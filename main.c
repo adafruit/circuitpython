@@ -57,6 +57,7 @@
 #include "supervisor/shared/safe_mode.h"
 #include "supervisor/shared/stack.h"
 #include "supervisor/shared/status_leds.h"
+#include "supervisor/shared/traceback.h"
 #include "supervisor/shared/translate.h"
 #include "supervisor/shared/workflow.h"
 #include "supervisor/usb.h"
@@ -221,7 +222,41 @@ STATIC bool maybe_run_list(const char * const * filenames, pyexec_result_t* exec
     return true;
 }
 
-STATIC void cleanup_after_vm(supervisor_allocation* heap) {
+STATIC void count_strn(void *data, const char *str, size_t len) {
+    *(size_t*)data += len;
+}
+
+STATIC void cleanup_after_vm(supervisor_allocation* heap, mp_obj_t exception) {
+    // Get the traceback of any exception from this run off the heap.
+    // MP_OBJ_SENTINEL means "this run does not contribute to traceback storage, don't touch it"
+    // MP_OBJ_NULL (=0) means "this run completed successfully, clear any stored traceback"
+    if (exception != MP_OBJ_SENTINEL) {
+        free_memory(prev_traceback_allocation);
+        // ReloadException is exempt from traceback printing in pyexec_file(), so treat it as "no
+        // traceback" here too.
+        if (exception && exception != MP_OBJ_FROM_PTR(&MP_STATE_VM(mp_reload_exception))) {
+            size_t traceback_len = 0;
+            mp_print_t print_count = {&traceback_len, count_strn};
+            mp_obj_print_exception(&print_count, exception);
+            prev_traceback_allocation = allocate_memory(align32_size(traceback_len + 1), false, true);
+            // Empirically, this never fails in practice - even when the heap is totally filled up
+            // with single-block-sized objects referenced by a root pointer, exiting the VM frees
+            // up several hundred bytes, sufficient for the traceback (which tends to be shortened
+            // because there wasn't memory for the full one). There may be convoluted ways of
+            // making it fail, but at this point I believe they are not worth spending code on.
+            if (prev_traceback_allocation != NULL) {
+                vstr_t vstr;
+                vstr_init_fixed_buf(&vstr, traceback_len, (char*)prev_traceback_allocation->ptr);
+                mp_print_t print = {&vstr, (mp_print_strn_t)vstr_add_strn};
+                mp_obj_print_exception(&print, exception);
+                ((char*)prev_traceback_allocation->ptr)[traceback_len] = '\0';
+            }
+        }
+        else {
+            prev_traceback_allocation = NULL;
+        }
+    }
+
     // Reset port-independent devices, like CIRCUITPY_BLEIO_HCI.
     reset_devices();
     // Turn off the display and flush the filesystem before the heap disappears.
@@ -274,10 +309,14 @@ STATIC bool run_code_py(safe_mode_t safe_mode) {
     pyexec_result_t result;
 
     result.return_code = 0;
-    result.exception_type = NULL;
+    result.exception = MP_OBJ_NULL;
     result.exception_line = 0;
 
+    bool skip_repl;
     bool found_main = false;
+    uint8_t next_code_options = 0;
+    // Collects stickiness bits that apply in the current situation.
+    uint8_t next_code_stickiness_situation = SUPERVISOR_NEXT_CODE_OPT_NEWLY_SET;
 
     if (safe_mode == NO_SAFE_MODE) {
         new_status_color(MAIN_RUNNING);
@@ -295,22 +334,62 @@ STATIC bool run_code_py(safe_mode_t safe_mode) {
         supervisor_allocation* heap = allocate_remaining_memory();
         start_mp(heap);
 
-        found_main = maybe_run_list(supported_filenames, &result);
-        #if CIRCUITPY_FULL_BUILD
-        if (!found_main){
-            found_main = maybe_run_list(double_extension_filenames, &result);
-            if (found_main) {
-                serial_write_compressed(translate("WARNING: Your code filename has two extensions\n"));
+        if (next_code_allocation) {
+            ((next_code_info_t*)next_code_allocation->ptr)->options &= ~SUPERVISOR_NEXT_CODE_OPT_NEWLY_SET;
+            next_code_options = ((next_code_info_t*)next_code_allocation->ptr)->options;
+            if (((next_code_info_t*)next_code_allocation->ptr)->filename[0] != '\0') {
+                const char* next_list[] = {((next_code_info_t*)next_code_allocation->ptr)->filename, ""};
+                found_main = maybe_run_list(next_list, &result);
+                if (!found_main) {
+                    serial_write(((next_code_info_t*)next_code_allocation->ptr)->filename);
+                    serial_write_compressed(translate(" not found.\n"));
+                }
             }
         }
-        #endif
+        if (!found_main) {
+            found_main = maybe_run_list(supported_filenames, &result);
+            #if CIRCUITPY_FULL_BUILD
+            if (!found_main){
+                found_main = maybe_run_list(double_extension_filenames, &result);
+                if (found_main) {
+                    serial_write_compressed(translate("WARNING: Your code filename has two extensions\n"));
+                }
+            }
+            #endif
+        }
 
         // TODO: on deep sleep, make sure display is refreshed before sleeping (for e-ink).
 
-        cleanup_after_vm(heap);
+        cleanup_after_vm(heap, result.exception);
 
+        // If a new next code file was set, that is a reason to keep it (obviously). Stuff this into
+        // the options because it can be treated like any other reason-for-stickiness bit. The
+        // source is different though: it comes from the options that will apply to the next run,
+        // while the rest of next_code_options is what applied to this run.
+        if (next_code_allocation != NULL && (((next_code_info_t*)next_code_allocation->ptr)->options & SUPERVISOR_NEXT_CODE_OPT_NEWLY_SET)) {
+            next_code_options |= SUPERVISOR_NEXT_CODE_OPT_NEWLY_SET;
+        }
+
+        if (reload_requested) {
+            next_code_stickiness_situation |= SUPERVISOR_NEXT_CODE_OPT_STICKY_ON_RELOAD;
+        }
+        else if (result.return_code == 0) { //TODO mask out PYEXEC_DEEP_SLEEP?
+            next_code_stickiness_situation |= SUPERVISOR_NEXT_CODE_OPT_STICKY_ON_SUCCESS;
+            if (next_code_options & SUPERVISOR_NEXT_CODE_OPT_RELOAD_ON_SUCCESS) {
+                skip_repl = true;
+                goto done;
+            }
+        }
+        else {
+            next_code_stickiness_situation |= SUPERVISOR_NEXT_CODE_OPT_STICKY_ON_ERROR;
+            if (next_code_options & SUPERVISOR_NEXT_CODE_OPT_RELOAD_ON_ERROR) {
+                skip_repl = true;
+                goto done;
+            }
+        }
         if (result.return_code & PYEXEC_FORCED_EXIT) {
-            return reload_requested;
+            skip_repl = reload_requested;
+            goto done;
         }
 
         if (reload_requested && result.return_code == PYEXEC_EXCEPTION) {
@@ -338,9 +417,16 @@ STATIC bool run_code_py(safe_mode_t safe_mode) {
                 board_init();
             }
             #endif
+            next_code_stickiness_situation |= SUPERVISOR_NEXT_CODE_OPT_STICKY_ON_RELOAD;
+            // Should the STICKY_ON_SUCCESS and STICKY_ON_ERROR bits be cleared in
+            // next_code_stickiness_situation? I can see arguments either way, but I'm deciding
+            // "no" for now, mainly because it's a bit less code. At this point, we have both a
+            // success or error and a reload, so let's have both of the respective options take
+            // effect (in OR combination).
             supervisor_set_run_reason(RUN_REASON_AUTO_RELOAD);
             reload_requested = false;
-            return true;
+            skip_repl = true;
+            goto done;
         }
 
         if (serial_connected() && serial_bytes_available()) {
@@ -350,11 +436,11 @@ STATIC bool run_code_py(safe_mode_t safe_mode) {
             }
             #endif
             // Skip REPL if reload was requested.
-            bool ctrl_d = serial_read() == CHAR_CTRL_D;
-            if (ctrl_d) {
+            skip_repl = serial_read() == CHAR_CTRL_D;
+            if (skip_repl) {
                 supervisor_set_run_reason(RUN_REASON_REPL_RELOAD);
             }
-            return ctrl_d;
+            goto done;
         }
 
         // Check for a deep sleep alarm and restart the VM. This can happen if
@@ -433,6 +519,13 @@ STATIC bool run_code_py(safe_mode_t safe_mode) {
             port_idle_until_interrupt();
         }
     }
+
+done:
+    if ((next_code_options & next_code_stickiness_situation) == 0) {
+        free_memory(next_code_allocation);
+        next_code_allocation = NULL;
+    }
+    return skip_repl;
 }
 
 FIL* boot_output_file;
@@ -501,7 +594,8 @@ STATIC void __attribute__ ((noinline)) run_boot_py(safe_mode_t safe_mode) {
         start_mp(heap);
 
         // TODO(tannewt): Re-add support for flashing boot error output.
-        bool found_boot = maybe_run_list(boot_py_filenames, NULL);
+        pyexec_result_t result = {0, MP_OBJ_NULL, 0};
+        bool found_boot = maybe_run_list(boot_py_filenames, &result);
         (void) found_boot;
 
         #ifdef CIRCUITPY_BOOT_OUTPUT_FILE
@@ -512,7 +606,7 @@ STATIC void __attribute__ ((noinline)) run_boot_py(safe_mode_t safe_mode) {
         boot_output_file = NULL;
         #endif
 
-        cleanup_after_vm(heap);
+        cleanup_after_vm(heap, result.exception);
     }
 }
 
@@ -529,7 +623,7 @@ STATIC int run_repl(void) {
     } else {
         exit_code = pyexec_friendly_repl();
     }
-    cleanup_after_vm(heap);
+    cleanup_after_vm(heap, MP_OBJ_SENTINEL);
     autoreload_resume();
     return exit_code;
 }

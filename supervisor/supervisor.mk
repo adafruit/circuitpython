@@ -12,6 +12,7 @@ SRC_SUPERVISOR = \
 	supervisor/shared/stack.c \
 	supervisor/shared/status_leds.c \
 	supervisor/shared/tick.c \
+	supervisor/shared/traceback.c \
 	supervisor/shared/translate.c
 
 NO_USB ?= $(wildcard supervisor/usb.c)

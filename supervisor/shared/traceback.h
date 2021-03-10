@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Scott Shawcroft for Adafruit Industries
+ * Copyright (c) 2020 Christian Walther
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,43 +24,11 @@
  * THE SOFTWARE.
  */
 
-#ifndef MICROPY_INCLUDED_SUPERVISOR_AUTORELOAD_H
-#define MICROPY_INCLUDED_SUPERVISOR_AUTORELOAD_H
-
-#include <stdbool.h>
+#ifndef MICROPY_INCLUDED_SUPERVISOR_TRACEBACK_H
+#define MICROPY_INCLUDED_SUPERVISOR_TRACEBACK_H
 
 #include "supervisor/memory.h"
 
-enum {
-	SUPERVISOR_NEXT_CODE_OPT_RELOAD_ON_SUCCESS = 0x1,
-	SUPERVISOR_NEXT_CODE_OPT_RELOAD_ON_ERROR = 0x2,
-	SUPERVISOR_NEXT_CODE_OPT_STICKY_ON_SUCCESS = 0x4,
-	SUPERVISOR_NEXT_CODE_OPT_STICKY_ON_ERROR = 0x8,
-	SUPERVISOR_NEXT_CODE_OPT_STICKY_ON_RELOAD = 0x10,
-	SUPERVISOR_NEXT_CODE_OPT_NEWLY_SET = 0x20,
-};
+extern supervisor_allocation* prev_traceback_allocation;
 
-typedef struct {
-    uint8_t options;
-    char filename[];
-} next_code_info_t;
-
-extern supervisor_allocation* next_code_allocation;
-
-extern volatile bool reload_requested;
-
-void autoreload_tick(void);
-
-void autoreload_start(void);
-void autoreload_stop(void);
-void autoreload_enable(void);
-void autoreload_disable(void);
-bool autoreload_is_enabled(void);
-
-// Temporarily turn it off. Used during the REPL.
-void autoreload_suspend(void);
-void autoreload_resume(void);
-
-void autoreload_now(void);
-
-#endif  // MICROPY_INCLUDED_SUPERVISOR_AUTORELOAD_H
+#endif  // MICROPY_INCLUDED_SUPERVISOR_TRACEBACK_H
