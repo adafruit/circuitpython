@@ -184,3 +184,9 @@
 [submodule "frozen/Adafruit_CircuitPython_MIDI"]
 	path = frozen/Adafruit_CircuitPython_MIDI
 	url = https://github.com/adafruit/Adafruit_CircuitPython_MIDI
+[submodule "ports/nxp/nxp_lpc"]
+	path = ports/nxp/nxp_lpc
+	url = https://github.com/ARM-software/NXP_LPC
+[submodule "ports/nxp/mcux-sdk"]
+	path = ports/nxp/mcux-sdk
+	url = https://github.com/NXPmicro/mcux-sdk
