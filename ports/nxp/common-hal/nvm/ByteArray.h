@@ -27,6 +27,12 @@
 #if !defined(PORTS_NXP_COMMON_HAL_NVM_BYTEARRAY_H_)
 #define PORTS_NXP_COMMON_HAL_NVM_BYTEARRAY_H_
 
-#include 
+#include "py/obj.h"
+
+typedef struct {
+    mp_obj_base_t base;
+    uint8_t *start_address;
+    uint32_t len;
+} nvm_bytearray_obj_t;
 
 #endif // PORTS_NXP_COMMON_HAL_NVM_BYTEARRAY_H_

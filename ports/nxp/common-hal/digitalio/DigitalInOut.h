@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
+ * Copyright (c) 2020 Scott Shawcroft for Adafruit Industries
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,9 +24,17 @@
  * THE SOFTWARE.
  */
 
-#if !defined(PORTS_NXP_COMMON_HAL_DIGITALIO_DIGITALINOUT_H_)
-#define PORTS_NXP_COMMON_HAL_DIGITALIO_DIGITALINOUT_H_
+#ifndef MICROPY_INCLUDED_RASPBERRYPI_COMMON_HAL_DIGITALIO_DIGITALINOUT_H
+#define MICROPY_INCLUDED_RASPBERRYPI_COMMON_HAL_DIGITALIO_DIGITALINOUT_H
 
-#include 
+#include "common-hal/microcontroller/Pin.h"
+#include "py/obj.h"
 
-#endif // PORTS_NXP_COMMON_HAL_DIGITALIO_DIGITALINOUT_H_
+typedef struct {
+    mp_obj_base_t base;
+    const mcu_pin_obj_t *pin;
+    bool output;
+    bool open_drain;
+} digitalio_digitalinout_obj_t;
+
+#endif // MICROPY_INCLUDED_RASPBERRYPI_COMMON_HAL_DIGITALIO_DIGITALINOUT_H

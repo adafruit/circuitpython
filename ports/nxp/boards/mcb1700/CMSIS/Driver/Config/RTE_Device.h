@@ -30,7 +30,7 @@
 // <e> USB Controller [Driver_USBD and Driver_USBH]
 // <i> Configuration settings for Driver_USBD in component ::Drivers:USB Device
 // <i> Configuration settings for Driver_USBH in component ::Drivers:USB Host
-#define   RTE_USB_USB0                  0
+#define   RTE_USB_USB0                  1
 
 //   <h> Pin Configuration
 //     <o> USB_PPWR (Host) <0=>Not used <1=>P1_19
@@ -222,7 +222,7 @@
 
 // <e> I2C0 (Inter-integrated Circuit Interface 0) [Driver_I2C0]
 // <i> Configuration settings for Driver_I2C0 in component ::Drivers:I2C
-#define RTE_I2C0                        0
+#define RTE_I2C0                        1
 
 //   <o> I2C0_SCL Pin <0=>P0_28
 #define RTE_I2C0_SCL_PORT_ID            0
@@ -309,7 +309,7 @@
 // </e>
 
 // <e> UART0 (Universal asynchronous receiver transmitter)
-#define RTE_UART0                       0
+#define RTE_UART0                       1
 
 //   <o> UART0_TX Pin <0=>P0_2
 //   <i> UART0 Serial Output pin
@@ -618,7 +618,7 @@
 
 // <e> CAN1 Controller [Driver_CAN1]
 // <i> Configuration settings for Driver_CAN1 in component ::Drivers:CAN
-#define   RTE_CAN_CAN1                  0
+#define   RTE_CAN_CAN1                  1
 
 //   <h> Pin Configuration
 //     <o> CAN1_RD <0=>Not used <1=>P0_0 <2=>P0_21
@@ -711,7 +711,7 @@
 
 // <e> SSP0 (Synchronous Serial Port 0) [Driver_SPI0]
 // <i> Configuration settings for Driver_SPI0 in component ::Drivers:SPI
-#define RTE_SSP0                        0
+#define RTE_SSP0                        1
 
 //   <h> Pin Configuration
 //     <o> SSP0_SSEL <0=>Not used <1=>P0_16 <2=>P1_21
@@ -870,7 +870,7 @@
 
 // <e> SPI (Serial Peripheral Interface) [Driver_SPI2]
 // <i> Configuration settings for Driver_SPI2 in component ::Drivers:SPI
-#define   RTE_SPI                       0
+#define   RTE_SPI                       1
 
 //   <h> Pin Configuration
 //     <o> SPI_SSEL <0=>Not used <1=>P0_16
@@ -924,7 +924,7 @@
 
 // <e> I2S0 (Integrated Interchip Sound 0) [Driver_SAI0]
 // <i> Configuration settings for Driver_SAI0 in component ::Drivers:SAI
-#define   RTE_I2S0                      0
+#define   RTE_I2S0                      1
 
 //   <h> Pin Configuration
 //     <o> I2S0_RX_SCK <0=>Not used <1=>P0_4 <2=>P0_23

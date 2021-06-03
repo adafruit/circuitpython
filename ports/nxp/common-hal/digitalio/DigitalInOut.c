@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
+ * Copyright (c) 2020 Scott Shawcroft for Adafruit Industries
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,18 +30,18 @@
 #include "py/runtime.h"
 #include "py/mphal.h"
 
-#include "hal/include/hal_gpio.h"
-
 #include "common-hal/microcontroller/Pin.h"
 #include "shared-bindings/digitalio/DigitalInOut.h"
 #include "supervisor/shared/translate.h"
 
-digitalinout_result_t common_hal_digitalio_digitalinout_construct(
-        digitalio_digitalinout_obj_t* self, const mcu_pin_obj_t* pin)
+#if (0)
+#include "src/rp2_common/hardware_gpio/include/hardware/gpio.h"
+#endif
+
+digitalinout_result_t
+common_hal_digitalio_digitalinout_construct(digitalio_digitalinout_obj_t *self, const mcu_pin_obj_t *pin)
 {
 #if (1)
-    // TODO: common_hal_digitalio_digitalinout_construct is stub
-    (void)self; (void)pin;
     return DIGITALINOUT_PIN_BUSY;
 #else
     claim_pin(pin);
@@ -49,25 +49,26 @@ digitalinout_result_t common_hal_digitalio_digitalinout_construct(
     self->output = false;
     self->open_drain = false;
 
-    // Must set pull after setting direction.
-    gpio_set_pin_direction(pin->number, GPIO_DIRECTION_IN);
-    gpio_set_pin_pull_mode(pin->number, GPIO_PULL_OFF);
+    // Set to input. No output value.
+    gpio_init(pin->number);
     return DIGITALINOUT_OK;
 #endif
 }
 
-void common_hal_digitalio_digitalinout_never_reset(
-        digitalio_digitalinout_obj_t *self)
+void
+common_hal_digitalio_digitalinout_never_reset(digitalio_digitalinout_obj_t *self)
 {
     never_reset_pin_number(self->pin->number);
 }
 
-bool common_hal_digitalio_digitalinout_deinited(digitalio_digitalinout_obj_t* self)
+bool
+common_hal_digitalio_digitalinout_deinited(digitalio_digitalinout_obj_t *self)
 {
     return self->pin == NULL;
 }
 
-void common_hal_digitalio_digitalinout_deinit(digitalio_digitalinout_obj_t* self)
+void
+common_hal_digitalio_digitalinout_deinit(digitalio_digitalinout_obj_t *self)
 {
     if (common_hal_digitalio_digitalinout_deinited(self)) {
         return;
@@ -76,95 +77,83 @@ void common_hal_digitalio_digitalinout_deinit(digitalio_digitalinout_obj_t* self
     self->pin = NULL;
 }
 
-void common_hal_digitalio_digitalinout_switch_to_input(
-        digitalio_digitalinout_obj_t* self, digitalio_pull_t pull)
+void
+common_hal_digitalio_digitalinout_switch_to_input(digitalio_digitalinout_obj_t *self, digitalio_pull_t pull)
 {
     self->output = false;
     // This also sets direction to input.
     common_hal_digitalio_digitalinout_set_pull(self, pull);
 }
 
-digitalinout_result_t common_hal_digitalio_digitalinout_switch_to_output(
-        digitalio_digitalinout_obj_t* self, bool value,
-        digitalio_drive_mode_t drive_mode)
+digitalinout_result_t
+common_hal_digitalio_digitalinout_switch_to_output(digitalio_digitalinout_obj_t *self, bool value, digitalio_drive_mode_t drive_mode)
 {
 #if (1)
-    // TODO: common_hal_digitalio_digitalinout_switch_to_output is stub
     return DIGITALINOUT_PIN_BUSY;
 #else
     const uint8_t pin = self->pin->number;
-    gpio_set_pin_pull_mode(pin, GPIO_PULL_OFF);
-    // Turn on "strong" pin driving (more current available). See DRVSTR doc in datasheet.
-    hri_port_set_PINCFG_DRVSTR_bit(PORT, (enum gpio_port)GPIO_PORT(pin), GPIO_PIN(pin));
+    gpio_disable_pulls(pin);
+
+    // Turn on "strong" pin driving (more current available).
+    hw_write_masked(&padsbank0_hw->io[pin],
+        PADS_BANK0_GPIO0_DRIVE_VALUE_12MA << PADS_BANK0_GPIO0_DRIVE_LSB,
+            PADS_BANK0_GPIO0_DRIVE_BITS);
 
     self->output = true;
     self->open_drain = drive_mode == DRIVE_MODE_OPEN_DRAIN;
 
-    // Direction is set in set_value. We don't need to do it here.
+    // Pin direction is ultimately set in set_value. We don't need to do it here.
     common_hal_digitalio_digitalinout_set_value(self, value);
     return DIGITALINOUT_OK;
 #endif
 }
 
-digitalio_direction_t common_hal_digitalio_digitalinout_get_direction(
-        digitalio_digitalinout_obj_t* self)
+digitalio_direction_t
+common_hal_digitalio_digitalinout_get_direction(digitalio_digitalinout_obj_t *self)
 {
     return self->output ? DIRECTION_OUTPUT : DIRECTION_INPUT;
 }
 
-void common_hal_digitalio_digitalinout_set_value(
-        digitalio_digitalinout_obj_t* self, bool value)
+void
+common_hal_digitalio_digitalinout_set_value(digitalio_digitalinout_obj_t *self, bool value)
 {
 #if (1)
-    // TODO: common_hal_digitalio_digitalinout_set_value is stub
-    (void)self; (void)value;
     return;
 #else
     const uint8_t pin = self->pin->number;
-    const uint8_t port = GPIO_PORT(pin);
-    const uint32_t pin_mask = 1U << GPIO_PIN(pin);
-    if (value) {
-        if (self->open_drain) {
-            // Assertion: pull is off, so the pin is floating in this case.
-            // We do open-drain high output (no sinking of current)
-            // by changing the direction to input with no pulls.
-            hri_port_clear_DIR_DIR_bf(PORT, port, pin_mask);
-        } else {
-            hri_port_set_DIR_DIR_bf(PORT, port, pin_mask);
-            hri_port_set_OUT_OUT_bf(PORT, port, pin_mask);
-        }
+    if (self->open_drain && value) {
+        // If true and open-drain, set the direction -before- setting
+        // the pin value, to to avoid a high glitch on the pin before
+        // switching from output to input for open-drain.
+        gpio_set_dir(pin, GPIO_IN);
+        gpio_put(pin, value);
     } else {
-        hri_port_set_DIR_DIR_bf(PORT, port, pin_mask);
-        hri_port_clear_OUT_OUT_bf(PORT,port, pin_mask);
+        // Otherwise set the direction -after- setting the pin value,
+        // to avoid a glitch which might occur if the old value was
+        // different and the pin was previously set to input.
+        gpio_put(pin, value);
+        gpio_set_dir(pin, GPIO_OUT);
     }
 #endif
 }
 
-bool common_hal_digitalio_digitalinout_get_value(
-        digitalio_digitalinout_obj_t* self)
+bool
+common_hal_digitalio_digitalinout_get_value(digitalio_digitalinout_obj_t *self)
 {
 #if (1)
-    // TODO: common_hal_digitalio_digitalinout_get_value is stub
-    (void)self;
     return false;
 #else
-    const uint8_t pin = self->pin->number;
-    if (!self->output) {
-        return gpio_get_pin_level(pin);
-    } else {
-        if (self->open_drain && hri_port_get_DIR_reg(PORT, GPIO_PORT(pin), 1U << GPIO_PIN(pin)) == 0) {
-            return true;
-        } else {
-            return hri_port_get_OUT_reg(PORT, GPIO_PORT(pin), 1U << GPIO_PIN(pin));
-        }
-    }
+    return gpio_get(self->pin->number);
 #endif
 }
 
-digitalinout_result_t common_hal_digitalio_digitalinout_set_drive_mode(
-        digitalio_digitalinout_obj_t* self,
-        digitalio_drive_mode_t drive_mode)
+digitalinout_result_t
+common_hal_digitalio_digitalinout_set_drive_mode(digitalio_digitalinout_obj_t *self, digitalio_drive_mode_t drive_mode)
 {
+#if (1)
+    return DIGITALINOUT_PIN_BUSY;
+#else
+    const uint8_t pin = self->pin->number;
     bool value = common_hal_digitalio_digitalinout_get_value(self);
     self->open_drain = drive_mode == DRIVE_MODE_OPEN_DRAIN;
     // True is implemented differently between modes so reset the value to make
@@ -173,10 +162,12 @@ digitalinout_result_t common_hal_digitalio_digitalinout_set_drive_mode(
         common_hal_digitalio_digitalinout_set_value(self, value);
     }
     return DIGITALINOUT_OK;
+#endif
 }
 
-digitalio_drive_mode_t common_hal_digitalio_digitalinout_get_drive_mode(
-        digitalio_digitalinout_obj_t* self) {
+digitalio_drive_mode_t
+common_hal_digitalio_digitalinout_get_drive_mode(digitalio_digitalinout_obj_t *self)
+{
     if (self->open_drain) {
         return DRIVE_MODE_OPEN_DRAIN;
     } else {
@@ -184,38 +175,22 @@ digitalio_drive_mode_t common_hal_digitalio_digitalinout_get_drive_mode(
     }
 }
 
-void common_hal_digitalio_digitalinout_set_pull(
-        digitalio_digitalinout_obj_t* self, digitalio_pull_t pull)
+void
+common_hal_digitalio_digitalinout_set_pull(digitalio_digitalinout_obj_t *self, digitalio_pull_t pull)
 {
 #if (1)
-    // TODO: common_hal_digitalio_digitalinout_set_pull is stub
-    (void)self; (void)pull;
     return;
 #else
-    enum gpio_pull_mode asf_pull = GPIO_PULL_OFF;
-    switch (pull) {
-        case PULL_UP:
-            asf_pull = GPIO_PULL_UP;
-            break;
-        case PULL_DOWN:
-            asf_pull = GPIO_PULL_DOWN;
-            break;
-        case PULL_NONE:
-        default:
-            break;
-    }
-    // Must set pull after setting direction.
-    gpio_set_pin_direction(self->pin->number, GPIO_DIRECTION_IN);
-    gpio_set_pin_pull_mode(self->pin->number, asf_pull);
+    const uint8_t pin = self->pin->number;
+    gpio_set_pulls(pin, pull == PULL_UP, pull == PULL_DOWN);
+    gpio_set_dir(pin, GPIO_IN);
 #endif
 }
 
-digitalio_pull_t common_hal_digitalio_digitalinout_get_pull(
-        digitalio_digitalinout_obj_t* self)
+digitalio_pull_t
+common_hal_digitalio_digitalinout_get_pull(digitalio_digitalinout_obj_t *self)
 {
 #if (1)
-    // TODO: common_hal_digitalio_digitalinout_get_pull is stub
-    (void)self;
     return PULL_NONE;
 #else
     uint32_t pin = self->pin->number;
@@ -223,13 +198,13 @@ digitalio_pull_t common_hal_digitalio_digitalinout_get_pull(
         mp_raise_AttributeError(translate("Cannot get pull while in output mode"));
         return PULL_NONE;
     } else {
-        if (hri_port_get_PINCFG_PULLEN_bit(PORT, GPIO_PORT(pin), GPIO_PIN(pin)) == 0) {
-            return PULL_NONE;
-        } if (hri_port_get_OUT_reg(PORT, GPIO_PORT(pin), 1U << GPIO_PIN(pin)) > 0) {
+        if (gpio_is_pulled_up(pin)) {
             return PULL_UP;
-        } else {
+        } else if (gpio_is_pulled_down(pin)) {
             return PULL_DOWN;
         }
     }
+    return PULL_NONE;
 #endif
 }
+

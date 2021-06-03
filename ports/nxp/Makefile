@@ -35,10 +35,17 @@ endif
 BUILD ?= build-$(BOARD)
 
 include ../../py/mkenv.mk
+
 # Board-specific
 include boards/$(BOARD)/mpconfigboard.mk
+
 # Port-specific
 include mpconfigport.mk
+
+ifndef USB_NUM_ENDPOINT_PAIRS
+$(error "USB_NUM_ENDPOINT_PAIRS (number of USB endpoint pairs)must be defined")
+endif
+
 # CircuitPython-specific
 include $(TOP)/py/circuitpy_mpconfig.mk
 
@@ -66,11 +73,12 @@ INC += -I. \
        -Iboards/$(BOARD) \
        -Iboards/
        
-ifeq ($(CHIP_FAMILY), LPC1700)
-INC += -isystem nxp_lpc/$(CHIP_FAMLIY)/CMSIS/Driver \
-       -isystem nxp_lpc/$(BOARD)/CMSIS/Driver/Config \
-       -I../../lib/tinyusb/src \
-       -I../../supervisor/shared/usb \
+ifeq ($(CHIP_FAMILY_LOWER), lpc1700)
+INC += -isystem cmsis5/CMSIS/Core/Include \
+       -isystem cmsis5/CMSIS/Driver/Include \
+       -isystem nxp_lpc/$(CHIP_FAMILY)/CMSIS/Driver \
+       -isystem boards/$(BOARD)/CMSIS/Driver/Config \
+       -I lpc17xx \
        -I$(BUILD)
 endif
 
@@ -78,17 +86,29 @@ endif
 CFLAGS += -mabi=aapcs-linux
 
 
-ifeq ($(CHIP_FAMILY), LPC1700)
-# LPC1700 specific configuration
-CFLAGS += -march=armv6-m \
-          -mthumb \
+ifeq ($(CHIP_FAMILY_LOWER), lpc1700)
+# lpc1700 specific configuration
+CFLAGS += -mthumb \
           -mcpu=cortex-m3 \
           -msoft-float \
           -mfloat-abi=soft
 endif
 
-ifeq ($(CHIP_VARIANT), LPC1768)
+ifeq ($(CHIP_VARIANT_LOWER), lpc1768)
 # LPC1768 specific configuration
+INC += -isystem lpc17xx/Keil/$(CHIP_FAMILY)_DFP/2.6.0/Device/Include
+
+# -Wno-error=attributes otherwise USB driver generates errors
+# -Wno-error=maybe-uninitialized otherwise UART driver generates errors
+# -Wno-error=int-conversion otherwise UART driver generates errors
+# -Wno-error=implicit-fallthrough otherwise I2C driver generates errors
+CFLAGS += -DLPC175x_6x=1 \
+          -DRTE_SSP2=0 \
+          -DRTE_UART4=0 \
+          -Wno-error=attributes \
+          -Wno-error=maybe-uninitialized \
+          -Wno-error=int-conversion \
+          -Wno-error=implicit-fallthrough
 endif
 
 ifeq ($(BOARD), MCB1700)
@@ -96,10 +116,27 @@ ifeq ($(BOARD), MCB1700)
 # CFLAGS += -DPICO_ON_DEVICE=1 -DPICO_NO_BINARY_INFO=0 -DPICO_TIME_DEFAULT_ALARM_POOL_DISABLED=1 -DPICO_DIVIDER_CALL_IDIV0=0 -DPICO_DIVIDER_CALL_LDIV0=0 -DPICO_DIVIDER_HARDWARE=1 -DPICO_DOUBLE_ROM=1 -DPICO_FLOAT_ROM=1 -DPICO_MULTICORE=1 -DPICO_BITS_IN_RAM=0 -DPICO_DIVIDER_IN_RAM=0 -DPICO_DOUBLE_PROPAGATE_NANS=0 -DPICO_DOUBLE_IN_RAM=0 -DPICO_MEM_IN_RAM=0 -DPICO_FLOAT_IN_RAM=0 -DPICO_FLOAT_PROPAGATE_NANS=1 -DPICO_NO_FLASH=0 -DPICO_COPY_TO_RAM=0 -DPICO_DISABLE_SHARED_IRQ_HANDLERS=0
 endif
 
-OPTIMIZATION_FLAGS ?= -Os
+OPTIMIZATION_FLAGS ?= -Os -ffreestanding -pipe
 
-# TinyUSB defines
-# CFLAGS += -DTUD_OPT_RP2040_USB_DEVICE_ENUMERATION_FIX=1 -DCFG_TUSB_MCU=OPT_MCU_RP2040 -DCFG_TUD_MIDI_RX_BUFSIZE=128 -DCFG_TUD_CDC_RX_BUFSIZE=256 -DCFG_TUD_MIDI_TX_BUFSIZE=128 -DCFG_TUD_CDC_TX_BUFSIZE=256 -DCFG_TUD_MSC_BUFSIZE=1024
+# CIRCUITPY_USB_VENDOR, CIRCUITPY_USB_HID, CIRCUITPY_USB_MIDI
+ifeq ($(CIRCUITPY_USB_CDC), 1) 
+# FIXME: Requires nxp_lpcopn drivers
+
+INC += -I../../lib/tinyusb/src \
+       -I../../supervisor/shared/usb \
+       -Inxp_lpcopen/lpc175x_6x/lpc_chip_175x_6x/inc/../
+       
+CFLAGS +=-DCORE_M3=1 \
+         -DRTC_EV_SUPPORT=0
+
+# TinyUSB specific configuration
+CFLAGS += -DCFG_TUSB_MCU=OPT_MCU_LPC175X_6X \
+          -DCFG_TUD_MIDI_RX_BUFSIZE=128 \
+          -DCFG_TUD_CDC_RX_BUFSIZE=256 \
+          -DCFG_TUD_MIDI_TX_BUFSIZE=128 \
+          -DCFG_TUD_CDC_TX_BUFSIZE=256 \
+          -DCFG_TUD_MSC_BUFSIZE=1024
+endif
 
 # option to override default optimization level, set in boards/$(BOARD)/mpconfigboard.mk
 CFLAGS += $(OPTIMIZATION_FLAGS)
@@ -123,24 +160,38 @@ DISABLE_WARNINGS = -Wno-stringop-overflow -Wno-unused-function -Wno-unused-varia
 
 CFLAGS += $(INC) -Wall -Werror -std=gnu11 -nostdlib -fshort-enums $(BASE_CFLAGS) $(CFLAGS_MOD) $(COPT) $(DISABLE_WARNINGS)
 
-ifeq ($(CHIP_FAMILY), LPC1700)
+# LDFLAGS = $(CFLAGS) -nostartfiles -Wl,-nostdlib -Wl,-T,$(GENERATED_LD_FILE) -Wl,-Map=$@.map -Wl,-cref -Wl,-gc-sections -specs=nano.specs
+LDFLAGS = $(CFLAGS) \
+          -Wl,-T,$(GENERATED_LD_FILE) -Wl,-Map=$@.map -Wl,-cref -specs=nano.specs -specs=nosys.specs
+          
+LIBS := -lgcc -lc
+
+# LDFLAGS += -nostartfiles
+LDFLAGS += -Wl,-nostdlib 
+# LDFLAGS += -Wl,-gc-sections
+
+ifeq ($(CHIP_FAMILY), lpc1700)
 # PICO_LDFLAGS = --specs=nosys.specs -Wl,--wrap=__aeabi_ldiv0 -Wl,--wrap=__aeabi_idiv0 -Wl,--wrap=__aeabi_lmul -Wl,--wrap=__clzsi2 -Wl,--wrap=__clzdi2 -Wl,--wrap=__ctzsi2 -Wl,--wrap=__ctzdi2 -Wl,--wrap=__popcountsi2 -Wl,--wrap=__popcountdi2 -Wl,--wrap=__clz -Wl,--wrap=__clzl -Wl,--wrap=__clzll -Wl,--wrap=__aeabi_idiv -Wl,--wrap=__aeabi_idivmod -Wl,--wrap=__aeabi_ldivmod -Wl,--wrap=__aeabi_uidiv -Wl,--wrap=__aeabi_uidivmod -Wl,--wrap=__aeabi_uldivmod -Wl,--wrap=__aeabi_dadd -Wl,--wrap=__aeabi_ddiv -Wl,--wrap=__aeabi_dmul -Wl,--wrap=__aeabi_drsub -Wl,--wrap=__aeabi_dsub -Wl,--wrap=__aeabi_cdcmpeq -Wl,--wrap=__aeabi_cdrcmple -Wl,--wrap=__aeabi_cdcmple -Wl,--wrap=__aeabi_dcmpeq -Wl,--wrap=__aeabi_dcmplt -Wl,--wrap=__aeabi_dcmple -Wl,--wrap=__aeabi_dcmpge -Wl,--wrap=__aeabi_dcmpgt -Wl,--wrap=__aeabi_dcmpun -Wl,--wrap=__aeabi_i2d -Wl,--wrap=__aeabi_l2d -Wl,--wrap=__aeabi_ui2d -Wl,--wrap=__aeabi_ul2d -Wl,--wrap=__aeabi_d2iz -Wl,--wrap=__aeabi_d2lz -Wl,--wrap=__aeabi_d2uiz -Wl,--wrap=__aeabi_d2ulz -Wl,--wrap=__aeabi_d2f -Wl,--wrap=sqrt -Wl,--wrap=cos -Wl,--wrap=sin -Wl,--wrap=tan -Wl,--wrap=atan2 -Wl,--wrap=exp -Wl,--wrap=log -Wl,--wrap=ldexp -Wl,--wrap=copysign -Wl,--wrap=trunc -Wl,--wrap=floor -Wl,--wrap=ceil -Wl,--wrap=round -Wl,--wrap=sincos -Wl,--wrap=asin -Wl,--wrap=acos -Wl,--wrap=atan -Wl,--wrap=sinh -Wl,--wrap=cosh -Wl,--wrap=tanh -Wl,--wrap=asinh -Wl,--wrap=acosh -Wl,--wrap=atanh -Wl,--wrap=exp2 -Wl,--wrap=log2 -Wl,--wrap=exp10 -Wl,--wrap=log10 -Wl,--wrap=pow -Wl,--wrap=powint -Wl,--wrap=hypot -Wl,--wrap=cbrt -Wl,--wrap=fmod -Wl,--wrap=drem -Wl,--wrap=remainder -Wl,--wrap=remquo -Wl,--wrap=expm1 -Wl,--wrap=log1p -Wl,--wrap=fma -Wl,--wrap=__aeabi_fadd -Wl,--wrap=__aeabi_fdiv -Wl,--wrap=__aeabi_fmul -Wl,--wrap=__aeabi_frsub -Wl,--wrap=__aeabi_fsub -Wl,--wrap=__aeabi_cfcmpeq -Wl,--wrap=__aeabi_cfrcmple -Wl,--wrap=__aeabi_cfcmple -Wl,--wrap=__aeabi_fcmpeq -Wl,--wrap=__aeabi_fcmplt -Wl,--wrap=__aeabi_fcmple -Wl,--wrap=__aeabi_fcmpge -Wl,--wrap=__aeabi_fcmpgt -Wl,--wrap=__aeabi_fcmpun -Wl,--wrap=__aeabi_i2f -Wl,--wrap=__aeabi_l2f -Wl,--wrap=__aeabi_ui2f -Wl,--wrap=__aeabi_ul2f -Wl,--wrap=__aeabi_f2iz -Wl,--wrap=__aeabi_f2lz -Wl,--wrap=__aeabi_f2uiz -Wl,--wrap=__aeabi_f2ulz -Wl,--wrap=__aeabi_f2d -Wl,--wrap=sqrtf -Wl,--wrap=cosf -Wl,--wrap=sinf -Wl,--wrap=tanf -Wl,--wrap=atan2f -Wl,--wrap=expf -Wl,--wrap=logf -Wl,--wrap=ldexpf -Wl,--wrap=copysignf -Wl,--wrap=truncf -Wl,--wrap=floorf -Wl,--wrap=ceilf -Wl,--wrap=roundf -Wl,--wrap=sincosf -Wl,--wrap=asinf -Wl,--wrap=acosf -Wl,--wrap=atanf -Wl,--wrap=sinhf -Wl,--wrap=coshf -Wl,--wrap=tanhf -Wl,--wrap=asinhf -Wl,--wrap=acoshf -Wl,--wrap=atanhf -Wl,--wrap=exp2f -Wl,--wrap=log2f -Wl,--wrap=exp10f -Wl,--wrap=log10f -Wl,--wrap=powf -Wl,--wrap=powintf -Wl,--wrap=hypotf -Wl,--wrap=cbrtf -Wl,--wrap=fmodf -Wl,--wrap=dremf -Wl,--wrap=remainderf -Wl,--wrap=remquof -Wl,--wrap=expm1f -Wl,--wrap=log1pf -Wl,--wrap=fmaf -Wl,--wrap=memcpy -Wl,--wrap=memset -Wl,--wrap=__aeabi_memcpy -Wl,--wrap=__aeabi_memset -Wl,--wrap=__aeabi_memcpy4 -Wl,--wrap=__aeabi_memset4 -Wl,--wrap=__aeabi_memcpy8 -Wl,--wrap=__aeabi_memset8
+  LDFLAGS += -mthumb \
+             -mcpu=cortex-m3
+else
+  ifeq ($(CHIP_FAMILY_LOWER), lpc55s28)
+    LDFLAGS += -mthumb \
+               -mcpu=cortex-m33
+  endif
 endif
 
-LDFLAGS = $(CFLAGS) $(PICO_LDFLAGS) -Wl,-T,link.ld -Wl,-Map=$@.map -Wl,-cref -Wl,--gc-sections
 
 # Use toolchain libm if we're not using our own.
 ifndef INTERNAL_LIBM
 LIBS += -lm
 endif
 
-LDFLAGS += -mthumb -mcpu=cortex-m0plus
 
-
-ifeq ($(CHIP_VARIANT), LPC1768)
+ifeq ($(CHIP_FAMILY_LOWER), lpc1700)
 SRC_SDK := \
+	lpc17xx/Keil/$(CHIP_FAMILY)_DFP/2.6.0/Device/Source/system_LPC17xx.c \
 	nxp_lpc/$(CHIP_FAMILY)/CMSIS/Driver/CAN_LPC17xx.c \
-	nxp_lpc/$(CHIP_FAMILY)/CMSIS/Driver/EMAC_LPC17xx.c \
 	nxp_lpc/$(CHIP_FAMILY)/CMSIS/Driver/GPDMA_LPC17xx.c \
 	nxp_lpc/$(CHIP_FAMILY)/CMSIS/Driver/GPIO_LPC17xx.c \
 	nxp_lpc/$(CHIP_FAMILY)/CMSIS/Driver/I2C_LPC17xx.c \
@@ -148,37 +199,37 @@ SRC_SDK := \
 	nxp_lpc/$(CHIP_FAMILY)/CMSIS/Driver/SPI_LPC17xx.c \
 	nxp_lpc/$(CHIP_FAMILY)/CMSIS/Driver/SSP_LPC17xx.c \
 	nxp_lpc/$(CHIP_FAMILY)/CMSIS/Driver/UART_LPC17xx.c \
+	nxp_lpc/$(CHIP_FAMILY)/CMSIS/Driver/OTG_LPC17xx.c \
 	nxp_lpc/$(CHIP_FAMILY)/CMSIS/Driver/USBD_LPC17xx.c
+
+# Requires cmsis_os.h
+#	nxp_lpc/$(CHIP_FAMILY)/CMSIS/Driver/EMAC_LPC17xx.c \
+
+else 
+  ifeq ($(CHIP_FAMILY_LOWER), lpc55s28)
+    SRC_SDK := $(addprefix sdk/, $(SRC_SDK))
+  endif
+
 endif
 
-
-SRC_SDK := $(addprefix sdk/, $(SRC_SDK))
-
 SRC_C += \
-	boards/$(BOARD)/board.c \
-	boards/$(BOARD)/pins.c \
-	bindings/rp2pio/StateMachine.c \
-	bindings/rp2pio/__init__.c \
-	common-hal/rp2pio/StateMachine.c \
-	common-hal/rp2pio/__init__.c \
-	background.c \
-	peripherals/pins.c \
-	fatfs_port.c \
-	lib/libc/string0.c \
-	lib/mp-readline/readline.c \
-	lib/oofatfs/ff.c \
-	lib/oofatfs/option/ccsbcs.c \
-	lib/timeutils/timeutils.c \
-	lib/tinyusb/src/portable/raspberrypi/rp2040/dcd_rp2040.c \
-	lib/tinyusb/src/portable/raspberrypi/rp2040/rp2040_usb.c \
-	lib/utils/buffer_helper.c \
-	lib/utils/context_manager_helpers.c \
-	lib/utils/interrupt_char.c \
-	lib/utils/pyexec.c \
-	lib/utils/stdout_helpers.c \
-	lib/utils/sys_stdio_mphal.c \
 	mphalport.c \
-	supervisor/shared/memory.c
+	fatfs_port.c \
+	background.c \
+	boards/$(BOARD)/board.c \
+	boards/$(BOARD)/pins.c
+
+ifeq ($(CIRCUITPY_USB_CDC), 1) 
+  ifeq ($(CHIP_FAMILY_LOWER), lpc1700)
+    SRC_C += \
+	    lib/tinyusb/src/portable/nxp/transdimension/dcd_transdimension.c \
+	    lib/tinyusb/src/portable/nxp/lpc17_40/dcd_lpc17_40.c
+  else ifeq ($(CHIP_FAMILY_LOWER), lpc55s28)
+    SRC_C += \
+	    lib/tinyusb/src/portable/nxp/transdimension/dcd_transdimension.c \
+	    lib/tinyusb/src/portable/nxp/lpc55/dcd_lpc55.c
+  endif
+endif
 
 SRC_COMMON_HAL_EXPANDED = $(addprefix shared-bindings/, $(SRC_COMMON_HAL)) \
                           $(addprefix shared-bindings/, $(SRC_BINDINGS_ENUMS)) \
@@ -193,19 +244,7 @@ SRC_SHARED_MODULE_EXPANDED = $(addprefix shared-bindings/, $(SRC_SHARED_MODULE))
 # Doing a $(sort ...) removes duplicates as part of sorting.
 SRC_COMMON_HAL_SHARED_MODULE_EXPANDED = $(sort $(SRC_COMMON_HAL_EXPANDED) $(SRC_SHARED_MODULE_EXPANDED))
 
-SRC_S = supervisor/$(CHIP_FAMILY)_cpu.s
-SRC_S_UPPER = bs2_default_padded_checksummed.S \
-              sdk/src/rp2_common/hardware_divider/divider.S \
-              sdk/src/rp2_common/hardware_irq/irq_handler_chain.S \
-              sdk/src/rp2_common/pico_bit_ops/bit_ops_aeabi.S \
-              sdk/src/rp2_common/pico_double/double_aeabi.S \
-              sdk/src/rp2_common/pico_double/double_v1_rom_shim.S \
-              sdk/src/rp2_common/pico_divider/divider.S \
-              sdk/src/rp2_common/pico_float/float_aeabi.S \
-              sdk/src/rp2_common/pico_float/float_v1_rom_shim.S \
-              sdk/src/rp2_common/pico_int64_ops/pico_int64_ops_aeabi.S \
-              sdk/src/rp2_common/pico_mem_ops/mem_ops_aeabi.S \
-              sdk/src/rp2_common/pico_standard_link/crt0.S \
+SRC_S = supervisor/$(CHIP_FAMILY_LOWER)_cpu.s
 
 OBJ = $(PY_O) $(SUPERVISOR_O) $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_SDK:.c=.o))
@@ -213,8 +252,8 @@ OBJ += $(addprefix $(BUILD)/, $(SRC_COMMON_HAL_SHARED_MODULE_EXPANDED:.c=.o))
 ifeq ($(INTERNAL_LIBM),1)
 OBJ += $(addprefix $(BUILD)/, $(SRC_LIBM:.c=.o))
 endif
+OBJ += $(addprefix $(BUILD)/, $(SRC_CIRCUITPY_COMMON:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_S:.s=.o))
-OBJ += $(addprefix $(BUILD)/, $(SRC_S_UPPER:.S=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_MOD:.c=.o))
 
 
@@ -222,10 +261,10 @@ SRC_QSTR += $(SRC_C) $(SRC_SUPERVISOR) $(SRC_COMMON_HAL_EXPANDED) $(SRC_SHARED_M
 
 all: $(BUILD)/firmware.uf2
 
-$(BUILD)/firmware.elf: $(OBJ) link.ld
+$(BUILD)/firmware.elf: $(OBJ) $(GENERATED_LD_FILE)
 	$(STEPECHO) "LINK $@"
-	$(Q)$(CC) -o $@ $(LDFLAGS) $(OBJ)
-	$(Q)$(SIZE) $@ | $(PYTHON3) $(TOP)/tools/build_memory_info.py link.ld
+	$(Q)$(CC) -o $@ $(LDFLAGS) $(OBJ) -Wl,--start-group $(LIBS) -Wl,--end-group
+	$(Q)$(SIZE) $@ | $(PYTHON3) $(TOP)/tools/build_memory_info.py $(GENERATED_LD_FILE)
 
 $(BUILD)/firmware.bin: $(BUILD)/firmware.elf
 	$(STEPECHO) "Create $@"

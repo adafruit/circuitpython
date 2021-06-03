@@ -190,3 +190,10 @@
 [submodule "ports/nxp/mcux-sdk"]
 	path = ports/nxp/mcux-sdk
 	url = https://github.com/NXPmicro/mcux-sdk
+[submodule "ports/nxp/cmsis5"]
+	path = ports/nxp/cmsis5
+	url = https://github.com/ARM-software/CMSIS_5.git
+	branch = master
+[submodule "ports/nxp/nxp_lpcopen"]
+	path = ports/nxp/nxp_lpcopen
+	url = https://github.com/hathach/nxp_lpcopen.git

@@ -27,6 +27,20 @@
 #if !defined(PORTS_NXP_COMMON_HAL_MICROCONTROLLER_PROCESSOR_H_)
 #define PORTS_NXP_COMMON_HAL_MICROCONTROLLER_PROCESSOR_H_
 
-#include 
+#if (1)
+#define COMMON_HAL_MCU_PROCESSOR_UID_LENGTH 16U
+#else
+#include "src/rp2_common/pico_unique_id/include/pico/unique_id.h"
+
+#define COMMON_HAL_MCU_PROCESSOR_UID_LENGTH PICO_UNIQUE_BOARD_ID_SIZE_BYTES
+#endif
+
+#include "py/obj.h"
+
+typedef struct {
+    mp_obj_base_t base;
+    // Stores no state currently.
+} mcu_processor_obj_t;
+
 
 #endif // PORTS_NXP_COMMON_HAL_MICROCONTROLLER_PROCESSOR_H_
