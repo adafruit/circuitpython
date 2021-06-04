@@ -1145,8 +1145,8 @@
 /*----------------------------------------------------------------------------
   DEFINES
  *----------------------------------------------------------------------------*/
-/* pll_out_clk = F_cco / (2 × P)
-   F_cco = pll_in_clk × M × 2 × P */
+/* pll_out_clk = F_cco / (2 * P)
+   F_cco = pll_in_clk * M * 2 * P */
 #define __M                   ((PLL0CFG_Val & 0x1F) + 1)
 #define __PLL0_CLK(__F_IN)    (__F_IN * __M)
 #define __CCLK_DIV            (CCLKSEL_Val & 0x1F)
