@@ -37,8 +37,7 @@
 #include "shared-bindings/rtc/__init__.h"
 
 #if (0)
-static uint32_t _get_count(uint64_t *overflow_count)
-{
+static uint32_t _get_count(uint64_t *overflow_count) {
     uint32_t count = 0;
     #ifdef SAM_D5X_E5X
 
@@ -63,10 +62,9 @@ static uint32_t _get_count(uint64_t *overflow_count)
 }
 #endif
 
-safe_mode_t port_init(void)
-{
-#if (1)
-#else
+safe_mode_t port_init(void) {
+    #if (1)
+    #else
     #if defined(SAMD21)
 
     // Set brownout detection.
@@ -173,26 +171,24 @@ safe_mode_t port_init(void)
     if (board_requests_safe_mode()) {
         return USER_SAFE_MODE;
     }
-#endif
+    #endif
     return NO_SAFE_MODE;
 }
 
-void rtc_start_pulse(void)
-{
-#if (1)
-#else
+void rtc_start_pulse(void) {
+    #if (1)
+    #else
     rtc_set_continuous(true);
     hold_interrupt = true;
-#endif
+    #endif
 }
 
-void rtc_end_pulse(void)
-{
-#if (1)
-#else
+void rtc_end_pulse(void) {
+    #if (1)
+    #else
     hold_interrupt = false;
     rtc_set_continuous(false);
-#endif
+    #endif
 }
 
 #else
@@ -380,11 +376,10 @@ static void rtc_init(void) {
 }
 #endif
 
-void reset_port(void)
-{
-#if (1)
+void reset_port(void) {
+    #if (1)
     return;
-#else
+    #else
     #if CIRCUITPY_BUSIO
     reset_sercoms();
     #endif
@@ -446,26 +441,24 @@ void reset_port(void)
         save_usb_clock_calibration();
     }
     #endif
-#endif
+    #endif
 }
 
-void reset_to_bootloader(void)
-{
-#if (1)
+void reset_to_bootloader(void) {
+    #if (1)
     do {} while (1);
-#else
+    #else
     _bootloader_dbl_tap = DBL_TAP_MAGIC;
     reset();
-#endif
+    #endif
 }
 
-void reset_cpu(void)
-{
-#if (1)
+void reset_cpu(void) {
+    #if (1)
     do {} while (1);
-#else
+    #else
     reset();
-#endif
+    #endif
 }
 
 
@@ -495,8 +488,7 @@ uint32_t *port_heap_get_top(void) {
 
 
 #if (1)
-void port_set_saved_word(uint32_t value)
-{
+void port_set_saved_word(uint32_t value) {
     (void)value;
     return;
 }
@@ -615,8 +607,7 @@ void RTC_Handler(void) {
 #endif
 
 #if (1)
-uint64_t port_get_raw_ticks(uint8_t *subticks)
-{
+uint64_t port_get_raw_ticks(uint8_t *subticks) {
     (void)subticks;
     return 0ULL;
 }
@@ -633,8 +624,7 @@ uint64_t port_get_raw_ticks(uint8_t *subticks) {
 #endif
 
 #if (1)
-void port_enable_tick(void)
-{
+void port_enable_tick(void) {
     return;
 }
 #else
@@ -653,8 +643,7 @@ void port_enable_tick(void) {
 #endif
 
 #if (1)
-void port_disable_tick(void)
-{
+void port_disable_tick(void) {
     return;
 }
 #else
@@ -671,8 +660,7 @@ void port_disable_tick(void) {
 #endif
 
 #if (1)
-void port_interrupt_after_ticks(uint32_t ticks)
-{
+void port_interrupt_after_ticks(uint32_t ticks) {
     (void)ticks;
     return;
 }
@@ -691,27 +679,26 @@ void port_interrupt_after_ticks(uint32_t ticks) {
 #endif
 
 #if (1)
-void port_idle_until_interrupt(void)
-{
+void port_idle_until_interrupt(void) {
     // Clear the FPU interrupt because it can prevent us from sleeping.
     if (__get_FPSCR() & ~(0x9f)) {
         __set_FPSCR(__get_FPSCR() & ~(0x9f));
         (void)__get_FPSCR();
     }
 
-#if (0)
+    #if (0)
     common_hal_mcu_disable_interrupts();
     if (!tud_task_event_ready() && !hold_interrupt && !_woken_up) {
         __DSB();
         __WFI();
     }
     common_hal_mcu_enable_interrupts();
-#else
+    #else
     {
         __DSB();
         __WFI();
     }
-#endif
+    #endif
     return;
 }
 #else
