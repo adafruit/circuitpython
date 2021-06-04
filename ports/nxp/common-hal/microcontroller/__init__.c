@@ -45,27 +45,24 @@
 
 static volatile uint32_t nesting_count = 0;
 
-static void __mcu_reset(void)
-{
+static void __mcu_reset(void) {
     filesystem_flush();
     NVIC_SystemReset();
 }
 
 extern uint32_t _srelocate;
-bool bootloader_available(void)
-{
-#if (1)
+bool bootloader_available(void) {
+    #if (1)
     return false;
-#else
+    #else
     return &_bootloader_dbl_tap >= &_srelocate;
-#endif
+    #endif
 }
 
-void common_hal_mcu_on_next_reset(mcu_runmode_t runmode)
-{
-#if (1)
+void common_hal_mcu_on_next_reset(mcu_runmode_t runmode) {
+    #if (1)
     return;
-#else
+    #else
     if (runmode == RUNMODE_BOOTLOADER) {
         if (!bootloader_available()) {
             mp_raise_ValueError(translate("Cannot reset into bootloader because no bootloader is present."));
@@ -80,11 +77,10 @@ void common_hal_mcu_on_next_reset(mcu_runmode_t runmode)
     if (runmode == RUNMODE_SAFE_MODE) {
         safe_mode_on_next_reset(PROGRAMMATIC_SAFE_MODE);
     }
-#endif
+    #endif
 }
 
-void common_hal_mcu_reset(void)
-{
+void common_hal_mcu_reset(void) {
     __mcu_reset();
 }
 
@@ -133,7 +129,7 @@ const nvm_bytearray_obj_t common_hal_mcu_nvm_obj = {
 
 // This maps MCU pin names to pin objects.
 STATIC const mp_rom_map_elem_t mcu_pin_global_dict_table[] = {
-#if (0)
+    #if (0)
     #if defined(PIN_PA00) && !defined(IGNORE_PIN_PA00)
     { MP_ROM_QSTR(MP_QSTR_PA00), MP_ROM_PTR(&pin_PA00) },
     #endif
@@ -437,6 +433,6 @@ STATIC const mp_rom_map_elem_t mcu_pin_global_dict_table[] = {
     #if defined(PIN_PD21) && !defined(IGNORE_PIN_PD21)
     { MP_ROM_QSTR(MP_QSTR_PD21), MP_ROM_PTR(&pin_PD21) },
     #endif
-#endif
+    #endif
 };
 MP_DEFINE_CONST_DICT(mcu_pin_globals, mcu_pin_global_dict_table);

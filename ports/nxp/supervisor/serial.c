@@ -29,15 +29,13 @@
 #include "supervisor/serial.h"
 
 
-void serial_early_init(void)
-{
+void serial_early_init(void) {
     return;
 }
 
-void serial_init(void)
-{
-#if (1)
-#else
+void serial_init(void) {
+    #if (1)
+    #else
     huart2.Instance = USART2;
     huart2.Init.BaudRate = 115200;
     huart2.Init.WordLength = UART_WORDLENGTH_8B;
@@ -49,55 +47,49 @@ void serial_init(void)
     if (HAL_UART_Init(&huart2) == HAL_OK) {
         stm32f4_peripherals_status_led(1,1);
     }
-#endif
+    #endif
     return;
 }
 
-bool serial_connected(void)
-{
+bool serial_connected(void) {
     return false;
 }
 
-char serial_read(void)
-{
-#if (1)
+char serial_read(void) {
+    #if (1)
     return 0;
-#else
+    #else
     uint8_t data;
     HAL_UART_Receive(&huart2, &data, 1,500);
     return data;
-#endif
+    #endif
 }
 
-bool serial_bytes_available(void)
-{
-#if (1)
+bool serial_bytes_available(void) {
+    #if (1)
     return false;
-#else
+    #else
     return __HAL_UART_GET_FLAG(&huart2, UART_FLAG_RXNE);
-#endif
+    #endif
 }
 
-void serial_write(const char *text)
-{
-#if (1)
+void serial_write(const char *text) {
+    #if (1)
     return;
-#else
+    #else
     serial_write_substring(text, strlen(text));
-#endif
+    #endif
 }
 
 void serial_write_substring(const char *text, uint32_t len) {
     if (len > 0U) {
-#if (0)
+        #if (0)
         HAL_UART_Transmit(&huart2, (uint8_t *)text, len, 5000);
-#endif
+        #endif
     }
     return;
 }
 
-void supervisor_workflow_reset(void)
-{
+void supervisor_workflow_reset(void) {
     return;
 }
-

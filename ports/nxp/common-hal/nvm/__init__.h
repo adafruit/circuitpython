@@ -27,6 +27,6 @@
 #if !defined(PORTS_NXP_COMMON_HAL_NVM___INIT___H_)
 #define PORTS_NXP_COMMON_HAL_NVM___INIT___H_
 
-#include 
+#include
 
 #endif // PORTS_NXP_COMMON_HAL_NVM___INIT___H_

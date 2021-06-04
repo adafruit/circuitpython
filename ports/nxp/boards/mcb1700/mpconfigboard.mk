@@ -10,7 +10,7 @@ CIRCUITPY_STDIO = 1
 CICRUITPY_CANIO = 1
 
 # LD_COMMON = boards/common_default.ld
-# LD_FILE = boards/STM32F407_fs.ld 
+# LD_FILE = boards/STM32F407_fs.ld
 
 CIRCUITPY_ANALOGIO = 0
 CIRCUITPY_AUDIOBUSIO = 0

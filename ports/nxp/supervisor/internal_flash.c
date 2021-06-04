@@ -55,8 +55,7 @@
 #include "supervisor/flash.h"
 
 #if (1)
-void supervisor_flash_init(void)
-{
+void supervisor_flash_init(void) {
     return;
 }
 #else
@@ -101,12 +100,12 @@ static int32_t convert_block_to_flash_addr(uint32_t block) {
 }
 #endif
 
-bool supervisor_flash_read_block(uint8_t *dest, uint32_t block)
-{
-#if (1)
-    (void)dest; (void)block;
+bool supervisor_flash_read_block(uint8_t *dest, uint32_t block) {
+    #if (1)
+    (void)dest;
+    (void)block;
     return false;
-#else
+    #else
     // non-MBR block, get data from flash memory
     int32_t src = convert_block_to_flash_addr(block);
     if (src == -1) {
@@ -115,14 +114,13 @@ bool supervisor_flash_read_block(uint8_t *dest, uint32_t block)
     }
     int32_t error_code = flash_read(&supervisor_flash_desc, src, dest, FILESYSTEM_BLOCK_SIZE);
     return error_code == ERR_NONE;
-#endif
+    #endif
 }
 
-bool supervisor_flash_write_block(const uint8_t *src, uint32_t block)
-{
-#if (1)
+bool supervisor_flash_write_block(const uint8_t *src, uint32_t block) {
+    #if (1)
     return false;
-#else
+    #else
     // non-MBR block, copy to cache
     int32_t dest = convert_block_to_flash_addr(block);
     if (dest == -1) {
@@ -142,7 +140,7 @@ bool supervisor_flash_write_block(const uint8_t *src, uint32_t block)
         return false;
     }
     return true;
-#endif
+    #endif
 }
 
 mp_uint_t supervisor_flash_read_blocks(uint8_t *dest, uint32_t block_num, uint32_t num_blocks) {

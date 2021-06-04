@@ -72,7 +72,7 @@ INC += -I. \
        -I../lib/timeutils \
        -Iboards/$(BOARD) \
        -Iboards/
-       
+
 ifeq ($(CHIP_FAMILY_LOWER), lpc1700)
 INC += -isystem cmsis5/CMSIS/Core/Include \
        -isystem cmsis5/CMSIS/Driver/Include \
@@ -119,13 +119,13 @@ endif
 OPTIMIZATION_FLAGS ?= -Os -ffreestanding -pipe
 
 # CIRCUITPY_USB_VENDOR, CIRCUITPY_USB_HID, CIRCUITPY_USB_MIDI
-ifeq ($(CIRCUITPY_USB_CDC), 1) 
+ifeq ($(CIRCUITPY_USB_CDC), 1)
 # FIXME: Requires nxp_lpcopn drivers
 
 INC += -I../../lib/tinyusb/src \
        -I../../supervisor/shared/usb \
        -Inxp_lpcopen/lpc175x_6x/lpc_chip_175x_6x/inc/../
-       
+
 CFLAGS +=-DCORE_M3=1 \
          -DRTC_EV_SUPPORT=0
 
@@ -163,11 +163,11 @@ CFLAGS += $(INC) -Wall -Werror -std=gnu11 -nostdlib -fshort-enums $(BASE_CFLAGS)
 # LDFLAGS = $(CFLAGS) -nostartfiles -Wl,-nostdlib -Wl,-T,$(GENERATED_LD_FILE) -Wl,-Map=$@.map -Wl,-cref -Wl,-gc-sections -specs=nano.specs
 LDFLAGS = $(CFLAGS) \
           -Wl,-T,$(GENERATED_LD_FILE) -Wl,-Map=$@.map -Wl,-cref -specs=nano.specs -specs=nosys.specs
-          
+
 LIBS := -lgcc -lc
 
 # LDFLAGS += -nostartfiles
-LDFLAGS += -Wl,-nostdlib 
+LDFLAGS += -Wl,-nostdlib
 # LDFLAGS += -Wl,-gc-sections
 
 ifeq ($(CHIP_FAMILY), lpc1700)
@@ -205,7 +205,7 @@ SRC_SDK := \
 # Requires cmsis_os.h
 #	nxp_lpc/$(CHIP_FAMILY)/CMSIS/Driver/EMAC_LPC17xx.c \
 
-else 
+else
   ifeq ($(CHIP_FAMILY_LOWER), lpc55s28)
     SRC_SDK := $(addprefix sdk/, $(SRC_SDK))
   endif
@@ -219,7 +219,7 @@ SRC_C += \
 	boards/$(BOARD)/board.c \
 	boards/$(BOARD)/pins.c
 
-ifeq ($(CIRCUITPY_USB_CDC), 1) 
+ifeq ($(CIRCUITPY_USB_CDC), 1)
   ifeq ($(CHIP_FAMILY_LOWER), lpc1700)
     SRC_C += \
 	    lib/tinyusb/src/portable/nxp/transdimension/dcd_transdimension.c \

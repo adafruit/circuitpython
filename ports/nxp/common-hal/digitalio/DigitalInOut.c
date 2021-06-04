@@ -39,11 +39,10 @@
 #endif
 
 digitalinout_result_t
-common_hal_digitalio_digitalinout_construct(digitalio_digitalinout_obj_t *self, const mcu_pin_obj_t *pin)
-{
-#if (1)
+common_hal_digitalio_digitalinout_construct(digitalio_digitalinout_obj_t *self, const mcu_pin_obj_t *pin) {
+    #if (1)
     return DIGITALINOUT_PIN_BUSY;
-#else
+    #else
     claim_pin(pin);
     self->pin = pin;
     self->output = false;
@@ -52,24 +51,21 @@ common_hal_digitalio_digitalinout_construct(digitalio_digitalinout_obj_t *self, 
     // Set to input. No output value.
     gpio_init(pin->number);
     return DIGITALINOUT_OK;
-#endif
+    #endif
 }
 
 void
-common_hal_digitalio_digitalinout_never_reset(digitalio_digitalinout_obj_t *self)
-{
+common_hal_digitalio_digitalinout_never_reset(digitalio_digitalinout_obj_t *self) {
     never_reset_pin_number(self->pin->number);
 }
 
 bool
-common_hal_digitalio_digitalinout_deinited(digitalio_digitalinout_obj_t *self)
-{
+common_hal_digitalio_digitalinout_deinited(digitalio_digitalinout_obj_t *self) {
     return self->pin == NULL;
 }
 
 void
-common_hal_digitalio_digitalinout_deinit(digitalio_digitalinout_obj_t *self)
-{
+common_hal_digitalio_digitalinout_deinit(digitalio_digitalinout_obj_t *self) {
     if (common_hal_digitalio_digitalinout_deinited(self)) {
         return;
     }
@@ -78,19 +74,17 @@ common_hal_digitalio_digitalinout_deinit(digitalio_digitalinout_obj_t *self)
 }
 
 void
-common_hal_digitalio_digitalinout_switch_to_input(digitalio_digitalinout_obj_t *self, digitalio_pull_t pull)
-{
+common_hal_digitalio_digitalinout_switch_to_input(digitalio_digitalinout_obj_t *self, digitalio_pull_t pull) {
     self->output = false;
     // This also sets direction to input.
     common_hal_digitalio_digitalinout_set_pull(self, pull);
 }
 
 digitalinout_result_t
-common_hal_digitalio_digitalinout_switch_to_output(digitalio_digitalinout_obj_t *self, bool value, digitalio_drive_mode_t drive_mode)
-{
-#if (1)
+common_hal_digitalio_digitalinout_switch_to_output(digitalio_digitalinout_obj_t *self, bool value, digitalio_drive_mode_t drive_mode) {
+    #if (1)
     return DIGITALINOUT_PIN_BUSY;
-#else
+    #else
     const uint8_t pin = self->pin->number;
     gpio_disable_pulls(pin);
 
@@ -105,21 +99,19 @@ common_hal_digitalio_digitalinout_switch_to_output(digitalio_digitalinout_obj_t 
     // Pin direction is ultimately set in set_value. We don't need to do it here.
     common_hal_digitalio_digitalinout_set_value(self, value);
     return DIGITALINOUT_OK;
-#endif
+    #endif
 }
 
 digitalio_direction_t
-common_hal_digitalio_digitalinout_get_direction(digitalio_digitalinout_obj_t *self)
-{
+common_hal_digitalio_digitalinout_get_direction(digitalio_digitalinout_obj_t *self) {
     return self->output ? DIRECTION_OUTPUT : DIRECTION_INPUT;
 }
 
 void
-common_hal_digitalio_digitalinout_set_value(digitalio_digitalinout_obj_t *self, bool value)
-{
-#if (1)
+common_hal_digitalio_digitalinout_set_value(digitalio_digitalinout_obj_t *self, bool value) {
+    #if (1)
     return;
-#else
+    #else
     const uint8_t pin = self->pin->number;
     if (self->open_drain && value) {
         // If true and open-drain, set the direction -before- setting
@@ -134,25 +126,23 @@ common_hal_digitalio_digitalinout_set_value(digitalio_digitalinout_obj_t *self, 
         gpio_put(pin, value);
         gpio_set_dir(pin, GPIO_OUT);
     }
-#endif
+    #endif
 }
 
 bool
-common_hal_digitalio_digitalinout_get_value(digitalio_digitalinout_obj_t *self)
-{
-#if (1)
+common_hal_digitalio_digitalinout_get_value(digitalio_digitalinout_obj_t *self) {
+    #if (1)
     return false;
-#else
+    #else
     return gpio_get(self->pin->number);
-#endif
+    #endif
 }
 
 digitalinout_result_t
-common_hal_digitalio_digitalinout_set_drive_mode(digitalio_digitalinout_obj_t *self, digitalio_drive_mode_t drive_mode)
-{
-#if (1)
+common_hal_digitalio_digitalinout_set_drive_mode(digitalio_digitalinout_obj_t *self, digitalio_drive_mode_t drive_mode) {
+    #if (1)
     return DIGITALINOUT_PIN_BUSY;
-#else
+    #else
     const uint8_t pin = self->pin->number;
     bool value = common_hal_digitalio_digitalinout_get_value(self);
     self->open_drain = drive_mode == DRIVE_MODE_OPEN_DRAIN;
@@ -162,12 +152,11 @@ common_hal_digitalio_digitalinout_set_drive_mode(digitalio_digitalinout_obj_t *s
         common_hal_digitalio_digitalinout_set_value(self, value);
     }
     return DIGITALINOUT_OK;
-#endif
+    #endif
 }
 
 digitalio_drive_mode_t
-common_hal_digitalio_digitalinout_get_drive_mode(digitalio_digitalinout_obj_t *self)
-{
+common_hal_digitalio_digitalinout_get_drive_mode(digitalio_digitalinout_obj_t *self) {
     if (self->open_drain) {
         return DRIVE_MODE_OPEN_DRAIN;
     } else {
@@ -176,23 +165,21 @@ common_hal_digitalio_digitalinout_get_drive_mode(digitalio_digitalinout_obj_t *s
 }
 
 void
-common_hal_digitalio_digitalinout_set_pull(digitalio_digitalinout_obj_t *self, digitalio_pull_t pull)
-{
-#if (1)
+common_hal_digitalio_digitalinout_set_pull(digitalio_digitalinout_obj_t *self, digitalio_pull_t pull) {
+    #if (1)
     return;
-#else
+    #else
     const uint8_t pin = self->pin->number;
     gpio_set_pulls(pin, pull == PULL_UP, pull == PULL_DOWN);
     gpio_set_dir(pin, GPIO_IN);
-#endif
+    #endif
 }
 
 digitalio_pull_t
-common_hal_digitalio_digitalinout_get_pull(digitalio_digitalinout_obj_t *self)
-{
-#if (1)
+common_hal_digitalio_digitalinout_get_pull(digitalio_digitalinout_obj_t *self) {
+    #if (1)
     return PULL_NONE;
-#else
+    #else
     uint32_t pin = self->pin->number;
     if (self->output) {
         mp_raise_AttributeError(translate("Cannot get pull while in output mode"));
@@ -205,6 +192,5 @@ common_hal_digitalio_digitalinout_get_pull(digitalio_digitalinout_obj_t *self)
         }
     }
     return PULL_NONE;
-#endif
+    #endif
 }
-

@@ -27,6 +27,6 @@
 #if !defined(PORTS_NXP_COMMON_HAL_CANIO_CAN_H_)
 #define PORTS_NXP_COMMON_HAL_CANIO_CAN_H_
 
-#include 
+#include
 
 #endif // PORTS_NXP_COMMON_HAL_CANIO_CAN_H_

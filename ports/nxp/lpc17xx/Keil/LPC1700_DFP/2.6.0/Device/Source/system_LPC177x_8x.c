@@ -40,7 +40,7 @@
 #include "LPC177x_8x.h"
 #include "system_LPC177x_8x.h"
 
-#define __CLK_DIV(x,y) ((y == 0) ? 0: x/y)
+#define __CLK_DIV(x,y) ((y == 0) ? 0: x / y)
 
 /*
 //-------- <<< Use Configuration Wizard in Context Menu >>> ------------------
@@ -216,16 +216,16 @@
 #define SCS_Val               0x00000021
 #define CLKSRCSEL_Val         0x00000001
 #define PLL0_SETUP            1
-//#if defined(__GNUC__)
+// #if defined(__GNUC__)
 // Getting strange errors running at 120 MHz when using LPCXpresso IDE
 // - ImpreciseErr
 // - UndefInstr
 // - ...
 // Workaround while trying to figure out why is to lower the frequency
-//#define PLL0CFG_Val           0x00000009 /* 6 */
-//#else
+// #define PLL0CFG_Val           0x00000009 /* 6 */
+// #else
 #define PLL0CFG_Val           0x00000009
-//#endif
+// #endif
 
 #define PLL1_SETUP            1
 #define PLL1CFG_Val           0x00000023
@@ -1145,10 +1145,10 @@
   Define clocks
  *----------------------------------------------------------------------------*/
 #define XTAL        (12000000UL)        /* Oscillator frequency               */
-#define OSC_CLK     (      XTAL)        /* Main oscillator frequency          */
-#define RTC_CLK     (   32768UL)        /* RTC oscillator frequency           */
+#define OSC_CLK     (XTAL)              /* Main oscillator frequency          */
+#define RTC_CLK     (32768UL)           /* RTC oscillator frequency           */
 #define IRC_OSC     (12000000UL)        /* Internal RC oscillator frequency   */
-#define WDT_OSC		  (  500000UL)		/* Internal WDT oscillator frequency  */
+#define WDT_OSC           (500000UL)            /* Internal WDT oscillator frequency  */
 
 
 /* pll_out_clk = F_cco / (2 * P)
@@ -1162,7 +1162,7 @@
 /* Determine core clock frequency according to settings */
 #if (CLOCK_SETUP)                       /* Clock Setup                        */
 
-  #if ((CLKSRCSEL_Val & 0x01) == 1) && ((SCS_Val & 0x20)== 0)
+  #if ((CLKSRCSEL_Val & 0x01) == 1) && ((SCS_Val & 0x20) == 0)
    #error "Main Oscillator is selected as clock source but is not enabled!"
   #endif
 
@@ -1173,12 +1173,12 @@
   #if ((CCLKSEL_Val & 0x100) == 0)      /* cclk = sysclk */
     #if ((CLKSRCSEL_Val & 0x01) == 0)   /* sysclk = irc_clk */
         #define __CORE_CLK (IRC_OSC / __CCLK_DIV)
-        #define __PER_CLK  (IRC_OSC/  __PCLK_DIV)
-        #define __EMC_CLK  (IRC_OSC/  __ECLK_DIV)
+        #define __PER_CLK  (IRC_OSC / __PCLK_DIV)
+        #define __EMC_CLK  (IRC_OSC / __ECLK_DIV)
     #else                               /* sysclk = osc_clk */
         #define __CORE_CLK (OSC_CLK / __CCLK_DIV)
-        #define __PER_CLK  (OSC_CLK/  __PCLK_DIV)
-        #define __EMC_CLK  (__CORE_CLK/  __ECLK_DIV)
+        #define __PER_CLK  (OSC_CLK / __PCLK_DIV)
+        #define __EMC_CLK  (__CORE_CLK / __ECLK_DIV)
     #endif
   #else                                 /* cclk = pll_clk */
     #if ((CLKSRCSEL_Val & 0x01) == 0)   /* sysclk = irc_clk */
@@ -1203,90 +1203,82 @@
  *----------------------------------------------------------------------------*/
 uint32_t SystemCoreClock = __CORE_CLK;  /* System Clock Frequency (Core Clock)*/
 uint32_t PeripheralClock = __PER_CLK;   /* Peripheral Clock Frequency (Pclk)  */
-uint32_t EMCClock        = __EMC_CLK;   /* EMC Clock Frequency                */
-uint32_t USBClock        = (48000000UL);/* USB Clock Frequency - this value will
+uint32_t EMCClock = __EMC_CLK;          /* EMC Clock Frequency                */
+uint32_t USBClock = (48000000UL);       /* USB Clock Frequency - this value will
                    be updated after call SystemCoreClockUpdate, should be 48MHz*/
 
 
 /*----------------------------------------------------------------------------
   SystemCoreClockUpdate
  *----------------------------------------------------------------------------*/
-void SystemCoreClockUpdate (void)               /* Get Core Clock Frequency   */
-{
-  /* Determine clock frequency according to clock register values             */
-  if ((LPC_SC->CCLKSEL &0x100) == 0) {            /* cclk = sysclk    */
-    if ((LPC_SC->CLKSRCSEL & 0x01) == 0) {    /* sysclk = irc_clk */
-          SystemCoreClock = __CLK_DIV(IRC_OSC , (LPC_SC->CCLKSEL & 0x1F));
-          PeripheralClock = __CLK_DIV(IRC_OSC , (LPC_SC->PCLKSEL & 0x1F));
-          EMCClock        = (IRC_OSC / ((LPC_SC->EMCCLKSEL & 0x01)+1));
-    }
-    else {                                        /* sysclk = osc_clk */
-      if ((LPC_SC->SCS & 0x40) == 0) {
-          SystemCoreClock = 0;                      /* this should never happen! */
-          PeripheralClock = 0;
-          EMCClock        = 0;
-      }
-      else {
-          SystemCoreClock = __CLK_DIV(OSC_CLK , (LPC_SC->CCLKSEL & 0x1F));
-          PeripheralClock = __CLK_DIV(OSC_CLK , (LPC_SC->PCLKSEL & 0x1F));
-          EMCClock        = (OSC_CLK / ((LPC_SC->EMCCLKSEL & 0x01)+1));
-      }
-    }
-  }
-  else {                                          /* cclk = pll_clk */
-    if ((LPC_SC->PLL0STAT & 0x100) == 0) {        /* PLL0 not enabled */
-          SystemCoreClock = 0;                      /* this should never happen! */
-          PeripheralClock = 0;
-          EMCClock        = 0;
-    }
-    else {
-      if ((LPC_SC->CLKSRCSEL & 0x01) == 0) {    /* sysclk = irc_clk */
-          SystemCoreClock = __CLK_DIV(IRC_OSC * ((LPC_SC->PLL0STAT & 0x1F) + 1) , (LPC_SC->CCLKSEL & 0x1F));
-          PeripheralClock = __CLK_DIV(IRC_OSC * ((LPC_SC->PLL0STAT & 0x1F) + 1) , (LPC_SC->PCLKSEL & 0x1F));
-          EMCClock        = (IRC_OSC * ((LPC_SC->PLL0STAT & 0x1F) + 1) / ((LPC_SC->EMCCLKSEL & 0x01)+1));
-      }
-      else {                                        /* sysclk = osc_clk */
-        if ((LPC_SC->SCS & 0x40) == 0) {
-          SystemCoreClock = 0;                      /* this should never happen! */
-          PeripheralClock = 0;
-          EMCClock        = 0;
+void SystemCoreClockUpdate(void) {              /* Get Core Clock Frequency   */
+    /* Determine clock frequency according to clock register values             */
+    if ((LPC_SC->CCLKSEL & 0x100) == 0) {         /* cclk = sysclk    */
+        if ((LPC_SC->CLKSRCSEL & 0x01) == 0) { /* sysclk = irc_clk */
+            SystemCoreClock = __CLK_DIV(IRC_OSC, (LPC_SC->CCLKSEL & 0x1F));
+            PeripheralClock = __CLK_DIV(IRC_OSC, (LPC_SC->PCLKSEL & 0x1F));
+            EMCClock = (IRC_OSC / ((LPC_SC->EMCCLKSEL & 0x01) + 1));
+        } else {                                  /* sysclk = osc_clk */
+            if ((LPC_SC->SCS & 0x40) == 0) {
+                SystemCoreClock = 0;                /* this should never happen! */
+                PeripheralClock = 0;
+                EMCClock = 0;
+            } else {
+                SystemCoreClock = __CLK_DIV(OSC_CLK, (LPC_SC->CCLKSEL & 0x1F));
+                PeripheralClock = __CLK_DIV(OSC_CLK, (LPC_SC->PCLKSEL & 0x1F));
+                EMCClock = (OSC_CLK / ((LPC_SC->EMCCLKSEL & 0x01) + 1));
+            }
         }
-        else {
-          SystemCoreClock = __CLK_DIV(OSC_CLK * ((LPC_SC->PLL0STAT & 0x1F) + 1) , (LPC_SC->CCLKSEL & 0x1F));
-          PeripheralClock = __CLK_DIV(OSC_CLK * ((LPC_SC->PLL0STAT & 0x1F) + 1) , (LPC_SC->PCLKSEL & 0x1F));
-          EMCClock        = (OSC_CLK * ((LPC_SC->PLL0STAT & 0x1F) + 1) / ((LPC_SC->EMCCLKSEL & 0x01)+1));
+    } else {                                      /* cclk = pll_clk */
+        if ((LPC_SC->PLL0STAT & 0x100) == 0) {    /* PLL0 not enabled */
+            SystemCoreClock = 0;                    /* this should never happen! */
+            PeripheralClock = 0;
+            EMCClock = 0;
+        } else {
+            if ((LPC_SC->CLKSRCSEL & 0x01) == 0) { /* sysclk = irc_clk */
+                SystemCoreClock = __CLK_DIV(IRC_OSC * ((LPC_SC->PLL0STAT & 0x1F) + 1), (LPC_SC->CCLKSEL & 0x1F));
+                PeripheralClock = __CLK_DIV(IRC_OSC * ((LPC_SC->PLL0STAT & 0x1F) + 1), (LPC_SC->PCLKSEL & 0x1F));
+                EMCClock = (IRC_OSC * ((LPC_SC->PLL0STAT & 0x1F) + 1) / ((LPC_SC->EMCCLKSEL & 0x01) + 1));
+            } else {                                /* sysclk = osc_clk */
+                if ((LPC_SC->SCS & 0x40) == 0) {
+                    SystemCoreClock = 0;            /* this should never happen! */
+                    PeripheralClock = 0;
+                    EMCClock = 0;
+                } else {
+                    SystemCoreClock = __CLK_DIV(OSC_CLK * ((LPC_SC->PLL0STAT & 0x1F) + 1), (LPC_SC->CCLKSEL & 0x1F));
+                    PeripheralClock = __CLK_DIV(OSC_CLK * ((LPC_SC->PLL0STAT & 0x1F) + 1), (LPC_SC->PCLKSEL & 0x1F));
+                    EMCClock = (OSC_CLK * ((LPC_SC->PLL0STAT & 0x1F) + 1) / ((LPC_SC->EMCCLKSEL & 0x01) + 1));
+                }
+            }
         }
-      }
     }
-  }
-  /* ---update USBClock------------------*/
-  if(LPC_SC->USBCLKSEL & (0x01<<8))//Use PLL0 as the input to the USB clock divider
-  {
-    switch (LPC_SC->USBCLKSEL & 0x1F)
-    {
-      case 0:
-        USBClock = 0; //no clock will be provided to the USB subsystem
-      break;
-      case 4:
-      case 6:
-        if(LPC_SC->CLKSRCSEL & 0x01)  //pll_clk_in = main_osc
-          USBClock = (OSC_CLK * ((LPC_SC->PLL0STAT & 0x1F) + 1) / (LPC_SC->USBCLKSEL & 0x1F));
-        else //pll_clk_in = irc_clk
-          USBClock = (IRC_OSC * ((LPC_SC->PLL0STAT & 0x1F) + 1) / (LPC_SC->USBCLKSEL & 0x1F));
-      break;
-      default:
-        USBClock = 0;  /* this should never happen! */
+    /* ---update USBClock------------------*/
+    if (LPC_SC->USBCLKSEL & (0x01 << 8)) {// Use PLL0 as the input to the USB clock divider
+        switch (LPC_SC->USBCLKSEL & 0x1F)
+        {
+            case 0:
+                USBClock = 0; // no clock will be provided to the USB subsystem
+                break;
+            case 4:
+            case 6:
+                if (LPC_SC->CLKSRCSEL & 0x01) { // pll_clk_in = main_osc
+                    USBClock = (OSC_CLK * ((LPC_SC->PLL0STAT & 0x1F) + 1) / (LPC_SC->USBCLKSEL & 0x1F));
+                } else { // pll_clk_in = irc_clk
+                    USBClock = (IRC_OSC * ((LPC_SC->PLL0STAT & 0x1F) + 1) / (LPC_SC->USBCLKSEL & 0x1F));
+                }
+                break;
+            default:
+                USBClock = 0; /* this should never happen! */
+        }
+    } else if (LPC_SC->USBCLKSEL & (0x02 << 8)) {// usb_input_clk = alt_pll (pll1)
+        if (LPC_SC->CLKSRCSEL & 0x01) { // pll1_clk_in = main_osc
+            USBClock = (OSC_CLK * ((LPC_SC->PLL1STAT & 0x1F) + 1));
+        } else { // pll1_clk_in = irc_clk
+            USBClock = (IRC_OSC * ((LPC_SC->PLL0STAT & 0x1F) + 1));
+        }
+    } else {
+        USBClock = 0; /* this should never happen! */
     }
-  }
-  else if(LPC_SC->USBCLKSEL & (0x02<<8))//usb_input_clk = alt_pll (pll1)
-  {
-    if(LPC_SC->CLKSRCSEL & 0x01)  //pll1_clk_in = main_osc
-      USBClock = (OSC_CLK * ((LPC_SC->PLL1STAT & 0x1F) + 1));
-    else //pll1_clk_in = irc_clk
-      USBClock = (IRC_OSC * ((LPC_SC->PLL0STAT & 0x1F) + 1));
-  }
-  else
-    USBClock = 0; /* this should never happen! */
 }
 
 #if (EMC_SETUP != 0)
@@ -1295,397 +1287,410 @@ void SystemCoreClockUpdate (void)               /* Get Core Clock Frequency   */
   Delay function in ms
  *----------------------------------------------------------------------------*/
 static void _DelayMs(uint32_t ms) {
-  ms *= (SystemCoreClock/10000);
-  while (ms--) { __nop(); __nop(); __nop(); __nop(); __nop(); __nop(); }
+    ms *= (SystemCoreClock / 10000);
+    while (ms--) {
+        __nop();
+        __nop();
+        __nop();
+        __nop();
+        __nop();
+        __nop();
+    }
 }
 
 /*----------------------------------------------------------------------------
   Initialize external memory controller
  *----------------------------------------------------------------------------*/
 void SystemInit_ExtMemCtl(void) {
-  uint32_t i;
+    uint32_t i;
 
-  /* Data and Address Bus configuration */
-  #if (EMC_DATA_BUS >= 0)
-  LPC_IOCON->P3_0  = 1;  // D0
-  LPC_IOCON->P3_1  = 1;  // D1
-  LPC_IOCON->P3_2  = 1;  // D2
-  LPC_IOCON->P3_3  = 1;  // D3
-  LPC_IOCON->P3_4  = 1;  // D4
-  LPC_IOCON->P3_5  = 1;  // D5
-  LPC_IOCON->P3_6  = 1;  // D6
-  LPC_IOCON->P3_7  = 1;  // D7
-  #endif
+    /* Data and Address Bus configuration */
+    #if (EMC_DATA_BUS >= 0)
+    LPC_IOCON->P3_0 = 1; // D0
+    LPC_IOCON->P3_1 = 1; // D1
+    LPC_IOCON->P3_2 = 1; // D2
+    LPC_IOCON->P3_3 = 1; // D3
+    LPC_IOCON->P3_4 = 1; // D4
+    LPC_IOCON->P3_5 = 1; // D5
+    LPC_IOCON->P3_6 = 1; // D6
+    LPC_IOCON->P3_7 = 1; // D7
+    #endif
 
-  #if (EMC_DATA_BUS > 0)
-  LPC_IOCON->P3_8  = 1;  // D8
-  LPC_IOCON->P3_9  = 1;  // D9
-  LPC_IOCON->P3_10 = 1;  // D10
-  LPC_IOCON->P3_11 = 1;  // D11
-  LPC_IOCON->P3_12 = 1;  // D12
-  LPC_IOCON->P3_13 = 1;  // D13
-  LPC_IOCON->P3_14 = 1;  // D14
-  LPC_IOCON->P3_15 = 1;  // D15
-  #endif
+    #if (EMC_DATA_BUS > 0)
+    LPC_IOCON->P3_8 = 1; // D8
+    LPC_IOCON->P3_9 = 1; // D9
+    LPC_IOCON->P3_10 = 1; // D10
+    LPC_IOCON->P3_11 = 1; // D11
+    LPC_IOCON->P3_12 = 1; // D12
+    LPC_IOCON->P3_13 = 1; // D13
+    LPC_IOCON->P3_14 = 1; // D14
+    LPC_IOCON->P3_15 = 1; // D15
+    #endif
 
-  #if (EMC_DATA_BUS > 1)
-  LPC_IOCON->P3_16 = 1;  // D16
-  LPC_IOCON->P3_17 = 1;  // D17
-  LPC_IOCON->P3_18 = 1;  // D18
-  LPC_IOCON->P3_19 = 1;  // D19
-  LPC_IOCON->P3_20 = 1;  // D20
-  LPC_IOCON->P3_21 = 1;  // D21
-  LPC_IOCON->P3_22 = 1;  // D22
-  LPC_IOCON->P3_23 = 1;  // D23
-  LPC_IOCON->P3_24 = 1;  // D24
-  LPC_IOCON->P3_25 = 1;  // D25
-  LPC_IOCON->P3_26 = 1;  // D26
-  LPC_IOCON->P3_27 = 1;  // D27
-  LPC_IOCON->P3_28 = 1;  // D28
-  LPC_IOCON->P3_29 = 1;  // D29
-  LPC_IOCON->P3_30 = 1;  // D30
-  LPC_IOCON->P3_31 = 1;  // D31
-  #endif
+    #if (EMC_DATA_BUS > 1)
+    LPC_IOCON->P3_16 = 1; // D16
+    LPC_IOCON->P3_17 = 1; // D17
+    LPC_IOCON->P3_18 = 1; // D18
+    LPC_IOCON->P3_19 = 1; // D19
+    LPC_IOCON->P3_20 = 1; // D20
+    LPC_IOCON->P3_21 = 1; // D21
+    LPC_IOCON->P3_22 = 1; // D22
+    LPC_IOCON->P3_23 = 1; // D23
+    LPC_IOCON->P3_24 = 1; // D24
+    LPC_IOCON->P3_25 = 1; // D25
+    LPC_IOCON->P3_26 = 1; // D26
+    LPC_IOCON->P3_27 = 1; // D27
+    LPC_IOCON->P3_28 = 1; // D28
+    LPC_IOCON->P3_29 = 1; // D29
+    LPC_IOCON->P3_30 = 1; // D30
+    LPC_IOCON->P3_31 = 1; // D31
+    #endif
 
-  #if (EMC_ADDR_BUS & 0x00000001)
-  LPC_IOCON->P4_0  = 1;  // A0
-  #endif
-  #if (EMC_ADDR_BUS & 0x00000002)
-  LPC_IOCON->P4_1  = 1;  // A1
-  #endif
-  #if (EMC_ADDR_BUS & 0x00000004)
-  LPC_IOCON->P4_2  = 1;  // A2
-  #endif
-  #if (EMC_ADDR_BUS & 0x00000008)
-  LPC_IOCON->P4_3  = 1;  // A3
-  #endif
-  #if (EMC_ADDR_BUS & 0x00000010)
-  LPC_IOCON->P4_4  = 1;  // A4
-  #endif
-  #if (EMC_ADDR_BUS & 0x00000020)
-  LPC_IOCON->P4_5  = 1;  // A5
-  #endif
-  #if (EMC_ADDR_BUS & 0x00000040)
-  LPC_IOCON->P4_6  = 1;  // A6
-  #endif
-  #if (EMC_ADDR_BUS & 0x00000080)
-  LPC_IOCON->P4_7  = 1;  // A7
-  #endif
-  #if (EMC_ADDR_BUS & 0x00000100)
-  LPC_IOCON->P4_8  = 1;  // A8
-  #endif
-  #if (EMC_ADDR_BUS & 0x00000200)
-  LPC_IOCON->P4_9  = 1;  // A9
-  #endif
-  #if (EMC_ADDR_BUS & 0x00000400)
-  LPC_IOCON->P4_10 = 1;  // A10
-  #endif
-  #if (EMC_ADDR_BUS & 0x00000800)
-  LPC_IOCON->P4_11 = 1;  // A11
-  #endif
-  #if (EMC_ADDR_BUS & 0x00001000)
-  LPC_IOCON->P4_12 = 1;  // A12
-  #endif
-  #if (EMC_ADDR_BUS & 0x00002000)
-  LPC_IOCON->P4_13 = 1;  // A13
-  #endif
-  #if (EMC_ADDR_BUS & 0x00004000)
-  LPC_IOCON->P4_14 = 1;  // A14
-  #endif
-  #if (EMC_ADDR_BUS & 0x00008000)
-  LPC_IOCON->P4_15 = 1;  // A15
-  #endif
-  #if (EMC_ADDR_BUS & 0x00010000)
-  LPC_IOCON->P4_16 = 1;  // A16
-  #endif
-  #if (EMC_ADDR_BUS & 0x00020000)
-  LPC_IOCON->P4_17 = 1;  // A17
-  #endif
-  #if (EMC_ADDR_BUS & 0x00040000)
-  LPC_IOCON->P4_18 = 1;  // A18
-  #endif
-  #if (EMC_ADDR_BUS & 0x00080000)
-  LPC_IOCON->P4_19 = 1;  // A19
-  #endif
-  #if (EMC_ADDR_BUS & 0x00100000)
-  LPC_IOCON->P4_20 = 1;  // A20
-  #endif
-  #if (EMC_ADDR_BUS & 0x00200000)
-  LPC_IOCON->P4_21 = 1;  // A21
-  #endif
-  #if (EMC_ADDR_BUS & 0x00400000)
-  LPC_IOCON->P4_22 = 1;  // A22
-  #endif
-  #if (EMC_ADDR_BUS & 0x00800000)
-  LPC_IOCON->P4_23 = 1;  // A23
-  #endif
-  #if (EMC_ADDR_BUS & 0x01000000)
-  LPC_IOCON->P5_0  = 1;  // A24
-  #endif
-  #if (EMC_ADDR_BUS & 0x02000000)
-  LPC_IOCON->P5_1  = 1;  // A25
-  #endif
+    #if (EMC_ADDR_BUS & 0x00000001)
+    LPC_IOCON->P4_0 = 1; // A0
+    #endif
+    #if (EMC_ADDR_BUS & 0x00000002)
+    LPC_IOCON->P4_1 = 1; // A1
+    #endif
+    #if (EMC_ADDR_BUS & 0x00000004)
+    LPC_IOCON->P4_2 = 1; // A2
+    #endif
+    #if (EMC_ADDR_BUS & 0x00000008)
+    LPC_IOCON->P4_3 = 1; // A3
+    #endif
+    #if (EMC_ADDR_BUS & 0x00000010)
+    LPC_IOCON->P4_4 = 1; // A4
+    #endif
+    #if (EMC_ADDR_BUS & 0x00000020)
+    LPC_IOCON->P4_5 = 1; // A5
+    #endif
+    #if (EMC_ADDR_BUS & 0x00000040)
+    LPC_IOCON->P4_6 = 1; // A6
+    #endif
+    #if (EMC_ADDR_BUS & 0x00000080)
+    LPC_IOCON->P4_7 = 1; // A7
+    #endif
+    #if (EMC_ADDR_BUS & 0x00000100)
+    LPC_IOCON->P4_8 = 1; // A8
+    #endif
+    #if (EMC_ADDR_BUS & 0x00000200)
+    LPC_IOCON->P4_9 = 1; // A9
+    #endif
+    #if (EMC_ADDR_BUS & 0x00000400)
+    LPC_IOCON->P4_10 = 1; // A10
+    #endif
+    #if (EMC_ADDR_BUS & 0x00000800)
+    LPC_IOCON->P4_11 = 1; // A11
+    #endif
+    #if (EMC_ADDR_BUS & 0x00001000)
+    LPC_IOCON->P4_12 = 1; // A12
+    #endif
+    #if (EMC_ADDR_BUS & 0x00002000)
+    LPC_IOCON->P4_13 = 1; // A13
+    #endif
+    #if (EMC_ADDR_BUS & 0x00004000)
+    LPC_IOCON->P4_14 = 1; // A14
+    #endif
+    #if (EMC_ADDR_BUS & 0x00008000)
+    LPC_IOCON->P4_15 = 1; // A15
+    #endif
+    #if (EMC_ADDR_BUS & 0x00010000)
+    LPC_IOCON->P4_16 = 1; // A16
+    #endif
+    #if (EMC_ADDR_BUS & 0x00020000)
+    LPC_IOCON->P4_17 = 1; // A17
+    #endif
+    #if (EMC_ADDR_BUS & 0x00040000)
+    LPC_IOCON->P4_18 = 1; // A18
+    #endif
+    #if (EMC_ADDR_BUS & 0x00080000)
+    LPC_IOCON->P4_19 = 1; // A19
+    #endif
+    #if (EMC_ADDR_BUS & 0x00100000)
+    LPC_IOCON->P4_20 = 1; // A20
+    #endif
+    #if (EMC_ADDR_BUS & 0x00200000)
+    LPC_IOCON->P4_21 = 1; // A21
+    #endif
+    #if (EMC_ADDR_BUS & 0x00400000)
+    LPC_IOCON->P4_22 = 1; // A22
+    #endif
+    #if (EMC_ADDR_BUS & 0x00800000)
+    LPC_IOCON->P4_23 = 1; // A23
+    #endif
+    #if (EMC_ADDR_BUS & 0x01000000)
+    LPC_IOCON->P5_0 = 1; // A24
+    #endif
+    #if (EMC_ADDR_BUS & 0x02000000)
+    LPC_IOCON->P5_1 = 1; // A25
+    #endif
 
-  LPC_IOCON->P4_25 = 1;  // WE
+    LPC_IOCON->P4_25 = 1; // WE
 
-  #if (EMC_CTRL_PIN_CLK0 != 0)
-  LPC_IOCON->P2_18 = 1;  // CLKOUT0
-  #endif
-  #if (EMC_CTRL_PIN_CLK1 != 0)
-  LPC_IOCON->P2_19 = 1;  // CLKOUT1
-  #endif
+    #if (EMC_CTRL_PIN_CLK0 != 0)
+    LPC_IOCON->P2_18 = 1; // CLKOUT0
+    #endif
+    #if (EMC_CTRL_PIN_CLK1 != 0)
+    LPC_IOCON->P2_19 = 1; // CLKOUT1
+    #endif
 
-#if (EMC_DYNAMIC_SETUP != 0)
-  /* Configure dynamic memory control pins */
-  LPC_IOCON->P2_16 = 1;  // CAS
-  LPC_IOCON->P2_17 = 1;  // RAS
+    #if (EMC_DYNAMIC_SETUP != 0)
+    /* Configure dynamic memory control pins */
+    LPC_IOCON->P2_16 = 1; // CAS
+    LPC_IOCON->P2_17 = 1; // RAS
 
-  LPC_IOCON->P2_28 = 1;  // DQMOUT0
-  LPC_IOCON->P2_29 = 1;  // DQMOUT1
-  #if ((DYNCS0_BUS_WIDTH == 32) || \
-       (DYNCS1_BUS_WIDTH == 32) || \
-       (DYNCS1_BUS_WIDTH == 32) || \
-       (DYNCS2_BUS_WIDTH == 32))
-  LPC_IOCON->P2_30 = 1;  // DQMOUT2
-  LPC_IOCON->P2_31 = 1;  // DQMOUT3
-  #endif
+    LPC_IOCON->P2_28 = 1; // DQMOUT0
+    LPC_IOCON->P2_29 = 1; // DQMOUT1
+    #if ((DYNCS0_BUS_WIDTH == 32) || \
+    (DYNCS1_BUS_WIDTH == 32) || \
+    (DYNCS1_BUS_WIDTH == 32) || \
+    (DYNCS2_BUS_WIDTH == 32))
+    LPC_IOCON->P2_30 = 1; // DQMOUT2
+    LPC_IOCON->P2_31 = 1; // DQMOUT3
+    #endif
 
-  #if (EMC_DYNCS0_SETUP != 0)
-  LPC_IOCON->P2_20 = 1;  // DYCS0
-  LPC_IOCON->P2_24 = 1;  // CKEOUT0
-  #endif
+    #if (EMC_DYNCS0_SETUP != 0)
+    LPC_IOCON->P2_20 = 1; // DYCS0
+    LPC_IOCON->P2_24 = 1; // CKEOUT0
+    #endif
 
-  #if (EMC_DYNCS1_SETUP != 0)
-  LPC_IOCON->P2_21 = 1;  // DYCS1
-  LPC_IOCON->P2_25 = 1;  // CKEOUT1
-  #endif
+    #if (EMC_DYNCS1_SETUP != 0)
+    LPC_IOCON->P2_21 = 1; // DYCS1
+    LPC_IOCON->P2_25 = 1; // CKEOUT1
+    #endif
 
-  #if (EMC_DYNCS2_SETUP != 0)
-  LPC_IOCON->P2_22 = 1;  // DYCS2
-  LPC_IOCON->P2_26 = 1;  // CKEOUT2
-  #endif
+    #if (EMC_DYNCS2_SETUP != 0)
+    LPC_IOCON->P2_22 = 1; // DYCS2
+    LPC_IOCON->P2_26 = 1; // CKEOUT2
+    #endif
 
-  #if (EMC_DYNCS3_SETUP != 0)
-  LPC_IOCON->P2_23 = 1;  // DYCS3
-  LPC_IOCON->P2_27 = 1;  // CKEOUT3
-  #endif
-#endif
+    #if (EMC_DYNCS3_SETUP != 0)
+    LPC_IOCON->P2_23 = 1; // DYCS3
+    LPC_IOCON->P2_27 = 1; // CKEOUT3
+    #endif
+    #endif
 
-#if (EMC_STATIC_SETUP != 0)
-  /* Configure static memory control pins */
-  LPC_IOCON->P4_24 = 1;  // OE
+    #if (EMC_STATIC_SETUP != 0)
+    /* Configure static memory control pins */
+    LPC_IOCON->P4_24 = 1; // OE
 
-  LPC_IOCON->P4_26 = 1;  // BLS0
-  #if ((STACS0_BUS_WIDTH >= 16) || \
-       (STACS1_BUS_WIDTH >= 16) || \
-       (STACS2_BUS_WIDTH >= 16) || \
-       (STACS3_BUS_WIDTH >= 16))
-  LPC_IOCON->P4_27 = 1;  // BLS1
-  #endif
+    LPC_IOCON->P4_26 = 1; // BLS0
+    #if ((STACS0_BUS_WIDTH >= 16) || \
+    (STACS1_BUS_WIDTH >= 16) || \
+    (STACS2_BUS_WIDTH >= 16) || \
+    (STACS3_BUS_WIDTH >= 16))
+    LPC_IOCON->P4_27 = 1; // BLS1
+    #endif
 
-  #if ((STACS0_BUS_WIDTH == 32) || \
-       (STACS1_BUS_WIDTH == 32) || \
-       (STACS2_BUS_WIDTH == 32) || \
-       (STACS3_BUS_WIDTH == 32))
-  LPC_IOCON->P4_28 = 1;  // BLS2
-  LPC_IOCON->P4_29 = 1;  // BLS3
-  #endif
+    #if ((STACS0_BUS_WIDTH == 32) || \
+    (STACS1_BUS_WIDTH == 32) || \
+    (STACS2_BUS_WIDTH == 32) || \
+    (STACS3_BUS_WIDTH == 32))
+    LPC_IOCON->P4_28 = 1; // BLS2
+    LPC_IOCON->P4_29 = 1; // BLS3
+    #endif
 
-  #if (EMC_STACS0_SETUP != 0)
-  LPC_IOCON->P4_30 = 1;  // CS0
-  #endif
-  #if (EMC_STACS1_SETUP != 0)
-  LPC_IOCON->P4_31 = 1;  // CS1
-  #endif
-  #if (EMC_STACS2_SETUP != 0)
-  LPC_IOCON->P2_14 = 1;  // CS2
-  #endif
-  #if (EMC_STACS3_SETUP != 0)
-  LPC_IOCON->P2_15 = 1;  // CS3
-  #endif
-#endif
+    #if (EMC_STACS0_SETUP != 0)
+    LPC_IOCON->P4_30 = 1; // CS0
+    #endif
+    #if (EMC_STACS1_SETUP != 0)
+    LPC_IOCON->P4_31 = 1; // CS1
+    #endif
+    #if (EMC_STACS2_SETUP != 0)
+    LPC_IOCON->P2_14 = 1; // CS2
+    #endif
+    #if (EMC_STACS3_SETUP != 0)
+    LPC_IOCON->P2_15 = 1; // CS3
+    #endif
+    #endif
 
-  LPC_SC->EMCDLYCTL |= 0x1111;      // CMDDLY = 0x11 , FBDELAY = 0x11
-  LPC_SC->PCONP     |= (1 << 11);   // Turn on EMC peripheral clock
+    LPC_SC->EMCDLYCTL |= 0x1111;    // CMDDLY = 0x11 , FBDELAY = 0x11
+    LPC_SC->PCONP |= (1 << 11);     // Turn on EMC peripheral clock
 
-  LPC_EMC->Control = EMC_CTRL_Val;
-  LPC_EMC->Config  = EMC_CONFIG_Val;
+    LPC_EMC->Control = EMC_CTRL_Val;
+    LPC_EMC->Config = EMC_CONFIG_Val;
 
-#if (EMC_DYNAMIC_SETUP != 0)
+    #if (EMC_DYNAMIC_SETUP != 0)
 
-  LPC_EMC->DynamicRefresh    = EMC_DYN_RFSH_Val;
-  LPC_EMC->DynamicReadConfig = EMC_DYN_RD_CFG_Val;
+    LPC_EMC->DynamicRefresh = EMC_DYN_RFSH_Val;
+    LPC_EMC->DynamicReadConfig = EMC_DYN_RD_CFG_Val;
 
-  LPC_EMC->DynamicRP   = EMC_DYN_RP_Val;
-  LPC_EMC->DynamicRAS  = EMC_DYN_RAS_Val;
-  LPC_EMC->DynamicSREX = EMC_DYN_SREX_Val;
-  LPC_EMC->DynamicAPR  = EMC_DYN_APR_Val;
-  LPC_EMC->DynamicDAL  = EMC_DYN_DAL_Val;
-  LPC_EMC->DynamicWR   = EMC_DYN_WR_Val;
-  LPC_EMC->DynamicRC   = EMC_DYN_RC_Val;
-  LPC_EMC->DynamicRFC  = EMC_DYN_RFC_Val;
-  LPC_EMC->DynamicXSR  = EMC_DYN_XSR_Val;
-  LPC_EMC->DynamicRRD  = EMC_DYN_RRD_Val;
-  LPC_EMC->DynamicMRD  = EMC_DYN_MRD_Val;
+    LPC_EMC->DynamicRP = EMC_DYN_RP_Val;
+    LPC_EMC->DynamicRAS = EMC_DYN_RAS_Val;
+    LPC_EMC->DynamicSREX = EMC_DYN_SREX_Val;
+    LPC_EMC->DynamicAPR = EMC_DYN_APR_Val;
+    LPC_EMC->DynamicDAL = EMC_DYN_DAL_Val;
+    LPC_EMC->DynamicWR = EMC_DYN_WR_Val;
+    LPC_EMC->DynamicRC = EMC_DYN_RC_Val;
+    LPC_EMC->DynamicRFC = EMC_DYN_RFC_Val;
+    LPC_EMC->DynamicXSR = EMC_DYN_XSR_Val;
+    LPC_EMC->DynamicRRD = EMC_DYN_RRD_Val;
+    LPC_EMC->DynamicMRD = EMC_DYN_MRD_Val;
 
-#if (EMC_DYNCS0_SETUP != 0)
-  LPC_EMC->DynamicConfig0 = EMC_DYN_CFG0_Val & ~(1 << 19);
-  LPC_EMC->DynamicRasCas0 = EMC_DYN_RASCAS0_Val;
-#endif
+    #if (EMC_DYNCS0_SETUP != 0)
+    LPC_EMC->DynamicConfig0 = EMC_DYN_CFG0_Val & ~(1 << 19);
+    LPC_EMC->DynamicRasCas0 = EMC_DYN_RASCAS0_Val;
+    #endif
 
-#if (EMC_DYNCS1_SETUP != 0)
-  LPC_EMC->DynamicConfig1 = EMC_DYN_CFG1_Val & ~(1 << 19);
-  LPC_EMC->DynamicRasCas1 = EMC_DYN_RASCAS1_Val;
-#endif
+    #if (EMC_DYNCS1_SETUP != 0)
+    LPC_EMC->DynamicConfig1 = EMC_DYN_CFG1_Val & ~(1 << 19);
+    LPC_EMC->DynamicRasCas1 = EMC_DYN_RASCAS1_Val;
+    #endif
 
-#if (EMC_DYNCS2_SETUP != 0)
-  LPC_EMC->DynamicConfig2 = EMC_DYN_CFG2_Val & ~(1 << 19);
-  LPC_EMC->DynamicRasCas2 = EMC_DYN_RASCAS2_Val;
-#endif
+    #if (EMC_DYNCS2_SETUP != 0)
+    LPC_EMC->DynamicConfig2 = EMC_DYN_CFG2_Val & ~(1 << 19);
+    LPC_EMC->DynamicRasCas2 = EMC_DYN_RASCAS2_Val;
+    #endif
 
-#if (EMC_DYNCS3_SETUP != 0)
-  LPC_EMC->DynamicConfig3 = EMC_DYN_CFG3_Val & ~(1 << 19);
-  LPC_EMC->DynamicRasCas3 = EMC_DYN_RASCAS3_Val;
-#endif
+    #if (EMC_DYNCS3_SETUP != 0)
+    LPC_EMC->DynamicConfig3 = EMC_DYN_CFG3_Val & ~(1 << 19);
+    LPC_EMC->DynamicRasCas3 = EMC_DYN_RASCAS3_Val;
+    #endif
 
-  /* Start SDRAM initialization procedure */
-  _DelayMs(100);
-  LPC_EMC->DynamicControl = 0x00000183;  // Issue NOP command
-  _DelayMs(200);
-  LPC_EMC->DynamicControl = 0x00000103;  // Issue PALL command
-  LPC_EMC->DynamicRefresh = 0x00000002;  // n * 16 clock cycles
-  for (i = 0; i < 0x80; i++);            // Wait 128 AHB clock cycles
-  LPC_EMC->DynamicRefresh = 0x0000003A;  // n * 16 clock cycles
+    /* Start SDRAM initialization procedure */
+    _DelayMs(100);
+    LPC_EMC->DynamicControl = 0x00000183; // Issue NOP command
+    _DelayMs(200);
+    LPC_EMC->DynamicControl = 0x00000103; // Issue PALL command
+    LPC_EMC->DynamicRefresh = 0x00000002; // n * 16 clock cycles
+    for (i = 0; i < 0x80; i++) {;        // Wait 128 AHB clock cycles
+    }
+    LPC_EMC->DynamicRefresh = 0x0000003A; // n * 16 clock cycles
 
-  LPC_EMC->DynamicControl = 0x00000083;  // Issue MODE command
+    LPC_EMC->DynamicControl = 0x00000083; // Issue MODE command
 
-  #if (EMC_DYNCS0_SETUP != 0)
-  *((volatile uint32_t*)(0xA0000000 | (DYNCS0_SDRAM_MODE << (DYNCS0_BANK_BITS + DYNCS0_COL_BITS + DYNCS0_BUS_WIDTH/16))));
-  LPC_EMC->DynamicConfig0 = EMC_DYN_CFG0_Val;
-  #endif
+    #if (EMC_DYNCS0_SETUP != 0)
+    *((volatile uint32_t *)(0xA0000000 | (DYNCS0_SDRAM_MODE << (DYNCS0_BANK_BITS + DYNCS0_COL_BITS + DYNCS0_BUS_WIDTH / 16))));
+    LPC_EMC->DynamicConfig0 = EMC_DYN_CFG0_Val;
+    #endif
 
-  #if (EMC_DYNCS1_SETUP != 0)
-  *((volatile uint32_t*)(0xB0000000 | (DYNCS1_SDRAM_MODE << (DYNCS1_BANK_BITS + DYNCS1_COL_BITS + DYNCS1_BUS_WIDTH/16))));
-  LPC_EMC->DynamicConfig1 = EMC_DYN_CFG1_Val;
-  #endif
+    #if (EMC_DYNCS1_SETUP != 0)
+    *((volatile uint32_t *)(0xB0000000 | (DYNCS1_SDRAM_MODE << (DYNCS1_BANK_BITS + DYNCS1_COL_BITS + DYNCS1_BUS_WIDTH / 16))));
+    LPC_EMC->DynamicConfig1 = EMC_DYN_CFG1_Val;
+    #endif
 
-  #if (EMC_DYNCS2_SETUP != 0)
-  *((volatile uint32_t*)(0xC0000000 | (DYNCS2_SDRAM_MODE << (DYNCS2_BANK_BITS + DYNCS2_COL_BITS + DYNCS2_BUS_WIDTH/16))));
-  LPC_EMC->DynamicConfig2 = EMC_DYN_CFG2_Val;
-  #endif
+    #if (EMC_DYNCS2_SETUP != 0)
+    *((volatile uint32_t *)(0xC0000000 | (DYNCS2_SDRAM_MODE << (DYNCS2_BANK_BITS + DYNCS2_COL_BITS + DYNCS2_BUS_WIDTH / 16))));
+    LPC_EMC->DynamicConfig2 = EMC_DYN_CFG2_Val;
+    #endif
 
-  #if (EMC_DYNCS3_SETUP != 0)
-  *((volatile uint32_t*)(0xD0000000 | (DYNCS3_SDRAM_MODE << (DYNCS3_BANK_BITS + DYNCS3_COL_BITS + DYNCS3_BUS_WIDTH/16))));
-  LPC_EMC->DynamicConfig3 = EMC_DYN_CFG3_Val;
-  #endif
+    #if (EMC_DYNCS3_SETUP != 0)
+    *((volatile uint32_t *)(0xD0000000 | (DYNCS3_SDRAM_MODE << (DYNCS3_BANK_BITS + DYNCS3_COL_BITS + DYNCS3_BUS_WIDTH / 16))));
+    LPC_EMC->DynamicConfig3 = EMC_DYN_CFG3_Val;
+    #endif
 
-  LPC_EMC->DynamicControl = 0x00000000;  // Issue NORMAL command
+    LPC_EMC->DynamicControl = 0x00000000; // Issue NORMAL command
 
-#endif /* (EMC_DYNAMIC_SETUP != 0) */
+    #endif /* (EMC_DYNAMIC_SETUP != 0) */
 
-#if (EMC_STATIC_SETUP != 0)
+    #if (EMC_STATIC_SETUP != 0)
 
-#if (EMC_STACS0_SETUP != 0)
-  LPC_EMC->StaticConfig0   = EMC_STA_CFG0_Val;
-  LPC_EMC->StaticWaitWen0  = EMC_STA_WWEN0_Val;
-  LPC_EMC->StaticWaitOen0  = EMC_STA_WOEN0_Val;
-  LPC_EMC->StaticWaitRd0   = EMC_STA_WRD0_Val;
-  LPC_EMC->StaticWaitPage0 = EMC_STA_WPAGE0_Val;
-  LPC_EMC->StaticWaitWr0   = EMC_STA_WWR0_Val;
-  LPC_EMC->StaticWaitTurn0 = EMC_STA_WTURN0_Val;
-#endif
+    #if (EMC_STACS0_SETUP != 0)
+    LPC_EMC->StaticConfig0 = EMC_STA_CFG0_Val;
+    LPC_EMC->StaticWaitWen0 = EMC_STA_WWEN0_Val;
+    LPC_EMC->StaticWaitOen0 = EMC_STA_WOEN0_Val;
+    LPC_EMC->StaticWaitRd0 = EMC_STA_WRD0_Val;
+    LPC_EMC->StaticWaitPage0 = EMC_STA_WPAGE0_Val;
+    LPC_EMC->StaticWaitWr0 = EMC_STA_WWR0_Val;
+    LPC_EMC->StaticWaitTurn0 = EMC_STA_WTURN0_Val;
+    #endif
 
-#if (EMC_STACS1_SETUP != 0)
-  LPC_EMC->StaticConfig1   = EMC_STA_CFG1_Val;
-  LPC_EMC->StaticWaitWen1  = EMC_STA_WWEN1_Val;
-  LPC_EMC->StaticWaitOen1  = EMC_STA_WOEN1_Val;
-  LPC_EMC->StaticWaitRd1   = EMC_STA_WRD1_Val;
-  LPC_EMC->StaticWaitPage1 = EMC_STA_WPAGE1_Val;
-  LPC_EMC->StaticWaitWr1   = EMC_STA_WWR1_Val;
-  LPC_EMC->StaticWaitTurn1 = EMC_STA_WTURN1_Val;
-#endif
+    #if (EMC_STACS1_SETUP != 0)
+    LPC_EMC->StaticConfig1 = EMC_STA_CFG1_Val;
+    LPC_EMC->StaticWaitWen1 = EMC_STA_WWEN1_Val;
+    LPC_EMC->StaticWaitOen1 = EMC_STA_WOEN1_Val;
+    LPC_EMC->StaticWaitRd1 = EMC_STA_WRD1_Val;
+    LPC_EMC->StaticWaitPage1 = EMC_STA_WPAGE1_Val;
+    LPC_EMC->StaticWaitWr1 = EMC_STA_WWR1_Val;
+    LPC_EMC->StaticWaitTurn1 = EMC_STA_WTURN1_Val;
+    #endif
 
-#if (EMC_STACS2_SETUP != 0)
-  LPC_EMC->StaticConfig2   = EMC_STA_CFG2_Val;
-  LPC_EMC->StaticWaitWen2  = EMC_STA_WWEN2_Val;
-  LPC_EMC->StaticWaitOen2  = EMC_STA_WOEN2_Val;
-  LPC_EMC->StaticWaitRd2   = EMC_STA_WRD2_Val;
-  LPC_EMC->StaticWaitPage2 = EMC_STA_WPAGE2_Val;
-  LPC_EMC->StaticWaitWr2   = EMC_STA_WWR2_Val;
-  LPC_EMC->StaticWaitTurn2 = EMC_STA_WTURN2_Val;
-#endif
+    #if (EMC_STACS2_SETUP != 0)
+    LPC_EMC->StaticConfig2 = EMC_STA_CFG2_Val;
+    LPC_EMC->StaticWaitWen2 = EMC_STA_WWEN2_Val;
+    LPC_EMC->StaticWaitOen2 = EMC_STA_WOEN2_Val;
+    LPC_EMC->StaticWaitRd2 = EMC_STA_WRD2_Val;
+    LPC_EMC->StaticWaitPage2 = EMC_STA_WPAGE2_Val;
+    LPC_EMC->StaticWaitWr2 = EMC_STA_WWR2_Val;
+    LPC_EMC->StaticWaitTurn2 = EMC_STA_WTURN2_Val;
+    #endif
 
-#if (EMC_STACS3_SETUP != 0)
-  LPC_EMC->StaticConfig3   = EMC_STA_CFG3_Val;
-  LPC_EMC->StaticWaitWen3  = EMC_STA_WWEN3_Val;
-  LPC_EMC->StaticWaitOen3  = EMC_STA_WOEN3_Val;
-  LPC_EMC->StaticWaitRd3   = EMC_STA_WRD3_Val;
-  LPC_EMC->StaticWaitPage3 = EMC_STA_WPAGE3_Val;
-  LPC_EMC->StaticWaitWr3   = EMC_STA_WWR3_Val;
-  LPC_EMC->StaticWaitTurn3 = EMC_STA_WTURN3_Val;
-#endif
+    #if (EMC_STACS3_SETUP != 0)
+    LPC_EMC->StaticConfig3 = EMC_STA_CFG3_Val;
+    LPC_EMC->StaticWaitWen3 = EMC_STA_WWEN3_Val;
+    LPC_EMC->StaticWaitOen3 = EMC_STA_WOEN3_Val;
+    LPC_EMC->StaticWaitRd3 = EMC_STA_WRD3_Val;
+    LPC_EMC->StaticWaitPage3 = EMC_STA_WPAGE3_Val;
+    LPC_EMC->StaticWaitWr3 = EMC_STA_WWR3_Val;
+    LPC_EMC->StaticWaitTurn3 = EMC_STA_WTURN3_Val;
+    #endif
 
-  LPC_EMC->StaticExtendedWait = EMC_STA_EXT_W_Val;
+    LPC_EMC->StaticExtendedWait = EMC_STA_EXT_W_Val;
 
-#endif /* (EMC_STATIC_SETUP != 0) */
+    #endif /* (EMC_STATIC_SETUP != 0) */
 }
 #endif /* (EMC_SETUP != 0) */
 
-  /* Determine clock frequency according to clock register values             */
+/* Determine clock frequency according to clock register values             */
 
 /*----------------------------------------------------------------------------
   SystemInit
  *----------------------------------------------------------------------------*/
-void SystemInit (void)
-{
-#if (CLOCK_SETUP)                       /* Clock Setup                        */
-  LPC_SC->SCS       = SCS_Val;
-  if (SCS_Val & (1 << 5)) {             /* If Main Oscillator is enabled      */
-    while ((LPC_SC->SCS & (1<<6)) == 0);/* Wait for Oscillator to be ready    */
-  }
+void SystemInit(void) {
+    #if (CLOCK_SETUP)                   /* Clock Setup                        */
+    LPC_SC->SCS = SCS_Val;
+    if (SCS_Val & (1 << 5)) {           /* If Main Oscillator is enabled      */
+        while ((LPC_SC->SCS & (1 << 6)) == 0) {
+            ;                           /* Wait for Oscillator to be ready    */
+        }
+    }
 
-  LPC_SC->CLKSRCSEL = CLKSRCSEL_Val;    /* Select Clock Source for sysclk/PLL0*/
+    LPC_SC->CLKSRCSEL = CLKSRCSEL_Val;  /* Select Clock Source for sysclk/PLL0*/
 
-#if (PLL0_SETUP)
-  LPC_SC->PLL0CFG   = PLL0CFG_Val;
-  LPC_SC->PLL0CON   = 0x01;             /* PLL0 Enable                        */
-  LPC_SC->PLL0FEED  = 0xAA;
-  LPC_SC->PLL0FEED  = 0x55;
-  while (!(LPC_SC->PLL0STAT & (1<<10)));/* Wait for PLOCK0                    */
-#endif
+    #if (PLL0_SETUP)
+    LPC_SC->PLL0CFG = PLL0CFG_Val;
+    LPC_SC->PLL0CON = 0x01;             /* PLL0 Enable                        */
+    LPC_SC->PLL0FEED = 0xAA;
+    LPC_SC->PLL0FEED = 0x55;
+    while (!(LPC_SC->PLL0STAT & (1 << 10))) {
+        ;                               /* Wait for PLOCK0                    */
+    }
+    #endif
 
-#if (PLL1_SETUP)
-  LPC_SC->PLL1CFG   = PLL1CFG_Val;
-  LPC_SC->PLL1CON   = 0x01;             /* PLL1 Enable                        */
-  LPC_SC->PLL1FEED  = 0xAA;
-  LPC_SC->PLL1FEED  = 0x55;
-  while (!(LPC_SC->PLL1STAT & (1<<10)));/* Wait for PLOCK1                    */
-#endif
+    #if (PLL1_SETUP)
+    LPC_SC->PLL1CFG = PLL1CFG_Val;
+    LPC_SC->PLL1CON = 0x01;             /* PLL1 Enable                        */
+    LPC_SC->PLL1FEED = 0xAA;
+    LPC_SC->PLL1FEED = 0x55;
+    while (!(LPC_SC->PLL1STAT & (1 << 10))) {
+        ;                               /* Wait for PLOCK1                    */
+    }
+    #endif
 
-  LPC_SC->CCLKSEL   = CCLKSEL_Val;      /* Setup Clock Divider                */
-  LPC_SC->USBCLKSEL = USBCLKSEL_Val;    /* Setup USB Clock Divider            */
-  LPC_SC->EMCCLKSEL = EMCCLKSEL_Val;    /* EMC Clock Selection                */
-  LPC_SC->PCLKSEL   = PCLKSEL_Val;      /* Peripheral Clock Selection         */
-  LPC_SC->PCONP     = PCONP_Val;        /* Power Control for Peripherals      */
-  LPC_SC->CLKOUTCFG = CLKOUTCFG_Val;    /* Clock Output Configuration         */
-#endif
+    LPC_SC->CCLKSEL = CCLKSEL_Val;      /* Setup Clock Divider                */
+    LPC_SC->USBCLKSEL = USBCLKSEL_Val;  /* Setup USB Clock Divider            */
+    LPC_SC->EMCCLKSEL = EMCCLKSEL_Val;  /* EMC Clock Selection                */
+    LPC_SC->PCLKSEL = PCLKSEL_Val;      /* Peripheral Clock Selection         */
+    LPC_SC->PCONP = PCONP_Val;          /* Power Control for Peripherals      */
+    LPC_SC->CLKOUTCFG = CLKOUTCFG_Val;  /* Clock Output Configuration         */
+    #endif
 
-  LPC_SC->PBOOST   |= 0x03;             /* Power Boost control                */
+    LPC_SC->PBOOST |= 0x03;             /* Power Boost control                */
 
-#if (FLASH_SETUP == 1)                  /* Flash Accelerator Setup            */
-  LPC_SC->FLASHCFG  = FLASHCFG_Val|0x03A;
-#endif
-#ifdef  __RAM_MODE__
-  SCB->VTOR  = 0x10000000 & 0x3FFFFF80;
-#else
-  SCB->VTOR  = 0x00000000 & 0x3FFFFF80;
-#endif
+    #if (FLASH_SETUP == 1)              /* Flash Accelerator Setup            */
+    LPC_SC->FLASHCFG = FLASHCFG_Val | 0x03A;
+    #endif
+    #ifdef  __RAM_MODE__
+    SCB->VTOR = 0x10000000 & 0x3FFFFF80;
+    #else
+    SCB->VTOR = 0x00000000 & 0x3FFFFF80;
+    #endif
 
-  /* Update SystemCoreClock variable */
-  SystemCoreClockUpdate();
+    /* Update SystemCoreClock variable */
+    SystemCoreClockUpdate();
 
-#if (EMC_SETUP != 0)
-  /* Configure External Memory Controller */
-  SystemInit_ExtMemCtl ();
-#endif
+    #if (EMC_SETUP != 0)
+    /* Configure External Memory Controller */
+    SystemInit_ExtMemCtl();
+    #endif
 }

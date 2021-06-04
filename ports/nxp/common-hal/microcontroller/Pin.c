@@ -30,15 +30,14 @@
 #include "shared-bindings/microcontroller/Pin.h"
 
 #if (1)
-#   define TOTAL_GPIO_COUNT 0U
+#define TOTAL_GPIO_COUNT 0U
 #else
 #include "src/rp2_common/hardware_gpio/include/hardware/gpio.h"
 #endif
 
 STATIC uint32_t never_reset_pins;
 
-void reset_all_pins(void)
-{
+void reset_all_pins(void) {
     for (size_t i = 0U; i < TOTAL_GPIO_COUNT; i++) {
         if ((never_reset_pins & (1 << i)) != 0) {
             continue;
@@ -49,8 +48,7 @@ void reset_all_pins(void)
     return;
 }
 
-void never_reset_pin_number(uint8_t pin_number)
-{
+void never_reset_pin_number(uint8_t pin_number) {
     if (pin_number < TOTAL_GPIO_COUNT) {
         never_reset_pins |= (1 << pin_number);
     }
@@ -58,11 +56,10 @@ void never_reset_pin_number(uint8_t pin_number)
     return;
 }
 
-void reset_pin_number(uint8_t pin_number)
-{
-#if (1)
+void reset_pin_number(uint8_t pin_number) {
+    #if (1)
     return;
-#else
+    #else
     if (pin_number >= TOTAL_GPIO_COUNT) {
         return;
     }
@@ -76,30 +73,26 @@ void reset_pin_number(uint8_t pin_number)
         PADS_BANK0_GPIO0_PUE_BITS |
         PADS_BANK0_GPIO0_PDE_BITS);
     hw_set_bits(&padsbank0_hw->io[pin_number], PADS_BANK0_GPIO0_OD_BITS);
-#endif
+    #endif
 }
 
-void common_hal_never_reset_pin(const mcu_pin_obj_t *pin)
-{
+void common_hal_never_reset_pin(const mcu_pin_obj_t *pin) {
     never_reset_pin_number(pin->number);
 }
 
-void common_hal_reset_pin(const mcu_pin_obj_t *pin)
-{
+void common_hal_reset_pin(const mcu_pin_obj_t *pin) {
     reset_pin_number(pin->number);
 }
 
-void claim_pin(const mcu_pin_obj_t *pin)
-{
+void claim_pin(const mcu_pin_obj_t *pin) {
     // Nothing to do because all changes will set the GPIO settings.
     return;
 }
 
-bool pin_number_is_free(uint8_t pin_number)
-{
-#if (1)
+bool pin_number_is_free(uint8_t pin_number) {
+    #if (1)
     return false;
-#else
+    #else
     if (pin_number >= TOTAL_GPIO_COUNT) {
         return false;
     }
@@ -107,21 +100,18 @@ bool pin_number_is_free(uint8_t pin_number)
     uint32_t pad_state = padsbank0_hw->io[pin_number];
     return (pad_state & PADS_BANK0_GPIO0_IE_BITS) == 0 &&
            (pad_state & PADS_BANK0_GPIO0_OD_BITS) != 0;
-#endif
+    #endif
 }
 
-bool common_hal_mcu_pin_is_free(const mcu_pin_obj_t *pin)
-{
+bool common_hal_mcu_pin_is_free(const mcu_pin_obj_t *pin) {
     return pin_number_is_free(pin->number);
 }
 
-uint8_t common_hal_mcu_pin_number(const mcu_pin_obj_t *pin)
-{
+uint8_t common_hal_mcu_pin_number(const mcu_pin_obj_t *pin) {
     return pin->number;
 }
 
-void common_hal_mcu_pin_claim(const mcu_pin_obj_t *pin)
-{
+void common_hal_mcu_pin_claim(const mcu_pin_obj_t *pin) {
     return claim_pin(pin);
 }
 

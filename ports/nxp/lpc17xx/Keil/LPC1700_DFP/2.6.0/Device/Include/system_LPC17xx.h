@@ -43,7 +43,7 @@ extern "C" {
 
 /**
   \brief  System clock frequency (core clock).
-    The system clock frequency supplied to the SysTick timer and the 
+    The system clock frequency supplied to the SysTick timer and the
     processor core clock.
  */
 extern uint32_t SystemCoreClock;
@@ -53,7 +53,7 @@ extern uint32_t SystemCoreClock;
 
     Initialize the System and update the SystemCoreClock variable.
  */
-extern void SystemInit (void);
+extern void SystemInit(void);
 
 /**
   \brief  Update SystemCoreClock variable.
@@ -61,7 +61,7 @@ extern void SystemInit (void);
     Updates the SystemCoreClock with current core Clock
     retrieved from cpu registers.
  */
-extern void SystemCoreClockUpdate (void);
+extern void SystemCoreClockUpdate(void);
 
 #ifdef __cplusplus
 }

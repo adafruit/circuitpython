@@ -127,11 +127,10 @@ bool common_hal_os_urandom(uint8_t *buffer, uint32_t length) {
 #endif
 
 
-mp_obj_t common_hal_os_stat(const char *path)
-{
-#if (1)
+mp_obj_t common_hal_os_stat(const char *path) {
+    #if (1)
     return NULL;
-#else
+    #else
     mp_obj_t path_out;
     mp_vfs_mount_t *vfs = lookup_path(path, &path_out);
     if (vfs == MP_VFS_ROOT) {
@@ -143,5 +142,5 @@ mp_obj_t common_hal_os_stat(const char *path)
         return MP_OBJ_FROM_PTR(t);
     }
     return mp_vfs_proxy_call(vfs, MP_QSTR_stat, 1, &path_out);
-#endif
+    #endif
 }

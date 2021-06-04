@@ -21,7 +21,7 @@
  * Project:      RTE Device Configuration for NXP LPC17xx
  * -------------------------------------------------------------------------- */
 
-//-------- <<< Use Configuration Wizard in Context Menu >>> --------------------
+// -------- <<< Use Configuration Wizard in Context Menu >>> --------------------
 
 #ifndef __RTE_DEVICE_H
 #define __RTE_DEVICE_H
@@ -195,7 +195,7 @@
 #define RTE_ENET_MDI_MDC_PORT           1
 #define RTE_ENET_MDI_MDC_PIN            16
 #define RTE_ENET_MDI_MDC_FUNC           1
-#elif  (RTE_ENET_MDI_MDC_PORT_ID == 1)  
+#elif  (RTE_ENET_MDI_MDC_PORT_ID == 1)
 #define RTE_ENET_MDI_MDC_PORT           2
 #define RTE_ENET_MDI_MDC_PIN            8
 #define RTE_ENET_MDI_MDC_FUNC           3
@@ -399,7 +399,7 @@
 #define RTE_UART1_CTS_PIN_EN            1
 #endif
 
-//       
+//
 //      <o> DCD <0=>Not used <1=>P0_18 <2=>P2_3
 #define RTE_UART1_DCD_ID                0
 #if    (RTE_UART1_DCD_ID == 0)

@@ -26,17 +26,14 @@
 
 #include "supervisor/board.h"
 
-void board_init(void)
-{
+void board_init(void) {
     return;
 }
 
-bool board_requests_safe_mode(void)
-{
+bool board_requests_safe_mode(void) {
     return false;
 }
 
-void reset_board(void)
-{
+void reset_board(void) {
     return;
 }

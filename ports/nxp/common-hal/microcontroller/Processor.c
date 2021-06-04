@@ -62,11 +62,10 @@ void common_hal_mcu_processor_get_uid(uint8_t raw_id[]) {
 }
 #endif
 
-float common_hal_mcu_processor_get_temperature(void)
-{
-#if (1)
+float common_hal_mcu_processor_get_temperature(void) {
+    #if (1)
     return 0.0f;
-#else
+    #else
     adc_init();
     adc_set_temp_sensor_enabled(true);
     adc_select_input(4);
@@ -75,41 +74,37 @@ float common_hal_mcu_processor_get_temperature(void)
     float voltage = value * 3.3 / (1 << 12);
     // TODO: turn the ADC back off
     return 27 - (voltage - 0.706) / 0.001721;
-#endif
+    #endif
 }
 
-float common_hal_mcu_processor_get_voltage(void)
-{
-#if (1)
+float common_hal_mcu_processor_get_voltage(void) {
+    #if (1)
     return 0.0f;
-#else
+    #else
     return 3.3f;
-#endif
+    #endif
 }
 
-uint32_t common_hal_mcu_processor_get_frequency(void)
-{
-#if (1)
+uint32_t common_hal_mcu_processor_get_frequency(void) {
+    #if (1)
     return 0U;
-#else
+    #else
     return clock_get_hz(clk_sys);
-#endif
+    #endif
 }
 
-void common_hal_mcu_processor_get_uid(uint8_t raw_id[])
-{
-#if (1)
+void common_hal_mcu_processor_get_uid(uint8_t raw_id[]) {
+    #if (1)
     (void)raw_id;
     return;
-#else
+    #else
     pico_unique_board_id_t retrieved_id;
     pico_get_unique_board_id(&retrieved_id);
     memcpy(raw_id, retrieved_id.id, COMMON_HAL_MCU_PROCESSOR_UID_LENGTH);
-#endif
+    #endif
 }
 
-mcu_reset_reason_t common_hal_mcu_processor_get_reset_reason(void)
-{
+mcu_reset_reason_t common_hal_mcu_processor_get_reset_reason(void) {
     // TODO: Get the reason from RSID
     return RESET_REASON_UNKNOWN;
 }

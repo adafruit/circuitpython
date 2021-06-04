@@ -33,16 +33,14 @@
 #include "src/rp2040/hardware_regs/include/hardware/regs/intctrl.h"
 #endif
 
-void init_usb_hardware(void)
-{
+void init_usb_hardware(void) {
     return;
 }
 
-void post_usb_init(void)
-{
-#if (1)
+void post_usb_init(void) {
+    #if (1)
     return;
-#else
+    #else
     irq_set_enabled(USBCTRL_IRQ, false);
 
     irq_handler_t usb_handler = irq_get_exclusive_handler(USBCTRL_IRQ);
@@ -52,5 +50,5 @@ void post_usb_init(void)
     irq_set_exclusive_handler(USBCTRL_IRQ, usb_irq_handler);
 
     irq_set_enabled(USBCTRL_IRQ, true);
-#endif
+    #endif
 }

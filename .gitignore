@@ -89,3 +89,4 @@ TAGS
 
 # Uncrustify formatting
 *.uncrustify
+/.settings/

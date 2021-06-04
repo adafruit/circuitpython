@@ -1,12 +1,12 @@
 /**********************************************************************
-* $Id$		system_LPC407x_8x_177x_8x.h			2011-06-02
+* $Id$        system_LPC407x_8x_177x_8x.h            2011-06-02
 *//**
-* @file		system_LPC407x_8x_177x_8x.h
-* @brief	CMSIS Cortex-M3 Device Peripheral Access Layer Source File
-*			for the NXP LPC Device Series
-* @version	1.0
-* @date		02. June. 2011
-* @author	NXP MCU SW Application Team
+* @file        system_LPC407x_8x_177x_8x.h
+* @brief    CMSIS Cortex-M3 Device Peripheral Access Layer Source File
+*            for the NXP LPC Device Series
+* @version    1.0
+* @date        02. June. 2011
+* @author    NXP MCU SW Application Team
 *
 * Copyright(C) 2011, NXP Semiconductor
 * All rights reserved.
@@ -39,10 +39,10 @@ extern "C" {
 
 #include <stdint.h>
 
-extern uint32_t SystemCoreClock;      /*!< System Clock Frequency (Core Clock)  	*/
-extern uint32_t PeripheralClock;	    /*!< Peripheral Clock Frequency (Pclk) 	    */
-extern uint32_t EMCClock;			        /*!< EMC Clock                              */
-extern uint32_t USBClock;			        /*!< USB Frequency 						              */
+extern uint32_t SystemCoreClock;      /*!< System Clock Frequency (Core Clock)          */
+extern uint32_t PeripheralClock;            /*!< Peripheral Clock Frequency (Pclk)          */
+extern uint32_t EMCClock;                               /*!< EMC Clock                              */
+extern uint32_t USBClock;                               /*!< USB Frequency                                                            */
 
 
 /**
@@ -50,7 +50,7 @@ extern uint32_t USBClock;			        /*!< USB Frequency 						              */
 
     Initialize the System and update the SystemCoreClock variable.
  */
-extern void SystemInit (void);
+extern void SystemInit(void);
 
 /**
   \brief  Update SystemCoreClock variable.
@@ -58,16 +58,16 @@ extern void SystemInit (void);
     Updates the SystemCoreClock with current core Clock
     retrieved from cpu registers.
  */
-extern void SystemCoreClockUpdate (void);
+extern void SystemCoreClockUpdate(void);
 
 /*----------------------------------------------------------------------------
   Define clocks
  *----------------------------------------------------------------------------*/
 #define XTAL        (12000000UL)        /* Oscillator frequency               */
-#define OSC_CLK     (      XTAL)        /* Main oscillator frequency          */
-#define RTC_CLK     (   32768UL)        /* RTC oscillator frequency           */
+#define OSC_CLK     (XTAL)              /* Main oscillator frequency          */
+#define RTC_CLK     (32768UL)           /* RTC oscillator frequency           */
 #define IRC_OSC     (12000000UL)        /* Internal RC oscillator frequency   */
-#define WDT_OSC		  (  500000UL)		/* Internal WDT oscillator frequency  */
+#define WDT_OSC     (500000UL)          /* Internal WDT oscillator frequency  */
 
 
 
