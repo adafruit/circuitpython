@@ -97,6 +97,10 @@ msgid "%q list must be a list"
 msgstr "lista %q deve essere una lista"
 
 #: shared-bindings/usb_hid/Device.c
+msgid "%q must be 0-255"
+msgstr ""
+
+#: shared-bindings/usb_hid/Device.c
 msgid "%q must be 1-255"
 msgstr ""
 
@@ -114,7 +118,7 @@ msgid "%q must be >= 1"
 msgstr "slice del buffer devono essere della stessa lunghezza"
 
 #: shared-bindings/usb_hid/Device.c
-msgid "%q must be None or 1-255"
+msgid "%q must be None or between 1 and len(report_descriptor)-1"
 msgstr ""
 
 #: shared-module/vectorio/Polygon.c
@@ -1704,6 +1708,10 @@ msgstr ""
 msgid "Only edge detection is available on this hardware"
 msgstr ""
 
+#: shared-bindings/ipaddress/__init__.c
+msgid "Only int or string supported for ip"
+msgstr ""
+
 #: shared-module/displayio/OnDiskBitmap.c
 #, c-format
 msgid ""
@@ -1723,10 +1731,6 @@ msgstr ""
 
 #: shared-module/displayio/ColorConverter.c
 msgid "Only one color can be transparent at a time"
-msgstr ""
-
-#: shared-bindings/ipaddress/__init__.c
-msgid "Only raw int supported for ip"
 msgstr ""
 
 #: ports/esp32s2/bindings/espidf/__init__.c ports/esp32s2/esp_error.c

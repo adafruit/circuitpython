@@ -6,7 +6,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-01-04 12:55-0600\n"
-"PO-Revision-Date: 2021-05-20 13:02+0000\n"
+"PO-Revision-Date: 2021-05-30 13:32+0000\n"
 "Last-Translator: Jonny Bergdahl <jonny@bergdahl.it>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: sv\n"
@@ -96,6 +96,10 @@ msgid "%q list must be a list"
 msgstr "%q-listan måste vara en lista"
 
 #: shared-bindings/usb_hid/Device.c
+msgid "%q must be 0-255"
+msgstr "%q måste vara 0-255"
+
+#: shared-bindings/usb_hid/Device.c
 msgid "%q must be 1-255"
 msgstr "%q måste vara 1-255"
 
@@ -112,8 +116,8 @@ msgid "%q must be >= 1"
 msgstr "%q måste vara >= 1"
 
 #: shared-bindings/usb_hid/Device.c
-msgid "%q must be None or 1-255"
-msgstr "%q måste vara None eller 1-255"
+msgid "%q must be None or between 1 and len(report_descriptor)-1"
+msgstr "%q måste vara None eller mellan 1 och len(report_descriptor)-1"
 
 #: shared-module/vectorio/Polygon.c
 msgid "%q must be a tuple of length 2"
@@ -1695,6 +1699,10 @@ msgstr ""
 msgid "Only edge detection is available on this hardware"
 msgstr "Endast kantdetektering är tillgänglig för denna hårdvara"
 
+#: shared-bindings/ipaddress/__init__.c
+msgid "Only int or string supported for ip"
+msgstr "Endast int eller string stöds för ip"
+
 #: shared-module/displayio/OnDiskBitmap.c
 #, c-format
 msgid ""
@@ -1717,10 +1725,6 @@ msgstr "Endast ett alarm.time kan ställas in."
 #: shared-module/displayio/ColorConverter.c
 msgid "Only one color can be transparent at a time"
 msgstr "Bara en färg kan vara genomskinlig i taget"
-
-#: shared-bindings/ipaddress/__init__.c
-msgid "Only raw int supported for ip"
-msgstr "Endast raw int stöds för ip"
 
 #: ports/esp32s2/bindings/espidf/__init__.c ports/esp32s2/esp_error.c
 msgid "Operation or feature not supported"
@@ -4416,6 +4420,15 @@ msgstr "zi måste vara av typ float"
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr "zi måste vara i formen (n_section, 2)"
+
+#~ msgid "%q must be None or 1-255"
+#~ msgstr "%q måste vara None eller 1-255"
+
+#~ msgid "Only raw int or string supported for ip"
+#~ msgstr "Enbart int eller string stöds för ip"
+
+#~ msgid "Only raw int supported for ip"
+#~ msgstr "Endast raw int stöds för ip"
 
 #~ msgid ""
 #~ "CircuitPython is in safe mode because you pressed the reset button during "

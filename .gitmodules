@@ -197,3 +197,6 @@
 [submodule "ports/nxp/nxp_lpcopen"]
 	path = ports/nxp/nxp_lpcopen
 	url = https://github.com/hathach/nxp_lpcopen.git
+[submodule "frozen/Adafruit_CircuitPython_SimpleIO"]
+	path = frozen/Adafruit_CircuitPython_SimpleIO
+	url = https://github.com/adafruit/adafruit_circuitpython_simpleio
