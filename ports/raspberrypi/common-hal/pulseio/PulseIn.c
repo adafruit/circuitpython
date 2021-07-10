@@ -36,8 +36,6 @@
 #include "bindings/rp2pio/StateMachine.h"
 #include "common-hal/pulseio/PulseIn.h"
 
-pulseio_pulsein_obj_t *save_self;
-
 #define NO_PIN 0xff
 #define MAX_PULSE 65535
 #define MIN_PULSE 10
@@ -62,7 +60,6 @@ void common_hal_pulseio_pulsein_construct(pulseio_pulsein_obj_t *self,
     self->idle_state = idle_state;
     self->start = 0;
     self->len = 0;
-    save_self = self;
 
     bool ok = rp2pio_statemachine_construct(&self->state_machine,
         pulsein_program, sizeof(pulsein_program) / sizeof(pulsein_program[0]),
@@ -88,7 +85,7 @@ void common_hal_pulseio_pulsein_construct(pulseio_pulsein_obj_t *self,
     buf_index = 0;
 
     pio_sm_set_in_pins(self->state_machine.pio,self->state_machine.state_machine,pin->number);
-    common_hal_rp2pio_statemachine_set_interrupt_handler(&(self->state_machine),&common_hal_pulseio_pulsein_interrupt,NULL,PIO_IRQ0_INTE_SM0_RXNEMPTY_BITS);
+    common_hal_rp2pio_statemachine_set_interrupt_handler(&(self->state_machine),&common_hal_pulseio_pulsein_interrupt,self,PIO_IRQ0_INTE_SM0_RXNEMPTY_BITS);
 
     // exec a set pindirs to 0 for input
     pio_sm_exec(self->state_machine.pio,self->state_machine.state_machine,0xe080);
@@ -117,12 +114,15 @@ void common_hal_pulseio_pulsein_deinit(pulseio_pulsein_obj_t *self) {
 }
 
 void common_hal_pulseio_pulsein_pause(pulseio_pulsein_obj_t *self) {
+    pio_sm_restart(self->state_machine.pio, self->state_machine.state_machine);
     pio_sm_set_enabled(self->state_machine.pio, self->state_machine.state_machine, false);
+    last_level = self->idle_state;
+    level_count = 0;
+    result = 0;
+    buf_index = 0;
 }
+void common_hal_pulseio_pulsein_interrupt(pulseio_pulsein_obj_t *self) {
 
-void common_hal_pulseio_pulsein_interrupt() {
-
-    pulseio_pulsein_obj_t *self = save_self;
     uint32_t rxfifo = 0;
 
     rxfifo = pio_sm_get_blocking(self->state_machine.pio, self->state_machine.state_machine);
@@ -134,13 +134,13 @@ void common_hal_pulseio_pulsein_interrupt() {
         } else {
             result = level_count;
             last_level = level;
-            level_count = 1;
-            // Pulses that are londger than MAX_PULSE will return MAX_PULSE
+            level_count = 0;
+            // Pulses that are longer than MAX_PULSE will return MAX_PULSE
             if (result > MAX_PULSE) {
                 result = MAX_PULSE;
             }
-            // ignore pulses that are too short
-            if (result <= MAX_PULSE && result > MIN_PULSE) {
+            // return  pulses that are not too short
+            if (result > MIN_PULSE) {
                 self->buffer[buf_index] = (uint16_t)result;
                 if (self->len < self->maxlen) {
                     self->len++;
@@ -165,12 +165,6 @@ void common_hal_pulseio_pulsein_interrupt() {
 }
 void common_hal_pulseio_pulsein_resume(pulseio_pulsein_obj_t *self,
     uint16_t trigger_duration) {
-    // exec a wait for the selected pin to change state
-    if (self->idle_state == true) {
-        pio_sm_exec(self->state_machine.pio,self->state_machine.state_machine,0x2020);
-    } else {
-        pio_sm_exec(self->state_machine.pio,self->state_machine.state_machine,0x20a0);
-    }
     // Send the trigger pulse.
     if (trigger_duration > 0) {
         gpio_set_function(self->pin,GPIO_FUNC_SIO);
@@ -178,11 +172,17 @@ void common_hal_pulseio_pulsein_resume(pulseio_pulsein_obj_t *self,
         gpio_put(self->pin, !self->idle_state);
         common_hal_mcu_delay_us((uint32_t)trigger_duration);
         gpio_set_function(self->pin,GPIO_FUNC_PIO0);
-        common_hal_mcu_delay_us(225);
+        common_hal_mcu_delay_us(125);
     }
 
     // Reconfigure the pin for PIO
     gpio_set_function(self->pin, GPIO_FUNC_PIO0);
+    // exec a wait for the selected pin to change state
+    if (self->idle_state == true) {
+        pio_sm_exec(self->state_machine.pio,self->state_machine.state_machine,0x2020);
+    } else {
+        pio_sm_exec(self->state_machine.pio,self->state_machine.state_machine,0x20a0);
+    }
     pio_sm_set_enabled(self->state_machine.pio, self->state_machine.state_machine, true);
 }
 
