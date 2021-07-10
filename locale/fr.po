@@ -57,6 +57,10 @@ msgid " is of type %q\n"
 msgstr " est de type %q\n"
 
 #: main.c
+msgid " not found.\n"
+msgstr ""
+
+#: main.c
 msgid " output:\n"
 msgstr " sortie :\n"
 
@@ -94,9 +98,21 @@ msgstr "index %q hors de portée"
 msgid "%q indices must be integers, not %s"
 msgstr "les indices %q doivent être des entiers, pas %s"
 
+#: py/argcheck.c
+msgid "%q length must be %q"
+msgstr ""
+
 #: shared-bindings/vectorio/Polygon.c
 msgid "%q list must be a list"
 msgstr "La liste %q doit être une liste"
+
+#: py/argcheck.c
+msgid "%q must <= %d"
+msgstr ""
+
+#: py/argcheck.c
+msgid "%q must be %d-%d"
+msgstr ""
 
 #: shared-bindings/usb_hid/Device.c
 msgid "%q must be 0-255"
@@ -106,7 +122,11 @@ msgstr ""
 msgid "%q must be 1-255"
 msgstr "%q doit être compris entre 1 et 255"
 
-#: shared-bindings/memorymonitor/AllocationAlarm.c
+#: py/argcheck.c
+msgid "%q must be >= %d"
+msgstr ""
+
+#: py/argcheck.c shared-bindings/memorymonitor/AllocationAlarm.c
 msgid "%q must be >= 0"
 msgstr "%q doit être >= 0"
 
@@ -122,9 +142,21 @@ msgstr "%q doit être >= 1"
 msgid "%q must be None or between 1 and len(report_descriptor)-1"
 msgstr ""
 
+#: py/argcheck.c
+msgid "%q must be a string"
+msgstr ""
+
 #: shared-module/vectorio/Polygon.c
 msgid "%q must be a tuple of length 2"
 msgstr "%q doit être un tuple de longueur 2"
+
+#: ports/esp32s2/common-hal/imagecapture/ParallelImageCapture.c
+msgid "%q must be between %d and %d"
+msgstr ""
+
+#: py/argcheck.c
+msgid "%q must of type %q"
+msgstr ""
 
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 #: shared-bindings/canio/Match.c
@@ -579,10 +611,6 @@ msgstr "La mémoire tampon doit être un multiple de 512"
 msgid "Buffer must be at least length 1"
 msgstr "Le tampon doit être de longueur au moins 1"
 
-#: ports/nrf/common-hal/_bleio/PacketBuffer.c
-msgid "Buffer too large and unable to allocate"
-msgstr "Tampon trop volumineux et impossible à allouer"
-
 #: shared-bindings/_bleio/PacketBuffer.c
 #, c-format
 msgid "Buffer too short by %d bytes"
@@ -867,6 +895,10 @@ msgstr "La broche Data 0 doit être aligné sur l'octet."
 #: shared-module/audiocore/WaveFile.c
 msgid "Data chunk must follow fmt chunk"
 msgstr "Un bloc de données doit suivre un bloc fmt"
+
+#: ports/nrf/common-hal/_bleio/Adapter.c
+msgid "Data not supported with directed advertising"
+msgstr ""
 
 #: ports/nrf/common-hal/_bleio/Adapter.c
 msgid "Data too large for advertisement packet"
@@ -1323,6 +1355,11 @@ msgstr "Nombre de canaux invalide"
 msgid "Invalid data_count %d"
 msgstr "data_count invalide %d"
 
+#: ports/atmel-samd/common-hal/imagecapture/ParallelImageCapture.c
+#, c-format
+msgid "Invalid data_pins[%d]"
+msgstr ""
+
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Invalid direction."
 msgstr "Direction invalide."
@@ -1674,7 +1711,6 @@ msgstr "Logiciel systême Nordic hors de mémoire"
 msgid "Not a valid IP string"
 msgstr "Chaîne IP non valide"
 
-#: ports/nrf/common-hal/_bleio/PacketBuffer.c
 #: ports/nrf/common-hal/_bleio/__init__.c
 #: shared-bindings/_bleio/CharacteristicBuffer.c
 msgid "Not connected"
@@ -1721,6 +1757,10 @@ msgstr ""
 "Seulement le format BMP Windows, non compressé est supporté : la taille de "
 "l'entête fournie est %d"
 
+#: shared-bindings/_bleio/Adapter.c
+msgid "Only connectable advertisements can be directed"
+msgstr ""
+
 #: ports/stm/common-hal/alarm/pin/PinAlarm.c
 msgid "Only edge detection is available on this hardware"
 msgstr ""
@@ -1744,6 +1784,7 @@ msgstr "Seulement une TouchAlarm peu être réglée en someil profond."
 
 #: ports/esp32s2/common-hal/alarm/time/TimeAlarm.c
 #: ports/nrf/common-hal/alarm/time/TimeAlarm.c
+#: ports/raspberrypi/common-hal/alarm/time/TimeAlarm.c
 #: ports/stm/common-hal/alarm/time/TimeAlarm.c
 msgid "Only one alarm.time alarm can be set."
 msgstr "Seulement une alarme alarm.time peut être réglée."
@@ -1871,6 +1912,7 @@ msgstr ""
 "octets idéal. Si cela ne peut pas être évité, transmettez allow_inefficient "
 "= True au constructeur"
 
+#: ports/raspberrypi/common-hal/imagecapture/ParallelImageCapture.c
 #: ports/raspberrypi/common-hal/rotaryio/IncrementalEncoder.c
 msgid "Pins must be sequential"
 msgstr "Les broches doivent être séquentielles"
@@ -2052,6 +2094,10 @@ msgstr "Erreur d'initialisation SPI"
 msgid "SPI Re-initialization error"
 msgstr "Erreur de réinitialisation SPI"
 
+#: ports/esp32s2/common-hal/busio/SPI.c
+msgid "SPI configuration failed"
+msgstr ""
+
 #: ports/raspberrypi/common-hal/busio/SPI.c
 msgid "SPI peripheral in use"
 msgstr "Périphérique SPI utilisé"
@@ -2090,6 +2136,7 @@ msgstr "Nombre de broches Side configurées doit être entre 1 et 5"
 msgid "Size not supported"
 msgstr "Taille n'est pas supportée"
 
+#: ports/raspberrypi/common-hal/alarm/SleepMemory.c
 #: ports/stm/common-hal/alarm/SleepMemory.c
 msgid "Sleep Memory not available"
 msgstr ""
@@ -2235,6 +2282,7 @@ msgstr "Trop d'affichages"
 msgid "Total data to write is larger than %q"
 msgstr "Quantité de données à écrire est plus que %q"
 
+#: ports/raspberrypi/common-hal/alarm/touch/TouchAlarm.c
 #: ports/stm/common-hal/alarm/touch/TouchAlarm.c
 msgid "Touch alarms not available"
 msgstr ""
@@ -2543,7 +2591,7 @@ msgstr "Le paramêtre argsort doit être un ndarray"
 msgid "argsort is not implemented for flattened arrays"
 msgstr "argsort n'est pas mis en œuvre pour les matrices aplatis"
 
-#: py/runtime.c
+#: py/runtime.c shared-bindings/supervisor/__init__.c
 msgid "argument has wrong type"
 msgstr "l'argument est d'un mauvais type"
 
@@ -2617,6 +2665,10 @@ msgstr "mauvais code type"
 #: py/emitnative.c
 msgid "binary op %q not implemented"
 msgstr "opération binaire '%q' non implémentée"
+
+#: extmod/modurandom.c
+msgid "bits must be 32 or less"
+msgstr ""
 
 #: shared-bindings/busio/UART.c
 msgid "bits must be in range 5 to 9"
@@ -3146,6 +3198,10 @@ msgstr "le premier paramêtre doit être un ndarray"
 msgid "first argument to super() must be type"
 msgstr "le premier argument de super() doit être un type"
 
+#: extmod/ulab/code/scipy/linalg/linalg.c
+msgid "first two arguments must be ndarrays"
+msgstr ""
+
 #: extmod/ulab/code/ndarray.c
 msgid "flattening order must be either 'C', or 'F'"
 msgstr "l'ordre d'aplatissement doit être «C» ou «F»"
@@ -3238,6 +3294,10 @@ msgstr "générateur (generator) à surlevé StopIteration"
 msgid "graphic must be 2048 bytes long"
 msgstr "graphic doit être long de 2048 octets"
 
+#: extmod/moduhashlib.c
+msgid "hash is final"
+msgstr ""
+
 #: extmod/moduheapq.c
 msgid "heap must be a list"
 msgstr "le tas doit être une liste"
@@ -3326,10 +3386,11 @@ msgid "input matrix is asymmetric"
 msgstr "la matrice d'entrée est asymétrique"
 
 #: extmod/ulab/code/numpy/linalg/linalg.c
+#: extmod/ulab/code/scipy/linalg/linalg.c
 msgid "input matrix is singular"
 msgstr "la matrice d'entrée est singulière"
 
-#: extmod/ulab/code/user/user.c
+#: extmod/ulab/code/scipy/linalg/linalg.c extmod/ulab/code/user/user.c
 msgid "input must be a dense ndarray"
 msgstr "l'entrée doit être un ndarray dense"
 
@@ -3370,8 +3431,8 @@ msgid "integer required"
 msgstr "entier requis"
 
 #: extmod/ulab/code/numpy/approx/approx.c
-msgid "interp is defined for 1D arrays of equal length"
-msgstr "interp est défini pour les matrices 1D de longueur égale"
+msgid "interp is defined for 1D iterables of equal length"
+msgstr ""
 
 #: shared-bindings/_bleio/Adapter.c
 #, c-format
@@ -3923,6 +3984,7 @@ msgstr "pow() avec 3 arguments nécessite des entiers"
 #: ports/esp32s2/boards/artisense_rd00/mpconfigboard.h
 #: ports/esp32s2/boards/atmegazero_esp32s2/mpconfigboard.h
 #: ports/esp32s2/boards/electroniccats_bastwifi/mpconfigboard.h
+#: ports/esp32s2/boards/espressif_kaluga_1.3/mpconfigboard.h
 #: ports/esp32s2/boards/espressif_kaluga_1/mpconfigboard.h
 #: ports/esp32s2/boards/espressif_saola_1_wroom/mpconfigboard.h
 #: ports/esp32s2/boards/espressif_saola_1_wrover/mpconfigboard.h
@@ -3930,7 +3992,8 @@ msgstr "pow() avec 3 arguments nécessite des entiers"
 #: ports/esp32s2/boards/franzininho_wifi_wrover/mpconfigboard.h
 #: ports/esp32s2/boards/lilygo_ttgo_t8_s2_st7789/mpconfigboard.h
 #: ports/esp32s2/boards/microdev_micro_s2/mpconfigboard.h
-#: ports/esp32s2/boards/muselab_nanoesp32_s2/mpconfigboard.h
+#: ports/esp32s2/boards/muselab_nanoesp32_s2_wroom/mpconfigboard.h
+#: ports/esp32s2/boards/muselab_nanoesp32_s2_wrover/mpconfigboard.h
 #: ports/esp32s2/boards/targett_module_clip_wroom/mpconfigboard.h
 #: ports/esp32s2/boards/targett_module_clip_wrover/mpconfigboard.h
 #: ports/esp32s2/boards/unexpectedmaker_feathers2/mpconfigboard.h
@@ -4236,12 +4299,12 @@ msgid "too many values to unpack (expected %d)"
 msgstr "trop de valeur à dégrouper (%d attendues)"
 
 #: extmod/ulab/code/numpy/approx/approx.c
-msgid "trapz is defined for 1D arrays"
-msgstr "trapz est définie pour matrices à une dimension"
-
-#: extmod/ulab/code/numpy/approx/approx.c
 msgid "trapz is defined for 1D arrays of equal length"
 msgstr "trapz n'est défini que pour des matrices 1D de longueur égales"
+
+#: extmod/ulab/code/numpy/approx/approx.c
+msgid "trapz is defined for 1D iterables"
+msgstr ""
 
 #: py/obj.c
 msgid "tuple/list has wrong length"
@@ -4423,10 +4486,6 @@ msgstr "mauvais nombres d'arguments"
 msgid "wrong number of values to unpack"
 msgstr "mauvais nombre de valeurs à dégrouper"
 
-#: extmod/ulab/code/ndarray.c
-msgid "wrong operand type"
-msgstr "type d'opérande incorrect"
-
 #: extmod/ulab/code/numpy/vector/vector.c
 msgid "wrong output type"
 msgstr "type de sortie incorrect"
@@ -4462,6 +4521,18 @@ msgstr "zi doit être de type float"
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr "zi doit être de forme (n_section, 2)"
+
+#~ msgid "Buffer too large and unable to allocate"
+#~ msgstr "Tampon trop volumineux et impossible à allouer"
+
+#~ msgid "interp is defined for 1D arrays of equal length"
+#~ msgstr "interp est défini pour les matrices 1D de longueur égale"
+
+#~ msgid "trapz is defined for 1D arrays"
+#~ msgstr "trapz est définie pour matrices à une dimension"
+
+#~ msgid "wrong operand type"
+#~ msgstr "type d'opérande incorrect"
 
 #~ msgid "%q must be None or 1-255"
 #~ msgstr "%q doit être None ou compris entre 1 et 255"
