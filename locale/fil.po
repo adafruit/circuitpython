@@ -47,6 +47,10 @@ msgid " is of type %q\n"
 msgstr ""
 
 #: main.c
+msgid " not found.\n"
+msgstr ""
+
+#: main.c
 msgid " output:\n"
 msgstr " output:\n"
 
@@ -82,8 +86,20 @@ msgstr "%q indeks wala sa sakop"
 msgid "%q indices must be integers, not %s"
 msgstr "%q indeks ay dapat integers, hindi %s"
 
+#: py/argcheck.c
+msgid "%q length must be %q"
+msgstr ""
+
 #: shared-bindings/vectorio/Polygon.c
 msgid "%q list must be a list"
+msgstr ""
+
+#: py/argcheck.c
+msgid "%q must <= %d"
+msgstr ""
+
+#: py/argcheck.c
+msgid "%q must be %d-%d"
 msgstr ""
 
 #: shared-bindings/usb_hid/Device.c
@@ -94,7 +110,11 @@ msgstr ""
 msgid "%q must be 1-255"
 msgstr ""
 
-#: shared-bindings/memorymonitor/AllocationAlarm.c
+#: py/argcheck.c
+msgid "%q must be >= %d"
+msgstr ""
+
+#: py/argcheck.c shared-bindings/memorymonitor/AllocationAlarm.c
 msgid "%q must be >= 0"
 msgstr ""
 
@@ -111,8 +131,20 @@ msgstr "aarehas na haba dapat ang buffer slices"
 msgid "%q must be None or between 1 and len(report_descriptor)-1"
 msgstr ""
 
+#: py/argcheck.c
+msgid "%q must be a string"
+msgstr ""
+
 #: shared-module/vectorio/Polygon.c
 msgid "%q must be a tuple of length 2"
+msgstr ""
+
+#: ports/esp32s2/common-hal/imagecapture/ParallelImageCapture.c
+msgid "%q must be between %d and %d"
+msgstr ""
+
+#: py/argcheck.c
+msgid "%q must of type %q"
 msgstr ""
 
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
@@ -567,10 +599,6 @@ msgstr ""
 msgid "Buffer must be at least length 1"
 msgstr "Buffer dapat ay hindi baba sa 1 na haba"
 
-#: ports/nrf/common-hal/_bleio/PacketBuffer.c
-msgid "Buffer too large and unable to allocate"
-msgstr ""
-
 #: shared-bindings/_bleio/PacketBuffer.c
 #, c-format
 msgid "Buffer too short by %d bytes"
@@ -848,6 +876,10 @@ msgstr ""
 #: shared-module/audiocore/WaveFile.c
 msgid "Data chunk must follow fmt chunk"
 msgstr "Dapat sunurin ng Data chunk ang fmt chunk"
+
+#: ports/nrf/common-hal/_bleio/Adapter.c
+msgid "Data not supported with directed advertising"
+msgstr ""
 
 #: ports/nrf/common-hal/_bleio/Adapter.c
 #, fuzzy
@@ -1295,6 +1327,11 @@ msgstr "Maling bilang ng channel"
 msgid "Invalid data_count %d"
 msgstr ""
 
+#: ports/atmel-samd/common-hal/imagecapture/ParallelImageCapture.c
+#, c-format
+msgid "Invalid data_pins[%d]"
+msgstr ""
+
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Invalid direction."
 msgstr "Mali ang direksyon."
@@ -1644,7 +1681,6 @@ msgstr ""
 msgid "Not a valid IP string"
 msgstr ""
 
-#: ports/nrf/common-hal/_bleio/PacketBuffer.c
 #: ports/nrf/common-hal/_bleio/__init__.c
 #: shared-bindings/_bleio/CharacteristicBuffer.c
 #, fuzzy
@@ -1690,6 +1726,10 @@ msgid ""
 "Only Windows format, uncompressed BMP supported: given header size is %d"
 msgstr ""
 
+#: shared-bindings/_bleio/Adapter.c
+msgid "Only connectable advertisements can be directed"
+msgstr ""
+
 #: ports/stm/common-hal/alarm/pin/PinAlarm.c
 msgid "Only edge detection is available on this hardware"
 msgstr ""
@@ -1711,6 +1751,7 @@ msgstr ""
 
 #: ports/esp32s2/common-hal/alarm/time/TimeAlarm.c
 #: ports/nrf/common-hal/alarm/time/TimeAlarm.c
+#: ports/raspberrypi/common-hal/alarm/time/TimeAlarm.c
 #: ports/stm/common-hal/alarm/time/TimeAlarm.c
 msgid "Only one alarm.time alarm can be set."
 msgstr ""
@@ -1832,6 +1873,7 @@ msgid ""
 "constructor"
 msgstr ""
 
+#: ports/raspberrypi/common-hal/imagecapture/ParallelImageCapture.c
 #: ports/raspberrypi/common-hal/rotaryio/IncrementalEncoder.c
 msgid "Pins must be sequential"
 msgstr ""
@@ -2007,6 +2049,10 @@ msgstr ""
 msgid "SPI Re-initialization error"
 msgstr ""
 
+#: ports/esp32s2/common-hal/busio/SPI.c
+msgid "SPI configuration failed"
+msgstr ""
+
 #: ports/raspberrypi/common-hal/busio/SPI.c
 msgid "SPI peripheral in use"
 msgstr ""
@@ -2045,6 +2091,7 @@ msgstr ""
 msgid "Size not supported"
 msgstr ""
 
+#: ports/raspberrypi/common-hal/alarm/SleepMemory.c
 #: ports/stm/common-hal/alarm/SleepMemory.c
 msgid "Sleep Memory not available"
 msgstr ""
@@ -2189,6 +2236,7 @@ msgstr ""
 msgid "Total data to write is larger than %q"
 msgstr ""
 
+#: ports/raspberrypi/common-hal/alarm/touch/TouchAlarm.c
 #: ports/stm/common-hal/alarm/touch/TouchAlarm.c
 msgid "Touch alarms not available"
 msgstr ""
@@ -2490,7 +2538,7 @@ msgstr ""
 msgid "argsort is not implemented for flattened arrays"
 msgstr ""
 
-#: py/runtime.c
+#: py/runtime.c shared-bindings/supervisor/__init__.c
 msgid "argument has wrong type"
 msgstr "may maling type ang argument"
 
@@ -2564,6 +2612,10 @@ msgstr "masamang typecode"
 #: py/emitnative.c
 msgid "binary op %q not implemented"
 msgstr "binary op %q hindi implemented"
+
+#: extmod/modurandom.c
+msgid "bits must be 32 or less"
+msgstr ""
 
 #: shared-bindings/busio/UART.c
 msgid "bits must be in range 5 to 9"
@@ -3092,6 +3144,10 @@ msgstr ""
 msgid "first argument to super() must be type"
 msgstr "unang argument ng super() ay dapat type"
 
+#: extmod/ulab/code/scipy/linalg/linalg.c
+msgid "first two arguments must be ndarrays"
+msgstr ""
+
 #: extmod/ulab/code/ndarray.c
 msgid "flattening order must be either 'C', or 'F'"
 msgstr ""
@@ -3185,6 +3241,10 @@ msgstr ""
 msgid "graphic must be 2048 bytes long"
 msgstr "graphic ay dapat 2048 bytes ang haba"
 
+#: extmod/moduhashlib.c
+msgid "hash is final"
+msgstr ""
+
 #: extmod/moduheapq.c
 msgid "heap must be a list"
 msgstr "list dapat ang heap"
@@ -3272,10 +3332,11 @@ msgid "input matrix is asymmetric"
 msgstr ""
 
 #: extmod/ulab/code/numpy/linalg/linalg.c
+#: extmod/ulab/code/scipy/linalg/linalg.c
 msgid "input matrix is singular"
 msgstr ""
 
-#: extmod/ulab/code/user/user.c
+#: extmod/ulab/code/scipy/linalg/linalg.c extmod/ulab/code/user/user.c
 msgid "input must be a dense ndarray"
 msgstr ""
 
@@ -3316,7 +3377,7 @@ msgid "integer required"
 msgstr "kailangan ng int"
 
 #: extmod/ulab/code/numpy/approx/approx.c
-msgid "interp is defined for 1D arrays of equal length"
+msgid "interp is defined for 1D iterables of equal length"
 msgstr ""
 
 #: shared-bindings/_bleio/Adapter.c
@@ -3866,6 +3927,7 @@ msgstr "pow() na may 3 argumento kailangan ng integers"
 #: ports/esp32s2/boards/artisense_rd00/mpconfigboard.h
 #: ports/esp32s2/boards/atmegazero_esp32s2/mpconfigboard.h
 #: ports/esp32s2/boards/electroniccats_bastwifi/mpconfigboard.h
+#: ports/esp32s2/boards/espressif_kaluga_1.3/mpconfigboard.h
 #: ports/esp32s2/boards/espressif_kaluga_1/mpconfigboard.h
 #: ports/esp32s2/boards/espressif_saola_1_wroom/mpconfigboard.h
 #: ports/esp32s2/boards/espressif_saola_1_wrover/mpconfigboard.h
@@ -3873,7 +3935,8 @@ msgstr "pow() na may 3 argumento kailangan ng integers"
 #: ports/esp32s2/boards/franzininho_wifi_wrover/mpconfigboard.h
 #: ports/esp32s2/boards/lilygo_ttgo_t8_s2_st7789/mpconfigboard.h
 #: ports/esp32s2/boards/microdev_micro_s2/mpconfigboard.h
-#: ports/esp32s2/boards/muselab_nanoesp32_s2/mpconfigboard.h
+#: ports/esp32s2/boards/muselab_nanoesp32_s2_wroom/mpconfigboard.h
+#: ports/esp32s2/boards/muselab_nanoesp32_s2_wrover/mpconfigboard.h
 #: ports/esp32s2/boards/targett_module_clip_wroom/mpconfigboard.h
 #: ports/esp32s2/boards/targett_module_clip_wrover/mpconfigboard.h
 #: ports/esp32s2/boards/unexpectedmaker_feathers2/mpconfigboard.h
@@ -4180,11 +4243,11 @@ msgid "too many values to unpack (expected %d)"
 msgstr "masyadong maraming values para i-unpact (umaasa ng %d)"
 
 #: extmod/ulab/code/numpy/approx/approx.c
-msgid "trapz is defined for 1D arrays"
+msgid "trapz is defined for 1D arrays of equal length"
 msgstr ""
 
 #: extmod/ulab/code/numpy/approx/approx.c
-msgid "trapz is defined for 1D arrays of equal length"
+msgid "trapz is defined for 1D iterables"
 msgstr ""
 
 #: py/obj.c
@@ -4366,10 +4429,6 @@ msgstr "mali ang bilang ng argumento"
 #: py/runtime.c
 msgid "wrong number of values to unpack"
 msgstr "maling number ng value na i-unpack"
-
-#: extmod/ulab/code/ndarray.c
-msgid "wrong operand type"
-msgstr ""
 
 #: extmod/ulab/code/numpy/vector/vector.c
 msgid "wrong output type"
