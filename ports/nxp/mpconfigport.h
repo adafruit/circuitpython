@@ -40,7 +40,11 @@
 
 #define CIRCUITPY_DEFAULT_STACK_SIZE        (24 * 1024)
 
-#define BOOTLOADER_SIZE                     (16 * 1024)
+#if (1)
+#   define BOOTLOADER_SIZE                  (0 * 1024)
+#else
+#   define BOOTLOADER_SIZE                  (16 * 1024)
+#endif
 
 // FIXME: Flash size is chip specific
 #define FLASH_PAGE_SIZE                     (256)

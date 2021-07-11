@@ -105,10 +105,13 @@ INC += -isystem lpc17xx/Keil/$(CHIP_FAMILY)_DFP/2.6.0/Device/Include
 CFLAGS += -DLPC175x_6x=1 \
           -DRTE_SSP2=0 \
           -DRTE_UART4=0 \
+          -D__USE_CMSIS=1 \
           -Wno-error=attributes \
           -Wno-error=maybe-uninitialized \
           -Wno-error=int-conversion \
           -Wno-error=implicit-fallthrough
+          
+SRC_C += lpc17xx/cr_startup_lpc175x_6x.c
 endif
 
 ifeq ($(BOARD), MCB1700)
