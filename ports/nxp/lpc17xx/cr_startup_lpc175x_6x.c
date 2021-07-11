@@ -1,8 +1,8 @@
-//*****************************************************************************
+// *****************************************************************************
 // LPC175x_6x Microcontroller Startup code for use with LPCXpresso IDE
 //
 // Version : 150706
-//*****************************************************************************
+// *****************************************************************************
 //
 // Copyright(C) NXP Semiconductors, 2014-2015, 2020
 // All rights reserved.
@@ -16,52 +16,52 @@
 //
 // If you do not agree to be bound by the applicable license terms, then you may not
 // retain, install, activate or otherwise use the software.
-//*****************************************************************************
+// *****************************************************************************
 
 #if !defined(DNDEBUG)
-#   include "LPC17xx.h"
-#   define __DEBUG_BKPT(code)  ({if (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) __BKPT(code);})
+#include "LPC17xx.h"
+#define __DEBUG_BKPT(code)  ({if (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) __BKPT(code);})
 #else
-#   define __DEBUG_BKPT(code)
+#define __DEBUG_BKPT(code)
 #endif
 
-#if defined (__cplusplus)
+#if defined(__cplusplus)
 #ifdef __REDLIB__
 #error Redlib does not support C++
 #else
-//*****************************************************************************
+// *****************************************************************************
 //
 // The entry point for the C++ library startup
 //
-//*****************************************************************************
+// *****************************************************************************
 extern "C" {
-    extern void __libc_init_array(void);
+extern void __libc_init_array(void);
 }
 #endif
 #endif
 
 #define WEAK __attribute__ ((weak))
-#define ALIAS(f) __attribute__ ((weak, alias (#f)))
+#define ALIAS(f) __attribute__ ((weak, alias(#f)))
 
-//*****************************************************************************
-#if defined (__cplusplus)
+// *****************************************************************************
+#if defined(__cplusplus)
 extern "C" {
 #endif
 
-//*****************************************************************************
-#if defined (__USE_CMSIS) || defined (__USE_LPCOPEN)
+// *****************************************************************************
+#if defined(__USE_CMSIS) || defined(__USE_LPCOPEN)
 // Declaration of external SystemInit function
 extern void SystemInit(void);
 #endif
 
-//*****************************************************************************
+// *****************************************************************************
 //
 // Forward declaration of the default handlers. These are aliased.
 // When the application defines a handler (with the same name), this will
 // automatically take precedence over these weak definitions
 //
-//*****************************************************************************
-     void Reset_Handler(void);
+// *****************************************************************************
+void Reset_Handler(void);
 WEAK void NMI_Handler(void);
 WEAK void HardFault_Handler(void);
 WEAK void MemManage_Handler(void);
@@ -73,14 +73,14 @@ WEAK void PendSV_Handler(void);
 WEAK void SysTick_Handler(void);
 WEAK void IntDefaultHandler(void);
 
-//*****************************************************************************
+// *****************************************************************************
 //
 // Forward declaration of the specific IRQ handlers. These are aliased
 // to the IntDefaultHandler, which is a 'forever' loop. When the application
 // defines a handler (with the same name), this will automatically take
 // precedence over these weak definitions
 //
-//*****************************************************************************
+// *****************************************************************************
 void WDT_IRQHandler(void) ALIAS(IntDefaultHandler);
 void TIMER0_IRQHandler(void) ALIAS(IntDefaultHandler);
 void TIMER1_IRQHandler(void) ALIAS(IntDefaultHandler);
@@ -109,7 +109,7 @@ void USB_IRQHandler(void) ALIAS(IntDefaultHandler);
 void CAN_IRQHandler(void) ALIAS(IntDefaultHandler);
 void DMA_IRQHandler(void) ALIAS(IntDefaultHandler);
 void I2S_IRQHandler(void) ALIAS(IntDefaultHandler);
-#if defined (__USE_LPCOPEN)
+#if defined(__USE_LPCOPEN)
 void ETH_IRQHandler(void) ALIAS(IntDefaultHandler);
 #else
 void ENET_IRQHandler(void) ALIAS(IntDefaultHandler);
@@ -121,44 +121,44 @@ void PLL1_IRQHandler(void) ALIAS(IntDefaultHandler);
 void USBActivity_IRQHandler(void) ALIAS(IntDefaultHandler);
 void CANActivity_IRQHandler(void) ALIAS(IntDefaultHandler);
 
-//*****************************************************************************
+// *****************************************************************************
 //
 // The entry point for the application.
 // __main() is the entry point for Redlib based applications
 // main() is the entry point for Newlib based applications
 //
-//*****************************************************************************
-#if defined (__REDLIB__)
+// *****************************************************************************
+#if defined(__REDLIB__)
 extern void __main(void);
 #endif
 extern int main(void);
-//*****************************************************************************
+// *****************************************************************************
 //
 // External declaration for the pointer to the stack top from the Linker Script
 //
-//*****************************************************************************
+// *****************************************************************************
 extern void _vStackTop(void);
 
-//*****************************************************************************
+// *****************************************************************************
 //
 // External declaration for LPC MCU vector table checksum from  Linker Script
 //
-//*****************************************************************************
+// *****************************************************************************
 WEAK extern void __valid_user_code_checksum();
 
-//*****************************************************************************
-#if defined (__cplusplus)
+// *****************************************************************************
+#if defined(__cplusplus)
 } // extern "C"
 #endif
-//*****************************************************************************
+// *****************************************************************************
 //
 // The vector table.
 // This relies on the linker script to place at correct location in memory.
 //
-//*****************************************************************************
-extern void (* const g_pfnVectors[])(void);
+// *****************************************************************************
+extern void(*const g_pfnVectors[])(void);
 __VECTOR_TABLE_ATTRIBUTE
-void (* const g_pfnVectors[])(void) = {
+void(*const g_pfnVectors[])(void) = {
     // Core Level - CM3
     &_vStackTop, // The initial stack pointer
     Reset_Handler,                          // The reset handler
@@ -206,11 +206,11 @@ void (* const g_pfnVectors[])(void) = {
     CAN_IRQHandler,                         // 41, 0xa4 - CAN
     DMA_IRQHandler,                         // 42, 0xa8 - GP DMA
     I2S_IRQHandler,                         // 43, 0xac - I2S
-#if defined (__USE_LPCOPEN)
+    #if defined(__USE_LPCOPEN)
     ETH_IRQHandler,                         // 44, 0xb0 - Ethernet
-#else
+    #else
     ENET_IRQHandler,                        // 44, 0xb0 - Ethernet
-#endif
+    #endif
     RIT_IRQHandler,                         // 45, 0xb4 - RITINT
     MCPWM_IRQHandler,                       // 46, 0xb8 - Motor Control PWM
     QEI_IRQHandler,                         // 47, 0xbc - Quadrature Encoder
@@ -221,62 +221,65 @@ void (* const g_pfnVectors[])(void) = {
 
 #include "cmsis_compiler.h"
 
-__NO_RETURN void _start(void)
-{
+__NO_RETURN void _start(void) {
     SystemInit();
 
     main();
 
-    while (1) {};
+    while (1) {
+    }
+    ;
 }
 
-//*****************************************************************************
+// *****************************************************************************
 // Functions to carry out the initialization of RW and BSS data sections. These
 // are written as separate functions rather than being inlined within the
 // ResetISR() function in order to cope with MCUs with multiple banks of
 // memory.
-//*****************************************************************************
+// *****************************************************************************
 __attribute__ ((section(".init")))
 void data_init(unsigned int romstart, unsigned int start, unsigned int len) {
-    unsigned int *pulDest = (unsigned int*) start;
-    unsigned int *pulSrc = (unsigned int*) romstart;
+    unsigned int *pulDest = (unsigned int *)start;
+    unsigned int *pulSrc = (unsigned int *)romstart;
     unsigned int loop;
-    for (loop = 0; loop < len; loop = loop + 4)
+    for (loop = 0; loop < len; loop = loop + 4) {
         *pulDest++ = *pulSrc++;
+    }
 }
 
 __attribute__ ((section(".init")))
 void bss_init(unsigned int start, unsigned int len) {
-    unsigned int *pulDest = (unsigned int*) start;
+    unsigned int *pulDest = (unsigned int *)start;
     unsigned int loop;
-    for (loop = 0; loop < len; loop = loop + 4)
+    for (loop = 0; loop < len; loop = loop + 4) {
         *pulDest++ = 0;
+    }
 }
 
-//*****************************************************************************
+// *****************************************************************************
 // The following symbols are constructs generated by the linker, indicating
 // the location of various points in the "Global Section Table". This table is
 // created by the linker via the Code Red managed linker script mechanism. It
 // contains the load address, execution address and length of each RW data
 // section and the execution and length of each BSS (zero initialized) section.
-//*****************************************************************************
+// *****************************************************************************
 extern unsigned int __data_section_table;
 extern unsigned int __data_section_table_end;
 extern unsigned int __bss_section_table;
 extern unsigned int __bss_section_table_end;
 
-//*****************************************************************************
+// *****************************************************************************
 // Reset entry point for your code.
 // Sets up a simple runtime environment and initializes the C/C++
 // library.
-//*****************************************************************************
+// *****************************************************************************
 __attribute__ ((section(".init")))
 void
 Reset_Handler(void) {
 
-#if (1)
+    #if (1)
     __cmsis_start();
-#else
+    #else
 
     //
     // Copy the data sections from flash to SRAM.
@@ -304,25 +307,25 @@ Reset_Handler(void) {
         SectionLen = *SectionTableAddr++;
         bss_init(ExeAddr, SectionLen);
     }
-#endif
+    #endif
 
-#if defined (__USE_CMSIS) || defined (__USE_LPCOPEN)
+    #if defined(__USE_CMSIS) || defined(__USE_LPCOPEN)
     SystemInit();
-#endif
+    #endif
 
-#if defined (__cplusplus)
+    #if defined(__cplusplus)
     //
     // Call C++ library initialisation
     //
     __libc_init_array();
-#endif
+    #endif
 
-#if defined (__REDLIB__)
+    #if defined(__REDLIB__)
     // Call the Redlib library, which in turn calls main()
-    __main() ;
-#else
+    __main();
+    #else
     main();
-#endif
+    #endif
 
     //
     // main() shouldn't return, but if it does, we'll just enter an infinite loop
@@ -332,82 +335,82 @@ Reset_Handler(void) {
     }
 }
 
-//*****************************************************************************
+// *****************************************************************************
 // Default exception handlers. Override the ones here by defining your own
 // handler routines in your application code.
-//*****************************************************************************
+// *****************************************************************************
 __attribute__ ((section(".init")))
-void NMI_Handler(void)
-{
+void NMI_Handler(void) {
     __DEBUG_BKPT(0);
-    while(1) {}
+    while (1) {
+    }
 }
 
 __attribute__ ((section(".init")))
-void HardFault_Handler(void)
-{
+void HardFault_Handler(void) {
     __DEBUG_BKPT(0);
-    while(1) {}
+    while (1) {
+    }
 }
 
 __attribute__ ((section(".init")))
-void MemManage_Handler(void)
-{
+void MemManage_Handler(void) {
     __DEBUG_BKPT(0);
-    while(1) {}
+    while (1) {
+    }
 }
 
 __attribute__ ((section(".init")))
-void BusFault_Handler(void)
-{
+void BusFault_Handler(void) {
     __DEBUG_BKPT(0);
-    while(1) {}
+    while (1) {
+    }
 }
 
 __attribute__ ((section(".init")))
-void UsageFault_Handler(void)
-{
+void UsageFault_Handler(void) {
     __DEBUG_BKPT(0);
-    while(1) {}
+    while (1) {
+    }
 }
 
 __attribute__ ((section(".init")))
-void SVC_Handler(void)
-{
+void SVC_Handler(void) {
     __DEBUG_BKPT(0);
-    while(1) {}
+    while (1) {
+    }
 }
 
 __attribute__ ((section(".init")))
-void DebugMon_Handler(void)
-{
+void DebugMon_Handler(void) {
     __DEBUG_BKPT(0);
-    while(1) {}
+    while (1) {
+    }
 }
 
 __attribute__ ((section(".init")))
-void PendSV_Handler(void)
-{
+void PendSV_Handler(void) {
     __DEBUG_BKPT(0);
-    while(1) {}
+    while (1) {
+    }
 }
 
 __attribute__ ((section(".init")))
-void SysTick_Handler(void)
-{
+void SysTick_Handler(void) {
     __DEBUG_BKPT(0);
-    while(1) {}
+    while (1) {
+    }
 }
 
-//*****************************************************************************
+// *****************************************************************************
 //
 // Processor ends up here if an unexpected interrupt occurs or a specific
 // handler is not present in the application code.
 //
-//*****************************************************************************
+// *****************************************************************************
 __attribute__ ((section(".init")))
-void IntDefaultHandler(void)
-{
+void IntDefaultHandler(void) {
     __DEBUG_BKPT(0);
-    while(1) {}
+    while (1) {
+    }
 }
