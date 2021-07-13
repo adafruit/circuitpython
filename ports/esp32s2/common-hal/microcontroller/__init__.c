@@ -42,6 +42,11 @@
 
 #include "freertos/FreeRTOS.h"
 
+#include "soc/rtc_cntl_reg.h"
+#include "esp_private/system_internal.h"
+#include "esp32s2/rom/usb/usb_persist.h"
+#include "esp32s2/rom/usb/chip_usb_dw_wrapper.h"
+
 void common_hal_mcu_delay_us(uint32_t delay) {
     mp_hal_delay_us(delay);
 }
@@ -68,12 +73,30 @@ void common_hal_mcu_enable_interrupts(void) {
 }
 
 void common_hal_mcu_on_next_reset(mcu_runmode_t runmode) {
-    if (runmode == RUNMODE_SAFE_MODE) {
-        safe_mode_on_next_reset(PROGRAMMATIC_SAFE_MODE);
+    switch (runmode) {
+        case RUNMODE_UF2:
+            // call to esp_reset_reason() is required to properly link of esp_reset_reason_set_hint()
+            // 0x11F2 is APP_REQUEST_UF2_RESET_HINT & is defined by TinyUF2
+            (void)esp_reset_reason();
+            esp_reset_reason_set_hint(0x11F2);
+            break;
+        case RUNMODE_NORMAL:
+            // revert back to normal boot
+            break;
+        case RUNMODE_SAFE_MODE:
+            safe_mode_on_next_reset(PROGRAMMATIC_SAFE_MODE);
+            break;
+        case RUNMODE_BOOTLOADER:
+            // DFU download
+            chip_usb_set_persist_flags(USBDC_BOOT_DFU);
+            REG_WRITE(RTC_CNTL_OPTION1_REG, RTC_CNTL_FORCE_DOWNLOAD_BOOT);
+            break;
+        default:
+            break;
     }
 }
 
-void common_hal_mcu_reset(void) {
+void NORETURN common_hal_mcu_reset(void) {
     filesystem_flush(); // TODO: implement as part of flash improvements
     esp_restart();
 }
