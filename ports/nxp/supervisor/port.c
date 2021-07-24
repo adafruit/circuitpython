@@ -36,6 +36,13 @@
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/rtc/__init__.h"
 
+STATIC volatile uint64_t overflowed_ticks = 0;
+
+#if defined(LPC175x_6x)
+#include "supervisor/port_lpc17xx.h"
+#endif
+
+
 #if (0)
 static uint32_t _get_count(uint64_t *overflow_count) {
     uint32_t count = 0;
@@ -62,8 +69,24 @@ static uint32_t _get_count(uint64_t *overflow_count) {
 }
 #endif
 
+
+STATIC void raw_ticks_init(void) {
+    RIT_Init();
+
+    RIT_Disable();
+    RIT_ClearInt();
+
+    const uint32_t freq = 32768U;
+
+    RIT_SetTimerIntervalHz(freq);
+    RIT_Enable();
+
+    return;
+}
+
 safe_mode_t port_init(void) {
     #if (1)
+    raw_ticks_init();
     #else
     #if defined(SAMD21)
 
@@ -173,22 +196,6 @@ safe_mode_t port_init(void) {
     }
     #endif
     return NO_SAFE_MODE;
-}
-
-void rtc_start_pulse(void) {
-    #if (1)
-    #else
-    rtc_set_continuous(true);
-    hold_interrupt = true;
-    #endif
-}
-
-void rtc_end_pulse(void) {
-    #if (1)
-    #else
-    hold_interrupt = false;
-    rtc_set_continuous(false);
-    #endif
 }
 
 #else
@@ -515,7 +522,38 @@ uint32_t port_get_saved_word(void) {
 }
 #endif
 
-#if (0)
+#if (1)
+STATIC uint64_t _get_count(uint64_t *overflow_count) {
+    // Disable interrupts so we can grab the count and the overflow.
+    common_hal_mcu_disable_interrupts();
+
+    uint64_t count = RIT_GetCounter();
+    if (overflow_count != NULL) {
+        *overflow_count = overflowed_ticks;
+    }
+    common_hal_mcu_enable_interrupts();
+
+    return count;
+    #if (0)
+    Chip_RIT_SetTimerInterval();
+    RIT_IRQHandler();
+    #endif
+}
+
+void RIT_IRQHandler(void) {
+    uint32_t irqstatus = RIT_GetIntStatus();
+
+    if (irqstatus) {
+        overflowed_ticks += (1L << (32 - 4));
+    }
+
+    RIT_ClearInt();
+
+    return;
+}
+
+
+#else
 // TODO: Move this to an RTC backup register so we can preserve it when only the BACKUP power domain
 // is enabled.
 static volatile uint64_t overflowed_ticks = 0;
@@ -606,7 +644,7 @@ void RTC_Handler(void) {
 }
 #endif
 
-#if (1)
+#if (0)
 uint64_t port_get_raw_ticks(uint8_t *subticks) {
     (void)subticks;
     return 0ULL;
@@ -614,12 +652,12 @@ uint64_t port_get_raw_ticks(uint8_t *subticks) {
 #else
 uint64_t port_get_raw_ticks(uint8_t *subticks) {
     uint64_t overflow_count;
-    uint32_t current_ticks = _get_count(&overflow_count);
+    uint64_t current_ticks = _get_count(&overflow_count);
     if (subticks != NULL) {
         *subticks = (current_ticks % 16) * 2;
     }
 
-    return overflow_count + current_ticks / 16;
+    return overflow_count + (current_ticks / 16ULL);
 }
 #endif
 

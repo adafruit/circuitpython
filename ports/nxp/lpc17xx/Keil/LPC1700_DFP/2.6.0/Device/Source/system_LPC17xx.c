@@ -320,7 +320,7 @@
 // </e>
 */
 #define FLASH_SETUP           1
-#define FLASHCFG_Val          0x00004000
+#define FLASHCFG_Val          0x00006000
 
 /*
 //-------- <<< end of configuration section >>> ------------------------------

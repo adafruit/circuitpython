@@ -97,12 +97,16 @@ SECTIONS
   {
     . = ALIGN(4);
     __zero_table_start__ = .;
+    __bss_section_table = .;
     /* Add each additional bss section here */
 /*
     LONG (__bss2_start__)
     LONG (__bss2_end__ - __bss2_start__)
 */
+    LONG (__bss_start__)
+    LONG (__bss_end__ - __bss_start__)
     __zero_table_end__ = .;
+    __bss_section_table_end = .;
   } > FLASH_FIRMWARE
 
   /**
@@ -173,14 +177,12 @@ SECTIONS
   {
     . = ALIGN(4);
     __bss_start__ = .;
-    __bss_section_table = .;
     *(.bss)
     *(.bss.*)
     *(COMMON)
     . = ALIGN(4);
     __bss_end__ = .;
     _ebss = .;
-    __bss_section_table_end = .;
   } > RAM AT > RAM
 
   /*

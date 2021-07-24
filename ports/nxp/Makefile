@@ -97,6 +97,10 @@ endif
 ifeq ($(CHIP_VARIANT_LOWER), lpc1768)
 # LPC1768 specific configuration
 INC += -isystem lpc17xx/Keil/$(CHIP_FAMILY)_DFP/2.6.0/Device/Include
+INC += -isystem nxp_lpcopen/lpc175x_6x/lpc_chip_175x_6x/inc
+
+
+CFLAGS += -DCORE_M3=1
 
 # -Wno-error=attributes otherwise USB driver generates errors
 # -Wno-error=maybe-uninitialized otherwise UART driver generates errors
@@ -112,11 +116,15 @@ CFLAGS += -DLPC175x_6x=1 \
           -Wno-error=implicit-fallthrough
 
 SRC_C += lpc17xx/cr_startup_lpc175x_6x.c
+SRC_C += nxp_lpcopen/lpc175x_6x/lpc_chip_175x_6x/src/ritimer_17xx_40xx.c \
+         nxp_lpcopen/lpc175x_6x/lpc_chip_175x_6x/src/clock_17xx_40xx.c \
+         supervisor/port_lpc17xx.c
 endif
 
 ifeq ($(BOARD), MCB1700)
 # MCB1700 specific configuration
 # CFLAGS += -DPICO_ON_DEVICE=1 -DPICO_NO_BINARY_INFO=0 -DPICO_TIME_DEFAULT_ALARM_POOL_DISABLED=1 -DPICO_DIVIDER_CALL_IDIV0=0 -DPICO_DIVIDER_CALL_LDIV0=0 -DPICO_DIVIDER_HARDWARE=1 -DPICO_DOUBLE_ROM=1 -DPICO_FLOAT_ROM=1 -DPICO_MULTICORE=1 -DPICO_BITS_IN_RAM=0 -DPICO_DIVIDER_IN_RAM=0 -DPICO_DOUBLE_PROPAGATE_NANS=0 -DPICO_DOUBLE_IN_RAM=0 -DPICO_MEM_IN_RAM=0 -DPICO_FLOAT_IN_RAM=0 -DPICO_FLOAT_PROPAGATE_NANS=1 -DPICO_NO_FLASH=0 -DPICO_COPY_TO_RAM=0 -DPICO_DISABLE_SHARED_IRQ_HANDLERS=0
+CFLAGS += -DBOARD_MCB1700=1
 endif
 
 OPTIMIZATION_FLAGS ?= -Os -ffreestanding -pipe
@@ -126,8 +134,11 @@ ifeq ($(CIRCUITPY_USB_CDC), 1)
 # FIXME: Requires nxp_lpcopn drivers
 
 INC += -I../../lib/tinyusb/src \
-       -I../../supervisor/shared/usb \
-       -Inxp_lpcopen/lpc175x_6x/lpc_chip_175x_6x/inc/../
+       -I../../supervisor/shared/usb
+
+ifeq ($(CHIP_VARIANT_LOWER), lpc1768)
+INC += -Inxp_lpcopen/lpc175x_6x/lpc_chip_175x_6x/inc/../
+endif
 
 CFLAGS +=-DCORE_M3=1 \
          -DRTC_EV_SUPPORT=0
