@@ -29,7 +29,10 @@
 #include "shared-bindings/gamepad/GamePad.h"
 #include "shared-bindings/util.h"
 
-//| """Button handling in the background"""
+//| """Button handling in the background
+//|
+//| .. note:: `gamepad` is deprecated in CircuitPython 7.0.0 and will be removed in 8.0.0. Use `keypad` instead.
+//| """
 //|
 STATIC const mp_rom_map_elem_t gamepad_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_gamepad) },
