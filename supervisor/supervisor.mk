@@ -14,6 +14,7 @@ SRC_SUPERVISOR = \
 	supervisor/shared/stack.c \
 	supervisor/shared/status_leds.c \
 	supervisor/shared/tick.c \
+	supervisor/shared/traceback.c \
 	supervisor/shared/translate.c
 
 NO_USB ?= $(wildcard supervisor/usb.c)
@@ -72,7 +73,9 @@ endif
 
 ifeq ($(CIRCUITPY_USB),0)
   ifeq ($(wildcard supervisor/serial.c),)
-    SRC_SUPERVISOR += supervisor/stub/serial.c
+    SRC_SUPERVISOR += supervisor/shared/serial.c \
+                      supervisor/shared/workflow.c \
+
   else
     SRC_SUPERVISOR += supervisor/serial.c
   endif
