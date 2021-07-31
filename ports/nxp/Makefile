@@ -79,7 +79,15 @@ INC += -isystem cmsis5/CMSIS/Core/Include \
        -isystem nxp_lpc/$(CHIP_FAMILY)/CMSIS/Driver \
        -isystem boards/$(BOARD)/CMSIS/Driver/Config \
        -I lpc17xx \
-       -I$(BUILD)
+       -I $(BUILD)
+else
+  ifeq ($(CHIP_FAMILY_LOWER), lpc55s28)
+  INC += -isystem cmsis5/CMSIS/Core/Include \
+         -isystem cmsis5/CMSIS/Driver/Include \
+         -I mcux-sdk/devices/LPC55S28 \
+         -I lpc55xx \
+         -I $(BUILD)
+  endif
 endif
 
 
@@ -92,13 +100,20 @@ CFLAGS += -mthumb \
           -mcpu=cortex-m3 \
           -msoft-float \
           -mfloat-abi=soft
+else
+  ifeq ($(CHIP_FAMILY_LOWER), lpc55s28)
+  # lpc55s28 specific configuration
+  CFLAGS += -mthumb \
+            -mcpu=cortex-m33 \
+            -mfpu=fpv5-sp-d16 \
+            -mfloat-abi=hard
+  endif
 endif
 
 ifeq ($(CHIP_VARIANT_LOWER), lpc1768)
 # LPC1768 specific configuration
 INC += -isystem lpc17xx/Keil/$(CHIP_FAMILY)_DFP/2.6.0/Device/Include
 INC += -isystem nxp_lpcopen/lpc175x_6x/lpc_chip_175x_6x/inc
-
 
 CFLAGS += -DCORE_M3=1
 
@@ -119,12 +134,27 @@ SRC_C += lpc17xx/cr_startup_lpc175x_6x.c
 SRC_C += nxp_lpcopen/lpc175x_6x/lpc_chip_175x_6x/src/ritimer_17xx_40xx.c \
          nxp_lpcopen/lpc175x_6x/lpc_chip_175x_6x/src/clock_17xx_40xx.c \
          supervisor/port_lpc17xx.c
+else
+  ifeq ($(CHIP_VARIANT_LOWER), lpc55s28)
+  CFLAGS += -DLPC55Sxx=1 \
+            -D__USE_CMSIS=1
+  
+  SRC_C += lpc55xx/startup_lpc55s28.c
+  SRC_C += mcux-sdk/devices/LPC55S28/system_LPC55S28.c
+  		    
+  SRC_C += supervisor/port_lpc55sxx.c
+  
+  endif
 endif
 
-ifeq ($(BOARD), MCB1700)
+ifeq ($(BOARD_LOWER), mcb1700)
 # MCB1700 specific configuration
 # CFLAGS += -DPICO_ON_DEVICE=1 -DPICO_NO_BINARY_INFO=0 -DPICO_TIME_DEFAULT_ALARM_POOL_DISABLED=1 -DPICO_DIVIDER_CALL_IDIV0=0 -DPICO_DIVIDER_CALL_LDIV0=0 -DPICO_DIVIDER_HARDWARE=1 -DPICO_DOUBLE_ROM=1 -DPICO_FLOAT_ROM=1 -DPICO_MULTICORE=1 -DPICO_BITS_IN_RAM=0 -DPICO_DIVIDER_IN_RAM=0 -DPICO_DOUBLE_PROPAGATE_NANS=0 -DPICO_DOUBLE_IN_RAM=0 -DPICO_MEM_IN_RAM=0 -DPICO_FLOAT_IN_RAM=0 -DPICO_FLOAT_PROPAGATE_NANS=1 -DPICO_NO_FLASH=0 -DPICO_COPY_TO_RAM=0 -DPICO_DISABLE_SHARED_IRQ_HANDLERS=0
 CFLAGS += -DBOARD_MCB1700=1
+else
+  ifeq ($(BOARD_LOWER), lpcxpresso55s28)
+  CFLAGS += -DBOARD_LPCEXPRESSO55S28=1
+  endif
 endif
 
 OPTIMIZATION_FLAGS ?= -Os -ffreestanding -pipe
@@ -138,6 +168,10 @@ INC += -I../../lib/tinyusb/src \
 
 ifeq ($(CHIP_VARIANT_LOWER), lpc1768)
 INC += -Inxp_lpcopen/lpc175x_6x/lpc_chip_175x_6x/inc/../
+else
+ifeq ($(CHIP_VARIANT_LOWER), lpc55s28)
+# INC += -I
+endif
 endif
 
 CFLAGS +=-DCORE_M3=1 \
@@ -221,7 +255,7 @@ SRC_SDK := \
 
 else
   ifeq ($(CHIP_FAMILY_LOWER), lpc55s28)
-    SRC_SDK := $(addprefix sdk/, $(SRC_SDK))
+#    SRC_SDK := $(addprefix mcu-dk/, $(SRC_SDK))
   endif
 
 endif

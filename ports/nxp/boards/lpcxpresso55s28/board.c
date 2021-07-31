@@ -24,16 +24,16 @@
  * THE SOFTWARE.
  */
 
-#if !defined(PORTS_NXP_BOARDS_LPCXPRESSO55S28_MPCONFIGBOARD_H_)
-#define PORTS_NXP_BOARDS_LPCXPRESSO55S28_MPCONFIGBOARD_H_
+#include "supervisor/board.h"
 
-#define MICROPY_HW_BOARD_NAME "Keil MCB1700"
-#define MICROPY_HW_MCU_NAME "lpc1768"
+void board_init(void) {
+    return;
+}
 
+bool board_requests_safe_mode(void) {
+    return false;
+}
 
-#define CIRCUITPY_INTERNAL_NVM_SIZE                 (0)
-#define CIRCUITPY_INTERNAL_FLASH_FILESYSTEM_SIZE    (128 * 1024)
-#define RAM_SIZE                                    (64 * 1024)
-
-
-#endif // PORTS_NXP_BOARDS_LPCXPRESSO55S28_MPCONFIGBOARD_H_
+void reset_board(void) {
+    return;
+}

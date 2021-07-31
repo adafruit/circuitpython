@@ -20,13 +20,14 @@ _estack = ORIGIN(RAM) + LENGTH(RAM) - 8;
 _bootloader_dbl_tap = ORIGIN(RAM) + LENGTH(RAM) - 4;
 
 /* define output sections */
-ENTRY(Reset_Handler)
+ENTRY(ResetISR)
 
 SECTIONS
 {
   .text :
   {
     KEEP(*(.vectors))
+    KEEP(*(.isr_vector))
     *(.text*)
 
     KEEP(*(.init))

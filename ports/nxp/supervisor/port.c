@@ -29,7 +29,7 @@
 
 #include "supervisor/board.h"
 #include "supervisor/port.h"
-
+#include "ports/nxp/supervisor/port_nxp.h"
 #include "device.h"
 
 #if (1)
@@ -37,10 +37,6 @@
 #include "shared-bindings/rtc/__init__.h"
 
 STATIC volatile uint64_t overflowed_ticks = 0;
-
-#if defined(LPC175x_6x)
-#include "supervisor/port_lpc17xx.h"
-#endif
 
 
 #if (0)

@@ -51,7 +51,7 @@
 #define FLASH_SIZE                          (512 * 1024)
 
 // FIXME: RAM size is chip specific
-#define RAM_SIZE                            (64 * 1024)
+// #define RAM_SIZE                            (64 * 1024)
 
 // FIXME: Erase size is sector specific for LPC17
 #define FLASH_ERASE_SIZE                    (8192)

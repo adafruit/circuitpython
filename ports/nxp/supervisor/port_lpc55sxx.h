@@ -24,16 +24,18 @@
  * THE SOFTWARE.
  */
 
-#if !defined(PORTS_NXP_BOARDS_LPCXPRESSO55S28_MPCONFIGBOARD_H_)
-#define PORTS_NXP_BOARDS_LPCXPRESSO55S28_MPCONFIGBOARD_H_
+#if !defined(PORTS_NXP_SUPERVISOR_PORT_LPC55SXX_H_)
+#define PORTS_NXP_SUPERVISOR_PORT_LPC55SXX_H_
 
-#define MICROPY_HW_BOARD_NAME "Keil MCB1700"
-#define MICROPY_HW_MCU_NAME "lpc1768"
+#include <stdint.h>
 
+extern void RIT_Init(void);
+extern void RIT_SetTimerIntervalHz(uint32_t freq);
+extern uint32_t RIT_GetIntStatus(void);
+extern void RIT_ClearInt(void);
+extern void RIT_Disable(void);
+extern void RIT_Disable(void);
+extern void RIT_Enable(void);
+extern uint32_t RIT_GetCounter(void);
 
-#define CIRCUITPY_INTERNAL_NVM_SIZE                 (0)
-#define CIRCUITPY_INTERNAL_FLASH_FILESYSTEM_SIZE    (128 * 1024)
-#define RAM_SIZE                                    (64 * 1024)
-
-
-#endif // PORTS_NXP_BOARDS_LPCXPRESSO55S28_MPCONFIGBOARD_H_
+#endif // PORTS_NXP_SUPERVISOR_PORT_LPC55SXX_H_
