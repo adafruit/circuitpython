@@ -137,6 +137,9 @@ STATIC void supervisor_bluetooth_start_advertising(void) {
 #define BLE_DISCOVERY_DATA_GUARD_MASK 0xff0000ff
 
 void supervisor_bluetooth_init(void) {
+    #if !CIRCUITPY_BLE_FILE_SERVICE && !CIRCUITPY_SERIAL_BLE
+    return;
+    #endif
     uint32_t reset_state = port_get_saved_word();
     uint32_t ble_mode = 0;
     if ((reset_state & BLE_DISCOVERY_DATA_GUARD_MASK) == BLE_DISCOVERY_DATA_GUARD) {
@@ -161,6 +164,9 @@ void supervisor_bluetooth_init(void) {
     common_hal_digitalio_digitalinout_construct(&boot_button, CIRCUITPY_BOOT_BUTTON);
     common_hal_digitalio_digitalinout_switch_to_input(&boot_button, PULL_UP);
     #endif
+    #if CIRCUITPY_STATUS_LED
+    status_led_init();
+    #endif
     uint64_t start_ticks = supervisor_ticks_ms64();
     uint64_t diff = 0;
     if (ble_mode != 0) {
@@ -171,10 +177,19 @@ void supervisor_bluetooth_init(void) {
         boot_in_discovery_mode = true;
         reset_state = 0x0;
     }
+    #if !CIRCUITPY_USB
+    // Boot into discovery if USB isn't available and we aren't bonded already.
+    // Checking here allows us to have the status LED solidly on even if no button was
+    // pressed.
+    bool bonded = common_hal_bleio_adapter_is_bonded_to_central(&common_hal_bleio_adapter_obj);
+    if (!bonded) {
+        boot_in_discovery_mode = true;
+    }
+    #endif
     while (diff < 1000) {
         #ifdef CIRCUITPY_STATUS_LED
-        // Blink on for 100, off for 100, on for 100, off for 100 and on for 200
-        bool led_on = ble_mode != 0 || (diff % 150) <= 75;
+        // Blink on for 50 and off for 100
+        bool led_on = boot_in_discovery_mode || (diff % 150) <= 50;
         if (led_on) {
             new_status_color(0x0000ff);
         } else {
@@ -232,4 +247,14 @@ void supervisor_start_bluetooth(void) {
 
     // Kick off advertisments
     supervisor_bluetooth_background();
+}
+
+void supervisor_stop_bluetooth(void) {
+    #if !CIRCUITPY_BLE_FILE_SERVICE && !CIRCUITPY_SERIAL_BLE
+    return;
+    #endif
+
+    #if CIRCUITPY_SERIAL_BLE
+    supervisor_stop_bluetooth_serial();
+    #endif
 }

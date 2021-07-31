@@ -184,9 +184,7 @@ endif
 ifeq ($(CIRCUITPY_FREQUENCYIO),1)
 SRC_PATTERNS += frequencyio/%
 endif
-ifeq ($(CIRCUITPY_GAMEPAD),1)
-SRC_PATTERNS += gamepad/%
-endif
+
 ifeq ($(CIRCUITPY_GAMEPADSHIFT),1)
 SRC_PATTERNS += gamepadshift/%
 endif
@@ -214,9 +212,6 @@ endif
 ifeq ($(CIRCUITPY_NEOPIXEL_WRITE),1)
 SRC_PATTERNS += neopixel_write/%
 endif
-ifeq ($(CIRCUITPY_NETWORK),1)
-SRC_PATTERNS += network/% socket/%
-endif
 ifeq ($(CIRCUITPY_NVM),1)
 SRC_PATTERNS += nvm/%
 endif
@@ -227,10 +222,10 @@ ifeq ($(CIRCUITPY_DUALBANK),1)
 SRC_PATTERNS += dualbank/%
 endif
 ifeq ($(CIRCUITPY_PIXELBUF),1)
-SRC_PATTERNS += _pixelbuf/%
+SRC_PATTERNS += adafruit_pixelbuf/%
 endif
-ifeq ($(CIRCUITPY_RAINBOW),1)
-SRC_PATTERNS += rainbow/%
+ifeq ($(CIRCUITPY_RAINBOWIO),1)
+SRC_PATTERNS += rainbowio/%
 endif
 ifeq ($(CIRCUITPY_RGBMATRIX),1)
 SRC_PATTERNS += rgbmatrix/%
@@ -469,8 +464,8 @@ SRC_SHARED_MODULE_ALL = \
 	_bleio/ScanEntry.c \
 	_bleio/ScanResults.c \
 	_eve/__init__.c \
-	_pixelbuf/PixelBuf.c \
-	_pixelbuf/__init__.c \
+	adafruit_pixelbuf/PixelBuf.c \
+	adafruit_pixelbuf/__init__.c \
 	_stage/Layer.c \
 	_stage/Text.c \
 	_stage/__init__.c \
@@ -526,8 +521,6 @@ SRC_SHARED_MODULE_ALL = \
 	keypad/Keys.c \
 	sdcardio/SDCard.c \
 	sdcardio/__init__.c \
-	gamepad/GamePad.c \
-	gamepad/__init__.c \
 	gamepadshift/GamePadShift.c \
 	gamepadshift/__init__.c \
 	memorymonitor/__init__.c \
@@ -536,7 +529,7 @@ SRC_SHARED_MODULE_ALL = \
 	network/__init__.c \
 	msgpack/__init__.c \
 	os/__init__.c \
-	rainbow/__init__.c \
+	rainbowio/__init__.c \
 	random/__init__.c \
 	rgbmatrix/RGBMatrix.c \
 	rgbmatrix/__init__.c \

@@ -40,20 +40,12 @@
 #include "shared-module/displayio/__init__.h"
 #endif
 
-#if CIRCUITPY_GAMEPAD
-#include "shared-module/gamepad/__init__.h"
-#endif
-
 #if CIRCUITPY_GAMEPADSHIFT
 #include "shared-module/gamepadshift/__init__.h"
 #endif
 
 #if CIRCUITPY_KEYPAD
 #include "shared-module/keypad/__init__.h"
-#endif
-
-#if CIRCUITPY_NETWORK
-#include "shared-module/network/__init__.h"
 #endif
 
 #include "shared-bindings/microcontroller/__init__.h"
@@ -80,9 +72,6 @@ void supervisor_background_tasks(void *unused) {
     displayio_background();
     #endif
 
-    #if CIRCUITPY_NETWORK
-    network_module_background();
-    #endif
     filesystem_background();
 
     port_background_task();
@@ -109,9 +98,6 @@ void supervisor_tick(void) {
 
     #ifdef CIRCUITPY_GAMEPAD_TICKS
     if (!(port_get_raw_ticks(NULL) & CIRCUITPY_GAMEPAD_TICKS)) {
-        #if CIRCUITPY_GAMEPAD
-        gamepad_tick();
-        #endif
         #if CIRCUITPY_GAMEPADSHIFT
         gamepadshift_tick();
         #endif
