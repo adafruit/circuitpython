@@ -79,6 +79,10 @@ jobs:
     - name: Test all
       run: MICROPY_CPYTHON3=python3.8 MICROPY_MICROPYTHON=../ports/unix/micropython-coverage ./run-tests.py -j1
       working-directory: tests
+    - name: Print failure info
+      run: MICROPY_CPYTHON3=python3.8 MICROPY_MICROPYTHON=../ports/unix/micropython-coverage ./run-tests.py -j1 --print-failures
+      if: failure()
+      working-directory: tests
     - name: Native Tests
       run: MICROPY_CPYTHON3=python3.8 MICROPY_MICROPYTHON=../ports/unix/micropython-coverage ./run-tests.py -j1 --emit native
       working-directory: tests
@@ -341,6 +345,7 @@ jobs:
         - "qtpy_m0_haxpress"
         - "raspberry_pi_pico"
         - "raytac_mdbt50q-db-40"
+        - "raytac_mdbt50q-rx"
         - "robohatmm1_m4"
         - "sam32"
         - "same54_xplained"
@@ -504,6 +509,10 @@ jobs:
         - "espressif_saola_1_wrover"
         - "franzininho_wifi_wroom"
         - "franzininho_wifi_wrover"
+        - "gravitech_cucumber_m"
+        - "gravitech_cucumber_ms"
+        - "gravitech_cucumber_r"
+        - "gravitech_cucumber_rs"
         - "lilygo_ttgo_t8_s2_st7789"
         - "microdev_micro_s2"
         - "muselab_nanoesp32_s2_wroom"

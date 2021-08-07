@@ -621,6 +621,13 @@ extern const struct _mp_obj_module_t pwmio_module;
 #define PWMIO_MODULE
 #endif
 
+#if CIRCUITPY_QRIO
+extern const struct _mp_obj_module_t qrio_module;
+#define QRIO_MODULE            { MP_OBJ_NEW_QSTR(MP_QSTR_qrio), (mp_obj_t)&qrio_module },
+#else
+#define QRIO_MODULE
+#endif
+
 #if CIRCUITPY_RAINBOWIO
 extern const struct _mp_obj_module_t rainbowio_module;
 #define RAINBOWIO_MODULE            { MP_OBJ_NEW_QSTR(MP_QSTR_rainbowio), (mp_obj_t)&rainbowio_module },
@@ -763,6 +770,13 @@ extern const struct _mp_obj_module_t touchio_module;
 #define TOUCHIO_MODULE
 #endif
 
+#if CIRCUITPY_TRACEBACK
+extern const struct _mp_obj_module_t traceback_module;
+#define TRACEBACK_MODULE           { MP_OBJ_NEW_QSTR(MP_QSTR_traceback), (mp_obj_t)&traceback_module },
+#else
+#define TRACEBACK_MODULE
+#endif
+
 #if CIRCUITPY_UHEAP
 extern const struct _mp_obj_module_t uheap_module;
 #define UHEAP_MODULE           { MP_OBJ_NEW_QSTR(MP_QSTR_uheap),(mp_obj_t)&uheap_module },
@@ -898,6 +912,7 @@ extern const struct _mp_obj_module_t msgpack_module;
     PS2IO_MODULE \
     PULSEIO_MODULE \
     PWMIO_MODULE \
+    QRIO_MODULE \
     RAINBOWIO_MODULE \
     RANDOM_MODULE \
     RE_MODULE \
@@ -917,6 +932,7 @@ extern const struct _mp_obj_module_t msgpack_module;
     SUPERVISOR_MODULE \
     SYNTHIO_MODULE \
     TOUCHIO_MODULE \
+    TRACEBACK_MODULE \
     UHEAP_MODULE \
     USB_CDC_MODULE \
     USB_HID_MODULE \
