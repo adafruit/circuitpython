@@ -138,12 +138,12 @@ else
   ifeq ($(CHIP_VARIANT_LOWER), lpc55s28)
   CFLAGS += -DLPC55Sxx=1 \
             -D__USE_CMSIS=1
-  
+
   SRC_C += lpc55xx/startup_lpc55s28.c
   SRC_C += mcux-sdk/devices/LPC55S28/system_LPC55S28.c
-  		    
+
   SRC_C += supervisor/port_lpc55sxx.c
-  
+
   endif
 endif
 

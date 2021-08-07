@@ -61,4 +61,3 @@ void RIT_Enable(void) {
 uint32_t RIT_GetCounter(void) {
     return 0;
 }
-

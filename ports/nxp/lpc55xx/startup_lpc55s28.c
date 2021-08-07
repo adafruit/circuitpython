@@ -1,57 +1,57 @@
-//*****************************************************************************
+// *****************************************************************************
 // LPC55S28_cm33_core0 startup code for use with MCUXpresso IDE
 //
 // Version : 160420
-//*****************************************************************************
+// *****************************************************************************
 //
 // Copyright 2016-2020 NXP
 // All rights reserved.
 //
 // SPDX-License-Identifier: BSD-3-Clause
-//*****************************************************************************
+// *****************************************************************************
 
-#if defined (DEBUG)
+#if defined(DEBUG)
 #pragma GCC push_options
 #pragma GCC optimize ("Og")
 #endif // (DEBUG)
 
-#if defined (__cplusplus)
+#if defined(__cplusplus)
 #ifdef __REDLIB__
 #error Redlib does not support C++
 #else
-//*****************************************************************************
+// *****************************************************************************
 //
 // The entry point for the C++ library startup
 //
-//*****************************************************************************
+// *****************************************************************************
 extern "C" {
-    extern void __libc_init_array(void);
+extern void __libc_init_array(void);
 }
 #endif
 #endif
 
 #define WEAK __attribute__ ((weak))
 #define WEAK_AV __attribute__ ((weak, section(".after_vectors")))
-#define ALIAS(f) __attribute__ ((weak, alias (#f)))
+#define ALIAS(f) __attribute__ ((weak, alias(#f)))
 
-//*****************************************************************************
-#if defined (__cplusplus)
+// *****************************************************************************
+#if defined(__cplusplus)
 extern "C" {
 #endif
 
-//*****************************************************************************
+// *****************************************************************************
 // Variable to store CRP value in. Will be placed automatically
 // by the linker when "Enable Code Read Protect" selected.
 // See crp.h header for more information
-//*****************************************************************************
-//*****************************************************************************
+// *****************************************************************************
+// *****************************************************************************
 // Declaration of external SystemInit function
-//*****************************************************************************
-#if defined (__USE_CMSIS)
+// *****************************************************************************
+#if defined(__USE_CMSIS)
 extern void SystemInit(void);
 #endif // (__USE_CMSIS)
 
-//*****************************************************************************
+// *****************************************************************************
 // Forward declaration of the core exception handlers.
 // When the application defines a handler (with the same name), this will
 // automatically take precedence over these weak definitions.
@@ -59,8 +59,8 @@ extern void SystemInit(void);
 // in C++ files within in your main application will need to have C linkage
 // rather than C++ linkage. To do this, make sure that you are using extern "C"
 // { .... } around the interrupt handler within your main application code.
-//*****************************************************************************
-     void ResetISR(void);
+// *****************************************************************************
+void ResetISR(void);
 WEAK void NMI_Handler(void);
 WEAK void HardFault_Handler(void);
 WEAK void MemManage_Handler(void);
@@ -73,11 +73,11 @@ WEAK void PendSV_Handler(void);
 WEAK void SysTick_Handler(void);
 WEAK void IntDefaultHandler(void);
 
-//*****************************************************************************
+// *****************************************************************************
 // Forward declaration of the application IRQ handlers. When the application
 // defines a handler (with the same name), this will automatically take
 // precedence over weak definitions below
-//*****************************************************************************
+// *****************************************************************************
 WEAK void WDT_BOD_IRQHandler(void);
 WEAK void DMA0_IRQHandler(void);
 WEAK void GINT0_IRQHandler(void);
@@ -139,12 +139,12 @@ WEAK void PQ_IRQHandler(void);
 WEAK void DMA1_IRQHandler(void);
 WEAK void FLEXCOMM8_IRQHandler(void);
 
-//*****************************************************************************
+// *****************************************************************************
 // Forward declaration of the driver IRQ handlers. These are aliased
 // to the IntDefaultHandler, which is a 'forever' loop. When the driver
 // defines a handler (with the same name), this will automatically take
 // precedence over these weak definitions
-//*****************************************************************************
+// *****************************************************************************
 void WDT_BOD_DriverIRQHandler(void) ALIAS(IntDefaultHandler);
 void DMA0_DriverIRQHandler(void) ALIAS(IntDefaultHandler);
 void GINT0_DriverIRQHandler(void) ALIAS(IntDefaultHandler);
@@ -206,42 +206,42 @@ void PQ_DriverIRQHandler(void) ALIAS(IntDefaultHandler);
 void DMA1_DriverIRQHandler(void) ALIAS(IntDefaultHandler);
 void FLEXCOMM8_DriverIRQHandler(void) ALIAS(IntDefaultHandler);
 
-//*****************************************************************************
+// *****************************************************************************
 // The entry point for the application.
 // __main() is the entry point for Redlib based applications
 // main() is the entry point for Newlib based applications
-//*****************************************************************************
-#if defined (__REDLIB__)
+// *****************************************************************************
+#if defined(__REDLIB__)
 extern void __main(void);
 #endif
 extern int main(void);
 
-//*****************************************************************************
+// *****************************************************************************
 // External declaration for the pointer to the stack top from the Linker Script
-//*****************************************************************************
+// *****************************************************************************
 extern void _vStackTop(void);
-//*****************************************************************************
+// *****************************************************************************
 // External declaration for LPC MCU vector table checksum from  Linker Script
-//*****************************************************************************
+// *****************************************************************************
 WEAK extern void __valid_user_code_checksum();
 
-//*****************************************************************************
-//*****************************************************************************
-#if defined (__cplusplus)
+// *****************************************************************************
+// *****************************************************************************
+#if defined(__cplusplus)
 } // extern "C"
 #endif
-//*****************************************************************************
+// *****************************************************************************
 // The vector table.
 // This relies on the linker script to place at correct location in memory.
-//*****************************************************************************
+// *****************************************************************************
 
 
 
-extern void (* const g_pfnVectors[])(void);
-extern void * __Vectors __attribute__ ((alias ("g_pfnVectors")));
+extern void (*const g_pfnVectors[])(void);
+extern void *__Vectors __attribute__ ((alias("g_pfnVectors")));
 
 __attribute__ ((used, section(".isr_vector")))
-void (* const g_pfnVectors[])(void) = {
+void (*const g_pfnVectors[])(void) = {
     // Core Level - CM33
     &_vStackTop,                       // The initial stack pointer
     ResetISR,                          // The reset handler
@@ -325,46 +325,48 @@ void (* const g_pfnVectors[])(void) = {
 
 }; /* End of g_pfnVectors */
 
-//*****************************************************************************
+// *****************************************************************************
 // Functions to carry out the initialization of RW and BSS data sections. These
 // are written as separate functions rather than being inlined within the
 // ResetISR() function in order to cope with MCUs with multiple banks of
 // memory.
-//*****************************************************************************
+// *****************************************************************************
 __attribute__ ((section(".after_vectors.init_data")))
 void data_init(unsigned int romstart, unsigned int start, unsigned int len) {
-    unsigned int *pulDest = (unsigned int*) start;
-    unsigned int *pulSrc = (unsigned int*) romstart;
+    unsigned int *pulDest = (unsigned int *)start;
+    unsigned int *pulSrc = (unsigned int *)romstart;
     unsigned int loop;
-    for (loop = 0; loop < len; loop = loop + 4)
+    for (loop = 0; loop < len; loop = loop + 4) {
         *pulDest++ = *pulSrc++;
+    }
 }
 
 __attribute__ ((section(".after_vectors.init_bss")))
 void bss_init(unsigned int start, unsigned int len) {
-    unsigned int *pulDest = (unsigned int*) start;
+    unsigned int *pulDest = (unsigned int *)start;
     unsigned int loop;
-    for (loop = 0; loop < len; loop = loop + 4)
+    for (loop = 0; loop < len; loop = loop + 4) {
         *pulDest++ = 0;
+    }
 }
 
-//*****************************************************************************
+// *****************************************************************************
 // The following symbols are constructs generated by the linker, indicating
 // the location of various points in the "Global Section Table". This table is
 // created by the linker via the Code Red managed linker script mechanism. It
 // contains the load address, execution address and length of each RW data
 // section and the execution and length of each BSS (zero initialized) section.
-//*****************************************************************************
+// *****************************************************************************
 extern unsigned int __data_section_table;
 extern unsigned int __data_section_table_end;
 extern unsigned int __bss_section_table;
 extern unsigned int __bss_section_table_end;
 
-//*****************************************************************************
+// *****************************************************************************
 // Reset entry point for your code.
 // Sets up a simple runtime environment and initializes the C/C++
 // library.
-//*****************************************************************************
+// *****************************************************************************
 __attribute__ ((section(".after_vectors.reset")))
 void ResetISR(void) {
 
@@ -373,11 +375,11 @@ void ResetISR(void) {
 
 
 
-#if defined (__USE_CMSIS)
+    #if defined(__USE_CMSIS)
 // If __USE_CMSIS defined, then call CMSIS SystemInit code
     SystemInit();
 
-#endif // (__USE_CMSIS)
+    #endif // (__USE_CMSIS)
 
     //
     // Copy the data sections from flash to SRAM.
@@ -405,7 +407,7 @@ void ResetISR(void) {
     }
 
 
-#if !defined (__USE_CMSIS)
+    #if !defined(__USE_CMSIS)
 // Assume that if __USE_CMSIS defined, then CMSIS SystemInit code
 // will setup the VTOR register
 
@@ -413,27 +415,27 @@ void ResetISR(void) {
     // address (eg RAM, external flash), in which case we need
     // to modify the VTOR register to tell the CPU that the
     // vector table is located at a non-0x0 address.
-    unsigned int * pSCB_VTOR = (unsigned int *) 0xE000ED08;
-    if ((unsigned int *)g_pfnVectors!=(unsigned int *) 0x00000000) {
+    unsigned int *pSCB_VTOR = (unsigned int *)0xE000ED08;
+    if ((unsigned int *)g_pfnVectors != (unsigned int *)0x00000000) {
         *pSCB_VTOR = (unsigned int)g_pfnVectors;
     }
-#endif // (__USE_CMSIS)
-#if defined (__cplusplus)
+    #endif // (__USE_CMSIS)
+    #if defined(__cplusplus)
     //
     // Call C++ library initialisation
     //
     __libc_init_array();
-#endif
+    #endif
 
     // Reenable interrupts
     __asm volatile ("cpsie i");
 
-#if defined (__REDLIB__)
+    #if defined(__REDLIB__)
     // Call the Redlib library, which in turn calls main()
     __main();
-#else
+    #else
     main();
-#endif
+    #endif
 
     //
     // main() shouldn't return, but if it does, we'll just enter an infinite loop
@@ -443,306 +445,317 @@ void ResetISR(void) {
     }
 }
 
-//*****************************************************************************
+// *****************************************************************************
 // Default core exception handlers. Override the ones here by defining your own
 // handler routines in your application code.
-//*****************************************************************************
-WEAK_AV void NMI_Handler(void)
-{ while(1) {}
+// *****************************************************************************
+WEAK_AV void NMI_Handler(void) {
+    while (1) {
+    }
 }
 
-WEAK_AV void HardFault_Handler(void)
-{ while(1) {}
+WEAK_AV void HardFault_Handler(void) {
+    while (1) {
+    }
 }
 
-WEAK_AV void MemManage_Handler(void)
-{ while(1) {}
+WEAK_AV void MemManage_Handler(void) {
+    while (1) {
+    }
 }
 
-WEAK_AV void BusFault_Handler(void)
-{ while(1) {}
+WEAK_AV void BusFault_Handler(void) {
+    while (1) {
+    }
 }
 
-WEAK_AV void UsageFault_Handler(void)
-{ while(1) {}
+WEAK_AV void UsageFault_Handler(void) {
+    while (1) {
+    }
 }
 
-WEAK_AV void SecureFault_Handler(void)
-{ while(1) {}
+WEAK_AV void SecureFault_Handler(void) {
+    while (1) {
+    }
 }
 
-WEAK_AV void SVC_Handler(void)
-{ while(1) {}
+WEAK_AV void SVC_Handler(void) {
+    while (1) {
+    }
 }
 
-WEAK_AV void DebugMon_Handler(void)
-{ while(1) {}
+WEAK_AV void DebugMon_Handler(void) {
+    while (1) {
+    }
 }
 
-WEAK_AV void PendSV_Handler(void)
-{ while(1) {}
+WEAK_AV void PendSV_Handler(void) {
+    while (1) {
+    }
 }
 
-WEAK_AV void SysTick_Handler(void)
-{ while(1) {}
+WEAK_AV void SysTick_Handler(void) {
+    while (1) {
+    }
 }
 
-//*****************************************************************************
+// *****************************************************************************
 // Processor ends up here if an unexpected interrupt occurs or a specific
 // handler is not present in the application code.
-//*****************************************************************************
-WEAK_AV void IntDefaultHandler(void)
-{ while(1) {}
+// *****************************************************************************
+WEAK_AV void IntDefaultHandler(void) {
+    while (1) {
+    }
 }
 
-//*****************************************************************************
+// *****************************************************************************
 // Default application exception handlers. Override the ones here by defining
 // your own handler routines in your application code. These routines call
 // driver exception handlers or IntDefaultHandler() if no driver exception
 // handler is included.
-//*****************************************************************************
-WEAK void WDT_BOD_IRQHandler(void)
-{   WDT_BOD_DriverIRQHandler();
+// *****************************************************************************
+WEAK void WDT_BOD_IRQHandler(void) {
+    WDT_BOD_DriverIRQHandler();
 }
 
-WEAK void DMA0_IRQHandler(void)
-{   DMA0_DriverIRQHandler();
+WEAK void DMA0_IRQHandler(void) {
+    DMA0_DriverIRQHandler();
 }
 
-WEAK void GINT0_IRQHandler(void)
-{   GINT0_DriverIRQHandler();
+WEAK void GINT0_IRQHandler(void) {
+    GINT0_DriverIRQHandler();
 }
 
-WEAK void GINT1_IRQHandler(void)
-{   GINT1_DriverIRQHandler();
+WEAK void GINT1_IRQHandler(void) {
+    GINT1_DriverIRQHandler();
 }
 
-WEAK void PIN_INT0_IRQHandler(void)
-{   PIN_INT0_DriverIRQHandler();
+WEAK void PIN_INT0_IRQHandler(void) {
+    PIN_INT0_DriverIRQHandler();
 }
 
-WEAK void PIN_INT1_IRQHandler(void)
-{   PIN_INT1_DriverIRQHandler();
+WEAK void PIN_INT1_IRQHandler(void) {
+    PIN_INT1_DriverIRQHandler();
 }
 
-WEAK void PIN_INT2_IRQHandler(void)
-{   PIN_INT2_DriverIRQHandler();
+WEAK void PIN_INT2_IRQHandler(void) {
+    PIN_INT2_DriverIRQHandler();
 }
 
-WEAK void PIN_INT3_IRQHandler(void)
-{   PIN_INT3_DriverIRQHandler();
+WEAK void PIN_INT3_IRQHandler(void) {
+    PIN_INT3_DriverIRQHandler();
 }
 
-WEAK void UTICK0_IRQHandler(void)
-{   UTICK0_DriverIRQHandler();
+WEAK void UTICK0_IRQHandler(void) {
+    UTICK0_DriverIRQHandler();
 }
 
-WEAK void MRT0_IRQHandler(void)
-{   MRT0_DriverIRQHandler();
+WEAK void MRT0_IRQHandler(void) {
+    MRT0_DriverIRQHandler();
 }
 
-WEAK void CTIMER0_IRQHandler(void)
-{   CTIMER0_DriverIRQHandler();
+WEAK void CTIMER0_IRQHandler(void) {
+    CTIMER0_DriverIRQHandler();
 }
 
-WEAK void CTIMER1_IRQHandler(void)
-{   CTIMER1_DriverIRQHandler();
+WEAK void CTIMER1_IRQHandler(void) {
+    CTIMER1_DriverIRQHandler();
 }
 
-WEAK void SCT0_IRQHandler(void)
-{   SCT0_DriverIRQHandler();
+WEAK void SCT0_IRQHandler(void) {
+    SCT0_DriverIRQHandler();
 }
 
-WEAK void CTIMER3_IRQHandler(void)
-{   CTIMER3_DriverIRQHandler();
+WEAK void CTIMER3_IRQHandler(void) {
+    CTIMER3_DriverIRQHandler();
 }
 
-WEAK void FLEXCOMM0_IRQHandler(void)
-{   FLEXCOMM0_DriverIRQHandler();
+WEAK void FLEXCOMM0_IRQHandler(void) {
+    FLEXCOMM0_DriverIRQHandler();
 }
 
-WEAK void FLEXCOMM1_IRQHandler(void)
-{   FLEXCOMM1_DriverIRQHandler();
+WEAK void FLEXCOMM1_IRQHandler(void) {
+    FLEXCOMM1_DriverIRQHandler();
 }
 
-WEAK void FLEXCOMM2_IRQHandler(void)
-{   FLEXCOMM2_DriverIRQHandler();
+WEAK void FLEXCOMM2_IRQHandler(void) {
+    FLEXCOMM2_DriverIRQHandler();
 }
 
-WEAK void FLEXCOMM3_IRQHandler(void)
-{   FLEXCOMM3_DriverIRQHandler();
+WEAK void FLEXCOMM3_IRQHandler(void) {
+    FLEXCOMM3_DriverIRQHandler();
 }
 
-WEAK void FLEXCOMM4_IRQHandler(void)
-{   FLEXCOMM4_DriverIRQHandler();
+WEAK void FLEXCOMM4_IRQHandler(void) {
+    FLEXCOMM4_DriverIRQHandler();
 }
 
-WEAK void FLEXCOMM5_IRQHandler(void)
-{   FLEXCOMM5_DriverIRQHandler();
+WEAK void FLEXCOMM5_IRQHandler(void) {
+    FLEXCOMM5_DriverIRQHandler();
 }
 
-WEAK void FLEXCOMM6_IRQHandler(void)
-{   FLEXCOMM6_DriverIRQHandler();
+WEAK void FLEXCOMM6_IRQHandler(void) {
+    FLEXCOMM6_DriverIRQHandler();
 }
 
-WEAK void FLEXCOMM7_IRQHandler(void)
-{   FLEXCOMM7_DriverIRQHandler();
+WEAK void FLEXCOMM7_IRQHandler(void) {
+    FLEXCOMM7_DriverIRQHandler();
 }
 
-WEAK void ADC0_IRQHandler(void)
-{   ADC0_DriverIRQHandler();
+WEAK void ADC0_IRQHandler(void) {
+    ADC0_DriverIRQHandler();
 }
 
-WEAK void Reserved39_IRQHandler(void)
-{   Reserved39_DriverIRQHandler();
+WEAK void Reserved39_IRQHandler(void) {
+    Reserved39_DriverIRQHandler();
 }
 
-WEAK void ACMP_IRQHandler(void)
-{   ACMP_DriverIRQHandler();
+WEAK void ACMP_IRQHandler(void) {
+    ACMP_DriverIRQHandler();
 }
 
-WEAK void Reserved41_IRQHandler(void)
-{   Reserved41_DriverIRQHandler();
+WEAK void Reserved41_IRQHandler(void) {
+    Reserved41_DriverIRQHandler();
 }
 
-WEAK void Reserved42_IRQHandler(void)
-{   Reserved42_DriverIRQHandler();
+WEAK void Reserved42_IRQHandler(void) {
+    Reserved42_DriverIRQHandler();
 }
 
-WEAK void USB0_NEEDCLK_IRQHandler(void)
-{   USB0_NEEDCLK_DriverIRQHandler();
+WEAK void USB0_NEEDCLK_IRQHandler(void) {
+    USB0_NEEDCLK_DriverIRQHandler();
 }
 
-WEAK void USB0_IRQHandler(void)
-{   USB0_DriverIRQHandler();
+WEAK void USB0_IRQHandler(void) {
+    USB0_DriverIRQHandler();
 }
 
-WEAK void RTC_IRQHandler(void)
-{   RTC_DriverIRQHandler();
+WEAK void RTC_IRQHandler(void) {
+    RTC_DriverIRQHandler();
 }
 
-WEAK void Reserved46_IRQHandler(void)
-{   Reserved46_DriverIRQHandler();
+WEAK void Reserved46_IRQHandler(void) {
+    Reserved46_DriverIRQHandler();
 }
 
-WEAK void Reserved47_IRQHandler(void)
-{   Reserved47_DriverIRQHandler();
+WEAK void Reserved47_IRQHandler(void) {
+    Reserved47_DriverIRQHandler();
 }
 
-WEAK void PIN_INT4_IRQHandler(void)
-{   PIN_INT4_DriverIRQHandler();
+WEAK void PIN_INT4_IRQHandler(void) {
+    PIN_INT4_DriverIRQHandler();
 }
 
-WEAK void PIN_INT5_IRQHandler(void)
-{   PIN_INT5_DriverIRQHandler();
+WEAK void PIN_INT5_IRQHandler(void) {
+    PIN_INT5_DriverIRQHandler();
 }
 
-WEAK void PIN_INT6_IRQHandler(void)
-{   PIN_INT6_DriverIRQHandler();
+WEAK void PIN_INT6_IRQHandler(void) {
+    PIN_INT6_DriverIRQHandler();
 }
 
-WEAK void PIN_INT7_IRQHandler(void)
-{   PIN_INT7_DriverIRQHandler();
+WEAK void PIN_INT7_IRQHandler(void) {
+    PIN_INT7_DriverIRQHandler();
 }
 
-WEAK void CTIMER2_IRQHandler(void)
-{   CTIMER2_DriverIRQHandler();
+WEAK void CTIMER2_IRQHandler(void) {
+    CTIMER2_DriverIRQHandler();
 }
 
-WEAK void CTIMER4_IRQHandler(void)
-{   CTIMER4_DriverIRQHandler();
+WEAK void CTIMER4_IRQHandler(void) {
+    CTIMER4_DriverIRQHandler();
 }
 
-WEAK void OS_EVENT_IRQHandler(void)
-{   OS_EVENT_DriverIRQHandler();
+WEAK void OS_EVENT_IRQHandler(void) {
+    OS_EVENT_DriverIRQHandler();
 }
 
-WEAK void Reserved55_IRQHandler(void)
-{   Reserved55_DriverIRQHandler();
+WEAK void Reserved55_IRQHandler(void) {
+    Reserved55_DriverIRQHandler();
 }
 
-WEAK void Reserved56_IRQHandler(void)
-{   Reserved56_DriverIRQHandler();
+WEAK void Reserved56_IRQHandler(void) {
+    Reserved56_DriverIRQHandler();
 }
 
-WEAK void Reserved57_IRQHandler(void)
-{   Reserved57_DriverIRQHandler();
+WEAK void Reserved57_IRQHandler(void) {
+    Reserved57_DriverIRQHandler();
 }
 
-WEAK void SDIO_IRQHandler(void)
-{   SDIO_DriverIRQHandler();
+WEAK void SDIO_IRQHandler(void) {
+    SDIO_DriverIRQHandler();
 }
 
-WEAK void Reserved59_IRQHandler(void)
-{   Reserved59_DriverIRQHandler();
+WEAK void Reserved59_IRQHandler(void) {
+    Reserved59_DriverIRQHandler();
 }
 
-WEAK void Reserved60_IRQHandler(void)
-{   Reserved60_DriverIRQHandler();
+WEAK void Reserved60_IRQHandler(void) {
+    Reserved60_DriverIRQHandler();
 }
 
-WEAK void Reserved61_IRQHandler(void)
-{   Reserved61_DriverIRQHandler();
+WEAK void Reserved61_IRQHandler(void) {
+    Reserved61_DriverIRQHandler();
 }
 
-WEAK void USB1_PHY_IRQHandler(void)
-{   USB1_PHY_DriverIRQHandler();
+WEAK void USB1_PHY_IRQHandler(void) {
+    USB1_PHY_DriverIRQHandler();
 }
 
-WEAK void USB1_IRQHandler(void)
-{   USB1_DriverIRQHandler();
+WEAK void USB1_IRQHandler(void) {
+    USB1_DriverIRQHandler();
 }
 
-WEAK void USB1_NEEDCLK_IRQHandler(void)
-{   USB1_NEEDCLK_DriverIRQHandler();
+WEAK void USB1_NEEDCLK_IRQHandler(void) {
+    USB1_NEEDCLK_DriverIRQHandler();
 }
 
-WEAK void SEC_HYPERVISOR_CALL_IRQHandler(void)
-{   SEC_HYPERVISOR_CALL_DriverIRQHandler();
+WEAK void SEC_HYPERVISOR_CALL_IRQHandler(void) {
+    SEC_HYPERVISOR_CALL_DriverIRQHandler();
 }
 
-WEAK void SEC_GPIO_INT0_IRQ0_IRQHandler(void)
-{   SEC_GPIO_INT0_IRQ0_DriverIRQHandler();
+WEAK void SEC_GPIO_INT0_IRQ0_IRQHandler(void) {
+    SEC_GPIO_INT0_IRQ0_DriverIRQHandler();
 }
 
-WEAK void SEC_GPIO_INT0_IRQ1_IRQHandler(void)
-{   SEC_GPIO_INT0_IRQ1_DriverIRQHandler();
+WEAK void SEC_GPIO_INT0_IRQ1_IRQHandler(void) {
+    SEC_GPIO_INT0_IRQ1_DriverIRQHandler();
 }
 
-WEAK void PLU_IRQHandler(void)
-{   PLU_DriverIRQHandler();
+WEAK void PLU_IRQHandler(void) {
+    PLU_DriverIRQHandler();
 }
 
-WEAK void SEC_VIO_IRQHandler(void)
-{   SEC_VIO_DriverIRQHandler();
+WEAK void SEC_VIO_IRQHandler(void) {
+    SEC_VIO_DriverIRQHandler();
 }
 
-WEAK void HASHCRYPT_IRQHandler(void)
-{   HASHCRYPT_DriverIRQHandler();
+WEAK void HASHCRYPT_IRQHandler(void) {
+    HASHCRYPT_DriverIRQHandler();
 }
 
-WEAK void CASER_IRQHandler(void)
-{   CASER_DriverIRQHandler();
+WEAK void CASER_IRQHandler(void) {
+    CASER_DriverIRQHandler();
 }
 
-WEAK void PUF_IRQHandler(void)
-{   PUF_DriverIRQHandler();
+WEAK void PUF_IRQHandler(void) {
+    PUF_DriverIRQHandler();
 }
 
-WEAK void PQ_IRQHandler(void)
-{   PQ_DriverIRQHandler();
+WEAK void PQ_IRQHandler(void) {
+    PQ_DriverIRQHandler();
 }
 
-WEAK void DMA1_IRQHandler(void)
-{   DMA1_DriverIRQHandler();
+WEAK void DMA1_IRQHandler(void) {
+    DMA1_DriverIRQHandler();
 }
 
-WEAK void FLEXCOMM8_IRQHandler(void)
-{   FLEXCOMM8_DriverIRQHandler();
+WEAK void FLEXCOMM8_IRQHandler(void) {
+    FLEXCOMM8_DriverIRQHandler();
 }
 
-//*****************************************************************************
+// *****************************************************************************
 
-#if defined (DEBUG)
+#if defined(DEBUG)
 #pragma GCC pop_options
 #endif // (DEBUG)
