@@ -62,6 +62,7 @@ extern void SystemInit(void);
 //
 // *****************************************************************************
 void Reset_Handler(void);
+void ResetISR(void) ALIAS(Reset_Handler);
 WEAK void NMI_Handler(void);
 WEAK void HardFault_Handler(void);
 WEAK void MemManage_Handler(void);
