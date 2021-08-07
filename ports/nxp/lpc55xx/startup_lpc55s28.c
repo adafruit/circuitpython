@@ -237,11 +237,11 @@ WEAK extern void __valid_user_code_checksum();
 
 
 
-extern void (*const g_pfnVectors[])(void);
+extern void(*const g_pfnVectors[])(void);
 extern void *__Vectors __attribute__ ((alias("g_pfnVectors")));
 
 __attribute__ ((used, section(".isr_vector")))
-void (*const g_pfnVectors[])(void) = {
+void(*const g_pfnVectors[])(void) = {
     // Core Level - CM33
     &_vStackTop,                       // The initial stack pointer
     ResetISR,                          // The reset handler
