@@ -56,7 +56,7 @@
 
 // This standard advertisement advertises the CircuitPython editing service and a CIRCUITPY short name.
 const uint8_t public_advertising_data[] = { 0x02, 0x01, 0x06, // 0-2 Flags
-                                            0x02, 0x0a, 0xd8,  // 3-5 TX power level -40
+                                            0x02, 0x0a, 0xec,  // 3-5 TX power level -20
                                             #if CIRCUITPY_BLE_FILE_SERVICE
                                             0x03, 0x02, 0xbb, 0xfe,  // 6 - 9 Incomplete service list (File Transfer service)
                                             #endif
@@ -79,7 +79,7 @@ const uint8_t private_advertising_data[] = { 0x02, 0x01, 0x06, // 0-2 Flags
 uint8_t circuitpython_scan_response_data[] = {
     0x0a, 0x09, 0x43, 0x49, 0x52, 0x50, 0x59, 0x00, 0x00, 0x00, 0x00,
     #if CIRCUITPY_SERIAL_BLE
-    0x11, 0x06, 0x9e, 0xca, 0xdc, 0x24, 0x0e, 0xe5, 0xa9, 0xe0, 0x93, 0xf3, 0xa3, 0xb5, 0x01, 0x00, 0x40, 0x6e,
+    0x11, 0x06, 0x6e, 0x68, 0x74, 0x79, 0x50, 0x74, 0x69, 0x75, 0x63, 0x72, 0x69, 0x43, 0x01, 0x00, 0xaf, 0xad
     #endif
 };
 
@@ -121,7 +121,7 @@ STATIC void supervisor_bluetooth_start_advertising(void) {
     // Advertise with less power when doing so publicly to reduce who can hear us. This will make it
     // harder for someone with bad intentions to pair from a distance.
     if (!bonded) {
-        tx_power = -40;
+        tx_power = -20;
         adv = public_advertising_data;
         adv_len = sizeof(public_advertising_data);
         scan_response = circuitpython_scan_response_data;

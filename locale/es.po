@@ -8,15 +8,15 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-01-04 12:55-0600\n"
-"PO-Revision-Date: 2021-06-27 12:33+0000\n"
-"Last-Translator: Alvaro Figueroa <alvaro@greencore.co.cr>\n"
+"PO-Revision-Date: 2021-08-23 14:19+0000\n"
+"Last-Translator: Jeff Epler <jepler@gmail.com>\n"
 "Language-Team: \n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.7.1-dev\n"
+"X-Generator: Weblate 4.8.1-dev\n"
 
 #: main.c
 msgid ""
@@ -43,6 +43,13 @@ msgstr ""
 "\n"
 "Presente un problema con el contenido de su unidad CIRCUITPY en\n"
 "https://github.com/adafruit/circuitpython/issues\n"
+
+#: lib/utils/pyexec.c
+msgid ""
+"\n"
+"paste mode; Ctrl-C to cancel, Ctrl-D to finish\n"
+"=== "
+msgstr ""
 
 #: py/obj.c
 msgid "  File \"%q\""
@@ -77,6 +84,14 @@ msgstr ""
 "%d pines de dirección, %d pines rgb y %d tiles indican una altura de %d, y "
 "no de %d"
 
+#: shared-bindings/microcontroller/Pin.c
+msgid "%q and %q contain duplicate pins"
+msgstr ""
+
+#: shared-bindings/microcontroller/Pin.c
+msgid "%q contains duplicate pins"
+msgstr ""
+
 #: ports/atmel-samd/common-hal/sdioio/SDCard.c
 msgid "%q failure: %d"
 msgstr "%q fallo: %d"
@@ -99,8 +114,12 @@ msgid "%q indices must be integers, not %s"
 msgstr "%q indices deben ser enteros, no %s"
 
 #: py/argcheck.c
-msgid "%q length must be %q"
-msgstr "el tamaño de %q debe ser %q"
+msgid "%q length must be %d-%d"
+msgstr ""
+
+#: shared-bindings/usb_hid/Device.c
+msgid "%q length must be >= 1"
+msgstr ""
 
 #: shared-bindings/vectorio/Polygon.c
 msgid "%q list must be a list"
@@ -113,14 +132,6 @@ msgstr "%q debe ser <= %d"
 #: py/argcheck.c
 msgid "%q must be %d-%d"
 msgstr "%q debe ser %d-%d"
-
-#: shared-bindings/usb_hid/Device.c
-msgid "%q must be 0-255"
-msgstr "%q debe ser de 0-255"
-
-#: shared-bindings/usb_hid/Device.c
-msgid "%q must be 1-255"
-msgstr "%q debe estar entre 1-255"
 
 #: py/argcheck.c
 msgid "%q must be >= %d"
@@ -137,10 +148,6 @@ msgstr "%q debe ser >= 0"
 #: shared-bindings/vectorio/Circle.c shared-bindings/vectorio/Rectangle.c
 msgid "%q must be >= 1"
 msgstr "%q debe ser >= 1"
-
-#: shared-bindings/usb_hid/Device.c
-msgid "%q must be None or between 1 and len(report_descriptor)-1"
-msgstr "%q debe ser None o entre 1 y len(report_descriptor)-1"
 
 #: py/argcheck.c
 msgid "%q must be a string"
@@ -179,6 +186,10 @@ msgstr "%q debe ser un int"
 msgid "%q() takes %d positional arguments but %d were given"
 msgstr "%q() toma %d argumentos posicionales pero %d fueron dados"
 
+#: shared-bindings/usb_hid/Device.c
+msgid "%q, %q, and %q must all be the same length"
+msgstr ""
+
 #: ports/esp32s2/bindings/espidf/__init__.c ports/esp32s2/esp_error.c
 #, c-format
 msgid "%s error 0x%x"
@@ -196,7 +207,7 @@ msgstr "objeto '%q' no tiene capacidad '%q'"
 msgid "'%q' object is not an iterator"
 msgstr "objeto '%q' no es un iterador"
 
-#: py/objtype.c py/runtime.c
+#: py/objtype.c py/runtime.c shared-module/atexit/__init__.c
 msgid "'%q' object is not callable"
 msgstr "objeto '%q' no es llamable"
 
@@ -328,6 +339,10 @@ msgstr "'yield from' dentro de una función asincrónica"
 #: py/compile.c
 msgid "'yield' outside function"
 msgstr "'yield' fuera de una función"
+
+#: shared-module/vectorio/VectorShape.c
+msgid "(x,y) integers required"
+msgstr ""
 
 #: py/compile.c
 msgid "*x must be assignment target"
@@ -502,6 +517,10 @@ msgstr "Tratando de localizar %d bloques"
 msgid "Attempted heap allocation when VM not running."
 msgstr "Asignación del montículo mientras la VM no esta ejecutándose."
 
+#: ports/raspberrypi/audio_dma.c
+msgid "Audio conversion not implemented"
+msgstr ""
+
 #: shared-bindings/wifi/Radio.c
 msgid "AuthMode.OPEN is not used with password"
 msgstr "AuthMode.OPEN no se usa con contraseña"
@@ -646,7 +665,7 @@ msgstr "CRC o suma de comprobación inválida"
 
 #: py/objtype.c
 msgid "Call super().__init__() before accessing native object."
-msgstr "Llame a super().__ init __() antes de acceder al objeto nativo."
+msgstr "Llame a super().__init__() antes de acceder al objeto nativo."
 
 #: ports/esp32s2/common-hal/alarm/pin/PinAlarm.c
 msgid "Can only alarm on RTC IO from deep sleep."
@@ -1220,11 +1239,6 @@ msgstr "error Input/output"
 
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 #, c-format
-msgid "Missing jmp_pin. Instruction %d jumps on pin"
-msgstr ""
-
-#: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
-#, c-format
 msgid "Instruction %d shifts in more bits than pin count"
 msgstr "La instruccion %d mueve mas bits que la cuenta del pin"
 
@@ -1251,6 +1265,10 @@ msgstr "Autenticación insuficiente"
 msgid "Insufficient encryption"
 msgstr "Cifrado insuficiente"
 
+#: ports/atmel-samd/audio_dma.c ports/raspberrypi/audio_dma.c
+msgid "Internal audio buffer too small"
+msgstr ""
+
 #: ports/stm/common-hal/busio/UART.c
 msgid "Internal define error"
 msgstr "Error interno de definición"
@@ -1260,7 +1278,7 @@ msgstr "Error interno de definición"
 msgid "Internal error #%d"
 msgstr "Error interno #%d"
 
-#: shared-bindings/sdioio/SDCard.c
+#: shared-bindings/sdioio/SDCard.c shared-module/usb_hid/Device.c
 msgid "Invalid %q"
 msgstr "%q inválido"
 
@@ -1414,7 +1432,8 @@ msgstr "Pin inválido para canal derecho"
 #: ports/mimxrt10xx/common-hal/busio/SPI.c ports/nrf/common-hal/busio/I2C.c
 #: ports/raspberrypi/common-hal/busio/I2C.c
 #: ports/raspberrypi/common-hal/busio/SPI.c
-#: ports/raspberrypi/common-hal/busio/UART.c
+#: ports/raspberrypi/common-hal/busio/UART.c shared-bindings/busio/SPI.c
+#: shared-bindings/busio/UART.c
 msgid "Invalid pins"
 msgstr "pines inválidos"
 
@@ -1542,6 +1561,16 @@ msgstr "first_in_pin no encontrado. La instrucción %d escribe pin(es)"
 msgid "Missing first_set_pin. Instruction %d sets pin(s)"
 msgstr ""
 "first_set_pin no encontrado. La instrucción %d configura el/los pin(es)"
+
+#: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
+#, c-format
+msgid "Missing jmp_pin. Instruction %d jumps on pin"
+msgstr ""
+
+#: shared-module/usb_hid/Device.c
+#, c-format
+msgid "More than %d report ids not supported"
+msgstr ""
 
 #: shared-bindings/busio/UART.c shared-bindings/displayio/Group.c
 msgid "Must be a %q subclass."
@@ -2115,7 +2144,6 @@ msgid "Size not supported"
 msgstr "Sin capacidades para el tamaño"
 
 #: ports/raspberrypi/common-hal/alarm/SleepMemory.c
-#: ports/stm/common-hal/alarm/SleepMemory.c
 msgid "Sleep Memory not available"
 msgstr "Memoria de sueño no disponible"
 
@@ -2585,7 +2613,7 @@ msgid "argument name reused"
 msgstr "nombre de argumento reutilizado"
 
 #: py/argcheck.c shared-bindings/_stage/__init__.c
-#: shared-bindings/digitalio/DigitalInOut.c shared-bindings/gamepad/GamePad.c
+#: shared-bindings/digitalio/DigitalInOut.c
 msgid "argument num/types mismatch"
 msgstr "argumento número/tipos no coinciden"
 
@@ -2629,6 +2657,10 @@ msgstr "Eje tiene que ser None, o un entero"
 #: extmod/ulab/code/numpy/numerical.c
 msgid "axis too long"
 msgstr "Eje demasiado largo"
+
+#: shared-bindings/bitmaptools/__init__.c
+msgid "background value out of range of target"
+msgstr ""
 
 #: py/builtinevex.c
 msgid "bad compile mode"
@@ -3156,6 +3188,10 @@ msgstr "cadena-f: solo '}' no está permitido"
 msgid "file must be a file opened in byte mode"
 msgstr "el archivo deberia ser una archivo abierto en modo byte"
 
+#: shared-bindings/traceback/__init__.c
+msgid "file write is not available"
+msgstr ""
+
 #: shared-bindings/storage/__init__.c
 msgid "filesystem must provide mount method"
 msgstr "sistema de archivos debe proporcionar método de montaje"
@@ -3443,6 +3479,10 @@ msgstr "el tamaño del elemento no es valido%d por bits_per_pixel %d\n"
 msgid "invalid element_size %d, must be, 1, 2, or 4"
 msgstr "el element_size %d,no es valido, debe ser 1,2 ó 4"
 
+#: shared-bindings/traceback/__init__.c
+msgid "invalid exception"
+msgstr ""
+
 #: extmod/modframebuf.c
 msgid "invalid format"
 msgstr "formato inválido"
@@ -3479,6 +3519,10 @@ msgstr "sintaxis inválida para entero con base %d"
 #: py/parsenum.c
 msgid "invalid syntax for number"
 msgstr "sintaxis inválida para número"
+
+#: py/objexcept.c shared-bindings/traceback/__init__.c
+msgid "invalid traceback"
+msgstr ""
 
 #: py/objtype.c
 msgid "issubclass() arg 1 must be a class"
@@ -3679,10 +3723,6 @@ msgstr "no hay tarjeta SD"
 #: py/vm.c
 msgid "no active exception to reraise"
 msgstr "exception no activa para reraise"
-
-#: shared-bindings/socket/__init__.c shared-module/network/__init__.c
-msgid "no available NIC"
-msgstr "NIC no disponible"
 
 #: py/compile.c
 msgid "no binding for nonlocal found"
@@ -3972,8 +4012,10 @@ msgstr "pow() con 3 argumentos requiere enteros"
 #: ports/esp32s2/boards/adafruit_funhouse/mpconfigboard.h
 #: ports/esp32s2/boards/adafruit_magtag_2.9_grayscale/mpconfigboard.h
 #: ports/esp32s2/boards/adafruit_metro_esp32s2/mpconfigboard.h
+#: ports/esp32s2/boards/ai_thinker_esp_12k_nodemcu/mpconfigboard.h
 #: ports/esp32s2/boards/artisense_rd00/mpconfigboard.h
 #: ports/esp32s2/boards/atmegazero_esp32s2/mpconfigboard.h
+#: ports/esp32s2/boards/crumpspace_crumps2/mpconfigboard.h
 #: ports/esp32s2/boards/electroniccats_bastwifi/mpconfigboard.h
 #: ports/esp32s2/boards/espressif_kaluga_1.3/mpconfigboard.h
 #: ports/esp32s2/boards/espressif_kaluga_1/mpconfigboard.h
@@ -3981,10 +4023,17 @@ msgstr "pow() con 3 argumentos requiere enteros"
 #: ports/esp32s2/boards/espressif_saola_1_wrover/mpconfigboard.h
 #: ports/esp32s2/boards/franzininho_wifi_wroom/mpconfigboard.h
 #: ports/esp32s2/boards/franzininho_wifi_wrover/mpconfigboard.h
+#: ports/esp32s2/boards/gravitech_cucumber_m/mpconfigboard.h
+#: ports/esp32s2/boards/gravitech_cucumber_ms/mpconfigboard.h
+#: ports/esp32s2/boards/gravitech_cucumber_r/mpconfigboard.h
+#: ports/esp32s2/boards/gravitech_cucumber_rs/mpconfigboard.h
 #: ports/esp32s2/boards/lilygo_ttgo_t8_s2_st7789/mpconfigboard.h
+#: ports/esp32s2/boards/lolin_s2_mini/mpconfigboard.h
 #: ports/esp32s2/boards/microdev_micro_s2/mpconfigboard.h
+#: ports/esp32s2/boards/morpheans_morphesp-240/mpconfigboard.h
 #: ports/esp32s2/boards/muselab_nanoesp32_s2_wroom/mpconfigboard.h
 #: ports/esp32s2/boards/muselab_nanoesp32_s2_wrover/mpconfigboard.h
+#: ports/esp32s2/boards/odt_pixelwing_esp32_s2/mpconfigboard.h
 #: ports/esp32s2/boards/targett_module_clip_wroom/mpconfigboard.h
 #: ports/esp32s2/boards/targett_module_clip_wrover/mpconfigboard.h
 #: ports/esp32s2/boards/unexpectedmaker_feathers2/mpconfigboard.h
@@ -4020,6 +4069,10 @@ msgstr "push_threshold debe esta entre 1 y 32"
 #: extmod/modutimeq.c
 msgid "queue overflow"
 msgstr "desbordamiento de cola(queue)"
+
+#: lib/utils/pyexec.c
+msgid "raw REPL; CTRL-B to exit\n"
+msgstr ""
 
 #: py/parse.c
 msgid "raw f-strings are not implemented"
@@ -4181,7 +4234,7 @@ msgstr "stop debe ser 1 ó 2"
 msgid "stop not reachable from start"
 msgstr "stop no se puede alcanzar del principio"
 
-#: py/stream.c
+#: py/stream.c shared-bindings/getpass/__init__.c
 msgid "stream operation not supported"
 msgstr "operación stream no soportada"
 
@@ -4391,7 +4444,7 @@ msgid "unreadable attribute"
 msgstr "atributo no legible"
 
 #: shared-bindings/displayio/TileGrid.c shared-bindings/vectorio/VectorShape.c
-#: shared-module/vectorio/Polygon.c
+#: shared-module/vectorio/Polygon.c shared-module/vectorio/VectorShape.c
 msgid "unsupported %q type"
 msgstr "tipo de %q no soportado"
 
@@ -4426,6 +4479,10 @@ msgstr "tipos no soportados para %q: '%q', '%q'"
 #, c-format
 msgid "value must fit in %d byte(s)"
 msgstr "el valor debe caber en %d byte(s)"
+
+#: shared-bindings/bitmaptools/__init__.c
+msgid "value out of range of target"
+msgstr ""
 
 #: shared-bindings/displayio/Bitmap.c
 msgid "value_count must be > 0"
@@ -4511,6 +4568,21 @@ msgstr "zi debe ser de tipo flotante"
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr "zi debe ser una forma (n_section,2)"
+
+#~ msgid "%q length must be %q"
+#~ msgstr "el tamaño de %q debe ser %q"
+
+#~ msgid "%q must be 0-255"
+#~ msgstr "%q debe ser de 0-255"
+
+#~ msgid "%q must be 1-255"
+#~ msgstr "%q debe estar entre 1-255"
+
+#~ msgid "%q must be None or between 1 and len(report_descriptor)-1"
+#~ msgstr "%q debe ser None o entre 1 y len(report_descriptor)-1"
+
+#~ msgid "no available NIC"
+#~ msgstr "NIC no disponible"
 
 #~ msgid ""
 #~ "Port does not accept PWM carrier. Pass a pin, frequency and duty cycle "

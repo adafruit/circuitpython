@@ -114,6 +114,9 @@ endif
 ifeq ($(CIRCUITPY_ANALOGIO),1)
 SRC_PATTERNS += analogio/%
 endif
+ifeq ($(CIRCUITPY_ATEXIT),1)
+SRC_PATTERNS += atexit/%
+endif
 ifeq ($(CIRCUITPY_AUDIOBUSIO),1)
 SRC_PATTERNS += audiobusio/%
 endif
@@ -155,7 +158,7 @@ ifeq ($(CIRCUITPY_BUSDEVICE),1)
 SRC_PATTERNS += adafruit_bus_device/%
 endif
 ifeq ($(CIRCUITPY_BUSIO),1)
-SRC_PATTERNS += busio/% bitbangio/OneWire.%
+SRC_PATTERNS += busio/%
 endif
 ifeq ($(CIRCUITPY_CAMERA),1)
 SRC_PATTERNS += camera/%
@@ -172,6 +175,9 @@ endif
 ifeq ($(CIRCUITPY_DISPLAYIO),1)
 SRC_PATTERNS += displayio/%
 endif
+ifeq ($(CIRCUITPY_PARALLELDISPLAY),1)
+SRC_PATTERNS += paralleldisplay/%
+endif
 ifeq ($(CIRCUITPY_VECTORIO),1)
 SRC_PATTERNS += vectorio/%
 endif
@@ -187,6 +193,9 @@ endif
 
 ifeq ($(CIRCUITPY_GAMEPADSHIFT),1)
 SRC_PATTERNS += gamepadshift/%
+endif
+ifeq ($(CIRCUITPY_GETPASS),1)
+SRC_PATTERNS += getpass/%
 endif
 ifeq ($(CIRCUITPY_GNSS),1)
 SRC_PATTERNS += gnss/%
@@ -214,6 +223,9 @@ SRC_PATTERNS += neopixel_write/%
 endif
 ifeq ($(CIRCUITPY_NVM),1)
 SRC_PATTERNS += nvm/%
+endif
+ifeq ($(CIRCUITPY_ONEWIREIO),1)
+SRC_PATTERNS += onewireio/%
 endif
 ifeq ($(CIRCUITPY_OS),1)
 SRC_PATTERNS += os/%
@@ -376,7 +388,6 @@ SRC_COMMON_HAL_ALL = \
 	countio/__init__.c \
 	digitalio/DigitalInOut.c \
 	digitalio/__init__.c \
-	displayio/ParallelBus.c \
 	dualbank/__init__.c \
 	frequencyio/FrequencyIn.c \
 	frequencyio/__init__.c \
@@ -395,6 +406,7 @@ SRC_COMMON_HAL_ALL = \
 	nvm/ByteArray.c \
 	nvm/__init__.c \
 	os/__init__.c \
+	paralleldisplay/ParallelBus.c \
 	ps2io/Ps2.c \
 	ps2io/__init__.c \
 	pulseio/PulseIn.c \
@@ -479,6 +491,7 @@ SRC_SHARED_MODULE_ALL = \
 	_stage/__init__.c \
 	aesio/__init__.c \
 	aesio/aes.c \
+	atexit/__init__.c \
 	audiocore/RawSample.c \
 	audiocore/WaveFile.c \
 	audiocore/__init__.c \
@@ -490,7 +503,6 @@ SRC_SHARED_MODULE_ALL = \
 	audiomp3/__init__.c \
 	audiopwmio/__init__.c \
 	bitbangio/I2C.c \
-	bitbangio/OneWire.c \
 	bitbangio/SPI.c \
 	bitbangio/__init__.c \
 	bitmaptools/__init__.c \
@@ -499,7 +511,6 @@ SRC_SHARED_MODULE_ALL = \
 	adafruit_bus_device/__init__.c \
 	adafruit_bus_device/I2CDevice.c \
 	adafruit_bus_device/SPIDevice.c \
-	busio/OneWire.c \
 	canio/Match.c \
 	canio/Message.c \
 	canio/RemoteTransmissionRequest.c \
@@ -519,6 +530,9 @@ SRC_SHARED_MODULE_ALL = \
 	fontio/__init__.c \
 	framebufferio/FramebufferDisplay.c \
 	framebufferio/__init__.c \
+	gamepadshift/GamePadShift.c \
+	gamepadshift/__init__.c \
+	getpass/__init__.c \
 	ipaddress/IPv4Address.c \
 	ipaddress/__init__.c \
 	keypad/__init__.c \
@@ -527,15 +541,13 @@ SRC_SHARED_MODULE_ALL = \
 	keypad/KeyMatrix.c \
 	keypad/ShiftRegisterKeys.c \
 	keypad/Keys.c \
-	sdcardio/SDCard.c \
-	sdcardio/__init__.c \
-	gamepadshift/GamePadShift.c \
-	gamepadshift/__init__.c \
 	memorymonitor/__init__.c \
 	memorymonitor/AllocationAlarm.c \
 	memorymonitor/AllocationSize.c \
 	network/__init__.c \
 	msgpack/__init__.c \
+	onewireio/__init__.c \
+	onewireio/OneWire.c \
 	os/__init__.c \
 	qrio/__init__.c \
 	qrio/QRDecoder.c \
@@ -544,6 +556,8 @@ SRC_SHARED_MODULE_ALL = \
 	rgbmatrix/RGBMatrix.c \
 	rgbmatrix/__init__.c \
 	rotaryio/IncrementalEncoder.c \
+	sdcardio/SDCard.c \
+	sdcardio/__init__.c \
 	sharpdisplay/SharpMemoryFramebuffer.c \
 	sharpdisplay/__init__.c \
 	socket/__init__.c \

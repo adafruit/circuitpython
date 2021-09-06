@@ -117,7 +117,8 @@ void common_hal_audiobusio_i2sout_construct(audiobusio_i2sout_obj_t *self,
     }
 
     // Use the state machine to manage pins.
-    common_hal_rp2pio_statemachine_construct(&self->state_machine,
+    common_hal_rp2pio_statemachine_construct(
+        &self->state_machine,
         program, program_len,
         44100 * 32 * 6, // Clock at 44.1 khz to warm the DAC up.
         NULL, 0,
@@ -131,7 +132,8 @@ void common_hal_audiobusio_i2sout_construct(audiobusio_i2sout_obj_t *self,
         true, // exclusive pin use
         false, 32, false, // shift out left to start with MSB
         false, // Wait for txstall
-        false, 32, false); // in settings
+        false, 32, false, // in settings
+        false); // Not user-interruptible.
 
     self->playing = false;
     audio_dma_init(&self->dma);
