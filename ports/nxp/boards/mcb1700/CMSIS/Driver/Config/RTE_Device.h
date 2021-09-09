@@ -347,7 +347,7 @@
 
 //     </e>
 // <e> UART1 (Universal asynchronous receiver transmitter)
-#define RTE_UART1                       0
+#define RTE_UART1                       1
 
 //   <o> U1_TX Pin <0=>P0_15 <1=>P2_0
 //   <i> UART1 Serial Output pin
@@ -501,13 +501,13 @@
 //     <e> Tx
 //       <o1> Channel     <0=>0 <1=>1 <2=>2 <3=>3 <4=>4 <5=>5 <6=>6 <7=>7
 //     </e>
-#define   RTE_UART1_DMA_TX_EN           1
-#define   RTE_UART1_DMA_TX_CH           0
+#define   RTE_UART1_DMA_TX_EN           0
+#define   RTE_UART1_DMA_TX_CH           2
 //     <e> Rx
 //       <o1> Channel    <0=>0 <1=>1 <2=>2 <3=>3 <4=>4 <5=>5 <6=>6 <7=>7
 //     </e>
-#define   RTE_UART1_DMA_RX_EN           1
-#define   RTE_UART1_DMA_RX_CH           1
+#define   RTE_UART1_DMA_RX_EN           0
+#define   RTE_UART1_DMA_RX_CH           3
 //   </h> DMA
 
 // </e>
@@ -875,7 +875,7 @@
 //   <h> Pin Configuration
 //     <o> SPI_SSEL <0=>Not used <1=>P0_16
 //     <i> Slave Select for SPI
-#define   RTE_SPI_SSEL_PIN_SEL          0
+#define   RTE_SPI_SSEL_PIN_SEL          1
 #if      (RTE_SPI_SSEL_PIN_SEL == 0)
 #define   RTE_SPI_SSEL_PIN_EN           0
 #elif    (RTE_SPI_SSEL_PIN_SEL == 1)
@@ -1079,13 +1079,13 @@
 //       <o2> Peripheral  <0=>9 (DMAMUXPER9)
 //     </e>
 #define   RTE_I2S0_DMA_TX_EN            1
-#define   RTE_I2S0_DMA_TX_CH            0
+#define   RTE_I2S0_DMA_TX_CH            6
 //     <e> Rx
 //       <o1> Channel     <0=>0 <1=>1 <2=>2 <3=>3 <4=>4 <5=>5 <6=>6 <7=>7
 //       <o2> Peripheral  <0=>10 (DMAMUXPER10)
 //     </e>
 #define   RTE_I2S0_DMA_RX_EN            1
-#define   RTE_I2S0_DMA_RX_CH            1
+#define   RTE_I2S0_DMA_RX_CH            7
 //   </h> DMA
 // </e> I2S0 (Integrated Interchip Sound 0) [Driver_SAI0]
 

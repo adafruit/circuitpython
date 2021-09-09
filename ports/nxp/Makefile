@@ -134,6 +134,7 @@ SRC_C += lpc17xx/cr_startup_lpc175x_6x.c
 SRC_C += nxp_lpcopen/lpc175x_6x/lpc_chip_175x_6x/src/ritimer_17xx_40xx.c \
          nxp_lpcopen/lpc175x_6x/lpc_chip_175x_6x/src/clock_17xx_40xx.c \
          supervisor/port_lpc17xx.c
+
 else
   ifeq ($(CHIP_VARIANT_LOWER), lpc55s28)
   CFLAGS += -DLPC55Sxx=1 \
@@ -246,9 +247,20 @@ SRC_SDK := \
 	nxp_lpc/$(CHIP_FAMILY)/CMSIS/Driver/PIN_LPC17xx.c \
 	nxp_lpc/$(CHIP_FAMILY)/CMSIS/Driver/SPI_LPC17xx.c \
 	nxp_lpc/$(CHIP_FAMILY)/CMSIS/Driver/SSP_LPC17xx.c \
-	nxp_lpc/$(CHIP_FAMILY)/CMSIS/Driver/UART_LPC17xx.c \
 	nxp_lpc/$(CHIP_FAMILY)/CMSIS/Driver/OTG_LPC17xx.c \
 	nxp_lpc/$(CHIP_FAMILY)/CMSIS/Driver/USBD_LPC17xx.c
+
+# DEBUG_UART_TX, DEBUG_UART_RX, CIRCUITPY_USB_CDC
+ifeq ($(CIRCUITPY_BUSIO), 1)
+  CFLAGS += -DRTE_UART1_RI_PIN=0 \
+            -DRTE_UART1_DTR_PIN=0 \
+            -DRTE_UART1_DSR_PIN=0 \
+            -DRTE_UART1_DCD_PIN=0 \
+            -DRTE_UART1_RTS_PIN=0 \
+            -DRTE_UART1_CTS_PIN_EN=0
+            
+  SRC_C += nxp_lpc/LPC1700/CMSIS/Driver/UART_LPC17xx.c
+endif
 
 # Requires cmsis_os.h
 #	nxp_lpc/$(CHIP_FAMILY)/CMSIS/Driver/EMAC_LPC17xx.c \
@@ -265,7 +277,8 @@ SRC_C += \
 	fatfs_port.c \
 	background.c \
 	boards/$(BOARD)/board.c \
-	boards/$(BOARD)/pins.c
+	boards/$(BOARD)/pins.c \
+	peripherals/$(CHIP_FAMILY_LOWER)/pins.c
 
 ifeq ($(CIRCUITPY_USB_CDC), 1)
   ifeq ($(CHIP_FAMILY_LOWER), lpc1700)

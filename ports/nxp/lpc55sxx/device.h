@@ -24,11 +24,11 @@
  * THE SOFTWARE.
  */
 
-#if !defined(PORTS_NXP_LPC55XX_DEVICE_H_)
-#define PORTS_NXP_LPC55XX_DEVICE_H_
+#if !defined(PORTS_NXP_LPC55SXX_DEVICE_H_)
+#define PORTS_NXP_LPC55SXX_DEVICE_H_
 
 #define CMSIS_device_header "LPC55S28.h"
 
 #include CMSIS_device_header
 
-#endif // PORTS_NXP_LPC55XX_DEVICE_H_
+#endif // PORTS_NXP_LPC55SXX_DEVICE_H_

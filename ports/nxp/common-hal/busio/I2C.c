@@ -32,7 +32,58 @@
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/bitbangio/I2C.h"
 
-#if (0)
+#if (1)
+void reset_i2c()
+{
+    return;
+}
+
+void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
+    const mcu_pin_obj_t *scl, const mcu_pin_obj_t *sda, uint32_t frequency, uint32_t timeout)
+{
+    return;
+}
+
+bool common_hal_busio_i2c_deinited(busio_i2c_obj_t *self) {
+    return false;
+}
+
+void common_hal_busio_i2c_deinit(busio_i2c_obj_t *self) {
+    return;
+}
+
+bool common_hal_busio_i2c_probe(busio_i2c_obj_t *self, uint8_t addr) {
+    return false;
+}
+
+bool common_hal_busio_i2c_try_lock(busio_i2c_obj_t *self) {
+    return false;
+}
+
+bool common_hal_busio_i2c_has_lock(busio_i2c_obj_t *self) {
+    return false;
+}
+
+void common_hal_busio_i2c_unlock(busio_i2c_obj_t *self) {
+    return;
+}
+
+uint8_t common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr,
+    const uint8_t *data, size_t len, bool transmit_stop_bit)
+{
+    return 0;
+}
+
+uint8_t common_hal_busio_i2c_read(busio_i2c_obj_t *self, uint16_t addr,
+    uint8_t *data, size_t len) {
+    return 0;
+}
+
+void common_hal_busio_i2c_never_reset(busio_i2c_obj_t *self) {
+    return;
+}
+
+#else
 #include "src/rp2_common/hardware_gpio/include/hardware/gpio.h"
 
 // Synopsys  DW_apb_i2c  (v2.01)  IP

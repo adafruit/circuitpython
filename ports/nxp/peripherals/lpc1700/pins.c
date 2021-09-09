@@ -1,5 +1,5 @@
 /*
- * This file is part of the Micro Python project, http://micropython.org/
+ * This file is part of the MicroPython project, http://micropython.org/
  *
  * The MIT License (MIT)
  *
@@ -24,34 +24,32 @@
  * THE SOFTWARE.
  */
 
-// DO NOT include this file directly. Use shared-bindings/microcontroller/Pin.h instead to ensure
-// that all necessary includes are already included.
-
-#ifndef MICROPY_INCLUDED_NXP_PERIPHERALS_PINS_H
-#define MICROPY_INCLUDED_NXP_PERIPHERALS_PINS_H
-
 #include "py/obj.h"
+#include "py/mphal.h"
+#include "peripherals/pins.h"
 
-typedef struct {
-    mp_obj_base_t base;
-    uint8_t port : 3;
-    uint8_t number : 5;
-} mcu_pin_obj_t;
 
-// This macro is used to simplify pin definition in boards/<board>/pins.c
-#define PIN(p_port, p_number) \
-    const mcu_pin_obj_t pin_P##p_port##_##p_number = { \
-        { &mcu_pin_type }, \
-        .port = p_port, \
-        .number = p_number \
-    }
+// ... CAN1
+PIN(0,0); // RD1
+PIN(0,1); // TD1
 
-extern const mp_obj_type_t mcu_pin_type;
+// ... UART0
+PIN(0,2); // TXD0
+PIN(0,3); // RXD0
 
-#if defined(LPC175x_6x)
-#include "lpc1700/pins.h"
-#elif defined(LPC55Sxx)
-#include "lpc55s28/pins.h"
-#endif
+// ... SPI0
+PIN(0,15); // SCK
+PIN(0,16); // SSEL
+PIN(0,17); // MISO
+PIN(0,18); // MOSI
 
-#endif  // MICROPY_INCLUDED_NXP_PERIPHERALS_PINS_H
+// ... I2C0
+PIN(0,27); // SDA
+PIN(0,28); // SCL
+
+// GPIO
+PIN(1,28);
+
+// ... UART1
+PIN(2,0); // TXD1
+PIN(2,1); // RXD1

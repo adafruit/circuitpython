@@ -1,5 +1,5 @@
 /*
- * This file is part of the Micro Python project, http://micropython.org/
+ * This file is part of the MicroPython project, http://micropython.org/
  *
  * The MIT License (MIT)
  *
@@ -24,34 +24,9 @@
  * THE SOFTWARE.
  */
 
-// DO NOT include this file directly. Use shared-bindings/microcontroller/Pin.h instead to ensure
-// that all necessary includes are already included.
+#if !defined(PORTS_NXP_LPC55SXX_PINS_H_)
+#define PORTS_NXP_LPC55SXX_PINS_H_
 
-#ifndef MICROPY_INCLUDED_NXP_PERIPHERALS_PINS_H
-#define MICROPY_INCLUDED_NXP_PERIPHERALS_PINS_H
+#include 
 
-#include "py/obj.h"
-
-typedef struct {
-    mp_obj_base_t base;
-    uint8_t port : 3;
-    uint8_t number : 5;
-} mcu_pin_obj_t;
-
-// This macro is used to simplify pin definition in boards/<board>/pins.c
-#define PIN(p_port, p_number) \
-    const mcu_pin_obj_t pin_P##p_port##_##p_number = { \
-        { &mcu_pin_type }, \
-        .port = p_port, \
-        .number = p_number \
-    }
-
-extern const mp_obj_type_t mcu_pin_type;
-
-#if defined(LPC175x_6x)
-#include "lpc1700/pins.h"
-#elif defined(LPC55Sxx)
-#include "lpc55s28/pins.h"
-#endif
-
-#endif  // MICROPY_INCLUDED_NXP_PERIPHERALS_PINS_H
+#endif // PORTS_NXP_LPC55SXX_PINS_H_
