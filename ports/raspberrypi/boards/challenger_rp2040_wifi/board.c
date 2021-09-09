@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2019 Scott Shawcroft for Adafruit Industries
+ * Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,19 +24,17 @@
  * THE SOFTWARE.
  */
 
-// Micropython setup
+#include "supervisor/board.h"
 
-#define MICROPY_HW_BOARD_NAME       "S2Mini"
-#define MICROPY_HW_MCU_NAME         "ESP32S2-S2FN4R2" // from Wemos MP
+void board_init(void) {
+}
 
-#define CIRCUITPY_BOOT_BUTTON (&pin_GPIO0)
-#define BOARD_USER_SAFE_MODE_ACTION translate("pressing boot button at start up.\n")
+bool board_requests_safe_mode(void) {
+    return false;
+}
 
-#define AUTORESET_DELAY_MS 500
+void reset_board(void) {
+}
 
-#define DEFAULT_I2C_BUS_SCL (&pin_GPIO35) // no I2C labels on S2 Mini, def from Wemos MP
-#define DEFAULT_I2C_BUS_SDA (&pin_GPIO33) // no I2C labels on S2 Mini, def from Wemos MP
-
-#define DEFAULT_SPI_BUS_SCK (&pin_GPIO7)   // no SPI labels on S2 Mini, def from Wemos MP
-#define DEFAULT_SPI_BUS_MOSI (&pin_GPIO11) // no SPI labels on S2 Mini, def from Wemos MP
-#define DEFAULT_SPI_BUS_MISO (&pin_GPIO9)  // no SPI labels on S2 Mini, def from Wemos MP
+void board_deinit(void) {
+}
