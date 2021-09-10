@@ -35,7 +35,7 @@ extern ARM_DRIVER_USART Driver_USART1;
 static char rx_buf[256u];
 static size_t rd;
 static volatile size_t wr;
-static bool is_empty, is_overflow;
+static bool is_init;
 
 // ARM_USART_SignalEvent_t
 static void cb_event(uint32_t event)
@@ -45,9 +45,7 @@ static void cb_event(uint32_t event)
         _wr++;
         if (_wr >= (sizeof(rx_buf)/sizeof(rx_buf[0]))) _wr = 0u;
 
-        if ((_wr) != rd) {
-            wr = _wr;
-        }
+        wr = _wr;
     }
 
     return;
@@ -61,8 +59,8 @@ void serial_init(void) {
     #if (1)
     rd = 0u;
     wr = 0u;
-    is_empty = true;
-    is_overflow = false;
+    is_init = true;
+    memset(&rx_buf[0u], '\0', sizeof(rx_buf));
 
     int32_t status = Driver_USART1.Initialize(cb_event);
     assert((ARM_DRIVER_OK == status));
@@ -125,9 +123,24 @@ char serial_read(void) {
 
 bool serial_bytes_available(void) {
     #if (1)
+
+    size_t RxCount = Driver_USART1.GetRxCount();
     size_t _wr = wr;
-    Driver_USART1.Receive(&rx_buf[_wr], 1u);
-    return (_wr != rd);
+    bool is_empty = (_wr == rd);
+
+    if ((RxCount) || (is_init)) {
+#if (0)
+        if ((_wr != rd) || is_init) {
+#else
+        {
+#endif
+            is_init = false;
+
+            Driver_USART1.Receive(&rx_buf[_wr], 1u);
+        }
+    }
+
+    return !is_empty;
     #else
     return __HAL_UART_GET_FLAG(&huart2, UART_FLAG_RXNE);
     #endif
