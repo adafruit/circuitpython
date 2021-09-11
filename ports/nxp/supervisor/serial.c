@@ -38,13 +38,14 @@ static volatile size_t wr;
 static bool is_init;
 
 // ARM_USART_SignalEvent_t
-static void cb_event(uint32_t event)
-{
+static void cb_event(uint32_t event) {
     if (event & ARM_USART_EVENT_RECEIVE_COMPLETE) {
         // FIXME: Replace the code below circular buffer
         size_t _wr = wr;
         _wr++;
-        if (_wr >= (sizeof(rx_buf)/sizeof(rx_buf[0]))) _wr = 0u;
+        if (_wr >= (sizeof(rx_buf) / sizeof(rx_buf[0]))) {
+            _wr = 0u;
+        }
 
         wr = _wr;
     }
@@ -69,11 +70,11 @@ void serial_init(void) {
     status = Driver_USART1.PowerControl(ARM_POWER_FULL);
     assert((ARM_DRIVER_OK == status));
 
-    uint32_t control =  ARM_USART_MODE_ASYNCHRONOUS
-                       |ARM_USART_DATA_BITS_8
-                       |ARM_USART_PARITY_NONE
-                       |ARM_USART_STOP_BITS_1
-                       |ARM_USART_FLOW_CONTROL_NONE;
+    uint32_t control = ARM_USART_MODE_ASYNCHRONOUS
+        | ARM_USART_DATA_BITS_8
+        | ARM_USART_PARITY_NONE
+        | ARM_USART_STOP_BITS_1
+        | ARM_USART_FLOW_CONTROL_NONE;
     uint32_t baudrate = 115200u;
     status = Driver_USART1.Control(control, baudrate);
     assert((ARM_DRIVER_OK == status));
@@ -111,7 +112,9 @@ char serial_read(void) {
     if (rd != wr) {
         data = rx_buf[rd];
         rd++;
-        if (rd >= (sizeof(rx_buf)/sizeof(rx_buf[0]))) rd = 0u;
+        if (rd >= (sizeof(rx_buf) / sizeof(rx_buf[0]))) {
+            rd = 0u;
+        }
     }
 
     return data;
@@ -130,11 +133,11 @@ bool serial_bytes_available(void) {
     bool is_empty = (_wr == rd);
 
     if ((RxCount) || (is_init)) {
-#if (0)
+        #if (0)
         if ((_wr != rd) || is_init) {
-#else
+        #else
         {
-#endif
+            #endif
             is_init = false;
 
             Driver_USART1.Receive(&rx_buf[_wr], 1u);
@@ -167,7 +170,9 @@ void serial_write_substring(const char *text, uint32_t len) {
     if (len > 0U) {
         #if (1)
         const size_t num = strlen(text);
-        if (num < len) len = num;
+        if (num < len) {
+            len = num;
+        }
         Driver_USART1.Send(text, len);
 
         ARM_USART_STATUS status;

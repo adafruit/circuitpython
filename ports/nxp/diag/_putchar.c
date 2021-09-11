@@ -27,7 +27,6 @@
 #include "diag/Trace.h"
 #include "diag/printf.h"
 
-void _putchar(char character)
-{
+void _putchar(char character) {
     trace_putchar(character);
 }

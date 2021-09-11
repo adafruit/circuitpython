@@ -478,38 +478,38 @@ bool port_has_fixed_stack(void) {
 
 
 uint32_t *port_stack_get_limit(void) {
-#if (1)
+    #if (1)
     return &__StackLimit;
-#else
+    #else
     return &_ebss;
-#endif
+    #endif
 }
 
 
 uint32_t *port_stack_get_top(void) {
-#if (0)
+    #if (0)
     return &__StackTop;
-#else
+    #else
     return &_estack;
-#endif
+    #endif
 }
 
 
 uint32_t *port_heap_get_bottom(void) {
-#if (1)
+    #if (1)
     return &__HeapBottom;
-#else
+    #else
     return port_stack_get_limit();
-#endif
+    #endif
 }
 
 
 uint32_t *port_heap_get_top(void) {
-#if (1)
+    #if (1)
     return &__HeapLimit;
-#else
+    #else
     return port_stack_get_top();
-#endif
+    #endif
 }
 
 

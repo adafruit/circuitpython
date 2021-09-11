@@ -258,7 +258,7 @@ ifeq ($(CIRCUITPY_BUSIO), 1)
             -DRTE_UART1_DCD_PIN=0 \
             -DRTE_UART1_RTS_PIN=0 \
             -DRTE_UART1_CTS_PIN_EN=0
-            
+
   SRC_C += nxp_lpc/LPC1700/CMSIS/Driver/UART_LPC17xx.c
 endif
 

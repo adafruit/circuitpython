@@ -33,14 +33,12 @@
 #include "shared-bindings/bitbangio/I2C.h"
 
 #if (1)
-void reset_i2c()
-{
+void reset_i2c() {
     return;
 }
 
 void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
-    const mcu_pin_obj_t *scl, const mcu_pin_obj_t *sda, uint32_t frequency, uint32_t timeout)
-{
+    const mcu_pin_obj_t *scl, const mcu_pin_obj_t *sda, uint32_t frequency, uint32_t timeout) {
     return;
 }
 
@@ -69,8 +67,7 @@ void common_hal_busio_i2c_unlock(busio_i2c_obj_t *self) {
 }
 
 uint8_t common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr,
-    const uint8_t *data, size_t len, bool transmit_stop_bit)
-{
+    const uint8_t *data, size_t len, bool transmit_stop_bit) {
     return 0;
 }
 

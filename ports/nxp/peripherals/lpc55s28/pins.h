@@ -27,6 +27,6 @@
 #if !defined(PORTS_NXP_LPC55SXX_PINS_H_)
 #define PORTS_NXP_LPC55SXX_PINS_H_
 
-#include 
+#include
 
 #endif // PORTS_NXP_LPC55SXX_PINS_H_
