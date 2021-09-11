@@ -34,6 +34,7 @@
 
 typedef struct {
     mp_obj_base_t base;
+    // TODO: Consider to replace (port, number) tuple with single designator
     uint8_t port : 3;
     uint8_t number : 5;
 } mcu_pin_obj_t;
@@ -47,6 +48,29 @@ typedef struct {
     }
 
 extern const mp_obj_type_t mcu_pin_type;
+
+typedef enum _gpio_pin_mode
+{
+    GPIO_Mode_PullUp    = 0U,
+    GPIO_Mode_PullDown  = 1U,
+    GPIO_Mode_PullNone  = 2U,
+    GPIO_Mode_OpenDrain = 3U,
+} gpio_pin_mode_t;
+
+
+typedef struct _gpio_pin_config
+{
+    bool input;
+    bool outputLogic;
+    gpio_pin_mode_t pinMode;
+} gpio_pin_config_t;
+
+
+int gpio_pin_init(uint8_t port, uint8_t number, gpio_pin_config_t *config);
+int gpio_pin_dir(uint8_t port, uint8_t number, bool input);
+int gpio_pin_write(uint8_t port, uint8_t number, bool value);
+bool gpio_pin_read(uint8_t port, uint8_t number);
+
 
 #if defined(LPC175x_6x)
 #include "lpc1700/pins.h"

@@ -39,6 +39,7 @@
     CIRCUITPY_COMMON_ROOT_POINTERS \
 
 #define CIRCUITPY_DEFAULT_STACK_SIZE        (24 * 1024)
+#define CIRCUITPY_DEFAULT_HEAP_SIZE         (40 * 1024)
 
 #if (1)
 #define BOOTLOADER_SIZE                  (0 * 1024)

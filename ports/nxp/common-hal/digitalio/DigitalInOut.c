@@ -34,13 +34,11 @@
 #include "shared-bindings/digitalio/DigitalInOut.h"
 #include "supervisor/shared/translate.h"
 
-#if (0)
-#include "src/rp2_common/hardware_gpio/include/hardware/gpio.h"
-#endif
+#include "peripherals/pins.h"
 
 digitalinout_result_t
 common_hal_digitalio_digitalinout_construct(digitalio_digitalinout_obj_t *self, const mcu_pin_obj_t *pin) {
-    #if (1)
+    #if (0)
     return DIGITALINOUT_PIN_BUSY;
     #else
     claim_pin(pin);
@@ -49,7 +47,12 @@ common_hal_digitalio_digitalinout_construct(digitalio_digitalinout_obj_t *self, 
     self->open_drain = false;
 
     // Set to input. No output value.
-    gpio_init(pin->number);
+    gpio_pin_config_t pin_config;
+    pin_config.input = true;
+    pin_config.pinMode = GPIO_Mode_PullNone;
+    pin_config.outputLogic = 1;
+
+    gpio_pin_init(pin->port, pin->number, &pin_config);
     return DIGITALINOUT_OK;
     #endif
 }
@@ -83,7 +86,19 @@ common_hal_digitalio_digitalinout_switch_to_input(digitalio_digitalinout_obj_t *
 digitalinout_result_t
 common_hal_digitalio_digitalinout_switch_to_output(digitalio_digitalinout_obj_t *self, bool value, digitalio_drive_mode_t drive_mode) {
     #if (1)
-    return DIGITALINOUT_PIN_BUSY;
+    gpio_pin_config_t pin_config;
+    pin_config.input = false;
+    pin_config.outputLogic = true;
+    pin_config.pinMode = GPIO_Mode_PullNone;
+    gpio_pin_init(self->pin->port, self->pin->number, &pin_config);
+
+    self->output = true;
+    self->open_drain = drive_mode == DRIVE_MODE_OPEN_DRAIN;
+
+    // Pin direction is ultimately set in set_value. We don't need to do it here.
+    common_hal_digitalio_digitalinout_set_value(self, value);
+
+    return DIGITALINOUT_OK;
     #else
     const uint8_t pin = self->pin->number;
     gpio_disable_pulls(pin);
@@ -110,6 +125,7 @@ common_hal_digitalio_digitalinout_get_direction(digitalio_digitalinout_obj_t *se
 void
 common_hal_digitalio_digitalinout_set_value(digitalio_digitalinout_obj_t *self, bool value) {
     #if (1)
+    gpio_pin_write(self->pin->port, self->pin->number, value);
     return;
     #else
     const uint8_t pin = self->pin->number;
@@ -132,7 +148,7 @@ common_hal_digitalio_digitalinout_set_value(digitalio_digitalinout_obj_t *self, 
 bool
 common_hal_digitalio_digitalinout_get_value(digitalio_digitalinout_obj_t *self) {
     #if (1)
-    return false;
+    return gpio_pin_read(self->pin->port, self->pin->number);
     #else
     return gpio_get(self->pin->number);
     #endif

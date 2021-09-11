@@ -280,6 +280,12 @@ SRC_C += \
 	boards/$(BOARD)/pins.c \
 	peripherals/$(CHIP_FAMILY_LOWER)/pins.c
 
+SRC_C += \
+	diag/Trace.c \
+	diag/trace_impl.c \
+	diag/printf.c \
+	diag/_putchar.c
+
 ifeq ($(CIRCUITPY_USB_CDC), 1)
   ifeq ($(CHIP_FAMILY_LOWER), lpc1700)
     SRC_C += \

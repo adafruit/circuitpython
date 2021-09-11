@@ -91,7 +91,8 @@ void claim_pin(const mcu_pin_obj_t *pin) {
 
 bool pin_number_is_free(uint8_t pin_number) {
     #if (1)
-    return false;
+    // FIXME: Implement pin_number_is_free
+    return true;
     #else
     if (pin_number >= TOTAL_GPIO_COUNT) {
         return false;

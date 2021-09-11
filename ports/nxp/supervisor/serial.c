@@ -41,6 +41,7 @@ static bool is_init;
 static void cb_event(uint32_t event)
 {
     if (event & ARM_USART_EVENT_RECEIVE_COMPLETE) {
+        // FIXME: Replace the code below circular buffer
         size_t _wr = wr;
         _wr++;
         if (_wr >= (sizeof(rx_buf)/sizeof(rx_buf[0]))) _wr = 0u;

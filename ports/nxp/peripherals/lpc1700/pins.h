@@ -27,6 +27,7 @@
 #if !defined(PORTS_NXP_LPC17XX_PINS_H_)
 #define PORTS_NXP_LPC17XX_PINS_H_
 
+
 extern const mcu_pin_obj_t pin_P0_0;
 extern const mcu_pin_obj_t pin_P0_1;
 extern const mcu_pin_obj_t pin_P0_2;

@@ -5,7 +5,8 @@
 // out on connectors are labelled with their MCU name available from
 // microcontroller.pin.
 STATIC const mp_rom_map_elem_t board_global_dict_table[] = {
-    { MP_OBJ_NEW_QSTR(MP_QSTR_LED),  MP_ROM_PTR(&pin_P1_28) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_LED1),  MP_ROM_PTR(&pin_P1_28) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_LED2),  MP_ROM_PTR(&pin_P1_29) },
 
     // CAN1
     { MP_OBJ_NEW_QSTR(MP_QSTR_CAN1_RX),  MP_ROM_PTR(&pin_P0_0) },

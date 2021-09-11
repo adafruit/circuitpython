@@ -16,7 +16,7 @@ MEMORY
 
 /* top end of the stack */
 /* stack must be double-word (8 byte) aligned */
-_estack = ORIGIN(RAM) + LENGTH(RAM) - 8;
+_estack = ORIGIN(AHBRAM) + LENGTH(AHBRAM) - 8;
 _bootloader_dbl_tap = ORIGIN(RAM) + LENGTH(RAM) - 4;
 
 /* define output sections */
@@ -205,19 +205,17 @@ SECTIONS
   } > RAM2 AT > RAM2
 */
 
-/*
-  .heap (COPY) :
+  .heap (ORIGIN(AHBRAM)) (COPY) :
   {
     . = ALIGN(8);
-    __end__ = .;
+    __HeapBottom = .;
     PROVIDE(end = .);
-    . = . + __HEAP_SIZE;
+    . = . + ${CIRCUITPY_DEFAULT_HEAP_SIZE};
     . = ALIGN(8);
     __HeapLimit = .;
-  } > RAM
-*/
+  } > AHBRAM
 
-  .stack (ORIGIN(RAM) + LENGTH(RAM) - ${CIRCUITPY_DEFAULT_STACK_SIZE}) (COPY) :
+  .stack (ORIGIN(AHBRAM) + LENGTH(AHBRAM) - ${CIRCUITPY_DEFAULT_STACK_SIZE}) (COPY) :
   {
     . = ALIGN(8);
     __StackLimit = .;

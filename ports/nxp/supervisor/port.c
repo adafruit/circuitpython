@@ -32,12 +32,18 @@
 #include "ports/nxp/supervisor/port_nxp.h"
 #include "device.h"
 
+#include "diag/Trace.h"
+
 #if (1)
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/rtc/__init__.h"
 
 STATIC volatile uint64_t overflowed_ticks = 0;
 
+extern uint32_t __StackTop;
+extern uint32_t __StackLimit;
+extern uint32_t __HeapBottom;
+extern uint32_t __HeapLimit;
 
 #if (0)
 static uint32_t _get_count(uint64_t *overflow_count) {
@@ -381,6 +387,7 @@ static void rtc_init(void) {
 
 void reset_port(void) {
     #if (1)
+    trace_initialize();
     return;
     #else
     #if CIRCUITPY_BUSIO
@@ -471,28 +478,45 @@ bool port_has_fixed_stack(void) {
 
 
 uint32_t *port_stack_get_limit(void) {
+#if (1)
+    return &__StackLimit;
+#else
     return &_ebss;
+#endif
 }
 
 
 uint32_t *port_stack_get_top(void) {
+#if (0)
+    return &__StackTop;
+#else
     return &_estack;
+#endif
 }
 
 
 uint32_t *port_heap_get_bottom(void) {
+#if (1)
+    return &__HeapBottom;
+#else
     return port_stack_get_limit();
+#endif
 }
 
 
 uint32_t *port_heap_get_top(void) {
+#if (1)
+    return &__HeapLimit;
+#else
     return port_stack_get_top();
+#endif
 }
 
 
 #if (1)
 void port_set_saved_word(uint32_t value) {
     (void)value;
+    // FIXME: Use RTC General Purpose Register on LPC17xx.
     return;
 }
 
