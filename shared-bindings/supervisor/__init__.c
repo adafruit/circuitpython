@@ -74,6 +74,18 @@ STATIC mp_obj_t supervisor_disable_autoreload(void) {
 }
 MP_DEFINE_CONST_FUN_OBJ_0(supervisor_disable_autoreload_obj, supervisor_disable_autoreload);
 
+//| def autoreload_enabled() -> bool:
+//|     """Gets current status of autoreload"""
+//|     ...
+//|
+STATIC mp_obj_t supervisor_autoreload_enabled(void) {
+    if (autoreload_is_enabled()) {
+        return mp_const_true;
+    }
+    return mp_const_false;
+}
+MP_DEFINE_CONST_FUN_OBJ_0(supervisor_autoreload_enabled_obj, supervisor_autoreload_enabled);
+
 //| def set_rgb_status_brightness(brightness: int) -> None:
 //|     """Set brightness of status neopixel from 0-255
 //|     `set_rgb_status_brightness` is called."""
@@ -303,6 +315,7 @@ STATIC const mp_rom_map_elem_t supervisor_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_supervisor) },
     { MP_ROM_QSTR(MP_QSTR_enable_autoreload),  MP_ROM_PTR(&supervisor_enable_autoreload_obj) },
     { MP_ROM_QSTR(MP_QSTR_disable_autoreload),  MP_ROM_PTR(&supervisor_disable_autoreload_obj) },
+    { MP_ROM_QSTR(MP_QSTR_autoreload_enabled),  MP_ROM_PTR(&supervisor_autoreload_enabled_obj) },
     { MP_ROM_QSTR(MP_QSTR_set_rgb_status_brightness),  MP_ROM_PTR(&supervisor_set_rgb_status_brightness_obj) },
     { MP_ROM_QSTR(MP_QSTR_runtime),  MP_ROM_PTR(&common_hal_supervisor_runtime_obj) },
     { MP_ROM_QSTR(MP_QSTR_reload),  MP_ROM_PTR(&supervisor_reload_obj) },
