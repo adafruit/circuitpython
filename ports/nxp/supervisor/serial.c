@@ -30,9 +30,21 @@
 
 #include "Driver_USART.h"
 
+#if defined(BOARD_MCB1700)
 extern ARM_DRIVER_USART Driver_USART1;
+#define USART_Instance Driver_USART1
 
-static char rx_buf[256u];
+#elif defined(BOARD_LPCEXPRESSO55S28)
+extern ARM_DRIVER_USART Driver_USART0;
+#define USART_Instance Driver_USART0
+
+#else
+#error "Board support is missing"
+
+#endif
+
+
+static char rx_buf[32u];
 static size_t rd;
 static volatile size_t wr;
 static bool is_init;
@@ -64,10 +76,10 @@ void serial_init(void) {
     is_init = true;
     memset(&rx_buf[0u], '\0', sizeof(rx_buf));
 
-    int32_t status = Driver_USART1.Initialize(cb_event);
+    int32_t status = USART_Instance.Initialize(cb_event);
     assert((ARM_DRIVER_OK == status));
 
-    status = Driver_USART1.PowerControl(ARM_POWER_FULL);
+    status = USART_Instance.PowerControl(ARM_POWER_FULL);
     assert((ARM_DRIVER_OK == status));
 
     uint32_t control = ARM_USART_MODE_ASYNCHRONOUS
@@ -76,13 +88,13 @@ void serial_init(void) {
         | ARM_USART_STOP_BITS_1
         | ARM_USART_FLOW_CONTROL_NONE;
     uint32_t baudrate = 115200u;
-    status = Driver_USART1.Control(control, baudrate);
+    status = USART_Instance.Control(control, baudrate);
     assert((ARM_DRIVER_OK == status));
 
-    status = Driver_USART1.Control(ARM_USART_CONTROL_TX, 1); // enable TX output
+    status = USART_Instance.Control(ARM_USART_CONTROL_TX, 1); // enable TX output
     assert((ARM_DRIVER_OK == status));
 
-    status = Driver_USART1.Control(ARM_USART_CONTROL_RX, 1); // enable RX input
+    status = USART_Instance.Control(ARM_USART_CONTROL_RX, 1); // enable RX input
     assert((ARM_DRIVER_OK == status));
 
     #else
@@ -128,7 +140,7 @@ char serial_read(void) {
 bool serial_bytes_available(void) {
     #if (1)
 
-    size_t RxCount = Driver_USART1.GetRxCount();
+    size_t RxCount = USART_Instance.GetRxCount();
     size_t _wr = wr;
     bool is_empty = (_wr == rd);
 
@@ -140,7 +152,7 @@ bool serial_bytes_available(void) {
             #endif
             is_init = false;
 
-            Driver_USART1.Receive(&rx_buf[_wr], 1u);
+            USART_Instance.Receive(&rx_buf[_wr], 1u);
         }
     }
 
@@ -153,11 +165,11 @@ bool serial_bytes_available(void) {
 void serial_write(const char *text) {
     #if (1)
     const size_t len = strlen(text);
-    Driver_USART1.Send(text, len);
+    USART_Instance.Send(text, len);
 
     ARM_USART_STATUS status;
     do {
-        status = Driver_USART1.GetStatus();
+        status = USART_Instance.GetStatus();
     } while (status.tx_busy);
 
     return;
@@ -173,11 +185,11 @@ void serial_write_substring(const char *text, uint32_t len) {
         if (num < len) {
             len = num;
         }
-        Driver_USART1.Send(text, len);
+        USART_Instance.Send(text, len);
 
         ARM_USART_STATUS status;
         do {
-            status = Driver_USART1.GetStatus();
+            status = USART_Instance.GetStatus();
         } while (status.tx_busy);
 
         #else

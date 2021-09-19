@@ -27,6 +27,16 @@
 #if !defined(PORTS_NXP_LPC55SXX_PINS_H_)
 #define PORTS_NXP_LPC55SXX_PINS_H_
 
-#include
+extern const mcu_pin_obj_t pin_P0_2;
+extern const mcu_pin_obj_t pin_P0_3;
+extern const mcu_pin_obj_t pin_P0_4;
+extern const mcu_pin_obj_t pin_P0_5;
+extern const mcu_pin_obj_t pin_P0_6;
+
+extern const mcu_pin_obj_t pin_P0_13;
+extern const mcu_pin_obj_t pin_P0_14;
+
+extern const mcu_pin_obj_t pin_P0_29;
+extern const mcu_pin_obj_t pin_P0_30;
 
 #endif // PORTS_NXP_LPC55SXX_PINS_H_

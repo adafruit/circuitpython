@@ -51,7 +51,7 @@ void RIT_SetTimerIntervalHz(uint32_t freq) {
     uint64_t cmp_value;
 
     /* Determine approximate compare value based on clock rate and passed interval */
-    cmp_value = (uint64_t)Chip_Clock_GetSystemClockRate();
+    cmp_value = (uint64_t)Chip_Clock_GetPeripheralClockRate(SYSCTL_PCLK_RIT);
     cmp_value = cmp_value / (uint64_t)freq;
 
     /* Set timer compare value and periodic mode */

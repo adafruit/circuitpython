@@ -30,10 +30,12 @@
 #define MICROPY_HW_BOARD_NAME "NXP LPCXPRESSO55S28"
 #define MICROPY_HW_MCU_NAME "lpc55s28"
 
-
 #define CIRCUITPY_INTERNAL_NVM_SIZE                 (0)
 #define CIRCUITPY_INTERNAL_FLASH_FILESYSTEM_SIZE    (128 * 1024)
 #define RAM_SIZE                                    (256 * 1024)
+
+#define DEBUG_UART_TX                               (&pin_P0_30)
+#define DEBUG_UART_RX                               (&pin_P0_29)
 
 
 #endif // PORTS_NXP_BOARDS_LPCXPRESSO55S28_MPCONFIGBOARD_H_

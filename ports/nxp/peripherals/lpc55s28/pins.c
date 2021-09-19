@@ -27,44 +27,61 @@
 #include "py/obj.h"
 #include "py/mphal.h"
 #include "peripherals/pins.h"
-#include "PIN_LPC17xx.h"
-#include "GPIO_LPC17xx.h"
+#include "pin_mux.h"
+
+#include "fsl_common.h"
+#include "fsl_iocon.h"
+#include "fsl_gpio_cmsis.h"
+#include "RTE_Device.h"
 
 
-// ... CAN1
-PIN(0,0);   // RD1
-PIN(0,1);   // TD1
+// FC3 SPI
+PIN(0,2);   // MISO
+PIN(0,3);   // MOSI
+PIN(0,4);   // SSEL
+PIN(0,6);   // SCK
 
-// ... UART0
-PIN(0,2);   // TXD0
-PIN(0,3);   // RXD0
+// FC1 I2C
+PIN(0,13);  // SDA
+PIN(0,14);  // SCL
 
-// ... SPI0
-PIN(0,15);  // SCK
-PIN(0,16);  // SSEL
-PIN(0,17);  // MISO
-PIN(0,18);  // MOSI
-
-// ... I2C0
-PIN(0,27);  // SDA
-PIN(0,28);  // SCL
+// FC0 USART
+PIN(0,29);  // RXD
+PIN(0,30);  // TXD
 
 // ... GPIO
-PIN(1,28);  // LED1
-PIN(1,29);  // LED2
-PIN(1,31);  // LED3
-PIN(2,2);   // LED4
-PIN(2,3);   // LED5
-PIN(2,4);   // LED6
-PIN(2,5);   // LED7
-PIN(2,6);   // LED8
+PIN(1,4);   // LED Blue
+PIN(1,6);   // LED Red
+PIN(1,7);   // LED Green
 
-// ... UART1
-PIN(2,0);   // TXD1
-PIN(2,1);   // RXD1
+
+#if defined(RTE_GPIO_PORT0) && RTE_GPIO_PORT0
+extern ARM_DRIVER_GPIO Driver_GPIO_PORT0;
+#endif
+
+#if defined(RTE_GPIO_PORT1) && RTE_GPIO_PORT1
+extern ARM_DRIVER_GPIO Driver_GPIO_PORT1;
+#endif
 
 
 int gpio_pin_init(uint8_t port, uint8_t number, gpio_pin_config_t *config) {
+    #if (1)
+    const uint32_t pin_config = (/* Pin is configured as GPIO */
+        IOCON_PIO_FUNC_GPIO |
+        /* No addition pin function */
+        IOCON_PIO_MODE_INACT |
+        /* Standard mode, output slew rate control is enabled */
+        IOCON_PIO_SLEW_STANDARD |
+        /* Input function is not inverted */
+        IOCON_PIO_INV_DI |
+        /* Enables digital function */
+        IOCON_PIO_DIGITAL_EN |
+        /* Open drain is disabled */
+        IOCON_PIO_OPENDRAIN_DI);
+
+    IOCON_PinMuxSet(IOCON, port, number, pin_config);
+
+    #else
     gpio_pin_mode_t mode = config->pinMode;
 
     const uint8_t open_drain = (GPIO_Mode_OpenDrain == mode) ? PIN_PINMODE_OPENDRAIN : PIN_PINMODE_NORMAL;
@@ -83,6 +100,7 @@ int gpio_pin_init(uint8_t port, uint8_t number, gpio_pin_config_t *config) {
         gpio_pin_write(port, number, config->outputLogic);
         GPIO_SetDir(port, number, GPIO_DIR_OUTPUT);
     }
+    #endif
 
     return 0;
 }
@@ -90,9 +108,9 @@ int gpio_pin_init(uint8_t port, uint8_t number, gpio_pin_config_t *config) {
 
 int gpio_pin_dir(uint8_t port, uint8_t number, bool input) {
     if (input) {
-        GPIO_SetDir(port, number, GPIO_DIR_INPUT);
+        Driver_GPIO_PORT1.InitPinAsOutput(number, 1U);
     } else {
-        GPIO_SetDir(port, number, GPIO_DIR_OUTPUT);
+        Driver_GPIO_PORT1.InitPinAsInput(number, ARM_GPIO_INTERRUPT_NONE, NULL);
     }
 
     return 0;
@@ -100,18 +118,14 @@ int gpio_pin_dir(uint8_t port, uint8_t number, bool input) {
 
 
 int gpio_pin_write(uint8_t port, uint8_t number, bool value) {
-    if (value) {
-        GPIO_PinWrite(port, number, 1U);
-    } else {
-        GPIO_PinWrite(port, number, 0U);
-    }
+    Driver_GPIO_PORT1.PinWrite(number, value);
 
     return 0;
 }
 
 
 bool gpio_pin_read(uint8_t port, uint8_t number) {
-    bool value = (bool)GPIO_PinRead(port, number);
+    bool value = (bool)Driver_GPIO_PORT1.PinRead(number);
 
     return value;
 }

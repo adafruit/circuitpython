@@ -52,16 +52,24 @@
 // #define OS_USE_TRACE_SEMIHOSTING_DEBUG
 // #define OS_USE_TRACE_SEMIHOSTING_STDOUT
 
-#if !(defined(__ARM_ARCH_7M__) || defined(__ARM_ARCH_7EM__))
+#if !(defined(__ARM_ARCH_7M__) || defined(__ARM_ARCH_7EM__) || defined(__ARM_ARCH_8M_MAIN__))
 #if defined(OS_USE_TRACE_ITM)
 #undef OS_USE_TRACE_ITM
 #warning "ITM unavailable"
 #endif // defined(OS_USE_TRACE_ITM)
-#endif // !(defined(__ARM_ARCH_7M__) || defined(__ARM_ARCH_7EM__))
+#endif // !(defined(__ARM_ARCH_7M__) || defined(__ARM_ARCH_7EM__) || defined(__ARM_ARCH_8M_MAIN__))
 
 #if defined(OS_DEBUG_SEMIHOSTING_FAULTS)
 #if defined(OS_USE_TRACE_SEMIHOSTING_STDOUT) || defined(OS_USE_TRACE_SEMIHOSTING_DEBUG)
 #error "Cannot debug semihosting using semihosting trace; use OS_USE_TRACE_ITM"
+#endif
+#endif
+
+#if !defined(ITM_TCR_TRACEBUSID_Msk)
+#if defined(ITM_TCR_TraceBusID_Msk)
+#define ITM_TCR_TRACEBUSID_Msk ITM_TCR_TraceBusID_Msk
+#else
+#error ITM_TCR_TraceBusID_Msk is supposed to be defined
 #endif
 #endif
 
@@ -99,28 +107,36 @@ void SWO_Init(uint32_t portBits, uint32_t cpuCoreFreqHz, uint32_t SWOSpeed) {
     SWOPrescaler /= 2u;
     SWOPrescaler -= 1u; /* SWOSpeed in Hz, note that cpuCoreFreqHz is expected to be match the CPU core clock */
 
-    #if (0)
+    #if defined(__ARM_ARCH_8M_MAIN__) && (__ARM_ARCH_8M_MAIN__)
     CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
     TPI->SPPR = CONFIG_SWO_PROTO_SEL;
     TPI->ACPR = SWOPrescaler;
     ITM->LAR = 0xC5ACCE55;
 
-    ITM->TCR = 0x0001000D;
+    ITM->TCR = ITM_TCR_TRACEBUSID_Msk | ITM_TCR_SWOENA_Msk | ITM_TCR_SYNCENA_Msk | ITM_TCR_ITMENA_Msk; /* ITM Trace Control Register */
     ITM->TPR = 0x0;
     ITM->TER = portBits; /* ITM Trace Enable Register. Enabled tracing on stimulus ports. One bit per stimulus port. */
+
+    DWT->CTRL = (DWT->CTRL & 1) | 0x400003FE; /* DWT_CTRL, preserve CYCCNTENA bit */
+    #if (1)
+    // FIXME: Implement Core M33 support
     #else
+    DWT->MASK1 = 0x00000100; /* Formatter and Flush Control Register */
+    #endif
+
+    #elif (__ARM_ARCH_7M__)
     CoreDebug->DEMCR = CoreDebug_DEMCR_TRCENA_Msk; /* enable trace in core debug */
     TPI->SPPR = CONFIG_SWO_PROTO_SEL; /* "Selected PIN Protocol Register": Select which protocol to use for trace output (2: SWO NRZ, 1: SWO Manchester encoding) */
     TPI->ACPR = SWOPrescaler; /* "Async Clock Prescaler Register". Scale the baud rate of the asynchronous output */
     ITM->LAR = 0xC5ACCE55; /* ITM Lock Access Register, C5ACCE55 enables more write access to Control Register 0xE00 :: 0xFFC */
 
-    ITM->TCR = ITM_TCR_TraceBusID_Msk | ITM_TCR_SWOENA_Msk | ITM_TCR_SYNCENA_Msk | ITM_TCR_ITMENA_Msk; /* ITM Trace Control Register */
+    ITM->TCR = ITM_TCR_TRACEBUSID_Msk | ITM_TCR_SWOENA_Msk | ITM_TCR_SYNCENA_Msk | ITM_TCR_ITMENA_Msk; /* ITM Trace Control Register */
     ITM->TPR = ITM_TPR_PRIVMASK_Msk; /* ITM Trace Privilege Register */
     ITM->TER = portBits; /* ITM Trace Enable Register. Enabled tracing on stimulus ports. One bit per stimulus port. */
+
     #endif
 
-    DWT->CTRL = (DWT->CTRL & 1) | 0x400003FE; /* DWT_CTRL, preserve CYCCNTENA bit */
-    DWT->MASK1 = 0x00000100; /* Formatter and Flush Control Register */
+    return;
 }
 
 void
@@ -154,7 +170,7 @@ trace_write(const char *buf __attribute__((unused)),
 
 #if defined(OS_USE_TRACE_ITM)
 
-#if defined(__ARM_ARCH_7M__) || defined(__ARM_ARCH_7EM__)
+#if defined(__ARM_ARCH_7M__) || defined(__ARM_ARCH_7EM__) || defined(__ARM_ARCH_8M_MAIN__)
 
 // ITM is the ARM standard mechanism, running over SWD/SWO on Cortex-M3/M4
 // devices, and is the recommended setting, if available.
@@ -190,7 +206,7 @@ _trace_write_itm(const char *buf, size_t nbyte) {
     return (ssize_t)nbyte; // all characters successfully sent
 }
 
-#endif // defined(__ARM_ARCH_7M__) || defined(__ARM_ARCH_7EM__)
+#endif // defined(__ARM_ARCH_7M__) || defined(__ARM_ARCH_7EM__) || defined(__ARM_ARCH_8M_MAIN__)
 
 #endif // OS_USE_TRACE_ITM
 

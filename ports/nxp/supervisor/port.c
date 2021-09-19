@@ -27,6 +27,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "supervisor/background_callback.h"
 #include "supervisor/board.h"
 #include "supervisor/port.h"
 #include "ports/nxp/supervisor/port_nxp.h"
@@ -548,6 +549,19 @@ STATIC uint64_t _get_count(uint64_t *overflow_count) {
     common_hal_mcu_disable_interrupts();
 
     uint64_t count = RIT_GetCounter();
+
+    #if (1)
+    // FIXME: Configure RIT counter accordingly. Use COMPARE interrupt.
+    {
+        #if (1)
+        count /= (100000000ULL / 32768ULL);
+        #else
+        uint64_t clk = (uint64_t)Chip_Clock_GetPeripheralClockRate(SYSCTL_PCLK_RIT);
+        count /= (clk / 32768ULL);
+        #endif
+    }
+    #endif
+
     if (overflow_count != NULL) {
         *overflow_count = overflowed_ticks;
     }
@@ -736,8 +750,15 @@ void port_interrupt_after_ticks(uint32_t ticks) {
 }
 #endif
 
-#if (1)
 void port_idle_until_interrupt(void) {
+    #if (1)
+    common_hal_mcu_disable_interrupts();
+    if (!background_callback_pending()) {
+//  asm volatile ("dsb 0xF":::"memory");
+//        __wfi();
+    }
+    common_hal_mcu_enable_interrupts();
+    #else
     // Clear the FPU interrupt because it can prevent us from sleeping.
     if (__get_FPSCR() & ~(0x9f)) {
         __set_FPSCR(__get_FPSCR() & ~(0x9f));
@@ -757,25 +778,10 @@ void port_idle_until_interrupt(void) {
         __WFI();
     }
     #endif
+    #endif
+
     return;
 }
-#else
-void port_idle_until_interrupt(void) {
-    #ifdef SAM_D5X_E5X
-    // Clear the FPU interrupt because it can prevent us from sleeping.
-    if (__get_FPSCR() & ~(0x9f)) {
-        __set_FPSCR(__get_FPSCR() & ~(0x9f));
-        (void)__get_FPSCR();
-    }
-    #endif
-    common_hal_mcu_disable_interrupts();
-    if (!tud_task_event_ready() && !hold_interrupt && !_woken_up) {
-        __DSB();
-        __WFI();
-    }
-    common_hal_mcu_enable_interrupts();
-}
-#endif
 
 #if (0)
 /**

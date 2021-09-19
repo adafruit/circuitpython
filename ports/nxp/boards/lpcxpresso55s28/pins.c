@@ -5,7 +5,24 @@
 // out on connectors are labeled with their MCU name available from
 // microcontroller.pin.
 STATIC const mp_rom_map_elem_t board_global_dict_table[] = {
+    #if (1)
+    // FC1 I2C
+    { MP_OBJ_NEW_QSTR(MP_QSTR_SDA),  MP_ROM_PTR(&pin_P0_13) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_SCL),  MP_ROM_PTR(&pin_P0_14) },
+
+    // FC3 SPI
+    { MP_OBJ_NEW_QSTR(MP_QSTR_SCK),  MP_ROM_PTR(&pin_P0_6) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_MISO),  MP_ROM_PTR(&pin_P0_2) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_MOSI), MP_ROM_PTR(&pin_P0_3) },
     #if (0)
+    { MP_OBJ_NEW_QSTR(MP_QSTR_SSEL), MP_ROM_PTR(&pin_P0_4) },
+    #endif
+
+    { MP_ROM_QSTR(MP_QSTR_UART), MP_ROM_PTR(&board_uart_obj) },
+    { MP_ROM_QSTR(MP_QSTR_I2C), MP_ROM_PTR(&board_i2c_obj) },
+    { MP_ROM_QSTR(MP_QSTR_SPI), MP_ROM_PTR(&board_spi_obj) },
+
+    #else
     { MP_OBJ_NEW_QSTR(MP_QSTR_SDA),  MP_ROM_PTR(&pin_PD08) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_SCL),  MP_ROM_PTR(&pin_PD09) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_VSYNC),  MP_ROM_PTR(&pin_PA12) },
