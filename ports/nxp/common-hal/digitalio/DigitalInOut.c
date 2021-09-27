@@ -91,6 +91,7 @@ common_hal_digitalio_digitalinout_switch_to_output(digitalio_digitalinout_obj_t 
     pin_config.outputLogic = true;
     pin_config.pinMode = GPIO_Mode_PullNone;
     gpio_pin_init(self->pin->port, self->pin->number, &pin_config);
+    gpio_pin_dir(self->pin->port, self->pin->number, false);
 
     self->output = true;
     self->open_drain = drive_mode == DRIVE_MODE_OPEN_DRAIN;

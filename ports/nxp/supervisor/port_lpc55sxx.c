@@ -26,14 +26,38 @@
 
 
 #include <stdint.h>
+#include "mcux-sdk/devices/LPC55S28/LPC55S28.h"
+#include "mcux-sdk/drivers/utick/fsl_utick.h"
+
+
+static volatile uint32_t counter;
+
+static void cb(void) {
+    counter++;
+
+    return;
+}
 
 
 void RIT_Init(void) {
+    counter = 0UL;
+
+    uint32_t CLOCK_CTRL = SYSCON->CLOCK_CTRL;
+    CLOCK_CTRL |= SYSCON_CLOCK_CTRL_FRO1MHZ_CLK_ENA(CLOCK_CTRL);
+    CLOCK_CTRL |= SYSCON_CLOCK_CTRL_FRO1MHZ_UTICK_ENA(CLOCK_CTRL);
+    SYSCON->CLOCK_CTRL = CLOCK_CTRL;
+
+    UTICK_Init(UTICK0);
     return;
 }
 
 
 void RIT_SetTimerIntervalHz(uint32_t freq) {
+
+    /* UTICK is fed by fro_1m, 1 MHz internal oscillator */
+    uint32_t count = 1000000UL / freq;
+
+    UTICK_SetTick(UTICK0, kUTICK_Repeat, count, cb);
     return;
 }
 
@@ -59,5 +83,5 @@ void RIT_Enable(void) {
 
 
 uint32_t RIT_GetCounter(void) {
-    return 0;
+    return counter;
 }

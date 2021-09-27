@@ -46,31 +46,12 @@ extern uint32_t __StackLimit;
 extern uint32_t __HeapBottom;
 extern uint32_t __HeapLimit;
 
-#if (0)
-static uint32_t _get_count(uint64_t *overflow_count) {
-    uint32_t count = 0;
-    #ifdef SAM_D5X_E5X
+/* Update SystemCoreClock variable */
+void SystemInitHook(void) {
+    SystemCoreClockUpdate();
 
-    while ((RTC->MODE0.SYNCBUSY.reg & (RTC_MODE0_SYNCBUSY_COUNTSYNC | RTC_MODE0_SYNCBUSY_COUNT)) != 0) {
-    }
-    #endif
-    #ifdef SAMD21
-    // Request a read so we don't stall the bus later. See section 14.3.1.5 Read Request
-    RTC->MODE0.READREQ.reg = RTC_READREQ_RREQ | 0x0010;
-    while (RTC->MODE0.STATUS.bit.SYNCBUSY != 0) {
-    }
-    #endif
-    // Disable interrupts so we can grab the count and the overflow.
-    common_hal_mcu_disable_interrupts();
-    uint32_t count = RTC->MODE0.COUNT.reg;
-    if (overflow_count != NULL) {
-        *overflow_count = overflowed_ticks;
-    }
-    common_hal_mcu_enable_interrupts();
-
-    return count;
+    return;
 }
-#endif
 
 
 STATIC void raw_ticks_init(void) {
@@ -549,18 +530,6 @@ STATIC uint64_t _get_count(uint64_t *overflow_count) {
     common_hal_mcu_disable_interrupts();
 
     uint64_t count = RIT_GetCounter();
-
-    #if (1)
-    // FIXME: Configure RIT counter accordingly. Use COMPARE interrupt.
-    {
-        #if (1)
-        count /= (100000000ULL / 32768ULL);
-        #else
-        uint64_t clk = (uint64_t)Chip_Clock_GetPeripheralClockRate(SYSCTL_PCLK_RIT);
-        count /= (clk / 32768ULL);
-        #endif
-    }
-    #endif
 
     if (overflow_count != NULL) {
         *overflow_count = overflowed_ticks;

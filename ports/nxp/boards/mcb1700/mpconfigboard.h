@@ -33,7 +33,14 @@
 
 #define CIRCUITPY_INTERNAL_NVM_SIZE                 (0)
 #define CIRCUITPY_INTERNAL_FLASH_FILESYSTEM_SIZE    (128 * 1024)
-#define RAM_SIZE                                    (64 * 1024)
+#define SRAM_ADDR                                   (0x10000000)
+#define SRAM_SIZE                                   (32 * 1024)
+#define AHBRAM_ADDR                                 (0x2007c000)
+#define AHBRAM_SIZE                                 (32 * 1024)
+#define RAM_ADDR                                    (SRAM_ADDR)
+#define RAM_SIZE                                    (SRAM_SIZE + AHBRAM_SIZE)
+#define CIRCUITPY_DEFAULT_STACK_SIZE                (8 * 1024)
+#define CIRCUITPY_DEFAULT_HEAP_SIZE                 (AHBRAM_SIZE - CIRCUITPY_DEFAULT_STACK_SIZE)
 
 #define DEBUG_UART_TX                               (&pin_P2_0)
 #define DEBUG_UART_RX                               (&pin_P0_2)

@@ -38,13 +38,17 @@
 #define MICROPY_PORT_ROOT_POINTERS \
     CIRCUITPY_COMMON_ROOT_POINTERS \
 
-#define CIRCUITPY_DEFAULT_STACK_SIZE        (24 * 1024)
-#define CIRCUITPY_DEFAULT_HEAP_SIZE         (40 * 1024)
+#if (1)
+// TODO: Defined in mpconfigboard.h; Must be chip specific;
+#else
+#define CIRCUITPY_DEFAULT_STACK_SIZE        (8 * 1024)
+#define CIRCUITPY_DEFAULT_HEAP_SIZE         (24 * 1024)
+#endif
 
 #if (1)
-#define BOOTLOADER_SIZE                  (0 * 1024)
+#define BOOTLOADER_SIZE                     (0 * 1024)
 #else
-#define BOOTLOADER_SIZE                  (16 * 1024)
+#define BOOTLOADER_SIZE                     (16 * 1024)
 #endif
 
 // FIXME: Flash size is chip specific

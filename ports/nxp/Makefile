@@ -133,7 +133,9 @@ CFLAGS += -DLPC175x_6x=1 \
           -Wno-error=int-conversion \
           -Wno-error=implicit-fallthrough
 
-SRC_C += lpc17xx/cr_startup_lpc175x_6x.c
+SRC_C += lpc17xx/cr_startup_lpc175x_6x.c \
+		 lpc17xx/system_LPC17xx.c
+
 SRC_C += nxp_lpcopen/lpc175x_6x/lpc_chip_175x_6x/src/ritimer_17xx_40xx.c \
          nxp_lpcopen/lpc175x_6x/lpc_chip_175x_6x/src/clock_17xx_40xx.c \
          supervisor/port_lpc17xx.c
@@ -243,7 +245,6 @@ endif
 
 ifeq ($(CHIP_FAMILY_LOWER), lpc1700)
 SRC_SDK := \
-	lpc17xx/Keil/$(CHIP_FAMILY)_DFP/2.6.0/Device/Source/system_LPC17xx.c \
 	nxp_lpc/$(CHIP_FAMILY)/CMSIS/Driver/CAN_LPC17xx.c \
 	nxp_lpc/$(CHIP_FAMILY)/CMSIS/Driver/GPDMA_LPC17xx.c \
 	nxp_lpc/$(CHIP_FAMILY)/CMSIS/Driver/GPIO_LPC17xx.c \
@@ -283,6 +284,7 @@ else
   	driver/fsl_cmsis/$(CHIP_FAMILY)/fsl_clock.c \
   	driver/fsl_cmsis/$(CHIP_FAMILY)/fsl_common.c \
   	driver/fsl_cmsis/$(CHIP_FAMILY)/fsl_reset.c \
+  	mcux-sdk/drivers/utick/fsl_utick.c \
   	mcux-sdk/utilities/misc_utilities/fsl_sbrk.c
   endif
 

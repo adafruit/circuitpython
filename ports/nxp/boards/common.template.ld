@@ -10,14 +10,15 @@ MEMORY
     FLASH_CONFIG (r)      : ORIGIN = ${CIRCUITPY_INTERNAL_CONFIG_START_ADDR}, LENGTH = ${CIRCUITPY_INTERNAL_CONFIG_SIZE}
     FLASH_NVM (r)         : ORIGIN = ${CIRCUITPY_INTERNAL_NVM_START_ADDR}, LENGTH = ${CIRCUITPY_INTERNAL_NVM_SIZE}
 
-    RAM (rw)              : ORIGIN = 0x10000000, LENGTH = 0x8000  /*  32k */
-    AHBRAM (rw)           : ORIGIN = 0x2007c000, LENGTH = 0x8000  /*  32k */
+    RAM (rw)              : ORIGIN = ${RAM_ADDR}, LENGTH = ${RAM_SIZE}
+    SRAM (rw)             : ORIGIN = ${SRAM_ADDR}, LENGTH = ${SRAM_SIZE}
+    AHBRAM (rw)           : ORIGIN = ${AHBRAM_ADDR}, LENGTH = ${AHBRAM_SIZE}
 }
 
 /* top end of the stack */
 /* stack must be double-word (8 byte) aligned */
 _estack = ORIGIN(AHBRAM) + LENGTH(AHBRAM) - 8;
-_bootloader_dbl_tap = ORIGIN(RAM) + LENGTH(RAM) - 4;
+_bootloader_dbl_tap = ORIGIN(SRAM) + LENGTH(SRAM) - 4;
 
 /* define output sections */
 ENTRY(ResetISR)
@@ -150,7 +151,7 @@ SECTIONS
     /* All data end */
     __data_end__ = .;
 
-  } > RAM
+  } > SRAM
 
   /*
    * Secondary data section, optional
@@ -171,7 +172,7 @@ SECTIONS
     . = ALIGN(4);
     __data2_end__ = .;
 
-  } > RAM2
+  } > SRAM2
 */
 
   .bss :
@@ -184,7 +185,7 @@ SECTIONS
     . = ALIGN(4);
     __bss_end__ = .;
     _ebss = .;
-  } > RAM AT > RAM
+  } > SRAM AT > SRAM
 
   /*
    * Secondary bss section, optional
@@ -202,10 +203,10 @@ SECTIONS
     *(.bss2.*)
     . = ALIGN(4);
     __bss2_end__ = .;
-  } > RAM2 AT > RAM2
+  } > SRAM2 AT > SRAM2
 */
 
-  .heap (ORIGIN(AHBRAM)) (COPY) :
+  .heap (ORIGIN(AHBRAM)) (NOLOAD) :
   {
     . = ALIGN(8);
     __HeapBottom = .;
@@ -215,7 +216,7 @@ SECTIONS
     __HeapLimit = .;
   } > AHBRAM
 
-  .stack (ORIGIN(AHBRAM) + LENGTH(AHBRAM) - ${CIRCUITPY_DEFAULT_STACK_SIZE}) (COPY) :
+  .stack (ORIGIN(AHBRAM) + LENGTH(AHBRAM) - ${CIRCUITPY_DEFAULT_STACK_SIZE}) (NOLOAD) :
   {
     . = ALIGN(8);
     __StackLimit = .;

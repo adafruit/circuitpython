@@ -38,6 +38,8 @@ extern ARM_DRIVER_USART Driver_USART1;
 extern ARM_DRIVER_USART Driver_USART0;
 #define USART_Instance Driver_USART0
 
+#include "fsl_clock.h"
+
 #else
 #error "Board support is missing"
 
@@ -75,6 +77,10 @@ void serial_init(void) {
     wr = 0u;
     is_init = true;
     memset(&rx_buf[0u], '\0', sizeof(rx_buf));
+
+    #if defined(BOARD_LPCEXPRESSO55S28)
+    CLOCK_AttachClk(kFRO12M_to_FLEXCOMM0);
+    #endif
 
     int32_t status = USART_Instance.Initialize(cb_event);
     assert((ARM_DRIVER_OK == status));

@@ -66,6 +66,8 @@ extern ARM_DRIVER_GPIO Driver_GPIO_PORT1;
 
 int gpio_pin_init(uint8_t port, uint8_t number, gpio_pin_config_t *config) {
     #if (1)
+    Driver_GPIO_PORT1.Initialize();
+
     const uint32_t pin_config = (/* Pin is configured as GPIO */
         IOCON_PIO_FUNC_GPIO |
         /* No addition pin function */
@@ -108,9 +110,9 @@ int gpio_pin_init(uint8_t port, uint8_t number, gpio_pin_config_t *config) {
 
 int gpio_pin_dir(uint8_t port, uint8_t number, bool input) {
     if (input) {
-        Driver_GPIO_PORT1.InitPinAsOutput(number, 1U);
-    } else {
         Driver_GPIO_PORT1.InitPinAsInput(number, ARM_GPIO_INTERRUPT_NONE, NULL);
+    } else {
+        Driver_GPIO_PORT1.InitPinAsOutput(number, 1U);
     }
 
     return 0;

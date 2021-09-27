@@ -9,6 +9,11 @@
 // The next line is a marker to start looking for definitions. Lines above the next line are ignored.
 // START_LD_DEFINES
 
+/*SRAM_ADDR=*/ SRAM_ADDR;
+/*SRAM_SIZE=*/ SRAM_SIZE;
+/*AHBRAM_ADDR=*/ AHBRAM_ADDR;
+/*AHBRAM_SIZE=*/ AHBRAM_SIZE;
+/*RAM_ADDR=*/ RAM_ADDR;
 /*RAM_SIZE=*/ RAM_SIZE;
 /*FLASH_SIZE=*/ FLASH_SIZE;
 

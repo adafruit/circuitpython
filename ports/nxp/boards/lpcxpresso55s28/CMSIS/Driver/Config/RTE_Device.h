@@ -20,21 +20,27 @@ extern void BOARD_InitLEDBlue(void); /* Function assigned for the Cortex-M33 (Co
 
 // -------- <<< Use Configuration Wizard in Context Menu >>> --------------------
 // <e> USART0 (Universal synchronous/asynchronous receiver transmitter)
-#define RTE_USART0        1
+#define RTE_USART0                  1
 
 // <h> DMA
 //   <e> Tx
 //     <o1> Channel     <0=>0 <1=>1 <2=>2 <3=>3 <4=>4 <5=>5 <6=>6 <7=>7
 //   </e>
-#define RTE_USART0_DMA_EN 0
-#define RTE_USART0_DMA_TX_CH       5
-#define RTE_USART0_DMA_RX_CH       4
+#define RTE_USART0_DMA_EN           0
+#define RTE_USART0_DMA_TX_CH        5
+
+//   <e> Rx
+//     <o1> Channel     <0=>0 <1=>1 <2=>2 <3=>3 <4=>4 <5=>5 <6=>6 <7=>7
+//   </e>
+#define RTE_USART0_DMA_EN           0
+#define RTE_USART0_DMA_RX_CH        4
 // </h>
 // </e> USART0 (Universal synchronous/asynchronous receiver transmitter)
 
+// -------- <<< end of configuration section >>> --------------------
+
 #define RTE_USART0_DMA_TX_DMA_BASE DMA0
 #define RTE_USART0_DMA_RX_DMA_BASE DMA0
-// -------- <<< end of configuration section >>> --------------------
 
 /* USART configuration. */
 #define USART_RX_BUFFER_LEN     64

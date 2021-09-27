@@ -85,5 +85,13 @@ void RIT_Enable(void) {
 
 
 uint32_t RIT_GetCounter(void) {
-    return Chip_RIT_GetCounter(LPC_RITIMER);
+    uint32_t Counter = Chip_RIT_GetCounter(LPC_RITIMER);
+    #if (1)
+    Counter /= (100000000ULL / 32768ULL);
+    #else
+    uint64_t clk = (uint64_t)Chip_Clock_GetPeripheralClockRate(SYSCTL_PCLK_RIT);
+    Counter /= (clk / 32768ULL);
+    #endif
+
+    return Counter;
 }

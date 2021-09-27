@@ -139,6 +139,7 @@ extern int main(void);
 //
 // *****************************************************************************
 extern void _vStackTop(void);
+extern void _estack(void);
 
 // *****************************************************************************
 //
@@ -161,7 +162,7 @@ extern void(*const g_pfnVectors[])(void);
 __VECTOR_TABLE_ATTRIBUTE
 void(*const g_pfnVectors[])(void) = {
     // Core Level - CM3
-    &_vStackTop, // The initial stack pointer
+    &_estack,                               // The initial stack pointer
     Reset_Handler,                          // The reset handler
     NMI_Handler,                            // The NMI handler
     HardFault_Handler,                      // The hard fault handler
