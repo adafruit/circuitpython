@@ -102,11 +102,11 @@ STATIC mp_obj_t supervisor_reload(void) {
 }
 MP_DEFINE_CONST_FUN_OBJ_0(supervisor_reload_obj, supervisor_reload);
 
-//| def set_next_stack_limit(size: int) -> None:
+//| def set_next_stack_limit(size: int) -> int:
 //|     """Set the size of the stack for the next vm run. If its too large, the default will be used."""
 //|     ...
 //|
-STATIC mp_obj_t supervisor_set_next_stack_limit(mp_obj_t size_obj) {
+mp_obj_t supervisor_set_next_stack_limit(mp_obj_t size_obj) {
     mp_int_t size = mp_obj_get_int(size_obj);
 
     if (size < 256) {
@@ -114,7 +114,7 @@ STATIC mp_obj_t supervisor_set_next_stack_limit(mp_obj_t size_obj) {
     }
     set_next_stack_size(size);
 
-    return mp_const_none;
+    return mp_obj_new_int(size);
 }
 MP_DEFINE_CONST_FUN_OBJ_1(supervisor_set_next_stack_limit_obj, supervisor_set_next_stack_limit);
 
