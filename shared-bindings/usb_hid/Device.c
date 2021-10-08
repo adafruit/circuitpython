@@ -39,16 +39,29 @@
 //|           not verified for correctness; it is up to you to make sure it is not malformed.
 //|         :param int usage_page: The Usage Page value from the descriptor. Must match what is in the descriptor.
 //|         :param int usage: The Usage value from the descriptor. Must match what is in the descriptor.
-//|         :param int report_ids: Sequence of report ids used by the descriptor.
-//|           If the ``report_descriptor`` does not have a report ID, use 0.
-//|         :param int in_report_lengths: Sequence of sizes in bytes of the HIDs report sent to the host.
+//|         :param Sequence[int] report_ids: Sequence of report ids used by the descriptor.
+//|           If the ``report_descriptor`` does not specify any report IDs, use ``(0,)``.
+//|         :param Sequence[int] in_report_lengths: Sequence of sizes in bytes of the HID reports sent to the host.
 //|           The sizes are in order of the ``report_ids``.
+//|           Use a size of ``0`` for a report that is not an IN report.
 //|           "IN" is with respect to the host.
-//|         :param int out_report_lengths: Size in bytes of the HID report received from the host.
+//|         :param int out_report_lengths: Sequence of sizes in bytes of the HID reports received from the host.
 //|           The sizes are in order of the ``report_ids``.
+//|           Use a size of ``0`` for a report that is not an OUT report.
 //|           "OUT" is with respect to the host.
 //|
 //|         ``report_ids``, ``in_report_lengths``, and ``out_report_lengths`` must all be the same length.
+//|
+//|         Here is an example of a `Device` with a descriptor that specifies two report IDs, 3 and 4.
+//|         Report ID 3 sends an IN report of length 5, and receives an OUT report of length 6.
+//|         Report ID 4 sends an IN report of length 2, and does not receive an OUT report::
+//|
+//|             device = usb_hid.Device(
+//|                 descriptor=b"...",         # Omitted for brevity.
+//|                 report_ids=(3, 4),
+//|                 in_report_lengths=(5, 2),
+//|                 out_report_lengths=(6, 0),
+//|             )
 //|         """
 //|         ...
 //|
@@ -123,7 +136,7 @@ STATIC mp_obj_t usb_hid_device_make_new(const mp_obj_type_t *type, size_t n_args
             // It's not the actual argument that's out of range, but its elements.
             // But the error message is close enough.
             MP_OBJ_SMALL_INT_VALUE(mp_obj_subscr(report_ids, i_obj, MP_OBJ_SENTINEL)),
-            1, 255, MP_QSTR_report_ids);
+            0, 255, MP_QSTR_report_ids);
 
         in_report_lengths_array[i] = (uint8_t)mp_arg_validate_int_range(
             MP_OBJ_SMALL_INT_VALUE(mp_obj_subscr(in_report_lengths, i_obj, MP_OBJ_SENTINEL)),
@@ -132,6 +145,10 @@ STATIC mp_obj_t usb_hid_device_make_new(const mp_obj_type_t *type, size_t n_args
         out_report_lengths_array[i] = (uint8_t)mp_arg_validate_int_range(
             MP_OBJ_SMALL_INT_VALUE(mp_obj_subscr(out_report_lengths, i_obj, MP_OBJ_SENTINEL)),
             0, 255, MP_QSTR_out_report_lengths);
+    }
+
+    if (report_ids_array[0] == 0 && report_ids_count > 1) {
+        mp_raise_ValueError_varg(translate("%q with a report ID of 0 must be of length 1"), MP_QSTR_report_ids);
     }
 
     common_hal_usb_hid_device_construct(

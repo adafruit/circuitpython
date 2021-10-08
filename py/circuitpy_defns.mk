@@ -471,6 +471,8 @@ $(filter $(SRC_PATTERNS), \
 	microcontroller/RunMode.c \
 	msgpack/__init__.c \
 	msgpack/ExtType.c \
+	paralleldisplay/__init__.c \
+	paralleldisplay/ParallelBus.c \
 	supervisor/RunReason.c \
 	wifi/AuthMode.c \
 )
@@ -549,6 +551,7 @@ SRC_SHARED_MODULE_ALL = \
 	onewireio/__init__.c \
 	onewireio/OneWire.c \
 	os/__init__.c \
+	paralleldisplay/ParallelBus.c \
 	qrio/__init__.c \
 	qrio/QRDecoder.c \
 	rainbowio/__init__.c \

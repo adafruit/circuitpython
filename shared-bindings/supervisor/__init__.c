@@ -195,7 +195,7 @@ STATIC mp_obj_t supervisor_set_next_code_file(size_t n_args, const mp_obj_t *pos
     const char *filename = mp_obj_str_get_data(args.filename.u_obj, &len);
     free_memory(next_code_allocation);
     if (options != 0 || len != 0) {
-        next_code_allocation = allocate_memory(align32_size(sizeof(next_code_info_t) + len + 1), false, false);
+        next_code_allocation = allocate_memory(align32_size(sizeof(next_code_info_t) + len + 1), false, true);
         if (next_code_allocation == NULL) {
             m_malloc_fail(sizeof(next_code_info_t) + len + 1);
         }
@@ -251,7 +251,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(supervisor_set_next_code_file_obj, 0, supervisor_set_
 //|
 //|     """
 //|     ...
-STATIC mp_obj_t supervisor_ticks_ms(void) {
+mp_obj_t supervisor_ticks_ms(void) {
     uint64_t ticks_ms = common_hal_time_monotonic_ms();
     return mp_obj_new_int((ticks_ms + 0x1fff0000) % (1 << 29));
 }

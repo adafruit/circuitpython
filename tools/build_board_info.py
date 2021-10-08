@@ -40,7 +40,7 @@ extension_by_port = {
     "cxd56": SPK,
     "mimxrt10xx": HEX_UF2,
     "litex": DFU,
-    "esp32s2": BIN_UF2,
+    "espressif": BIN_UF2,
     "raspberrypi": UF2,
 }
 
@@ -65,6 +65,9 @@ extension_by_board = {
     "microbit_v2": COMBINED_HEX,
     # stm32
     "meowbit_v121": UF2,
+    # esp32c3
+    "ai_thinker_esp32-c3s": BIN,
+    "microdev_micro_c3": BIN,
 }
 
 language_allow_list = set(

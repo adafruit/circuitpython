@@ -213,7 +213,7 @@ Supported         Support status
 ================  ============================================================
 atmel-samd        ``SAMD21`` stable | ``SAMD51`` stable
 cxd56             stable
-esp32s2           stable
+espressif         ``ESP32-C3`` beta | ``ESP32-S2`` stable
 litex             alpha
 mimxrt10xx        alpha
 nrf               stable

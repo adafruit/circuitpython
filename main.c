@@ -107,6 +107,11 @@
 #include "shared-bindings/wifi/__init__.h"
 #endif
 
+#if CIRCUITPY_BOOT_COUNTER
+#include "shared-bindings/nvm/ByteArray.h"
+uint8_t value_out = 0;
+#endif
+
 #if MICROPY_ENABLE_PYSTACK
 static size_t PLACE_IN_DTCM_BSS(_pystack[CIRCUITPY_PYSTACK_SIZE / sizeof(size_t)]);
 #endif
@@ -236,7 +241,7 @@ STATIC void cleanup_after_vm(supervisor_allocation* heap, mp_obj_t exception) {
             size_t traceback_len = 0;
             mp_print_t print_count = {&traceback_len, count_strn};
             mp_obj_print_exception(&print_count, exception);
-            prev_traceback_allocation = allocate_memory(align32_size(traceback_len + 1), false, false);
+            prev_traceback_allocation = allocate_memory(align32_size(traceback_len + 1), false, true);
             // Empirically, this never fails in practice - even when the heap is totally filled up
             // with single-block-sized objects referenced by a root pointer, exiting the VM frees
             // up several hundred bytes, sufficient for the traceback (which tends to be shortened
@@ -795,6 +800,13 @@ int __attribute__((used)) main(void) {
 
     // Turn on RX and TX LEDs if we have them.
     init_rxtx_leds();
+
+    #if CIRCUITPY_BOOT_COUNTER
+    // Increment counter before possibly entering safe mode
+    common_hal_nvm_bytearray_get_bytes(&common_hal_mcu_nvm_obj,0,1,&value_out);
+    ++value_out;
+    common_hal_nvm_bytearray_set_bytes(&common_hal_mcu_nvm_obj,0,&value_out,1);
+    #endif
 
     // Wait briefly to give a reset window where we'll enter safe mode after the reset.
     if (safe_mode == NO_SAFE_MODE) {

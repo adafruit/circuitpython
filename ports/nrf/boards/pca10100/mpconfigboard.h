@@ -27,7 +27,7 @@
 
 #include "nrfx/hal/nrf_gpio.h"
 
-#define MICROPY_HW_BOARD_NAME       "PCA10100 nRF52833 Dongle"
+#define MICROPY_HW_BOARD_NAME       "PCA10100 nRF52833 DK"
 #define MICROPY_HW_MCU_NAME         "nRF52833"
 
 #define MICROPY_HW_LED_STATUS          (&pin_P0_13)
@@ -38,6 +38,9 @@
 #define CIRCUITPY_INTERNAL_FLASH_FILESYSTEM_SIZE (60 * 1024)
 
 #define CIRCUITPY_BLE_CONFIG_SIZE       (12 * 1024)
+
+// Take 1k RAM to save 1k flash.
+#define CIRCUITPY_PRECOMPUTE_QSTR_ATTR (0)
 
 // Reduce nRF SoftRadio memory usage
 #define BLEIO_VS_UUID_COUNT 10
