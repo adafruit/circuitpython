@@ -163,6 +163,11 @@ else
 
   SRC_C += \
   	boards/$(BOARD)/pin_mux.c
+
+  else
+    ifeq ($(BOARD_LOWER), brkr_ict2)
+    CFLAGS += -DBOARD_BRKR_ICT2=1
+    endif
   endif
 endif
 

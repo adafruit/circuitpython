@@ -34,6 +34,10 @@
 extern ARM_DRIVER_USART Driver_USART1;
 #define USART_Instance Driver_USART1
 
+#elif defined(BOARD_BRKR_ICT2)
+extern ARM_DRIVER_USART Driver_USART0;
+#define USART_Instance Driver_USART0
+
 #elif defined(BOARD_LPCEXPRESSO55S28)
 extern ARM_DRIVER_USART Driver_USART0;
 #define USART_Instance Driver_USART0
@@ -83,6 +87,8 @@ void serial_init(void) {
     #endif
 
     int32_t status = USART_Instance.Initialize(cb_event);
+    (void)status;
+
     assert((ARM_DRIVER_OK == status));
 
     status = USART_Instance.PowerControl(ARM_POWER_FULL);

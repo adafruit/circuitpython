@@ -17,5 +17,6 @@ is limited.
     ../ports/litex/README
     ../ports/mimxrt10xx/README
     ../ports/nrf/README
+    ../ports/nxp/README
     ../ports/raspberrypi/README
     ../ports/stm/README

@@ -392,9 +392,16 @@
 /*----------------------------------------------------------------------------
   Define clocks
  *----------------------------------------------------------------------------*/
+#if !defined(XTAL)
 #define XTAL        (12000000UL)        /* Oscillator frequency               */
+#endif
+
 #define OSC_CLK     (XTAL)              /* Main oscillator frequency          */
+
+#if !defined(RTC_CLK)
 #define RTC_CLK     (32768UL)           /* RTC oscillator frequency           */
+#endif
+
 #define IRC_OSC     (4000000UL)         /* Internal RC oscillator frequency   */
 
 

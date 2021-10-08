@@ -25,9 +25,10 @@
  */
 
 #include "supervisor/board.h"
+#include "clock_config.h"
 
-uint32_t OscRateIn = 12000000;
-uint32_t RTCOscRateIn = 32768;
+uint32_t OscRateIn = XTAL;
+uint32_t RTCOscRateIn = RTC_CLK;
 
 void board_init(void) {
     return;
