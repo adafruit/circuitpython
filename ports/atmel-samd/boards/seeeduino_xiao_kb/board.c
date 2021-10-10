@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2017 Radomir Dopieralski
+ * Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,23 +24,16 @@
  * THE SOFTWARE.
  */
 
-#ifndef MICROPY_INCLUDED_SHARED_MODULE__STAGE_H
-#define MICROPY_INCLUDED_SHARED_MODULE__STAGE_H
+#include "supervisor/board.h"
+#include "mpconfigboard.h"
+#include "hal/include/hal_gpio.h"
 
-#include "shared-bindings/displayio/Display.h"
-#include <stdint.h>
-#include <stdbool.h>
-#include "py/obj.h"
+void board_init(void) {
+}
 
-#define TRANSPARENT (0x1ff8)
+bool board_requests_safe_mode(void) {
+    return false;
+}
 
-void render_stage(
-    uint16_t x0, uint16_t y0,
-    uint16_t x1, uint16_t y1,
-    int16_t vx, int16_t vy,
-    mp_obj_t *layers, size_t layers_size,
-    uint16_t *buffer, size_t buffer_size,
-    displayio_display_obj_t *display,
-    uint8_t scale, uint16_t background);
-
-#endif  // MICROPY_INCLUDED_SHARED_MODULE__STAGE
+void reset_board(void) {
+}
