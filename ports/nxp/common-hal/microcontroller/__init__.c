@@ -129,310 +129,376 @@ const nvm_bytearray_obj_t common_hal_mcu_nvm_obj = {
 
 // This maps MCU pin names to pin objects.
 STATIC const mp_rom_map_elem_t mcu_pin_global_dict_table[] = {
-    #if (0)
-    #if defined(PIN_PA00) && !defined(IGNORE_PIN_PA00)
-    { MP_ROM_QSTR(MP_QSTR_PA00), MP_ROM_PTR(&pin_PA00) },
+    #if defined(PIN_P0_0) && !defined(IGNORE_PIN_P0_0)
+    { MP_ROM_QSTR(MP_QSTR_P0_0), MP_ROM_PTR(&pin_P0_0) },
     #endif
-    #if defined(PIN_PA01) && !defined(IGNORE_PIN_PA01)
-    { MP_ROM_QSTR(MP_QSTR_PA01), MP_ROM_PTR(&pin_PA01) },
+    #if defined(PIN_P0_1) && !defined(IGNORE_PIN_P0_1)
+    { MP_ROM_QSTR(MP_QSTR_P0_1), MP_ROM_PTR(&pin_P0_1) },
     #endif
-    #if defined(PIN_PA02) && !defined(IGNORE_PIN_PA02)
-    { MP_ROM_QSTR(MP_QSTR_PA02), MP_ROM_PTR(&pin_PA02) },
+    #if defined(PIN_P0_2) && !defined(IGNORE_PIN_P0_2)
+    { MP_ROM_QSTR(MP_QSTR_P0_2), MP_ROM_PTR(&pin_P0_2) },
     #endif
-    #if defined(PIN_PA03) && !defined(IGNORE_PIN_PA03)
-    { MP_ROM_QSTR(MP_QSTR_PA03), MP_ROM_PTR(&pin_PA03) },
+    #if defined(PIN_P0_3) && !defined(IGNORE_PIN_P0_3)
+    { MP_ROM_QSTR(MP_QSTR_P0_3), MP_ROM_PTR(&pin_P0_3) },
     #endif
-    #if defined(PIN_PA04) && !defined(IGNORE_PIN_PA04)
-    { MP_ROM_QSTR(MP_QSTR_PA04), MP_ROM_PTR(&pin_PA04) },
+    #if defined(PIN_P0_4) && !defined(IGNORE_PIN_P0_4)
+    { MP_ROM_QSTR(MP_QSTR_P0_4), MP_ROM_PTR(&pin_P0_4) },
     #endif
-    #if defined(PIN_PA05) && !defined(IGNORE_PIN_PA05)
-    { MP_ROM_QSTR(MP_QSTR_PA05), MP_ROM_PTR(&pin_PA05) },
+    #if defined(PIN_P0_5) && !defined(IGNORE_PIN_P0_5)
+    { MP_ROM_QSTR(MP_QSTR_P0_5), MP_ROM_PTR(&pin_P0_5) },
     #endif
-    #if defined(PIN_PA06) && !defined(IGNORE_PIN_PA06)
-    { MP_ROM_QSTR(MP_QSTR_PA06), MP_ROM_PTR(&pin_PA06) },
+    #if defined(PIN_P0_6) && !defined(IGNORE_PIN_P0_6)
+    { MP_ROM_QSTR(MP_QSTR_P0_6), MP_ROM_PTR(&pin_P0_6) },
     #endif
-    #if defined(PIN_PA07) && !defined(IGNORE_PIN_PA07)
-    { MP_ROM_QSTR(MP_QSTR_PA07), MP_ROM_PTR(&pin_PA07) },
+    #if defined(PIN_P0_7) && !defined(IGNORE_PIN_P0_7)
+    { MP_ROM_QSTR(MP_QSTR_P0_7), MP_ROM_PTR(&pin_P0_7) },
     #endif
-    #if defined(PIN_PA08) && !defined(IGNORE_PIN_PA08)
-    { MP_ROM_QSTR(MP_QSTR_PA08), MP_ROM_PTR(&pin_PA08) },
+    #if defined(PIN_P0_8) && !defined(IGNORE_PIN_P0_8)
+    { MP_ROM_QSTR(MP_QSTR_P0_8), MP_ROM_PTR(&pin_P0_8) },
     #endif
-    #if defined(PIN_PA09) && !defined(IGNORE_PIN_PA09)
-    { MP_ROM_QSTR(MP_QSTR_PA09), MP_ROM_PTR(&pin_PA09) },
+    #if defined(PIN_P0_9) && !defined(IGNORE_PIN_P0_9)
+    { MP_ROM_QSTR(MP_QSTR_P0_9), MP_ROM_PTR(&pin_P0_9) },
     #endif
-    #if defined(PIN_PA10) && !defined(IGNORE_PIN_PA10)
-    { MP_ROM_QSTR(MP_QSTR_PA10), MP_ROM_PTR(&pin_PA10) },
+    #if defined(PIN_P0_10) && !defined(IGNORE_PIN_P0_10)
+    { MP_ROM_QSTR(MP_QSTR_P0_10), MP_ROM_PTR(&pin_P0_10) },
     #endif
-    #if defined(PIN_PA11) && !defined(IGNORE_PIN_PA11)
-    { MP_ROM_QSTR(MP_QSTR_PA11), MP_ROM_PTR(&pin_PA11) },
+    #if defined(PIN_P0_11) && !defined(IGNORE_PIN_P0_11)
+    { MP_ROM_QSTR(MP_QSTR_P0_11), MP_ROM_PTR(&pin_P0_11) },
     #endif
-    #if defined(PIN_PA12) && !defined(IGNORE_PIN_PA12)
-    { MP_ROM_QSTR(MP_QSTR_PA12), MP_ROM_PTR(&pin_PA12) },
+    #if defined(PIN_P0_12) && !defined(IGNORE_PIN_P0_12)
+    { MP_ROM_QSTR(MP_QSTR_P0_12), MP_ROM_PTR(&pin_P0_12) },
     #endif
-    #if defined(PIN_PA13) && !defined(IGNORE_PIN_PA13)
-    { MP_ROM_QSTR(MP_QSTR_PA13), MP_ROM_PTR(&pin_PA13) },
+    #if defined(PIN_P0_13) && !defined(IGNORE_PIN_P0_13)
+    { MP_ROM_QSTR(MP_QSTR_P0_13), MP_ROM_PTR(&pin_P0_13) },
     #endif
-    #if defined(PIN_PA14) && !defined(IGNORE_PIN_PA14)
-    { MP_ROM_QSTR(MP_QSTR_PA14), MP_ROM_PTR(&pin_PA14) },
+    #if defined(PIN_P0_14) && !defined(IGNORE_PIN_P0_14)
+    { MP_ROM_QSTR(MP_QSTR_P0_14), MP_ROM_PTR(&pin_P0_14) },
     #endif
-    #if defined(PIN_PA15) && !defined(IGNORE_PIN_PA15)
-    { MP_ROM_QSTR(MP_QSTR_PA15), MP_ROM_PTR(&pin_PA15) },
+    #if defined(PIN_P0_15) && !defined(IGNORE_PIN_P0_15)
+    { MP_ROM_QSTR(MP_QSTR_P0_15), MP_ROM_PTR(&pin_P0_15) },
     #endif
-    #if defined(PIN_PA16) && !defined(IGNORE_PIN_PA16)
-    { MP_ROM_QSTR(MP_QSTR_PA16), MP_ROM_PTR(&pin_PA16) },
+    #if defined(PIN_P0_16) && !defined(IGNORE_PIN_P0_16)
+    { MP_ROM_QSTR(MP_QSTR_P0_16), MP_ROM_PTR(&pin_P0_16) },
     #endif
-    #if defined(PIN_PA17) && !defined(IGNORE_PIN_PA17)
-    { MP_ROM_QSTR(MP_QSTR_PA17), MP_ROM_PTR(&pin_PA17) },
+    #if defined(PIN_P0_17) && !defined(IGNORE_PIN_P0_17)
+    { MP_ROM_QSTR(MP_QSTR_P0_17), MP_ROM_PTR(&pin_P0_17) },
     #endif
-    #if defined(PIN_PA18) && !defined(IGNORE_PIN_PA18)
-    { MP_ROM_QSTR(MP_QSTR_PA18), MP_ROM_PTR(&pin_PA18) },
+    #if defined(PIN_P0_18) && !defined(IGNORE_PIN_P0_18)
+    { MP_ROM_QSTR(MP_QSTR_P0_18), MP_ROM_PTR(&pin_P0_18) },
     #endif
-    #if defined(PIN_PA19) && !defined(IGNORE_PIN_PA19)
-    { MP_ROM_QSTR(MP_QSTR_PA19), MP_ROM_PTR(&pin_PA19) },
+    #if defined(PIN_P0_19) && !defined(IGNORE_PIN_P0_19)
+    { MP_ROM_QSTR(MP_QSTR_P0_19), MP_ROM_PTR(&pin_P0_19) },
     #endif
-    #if defined(PIN_PA20) && !defined(IGNORE_PIN_PA20)
-    { MP_ROM_QSTR(MP_QSTR_PA20), MP_ROM_PTR(&pin_PA20) },
+    #if defined(PIN_P0_20) && !defined(IGNORE_PIN_P0_20)
+    { MP_ROM_QSTR(MP_QSTR_P0_20), MP_ROM_PTR(&pin_P0_20) },
     #endif
-    #if defined(PIN_PA21) && !defined(IGNORE_PIN_PA21)
-    { MP_ROM_QSTR(MP_QSTR_PA21), MP_ROM_PTR(&pin_PA21) },
+    #if defined(PIN_P0_21) && !defined(IGNORE_PIN_P0_21)
+    { MP_ROM_QSTR(MP_QSTR_P0_21), MP_ROM_PTR(&pin_P0_21) },
     #endif
-    #if defined(PIN_PA22) && !defined(IGNORE_PIN_PA22)
-    { MP_ROM_QSTR(MP_QSTR_PA22), MP_ROM_PTR(&pin_PA22) },
+    #if defined(PIN_P0_22) && !defined(IGNORE_PIN_P0_22)
+    { MP_ROM_QSTR(MP_QSTR_P0_22), MP_ROM_PTR(&pin_P0_22) },
     #endif
-    #if defined(PIN_PA23) && !defined(IGNORE_PIN_PA23)
-    { MP_ROM_QSTR(MP_QSTR_PA23), MP_ROM_PTR(&pin_PA23) },
+    #if defined(PIN_P0_23) && !defined(IGNORE_PIN_P0_23)
+    { MP_ROM_QSTR(MP_QSTR_P0_23), MP_ROM_PTR(&pin_P0_23) },
     #endif
-    #if defined(PIN_PA24) && !defined(IGNORE_PIN_PA24)
-    { MP_ROM_QSTR(MP_QSTR_PA24), MP_ROM_PTR(&pin_PA24) },
+    #if defined(PIN_P0_24) && !defined(IGNORE_PIN_P0_24)
+    { MP_ROM_QSTR(MP_QSTR_P0_24), MP_ROM_PTR(&pin_P0_24) },
     #endif
-    #if defined(PIN_PA25) && !defined(IGNORE_PIN_PA25)
-    { MP_ROM_QSTR(MP_QSTR_PA25), MP_ROM_PTR(&pin_PA25) },
+    #if defined(PIN_P0_25) && !defined(IGNORE_PIN_P0_25)
+    { MP_ROM_QSTR(MP_QSTR_P0_25), MP_ROM_PTR(&pin_P0_25) },
     #endif
-    #if defined(PIN_PA27) && !defined(IGNORE_PIN_PA27)
-    { MP_ROM_QSTR(MP_QSTR_PA27), MP_ROM_PTR(&pin_PA27) },
+    #if defined(PIN_P0_27) && !defined(IGNORE_PIN_P0_27)
+    { MP_ROM_QSTR(MP_QSTR_P0_27), MP_ROM_PTR(&pin_P0_27) },
     #endif
-    #if defined(PIN_PA28) && !defined(IGNORE_PIN_PA28)
-    { MP_ROM_QSTR(MP_QSTR_PA28), MP_ROM_PTR(&pin_PA28) },
+    #if defined(PIN_P0_28) && !defined(IGNORE_PIN_P0_28)
+    { MP_ROM_QSTR(MP_QSTR_P0_28), MP_ROM_PTR(&pin_P0_28) },
     #endif
-    #if defined(PIN_PA30) && !defined(IGNORE_PIN_PA30)
-    { MP_ROM_QSTR(MP_QSTR_PA30), MP_ROM_PTR(&pin_PA30) },
+    #if defined(PIN_P0_30) && !defined(IGNORE_PIN_P0_30)
+    { MP_ROM_QSTR(MP_QSTR_P0_30), MP_ROM_PTR(&pin_P0_30) },
     #endif
-    #if defined(PIN_PA31) && !defined(IGNORE_PIN_PA31)
-    { MP_ROM_QSTR(MP_QSTR_PA31), MP_ROM_PTR(&pin_PA31) },
-    #endif
-
-    #if defined(PIN_PB00) && !defined(IGNORE_PIN_PB00)
-    { MP_ROM_QSTR(MP_QSTR_PB00), MP_ROM_PTR(&pin_PB00) },
-    #endif
-    #if defined(PIN_PB01) && !defined(IGNORE_PIN_PB01)
-    { MP_ROM_QSTR(MP_QSTR_PB01), MP_ROM_PTR(&pin_PB01) },
-    #endif
-    #if defined(PIN_PB02) && !defined(IGNORE_PIN_PB02)
-    { MP_ROM_QSTR(MP_QSTR_PB02), MP_ROM_PTR(&pin_PB02) },
-    #endif
-    #if defined(PIN_PB03) && !defined(IGNORE_PIN_PB03)
-    { MP_ROM_QSTR(MP_QSTR_PB03), MP_ROM_PTR(&pin_PB03) },
-    #endif
-    #if defined(PIN_PB04) && !defined(IGNORE_PIN_PB04)
-    { MP_ROM_QSTR(MP_QSTR_PB04), MP_ROM_PTR(&pin_PB04) },
-    #endif
-    #if defined(PIN_PB05) && !defined(IGNORE_PIN_PB05)
-    { MP_ROM_QSTR(MP_QSTR_PB05), MP_ROM_PTR(&pin_PB05) },
-    #endif
-    #if defined(PIN_PB06) && !defined(IGNORE_PIN_PB06)
-    { MP_ROM_QSTR(MP_QSTR_PB06), MP_ROM_PTR(&pin_PB06) },
-    #endif
-    #if defined(PIN_PB07) && !defined(IGNORE_PIN_PB07)
-    { MP_ROM_QSTR(MP_QSTR_PB07), MP_ROM_PTR(&pin_PB07) },
-    #endif
-    #if defined(PIN_PB08) && !defined(IGNORE_PIN_PB08)
-    { MP_ROM_QSTR(MP_QSTR_PB08), MP_ROM_PTR(&pin_PB08) },
-    #endif
-    #if defined(PIN_PB09) && !defined(IGNORE_PIN_PB09)
-    { MP_ROM_QSTR(MP_QSTR_PB09), MP_ROM_PTR(&pin_PB09) },
-    #endif
-    #if defined(PIN_PB10) && !defined(IGNORE_PIN_PB10)
-    { MP_ROM_QSTR(MP_QSTR_PB10), MP_ROM_PTR(&pin_PB10) },
-    #endif
-    #if defined(PIN_PB11) && !defined(IGNORE_PIN_PB11)
-    { MP_ROM_QSTR(MP_QSTR_PB11), MP_ROM_PTR(&pin_PB11) },
-    #endif
-    #if defined(PIN_PB12) && !defined(IGNORE_PIN_PB12)
-    { MP_ROM_QSTR(MP_QSTR_PB12), MP_ROM_PTR(&pin_PB12) },
-    #endif
-    #if defined(PIN_PB13) && !defined(IGNORE_PIN_PB13)
-    { MP_ROM_QSTR(MP_QSTR_PB13), MP_ROM_PTR(&pin_PB13) },
-    #endif
-    #if defined(PIN_PB14) && !defined(IGNORE_PIN_PB14)
-    { MP_ROM_QSTR(MP_QSTR_PB14), MP_ROM_PTR(&pin_PB14) },
-    #endif
-    #if defined(PIN_PB15) && !defined(IGNORE_PIN_PB15)
-    { MP_ROM_QSTR(MP_QSTR_PB15), MP_ROM_PTR(&pin_PB15) },
-    #endif
-    #if defined(PIN_PB16) && !defined(IGNORE_PIN_PB16)
-    { MP_ROM_QSTR(MP_QSTR_PB16), MP_ROM_PTR(&pin_PB16) },
-    #endif
-    #if defined(PIN_PB17) && !defined(IGNORE_PIN_PB17)
-    { MP_ROM_QSTR(MP_QSTR_PB17), MP_ROM_PTR(&pin_PB17) },
-    #endif
-    #if defined(PIN_PB18) && !defined(IGNORE_PIN_PB18)
-    { MP_ROM_QSTR(MP_QSTR_PB18), MP_ROM_PTR(&pin_PB18) },
-    #endif
-    #if defined(PIN_PB19) && !defined(IGNORE_PIN_PB19)
-    { MP_ROM_QSTR(MP_QSTR_PB19), MP_ROM_PTR(&pin_PB19) },
-    #endif
-    #if defined(PIN_PB20) && !defined(IGNORE_PIN_PB20)
-    { MP_ROM_QSTR(MP_QSTR_PB20), MP_ROM_PTR(&pin_PB20) },
-    #endif
-    #if defined(PIN_PB21) && !defined(IGNORE_PIN_PB21)
-    { MP_ROM_QSTR(MP_QSTR_PB21), MP_ROM_PTR(&pin_PB21) },
-    #endif
-    #if defined(PIN_PB22) && !defined(IGNORE_PIN_PB22)
-    { MP_ROM_QSTR(MP_QSTR_PB22), MP_ROM_PTR(&pin_PB22) },
-    #endif
-    #if defined(PIN_PB23) && !defined(IGNORE_PIN_PB23)
-    { MP_ROM_QSTR(MP_QSTR_PB23), MP_ROM_PTR(&pin_PB23) },
-    #endif
-    #if defined(PIN_PB24) && !defined(IGNORE_PIN_PB24)
-    { MP_ROM_QSTR(MP_QSTR_PB24), MP_ROM_PTR(&pin_PB24) },
-    #endif
-    #if defined(PIN_PB25) && !defined(IGNORE_PIN_PB25)
-    { MP_ROM_QSTR(MP_QSTR_PB25), MP_ROM_PTR(&pin_PB25) },
-    #endif
-    #if defined(PIN_PB26) && !defined(IGNORE_PIN_PB26)
-    { MP_ROM_QSTR(MP_QSTR_PB26), MP_ROM_PTR(&pin_PB26) },
-    #endif
-    #if defined(PIN_PB27) && !defined(IGNORE_PIN_PB27)
-    { MP_ROM_QSTR(MP_QSTR_PB27), MP_ROM_PTR(&pin_PB27) },
-    #endif
-    #if defined(PIN_PB28) && !defined(IGNORE_PIN_PB28)
-    { MP_ROM_QSTR(MP_QSTR_PB28), MP_ROM_PTR(&pin_PB28) },
-    #endif
-    #if defined(PIN_PB29) && !defined(IGNORE_PIN_PB29)
-    { MP_ROM_QSTR(MP_QSTR_PB29), MP_ROM_PTR(&pin_PB29) },
-    #endif
-    #if defined(PIN_PB30) && !defined(IGNORE_PIN_PB30)
-    { MP_ROM_QSTR(MP_QSTR_PB30), MP_ROM_PTR(&pin_PB30) },
-    #endif
-    #if defined(PIN_PB31) && !defined(IGNORE_PIN_PB31)
-    { MP_ROM_QSTR(MP_QSTR_PB31), MP_ROM_PTR(&pin_PB31) },
+    #if defined(PIN_P0_31) && !defined(IGNORE_PIN_P0_31)
+    { MP_ROM_QSTR(MP_QSTR_P0_31), MP_ROM_PTR(&pin_P0_31) },
     #endif
 
-    #if defined(PIN_PC00) && !defined(IGNORE_PIN_PC00)
-    { MP_ROM_QSTR(MP_QSTR_PC00), MP_ROM_PTR(&pin_PC00) },
+    #if defined(PIN_P1_0) && !defined(IGNORE_PIN_P1_0)
+    { MP_ROM_QSTR(MP_QSTR_P1_0), MP_ROM_PTR(&pin_P1_0) },
     #endif
-    #if defined(PIN_PC01) && !defined(IGNORE_PIN_PC01)
-    { MP_ROM_QSTR(MP_QSTR_PC01), MP_ROM_PTR(&pin_PC01) },
+    #if defined(PIN_P1_1) && !defined(IGNORE_PIN_P1_1)
+    { MP_ROM_QSTR(MP_QSTR_P1_1), MP_ROM_PTR(&pin_P1_1) },
     #endif
-    #if defined(PIN_PC02) && !defined(IGNORE_PIN_PC02)
-    { MP_ROM_QSTR(MP_QSTR_PC02), MP_ROM_PTR(&pin_PC02) },
+    #if defined(PIN_P1_2) && !defined(IGNORE_PIN_P1_2)
+    { MP_ROM_QSTR(MP_QSTR_P1_2), MP_ROM_PTR(&pin_P1_2) },
     #endif
-    #if defined(PIN_PC03) && !defined(IGNORE_PIN_PC03)
-    { MP_ROM_QSTR(MP_QSTR_PC03), MP_ROM_PTR(&pin_PC03) },
+    #if defined(PIN_P1_3) && !defined(IGNORE_PIN_P1_3)
+    { MP_ROM_QSTR(MP_QSTR_P1_3), MP_ROM_PTR(&pin_P1_3) },
     #endif
-    #if defined(PIN_PC04) && !defined(IGNORE_PIN_PC04)
-    { MP_ROM_QSTR(MP_QSTR_PC04), MP_ROM_PTR(&pin_PC04) },
+    #if defined(PIN_P1_4) && !defined(IGNORE_PIN_P1_4)
+    { MP_ROM_QSTR(MP_QSTR_P1_4), MP_ROM_PTR(&pin_P1_4) },
     #endif
-    #if defined(PIN_PC05) && !defined(IGNORE_PIN_PC05)
-    { MP_ROM_QSTR(MP_QSTR_PC05), MP_ROM_PTR(&pin_PC05) },
+    #if defined(PIN_P1_5) && !defined(IGNORE_PIN_P1_5)
+    { MP_ROM_QSTR(MP_QSTR_P1_5), MP_ROM_PTR(&pin_P1_5) },
     #endif
-    #if defined(PIN_PC06) && !defined(IGNORE_PIN_PC06)
-    { MP_ROM_QSTR(MP_QSTR_PC06), MP_ROM_PTR(&pin_PC06) },
+    #if defined(PIN_P1_6) && !defined(IGNORE_PIN_P1_6)
+    { MP_ROM_QSTR(MP_QSTR_P1_6), MP_ROM_PTR(&pin_P1_6) },
     #endif
-    #if defined(PIN_PC07) && !defined(IGNORE_PIN_PC07)
-    { MP_ROM_QSTR(MP_QSTR_PC07), MP_ROM_PTR(&pin_PC07) },
+    #if defined(PIN_P1_7) && !defined(IGNORE_PIN_P1_7)
+    { MP_ROM_QSTR(MP_QSTR_P1_7), MP_ROM_PTR(&pin_P1_7) },
     #endif
-    #if defined(PIN_PC10) && !defined(IGNORE_PIN_PC10)
-    { MP_ROM_QSTR(MP_QSTR_PC10), MP_ROM_PTR(&pin_PC10) },
+    #if defined(PIN_P1_8) && !defined(IGNORE_PIN_P1_8)
+    { MP_ROM_QSTR(MP_QSTR_P1_8), MP_ROM_PTR(&pin_P1_8) },
     #endif
-    #if defined(PIN_PC11) && !defined(IGNORE_PIN_PC11)
-    { MP_ROM_QSTR(MP_QSTR_PC11), MP_ROM_PTR(&pin_PC11) },
+    #if defined(PIN_P1_9) && !defined(IGNORE_PIN_P1_9)
+    { MP_ROM_QSTR(MP_QSTR_P1_9), MP_ROM_PTR(&pin_P1_9) },
     #endif
-    #if defined(PIN_PC12) && !defined(IGNORE_PIN_PC12)
-    { MP_ROM_QSTR(MP_QSTR_PC12), MP_ROM_PTR(&pin_PC12) },
+    #if defined(PIN_P1_10) && !defined(IGNORE_PIN_P1_10)
+    { MP_ROM_QSTR(MP_QSTR_P1_10), MP_ROM_PTR(&pin_P1_10) },
     #endif
-    #if defined(PIN_PC13) && !defined(IGNORE_PIN_PC13)
-    { MP_ROM_QSTR(MP_QSTR_PC13), MP_ROM_PTR(&pin_PC13) },
+    #if defined(PIN_P1_11) && !defined(IGNORE_PIN_P1_11)
+    { MP_ROM_QSTR(MP_QSTR_P1_11), MP_ROM_PTR(&pin_P1_11) },
     #endif
-    #if defined(PIN_PC14) && !defined(IGNORE_PIN_PC14)
-    { MP_ROM_QSTR(MP_QSTR_PC14), MP_ROM_PTR(&pin_PC14) },
+    #if defined(PIN_P1_12) && !defined(IGNORE_PIN_P1_12)
+    { MP_ROM_QSTR(MP_QSTR_P1_12), MP_ROM_PTR(&pin_P1_12) },
     #endif
-    #if defined(PIN_PC15) && !defined(IGNORE_PIN_PC15)
-    { MP_ROM_QSTR(MP_QSTR_PC15), MP_ROM_PTR(&pin_PC15) },
+    #if defined(PIN_P1_13) && !defined(IGNORE_PIN_P1_13)
+    { MP_ROM_QSTR(MP_QSTR_P1_13), MP_ROM_PTR(&pin_P1_13) },
     #endif
-    #if defined(PIN_PC16) && !defined(IGNORE_PIN_PC16)
-    { MP_ROM_QSTR(MP_QSTR_PC16), MP_ROM_PTR(&pin_PC16) },
+    #if defined(PIN_P1_14) && !defined(IGNORE_PIN_P1_14)
+    { MP_ROM_QSTR(MP_QSTR_P1_14), MP_ROM_PTR(&pin_P1_14) },
     #endif
-    #if defined(PIN_PC17) && !defined(IGNORE_PIN_PC17)
-    { MP_ROM_QSTR(MP_QSTR_PC17), MP_ROM_PTR(&pin_PC17) },
+    #if defined(PIN_P1_15) && !defined(IGNORE_PIN_P1_15)
+    { MP_ROM_QSTR(MP_QSTR_P1_15), MP_ROM_PTR(&pin_P1_15) },
     #endif
-    #if defined(PIN_PC18) && !defined(IGNORE_PIN_PC18)
-    { MP_ROM_QSTR(MP_QSTR_PC18), MP_ROM_PTR(&pin_PC18) },
+    #if defined(PIN_P1_16) && !defined(IGNORE_PIN_P1_16)
+    { MP_ROM_QSTR(MP_QSTR_P1_16), MP_ROM_PTR(&pin_P1_16) },
     #endif
-    #if defined(PIN_PC19) && !defined(IGNORE_PIN_PC19)
-    { MP_ROM_QSTR(MP_QSTR_PC19), MP_ROM_PTR(&pin_PC19) },
+    #if defined(PIN_P1_17) && !defined(IGNORE_PIN_P1_17)
+    { MP_ROM_QSTR(MP_QSTR_P1_17), MP_ROM_PTR(&pin_P1_17) },
     #endif
-    #if defined(PIN_PC20) && !defined(IGNORE_PIN_PC20)
-    { MP_ROM_QSTR(MP_QSTR_PC20), MP_ROM_PTR(&pin_PC20) },
+    #if defined(PIN_P1_18) && !defined(IGNORE_PIN_P1_18)
+    { MP_ROM_QSTR(MP_QSTR_P1_18), MP_ROM_PTR(&pin_P1_18) },
     #endif
-    #if defined(PIN_PC21) && !defined(IGNORE_PIN_PC21)
-    { MP_ROM_QSTR(MP_QSTR_PC21), MP_ROM_PTR(&pin_PC21) },
+    #if defined(PIN_P1_19) && !defined(IGNORE_PIN_P1_19)
+    { MP_ROM_QSTR(MP_QSTR_P1_19), MP_ROM_PTR(&pin_P1_19) },
     #endif
-    #if defined(PIN_PC22) && !defined(IGNORE_PIN_PC22)
-    { MP_ROM_QSTR(MP_QSTR_PC22), MP_ROM_PTR(&pin_PC22) },
+    #if defined(PIN_P1_20) && !defined(IGNORE_PIN_P1_20)
+    { MP_ROM_QSTR(MP_QSTR_P1_20), MP_ROM_PTR(&pin_P1_20) },
     #endif
-    #if defined(PIN_PC23) && !defined(IGNORE_PIN_PC23)
-    { MP_ROM_QSTR(MP_QSTR_PC23), MP_ROM_PTR(&pin_PC23) },
+    #if defined(PIN_P1_21) && !defined(IGNORE_PIN_P1_21)
+    { MP_ROM_QSTR(MP_QSTR_P1_21), MP_ROM_PTR(&pin_P1_21) },
     #endif
-    #if defined(PIN_PC24) && !defined(IGNORE_PIN_PC24)
-    { MP_ROM_QSTR(MP_QSTR_PC24), MP_ROM_PTR(&pin_PC24) },
+    #if defined(PIN_P1_22) && !defined(IGNORE_PIN_P1_22)
+    { MP_ROM_QSTR(MP_QSTR_P1_22), MP_ROM_PTR(&pin_P1_22) },
     #endif
-    #if defined(PIN_PC25) && !defined(IGNORE_PIN_PC25)
-    { MP_ROM_QSTR(MP_QSTR_PC25), MP_ROM_PTR(&pin_PC25) },
+    #if defined(PIN_P1_23) && !defined(IGNORE_PIN_P1_23)
+    { MP_ROM_QSTR(MP_QSTR_P1_23), MP_ROM_PTR(&pin_P1_23) },
     #endif
-    #if defined(PIN_PC26) && !defined(IGNORE_PIN_PC26)
-    { MP_ROM_QSTR(MP_QSTR_PC26), MP_ROM_PTR(&pin_PC26) },
+    #if defined(PIN_P1_24) && !defined(IGNORE_PIN_P1_24)
+    { MP_ROM_QSTR(MP_QSTR_P1_24), MP_ROM_PTR(&pin_P1_24) },
     #endif
-    #if defined(PIN_PC27) && !defined(IGNORE_PIN_PC27)
-    { MP_ROM_QSTR(MP_QSTR_PC27), MP_ROM_PTR(&pin_PC27) },
+    #if defined(PIN_P1_25) && !defined(IGNORE_PIN_P1_25)
+    { MP_ROM_QSTR(MP_QSTR_P1_25), MP_ROM_PTR(&pin_P1_25) },
     #endif
-    #if defined(PIN_PC28) && !defined(IGNORE_PIN_PC28)
-    { MP_ROM_QSTR(MP_QSTR_PC28), MP_ROM_PTR(&pin_PC28) },
+    #if defined(PIN_P1_26) && !defined(IGNORE_PIN_P1_26)
+    { MP_ROM_QSTR(MP_QSTR_P1_26), MP_ROM_PTR(&pin_P1_26) },
     #endif
-    #if defined(PIN_PC30) && !defined(IGNORE_PIN_PC30)
-    { MP_ROM_QSTR(MP_QSTR_PC30), MP_ROM_PTR(&pin_PC30) },
+    #if defined(PIN_P1_27) && !defined(IGNORE_PIN_P1_27)
+    { MP_ROM_QSTR(MP_QSTR_P1_27), MP_ROM_PTR(&pin_P1_27) },
     #endif
-    #if defined(PIN_PC31) && !defined(IGNORE_PIN_PC31)
-    { MP_ROM_QSTR(MP_QSTR_PC31), MP_ROM_PTR(&pin_PC31) },
+    #if defined(PIN_P1_28) && !defined(IGNORE_PIN_P1_28)
+    { MP_ROM_QSTR(MP_QSTR_P1_28), MP_ROM_PTR(&pin_P1_28) },
+    #endif
+    #if defined(PIN_P1_29) && !defined(IGNORE_PIN_P1_29)
+    { MP_ROM_QSTR(MP_QSTR_P1_29), MP_ROM_PTR(&pin_P1_29) },
+    #endif
+    #if defined(PIN_P1_30) && !defined(IGNORE_PIN_P1_30)
+    { MP_ROM_QSTR(MP_QSTR_P1_30), MP_ROM_PTR(&pin_P1_30) },
+    #endif
+    #if defined(PIN_P1_31) && !defined(IGNORE_PIN_P1_31)
+    { MP_ROM_QSTR(MP_QSTR_P1_31), MP_ROM_PTR(&pin_P1_31) },
     #endif
 
-    #if defined(PIN_PD00) && !defined(IGNORE_PIN_PD00)
-    { MP_ROM_QSTR(MP_QSTR_PD00), MP_ROM_PTR(&pin_PD00) },
+    #if defined(PIN_P2_0) && !defined(IGNORE_PIN_P2_0)
+    { MP_ROM_QSTR(MP_QSTR_P2_0), MP_ROM_PTR(&pin_P2_0) },
     #endif
-    #if defined(PIN_PD01) && !defined(IGNORE_PIN_PD01)
-    { MP_ROM_QSTR(MP_QSTR_PD01), MP_ROM_PTR(&pin_PD01) },
+    #if defined(PIN_P2_1) && !defined(IGNORE_PIN_P2_1)
+    { MP_ROM_QSTR(MP_QSTR_P2_1), MP_ROM_PTR(&pin_P2_1) },
     #endif
-    #if defined(PIN_PD08) && !defined(IGNORE_PIN_PD08)
-    { MP_ROM_QSTR(MP_QSTR_PD08), MP_ROM_PTR(&pin_PD08) },
+    #if defined(PIN_P2_2) && !defined(IGNORE_PIN_P2_2)
+    { MP_ROM_QSTR(MP_QSTR_P2_2), MP_ROM_PTR(&pin_P2_2) },
     #endif
-    #if defined(PIN_PD09) && !defined(IGNORE_PIN_PD09)
-    { MP_ROM_QSTR(MP_QSTR_PD09), MP_ROM_PTR(&pin_PD09) },
+    #if defined(PIN_P2_3) && !defined(IGNORE_PIN_P2_3)
+    { MP_ROM_QSTR(MP_QSTR_P2_3), MP_ROM_PTR(&pin_P2_3) },
     #endif
-    #if defined(PIN_PD10) && !defined(IGNORE_PIN_PD10)
-    { MP_ROM_QSTR(MP_QSTR_PD10), MP_ROM_PTR(&pin_PD10) },
+    #if defined(PIN_P2_4) && !defined(IGNORE_PIN_P2_4)
+    { MP_ROM_QSTR(MP_QSTR_P2_4), MP_ROM_PTR(&pin_P2_4) },
     #endif
-    #if defined(PIN_PD11) && !defined(IGNORE_PIN_PD11)
-    { MP_ROM_QSTR(MP_QSTR_PD11), MP_ROM_PTR(&pin_PD11) },
+    #if defined(PIN_P2_5) && !defined(IGNORE_PIN_P2_5)
+    { MP_ROM_QSTR(MP_QSTR_P2_5), MP_ROM_PTR(&pin_P2_5) },
     #endif
-    #if defined(PIN_PD12) && !defined(IGNORE_PIN_PD12)
-    { MP_ROM_QSTR(MP_QSTR_PD12), MP_ROM_PTR(&pin_PD12) },
+    #if defined(PIN_P2_6) && !defined(IGNORE_PIN_P2_6)
+    { MP_ROM_QSTR(MP_QSTR_P2_6), MP_ROM_PTR(&pin_P2_6) },
     #endif
-    #if defined(PIN_PD20) && !defined(IGNORE_PIN_PD20)
-    { MP_ROM_QSTR(MP_QSTR_PD20), MP_ROM_PTR(&pin_PD20) },
+    #if defined(PIN_P2_7) && !defined(IGNORE_PIN_P2_7)
+    { MP_ROM_QSTR(MP_QSTR_P2_7), MP_ROM_PTR(&pin_P2_7) },
     #endif
-    #if defined(PIN_PD21) && !defined(IGNORE_PIN_PD21)
-    { MP_ROM_QSTR(MP_QSTR_PD21), MP_ROM_PTR(&pin_PD21) },
+    #if defined(PIN_P2_10) && !defined(IGNORE_PIN_P2_10)
+    { MP_ROM_QSTR(MP_QSTR_P2_10), MP_ROM_PTR(&pin_P2_10) },
     #endif
+    #if defined(PIN_P2_11) && !defined(IGNORE_PIN_P2_11)
+    { MP_ROM_QSTR(MP_QSTR_P2_11), MP_ROM_PTR(&pin_P2_11) },
     #endif
+    #if defined(PIN_P2_12) && !defined(IGNORE_PIN_P2_12)
+    { MP_ROM_QSTR(MP_QSTR_P2_12), MP_ROM_PTR(&pin_P2_12) },
+    #endif
+    #if defined(PIN_P2_13) && !defined(IGNORE_PIN_P2_13)
+    { MP_ROM_QSTR(MP_QSTR_P2_13), MP_ROM_PTR(&pin_P2_13) },
+    #endif
+    #if defined(PIN_P2_14) && !defined(IGNORE_PIN_P2_14)
+    { MP_ROM_QSTR(MP_QSTR_P2_14), MP_ROM_PTR(&pin_P2_14) },
+    #endif
+    #if defined(PIN_P2_15) && !defined(IGNORE_PIN_P2_15)
+    { MP_ROM_QSTR(MP_QSTR_P2_15), MP_ROM_PTR(&pin_P2_15) },
+    #endif
+    #if defined(PIN_P2_16) && !defined(IGNORE_PIN_P2_16)
+    { MP_ROM_QSTR(MP_QSTR_P2_16), MP_ROM_PTR(&pin_P2_16) },
+    #endif
+    #if defined(PIN_P2_17) && !defined(IGNORE_PIN_P2_17)
+    { MP_ROM_QSTR(MP_QSTR_P2_17), MP_ROM_PTR(&pin_P2_17) },
+    #endif
+    #if defined(PIN_P2_18) && !defined(IGNORE_PIN_P2_18)
+    { MP_ROM_QSTR(MP_QSTR_P2_18), MP_ROM_PTR(&pin_P2_18) },
+    #endif
+    #if defined(PIN_P2_19) && !defined(IGNORE_PIN_P2_19)
+    { MP_ROM_QSTR(MP_QSTR_P2_19), MP_ROM_PTR(&pin_P2_19) },
+    #endif
+    #if defined(PIN_P2_20) && !defined(IGNORE_PIN_P2_20)
+    { MP_ROM_QSTR(MP_QSTR_P2_20), MP_ROM_PTR(&pin_P2_20) },
+    #endif
+    #if defined(PIN_P2_21) && !defined(IGNORE_PIN_P2_21)
+    { MP_ROM_QSTR(MP_QSTR_P2_21), MP_ROM_PTR(&pin_P2_21) },
+    #endif
+    #if defined(PIN_P2_22) && !defined(IGNORE_PIN_P2_22)
+    { MP_ROM_QSTR(MP_QSTR_P2_22), MP_ROM_PTR(&pin_P2_22) },
+    #endif
+    #if defined(PIN_P2_23) && !defined(IGNORE_PIN_P2_23)
+    { MP_ROM_QSTR(MP_QSTR_P2_23), MP_ROM_PTR(&pin_P2_23) },
+    #endif
+    #if defined(PIN_P2_24) && !defined(IGNORE_PIN_P2_24)
+    { MP_ROM_QSTR(MP_QSTR_P2_24), MP_ROM_PTR(&pin_P2_24) },
+    #endif
+    #if defined(PIN_P2_25) && !defined(IGNORE_PIN_P2_25)
+    { MP_ROM_QSTR(MP_QSTR_P2_25), MP_ROM_PTR(&pin_P2_25) },
+    #endif
+    #if defined(PIN_P2_26) && !defined(IGNORE_PIN_P2_26)
+    { MP_ROM_QSTR(MP_QSTR_P2_26), MP_ROM_PTR(&pin_P2_26) },
+    #endif
+    #if defined(PIN_P2_27) && !defined(IGNORE_PIN_P2_27)
+    { MP_ROM_QSTR(MP_QSTR_P2_27), MP_ROM_PTR(&pin_P2_27) },
+    #endif
+    #if defined(PIN_P2_28) && !defined(IGNORE_PIN_P2_28)
+    { MP_ROM_QSTR(MP_QSTR_P2_28), MP_ROM_PTR(&pin_P2_28) },
+    #endif
+    #if defined(PIN_P2_30) && !defined(IGNORE_PIN_P2_30)
+    { MP_ROM_QSTR(MP_QSTR_P2_30), MP_ROM_PTR(&pin_P2_30) },
+    #endif
+    #if defined(PIN_P2_31) && !defined(IGNORE_PIN_P2_31)
+    { MP_ROM_QSTR(MP_QSTR_P2_31), MP_ROM_PTR(&pin_P2_31) },
+    #endif
+
+    #if defined(PIN_P3_25) && !defined(IGNORE_PIN_P3_25)
+    { MP_ROM_QSTR(MP_QSTR_P3_25), MP_ROM_PTR(&pin_P3_25) },
+    #endif
+    #if defined(PIN_P3_21) && !defined(IGNORE_PIN_P3_26)
+    { MP_ROM_QSTR(MP_QSTR_P3_26), MP_ROM_PTR(&pin_P3_26) },
+    #endif
+
+    #if defined(PIN_P4_0) && !defined(IGNORE_PIN_P4_0)
+    { MP_ROM_QSTR(MP_QSTR_P4_0), MP_ROM_PTR(&pin_P4_0) },
+    #endif
+    #if defined(PIN_P4_1) && !defined(IGNORE_PIN_P4_1)
+    { MP_ROM_QSTR(MP_QSTR_P4_1), MP_ROM_PTR(&pin_P4_1) },
+    #endif
+    #if defined(PIN_P4_2) && !defined(IGNORE_PIN_P4_2)
+    { MP_ROM_QSTR(MP_QSTR_P4_2), MP_ROM_PTR(&pin_P4_2) },
+    #endif
+    #if defined(PIN_P4_3) && !defined(IGNORE_PIN_P4_3)
+    { MP_ROM_QSTR(MP_QSTR_P4_3), MP_ROM_PTR(&pin_P4_3) },
+    #endif
+    #if defined(PIN_P4_4) && !defined(IGNORE_PIN_P4_4)
+    { MP_ROM_QSTR(MP_QSTR_P4_4), MP_ROM_PTR(&pin_P4_4) },
+    #endif
+    #if defined(PIN_P4_5) && !defined(IGNORE_PIN_P4_5)
+    { MP_ROM_QSTR(MP_QSTR_P4_5), MP_ROM_PTR(&pin_P4_5) },
+    #endif
+    #if defined(PIN_P4_6) && !defined(IGNORE_PIN_P4_6)
+    { MP_ROM_QSTR(MP_QSTR_P4_6), MP_ROM_PTR(&pin_P4_6) },
+    #endif
+    #if defined(PIN_P4_7) && !defined(IGNORE_PIN_P4_7)
+    { MP_ROM_QSTR(MP_QSTR_P4_7), MP_ROM_PTR(&pin_P4_7) },
+    #endif
+    #if defined(PIN_P4_10) && !defined(IGNORE_PIN_P4_10)
+    { MP_ROM_QSTR(MP_QSTR_P4_10), MP_ROM_PTR(&pin_P4_10) },
+    #endif
+    #if defined(PIN_P4_11) && !defined(IGNORE_PIN_P4_11)
+    { MP_ROM_QSTR(MP_QSTR_P4_11), MP_ROM_PTR(&pin_P4_11) },
+    #endif
+    #if defined(PIN_P4_12) && !defined(IGNORE_PIN_P4_12)
+    { MP_ROM_QSTR(MP_QSTR_P4_12), MP_ROM_PTR(&pin_P4_12) },
+    #endif
+    #if defined(PIN_P4_13) && !defined(IGNORE_PIN_P4_13)
+    { MP_ROM_QSTR(MP_QSTR_P4_13), MP_ROM_PTR(&pin_P4_13) },
+    #endif
+    #if defined(PIN_P4_14) && !defined(IGNORE_PIN_P4_14)
+    { MP_ROM_QSTR(MP_QSTR_P4_14), MP_ROM_PTR(&pin_P4_14) },
+    #endif
+    #if defined(PIN_P4_15) && !defined(IGNORE_PIN_P4_15)
+    { MP_ROM_QSTR(MP_QSTR_P4_15), MP_ROM_PTR(&pin_P4_15) },
+    #endif
+    #if defined(PIN_P4_16) && !defined(IGNORE_PIN_P4_16)
+    { MP_ROM_QSTR(MP_QSTR_P4_16), MP_ROM_PTR(&pin_P4_16) },
+    #endif
+    #if defined(PIN_P4_17) && !defined(IGNORE_PIN_P4_17)
+    { MP_ROM_QSTR(MP_QSTR_P4_17), MP_ROM_PTR(&pin_P4_17) },
+    #endif
+    #if defined(PIN_P4_18) && !defined(IGNORE_PIN_P4_18)
+    { MP_ROM_QSTR(MP_QSTR_P4_18), MP_ROM_PTR(&pin_P4_18) },
+    #endif
+    #if defined(PIN_P4_19) && !defined(IGNORE_PIN_P4_19)
+    { MP_ROM_QSTR(MP_QSTR_P4_19), MP_ROM_PTR(&pin_P4_19) },
+    #endif
+    #if defined(PIN_P4_20) && !defined(IGNORE_PIN_P4_20)
+    { MP_ROM_QSTR(MP_QSTR_P4_20), MP_ROM_PTR(&pin_P4_20) },
+    #endif
+    #if defined(PIN_P4_21) && !defined(IGNORE_PIN_P4_21)
+    { MP_ROM_QSTR(MP_QSTR_P4_21), MP_ROM_PTR(&pin_P4_21) },
+    #endif
+    #if defined(PIN_P4_22) && !defined(IGNORE_PIN_P4_22)
+    { MP_ROM_QSTR(MP_QSTR_P4_22), MP_ROM_PTR(&pin_P4_22) },
+    #endif
+    #if defined(PIN_P4_23) && !defined(IGNORE_PIN_P4_23)
+    { MP_ROM_QSTR(MP_QSTR_P4_23), MP_ROM_PTR(&pin_P4_23) },
+    #endif
+    #if defined(PIN_P4_24) && !defined(IGNORE_PIN_P4_24)
+    { MP_ROM_QSTR(MP_QSTR_P4_24), MP_ROM_PTR(&pin_P4_24) },
+    #endif
+    #if defined(PIN_P4_25) && !defined(IGNORE_PIN_P4_25)
+    { MP_ROM_QSTR(MP_QSTR_P4_25), MP_ROM_PTR(&pin_P4_25) },
+    #endif
+    #if defined(PIN_P4_26) && !defined(IGNORE_PIN_P4_26)
+    { MP_ROM_QSTR(MP_QSTR_P4_26), MP_ROM_PTR(&pin_P4_26) },
+    #endif
+    #if defined(PIN_P4_27) && !defined(IGNORE_PIN_P4_27)
+    { MP_ROM_QSTR(MP_QSTR_P4_27), MP_ROM_PTR(&pin_P4_27) },
+    #endif
+    #if defined(PIN_P4_28) && !defined(IGNORE_PIN_P4_28)
+    { MP_ROM_QSTR(MP_QSTR_P4_28), MP_ROM_PTR(&pin_P4_28) },
+    #endif
+    #if defined(PIN_P4_30) && !defined(IGNORE_PIN_P4_30)
+    { MP_ROM_QSTR(MP_QSTR_P4_30), MP_ROM_PTR(&pin_P4_30) },
+    #endif
+    #if defined(PIN_P4_31) && !defined(IGNORE_PIN_P4_31)
+    { MP_ROM_QSTR(MP_QSTR_P4_31), MP_ROM_PTR(&pin_P4_31) },
+    #endif
+
 };
 MP_DEFINE_CONST_DICT(mcu_pin_globals, mcu_pin_global_dict_table);

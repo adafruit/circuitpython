@@ -62,4 +62,21 @@ extern const mcu_pin_obj_t pin_P1_4;
 extern const mcu_pin_obj_t pin_P1_6;
 extern const mcu_pin_obj_t pin_P1_7;
 
+
+#define PIN_P0_2
+#define PIN_P0_3
+#define PIN_P0_4
+#define PIN_P0_6
+
+#define PIN_P0_13
+#define PIN_P0_14
+
+#define PIN_P0_29
+#define PIN_P0_30
+
+
+#define PIN_P1_4
+#define PIN_P1_6
+#define PIN_P1_7
+
 #endif // PORTS_NXP_LPC55SXX_PINS_H_

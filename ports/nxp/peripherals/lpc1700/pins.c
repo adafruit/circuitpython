@@ -31,37 +31,145 @@
 #include "GPIO_LPC17xx.h"
 
 
-// ... CAN1
-PIN(0,0);   // RD1
-PIN(0,1);   // TD1
+// ... GPIO0
+PIN(0,0);   // CAN RD1
+PIN(0,1);   // CAN TD1
+PIN(0,2);   // UART0 TXD0
+PIN(0,3);   // UART0 RXD0
+PIN(0,4);   //
+PIN(0,5);   //
+PIN(0,6);   //
+PIN(0,7);   //
+PIN(0,8);   //
+PIN(0,9);   //
+PIN(0,10);  //
+PIN(0,11);  //
+PIN(0,12);  //
+PIN(0,13);  //
+PIN(0,14);  //
+PIN(0,15);  // SPI0 SCK
+PIN(0,16);  // SPI0 SSEL
+PIN(0,17);  // SPI0 MISO
+PIN(0,18);  // SPI0 MOSI
+PIN(0,19);  //
+PIN(0,20);  //
+PIN(0,21);  //
+PIN(0,22);  //
+PIN(0,23);  //
+PIN(0,24);  //
+PIN(0,25);  //
+PIN(0,26);  //
+PIN(0,27);  // I2C0 SDA
+PIN(0,28);  // I2C0 SCL
+PIN(0,29);  //
+PIN(0,30);  //
+PIN(0,31);  //
 
-// ... UART0
-PIN(0,2);   // TXD0
-PIN(0,3);   // RXD0
+// ... GPIO1
+PIN(1,0);   //
+PIN(1,1);   //
+PIN(1,2);   //
+PIN(1,3);   //
+PIN(1,4);   //
+PIN(1,5);   //
+PIN(1,6);   //
+PIN(1,7);   //
+PIN(1,8);   //
+PIN(1,9);   //
+PIN(1,10);  //
+PIN(1,11);  //
+PIN(1,12);  //
+PIN(1,13);  //
+PIN(1,14);  //
+PIN(1,15);  //
+PIN(1,16);  //
+PIN(1,17);  //
+PIN(1,18);  //
+PIN(1,19);  //
+PIN(1,20);  //
+PIN(1,21);  //
+PIN(1,22);  //
+PIN(1,23);  //
+PIN(1,24);  //
+PIN(1,25);  //
+PIN(1,26);  //
+PIN(1,27);  //
+PIN(1,28);  //
+PIN(1,29);  //
+PIN(1,30);  //
+PIN(1,31);  //
 
-// ... SPI0
-PIN(0,15);  // SCK
-PIN(0,16);  // SSEL
-PIN(0,17);  // MISO
-PIN(0,18);  // MOSI
+// ... GPIO2
+PIN(2,0);   // UART1 TXD1
+PIN(2,1);   // UARt1 RXD1
+PIN(2,2);   //
+PIN(2,3);   //
+PIN(2,4);   //
+PIN(2,5);   //
+PIN(2,6);   //
+PIN(2,7);   //
+PIN(2,8);   //
+PIN(2,9);   //
+PIN(2,10);  //
+PIN(2,11);  //
+PIN(2,12);  //
+PIN(2,13);  //
+PIN(2,14);  //
+PIN(2,15);  //
+PIN(2,16);  //
+PIN(2,17);  //
+PIN(2,18);  //
+PIN(2,19);  //
+PIN(2,20);  //
+PIN(2,21);  //
+PIN(2,22);  //
+PIN(2,23);  //
+PIN(2,24);  //
+PIN(2,25);  //
+PIN(2,26);  //
+PIN(2,27);  //
+PIN(2,28);  //
+PIN(2,29);  //
+PIN(2,30);  //
+PIN(2,31);  //
 
-// ... I2C0
-PIN(0,27);  // SDA
-PIN(0,28);  // SCL
+// ... GPIO3
+PIN(3,25);
+PIN(3,26);
 
-// ... GPIO
-PIN(1,28);  // LED1
-PIN(1,29);  // LED2
-PIN(1,31);  // LED3
-PIN(2,2);   // LED4
-PIN(2,3);   // LED5
-PIN(2,4);   // LED6
-PIN(2,5);   // LED7
-PIN(2,6);   // LED8
-
-// ... UART1
-PIN(2,0);   // TXD1
-PIN(2,1);   // RXD1
+// ... GPIO4
+PIN(4,0);   //
+PIN(4,1);   //
+PIN(4,2);   //
+PIN(4,3);   //
+PIN(4,4);   //
+PIN(4,5);   //
+PIN(4,6);   //
+PIN(4,7);   //
+PIN(4,8);   //
+PIN(4,9);   //
+PIN(4,10);  //
+PIN(4,11);  //
+PIN(4,12);  //
+PIN(4,13);  //
+PIN(4,14);  //
+PIN(4,15);  //
+PIN(4,16);  //
+PIN(4,17);  //
+PIN(4,18);  //
+PIN(4,19);  //
+PIN(4,20);  //
+PIN(4,21);  //
+PIN(4,22);  //
+PIN(4,23);  //
+PIN(4,24);  //
+PIN(4,25);  //
+PIN(4,26);  //
+PIN(4,27);  //
+PIN(4,28);  //
+PIN(4,29);  //
+PIN(4,30);  //
+PIN(4,31);  //
 
 
 int gpio_pin_init(uint8_t port, uint8_t number, gpio_pin_config_t *config) {

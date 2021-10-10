@@ -35,8 +35,8 @@ extern ARM_DRIVER_USART Driver_USART1;
 #define USART_Instance Driver_USART1
 
 #elif defined(BOARD_BRKR_ICT2)
-extern ARM_DRIVER_USART Driver_USART0;
-#define USART_Instance Driver_USART0
+extern ARM_DRIVER_USART Driver_USART1;
+#define USART_Instance Driver_USART1
 
 #elif defined(BOARD_LPCEXPRESSO55S28)
 extern ARM_DRIVER_USART Driver_USART0;

@@ -34,6 +34,7 @@
 
 #include <stdint.h>
 #include "LPC17xx.h"
+#include "clock_config.h"
 
 /*
 //-------- <<< Use Configuration Wizard in Context Menu >>> ------------------
