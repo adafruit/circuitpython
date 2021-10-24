@@ -562,6 +562,10 @@ msgstr "Bittiefe muss zwischen 1 und 6 liegen, nicht %d"
 msgid "Bit depth must be multiple of 8."
 msgstr "Bit depth muss ein Vielfaches von 8 sein."
 
+#: supervisor/shared/safe_mode.c
+msgid "Boot device must be first device (interface #0)."
+msgstr ""
+
 #: ports/mimxrt10xx/common-hal/busio/UART.c
 msgid "Both RX and TX required for flow control"
 msgstr "Sowohl RX als auch TX sind zu Flusssteuerung erforderlich"
@@ -1952,6 +1956,7 @@ msgstr "Das Programm ist zu groß"
 msgid "Pull not used when direction is output."
 msgstr "Pull wird nicht verwendet, wenn die Richtung output ist."
 
+#: ports/atmel-samd/common-hal/watchdog/WatchDogTimer.c
 #: ports/raspberrypi/common-hal/watchdog/WatchDogTimer.c
 msgid "RAISE mode is not implemented"
 msgstr ""
@@ -2449,6 +2454,7 @@ msgid "WARNING: Your code filename has two extensions\n"
 msgstr ""
 "WARNUNG: Der Dateiname deines Programms hat zwei Dateityperweiterungen\n"
 
+#: ports/atmel-samd/common-hal/watchdog/WatchDogTimer.c
 #: ports/nrf/common-hal/watchdog/WatchDogTimer.c
 #: ports/raspberrypi/common-hal/watchdog/WatchDogTimer.c
 msgid "WatchDogTimer cannot be deinitialized once mode is set to RESET"
@@ -2477,16 +2483,10 @@ msgstr "Watchdog timer abgelaufen."
 msgid ""
 "Welcome to Adafruit CircuitPython %s!\n"
 "\n"
-"Please visit learn.adafruit.com/category/circuitpython for project guides.\n"
+"Visit circuitpython.org for more information.\n"
 "\n"
-"To list built-in modules please do `help(\"modules\")`.\n"
+"To list built-in modules type `help(\"modules\")`.\n"
 msgstr ""
-"Willkommen bei Adafruit CircuitPython %s!\n"
-"\n"
-"Projektleitfäden findest du auf learn.adafruit.com/category/circuitpython \n"
-"\n"
-"Um die integrierten Module aufzulisten, führe bitte `help(\"modules\")` "
-"aus.\n"
 
 #: shared-bindings/wifi/Radio.c
 msgid "WiFi password must be between 8 and 63 characters"
@@ -2528,10 +2528,6 @@ msgstr "__new__ arg muss user-type sein"
 #: extmod/modubinascii.c extmod/moduhashlib.c py/objarray.c
 msgid "a bytes-like object is required"
 msgstr "ein Byte-ähnliches Objekt ist erforderlich"
-
-#: lib/embed/abort_.c
-msgid "abort() called"
-msgstr "abort() wurde aufgerufen"
 
 #: shared-bindings/i2cperipheral/I2CPeripheral.c
 msgid "address out of bounds"
@@ -3040,6 +3036,10 @@ msgstr ""
 msgid "division by zero"
 msgstr "Division durch Null"
 
+#: ports/espressif/common-hal/rotaryio/IncrementalEncoder.c
+msgid "divisor must be 4"
+msgstr ""
+
 #: py/objdeque.c
 msgid "empty"
 msgstr "leer"
@@ -3120,26 +3120,6 @@ msgstr "Es wurden zusätzliche Schlüsselwort-Argumente angegeben"
 #: py/argcheck.c
 msgid "extra positional arguments given"
 msgstr "Es wurden zusätzliche Argumente ohne Schlüsselwort angegeben"
-
-#: py/parse.c
-msgid "f-string expression part cannot include a '#'"
-msgstr "f-string expression Teil kann kein '#' beinhalten"
-
-#: py/parse.c
-msgid "f-string expression part cannot include a backslash"
-msgstr "Die f-String expression darf keinen Backslash enthalten"
-
-#: py/parse.c
-msgid "f-string: empty expression not allowed"
-msgstr "f-string: leere expression nicht erlaubt"
-
-#: py/parse.c
-msgid "f-string: expecting '}'"
-msgstr "f-string: erwartet '}'"
-
-#: py/parse.c
-msgid "f-string: single '}' is not allowed"
-msgstr "f-string: einzelne '}' nicht erlaubt"
 
 #: shared-bindings/audiocore/WaveFile.c shared-bindings/audiomp3/MP3Decoder.c
 #: shared-bindings/displayio/OnDiskBitmap.c shared-bindings/synthio/__init__.c
@@ -3403,10 +3383,6 @@ msgstr ""
 msgid "int() arg 2 must be >= 2 and <= 36"
 msgstr "int() arg 2 muss >= 2 und <= 36 sein"
 
-#: py/objstr.c
-msgid "integer required"
-msgstr "integer erforderlich"
-
 #: extmod/ulab/code/numpy/approx.c
 msgid "interp is defined for 1D iterables of equal length"
 msgstr ""
@@ -3419,10 +3395,6 @@ msgstr "Das Intervall muss im Bereich %s-%s sein"
 #: py/compile.c
 msgid "invalid architecture"
 msgstr ""
-
-#: lib/netutils/netutils.c
-msgid "invalid arguments"
-msgstr "ungültige argumente"
 
 #: shared-bindings/bitmaptools/__init__.c
 #, c-format
@@ -3994,6 +3966,7 @@ msgstr "pow() mit 3 Argumenten erfordert Integer"
 #: ports/espressif/boards/gravitech_cucumber_rs/mpconfigboard.h
 #: ports/espressif/boards/lilygo_ttgo_t8_s2_st7789/mpconfigboard.h
 #: ports/espressif/boards/lolin_s2_mini/mpconfigboard.h
+#: ports/espressif/boards/lolin_s2_pico/mpconfigboard.h
 #: ports/espressif/boards/microdev_micro_c3/mpconfigboard.h
 #: ports/espressif/boards/microdev_micro_s2/mpconfigboard.h
 #: ports/espressif/boards/morpheans_morphesp-240/mpconfigboard.h
@@ -4038,8 +4011,8 @@ msgid "queue overflow"
 msgstr "Warteschlangenüberlauf"
 
 #: py/parse.c
-msgid "raw f-strings are not implemented"
-msgstr "rohe F-Strings sind nicht implementiert"
+msgid "raw f-strings are not supported"
+msgstr ""
 
 #: extmod/ulab/code/numpy/fft/fft_tools.c
 msgid "real and imaginary parts must be of equal length"
@@ -4101,7 +4074,7 @@ msgstr "Abtastrate außerhalb der Reichweite"
 msgid "schedule queue full"
 msgstr ""
 
-#: lib/utils/pyexec.c py/builtinimport.c
+#: py/builtinimport.c
 msgid "script compilation not supported"
 msgstr "kompilieren von Skripten nicht unterstützt"
 
@@ -4250,6 +4223,7 @@ msgstr ""
 msgid "time.struct_time() takes a 9-sequence"
 msgstr "time.struct_time() nimmt eine 9-Sequenz an"
 
+#: ports/atmel-samd/common-hal/watchdog/WatchDogTimer.c
 #: ports/espressif/common-hal/watchdog/WatchDogTimer.c
 #: ports/nrf/common-hal/watchdog/WatchDogTimer.c
 #: ports/raspberrypi/common-hal/watchdog/WatchDogTimer.c
@@ -4380,10 +4354,8 @@ msgid "unicode name escapes"
 msgstr "Unicode Name ausgebrochen (escaped)"
 
 #: py/parse.c
-msgid "unindent does not match any outer indentation level"
+msgid "unindent doesn't match any outer indent level"
 msgstr ""
-"Einrückung entspricht keiner äußeren Einrückungsebene. Bitte Leerzeichen am "
-"Zeilenanfang kontrollieren"
 
 #: py/objstr.c
 #, c-format
@@ -4535,6 +4507,55 @@ msgstr ""
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr ""
+
+#, c-format
+#~ msgid ""
+#~ "Welcome to Adafruit CircuitPython %s!\n"
+#~ "\n"
+#~ "Please visit learn.adafruit.com/category/circuitpython for project "
+#~ "guides.\n"
+#~ "\n"
+#~ "To list built-in modules please do `help(\"modules\")`.\n"
+#~ msgstr ""
+#~ "Willkommen bei Adafruit CircuitPython %s!\n"
+#~ "\n"
+#~ "Projektleitfäden findest du auf learn.adafruit.com/category/"
+#~ "circuitpython \n"
+#~ "\n"
+#~ "Um die integrierten Module aufzulisten, führe bitte `help(\"modules\")` "
+#~ "aus.\n"
+
+#~ msgid "integer required"
+#~ msgstr "integer erforderlich"
+
+#~ msgid "abort() called"
+#~ msgstr "abort() wurde aufgerufen"
+
+#~ msgid "f-string expression part cannot include a '#'"
+#~ msgstr "f-string expression Teil kann kein '#' beinhalten"
+
+#~ msgid "f-string expression part cannot include a backslash"
+#~ msgstr "Die f-String expression darf keinen Backslash enthalten"
+
+#~ msgid "f-string: empty expression not allowed"
+#~ msgstr "f-string: leere expression nicht erlaubt"
+
+#~ msgid "f-string: expecting '}'"
+#~ msgstr "f-string: erwartet '}'"
+
+#~ msgid "f-string: single '}' is not allowed"
+#~ msgstr "f-string: einzelne '}' nicht erlaubt"
+
+#~ msgid "invalid arguments"
+#~ msgstr "ungültige argumente"
+
+#~ msgid "raw f-strings are not implemented"
+#~ msgstr "rohe F-Strings sind nicht implementiert"
+
+#~ msgid "unindent does not match any outer indentation level"
+#~ msgstr ""
+#~ "Einrückung entspricht keiner äußeren Einrückungsebene. Bitte Leerzeichen "
+#~ "am Zeilenanfang kontrollieren"
 
 #~ msgid "%q list must be a list"
 #~ msgstr "%q Liste muss eine Liste sein"
