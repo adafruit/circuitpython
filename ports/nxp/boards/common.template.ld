@@ -56,7 +56,7 @@ SECTIONS
   /*
    * SG veneers:
    * All SG veneers are placed in the special output section .gnu.sgstubs. Its start address
-   * must be set, either with the command line option �--section-start� or in a linker script,
+   * must be set, either with the command line option '--section-start' or in a linker script,
    * to indicate where to place these veneers in memory.
    */
 /*
