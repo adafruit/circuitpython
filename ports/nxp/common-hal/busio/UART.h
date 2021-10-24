@@ -24,8 +24,8 @@
  * THE SOFTWARE.
  */
 
-#ifndef MICROPY_INCLUDED_RASPBERRYPI_COMMON_HAL_BUSIO_UART_H
-#define MICROPY_INCLUDED_RASPBERRYPI_COMMON_HAL_BUSIO_UART_H
+#ifndef MICROPY_INCLUDED_NXP_COMMON_HAL_BUSIO_UART_H
+#define MICROPY_INCLUDED_NXP_COMMON_HAL_BUSIO_UART_H
 
 #include "py/obj.h"
 #include "py/ringbuf.h"
@@ -68,4 +68,4 @@ typedef struct {
 extern void reset_uart(void);
 extern void never_reset_uart(uint8_t num);
 
-#endif // MICROPY_INCLUDED_RASPBERRYPI_COMMON_HAL_BUSIO_UART_H
+#endif // MICROPY_INCLUDED_NXP_COMMON_HAL_BUSIO_UART_H

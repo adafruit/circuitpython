@@ -44,6 +44,9 @@ bool pin_number_is_free(uint8_t pin_number);
 
 int gpio_init();
 
+#define NO_PIN 0xff
+
+
 typedef struct {
     const mcu_pin_obj_t *obj;
     uint8_t instance;

@@ -43,6 +43,61 @@ void BOARD_InitBootPins(void) {
 /* clang-format off */
 /*
  * TEXT BELOW IS USED AS SETTING FOR TOOLS *************************************
+I2C0_InitPins:
+- options: {callFromInitBoot: 'true', coreID: cm33_core0, enableClock: 'true'}
+- pin_list:
+  - {pin_num: '30', peripheral: FLEXCOMM4, signal: RXD_SDA_MOSI_DATA, pin_signal: PIO1_21/FC7_CTS_SDA_SSEL0/CTIMER3_MAT2/FC4_RXD_SDA_MOSI_DATA/PLU_OUT3, mode: pullUp,
+    slew_rate: standard, invert: disabled, open_drain: enabled}
+  - {pin_num: '4', peripheral: FLEXCOMM4, signal: TXD_SCL_MISO_WS, pin_signal: PIO1_20/FC7_RTS_SCL_SSEL1/CT_INP14/FC4_TXD_SCL_MISO_WS/PLU_OUT2, mode: pullUp, slew_rate: standard,
+    invert: disabled, open_drain: enabled}
+ * BE CAREFUL MODIFYING THIS COMMENT - IT IS YAML SETTINGS FOR TOOLS ***********
+ */
+/* clang-format on */
+
+/* FUNCTION ************************************************************************************************************
+ *
+ * Function Name : I2C0_InitPins
+ * Description   : Configures pin routing and optionally pin electrical features.
+ *
+ * END ****************************************************************************************************************/
+/* Function assigned for the Cortex-M33 (Core #0) */
+void I2C4_InitPins(void) {
+    /* Enables the clock for the I/O controller.: Enable Clock. */
+    CLOCK_EnableClock(kCLOCK_Iocon);
+
+    const uint32_t port1_pin20_config = (/* Pin is configured as FC4_TXD_SCL_MISO_WS */
+        IOCON_PIO_FUNC5 |
+        /* Selects pull-up function */
+        IOCON_PIO_MODE_PULLUP |
+        /* Standard mode, output slew rate control is enabled */
+        IOCON_PIO_SLEW_STANDARD |
+        /* Input function is not inverted */
+        IOCON_PIO_INV_DI |
+        /* Enables digital function */
+        IOCON_PIO_DIGITAL_EN |
+        /* Open drain is enabled */
+        IOCON_PIO_OPENDRAIN_EN);
+    /* PORT1 PIN20 (coords: 4) is configured as FC4_TXD_SCL_MISO_WS */
+    IOCON_PinMuxSet(IOCON, 1U, 20U, port1_pin20_config);
+
+    const uint32_t port1_pin21_config = (/* Pin is configured as FC4_RXD_SDA_MOSI_DATA */
+        IOCON_PIO_FUNC5 |
+        /* Selects pull-up function */
+        IOCON_PIO_MODE_PULLUP |
+        /* Standard mode, output slew rate control is enabled */
+        IOCON_PIO_SLEW_STANDARD |
+        /* Input function is not inverted */
+        IOCON_PIO_INV_DI |
+        /* Enables digital function */
+        IOCON_PIO_DIGITAL_EN |
+        /* Open drain is enabled */
+        IOCON_PIO_OPENDRAIN_EN);
+    /* PORT1 PIN21 (coords: 30) is configured as FC4_RXD_SDA_MOSI_DATA */
+    IOCON_PinMuxSet(IOCON, 1U, 21U, port1_pin21_config);
+}
+
+/*
+ * TEXT BELOW IS USED AS SETTING FOR TOOLS *************************************
 USART0_InitPins:
 - options: {callFromInitBoot: 'true', coreID: cm33_core0, enableClock: 'true'}
 - pin_list:
@@ -171,6 +226,62 @@ void USART0_DeinitPins(void) {
     /* PORT0 PIN30 (coords: 94) is configured as PIO0_30 */
     IOCON_PinMuxSet(IOCON, 0U, 30U, port0_pin30_config);
 }
+
+/* clang-format off */
+/*
+ * TEXT BELOW IS USED AS SETTING FOR TOOLS *************************************
+I2C0_DeinitPins:
+- options: {callFromInitBoot: 'false', coreID: cm33_core0, enableClock: 'true'}
+- pin_list:
+  - {pin_num: '4', peripheral: GPIO, signal: 'PIO1, 20', pin_signal: PIO1_20/FC7_RTS_SCL_SSEL1/CT_INP14/FC4_TXD_SCL_MISO_WS/PLU_OUT2, mode: inactive, slew_rate: standard,
+    invert: disabled, open_drain: disabled}
+  - {pin_num: '30', peripheral: GPIO, signal: 'PIO1, 21', pin_signal: PIO1_21/FC7_CTS_SDA_SSEL0/CTIMER3_MAT2/FC4_RXD_SDA_MOSI_DATA/PLU_OUT3, mode: inactive, slew_rate: standard,
+    invert: disabled, open_drain: disabled}
+ * BE CAREFUL MODIFYING THIS COMMENT - IT IS YAML SETTINGS FOR TOOLS ***********
+ */
+/* clang-format on */
+
+/* FUNCTION ************************************************************************************************************
+ *
+ * Function Name : I2C0_DeinitPins
+ * Description   : Configures pin routing and optionally pin electrical features.
+ *
+ * END ****************************************************************************************************************/
+/* Function assigned for the Cortex-M33 (Core #0) */
+void I2C4_DeinitPins(void) {
+    /* Enables the clock for the I/O controller.: Enable Clock. */
+    CLOCK_EnableClock(kCLOCK_Iocon);
+
+    const uint32_t port1_pin20_config = (/* Pin is configured as PIO1_20 */
+        IOCON_PIO_FUNC0 |
+        /* No addition pin function */
+        IOCON_PIO_MODE_INACT |
+        /* Standard mode, output slew rate control is enabled */
+        IOCON_PIO_SLEW_STANDARD |
+        /* Input function is not inverted */
+        IOCON_PIO_INV_DI |
+        /* Enables digital function */
+        IOCON_PIO_DIGITAL_EN |
+        /* Open drain is disabled */
+        IOCON_PIO_OPENDRAIN_DI);
+    /* PORT1 PIN20 (coords: 4) is configured as PIO1_20 */
+    IOCON_PinMuxSet(IOCON, 1U, 20U, port1_pin20_config);
+
+    const uint32_t port1_pin21_config = (/* Pin is configured as PIO1_21 */
+        IOCON_PIO_FUNC0 |
+        /* No addition pin function */
+        IOCON_PIO_MODE_INACT |
+        /* Standard mode, output slew rate control is enabled */
+        IOCON_PIO_SLEW_STANDARD |
+        /* Input function is not inverted */
+        IOCON_PIO_INV_DI |
+        /* Enables digital function */
+        IOCON_PIO_DIGITAL_EN |
+        /* Open drain is disabled */
+        IOCON_PIO_OPENDRAIN_DI);
+    /* PORT1 PIN21 (coords: 30) is configured as PIO1_21 */
+    IOCON_PinMuxSet(IOCON, 1U, 21U, port1_pin21_config);
+}/* clang-format off */
 
 /* FUNCTION ************************************************************************************************************
  *

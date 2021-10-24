@@ -34,201 +34,211 @@
 #include "common-hal/microcontroller/Pin.h"
 #include "shared-bindings/microcontroller/Pin.h"
 
-#if (1)
 
-void reset_spi(void) {
-    return;
-}
-
-void common_hal_busio_spi_construct(busio_spi_obj_t *self,
-    const mcu_pin_obj_t *clock, const mcu_pin_obj_t *mosi,
-    const mcu_pin_obj_t *miso) {
-    return;
-}
-
-void common_hal_busio_spi_never_reset(busio_spi_obj_t *self) {
-    return;
-}
-
-bool common_hal_busio_spi_deinited(busio_spi_obj_t *self) {
-    return false;
-}
+#define CRITICAL_SECTION_ENTER()    {}
+#define CRITICAL_SECTION_LEAVE()    {}
 
 
-void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
-    return;
-}
+/* TODO: Move board dependencies to the board functions accordingly */
+#if defined(BOARD_MCB1700)
+extern ARM_DRIVER_SPI Driver_SPI0;
 
-bool common_hal_busio_spi_configure(busio_spi_obj_t *self,
-    uint32_t baudrate, uint8_t polarity, uint8_t phase, uint8_t bits) {
-    return false;
-}
+#define MAX_SPI 1U
+const STATIC spi_inst_t *spi[MAX_SPI] = {&Driver_SPI0};
+STATIC uint32_t events[MAX_SPI] = {0};
 
-bool common_hal_busio_spi_try_lock(busio_spi_obj_t *self) {
-    return false;
-}
 
-bool common_hal_busio_spi_has_lock(busio_spi_obj_t *self) {
-    return false;
-}
+#elif defined(BOARD_LPCEXPRESSO55S28)
+#include "fsl_clock.h"
 
-void common_hal_busio_spi_unlock(busio_spi_obj_t *self) {
-    return;
-}
+extern ARM_DRIVER_SPI Driver_SPI7;
 
-bool common_hal_busio_spi_write(busio_spi_obj_t *self,
-    const uint8_t *data, size_t len) {
-    return false;
-}
+#define MAX_SPI 1U
+const STATIC spi_inst_t *spi[MAX_SPI] = {&Driver_SPI7};
+STATIC uint32_t events[MAX_SPI] = {0};
 
-bool common_hal_busio_spi_read(busio_spi_obj_t *self,
-    uint8_t *data, size_t len, uint8_t write_value) {
-    return false;
-}
-
-bool common_hal_busio_spi_transfer(busio_spi_obj_t *self, const uint8_t *data_out, uint8_t *data_in, size_t len) {
-    return false;
-}
-
-uint32_t common_hal_busio_spi_get_frequency(busio_spi_obj_t *self) {
-    return 0;
-}
-
-uint8_t common_hal_busio_spi_get_phase(busio_spi_obj_t *self) {
-    return 0;
-}
-
-uint8_t common_hal_busio_spi_get_polarity(busio_spi_obj_t *self) {
-    return 0;
-}
 
 #else
-#include "src/rp2_common/hardware_dma/include/hardware/dma.h"
-#include "src/rp2_common/hardware_gpio/include/hardware/gpio.h"
+#error "Only BOARD_[BRKR_MCB1700|LPCEXPRESSO55S28] are supported"
 
-#define NO_INSTANCE 0xff
+#endif
 
-STATIC bool never_reset_spi[2];
-STATIC spi_inst_t *spi[2] = {spi0, spi1};
+/* Conforming SD card, start with 250 kHz */
+#define SPI_DEFAULT_FREQ    250000U
+
+
+
+STATIC void SPI0_cb(uint32_t event) {
+    events[0U] = event;
+
+    return;
+}
+
+STATIC void SPI1_cb(uint32_t event) {
+    events[0U] = event;
+
+    return;
+}
+
+STATIC void SPI2_cb(uint32_t event) {
+    events[0U] = event;
+
+    return;
+}
 
 void reset_spi(void) {
-    for (size_t i = 0; i < 2; i++) {
-        if (never_reset_spi[i]) {
-            continue;
-        }
-
-        spi_deinit(spi[i]);
-    }
+    return;
 }
 
 void common_hal_busio_spi_construct(busio_spi_obj_t *self,
     const mcu_pin_obj_t *clock, const mcu_pin_obj_t *mosi,
     const mcu_pin_obj_t *miso) {
-    size_t instance_index = NO_INSTANCE;
-    if (clock->number % 4 == 2) {
-        instance_index = (clock->number / 8) % 2;
-    }
-    if (mosi != NULL) {
-        // Make sure the set MOSI matches the clock settings.
-        if (mosi->number % 4 != 3 ||
-            (mosi->number / 8) % 2 != instance_index) {
-            instance_index = NO_INSTANCE;
-        }
-    }
-    if (miso != NULL) {
-        // Make sure the set MOSI matches the clock settings.
-        if (miso->number % 4 != 0 ||
-            (miso->number / 8) % 2 != instance_index) {
-            instance_index = NO_INSTANCE;
-        }
-    }
 
-    // TODO: Check to see if we're sharing the SPI with a native APA102.
+    self->clock = (const mcu_pin_obj_t *)NULL;
+    self->miso = (const mcu_pin_obj_t *)NULL;
+    self->mosi = (const mcu_pin_obj_t *)NULL;
 
-    if (instance_index > 1) {
-        mp_raise_ValueError(translate("Invalid pins"));
+    #if (0)
+    if (invalid_pin) {
+        mp_raise_ValueError_varg(translate("Invalid %q pin selection"), MP_QSTR_SPI);
     }
+    #endif
 
-    if (instance_index == 0) {
-        self->peripheral = spi0;
-    } else if (instance_index == 1) {
-        self->peripheral = spi1;
+    reset_pin_number(mosi->number);
+    reset_pin_number(miso->number);
+
+    const size_t n = 0U;
+    ARM_DRIVER_SPI *spi_drv = spi[n];
+    self->driver = spi_drv;
+
+    #if defined(BOARD_LPCEXPRESSO55S28)
+    CLOCK_AttachClk(kFRO12M_to_FLEXCOMM7);
+    #endif
+
+    int32_t drv_err = spi_drv->Initialize(SPI0_cb);
+    if (ARM_DRIVER_OK != drv_err) {
+        mp_raise_RuntimeError(translate("SPI Init Error"));
     }
 
-    if ((spi_get_hw(self->peripheral)->cr1 & SPI_SSPCR1_SSE_BITS) != 0) {
-        mp_raise_ValueError(translate("SPI peripheral in use"));
-    }
+    spi_drv->PowerControl(ARM_POWER_FULL);
+    uint32_t ctrl = ARM_SPI_MODE_MASTER;
+    spi_drv->Control(ctrl, SPI_DEFAULT_FREQ);
+    self->target_baudrate = SPI_DEFAULT_FREQ;
+    self->real_baudrate = spi_drv->Control(ARM_SPI_GET_BUS_SPEED, 0UL);
 
-    spi_init(self->peripheral, 250000);
+    ctrl = ARM_SPI_MODE_MASTER;
+    ctrl |= ARM_SPI_SS_MASTER_SW | ARM_SPI_CPOL0_CPHA0;
+    ctrl |= ARM_SPI_DATA_BITS(8u);
+    spi_drv->Control(ARM_SPI_CONTROL_SS, ARM_SPI_SS_INACTIVE);
 
-    gpio_set_function(clock->number, GPIO_FUNC_SPI);
-    claim_pin(clock);
     self->clock = clock;
+    common_hal_mcu_pin_claim(self->clock);
 
-    self->MOSI = mosi;
-    if (mosi != NULL) {
-        gpio_set_function(mosi->number, GPIO_FUNC_SPI);
-        claim_pin(mosi);
+    self->mosi = mosi;
+    if (NULL != self->mosi) {
+        common_hal_mcu_pin_claim(self->mosi);
     }
 
-    self->MISO = miso;
-    if (miso != NULL) {
-        gpio_set_function(miso->number, GPIO_FUNC_SPI);
-        claim_pin(miso);
+    self->miso = miso;
+    if (NULL != self->miso) {
+        common_hal_mcu_pin_claim(self->miso);
     }
+
+    return;
 }
 
 void common_hal_busio_spi_never_reset(busio_spi_obj_t *self) {
-    never_reset_spi[spi_get_index(self->peripheral)] = true;
-
-    common_hal_never_reset_pin(self->clock);
-    common_hal_never_reset_pin(self->MOSI);
-    common_hal_never_reset_pin(self->MISO);
+    return;
 }
 
 bool common_hal_busio_spi_deinited(busio_spi_obj_t *self) {
-    return self->clock == NULL;
+    return NULL == self->clock;
 }
 
-void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
-    if (common_hal_busio_spi_deinited(self)) {
-        return;
-    }
-    never_reset_spi[spi_get_index(self->peripheral)] = false;
-    spi_deinit(self->peripheral);
 
-    common_hal_reset_pin(self->clock);
-    common_hal_reset_pin(self->MOSI);
-    common_hal_reset_pin(self->MISO);
-    self->clock = NULL;
+void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
+    bool is_deinited = common_hal_busio_spi_deinited(self);
+
+    if (!is_deinited) {
+        #if (0)
+        never_reset_spi[spi_get_index(self->peripheral)] = false;
+        spi_deinit(self->peripheral);
+        #endif
+
+        common_hal_reset_pin(self->clock);
+        common_hal_reset_pin(self->mosi);
+        common_hal_reset_pin(self->miso);
+        self->clock = NULL;
+        self->mosi = NULL;
+        self->miso = NULL;
+        self->driver = NULL;
+    }
+    return;
 }
 
 bool common_hal_busio_spi_configure(busio_spi_obj_t *self,
     uint32_t baudrate, uint8_t polarity, uint8_t phase, uint8_t bits) {
-    if (baudrate == self->target_frequency &&
-        polarity == self->polarity &&
-        phase == self->phase &&
-        bits == self->bits) {
-        return true;
+
+    bool is_baudrate_changed = (baudrate != self->target_baudrate);
+    bool is_polarity_changed = (polarity != self->polarity);
+    bool is_phase_changed = (phase != self->phase);
+    bool is_bits_changed = (bits != self->bits);
+    bool is_configured = !(is_baudrate_changed || is_polarity_changed || is_phase_changed || is_bits_changed);
+
+    if (!is_configured) {
+        spi_inst_t *spi_drv = self->driver;
+        int32_t drv_err = ARM_DRIVER_OK;
+        if (is_baudrate_changed) {
+            drv_err = spi_drv->Control(ARM_SPI_SET_BUS_SPEED, baudrate);
+        }
+
+        if ((ARM_DRIVER_OK == drv_err) && (is_polarity_changed || is_phase_changed)) {
+            uint32_t ctrl = ARM_SPI_MODE_MASTER | ARM_SPI_SS_MASTER_SW | ARM_SPI_SET_BUS_SPEED;
+
+            if (!polarity && !phase) {
+                ctrl |= ARM_SPI_CPOL0_CPHA0;
+            } else if (!polarity && phase) {
+                ctrl |= ARM_SPI_CPOL0_CPHA1;
+            } else if (polarity && !phase) {
+                ctrl |= ARM_SPI_CPOL1_CPHA0;
+            } else if (polarity && phase) {
+                ctrl |= ARM_SPI_CPOL1_CPHA1;
+            }
+
+            drv_err = spi_drv->Control(ctrl, 0u);
+        }
+
+        if ((ARM_DRIVER_OK == drv_err) && (is_bits_changed)) {
+            uint32_t ctrl = ARM_SPI_MODE_MASTER | ARM_SPI_SS_MASTER_SW | ARM_SPI_SET_BUS_SPEED;
+
+            ctrl |= ARM_SPI_DATA_BITS(bits);
+            drv_err = spi_drv->Control(ctrl, 0u);
+        }
+
+        if (ARM_DRIVER_OK == drv_err) {
+            self->target_baudrate = baudrate;
+            self->real_baudrate = spi_drv->Control(ARM_SPI_GET_BUS_SPEED, 0UL);
+            self->polarity = polarity;
+            self->phase = phase;
+            self->bits = bits;
+            is_configured = true;
+        } else {
+            mp_raise_ValueError(translate("SPI Re-initialization error"));
+        }
     }
 
-    spi_set_format(self->peripheral, bits, polarity, phase, SPI_MSB_FIRST);
-
-    self->polarity = polarity;
-    self->phase = phase;
-    self->bits = bits;
-    self->target_frequency = baudrate;
-    self->real_frequency = spi_set_baudrate(self->peripheral, baudrate);
-
-    return true;
+    return is_configured;
 }
 
 bool common_hal_busio_spi_try_lock(busio_spi_obj_t *self) {
+    /* TODO: Introduce common_hal_busio_try_lock function */
     bool grabbed_lock = false;
+    CRITICAL_SECTION_ENTER();
     if (!self->has_lock) {
         grabbed_lock = true;
         self->has_lock = true;
     }
+    CRITICAL_SECTION_LEAVE();
     return grabbed_lock;
 }
 
@@ -240,117 +250,74 @@ void common_hal_busio_spi_unlock(busio_spi_obj_t *self) {
     self->has_lock = false;
 }
 
-static bool _transfer(busio_spi_obj_t *self,
-    const uint8_t *data_out, size_t out_len,
-    uint8_t *data_in, size_t in_len) {
-    // Use DMA for large transfers if channels are available
-    const size_t dma_min_size_threshold = 32;
-    int chan_tx = -1;
-    int chan_rx = -1;
-    size_t len = MAX(out_len, in_len);
-    if (len >= dma_min_size_threshold) {
-        // Use two DMA channels to service the two FIFOs
-        chan_tx = dma_claim_unused_channel(false);
-        chan_rx = dma_claim_unused_channel(false);
-    }
-    bool use_dma = chan_rx >= 0 && chan_tx >= 0;
-    if (use_dma) {
-        dma_channel_config c = dma_channel_get_default_config(chan_tx);
-        channel_config_set_transfer_data_size(&c, DMA_SIZE_8);
-        channel_config_set_dreq(&c, spi_get_index(self->peripheral) ? DREQ_SPI1_TX : DREQ_SPI0_TX);
-        channel_config_set_read_increment(&c, out_len == len);
-        channel_config_set_write_increment(&c, false);
-        dma_channel_configure(chan_tx, &c,
-            &spi_get_hw(self->peripheral)->dr,
-            data_out,
-            len,
-            false);
-
-        c = dma_channel_get_default_config(chan_rx);
-        channel_config_set_transfer_data_size(&c, DMA_SIZE_8);
-        channel_config_set_dreq(&c, spi_get_index(self->peripheral) ? DREQ_SPI1_RX : DREQ_SPI0_RX);
-        channel_config_set_read_increment(&c, false);
-        channel_config_set_write_increment(&c, in_len == len);
-        dma_channel_configure(chan_rx, &c,
-            data_in,
-            &spi_get_hw(self->peripheral)->dr,
-            len,
-            false);
-
-        dma_start_channel_mask((1u << chan_rx) | (1u << chan_tx));
-        while (dma_channel_is_busy(chan_rx) || dma_channel_is_busy(chan_tx)) {
-            // TODO: We should idle here until we get a DMA interrupt or something else.
-            RUN_BACKGROUND_TASKS;
-            if (mp_hal_is_interrupted()) {
-                if (dma_channel_is_busy(chan_rx)) {
-                    dma_channel_abort(chan_rx);
-                }
-                if (dma_channel_is_busy(chan_tx)) {
-                    dma_channel_abort(chan_tx);
-                }
-                break;
-            }
-        }
-    }
-
-    // If we have claimed only one channel successfully, we should release immediately. This also
-    // releases the DMA after use_dma has been done.
-    if (chan_rx >= 0) {
-        dma_channel_unclaim(chan_rx);
-    }
-    if (chan_tx >= 0) {
-        dma_channel_unclaim(chan_tx);
-    }
-
-    if (!use_dma && !mp_hal_is_interrupted()) {
-        // Use software for small transfers, or if couldn't claim two DMA channels
-        // Never have more transfers in flight than will fit into the RX FIFO,
-        // else FIFO will overflow if this code is heavily interrupted.
-        const size_t fifo_depth = 8;
-        size_t rx_remaining = len;
-        size_t tx_remaining = len;
-
-        while (!mp_hal_is_interrupted() && (rx_remaining || tx_remaining)) {
-            if (tx_remaining && spi_is_writable(self->peripheral) && rx_remaining - tx_remaining < fifo_depth) {
-                spi_get_hw(self->peripheral)->dr = (uint32_t)*data_out;
-                // Increment only if the buffer is the transfer length. It's 1 otherwise.
-                if (out_len == len) {
-                    data_out++;
-                }
-                --tx_remaining;
-            }
-            if (rx_remaining && spi_is_readable(self->peripheral)) {
-                *data_in = (uint8_t)spi_get_hw(self->peripheral)->dr;
-                // Increment only if the buffer is the transfer length. It's 1 otherwise.
-                if (in_len == len) {
-                    data_in++;
-                }
-                --rx_remaining;
-            }
-            RUN_BACKGROUND_TASKS;
-        }
-    }
-    return true;
-}
-
 bool common_hal_busio_spi_write(busio_spi_obj_t *self,
     const uint8_t *data, size_t len) {
-    uint32_t data_in;
-    return _transfer(self, data, len, (uint8_t *)&data_in, MIN(len, 4));
+    int32_t drv_err = ARM_DRIVER_ERROR;
+
+    if (NULL != self->mosi) {
+        spi_inst_t *spi_drv = self->driver;
+        drv_err = spi_drv->Send(data, len);
+
+        if (!drv_err) {
+            ARM_SPI_STATUS status;
+            do {
+                RUN_BACKGROUND_TASKS;
+                status = spi_drv->GetStatus();
+            } while (status.busy);
+        }
+    } else {
+        mp_raise_ValueError(translate("No MOSI Pin"));
+    }
+
+    return ARM_DRIVER_OK == drv_err;
 }
 
 bool common_hal_busio_spi_read(busio_spi_obj_t *self,
     uint8_t *data, size_t len, uint8_t write_value) {
-    uint32_t data_out = write_value << 24 | write_value << 16 | write_value << 8 | write_value;
-    return _transfer(self, (const uint8_t *)&data_out, MIN(4, len), data, len);
+    int32_t drv_err = ARM_DRIVER_ERROR;
+
+    if (NULL != self->miso) {
+        spi_inst_t *spi_drv = self->driver;
+        drv_err = spi_drv->Receive(data, len);
+
+        if (!drv_err) {
+            ARM_SPI_STATUS status;
+            do {
+                RUN_BACKGROUND_TASKS;
+                status = spi_drv->GetStatus();
+            } while (status.busy);
+        }
+    } else {
+        mp_raise_ValueError(translate("No MISO Pin"));
+    }
+
+    return ARM_DRIVER_OK == drv_err;
 }
 
-bool common_hal_busio_spi_transfer(busio_spi_obj_t *self, const uint8_t *data_out, uint8_t *data_in, size_t len) {
-    return _transfer(self, data_out, len, data_in, len);
+bool common_hal_busio_spi_transfer(busio_spi_obj_t *self,
+    const uint8_t *data_out, uint8_t *data_in, size_t len) {
+    int32_t drv_err = ARM_DRIVER_ERROR;
+
+    if ((NULL != self->mosi) && (NULL != self->miso)) {
+        spi_inst_t *spi_drv = self->driver;
+        drv_err = spi_drv->Transfer(data_out, data_in, len);
+
+        if (!drv_err) {
+            ARM_SPI_STATUS status;
+            do {
+                RUN_BACKGROUND_TASKS;
+                status = spi_drv->GetStatus();
+            } while (status.busy);
+        }
+    } else {
+        mp_raise_ValueError(translate("Missing MISO or MOSI Pin"));
+    }
+
+    return ARM_DRIVER_OK == drv_err;
 }
 
 uint32_t common_hal_busio_spi_get_frequency(busio_spi_obj_t *self) {
-    return self->real_frequency;
+    return self->real_baudrate;
 }
 
 uint8_t common_hal_busio_spi_get_phase(busio_spi_obj_t *self) {
@@ -360,5 +327,3 @@ uint8_t common_hal_busio_spi_get_phase(busio_spi_obj_t *self) {
 uint8_t common_hal_busio_spi_get_polarity(busio_spi_obj_t *self) {
     return self->polarity;
 }
-
-#endif

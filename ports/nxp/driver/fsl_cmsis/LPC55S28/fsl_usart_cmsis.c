@@ -728,13 +728,7 @@ static ARM_USART_STATUS USART_NonBlockingGetStatus(cmsis_usart_non_blocking_driv
 
 /* User needs to provide the implementation for USART0_GetFreq/InitPins/DeinitPins
 in the application for enabling according instance. */
-#if (1)
-uint32_t USART0_GetFreq(void) {
-    return CLOCK_GetFlexCommClkFreq(0U);
-}
-#else
 extern uint32_t USART0_GetFreq(void);
-#endif
 
 static cmsis_usart_resource_t usart0_Resource = {USART0, USART0_GetFreq};
 

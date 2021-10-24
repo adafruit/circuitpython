@@ -24,42 +24,26 @@
  * THE SOFTWARE.
  */
 
-#ifndef MICROPY_INCLUDED_RASPBERRYPI_COMMON_HAL_BUSIO_I2C_H
-#define MICROPY_INCLUDED_RASPBERRYPI_COMMON_HAL_BUSIO_I2C_H
+#ifndef MICROPY_INCLUDED_NXP_COMMON_HAL_BUSIO_I2C_H
+#define MICROPY_INCLUDED_NXP_COMMON_HAL_BUSIO_I2C_H
 
+#include "cmsis5/CMSIS/Driver/Include/Driver_I2C.h"
 #include "common-hal/microcontroller/Pin.h"
-#include "shared-module/bitbangio/I2C.h"
-
 #include "py/obj.h"
 
-#if (1)
 
-typedef void i2c_inst_t;
-
-typedef struct {
-    mp_obj_base_t base;
-    i2c_inst_t *peripheral;
-    bitbangio_i2c_obj_t bitbangio_i2c;
-    bool has_lock;
-    uint baudrate;
-    uint8_t scl_pin;
-    uint8_t sda_pin;
-} busio_i2c_obj_t;
-
-#else
-#include "src/rp2_common/hardware_i2c/include/hardware/i2c.h"
+typedef ARM_DRIVER_I2C i2c_inst_t;
 
 typedef struct {
     mp_obj_base_t base;
-    i2c_inst_t *peripheral;
-    bitbangio_i2c_obj_t bitbangio_i2c;
+    i2c_inst_t *driver;
     bool has_lock;
-    uint baudrate;
     uint8_t scl_pin;
     uint8_t sda_pin;
+    uint32_t baudrate;
 } busio_i2c_obj_t;
-#endif
 
 void reset_i2c(void);
 
-#endif // MICROPY_INCLUDED_RASPBERRYPI_COMMON_HAL_BUSIO_I2C_H
+
+#endif // MICROPY_INCLUDED_NXP_COMMON_HAL_BUSIO_I2C_H

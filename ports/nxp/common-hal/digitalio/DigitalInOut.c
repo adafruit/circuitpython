@@ -38,9 +38,6 @@
 
 digitalinout_result_t
 common_hal_digitalio_digitalinout_construct(digitalio_digitalinout_obj_t *self, const mcu_pin_obj_t *pin) {
-    #if (0)
-    return DIGITALINOUT_PIN_BUSY;
-    #else
     claim_pin(pin);
     self->pin = pin;
     self->output = false;
@@ -54,7 +51,6 @@ common_hal_digitalio_digitalinout_construct(digitalio_digitalinout_obj_t *self, 
 
     gpio_pin_init(pin->port, pin->number, &pin_config);
     return DIGITALINOUT_OK;
-    #endif
 }
 
 void
@@ -85,7 +81,6 @@ common_hal_digitalio_digitalinout_switch_to_input(digitalio_digitalinout_obj_t *
 
 digitalinout_result_t
 common_hal_digitalio_digitalinout_switch_to_output(digitalio_digitalinout_obj_t *self, bool value, digitalio_drive_mode_t drive_mode) {
-    #if (1)
     gpio_pin_config_t pin_config;
     pin_config.input = false;
     pin_config.outputLogic = true;
@@ -100,22 +95,6 @@ common_hal_digitalio_digitalinout_switch_to_output(digitalio_digitalinout_obj_t 
     common_hal_digitalio_digitalinout_set_value(self, value);
 
     return DIGITALINOUT_OK;
-    #else
-    const uint8_t pin = self->pin->number;
-    gpio_disable_pulls(pin);
-
-    // Turn on "strong" pin driving (more current available).
-    hw_write_masked(&padsbank0_hw->io[pin],
-        PADS_BANK0_GPIO0_DRIVE_VALUE_12MA << PADS_BANK0_GPIO0_DRIVE_LSB,
-            PADS_BANK0_GPIO0_DRIVE_BITS);
-
-    self->output = true;
-    self->open_drain = drive_mode == DRIVE_MODE_OPEN_DRAIN;
-
-    // Pin direction is ultimately set in set_value. We don't need to do it here.
-    common_hal_digitalio_digitalinout_set_value(self, value);
-    return DIGITALINOUT_OK;
-    #endif
 }
 
 digitalio_direction_t
@@ -148,11 +127,7 @@ common_hal_digitalio_digitalinout_set_value(digitalio_digitalinout_obj_t *self, 
 
 bool
 common_hal_digitalio_digitalinout_get_value(digitalio_digitalinout_obj_t *self) {
-    #if (1)
     return gpio_pin_read(self->pin->port, self->pin->number);
-    #else
-    return gpio_get(self->pin->number);
-    #endif
 }
 
 digitalinout_result_t

@@ -24,48 +24,31 @@
  * THE SOFTWARE.
  */
 
-#ifndef MICROPY_INCLUDED_RASPBERRYPI_COMMON_HAL_BUSIO_SPI_H
-#define MICROPY_INCLUDED_RASPBERRYPI_COMMON_HAL_BUSIO_SPI_H
+#ifndef MICROPY_INCLUDED_NXP_COMMON_HAL_BUSIO_SPI_H
+#define MICROPY_INCLUDED_NXP_COMMON_HAL_BUSIO_SPI_H
 
+#include "cmsis5/CMSIS/Driver/Include/Driver_SPI.h"
 #include "common-hal/microcontroller/Pin.h"
-
 #include "py/obj.h"
 
-#if (1)
-typedef void spi_inst_t;
+
+typedef ARM_DRIVER_SPI spi_inst_t;
 
 typedef struct {
     mp_obj_base_t base;
-    spi_inst_t *peripheral;
+    spi_inst_t *driver;
     bool has_lock;
     const mcu_pin_obj_t *clock;
-    const mcu_pin_obj_t *MOSI;
-    const mcu_pin_obj_t *MISO;
-    uint32_t target_frequency;
-    int32_t real_frequency;
+    const mcu_pin_obj_t *mosi;
+    const mcu_pin_obj_t *miso;
+    uint32_t target_baudrate;
+    uint32_t real_baudrate;
     uint8_t polarity;
     uint8_t phase;
     uint8_t bits;
 } busio_spi_obj_t;
-
-#else
-#include "src/rp2_common/hardware_spi/include/hardware/spi.h"
-
-typedef struct {
-    mp_obj_base_t base;
-    spi_inst_t *peripheral;
-    bool has_lock;
-    const mcu_pin_obj_t *clock;
-    const mcu_pin_obj_t *MOSI;
-    const mcu_pin_obj_t *MISO;
-    uint32_t target_frequency;
-    int32_t real_frequency;
-    uint8_t polarity;
-    uint8_t phase;
-    uint8_t bits;
-} busio_spi_obj_t;
-#endif
 
 void reset_spi(void);
 
-#endif // MICROPY_INCLUDED_RASPBERRYPI_COMMON_HAL_BUSIO_SPI_H
+
+#endif // MICROPY_INCLUDED_NXP_COMMON_HAL_BUSIO_SPI_H

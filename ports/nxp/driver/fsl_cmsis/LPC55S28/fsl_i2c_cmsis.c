@@ -381,6 +381,9 @@ static void KSDK_I2C_MASTER_InterruptCallback(I2C_Type *base,
         case kStatus_I2C_ArbitrationLost: /*Occurs in master mode when arbitration is lost.*/
             event = ARM_I2C_EVENT_ARBITRATION_LOST;
             break;
+        case kStatus_I2C_Addr_Nak:
+            event = ARM_I2C_EVENT_ADDRESS_NACK;
+            break;
         default:
             event = ARM_I2C_EVENT_TRANSFER_INCOMPLETE;
             break;

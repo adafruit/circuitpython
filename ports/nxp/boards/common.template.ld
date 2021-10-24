@@ -1,4 +1,4 @@
-/* Template for SAMD21/SAMD51 linking. dollar-sign-curly-bracket items are replaced with strings. */
+/* Template for NXP LPC MCUs linking. dollar-sign-curly-bracket items are replaced with strings. */
 
 /* Specify the memory areas */
 MEMORY

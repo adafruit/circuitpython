@@ -46,6 +46,12 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     uint32_t baudrate, uint8_t bits, busio_uart_parity_t parity, uint8_t stop,
     mp_float_t timeout, uint16_t receiver_buffer_size, byte *receiver_buffer,
     bool sigint_enabled) {
+
+    self->rx_pin = NO_PIN;
+    self->tx_pin = NO_PIN;
+
+    // FIXME: Pick out the module based on pins
+
     return;
 }
 
