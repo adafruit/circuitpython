@@ -26,7 +26,7 @@
 
 // Micropython setup
 
-#define MICROPY_HW_BOARD_NAME       "Feather ESP32S2 without PSRAM"
+#define MICROPY_HW_BOARD_NAME       "Adafruit Feather ESP32S2"
 #define MICROPY_HW_MCU_NAME         "ESP32S2"
 
 #define MICROPY_HW_NEOPIXEL (&pin_GPIO33)
