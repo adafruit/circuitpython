@@ -86,7 +86,7 @@ STATIC mp_obj_t bit_transpose(size_t n_args, const mp_obj_t *pos_args, mp_map_t 
     common_hal_bitops_bit_transpose(output_bufinfo.buf, input_bufinfo.buf, inlen, width);
     return args[ARG_output].u_obj;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_KW(bitops_bit_transpose_obj, 1, bit_transpose);
+STATIC MP_DEFINE_CONST_FUN_OBJ_KW(bitops_bit_transpose_obj, 0, bit_transpose);
 
 STATIC const mp_rom_map_elem_t bitops_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_bitops) },
@@ -99,3 +99,5 @@ const mp_obj_module_t bitops_module = {
     .base = { &mp_type_module },
     .globals = (mp_obj_dict_t *)&bitops_module_globals,
 };
+
+MP_REGISTER_MODULE(MP_QSTR_bitops, bitops_module, CIRCUITPY_BITOPS);

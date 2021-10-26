@@ -4,17 +4,13 @@
 
 [submodule "lib/axtls"]
 	path = lib/axtls
-	url = https://github.com/pfalcon/axtls
-	branch = micropython
+	url = https://github.com/micropython/axtls.git
 [submodule "lib/libffi"]
 	path = lib/libffi
 	url = https://github.com/atgreen/libffi
 [submodule "lib/berkeley-db-1.xx"]
 	path = lib/berkeley-db-1.xx
 	url = https://github.com/pfalcon/berkeley-db-1.xx
-[submodule "lib/uzlib"]
-	path = lib/uzlib
-	url = https://github.com/pfalcon/uzlib
 [submodule "tools/uf2"]
 	path = tools/uf2
 	url = https://github.com/Microsoft/uf2.git
@@ -150,12 +146,12 @@
 [submodule "frozen/Adafruit_CircuitPython_RFM69"]
 	path = frozen/Adafruit_CircuitPython_RFM69
 	url = https://github.com/adafruit/Adafruit_CircuitPython_RFM69.git
-[submodule "ports/esp32s2/esp-idf"]
-	path = ports/esp32s2/esp-idf
+[submodule "ports/espressif/esp-idf"]
+	path = ports/espressif/esp-idf
 	url = https://github.com/espressif/esp-idf.git
 	branch = release/v4.3
-[submodule "ports/esp32s2/certificates/nina-fw"]
-	path = ports/esp32s2/certificates/nina-fw
+[submodule "ports/espressif/certificates/nina-fw"]
+	path = ports/espressif/certificates/nina-fw
 	url = https://github.com/adafruit/nina-fw.git
 [submodule "frozen/Adafruit_CircuitPython_ST7789"]
 	path = frozen/Adafruit_CircuitPython_ST7789
@@ -191,3 +187,6 @@
 [submodule "lib/quirc"]
 	path = lib/quirc
 	url = https://github.com/adafruit/quirc.git
+[submodule "frozen/Adafruit_CircuitPython_APDS9960"]
+	path = frozen/Adafruit_CircuitPython_APDS9960
+	url = https://github.com/adafruit/Adafruit_CircuitPython_APDS9960

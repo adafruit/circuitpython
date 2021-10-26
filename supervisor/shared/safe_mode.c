@@ -66,6 +66,9 @@ safe_mode_t wait_for_safe_mode_reset(void) {
         reset_reason != RESET_REASON_SOFTWARE) {
         return NO_SAFE_MODE;
     }
+    #ifdef CIRCUITPY_SKIP_SAFE_MODE_WAIT
+    return NO_SAFE_MODE;
+    #endif
     port_set_saved_word(SAFE_MODE_DATA_GUARD | (MANUAL_SAFE_MODE << 8));
     // Wait for a while to allow for reset.
 
@@ -165,6 +168,9 @@ void print_safe_mode_message(safe_mode_t reason) {
             break;
         case USB_TOO_MANY_INTERFACE_NAMES:
             message = translate("USB devices specify too many interface names.");
+            break;
+        case USB_BOOT_DEVICE_NOT_INTERFACE_ZERO:
+            message = translate("Boot device must be first device (interface #0).");
             break;
         case WATCHDOG_RESET:
             message = translate("Watchdog timer expired.");

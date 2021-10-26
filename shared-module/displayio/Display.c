@@ -29,7 +29,9 @@
 #include "py/runtime.h"
 #include "shared-bindings/displayio/FourWire.h"
 #include "shared-bindings/displayio/I2CDisplay.h"
-#include "shared-bindings/displayio/ParallelBus.h"
+#if CIRCUITPY_PARALLELDISPLAY
+#include "shared-bindings/paralleldisplay/ParallelBus.h"
+#endif
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/time/__init__.h"
 #include "shared-module/displayio/__init__.h"
@@ -320,7 +322,9 @@ STATIC bool _refresh_area(displayio_display_obj_t *self, const displayio_area_t 
 
         // TODO(tannewt): Make refresh displays faster so we don't starve other
         // background tasks.
+        #if CIRCUITPY_USB
         usb_background();
+        #endif
     }
     return true;
 }

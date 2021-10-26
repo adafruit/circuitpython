@@ -28,7 +28,7 @@
 
 #include <stdint.h>
 
-#include "lib/utils/context_manager_helpers.h"
+#include "shared/runtime/context_manager_helpers.h"
 #include "py/binary.h"
 #include "py/objproperty.h"
 #include "py/objtype.h"
@@ -48,14 +48,14 @@
 //|
 //|     A single tile grid is also known as a Sprite."""
 //|
-//|     def __init__(self, bitmap: Bitmap, *, pixel_shader: Union[ColorConverter, Palette], width: int = 1, height: int = 1, tile_width: Optional[int] = None, tile_height: Optional[int] = None, default_tile: int = 0, x: int = 0, y: int = 0) -> None:
+//|     def __init__(self, bitmap: Union[Bitmap, OnDiskBitmap, Shape], *, pixel_shader: Union[ColorConverter, Palette], width: int = 1, height: int = 1, tile_width: Optional[int] = None, tile_height: Optional[int] = None, default_tile: int = 0, x: int = 0, y: int = 0) -> None:
 //|         """Create a TileGrid object. The bitmap is source for 2d pixels. The pixel_shader is used to
 //|         convert the value and its location to a display native pixel color. This may be a simple color
 //|         palette lookup, a gradient, a pattern or a color transformer.
 //|
 //|         tile_width and tile_height match the height of the bitmap by default.
 //|
-//|         :param Bitmap bitmap: The bitmap storing one or more tiles.
+//|         :param Bitmap,OnDiskBitmap,Shape bitmap: The bitmap storing one or more tiles.
 //|         :param ColorConverter,Palette pixel_shader: The pixel shader that produces colors from values
 //|         :param int width: Width of the grid in tiles.
 //|         :param int height: Height of the grid in tiles.
@@ -65,7 +65,7 @@
 //|         :param int x: Initial x position of the left edge within the parent.
 //|         :param int y: Initial y position of the top edge within the parent."""
 //|
-STATIC mp_obj_t displayio_tilegrid_make_new(const mp_obj_type_t *type, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+STATIC mp_obj_t displayio_tilegrid_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_bitmap, ARG_pixel_shader, ARG_width, ARG_height, ARG_tile_width, ARG_tile_height, ARG_default_tile, ARG_x, ARG_y };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_bitmap, MP_ARG_REQUIRED | MP_ARG_OBJ },
@@ -79,7 +79,7 @@ STATIC mp_obj_t displayio_tilegrid_make_new(const mp_obj_type_t *type, size_t n_
         { MP_QSTR_y, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 0} },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
-    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+    mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
     mp_obj_t bitmap = args[ARG_bitmap].u_obj;
 

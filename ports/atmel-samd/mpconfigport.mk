@@ -35,6 +35,7 @@ ifeq ($(CHIP_FAMILY),samd21)
 # Some of these are on by default with CIRCUITPY_FULL_BUILD, but don't
 # fit in 256kB of flash
 
+CIRCUITPY_AESIO ?= 0
 CIRCUITPY_AUDIOMIXER ?= 0
 CIRCUITPY_BINASCII ?= 0
 CIRCUITPY_BITBANGIO ?= 0
@@ -97,10 +98,13 @@ CIRCUITPY_TOUCHIO_USE_NATIVE = 0
 
 # The ?='s allow overriding in mpconfigboard.mk.
 
+
+CIRCUITPY_ALARM ?= 0
 CIRCUITPY_PS2IO ?= 1
 CIRCUITPY_SAMD ?= 1
 CIRCUITPY_RGBMATRIX ?= $(CIRCUITPY_FULL_BUILD)
 CIRCUITPY_FRAMEBUFFERIO ?= $(CIRCUITPY_FULL_BUILD)
+CIRCUITPY_WATCHDOG ?= 1
 
 endif # samd51
 ######################################################################

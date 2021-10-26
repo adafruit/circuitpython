@@ -40,8 +40,8 @@
 #include "py/gc.h"
 #include "py/stackctrl.h"
 
-#include "lib/mp-readline/readline.h"
-#include "lib/utils/pyexec.h"
+#include "shared/readline/readline.h"
+#include "shared/runtime/pyexec.h"
 
 #include "background.h"
 #include "mpconfigboard.h"
@@ -105,6 +105,11 @@
 
 #if CIRCUITPY_WIFI
 #include "shared-bindings/wifi/__init__.h"
+#endif
+
+#if CIRCUITPY_BOOT_COUNTER
+#include "shared-bindings/nvm/ByteArray.h"
+uint8_t value_out = 0;
 #endif
 
 #if MICROPY_ENABLE_PYSTACK
@@ -795,6 +800,13 @@ int __attribute__((used)) main(void) {
 
     // Turn on RX and TX LEDs if we have them.
     init_rxtx_leds();
+
+    #if CIRCUITPY_BOOT_COUNTER
+    // Increment counter before possibly entering safe mode
+    common_hal_nvm_bytearray_get_bytes(&common_hal_mcu_nvm_obj,0,1,&value_out);
+    ++value_out;
+    common_hal_nvm_bytearray_set_bytes(&common_hal_mcu_nvm_obj,0,&value_out,1);
+    #endif
 
     // Wait briefly to give a reset window where we'll enter safe mode after the reset.
     if (safe_mode == NO_SAFE_MODE) {

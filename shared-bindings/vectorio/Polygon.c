@@ -18,14 +18,16 @@
 
 //| class Polygon:
 //|     def __init__(self, pixel_shader: Union[displayio.ColorConverter, displayio.Palette], points: List[Tuple[int, int]], x: int, y: int) -> None:
-//|         """Represents a closed shape by ordered vertices
+//|         """Represents a closed shape by ordered vertices. The path will be treated as
+//|         'closed', the last point will connect to the first point.
 //|
-//|            :param pixel_shader: The pixel shader that produces colors from values
-//|            :param points: Vertices for the polygon
-//|            :param x: Initial screen x position of the 0,0 origin in the points list.
-//|            :param y: Initial screen y position of the 0,0 origin in the points list."""
+//|         :param Union[~displayio.ColorConverter,~displayio.Palette] pixel_shader: The pixel
+//|             shader that produces colors from values
+//|         :param List[Tuple[int,int]] points: Vertices for the polygon
+//|         :param int x: Initial screen x position of the 0,0 origin in the points list.
+//|         :param int y: Initial screen y position of the 0,0 origin in the points list."""
 //|
-static mp_obj_t vectorio_polygon_make_new(const mp_obj_type_t *type, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+static mp_obj_t vectorio_polygon_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_pixel_shader, ARG_points_list, ARG_x, ARG_y };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_pixel_shader, MP_ARG_OBJ | MP_ARG_KW_ONLY | MP_ARG_REQUIRED },
@@ -34,21 +36,19 @@ static mp_obj_t vectorio_polygon_make_new(const mp_obj_type_t *type, size_t n_ar
         { MP_QSTR_y, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 0} },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
-    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+    mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    if (!mp_obj_is_type(args[ARG_points_list].u_obj, &mp_type_list)) {
-        mp_raise_TypeError_varg(translate("%q list must be a list"), MP_QSTR_point);
-    }
+    mp_obj_t points_list = mp_arg_validate_type(args[ARG_points_list].u_obj, &mp_type_list, MP_QSTR_points);
 
     vectorio_polygon_t *self = m_new_obj(vectorio_polygon_t);
     self->base.type = &vectorio_polygon_type;
 
-    common_hal_vectorio_polygon_construct(self, args[ARG_points_list].u_obj);
+    common_hal_vectorio_polygon_construct(self, points_list);
 
     // VectorShape parts
     mp_obj_t pixel_shader = args[ARG_pixel_shader].u_obj;
-    int16_t x = args[ARG_x].u_int;
-    int16_t y = args[ARG_y].u_int;
+    int32_t x = args[ARG_x].u_int;
+    int32_t y = args[ARG_y].u_int;
     mp_obj_t vector_shape = vectorio_vector_shape_make_new(self, pixel_shader, x, y);
     self->draw_protocol_instance = vector_shape;
 
@@ -63,7 +63,7 @@ STATIC const vectorio_draw_protocol_t polygon_draw_protocol = {
 
 
 //|     points: List[Tuple[int, int]]
-//|     """Set a new look and shape for this polygon"""
+//|     """Vertices for the polygon."""
 //|
 STATIC mp_obj_t vectorio_polygon_obj_get_points(mp_obj_t self_in) {
     vectorio_polygon_t *self = MP_OBJ_TO_PTR(self_in);
@@ -85,6 +85,22 @@ const mp_obj_property_t vectorio_polygon_points_obj = {
               (mp_obj_t)&vectorio_polygon_set_points_obj,
               MP_ROM_NONE},
 };
+
+
+// Documentation for properties inherited from VectorShape.
+
+//|     x : int
+//|     """X position of the 0,0 origin in the points list."""
+//|
+//|     y : int
+//|     """Y position of the 0,0 origin in the points list."""
+//|
+//|     location : Tuple[int,int]
+//|     """(X,Y) position of the 0,0 origin in the points list."""
+//|
+//|     pixel_shader : Union[displayio.ColorConverter,displayio.Palette]
+//|     """The pixel shader of the polygon."""
+//|
 
 STATIC const mp_rom_map_elem_t vectorio_polygon_locals_dict_table[] = {
     // Properties

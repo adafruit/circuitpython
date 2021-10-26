@@ -30,7 +30,7 @@
 #include "py/reload.h"
 #include "py/objstr.h"
 
-#include "lib/utils/interrupt_char.h"
+#include "shared/runtime/interrupt_char.h"
 #include "supervisor/shared/autoreload.h"
 #include "supervisor/shared/bluetooth/bluetooth.h"
 #include "supervisor/shared/status_leds.h"
@@ -251,7 +251,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(supervisor_set_next_code_file_obj, 0, supervisor_set_
 //|
 //|     """
 //|     ...
-STATIC mp_obj_t supervisor_ticks_ms(void) {
+mp_obj_t supervisor_ticks_ms(void) {
     uint64_t ticks_ms = common_hal_time_monotonic_ms();
     return mp_obj_new_int((ticks_ms + 0x1fff0000) % (1 << 29));
 }
@@ -320,3 +320,5 @@ const mp_obj_module_t supervisor_module = {
     .base = { &mp_type_module },
     .globals = (mp_obj_dict_t *)&supervisor_module_globals,
 };
+
+MP_REGISTER_MODULE(MP_QSTR_supervisor, supervisor_module, CIRCUITPY_SUPERVISOR);

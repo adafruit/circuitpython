@@ -1078,7 +1078,7 @@ STATIC const mp_rom_map_elem_t _EVE_locals_dict_table[] = {
 };
 STATIC MP_DEFINE_CONST_DICT(_EVE_locals_dict, _EVE_locals_dict_table);
 
-STATIC mp_obj_t _EVE_make_new(const mp_obj_type_t *type, size_t n_args, const mp_obj_t *args, mp_map_t *kw_args) {
+STATIC mp_obj_t _EVE_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     // mp_arg_check_num(n_args, kw_args, 1, 1, false);
     mp_obj__EVE_t *o = m_new_obj(mp_obj__EVE_t);
     o->base.type = &_EVE_type;
@@ -1105,3 +1105,5 @@ const mp_obj_module_t _eve_module = {
     .base = { &mp_type_module },
     .globals = (mp_obj_dict_t *)&mp_module__eve_globals,
 };
+
+MP_REGISTER_MODULE(MP_QSTR__eve, _eve_module, CIRCUITPY__EVE);

@@ -28,7 +28,7 @@
 
 #include <stdint.h>
 
-#include "lib/utils/context_manager_helpers.h"
+#include "shared/runtime/context_manager_helpers.h"
 #include "py/binary.h"
 #include "py/objproperty.h"
 #include "py/objtype.h"
@@ -39,8 +39,8 @@
 #include "shared-module/displayio/__init__.h"
 #include "supervisor/shared/translate.h"
 
-//| _DisplayBus = Union['FourWire', 'ParallelBus', 'I2CDisplay']
-//| """:py:class:`FourWire`, :py:class:`ParallelBus` or :py:class:`I2CDisplay`"""
+//| _DisplayBus = Union['FourWire', 'paralleldisplay.ParallelBus', 'I2CDisplay']
+//| """:py:class:`FourWire`, :py:class:`paralleldisplay.ParallelBus` or :py:class:`I2CDisplay`"""
 //|
 
 //|
@@ -115,7 +115,7 @@
 //|         ...
 //|
 STATIC mp_obj_t displayio_display_make_new(const mp_obj_type_t *type, size_t n_args,
-    const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_display_bus, ARG_init_sequence, ARG_width, ARG_height, ARG_colstart, ARG_rowstart,
            ARG_rotation, ARG_color_depth, ARG_grayscale, ARG_pixels_in_byte_share_row,
            ARG_bytes_per_cell, ARG_reverse_pixels_in_byte, ARG_reverse_bytes_in_word,
@@ -154,7 +154,7 @@ STATIC mp_obj_t displayio_display_make_new(const mp_obj_type_t *type, size_t n_a
         { MP_QSTR_SH1107_addressing, MP_ARG_BOOL | MP_ARG_KW_ONLY, {.u_bool = false} }
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
-    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+    mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
     mp_obj_t display_bus = args[ARG_display_bus].u_obj;
 
@@ -230,22 +230,23 @@ STATIC mp_obj_t displayio_display_obj_show(mp_obj_t self_in, mp_obj_t group_in) 
 MP_DEFINE_CONST_FUN_OBJ_2(displayio_display_show_obj, displayio_display_obj_show);
 
 //|     def refresh(self, *, target_frames_per_second: Optional[int] = None, minimum_frames_per_second: int = 0) -> bool:
-//|         """When auto refresh is off, waits for the target frame rate and then refreshes the display,
-//|         returning True. If the call has taken too long since the last refresh call for the given
-//|         target frame rate, then the refresh returns False immediately without updating the screen to
+//|         """When auto_refresh is off, and :py:attr:`target_frames_per_second` is not `None` this waits
+//|         for the target frame rate and then refreshes the display,
+//|         returning `True`. If the call has taken too long since the last refresh call for the given
+//|         target frame rate, then the refresh returns `False` immediately without updating the screen to
 //|         hopefully help getting caught up.
 //|
 //|         If the time since the last successful refresh is below the minimum frame rate, then an
-//|         exception will be raised. The default ``minimum_frames_per_second`` of 0 disables this behavior.
+//|         exception will be raised. The default :py:attr:`minimum_frames_per_second` of 0 disables this behavior.
 //|
-//|         When auto refresh is off, ``display.refresh()`` or ``display.refresh(target_frames_per_second=None)``
+//|         When auto_refresh is off, and :py:attr:`target_frames_per_second` is `None` this
 //|         will update the display immediately.
 //|
-//|         When auto refresh is on, updates the display immediately. (The display will also update
+//|         When auto_refresh is on, updates the display immediately. (The display will also update
 //|         without calls to this.)
 //|
-//|         :param int target_frames_per_second: How many times a second `refresh` should be called and the screen updated.
-//|             Set to `None` for immediate refresh.
+//|         :param Optional[int] target_frames_per_second: The target frame rate that :py:func:`refresh` should try to
+//|             achieve. Set to `None` for immediate refresh.
 //|         :param int minimum_frames_per_second: The minimum number of times the screen should be updated per second."""
 //|         ...
 //|
@@ -466,9 +467,6 @@ STATIC mp_obj_t displayio_display_obj_fill_row(size_t n_args, const mp_obj_t *po
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(result, &bufinfo, MP_BUFFER_WRITE);
 
-    if (bufinfo.typecode != BYTEARRAY_TYPECODE) {
-        mp_raise_ValueError(translate("Buffer is not a bytearray."));
-    }
     if (self->core.colorspace.depth != 16) {
         mp_raise_ValueError(translate("Display must have a 16 bit colorspace."));
     }

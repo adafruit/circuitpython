@@ -28,7 +28,7 @@
 
 #include <stdint.h>
 
-#include "lib/utils/context_manager_helpers.h"
+#include "shared/runtime/context_manager_helpers.h"
 #include "py/binary.h"
 #include "py/objproperty.h"
 #include "py/objtype.h"
@@ -64,7 +64,7 @@
 //|                  busy_pin: Optional[microcontroller.Pin] = None, busy_state: bool = True,
 //|                  seconds_per_frame: float = 180, always_toggle_chip_select: bool = False,
 //|                  grayscale: bool = False) -> None:
-//|         """Create a EPaperDisplay object on the given display bus (`displayio.FourWire` or `displayio.ParallelBus`).
+//|         """Create a EPaperDisplay object on the given display bus (`displayio.FourWire` or `paralleldisplay.ParallelBus`).
 //|
 //|         The ``start_sequence`` and ``stop_sequence`` are bitpacked to minimize the ram impact. Every
 //|         command begins with a command byte followed by a byte to determine the parameter count and
@@ -75,7 +75,7 @@
 //|         extra long 500 ms delay instead of 255 ms. The next byte will begin a new command definition.
 //|
 //|         :param display_bus: The bus that the display is connected to
-//|         :type _DisplayBus: displayio.FourWire or displayio.ParallelBus
+//|         :type _DisplayBus: displayio.FourWire or paralleldisplay.ParallelBus
 //|         :param ~_typing.ReadableBuffer start_sequence: Byte-packed initialization sequence.
 //|         :param ~_typing.ReadableBuffer stop_sequence: Byte-packed initialization sequence.
 //|         :param int width: Width in pixels
@@ -103,7 +103,7 @@
 //|         :param bool grayscale: When true, the color ram is the low bit of 2-bit grayscale"""
 //|         ...
 //|
-STATIC mp_obj_t displayio_epaperdisplay_make_new(const mp_obj_type_t *type, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+STATIC mp_obj_t displayio_epaperdisplay_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_display_bus, ARG_start_sequence, ARG_stop_sequence, ARG_width, ARG_height,
            ARG_ram_width, ARG_ram_height, ARG_colstart, ARG_rowstart, ARG_rotation,
            ARG_set_column_window_command, ARG_set_row_window_command, ARG_set_current_column_command,
@@ -140,7 +140,7 @@ STATIC mp_obj_t displayio_epaperdisplay_make_new(const mp_obj_type_t *type, size
         { MP_QSTR_grayscale, MP_ARG_BOOL | MP_ARG_KW_ONLY, {.u_bool = false} },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
-    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+    mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
     mp_obj_t display_bus = args[ARG_display_bus].u_obj;
 
@@ -240,7 +240,7 @@ STATIC mp_obj_t displayio_epaperdisplay_update_refresh_mode(size_t n_args, const
     displayio_epaperdisplay_change_refresh_mode_parameters(self, &start_sequence, seconds_per_frame);
     return mp_const_none;
 }
-MP_DEFINE_CONST_FUN_OBJ_KW(displayio_epaperdisplay_update_refresh_mode_obj, 3, displayio_epaperdisplay_update_refresh_mode);
+MP_DEFINE_CONST_FUN_OBJ_KW(displayio_epaperdisplay_update_refresh_mode_obj, 1, displayio_epaperdisplay_update_refresh_mode);
 
 //|     def refresh(self) -> None:
 //|         """Refreshes the display immediately or raises an exception if too soon. Use
