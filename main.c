@@ -667,24 +667,26 @@ STATIC void __attribute__ ((noinline)) run_boot_py(safe_mode_t safe_mode) {
         // This saves wear and tear on the flash and also prevents filesystem damage if power is lost
         // during the write, which may happen due to bobbling the power connector or weak power.
 
-        static const size_t NUM_CHARS_TO_COMPARE = 160;
+        // + 1 to check that there aren't extra characters beyond the version info.
+        const size_t constant_string_length = strlen(MICROPY_FULL_VERSION_INFO) + strlen(CIRCUITPY_BOARD_INFO) + 1;
         if (!have_boot_py && f_open(fs, boot_output_file, CIRCUITPY_BOOT_OUTPUT_FILE, FA_READ) == FR_OK) {
 
-            char file_contents[NUM_CHARS_TO_COMPARE];
+            char file_contents[constant_string_length];
             UINT chars_read = 0;
-            f_read(boot_output_file, file_contents, NUM_CHARS_TO_COMPARE, &chars_read);
+            f_read(boot_output_file, file_contents, constant_string_length, &chars_read);
             f_close(boot_output_file);
             skip_boot_output =
-                // + 2 accounts for  \r\n.
-                chars_read == strlen(MICROPY_FULL_VERSION_INFO) + 2 &&
-                strncmp(file_contents, MICROPY_FULL_VERSION_INFO, strlen(MICROPY_FULL_VERSION_INFO)) == 0;
+                chars_read == strlen(MICROPY_FULL_VERSION_INFO) + strlen(CIRCUITPY_BOARD_INFO) &&
+                strncmp(file_contents, MICROPY_FULL_VERSION_INFO, strlen(MICROPY_FULL_VERSION_INFO)) == 0 &&
+                strncmp(file_contents + strlen(MICROPY_FULL_VERSION_INFO),
+                    CIRCUITPY_BOARD_INFO, strlen(CIRCUITPY_BOARD_INFO)) == 0;
         }
 
         if (!skip_boot_output) {
-            // Wait 1.5 seconds before opening CIRCUITPY_BOOT_OUTPUT_FILE for write,
+            // Wait 1 second before opening CIRCUITPY_BOOT_OUTPUT_FILE for write,
             // in case power is momentary or will fail shortly due to, say a low, battery.
             if (common_hal_mcu_processor_get_reset_reason() == RESET_REASON_POWER_ON) {
-                mp_hal_delay_ms(1500);
+                mp_hal_delay_ms(1000);
             }
             // USB isn't up, so we can write the file.
             filesystem_set_internal_writable_by_usb(false);
@@ -694,12 +696,9 @@ STATIC void __attribute__ ((noinline)) run_boot_py(safe_mode_t safe_mode) {
             // since boot.py might change it back to writable.
             filesystem_set_internal_writable_by_usb(true);
 
-            // Write version info to boot_out.txt.
+            // Write version info and board ID to boot_out.txt.
             mp_hal_stdout_tx_str(MICROPY_FULL_VERSION_INFO);
-            // Write the board ID (board directory and ID on circuitpython.org)
-            mp_hal_stdout_tx_str("\r\n" "Board ID:");
-            mp_hal_stdout_tx_str(CIRCUITPY_BOARD_ID);
-            mp_hal_stdout_tx_str("\r\n");
+            mp_hal_stdout_tx_str(CIRCUITPY_BOARD_INFO);
         }
         #endif
 
