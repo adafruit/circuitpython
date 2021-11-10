@@ -6,12 +6,6 @@
 // Status LED
 #define MICROPY_HW_LED_STATUS (&pin_PA23)
 
-// On-board flash
-#define SPI_FLASH_MOSI_PIN &pin_PA09
-#define SPI_FLASH_MISO_PIN &pin_PA10
-#define SPI_FLASH_SCK_PIN  &pin_PA08
-#define SPI_FLASH_CS_PIN   &pin_PA11
-
 #define BOARD_HAS_CRYSTAL 1
 
 #define DEFAULT_I2C_BUS_SCL (&pin_PA16)
