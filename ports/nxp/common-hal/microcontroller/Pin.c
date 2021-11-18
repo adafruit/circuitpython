@@ -28,94 +28,124 @@
 
 #include "common-hal/microcontroller/__init__.h"
 #include "shared-bindings/microcontroller/Pin.h"
+#include "cmsis5/CMSIS/Core/Include/cmsis_compiler.h"
 
-#if (1)
-#define TOTAL_GPIO_COUNT 0U
-#else
-#include "src/rp2_common/hardware_gpio/include/hardware/gpio.h"
-#endif
 
-STATIC uint32_t never_reset_pins;
+STATIC void gpio_port_init(gpio_port_obj_t *ports, const size_t num) {
+    for (size_t n = 0; n < num; ++n) {
+        ports[n].used_pin_mask = 0U;
+    }
+
+    return;
+}
 
 void reset_all_pins(void) {
-    for (size_t i = 0U; i < TOTAL_GPIO_COUNT; i++) {
-        if ((never_reset_pins & (1 << i)) != 0) {
-            continue;
+    const size_t port_cnt = sizeof(gpio_ports) / sizeof(gpio_ports[0U]);
+    gpio_port_init(gpio_ports, port_cnt);
+
+    for (size_t port_idx = 0U; port_idx < port_cnt; port_idx++) {
+        uint32_t available_pin_mask = gpio_ports[port_idx].available_pin_mask;
+        const uint32_t reserved_pin_mask = gpio_ports[port_idx].reserved_pin_mask;
+
+        available_pin_mask &= ~reserved_pin_mask;
+
+        uint32_t pin_idx = (31U - __CLZ(available_pin_mask));
+        uint32_t pin_mask = (1U << pin_idx);
+        while (available_pin_mask & pin_mask) {
+            reset_pin_number(port_idx, pin_idx);
+            available_pin_mask &= ~pin_mask;
+            pin_idx = (31U - __CLZ(available_pin_mask));
+            pin_mask = (1U << pin_idx);
         }
-        reset_pin_number(i);
     }
 
     return;
 }
 
-void never_reset_pin_number(uint8_t pin_number) {
-    if (pin_number < TOTAL_GPIO_COUNT) {
-        never_reset_pins |= (1 << pin_number);
+void never_reset_pin_number(uint8_t pin_port, uint8_t pin_number) {
+    const size_t port_cnt = sizeof(gpio_ports) / sizeof(gpio_ports[0U]);
+
+    if ((pin_port < port_cnt) && (pin_number < 32U)) {
+        const uint32_t available_pin_mask = gpio_ports[pin_port].available_pin_mask;
+        uint32_t pin_mask = (1 << pin_number);
+
+        if (pin_mask & available_pin_mask) {
+            gpio_ports[pin_port].reserved_pin_mask |= pin_mask;
+        }
     }
 
     return;
 }
 
-void reset_pin_number(uint8_t pin_number) {
-    #if (1)
-    return;
-    #else
-    if (pin_number >= TOTAL_GPIO_COUNT) {
-        return;
+void reset_pin_number(uint8_t pin_port, uint8_t pin_number) {
+    const size_t port_cnt = sizeof(gpio_ports) / sizeof(gpio_ports[0U]);
+    if ((pin_port < port_cnt) && (pin_number < 32U)) {
+        uint32_t pin_mask = ~(1U << pin_number);
+        gpio_ports[pin_port].reserved_pin_mask &= pin_mask;
+        gpio_ports[pin_port].used_pin_mask &= pin_mask;
+
+        gpio_pin_config_t config;
+        config.input = true;
+        config.outputLogic = true;
+        config.pinMode = GPIO_Mode_PullNone;
+        gpio_pin_init(pin_port, pin_number, &config);
     }
 
-    never_reset_pins &= ~(1 << pin_number);
-
-    // We are very aggressive in shutting down the pad fully. Both pulls are
-    // disabled and both buffers are as well.
-    gpio_init(pin_number);
-    hw_clear_bits(&padsbank0_hw->io[pin_number], PADS_BANK0_GPIO0_IE_BITS |
-        PADS_BANK0_GPIO0_PUE_BITS |
-        PADS_BANK0_GPIO0_PDE_BITS);
-    hw_set_bits(&padsbank0_hw->io[pin_number], PADS_BANK0_GPIO0_OD_BITS);
-    #endif
+    return;
 }
 
 void common_hal_never_reset_pin(const mcu_pin_obj_t *pin) {
-    never_reset_pin_number(pin->number);
+    never_reset_pin_number(pin->port, pin->number);
 }
 
 void common_hal_reset_pin(const mcu_pin_obj_t *pin) {
-    reset_pin_number(pin->number);
+    reset_pin_number(pin->port, pin->number);
 }
 
-void claim_pin(const mcu_pin_obj_t *pin) {
-    // Nothing to do because all changes will set the GPIO settings.
+void claim_pin(uint8_t pin_port, uint8_t pin_number) {
+    const size_t port_cnt = sizeof(gpio_ports) / sizeof(gpio_ports[0U]);
+
+    if ((pin_port < port_cnt) && (pin_number < 32U)) {
+        uint32_t pin_mask = (1U << pin_number);
+        gpio_ports[pin_port].used_pin_mask |= pin_mask;
+    }
+
     return;
 }
 
-bool pin_number_is_free(uint8_t pin_number) {
-    #if (1)
-    // FIXME: Implement pin_number_is_free
-    return true;
-    #else
-    if (pin_number >= TOTAL_GPIO_COUNT) {
-        return false;
+bool pin_number_is_free(uint8_t pin_port, uint8_t pin_number) {
+    bool is_free = true;
+    const size_t port_cnt = sizeof(gpio_ports) / sizeof(gpio_ports[0U]);
+
+    if ((pin_port < port_cnt) && (pin_number < 32U)) {
+        uint32_t pin_mask = (1U << pin_number);
+        is_free = is_free && !(gpio_ports[pin_port].used_pin_mask & pin_mask);
+        is_free = is_free && !(gpio_ports[pin_port].reserved_pin_mask & pin_mask);
     }
 
-    uint32_t pad_state = padsbank0_hw->io[pin_number];
-    return (pad_state & PADS_BANK0_GPIO0_IE_BITS) == 0 &&
-           (pad_state & PADS_BANK0_GPIO0_OD_BITS) != 0;
-    #endif
+    return is_free;
 }
 
 bool common_hal_mcu_pin_is_free(const mcu_pin_obj_t *pin) {
-    return pin_number_is_free(pin->number);
+    return pin_number_is_free(pin->port, pin->number);
 }
 
 uint8_t common_hal_mcu_pin_number(const mcu_pin_obj_t *pin) {
-    return pin->number;
+    uint8_t pin_designator = (pin->port) << 5;
+    pin_designator |= (pin->number);
+
+    return pin_designator;
 }
 
 void common_hal_mcu_pin_claim(const mcu_pin_obj_t *pin) {
-    return claim_pin(pin);
+    return claim_pin(pin->port, pin->number);
 }
 
 void common_hal_mcu_pin_reset_number(uint8_t pin_no) {
-    reset_pin_number(pin_no);
+    uint8_t port = (uint8_t)(pin_no >> 5U);
+    uint8_t pin = (uint8_t)(pin_no & 0x1FU);
+
+    reset_pin_number(port, pin);
+
+    return;
 }

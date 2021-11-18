@@ -24,18 +24,4 @@
  * THE SOFTWARE.
  */
 
-#if !defined(PORTS_NXP_SUPERVISOR_PORT_LPC17XX_H_)
-#define PORTS_NXP_SUPERVISOR_PORT_LPC17XX_H_
-
-#include <stdint.h>
-
-extern void RIT_Init(void);
-extern void RIT_SetTimerIntervalHz(uint32_t freq);
-extern uint32_t RIT_GetIntStatus(void);
-extern void RIT_ClearInt(void);
-extern void RIT_Disable(void);
-extern void RIT_Disable(void);
-extern void RIT_Enable(void);
-extern uint64_t RIT_GetCounter(void);
-
-#endif // PORTS_NXP_SUPERVISOR_PORT_LPC17XX_H_
+#include

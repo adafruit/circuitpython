@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
+ * Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,18 +24,21 @@
  * THE SOFTWARE.
  */
 
-#if !defined(PORTS_NXP_SUPERVISOR_PORT_LPC17XX_H_)
-#define PORTS_NXP_SUPERVISOR_PORT_LPC17XX_H_
+#include "fsl_common.h"
+#include "fsl_power.h"
 
-#include <stdint.h>
+uint32_t USART0_GetFreq(void) {
+    return CLOCK_GetFlexCommClkFreq(0U);
+}
 
-extern void RIT_Init(void);
-extern void RIT_SetTimerIntervalHz(uint32_t freq);
-extern uint32_t RIT_GetIntStatus(void);
-extern void RIT_ClearInt(void);
-extern void RIT_Disable(void);
-extern void RIT_Disable(void);
-extern void RIT_Enable(void);
-extern uint64_t RIT_GetCounter(void);
+uint32_t I2C4_GetFreq(void) {
+    return CLOCK_GetFlexCommClkFreq(4U);
+}
 
-#endif // PORTS_NXP_SUPERVISOR_PORT_LPC17XX_H_
+uint32_t SPI3_GetFreq(void) {
+    return CLOCK_GetFlexCommClkFreq(3U);
+}
+
+uint32_t SPI8_GetFreq(void) {
+    return CLOCK_GetHsLspiClkFreq();
+}

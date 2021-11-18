@@ -24,18 +24,28 @@
  * THE SOFTWARE.
  */
 
-#if !defined(PORTS_NXP_SUPERVISOR_PORT_LPC17XX_H_)
-#define PORTS_NXP_SUPERVISOR_PORT_LPC17XX_H_
 
-#include <stdint.h>
+#include "py/mpconfig.h"
+#include "cmsis5/CMSIS/Driver/Include/Driver_SPI.h"
+#include "CMSIS/Driver/Config/RTE_Device.h"
 
-extern void RIT_Init(void);
-extern void RIT_SetTimerIntervalHz(uint32_t freq);
-extern uint32_t RIT_GetIntStatus(void);
-extern void RIT_ClearInt(void);
-extern void RIT_Disable(void);
-extern void RIT_Disable(void);
-extern void RIT_Enable(void);
-extern uint64_t RIT_GetCounter(void);
+#if (RTE_SSP0)
+extern ARM_DRIVER_SPI Driver_SPI0;
+#else
+#define Driver_SPI0  (spi_inst_t *)(0U)
+#endif
 
-#endif // PORTS_NXP_SUPERVISOR_PORT_LPC17XX_H_
+#if (RTE_SSP1)
+extern ARM_DRIVER_SPI Driver_SPI1;
+#else
+#define Driver_SPI1  (spi_inst_t *)(0U)
+#endif
+
+#if (RTE_SSP2)
+extern ARM_DRIVER_SPI Driver_SPI2;
+#else
+#define Driver_SPI2  (spi_inst_t *)(0U)
+#endif
+
+
+const STATIC spi_inst_t *spi_insts[3U] = {&Driver_SPI0, &Driver_SPI1, &Driver_SPI2};

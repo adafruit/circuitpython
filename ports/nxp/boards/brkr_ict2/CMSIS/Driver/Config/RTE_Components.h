@@ -24,18 +24,26 @@
  * THE SOFTWARE.
  */
 
-#if !defined(PORTS_NXP_SUPERVISOR_PORT_LPC17XX_H_)
-#define PORTS_NXP_SUPERVISOR_PORT_LPC17XX_H_
+#if !defined(PORTS_NXP_BOARDS_MCB1700_CMSIS_DRIVER_CONFIG_RTE_COMPONENTS_H_)
+#define PORTS_NXP_BOARDS_MCB1700_CMSIS_DRIVER_CONFIG_RTE_COMPONENTS_H_
 
-#include <stdint.h>
+#ifndef RTE_COMPONENTS_H
+#define RTE_COMPONENTS_H
 
-extern void RIT_Init(void);
-extern void RIT_SetTimerIntervalHz(uint32_t freq);
-extern uint32_t RIT_GetIntStatus(void);
-extern void RIT_ClearInt(void);
-extern void RIT_Disable(void);
-extern void RIT_Disable(void);
-extern void RIT_Enable(void);
-extern uint64_t RIT_GetCounter(void);
 
-#endif // PORTS_NXP_SUPERVISOR_PORT_LPC17XX_H_
+/*
+ * Define the Device Header File:
+ */
+#define CMSIS_device_header "LPC17xx.h"
+
+#define RTE_Drivers_SSP0    /* Driver SPI0 */
+#define RTE_Drivers_I2C0    /* Driver I2C0 */
+#define RTE_Drivers_USART0  /* Driver USART0 */
+#define RTE_Drivers_CAN1    /* Driver CAN1 */
+#define RTE_Drivers_CAN2    /* Driver CAN2 */
+#define RTE_Drivers_USBD0   /* Driver USBD0 */
+
+#endif /* RTE_COMPONENTS_H */
+
+
+#endif // PORTS_NXP_BOARDS_MCB1700_CMSIS_DRIVER_CONFIG_RTE_COMPONENTS_H_

@@ -27,6 +27,9 @@
 #if !defined(PORTS_NXP_LPC55SXX_PINS_H_)
 #define PORTS_NXP_LPC55SXX_PINS_H_
 
+
+extern gpio_port_obj_t gpio_ports[2U];
+
 extern const mcu_pin_obj_t pin_P0_1;
 extern const mcu_pin_obj_t pin_P0_2;
 extern const mcu_pin_obj_t pin_P0_3;
@@ -57,6 +60,7 @@ extern const mcu_pin_obj_t pin_P0_27;
 extern const mcu_pin_obj_t pin_P0_28;
 extern const mcu_pin_obj_t pin_P0_29;
 extern const mcu_pin_obj_t pin_P0_30;
+extern const mcu_pin_obj_t pin_P0_31;
 
 extern const mcu_pin_obj_t pin_P1_4;
 extern const mcu_pin_obj_t pin_P1_6;

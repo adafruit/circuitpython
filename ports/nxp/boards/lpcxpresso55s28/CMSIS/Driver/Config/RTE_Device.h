@@ -79,14 +79,181 @@ extern void I2C0_DeinitPins();
 #define RTE_SPI2                    0
 // </e>
 
-// <e> SPI2 (Serial Peripheral Interface 7) [Driver_SPI7]
-// <i> Configuration settings for Driver_SPI7 in component ::Drivers:SPI
-#define RTE_SPI7                    1
+// <e> SPI3 (Serial Peripheral Interface 2) [Driver_SPI3]
+// <i> Configuration settings for Driver_SPI3 in component ::Drivers:SPI
+#define RTE_SPI3                        1
+
+//   <h> Pin Configuration
+//     <o> SPI3_SSEL <0=>Not used <1=>P0_1 <2=>P0_4 <3=>P0_5 <4=>P0_7 <5=>P0_8 <6=>P0_9 <7=>P0_20 <8=>P0_21 <9=>P1_23 <10=>P1_24
+//     <i> Slave Select for SPI3
+#define   RTE_SPI3_SSEL_PIN_SEL         2
+#if      (RTE_SPI3_SSEL_PIN_SEL == 0)
+#define   RTE_SPI3_SSEL_PIN_EN          0
+#elif    (RTE_SPI3_SSEL_PIN_SEL == 1)   // SSEL0
+  #define RTE_SPI3_SSEL_PORT            0
+  #define RTE_SPI3_SSEL_BIT             1
+  #define RTE_SPI3_SSEL_FUNC            2
+#elif    (RTE_SPI3_SSEL_PIN_SEL == 2)   // SSEL0
+  #define RTE_SPI3_SSEL_PORT            0
+  #define RTE_SPI3_SSEL_BIT             4
+  #define RTE_SPI3_SSEL_FUNC            8
+#elif    (RTE_SPI3_SSEL_PIN_SEL == 3)   // SSEL1
+  #define RTE_SPI3_SSEL_PORT            0
+  #define RTE_SPI3_SSEL_BIT             5
+  #define RTE_SPI3_SSEL_FUNC            8
+#elif    (RTE_SPI3_SSEL_PIN_SEL == 4)   // SSEL1
+  #define RTE_SPI3_SSEL_PORT            0
+  #define RTE_SPI3_SSEL_BIT             7
+  #define RTE_SPI3_SSEL_FUNC            1
+#elif    (RTE_SPI3_SSEL_PIN_SEL == 5)   // SSEL3
+  #define RTE_SPI3_SSEL_PORT            0
+  #define RTE_SPI3_SSEL_BIT             8
+  #define RTE_SPI3_SSEL_FUNC            1
+#elif    (RTE_SPI3_SSEL_PIN_SEL == 6)   // SSEL2
+  #define RTE_SPI3_SSEL_PORT            0
+  #define RTE_SPI3_SSEL_BIT             9
+  #define RTE_SPI3_SSEL_FUNC            1
+#elif    (RTE_SPI3_SSEL_PIN_SEL == 7)   // SSEL0
+  #define RTE_SPI3_SSEL_PORT            0
+  #define RTE_SPI3_SSEL_BIT             20
+  #define RTE_SPI3_SSEL_FUNC            1
+#elif    (RTE_SPI3_SSEL_PIN_SEL == 8)   // SSEL1
+  #define RTE_SPI3_SSEL_PORT            0
+  #define RTE_SPI3_SSEL_BIT             21
+  #define RTE_SPI3_SSEL_FUNC            1
+#elif    (RTE_SPI3_SSEL_PIN_SEL == 9)   // SSEL2
+  #define RTE_SPI3_SSEL_PORT            1
+  #define RTE_SPI3_SSEL_BIT             23
+  #define RTE_SPI3_SSEL_FUNC            5
+#elif    (RTE_SPI3_SSEL_PIN_SEL == 9)   // SSEL3
+  #define RTE_SPI3_SSEL_PORT            1
+  #define RTE_SPI3_SSEL_BIT             24
+  #define RTE_SPI3_SSEL_FUNC            5
+#else
+  #error "Invalid SPI3 SPI3_SSEL Pin Configuration!"
+#endif
+#ifndef   RTE_SPI3_SSEL_PIN_EN
+#define   RTE_SPI3_SSEL_PIN_EN          1
+#endif
+
+//     <o> SPI3_SCK <0=>P0_0 <1=>P0_6
+//     <i> Serial clock for SPI3
+#define   RTE_SPI3_SCK_PIN_SEL          1
+#if      (RTE_SPI3_SCK_PIN_SEL == 0)
+  #define RTE_SPI3_SCK_PORT             0
+  #define RTE_SPI3_SCK_BIT              0
+  #define RTE_SPI3_SCK_FUNC             2
+#elif    (RTE_SPI3_SCK_PIN_SEL == 1)
+  #define RTE_SPI3_SCK_PORT             0
+  #define RTE_SPI3_SCK_BIT              6
+  #define RTE_SPI3_SCK_FUNC             1
+#else
+  #error "Invalid SPI3 SPI3_SCK Pin Configuration!"
+#endif
+
+//     <o> SPI3_MISO <0=>P0_2 <1=>P0_12
+//     <i> Master In Slave Out for SPI3
+#define   RTE_SPI3_MISO_PIN_SEL         0
+#if      (RTE_SPI3_MISO_PIN_SEL == 0)
+  #define RTE_SPI3_MISO_PORT            0
+  #define RTE_SPI3_MISO_BIT             2
+  #define RTE_SPI3_MISO_FUNC            1
+#elif    (RTE_SPI3_MISO_PIN_SEL == 1)
+  #define RTE_SPI3_MISO_PORT            0
+  #define RTE_SPI3_MISO_BIT             12
+  #define RTE_SPI3_MISO_FUNC            1
+#else
+  #error "Invalid SPI3 SPI3_MISO Pin Configuration!"
+#endif
+
+//     <o> SPI3_MOSI <0=>P0_3 <1=>P1_1
+//     <i> Master Out Slave In for SPI3
+#define   RTE_SPI3_MOSI_PIN_SEL         0
+#if      (RTE_SPI3_MOSI_PIN_SEL == 0)
+  #define RTE_SPI3_MOSI_PORT            0
+  #define RTE_SPI3_MOSI_BIT             3
+  #define RTE_SPI3_MOSI_FUNC            1
+#elif    (RTE_SPI3_MOSI_PIN_SEL == 1)
+  #define RTE_SPI3_MOSI_PORT            1
+  #define RTE_SPI3_MOSI_BIT             1
+  #define RTE_SPI3_MOSI_FUNC            1
+#else
+  #error "Invalid SPI3 SPI3_MOSI Pin Configuration!"
+#endif
+//   </h>
 // </e>
 
-// <e> SPI2 (Serial Peripheral Interface 13) [Driver_SPI13]
-// <i> Configuration settings for Driver_SPI13 in component ::Drivers:SPI
-#define RTE_SPI13                   0
+// <e> SPI7 (Serial Peripheral Interface 7) [Driver_SPI7]
+// <i> Configuration settings for Driver_SPI7 in component ::Drivers:SPI
+#define RTE_SPI7                    0
+// </e>
+
+// <e> SPI8 (High Speed Serial Peripheral Interface 8) [Driver_SPI8]
+// <i> Configuration settings for Driver_SPI8 in component ::Drivers:SPI
+#define RTE_SPI8                        1
+
+//   <h> Pin Configuration
+//     <o> SPI8_SSEL <0=>Not used <1=>P0_20 <2=>P1_1 <3=>P1_12 <4=>P1_26
+//     <i> Slave Select for SPI8
+#define   RTE_SPI8_SSEL_PIN_SEL         2
+#if      (RTE_SPI8_SSEL_PIN_SEL == 0)
+#define   RTE_SPI8_SSEL_PIN_EN          0
+#elif    (RTE_SPI8_SSEL_PIN_SEL == 1)
+  #define RTE_SPI8_SSEL_PORT            0
+  #define RTE_SPI8_SSEL_BIT             20
+  #define RTE_SPI8_SSEL_FUNC            8
+#elif    (RTE_SPI8_SSEL_PIN_SEL == 2)
+  #define RTE_SPI8_SSEL_PORT            1
+  #define RTE_SPI8_SSEL_BIT             1
+  #define RTE_SPI8_SSEL_FUNC            5
+#elif    (RTE_SPI8_SSEL_PIN_SEL == 3)
+  #define RTE_SPI8_SSEL_PORT            1
+  #define RTE_SPI8_SSEL_BIT             12
+  #define RTE_SPI8_SSEL_FUNC            5
+#elif    (RTE_SPI8_SSEL_PIN_SEL == 4)
+  #define RTE_SPI8_SSEL_PORT            1
+  #define RTE_SPI8_SSEL_BIT             26
+  #define RTE_SPI8_SSEL_FUNC            5
+#else
+  #error "Invalid SPI8 SPI8_SSEL Pin Configuration!"
+#endif
+#ifndef   RTE_SPI8_SSEL_PIN_EN
+#define   RTE_SPI8_SSEL_PIN_EN          1
+#endif
+
+//     <o> SPI8_SCK <0=>P1_2
+//     <i> Serial clock for SPI8
+#define   RTE_SPI8_SCK_PIN_SEL          0
+#if      (RTE_SPI8_SCK_PIN_SEL == 0)
+  #define RTE_SPI8_SCK_PORT             1
+  #define RTE_SPI8_SCK_BIT              5
+  #define RTE_SPI8_SCK_FUNC             9
+#else
+  #error "Invalid SPI8 SPI8_SCK Pin Configuration!"
+#endif
+
+//     <o> SPI8_MISO <0=>P1_3
+//     <i> Master In Slave Out for SPI8
+#define   RTE_SPI8_MISO_PIN_SEL         0
+#if      (RTE_SPI8_MISO_PIN_SEL == 0)
+  #define RTE_SPI8_MISO_PORT            1
+  #define RTE_SPI8_MISO_BIT             3
+  #define RTE_SPI8_MISO_FUNC            6
+#else
+  #error "Invalid SPI8 SPI8_MISO Pin Configuration!"
+#endif
+
+//     <o> SPI8_MOSI <0=>P0_26
+//     <i> Master Out Slave In for SPI8
+#define   RTE_SPI8_MOSI_PIN_SEL         0
+#if      (RTE_SPI8_MOSI_PIN_SEL == 0)
+  #define RTE_SPI8_MOSI_PORT            0
+  #define RTE_SPI8_MOSI_BIT             26
+  #define RTE_SPI8_MOSI_FUNC            9
+#else
+  #error "Invalid SPI8 SPI8_MOSI Pin Configuration!"
+#endif
+//   </h>
 // </e>
 
 // -------- <<< end of configuration section >>> --------------------

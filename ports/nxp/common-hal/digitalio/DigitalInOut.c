@@ -38,7 +38,7 @@
 
 digitalinout_result_t
 common_hal_digitalio_digitalinout_construct(digitalio_digitalinout_obj_t *self, const mcu_pin_obj_t *pin) {
-    claim_pin(pin);
+    claim_pin(pin->port, pin->number);
     self->pin = pin;
     self->output = false;
     self->open_drain = false;
@@ -47,7 +47,7 @@ common_hal_digitalio_digitalinout_construct(digitalio_digitalinout_obj_t *self, 
     gpio_pin_config_t pin_config;
     pin_config.input = true;
     pin_config.pinMode = GPIO_Mode_PullNone;
-    pin_config.outputLogic = 1;
+    pin_config.outputLogic = true;
 
     gpio_pin_init(pin->port, pin->number, &pin_config);
     return DIGITALINOUT_OK;
@@ -55,21 +55,22 @@ common_hal_digitalio_digitalinout_construct(digitalio_digitalinout_obj_t *self, 
 
 void
 common_hal_digitalio_digitalinout_never_reset(digitalio_digitalinout_obj_t *self) {
-    never_reset_pin_number(self->pin->number);
+    never_reset_pin_number(self->pin->port, self->pin->number);
 }
 
 bool
 common_hal_digitalio_digitalinout_deinited(digitalio_digitalinout_obj_t *self) {
-    return self->pin == NULL;
+    return NULL == self->pin;
 }
 
 void
 common_hal_digitalio_digitalinout_deinit(digitalio_digitalinout_obj_t *self) {
-    if (common_hal_digitalio_digitalinout_deinited(self)) {
-        return;
+    if (!common_hal_digitalio_digitalinout_deinited(self)) {
+        reset_pin_number(self->pin->port, self->pin->number);
+        self->pin = NULL;
     }
-    reset_pin_number(self->pin->number);
-    self->pin = NULL;
+
+    return;
 }
 
 void
@@ -77,6 +78,9 @@ common_hal_digitalio_digitalinout_switch_to_input(digitalio_digitalinout_obj_t *
     self->output = false;
     // This also sets direction to input.
     common_hal_digitalio_digitalinout_set_pull(self, pull);
+    (void)gpio_pin_dir(self->pin->port, self->pin->number, true);
+
+    return;
 }
 
 digitalinout_result_t
@@ -89,7 +93,7 @@ common_hal_digitalio_digitalinout_switch_to_output(digitalio_digitalinout_obj_t 
     gpio_pin_dir(self->pin->port, self->pin->number, false);
 
     self->output = true;
-    self->open_drain = drive_mode == DRIVE_MODE_OPEN_DRAIN;
+    self->open_drain = (DRIVE_MODE_OPEN_DRAIN == drive_mode);
 
     // Pin direction is ultimately set in set_value. We don't need to do it here.
     common_hal_digitalio_digitalinout_set_value(self, value);
@@ -104,25 +108,9 @@ common_hal_digitalio_digitalinout_get_direction(digitalio_digitalinout_obj_t *se
 
 void
 common_hal_digitalio_digitalinout_set_value(digitalio_digitalinout_obj_t *self, bool value) {
-    #if (1)
-    gpio_pin_write(self->pin->port, self->pin->number, value);
+    (void)gpio_pin_write(self->pin->port, self->pin->number, value);
+
     return;
-    #else
-    const uint8_t pin = self->pin->number;
-    if (self->open_drain && value) {
-        // If true and open-drain, set the direction -before- setting
-        // the pin value, to to avoid a high glitch on the pin before
-        // switching from output to input for open-drain.
-        gpio_set_dir(pin, GPIO_IN);
-        gpio_put(pin, value);
-    } else {
-        // Otherwise set the direction -after- setting the pin value,
-        // to avoid a glitch which might occur if the old value was
-        // different and the pin was previously set to input.
-        gpio_put(pin, value);
-        gpio_set_dir(pin, GPIO_OUT);
-    }
-    #endif
 }
 
 bool
@@ -158,13 +146,21 @@ common_hal_digitalio_digitalinout_get_drive_mode(digitalio_digitalinout_obj_t *s
 
 void
 common_hal_digitalio_digitalinout_set_pull(digitalio_digitalinout_obj_t *self, digitalio_pull_t pull) {
-    #if (1)
+    gpio_pin_config_t pin_config;
+    pin_config.input = (false == self->output);
+    pin_config.outputLogic = true;
+
+    if (PULL_NONE == pull) {
+        pin_config.pinMode = GPIO_Mode_PullNone;
+    } else if (PULL_DOWN == pull) {
+        pin_config.pinMode = GPIO_Mode_PullDown;
+    } else if (PULL_UP == pull) {
+        pin_config.pinMode = GPIO_Mode_PullUp;
+    }
+
+    (void)gpio_pin_init(self->pin->port, self->pin->number, &pin_config);
+
     return;
-    #else
-    const uint8_t pin = self->pin->number;
-    gpio_set_pulls(pin, pull == PULL_UP, pull == PULL_DOWN);
-    gpio_set_dir(pin, GPIO_IN);
-    #endif
 }
 
 digitalio_pull_t

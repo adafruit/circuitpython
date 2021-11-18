@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
+ * Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,17 +24,4 @@
  * THE SOFTWARE.
  */
 
-#include "fsl_common.h"
-#include "fsl_power.h"
-
-uint32_t USART0_GetFreq(void) {
-    return CLOCK_GetFlexCommClkFreq(0U);
-}
-
-uint32_t I2C4_GetFreq(void) {
-    return CLOCK_GetFlexCommClkFreq(4U);
-}
-
-uint32_t SPI7_GetFreq(void) {
-    return CLOCK_GetFlexCommClkFreq(7U);
-}
+#include

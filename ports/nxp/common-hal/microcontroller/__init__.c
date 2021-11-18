@@ -105,7 +105,17 @@ void common_hal_mcu_enable_interrupts(void) {
 }
 
 void common_hal_mcu_delay_us(uint32_t delay) {
-    mp_hal_delay_us(delay);
+    uint32_t ticks_per_us = SystemCoreClock / 1000000UL;
+    delay *= ticks_per_us;
+
+    SysTick->VAL = 0UL;
+    SysTick->LOAD = delay;
+    SysTick->CTRL = SysTick_CTRL_CLKSOURCE_Msk | SysTick_CTRL_ENABLE_Msk;
+    while ((SysTick->CTRL & SysTick_CTRL_COUNTFLAG_Msk) == 0UL) {
+    }
+    SysTick->CTRL = 0UL;
+
+    return;
 }
 
 // The singleton microcontroller.Processor object, bound to microcontroller.cpu

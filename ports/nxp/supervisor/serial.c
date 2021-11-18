@@ -38,7 +38,7 @@ extern ARM_DRIVER_USART Driver_USART1;
 extern ARM_DRIVER_USART Driver_USART1;
 #define USART_Instance Driver_USART1
 
-#elif defined(BOARD_LPCEXPRESSO55S28)
+#elif defined(BOARD_LPC55S28_EVK)
 extern ARM_DRIVER_USART Driver_USART0;
 #define USART_Instance Driver_USART0
 
@@ -50,10 +50,14 @@ extern ARM_DRIVER_USART Driver_USART0;
 #endif
 
 
+#if defined(DEBUG_UART_TX) && defined(DEBUG_UART_RX)
+#include "shared-bindings/busio/UART.h"
+STATIC busio_uart_obj_t debug_uart;
 static char rx_buf[32u];
 static size_t rd;
 static volatile size_t wr;
 static bool is_init;
+#endif
 
 // ARM_USART_SignalEvent_t
 static void cb_event(uint32_t event) {
@@ -72,6 +76,12 @@ static void cb_event(uint32_t event) {
 }
 
 void serial_early_init(void) {
+    #if (1)
+    never_reset_pin_number(DEBUG_UART_TX->port, DEBUG_UART_TX->number);
+    never_reset_pin_number(DEBUG_UART_RX->port, DEBUG_UART_RX->number);
+    #else
+    common_hal_busio_uart_never_reset(&debug_uart);
+    #endif
     return;
 }
 
@@ -82,7 +92,7 @@ void serial_init(void) {
     is_init = true;
     memset(&rx_buf[0u], '\0', sizeof(rx_buf));
 
-    #if defined(BOARD_LPCEXPRESSO55S28)
+    #if defined(BOARD_LPC55S28_EVK)
     CLOCK_AttachClk(kFRO12M_to_FLEXCOMM0);
     #endif
 

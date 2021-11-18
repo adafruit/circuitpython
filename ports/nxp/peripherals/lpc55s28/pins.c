@@ -57,54 +57,69 @@ PIN(1,7);   // LED Green
 
 #if defined(RTE_GPIO_PORT0) && RTE_GPIO_PORT0
 extern ARM_DRIVER_GPIO Driver_GPIO_PORT0;
+#else
+#define Driver_GPIO_PORT0 *(ARM_DRIVER_GPIO *)(NULL)
 #endif
 
 #if defined(RTE_GPIO_PORT1) && RTE_GPIO_PORT1
 extern ARM_DRIVER_GPIO Driver_GPIO_PORT1;
+#else
+#define Driver_GPIO_PORT1 *(ARM_DRIVER_GPIO *)(NULL)
 #endif
 
 
+gpio_port_obj_t gpio_ports[2U] =
+{
+    // P0
+    {
+        .available_pin_mask = 0xFFFFFFFFU,
+        .reserved_pin_mask = 0U,
+        .used_pin_mask = 0U,
+    },
+
+    // P1
+    {
+        .available_pin_mask = 0x000000D0U,
+        .reserved_pin_mask = 0xFFFFFF2FU,
+        .used_pin_mask = 0U,
+    },
+};
+
+
 int gpio_pin_init(uint8_t port, uint8_t number, gpio_pin_config_t *config) {
-    #if (1)
-    Driver_GPIO_PORT1.Initialize();
+    const size_t port_cnt = sizeof(gpio_ports) / sizeof(gpio_ports[0U]);
+    ARM_DRIVER_GPIO *gpio_port = NULL;
 
-    const uint32_t pin_config = (/* Pin is configured as GPIO */
-        IOCON_PIO_FUNC_GPIO |
-        /* No addition pin function */
-        IOCON_PIO_MODE_INACT |
-        /* Standard mode, output slew rate control is enabled */
-        IOCON_PIO_SLEW_STANDARD |
-        /* Input function is not inverted */
-        IOCON_PIO_INV_DI |
-        /* Enables digital function */
-        IOCON_PIO_DIGITAL_EN |
-        /* Open drain is disabled */
-        IOCON_PIO_OPENDRAIN_DI);
+    int rc = -1;
 
-    IOCON_PinMuxSet(IOCON, port, number, pin_config);
+    if (port < port_cnt) {
+        if (0U == port) {
+            gpio_port = &Driver_GPIO_PORT0;
+        } else if (1U == port) {
+            gpio_port = &Driver_GPIO_PORT1;
+        }
 
-    #else
-    gpio_pin_mode_t mode = config->pinMode;
+        gpio_port->Initialize();
 
-    const uint8_t open_drain = (GPIO_Mode_OpenDrain == mode) ? PIN_PINMODE_OPENDRAIN : PIN_PINMODE_NORMAL;
-    uint8_t pin_mode = PIN_PINMODE_PULLUP;
-    if (GPIO_Mode_PullDown == mode) {
-        pin_mode = PIN_PINMODE_PULLDOWN;
-    } else if (GPIO_Mode_PullNone == mode) {
-        pin_mode = PIN_PINMODE_TRISTATE;
+        const uint32_t pin_config = (/* Pin is configured as GPIO */
+            IOCON_PIO_FUNC_GPIO |
+            /* No addition pin function */
+            IOCON_PIO_MODE_INACT |
+            /* Standard mode, output slew rate control is enabled */
+            IOCON_PIO_SLEW_STANDARD |
+            /* Input function is not inverted */
+            IOCON_PIO_INV_DI |
+            /* Enables digital function */
+            IOCON_PIO_DIGITAL_EN |
+            /* Open drain is disabled */
+            IOCON_PIO_OPENDRAIN_DI);
+
+        IOCON_PinMuxSet(IOCON, port, number, pin_config);
+
+        rc = 0;
     }
 
-    PIN_Configure(port, number, PIN_FUNC_0, pin_mode, open_drain);
-
-    if (config->input) {
-        GPIO_SetDir(port, number, GPIO_DIR_INPUT);
-    } else {
-        gpio_pin_write(port, number, config->outputLogic);
-        GPIO_SetDir(port, number, GPIO_DIR_OUTPUT);
-    }
-    #endif
-
-    return 0;
+    return rc;
 }
 
 

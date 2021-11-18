@@ -1,0 +1,83 @@
+===============================================================================
+This file lists the portions of this release of 'Keil MDK' that
+you are permitted to redistribute and any terms and conditions applicable to
+such redistribution. Refer to the End User License Agreement that accompanies
+this release of 'Keil MDK' for terms and conditions relating to
+permitted redistribution and 'Redistributables'. Any modification or
+redistribution of files covered by open-source licenses, whether listed here
+or not, is subject to the terms of the applicable open-source license.
+===============================================================================
+
+1) Target Libraries(libraries and helper libraries): Redistribution permitted
+only in object code form, compiled and linked by Arm Compiler in to Software
+Applications developed by you or your permitted users, provided that Software
+Applications contain substantial additional functionality. If you choose to
+redistribute the whole or any part of Target Libraries, you agree: (a) to
+ensure that they are licensed for use only as part of Software Applications
+and only for execution on microprocessors manufactured or simulated under
+licence from Arm; (b) not to use Arm's or any of its licensors names, logos or
+trademarks to market Software Applications; (c) to include valid copyright
+notices on Software Applications, and preserve any copyright notices which are
+included with, or in, the Target Libraries; and (d) to ensure that any further
+redistribution is limited to redistribution by either or both your customers
+and your authorised distributors as part of Software Applications and that
+your customers and your authorised distributors comply with these terms.
+
+Details of the Target Libraries and their location in your installation:
+a) Libraries: C libraries; ABI libraries; Standard C++ libraries; C++ runtime
+support libraries; Maths libraries; Software floating-point libraries; VFP
+support found in your installation in armlib and libcxx subdirectories at
+at <install_dir>\ARM\<Arm_Compiler_toolchain_name>\lib
+
+b) Helper libraries: Arm Compiler helper libraries found in your installation
+at <install_dir>\ARM\<Arm_Compiler_toolchain_name>\lib\armlib\h_*
+
+---------------------------------------------------------------------
+2) Example Code: Redistribution permitted only in object code form and only as
+part of Software Applications developed by you or your permitted users. If you
+choose to redistribute the whole or any part of Example Code, you agree: (a)
+to ensure that they are licensed for use only as part of Software Applications
+and only for execution on microprocessors manufactured or simulated under
+licence from Arm; (b) not to use Arm's or any of its licensors names, logos or
+trademarks to market Software Applications; (c) to include valid copyright
+notices on Software Applications, and preserve any copyright notices which are
+included with, or in, the Example Code; and (d) to ensure that any further
+redistribution is limited to redistribution by either or both your customers
+and your authorised distributors as part of Software Applications and that
+your customers and your authorised distributors comply with these terms.
+
+Example code found in the software packs in the default directory at
+<install_dir>\ARM\Pack\Keil or the pack directory selected during installation.
+
+-------------------------------------------------------------------------
+3) Middleware: Redistribution permitted only in object code form and only as
+part of Software Applications developed by you or your permitted users,
+provided that Software Applications contain substantial additional functionality.
+If you choose to redistribute the whole or any part of Middleware, you agree: (a)
+to ensure that they are licensed for use only as part of Software Applications
+and only for execution on microprocessors manufactured or simulated under
+licence from Arm; (b) not to use Arm's or any of its licensors names, logos or
+trademarks to market Software Applications; (c) to include valid copyright
+notices on Software Applications, and preserve any copyright notices which are
+included with, or in, the Middleware; and (d) to ensure that any further
+redistribution is limited to redistribution by either or both your customers
+and your authorised distributors as part of Software Applications and that
+your customers and your authorised distributors comply with these terms.
+-------------------------------------------------------------------------
+
+4) uVision IDE project file extensions *.uvprojx, *.uvoptx, and *.uvguix:
+Redistribution permitted only as part of Software Applications developed by
+you or your permitted users, provided that Software Applications contain
+substantial additional functionality. If you choose to redistribute uVision
+IDE project files, you agree: (a) to ensure that they are licensed for use
+only as part of Software Applications and only for execution on
+microprocessors manufactured or simulated under licence from Arm; (b) not to
+use Arm's or any of its licensors names, logos or trademarks to market
+Software Applications; (c) to include valid copyright notices on Software
+Applications, and preserve any copyright notices which are included with, or
+in, the Example Code; and (d) to ensure that any further redistribution is
+limited to redistribution by either or both your customers and your authorised
+distributors as part of Software Applications and that your customers and your
+authorised distributors comply with these terms.
+---------------------------------------------------------------------
+END OF FILE: redistributables.txt

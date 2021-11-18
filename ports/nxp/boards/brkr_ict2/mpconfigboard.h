@@ -24,29 +24,32 @@
  * THE SOFTWARE.
  */
 
-#if !defined(PORTS_NXP_BOARDS_LPCXPRESSO55S28_MPCONFIGBOARD_H_)
-#define PORTS_NXP_BOARDS_LPCXPRESSO55S28_MPCONFIGBOARD_H_
+#if !defined(PORTS_NXP_BOARDS_BRKR_ICT2_MPCONFIGBOARD_H_)
+#define PORTS_NXP_BOARDS_BRKR_ICT2_MPCONFIGBOARD_H_
 
-#define MICROPY_HW_BOARD_NAME "NXP LPC55S28 EVK"
-#define MICROPY_HW_MCU_NAME "lpc55s28"
+
+#define MICROPY_HW_BOARD_NAME "Bruker ICT2"
+#define MICROPY_HW_MCU_NAME "lpc1768"
 
 #define CIRCUITPY_INTERNAL_NVM_SIZE                 (0)
 #define CIRCUITPY_INTERNAL_FLASH_FILESYSTEM_SIZE    (128 * 1024)
-#define SRAM_ADDR                                   (0x20000000)
-#define SRAM_SIZE                                   (256 * 1024)
-#define AHBRAM_ADDR                                 (0x04000000)
+#define SRAM_ADDR                                   (0x10000000)
+#define SRAM_SIZE                                   (32 * 1024)
+#define AHBRAM_ADDR                                 (0x2007c000)
 #define AHBRAM_SIZE                                 (32 * 1024)
 #define RAM_ADDR                                    (SRAM_ADDR)
 #define RAM_SIZE                                    (SRAM_SIZE + AHBRAM_SIZE)
 #define CIRCUITPY_DEFAULT_STACK_SIZE                (8 * 1024)
 #define CIRCUITPY_DEFAULT_HEAP_SIZE                 (AHBRAM_SIZE - CIRCUITPY_DEFAULT_STACK_SIZE)
 
-#define DEBUG_UART_TX                               (&pin_P0_30)
-#define DEBUG_UART_RX                               (&pin_P0_29)
+#define DEBUG_UART_TX                               (&pin_P2_0)
+#define DEBUG_UART_RX                               (&pin_P2_1)
 
 #if (0)
-#define CIRCUITPY_STATUS_LED_POWER                  (&pin_P1_4)
-#define MICROPY_HW_LED_STATUS                       (&pin_P1_7)
+#define CIRCUITPY_STATUS_LED_POWER                  (&pin_P2_6)
+#define MICROPY_HW_LED_STATUS                       (&pin_P2_5)
+#define MICROPY_HW_LED_TX                           (&pin_P2_4)
+#define MICROPY_HW_LED_RX                           (&pin_P2_3)
 #endif
 
-#endif // PORTS_NXP_BOARDS_LPCXPRESSO55S28_MPCONFIGBOARD_H_
+#endif // PORTS_NXP_BOARDS_BRKR_ICT2_MPCONFIGBOARD_H_

@@ -28,6 +28,8 @@
 #define PORTS_NXP_LPC17XX_PINS_H_
 
 
+extern gpio_port_obj_t gpio_ports[5U];
+
 extern const mcu_pin_obj_t pin_P0_0;
 extern const mcu_pin_obj_t pin_P0_1;
 extern const mcu_pin_obj_t pin_P0_2;

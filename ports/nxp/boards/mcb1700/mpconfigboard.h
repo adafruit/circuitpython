@@ -43,7 +43,7 @@
 #define CIRCUITPY_DEFAULT_HEAP_SIZE                 (AHBRAM_SIZE - CIRCUITPY_DEFAULT_STACK_SIZE)
 
 #define DEBUG_UART_TX                               (&pin_P2_0)
-#define DEBUG_UART_RX                               (&pin_P0_2)
+#define DEBUG_UART_RX                               (&pin_P2_1)
 
 #define CIRCUITPY_STATUS_LED_POWER                  (&pin_P2_6)
 #define MICROPY_HW_LED_STATUS                       (&pin_P2_5)

@@ -157,17 +157,26 @@ ifeq ($(BOARD_LOWER), mcb1700)
 # MCB1700 specific configuration
 # CFLAGS += -DPICO_ON_DEVICE=1 -DPICO_NO_BINARY_INFO=0 -DPICO_TIME_DEFAULT_ALARM_POOL_DISABLED=1 -DPICO_DIVIDER_CALL_IDIV0=0 -DPICO_DIVIDER_CALL_LDIV0=0 -DPICO_DIVIDER_HARDWARE=1 -DPICO_DOUBLE_ROM=1 -DPICO_FLOAT_ROM=1 -DPICO_MULTICORE=1 -DPICO_BITS_IN_RAM=0 -DPICO_DIVIDER_IN_RAM=0 -DPICO_DOUBLE_PROPAGATE_NANS=0 -DPICO_DOUBLE_IN_RAM=0 -DPICO_MEM_IN_RAM=0 -DPICO_FLOAT_IN_RAM=0 -DPICO_FLOAT_PROPAGATE_NANS=1 -DPICO_NO_FLASH=0 -DPICO_COPY_TO_RAM=0 -DPICO_DISABLE_SHARED_IRQ_HANDLERS=0
 CFLAGS += -DBOARD_MCB1700=1
+SRC_C += \
+  	boards/$(BOARD)/spi_config.c \
+  	boards/$(BOARD)/i2c_config.c
+
 else
   ifeq ($(BOARD_LOWER), lpcxpresso55s28)
-  CFLAGS += -DBOARD_LPCEXPRESSO55S28=1
+  CFLAGS += -DBOARD_LPC55S28_EVK=1
 
   SRC_C += \
-  	boards/$(BOARD)/board_$(BOARD_LOWER).c \
-  	boards/$(BOARD)/pin_mux.c
+  	boards/$(BOARD)/board_lpc55s28_evk.c \
+  	boards/$(BOARD)/pin_mux.c \
+  	boards/$(BOARD)/spi_config.c \
+  	boards/$(BOARD)/i2c_config.c
 
   else
     ifeq ($(BOARD_LOWER), brkr_ict2)
     CFLAGS += -DBOARD_BRKR_ICT2=1
+    SRC_C += \
+  		boards/$(BOARD)/spi_config.c \
+  		boards/$(BOARD)/i2c_config.c
     endif
   endif
 endif

@@ -38,6 +38,7 @@
 #if (1)
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/rtc/__init__.h"
+#include "shared-bindings/microcontroller/Pin.h"
 
 STATIC volatile uint64_t overflowed_ticks = 0;
 
@@ -68,9 +69,18 @@ STATIC void raw_ticks_init(void) {
     return;
 }
 
+
 safe_mode_t port_init(void) {
     #if (1)
     raw_ticks_init();
+
+    #if (1)
+    // No need to call reset_port from port_init,
+    // since it is called from main function anyway
+    #else
+    reset_port();
+    #endif
+
     #else
     #if defined(SAMD21)
 
@@ -370,6 +380,8 @@ static void rtc_init(void) {
 void reset_port(void) {
     #if (1)
     trace_initialize();
+    reset_all_pins();
+
     return;
     #else
     #if CIRCUITPY_BUSIO
@@ -537,17 +549,13 @@ STATIC uint64_t _get_count(uint64_t *overflow_count) {
     common_hal_mcu_enable_interrupts();
 
     return count;
-    #if (0)
-    Chip_RIT_SetTimerInterval();
-    RIT_IRQHandler();
-    #endif
 }
 
 void RIT_IRQHandler(void) {
     uint32_t irqstatus = RIT_GetIntStatus();
 
     if (irqstatus) {
-        overflowed_ticks += (1L << (32 - 4));
+        overflowed_ticks += (1UL << (32 - 5));
     }
 
     RIT_ClearInt();
@@ -657,15 +665,16 @@ uint64_t port_get_raw_ticks(uint8_t *subticks) {
     uint64_t overflow_count;
     uint64_t current_ticks = _get_count(&overflow_count);
     if (subticks != NULL) {
-        *subticks = (current_ticks % 16) * 2;
+        *subticks = (current_ticks % 32ULL);
     }
 
-    return overflow_count + (current_ticks / 16ULL);
+    return overflow_count + (current_ticks / 32ULL);
 }
 #endif
 
 #if (1)
 void port_enable_tick(void) {
+    RIT_Enable();
     return;
 }
 #else
@@ -685,6 +694,7 @@ void port_enable_tick(void) {
 
 #if (1)
 void port_disable_tick(void) {
+    RIT_Disable();
     return;
 }
 #else

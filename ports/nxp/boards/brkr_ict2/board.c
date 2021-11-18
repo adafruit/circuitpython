@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
+ * Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,18 +24,20 @@
  * THE SOFTWARE.
  */
 
-#if !defined(PORTS_NXP_SUPERVISOR_PORT_LPC17XX_H_)
-#define PORTS_NXP_SUPERVISOR_PORT_LPC17XX_H_
+#include "supervisor/board.h"
+#include "clock_config.h"
 
-#include <stdint.h>
+uint32_t OscRateIn = XTAL;
+uint32_t RTCOscRateIn = RTC_CLK;
 
-extern void RIT_Init(void);
-extern void RIT_SetTimerIntervalHz(uint32_t freq);
-extern uint32_t RIT_GetIntStatus(void);
-extern void RIT_ClearInt(void);
-extern void RIT_Disable(void);
-extern void RIT_Disable(void);
-extern void RIT_Enable(void);
-extern uint64_t RIT_GetCounter(void);
+void board_init(void) {
+    return;
+}
 
-#endif // PORTS_NXP_SUPERVISOR_PORT_LPC17XX_H_
+bool board_requests_safe_mode(void) {
+    return false;
+}
+
+void reset_board(void) {
+    return;
+}

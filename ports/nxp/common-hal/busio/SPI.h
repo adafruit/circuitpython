@@ -32,11 +32,23 @@
 #include "py/obj.h"
 
 
-typedef ARM_DRIVER_SPI spi_inst_t;
+typedef struct {
+    uint8_t clock;
+    uint8_t mosi;
+    uint8_t miso;
+} spi_pin_set_t;
+
+typedef struct {
+    const size_t id;
+    bool is_used;
+    ARM_DRIVER_SPI *driver;
+    const spi_pin_set_t *pin_map;
+    const size_t pin_map_len;
+} spi_inst_t;
 
 typedef struct {
     mp_obj_base_t base;
-    spi_inst_t *driver;
+    spi_inst_t *spi_instance;
     bool has_lock;
     const mcu_pin_obj_t *clock;
     const mcu_pin_obj_t *mosi;

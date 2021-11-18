@@ -24,18 +24,9 @@
  * THE SOFTWARE.
  */
 
-#if !defined(PORTS_NXP_SUPERVISOR_PORT_LPC17XX_H_)
-#define PORTS_NXP_SUPERVISOR_PORT_LPC17XX_H_
+#if !defined(PORTS_NXP_BOARDS_BRKR_ICT2_I2C_CONFIG_H_)
+#define PORTS_NXP_BOARDS_BRKR_ICT2_I2C_CONFIG_H_
 
-#include <stdint.h>
+#include
 
-extern void RIT_Init(void);
-extern void RIT_SetTimerIntervalHz(uint32_t freq);
-extern uint32_t RIT_GetIntStatus(void);
-extern void RIT_ClearInt(void);
-extern void RIT_Disable(void);
-extern void RIT_Disable(void);
-extern void RIT_Enable(void);
-extern uint64_t RIT_GetCounter(void);
-
-#endif // PORTS_NXP_SUPERVISOR_PORT_LPC17XX_H_
+#endif // PORTS_NXP_BOARDS_BRKR_ICT2_I2C_CONFIG_H_

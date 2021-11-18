@@ -172,6 +172,45 @@ PIN(4,30);  //
 PIN(4,31);  //
 
 
+gpio_port_obj_t gpio_ports[5U] =
+{
+    // P0
+    {
+        .available_pin_mask = 0xFFFFFFFFU,
+        .reserved_pin_mask = 0U,
+        .used_pin_mask = 0U,
+    },
+
+    // P1
+    {
+        .available_pin_mask = 0xFFFFFFFFU,
+        .reserved_pin_mask = 0U,
+        .used_pin_mask = 0U,
+    },
+
+    // P2
+    {
+        .available_pin_mask = 0xFFFFFFFFU,
+        .reserved_pin_mask = 0U,
+        .used_pin_mask = 0U,
+    },
+
+    // P3
+    {
+        .available_pin_mask = (1U << 26) | (1U << 25),
+        .reserved_pin_mask = 0U,
+        .used_pin_mask = 0U,
+    },
+
+    // P4
+    {
+        .available_pin_mask = 0xFFFFFFFFU,
+        .reserved_pin_mask = 0U,
+        .used_pin_mask = 0U,
+    },
+};
+
+
 int gpio_pin_init(uint8_t port, uint8_t number, gpio_pin_config_t *config) {
     gpio_pin_mode_t mode = config->pinMode;
 

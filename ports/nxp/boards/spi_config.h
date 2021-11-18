@@ -24,18 +24,26 @@
  * THE SOFTWARE.
  */
 
-#if !defined(PORTS_NXP_SUPERVISOR_PORT_LPC17XX_H_)
-#define PORTS_NXP_SUPERVISOR_PORT_LPC17XX_H_
+#if !defined(PORTS_NXP_BOARDS_SPI_CONFIG_H_)
+#define PORTS_NXP_BOARDS_SPI_CONFIG_H_
 
-#include <stdint.h>
 
-extern void RIT_Init(void);
-extern void RIT_SetTimerIntervalHz(uint32_t freq);
-extern uint32_t RIT_GetIntStatus(void);
-extern void RIT_ClearInt(void);
-extern void RIT_Disable(void);
-extern void RIT_Disable(void);
-extern void RIT_Enable(void);
-extern uint64_t RIT_GetCounter(void);
+#if defined(BOARD_MCB1700)
+#include "boards/mcb1700/spi_config.h"
 
-#endif // PORTS_NXP_SUPERVISOR_PORT_LPC17XX_H_
+#elif defined(BOARD_LPC55S28_EVK)
+#include "boards/lpcxpresso55s28/spi_config.h"
+
+#elif defined(BOARD_BRKR_ICT2)
+#include "boards/brkr_ict2/spi_config.h"
+
+#endif
+
+#include "common-hal/busio/SPI.h"
+
+extern spi_inst_t spi_instances[SPI_INSTANCES_NUM];
+extern void spi_enable(spi_inst_t *spi_instance);
+extern void spi_disable(spi_inst_t *spi_instance);
+
+
+#endif // PORTS_NXP_BOARDS_SPI_CONFIG_H_

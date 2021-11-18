@@ -31,11 +31,16 @@
 #include "py/runtime.h"
 #include "supervisor/shared/tick.h"
 #include "shared/runtime/interrupt_char.h"
+#include "shared-bindings/microcontroller/Pin.h"
 #include "common-hal/microcontroller/Pin.h"
 
 #if (1)
 
 void reset_uart(void) {
+    return;
+}
+
+void never_reset_uart(uint8_t num) {
     return;
 }
 
@@ -47,8 +52,8 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     mp_float_t timeout, uint16_t receiver_buffer_size, byte *receiver_buffer,
     bool sigint_enabled) {
 
-    self->rx_pin = NO_PIN;
-    self->tx_pin = NO_PIN;
+    self->rx_pin = COMMON_HAL_MCU_NO_PIN;
+    self->tx_pin = COMMON_HAL_MCU_NO_PIN;
 
     // FIXME: Pick out the module based on pins
 
@@ -99,11 +104,15 @@ bool common_hal_busio_uart_ready_to_tx(busio_uart_obj_t *self) {
     return false;
 }
 
+void common_hal_busio_uart_never_reset(busio_uart_obj_t *self) {
+    return;
+}
+
 #else
 #include "src/rp2_common/hardware_irq/include/hardware/irq.h"
 #include "src/rp2_common/hardware_gpio/include/hardware/gpio.h"
 
-#define NO_PIN 0xff
+#define COMMON_HAL_MCU_NO_PIN 0xff
 
 #define UART_INST(uart) (((uart) ? uart1 : uart0))
 
@@ -130,7 +139,7 @@ void never_reset_uart(uint8_t num) {
 
 static uint8_t pin_init(const uint8_t uart, const mcu_pin_obj_t *pin, const uint8_t pin_type) {
     if (pin == NULL) {
-        return NO_PIN;
+        return COMMON_HAL_MCU_NO_PIN;
     }
     if (!(((pin->number % 4) == pin_type) && ((((pin->number + 4) / 8) % NUM_UARTS) == uart))) {
         mp_raise_ValueError(translate("Invalid pins"));
@@ -231,7 +240,7 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
 }
 
 bool common_hal_busio_uart_deinited(busio_uart_obj_t *self) {
-    return self->tx_pin == NO_PIN && self->rx_pin == NO_PIN;
+    return self->tx_pin == COMMON_HAL_MCU_NO_PIN && self->rx_pin == COMMON_HAL_MCU_NO_PIN;
 }
 
 void common_hal_busio_uart_deinit(busio_uart_obj_t *self) {
@@ -246,15 +255,15 @@ void common_hal_busio_uart_deinit(busio_uart_obj_t *self) {
     reset_pin_number(self->rx_pin);
     reset_pin_number(self->cts_pin);
     reset_pin_number(self->rts_pin);
-    self->tx_pin = NO_PIN;
-    self->rx_pin = NO_PIN;
-    self->cts_pin = NO_PIN;
-    self->rts_pin = NO_PIN;
+    self->tx_pin = COMMON_HAL_MCU_NO_PIN;
+    self->rx_pin = COMMON_HAL_MCU_NO_PIN;
+    self->cts_pin = COMMON_HAL_MCU_NO_PIN;
+    self->rts_pin = COMMON_HAL_MCU_NO_PIN;
 }
 
 // Write characters.
 size_t common_hal_busio_uart_write(busio_uart_obj_t *self, const uint8_t *data, size_t len, int *errcode) {
-    if (self->tx_pin == NO_PIN) {
+    if (self->tx_pin == COMMON_HAL_MCU_NO_PIN) {
         mp_raise_ValueError(translate("No TX pin"));
     }
 
@@ -274,7 +283,7 @@ size_t common_hal_busio_uart_write(busio_uart_obj_t *self, const uint8_t *data, 
 
 // Read characters.
 size_t common_hal_busio_uart_read(busio_uart_obj_t *self, uint8_t *data, size_t len, int *errcode) {
-    if (self->rx_pin == NO_PIN) {
+    if (self->rx_pin == COMMON_HAL_MCU_NO_PIN) {
         mp_raise_ValueError(translate("No RX pin"));
     }
 
@@ -370,7 +379,7 @@ void common_hal_busio_uart_clear_rx_buffer(busio_uart_obj_t *self) {
 }
 
 bool common_hal_busio_uart_ready_to_tx(busio_uart_obj_t *self) {
-    if (self->tx_pin == NO_PIN) {
+    if (self->tx_pin == COMMON_HAL_MCU_NO_PIN) {
         return false;
     }
     return uart_is_writable(self->uart);

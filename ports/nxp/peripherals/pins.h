@@ -32,12 +32,23 @@
 
 #include "py/obj.h"
 
+// Used to track the pin usage
+typedef struct {
+    const uint32_t available_pin_mask;
+    uint32_t reserved_pin_mask;
+    uint32_t used_pin_mask;
+} gpio_port_obj_t;
+
 typedef struct {
     mp_obj_base_t base;
     // TODO: Consider to replace (port, number) tuple with single designator
     uint8_t port : 3;
     uint8_t number : 5;
 } mcu_pin_obj_t;
+
+#define NXP_PORT_GPIO_PIN(port, number)  ((port << 5) | (number))
+#define NXP_PORT_GPIO_PIN_PORT(pin)      ((pin >> 5))
+#define NXP_PORT_GPIO_PIN_NUMBER(pin)    ((pin & 0x1FU))
 
 // This macro is used to simplify pin definition in boards/<board>/pins.c
 #define PIN(p_port, p_number) \

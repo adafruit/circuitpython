@@ -32,15 +32,26 @@
 #include "py/obj.h"
 
 
-typedef ARM_DRIVER_I2C i2c_inst_t;
+typedef struct {
+    uint8_t scl;
+    uint8_t sda;
+} i2c_pin_set_t;
+
+typedef struct {
+    const size_t id;
+    bool is_used;
+    ARM_DRIVER_I2C *driver;
+    const i2c_pin_set_t *pin_map;
+    const size_t pin_map_len;
+} i2c_inst_t;
 
 typedef struct {
     mp_obj_base_t base;
-    i2c_inst_t *driver;
+    i2c_inst_t *i2c_instance;
     bool has_lock;
-    uint8_t scl_pin;
-    uint8_t sda_pin;
-    uint32_t baudrate;
+    const mcu_pin_obj_t *scl;
+    const mcu_pin_obj_t *sda;
+    uint32_t frequency;
 } busio_i2c_obj_t;
 
 void reset_i2c(void);

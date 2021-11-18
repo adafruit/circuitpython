@@ -5,8 +5,7 @@
 // out on connectors are labelled with their MCU name available from
 // microcontroller.pin.
 STATIC const mp_rom_map_elem_t board_global_dict_table[] = {
-    { MP_OBJ_NEW_QSTR(MP_QSTR_LED1),    MP_ROM_PTR(&pin_P1_28) },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_LED2),    MP_ROM_PTR(&pin_P1_29) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_HB_LED),  MP_ROM_PTR(&pin_P3_26) },
 
     // CAN1
     { MP_OBJ_NEW_QSTR(MP_QSTR_CAN1_RX), MP_ROM_PTR(&pin_P0_0) },
@@ -17,9 +16,9 @@ STATIC const mp_rom_map_elem_t board_global_dict_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_SCL),     MP_ROM_PTR(&pin_P0_28) },
 
     // SPI0
-    { MP_OBJ_NEW_QSTR(MP_QSTR_SCK),     MP_ROM_PTR(&pin_P1_20) },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_MISO),    MP_ROM_PTR(&pin_P1_23) },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_MOSI),    MP_ROM_PTR(&pin_P1_24) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_SCK),     MP_ROM_PTR(&pin_P0_15) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_MISO),    MP_ROM_PTR(&pin_P0_17) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_MOSI),    MP_ROM_PTR(&pin_P0_18) },
 
     // COM1
     { MP_ROM_QSTR(MP_QSTR_UART),        MP_ROM_PTR(&board_uart_obj) },

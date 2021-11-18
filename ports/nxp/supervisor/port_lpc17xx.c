@@ -73,6 +73,7 @@ void RIT_ClearInt(void) {
 
 
 void RIT_Disable(void) {
+    NVIC_DisableIRQ(RITIMER_IRQn);
     Chip_RIT_Disable(LPC_RITIMER);
     return;
 }
@@ -80,6 +81,7 @@ void RIT_Disable(void) {
 
 void RIT_Enable(void) {
     Chip_RIT_Enable(LPC_RITIMER);
+    NVIC_EnableIRQ(RITIMER_IRQn);
     return;
 }
 

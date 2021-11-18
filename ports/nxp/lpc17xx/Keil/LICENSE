@@ -1,0 +1,223 @@
+END USER LICENSE AGREEMENT FOR ARM SOFTWARE DEVELOPMENT TOOLS
+
+This end user license agreement ("License") is a legal agreement between you (a single individual), or the company or organisation (a single legal entity) that you represent and have the legal authority to bind, and Arm relating to use of the Arm Tools. Arm is only willing to license the Arm Tools on condition that you accept all of the terms of this License. By clicking "I Agree" or by installing or otherwise using the Arm Tools and/or any Update thereto (as permitted by this License) you indicate that you agree to be bound by all of the terms and conditions of this License. If you do not agree to the terms of this License, Arm will NOT license the Arm Tools to you, you may not install or use the Arm Tools or any part thereof, and you shall promptly return the Arm Tools to Arm or to your supplier (if not Arm) and ask for a refund of the license fee paid (if any).
+
+NOTE - YOUR ATTENTION IS DRAWN TO THE FOLLOWING:
+
+(A) The terms and conditions set out in this License shall apply to the supply by Arm of Arm Tools for both commercial and non-commercial use. If you are in receipt of a Non-Commercial Use License for the Arm Tools (each capitalised term as defined below), or the Arm Tools or any component thereof are identified or classified as such, or you are receiving a license for the Arm Tools free of charge, then notwithstanding any of the other terms and conditions of this License, your use of the Arm Tools shall be limited by the restrictions of use set out in clause 3 of this License.
+
+(B) PLEASE NOTE any terms and conditions of use set out in the order documentation provided to you by Arm and the Software Information File(s) (as defined below) applicable to the Arm Tools provided to you with (or included within) either (i) the Arm Tools, and/or (ii) any Updates to the Arm Tools, which limit, extend or otherwise vary the permitted uses and restrictions applicable to the Arm Tools ("Special Conditions"). The Special Conditions form part of and are incorporated into this License. In the event of any conflict or inconsistency between the provisions set out in the main body of this License and any of the Special Conditions, the provisions set out in the Special Conditions shall prevail (in the order in which they are listed in this paragraph).
+
+(C) This License (and any documents incorporated by reference herein) is the sole and exclusive agreement between you and Arm for the Arm Tools, and (except as agreed in writing to the contrary) no other document, including (but not limited to) your purchase order or any other document supplied by you, will form part of this License.
+
+1. DEFINITIONS
+
+For the purposes of this License the following words and expressions shall have the following meanings:
+
+"Arm" means Arm Limited whose registered office is situated at 110 Fulbourn Road, Cambridge CB1 9NJ, England and/or any member of Arm's group of companies.
+
+"Arm Documentation" means any printed, electronic or online documentation owned or licensed by Arm that relates to the Arm Software.
+
+"Arm Software" means any software, firmware and data owned or licensed by Arm.
+
+"Arm Tools" means the Arm Software and/or Arm Documentation (including any Updates to the Arm Software and/or Arm Documentation) licensed to you by Arm under this License.
+
+"Arm Tools Performance Data" means any results, benchmarking data or other information relating to or connected with your use or testing of Arm Tools which is indicative of their performance, efficacy, reliability or quality.
+
+"Fees" means any fee(s) payable by you for the provision by Arm to you of the Arm Tools and associated support and maintenance services, and any other fees payable by you in accordance with this License that are agreed by the parties from time to time.
+
+"License Key" means an electronic license key issued to you by Arm which enables you to use and run one or more Licensed Seat of an Arm Tool or a component thereof in accordance with the terms of this License.
+
+"Licensed Seats" means any and all Seats of the Arm Tools (including, if applicable, Updates) that you are licensed to run and use concurrently under the terms of this License, in the types and quantities specified (if applicable) in the order documentation provided to you by Arm, as well as any additional or replacement Seats of the Arm Tools that Arm provides to you from time to time during the License Term (For the purposes of this definition, "Seat" meaning a written or electronic authorisation to run a software component subject to the terms and restrictions specified in that authorisation).
+
+"License Term" means the term set out in the order documentation provided to you by Arm during which you shall be entitled to access and use the Arm Tools.
+
+"Non-Commercial Use License" means an evaluation, preview, beta, pre-release, pilot, academic, educational or community use only license.
+
+"Permitted Users" means your employees, workers, consultants, professional advisors, bona fide sub-contractors and service providers that use the Arm Tools in connection with the provision of work carried out for your benefit, and/or, other members of your organisation or third party users who use the Arm Tools with your express written permission on computers (physical or virtual) owned or controlled by you.
+
+"Redistributables" means the example code, library files, configuration files, header files, and any other Arm Tools or components thereof owned by Arm (or licensed by Arm and provided to you under Arm's terms and conditions) which you are permitted to include within Your Software and redistribute or sub-license within Your Software to third parties, the details of which (if applicable) are set out in a file or folder (the "Redistributables File") typically named 'redistributables' located within the 'license_terms' folder in an Arm Tool (or components thereof).
+
+"Software Information File(s)" means Third Party Licenses Files, Redistributables Files, and/or Supplementary Terms Files (as the context requires).
+
+"Special Conditions" is as defined above in Recital (B) of this License.
+
+"Specified Project" means a single design and development activity undertaken by you or your Permitted Users relating to Your Software or Your Hardware, the details of which (if applicable) shall be set out in the order documentation provided to you by Arm.
+
+"Supplementary Terms File" means a software file or folder typically named 'supplementary_terms' located within the 'license_terms' folder in an Arm Tool (or components thereof) which (if applicable) details any component-specific extensions, limitations or other variations to the terms of this License.
+
+"Territory" means, if applicable, the geographical area detailed in the order documentation provided to you by Arm to which your use of the Arm Tools or any part thereof is restricted.
+
+"Third Party Licenses File" means a software file or folder typically named 'third_party_licenses' located within the 'license_terms' folder in an Arm Tool (or components thereof) which (if applicable) details any third party material included in the relevant Arm Tool which is not licensed under the terms of this License, and references the applicable third party license terms and conditions.
+
+"Update" means an update, patch, hotfix, bug fix, support release, modification or limited functional enhancement (as applicable) to an Arm Tool or component thereof, including but not limited to error corrections to any program or associated documentation developed by or for Arm comprised in the Arm Tools, which (i) Arm makes generally available to the market, and (ii) does not, in Arm's opinion, constitute an Upgrade or a new product.
+
+"Upgrade" means a new release of an existing Arm Tool which Arm makes generally available to the market and which usually contains major functional improvements.
+
+"Your Hardware" means hardware manufactured or developed by you or on your behalf, or hardware owned or licensed by you, which is supported by the Arm Tools.
+
+"Your Reports" means any written reports or other information relating to the behavior, performance or configuration of Your Software or Your Hardware, in html, binary, text or any other format (excluding for the avoidance of doubt, Arm Tools Performance Data), generated by you from or using Arm Tools and any modifications thereto.
+
+"Your Software" means any software owned or licensed by you (including, but not limited to, applications, libraries and Arm API compliant plug-ins, but excluding Arm Software) which is supported by (or developed by you using) Arm Tools.
+
+2. LICENSE GRANT
+
+2.1 Subject to your compliance with the terms and conditions of this License, and payment by you of the Fees (if any), Arm hereby grants to you and your Permitted Users during the License Term a non-exclusive, non-transferable license to receive and use the Arm Tools, certain components thereof, or optional functionality, in the Territory only on the Licensed Seats or for a Specified Project (as applicable) for the permitted uses set out in this clause 2 and subject to the restrictions set out in clause 3 (as limited, extended or otherwise varied by any terms, including product-specific permitted uses and restrictions, set out in the Special Conditions). Except as expressly permitted by this License, you and your Permitted Users shall NOT copy, modify, sub-license, redistribute or otherwise use any component of the Arm Tools.
+
+2.2 PERMITTED USE OF THE ARM TOOLS: Except as otherwise provided in this License, use of the Arm Tools (or components thereof) is permitted for the purpose of:
+
+(a) building, developing, testing, debugging, analysing and optimising Your Software or Your Hardware;
+
+(b) generation of Your Reports, and use of Your Reports to develop, test, debug, analyse and optimise Your Software or Your Hardware; and
+
+(c) only as expressly permitted in the relevant Redistributables File: (i) incorporating, compiling and/or linking the files listed in that Redistributables File into Your Software, provided that Your Software contains substantial additional functionality; and (ii) subject to clause 3.1 below, reproducing and redistributing the files (and permitting your customers and/or your authorised distributors to reproduce and redistribute the files), only in object code form (unless otherwise specified in the relevant Redistributables Files), and only as part of Your Software. You agree that, except as expressly provided to the contrary in the relevant Redistributables File, you may only copy the Arm Tools (or any component thereof) to the extent that such copying is incidental to the permitted uses set out in this clause 2.2, including installation, backup and execution.
+
+3. YOUR OBLIGATIONS AND RESTRICTIONS ON USE
+
+3.1 OBLIGATIONS RELATING TO REDISTRIBUTION: Any redistribution as permitted by this License is subject to any restrictions set out in the applicable Special Conditions, and your compliance with the following:
+
+(a) in cases where you are expressly permitted under this License (including for the avoidance of doubt by inclusion of agreed wording in the order documentation provided to you by Arm) to sub-license or redistribute any Arm Tool or component thereof to your customers, authorised distributors or other third parties, you are responsible for ensuring that such customers, authorised distributors and third parties accept, and are contractually bound (by agreement with you or directly with Arm) to comply with, the terms and conditions of this License;
+
+(b) any use by you of Arm's or any of its licensors' names, logos or trademarks to publicise or market any of Your Software containing (or developed or generated using) Arm Tools is subject to you obtaining express written permission from Arm;
+
+(c) you warrant that you shall not make any representations or warranties on behalf of Arm in respect of any of the Arm Tools or in respect of any other software, reports or documentation developed or generated by you in accordance with the license grants set out in this License;
+
+(d) you must reproduce or preserve (as applicable) any copyright notices which are included in or with any Arm Tools or components thereof; and
+
+(e) except as otherwise agreed by Arm (including for the avoidance of doubt by inclusion of the relevant permission in a Supplementary Terms File), you may not disclose or otherwise distribute any Arm Tools Performance Data. For the avoidance of doubt, nothing in this sub-clause 3.1 (e) shall prevent you from disclosing or otherwise distributing Your Reports.
+
+3.2 NON-COMMERCIAL USE AND FREE OF CHARGE LICENSES: If you are in receipt of a Non-Commercial Use License for the Arm Tools, or the Arm Tools or any component thereof are identified or classified as such, and/or you are receiving the Arm Tools free of charge, then notwithstanding any of the other terms and conditions of this License, your use (which includes use by your Permitted Users) of the Arm Tools is limited as follows:
+
+(a) if you are receiving the Arm Tools free of charge:
+
+    (i) no support or maintenance shall be provided to you in respect of the Arm Tools;
+    (ii) the warranty set out in clause 8.1 of this License does not apply to you or your use of the Arm Tools, and Arm gives no other warranty whatsoever in relation to (and accepts no liability in connection with) the Arm Tools or your use (as permitted by this License) of them;
+    (iii) Arm may immediately terminate this License at any time for any reason by giving written notice to you;
+    (iv) except as otherwise expressly agreed in writing by Arm, you shall grant to Arm in full the license set out in clause 4.2 of this License; and/or
+        (b) if you are receiving a Non-Commercial Use License or version (as applicable) of the Arm Tools:
+    (i) you and your Permitted Users may use the Arm Tools for internal use only; and
+    (ii) you are not permitted to distribute or sub-license (A) any part of the Arm Tools, or (B) Your Software, Your Hardware, or Your Reports developed under this License using the Arm Tools. The Arm Tools shall be used only by you and your Permitted Users, and you shall not (except as otherwise authorised in writing by Arm) allow any other third party whatsoever to use the Arm Tools.
+
+For the avoidance of doubt, if you are receiving a Non-Commercial Use License and the license is provided to you free of charge, the restrictions in both sub-clauses (a) and (b) above will apply to your use of the Arm Tools.
+
+3.3 RESTRICTIONS RELATING TO LICENSE TYPES: Depending on the type of license you have purchased from Arm under this License (the details of which shall be set out in the order documentation provided to you by Arm), your use of each Licensed Seat of an Arm Tool shall be limited to:
+
+(a) for a 'Node Locked License', use only (i) on one specified item of computer hardware, and (ii) at any point in time, by one individual Permitted User for one 'process'. For the purpose of this sub-clause 3.3 (a), each 'process' is the execution of an instance of an Arm Tool;
+
+(b) for a 'Floating License', use only by one individual Permitted User at a time on specified items of computer hardware;
+
+(c) for an 'Authorised User License', use only by (i) one individual assigned Permitted User, OR (ii) one assigned Automation Process, provided always that only Permitted Users that have a valid Authorised User License for an Arm Tool shall be permitted to deliver to an Automation Process jobs generated using that Arm Tool. For the purposes of this sub-clause 3.3 (c), "Automation Process" means a process or processes used to automate certain software methods, such as continuous integration; or
+
+(d) in respect of a 'Specified Project License', use for a Specified Project.
+
+3.4 PERMITTED USERS: You hereby agree to be responsible for the acts and omissions of any and all Permitted Users, and shall ensure that such Permitted Users (i) are contractually obliged to comply with the terms of this License, including those relating to confidentiality; and (ii) do not supply Arm Tools or any components thereof to any third party whatsoever. Except as expressly provided in this License or as agreed in writing by Arm on a case by case basis, you shall not sub-license, redistribute, lease, rent or otherwise allow any third party to use the Arm Tools or License Keys.
+
+3.5 REVERSE ENGINEERING: Your use of Arm Tools shall specifically exclude the reverse engineering, decompiling, disassembly, translation, adaptation, arrangement or other alteration of any part of the Arm Tools (except to the extent that applicable law overrides this provision or any part hereof).
+
+3.6 COPYRIGHT AND RESERVATION OF RIGHTS: Arm Tools are owned by Arm and/or its licensors and are protected by copyright and other intellectual property rights, laws and international treaties. Arm Tools are licensed not sold. Except as expressly provided by this License, you acquire no rights to any Arm Tools or elements thereof, or to any other Arm products or services. You shall not remove from Arm Tools any copyright notice or other notice and shall ensure that any such notice is reproduced in any permitted reproduction of the whole or any part of the Arm Tools.
+
+3.7 TECHNICAL RESTRICTIONS IN THE ARM TOOLS: You must comply with any technical restrictions in Arm Tools and License Keys, including any restrictions that restrict use to certain components of Arm Tools or use only for certain purposes. You shall not work around any such technical restrictions.
+
+3.8 ARM DOCUMENTATION: Use of Arm Documentation (if any) is permitted internally only in conjunction with your use of the Arm Software to which it relates.
+
+4. LICENSE OF FEEDBACK TO ARM
+
+4.1 You may at your discretion deliver any suggestions, comments, feedback, ideas, or know-how (whether in oral or written form) to Arm relating to or connected with your use of Arm Tools ("Feedback"). Notwithstanding the foregoing, you shall not knowingly give to Arm any Feedback that you are aware (or should reasonably be aware) is subject to any patent, copyright or other intellectual property claim or right of any third party.
+
+4.2 Except as expressly notified by you to Arm (in writing which may include email) to the contrary, you hereby grant to Arm under your and your affiliates (as applicable) intellectual property rights, a perpetual, irrevocable, royalty free, non-exclusive, worldwide license to: (i) use, copy, modify, and create derivative works of the Feedback; (ii) sell, supply or otherwise distribute the whole or any part of the Feedback (and derivative works thereof) as part of any Arm owned or licensed product(s) without obligation or restriction of any kind; and (iii) sub-license to third parties the foregoing rights, including the right to sub-license to further third parties. No right is granted by you to Arm to sub-license your and your affiliates (as applicable) intellectual property rights except to the extent that it is provided to Arm as Feedback and is embodied in any Arm owned or licensed product(s). For the avoidance of doubt, if, during the License Term, you provide notice to Arm revoking the license granted under this clause 4.2, you acknowledge and agree that such revocation shall not apply to Feedback delivered to Arm prior to the date of receipt of the revocation notice, and that (notwithstanding the foregoing) Arm shall continue to be permitted to use Feedback received after the date of receipt of the revocation notice for internal purposes.
+
+4.3 Except as expressly licensed to Arm in clause 4.2, you retain all right, title and interest in and to the Feedback provided by you under this License.
+
+5. DATA COLLECTION AND PRIVACY
+
+5.1 Arm Software may include features that enable it to transmit certain computer information over the internet to Arm's computer systems. Any non-anonymous data collected by Arm, for example your computer's internet protocol address, computer hardware and operating system details, or the serial numbers of Arm Tools you have licensed, shall be used by Arm only for the purpose of Arm protecting its legitimate interests, which may include Arm verifying your right to use any Arm Tools and monitoring your compliance with the permitted uses and restrictions set out in this License.
+
+5.2 Arm may also collect anonymous data, which, for the avoidance of doubt, cannot be used to identify individual users of Arm Tools. This information may be used by Arm to help us understand and analyse what components or features in Arm Tools our end users are using in order to (i) maintain and improve the quality of the Arm Tools and the end user experience, (ii) inform end users of relevant new and improved products and services, and (iii) assist end users to maximise the performance of, or solve user experience issues with, the Arm Tools.
+
+5.3 Information collected by Arm Software will only be used for the aforementioned purposes. Please refer to the Arm Privacy Policy https://www.arm.com/company/policies /privacy for further information on how Arm collects, uses and safeguards personal data (including but not limited to personal data collected for the protection of Arm's legitimate interests and your rights to object to its collection).
+
+6. SUPPORT AND MAINTENANCE
+
+6.1 Provision of reasonable support and maintenance is subject to payment by you of all applicable Fees.
+
+6.2 Any support provided by Arm in accordance with the above clause 6.1 shall (i) be provided by telephone, email or such other format as is designated by Arm, (ii) be prioritised at Arm's discretion, and (iii) not be used as a substitute for training or as additional resource for your projects.
+
+6.3 Maintenance will generally be provided in the form of Updates to Arm Tools. Arm shall be under no obligation to provide such maintenance in respect of any modifications made by you (where permitted) to Arm Tools. Updates do not constitute additional Licensed Seats and may only be used by you if you have an active Licensed Seat to run and use such Updates. Updates will generally be provided to you as soon as reasonably practicable following the date of general public release of the Update by Arm.
+
+6.4 In cases where the Arm Tools were provided to you free of charge, you are not entitled to any support or maintenance for the Arm Tools from Arm, but Arm may, in its sole discretion, provide support to you. If you obtained the Arm Tools from an Arm authorised distributor, reseller or other third party, support and maintenance may be provided by either Arm or the third party as per the terms of your contract for supply. Arm shall not be responsible for any delay or failure in connection with any third party supplier providing support or maintenance that it is obligated to provide to you. Please refer to the 'Support' area of https://www.arm.com for details of Arm's support services, relevant contact details, and (if applicable) details of other authorised support channels.
+
+6.5 Any obligation Arm has under this clause 6 is limited to the provision of support and maintenance to you, and Arm is under no obligation to provide any support and maintenance to any third parties. You agree to provide all front line support services to all third parties to whom you distribute any Arm Tools, Your Reports, Your Software or Your Hardware, pursuant to and in accordance with the terms of this License.
+
+6.6 This License does not grant you any entitlement to receive (i) Upgrades, (ii) Arm products other than those specified in your product documentation, or (iii) any new products developed or introduced by Arm from time to time, nor to receive any support or maintenance in respect of the same.
+
+7. CONFIDENTIALITY
+
+7.1 You acknowledge that the Arm Tools, License Keys, Arm Tools Performance Data, and any and all other software, documentation or other information licensed to you by Arm, or provided to you during discussions about or in connection with the Arm Tools (including this License and information provided during the provision by Arm of any support), contain trade secrets and confidential information of Arm ("Confidential Information").
+
+7.2 You agree to maintain all such Confidential Information in confidence and apply security measures (such measures to be no less stringent than the measures which you apply (or should reasonably apply) to protect your own like information, but not less than a reasonable degree of care) to prevent their unauthorised disclosure and use.
+
+7.3 Subject to any restrictions imposed by applicable law, the period of confidentiality shall be indefinite. You agree that you shall not use any such information other than in your normal use of the Arm Tools as permitted by this License.
+
+8 LIMITED WARRANTIES
+
+8.1 For the period of ninety (90) days from the date of receipt by you of Arm Tools, Arm warrants to you that; (i) Arm Software will perform substantially in accordance with the accompanying Arm Documentation (if any); and (ii) Arm Software will be compatible with the hardware and software mentioned as such in the Arm Documentation. Arm's total liability and your exclusive remedy for breach of these warranties shall be limited to Arm, at Arm's option (a) replacing any defective Arm Software; or (b) using reasonable efforts to correct material, documented, reproducible defects in the Arm Software and delivering such corrected Arm Software to you; or (c) if you licensed the Arm Software directly from Arm, refunding the price paid by you to Arm for that Arm Software. Any replacement Arm Software will be warranted for the remainder of the original warranty period or thirty (30) days from the date of replacement, whichever is longer.
+
+8.2 Arm Software described in any Arm Documentation is subject to continuous development and improvement. All particulars of Arm Software and its use as described in the applicable Arm Documentation are given by Arm in good faith. Consequently, the information contained in Arm Documentation is subject to change without notice and is not warranted to be error free. If you discover any errors in Arm Documentation please report them to Arm in writing. Any Arm Documentation provided to you that relates to specific industry quality and functional safety standard compliance may assist you in applying to a competent auditor for certification of Your Software or Your Hardware, but you acknowledge and agree that on its own such Arm Documentation may not provide sufficient evidence of, or be compatible with, the required safety compliance standards.
+
+8.3 Except as provided in clause 8.1 above, you agree that Arm Tools, and any associated support and maintenance, are licensed or provided (as applicable) "as is", and that Arm and its licensors expressly disclaim all representations, warranties, conditions or other terms, express or implied or statutory, including, without limitation, the implied warranties of merchantability, non-infringement, satisfactory quality, and fitness for a particular purpose. You acknowledge that it is your responsibility to satisfy yourself that any Arm Tools are fit for the intended purpose and satisfy your requirements, including compatibility with Your Hardware, and you expressly assume all liabilities and risks relating to (i) any use of an Arm Tool which is inconsistent with its design or any guidance provided to you in the applicable Arm Documentation, and/or (ii) any use of an Arm Tool with Your Software or Your Hardware where such software or hardware (as applicable) is not supported by or compatible with the relevant Arm Tool.
+
+8.4 You expressly assume all liabilities and risks relating to your use or operation of Your Software and Your Hardware designed or modified using Arm Tools, including without limitation, Your software or Your Hardware designed or intended for safety-critical applications. Should Your Software or Your Hardware prove defective, you assume the entire cost of all necessary servicing, repair or correction.
+
+9 LIMITATION OF LIABILITY
+
+9.1 To the maximum extent permitted by applicable law, in no event shall Arm be liable for any indirect, special, incidental or consequential damages (including loss of profits) arising out of the use of, or inability to use, Arm Tools, whether based on a claim under contract, tort or otherwise, even if Arm was advised of the possibility of such damages.
+
+9.2 Arm does not seek to limit or exclude liability for death or personal injury arising from Arm's negligence or Arm's fraud. Arm acknowledges that certain jurisdictions do not permit the exclusion or limitation of liability for consequential or incidental damages, and in such cases the above limitation relating to liability for consequential damages may not apply to you.
+
+9.3 Notwithstanding anything to the contrary contained in this License, the maximum liability of Arm to you in aggregate (in contract, tort or otherwise) in relation to or in connection with the subject matter of this License shall not exceed the greater of (i) the total sums paid by you to Arm (if any) for this License, and (ii) $10.00 USD. The existence of more than one claim or suit will not enlarge or extend the limit. You release Arm from all obligations, liability, claims or demands in excess of this limitation.
+
+10 THIRD PARTY MATERIAL
+
+10.1 Arm Tools may contain material owned or developed by third parties, including but not limited to open source software, freeware and commercial software ("Third Party Material"). Details relating to such Third Party Material shall be detailed in the Third Party Licenses File(s). Your use of such Third Party Material is subject to your compliance with the applicable Third Party Material license(s).
+
+10.2 Arm hereby disclaims any and all warranties express or implied from any third parties regarding, or otherwise connected with, any Third Party Material included in Arm Tools and any Third Party Material from which any Arm Tools are derived, and /or your use of any or all of the Third Party Material in connection with Your Software or Your Hardware, including (without limitation) any warranties of satisfactory quality or fitness for a particular purpose.
+
+10.3 No Third Party Material licensors shall have any liability for any direct, indirect, incidental, special, exemplary, or consequential damages (including without limitation lost profits) howsoever caused and whether made under contract, tort or otherwise arising in any way out of your use or distribution of the Third Party Material or the exercise of any rights granted under this License, even if advised in advance of the possibility of such damages.
+
+11. GOVERNMENT REQUIREMENTS
+
+11.1 To the extent that you are an agency, contractor or instrumentality of the U.S. Government, you and we agree that:
+
+(a) Arm Tools are commercial computer software and commercial computer software documentation, and that your rights therein are as specified in this License, per FAR 12.212 and DFARS 227.7202-3, as applicable, or in the case of NASA, subject to NSF 1852.22786. Arm acknowledges that, whilst commercial computer software or commercial computer software documentation shall be acquired under licenses customarily provided to the public, such licenses must be consistent with U.S. Federal law and otherwise satisfy the U.S. Government's needs ("U.S. Government Requirements"); and
+
+(b) you may assign your rights under this License to the relevant US Government Federal Department or the successor contractor designated by the US Government Federal Department upon termination of your related prime contract with that US Government Federal Department. If you exercise your rights under this clause 11.1(b), you acknowledge and agree that you shall remain liable to Arm in respect of all your obligations under this License.
+
+11.2 If there is any material inconsistency between (i) either a U.S. Government Requirement or a requirement of another government with which Arm is mandated by statute to comply and (ii) any provision of this License, the terms of the relevant government requirement shall prevail and the provision in question shall be deemed varied or deleted (as applicable) as required by the terms of the relevant government requirement. For the avoidance of doubt, in such circumstances, all other terms, conditions and provisions of this License will continue to be valid to the fullest extent permitted by law in accordance with the below clause 13.3.
+
+12. TERM AND TERMINATION
+
+12.1 Subject to clauses 12.2 and 12.3 below, this License shall remain in force until terminated by you, by Arm or (in the case of a time limited license) by expiry.
+
+12.2 In the event of a party breaching of any of the terms and conditions of this License, which if capable of remedy, has not been remedied by that party within thirty (30) days of the date of breach, without prejudice to any of its other rights under this License, the non-breaching party may terminate this License immediately upon giving written notice to the breaching party. Upon termination of this License by you or by Arm, or upon expiry, you shall (and shall ensure that your Permitted Users shall) immediately (i) stop using the relevant Arm Tools (or any element thereof) and any Confidential Information and, (ii) destroy all copies of the same in your possession or control, together with all Arm Documentation and related materials.
+
+12.3 Notwithstanding the foregoing, except where Arm has terminated this License for your breach, your rights (if applicable) to distribute any of Your Software or Your Hardware developed using the Arm Tools prior to termination or expiry of this License shall (subject to your continued compliance with the terms and conditions of this License) survive such termination or expiry.
+
+12.4 Without limitation to the survival of other terms as expressly set out elsewhere in this License, upon termination or expiry of this License, the provisions of clauses 1, 3.1, 3.5, 4, 7, 8, 9, 10, 12 and 13 shall survive.
+
+13. GENERAL
+
+13.1 This License is governed by English Law. Notwithstanding the foregoing, to the extent that you are an agency, contractor or instrumentality of the U.S. Government, disputes arising under or relating to this License shall be decided under the U.S. federal law of government contracting, including without limitation the Contract Disputes Act. Nothing in this License shall prevent you from enforcing your intellectual property rights or seeking injunctive or other equitable relief in any court of competent jurisdiction. The parties hereby disclaim application of the United Nations Convention on Contracts for the International Sale of Goods and the Uniform Computer Information Transactions Act.
+
+13.2 Except where Arm agrees otherwise in (i) a written contract signed by you and Arm, or (ii) a written contract provided by Arm and accepted by you, this License (including any documents expressly incorporated herein) is the only agreement between you and Arm relating to the Arm Tools and it may only be modified by written agreement between you and Arm. No terms and conditions contained in any purchase order or other document issued by you, or any advertising or other representation by you or any third party shall add to, supersede or in any way vary the terms and conditions of this License. This License (and any documents expressly incorporated into it by reference herein) represents the entire agreement between you and Arm in relation to its subject matter.
+
+13.3 If any clause or sentence in this License is held by a court of law to be illegal or unenforceable, the remaining provisions of this License shall not be affected. Any failure by Arm to enforce any of the provisions of this License, unless waived in writing, shall not constitute a waiver of Arm's rights to enforce such provision or any other provision of this License in the future.
+
+13.4 Subject to clause 11.1(b), neither this License or any rights granted to you under it may be assigned, sub-licensed or otherwise transferred by you to any third party without the prior written consent of Arm. An assignment shall be deemed to include, without limitation (i) any transaction or series of transactions whereby a third party acquires, directly or indirectly, the power to control the management and policies of you, whether through the acquisition of voting securities, by contract or otherwise; and (ii) the sale of more than fifty percent (50%) of your assets whether in a single transaction or series of transactions. Notwithstanding the foregoing, Arm may, in its discretion acting reasonably, separately agree to authorise the re-host of a Licensed Seat (for which additional charges may apply).
+
+13.5 Subject to any applicable legal restrictions, including but not limited to those relating to the security of classified information, at Arm's reasonable request, (i) you agree to check your computers for installations of the Arm Tools, copies of License Keys, contents of any license server log files, individual or concurrent usage of Licensed Seats, and any other information requested by Arm relating to Arm Tools installation, usage and License Key management, and, to provide this information to Arm; and (ii) you agree that Arm may instruct appropriately qualified independent auditors to perform such checks by prior appointment during your normal business hours on reasonable notice. In respect of any audit, Arm shall bear the auditors' costs for that audit unless it reveals unlicensed usage, in which case you shall promptly reimburse Arm for all reasonable costs and expenses, including professional fees, relating to such audit. Any information which is disclosed to Arm or such auditors during checking or audit shall be treated as your confidential information and shall only be used by Arm for compliance and enforcement purposes.
+
+13.6 Arm Confidential Information, Arm Tools and any other Arm products provided under this License may be subject to U.K., European Union, and U.S. export control and sanctions laws and regulations, including the U.S. Export Administration Regulations ("EAR") (hereafter collectively referred to as "Export Regulations"). The parties agree to comply fully with all applicable Export Regulations. You agree that you shall not, either directly or indirectly, export in breach of the Export Regulations any Arm Confidential Information, Arm Tools or other Arm products received under this License, nor any direct products thereof: (i) to any country, company or person subject to export restrictions or sanctions under the applicable Export Regulations without required export authorisation; or (ii) for any prohibited end use, which at the time of export requires an export license or other governmental approval, without first obtaining such license or approval. The specific export controls applicable to any Arm Confidential Information, Arm Tools or other Arm products is determined by the relevant ECCN. Arm will provide ECCNs for licensed products upon request to tradecompliance@arm.com. You are responsible for determining the jurisdiction and classification of the designs you create using Arm Confidential Information, Arm Tools or other Arm products. Arm Confidential Information, Arm Tools or other Arm products provided under this Licensee are dual-use, and are not listed on the UK Military List, nor are they subject to the International Traffic in Arms Regulations (ITAR), the 600 Series of the EAR or other military export control regimes. The parties are prohibited from sharing ITAR-controlled technical data, 600 series-controlled technology, other export controlled military data, or any other data that might require an export license or other export authorisation without prior written consent from the other party. Further, Arm is expressly authorised to use non-U.S. citizens for the performance of this License with the exception of nationals of Country Group E:1 and E:2 as listed in Supp. 1 to Part 740 of the EAR, which shall only be permitted in full compliance with all applicable laws.
+
+13.7 All notices which are required to be given hereunder must be in English and in writing and must be delivered: (i) personally to the other party's employee with the authority to accept such delivery (in which case it will be deemed served immediately), (ii) by first class post (in which case it will be deemed served on the third business day after it was posted) to the Notice Address (as defined below), or (iii) by registered commercial courier (in which case it will be deemed served on the second business day after deposit with the courier) to the Notice Address (as defined below). This clause shall not apply to the service of any proceedings or other documents in a legal action. The "Notice Address" for the purposes of sub-clauses (ii) and (iii) above means 150 Rose Orchard Way, San Jose, CA 95134, Attention: General Counsel. To be effective, any notice delivered pursuant to sub-clauses (i), (ii), or (iii) of this clause 13.7 must also be emailed to litigation@arm.com no later than twenty-four (24) hours after the notice is deemed served.
+
+Arm Document Reference LES-PRE-21260, Version 12.4, Effective Date 22.01.2021
