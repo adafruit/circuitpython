@@ -53,7 +53,7 @@ const static spi_pin_set_t SPI8_pin_set[] =
     },
 };
 
-spi_inst_t spi_instances[SPI_INSTANCES_NUM] = {
+static spi_inst_t spi_instances[SPI_INSTANCES_NUM] = {
     /* SPI Instance 0 */
     {
         .driver = &Driver_SPI3,
@@ -70,6 +70,14 @@ spi_inst_t spi_instances[SPI_INSTANCES_NUM] = {
         .pin_map_len = MP_ARRAY_SIZE(SPI8_pin_set),
     },
 };
+
+spi_inst_t *get_spi_instance(const size_t n) {
+    if (n < SPI_INSTANCES_NUM) {
+        return &spi_instances[n];
+    } else {
+        return (spi_inst_t *)NULL;
+    }
+}
 
 void spi_enable(spi_inst_t *spi_instance) {
     if (3U == spi_instance->id) {

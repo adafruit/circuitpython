@@ -28,20 +28,9 @@
 #define PORTS_NXP_BOARDS_SPI_CONFIG_H_
 
 
-#if defined(BOARD_MCB1700)
-#include "boards/mcb1700/spi_config.h"
-
-#elif defined(BOARD_LPC55S28_EVK)
-#include "boards/lpcxpresso55s28/spi_config.h"
-
-#elif defined(BOARD_BRKR_ICT2)
-#include "boards/brkr_ict2/spi_config.h"
-
-#endif
-
 #include "common-hal/busio/SPI.h"
 
-extern spi_inst_t spi_instances[SPI_INSTANCES_NUM];
+extern spi_inst_t *get_spi_instance(const size_t n);
 extern void spi_enable(spi_inst_t *spi_instance);
 extern void spi_disable(spi_inst_t *spi_instance);
 

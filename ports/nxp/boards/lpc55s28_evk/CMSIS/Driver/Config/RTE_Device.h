@@ -52,9 +52,63 @@ extern void I2C0_DeinitPins();
 #define RTE_I2C0_Master_DMA_CH      13
 // </e>
 
+// <e> I2C1 (Inter-integrated Circuit Interface 4) [Driver_I2C1]
+// <i> Configuration settings for Driver_I2C1 in component ::Drivers:I2C
+#define RTE_I2C1                        1
+
+//   <o> I2C1_SCL Pin <0=>P0_28
+#define RTE_I2C1_SCL_PORT_ID            0
+#if    (RTE_I2C1_SCL_PORT_ID == 0)
+#define RTE_I2C1_SCL_PORT               0
+#define RTE_I2C1_SCL_PIN                14
+#define RTE_I2C1_SCL_FUNC               1
+#else
+#error "Invalid I2C1_SCL Pin Configuration!"
+#endif
+
+//   <o> I2C1_SDA Pin <0=>P0_27
+#define RTE_I2C1_SDA_PORT_ID            0
+#if    (RTE_I2C1_SDA_PORT_ID == 0)
+#define RTE_I2C1_SDA_PORT               0
+#define RTE_I2C1_SDA_PIN                13
+#define RTE_I2C1_SDA_FUNC               1
+#else
+#error "Invalid I2C1_SDA Pin Configuration!"
+#endif
+
+#define RTE_I2C1_PIN_INIT           I2C1_InitPins
+#define RTE_I2C1_PIN_DEINIT         I2C1_DeinitPins
+#define RTE_I2C1_DMA_EN             0
+
+// I2C configuration
+#define RTE_I2C1_Master_DMA_BASE    DMA0
+#define RTE_I2C1_Master_DMA_CH      17
+// </e>
+
 // <e> I2C4 (Inter-integrated Circuit Interface 4) [Driver_I2C4]
 // <i> Configuration settings for Driver_I2C4 in component ::Drivers:I2C
-#define RTE_I2C4                    1
+#define RTE_I2C4                        1
+
+//   <o> I2C4_SCL Pin <0=>P0_28
+#define RTE_I2C4_SCL_PORT_ID            0
+#if    (RTE_I2C4_SCL_PORT_ID == 0)
+#define RTE_I2C4_SCL_PORT               1
+#define RTE_I2C4_SCL_PIN                20
+#define RTE_I2C4_SCL_FUNC               5
+#else
+#error "Invalid I2C4_SCL Pin Configuration!"
+#endif
+
+//   <o> I2C4_SDA Pin <0=>P0_27
+#define RTE_I2C4_SDA_PORT_ID            0
+#if    (RTE_I2C4_SDA_PORT_ID == 0)
+#define RTE_I2C4_SDA_PORT               1
+#define RTE_I2C4_SDA_PIN                21
+#define RTE_I2C4_SDA_FUNC               5
+#else
+#error "Invalid I2C4_SDA Pin Configuration!"
+#endif
+
 #define RTE_I2C4_PIN_INIT           I2C4_InitPins
 #define RTE_I2C4_PIN_DEINIT         I2C4_DeinitPins
 #define RTE_I2C4_DMA_EN             0

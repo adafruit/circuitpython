@@ -27,6 +27,8 @@
 #if !defined(PORTS_NXP_BOARDS_BRKR_ICT2_SPI_CONFIG_H_)
 #define PORTS_NXP_BOARDS_BRKR_ICT2_SPI_CONFIG_H_
 
+#include "boards/spi_config.h"
+
 #define SPI_INSTANCES_NUM   3
 
 #endif // PORTS_NXP_BOARDS_BRKR_ICT2_SPI_CONFIG_H_

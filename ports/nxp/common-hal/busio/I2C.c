@@ -24,7 +24,7 @@
  * THE SOFTWARE.
  */
 
-#include "boards/i2c_config.h"
+#include "i2c_config.h"
 #include "shared-bindings/busio/I2C.h"
 
 #include "py/mphal.h"
@@ -134,26 +134,6 @@ const STATIC cb_func __cb[I2C_INSTANCES_NUM] =
     #endif
 };
 
-
-/* TODO: Move board dependencies to the board functions accordingly */
-#if defined(BOARD_LPC55S28_EVK)
-#include "fsl_clock.h"
-
-extern ARM_DRIVER_I2C Driver_I2C4;
-
-#define MAX_I2C 1
-const STATIC i2c_inst_t *i2c[MAX_I2C] = {&Driver_I2C4};
-
-
-#elif defined(BOARD_BRKR_ICT2)
-extern ARM_DRIVER_I2C Driver_I2C0;
-
-#define MAX_I2C 1
-const STATIC i2c_inst_t *i2c[MAX_I2C] = {&Driver_I2C0};
-
-#endif
-
-
 STATIC bool __match_i2c_instance(const i2c_pin_set_t *pin_set, const mcu_pin_obj_t *scl, const mcu_pin_obj_t *sda) {
     bool is_matched = true;
 
@@ -178,11 +158,10 @@ STATIC bool __validate_pins(const mcu_pin_obj_t *scl, const mcu_pin_obj_t *sda) 
 size_t __lookup_matching_free_i2c_instance(const mcu_pin_obj_t *scl, const mcu_pin_obj_t *sda) {
     bool valid_pin_set = false;
 
-    const size_t N = MP_ARRAY_SIZE(i2c_instances);
     size_t n;
-    for (n = 0U; n < N; ++n) {
+    for (n = 0U; n < I2C_INSTANCES_NUM; ++n) {
         /* ... loop over all I2C pin set for given I2C instance */
-        i2c_inst_t *instance = &i2c_instances[n];
+        i2c_inst_t *instance = get_i2c_instance(0U);
         const i2c_pin_set_t *pin_set = instance->pin_map;
         const size_t M = instance->pin_map_len;
         for (size_t m = 0U; m < M; ++m) {
@@ -240,7 +219,7 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
 
         bool valid_pin_set = __validate_pins(scl, sda);
         size_t instance_idx = __lookup_matching_free_i2c_instance(scl, sda);
-        i2c_inst_t *i2c_instance = &i2c_instances[instance_idx];
+        i2c_inst_t *i2c_instance = get_i2c_instance(instance_idx);
 
         if (valid_pin_set && (SIZE_MAX > instance_idx)) {
             reset_pin_number(scl->port, scl->number);

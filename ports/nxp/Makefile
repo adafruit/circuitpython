@@ -162,7 +162,7 @@ SRC_C += \
   	boards/$(BOARD)/i2c_config.c
 
 else
-  ifeq ($(BOARD_LOWER), lpcxpresso55s28)
+  ifeq ($(BOARD_LOWER), lpc55s28_evk)
   CFLAGS += -DBOARD_LPC55S28_EVK=1
 
   SRC_C += \

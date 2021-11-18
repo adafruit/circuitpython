@@ -94,6 +94,14 @@ spi_inst_t spi_instances[SPI_INSTANCES_NUM] = {
     },
 };
 
+spi_inst_t *get_spi_instance(const size_t n) {
+    if (n < SPI_INSTANCES_NUM) {
+        return &spi_instances[n];
+    } else {
+        return (spi_inst_t *)NULL;
+    }
+}
+
 #define PCI2C0  (1U << 21)
 #define PCI2C1  (1U << 10)
 #define PCSPI   (1U << 8)

@@ -62,7 +62,7 @@ const static i2c_pin_set_t I2C2_pin_set[] =
     },
 };
 
-i2c_inst_t i2c_instances[I2C_INSTANCES_NUM] = {
+static i2c_inst_t i2c_instances[I2C_INSTANCES_NUM] = {
     /* I2C Instance 0 */
     {
         .id = 0U,
@@ -90,6 +90,14 @@ i2c_inst_t i2c_instances[I2C_INSTANCES_NUM] = {
         .pin_map_len = MP_ARRAY_SIZE(I2C2_pin_set),
     },
 };
+
+i2c_inst_t *get_i2c_instance(const size_t n) {
+    if (n < I2C_INSTANCES_NUM) {
+        return &i2c_instances[n];
+    } else {
+        return (i2c_inst_t *)NULL;
+    }
+}
 
 #define PCI2C0  (1U << 7)
 #define PCI2C1  (1U << 19)

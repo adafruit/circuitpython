@@ -24,7 +24,7 @@
  * THE SOFTWARE.
  */
 
-#include "boards/spi_config.h"
+#include "spi_config.h"
 #include "shared-bindings/busio/SPI.h"
 
 #include "py/mphal.h"
@@ -164,11 +164,10 @@ STATIC bool __validate_pins(const mcu_pin_obj_t *clock, const mcu_pin_obj_t *mos
 size_t __lookup_matching_free_spi_instance(const mcu_pin_obj_t *clock, const mcu_pin_obj_t *mosi, const mcu_pin_obj_t *miso) {
     bool valid_pin_set = false;
 
-    const size_t N = MP_ARRAY_SIZE(spi_instances);
     size_t n;
-    for (n = 0U; n < N; ++n) {
+    for (n = 0U; n < SPI_INSTANCES_NUM; ++n) {
         /* ... loop over all SPI pin set for given SPI instance */
-        spi_inst_t *instance = &spi_instances[n];
+        spi_inst_t *instance = get_spi_instance(0U);
         const spi_pin_set_t *pin_set = instance->pin_map;
         const size_t M = instance->pin_map_len;
         for (size_t m = 0U; m < M; ++m) {
@@ -226,7 +225,7 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
 
         bool valid_pin_set = __validate_pins(clock, mosi, miso);
         size_t instance_idx = __lookup_matching_free_spi_instance(clock, mosi, miso);
-        spi_inst_t *spi_instance = &spi_instances[instance_idx];
+        spi_inst_t *spi_instance = get_spi_instance(instance_idx);
 
         if (valid_pin_set && (SIZE_MAX > instance_idx) && !(spi_instance->is_used)) {
             reset_pin_number(clock->port, clock->number);
