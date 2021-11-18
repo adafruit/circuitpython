@@ -23,11 +23,11 @@ processor_version: 0.0.0
  */
 /* clang-format on */
 
+#include <boards/lpc55s28_evk/pin_mux.h>
 #include "fsl_common.h"
 #include "fsl_gpio.h"
 #include "fsl_iocon.h"
 #include "fsl_inputmux.h"
-#include "pin_mux.h"
 
 /* FUNCTION ************************************************************************************************************
  *

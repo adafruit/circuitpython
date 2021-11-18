@@ -24,10 +24,10 @@
  * THE SOFTWARE.
  */
 
-#if !defined(PORTS_NXP_BOARDS_LPCXPRESSO55S28_BOARD_LPC55S28_EVK_H_)
-#define PORTS_NXP_BOARDS_LPCXPRESSO55S28_BOARD_LPC55S28_EVK_H_
+#if !defined(PORTS_NXP_BOARDS_LPC55S28_EVK_BOARD_LPC55S28_EVK_H_)
+#define PORTS_NXP_BOARDS_LPC55S28_EVK_BOARD_LPC55S28_EVK_H_
 
-#include "clock_config.h"
+#include "../lpc55s28_evk/clock_config.h"
 #include "fsl_common.h"
 #include "fsl_reset.h"
 #include "fsl_gpio.h"
@@ -262,4 +262,4 @@ status_t BOARD_Codec_I2C_Receive(
 #endif /* __cplusplus */
 
 
-#endif // PORTS_NXP_BOARDS_LPCXPRESSO55S28_BOARD_LPC55S28_EVK_H_
+#endif // PORTS_NXP_BOARDS_LPC55S28_EVK_BOARD_LPC55S28_EVK_H_

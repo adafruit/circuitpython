@@ -20,7 +20,7 @@
  #if defined(NO_BOARD_LIB)
  #include "chip.h"
  #else
- #include "board.h"
+ #include <boards/lpc55s28_evk/board_config.h>
  #endif
 
 /*****************************************************************************

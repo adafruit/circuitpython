@@ -24,10 +24,9 @@
  * THE SOFTWARE.
  */
 
+#include <boards/lpc55s28_evk/CMSIS/Driver/Config/RTE_Device.h>
+#include <boards/lpc55s28_evk/spi_config.h>
 #include "common-hal/busio/SPI.h"
-#include "boards/lpcxpresso55s28/spi_config.h"
-#include "boards/lpcxpresso55s28/CMSIS/Driver/Config/RTE_Device.h"
-
 #include "fsl_clock.h"
 
 

@@ -24,11 +24,11 @@
  * THE SOFTWARE.
  */
 
+#include <boards/lpc55s28_evk/pin_mux.h>
+
 #include "py/obj.h"
 #include "py/mphal.h"
 #include "peripherals/pins.h"
-#include "pin_mux.h"
-
 #include "fsl_common.h"
 #include "fsl_iocon.h"
 #include "fsl_gpio_cmsis.h"

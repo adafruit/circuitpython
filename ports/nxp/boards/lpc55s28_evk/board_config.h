@@ -27,7 +27,7 @@
 #if !defined(PORTS_NXP_BOARDS_LPCXPRESSO55S28_BOARD__H_)
 #define PORTS_NXP_BOARDS_LPCXPRESSO55S28_BOARD__H_
 
-#include "nxp/boards/lpcxpresso55s28/spi_config.h"
-#include "nxp/boards/lpcxpresso55s28/i2c_config.h"
+#include "../lpc55s28_evk/i2c_config.h"
+#include "../lpc55s28_evk/spi_config.h"
 
 #endif // PORTS_NXP_BOARDS_LPCXPRESSO55S28_BOARD__H_

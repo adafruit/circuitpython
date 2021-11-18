@@ -31,9 +31,9 @@ processor_version: 0.7.2
  * BE CAREFUL MODIFYING THIS COMMENT - IT IS YAML SETTINGS FOR TOOLS **********/
 /* clang-format on */
 
+#include <boards/lpc55s28_evk/clock_config.h>
 #include "fsl_power.h"
 #include "fsl_clock.h"
-#include "clock_config.h"
 
 /*******************************************************************************
  * Definitions
