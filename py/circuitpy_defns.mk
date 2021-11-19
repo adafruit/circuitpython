@@ -197,6 +197,9 @@ endif
 ifeq ($(CIRCUITPY_GETPASS),1)
 SRC_PATTERNS += getpass/%
 endif
+ifeq ($(CIRCUITPY_GIFIO),1)
+SRC_PATTERNS += gifio/%
+endif
 ifeq ($(CIRCUITPY_GNSS),1)
 SRC_PATTERNS += gnss/%
 endif
@@ -465,7 +468,9 @@ $(filter $(SRC_PATTERNS), \
 	digitalio/Direction.c \
 	digitalio/DriveMode.c \
 	digitalio/Pull.c \
+	displayio/Colorspace.c \
 	fontio/Glyph.c \
+	imagecapture/ParallelImageCapture.c \
 	math/__init__.c \
 	microcontroller/ResetReason.c \
 	microcontroller/RunMode.c \
@@ -535,6 +540,9 @@ SRC_SHARED_MODULE_ALL = \
 	gamepadshift/GamePadShift.c \
 	gamepadshift/__init__.c \
 	getpass/__init__.c \
+	gifio/__init__.c \
+	gifio/GifWriter.c \
+	imagecapture/ParallelImageCapture.c \
 	ipaddress/IPv4Address.c \
 	ipaddress/__init__.c \
 	keypad/__init__.c \

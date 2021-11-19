@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: circuitpython-cn\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-01-04 12:55-0600\n"
-"PO-Revision-Date: 2021-10-01 02:38+0000\n"
+"PO-Revision-Date: 2021-11-05 04:07+0000\n"
 "Last-Translator: hexthat <hexthat@gmail.com>\n"
 "Language-Team: Chinese Hanyu Pinyin\n"
 "Language: zh_Latn_pinyin\n"
@@ -152,7 +152,7 @@ msgstr "%q bì xū zài %d hé %d zhī jiān"
 
 #: py/argcheck.c
 msgid "%q must be of type %q"
-msgstr ""
+msgstr "%q bì xū shì lèi xíng %q"
 
 #: ports/atmel-samd/common-hal/busio/UART.c
 msgid "%q must be power of 2"
@@ -173,7 +173,7 @@ msgstr "%q yīnggāi shì yīgè int"
 
 #: shared-bindings/usb_hid/Device.c
 msgid "%q with a report ID of 0 must be of length 1"
-msgstr ""
+msgstr "%q yǔ bào gào ID 0 bì xū shì cháng dù 1"
 
 #: py/bc.c py/objnamedtuple.c
 msgid "%q() takes %d positional arguments but %d were given"
@@ -357,6 +357,7 @@ msgstr "bù zhīchí 3-arg pow()"
 msgid "64 bit types"
 msgstr "64 wèi lèi xíng"
 
+#: ports/atmel-samd/common-hal/alarm/pin/PinAlarm.c
 #: ports/atmel-samd/common-hal/countio/Counter.c
 #: ports/atmel-samd/common-hal/rotaryio/IncrementalEncoder.c
 msgid "A hardware interrupt channel is already in use"
@@ -565,7 +566,7 @@ msgstr "Bǐtè shēndù bìxū shì 8 bèi yǐshàng."
 
 #: supervisor/shared/safe_mode.c
 msgid "Boot device must be first device (interface #0)."
-msgstr ""
+msgstr "yǐn dǎo shè bèi bì xū shì dì yī tái shè bèi (jiē kǒu #0)."
 
 #: ports/mimxrt10xx/common-hal/busio/UART.c
 msgid "Both RX and TX required for flow control"
@@ -636,6 +637,10 @@ msgstr "Huǎnchōng qū bìxū zhìshǎo chángdù 1"
 #, c-format
 msgid "Buffer too short by %d bytes"
 msgstr "Huǎn chōng qū tài duǎn , àn %d zì jié"
+
+#: ports/espressif/common-hal/imagecapture/ParallelImageCapture.c
+msgid "Buffers must be same size"
+msgstr "huǎn chōng qì bì xū dà xiǎo xiāng tóng"
 
 #: ports/atmel-samd/common-hal/paralleldisplay/ParallelBus.c
 #: ports/espressif/common-hal/paralleldisplay/ParallelBus.c
@@ -1610,6 +1615,10 @@ msgstr "Wèi zhǎodào TX yǐn jiǎo"
 msgid "No available clocks"
 msgstr "Méiyǒu kěyòng de shízhōng"
 
+#: ports/espressif/common-hal/imagecapture/ParallelImageCapture.c
+msgid "No capture in progress"
+msgstr "zhèng zài jìn xíng zhōng de wèi bǔ huò"
+
 #: shared-bindings/_bleio/PacketBuffer.c
 msgid "No connection: length cannot be determined"
 msgstr "Wú liánjiē: Wúfǎ quèdìng chángdù"
@@ -1630,6 +1639,7 @@ msgstr "Méiyǒu kěyòng de yìngjiàn suíjī"
 msgid "No hardware support on clk pin"
 msgstr "Shízhōng yǐn jiǎo wú yìngjiàn zhīchí"
 
+#: ports/atmel-samd/common-hal/alarm/pin/PinAlarm.c
 #: ports/atmel-samd/common-hal/frequencyio/FrequencyIn.c
 #: ports/atmel-samd/common-hal/pulseio/PulseIn.c
 msgid "No hardware support on pin"
@@ -1776,8 +1786,9 @@ msgstr "zhǐ yǒu yí gè chù mō bì kě yǐ shè zhì zài shēn dù shuì mi
 
 #: ports/espressif/common-hal/i2cperipheral/I2CPeripheral.c
 msgid "Only one address is allowed"
-msgstr ""
+msgstr "zhǐ yǔn xǔ yí gè dì zhǐ"
 
+#: ports/atmel-samd/common-hal/alarm/time/TimeAlarm.c
 #: ports/espressif/common-hal/alarm/time/TimeAlarm.c
 #: ports/nrf/common-hal/alarm/time/TimeAlarm.c
 #: ports/raspberrypi/common-hal/alarm/time/TimeAlarm.c
@@ -1849,6 +1860,7 @@ msgstr "shǐ yòng zhōng de wài shè"
 msgid "Permission denied"
 msgstr "Quánxiàn bèi jùjué"
 
+#: ports/atmel-samd/common-hal/alarm/pin/PinAlarm.c
 #: ports/stm/common-hal/alarm/pin/PinAlarm.c
 msgid "Pin cannot wake from Deep Sleep"
 msgstr "yǐn jiǎo wú fǎ cóng shēn dù shuì mián zhōng huàn xǐng"
@@ -1906,7 +1918,7 @@ msgstr "yǐn jiǎo bì xū shì lián xù de"
 
 #: ports/raspberrypi/common-hal/rotaryio/IncrementalEncoder.c
 msgid "Pins must be sequential GPIO pins"
-msgstr ""
+msgstr "yǐn jiǎo bì xū shì lián xù de GPIO yǐn jiǎo"
 
 #: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
 msgid "Pins must share PWM slice"
@@ -2104,6 +2116,7 @@ msgstr "cè miàn shè zhì yǐn jiǎo shù bì xū jiè yú 1 hé 5 zhī jiān"
 msgid "Size not supported"
 msgstr "bù zhī chí dà xiǎo"
 
+#: ports/atmel-samd/common-hal/alarm/SleepMemory.c
 #: ports/raspberrypi/common-hal/alarm/SleepMemory.c
 msgid "Sleep Memory not available"
 msgstr "shuì mián jì yì bù kě yòng"
@@ -2213,6 +2226,10 @@ msgstr "Yàngběn de yàngběn sùdù yǔ hǔn yīn qì de xiāngchà bù pǐpè
 msgid "The sample's signedness does not match the mixer's"
 msgstr "Yàngběn de qiānmíng yǔ hǔn yīn qì de qiānmíng bù pǐpèi"
 
+#: shared-module/imagecapture/ParallelImageCapture.c
+msgid "This microcontroller does not support continuous capture."
+msgstr "cǐ wēi kòng zhì qì bù zhī chí lián xù bǔ huò."
+
 #: shared-module/paralleldisplay/ParallelBus.c
 msgid ""
 "This microcontroller only supports data0=, not data_pins=, because it "
@@ -2267,6 +2284,7 @@ msgstr "Xiǎnshì tài duō"
 msgid "Total data to write is larger than %q"
 msgstr "yào biān xiě de zǒng shù jù dà yú %q"
 
+#: ports/atmel-samd/common-hal/alarm/touch/TouchAlarm.c
 #: ports/raspberrypi/common-hal/alarm/touch/TouchAlarm.c
 #: ports/stm/common-hal/alarm/touch/TouchAlarm.c
 msgid "Touch alarms not available"
@@ -2491,6 +2509,11 @@ msgid ""
 "\n"
 "To list built-in modules type `help(\"modules\")`.\n"
 msgstr ""
+"huān yíng lái dào ā dá shuǐ guǒ diàn lù Python %s!\n"
+"\n"
+"fǎng wèn circuitpython.org le jiě gèng duō xìn xī.\n"
+"\n"
+"liè chū nèi zhì mó kuài jiàn rù `help(\"modules\")`.\n"
 
 #: shared-bindings/wifi/Radio.c
 msgid "WiFi password must be between 8 and 63 characters"
@@ -3038,7 +3061,7 @@ msgstr "bèi líng chú"
 
 #: ports/espressif/common-hal/rotaryio/IncrementalEncoder.c
 msgid "divisor must be 4"
-msgstr ""
+msgstr "èr chóng zòu bì xū shì 4"
 
 #: py/objdeque.c
 msgid "empty"
@@ -3931,6 +3954,7 @@ msgstr "pow() 3 cān shǔ bùnéng wéi 0"
 msgid "pow() with 3 arguments requires integers"
 msgstr "pow() yǒu 3 cānshù xūyào zhěngshù"
 
+#: ports/espressif/boards/adafruit_feather_esp32s2/mpconfigboard.h
 #: ports/espressif/boards/adafruit_feather_esp32s2_nopsram/mpconfigboard.h
 #: ports/espressif/boards/adafruit_feather_esp32s2_tftback_nopsram/mpconfigboard.h
 #: ports/espressif/boards/adafruit_funhouse/mpconfigboard.h
@@ -4001,7 +4025,7 @@ msgstr "duìliè yìchū"
 
 #: py/parse.c
 msgid "raw f-strings are not supported"
-msgstr ""
+msgstr "bù zhī chí yuán shǐ f-strings"
 
 #: extmod/ulab/code/numpy/fft/fft_tools.c
 msgid "real and imaginary parts must be of equal length"
@@ -4341,7 +4365,7 @@ msgstr "unicode míngchēng táoyì"
 
 #: py/parse.c
 msgid "unindent doesn't match any outer indent level"
-msgstr ""
+msgstr "dān dù bù pǐ pèi rèn hé wài bù āo hén shuǐ píng"
 
 #: py/objstr.c
 #, c-format
