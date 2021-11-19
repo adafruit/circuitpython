@@ -24,4 +24,53 @@
  * THE SOFTWARE.
  */
 
-#include
+
+#include <math.h>
+#include <string.h>
+
+#include "py/obj.h"
+#include "py/runtime.h"
+
+#include "shared/runtime/interrupt_char.h"
+
+#include "common-hal/canio/__init__.h"
+#include "common-hal/canio/Listener.h"
+#include "shared-bindings/canio/Listener.h"
+#include "shared-bindings/util.h"
+#include "supervisor/shared/tick.h"
+#include "supervisor/shared/safe_mode.h"
+
+void set_filters(canio_listener_obj_t *self, size_t nmatch, canio_match_obj_t **matches) {
+    return;
+}
+
+void common_hal_canio_listener_construct(canio_listener_obj_t *self, canio_can_obj_t *can, size_t nmatch, canio_match_obj_t **matches, float timeout) {
+    return;
+}
+
+void common_hal_canio_listener_set_timeout(canio_listener_obj_t *self, float timeout) {
+    return;
+}
+
+
+float common_hal_canio_listener_get_timeout(canio_listener_obj_t *self) {
+    return 0.0f;
+}
+
+void common_hal_canio_listener_check_for_deinit(canio_listener_obj_t *self) {
+    return;
+}
+
+int common_hal_canio_listener_in_waiting(canio_listener_obj_t *self) {
+    return 0;
+}
+
+mp_obj_t common_hal_canio_listener_receive(canio_listener_obj_t *self) {
+    canio_message_obj_t *message = m_new_obj(canio_message_obj_t);
+
+    return message;
+}
+
+void common_hal_canio_listener_deinit(canio_listener_obj_t *self) {
+    return;
+}

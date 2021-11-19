@@ -27,6 +27,19 @@
 #if !defined(PORTS_NXP_COMMON_HAL_CANIO_LISTENER_H_)
 #define PORTS_NXP_COMMON_HAL_CANIO_LISTENER_H_
 
-#include
+#include "common-hal/canio/CAN.h"
+#include "shared-module/canio/Match.h"
+
+typedef uint32_t twai_message_t;
+
+typedef struct canio_listener_obj {
+    mp_obj_base_t base;
+    canio_can_obj_t *can;
+    bool extended : 1;
+    bool standard : 1;
+    bool pending : 1;
+    twai_message_t message_in;
+    uint32_t timeout_ms;
+} canio_listener_obj_t;
 
 #endif // PORTS_NXP_COMMON_HAL_CANIO_LISTENER_H_

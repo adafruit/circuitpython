@@ -24,9 +24,13 @@
  * THE SOFTWARE.
  */
 
-#if !defined(PORTS_NXP_COMMON_HAL_CANIO___INI___H_)
-#define PORTS_NXP_COMMON_HAL_CANIO___INI___H_
+#if !defined(PORTS_NXP_COMMON_HAL_CANIO___INIT___H_)
+#define PORTS_NXP_COMMON_HAL_CANIO___INIT___H_
 
-#include
+typedef struct _canio_can_state_t
+{
+    uint32_t dummy;
+} canio_can_state_t;
 
-#endif // PORTS_NXP_COMMON_HAL_CANIO___INI___H_
+
+#endif // PORTS_NXP_COMMON_HAL_CANIO___INIT___H_
