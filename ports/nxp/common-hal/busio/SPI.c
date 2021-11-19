@@ -24,8 +24,9 @@
  * THE SOFTWARE.
  */
 
-#include "spi_config.h"
 #include "shared-bindings/busio/SPI.h"
+
+#include "spi_config.h"
 
 #include "py/mphal.h"
 #include "py/mperrno.h"

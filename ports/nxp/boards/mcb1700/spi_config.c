@@ -65,7 +65,7 @@ const static spi_pin_set_t SPI2_pin_set[] =
     },
 };
 
-spi_inst_t spi_instances[SPI_INSTANCES_NUM] = {
+static spi_inst_t spi_instances[SPI_INSTANCES_NUM] = {
     /* SPI Instance 0 */
     {
         .id = 0U,
@@ -93,6 +93,14 @@ spi_inst_t spi_instances[SPI_INSTANCES_NUM] = {
         .pin_map_len = MP_ARRAY_SIZE(SPI2_pin_set),
     },
 };
+
+spi_inst_t *get_spi_instance(const size_t n) {
+    if (n < SPI_INSTANCES_NUM) {
+        return &spi_instances[n];
+    } else {
+        return (spi_inst_t *)NULL;
+    }
+}
 
 #define PCI2C0  (1U << 21)
 #define PCI2C1  (1U << 10)

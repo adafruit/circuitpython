@@ -27,6 +27,8 @@
 #if !defined(PORTS_NXP_BOARDS_LPC55S28_EVK_SPI_CONFIG_H_)
 #define PORTS_NXP_BOARDS_LPC55S28_EVK_SPI_CONFIG_H_
 
-#define SPI_INSTANCES_NUM   2
+#include "boards/board_spi_config.h"
+
+#define SPI_INSTANCES_NUM   2U
 
 #endif // PORTS_NXP_BOARDS_LPC55S28_EVK_SPI_CONFIG_H_

@@ -24,8 +24,8 @@
  * THE SOFTWARE.
  */
 
-#if !defined(PORTS_NXP_BOARDS_SPI_CONFIG_H_)
-#define PORTS_NXP_BOARDS_SPI_CONFIG_H_
+#if !defined(PORTS_NXP_BOARDS_BOARD_SPI_CONFIG_H_)
+#define PORTS_NXP_BOARDS_BOARD_SPI_CONFIG_H_
 
 
 #include "common-hal/busio/SPI.h"
@@ -35,4 +35,4 @@ extern void spi_enable(spi_inst_t *spi_instance);
 extern void spi_disable(spi_inst_t *spi_instance);
 
 
-#endif // PORTS_NXP_BOARDS_SPI_CONFIG_H_
+#endif // PORTS_NXP_BOARDS_BOARD_SPI_CONFIG_H_

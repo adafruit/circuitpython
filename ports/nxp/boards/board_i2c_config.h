@@ -24,8 +24,8 @@
  * THE SOFTWARE.
  */
 
-#if !defined(PORTS_NXP_BOARDS_I2C_CONFIG_H_)
-#define PORTS_NXP_BOARDS_I2C_CONFIG_H_
+#if !defined(PORTS_NXP_BOARDS_BOARD_I2C_CONFIG_H_)
+#define PORTS_NXP_BOARDS_BOARD_I2C_CONFIG_H_
 
 #include "common-hal/busio/I2C.h"
 
@@ -34,4 +34,4 @@ extern void i2c_enable(i2c_inst_t *i2c_instance);
 extern void i2c_disable(i2c_inst_t *i2c_instance);
 
 
-#endif // PORTS_NXP_BOARDS_I2C_CONFIG_H_
+#endif // PORTS_NXP_BOARDS_BOARD_I2C_CONFIG_H_

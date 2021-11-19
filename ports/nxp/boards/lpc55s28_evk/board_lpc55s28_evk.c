@@ -31,6 +31,10 @@ uint32_t USART0_GetFreq(void) {
     return CLOCK_GetFlexCommClkFreq(0U);
 }
 
+uint32_t I2C1_GetFreq(void) {
+    return CLOCK_GetFlexCommClkFreq(1U);
+}
+
 uint32_t I2C4_GetFreq(void) {
     return CLOCK_GetFlexCommClkFreq(4U);
 }

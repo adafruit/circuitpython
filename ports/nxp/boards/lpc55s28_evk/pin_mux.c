@@ -61,6 +61,41 @@ I2C0_InitPins:
  *
  * END ****************************************************************************************************************/
 /* Function assigned for the Cortex-M33 (Core #0) */
+void I2C1_InitPins(void) {
+    /* Enables the clock for the I/O controller.: Enable Clock. */
+    CLOCK_EnableClock(kCLOCK_Iocon);
+
+    const uint32_t port1_pin14_config = (/* Pin is configured as FC1_RTS_SCLX_SSEL1 */
+        IOCON_PIO_FUNC1 |
+        /* Selects pull-up function */
+        IOCON_PIO_MODE_PULLUP |
+        /* Standard mode, output slew rate control is enabled */
+        IOCON_PIO_SLEW_STANDARD |
+        /* Input function is not inverted */
+        IOCON_PIO_INV_DI |
+        /* Enables digital function */
+        IOCON_PIO_DIGITAL_EN |
+        /* Open drain is enabled */
+        IOCON_PIO_OPENDRAIN_EN);
+    /* PORT0 PIN14 (coords: ?) is configured as FC4_TXD_SCL_MISO_WS */
+    IOCON_PinMuxSet(IOCON, 0U, 14U, port1_pin14_config);
+
+    const uint32_t port1_pin13_config = (/* Pin is configured as FC1_CTS_SDAX_SSEL0 */
+        IOCON_PIO_FUNC1 |
+        /* Selects pull-up function */
+        IOCON_PIO_MODE_PULLUP |
+        /* Standard mode, output slew rate control is enabled */
+        IOCON_PIO_SLEW_STANDARD |
+        /* Input function is not inverted */
+        IOCON_PIO_INV_DI |
+        /* Enables digital function */
+        IOCON_PIO_DIGITAL_EN |
+        /* Open drain is enabled */
+        IOCON_PIO_OPENDRAIN_EN);
+    /* PORT0 PIN13 (coords: ?) is configured as FC4_RXD_SDA_MOSI_DATA */
+    IOCON_PinMuxSet(IOCON, 0U, 13U, port1_pin13_config);
+}
+
 void I2C4_InitPins(void) {
     /* Enables the clock for the I/O controller.: Enable Clock. */
     CLOCK_EnableClock(kCLOCK_Iocon);
@@ -248,6 +283,41 @@ I2C0_DeinitPins:
  *
  * END ****************************************************************************************************************/
 /* Function assigned for the Cortex-M33 (Core #0) */
+void I2C1_DeinitPins(void) {
+    /* Enables the clock for the I/O controller.: Enable Clock. */
+    CLOCK_EnableClock(kCLOCK_Iocon);
+
+    const uint32_t port1_pin14_config = (/* Pin is configured as PIO1_20 */
+        IOCON_PIO_FUNC0 |
+        /* No addition pin function */
+        IOCON_PIO_MODE_INACT |
+        /* Standard mode, output slew rate control is enabled */
+        IOCON_PIO_SLEW_STANDARD |
+        /* Input function is not inverted */
+        IOCON_PIO_INV_DI |
+        /* Enables digital function */
+        IOCON_PIO_DIGITAL_EN |
+        /* Open drain is disabled */
+        IOCON_PIO_OPENDRAIN_DI);
+    /* PORT0 PIN14 (coords: 4) is configured as PIO1_20 */
+    IOCON_PinMuxSet(IOCON, 0U, 14U, port1_pin14_config);
+
+    const uint32_t port1_pin13_config = (/* Pin is configured as PIO1_21 */
+        IOCON_PIO_FUNC0 |
+        /* No addition pin function */
+        IOCON_PIO_MODE_INACT |
+        /* Standard mode, output slew rate control is enabled */
+        IOCON_PIO_SLEW_STANDARD |
+        /* Input function is not inverted */
+        IOCON_PIO_INV_DI |
+        /* Enables digital function */
+        IOCON_PIO_DIGITAL_EN |
+        /* Open drain is disabled */
+        IOCON_PIO_OPENDRAIN_DI);
+    /* PORT0 PIN13 (coords: ?) is configured as PIO1_21 */
+    IOCON_PinMuxSet(IOCON, 0U, 13U, port1_pin13_config);
+}/* clang-format off */
+
 void I2C4_DeinitPins(void) {
     /* Enables the clock for the I/O controller.: Enable Clock. */
     CLOCK_EnableClock(kCLOCK_Iocon);

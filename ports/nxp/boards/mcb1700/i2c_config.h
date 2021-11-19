@@ -27,6 +27,8 @@
 #if !defined(PORTS_NXP_BOARDS_MCB1700_I2C_CONFIG_H_)
 #define PORTS_NXP_BOARDS_MCB1700_I2C_CONFIG_H_
 
+#include "boards/board_i2c_config.h"
+
 #define I2C_INSTANCES_NUM   3U
 
 #endif // PORTS_NXP_BOARDS_MCB1700_I2C_CONFIG_H_

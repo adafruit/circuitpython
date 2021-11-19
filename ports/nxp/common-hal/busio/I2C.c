@@ -24,8 +24,9 @@
  * THE SOFTWARE.
  */
 
-#include "i2c_config.h"
 #include "shared-bindings/busio/I2C.h"
+
+#include "i2c_config.h"
 
 #include "py/mphal.h"
 #include "py/mperrno.h"

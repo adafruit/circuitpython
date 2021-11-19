@@ -27,6 +27,8 @@
 #if !defined(PORTS_NXP_BOARDS_MCB1700_SPI_CONFIG_H_)
 #define PORTS_NXP_BOARDS_MCB1700_SPI_CONFIG_H_
 
-#define SPI_INSTANCES_NUM   3
+#include "boards/board_spi_config.h"
+
+#define SPI_INSTANCES_NUM   3U
 
 #endif // PORTS_NXP_BOARDS_MCB1700_SPI_CONFIG_H_
