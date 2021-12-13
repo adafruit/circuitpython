@@ -60,6 +60,10 @@ S8 = {
 assert uctypes.sizeof(S8) == 15
 
 S9 = {
-    "arr": (uctypes.ARRAY | 0, 3, {"a": uctypes.UINT32 | 0, "b": uctypes.UINT8 | 4, "dummy": uctypes.UINT8 | 7}),
+    "arr": (
+        uctypes.ARRAY | 0,
+        3,
+        {"a": uctypes.UINT32 | 0, "b": uctypes.UINT8 | 4, "dummy": uctypes.UINT8 | 7},
+    ),
 }
 assert uctypes.sizeof(S9) == 24
