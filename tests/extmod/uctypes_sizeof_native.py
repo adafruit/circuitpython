@@ -21,7 +21,7 @@ S4 = {
     "b": uctypes.UINT32 | 4,
     "c": uctypes.UINT8 | 8,
 }
-assert uctypes.sizeof(S4) == 12
+assert uctypes.sizeof(S4) == 9
 
 S5 = {
     "a": uctypes.UINT8 | 0,
@@ -37,10 +37,10 @@ S5 = {
     ),
 }
 
-assert uctypes.sizeof(S5) == 12
+assert uctypes.sizeof(S5) == 9
 
 s5 = uctypes.struct(0, S5)
-assert uctypes.sizeof(s5) == 12
+assert uctypes.sizeof(s5) == 9
 assert uctypes.sizeof(s5.sub) == 2
 
 S6 = {
@@ -57,4 +57,9 @@ assert uctypes.sizeof(S7) == 5
 S8 = {
     "arr": (uctypes.ARRAY | 0, 3, {"a": uctypes.UINT32 | 0, "b": uctypes.UINT8 | 4}),
 }
-assert uctypes.sizeof(S8) == 24
+assert uctypes.sizeof(S8) == 15
+
+S9 = {
+    "arr": (uctypes.ARRAY | 0, 3, {"a": uctypes.UINT32 | 0, "b": uctypes.UINT8 | 4, "dummy": uctypes.UINT8 | 7}),
+}
+assert uctypes.sizeof(S9) == 24

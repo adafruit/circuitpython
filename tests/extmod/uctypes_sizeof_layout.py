@@ -13,10 +13,9 @@ desc = {
 # uctypes.NATIVE is default
 print(uctypes.sizeof(desc) == uctypes.sizeof(desc, uctypes.NATIVE))
 
-# Here we assume that that we run on a platform with convential ABI
-# (which rounds up structure size based on max alignment). For platforms
-# where that doesn't hold, this tests should be just disabled in the runner.
-print(uctypes.sizeof(desc, uctypes.NATIVE) > uctypes.sizeof(desc, uctypes.LITTLE_ENDIAN))
+# To accord with convential ABI (which rounds up structure size based
+# on max alignment), users should add padding bytes explicitly.
+print(uctypes.sizeof(desc, uctypes.NATIVE) == uctypes.sizeof(desc, uctypes.LITTLE_ENDIAN))
 
 # When taking sizeof of instantiated structure, layout type param
 # is prohibited (because structure already has its layout type).
