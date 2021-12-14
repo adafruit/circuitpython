@@ -99,6 +99,14 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self, const mcu_pin_obj_t *
         mp_raise_ValueError(translate("Invalid pins"));
     }
 
+    // Set pulls on I2C pins up if setpullup is 1 - this supports boards with internal pullups
+    if (setpullup){
+        nrf_gpio_pin_pull_t hal_pull = NRF_GPIO_PIN_PULLUP;
+
+        nrf_gpio_cfg_input(scl->number, hal_pull);
+        nrf_gpio_cfg_input(sda->number, hal_pull);
+    }
+
     // Find a free instance.
     self->twim_peripheral = NULL;
     for (size_t i = 0; i < MP_ARRAY_SIZE(twim_peripherals); i++) {
