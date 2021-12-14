@@ -35,7 +35,7 @@
 #include "supervisor/shared/translate.h"
 
 void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
-    const mcu_pin_obj_t *scl, const mcu_pin_obj_t *sda, uint32_t frequency, uint32_t timeout) {
+    const mcu_pin_obj_t *scl, const mcu_pin_obj_t *sda, bool internal_pullup, uint32_t frequency, uint32_t timeout) {
     // Pins 45 and 46 are "strapping" pins that impact start up behavior. They usually need to
     // be pulled-down so pulling them up for I2C is a bad idea. To make this hard, we don't
     // support I2C on these pins.

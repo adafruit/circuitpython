@@ -145,6 +145,7 @@ STATIC bool read_byte(bitbangio_i2c_obj_t *self, uint8_t *val, bool ack) {
 void shared_module_bitbangio_i2c_construct(bitbangio_i2c_obj_t *self,
     const mcu_pin_obj_t *scl,
     const mcu_pin_obj_t *sda,
+    bool internal_pullup,
     uint32_t frequency,
     uint32_t us_timeout) {
 

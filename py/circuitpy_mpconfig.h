@@ -276,6 +276,13 @@ typedef long mp_off_t;
 #define BOARD_UART_ROOT_POINTER
 #endif
 
+// Support for internal pullups for boards that have them: e.g. nrf52833
+#if CIRCUITPY_INTERNAL_PULLUPS
+#define HAS_INTERNAL_PULLUPS = true
+#else
+#define HAS_INTERNAL_PULLUPS = false
+#endif
+
 #if CIRCUITPY_DISPLAYIO
 #ifndef CIRCUITPY_DISPLAY_LIMIT
 #define CIRCUITPY_DISPLAY_LIMIT (1)

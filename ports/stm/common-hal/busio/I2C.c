@@ -83,7 +83,7 @@ void i2c_reset(void) {
 }
 
 void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
-    const mcu_pin_obj_t *scl, const mcu_pin_obj_t *sda, uint32_t frequency, uint32_t timeout) {
+    const mcu_pin_obj_t *scl, const mcu_pin_obj_t *sda, bool internal_pullup, uint32_t frequency, uint32_t timeout) {
 
     // Match pins to I2C objects
     I2C_TypeDef *I2Cx;

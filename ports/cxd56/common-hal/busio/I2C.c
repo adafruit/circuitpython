@@ -34,7 +34,7 @@
 #include "shared-bindings/busio/I2C.h"
 
 void common_hal_busio_i2c_construct(busio_i2c_obj_t *self, const mcu_pin_obj_t *scl,
-    const mcu_pin_obj_t *sda, uint32_t frequency, uint32_t timeout) {
+    const mcu_pin_obj_t *sda, bool internal_pullup, uint32_t frequency, uint32_t timeout) {
     if (frequency != I2C_SPEED_STANDARD && frequency != I2C_SPEED_FAST) {
         mp_raise_ValueError(translate("Unsupported baudrate"));
     }
