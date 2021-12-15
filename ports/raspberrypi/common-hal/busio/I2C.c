@@ -55,7 +55,7 @@ void reset_i2c(void) {
 }
 
 void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
-    const mcu_pin_obj_t *scl, const mcu_pin_obj_t *sda, uint32_t frequency, uint32_t timeout) {
+    const mcu_pin_obj_t *scl, const mcu_pin_obj_t *sda, bool internal_pullup, uint32_t frequency, uint32_t timeout) {
     self->peripheral = NULL;
     // I2C pins have a regular pattern. SCL is always odd and SDA is even. They match up in pairs
     // so we can divide by two to get the instance. This pattern repeats.
@@ -92,6 +92,12 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
     // We must pull up within 3us to achieve 400khz.
     common_hal_mcu_delay_us(3);
 
+     // Set pull for SDA and SCL pins UP if internal_pullup = true
+    if (internal_pullup){
+        gpio_set_pulls(sda->number, true, false)
+        gpio_set_pulls(scl->number, true, false)
+    }
+
     if (!gpio_get(sda->number) || !gpio_get(scl->number)) {
         reset_pin_number(sda->number);
         reset_pin_number(scl->number);
@@ -112,7 +118,9 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
     //
     // Do not use the default supplied clock stretching timeout here.
     // It is too short for some devices. Use the busio timeout instead.
-    shared_module_bitbangio_i2c_construct(&self->bitbangio_i2c, scl, sda,
+    //
+    // NB: passing internal_pullup to satisfy new signature
+    shared_module_bitbangio_i2c_construct(&self->bitbangio_i2c, scl, sda, internal_pullup,
         frequency, BUS_TIMEOUT_US);
 
     self->baudrate = i2c_init(self->peripheral, frequency);

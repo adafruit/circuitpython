@@ -86,7 +86,7 @@ static void i2c_check_pin_config(const mcu_pin_obj_t *pin, uint32_t pull) {
 }
 
 void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
-    const mcu_pin_obj_t *scl, const mcu_pin_obj_t *sda, uint32_t frequency, uint32_t timeout) {
+    const mcu_pin_obj_t *scl, const mcu_pin_obj_t *sda, bool internal_pullup, uint32_t frequency, uint32_t timeout) {
 
     #if CIRCUITPY_REQUIRE_I2C_PULLUPS
     // Test that the pins are in a high state. (Hopefully indicating they are pulled up.)
@@ -105,6 +105,12 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
 
     // We must pull up within 3us to achieve 400khz.
     common_hal_mcu_delay_us(3);
+    
+    // If the board supports internal pullups, set the SDA and SCL channel pulls up
+    if (internal_pullup){
+        i2c_check_pin_config(sda, 1);
+        i2c_check_pin_config(scl, 1);
+    }
 
     if (!GPIO_PinRead(sda->gpio, sda->number) || !GPIO_PinRead(scl->gpio, scl->number)) {
         common_hal_reset_pin(sda);

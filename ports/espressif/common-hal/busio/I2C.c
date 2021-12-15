@@ -35,7 +35,7 @@
 #include "supervisor/shared/translate.h"
 
 void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
-    const mcu_pin_obj_t *scl, const mcu_pin_obj_t *sda, uint32_t frequency, uint32_t timeout) {
+    const mcu_pin_obj_t *scl, const mcu_pin_obj_t *sda, bool internal_pullup, uint32_t frequency, uint32_t timeout) {
     // Pins 45 and 46 are "strapping" pins that impact start up behavior. They usually need to
     // be pulled-down so pulling them up for I2C is a bad idea. To make this hard, we don't
     // support I2C on these pins.
@@ -58,6 +58,9 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
     gpio_pulldown_dis(sda->number);
     gpio_pulldown_dis(scl->number);
 
+    // This appears to be a board-specific way of supporting internal pullups without 
+    // going through all of the changes I've made - @dhalbert can you comment?
+    // Not going to change anything here before discussion - will just throw internal_pullup away
     #if CIRCUITPY_I2C_ALLOW_INTERNAL_PULL_UP
     gpio_pullup_en(sda->number);
     gpio_pullup_en(scl->number);

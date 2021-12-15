@@ -68,7 +68,7 @@ Sercom *samd_i2c_get_sercom(const mcu_pin_obj_t *scl, const mcu_pin_obj_t *sda,
 }
 
 void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
-    const mcu_pin_obj_t *scl, const mcu_pin_obj_t *sda, uint32_t frequency, uint32_t timeout) {
+    const mcu_pin_obj_t *scl, const mcu_pin_obj_t *sda, bool internal_pullup, uint32_t frequency, uint32_t timeout) {
     uint8_t sercom_index;
     uint32_t sda_pinmux, scl_pinmux;
 
@@ -97,6 +97,12 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
     // We must pull up within 3us to achieve 400khz.
     common_hal_mcu_delay_us(3);
 
+    // If board supports internal pullups, set SDA and SCL channels up
+    if (internal_pullup){
+        gpio_set_pin_pull_mode(sda->number, GPIO_PULL_UP);
+        gpio_set_pin_pull_mode(scl->number, GPIO_PULL_UP);
+    }
+    
     if (!gpio_get_pin_level(sda->number) || !gpio_get_pin_level(scl->number)) {
         reset_pin_number(sda->number);
         reset_pin_number(scl->number);

@@ -55,15 +55,17 @@
 //|
 //|         :param ~microcontroller.Pin scl: The clock pin
 //|         :param ~microcontroller.Pin sda: The data pin
+//|         :param bool internal_pullup: Indicates if internal pullups should be used - only available on boards that support them.
 //|         :param int frequency: The clock frequency of the bus
 //|         :param int timeout: The maximum clock stretching timeout in microseconds"""
 //|         ...
 //|
 STATIC mp_obj_t bitbangio_i2c_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
-    enum { ARG_scl, ARG_sda, ARG_frequency, ARG_timeout };
+    enum { ARG_scl, ARG_sda, ARG_internal_pullup, ARG_frequency, ARG_timeout };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_scl, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_sda, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_internal_pullup, MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = false}  }, 
         { MP_QSTR_frequency, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 400000} },
         { MP_QSTR_timeout, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 255} },
     };
@@ -75,7 +77,7 @@ STATIC mp_obj_t bitbangio_i2c_make_new(const mp_obj_type_t *type, size_t n_args,
 
     bitbangio_i2c_obj_t *self = m_new_obj(bitbangio_i2c_obj_t);
     self->base.type = &bitbangio_i2c_type;
-    shared_module_bitbangio_i2c_construct(self, scl, sda, args[ARG_frequency].u_int, args[ARG_timeout].u_int);
+    shared_module_bitbangio_i2c_construct(self, scl, sda, args[ARG_internal_pullup].u_int, args[ARG_frequency].u_int, args[ARG_timeout].u_int);
     return (mp_obj_t)self;
 }
 

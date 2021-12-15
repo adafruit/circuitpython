@@ -66,10 +66,13 @@ void reset_i2c(void) {
 }
 
 void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
-    const mcu_pin_obj_t *scl, const mcu_pin_obj_t *sda, uint32_t frequency, uint32_t timeout) {
+    const mcu_pin_obj_t *scl, const mcu_pin_obj_t *sda,  bool internal_pullup, uint32_t frequency, uint32_t timeout) {
+    
+    //NB: this board doesn't appear to support internal pullups - throw internal_pullup away?
+    
     size_t instance_index = NUM_I2C;
-    uint8_t scl_alt = 0;
-    uint8_t sda_alt = 0;
+    uint8_t scl_alt = 0; // Are these necessary, or can they be declared in the for?
+    uint8_t sda_alt = 0; // e.g. for (uint8_t scl_alt = 0; scl_alt < 6; scl_alt++) 
     for (scl_alt = 0; scl_alt < 6; scl_alt++) {
         if (scl->functions[scl_alt].type != PIN_FUNCTION_I2C ||
             i2c_in_use[scl->functions[scl_alt].index] ||
