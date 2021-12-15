@@ -275,18 +275,20 @@ FLASHER ?=
 
 ifeq ($(FLASHER),)
 
+# NOTE: added the .exe extension for WSL users - not sure if this needs to be removed prevent breakage
+
 # Also update to bootloader settting to validate application and skip checksum ( app valid = 0x0001, crc = 0x0000 )
 flash: $(BUILD)/firmware.hex
-	nrfjprog --program $< --sectorerase -f $(MCU_VARIANT)
-	nrfjprog --erasepage $(BOOT_SETTING_ADDR) -f $(MCU_VARIANT)
-	nrfjprog --memwr $(BOOT_SETTING_ADDR) --val 0x00000001 -f $(MCU_VARIANT)
-	nrfjprog --reset -f $(MCU_VARIANT)
+	nrfjprog.exe --program $< --sectorerase -f $(MCU_VARIANT)
+	nrfjprog.exe --erasepage $(BOOT_SETTING_ADDR) -f $(MCU_VARIANT)
+	nrfjprog.exe --memwr $(BOOT_SETTING_ADDR) --val 0x00000001 -f $(MCU_VARIANT)
+	nrfjprog.exe --reset -f $(MCU_VARIANT)
 
 sd: $(BUILD)/firmware.hex
-	nrfjprog --eraseall -f $(MCU_VARIANT)
-	nrfjprog --program $(SOFTDEV_HEX) -f $(MCU_VARIANT)
-	nrfjprog --program $< --sectorerase -f $(MCU_VARIANT)
-	nrfjprog --reset -f $(MCU_VARIANT)
+	nrfjprog.exe --eraseall -f $(MCU_VARIANT)
+	nrfjprog.exe --program $(SOFTDEV_HEX) -f $(MCU_VARIANT)
+	nrfjprog.exe --program $< --sectorerase -f $(MCU_VARIANT)
+	nrfjprog.exe --reset -f $(MCU_VARIANT)
 
 else ifeq ($(FLASHER), pyocd)
 

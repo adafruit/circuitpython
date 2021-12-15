@@ -94,13 +94,13 @@ static uint8_t twi_error_to_mp(const nrfx_err_t err) {
     return 0;
 }
 
-void common_hal_busio_i2c_construct(busio_i2c_obj_t *self, const mcu_pin_obj_t *scl, const mcu_pin_obj_t *sda, bool internal_pullup, uint8_t setpullup, uint32_t frequency, uint32_t timeout) {
+void common_hal_busio_i2c_construct(busio_i2c_obj_t *self, const mcu_pin_obj_t *scl, const mcu_pin_obj_t *sda, bool internal_pullup, uint32_t frequency, uint32_t timeout) {
     if (scl->number == sda->number) {
         mp_raise_ValueError(translate("Invalid pins"));
     }
 
     // Set pulls on I2C pins up if setpullup is 1 - this supports boards with internal pullups
-    if (setpullup){
+    if (internal_pullup){
         nrf_gpio_pin_pull_t hal_pull = NRF_GPIO_PIN_PULLUP;
 
         nrf_gpio_cfg_input(scl->number, hal_pull);
