@@ -329,7 +329,9 @@ void set_status_brightness(uint8_t level) {
     // LED. Usually duplicate calls of the same color are ignored without regard to brightness
     // changes.
     current_status_color = 0;
+    status_led_init();
     new_status_color(current_color);
+    status_led_deinit();
     #endif
 }
 
