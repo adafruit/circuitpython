@@ -528,6 +528,8 @@ STATIC mp_obj_t extra_coverage(void) {
     {
         byte buf[100];
         ringbuf_t ringbuf;
+        // Capacity of ringbuf is 100, one less than actual memory size.
+        // We pass the actual size to ringbuf_init().
         ringbuf_init(&ringbuf, &buf[0], sizeof(buf));
 
         mp_printf(&mp_plat_print, "# ringbuf\n");

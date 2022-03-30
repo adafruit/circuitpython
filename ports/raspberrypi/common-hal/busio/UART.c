@@ -140,16 +140,23 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     uart_set_hw_flow(self->uart, (cts != NULL), (rts != NULL));
 
     if (rx != NULL) {
-        // Initially allocate the UART's buffer in the long-lived part of the
-        // heap. UARTs are generally long-lived objects, but the "make long-
-        // lived" machinery is incapable of moving internal pointers like
-        // self->buffer, so do it manually.  (However, as long as internal
-        // pointers like this are NOT moved, allocating the buffer
-        // in the long-lived pool is not strictly necessary)
-        // (This is a macro.)
-        if (!ringbuf_alloc(&self->ringbuf, receiver_buffer_size, true)) {
-            mp_raise_msg(&mp_type_MemoryError, translate("Failed to allocate RX buffer"));
+        self->allocated_ringbuf = true;
+        // Use the provided buffer when given.
+        if (receiver_buffer != NULL) {
+            ringbuf_init(&self->ringbuf, receiver_buffer, receiver_buffer_size);
+            self->allocated_ringbuf = false;
+        } else {
+            // Initially allocate the UART's buffer in the long-lived part of the
+            // heap. UARTs are generally long-lived objects, but the "make long-
+            // lived" machinery is incapable of moving internal pointers like
+            // self->buffer, so do it manually.  (However, as long as internal
+            // pointers like this are NOT moved, allocating the buffer
+            // in the long-lived pool is not strictly necessary)
+            if (!ringbuf_alloc(&self->ringbuf, receiver_buffer_size, true)) {
+                mp_raise_msg(&mp_type_MemoryError, translate("Failed to allocate RX buffer"));
+            }
         }
+
         active_uarts[uart_id] = self;
         if (uart_id == 1) {
             self->uart_irq_id = UART1_IRQ;
@@ -172,7 +179,9 @@ void common_hal_busio_uart_deinit(busio_uart_obj_t *self) {
         return;
     }
     uart_deinit(self->uart);
-    ringbuf_free(&self->ringbuf);
+    if (self->allocated_ringbuf) {
+        ringbuf_free(&self->ringbuf);
+    }
     active_uarts[self->uart_id] = NULL;
     uart_status[self->uart_id] = STATUS_FREE;
     reset_pin_number(self->tx_pin);

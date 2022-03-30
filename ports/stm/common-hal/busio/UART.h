@@ -48,12 +48,12 @@ typedef struct {
     const mcu_periph_obj_t *rx;
 
     ringbuf_t ringbuf;
-    uint8_t rx_char;
-
     uint32_t baudrate;
     uint32_t timeout_ms;
 
+    uint8_t rx_char;
     bool sigint_enabled;
+    bool allocated_ringbuf;
 } busio_uart_obj_t;
 
 void uart_reset(void);

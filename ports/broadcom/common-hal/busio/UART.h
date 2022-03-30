@@ -36,10 +36,11 @@ typedef struct {
     const mcu_pin_obj_t *rx_pin;
     const mcu_pin_obj_t *cts_pin;
     const mcu_pin_obj_t *rts_pin;
-    uint8_t uart_id;
     uint32_t baudrate;
     uint32_t timeout_ms;
+    uint8_t uart_id;
     bool sigint_enabled;
+    bool allocated_ringbuf;
     ringbuf_t ringbuf;
 } busio_uart_obj_t;
 

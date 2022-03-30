@@ -233,10 +233,7 @@ void _common_hal_bleio_packet_buffer_construct(
     }
 
     if (incoming) {
-        self->ringbuf.buf = (uint8_t *)incoming_buffer;
-        self->ringbuf.size = incoming_buffer_size;
-        self->ringbuf.iget = 0;
-        self->ringbuf.iput = 0;
+        ringbuf_init(&self->ringbuf, (uint8_t *)incoming_buffer, incoming_buffer_size);
     }
 
     self->packet_queued = false;

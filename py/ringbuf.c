@@ -27,10 +27,12 @@
 
 #include "ringbuf.h"
 
-bool ringbuf_init(ringbuf_t *r, uint8_t *buf, size_t capacity) {
+// Note that ringbuf_init() takes the actual buffer size, but
+// ringbuf_alloc() takes the capacity. The capacity is one less than the size.
+bool ringbuf_init(ringbuf_t *r, uint8_t *buf, size_t buf_size) {
     r->heap = false;
     r->buf = buf;
-    r->size = capacity;
+    r->size = buf_size;
     r->iget = r->iput = 0;
     return r->buf != NULL;
 }

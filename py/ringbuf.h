@@ -42,8 +42,9 @@ typedef struct _ringbuf_t {
 
 // Note that the capacity of the buffer is N-1!
 
-// For static initialization use ringbuf_init()
-bool ringbuf_init(ringbuf_t *r, uint8_t *buf, size_t capacity);
+// For static initialization use ringbuf_init(), which takes actual size instead of capacity.
+bool ringbuf_init(ringbuf_t *r, uint8_t *buf, size_t buf_size);
+// For heap allocation, use ringbuf_alloc, which takes capacity.
 bool ringbuf_alloc(ringbuf_t *r, size_t capacity, bool long_lived);
 void ringbuf_free(ringbuf_t *r);
 size_t ringbuf_capacity(ringbuf_t *r);

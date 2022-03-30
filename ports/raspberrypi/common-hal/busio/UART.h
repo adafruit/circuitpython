@@ -40,6 +40,7 @@ typedef struct {
     uint8_t rts_pin;
     uint8_t uart_id;
     uint8_t uart_irq_id;
+    bool allocated_ringbuf;
     uint32_t baudrate;
     uint32_t timeout_ms;
     uart_inst_t *uart;
