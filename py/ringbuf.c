@@ -48,7 +48,8 @@ bool ringbuf_alloc(ringbuf_t *r, size_t capacity, bool long_lived) {
 }
 
 void ringbuf_free(ringbuf_t *r) {
-    if (r->heap) {
+    if (r->heap && gc_alloc_possible()) {
+        // Only free if on the heap, and there is really a heap.
         gc_free(r->buf);
     }
     r->buf = (uint8_t *)NULL;
