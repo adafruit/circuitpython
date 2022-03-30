@@ -526,10 +526,10 @@ STATIC mp_obj_t extra_coverage(void) {
 
     // ringbuf
     {
-        byte buf[100];
+        #define RINGBUF_CAPACITY 99
+
+        byte buf[RINGBUF_CAPACITY];
         ringbuf_t ringbuf;
-        // Capacity of ringbuf is 100, one less than actual memory size.
-        // We pass the actual size to ringbuf_init().
         ringbuf_init(&ringbuf, &buf[0], sizeof(buf));
 
         mp_printf(&mp_plat_print, "# ringbuf\n");
@@ -548,7 +548,7 @@ STATIC mp_obj_t extra_coverage(void) {
         mp_printf(&mp_plat_print, "%d %d\n", ringbuf_num_empty(&ringbuf), ringbuf_num_filled(&ringbuf));
 
         // Two-byte put with full ringbuf.
-        for (int i = 0; i < 99; ++i) {
+        for (int i = 0; i < RINGBUF_CAPACITY; ++i) {
             ringbuf_put(&ringbuf, i);
         }
         mp_printf(&mp_plat_print, "%d %d\n", ringbuf_num_empty(&ringbuf), ringbuf_num_filled(&ringbuf));
@@ -560,16 +560,15 @@ STATIC mp_obj_t extra_coverage(void) {
         ringbuf_get(&ringbuf);
         mp_printf(&mp_plat_print, "%d %d\n", ringbuf_num_empty(&ringbuf), ringbuf_num_filled(&ringbuf));
         mp_printf(&mp_plat_print, "%d\n", ringbuf_put16(&ringbuf, 0xcc99));
-        for (int i = 0; i < 97; ++i) {
+        for (int i = 0; i < RINGBUF_CAPACITY - 2; ++i) {
             ringbuf_get(&ringbuf);
         }
         mp_printf(&mp_plat_print, "%04x\n", ringbuf_get16(&ringbuf));
         mp_printf(&mp_plat_print, "%d %d\n", ringbuf_num_empty(&ringbuf), ringbuf_num_filled(&ringbuf));
 
         // Two-byte put with wrap around on first byte:
-        ringbuf.iput = 0;
-        ringbuf.iget = 0;
-        for (int i = 0; i < 99; ++i) {
+        ringbuf_clear(&ringbuf);
+        for (int i = 0; i < RINGBUF_CAPACITY; ++i) {
             ringbuf_put(&ringbuf, i);
             ringbuf_get(&ringbuf);
         }
@@ -577,9 +576,8 @@ STATIC mp_obj_t extra_coverage(void) {
         mp_printf(&mp_plat_print, "%04x\n", ringbuf_get16(&ringbuf));
 
         // Two-byte put with wrap around on second byte:
-        ringbuf.iput = 0;
-        ringbuf.iget = 0;
-        for (int i = 0; i < 98; ++i) {
+        ringbuf_clear(&ringbuf);
+        for (int i = 0; i < RINGBUF_CAPACITY - 1; ++i) {
             ringbuf_put(&ringbuf, i);
             ringbuf_get(&ringbuf);
         }
@@ -587,13 +585,11 @@ STATIC mp_obj_t extra_coverage(void) {
         mp_printf(&mp_plat_print, "%04x\n", ringbuf_get16(&ringbuf));
 
         // Two-byte get from empty ringbuf.
-        ringbuf.iput = 0;
-        ringbuf.iget = 0;
+        ringbuf_clear(&ringbuf);
         mp_printf(&mp_plat_print, "%d\n", ringbuf_get16(&ringbuf));
 
         // Two-byte get from ringbuf with one byte available.
-        ringbuf.iput = 0;
-        ringbuf.iget = 0;
+        ringbuf_clear(&ringbuf);
         ringbuf_put(&ringbuf, 0xaa);
         mp_printf(&mp_plat_print, "%d\n", ringbuf_get16(&ringbuf));
     }

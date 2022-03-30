@@ -33,19 +33,19 @@
 
 typedef struct _ringbuf_t {
     uint8_t *buf;
-    // Allocated size; capacity is one less. Don't reference this directly.
     uint32_t size;
-    uint32_t iget;
-    uint32_t iput;
+    uint32_t used;
+    uint32_t next_read;
+    uint32_t next_write;
     bool heap;
 } ringbuf_t;
 
-// Note that the capacity of the buffer is N-1!
+// For static initialization with an existing buffer, use ringbuf_init().
+bool ringbuf_init(ringbuf_t *r, uint8_t *buf, size_t size);
 
-// For static initialization use ringbuf_init(), which takes actual size instead of capacity.
-bool ringbuf_init(ringbuf_t *r, uint8_t *buf, size_t buf_size);
-// For heap allocation, use ringbuf_alloc, which takes capacity.
-bool ringbuf_alloc(ringbuf_t *r, size_t capacity, bool long_lived);
+// For allocation of a buffer on the heap, use ringbuf_alloc().
+bool ringbuf_alloc(ringbuf_t *r, size_t size, bool long_lived);
+
 void ringbuf_free(ringbuf_t *r);
 size_t ringbuf_capacity(ringbuf_t *r);
 int ringbuf_get(ringbuf_t *r);
@@ -56,9 +56,8 @@ size_t ringbuf_num_filled(ringbuf_t *r);
 size_t ringbuf_put_n(ringbuf_t *r, const uint8_t *buf, size_t bufsize);
 size_t ringbuf_get_n(ringbuf_t *r, uint8_t *buf, size_t bufsize);
 
-// Note: big-endian. No-op if not enough room available for both bytes.
+// Note: big-endian. Return -1 if can't read or write two bytes.
 int ringbuf_get16(ringbuf_t *r);
-int ringbuf_peek16(ringbuf_t *r);
 int ringbuf_put16(ringbuf_t *r, uint16_t v);
 
 #endif // MICROPY_INCLUDED_PY_RINGBUF_H
