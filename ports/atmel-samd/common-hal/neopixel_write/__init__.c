@@ -60,17 +60,17 @@ static void neopixel_send_buffer_core(volatile uint32_t *clraddr, uint32_t pinMa
         "        movs r6, #3; d2: sub r6, #1; bne d2;"          // delay 3
         #endif
         #ifdef SAM_D5X_E5X
-        "        movs r6, #16; d2: subs r6, #1; bne d2;"          // delay 3
+        "        movs r6, #15; d2: subs r6, #1; bne d2;"          // short low or high
         #endif
         "        tst r4, r5;"                                   // mask&r5
         "        bne skipclr;"
         "        str r1, [r0, #0];"          // clr
         "skipclr:"
         #ifdef SAMD21
-        "        movs r6, #6; d0: sub r6, #1; bne d0;"          // delay 6
+        "        movs r6, #6; d0: sub r6, #1; bne d0;"          // long low or high
         #endif
         #ifdef SAM_D5X_E5X
-        "        movs r6, #16; d0: subs r6, #1; bne d0;"          // delay 6
+        "        movs r6, #17; d0: subs r6, #1; bne d0;"          // 834 ns
         #endif
         "        str r1, [r0, #0];"            // clr (possibly again, doesn't matter)
         #ifdef SAMD21
@@ -85,12 +85,12 @@ static void neopixel_send_buffer_core(volatile uint32_t *clraddr, uint32_t pinMa
         "        movs r6, #2; d1: sub r6, #1; bne d1;"          // delay 2
         #endif
         #ifdef SAM_D5X_E5X
-        "        movs r6, #15; d1: subs r6, #1; bne d1;"          // delay 2
+        "        movs r6, #14; d1: subs r6, #1; bne d1;"          // finish low
         #endif
         "        b       loopBit;"
         "nextbyte:"
         #ifdef SAM_D5X_E5X
-        "        movs r6, #12; d3: subs r6, #1; bne d3;"          // delay 2
+        "        movs r6, #14; d3: subs r6, #1; bne d3;"          // finish low
         #endif
         "        cmp r2, r3;"
         "        bcs neopixel_stop;"
