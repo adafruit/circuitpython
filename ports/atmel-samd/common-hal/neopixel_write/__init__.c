@@ -46,6 +46,29 @@ __attribute__((naked,noinline,aligned(16)))
 static void neopixel_send_buffer_core(volatile uint32_t *clraddr, uint32_t pinMask,
     const uint8_t *ptr, int numBytes);
 
+// From the SK6812 datasheet:
+// T0H 0 code, high level time 0.3µs ±0.15µs
+// T1H 1 code, high level time 0.6µs ±0.15µs
+// T0L 0 code, low level time 0.9µs ±0.15µs
+// T1L 1 code, low level time 0.6µs ±0.15µs
+// Trst Reset code，low level time 80µs
+
+// From the WS2812 datasheet:
+// T0H 0 code, high voltage time 0.35us ±150ns
+// T1H 1 code, high voltage time 0.7us ±150ns
+// T0L 0 code, low voltage time 0.8us ±150ns
+// T1L 1 code, low voltage time 0.6us ±150ns
+// RES low voltage time Above 50µs
+
+// From the WS28212B datasheet:
+// T0H 0 code, high voltage time 0.4us ±150ns
+// T1H 1 code, high voltage time 0.8us ±150ns
+// T0L 0 code, low voltage time 0.85us ±150ns
+// T1L 1 code, low voltage time 0.45us ±150ns
+// RES low voltage time Above 50µs
+
+// The SAMDx5x timings do not correspond to the SAMD21 timings. The SAMDx5x were determined
+// by looking at the output of an SK6812, and trying to match what it sent.
 static void neopixel_send_buffer_core(volatile uint32_t *clraddr, uint32_t pinMask,
     const uint8_t *ptr, int numBytes) {
     asm volatile ("        push    {r4, r5, r6, lr};"
@@ -60,17 +83,17 @@ static void neopixel_send_buffer_core(volatile uint32_t *clraddr, uint32_t pinMa
         "        movs r6, #3; d2: sub r6, #1; bne d2;"          // delay 3
         #endif
         #ifdef SAM_D5X_E5X
-        "        movs r6, #15; d2: subs r6, #1; bne d2;"          // short low or high
+        "        movs r6, #11; d2: subs r6, #1; bne d2;"        // 302 ns high (entire T0H or start T1H)
         #endif
         "        tst r4, r5;"                                   // mask&r5
         "        bne skipclr;"
         "        str r1, [r0, #0];"          // clr
         "skipclr:"
         #ifdef SAMD21
-        "        movs r6, #6; d0: sub r6, #1; bne d0;"          // long low or high
+        "        movs r6, #6; d0: sub r6, #1; bne d0;"          // delay 6
         #endif
         #ifdef SAM_D5X_E5X
-        "        movs r6, #17; d0: subs r6, #1; bne d0;"          // 834 ns
+        "        movs r6, #11; d0: subs r6, #1; bne d0;"          // 302 ns low or high (start T0L or end T1H)
         #endif
         "        str r1, [r0, #0];"            // clr (possibly again, doesn't matter)
         #ifdef SAMD21
@@ -85,12 +108,12 @@ static void neopixel_send_buffer_core(volatile uint32_t *clraddr, uint32_t pinMa
         "        movs r6, #2; d1: sub r6, #1; bne d1;"          // delay 2
         #endif
         #ifdef SAM_D5X_E5X
-        "        movs r6, #14; d1: subs r6, #1; bne d1;"          // finish low
+        "        movs r6, #22; d1: subs r6, #1; bne d1;"          // 606 ns (end TOL or entire T1L)
         #endif
         "        b       loopBit;"
         "nextbyte:"
         #ifdef SAM_D5X_E5X
-        "        movs r6, #14; d3: subs r6, #1; bne d3;"          // finish low
+        "        movs r6, #6; d3: subs r6, #1; bne d3;"          // byte delay  FIGURE THIS OUT
         #endif
         "        cmp r2, r3;"
         "        bcs neopixel_stop;"
