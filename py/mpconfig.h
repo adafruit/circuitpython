@@ -1197,6 +1197,18 @@ typedef double mp_float_t;
 #define MICROPY_PY_BUILTINS_HELP_MODULES (MICROPY_CONFIG_ROM_LEVEL_AT_LEAST_EXTRA_FEATURES)
 #endif
 
+// Whether to include __class_getitem__ support as per pep 560, cpython 3.7+
+// This is the part of python typing that is not in type annotations (ie not ignored)
+#ifndef MICROPY_PY_TYPE_CLASS_GETITEM
+#define MICROPY_PY_TYPE_CLASS_GETITEM (1)
+#endif
+
+// Whether to include type[...] for builtin classes as per pep 585, cpython 3.9+
+// Set off b/c pep 585's primary usecase is in type hints, which micropython does not evaluate
+#ifndef MICROPY_PY_TYPE_GENERIC_BUILTINS
+#define MICROPY_PY_TYPE_GENERIC_BUILTINS (MICROPY_CPYTHON_COMPAT)
+#endif
+
 // Whether to set __file__ for imported modules
 #ifndef MICROPY_PY___FILE__
 #define MICROPY_PY___FILE__ (MICROPY_CONFIG_ROM_LEVEL_AT_LEAST_CORE_FEATURES)
@@ -1234,16 +1246,6 @@ typedef double mp_float_t;
 // in array and struct modules.
 #ifndef MICROPY_NONSTANDARD_TYPECODES
 #define MICROPY_NONSTANDARD_TYPECODES (1)
-#endif
-
-// Whether to include __class_getitem__ support as per pep 560 cpython 3.7+
-#ifndef MICROPY_PY_TYPE_CLASS_GETITEM
-#define MICROPY_PY_TYPE_CLASS_GETITEM (MICROPY_CPYTHON_COMPAT)
-#endif
-
-// Whether to include type[...] for builtin classes as per pep 585, cpython 3.9+
-#ifndef MICROPY_PY_TYPE_BUILTIN_GETITEM_GENERICS
-#define MICROPY_PY_TYPE_BUILTIN_GETITEM_GENERICS (MICROPY_CPYTHON_COMPAT)
 #endif
 
 // Whether to support attrtuple type (MicroPython extension)

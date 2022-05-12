@@ -1150,15 +1150,14 @@ STATIC void type_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
     }
 }
 
-#if MICROPY_PY_TYPE_CLASS_GETITEM
+#if MICROPY_PY_TYPE_CLASS_GETITEM || MICROPY_PY_TYPE_GENERIC_BUILTINS
 STATIC mp_obj_t type_cls_getitem_subscr(mp_obj_t self_in, mp_obj_t index, mp_obj_t value) {
     mp_obj_type_t *self = MP_OBJ_TO_PTR(self_in);
-    #if MICROPY_PY_TYPE_BUILTIN_GETITEM_GENERICS
-    // check for built-in types as per builtins in pep 585
-    if (
-        self == &mp_type_list
-        || self == &mp_type_dict
-        || self == &mp_type_tuple
+    #if MICROPY_PY_TYPE_GENERIC_BUILTINS
+    // check for built-in types as per supported types in pep 585
+    if (   self == &mp_type_list  
+        || self == &mp_type_dict 
+        || self == &mp_type_tuple 
         || self == &mp_type_type
         #if MICROPY_PY_BUILTINS_SET
         || self == &mp_type_set
@@ -1178,7 +1177,8 @@ STATIC mp_obj_t type_cls_getitem_subscr(mp_obj_t self_in, mp_obj_t index, mp_obj
         return self;
     }
     #endif
-    // lookup __class_getitem__ in the heirarchy
+    #if MICROPY_PY_TYPE_CLASS_GETITEM
+    // lookup __class_getitem__ in the class heirarchy
     mp_obj_t class_getitem_func = MP_OBJ_NULL;
     struct class_lookup_data lookup = {
         .obj = (mp_obj_instance_t *)self,
@@ -1188,11 +1188,12 @@ STATIC mp_obj_t type_cls_getitem_subscr(mp_obj_t self_in, mp_obj_t index, mp_obj
         .is_type = true,
     };
     mp_obj_class_lookup(&lookup, self);
-    // if not found, return early which raises an Exception
-    if (class_getitem_func == MP_OBJ_NULL) {
-        return MP_OBJ_NULL;
+    if (class_getitem_func != MP_OBJ_NULL) {
+        return mp_call_function_2(class_getitem_func, self, index);
     }
-    return mp_call_function_2(class_getitem_func, self, index);
+    #endif
+    // else raise normal
+    return MP_OBJ_NULL;
 }
 #endif
 
@@ -1208,7 +1209,7 @@ const mp_obj_type_t mp_type_type = {
     MP_TYPE_EXTENDED_FIELDS(
         .call = type_call,
         .unary_op = mp_generic_unary_op,
-        #if MICROPY_PY_TYPE_CLASS_GETITEM
+        #if MICROPY_PY_TYPE_CLASS_GETITEM || MICROPY_PY_TYPE_GENERIC_BUILTINS
         .subscr = type_cls_getitem_subscr,
         #endif
         ),
