@@ -1150,6 +1150,10 @@ STATIC void type_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
     }
 }
 
+STATIC mp_obj_t type_subscr(mp_obj_t self_in, mp_obj_t index, mp_obj_t value) {
+    return self_in;
+}
+
 const mp_obj_type_t mp_type_type = {
     { &mp_type_type },
     .flags = MP_TYPE_FLAG_EXTENDED,
@@ -1160,6 +1164,7 @@ const mp_obj_type_t mp_type_type = {
     MP_TYPE_EXTENDED_FIELDS(
         .call = type_call,
         .unary_op = mp_generic_unary_op,
+        .subscr = type_subscr,
         ),
 };
 
