@@ -1236,6 +1236,16 @@ typedef double mp_float_t;
 #define MICROPY_NONSTANDARD_TYPECODES (1)
 #endif
 
+// Whether to include __class_getitem__ support as per pep 560 cpython 3.7+
+#ifndef MICROPY_PY_TYPE_CLASS_GETITEM
+#define MICROPY_PY_TYPE_CLASS_GETITEM (MICROPY_CPYTHON_COMPAT)
+#endif
+
+// Whether to include type[...] for builtin classes as per pep 585, cpython 3.9+
+#ifndef MICROPY_PY_TYPE_BUILTIN_GETITEM_GENERICS
+#define MICROPY_PY_TYPE_BUILTIN_GETITEM_GENERICS (MICROPY_CPYTHON_COMPAT)
+#endif
+
 // Whether to support attrtuple type (MicroPython extension)
 // It provides space-efficient tuples with attribute access
 #ifndef MICROPY_PY_ATTRTUPLE
