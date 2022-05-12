@@ -1150,8 +1150,29 @@ STATIC void type_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
     }
 }
 
-STATIC mp_obj_t type_subscr(mp_obj_t self_in, mp_obj_t index, mp_obj_t value) {
-    return self_in;
+// #if MICROPY_PY_TYPE_SUBSCR
+STATIC mp_obj_t type_cls_getitem_subscr(mp_obj_t self_in, mp_obj_t index, mp_obj_t value) {
+    mp_obj_type_t *self = MP_OBJ_TO_PTR(self_in);
+    // lookup __class_getitem__ in the heirarchy
+    mp_obj_t class_getitem_func = MP_OBJ_NULL;
+    struct class_lookup_data lookup = {
+        .obj = (mp_obj_instance_t *)self,
+        .attr = MP_QSTR___class_getitem__,
+        .meth_offset = 0,
+        .dest = &class_getitem_func,
+        .is_type = true,
+    };
+    mp_obj_class_lookup(&lookup, self);
+    // if not found, return early
+    if (class_getitem_func == MP_OBJ_NULL) {
+        return MP_OBJ_NULL;
+    }
+    return mp_call_function_2(class_getitem_func, self, index);
+}
+// #endif
+
+STATIC mp_obj_t type_bypass_subscr(mp_obj_t self, mp_obj_t index, mp_obj_t value) {
+    return self;
 }
 
 const mp_obj_type_t mp_type_type = {
@@ -1164,7 +1185,9 @@ const mp_obj_type_t mp_type_type = {
     MP_TYPE_EXTENDED_FIELDS(
         .call = type_call,
         .unary_op = mp_generic_unary_op,
-        .subscr = type_subscr,
+// #if MICROPY_PY_TYPE_SUBSCR
+        .subscr = type_cls_getitem_subscr,
+// #endif
         ),
 };
 
