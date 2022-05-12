@@ -1150,9 +1150,20 @@ STATIC void type_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
     }
 }
 
-// #if MICROPY_PY_TYPE_SUBSCR
+// #if MICROPY_PY_CLASS_GETITEM
 STATIC mp_obj_t type_cls_getitem_subscr(mp_obj_t self_in, mp_obj_t index, mp_obj_t value) {
     mp_obj_type_t *self = MP_OBJ_TO_PTR(self_in);
+    // check for built-in types as per builtins in pep 585
+    if (
+        self == &mp_type_list
+        || self == &mp_type_tuple
+        || self == &mp_type_dict
+        || self == &mp_type_set
+        || self == &mp_type_frozenset
+        || self == &mp_type_type
+    ) {
+        return self;
+    }
     // lookup __class_getitem__ in the heirarchy
     mp_obj_t class_getitem_func = MP_OBJ_NULL;
     struct class_lookup_data lookup = {
@@ -1171,9 +1182,7 @@ STATIC mp_obj_t type_cls_getitem_subscr(mp_obj_t self_in, mp_obj_t index, mp_obj
 }
 // #endif
 
-STATIC mp_obj_t type_bypass_subscr(mp_obj_t self, mp_obj_t index, mp_obj_t value) {
-    return self;
-}
+
 
 const mp_obj_type_t mp_type_type = {
     { &mp_type_type },
