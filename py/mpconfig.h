@@ -1209,6 +1209,12 @@ typedef double mp_float_t;
 #define MICROPY_PY_TYPE_GENERIC_BUILTINS (MICROPY_CPYTHON_COMPAT)
 #endif
 
+// Whether to include the `|` operator on types as per pep 604, cpython 3.10+
+// Here, instead of returning a wrapper type we return `object`
+#ifndef MICROPY_PY_TYPES_BITWISE_OR_UNION
+#define MICROPY_PY_TYPES_BITWISE_OR_UNION (MICROPY_CPYTHON_COMPAT)
+#endif
+
 // Whether to set __file__ for imported modules
 #ifndef MICROPY_PY___FILE__
 #define MICROPY_PY___FILE__ (MICROPY_CONFIG_ROM_LEVEL_AT_LEAST_CORE_FEATURES)

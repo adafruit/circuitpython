@@ -113,6 +113,7 @@ extern void common_hal_mcu_enable_interrupts(void);
 #define MICROPY_PY_BUILTINS_STR_UNICODE  (1)
 
 #define MICROPY_PY_TYPE_CLASS_GETITEM    (1)
+#define MICROPY_PY_TYPE_BITWISE_OR_UNION (1)
 #define MICROPY_PY_TYPE_GENERIC_BUILTINS (0)
 
 #define MICROPY_PY_CMATH                 (0)
