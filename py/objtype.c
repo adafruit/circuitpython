@@ -1198,7 +1198,20 @@ STATIC mp_obj_t type_cls_getitem_subscr(mp_obj_t self_in, mp_obj_t index, mp_obj
 }
 #endif
 
-
+#define MICROPY_PY_TYPE_BITWISE_OR_UNION 1
+#if MICROPY_PY_TYPE_BITWISE_OR_UNION
+STATIC mp_obj_t type_union_binary_op(mp_binary_op_t op, mp_obj_t lhs, mp_obj_t rhs) {
+    if (
+        op == MP_BINARY_OP_OR
+        && mp_obj_is_type(lhs, &mp_type_type)
+        && mp_obj_is_type(rhs, &mp_type_type) 
+    ) {
+        return (lhs == rhs) ? lhs : MP_OBJ_TO_PTR(&mp_type_object); // return `object`
+    } else {
+        return MP_OBJ_NULL; // op not supported
+    } 
+}
+#endif
 
 const mp_obj_type_t mp_type_type = {
     { &mp_type_type },
@@ -1212,6 +1225,9 @@ const mp_obj_type_t mp_type_type = {
         .unary_op = mp_generic_unary_op,
         #if MICROPY_PY_TYPE_CLASS_GETITEM || MICROPY_PY_TYPE_GENERIC_BUILTINS
         .subscr = type_cls_getitem_subscr,
+        #endif
+        #if MICROPY_PY_TYPES_BITWISE_OR_UNION
+        .binary_op = type_union_binary_op,
         #endif
         ),
 };
