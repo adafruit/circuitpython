@@ -290,5 +290,5 @@
 	path = frozen/pew-pewpew-lcd
 	url = https://github.com/pypewpew/pew-pewpew-lcd.git
 [submodule "ports/espressif/boards/mixgo_ce_udisk/cp_lib"]
-	path = ports/espressif/boards/mixgo_ce_udisk/cp_lib
+	path = frozen/mixgo_circuitpython_lib
 	url = https://github.com/dahanzimin/circuitpython_lib.git
