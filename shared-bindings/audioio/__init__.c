@@ -32,6 +32,7 @@
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/audioio/__init__.h"
 #include "shared-bindings/audioio/AudioOut.h"
+#include "shared-bindings/audioio/AudioIn.h"
 
 //| """Support for audio output
 //|
@@ -53,6 +54,7 @@
 STATIC const mp_rom_map_elem_t audioio_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_audioio) },
     { MP_ROM_QSTR(MP_QSTR_AudioOut), MP_ROM_PTR(&audioio_audioout_type) },
+    { MP_ROM_QSTR(MP_QSTR_AudioIn),  MP_ROM_PTR(&audioio_audioin_type) },
 };
 
 STATIC MP_DEFINE_CONST_DICT(audioio_module_globals, audioio_module_globals_table);

@@ -395,6 +395,7 @@ SRC_COMMON_HAL_ALL = \
 	audiobusio/I2SOut.c \
 	audiobusio/PDMIn.c \
 	audiobusio/__init__.c \
+	audioio/AudioIn.c \
 	audioio/AudioOut.c \
 	audioio/__init__.c \
 	audiopwmio/PWMAudioOut.c \
