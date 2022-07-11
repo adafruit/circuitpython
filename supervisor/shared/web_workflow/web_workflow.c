@@ -825,6 +825,7 @@ static void _write_file_and_reply(socketpool_socket_obj_t *socket, _request *req
 STATIC_FILE(directory_html);
 STATIC_FILE(directory_js);
 STATIC_FILE(welcome_html);
+STATIC_FILE(edit_html); // <- added this one
 STATIC_FILE(welcome_js);
 STATIC_FILE(blinka_16x16_ico);
 
@@ -971,6 +972,16 @@ static bool _reply(socketpool_socket_obj_t *socket, _request *request) {
                     return true;
                 }
             }
+        }
+    } else if (strcmp(request->path, "/edit/") == 0) {
+        if (!request->authenticated) {
+            if (_api_password[0] != '\0') {
+                _reply_unauthorized(socket, request);
+            } else {
+                _reply_forbidden(socket, request);
+            }
+        } else {
+            _REPLY_STATIC(socket, request, edit_html);
         }
     } else if (memcmp(request->path, "/cp/", 4) == 0) {
         const char *path = request->path + 3;

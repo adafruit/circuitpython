@@ -60,7 +60,7 @@ async function refresh_list() {
         // Clone the new row and insert it into the table
         var clone = template.content.cloneNode(true);
         var td = clone.querySelectorAll("td");
-        var icon = "⬇";
+        var icon = "&#11015;&#65039;";
         var file_path = current_path + f.name;
         let api_url = new URL("/fs" + file_path, url_base);
         if (f.directory) {
@@ -71,25 +71,31 @@ async function refresh_list() {
         }
 
         if (f.directory) {
-            icon = "🗀";
+            icon = "&#128193;";
         } else if(f.name.endsWith(".txt") ||
-                  f.name.endsWith(".py") ||
-                  f.name.endsWith(".js") ||
-                  f.name.endsWith(".json")) {
-            icon = "🖹";
+            f.name.endsWith(".py") ||
+            f.name.endsWith(".js") ||
+            f.name.endsWith(".json")) {
+            icon = "&#128196;";
         } else if (f.name.endsWith(".html")) {
-            icon = "🌐";
+            icon = "&#127760;";
         }
-        td[0].textContent = icon;
+        td[0].innerHTML = icon;
+
         td[1].textContent = f.file_size;
         var path = clone.querySelector("a");
         path.href = file_path;
         path.textContent = f.name;
         td[3].textContent = (new Date(f.modified_ns / 1000000)).toLocaleString();
+
         var delete_button = clone.querySelector("button.delete");
         delete_button.value = api_url;
         delete_button.disabled = !editable;
         delete_button.onclick = del;
+
+        let edit_url = new URL("/edit/#" + f.name, url_base);
+        let edit_link = clone.querySelector(".edit_link");
+        edit_link.href = edit_url
 
 
         new_children.push(clone);
