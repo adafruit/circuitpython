@@ -825,7 +825,8 @@ static void _write_file_and_reply(socketpool_socket_obj_t *socket, _request *req
 STATIC_FILE(directory_html);
 STATIC_FILE(directory_js);
 STATIC_FILE(welcome_html);
-STATIC_FILE(edit_html); // <- added this one
+STATIC_FILE(edit_html);
+STATIC_FILE(edit_js);
 STATIC_FILE(welcome_js);
 STATIC_FILE(blinka_16x16_ico);
 
@@ -1003,6 +1004,8 @@ static bool _reply(socketpool_socket_obj_t *socket, _request *request) {
             _REPLY_STATIC(socket, request, directory_js);
         } else if (strcmp(request->path, "/welcome.js") == 0) {
             _REPLY_STATIC(socket, request, welcome_js);
+        } else if (strcmp(request->path, "/edit.js") == 0) {
+            _REPLY_STATIC(socket, request, edit_js);
         } else if (strcmp(request->path, "/favicon.ico") == 0) {
             // TODO: Autogenerate this based on the blinka bitmap and change the
             // palette based on MAC address.
