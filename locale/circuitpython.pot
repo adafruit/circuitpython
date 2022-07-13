@@ -2199,6 +2199,10 @@ msgstr ""
 msgid "Unsupported format"
 msgstr ""
 
+#: shared-bindings/hashlib/__init__.c
+msgid "Unsupported hash algorithm"
+msgstr ""
+
 #: ports/espressif/common-hal/dualbank/__init__.c
 msgid "Update Failed"
 msgstr ""
@@ -3740,6 +3744,7 @@ msgid "pow() with 3 arguments requires integers"
 msgstr ""
 
 #: ports/espressif/boards/adafruit_qtpy_esp32c3/mpconfigboard.h
+#: ports/espressif/boards/lolin_c3_mini/mpconfigboard.h
 #: supervisor/shared/safe_mode.c
 msgid "pressing boot button at start up.\n"
 msgstr ""
