@@ -37,6 +37,7 @@
 #include "shared/timeutils/timeutils.h"
 #include "supervisor/fatfs_port.h"
 #include "supervisor/filesystem.h"
+#include "supervisor/port.h"
 #include "supervisor/shared/reload.h"
 #include "supervisor/shared/translate/translate.h"
 #include "supervisor/shared/web_workflow/web_workflow.h"
@@ -323,22 +324,31 @@ void supervisor_start_web_workflow(void) {
     #endif
 }
 
-static void _send_raw(socketpool_socket_obj_t *socket, const uint8_t *buf, int len) {
+void web_workflow_send_raw(socketpool_socket_obj_t *socket, const uint8_t *buf, int len) {
+    int total_sent = 0;
     int sent = -EAGAIN;
-    while (sent == -EAGAIN && common_hal_socketpool_socket_get_connected(socket)) {
-        sent = socketpool_socket_send(socket, buf, len);
+    while ((sent == -EAGAIN || (sent > 0 && total_sent < len)) &&
+           common_hal_socketpool_socket_get_connected(socket)) {
+        sent = socketpool_socket_send(socket, buf + total_sent, len - total_sent);
+        if (sent > 0) {
+            total_sent += sent;
+            if (total_sent < len) {
+                // Yield so that network code can run.
+                port_yield();
+            }
+        }
     }
-    if (sent < len) {
+    if (total_sent < len) {
         ESP_LOGE(TAG, "short send %d %d", sent, len);
     }
 }
 
 STATIC void _print_raw(void *env, const char *str, size_t len) {
-    _send_raw((socketpool_socket_obj_t *)env, (const uint8_t *)str, (size_t)len);
+    web_workflow_send_raw((socketpool_socket_obj_t *)env, (const uint8_t *)str, (size_t)len);
 }
 
 static void _send_str(socketpool_socket_obj_t *socket, const char *str) {
-    _send_raw(socket, (const uint8_t *)str, strlen(str));
+    web_workflow_send_raw(socket, (const uint8_t *)str, strlen(str));
 }
 
 // The last argument must be NULL! Otherwise, it won't stop.
@@ -357,15 +367,15 @@ static void _send_strs(socketpool_socket_obj_t *socket, ...) {
 static void _send_chunk(socketpool_socket_obj_t *socket, const char *chunk) {
     mp_print_t _socket_print = {socket, _print_raw};
     mp_printf(&_socket_print, "%X\r\n", strlen(chunk));
-    _send_raw(socket, (const uint8_t *)chunk, strlen(chunk));
-    _send_raw(socket, (const uint8_t *)"\r\n", 2);
+    web_workflow_send_raw(socket, (const uint8_t *)chunk, strlen(chunk));
+    web_workflow_send_raw(socket, (const uint8_t *)"\r\n", 2);
 }
 
 STATIC void _print_chunk(void *env, const char *str, size_t len) {
     mp_print_t _socket_print = {env, _print_raw};
     mp_printf(&_socket_print, "%X\r\n", len);
-    _send_raw((socketpool_socket_obj_t *)env, (const uint8_t *)str, len);
-    _send_raw((socketpool_socket_obj_t *)env, (const uint8_t *)"\r\n", 2);
+    web_workflow_send_raw((socketpool_socket_obj_t *)env, (const uint8_t *)str, len);
+    web_workflow_send_raw((socketpool_socket_obj_t *)env, (const uint8_t *)"\r\n", 2);
 }
 
 // A bit of a misnomer because it sends all arguments as one chunk.
@@ -659,13 +669,13 @@ static void _reply_with_file(socketpool_socket_obj_t *socket, _request *request,
     mp_printf(&_socket_print, "Content-Length: %d\r\n", total_length);
     // TODO: Make this a table to save space.
     if (_endswith(filename, ".txt") || _endswith(filename, ".py")) {
-        _send_str(socket, "Content-Type: text/plain\r\n");
+        _send_strs(socket, "Content-Type: text/plain", ";charset=UTF-8\r\n", NULL);
     } else if (_endswith(filename, ".js")) {
-        _send_str(socket, "Content-Type: text/javascript\r\n");
+        _send_strs(socket, "Content-Type: text/javascript", ";charset=UTF-8\r\n", NULL);
     } else if (_endswith(filename, ".html")) {
-        _send_str(socket, "Content-Type: text/html\r\n");
+        _send_strs(socket, "Content-Type: text/html", ";charset=UTF-8\r\n", NULL);
     } else if (_endswith(filename, ".json")) {
-        _send_str(socket, "Content-Type: application/json\r\n");
+        _send_strs(socket, "Content-Type: application/json", ";charset=UTF-8\r\n", NULL);
     } else {
         _send_str(socket, "Content-Type: application/octet-stream\r\n");
     }
@@ -938,7 +948,7 @@ static void _reply_static(socketpool_socket_obj_t *socket, _request *request, co
         "Content-Length: ", encoded_len, "\r\n",
         "Content-Type: ", content_type, "\r\n",
         "\r\n", NULL);
-    _send_raw(socket, response, response_len);
+    web_workflow_send_raw(socket, response, response_len);
 }
 
 #define _REPLY_STATIC(socket, request, filename) _reply_static(socket, request, filename, filename##_length, filename##_content_type)
@@ -966,6 +976,16 @@ static void _reply_websocket_upgrade(socketpool_socket_obj_t *socket, _request *
     // socket is now closed and "disconnected".
 }
 
+static uint8_t _hex2nibble(char h) {
+    if ('0' <= h && h <= '9') {
+        return h - '0';
+    } else if ('A' <= h && h <= 'F') {
+        return h - 'A' + 0xa;
+    }
+    // Shouldn't usually use lower case.
+    return h - 'a' + 0xa;
+}
+
 static bool _reply(socketpool_socket_obj_t *socket, _request *request) {
     if (request->redirect) {
         _reply_redirect(socket, request, request->path);
@@ -983,6 +1003,26 @@ static bool _reply(socketpool_socket_obj_t *socket, _request *request) {
                 _reply_forbidden(socket, request);
             }
         } else {
+            // Decode any percent encoded bytes so that we're left with UTF-8.
+            // We only do this on /fs/ paths and after redirect so that any
+            // path echoing we do stays encoded.
+            size_t o = 0;
+            size_t i = 0;
+            while (i < strlen(request->path)) {
+                if (request->path[i] == '%') {
+                    request->path[o] = _hex2nibble(request->path[i + 1]) << 4 | _hex2nibble(request->path[i + 2]);
+                    i += 3;
+                } else {
+                    if (i != o) {
+                        request->path[o] = request->path[i];
+                    }
+                    i += 1;
+                }
+                o += 1;
+            }
+            if (o < i) {
+                request->path[o] = '\0';
+            }
             char *path = request->path + 3;
             size_t pathlen = strlen(path);
             FATFS *fs = filesystem_circuitpy();
@@ -1350,6 +1390,8 @@ void supervisor_web_workflow_background(void) {
         // Close the active socket if it is no longer connected.
         common_hal_socketpool_socket_close(&active);
     }
+
+    websocket_background();
 }
 
 void supervisor_stop_web_workflow(void) {

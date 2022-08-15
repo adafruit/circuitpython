@@ -76,8 +76,8 @@
 #include "shared-bindings/_bleio/__init__.h"
 #endif
 
-#if CIRCUITPY_IMAGECAPTURE
-#include "cam.h"
+#if CIRCUITPY_ESP32_CAMERA
+#include "esp_camera.h"
 #endif
 
 #ifndef CONFIG_IDF_TARGET_ESP32
@@ -338,14 +338,12 @@ safe_mode_t port_init(void) {
 }
 
 void reset_port(void) {
-    #if CIRCUITPY_IMAGECAPTURE
-    cam_deinit();
+    // TODO deinit for esp32-camera
+    #if CIRCUITPY_ESP32_CAMERA
+    esp_camera_deinit();
     #endif
 
     reset_all_pins();
-
-    // A larger delay so the idle task can run and do any IDF cleanup needed.
-    vTaskDelay(4);
 
     #if CIRCUITPY_ANALOGIO
     analogout_reset();
@@ -401,6 +399,9 @@ void reset_port(void) {
     #if CIRCUITPY_WATCHDOG
     watchdog_reset();
     #endif
+
+    // Yield so the idle task can run and do any IDF cleanup needed.
+    port_yield();
 }
 
 void reset_to_bootloader(void) {
@@ -489,6 +490,10 @@ void port_wake_main_task_from_isr() {
     if (xHigherPriorityTaskWoken == pdTRUE) {
         portYIELD_FROM_ISR();
     }
+}
+
+void port_yield() {
+    vTaskDelay(4);
 }
 
 void sleep_timer_cb(void *arg) {
