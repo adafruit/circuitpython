@@ -24,6 +24,7 @@
  * THE SOFTWARE.
  */
 
+#include <stdbool.h>
 #include <string.h>
 
 #include "py/gc.h"
@@ -120,6 +121,18 @@ static const uint8_t mouse_report_descriptor[] = {
     0xC0,              //   End Collection
     0xC0,              // End Collection
 };
+
+static inline bool bitset_is_set(const uint8_t *bitset, int index) {
+    return (bitset[index >> 3] & (1 << (index & 0x7))) != 0;
+}
+
+static inline void bitset_set(uint8_t *bitset, int index) {
+    bitset[index >> 3] |= (1 << (index & 0x7));
+}
+
+static inline void bitset_clear(uint8_t *bitset, int index) {
+    bitset[index >> 3] &= ~(1 << (index & 0x7));
+}
 
 const usb_hid_device_obj_t usb_hid_device_mouse_obj = {
     .base = {
@@ -246,6 +259,10 @@ void common_hal_usb_hid_device_send_report(usb_hid_device_obj_t *self, uint8_t *
 mp_obj_t common_hal_usb_hid_device_get_last_received_report(usb_hid_device_obj_t *self, uint8_t report_id) {
     // report_id has already been validated for this device.
     size_t id_idx = get_report_id_idx(self, report_id);
+    if (!bitset_is_set(self->out_report_buffers_updated, id_idx)) {
+        return mp_const_none;
+    }
+    bitset_clear(self->out_report_buffers_updated, id_idx);
     return mp_obj_new_bytes(self->out_report_buffers[id_idx], self->out_report_lengths[id_idx]);
 }
 
@@ -263,6 +280,7 @@ void usb_hid_device_create_report_buffers(usb_hid_device_obj_t *self) {
             ? gc_alloc(self->out_report_lengths[i], false, true /*long-lived*/)
             : NULL;
     }
+    memset(self->out_report_buffers_updated, 0, sizeof(self->out_report_buffers_updated));
 }
 
 
@@ -309,6 +327,7 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t rep
             hid_device->out_report_buffers[id_idx] &&
             hid_device->out_report_lengths[id_idx] >= bufsize) {
             memcpy(hid_device->out_report_buffers[id_idx], buffer, bufsize);
+            bitset_set(hid_device->out_report_buffers_updated, id_idx);
         }
     }
 }
