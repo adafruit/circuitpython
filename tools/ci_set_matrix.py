@@ -172,6 +172,15 @@ def set_docs_to_build(build_all):
         )
         for p in changed_files:
             if doc_pattern.search(p):
+                if (
+                        p.endswith(".c")
+                        and not subprocess.run(
+                            "git diff -U0 origin/" + os.environ.get("GITHUB_BASE_REF") + "...HEAD " + p + " | grep -o -m 1 '^[+-]\/\/|'",
+                            capture_output=True,
+                            shell=True,
+                        ).stdout
+                    ):
+                    continue
                 doc_match = True
                 break
 
