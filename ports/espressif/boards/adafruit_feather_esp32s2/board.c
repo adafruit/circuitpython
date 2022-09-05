@@ -54,4 +54,13 @@ void reset_board(void) {
 }
 
 void board_deinit(void) {
+    // Disable NEOPIXEL_POWER and I2C_POWER with a pull-down to reduce power during deep sleep.
+    gpio_config_t cfg = {
+        .pin_bit_mask = BIT64(7) | BIT64(21),
+        .mode = GPIO_MODE_DISABLE,
+        .pull_up_en = false,
+        .pull_down_en = true,
+        .intr_type = GPIO_INTR_DISABLE,
+    };
+    gpio_config(&cfg);
 }

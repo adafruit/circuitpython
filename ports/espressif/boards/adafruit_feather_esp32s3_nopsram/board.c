@@ -40,11 +40,23 @@ bool board_requests_safe_mode(void) {
 }
 
 void reset_board(void) {
-    // Turn on I2C power by default.
+    // Turn on I2C and NeoPixel power by default.
+
+    gpio_set_direction(2, GPIO_MODE_DEF_OUTPUT);
+    gpio_set_level(2, true);
 
     gpio_set_direction(7, GPIO_MODE_DEF_OUTPUT);
     gpio_set_level(7, true);
 }
 
 void board_deinit(void) {
+    // Disable I2C_POWER and NEOPIXEL_POWER with a pull-down to reduce power during deep sleep.
+    gpio_config_t cfg = {
+        .pin_bit_mask = BIT64(7) | BIT64(21),
+        .mode = GPIO_MODE_DISABLE,
+        .pull_up_en = false,
+        .pull_down_en = true,
+        .intr_type = GPIO_INTR_DISABLE,
+    };
+    gpio_config(&cfg);
 }
