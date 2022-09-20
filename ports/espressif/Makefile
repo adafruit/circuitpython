@@ -331,11 +331,13 @@ $(BUILD)/esp-idf:
 
 TARGET_SDKCONFIG = esp-idf-config/sdkconfig-$(IDF_TARGET).defaults
 
-UF2_BOOTLOADER ?= $(if $(filter $(IDF_TARGET),esp32s2 esp32s3),1)
-ifeq ($(UF2_BOOTLOADER), 1)
-	FLASH_SDKCONFIG = esp-idf-config/sdkconfig-$(CIRCUITPY_ESP_FLASH_SIZE).defaults
-else
+UF2_BOOTLOADER ?= $(if $(filter $(IDF_TARGET),esp32 esp32c3),0)
+ifeq ($(UF2_BOOTLOADER), 0)
 	FLASH_SDKCONFIG = esp-idf-config/sdkconfig-$(CIRCUITPY_ESP_FLASH_SIZE)-no-uf2.defaults
+else ifeq ($(CIRCUITPY_DUALBANK), 0)
+	FLASH_SDKCONFIG = esp-idf-config/sdkconfig-$(CIRCUITPY_ESP_FLASH_SIZE)-no-ota.defaults
+else
+	FLASH_SDKCONFIG = esp-idf-config/sdkconfig-$(CIRCUITPY_ESP_FLASH_SIZE).defaults
 endif
 
 ifeq ($(DEBUG), 1)
@@ -433,10 +435,10 @@ FLASH_FLAGS = --flash_mode $(CIRCUITPY_ESP_FLASH_MODE) --flash_freq $(CIRCUITPY_
 
 ESPTOOL_FLAGS ?= --before=default_reset --after=no_reset --baud 921600
 
-ifeq ($(UF2_BOOTLOADER),1)
-all: $(BUILD)/firmware.bin $(BUILD)/firmware.uf2
-else
+ifeq ($(UF2_BOOTLOADER),0)
 all: $(BUILD)/firmware.bin
+else
+all: $(BUILD)/firmware.bin $(BUILD)/firmware.uf2
 endif
 
 .PHONY: esp-idf-stamp
