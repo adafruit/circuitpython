@@ -44,6 +44,7 @@
 //| """
 //|
 //| import typing
+//|
 
 //| def uname() -> _Uname:
 //|     """Returns a named tuple of operating specific and CircuitPython port
@@ -87,7 +88,7 @@ MP_DEFINE_CONST_FUN_OBJ_0(os_getcwd_obj, os_getcwd);
 //| def getenv(key: str, default: Optional[str] = None) -> Optional[str]:
 //|     """Get the environment variable value for the given key or return ``default``.
 //|
-//|        This may load values from disk so cache the result instead of calling this often."""
+//|     This may load values from disk so cache the result instead of calling this often."""
 //|     ...
 //|
 STATIC mp_obj_t os_getenv(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
@@ -234,7 +235,10 @@ MP_DEFINE_CONST_FUN_OBJ_0(os_sync_obj, os_sync);
 
 //| def urandom(size: int) -> str:
 //|     """Returns a string of *size* random bytes based on a hardware True Random
-//|     Number Generator. When not available, it will raise a NotImplementedError."""
+//|     Number Generator. When not available, it will raise a NotImplementedError.
+//|
+//|     **Limitations:** Not yet available on nRF. Not available on SAMD21 due to lack of hardware.
+//|     """
 //|     ...
 //|
 STATIC mp_obj_t os_urandom(mp_obj_t size_in) {
@@ -246,6 +250,17 @@ STATIC mp_obj_t os_urandom(mp_obj_t size_in) {
     return result;
 }
 MP_DEFINE_CONST_FUN_OBJ_1(os_urandom_obj, os_urandom);
+
+//| def utime(path: str, times: Tuple[int, int]) -> None:
+//|     """Change the timestamp of a file."""
+//|     ...
+//|
+STATIC mp_obj_t os_utime(mp_obj_t path_in, mp_obj_t times_in) {
+    const char *path = mp_obj_str_get_str(path_in);
+    common_hal_os_utime(path, times_in);
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_2(os_utime_obj, os_utime);
 
 STATIC const mp_rom_map_elem_t os_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_os) },
@@ -263,15 +278,14 @@ STATIC const mp_rom_map_elem_t os_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_stat), MP_ROM_PTR(&os_stat_obj) },
     { MP_ROM_QSTR(MP_QSTR_statvfs), MP_ROM_PTR(&os_statvfs_obj) },
     { MP_ROM_QSTR(MP_QSTR_unlink), MP_ROM_PTR(&os_remove_obj) }, // unlink aliases to remove
+    { MP_ROM_QSTR(MP_QSTR_utime), MP_ROM_PTR(&os_utime_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_sync), MP_ROM_PTR(&os_sync_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_urandom), MP_ROM_PTR(&os_urandom_obj) },
 
-//|
 //| sep: str
 //| """Separator used to delineate path components such as folder and file names."""
-//|
     { MP_ROM_QSTR(MP_QSTR_sep), MP_ROM_QSTR(MP_QSTR__slash_) },
 };
 

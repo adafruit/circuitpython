@@ -39,9 +39,10 @@
 //|
 //|         :param microcontroller.Pin pin: The pin to monitor. On some ports, the choice of pin
 //|           may be limited due to hardware restrictions, particularly for deep-sleep alarms.
+//|
+//|         **Limitations:** Not available on SAMD, nRF, or RP2040.
 //|         """
 //|         ...
-//|
 STATIC mp_obj_t alarm_touch_touchalarm_make_new(const mp_obj_type_t *type,
     size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     alarm_touch_touchalarm_obj_t *self = m_new_obj(alarm_touch_touchalarm_obj_t);

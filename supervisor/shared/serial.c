@@ -28,6 +28,7 @@
 #include <string.h>
 
 #include "py/mpconfig.h"
+#include "py/mphal.h"
 
 #include "supervisor/shared/cpu.h"
 #include "supervisor/shared/display.h"
@@ -39,11 +40,6 @@
 
 #if CIRCUITPY_SERIAL_BLE
 #include "supervisor/shared/bluetooth/serial.h"
-#endif
-
-#if CIRCUITPY_STATUS_BAR
-#include "shared-bindings/supervisor/__init__.h"
-#include "shared-bindings/supervisor/StatusBar.h"
 #endif
 
 #if CIRCUITPY_USB
@@ -67,9 +63,22 @@ byte console_uart_rx_buf[64];
 #endif
 #endif
 
+#if CIRCUITPY_USB || CIRCUITPY_CONSOLE_UART
+// Flag to note whether this is the first write after connection.
+// Delay slightly on the first write to allow time for the host to set up things,
+// including turning off echo mode.
+static bool _first_write_done = false;
+#endif
+
 #if CIRCUITPY_USB_VENDOR
 bool tud_vendor_connected(void);
 #endif
+
+// Set to true to temporarily discard writes to the console only.
+static bool _serial_console_write_disabled;
+
+// Set to true to temporarily discard writes to the display terminal only.
+static bool _serial_display_write_disabled;
 
 #if CIRCUITPY_CONSOLE_UART
 STATIC void console_uart_print_strn(void *env, const char *str, size_t len) {
@@ -143,6 +152,10 @@ void serial_early_init(void) {
 }
 
 void serial_init(void) {
+    #if CIRCUITPY_USB || CIRCUITPY_CONSOLE_UART
+    _first_write_done = false;
+    #endif
+
     port_serial_init();
 }
 
@@ -284,18 +297,14 @@ void serial_write_substring(const char *text, uint32_t length) {
 
     #if CIRCUITPY_TERMINALIO
     int errcode;
-    // We might be writing
-    // If the status bar is disabled for the display, common_hal_terminalio_terminal_write() will not write it.
-    common_hal_terminalio_terminal_write(&supervisor_terminal, (const uint8_t *)text, length, &errcode);
-    #endif
-
-    #if CIRCUITPY_STATUS_BAR
-    // If the status bar is disabled for the console, skip writing out the OSC sequence.
-    if (supervisor_status_bar_get_update_in_progress(&shared_module_supervisor_status_bar_obj) &&
-        !shared_module_supervisor_status_bar_get_console(&shared_module_supervisor_status_bar_obj)) {
-        return;
+    if (!_serial_display_write_disabled) {
+        common_hal_terminalio_terminal_write(&supervisor_terminal, (const uint8_t *)text, length, &errcode);
     }
     #endif
+
+    if (_serial_console_write_disabled) {
+        return;
+    }
 
     #if CIRCUITPY_USB_VENDOR
     if (tud_vendor_connected()) {
@@ -304,8 +313,11 @@ void serial_write_substring(const char *text, uint32_t length) {
     #endif
 
     #if CIRCUITPY_CONSOLE_UART
+    if (!_first_write_done) {
+        mp_hal_delay_ms(50);
+        _first_write_done = true;
+    }
     int uart_errcode;
-
     common_hal_busio_uart_write(&console_uart, (const uint8_t *)text, length, &uart_errcode);
     #endif
 
@@ -324,14 +336,21 @@ void serial_write_substring(const char *text, uint32_t length) {
     #endif
 
     #if CIRCUITPY_USB
+    // Delay the very first write
+    if (tud_cdc_connected() && !_first_write_done) {
+        mp_hal_delay_ms(50);
+        _first_write_done = true;
+    }
     uint32_t count = 0;
-    while (count < length && tud_cdc_connected()) {
-        count += tud_cdc_write(text + count, length - count);
-        // If we're in an interrupt, then don't wait for more room. Queue up what we can.
-        if (cpu_interrupt_active()) {
-            break;
+    if (tud_cdc_connected()) {
+        while (count < length) {
+            count += tud_cdc_write(text + count, length - count);
+            // If we're in an interrupt, then don't wait for more room. Queue up what we can.
+            if (cpu_interrupt_active()) {
+                break;
+            }
+            usb_background();
         }
-        usb_background();
     }
     #endif
 
@@ -340,4 +359,16 @@ void serial_write_substring(const char *text, uint32_t length) {
 
 void serial_write(const char *text) {
     serial_write_substring(text, strlen(text));
+}
+
+bool serial_console_write_disable(bool disabled) {
+    bool now = _serial_console_write_disabled;
+    _serial_console_write_disabled = disabled;
+    return now;
+}
+
+bool serial_display_write_disable(bool disabled) {
+    bool now = _serial_display_write_disabled;
+    _serial_display_write_disabled = disabled;
+    return now;
 }

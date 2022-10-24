@@ -38,6 +38,10 @@
 
 #include "shared-bindings/microcontroller/__init__.h"
 
+#if CIRCUITPY_CYW43
+#include "bindings/cyw43/__init__.h"
+#endif
+
 #include "supervisor/port.h"
 #include "supervisor/shared/workflow.h"
 
@@ -194,12 +198,19 @@ mp_obj_t common_hal_alarm_light_sleep_until_alarms(size_t n_alarms, const mp_obj
     return wake_alarm;
 }
 
-void common_hal_alarm_set_deep_sleep_alarms(size_t n_alarms, const mp_obj_t *alarms) {
+void common_hal_alarm_set_deep_sleep_alarms(size_t n_alarms, const mp_obj_t *alarms, size_t n_dios, digitalio_digitalinout_obj_t **preserve_dios) {
+    if (n_dios > 0) {
+        mp_raise_NotImplementedError_varg(translate("%q"), MP_QSTR_preserve_dios);
+    }
     _setup_sleep_alarms(true, n_alarms, alarms);
 }
 
 void NORETURN common_hal_alarm_enter_deep_sleep(void) {
     bool timealarm_set = alarm_time_timealarm_is_set();
+
+    #if CIRCUITPY_CYW43
+    cyw43_enter_deep_sleep();
+    #endif
 
     // If there's a timealarm, just enter a very deep light sleep
     if (timealarm_set) {

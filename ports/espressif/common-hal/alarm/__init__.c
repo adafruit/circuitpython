@@ -35,9 +35,12 @@
 #include "shared-bindings/alarm/pin/PinAlarm.h"
 #include "shared-bindings/alarm/time/TimeAlarm.h"
 #include "shared-bindings/alarm/touch/TouchAlarm.h"
+#include "shared-bindings/alarm/coproc/CoprocAlarm.h"
 
 #include "shared-bindings/wifi/__init__.h"
 #include "shared-bindings/microcontroller/__init__.h"
+
+#include "common-hal/digitalio/DigitalInOut.h"
 
 #include "supervisor/port.h"
 #include "supervisor/shared/workflow.h"
@@ -45,6 +48,7 @@
 #include "esp_sleep.h"
 
 #include "soc/rtc_cntl_reg.h"
+#include "components/driver/include/driver/gpio.h"
 #include "components/driver/include/driver/uart.h"
 
 // Singleton instance of SleepMemory.
@@ -59,6 +63,7 @@ void alarm_reset(void) {
     alarm_pin_pinalarm_reset();
     alarm_time_timealarm_reset();
     alarm_touch_touchalarm_reset();
+    alarm_coproc_coprocalarm_reset();
     esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
 }
 
@@ -72,6 +77,9 @@ STATIC esp_sleep_wakeup_cause_t _get_wakeup_cause(void) {
     }
     if (alarm_touch_touchalarm_woke_this_cycle()) {
         return ESP_SLEEP_WAKEUP_TOUCHPAD;
+    }
+    if (alarm_coproc_coprocalarm_woke_this_cycle()) {
+        return ESP_SLEEP_WAKEUP_ULP;
     }
     // If waking from true deep sleep, modules will have lost their state,
     // so check the deep wakeup cause manually
@@ -101,6 +109,10 @@ mp_obj_t common_hal_alarm_create_wake_alarm(void) {
             return alarm_touch_touchalarm_create_wakeup_alarm();
         }
 
+        case ESP_SLEEP_WAKEUP_ULP: {
+            return alarm_coproc_coprocalarm_create_wakeup_alarm();
+        }
+
         case ESP_SLEEP_WAKEUP_UNDEFINED:
         default:
             // Not a deep sleep reset.
@@ -114,6 +126,7 @@ STATIC void _setup_sleep_alarms(bool deep_sleep, size_t n_alarms, const mp_obj_t
     alarm_pin_pinalarm_set_alarms(deep_sleep, n_alarms, alarms);
     alarm_time_timealarm_set_alarms(deep_sleep, n_alarms, alarms);
     alarm_touch_touchalarm_set_alarm(deep_sleep, n_alarms, alarms);
+    alarm_coproc_coprocalarm_set_alarm(deep_sleep, n_alarms, alarms);
 }
 
 mp_obj_t common_hal_alarm_light_sleep_until_alarms(size_t n_alarms, const mp_obj_t *alarms) {
@@ -140,6 +153,10 @@ mp_obj_t common_hal_alarm_light_sleep_until_alarms(size_t n_alarms, const mp_obj
                     wake_alarm = alarm_touch_touchalarm_find_triggered_alarm(n_alarms,alarms);
                     break;
                 }
+                case ESP_SLEEP_WAKEUP_ULP: {
+                    wake_alarm = alarm_coproc_coprocalarm_find_triggered_alarm(n_alarms,alarms);
+                    break;
+                }
                 default:
                     // Should not reach this, if all light sleep types are covered correctly
                     break;
@@ -158,13 +175,18 @@ mp_obj_t common_hal_alarm_light_sleep_until_alarms(size_t n_alarms, const mp_obj
     return wake_alarm;
 }
 
-void common_hal_alarm_set_deep_sleep_alarms(size_t n_alarms, const mp_obj_t *alarms) {
+void common_hal_alarm_set_deep_sleep_alarms(size_t n_alarms, const mp_obj_t *alarms, size_t n_dios, digitalio_digitalinout_obj_t *preserve_dios[]) {
+    digitalio_digitalinout_preserve_for_deep_sleep(n_dios, preserve_dios);
     _setup_sleep_alarms(true, n_alarms, alarms);
 }
 
 void NORETURN common_hal_alarm_enter_deep_sleep(void) {
     alarm_pin_pinalarm_prepare_for_deep_sleep();
     alarm_touch_touchalarm_prepare_for_deep_sleep();
+    alarm_coproc_coprocalarm_prepare_for_deep_sleep();
+
+    // We no longer need to remember the pin preservations, since any pin resets are all done.
+    clear_pin_preservations();
 
     // The ESP-IDF caches the deep sleep settings and applies them before sleep.
     // We don't need to worry about resetting them in the interim.

@@ -109,6 +109,9 @@ endif
 ifeq ($(CIRCUITPY_ALARM),1)
 SRC_PATTERNS += alarm/%
 endif
+ifeq ($(CIRCUITPY_ANALOGBUFIO),1)
+SRC_PATTERNS += analogbufio/%
+endif
 ifeq ($(CIRCUITPY_ANALOGIO),1)
 SRC_PATTERNS += analogio/%
 endif
@@ -164,8 +167,14 @@ endif
 ifeq ($(CIRCUITPY_CANIO),1)
 SRC_PATTERNS += canio/%
 endif
+ifeq ($(CIRCUITPY_COPROC),1)
+SRC_PATTERNS += coproc/%
+endif
 ifeq ($(CIRCUITPY_COUNTIO),1)
 SRC_PATTERNS += countio/%
+endif
+ifeq ($(CIRCUITPY_CYW43),1)
+SRC_PATTERNS += cyw43/%
 endif
 ifeq ($(CIRCUITPY_DIGITALIO),1)
 SRC_PATTERNS += digitalio/%
@@ -323,6 +332,9 @@ endif
 ifeq ($(CIRCUITPY_TERMINALIO),1)
 SRC_PATTERNS += terminalio/% fontio/%
 endif
+ifeq ($(CIRCUITPY_FONTIO),1)
+SRC_PATTERNS += fontio/%
+endif
 ifeq ($(CIRCUITPY_TIME),1)
 SRC_PATTERNS += time/%
 endif
@@ -388,6 +400,9 @@ SRC_COMMON_HAL_ALL = \
 	alarm/pin/PinAlarm.c \
 	alarm/time/TimeAlarm.c \
 	alarm/touch/TouchAlarm.c \
+	alarm/coproc/CoprocAlarm.c \
+	analogbufio/BufferedIn.c \
+	analogbufio/__init__.c \
 	analogio/AnalogIn.c \
 	analogio/AnalogOut.c \
 	analogio/__init__.c \
@@ -408,6 +423,9 @@ SRC_COMMON_HAL_ALL = \
 	canio/CAN.c \
 	canio/Listener.c \
 	canio/__init__.c \
+	coproc/__init__.c \
+	coproc/Coproc.c \
+	coproc/CoprocMemory.c \
 	countio/Counter.c \
 	countio/__init__.c \
 	digitalio/DigitalInOut.c \
@@ -477,7 +495,6 @@ SRC_C += \
 	common-hal/_bleio/hci.c \
 
 endif
-
 
 SRC_COMMON_HAL = $(filter $(SRC_PATTERNS), $(SRC_COMMON_HAL_ALL))
 

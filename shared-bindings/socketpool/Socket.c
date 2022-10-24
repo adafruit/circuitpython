@@ -37,32 +37,30 @@
 #include "py/mperrno.h"
 
 #include "shared/netutils/netutils.h"
+#include "shared/runtime/interrupt_char.h"
 
 //| class Socket:
 //|     """TCP, UDP and RAW socket. Cannot be created directly. Instead, call
-//|        `SocketPool.socket()`.
+//|     `SocketPool.socket()`.
 //|
-//|        Provides a subset of CPython's `socket.socket` API. It only implements the versions of
-//|        recv that do not allocate bytes objects."""
+//|     Provides a subset of CPython's `socket.socket` API. It only implements the versions of
+//|     recv that do not allocate bytes objects."""
 //|
 
 //|     def __hash__(self) -> int:
 //|         """Returns a hash for the Socket."""
 //|         ...
-//|
 // Provided by mp_generic_unary_op().
 
 //|     def __enter__(self) -> Socket:
 //|         """No-op used by Context Managers."""
 //|         ...
-//|
 //  Provided by context manager helper.
 
 //|     def __exit__(self) -> None:
 //|         """Automatically closes the Socket when exiting a context. See
 //|         :ref:`lifetime-and-contextmanagers` for more info."""
 //|         ...
-//|
 STATIC mp_obj_t socketpool_socket___exit__(size_t n_args, const mp_obj_t *args) {
     (void)n_args;
     common_hal_socketpool_socket_close(args[0]);
@@ -74,7 +72,6 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(socketpool_socket___exit___obj, 4, 4,
 //|         """Accept a connection on a listening socket of type SOCK_STREAM,
 //|         creating a new socket of type SOCK_STREAM.
 //|         Returns a tuple of (new_socket, remote_address)"""
-//|
 STATIC mp_obj_t _socketpool_socket_accept(mp_obj_t self_in) {
     socketpool_socket_obj_t *self = MP_OBJ_TO_PTR(self_in);
     uint8_t ip[4];
@@ -94,7 +91,6 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(socketpool_socket_accept_obj, _socketpool_socke
 //|
 //|         :param ~tuple address: tuple of (remote_address, remote_port)"""
 //|         ...
-//|
 STATIC mp_obj_t socketpool_socket_bind(mp_obj_t self_in, mp_obj_t addr_in) {
     socketpool_socket_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
@@ -119,7 +115,6 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(socketpool_socket_bind_obj, socketpool_socket_b
 
 //|     def close(self) -> None:
 //|         """Closes this Socket and makes its resources available to its SocketPool."""
-//|
 STATIC mp_obj_t _socketpool_socket_close(mp_obj_t self_in) {
     socketpool_socket_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_socketpool_socket_close(self);
@@ -132,7 +127,6 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(socketpool_socket_close_obj, _socketpool_socket
 //|
 //|         :param ~tuple address: tuple of (remote_address, remote_port)"""
 //|         ...
-//|
 STATIC mp_obj_t socketpool_socket_connect(mp_obj_t self_in, mp_obj_t addr_in) {
     socketpool_socket_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
@@ -157,7 +151,6 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(socketpool_socket_connect_obj, socketpool_socke
 //|
 //|         :param ~int backlog: length of backlog queue for waiting connections"""
 //|         ...
-//|
 STATIC mp_obj_t socketpool_socket_listen(mp_obj_t self_in, mp_obj_t backlog_in) {
     socketpool_socket_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
@@ -177,14 +170,13 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(socketpool_socket_listen_obj, socketpool_socket
 //|
 //|         :param object buffer: buffer to read into"""
 //|         ...
-//|
 STATIC mp_obj_t socketpool_socket_recvfrom_into(mp_obj_t self_in, mp_obj_t data_in) {
     socketpool_socket_obj_t *self = MP_OBJ_TO_PTR(self_in);
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(data_in, &bufinfo, MP_BUFFER_WRITE);
 
     byte ip[4];
-    mp_uint_t port;
+    uint32_t port;
     mp_int_t ret = common_hal_socketpool_socket_recvfrom_into(self,
         (byte *)bufinfo.buf, bufinfo.len, ip, &port);
     mp_obj_t tuple_contents[2];
@@ -207,7 +199,6 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(socketpool_socket_recvfrom_into_obj, socketpool
 //|         :param bytearray buffer: buffer to receive into
 //|         :param int bufsize: optionally, a maximum number of bytes to read."""
 //|         ...
-//|
 STATIC mp_obj_t _socketpool_socket_recv_into(size_t n_args, const mp_obj_t *args) {
     socketpool_socket_obj_t *self = MP_OBJ_TO_PTR(args[0]);
     if (common_hal_socketpool_socket_get_closed(self)) {
@@ -246,7 +237,6 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(socketpool_socket_recv_into_obj, 2, 3
 //|
 //|         :param ~bytes bytes: some bytes to send"""
 //|         ...
-//|
 STATIC mp_obj_t _socketpool_socket_send(mp_obj_t self_in, mp_obj_t buf_in) {
     socketpool_socket_obj_t *self = MP_OBJ_TO_PTR(self_in);
     if (common_hal_socketpool_socket_get_closed(self)) {
@@ -266,6 +256,46 @@ STATIC mp_obj_t _socketpool_socket_send(mp_obj_t self_in, mp_obj_t buf_in) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(socketpool_socket_send_obj, _socketpool_socket_send);
 
+//|     def sendall(self, bytes: ReadableBuffer) -> None:
+//|         """Send some bytes to the connected remote address.
+//|         Suits sockets of type SOCK_STREAM
+//|
+//|         This calls send() repeatedly until all the data is sent or an error
+//|         occurs. If an error occurs, it's impossible to tell how much data
+//|         has been sent.
+//|
+//|         :param ~bytes bytes: some bytes to send"""
+//|         ...
+STATIC mp_obj_t _socketpool_socket_sendall(mp_obj_t self_in, mp_obj_t buf_in) {
+    socketpool_socket_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    if (common_hal_socketpool_socket_get_closed(self)) {
+        // Bad file number.
+        mp_raise_OSError(MP_EBADF);
+    }
+    if (!common_hal_socketpool_socket_get_connected(self)) {
+        mp_raise_BrokenPipeError();
+    }
+    mp_buffer_info_t bufinfo;
+    mp_get_buffer_raise(buf_in, &bufinfo, MP_BUFFER_READ);
+    while (bufinfo.len > 0) {
+        mp_int_t ret = common_hal_socketpool_socket_send(self, bufinfo.buf, bufinfo.len);
+        if (ret == -1) {
+            mp_raise_BrokenPipeError();
+        }
+        bufinfo.len -= ret;
+        bufinfo.buf += ret;
+        if (bufinfo.len > 0) {
+            RUN_BACKGROUND_TASKS;
+            // Allow user to break out of sendall with a KeyboardInterrupt.
+            if (mp_hal_is_interrupted()) {
+                return 0;
+            }
+        }
+    }
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(socketpool_socket_sendall_obj, _socketpool_socket_sendall);
+
 //|     def sendto(self, bytes: ReadableBuffer, address: Tuple[str, int]) -> int:
 //|         """Send some bytes to a specific address.
 //|         Suits sockets of type SOCK_DGRAM
@@ -273,7 +303,6 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(socketpool_socket_send_obj, _socketpool_socket_
 //|         :param ~bytes bytes: some bytes to send
 //|         :param ~tuple address: tuple of (remote_address, remote_port)"""
 //|         ...
-//|
 STATIC mp_obj_t socketpool_socket_sendto(mp_obj_t self_in, mp_obj_t data_in, mp_obj_t addr_in) {
     socketpool_socket_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
@@ -302,7 +331,6 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_3(socketpool_socket_sendto_obj, socketpool_socket
 //|
 //|         :param ~bool flag: False means non-blocking, True means block indefinitely."""
 //|         ...
-//|
 // method socket.setblocking(flag)
 STATIC mp_obj_t socketpool_socket_setblocking(mp_obj_t self_in, mp_obj_t blocking) {
     socketpool_socket_obj_t *self = MP_OBJ_TO_PTR(self_in);
@@ -385,6 +413,7 @@ STATIC const mp_rom_map_elem_t socketpool_socket_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_recvfrom_into), MP_ROM_PTR(&socketpool_socket_recvfrom_into_obj) },
     { MP_ROM_QSTR(MP_QSTR_recv_into), MP_ROM_PTR(&socketpool_socket_recv_into_obj) },
     { MP_ROM_QSTR(MP_QSTR_send), MP_ROM_PTR(&socketpool_socket_send_obj) },
+    { MP_ROM_QSTR(MP_QSTR_sendall), MP_ROM_PTR(&socketpool_socket_sendall_obj) },
     { MP_ROM_QSTR(MP_QSTR_sendto), MP_ROM_PTR(&socketpool_socket_sendto_obj) },
     { MP_ROM_QSTR(MP_QSTR_setblocking), MP_ROM_PTR(&socketpool_socket_setblocking_obj) },
     // { MP_ROM_QSTR(MP_QSTR_setsockopt), MP_ROM_PTR(&socketpool_socket_setsockopt_obj) },

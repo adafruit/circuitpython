@@ -27,6 +27,7 @@ import pathlib
 import re
 import subprocess
 import sys
+import functools
 
 from concurrent.futures import ThreadPoolExecutor
 
@@ -56,12 +57,22 @@ ALIASES_BRAND_NAMES = {
 }
 
 ADDITIONAL_MODULES = {
-    "fontio": "CIRCUITPY_DISPLAYIO",
-    "terminalio": "CIRCUITPY_DISPLAYIO",
+    "_asyncio": "MICROPY_PY_UASYNCIO",
     "adafruit_bus_device": "CIRCUITPY_BUSDEVICE",
     "adafruit_pixelbuf": "CIRCUITPY_PIXELBUF",
+    "array": "CIRCUITPY_ARRAY",
+    # always available, so depend on something that's always 1.
+    "builtins": "CIRCUITPY",
+    "collections": "CIRCUITPY_COLLECTIONS",
+    "fontio": "CIRCUITPY_DISPLAYIO",
+    "io": "CIRCUITPY_IO",
+    "select": "MICROPY_PY_USELECT_SELECT",
+    "terminalio": "CIRCUITPY_DISPLAYIO",
+    "sys": "CIRCUITPY_SYS",
     "usb": "CIRCUITPY_USB_HOST",
 }
+
+MODULES_NOT_IN_SHARED_BINDINGS = ["_asyncio", "array", "binascii", "builtins", "collections", "errno", "json", "re", "select", "sys", "ulab"]
 
 FROZEN_EXCLUDES = ["examples", "docs", "tests", "utils", "conf.py", "setup.py"]
 """Files and dirs at the root of a frozen directory that should be ignored.
@@ -70,19 +81,18 @@ This is the same list as in the preprocess_frozen_modules script."""
 repository_urls = {}
 """Cache of repository URLs for frozen modules."""
 
+root_dir = pathlib.Path(__file__).resolve().parent.parent
+
 def get_circuitpython_root_dir():
     """ The path to the root './circuitpython' directory.
     """
-    file_path = pathlib.Path(__file__).resolve()
-    root_dir = file_path.parent.parent
-
     return root_dir
 
 def get_shared_bindings():
     """ Get a list of modules in shared-bindings based on folder names.
     """
     shared_bindings_dir = get_circuitpython_root_dir() / "shared-bindings"
-    return [item.name for item in shared_bindings_dir.iterdir()] + ["binascii", "errno", "json", "re", "ulab"]
+    return [item.name for item in shared_bindings_dir.iterdir()] + MODULES_NOT_IN_SHARED_BINDINGS
 
 
 def get_board_mapping():
@@ -92,7 +102,7 @@ def get_board_mapping():
     """
     boards = {}
     for port in SUPPORTED_PORTS:
-        board_path = os.path.join("../ports", port, "boards")
+        board_path = root_dir / "ports" / port / "boards"
         for board_path in os.scandir(board_path):
             if board_path.is_dir():
                 board_files = os.listdir(board_path.path)
@@ -266,6 +276,7 @@ def lookup_setting(settings, key, default=''):
         key = value[2:-1]
     return value
 
+@functools.cache
 def all_ports_all_boards(ports=SUPPORTED_PORTS):
     for port in ports:
 

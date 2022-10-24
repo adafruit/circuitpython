@@ -48,7 +48,7 @@
 #define NO_DMA_CHANNEL (-1)
 
 // Count how many state machines are using each pin.
-STATIC uint8_t _pin_reference_count[TOTAL_GPIO_COUNT];
+STATIC uint8_t _pin_reference_count[NUM_BANK0_GPIOS];
 STATIC uint32_t _current_program_id[NUM_PIOS][NUM_PIO_STATE_MACHINES];
 STATIC uint8_t _current_program_offset[NUM_PIOS][NUM_PIO_STATE_MACHINES];
 STATIC uint8_t _current_program_len[NUM_PIOS][NUM_PIO_STATE_MACHINES];
@@ -71,7 +71,7 @@ STATIC void *_interrupt_arg[NUM_PIOS][NUM_PIO_STATE_MACHINES];
 STATIC void rp2pio_statemachine_interrupt_handler(void);
 
 static void rp2pio_statemachine_set_pull(uint32_t pull_pin_up, uint32_t pull_pin_down, uint32_t pins_we_use) {
-    for (int i = 0; i < TOTAL_GPIO_COUNT; i++) {
+    for (size_t i = 0; i < NUM_BANK0_GPIOS; i++) {
         bool used = pins_we_use & (1 << i);
         if (used) {
             bool pull_up = pull_pin_up & (1 << i);
@@ -120,7 +120,7 @@ STATIC void _reset_statemachine(PIO pio, uint8_t sm, bool leave_pins) {
     }
 
     uint32_t pins = _current_sm_pins[pio_index][sm];
-    for (size_t pin_number = 0; pin_number < TOTAL_GPIO_COUNT; pin_number++) {
+    for (size_t pin_number = 0; pin_number < NUM_BANK0_GPIOS; pin_number++) {
         if ((pins & (1 << pin_number)) == 0) {
             continue;
         }
@@ -161,10 +161,14 @@ STATIC uint32_t _check_pins_free(const mcu_pin_obj_t *first_pin, uint8_t pin_cou
     if (first_pin != NULL) {
         for (size_t i = 0; i < pin_count; i++) {
             uint8_t pin_number = first_pin->number + i;
-            if (pin_number >= TOTAL_GPIO_COUNT) {
+            if (pin_number >= NUM_BANK0_GPIOS) {
                 mp_raise_ValueError(translate("Pin count too large"));
             }
-            const mcu_pin_obj_t *pin = mcu_pin_global_dict_table[pin_number].value;
+            const mcu_pin_obj_t *pin = mcu_get_pin_by_number(pin_number);
+            if (!pin) {
+                mp_raise_ValueError_varg(translate("%q in use"), MP_QSTR_Pin);
+            }
+
             if (exclusive_pin_use || _pin_reference_count[pin_number] == 0) {
                 assert_pin_free(pin);
             }
@@ -231,7 +235,7 @@ bool rp2pio_statemachine_construct(rp2pio_statemachine_obj_t *self,
         program_offset = 32;
     }
 
-    int state_machine = -1;
+    size_t state_machine = NUM_PIO_STATE_MACHINES;
     if (pio_index < NUM_PIOS) {
         PIO pio = pio_instances[pio_index];
         for (size_t i = 0; i < NUM_PIOS; i++) {
@@ -269,12 +273,15 @@ bool rp2pio_statemachine_construct(rp2pio_statemachine_obj_t *self,
     self->pull_pin_up = pull_pin_up;
     self->pull_pin_down = pull_pin_down;
 
-    for (size_t pin_number = 0; pin_number < TOTAL_GPIO_COUNT; pin_number++) {
+    for (size_t pin_number = 0; pin_number < NUM_BANK0_GPIOS; pin_number++) {
         if ((pins_we_use & (1 << pin_number)) == 0) {
             continue;
         }
+        const mcu_pin_obj_t *pin = mcu_get_pin_by_number(pin_number);
+        if (!pin) {
+            return false;
+        }
         _pin_reference_count[pin_number]++;
-        const mcu_pin_obj_t *pin = mcu_pin_global_dict_table[pin_number].value;
         // Also claim the pin at the top level when we're the first to grab it.
         if (_pin_reference_count[pin_number] == 1) {
             if (claim_pins) {
@@ -871,7 +878,7 @@ bool common_hal_rp2pio_statemachine_get_txstall(rp2pio_statemachine_obj_t *self)
 }
 
 void common_hal_rp2pio_statemachine_clear_txstall(rp2pio_statemachine_obj_t *self) {
-    uint8_t level = pio_sm_get_rx_fifo_level(self->pio, self->state_machine);
+    (void)pio_sm_get_rx_fifo_level(self->pio, self->state_machine);
     uint32_t stall_mask = 1 << (PIO_FDEBUG_TXSTALL_LSB + self->state_machine);
     self->pio->fdebug = stall_mask;
 }

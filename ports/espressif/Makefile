@@ -135,6 +135,8 @@ INC += \
 	-isystem esp-idf/components/soc/include \
 	-isystem esp-idf/components/soc/$(IDF_TARGET)/include \
 	-isystem esp-idf/components/spi_flash/include \
+	-isystem esp-idf/components/ulp/include \
+	-isystem esp-idf/components/ulp/ulp_riscv/include \
 	-isystem esp-idf/components/$(IDF_TARGET_ARCH)/include \
 	-isystem esp-idf/components/$(IDF_TARGET_ARCH)/$(IDF_TARGET)/include
 
@@ -161,12 +163,9 @@ ifeq ($(DEBUG), 1)
   # CFLAGS += -fno-inline -fno-ipa-sra
 else
   CFLAGS += -DNDEBUG -ggdb3
-	ifeq ($(IDF_TARGET_ARCH),xtensa)
-	  OPTIMIZATION_FLAGS ?= -O2
-	else
-		# RISC-V is larger than xtensa so do -Os for it
-	  OPTIMIZATION_FLAGS ?= -Os
-	endif
+  OPTIMIZATION_FLAGS ?= -O2
+  # RISC-V is larger than xtensa
+  # Use -Os for RISC-V when it overflows
 endif
 
 # option to override compiler optimization level, set in boards/$(BOARD)/mpconfigboard.mk
@@ -176,6 +175,8 @@ CFLAGS += $(INC) -Werror -Wall -std=gnu11 -Wl,--gc-sections $(BASE_CFLAGS) $(C_D
 
 ifeq ($(IDF_TARGET_ARCH),xtensa)
 CFLAGS += -mlongcalls
+else ifeq ($(IDF_TARGET_ARCH),riscv)
+CFLAGS += -march=rv32imc
 endif
 
 LDFLAGS = $(CFLAGS) -Wl,-nostdlib -Wl,-Map=$@.map -Wl,-cref -Wl,--undefined=uxTopUsedPriority
@@ -226,8 +227,12 @@ endif
 
 # TinyUSB defines
 ifeq ($(CIRCUITPY_USB),1)
+ifeq ($(IDF_TARGET),esp32s2)
+CFLAGS += -DCFG_TUSB_MCU=OPT_MCU_ESP32S2
+else ifeq ($(IDF_TARGET),esp32s3)
+CFLAGS += -DCFG_TUSB_MCU=OPT_MCU_ESP32S3
+endif
 CFLAGS += \
-	-DCFG_TUSB_MCU=OPT_MCU_ESP32S2 \
 	-DCFG_TUSB_OS=OPT_OS_FREERTOS \
 	-DCFG_TUD_CDC_RX_BUFSIZE=1024 \
 	-DCFG_TUD_CDC_TX_BUFSIZE=1024 \
@@ -235,7 +240,8 @@ CFLAGS += \
 	-DCFG_TUD_MIDI_RX_BUFSIZE=128 \
 	-DCFG_TUD_MIDI_TX_BUFSIZE=128 \
 	-DCFG_TUD_VENDOR_RX_BUFSIZE=128 \
-	-DCFG_TUD_VENDOR_TX_BUFSIZE=128
+	-DCFG_TUD_VENDOR_TX_BUFSIZE=128 \
+	-DCFG_TUD_TASK_QUEUE_SZ=32
 endif
 
 ######################################
@@ -331,11 +337,15 @@ $(BUILD)/esp-idf:
 
 TARGET_SDKCONFIG = esp-idf-config/sdkconfig-$(IDF_TARGET).defaults
 
-UF2_BOOTLOADER ?= $(if $(filter $(IDF_TARGET),esp32s2 esp32s3),1)
+ifeq ($(CIRCUITPY_ESP_FLASH_SIZE), 2MB)
+	FLASH_SDKCONFIG = esp-idf-config/sdkconfig-$(CIRCUITPY_ESP_FLASH_SIZE)-no-ota-no-uf2.defaults
+else
+UF2_BOOTLOADER ?= $(CIRCUITPY_USB)
 ifeq ($(UF2_BOOTLOADER), 1)
 	FLASH_SDKCONFIG = esp-idf-config/sdkconfig-$(CIRCUITPY_ESP_FLASH_SIZE).defaults
 else
 	FLASH_SDKCONFIG = esp-idf-config/sdkconfig-$(CIRCUITPY_ESP_FLASH_SIZE)-no-uf2.defaults
+endif
 endif
 
 ifeq ($(DEBUG), 1)
@@ -389,6 +399,9 @@ ifneq ($(CIRCUITPY_BLEIO),0)
 	ESP_IDF_COMPONENTS_LINK += bt
 	BINARY_BLOBS += esp-idf/components/esp_phy/lib/$(IDF_TARGET)/libbtbb.a \
 	                esp-idf/components/bt/controller/lib_esp32c3_family/$(IDF_TARGET)/libbtdm_app.a
+endif
+ifneq ($(CIRCUITPY_COPROC),0)
+	ESP_IDF_COMPONENTS_LINK += ulp
 endif
 
 ESP_IDF_COMPONENTS_EXPANDED = $(foreach component, $(ESP_IDF_COMPONENTS_LINK), $(BUILD)/esp-idf/esp-idf/$(component)/lib$(component).a)
