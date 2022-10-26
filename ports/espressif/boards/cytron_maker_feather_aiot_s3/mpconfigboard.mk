@@ -5,8 +5,6 @@ USB_MANUFACTURER = "Cytron"
 
 IDF_TARGET = esp32s3
 
-CIRCUITPY_ESP_FLASH_MODE = dio
-CIRCUITPY_ESP_FLASH_FREQ = 80m
 CIRCUITPY_ESP_FLASH_SIZE = 8MB
 
 # Include these Python libraries in firmware.

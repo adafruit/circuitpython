@@ -442,8 +442,6 @@ FIRMWARE_OFFSET = 0x10000
 
 ESP_AUTOGEN_LD = $(BUILD)/esp-idf/esp-idf/$(IDF_TARGET)/$(IDF_TARGET)_out.ld $(BUILD)/esp-idf/esp-idf/$(IDF_TARGET)/ld/$(IDF_TARGET).project.ld
 
-FLASH_FLAGS = --flash_mode $(CIRCUITPY_ESP_FLASH_MODE) --flash_freq $(CIRCUITPY_ESP_FLASH_FREQ) --flash_size $(CIRCUITPY_ESP_FLASH_SIZE)
-
 ESPTOOL_FLAGS ?= --before=default_reset --after=no_reset --baud 921600
 
 ifeq ($(UF2_BOOTLOADER),1)
@@ -462,7 +460,7 @@ $(BUILD)/firmware.elf: $(OBJ) | esp-idf-stamp
 
 $(BUILD)/circuitpython-firmware.bin: $(BUILD)/firmware.elf | tools/build_memory_info.py
 	$(STEPECHO) "Create $@"
-	$(Q)esptool.py --chip $(IDF_TARGET) elf2image $(FLASH_FLAGS) --elf-sha256-offset 0xb0 -o $@ $^
+	$(Q)esptool.py --chip $(IDF_TARGET) elf2image --elf-sha256-offset 0xb0 -o $@ $^
 	$(Q)$(PYTHON) tools/build_memory_info.py $< $(BUILD)/esp-idf/sdkconfig $@
 
 $(BUILD)/firmware.bin: $(BUILD)/circuitpython-firmware.bin | esp-idf-stamp
@@ -476,10 +474,10 @@ $(BUILD)/firmware.uf2: $(BUILD)/circuitpython-firmware.bin
 	$(Q)$(PYTHON) $(TOP)/tools/uf2/utils/uf2conv.py -f $(UF2_FAMILY_ID_$(IDF_TARGET)) -b 0x0000 -c -o $@ $^
 
 flash: $(BUILD)/firmware.bin
-	esptool.py --chip $(IDF_TARGET) -p $(PORT) $(ESPTOOL_FLAGS) write_flash $(FLASH_FLAGS) 0x0000 $^
+	esptool.py --chip $(IDF_TARGET) -p $(PORT) $(ESPTOOL_FLAGS) write_flash 0x0000 $^
 
 flash-circuitpython-only: $(BUILD)/circuitpython-firmware.bin
-	esptool.py --chip $(IDF_TARGET) -p $(PORT) $(ESPTOOL_FLAGS) write_flash $(FLASH_FLAGS) $(FIRMWARE_OFFSET) $^
+	esptool.py --chip $(IDF_TARGET) -p $(PORT) $(ESPTOOL_FLAGS) write_flash $(FIRMWARE_OFFSET) $^
 
 monitor: $(BUILD)/firmware.elf
 	cp $< build/circuitpython.elf

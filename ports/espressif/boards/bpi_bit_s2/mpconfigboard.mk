@@ -5,8 +5,6 @@ USB_MANUFACTURER = "BananaPi"
 
 IDF_TARGET = esp32s2
 
-CIRCUITPY_ESP_FLASH_MODE=dio
-CIRCUITPY_ESP_FLASH_FREQ=40m
 CIRCUITPY_ESP_FLASH_SIZE=4MB
 
 # Include these Python libraries in firmware.

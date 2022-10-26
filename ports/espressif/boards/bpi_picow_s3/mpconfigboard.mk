@@ -12,8 +12,6 @@ LONGINT_IMPL = MPZ
 # so increase it to 32.
 CFLAGS += -DCFG_TUD_TASK_QUEUE_SZ=32
 
-CIRCUITPY_ESP_FLASH_MODE = dio
-CIRCUITPY_ESP_FLASH_FREQ = 80m
 CIRCUITPY_ESP_FLASH_SIZE = 8MB
 
 # Include these Python libraries in firmware.
