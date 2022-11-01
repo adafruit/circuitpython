@@ -84,6 +84,10 @@ help:
 	@echo "  pseudoxml  to make pseudoxml-XML files for display purposes"
 	@echo "  linkcheck  to check all external links for integrity"
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
+	@# WIP
+	@# @echo "  platform-deps  to install platform-specific dependencies"
+
+-include mk/platform-$(shell uname -s | tr ' ' -).mk
 
 clean:
 	rm -rf $(BUILDDIR)/*
@@ -330,3 +334,10 @@ fetch-submodules:
 	# (Only works for git servers that allow sha fetches.)
 	git submodule update --init -N --depth 1 || true
 	git submodule foreach 'git fetch --tags --depth 1 origin $$sha1 && git checkout -q $$sha1'
+
+install-deps::
+	@echo "Installing platform dependencies"
+	pre-commit install
+
+check-deps::
+	# For checking dependencies for platforms
