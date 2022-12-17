@@ -1,7 +1,7 @@
 USB_VID = 0x0483
 USB_PID = 0x2302
 USB_PRODUCT = "stm32f411ce Iskra JS mini"
-USB_MANUFACTURER = "STMicroelectronics
+USB_MANUFACTURER = "STMicroelectronics"
 
 # SPI_FLASH_FILESYSTEM = 1
 # EXTERNAL_FLASH_DEVICES = xxxxxx #See supervisor/shared/external_flash/devices.h for options
