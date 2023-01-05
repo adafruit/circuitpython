@@ -412,14 +412,14 @@ jobs:
         path: ${{ github.workspace }}/.idf_tools
         key: ${{ runner.os }}-idf-tools-${{ hashFiles('.git/modules/ports/espressif/esp-idf/HEAD') }}-${{ steps.py3.outputs.python-path }}-20220404
     - name: Clone IDF submodules
-      run: |
-        (cd $IDF_PATH && git submodule update --init)
+      run: git submodule update --init $IDF_PATH
       env:
         IDF_PATH: ${{ github.workspace }}/ports/espressif/esp-idf
     - name: Install IDF tools
       run: |
-        $IDF_PATH/tools/idf_tools.py --non-interactive install required
-        $IDF_PATH/tools/idf_tools.py --non-interactive install cmake
+        echo "Installing ESP-IDF tools"
+        $IDF_PATH/tools/idf_tools.py --non-interactive install
+        echo "Installing Python environment and packages"
         $IDF_PATH/tools/idf_tools.py --non-interactive install-python-env
         rm -rf $IDF_TOOLS_PATH/dist
       env:
@@ -437,7 +437,6 @@ jobs:
       run: |
         source $IDF_PATH/export.sh
         gcc --version
-        xtensa-esp32s2-elf-gcc --version
         python3 --version
         ninja --version
         cmake --version
