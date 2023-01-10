@@ -173,6 +173,9 @@ endif
 ifeq ($(CIRCUITPY_CYW43),1)
 SRC_PATTERNS += cyw43/%
 endif
+ifeq ($(CIRCUITPY_TCA9555R),1)
+SRC_PATTERNS += tca9555r/%
+endif
 ifeq ($(CIRCUITPY_DIGITALIO),1)
 SRC_PATTERNS += digitalio/%
 endif

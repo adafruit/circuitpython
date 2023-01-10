@@ -43,6 +43,17 @@ void reset_pin_number_cyw(uint8_t pin_no) {
 }
 #endif
 
+#if CIRCUITPY_TCA9555R
+#include "bindings/tca9555r/__init__.h"
+
+bool tca_ever_init;
+static uint32_t tca_pin_claimed;
+
+void reset_pin_number_tca(uint8_t pin_no) {
+    tca_pin_claimed &= ~(1 << pin_no);
+}
+#endif
+
 STATIC uint32_t never_reset_pins;
 
 void reset_all_pins(void) {
@@ -60,6 +71,16 @@ void reset_all_pins(void) {
         cyw43_arch_gpio_put(1, 0);
     }
     cyw_pin_claimed = 0;
+    #endif
+    #if CIRCUITPY_TCA9555R
+    if (tca_ever_init) {
+        // reset LED and SMPS_MODE to Low; don't touch VBUS_SENSE
+        // otherwise it is switched to output mode forever!
+        // tca9555r_gpio_put(0, 0);
+        // tca9555r_gpio_put(1, 0);
+        // TODO This is where we would turn off the main output of Yukon
+    }
+    tca_pin_claimed = 0;
     #endif
 }
 
@@ -98,6 +119,12 @@ void common_hal_reset_pin(const mcu_pin_obj_t *pin) {
         return;
     }
     #endif
+    #if CIRCUITPY_TCA9555R
+    if (pin->base.type == &tca_pin_type) {
+        reset_pin_number_tca(pin->number);
+        return;
+    }
+    #endif
     reset_pin_number(pin->number);
 }
 
@@ -105,6 +132,11 @@ void claim_pin(const mcu_pin_obj_t *pin) {
     #if CIRCUITPY_CYW43
     if (pin->base.type == &cyw43_pin_type) {
         cyw_pin_claimed |= (1 << pin->number);
+    }
+    #endif
+    #if CIRCUITPY_TCA9555R
+    if (pin->base.type == &tca_pin_type) {
+        tca_pin_claimed |= (1 << pin->number);
     }
     #endif
     // Nothing to do because all changes will set the GPIO settings.
@@ -124,6 +156,11 @@ bool common_hal_mcu_pin_is_free(const mcu_pin_obj_t *pin) {
     #if CIRCUITPY_CYW43
     if (pin->base.type == &cyw43_pin_type) {
         return !(cyw_pin_claimed & (1 << pin->number));
+    }
+    #endif
+    #if CIRCUITPY_TCA9555R
+    if (pin->base.type == &tca_pin_type) {
+        return !(tca_pin_claimed & (1 << pin->number));
     }
     #endif
     return pin_number_is_free(pin->number);

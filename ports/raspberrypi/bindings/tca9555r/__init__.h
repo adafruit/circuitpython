@@ -3,7 +3,8 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
+ * Copyright (c) 2022 Jeff Epler for Adafruit Industries
+ * Copyright (c) 2016 Scott Shawcroft
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,31 +25,11 @@
  * THE SOFTWARE.
  */
 
-#ifndef MICROPY_INCLUDED_RASPBERRYPI_COMMON_HAL_MICROCONTROLLER_PIN_H
-#define MICROPY_INCLUDED_RASPBERRYPI_COMMON_HAL_MICROCONTROLLER_PIN_H
+#pragma once
 
-#include <assert.h>
-#include <stdint.h>
+#include "py/obj.h"
+#include "common-hal/microcontroller/Pin.h"
 
-#include <py/obj.h>
-
-#include "peripherals/pins.h"
-
-void reset_all_pins(void);
-// reset_pin_number takes the pin number instead of the pointer so that objects don't
-// need to store a full pointer.
-void reset_pin_number(uint8_t pin_number);
-void never_reset_pin_number(uint8_t pin_number);
-void claim_pin(const mcu_pin_obj_t *pin);
-bool pin_number_is_free(uint8_t pin_number);
-
-#if CIRCUITPY_CYW43
-extern bool cyw_ever_init;
-void reset_pin_number_cyw(uint8_t pin_number);
-#endif
-#if CIRCUITPY_TCA9555R
-extern bool tca_ever_init;
-void reset_pin_number_tca(uint8_t pin_number);
-#endif
-
-#endif // MICROPY_INCLUDED_RASPBERRYPI_COMMON_HAL_MICROCONTROLLER_PIN_H
+extern const mp_obj_type_t tca_pin_type;
+const mcu_pin_obj_t *validate_obj_is_free_pin_including_tca(mp_obj_t obj);
+const mcu_pin_obj_t *validate_obj_is_pin_including_tca(mp_obj_t obj);

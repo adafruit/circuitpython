@@ -93,6 +93,13 @@ OBJ_CYW43 :=
 SRC_LWIP :=
 endif
 
+ifeq ($(CIRCUITPY_TCA9555R),1)
+SRC_TCA9555R := \
+	$(wildcard bindings/tca9555r/*.c)
+else
+SRC_TCA9555R :=
+endif
+
 INC += \
         -I. \
         -Ilwip_inc \
@@ -233,7 +240,7 @@ SRC_SDK := \
 	$(SRC_SDK_CYW43) \
 
 SRC_SDK := $(addprefix sdk/, $(SRC_SDK))
-$(patsubst %.c,$(BUILD)/%.o,$(SRC_SDK) $(SRC_CYW43)): CFLAGS += -Wno-missing-prototypes -Wno-undef -Wno-unused-function -Wno-nested-externs -Wno-strict-prototypes -Wno-double-promotion -Wno-sign-compare -Wno-unused-variable -Wno-strict-overflow
+$(patsubst %.c,$(BUILD)/%.o,$(SRC_SDK) $(SRC_CYW43) $(SRC_TCA9555R)): CFLAGS += -Wno-missing-prototypes -Wno-undef -Wno-unused-function -Wno-nested-externs -Wno-strict-prototypes -Wno-double-promotion -Wno-sign-compare -Wno-unused-variable -Wno-strict-overflow
 
 SRC_C += \
 	boards/$(BOARD)/board.c \
@@ -250,6 +257,7 @@ SRC_C += \
 	lib/tinyusb/src/portable/raspberrypi/rp2040/rp2040_usb.c \
 	mphalport.c \
 	$(SRC_CYW43) \
+  $(SRC_TCA9555R) \
 	$(SRC_LWIP) \
 
 ifeq ($(CIRCUITPY_SSL),1)

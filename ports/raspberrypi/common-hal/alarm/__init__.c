@@ -41,6 +41,9 @@
 #if CIRCUITPY_CYW43
 #include "bindings/cyw43/__init__.h"
 #endif
+#if CIRCUITPY_TCA9555R
+#include "bindings/tca9555r/__init__.h"
+#endif
 
 #include "supervisor/port.h"
 #include "supervisor/shared/workflow.h"
