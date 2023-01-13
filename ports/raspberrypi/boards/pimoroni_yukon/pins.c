@@ -10,7 +10,7 @@ STATIC const qstr board_slot_fields[] = {
     MP_QSTR_SLOW2,
     MP_QSTR_SLOW3,
     MP_QSTR_ADC1_ADDR,
-    MP_QSTR_ADC2_ADDR
+    MP_QSTR_ADC2_TEMP_ADDR
 };
 
 STATIC MP_DEFINE_ATTRTUPLE(
@@ -40,7 +40,7 @@ STATIC MP_DEFINE_ATTRTUPLE(
     (mp_obj_t)&pin_TCA0_1,
     (mp_obj_t)&pin_TCA0_2,
     MP_ROM_INT(1),  // 0b0001
-    MP_ROM_INT(7)   // 0b0110
+    MP_ROM_INT(6)   // 0b0110
     );
 
 STATIC MP_DEFINE_ATTRTUPLE(

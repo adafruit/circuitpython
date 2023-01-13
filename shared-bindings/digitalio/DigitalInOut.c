@@ -75,6 +75,10 @@ MP_WEAK const mcu_pin_obj_t *common_hal_digitalio_validate_pin(mp_obj_t obj) {
     return validate_obj_is_free_pin(obj);
 }
 
+MP_WEAK const mcu_pin_obj_t *common_hal_digitalio_validate_pin_or_none(mp_obj_t obj) {
+    return validate_obj_is_free_pin_or_none(obj);
+}
+
 //| class DigitalInOut:
 //|     """Digital input and output
 //|

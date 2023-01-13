@@ -89,9 +89,9 @@ STATIC mp_obj_t displayio_fourwire_make_new(const mp_obj_type_t *type, size_t n_
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    const mcu_pin_obj_t *command = validate_obj_is_free_pin_or_none(args[ARG_command].u_obj);
-    const mcu_pin_obj_t *chip_select = validate_obj_is_free_pin(args[ARG_chip_select].u_obj);
-    const mcu_pin_obj_t *reset = validate_obj_is_free_pin_or_none(args[ARG_reset].u_obj);
+    const mcu_pin_obj_t *command = common_hal_digitalio_validate_pin_or_none(args[ARG_command].u_obj);
+    const mcu_pin_obj_t *chip_select = common_hal_digitalio_validate_pin(args[ARG_chip_select].u_obj);
+    const mcu_pin_obj_t *reset = common_hal_digitalio_validate_pin_or_none(args[ARG_reset].u_obj);
 
     mp_obj_t spi = mp_arg_validate_type(args[ARG_spi_bus].u_obj, &busio_spi_type, MP_QSTR_spi_bus);
 

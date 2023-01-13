@@ -3,7 +3,7 @@
 
 #define CIRCUITPY_DIGITALIO_HAVE_INVALID_PULL (1)
 #define CIRCUITPY_DIGITALIO_HAVE_INVALID_DRIVE_MODE (1)
-//#define MICROPY_HW_LED_STATUS         (&pin_GPIO18)
+#define MICROPY_HW_LED_STATUS         (&pin_TCA1_3)
 
 #define CIRCUITPY_BOARD_I2C         (1)
 #define CIRCUITPY_BOARD_I2C_PIN     {{.scl = &pin_GPIO25, .sda = &pin_GPIO24}}
