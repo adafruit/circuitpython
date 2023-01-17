@@ -76,20 +76,14 @@ const mcu_pin_obj_t *validate_obj_is_free_pin_including_tca_or_none(mp_obj_t obj
     return validate_obj_is_free_pin_including_tca(obj);
 }
 
-void tca_init(void) {
-}
+static const uint8_t tca9555r_addresses[TCA9555R_CHIP_COUNT] = TCA9555R_CHIP_ADDRESSES;
 
-#define TCA_ADDR0  0x20
-#define TCA_ADDR1  0x26
 #define TCA9555R_GPIO_COUNT     16
-#define TCA9555R_CHIP_COUNT     2
 #define TCA9555R_VIRTUAL_GPIO_COUNT     (TCA9555R_GPIO_COUNT * TCA9555R_CHIP_COUNT)
 
 uint8_t tca_get_address_from_pin(uint tca_gpio) {
-    if(tca_gpio < TCA9555R_GPIO_COUNT) {
-        return TCA_ADDR0;
-    }
-    return TCA_ADDR1;
+    uint8_t index = tca_gpio / TCA9555R_GPIO_COUNT;
+    return tca9555r_addresses[index];
 }
 
 bool tca_gpio_get_input(uint tca_gpio) {
@@ -143,7 +137,7 @@ bool tca_gpio_get_dir(uint tca_gpio) {
     uint8_t reg = (tca_gpio >= 8) ? CONFIGURATION_PORT1 : CONFIGURATION_PORT0;
     uint8_t input_state = 0x00;
     common_hal_busio_i2c_write_read(i2c, address, &reg, 1, &input_state, 1);
-    return (input_state & (1 << (tca_gpio % 8))) != 0;
+    return (input_state & (1 << (tca_gpio % 8))) == 0;
 }
 
 void tca_gpio_set_dir(uint tca_gpio, bool output) {

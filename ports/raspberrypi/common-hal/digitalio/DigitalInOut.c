@@ -75,6 +75,10 @@ digitalinout_result_t common_hal_digitalio_digitalinout_construct(
     #endif
     #if CIRCUITPY_TCA9555R
     if (IS_TCA(self)) {
+        if(tca_gpio_get_dir(self->pin->number) == GPIO_OUT) {
+            self->output = true;
+            self->open_drain = false;
+        }
         return DIGITALINOUT_OK;
     }
     #endif
