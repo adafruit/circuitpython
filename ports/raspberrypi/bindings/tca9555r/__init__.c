@@ -90,25 +90,25 @@ const mp_obj_type_t tca_pin_type = {
         )
 };
 
-const mcu_pin_obj_t *validate_obj_is_pin_including_tca(mp_obj_t obj) {
+const mcu_pin_obj_t *validate_obj_is_pin_including_tca(mp_obj_t obj, qstr arg_name) {
     if (!mp_obj_is_type(obj, &mcu_pin_type) && !mp_obj_is_type(obj, &tca_pin_type)) {
-        mp_raise_TypeError_varg(translate("Expected a %q or %q"), mcu_pin_type.name, tca_pin_type.name);
+        mp_raise_TypeError_varg(translate("%q must be of type %q or %q, not %q"), arg_name, mcu_pin_type.name, tca_pin_type.name, mp_obj_get_type(obj)->name);
     }
     return MP_OBJ_TO_PTR(obj);
 }
 
-const mcu_pin_obj_t *validate_obj_is_free_pin_including_tca(mp_obj_t obj) {
-    const mcu_pin_obj_t *pin = validate_obj_is_pin_including_tca(obj);
+const mcu_pin_obj_t *validate_obj_is_free_pin_including_tca(mp_obj_t obj, qstr arg_name) {
+    const mcu_pin_obj_t *pin = validate_obj_is_pin_including_tca(obj, arg_name);
     assert_pin_free(pin);
     return pin;
 }
 
 // Validate that the obj is a free pin or None. Return an mcu_pin_obj_t* or NULL, correspondingly.
-const mcu_pin_obj_t *validate_obj_is_free_pin_including_tca_or_none(mp_obj_t obj) {
+const mcu_pin_obj_t *validate_obj_is_free_pin_including_tca_or_none(mp_obj_t obj, qstr arg_name) {
     if (obj == mp_const_none) {
         return NULL;
     }
-    return validate_obj_is_free_pin_including_tca(obj);
+    return validate_obj_is_free_pin_including_tca(obj, arg_name);
 }
 
 static const uint8_t tca9555r_addresses[TCA9555R_CHIP_COUNT] = TCA9555R_CHIP_ADDRESSES;

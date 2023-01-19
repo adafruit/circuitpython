@@ -42,8 +42,8 @@
 #include "bindings/cyw43/__init__.h"
 #define IS_CYW(self) ((self)->pin->base.type == &cyw43_pin_type)
 
-const mcu_pin_obj_t *common_hal_digitalio_validate_pin(mp_obj_t obj) {
-    return validate_obj_is_free_pin_including_cyw43(obj, MP_QSTR_pin);
+const mcu_pin_obj_t *common_hal_digitalio_validate_pin(mp_obj_t obj, qstr arg_name) {
+    return validate_obj_is_free_pin_including_cyw43(obj, arg_name);
 }
 #endif
 
@@ -52,12 +52,12 @@ const mcu_pin_obj_t *common_hal_digitalio_validate_pin(mp_obj_t obj) {
 #include "bindings/tca9555r/__init__.h"
 #define IS_TCA(self) ((self)->pin->base.type == &tca_pin_type)
 
-const mcu_pin_obj_t *common_hal_digitalio_validate_pin(mp_obj_t obj) {
-    return validate_obj_is_free_pin_including_tca(obj);
+const mcu_pin_obj_t *common_hal_digitalio_validate_pin(mp_obj_t obj, qstr arg_name) {
+    return validate_obj_is_free_pin_including_tca(obj, arg_name);
 }
 
-const mcu_pin_obj_t *common_hal_digitalio_validate_pin_or_none(mp_obj_t obj) {
-    return validate_obj_is_free_pin_including_tca_or_none(obj);
+const mcu_pin_obj_t *common_hal_digitalio_validate_pin_or_none(mp_obj_t obj, qstr arg_name) {
+    return validate_obj_is_free_pin_including_tca_or_none(obj, arg_name);
 }
 #endif
 

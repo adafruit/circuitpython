@@ -71,12 +71,12 @@ STATIC void check_result(digitalinout_result_t result) {
     }
 }
 
-MP_WEAK const mcu_pin_obj_t *common_hal_digitalio_validate_pin(mp_obj_t obj) {
-    return validate_obj_is_free_pin(obj, MP_QSTR_pin);
+MP_WEAK const mcu_pin_obj_t *common_hal_digitalio_validate_pin(mp_obj_t obj, qstr arg_name) {
+    return validate_obj_is_free_pin(obj, arg_name);
 }
 
-MP_WEAK const mcu_pin_obj_t *common_hal_digitalio_validate_pin_or_none(mp_obj_t obj) {
-    return validate_obj_is_free_pin_or_none(obj);
+MP_WEAK const mcu_pin_obj_t *common_hal_digitalio_validate_pin_or_none(mp_obj_t obj, qstr arg_name) {
+    return validate_obj_is_free_pin_or_none(obj, arg_name);
 }
 
 //| class DigitalInOut:
@@ -100,7 +100,7 @@ STATIC mp_obj_t digitalio_digitalinout_make_new(const mp_obj_type_t *type,
     digitalio_digitalinout_obj_t *self = m_new_obj(digitalio_digitalinout_obj_t);
     self->base.type = &digitalio_digitalinout_type;
 
-    const mcu_pin_obj_t *pin = common_hal_digitalio_validate_pin(args[0]);
+    const mcu_pin_obj_t *pin = common_hal_digitalio_validate_pin(args[0], MP_QSTR_pin);
     common_hal_digitalio_digitalinout_construct(self, pin);
 
     return MP_OBJ_FROM_PTR(self);

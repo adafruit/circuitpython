@@ -41,9 +41,9 @@
 
 extern const mp_obj_dict_t tca_module_globals;
 extern const mp_obj_type_t tca_pin_type;
-const mcu_pin_obj_t *validate_obj_is_free_pin_including_tca(mp_obj_t obj);
-const mcu_pin_obj_t *validate_obj_is_free_pin_including_tca_or_none(mp_obj_t obj);
-const mcu_pin_obj_t *validate_obj_is_pin_including_tca(mp_obj_t obj);
+const mcu_pin_obj_t *validate_obj_is_free_pin_including_tca(mp_obj_t obj, qstr arg_name);
+const mcu_pin_obj_t *validate_obj_is_free_pin_including_tca_or_none(mp_obj_t obj, qstr arg_name);
+const mcu_pin_obj_t *validate_obj_is_pin_including_tca(mp_obj_t obj, qstr arg_name);
 
 uint8_t tca_get_address_from_pin(uint tca_gpio);
 bool tca_gpio_get_input(uint tca_gpio);
