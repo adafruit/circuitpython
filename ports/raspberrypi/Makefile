@@ -240,7 +240,7 @@ SRC_SDK := \
 	$(SRC_SDK_CYW43) \
 
 SRC_SDK := $(addprefix sdk/, $(SRC_SDK))
-$(patsubst %.c,$(BUILD)/%.o,$(SRC_SDK) $(SRC_CYW43) $(SRC_TCA9555R)): CFLAGS += -Wno-missing-prototypes -Wno-undef -Wno-unused-function -Wno-nested-externs -Wno-strict-prototypes -Wno-double-promotion -Wno-sign-compare -Wno-unused-variable -Wno-strict-overflow
+$(patsubst %.c,$(BUILD)/%.o,$(SRC_SDK) $(SRC_CYW43) $(SRC_TCA9555R)): CFLAGS += -Wno-missing-prototypes -Wno-undef -Wno-unused-function -Wno-nested-externs -Wno-strict-prototypes -Wno-double-promotion -Wno-sign-compare -Wno-unused-variable -Wno-strict-overflow -Ilib/cyw43-driver
 
 SRC_C += \
 	boards/$(BOARD)/board.c \
@@ -257,7 +257,7 @@ SRC_C += \
 	lib/tinyusb/src/portable/raspberrypi/rp2040/rp2040_usb.c \
 	mphalport.c \
 	$(SRC_CYW43) \
-  $(SRC_TCA9555R) \
+	$(SRC_TCA9555R) \
 	$(SRC_LWIP) \
 
 ifeq ($(CIRCUITPY_SSL),1)
