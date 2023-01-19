@@ -61,3 +61,39 @@ uint16_t tca_gpio_get_polarity_port(uint tca_address);
 void tca_gpio_set_polarity_port(uint tca_address, uint16_t polarity_state);
 
 void shared_bindings_tca9555r_pin_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind);
+
+#if CIRCUITPY_TCA9555R
+extern const mcu_pin_obj_t pin_TCA0_0;
+extern const mcu_pin_obj_t pin_TCA0_1;
+extern const mcu_pin_obj_t pin_TCA0_2;
+extern const mcu_pin_obj_t pin_TCA0_3;
+extern const mcu_pin_obj_t pin_TCA0_4;
+extern const mcu_pin_obj_t pin_TCA0_5;
+extern const mcu_pin_obj_t pin_TCA0_6;
+extern const mcu_pin_obj_t pin_TCA0_7;
+extern const mcu_pin_obj_t pin_TCA0_8;
+extern const mcu_pin_obj_t pin_TCA0_9;
+extern const mcu_pin_obj_t pin_TCA0_10;
+extern const mcu_pin_obj_t pin_TCA0_11;
+extern const mcu_pin_obj_t pin_TCA0_12;
+extern const mcu_pin_obj_t pin_TCA0_13;
+extern const mcu_pin_obj_t pin_TCA0_14;
+extern const mcu_pin_obj_t pin_TCA0_15;
+
+extern const mcu_pin_obj_t pin_TCA1_0;
+extern const mcu_pin_obj_t pin_TCA1_1;
+extern const mcu_pin_obj_t pin_TCA1_2;
+extern const mcu_pin_obj_t pin_TCA1_3;
+extern const mcu_pin_obj_t pin_TCA1_4;
+extern const mcu_pin_obj_t pin_TCA1_5;
+extern const mcu_pin_obj_t pin_TCA1_6;
+extern const mcu_pin_obj_t pin_TCA1_7;
+extern const mcu_pin_obj_t pin_TCA1_8;
+extern const mcu_pin_obj_t pin_TCA1_9;
+extern const mcu_pin_obj_t pin_TCA1_10;
+extern const mcu_pin_obj_t pin_TCA1_11;
+extern const mcu_pin_obj_t pin_TCA1_12;
+extern const mcu_pin_obj_t pin_TCA1_13;
+extern const mcu_pin_obj_t pin_TCA1_14;
+extern const mcu_pin_obj_t pin_TCA1_15;
+#endif
