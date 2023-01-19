@@ -6,14 +6,14 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-01-04 12:55-0600\n"
-"PO-Revision-Date: 2022-11-09 19:20+0000\n"
+"PO-Revision-Date: 2023-01-13 18:51+0000\n"
 "Last-Translator: Ettore Atalan <atalanttore@googlemail.com>\n"
 "Language: de_DE\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 4.15-dev\n"
+"X-Generator: Weblate 4.15.1-dev\n"
 
 #: main.c
 msgid ""
@@ -113,6 +113,10 @@ msgstr "%q enthält doppelte Pins"
 msgid "%q failure: %d"
 msgstr "%q Fehler: %d"
 
+#: py/argcheck.c
+msgid "%q in %q must be of type %q, not %q"
+msgstr "%q in %q muss von Typ %q sein, nicht %q"
+
 #: ports/espressif/common-hal/espulp/ULP.c
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 #: shared-bindings/digitalio/DigitalInOut.c
@@ -134,7 +138,7 @@ msgstr "%q ist %q"
 
 #: ports/raspberrypi/common-hal/wifi/Radio.c
 msgid "%q is read-only for this board"
-msgstr ""
+msgstr "%q ist für diese Platine schreibgeschützt"
 
 #: py/argcheck.c shared-bindings/usb_hid/Device.c
 msgid "%q length must be %d"
@@ -181,13 +185,14 @@ msgid "%q must be a bytearray or array of type 'h', 'H', 'b', or 'B'"
 msgstr ""
 "%q muss ein Byte-Array oder ein array vom Typ 'h', 'H', 'b', oder 'B' sein"
 
-#: py/argcheck.c py/obj.c py/objstrunicode.c
-msgid "%q must be of type %q"
-msgstr "%q muss vom Type %q sein"
+#: ports/raspberrypi/bindings/cyw43/__init__.c py/argcheck.c py/objexcept.c
+#: shared-bindings/canio/CAN.c shared-bindings/digitalio/Pull.c
+msgid "%q must be of type %q or %q, not %q"
+msgstr "%q muss von Typ %q oder %q sein, nicht %q"
 
-#: py/objexcept.c shared-bindings/digitalio/Pull.c
-msgid "%q must be of type %q or None"
-msgstr "%q muss vom Type %q oder None sein"
+#: py/argcheck.c py/obj.c py/objstrunicode.c
+msgid "%q must be of type %q, not %q"
+msgstr "%q muss von Typ %q sein, nicht %q"
 
 #: ports/atmel-samd/common-hal/busio/UART.c
 msgid "%q must be power of 2"
@@ -212,7 +217,7 @@ msgstr "%q Pin ungültig"
 
 #: py/objrange.c py/objslice.c shared-bindings/random/__init__.c
 msgid "%q step cannot be zero"
-msgstr ""
+msgstr "Schritt %q kann nicht Null sein"
 
 #: py/bc.c py/objnamedtuple.c
 msgid "%q() takes %d positional arguments but %d were given"
@@ -414,7 +419,7 @@ msgstr "Die Adresse muss %d Bytes lang sein"
 
 #: ports/espressif/common-hal/memorymap/AddressRange.c
 msgid "Address range not allowed"
-msgstr ""
+msgstr "Adressbereich nicht erlaubt"
 
 #: ports/espressif/common-hal/canio/CAN.c
 msgid "All CAN peripherals are in use"
@@ -921,6 +926,8 @@ msgstr "Drive mode wird nicht verwendet, wenn die Richtung input ist."
 #: py/obj.c
 msgid "During handling of the above exception, another exception occurred:"
 msgstr ""
+"Während der Behandlung der oben genannten Ausnahme trat eine weitere "
+"Ausnahme auf:"
 
 #: shared-bindings/aesio/aes.c
 msgid "ECB only operates on 16 bytes at a time"
@@ -951,21 +958,9 @@ msgstr "Fehler in regex"
 msgid "Error: Failure to bind"
 msgstr "Error: Bind Fehler"
 
-#: ports/espressif/bindings/espulp/ULP.c py/enum.c
-#: shared-bindings/_bleio/__init__.c shared-bindings/aesio/aes.c
-#: shared-bindings/alarm/__init__.c shared-bindings/busio/SPI.c
-#: shared-bindings/microcontroller/Pin.c
-#: shared-bindings/neopixel_write/__init__.c
-msgid "Expected a %q"
-msgstr "Erwartet ein(e) %q"
-
-#: ports/raspberrypi/bindings/cyw43/__init__.c
-msgid "Expected a %q or %q"
-msgstr "Erwartete ein %q oder %q"
-
 #: shared-bindings/alarm/__init__.c
-msgid "Expected an %q"
-msgstr "Erwartet ein %q"
+msgid "Expected a kind of %q"
+msgstr "Erwartete eine Art von %q"
 
 #: ports/espressif/common-hal/_bleio/Adapter.c
 #: ports/nrf/common-hal/_bleio/Adapter.c
@@ -1042,7 +1037,7 @@ msgstr "Datei existiert"
 
 #: shared-module/os/getenv.c
 msgid "File not found"
-msgstr ""
+msgstr "Datei nicht gefunden"
 
 #: ports/atmel-samd/common-hal/canio/Listener.c
 #: ports/espressif/common-hal/canio/Listener.c
@@ -1141,11 +1136,6 @@ msgstr "I2C Peripherie in Verwendung"
 #: shared-bindings/audiobusio/I2SOut.c
 msgid "I2SOut not available"
 msgstr "I2SOut nicht verfügbar"
-
-#: shared-bindings/aesio/aes.c
-#, c-format
-msgid "IV must be %d bytes long"
-msgstr "IV muss %d Bytes lang sein"
 
 #: ports/raspberrypi/bindings/rp2pio/StateMachine.c
 msgid "In-buffer elements must be <= 4 bytes long"
@@ -1287,7 +1277,7 @@ msgstr "Ungültige Bits pro Wert"
 #: shared-module/os/getenv.c
 #, c-format
 msgid "Invalid byte %.*s"
-msgstr ""
+msgstr "Ungültiges Byte %.*s"
 
 #: ports/atmel-samd/common-hal/imagecapture/ParallelImageCapture.c
 #, c-format
@@ -1329,7 +1319,7 @@ msgstr "Der Schlüssel muss 16, 24 oder 32 Byte lang sein"
 
 #: shared-module/os/getenv.c
 msgid "Key not found"
-msgstr ""
+msgstr "Schlüssel nicht gefunden"
 
 #: shared-module/is31fl3741/FrameBuffer.c
 msgid "LED mappings must match display size"
@@ -1440,7 +1430,7 @@ msgstr "NVS-Fehler"
 
 #: shared-bindings/socketpool/SocketPool.c
 msgid "Name or service not known"
-msgstr ""
+msgstr "Name oder Dienst nicht bekannt"
 
 #: py/qstr.c
 msgid "Name too long"
@@ -1614,10 +1604,6 @@ msgstr "Nicht verbunden"
 msgid "Not playing"
 msgstr "Spielt nicht ab"
 
-#: shared-bindings/_bleio/__init__.c
-msgid "Not settable"
-msgstr "Kann nicht gesetzt werden"
-
 #: ports/espressif/common-hal/paralleldisplay/ParallelBus.c
 #, c-format
 msgid "Number of data_pins must be 8 or 16, not %d"
@@ -1692,7 +1678,7 @@ msgstr "Nur ein %q kann im Deep-Sleep gesetzt werden."
 
 #: ports/espressif/common-hal/espulp/ULPAlarm.c
 msgid "Only one %q can be set."
-msgstr ""
+msgstr "Es kann nur ein %q festgelegt werden."
 
 #: ports/espressif/common-hal/i2ctarget/I2CTarget.c
 #: ports/raspberrypi/common-hal/i2ctarget/I2CTarget.c
@@ -1861,7 +1847,7 @@ msgstr "Programm-Größe ist ungültig"
 
 #: ports/espressif/common-hal/espulp/ULP.c
 msgid "Program too long"
-msgstr ""
+msgstr "Programm zu lang"
 
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Pull not used when direction is output."
@@ -1902,6 +1888,7 @@ msgstr "Eine RTC wird auf diesem Board nicht unterstützt"
 msgid "Random number generation error"
 msgstr "Fehler bei der Erzeugung von Zufallszahlen"
 
+#: shared-bindings/_bleio/__init__.c
 #: shared-bindings/memorymonitor/AllocationSize.c
 #: shared-bindings/pulseio/PulseIn.c shared-module/displayio/Bitmap.c
 msgid "Read-only"
@@ -2091,8 +2078,12 @@ msgstr ""
 #: py/obj.c
 msgid "The above exception was the direct cause of the following exception:"
 msgstr ""
+"Die oben genannte Ausnahme war die direkte Ursache für die folgende Ausnahme:"
 
+#: ports/espressif/boards/m5stack_atom_echo/mpconfigboard.h
 #: ports/espressif/boards/m5stack_atom_lite/mpconfigboard.h
+#: ports/espressif/boards/m5stack_atom_matrix/mpconfigboard.h
+#: ports/espressif/boards/m5stack_atom_u/mpconfigboard.h
 msgid "The central button was pressed at start up.\n"
 msgstr "Beim Starten wurde die zentrale Taste gedrückt.\n"
 
@@ -2293,7 +2284,7 @@ msgstr "mDNS-Abfrage kann nicht gestartet werden"
 
 #: shared-bindings/memorymap/AddressRange.c
 msgid "Unable to write to address."
-msgstr ""
+msgstr "An die Adresse kann nicht geschrieben werden."
 
 #: shared-bindings/nvm/ByteArray.c
 msgid "Unable to write to nvm."
@@ -2472,7 +2463,7 @@ msgstr ""
 
 #: ports/raspberrypi/common-hal/wifi/Radio.c
 msgid "Wifi is not enabled"
-msgstr ""
+msgstr "WLAN ist nicht aktiviert"
 
 #: main.c
 msgid "Woken up by alarm.\n"
@@ -3055,14 +3046,6 @@ msgstr ""
 #: py/runtime.c
 msgid "exceptions must derive from BaseException"
 msgstr "Exceptions müssen von BaseException abgeleitet sein"
-
-#: shared-bindings/canio/CAN.c
-msgid "expected '%q' but got '%q'"
-msgstr "erwartet '%q' aber bekommen '%q'"
-
-#: shared-bindings/canio/CAN.c
-msgid "expected '%q' or '%q' but got '%q'"
-msgstr "erwartete '%q' oder '%q', aber bekam '%q'"
 
 #: py/objstr.c
 msgid "expected ':' after format specifier"
@@ -3834,7 +3817,7 @@ msgstr "nur eine bit_depth=16 wird unterstützt"
 
 #: ports/stm/common-hal/audiobusio/PDMIn.c
 msgid "only mono is supported"
-msgstr ""
+msgstr "nur Mono wird unterstützt"
 
 #: ports/stm/common-hal/audiobusio/PDMIn.c
 msgid "only oversample=64 is supported"
@@ -4447,6 +4430,34 @@ msgstr "zi muss eine Gleitkommazahl sein"
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr "zi muss die Form (n_section, 2) haben"
+
+#~ msgid "%q must be of type %q"
+#~ msgstr "%q muss vom Type %q sein"
+
+#~ msgid "%q must be of type %q or None"
+#~ msgstr "%q muss vom Type %q oder None sein"
+
+#~ msgid "Expected a %q"
+#~ msgstr "Erwartet ein(e) %q"
+
+#~ msgid "Expected a %q or %q"
+#~ msgstr "Erwartete ein %q oder %q"
+
+#~ msgid "Expected an %q"
+#~ msgstr "Erwartet ein %q"
+
+#, c-format
+#~ msgid "IV must be %d bytes long"
+#~ msgstr "IV muss %d Bytes lang sein"
+
+#~ msgid "Not settable"
+#~ msgstr "Kann nicht gesetzt werden"
+
+#~ msgid "expected '%q' but got '%q'"
+#~ msgstr "erwartet '%q' aber bekommen '%q'"
+
+#~ msgid "expected '%q' or '%q' but got '%q'"
+#~ msgstr "erwartete '%q' oder '%q', aber bekam '%q'"
 
 #~ msgid "Read-only object"
 #~ msgstr "Schreibgeschützte Objekt"
