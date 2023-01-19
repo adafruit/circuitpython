@@ -39,6 +39,7 @@
 #define CONFIGURATION_PORT0  0x06
 #define CONFIGURATION_PORT1  0x07
 
+extern const mp_obj_dict_t tca_module_globals;
 extern const mp_obj_type_t tca_pin_type;
 const mcu_pin_obj_t *validate_obj_is_free_pin_including_tca(mp_obj_t obj);
 const mcu_pin_obj_t *validate_obj_is_free_pin_including_tca_or_none(mp_obj_t obj);
@@ -58,3 +59,5 @@ uint16_t tca_gpio_get_dir_port(uint tca_address);
 void tca_gpio_set_dir_port(uint tca_address, uint16_t config_state);
 uint16_t tca_gpio_get_polarity_port(uint tca_address);
 void tca_gpio_set_polarity_port(uint tca_address, uint16_t polarity_state);
+
+void shared_bindings_tca9555r_pin_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind);

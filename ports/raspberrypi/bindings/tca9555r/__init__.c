@@ -38,6 +38,41 @@
 #define PARAM_ASSERTIONS_ENABLED_TCA9555R 0
 #endif
 
+static void get_pin_name(const mcu_pin_obj_t *self, qstr *package, qstr *module, qstr *name) {
+    const mp_map_t *board_map = &board_module_globals.map;
+    for (uint8_t i = 0; i < board_map->alloc; i++) {
+        if (board_map->table[i].value == MP_OBJ_FROM_PTR(self)) {
+            *package = 0;
+            *module = MP_QSTR_board;
+            *name = MP_OBJ_QSTR_VALUE(board_map->table[i].key);
+            return;
+        }
+    }
+    const mp_map_t *tca_map = &tca_module_globals.map;
+    for (uint8_t i = 0; i < tca_map->alloc; i++) {
+        if (tca_map->table[i].value == MP_OBJ_FROM_PTR(self)) {
+            *package = 0;
+            *module = MP_QSTR_tca;
+            *name = MP_OBJ_QSTR_VALUE(tca_map->table[i].key);
+            return;
+        }
+    }
+}
+
+void shared_bindings_tca9555r_pin_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
+    mcu_pin_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    qstr package = MP_QSTR_Pin;
+    qstr module = MP_QSTR_pin;
+    qstr name = MP_QSTR_Pin;
+
+    get_pin_name(self, &package, &module, &name);
+    if (package) {
+        mp_printf(print, "%q.%q.%q", package, module, name);
+    } else {
+        mp_printf(print, "%q.%q", module, name);
+    }
+}
+
 //| class TcaPin:
 //|     """A class that represents a GPIO pin attached to a TCA9555R IO expander chip.
 //|
@@ -49,7 +84,7 @@ const mp_obj_type_t tca_pin_type = {
     { &mp_type_type },
     .flags = MP_TYPE_FLAG_EXTENDED,
     .name = MP_QSTR_TcaPin,
-    .print = shared_bindings_microcontroller_pin_print,
+    .print = shared_bindings_tca9555r_pin_print,
     MP_TYPE_EXTENDED_FIELDS(
         .unary_op = mp_generic_unary_op,
         )
@@ -212,12 +247,46 @@ void tca_gpio_set_polarity_port(uint tca_address, uint16_t polarity_state) {
     common_hal_busio_i2c_write(i2c, tca_address, reg_and_data, 3);
 }
 
+
 STATIC const mp_rom_map_elem_t tca_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_tca) },
     { MP_ROM_QSTR(MP_QSTR_TcaPin), MP_ROM_PTR(&tca_pin_type) },
+    { MP_ROM_QSTR(MP_QSTR_TCA0_0), MP_ROM_PTR(&pin_TCA0_0) },
+    { MP_ROM_QSTR(MP_QSTR_TCA0_1), MP_ROM_PTR(&pin_TCA0_1) },
+    { MP_ROM_QSTR(MP_QSTR_TCA0_2), MP_ROM_PTR(&pin_TCA0_2) },
+    { MP_ROM_QSTR(MP_QSTR_TCA0_3), MP_ROM_PTR(&pin_TCA0_3) },
+    { MP_ROM_QSTR(MP_QSTR_TCA0_4), MP_ROM_PTR(&pin_TCA0_4) },
+    { MP_ROM_QSTR(MP_QSTR_TCA0_5), MP_ROM_PTR(&pin_TCA0_5) },
+    { MP_ROM_QSTR(MP_QSTR_TCA0_6), MP_ROM_PTR(&pin_TCA0_6) },
+    { MP_ROM_QSTR(MP_QSTR_TCA0_7), MP_ROM_PTR(&pin_TCA0_7) },
+    { MP_ROM_QSTR(MP_QSTR_TCA0_8), MP_ROM_PTR(&pin_TCA0_8) },
+    { MP_ROM_QSTR(MP_QSTR_TCA0_9), MP_ROM_PTR(&pin_TCA0_9) },
+    { MP_ROM_QSTR(MP_QSTR_TCA0_10), MP_ROM_PTR(&pin_TCA0_10) },
+    { MP_ROM_QSTR(MP_QSTR_TCA0_11), MP_ROM_PTR(&pin_TCA0_11) },
+    { MP_ROM_QSTR(MP_QSTR_TCA0_12), MP_ROM_PTR(&pin_TCA0_12) },
+    { MP_ROM_QSTR(MP_QSTR_TCA0_13), MP_ROM_PTR(&pin_TCA0_13) },
+    { MP_ROM_QSTR(MP_QSTR_TCA0_14), MP_ROM_PTR(&pin_TCA0_14) },
+    { MP_ROM_QSTR(MP_QSTR_TCA0_15), MP_ROM_PTR(&pin_TCA0_15) },
+
+    { MP_ROM_QSTR(MP_QSTR_TCA1_0), MP_ROM_PTR(&pin_TCA1_0) },
+    { MP_ROM_QSTR(MP_QSTR_TCA1_1), MP_ROM_PTR(&pin_TCA1_1) },
+    { MP_ROM_QSTR(MP_QSTR_TCA1_2), MP_ROM_PTR(&pin_TCA1_2) },
+    { MP_ROM_QSTR(MP_QSTR_TCA1_3), MP_ROM_PTR(&pin_TCA1_3) },
+    { MP_ROM_QSTR(MP_QSTR_TCA1_4), MP_ROM_PTR(&pin_TCA1_4) },
+    { MP_ROM_QSTR(MP_QSTR_TCA1_5), MP_ROM_PTR(&pin_TCA1_5) },
+    { MP_ROM_QSTR(MP_QSTR_TCA1_6), MP_ROM_PTR(&pin_TCA1_6) },
+    { MP_ROM_QSTR(MP_QSTR_TCA1_7), MP_ROM_PTR(&pin_TCA1_7) },
+    { MP_ROM_QSTR(MP_QSTR_TCA1_8), MP_ROM_PTR(&pin_TCA1_8) },
+    { MP_ROM_QSTR(MP_QSTR_TCA1_9), MP_ROM_PTR(&pin_TCA1_9) },
+    { MP_ROM_QSTR(MP_QSTR_TCA1_10), MP_ROM_PTR(&pin_TCA1_10) },
+    { MP_ROM_QSTR(MP_QSTR_TCA1_11), MP_ROM_PTR(&pin_TCA1_11) },
+    { MP_ROM_QSTR(MP_QSTR_TCA1_12), MP_ROM_PTR(&pin_TCA1_12) },
+    { MP_ROM_QSTR(MP_QSTR_TCA1_13), MP_ROM_PTR(&pin_TCA1_13) },
+    { MP_ROM_QSTR(MP_QSTR_TCA1_14), MP_ROM_PTR(&pin_TCA1_14) },
+    { MP_ROM_QSTR(MP_QSTR_TCA1_15), MP_ROM_PTR(&pin_TCA1_15) }
 };
 
-STATIC MP_DEFINE_CONST_DICT(tca_module_globals, tca_module_globals_table);
+MP_DEFINE_CONST_DICT(tca_module_globals, tca_module_globals_table);
 
 const mp_obj_module_t tca_module = {
     .base = { &mp_type_module },
