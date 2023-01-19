@@ -247,43 +247,61 @@ void tca_gpio_set_polarity_port(uint tca_address, uint16_t polarity_state) {
     common_hal_busio_i2c_write(i2c, tca_address, reg_and_data, 3);
 }
 
+#define TCA_PIN(exp_number, p_number) \
+    const mcu_pin_obj_t pin_TCA##exp_number##_##p_number = { \
+        { &tca_pin_type }, \
+        .number = p_number + (exp_number << 4) \
+    }
+
+#define TCA_PINS(exp_number) \
+    TCA_PIN(exp_number, 0); \
+    TCA_PIN(exp_number, 1); \
+    TCA_PIN(exp_number, 2); \
+    TCA_PIN(exp_number, 3); \
+    TCA_PIN(exp_number, 4); \
+    TCA_PIN(exp_number, 5); \
+    TCA_PIN(exp_number, 6); \
+    TCA_PIN(exp_number, 7); \
+    TCA_PIN(exp_number, 8); \
+    TCA_PIN(exp_number, 9); \
+    TCA_PIN(exp_number, 10); \
+    TCA_PIN(exp_number, 11); \
+    TCA_PIN(exp_number, 12); \
+    TCA_PIN(exp_number, 13); \
+    TCA_PIN(exp_number, 14); \
+    TCA_PIN(exp_number, 15)
+
+#if CIRCUITPY_TCA9555R
+TCA_PINS(0);
+TCA_PINS(1);
+#endif
+
+#define TCA_ENTRY(exp_number, p_number) \
+    { MP_ROM_QSTR(MP_QSTR_TCA##exp_number##_##p_number), MP_ROM_PTR(&pin_TCA##exp_number##_##p_number) }
+
+#define TCA_ENTRIES(exp_number) \
+    TCA_ENTRY(exp_number, 0), \
+    TCA_ENTRY(exp_number, 1), \
+    TCA_ENTRY(exp_number, 2), \
+    TCA_ENTRY(exp_number, 3), \
+    TCA_ENTRY(exp_number, 4), \
+    TCA_ENTRY(exp_number, 5), \
+    TCA_ENTRY(exp_number, 6), \
+    TCA_ENTRY(exp_number, 7), \
+    TCA_ENTRY(exp_number, 8), \
+    TCA_ENTRY(exp_number, 9), \
+    TCA_ENTRY(exp_number, 10), \
+    TCA_ENTRY(exp_number, 11), \
+    TCA_ENTRY(exp_number, 12), \
+    TCA_ENTRY(exp_number, 13), \
+    TCA_ENTRY(exp_number, 14), \
+    TCA_ENTRY(exp_number, 15)
 
 STATIC const mp_rom_map_elem_t tca_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_tca) },
     { MP_ROM_QSTR(MP_QSTR_TcaPin), MP_ROM_PTR(&tca_pin_type) },
-    { MP_ROM_QSTR(MP_QSTR_TCA0_0), MP_ROM_PTR(&pin_TCA0_0) },
-    { MP_ROM_QSTR(MP_QSTR_TCA0_1), MP_ROM_PTR(&pin_TCA0_1) },
-    { MP_ROM_QSTR(MP_QSTR_TCA0_2), MP_ROM_PTR(&pin_TCA0_2) },
-    { MP_ROM_QSTR(MP_QSTR_TCA0_3), MP_ROM_PTR(&pin_TCA0_3) },
-    { MP_ROM_QSTR(MP_QSTR_TCA0_4), MP_ROM_PTR(&pin_TCA0_4) },
-    { MP_ROM_QSTR(MP_QSTR_TCA0_5), MP_ROM_PTR(&pin_TCA0_5) },
-    { MP_ROM_QSTR(MP_QSTR_TCA0_6), MP_ROM_PTR(&pin_TCA0_6) },
-    { MP_ROM_QSTR(MP_QSTR_TCA0_7), MP_ROM_PTR(&pin_TCA0_7) },
-    { MP_ROM_QSTR(MP_QSTR_TCA0_8), MP_ROM_PTR(&pin_TCA0_8) },
-    { MP_ROM_QSTR(MP_QSTR_TCA0_9), MP_ROM_PTR(&pin_TCA0_9) },
-    { MP_ROM_QSTR(MP_QSTR_TCA0_10), MP_ROM_PTR(&pin_TCA0_10) },
-    { MP_ROM_QSTR(MP_QSTR_TCA0_11), MP_ROM_PTR(&pin_TCA0_11) },
-    { MP_ROM_QSTR(MP_QSTR_TCA0_12), MP_ROM_PTR(&pin_TCA0_12) },
-    { MP_ROM_QSTR(MP_QSTR_TCA0_13), MP_ROM_PTR(&pin_TCA0_13) },
-    { MP_ROM_QSTR(MP_QSTR_TCA0_14), MP_ROM_PTR(&pin_TCA0_14) },
-    { MP_ROM_QSTR(MP_QSTR_TCA0_15), MP_ROM_PTR(&pin_TCA0_15) },
-
-    { MP_ROM_QSTR(MP_QSTR_TCA1_0), MP_ROM_PTR(&pin_TCA1_0) },
-    { MP_ROM_QSTR(MP_QSTR_TCA1_1), MP_ROM_PTR(&pin_TCA1_1) },
-    { MP_ROM_QSTR(MP_QSTR_TCA1_2), MP_ROM_PTR(&pin_TCA1_2) },
-    { MP_ROM_QSTR(MP_QSTR_TCA1_3), MP_ROM_PTR(&pin_TCA1_3) },
-    { MP_ROM_QSTR(MP_QSTR_TCA1_4), MP_ROM_PTR(&pin_TCA1_4) },
-    { MP_ROM_QSTR(MP_QSTR_TCA1_5), MP_ROM_PTR(&pin_TCA1_5) },
-    { MP_ROM_QSTR(MP_QSTR_TCA1_6), MP_ROM_PTR(&pin_TCA1_6) },
-    { MP_ROM_QSTR(MP_QSTR_TCA1_7), MP_ROM_PTR(&pin_TCA1_7) },
-    { MP_ROM_QSTR(MP_QSTR_TCA1_8), MP_ROM_PTR(&pin_TCA1_8) },
-    { MP_ROM_QSTR(MP_QSTR_TCA1_9), MP_ROM_PTR(&pin_TCA1_9) },
-    { MP_ROM_QSTR(MP_QSTR_TCA1_10), MP_ROM_PTR(&pin_TCA1_10) },
-    { MP_ROM_QSTR(MP_QSTR_TCA1_11), MP_ROM_PTR(&pin_TCA1_11) },
-    { MP_ROM_QSTR(MP_QSTR_TCA1_12), MP_ROM_PTR(&pin_TCA1_12) },
-    { MP_ROM_QSTR(MP_QSTR_TCA1_13), MP_ROM_PTR(&pin_TCA1_13) },
-    { MP_ROM_QSTR(MP_QSTR_TCA1_14), MP_ROM_PTR(&pin_TCA1_14) },
-    { MP_ROM_QSTR(MP_QSTR_TCA1_15), MP_ROM_PTR(&pin_TCA1_15) }
+    TCA_ENTRIES(0),
+    TCA_ENTRIES(1)
 };
 
 MP_DEFINE_CONST_DICT(tca_module_globals, tca_module_globals_table);

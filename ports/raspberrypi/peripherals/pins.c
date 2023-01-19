@@ -28,7 +28,6 @@
 
 #include "shared-bindings/microcontroller/Pin.h"
 #include "bindings/cyw43/__init__.h"
-#include "bindings/tca9555r/__init__.h"
 
 // This macro is used to simplify pin definition in boards/<board>/pins.c
 #define PIN(p_number) \
@@ -40,11 +39,6 @@
     const mcu_pin_obj_t pin_CYW##p_number = { \
         { &cyw43_pin_type }, \
         .number = p_number \
-    }
-#define TCA_PIN(exp_number, p_number) \
-    const mcu_pin_obj_t pin_TCA##exp_number##_##p_number = { \
-        { &tca_pin_type }, \
-        .number = p_number + (exp_number << 4) \
     }
 
 PIN(0);
@@ -87,39 +81,4 @@ PIN(29);
 CYW_PIN(0);
 CYW_PIN(1);
 CYW_PIN(2);
-#endif
-#if CIRCUITPY_TCA9555R
-TCA_PIN(0, 0);
-TCA_PIN(0, 1);
-TCA_PIN(0, 2);
-TCA_PIN(0, 3);
-TCA_PIN(0, 4);
-TCA_PIN(0, 5);
-TCA_PIN(0, 6);
-TCA_PIN(0, 7);
-TCA_PIN(0, 8);
-TCA_PIN(0, 9);
-TCA_PIN(0, 10);
-TCA_PIN(0, 11);
-TCA_PIN(0, 12);
-TCA_PIN(0, 13);
-TCA_PIN(0, 14);
-TCA_PIN(0, 15);
-
-TCA_PIN(1, 0);
-TCA_PIN(1, 1);
-TCA_PIN(1, 2);
-TCA_PIN(1, 3);
-TCA_PIN(1, 4);
-TCA_PIN(1, 5);
-TCA_PIN(1, 6);
-TCA_PIN(1, 7);
-TCA_PIN(1, 8);
-TCA_PIN(1, 9);
-TCA_PIN(1, 10);
-TCA_PIN(1, 11);
-TCA_PIN(1, 12);
-TCA_PIN(1, 13);
-TCA_PIN(1, 14);
-TCA_PIN(1, 15);
 #endif
