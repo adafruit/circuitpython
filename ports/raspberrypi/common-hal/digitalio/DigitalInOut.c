@@ -48,7 +48,6 @@ const mcu_pin_obj_t *common_hal_digitalio_validate_pin(mp_obj_t obj, qstr arg_na
 #endif
 
 #if CIRCUITPY_TCA9555R
-//#include "pico/cyw43_arch.h"
 #include "bindings/tca9555r/__init__.h"
 #define IS_TCA(self) ((self)->pin->base.type == &tca_pin_type)
 
@@ -75,7 +74,7 @@ digitalinout_result_t common_hal_digitalio_digitalinout_construct(
     #endif
     #if CIRCUITPY_TCA9555R
     if (IS_TCA(self)) {
-        if(tca_gpio_get_dir(self->pin->number) == GPIO_OUT) {
+        if (tca_gpio_get_dir(self->pin->number) == GPIO_OUT) {
             self->output = true;
             self->open_drain = false;
         }
@@ -201,10 +200,9 @@ bool common_hal_digitalio_digitalinout_get_value(
     #endif
     #if CIRCUITPY_TCA9555R
     if (IS_TCA(self)) {
-        if(self->output) {
+        if (self->output) {
             return tca_gpio_get_output(self->pin->number);
-        }
-        else {
+        } else {
             return tca_gpio_get_input(self->pin->number);
         }
     }

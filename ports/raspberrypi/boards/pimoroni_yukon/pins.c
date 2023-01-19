@@ -136,13 +136,13 @@ STATIC const mp_rom_map_elem_t board_module_globals_table[] = {
 
     { MP_ROM_QSTR(MP_QSTR_MAIN_EN), MP_ROM_PTR(&pin_TCA0_6) },
     { MP_ROM_QSTR(MP_QSTR_USER_SW), MP_ROM_PTR(&pin_TCA0_7) },
-    
+
     { MP_ROM_QSTR(MP_QSTR_ADC_ADDR_1), MP_ROM_PTR(&pin_TCA0_12) },
     { MP_ROM_QSTR(MP_QSTR_ADC_ADDR_2), MP_ROM_PTR(&pin_TCA0_13) },
     { MP_ROM_QSTR(MP_QSTR_ADC_ADDR_3), MP_ROM_PTR(&pin_TCA0_14) },
     { MP_ROM_QSTR(MP_QSTR_ADC_MUX_EN_1), MP_ROM_PTR(&pin_TCA0_15) },
     { MP_ROM_QSTR(MP_QSTR_ADC_MUX_EN_2), MP_ROM_PTR(&pin_TCA0_11) },
-        
+
     { MP_ROM_QSTR(MP_QSTR_SW_A), MP_ROM_PTR(&pin_TCA1_1) },
     { MP_ROM_QSTR(MP_QSTR_SW_B), MP_ROM_PTR(&pin_TCA1_2) },
     { MP_ROM_QSTR(MP_QSTR_LED_A), MP_ROM_PTR(&pin_TCA1_3) },

@@ -154,10 +154,11 @@ void tca_gpio_set_output(uint tca_gpio, bool value) {
     uint8_t reg = (tca_gpio >= 8) ? OUTPUT_PORT1 : OUTPUT_PORT0;
     uint8_t output_state = 0x00;
     common_hal_busio_i2c_write_read(i2c, address, &reg, 1, &output_state, 1);
-    if(value)
+    if (value) {
         output_state = output_state | (1 << (tca_gpio % 8));
-    else
+    } else {
         output_state = output_state & ~(1 << (tca_gpio % 8));
+    }
 
     uint8_t reg_and_data[2] = { reg, output_state };
     common_hal_busio_i2c_write(i2c, address, reg_and_data, 2);
@@ -184,10 +185,11 @@ void tca_gpio_set_dir(uint tca_gpio, bool output) {
     uint8_t reg = (tca_gpio >= 8) ? CONFIGURATION_PORT1 : CONFIGURATION_PORT0;
     uint8_t config_state = 0x00;
     common_hal_busio_i2c_write_read(i2c, address, &reg, 1, &config_state, 1);
-    if(output)
+    if (output) {
         config_state = config_state & ~(1 << (tca_gpio % 8));
-    else
-        config_state = config_state | (1 << (tca_gpio % 8));    
+    } else {
+        config_state = config_state | (1 << (tca_gpio % 8));
+    }
 
     uint8_t reg_and_data[2] = { reg, config_state };
     common_hal_busio_i2c_write(i2c, address, reg_and_data, 2);
@@ -198,7 +200,7 @@ uint16_t tca_gpio_get_input_port(uint tca_address) {
 
     uint8_t reg = INPUT_PORT0;
     uint16_t input_state = 0x0000;
-    common_hal_busio_i2c_write_read(i2c, tca_address, &reg, 1, (uint8_t*)&input_state, 2);
+    common_hal_busio_i2c_write_read(i2c, tca_address, &reg, 1, (uint8_t *)&input_state, 2);
     return input_state;
 }
 
@@ -207,7 +209,7 @@ uint16_t tca_gpio_get_output_port(uint tca_address) {
 
     uint8_t reg = OUTPUT_PORT0;
     uint16_t output_state = 0x0000;
-    common_hal_busio_i2c_write_read(i2c, tca_address, &reg, 1, (uint8_t*)&output_state, 2);
+    common_hal_busio_i2c_write_read(i2c, tca_address, &reg, 1, (uint8_t *)&output_state, 2);
     return output_state;
 }
 
@@ -222,7 +224,7 @@ uint16_t tca_gpio_get_dir_port(uint tca_address) {
 
     uint8_t reg = CONFIGURATION_PORT0;
     uint16_t config_state = 0x0000;
-    common_hal_busio_i2c_write_read(i2c, tca_address, &reg, 1, (uint8_t*)&config_state, 2);
+    common_hal_busio_i2c_write_read(i2c, tca_address, &reg, 1, (uint8_t *)&config_state, 2);
     return config_state;
 }
 
@@ -237,7 +239,7 @@ uint16_t tca_gpio_get_polarity_port(uint tca_address) {
 
     uint8_t reg = POLARITY_PORT0;
     uint16_t polarity_state = 0x0000;
-    common_hal_busio_i2c_write_read(i2c, tca_address, &reg, 1, (uint8_t*)&polarity_state, 2);
+    common_hal_busio_i2c_write_read(i2c, tca_address, &reg, 1, (uint8_t *)&polarity_state, 2);
     return polarity_state;
 }
 

@@ -84,11 +84,11 @@ mp_obj_t common_hal_board_create_i2c(const mp_int_t instance) {
     assert_pin_free(i2c_pin[instance].scl);
     assert_pin_free(i2c_pin[instance].sda);
 
-#ifdef CIRCUITPY_BOARD_I2C_FREQ
+    #ifdef CIRCUITPY_BOARD_I2C_FREQ
     common_hal_busio_i2c_construct(self, i2c_pin[instance].scl, i2c_pin[instance].sda, CIRCUITPY_BOARD_I2C_FREQ, 255);
-#else
+    #else
     common_hal_busio_i2c_construct(self, i2c_pin[instance].scl, i2c_pin[instance].sda, 100000, 255);
-#endif
+    #endif
 
     i2c_obj_created[instance] = true;
     return &i2c_obj[instance];
