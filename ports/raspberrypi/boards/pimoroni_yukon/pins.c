@@ -68,8 +68,8 @@ STATIC MP_DEFINE_ATTRTUPLE(
     (mp_obj_t)&pin_GPIO14,
     (mp_obj_t)&pin_GPIO15,
     (mp_obj_t)&pin_TCA1_7,
-    (mp_obj_t)&pin_TCA1_6,
     (mp_obj_t)&pin_TCA1_5,
+    (mp_obj_t)&pin_TCA1_6,
     MP_ROM_INT(5),  // 0b0101
     MP_ROM_INT(7)   // 0b0111
     );
@@ -98,8 +98,8 @@ STATIC MP_DEFINE_ATTRTUPLE(
     (mp_obj_t)&pin_GPIO22,
     (mp_obj_t)&pin_GPIO23,
     (mp_obj_t)&pin_TCA1_10,
-    (mp_obj_t)&pin_TCA1_11,
     (mp_obj_t)&pin_TCA1_12,
+    (mp_obj_t)&pin_TCA1_11,
     MP_ROM_INT(9),  // 0b1001
     MP_ROM_INT(10)  // 0b1010
     );
