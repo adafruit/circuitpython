@@ -213,10 +213,40 @@ uint16_t tca_gpio_get_output_port(uint tca_address) {
     return output_state;
 }
 
+uint8_t tca_gpio_get_low_output_port(uint tca_address) {
+    busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
+
+    uint8_t reg = OUTPUT_PORT0;
+    uint8_t output_state = 0x00;
+    common_hal_busio_i2c_write_read(i2c, tca_address, &reg, 1, &output_state, 1);
+    return output_state;
+}
+
+uint8_t tca_gpio_get_high_output_port(uint tca_address) {
+    busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
+
+    uint8_t reg = OUTPUT_PORT1;
+    uint8_t output_state = 0x00;
+    common_hal_busio_i2c_write_read(i2c, tca_address, &reg, 1, &output_state, 1);
+    return output_state;
+}
+
 void tca_gpio_set_output_port(uint tca_address, uint16_t output_state) {
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     uint8_t reg_and_data[3] = { OUTPUT_PORT0, output_state & 0xFF, (output_state >> 8) };
     common_hal_busio_i2c_write(i2c, tca_address, reg_and_data, 3);
+}
+
+void tca_gpio_set_low_output_port(uint tca_address, uint8_t output_state) {
+    busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
+    uint8_t reg_and_data[2] = { OUTPUT_PORT0, output_state };
+    common_hal_busio_i2c_write(i2c, tca_address, reg_and_data, 2);
+}
+
+void tca_gpio_set_high_output_port(uint tca_address, uint8_t output_state) {
+    busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
+    uint8_t reg_and_data[2] = { OUTPUT_PORT1, output_state };
+    common_hal_busio_i2c_write(i2c, tca_address, reg_and_data, 2);
 }
 
 uint16_t tca_gpio_get_dir_port(uint tca_address) {
@@ -248,6 +278,110 @@ void tca_gpio_set_polarity_port(uint tca_address, uint16_t polarity_state) {
     uint8_t reg_and_data[3] = { POLARITY_PORT0, polarity_state & 0xFF, (polarity_state >> 8) };
     common_hal_busio_i2c_write(i2c, tca_address, reg_and_data, 3);
 }
+
+void tca_populate_mask(mp_obj_t pins, uint16_t* mask, qstr arg_name) {
+    if (mp_obj_is_type(pins, &tca_pin_type)) {
+        mcu_pin_obj_t* pin = MP_OBJ_TO_PTR(pins);
+        uint8_t tca_gpio = pin->number;
+        invalid_params_if(TCA9555R, tca_gpio >= TCA9555R_VIRTUAL_GPIO_COUNT);
+
+        uint8_t index = tca_gpio >> 4;
+        mask[index] |= (1 << (tca_gpio % 16));
+    }
+    else if(mp_obj_is_type(pins, &mp_type_tuple) || mp_obj_is_type(pins, &mp_type_list)) {
+        size_t len;
+        mp_obj_t *items;
+        mp_obj_get_array(pins, &len, &items);
+
+        // go through each of the tuple/list items
+        for (size_t i = 0; i < len; i++) {
+            // ensure each is a tca pin
+            if (!mp_obj_is_type(items[i], &tca_pin_type)) {
+                mp_raise_TypeError_varg(translate("pin in list or tuple must be of type %q, not %q"), tca_pin_type.name, mp_obj_get_type(items[i])->name);
+            }
+            mcu_pin_obj_t* pin = MP_OBJ_TO_PTR(items[i]);
+            uint8_t tca_gpio = pin->number;
+            invalid_params_if(TCA9555R, tca_gpio >= TCA9555R_VIRTUAL_GPIO_COUNT);
+
+            uint8_t index = tca_gpio >> 4;
+            mask[index] |= (1 << (tca_gpio % 16));
+        }
+    }
+    else {
+        mp_raise_TypeError_varg(translate("%q must be of type %q, %q or %q, not %q"), arg_name, tca_pin_type.name, mp_type_tuple.name, mp_type_list.name, mp_obj_get_type(pins)->name);
+    }
+}
+
+STATIC mp_obj_t tca_pin_change_output(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    enum { ARG_set, ARG_clear };
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_set, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
+        { MP_QSTR_clear, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
+    };
+
+    // args will contain only the value for preserve_dios. The *alarms args are in pos_args.
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(0, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    mp_obj_t set_pins = args[ARG_set].u_obj;
+    mp_obj_t clear_pins = args[ARG_clear].u_obj;
+    if (set_pins == mp_const_none) {
+        if (clear_pins == mp_const_none) {
+            mp_raise_TypeError_varg(translate("set or clear must be of type %q, %q or %q"), tca_pin_type.name, mp_type_tuple.name, mp_type_list.name);
+        }
+        set_pins = mp_const_empty_tuple;
+    }
+    else if (clear_pins == mp_const_none) {
+        clear_pins = mp_const_empty_tuple;
+    }
+
+    // create a set mask and zero it
+    uint16_t set_mask[TCA9555R_CHIP_COUNT];
+    uint16_t clear_mask[TCA9555R_CHIP_COUNT];
+    for (size_t i = 0; i < TCA9555R_CHIP_COUNT; i++) {
+        set_mask[i] = 0x0000;
+        clear_mask[i] = 0x0000;
+    }
+
+    tca_populate_mask(set_pins, set_mask, MP_QSTR_set);
+    tca_populate_mask(clear_pins, clear_mask, MP_QSTR_clear);
+
+    for (size_t i = 0; i < TCA9555R_CHIP_COUNT; i++) {
+        uint8_t address = tca9555r_addresses[i];
+        uint8_t low_set_mask = (uint8_t)(set_mask[i] & 0xFF);
+        uint8_t low_clear_mask = (uint8_t)(clear_mask[i] & 0xFF);
+        uint8_t high_set_mask = (uint8_t)(set_mask[i] >> 8);
+        uint8_t high_clear_mask = (uint8_t)(clear_mask[i] >> 8);
+        bool low_changed = (low_set_mask | low_clear_mask) > 0;
+        bool high_changed = (high_set_mask | high_clear_mask) > 0;
+        if (low_changed && high_changed) {
+            uint16_t output_state = tca_gpio_get_output_port(address);
+            uint16_t new_output_state = output_state;
+            new_output_state |= (uint16_t)low_set_mask | ((uint16_t)high_set_mask << 8);
+            new_output_state &= ~((uint16_t)low_clear_mask | ((uint16_t)high_clear_mask << 8));
+            if (new_output_state != output_state) {
+                tca_gpio_set_output_port(address, new_output_state);
+            }
+        }
+        else if (low_changed) {
+            uint8_t output_state = tca_gpio_get_low_output_port(address);
+            uint8_t new_output_state = (output_state | low_set_mask) & ~low_clear_mask;
+            if (new_output_state != output_state) {
+                tca_gpio_set_low_output_port(address, new_output_state);
+            }
+        }
+        else if (high_changed) {
+            uint8_t output_state = tca_gpio_get_high_output_port(address);
+            uint8_t new_output_state = (output_state | high_set_mask) & ~high_clear_mask;
+            if (new_output_state != output_state) {
+                tca_gpio_set_high_output_port(address, output_state);
+            }
+        }
+    }
+
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_KW(tca_pin_change_output_obj, 0, tca_pin_change_output);
 
 #define TCA_PIN(exp_number, p_number) \
     const mcu_pin_obj_t pin_TCA##exp_number##_##p_number = { \
@@ -302,6 +436,7 @@ TCA_PINS(1);
 STATIC const mp_rom_map_elem_t tca_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_tca) },
     { MP_ROM_QSTR(MP_QSTR_TcaPin), MP_ROM_PTR(&tca_pin_type) },
+    { MP_ROM_QSTR(MP_QSTR_change_output), &tca_pin_change_output_obj },
     TCA_ENTRIES(0),
     TCA_ENTRIES(1)
 };
