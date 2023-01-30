@@ -154,14 +154,17 @@ void tca_gpio_set_output(uint tca_gpio, bool value) {
     uint8_t reg = (tca_gpio >= 8) ? OUTPUT_PORT1 : OUTPUT_PORT0;
     uint8_t output_state = 0x00;
     common_hal_busio_i2c_write_read(i2c, address, &reg, 1, &output_state, 1);
+    uint8_t new_output_state;
     if (value) {
-        output_state = output_state | (1 << (tca_gpio % 8));
+        new_output_state = output_state | (1 << (tca_gpio % 8));
     } else {
-        output_state = output_state & ~(1 << (tca_gpio % 8));
+        new_output_state = output_state & ~(1 << (tca_gpio % 8));
     }
 
-    uint8_t reg_and_data[2] = { reg, output_state };
-    common_hal_busio_i2c_write(i2c, address, reg_and_data, 2);
+    if (new_output_state != output_state) {
+        uint8_t reg_and_data[2] = { reg, new_output_state };
+        common_hal_busio_i2c_write(i2c, address, reg_and_data, 2);
+    }
 }
 
 bool tca_gpio_get_dir(uint tca_gpio) {
@@ -185,14 +188,17 @@ void tca_gpio_set_dir(uint tca_gpio, bool output) {
     uint8_t reg = (tca_gpio >= 8) ? CONFIGURATION_PORT1 : CONFIGURATION_PORT0;
     uint8_t config_state = 0x00;
     common_hal_busio_i2c_write_read(i2c, address, &reg, 1, &config_state, 1);
+    uint8_t new_config_state;
     if (output) {
-        config_state = config_state & ~(1 << (tca_gpio % 8));
+        new_config_state = config_state & ~(1 << (tca_gpio % 8));
     } else {
-        config_state = config_state | (1 << (tca_gpio % 8));
+        new_config_state = config_state | (1 << (tca_gpio % 8));
     }
 
-    uint8_t reg_and_data[2] = { reg, config_state };
-    common_hal_busio_i2c_write(i2c, address, reg_and_data, 2);
+    if (new_config_state != config_state) {
+        uint8_t reg_and_data[2] = { reg, new_config_state };
+        common_hal_busio_i2c_write(i2c, address, reg_and_data, 2);
+    }
 }
 
 uint16_t tca_gpio_get_input_port(uint tca_address) {
@@ -279,16 +285,15 @@ void tca_gpio_set_polarity_port(uint tca_address, uint16_t polarity_state) {
     common_hal_busio_i2c_write(i2c, tca_address, reg_and_data, 3);
 }
 
-void tca_populate_mask(mp_obj_t pins, uint16_t* mask, qstr arg_name) {
+void tca_populate_mask(mp_obj_t pins, uint16_t *mask, qstr arg_name) {
     if (mp_obj_is_type(pins, &tca_pin_type)) {
-        mcu_pin_obj_t* pin = MP_OBJ_TO_PTR(pins);
+        mcu_pin_obj_t *pin = MP_OBJ_TO_PTR(pins);
         uint8_t tca_gpio = pin->number;
         invalid_params_if(TCA9555R, tca_gpio >= TCA9555R_VIRTUAL_GPIO_COUNT);
 
         uint8_t index = tca_gpio >> 4;
         mask[index] |= (1 << (tca_gpio % 16));
-    }
-    else if(mp_obj_is_type(pins, &mp_type_tuple) || mp_obj_is_type(pins, &mp_type_list)) {
+    } else if(mp_obj_is_type(pins, &mp_type_tuple) || mp_obj_is_type(pins, &mp_type_list)) {
         size_t len;
         mp_obj_t *items;
         mp_obj_get_array(pins, &len, &items);
@@ -299,15 +304,14 @@ void tca_populate_mask(mp_obj_t pins, uint16_t* mask, qstr arg_name) {
             if (!mp_obj_is_type(items[i], &tca_pin_type)) {
                 mp_raise_TypeError_varg(translate("pin in list or tuple must be of type %q, not %q"), tca_pin_type.name, mp_obj_get_type(items[i])->name);
             }
-            mcu_pin_obj_t* pin = MP_OBJ_TO_PTR(items[i]);
+            mcu_pin_obj_t *pin = MP_OBJ_TO_PTR(items[i]);
             uint8_t tca_gpio = pin->number;
             invalid_params_if(TCA9555R, tca_gpio >= TCA9555R_VIRTUAL_GPIO_COUNT);
 
             uint8_t index = tca_gpio >> 4;
             mask[index] |= (1 << (tca_gpio % 16));
         }
-    }
-    else {
+    } else {
         mp_raise_TypeError_varg(translate("%q must be of type %q, %q or %q, not %q"), arg_name, tca_pin_type.name, mp_type_tuple.name, mp_type_list.name, mp_obj_get_type(pins)->name);
     }
 }
@@ -330,8 +334,7 @@ STATIC mp_obj_t tca_pin_change_output(size_t n_args, const mp_obj_t *pos_args, m
             mp_raise_TypeError_varg(translate("set or clear must be of type %q, %q or %q"), tca_pin_type.name, mp_type_tuple.name, mp_type_list.name);
         }
         set_pins = mp_const_empty_tuple;
-    }
-    else if (clear_pins == mp_const_none) {
+    } else if (clear_pins == mp_const_none) {
         clear_pins = mp_const_empty_tuple;
     }
 
@@ -362,15 +365,13 @@ STATIC mp_obj_t tca_pin_change_output(size_t n_args, const mp_obj_t *pos_args, m
             if (new_output_state != output_state) {
                 tca_gpio_set_output_port(address, new_output_state);
             }
-        }
-        else if (low_changed) {
+        } else if (low_changed) {
             uint8_t output_state = tca_gpio_get_low_output_port(address);
             uint8_t new_output_state = (output_state | low_set_mask) & ~low_clear_mask;
             if (new_output_state != output_state) {
                 tca_gpio_set_low_output_port(address, new_output_state);
             }
-        }
-        else if (high_changed) {
+        } else if (high_changed) {
             uint8_t output_state = tca_gpio_get_high_output_port(address);
             uint8_t new_output_state = (output_state | high_set_mask) & ~high_clear_mask;
             if (new_output_state != output_state) {
