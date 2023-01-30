@@ -293,7 +293,7 @@ void tca_populate_mask(mp_obj_t pins, uint16_t *mask, qstr arg_name) {
 
         uint8_t index = tca_gpio >> 4;
         mask[index] |= (1 << (tca_gpio % 16));
-    } else if(mp_obj_is_type(pins, &mp_type_tuple) || mp_obj_is_type(pins, &mp_type_list)) {
+    } else if (mp_obj_is_type(pins, &mp_type_tuple) || mp_obj_is_type(pins, &mp_type_list)) {
         size_t len;
         mp_obj_t *items;
         mp_obj_get_array(pins, &len, &items);
@@ -375,7 +375,7 @@ STATIC mp_obj_t tca_pin_change_output(size_t n_args, const mp_obj_t *pos_args, m
             uint8_t output_state = tca_gpio_get_high_output_port(address);
             uint8_t new_output_state = (output_state | high_set_mask) & ~high_clear_mask;
             if (new_output_state != output_state) {
-                tca_gpio_set_high_output_port(address, output_state);
+                tca_gpio_set_high_output_port(address, new_output_state);
             }
         }
     }
