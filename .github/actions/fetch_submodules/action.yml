@@ -4,7 +4,7 @@ inputs:
   submodules:
     description: 'The submodules to cache'
     required: false
-    default: '["extmod/ulab", "lib/", "tools/"]'
+    default: '["extmod/ulab", "lib/", "tools/adabot", "tools/bitmap_font", "tools/huffman", "tools/python-semver", "tools/Tecate-bitmap-fonts", "tools/uf2", "tools/usb_descriptor"]'
     type: string
 
   cache:
