@@ -44,6 +44,9 @@
 //| """Tuple of all MIDI ports. Each item is ether `PortIn` or `PortOut`."""
 //|
 
+//| For more information about how to utilize the 'usb_midi' module, see the link below:
+//| <https://learn.adafruit.com/customizing-usb-devices-in-circuitpython?view=all>
+
 //| def disable() -> None:
 //|     """Disable presenting a USB MIDI device to the host.
 //|     The device is normally enabled by default, but on some boards with limited endpoints

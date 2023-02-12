@@ -37,6 +37,10 @@
 //|     """
 //|     ...
 //|
+
+//| For more information about how to utilize the 'rainbowio' module, see the link below:
+//| <https://learn.adafruit.com/todbot-circuitpython-tricks/neopixels-dotstars>
+
 STATIC mp_obj_t rainbowio_colorwheel(mp_obj_t n) {
     mp_float_t f = mp_obj_get_float(n);
     return MP_OBJ_NEW_SMALL_INT(colorwheel(f));

@@ -32,6 +32,12 @@
 #include "shared-bindings/rgbmatrix/RGBMatrix.h"
 
 //| """Low-level routines for bitbanged LED matrices"""
+//| For more information about the 'rgbmatrix' module:
+//| <https://learn.adafruit.com/rgb-led-matrices-matrix-panels-with-circuitpython/overview>
+//|
+//| For examples on how to utilize the 'rgbmatrix' module, see the links below:
+//| <https://learn.adafruit.com/rgb-led-matrices-matrix-panels-with-circuitpython/example-simple-two-line-text-scroller>
+//| <https://learn.adafruit.com/rgb-led-matrices-matrix-panels-with-circuitpython/example-adafruit-machine>
 
 STATIC const mp_rom_map_elem_t rgbmatrix_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_rgbmatrix) },

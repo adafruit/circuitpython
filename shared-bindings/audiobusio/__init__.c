@@ -44,6 +44,8 @@
 //| All classes change hardware state and should be deinitialized when they
 //| are no longer needed. To do so, either call :py:meth:`!deinit` or use a
 //| context manager."""
+//| For more information about how to utilize the 'audiobusio' module, see the link below:
+//| <https://learn.adafruit.com/make-it-sense/circuitpython-3>
 
 STATIC const mp_rom_map_elem_t audiobusio_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_audiobusio) },

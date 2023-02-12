@@ -35,6 +35,9 @@
 //| The `wifi` module provides necessary low-level functionality for managing
 //| wifi connections. Use `socketpool` for communicating over the network."""
 //|
+//| For more information about how to utilize the 'wifi' module, see the link below:
+//| <https://learn.adafruit.com/mqtt-in-circuitpython/circuitpython-wifi-usage>
+//|
 //| radio: Radio
 //| """Wifi radio used to manage both station and AP modes.
 //| This object is the sole instance of `wifi.Radio`."""

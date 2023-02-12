@@ -49,6 +49,9 @@
 //| """
 //|
 
+//| For more information about how to utilize the 'usb_hid' module, see the link below:
+//| <https://learn.adafruit.com/customizing-usb-devices-in-circuitpython?view=all>
+
 //| def disable() -> None:
 //|     """Do not present any USB HID devices to the host computer.
 //|     Can be called in ``boot.py``, before USB is connected.

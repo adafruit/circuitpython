@@ -33,6 +33,8 @@
 #include "shared-bindings/sdcardio/SDCard.h"
 
 //| """Interface to an SD card via the SPI bus"""
+//| For more information about how to utilize the 'sdcardio' module, see the link below:
+//| <https://learn.adafruit.com/adafruit-microsd-spi-sdio/using-sdcardio>
 
 STATIC const mp_rom_map_elem_t sdcardio_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_sdcardio) },

@@ -36,6 +36,8 @@
 //| module.
 //| """
 //|
+//| For more information about learning how to utilize the 'ipaddress' module, see the link below:
+//| <https://learn.adafruit.com/iot-led-sign/circuitpython-internet-test>
 
 
 bool ipaddress_parse_ipv4address(const char *str_data, size_t str_len, uint32_t *ip_out) {

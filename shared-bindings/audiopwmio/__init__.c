@@ -45,6 +45,9 @@
 //| Since CircuitPython 5, `Mixer`, `RawSample` and `WaveFile` are moved
 //| to :mod:`audiocore`."""
 
+//| For more information about how to utilize the 'audiopwmio' module, see the link below:
+//| <https://learn.adafruit.com/todbot-circuitpython-tricks/audio>
+
 STATIC const mp_rom_map_elem_t audiopwmio_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_audiopwmio) },
     { MP_ROM_QSTR(MP_QSTR_PWMAudioOut), MP_ROM_PTR(&audiopwmio_pwmaudioout_type) },

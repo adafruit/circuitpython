@@ -70,6 +70,9 @@
 //|     Equivalent to ``usb_cdc.enable(console=False, data=False)``."""
 //|     ...
 //|
+//| For more information about how to utilize the 'usb_cdc' module, see the link below:
+//| <https://learn.adafruit.com/customizing-usb-devices-in-circuitpython?view=all>
+
 STATIC mp_obj_t usb_cdc_disable(void) {
     if (!common_hal_usb_cdc_disable()) {
         mp_raise_RuntimeError(translate("Cannot change USB devices now"));
