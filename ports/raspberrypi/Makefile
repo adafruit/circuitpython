@@ -160,7 +160,7 @@ CFLAGS += $(OPTIMIZATION_FLAGS)
 CFLAGS += $(CFLAGS_CYW43)
 #Debugging/Optimization
 ifeq ($(DEBUG), 1)
-  CFLAGS += -ggdb3 -O3
+  CFLAGS += -ggdb3 -O1
   # No LTO because we may place some functions in RAM instead of flash.
 else
   CFLAGS += -DNDEBUG

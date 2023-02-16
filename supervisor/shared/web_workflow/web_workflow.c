@@ -60,13 +60,9 @@
 #include "shared-bindings/socketpool/Socket.h"
 #include "shared-bindings/socketpool/SocketPool.h"
 
-#if CIRCUITPY_WIFI
 #include "shared-bindings/wifi/__init__.h"
-#endif
 
-#if CIRCUITPY_OS_GETENV
 #include "shared-module/os/__init__.h"
-#endif
 
 enum request_state {
     STATE_METHOD,
@@ -254,8 +250,6 @@ void supervisor_web_workflow_status(void) {
 #endif
 
 void supervisor_start_web_workflow(void) {
-    #if CIRCUITPY_WEB_WORKFLOW && CIRCUITPY_WIFI && CIRCUITPY_OS_GETENV
-
     // Skip starting the workflow if we're not starting from power on or reset.
     const mcu_reset_reason_t reset_reason = common_hal_mcu_processor_get_reset_reason();
     if (reset_reason != RESET_REASON_POWER_ON &&
@@ -353,7 +347,6 @@ void supervisor_start_web_workflow(void) {
         _api_password[0] = ':';
         _base64_in_place(_api_password, strlen(_api_password), sizeof(_api_password) - 1);
     }
-    #endif
 }
 
 void web_workflow_send_raw(socketpool_socket_obj_t *socket, const uint8_t *buf, int len) {

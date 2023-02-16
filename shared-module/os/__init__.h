@@ -26,6 +26,10 @@
 
 #pragma once
 
+#if !CIRCUITPY_OS_GETENV
+#error os_getenv not in build
+#endif
+
 typedef enum {
     GETENV_OK = 0,
     GETENV_ERR_OPEN,

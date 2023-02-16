@@ -27,6 +27,10 @@
 #ifndef MICROPY_INCLUDED_SHARED_MODULE_BITBANGIO_SPI_H
 #define MICROPY_INCLUDED_SHARED_MODULE_BITBANGIO_SPI_H
 
+#if (!CIRCUITPY_BITBANGIO) && (!CIRCUITPY_BUSIO_SPI)
+#error bitbangio not in build
+#endif
+
 #include "common-hal/digitalio/DigitalInOut.h"
 
 #include "py/obj.h"

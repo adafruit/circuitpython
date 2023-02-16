@@ -25,8 +25,11 @@
  * THE SOFTWARE.
  */
 
-#ifndef MICROPY_INCLUDED_ESPRESSIF_COMMON_HAL_WIFI_MONITOR_H
-#define MICROPY_INCLUDED_ESPRESSIF_COMMON_HAL_WIFI_MONITOR_H
+#pragma once
+
+#if !CIRCUITPY_WIFI
+#error wifi not in build
+#endif
 
 #include "py/obj.h"
 
@@ -36,5 +39,3 @@ typedef struct {
     size_t lost;
     size_t queue_length;
 } wifi_monitor_obj_t;
-
-#endif // MICROPY_INCLUDED_ESPRESSIF_COMMON_HAL_WIFI_MONITOR_H

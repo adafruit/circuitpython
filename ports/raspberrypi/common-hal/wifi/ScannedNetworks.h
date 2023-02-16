@@ -27,6 +27,10 @@
 
 #pragma once
 
+#if !CIRCUITPY_WIFI
+#error wifi not in build
+#endif
+
 #include <stdint.h>
 
 #include "py/obj.h"

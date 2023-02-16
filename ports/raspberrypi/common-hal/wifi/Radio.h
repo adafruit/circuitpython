@@ -26,6 +26,10 @@
 
 #pragma once
 
+#if !CIRCUITPY_WIFI
+#error wifi not in build
+#endif
+
 #include "py/obj.h"
 
 #include "shared-bindings/wifi/ScannedNetworks.h"
