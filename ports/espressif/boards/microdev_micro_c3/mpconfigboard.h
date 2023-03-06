@@ -50,3 +50,5 @@
 
 // For entering safe mode
 #define CIRCUITPY_BOOT_BUTTON           (&pin_GPIO9)
+
+#define CIRCUITPY_SETTABLE_PYSTACK 0

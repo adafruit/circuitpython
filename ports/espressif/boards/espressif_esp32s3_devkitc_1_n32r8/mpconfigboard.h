@@ -37,3 +37,5 @@
 #define DEFAULT_UART_BUS_TX         (&pin_GPIO43)
 
 #define AUTORESET_DELAY_MS          500
+
+#define CIRCUITPY_SETTABLE_PYSTACK 0
