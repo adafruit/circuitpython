@@ -40,5 +40,3 @@
 // Serial over UART
 #define CIRCUITPY_CONSOLE_UART_RX               (&pin_GPIO20)
 #define CIRCUITPY_CONSOLE_UART_TX               (&pin_GPIO21)
-
-#define CIRCUITPY_SETTABLE_PYSTACK 0

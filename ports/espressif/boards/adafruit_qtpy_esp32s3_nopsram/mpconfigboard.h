@@ -43,5 +43,3 @@
 #define CIRCUITPY_BOARD_UART_PIN    {{.tx = &pin_GPIO5, .rx = &pin_GPIO16}}
 
 #define DOUBLE_TAP_PIN (&pin_GPIO10)
-
-#define CIRCUITPY_SETTABLE_PYSTACK 0
