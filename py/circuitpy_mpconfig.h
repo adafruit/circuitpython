@@ -145,7 +145,6 @@ extern void common_hal_mcu_enable_interrupts(void);
 #define MICROPY_REPL_AUTO_INDENT         (1)
 #define MICROPY_REPL_EVENT_DRIVEN        (0)
 #define MICROPY_ENABLE_PYSTACK           (1)
-#define CIRCUITPY_SETTABLE_PYSTACK       (1)
 #define MICROPY_STACK_CHECK              (1)
 #define MICROPY_STREAMS_NON_BLOCK        (1)
 #ifndef MICROPY_USE_INTERNAL_PRINTF
@@ -405,7 +404,7 @@ extern const struct _mp_obj_module_t nvm_module;
 #if MICROPY_MODULE_WEAK_LINKS
 #define MICROPY_PORT_BUILTIN_MODULES \
     MICROPY_PORT_BUILTIN_MODULES_STRONG_LINKS \
-    MICROPY_PORT_BUILTIN_MODULE_ALT_NAMES
+        MICROPY_PORT_BUILTIN_MODULE_ALT_NAMES
 #else
 // If weak links are disabled, included both strong and potentially weak lines
 #define MICROPY_PORT_BUILTIN_MODULES \
@@ -539,6 +538,10 @@ void supervisor_run_background_tasks_if_tick(void);
 
 #ifndef USB_MSC_EP_NUM_IN
 #define USB_MSC_EP_NUM_IN (0)
+#endif
+
+#ifndef CIRCUITPY_SETTABLE_PYSTACK
+#define CIRCUITPY_SETTABLE_PYSTACK (1)
 #endif
 
 #ifndef USB_HID_EP_NUM_OUT

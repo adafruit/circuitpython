@@ -55,8 +55,7 @@
 
 // Temporarily disable settable pystack
 #if defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S3)
-#undef CIRCUITPY_SETTABLE_PYSTACK
-#define CIRCUITPY_SETTABLE_PYSTACK 0
+#define CIRCUITPY_SETTABLE_PYSTACK (0)
 #endif
 
 // Nearly all boards have this because it is used to enter the ROM bootloader.
