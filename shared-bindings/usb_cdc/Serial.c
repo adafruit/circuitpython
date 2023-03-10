@@ -273,9 +273,7 @@ STATIC const mp_stream_p_t usb_cdc_serial_stream_p = {
     .write = usb_cdc_serial_write_stream,
     .ioctl = usb_cdc_serial_ioctl_stream,
     .is_text = false,
-    .pyserial_read_compatibility = true,
     .pyserial_readinto_compatibility = true,
-    .pyserial_dont_return_none_compatibility = true,
 };
 
 const mp_obj_type_t usb_cdc_serial_type = {

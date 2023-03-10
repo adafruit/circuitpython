@@ -79,8 +79,9 @@ mp_uint_t mp_stream_rw(mp_obj_t stream, void *buf_, mp_uint_t size, int *errcode
             // If we read something before getting EAGAIN, don't leak it
             if (mp_is_nonblocking_error(*errcode) && done != 0) {
                 *errcode = 0;
+                return done;
             }
-            return done;
+            return MP_STREAM_ERROR;
         }
         if (flags & MP_STREAM_RW_ONCE) {
             return out_sz;

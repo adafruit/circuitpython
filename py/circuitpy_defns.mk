@@ -103,6 +103,9 @@ endif
 # Select which builtin modules to compile and include.
 # Keep alphabetical.
 
+ifeq ($(CIRCUITPY__ASYNCIO),1)
+SRC_PATTERNS += _asyncio/%
+endif
 ifeq ($(CIRCUITPY_AESIO),1)
 SRC_PATTERNS += aesio/%
 endif
@@ -539,6 +542,8 @@ SRC_BINDINGS_ENUMS += \
 	util.c
 
 SRC_SHARED_MODULE_ALL = \
+	_asyncio/__init__.c \
+	_asyncio/Loop.c \
 	_bleio/Address.c \
 	_bleio/Attribute.c \
 	_bleio/ScanEntry.c \

@@ -24,6 +24,7 @@
  * THE SOFTWARE.
  */
 
+#include "py/stream.h"
 #include "shared/runtime/interrupt_char.h"
 #include "shared-bindings/usb_cdc/Serial.h"
 #include "shared-module/usb_cdc/Serial.h"
@@ -60,7 +61,8 @@ size_t common_hal_usb_cdc_serial_read(usb_cdc_serial_obj_t *self, uint8_t *data,
             // Wait for a bit, and check for ctrl-C.
             RUN_BACKGROUND_TASKS;
             if (mp_hal_is_interrupted()) {
-                return 0;
+                *errcode = MP_EINTR;
+                return MP_STREAM_ERROR;
             }
 
             // Advance buffer pointer and reduce number of bytes that need to be read.
@@ -74,7 +76,10 @@ size_t common_hal_usb_cdc_serial_read(usb_cdc_serial_obj_t *self, uint8_t *data,
             total_num_read += num_read;
         }
     }
-
+    if (total_num_read == 0) {
+        *errcode = MP_EAGAIN;
+        return MP_STREAM_ERROR;
+    }
     return total_num_read;
 }
 

@@ -188,16 +188,16 @@ msgstr ""
 msgid "%q must be >= %d"
 msgstr ""
 
-#: ports/espressif/common-hal/analogbufio/BufferedIn.c
-msgid "%q must be array of type 'H'"
-msgstr ""
-
 #: shared-bindings/analogbufio/BufferedIn.c
 msgid "%q must be a bytearray or array of type 'H' or 'B'"
 msgstr ""
 
 #: shared-bindings/audiocore/RawSample.c
 msgid "%q must be a bytearray or array of type 'h', 'H', 'b', or 'B'"
+msgstr ""
+
+#: ports/espressif/common-hal/analogbufio/BufferedIn.c
+msgid "%q must be array of type 'H'"
 msgstr ""
 
 #: ports/raspberrypi/bindings/cyw43/__init__.c py/argcheck.c py/objexcept.c
@@ -1220,7 +1220,8 @@ msgstr ""
 msgid "Interrupt error."
 msgstr ""
 
-#: py/argcheck.c shared-bindings/digitalio/DigitalInOut.c
+#: ports/mimxrt10xx/common-hal/pwmio/PWMOut.c py/argcheck.c
+#: shared-bindings/digitalio/DigitalInOut.c
 #: shared-bindings/displayio/EPaperDisplay.c
 msgid "Invalid %q"
 msgstr ""
@@ -3036,8 +3037,8 @@ msgid "extra positional arguments given"
 msgstr ""
 
 #: shared-bindings/audiocore/WaveFile.c shared-bindings/audiomp3/MP3Decoder.c
-#: shared-bindings/displayio/OnDiskBitmap.c shared-bindings/synthio/__init__.c
-#: shared-module/gifio/GifWriter.c
+#: shared-bindings/displayio/OnDiskBitmap.c shared-bindings/gifio/OnDiskGif.c
+#: shared-bindings/synthio/__init__.c shared-module/gifio/GifWriter.c
 msgid "file must be a file opened in byte mode"
 msgstr ""
 
@@ -3697,6 +3698,10 @@ msgstr ""
 
 #: py/obj.c
 msgid "object has no len"
+msgstr ""
+
+#: shared-bindings/_asyncio/Loop.c
+msgid "object is not a loop"
 msgstr ""
 
 #: py/obj.c

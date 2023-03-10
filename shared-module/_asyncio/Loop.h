@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * SPDX-FileCopyrightText: Copyright (c) 2013, 2014 Damien P. George
+ * Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,33 +23,32 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef MICROPY_INCLUDED_PY_OBJGENERATOR_H
-#define MICROPY_INCLUDED_PY_OBJGENERATOR_H
 
-#include "py/bc.h"
+#pragma once
+
 #include "py/obj.h"
-#include "py/runtime.h"
 
-/******************************************************************************/
-/* generator wrapper                                                          */
+typedef struct _asyncio_loop_call_soon_entry _asyncio_loop_call_soon_entry_t;
 
-typedef struct _mp_obj_gen_wrap_t {
+typedef struct {
     mp_obj_base_t base;
-    mp_obj_t *fun;
-    bool coroutine_generator;
-} mp_obj_gen_wrap_t;
+    _asyncio_loop_call_soon_entry_t *call_soon_list_head;
+    _asyncio_loop_call_soon_entry_t **call_soon_list_tail;
+} _asyncio_loop_obj_t;
 
-typedef struct _mp_obj_gen_instance_t {
-    mp_obj_base_t base;
-    // mp_const_none: Not-running, no exception.
-    // MP_OBJ_NULL: Running, no exception.
-    // other: Not running, pending exception.
-    mp_obj_t pend_exc;
-    bool coroutine_generator;
-    mp_code_state_t code_state;
-} mp_obj_gen_instance_t;
+struct _asyncio_loop_call_soon_entry {
+    _asyncio_loop_call_soon_entry_t *next;
+    _asyncio_loop_obj_t *native_loop;
+    size_t n_args;
+    mp_obj_t *args;
+};
 
+void common_hal__asyncio_loop_init(_asyncio_loop_obj_t *native_loop, const mp_obj_type_t *type);
 
-mp_vm_return_kind_t mp_obj_gen_resume(mp_obj_t self_in, mp_obj_t send_val, mp_obj_t throw_val, mp_obj_t *ret_val);
+_asyncio_loop_call_soon_entry_t *common_hal__asyncio_loop_call_soon_entry_alloc(_asyncio_loop_obj_t *native_loop, mp_obj_t loop_obj,  mp_obj_t fun_obj, size_t n_args, mp_obj_t *args);
 
-#endif // MICROPY_INCLUDED_PY_OBJGENERATOR_H
+void common_hal__asyncio_loop_call_soon_entry_free(_asyncio_loop_call_soon_entry_t *entry);
+
+void common_hal__asyncio_loop_call_soon_isrsafe(_asyncio_loop_call_soon_entry_t *entry);
+
+void common_hal__asyncio_loop_poll_isr(_asyncio_loop_obj_t *native_loop, mp_obj_t loop_obj);

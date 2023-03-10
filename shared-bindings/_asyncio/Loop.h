@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * SPDX-FileCopyrightText: Copyright (c) 2013, 2014 Damien P. George
+ * Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,33 +23,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef MICROPY_INCLUDED_PY_OBJGENERATOR_H
-#define MICROPY_INCLUDED_PY_OBJGENERATOR_H
 
-#include "py/bc.h"
+#pragma once
+
+#include "shared-module/_asyncio/Loop.h"
 #include "py/obj.h"
-#include "py/runtime.h"
 
-/******************************************************************************/
-/* generator wrapper                                                          */
+extern const mp_obj_type_t _asyncio_loop_type;
 
-typedef struct _mp_obj_gen_wrap_t {
-    mp_obj_base_t base;
-    mp_obj_t *fun;
-    bool coroutine_generator;
-} mp_obj_gen_wrap_t;
-
-typedef struct _mp_obj_gen_instance_t {
-    mp_obj_base_t base;
-    // mp_const_none: Not-running, no exception.
-    // MP_OBJ_NULL: Running, no exception.
-    // other: Not running, pending exception.
-    mp_obj_t pend_exc;
-    bool coroutine_generator;
-    mp_code_state_t code_state;
-} mp_obj_gen_instance_t;
-
-
-mp_vm_return_kind_t mp_obj_gen_resume(mp_obj_t self_in, mp_obj_t send_val, mp_obj_t throw_val, mp_obj_t *ret_val);
-
-#endif // MICROPY_INCLUDED_PY_OBJGENERATOR_H
+_asyncio_loop_obj_t *_asyncio_get_native_loop(mp_obj_t loop_obj);

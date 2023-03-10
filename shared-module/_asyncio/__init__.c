@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * SPDX-FileCopyrightText: Copyright (c) 2013, 2014 Damien P. George
+ * Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,33 +23,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef MICROPY_INCLUDED_PY_OBJGENERATOR_H
-#define MICROPY_INCLUDED_PY_OBJGENERATOR_H
 
-#include "py/bc.h"
-#include "py/obj.h"
-#include "py/runtime.h"
+#include "shared-module/_asyncio/__init__.h"
+#include "py/objgenerator.h"
 
-/******************************************************************************/
-/* generator wrapper                                                          */
+// TODO: move this to mp_state_thread_t
+STATIC mp_obj_t common_hal__asyncio_running_loop_obj = mp_const_none;
 
-typedef struct _mp_obj_gen_wrap_t {
-    mp_obj_base_t base;
-    mp_obj_t *fun;
-    bool coroutine_generator;
-} mp_obj_gen_wrap_t;
+mp_obj_t *common_hal__asyncio_running_loop() {
+    return &common_hal__asyncio_running_loop_obj;
+}
 
-typedef struct _mp_obj_gen_instance_t {
-    mp_obj_base_t base;
-    // mp_const_none: Not-running, no exception.
-    // MP_OBJ_NULL: Running, no exception.
-    // other: Not running, pending exception.
-    mp_obj_t pend_exc;
-    bool coroutine_generator;
-    mp_code_state_t code_state;
-} mp_obj_gen_instance_t;
+void common_hal__asyncio_reset() {
+    *common_hal__asyncio_running_loop() = mp_const_none;
+}
 
-
-mp_vm_return_kind_t mp_obj_gen_resume(mp_obj_t self_in, mp_obj_t send_val, mp_obj_t throw_val, mp_obj_t *ret_val);
-
-#endif // MICROPY_INCLUDED_PY_OBJGENERATOR_H
+bool common_hal__asyncio_iscoroutine(mp_const_obj_t obj) {
+    if (mp_obj_get_type(obj) == &mp_type_gen_instance) {
+        mp_obj_gen_instance_t *self = MP_OBJ_TO_PTR(obj);
+        return self->coroutine_generator;
+    }
+    if (mp_obj_get_type(obj) == &mp_type_gen_wrap) {
+        mp_obj_gen_wrap_t *self = MP_OBJ_TO_PTR(obj);
+        return self->coroutine_generator;
+    }
+    return false;
+}

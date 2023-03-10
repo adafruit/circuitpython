@@ -186,7 +186,6 @@ PY_CORE_O_BASENAME = $(addprefix py/,\
 	)
 
 PY_EXTMOD_O_BASENAME = \
-	extmod/moduasyncio.o \
 	extmod/moductypes.o \
 	extmod/modujson.o \
 	extmod/modure.o \

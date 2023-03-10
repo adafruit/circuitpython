@@ -29,7 +29,6 @@
 #include <assert.h>
 
 #include "py/runtime.h"
-#include "py/bc.h"
 #include "py/objstr.h"
 #include "py/objgenerator.h"
 #include "py/objfun.h"
@@ -45,25 +44,6 @@ mp_obj_exception_t mp_static_GeneratorExit_obj = {{&mp_type_GeneratorExit}, (mp_
 static
 mp_obj_exception_t mp_static_GeneratorExit_obj;
 #endif
-
-/******************************************************************************/
-/* generator wrapper                                                          */
-
-typedef struct _mp_obj_gen_wrap_t {
-    mp_obj_base_t base;
-    mp_obj_t *fun;
-    bool coroutine_generator;
-} mp_obj_gen_wrap_t;
-
-typedef struct _mp_obj_gen_instance_t {
-    mp_obj_base_t base;
-    // mp_const_none: Not-running, no exception.
-    // MP_OBJ_NULL: Running, no exception.
-    // other: Not running, pending exception.
-    mp_obj_t pend_exc;
-    bool coroutine_generator;
-    mp_code_state_t code_state;
-} mp_obj_gen_instance_t;
 
 /******************************************************************************/
 // native generator wrapper
