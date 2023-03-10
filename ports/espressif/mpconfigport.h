@@ -35,6 +35,9 @@
 
 #define CIRCUITPY_DIGITALIO_HAVE_INPUT_ONLY (1)
 
+// Temporarily disable settable pystack
+#define CIRCUITPY_SETTABLE_PYSTACK (0)
+
 #include "py/circuitpy_mpconfig.h"
 
 #if CIRCUITPY_BLEIO
@@ -52,11 +55,6 @@
 
 #define MICROPY_NLR_SETJMP                  (1)
 #define CIRCUITPY_DEFAULT_STACK_SIZE        0x6000
-
-// Temporarily disable settable pystack
-#if defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32S3)
-#define CIRCUITPY_SETTABLE_PYSTACK (0)
-#endif
 
 // Nearly all boards have this because it is used to enter the ROM bootloader.
 #ifndef CIRCUITPY_BOOT_BUTTON
