@@ -405,7 +405,7 @@ extern const struct _mp_obj_module_t nvm_module;
 #if MICROPY_MODULE_WEAK_LINKS
 #define MICROPY_PORT_BUILTIN_MODULES \
     MICROPY_PORT_BUILTIN_MODULES_STRONG_LINKS \
-    MICROPY_PORT_BUILTIN_MODULE_ALT_NAMES
+        MICROPY_PORT_BUILTIN_MODULE_ALT_NAMES
 #else
 // If weak links are disabled, included both strong and potentially weak lines
 #define MICROPY_PORT_BUILTIN_MODULES \

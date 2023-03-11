@@ -91,7 +91,7 @@ typedef struct _mp_fun_table_t {
     mp_const_obj_t const_true;
     mp_uint_t (*native_from_obj)(mp_obj_t obj, mp_uint_t type);
     mp_obj_t (*native_to_obj)(mp_uint_t val, mp_uint_t type);
-    mp_obj_dict_t *(*swap_globals)(mp_obj_dict_t * new_globals);
+    mp_obj_dict_t *(*swap_globals)(mp_obj_dict_t *new_globals);
     mp_obj_t (*load_name)(qstr qst);
     mp_obj_t (*load_global)(qstr qst);
     mp_obj_t (*load_build_class)(void);

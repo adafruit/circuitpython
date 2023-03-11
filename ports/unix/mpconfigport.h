@@ -266,7 +266,7 @@ extern const struct _mp_obj_module_t mp_module_jni;
     MICROPY_PY_MACHINE_DEF \
     MICROPY_PY_UOS_DEF \
     MICROPY_PY_USELECT_DEF \
-    MICROPY_PY_TERMIOS_DEF \
+        MICROPY_PY_TERMIOS_DEF \
 
 // type definitions for the specific machine
 

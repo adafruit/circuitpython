@@ -143,18 +143,18 @@ static const uint8_t Rcon[11] = {
 /*****************************************************************************/
 static const uint8_t *GetRoundKey(const struct AES_ctx *ctx) {
     switch (ctx->KeyLength) {
-        #if defined(AES128) && (AES128 == 1)
+    #if defined(AES128) && (AES128 == 1)
         case 16:
             return ctx->RoundKey128;
-        #endif
-        #if defined(AES192) && (AES192 == 1)
+    #endif
+    #if defined(AES192) && (AES192 == 1)
         case 24:
             return ctx->RoundKey192;
-        #endif
-        #if defined(AES256) && (AES256 == 1)
+    #endif
+    #if defined(AES256) && (AES256 == 1)
         case 32:
             return ctx->RoundKey256;
-        #endif
+    #endif
     }
     return NULL;
 }
@@ -255,24 +255,24 @@ static void KeyExpansion(struct AES_ctx *ctx, const uint8_t *Key) {
 void AES_init_ctx(struct AES_ctx *ctx, const uint8_t *key, uint32_t keylen) {
     ctx->KeyLength = keylen;
     switch (ctx->KeyLength) {
-        #if defined(AES128) && (AES128 == 1)
+    #if defined(AES128) && (AES128 == 1)
         case 16:
             ctx->Nr = Nr128;
             ctx->Nk = Nk128;
             break;
-        #endif
-        #if defined(AES192) && (AES192 == 1)
+    #endif
+    #if defined(AES192) && (AES192 == 1)
         case 24:
             ctx->Nr = Nr192;
             ctx->Nk = Nk192;
             break;
-        #endif
-        #if defined(AES256) && (AES256 == 1)
+    #endif
+    #if defined(AES256) && (AES256 == 1)
         case 32:
             ctx->Nr = Nr256;
             ctx->Nk = Nk256;
             break;
-        #endif
+    #endif
         default:
             ctx->Nr = 0;
             ctx->Nk = 0;

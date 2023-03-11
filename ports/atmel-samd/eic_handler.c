@@ -43,35 +43,35 @@ void set_eic_handler(uint8_t channel, uint8_t eic_handler) {
 void shared_eic_handler(uint8_t channel) {
     uint8_t handler = eic_channel_handler[channel];
     switch (handler) {
-        #if CIRCUITPY_PULSEIO
+    #if CIRCUITPY_PULSEIO
         case EIC_HANDLER_PULSEIN:
             pulsein_interrupt_handler(channel);
             break;
-        #endif
+    #endif
 
-        #if CIRCUITPY_PS2IO
+    #if CIRCUITPY_PS2IO
         case EIC_HANDLER_PS2:
             ps2_interrupt_handler(channel);
             break;
-        #endif
+    #endif
 
-        #if CIRCUITPY_ROTARYIO
+    #if CIRCUITPY_ROTARYIO
         case EIC_HANDLER_INCREMENTAL_ENCODER:
             incrementalencoder_interrupt_handler(channel);
             break;
-        #endif
+    #endif
 
-        #if CIRCUITPY_COUNTIO
+    #if CIRCUITPY_COUNTIO
         case EIC_HANDLER_COUNTER:
             counter_interrupt_handler(channel);
             break;
-        #endif
+    #endif
 
-        #if CIRCUITPY_ALARM
+    #if CIRCUITPY_ALARM
         case EIC_HANDLER_ALARM:
             pin_alarm_callback(channel);
             break;
-        #endif
+    #endif
 
         default:
             break;

@@ -51,7 +51,7 @@ int mp_vfs_blockdev_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_b
         mp_uint_t (*f)(uint8_t *, uint32_t, uint32_t) = (void *)(uintptr_t)self->readblocks[2];
         return f(buf, block_num, num_blocks);
     } else {
-        mp_obj_array_t ar = {{&mp_type_bytearray}, BYTEARRAY_TYPECODE, 0, num_blocks *self->block_size, buf};
+        mp_obj_array_t ar = {{&mp_type_bytearray}, BYTEARRAY_TYPECODE, 0, num_blocks * self->block_size, buf};
         self->readblocks[2] = MP_OBJ_NEW_SMALL_INT(block_num);
         self->readblocks[3] = MP_OBJ_FROM_PTR(&ar);
         mp_call_method_n_kw(2, 0, self->readblocks);
@@ -83,7 +83,7 @@ int mp_vfs_blockdev_write(mp_vfs_blockdev_t *self, size_t block_num, size_t num_
         mp_uint_t (*f)(const uint8_t *, uint32_t, uint32_t) = (void *)(uintptr_t)self->writeblocks[2];
         return f(buf, block_num, num_blocks);
     } else {
-        mp_obj_array_t ar = {{&mp_type_bytearray}, BYTEARRAY_TYPECODE, 0, num_blocks *self->block_size, (void *)buf};
+        mp_obj_array_t ar = {{&mp_type_bytearray}, BYTEARRAY_TYPECODE, 0, num_blocks * self->block_size, (void *)buf};
         self->writeblocks[2] = MP_OBJ_NEW_SMALL_INT(block_num);
         self->writeblocks[3] = MP_OBJ_FROM_PTR(&ar);
         mp_call_method_n_kw(2, 0, self->writeblocks);

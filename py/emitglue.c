@@ -183,17 +183,17 @@ mp_obj_t mp_make_function_from_raw_code(const mp_raw_code_t *rc, mp_obj_t def_ar
     // make the function, depending on the raw code kind
     mp_obj_t fun;
     switch (rc->kind) {
-        #if MICROPY_EMIT_NATIVE
+    #if MICROPY_EMIT_NATIVE
         case MP_CODE_NATIVE_PY:
         case MP_CODE_NATIVE_VIPER:
             fun = mp_obj_new_fun_native(def_args, def_kw_args, rc->fun_data, rc->const_table);
             break;
-        #endif
-        #if MICROPY_EMIT_INLINE_ASM
+    #endif
+    #if MICROPY_EMIT_INLINE_ASM
         case MP_CODE_NATIVE_ASM:
             fun = mp_obj_new_fun_asm(rc->n_pos_args, rc->fun_data, rc->type_sig);
             break;
-        #endif
+    #endif
         default:
             // rc->kind should always be set and BYTECODE is the only remaining case
             assert(rc->kind == MP_CODE_BYTECODE);
