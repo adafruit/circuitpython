@@ -255,6 +255,10 @@ typedef long mp_off_t;
 #define MICROPY_FATFS_EXFAT           (CIRCUITPY_FULL_BUILD)
 #endif
 
+#ifndef MICROPY_FF_MKFS_FAT32
+#define MICROPY_FF_MKFS_FAT32           (CIRCUITPY_FULL_BUILD)
+#endif
+
 // LONGINT_IMPL_xxx are defined in the Makefile.
 //
 #ifdef LONGINT_IMPL_NONE
@@ -581,6 +585,18 @@ void supervisor_run_background_tasks_if_tick(void);
 
 #ifndef MICROPY_WRAP_MP_EXECUTE_BYTECODE
 #define MICROPY_WRAP_MP_EXECUTE_BYTECODE PLACE_IN_ITCM
+#endif
+
+#ifndef MICROPY_WRAP_MP_LOAD_GLOBAL
+#define MICROPY_WRAP_MP_LOAD_GLOBAL PLACE_IN_ITCM
+#endif
+
+#ifndef MICROPY_WRAP_MP_LOAD_NAME
+#define MICROPY_WRAP_MP_LOAD_NAME PLACE_IN_ITCM
+#endif
+
+#ifndef MICROPY_WRAP_MP_OBJ_GET_TYPE
+#define MICROPY_WRAP_MP_OBJ_GET_TYPE PLACE_IN_ITCM
 #endif
 
 #ifndef CIRCUITPY_DIGITALIO_HAVE_INPUT_ONLY
