@@ -321,7 +321,7 @@ void board_init(void) {
         false,  // busy_state
         2.0, // seconds_per_frame
         false,  // always_toggle_chip_select
-        true, // grayscale
+        false, // grayscale
         false, // acep
         false);  // two_byte_sequence_length
 }
