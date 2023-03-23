@@ -42,8 +42,8 @@ _asyncio_loop_obj_t *_asyncio_get_native_loop(mp_obj_t loop_obj) {
 //|     Implementations use this base class to access the queue of callbacks scheduled from hardware interrupt handlers.
 //|     The implementation is expected to implement a subset of the CPython Loop interface (https://docs.python.org/3/library/asyncio-eventloop.html),
 //|     specifically these methods:
-//|       - call_soon
-//|       - create_future
+//|     - call_soon
+//|     - create_future
 //|     """
 //|
 //|     def __init__(self) -> None:
@@ -57,7 +57,7 @@ STATIC mp_obj_t _asyncio_loop_make_new(const mp_obj_type_t *type, size_t n_args,
 }
 
 //|     def poll_isr(self) -> None:
-//|         """Drains the queue of callbacks from interrupt handlers and queues them onto the regular loop queue using the Python method `call_soon`."""
+//|         """Drains the queue of callbacks from interrupt handlers and queues them onto the regular loop queue using the Python method call_soon."""
 //|         ...
 //|
 STATIC mp_obj_t _asyncio_loop_poll_isr(mp_obj_t self_obj) {

@@ -203,9 +203,6 @@ STATIC const mp_rom_map_elem_t mp_builtin_module_table[] = {
     // Modules included in CircuitPython are registered using MP_REGISTER_MODULE,
     // and do not have the "u" prefix.
 
-    #if MICROPY_PY_UASYNCIO && !CIRCUITPY
-    { MP_ROM_QSTR(MP_QSTR__uasyncio), MP_ROM_PTR(&mp_module_uasyncio) },
-    #endif
     #if MICROPY_PY_UERRNO && !CIRCUITPY
     { MP_ROM_QSTR(MP_QSTR_uerrno), MP_ROM_PTR(&mp_module_uerrno) },
     #endif

@@ -62,7 +62,7 @@ ALIASES_BRAND_NAMES = {
 }
 
 ADDITIONAL_MODULES = {
-    "_asyncio": "MICROPY_PY_UASYNCIO",
+    "_asyncio": "CIRCUITPY__ASYNCIO",
     "adafruit_bus_device": "CIRCUITPY_BUSDEVICE",
     "adafruit_pixelbuf": "CIRCUITPY_PIXELBUF",
     "array": "CIRCUITPY_ARRAY",

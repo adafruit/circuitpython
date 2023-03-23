@@ -30,8 +30,8 @@
 #include "py/runtime.h"
 
 
-//| def set_running_loop(loop: Loop) -> None:
-//|     """Set `loop` as the running event loop used by CircuitPython."""
+//| def set_running_loop(loop: BaseLoop) -> None:
+//|     """Set loop as the running event loop used by CircuitPython."""
 //|     ...
 //|
 STATIC mp_obj_t _asyncio_set_running_loop(mp_obj_t loop_obj) {
@@ -44,7 +44,7 @@ STATIC mp_obj_t _asyncio_set_running_loop(mp_obj_t loop_obj) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(_asyncio_set_running_loop_obj, _asyncio_set_running_loop);
 
 
-//| def get_running_loop() -> Loop:
+//| def get_running_loop() -> BaseLoop:
 //|     """Returns the running event loop used by CircuitPython."""
 //|     ...
 //|
