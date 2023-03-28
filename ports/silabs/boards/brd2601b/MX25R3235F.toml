@@ -1,0 +1,11 @@
+# Settings for the Macronix MX25R3235F 32MiB SPI flash.
+# Datasheet: https://www.macronix.com/Lists/Datasheet/Attachments/8385/MX25R3235F,%20Wide%20Range,%2032Mb,%20v1.0.pdf
+# By default its in lower power mode which can only do 8mhz. In high power mode it can do 80mhz.
+total_size = 0x2000000 # 32 MiB
+start_up_time_us = 5000
+manufacturer_id = 0xc2
+memory_type = 0x28
+capacity = 0x16
+max_clock_speed_mhz = 8
+quad_enable_bit_mask = 0x40
+has_sector_protection = false

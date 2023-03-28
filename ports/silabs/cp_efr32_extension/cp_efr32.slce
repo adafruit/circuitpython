@@ -1,0 +1,10 @@
+id: cp_efr32
+label:  CircuitPython support
+version: 1.0.0
+sdk:
+  id: "gecko_sdk"
+  version: 4.2.1
+component_path:
+  - path: ../boards/brd2601b/
+  - path: ../boards/brd2704a/
+  - path: ../boards/brd2703a/
