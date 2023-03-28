@@ -49,7 +49,6 @@ OUTPUT_DIR = $(SILABS_BUILD)
 PY_GEN_PINS_SRC ?= tools/make_pins.py
 
 FLASH_TOML_DIR = ../../data/nvm.toml/flash/macronix/
-TESTS_DIR = ../../tests
 
 # Default goal
 all:
@@ -180,11 +179,11 @@ SRC_QSTR_PREPROCESSOR +=
 
 MCU_SECTIONS = $^ $@
 
-finalbuild_brd2601b:  $(FLASH_TOML_DIR)/MX25R3235F.toml $(TESTS_DIR)/silabs-run-tests.py $(SILABS_BUILD)/pin_functions.h $(SILABS_BUILD)/pins.c $(OUTPUT_DIR)/$(PROJECTNAME).out
+finalbuild_brd2601b: $(FLASH_TOML_DIR)/MX25R3235F.toml $(SILABS_BUILD)/pin_functions.h $(SILABS_BUILD)/pins.c $(OUTPUT_DIR)/$(PROJECTNAME).out
 
-finalbuild_brd2704a: $(TESTS_DIR)/silabs-run-tests.py $(SILABS_BUILD)/pin_functions.h $(SILABS_BUILD)/pins.c $(OUTPUT_DIR)/$(PROJECTNAME).out
+finalbuild_brd2704a: $(SILABS_BUILD)/pin_functions.h $(SILABS_BUILD)/pins.c $(OUTPUT_DIR)/$(PROJECTNAME).out
 
-finalbuild_brd2703a: $(TESTS_DIR)/silabs-run-tests.py $(SILABS_BUILD)/pin_functions.h $(SILABS_BUILD)/pins.c $(OUTPUT_DIR)/$(PROJECTNAME).out
+finalbuild_brd2703a: $(SILABS_BUILD)/pin_functions.h $(SILABS_BUILD)/pins.c $(OUTPUT_DIR)/$(PROJECTNAME).out
 
 $(OUTPUT_DIR)/$(PROJECTNAME).out: $(OBJ) $(OBJS) $(LIB_FILES)
 	@echo 'Linking $(OUTPUT_DIR)/$(PROJECTNAME).out'
@@ -212,13 +211,6 @@ slc-clean:
 	$(RM) -fr $(FLASH_TOML_DIR)/MX25R3235F.toml
 	$(RM) -fr ./tools/build-tools
 
-tests-clean:
-	@echo 'Tests cleaning'
-	+@$(MAKE) clean
-	$(RM) -fr $(TESTS_DIR)/silabs-run-tests.py
-	$(RM) -fr $(TESTS_DIR)/efr32
-	$(RM) -fr $(TESTS_DIR)/result.xlsx
-
 $(SILABS_BUILD)/pin_functions.h:
 	$(STEPECHO) "GEN $@"
 	$(Q)$(PYTHON) $(PY_GEN_PINS_SRC) -e $@ boards/$(BOARD)/pins.csv boards/$(BOARD)/pin_functions.csv
@@ -229,13 +221,8 @@ $(SILABS_BUILD)/pins.c:
 	$(Q)$(PYTHON) $(PY_GEN_PINS_SRC) -s $@ boards/$(BOARD)/pins.csv boards/$(BOARD)/pin_functions.csv
 	@-rm pin_functions.h
 
-
 $(FLASH_TOML_DIR)/MX25R3235F.toml:
 	cp -f boards/$(BOARD)/MX25R3235F.toml  $(FLASH_TOML_DIR)/MX25R3235F.toml
-
-$(TESTS_DIR)/silabs-run-tests.py:
-	cp -f ./tests/silabs-run-tests.py $(TESTS_DIR)/silabs-run-tests.py
-	cp -fr ./tests/efr32 $(TESTS_DIR)/efr32
 
 #Override ECHO
 $(OBJS): ECHO =
