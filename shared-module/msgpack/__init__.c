@@ -30,6 +30,7 @@
 #include "py/obj.h"
 #include "py/binary.h"
 #include "py/objarray.h"
+#include "py/objint.h"
 #include "py/objlist.h"
 #include "py/objstringio.h"
 #include "py/parsenum.h"
@@ -195,19 +196,34 @@ STATIC mp_map_elem_t *dict_iter_next(mp_obj_dict_t *dict, size_t *cur) {
     return NULL;
 }
 
-STATIC void pack_int(msgpack_stream_t *s, int32_t x) {
-    if (x > -32 && x < 128) {
-        write1(s, x);
-    } else if ((int8_t)x == x) {
-        write1(s, 0xd0);
-        write1(s, x);
-    } else if ((int16_t)x == x) {
-        write1(s, 0xd1);
-        write2(s, x);
+STATIC void pack_int(msgpack_stream_t *s, mp_obj_t obj, bool _signed) {
+    byte buffer[9];
+    byte *buf = (buffer + 1);
+    byte *type = buffer;
+    size_t len = 0;
+    if (mp_obj_is_small_int(obj)) {
+        int32_t x = MP_OBJ_SMALL_INT_VALUE(obj);
+        if (x > -32 && x < 128) {
+            write1(s, x);
+            return;
+        } else if (-0x80 <= x && x <= 0xff) {
+            *type = _signed ? 0xd0 : 0xcc;
+            len = 1;
+        } else if (-0x8000 <= x && x <= 0xffff) {
+            *type = _signed ? 0xd1 : 0xcd;
+            len = 2;
+        } else {
+            *type = _signed ? 0xd2 : 0xce;
+            len = 4;
+        }
+        mp_binary_set_int(len, true, buf, x);
     } else {
-        write1(s, 0xd2);
-        write4(s, x);
+        // todo: encode remaining 32 bit values as 0xd2/0xce ?
+        *type = _signed ? 0xd3 : 0xcf;
+        len = 8;
+        mp_obj_int_to_bytes_impl(obj, true, len, buf);
     }
+    write(s, buffer, len + 1);
 }
 
 STATIC void pack_bin(msgpack_stream_t *s, const uint8_t *data, size_t len) {
@@ -275,10 +291,13 @@ STATIC void pack_dict(msgpack_stream_t *s, size_t len) {
 }
 
 STATIC void pack(mp_obj_t obj, msgpack_stream_t *s, mp_obj_t default_handler) {
-    if (mp_obj_is_small_int(obj)) {
-        // int
-        int32_t x = MP_OBJ_SMALL_INT_VALUE(obj);
-        pack_int(s, x);
+    if (mp_obj_is_int(obj)) {
+        // big int
+        // encode signed or unsigned
+        bool _signed = mp_obj_int_sign(obj) < 0;
+        // raise if overflow
+        mp_obj_int_buffer_overflow_check(obj, 8, _signed);
+        pack_int(s, obj, _signed);
     } else if (mp_obj_is_str(obj)) {
         // string
         size_t len;
