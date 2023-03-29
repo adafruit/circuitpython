@@ -196,11 +196,13 @@ STATIC mp_map_elem_t *dict_iter_next(mp_obj_dict_t *dict, size_t *cur) {
     return NULL;
 }
 
-STATIC void pack_int(msgpack_stream_t *s, mp_obj_t obj, bool _signed) {
+STATIC void pack_int(msgpack_stream_t *s, mp_obj_t obj) {
     byte buffer[9];
     byte *buf = (buffer + 1);
     byte *type = buffer;
     size_t len = 0;
+    // encode signed or unsigned
+    bool _signed = mp_obj_int_sign(obj) < 0;
     if (mp_obj_is_small_int(obj)) {
         int32_t x = MP_OBJ_SMALL_INT_VALUE(obj);
         if (x > -32 && x < 128) {
@@ -218,10 +220,17 @@ STATIC void pack_int(msgpack_stream_t *s, mp_obj_t obj, bool _signed) {
         }
         mp_binary_set_int(len, true, buf, x);
     } else {
+        #if MICROPY_LONGINT_IMPL != MICROPY_LONGINT_IMPL_NONE
+        // raise if long int overflows
+        mp_obj_int_buffer_overflow_check(obj, 8, _signed);
         // todo: encode remaining 32 bit values as 0xd2/0xce ?
         *type = _signed ? 0xd3 : 0xcf;
         len = 8;
         mp_obj_int_to_bytes_impl(obj, true, len, buf);
+        #else
+        // never reached because you can't have mp_obj_is_small_int false
+        // if there is no LONGINT implemented !
+        #endif
     }
     write(s, buffer, len + 1);
 }
@@ -292,12 +301,8 @@ STATIC void pack_dict(msgpack_stream_t *s, size_t len) {
 
 STATIC void pack(mp_obj_t obj, msgpack_stream_t *s, mp_obj_t default_handler) {
     if (mp_obj_is_int(obj)) {
-        // big int
-        // encode signed or unsigned
-        bool _signed = mp_obj_int_sign(obj) < 0;
-        // raise if overflow
-        mp_obj_int_buffer_overflow_check(obj, 8, _signed);
-        pack_int(s, obj, _signed);
+        // all ints
+        pack_int(s, obj);
     } else if (mp_obj_is_str(obj)) {
         // string
         size_t len;
