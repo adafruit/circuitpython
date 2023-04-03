@@ -5,7 +5,7 @@ description: >
 package: custom
 category: Custom
 quality: production
-root_path: ../boards/brd2703a
+root_path: ../boards/explorerkit_xg24_brd2703a
 include:
   - path: ''
     file_list:

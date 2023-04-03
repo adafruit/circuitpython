@@ -15,15 +15,17 @@ Refer to **mpconfigport.mk** for a full list of enabled modules sorted by family
 - **boards/** contains the configuration files for each development board and breakout available on the port, as well as system files and both shared and SoC-specific linker files. Board configuration includes a pin mapping of the board, oscillator information, board-specific build flags, and setup for some other peripheral where applicable.
 - **common-hal/** contains the port-specific module implementations, used by shared-module and shared-bindings.
 - **peripherals/** contains peripheral setup files and peripheral mapping information, sorted by family and sub-variant. Most files in this directory can be generated with the python scripts in **tools/**.
-- **application/** submodule the DMP application code.
 - **supervisor/** contains port-specific implementations of internal flash and serial, as well as the **port.c** file, which initializes the port at startup.
-- **tools/** python scripts for generating peripheral and pin mapping files in **peripherals/** and **board/**.
-- **examples/** a few examples CircuitPython scripts.
-- **tests/** test scripts for test framework
+- **tools/** contains Silicon Labs configurator (SLC) tool, python scripts for generating peripheral and pin mapping files in **peripherals/** and **board/**.
 
 At the root level, refer to **mpconfigboard.h** and **mpconfigport.mk** for port specific settings and a list of enabled modules.
 
 ## Prerequisites ##
+Please ensure you set up your build environment appropriately, as per the guide. You will need:
+
+- Linux: https://learn.adafruit.com/building-circuitpython/linux
+- Windows Subsystem for Linux (WSL): https://learn.adafruit.com/building-circuitpython/windows-subsystem-for-linux
+- MacOS: Not supported yet
 
 Install necessary packages
 
@@ -38,11 +40,11 @@ Download toolchain
 
 ## Board supported ##
 
-| Board                       | Code         | Note               |
-| --------------------------- | ------------ | ------------------ |
-| xG24 Dev Kit                | brd2601b     |                    |
-| xG24 Explorer Kit           | brd2703a     |                    |
-| Sparkfun Thing Plus MGM240P | brd2704a     |                    |
+| Board                       | Code         | Build CMD                                  |
+| --------------------------- | ------------ | ------------------------------------------ |
+| xG24 Dev Kit                | brd2601b     | devkit_xg24_brd2601b                       |
+| xG24 Explorer Kit           | brd2703a     | explorerkit_xg24_brd2703a                  |
+| Sparkfun Thing Plus MGM240P | brd2704a     | sparkfun_thingplus_matter_mgm240p_brd2704a |
 
 ## Build instructions ##
 
@@ -71,19 +73,19 @@ Before building, let's export the path to the toolchain folder:
 
 Once the one-time build tasks are complete, you can build at any time by navigating to the port directory:
 
-    $ make BOARD=brd2601b V=2
+    $ make BOARD=explorerkit_xg24_brd2703a V=2
 
 You may also build with certain flags available in the makefile, depending on your board and development goals:
 
-    $ make BOARD=brd2601b DEBUG=1
+    $ make BOARD=explorerkit_xg24_brd2703a DEBUG=1
 
 Clean project by using:
 
-    $ make BOARD=brd2601b clean
+    $ make BOARD=explorerkit_xg24_brd2703a clean
 
 Clean project and SLC generated files:
 
-    $ make BOARD=brd2601b slc-clean
+    $ make BOARD=explorerkit_xg24_brd2703a slc-clean
 
 ## Bring-up on the board ##
 
@@ -138,3 +140,11 @@ With the boards which support USB mass storage, we can drag the files to the boa
 Refer to the guideline below for installing the **Ampy** tool: 
 
 https://learn.adafruit.com/micropython-basics-load-files-and-run-code/install-ampy  
+
+## Modules supported ##
+
+| Board                       | Modules Available|
+| --------------------------- | ---------------- |
+| xG24 Dev Kit                |  _asyncio, _bleio, _pixelmap, adafruit_ble, adafruit_bus_device, adafruit_pixelbuf, adafruit_register, aesio,analogio, array, atexit, binascii, bitmaptools, board, builtins, busio, collections, digitalio, displayio,errno, fontio, framebufferio, gc, getpass, gifio, json, math, microcontroller, micropython, msgpack, nvm, onewireio, os, pwmio, rainbowio, random, re, rtc, select, sharpdisplay, storage, struct, supervisor, sys, terminalio, time, traceback, ulab, uselect, vectorio, watchdog, zlib |
+| xG24 Explorer Kit           |  _asyncio, _bleio, _pixelmap, adafruit_ble, adafruit_bus_device, adafruit_pixelbuf, adafruit_register, aesio,analogio, array, atexit, binascii, bitmaptools, board, builtins, busio, collections, digitalio, displayio,errno, fontio, framebufferio, gc, getpass, gifio, json, math, microcontroller, micropython, msgpack, nvm, onewireio, os, pwmio, rainbowio, random, re, rtc, sdcardio, select, sharpdisplay, storage, struct, supervisor, sys, terminalio, time, traceback, ulab, uselect, vectorio, watchdog, zlib |
+| Sparkfun Thing Plus MGM240P | _asyncio, _bleio, _pixelmap, adafruit_ble, adafruit_bus_device, adafruit_pixelbuf, adafruit_register, aesio,analogio, array, atexit, binascii, bitmaptools, board, builtins, busio, collections, digitalio, displayio,errno, fontio, framebufferio, gc, getpass, gifio, json, math, microcontroller, micropython, msgpack, nvm, onewireio, os, pwmio, rainbowio, random, re, rtc, sdcardio, select, sharpdisplay, storage, struct, supervisor, sys, terminalio, time, traceback, ulab, uselect, vectorio, watchdog, zlib |

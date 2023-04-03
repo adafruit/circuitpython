@@ -35,7 +35,6 @@
 #include "common-hal/_bleio/CharacteristicBuffer.h"
 #include "shared/runtime/interrupt_char.h"
 #include "supervisor/shared/tick.h"
-#include "application/app_bluetooth.h"
 
 // Characteristic buffer list of peripheral device
 bleio_characteristic_buffer_obj_list_t bleio_characteristic_buffer_list;

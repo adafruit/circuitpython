@@ -36,6 +36,17 @@ $(error Invalid BOARD specified)
 endif
 endif
 
+# Select the brd to build
+ifeq ($(BOARD),devkit_xg24_brd2601b)
+    BOARD_BRD = brd2601b
+else ifeq ($(BOARD),explorerkit_xg24_brd2703a)
+    BOARD_BRD = brd2703a
+else ifeq ($(BOARD),sparkfun_thingplus_matter_mgm240p_brd2704a)
+    BOARD_BRD = brd2704a
+else
+    $(error "Invalid BOARD value: $(BOARD)")
+endif
+
 # Values set by the initial generation
 PROJECTNAME = circuitpython_efr32
 
@@ -179,11 +190,11 @@ SRC_QSTR_PREPROCESSOR +=
 
 MCU_SECTIONS = $^ $@
 
-finalbuild_brd2601b: $(FLASH_TOML_DIR)/MX25R3235F.toml $(SILABS_BUILD)/pin_functions.h $(SILABS_BUILD)/pins.c $(OUTPUT_DIR)/$(PROJECTNAME).out
+finalbuild_devkit_xg24_brd2601b: $(FLASH_TOML_DIR)/MX25R3235F.toml $(SILABS_BUILD)/pin_functions.h $(SILABS_BUILD)/pins.c $(OUTPUT_DIR)/$(PROJECTNAME).out
 
-finalbuild_brd2704a: $(SILABS_BUILD)/pin_functions.h $(SILABS_BUILD)/pins.c $(OUTPUT_DIR)/$(PROJECTNAME).out
+finalbuild_explorerkit_xg24_brd2703a: $(SILABS_BUILD)/pin_functions.h $(SILABS_BUILD)/pins.c $(OUTPUT_DIR)/$(PROJECTNAME).out
 
-finalbuild_brd2703a: $(SILABS_BUILD)/pin_functions.h $(SILABS_BUILD)/pins.c $(OUTPUT_DIR)/$(PROJECTNAME).out
+finalbuild_sparkfun_thingplus_matter_mgm240p_brd2704a: $(SILABS_BUILD)/pin_functions.h $(SILABS_BUILD)/pins.c $(OUTPUT_DIR)/$(PROJECTNAME).out
 
 $(OUTPUT_DIR)/$(PROJECTNAME).out: $(OBJ) $(OBJS) $(LIB_FILES)
 	@echo 'Linking $(OUTPUT_DIR)/$(PROJECTNAME).out'
@@ -200,10 +211,9 @@ slc-generate:
 	@./tools/build-tools/slc_cli/slc configuration --sdk gecko_sdk
 	@./tools/build-tools/slc_cli/slc signature trust -extpath cp_efr32_extension
 	@./tools/build-tools/slc_cli/slc signature trust --sdk gecko_sdk
-	@./tools/build-tools/slc_cli/slc generate -name=$(PROJECTNAME) $(PROJECTNAME).slcp --sdk gecko_sdk --with $(BOARD) -tlcn gcc -d=$(SILABS_BUILD)
-	@sed -i 's_ autogen/_ $(SILABS_BUILD)/autogen/_g'  $(SILABS_BUILD)/circuitpython_efr32.project.mak
-	@sed -i 's_-T"autogen/_-T"$(SILABS_BUILD)/autogen/_g'  $(SILABS_BUILD)/circuitpython_efr32.project.mak
-
+	@./tools/build-tools/slc_cli/slc generate -name=$(PROJECTNAME) $(PROJECTNAME).slcp --sdk gecko_sdk --with $(BOARD_BRD) -tlcn gcc -d=$(SILABS_BUILD)
+	@sed -i 's/ autogen\// $(SILABS_BUILD)\/autogen\//g' $(SILABS_BUILD)/circuitpython_efr32.project.mak
+	@sed -i 's/-T"autogen\//-T"$(SILABS_BUILD)\/autogen\//g' $(SILABS_BUILD)/circuitpython_efr32.project.mak
 slc-clean:
 	@echo 'SLC cleaning'
 	+@$(MAKE) clean

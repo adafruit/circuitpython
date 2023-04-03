@@ -35,7 +35,6 @@
 #include "shared/runtime/interrupt_char.h"
 #include "supervisor/shared/tick.h"
 #include "supervisor/serial.h"
-#include "application/app_bluetooth.h"
 
 EventGroupHandle_t xcharacteristic_event;
 

@@ -29,7 +29,6 @@
 #include "shared-bindings/_bleio/Descriptor.h"
 #include "shared-bindings/_bleio/Service.h"
 #include "shared-bindings/_bleio/UUID.h"
-#include "application/app_bluetooth.h"
 
 void common_hal_bleio_descriptor_construct(
     bleio_descriptor_obj_t *self,

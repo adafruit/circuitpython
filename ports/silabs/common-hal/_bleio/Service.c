@@ -32,7 +32,6 @@
 #include "shared-bindings/_bleio/Characteristic.h"
 #include "shared-bindings/_bleio/Descriptor.h"
 #include "shared-bindings/_bleio/Service.h"
-#include "application/app_bluetooth.h"
 
 // List ble service of central device
 bleio_service_obj_list bleio_service_list;

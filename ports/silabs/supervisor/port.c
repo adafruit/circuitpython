@@ -79,7 +79,6 @@
 #include "sl_system_init.h"
 #include "sl_system_kernel.h"
 
-
 #if defined(SL_CATALOG_POWER_MANAGER_PRESENT)
 #include "sl_power_manager.h"
 #endif // SL_CATALOG_POWER_MANAGER_PRESENT
@@ -143,6 +142,12 @@ safe_mode_t port_init(void) {
                 NULL,
                 &thread_circuitpython_attr);
         }
+
+        // Create mutex for Bluetooth handle
+        if (bluetooth_connection_mutex_id == NULL) {
+            bluetooth_connection_mutex_id = osMutexNew(&bluetooth_connection_mutex_attr);
+        }
+
         if (tid_thread_circuitpython == NULL) {
             for (;;) {
             }
@@ -284,6 +289,7 @@ void port_idle_until_interrupt(void) {
     if (!background_callback_pending()) {
         osThreadFlagsWait(0x0001, osFlagsWaitAny, osWaitForever);
     }
+
 }
 
 // Place the word to save just after our BSS section that gets blanked.

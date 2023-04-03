@@ -39,7 +39,6 @@
 #include "shared-bindings/time/__init__.h"
 #include "common-hal/_bleio/Connection.h"
 #include "supervisor/shared/tick.h"
-#include "application/app_bluetooth.h"
 
 #define PUBLIC_ADDRESS 0
 #define STATIC_ADDRESS 1
@@ -572,6 +571,7 @@ mp_obj_t common_hal_bleio_adapter_get_connections(bleio_adapter_obj_t *self) {
 void common_hal_bleio_adapter_remove_connection(uint8_t conn_handle) {
     uint8_t conn_index;
     bleio_connection_internal_t *connection;
+    osMutexAcquire(bluetooth_connection_mutex_id, osWaitForever);
     for (conn_index = 0; conn_index < BLEIO_TOTAL_CONNECTION_COUNT; conn_index++) {
         connection = &bleio_connections[conn_index];
         if (conn_handle == connection->conn_handle) {
@@ -579,6 +579,7 @@ void common_hal_bleio_adapter_remove_connection(uint8_t conn_handle) {
             connection->conn_handle = BLEIO_HANDLE_INVALID;
         }
     }
+    osMutexRelease(bluetooth_connection_mutex_id);
 }
 
 // Delete all bonding

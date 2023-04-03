@@ -43,7 +43,6 @@
 #include "shared/runtime/interrupt_char.h"
 #include "supervisor/shared/tick.h"
 #include "supervisor/serial.h"
-#include "application/app_bluetooth.h"
 
 // Give 10 seconds for discovery
 #define DISCOVERY_TIMEOUT_MS 10000

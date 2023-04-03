@@ -27,7 +27,7 @@
  * 3. This notice may not be removed or altered from any source distribution.
  *
  ******************************************************************************/
-#include "build-brd2703a/pin_functions.h"
+#include "build-explorerkit_xg24_brd2703a/pin_functions.h"
 
 // Micropython setup
 #define MICROPY_HW_BOARD_NAME "SiLabs xG24  Explorer Kit"

@@ -26,8 +26,24 @@
 
 #ifndef MICROPY_INCLUDED_BLE_HCI_COMMON_HAL_INIT_H
 #define MICROPY_INCLUDED_BLE_HCI_COMMON_HAL_INIT_H
+
 #include <stdbool.h>
+#include <stdio.h>
 #include "shared-bindings/_bleio/UUID.h"
+
+#include "gatt_db.h"
+#include "sl_status.h"
+#include "sl_bt_api.h"
+#include "sl_bgapi.h"
+#include "sl_bluetooth.h"
+#include "sl_bt_rtos_adaptation.h"
+#include "sl_cmsis_os2_common.h"
+#include <cmsis_os2.h>
+
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+#include "semphr.h"
 
 #define MSEC_TO_UNITS(TIME, RESOLUTION) (((TIME) * 1000) / (RESOLUTION))
 #define SEC_TO_UNITS(TIME, RESOLUTION) (((TIME) * 1000000) / (RESOLUTION))
@@ -52,4 +68,13 @@ extern bool vm_used_ble;
 // UUID shared by all CCCD's.
 extern bleio_uuid_obj_t cccd_uuid;
 extern void bleio_reset();
+
+extern osMutexId_t bluetooth_connection_mutex_id;
+extern const osMutexAttr_t bluetooth_connection_mutex_attr;
+typedef enum {
+    DISCOVER_SERVICES,
+    DISCOVER_CHARACTERISTICS,
+    RUNNING
+} conn_state_t;
+
 #endif // MICROPY_INCLUDED_BLE_HCI_COMMON_HAL_INIT_H

@@ -5,7 +5,7 @@ description: >
 package: custom
 category: Custom
 quality: production
-root_path: ../boards/brd2704a
+root_path: ../boards/sparkfun_thingplus_matter_mgm240p_brd2704a
 include:
   - path: ''
     file_list:

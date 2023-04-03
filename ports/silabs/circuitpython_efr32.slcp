@@ -12,13 +12,7 @@ filter:
   value: [Bluetooth]
 package: Bluetooth
 quality: production
-source:
-- {path: application/app_bluetooth.c}
 tag: ['hardware:rf:band:2400', 'hardware:device:ram:64']
-include:
-- path: 'application'
-  file_list:
-  - {path: app_bluetooth.h}
 sdk: {id: gecko_sdk, version: 4.2.1}
 toolchain_settings: []
 sdk_extension:

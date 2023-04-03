@@ -24,26 +24,32 @@
  * THE SOFTWARE.
  */
 
-#include "build-brd2704a/pin_functions.h"
+#include "build-devkit_xg24_brd2601b/pin_functions.h"
 
 // Micropython setup
-#define MICROPY_HW_BOARD_NAME "Sparkfun Thing Plus MGM240P"
+#define MICROPY_HW_BOARD_NAME "SiLabs xG24 Dev Kit"
 #define MICROPY_HW_MCU_NAME EFR32_SERIES_LOWER
 
 #define HSE_VALUE ((uint32_t)8000000)
 #define BOARD_HSE_SOURCE (RCC_HSE_BYPASS)
 #define BOARD_HAS_LOW_SPEED_CRYSTAL (0)
 
-#define DEFAULT_I2C_BUS_SDA   (&pin_PB4)
-#define DEFAULT_I2C_BUS_SCL   (&pin_PB3)
-#define DEFAULT_I2C_PERIPHERAL I2C0
+// On-board flash
+#define SPI_FLASH_MOSI_PIN          (&pin_PC3)
+#define SPI_FLASH_MISO_PIN          (&pin_PC2)
+#define SPI_FLASH_SCK_PIN           (&pin_PC1)
+#define SPI_FLASH_CS_PIN            (&pin_PC0)
 
-#define DEFAULT_SPI_BUS_SCK   (&pin_PC2)
+#define DEFAULT_I2C_BUS_SDA   (&pin_PC5)
+#define DEFAULT_I2C_BUS_SCL   (&pin_PC4)
+#define DEFAULT_I2C_PERIPHERAL I2C1
+
+#define DEFAULT_SPI_BUS_SCK   (&pin_PC1)
 #define DEFAULT_SPI_BUS_MOSI  (&pin_PC3)
-#define DEFAULT_SPI_BUS_MISO  (&pin_PC6)
+#define DEFAULT_SPI_BUS_MISO  (&pin_PC2)
 #define DEFAULT_SPI_BUS_SS    (&pin_PA7)
 
-#define NVM_BYTEARRAY_BUFFER_SIZE (512)
+#define NVM_BYTEARRAY_BUFFER_SIZE 512
 #define CIRCUITPY_INTERNAL_NVM_SIZE (512)
 #undef MICROPY_USE_INTERNAL_PRINTF
 #define MICROPY_USE_INTERNAL_PRINTF (0)

@@ -36,7 +36,6 @@
 #include "common-hal/_bleio/Connection.h"
 #include "supervisor/shared/tick.h"
 #include "supervisor/serial.h"
-#include "application/app_bluetooth.h"
 
 // List packet buffer of peripheral device
 bleio_packet_buffer_obj_list_t bleio_packet_buffer_list;

@@ -32,9 +32,6 @@
 #include "shared-bindings/_bleio/Connection.h"
 #include "shared-bindings/_bleio/ScanResults.h"
 #include "supervisor/background_callback.h"
-#include "FreeRTOS.h"
-#include "event_groups.h"
-#include "sl_bgapi.h"
 
 #ifndef BLEIO_TOTAL_CONNECTION_COUNT
 #define BLEIO_TOTAL_CONNECTION_COUNT 5
