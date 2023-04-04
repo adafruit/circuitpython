@@ -278,7 +278,7 @@ void common_hal_busio_uart_set_timeout(busio_uart_obj_t *self,
     self->timeout_ms = timeout * 1000;
 }
 
-// Querry characters available to read
+// Query characters available to read
 uint32_t common_hal_busio_uart_rx_characters_available(busio_uart_obj_t *self) {
     return ringbuf_num_filled(&self->ringbuf);
 }

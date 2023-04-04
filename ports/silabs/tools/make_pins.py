@@ -173,7 +173,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog="make_pins",
         usage="%(prog)s [options]",
-        description="Parse a CSV file with pin data and store as corresponsing C source and header files.",
+        description="Parse a CSV file with pin data and store as corresponding C source and header files.",
     )
     parser.add_argument(
         "-s",

@@ -175,7 +175,7 @@ bool common_hal_pwmio_pwmout_get_variable_frequency(pwmio_pwmout_obj_t *self) {
     return self->variable_frequency;
 }
 
-// Get pin vlaue in  pwmio obj
+// Get pin value in pwmio obj
 const mcu_pin_obj_t *common_hal_pwmio_pwmout_get_pin(pwmio_pwmout_obj_t *self) {
     return self->tim->pin;
 }

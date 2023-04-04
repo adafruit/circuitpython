@@ -35,7 +35,7 @@
 // Set the VDAC to max frequency of 1 MHz
 #define CLK_VDAC_FREQ 1000000
 
-// List DAC pin and chanel suported
+// List DAC pin and channel supported
 mcu_dac_pin_obj_t mcu_dac_list[DAC_BANK_ARRAY_LEN] = {
     DAC(VDAC0, 0, FN_VDAC0_CH0, false, 0, &pin_PB0),
     DAC(VDAC0, 1, FN_VDAC0_CH1, false, 0, &pin_PB1),
@@ -154,7 +154,7 @@ void common_hal_analogio_analogout_set_value(analogio_analogout_obj_t *self,
     VDAC_ChannelOutputSet(self->dac->vdac, self->dac->channel, value >> 4);
 }
 
-// Funtion reset dac peripheral
+// Function reset dac peripheral
 void analogout_reset(void) {
     uint8_t dac_index;
     mcu_dac_pin_obj_t *p_dac;

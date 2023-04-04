@@ -348,7 +348,7 @@ mp_int_t common_hal_bleio_packet_buffer_write(bleio_packet_buffer_obj_t *self,
     return num_bytes_written;
 }
 
-// Get length of receving packet
+// Get length of receiving packet
 mp_int_t common_hal_bleio_packet_buffer_get_incoming_packet_length(
     bleio_packet_buffer_obj_t *self) {
 

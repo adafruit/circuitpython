@@ -108,7 +108,7 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
     common_hal_mcu_pin_claim(miso);
 }
 
-// Nerver reset SPI when reload
+// Never reset SPI when reload
 void common_hal_busio_spi_never_reset(busio_spi_obj_t *self) {
     never_reset = true;
     common_hal_never_reset_pin(self->mosi);

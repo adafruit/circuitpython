@@ -109,7 +109,7 @@ Then note down the correct name and substitute com-port-name in the followin
 
 ### Using the REPL prompt ###
 
-After flashing the fimware to the board, at your first connecting to the board, you might see a blank screen. Press enter and you should be presented with a Circuitpython prompt, >>>. If not, try to reset the board (see instructions below). 
+After flashing the firmware to the board, at your first connecting to the board, you might see a blank screen. Press enter and you should be presented with a Circuitpython prompt, >>>. If not, try to reset the board (see instructions below).
 
 You can now type in simple commands such as: 
 

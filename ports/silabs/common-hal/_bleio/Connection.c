@@ -230,7 +230,7 @@ mp_obj_tuple_t *common_hal_bleio_connection_discover_remote_services(
         self->connection->remote_service_list->items);
 
     if (NULL == services_tuple) {
-        mp_raise_ValueError(translate("Create new service tupple fail."));
+        mp_raise_ValueError(translate("Create new service tuple fail."));
         return mp_const_none;
     }
     return services_tuple;

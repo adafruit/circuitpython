@@ -29,7 +29,7 @@
 #include "py/runtime.h"
 #include "supervisor/shared/translate/translate.h"
 
-// Nerver reset pin when reload
+// Never reset pin when reload
 void common_hal_digitalio_digitalinout_never_reset(
     digitalio_digitalinout_obj_t *self) {
     common_hal_never_reset_pin(self->pin);

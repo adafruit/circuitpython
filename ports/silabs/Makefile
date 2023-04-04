@@ -66,6 +66,7 @@ all:
 ifeq (,$(wildcard  $(SILABS_BUILD)/$(PROJECTNAME).Makefile))
 	+@$(MAKE) --no-print-directory slc-generate
 	-@echo 'Project is generated. Run make again'
+	+@$(MAKE) --no-print-directory finalbuild_$(BOARD)
 else
 	+@$(MAKE) --no-print-directory finalbuild_$(BOARD)
 endif
