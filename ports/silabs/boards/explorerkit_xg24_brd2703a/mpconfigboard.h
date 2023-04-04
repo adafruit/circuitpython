@@ -30,7 +30,7 @@
 #include "build-explorerkit_xg24_brd2703a/pin_functions.h"
 
 // Micropython setup
-#define MICROPY_HW_BOARD_NAME "SiLabs xG24  Explorer Kit"
+#define MICROPY_HW_BOARD_NAME "SiLabs xG24 Explorer Kit"
 #define MICROPY_HW_MCU_NAME EFR32_SERIES_LOWER
 
 #define HSE_VALUE ((uint32_t)8000000)
