@@ -175,6 +175,7 @@ void IADC_IRQHandler(void) {
         // Pull a scan result from the FIFO
         result = IADC_pullScanFifoResult(IADC0);
         scan_result[result.id] = result.data;
+        scan_result[result.id] *= 16;
     }
     scan_flag = 1;
     IADC_clearInt(IADC0, IADC_IF_SCANTABLEDONE);
@@ -211,5 +212,5 @@ uint16_t common_hal_analogio_analogin_get_value(analogio_analogin_obj_t *self) {
 // Get adc ref value
 float common_hal_analogio_analogin_get_reference_voltage
     (analogio_analogin_obj_t *self) {
-    return 1.25f;
+    return 2.42f;
 }

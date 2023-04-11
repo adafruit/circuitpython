@@ -41,6 +41,7 @@ SUPPORTED_PORTS = [
     "nrf",
     "raspberrypi",
     "stm",
+    "silabs",
 ]
 
 ALIASES_BY_BOARD = {

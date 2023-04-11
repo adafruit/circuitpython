@@ -72,10 +72,10 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
             common_hal_mcu_pin_claim(sda);
             in_used = true;
         } else {
-            mp_raise_ValueError(translate("I2C busy pin"));
+            mp_raise_ValueError(translate("Hardware busy, try alternative pins"));
         }
     } else {
-        mp_raise_ValueError(translate("I2C pin"));
+        raise_ValueError_invalid_pins();
     }
 }
 

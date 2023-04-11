@@ -36,17 +36,6 @@ $(error Invalid BOARD specified)
 endif
 endif
 
-# Select the brd to build
-ifeq ($(BOARD),devkit_xg24_brd2601b)
-    BOARD_BRD = brd2601b
-else ifeq ($(BOARD),explorerkit_xg24_brd2703a)
-    BOARD_BRD = brd2703a
-else ifeq ($(BOARD),sparkfun_thingplus_matter_mgm240p_brd2704a)
-    BOARD_BRD = brd2704a
-else
-    $(error "Invalid BOARD value: $(BOARD)")
-endif
-
 # Values set by the initial generation
 PROJECTNAME = circuitpython_efr32
 
@@ -151,8 +140,7 @@ ifneq ($(CIRCUITPY_USB),0)
 SRC_C += lib/tinyusb/src/portable/st/synopsys/dcd_synopsys.c
 endif
 
-SRC_S = \
-	boards/$(BOARD)/mp_efr32xg24_gchelper.s
+SRC_S = boards/mp_efr32xg24_gchelper.s
 
 SRC_COMMON_HAL_EXPANDED = $(addprefix shared-bindings/, $(SRC_COMMON_HAL)) \
 						  $(addprefix shared-bindings/, $(SRC_BINDINGS_ENUMS)) \
@@ -219,7 +207,6 @@ slc-clean:
 	@echo 'SLC cleaning'
 	+@$(MAKE) clean
 	$(RM) -fr $(SILABS_BUILD)
-	$(RM) -fr $(FLASH_TOML_DIR)/MX25R3235F.toml
 	$(RM) -fr ./tools/build-tools
 
 $(SILABS_BUILD)/pin_functions.h:

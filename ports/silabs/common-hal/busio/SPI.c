@@ -92,14 +92,13 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
 
             sc = SPIDRV_Init(self->handle, &spidrv_eusart_init);
             if (sc != ECODE_EMDRV_SPIDRV_OK) {
-                mp_raise_ValueError(translate("SPI init fail"));
-
+                mp_raise_ValueError(translate("SPI init error"));
             }
         } else {
-            mp_raise_ValueError(translate("SPI busy pin"));
+            mp_raise_ValueError(translate("Hardware busy, try alternative pins"));
         }
     } else {
-        mp_raise_ValueError(translate("SPI pin"));
+        raise_ValueError_invalid_pins();
     }
 
     in_used = true;
@@ -130,7 +129,7 @@ void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
 
     Ecode_t sc = SPIDRV_DeInit(self->handle);
     if (sc != ECODE_EMDRV_SPIDRV_OK) {
-        mp_raise_ValueError(translate("SPI deinit fail"));
+        mp_raise_RuntimeError(translate("SPI re-init"));
     }
 
     in_used = false;
@@ -158,7 +157,7 @@ bool common_hal_busio_spi_configure(busio_spi_obj_t *self,
 
     sc = SPIDRV_DeInit(self->handle);
     if (sc != ECODE_EMDRV_SPIDRV_OK) {
-        mp_raise_ValueError(translate("SPI deinit fail"));
+        mp_raise_RuntimeError(translate("SPI re-init"));
     }
     in_used = false;
     self->baudrate = baudrate;
@@ -180,7 +179,7 @@ bool common_hal_busio_spi_configure(busio_spi_obj_t *self,
 
     sc = SPIDRV_Init(self->handle, &spidrv_eusart_init);
     if (sc != ECODE_EMDRV_SPIDRV_OK) {
-        mp_raise_ValueError(translate("SPI configure fail"));
+        mp_raise_RuntimeError(translate("SPI re-init"));
     }
     in_used = true;
     return true;

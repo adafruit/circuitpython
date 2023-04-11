@@ -131,11 +131,11 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
             context = self;
 
         } else {
-            mp_raise_ValueError(translate("UART busy pin"));
+            mp_raise_ValueError(translate("Hardware busy, try alternative pins"));
         }
 
     } else {
-        mp_raise_ValueError(translate("UART pin"));
+        raise_ValueError_invalid_pins();
     }
 }
 
@@ -159,7 +159,7 @@ void common_hal_busio_uart_deinit(busio_uart_obj_t *self) {
     }
 
     if (UARTDRV_DeInit(self->handle) != ECODE_EMDRV_UARTDRV_OK) {
-        mp_raise_ValueError(translate("UART Deinit fail"));
+        mp_raise_RuntimeError(translate("UART de-init"));
     }
 
     common_hal_reset_pin(self->rx);

@@ -43,37 +43,25 @@ uint32_t common_hal_nvm_bytearray_get_length(nvm_bytearray_obj_t *self) {
 }
 
 uint32_t nvm3_read(nvm_bytearray_obj_t *self) {
-
     uint32_t type;
     Ecode_t err;
     size_t len;
 
     if (isInitialized == false) {
-        err = nvm3_initDefault();
-        if (err != ECODE_NVM3_OK) {
-            mp_raise_ValueError(translate("NVM3 init false"));
-        }
+        nvm3_initDefault();
         isInitialized = true;
     }
     err = nvm3_getObjectInfo(nvm3_defaultHandle, NVM_KEY, &type, &len);
-    if (err != NVM3_OBJECTTYPE_DATA || type != NVM3_OBJECTTYPE_DATA
+    if (err != ECODE_NVM3_OK || type != NVM3_OBJECTTYPE_DATA
         || len != NVM_BYTEARRAY_BUFFER_SIZE) {
 
         nvm3_deleteObject(nvm3_defaultHandle, NVM_KEY);
-        err = nvm3_writeData(nvm3_defaultHandle, NVM_KEY, nvm_array,
+        nvm3_writeData(nvm3_defaultHandle, NVM_KEY, nvm_array,
             NVM_BYTEARRAY_BUFFER_SIZE);
-
-        if (err != ECODE_NVM3_OK) {
-            mp_raise_ValueError(translate("NVM3 create object false"));
-        }
     }
 
     err = nvm3_readData(nvm3_defaultHandle, NVM_KEY, nvm_array,
         NVM_BYTEARRAY_BUFFER_SIZE);
-
-    if (err != ECODE_NVM3_OK) {
-        mp_raise_ValueError(translate("NVM3 read false"));
-    }
 
     return err;
 }
@@ -85,6 +73,9 @@ bool common_hal_nvm_bytearray_set_bytes(nvm_bytearray_obj_t *self,
     Ecode_t err;
     err = nvm3_read(self);
 
+    if (err != ECODE_NVM3_OK) {
+        mp_raise_RuntimeError(translate("NVM3 read false"));
+    }
     // Set bytes in buffer
     memmove(nvm_array + start_index, values, len);
 
@@ -92,7 +83,7 @@ bool common_hal_nvm_bytearray_set_bytes(nvm_bytearray_obj_t *self,
         NVM_BYTEARRAY_BUFFER_SIZE);
 
     if (err != ECODE_NVM3_OK) {
-        mp_raise_ValueError(translate("NVM3 write false"));
+        mp_raise_RuntimeError(translate("NVM3 write false"));
     }
 
     return true;

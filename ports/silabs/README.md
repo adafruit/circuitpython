@@ -29,14 +29,8 @@ Please ensure you set up your build environment appropriately, as per the guide.
 
 Install necessary packages
 
-    $ sudo apt install default-jre wget unzip python3 python3-pip git gettext uncrustify
+    $ sudo apt install default-jre gcc-arm-none-eabi wget python3 python3-pip git gettext uncrustify
     $ sudo python -m pip install --upgrade pip
-
-Download toolchain
-
-    $ sudo wget https://armkeil.blob.core.windows.net/developer/Files/downloads/gnu-rm/10.3-2021.10/gcc-arm-none-eabi-10.3-2021.10-x86_64-linux.tar.bz2 /opt/
-    $ cd /opt
-    $ sudo tar -jxvf gcc-arm-none-eabi-10.3-2021.10-x86_64-linux.tar.bz2
 
 ## Board supported ##
 
@@ -62,14 +56,6 @@ Checkout the branch or tag you want to build. For example:
 
 Following the guideline below to install required packages for SLC tool:
     https://www.silabs.com/documents/public/user-guides/ug520-software-project-generation-configuration-with-slc-cli.pdf
-
-    $  sudo apt install default-jre
-    $  sudo apt install default-jdk
-
-Before building, let's export the path to the toolchain folder:
-
-    $ export PATH=/opt/gcc-arm-none-eabi-10.3-2021.10/bin:$PATH
-
 
 Once the one-time build tasks are complete, you can build at any time by navigating to the port directory:
 

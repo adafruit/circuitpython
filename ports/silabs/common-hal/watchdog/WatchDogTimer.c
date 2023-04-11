@@ -51,9 +51,11 @@ mp_float_t common_hal_watchdog_get_timeout(watchdog_watchdogtimer_obj_t *self) {
 
 void common_hal_watchdog_set_timeout(watchdog_watchdogtimer_obj_t *self,
     mp_float_t new_timeout) {
-    if ((uint64_t)new_timeout > 256) {
-        mp_raise_RuntimeError(translate("timeout duration exceeded the maximum supported value"));
-    }
+
+    // Max timeout is 256000 ms
+    uint64_t timeout = new_timeout * 1000;
+    mp_arg_validate_int_max(timeout, 256000, MP_QSTR_WatchDogTimeout);
+
     if ((uint32_t)self->timeout != (uint32_t)new_timeout) {
 
         // Watchdog Initialize settings

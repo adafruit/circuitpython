@@ -36,6 +36,7 @@
 #include "supervisor/shared/translate/translate.h"
 #include "tempdrv.h"
 #include "em_system.h"
+#include "em_cmu.h"
 
 float common_hal_mcu_processor_get_temperature(void) {
     TEMPDRV_Init();
@@ -43,11 +44,13 @@ float common_hal_mcu_processor_get_temperature(void) {
 }
 
 float common_hal_mcu_processor_get_voltage(void) {
-    return false;
+    // xG24 does not have built-in direct reading of processor voltage
+    // Have Only 1 of IADC, already used for analogio module
+    return 3.3f;
 }
 
 uint32_t common_hal_mcu_processor_get_frequency(void) {
-    return 0xFFFFFFFFULL;
+    return CMU_ClockFreqGet(cmuClock_HCLK);
 }
 
 void common_hal_mcu_processor_get_uid(uint8_t raw_id[]) {
