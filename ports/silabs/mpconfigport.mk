@@ -33,3 +33,5 @@ ifeq ($(MCU_SERIES),MG24)
         CIRCUITPY_TOUCHIO ?= 0
         CIRCUITPY_USB ?= 0
 endif
+
+CIRCUITPY_BUILD_EXTENSIONS ?= bin

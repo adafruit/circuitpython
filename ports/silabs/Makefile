@@ -179,19 +179,19 @@ SRC_QSTR_PREPROCESSOR +=
 
 MCU_SECTIONS = $^ $@
 
-finalbuild_devkit_xg24_brd2601b: $(FLASH_TOML_DIR)/MX25R3235F.toml $(SILABS_BUILD)/pin_functions.h $(SILABS_BUILD)/pins.c $(OUTPUT_DIR)/$(PROJECTNAME).out
+finalbuild_devkit_xg24_brd2601b: $(FLASH_TOML_DIR)/MX25R3235F.toml $(SILABS_BUILD)/pin_functions.h $(SILABS_BUILD)/pins.c $(OUTPUT_DIR)/firmware.out
 
-finalbuild_explorerkit_xg24_brd2703a: $(SILABS_BUILD)/pin_functions.h $(SILABS_BUILD)/pins.c $(OUTPUT_DIR)/$(PROJECTNAME).out
+finalbuild_explorerkit_xg24_brd2703a: $(SILABS_BUILD)/pin_functions.h $(SILABS_BUILD)/pins.c $(OUTPUT_DIR)/firmware.out
 
-finalbuild_sparkfun_thingplus_matter_mgm240p_brd2704a: $(SILABS_BUILD)/pin_functions.h $(SILABS_BUILD)/pins.c $(OUTPUT_DIR)/$(PROJECTNAME).out
+finalbuild_sparkfun_thingplus_matter_mgm240p_brd2704a: $(SILABS_BUILD)/pin_functions.h $(SILABS_BUILD)/pins.c $(OUTPUT_DIR)/firmware.out
 
-$(OUTPUT_DIR)/$(PROJECTNAME).out: $(OBJ) $(OBJS) $(LIB_FILES)
-	@echo 'Linking $(OUTPUT_DIR)/$(PROJECTNAME).out'
+$(OUTPUT_DIR)/firmware.out: $(OBJ) $(OBJS) $(LIB_FILES)
+	@echo 'Linking $(OUTPUT_DIR)/firmware.out'
 	@echo "$(OBJS) $(OBJ)" > $(OUTPUT_DIR)/linker_objs
-	$(CC) $(LD_FLAGS) @$(OUTPUT_DIR)/linker_objs $(LIBS) -o $(OUTPUT_DIR)/$(PROJECTNAME).out
-	$(OBJCOPY) $(OUTPUT_DIR)/$(PROJECTNAME).out -O binary $(OUTPUT_DIR)/$(PROJECTNAME).bin
-	$(OBJCOPY) $(OUTPUT_DIR)/$(PROJECTNAME).out -O ihex $(OUTPUT_DIR)/$(PROJECTNAME).hex
-	$(OBJCOPY) $(OUTPUT_DIR)/$(PROJECTNAME).out -O srec $(OUTPUT_DIR)/$(PROJECTNAME).s37
+	$(CC) $(LD_FLAGS) @$(OUTPUT_DIR)/linker_objs $(LIBS) -o $(OUTPUT_DIR)/firmware.out
+	$(OBJCOPY) $(OUTPUT_DIR)/firmware.out -O binary $(OUTPUT_DIR)/firmware.bin
+	$(OBJCOPY) $(OUTPUT_DIR)/firmware.out -O ihex $(OUTPUT_DIR)/firmware.hex
+	$(OBJCOPY) $(OUTPUT_DIR)/firmware.out -O srec $(OUTPUT_DIR)/firmware.s37
 	@echo 'Done.'
 
 slc-generate:
