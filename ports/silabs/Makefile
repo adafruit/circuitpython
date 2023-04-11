@@ -51,7 +51,9 @@ PY_GEN_PINS_SRC ?= tools/make_pins.py
 FLASH_TOML_DIR = ../../data/nvm.toml/flash/macronix/
 
 # Default goal
-all:
+all: $(OUTPUT_DIR)/firmware.bin
+
+$(OUTPUT_DIR)/firmware.bin:
 ifeq (,$(wildcard  $(SILABS_BUILD)/$(PROJECTNAME).Makefile))
 	+@$(MAKE) --no-print-directory slc-generate
 	-@echo 'Project is generated. Run make again'
