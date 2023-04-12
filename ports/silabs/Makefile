@@ -42,7 +42,7 @@ PROJECTNAME = circuitpython_efr32
 # If the build directory is not given, make it reflect the board name.
 SILABS_BUILD = build-$(BOARD)
 # Build dir for CircuitPython
-BUILD ?= $(SILABS_BUILD)/circuitpython
+BUILD ?= $(SILABS_BUILD)
 # Override Build Directories
 OUTPUT_DIR = $(SILABS_BUILD)
 # Python script to generate pins and pins functionalities code
@@ -56,6 +56,8 @@ all: $(OUTPUT_DIR)/firmware.bin
 $(OUTPUT_DIR)/firmware.bin:
 	-@java --version
 	-@pip show jinja2
+	-@echo $(shell python3 -c "import jinja2; print(jinja2.__path__[0])")
+	-@echo $(PATH)
 ifeq (,$(wildcard  $(SILABS_BUILD)/$(PROJECTNAME).Makefile))
 	+@$(MAKE) --no-print-directory slc-generate
 	-@echo 'Project is generated. Run make again'
