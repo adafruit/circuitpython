@@ -49,6 +49,8 @@ OUTPUT_DIR = $(SILABS_BUILD)
 PY_GEN_PINS_SRC ?= tools/make_pins.py
 
 FLASH_TOML_DIR = ../../data/nvm.toml/flash/macronix/
+export PATH := $(PWD)/tools/build-tools/slc_cli:$(PATH)
+export PATH := $(shell python3 -c "import jinja2; print(jinja2.__path__[0])"):$(PATH)
 
 # Default goal
 all: $(OUTPUT_DIR)/firmware.bin
@@ -56,7 +58,6 @@ all: $(OUTPUT_DIR)/firmware.bin
 $(OUTPUT_DIR)/firmware.bin:
 	-@java --version
 	-@pip show jinja2
-	-@echo $(shell python3 -c "import jinja2; print(jinja2.__path__[0])")
 	-@echo $(PATH)
 ifeq (,$(wildcard  $(SILABS_BUILD)/$(PROJECTNAME).Makefile))
 	+@$(MAKE) --no-print-directory slc-generate
@@ -203,10 +204,10 @@ $(OUTPUT_DIR)/firmware.out: $(OBJ) $(OBJS) $(LIB_FILES)
 slc-generate:
 	+@$(MAKE) -C tools all
 	@echo 'SLC generates project'
-	@./tools/build-tools/slc_cli/slc configuration --sdk gecko_sdk
-	@./tools/build-tools/slc_cli/slc signature trust -extpath cp_efr32_extension
-	@./tools/build-tools/slc_cli/slc signature trust --sdk gecko_sdk
-	@./tools/build-tools/slc_cli/slc generate -name=$(PROJECTNAME) $(PROJECTNAME).slcp --sdk gecko_sdk --with $(BOARD_BRD) -tlcn gcc -d=$(SILABS_BUILD)
+	@slc configuration --sdk gecko_sdk
+	@slc signature trust -extpath cp_efr32_extension
+	@slc signature trust --sdk gecko_sdk
+	@slc generate -name=$(PROJECTNAME) $(PROJECTNAME).slcp --sdk gecko_sdk --with $(BOARD_BRD) -tlcn gcc -d=$(SILABS_BUILD)
 	@sed -i 's/ autogen\// $(SILABS_BUILD)\/autogen\//g' $(SILABS_BUILD)/circuitpython_efr32.project.mak
 	@sed -i 's/-T"autogen\//-T"$(SILABS_BUILD)\/autogen\//g' $(SILABS_BUILD)/circuitpython_efr32.project.mak
 slc-clean:
