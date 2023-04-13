@@ -51,15 +51,12 @@ PY_GEN_PINS_SRC ?= tools/make_pins.py
 FLASH_TOML_DIR = ../../data/nvm.toml/flash/macronix/
 
 export PATH := $(realpath $(CURDIR))/tools/build-tools/slc_cli:$(PATH)
-export PATH := $(shell python3 -c "import jinja2; print(jinja2.__path__[0])"):$(PATH)
 
 # Default goal
 all: $(OUTPUT_DIR)/firmware.bin
 
 $(OUTPUT_DIR)/firmware.bin:
-	-@java --version
-	-@pip show jinja2
-	-@echo $(PATH)
+
 ifeq (,$(wildcard  $(SILABS_BUILD)/$(PROJECTNAME).Makefile))
 	+@$(MAKE) --no-print-directory slc-generate
 	-@echo 'Project is generated. Run make again'

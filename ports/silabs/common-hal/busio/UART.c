@@ -101,7 +101,7 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
             uartdrv_usart_init.uartNum = 0;
             uartdrv_usart_init.stopBits = (stop >= 2) ? usartStopbits2
                                                        :usartStopbits1;
-            uartdrv_usart_init.parity = parity;
+            uartdrv_usart_init.parity = (USART_Parity_TypeDef)parity;
             uartdrv_usart_init.oversampling = usartOVS4;
             uartdrv_usart_init.mvdis = false;
             uartdrv_usart_init.fcType = uartdrvFlowControlNone;
