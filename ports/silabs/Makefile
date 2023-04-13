@@ -56,7 +56,9 @@ export PATH := $(shell python3 -c "import jinja2; print(jinja2.__path__[0])"):$(
 all: $(OUTPUT_DIR)/firmware.bin
 
 $(OUTPUT_DIR)/firmware.bin:
-
+	-@java --version
+	-@pip show jinja2
+	-@echo $(PATH)
 ifeq (,$(wildcard  $(SILABS_BUILD)/$(PROJECTNAME).Makefile))
 	+@$(MAKE) --no-print-directory slc-generate
 	-@echo 'Project is generated. Run make again'
