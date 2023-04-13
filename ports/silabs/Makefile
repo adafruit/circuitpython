@@ -207,11 +207,13 @@ $(OUTPUT_DIR)/firmware.out: $(OBJ) $(OBJS) $(LIB_FILES)
 
 slc-generate:
 	+@$(MAKE) -C tools all
+	-@mv $(realpath $(CURDIR))/tools/build-tools/slc_cli/bin/slc-cli/developer/adapter_packs/python/lib/python3.6/site-packages/jinja2 \
+		 $(realpath $(CURDIR))/tools/build-tools/slc_cli/bin/slc-cli/developer/adapter_packs/python/lib/python3.6/jinja2
 	@echo 'SLC generates project'
 	@slc configuration --sdk gecko_sdk
 	@slc signature trust -extpath cp_efr32_extension
 	@slc signature trust --sdk gecko_sdk
-	@slc generate -name=$(PROJECTNAME) $(PROJECTNAME).slcp --sdk gecko_sdk --with $(BOARD_BRD) -tlcn gcc -d=$(SILABS_BUILD)
+	@slc generate -debug -name=$(PROJECTNAME) $(PROJECTNAME).slcp --sdk gecko_sdk --with $(BOARD_BRD) -tlcn gcc -d=$(SILABS_BUILD)
 	@sed -i 's/ autogen\// $(SILABS_BUILD)\/autogen\//g' $(SILABS_BUILD)/circuitpython_efr32.project.mak
 	@sed -i 's/-T"autogen\//-T"$(SILABS_BUILD)\/autogen\//g' $(SILABS_BUILD)/circuitpython_efr32.project.mak
 slc-clean:
