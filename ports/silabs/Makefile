@@ -209,6 +209,8 @@ slc-generate:
 	+@$(MAKE) -C tools all
 	-@mv $(realpath $(CURDIR))/tools/build-tools/slc_cli/bin/slc-cli/developer/adapter_packs/python/lib/python3.6/site-packages/jinja2 \
 		 $(realpath $(CURDIR))/tools/build-tools/slc_cli/bin/slc-cli/developer/adapter_packs/python/lib/python3.6/jinja2
+	-@mv $(realpath $(CURDIR))/tools/build-tools/slc_cli/bin/slc-cli/developer/adapter_packs/python/lib/python3.6/site-packages/markupsafe \
+		 $(realpath $(CURDIR))/tools/build-tools/slc_cli/bin/slc-cli/developer/adapter_packs/python/lib/python3.6/markupsafe
 	@echo 'SLC generates project'
 	@slc configuration --sdk gecko_sdk
 	@slc signature trust -extpath cp_efr32_extension
