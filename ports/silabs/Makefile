@@ -51,7 +51,7 @@ PY_GEN_PINS_SRC ?= tools/make_pins.py
 FLASH_TOML_DIR = ../../data/nvm.toml/flash/macronix/
 
 export PATH := $(realpath $(CURDIR))/tools/build-tools/slc_cli:$(PATH)
-export PATH := /opt/hostedtoolcache/Python/3.11.2/x64/lib/python3.11/site-packages/jinja2:$(PATH)
+export PATH := /opt/hostedtoolcache/Python/3.11.3/x64/lib/python3.11/site-packages/jinja2:$(PATH)
 export PATH := $(shell python3 -c "import jinja2; print(jinja2.__path__[0])"):$(PATH)
 export PATH := $(realpath $(CURDIR))/tools/build-tools/slc_cli/bin/slc-cli/developer/adapter_packs/python/lib/python3.6/site-packages/jinja2:$(PATH)
 
