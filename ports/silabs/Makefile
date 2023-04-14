@@ -35,9 +35,10 @@ BUILD ?= $(SILABS_BUILD)
 OUTPUT_DIR = $(SILABS_BUILD)
 # Python script to generate pins and pins functionalities code
 PY_GEN_PINS_SRC ?= tools/make_pins.py
-
 # SLC tool path
 SLC_PATH = $(realpath $(CURDIR))/tools/build-tools/slc_cli
+
+BUILD_VERBOSE ?= 1
 
 CFLAGS = $(INCLUDES) $(C_DEFS) $(C_FLAGS) \
 	-Wno-expansion-to-defined \
@@ -134,42 +135,36 @@ MCU_SECTIONS = $^ $@
 -include $(SILABS_BUILD)/$(PROJECTNAME).project.mak
 
 # Default goal
-all:
-ifeq (,$(wildcard  $(SILABS_BUILD)/$(PROJECTNAME).Makefile))
-	+@$(MAKE) --no-print-directory slc-generate
-	+@$(MAKE) --no-print-directory $(OUTPUT_DIR)/firmware.out
-else
-	+@$(MAKE) --no-print-directory $(OUTPUT_DIR)/firmware.out
-endif
+all: $(OUTPUT_DIR)/firmware.bin
 
-$(OUTPUT_DIR)/firmware.bin: $(SILABS_BUILD)/$(PROJECTNAME).Makefile $(OUTPUT_DIR)/firmware.out
+$(OUTPUT_DIR)/firmware.bin: $(SILABS_BUILD)/$(PROJECTNAME).Makefile $(OUTPUT_DIR)/firmware.hex
+	+@$(MAKE) --no-print-directory $(OUTPUT_DIR)/firmware.out
 
 $(SILABS_BUILD)/$(PROJECTNAME).Makefile:
 	+@$(MAKE) --no-print-directory slc-generate
-	+@$(MAKE) --no-print-directory $(OUTPUT_DIR)/firmware.out
 
 $(OUTPUT_DIR)/firmware.out: $(SILABS_BUILD)/pin_functions.h $(SILABS_BUILD)/pins.c $(OBJ) $(OBJS) $(LIB_FILES)
 	@echo 'Linking $(OUTPUT_DIR)/firmware.out'
 	@echo "$(OBJS) $(OBJ)" > $(OUTPUT_DIR)/linker_objs
 	$(CC) $(LD_FLAGS) @$(OUTPUT_DIR)/linker_objs $(LIBS) -o $(OUTPUT_DIR)/firmware.out
 	$(OBJCOPY) $(OUTPUT_DIR)/firmware.out -O binary $(OUTPUT_DIR)/firmware.bin
-	$(OBJCOPY) $(OUTPUT_DIR)/firmware.out -O ihex $(OUTPUT_DIR)/firmware.hex
-	$(OBJCOPY) $(OUTPUT_DIR)/firmware.out -O srec $(OUTPUT_DIR)/firmware.s37
 	@echo 'Done.'
+
+$(OUTPUT_DIR)/firmware.hex:
 
 $(SILABS_BUILD)/pin_functions.h:
 	$(STEPECHO) "GEN $@"
 	$(Q)$(PYTHON) $(PY_GEN_PINS_SRC) -e $@ boards/$(BOARD)/pins.csv boards/$(BOARD)/pin_functions.csv
-	@-rm pins.c
+	@-$(RM) pins.c
 
 $(SILABS_BUILD)/pins.c:
 	$(STEPECHO) "GEN $@"
 	$(Q)$(PYTHON) $(PY_GEN_PINS_SRC) -s $@ boards/$(BOARD)/pins.csv boards/$(BOARD)/pin_functions.csv
-	@-rm pin_functions.h
+	@-$(RM) pin_functions.h
 
 slc-generate:
 	+@$(MAKE) -C tools all
-	-@cp -f boards/$(BOARD)/MX25R3235F.toml ../../data/nvm.toml/flash/macronix/MX25R3235F.toml
+	-@$(CP) -f boards/devkit_xg24_brd2601b/MX25R3235F.toml ../../data/nvm.toml/flash/macronix/MX25R3235F.toml
 ifeq (,$(wildcard $(SLC_PATH)/bin/slc-cli/developer/adapter_packs/python/lib/python3.6/jinja2))
 	-@ln -s $(SLC_PATH)/bin/slc-cli/developer/adapter_packs/python/lib/python3.6/site-packages/jinja2 \
 			$(SLC_PATH)/bin/slc-cli/developer/adapter_packs/python/lib/python3.6/jinja2
@@ -195,27 +190,27 @@ $(OBJS):
 
 $(OUTPUT_DIR)/%.o: %.c
 	@echo 'Building $<'
-	@mkdir -p $(@D)
+	@$(MKDIR_P) $(@D)
 	$(ECHO)$(CC) $(CFLAGS) -c -o $@ $<
 
 $(OUTPUT_DIR)/%.o: %.cpp
 	@echo 'Building $<'
-	@mkdir -p $(@D)
+	@$(MKDIR_P) $(@D)
 	$(ECHO)$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 $(OUTPUT_DIR)/%.o: %.cc
 	@echo 'Building $<'
-	@mkdir -p $(@D)
+	@$(MKDIR_P) $(@D)
 	$(ECHO)$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 $(OUTPUT_DIR)/%.o: %.s
 	@echo 'Building $<'
-	@mkdir -p $(@D)
+	@$(MKDIR_P) $(@D)
 	$(ECHO)$(CC) $(ASMFLAGS) -c -o $@ $<
 
 $(OUTPUT_DIR)/%.o: %.S
 	@echo 'Building $<'
-	@mkdir -p $(@D)
+	@$(MKDIR_P) $(@D)
 	$(ECHO)$(CC) $(ASMFLAGS) -c -o $@ $<
 
 include $(TOP)/py/mkrules.mk
