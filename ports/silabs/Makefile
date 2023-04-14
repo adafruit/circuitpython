@@ -23,22 +23,10 @@
 # THE SOFTWARE.
 #
 
-
 .SUFFIXES:				# ignore builtin rules
-.PHONY: all clean slc-clean slc-generate finalbuild dependents
-
-# Select the board to build for.
-ifeq ($(BOARD),)
-$(error You must provide a BOARD parameter)
-else
-ifeq ($(wildcard boards/$(BOARD)/.),)
-$(error Invalid BOARD specified)
-endif
-endif
-
+.PHONY: all clean slc-clean slc-generate dependents
 # Values set by the initial generation
 PROJECTNAME = circuitpython_efr32
-
 # If the build directory is not given, make it reflect the board name.
 SILABS_BUILD = build-$(BOARD)
 # Build dir for CircuitPython
@@ -48,25 +36,8 @@ OUTPUT_DIR = $(SILABS_BUILD)
 # Python script to generate pins and pins functionalities code
 PY_GEN_PINS_SRC ?= tools/make_pins.py
 
-FLASH_TOML_DIR = ../../data/nvm.toml/flash/macronix/
-
+# SLC tool path
 SLC_PATH = $(realpath $(CURDIR))/tools/build-tools/slc_cli
-export PATH := $(SLC_PATH):$(PATH)
-
-# Default goal
-all: $(OUTPUT_DIR)/firmware.bin
-
-$(OUTPUT_DIR)/firmware.bin:
-ifeq (,$(wildcard  $(SILABS_BUILD)/$(PROJECTNAME).Makefile))
-	+@$(MAKE) --no-print-directory slc-generate
-	-@echo 'Project is generated. Run make again'
-	+@$(MAKE) --no-print-directory finalbuild_$(BOARD)
-else
-	+@$(MAKE) --no-print-directory finalbuild_$(BOARD)
-endif
-
-# Include sub-makefiles
--include $(SILABS_BUILD)/$(PROJECTNAME).project.mak
 
 CFLAGS = $(INCLUDES) $(C_DEFS) $(C_FLAGS) \
 	-Wno-expansion-to-defined \
@@ -76,26 +47,7 @@ CFLAGS = $(INCLUDES) $(C_DEFS) $(C_FLAGS) \
 
 ASMFLAGS = $(INCLUDES) $(ASM_DEFS) $(ASM_FLAGS) $(DEPFLAGS)
 
-# Env-specific
-include ../../py/mkenv.mk
-# Board-specific
-include boards/$(BOARD)/mpconfigboard.mk
-# Port-specific
-include mpconfigport.mk
-
-# CircuitPython-specific
-include $(TOP)/py/circuitpy_mpconfig.mk
-
-# qstr definitions (must come before including py.mk)
-QSTR_DEFS = qstrdefsport.h
-
-# include py core make definitions
-include $(TOP)/py/py.mk
-
-include $(TOP)/supervisor/supervisor.mk
-
-# Include make rules and variables common across CircuitPython builds.
-include $(TOP)/py/circuitpy_defns.mk
+include ../../py/circuitpy_mkenv.mk
 
 CROSS_COMPILE = arm-none-eabi-
 
@@ -112,7 +64,6 @@ INC += -I$(SILABS_BUILD)/config
 INC += -I./boards
 INC += -I./peripherals
 INC += -I../../lib/mp-readline
-#D INC += -I../../supervisor/shared/usb
 
 #Debugging/Optimization
 ifeq ($(DEBUG), 1)
@@ -131,7 +82,6 @@ CFLAGS += $(INC) $(BASE_CFLAGS) $(C_DEFS) $(CFLAGS_MOD) $(COPT)
 CFLAGS += -DEFR32_SERIES_LOWER='"$(MCU_VARIANT)"'
 CFLAGS += -Wno-undef -Wno-shadow -Wno-cast-align -Wno-nested-externs -Wno-strict-prototypes
 
-
 SRC_C += \
 	background.c \
 	mphalport.c \
@@ -139,10 +89,6 @@ SRC_C += \
 
 ifeq ('$(BOARD)','brd2601b')
 SRC_C += boards/$(BOARD)/sensor.c
-endif
-
-ifneq ($(CIRCUITPY_USB),0)
-SRC_C += lib/tinyusb/src/portable/st/synopsys/dcd_synopsys.c
 endif
 
 SRC_S = boards/mp_efr32xg24_gchelper.s
@@ -184,13 +130,25 @@ SRC_QSTR_PREPROCESSOR +=
 
 MCU_SECTIONS = $^ $@
 
-finalbuild_devkit_xg24_brd2601b: $(FLASH_TOML_DIR)/MX25R3235F.toml $(SILABS_BUILD)/pin_functions.h $(SILABS_BUILD)/pins.c $(OUTPUT_DIR)/firmware.out
+# Include sub-makefiles
+-include $(SILABS_BUILD)/$(PROJECTNAME).project.mak
 
-finalbuild_explorerkit_xg24_brd2703a: $(SILABS_BUILD)/pin_functions.h $(SILABS_BUILD)/pins.c $(OUTPUT_DIR)/firmware.out
+# Default goal
+all:
+ifeq (,$(wildcard  $(SILABS_BUILD)/$(PROJECTNAME).Makefile))
+	+@$(MAKE) --no-print-directory slc-generate
+	+@$(MAKE) --no-print-directory $(OUTPUT_DIR)/firmware.out
+else
+	+@$(MAKE) --no-print-directory $(OUTPUT_DIR)/firmware.out
+endif
 
-finalbuild_sparkfun_thingplus_matter_mgm240p_brd2704a: $(SILABS_BUILD)/pin_functions.h $(SILABS_BUILD)/pins.c $(OUTPUT_DIR)/firmware.out
+$(OUTPUT_DIR)/firmware.bin: $(SILABS_BUILD)/$(PROJECTNAME).Makefile $(OUTPUT_DIR)/firmware.out
 
-$(OUTPUT_DIR)/firmware.out: $(OBJ) $(OBJS) $(LIB_FILES)
+$(SILABS_BUILD)/$(PROJECTNAME).Makefile:
+	+@$(MAKE) --no-print-directory slc-generate
+	+@$(MAKE) --no-print-directory $(OUTPUT_DIR)/firmware.out
+
+$(OUTPUT_DIR)/firmware.out: $(SILABS_BUILD)/pin_functions.h $(SILABS_BUILD)/pins.c $(OBJ) $(OBJS) $(LIB_FILES)
 	@echo 'Linking $(OUTPUT_DIR)/firmware.out'
 	@echo "$(OBJS) $(OBJ)" > $(OUTPUT_DIR)/linker_objs
 	$(CC) $(LD_FLAGS) @$(OUTPUT_DIR)/linker_objs $(LIBS) -o $(OUTPUT_DIR)/firmware.out
@@ -198,25 +156,6 @@ $(OUTPUT_DIR)/firmware.out: $(OBJ) $(OBJS) $(LIB_FILES)
 	$(OBJCOPY) $(OUTPUT_DIR)/firmware.out -O ihex $(OUTPUT_DIR)/firmware.hex
 	$(OBJCOPY) $(OUTPUT_DIR)/firmware.out -O srec $(OUTPUT_DIR)/firmware.s37
 	@echo 'Done.'
-
-slc-generate:
-	+@$(MAKE) -C tools all
-	-@ln -s $(SLC_PATH)/bin/slc-cli/developer/adapter_packs/python/lib/python3.6/site-packages/jinja2 \
-			$(SLC_PATH)/bin/slc-cli/developer/adapter_packs/python/lib/python3.6/jinja2
-	-@ln -s $(SLC_PATH)/bin/slc-cli/developer/adapter_packs/python/lib/python3.6/site-packages/markupsafe \
-			$(SLC_PATH)/bin/slc-cli/developer/adapter_packs/python/lib/python3.6/markupsafe
-	@echo 'SLC generates project'
-	@slc configuration --sdk gecko_sdk
-	@slc signature trust -extpath cp_efr32_extension
-	@slc signature trust --sdk gecko_sdk
-	@slc generate -name=$(PROJECTNAME) $(PROJECTNAME).slcp --sdk gecko_sdk --with $(BOARD_BRD) -tlcn gcc -d=$(SILABS_BUILD)
-	@sed -i 's/ autogen\// $(SILABS_BUILD)\/autogen\//g' $(SILABS_BUILD)/circuitpython_efr32.project.mak
-	@sed -i 's/-T"autogen\//-T"$(SILABS_BUILD)\/autogen\//g' $(SILABS_BUILD)/circuitpython_efr32.project.mak
-slc-clean:
-	@echo 'SLC cleaning'
-	+@$(MAKE) clean
-	$(RM) -fr $(SILABS_BUILD)
-	$(RM) -fr ./tools/build-tools
 
 $(SILABS_BUILD)/pin_functions.h:
 	$(STEPECHO) "GEN $@"
@@ -228,8 +167,27 @@ $(SILABS_BUILD)/pins.c:
 	$(Q)$(PYTHON) $(PY_GEN_PINS_SRC) -s $@ boards/$(BOARD)/pins.csv boards/$(BOARD)/pin_functions.csv
 	@-rm pin_functions.h
 
-$(FLASH_TOML_DIR)/MX25R3235F.toml:
-	cp -f boards/$(BOARD)/MX25R3235F.toml  $(FLASH_TOML_DIR)/MX25R3235F.toml
+slc-generate:
+	+@$(MAKE) -C tools all
+	-@cp -f boards/$(BOARD)/MX25R3235F.toml ../../data/nvm.toml/flash/macronix/MX25R3235F.toml
+ifeq (,$(wildcard $(SLC_PATH)/bin/slc-cli/developer/adapter_packs/python/lib/python3.6/jinja2))
+	-@ln -s $(SLC_PATH)/bin/slc-cli/developer/adapter_packs/python/lib/python3.6/site-packages/jinja2 \
+			$(SLC_PATH)/bin/slc-cli/developer/adapter_packs/python/lib/python3.6/jinja2
+	-@ln -s $(SLC_PATH)/bin/slc-cli/developer/adapter_packs/python/lib/python3.6/site-packages/markupsafe \
+			$(SLC_PATH)/bin/slc-cli/developer/adapter_packs/python/lib/python3.6/markupsafe
+endif
+	@echo 'SLC generates project'
+	@$(SLC_PATH)/slc configuration --sdk gecko_sdk
+	@$(SLC_PATH)/slc signature trust -extpath cp_efr32_extension
+	@$(SLC_PATH)/slc signature trust --sdk gecko_sdk
+	@$(SLC_PATH)/slc generate -name=$(PROJECTNAME) $(PROJECTNAME).slcp --sdk gecko_sdk --with $(BOARD_BRD) -tlcn gcc -d=$(SILABS_BUILD)
+	@sed -i 's/ autogen\// $(SILABS_BUILD)\/autogen\//g' $(SILABS_BUILD)/circuitpython_efr32.project.mak
+	@sed -i 's/-T"autogen\//-T"$(SILABS_BUILD)\/autogen\//g' $(SILABS_BUILD)/circuitpython_efr32.project.mak
+
+slc-clean:
+	@echo 'SLC cleaning'
+	$(RM) -fr $(SILABS_BUILD)
+	$(RM) -fr ./tools/build-tools
 
 #Override ECHO
 $(OBJS): ECHO =
