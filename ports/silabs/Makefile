@@ -164,7 +164,6 @@ $(SILABS_BUILD)/pins.c:
 
 slc-generate:
 	+@$(MAKE) -C tools all
-	-@$(CP) -f boards/devkit_xg24_brd2601b/MX25R3235F.toml ../../data/nvm.toml/flash/macronix/MX25R3235F.toml
 ifeq (,$(wildcard $(SLC_PATH)/bin/slc-cli/developer/adapter_packs/python/lib/python3.6/jinja2))
 	-@ln -s $(SLC_PATH)/bin/slc-cli/developer/adapter_packs/python/lib/python3.6/site-packages/jinja2 \
 			$(SLC_PATH)/bin/slc-cli/developer/adapter_packs/python/lib/python3.6/jinja2
