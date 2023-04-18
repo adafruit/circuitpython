@@ -29,7 +29,7 @@ Please ensure you set up your build environment appropriately, as per the guide.
 
 Install necessary packages
 
-    $ sudo apt install default-jre gcc-arm-none-eabi wget python3 python3-pip git gettext uncrustify
+    $ sudo apt install default-jre gcc-arm-none-eabi wget python3 python3-pip git git-lfs gettext uncrustify
     $ sudo python -m pip install --upgrade pip
 
 ## Board supported ##
@@ -59,7 +59,7 @@ Following the guideline below to install required packages for SLC tool:
 
 Once the one-time build tasks are complete, you can build at any time by navigating to the port directory:
 
-    $ make BOARD=explorerkit_xg24_brd2703a V=2
+    $ make BOARD=explorerkit_xg24_brd2703a
 
 You may also build with certain flags available in the makefile, depending on your board and development goals:
 
@@ -68,10 +68,6 @@ You may also build with certain flags available in the makefile, depending on yo
 Clean project by using:
 
     $ make BOARD=explorerkit_xg24_brd2703a clean
-
-Clean project and SLC generated files:
-
-    $ make BOARD=explorerkit_xg24_brd2703a slc-clean
 
 ## Bring-up on the board ##
 

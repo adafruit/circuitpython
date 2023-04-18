@@ -36,7 +36,7 @@ OUTPUT_DIR = $(SILABS_BUILD)
 # Python script to generate pins and pins functionalities code
 PY_GEN_PINS_SRC ?= tools/make_pins.py
 # SLC tool path
-SLC_PATH = $(realpath $(CURDIR))/tools/build-tools/slc_cli
+SLC_PATH = $(realpath $(CURDIR))/tools/slc_cli_linux
 
 BUILD_VERBOSE ?= 1
 
@@ -139,6 +139,7 @@ all: $(OUTPUT_DIR)/firmware.bin
 
 $(OUTPUT_DIR)/firmware.bin: $(SILABS_BUILD)/$(PROJECTNAME).Makefile $(OUTPUT_DIR)/firmware.hex
 	+@$(MAKE) --no-print-directory $(OUTPUT_DIR)/firmware.out
+	@echo 'Done.'
 
 $(SILABS_BUILD)/$(PROJECTNAME).Makefile:
 	+@$(MAKE) --no-print-directory slc-generate
@@ -148,7 +149,6 @@ $(OUTPUT_DIR)/firmware.out: $(SILABS_BUILD)/pin_functions.h $(SILABS_BUILD)/pins
 	@echo "$(OBJS) $(OBJ)" > $(OUTPUT_DIR)/linker_objs
 	$(CC) $(LD_FLAGS) @$(OUTPUT_DIR)/linker_objs $(LIBS) -o $(OUTPUT_DIR)/firmware.out
 	$(OBJCOPY) $(OUTPUT_DIR)/firmware.out -O binary $(OUTPUT_DIR)/firmware.bin
-	@echo 'Done.'
 
 $(OUTPUT_DIR)/firmware.hex:
 
@@ -163,7 +163,6 @@ $(SILABS_BUILD)/pins.c:
 	@-$(RM) pin_functions.h
 
 slc-generate:
-	+@$(MAKE) -C tools all
 ifeq (,$(wildcard $(SLC_PATH)/bin/slc-cli/developer/adapter_packs/python/lib/python3.6/jinja2))
 	-@ln -s $(SLC_PATH)/bin/slc-cli/developer/adapter_packs/python/lib/python3.6/site-packages/jinja2 \
 			$(SLC_PATH)/bin/slc-cli/developer/adapter_packs/python/lib/python3.6/jinja2
@@ -177,11 +176,6 @@ endif
 	@$(SLC_PATH)/slc generate -name=$(PROJECTNAME) $(PROJECTNAME).slcp --sdk gecko_sdk --with $(BOARD_BRD) -tlcn gcc -d=$(SILABS_BUILD)
 	@sed -i 's/ autogen\// $(SILABS_BUILD)\/autogen\//g' $(SILABS_BUILD)/circuitpython_efr32.project.mak
 	@sed -i 's/-T"autogen\//-T"$(SILABS_BUILD)\/autogen\//g' $(SILABS_BUILD)/circuitpython_efr32.project.mak
-
-slc-clean:
-	@echo 'SLC cleaning'
-	$(RM) -fr $(SILABS_BUILD)
-	$(RM) -fr ./tools/build-tools
 
 #Override ECHO
 $(OBJS): ECHO =
