@@ -5,6 +5,7 @@ all: build-tools/slc_cli/slc
 
 build-tools/slc_cli/slc:
 	@echo 'Unzip SLC'
-	@cat ./slc_cli_linux/slc_cli_* > ./slc_cli_linux.tar.gz
-	@tar -xzf ./slc_cli_linux.tar.gz
-	@rm -rf ./slc_cli_linux.tar.gz
+	@rm -rf ./slc_cli_linux.*
+	@wget https://www.silabs.com/documents/login/software/slc_cli_linux.zip
+	@unzip -o slc_cli_linux.zip -d build-tools
+	@rm -rf ./slc_cli_linux.*
