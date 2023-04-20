@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2022 Dan Halbert for Adafruit Industries
+ * Copyright (c) 2023 Bill Sideris, independently providing these changes.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,14 +29,7 @@
 #define MICROPY_HW_BOARD_NAME       "Lilygo T-Energy"
 #define MICROPY_HW_MCU_NAME         "ESP32"
 
-#define MICROPY_HW_LED_STATUS (&pin_GPIO4)
-
-#define CIRCUITPY_BOARD_I2C         (2)
-#define CIRCUITPY_BOARD_I2C_PIN     {{.scl = &pin_GPIO22, .sda = &pin_GPIO21}, \
-                                     {.scl = &pin_GPIO32, .sda = &pin_GPIO23}}
-
-#define CIRCUITPY_BOARD_SPI         (1)
-#define CIRCUITPY_BOARD_SPI_PIN     {{.clock = &pin_GPIO18, .mosi = &pin_GPIO19, .miso = NULL}}
+#define MICROPY_HW_LED_STATUS (&pin_GPIO5)
 
 // UART pins attached to the USB-serial converter chip
 #define CIRCUITPY_CONSOLE_UART_TX (&pin_GPIO1)
