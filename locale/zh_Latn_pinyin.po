@@ -113,6 +113,9 @@ msgstr ""
 #: ports/raspberrypi/common-hal/analogio/AnalogOut.c
 #: ports/raspberrypi/common-hal/rtc/RTC.c ports/stm/common-hal/alarm/__init__.c
 #: ports/stm/common-hal/canio/Listener.c ports/stm/common-hal/rtc/RTC.c
+#: shared-bindings/audiobusio/I2SOut.c shared-bindings/audiobusio/PDMIn.c
+#: shared-bindings/keypad/KeyMatrix.c shared-bindings/keypad/Keys.c
+#: shared-bindings/keypad/ShiftRegisterKeys.c
 msgid "%q"
 msgstr "%q"
 
@@ -138,6 +141,7 @@ msgstr "%q zhōng de %q bì xū shì %q lèi xíng, ér bù shì %q"
 
 #: ports/espressif/common-hal/espulp/ULP.c
 #: ports/mimxrt10xx/common-hal/audiobusio/__init__.c
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer.c
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 #: shared-bindings/digitalio/DigitalInOut.c
 #: shared-bindings/microcontroller/Pin.c
@@ -176,11 +180,11 @@ msgstr "%q chángdù bìxū <= %d"
 msgid "%q length must be >= %d"
 msgstr "%q chángdù bìxū >= %d"
 
-#: py/argcheck.c
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer.c py/argcheck.c
 msgid "%q must be %d"
 msgstr "%q bìxū %d"
 
-#: py/argcheck.c
+#: py/argcheck.c shared-bindings/displayio/Bitmap.c
 msgid "%q must be %d-%d"
 msgstr "%q bì xū wéi %d-%d"
 
@@ -209,7 +213,7 @@ msgstr ""
 msgid "%q must be array of type 'H'"
 msgstr "%q bì xū shì lèi xíng wéi 'H' de shù zǔ"
 
-#: shared-bindings/synthio/MidiTrack.c shared-bindings/synthio/__init__.c
+#: shared-module/synthio/__init__.c
 msgid "%q must be array of type 'h'"
 msgstr "%q bìxū shì lèixíng wéi 'h' de shùzǔ"
 
@@ -481,6 +485,7 @@ msgstr "suǒyǒu píndào dōu zài shǐyòng zhōng"
 msgid "All event channels in use"
 msgstr "suǒyǒu shìjiàn píndào dōu zài shǐyòng zhōng"
 
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer.c
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 msgid "All state machines in use"
 msgstr "suǒyǒu zhuàngtàijī dōu zài shǐyòng zhōng"
@@ -489,6 +494,7 @@ msgstr "suǒyǒu zhuàngtàijī dōu zài shǐyòng zhōng"
 msgid "All sync event channels in use"
 msgstr "suǒyǒu tóngbù shìjiàn píndào dōu zài shǐyòng zhōng"
 
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer.c
 #: shared-bindings/pwmio/PWMOut.c
 msgid "All timers for this pin are in use"
 msgstr "cǐ yǐnjiǎo de suǒyǒu jìshíqì dōu zài shǐyòng zhōng"
@@ -1144,10 +1150,6 @@ msgstr "I2C qǐdòng cuòwù"
 msgid "I2C peripheral in use"
 msgstr "I2C wài shè zhèng zài shǐ yòng zhōng"
 
-#: shared-bindings/audiobusio/I2SOut.c
-msgid "I2SOut not available"
-msgstr "I2SOut bù kě yòng"
-
 #: ports/raspberrypi/bindings/rp2pio/StateMachine.c
 msgid "In-buffer elements must be <= 4 bytes long"
 msgstr "huǎn chōng nèi yuán sù bì xū <= 4 zì jié cháng"
@@ -1257,7 +1259,9 @@ msgid "Interrupt error."
 msgstr "zhōng duàn cuò wù."
 
 #: ports/mimxrt10xx/common-hal/audiobusio/__init__.c
-#: ports/mimxrt10xx/common-hal/pwmio/PWMOut.c py/argcheck.c
+#: ports/mimxrt10xx/common-hal/pwmio/PWMOut.c
+#: ports/raspberrypi/bindings/picodvi/Framebuffer.c
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer.c py/argcheck.c
 #: shared-bindings/digitalio/DigitalInOut.c
 #: shared-bindings/displayio/EPaperDisplay.c
 msgid "Invalid %q"
@@ -1315,6 +1319,10 @@ msgstr "géshì wúxiào"
 #: shared-module/audiocore/WaveFile.c
 msgid "Invalid format chunk size"
 msgstr "Géshì kuài dàxiǎo wúxiào"
+
+#: shared-bindings/wifi/Radio.c
+msgid "Invalid hex password"
+msgstr ""
 
 #: ports/espressif/common-hal/wifi/Radio.c
 msgid "Invalid multicast MAC address"
@@ -1747,10 +1755,6 @@ msgstr "huǎn chōng wài yuán sù bì xū <= 4 zì jié cháng"
 #: shared-bindings/audiobusio/PDMIn.c
 msgid "Oversample must be multiple of 8."
 msgstr "Guò cǎiyàng bìxū shì 8 de bèishù."
-
-#: shared-bindings/audiobusio/PDMIn.c
-msgid "PDMIn not available"
-msgstr "PDMIn bù kě yòng"
 
 #: shared-bindings/pwmio/PWMOut.c
 msgid ""
@@ -4428,6 +4432,12 @@ msgstr "zi bìxū wèi fú diǎn xíng"
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr "zi bìxū jùyǒu xíngzhuàng (n_section,2)"
+
+#~ msgid "I2SOut not available"
+#~ msgstr "I2SOut bù kě yòng"
+
+#~ msgid "PDMIn not available"
+#~ msgstr "PDMIn bù kě yòng"
 
 #~ msgid "out of range of source"
 #~ msgstr "yuán fàn wéi wài"

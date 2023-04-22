@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
+ * Copyright (c) 2023 CDarius
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,29 +24,21 @@
  * THE SOFTWARE.
  */
 
-#include "supervisor/board.h"
+// Micropython setup
 
-#include "bindings/picodvi/Framebuffer.h"
-#include "shared-module/displayio/__init__.h"
-#include "shared-bindings/framebufferio/FramebufferDisplay.h"
+#define MICROPY_HW_BOARD_NAME       "M5Stack Core2"
+#define MICROPY_HW_MCU_NAME         "ESP32"
 
-void board_init(void) {
-    picodvi_framebuffer_obj_t *fb = &allocate_display_bus()->picodvi;
-    fb->base.type = &picodvi_framebuffer_type;
-    common_hal_picodvi_framebuffer_construct(fb, 640, 480,
-        &pin_GPIO17, &pin_GPIO16,
-        &pin_GPIO19, &pin_GPIO18,
-        &pin_GPIO21, &pin_GPIO20,
-        &pin_GPIO23, &pin_GPIO22,
-        8);
+#define CIRCUITPY_BOARD_I2C         (2)
+#define CIRCUITPY_BOARD_I2C_PIN     {{.scl = &pin_GPIO22, .sda = &pin_GPIO21}, \
+                                     {.scl = &pin_GPIO33, .sda = &pin_GPIO32}}
 
-    framebufferio_framebufferdisplay_obj_t *display = &displays[0].framebuffer_display;
-    display->base.type = &framebufferio_framebufferdisplay_type;
-    common_hal_framebufferio_framebufferdisplay_construct(
-        display,
-        MP_OBJ_FROM_PTR(fb),
-        0,
-        true);
-}
+#define CIRCUITPY_BOARD_SPI         (1)
+#define CIRCUITPY_BOARD_SPI_PIN     {{.clock = &pin_GPIO18, .mosi = &pin_GPIO23, .miso = &pin_GPIO38}}
 
-// Use the MP_WEAK supervisor/shared/board.c versions of routines not defined here.
+#define CIRCUITPY_BOARD_UART        (1)
+#define CIRCUITPY_BOARD_UART_PIN    {{.tx = &pin_GPIO14, .rx = &pin_GPIO13}}
+
+// UART pins attached to the USB-serial converter chip
+#define CIRCUITPY_CONSOLE_UART_TX (&pin_GPIO1)
+#define CIRCUITPY_CONSOLE_UART_RX (&pin_GPIO3)
