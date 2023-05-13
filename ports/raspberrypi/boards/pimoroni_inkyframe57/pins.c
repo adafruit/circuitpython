@@ -2,6 +2,7 @@
 
 #include "shared-module/displayio/__init__.h"
 #include "inky-shared.h"
+#include "py/obj.h"
 
 STATIC const mp_rom_map_elem_t board_module_globals_table[] = {
     CIRCUITPYTHON_BOARD_DICT_STANDARD_ITEMS
@@ -55,5 +56,14 @@ STATIC const mp_rom_map_elem_t board_module_globals_table[] = {
 
     { MP_ROM_QSTR(MP_QSTR_DISPLAY), MP_ROM_PTR(&displays[0].epaper_display)},
     { MP_ROM_QSTR(MP_QSTR_ENABLE_DIO), MP_ROM_PTR(&enable_pin_obj)},   // GP2
+
+    { MP_ROM_QSTR(MP_QSTR_SW_A),        MP_ROM_INT(0)},
+    { MP_ROM_QSTR(MP_QSTR_SW_B),        MP_ROM_INT(1)},
+    { MP_ROM_QSTR(MP_QSTR_SW_C),        MP_ROM_INT(2)},
+    { MP_ROM_QSTR(MP_QSTR_SW_D),        MP_ROM_INT(3)},
+    { MP_ROM_QSTR(MP_QSTR_SW_E),        MP_ROM_INT(4)},
+    { MP_ROM_QSTR(MP_QSTR_RTC_ALARM),   MP_ROM_INT(5)},
+    { MP_ROM_QSTR(MP_QSTR_EXT_TRIGGER), MP_ROM_INT(6)},
+    { MP_ROM_QSTR(MP_QSTR_INKY_BUSY),   MP_ROM_INT(7)},
 };
 MP_DEFINE_CONST_DICT(board_module_globals, board_module_globals_table);
