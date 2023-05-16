@@ -39,7 +39,7 @@
 
 //| devices: Tuple[Device, ...]
 //| """Tuple of all active HID device interfaces.
-//| The default set of devices is ``Device.KEYBOARD, Device.MOUSE, Device.CONSUMER_CONTROL``,
+//| The default set of devices is ``Device.KEYBOARD, Device.POINTER, Device.MOUSE, Device.CONSUMER_CONTROL``,
 //| On boards where `usb_hid` is disabled by default, `devices` is an empty tuple.
 //|
 //| If a boot device is enabled by `usb_hid.enable()`, *and* the host has requested a boot device,

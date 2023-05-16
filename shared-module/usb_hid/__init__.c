@@ -99,11 +99,12 @@ static mp_obj_tuple_t default_hid_devices_tuple = {
     .base = {
         .type = &mp_type_tuple,
     },
-    .len = 3,
+    .len = 4,
     .items = {
         MP_OBJ_FROM_PTR(&usb_hid_device_keyboard_obj),
         MP_OBJ_FROM_PTR(&usb_hid_device_mouse_obj),
         MP_OBJ_FROM_PTR(&usb_hid_device_consumer_control_obj),
+        MP_OBJ_FROM_PTR(&usb_hid_device_pointer_obj),
     },
 };
 

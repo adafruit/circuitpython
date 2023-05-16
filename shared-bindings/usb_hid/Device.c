@@ -80,6 +80,12 @@
 //|     Uses Report ID 1 for its IN and OUT reports.
 //|     """
 //|
+//|     POINTER: Device
+//|     """Standard mouse device supporting five mouse buttons, X and Y relative movements from -127 to 127
+//|     in each report, a relative mouse wheel change from -127 to 127, and a relative mouse pan change from -127 to 127 in each report.
+//|     Uses Report ID 5 for its IN report.
+//|     """
+//|
 //|     MOUSE: Device
 //|     """Standard mouse device supporting five mouse buttons, X and Y relative movements from -127 to 127
 //|     in each report, and a relative mouse wheel change from -127 to 127 in each report.
@@ -259,6 +265,7 @@ STATIC const mp_rom_map_elem_t usb_hid_device_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_usage),                    MP_ROM_PTR(&usb_hid_device_usage_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_KEYBOARD),                 MP_ROM_PTR(&usb_hid_device_keyboard_obj) },
+    { MP_ROM_QSTR(MP_QSTR_POINTER),                  MP_ROM_PTR(&usb_hid_device_pointer_obj) },
     { MP_ROM_QSTR(MP_QSTR_MOUSE),                    MP_ROM_PTR(&usb_hid_device_mouse_obj) },
     { MP_ROM_QSTR(MP_QSTR_CONSUMER_CONTROL),         MP_ROM_PTR(&usb_hid_device_consumer_control_obj) },
 };
