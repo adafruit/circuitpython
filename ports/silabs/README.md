@@ -11,13 +11,13 @@ This port brings the Silicon Labs EFR32 series of MCUs to Circuitpython.
 
 Refer to **mpconfigport.mk** for a full list of enabled modules sorted by family.
 
-## How this port is organized: ##
+## How this port is organized ##
 
-- **boards/** contains the configuration files for each development board and breakout available on the port, as well as system files and both shared and SoC-specific linker files. Board configuration includes a pin mapping of the board, oscillator information, board-specific build flags, and setup for some other peripheral where applicable.
+- **boards/** contains the configuration files for each development board and breakout available on the port, as well as system files and both shared and SoC-specific linker files. Board configuration includes a pin mapping of the board, oscillator information, board-specific build flags, and setup for other peripherals where applicable.
 - **common-hal/** contains the port-specific module implementations, used by shared-module and shared-bindings.
 - **peripherals/** contains peripheral setup files and peripheral mapping information, sorted by family and sub-variant. Most files in this directory can be generated with the python scripts in **tools/**.
 - **supervisor/** contains port-specific implementations of internal flash and serial, as well as the **port.c** file, which initializes the port at startup.
-- **tools/** contains Silicon Labs configurator (SLC) tool, python scripts for generating peripheral and pin mapping files in **peripherals/** and **board/**.
+- **tools/** contains the Silicon Labs Configurator (SLC) tool, python scripts for generating peripheral and pin mapping files in **peripherals/** and **board/**.
 
 At the root level, refer to **mpconfigboard.h** and **mpconfigport.mk** for port specific settings and a list of enabled modules.
 
@@ -34,7 +34,7 @@ Install the necessary packages:
     sudo apt install default-jre gcc-arm-none-eabi wget python3 python3-pip git git-lfs gettext uncrustify
     sudo python -m pip install --upgrade pip
 
-## Board supported ##
+## Supported boards ##
 
 | Board                       | Code         | Build CMD                                  |
 | --------------------------- | ------------ | ------------------------------------------ |
@@ -67,13 +67,13 @@ You may also build with certain flags available in the makefile, depending on yo
 
     make BOARD=explorerkit_xg24_brd2703a DEBUG=1
 
-Clean project by using:
+Clean the project by using:
 
     make BOARD=explorerkit_xg24_brd2703a clean
 
 ## Running CircuitPython ##
 
-### Getting a REPL prompt ###
+### Connecting to the Serial Console ###
 
 Connect the devkit to the PC via the USB cable. The board uses serial for REPL access and debugging because the EFR32 chips has no USB support.
 
@@ -118,14 +118,14 @@ After code.py has finished executing, a REPL prompt will be presented on the
 
 With the boards which support USB mass storage, we can drag the files to the board file system. However, because the EFR32 boards don’t support USB mass storage, we need to use a tool like **Ampy** to copy the file to the board. You can use the latest version of **Ampy** and its  command to copy the module directories to the board.
 
-Refer to the guideline below for installing the **Ampy** tool:
+Refer to the guide below for installing the **Ampy** tool:
 
 <https://learn.adafruit.com/micropython-basics-load-files-and-run-code/install-ampy>
 
-## Modules supported ##
+## Built-in modules available ##
 
 | Board                       | Modules Available|
 | --------------------------- | ---------------- |
-| xG24 Dev Kit                |  _asyncio, _bleio, _pixelmap, adafruit_ble, adafruit_bus_device, adafruit_pixelbuf, adafruit_register, aesio,analogio, array, atexit, binascii, bitmaptools, board, builtins, busio, collections, digitalio, displayio,errno, fontio, framebufferio, gc, getpass, gifio, json, math, microcontroller, micropython, msgpack, nvm, onewireio, os, pwmio, rainbowio, random, re, rtc, select, sharpdisplay, storage, struct, supervisor, sys, terminalio, time, traceback, ulab, uselect, vectorio, watchdog, zlib |
-| xG24 Explorer Kit           |  _asyncio, _bleio, _pixelmap, adafruit_ble, adafruit_bus_device, adafruit_pixelbuf, adafruit_register, aesio,analogio, array, atexit, binascii, bitmaptools, board, builtins, busio, collections, digitalio, displayio,errno, fontio, framebufferio, gc, getpass, gifio, json, math, microcontroller, micropython, msgpack, nvm, onewireio, os, pwmio, rainbowio, random, re, rtc, sdcardio, select, sharpdisplay, storage, struct, supervisor, sys, terminalio, time, traceback, ulab, uselect, vectorio, watchdog, zlib |
-| SparkFun Thing Plus MGM240P | _asyncio, _bleio, _pixelmap, adafruit_ble, adafruit_bus_device, adafruit_pixelbuf, adafruit_register, aesio,analogio, array, atexit, binascii, bitmaptools, board, builtins, busio, collections, digitalio, displayio,errno, fontio, framebufferio, gc, getpass, gifio, json, math, microcontroller, micropython, msgpack, nvm, onewireio, os, pwmio, rainbowio, random, re, rtc, sdcardio, select, sharpdisplay, storage, struct, supervisor, sys, terminalio, time, traceback, ulab, uselect, vectorio, watchdog, zlib |
+| xG24 Dev Kit                |  _asyncio, _bleio, _pixelmap, adafruit_ble, adafruit_bus_device, adafruit_pixelbuf, adafruit_register, aesio, analogio, array, atexit, binascii, bitmaptools, board, builtins, busio, collections, digitalio, displayio, errno, fontio, framebufferio, gc, getpass, gifio, json, math, microcontroller, micropython, msgpack, nvm, onewireio, os, pwmio, rainbowio, random, re, rtc, select, sharpdisplay, storage, struct, supervisor, sys, terminalio, time, traceback, ulab, uselect, vectorio, watchdog, zlib |
+| xG24 Explorer Kit           |  _asyncio, _bleio, _pixelmap, adafruit_ble, adafruit_bus_device, adafruit_pixelbuf, adafruit_register, aesio, analogio, array, atexit, binascii, bitmaptools, board, builtins, busio, collections, digitalio, displayio, errno, fontio, framebufferio, gc, getpass, gifio, json, math, microcontroller, micropython, msgpack, nvm, onewireio, os, pwmio, rainbowio, random, re, rtc, sdcardio, select, sharpdisplay, storage, struct, supervisor, sys, terminalio, time, traceback, ulab, uselect, vectorio, watchdog, zlib |
+| SparkFun Thing Plus MGM240P | _asyncio, _bleio, _pixelmap, adafruit_ble, adafruit_bus_device, adafruit_pixelbuf, adafruit_register, aesio, analogio, array, atexit, binascii, bitmaptools, board, builtins, busio, collections, digitalio, displayio, errno, fontio, framebufferio, gc, getpass, gifio, json, math, microcontroller, micropython, msgpack, nvm, onewireio, os, pwmio, rainbowio, random, re, rtc, sdcardio, select, sharpdisplay, storage, struct, supervisor, sys, terminalio, time, traceback, ulab, uselect, vectorio, watchdog, zlib |
