@@ -235,9 +235,9 @@ litex             alpha
 mimxrt10xx        alpha
 nrf               stable
 raspberrypi       stable
+silabs            alpha
 stm               ``F4`` stable | ``others`` beta
 unix              alpha
-silabs            alpha
 ================  ============================================================
 
 -  ``stable`` Highly unlikely to have bugs or missing functionality.
