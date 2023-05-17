@@ -237,6 +237,7 @@ nrf               stable
 raspberrypi       stable
 stm               ``F4`` stable | ``others`` beta
 unix              alpha
+silabs            alpha
 ================  ============================================================
 
 -  ``stable`` Highly unlikely to have bugs or missing functionality.
