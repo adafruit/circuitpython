@@ -66,5 +66,6 @@ void release_epaperdisplay(displayio_epaperdisplay_obj_t *self);
 size_t maybe_refresh_epaperdisplay(void);
 
 void displayio_epaperdisplay_collect_ptrs(displayio_epaperdisplay_obj_t *self);
+bool displayio_epaperdisplay_query_busy(displayio_epaperdisplay_obj_t *self);
 
 #endif // MICROPY_INCLUDED_SHARED_MODULE_DISPLAYIO_EPAPERDISPLAY_H
