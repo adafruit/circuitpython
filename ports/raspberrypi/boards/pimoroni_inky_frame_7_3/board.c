@@ -37,7 +37,9 @@
 
 #define DELAY 0x80
 
-// This is an SPD1656 control chip. The display is a 5.7" ACeP EInk.
+// This is a 7.3" ACeP EInk.
+
+digitalio_digitalinout_obj_t enable_pin_obj;
 
 digitalio_digitalinout_obj_t sr_clock;
 digitalio_digitalinout_obj_t sr_data;
@@ -83,7 +85,7 @@ enum reg {
 const uint8_t display_start_sequence[] = {
     CMDH, 6, 0x49, 0x55, 0x20, 0x08, 0x09, 0x18,
     PWR, 6, 0x3F, 0x00, 0x32, 0x2A, 0x0E, 0x2A,
-    PSR, 2, 0x53, 0x69,
+    PSR, 2, 0x5F, 0x69,
     PFS, 4, 0x00, 0x54, 0x00, 0x44,
     BTST1, 4, 0x40, 0x1F, 0x1F, 0x2C,
     BTST2, 4, 0x6F, 0x1F, 0x16, 0x25,
@@ -100,6 +102,7 @@ const uint8_t display_start_sequence[] = {
     PWS, 1, 0x2F,
     CCSET, 1, 0x00,
     TSSET, 1, 0x00,
+    PON, DELAY, 0xc8,
 };
 
 const uint8_t display_stop_sequence[] = {
@@ -107,7 +110,6 @@ const uint8_t display_stop_sequence[] = {
 };
 
 const uint8_t refresh_sequence[] = {
-    PON, DELAY | 1, 0xc8, 0x00,
     DRF, 1, 0x00,
 };
 
@@ -134,6 +136,13 @@ bool displayio_epaperdisplay_query_busy(displayio_epaperdisplay_obj_t *self) {
 }
 
 void board_init(void) {
+    // Drive the EN_3V3 pin high so the board stays awake on battery power
+    enable_pin_obj.base.type = &digitalio_digitalinout_type;
+    common_hal_digitalio_digitalinout_construct(&enable_pin_obj, &pin_GPIO2);
+    common_hal_digitalio_digitalinout_switch_to_output(&enable_pin_obj, true, DRIVE_MODE_PUSH_PULL);
+
+    // Never reset
+    common_hal_digitalio_digitalinout_never_reset(&enable_pin_obj);
 
     common_hal_digitalio_digitalinout_construct(&sr_clock, &pin_GPIO8);
     common_hal_digitalio_digitalinout_switch_to_output(&sr_clock, false, DRIVE_MODE_PUSH_PULL);
@@ -182,10 +191,10 @@ void board_init(void) {
         false,  // color_bits_inverted
         0x000000,  // highlight_color
         refresh_sequence, sizeof(refresh_sequence),
-        8.0,  // refresh_time
+        80.0,  // refresh_time
         NULL,  // busy_pin
         false,  // busy_state
-        10.0, // seconds_per_frame
+        80.0, // seconds_per_frame
         false,  // always_toggle_chip_select
         false, // grayscale
         true, // acep

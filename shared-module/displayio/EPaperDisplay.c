@@ -163,7 +163,6 @@ MP_WEAK bool displayio_epaperdisplay_query_busy(displayio_epaperdisplay_obj_t *s
 }
 
 STATIC void wait_for_busy(displayio_epaperdisplay_obj_t *self) {
-    mp_printf(MICROPY_DEBUG_PRINTER, "busy_wait\n");
     while (displayio_epaperdisplay_query_busy(self)) {
         RUN_BACKGROUND_TASKS;
     }
@@ -183,9 +182,6 @@ STATIC void send_command_sequence(displayio_epaperdisplay_obj_t *self,
             data = cmd + 3;
         }
         displayio_display_core_begin_transaction(&self->core);
-        mp_printf(MICROPY_DEBUG_PRINTER, "command: 0x%02x\n", sequence[i]);
-        mp_printf(MICROPY_DEBUG_PRINTER, "data (%d): ", data_size);
-        mp_printf(MICROPY_DEBUG_PRINTER, "\n");
         self->core.send(self->core.bus, DISPLAY_COMMAND, self->chip_select, cmd, 1);
         self->core.send(self->core.bus, DISPLAY_DATA, self->chip_select, data, data_size);
 
@@ -282,7 +278,6 @@ mp_obj_t common_hal_displayio_epaperdisplay_get_root_group(displayio_epaperdispl
 }
 
 STATIC bool displayio_epaperdisplay_refresh_area(displayio_epaperdisplay_obj_t *self, const displayio_area_t *area) {
-    mp_printf(MICROPY_DEBUG_PRINTER, "_refresh_area\n");
     uint16_t buffer_size = 128; // In uint32_ts
 
     displayio_area_t clipped;
@@ -332,7 +327,6 @@ STATIC bool displayio_epaperdisplay_refresh_area(displayio_epaperdisplay_obj_t *
             write_command = self->write_color_ram_command;
         }
         displayio_display_core_begin_transaction(&self->core);
-        mp_printf(MICROPY_DEBUG_PRINTER, "command: 0x%02x\n", write_command);
         self->core.send(self->core.bus, DISPLAY_COMMAND, self->chip_select, &write_command, 1);
         displayio_display_core_end_transaction(&self->core);
 
@@ -384,8 +378,6 @@ STATIC bool displayio_epaperdisplay_refresh_area(displayio_epaperdisplay_obj_t *
                 // Can't acquire display bus; skip the rest of the data. Try next display.
                 return false;
             }
-            mp_printf(MICROPY_DEBUG_PRINTER, "graphics (%d): ", subrectangle_size_bytes);
-            mp_printf(MICROPY_DEBUG_PRINTER, "\n");
             self->core.send(self->core.bus, DISPLAY_DATA, self->chip_select, (uint8_t *)buffer, subrectangle_size_bytes);
             displayio_display_core_end_transaction(&self->core);
 
@@ -401,7 +393,6 @@ STATIC bool displayio_epaperdisplay_refresh_area(displayio_epaperdisplay_obj_t *
 }
 
 STATIC bool _clean_area(displayio_epaperdisplay_obj_t *self) {
-    mp_printf(MICROPY_DEBUG_PRINTER, "_clean_area\n");
     uint16_t width = displayio_display_core_get_width(&self->core);
     uint16_t height = displayio_display_core_get_height(&self->core);
 
@@ -410,7 +401,6 @@ STATIC bool _clean_area(displayio_epaperdisplay_obj_t *self) {
 
     uint8_t write_command = self->write_black_ram_command;
     displayio_display_core_begin_transaction(&self->core);
-    mp_printf(MICROPY_DEBUG_PRINTER, "command: 0x%02x\n", write_command);
     self->core.send(self->core.bus, DISPLAY_COMMAND, self->chip_select, &write_command, 1);
     displayio_display_core_end_transaction(&self->core);
 
@@ -419,8 +409,6 @@ STATIC bool _clean_area(displayio_epaperdisplay_obj_t *self) {
             // Can't acquire display bus; skip the rest of the data. Try next display.
             return false;
         }
-        mp_printf(MICROPY_DEBUG_PRINTER, "graphics (%d): ", width/2);
-        mp_printf(MICROPY_DEBUG_PRINTER, "\n");
         self->core.send(self->core.bus, DISPLAY_DATA, self->chip_select, buffer, width / 2);
         displayio_display_core_end_transaction(&self->core);
 
