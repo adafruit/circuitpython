@@ -41,6 +41,10 @@
 
 #define BOARD_HAS_CRYSTAL 1
 
+// See https://github.com/adafruit/circuitpython/issues/1300, circuitpython
+// doesn't yet support NFC so just force those pins to be GPIO.
+#define CONFIG_NFCT_PINS_AS_GPIOS
+
 #define DEFAULT_I2C_BUS_SCL         (&pin_P0_05)
 #define DEFAULT_I2C_BUS_SDA         (&pin_P0_04)
 
