@@ -61,7 +61,7 @@ typedef int32_t mems_audio_err_t;
  * @brief The datatype that holds an output PCM sample.
  */
 typedef int16_t pcm_sample_t;
-_Static_assert(PCM_OUT_RESOLUTION==16, "Output PCM resolution must be 16-bits");
+_Static_assert(PCM_OUT_RESOLUTION == 16, "Output PCM resolution must be 16-bits");
 
 
 typedef enum {
@@ -79,7 +79,7 @@ typedef struct MemsAudio_t MemsAudio;
 /**
  * @brief Callback informing that PCM samples are available for processing.
  */
-typedef void (*pcm_data_available_t)(MemsAudio* audio, pcm_sample_t* pcmSamples, size_t pcmLength);
+typedef void (*pcm_data_available_t)(MemsAudio *audio, pcm_sample_t *pcmSamples, size_t pcmLength);
 
 /**
  * @brief MemsAudio manages the filter, buffers and callbacks used to capture PDM audio samples and convert to PCM.
@@ -90,7 +90,7 @@ typedef struct MemsAudio_t {
     /**
      * @brief The buffer to store PCM audio samples
      */
-    volatile pcm_sample_t* volatile pcmOutputBuffer;
+    volatile pcm_sample_t *volatile pcmOutputBuffer;
 
     /**
      * @brief The length of the PCM buffer. SHould be at least MEMS_AUDIO_PCM_BUFFER_LENGTH
@@ -102,12 +102,12 @@ typedef struct MemsAudio_t {
      */
     pcm_data_available_t pcm_data_available;
 
-    void* audioImpl;
-    void* userData;
+    void *audioImpl;
+    void *userData;
 } MemsAudio;
 
 
-mems_audio_err_t mems_audio_init(MemsAudio* audio);
+mems_audio_err_t mems_audio_init(MemsAudio *audio);
 
 /**
  * @brief Uninitializes the MemsAudio instance.
@@ -115,7 +115,7 @@ mems_audio_err_t mems_audio_init(MemsAudio* audio);
  * @param audio
  * @return mems_audio_err_t
  */
-mems_audio_err_t mems_audio_uninit(MemsAudio* audio);
+mems_audio_err_t mems_audio_uninit(MemsAudio *audio);
 
 /**
  * @brief Asynchronously records audio.
@@ -125,12 +125,12 @@ mems_audio_err_t mems_audio_uninit(MemsAudio* audio);
  * @param pdmBufferLength
  * @return mems_audio_err_t
  */
-mems_audio_err_t mems_audio_record(MemsAudio* audio);
+mems_audio_err_t mems_audio_record(MemsAudio *audio);
 
 /**
  * @brief Pause recording audio.
  */
-mems_audio_err_t mems_audio_pause(MemsAudio* audio);
+mems_audio_err_t mems_audio_pause(MemsAudio *audio);
 
 /**
  * @brief Resume recording audio.
@@ -138,7 +138,7 @@ mems_audio_err_t mems_audio_pause(MemsAudio* audio);
  * @param audio
  * @return mems_audio_err_t
  */
-mems_audio_err_t mems_audio_resume(MemsAudio* audio);
+mems_audio_err_t mems_audio_resume(MemsAudio *audio);
 
 /**
  * @brief Stop recording audio and
@@ -146,7 +146,7 @@ mems_audio_err_t mems_audio_resume(MemsAudio* audio);
  * @param audio
  * @return mems_audio_err_t
  */
-mems_audio_err_t mems_audio_stop(MemsAudio* audio);
+mems_audio_err_t mems_audio_stop(MemsAudio *audio);
 
 #ifdef __cplusplus
 }
