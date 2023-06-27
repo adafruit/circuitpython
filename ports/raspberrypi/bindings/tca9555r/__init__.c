@@ -169,7 +169,7 @@ void tca_gpio_set_output(uint tca_gpio, bool value) {
 
     uint8_t reg = (tca_gpio >= 8) ? OUTPUT_PORT1 : OUTPUT_PORT0;
     uint8_t output_state = tca9555r_output_state[tca_gpio / 8];
-    //common_hal_busio_i2c_write_read(i2c, address, &reg, 1, &output_state, 1);
+    // common_hal_busio_i2c_write_read(i2c, address, &reg, 1, &output_state, 1);
     uint8_t new_output_state;
     if (value) {
         new_output_state = output_state | tca_pin_to_bit_mask(tca_gpio);
@@ -205,7 +205,7 @@ void tca_gpio_set_dir(uint tca_gpio, bool output) {
 
     uint8_t reg = (tca_gpio >= 8) ? CONFIGURATION_PORT1 : CONFIGURATION_PORT0;
     uint8_t config_state = tca9555r_config_state[tca_gpio / 8];
-    //common_hal_busio_i2c_write_read(i2c, address, &reg, 1, &config_state, 1);
+    // common_hal_busio_i2c_write_read(i2c, address, &reg, 1, &config_state, 1);
     uint8_t new_config_state;
     if (output) {
         new_config_state = config_state & ~tca_pin_to_bit_mask(tca_gpio);
@@ -447,7 +447,7 @@ void tca_change_output_mask(uint8_t chip, uint16_t mask, uint16_t state) {
     bool low_changed = low_mask > 0;
     bool high_changed = high_mask > 0;
     if (low_changed && high_changed) {
-        //uint16_t output_state = tca_gpio_get_output_port(address);
+        // uint16_t output_state = tca_gpio_get_output_port(address);
         uint16_t output_state = (tca9555r_output_state[(chip * 2) + 1] << 8) | tca9555r_output_state[(chip * 2)];
         uint16_t new_output_state = output_state;
         new_output_state &= ~mask; // Clear the mask bits
@@ -458,7 +458,7 @@ void tca_change_output_mask(uint8_t chip, uint16_t mask, uint16_t state) {
             tca9555r_output_state[(chip * 2)] = (new_output_state & 0xFF);
         }
     } else if (low_changed) {
-        //uint8_t output_state = tca_gpio_get_low_output_port(address);
+        // uint8_t output_state = tca_gpio_get_low_output_port(address);
         uint8_t output_state = tca9555r_output_state[(chip * 2)];
         uint8_t new_output_state = (output_state & ~low_mask) | low_state;
         if (new_output_state != output_state) {
@@ -466,7 +466,7 @@ void tca_change_output_mask(uint8_t chip, uint16_t mask, uint16_t state) {
             tca9555r_output_state[(chip * 2)] = new_output_state;
         }
     } else if (high_changed) {
-        //uint8_t output_state = tca_gpio_get_high_output_port(address);
+        // uint8_t output_state = tca_gpio_get_high_output_port(address);
         uint8_t output_state = tca9555r_output_state[(chip * 2) + 1];
         uint8_t new_output_state = (output_state & ~high_mask) | high_state;
         if (new_output_state != output_state) {
@@ -987,15 +987,15 @@ TCA_PINS(1);
 STATIC const mp_rom_map_elem_t tca_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_tca) },
     { MP_ROM_QSTR(MP_QSTR_TcaPin), MP_ROM_PTR(&tca_pin_type) },
-    //{ MP_ROM_QSTR(MP_QSTR_change_output), &tca_pin_change_output_obj },
+    // { MP_ROM_QSTR(MP_QSTR_change_output), &tca_pin_change_output_obj },
     { MP_ROM_QSTR(MP_QSTR_change_output_mask), &tca_pin_change_output_mask_obj },
-    //{ MP_ROM_QSTR(MP_QSTR_soft_i2c_write), &tca_pin_soft_i2c_write_obj },
-    //{ MP_ROM_QSTR(MP_QSTR_soft_i2c_start), &tca_pin_soft_i2c_start_obj },
-    //{ MP_ROM_QSTR(MP_QSTR_soft_i2c_write_byte), &tca_pin_soft_i2c_write_byte_obj },
-    //{ MP_ROM_QSTR(MP_QSTR_soft_i2c_write_bit), &tca_pin_soft_i2c_write_bit_obj },
-    //{ MP_ROM_QSTR(MP_QSTR_soft_i2c_ack_bit), &tca_pin_soft_i2c_ack_bit_obj },
-    //{ MP_ROM_QSTR(MP_QSTR_soft_i2c_read_byte), &tca_pin_soft_i2c_read_byte_obj },
-    //{ MP_ROM_QSTR(MP_QSTR_soft_i2c_end), &tca_pin_soft_i2c_end_obj },
+    // { MP_ROM_QSTR(MP_QSTR_soft_i2c_write), &tca_pin_soft_i2c_write_obj },
+    // { MP_ROM_QSTR(MP_QSTR_soft_i2c_start), &tca_pin_soft_i2c_start_obj },
+    // { MP_ROM_QSTR(MP_QSTR_soft_i2c_write_byte), &tca_pin_soft_i2c_write_byte_obj },
+    // { MP_ROM_QSTR(MP_QSTR_soft_i2c_write_bit), &tca_pin_soft_i2c_write_bit_obj },
+    // { MP_ROM_QSTR(MP_QSTR_soft_i2c_ack_bit), &tca_pin_soft_i2c_ack_bit_obj },
+    // { MP_ROM_QSTR(MP_QSTR_soft_i2c_read_byte), &tca_pin_soft_i2c_read_byte_obj },
+    // { MP_ROM_QSTR(MP_QSTR_soft_i2c_end), &tca_pin_soft_i2c_end_obj },
     { MP_ROM_QSTR(MP_QSTR_get_number), &tca_pin_get_number_obj },
     { MP_ROM_QSTR(MP_QSTR_get_chip), &tca_pin_get_chip_obj },
     TCA_ENTRIES(0),
