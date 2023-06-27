@@ -41,6 +41,7 @@
 
 //| _DisplayBus = Union["FourWire", "paralleldisplay.ParallelBus", "I2CDisplay"]
 //| """:py:class:`FourWire`, :py:class:`paralleldisplay.ParallelBus` or :py:class:`I2CDisplay`"""
+//|
 
 //| class Display:
 //|     """Manage updating a display over a display bus
@@ -239,10 +240,16 @@ static displayio_display_obj_t *native_display(mp_obj_t display_obj) {
 }
 
 //|     def show(self, group: Group) -> None:
-//|         """Switches to displaying the given group of layers. When group is None, the default
+//|         """
+//|         .. note:: `show()` is deprecated and will be removed in CircuitPython 9.0.0.
+//|           Use ``.root_group = group`` instead.
+//|
+//|         Switches to displaying the given group of layers. When group is None, the default
 //|         CircuitPython terminal will be shown.
 //|
-//|         :param Group group: The group to show."""
+//|         :param Group group: The group to show.
+//|
+//|         """
 //|         ...
 STATIC mp_obj_t displayio_display_obj_show(mp_obj_t self_in, mp_obj_t group_in) {
     displayio_display_obj_t *self = native_display(self_in);
@@ -282,7 +289,8 @@ MP_DEFINE_CONST_FUN_OBJ_2(displayio_display_show_obj, displayio_display_obj_show
 //|
 //|         :param Optional[int] target_frames_per_second: The target frame rate that :py:func:`refresh` should try to
 //|             achieve. Set to `None` for immediate refresh.
-//|         :param int minimum_frames_per_second: The minimum number of times the screen should be updated per second."""
+//|         :param int minimum_frames_per_second: The minimum number of times the screen should be updated per second.
+//|         """
 //|         ...
 STATIC mp_obj_t displayio_display_obj_refresh(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_target_frames_per_second, ARG_minimum_frames_per_second };
@@ -350,7 +358,7 @@ STATIC mp_obj_t displayio_display_obj_set_brightness(mp_obj_t self_in, mp_obj_t 
     displayio_display_obj_t *self = native_display(self_in);
     mp_float_t brightness = mp_obj_get_float(brightness_obj);
     if (brightness < 0 || brightness > 1.0) {
-        mp_raise_ValueError(translate("Brightness must be 0-1.0"));
+        mp_raise_ValueError_varg(translate("%q must be %d-%d"), MP_QSTR_brightness, 0, 1);
     }
     bool ok = common_hal_displayio_display_set_brightness(self, brightness);
     if (!ok) {
@@ -417,7 +425,10 @@ MP_PROPERTY_GETTER(displayio_display_bus_obj,
     (mp_obj_t)&displayio_display_get_bus_obj);
 
 //|     root_group: Group
-//|     """The root group on the display."""
+//|     """The root group on the display.
+//|     If the root group is set to `displayio.CIRCUITPYTHON_TERMINAL`, the default CircuitPython terminal will be shown.
+//|     If the root group is set to ``None``, no output will be shown.
+//|     """
 STATIC mp_obj_t displayio_display_obj_get_root_group(mp_obj_t self_in) {
     displayio_display_obj_t *self = native_display(self_in);
     return common_hal_displayio_display_get_root_group(self);
@@ -445,7 +456,8 @@ MP_PROPERTY_GETSET(displayio_display_root_group_obj,
 //|         """Extract the pixels from a single row
 //|
 //|         :param int y: The top edge of the area
-//|         :param ~circuitpython_typing.WriteableBuffer buffer: The buffer in which to place the pixel data"""
+//|         :param ~circuitpython_typing.WriteableBuffer buffer: The buffer in which to place the pixel data
+//|         """
 //|         ...
 //|
 STATIC mp_obj_t displayio_display_obj_fill_row(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {

@@ -82,8 +82,13 @@ bool common_hal_displayio_tilegrid_get_hidden(displayio_tilegrid_t *self) {
     return self->hidden;
 }
 
+bool displayio_tilegrid_get_rendered_hidden(displayio_tilegrid_t *self) {
+    return self->rendered_hidden;
+}
+
 void common_hal_displayio_tilegrid_set_hidden(displayio_tilegrid_t *self, bool hidden) {
     self->hidden = hidden;
+    self->rendered_hidden = false;
     if (!hidden) {
         self->full_change = true;
     }
@@ -91,6 +96,7 @@ void common_hal_displayio_tilegrid_set_hidden(displayio_tilegrid_t *self, bool h
 
 void displayio_tilegrid_set_hidden_by_parent(displayio_tilegrid_t *self, bool hidden) {
     self->hidden_by_parent = hidden;
+    self->rendered_hidden = false;
     if (!hidden) {
         self->full_change = true;
     }
@@ -507,7 +513,7 @@ bool displayio_tilegrid_fill_area(displayio_tilegrid_t *self,
             if (self->pixel_shader == mp_const_none) {
                 output_pixel.pixel = input_pixel.pixel;
             } else if (mp_obj_is_type(self->pixel_shader, &displayio_palette_type)) {
-                output_pixel.opaque = displayio_palette_get_color(self->pixel_shader, colorspace, input_pixel.pixel, &output_pixel.pixel);
+                displayio_palette_get_color(self->pixel_shader, colorspace, &input_pixel, &output_pixel);
             } else if (mp_obj_is_type(self->pixel_shader, &displayio_colorconverter_type)) {
                 displayio_colorconverter_convert(self->pixel_shader, colorspace, &input_pixel, &output_pixel);
             }
@@ -543,7 +549,6 @@ bool displayio_tilegrid_fill_area(displayio_tilegrid_t *self,
                     ((uint8_t *)buffer)[offset / pixels_per_byte] |= output_pixel.pixel << shift;
                 }
             }
-            (void)input_pixel;
         }
     }
     return full_coverage;
@@ -583,6 +588,7 @@ displayio_area_t *displayio_tilegrid_get_refresh_areas(displayio_tilegrid_t *sel
     bool hidden = self->hidden || self->hidden_by_parent;
     // Check hidden first because it trumps all other changes.
     if (hidden) {
+        self->rendered_hidden = true;
         if (!first_draw) {
             self->previous_area.next = tail;
             return &self->previous_area;

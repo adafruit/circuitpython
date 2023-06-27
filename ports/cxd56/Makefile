@@ -102,8 +102,6 @@ LIBGCC = "${shell "$(CC)" $(CFLAGS) -print-libgcc-file-name}"
 
 LDFLAGS = \
 	--entry=__start \
-	-nostartfiles \
-	-nodefaultlibs \
 	-T$(SPRESENSE_SDK)/nuttx/scripts/ramconfig.ld \
 	--gc-sections \
 	-Map=$(BUILD)/output.map \
@@ -183,9 +181,13 @@ $(BUILD)/firmware.elf: $(BUILD)/libmpy.a
 $(MKSPK):
 	$(MAKE) -C mkspk
 
+ifeq ($(VALID_BOARD),)
+$(BUILD)/firmware.spk: invalid-board
+else
 $(BUILD)/firmware.spk: $(BUILD)/firmware.elf $(MKSPK)
 	$(ECHO) "Creating $@"
 	$(MKSPK) -c 2 $(BUILD)/firmware.elf nuttx $(BUILD)/firmware.spk
+endif
 
 flash: $(BUILD)/firmware.spk
 	$(ECHO) "Writing $< to the board"

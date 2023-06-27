@@ -29,6 +29,7 @@
 
 #include <string.h>
 
+#include "bindings/espidf/__init__.h"
 #include "common-hal/wifi/__init__.h"
 #include "shared/runtime/interrupt_char.h"
 #include "py/gc.h"
@@ -205,22 +206,22 @@ void common_hal_wifi_radio_stop_station(wifi_radio_obj_t *self) {
     set_mode_station(self, false);
 }
 
-void common_hal_wifi_radio_start_ap(wifi_radio_obj_t *self, uint8_t *ssid, size_t ssid_len, uint8_t *password, size_t password_len, uint8_t channel, uint32_t authmodes, uint8_t max_connections) {
+void common_hal_wifi_radio_start_ap(wifi_radio_obj_t *self, uint8_t *ssid, size_t ssid_len, uint8_t *password, size_t password_len, uint8_t channel, uint32_t authmode, uint8_t max_connections) {
     set_mode_ap(self, true);
 
-    uint8_t authmode = 0;
-    switch (authmodes) {
+    uint8_t esp_authmode = 0;
+    switch (authmode) {
         case AUTHMODE_OPEN:
-            authmode = WIFI_AUTH_OPEN;
+            esp_authmode = WIFI_AUTH_OPEN;
             break;
         case AUTHMODE_WPA | AUTHMODE_PSK:
-            authmode = WIFI_AUTH_WPA_PSK;
+            esp_authmode = WIFI_AUTH_WPA_PSK;
             break;
         case AUTHMODE_WPA2 | AUTHMODE_PSK:
-            authmode = WIFI_AUTH_WPA2_PSK;
+            esp_authmode = WIFI_AUTH_WPA2_PSK;
             break;
         case AUTHMODE_WPA | AUTHMODE_WPA2 | AUTHMODE_PSK:
-            authmode = WIFI_AUTH_WPA_WPA2_PSK;
+            esp_authmode = WIFI_AUTH_WPA_WPA2_PSK;
             break;
         default:
             mp_arg_error_invalid(MP_QSTR_authmode);
@@ -233,13 +234,17 @@ void common_hal_wifi_radio_start_ap(wifi_radio_obj_t *self, uint8_t *ssid, size_
     memcpy(&config->ap.password, password, password_len);
     config->ap.password[password_len] = 0;
     config->ap.channel = channel;
-    config->ap.authmode = authmode;
+    config->ap.authmode = esp_authmode;
 
     mp_arg_validate_int_range(max_connections, 0, 10, MP_QSTR_max_connections);
 
     config->ap.max_connection = max_connections;
 
     esp_wifi_set_config(WIFI_IF_AP, config);
+}
+
+bool common_hal_wifi_radio_get_ap_active(wifi_radio_obj_t *self) {
+    return self->ap_mode && esp_netif_is_netif_up(self->ap_netif);
 }
 
 void common_hal_wifi_radio_stop_ap(wifi_radio_obj_t *self) {
@@ -345,6 +350,10 @@ wifi_radio_error_t common_hal_wifi_radio_connect(wifi_radio_obj_t *self, uint8_t
         self->retries_left = self->starting_retries;
     }
     return WIFI_RADIO_ERROR_NONE;
+}
+
+bool common_hal_wifi_radio_get_connected(wifi_radio_obj_t *self) {
+    return self->sta_mode && esp_netif_is_netif_up(self->netif);
 }
 
 mp_obj_t common_hal_wifi_radio_get_ap_info(wifi_radio_obj_t *self) {
@@ -466,8 +475,16 @@ void common_hal_wifi_radio_stop_dhcp_client(wifi_radio_obj_t *self) {
     esp_netif_dhcpc_stop(self->netif);
 }
 
+void common_hal_wifi_radio_start_dhcp_server(wifi_radio_obj_t *self) {
+    esp_netif_dhcps_start(self->ap_netif);
+}
+
+void common_hal_wifi_radio_stop_dhcp_server(wifi_radio_obj_t *self) {
+    esp_netif_dhcps_stop(self->ap_netif);
+}
+
 void common_hal_wifi_radio_set_ipv4_address(wifi_radio_obj_t *self, mp_obj_t ipv4, mp_obj_t netmask, mp_obj_t gateway, mp_obj_t ipv4_dns) {
-    common_hal_wifi_radio_stop_dhcp_client(self); // Must stop DHCP to set a manual address
+    common_hal_wifi_radio_stop_dhcp_client(self); // Must stop station DHCP to set a manual address
 
     esp_netif_ip_info_t ip_info;
     ipaddress_ipaddress_to_esp_idf_ip4(ipv4, &ip_info.ip);
@@ -481,6 +498,19 @@ void common_hal_wifi_radio_set_ipv4_address(wifi_radio_obj_t *self, mp_obj_t ipv
     }
 }
 
+void common_hal_wifi_radio_set_ipv4_address_ap(wifi_radio_obj_t *self, mp_obj_t ipv4, mp_obj_t netmask, mp_obj_t gateway) {
+    common_hal_wifi_radio_stop_dhcp_server(self); // Must stop access point DHCP to set a manual address
+
+    esp_netif_ip_info_t ip_info;
+    ipaddress_ipaddress_to_esp_idf_ip4(ipv4, &ip_info.ip);
+    ipaddress_ipaddress_to_esp_idf_ip4(netmask, &ip_info.netmask);
+    ipaddress_ipaddress_to_esp_idf_ip4(gateway, &ip_info.gw);
+
+    esp_netif_set_ip_info(self->ap_netif, &ip_info);
+
+    common_hal_wifi_radio_start_dhcp_server(self); // restart access point DHCP
+}
+
 mp_int_t common_hal_wifi_radio_ping(wifi_radio_obj_t *self, mp_obj_t ip_address, mp_float_t timeout) {
     esp_ping_config_t ping_config = ESP_PING_DEFAULT_CONFIG();
     ipaddress_ipaddress_to_esp_idf(ip_address, &ping_config.target_addr);
@@ -489,7 +519,7 @@ mp_int_t common_hal_wifi_radio_ping(wifi_radio_obj_t *self, mp_obj_t ip_address,
     size_t timeout_ms = timeout * 1000;
 
     esp_ping_handle_t ping;
-    esp_ping_new_session(&ping_config, NULL, &ping);
+    CHECK_ESP_RESULT(esp_ping_new_session(&ping_config, NULL, &ping));
     esp_ping_start(ping);
 
     uint32_t received = 0;

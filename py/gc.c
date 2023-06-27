@@ -231,7 +231,9 @@ bool gc_is_locked(void) {
 // children: mark the unmarked child blocks and put those newly marked
 // blocks on the stack. When all children have been checked, pop off the
 // topmost block on the stack and repeat with that one.
-STATIC void gc_mark_subtree(size_t block) {
+// We don't instrument these functions because they occur a lot during GC and
+// fill up the output buffer quickly.
+STATIC void MP_NO_INSTRUMENT PLACE_IN_ITCM(gc_mark_subtree)(size_t block) {
     // Start with the block passed in the argument.
     size_t sp = 0;
     for (;;) {
@@ -350,7 +352,7 @@ STATIC void gc_sweep(void) {
 }
 
 // Mark can handle NULL pointers because it verifies the pointer is within the heap bounds.
-STATIC void gc_mark(void *ptr) {
+STATIC void MP_NO_INSTRUMENT PLACE_IN_ITCM(gc_mark)(void *ptr) {
     if (VERIFY_PTR(ptr)) {
         size_t block = BLOCK_FROM_PTR(ptr);
         if (ATB_GET_KIND(block) == AT_HEAD) {
@@ -397,7 +399,7 @@ void gc_collect_ptr(void *ptr) {
 #if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8))
 __attribute__((no_sanitize_address))
 #endif
-static void *gc_get_ptr(void **ptrs, int i) {
+static void *MP_NO_INSTRUMENT PLACE_IN_ITCM(gc_get_ptr)(void **ptrs, int i) {
     #if MICROPY_DEBUG_VALGRIND
     if (!VALGRIND_CHECK_MEM_IS_ADDRESSABLE(&ptrs[i], sizeof(*ptrs))) {
         return NULL;
@@ -518,7 +520,7 @@ void *gc_alloc(size_t n_bytes, unsigned int alloc_flags, bool long_lived) {
     }
 
     if (MP_STATE_MEM(gc_pool_start) == 0) {
-        reset_into_safe_mode(GC_ALLOC_OUTSIDE_VM);
+        reset_into_safe_mode(SAFE_MODE_GC_ALLOC_OUTSIDE_VM);
     }
 
     GC_ENTER();
@@ -712,7 +714,7 @@ void gc_free(void *ptr) {
         GC_EXIT();
     } else {
         if (MP_STATE_MEM(gc_pool_start) == 0) {
-            reset_into_safe_mode(GC_ALLOC_OUTSIDE_VM);
+            reset_into_safe_mode(SAFE_MODE_GC_ALLOC_OUTSIDE_VM);
         }
         // get the GC block number corresponding to this pointer
         assert(VERIFY_PTR(ptr));
@@ -1011,6 +1013,7 @@ bool gc_never_free(void *ptr) {
     // Pointers are stored in a linked list where each block is BYTES_PER_BLOCK long and the first
     // pointer is the next block of pointers.
     void **current_reference_block = MP_STATE_MEM(permanent_pointers);
+    void **last_reference_block = NULL;
     while (current_reference_block != NULL) {
         for (size_t i = 1; i < BYTES_PER_BLOCK / sizeof(void *); i++) {
             if (current_reference_block[i] == NULL) {
@@ -1018,6 +1021,7 @@ bool gc_never_free(void *ptr) {
                 return true;
             }
         }
+        last_reference_block = current_reference_block; // keep a record of last "proper" reference block
         current_reference_block = current_reference_block[0];
     }
     void **next_block = gc_alloc(BYTES_PER_BLOCK, false, true);
@@ -1027,7 +1031,7 @@ bool gc_never_free(void *ptr) {
     if (MP_STATE_MEM(permanent_pointers) == NULL) {
         MP_STATE_MEM(permanent_pointers) = next_block;
     } else {
-        current_reference_block[0] = next_block;
+        last_reference_block[0] = next_block;
     }
     next_block[1] = ptr;
     return true;

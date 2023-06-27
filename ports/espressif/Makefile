@@ -120,15 +120,25 @@ CFLAGS += -DSTACK_CANARY_VALUE=0xa5a5a5a5
 
 #Debugging/Optimization
 ifeq ($(DEBUG), 1)
-  CFLAGS += -DDEBUG -ggdb
-  OPTIMIZATION_FLAGS ?= -Og
-  # You may want to enable these flags to make setting breakpoints easier.
-  # CFLAGS += -fno-inline -fno-ipa-sra
+	CFLAGS += -ggdb
+	ifeq ($(IDF_TARGET_ARCH),riscv)
+		OPTIMIZATION_FLAGS ?= -Os
+		CFLAGS += -DNDEBUG
+	else
+		OPTIMIZATION_FLAGS ?= -Og
+		CFLAGS += -DDEBUG
+	endif
+	# You may want to enable these flags to make setting breakpoints easier.
+	# CFLAGS += -fno-inline -fno-ipa-sra
 else
-  CFLAGS += -DNDEBUG -ggdb3
-  OPTIMIZATION_FLAGS ?= -O2
-  # RISC-V is larger than xtensa
-  # Use -Os for RISC-V when it overflows
+	CFLAGS += -DNDEBUG -ggdb3
+	# RISC-V is larger than xtensa
+	# Use -Os for RISC-V when it overflows
+	ifeq ($(IDF_TARGET_ARCH),riscv)
+		OPTIMIZATION_FLAGS ?= -Os
+	else
+		OPTIMIZATION_FLAGS ?= -O2
+	endif
 endif
 
 # option to override compiler optimization level, set in boards/$(BOARD)/mpconfigboard.mk
@@ -214,7 +224,6 @@ endif
 SRC_C += \
 	background.c \
 	mphalport.c \
-	bindings/espidf/__init__.c \
 	boards/$(BOARD)/board.c \
 	boards/$(BOARD)/pins.c \
 	shared/netutils/netutils.c \
@@ -248,15 +257,27 @@ ifneq ($(CIRCUITPY_BLEIO),0)
 SRC_C += common-hal/_bleio/ble_events.c
 endif
 
-SRC_C += $(wildcard common-hal/espidf/*.c)
-
-ifneq ($(CIRCUITPY_ESP32_CAMERA),0)
+ifneq ($(CIRCUITPY_ESPCAMERA),0)
 SRC_CAMERA := \
-	$(wildcard common-hal/esp32_camera/*.c) \
-	$(wildcard bindings/esp32_camera/*.c)
+	$(wildcard common-hal/espcamera/*.c) \
+	$(wildcard bindings/espcamera/*.c)
 SRC_C += $(SRC_CAMERA)
 CFLAGS += -isystem esp32-camera/driver/include
 CFLAGS += -isystem esp32-camera/conversions/include
+endif
+
+ifneq ($(CIRCUITPY_ESPIDF),0)
+SRC_ESPIDF := \
+	$(wildcard common-hal/espidf/*.c) \
+	$(wildcard bindings/espidf/*.c)
+SRC_C += $(SRC_ESPIDF)
+endif
+
+ifneq ($(CIRCUITPY_ESPNOW),0)
+SRC_ESPNOW := \
+	$(wildcard common-hal/espnow/*.c) \
+	$(wildcard bindings/espnow/*.c)
+SRC_C += $(SRC_ESPNOW)
 endif
 
 ifneq ($(CIRCUITPY_ESPULP),0)
@@ -333,7 +354,7 @@ endif
 .PHONY: do-sdkconfig
 do-sdkconfig: $(BUILD)/esp-idf/config/sdkconfig.h
 $(BUILD)/esp-idf/config/sdkconfig.h: boards/$(BOARD)/sdkconfig CMakeLists.txt | $(BUILD)/esp-idf
-	IDF_PATH=$(IDF_PATH) cmake -S . -B $(BUILD)/esp-idf -DSDKCONFIG=$(BUILD)/esp-idf/sdkconfig -DSDKCONFIG_DEFAULTS="$(SDKCONFIGS)" -DCMAKE_TOOLCHAIN_FILE=$(IDF_PATH)/tools/cmake/toolchain-$(IDF_TARGET).cmake -DIDF_TARGET=$(IDF_TARGET) -GNinja -DCIRCUITPY_ESP32_CAMERA=$(CIRCUITPY_ESP32_CAMERA)
+	IDF_PATH=$(IDF_PATH) cmake -S . -B $(BUILD)/esp-idf -DSDKCONFIG=$(BUILD)/esp-idf/sdkconfig -DSDKCONFIG_DEFAULTS="$(SDKCONFIGS)" -DCMAKE_TOOLCHAIN_FILE=$(IDF_PATH)/tools/cmake/toolchain-$(IDF_TARGET).cmake -DIDF_TARGET=$(IDF_TARGET) -GNinja -DCIRCUITPY_ESPCAMERA=$(CIRCUITPY_ESPCAMERA)
 
 # build a lib
 # Adding -d explain -j 1 -v to the ninja line will output debug info
@@ -385,11 +406,12 @@ BINARY_BLOBS += esp-idf/components/xtensa/$(IDF_TARGET)/libxt_hal.a
 ESP_IDF_COMPONENTS_EXPANDED += esp-idf/components/xtensa/$(IDF_TARGET)/libxt_hal.a
 endif
 
-ifneq ($(CIRCUITPY_ESP32_CAMERA),0)
+ifneq ($(CIRCUITPY_ESPCAMERA),0)
 ESP_IDF_COMPONENTS_EXPANDED += $(BUILD)/esp-idf/esp-idf/esp32-camera/libesp32-camera.a
 #$(error $(ESP_IDF_COMPONENTS_EXPANDED))
 endif
 
+ifneq ($(VALID_BOARD),)
 # BOOTLOADER_OFFSET is determined by chip type, based on the ROM bootloader, and is not changeable.
 ifeq ($(IDF_TARGET),esp32)
 BOOTLOADER_OFFSET = 0x1000
@@ -401,6 +423,7 @@ else ifeq ($(IDF_TARGET),esp32s2)
 BOOTLOADER_OFFSET = 0x1000
 else
 $(error unknown IDF_TARGET $(IDF_TARGET))
+endif
 endif
 
 IDF_CMAKE_TARGETS = \
@@ -434,10 +457,14 @@ $(BUILD)/firmware.elf: $(OBJ) | esp-idf-stamp
 $(BUILD)/circuitpython-firmware.bin: $(BUILD)/firmware.elf | tools/build_memory_info.py
 	$(STEPECHO) "Create $@"
 	$(Q)esptool.py --chip $(IDF_TARGET) elf2image $(FLASH_FLAGS) --elf-sha256-offset 0xb0 -o $@ $^
-	$(Q)$(PYTHON) tools/build_memory_info.py $< $(BUILD)/esp-idf/sdkconfig $@
+	$(Q)$(PYTHON) tools/build_memory_info.py $< $(BUILD)/esp-idf/sdkconfig $@ $(BUILD)
 
+ifeq ($(VALID_BOARD),)
+$(BUILD)/firmware.bin: invalid-board
+else
 $(BUILD)/firmware.bin: $(BUILD)/circuitpython-firmware.bin | esp-idf-stamp
 	$(Q)$(PYTHON) ../../tools/join_bins.py $@ $(BOOTLOADER_OFFSET) $(BUILD)/esp-idf/bootloader/bootloader.bin $(PARTITION_TABLE_OFFSET) $(BUILD)/esp-idf/partition_table/partition-table.bin $(FIRMWARE_OFFSET) $(BUILD)/circuitpython-firmware.bin
+endif
 
 UF2_FAMILY_ID_esp32s2 = 0xbfdd4eee
 UF2_FAMILY_ID_esp32s3 = 0xc47e5767

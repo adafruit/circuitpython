@@ -48,6 +48,8 @@
 #include "lwip/raw.h"
 #include "lwip_src/ping.h"
 
+#include "shared/netutils/dhcpserver.h"
+
 #define MAC_ADDRESS_LENGTH 6
 
 #define NETIF_STA (&cyw43_state.netif[CYW43_ITF_STA])
@@ -161,11 +163,19 @@ void common_hal_wifi_radio_stop_station(wifi_radio_obj_t *self) {
     // (by tcpip_link_status). However since ap disconnection isn't working
     // either, this is not an issue.
     cyw43_wifi_leave(&cyw43_state, CYW43_ITF_AP);
-
+    const size_t timeout_ms = 500;
+    uint64_t start = port_get_raw_ticks(NULL);
+    uint64_t deadline = start + timeout_ms;
+    while (port_get_raw_ticks(NULL) < deadline && (cyw43_tcpip_link_status(&cyw43_state, CYW43_ITF_STA) != CYW43_LINK_DOWN)) {
+        RUN_BACKGROUND_TASKS;
+        if (mp_hal_is_interrupted()) {
+            break;
+        }
+    }
     bindings_cyw43_wifi_enforce_pm();
 }
 
-void common_hal_wifi_radio_start_ap(wifi_radio_obj_t *self, uint8_t *ssid, size_t ssid_len, uint8_t *password, size_t password_len, uint8_t channel, uint32_t authmodes, uint8_t max_connections) {
+void common_hal_wifi_radio_start_ap(wifi_radio_obj_t *self, uint8_t *ssid, size_t ssid_len, uint8_t *password, size_t password_len, uint8_t channel, uint32_t authmode, uint8_t max_connections) {
     if (!common_hal_wifi_radio_get_enabled(self)) {
         mp_raise_RuntimeError(translate("Wifi is not enabled"));
     }
@@ -176,7 +186,7 @@ void common_hal_wifi_radio_start_ap(wifi_radio_obj_t *self, uint8_t *ssid, size_
 
     common_hal_wifi_radio_stop_ap(self);
 
-    // Channel can only be changed after inital powerup and config of ap.
+    // Channel can only be changed after initial powerup and config of ap.
     // Defaults to 1 if not set or invalid (i.e. 13)
     cyw43_wifi_ap_set_channel(&cyw43_state, (const uint32_t)channel);
 
@@ -184,6 +194,10 @@ void common_hal_wifi_radio_start_ap(wifi_radio_obj_t *self, uint8_t *ssid, size_
 
     // TODO: Implement authmode check like in espressif
     bindings_cyw43_wifi_enforce_pm();
+}
+
+bool common_hal_wifi_radio_get_ap_active(wifi_radio_obj_t *self) {
+    return cyw43_tcpip_link_status(&cyw43_state, CYW43_ITF_AP) == CYW43_LINK_UP;
 }
 
 void common_hal_wifi_radio_stop_ap(wifi_radio_obj_t *self) {
@@ -275,6 +289,10 @@ wifi_radio_error_t common_hal_wifi_radio_connect(wifi_radio_obj_t *self, uint8_t
     return WIFI_RADIO_ERROR_UNSPECIFIED;
 }
 
+bool common_hal_wifi_radio_get_connected(wifi_radio_obj_t *self) {
+    return cyw43_tcpip_link_status(&cyw43_state, CYW43_ITF_STA) == CYW43_LINK_UP;
+}
+
 mp_obj_t common_hal_wifi_radio_get_ap_info(wifi_radio_obj_t *self) {
     mp_raise_NotImplementedError(NULL);
 }
@@ -350,6 +368,17 @@ void common_hal_wifi_radio_stop_dhcp_client(wifi_radio_obj_t *self) {
     dhcp_stop(NETIF_STA);
 }
 
+void common_hal_wifi_radio_start_dhcp_server(wifi_radio_obj_t *self) {
+    ip4_addr_t ipv4_addr, netmask_addr;
+    ipaddress_ipaddress_to_lwip(common_hal_wifi_radio_get_ipv4_address_ap(self), &ipv4_addr);
+    ipaddress_ipaddress_to_lwip(common_hal_wifi_radio_get_ipv4_subnet_ap(self), &netmask_addr);
+    dhcp_server_init(&cyw43_state.dhcp_server, &ipv4_addr, &netmask_addr);
+}
+
+void common_hal_wifi_radio_stop_dhcp_server(wifi_radio_obj_t *self) {
+    dhcp_server_deinit(&cyw43_state.dhcp_server);
+}
+
 void common_hal_wifi_radio_set_ipv4_address(wifi_radio_obj_t *self, mp_obj_t ipv4, mp_obj_t netmask, mp_obj_t gateway, mp_obj_t ipv4_dns) {
     common_hal_wifi_radio_stop_dhcp_client(self);
 
@@ -361,6 +390,18 @@ void common_hal_wifi_radio_set_ipv4_address(wifi_radio_obj_t *self, mp_obj_t ipv
     if (ipv4_dns != MP_OBJ_NULL) {
         common_hal_wifi_radio_set_ipv4_dns(self, ipv4_dns);
     }
+}
+
+void common_hal_wifi_radio_set_ipv4_address_ap(wifi_radio_obj_t *self, mp_obj_t ipv4, mp_obj_t netmask, mp_obj_t gateway) {
+    common_hal_wifi_radio_stop_dhcp_server(self);
+
+    ip4_addr_t ipv4_addr, netmask_addr, gateway_addr;
+    ipaddress_ipaddress_to_lwip(ipv4, &ipv4_addr);
+    ipaddress_ipaddress_to_lwip(netmask, &netmask_addr);
+    ipaddress_ipaddress_to_lwip(gateway, &gateway_addr);
+    netif_set_addr(NETIF_AP, &ipv4_addr, &netmask_addr, &gateway_addr);
+
+    common_hal_wifi_radio_start_dhcp_server(self);
 }
 
 volatile bool ping_received;

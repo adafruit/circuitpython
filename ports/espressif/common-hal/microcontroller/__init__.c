@@ -108,7 +108,7 @@ void common_hal_mcu_on_next_reset(mcu_runmode_t runmode) {
             break;
         case RUNMODE_SAFE_MODE:
             // enter safe mode on next boot
-            safe_mode_on_next_reset(PROGRAMMATIC_SAFE_MODE);
+            safe_mode_on_next_reset(SAFE_MODE_PROGRAMMATIC);
             break;
         case RUNMODE_BOOTLOADER:
             // DFU download
@@ -303,6 +303,12 @@ STATIC const mp_rom_map_elem_t mcu_pin_global_dict_table[] = {
     #endif
     #ifdef GPIO46_EXISTS
     { MP_ROM_QSTR(MP_QSTR_GPIO46), MP_ROM_PTR(&pin_GPIO46) },
+    #endif
+    #ifdef GPIO47_EXISTS
+    { MP_ROM_QSTR(MP_QSTR_GPIO47), MP_ROM_PTR(&pin_GPIO47) },
+    #endif
+    #ifdef GPIO48_EXISTS
+    { MP_ROM_QSTR(MP_QSTR_GPIO48), MP_ROM_PTR(&pin_GPIO48) },
     #endif
 };
 MP_DEFINE_CONST_DICT(mcu_pin_globals, mcu_pin_global_dict_table);

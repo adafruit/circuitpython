@@ -58,7 +58,8 @@
 //|
 //|         :param ~circuitpython_typing.FrameBuffer framebuffer: The framebuffer that the display is connected to
 //|         :param bool auto_refresh: Automatically refresh the screen
-//|         :param int rotation: The rotation of the display in degrees clockwise. Must be in 90 degree increments (0, 90, 180, 270)"""
+//|         :param int rotation: The rotation of the display in degrees clockwise. Must be in 90 degree increments (0, 90, 180, 270)
+//|         """
 //|         ...
 STATIC mp_obj_t framebufferio_framebufferdisplay_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_framebuffer, ARG_rotation, ARG_auto_refresh, NUM_ARGS };
@@ -134,7 +135,8 @@ MP_DEFINE_CONST_FUN_OBJ_2(framebufferio_framebufferdisplay_show_obj, framebuffer
 //|         without calls to this.)
 //|
 //|         :param int target_frames_per_second: How many times a second `refresh` should be called and the screen updated.
-//|         :param int minimum_frames_per_second: The minimum number of times the screen should be updated per second."""
+//|         :param int minimum_frames_per_second: The minimum number of times the screen should be updated per second.
+//|         """
 //|         ...
 STATIC mp_obj_t framebufferio_framebufferdisplay_obj_refresh(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_target_frames_per_second, ARG_minimum_frames_per_second };
@@ -192,7 +194,7 @@ STATIC mp_obj_t framebufferio_framebufferdisplay_obj_set_brightness(mp_obj_t sel
     framebufferio_framebufferdisplay_obj_t *self = native_display(self_in);
     mp_float_t brightness = mp_obj_get_float(brightness_obj);
     if (brightness < 0.0f || brightness > 1.0f) {
-        mp_raise_ValueError(translate("Brightness must be 0-1.0"));
+        mp_raise_ValueError_varg(translate("%q must be %d-%d"), MP_QSTR_brightness, 0, 1);
     }
     bool ok = common_hal_framebufferio_framebufferdisplay_set_brightness(self, brightness);
     if (!ok) {
@@ -263,7 +265,8 @@ MP_PROPERTY_GETTER(framebufferio_framebufferframebuffer_obj,
 //|         """Extract the pixels from a single row
 //|
 //|         :param int y: The top edge of the area
-//|         :param ~circuitpython_typing.WriteableBuffer buffer: The buffer in which to place the pixel data"""
+//|         :param ~circuitpython_typing.WriteableBuffer buffer: The buffer in which to place the pixel data
+//|         """
 //|         ...
 STATIC mp_obj_t framebufferio_framebufferdisplay_obj_fill_row(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_y, ARG_buffer };
@@ -320,7 +323,10 @@ STATIC mp_obj_t framebufferio_framebufferdisplay_obj_fill_row(size_t n_args, con
 MP_DEFINE_CONST_FUN_OBJ_KW(framebufferio_framebufferdisplay_fill_row_obj, 1, framebufferio_framebufferdisplay_obj_fill_row);
 
 //|     root_group: displayio.Group
-//|     """The root group on the display."""
+//|     """The root group on the display.
+//|     If the root group is set to `displayio.CIRCUITPYTHON_TERMINAL`, the default CircuitPython terminal will be shown.
+//|     If the root group is set to ``None``, no output will be shown.
+//|     """
 //|
 STATIC mp_obj_t framebufferio_framebufferdisplay_obj_get_root_group(mp_obj_t self_in) {
     framebufferio_framebufferdisplay_obj_t *self = native_display(self_in);

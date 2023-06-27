@@ -32,6 +32,7 @@
 
 #include "shared-bindings/supervisor/RunReason.h"
 #include "shared-bindings/supervisor/Runtime.h"
+#include "shared-bindings/supervisor/SafeModeReason.h"
 
 #include "supervisor/shared/reload.h"
 #include "supervisor/shared/stack.h"
@@ -106,7 +107,7 @@ void supervisor_set_run_reason(supervisor_run_reason_t run_reason) {
 }
 
 //|     run_reason: RunReason
-//|     """Why CircuitPython started running this particular time."""
+//|     """Why CircuitPython started running this particular time (read-only)."""
 STATIC mp_obj_t supervisor_runtime_get_run_reason(mp_obj_t self) {
     return cp_enum_find(&supervisor_run_reason_type, _run_reason);
 }
@@ -114,6 +115,23 @@ MP_DEFINE_CONST_FUN_OBJ_1(supervisor_runtime_get_run_reason_obj, supervisor_runt
 
 MP_PROPERTY_GETTER(supervisor_runtime_run_reason_obj,
     (mp_obj_t)&supervisor_runtime_get_run_reason_obj);
+
+//|     safe_mode_reason: SafeModeReason
+//|     """Why CircuitPython went into safe mode this particular time (read-only).
+//|
+//|     **Limitations**: Raises ``NotImplementedError`` on builds that do not implement ``safemode.py``.
+//|     """
+STATIC mp_obj_t supervisor_runtime_get_safe_mode_reason(mp_obj_t self) {
+    #if CIRCUITPY_SAFEMODE_PY
+    return cp_enum_find(&supervisor_safe_mode_reason_type, get_safe_mode());
+    #else
+    mp_raise_NotImplementedError(NULL);
+    #endif
+}
+MP_DEFINE_CONST_FUN_OBJ_1(supervisor_runtime_get_safe_mode_reason_obj, supervisor_runtime_get_safe_mode_reason);
+
+MP_PROPERTY_GETTER(supervisor_runtime_safe_mode_reason_obj,
+    (mp_obj_t)&supervisor_runtime_get_safe_mode_reason_obj);
 
 //|     autoreload: bool
 //|     """Whether CircuitPython may autoreload based on workflow writes to the filesystem."""
@@ -169,8 +187,10 @@ MP_PROPERTY_GETSET(supervisor_runtime_ble_workflow_obj,
     (mp_obj_t)&supervisor_runtime_set_ble_workflow_obj);
 
 //|     next_stack_limit: int
-//|     """The size of the stack for the next vm run. If its too large, the default will be used."""
+//|     """The size of the stack for the next vm run. If its too large, the default will be used.
 //|
+//|     **Limitations**: Stack size is fixed at startup on the ``espressif`` port; setting this will have no effect.
+//|     """
 STATIC mp_obj_t supervisor_runtime_get_next_stack_limit(mp_obj_t self) {
     return mp_obj_new_int(get_next_stack_size());
 }
@@ -179,7 +199,11 @@ MP_DEFINE_CONST_FUN_OBJ_1(supervisor_runtime_get_next_stack_limit_obj, superviso
 STATIC mp_obj_t supervisor_runtime_set_next_stack_limit(mp_obj_t self, mp_obj_t size_obj) {
     mp_int_t size = mp_obj_get_int(size_obj);
     mp_arg_validate_int_min(size, 256, MP_QSTR_size);
-    set_next_stack_size(size);
+    if (!set_next_stack_size(size)) {
+        mp_raise_msg_varg(&mp_type_AttributeError,
+            MP_ERROR_TEXT("can't set attribute '%q'"),
+            MP_QSTR_next_stack_limit);
+    }
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(supervisor_runtime_set_next_stack_limit_obj, supervisor_runtime_set_next_stack_limit);
@@ -218,6 +242,7 @@ STATIC const mp_rom_map_elem_t supervisor_runtime_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_serial_connected), MP_ROM_PTR(&supervisor_runtime_serial_connected_obj) },
     { MP_ROM_QSTR(MP_QSTR_serial_bytes_available), MP_ROM_PTR(&supervisor_runtime_serial_bytes_available_obj) },
     { MP_ROM_QSTR(MP_QSTR_run_reason), MP_ROM_PTR(&supervisor_runtime_run_reason_obj) },
+    { MP_ROM_QSTR(MP_QSTR_safe_mode_reason), MP_ROM_PTR(&supervisor_runtime_safe_mode_reason_obj) },
     { MP_ROM_QSTR(MP_QSTR_autoreload), MP_ROM_PTR(&supervisor_runtime_autoreload_obj) },
     { MP_ROM_QSTR(MP_QSTR_ble_workflow),  MP_ROM_PTR(&supervisor_runtime_ble_workflow_obj) },
     { MP_ROM_QSTR(MP_QSTR_next_stack_limit),  MP_ROM_PTR(&supervisor_runtime_next_stack_limit_obj) },
