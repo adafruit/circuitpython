@@ -1,5 +1,5 @@
 USB_VID = 0x2E8A
-USB_PID = 0x101C # To replace
+USB_PID = 0x105B
 USB_PRODUCT = "Yukon"
 USB_MANUFACTURER = "Pimoroni"
 
