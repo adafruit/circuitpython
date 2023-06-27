@@ -39,6 +39,10 @@
 #define CONFIGURATION_PORT0  0x06
 #define CONFIGURATION_PORT1  0x07
 
+extern uint8_t tca9555r_output_state[TCA9555R_CHIP_COUNT * 2];
+extern uint8_t tca9555r_config_state[TCA9555R_CHIP_COUNT * 2];
+
+
 extern const mp_obj_dict_t tca_module_globals;
 extern const mp_obj_type_t tca_pin_type;
 const mcu_pin_obj_t *validate_obj_is_free_pin_including_tca(mp_obj_t obj, qstr arg_name);
