@@ -3,6 +3,7 @@
 #include "py/objtuple.h"
 
 STATIC const qstr board_slot_fields[] = {
+    MP_QSTR_ID,
     MP_QSTR_FAST1,
     MP_QSTR_FAST2,
     MP_QSTR_FAST3,
@@ -17,7 +18,8 @@ STATIC const qstr board_slot_fields[] = {
 STATIC MP_DEFINE_ATTRTUPLE(
     board_slot1_obj,
     board_slot_fields,
-    9,
+    10,
+    MP_ROM_INT(1),
     (mp_obj_t)&pin_GPIO0,
     (mp_obj_t)&pin_GPIO1,
     (mp_obj_t)&pin_GPIO2,
@@ -32,7 +34,8 @@ STATIC MP_DEFINE_ATTRTUPLE(
 STATIC MP_DEFINE_ATTRTUPLE(
     board_slot2_obj,
     board_slot_fields,
-    9,
+    10,
+    MP_ROM_INT(2),
     (mp_obj_t)&pin_GPIO4,
     (mp_obj_t)&pin_GPIO5,
     (mp_obj_t)&pin_GPIO6,
@@ -47,7 +50,8 @@ STATIC MP_DEFINE_ATTRTUPLE(
 STATIC MP_DEFINE_ATTRTUPLE(
     board_slot3_obj,
     board_slot_fields,
-    9,
+    10,
+    MP_ROM_INT(3),
     (mp_obj_t)&pin_GPIO8,
     (mp_obj_t)&pin_GPIO9,
     (mp_obj_t)&pin_GPIO10,
@@ -62,7 +66,8 @@ STATIC MP_DEFINE_ATTRTUPLE(
 STATIC MP_DEFINE_ATTRTUPLE(
     board_slot4_obj,
     board_slot_fields,
-    9,
+    10,
+    MP_ROM_INT(4),
     (mp_obj_t)&pin_GPIO12,
     (mp_obj_t)&pin_GPIO13,
     (mp_obj_t)&pin_GPIO14,
@@ -77,7 +82,8 @@ STATIC MP_DEFINE_ATTRTUPLE(
 STATIC MP_DEFINE_ATTRTUPLE(
     board_slot5_obj,
     board_slot_fields,
-    9,
+    10,
+    MP_ROM_INT(5),
     (mp_obj_t)&pin_GPIO16,
     (mp_obj_t)&pin_GPIO17,
     (mp_obj_t)&pin_GPIO18,
@@ -92,7 +98,8 @@ STATIC MP_DEFINE_ATTRTUPLE(
 STATIC MP_DEFINE_ATTRTUPLE(
     board_slot6_obj,
     board_slot_fields,
-    9,
+    10,
+    MP_ROM_INT(6),
     (mp_obj_t)&pin_GPIO20,
     (mp_obj_t)&pin_GPIO21,
     (mp_obj_t)&pin_GPIO22,
