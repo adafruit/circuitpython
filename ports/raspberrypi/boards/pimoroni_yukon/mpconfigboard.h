@@ -10,3 +10,4 @@
 
 #define TCA9555R_CHIP_COUNT         (2)
 #define TCA9555R_CHIP_ADDRESSES     { 0x20, 0x26 }
+#define TCA9555R_LOCAL_MEMORY       (1)

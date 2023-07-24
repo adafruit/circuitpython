@@ -41,13 +41,13 @@ void board_deinit(void) {
 }
 
 void reset_board(void) {
-    tca_gpio_set_output_port(0x20, 0x0000);
-    tca_gpio_set_polarity_port(0x20, 0x0000);
-    tca_gpio_set_dir_port(0x20, 0x07BF);
+    tca_gpio_set_output_port(0, 0x0000);
+    tca_gpio_set_polarity_port(0, 0x0000);
+    tca_gpio_set_dir_port(0, 0x07BF);
 
-    tca_gpio_set_output_port(0x26, 0x0000);
-    tca_gpio_set_polarity_port(0x26, 0x0000);
-    tca_gpio_set_dir_port(0x26, 0xFCE6);
+    tca_gpio_set_output_port(1, 0x0000);
+    tca_gpio_set_polarity_port(1, 0x0000);
+    tca_gpio_set_dir_port(1, 0xFCE6);
 
     // Releasing displays, as if one is set up with the
     // intended IO expander LCD pins then it will carry over

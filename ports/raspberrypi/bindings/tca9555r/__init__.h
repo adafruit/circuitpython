@@ -39,8 +39,17 @@
 #define CONFIGURATION_PORT0  0x06
 #define CONFIGURATION_PORT1  0x07
 
+#ifndef TCA9555R_LOCAL_MEMORY
+#define TCA9555R_LOCAL_MEMORY (0)
+#endif
+
+#if TCA9555R_LOCAL_MEMORY
 extern uint8_t tca9555r_output_state[TCA9555R_CHIP_COUNT * 2];
 extern uint8_t tca9555r_config_state[TCA9555R_CHIP_COUNT * 2];
+#endif
+
+#define HIGH_BYTE(val) ((val * 2) + 1)
+#define LOW_BYTE(val) ((val * 2))
 
 
 extern const mp_obj_dict_t tca_module_globals;
@@ -56,13 +65,13 @@ void tca_gpio_set_output(uint tca_gpio, bool value);
 bool tca_gpio_get_dir(uint tca_gpio);
 void tca_gpio_set_dir(uint tca_gpio, bool output);
 
-uint16_t tca_gpio_get_input_port(uint tca_address);
-uint16_t tca_gpio_get_output_port(uint tca_address);
-void tca_gpio_set_output_port(uint tca_address, uint16_t output_state);
-uint16_t tca_gpio_get_dir_port(uint tca_address);
-void tca_gpio_set_dir_port(uint tca_address, uint16_t config_state);
-uint16_t tca_gpio_get_polarity_port(uint tca_address);
-void tca_gpio_set_polarity_port(uint tca_address, uint16_t polarity_state);
+uint16_t tca_gpio_get_input_port(uint tca_index);
+uint16_t tca_gpio_get_output_port(uint tca_index);
+void tca_gpio_set_output_port(uint tca_index, uint16_t output_state);
+uint16_t tca_gpio_get_dir_port(uint tca_index);
+void tca_gpio_set_dir_port(uint tca_index, uint16_t config_state);
+uint16_t tca_gpio_get_polarity_port(uint tca_index);
+void tca_gpio_set_polarity_port(uint tca_index, uint16_t polarity_state);
 
 void shared_bindings_tca9555r_pin_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind);
 

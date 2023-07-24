@@ -116,8 +116,10 @@ static const uint8_t tca9555r_addresses[TCA9555R_CHIP_COUNT] = TCA9555R_CHIP_ADD
 #define TCA9555R_GPIO_COUNT     16
 #define TCA9555R_VIRTUAL_GPIO_COUNT     (TCA9555R_GPIO_COUNT * TCA9555R_CHIP_COUNT)
 
+#if TCA9555R_LOCAL_MEMORY
 uint8_t tca9555r_output_state[TCA9555R_CHIP_COUNT * 2] = {0};
 uint8_t tca9555r_config_state[TCA9555R_CHIP_COUNT * 2] = {0};
+#endif
 
 uint8_t tca_get_chip_from_pin(uint tca_gpio) {
     return tca_gpio / TCA9555R_GPIO_COUNT;
@@ -152,12 +154,17 @@ bool tca_gpio_get_output(uint tca_gpio) {
     invalid_params_if(TCA9555R, tca_gpio >= TCA9555R_VIRTUAL_GPIO_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     uint8_t address = tca_get_address_from_pin(tca_gpio);
+    #if TCA9555R_LOCAL_MEMORY
+    uint8_t tca_byte = tca_gpio >> 3;
+    #endif
     tca_gpio = (tca_gpio % TCA9555R_GPIO_COUNT);
 
     uint8_t reg = (tca_gpio >= 8) ? OUTPUT_PORT1 : OUTPUT_PORT0;
     uint8_t output_state = 0x00;
     common_hal_busio_i2c_write_read(i2c, address, &reg, 1, &output_state, 1);
-    tca9555r_output_state[tca_gpio / 8] = output_state;
+    #if TCA9555R_LOCAL_MEMORY
+    tca9555r_output_state[tca_byte] = output_state;
+    #endif
     return (output_state & tca_pin_to_bit_mask(tca_gpio)) != 0;
 }
 
@@ -165,11 +172,18 @@ void tca_gpio_set_output(uint tca_gpio, bool value) {
     invalid_params_if(TCA9555R, tca_gpio >= TCA9555R_VIRTUAL_GPIO_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     uint8_t address = tca_get_address_from_pin(tca_gpio);
+    #if TCA9555R_LOCAL_MEMORY
+    uint8_t tca_byte = tca_gpio >> 3;
+    #endif
     tca_gpio = (tca_gpio % TCA9555R_GPIO_COUNT);
 
     uint8_t reg = (tca_gpio >= 8) ? OUTPUT_PORT1 : OUTPUT_PORT0;
-    uint8_t output_state = tca9555r_output_state[tca_gpio / 8];
-    // common_hal_busio_i2c_write_read(i2c, address, &reg, 1, &output_state, 1);
+    #if TCA9555R_LOCAL_MEMORY
+    uint8_t output_state = tca9555r_output_state[tca_byte];
+    #else
+    uint8_t output_state = 0x00;
+    common_hal_busio_i2c_write_read(i2c, address, &reg, 1, &output_state, 1);
+    #endif
     uint8_t new_output_state;
     if (value) {
         new_output_state = output_state | tca_pin_to_bit_mask(tca_gpio);
@@ -180,7 +194,9 @@ void tca_gpio_set_output(uint tca_gpio, bool value) {
     if (new_output_state != output_state) {
         uint8_t reg_and_data[2] = { reg, new_output_state };
         common_hal_busio_i2c_write(i2c, address, reg_and_data, 2);
-        tca9555r_output_state[tca_gpio / 8] = new_output_state;
+        #if TCA9555R_LOCAL_MEMORY
+        tca9555r_output_state[tca_byte] = new_output_state;
+        #endif
     }
 }
 
@@ -188,12 +204,17 @@ bool tca_gpio_get_dir(uint tca_gpio) {
     invalid_params_if(TCA9555R, tca_gpio >= TCA9555R_VIRTUAL_GPIO_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     uint8_t address = tca_get_address_from_pin(tca_gpio);
+    #if TCA9555R_LOCAL_MEMORY
+    uint8_t tca_byte = tca_gpio >> 3;
+    #endif
     tca_gpio = (tca_gpio % TCA9555R_GPIO_COUNT);
 
     uint8_t reg = (tca_gpio >= 8) ? CONFIGURATION_PORT1 : CONFIGURATION_PORT0;
     uint8_t config_state = 0x00;
     common_hal_busio_i2c_write_read(i2c, address, &reg, 1, &config_state, 1);
-    tca9555r_config_state[tca_gpio / 8] = config_state;
+    #if TCA9555R_LOCAL_MEMORY
+    tca9555r_config_state[tca_byte] = config_state;
+    #endif
     return (config_state & tca_pin_to_bit_mask(tca_gpio)) == 0;
 }
 
@@ -201,11 +222,18 @@ void tca_gpio_set_dir(uint tca_gpio, bool output) {
     invalid_params_if(TCA9555R, tca_gpio >= TCA9555R_VIRTUAL_GPIO_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     uint8_t address = tca_get_address_from_pin(tca_gpio);
+    #if TCA9555R_LOCAL_MEMORY
+    uint8_t tca_byte = tca_gpio >> 3;
+    #endif
     tca_gpio = (tca_gpio % TCA9555R_GPIO_COUNT);
 
     uint8_t reg = (tca_gpio >= 8) ? CONFIGURATION_PORT1 : CONFIGURATION_PORT0;
-    uint8_t config_state = tca9555r_config_state[tca_gpio / 8];
-    // common_hal_busio_i2c_write_read(i2c, address, &reg, 1, &config_state, 1);
+    #if TCA9555R_LOCAL_MEMORY
+    uint8_t config_state = tca9555r_config_state[tca_byte];
+    #else
+    uint8_t config_state = 0x00;
+    common_hal_busio_i2c_write_read(i2c, address, &reg, 1, &config_state, 1);
+    #endif
     uint8_t new_config_state;
     if (output) {
         new_config_state = config_state & ~tca_pin_to_bit_mask(tca_gpio);
@@ -216,92 +244,122 @@ void tca_gpio_set_dir(uint tca_gpio, bool output) {
     if (new_config_state != config_state) {
         uint8_t reg_and_data[2] = { reg, new_config_state };
         common_hal_busio_i2c_write(i2c, address, reg_and_data, 2);
-        tca9555r_config_state[tca_gpio / 8] = new_config_state;
+        #if TCA9555R_LOCAL_MEMORY
+        tca9555r_config_state[tca_byte] = new_config_state;
+        #endif
     }
 }
 
-uint16_t tca_gpio_get_input_port(uint tca_address) {
+uint16_t tca_gpio_get_input_port(uint tca_index) {
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
 
     uint8_t reg = INPUT_PORT0;
     uint16_t input_state = 0x0000;
-    common_hal_busio_i2c_write_read(i2c, tca_address, &reg, 1, (uint8_t *)&input_state, 2);
+    common_hal_busio_i2c_write_read(i2c, tca9555r_addresses[tca_index], &reg, 1, (uint8_t *)&input_state, 2);
     return input_state;
 }
 
-uint16_t tca_gpio_get_output_port(uint tca_address) {
+uint16_t tca_gpio_get_output_port(uint tca_index) {
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
 
     uint8_t reg = OUTPUT_PORT0;
     uint16_t output_state = 0x0000;
-    common_hal_busio_i2c_write_read(i2c, tca_address, &reg, 1, (uint8_t *)&output_state, 2);
+    common_hal_busio_i2c_write_read(i2c, tca9555r_addresses[tca_index], &reg, 1, (uint8_t *)&output_state, 2);
+    #if TCA9555R_LOCAL_MEMORY
+    tca9555r_output_state[HIGH_BYTE(tca_index)] = (output_state >> 8);
+    tca9555r_output_state[LOW_BYTE(tca_index)] = (output_state & 0xFF);
+    #endif
     return output_state;
 }
 
-uint8_t tca_gpio_get_low_output_port(uint tca_address) {
+uint8_t tca_gpio_get_low_output_port(uint tca_index) {
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
 
     uint8_t reg = OUTPUT_PORT0;
     uint8_t output_state = 0x00;
-    common_hal_busio_i2c_write_read(i2c, tca_address, &reg, 1, &output_state, 1);
+    common_hal_busio_i2c_write_read(i2c, tca9555r_addresses[tca_index], &reg, 1, &output_state, 1);
+    #if TCA9555R_LOCAL_MEMORY
+    tca9555r_output_state[LOW_BYTE(tca_index)] = output_state;
+    #endif
     return output_state;
 }
 
-uint8_t tca_gpio_get_high_output_port(uint tca_address) {
+uint8_t tca_gpio_get_high_output_port(uint tca_index) {
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
 
     uint8_t reg = OUTPUT_PORT1;
     uint8_t output_state = 0x00;
-    common_hal_busio_i2c_write_read(i2c, tca_address, &reg, 1, &output_state, 1);
+    common_hal_busio_i2c_write_read(i2c, tca9555r_addresses[tca_index], &reg, 1, &output_state, 1);
+    #if TCA9555R_LOCAL_MEMORY
+    tca9555r_output_state[HIGH_BYTE(tca_index)] = output_state;
+    #endif
     return output_state;
 }
 
-void tca_gpio_set_output_port(uint tca_address, uint16_t output_state) {
+void tca_gpio_set_output_port(uint tca_index, uint16_t output_state) {
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     uint8_t reg_and_data[3] = { OUTPUT_PORT0, output_state & 0xFF, (output_state >> 8) };
-    common_hal_busio_i2c_write(i2c, tca_address, reg_and_data, 3);
+    common_hal_busio_i2c_write(i2c, tca9555r_addresses[tca_index], reg_and_data, 3);
+    #if TCA9555R_LOCAL_MEMORY
+    tca9555r_output_state[HIGH_BYTE(tca_index)] = (output_state >> 8);
+    tca9555r_output_state[LOW_BYTE(tca_index)] = (output_state & 0xFF);
+    #endif
 }
 
-void tca_gpio_set_low_output_port(uint tca_address, uint8_t output_state) {
+void tca_gpio_set_low_output_port(uint tca_index, uint8_t output_state) {
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     uint8_t reg_and_data[2] = { OUTPUT_PORT0, output_state };
-    common_hal_busio_i2c_write(i2c, tca_address, reg_and_data, 2);
+    common_hal_busio_i2c_write(i2c, tca9555r_addresses[tca_index], reg_and_data, 2);
+    #if TCA9555R_LOCAL_MEMORY
+    tca9555r_output_state[LOW_BYTE(tca_index)] = output_state;
+    #endif
 }
 
-void tca_gpio_set_high_output_port(uint tca_address, uint8_t output_state) {
+void tca_gpio_set_high_output_port(uint tca_index, uint8_t output_state) {
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     uint8_t reg_and_data[2] = { OUTPUT_PORT1, output_state };
-    common_hal_busio_i2c_write(i2c, tca_address, reg_and_data, 2);
+    common_hal_busio_i2c_write(i2c, tca9555r_addresses[tca_index], reg_and_data, 2);
+    #if TCA9555R_LOCAL_MEMORY
+    tca9555r_output_state[HIGH_BYTE(tca_index)] = output_state;
+    #endif
 }
 
-uint16_t tca_gpio_get_dir_port(uint tca_address) {
+uint16_t tca_gpio_get_dir_port(uint tca_index) {
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
 
     uint8_t reg = CONFIGURATION_PORT0;
     uint16_t config_state = 0x0000;
-    common_hal_busio_i2c_write_read(i2c, tca_address, &reg, 1, (uint8_t *)&config_state, 2);
+    common_hal_busio_i2c_write_read(i2c, tca9555r_addresses[tca_index], &reg, 1, (uint8_t *)&config_state, 2);
+    #if TCA9555R_LOCAL_MEMORY
+    tca9555r_config_state[HIGH_BYTE(tca_index)] = (config_state >> 8);
+    tca9555r_config_state[LOW_BYTE(tca_index)] = (config_state & 0xFF);
+    #endif
     return config_state;
 }
 
-void tca_gpio_set_dir_port(uint tca_address, uint16_t config_state) {
+void tca_gpio_set_dir_port(uint tca_index, uint16_t config_state) {
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     uint8_t reg_and_data[3] = { CONFIGURATION_PORT0, config_state & 0xFF, (config_state >> 8) };
-    common_hal_busio_i2c_write(i2c, tca_address, reg_and_data, 3);
+    common_hal_busio_i2c_write(i2c, tca9555r_addresses[tca_index], reg_and_data, 3);
+    #if TCA9555R_LOCAL_MEMORY
+    tca9555r_config_state[HIGH_BYTE(tca_index)] = (config_state >> 8);
+    tca9555r_config_state[LOW_BYTE(tca_index)] = (config_state & 0xFF);
+    #endif
 }
 
-uint16_t tca_gpio_get_polarity_port(uint tca_address) {
+uint16_t tca_gpio_get_polarity_port(uint tca_index) {
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
 
     uint8_t reg = POLARITY_PORT0;
     uint16_t polarity_state = 0x0000;
-    common_hal_busio_i2c_write_read(i2c, tca_address, &reg, 1, (uint8_t *)&polarity_state, 2);
+    common_hal_busio_i2c_write_read(i2c, tca9555r_addresses[tca_index], &reg, 1, (uint8_t *)&polarity_state, 2);
     return polarity_state;
 }
 
-void tca_gpio_set_polarity_port(uint tca_address, uint16_t polarity_state) {
+void tca_gpio_set_polarity_port(uint tca_index, uint16_t polarity_state) {
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     uint8_t reg_and_data[3] = { POLARITY_PORT0, polarity_state & 0xFF, (polarity_state >> 8) };
-    common_hal_busio_i2c_write(i2c, tca_address, reg_and_data, 3);
+    common_hal_busio_i2c_write(i2c, tca9555r_addresses[tca_index], reg_and_data, 3);
 }
 
 void tca_populate_mask(mp_obj_t pins, uint16_t *mask, qstr arg_name) {
@@ -447,31 +505,46 @@ void tca_change_output_mask(uint8_t chip, uint16_t mask, uint16_t state) {
     bool low_changed = low_mask > 0;
     bool high_changed = high_mask > 0;
     if (low_changed && high_changed) {
-        // uint16_t output_state = tca_gpio_get_output_port(address);
-        uint16_t output_state = (tca9555r_output_state[(chip * 2) + 1] << 8) | tca9555r_output_state[(chip * 2)];
+        #if TCA9555R_LOCAL_MEMORY
+        uint16_t output_state = (tca9555r_output_state[HIGH_BYTE(chip)] << 8) | tca9555r_output_state[LOW_BYTE(chip)];
+        #else
+        uint16_t output_state = tca_gpio_get_output_port(address);
+        #endif
         uint16_t new_output_state = output_state;
         new_output_state &= ~mask; // Clear the mask bits
         new_output_state |= state; // Set the state bits
         if (new_output_state != output_state) {
             tca_gpio_set_output_port(address, new_output_state);
-            tca9555r_output_state[(chip * 2) + 1] = (new_output_state >> 8);
-            tca9555r_output_state[(chip * 2)] = (new_output_state & 0xFF);
+            #if TCA9555R_LOCAL_MEMORY
+            tca9555r_output_state[HIGH_BYTE(chip)] = (new_output_state >> 8);
+            tca9555r_output_state[LOW_BYTE(chip)] = (new_output_state & 0xFF);
+            #endif
         }
     } else if (low_changed) {
-        // uint8_t output_state = tca_gpio_get_low_output_port(address);
-        uint8_t output_state = tca9555r_output_state[(chip * 2)];
+        #if TCA9555R_LOCAL_MEMORY
+        uint8_t output_state = tca9555r_output_state[LOW_BYTE(chip)];
+        #else
+        uint8_t output_state = tca_gpio_get_low_output_port(address);
+        #endif
         uint8_t new_output_state = (output_state & ~low_mask) | low_state;
         if (new_output_state != output_state) {
             tca_gpio_set_low_output_port(address, new_output_state);
-            tca9555r_output_state[(chip * 2)] = new_output_state;
+            #if TCA9555R_LOCAL_MEMORY
+            tca9555r_output_state[LOW_BYTE(chip)] = new_output_state;
+            #endif
         }
     } else if (high_changed) {
-        // uint8_t output_state = tca_gpio_get_high_output_port(address);
-        uint8_t output_state = tca9555r_output_state[(chip * 2) + 1];
+        #if TCA9555R_LOCAL_MEMORY
+        uint8_t output_state = tca9555r_output_state[HIGH_BYTE(chip)];
+        #else
+        uint8_t output_state = tca_gpio_get_high_output_port(address);
+        #endif
         uint8_t new_output_state = (output_state & ~high_mask) | high_state;
         if (new_output_state != output_state) {
             tca_gpio_set_high_output_port(address, new_output_state);
-            tca9555r_output_state[(chip * 2) + 1] = new_output_state;
+            #if TCA9555R_LOCAL_MEMORY
+            tca9555r_output_state[HIGH_BYTE(chip)] = new_output_state;
+            #endif
         }
     }
 }
@@ -481,11 +554,11 @@ void tca_change_output_low_mask(uint8_t chip, uint8_t mask, uint8_t state) {
     //bool changed = mask > 0;
     //if (changed) {
         //uint8_t output_state = tca_gpio_get_low_output_port(address);
-        uint8_t output_state = tca9555r_output_state[(chip * 2)];
+        uint8_t output_state = tca9555r_output_state[LOW_BYTE(chip)];
         uint8_t new_output_state = (output_state & ~mask) | state;
         if (new_output_state != output_state) {
             tca_gpio_set_low_output_port(address, new_output_state);
-            tca9555r_output_state[(chip * 2)] = new_output_state;
+            tca9555r_output_state[LOW_BYTE(chip)] = new_output_state;
         }
     //}
 }
@@ -495,11 +568,11 @@ void tca_change_output_high_mask(uint8_t chip, uint8_t mask, uint8_t state) {
     //bool changed = mask > 0;
     //if (changed) {
         //uint8_t output_state = tca_gpio_get_high_output_port(address);
-        uint8_t output_state = tca9555r_output_state[(chip * 2) + 1];
+        uint8_t output_state = tca9555r_output_state[HIGH_BYTE(chip)];
         uint8_t new_output_state = (output_state & ~mask) | state;
         if (new_output_state != output_state) {
             tca_gpio_set_high_output_port(address, new_output_state);
-            tca9555r_output_state[(chip * 2) + 1] = new_output_state;
+            tca9555r_output_state[HIGH_BYTE(chip)] = new_output_state;
         }
     //}
 }*/
@@ -524,6 +597,49 @@ STATIC mp_obj_t tca_pin_change_output_mask(mp_obj_t chip_obj, mp_obj_t mask_obj,
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(tca_pin_change_output_mask_obj, tca_pin_change_output_mask);
 
+STATIC mp_obj_t tca_port_true_output_state(mp_obj_t chip_obj) {
+    int chip = mp_obj_get_int(chip_obj);
+    if (chip < 0 || chip > TCA9555R_CHIP_COUNT) {
+        mp_raise_TypeError_varg(translate("chip can only be 0 to %q"), TCA9555R_CHIP_COUNT);
+    }
+
+    return mp_obj_new_int(tca_gpio_get_output_port(chip));
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(tca_port_true_output_state_obj, tca_port_true_output_state);
+
+#if TCA9555R_LOCAL_MEMORY
+STATIC mp_obj_t tca_port_stored_output_state(mp_obj_t chip_obj) {
+    int chip = mp_obj_get_int(chip_obj);
+    if (chip < 0 || chip > TCA9555R_CHIP_COUNT) {
+        mp_raise_TypeError_varg(translate("chip can only be 0 to %q"), TCA9555R_CHIP_COUNT);
+    }
+
+    return mp_obj_new_int((tca9555r_output_state[HIGH_BYTE(chip)] << 8) | tca9555r_output_state[LOW_BYTE(chip)]);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(tca_port_stored_output_state_obj, tca_port_stored_output_state);
+#endif
+
+STATIC mp_obj_t tca_port_true_dir_state(mp_obj_t chip_obj) {
+    int chip = mp_obj_get_int(chip_obj);
+    if (chip < 0 || chip > TCA9555R_CHIP_COUNT) {
+        mp_raise_TypeError_varg(translate("chip can only be 0 to %q"), TCA9555R_CHIP_COUNT);
+    }
+
+    return mp_obj_new_int(tca_gpio_get_dir_port(chip));
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(tca_port_true_dir_state_obj, tca_port_true_dir_state);
+
+#if TCA9555R_LOCAL_MEMORY
+STATIC mp_obj_t tca_port_stored_dir_state(mp_obj_t chip_obj) {
+    int chip = mp_obj_get_int(chip_obj);
+    if (chip < 0 || chip > TCA9555R_CHIP_COUNT) {
+        mp_raise_TypeError_varg(translate("chip can only be 0 to %q"), TCA9555R_CHIP_COUNT);
+    }
+
+    return mp_obj_new_int((tca9555r_config_state[HIGH_BYTE(chip)] << 8) | tca9555r_config_state[LOW_BYTE(chip)]);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(tca_port_stored_dir_state_obj, tca_port_stored_dir_state);
+#endif
 /*
 void start_i2c(uint8_t sda_gpio, uint8_t scl_gpio) {
     tca_gpio_set_output(sda_gpio, false);
@@ -998,6 +1114,15 @@ STATIC const mp_rom_map_elem_t tca_module_globals_table[] = {
     // { MP_ROM_QSTR(MP_QSTR_soft_i2c_end), &tca_pin_soft_i2c_end_obj },
     { MP_ROM_QSTR(MP_QSTR_get_number), &tca_pin_get_number_obj },
     { MP_ROM_QSTR(MP_QSTR_get_chip), &tca_pin_get_chip_obj },
+
+    { MP_ROM_QSTR(MP_QSTR_get_true_output), &tca_port_true_output_state_obj },
+    #if TCA9555R_LOCAL_MEMORY
+    { MP_ROM_QSTR(MP_QSTR_get_stored_output), &tca_port_stored_output_state_obj },
+    #endif
+    { MP_ROM_QSTR(MP_QSTR_get_true_config), &tca_port_true_dir_state_obj },
+    #if TCA9555R_LOCAL_MEMORY
+    { MP_ROM_QSTR(MP_QSTR_get_stored_config), &tca_port_stored_dir_state_obj },
+    #endif
     TCA_ENTRIES(0),
     TCA_ENTRIES(1)
 };
