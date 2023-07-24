@@ -74,7 +74,7 @@ digitalinout_result_t common_hal_digitalio_digitalinout_construct(
     #endif
     #if CIRCUITPY_TCA9555R
     if (IS_TCA(self)) {
-        if (tca_gpio_get_dir(self->pin->number) == GPIO_OUT) {
+        if (tca_gpio_get_config(self->pin->number) == GPIO_OUT) {
             self->output = true;
             self->open_drain = false;
         }
@@ -134,7 +134,7 @@ digitalinout_result_t common_hal_digitalio_digitalinout_switch_to_output(
         // to avoid a glitch which might occur if the old value was
         // different and the pin was previously set to input.
         tca_gpio_set_output(self->pin->number, value);
-        tca_gpio_set_dir(self->pin->number, GPIO_OUT);
+        tca_gpio_set_config(self->pin->number, GPIO_OUT);
         self->output = true;
         self->open_drain = false;
         return DIGITALINOUT_OK;
@@ -263,7 +263,7 @@ digitalinout_result_t common_hal_digitalio_digitalinout_set_pull(
         if (pull != PULL_NONE) {
             return DIGITALINOUT_INVALID_PULL;
         }
-        tca_gpio_set_dir(self->pin->number, GPIO_IN);
+        tca_gpio_set_config(self->pin->number, GPIO_IN);
         self->output = false;
         return DIGITALINOUT_OK;
     }
