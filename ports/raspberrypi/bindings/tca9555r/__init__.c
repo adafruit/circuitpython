@@ -516,10 +516,6 @@ void tca_change_output_mask(uint8_t chip, uint16_t mask, uint16_t state) {
         new_output_state |= state; // Set the state bits
         if (new_output_state != output_state) {
             tca_set_output_port(chip, new_output_state);
-            #if TCA9555R_LOCAL_MEMORY
-            tca9555r_output_state[HIGH_BYTE(chip)] = (new_output_state >> 8);
-            tca9555r_output_state[LOW_BYTE(chip)] = (new_output_state & 0xFF);
-            #endif
         }
     } else if (low_changed) {
         #if TCA9555R_LOCAL_MEMORY
@@ -530,9 +526,6 @@ void tca_change_output_mask(uint8_t chip, uint16_t mask, uint16_t state) {
         uint8_t new_output_state = (output_state & ~low_mask) | low_state;
         if (new_output_state != output_state) {
             tca_set_output_port_low(chip, new_output_state);
-            #if TCA9555R_LOCAL_MEMORY
-            tca9555r_output_state[LOW_BYTE(chip)] = new_output_state;
-            #endif
         }
     } else if (high_changed) {
         #if TCA9555R_LOCAL_MEMORY
@@ -543,9 +536,6 @@ void tca_change_output_mask(uint8_t chip, uint16_t mask, uint16_t state) {
         uint8_t new_output_state = (output_state & ~high_mask) | high_state;
         if (new_output_state != output_state) {
             tca_set_output_port_high(chip, new_output_state);
-            #if TCA9555R_LOCAL_MEMORY
-            tca9555r_output_state[HIGH_BYTE(chip)] = new_output_state;
-            #endif
         }
     }
 }
