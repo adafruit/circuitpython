@@ -618,6 +618,90 @@ const mp_obj_type_t mp_type_dict = {
 };
 
 #if MICROPY_PY_COLLECTIONS_ORDEREDDICT
+//| def move_to_end(
+//|     key: Any,
+//|     last: Optional[bool] = True
+//| ):
+//|     """
+//|     :param key: The key of the element to be moved.
+//|     :param last: Whether it moves to the start(False) or start(default behaviour) of the dict.
+//|     """
+//|     ...
+//|
+
+STATIC mp_obj_t dict_move_to_end(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    // parse args
+    enum { ARG_self, ARG_key, ARG_last };
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_rom_obj = MP_ROM_NONE } },
+        { MP_QSTR_, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_rom_obj = MP_ROM_NONE } },
+        { MP_QSTR_last, MP_ARG_BOOL, {.u_bool = true } }
+    };
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    mp_obj_dict_t *self = MP_OBJ_TO_PTR(args[ARG_self].u_obj);
+    mp_obj_t *key = args[ARG_key].u_obj;
+    bool last = args[ARG_last].u_bool;
+
+    // iterate in the desired order
+    //     last == True: 0 -> used
+    //     last == False: used -> 0
+    const size_t start = last ? 0 : (self->map.used - 1);
+    const size_t end = last ? (self->map.used - 1) : 0;
+    const int8_t increment = last ? 1 : -1;
+
+    // only swap when needed (after finding the key)
+    bool found = false;
+    for (size_t i = start; i != end; i += increment) {
+        mp_map_elem_t curr = self->map.table[i];
+
+        if (!found && mp_obj_equal(curr.key, key)) {
+            found = true;
+        }
+
+        // shift elements
+        if (found) {
+            size_t next = i + increment;
+
+            // temporary copy
+            mp_map_elem_t temp = self->map.table[next];
+
+            // next = curr
+            self->map.table[next] = curr;
+
+            // curr = next
+            self->map.table[i] = temp;
+        }
+    }
+
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_KW(dict_move_to_end_obj, 2, dict_move_to_end);
+
+STATIC const mp_rom_map_elem_t ordered_dict_locals_dict_table[] = {
+    { MP_ROM_QSTR(MP_QSTR_clear), MP_ROM_PTR(&dict_clear_obj) },
+    { MP_ROM_QSTR(MP_QSTR_copy), MP_ROM_PTR(&dict_copy_obj) },
+    #if MICROPY_PY_BUILTINS_DICT_FROMKEYS
+    { MP_ROM_QSTR(MP_QSTR_fromkeys), MP_ROM_PTR(&dict_fromkeys_obj) },
+    #endif
+    { MP_ROM_QSTR(MP_QSTR_get), MP_ROM_PTR(&dict_get_obj) },
+    { MP_ROM_QSTR(MP_QSTR_items), MP_ROM_PTR(&dict_items_obj) },
+    { MP_ROM_QSTR(MP_QSTR_keys), MP_ROM_PTR(&dict_keys_obj) },
+    { MP_ROM_QSTR(MP_QSTR_pop), MP_ROM_PTR(&dict_pop_obj) },
+    { MP_ROM_QSTR(MP_QSTR_popitem), MP_ROM_PTR(&dict_popitem_obj) },
+    { MP_ROM_QSTR(MP_QSTR_setdefault), MP_ROM_PTR(&dict_setdefault_obj) },
+    { MP_ROM_QSTR(MP_QSTR_update), MP_ROM_PTR(&dict_update_obj) },
+    { MP_ROM_QSTR(MP_QSTR_values), MP_ROM_PTR(&dict_values_obj) },
+    { MP_ROM_QSTR(MP_QSTR_move_to_end), MP_ROM_PTR(&dict_move_to_end_obj) },
+    { MP_ROM_QSTR(MP_QSTR___delitem__), MP_ROM_PTR(&mp_op_delitem_obj) },
+    { MP_ROM_QSTR(MP_QSTR___getitem__), MP_ROM_PTR(&mp_op_getitem_obj) },
+    { MP_ROM_QSTR(MP_QSTR___setitem__), MP_ROM_PTR(&mp_op_setitem_obj) },
+    { MP_ROM_QSTR(MP_QSTR___delitem__), MP_ROM_PTR(&mp_op_delitem_obj) },
+};
+
+STATIC MP_DEFINE_CONST_DICT(ordered_dict_locals_dict, ordered_dict_locals_dict_table);
+
 const mp_obj_type_t mp_type_ordereddict = {
     { &mp_type_type },
     .flags = MP_TYPE_FLAG_EXTENDED,
@@ -625,7 +709,7 @@ const mp_obj_type_t mp_type_ordereddict = {
     .print = dict_print,
     .make_new = mp_obj_dict_make_new,
     .parent = &mp_type_dict,
-    .locals_dict = (mp_obj_dict_t *)&dict_locals_dict,
+    .locals_dict = (mp_obj_dict_t *)&ordered_dict_locals_dict,
     MP_TYPE_EXTENDED_FIELDS(
         .unary_op = dict_unary_op,
         .binary_op = dict_binary_op,
