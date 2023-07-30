@@ -624,7 +624,7 @@ const mp_obj_type_t mp_type_dict = {
 //| ):
 //|     """
 //|     :param key: The key of the element to be moved.
-//|     :param last: Whether it moves to the start(False) or start(default behaviour) of the dict.
+//|     :param last: Whether it moves to the start(False) or end(default behaviour) of the dict.
 //|     """
 //|     ...
 //|
