@@ -618,6 +618,15 @@ const mp_obj_type_t mp_type_dict = {
 };
 
 #if MICROPY_PY_COLLECTIONS_ORDEREDDICT
+/* ------------------------------------------------------------------
+ * Only real difference between OrderedDict and regular dict is that
+ * ordered has `move_to_end`. This method is only added if asked
+ * for (due to flash constrains), thus we can just alias the locals'
+ * table to the one for dicts one when the method is not present.
+ * ------------------------------------------------------------------*/
+#if !MICROPY_CPYTHON_COMPAT
+#define ordered_dict_locals_dict dict_locals_dict
+#else     // !MICROPY_CPYTHON_COMPAT
 //| def move_to_end(
 //|     key: Any,
 //|     last: Optional[bool] = True
@@ -701,6 +710,7 @@ STATIC const mp_rom_map_elem_t ordered_dict_locals_dict_table[] = {
 };
 
 STATIC MP_DEFINE_CONST_DICT(ordered_dict_locals_dict, ordered_dict_locals_dict_table);
+#endif     // !MICROPY_CPYTHON_COMPAT
 
 const mp_obj_type_t mp_type_ordereddict = {
     { &mp_type_type },
