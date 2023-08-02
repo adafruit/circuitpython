@@ -634,6 +634,7 @@ const mp_obj_type_t mp_type_dict = {
 //|     """
 //|     :param key: The key of the element to be moved.
 //|     :param last: Whether it moves to the start(False) or end(default behaviour) of the dict.
+//|     :raises KeyError: If key is not found on the dict.
 //|     """
 //|     ...
 //|
@@ -643,7 +644,7 @@ STATIC mp_obj_t dict_move_to_end(size_t n_args, const mp_obj_t *pos_args, mp_map
     enum { ARG_self, ARG_key, ARG_last };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_rom_obj = MP_ROM_NONE } },
-        { MP_QSTR_, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_rom_obj = MP_ROM_NONE } },
+        { MP_QSTR_key, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_rom_obj = MP_ROM_NONE } },
         { MP_QSTR_last, MP_ARG_BOOL, {.u_bool = true } }
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
@@ -653,11 +654,16 @@ STATIC mp_obj_t dict_move_to_end(size_t n_args, const mp_obj_t *pos_args, mp_map
     mp_obj_t *key = args[ARG_key].u_obj;
     bool last = args[ARG_last].u_bool;
 
-    // iterate in the desired order
-    //     last == True: 0 -> used
-    //     last == False: used -> 0
-    const size_t start = last ? 0 : (self->map.used - 1);
-    const size_t end = last ? (self->map.used - 1) : 0;
+    const size_t used = self->map.used;
+    if (!used) {
+        // can not find key, if there are no keys
+        mp_raise_type_arg(&mp_type_KeyError, key);
+    }
+
+    // iterate in the desired order (last=True goes 0 -> used)
+    const size_t last_index = used - 1;
+    const size_t start = last ? 0 : last_index;
+    const size_t end = last ? last_index : 0;
     const int8_t increment = last ? 1 : -1;
 
     // only swap when needed (after finding the key)
@@ -684,9 +690,13 @@ STATIC mp_obj_t dict_move_to_end(size_t n_args, const mp_obj_t *pos_args, mp_map
         }
     }
 
+    if (!found) {
+        mp_raise_type_arg(&mp_type_KeyError, key);
+    }
+
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_KW(dict_move_to_end_obj, 2, dict_move_to_end);
+STATIC MP_DEFINE_CONST_FUN_OBJ_KW(dict_move_to_end_obj, 1, dict_move_to_end);
 
 STATIC const mp_rom_map_elem_t ordered_dict_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_clear), MP_ROM_PTR(&dict_clear_obj) },
