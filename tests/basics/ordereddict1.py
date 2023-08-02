@@ -52,3 +52,25 @@ print(''.join(d))
 # fromkey handles ordering with duplicates
 d = OrderedDict.fromkeys('abcdefghijjihgfedcba')
 print(''.join(d))
+
+# move_to_end works as expected
+d = OrderedDict.fromkeys("ab")
+print(d.keys())
+
+d.move_to_end("a")
+print(d.keys())
+
+d.move_to_end("a", False)
+print(d.keys())
+
+d.move_to_end(key="a")
+print(d.keys())
+
+d.move_to_end("a", last=False)
+print(d.keys())
+
+d.move_to_end(key="a", last=True)
+print(d.keys())
+
+d.move_to_end(last=False, key="a")
+print(d.keys())
