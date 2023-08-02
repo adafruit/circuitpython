@@ -641,16 +641,15 @@ const mp_obj_type_t mp_type_dict = {
 
 STATIC mp_obj_t dict_move_to_end(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     // parse args
-    enum { ARG_self, ARG_key, ARG_last };
+    enum { ARG_key, ARG_last };
     static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_rom_obj = MP_ROM_NONE } },
         { MP_QSTR_key, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_rom_obj = MP_ROM_NONE } },
         { MP_QSTR_last, MP_ARG_BOOL, {.u_bool = true } }
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
-    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+    mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    mp_obj_dict_t *self = MP_OBJ_TO_PTR(args[ARG_self].u_obj);
+    mp_obj_dict_t *self = MP_OBJ_TO_PTR(pos_args[0]);
     mp_obj_t *key = args[ARG_key].u_obj;
     bool last = args[ARG_last].u_bool;
 
