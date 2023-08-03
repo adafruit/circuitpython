@@ -54,23 +54,23 @@ d = OrderedDict.fromkeys('abcdefghijjihgfedcba')
 print(''.join(d))
 
 # move_to_end works as expected
-d = OrderedDict.fromkeys("ab")
-print(d.keys())
+d = OrderedDict()
+try:
+    d.move_to_end("empty")
+except KeyError:
+    print("empty")
 
+d = OrderedDict.fromkeys("ab")
 d.move_to_end("a")
-print(d.keys())
+print(''.join(d))
 
 d.move_to_end("a", False)
-print(d.keys())
+print(''.join(d))
 
-d.move_to_end(key="a")
-print(d.keys())
+try:
+    d.move_to_end("KeyError")
+except KeyError:
+    print("KeyError")
 
-d.move_to_end("a", last=False)
-print(d.keys())
-
-d.move_to_end(key="a", last=True)
-print(d.keys())
-
-d.move_to_end(last=False, key="a")
-print(d.keys())
+d.move_to_end("a", "not_a_bool")
+print(''.join(d))
