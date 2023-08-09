@@ -21,7 +21,7 @@ CFLAGS += -DCIRCUITPY_FIRMWARE_SIZE='(512 * 1024)'
 CIRCUITPY_TOUCHIO = 1
 #CIRCUITPY_PWMIO = 1
 
-# Boards hav limited IO, only
+# Boards have limited IO, only
 # - IS31FL3741/IS31FL3731 LED matrix
 # - USB 2.0
 # - PWM backlight
