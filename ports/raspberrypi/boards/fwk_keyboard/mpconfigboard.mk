@@ -1,7 +1,7 @@
 USB_VID = 0x32AC
-USB_PID = 0x0013
-USB_PRODUCT = "Ledmatrix Laptop 16 Keyboard (CircuitPython)"
-USB_MANUFACTURER = "Framework Computer Inc"
+USB_PID = 0x001F
+USB_PRODUCT = "Generic Framework 16 Inputmodule"
+USB_MANUFACTURER = "Framework Computer"
 
 CHIP_VARIANT = RP2040
 CHIP_FAMILY = rp2
