@@ -10,7 +10,8 @@ QSPI_FLASH_FILESYSTEM = 1
 #EXTERNAL_FLASH_DEVICE_COUNT = 1
 EXTERNAL_FLASH_DEVICES = "W25Q80DV"
 
-FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_IS31FL3731
+# TODO: This is currently not in circuitpython as a frozen directory
+# FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_IS31FL3731
 
 # Flash is only 1M, reduce firmware to half, so there's space for the CIRCUITPY drive
 # Must be accompanied by a linker script change
