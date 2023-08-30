@@ -54,6 +54,8 @@ INC += -I. \
 
 SRC_C += bindings/videocore/__init__.c \
          bindings/videocore/Framebuffer.c \
+         bindings/videocore/Sprite.c \
+         bindings/videocore/Hvs.c \
 		 boards/$(BOARD)/board.c \
 	     boards/$(BOARD)/pins.c \
 	     background.c \
