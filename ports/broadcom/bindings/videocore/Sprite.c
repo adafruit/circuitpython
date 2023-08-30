@@ -14,14 +14,15 @@ STATIC mp_obj_t hvs_sprite_make_new(const mp_obj_type_t *type, size_t n_args, si
   sprite->bitmap = NULL;
   sprite->dirty = true;
   sprite->alpha_mode = alpha_mode_fixed;
-  printf("sprite is at %p\n", sprite);
+  sprite->color_order = HVS_PIXEL_ORDER_ABGR;
+  sprite->pixel_format = HVS_PIXEL_FORMAT_RGB565;
   return MP_OBJ_FROM_PTR(sprite);
 }
 
 enum hvs_pixel_format bitmap_to_hvs(const displayio_bitmap_t *bitmap) {
   switch (bitmap->bits_per_value) {
   case 16:
-    return HVS_PIXEL_FORMAT_RGB555;
+    return HVS_PIXEL_FORMAT_RGB565;
   }
   return HVS_PIXEL_FORMAT_RGB332;
 }
@@ -33,9 +34,9 @@ void hvs_regen_noscale_noviewport(sprite_t *s) {
   uint32_t *d = s->dlist;
   // CTL0
   d[0] = CONTROL_VALID
-    | CONTROL_PIXEL_ORDER(HVS_PIXEL_ORDER_ABGR)
+    | CONTROL_PIXEL_ORDER(s->color_order)
     | CONTROL_UNITY
-    | CONTROL_FORMAT(bitmap_to_hvs(s->bitmap))
+    | CONTROL_FORMAT(s->pixel_format)
     | CONTROL_WORDS(7);
   // POS0
   d[1] = POS0_X(s->x) | POS0_Y(s->y) | POS0_ALPHA(0xff);
@@ -97,6 +98,8 @@ simpleprop(width);
 simpleprop(height);
 simpleprop(x);
 simpleprop(y);
+simpleprop(color_order);
+simpleprop(pixel_format);
 
 STATIC const mp_rom_map_elem_t hvs_sprite_locals_dict_table[] = {
   { MP_ROM_QSTR(MP_QSTR_image), MP_ROM_PTR(&image_prop) },
@@ -104,6 +107,8 @@ STATIC const mp_rom_map_elem_t hvs_sprite_locals_dict_table[] = {
   prop_entry(height),
   prop_entry(x),
   prop_entry(y),
+  prop_entry(color_order),
+  prop_entry(pixel_format),
   { MP_ROM_QSTR(MP_QSTR_maybe_regen), MP_ROM_PTR(&fun_maybe_regen) },
 };
 

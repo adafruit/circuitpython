@@ -123,10 +123,11 @@
 //|         """
 //|         ...
 STATIC mp_obj_t gifio_ondiskgif_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
-    enum { ARG_filename, ARG_use_palette, NUM_ARGS };
+    enum { ARG_filename, ARG_use_palette, ARG_le, NUM_ARGS };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_filename, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_use_palette, MP_ARG_BOOL | MP_ARG_KW_ONLY, {.u_bool = false} },
+        { MP_QSTR_le, MP_ARG_BOOL | MP_ARG_KW_ONLY, { .u_bool = false} },
     };
     MP_STATIC_ASSERT(MP_ARRAY_SIZE(allowed_args) == NUM_ARGS);
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
@@ -142,7 +143,7 @@ STATIC mp_obj_t gifio_ondiskgif_make_new(const mp_obj_type_t *type, size_t n_arg
     }
 
     gifio_ondiskgif_t *self = mp_obj_malloc(gifio_ondiskgif_t, &gifio_ondiskgif_type);
-    common_hal_gifio_ondiskgif_construct(self, MP_OBJ_TO_PTR(filename), args[ARG_use_palette].u_bool);
+    common_hal_gifio_ondiskgif_construct(self, MP_OBJ_TO_PTR(filename), args[ARG_use_palette].u_bool, args[ARG_le].u_bool);
 
     return MP_OBJ_FROM_PTR(self);
 }

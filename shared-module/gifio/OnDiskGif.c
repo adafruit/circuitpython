@@ -147,13 +147,17 @@ static void GIFDraw(GIFDRAW *pDraw) {
     }
 }
 
-void common_hal_gifio_ondiskgif_construct(gifio_ondiskgif_t *self, pyb_file_obj_t *file, bool use_palette) {
+void common_hal_gifio_ondiskgif_construct(gifio_ondiskgif_t *self, pyb_file_obj_t *file, bool use_palette, bool le) {
     self->file = file;
 
     if (use_palette == true) {
         GIF_begin(&self->gif, GIF_PALETTE_RGB888);
     } else {
-        GIF_begin(&self->gif, GIF_PALETTE_RGB565_BE);
+        if (le) {
+          GIF_begin(&self->gif, GIF_PALETTE_RGB565_LE);
+        } else {
+          GIF_begin(&self->gif, GIF_PALETTE_RGB565_BE);
+        }
     }
 
     self->gif.iError = GIF_SUCCESS;
