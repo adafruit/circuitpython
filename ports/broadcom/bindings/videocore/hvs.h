@@ -1,4 +1,5 @@
 #pragma once
+#include "bcm283x.h"
 
 enum alpha_mode {
   alpha_mode_pipeline = 0,      // per-pixel alpha allowed, POS0_ALPHA ignored
@@ -75,11 +76,6 @@ extern volatile struct hvs_channel *hvs_hw_channels;
 #define HVS_PIXEL_ORDER_XRBG			1
 #define HVS_PIXEL_ORDER_XRGB			2
 #define HVS_PIXEL_ORDER_XBGR			3
-
-#if BCM_VERSION == 2835
-#define BCM_PERIPH_BASE_VIRT 0x20000000
-#endif
-#define SCALER_BASE (BCM_PERIPH_BASE_VIRT + 0x400000)
 
 #define SCALER_DISPCTRL0    (SCALER_BASE + 0x40)
 #define SCALER_DISPCTRLX_ENABLE (1<<31)

@@ -33,6 +33,7 @@
 #include "peripherals/broadcom/interrupts.h"
 
 #include "mphalport.h"
+#include "pm.h"
 
 void common_hal_mcu_delay_us(uint32_t delay) {
     mp_hal_delay_us(delay);
@@ -56,9 +57,18 @@ void common_hal_mcu_enable_interrupts(void) {
 }
 
 void common_hal_mcu_on_next_reset(mcu_runmode_t runmode) {
+  // there is room for a 6bit int to be smuggled across reset, look into using that
 }
 
+
 void common_hal_mcu_reset(void) {
+  common_hal_mcu_disable_interrupts();
+  *REG32(PM_WDOG) = PM_PASSWORD | (1 & PM_WDOG_MASK);
+  uint32_t t = *REG32(PM_RSTC);
+  t &= PM_RSTC_WRCFG_CLR;
+  t |= 0x20;
+  *REG32(PM_RSTC) = PM_PASSWORD | t;
+  for (;;);
 }
 
 // The singleton microcontroller.Processor object, bound to microcontroller.cpu
