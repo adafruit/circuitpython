@@ -23,9 +23,19 @@ def gif_animate():
 
   x = 5
   y = 5
+  lastframe = videocore.HvsChannel1.frame
+  start = time.monotonic()
 
   while True:
+    framedelta = videocore.HvsChannel1.frame - lastframe
+    lastframe = videocore.HvsChannel1.frame
+    #print(f"delta: {framedelta} scanline: {videocore.HvsChannel1.scanline}/{videocore.HvsChannel1.height} overhead: {overhead} next: {next_delay}")
+    end = time.monotonic()
+    overhead = end - start
+
     time.sleep(max(0, next_delay - overhead))
+
+    start = time.monotonic()
     next_delay = gif.next_frame()
     if (x > 0) and (x < xmax):
       x += xinc
@@ -45,10 +55,7 @@ def gif_animate():
       y = 0
     sprite.x = x
     sprite.y = y
-    start = time.monotonic()
     videocore.HvsChannel1.set_sprite_list([sprite])
-    end = time.monotonic()
-    refresh = end-start
     #print("refresh time:")
     #print(refresh)
 
@@ -80,7 +87,29 @@ def many_formats():
   format4 = make_color_sweep(4, dist * 3, color_order=3, red_start=0, red_max=31, green_start=5, green_max=63, blue_start = 11, blue_max=31)
   videocore.HvsChannel1.set_sprite_list([format1, format2, format3, format4])
 
-#many_formats()
-gif_animate()
+def tilegrid():
+  import adafruit_imageload
+  import displayio
+  import board
+  # https://learn.adafruit.com/circuitpython-display-support-using-displayio/sprite-sheet
+  sprite_sheet, palette = adafruit_imageload.load("/cp_sprite_sheet.bmp", bitmap=displayio.Bitmap, palette=displayio.Palette)
+  sprite = displayio.TileGrid(sprite_sheet, pixel_shader=palette, width=2, height=2, tile_width=16, tile_height=16)
+  group = displayio.Group(scale=8)
+  group.append(sprite)
+  display = board.DISPLAY
+  group.x = 30
+  group.y = 30
+  for i in range(30):
+    sprite[0] = i % 6
+    sprite[1] = (i+1) % 6
+    sprite[2] = (i+2) % 6
+    sprite[3] = (i+3) % 6
+    for j in range(100):
+      group.x = j
+      display.show(group)
+      return
+      time.sleep(0.01)
 
-print("Hello World!")
+#many_formats()
+#gif_animate()
+tilegrid()

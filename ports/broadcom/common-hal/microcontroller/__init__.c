@@ -60,7 +60,7 @@ void common_hal_mcu_on_next_reset(mcu_runmode_t runmode) {
   // there is room for a 6bit int to be smuggled across reset, look into using that
 }
 
-
+// https://learn.adafruit.com/circuitpython-essentials/circuitpython-resetting
 void common_hal_mcu_reset(void) {
   common_hal_mcu_disable_interrupts();
   *REG32(PM_WDOG) = PM_PASSWORD | (1 & PM_WDOG_MASK);

@@ -6,3 +6,4 @@ typedef struct {
 } hvs_channel_t;
 
 extern hvs_channel_t hvs_channels[3];
+extern const mp_obj_type_t hvs_channel_type;

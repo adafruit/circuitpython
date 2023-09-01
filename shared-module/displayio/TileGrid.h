@@ -40,7 +40,7 @@ typedef struct {
     mp_obj_t pixel_shader;
     int16_t x;
     int16_t y;
-    uint16_t pixel_width;
+    uint16_t pixel_width; // of the entire grid, covering width_in_tiles tiles
     uint16_t pixel_height;
     uint16_t bitmap_width_in_tiles;
     ;

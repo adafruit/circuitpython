@@ -31,27 +31,58 @@ enum hvs_pixel_format bitmap_to_hvs(const displayio_bitmap_t *bitmap) {
 #error not implemented yet
 #else
 void hvs_regen_noscale_noviewport(sprite_t *s) {
+  printf("xoffset: %ld yoffset: %ld\n", s->x_offset, s->y_offset);
   uint32_t *d = s->dlist;
+  uint32_t phys_addr = (uint32_t)s->bitmap->data; // assumes identity map, should be physical addr
+  int bytes_per_pixel = s->bitmap->bits_per_value / 8;
+  uint stride = s->bitmap->stride * 4;
+  phys_addr += bytes_per_pixel * s->x_offset;
+  phys_addr += stride * s->y_offset;
+  uint size = 7;
+  if (s->pixel_format == HVS_PIXEL_FORMAT_PALETTE) size = 8;
   // CTL0
   d[0] = CONTROL_VALID
     | CONTROL_PIXEL_ORDER(s->color_order)
     | CONTROL_UNITY
     | CONTROL_FORMAT(s->pixel_format)
-    | CONTROL_WORDS(7);
+    | CONTROL_WORDS(size);
   // POS0
   d[1] = POS0_X(s->x) | POS0_Y(s->y) | POS0_ALPHA(0xff);
   // POS2, input size
-  d[2] = POS2_H(s->bitmap->height) | POS2_W(s->bitmap->width) | (s->alpha_mode << 30);
+  d[2] = POS2_H(s->height) | POS2_W(s->width) | (s->alpha_mode << 30);
   // POS3, context
   d[3] = 0xDEADBEEF;
   // PTR0
-  d[4] = ((uint32_t)s->bitmap->data) // assumes identity map, should be physical addr
+  d[4] = phys_addr
     | 0xc0000000; // and tell HVS to do uncached reads
   // context 0
   d[5] = 0xDEADBEEF;
   // pitch 0
-  d[6] = s->bitmap->stride * 4;
-
+  d[6] = stride;
+  if (s->pixel_format == HVS_PIXEL_FORMAT_PALETTE) {
+    // https://github.com/librerpi/rpi-open-firmware/blob/93dc394d33f54a59a25a087213f46a20f5aad327/docs/hvs.txt#L107-L112
+    uint bitsize;
+    switch (s->bitmap->bits_per_value) {
+    case 1:
+      bitsize = 0;
+      break;
+    case 2:
+      bitsize = 1;
+      break;
+    case 4:
+      bitsize = 2;
+      break;
+    case 8:
+      bitsize = 3;
+      break;
+    default:
+      d[0] = 0;
+      return;
+    }
+    uint initial_pixel_offset = 0;
+    uint order = 0;
+    d[7] = (bitsize << 30) | (initial_pixel_offset << 27) | (order << 26) | (s->palette_addr << 2);
+  }
   //printf("w: %d, h: %d, stride: %d, bits per value: %d\n", s->bitmap->width, s->bitmap->height, s->bitmap->stride, s->bitmap->bits_per_value);
 }
 #endif

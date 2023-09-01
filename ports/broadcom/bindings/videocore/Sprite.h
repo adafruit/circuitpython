@@ -11,10 +11,14 @@ typedef struct {
   uint32_t height;
   uint32_t x;
   uint32_t y;
+  uint32_t x_offset;
+  uint32_t y_offset;
   uint32_t dlist[32];
   enum alpha_mode alpha_mode;
   uint32_t color_order;
+  uint32_t palette_addr;
   enum hvs_pixel_format pixel_format;
+  mp_obj_t palette;
 } sprite_t;
 
 extern const mp_obj_type_t hvs_sprite_type;

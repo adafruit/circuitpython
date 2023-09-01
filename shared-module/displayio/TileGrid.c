@@ -38,7 +38,7 @@ void common_hal_displayio_tilegrid_construct(displayio_tilegrid_t *self, mp_obj_
     mp_obj_t pixel_shader, uint16_t width, uint16_t height,
     uint16_t tile_width, uint16_t tile_height, uint16_t x, uint16_t y, uint8_t default_tile) {
     uint32_t total_tiles = width * height;
-    // Sprites will only have one tile so save a little memory by inlining values in the pointer.
+    // Sprites with only have one tile so save a little memory by inlining values in the pointer.
     uint8_t inline_tiles = sizeof(uint8_t *);
     if (total_tiles <= inline_tiles) {
         self->tiles = 0;
