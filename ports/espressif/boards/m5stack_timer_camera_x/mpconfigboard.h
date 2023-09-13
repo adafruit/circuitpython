@@ -45,4 +45,4 @@
 #define CIRCUITPY_I2C_ALLOW_INTERNAL_PULL_UP (1)
 
 // `espcamera.FrameSize.QXGA` & wifi connected only use 834028.
-#define DEFAULT_RESERVED_PSRAM      (1048576)
+#define DEFAULT_RESERVED_PSRAM      (1572864)
