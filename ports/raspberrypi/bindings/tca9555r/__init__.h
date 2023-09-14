@@ -111,7 +111,8 @@ void tca_set_polarity_port_low(uint tca_index, uint8_t polarity_state);
 void tca_set_polarity_port_high(uint tca_index, uint8_t polarity_state);
 
 void tca_change_output_mask(uint8_t chip, uint16_t mask, uint16_t state);
-
+void tca_change_config_mask(uint8_t chip, uint16_t mask, uint16_t state);
+void tca_change_polarity_mask(uint8_t chip, uint16_t mask, uint16_t state);
 
 
 #if CIRCUITPY_TCA9555R

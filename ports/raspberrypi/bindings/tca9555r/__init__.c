@@ -539,6 +539,90 @@ void tca_change_output_mask(uint8_t chip, uint16_t mask, uint16_t state) {
     }
 }
 
+void tca_change_config_mask(uint8_t chip, uint16_t mask, uint16_t state) {
+    uint8_t low_mask = (uint8_t)(mask & 0xFF);
+    uint8_t low_state = (uint8_t)(state & 0xFF);
+    uint8_t high_mask = (uint8_t)(mask >> 8);
+    uint8_t high_state = (uint8_t)(state >> 8);
+    bool low_changed = low_mask > 0;
+    bool high_changed = high_mask > 0;
+    if (low_changed && high_changed) {
+        #if TCA9555R_LOCAL_MEMORY
+        uint16_t config_state = (tca9555r_config_state[HIGH_BYTE(chip)] << 8) | tca9555r_config_state[LOW_BYTE(chip)];
+        #else
+        uint16_t config_state = tca_get_config_port(chip);
+        #endif
+        uint16_t new_config_state = config_state;
+        new_config_state &= ~mask; // Clear the mask bits
+        new_config_state |= state; // Set the state bits
+        if (new_config_state != config_state) {
+            tca_set_config_port(chip, new_config_state);
+        }
+    } else if (low_changed) {
+        #if TCA9555R_LOCAL_MEMORY
+        uint8_t config_state = tca9555r_config_state[LOW_BYTE(chip)];
+        #else
+        uint8_t config_state = tca_get_config_port_low(chip);
+        #endif
+        uint8_t new_config_state = (config_state & ~low_mask) | low_state;
+        if (new_config_state != config_state) {
+            tca_set_config_port_low(chip, new_config_state);
+        }
+    } else if (high_changed) {
+        #if TCA9555R_LOCAL_MEMORY
+        uint8_t config_state = tca9555r_config_state[HIGH_BYTE(chip)];
+        #else
+        uint8_t config_state = tca_get_config_port_high(chip);
+        #endif
+        uint8_t new_config_state = (config_state & ~high_mask) | high_state;
+        if (new_config_state != config_state) {
+            tca_set_config_port_high(chip, new_config_state);
+        }
+    }
+}
+
+void tca_change_polarity_mask(uint8_t chip, uint16_t mask, uint16_t state) {
+    uint8_t low_mask = (uint8_t)(mask & 0xFF);
+    uint8_t low_state = (uint8_t)(state & 0xFF);
+    uint8_t high_mask = (uint8_t)(mask >> 8);
+    uint8_t high_state = (uint8_t)(state >> 8);
+    bool low_changed = low_mask > 0;
+    bool high_changed = high_mask > 0;
+    if (low_changed && high_changed) {
+        #if TCA9555R_LOCAL_MEMORY
+        uint16_t polarity_state = (tca9555r_polarity_state[HIGH_BYTE(chip)] << 8) | tca9555r_polarity_state[LOW_BYTE(chip)];
+        #else
+        uint16_t polarity_state = tca_get_polarity_port(chip);
+        #endif
+        uint16_t new_polarity_state = polarity_state;
+        new_polarity_state &= ~mask; // Clear the mask bits
+        new_polarity_state |= state; // Set the state bits
+        if (new_polarity_state != polarity_state) {
+            tca_set_polarity_port(chip, new_polarity_state);
+        }
+    } else if (low_changed) {
+        #if TCA9555R_LOCAL_MEMORY
+        uint8_t polarity_state = tca9555r_polarity_state[LOW_BYTE(chip)];
+        #else
+        uint8_t polarity_state = tca_get_polarity_port_low(chip);
+        #endif
+        uint8_t new_polarity_state = (polarity_state & ~low_mask) | low_state;
+        if (new_polarity_state != polarity_state) {
+            tca_set_polarity_port_low(chip, new_polarity_state);
+        }
+    } else if (high_changed) {
+        #if TCA9555R_LOCAL_MEMORY
+        uint8_t polarity_state = tca9555r_polarity_state[HIGH_BYTE(chip)];
+        #else
+        uint8_t polarity_state = tca_get_polarity_port_high(chip);
+        #endif
+        uint8_t new_polarity_state = (polarity_state & ~high_mask) | high_state;
+        if (new_polarity_state != polarity_state) {
+            tca_set_polarity_port_high(chip, new_polarity_state);
+        }
+    }
+}
+
 STATIC mp_obj_t tca_pin_get_number(mp_obj_t pin_obj) {
     if (!mp_obj_is_type(pin_obj, &tca_pin_type)) {
         mp_raise_TypeError_varg(translate("%q must be of type %q, not %q"), MP_QSTR_pin, tca_pin_type.name, mp_obj_get_type(pin_obj)->name);
@@ -586,6 +670,46 @@ STATIC mp_obj_t tca_pin_change_output_mask(mp_obj_t chip_obj, mp_obj_t mask_obj,
     return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(tca_pin_change_output_mask_obj, tca_pin_change_output_mask);
+
+STATIC mp_obj_t tca_pin_change_config_mask(mp_obj_t chip_obj, mp_obj_t mask_obj, mp_obj_t state_obj) {
+    int chip = mp_obj_get_int(chip_obj);
+    int mask = mp_obj_get_int(mask_obj);
+    int state = mp_obj_get_int(state_obj);
+    if (chip < 0 || chip >= TCA9555R_CHIP_COUNT) {
+        mp_raise_TypeError_varg(translate("chip can only be 0 to %q"), TCA9555R_CHIP_COUNT - 1);
+    }
+    if (mask < 0 || mask > UINT16_MAX) {
+        mp_raise_TypeError(translate("mask only supports 16 bits"));
+    }
+    if (state < 0 || state > UINT16_MAX) {
+        mp_raise_TypeError(translate("state only supports 16 bits"));
+    }
+
+    tca_change_config_mask(chip, mask, state);
+
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(tca_pin_change_config_mask_obj, tca_pin_change_config_mask);
+
+STATIC mp_obj_t tca_pin_change_polarity_mask(mp_obj_t chip_obj, mp_obj_t mask_obj, mp_obj_t state_obj) {
+    int chip = mp_obj_get_int(chip_obj);
+    int mask = mp_obj_get_int(mask_obj);
+    int state = mp_obj_get_int(state_obj);
+    if (chip < 0 || chip >= TCA9555R_CHIP_COUNT) {
+        mp_raise_TypeError_varg(translate("chip can only be 0 to %q"), TCA9555R_CHIP_COUNT - 1);
+    }
+    if (mask < 0 || mask > UINT16_MAX) {
+        mp_raise_TypeError(translate("mask only supports 16 bits"));
+    }
+    if (state < 0 || state > UINT16_MAX) {
+        mp_raise_TypeError(translate("state only supports 16 bits"));
+    }
+
+    tca_change_polarity_mask(chip, mask, state);
+
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(tca_pin_change_polarity_mask_obj, tca_pin_change_polarity_mask);
 
 #if TCA9555R_READ_INTERNALS
 STATIC mp_obj_t tca_port_read_input_state(mp_obj_t chip_obj) {
@@ -717,6 +841,8 @@ STATIC const mp_rom_map_elem_t tca_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_get_number), &tca_pin_get_number_obj },
     { MP_ROM_QSTR(MP_QSTR_get_chip), &tca_pin_get_chip_obj },
     { MP_ROM_QSTR(MP_QSTR_change_output_mask), &tca_pin_change_output_mask_obj },
+    { MP_ROM_QSTR(MP_QSTR_change_config_mask), &tca_pin_change_config_mask_obj },
+    { MP_ROM_QSTR(MP_QSTR_change_polarity_mask), &tca_pin_change_polarity_mask_obj },
     #if TCA9555R_READ_INTERNALS
     { MP_ROM_QSTR(MP_QSTR_read_input), &tca_port_read_input_state_obj },
     { MP_ROM_QSTR(MP_QSTR_read_output), &tca_port_read_output_state_obj },
