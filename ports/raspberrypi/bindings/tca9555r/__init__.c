@@ -226,7 +226,7 @@ void tca_gpio_set_config(uint tca_gpio, bool output) {
     }
 }
 
-void tca_gpio_set_polairty(uint tca_gpio, bool polarity) {
+void tca_gpio_set_polarity(uint tca_gpio, bool polarity) {
     invalid_params_if(TCA9555R, tca_gpio >= TCA9555R_VIRTUAL_GPIO_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     uint8_t address = ADDRESS_FROM_GPIO(tca_gpio);
@@ -739,4 +739,4 @@ const mp_obj_module_t tca_module = {
     .globals = (mp_obj_dict_t *)&tca_module_globals,
 };
 
-MP_REGISTER_MODULE(MP_QSTR_tca, tca_module, CIRCUITPY_TCA9555R);
+MP_REGISTER_MODULE(MP_QSTR_tca, tca_module);
