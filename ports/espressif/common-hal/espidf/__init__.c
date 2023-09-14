@@ -79,7 +79,7 @@ bool common_hal_espidf_set_reserved_psram(size_t amount) {
 supervisor_allocation *psram_for_idf;
 
 void common_hal_espidf_reserve_psram(void) {
-    #ifdef CONFIG_SPIRAM
+    #ifdef CONFIG_SPIRAM_USE_MEMMAP
     if (!psram_for_idf) {
         ESP_LOGI(TAG, "Reserving %d bytes of psram", reserved_psram);
         if (reserved_psram == 0) {
@@ -198,4 +198,4 @@ void raise_esp_error(esp_err_t err) {
     mp_raise_msg_varg(exception_type, translate("%s error 0x%x"), group, err);
 }
 
-MP_REGISTER_MODULE(MP_QSTR_espidf, espidf_module, CIRCUITPY_ESPIDF);
+MP_REGISTER_MODULE(MP_QSTR_espidf, espidf_module);

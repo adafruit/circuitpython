@@ -175,7 +175,7 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     xTaskCreatePinnedToCore(
         uart_event_task,
         "uart_event_task",
-        configMINIMAL_STACK_SIZE,
+        configMINIMAL_STACK_SIZE + 512,
         self,
         CONFIG_PTHREAD_TASK_PRIO_DEFAULT,
         &self->event_task,
@@ -304,7 +304,7 @@ void common_hal_busio_uart_deinit(busio_uart_obj_t *self) {
 // Read characters.
 size_t common_hal_busio_uart_read(busio_uart_obj_t *self, uint8_t *data, size_t len, int *errcode) {
     if (self->rx_pin == NULL) {
-        mp_raise_ValueError(translate("No RX pin"));
+        mp_raise_ValueError_varg(translate("No %q pin"), MP_QSTR_rx);
     }
     if (len == 0) {
         // Nothing to read.
@@ -357,7 +357,7 @@ size_t common_hal_busio_uart_read(busio_uart_obj_t *self, uint8_t *data, size_t 
 // Write characters.
 size_t common_hal_busio_uart_write(busio_uart_obj_t *self, const uint8_t *data, size_t len, int *errcode) {
     if (self->tx_pin == NULL) {
-        mp_raise_ValueError(translate("No TX pin"));
+        mp_raise_ValueError_varg(translate("No %q pin"), MP_QSTR_tx);
     }
 
     size_t left_to_write = len;

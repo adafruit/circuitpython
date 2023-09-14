@@ -75,8 +75,7 @@ STATIC mp_obj_t displayio_bitmap_make_new(const mp_obj_type_t *type, size_t n_ar
         }
     }
 
-    displayio_bitmap_t *self = m_new_obj(displayio_bitmap_t);
-    self->base.type = &displayio_bitmap_type;
+    displayio_bitmap_t *self = mp_obj_malloc(displayio_bitmap_t, &displayio_bitmap_type);
     common_hal_displayio_bitmap_construct(self, width, height, bits);
 
     return MP_OBJ_FROM_PTR(self);
@@ -115,6 +114,21 @@ MP_DEFINE_CONST_FUN_OBJ_1(displayio_bitmap_get_height_obj, displayio_bitmap_obj_
 
 MP_PROPERTY_GETTER(displayio_bitmap_height_obj,
     (mp_obj_t)&displayio_bitmap_get_height_obj);
+
+//|     bits_per_value: int
+//|     """Bits per Pixel of the bitmap. (read only)"""
+STATIC mp_obj_t displayio_bitmap_obj_get_bits_per_value(mp_obj_t self_in) {
+    displayio_bitmap_t *self = MP_OBJ_TO_PTR(self_in);
+
+    check_for_deinit(self);
+    return MP_OBJ_NEW_SMALL_INT(common_hal_displayio_bitmap_get_bits_per_value(self));
+}
+
+MP_DEFINE_CONST_FUN_OBJ_1(displayio_bitmap_get_bits_per_value_obj, displayio_bitmap_obj_get_bits_per_value);
+
+MP_PROPERTY_GETTER(displayio_bitmap_bits_per_value_obj,
+    (mp_obj_t)&displayio_bitmap_get_bits_per_value_obj);
+
 
 //|     def __getitem__(self, index: Union[Tuple[int, int], int]) -> int:
 //|         """Returns the value at the given index. The index can either be an x,y tuple or an int equal
@@ -193,7 +207,7 @@ STATIC mp_obj_t displayio_bitmap_obj_fill(mp_obj_t self_in, mp_obj_t value_obj) 
     displayio_bitmap_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
 
-    mp_uint_t value = (mp_uint_t)mp_arg_validate_int_range(mp_obj_get_int(value_obj), 0,(1u << common_hal_displayio_bitmap_get_bits_per_value(self)) - 1,MP_QSTR_value);
+    mp_uint_t value = (mp_uint_t)mp_arg_validate_int_range(mp_obj_get_int(value_obj), 0, (1u << common_hal_displayio_bitmap_get_bits_per_value(self)) - 1, MP_QSTR_value);
     common_hal_displayio_bitmap_fill(self, value);
 
     return mp_const_none;
@@ -260,6 +274,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(displayio_bitmap_deinit_obj, displayio_bitmap_obj_dein
 STATIC const mp_rom_map_elem_t displayio_bitmap_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_height), MP_ROM_PTR(&displayio_bitmap_height_obj) },
     { MP_ROM_QSTR(MP_QSTR_width), MP_ROM_PTR(&displayio_bitmap_width_obj) },
+    { MP_ROM_QSTR(MP_QSTR_bits_per_value), MP_ROM_PTR(&displayio_bitmap_bits_per_value_obj) },
     { MP_ROM_QSTR(MP_QSTR_fill), MP_ROM_PTR(&displayio_bitmap_fill_obj) },
     { MP_ROM_QSTR(MP_QSTR_dirty), MP_ROM_PTR(&displayio_bitmap_dirty_obj) },
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&displayio_bitmap_deinit_obj) },

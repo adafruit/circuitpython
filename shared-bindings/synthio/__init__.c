@@ -45,6 +45,13 @@
 
 #include "shared-module/synthio/LFO.h"
 
+//|
+//| """Support for multi-channel audio synthesis
+//|
+//| At least 2 simultaneous notes are supported.  samd5x, mimxrt10xx and rp2040 platforms support up to 12 notes.
+//| """
+//|
+
 //| class EnvelopeState:
 //|     ATTACK: EnvelopeState
 //|     """The note is in its attack phase"""
@@ -85,12 +92,6 @@ static const mp_arg_t envelope_properties[] = {
     { MP_QSTR_sustain_level, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = MP_OBJ_NULL } },
 };
 
-//|
-//| """Support for multi-channel audio synthesis
-//|
-//| At least 2 simultaneous notes are supported.  samd5x, mimxrt10xx and rp2040 platforms support up to 12 notes.
-//| """
-//|
 //| BlockInput = Union["Math", "LFO", float, None]
 //| """Blocks and Notes can take any of these types as inputs on certain attributes
 //|
@@ -271,7 +272,7 @@ STATIC mp_obj_t synthio_from_file(size_t n_args, const mp_obj_t *pos_args, mp_ma
     }
     uint32_t track_size = (chunk_header[4] << 24) |
         (chunk_header[5] << 16) | (chunk_header[6] << 8) | chunk_header[7];
-    uint8_t *buffer = m_malloc(track_size, false);
+    uint8_t *buffer = m_malloc(track_size);
     if (f_read(&file->fp, buffer, track_size, &bytes_read) != FR_OK) {
         mp_raise_OSError(MP_EIO);
     }
@@ -279,8 +280,7 @@ STATIC mp_obj_t synthio_from_file(size_t n_args, const mp_obj_t *pos_args, mp_ma
         mp_arg_error_invalid(MP_QSTR_file);
     }
 
-    synthio_miditrack_obj_t *result = m_new_obj(synthio_miditrack_obj_t);
-    result->base.type = &synthio_miditrack_type;
+    synthio_miditrack_obj_t *result = mp_obj_malloc(synthio_miditrack_obj_t, &synthio_miditrack_type);
 
     common_hal_synthio_miditrack_construct(result, buffer, track_size,
         tempo, args[ARG_sample_rate].u_int, args[ARG_waveform].u_obj,
@@ -361,4 +361,4 @@ const mp_obj_module_t synthio_module = {
     .globals = (mp_obj_dict_t *)&synthio_module_globals,
 };
 
-MP_REGISTER_MODULE(MP_QSTR_synthio, synthio_module, CIRCUITPY_SYNTHIO);
+MP_REGISTER_MODULE(MP_QSTR_synthio, synthio_module);

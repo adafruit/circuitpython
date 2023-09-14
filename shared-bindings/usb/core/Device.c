@@ -123,7 +123,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(usb_core_device_get_manufacturer_obj, usb_core_device_
 MP_PROPERTY_GETTER(usb_core_device_manufacturer_obj,
     (mp_obj_t)&usb_core_device_get_manufacturer_obj);
 
-//|     def set_configuration(self, configuration=None):
+//|     def set_configuration(self, configuration=1):
 //|         """Set the active configuration.
 //|
 //|         The configuration parameter is the bConfigurationValue field of the
@@ -136,7 +136,7 @@ MP_PROPERTY_GETTER(usb_core_device_manufacturer_obj,
 STATIC mp_obj_t usb_core_device_set_configuration(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_configuration };
     static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_configuration, MP_ARG_INT, {.u_int = 0x100} },
+        { MP_QSTR_configuration, MP_ARG_INT, {.u_int = 1} },
     };
     usb_core_device_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
@@ -319,7 +319,7 @@ STATIC const mp_rom_map_elem_t usb_core_device_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_product),          MP_ROM_PTR(&usb_core_device_product_obj) },
     { MP_ROM_QSTR(MP_QSTR_manufacturer),     MP_ROM_PTR(&usb_core_device_manufacturer_obj) },
 
-    { MP_ROM_QSTR(MP_QSTR_set_configuration),MP_ROM_PTR(&usb_core_device_set_configuration_obj) },
+    { MP_ROM_QSTR(MP_QSTR_set_configuration), MP_ROM_PTR(&usb_core_device_set_configuration_obj) },
     { MP_ROM_QSTR(MP_QSTR_write),            MP_ROM_PTR(&usb_core_device_write_obj) },
     { MP_ROM_QSTR(MP_QSTR_read),             MP_ROM_PTR(&usb_core_device_read_obj) },
     { MP_ROM_QSTR(MP_QSTR_ctrl_transfer),    MP_ROM_PTR(&usb_core_device_ctrl_transfer_obj) },
