@@ -46,7 +46,7 @@ bool pin_number_is_free(uint8_t pin_number);
 extern bool cyw_ever_init;
 void reset_pin_number_cyw(uint8_t pin_number);
 #endif
-#if CIRCUITPY_TCA9555R
+#if CIRCUITPY_TCA9555
 extern bool tca_ever_init;
 void reset_pin_number_tca(uint8_t pin_number);
 #endif

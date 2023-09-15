@@ -167,9 +167,6 @@ endif
 ifeq ($(CIRCUITPY_CYW43),1)
 SRC_PATTERNS += cyw43/%
 endif
-ifeq ($(CIRCUITPY_TCA9555R),1)
-SRC_PATTERNS += tca9555r/%
-endif
 ifeq ($(CIRCUITPY_DIGITALIO),1)
 SRC_PATTERNS += digitalio/%
 endif
@@ -349,6 +346,9 @@ SRC_PATTERNS += terminalio/% fontio/%
 endif
 ifeq ($(CIRCUITPY_FONTIO),1)
 SRC_PATTERNS += fontio/%
+endif
+ifeq ($(CIRCUITPY_TCA9555),1)
+SRC_PATTERNS += tca9555/%
 endif
 ifeq ($(CIRCUITPY_TIME),1)
 SRC_PATTERNS += time/%
@@ -659,6 +659,7 @@ SRC_SHARED_MODULE_ALL = \
 	synthio/Note.c \
 	synthio/Synthesizer.c \
 	synthio/__init__.c \
+	tca9555/__init__.c \
 	terminalio/Terminal.c \
 	terminalio/__init__.c \
 	time/__init__.c \

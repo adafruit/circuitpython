@@ -8,7 +8,7 @@
 #define CIRCUITPY_BOARD_I2C_PIN     {{.scl = &pin_GPIO25, .sda = &pin_GPIO24}}
 #define CIRCUITPY_BOARD_I2C_FREQ    (400000)
 
-#define TCA9555R_CHIP_COUNT         (2)
-#define TCA9555R_CHIP_ADDRESSES     { 0x20, 0x26 }
-#define TCA9555R_LOCAL_MEMORY       (1)
-#define TCA9555R_READ_INTERNALS     (1)
+#define TCA9555_CHIP_COUNT          (2)
+#define TCA9555_CHIP_ADDRESSES      { 0x20, 0x26 }
+#define TCA9555_LOCAL_MEMORY        (1)
+#define TCA9555_READ_INTERNALS      (1)

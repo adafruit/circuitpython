@@ -31,7 +31,7 @@
 
 #include "shared-bindings/busio/I2C.h"
 #include "shared-bindings/board/__init__.h"
-#include "bindings/tca9555r/__init__.h"
+#include "shared-bindings/tca9555/__init__.h"
 #include "shared-module/displayio/__init__.h"
 
 void board_init(void) {

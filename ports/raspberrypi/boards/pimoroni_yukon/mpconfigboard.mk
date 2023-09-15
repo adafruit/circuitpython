@@ -10,7 +10,7 @@ EXTERNAL_FLASH_DEVICES = "W25Q128JVxQ"
 
 CIRCUITPY__EVE = 1
 
-CIRCUITPY_TCA9555R = 1
+CIRCUITPY_TCA9555 = 1
 
 # Include these Python libraries in firmware.
 FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_Motor

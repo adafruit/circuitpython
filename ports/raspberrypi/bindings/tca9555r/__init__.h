@@ -23,7 +23,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
+/*
 #pragma once
 
 #include "py/obj.h"
@@ -150,3 +150,4 @@ extern const mcu_pin_obj_t pin_TCA1_13;
 extern const mcu_pin_obj_t pin_TCA1_14;
 extern const mcu_pin_obj_t pin_TCA1_15;
 #endif
+*/

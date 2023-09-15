@@ -47,8 +47,8 @@ const mcu_pin_obj_t *common_hal_digitalio_validate_pin(mp_obj_t obj, qstr arg_na
 }
 #endif
 
-#if CIRCUITPY_TCA9555R
-#include "bindings/tca9555r/__init__.h"
+#if CIRCUITPY_TCA9555
+#include "shared-bindings/tca9555/__init__.h"
 #define IS_TCA(self) ((self)->pin->base.type == &tca_pin_type)
 
 const mcu_pin_obj_t *common_hal_digitalio_validate_pin(mp_obj_t obj, qstr arg_name) {
@@ -72,7 +72,7 @@ digitalinout_result_t common_hal_digitalio_digitalinout_construct(
         return DIGITALINOUT_OK;
     }
     #endif
-    #if CIRCUITPY_TCA9555R
+    #if CIRCUITPY_TCA9555
     if (IS_TCA(self)) {
         if (common_hal_tca_gpio_get_config(self->pin->number) == GPIO_OUT) {
             self->output = true;
@@ -125,7 +125,7 @@ digitalinout_result_t common_hal_digitalio_digitalinout_switch_to_output(
         return DIGITALINOUT_OK;
     }
     #endif
-    #if CIRCUITPY_TCA9555R
+    #if CIRCUITPY_TCA9555
     if (IS_TCA(self)) {
         if (drive_mode != DRIVE_MODE_PUSH_PULL) {
             return DIGITALINOUT_INVALID_DRIVE_MODE;
@@ -170,7 +170,7 @@ void common_hal_digitalio_digitalinout_set_value(
         return;
     }
     #endif
-    #if CIRCUITPY_TCA9555R
+    #if CIRCUITPY_TCA9555
     if (IS_TCA(self)) {
         common_hal_tca_gpio_set_output(pin, value);
         return;
@@ -198,7 +198,7 @@ bool common_hal_digitalio_digitalinout_get_value(
         return cyw43_arch_gpio_get(self->pin->number);
     }
     #endif
-    #if CIRCUITPY_TCA9555R
+    #if CIRCUITPY_TCA9555
     if (IS_TCA(self)) {
         if (self->output) {
             return common_hal_tca_gpio_get_output(self->pin->number);
@@ -220,7 +220,7 @@ digitalinout_result_t common_hal_digitalio_digitalinout_set_drive_mode(
         }
     }
     #endif
-    #if CIRCUITPY_TCA9555R
+    #if CIRCUITPY_TCA9555
     if (IS_TCA(self)) {
         if (drive_mode != DRIVE_MODE_PUSH_PULL) {
             return DIGITALINOUT_INVALID_DRIVE_MODE;
@@ -258,7 +258,7 @@ digitalinout_result_t common_hal_digitalio_digitalinout_set_pull(
         return DIGITALINOUT_OK;
     }
     #endif
-    #if CIRCUITPY_TCA9555R
+    #if CIRCUITPY_TCA9555
     if (IS_TCA(self)) {
         if (pull != PULL_NONE) {
             return DIGITALINOUT_INVALID_PULL;
@@ -282,7 +282,7 @@ digitalio_pull_t common_hal_digitalio_digitalinout_get_pull(
         mp_raise_AttributeError(translate("Cannot get pull while in output mode"));
         return PULL_NONE;
     } else {
-        #if CIRCUITPY_TCA9555R
+        #if CIRCUITPY_TCA9555
         if (IS_TCA(self)) {
             return PULL_NONE;
         }
@@ -306,7 +306,7 @@ volatile uint32_t *common_hal_digitalio_digitalinout_get_reg(digitalio_digitalin
         return NULL;
     }
     #endif
-    #if CIRCUITPY_TCA9555R
+    #if CIRCUITPY_TCA9555
     if (IS_TCA(self)) {
         return NULL;
     }

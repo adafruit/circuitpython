@@ -1,5 +1,5 @@
 #include "shared-bindings/board/__init__.h"
-#include "bindings/tca9555r/__init__.h"
+#include "shared-bindings/tca9555/__init__.h"
 #include "py/objtuple.h"
 
 STATIC const qstr board_slot_fields[] = {

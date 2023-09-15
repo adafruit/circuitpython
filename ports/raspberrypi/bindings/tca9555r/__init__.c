@@ -23,7 +23,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
+/*
 #include "py/runtime.h"
 
 #include "shared-bindings/board/__init__.h"
@@ -874,3 +874,4 @@ const mp_obj_module_t tca_module = {
 };
 
 MP_REGISTER_MODULE(MP_QSTR_tca, tca_module);
+*/
