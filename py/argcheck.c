@@ -288,6 +288,13 @@ mp_int_t mp_arg_validate_type_int(mp_obj_t obj, qstr arg_name) {
     return an_int;
 }
 
+mp_obj_t mp_arg_validate_type_or_type(mp_obj_t obj, const mp_obj_type_t *type1, const mp_obj_type_t *type2, qstr arg_name) {
+    if (!mp_obj_is_type(obj, type1) && !mp_obj_is_type(obj, type2)) {
+        mp_raise_TypeError_varg(translate("%q must be of type %q or %q, not %q"), arg_name, type1->name, type2->name, mp_obj_get_type(obj)->name);
+    }
+    return obj;
+}
+
 NORETURN void mp_arg_error_invalid(qstr arg_name) {
     mp_raise_ValueError_varg(translate("Invalid %q"), arg_name);
 }
