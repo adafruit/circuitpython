@@ -90,10 +90,7 @@ const mp_obj_type_t tca_pin_type = {
 };
 
 const mcu_pin_obj_t *validate_obj_is_pin_including_tca(mp_obj_t obj, qstr arg_name) {
-    if (!mp_obj_is_type(obj, &mcu_pin_type) && !mp_obj_is_type(obj, &tca_pin_type)) {
-        mp_raise_TypeError_varg(translate("%q must be of type %q or %q, not %q"), arg_name, mcu_pin_type.name, tca_pin_type.name, mp_obj_get_type(obj)->name);
-    }
-    return MP_OBJ_TO_PTR(obj);
+    return MP_OBJ_TO_PTR(mp_arg_validate_type_or_type(obj, &mcu_pin_type, &tca_pin_type, arg_name));
 }
 
 const mcu_pin_obj_t *validate_obj_is_free_pin_including_tca(mp_obj_t obj, qstr arg_name) {
@@ -623,47 +620,46 @@ void tca_change_polarity_mask(uint8_t chip, uint16_t mask, uint16_t state) {
     }
 }
 
+//| def get_number(pin: tca_pin) -> int:
+//|     """Get the TCA9555 pin number (from 0 to 15) of the provided tca_pin.
+//|
+//|     :param tca_pin pin: a TCA pin object"""
+//|     ...
+//|
 STATIC mp_obj_t tca_pin_get_number(mp_obj_t pin_obj) {
-    if (!mp_obj_is_type(pin_obj, &tca_pin_type)) {
-        mp_raise_TypeError_varg(translate("%q must be of type %q, not %q"), MP_QSTR_pin, tca_pin_type.name, mp_obj_get_type(pin_obj)->name);
-    }
-
-    mcu_pin_obj_t *pin = MP_OBJ_TO_PTR(pin_obj);
-    uint8_t tca_gpio = pin->number;
-    invalid_params_if(TCA9555R, tca_gpio >= TCA9555R_VIRTUAL_GPIO_COUNT);
+    mcu_pin_obj_t *pin = MP_OBJ_TO_PTR(mp_arg_validate_type(pin_obj, &tca_pin_type, MP_QSTR_pin));
+    uint8_t tca_gpio = mp_arg_validate_index_range(pin->number, 0, TCA9555R_VIRTUAL_GPIO_COUNT - 1, MP_QSTR_pin_number);
 
     return mp_obj_new_int(tca_gpio % TCA9555R_GPIO_COUNT);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(tca_pin_get_number_obj, tca_pin_get_number);
 
+//| def get_chip(pin: tca_pin) -> int:
+//|     """Get the TCA9555 chip number of the provided tca_pin.
+//|
+//|     :param tca_pin pin: a TCA pin object"""
+//|     ...
+//|
 STATIC mp_obj_t tca_pin_get_chip(mp_obj_t pin_obj) {
-    if (!mp_obj_is_type(pin_obj, &tca_pin_type)) {
-        mp_raise_TypeError_varg(translate("%q must be of type %q, not %q"), MP_QSTR_pin, tca_pin_type.name, mp_obj_get_type(pin_obj)->name);
-    }
-
-    mcu_pin_obj_t *pin = MP_OBJ_TO_PTR(pin_obj);
-    uint8_t tca_gpio = pin->number;
-    invalid_params_if(TCA9555R, tca_gpio >= TCA9555R_VIRTUAL_GPIO_COUNT);
+    mcu_pin_obj_t *pin = MP_OBJ_TO_PTR(mp_arg_validate_type(pin_obj, &tca_pin_type, MP_QSTR_pin));
+    uint8_t tca_gpio = mp_arg_validate_index_range(pin->number, 0, TCA9555R_VIRTUAL_GPIO_COUNT - 1, MP_QSTR_pin_number);
 
     return mp_obj_new_int(CHIP_FROM_GPIO(tca_gpio));
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(tca_pin_get_chip_obj, tca_pin_get_chip);
 
-
-
+//| def change_output_mask(chip: int, mask: int, state: int) -> None:
+//|     """Change the output state of a set of pins on a single TCA9555 chip.
+//|
+//|     :param int chip: the number of the TCA9555 chip to use
+//|     :param int mask: which of the 16 pins on the chip to modify
+//|     :param int state: the state the masked pins should have"""
+//|     ...
+//|
 STATIC mp_obj_t tca_pin_change_output_mask(mp_obj_t chip_obj, mp_obj_t mask_obj, mp_obj_t state_obj) {
-    int chip = mp_obj_get_int(chip_obj);
-    int mask = mp_obj_get_int(mask_obj);
-    int state = mp_obj_get_int(state_obj);
-    if (chip < 0 || chip >= TCA9555R_CHIP_COUNT) {
-        mp_raise_TypeError_varg(translate("chip can only be 0 to %q"), TCA9555R_CHIP_COUNT - 1);
-    }
-    if (mask < 0 || mask > UINT16_MAX) {
-        mp_raise_TypeError(translate("mask only supports 16 bits"));
-    }
-    if (state < 0 || state > UINT16_MAX) {
-        mp_raise_TypeError(translate("state only supports 16 bits"));
-    }
+    uint8_t chip = mp_arg_validate_int_range(mp_obj_get_int(chip_obj), 0, TCA9555R_CHIP_COUNT - 1, MP_QSTR_chip);
+    uint16_t mask = mp_arg_validate_int_range(mp_obj_get_int(mask_obj), 0, UINT16_MAX, MP_QSTR_mask);
+    uint16_t state = mp_arg_validate_int_range(mp_obj_get_int(state_obj), 0, UINT16_MAX, MP_QSTR_state);
 
     tca_change_output_mask(chip, mask, state);
 
@@ -671,19 +667,18 @@ STATIC mp_obj_t tca_pin_change_output_mask(mp_obj_t chip_obj, mp_obj_t mask_obj,
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(tca_pin_change_output_mask_obj, tca_pin_change_output_mask);
 
+//| def change_config_mask(chip: int, mask: int, state: int) -> None:
+//|     """Change the config state of a set of pins on a single TCA9555 chip.
+//|
+//|     :param int chip: the number of the TCA9555 chip to use
+//|     :param int mask: which of the 16 pins on the chip to change the direction of
+//|     :param int state: the directions the masked pins should have"""
+//|     ...
+//|
 STATIC mp_obj_t tca_pin_change_config_mask(mp_obj_t chip_obj, mp_obj_t mask_obj, mp_obj_t state_obj) {
-    int chip = mp_obj_get_int(chip_obj);
-    int mask = mp_obj_get_int(mask_obj);
-    int state = mp_obj_get_int(state_obj);
-    if (chip < 0 || chip >= TCA9555R_CHIP_COUNT) {
-        mp_raise_TypeError_varg(translate("chip can only be 0 to %q"), TCA9555R_CHIP_COUNT - 1);
-    }
-    if (mask < 0 || mask > UINT16_MAX) {
-        mp_raise_TypeError(translate("mask only supports 16 bits"));
-    }
-    if (state < 0 || state > UINT16_MAX) {
-        mp_raise_TypeError(translate("state only supports 16 bits"));
-    }
+    uint8_t chip = mp_arg_validate_int_range(mp_obj_get_int(chip_obj), 0, TCA9555R_CHIP_COUNT - 1, MP_QSTR_chip);
+    uint16_t mask = mp_arg_validate_int_range(mp_obj_get_int(mask_obj), 0, UINT16_MAX, MP_QSTR_mask);
+    uint16_t state = mp_arg_validate_int_range(mp_obj_get_int(state_obj), 0, UINT16_MAX, MP_QSTR_state);
 
     tca_change_config_mask(chip, mask, state);
 
@@ -691,19 +686,18 @@ STATIC mp_obj_t tca_pin_change_config_mask(mp_obj_t chip_obj, mp_obj_t mask_obj,
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(tca_pin_change_config_mask_obj, tca_pin_change_config_mask);
 
+//| def change_polarity_mask(chip: int, mask: int, state: int) -> None:
+//|     """Change the output polarity state of a set of pins on a single TCA9555 chip.
+//|
+//|     :param int chip: the number of the TCA9555 chip to use
+//|     :param int mask: which of the 16 pins on the chip to modify
+//|     :param int state: the polarity state the masked pins should have"""
+//|     ...
+//|
 STATIC mp_obj_t tca_pin_change_polarity_mask(mp_obj_t chip_obj, mp_obj_t mask_obj, mp_obj_t state_obj) {
-    int chip = mp_obj_get_int(chip_obj);
-    int mask = mp_obj_get_int(mask_obj);
-    int state = mp_obj_get_int(state_obj);
-    if (chip < 0 || chip >= TCA9555R_CHIP_COUNT) {
-        mp_raise_TypeError_varg(translate("chip can only be 0 to %q"), TCA9555R_CHIP_COUNT - 1);
-    }
-    if (mask < 0 || mask > UINT16_MAX) {
-        mp_raise_TypeError(translate("mask only supports 16 bits"));
-    }
-    if (state < 0 || state > UINT16_MAX) {
-        mp_raise_TypeError(translate("state only supports 16 bits"));
-    }
+    uint8_t chip = mp_arg_validate_int_range(mp_obj_get_int(chip_obj), 0, TCA9555R_CHIP_COUNT - 1, MP_QSTR_chip);
+    uint16_t mask = mp_arg_validate_int_range(mp_obj_get_int(mask_obj), 0, UINT16_MAX, MP_QSTR_mask);
+    uint16_t state = mp_arg_validate_int_range(mp_obj_get_int(state_obj), 0, UINT16_MAX, MP_QSTR_state);
 
     tca_change_polarity_mask(chip, mask, state);
 
@@ -712,73 +706,87 @@ STATIC mp_obj_t tca_pin_change_polarity_mask(mp_obj_t chip_obj, mp_obj_t mask_ob
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(tca_pin_change_polarity_mask_obj, tca_pin_change_polarity_mask);
 
 #if TCA9555R_READ_INTERNALS
+//| def read_input(chip: int) -> int:
+//|     """Read the input state of a single TCA9555 chip.
+//|
+//|     :param int chip: the number of the TCA9555 chip to read"""
+//|     ...
+//|
 STATIC mp_obj_t tca_port_read_input_state(mp_obj_t chip_obj) {
-    int chip = mp_obj_get_int(chip_obj);
-    if (chip < 0 || chip >= TCA9555R_CHIP_COUNT) {
-        mp_raise_TypeError_varg(translate("chip can only be 0 to %q"), TCA9555R_CHIP_COUNT - 1);
-    }
-
+    uint chip = mp_arg_validate_int_range(mp_obj_get_int(chip_obj), 0, TCA9555R_CHIP_COUNT - 1, MP_QSTR_chip);
     return mp_obj_new_int(tca_get_input_port(chip));
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(tca_port_read_input_state_obj, tca_port_read_input_state);
 
+//| def read_output(chip: int) -> int:
+//|     """Read the output state of a single TCA9555 chip.
+//|
+//|     :param int chip: the number of the TCA9555 chip to read"""
+//|     ...
+//|
 STATIC mp_obj_t tca_port_read_output_state(mp_obj_t chip_obj) {
-    int chip = mp_obj_get_int(chip_obj);
-    if (chip < 0 || chip >= TCA9555R_CHIP_COUNT) {
-        mp_raise_TypeError_varg(translate("chip can only be 0 to %q"), TCA9555R_CHIP_COUNT - 1);
-    }
-
+    uint chip = mp_arg_validate_int_range(mp_obj_get_int(chip_obj), 0, TCA9555R_CHIP_COUNT - 1, MP_QSTR_chip);
     return mp_obj_new_int(tca_get_output_port(chip));
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(tca_port_read_output_state_obj, tca_port_read_output_state);
 
+//| def read_config(chip: int) -> int:
+//|     """Read the config state of a single TCA9555 chip.
+//|
+//|     :param int chip: the number of the TCA9555 chip to read"""
+//|     ...
+//|
 STATIC mp_obj_t tca_port_read_config_state(mp_obj_t chip_obj) {
-    int chip = mp_obj_get_int(chip_obj);
-    if (chip < 0 || chip >= TCA9555R_CHIP_COUNT) {
-        mp_raise_TypeError_varg(translate("chip can only be 0 to %q"), TCA9555R_CHIP_COUNT - 1);
-    }
-
+    uint chip = mp_arg_validate_int_range(mp_obj_get_int(chip_obj), 0, TCA9555R_CHIP_COUNT - 1, MP_QSTR_chip);
     return mp_obj_new_int(tca_get_config_port(chip));
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(tca_port_read_config_state_obj, tca_port_read_config_state);
 
+//| def read_polarity(chip: int) -> int:
+//|     """Read the polarity state of a single TCA9555 chip.
+//|
+//|     :param int chip: the number of the TCA9555 chip to read"""
+//|     ...
+//|
 STATIC mp_obj_t tca_port_read_polarity_state(mp_obj_t chip_obj) {
-    int chip = mp_obj_get_int(chip_obj);
-    if (chip < 0 || chip >= TCA9555R_CHIP_COUNT) {
-        mp_raise_TypeError_varg(translate("chip can only be 0 to %q"), TCA9555R_CHIP_COUNT - 1);
-    }
-
+    uint chip = mp_arg_validate_int_range(mp_obj_get_int(chip_obj), 0, TCA9555R_CHIP_COUNT - 1, MP_QSTR_chip);
     return mp_obj_new_int(tca_get_polarity_port(chip));
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(tca_port_read_polarity_state_obj, tca_port_read_polarity_state);
 
 #if TCA9555R_LOCAL_MEMORY
+//| def stored_output(chip: int) -> int:
+//|     """Read the stored output state of a single TCA9555 chip.
+//|
+//|     :param int chip: the number of the TCA9555 chip to read the stored state of"""
+//|     ...
+//|
 STATIC mp_obj_t tca_port_stored_output_state(mp_obj_t chip_obj) {
-    int chip = mp_obj_get_int(chip_obj);
-    if (chip < 0 || chip >= TCA9555R_CHIP_COUNT) {
-        mp_raise_TypeError_varg(translate("chip can only be 0 to %q"), TCA9555R_CHIP_COUNT - 1);
-    }
-
+    uint chip = mp_arg_validate_int_range(mp_obj_get_int(chip_obj), 0, TCA9555R_CHIP_COUNT - 1, MP_QSTR_chip);
     return mp_obj_new_int((tca9555r_output_state[HIGH_BYTE(chip)] << 8) | tca9555r_output_state[LOW_BYTE(chip)]);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(tca_port_stored_output_state_obj, tca_port_stored_output_state);
 
+//| def stored_config(chip: int) -> int:
+//|     """Read the stored config state of a single TCA9555 chip.
+//|
+//|     :param int chip: the number of the TCA9555 chip to read the stored state of"""
+//|     ...
+//|
 STATIC mp_obj_t tca_port_stored_config_state(mp_obj_t chip_obj) {
-    int chip = mp_obj_get_int(chip_obj);
-    if (chip < 0 || chip >= TCA9555R_CHIP_COUNT) {
-        mp_raise_TypeError_varg(translate("chip can only be 0 to %q"), TCA9555R_CHIP_COUNT - 1);
-    }
-
+    uint chip = mp_arg_validate_int_range(mp_obj_get_int(chip_obj), 0, TCA9555R_CHIP_COUNT - 1, MP_QSTR_chip);
     return mp_obj_new_int((tca9555r_config_state[HIGH_BYTE(chip)] << 8) | tca9555r_config_state[LOW_BYTE(chip)]);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(tca_port_stored_config_state_obj, tca_port_stored_config_state);
 
+//| def stored_polarity(chip: int) -> int:
+//|     """Read the stored polarity state of a single TCA9555 chip.
+//|
+//|     :param int chip: the number of the TCA9555 chip to read the stored state of"""
+//|     ...
+//|
 STATIC mp_obj_t tca_port_stored_polarity_state(mp_obj_t chip_obj) {
-    int chip = mp_obj_get_int(chip_obj);
-    if (chip < 0 || chip >= TCA9555R_CHIP_COUNT) {
-        mp_raise_TypeError_varg(translate("chip can only be 0 to %q"), TCA9555R_CHIP_COUNT - 1);
-    }
-
+    uint chip = mp_arg_validate_int_range(mp_obj_get_int(chip_obj), 0, TCA9555R_CHIP_COUNT - 1, MP_QSTR_chip);
     return mp_obj_new_int((tca9555r_polarity_state[HIGH_BYTE(chip)] << 8) | tca9555r_polarity_state[LOW_BYTE(chip)]);
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(tca_port_stored_polarity_state_obj, tca_port_stored_polarity_state);
