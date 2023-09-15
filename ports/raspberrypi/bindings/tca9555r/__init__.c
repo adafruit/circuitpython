@@ -620,10 +620,10 @@ void tca_change_polarity_mask(uint8_t chip, uint16_t mask, uint16_t state) {
     }
 }
 
-//| def get_number(pin: tca_pin) -> int:
-//|     """Get the TCA9555 pin number (from 0 to 15) of the provided tca_pin.
+//| def get_number(pin: TcaPin) -> int:
+//|     """Get the TCA9555 pin number (from 0 to 15) of the provided TcaPin.
 //|
-//|     :param tca_pin pin: a TCA pin object"""
+//|     :param TcaPin pin: a TCA pin object"""
 //|     ...
 //|
 STATIC mp_obj_t tca_pin_get_number(mp_obj_t pin_obj) {
@@ -634,10 +634,10 @@ STATIC mp_obj_t tca_pin_get_number(mp_obj_t pin_obj) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(tca_pin_get_number_obj, tca_pin_get_number);
 
-//| def get_chip(pin: tca_pin) -> int:
-//|     """Get the TCA9555 chip number of the provided tca_pin.
+//| def get_chip(pin: TcaPin) -> int:
+//|     """Get the TCA9555 chip number of the provided TcaPin.
 //|
-//|     :param tca_pin pin: a TCA pin object"""
+//|     :param TcaPin pin: a TCA pin object"""
 //|     ...
 //|
 STATIC mp_obj_t tca_pin_get_chip(mp_obj_t pin_obj) {
