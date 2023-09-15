@@ -217,17 +217,11 @@ msgid "%q must be array of type 'h'"
 msgstr ""
 
 #: ports/raspberrypi/bindings/cyw43/__init__.c py/argcheck.c py/objexcept.c
-#: ports/raspberrypi/bindings/tca9555r/__init__.c py/argcheck.c py/objexcept.c
 #: shared-bindings/canio/CAN.c shared-bindings/digitalio/Pull.c
 #: shared-module/synthio/Synthesizer.c
 msgid "%q must be of type %q or %q, not %q"
 msgstr ""
 
-#: ports/raspberrypi/bindings/tca9555r/__init__.c
-msgid "%q must be of type %q, %q or %q, not %q"
-msgstr ""
-
-#: ports/raspberrypi/bindings/tca9555r/__init__.c py/argcheck.c py/obj.c
 #: py/argcheck.c py/objstrunicode.c shared-module/synthio/__init__.c
 msgid "%q must be of type %q, not %q"
 msgstr ""
@@ -2818,10 +2812,6 @@ msgstr ""
 msgid "chars buffer too small"
 msgstr ""
 
-#: ports/raspberrypi/bindings/tca9555r/__init__.c
-msgid "chip can only be 0 to %q"
-msgstr ""
-
 #: py/modbuiltins.c
 msgid "chr() arg not in range(0x110000)"
 msgstr ""
@@ -3487,10 +3477,6 @@ msgstr ""
 msgid "map buffer too small"
 msgstr ""
 
-#: ports/raspberrypi/bindings/tca9555r/__init__.c
-msgid "mask only supports 16 bits"
-msgstr ""
-
 #: py/modmath.c shared-bindings/math/__init__.c
 msgid "math domain error"
 msgstr ""
@@ -3886,10 +3872,6 @@ msgstr ""
 msgid "parameters must be registers in sequence r0 to r3"
 msgstr ""
 
-#: ports/raspberrypi/bindings/tca9555r/__init__.c
-msgid "pin in list or tuple must be of type %q, not %q"
-msgstr ""
-
 #: shared-bindings/bitmaptools/__init__.c
 msgid "pixel coordinates out of bounds"
 msgstr ""
@@ -4073,10 +4055,6 @@ msgstr ""
 
 #: py/objstr.c
 msgid "start/end indices"
-msgstr ""
-
-#: ports/raspberrypi/bindings/tca9555r/__init__.c
-msgid "state only supports 16 bits"
 msgstr ""
 
 #: shared-bindings/random/__init__.c
