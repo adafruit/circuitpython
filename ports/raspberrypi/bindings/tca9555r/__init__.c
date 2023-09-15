@@ -114,7 +114,7 @@ uint8_t tca9555r_config_state[TCA9555R_CHIP_COUNT * 2] = {0};
 uint8_t tca9555r_polarity_state[TCA9555R_CHIP_COUNT * 2] = {0};
 #endif
 
-bool tca_gpio_get_input(uint tca_gpio) {
+bool common_hal_tca_gpio_get_input(uint tca_gpio) {
     invalid_params_if(TCA9555R, tca_gpio >= TCA9555R_VIRTUAL_GPIO_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     uint8_t address = ADDRESS_FROM_GPIO(tca_gpio);
@@ -125,7 +125,7 @@ bool tca_gpio_get_input(uint tca_gpio) {
     return (input_state & GPIO_BIT_MASK(tca_gpio)) != 0;
 }
 
-bool tca_gpio_get_output(uint tca_gpio) {
+bool common_hal_tca_gpio_get_output(uint tca_gpio) {
     invalid_params_if(TCA9555R, tca_gpio >= TCA9555R_VIRTUAL_GPIO_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     uint8_t address = ADDRESS_FROM_GPIO(tca_gpio);
@@ -139,7 +139,7 @@ bool tca_gpio_get_output(uint tca_gpio) {
     return (output_state & GPIO_BIT_MASK(tca_gpio)) != 0;
 }
 
-bool tca_gpio_get_config(uint tca_gpio) {
+bool common_hal_tca_gpio_get_config(uint tca_gpio) {
     invalid_params_if(TCA9555R, tca_gpio >= TCA9555R_VIRTUAL_GPIO_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     uint8_t address = ADDRESS_FROM_GPIO(tca_gpio);
@@ -153,7 +153,7 @@ bool tca_gpio_get_config(uint tca_gpio) {
     return (config_state & GPIO_BIT_MASK(tca_gpio)) == 0;
 }
 
-bool tca_gpio_get_polarity(uint tca_gpio) {
+bool common_hal_tca_gpio_get_polarity(uint tca_gpio) {
     invalid_params_if(TCA9555R, tca_gpio >= TCA9555R_VIRTUAL_GPIO_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     uint8_t address = ADDRESS_FROM_GPIO(tca_gpio);
@@ -167,7 +167,7 @@ bool tca_gpio_get_polarity(uint tca_gpio) {
     return (polarity_state & GPIO_BIT_MASK(tca_gpio)) != 0;
 }
 
-void tca_gpio_set_output(uint tca_gpio, bool value) {
+void common_hal_tca_gpio_set_output(uint tca_gpio, bool value) {
     invalid_params_if(TCA9555R, tca_gpio >= TCA9555R_VIRTUAL_GPIO_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     uint8_t address = ADDRESS_FROM_GPIO(tca_gpio);
@@ -195,7 +195,7 @@ void tca_gpio_set_output(uint tca_gpio, bool value) {
     }
 }
 
-void tca_gpio_set_config(uint tca_gpio, bool output) {
+void common_hal_tca_gpio_set_config(uint tca_gpio, bool output) {
     invalid_params_if(TCA9555R, tca_gpio >= TCA9555R_VIRTUAL_GPIO_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     uint8_t address = ADDRESS_FROM_GPIO(tca_gpio);
@@ -223,7 +223,7 @@ void tca_gpio_set_config(uint tca_gpio, bool output) {
     }
 }
 
-void tca_gpio_set_polarity(uint tca_gpio, bool polarity) {
+void common_hal_tca_gpio_set_polarity(uint tca_gpio, bool polarity) {
     invalid_params_if(TCA9555R, tca_gpio >= TCA9555R_VIRTUAL_GPIO_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     uint8_t address = ADDRESS_FROM_GPIO(tca_gpio);
@@ -251,7 +251,7 @@ void tca_gpio_set_polarity(uint tca_gpio, bool polarity) {
     }
 }
 
-uint16_t tca_get_input_port(uint tca_index) {
+uint16_t common_hal_tca_get_input_port(uint tca_index) {
     invalid_params_if(TCA9555R, tca_index >= TCA9555R_CHIP_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
 
@@ -261,7 +261,7 @@ uint16_t tca_get_input_port(uint tca_index) {
     return input_state;
 }
 
-uint8_t tca_get_input_port_low(uint tca_index) {
+uint8_t common_hal_tca_get_input_port_low(uint tca_index) {
     invalid_params_if(TCA9555R, tca_index >= TCA9555R_CHIP_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
 
@@ -271,7 +271,7 @@ uint8_t tca_get_input_port_low(uint tca_index) {
     return input_state;
 }
 
-uint8_t tca_get_input_port_high(uint tca_index) {
+uint8_t common_hal_tca_get_input_port_high(uint tca_index) {
     invalid_params_if(TCA9555R, tca_index >= TCA9555R_CHIP_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
 
@@ -281,7 +281,7 @@ uint8_t tca_get_input_port_high(uint tca_index) {
     return input_state;
 }
 
-uint16_t tca_get_output_port(uint tca_index) {
+uint16_t common_hal_tca_get_output_port(uint tca_index) {
     invalid_params_if(TCA9555R, tca_index >= TCA9555R_CHIP_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
 
@@ -295,7 +295,7 @@ uint16_t tca_get_output_port(uint tca_index) {
     return output_state;
 }
 
-uint8_t tca_get_output_port_low(uint tca_index) {
+uint8_t common_hal_tca_get_output_port_low(uint tca_index) {
     invalid_params_if(TCA9555R, tca_index >= TCA9555R_CHIP_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
 
@@ -308,7 +308,7 @@ uint8_t tca_get_output_port_low(uint tca_index) {
     return output_state;
 }
 
-uint8_t tca_get_output_port_high(uint tca_index) {
+uint8_t common_hal_tca_get_output_port_high(uint tca_index) {
     invalid_params_if(TCA9555R, tca_index >= TCA9555R_CHIP_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
 
@@ -321,7 +321,7 @@ uint8_t tca_get_output_port_high(uint tca_index) {
     return output_state;
 }
 
-uint16_t tca_get_config_port(uint tca_index) {
+uint16_t common_hal_tca_get_config_port(uint tca_index) {
     invalid_params_if(TCA9555R, tca_index >= TCA9555R_CHIP_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
 
@@ -335,7 +335,7 @@ uint16_t tca_get_config_port(uint tca_index) {
     return config_state;
 }
 
-uint8_t tca_get_config_port_low(uint tca_index) {
+uint8_t common_hal_tca_get_config_port_low(uint tca_index) {
     invalid_params_if(TCA9555R, tca_index >= TCA9555R_CHIP_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
 
@@ -348,7 +348,7 @@ uint8_t tca_get_config_port_low(uint tca_index) {
     return config_state;
 }
 
-uint8_t tca_get_config_port_high(uint tca_index) {
+uint8_t common_hal_tca_get_config_port_high(uint tca_index) {
     invalid_params_if(TCA9555R, tca_index >= TCA9555R_CHIP_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
 
@@ -361,7 +361,7 @@ uint8_t tca_get_config_port_high(uint tca_index) {
     return config_state;
 }
 
-uint16_t tca_get_polarity_port(uint tca_index) {
+uint16_t common_hal_tca_get_polarity_port(uint tca_index) {
     invalid_params_if(TCA9555R, tca_index >= TCA9555R_CHIP_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
 
@@ -375,7 +375,7 @@ uint16_t tca_get_polarity_port(uint tca_index) {
     return polarity_state;
 }
 
-uint8_t tca_get_polarity_port_low(uint tca_index) {
+uint8_t common_hal_tca_get_polarity_port_low(uint tca_index) {
     invalid_params_if(TCA9555R, tca_index >= TCA9555R_CHIP_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
 
@@ -388,7 +388,7 @@ uint8_t tca_get_polarity_port_low(uint tca_index) {
     return polarity_state;
 }
 
-uint8_t tca_get_polarity_port_high(uint tca_index) {
+uint8_t common_hal_tca_get_polarity_port_high(uint tca_index) {
     invalid_params_if(TCA9555R, tca_index >= TCA9555R_CHIP_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
 
@@ -401,7 +401,7 @@ uint8_t tca_get_polarity_port_high(uint tca_index) {
     return polarity_state;
 }
 
-void tca_set_output_port(uint tca_index, uint16_t output_state) {
+void common_hal_tca_set_output_port(uint tca_index, uint16_t output_state) {
     invalid_params_if(TCA9555R, tca_index >= TCA9555R_CHIP_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     uint8_t reg_and_data[3] = { OUTPUT_PORT0, output_state & 0xFF, (output_state >> 8) };
@@ -412,7 +412,7 @@ void tca_set_output_port(uint tca_index, uint16_t output_state) {
     #endif
 }
 
-void tca_set_output_port_low(uint tca_index, uint8_t output_state) {
+void common_hal_tca_set_output_port_low(uint tca_index, uint8_t output_state) {
     invalid_params_if(TCA9555R, tca_index >= TCA9555R_CHIP_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     uint8_t reg_and_data[2] = { OUTPUT_PORT0, output_state };
@@ -422,7 +422,7 @@ void tca_set_output_port_low(uint tca_index, uint8_t output_state) {
     #endif
 }
 
-void tca_set_output_port_high(uint tca_index, uint8_t output_state) {
+void common_hal_tca_set_output_port_high(uint tca_index, uint8_t output_state) {
     invalid_params_if(TCA9555R, tca_index >= TCA9555R_CHIP_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     uint8_t reg_and_data[2] = { OUTPUT_PORT1, output_state };
@@ -432,7 +432,7 @@ void tca_set_output_port_high(uint tca_index, uint8_t output_state) {
     #endif
 }
 
-void tca_set_config_port(uint tca_index, uint16_t config_state) {
+void common_hal_tca_set_config_port(uint tca_index, uint16_t config_state) {
     invalid_params_if(TCA9555R, tca_index >= TCA9555R_CHIP_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     uint8_t reg_and_data[3] = { CONFIGURATION_PORT0, config_state & 0xFF, (config_state >> 8) };
@@ -443,7 +443,7 @@ void tca_set_config_port(uint tca_index, uint16_t config_state) {
     #endif
 }
 
-void tca_set_config_port_low(uint tca_index, uint8_t config_state) {
+void common_hal_tca_set_config_port_low(uint tca_index, uint8_t config_state) {
     invalid_params_if(TCA9555R, tca_index >= TCA9555R_CHIP_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     uint8_t reg_and_data[2] = { CONFIGURATION_PORT0, config_state };
@@ -453,7 +453,7 @@ void tca_set_config_port_low(uint tca_index, uint8_t config_state) {
     #endif
 }
 
-void tca_set_config_port_high(uint tca_index, uint8_t config_state) {
+void common_hal_tca_set_config_port_high(uint tca_index, uint8_t config_state) {
     invalid_params_if(TCA9555R, tca_index >= TCA9555R_CHIP_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     uint8_t reg_and_data[2] = { CONFIGURATION_PORT1, config_state };
@@ -463,7 +463,7 @@ void tca_set_config_port_high(uint tca_index, uint8_t config_state) {
     #endif
 }
 
-void tca_set_polarity_port(uint tca_index, uint16_t polarity_state) {
+void common_hal_tca_set_polarity_port(uint tca_index, uint16_t polarity_state) {
     invalid_params_if(TCA9555R, tca_index >= TCA9555R_CHIP_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     uint8_t reg_and_data[3] = { POLARITY_PORT0, polarity_state & 0xFF, (polarity_state >> 8) };
@@ -474,7 +474,7 @@ void tca_set_polarity_port(uint tca_index, uint16_t polarity_state) {
     #endif
 }
 
-void tca_set_polarity_port_low(uint tca_index, uint8_t polarity_state) {
+void common_hal_tca_set_polarity_port_low(uint tca_index, uint8_t polarity_state) {
     invalid_params_if(TCA9555R, tca_index >= TCA9555R_CHIP_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     uint8_t reg_and_data[2] = { POLARITY_PORT0, polarity_state };
@@ -484,7 +484,7 @@ void tca_set_polarity_port_low(uint tca_index, uint8_t polarity_state) {
     #endif
 }
 
-void tca_set_polarity_port_high(uint tca_index, uint8_t polarity_state) {
+void common_hal_tca_set_polarity_port_high(uint tca_index, uint8_t polarity_state) {
     invalid_params_if(TCA9555R, tca_index >= TCA9555R_CHIP_COUNT);
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     uint8_t reg_and_data[2] = { POLARITY_PORT1, polarity_state };
@@ -494,7 +494,7 @@ void tca_set_polarity_port_high(uint tca_index, uint8_t polarity_state) {
     #endif
 }
 
-void tca_change_output_mask(uint8_t chip, uint16_t mask, uint16_t state) {
+void common_hal_tca_change_output_mask(uint8_t chip, uint16_t mask, uint16_t state) {
     uint8_t low_mask = (uint8_t)(mask & 0xFF);
     uint8_t low_state = (uint8_t)(state & 0xFF);
     uint8_t high_mask = (uint8_t)(mask >> 8);
@@ -505,38 +505,38 @@ void tca_change_output_mask(uint8_t chip, uint16_t mask, uint16_t state) {
         #if TCA9555R_LOCAL_MEMORY
         uint16_t output_state = (tca9555r_output_state[HIGH_BYTE(chip)] << 8) | tca9555r_output_state[LOW_BYTE(chip)];
         #else
-        uint16_t output_state = tca_get_output_port(chip);
+        uint16_t output_state = common_hal_tca_get_output_port(chip);
         #endif
         uint16_t new_output_state = output_state;
         new_output_state &= ~mask; // Clear the mask bits
         new_output_state |= state; // Set the state bits
         if (new_output_state != output_state) {
-            tca_set_output_port(chip, new_output_state);
+            common_hal_tca_set_output_port(chip, new_output_state);
         }
     } else if (low_changed) {
         #if TCA9555R_LOCAL_MEMORY
         uint8_t output_state = tca9555r_output_state[LOW_BYTE(chip)];
         #else
-        uint8_t output_state = tca_get_output_port_low(chip);
+        uint8_t output_state = common_hal_tca_get_output_port_low(chip);
         #endif
         uint8_t new_output_state = (output_state & ~low_mask) | low_state;
         if (new_output_state != output_state) {
-            tca_set_output_port_low(chip, new_output_state);
+            common_hal_tca_set_output_port_low(chip, new_output_state);
         }
     } else if (high_changed) {
         #if TCA9555R_LOCAL_MEMORY
         uint8_t output_state = tca9555r_output_state[HIGH_BYTE(chip)];
         #else
-        uint8_t output_state = tca_get_output_port_high(chip);
+        uint8_t output_state = common_hal_tca_get_output_port_high(chip);
         #endif
         uint8_t new_output_state = (output_state & ~high_mask) | high_state;
         if (new_output_state != output_state) {
-            tca_set_output_port_high(chip, new_output_state);
+            common_hal_tca_set_output_port_high(chip, new_output_state);
         }
     }
 }
 
-void tca_change_config_mask(uint8_t chip, uint16_t mask, uint16_t state) {
+void common_hal_tca_change_config_mask(uint8_t chip, uint16_t mask, uint16_t state) {
     uint8_t low_mask = (uint8_t)(mask & 0xFF);
     uint8_t low_state = (uint8_t)(state & 0xFF);
     uint8_t high_mask = (uint8_t)(mask >> 8);
@@ -547,38 +547,38 @@ void tca_change_config_mask(uint8_t chip, uint16_t mask, uint16_t state) {
         #if TCA9555R_LOCAL_MEMORY
         uint16_t config_state = (tca9555r_config_state[HIGH_BYTE(chip)] << 8) | tca9555r_config_state[LOW_BYTE(chip)];
         #else
-        uint16_t config_state = tca_get_config_port(chip);
+        uint16_t config_state = common_hal_tca_get_config_port(chip);
         #endif
         uint16_t new_config_state = config_state;
         new_config_state &= ~mask; // Clear the mask bits
         new_config_state |= state; // Set the state bits
         if (new_config_state != config_state) {
-            tca_set_config_port(chip, new_config_state);
+            common_hal_tca_set_config_port(chip, new_config_state);
         }
     } else if (low_changed) {
         #if TCA9555R_LOCAL_MEMORY
         uint8_t config_state = tca9555r_config_state[LOW_BYTE(chip)];
         #else
-        uint8_t config_state = tca_get_config_port_low(chip);
+        uint8_t config_state = common_hal_tca_get_config_port_low(chip);
         #endif
         uint8_t new_config_state = (config_state & ~low_mask) | low_state;
         if (new_config_state != config_state) {
-            tca_set_config_port_low(chip, new_config_state);
+            common_hal_tca_set_config_port_low(chip, new_config_state);
         }
     } else if (high_changed) {
         #if TCA9555R_LOCAL_MEMORY
         uint8_t config_state = tca9555r_config_state[HIGH_BYTE(chip)];
         #else
-        uint8_t config_state = tca_get_config_port_high(chip);
+        uint8_t config_state = common_hal_tca_get_config_port_high(chip);
         #endif
         uint8_t new_config_state = (config_state & ~high_mask) | high_state;
         if (new_config_state != config_state) {
-            tca_set_config_port_high(chip, new_config_state);
+            common_hal_tca_set_config_port_high(chip, new_config_state);
         }
     }
 }
 
-void tca_change_polarity_mask(uint8_t chip, uint16_t mask, uint16_t state) {
+void common_hal_tca_change_polarity_mask(uint8_t chip, uint16_t mask, uint16_t state) {
     uint8_t low_mask = (uint8_t)(mask & 0xFF);
     uint8_t low_state = (uint8_t)(state & 0xFF);
     uint8_t high_mask = (uint8_t)(mask >> 8);
@@ -589,33 +589,33 @@ void tca_change_polarity_mask(uint8_t chip, uint16_t mask, uint16_t state) {
         #if TCA9555R_LOCAL_MEMORY
         uint16_t polarity_state = (tca9555r_polarity_state[HIGH_BYTE(chip)] << 8) | tca9555r_polarity_state[LOW_BYTE(chip)];
         #else
-        uint16_t polarity_state = tca_get_polarity_port(chip);
+        uint16_t polarity_state = common_hal_tca_get_polarity_port(chip);
         #endif
         uint16_t new_polarity_state = polarity_state;
         new_polarity_state &= ~mask; // Clear the mask bits
         new_polarity_state |= state; // Set the state bits
         if (new_polarity_state != polarity_state) {
-            tca_set_polarity_port(chip, new_polarity_state);
+            common_hal_tca_set_polarity_port(chip, new_polarity_state);
         }
     } else if (low_changed) {
         #if TCA9555R_LOCAL_MEMORY
         uint8_t polarity_state = tca9555r_polarity_state[LOW_BYTE(chip)];
         #else
-        uint8_t polarity_state = tca_get_polarity_port_low(chip);
+        uint8_t polarity_state = common_hal_tca_get_polarity_port_low(chip);
         #endif
         uint8_t new_polarity_state = (polarity_state & ~low_mask) | low_state;
         if (new_polarity_state != polarity_state) {
-            tca_set_polarity_port_low(chip, new_polarity_state);
+            common_hal_tca_set_polarity_port_low(chip, new_polarity_state);
         }
     } else if (high_changed) {
         #if TCA9555R_LOCAL_MEMORY
         uint8_t polarity_state = tca9555r_polarity_state[HIGH_BYTE(chip)];
         #else
-        uint8_t polarity_state = tca_get_polarity_port_high(chip);
+        uint8_t polarity_state = common_hal_tca_get_polarity_port_high(chip);
         #endif
         uint8_t new_polarity_state = (polarity_state & ~high_mask) | high_state;
         if (new_polarity_state != polarity_state) {
-            tca_set_polarity_port_high(chip, new_polarity_state);
+            common_hal_tca_set_polarity_port_high(chip, new_polarity_state);
         }
     }
 }
@@ -661,7 +661,7 @@ STATIC mp_obj_t tca_pin_change_output_mask(mp_obj_t chip_obj, mp_obj_t mask_obj,
     uint16_t mask = mp_arg_validate_int_range(mp_obj_get_int(mask_obj), 0, UINT16_MAX, MP_QSTR_mask);
     uint16_t state = mp_arg_validate_int_range(mp_obj_get_int(state_obj), 0, UINT16_MAX, MP_QSTR_state);
 
-    tca_change_output_mask(chip, mask, state);
+    common_hal_tca_change_output_mask(chip, mask, state);
 
     return mp_const_none;
 }
@@ -680,7 +680,7 @@ STATIC mp_obj_t tca_pin_change_config_mask(mp_obj_t chip_obj, mp_obj_t mask_obj,
     uint16_t mask = mp_arg_validate_int_range(mp_obj_get_int(mask_obj), 0, UINT16_MAX, MP_QSTR_mask);
     uint16_t state = mp_arg_validate_int_range(mp_obj_get_int(state_obj), 0, UINT16_MAX, MP_QSTR_state);
 
-    tca_change_config_mask(chip, mask, state);
+    common_hal_tca_change_config_mask(chip, mask, state);
 
     return mp_const_none;
 }
@@ -699,7 +699,7 @@ STATIC mp_obj_t tca_pin_change_polarity_mask(mp_obj_t chip_obj, mp_obj_t mask_ob
     uint16_t mask = mp_arg_validate_int_range(mp_obj_get_int(mask_obj), 0, UINT16_MAX, MP_QSTR_mask);
     uint16_t state = mp_arg_validate_int_range(mp_obj_get_int(state_obj), 0, UINT16_MAX, MP_QSTR_state);
 
-    tca_change_polarity_mask(chip, mask, state);
+    common_hal_tca_change_polarity_mask(chip, mask, state);
 
     return mp_const_none;
 }
@@ -714,7 +714,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_3(tca_pin_change_polarity_mask_obj, tca_pin_chang
 //|
 STATIC mp_obj_t tca_port_read_input_state(mp_obj_t chip_obj) {
     uint chip = mp_arg_validate_int_range(mp_obj_get_int(chip_obj), 0, TCA9555R_CHIP_COUNT - 1, MP_QSTR_chip);
-    return mp_obj_new_int(tca_get_input_port(chip));
+    return mp_obj_new_int(common_hal_tca_get_input_port(chip));
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(tca_port_read_input_state_obj, tca_port_read_input_state);
 
@@ -726,7 +726,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(tca_port_read_input_state_obj, tca_port_read_in
 //|
 STATIC mp_obj_t tca_port_read_output_state(mp_obj_t chip_obj) {
     uint chip = mp_arg_validate_int_range(mp_obj_get_int(chip_obj), 0, TCA9555R_CHIP_COUNT - 1, MP_QSTR_chip);
-    return mp_obj_new_int(tca_get_output_port(chip));
+    return mp_obj_new_int(common_hal_tca_get_output_port(chip));
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(tca_port_read_output_state_obj, tca_port_read_output_state);
 
@@ -738,7 +738,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(tca_port_read_output_state_obj, tca_port_read_o
 //|
 STATIC mp_obj_t tca_port_read_config_state(mp_obj_t chip_obj) {
     uint chip = mp_arg_validate_int_range(mp_obj_get_int(chip_obj), 0, TCA9555R_CHIP_COUNT - 1, MP_QSTR_chip);
-    return mp_obj_new_int(tca_get_config_port(chip));
+    return mp_obj_new_int(common_hal_tca_get_config_port(chip));
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(tca_port_read_config_state_obj, tca_port_read_config_state);
 
@@ -750,7 +750,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(tca_port_read_config_state_obj, tca_port_read_c
 //|
 STATIC mp_obj_t tca_port_read_polarity_state(mp_obj_t chip_obj) {
     uint chip = mp_arg_validate_int_range(mp_obj_get_int(chip_obj), 0, TCA9555R_CHIP_COUNT - 1, MP_QSTR_chip);
-    return mp_obj_new_int(tca_get_polarity_port(chip));
+    return mp_obj_new_int(common_hal_tca_get_polarity_port(chip));
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(tca_port_read_polarity_state_obj, tca_port_read_polarity_state);
 

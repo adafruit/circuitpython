@@ -73,46 +73,46 @@ const mcu_pin_obj_t *validate_obj_is_free_pin_including_tca(mp_obj_t obj, qstr a
 const mcu_pin_obj_t *validate_obj_is_free_pin_including_tca_or_none(mp_obj_t obj, qstr arg_name);
 const mcu_pin_obj_t *validate_obj_is_pin_including_tca(mp_obj_t obj, qstr arg_name);
 
-bool tca_gpio_get_input(uint tca_gpio);
-bool tca_gpio_get_output(uint tca_gpio);
-bool tca_gpio_get_config(uint tca_gpio);
-bool tca_gpio_get_polarity(uint tca_gpio);
+bool common_hal_tca_gpio_get_input(uint tca_gpio);
+bool common_hal_tca_gpio_get_output(uint tca_gpio);
+bool common_hal_tca_gpio_get_config(uint tca_gpio);
+bool common_hal_tca_gpio_get_polarity(uint tca_gpio);
 
-void tca_gpio_set_output(uint tca_gpio, bool value);
-void tca_gpio_set_config(uint tca_gpio, bool output);
-void tca_gpio_set_polarity(uint tca_gpio, bool polarity);
+void common_hal_tca_gpio_set_output(uint tca_gpio, bool value);
+void common_hal_tca_gpio_set_config(uint tca_gpio, bool output);
+void common_hal_tca_gpio_set_polarity(uint tca_gpio, bool polarity);
 
-uint16_t tca_get_input_port(uint tca_index);
-uint8_t tca_get_input_port_low(uint tca_index);
-uint8_t tca_get_input_port_high(uint tca_index);
+uint16_t common_hal_tca_get_input_port(uint tca_index);
+uint8_t common_hal_tca_get_input_port_low(uint tca_index);
+uint8_t common_hal_tca_get_input_port_high(uint tca_index);
 
-uint16_t tca_get_output_port(uint tca_index);
-uint8_t tca_get_output_port_low(uint tca_index);
-uint8_t tca_get_output_port_high(uint tca_index);
+uint16_t common_hal_tca_get_output_port(uint tca_index);
+uint8_t common_hal_tca_get_output_port_low(uint tca_index);
+uint8_t common_hal_tca_get_output_port_high(uint tca_index);
 
-uint16_t tca_get_config_port(uint tca_index);
-uint8_t tca_get_config_port_low(uint tca_index);
-uint8_t tca_get_config_port_high(uint tca_index);
+uint16_t common_hal_tca_get_config_port(uint tca_index);
+uint8_t common_hal_tca_get_config_port_low(uint tca_index);
+uint8_t common_hal_tca_get_config_port_high(uint tca_index);
 
-uint16_t tca_get_polarity_port(uint tca_index);
-uint8_t tca_get_polarity_port_low(uint tca_index);
-uint8_t tca_get_polarity_port_high(uint tca_index);
+uint16_t common_hal_tca_get_polarity_port(uint tca_index);
+uint8_t common_hal_tca_get_polarity_port_low(uint tca_index);
+uint8_t common_hal_tca_get_polarity_port_high(uint tca_index);
 
-void tca_set_output_port(uint tca_index, uint16_t output_state);
-void tca_set_output_port_low(uint tca_index, uint8_t output_state);
-void tca_set_output_port_high(uint tca_index, uint8_t output_state);
+void common_hal_tca_set_output_port(uint tca_index, uint16_t output_state);
+void common_hal_tca_set_output_port_low(uint tca_index, uint8_t output_state);
+void common_hal_tca_set_output_port_high(uint tca_index, uint8_t output_state);
 
-void tca_set_config_port(uint tca_index, uint16_t config_state);
-void tca_set_config_port_low(uint tca_index, uint8_t config_state);
-void tca_set_config_port_high(uint tca_index, uint8_t config_state);
+void common_hal_tca_set_config_port(uint tca_index, uint16_t config_state);
+void common_hal_tca_set_config_port_low(uint tca_index, uint8_t config_state);
+void common_hal_tca_set_config_port_high(uint tca_index, uint8_t config_state);
 
-void tca_set_polarity_port(uint tca_index, uint16_t polarity_state);
-void tca_set_polarity_port_low(uint tca_index, uint8_t polarity_state);
-void tca_set_polarity_port_high(uint tca_index, uint8_t polarity_state);
+void common_hal_tca_set_polarity_port(uint tca_index, uint16_t polarity_state);
+void common_hal_tca_set_polarity_port_low(uint tca_index, uint8_t polarity_state);
+void common_hal_tca_set_polarity_port_high(uint tca_index, uint8_t polarity_state);
 
-void tca_change_output_mask(uint8_t chip, uint16_t mask, uint16_t state);
-void tca_change_config_mask(uint8_t chip, uint16_t mask, uint16_t state);
-void tca_change_polarity_mask(uint8_t chip, uint16_t mask, uint16_t state);
+void common_hal_tca_change_output_mask(uint8_t chip, uint16_t mask, uint16_t state);
+void common_hal_tca_change_config_mask(uint8_t chip, uint16_t mask, uint16_t state);
+void common_hal_tca_change_polarity_mask(uint8_t chip, uint16_t mask, uint16_t state);
 
 
 #if CIRCUITPY_TCA9555R

@@ -74,7 +74,7 @@ digitalinout_result_t common_hal_digitalio_digitalinout_construct(
     #endif
     #if CIRCUITPY_TCA9555R
     if (IS_TCA(self)) {
-        if (tca_gpio_get_config(self->pin->number) == GPIO_OUT) {
+        if (common_hal_tca_gpio_get_config(self->pin->number) == GPIO_OUT) {
             self->output = true;
             self->open_drain = false;
         }
@@ -133,8 +133,8 @@ digitalinout_result_t common_hal_digitalio_digitalinout_switch_to_output(
         // Set the direction -after- setting the pin value,
         // to avoid a glitch which might occur if the old value was
         // different and the pin was previously set to input.
-        tca_gpio_set_output(self->pin->number, value);
-        tca_gpio_set_config(self->pin->number, GPIO_OUT);
+        common_hal_tca_gpio_set_output(self->pin->number, value);
+        common_hal_tca_gpio_set_config(self->pin->number, GPIO_OUT);
         self->output = true;
         self->open_drain = false;
         return DIGITALINOUT_OK;
@@ -172,7 +172,7 @@ void common_hal_digitalio_digitalinout_set_value(
     #endif
     #if CIRCUITPY_TCA9555R
     if (IS_TCA(self)) {
-        tca_gpio_set_output(pin, value);
+        common_hal_tca_gpio_set_output(pin, value);
         return;
     }
     #endif
@@ -201,9 +201,9 @@ bool common_hal_digitalio_digitalinout_get_value(
     #if CIRCUITPY_TCA9555R
     if (IS_TCA(self)) {
         if (self->output) {
-            return tca_gpio_get_output(self->pin->number);
+            return common_hal_tca_gpio_get_output(self->pin->number);
         } else {
-            return tca_gpio_get_input(self->pin->number);
+            return common_hal_tca_gpio_get_input(self->pin->number);
         }
     }
     #endif
@@ -263,7 +263,7 @@ digitalinout_result_t common_hal_digitalio_digitalinout_set_pull(
         if (pull != PULL_NONE) {
             return DIGITALINOUT_INVALID_PULL;
         }
-        tca_gpio_set_config(self->pin->number, GPIO_IN);
+        common_hal_tca_gpio_set_config(self->pin->number, GPIO_IN);
         self->output = false;
         return DIGITALINOUT_OK;
     }

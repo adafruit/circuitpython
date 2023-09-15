@@ -42,14 +42,14 @@ void board_deinit(void) {
 
 void reset_board(void) {
     // Set the first IO expander's initial state
-    tca_set_output_port(0, 0x0000);
-    tca_set_polarity_port(0, 0x0000);
-    tca_set_config_port(0, 0x07BF);
+    common_hal_tca_set_output_port(0, 0x0000);
+    common_hal_tca_set_polarity_port(0, 0x0000);
+    common_hal_tca_set_config_port(0, 0x07BF);
 
     // Set the second IO expander's initial state
-    tca_set_output_port(1, 0x0000);
-    tca_set_polarity_port(1, 0x0000);
-    tca_set_config_port(1, 0xFCE6);
+    common_hal_tca_set_output_port(1, 0x0000);
+    common_hal_tca_set_polarity_port(1, 0x0000);
+    common_hal_tca_set_config_port(1, 0xFCE6);
 
     // Releasing displays, as if one is set up with the
     // intended IO expander LCD pins then it will carry over
