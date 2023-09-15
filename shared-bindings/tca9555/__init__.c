@@ -27,11 +27,8 @@
 #include "py/runtime.h"
 
 #include "shared-bindings/board/__init__.h"
-#include "shared-bindings/microcontroller/__init__.h"
-#include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/tca9555/__init__.h"
 #include "shared-module/tca9555/__init__.h"
-#include "shared-bindings/busio/I2C.h"
 
 //| class TcaPin:
 //|     """A class that represents a GPIO pin attached to a TCA9555 IO expander chip.

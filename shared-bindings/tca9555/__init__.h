@@ -28,7 +28,6 @@
 #define MICROPY_INCLUDED_SHARED_BINDINGS_TCA9555___INIT___H
 
 #include "common-hal/microcontroller/Pin.h"
-#include "py/obj.h"
 
 // Type object used in Python. Should be shared between ports.
 extern const mp_obj_dict_t tca_pin_globals;
