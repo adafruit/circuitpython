@@ -239,6 +239,8 @@ void common_hal_wifi_radio_start_ap(wifi_radio_obj_t *self, uint8_t *ssid, size_
 
     config->ap.max_connection = max_connections;
 
+    esp_netif_napt_enable(WIFI_IF_AP)
+    
     esp_wifi_set_config(WIFI_IF_AP, config);
 }
 
