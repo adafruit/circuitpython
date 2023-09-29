@@ -42,7 +42,7 @@ void board_deinit(void) {
 
 void reset_board(void) {
     // Set the first IO expander's initial state
-    common_hal_tca_set_output_port(0, 0x0000);
+    common_hal_tca_set_output_port(0, 0x8800);  // Disable the two ADC Muxes
     common_hal_tca_set_polarity_port(0, 0x0000);
     common_hal_tca_set_config_port(0, 0x07BF);
 
