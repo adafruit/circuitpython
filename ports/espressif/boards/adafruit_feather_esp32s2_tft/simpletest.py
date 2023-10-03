@@ -82,21 +82,38 @@ except OSError as e:
         wrap_text_to_pixels(ERROR_MSG, board.DISPLAY.width - 10, terminalio.FONT)
     )
 
-# Wait forever so you can see our label on the display
+# Loop forever
 while True:
+    # store the current time
     now = time.monotonic()
 
+    # check if the button is not pressed.
     if button.value:
+        # check if it's been long enough since the last LED blink
         if last_led_blink_time + PLAIN_LED_BLINK_DELAY <= now:
+            # flop the LED state
             led.value = not led.value
+            # record the time to compare in future iterations
             last_led_blink_time = now
-    else:
+
+    else:  # button is pressed
+        # turn on the LED
         led.value = True
+        # record the time, so we can transition back to blinking smoothly
         last_led_blink_time = now
 
+    # check if it's been long enough since the last Neopixel color change
     if last_neopixel_change_time + NEOPIXEL_CHANGE_DELAY <= now:
+
+        # set the neopixel to the next color of the rainbow
         rgb_pixel.fill(rainbowio.colorwheel(cur_color_number))
+
+        # increment the color number
         cur_color_number += 1
+
+        # wrap color number back to 0 at the end of the cycle
         if cur_color_number > 255:
             cur_color_number = 0
+
+        # record the time to compare in future iterations
         last_neopixel_change_time = now
