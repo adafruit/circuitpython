@@ -104,7 +104,6 @@ while True:
 
     # check if it's been long enough since the last Neopixel color change
     if last_neopixel_change_time + NEOPIXEL_CHANGE_DELAY <= now:
-
         # set the neopixel to the next color of the rainbow
         rgb_pixel.fill(rainbowio.colorwheel(cur_color_number))
 
