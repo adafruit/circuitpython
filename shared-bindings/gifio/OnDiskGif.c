@@ -114,6 +114,12 @@
 //|         `displayio` expects little-endian, so the example above uses `Colorspace.RGB565_SWAPPED`.
 //|
 //|         :param file file: The name of the GIF file.
+//|
+//|         If the image is too large it will be cropped at the bottom and right when displayed.
+//|
+//|         **Limitations**: The image width is limited to 320 pixels at present. `ValueError`
+//|         will be raised if the image is too wide. The height
+//|         is not limited but images that are too large will cause a memory exception.
 //|         """
 //|         ...
 STATIC mp_obj_t gifio_ondiskgif_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
@@ -135,8 +141,7 @@ STATIC mp_obj_t gifio_ondiskgif_make_new(const mp_obj_type_t *type, size_t n_arg
         mp_raise_TypeError(translate("file must be a file opened in byte mode"));
     }
 
-    gifio_ondiskgif_t *self = m_new_obj(gifio_ondiskgif_t);
-    self->base.type = &gifio_ondiskgif_type;
+    gifio_ondiskgif_t *self = mp_obj_malloc(gifio_ondiskgif_t, &gifio_ondiskgif_type);
     common_hal_gifio_ondiskgif_construct(self, MP_OBJ_TO_PTR(filename), args[ARG_use_palette].u_bool);
 
     return MP_OBJ_FROM_PTR(self);

@@ -206,7 +206,7 @@ STATIC mp_obj_t displayio_epaperdisplay_make_new(const mp_obj_type_t *type, size
     size_t refresh_buf_len = 0;
     mp_int_t refresh_command;
     if (mp_obj_get_int_maybe(refresh_obj, &refresh_command)) {
-        uint8_t *command_buf = m_malloc(3, true);
+        uint8_t *command_buf = m_malloc(3);
         command_buf[0] = refresh_command;
         command_buf[1] = 0;
         command_buf[2] = 0;
@@ -244,31 +244,6 @@ static displayio_epaperdisplay_obj_t *native_display(mp_obj_t display_obj) {
     mp_obj_assert_native_inited(native_display);
     return MP_OBJ_TO_PTR(native_display);
 }
-
-//|     def show(self, group: Group) -> None:
-//|         """
-//|         .. note:: `show()` is deprecated and will be removed in CircuitPython 9.0.0.
-//|           Use ``.root_group = group`` instead.
-//|
-//|         Switches to displaying the given group of layers. When group is None, the default
-//|         CircuitPython terminal will be shown.
-//|
-//|         :param Group group: The group to show."""
-//|         ...
-STATIC mp_obj_t displayio_epaperdisplay_obj_show(mp_obj_t self_in, mp_obj_t group_in) {
-    displayio_epaperdisplay_obj_t *self = native_display(self_in);
-    displayio_group_t *group = NULL;
-    if (group_in != mp_const_none) {
-        group = MP_OBJ_TO_PTR(native_group(group_in));
-    }
-
-    bool ok = common_hal_displayio_epaperdisplay_show(self, group);
-    if (!ok) {
-        mp_raise_ValueError(translate("Group already used"));
-    }
-    return mp_const_none;
-}
-MP_DEFINE_CONST_FUN_OBJ_2(displayio_epaperdisplay_show_obj, displayio_epaperdisplay_obj_show);
 
 //|     def update_refresh_mode(
 //|         self, start_sequence: ReadableBuffer, seconds_per_frame: float = 180
@@ -415,7 +390,6 @@ MP_PROPERTY_GETSET(displayio_epaperdisplay_root_group_obj,
     (mp_obj_t)&displayio_epaperdisplay_set_root_group_obj);
 
 STATIC const mp_rom_map_elem_t displayio_epaperdisplay_locals_dict_table[] = {
-    { MP_ROM_QSTR(MP_QSTR_show), MP_ROM_PTR(&displayio_epaperdisplay_show_obj) },
     { MP_ROM_QSTR(MP_QSTR_update_refresh_mode), MP_ROM_PTR(&displayio_epaperdisplay_update_refresh_mode_obj) },
     { MP_ROM_QSTR(MP_QSTR_refresh), MP_ROM_PTR(&displayio_epaperdisplay_refresh_obj) },
 

@@ -41,7 +41,7 @@ static const mp_arg_t note_properties[] = {
     { MP_QSTR_bend, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = MP_ROM_INT(0) } },
     { MP_QSTR_waveform, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = MP_ROM_NONE } },
     { MP_QSTR_envelope, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = MP_ROM_NONE } },
-    { MP_QSTR_filter, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = MP_ROM_INT(1) } },
+    { MP_QSTR_filter, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = MP_ROM_NONE } },
     { MP_QSTR_ring_frequency, MP_ARG_OBJ, {.u_obj = MP_ROM_INT(0) } },
     { MP_QSTR_ring_bend, MP_ARG_OBJ, {.u_obj = MP_ROM_INT(0) } },
     { MP_QSTR_ring_waveform, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = MP_ROM_NONE } },
@@ -56,6 +56,7 @@ static const mp_arg_t note_properties[] = {
 //|         envelope: Optional[Envelope] = None,
 //|         amplitude: BlockInput = 0.0,
 //|         bend: BlockInput = 0.0,
+//|         filter: Optional[Biquad] = None,
 //|         ring_frequency: float = 0.0,
 //|         ring_bend: float = 0.0,
 //|         ring_waveform: Optional[ReadableBuffer] = 0.0,
@@ -70,8 +71,7 @@ STATIC mp_obj_t synthio_note_make_new(const mp_obj_type_t *type_in, size_t n_arg
     mp_arg_val_t args[MP_ARRAY_SIZE(note_properties)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(note_properties), note_properties, args);
 
-    synthio_note_obj_t *self = m_new_obj(synthio_note_obj_t);
-    self->base.type = &synthio_note_type;
+    synthio_note_obj_t *self = mp_obj_malloc(synthio_note_obj_t, &synthio_note_type);
 
     mp_obj_t result = MP_OBJ_FROM_PTR(self);
     properties_construct_helper(result, note_properties, args, MP_ARRAY_SIZE(note_properties));
@@ -97,17 +97,21 @@ MP_PROPERTY_GETSET(synthio_note_frequency_obj,
     (mp_obj_t)&synthio_note_get_frequency_obj,
     (mp_obj_t)&synthio_note_set_frequency_obj);
 
-//|     filter: bool
-//|     """True if the note should be processed via the synthesizer's FIR filter."""
+//|     filter: Optional[Biquad]
+//|     """If not None, the output of this Note is filtered according to the provided coefficients.
+//|
+//|     Construct an appropriate filter by calling a filter-making method on the
+//|     `Synthesizer` object where you plan to play the note, as filter coefficients depend
+//|     on the sample rate"""
 STATIC mp_obj_t synthio_note_get_filter(mp_obj_t self_in) {
     synthio_note_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    return mp_obj_new_bool(common_hal_synthio_note_get_filter(self));
+    return common_hal_synthio_note_get_filter_obj(self);
 }
 MP_DEFINE_CONST_FUN_OBJ_1(synthio_note_get_filter_obj, synthio_note_get_filter);
 
 STATIC mp_obj_t synthio_note_set_filter(mp_obj_t self_in, mp_obj_t arg) {
     synthio_note_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    common_hal_synthio_note_set_filter(self, mp_obj_is_true(arg));
+    common_hal_synthio_note_set_filter(self, arg);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(synthio_note_set_filter_obj, synthio_note_set_filter);
