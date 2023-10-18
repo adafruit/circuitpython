@@ -257,9 +257,9 @@ void new_status_color(uint32_t rgb) {
         status_neopixel_color[3 * i + 0] = (rgb_adjusted >> 8) & 0xff;
         status_neopixel_color[3 * i + 1] = (rgb_adjusted >> 16) & 0xff;
         status_neopixel_color[3 * i + 2] = rgb_adjusted & 0xff;
-        
+
         #ifdef MICROPY_HW_NEOPIXEL_ORDER_GRB
-        //Swap RG to GR
+        // Swap RG to GR
         uint8_t temp = status_neopixel_color[3 * i + 0];
         status_neopixel_color[3 * i + 0] = status_neopixel_color[3 * i + 1];
         status_neopixel_color[3 * i + 1] = temp;
