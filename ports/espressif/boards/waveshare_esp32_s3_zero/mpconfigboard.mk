@@ -1,5 +1,5 @@
 USB_VID = 0x303a
-USB_PID = 0x1fe8
+USB_PID = 0x81B4
 USB_PRODUCT = "Waveshare ESP32-S3-Zero"
 USB_MANUFACTURER = "Waveshare Electronics"
 
