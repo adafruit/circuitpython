@@ -3983,6 +3983,10 @@ msgstr ""
 msgid "sleep length must be non-negative"
 msgstr ""
 
+#: extmod/ulab/code/ndarray.c
+msgid "slice step can't be zero"
+msgstr ""
+
 #: py/nativeglue.c
 msgid "slice unsupported"
 msgstr ""
