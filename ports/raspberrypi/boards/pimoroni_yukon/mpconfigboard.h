@@ -1,0 +1,14 @@
+#define MICROPY_HW_BOARD_NAME "Pimoroni Yukon"
+#define MICROPY_HW_MCU_NAME "rp2040"
+
+#define CIRCUITPY_DIGITALIO_HAVE_INVALID_PULL (1)
+#define CIRCUITPY_DIGITALIO_HAVE_INVALID_DRIVE_MODE (1)
+
+#define CIRCUITPY_BOARD_I2C         (1)
+#define CIRCUITPY_BOARD_I2C_PIN     {{.scl = &pin_GPIO25, .sda = &pin_GPIO24}}
+#define CIRCUITPY_BOARD_I2C_FREQ    (400000)
+
+#define TCA9555_CHIP_COUNT          (2)
+#define TCA9555_CHIP_ADDRESSES      { 0x20, 0x26 }
+#define TCA9555_LOCAL_MEMORY        (1)
+#define TCA9555_READ_INTERNALS      (1)

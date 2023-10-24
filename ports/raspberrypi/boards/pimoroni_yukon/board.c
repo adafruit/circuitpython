@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
+ * Copyright (c) 2023 Christopher Parrott for Pimoroni Ltd
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,31 +24,38 @@
  * THE SOFTWARE.
  */
 
-#ifndef MICROPY_INCLUDED_RASPBERRYPI_COMMON_HAL_MICROCONTROLLER_PIN_H
-#define MICROPY_INCLUDED_RASPBERRYPI_COMMON_HAL_MICROCONTROLLER_PIN_H
+#include "supervisor/board.h"
 
-#include <assert.h>
-#include <stdint.h>
+#include "py/gc.h"
+#include "py/runtime.h"
 
-#include <py/obj.h>
+#include "shared-bindings/busio/I2C.h"
+#include "shared-bindings/board/__init__.h"
+#include "shared-bindings/tca9555/__init__.h"
+#include "shared-module/displayio/__init__.h"
 
-#include "peripherals/pins.h"
+void board_init(void) {
+}
 
-void reset_all_pins(void);
-// reset_pin_number takes the pin number instead of the pointer so that objects don't
-// need to store a full pointer.
-void reset_pin_number(uint8_t pin_number);
-void never_reset_pin_number(uint8_t pin_number);
-void claim_pin(const mcu_pin_obj_t *pin);
-bool pin_number_is_free(uint8_t pin_number);
+void board_deinit(void) {
+}
 
-#if CIRCUITPY_CYW43
-extern bool cyw_ever_init;
-void reset_pin_number_cyw(uint8_t pin_number);
-#endif
-#if CIRCUITPY_TCA9555
-extern bool tca_ever_init;
-void reset_pin_number_tca(uint8_t pin_number);
-#endif
+void reset_board(void) {
+    // Set the first IO expander's initial state
+    common_hal_tca_set_output_port(0, 0x8800);  // Disable the two ADC Muxes
+    common_hal_tca_set_polarity_port(0, 0x0000);
+    common_hal_tca_set_config_port(0, 0x07BF);
 
-#endif // MICROPY_INCLUDED_RASPBERRYPI_COMMON_HAL_MICROCONTROLLER_PIN_H
+    // Set the second IO expander's initial state
+    common_hal_tca_set_output_port(1, 0x0000);
+    common_hal_tca_set_polarity_port(1, 0x0000);
+    common_hal_tca_set_config_port(1, 0xFCE6);
+
+    // Releasing displays, as if one is set up with the
+    // intended IO expander LCD pins then it will carry over
+    // into other user program runs, causing poor performance
+    // if they don't realise the screen is still being driven
+    common_hal_displayio_release_displays();
+}
+
+// Use the MP_WEAK supervisor/shared/board.c versions of routines not defined here.
