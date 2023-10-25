@@ -201,7 +201,9 @@ ifeq ($(CIRCUITPY_FOURWIRE),1)
 SRC_PATTERNS += fourwire/%
 endif
 ifeq ($(CIRCUITPY_FRAMEBUFFERIO),1)
+ifeq ($(CIRCUITPY_DISPLAYIO),1)
 SRC_PATTERNS += framebufferio/%
+endif
 endif
 ifeq ($(CIRCUITPY_FREQUENCYIO),1)
 SRC_PATTERNS += frequencyio/%
@@ -213,7 +215,9 @@ ifeq ($(CIRCUITPY_GETPASS),1)
 SRC_PATTERNS += getpass/%
 endif
 ifeq ($(CIRCUITPY_GIFIO),1)
+ifeq ($(CIRCUITPY_DISPLAYIO),1)
 SRC_PATTERNS += gifio/%
+endif
 endif
 ifeq ($(CIRCUITPY_GNSS),1)
 SRC_PATTERNS += gnss/%
@@ -228,7 +232,9 @@ ifeq ($(CIRCUITPY_I2CTARGET),1)
 SRC_PATTERNS += i2ctarget/%
 endif
 ifeq ($(CIRCUITPY_IMAGECAPTURE),1)
+ifeq ($(CIRCUITPY_AUDIOBUSIO),1)
 SRC_PATTERNS += imagecapture/%
+endif
 endif
 ifeq ($(CIRCUITPY_IPADDRESS),1)
 SRC_PATTERNS += ipaddress/%
@@ -285,7 +291,9 @@ ifeq ($(CIRCUITPY_PIXELMAP),1)
 SRC_PATTERNS += _pixelmap/%
 endif
 ifeq ($(CIRCUITPY_PICODVI),1)
+ifeq ($(CIRCUITPY_DISPLAYIO),1)
 SRC_PATTERNS += picodvi/%
+endif
 endif
 ifeq ($(CIRCUITPY_PS2IO),1)
 SRC_PATTERNS += ps2io/%
@@ -306,10 +314,14 @@ ifeq ($(CIRCUITPY_RANDOM),1)
 SRC_PATTERNS += random/%
 endif
 ifeq ($(CIRCUITPY_RGBMATRIX),1)
+ifeq ($(CIRCUITPY_DISPLAYIO),1)
 SRC_PATTERNS += rgbmatrix/%
 endif
+endif
 ifeq ($(CIRCUITPY_DOTCLOCKFRAMEBUFFER),1)
+ifeq ($(CIRCUITPY_DISPLAYIO),1)
 SRC_PATTERNS += dotclockframebuffer/%
+endif
 endif
 ifeq ($(CIRCUITPY_RP2PIO),1)
 SRC_PATTERNS += rp2pio/%
@@ -330,7 +342,9 @@ ifeq ($(CIRCUITPY_SDIOIO),1)
 SRC_PATTERNS += sdioio/%
 endif
 ifeq ($(CIRCUITPY_SHARPDISPLAY),1)
+ifeq ($(CIRCUITPY_DISPLAYIO),1)
 SRC_PATTERNS += sharpdisplay/%
+endif
 endif
 ifeq ($(CIRCUITPY_SOCKETPOOL),1)
 SRC_PATTERNS += socketpool/%

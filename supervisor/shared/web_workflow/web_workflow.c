@@ -121,14 +121,17 @@ static mdns_server_obj_t mdns;
 
 static mp_int_t web_api_port = 80;
 
-static socketpool_socketpool_obj_t pool;
 static socketpool_socket_obj_t listening;
 static socketpool_socket_obj_t active;
 
 static _request active_request;
 
 static char _api_password[64];
+
+#if CIRCUITPY_WEB_WORKFLOW && CIRCUITPY_WIFI && CIRCUITPY_OS_GETENV
+static socketpool_socketpool_obj_t pool;
 static char web_instance_name[50];
+#endif
 
 // Store the encoded IP so we don't duplicate work.
 static uint32_t _encoded_ip = 0;
