@@ -310,14 +310,12 @@ CFLAGS += -isystem esp-idf/components/esp_lcd/interface
 endif
 
 ifneq ($(CIRCUITPY_ESPCAMERA),0)
-ifneq ($(CIRCUITPY_DISPLAYIO),0)
 SRC_CAMERA := \
 	$(wildcard common-hal/espcamera/*.c) \
 	$(wildcard bindings/espcamera/*.c)
 SRC_C += $(SRC_CAMERA)
 CFLAGS += -isystem esp-camera/driver/include
 CFLAGS += -isystem esp-camera/conversions/include
-endif
 endif
 
 ifneq ($(CIRCUITPY_ESPIDF),0)
@@ -502,10 +500,8 @@ ESP_IDF_COMPONENTS_EXPANDED += esp-idf/components/xtensa/$(IDF_TARGET)/libxt_hal
 endif
 
 ifneq ($(CIRCUITPY_ESPCAMERA),0)
-ifneq ($(CIRCUITPY_DISPLAYIO),0)
 ESP_IDF_COMPONENTS_EXPANDED += $(BUILD)/esp-idf/esp-idf/esp-camera/libesp-camera.a
 #$(error $(ESP_IDF_COMPONENTS_EXPANDED))
-endif
 endif
 
 ifneq ($(VALID_BOARD),)
