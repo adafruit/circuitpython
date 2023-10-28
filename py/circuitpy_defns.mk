@@ -115,6 +115,17 @@ endif  # FULL_BUILD
 endif  # IMAGECAPTURE
 endif  # AUDIOBUSIO
 
+ifeq ($(CIRCUITPY_FULL_BUILD),0)
+
+ifneq ($(CIRCUITPY_ULAB),0)
+$(error CIRCUITPY_ULAB=1 can not be used with CIRCUITPY_FUILL_BUILD=0)
+endif
+
+$(info *** Building with CIRCUITPY_FULL_BUILD=0, if the board has a built-in display and the)
+$(info *** build fails try adding the CIRCUITPY_DISPLAYIO=1 option to mpconfigboard.mk)
+$(info )
+endif
+
 ###
 # Select which builtin modules to compile and include.
 # Keep alphabetical.
