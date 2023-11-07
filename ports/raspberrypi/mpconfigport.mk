@@ -1,6 +1,9 @@
 # All raspberrypi ports have longints.
 LONGINT_IMPL = MPZ
 
+CFLAGS += -DMODULE_OGGZ_ENABLED=1
+USER_C_MODULES += ../../examples/oggzmodule
+
 CIRCUITPY_OPTIMIZE_PROPERTY_FLASH_SIZE ?= 1
 # CYW43 support does not provide settable MAC addresses for station or AP.
 CIRCUITPY_WIFI_RADIO_SETTABLE_MAC_ADDRESS = 0
