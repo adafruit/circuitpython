@@ -202,6 +202,12 @@ STATIC mp_obj_t task_done(mp_obj_t self_in) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(task_done_obj, task_done);
 
+STATIC mp_obj_t task_get_coro(mp_obj_t self_in) {
+    mp_obj_task_t *self = MP_OBJ_TO_PTR(self_in);
+    return MP_OBJ_FROM_PTR(self->coro);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(task_get_coro_obj, task_get_coro);
+
 STATIC mp_obj_t task_cancel(mp_obj_t self_in) {
     mp_obj_task_t *self = MP_OBJ_TO_PTR(self_in);
     // Check if task is already finished.
@@ -276,6 +282,9 @@ STATIC void task_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
         } else if (attr == MP_QSTR___await__) {
             dest[0] = MP_OBJ_FROM_PTR(&task_await_obj);
             dest[1] = self_in;
+        } else if (attr == MP_QSTR_get_coro) {
+            dest[0] = MP_OBJ_FROM_PTR(&task_get_coro_obj);
+            dest[1] = self_in;
         }
     } else if (dest[1] != MP_OBJ_NULL) {
         // Store
@@ -286,6 +295,15 @@ STATIC void task_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
             self->state = dest[1];
             dest[0] = MP_OBJ_NULL;
         }
+    }
+}
+
+STATIC mp_obj_t task_unary_op(mp_unary_op_t op, mp_obj_t o_in) {
+    switch(op) {
+        case MP_UNARY_OP_HASH:
+            return MP_OBJ_NEW_SMALL_INT((mp_uint_t) o_in);
+        default:
+            return MP_OBJ_NULL;      // op not supported
     }
 }
 
@@ -337,7 +355,8 @@ STATIC MP_DEFINE_CONST_OBJ_TYPE(
     MP_TYPE_FLAG_ITER_IS_CUSTOM,
     make_new, task_make_new,
     attr, task_attr,
-    iter, &task_getiter_iternext
+    iter, &task_getiter_iternext,
+    unary_op, task_unary_op
     );
 
 /******************************************************************************/
