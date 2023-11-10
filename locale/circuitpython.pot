@@ -958,6 +958,10 @@ msgstr ""
 msgid "Error: Failure to bind"
 msgstr ""
 
+#: extmod/modasyncio.c
+msgid "Exception is not set."
+msgstr ""
+
 #: shared-bindings/alarm/__init__.c
 msgid "Expected a kind of %q"
 msgstr ""
@@ -1858,6 +1862,10 @@ msgstr ""
 msgid "Requested resource not found"
 msgstr ""
 
+#: extmod/modasyncio.c
+msgid "Result is not ready."
+msgstr ""
+
 #: ports/atmel-samd/common-hal/audioio/AudioOut.c
 msgid "Right channel unsupported"
 msgstr ""
@@ -1961,6 +1969,14 @@ msgstr ""
 
 #: shared-bindings/gnss/GNSS.c
 msgid "System entry must be gnss.SatelliteSystem"
+msgstr ""
+
+#: extmod/modasyncio.c
+msgid "Task does not support set_exception operation"
+msgstr ""
+
+#: extmod/modasyncio.c
+msgid "Task does not support set_result operation"
 msgstr ""
 
 #: ports/stm/common-hal/microcontroller/Processor.c

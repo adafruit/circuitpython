@@ -59,6 +59,9 @@ typedef struct _mp_obj_task_queue_t {
     mp_obj_task_t *heap;
 } mp_obj_task_queue_t;
 
+MP_DEFINE_EXCEPTION(CancelledError, BaseException)
+MP_DEFINE_EXCEPTION(InvalidStateError, Exception)
+
 STATIC const mp_obj_type_t task_queue_type;
 STATIC const mp_obj_type_t task_type;
 
@@ -208,6 +211,85 @@ STATIC mp_obj_t task_get_coro(mp_obj_t self_in) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(task_get_coro_obj, task_get_coro);
 
+STATIC mp_obj_t task_set_exception(mp_obj_t self_in, const mp_obj_t arg) {
+    mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("Task does not support set_exception operation"));
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(task_set_exception_obj, task_set_exception);
+
+STATIC mp_obj_t task_exception(mp_obj_t self_in) {
+    mp_obj_task_t *self = MP_OBJ_TO_PTR(self_in);
+
+    if (!TASK_IS_DONE(self)) {
+        mp_raise_msg(&mp_type_InvalidStateError, MP_ERROR_TEXT("Exception is not set."));
+        return NULL;
+    }
+
+    mp_obj_t data_obj = self->data;
+
+    // If the exception is a cancelled error then we should raise it
+    if (mp_obj_is_subclass_fast(MP_OBJ_FROM_PTR(mp_obj_get_type(data_obj)), MP_OBJ_FROM_PTR(&mp_type_CancelledError))) {
+        nlr_raise(data_obj);
+    }
+
+    // If it's a StopIteration we should should return none
+    if (mp_obj_is_subclass_fast(MP_OBJ_FROM_PTR(mp_obj_get_type(data_obj)), MP_OBJ_FROM_PTR(&mp_type_StopIteration))) {
+        return mp_const_none;
+    }
+
+    if (!mp_obj_is_exception_instance(data_obj)) {
+        return mp_const_none;
+    }
+
+    return data_obj;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(task_exception_obj, task_exception);
+
+STATIC mp_obj_t task_set_result(mp_obj_t self_in, const mp_obj_t arg) {
+    mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("Task does not support set_result operation"));
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(task_set_result_obj, task_set_result);
+
+STATIC mp_obj_t task_result(mp_obj_t self_in) {
+    mp_obj_task_t *self = MP_OBJ_TO_PTR(self_in);
+
+    if (!TASK_IS_DONE(self)) {
+        mp_raise_msg(&mp_type_InvalidStateError, MP_ERROR_TEXT("Result is not ready."));
+        return NULL;
+    }
+
+    // If `exception()` returns anything we raise that
+    mp_obj_t exception_obj = task_exception(self_in);
+    if (exception_obj != mp_const_none) {
+        nlr_raise(exception_obj);
+    }
+
+    mp_obj_t data_obj = self->data;
+
+    // If not StopIteration, bail early
+    if (!mp_obj_is_subclass_fast(MP_OBJ_FROM_PTR(mp_obj_get_type(data_obj)), MP_OBJ_FROM_PTR(&mp_type_StopIteration))) {
+        return mp_const_none;
+    }
+
+    return mp_obj_exception_get_value(data_obj);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(task_result_obj, task_result);
+
+STATIC mp_obj_t task_cancelled(mp_obj_t self_in) {
+    mp_obj_task_t *self = MP_OBJ_TO_PTR(self_in);
+
+    if (!TASK_IS_DONE(self)) {
+        // If task isn't done it can't possibly be cancelled, and would instead
+        // be considered "cancelling" even if a cancel was requested until it
+        // has fully completed.
+        return mp_obj_new_bool(false);
+    }
+
+    mp_obj_t data_obj = self->data;
+
+    return mp_obj_new_bool(mp_obj_is_subclass_fast(MP_OBJ_FROM_PTR(mp_obj_get_type(data_obj)), MP_OBJ_FROM_PTR(&mp_type_CancelledError)));
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(task_cancelled_obj, task_cancelled);
+
 STATIC mp_obj_t task_cancel(mp_obj_t self_in) {
     mp_obj_task_t *self = MP_OBJ_TO_PTR(self_in);
     // Check if task is already finished.
@@ -285,6 +367,21 @@ STATIC void task_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
         } else if (attr == MP_QSTR_get_coro) {
             dest[0] = MP_OBJ_FROM_PTR(&task_get_coro_obj);
             dest[1] = self_in;
+        } else if (attr == MP_QSTR_set_result) {
+            dest[0] = MP_OBJ_FROM_PTR(&task_set_result_obj);
+            dest[1] = self_in;
+        } else if (attr == MP_QSTR_result) {
+            dest[0] = MP_OBJ_FROM_PTR(&task_result_obj);
+            dest[1] = self_in;
+        } else if (attr == MP_QSTR_set_exception) {
+            dest[0] = MP_OBJ_FROM_PTR(&task_set_exception_obj);
+            dest[1] = self_in;
+        } else if (attr == MP_QSTR_exception) {
+            dest[0] = MP_OBJ_FROM_PTR(&task_exception_obj);
+            dest[1] = self_in;
+        } else if (attr == MP_QSTR_cancelled) {
+            dest[0] = MP_OBJ_FROM_PTR(&task_cancelled_obj);
+            dest[1] = self_in;
         }
     } else if (dest[1] != MP_OBJ_NULL) {
         // Store
@@ -299,9 +396,9 @@ STATIC void task_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
 }
 
 STATIC mp_obj_t task_unary_op(mp_unary_op_t op, mp_obj_t o_in) {
-    switch(op) {
+    switch (op) {
         case MP_UNARY_OP_HASH:
-            return MP_OBJ_NEW_SMALL_INT((mp_uint_t) o_in);
+            return MP_OBJ_NEW_SMALL_INT((mp_uint_t)o_in);
         default:
             return MP_OBJ_NULL;      // op not supported
     }
@@ -366,6 +463,8 @@ STATIC const mp_rom_map_elem_t mp_module_asyncio_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR__asyncio) },
     { MP_ROM_QSTR(MP_QSTR_TaskQueue), MP_ROM_PTR(&task_queue_type) },
     { MP_ROM_QSTR(MP_QSTR_Task), MP_ROM_PTR(&task_type) },
+    { MP_ROM_QSTR(MP_QSTR_CancelledError), MP_ROM_PTR(&mp_type_CancelledError) },
+    { MP_ROM_QSTR(MP_QSTR_InvalidStateError), MP_ROM_PTR(&mp_type_InvalidStateError) },
 };
 STATIC MP_DEFINE_CONST_DICT(mp_module_asyncio_globals, mp_module_asyncio_globals_table);
 
