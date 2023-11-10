@@ -1,0 +1,14 @@
+==========
+Waiting for task to complete
+done
+Task has completed
+==========
+Task has completed
+done
+Callback added
+==========
+Second call to add_done_callback emits error: Tasks only support one done callback.
+==========
+Waiting for task to complete
+done
+Exception handled
