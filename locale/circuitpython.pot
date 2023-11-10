@@ -1979,6 +1979,10 @@ msgstr ""
 msgid "Task does not support set_result operation"
 msgstr ""
 
+#: extmod/modasyncio.c
+msgid "Tasks only support one done callback."
+msgstr ""
+
 #: ports/stm/common-hal/microcontroller/Processor.c
 msgid "Temperature read timed out"
 msgstr ""

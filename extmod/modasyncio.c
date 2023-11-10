@@ -205,6 +205,43 @@ STATIC mp_obj_t task_done(mp_obj_t self_in) {
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(task_done_obj, task_done);
 
+STATIC mp_obj_t task_add_done_callback(mp_obj_t self_in, mp_obj_t callback) {
+    assert(mp_obj_is_callable(callback));
+    mp_obj_task_t *self = MP_OBJ_TO_PTR(self_in);
+
+    if (TASK_IS_DONE(self)) {
+        // In CPython the callbacks are not immediately called and are instead
+        // called by the event loop.  However, CircuitPython's event loop doesn't
+        // support `call_soon` to handle callback processing.
+        //
+        // Because of this, it's close enough to call the callback immediately.
+        mp_call_function_1(callback, self_in);
+        return mp_const_none;
+    }
+
+    if (self->state != mp_const_true) {
+        // Tasks SHOULD support more than one callback per CPython but to reduce
+        // the surface area of this change tasks can currently only support one.
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Tasks only support one done callback."));
+    }
+
+    self->state = callback;
+    return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(task_add_done_callback_obj, task_add_done_callback);
+
+STATIC mp_obj_t task_remove_done_callback(mp_obj_t self_in, mp_obj_t callback) {
+    mp_obj_task_t *self = MP_OBJ_TO_PTR(self_in);
+
+    if (callback != self->state) {
+        return mp_obj_new_int(0);
+    }
+
+    self->state = mp_const_true;
+    return mp_obj_new_int(1);
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(task_remove_done_callback_obj, task_remove_done_callback);
+
 STATIC mp_obj_t task_get_coro(mp_obj_t self_in) {
     mp_obj_task_t *self = MP_OBJ_TO_PTR(self_in);
     return MP_OBJ_FROM_PTR(self->coro);
@@ -363,6 +400,12 @@ STATIC void task_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
             dest[0] = self->ph_key;
         } else if (attr == MP_QSTR___await__) {
             dest[0] = MP_OBJ_FROM_PTR(&task_await_obj);
+            dest[1] = self_in;
+        } else if (attr == MP_QSTR_add_done_callback) {
+            dest[0] = MP_OBJ_FROM_PTR(&task_add_done_callback_obj);
+            dest[1] = self_in;
+        } else if (attr == MP_QSTR_remove_done_callback) {
+            dest[0] = MP_OBJ_FROM_PTR(&task_remove_done_callback_obj);
             dest[1] = self_in;
         } else if (attr == MP_QSTR_get_coro) {
             dest[0] = MP_OBJ_FROM_PTR(&task_get_coro_obj);
