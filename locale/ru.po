@@ -4467,6 +4467,46 @@ msgstr "zi должно быть типа float"
 msgid "zi must be of shape (n_section, 2)"
 msgstr "zi должен иметь форму (n_section, 2)"
 
+#: main.c
+#, c-format
+msgid "%02X"
+msgstr "%02X"
+
+#: ports/atmel-samd/common-hal/alarm/__init__.c
+#: ports/atmel-samd/common-hal/audiobusio/I2SOut.c
+#: ports/cxd56/common-hal/analogio/AnalogOut.c ports/cxd56/common-hal/rtc/RTC.c
+#: ports/espressif/common-hal/audiobusio/I2SOut.c
+#: ports/espressif/common-hal/rtc/RTC.c
+#: ports/mimxrt10xx/common-hal/analogio/AnalogOut.c
+#: ports/mimxrt10xx/common-hal/rtc/RTC.c ports/nrf/common-hal/alarm/__init__.c
+#: ports/nrf/common-hal/analogio/AnalogOut.c
+#: ports/nrf/common-hal/audiobusio/I2SOut.c ports/nrf/common-hal/rtc/RTC.c
+#: ports/raspberrypi/common-hal/alarm/__init__.c
+#: ports/raspberrypi/common-hal/analogio/AnalogOut.c
+#: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
+#: ports/raspberrypi/common-hal/rtc/RTC.c ports/stm/common-hal/alarm/__init__.c
+#: ports/stm/common-hal/canio/Listener.c ports/stm/common-hal/rtc/RTC.c
+#: shared-bindings/audiobusio/I2SOut.c shared-bindings/audiobusio/PDMIn.c
+#: shared-bindings/keypad/KeyMatrix.c shared-bindings/keypad/Keys.c
+#: shared-bindings/keypad/ShiftRegisterKeys.c
+msgid "%q"
+msgstr "%q"
+
+#: ports/atmel-samd/common-hal/audiobusio/PDMIn.c
+#: ports/raspberrypi/common-hal/audiobusio/PDMIn.c
+msgid "Only 8 or 16 bit mono with "
+msgstr "Только 8- или 16-битное моно с "
+
+#: shared-module/os/getenv.c
+#, c-format
+msgid "%S"
+msgstr "%S"
+
+#: py/runtime.c
+#, c-format
+msgid "%s"
+msgstr ""
+
 #~ msgid ""
 #~ "\n"
 #~ "Code stopped by auto-reload.\n"
@@ -4483,13 +4523,6 @@ msgstr "zi должен иметь форму (n_section, 2)"
 #~ "Пожалуйста, сообщите о проблеме, приложив содержимое вашего диска "
 #~ "CIRCUITPY на\n"
 #~ "https://github.com/adafruit/circuitpython/issues\n"
-
-#, c-format
-#~ msgid "%02X"
-#~ msgstr "%02X"
-
-#~ msgid "%q"
-#~ msgstr "%q"
 
 #~ msgid "%q length must be >= 1"
 #~ msgstr "Длинна %q должна быть >= 1"
@@ -4954,9 +4987,6 @@ msgstr "zi должен иметь форму (n_section, 2)"
 #, fuzzy
 #~ msgid "Not settable"
 #~ msgstr "Невозможно установить"
-
-#~ msgid "Only 8 or 16 bit mono with "
-#~ msgstr "Только 8- или 16-битное моно с "
 
 #~ msgid "Pin count must be at least 1"
 #~ msgstr "Количество пинов должно быть не менее 1"
