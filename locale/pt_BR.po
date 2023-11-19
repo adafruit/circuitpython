@@ -4463,6 +4463,46 @@ msgstr "zi deve ser de um tipo float"
 msgid "zi must be of shape (n_section, 2)"
 msgstr "zi deve estar na forma (n_section, 2)"
 
+#: main.c
+#, c-format
+msgid "%02X"
+msgstr "%02X"
+
+#: ports/atmel-samd/common-hal/alarm/__init__.c
+#: ports/atmel-samd/common-hal/audiobusio/I2SOut.c
+#: ports/cxd56/common-hal/analogio/AnalogOut.c ports/cxd56/common-hal/rtc/RTC.c
+#: ports/espressif/common-hal/audiobusio/I2SOut.c
+#: ports/espressif/common-hal/rtc/RTC.c
+#: ports/mimxrt10xx/common-hal/analogio/AnalogOut.c
+#: ports/mimxrt10xx/common-hal/rtc/RTC.c ports/nrf/common-hal/alarm/__init__.c
+#: ports/nrf/common-hal/analogio/AnalogOut.c
+#: ports/nrf/common-hal/audiobusio/I2SOut.c ports/nrf/common-hal/rtc/RTC.c
+#: ports/raspberrypi/common-hal/alarm/__init__.c
+#: ports/raspberrypi/common-hal/analogio/AnalogOut.c
+#: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
+#: ports/raspberrypi/common-hal/rtc/RTC.c ports/stm/common-hal/alarm/__init__.c
+#: ports/stm/common-hal/canio/Listener.c ports/stm/common-hal/rtc/RTC.c
+#: shared-bindings/audiobusio/I2SOut.c shared-bindings/audiobusio/PDMIn.c
+#: shared-bindings/keypad/KeyMatrix.c shared-bindings/keypad/Keys.c
+#: shared-bindings/keypad/ShiftRegisterKeys.c
+msgid "%q"
+msgstr "%q"
+
+#: py/runtime.c
+#, c-format
+msgid "%s"
+msgstr "%s"
+
+#: ports/atmel-samd/common-hal/audiobusio/PDMIn.c
+#: ports/raspberrypi/common-hal/audiobusio/PDMIn.c
+msgid "Only 8 or 16 bit mono with "
+msgstr "Apenas mono com 8 ou 16 bits com "
+
+#: shared-module/os/getenv.c
+#, c-format
+msgid "%S"
+msgstr "%S"
+
 #~ msgid ""
 #~ "\n"
 #~ "Code done running. Waiting for reload.\n"
@@ -4522,16 +4562,9 @@ msgstr "zi deve estar na forma (n_section, 2)"
 #~ "modo colar; Ctrl-C para cancelar, Ctrl-D para concluir\n"
 #~ "=== "
 
-#, c-format
-#~ msgid "%02X"
-#~ msgstr "%02X"
-
 #~ msgid "%d address pins and %d rgb pins indicate a height of %d, not %d"
 #~ msgstr ""
 #~ "%d endereços dos pinos e %d pinos rgb indicam uma altura do %d, não %d"
-
-#~ msgid "%q"
-#~ msgstr "%q"
 
 #~ msgid "%q indices must be integers, not %q"
 #~ msgstr "Os indicadores %q devem ser inteiros, não %q"
@@ -4598,10 +4631,6 @@ msgstr "zi deve estar na forma (n_section, 2)"
 
 #~ msgid "%q with a report ID of 0 must be of length 1"
 #~ msgstr "%q com um relatório com ID de 0 deve ter comprimento 1"
-
-#, c-format
-#~ msgid "%s"
-#~ msgstr "%s"
 
 #~ msgid "'%q' object cannot assign attribute '%q'"
 #~ msgstr "O objeto '%q' não pode definir o atributo '%q'"
@@ -5370,9 +5399,6 @@ msgstr "zi deve estar na forma (n_section, 2)"
 
 #~ msgid "Not settable"
 #~ msgstr "Não configurável"
-
-#~ msgid "Only 8 or 16 bit mono with "
-#~ msgstr "Apenas mono com 8 ou 16 bits com "
 
 #~ msgid "Only IN/OUT of up to 8 supported"
 #~ msgstr "Somente IN/OUT de até 8 suportados"
