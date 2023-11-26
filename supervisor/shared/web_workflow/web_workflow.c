@@ -44,6 +44,7 @@
 #include "supervisor/filesystem.h"
 #include "supervisor/port.h"
 #include "supervisor/shared/reload.h"
+#include "supervisor/shared/safe_mode.h"
 #include "supervisor/shared/translate/translate.h"
 #include "supervisor/shared/web_workflow/web_workflow.h"
 #include "supervisor/shared/web_workflow/websocket.h"
@@ -260,6 +261,10 @@ void supervisor_web_workflow_status(void) {
 
 bool supervisor_start_web_workflow(bool reload) {
     #if CIRCUITPY_WEB_WORKFLOW && CIRCUITPY_WIFI && CIRCUITPY_OS_GETENV
+
+    if (get_safe_mode() != SAFE_MODE_NONE) {
+        return false;
+    }
 
     char ssid[33];
     char password[64];
