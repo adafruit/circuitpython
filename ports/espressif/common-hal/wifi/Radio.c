@@ -132,10 +132,10 @@ mp_obj_t common_hal_wifi_radio_get_mac_address(wifi_radio_obj_t *self) {
 
 void common_hal_wifi_radio_set_mac_address(wifi_radio_obj_t *self, const uint8_t *mac) {
     if (!self->sta_mode) {
-        mp_raise_RuntimeError(translate("Interface must be started"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Interface must be started"));
     }
     if ((mac[0] & 0b1) == 0b1) {
-        mp_raise_RuntimeError(translate("Invalid multicast MAC address"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Invalid multicast MAC address"));
     }
     esp_wifi_set_mac(ESP_IF_WIFI_STA, mac);
 }
@@ -158,25 +158,24 @@ mp_obj_t common_hal_wifi_radio_get_mac_address_ap(wifi_radio_obj_t *self) {
 
 void common_hal_wifi_radio_set_mac_address_ap(wifi_radio_obj_t *self, const uint8_t *mac) {
     if (!self->ap_mode) {
-        mp_raise_RuntimeError(translate("Interface must be started"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Interface must be started"));
     }
     if ((mac[0] & 0b1) == 0b1) {
-        mp_raise_RuntimeError(translate("Invalid multicast MAC address"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Invalid multicast MAC address"));
     }
     esp_wifi_set_mac(ESP_IF_WIFI_AP, mac);
 }
 
 mp_obj_t common_hal_wifi_radio_start_scanning_networks(wifi_radio_obj_t *self, uint8_t start_channel, uint8_t stop_channel) {
     if (self->current_scan != NULL) {
-        mp_raise_RuntimeError(translate("Already scanning for wifi networks"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Already scanning for wifi networks"));
     }
     if (!common_hal_wifi_radio_get_enabled(self)) {
-        mp_raise_RuntimeError(translate("wifi is not enabled"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("wifi is not enabled"));
     }
     set_mode_station(self, true);
 
-    wifi_scannednetworks_obj_t *scan = m_new_obj(wifi_scannednetworks_obj_t);
-    scan->base.type = &wifi_scannednetworks_type;
+    wifi_scannednetworks_obj_t *scan = mp_obj_malloc(wifi_scannednetworks_obj_t, &wifi_scannednetworks_type);
     self->current_scan = scan;
     scan->current_channel_index = 0;
     scan->start_channel = start_channel;
@@ -253,7 +252,7 @@ void common_hal_wifi_radio_stop_ap(wifi_radio_obj_t *self) {
 
 wifi_radio_error_t common_hal_wifi_radio_connect(wifi_radio_obj_t *self, uint8_t *ssid, size_t ssid_len, uint8_t *password, size_t password_len, uint8_t channel, mp_float_t timeout, uint8_t *bssid, size_t bssid_len) {
     if (!common_hal_wifi_radio_get_enabled(self)) {
-        mp_raise_RuntimeError(translate("wifi is not enabled"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("wifi is not enabled"));
     }
     wifi_config_t *config = &self->sta_config;
 
@@ -366,8 +365,7 @@ mp_obj_t common_hal_wifi_radio_get_ap_info(wifi_radio_obj_t *self) {
         return mp_const_none;
     }
 
-    wifi_network_obj_t *ap_info = m_new_obj(wifi_network_obj_t);
-    ap_info->base.type = &wifi_network_type;
+    wifi_network_obj_t *ap_info = mp_obj_malloc(wifi_network_obj_t, &wifi_network_type);
     // From esp_wifi.h, the possible return values (typos theirs):
     //    ESP_OK: succeed
     //    ESP_ERR_WIFI_CONN: The station interface don't initialized

@@ -49,8 +49,8 @@ extern const mp_obj_type_t mcu_pin_type;
 
 #define NO_PIN (GPIO_NUM_NC)
 
-#define NO_ADC 0
-#define NO_ADC_CHANNEL ADC_CHANNEL_MAX
+#define NO_ADC SOC_ADC_PERIPH_NUM
+#define NO_ADC_CHANNEL SOC_ADC_MAX_CHANNEL_NUM
 
 #define NO_TOUCH_CHANNEL TOUCH_PAD_MAX
 
@@ -69,6 +69,10 @@ extern const mp_obj_type_t mcu_pin_type;
 #include "esp32/pins.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32C3)
 #include "esp32c3/pins.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32C6)
+#include "esp32c6/pins.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32H2)
+#include "esp32h2/pins.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32S2)
 #include "esp32s2/pins.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32S3)
