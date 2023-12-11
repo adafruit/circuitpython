@@ -19,6 +19,9 @@ USB_MANUFACTURER = "Heltec"
 
 IDF_TARGET = esp32
 
+DEBUG = 1
+ESPTOOL_FLAGS = --before=default_reset --after=hard_reset --baud 921600
+
 # This board doesn't have USB by default, it
 # instead uses a CP2102 USB-to-Serial chip
 CIRCUITPY_USB = 0
@@ -35,6 +38,9 @@ CIRCUITPY_ESP_FLASH_SIZE = 8MB
 CIRCUITPY_ESPCAMERA = 0
 
 CIRCUITPY_DISPLAYIO = 1
+
+# This has something to do with XTAL Config support?:
+CIRCUITPY_CANIO = 0
 
 FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_Display_Shapes
 FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_Display_Text
