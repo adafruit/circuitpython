@@ -33,7 +33,7 @@
 
 // I2C
 #define CIRCUITPY_BOARD_I2C         (1)
-#define CIRCUITPY_BOARD_I2C_PIN     {{.scl = &pin_GPIO22, .sda = &pin_GPIO21}}
+#define CIRCUITPY_BOARD_I2C_PIN     {{.scl = &pin_GPIO15, .sda = &pin_GPIO4}}
 
 // UART definition for UART connected to the CP210x
 #define DEFAULT_UART_BUS_RX         (&pin_GPIO3)

@@ -19,7 +19,7 @@ USB_MANUFACTURER = "Heltec"
 
 IDF_TARGET = esp32
 
-DEBUG = 1
+DEBUG = 0
 ESPTOOL_FLAGS = --before=default_reset --after=hard_reset --baud 921600
 
 # This board doesn't have USB by default, it
