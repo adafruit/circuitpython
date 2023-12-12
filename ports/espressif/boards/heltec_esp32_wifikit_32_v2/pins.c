@@ -99,7 +99,7 @@ STATIC const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_BAT_ADC), MP_ROM_PTR(&pin_GPIO13) },
     { MP_ROM_QSTR(MP_QSTR_PWR), MP_ROM_PTR(&pin_GPIO13) },
 
-    { MP_ROM_QSTR(MP_QSTR_USER_BUTTON), MP_ROM_PTR(&pin_GPIO0) },
+    { MP_ROM_QSTR(MP_QSTR_BTN_PRG), MP_ROM_PTR(&pin_GPIO0) },
 
     { MP_ROM_QSTR(MP_QSTR_TOUCH0), MP_ROM_PTR(&pin_GPIO4) },
     { MP_ROM_QSTR(MP_QSTR_TOUCH1), MP_ROM_PTR(&pin_GPIO0) },
