@@ -425,6 +425,10 @@ msgstr ""
 msgid "3-arg pow() not supported"
 msgstr ""
 
+#: extmod/modasyncio.c
+msgid ">1 callback unsupported"
+msgstr ""
+
 #: ports/atmel-samd/common-hal/alarm/pin/PinAlarm.c
 #: ports/atmel-samd/common-hal/countio/Counter.c
 #: ports/atmel-samd/common-hal/rotaryio/IncrementalEncoder.c
