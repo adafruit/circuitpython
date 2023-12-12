@@ -54,7 +54,7 @@ uint8_t display_init_sequence[] = { // SSD1306
 digitalio_digitalinout_obj_t display_on;
 
 static void display_init(void) {
-    // Need to bring GPIO4 high or the screen doesn't get power : TODO: This is GPIO21 (OLED_RST) on Heltec Lora V3 on ESP32-S3, right?
+    // Need to bring GPIO16 high or the screen doesn't get power
     // & the board can't see the i2c bus at all.
     common_hal_digitalio_digitalinout_construct(&display_on, &pin_GPIO16);
     common_hal_digitalio_digitalinout_switch_to_output(&display_on, true, DRIVE_MODE_PUSH_PULL);
