@@ -43,6 +43,11 @@
 #if CIRCUITPY_USB_MSC
 #include "tusb.h"
 
+#if CIRCUITPY_OS_GETENV
+#include "shared-module/os/__init__.h"
+#include "supervisor/shared/safe_mode.h"
+#endif
+
 static const uint8_t usb_msc_descriptor_template[] = {
     // MSC Interface Descriptor
     0x09,        //  0 bLength
@@ -88,7 +93,13 @@ static const uint8_t usb_msc_descriptor_template[] = {
 bool storage_usb_is_enabled;
 
 void storage_usb_set_defaults(void) {
-    storage_usb_is_enabled = CIRCUITPY_USB_MSC_ENABLED_DEFAULT;
+    mp_int_t getenv_d = (int)CIRCUITPY_USB_MSC_ENABLED_DEFAULT;
+    #if CIRCUITPY_OS_GETENV
+    if (get_safe_mode() == SAFE_MODE_NONE) {
+        (void)common_hal_os_getenv_int("CIRCUITPY_USB_MSC_DEFAULT", &getenv_d);
+    }
+    storage_usb_is_enabled = (bool)getenv_d;
+    #endif
 }
 
 bool storage_usb_enabled(void) {
