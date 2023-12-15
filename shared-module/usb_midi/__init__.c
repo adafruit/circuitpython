@@ -36,6 +36,11 @@
 #include "supervisor/usb.h"
 #include "tusb.h"
 
+#if CIRCUITPY_OS_GETENV
+#include "shared-module/os/__init__.h"
+#include "supervisor/shared/safe_mode.h"
+#endif
+
 static const uint8_t usb_midi_descriptor_template[] = {
     // Audio Interface Descriptor
     0x09,        //  0 bLength
@@ -164,14 +169,9 @@ static const uint8_t usb_midi_descriptor_template[] = {
 // Is the USB MIDI device enabled?
 static bool usb_midi_is_enabled;
 
-void usb_midi_set_defaults(void) {
-    usb_midi_is_enabled = CIRCUITPY_USB_MIDI_ENABLED_DEFAULT;
-}
-
 bool usb_midi_enabled(void) {
     return usb_midi_is_enabled;
 }
-
 
 size_t usb_midi_descriptor_length(void) {
     return sizeof(usb_midi_descriptor_template);
@@ -266,4 +266,15 @@ bool common_hal_usb_midi_disable(void) {
 
 bool common_hal_usb_midi_enable(void) {
     return usb_midi_set_enabled(true);
+}
+
+void usb_midi_set_defaults(void) {
+    mp_int_t getenv_d = (mp_int_t)CIRCUITPY_USB_MIDI_ENABLED_DEFAULT;
+    #if CIRCUITPY_OS_GETENV
+    if (get_safe_mode() == SAFE_MODE_NONE) {
+        (void)common_hal_os_getenv_int("CIRCUITPY_USB_MIDI_DEFAULT", &getenv_d);
+    }
+    #endif
+    usb_midi_is_enabled = (bool)getenv_d;
+    usb_midi_set_enabled(usb_midi_is_enabled);
 }

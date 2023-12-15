@@ -43,6 +43,11 @@
 #error CFG_TUD_CDC must be exactly 2
 #endif
 
+#if CIRCUITPY_OS_GETENV
+#include "shared-module/os/__init__.h"
+#include "supervisor/shared/safe_mode.h"
+#endif
+
 static const uint8_t usb_cdc_descriptor_template[] = {
     // CDC IAD Descriptor
     0x08,        //  0 bLength
@@ -169,8 +174,15 @@ static bool usb_cdc_console_is_enabled;
 static bool usb_cdc_data_is_enabled;
 
 void usb_cdc_set_defaults(void) {
-    common_hal_usb_cdc_enable(CIRCUITPY_USB_CDC_CONSOLE_ENABLED_DEFAULT,
-        CIRCUITPY_USB_CDC_DATA_ENABLED_DEFAULT);
+    #if CIRCUITPY_OS_GETENV
+    mp_int_t getenv_console = (mp_int_t)CIRCUITPY_USB_CDC_CONSOLE_ENABLED_DEFAULT;
+    mp_int_t getenv_data = (mp_int_t)CIRCUITPY_USB_CDC_DATA_ENABLED_DEFAULT;
+    if (get_safe_mode() == SAFE_MODE_NONE) {
+        (void)common_hal_os_getenv_int("CIRCUITPY_USB_CDC_CONSOLE_DEFAULT", &getenv_console);
+        (void)common_hal_os_getenv_int("CIRCUITPY_USB_CDC_DATA_DEFAULT", &getenv_data);
+    }
+    #endif
+    common_hal_usb_cdc_enable((bool)getenv_console, (bool)getenv_data);
 }
 
 bool usb_cdc_console_enabled(void) {

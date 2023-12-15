@@ -35,6 +35,11 @@
 #include "supervisor/port.h"
 #include "supervisor/usb.h"
 
+#if CIRCUITPY_OS_GETENV
+#include "shared-module/os/__init__.h"
+#include "supervisor/shared/safe_mode.h"
+#endif
+
 static const uint8_t usb_hid_descriptor_template[] = {
     0x09,        //  0 bLength
     0x04,        //  1 bDescriptorType (Interface)
@@ -154,8 +159,17 @@ uint8_t common_hal_usb_hid_get_boot_device(void) {
 void usb_hid_set_defaults(void) {
     hid_boot_device = 0;
     hid_boot_device_requested = false;
-    common_hal_usb_hid_enable(
-        CIRCUITPY_USB_HID_ENABLED_DEFAULT ? &default_hid_devices_tuple : mp_const_empty_tuple, 0);
+    mp_int_t getenv_d = 1;
+    #if CIRCUITPY_OS_GETENV
+    if (get_safe_mode() == SAFE_MODE_NONE) {
+        (void)common_hal_os_getenv_int("CIRCUITPY_USB_HID_DEFAULT", &getenv_d);
+    }
+    #endif
+    if (getenv_d) {
+        common_hal_usb_hid_enable(
+            CIRCUITPY_USB_HID_ENABLED_DEFAULT ? &default_hid_devices_tuple : mp_const_empty_tuple, 0
+            );
+    }
 }
 
 // This is the interface descriptor, not the report descriptor.
