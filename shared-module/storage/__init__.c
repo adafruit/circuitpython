@@ -98,8 +98,8 @@ void storage_usb_set_defaults(void) {
     if (get_safe_mode() == SAFE_MODE_NONE) {
         (void)common_hal_os_getenv_int("CIRCUITPY_USB_MSC_DEFAULT", &getenv_d);
     }
-    storage_usb_is_enabled = (bool)getenv_d;
     #endif
+    storage_usb_is_enabled = (bool)getenv_d;
 }
 
 bool storage_usb_enabled(void) {
