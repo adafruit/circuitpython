@@ -35,7 +35,7 @@
 #include "supervisor/port.h"
 #include "supervisor/usb.h"
 
-#if CIRCUITPY_OS_GETENV
+#if CIRCUITPY_OS_GETENV && CIRCUITPY_TOML_USB_DEFAULTS
 #include "shared-module/os/__init__.h"
 #include "supervisor/shared/safe_mode.h"
 #endif
@@ -160,7 +160,7 @@ void usb_hid_set_defaults(void) {
     hid_boot_device = 0;
     hid_boot_device_requested = false;
     mp_int_t getenv_d = 1;
-    #if CIRCUITPY_OS_GETENV
+    #if CIRCUITPY_OS_GETENV && CIRCUITPY_TOML_USB_DEFAULTS
     if (get_safe_mode() == SAFE_MODE_NONE) {
         (void)common_hal_os_getenv_int("CIRCUITPY_USB_HID_DEFAULT", &getenv_d);
     }

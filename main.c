@@ -1070,7 +1070,7 @@ int __attribute__((used)) main(void) {
     // and writable by USB. However if USB_MSC is toggled off or the board only has other workflows,
     // the board starts with the internal flash in read-write mode.
     static mp_int_t default_usb_state = CIRCUITPY_USB == 1;
-    #if CIRCUITPY_OS_GETENV && CIRCUITPY_USB
+    #if CIRCUITPY_OS_GETENV && CIRCUITPY_USB && CIRCUITPY_TOML_USB_DEFAULTS
     if (safe_mode == SAFE_MODE_NONE) {
         (void)common_hal_os_getenv_int("CIRCUITPY_USB_MSC_DEFAULT", &default_usb_state);
     }

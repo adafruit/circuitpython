@@ -43,7 +43,7 @@
 #if CIRCUITPY_USB_MSC
 #include "tusb.h"
 
-#if CIRCUITPY_OS_GETENV
+#if CIRCUITPY_OS_GETENV && CIRCUITPY_TOML_USB_DEFAULTS
 #include "shared-module/os/__init__.h"
 #include "supervisor/shared/safe_mode.h"
 #endif
@@ -94,7 +94,7 @@ bool storage_usb_is_enabled;
 
 void storage_usb_set_defaults(void) {
     mp_int_t getenv_d = (mp_int_t)CIRCUITPY_USB_MSC_ENABLED_DEFAULT;
-    #if CIRCUITPY_OS_GETENV
+    #if CIRCUITPY_OS_GETENV && CIRCUITPY_TOML_USB_DEFAULTS
     if (get_safe_mode() == SAFE_MODE_NONE) {
         (void)common_hal_os_getenv_int("CIRCUITPY_USB_MSC_DEFAULT", &getenv_d);
     }

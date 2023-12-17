@@ -43,7 +43,7 @@
 #error CFG_TUD_CDC must be exactly 2
 #endif
 
-#if CIRCUITPY_OS_GETENV
+#if CIRCUITPY_OS_GETENV && CIRCUITPY_TOML_USB_DEFAULTS
 #include "shared-module/os/__init__.h"
 #include "supervisor/shared/safe_mode.h"
 #endif
@@ -176,7 +176,7 @@ static bool usb_cdc_data_is_enabled;
 void usb_cdc_set_defaults(void) {
     mp_int_t getenv_console = (mp_int_t)CIRCUITPY_USB_CDC_CONSOLE_ENABLED_DEFAULT;
     mp_int_t getenv_data = (mp_int_t)CIRCUITPY_USB_CDC_DATA_ENABLED_DEFAULT;
-    #if CIRCUITPY_OS_GETENV
+    #if CIRCUITPY_OS_GETENV && CIRCUITPY_TOML_USB_DEFAULTS
     if (get_safe_mode() == SAFE_MODE_NONE) {
         (void)common_hal_os_getenv_int("CIRCUITPY_USB_CDC_CONSOLE_DEFAULT", &getenv_console);
         (void)common_hal_os_getenv_int("CIRCUITPY_USB_CDC_DATA_DEFAULT", &getenv_data);

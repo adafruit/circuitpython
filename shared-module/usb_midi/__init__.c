@@ -36,7 +36,7 @@
 #include "supervisor/usb.h"
 #include "tusb.h"
 
-#if CIRCUITPY_OS_GETENV
+#if CIRCUITPY_OS_GETENV && CIRCUITPY_TOML_USB_DEFAULTS
 #include "shared-module/os/__init__.h"
 #include "supervisor/shared/safe_mode.h"
 #endif
@@ -270,7 +270,7 @@ bool common_hal_usb_midi_enable(void) {
 
 void usb_midi_set_defaults(void) {
     mp_int_t getenv_d = (mp_int_t)CIRCUITPY_USB_MIDI_ENABLED_DEFAULT;
-    #if CIRCUITPY_OS_GETENV
+    #if CIRCUITPY_OS_GETENV && CIRCUITPY_TOML_USB_DEFAULTS
     if (get_safe_mode() == SAFE_MODE_NONE) {
         (void)common_hal_os_getenv_int("CIRCUITPY_USB_MIDI_DEFAULT", &getenv_d);
     }
