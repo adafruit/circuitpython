@@ -1033,7 +1033,7 @@ int __attribute__((used)) main(void) {
 
     // Check whether CIRCUITPY is available. No need to reset to get safe mode
     // since we haven't run user code yet.
-    if (!filesystem_init(safe_mode == SAFE_MODE_NONE, false)) {
+    if (!filesystem_init(get_safe_mode() == SAFE_MODE_NONE, false)) {
         set_safe_mode(SAFE_MODE_NO_CIRCUITPY);
     }
 
