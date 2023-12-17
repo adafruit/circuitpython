@@ -1063,6 +1063,9 @@ int __attribute__((used)) main(void) {
         autoreload_enable();
     }
 
+    // By default, on boards that have USB_MSC, our internal flash is read-only to local python code
+    // and writable by USB. However if USB_MSC is toggled off or the board only has other workflows,
+    // the board starts with the internal flash in read-write mode.
     static mp_int_t default_usb_state = CIRCUITPY_USB == 1;
     #if CIRCUITPY_OS_GETENV
     if (get_safe_mode() == SAFE_MODE_NONE) {
