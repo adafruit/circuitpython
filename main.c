@@ -1031,9 +1031,6 @@ int __attribute__((used)) main(void) {
     // A power brownout here could make it appear as if there's
     // no SPI flash filesystem, and we might erase the existing one.
 
-    // Re-aquire safe mode status.
-    safe_mode_t safe_mode = get_safe_mode();
-
     // Check whether CIRCUITPY is available. No need to reset to get safe mode
     // since we haven't run user code yet.
     if (!filesystem_init(safe_mode == SAFE_MODE_NONE, false)) {
@@ -1062,13 +1059,13 @@ int __attribute__((used)) main(void) {
     supervisor_set_run_reason(RUN_REASON_STARTUP);
 
     // If not in safe mode turn on autoreload by default but before boot.py in case it wants to change it.
-    if (safe_mode == SAFE_MODE_NONE) {
+    if (get_safe_mode() == SAFE_MODE_NONE) {
         autoreload_enable();
     }
 
     static mp_int_t default_usb_state = CIRCUITPY_USB == 1;
     #if CIRCUITPY_OS_GETENV
-    if (safe_mode == SAFE_MODE_NONE) {
+    if (get_safe_mode() == SAFE_MODE_NONE) {
         (void)common_hal_os_getenv_int("CIRCUITPY_USB_MSC_DEFAULT", &default_usb_state);
     }
     #endif
