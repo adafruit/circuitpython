@@ -174,15 +174,18 @@ static bool usb_cdc_console_is_enabled;
 static bool usb_cdc_data_is_enabled;
 
 void usb_cdc_set_defaults(void) {
+    #if CIRCUITPY_OS_GETENV
     mp_int_t getenv_console = (mp_int_t)CIRCUITPY_USB_CDC_CONSOLE_ENABLED_DEFAULT;
     mp_int_t getenv_data = (mp_int_t)CIRCUITPY_USB_CDC_DATA_ENABLED_DEFAULT;
-    #if CIRCUITPY_OS_GETENV
     if (get_safe_mode() == SAFE_MODE_NONE) {
         (void)common_hal_os_getenv_int("CIRCUITPY_USB_CDC_CONSOLE_DEFAULT", &getenv_console);
         (void)common_hal_os_getenv_int("CIRCUITPY_USB_CDC_DATA_DEFAULT", &getenv_data);
     }
-    #endif
     common_hal_usb_cdc_enable((bool)getenv_console, (bool)getenv_data);
+    #else
+    common_hal_usb_cdc_enable(CIRCUITPY_USB_CDC_CONSOLE_ENABLED_DEFAULT,
+        CIRCUITPY_USB_CDC_DATA_ENABLED_DEFAULT);
+    #endif
 }
 
 bool usb_cdc_console_enabled(void) {

@@ -93,13 +93,15 @@ static const uint8_t usb_msc_descriptor_template[] = {
 bool storage_usb_is_enabled;
 
 void storage_usb_set_defaults(void) {
-    mp_int_t getenv_d = (mp_int_t)CIRCUITPY_USB_MSC_ENABLED_DEFAULT;
     #if CIRCUITPY_OS_GETENV
+    mp_int_t getenv_d = (mp_int_t)CIRCUITPY_USB_MSC_ENABLED_DEFAULT;
     if (get_safe_mode() == SAFE_MODE_NONE) {
         (void)common_hal_os_getenv_int("CIRCUITPY_USB_MSC_DEFAULT", &getenv_d);
     }
-    #endif
     storage_usb_is_enabled = (bool)getenv_d;
+    #else
+    storage_usb_is_enabled = CIRCUITPY_USB_MSC_ENABLED_DEFAULT;
+    #endif
 }
 
 bool storage_usb_enabled(void) {
