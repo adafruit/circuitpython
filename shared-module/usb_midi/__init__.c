@@ -269,14 +269,12 @@ bool common_hal_usb_midi_enable(void) {
 }
 
 void usb_midi_set_defaults(void) {
-    #if CIRCUITPY_OS_GETENV
     mp_int_t getenv_d = (mp_int_t)CIRCUITPY_USB_MIDI_ENABLED_DEFAULT;
+    #if CIRCUITPY_OS_GETENV
     if (get_safe_mode() == SAFE_MODE_NONE) {
         (void)common_hal_os_getenv_int("CIRCUITPY_USB_MIDI_DEFAULT", &getenv_d);
     }
+    #endif
     usb_midi_is_enabled = (bool)getenv_d;
     usb_midi_set_enabled(usb_midi_is_enabled);
-    #else
-    usb_midi_is_enabled = CIRCUITPY_USB_MIDI_ENABLED_DEFAULT;
-    #endif
 }
