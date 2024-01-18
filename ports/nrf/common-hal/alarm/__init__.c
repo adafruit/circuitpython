@@ -186,7 +186,7 @@ STATIC void system_on_idle_until_alarm(int64_t timediff_ms, bool wake_from_seria
         if (wake_from_serial && serial_connected() && serial_bytes_available()) {
             break;
         }
-        RUN_BACKGROUND_TASKS;
+        // RUN_BACKGROUND_TASKS;
         if (common_hal_alarm_woken_from_sleep()) {
             break;
         }
