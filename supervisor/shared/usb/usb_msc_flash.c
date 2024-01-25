@@ -40,7 +40,14 @@
 
 #define MSC_FLASH_BLOCK_SIZE    512
 
-static bool ejected[1] = {true};
+#define LUN_COUNT 4
+
+static bool ejected[LUN_COUNT] = {true};
+
+// Invoked to determine max LUN
+uint8_t tud_msc_get_maxlun_cb(void) {
+    return LUN_COUNT;
+}
 
 // Lock to track if something else is using the filesystem when USB is plugged in. If so, the drive
 // will be made available once the lock is released.
@@ -98,17 +105,24 @@ void usb_msc_unlock(void) {
 static fs_user_mount_t *get_vfs(int lun) {
     // TODO(tannewt): Return the mount which matches the lun where 0 is the end
     // and is counted in reverse.
-    if (lun > 0) {
+    if (lun < 0 || lun >= LUN_COUNT) {
         return NULL;
     }
+
+    mp_vfs_mount_t *mounts[LUN_COUNT] = { NULL };
+    int last_mount_idx = -1;
     mp_vfs_mount_t *current_mount = MP_STATE_VM(vfs_mount_table);
-    if (current_mount == NULL) {
-        return NULL;
-    }
-    while (current_mount->next != NULL) {
+
+    while (current_mount != NULL) {
+        mounts[++last_mount_idx] = current_mount;
         current_mount = current_mount->next;
     }
-    return current_mount->obj;
+
+    if (last_mount_idx < lun) {
+        return NULL;
+    }
+
+    return mounts[last_mount_idx - lun]->obj;
 }
 
 // Callback invoked when received an SCSI command not in built-in list below
@@ -119,11 +133,6 @@ int32_t tud_msc_scsi_cb(uint8_t lun, const uint8_t scsi_cmd[16], void *buffer, u
     int32_t resplen = 0;
 
     switch (scsi_cmd[0]) {
-        case SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL:
-            // Host is about to read/write etc ... better not to disconnect disk
-            resplen = 0;
-            break;
-
         default:
             // Set Sense = Invalid Command Operation
             tud_msc_set_sense(lun, SCSI_SENSE_ILLEGAL_REQUEST, 0x20, 0x00);
@@ -148,12 +157,18 @@ int32_t tud_msc_scsi_cb(uint8_t lun, const uint8_t scsi_cmd[16], void *buffer, u
 
 void tud_msc_capacity_cb(uint8_t lun, uint32_t *block_count, uint16_t *block_size) {
     fs_user_mount_t *vfs = get_vfs(lun);
-    disk_ioctl(vfs, GET_SECTOR_COUNT, block_count);
-    disk_ioctl(vfs, GET_SECTOR_SIZE, block_size);
+
+    if (vfs) {
+        disk_ioctl(vfs, GET_SECTOR_COUNT, block_count);
+        disk_ioctl(vfs, GET_SECTOR_SIZE, block_size);
+    } else {
+        *block_count = 0;
+        *block_size = 0;
+    }
 }
 
 bool tud_msc_is_writable_cb(uint8_t lun) {
-    if (lun > 1) {
+    if (lun >= LUN_COUNT) {
         return false;
     }
 
@@ -175,21 +190,26 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void *buff
     const uint32_t block_count = bufsize / MSC_FLASH_BLOCK_SIZE;
 
     fs_user_mount_t *vfs = get_vfs(lun);
-    disk_read(vfs, buffer, lba, block_count);
+    if (vfs == NULL) {
+        return -1;
+    }
 
+    disk_read(vfs, buffer, lba, block_count);
     return block_count * MSC_FLASH_BLOCK_SIZE;
 }
 
 // Callback invoked when received WRITE10 command.
 // Process data in buffer to disk's storage and return number of written bytes
 int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t *buffer, uint32_t bufsize) {
-    (void)lun;
     (void)offset;
-    autoreload_suspend(AUTORELOAD_SUSPEND_USB);
 
     const uint32_t block_count = bufsize / MSC_FLASH_BLOCK_SIZE;
 
     fs_user_mount_t *vfs = get_vfs(lun);
+    if (vfs != NULL) {
+        return -1;
+    }
+
     disk_write(vfs, buffer, lba, block_count);
     // Since by getting here we assume the mount is read-only to
     // MicroPython let's update the cached FatFs sector if it's the one
@@ -213,11 +233,13 @@ int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t *
 // Callback invoked when WRITE10 command is completed (status received and accepted by host).
 // used to flush any pending cache.
 void tud_msc_write10_complete_cb(uint8_t lun) {
-    (void)lun;
-
-    // This write is complete; initiate an autoreload.
-    autoreload_resume(AUTORELOAD_SUSPEND_USB);
-    autoreload_trigger();
+    // A write to CIRCUITPY is complete. Start the autoreload clock.
+    // Don't auto-reload on writes to other filesystems.
+    if (lun == 0) {
+        // This write is complete; initiate an autoreload.
+        autoreload_resume(AUTORELOAD_SUSPEND_USB);
+        autoreload_trigger();
+    }
 }
 
 // Invoked when received SCSI_CMD_INQUIRY
@@ -233,16 +255,14 @@ void tud_msc_inquiry_cb(uint8_t lun, uint8_t vendor_id[8], uint8_t product_id[16
 // Invoked when received Test Unit Ready command.
 // return true allowing host to read/write this LUN e.g SD card inserted
 bool tud_msc_test_unit_ready_cb(uint8_t lun) {
-    if (lun > 1) {
+    if (lun >= LUN_COUNT) {
         return false;
     }
 
     fs_user_mount_t *current_mount = get_vfs(lun);
-    if (current_mount == NULL) {
-        return false;
-    }
-    if (ejected[lun]) {
+    if (current_mount == NULL || ejected[lun]) {
         // Set 0x3a for media not present.
+        // If no sense is set, tinyusb will default to MEDIUM NOT PRESENT: SCSI_SENSE_NOT_READY, 0x3A, 0x00
         tud_msc_set_sense(lun, SCSI_SENSE_NOT_READY, 0x3A, 0x00);
         return false;
     }
@@ -254,7 +274,7 @@ bool tud_msc_test_unit_ready_cb(uint8_t lun) {
 // - Start = 0 : stopped power mode, if load_eject = 1 : unload disk storage
 // - Start = 1 : active mode, if load_eject = 1 : load disk storage
 bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, bool load_eject) {
-    if (lun > 1) {
+    if (lun >= LUN_COUNT) {
         return false;
     }
     fs_user_mount_t *current_mount = get_vfs(lun);
