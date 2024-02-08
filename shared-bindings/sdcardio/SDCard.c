@@ -69,11 +69,13 @@
 //|             import os
 //|
 //|             import board
-//|             import busio
+//|             #import busio           # If you need to use `busio.SPI` instead of `board.SPI`
 //|             import sdcardio
 //|             import storage
 //|
-//|             sd = sdcardio.SDCard(busio.SPI(), board.SD_CS)
+//|             sd = sdcardio.SDCard(board.SPI(), board.SD_CS)
+//|             # If board.SPI is not defined on the board being used
+//|             # sd = sdcardio.SDCard(busio.SPI(board.SCK,board.MOSI,board.MISO), board.SD_CS)
 //|             vfs = storage.VfsFat(sd)
 //|             storage.mount(vfs, '/sd')
 //|             os.listdir('/sd')"""
