@@ -92,7 +92,7 @@ mp_obj_t common_hal_board_create_i2c(const mp_int_t instance) {
 
 #if CIRCUITPY_BOARD_SPI
 // Statically allocate the SPI object so it can live past the end of the heap and into the next VM.
-// That way it can be used by built-in FourWire displays and be accessible through board.SPI().
+// That way it can be used by built-in FourWire displays and be accessible through boardio.SPI().
 
 typedef struct {
     const mcu_pin_obj_t *clock;
