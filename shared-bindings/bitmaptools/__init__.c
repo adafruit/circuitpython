@@ -1020,7 +1020,8 @@ MP_DEFINE_CONST_FUN_OBJ_KW(bitmaptools_draw_circle_obj, 0, bitmaptools_obj_draw_
 //|     x2: int | None = None,
 //|     y2: int | None = None,
 //|     skip_source_index: int | None = None,
-//|     skip_dest_index: int | None = None
+//|     skip_dest_index: int | None = None,
+//|     swap_bytes: bool = False
 //| ) -> None:
 //|     """Inserts the source_bitmap region defined by rectangular boundaries
 //|     (x1,y1) and (x2,y2) into the bitmap at the specified (x,y) location.
@@ -1038,7 +1039,9 @@ MP_DEFINE_CONST_FUN_OBJ_KW(bitmaptools_draw_circle_obj, 0, bitmaptools_obj_draw_
 //|     :param int skip_source_index: bitmap palette index in the source that will not be copied,
 //|                            set to None to copy all pixels
 //|     :param int skip_dest_index: bitmap palette index in the destination bitmap that will not get overwritten
-//|                             by the pixels from the source"""
+//|                             by the pixels from the source
+//|     :param bool swap_bytes: Swap the bytes of 565 color values as they are being blitted. Defaults to False.
+//|     """
 //|     ...
 //|
 STATIC mp_obj_t bitmaptools_obj_blit(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
