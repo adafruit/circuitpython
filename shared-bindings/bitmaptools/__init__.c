@@ -1042,7 +1042,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(bitmaptools_draw_circle_obj, 0, bitmaptools_obj_draw_
 //|     ...
 //|
 STATIC mp_obj_t bitmaptools_obj_blit(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    enum {ARG_destination, ARG_source, ARG_x, ARG_y, ARG_x1, ARG_y1, ARG_x2, ARG_y2, ARG_skip_source_index, ARG_skip_dest_index};
+    enum {ARG_destination, ARG_source, ARG_x, ARG_y, ARG_x1, ARG_y1, ARG_x2, ARG_y2, ARG_skip_source_index, ARG_skip_dest_index, ARG_swap_bytes};
     static const mp_arg_t allowed_args[] = {
         {MP_QSTR_dest_bitmap, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
         {MP_QSTR_source_bitmap, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
@@ -1051,6 +1051,7 @@ STATIC mp_obj_t bitmaptools_obj_blit(size_t n_args, const mp_obj_t *pos_args, mp
         ALLOWED_ARGS_X1_Y1_X2_Y2(0, 0),
         {MP_QSTR_skip_source_index, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
         {MP_QSTR_skip_dest_index, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
+        {MP_QSTR_swap_bytes, MP_ARG_BOOL, {.u_bool = false}},
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     // mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
@@ -1094,9 +1095,10 @@ STATIC mp_obj_t bitmaptools_obj_blit(size_t n_args, const mp_obj_t *pos_args, mp
         skip_dest_index = mp_obj_get_int(args[ARG_skip_dest_index].u_obj);
         skip_dest_index_none = false;
     }
+    bool swap_bytes = args[ARG_swap_bytes].u_bool;
 
     common_hal_bitmaptools_blit(destination, source, x, y, lim.x1, lim.y1, lim.x2, lim.y2, skip_source_index, skip_source_index_none, skip_dest_index,
-        skip_dest_index_none);
+        skip_dest_index_none, swap_bytes);
 
     return mp_const_none;
 }

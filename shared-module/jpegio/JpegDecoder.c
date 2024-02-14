@@ -201,7 +201,7 @@ static int bitmap_output(JDEC *jd, void *data, JRECT *rect) {
     assert(x2 <= src_width);
     assert(y2 <= src_height);
 
-    common_hal_bitmaptools_blit(self->dest, &src, x, y, x1, y1, x2, y2, self->skip_source_index, self->skip_source_index_none, self->skip_dest_index, self->skip_dest_index_none);
+    common_hal_bitmaptools_blit(self->dest, &src, x, y, x1, y1, x2, y2, self->skip_source_index, self->skip_source_index_none, self->skip_dest_index, self->skip_dest_index_none, false);
     return 1;
 }
 

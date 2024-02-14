@@ -26,6 +26,7 @@
 
 #include "shared/runtime/interrupt_char.h"
 #include "shared-bindings/bitmaptools/__init__.h"
+#include "shared-module/bitmaptools/__init__.h"
 #include "shared-bindings/displayio/Bitmap.h"
 #include "shared-bindings/displayio/Palette.h"
 #include "shared-bindings/displayio/ColorConverter.h"
@@ -39,6 +40,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
 
 #define BITMAP_DEBUG(...) (void)0
 // #define BITMAP_DEBUG(...) mp_printf(&mp_plat_print, __VA_ARGS__)
@@ -1054,9 +1056,24 @@ void common_hal_bitmaptools_draw_circle(displayio_bitmap_t *destination,
     draw_circle(destination, x, y, radius, value);
 }
 
+
+
+uint32_t swap_first_two_bytes(uint32_t value) {
+    // Extract the individual bytes
+    uint8_t byte1 = (value >> 24) & 0xFF; // Most significant byte
+    uint8_t byte2 = (value >> 16) & 0xFF;
+    uint8_t byte3 = (value >> 8) & 0xFF;
+    uint8_t byte4 = value & 0xFF; // Least significant byte
+
+    // Swap the first two bytes
+    //uint32_t swapped_value = (byte2 << 24) | (byte1 << 16) | (byte4 << 8) | byte3;
+    uint32_t swapped_value = (byte1 << 24) | (byte2 << 16) | (byte4 << 8) | byte3;
+    //mp_printf(&mp_plat_print, "swapped_value: 0x%" PRIx32 "\n", swapped_value);
+    return swapped_value;
+}
 void common_hal_bitmaptools_blit(displayio_bitmap_t *destination, displayio_bitmap_t *source, int16_t x, int16_t y,
     int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint32_t skip_source_index, bool skip_source_index_none, uint32_t skip_dest_index,
-    bool skip_dest_index_none) {
+    bool skip_dest_index_none, bool swap_bytes) {
 
     if (destination->read_only) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Read-only"));
@@ -1104,9 +1121,16 @@ void common_hal_bitmaptools_blit(displayio_bitmap_t *destination, displayio_bitm
 
                 if ((yd_index >= 0) && (yd_index < destination->height)) {
                     uint32_t value = common_hal_displayio_bitmap_get_pixel(source, xs_index, ys_index);
+                    //mp_printf(&mp_plat_print, "Hex value: 0x%" PRIx32 "\n", value);
                     if (skip_dest_index_none) { // if skip_dest_index is none, then only check source skip
                         if ((skip_source_index_none) || (value != skip_source_index)) {   // write if skip_value_none is True
-                            displayio_bitmap_write_pixel(destination, xd_index, yd_index, value);
+                            //displayio_bitmap_write_pixel(destination, xd_index, yd_index, swap_r_and_b(swap_first_two_bytes(value)));
+                            if (swap_bytes){
+                                displayio_bitmap_write_pixel(destination, xd_index, yd_index, swap_first_two_bytes(value));
+                            }else{
+                                displayio_bitmap_write_pixel(destination, xd_index, yd_index, value);
+                            }
+
                         }
                     } else { // check dest_value index against skip_dest_index and skip if they match
                         uint32_t dest_value = common_hal_displayio_bitmap_get_pixel(destination, xd_index, yd_index);
