@@ -1122,9 +1122,9 @@ void common_hal_bitmaptools_blit(displayio_bitmap_t *destination, displayio_bitm
                     uint32_t value = common_hal_displayio_bitmap_get_pixel(source, xs_index, ys_index);
                     if (skip_dest_index_none) { // if skip_dest_index is none, then only check source skip
                         if ((skip_source_index_none) || (value != skip_source_index)) {   // write if skip_value_none is True
-                            if (swap_bytes){
+                            if (swap_bytes) {
                                 displayio_bitmap_write_pixel(destination, xd_index, yd_index, rgb565_swap(value));
-                            }else{
+                            } else {
                                 displayio_bitmap_write_pixel(destination, xd_index, yd_index, value);
                             }
                         }
