@@ -24,4 +24,4 @@
  * THE SOFTWARE.
  */
 
-uint32_t swap_first_two_bytes(uint32_t);
+uint32_t rgb565_swap(uint32_t);
