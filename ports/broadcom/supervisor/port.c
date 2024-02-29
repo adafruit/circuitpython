@@ -91,17 +91,10 @@ void reset_port(void) {
     reset_uart();
     #endif
 
-    #if CIRCUITPY_PWMIO
-    pwmout_reset();
-    #endif
-
     #if CIRCUITPY_RTC
     rtc_reset();
     #endif
 
-    #if CIRCUITPY_AUDIOPWMIO
-    audiopwmout_reset();
-    #endif
     #if CIRCUITPY_AUDIOCORE
     audio_dma_reset();
     #endif

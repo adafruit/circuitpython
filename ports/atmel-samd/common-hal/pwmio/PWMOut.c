@@ -52,16 +52,12 @@ uint8_t tcc_refcount[TCC_INST_NUM];
 
 // This bitmask keeps track of which channels of a TCC are currently claimed.
 #ifdef SAMD21
-uint8_t tcc_channels[3];   // Set by pwmout_reset() to {0xf0, 0xfc, 0xfc} initially.
+uint8_t tcc_channels[3];
 #endif
 #ifdef SAM_D5X_E5X
-uint8_t tcc_channels[5];   // Set by pwmout_reset() to {0xc0, 0xf0, 0xf8, 0xfc, 0xfc} initially.
+uint8_t tcc_channels[5];
 #endif
 
-
-void common_hal_pwmio_pwmout_never_reset(pwmio_pwmout_obj_t *self) {
-    never_reset_pin_number(self->pin->number);
-}
 
 static uint8_t tcc_channel(const pin_timer_t *t) {
     // For the SAMD51 this hardcodes the use of OTMX == 0x0, the output matrix mapping, which uses

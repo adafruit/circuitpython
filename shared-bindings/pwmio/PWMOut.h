@@ -56,10 +56,6 @@ extern bool common_hal_pwmio_pwmout_get_variable_frequency(pwmio_pwmout_obj_t *s
 // Don't use this! It is only used internally for backwards compatibility.
 extern const mcu_pin_obj_t *common_hal_pwmio_pwmout_get_pin(pwmio_pwmout_obj_t *self);
 
-// This is used by the supervisor to claim PWMOut devices indefinitely.
-extern void common_hal_pwmio_pwmout_never_reset(pwmio_pwmout_obj_t *self);
-extern void common_hal_pwmio_pwmout_reset_ok(pwmio_pwmout_obj_t *self);
-
 extern void common_hal_pwmio_pwmout_raise_error(pwmout_result_t result);
 
 #endif // MICROPY_INCLUDED_SHARED_BINDINGS_PWMIO_PWMOUT_H

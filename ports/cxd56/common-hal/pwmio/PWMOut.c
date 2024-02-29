@@ -36,7 +36,6 @@ typedef struct {
     const char *devpath;
     const mcu_pin_obj_t *pin;
     int fd;
-    bool reset;
 } pwmout_dev_t;
 
 STATIC pwmout_dev_t pwmout_dev[] = {
@@ -90,8 +89,6 @@ void common_hal_pwmio_pwmout_deinit(pwmio_pwmout_obj_t *self) {
         return;
     }
 
-    pwmout_dev[self->number].reset = true;
-
     ioctl(pwmout_dev[self->number].fd, PWMIOC_STOP, 0);
     close(pwmout_dev[self->number].fd);
     pwmout_dev[self->number].fd = -1;
@@ -128,12 +125,6 @@ uint32_t common_hal_pwmio_pwmout_get_frequency(pwmio_pwmout_obj_t *self) {
 
 bool common_hal_pwmio_pwmout_get_variable_frequency(pwmio_pwmout_obj_t *self) {
     return self->variable_frequency;
-}
-
-void common_hal_pwmio_pwmout_never_reset(pwmio_pwmout_obj_t *self) {
-    never_reset_pin_number(self->pin->number);
-
-    pwmout_dev[self->number].reset = false;
 }
 
 void pwmout_start(uint8_t pwm_num) {
