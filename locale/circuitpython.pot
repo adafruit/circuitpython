@@ -206,6 +206,8 @@ msgstr ""
 msgid "%q must be multiple of 8."
 msgstr ""
 
+#: ports/raspberrypi/bindings/clkio/ClkAuxSrc.c
+#: ports/raspberrypi/bindings/clkio/ClkIndex.c
 #: ports/raspberrypi/bindings/cyw43/__init__.c py/argcheck.c py/objexcept.c
 #: shared-bindings/bitmapfilter/__init__.c shared-bindings/canio/CAN.c
 #: shared-bindings/digitalio/Pull.c shared-bindings/supervisor/__init__.c
@@ -224,6 +226,11 @@ msgstr ""
 
 #: ports/atmel-samd/common-hal/busio/UART.c
 msgid "%q must be power of 2"
+msgstr ""
+
+#: ports/raspberrypi/common-hal/clkio/ClkInput.c
+#: ports/raspberrypi/common-hal/clkio/ClkOutput.c
+msgid "%q not set"
 msgstr ""
 
 #: shared-bindings/wifi/Monitor.c
@@ -912,10 +919,6 @@ msgstr ""
 msgid "Error in safemode.py."
 msgstr ""
 
-#: shared-bindings/ssl/SSLSocket.c
-msgid "Error: Failure to bind"
-msgstr ""
-
 #: shared-bindings/alarm/__init__.c
 msgid "Expected a kind of %q"
 msgstr ""
@@ -1222,12 +1225,21 @@ msgstr ""
 msgid "Invalid data_pins[%d]"
 msgstr ""
 
+#: ports/raspberrypi/common-hal/clkio/ClkOutput.c
+msgid "Invalid divisor: [1, 2-16777215]"
+msgstr ""
+
 #: shared-module/msgpack/__init__.c
 msgid "Invalid format"
 msgstr ""
 
 #: shared-module/audiocore/WaveFile.c
 msgid "Invalid format chunk size"
+msgstr ""
+
+#: ports/raspberrypi/common-hal/clkio/ClkInput.c
+#, c-format
+msgid "Invalid freqs: %u > %u"
 msgstr ""
 
 #: shared-bindings/wifi/Radio.c
@@ -1657,12 +1669,27 @@ msgstr ""
 msgid "Permission denied"
 msgstr ""
 
+#: ports/raspberrypi/common-hal/clkio/ClkInput.c
+#, c-format
+msgid "Pin %d invalid, valid pins are: 20,22"
+msgstr ""
+
+#: ports/raspberrypi/common-hal/clkio/ClkOutput.c
+#, c-format
+msgid "Pin %d invalid, valid pins are: 21,23,24,25"
+msgstr ""
+
 #: ports/stm/common-hal/alarm/pin/PinAlarm.c
 msgid "Pin cannot wake from Deep Sleep"
 msgstr ""
 
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 msgid "Pin count too large"
+msgstr ""
+
+#: ports/raspberrypi/common-hal/clkio/ClkInput.c
+#: ports/raspberrypi/common-hal/clkio/ClkOutput.c
+msgid "Pin in use"
 msgstr ""
 
 #: ports/stm/common-hal/alarm/pin/PinAlarm.c
@@ -2728,6 +2755,10 @@ msgstr ""
 
 #: shared-bindings/bitmaptools/__init__.c
 msgid "clip point must be (x,y) tuple"
+msgstr ""
+
+#: ports/raspberrypi/common-hal/clkio/ClkInput.c
+msgid "clock_configure_gpin failed!"
 msgstr ""
 
 #: shared-bindings/msgpack/ExtType.c
@@ -3961,6 +3992,10 @@ msgstr ""
 msgid "splitting with sub-captures"
 msgstr ""
 
+#: ports/raspberrypi/common-hal/clkio/ClkInput.c
+msgid "src freq == 0"
+msgstr ""
+
 #: py/objstr.c
 msgid "start/end indices"
 msgstr ""
@@ -4012,6 +4047,10 @@ msgstr ""
 
 #: extmod/moductypes.c
 msgid "syntax error in uctypes descriptor"
+msgstr ""
+
+#: ports/raspberrypi/common-hal/clkio/ClkInput.c
+msgid "target freq == 0"
 msgstr ""
 
 #: extmod/modtime.c
