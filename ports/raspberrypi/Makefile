@@ -259,6 +259,17 @@ SRC_C += \
 	$(SRC_CYW43) \
 	$(SRC_LWIP) \
 
+ifeq ($(CIRCUITPY_RP2CLKIO),1)
+SRC_C += \
+	bindings/clkio/__init__.c \
+	bindings/clkio/ClkOutput.c \
+	bindings/clkio/ClkInput.c \
+	bindings/clkio/ClkAuxSrc.c \
+	bindings/clkio/ClkIndex.c \
+	common-hal/clkio/ClkOutput.c \
+	common-hal/clkio/ClkInput.c \
+
+endif
 
 ifeq ($(CIRCUITPY_USB_HOST), 1)
 SRC_C += \
