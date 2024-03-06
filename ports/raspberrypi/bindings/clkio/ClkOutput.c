@@ -108,7 +108,7 @@ STATIC mp_obj_t clkio_clkoutput_disable(size_t n_args, const mp_obj_t *pos_args,
 MP_DEFINE_CONST_FUN_OBJ_KW(clkio_clkoutput_disable_obj, 1, clkio_clkoutput_disable);
 
 //|     clksrc: clkio.ClkAuxSrc
-//|     """Gets the auxiliary source clock to be driven to pin."""
+//|     """Auxiliary source clock to be driven to pin."""
 static mp_obj_t clkio_clkoutput_clksrc_get(mp_obj_t self_in) {
     clkio_clkoutput_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -116,8 +116,6 @@ static mp_obj_t clkio_clkoutput_clksrc_get(mp_obj_t self_in) {
 }
 MP_DEFINE_CONST_FUN_OBJ_1(clkio_clkoutput_clksrc_get_obj, clkio_clkoutput_clksrc_get);
 
-//|     clksrc: clkio.ClkAuxSrc
-//|     """Sets the auxiliary source clock to be driven to pin."""
 static mp_obj_t clkio_clkoutput_clksrc_set(mp_obj_t self_in, mp_obj_t clksrc_obj) {
     clkio_clkoutput_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -130,7 +128,8 @@ MP_PROPERTY_GETSET(clkio_clkoutput_clksrc_obj,
     (mp_obj_t)&clkio_clkoutput_clksrc_set_obj);
 
 //|     divisor: float
-//|     """Gets the divisor used to divide the clock before it's output to pin."""
+//|     """Divisor used to divide the clock before it's output to pin."""
+//|
 static mp_obj_t clkio_clkoutput_divisor_get(mp_obj_t self_in) {
     clkio_clkoutput_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -138,9 +137,6 @@ static mp_obj_t clkio_clkoutput_divisor_get(mp_obj_t self_in) {
 }
 MP_DEFINE_CONST_FUN_OBJ_1(clkio_clkoutput_divisor_get_obj, clkio_clkoutput_divisor_get);
 
-//|     divisor: float
-//|     """Sets the divisor used to divide the clock before it's output to pin."""
-//|
 static mp_obj_t clkio_clkoutput_divisor_set(mp_obj_t self_in, mp_obj_t divisor_obj) {
     clkio_clkoutput_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);

@@ -86,32 +86,23 @@ STATIC void clkio_clkindex_print(const mp_print_t *print, mp_obj_t self_in, mp_p
     qstr clk = MP_QSTR_INVALID;
     if (self_in == MP_ROM_PTR(&clkio_clkindex_gpout0_obj)) {
         clk = MP_QSTR_GPOUT0;
-    }
-    else if (self_in == MP_ROM_PTR(&clkio_clkindex_gpout1_obj)) {
+    } else if (self_in == MP_ROM_PTR(&clkio_clkindex_gpout1_obj)) {
         clk = MP_QSTR_GPOUT1;
-    }
-    else if (self_in == MP_ROM_PTR(&clkio_clkindex_gpout2_obj)) {
+    } else if (self_in == MP_ROM_PTR(&clkio_clkindex_gpout2_obj)) {
         clk = MP_QSTR_GPOUT2;
-    }
-    else if (self_in == MP_ROM_PTR(&clkio_clkindex_gpout3_obj)) {
+    } else if (self_in == MP_ROM_PTR(&clkio_clkindex_gpout3_obj)) {
         clk = MP_QSTR_GPOUT3;
-    }
-    else if (self_in == MP_ROM_PTR(&clkio_clkindex_ref_obj)) {
+    } else if (self_in == MP_ROM_PTR(&clkio_clkindex_ref_obj)) {
         clk = MP_QSTR_REF;
-    }
-    else if (self_in == MP_ROM_PTR(&clkio_clkindex_sys_obj)) {
+    } else if (self_in == MP_ROM_PTR(&clkio_clkindex_sys_obj)) {
         clk = MP_QSTR_SYS;
-    }
-    else if (self_in == MP_ROM_PTR(&clkio_clkindex_peri_obj)) {
+    } else if (self_in == MP_ROM_PTR(&clkio_clkindex_peri_obj)) {
         clk = MP_QSTR_PERI;
-    }
-    else if (self_in == MP_ROM_PTR(&clkio_clkindex_usb_obj)) {
+    } else if (self_in == MP_ROM_PTR(&clkio_clkindex_usb_obj)) {
         clk = MP_QSTR_USB;
-    }
-    else if (self_in == MP_ROM_PTR(&clkio_clkindex_adc_obj)) {
+    } else if (self_in == MP_ROM_PTR(&clkio_clkindex_adc_obj)) {
         clk = MP_QSTR_ADC;
-    }
-    else if (self_in == MP_ROM_PTR(&clkio_clkindex_rtc_obj)) {
+    } else if (self_in == MP_ROM_PTR(&clkio_clkindex_rtc_obj)) {
         clk = MP_QSTR_RTC;
     }
     mp_printf(print, "%q.%q.%q", MP_QSTR_clkio, MP_QSTR_ClkIndex, clk);
@@ -126,62 +117,53 @@ MP_DEFINE_CONST_OBJ_TYPE(
     );
 
 mp_obj_t clkindex_get_obj(clkio_clkindex_t type) {
-    if (type == CLKINDEX_GPOUT0)
+    if (type == CLKINDEX_GPOUT0) {
         return MP_OBJ_FROM_PTR(&clkio_clkindex_gpout0_obj);
-    else if (type == CLKINDEX_GPOUT1)
+    } else if (type == CLKINDEX_GPOUT1) {
         return MP_OBJ_FROM_PTR(&clkio_clkindex_gpout1_obj);
-    else if (type == CLKINDEX_GPOUT2)
+    } else if (type == CLKINDEX_GPOUT2) {
         return MP_OBJ_FROM_PTR(&clkio_clkindex_gpout2_obj);
-    else if (type == CLKINDEX_GPOUT3)
+    } else if (type == CLKINDEX_GPOUT3) {
         return MP_OBJ_FROM_PTR(&clkio_clkindex_gpout3_obj);
-    else if (type == CLKINDEX_REF)
+    } else if (type == CLKINDEX_REF) {
         return MP_OBJ_FROM_PTR(&clkio_clkindex_ref_obj);
-    else if (type == CLKINDEX_SYS)
+    } else if (type == CLKINDEX_SYS) {
         return MP_OBJ_FROM_PTR(&clkio_clkindex_sys_obj);
-    else if (type == CLKINDEX_PERI)
+    } else if (type == CLKINDEX_PERI) {
         return MP_OBJ_FROM_PTR(&clkio_clkindex_peri_obj);
-    else if (type == CLKINDEX_USB)
+    } else if (type == CLKINDEX_USB) {
         return MP_OBJ_FROM_PTR(&clkio_clkindex_usb_obj);
-    else if (type == CLKINDEX_ADC)
+    } else if (type == CLKINDEX_ADC) {
         return MP_OBJ_FROM_PTR(&clkio_clkindex_adc_obj);
-    else if (type == CLKINDEX_RTC)
+    } else if (type == CLKINDEX_RTC) {
         return MP_OBJ_FROM_PTR(&clkio_clkindex_rtc_obj);
-    else
+    } else {
         return MP_ROM_NONE;
+    }
 }
 
 clkio_clkindex_t validate_clkindex(mp_rom_obj_t obj, qstr arg_name) {
     if (obj == MP_ROM_PTR(&clkio_clkindex_gpout0_obj)) {
         return CLKINDEX_GPOUT0;
-    }
-    else if (obj == MP_ROM_PTR(&clkio_clkindex_gpout1_obj)) {
+    } else if (obj == MP_ROM_PTR(&clkio_clkindex_gpout1_obj)) {
         return CLKINDEX_GPOUT1;
-    }
-    else if (obj == MP_ROM_PTR(&clkio_clkindex_gpout2_obj)) {
+    } else if (obj == MP_ROM_PTR(&clkio_clkindex_gpout2_obj)) {
         return CLKINDEX_GPOUT2;
-    }
-    else if (obj == MP_ROM_PTR(&clkio_clkindex_gpout3_obj)) {
+    } else if (obj == MP_ROM_PTR(&clkio_clkindex_gpout3_obj)) {
         return CLKINDEX_GPOUT3;
-    }
-    else if (obj == MP_ROM_PTR(&clkio_clkindex_ref_obj)) {
+    } else if (obj == MP_ROM_PTR(&clkio_clkindex_ref_obj)) {
         return CLKINDEX_REF;
-    }
-    else if (obj == MP_ROM_PTR(&clkio_clkindex_sys_obj)) {
+    } else if (obj == MP_ROM_PTR(&clkio_clkindex_sys_obj)) {
         return CLKINDEX_SYS;
-    }
-    else if (obj == MP_ROM_PTR(&clkio_clkindex_peri_obj)) {
+    } else if (obj == MP_ROM_PTR(&clkio_clkindex_peri_obj)) {
         return CLKINDEX_PERI;
-    }
-    else if (obj == MP_ROM_PTR(&clkio_clkindex_usb_obj)) {
+    } else if (obj == MP_ROM_PTR(&clkio_clkindex_usb_obj)) {
         return CLKINDEX_USB;
-    }
-    else if (obj == MP_ROM_PTR(&clkio_clkindex_adc_obj)) {
+    } else if (obj == MP_ROM_PTR(&clkio_clkindex_adc_obj)) {
         return CLKINDEX_ADC;
-    }
-    else if (obj == MP_ROM_PTR(&clkio_clkindex_rtc_obj)) {
+    } else if (obj == MP_ROM_PTR(&clkio_clkindex_rtc_obj)) {
         return CLKINDEX_RTC;
-    }
-    else if (obj == MP_ROM_NONE) {
+    } else if (obj == MP_ROM_NONE) {
         return CLKINDEX_NONE;
     }
     mp_raise_TypeError_varg(MP_ERROR_TEXT("%q must be of type %q or %q, not %q"), arg_name, MP_QSTR_ClkIndex, MP_QSTR_None, mp_obj_get_type(obj)->name);

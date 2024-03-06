@@ -63,4 +63,4 @@ extern const clkio_clkauxsrc_obj_t clkio_clkauxsrc_rtc_obj;
 extern const clkio_clkauxsrc_obj_t clkio_clkauxsrc_ref_obj;
 
 clkio_clkauxsrc_t validate_clkauxsrc(mp_rom_obj_t obj, qstr arg_name);
-mp_obj_t clkauxsrc_get_obj (clkio_clkauxsrc_t type);
+mp_obj_t clkauxsrc_get_obj(clkio_clkauxsrc_t type);

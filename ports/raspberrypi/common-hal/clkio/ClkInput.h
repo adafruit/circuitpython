@@ -32,17 +32,17 @@
 typedef struct {
     mp_obj_base_t base;
     const mcu_pin_obj_t *pin;
-    clkio_clkindex_t  clkindex;
+    clkio_clkindex_t clkindex;
     uint32_t src_freq;
     uint32_t target_freq;
     bool enabled;
 } clkio_clkinput_obj_t;
 
-void common_hal_clkio_clkinput_validate_clkindex_pin (const mcu_pin_obj_t *pin);
-bool common_hal_clkio_clkinput_deinited (clkio_clkinput_obj_t *self);
-void common_hal_clkio_clkinput_deinit (clkio_clkinput_obj_t *self);
-void common_hal_clkio_clkinput_validate_freqs (uint32_t src, uint32_t target);
+void common_hal_clkio_clkinput_validate_clkindex_pin(const mcu_pin_obj_t *pin);
+bool common_hal_clkio_clkinput_deinited(clkio_clkinput_obj_t *self);
+void common_hal_clkio_clkinput_deinit(clkio_clkinput_obj_t *self);
+void common_hal_clkio_clkinput_validate_freqs(uint32_t src, uint32_t target);
 
 // Configure clock in/out
-void common_hal_clkio_clkinput_enable (clkio_clkinput_obj_t *self);
-void common_hal_clkio_clkinput_disable (clkio_clkinput_obj_t *self);
+void common_hal_clkio_clkinput_enable(clkio_clkinput_obj_t *self);
+void common_hal_clkio_clkinput_disable(clkio_clkinput_obj_t *self);

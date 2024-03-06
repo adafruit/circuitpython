@@ -45,8 +45,8 @@ STATIC void check_for_deinit(clkio_clkinput_obj_t *self) {
 //|         pin: microcontroller.Pin,
 //|         *,
 //|         clkindex: clkio.ClkIndex,
-//|         src_freq: uint32,
-//|         target_freq: uint32
+//|         src_freq: int,
+//|         target_freq: int
 //|     ) -> None:
 //|         """Creates a clock input pin object.
 //|         pin: Pin to be used as clock input, allowed pins: 20,22
@@ -120,7 +120,7 @@ STATIC mp_obj_t clkio_clkinput_disable(size_t n_args, const mp_obj_t *pos_args, 
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(clkio_clkinput_disable_obj, 1, clkio_clkinput_disable);
 
-//|     def set_freq(self, src_freq: uint32, target_freq: uint32) -> None:
+//|     def set_freq(self, src_freq: int, target_freq: int) -> None:
 //|         """Configures the src and target frequency. Must be set before enable() is called."""
 STATIC mp_obj_t clkio_clkinput_set_freq(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_src_freq, ARG_target_freq };
@@ -140,10 +140,8 @@ STATIC mp_obj_t clkio_clkinput_set_freq(size_t n_args, const mp_obj_t *pos_args,
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(clkio_clkinput_set_freq_obj, 1, clkio_clkinput_set_freq);
 
-//|     def set_freq(
-//|         self,
-//|     ) -> tuple(src_freq, target_freq):
-//|         """Returns the src and target frequency."""
+//|     def get_freq(self) -> tuple[int, int]:
+//|         """Returns the (src, target) frequency as tuple."""
 STATIC mp_obj_t clkio_clkinput_get_freq(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     clkio_clkinput_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
     check_for_deinit(self);
@@ -157,7 +155,8 @@ STATIC mp_obj_t clkio_clkinput_get_freq(size_t n_args, const mp_obj_t *pos_args,
 MP_DEFINE_CONST_FUN_OBJ_KW(clkio_clkinput_get_freq_obj, 1, clkio_clkinput_get_freq);
 
 //|     clkindex: clkio.ClkIndex
-//|     """Get clock that will be driven from external pin."""
+//|     """Clock that will be driven from external pin."""
+//|
 static mp_obj_t clkio_clkinput_clkindex_get(mp_obj_t self_in) {
     clkio_clkinput_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -165,9 +164,6 @@ static mp_obj_t clkio_clkinput_clkindex_get(mp_obj_t self_in) {
 }
 MP_DEFINE_CONST_FUN_OBJ_1(clkio_clkinput_clkindex_get_obj, clkio_clkinput_clkindex_get);
 
-//|     clkindex: clkio.ClkIndex
-//|     """Set clock that will be driven from external pin."""
-//|
 static mp_obj_t clkio_clkinput_clkindex_set(mp_obj_t self_in, mp_obj_t clkindex_obj) {
     clkio_clkinput_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);

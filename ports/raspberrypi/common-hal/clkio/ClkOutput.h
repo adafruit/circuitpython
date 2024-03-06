@@ -37,11 +37,11 @@ typedef struct {
     bool enabled;
 } clkio_clkoutput_obj_t;
 
-void common_hal_clkio_clkoutput_validate_clksrc_pin (const mcu_pin_obj_t *pin);
-bool common_hal_clkio_clkoutput_deinited (clkio_clkoutput_obj_t *self);
-void common_hal_clkio_clkoutput_deinit (clkio_clkoutput_obj_t *self);
-mp_float_t common_hal_clkio_clkoutput_validate_divisor (mp_float_t div);
+void common_hal_clkio_clkoutput_validate_clksrc_pin(const mcu_pin_obj_t *pin);
+bool common_hal_clkio_clkoutput_deinited(clkio_clkoutput_obj_t *self);
+void common_hal_clkio_clkoutput_deinit(clkio_clkoutput_obj_t *self);
+mp_float_t common_hal_clkio_clkoutput_validate_divisor(mp_float_t div);
 
 // Configure clock out
-void common_hal_clkio_clkoutput_enable (clkio_clkoutput_obj_t *self);
-void common_hal_clkio_clkoutput_disable (clkio_clkoutput_obj_t *self);
+void common_hal_clkio_clkoutput_enable(clkio_clkoutput_obj_t *self);
+void common_hal_clkio_clkoutput_disable(clkio_clkoutput_obj_t *self);

@@ -90,35 +90,25 @@ STATIC void clkio_clkauxsrc_print(const mp_print_t *print, mp_obj_t self_in, mp_
     qstr clk = MP_QSTR_INVALID;
     if (self_in == MP_ROM_PTR(&clkio_clkauxsrc_pll_sys_obj)) {
         clk = MP_QSTR_PLL_SYS;
-    }
-    else if (self_in == MP_ROM_PTR(&clkio_clkauxsrc_gpin0_obj)) {
+    } else if (self_in == MP_ROM_PTR(&clkio_clkauxsrc_gpin0_obj)) {
         clk = MP_QSTR_GPIN0;
-    }
-    else if (self_in == MP_ROM_PTR(&clkio_clkauxsrc_gpin1_obj)) {
+    } else if (self_in == MP_ROM_PTR(&clkio_clkauxsrc_gpin1_obj)) {
         clk = MP_QSTR_GPIN1;
-    }
-    else if (self_in == MP_ROM_PTR(&clkio_clkauxsrc_pll_usb_obj)) {
+    } else if (self_in == MP_ROM_PTR(&clkio_clkauxsrc_pll_usb_obj)) {
         clk = MP_QSTR_PLL_USB;
-    }
-    else if (self_in == MP_ROM_PTR(&clkio_clkauxsrc_pll_rosc_obj)) {
+    } else if (self_in == MP_ROM_PTR(&clkio_clkauxsrc_pll_rosc_obj)) {
         clk = MP_QSTR_PLL_ROSC;
-    }
-    else if (self_in == MP_ROM_PTR(&clkio_clkauxsrc_pll_xosc_obj)) {
+    } else if (self_in == MP_ROM_PTR(&clkio_clkauxsrc_pll_xosc_obj)) {
         clk = MP_QSTR_PLL_XOSC;
-    }
-    else if (self_in == MP_ROM_PTR(&clkio_clkauxsrc_sys_obj)) {
+    } else if (self_in == MP_ROM_PTR(&clkio_clkauxsrc_sys_obj)) {
         clk = MP_QSTR_SYS;
-    }
-    else if (self_in == MP_ROM_PTR(&clkio_clkauxsrc_usb_obj)) {
+    } else if (self_in == MP_ROM_PTR(&clkio_clkauxsrc_usb_obj)) {
         clk = MP_QSTR_USB;
-    }
-    else if (self_in == MP_ROM_PTR(&clkio_clkauxsrc_adc_obj)) {
+    } else if (self_in == MP_ROM_PTR(&clkio_clkauxsrc_adc_obj)) {
         clk = MP_QSTR_ADC;
-    }
-    else if (self_in == MP_ROM_PTR(&clkio_clkauxsrc_rtc_obj)) {
+    } else if (self_in == MP_ROM_PTR(&clkio_clkauxsrc_rtc_obj)) {
         clk = MP_QSTR_RTC;
-    }
-    else if (self_in == MP_ROM_PTR(&clkio_clkauxsrc_ref_obj)) {
+    } else if (self_in == MP_ROM_PTR(&clkio_clkauxsrc_ref_obj)) {
         clk = MP_QSTR_REF;
     }
     mp_printf(print, "%q.%q.%q", MP_QSTR_clkio, MP_QSTR_ClkAuxSrc, clk);
@@ -132,68 +122,57 @@ MP_DEFINE_CONST_OBJ_TYPE(
     locals_dict, &clkio_clkauxsrc_locals_dict
     );
 
-mp_obj_t clkauxsrc_get_obj (clkio_clkauxsrc_t type)
-{
-    if (type == CLKAUXSRC_PLL_SYS)
+mp_obj_t clkauxsrc_get_obj(clkio_clkauxsrc_t type) {
+    if (type == CLKAUXSRC_PLL_SYS) {
         return MP_OBJ_FROM_PTR(&clkio_clkauxsrc_pll_sys_obj);
-    else if (type == CLKAUXSRC_GPIN0)
+    } else if (type == CLKAUXSRC_GPIN0) {
         return MP_OBJ_FROM_PTR(&clkio_clkauxsrc_gpin0_obj);
-    else if (type == CLKAUXSRC_GPIN1)
+    } else if (type == CLKAUXSRC_GPIN1) {
         return MP_OBJ_FROM_PTR(&clkio_clkauxsrc_gpin1_obj);
-    else if (type == CLKAUXSRC_PLL_USB)
+    } else if (type == CLKAUXSRC_PLL_USB) {
         return MP_OBJ_FROM_PTR(&clkio_clkauxsrc_pll_usb_obj);
-    else if (type == CLKAUXSRC_PLL_ROSC)
+    } else if (type == CLKAUXSRC_PLL_ROSC) {
         return MP_OBJ_FROM_PTR(&clkio_clkauxsrc_pll_rosc_obj);
-    else if (type == CLKAUXSRC_PLL_XOSC)
+    } else if (type == CLKAUXSRC_PLL_XOSC) {
         return MP_OBJ_FROM_PTR(&clkio_clkauxsrc_pll_xosc_obj);
-    else if (type == CLKAUXSRC_SYS)
+    } else if (type == CLKAUXSRC_SYS) {
         return MP_OBJ_FROM_PTR(&clkio_clkauxsrc_sys_obj);
-    else if (type == CLKAUXSRC_USB)
+    } else if (type == CLKAUXSRC_USB) {
         return MP_OBJ_FROM_PTR(&clkio_clkauxsrc_usb_obj);
-    else if (type == CLKAUXSRC_ADC)
+    } else if (type == CLKAUXSRC_ADC) {
         return MP_OBJ_FROM_PTR(&clkio_clkauxsrc_adc_obj);
-    else if (type == CLKAUXSRC_RTC)
+    } else if (type == CLKAUXSRC_RTC) {
         return MP_OBJ_FROM_PTR(&clkio_clkauxsrc_rtc_obj);
-    else if (type == CLKAUXSRC_REF)
+    } else if (type == CLKAUXSRC_REF) {
         return MP_OBJ_FROM_PTR(&clkio_clkauxsrc_ref_obj);
-    else
+    } else {
         return MP_ROM_NONE;
+    }
 }
 clkio_clkauxsrc_t validate_clkauxsrc(mp_rom_obj_t obj, qstr arg_name) {
     if (obj == MP_ROM_PTR(&clkio_clkauxsrc_pll_sys_obj)) {
         return CLKAUXSRC_PLL_SYS;
-    }
-    else if (obj == MP_ROM_PTR(&clkio_clkauxsrc_gpin0_obj)) {
+    } else if (obj == MP_ROM_PTR(&clkio_clkauxsrc_gpin0_obj)) {
         return CLKAUXSRC_GPIN0;
-    }
-    else if (obj == MP_ROM_PTR(&clkio_clkauxsrc_gpin1_obj)) {
+    } else if (obj == MP_ROM_PTR(&clkio_clkauxsrc_gpin1_obj)) {
         return CLKAUXSRC_GPIN1;
-    }
-    else if (obj == MP_ROM_PTR(&clkio_clkauxsrc_pll_usb_obj)) {
+    } else if (obj == MP_ROM_PTR(&clkio_clkauxsrc_pll_usb_obj)) {
         return CLKAUXSRC_PLL_USB;
-    }
-    else if (obj == MP_ROM_PTR(&clkio_clkauxsrc_pll_rosc_obj)) {
+    } else if (obj == MP_ROM_PTR(&clkio_clkauxsrc_pll_rosc_obj)) {
         return CLKAUXSRC_PLL_ROSC;
-    }
-    else if (obj == MP_ROM_PTR(&clkio_clkauxsrc_pll_xosc_obj)) {
+    } else if (obj == MP_ROM_PTR(&clkio_clkauxsrc_pll_xosc_obj)) {
         return CLKAUXSRC_PLL_XOSC;
-    }
-    else if (obj == MP_ROM_PTR(&clkio_clkauxsrc_sys_obj)) {
+    } else if (obj == MP_ROM_PTR(&clkio_clkauxsrc_sys_obj)) {
         return CLKAUXSRC_SYS;
-    }
-    else if (obj == MP_ROM_PTR(&clkio_clkauxsrc_usb_obj)) {
+    } else if (obj == MP_ROM_PTR(&clkio_clkauxsrc_usb_obj)) {
         return CLKAUXSRC_USB;
-    }
-    else if (obj == MP_ROM_PTR(&clkio_clkauxsrc_adc_obj)) {
+    } else if (obj == MP_ROM_PTR(&clkio_clkauxsrc_adc_obj)) {
         return CLKAUXSRC_ADC;
-    }
-    else if (obj == MP_ROM_PTR(&clkio_clkauxsrc_rtc_obj)) {
+    } else if (obj == MP_ROM_PTR(&clkio_clkauxsrc_rtc_obj)) {
         return CLKAUXSRC_RTC;
-    }
-    else if (obj == MP_ROM_PTR(&clkio_clkauxsrc_ref_obj)) {
+    } else if (obj == MP_ROM_PTR(&clkio_clkauxsrc_ref_obj)) {
         return CLKAUXSRC_REF;
-    }
-    else if (obj == MP_ROM_NONE) {
+    } else if (obj == MP_ROM_NONE) {
         return CLKAUXSRC_NONE;
     }
     mp_raise_TypeError_varg(MP_ERROR_TEXT("%q must be of type %q or %q, not %q"), arg_name, MP_QSTR_ClkAuxSrc, MP_QSTR_None, mp_obj_get_type(obj)->name);
