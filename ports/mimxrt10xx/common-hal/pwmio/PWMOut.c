@@ -85,10 +85,6 @@ static uint16_t _outen_mask(pwm_submodule_t submodule, pwm_channels_t channel) {
     return outen_mask;
 }
 
-void common_hal_pwmio_pwmout_never_reset(pwmio_pwmout_obj_t *self) {
-    common_hal_never_reset_pin(self->pin);
-}
-
 STATIC void _maybe_disable_clock(uint8_t instance) {
     if ((_flexpwms[instance]->MCTRL & PWM_MCTRL_RUN_MASK) == 0) {
         CLOCK_DisableClock(_flexpwm_clocks[instance][0]);

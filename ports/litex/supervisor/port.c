@@ -83,7 +83,6 @@ void reset_port(void) {
     // i2c_reset();
     // spi_reset();
     // uart_reset();
-    // pwmout_reset();
 }
 
 void reset_to_bootloader(void) {
