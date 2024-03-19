@@ -330,6 +330,12 @@ STATIC mp_obj_t supervisor_set_usb_identification(size_t n_args, const mp_obj_t 
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(supervisor_set_usb_identification_obj, 0, supervisor_set_usb_identification);
 
+STATIC mp_obj_t supervisor_run_backround_tasks(void) {
+    RUN_BACKGROUND_TASKS;
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_0(supervisor_run_backround_tasks_obj, supervisor_run_backround_tasks);
+
 STATIC const mp_rom_map_elem_t supervisor_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_supervisor) },
     { MP_ROM_QSTR(MP_QSTR_runtime),  MP_ROM_PTR(&common_hal_supervisor_runtime_obj) },
@@ -346,6 +352,7 @@ STATIC const mp_rom_map_elem_t supervisor_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_reset_terminal),  MP_ROM_PTR(&supervisor_reset_terminal_obj) },
     { MP_ROM_QSTR(MP_QSTR_set_usb_identification),  MP_ROM_PTR(&supervisor_set_usb_identification_obj) },
     { MP_ROM_QSTR(MP_QSTR_status_bar),  MP_ROM_PTR(&shared_module_supervisor_status_bar_obj) },
+    { MP_ROM_QSTR(MP_QSTR_run_backround_tasks),  MP_ROM_PTR(&supervisor_run_backround_tasks_obj) },
 };
 
 STATIC MP_DEFINE_CONST_DICT(supervisor_module_globals, supervisor_module_globals_table);
