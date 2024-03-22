@@ -1,5 +1,5 @@
 /*
- * This file is part of the MicroPython project, http://micropython.org/
+ * This file is part of the Micro Python project, http://micropython.org/
  *
  * The MIT License (MIT)
  *
@@ -23,26 +23,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
 #pragma once
 
-#include "common-hal/microcontroller/Pin.h"
-#include "bindings/rp2clock/ClkIndex.h"
-#include "hardware/clocks.h"
+#include "shared-bindings/microcontroller/Pin.h"
 
-typedef struct {
-    mp_obj_base_t base;
-    const mcu_pin_obj_t *pin;
-    clkio_clkindex_t clkindex;
-    uint32_t src_freq;
-    uint32_t target_freq;
-    bool enabled;
-} clkio_clkinput_obj_t;
-
-void common_hal_clkio_clkinput_validate_clkindex_pin(const mcu_pin_obj_t *pin);
-bool common_hal_clkio_clkinput_deinited(clkio_clkinput_obj_t *self);
-void common_hal_clkio_clkinput_deinit(clkio_clkinput_obj_t *self);
-void common_hal_clkio_clkinput_validate_freqs(uint32_t src, uint32_t target);
-
-// Configure clock in/out
-void common_hal_clkio_clkinput_enable(clkio_clkinput_obj_t *self);
-void common_hal_clkio_clkinput_disable(clkio_clkinput_obj_t *self);
+extern const mp_obj_type_t rp2clock_inputpin_type;

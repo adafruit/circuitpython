@@ -26,22 +26,23 @@
 #pragma once
 
 #include "common-hal/microcontroller/Pin.h"
-#include "bindings/rp2clock/ClkAuxSrc.h"
+#include "bindings/rp2clock/Index.h"
 #include "hardware/clocks.h"
 
 typedef struct {
     mp_obj_base_t base;
     const mcu_pin_obj_t *pin;
-    clkio_clkauxsrc_t clksrc;
-    mp_float_t divisor;
+    rp2clock_index_t index;
+    uint32_t src_freq;
+    uint32_t target_freq;
     bool enabled;
-} clkio_clkoutput_obj_t;
+} rp2clock_inputpin_obj_t;
 
-void common_hal_clkio_clkoutput_validate_clksrc_pin(const mcu_pin_obj_t *pin);
-bool common_hal_clkio_clkoutput_deinited(clkio_clkoutput_obj_t *self);
-void common_hal_clkio_clkoutput_deinit(clkio_clkoutput_obj_t *self);
-mp_float_t common_hal_clkio_clkoutput_validate_divisor(mp_float_t div);
+void common_hal_rp2clock_inputpin_validate_index_pin(const mcu_pin_obj_t *pin);
+bool common_hal_rp2clock_inputpin_deinited(rp2clock_inputpin_obj_t *self);
+void common_hal_rp2clock_inputpin_deinit(rp2clock_inputpin_obj_t *self);
+void common_hal_rp2clock_inputpin_validate_freqs(uint32_t src, uint32_t target);
 
-// Configure clock out
-void common_hal_clkio_clkoutput_enable(clkio_clkoutput_obj_t *self);
-void common_hal_clkio_clkoutput_disable(clkio_clkoutput_obj_t *self);
+// Configure clock in/out
+void common_hal_rp2clock_inputpin_enable(rp2clock_inputpin_obj_t *self);
+void common_hal_rp2clock_inputpin_disable(rp2clock_inputpin_obj_t *self);

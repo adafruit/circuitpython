@@ -27,39 +27,40 @@
 #pragma once
 
 #include "py/obj.h"
-#include "hardware/clocks.h"
 
-// Input sources
-typedef enum _clkio_clkindex_t {
-    CLKINDEX_GPOUT0  = clk_gpout0,
-    CLKINDEX_GPOUT1  = clk_gpout1,
-    CLKINDEX_GPOUT2  = clk_gpout2,
-    CLKINDEX_GPOUT3  = clk_gpout3,
-    CLKINDEX_REF     = clk_ref,
-    CLKINDEX_SYS     = clk_sys,
-    CLKINDEX_PERI    = clk_peri,
-    CLKINDEX_USB     = clk_usb,
-    CLKINDEX_ADC     = clk_adc,
-    CLKINDEX_RTC     = clk_rtc,
-    CLKINDEX_NONE = CLK_COUNT
-} clkio_clkindex_t;
+// Output sources
+typedef enum _rp2clock_auxsrc_t {
+    AUXSRC_PLL_SYS    = 0,
+    AUXSRC_GPIN0      = 1,
+    AUXSRC_GPIN1      = 2,
+    AUXSRC_PLL_USB    = 3,
+    AUXSRC_PLL_ROSC   = 4,
+    AUXSRC_PLL_XOSC   = 5,
+    AUXSRC_SYS        = 6,
+    AUXSRC_USB        = 7,
+    AUXSRC_ADC        = 8,
+    AUXSRC_RTC        = 9,
+    AUXSRC_REF        = 10,
+    AUXSRC_NONE       = 11,
+} rp2clock_auxsrc_t;
 
-extern const mp_obj_type_t clkio_clkindex_type;
+extern const mp_obj_type_t rp2clock_auxsrc_type;
 
 typedef struct {
     mp_obj_base_t base;
-} clkio_clkindex_obj_t;
+} rp2clock_auxsrc_obj_t;
 
-extern const clkio_clkindex_obj_t clkio_clkindex_gpout0_obj;
-extern const clkio_clkindex_obj_t clkio_clkindex_gpout1_obj;
-extern const clkio_clkindex_obj_t clkio_clkindex_gpout2_obj;
-extern const clkio_clkindex_obj_t clkio_clkindex_gpout3_obj;
-extern const clkio_clkindex_obj_t clkio_clkindex_ref_obj;
-extern const clkio_clkindex_obj_t clkio_clkindex_sys_obj;
-extern const clkio_clkindex_obj_t clkio_clkindex_peri_obj;
-extern const clkio_clkindex_obj_t clkio_clkindex_usb_obj;
-extern const clkio_clkindex_obj_t clkio_clkindex_adc_obj;
-extern const clkio_clkindex_obj_t clkio_clkindex_rtc_obj;
+extern const rp2clock_auxsrc_obj_t rp2clock_auxsrc_pll_sys_obj;
+extern const rp2clock_auxsrc_obj_t rp2clock_auxsrc_gpin0_obj;
+extern const rp2clock_auxsrc_obj_t rp2clock_auxsrc_gpin1_obj;
+extern const rp2clock_auxsrc_obj_t rp2clock_auxsrc_pll_usb_obj;
+extern const rp2clock_auxsrc_obj_t rp2clock_auxsrc_pll_rosc_obj;
+extern const rp2clock_auxsrc_obj_t rp2clock_auxsrc_pll_xosc_obj;
+extern const rp2clock_auxsrc_obj_t rp2clock_auxsrc_sys_obj;
+extern const rp2clock_auxsrc_obj_t rp2clock_auxsrc_usb_obj;
+extern const rp2clock_auxsrc_obj_t rp2clock_auxsrc_adc_obj;
+extern const rp2clock_auxsrc_obj_t rp2clock_auxsrc_rtc_obj;
+extern const rp2clock_auxsrc_obj_t rp2clock_auxsrc_ref_obj;
 
-clkio_clkindex_t validate_clkindex(mp_rom_obj_t obj, qstr arg_name);
-mp_obj_t clkindex_get_obj(clkio_clkindex_t type);
+rp2clock_auxsrc_t validate_auxsrc(mp_rom_obj_t obj, qstr arg_name);
+mp_obj_t auxsrc_get_obj(rp2clock_auxsrc_t type);

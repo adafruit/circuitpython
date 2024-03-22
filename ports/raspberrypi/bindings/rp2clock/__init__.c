@@ -30,26 +30,26 @@
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/microcontroller/Pin.h"
 #include "bindings/rp2clock/__init__.h"
-#include "bindings/rp2clock/ClkAuxSrc.h"
-#include "bindings/rp2clock/ClkIndex.h"
-#include "bindings/rp2clock/ClkOutput.h"
-#include "bindings/rp2clock/ClkInput.h"
+#include "bindings/rp2clock/AuxSrc.h"
+#include "bindings/rp2clock/Index.h"
+#include "bindings/rp2clock/OutputPin.h"
+#include "bindings/rp2clock/InputPin.h"
 
-STATIC const mp_rom_map_elem_t clkio_module_globals_table[] = {
-    { MP_ROM_QSTR(MP_QSTR___name__),  MP_ROM_QSTR(MP_QSTR_clkio) },
-    { MP_ROM_QSTR(MP_QSTR_ClkOutput), MP_ROM_PTR(&clkio_clkoutput_type) },
-    { MP_ROM_QSTR(MP_QSTR_ClkInput),  MP_ROM_PTR(&clkio_clkinput_type) },
+STATIC const mp_rom_map_elem_t rp2clock_module_globals_table[] = {
+    { MP_ROM_QSTR(MP_QSTR___name__),  MP_ROM_QSTR(MP_QSTR_rp2clock) },
+    { MP_ROM_QSTR(MP_QSTR_OutputPin), MP_ROM_PTR(&rp2clock_outputpin_type) },
+    { MP_ROM_QSTR(MP_QSTR_InputPin),  MP_ROM_PTR(&rp2clock_inputpin_type) },
 
     // Enum like classes
-    { MP_ROM_QSTR(MP_QSTR_ClkAuxSrc), MP_ROM_PTR(&clkio_clkauxsrc_type) },
-    { MP_ROM_QSTR(MP_QSTR_ClkIndex),  MP_ROM_PTR(&clkio_clkindex_type) },
+    { MP_ROM_QSTR(MP_QSTR_AuxSrc), MP_ROM_PTR(&rp2clock_auxsrc_type) },
+    { MP_ROM_QSTR(MP_QSTR_Index),  MP_ROM_PTR(&rp2clock_index_type) },
 };
 
-STATIC MP_DEFINE_CONST_DICT(clkio_module_globals, clkio_module_globals_table);
+STATIC MP_DEFINE_CONST_DICT(rp2clock_module_globals, rp2clock_module_globals_table);
 
-const mp_obj_module_t clkio_module = {
+const mp_obj_module_t rp2clock_module = {
     .base = { &mp_type_module },
-    .globals = (mp_obj_dict_t *)&clkio_module_globals,
+    .globals = (mp_obj_dict_t *)&rp2clock_module_globals,
 };
 
-MP_REGISTER_MODULE(MP_QSTR_clkio, clkio_module);
+MP_REGISTER_MODULE(MP_QSTR_rp2clock, rp2clock_module);

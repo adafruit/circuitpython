@@ -1,1 +1,1 @@
-// No clkio module functions
+// No rp2clock module functions

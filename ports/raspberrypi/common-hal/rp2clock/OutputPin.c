@@ -24,46 +24,44 @@
  * THE SOFTWARE.
  */
 #include "shared-bindings/microcontroller/Pin.h"
-#include "common-hal/rp2clock/ClkInput.h"
-#include "bindings/rp2clock/ClkIndex.h"
+#include "common-hal/rp2clock/OutputPin.h"
+#include "bindings/rp2clock/AuxSrc.h"
 #include "hardware/clocks.h"
 #include "hardware/gpio.h"
 #include "py/runtime.h"
 
-// GPIN must be [20,22]
-void common_hal_clkio_clkinput_validate_clkindex_pin(const mcu_pin_obj_t *pin) {
-    if ((pin->number != 20) && (pin->number != 22)) {
-        mp_raise_ValueError_varg(MP_ERROR_TEXT("Pin %d invalid, valid pins are: 20,22"), pin->number);
+// GPOUT must be [21,23,24,25]
+void common_hal_rp2clock_outputpin_validate_src_pin(const mcu_pin_obj_t *pin) {
+    if ((pin->number != 21) && (pin->number != 23) &&
+        (pin->number != 24) && (pin->number != 25)) {
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("Pin %d invalid, valid pins are: 21,23,24,25"), pin->number);
     }
 }
 
-void common_hal_clkio_clkinput_validate_freqs(uint32_t src, uint32_t target) {
-    if (src == 0) {
-        mp_raise_ValueError(MP_ERROR_TEXT("src freq == 0"));
+mp_float_t common_hal_rp2clock_outputpin_validate_divisor(mp_float_t div) {
+    if (mp_obj_float_binary_op(MP_BINARY_OP_EQUAL, div, mp_obj_new_float(1.0f)) ||
+        (div >= 2.0f && div <= 16777215.0f)) {
+        return div;
     }
-    if (target == 0) {
-        mp_raise_ValueError(MP_ERROR_TEXT("target freq == 0"));
-    }
-    if (target > src) {
-        mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid freqs: %u > %u"), target, src);
-    }
+    mp_raise_ValueError(MP_ERROR_TEXT("Invalid divisor: [1, 2-16777215]"));
+    return 1.0f;
 }
 
-bool common_hal_clkio_clkinput_deinited(clkio_clkinput_obj_t *self) {
+bool common_hal_rp2clock_outputpin_deinited(rp2clock_outputpin_obj_t *self) {
     return self->pin == NULL;
 }
 
-void common_hal_clkio_clkinput_deinit(clkio_clkinput_obj_t *self) {
-    if (common_hal_clkio_clkinput_deinited(self)) {
+void common_hal_rp2clock_outputpin_deinit(rp2clock_outputpin_obj_t *self) {
+    if (common_hal_rp2clock_outputpin_deinited(self)) {
         return;
     }
     if (self->enabled) {
-        common_hal_clkio_clkinput_disable(self);
+        common_hal_rp2clock_outputpin_disable(self);
     }
     self->pin = NULL;
 }
 
-static void common_hal_clkio_clkinput_claim_pin(clkio_clkinput_obj_t *self) {
+static void common_hal_rp2clock_outputpin_claim_pin(rp2clock_outputpin_obj_t *self) {
     // Avoid runtime error if enable already called
     if (self->enabled) {
         return;
@@ -78,18 +76,15 @@ static void common_hal_clkio_clkinput_claim_pin(clkio_clkinput_obj_t *self) {
     self->enabled = true;
 }
 
-void common_hal_clkio_clkinput_enable(clkio_clkinput_obj_t *self) {
-    if (self->clkindex == CLKINDEX_NONE) {
-        mp_raise_ValueError_varg(MP_ERROR_TEXT("%q not set"), MP_QSTR_clkindex);
+void common_hal_rp2clock_outputpin_enable(rp2clock_outputpin_obj_t *self) {
+    if (self->src == AUXSRC_NONE) {
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("%q not set"), MP_QSTR_src);
     }
-    common_hal_clkio_clkinput_claim_pin(self);
-    // Check return value
-    if (!clock_configure_gpin(self->clkindex, self->pin->number, self->src_freq, self->target_freq)) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("clock_configure_gpin failed!"));
-    }
+    common_hal_rp2clock_outputpin_claim_pin(self);
+    clock_gpio_init(self->pin->number, self->src, self->divisor);
 }
 
-void common_hal_clkio_clkinput_disable(clkio_clkinput_obj_t *self) {
+void common_hal_rp2clock_outputpin_disable(rp2clock_outputpin_obj_t *self) {
     if (!self->enabled) {
         return;
     }

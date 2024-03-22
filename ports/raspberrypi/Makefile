@@ -262,12 +262,12 @@ SRC_C += \
 ifeq ($(CIRCUITPY_RP2CLOCK),1)
 SRC_C += \
 	bindings/rp2clock/__init__.c \
-	bindings/rp2clock/ClkOutput.c \
-	bindings/rp2clock/ClkInput.c \
-	bindings/rp2clock/ClkAuxSrc.c \
-	bindings/rp2clock/ClkIndex.c \
-	common-hal/rp2clock/ClkOutput.c \
-	common-hal/rp2clock/ClkInput.c \
+	bindings/rp2clock/OutputPin.c \
+	bindings/rp2clock/InputPin.c \
+	bindings/rp2clock/AuxSrc.c \
+	bindings/rp2clock/Index.c \
+	common-hal/rp2clock/OutputPin.c \
+	common-hal/rp2clock/InputPin.c \
 
 endif
 

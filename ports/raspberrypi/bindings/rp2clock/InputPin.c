@@ -30,61 +30,61 @@
 #include "py/objarray.h"
 
 #include "shared-bindings/util.h"
-#include "bindings/rp2clock/ClkInput.h"
-#include "common-hal/rp2clock/ClkInput.h"
+#include "bindings/rp2clock/InputPin.h"
+#include "common-hal/rp2clock/InputPin.h"
 
-STATIC void check_for_deinit(clkio_clkinput_obj_t *self) {
-    if (common_hal_clkio_clkinput_deinited(self)) {
+STATIC void check_for_deinit(rp2clock_inputpin_obj_t *self) {
+    if (common_hal_rp2clock_inputpin_deinited(self)) {
         raise_deinited_error();
     }
 }
 
-//| class ClkInput:
+//| class InputPin:
 //|     def __init__(
 //|         self,
 //|         pin: microcontroller.Pin,
 //|         *,
-//|         clkindex: clkio.ClkIndex,
+//|         index: rp2clock.Index,
 //|         src_freq: int,
 //|         target_freq: int
 //|     ) -> None:
 //|         """Creates a clock input pin object.
 //|         pin: Pin to be used as clock input, allowed pins: 20,22
-//|         clkindex: points to the destination clock to be connected to the input pin.
+//|         index: points to the destination clock to be connected to the input pin.
 //|         src_freq: External input frequency at the pin.
-//|         target_freq: Desired frequency for clkindex.
+//|         target_freq: Desired frequency for index.
 //|         """
 
-STATIC mp_obj_t clkio_clkinput_make_new(const mp_obj_type_t *type, size_t n_args,
+STATIC mp_obj_t rp2clock_inputpin_make_new(const mp_obj_type_t *type, size_t n_args,
     size_t n_kw, const mp_obj_t *all_args) {
-    enum { ARG_pin, ARG_clkindex, ARG_src_freq, ARG_target_freq };
+    enum { ARG_pin, ARG_index, ARG_src_freq, ARG_target_freq };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_pin,         MP_ARG_REQUIRED | MP_ARG_OBJ },
-        { MP_QSTR_clkindex,    MP_ARG_OBJ | MP_ARG_KW_ONLY,  {.u_rom_obj = mp_const_none} },
+        { MP_QSTR_index,       MP_ARG_OBJ | MP_ARG_KW_ONLY,  {.u_rom_obj = mp_const_none} },
         { MP_QSTR_src_freq,    MP_ARG_INT | MP_ARG_KW_ONLY,  {.u_int = 0} },
         { MP_QSTR_target_freq, MP_ARG_INT | MP_ARG_KW_ONLY,  {.u_int = 0} },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    clkio_clkinput_obj_t *self = m_new_obj(clkio_clkinput_obj_t);
-    self->base.type = &clkio_clkinput_type;
+    rp2clock_inputpin_obj_t *self = m_new_obj(rp2clock_inputpin_obj_t);
+    self->base.type = &rp2clock_inputpin_type;
 
     // Validate pin number
-    common_hal_clkio_clkinput_validate_clkindex_pin(args[ARG_pin].u_rom_obj);
+    common_hal_rp2clock_inputpin_validate_index_pin(args[ARG_pin].u_rom_obj);
     self->pin = args[ARG_pin].u_rom_obj;
 
     // Validate pin based on clock
-    if (args[ARG_clkindex].u_rom_obj != mp_const_none) {
-        self->clkindex = validate_clkindex(args[ARG_clkindex].u_rom_obj, MP_QSTR_clkindex);
+    if (args[ARG_index].u_rom_obj != mp_const_none) {
+        self->index = validate_index(args[ARG_index].u_rom_obj, MP_QSTR_index);
         self->src_freq = args[ARG_src_freq].u_int;
         self->target_freq = args[ARG_target_freq].u_int;
         // Validate frequencies if set
         if (self->src_freq && self->target_freq) {
-            common_hal_clkio_clkinput_validate_freqs(args[ARG_src_freq].u_int, args[ARG_target_freq].u_int);
+            common_hal_rp2clock_inputpin_validate_freqs(args[ARG_src_freq].u_int, args[ARG_target_freq].u_int);
         }
     } else {
-        self->clkindex = CLKINDEX_NONE;
+        self->index = INDEX_NONE;
     }
     self->enabled = false;
     return MP_OBJ_FROM_PTR(self);
@@ -92,37 +92,37 @@ STATIC mp_obj_t clkio_clkinput_make_new(const mp_obj_type_t *type, size_t n_args
 
 //|     def deinit(self) -> None:
 //|         """Releases the pin and frees any resources."""
-STATIC mp_obj_t clkio_clkinput_deinit(mp_obj_t self_in) {
-    clkio_clkinput_obj_t *self = MP_OBJ_TO_PTR(self_in);
+STATIC mp_obj_t rp2clock_inputpin_deinit(mp_obj_t self_in) {
+    rp2clock_inputpin_obj_t *self = MP_OBJ_TO_PTR(self_in);
     // Release pin
-    common_hal_clkio_clkinput_deinit(self);
+    common_hal_rp2clock_inputpin_deinit(self);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(clkio_clkinput_deinit_obj, clkio_clkinput_deinit);
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(rp2clock_inputpin_deinit_obj, rp2clock_inputpin_deinit);
 
 //|     def enable(self) -> None:
 //|         """Configures the pin and enables the internal clock"""
-STATIC mp_obj_t clkio_clkinput_enable(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    clkio_clkinput_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
+STATIC mp_obj_t rp2clock_inputpin_enable(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    rp2clock_inputpin_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
     check_for_deinit(self);
-    common_hal_clkio_clkinput_enable(self);
+    common_hal_rp2clock_inputpin_enable(self);
     return mp_const_none;
 }
-MP_DEFINE_CONST_FUN_OBJ_KW(clkio_clkinput_enable_obj, 1, clkio_clkinput_enable);
+MP_DEFINE_CONST_FUN_OBJ_KW(rp2clock_inputpin_enable_obj, 1, rp2clock_inputpin_enable);
 
 //|     def disable(self) -> None:
 //|         """Disables the pin and internal clock"""
-STATIC mp_obj_t clkio_clkinput_disable(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    clkio_clkinput_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
+STATIC mp_obj_t rp2clock_inputpin_disable(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    rp2clock_inputpin_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
     check_for_deinit(self);
-    common_hal_clkio_clkinput_disable(self);
+    common_hal_rp2clock_inputpin_disable(self);
     return mp_const_none;
 }
-MP_DEFINE_CONST_FUN_OBJ_KW(clkio_clkinput_disable_obj, 1, clkio_clkinput_disable);
+MP_DEFINE_CONST_FUN_OBJ_KW(rp2clock_inputpin_disable_obj, 1, rp2clock_inputpin_disable);
 
 //|     def set_freq(self, src_freq: int, target_freq: int) -> None:
 //|         """Configures the src and target frequency. Must be set before enable() is called."""
-STATIC mp_obj_t clkio_clkinput_set_freq(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+STATIC mp_obj_t rp2clock_inputpin_set_freq(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_src_freq, ARG_target_freq };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_src_freq,  MP_ARG_REQUIRED | MP_ARG_INT },
@@ -131,19 +131,19 @@ STATIC mp_obj_t clkio_clkinput_set_freq(size_t n_args, const mp_obj_t *pos_args,
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    clkio_clkinput_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
+    rp2clock_inputpin_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
     check_for_deinit(self);
-    common_hal_clkio_clkinput_validate_freqs(args[ARG_src_freq].u_int, args[ARG_target_freq].u_int);
+    common_hal_rp2clock_inputpin_validate_freqs(args[ARG_src_freq].u_int, args[ARG_target_freq].u_int);
     self->src_freq = args[ARG_src_freq].u_int;
     self->target_freq = args[ARG_target_freq].u_int;
     return mp_const_none;
 }
-MP_DEFINE_CONST_FUN_OBJ_KW(clkio_clkinput_set_freq_obj, 1, clkio_clkinput_set_freq);
+MP_DEFINE_CONST_FUN_OBJ_KW(rp2clock_inputpin_set_freq_obj, 1, rp2clock_inputpin_set_freq);
 
 //|     def get_freq(self) -> tuple[int, int]:
 //|         """Returns the (src, target) frequency as tuple."""
-STATIC mp_obj_t clkio_clkinput_get_freq(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    clkio_clkinput_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
+STATIC mp_obj_t rp2clock_inputpin_get_freq(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    rp2clock_inputpin_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
     check_for_deinit(self);
     mp_obj_t tup[] = {
         mp_obj_new_int(self->src_freq),
@@ -152,46 +152,46 @@ STATIC mp_obj_t clkio_clkinput_get_freq(size_t n_args, const mp_obj_t *pos_args,
     // Return tuple with (src, target)
     return mp_obj_new_tuple(2, tup);
 }
-MP_DEFINE_CONST_FUN_OBJ_KW(clkio_clkinput_get_freq_obj, 1, clkio_clkinput_get_freq);
+MP_DEFINE_CONST_FUN_OBJ_KW(rp2clock_inputpin_get_freq_obj, 1, rp2clock_inputpin_get_freq);
 
-//|     clkindex: clkio.ClkIndex
+//|     index: rp2clock.Index
 //|     """Clock that will be driven from external pin."""
 //|
-static mp_obj_t clkio_clkinput_clkindex_get(mp_obj_t self_in) {
-    clkio_clkinput_obj_t *self = MP_OBJ_TO_PTR(self_in);
+static mp_obj_t rp2clock_inputpin_index_get(mp_obj_t self_in) {
+    rp2clock_inputpin_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
-    return clkindex_get_obj(self->clkindex);
+    return index_get_obj(self->index);
 }
-MP_DEFINE_CONST_FUN_OBJ_1(clkio_clkinput_clkindex_get_obj, clkio_clkinput_clkindex_get);
+MP_DEFINE_CONST_FUN_OBJ_1(rp2clock_inputpin_index_get_obj, rp2clock_inputpin_index_get);
 
-static mp_obj_t clkio_clkinput_clkindex_set(mp_obj_t self_in, mp_obj_t clkindex_obj) {
-    clkio_clkinput_obj_t *self = MP_OBJ_TO_PTR(self_in);
+static mp_obj_t rp2clock_inputpin_index_set(mp_obj_t self_in, mp_obj_t index_obj) {
+    rp2clock_inputpin_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
-    self->clkindex = validate_clkindex(clkindex_obj, MP_QSTR_clkindex);
+    self->index = validate_index(index_obj, MP_QSTR_index);
     return mp_const_none;
 }
-MP_DEFINE_CONST_FUN_OBJ_2(clkio_clkinput_clkindex_set_obj, clkio_clkinput_clkindex_set);
-MP_PROPERTY_GETSET(clkio_clkinput_clkindex_obj,
-    (mp_obj_t)&clkio_clkinput_clkindex_get_obj,
-    (mp_obj_t)&clkio_clkinput_clkindex_set_obj);
+MP_DEFINE_CONST_FUN_OBJ_2(rp2clock_inputpin_index_set_obj, rp2clock_inputpin_index_set);
+MP_PROPERTY_GETSET(rp2clock_inputpin_index_obj,
+    (mp_obj_t)&rp2clock_inputpin_index_get_obj,
+    (mp_obj_t)&rp2clock_inputpin_index_set_obj);
 
 
-STATIC const mp_rom_map_elem_t clkio_clkinput_locals_dict_table[] = {
+STATIC const mp_rom_map_elem_t rp2clock_inputpin_locals_dict_table[] = {
     // Functions
-    { MP_ROM_QSTR(MP_QSTR_deinit),          MP_ROM_PTR(&clkio_clkinput_deinit_obj) },
-    { MP_ROM_QSTR(MP_QSTR_enable),          MP_ROM_PTR(&clkio_clkinput_enable_obj) },
-    { MP_ROM_QSTR(MP_QSTR_disable),         MP_ROM_PTR(&clkio_clkinput_disable_obj) },
-    { MP_ROM_QSTR(MP_QSTR_set_freq),        MP_ROM_PTR(&clkio_clkinput_set_freq_obj) },
-    { MP_ROM_QSTR(MP_QSTR_get_freq),        MP_ROM_PTR(&clkio_clkinput_get_freq_obj) },
+    { MP_ROM_QSTR(MP_QSTR_deinit),          MP_ROM_PTR(&rp2clock_inputpin_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR_enable),          MP_ROM_PTR(&rp2clock_inputpin_enable_obj) },
+    { MP_ROM_QSTR(MP_QSTR_disable),         MP_ROM_PTR(&rp2clock_inputpin_disable_obj) },
+    { MP_ROM_QSTR(MP_QSTR_set_freq),        MP_ROM_PTR(&rp2clock_inputpin_set_freq_obj) },
+    { MP_ROM_QSTR(MP_QSTR_get_freq),        MP_ROM_PTR(&rp2clock_inputpin_get_freq_obj) },
     // Properties
-    { MP_ROM_QSTR(MP_QSTR_clkindex),        MP_ROM_PTR(&clkio_clkinput_clkindex_obj) },
+    { MP_ROM_QSTR(MP_QSTR_index),        MP_ROM_PTR(&rp2clock_inputpin_index_obj) },
 };
-STATIC MP_DEFINE_CONST_DICT(clkio_clkinput_locals_dict, clkio_clkinput_locals_dict_table);
+STATIC MP_DEFINE_CONST_DICT(rp2clock_inputpin_locals_dict, rp2clock_inputpin_locals_dict_table);
 
 MP_DEFINE_CONST_OBJ_TYPE(
-    clkio_clkinput_type,
-    MP_QSTR_ClkInput,
+    rp2clock_inputpin_type,
+    MP_QSTR_InputPin,
     MP_TYPE_FLAG_HAS_SPECIAL_ACCESSORS,
-    make_new, clkio_clkinput_make_new,
-    locals_dict, &clkio_clkinput_locals_dict
+    make_new, rp2clock_inputpin_make_new,
+    locals_dict, &rp2clock_inputpin_locals_dict
     );

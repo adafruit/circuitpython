@@ -1,5 +1,5 @@
 /*
- * This file is part of the Micro Python project, http://micropython.org/
+ * This file is part of the MicroPython project, http://micropython.org/
  *
  * The MIT License (MIT)
  *
@@ -23,9 +23,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-
 #pragma once
 
-#include "shared-bindings/microcontroller/Pin.h"
+#include "common-hal/microcontroller/Pin.h"
+#include "bindings/rp2clock/AuxSrc.h"
+#include "hardware/clocks.h"
 
-extern const mp_obj_type_t clkio_clkinput_type;
+typedef struct {
+    mp_obj_base_t base;
+    const mcu_pin_obj_t *pin;
+    rp2clock_auxsrc_t src;
+    mp_float_t divisor;
+    bool enabled;
+} rp2clock_outputpin_obj_t;
+
+void common_hal_rp2clock_outputpin_validate_src_pin(const mcu_pin_obj_t *pin);
+bool common_hal_rp2clock_outputpin_deinited(rp2clock_outputpin_obj_t *self);
+void common_hal_rp2clock_outputpin_deinit(rp2clock_outputpin_obj_t *self);
+mp_float_t common_hal_rp2clock_outputpin_validate_divisor(mp_float_t div);
+
+// Configure clock out
+void common_hal_rp2clock_outputpin_enable(rp2clock_outputpin_obj_t *self);
+void common_hal_rp2clock_outputpin_disable(rp2clock_outputpin_obj_t *self);

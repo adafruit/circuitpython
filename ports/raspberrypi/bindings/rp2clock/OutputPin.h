@@ -28,4 +28,4 @@
 
 #include "shared-bindings/microcontroller/Pin.h"
 
-extern const mp_obj_type_t clkio_clkoutput_type;
+extern const mp_obj_type_t rp2clock_outputpin_type;
