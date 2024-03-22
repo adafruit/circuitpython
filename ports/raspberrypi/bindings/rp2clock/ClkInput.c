@@ -30,8 +30,8 @@
 #include "py/objarray.h"
 
 #include "shared-bindings/util.h"
-#include "bindings/clkio/ClkInput.h"
-#include "common-hal/clkio/ClkInput.h"
+#include "bindings/rp2clock/ClkInput.h"
+#include "common-hal/rp2clock/ClkInput.h"
 
 STATIC void check_for_deinit(clkio_clkinput_obj_t *self) {
     if (common_hal_clkio_clkinput_deinited(self)) {
@@ -71,8 +71,8 @@ STATIC mp_obj_t clkio_clkinput_make_new(const mp_obj_type_t *type, size_t n_args
     self->base.type = &clkio_clkinput_type;
 
     // Validate pin number
+    common_hal_clkio_clkinput_validate_clkindex_pin(args[ARG_pin].u_rom_obj);
     self->pin = args[ARG_pin].u_rom_obj;
-    common_hal_clkio_clkinput_validate_clkindex_pin(self->pin);
 
     // Validate pin based on clock
     if (args[ARG_clkindex].u_rom_obj != mp_const_none) {

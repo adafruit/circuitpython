@@ -26,7 +26,7 @@
 #pragma once
 
 #include "common-hal/microcontroller/Pin.h"
-#include "bindings/clkio/ClkIndex.h"
+#include "bindings/rp2clock/ClkIndex.h"
 #include "hardware/clocks.h"
 
 typedef struct {

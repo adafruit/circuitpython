@@ -259,15 +259,15 @@ SRC_C += \
 	$(SRC_CYW43) \
 	$(SRC_LWIP) \
 
-ifeq ($(CIRCUITPY_RP2CLKIO),1)
+ifeq ($(CIRCUITPY_RP2CLOCK),1)
 SRC_C += \
-	bindings/clkio/__init__.c \
-	bindings/clkio/ClkOutput.c \
-	bindings/clkio/ClkInput.c \
-	bindings/clkio/ClkAuxSrc.c \
-	bindings/clkio/ClkIndex.c \
-	common-hal/clkio/ClkOutput.c \
-	common-hal/clkio/ClkInput.c \
+	bindings/rp2clock/__init__.c \
+	bindings/rp2clock/ClkOutput.c \
+	bindings/rp2clock/ClkInput.c \
+	bindings/rp2clock/ClkAuxSrc.c \
+	bindings/rp2clock/ClkIndex.c \
+	common-hal/rp2clock/ClkOutput.c \
+	common-hal/rp2clock/ClkInput.c \
 
 endif
 

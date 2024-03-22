@@ -24,9 +24,9 @@
  * THE SOFTWARE.
  */
 #include "shared-bindings/microcontroller/Pin.h"
-#include "common-hal/clkio/ClkOutput.h"
-#include "bindings/clkio/ClkAuxSrc.h"
-#include "bindings/clkio/ClkIndex.h"
+#include "common-hal/rp2clock/ClkOutput.h"
+#include "bindings/rp2clock/ClkAuxSrc.h"
+#include "bindings/rp2clock/ClkIndex.h"
 #include "hardware/clocks.h"
 #include "hardware/gpio.h"
 #include "py/runtime.h"

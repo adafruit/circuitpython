@@ -26,7 +26,7 @@
 
 #include "py/runtime.h"
 #include "supervisor/shared/translate/translate.h"
-#include "bindings/clkio/ClkIndex.h"
+#include "bindings/rp2clock/ClkIndex.h"
 
 //| class ClkIndex:
 //|     """Defines the internal clock index to drive GPIN from an external pin."""

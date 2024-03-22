@@ -23,25 +23,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#pragma once
 
-#include "common-hal/microcontroller/Pin.h"
-#include "bindings/clkio/ClkAuxSrc.h"
-#include "hardware/clocks.h"
+#include "py/runtime.h"
 
-typedef struct {
-    mp_obj_base_t base;
-    const mcu_pin_obj_t *pin;
-    clkio_clkauxsrc_t clksrc;
-    mp_float_t divisor;
-    bool enabled;
-} clkio_clkoutput_obj_t;
+#include "shared-bindings/board/__init__.h"
+#include "shared-bindings/microcontroller/__init__.h"
+#include "shared-bindings/microcontroller/Pin.h"
+#include "bindings/rp2clock/__init__.h"
+#include "bindings/rp2clock/ClkAuxSrc.h"
+#include "bindings/rp2clock/ClkIndex.h"
+#include "bindings/rp2clock/ClkOutput.h"
+#include "bindings/rp2clock/ClkInput.h"
 
-void common_hal_clkio_clkoutput_validate_clksrc_pin(const mcu_pin_obj_t *pin);
-bool common_hal_clkio_clkoutput_deinited(clkio_clkoutput_obj_t *self);
-void common_hal_clkio_clkoutput_deinit(clkio_clkoutput_obj_t *self);
-mp_float_t common_hal_clkio_clkoutput_validate_divisor(mp_float_t div);
+STATIC const mp_rom_map_elem_t clkio_module_globals_table[] = {
+    { MP_ROM_QSTR(MP_QSTR___name__),  MP_ROM_QSTR(MP_QSTR_clkio) },
+    { MP_ROM_QSTR(MP_QSTR_ClkOutput), MP_ROM_PTR(&clkio_clkoutput_type) },
+    { MP_ROM_QSTR(MP_QSTR_ClkInput),  MP_ROM_PTR(&clkio_clkinput_type) },
 
-// Configure clock out
-void common_hal_clkio_clkoutput_enable(clkio_clkoutput_obj_t *self);
-void common_hal_clkio_clkoutput_disable(clkio_clkoutput_obj_t *self);
+    // Enum like classes
+    { MP_ROM_QSTR(MP_QSTR_ClkAuxSrc), MP_ROM_PTR(&clkio_clkauxsrc_type) },
+    { MP_ROM_QSTR(MP_QSTR_ClkIndex),  MP_ROM_PTR(&clkio_clkindex_type) },
+};
+
+STATIC MP_DEFINE_CONST_DICT(clkio_module_globals, clkio_module_globals_table);
+
+const mp_obj_module_t clkio_module = {
+    .base = { &mp_type_module },
+    .globals = (mp_obj_dict_t *)&clkio_module_globals,
+};
+
+MP_REGISTER_MODULE(MP_QSTR_clkio, clkio_module);

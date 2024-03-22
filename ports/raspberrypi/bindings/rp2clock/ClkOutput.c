@@ -30,8 +30,8 @@
 #include "py/objarray.h"
 
 #include "shared-bindings/util.h"
-#include "bindings/clkio/ClkOutput.h"
-#include "common-hal/clkio/ClkOutput.h"
+#include "bindings/rp2clock/ClkOutput.h"
+#include "common-hal/rp2clock/ClkOutput.h"
 
 STATIC void check_for_deinit(clkio_clkoutput_obj_t *self) {
     if (common_hal_clkio_clkoutput_deinited(self)) {

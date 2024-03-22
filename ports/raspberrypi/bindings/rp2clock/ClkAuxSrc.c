@@ -26,7 +26,7 @@
 
 #include "py/runtime.h"
 #include "supervisor/shared/translate/translate.h"
-#include "bindings/clkio/ClkAuxSrc.h"
+#include "bindings/rp2clock/ClkAuxSrc.h"
 
 //| class ClkAuxSrc:
 //|     """Defines the input clock for GPOUT on RP2040"""
