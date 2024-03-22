@@ -53,7 +53,7 @@ STATIC mp_obj_t rp2clock_outputpin_make_new(const mp_obj_type_t *type, size_t n_
     enum { ARG_pin, ARG_src, ARG_divisor };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_pin,         MP_ARG_REQUIRED | MP_ARG_OBJ },
-        { MP_QSTR_src,      MP_ARG_OBJ | MP_ARG_KW_ONLY,  {.u_rom_obj = mp_const_none} },
+        { MP_QSTR_src,         MP_ARG_OBJ | MP_ARG_KW_ONLY,  {.u_rom_obj = mp_const_none} },
         { MP_QSTR_divisor,     MP_ARG_OBJ | MP_ARG_KW_ONLY,  {.u_obj = MP_OBJ_NEW_SMALL_INT(1)} },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
