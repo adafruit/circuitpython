@@ -165,3 +165,11 @@ void port_interrupt_after_ticks(uint32_t ticks) {
 void port_idle_until_interrupt(void) {
     // TODO: Implement sleep.
 }
+
+// Wrap main in spresense_main
+extern void main(void);
+extern int spresense_main(int argc, FAR char *argv[]);
+int spresense_main(int argc, FAR char *argv[]) {
+    main();
+    return 0;
+}
