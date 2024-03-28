@@ -29,7 +29,6 @@
 
 #include "py/mpconfig.h"
 #include "py/mphal.h"
-#include "py/unicode.h"
 
 #include "supervisor/shared/cpu.h"
 #include "supervisor/shared/display.h"
