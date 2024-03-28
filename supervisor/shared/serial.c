@@ -220,11 +220,6 @@ char serial_read(void) {
         int uart_errcode;
         char text;
         common_hal_busio_uart_read(&console_uart, (uint8_t *)&text, 1, &uart_errcode);
-        #if MICROPY_PY_BUILTINS_STR_UNICODE && MICROPY_PY_BUILTINS_STR_UNICODE_CHECK
-        if (!utf8_check((byte *)&text, (size_t)1)) {
-            text = (char)65534; // utf8 Noncharacter
-        }
-        #endif // MICROPY_PY_BUILTINS_STR_UNICODE && MICROPY_PY_BUILTINS_STR_UNICODE_CHECK
         return text;
     }
     #endif

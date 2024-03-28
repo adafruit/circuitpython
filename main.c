@@ -1016,6 +1016,11 @@ int __attribute__((used)) main(void) {
         set_safe_mode(wait_for_safe_mode_reset());
     }
 
+    // Clear serial input buffer of newly created console/board UART
+    while (serial_bytes_available()) {
+        serial_read();
+    }
+
     stack_init();
 
     #if CIRCUITPY_STATUS_BAR
