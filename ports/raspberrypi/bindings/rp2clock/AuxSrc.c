@@ -33,39 +33,39 @@
 //|     Used with rp2clock.OutputPin instantiation.
 //|     """
 //|
-//|     def __init__(self) -> AuxSrc:
+//|     def __init__(self) -> None:
 //|         """Enum-like class to define the clock src."""
-//|     PLL_SYS: "AuxSrc Clock"
-//|     """Undivided PLL used to derive SYS clock."""
+//|     PLL_SYS: object
+//|     """PLL used to derive SYS clock."""
 //|
-//|     GPIN0: "AuxSrc Clock"
+//|     GPIN0: object
 //|     """Input clock on GP20."""
 //|
-//|     GPIN1: "AuxSrc Clock"
+//|     GPIN1: object
 //|     """Input clock on GP22."""
 //|
-//|     PLL_USB: "AuxSrc Clock"
+//|     PLL_USB: object
 //|     """Generates 48MHz USB reference clock."""
 //|
-//|     PLL_ROSC: "AuxSrc Clock"
+//|     PLL_ROSC: object
 //|     """Ring oscillator clock. 1.8-12MHz on boot depending on PVT."""
 //|
-//|     PLL_XOSC: "AuxSrc Clock"
+//|     PLL_XOSC: object
 //|     """External oscillator clock."""
 //|
-//|     SYS: "AuxSrc Clock"
-//|     """Derived system clock after SYS_PLL divider."""
+//|     SYS: object
+//|     """Derived system clock."""
 //|
-//|     USB: "AuxSrc Clock"
+//|     USB: object
 //|     """Derived USB clock after PLL_USB divider, 48MHz."""
 //|
-//|     ADC: "AuxSrc Clock"
+//|     ADC: object
 //|     """Current ADC selected clock, 48MHz."""
 //|
-//|     RTC: "AuxSrc Clock"
+//|     RTC: object
 //|     """Current RTC selected clock."""
 //|
-//|     REF: "AuxSrc Clock"
+//|     REF: object
 //|     """Current reference clock for watchdog and timers."""
 //|
 const mp_obj_type_t rp2clock_auxsrc_type;

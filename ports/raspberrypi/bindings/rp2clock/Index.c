@@ -33,36 +33,36 @@
 //|     Used with rp2clock.InputPin instantiation.
 //|     """
 //|
-//|     def __init__(self) -> Index:
+//|     def __init__(self) -> None:
 //|         """Enum-like class to define the internal clock index."""
-//|     GPOUT0: "Index Clock."
+//|     GPOUT0: object
 //|     """Clock routed to GPOUT0 (GP21)"""
 //|
-//|     GPOUT1: "Index Clock."
+//|     GPOUT1: object
 //|     """Clock routed to GPOUT1 (GP23)"""
 //|
-//|     GPOUT2: "Index Clock."
+//|     GPOUT2: object
 //|     """Clock routed to GPOUT2 (GP24)"""
 //|
-//|     GPOUT3: "Index Clock."
+//|     GPOUT3: object
 //|     """Clock routed to GPOUT3 (GP25)"""
 //|
-//|     REF: "Index Clock."
+//|     REF: object
 //|     """Reference clock for watchdog and timers."""
 //|
-//|     SYS: "Index Clock."
+//|     SYS: object
 //|     """Main system clock for processors."""
 //|
-//|     PERI: "Index Clock."
+//|     PERI: object
 //|     """Peripheral clock: UART, SPI, etc. 12-125MHz"""
 //|
-//|     USB: "Index Clock."
+//|     USB: object
 //|     """USB clock: Must be 48MHz."""
 //|
-//|     ADC: "Index Clock."
+//|     ADC: object
 //|     """ADC clock: Must be 48MHz."""
 //|
-//|     RTC: "Index Clock."
+//|     RTC: object
 //|     """RTC clock: Nominally 46875 for 1 second ticks."""
 //|
 const mp_obj_type_t rp2clock_index_type;
