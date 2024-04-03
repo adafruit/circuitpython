@@ -28,6 +28,7 @@
 #include "py/objproperty.h"
 #include "py/runtime.h"
 #include "py/objarray.h"
+#include "py/enum.h"
 
 #include "shared-bindings/util.h"
 #include "bindings/rp2clock/OutputPin.h"
@@ -53,13 +54,13 @@ STATIC mp_obj_t rp2clock_outputpin_make_new(const mp_obj_type_t *type, size_t n_
     enum { ARG_pin, ARG_src, ARG_divisor };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_pin,         MP_ARG_REQUIRED | MP_ARG_OBJ },
-        { MP_QSTR_src,         MP_ARG_OBJ | MP_ARG_KW_ONLY,  {.u_rom_obj = mp_const_none} },
-        { MP_QSTR_divisor,     MP_ARG_OBJ | MP_ARG_KW_ONLY,  {.u_obj = MP_OBJ_NEW_SMALL_INT(1)} },
+        { MP_QSTR_src,         MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_divisor,     MP_ARG_REQUIRED | MP_ARG_OBJ },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    rp2clock_outputpin_obj_t *self = m_new_obj(rp2clock_outputpin_obj_t);
+    rp2clock_outputpin_obj_t *self = m_new_obj_with_finaliser(rp2clock_outputpin_obj_t);
     self->base.type = &rp2clock_outputpin_type;
 
     // Validate pin number
@@ -67,13 +68,11 @@ STATIC mp_obj_t rp2clock_outputpin_make_new(const mp_obj_type_t *type, size_t n_
     self->pin = args[ARG_pin].u_rom_obj;
     self->divisor = common_hal_rp2clock_outputpin_validate_divisor(mp_obj_get_float(args[ARG_divisor].u_obj));
 
-    // Validate pin based on clock
-    if (args[ARG_src].u_rom_obj != mp_const_none) {
-        self->src = validate_auxsrc(args[ARG_src].u_rom_obj, MP_QSTR_src);
-    } else {
-        self->src = AUXSRC_NONE;
-    }
-    self->enabled = false;
+    // Validate clock
+    self->src = cp_enum_value(&rp2clock_auxsrc_type, args[ARG_src].u_obj, MP_QSTR_rp2clock_auxsrc);
+
+    // Enable pin
+    common_hal_rp2clock_outputpin_enable(self);
     return MP_OBJ_FROM_PTR(self);
 }
 
@@ -107,56 +106,26 @@ STATIC mp_obj_t rp2clock_outputpin_disable(size_t n_args, const mp_obj_t *pos_ar
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(rp2clock_outputpin_disable_obj, 1, rp2clock_outputpin_disable);
 
-//|     src: rp2clock.AuxSrc
-//|     """Auxiliary source clock to be driven to pin."""
-static mp_obj_t rp2clock_outputpin_src_get(mp_obj_t self_in) {
-    rp2clock_outputpin_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    check_for_deinit(self);
-    return auxsrc_get_obj(self->src);
-}
-MP_DEFINE_CONST_FUN_OBJ_1(rp2clock_outputpin_src_get_obj, rp2clock_outputpin_src_get);
-
-static mp_obj_t rp2clock_outputpin_src_set(mp_obj_t self_in, mp_obj_t src_obj) {
-    rp2clock_outputpin_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    check_for_deinit(self);
-    self->src = validate_auxsrc(src_obj, MP_QSTR_src);
-    return mp_const_none;
-}
-MP_DEFINE_CONST_FUN_OBJ_2(rp2clock_outputpin_src_set_obj, rp2clock_outputpin_src_set);
-MP_PROPERTY_GETSET(rp2clock_outputpin_src_obj,
-    (mp_obj_t)&rp2clock_outputpin_src_get_obj,
-    (mp_obj_t)&rp2clock_outputpin_src_set_obj);
-
-//|     divisor: float
-//|     """Divisor used to divide the clock before it's output to pin."""
+//|     enabled: bool
+//|     """Check if pin is enabled."""
 //|
-static mp_obj_t rp2clock_outputpin_divisor_get(mp_obj_t self_in) {
+static mp_obj_t rp2clock_outputpin_get_enabled(mp_obj_t self_in) {
     rp2clock_outputpin_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
-    return mp_obj_new_float(self->divisor);
+    return mp_obj_new_bool(self->enabled);
 }
-MP_DEFINE_CONST_FUN_OBJ_1(rp2clock_outputpin_divisor_get_obj, rp2clock_outputpin_divisor_get);
-
-static mp_obj_t rp2clock_outputpin_divisor_set(mp_obj_t self_in, mp_obj_t divisor_obj) {
-    rp2clock_outputpin_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    check_for_deinit(self);
-    self->divisor = common_hal_rp2clock_outputpin_validate_divisor(mp_obj_get_float(divisor_obj));
-    return mp_const_none;
-}
-MP_DEFINE_CONST_FUN_OBJ_2(rp2clock_outputpin_divisor_set_obj, rp2clock_outputpin_divisor_set);
-MP_PROPERTY_GETSET(rp2clock_outputpin_divisor_obj,
-    (mp_obj_t)&rp2clock_outputpin_divisor_get_obj,
-    (mp_obj_t)&rp2clock_outputpin_divisor_set_obj);
-
+MP_DEFINE_CONST_FUN_OBJ_1(rp2clock_outputpin_get_enabled_obj, rp2clock_outputpin_get_enabled);
+MP_PROPERTY_GETTER(rp2clock_outputpin_enabled_obj,
+    (mp_obj_t)&rp2clock_outputpin_get_enabled_obj);
 
 STATIC const mp_rom_map_elem_t rp2clock_outputpin_locals_dict_table[] = {
     // Functions
+    { MP_ROM_QSTR(MP_QSTR___del__),         MP_ROM_PTR(&rp2clock_outputpin_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR_deinit),          MP_ROM_PTR(&rp2clock_outputpin_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR_enable),          MP_ROM_PTR(&rp2clock_outputpin_enable_obj) },
     { MP_ROM_QSTR(MP_QSTR_disable),         MP_ROM_PTR(&rp2clock_outputpin_disable_obj) },
     // Properties
-    { MP_ROM_QSTR(MP_QSTR_src),             MP_ROM_PTR(&rp2clock_outputpin_src_obj) },
-    { MP_ROM_QSTR(MP_QSTR_divisor),         MP_ROM_PTR(&rp2clock_outputpin_divisor_obj) },
+    { MP_ROM_QSTR(MP_QSTR_enabled),         MP_ROM_PTR(&rp2clock_outputpin_enabled_obj) },
 };
 STATIC MP_DEFINE_CONST_DICT(rp2clock_outputpin_locals_dict, rp2clock_outputpin_locals_dict_table);
 

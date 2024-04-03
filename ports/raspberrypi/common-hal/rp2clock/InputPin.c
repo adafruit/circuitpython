@@ -39,10 +39,10 @@ void common_hal_rp2clock_inputpin_validate_index_pin(const mcu_pin_obj_t *pin) {
 
 void common_hal_rp2clock_inputpin_validate_freqs(uint32_t src, uint32_t target) {
     if (src == 0) {
-        mp_raise_ValueError(MP_ERROR_TEXT("src freq == 0"));
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid freq: %u"), src);
     }
     if (target == 0) {
-        mp_raise_ValueError(MP_ERROR_TEXT("target freq == 0"));
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid freq: %u"), target);
     }
     if (target > src) {
         mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid freqs: %u > %u"), target, src);
@@ -64,29 +64,19 @@ void common_hal_rp2clock_inputpin_deinit(rp2clock_inputpin_obj_t *self) {
 }
 
 static void common_hal_rp2clock_inputpin_claim_pin(rp2clock_inputpin_obj_t *self) {
-    // Avoid runtime error if enable already called
-    if (self->enabled) {
-        return;
-    }
     // Check pin is available
-    if (!common_hal_mcu_pin_is_free(self->pin)) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("Pin in use"));
-    }
+    assert_pin_free(self->pin);
     // Claim pin
     common_hal_mcu_pin_claim(self->pin);
-    // Store flag
-    self->enabled = true;
 }
 
 void common_hal_rp2clock_inputpin_enable(rp2clock_inputpin_obj_t *self) {
-    if (self->index == INDEX_NONE) {
-        mp_raise_ValueError_varg(MP_ERROR_TEXT("%q not set"), MP_QSTR_index);
-    }
     common_hal_rp2clock_inputpin_claim_pin(self);
     // Check return value
     if (!clock_configure_gpin(self->index, self->pin->number, self->src_freq, self->target_freq)) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("clock_configure_gpin failed!"));
     }
+    self->enabled = true;
 }
 
 void common_hal_rp2clock_inputpin_disable(rp2clock_inputpin_obj_t *self) {
@@ -94,5 +84,5 @@ void common_hal_rp2clock_inputpin_disable(rp2clock_inputpin_obj_t *self) {
         return;
     }
     common_hal_reset_pin(self->pin);
-    self->enabled = 0;
+    self->enabled = false;
 }

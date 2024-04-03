@@ -25,6 +25,7 @@
  */
 
 #include "py/obj.h"
+#include "py/enum.h"
 #include "py/objproperty.h"
 #include "py/runtime.h"
 #include "py/objarray.h"
@@ -60,33 +61,30 @@ STATIC mp_obj_t rp2clock_inputpin_make_new(const mp_obj_type_t *type, size_t n_a
     enum { ARG_pin, ARG_index, ARG_src_freq, ARG_target_freq };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_pin,         MP_ARG_REQUIRED | MP_ARG_OBJ },
-        { MP_QSTR_index,       MP_ARG_OBJ | MP_ARG_KW_ONLY,  {.u_rom_obj = mp_const_none} },
-        { MP_QSTR_src_freq,    MP_ARG_INT | MP_ARG_KW_ONLY,  {.u_int = 0} },
-        { MP_QSTR_target_freq, MP_ARG_INT | MP_ARG_KW_ONLY,  {.u_int = 0} },
+        { MP_QSTR_index,       MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_src_freq,    MP_ARG_REQUIRED | MP_ARG_INT },
+        { MP_QSTR_target_freq, MP_ARG_REQUIRED | MP_ARG_INT },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    rp2clock_inputpin_obj_t *self = m_new_obj(rp2clock_inputpin_obj_t);
+    rp2clock_inputpin_obj_t *self = m_new_obj_with_finaliser(rp2clock_inputpin_obj_t);
     self->base.type = &rp2clock_inputpin_type;
 
     // Validate pin number
     common_hal_rp2clock_inputpin_validate_index_pin(args[ARG_pin].u_rom_obj);
     self->pin = args[ARG_pin].u_rom_obj;
 
-    // Validate pin based on clock
-    if (args[ARG_index].u_rom_obj != mp_const_none) {
-        self->index = validate_index(args[ARG_index].u_rom_obj, MP_QSTR_index);
-        self->src_freq = args[ARG_src_freq].u_int;
-        self->target_freq = args[ARG_target_freq].u_int;
-        // Validate frequencies if set
-        if (self->src_freq && self->target_freq) {
-            common_hal_rp2clock_inputpin_validate_freqs(args[ARG_src_freq].u_int, args[ARG_target_freq].u_int);
-        }
-    } else {
-        self->index = INDEX_NONE;
-    }
-    self->enabled = false;
+    // Validate clock
+    self->index = cp_enum_value(&rp2clock_index_type, args[ARG_index].u_obj, MP_QSTR_rp2clock_index);
+
+    // Validate frequencies
+    common_hal_rp2clock_inputpin_validate_freqs(args[ARG_src_freq].u_int, args[ARG_target_freq].u_int);
+    self->src_freq = args[ARG_src_freq].u_int;
+    self->target_freq = args[ARG_target_freq].u_int;
+
+    // Enable and return
+    common_hal_rp2clock_inputpin_enable(self);
     return MP_OBJ_FROM_PTR(self);
 };
 
@@ -112,6 +110,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(rp2clock_inputpin_enable_obj, 1, rp2clock_inputpin_en
 
 //|     def disable(self) -> None:
 //|         """Disables the pin and internal clock"""
+//|
 STATIC mp_obj_t rp2clock_inputpin_disable(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     rp2clock_inputpin_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
     check_for_deinit(self);
@@ -120,71 +119,22 @@ STATIC mp_obj_t rp2clock_inputpin_disable(size_t n_args, const mp_obj_t *pos_arg
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(rp2clock_inputpin_disable_obj, 1, rp2clock_inputpin_disable);
 
-//|     def set_freq(self, src_freq: int, target_freq: int) -> None:
-//|         """Configures the src and target frequency. Must be set before enable() is called."""
-STATIC mp_obj_t rp2clock_inputpin_set_freq(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    enum { ARG_src_freq, ARG_target_freq };
-    static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_src_freq,  MP_ARG_REQUIRED | MP_ARG_INT },
-        { MP_QSTR_target_freq,  MP_ARG_REQUIRED | MP_ARG_INT },
-    };
-    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
-    mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
-
-    rp2clock_inputpin_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
-    check_for_deinit(self);
-    common_hal_rp2clock_inputpin_validate_freqs(args[ARG_src_freq].u_int, args[ARG_target_freq].u_int);
-    self->src_freq = args[ARG_src_freq].u_int;
-    self->target_freq = args[ARG_target_freq].u_int;
-    return mp_const_none;
-}
-MP_DEFINE_CONST_FUN_OBJ_KW(rp2clock_inputpin_set_freq_obj, 1, rp2clock_inputpin_set_freq);
-
-//|     def get_freq(self) -> tuple[int, int]:
-//|         """Returns the (src, target) frequency as tuple."""
-STATIC mp_obj_t rp2clock_inputpin_get_freq(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    rp2clock_inputpin_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
-    check_for_deinit(self);
-    mp_obj_t tup[] = {
-        mp_obj_new_int(self->src_freq),
-        mp_obj_new_int(self->target_freq)
-    };
-    // Return tuple with (src, target)
-    return mp_obj_new_tuple(2, tup);
-}
-MP_DEFINE_CONST_FUN_OBJ_KW(rp2clock_inputpin_get_freq_obj, 1, rp2clock_inputpin_get_freq);
-
-//|     index: rp2clock.Index
-//|     """Clock that will be driven from external pin."""
-//|
-static mp_obj_t rp2clock_inputpin_index_get(mp_obj_t self_in) {
+static mp_obj_t rp2clock_inputpin_get_enabled(mp_obj_t self_in) {
     rp2clock_inputpin_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
-    return index_get_obj(self->index);
+    return mp_obj_new_bool(self->enabled);
 }
-MP_DEFINE_CONST_FUN_OBJ_1(rp2clock_inputpin_index_get_obj, rp2clock_inputpin_index_get);
-
-static mp_obj_t rp2clock_inputpin_index_set(mp_obj_t self_in, mp_obj_t index_obj) {
-    rp2clock_inputpin_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    check_for_deinit(self);
-    self->index = validate_index(index_obj, MP_QSTR_index);
-    return mp_const_none;
-}
-MP_DEFINE_CONST_FUN_OBJ_2(rp2clock_inputpin_index_set_obj, rp2clock_inputpin_index_set);
-MP_PROPERTY_GETSET(rp2clock_inputpin_index_obj,
-    (mp_obj_t)&rp2clock_inputpin_index_get_obj,
-    (mp_obj_t)&rp2clock_inputpin_index_set_obj);
-
+MP_DEFINE_CONST_FUN_OBJ_1(rp2clock_inputpin_get_enabled_obj, rp2clock_inputpin_get_enabled);
+MP_PROPERTY_GETTER(rp2clock_inputpin_enabled_obj,
+    (mp_obj_t)&rp2clock_inputpin_get_enabled_obj);
 
 STATIC const mp_rom_map_elem_t rp2clock_inputpin_locals_dict_table[] = {
     // Functions
+    { MP_ROM_QSTR(MP_QSTR___del__),         MP_ROM_PTR(&rp2clock_inputpin_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR_deinit),          MP_ROM_PTR(&rp2clock_inputpin_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR_enable),          MP_ROM_PTR(&rp2clock_inputpin_enable_obj) },
     { MP_ROM_QSTR(MP_QSTR_disable),         MP_ROM_PTR(&rp2clock_inputpin_disable_obj) },
-    { MP_ROM_QSTR(MP_QSTR_set_freq),        MP_ROM_PTR(&rp2clock_inputpin_set_freq_obj) },
-    { MP_ROM_QSTR(MP_QSTR_get_freq),        MP_ROM_PTR(&rp2clock_inputpin_get_freq_obj) },
-    // Properties
-    { MP_ROM_QSTR(MP_QSTR_index),        MP_ROM_PTR(&rp2clock_inputpin_index_obj) },
+    { MP_ROM_QSTR(MP_QSTR_enabled),         MP_ROM_PTR(&rp2clock_inputpin_enabled_obj) },
 };
 STATIC MP_DEFINE_CONST_DICT(rp2clock_inputpin_locals_dict, rp2clock_inputpin_locals_dict_table);
 

@@ -30,7 +30,7 @@
 #include "hardware/clocks.h"
 
 // Input sources
-typedef enum _rp2clock_index_t {
+typedef enum {
     INDEX_GPOUT0  = clk_gpout0,
     INDEX_GPOUT1  = clk_gpout1,
     INDEX_GPOUT2  = clk_gpout2,
@@ -41,25 +41,6 @@ typedef enum _rp2clock_index_t {
     INDEX_USB     = clk_usb,
     INDEX_ADC     = clk_adc,
     INDEX_RTC     = clk_rtc,
-    INDEX_NONE = CLK_COUNT
 } rp2clock_index_t;
 
 extern const mp_obj_type_t rp2clock_index_type;
-
-typedef struct {
-    mp_obj_base_t base;
-} rp2clock_index_obj_t;
-
-extern const rp2clock_index_obj_t rp2clock_index_gpout0_obj;
-extern const rp2clock_index_obj_t rp2clock_index_gpout1_obj;
-extern const rp2clock_index_obj_t rp2clock_index_gpout2_obj;
-extern const rp2clock_index_obj_t rp2clock_index_gpout3_obj;
-extern const rp2clock_index_obj_t rp2clock_index_ref_obj;
-extern const rp2clock_index_obj_t rp2clock_index_sys_obj;
-extern const rp2clock_index_obj_t rp2clock_index_peri_obj;
-extern const rp2clock_index_obj_t rp2clock_index_usb_obj;
-extern const rp2clock_index_obj_t rp2clock_index_adc_obj;
-extern const rp2clock_index_obj_t rp2clock_index_rtc_obj;
-
-rp2clock_index_t validate_index(mp_rom_obj_t obj, qstr arg_name);
-mp_obj_t index_get_obj(rp2clock_index_t type);

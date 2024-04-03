@@ -27,40 +27,21 @@
 #pragma once
 
 #include "py/obj.h"
+#include "hardware/regs/clocks.h"
 
 // Output sources
-typedef enum _rp2clock_auxsrc_t {
-    AUXSRC_PLL_SYS    = 0,
-    AUXSRC_GPIN0      = 1,
-    AUXSRC_GPIN1      = 2,
-    AUXSRC_PLL_USB    = 3,
-    AUXSRC_PLL_ROSC   = 4,
-    AUXSRC_PLL_XOSC   = 5,
-    AUXSRC_SYS        = 6,
-    AUXSRC_USB        = 7,
-    AUXSRC_ADC        = 8,
-    AUXSRC_RTC        = 9,
-    AUXSRC_REF        = 10,
-    AUXSRC_NONE       = 11,
+typedef enum {
+    AUXSRC_PLL_SYS    = CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS,
+    AUXSRC_GPIN0      = CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLKSRC_GPIN0,
+    AUXSRC_GPIN1      = CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLKSRC_GPIN1,
+    AUXSRC_PLL_USB    = CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLKSRC_PLL_USB,
+    AUXSRC_PLL_ROSC   = CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_ROSC_CLKSRC,
+    AUXSRC_PLL_XOSC   = CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_XOSC_CLKSRC,
+    AUXSRC_SYS        = CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLK_SYS,
+    AUXSRC_USB        = CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLK_USB,
+    AUXSRC_ADC        = CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLK_ADC,
+    AUXSRC_RTC        = CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLK_RTC,
+    AUXSRC_REF        = CLOCKS_CLK_GPOUT0_CTRL_AUXSRC_VALUE_CLK_REF,
 } rp2clock_auxsrc_t;
 
 extern const mp_obj_type_t rp2clock_auxsrc_type;
-
-typedef struct {
-    mp_obj_base_t base;
-} rp2clock_auxsrc_obj_t;
-
-extern const rp2clock_auxsrc_obj_t rp2clock_auxsrc_pll_sys_obj;
-extern const rp2clock_auxsrc_obj_t rp2clock_auxsrc_gpin0_obj;
-extern const rp2clock_auxsrc_obj_t rp2clock_auxsrc_gpin1_obj;
-extern const rp2clock_auxsrc_obj_t rp2clock_auxsrc_pll_usb_obj;
-extern const rp2clock_auxsrc_obj_t rp2clock_auxsrc_pll_rosc_obj;
-extern const rp2clock_auxsrc_obj_t rp2clock_auxsrc_pll_xosc_obj;
-extern const rp2clock_auxsrc_obj_t rp2clock_auxsrc_sys_obj;
-extern const rp2clock_auxsrc_obj_t rp2clock_auxsrc_usb_obj;
-extern const rp2clock_auxsrc_obj_t rp2clock_auxsrc_adc_obj;
-extern const rp2clock_auxsrc_obj_t rp2clock_auxsrc_rtc_obj;
-extern const rp2clock_auxsrc_obj_t rp2clock_auxsrc_ref_obj;
-
-rp2clock_auxsrc_t validate_auxsrc(mp_rom_obj_t obj, qstr arg_name);
-mp_obj_t auxsrc_get_obj(rp2clock_auxsrc_t type);

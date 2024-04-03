@@ -62,26 +62,16 @@ void common_hal_rp2clock_outputpin_deinit(rp2clock_outputpin_obj_t *self) {
 }
 
 static void common_hal_rp2clock_outputpin_claim_pin(rp2clock_outputpin_obj_t *self) {
-    // Avoid runtime error if enable already called
-    if (self->enabled) {
-        return;
-    }
     // Check pin is available
-    if (!common_hal_mcu_pin_is_free(self->pin)) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("Pin in use"));
-    }
+    assert_pin_free(self->pin);
     // Claim pin
     common_hal_mcu_pin_claim(self->pin);
-    // Store flag
-    self->enabled = true;
 }
 
 void common_hal_rp2clock_outputpin_enable(rp2clock_outputpin_obj_t *self) {
-    if (self->src == AUXSRC_NONE) {
-        mp_raise_ValueError_varg(MP_ERROR_TEXT("%q not set"), MP_QSTR_src);
-    }
     common_hal_rp2clock_outputpin_claim_pin(self);
     clock_gpio_init(self->pin->number, self->src, self->divisor);
+    self->enabled = true;
 }
 
 void common_hal_rp2clock_outputpin_disable(rp2clock_outputpin_obj_t *self) {
