@@ -29,9 +29,7 @@
 #include "bindings/rp2clock/Index.h"
 
 //| class Index:
-//|     """Defines the internal clock driven from GPIN external pin.
-//|     Used with rp2clock.InputPin instantiation.
-//|     """
+//|     """Defines the internal clock to be driven from GPIN external pin."""
 //|
 //|     def __init__(self) -> None:
 //|         """Enum-like class to define the internal clock index."""

@@ -41,21 +41,21 @@ STATIC void check_for_deinit(rp2clock_inputpin_obj_t *self) {
 }
 
 //| class InputPin:
+//|     """Route external clocks to internal clocks via dedicated pins."""
+//|
 //|     def __init__(
-//|         self,
-//|         pin: microcontroller.Pin,
-//|         *,
-//|         index: rp2clock.Index,
-//|         src_freq: int,
-//|         target_freq: int
+//|         self, pin: microcontroller.Pin, index: rp2clock.Index, src_freq: int, target_freq: int
 //|     ) -> None:
 //|         """Creates a clock input pin object.
-//|         pin: Pin to be used as clock input, allowed pins: 20,22
-//|         index: points to the destination clock to be connected to the input pin.
-//|         src_freq: External input frequency at the pin.
-//|         target_freq: Desired frequency for index.
-//|         """
-
+//|
+//|         .. note:: Valid pins are: GP20, GP22.
+//|         :param ~microcontroller.Pin pin: Pin to be used as clock input.
+//|
+//|         :param ~rp2clock.Index index: Destination clock to be connected to the input pin.
+//|
+//|         :param int src_freq: Frequency of clock input at the pin.
+//|
+//|         :param int target_freq: Desired frequency for ~rp2clock.Index clock."""
 STATIC mp_obj_t rp2clock_inputpin_make_new(const mp_obj_type_t *type, size_t n_args,
     size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_pin, ARG_index, ARG_src_freq, ARG_target_freq };
@@ -99,7 +99,7 @@ STATIC mp_obj_t rp2clock_inputpin_deinit(mp_obj_t self_in) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(rp2clock_inputpin_deinit_obj, rp2clock_inputpin_deinit);
 
 //|     def enable(self) -> None:
-//|         """Configures the pin and enables the internal clock"""
+//|         """Configures the pin and enables the internal clock."""
 STATIC mp_obj_t rp2clock_inputpin_enable(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     rp2clock_inputpin_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
     check_for_deinit(self);
@@ -110,7 +110,6 @@ MP_DEFINE_CONST_FUN_OBJ_KW(rp2clock_inputpin_enable_obj, 1, rp2clock_inputpin_en
 
 //|     def disable(self) -> None:
 //|         """Disables the pin and internal clock"""
-//|
 STATIC mp_obj_t rp2clock_inputpin_disable(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     rp2clock_inputpin_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
     check_for_deinit(self);
@@ -119,6 +118,9 @@ STATIC mp_obj_t rp2clock_inputpin_disable(size_t n_args, const mp_obj_t *pos_arg
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(rp2clock_inputpin_disable_obj, 1, rp2clock_inputpin_disable);
 
+//|     def enabled(self) -> bool:
+//|         """Check if pin is enabled."""
+//|
 static mp_obj_t rp2clock_inputpin_get_enabled(mp_obj_t self_in) {
     rp2clock_inputpin_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -129,7 +131,6 @@ MP_PROPERTY_GETTER(rp2clock_inputpin_enabled_obj,
     (mp_obj_t)&rp2clock_inputpin_get_enabled_obj);
 
 STATIC const mp_rom_map_elem_t rp2clock_inputpin_locals_dict_table[] = {
-    // Functions
     { MP_ROM_QSTR(MP_QSTR___del__),         MP_ROM_PTR(&rp2clock_inputpin_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR_deinit),          MP_ROM_PTR(&rp2clock_inputpin_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR_enable),          MP_ROM_PTR(&rp2clock_inputpin_enable_obj) },

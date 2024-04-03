@@ -29,9 +29,7 @@
 #include "bindings/rp2clock/AuxSrc.h"
 
 //| class AuxSrc:
-//|     """Defines the input clock for GPOUT on RP2040.
-//|     Used with rp2clock.OutputPin instantiation.
-//|     """
+//|     """Defines the internal clock for GPOUT on RP2040."""
 //|
 //|     def __init__(self) -> None:
 //|         """Enum-like class to define the clock src."""

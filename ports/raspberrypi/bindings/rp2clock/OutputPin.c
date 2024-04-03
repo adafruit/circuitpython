@@ -41,14 +41,15 @@ STATIC void check_for_deinit(rp2clock_outputpin_obj_t *self) {
 }
 
 //| class OutputPin:
-//|     def __init__(
-//|         self, pin: microcontroller.Pin, *, src: rp2clock.AuxSrc, divisor: float
-//|     ) -> None:
-//|         """Creates a clock output pip object.
-//|         pin: Pin to be used as clock input, allowed pins: 22,23,24,25
-//|         src: points to the source clock to be connected to the output pin.
-//|         divisor: Divisor for clock before it's driven onto pin.
-//|         """
+//|     def __init__(self, pin: microcontroller.Pin, src: rp2clock.AuxSrc, divisor: float) -> None:
+//|         """Creates a clock output pin object.
+//|
+//|         .. note:: Valid pins are: GP21, GP23, GP24, GP25.
+//|         :param ~microcontroller.Pin pin: Pin to be used as clock output.
+//|
+//|         :param ~rp2clock.AuxSrc src: Source clock to be connected to the output pin.
+//|
+//|         :param float divisor: Divisor for clock before it's driven onto pin."""
 STATIC mp_obj_t rp2clock_outputpin_make_new(const mp_obj_type_t *type, size_t n_args,
     size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_pin, ARG_src, ARG_divisor };
@@ -87,7 +88,7 @@ STATIC mp_obj_t rp2clock_outputpin_deinit(mp_obj_t self_in) {
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(rp2clock_outputpin_deinit_obj, rp2clock_outputpin_deinit);
 
 //|     def enable(self) -> None:
-//|         """Configures the pin and enables the clock output"""
+//|         """Configures the pin and enables the clock output."""
 STATIC mp_obj_t rp2clock_outputpin_enable(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     rp2clock_outputpin_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
     check_for_deinit(self);
@@ -97,7 +98,7 @@ STATIC mp_obj_t rp2clock_outputpin_enable(size_t n_args, const mp_obj_t *pos_arg
 MP_DEFINE_CONST_FUN_OBJ_KW(rp2clock_outputpin_enable_obj, 1, rp2clock_outputpin_enable);
 
 //|     def disable(self) -> None:
-//|         """Disableds the pin and external clock"""
+//|         """Disables the pin and external clock."""
 STATIC mp_obj_t rp2clock_outputpin_disable(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     rp2clock_outputpin_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
     check_for_deinit(self);

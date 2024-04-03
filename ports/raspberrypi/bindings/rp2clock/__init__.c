@@ -35,6 +35,7 @@
 #include "bindings/rp2clock/OutputPin.h"
 #include "bindings/rp2clock/InputPin.h"
 
+//| """Hardware interface for RP2040 clock control"""
 STATIC const mp_rom_map_elem_t rp2clock_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__),  MP_ROM_QSTR(MP_QSTR_rp2clock) },
     { MP_ROM_QSTR(MP_QSTR_OutputPin), MP_ROM_PTR(&rp2clock_outputpin_type) },
