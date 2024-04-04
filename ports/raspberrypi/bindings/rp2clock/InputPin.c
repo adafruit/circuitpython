@@ -49,6 +49,7 @@ STATIC void check_for_deinit(rp2clock_inputpin_obj_t *self) {
 //|         """Creates a clock input pin object.
 //|
 //|         .. note:: Valid pins are: GP20, GP22.
+//|
 //|         :param ~microcontroller.Pin pin: Pin to be used as clock input.
 //|
 //|         :param ~rp2clock.Index index: Destination clock to be connected to the input pin.

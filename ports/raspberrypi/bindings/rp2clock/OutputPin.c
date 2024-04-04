@@ -45,6 +45,7 @@ STATIC void check_for_deinit(rp2clock_outputpin_obj_t *self) {
 //|         """Creates a clock output pin object.
 //|
 //|         .. note:: Valid pins are: GP21, GP23, GP24, GP25.
+//|
 //|         :param ~microcontroller.Pin pin: Pin to be used as clock output.
 //|
 //|         :param ~rp2clock.AuxSrc src: Source clock to be connected to the output pin.
