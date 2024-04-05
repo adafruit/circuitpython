@@ -1,7 +1,5 @@
 CIRCUITPY_CREATOR_ID = 0x19991000
 CIRCUITPY_CREATION_ID = 0x00AA0004
-USB_PRODUCT = "Sunton ESP32-8048S070"
-USB_MANUFACTURER = "Sunton"
 
 # This board doesn't have USB by default, it
 # instead uses a CH340C USB-to-Serial chip
