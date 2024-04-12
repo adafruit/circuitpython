@@ -34,11 +34,11 @@ STATIC const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_BUTTON0), MP_ROM_PTR(&pin_GPIO0) },
 
     // Battery ADC
-    { MP_ROM_QSTR(MP_QSTR_BATTERY_ADC), MP_ROM_PTR(&pin_GPIO1) },
+    { MP_ROM_QSTR(MP_QSTR_BAT_ADC), MP_ROM_PTR(&pin_GPIO1) },
 
     // I2C
-    { MP_ROM_QSTR(MP_QSTR_LCD_SCL), MP_ROM_PTR(&pin_GPIO7) },
-    { MP_ROM_QSTR(MP_QSTR_LCD_SDA), MP_ROM_PTR(&pin_GPIO6) },
+    { MP_ROM_QSTR(MP_QSTR_SCL), MP_ROM_PTR(&pin_GPIO7) },
+    { MP_ROM_QSTR(MP_QSTR_SDA), MP_ROM_PTR(&pin_GPIO6) },
 
     // SPI
     { MP_ROM_QSTR(MP_QSTR_SCK), MP_ROM_PTR(&pin_GPIO10) },

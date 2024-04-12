@@ -1,7 +1,10 @@
-USB_VID = 0x1a86
-USB_PID = 0x5d37
-USB_PRODUCT = "Waveshare ESP32S3 LCD 1.28"
-USB_MANUFACTURER = "Waveshare"
+CIRCUITPY_CREATOR_ID = 0x1BBB0000
+CIRCUITPY_CREATION_ID = 0x00AB0001
+
+# This board doesn't have USB by default, it
+# instead uses a CH340C USB-to-Serial chip
+CIRCUITPY_USB = 0
+CIRCUITPY_ESP_USB_SERIAL_JTAG = 0
 
 IDF_TARGET = esp32s3
 
