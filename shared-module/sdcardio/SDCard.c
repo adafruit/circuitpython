@@ -211,9 +211,10 @@ STATIC mp_rom_error_text_t init_card_v1(sdcardio_sdcard_obj_t *self) {
 }
 
 STATIC mp_rom_error_text_t init_card_v2(sdcardio_sdcard_obj_t *self) {
+    common_hal_time_delay_ms(45);
     for (int i = 0; i < CMD_TIMEOUT; i++) {
         uint8_t ocr[4];
-        common_hal_time_delay_ms(50);
+        common_hal_time_delay_ms(5);
         cmd(self, 58, 0, ocr, sizeof(ocr), false, true);
         cmd(self, 55, 0, NULL, 0, true, true);
         if (cmd(self, 41, 0x40000000, NULL, 0, true, true) == 0) {
