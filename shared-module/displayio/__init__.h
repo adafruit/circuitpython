@@ -38,6 +38,7 @@
 // Port unique frame buffers.
 #if CIRCUITPY_VIDEOCORE
 #include "bindings/videocore/Framebuffer.h"
+#include "bindings/videocore/Hvs.h"
 #endif
 #if CIRCUITPY_PICODVI
 #include "bindings/picodvi/Framebuffer.h"
@@ -89,6 +90,7 @@ typedef struct {
         #endif
         #if CIRCUITPY_FRAMEBUFFERIO
         framebufferio_framebufferdisplay_obj_t framebuffer_display;
+        hvs_channel_t hvs_display;
         #endif
     };
 } primary_display_t;

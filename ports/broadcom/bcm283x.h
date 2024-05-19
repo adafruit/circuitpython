@@ -1,0 +1,15 @@
+#pragma once
+
+#if BCM_VERSION == 2835
+#define BCM_PERIPH_BASE_VIRT 0x20000000
+#elif BCM_VERSION == 2836
+#define BCM_PERIPH_BASE_VIRT 0x3f000000
+#elif BCM_VERSION == 2837
+#define BCM_PERIPH_BASE_VIRT 0x3f000000
+#endif
+
+#define REG32(r) ((volatile uint32_t*)r)
+
+#undef PM_BASE
+#define PM_BASE     (BCM_PERIPH_BASE_VIRT + 0x100000)
+#define SCALER_BASE (BCM_PERIPH_BASE_VIRT + 0x400000)
