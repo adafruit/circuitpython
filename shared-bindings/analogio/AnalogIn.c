@@ -46,18 +46,27 @@ MP_WEAK const mcu_pin_obj_t *common_hal_analogio_analogin_validate_pin(mp_obj_t 
 //|         when you read a value. You can retry the read.
 //|         """
 //|         ...
-static mp_obj_t analogio_analogin_make_new(const mp_obj_type_t *type,
-    mp_uint_t n_args, size_t n_kw, const mp_obj_t *args) {
-    // check number of arguments
-    mp_arg_check_num(n_args, n_kw, 1, 1, false);
-
-    // 1st argument is the pin
-    const mcu_pin_obj_t *pin = common_hal_analogio_analogin_validate_pin(args[0]);
+static mp_obj_t analogio_analogin_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
+    enum { ARG_pin, ARG_samples };
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_pin,    MP_ARG_REQUIRED | MP_ARG_OBJ, },
+        { MP_QSTR_samples, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 2} },
+    };
+    mp_arg_val_t parsed_args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all_kw_array(n_args, n_kw, args, MP_ARRAY_SIZE(allowed_args), allowed_args, parsed_args);
+    const mcu_pin_obj_t *pin = common_hal_analogio_analogin_validate_pin(parsed_args[ARG_pin].u_obj);
+    mp_int_t samples = parsed_args[ARG_samples].u_int;
+    if (samples <= 0 || samples >= 255) {
+        mp_raise_ValueError(MP_ERROR_TEXT("value is out of bounds"));
+    }
+    uint8_t sample_size = samples;
     analogio_analogin_obj_t *self = mp_obj_malloc(analogio_analogin_obj_t, &analogio_analogin_type);
-    common_hal_analogio_analogin_construct(self, pin);
+    common_hal_analogio_analogin_construct(self, pin, sample_size);
 
     return MP_OBJ_FROM_PTR(self);
 }
+
+
 
 //|     def deinit(self) -> None:
 //|         """Turn off the AnalogIn and release the pin for other use."""
