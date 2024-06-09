@@ -60,7 +60,8 @@ static mp_obj_t analogio_analogin_make_new(const mp_obj_type_t *type, size_t n_a
         mp_raise_ValueError(MP_ERROR_TEXT("value is out of bounds"));
     }
     uint8_t sample_size = samples;
-    analogio_analogin_obj_t *self = mp_obj_malloc(analogio_analogin_obj_t, &analogio_analogin_type);
+    analogio_analogin_obj_t *self = m_new_obj_with_finaliser(analogio_analogin_obj_t);
+    self->base.type = &analogio_analogin_type;
     common_hal_analogio_analogin_construct(self, pin, sample_size);
 
     return MP_OBJ_FROM_PTR(self);
@@ -137,6 +138,7 @@ MP_PROPERTY_GETTER(analogio_analogin_reference_voltage_obj,
     (mp_obj_t)&analogio_analogin_get_reference_voltage_obj);
 
 static const mp_rom_map_elem_t analogio_analogin_locals_dict_table[] = {
+    { MP_ROM_QSTR(MP_QSTR___del__),            MP_ROM_PTR(&analogio_analogin_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR_deinit),             MP_ROM_PTR(&analogio_analogin_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__),          MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__),           MP_ROM_PTR(&analogio_analogin___exit___obj) },
