@@ -29,7 +29,7 @@ const mcu_pin_obj_t *common_hal_analogio_analogin_validate_pin(mp_obj_t obj) {
 #define SPECIAL_PIN(pin) false
 #endif
 
-void common_hal_analogio_analogin_construct(analogio_analogin_obj_t *self, const mcu_pin_obj_t *pin) {
+void common_hal_analogio_analogin_construct(analogio_analogin_obj_t *self, const mcu_pin_obj_t *pin, uint8_t sample_size) {
     if (pin->number < ADC_FIRST_PIN_NUMBER || pin->number > ADC_FIRST_PIN_NUMBER + ADC_PIN_COUNT) {
         raise_ValueError_invalid_pin();
     }
@@ -41,6 +41,7 @@ void common_hal_analogio_analogin_construct(analogio_analogin_obj_t *self, const
     }
 
     self->pin = pin;
+    self->sample_size = sample_size;
 }
 
 bool common_hal_analogio_analogin_deinited(analogio_analogin_obj_t *self) {
@@ -59,24 +60,27 @@ void common_hal_analogio_analogin_deinit(analogio_analogin_obj_t *self) {
 }
 
 uint16_t common_hal_analogio_analogin_get_value(analogio_analogin_obj_t *self) {
-    uint16_t value;
-    if (SPECIAL_PIN(self->pin)) {
-        common_hal_mcu_disable_interrupts();
-        uint32_t old_pad = padsbank0_hw->io[self->pin->number];
-        uint32_t old_ctrl = iobank0_hw->io[self->pin->number].ctrl;
-        adc_gpio_init(self->pin->number);
-        adc_select_input(self->pin->number - ADC_FIRST_PIN_NUMBER);
-        common_hal_mcu_delay_us(100);
-        value = adc_read();
-        gpio_init(self->pin->number);
-        padsbank0_hw->io[self->pin->number] = old_pad;
-        iobank0_hw->io[self->pin->number].ctrl = old_ctrl;
-        common_hal_mcu_enable_interrupts();
-    } else {
-        adc_select_input(self->pin->number - ADC_FIRST_PIN_NUMBER);
-        value = adc_read();
+    uint32_t value = 0;
+    for (int i = 0; i < self->sample_size; i++) {
+        if (SPECIAL_PIN(self->pin)) {
+            common_hal_mcu_disable_interrupts();
+            uint32_t old_pad = padsbank0_hw->io[self->pin->number];
+            uint32_t old_ctrl = iobank0_hw->io[self->pin->number].ctrl;
+            adc_gpio_init(self->pin->number);
+            adc_select_input(self->pin->number - ADC_FIRST_PIN_NUMBER);
+            common_hal_mcu_delay_us(100);
+            value += adc_read();
+            gpio_init(self->pin->number);
+            padsbank0_hw->io[self->pin->number] = old_pad;
+            iobank0_hw->io[self->pin->number].ctrl = old_ctrl;
+            common_hal_mcu_enable_interrupts();
+        } else {
+            adc_select_input(self->pin->number - ADC_FIRST_PIN_NUMBER);
+            value += adc_read();
+        }
     }
     // Stretch 12-bit ADC reading to 16-bit range
+    value /= self->sample_size;
     return (value << 4) | (value >> 8);
 }
 
