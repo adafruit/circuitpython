@@ -14,4 +14,5 @@
 typedef struct {
     mp_obj_base_t base;
     const mcu_pin_obj_t *pin;
+    uint16_t sample_size;
 } analogio_analogin_obj_t;
