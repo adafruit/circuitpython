@@ -29,7 +29,7 @@ const mcu_pin_obj_t *common_hal_analogio_analogin_validate_pin(mp_obj_t obj) {
 #define SPECIAL_PIN(pin) false
 #endif
 
-void common_hal_analogio_analogin_construct(analogio_analogin_obj_t *self, const mcu_pin_obj_t *pin, uint8_t sample_size) {
+void common_hal_analogio_analogin_construct(analogio_analogin_obj_t *self, const mcu_pin_obj_t *pin, uint16_t sample_size) {
     if (pin->number < ADC_FIRST_PIN_NUMBER || pin->number > ADC_FIRST_PIN_NUMBER + ADC_PIN_COUNT) {
         raise_ValueError_invalid_pin();
     }

@@ -42,7 +42,7 @@
 #endif
 
 void common_hal_analogio_analogin_construct(analogio_analogin_obj_t *self,
-    const mcu_pin_obj_t *pin, uint8_t sample_size) {
+    const mcu_pin_obj_t *pin, uint16_t sample_size) {
     if (pin->adc_index == NO_ADC || pin->adc_channel == NO_ADC_CHANNEL) {
         raise_ValueError_invalid_pin();
     }
