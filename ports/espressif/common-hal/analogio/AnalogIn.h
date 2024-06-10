@@ -22,7 +22,7 @@
 typedef struct {
     mp_obj_base_t base;
     const mcu_pin_obj_t *pin;
-    uint8_t sample_size;
+    uint16_t sample_size;
     adc_oneshot_unit_handle_t adc_handle;
     adc_channel_t channel;
     #if defined(ADC_CALI_SCHEME_CURVE_FITTING_SUPPORTED) && ADC_CALI_SCHEME_CURVE_FITTING_SUPPORTED
@@ -33,6 +33,5 @@ typedef struct {
     #endif
     adc_cali_scheme_ver_t calibration_scheme;
     adc_cali_handle_t calibration;
-    uint8_t samples;
 
 } analogio_analogin_obj_t;
