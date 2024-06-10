@@ -31,7 +31,7 @@ static analogin_dev_t analogin_dev[] = {
     {"/dev/hpadc1", &pin_HPADC1, -1},
 };
 
-void common_hal_analogio_analogin_construct(analogio_analogin_obj_t *self, const mcu_pin_obj_t *pin) {
+void common_hal_analogio_analogin_construct(analogio_analogin_obj_t *self, const mcu_pin_obj_t *pin, uint16_t sample_size) {
     if (!pin->analog) {
         raise_ValueError_invalid_pin();
     }
@@ -66,6 +66,7 @@ void common_hal_analogio_analogin_construct(analogio_analogin_obj_t *self, const
     ioctl(analogin_dev[self->number].fd, ANIOC_CXD56_START, 0);
 
     self->pin = pin;
+    self->sample_size = sample_size;
 }
 
 void common_hal_analogio_analogin_deinit(analogio_analogin_obj_t *self) {
@@ -86,11 +87,14 @@ bool common_hal_analogio_analogin_deinited(analogio_analogin_obj_t *self) {
 }
 
 uint16_t common_hal_analogio_analogin_get_value(analogio_analogin_obj_t *self) {
-    int16_t value = 0;
-
-    read(analogin_dev[self->number].fd, &value, sizeof(value));
-
-    return (uint16_t)32768 + (uint16_t)value;
+    uint32_t avg_value = 0;
+    for (int i = 0; i < self->sample_size; i++) {
+        int16_t value = 0;
+        read(analogin_dev[self->number].fd, &value, sizeof(value));
+        avg_value += (uint16_t)32768 + (uint16_t)value;
+    }
+    avg_value /= self->sample_size;
+    return avg_value;
 }
 
 // Reference voltage is a fixed value which is depending on the board.
