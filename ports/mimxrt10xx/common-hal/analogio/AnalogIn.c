@@ -18,7 +18,7 @@
 #define ADC_CHANNEL_GROUP 0
 
 void common_hal_analogio_analogin_construct(analogio_analogin_obj_t *self,
-    const mcu_pin_obj_t *pin, uint8_t sample_size) {
+    const mcu_pin_obj_t *pin, uint16_t sample_size) {
     adc_config_t config = {0};
 
     if (pin->adc == NULL) {
