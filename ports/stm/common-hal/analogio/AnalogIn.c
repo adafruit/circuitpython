@@ -26,7 +26,7 @@
 #endif
 
 void common_hal_analogio_analogin_construct(analogio_analogin_obj_t *self,
-    const mcu_pin_obj_t *pin) {
+    const mcu_pin_obj_t *pin, uint16_t sample_size) {
 
     // No ADC function on pin
     if (pin->adc_unit == 0x00) {
@@ -48,6 +48,7 @@ void common_hal_analogio_analogin_construct(analogio_analogin_obj_t *self,
     }
     common_hal_mcu_pin_claim(pin);
     self->pin = pin;
+    self->sample_size = sample_size;
 }
 
 bool common_hal_analogio_analogin_deinited(analogio_analogin_obj_t *self) {
@@ -154,37 +155,44 @@ uint16_t common_hal_analogio_analogin_get_value(analogio_analogin_obj_t *self) {
     AdcHandle.Init.Overrun = ADC_OVR_DATA_OVERWRITTEN;                    /* DR register is overwritten with the last conversion result in case of overrun */
     #endif
 
-    if (HAL_ADC_Init(&AdcHandle) != HAL_OK) {
-        return 0;
-    }
+    uint16_t avg_value = 0;
+    uint16_t i = 0;
 
-    sConfig.Channel = adc_channel(self->pin->adc_channel); // ADC_CHANNEL_0 <-normal iteration, not mask
-    sConfig.Rank = 1;
-    sConfig.SamplingTime = ADC_SAMPLETIME;
-    #if CPY_STM32L4
-    sConfig.SingleDiff = ADC_SINGLE_ENDED;                   /* Single-ended input channel */
-    sConfig.OffsetNumber = ADC_OFFSET_NONE;                  /* No offset subtraction */
-    if (!IS_ADC_CHANNEL(&AdcHandle, sConfig.Channel)) {
-        return 0;
-    }
-    #endif
-    if (HAL_ADC_ConfigChannel(&AdcHandle, &sConfig) != HAL_OK) {
-        return 0;
-    }
-    #if CPY_STM32L4
-    if (HAL_ADCEx_Calibration_Start(&AdcHandle, ADC_SINGLE_ENDED) != HAL_OK) {
-        return 0;
-    }
-    #endif
-    if (HAL_ADC_Start(&AdcHandle) != HAL_OK) {
-        return 0;
-    }
-    HAL_ADC_PollForConversion(&AdcHandle, 1);
-    uint16_t value = (uint16_t)HAL_ADC_GetValue(&AdcHandle);
-    HAL_ADC_Stop(&AdcHandle);
+    while (i < self->sample_size) {
+        if (HAL_ADC_Init(&AdcHandle) != HAL_OK) {
+            continue;
+        }
 
-    // Stretch 12-bit ADC reading to 16-bit range
-    return (value << 4) | (value >> 8);
+        sConfig.Channel = adc_channel(self->pin->adc_channel); // ADC_CHANNEL_0 <-normal iteration, not mask
+        sConfig.Rank = 1;
+        sConfig.SamplingTime = ADC_SAMPLETIME;
+        #if CPY_STM32L4
+        sConfig.SingleDiff = ADC_SINGLE_ENDED;                   /* Single-ended input channel */
+        sConfig.OffsetNumber = ADC_OFFSET_NONE;                  /* No offset subtraction */
+        if (!IS_ADC_CHANNEL(&AdcHandle, sConfig.Channel)) {
+            continue;
+        }
+        #endif
+        if (HAL_ADC_ConfigChannel(&AdcHandle, &sConfig) != HAL_OK) {
+            continue;
+        }
+        #if CPY_STM32L4
+        if (HAL_ADCEx_Calibration_Start(&AdcHandle, ADC_SINGLE_ENDED) != HAL_OK) {
+            continue;
+        }
+        #endif
+        if (HAL_ADC_Start(&AdcHandle) != HAL_OK) {
+            continue;
+        }
+        HAL_ADC_PollForConversion(&AdcHandle, 1);
+        uint16_t value = (uint16_t)HAL_ADC_GetValue(&AdcHandle);
+        HAL_ADC_Stop(&AdcHandle);
+
+        // Stretch 12-bit ADC reading to 16-bit range
+        avg_value += (value << 4) | (value >> 8);
+        i++;
+    }
+    return avg_value;
 }
 
 float common_hal_analogio_analogin_get_reference_voltage(analogio_analogin_obj_t *self) {
