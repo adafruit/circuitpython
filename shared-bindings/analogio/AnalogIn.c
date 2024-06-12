@@ -137,6 +137,35 @@ MP_DEFINE_CONST_FUN_OBJ_1(analogio_analogin_get_reference_voltage_obj,
 MP_PROPERTY_GETTER(analogio_analogin_reference_voltage_obj,
     (mp_obj_t)&analogio_analogin_get_reference_voltage_obj);
 
+//|     sample_size: int
+//|     """The number of samples taken for every reading."""
+//|
+static mp_obj_t analogio_analogin_obj_get_sample_size(mp_obj_t self_in) {
+    analogio_analogin_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    check_for_deinit(self);
+
+    uint16_t sample_size = common_hal_analogio_analogin_get_sample_size(self);
+    return MP_OBJ_NEW_SMALL_INT(sample_size);
+}
+
+static mp_obj_t analogio_analogin_obj_set_sample_size(mp_obj_t self_in, mp_obj_t value_in) {
+    analogio_analogin_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    check_for_deinit(self);
+
+    common_hal_analogio_analogin_set_sample_size(self, mp_obj_get_int(value_in));
+    return mp_const_none;
+}
+
+MP_DEFINE_CONST_FUN_OBJ_1(analogio_analogin_get_sample_size_obj,
+    analogio_analogin_obj_get_sample_size);
+
+MP_DEFINE_CONST_FUN_OBJ_2(analogio_analogin_set_sample_size_obj,
+    analogio_analogin_obj_set_sample_size);
+
+MP_PROPERTY_GETSET(analogio_analogin_sample_size_obj,
+    (mp_obj_t)&analogio_analogin_get_sample_size_obj,
+    (mp_obj_t)&analogio_analogin_set_sample_size_obj);
+
 static const mp_rom_map_elem_t analogio_analogin_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR___del__),            MP_ROM_PTR(&analogio_analogin_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR_deinit),             MP_ROM_PTR(&analogio_analogin_deinit_obj) },
@@ -144,6 +173,7 @@ static const mp_rom_map_elem_t analogio_analogin_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR___exit__),           MP_ROM_PTR(&analogio_analogin___exit___obj) },
     { MP_ROM_QSTR(MP_QSTR_value),              MP_ROM_PTR(&analogio_analogin_value_obj)},
     { MP_ROM_QSTR(MP_QSTR_reference_voltage),  MP_ROM_PTR(&analogio_analogin_reference_voltage_obj)},
+    { MP_ROM_QSTR(MP_QSTR_sample_size),        MP_ROM_PTR(&analogio_analogin_sample_size_obj)},
 };
 
 static MP_DEFINE_CONST_DICT(analogio_analogin_locals_dict, analogio_analogin_locals_dict_table);
