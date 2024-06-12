@@ -59,10 +59,9 @@ static mp_obj_t analogio_analogin_make_new(const mp_obj_type_t *type, size_t n_a
     if (samples < 1 || samples > 65535) {
         mp_raise_ValueError(MP_ERROR_TEXT("value is out of bounds"));
     }
-    uint16_t sample_size = samples;
     analogio_analogin_obj_t *self = m_new_obj_with_finaliser(analogio_analogin_obj_t);
     self->base.type = &analogio_analogin_type;
-    common_hal_analogio_analogin_construct(self, pin, sample_size);
+    common_hal_analogio_analogin_construct(self, pin, (uint16_t)samples);
 
     return MP_OBJ_FROM_PTR(self);
 }
@@ -152,7 +151,11 @@ static mp_obj_t analogio_analogin_obj_set_sample_size(mp_obj_t self_in, mp_obj_t
     analogio_analogin_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
 
-    common_hal_analogio_analogin_set_sample_size(self, mp_obj_get_int(value_in));
+    int samples = mp_obj_get_int(value_in);
+    if (samples < 1 || samples > 65535) {
+        mp_raise_ValueError(MP_ERROR_TEXT("value is out of bounds"));
+    }
+    common_hal_analogio_analogin_set_sample_size(self, (uint16_t)samples);
     return mp_const_none;
 }
 
