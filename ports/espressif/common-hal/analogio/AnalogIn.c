@@ -93,7 +93,6 @@ void common_hal_analogio_analogin_construct(analogio_analogin_obj_t *self,
     if (adc_cali_create_scheme_line_fitting(&(self->config), &(self->calibration)) == ESP_OK) {
         self->calibration_scheme = ADC_CALI_SCHEME_VER_LINE_FITTING;
     }
-}
     #endif
 }
 
