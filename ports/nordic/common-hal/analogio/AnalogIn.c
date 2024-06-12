@@ -58,7 +58,7 @@ uint16_t common_hal_analogio_analogin_get_value(analogio_analogin_obj_t *self) {
     // Something else might have used the ADC in a different way,
     // so we completely re-initialize it.
     uint32_t avg_value = 0;
-    for (int i = 0; i < self->sample_size; i++) {
+    for (uint16_t i = 0; i < self->sample_size; i++) {
         nrf_saadc_value_t value = 0;
 
         const nrf_saadc_channel_config_t config = {
