@@ -185,7 +185,7 @@ void IADC_IRQHandler(void) {
 //  adc value 0 - 65535
 uint16_t common_hal_analogio_analogin_get_value(analogio_analogin_obj_t *self) {
     uint32_t avg_value = 0;
-    for (int i = 0; i < self->sample_size; i++) {
+    for (uint16_t i = 0; i < self->sample_size; i++) {
         // Start scan
         IADC_command(IADC0, iadcCmdStartScan);
 
