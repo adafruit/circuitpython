@@ -34,6 +34,7 @@ typedef struct {
     mp_obj_base_t base;
     const mcu_pin_obj_t *pin;
     uint8_t id;
+    uint16_t sample_size;
 } analogio_analogin_obj_t;
 
 #endif // MICROPY_INCLUDED_EFR32_COMMON_HAL_ANALOGIO_ANALOGIN_H

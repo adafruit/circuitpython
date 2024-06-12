@@ -45,7 +45,7 @@ STATIC IADC_ScanTable_t init_scan_table = IADC_SCANTABLE_DEFAULT;  // Scan Table
 
 // Construct analogin pin. This function is called when init AnalogIn
 void common_hal_analogio_analogin_construct(analogio_analogin_obj_t *self,
-    const mcu_pin_obj_t *pin) {
+    const mcu_pin_obj_t *pin, uint16_t sample_size) {
 
     uint8_t adc_index;
     if (self->pin == NULL) {
@@ -143,6 +143,7 @@ void common_hal_analogio_analogin_construct(analogio_analogin_obj_t *self,
     NVIC_EnableIRQ(IADC_IRQn);
 
     common_hal_mcu_pin_claim(pin);
+    self->sample_size = sample_size;
 }
 
 // Check obj is deinited or not
@@ -183,29 +184,32 @@ void IADC_IRQHandler(void) {
 //  Get adc value, use IADC_IRQHandler
 //  adc value 0 - 65535
 uint16_t common_hal_analogio_analogin_get_value(analogio_analogin_obj_t *self) {
-    // Start scan
-    IADC_command(IADC0, iadcCmdStartScan);
+    uint16_t avg_value = 0;
+    for (int i = 0; i < self->sample_size; i++) {
+        // Start scan
+        IADC_command(IADC0, iadcCmdStartScan);
 
-    uint64_t start_ticks = supervisor_ticks_ms64();
-    uint64_t current_ticks = start_ticks;
+        uint64_t start_ticks = supervisor_ticks_ms64();
+        uint64_t current_ticks = start_ticks;
 
-    // Busy-wait until timeout or until we've read enough chars.
-    while (current_ticks - start_ticks <= 1000) {
-        current_ticks = supervisor_ticks_ms64();
-        if (scan_flag == 1) {
-            scan_flag = 0;
-            break;
+        // Busy-wait until timeout or until we've read enough chars.
+        while (current_ticks - start_ticks <= 1000) {
+            current_ticks = supervisor_ticks_ms64();
+            if (scan_flag == 1) {
+                scan_flag = 0;
+                break;
+            }
+            RUN_BACKGROUND_TASKS;
+            // Allow user to break out of a timeout with a KeyboardInterrupt.
+            if (mp_hal_is_interrupted()) {
+                break;
+            }
         }
-        RUN_BACKGROUND_TASKS;
-        // Allow user to break out of a timeout with a KeyboardInterrupt.
-        if (mp_hal_is_interrupted()) {
-            break;
-        }
+
+        avg_value += scan_result[self->id];
+        scan_result[self->id] = 0;
     }
-
-    uint16_t ret = scan_result[self->id];
-    scan_result[self->id] = 0;
-    return ret;
+    return avg_value / self->sample_size;
 }
 
 // Get adc ref value
