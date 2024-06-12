@@ -62,8 +62,8 @@ uint16_t common_hal_analogio_analogin_get_value(analogio_analogin_obj_t *self) {
 
     }
 
-    uint16_t value = 0;
-    for (int i = 0; i < self->sample_size; i++) {
+    uint32_t value = 0;
+    for (uint16_t i = 0; i < self->sample_size; i++) {
         value += ADC_GetChannelConversionValue(self->pin->adc, ADC_CHANNEL_GROUP);
     }
     value /= self->sample_size;
