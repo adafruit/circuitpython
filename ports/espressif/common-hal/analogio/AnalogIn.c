@@ -125,7 +125,7 @@ uint16_t common_hal_analogio_analogin_get_value(analogio_analogin_obj_t *self) {
     size_t sample_count = 0;
     // Multisampling
     esp_err_t ret = ESP_OK;
-    for (int i = 0; i < self->sample_size; i++) {
+    for (uint16_t i = 0; i < self->sample_size; i++) {
         int raw;
         ret = adc_oneshot_read(self->adc_handle, self->channel, &raw);
         if (ret != ESP_OK) {

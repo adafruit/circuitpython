@@ -61,7 +61,7 @@ void common_hal_analogio_analogin_deinit(analogio_analogin_obj_t *self) {
 
 uint16_t common_hal_analogio_analogin_get_value(analogio_analogin_obj_t *self) {
     uint32_t value = 0;
-    for (int i = 0; i < self->sample_size; i++) {
+    for (uint16_t i = 0; i < self->sample_size; i++) {
         if (SPECIAL_PIN(self->pin)) {
             common_hal_mcu_disable_interrupts();
             uint32_t old_pad = padsbank0_hw->io[self->pin->number];

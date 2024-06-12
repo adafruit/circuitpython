@@ -155,7 +155,7 @@ uint16_t common_hal_analogio_analogin_get_value(analogio_analogin_obj_t *self) {
     AdcHandle.Init.Overrun = ADC_OVR_DATA_OVERWRITTEN;                    /* DR register is overwritten with the last conversion result in case of overrun */
     #endif
 
-    uint16_t avg_value = 0;
+    uint32_t avg_value = 0;
     uint16_t i = 0;
 
     while (i < self->sample_size) {
