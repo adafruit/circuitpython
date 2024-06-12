@@ -56,7 +56,7 @@ static mp_obj_t analogio_analogin_make_new(const mp_obj_type_t *type, size_t n_a
     mp_arg_parse_all_kw_array(n_args, n_kw, args, MP_ARRAY_SIZE(allowed_args), allowed_args, parsed_args);
     const mcu_pin_obj_t *pin = common_hal_analogio_analogin_validate_pin(parsed_args[ARG_pin].u_obj);
     mp_int_t samples = parsed_args[ARG_samples].u_int;
-    if (samples <= 0 || samples >= 65535) {
+    if (samples < 1 || samples > 65535) {
         mp_raise_ValueError(MP_ERROR_TEXT("value is out of bounds"));
     }
     uint16_t sample_size = samples;
