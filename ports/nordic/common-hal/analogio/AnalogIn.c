@@ -129,3 +129,11 @@ float common_hal_analogio_analogin_get_reference_voltage(analogio_analogin_obj_t
     // The nominal VCC voltage
     return 3.3f;
 }
+
+uint16_t common_hal_analogio_analogin_get_sample_size(analogio_analogin_obj_t *self) {
+    return self->sample_size;
+}
+
+void common_hal_analogio_analogin_set_sample_size(analogio_analogin_obj_t *self, uint16_t sample_size) {
+    self->sample_size = sample_size;
+}
