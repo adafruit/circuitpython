@@ -75,7 +75,7 @@ uint16_t common_hal_analogio_analogin_get_value(analogio_analogin_obj_t *self) {
         nrf_saadc_oversample_set(NRF_SAADC, NRF_SAADC_OVERSAMPLE_DISABLED);
         nrf_saadc_enable(NRF_SAADC);
 
-        for (uint32_t i = 0; i < SAADC_CH_NUM; i++) {
+        for (uint32_t j = 0; j < SAADC_CH_NUM; j++) {
             nrf_saadc_channel_input_set(NRF_SAADC, i, NRF_SAADC_INPUT_DISABLED, NRF_SAADC_INPUT_DISABLED);
         }
 
