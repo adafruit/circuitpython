@@ -386,3 +386,21 @@
 [submodule "frozen/Adafruit_CircuitPython_Bitmap_Font"]
 	path = frozen/Adafruit_CircuitPython_Bitmap_Font
 	url = https://github.com/adafruit/Adafruit_CircuitPython_Bitmap_Font
+[submodule "frozen/Adafruit_CircuitPython_Framebuf"]
+	path = frozen/Adafruit_CircuitPython_Framebuf
+	url = https://github.com/adafruit/Adafruit_CircuitPython_Framebuf
+[submodule "frozen/Adafruit_CircuitPython_MPU6050"]
+	path = frozen/Adafruit_CircuitPython_MPU6050
+	url = https://github.com/adafruit/Adafruit_CircuitPython_MPU6050
+[submodule "frozen/Adafruit_CircuitPython_Pixel_Framebuf"]
+	path = frozen/Adafruit_CircuitPython_Pixel_Framebuf
+	url = https://github.com/adafruit/Adafruit_CircuitPython_Pixel_Framebuf
+[submodule "frozen/Adafruit_CircuitPython_Led_Animation"]
+	path = frozen/Adafruit_CircuitPython_Led_Animation
+	url = https://github.com/adafruit/Adafruit_CircuitPython_Led_Animation
+[submodule "frozen/Adafruit_CircuitPython_Neopixel"]
+	path = frozen/Adafruit_CircuitPython_Neopixel
+	url = https://github.com/adafruit/Adafruit_CircuitPython_Neopixel
+[submodule "frozen/Adafruit_CircuitPython_MatrixKeypad"]
+	path = frozen/Adafruit_CircuitPython_MatrixKeypad
+	url = https://github.com/adafruit/Adafruit_CircuitPython_MatrixKeypad
