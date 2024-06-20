@@ -1288,6 +1288,10 @@ msgstr ""
 msgid "MAC address was invalid"
 msgstr ""
 
+#: ports/espressif/common-hal/_bleio/Characteristic.c
+msgid "MITM security not supported"
+msgstr ""
+
 #: shared-bindings/is31fl3741/IS31FL3741.c
 msgid "Mapping must be a tuple"
 msgstr ""
