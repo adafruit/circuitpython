@@ -32,11 +32,12 @@ MP_WEAK const mcu_pin_obj_t *common_hal_analogio_analogin_validate_pin(mp_obj_t 
 //|        val = adc.value"""
 //|
 
-//|     def __init__(self, pin: microcontroller.Pin) -> None:
+//|     def __init__(self, pin: microcontroller.Pin, samples: int) -> None:
 //|         """Use the AnalogIn on the given pin. The reference voltage varies by
 //|         platform so use ``reference_voltage`` to read the configured setting.
 //|
 //|         :param ~microcontroller.Pin pin: the pin to read from
+//|         :param ~int samples: the number of samples taken
 //|
 //|         **Limitations:** On Espressif ESP32, pins that use ADC2 are not available when WiFi is enabled:
 //|         the hardware makes use of ADC2.
