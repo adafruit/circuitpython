@@ -121,19 +121,24 @@ void common_hal_analogio_analogin_deinit(analogio_analogin_obj_t *self) {
 
 uint16_t common_hal_analogio_analogin_get_value(analogio_analogin_obj_t *self) {
     uint32_t adc_reading = 0;
-    size_t sample_count = 0;
+    uint16_t sample_count = 0;
+    uint8_t failures = 0;
     // Multisampling
     esp_err_t ret = ESP_OK;
-    for (uint16_t i = 0; i < self->sample_size; i++) {
+    while (sample_count < self->sample_size) {
+        if (failures > 19) {
+            break;
+        }
         int raw;
         ret = adc_oneshot_read(self->adc_handle, self->channel, &raw);
         if (ret != ESP_OK) {
+            failures++;
             continue;
         }
         adc_reading += raw;
         sample_count += 1;
     }
-    if (sample_count == 0) {
+    if (sample_count < self->sample_size) {
         raise_esp_error(ret);
     }
     adc_reading /= sample_count;
