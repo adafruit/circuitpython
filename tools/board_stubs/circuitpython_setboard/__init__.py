@@ -2,20 +2,23 @@
 #
 # SPDX-License-Identifier: MIT
 import argparse
+import os
 import sys
 import shutil
+import site
 from collections import defaultdict
 from importlib import resources
 from importlib.abc import Traversable
 
 
-def get_definitions_or_exit(board: str) -> Traversable:
+def get_definitions_or_exit(board: str) -> str:
     """Get the definitions file for a board given its name."""
 
-    path = resources.files("board_definitions").joinpath(board)
+    path = os.path.join(site.getsitepackages()[0], "board_definitions", board)
 
-    file = path.joinpath("__init__.pyi")
-    if not file.is_file():
+    file = os.path.join(path, "__init__.pyi")
+
+    if not os.path.exists(file):
         sys.stderr.write(f"Definitions for: '{board}' were not found\n")
         sys.exit(1)
 
@@ -25,7 +28,8 @@ def get_definitions_or_exit(board: str) -> Traversable:
 def get_doc_or_exit(board: str) -> str:
     """Get the docstring for a board given its name."""
 
-    with get_definitions_or_exit(board).open("r") as f:
+    # with get_definitions_or_exit(board).open("r") as f:
+    with open(get_definitions_or_exit(board), "r") as f:
         return f.read().split('"""')[1]
 
 
@@ -55,7 +59,7 @@ def set_board():
         # NOTE: "" in some_str == True
         looking_for = "" if args.chosen_board is None else args.chosen_board.lower()
 
-        for board in resources.files("board_definitions").iterdir():
+        for board in os.listdir(os.path.join(site.getsitepackages()[0], "board_definitions")):
             # NOTE: For the hand-crafted finding of port in the docstring, its
             #       format is assumed to be:
             #
@@ -71,10 +75,10 @@ def set_board():
             lines = get_doc_or_exit(board).split("\n")
             port = lines[2].split("-")[1].split(":")[1].strip()
 
-            if looking_for not in board.name.lower() and looking_for not in port.lower():
+            if looking_for not in board.lower() and looking_for not in port.lower():
                 continue
 
-            port_boards[port].append(board.name)
+            port_boards[port].append(board)
 
         if not port_boards:
             sys.stdout.write("Nothing found, check out your filter.\n")
@@ -99,5 +103,6 @@ def set_board():
 
     board_definitions_file = get_definitions_or_exit(args.chosen_board)
 
-    board_stubs_file = resources.files("board-stubs").joinpath("__init__.pyi")
+    # board_stubs_file = resources.files("board-stubs").joinpath("__init__.pyi")
+    board_stubs_file = os.path.join(site.getsitepackages()[0], "board-stubs", "__init__.pyi")
     shutil.copyfile(board_definitions_file, board_stubs_file)
