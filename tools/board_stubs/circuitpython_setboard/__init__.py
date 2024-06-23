@@ -7,8 +7,6 @@ import sys
 import shutil
 import site
 from collections import defaultdict
-from importlib import resources
-from importlib.abc import Traversable
 
 
 def get_definitions_or_exit(board: str) -> str:
