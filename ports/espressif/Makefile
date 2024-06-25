@@ -73,6 +73,7 @@ INC += \
 	-isystem esp-idf/components/driver/ledc/include \
 	-isystem esp-idf/components/driver/pcnt/include \
 	-isystem esp-idf/components/driver/rmt/include \
+	-isystem esp-idf/components/driver/sdmmc/include \
 	-isystem esp-idf/components/driver/spi/include \
 	-isystem esp-idf/components/driver/temperature_sensor/include \
 	-isystem esp-idf/components/driver/touch_sensor/include \
@@ -532,6 +533,9 @@ ifneq ($(CIRCUITPY_PARALLELDISPLAYBUS),0)
 endif
 ifneq ($(CIRCUITPY_USB_DEVICE),0)
 	ESP_IDF_COMPONENTS_LINK += usb
+endif
+ifneq ($(CIRCUITPY_SDIOIO),0)
+	ESP_IDF_COMPONENTS_LINK += sdmmc
 endif
 
 ESP_IDF_COMPONENTS_EXPANDED = $(foreach component, $(ESP_IDF_COMPONENTS_LINK), $(BUILD)/esp-idf/esp-idf/$(component)/lib$(component).a)
