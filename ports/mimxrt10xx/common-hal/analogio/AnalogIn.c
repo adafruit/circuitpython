@@ -18,7 +18,7 @@
 #define ADC_CHANNEL_GROUP 0
 
 void common_hal_analogio_analogin_construct(analogio_analogin_obj_t *self,
-    const mcu_pin_obj_t *pin) {
+    const mcu_pin_obj_t *pin, uint16_t sample_size) {
     adc_config_t config = {0};
 
     if (pin->adc == NULL) {
@@ -37,6 +37,7 @@ void common_hal_analogio_analogin_construct(analogio_analogin_obj_t *self,
     claim_pin(pin);
 
     self->pin = pin;
+    self->sample_size = sample_size;
 }
 
 bool common_hal_analogio_analogin_deinited(analogio_analogin_obj_t *self) {
@@ -61,7 +62,11 @@ uint16_t common_hal_analogio_analogin_get_value(analogio_analogin_obj_t *self) {
 
     }
 
-    uint16_t value = ADC_GetChannelConversionValue(self->pin->adc, ADC_CHANNEL_GROUP);
+    uint32_t value = 0;
+    for (uint16_t i = 0; i < self->sample_size; i++) {
+        value += ADC_GetChannelConversionValue(self->pin->adc, ADC_CHANNEL_GROUP);
+    }
+    value /= self->sample_size;
 
     // Stretch 12-bit ADC reading to 16-bit range
     return (value << 4) | (value >> 8);
@@ -69,4 +74,12 @@ uint16_t common_hal_analogio_analogin_get_value(analogio_analogin_obj_t *self) {
 
 float common_hal_analogio_analogin_get_reference_voltage(analogio_analogin_obj_t *self) {
     return 3.3f;
+}
+
+uint16_t common_hal_analogio_analogin_get_sample_size(analogio_analogin_obj_t *self) {
+    return self->sample_size;
+}
+
+void common_hal_analogio_analogin_set_sample_size(analogio_analogin_obj_t *self, uint16_t sample_size) {
+    self->sample_size = sample_size;
 }

@@ -32,11 +32,12 @@ MP_WEAK const mcu_pin_obj_t *common_hal_analogio_analogin_validate_pin(mp_obj_t 
 //|        val = adc.value"""
 //|
 
-//|     def __init__(self, pin: microcontroller.Pin) -> None:
+//|     def __init__(self, pin: microcontroller.Pin, samples: int) -> None:
 //|         """Use the AnalogIn on the given pin. The reference voltage varies by
 //|         platform so use ``reference_voltage`` to read the configured setting.
 //|
 //|         :param ~microcontroller.Pin pin: the pin to read from
+//|         :param ~int samples: the number of samples taken
 //|
 //|         **Limitations:** On Espressif ESP32, pins that use ADC2 are not available when WiFi is enabled:
 //|         the hardware makes use of ADC2.
@@ -46,18 +47,27 @@ MP_WEAK const mcu_pin_obj_t *common_hal_analogio_analogin_validate_pin(mp_obj_t 
 //|         when you read a value. You can retry the read.
 //|         """
 //|         ...
-static mp_obj_t analogio_analogin_make_new(const mp_obj_type_t *type,
-    mp_uint_t n_args, size_t n_kw, const mp_obj_t *args) {
-    // check number of arguments
-    mp_arg_check_num(n_args, n_kw, 1, 1, false);
-
-    // 1st argument is the pin
-    const mcu_pin_obj_t *pin = common_hal_analogio_analogin_validate_pin(args[0]);
-    analogio_analogin_obj_t *self = mp_obj_malloc(analogio_analogin_obj_t, &analogio_analogin_type);
-    common_hal_analogio_analogin_construct(self, pin);
+static mp_obj_t analogio_analogin_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
+    enum { ARG_pin, ARG_samples };
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_pin,    MP_ARG_REQUIRED | MP_ARG_OBJ, },
+        { MP_QSTR_samples, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 2} },
+    };
+    mp_arg_val_t parsed_args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all_kw_array(n_args, n_kw, args, MP_ARRAY_SIZE(allowed_args), allowed_args, parsed_args);
+    const mcu_pin_obj_t *pin = common_hal_analogio_analogin_validate_pin(parsed_args[ARG_pin].u_obj);
+    mp_int_t samples = parsed_args[ARG_samples].u_int;
+    if (samples < 1 || samples > 65535) {
+        mp_raise_ValueError(MP_ERROR_TEXT("value is out of bounds"));
+    }
+    analogio_analogin_obj_t *self = m_new_obj_with_finaliser(analogio_analogin_obj_t);
+    self->base.type = &analogio_analogin_type;
+    common_hal_analogio_analogin_construct(self, pin, (uint16_t)samples);
 
     return MP_OBJ_FROM_PTR(self);
 }
+
+
 
 //|     def deinit(self) -> None:
 //|         """Turn off the AnalogIn and release the pin for other use."""
@@ -127,12 +137,47 @@ MP_DEFINE_CONST_FUN_OBJ_1(analogio_analogin_get_reference_voltage_obj,
 MP_PROPERTY_GETTER(analogio_analogin_reference_voltage_obj,
     (mp_obj_t)&analogio_analogin_get_reference_voltage_obj);
 
+//|     sample_size: int
+//|     """The number of samples taken for every reading."""
+//|
+static mp_obj_t analogio_analogin_obj_get_sample_size(mp_obj_t self_in) {
+    analogio_analogin_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    check_for_deinit(self);
+
+    uint16_t sample_size = common_hal_analogio_analogin_get_sample_size(self);
+    return MP_OBJ_NEW_SMALL_INT(sample_size);
+}
+
+static mp_obj_t analogio_analogin_obj_set_sample_size(mp_obj_t self_in, mp_obj_t value_in) {
+    analogio_analogin_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    check_for_deinit(self);
+
+    int samples = mp_obj_get_int(value_in);
+    if (samples < 1 || samples > 65535) {
+        mp_raise_ValueError(MP_ERROR_TEXT("value is out of bounds"));
+    }
+    common_hal_analogio_analogin_set_sample_size(self, (uint16_t)samples);
+    return mp_const_none;
+}
+
+MP_DEFINE_CONST_FUN_OBJ_1(analogio_analogin_get_sample_size_obj,
+    analogio_analogin_obj_get_sample_size);
+
+MP_DEFINE_CONST_FUN_OBJ_2(analogio_analogin_set_sample_size_obj,
+    analogio_analogin_obj_set_sample_size);
+
+MP_PROPERTY_GETSET(analogio_analogin_sample_size_obj,
+    (mp_obj_t)&analogio_analogin_get_sample_size_obj,
+    (mp_obj_t)&analogio_analogin_set_sample_size_obj);
+
 static const mp_rom_map_elem_t analogio_analogin_locals_dict_table[] = {
+    { MP_ROM_QSTR(MP_QSTR___del__),            MP_ROM_PTR(&analogio_analogin_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR_deinit),             MP_ROM_PTR(&analogio_analogin_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__),          MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__),           MP_ROM_PTR(&analogio_analogin___exit___obj) },
     { MP_ROM_QSTR(MP_QSTR_value),              MP_ROM_PTR(&analogio_analogin_value_obj)},
     { MP_ROM_QSTR(MP_QSTR_reference_voltage),  MP_ROM_PTR(&analogio_analogin_reference_voltage_obj)},
+    { MP_ROM_QSTR(MP_QSTR_sample_size),        MP_ROM_PTR(&analogio_analogin_sample_size_obj)},
 };
 
 static MP_DEFINE_CONST_DICT(analogio_analogin_locals_dict, analogio_analogin_locals_dict_table);
