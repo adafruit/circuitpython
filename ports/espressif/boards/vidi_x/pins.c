@@ -1,0 +1,109 @@
+#include "py/objtuple.h"
+#include "shared-bindings/board/__init__.h"
+#include "shared-module/displayio/__init__.h"
+
+
+STATIC const mp_rom_map_elem_t board_module_globals_table[] = {
+    CIRCUITPYTHON_BOARD_DICT_STANDARD_ITEMS
+
+    { MP_ROM_QSTR(MP_QSTR_VOLUME), MP_ROM_PTR(&pin_GPIO0) },
+    { MP_ROM_QSTR(MP_QSTR_EXP9), MP_ROM_PTR(&pin_GPIO0) },
+
+    { MP_ROM_QSTR(MP_QSTR_TX), MP_ROM_PTR(&pin_GPIO1) },
+    { MP_ROM_QSTR(MP_QSTR_EXP16), MP_ROM_PTR(&pin_GPIO1) },
+
+    { MP_ROM_QSTR(MP_QSTR_STATUS), MP_ROM_PTR(&pin_GPIO2) },
+    { MP_ROM_QSTR(MP_QSTR_EXP8), MP_ROM_PTR(&pin_GPIO2) },
+
+    { MP_ROM_QSTR(MP_QSTR_RX), MP_ROM_PTR(&pin_GPIO3) },
+    { MP_ROM_QSTR(MP_QSTR_EXP14), MP_ROM_PTR(&pin_GPIO3) },
+
+    { MP_ROM_QSTR(MP_QSTR_VSPI_CS2), MP_ROM_PTR(&pin_GPIO4) },
+    { MP_ROM_QSTR(MP_QSTR_EXP10), MP_ROM_PTR(&pin_GPIO4) },
+    { MP_ROM_QSTR(MP_QSTR_TOUCH_CS), MP_ROM_PTR(&pin_GPIO4) },
+
+    { MP_ROM_QSTR(MP_QSTR_VSPI_CS0), MP_ROM_PTR(&pin_GPIO5) },
+    { MP_ROM_QSTR(MP_QSTR_EXP11), MP_ROM_PTR(&pin_GPIO5) },
+    { MP_ROM_QSTR(MP_QSTR_LCD_CS), MP_ROM_PTR(&pin_GPIO5) },
+
+    // 6-11 not connected?
+
+    { MP_ROM_QSTR(MP_QSTR_TOUCH_IRQ), MP_ROM_PTR(&pin_GPIO12) },
+    { MP_ROM_QSTR(MP_QSTR_EXP20), MP_ROM_PTR(&pin_GPIO12) },
+
+    { MP_ROM_QSTR(MP_QSTR_MENU), MP_ROM_PTR(&pin_GPIO13) },
+    { MP_ROM_QSTR(MP_QSTR_EXP17), MP_ROM_PTR(&pin_GPIO13) },
+
+    { MP_ROM_QSTR(MP_QSTR_MIC), MP_ROM_PTR(&pin_GPIO14) },
+    { MP_ROM_QSTR(MP_QSTR_EXP19), MP_ROM_PTR(&pin_GPIO14) },
+
+    { MP_ROM_QSTR(MP_QSTR_IRTX), MP_ROM_PTR(&pin_GPIO15) },
+    { MP_ROM_QSTR(MP_QSTR_EXP7), MP_ROM_PTR(&pin_GPIO15) },
+
+    // 16-17 not connected?
+
+    { MP_ROM_QSTR(MP_QSTR_VSPI_SCK), MP_ROM_PTR(&pin_GPIO18) },
+    { MP_ROM_QSTR(MP_QSTR_EXP12), MP_ROM_PTR(&pin_GPIO18) },
+    { MP_ROM_QSTR(MP_QSTR_TOUCH_SCK), MP_ROM_PTR(&pin_GPIO18) },
+    { MP_ROM_QSTR(MP_QSTR_LCD_SCK), MP_ROM_PTR(&pin_GPIO18) },
+    { MP_ROM_QSTR(MP_QSTR_SD_SCK), MP_ROM_PTR(&pin_GPIO18) },
+
+    { MP_ROM_QSTR(MP_QSTR_VSPI_MISO), MP_ROM_PTR(&pin_GPIO19) },
+    { MP_ROM_QSTR(MP_QSTR_EXP13), MP_ROM_PTR(&pin_GPIO19) },
+    { MP_ROM_QSTR(MP_QSTR_TOUCH_MISO), MP_ROM_PTR(&pin_GPIO19) },
+    { MP_ROM_QSTR(MP_QSTR_LCD_MISO), MP_ROM_PTR(&pin_GPIO19) },
+    { MP_ROM_QSTR(MP_QSTR_SD_MISO), MP_ROM_PTR(&pin_GPIO19) },
+
+    // 20 not connected?
+
+    { MP_ROM_QSTR(MP_QSTR_LCD_DC), MP_ROM_PTR(&pin_GPIO21) },
+    { MP_ROM_QSTR(MP_QSTR_EXP15), MP_ROM_PTR(&pin_GPIO21) },
+
+    { MP_ROM_QSTR(MP_QSTR_VSPI_CS1), MP_ROM_PTR(&pin_GPIO22) },
+    { MP_ROM_QSTR(MP_QSTR_EXP18), MP_ROM_PTR(&pin_GPIO22) },
+    { MP_ROM_QSTR(MP_QSTR_SD_CS), MP_ROM_PTR(&pin_GPIO22) },
+
+    { MP_ROM_QSTR(MP_QSTR_VSPI_MOSI), MP_ROM_PTR(&pin_GPIO23) },
+    { MP_ROM_QSTR(MP_QSTR_EXP28), MP_ROM_PTR(&pin_GPIO23) },
+    { MP_ROM_QSTR(MP_QSTR_TOUCH_MOSI), MP_ROM_PTR(&pin_GPIO19) },
+    { MP_ROM_QSTR(MP_QSTR_LCD_MOSI), MP_ROM_PTR(&pin_GPIO19) },
+    { MP_ROM_QSTR(MP_QSTR_SD_MOSI), MP_ROM_PTR(&pin_GPIO19) },
+
+    // 24 not connected?
+
+    { MP_ROM_QSTR(MP_QSTR_IRRX), MP_ROM_PTR(&pin_GPIO25) },
+    { MP_ROM_QSTR(MP_QSTR_SPEAKER_IN_M), MP_ROM_PTR(&pin_GPIO25) },
+
+    { MP_ROM_QSTR(MP_QSTR_TEMP), MP_ROM_PTR(&pin_GPIO26) },
+    { MP_ROM_QSTR(MP_QSTR_SPEAKER_IN_P), MP_ROM_PTR(&pin_GPIO26) },
+
+    { MP_ROM_QSTR(MP_QSTR_SELECT), MP_ROM_PTR(&pin_GPIO27) },
+    { MP_ROM_QSTR(MP_QSTR_EXP22), MP_ROM_PTR(&pin_GPIO27) },
+
+    // 28-31 not connected?
+
+    { MP_ROM_QSTR(MP_QSTR_BTN_A), MP_ROM_PTR(&pin_GPIO32) },
+    { MP_ROM_QSTR(MP_QSTR_EXP23), MP_ROM_PTR(&pin_GPIO32) },
+
+    { MP_ROM_QSTR(MP_QSTR_BTN_B), MP_ROM_PTR(&pin_GPIO33) },
+    { MP_ROM_QSTR(MP_QSTR_EXP21), MP_ROM_PTR(&pin_GPIO33) },
+
+    { MP_ROM_QSTR(MP_QSTR_BTN_L_R), MP_ROM_PTR(&pin_GPIO34) },
+    { MP_ROM_QSTR(MP_QSTR_EXP25), MP_ROM_PTR(&pin_GPIO34) },
+
+    { MP_ROM_QSTR(MP_QSTR_BTN_UP_DOWN), MP_ROM_PTR(&pin_GPIO35) },
+    { MP_ROM_QSTR(MP_QSTR_EXP24), MP_ROM_PTR(&pin_GPIO35) },
+
+    { MP_ROM_QSTR(MP_QSTR_ADC_BAT), MP_ROM_PTR(&pin_GPIO36) },
+    { MP_ROM_QSTR(MP_QSTR_EXP27), MP_ROM_PTR(&pin_GPIO36) },
+
+    // 37-38 not connected?
+
+    { MP_ROM_QSTR(MP_QSTR_START), MP_ROM_PTR(&pin_GPIO39) },
+    { MP_ROM_QSTR(MP_QSTR_EXP26), MP_ROM_PTR(&pin_GPIO39) },
+
+    { MP_ROM_QSTR(MP_QSTR_SPI), MP_ROM_PTR(&board_spi_obj) },
+
+    { MP_ROM_QSTR(MP_QSTR_DISPLAY), MP_ROM_PTR(&displays[0].display)},
+};
+MP_DEFINE_CONST_DICT(board_module_globals, board_module_globals_table);
