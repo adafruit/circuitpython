@@ -16,7 +16,7 @@
 #include "py/runtime.h"
 
 #include "esp_log.h"
-static const char* TAG = "SDCard.c";
+static const char *TAG = "SDCard.c";
 
 static bool sdio_host_init = false;
 
@@ -32,8 +32,7 @@ STATIC int check_pins(const mcu_pin_obj_t *clock, const mcu_pin_obj_t *command, 
         if (num_data == 1 || (num_data == 4 && data[1]->number == GPIO_NUM_8 && data[2]->number == GPIO_NUM_9 && data[3]->number == GPIO_NUM_10)) {
             return SDMMC_HOST_SLOT_0;
         }
-    }
-    else if (command->number == GPIO_NUM_15 && clock->number == GPIO_NUM_14 && data[0]->number ==2) {
+    } else if (command->number == GPIO_NUM_15 && clock->number == GPIO_NUM_14 && data[0]->number == 2) {
         // Might be slot 1
         if (num_data == 1 || (num_data == 4 && data[1]->number == GPIO_NUM_4 && data[2]->number == GPIO_NUM_12 && data[3]->number == GPIO_NUM_13)) {
             return SDMMC_HOST_SLOT_1;

@@ -978,6 +978,21 @@ msgstr ""
 msgid "Failed to connect: timeout"
 msgstr ""
 
+#: ports/espressif/common-hal/sdioio/SDCard.c
+#, c-format
+msgid "Failed to initialize SDMMC card: %x"
+msgstr ""
+
+#: ports/espressif/common-hal/sdioio/SDCard.c
+#, c-format
+msgid "Failed to initialize SDMMC host: %x"
+msgstr ""
+
+#: ports/espressif/common-hal/sdioio/SDCard.c
+#, c-format
+msgid "Failed to initialize SDMMC slot: %x"
+msgstr ""
+
 #: shared-module/audiomp3/MP3Decoder.c
 msgid "Failed to parse MP3 file"
 msgstr ""
