@@ -111,8 +111,7 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_TOUCH9), MP_ROM_PTR(&pin_GPIO27) },
 
     { MP_ROM_QSTR(MP_QSTR_GP28), MP_ROM_PTR(&pin_GPIO28) },
-    // GPIO28 is also the interrupt pin of the accelerometer
-    { MP_ROM_QSTR(MP_QSTR_ACCEL_INT), MP_ROM_PTR(&pin_GPIO28) },
+    // GPIO28 is also the interrupt pin of the accelerometer on some boards
 
     { MP_ROM_QSTR(MP_QSTR_GP29), MP_ROM_PTR(&pin_GPIO29) },
     // GPIO29 is also the ID value of the board (an analog read value between 0 .. 4096)
