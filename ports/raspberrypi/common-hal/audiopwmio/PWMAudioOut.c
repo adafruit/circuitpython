@@ -12,6 +12,7 @@
 
 #include "extmod/vfs_fat.h"
 #include "py/gc.h"
+#include "py/mphal.h"
 #include "py/mperrno.h"
 #include "py/runtime.h"
 #include "shared-bindings/pwmio/PWMOut.h"
@@ -122,13 +123,23 @@ void common_hal_audiopwmio_pwmaudioout_construct(audiopwmio_pwmaudioout_obj_t *s
         mp_raise_RuntimeError(MP_ERROR_TEXT("All timers in use"));
     }
 
-    self->quiescent_value = quiescent_value >> SAMPLE_BITS_TO_DISCARD;
-    common_hal_pwmio_pwmout_set_duty_cycle(&self->left_pwm, self->quiescent_value);
+    self->quiescent_value = quiescent_value;
     pwmio_pwmout_set_top(&self->left_pwm, PWM_TOP);
     if (self->stereo) {
-        common_hal_pwmio_pwmout_set_duty_cycle(&self->right_pwm, self->quiescent_value);
         pwmio_pwmout_set_top(&self->right_pwm, PWM_TOP);
     }
+
+    // Ramp the PWM from zero to the quiescent value
+    uint16_t incr = 0;
+    for (int i = 0; i < 256; i++) {
+        incr += self->quiescent_value / 256;
+        
+        mp_hal_delay_ms(2);
+        common_hal_pwmio_pwmout_set_duty_cycle(&self->left_pwm, incr);
+        if (self->stereo) {
+            common_hal_pwmio_pwmout_set_duty_cycle(&self->right_pwm, incr);
+        }
+    }    
 
     audio_dma_init(&self->dma);
     self->pacing_timer = NUM_DMA_TIMERS;
@@ -224,14 +235,6 @@ void common_hal_audiopwmio_pwmaudioout_stop(audiopwmio_pwmaudioout_obj_t *self) 
     }
 
     audio_dma_stop(&self->dma);
-
-    // Set to quiescent level.
-    common_hal_pwmio_pwmout_set_duty_cycle(&self->left_pwm, self->quiescent_value);
-    pwmio_pwmout_set_top(&self->left_pwm, PWM_TOP);
-    if (self->stereo) {
-        common_hal_pwmio_pwmout_set_duty_cycle(&self->right_pwm, self->quiescent_value);
-        pwmio_pwmout_set_top(&self->right_pwm, PWM_TOP);
-    }
 }
 
 bool common_hal_audiopwmio_pwmaudioout_get_playing(audiopwmio_pwmaudioout_obj_t *self) {
