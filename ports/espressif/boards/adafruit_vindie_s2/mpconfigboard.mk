@@ -1,6 +1,6 @@
 USB_VID = 0x239A
 USB_PID = 0x8160
-USB_PRODUCT = "Adafruit ESP32S2 Ikea Vindriktning"
+USB_PRODUCT = "Adafruit Vindie S2"
 USB_MANUFACTURER = "Adafruit"
 
 IDF_TARGET = esp32s2
