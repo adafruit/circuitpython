@@ -11,8 +11,8 @@
 #define MICROPY_HW_BOARD_NAME       "Adafruit Vindie S2"
 #define MICROPY_HW_MCU_NAME         "ESP32S2"
 
-//#define MICROPY_HW_NEOPIXEL (&pin_GPIO26)
-//#define MICROPY_HW_NEOPIXEL_COUNT   (4)
+// #define MICROPY_HW_NEOPIXEL (&pin_GPIO26)
+// #define MICROPY_HW_NEOPIXEL_COUNT   (4)
 
 #define MICROPY_HW_LED_STATUS (&pin_GPIO18)
 
