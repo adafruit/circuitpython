@@ -347,7 +347,7 @@ size_t common_hal_busio_uart_write(busio_uart_obj_t *self, const uint8_t *data, 
 
     if ((int)len < 0) {
         noWait = true;
-        write_tries = 1;
+        write_tries = -(int)len;
         len = -(int)len;
     } else {
         noWait = false;

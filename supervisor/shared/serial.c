@@ -318,12 +318,13 @@ uint32_t serial_bytes_available(void) {
     return count;
 }
 
-void serial_write_substring(const char *text, uint32_t length) {
+size_t serial_write_substring(const char *text, uint32_t length) {
     int txlen = (int)length;
+    size_t uarttx_len = 0;
     length = abs(txlen);
 
     if (length == 0) {
-        return;
+        return uarttx_len;
     }
 
     #if CIRCUITPY_TERMINALIO
@@ -334,7 +335,7 @@ void serial_write_substring(const char *text, uint32_t length) {
     #endif
 
     if (_serial_console_write_disabled) {
-        return;
+        return uarttx_len;
     }
 
     #if CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_VENDOR
@@ -349,7 +350,10 @@ void serial_write_substring(const char *text, uint32_t length) {
         _first_write_done = true;
     }
     int uart_errcode = 0;
-    common_hal_busio_uart_write(&console_uart, (const uint8_t *)text, (size_t)txlen, &uart_errcode);
+    uarttx_len = common_hal_busio_uart_write(&console_uart, (const uint8_t *)text, (size_t)txlen, &uart_errcode);
+    if (uarttx_len < 0) {
+        uarttx_len = 0;
+    }
     #endif
 
     #if CIRCUITPY_SERIAL_BLE
@@ -387,6 +391,8 @@ void serial_write_substring(const char *text, uint32_t length) {
 
     board_serial_write_substring(text, length);
     port_serial_write_substring(text, length);
+
+    return uarttx_len;
 }
 
 void serial_write(const char *text) {
