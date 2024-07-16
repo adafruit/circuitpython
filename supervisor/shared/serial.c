@@ -321,7 +321,9 @@ uint32_t serial_bytes_available(void) {
 size_t serial_write_substring(const char *text, uint32_t length) {
     int txlen = (int)length;
     size_t uarttx_len = 0;
-    length = abs(txlen);
+    if (txlen < 0) {
+        length = -txlen;
+    }
 
     if (length == 0) {
         return uarttx_len;
