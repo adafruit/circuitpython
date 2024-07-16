@@ -190,7 +190,7 @@ main_term:;
     return c;
 }
 
-void mp_hal_stdout_tx_strn(const char *str, size_t len) {
+size_t mp_hal_stdout_tx_strn(const char *str, size_t len) {
     ssize_t ret;
     MP_HAL_RETRY_SYSCALL(ret, write(STDOUT_FILENO, str, len), {});
     // CIRCUITPY-CHANGE: need to conditionalize MICROPY_PY_OS_DUPTERM
