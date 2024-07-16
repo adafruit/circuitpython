@@ -302,6 +302,9 @@ size_t common_hal_busio_uart_write(busio_uart_obj_t *self, const uint8_t *data, 
     if (self->tx == NULL) {
         mp_raise_ValueError_varg(MP_ERROR_TEXT("No %q pin"), MP_QSTR_tx);
     }
+    if ((int)len < 0) {
+        len = -(int)len;
+    }
 
     // Disable UART IRQ to avoid resource hazards in Rx IRQ handler
     HAL_NVIC_DisableIRQ(self->irq);

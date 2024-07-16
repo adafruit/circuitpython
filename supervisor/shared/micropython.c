@@ -40,7 +40,9 @@ size_t mp_hal_stdout_tx_strn(const char *str, size_t len) {
     toggle_tx_led();
 
     int txlen = len;
-    len = abs(len);
+    if (len < 0) {
+        len = -len;
+    }
 
     #ifdef CIRCUITPY_BOOT_OUTPUT_FILE
     if (boot_output != NULL) {

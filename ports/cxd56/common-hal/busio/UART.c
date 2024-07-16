@@ -141,6 +141,10 @@ size_t common_hal_busio_uart_read(busio_uart_obj_t *self, uint8_t *data, size_t 
 }
 
 size_t common_hal_busio_uart_write(busio_uart_obj_t *self, const uint8_t *data, size_t len, int *errcode) {
+    if ((int)len < 0) {
+        len = -(int)len;
+    }
+
     int bytes_written = write(busio_uart_dev[self->number].fd, data, len);
     if (bytes_written < 0) {
         *errcode = MP_EAGAIN;

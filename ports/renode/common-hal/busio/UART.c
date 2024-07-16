@@ -32,6 +32,10 @@ void common_hal_busio_uart_deinit(busio_uart_obj_t *self) {
 
 // Write characters.
 size_t common_hal_busio_uart_write(busio_uart_obj_t *self, const uint8_t *data, size_t len, int *errcode) {
+    if ((int)len < 0) {
+        len = -(int)len;
+    }
+
     for (size_t i = 0; i < len; i++) {
         *RXTX = data[i];
     }

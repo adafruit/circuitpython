@@ -427,6 +427,9 @@ size_t common_hal_busio_uart_write(busio_uart_obj_t *self, const uint8_t *data, 
     if (self->tx_pin == NO_PIN) {
         mp_raise_ValueError_varg(MP_ERROR_TEXT("No %q pin"), MP_QSTR_tx);
     }
+    if ((int)len < 0) {
+        len = -(int)len;
+    }
 
     // This assignment is only here because the usart_async routines take a *const argument.
     struct usart_async_descriptor *const usart_desc_p = (struct usart_async_descriptor *const)&self->usart_desc;

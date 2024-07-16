@@ -325,6 +325,8 @@ size_t serial_write_substring(const char *text, uint32_t length) {
 
     if (length == 0) {
         return uarttx_len;
+    } else {
+        uarttx_len = length;
     }
 
     #if CIRCUITPY_TERMINALIO
@@ -351,7 +353,7 @@ size_t serial_write_substring(const char *text, uint32_t length) {
     }
     int uart_errcode = 0;
     uarttx_len = common_hal_busio_uart_write(&console_uart, (const uint8_t *)text, (size_t)txlen, &uart_errcode);
-    if (uarttx_len < 0) {
+    if (uart_errcode != 0 || uarttx_len < 0) {
         uarttx_len = 0;
     }
     #endif
@@ -366,7 +368,7 @@ size_t serial_write_substring(const char *text, uint32_t length) {
 
     #if CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_CDC
     if (!usb_cdc_console_enabled()) {
-        return;
+        return uarttx_len;
     }
     #endif
 

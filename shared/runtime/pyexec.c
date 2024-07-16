@@ -42,6 +42,7 @@
 #endif
 #include "shared/readline/readline.h"
 #include "shared/runtime/pyexec.h"
+#include "shared-bindings/time/__init__.h"
 #include "supervisor/shared/serial.h"
 #include "genhdr/mpversion.h"
 
@@ -707,14 +708,17 @@ friendly_repl_reset:
             // paste mode
             mp_hal_stdout_tx_str("\r\npaste mode; Ctrl-C to cancel, Ctrl-D to finish\r\n=== ");
             vstr_reset(&line);
-            
+
             size_t curloc = 0;
             size_t printed;
-            const char* ptr;
-            const char* pprmptStr = "\r\n=== ";
+            const char *ptr;
+            const char *pprmptStr = "\r\n=== ";
             int pprmpt = 0;
             char c;
             bool charRead;
+            uint64_t pauseTX = 0;
+            uint64_t strtPause = 0;
+            uint64_t curr_ms;
             for (;;) {
                 if (serial_bytes_available() || curloc == vstr_len(&line)) {
                     c = mp_hal_stdin_rx_chr();
@@ -736,19 +740,30 @@ friendly_repl_reset:
                     if (charRead) {
                         vstr_add_byte(&line, c);
                     }
-                    if (!serial_bytes_available()) {
-                        ptr = (const char*)(((const char*)vstr_null_terminated_str(&line)) + curloc);
+                    // Watch for monotonic roll-over
+                    curr_ms = common_hal_time_monotonic_ms();
+                    if (curr_ms < strtPause) {
+                        strtPause = curr_ms;
+                    }
+                    if (!serial_bytes_available() && curr_ms >= strtPause+pauseTX) {
+                        pauseTX = 0;
+                        ptr = (const char *)(((const char *)vstr_null_terminated_str(&line)) + curloc);
                         if (*(ptr) == '\r') {
-                            printed = mp_hal_stdout_tx_strn((pprmptStr+pprmpt),-1);
+                            printed = mp_hal_stdout_tx_strn((pprmptStr + pprmpt), -1);
                             pprmpt += printed;
                             if (pprmpt == 6) {
                                 curloc += 1;
                                 pprmpt = 0;
                             }
                         } else {
-                            // Use the vstr buffer as a uart transmit buffer 
+                            // Use the vstr buffer as a uart transmit buffer
                             printed = mp_hal_stdout_tx_strn(ptr, -1);
                             curloc += printed;
+                        }
+                        // Detected the TX buffer not available, pause transmissions
+                        if (printed == 0) {
+                            pauseTX = 100;
+                            strtPause = common_hal_time_monotonic_ms();
                         }
                     }
                 }

@@ -319,6 +319,9 @@ size_t common_hal_busio_uart_write(busio_uart_obj_t *self, const uint8_t *data, 
     if (len == 0) {
         return 0;
     }
+    if ((int)len < 0) {
+        len = -(int)len;
+    }
 
     // EasyDMA can only access SRAM
     uint8_t *tx_buf = (uint8_t *)data;

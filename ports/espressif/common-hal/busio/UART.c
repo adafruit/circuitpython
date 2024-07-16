@@ -19,6 +19,7 @@
 #include "py/stream.h"
 #include "supervisor/port.h"
 #include "supervisor/shared/tick.h"
+#include "supervisor/shared/serial.h"
 
 static uint8_t never_reset_uart_mask = 0;
 
@@ -360,10 +361,16 @@ size_t common_hal_busio_uart_write(busio_uart_obj_t *self, const uint8_t *data, 
 
     size_t left_to_write = len;
     while (left_to_write > 0 && write_tries != 0) {
-        int count = uart_tx_chars(self->uart_num, (const char *)data, left_to_write);
-        if (count < 0) {
-            *errcode = MP_EAGAIN;
-            return MP_STREAM_ERROR;
+        int count;
+        // If the noWait option has been selected (negative len) only attempt if no RX data available
+        if (!serial_bytes_available() || !noWait) {
+            count = uart_tx_chars(self->uart_num, (const char *)data, left_to_write);
+            if (count < 0) {
+                *errcode = MP_EAGAIN;
+                return MP_STREAM_ERROR;
+            }
+        } else {
+            count = 0;
         }
         left_to_write -= count;
         data += count;
@@ -378,7 +385,7 @@ size_t common_hal_busio_uart_write(busio_uart_obj_t *self, const uint8_t *data, 
         }
     }
 
-    return (len - left_to_write);
+    return len - left_to_write;
 }
 
 uint32_t common_hal_busio_uart_get_baudrate(busio_uart_obj_t *self) {

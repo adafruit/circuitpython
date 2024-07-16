@@ -239,6 +239,10 @@ size_t common_hal_busio_uart_write(busio_uart_obj_t *self,
     size_t len,
     int *errcode) {
 
+    if ((int)len < 0) {
+        len = -(int)len;
+    }
+
     Ecode_t ret = UARTDRV_TransmitB(self->handle, (uint8_t *)data, len);
     if (ret != ECODE_EMDRV_UARTDRV_OK) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("UART write"));

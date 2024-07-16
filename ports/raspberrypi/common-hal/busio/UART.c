@@ -199,6 +199,10 @@ size_t common_hal_busio_uart_write(busio_uart_obj_t *self, const uint8_t *data, 
         mp_raise_ValueError_varg(MP_ERROR_TEXT("No %q pin"), MP_QSTR_tx);
     }
 
+    if ((int)len < 0) {
+        len = -(int)len;
+    }
+
     if (self->rs485_dir_pin != NO_PIN) {
         uart_tx_wait_blocking(self->uart);
         gpio_put(self->rs485_dir_pin, !self->rs485_invert);
