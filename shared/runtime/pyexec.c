@@ -745,7 +745,7 @@ friendly_repl_reset:
                     if (curr_ms < strtPause) {
                         strtPause = curr_ms;
                     }
-                    if (!serial_bytes_available() && curr_ms >= strtPause+pauseTX) {
+                    if (!serial_bytes_available() && curr_ms >= strtPause + pauseTX) {
                         pauseTX = 0;
                         ptr = (const char *)(((const char *)vstr_null_terminated_str(&line)) + curloc);
                         if (*(ptr) == '\r') {
