@@ -720,9 +720,9 @@ friendly_repl_reset:
                     // add char to buffer and echo
                     vstr_add_byte(&line, c);
                     if (c == '\r') {
-                        mp_hal_stdout_tx_str("\r\n=== ");
+                        mp_hal_stdout_tx_strn("\r\n=== ",-6);
                     } else {
-                        mp_hal_stdout_tx_strn(&c, 1);
+                        mp_hal_stdout_tx_strn(&c, -1);
                     }
                 }
             }

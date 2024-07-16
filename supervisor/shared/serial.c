@@ -319,6 +319,9 @@ uint32_t serial_bytes_available(void) {
 }
 
 void serial_write_substring(const char *text, uint32_t length) {
+    int txlen = (int)length;
+    length = abs(txlen);
+
     if (length == 0) {
         return;
     }
@@ -345,8 +348,8 @@ void serial_write_substring(const char *text, uint32_t length) {
         mp_hal_delay_ms(50);
         _first_write_done = true;
     }
-    int uart_errcode;
-    common_hal_busio_uart_write(&console_uart, (const uint8_t *)text, length, &uart_errcode);
+    int uart_errcode = 0;
+    common_hal_busio_uart_write(&console_uart, (const uint8_t *)text, (size_t)txlen, &uart_errcode);
     #endif
 
     #if CIRCUITPY_SERIAL_BLE

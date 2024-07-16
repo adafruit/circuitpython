@@ -342,12 +342,24 @@ size_t common_hal_busio_uart_read(busio_uart_obj_t *self, uint8_t *data, size_t 
 
 // Write characters.
 size_t common_hal_busio_uart_write(busio_uart_obj_t *self, const uint8_t *data, size_t len, int *errcode) {
+    int write_tries;
+    bool noWait;
+
+    if ((int)len < 0) {
+        noWait = true;
+        write_tries = 1;
+        len = -(int)len;
+    } else {
+        noWait = false;
+        write_tries = -1;
+    }
+
     if (self->tx_pin == NULL) {
         mp_raise_ValueError_varg(MP_ERROR_TEXT("No %q pin"), MP_QSTR_tx);
     }
 
     size_t left_to_write = len;
-    while (left_to_write > 0) {
+    while (left_to_write > 0 && write_tries != 0) {
         int count = uart_tx_chars(self->uart_num, (const char *)data, left_to_write);
         if (count < 0) {
             *errcode = MP_EAGAIN;
@@ -355,13 +367,18 @@ size_t common_hal_busio_uart_write(busio_uart_obj_t *self, const uint8_t *data, 
         }
         left_to_write -= count;
         data += count;
-        RUN_BACKGROUND_TASKS;
+        write_tries -= 1;
+        if (noWait == false) {
+            RUN_BACKGROUND_TASKS;
+        }
     }
-    while (uart_wait_tx_done(self->uart_num, 0) == ESP_ERR_TIMEOUT) {
-        RUN_BACKGROUND_TASKS;
+    if (noWait == false) {
+        while (uart_wait_tx_done(self->uart_num, 0) == ESP_ERR_TIMEOUT) {
+            RUN_BACKGROUND_TASKS;
+        }
     }
 
-    return len;
+    return (len - left_to_write);
 }
 
 uint32_t common_hal_busio_uart_get_baudrate(busio_uart_obj_t *self) {
