@@ -197,6 +197,7 @@ size_t mp_hal_stdout_tx_strn(const char *str, size_t len) {
     #if MICROPY_PY_OS_DUPTERM
     mp_os_dupterm_tx_strn(str, len);
     #endif
+    return len;
 }
 
 // cooked is same as uncooked because the terminal does some postprocessing
