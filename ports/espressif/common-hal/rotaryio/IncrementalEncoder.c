@@ -23,7 +23,7 @@ void common_hal_rotaryio_incrementalencoder_construct(rotaryio_incrementalencode
     // in CircuitPython.
     pcnt_unit_config_t unit_config = {
         // Set counter limit
-        .low_limit  = INT16_MIN,
+        .low_limit = INT16_MIN,
         .high_limit = INT16_MAX
     };
     // Enable PCNT internal accumulator to count overflows.
