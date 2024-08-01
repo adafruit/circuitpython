@@ -4,11 +4,12 @@
 // SPDX-FileCopyrightText: Copyright (c) 2020 Dan Halbert for Adafruit Industries
 //
 // SPDX-License-Identifier: MIT
-
+#include <stdio.h>
 #include "py/gc.h"
 #include "py/obj.h"
 #include "py/objtuple.h"
 #include "py/runtime.h"
+#include "py/mpprint.h"
 
 #include "shared-bindings/alarm/__init__.h"
 #include "shared-bindings/alarm/SleepMemory.h"
@@ -29,6 +30,7 @@
 #include "supervisor/shared/workflow.h"
 
 #include "esp_sleep.h"
+#include "esp_pm.h"
 
 #include "components/driver/gpio/include/driver/gpio.h"
 #include "components/driver/uart/include/driver/uart.h"
@@ -91,7 +93,8 @@ mp_obj_t common_hal_alarm_record_wake_alarm(void) {
     // If woken from deep sleep, create a copy alarm similar to what would have
     // been passed in originally. Otherwise, just return none
     esp_sleep_wakeup_cause_t cause = _get_wakeup_cause(true);
-    switch (cause) {
+    switch (cause)
+    {
         case ESP_SLEEP_WAKEUP_TIMER: {
             return alarm_time_timealarm_record_wake_alarm();
         }
@@ -139,13 +142,26 @@ mp_obj_t common_hal_alarm_light_sleep_until_alarms(size_t n_alarms, const mp_obj
 
     mp_obj_t wake_alarm = mp_const_none;
 
+    #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 1, 0)
+    esp_pm_config_t pm;
+    esp_pm_config_t old_pm;
+    esp_pm_get_configuration(&pm);
+    esp_pm_get_configuration(&old_pm);
+    pm.light_sleep_enable = true;
+    pm.max_freq_mhz = 240;
+    pm.min_freq_mhz = 80;
+    ESP_ERROR_CHECK_WITHOUT_ABORT(esp_pm_configure(&pm));
+    #endif
+
+    port_disable_tick();
     // We cannot esp_light_sleep_start() here because it shuts down all non-RTC peripherals.
     while (!mp_hal_is_interrupted()) {
         RUN_BACKGROUND_TASKS;
         // Detect if interrupt was alarm or ctrl-C interrupt.
         if (common_hal_alarm_woken_from_sleep()) {
             esp_sleep_wakeup_cause_t cause = _get_wakeup_cause(false);
-            switch (cause) {
+            switch (cause)
+            {
                 case ESP_SLEEP_WAKEUP_TIMER: {
                     wake_alarm = alarm_time_timealarm_find_triggered_alarm(n_alarms, alarms);
                     break;
@@ -176,6 +192,10 @@ mp_obj_t common_hal_alarm_light_sleep_until_alarms(size_t n_alarms, const mp_obj
         port_idle_until_interrupt();
     }
 
+    #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 1, 0)
+    esp_pm_configure(&old_pm);
+    #endif
+    port_enable_tick();
     if (mp_hal_is_interrupted()) {
         return mp_const_none; // Shouldn't be given to python code because exception handling should kick in.
     }
