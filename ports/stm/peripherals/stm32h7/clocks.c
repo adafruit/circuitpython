@@ -12,6 +12,9 @@
 #ifdef STM32H743xx
 #include "stm32h7/stm32h743xx/clocks.h"
 #endif
+#ifdef STM32H723xx
+#include "stm32h7/stm32h723xx/clocks.h"
+#endif
 
 void stm32_peripherals_clocks_init(void) {
     RCC_OscInitTypeDef RCC_OscInitStruct = {0};
@@ -44,12 +47,12 @@ void stm32_peripherals_clocks_init(void) {
     RCC_OscInitStruct.HSEState = BOARD_HSE_SOURCE;
     RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
     RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-    RCC_OscInitStruct.PLL.PLLM = HSE_VALUE / 2000000;
+    RCC_OscInitStruct.PLL.PLLM = 2;
     RCC_OscInitStruct.PLL.PLLN = CPY_CLK_PLLN;
     RCC_OscInitStruct.PLL.PLLP = CPY_CLK_PLLP;
     RCC_OscInitStruct.PLL.PLLQ = CPY_CLK_PLLQ;
     RCC_OscInitStruct.PLL.PLLR = 2;
-    RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_1;
+    RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_3;
     RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1VCOWIDE;
     RCC_OscInitStruct.PLL.PLLFRACN = 0;
     if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {

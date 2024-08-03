@@ -12,8 +12,6 @@
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/microcontroller/Pin.h"
 
-#if !(CPY_STM32H7)
-
 #define ALL_CLOCKS 0xFFFF
 #define NULL_IRQ 0xFF
 
@@ -160,18 +158,32 @@ uint32_t stm_peripherals_timer_get_source_freq(TIM_TypeDef *timer) {
     if (tim_id == 1 || (8 <= tim_id && tim_id <= 11)) {
         // TIM{1,8,9,10,11} are on APB2
         source = HAL_RCC_GetPCLK2Freq();
+        #if CPY_STM32H7
+        // 0b0xx means not divided; 0b100 is divide by 2; 0b101 by 4; 0b110 by 8; 0b111 by 16.
+        clk_div = (RCC->D2CFGR & RCC_D2CFGR_D2PPRE2) >> RCC_D2CFGR_D2PPRE2_Pos;
+        #else
         // 0b0xx means not divided; 0b100 is divide by 2; 0b101 by 4; 0b110 by 8; 0b111 by 16.
         clk_div = (RCC->CFGR & RCC_CFGR_PPRE2) >> RCC_CFGR_PPRE2_Pos;
+        #endif
     } else {
         // TIM{2,3,4,5,6,7,12,13,14} are on APB1
         source = HAL_RCC_GetPCLK1Freq();
+        #if CPY_STM32H7
+        // 0b0xx means not divided; 0b100 is divide by 2; 0b101 by 4; 0b110 by 8; 0b111 by 16.
+        clk_div = (RCC->D2CFGR & RCC_D2CFGR_D2PPRE1) >> RCC_D2CFGR_D2PPRE1_Pos;
+        #else
         // 0b0xx means not divided; 0b100 is divide by 2; 0b101 by 4; 0b110 by 8; 0b111 by 16.
         clk_div = (RCC->CFGR & RCC_CFGR_PPRE1) >> RCC_CFGR_PPRE1_Pos;
+        #endif
     }
 
     // Only some STM32's have TIMPRE.
     #if defined(RCC_CFGR_TIMPRE)
+    #if CPY_STM32H7
+    uint32_t timpre = RCC->CFGR & RCC_CFGR_TIMPRE;
+    #else
     uint32_t timpre = RCC->DCKCFGR & RCC_CFGR_TIMPRE;
+    #endif
     if (timpre == 0) {
         if (clk_div >= 0b100) {
             source *= 2;
@@ -490,6 +502,4 @@ void TIM16_IRQHandler(void) {
 void TIM17_IRQHandler(void) {
     callback_router(17);
 }
-#endif
-
 #endif

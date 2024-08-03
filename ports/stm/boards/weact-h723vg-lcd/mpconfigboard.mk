@@ -1,0 +1,63 @@
+USB_VID = 0x0483
+USB_PID = 0x5740
+USB_PRODUCT = "H723VG LCD"
+USB_MANUFACTURER = "WeAct Studio"
+
+INTERNAL_FLASH_FILESYSTEM = 0
+# QSPI_FLASH_FILESYSTEM = 1
+SPI_FLASH_FILESYSTEM = 1
+
+MCU_SERIES = H7
+MCU_VARIANT = STM32H723xx
+MCU_PACKAGE = LQFP100_x7
+
+EXTERNAL_FLASH_DEVICES = "W25Q64JVxQ"
+
+LD_COMMON = boards/common_tcm.ld
+LD_FILE = boards/STM32H723_nofs.ld
+
+CIRCUITPY_BLEIO_HCI = 0
+
+# Typically the first module to create
+CIRCUITPY_MICROCONTROLLER = 1
+# Typically the second module to create
+CIRCUITPY_DIGITALIO = 1
+# Other modules:
+CIRCUITPY_ANALOGIO = 0
+CIRCUITPY_PWMIO = 1
+CIRCUITPY_BUSIO = 1
+CIRCUITPY_COUNTIO = 0
+CIRCUITPY_NEOPIXEL_WRITE = 0
+CIRCUITPY_PULSEIO = 1
+CIRCUITPY_OS = 1
+CIRCUITPY_NVM = 0
+CIRCUITPY_AUDIOBUSIO = 0
+CIRCUITPY_AUDIOIO = 0
+CIRCUITPY_ROTARYIO = 0
+CIRCUITPY_RTC = 1
+CIRCUITPY_SDCARDIO = 1
+CIRCUITPY_FRAMEBUFFERIO = 0
+CIRCUITPY_FREQUENCYIO = 0
+CIRCUITPY_I2CTARGET = 0
+# Requires SPI, PulseIO (stub ok):
+CIRCUITPY_DISPLAYIO = 1
+
+# These modules are implemented in shared-module/ - they can be included in
+# any port once their prerequisites in common-hal are complete.
+# Requires DigitalIO:
+CIRCUITPY_BITBANGIO = 0
+# Requires neopixel_write or SPI (dotstar)
+CIRCUITPY_PIXELBUF = 0
+# Requires OS
+CIRCUITPY_RANDOM = 1
+# Requires OS, filesystem
+CIRCUITPY_STORAGE = 1
+# Requires Microcontroller
+CIRCUITPY_TOUCHIO = 0
+# Requires USB
+CIRCUITPY_USB_HID = 0
+CIRCUITPY_USB_MIDI = 0
+# Does nothing without I2C
+CIRCUITPY_REQUIRE_I2C_PULLUPS = 0
+# No requirements, but takes extra flash
+CIRCUITPY_ULAB = 0

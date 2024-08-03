@@ -73,7 +73,7 @@ CFLAGS += -DSTM32_HAL_H="<stm32$(MCU_SERIES_LOWER)xx_hal.h>"
 CFLAGS += -DSTM32_SERIES_LOWER='"stm32$(MCU_SERIES_LOWER)"'
 
 # Floating point settings
-ifeq ($(MCU_VARIANT),$(filter $(MCU_VARIANT),STM32F765xx STM32F767xx STM32F769xx STM32H743xx))
+ifeq ($(MCU_VARIANT),$(filter $(MCU_VARIANT),STM32F765xx STM32F767xx STM32F769xx STM32H743xx STM32H723xx))
 CFLAGS += -mfpu=fpv5-d16 -mfloat-abi=hard
 else
 CFLAGS += -mfpu=fpv4-sp-d16 -mfloat-abi=hard
@@ -134,6 +134,8 @@ SRC_STM32 = $(addprefix $(HAL_DIR)/Src/stm32$(MCU_SERIES_LOWER)xx_,\
 	hal_gpio.c \
 	hal_i2c.c \
 	hal_i2c_ex.c \
+	hal_pcd.c \
+	hal_pcd_ex.c \
 	hal_pwr.c \
 	hal_pwr_ex.c \
 	hal_qspi.c \
@@ -156,6 +158,7 @@ SRC_STM32 = $(addprefix $(HAL_DIR)/Src/stm32$(MCU_SERIES_LOWER)xx_,\
 	ll_rcc.c \
 	ll_sdmmc.c \
 	ll_usart.c \
+	ll_usb.c \
 	ll_utils.c \
 )
 
@@ -165,7 +168,7 @@ endif
 
 # Need this to avoid UART linker problems. TODO: rewrite to use registered callbacks.
 # Does not exist for F4 and lower
-ifeq ($(MCU_VARIANT),$(filter $(MCU_VARIANT),STM32F765xx STM32F767xx STM32F769xx STM32H743xx STM32L4R5xx))
+ifeq ($(MCU_VARIANT),$(filter $(MCU_VARIANT),STM32F765xx STM32F767xx STM32F769xx STM32H743xx STM32H723xx STM32L4R5xx))
 	SRC_STM32 += $(HAL_DIR)/Src/stm32$(MCU_SERIES_LOWER)xx_hal_uart_ex.c
 endif
 
@@ -238,7 +241,7 @@ SRC_QSTR += $(SRC_C) $(SRC_SUPERVISOR) $(SRC_MOD) $(SRC_COMMON_HAL_EXPANDED) $(S
 SRC_QSTR_PREPROCESSOR +=
 
 # Bin section settings specific to the STM32H7
-ifeq ($(MCU_VARIANT),$(filter $(MCU_VARIANT),STM32H743xx))
+ifeq ($(MCU_VARIANT),$(filter $(MCU_VARIANT),STM32H743xx STM32H723xx))
 MCU_SECTIONS = -j .isr_vector -j .text -j .data -j .itcm -j .dtcm_data $^ $@
 else
 MCU_SECTIONS = $^ $@
