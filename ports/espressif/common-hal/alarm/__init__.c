@@ -93,8 +93,7 @@ mp_obj_t common_hal_alarm_record_wake_alarm(void) {
     // If woken from deep sleep, create a copy alarm similar to what would have
     // been passed in originally. Otherwise, just return none
     esp_sleep_wakeup_cause_t cause = _get_wakeup_cause(true);
-    switch (cause)
-    {
+    switch (cause) {
         case ESP_SLEEP_WAKEUP_TIMER: {
             return alarm_time_timealarm_record_wake_alarm();
         }
@@ -160,8 +159,7 @@ mp_obj_t common_hal_alarm_light_sleep_until_alarms(size_t n_alarms, const mp_obj
         // Detect if interrupt was alarm or ctrl-C interrupt.
         if (common_hal_alarm_woken_from_sleep()) {
             esp_sleep_wakeup_cause_t cause = _get_wakeup_cause(false);
-            switch (cause)
-            {
+            switch (cause) {
                 case ESP_SLEEP_WAKEUP_TIMER: {
                     wake_alarm = alarm_time_timealarm_find_triggered_alarm(n_alarms, alarms);
                     break;

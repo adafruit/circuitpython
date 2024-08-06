@@ -58,8 +58,7 @@
 // wake_alarm is implemented as a dictionary entry, so there's no code here.
 
 static void validate_objs_are_alarms(size_t n_args, const mp_obj_t *objs) {
-    for (size_t i = 0; i < n_args; i++)
-    {
+    for (size_t i = 0; i < n_args; i++) {
         if (mp_obj_is_type(objs[i], &alarm_pin_pinalarm_type) ||
             #if CIRCUITPY_ALARM_TOUCH
             mp_obj_is_type(objs[i], &alarm_touch_touchalarm_type) ||
@@ -174,12 +173,9 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(alarm_light_sleep_until_alarms_obj, 1, MP_OB
 //|     ...
 //|
 static mp_obj_t alarm_exit_and_deep_sleep_until_alarms(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    enum
-    {
-        ARG_preserve_dios
-    };
+    enum { ARG_preserve_dios };
     static const mp_arg_t allowed_args[] = {
-        {MP_QSTR_preserve_dios, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_empty_tuple}},
+        { MP_QSTR_preserve_dios, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_empty_tuple} },
     };
 
     // args will contain only the value for preserve_dios. The *alarms args are in pos_args.
@@ -192,8 +188,7 @@ static mp_obj_t alarm_exit_and_deep_sleep_until_alarms(size_t n_args, const mp_o
     const size_t num_dios = (size_t)MP_OBJ_SMALL_INT_VALUE(mp_obj_len(preserve_dios));
     digitalio_digitalinout_obj_t *dios_array[num_dios];
 
-    for (mp_uint_t i = 0; i < num_dios; i++)
-    {
+    for (mp_uint_t i = 0; i < num_dios; i++) {
         mp_obj_t dio = mp_obj_subscr(preserve_dios, MP_OBJ_NEW_SMALL_INT(i), MP_OBJ_SENTINEL);
         dios_array[i] = mp_arg_validate_type(dio, &digitalio_digitalinout_type, MP_QSTR_alarm);
     }
@@ -209,64 +204,64 @@ static mp_obj_t alarm_exit_and_deep_sleep_until_alarms(size_t n_args, const mp_o
 MP_DEFINE_CONST_FUN_OBJ_KW(alarm_exit_and_deep_sleep_until_alarms_obj, 0, alarm_exit_and_deep_sleep_until_alarms);
 
 static const mp_map_elem_t alarm_pin_globals_table[] = {
-    {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_pin)},
+    { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_pin) },
 
-    {MP_ROM_QSTR(MP_QSTR_PinAlarm), MP_OBJ_FROM_PTR(&alarm_pin_pinalarm_type)},
+    { MP_ROM_QSTR(MP_QSTR_PinAlarm), MP_OBJ_FROM_PTR(&alarm_pin_pinalarm_type) },
 };
 
 static MP_DEFINE_CONST_DICT(alarm_pin_globals, alarm_pin_globals_table);
 
 static const mp_obj_module_t alarm_pin_module = {
-    .base = {&mp_type_module},
+    .base = { &mp_type_module },
     .globals = (mp_obj_dict_t *)&alarm_pin_globals,
 };
 
 static const mp_map_elem_t alarm_time_globals_table[] = {
-    {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_time)},
+    { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_time) },
 
-    {MP_ROM_QSTR(MP_QSTR_TimeAlarm), MP_OBJ_FROM_PTR(&alarm_time_timealarm_type)},
+    { MP_ROM_QSTR(MP_QSTR_TimeAlarm), MP_OBJ_FROM_PTR(&alarm_time_timealarm_type) },
 };
 
 static MP_DEFINE_CONST_DICT(alarm_time_globals, alarm_time_globals_table);
 
 static const mp_obj_module_t alarm_time_module = {
-    .base = {&mp_type_module},
+    .base = { &mp_type_module },
     .globals = (mp_obj_dict_t *)&alarm_time_globals,
 };
 
 #if CIRCUITPY_ALARM_TOUCH
 static const mp_map_elem_t alarm_touch_globals_table[] = {
-    {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_touch)},
-    {MP_ROM_QSTR(MP_QSTR_TouchAlarm), MP_OBJ_FROM_PTR(&alarm_touch_touchalarm_type)},
+    { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_touch) },
+    { MP_ROM_QSTR(MP_QSTR_TouchAlarm), MP_OBJ_FROM_PTR(&alarm_touch_touchalarm_type) },
 };
 
 static MP_DEFINE_CONST_DICT(alarm_touch_globals, alarm_touch_globals_table);
 
 static const mp_obj_module_t alarm_touch_module = {
-    .base = {&mp_type_module},
+    .base = { &mp_type_module },
     .globals = (mp_obj_dict_t *)&alarm_touch_globals,
 };
 #endif
 
 // The module table is mutable because .wake_alarm is a mutable attribute.
 static mp_map_elem_t alarm_module_globals_table[] = {
-    {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_alarm)},
+    { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_alarm) },
 
     // wake_alarm is a mutable attribute.
-    {MP_ROM_QSTR(MP_QSTR_wake_alarm), mp_const_none},
+    { MP_ROM_QSTR(MP_QSTR_wake_alarm), mp_const_none },
 
-    {MP_ROM_QSTR(MP_QSTR_light_sleep_until_alarms), MP_OBJ_FROM_PTR(&alarm_light_sleep_until_alarms_obj)},
-    {MP_ROM_QSTR(MP_QSTR_exit_and_deep_sleep_until_alarms),
-     MP_OBJ_FROM_PTR(&alarm_exit_and_deep_sleep_until_alarms_obj)},
+    { MP_ROM_QSTR(MP_QSTR_light_sleep_until_alarms), MP_OBJ_FROM_PTR(&alarm_light_sleep_until_alarms_obj) },
+    { MP_ROM_QSTR(MP_QSTR_exit_and_deep_sleep_until_alarms),
+      MP_OBJ_FROM_PTR(&alarm_exit_and_deep_sleep_until_alarms_obj) },
 
-    {MP_ROM_QSTR(MP_QSTR_pin), MP_OBJ_FROM_PTR(&alarm_pin_module)},
-    {MP_ROM_QSTR(MP_QSTR_time), MP_OBJ_FROM_PTR(&alarm_time_module)},
+    { MP_ROM_QSTR(MP_QSTR_pin), MP_OBJ_FROM_PTR(&alarm_pin_module) },
+    { MP_ROM_QSTR(MP_QSTR_time), MP_OBJ_FROM_PTR(&alarm_time_module) },
     #if CIRCUITPY_ALARM_TOUCH
-    {MP_ROM_QSTR(MP_QSTR_touch), MP_OBJ_FROM_PTR(&alarm_touch_module)},
+    { MP_ROM_QSTR(MP_QSTR_touch), MP_OBJ_FROM_PTR(&alarm_touch_module) },
     #endif
 
-    {MP_ROM_QSTR(MP_QSTR_SleepMemory), MP_OBJ_FROM_PTR(&alarm_sleep_memory_type)},
-    {MP_ROM_QSTR(MP_QSTR_sleep_memory), MP_OBJ_FROM_PTR(&alarm_sleep_memory_obj)},
+    { MP_ROM_QSTR(MP_QSTR_SleepMemory),   MP_OBJ_FROM_PTR(&alarm_sleep_memory_type) },
+    { MP_ROM_QSTR(MP_QSTR_sleep_memory),  MP_OBJ_FROM_PTR(&alarm_sleep_memory_obj) },
 };
 static MP_DEFINE_MUTABLE_DICT(alarm_module_globals, alarm_module_globals_table);
 
@@ -293,7 +288,7 @@ void shared_alarm_save_wake_alarm(mp_obj_t alarm) {
 }
 
 const mp_obj_module_t alarm_module = {
-    .base = {&mp_type_module},
+    .base = { &mp_type_module },
     .globals = (mp_obj_dict_t *)&alarm_module_globals,
 };
 

@@ -117,39 +117,39 @@ void sleep_timer_cb(void *arg);
 // WARNING: PSRAM shares all but the CS and CLK pins with the flash, so these defines
 // hardcode the flash pins as well, making this code incompatible with either a setup
 // that has the flash on non-standard pins or ESP32s with built-in flash.
-#define PSRAM_SPIQ_SD0_IO 7
-#define PSRAM_SPID_SD1_IO 8
-#define PSRAM_SPIWP_SD3_IO 10
-#define PSRAM_SPIHD_SD2_IO 9
+#define PSRAM_SPIQ_SD0_IO          7
+#define PSRAM_SPID_SD1_IO          8
+#define PSRAM_SPIWP_SD3_IO         10
+#define PSRAM_SPIHD_SD2_IO         9
 
-#define FLASH_HSPI_CLK_IO 14
-#define FLASH_HSPI_CS_IO 15
-#define PSRAM_HSPI_SPIQ_SD0_IO 12
-#define PSRAM_HSPI_SPID_SD1_IO 13
-#define PSRAM_HSPI_SPIWP_SD3_IO 2
-#define PSRAM_HSPI_SPIHD_SD2_IO 4
+#define FLASH_HSPI_CLK_IO          14
+#define FLASH_HSPI_CS_IO           15
+#define PSRAM_HSPI_SPIQ_SD0_IO     12
+#define PSRAM_HSPI_SPID_SD1_IO     13
+#define PSRAM_HSPI_SPIWP_SD3_IO    2
+#define PSRAM_HSPI_SPIHD_SD2_IO    4
 
 #ifdef CONFIG_SPIRAM
 // PSRAM clock and cs IO should be configured based on hardware design.
 // For ESP32-WROVER or ESP32-WROVER-B module, the clock IO is IO17, the cs IO is IO16,
 // they are the default value for these two configs.
-#define D0WD_PSRAM_CLK_IO CONFIG_D0WD_PSRAM_CLK_IO // Default value is 17
-#define D0WD_PSRAM_CS_IO CONFIG_D0WD_PSRAM_CS_IO   // Default value is 16
+#define D0WD_PSRAM_CLK_IO          CONFIG_D0WD_PSRAM_CLK_IO  // Default value is 17
+#define D0WD_PSRAM_CS_IO           CONFIG_D0WD_PSRAM_CS_IO   // Default value is 16
 
-#define D2WD_PSRAM_CLK_IO CONFIG_D2WD_PSRAM_CLK_IO // Default value is 9
-#define D2WD_PSRAM_CS_IO CONFIG_D2WD_PSRAM_CS_IO   // Default value is 10
+#define D2WD_PSRAM_CLK_IO          CONFIG_D2WD_PSRAM_CLK_IO  // Default value is 9
+#define D2WD_PSRAM_CS_IO           CONFIG_D2WD_PSRAM_CS_IO   // Default value is 10
 
 // There is no reason to change the pin of an embedded psram.
 // So define the number of pin directly, instead of configurable.
-#define D0WDR2_V3_PSRAM_CLK_IO 6
-#define D0WDR2_V3_PSRAM_CS_IO 16
+#define D0WDR2_V3_PSRAM_CLK_IO    6
+#define D0WDR2_V3_PSRAM_CS_IO     16
 
 // For ESP32-PICO chip, the psram share clock with flash. The flash clock pin is fixed, which is IO6.
-#define PICO_PSRAM_CLK_IO 6
-#define PICO_PSRAM_CS_IO CONFIG_PICO_PSRAM_CS_IO // Default value is 10
+#define PICO_PSRAM_CLK_IO          6
+#define PICO_PSRAM_CS_IO           CONFIG_PICO_PSRAM_CS_IO   // Default value is 10
 
-#define PICO_V3_02_PSRAM_CLK_IO 10
-#define PICO_V3_02_PSRAM_CS_IO 9
+#define PICO_V3_02_PSRAM_CLK_IO    10
+#define PICO_V3_02_PSRAM_CS_IO     9
 #endif // CONFIG_SPIRAM
 
 static void _never_reset_spi_ram_flash(void) {
@@ -220,16 +220,16 @@ safe_mode_t port_init(void) {
     circuitpython_task = xTaskGetCurrentTaskHandle();
 
     #if !defined(DEBUG)
-#define DEBUG (0)
+    #define DEBUG (0)
     #endif
 
-// Send the ROM output out of the UART. This includes early logs.
+    // Send the ROM output out of the UART. This includes early logs.
     #if DEBUG
     esp_rom_install_uart_printf();
     #endif
 
-#define pin_GPIOn(n) pin_GPIO##n
-#define pin_GPIOn_EXPAND(x) pin_GPIOn(x)
+    #define pin_GPIOn(n) pin_GPIO##n
+    #define pin_GPIOn_EXPAND(x) pin_GPIOn(x)
 
     #ifdef CONFIG_CONSOLE_UART_TX_GPIO
     common_hal_never_reset_pin(&pin_GPIOn_EXPAND(CONFIG_CONSOLE_UART_TX_GPIO));
@@ -240,7 +240,7 @@ safe_mode_t port_init(void) {
     #endif
 
     #if DEBUG
-// debug UART
+    // debug UART
     #if defined(CONFIG_IDF_TARGET_ESP32C3)
     common_hal_never_reset_pin(&pin_GPIO20);
     common_hal_never_reset_pin(&pin_GPIO21);
@@ -254,12 +254,12 @@ safe_mode_t port_init(void) {
     #endif
 
     #ifndef ENABLE_JTAG
-#define ENABLE_JTAG (0)
+    #define ENABLE_JTAG (0)
     #endif
 
     #if ENABLE_JTAG
     ESP_LOGI(TAG, "Marking JTAG pins never_reset");
-// JTAG
+    // JTAG
     #if defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32C6)
     common_hal_never_reset_pin(&pin_GPIO4);
     common_hal_never_reset_pin(&pin_GPIO5);
@@ -276,8 +276,7 @@ safe_mode_t port_init(void) {
     _never_reset_spi_ram_flash();
 
     esp_reset_reason_t reason = esp_reset_reason();
-    switch (reason)
-    {
+    switch (reason) {
         case ESP_RST_BROWNOUT:
             return SAFE_MODE_BROWNOUT;
         case ESP_RST_PANIC:
@@ -305,7 +304,7 @@ void *port_malloc(size_t size, bool dma_capable) {
     }
 
     void *ptr = NULL;
-// Try SPIRAM first when available.
+    // Try SPIRAM first when available.
     #ifdef CONFIG_SPIRAM
     ptr = heap_caps_malloc(size, caps | MALLOC_CAP_SPIRAM);
     #endif
@@ -329,7 +328,7 @@ size_t port_heap_get_largest_free_size(void) {
 }
 
 void reset_port(void) {
-// TODO deinit for esp32-camera
+    // TODO deinit for esp32-camera
     #if CIRCUITPY_ESPCAMERA
     esp_camera_deinit();
     #endif
@@ -489,6 +488,7 @@ void port_post_boot_py(bool heap_valid) {
     if (!heap_valid && filesystem_present()) {
     }
 }
+
 
 #if CIRCUITPY_CONSOLE_UART
 static int vprintf_adapter(const char *fmt, va_list ap) {
