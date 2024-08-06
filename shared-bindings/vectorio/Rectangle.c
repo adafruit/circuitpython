@@ -136,6 +136,15 @@ const mp_obj_property_t vectorio_rectangle_color_index_obj = {
               MP_ROM_NONE},
 };
 
+//|     is_colliding: bool
+//|     """Return true if this shape is colliding with another shape."""
+static mp_obj_t vectorio_rectangle_obj_is_colliding(mp_obj_t self_in, mp_obj_t other_shape) {
+    vectorio_rectangle_t *self = MP_OBJ_TO_PTR(self_in);
+    return mp_obj_new_bool(common_hal_vectorio_rectangle_is_colliding(self, other_shape));
+}
+MP_DEFINE_CONST_FUN_OBJ_1(vectorio_rectangle_is_colliding_obj, vectorio_rectangle_obj_is_colliding);
+
+
 // Documentation for properties inherited from VectorShape.
 
 //|     x: int

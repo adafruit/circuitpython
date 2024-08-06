@@ -29,3 +29,5 @@ void common_hal_vectorio_rectangle_set_color_index(void *obj, uint16_t color_ind
 
 int16_t common_hal_vectorio_rectangle_get_height(void *obj);
 void common_hal_vectorio_rectangle_set_height(void *obj, int16_t height);
+
+bool common_hal_vectorio_rectangle_is_colliding(vectorio_rectangle_t *self, mp_obj_t other_shape);
