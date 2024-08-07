@@ -132,7 +132,7 @@ bool common_hal_vectorio_circle_intersects(vectorio_circle_t *self, mp_obj_t oth
 
         mp_int_t dist = sqrtf((dist_x * dist_x) + (dist_y * dist_y));
 
-        return (dist <= self->radius + other_circle->radius);
+        return dist <= self->radius + other_circle->radius;
 
     }
 
