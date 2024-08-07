@@ -51,7 +51,7 @@ mp_obj_t common_hal_vectorio_rectangle_get_draw_protocol(void *rectangle) {
     return self->draw_protocol_instance;
 }
 
-bool common_hal_vectorio_rectangle_intersecting(vectorio_rectangle_t *self, mp_obj_t other_shape) {
+bool common_hal_vectorio_rectangle_intersects(vectorio_rectangle_t *self, mp_obj_t other_shape) {
 
     mp_obj_t possible_rect = mp_obj_cast_to_native_base(other_shape, &vectorio_rectangle_type);
     if (possible_rect != MP_OBJ_NULL) {

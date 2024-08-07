@@ -106,6 +106,15 @@ MP_PROPERTY_GETSET(vectorio_circle_color_index_obj,
     (mp_obj_t)&vectorio_circle_set_color_index_obj);
 
 
+//|     def intersects(self, other_shape: Union[vectorio.Circle, vectorio.Rectangle]) -> bool:
+//|         """Return true if this shape is colliding with another shape."""
+//|         ...
+static mp_obj_t vectorio_circle_obj_intersects(mp_obj_t self_in, mp_obj_t other_shape) {
+    vectorio_circle_t *self = MP_OBJ_TO_PTR(self_in);
+    return mp_obj_new_bool(common_hal_vectorio_circle_intersects(self, other_shape));
+}
+MP_DEFINE_CONST_FUN_OBJ_2(vectorio_circle_intersects_obj, vectorio_circle_obj_intersects);
+
 // Documentation for properties inherited from VectorShape.
 
 //|     x: int
@@ -133,6 +142,7 @@ static const mp_rom_map_elem_t vectorio_circle_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_y), MP_ROM_PTR(&vectorio_vector_shape_y_obj) },
     { MP_ROM_QSTR(MP_QSTR_hidden), MP_ROM_PTR(&vectorio_vector_shape_hidden_obj) },
     { MP_ROM_QSTR(MP_QSTR_color_index), MP_ROM_PTR(&vectorio_circle_color_index_obj) },
+    { MP_ROM_QSTR(MP_QSTR_intersects), MP_ROM_PTR(&vectorio_circle_intersects_obj) },
     { MP_ROM_QSTR(MP_QSTR_location), MP_ROM_PTR(&vectorio_vector_shape_location_obj) },
     { MP_ROM_QSTR(MP_QSTR_pixel_shader), MP_ROM_PTR(&vectorio_vector_shape_pixel_shader_obj) },
 };

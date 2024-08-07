@@ -28,3 +28,5 @@ uint16_t common_hal_vectorio_circle_get_color_index(void *obj);
 void common_hal_vectorio_circle_set_color_index(void *obj, uint16_t color_index);
 
 mp_obj_t common_hal_vectorio_circle_get_draw_protocol(void *circle);
+
+bool common_hal_vectorio_circle_intersects(vectorio_circle_t *self, mp_obj_t other_shape);
