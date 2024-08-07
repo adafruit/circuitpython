@@ -137,7 +137,7 @@ const mp_obj_property_t vectorio_rectangle_color_index_obj = {
 };
 
 //|     def intersects(self, other_shape: Union[vectorio.Circle, vectorio.Rectangle]) -> bool:
-//|         """Return true if this shape is colliding with another shape."""
+//|         """Return true if this shape intersects (overlaps with) another shape."""
 //|         ...
 static mp_obj_t vectorio_rectangle_obj_intersects(mp_obj_t self_in, mp_obj_t other_shape) {
     vectorio_rectangle_t *self = MP_OBJ_TO_PTR(self_in);
