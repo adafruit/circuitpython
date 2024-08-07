@@ -28,6 +28,7 @@
 
 #include "supervisor/port.h"
 #include "supervisor/shared/workflow.h"
+#include "supervisor/shared/serial.h"
 
 #include "esp_sleep.h"
 #include "esp_pm.h"
@@ -141,18 +142,27 @@ mp_obj_t common_hal_alarm_light_sleep_until_alarms(size_t n_alarms, const mp_obj
 
     mp_obj_t wake_alarm = mp_const_none;
 
+    bool use_real_sleep = !serial_connected();
+
+
     #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 1, 0)
-    esp_pm_config_t pm;
     esp_pm_config_t old_pm;
-    esp_pm_get_configuration(&pm);
     esp_pm_get_configuration(&old_pm);
-    pm.light_sleep_enable = true;
+
+    esp_pm_config_t pm;
+    esp_pm_get_configuration(&pm);
+
     pm.max_freq_mhz = 240;
     pm.min_freq_mhz = 80;
+
+    if (use_real_sleep) {
+        pm.light_sleep_enable = true;
+    }
+
     ESP_ERROR_CHECK_WITHOUT_ABORT(esp_pm_configure(&pm));
     #endif
 
-    port_disable_tick();
+
     // We cannot esp_light_sleep_start() here because it shuts down all non-RTC peripherals.
     while (!mp_hal_is_interrupted()) {
         RUN_BACKGROUND_TASKS;
@@ -193,7 +203,8 @@ mp_obj_t common_hal_alarm_light_sleep_until_alarms(size_t n_alarms, const mp_obj
     #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 1, 0)
     esp_pm_configure(&old_pm);
     #endif
-    port_enable_tick();
+
+
     if (mp_hal_is_interrupted()) {
         return mp_const_none; // Shouldn't be given to python code because exception handling should kick in.
     }
