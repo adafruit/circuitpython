@@ -4250,6 +4250,10 @@ msgstr ""
 msgid "usecols keyword must be specified"
 msgstr ""
 
+#: shared-bindings/analogio/AnalogIn.c
+msgid "value is out of bounds"
+msgstr ""
+
 #: py/objint.c
 #, c-format
 msgid "value must fit in %d byte(s)"
