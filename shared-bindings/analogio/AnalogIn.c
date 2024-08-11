@@ -58,7 +58,7 @@ static mp_obj_t analogio_analogin_make_new(const mp_obj_type_t *type, size_t n_a
     const mcu_pin_obj_t *pin = common_hal_analogio_analogin_validate_pin(parsed_args[ARG_pin].u_obj);
     mp_int_t samples = parsed_args[ARG_samples].u_int;
     if (samples < 1 || samples > 65535) {
-        mp_raise_ValueError(MP_ERROR_TEXT("value is out of bounds"));
+        mp_raise_OverflowError_varg(MP_ERROR_TEXT("value must fit in %d byte(s)"), 4);
     }
     analogio_analogin_obj_t *self = m_new_obj_with_finaliser(analogio_analogin_obj_t);
     self->base.type = &analogio_analogin_type;
@@ -154,7 +154,7 @@ static mp_obj_t analogio_analogin_obj_set_sample_size(mp_obj_t self_in, mp_obj_t
 
     int samples = mp_obj_get_int(value_in);
     if (samples < 1 || samples > 65535) {
-        mp_raise_ValueError(MP_ERROR_TEXT("value is out of bounds"));
+        mp_raise_OverflowError_varg(MP_ERROR_TEXT("value must fit in %d byte(s)"), 4);
     }
     common_hal_analogio_analogin_set_sample_size(self, (uint16_t)samples);
     return mp_const_none;
