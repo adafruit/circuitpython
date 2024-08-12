@@ -121,7 +121,8 @@ msgstr "%q i %q måste vara av typen %q, inte %q"
 #: ports/espressif/common-hal/espulp/ULP.c
 #: ports/mimxrt10xx/common-hal/audiobusio/__init__.c
 #: ports/mimxrt10xx/common-hal/usb_host/Port.c
-#: ports/raspberrypi/common-hal/picodvi/Framebuffer.c
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2350.c
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 #: ports/raspberrypi/common-hal/usb_host/Port.c
 #: shared-bindings/digitalio/DigitalInOut.c
@@ -165,7 +166,7 @@ msgstr "längden på %q måste vara <= %d"
 msgid "%q length must be >= %d"
 msgstr "längden på %q måste vara >= %d"
 
-#: py/objmodule.c py/runtime.c
+#: py/modsys.c py/objmodule.c py/runtime.c
 msgid "%q moved from %q to %q"
 msgstr "%q flyttad från %q till %q"
 
@@ -523,7 +524,7 @@ msgid "All event channels in use"
 msgstr "Alla händelsekanaler används"
 
 #: ports/raspberrypi/common-hal/floppyio/__init__.c
-#: ports/raspberrypi/common-hal/picodvi/Framebuffer.c
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 #: ports/raspberrypi/common-hal/usb_host/Port.c
 msgid "All state machines in use"
@@ -533,7 +534,7 @@ msgstr "Alla tillståndsmaskiner används"
 msgid "All sync event channels in use"
 msgstr "Alla synkroniseringskanaler används"
 
-#: ports/raspberrypi/common-hal/picodvi/Framebuffer.c
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
 msgid "All timers for this pin are in use"
 msgstr "Alla timers för denna pinne är i bruk"
 
@@ -1187,7 +1188,9 @@ msgstr "Internt fel #%d"
 #: ports/atmel-samd/common-hal/ps2io/Ps2.c
 #: ports/atmel-samd/common-hal/pulseio/PulseIn.c
 #: ports/atmel-samd/common-hal/rotaryio/IncrementalEncoder.c
-#: ports/cxd56/common-hal/pulseio/PulseIn.c shared-bindings/pwmio/PWMOut.c
+#: ports/cxd56/common-hal/pulseio/PulseIn.c
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2350.c
+#: shared-bindings/pwmio/PWMOut.c
 msgid "Internal resource(s) in use"
 msgstr ""
 
@@ -1204,14 +1207,19 @@ msgid "Interrupted by output function"
 msgstr "Avbruten av utgångsfunktion"
 
 #: ports/espressif/common-hal/espulp/ULP.c
+#: ports/espressif/common-hal/microcontroller/Processor.c
 #: ports/mimxrt10xx/common-hal/audiobusio/__init__.c
 #: ports/mimxrt10xx/common-hal/pwmio/PWMOut.c
 #: ports/raspberrypi/bindings/picodvi/Framebuffer.c
-#: ports/raspberrypi/common-hal/picodvi/Framebuffer.c py/argcheck.c
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c py/argcheck.c
 #: shared-bindings/digitalio/DigitalInOut.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c shared-bindings/pwmio/PWMOut.c
 msgid "Invalid %q"
 msgstr "Ogiltig %q"
+
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2350.c
+msgid "Invalid %q and %q"
+msgstr ""
 
 #: ports/atmel-samd/common-hal/microcontroller/Pin.c
 #: ports/espressif/common-hal/dotclockframebuffer/DotClockFramebuffer.c
@@ -1310,6 +1318,10 @@ msgstr "Layer är redan med i en grupp"
 #: shared-module/displayio/Group.c
 msgid "Layer must be a Group or TileGrid subclass"
 msgstr "Layer måste vara en underklass av Group eller TileGrid"
+
+#: shared-bindings/audiocore/RawSample.c
+msgid "Length of %q must be an even multiple of channel_count * type_size"
+msgstr ""
 
 #: ports/espressif/common-hal/espidf/__init__.c
 msgid "MAC address was invalid"
@@ -1586,7 +1598,6 @@ msgstr "Endast 8 eller 16 bitars mono med %dx översampling stöds."
 msgid "Only IPv4 addresses supported"
 msgstr "Endast IPv4-adresser stöds"
 
-#: ports/espressif/common-hal/socketpool/Socket.c
 #: ports/raspberrypi/common-hal/socketpool/Socket.c
 msgid "Only IPv4 sockets supported"
 msgstr "Endast IPv4-socket stöds"
@@ -2260,6 +2271,10 @@ msgstr "Format stöds inte"
 msgid "Unsupported hash algorithm"
 msgstr "Hash-algoritmen stöds inte"
 
+#: ports/espressif/common-hal/socketpool/Socket.c
+msgid "Unsupported socket type"
+msgstr ""
+
 #: ports/espressif/common-hal/_bleio/Adapter.c
 #: ports/espressif/common-hal/dualbank/__init__.c
 msgid "Update failed"
@@ -2367,6 +2382,7 @@ msgid "You pressed the SW38 button at start up."
 msgstr "Du tryckte ned SW38-knappen vid start."
 
 #: ports/espressif/boards/hardkernel_odroid_go/mpconfigboard.h
+#: ports/espressif/boards/vidi_x/mpconfigboard.h
 msgid "You pressed the VOLUME button at start up."
 msgstr "Du tryckte ned VOLYM-knappen vid start."
 
