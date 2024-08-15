@@ -79,7 +79,7 @@ void stm32_peripherals_clocks_init(void) {
     // Set up non-bus peripherals
     // TODO: I2S settings go here
     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_RTC | RCC_PERIPHCLK_USART3
-        | RCC_PERIPHCLK_USB;
+        | RCC_PERIPHCLK_USB | RCC_PERIPHCLK_OSPI;
     #if (BOARD_HAS_LOW_SPEED_CRYSTAL)
     PeriphClkInitStruct.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
     #else
@@ -91,7 +91,20 @@ void stm32_peripherals_clocks_init(void) {
     #else
     PeriphClkInitStruct.UsbClockSelection = RCC_USBCLKSOURCE_PLL;
     #endif
+    PeriphClkInitStruct.PLL2.PLL2M = 2;
+    PeriphClkInitStruct.PLL2.PLL2N = 20;
+    PeriphClkInitStruct.PLL2.PLL2P = 2;
+    PeriphClkInitStruct.PLL2.PLL2Q = 2;
+    PeriphClkInitStruct.PLL2.PLL2R = 2;
+    PeriphClkInitStruct.PLL2.PLL2RGE = RCC_PLL2VCIRANGE_3;
+    PeriphClkInitStruct.PLL2.PLL2VCOSEL = RCC_PLL2VCOWIDE;
+    PeriphClkInitStruct.PLL2.PLL2FRACN = 0;
+    PeriphClkInitStruct.OspiClockSelection = RCC_OSPICLKSOURCE_PLL2;
     HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct);
+
+    /* OCTOSPI1 clock enable */
+    __HAL_RCC_OCTOSPIM_CLK_ENABLE();
+    __HAL_RCC_OSPI1_CLK_ENABLE();
 
     // Enable USB Voltage detector
     HAL_PWREx_EnableUSBVoltageDetector();

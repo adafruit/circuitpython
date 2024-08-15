@@ -134,6 +134,7 @@ SRC_STM32 = $(addprefix $(HAL_DIR)/Src/stm32$(MCU_SERIES_LOWER)xx_,\
 	hal_gpio.c \
 	hal_i2c.c \
 	hal_i2c_ex.c \
+	hal_ospi.c \
 	hal_pcd.c \
 	hal_pcd_ex.c \
 	hal_pwr.c \

@@ -23,4 +23,12 @@ void stm32_peripherals_gpio_init(void) {
     never_reset_pin_number(2, 15); // PC15 OSC32_OUT
     never_reset_pin_number(0, 13); // PA13 SWDIO
     never_reset_pin_number(0, 14); // PA14 SWCLK
+
+    never_reset_pin_number(1,  6); // PB6  OSPI NCS
+    never_reset_pin_number(1,  2); // PB2  OSPI CLK
+    never_reset_pin_number(3, 11); // PD11 OSPI IO0
+    never_reset_pin_number(3, 12); // PD12 OSPI IO1
+    never_reset_pin_number(4,  2); // PE2  OSPI IO2
+    never_reset_pin_number(3, 13); // PD13 OSPI IO3
+
 }

@@ -38,6 +38,15 @@
 #define SPI_FLASH_SCK_PIN  (&pin_PB03)
 #define SPI_FLASH_CS_PIN   (&pin_PD06)
 
+#if QSPI_FLASH_FILESYSTEM
+#define MICROPY_QSPI_DATA0  (&pin_PD11)
+#define MICROPY_QSPI_DATA1  (&pin_PD12)
+#define MICROPY_QSPI_DATA2  (&pin_PE02)
+#define MICROPY_QSPI_DATA3  (&pin_PD13)
+#define MICROPY_QSPI_SCK    (&pin_PB02)
+#define MICROPY_QSPI_CS     (&pin_PB06)
+#endif
+
 // usb?
 #define IGNORE_PIN_PA11 1
 #define IGNORE_PIN_PA12 1
