@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2020 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2020 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "shared-bindings/wifi/Radio.h"
 #include "shared-bindings/wifi/Network.h"
@@ -33,15 +13,23 @@
 #include "common-hal/wifi/__init__.h"
 #include "shared/runtime/interrupt_char.h"
 #include "py/gc.h"
+#include "py/obj.h"
 #include "py/runtime.h"
 #include "shared-bindings/ipaddress/IPv4Address.h"
 #include "shared-bindings/wifi/ScannedNetworks.h"
 #include "shared-bindings/wifi/AuthMode.h"
 #include "shared-bindings/time/__init__.h"
 #include "shared-module/ipaddress/__init__.h"
+#include "common-hal/socketpool/__init__.h"
 
+#include "components/esp_netif/include/esp_netif_net_stack.h"
 #include "components/esp_wifi/include/esp_wifi.h"
 #include "components/lwip/include/apps/ping/ping_sock.h"
+#include "lwip/sockets.h"
+
+#if LWIP_IPV6_DHCP6
+#include "lwip/dhcp6.h"
+#endif
 
 #if CIRCUITPY_MDNS
 #include "common-hal/mdns/Server.h"
@@ -106,6 +94,7 @@ void common_hal_wifi_radio_set_enabled(wifi_radio_obj_t *self, bool enabled) {
     if (!self->started && enabled) {
         ESP_ERROR_CHECK(esp_wifi_start());
         self->started = true;
+        common_hal_wifi_radio_set_tx_power(self, CIRCUITPY_WIFI_DEFAULT_TX_POWER);
         return;
     }
 }
@@ -148,6 +137,25 @@ mp_float_t common_hal_wifi_radio_get_tx_power(wifi_radio_obj_t *self) {
 
 void common_hal_wifi_radio_set_tx_power(wifi_radio_obj_t *self, const mp_float_t tx_power) {
     esp_wifi_set_max_tx_power(tx_power * 4.0f);
+}
+
+mp_int_t common_hal_wifi_radio_get_listen_interval(wifi_radio_obj_t *self) {
+    wifi_config_t *config = &self->sta_config;
+    return config->sta.listen_interval;
+}
+
+void common_hal_wifi_radio_set_listen_interval(wifi_radio_obj_t *self, const mp_int_t listen_interval) {
+    wifi_config_t *config = &self->sta_config;
+    config->sta.listen_interval = listen_interval;
+    if (listen_interval == 1) {
+        esp_wifi_set_ps(WIFI_PS_MIN_MODEM);
+    } else if (listen_interval > 1) {
+        esp_wifi_set_ps(WIFI_PS_MAX_MODEM);
+    } else {
+        esp_wifi_set_ps(WIFI_PS_NONE);
+    }
+
+    esp_wifi_set_config(ESP_IF_WIFI_STA, config);
 }
 
 mp_obj_t common_hal_wifi_radio_get_mac_address_ap(wifi_radio_obj_t *self) {
@@ -378,7 +386,9 @@ wifi_radio_error_t common_hal_wifi_radio_connect(wifi_radio_obj_t *self, uint8_t
     if ((bits & WIFI_DISCONNECTED_BIT) != 0) {
         if (
             (self->last_disconnect_reason == WIFI_REASON_AUTH_FAIL) ||
-            (self->last_disconnect_reason == WIFI_REASON_4WAY_HANDSHAKE_TIMEOUT)
+            (self->last_disconnect_reason == WIFI_REASON_4WAY_HANDSHAKE_TIMEOUT) ||
+            (self->last_disconnect_reason == WIFI_REASON_NO_AP_FOUND_W_COMPATIBLE_SECURITY) ||
+            (self->last_disconnect_reason == WIFI_REASON_NO_AP_FOUND_IN_AUTHMODE_THRESHOLD)
             ) {
             return WIFI_RADIO_ERROR_AUTH_FAIL;
         } else if (self->last_disconnect_reason == WIFI_REASON_NO_AP_FOUND) {
@@ -462,6 +472,44 @@ mp_obj_t common_hal_wifi_radio_get_ipv4_subnet_ap(wifi_radio_obj_t *self) {
     return common_hal_ipaddress_new_ipv4address(self->ap_ip_info.netmask.addr);
 }
 
+static mp_obj_t common_hal_wifi_radio_get_addresses_netif(wifi_radio_obj_t *self, esp_netif_t *netif) {
+    if (!esp_netif_is_netif_up(netif)) {
+        return mp_const_empty_tuple;
+    }
+    esp_netif_ip_info_t ip_info;
+    esp_netif_get_ip_info(netif, &ip_info);
+    int n_addresses4 = ip_info.ip.addr != INADDR_NONE;
+
+    #if CIRCUITPY_SOCKETPOOL_IPV6
+    esp_ip6_addr_t addresses[LWIP_IPV6_NUM_ADDRESSES];
+    int n_addresses6 = esp_netif_get_all_ip6(netif, &addresses[0]);
+    #else
+    int n_addresses6 = 0;
+    #endif
+    int n_addresses = n_addresses4 + n_addresses6;
+    mp_obj_tuple_t *result = MP_OBJ_TO_PTR(mp_obj_new_tuple(n_addresses, NULL));
+
+    #if CIRCUITPY_SOCKETPOOL_IPV6
+    for (int i = 0; i < n_addresses6; i++) {
+        result->items[i] = espaddr6_to_str(&addresses[i]);
+    }
+    #endif
+
+    if (n_addresses4) {
+        result->items[n_addresses6] = espaddr4_to_str(&ip_info.ip);
+    }
+
+    return MP_OBJ_FROM_PTR(result);
+}
+
+mp_obj_t common_hal_wifi_radio_get_addresses(wifi_radio_obj_t *self) {
+    return common_hal_wifi_radio_get_addresses_netif(self, self->netif);
+}
+
+mp_obj_t common_hal_wifi_radio_get_addresses_ap(wifi_radio_obj_t *self) {
+    return common_hal_wifi_radio_get_addresses_netif(self, self->ap_netif);
+}
+
 uint32_t wifi_radio_get_ipv4_address(wifi_radio_obj_t *self) {
     if (!esp_netif_is_netif_up(self->netif)) {
         return 0;
@@ -493,6 +541,9 @@ mp_obj_t common_hal_wifi_radio_get_ipv4_dns(wifi_radio_obj_t *self) {
 
     esp_netif_get_dns_info(self->netif, ESP_NETIF_DNS_MAIN, &self->dns_info);
 
+    if (self->dns_info.ip.type != ESP_IPADDR_TYPE_V4) {
+        return mp_const_none;
+    }
     // dns_info is of type esp_netif_dns_info_t, which is just ever so slightly
     // different than esp_netif_ip_info_t used for
     // common_hal_wifi_radio_get_ipv4_address (includes both ipv4 and 6),
@@ -506,12 +557,31 @@ void common_hal_wifi_radio_set_ipv4_dns(wifi_radio_obj_t *self, mp_obj_t ipv4_dn
     esp_netif_set_dns_info(self->netif, ESP_NETIF_DNS_MAIN, &dns_addr);
 }
 
-void common_hal_wifi_radio_start_dhcp_client(wifi_radio_obj_t *self) {
-    esp_netif_dhcpc_start(self->netif);
+void common_hal_wifi_radio_start_dhcp_client(wifi_radio_obj_t *self, bool ipv4, bool ipv6) {
+    if (ipv4) {
+        esp_netif_dhcpc_start(self->netif);
+    } else {
+        esp_netif_dhcpc_stop(self->netif);
+    }
+    #if LWIP_IPV6_DHCP6
+    if (ipv6) {
+        esp_netif_create_ip6_linklocal(self->netif);
+        dhcp6_enable_stateless(esp_netif_get_netif_impl(self->netif));
+    } else {
+        dhcp6_disable(esp_netif_get_netif_impl(self->netif));
+    }
+    #else
+    if (ipv6) {
+        mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("%q"), MP_QSTR_ipv6);
+    }
+    #endif
 }
 
 void common_hal_wifi_radio_stop_dhcp_client(wifi_radio_obj_t *self) {
     esp_netif_dhcpc_stop(self->netif);
+    #if LWIP_IPV6_DHCP6
+    dhcp6_disable(esp_netif_get_netif_impl(self->netif));
+    #endif
 }
 
 void common_hal_wifi_radio_start_dhcp_server(wifi_radio_obj_t *self) {
@@ -550,35 +620,94 @@ void common_hal_wifi_radio_set_ipv4_address_ap(wifi_radio_obj_t *self, mp_obj_t 
     common_hal_wifi_radio_start_dhcp_server(self); // restart access point DHCP
 }
 
+static void ping_success_cb(esp_ping_handle_t hdl, void *args) {
+    wifi_radio_obj_t *self = (wifi_radio_obj_t *)args;
+    esp_ping_get_profile(hdl, ESP_PING_PROF_TIMEGAP, &self->ping_elapsed_time, sizeof(self->ping_elapsed_time));
+}
+
 mp_int_t common_hal_wifi_radio_ping(wifi_radio_obj_t *self, mp_obj_t ip_address, mp_float_t timeout) {
     esp_ping_config_t ping_config = ESP_PING_DEFAULT_CONFIG();
     ipaddress_ipaddress_to_esp_idf(ip_address, &ping_config.target_addr);
     ping_config.count = 1;
 
+    // We must fetch ping information using the callback mechanism, because the session storage is freed when
+    // the ping session is done, even before esp_ping_delete_session().
+    esp_ping_callbacks_t ping_callbacks = {
+        .on_ping_success = ping_success_cb,
+        .cb_args = (void *)self,
+    };
+
     size_t timeout_ms = timeout * 1000;
 
+    // ESP-IDF creates a task to do the ping session. It shuts down when done, but only after a one second delay.
+    // Calling common_hal_wifi_radio_ping() too fast will cause resource exhaustion.
     esp_ping_handle_t ping;
-    CHECK_ESP_RESULT(esp_ping_new_session(&ping_config, NULL, &ping));
+    if (esp_ping_new_session(&ping_config, &ping_callbacks, &ping) != ESP_OK) {
+        // Wait for old task to go away and then try again.
+        // Empirical testing shows we have to wait at least two seconds, despite the task
+        // having a one-second timeout.
+        common_hal_time_delay_ms(2000);
+        // Return if interrupted now, to show the interruption as KeyboardInterrupt instead of the
+        // IDF error.
+        if (mp_hal_is_interrupted()) {
+            return (uint32_t)(-1);
+        }
+        CHECK_ESP_RESULT(esp_ping_new_session(&ping_config, &ping_callbacks, &ping));
+    }
+
+    // Use all ones as a flag that the elapsed time was not set (ping failed or timed out).
+    self->ping_elapsed_time = (uint32_t)(-1);
+
     esp_ping_start(ping);
 
-    uint32_t received = 0;
-    uint32_t total_time_ms = 0;
     uint32_t start_time = common_hal_time_monotonic_ms();
-    while (received == 0 && (common_hal_time_monotonic_ms() - start_time < timeout_ms) && !mp_hal_is_interrupted()) {
+    while ((self->ping_elapsed_time == (uint32_t)(-1)) &&
+           (common_hal_time_monotonic_ms() - start_time < timeout_ms) &&
+           !mp_hal_is_interrupted()) {
         RUN_BACKGROUND_TASKS;
-        esp_ping_get_profile(ping, ESP_PING_PROF_DURATION, &total_time_ms, sizeof(total_time_ms));
-        esp_ping_get_profile(ping, ESP_PING_PROF_REPLY, &received, sizeof(received));
     }
-    uint32_t elapsed_time = 0xffffffff;
-    if (received > 0) {
-        esp_ping_get_profile(ping, ESP_PING_PROF_TIMEGAP, &elapsed_time, sizeof(elapsed_time));
-    }
+    esp_ping_stop(ping);
     esp_ping_delete_session(ping);
 
-    return elapsed_time;
+    return (mp_int_t)self->ping_elapsed_time;
 }
 
 void common_hal_wifi_radio_gc_collect(wifi_radio_obj_t *self) {
     // Only bother to scan the actual object references.
     gc_collect_ptr(self->current_scan);
+}
+
+mp_obj_t common_hal_wifi_radio_get_dns(wifi_radio_obj_t *self) {
+    if (!esp_netif_is_netif_up(self->netif)) {
+        return mp_const_empty_tuple;
+    }
+
+    esp_netif_get_dns_info(self->netif, ESP_NETIF_DNS_MAIN, &self->dns_info);
+
+    if (self->dns_info.ip.type == ESP_IPADDR_TYPE_V4 && self->dns_info.ip.u_addr.ip4.addr == INADDR_NONE) {
+        return mp_const_empty_tuple;
+    }
+
+    mp_obj_t args[] = {
+        espaddr_to_str(&self->dns_info.ip),
+    };
+
+    return mp_obj_new_tuple(1, args);
+}
+
+void common_hal_wifi_radio_set_dns(wifi_radio_obj_t *self, mp_obj_t dns_addrs_obj) {
+    mp_int_t len = mp_obj_get_int(mp_obj_len(dns_addrs_obj));
+    mp_arg_validate_length_max(len, 1, MP_QSTR_dns);
+    esp_netif_dns_info_t dns_info;
+    if (len == 0) {
+        // clear DNS server
+        dns_info.ip.type = ESP_IPADDR_TYPE_V4;
+        dns_info.ip.u_addr.ip4.addr = INADDR_NONE;
+    } else {
+        mp_obj_t dns_addr_obj = mp_obj_subscr(dns_addrs_obj, MP_OBJ_NEW_SMALL_INT(0), MP_OBJ_SENTINEL);
+        struct sockaddr_storage addr_storage;
+        socketpool_resolve_host_or_throw(AF_UNSPEC, SOCK_STREAM, mp_obj_str_get_str(dns_addr_obj), &addr_storage, 1);
+        sockaddr_to_espaddr(&addr_storage, &dns_info.ip);
+    }
+    esp_netif_set_dns_info(self->netif, ESP_NETIF_DNS_MAIN, &dns_info);
 }

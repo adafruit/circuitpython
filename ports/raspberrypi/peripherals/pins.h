@@ -1,34 +1,13 @@
-/*
- * This file is part of the Micro Python project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 // DO NOT include this file directly. Use shared-bindings/microcontroller/Pin.h instead to ensure
 // that all necessary includes are already included.
 
-#ifndef MICROPY_INCLUDED_RASPBERRYPI_PERIPHERALS_PINS_H
-#define MICROPY_INCLUDED_RASPBERRYPI_PERIPHERALS_PINS_H
+#pragma once
 
 #include "py/obj.h"
 
@@ -69,11 +48,29 @@ extern const mcu_pin_obj_t pin_GPIO26;
 extern const mcu_pin_obj_t pin_GPIO27;
 extern const mcu_pin_obj_t pin_GPIO28;
 extern const mcu_pin_obj_t pin_GPIO29;
+#if NUM_BANK0_GPIOS == 48
+extern const mcu_pin_obj_t pin_GPIO30;
+extern const mcu_pin_obj_t pin_GPIO31;
+extern const mcu_pin_obj_t pin_GPIO32;
+extern const mcu_pin_obj_t pin_GPIO33;
+extern const mcu_pin_obj_t pin_GPIO34;
+extern const mcu_pin_obj_t pin_GPIO35;
+extern const mcu_pin_obj_t pin_GPIO36;
+extern const mcu_pin_obj_t pin_GPIO37;
+extern const mcu_pin_obj_t pin_GPIO38;
+extern const mcu_pin_obj_t pin_GPIO39;
+extern const mcu_pin_obj_t pin_GPIO40;
+extern const mcu_pin_obj_t pin_GPIO41;
+extern const mcu_pin_obj_t pin_GPIO42;
+extern const mcu_pin_obj_t pin_GPIO43;
+extern const mcu_pin_obj_t pin_GPIO44;
+extern const mcu_pin_obj_t pin_GPIO45;
+extern const mcu_pin_obj_t pin_GPIO46;
+extern const mcu_pin_obj_t pin_GPIO47;
+#endif
 
 #if CIRCUITPY_CYW43
 extern const mcu_pin_obj_t pin_CYW0;
 extern const mcu_pin_obj_t pin_CYW1;
 extern const mcu_pin_obj_t pin_CYW2;
 #endif
-
-#endif  // MICROPY_INCLUDED_RASPBERRYPI_PERIPHERALS_PINS_H

@@ -34,8 +34,8 @@
 #include "shared-bindings/_bleio/PacketBuffer.h"
 #include "shared/runtime/interrupt_char.h"
 #include "common-hal/_bleio/Connection.h"
+#include "supervisor/shared/serial.h"
 #include "supervisor/shared/tick.h"
-#include "supervisor/serial.h"
 
 // List packet buffer of peripheral device
 bleio_packet_buffer_obj_list_t bleio_packet_buffer_list;
@@ -145,7 +145,7 @@ void _common_hal_bleio_packet_buffer_construct(
     uint32_t *outgoing_buffer1,
     uint32_t *outgoing_buffer2,
     size_t max_packet_size,
-    void *static_handler_entry) {
+    ble_event_handler_t static_handler_entry) {
 
     bleio_characteristic_properties_t temp_prop;
     self->characteristic = characteristic;

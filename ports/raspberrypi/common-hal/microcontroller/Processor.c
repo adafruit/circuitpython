@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include <math.h>
 #include <string.h>
@@ -40,9 +20,20 @@
 #include "src/rp2_common/hardware_vreg/include/hardware/vreg.h"
 #include "src/rp2_common/hardware_watchdog/include/hardware/watchdog.h"
 
+#ifdef PICO_RP2040
 #include "src/rp2040/hardware_regs/include/hardware/regs/vreg_and_chip_reset.h"
+#endif
+#ifdef PICO_RP2350
+#include "src/rp2350/hardware_regs/include/hardware/regs/powman.h"
+#endif
 #include "src/rp2040/hardware_regs/include/hardware/regs/watchdog.h"
+
+#ifdef PICO_RP2040
 #include "src/rp2040/hardware_structs/include/hardware/structs/vreg_and_chip_reset.h"
+#endif
+#ifdef PICO_RP2350
+#include "src/rp2350/hardware_structs/include/hardware/structs/powman.h"
+#endif
 #include "src/rp2040/hardware_structs/include/hardware/structs/watchdog.h"
 
 float common_hal_mcu_processor_get_temperature(void) {
@@ -94,6 +85,7 @@ void common_hal_mcu_processor_get_uid(uint8_t raw_id[]) {
 mcu_reset_reason_t common_hal_mcu_processor_get_reset_reason(void) {
     mcu_reset_reason_t reason = RESET_REASON_UNKNOWN;
 
+    #ifdef PICO_RP2040
     uint32_t chip_reset_reg = vreg_and_chip_reset_hw->chip_reset;
 
     if (chip_reset_reg & VREG_AND_CHIP_RESET_CHIP_RESET_HAD_PSM_RESTART_BITS) {
@@ -108,6 +100,26 @@ mcu_reset_reason_t common_hal_mcu_processor_get_reset_reason(void) {
         // NOTE: This register is also used for brownout, but there is no way to differentiate between power on and brown out
         reason = RESET_REASON_POWER_ON;
     }
+    #endif
+    #ifdef PICO_RP2350
+    uint32_t chip_reset_reg = powman_hw->chip_reset;
+
+    if (chip_reset_reg & POWMAN_CHIP_RESET_HAD_RESCUE_BITS) {
+        reason = RESET_REASON_RESCUE_DEBUG;
+    }
+
+    if (chip_reset_reg & POWMAN_CHIP_RESET_HAD_RUN_LOW_BITS) {
+        reason = RESET_REASON_RESET_PIN;
+    }
+
+    if (chip_reset_reg & POWMAN_CHIP_RESET_HAD_BOR_BITS) {
+        reason = RESET_REASON_BROWNOUT;
+    }
+
+    if (chip_reset_reg & POWMAN_CHIP_RESET_HAD_POR_BITS) {
+        reason = RESET_REASON_POWER_ON;
+    }
+    #endif
 
     // Check watchdog after chip reset since watchdog doesn't clear chip_reset, while chip_reset clears the watchdog
 

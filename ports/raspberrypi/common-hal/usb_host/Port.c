@@ -1,38 +1,25 @@
-/*
- * This file is part of the Micro Python project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2022 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2022 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "bindings/rp2pio/StateMachine.h"
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/microcontroller/Processor.h"
 #include "shared-bindings/usb_host/Port.h"
+#include "supervisor/shared/serial.h"
 #include "supervisor/usb.h"
 
 #include "src/common/pico_time/include/pico/time.h"
+#ifdef PICO_RP2040
 #include "src/rp2040/hardware_structs/include/hardware/structs/mpu.h"
-#include "src/rp2_common/cmsis/stub/CMSIS/Device/RaspberryPi/RP2040/Include/RP2040.h"
+#include "src/rp2_common/cmsis/stub/CMSIS/Device/RP2040/Include/RP2040.h"
+#endif
+#ifdef PICO_RP2350
+#include "src/rp2350/hardware_structs/include/hardware/structs/mpu.h"
+#include "src/rp2_common/cmsis/stub/CMSIS/Device/RP2350/Include/RP2350.h"
+#endif
 #include "src/rp2_common/hardware_dma/include/hardware/dma.h"
 #include "src/rp2_common/pico_multicore/include/pico/multicore.h"
 
@@ -43,11 +30,10 @@
 #include "lib/Pico-PIO-USB/src/pio_usb.h"
 #include "lib/Pico-PIO-USB/src/pio_usb_configuration.h"
 
-#include "supervisor/serial.h"
 
 usb_host_port_obj_t usb_host_instance;
 
-STATIC PIO pio_instances[2] = {pio0, pio1};
+static PIO pio_instances[2] = {pio0, pio1};
 volatile bool _core1_ready = false;
 
 static void __not_in_flash_func(core1_main)(void) {
@@ -59,13 +45,21 @@ static void __not_in_flash_func(core1_main)(void) {
 
     // Turn off flash access. After this, it will hard fault. Better than messing
     // up CIRCUITPY.
+    #if __CORTEX_M == 0
     MPU->CTRL = MPU_CTRL_PRIVDEFENA_Msk | MPU_CTRL_ENABLE_Msk;
     MPU->RNR = 6; // 7 is used by pico-sdk stack protection.
-    MPU->RBAR = XIP_MAIN_BASE | MPU_RBAR_VALID_Msk;
+    MPU->RBAR = XIP_BASE | MPU_RBAR_VALID_Msk;
     MPU->RASR = MPU_RASR_XN_Msk | // Set execute never and everything else is restricted.
         MPU_RASR_ENABLE_Msk |
         (0x1b << MPU_RASR_SIZE_Pos);         // Size is 0x10000000 which masks up to SRAM region.
     MPU->RNR = 7;
+    #endif
+    #if __CORTEX_M == 33
+    MPU->CTRL = MPU_CTRL_PRIVDEFENA_Msk | MPU_CTRL_ENABLE_Msk;
+    MPU->RNR = 6; // 7 is used by pico-sdk stack protection.
+    MPU->RBAR = XIP_BASE | MPU_RBAR_XN_Msk;
+    MPU->RLAR = XIP_SRAM_BASE | MPU_RLAR_EN_Msk;
+    #endif
 
     _core1_ready = true;
 
@@ -81,7 +75,7 @@ static void __not_in_flash_func(core1_main)(void) {
     }
 }
 
-STATIC uint8_t _sm_free_count(uint8_t pio_index) {
+static uint8_t _sm_free_count(uint8_t pio_index) {
     PIO pio = pio_instances[pio_index];
     uint8_t free_count = 0;
     for (size_t j = 0; j < NUM_PIO_STATE_MACHINES; j++) {
@@ -92,7 +86,7 @@ STATIC uint8_t _sm_free_count(uint8_t pio_index) {
     return free_count;
 }
 
-STATIC bool _has_program_room(uint8_t pio_index, uint8_t program_size) {
+static bool _has_program_room(uint8_t pio_index, uint8_t program_size) {
     PIO pio = pio_instances[pio_index];
     pio_program_t program_struct = {
         .instructions = NULL,

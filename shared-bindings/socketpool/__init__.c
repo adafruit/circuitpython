@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2020 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2020 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "py/objexcept.h"
 #include "py/objstr.h"
@@ -38,16 +18,31 @@
 //|
 //| For more information about the `socket` module, see the CPython documentation:
 //| https://docs.python.org/3/library/socket.html
+//|
+//| .. jinja
+//|
+//| .. raw:: html
+//|
+//|     <p>
+//|     <details>
+//|     <summary>AF_INET6 (IPv6) supported on these boards</summary>
+//|     <ul>
+//|     {% for board in support_matrix_reverse["socketpool.socketpool.AF_INET6"] %}
+//|     <li> {{ board }}
+//|     {% endfor %}
+//|     </ul>
+//|     </details>
+//|     </p>
 //| """
 
-STATIC const mp_rom_map_elem_t socketpool_globals_table[] = {
+static const mp_rom_map_elem_t socketpool_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_socketpool) },
 
     { MP_ROM_QSTR(MP_QSTR_SocketPool), MP_ROM_PTR(&socketpool_socketpool_type) },
     { MP_ROM_QSTR(MP_QSTR_Socket), MP_ROM_PTR(&socketpool_socket_type) },
 };
 
-STATIC MP_DEFINE_CONST_DICT(socketpool_globals, socketpool_globals_table);
+static MP_DEFINE_CONST_DICT(socketpool_globals, socketpool_globals_table);
 
 const mp_obj_module_t socketpool_module = {
     .base = { &mp_type_module },

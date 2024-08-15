@@ -112,11 +112,12 @@ msgstr ""
 #: ports/espressif/common-hal/espulp/ULP.c
 #: ports/mimxrt10xx/common-hal/audiobusio/__init__.c
 #: ports/mimxrt10xx/common-hal/usb_host/Port.c
-#: ports/raspberrypi/common-hal/picodvi/Framebuffer.c
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2350.c
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 #: ports/raspberrypi/common-hal/usb_host/Port.c
 #: shared-bindings/digitalio/DigitalInOut.c
-#: shared-bindings/microcontroller/Pin.c
+#: shared-bindings/microcontroller/Pin.c shared-module/max3421e/Max3421E.c
 msgid "%q in use"
 msgstr "%q sedang digunakan"
 
@@ -156,7 +157,7 @@ msgstr ""
 msgid "%q length must be >= %d"
 msgstr ""
 
-#: py/objmodule.c py/runtime.c
+#: py/modsys.c py/objmodule.c py/runtime.c
 msgid "%q moved from %q to %q"
 msgstr ""
 
@@ -511,7 +512,8 @@ msgstr ""
 msgid "All event channels in use"
 msgstr "Semua channel event sedang digunakan"
 
-#: ports/raspberrypi/common-hal/picodvi/Framebuffer.c
+#: ports/raspberrypi/common-hal/floppyio/__init__.c
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 #: ports/raspberrypi/common-hal/usb_host/Port.c
 msgid "All state machines in use"
@@ -521,7 +523,7 @@ msgstr ""
 msgid "All sync event channels in use"
 msgstr "Semua channel event yang disinkronisasi sedang digunakan"
 
-#: ports/raspberrypi/common-hal/picodvi/Framebuffer.c
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
 msgid "All timers for this pin are in use"
 msgstr "Semua timer untuk pin ini sedang digunakan"
 
@@ -1121,10 +1123,12 @@ msgstr ""
 msgid "Input/output error"
 msgstr "Kesalahan input/output"
 
+#: ports/espressif/common-hal/_bleio/__init__.c
 #: ports/nordic/common-hal/_bleio/__init__.c
 msgid "Insufficient authentication"
 msgstr "Otentikasi tidak cukup"
 
+#: ports/espressif/common-hal/_bleio/__init__.c
 #: ports/nordic/common-hal/_bleio/__init__.c
 msgid "Insufficient encryption"
 msgstr "Enkripsi tidak cukup"
@@ -1161,10 +1165,13 @@ msgstr "Kesalahan internal #%d"
 #: ports/atmel-samd/common-hal/alarm/pin/PinAlarm.c
 #: ports/atmel-samd/common-hal/countio/Counter.c
 #: ports/atmel-samd/common-hal/frequencyio/FrequencyIn.c
+#: ports/atmel-samd/common-hal/max3421e/Max3421E.c
 #: ports/atmel-samd/common-hal/ps2io/Ps2.c
 #: ports/atmel-samd/common-hal/pulseio/PulseIn.c
 #: ports/atmel-samd/common-hal/rotaryio/IncrementalEncoder.c
-#: ports/cxd56/common-hal/pulseio/PulseIn.c shared-bindings/pwmio/PWMOut.c
+#: ports/cxd56/common-hal/pulseio/PulseIn.c
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2350.c
+#: shared-bindings/pwmio/PWMOut.c
 msgid "Internal resource(s) in use"
 msgstr ""
 
@@ -1180,13 +1187,21 @@ msgstr ""
 msgid "Interrupted by output function"
 msgstr ""
 
+#: ports/espressif/common-hal/espulp/ULP.c
+#: ports/espressif/common-hal/microcontroller/Processor.c
 #: ports/mimxrt10xx/common-hal/audiobusio/__init__.c
 #: ports/mimxrt10xx/common-hal/pwmio/PWMOut.c
 #: ports/raspberrypi/bindings/picodvi/Framebuffer.c
-#: ports/raspberrypi/common-hal/picodvi/Framebuffer.c py/argcheck.c
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c py/argcheck.c
 #: shared-bindings/digitalio/DigitalInOut.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c shared-bindings/pwmio/PWMOut.c
+#: shared-module/aurora_epaper/aurora_framebuffer.c
 msgid "Invalid %q"
+msgstr ""
+
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2350.c
+#: shared-module/aurora_epaper/aurora_framebuffer.c
+msgid "Invalid %q and %q"
 msgstr ""
 
 #: ports/atmel-samd/common-hal/microcontroller/Pin.c
@@ -1287,8 +1302,16 @@ msgstr ""
 msgid "Layer must be a Group or TileGrid subclass"
 msgstr ""
 
+#: shared-bindings/audiocore/RawSample.c
+msgid "Length of %q must be an even multiple of channel_count * type_size"
+msgstr ""
+
 #: ports/espressif/common-hal/espidf/__init__.c
 msgid "MAC address was invalid"
+msgstr ""
+
+#: ports/espressif/common-hal/_bleio/Characteristic.c
+msgid "MITM security not supported"
 msgstr ""
 
 #: shared-bindings/is31fl3741/IS31FL3741.c
@@ -1557,7 +1580,6 @@ msgstr ""
 msgid "Only IPv4 addresses supported"
 msgstr "Hanya alamat IPv4 yang didukung"
 
-#: ports/espressif/common-hal/socketpool/Socket.c
 #: ports/raspberrypi/common-hal/socketpool/Socket.c
 msgid "Only IPv4 sockets supported"
 msgstr "Hanysa socket IPv4 yang didukung"
@@ -2018,6 +2040,10 @@ msgstr ""
 msgid "Too many channels in sample."
 msgstr "Terlalu banyak channel dalam sampel"
 
+#: ports/espressif/common-hal/_bleio/Characteristic.c
+msgid "Too many descriptors"
+msgstr ""
+
 #: shared-module/displayio/__init__.c
 msgid "Too many display busses; forgot displayio.release_displays() ?"
 msgstr ""
@@ -2157,6 +2183,7 @@ msgstr ""
 msgid "Unknown BLE error: %d"
 msgstr ""
 
+#: ports/espressif/common-hal/max3421e/Max3421E.c
 #: ports/raspberrypi/common-hal/wifi/__init__.c
 #, c-format
 msgid "Unknown error code %d"
@@ -2227,8 +2254,13 @@ msgstr "Format tidak didukung"
 msgid "Unsupported hash algorithm"
 msgstr ""
 
+#: ports/espressif/common-hal/socketpool/Socket.c
+msgid "Unsupported socket type"
+msgstr ""
+
+#: ports/espressif/common-hal/_bleio/Adapter.c
 #: ports/espressif/common-hal/dualbank/__init__.c
-msgid "Update Failed"
+msgid "Update failed"
 msgstr ""
 
 #: ports/espressif/common-hal/_bleio/Characteristic.c
@@ -2328,6 +2360,7 @@ msgid "You pressed the SW38 button at start up."
 msgstr ""
 
 #: ports/espressif/boards/hardkernel_odroid_go/mpconfigboard.h
+#: ports/espressif/boards/vidi_x/mpconfigboard.h
 msgid "You pressed the VOLUME button at start up."
 msgstr ""
 
@@ -3830,7 +3863,7 @@ msgstr "Muncul dari PulseIn yang kosong"
 msgid "pop from empty %q"
 msgstr ""
 
-#: shared-bindings/socketpool/Socket.c shared-bindings/ssl/SSLSocket.c
+#: shared-bindings/socketpool/Socket.c
 msgid "port must be >= 0"
 msgstr ""
 
@@ -4049,6 +4082,15 @@ msgstr ""
 
 #: ports/nordic/common-hal/_bleio/Adapter.c
 msgid "timeout must be < 655.35 secs"
+msgstr ""
+
+#: ports/raspberrypi/common-hal/floppyio/__init__.c
+msgid "timeout waiting for flux"
+msgstr ""
+
+#: ports/raspberrypi/common-hal/floppyio/__init__.c
+#: shared-module/floppyio/__init__.c
+msgid "timeout waiting for index pulse"
 msgstr ""
 
 #: shared-module/sdcardio/SDCard.c

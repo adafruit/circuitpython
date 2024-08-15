@@ -1,28 +1,8 @@
-/*
- * This file is part of the Micro Python project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2021 Dan Halbert for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2021 Dan Halbert for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "shared-bindings/keypad/Event.h"
 #include "shared-bindings/keypad/EventQueue.h"
@@ -37,6 +17,7 @@ void common_hal_keypad_eventqueue_construct(keypad_eventqueue_obj_t *self, size_
     // Event queue is 16-bit values.
     ringbuf_alloc(&self->encoded_events, max_events * (sizeof(uint16_t) + sizeof(mp_obj_t)));
     self->overflowed = false;
+    self->event_handler = NULL;
 }
 
 bool common_hal_keypad_eventqueue_get_into(keypad_eventqueue_obj_t *self, keypad_event_obj_t *event) {
@@ -79,6 +60,10 @@ size_t common_hal_keypad_eventqueue_get_length(keypad_eventqueue_obj_t *self) {
     return ringbuf_num_filled(&self->encoded_events);
 }
 
+void common_hal_keypad_eventqueue_set_event_handler(keypad_eventqueue_obj_t *self, void (*event_handler)(keypad_eventqueue_obj_t *)) {
+    self->event_handler = event_handler;
+}
+
 bool keypad_eventqueue_record(keypad_eventqueue_obj_t *self, mp_uint_t key_number, bool pressed, mp_obj_t timestamp) {
     if (ringbuf_num_empty(&self->encoded_events) == 0) {
         // Queue is full. Set the overflow flag. The caller will decide what else to do.
@@ -92,6 +77,10 @@ bool keypad_eventqueue_record(keypad_eventqueue_obj_t *self, mp_uint_t key_numbe
     }
     ringbuf_put16(&self->encoded_events, encoded_event);
     ringbuf_put_n(&self->encoded_events, (uint8_t *)&timestamp, sizeof(mp_obj_t));
+
+    if (self->event_handler) {
+        self->event_handler(self);
+    }
 
     return true;
 }

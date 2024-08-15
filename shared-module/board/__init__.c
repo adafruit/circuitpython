@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2018 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2018 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "shared-bindings/board/__init__.h"
 #include "shared-bindings/microcontroller/Pin.h"
@@ -43,6 +23,11 @@
 #if CIRCUITPY_SHARPDISPLAY
 #include "shared-bindings/sharpdisplay/SharpMemoryFramebuffer.h"
 #include "shared-module/sharpdisplay/SharpMemoryFramebuffer.h"
+#endif
+
+#if CIRCUITPY_AURORA_EPAPER
+#include "shared-bindings/aurora_epaper/aurora_framebuffer.h"
+#include "shared-module/aurora_epaper/aurora_framebuffer.h"
 #endif
 
 #if CIRCUITPY_BOARD_I2C
@@ -211,7 +196,7 @@ void reset_board_buses(void) {
     #if CIRCUITPY_BOARD_SPI
     for (uint8_t instance = 0; instance < CIRCUITPY_BOARD_SPI; instance++) {
         bool display_using_spi = false;
-        #if CIRCUITPY_FOURWIRE || CIRCUITPY_SHARPDISPLAY
+        #if CIRCUITPY_FOURWIRE || CIRCUITPY_SHARPDISPLAY || CIRCUITPY_AURORA_EPAPER
         for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
             mp_const_obj_t bus_type = display_buses[i].bus_base.type;
             #if CIRCUITPY_FOURWIRE
@@ -226,11 +211,15 @@ void reset_board_buses(void) {
                 break;
             }
             #endif
+            #if CIRCUITPY_AURORA_EPAPER
+            if (bus_type == &aurora_epaper_framebuffer_type && display_buses[i].aurora_epaper.bus == &spi_obj[instance]) {
+                display_using_spi = true;
+                break;
+            }
+            #endif
         }
         #endif
         if (spi_obj_created[instance]) {
-            // make sure SPI lock is not held over a soft reset
-            common_hal_busio_spi_unlock(&spi_obj[instance]);
             if (!display_using_spi) {
                 common_hal_busio_spi_deinit(&spi_obj[instance]);
                 spi_obj_created[instance] = false;

@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2021 microDev
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2021 microDev
+//
+// SPDX-License-Identifier: MIT
 
 #include "shared-bindings/busio/UART.h"
 
@@ -62,15 +42,39 @@ void never_reset_uart(uint8_t num) {
     uart_status[num] = STATUS_NEVER_RESET;
 }
 
+static void pin_check(const uint8_t uart, const mcu_pin_obj_t *pin, const uint8_t pin_type) {
+    if (pin == NULL) {
+        return;
+    }
+    uint8_t pins_uart = (pin->number + 4) / 8 % NUM_UARTS;
+    if (pins_uart != uart) {
+        raise_ValueError_invalid_pins();
+    }
+    #ifdef PICO_RP2350
+    if ((pin_type == 0 && pin->number % 4 == 2) ||
+        (pin_type == 1 && pin->number % 4 == 3)) {
+        return;
+    }
+    #endif
+    if ((pin->number % 4) != pin_type) {
+        raise_ValueError_invalid_pins();
+    }
+}
+
 static uint8_t pin_init(const uint8_t uart, const mcu_pin_obj_t *pin, const uint8_t pin_type) {
     if (pin == NULL) {
         return NO_PIN;
     }
-    if (!(((pin->number % 4) == pin_type) && ((((pin->number + 4) / 8) % NUM_UARTS) == uart))) {
-        raise_ValueError_invalid_pins();
-    }
     claim_pin(pin);
-    gpio_set_function(pin->number, GPIO_FUNC_UART);
+    gpio_function_t function = GPIO_FUNC_UART;
+    #ifdef PICO_RP2350
+    if ((pin_type == 0 && pin->number % 4 == 2) ||
+        (pin_type == 1 && pin->number % 4 == 3)) {
+        function = GPIO_FUNC_UART_AUX;
+    }
+    #endif
+
+    gpio_set_function(pin->number, function);
     return pin->number;
 }
 
@@ -110,10 +114,15 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
 
     uint8_t uart_id = ((((tx != NULL) ? tx->number : rx->number) + 4) / 8) % NUM_UARTS;
 
+    pin_check(uart_id, tx, 0);
+    pin_check(uart_id, rx, 1);
+    pin_check(uart_id, cts, 2);
+    pin_check(uart_id, rts, 3);
+
     if (uart_status[uart_id] != STATUS_FREE) {
         mp_raise_ValueError(MP_ERROR_TEXT("UART peripheral in use"));
     }
-    // These may raise exceptions if pins are already in use.
+
     self->tx_pin = pin_init(uart_id, tx, 0);
     self->rx_pin = pin_init(uart_id, rx, 1);
     self->cts_pin = pin_init(uart_id, cts, 2);
@@ -131,7 +140,7 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
         gpio_disable_pulls(pin);
 
         // Turn on "strong" pin driving (more current available).
-        hw_write_masked(&padsbank0_hw->io[pin],
+        hw_write_masked(&pads_bank0_hw->io[pin],
             PADS_BANK0_GPIO0_DRIVE_VALUE_12MA << PADS_BANK0_GPIO0_DRIVE_LSB,
                 PADS_BANK0_GPIO0_DRIVE_BITS);
 
@@ -334,7 +343,7 @@ bool common_hal_busio_uart_ready_to_tx(busio_uart_obj_t *self) {
     return uart_is_writable(self->uart);
 }
 
-STATIC void pin_never_reset(uint8_t pin) {
+static void pin_never_reset(uint8_t pin) {
     if (pin != NO_PIN) {
         never_reset_pin_number(pin);
     }

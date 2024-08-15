@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2020 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2020 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "supervisor/port.h"
 #include "shared-bindings/wifi/Radio.h"
@@ -41,6 +21,7 @@
 #include "shared-bindings/wifi/AuthMode.h"
 #include "shared-bindings/time/__init__.h"
 #include "shared-module/ipaddress/__init__.h"
+#include "common-hal/socketpool/__init__.h"
 
 #include "lwip/sys.h"
 #include "lwip/dns.h"
@@ -425,8 +406,15 @@ void common_hal_wifi_radio_set_ipv4_dns(wifi_radio_obj_t *self, mp_obj_t ipv4_dn
     dns_setserver(0, &addr);
 }
 
-void common_hal_wifi_radio_start_dhcp_client(wifi_radio_obj_t *self) {
-    dhcp_start(NETIF_STA);
+void common_hal_wifi_radio_start_dhcp_client(wifi_radio_obj_t *self, bool ipv4, bool ipv6) {
+    if (ipv4) {
+        dhcp_start(NETIF_STA);
+    } else {
+        dhcp_stop(NETIF_STA);
+    }
+    if (ipv6) {
+        mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("%q"), MP_QSTR_ipv6);
+    }
 }
 
 void common_hal_wifi_radio_stop_dhcp_client(wifi_radio_obj_t *self) {
@@ -501,7 +489,11 @@ ping_recv(void *arg, struct raw_pcb *pcb, struct pbuf *p, const ip_addr_t *addr)
 mp_int_t common_hal_wifi_radio_ping(wifi_radio_obj_t *self, mp_obj_t ip_address, mp_float_t timeout) {
     ping_time = sys_now();
     ip_addr_t ping_addr;
-    ipaddress_ipaddress_to_lwip(ip_address, &ping_addr);
+    if (mp_obj_is_str(ip_address)) {
+        socketpool_resolve_host_raise(mp_obj_str_get_str(ip_address), &ping_addr);
+    } else {
+        ipaddress_ipaddress_to_lwip(ip_address, &ping_addr);
+    }
 
     struct raw_pcb *ping_pcb;
     MICROPY_PY_LWIP_ENTER
@@ -541,4 +533,48 @@ mp_int_t common_hal_wifi_radio_ping(wifi_radio_obj_t *self, mp_obj_t ip_address,
 void common_hal_wifi_radio_gc_collect(wifi_radio_obj_t *self) {
     // Only bother to scan the actual object references.
     gc_collect_ptr(self->current_scan);
+}
+
+mp_obj_t common_hal_wifi_radio_get_addresses(wifi_radio_obj_t *self) {
+    if (cyw43_tcpip_link_status(&cyw43_state, CYW43_ITF_STA) != CYW43_LINK_UP) {
+        return mp_const_empty_tuple;
+    }
+    mp_obj_t args[] = {
+        socketpool_ip_addr_to_str(&NETIF_STA->ip_addr),
+    };
+    return mp_obj_new_tuple(1, args);
+}
+
+mp_obj_t common_hal_wifi_radio_get_addresses_ap(wifi_radio_obj_t *self) {
+    if (cyw43_tcpip_link_status(&cyw43_state, CYW43_ITF_AP) != CYW43_LINK_UP) {
+        return mp_const_empty_tuple;
+    }
+    mp_obj_t args[] = {
+        socketpool_ip_addr_to_str(&NETIF_AP->ip_addr),
+    };
+    return mp_obj_new_tuple(MP_ARRAY_SIZE(args), args);
+}
+
+mp_obj_t common_hal_wifi_radio_get_dns(wifi_radio_obj_t *self) {
+    const ip_addr_t *dns_addr = dns_getserver(0);
+    if (cyw43_tcpip_link_status(&cyw43_state, CYW43_ITF_STA) != CYW43_LINK_UP || dns_addr->addr == 0) {
+        return mp_const_empty_tuple;
+    }
+    mp_obj_t args[] = {
+        socketpool_ip_addr_to_str(dns_addr),
+    };
+    return mp_obj_new_tuple(MP_ARRAY_SIZE(args), args);
+}
+
+void common_hal_wifi_radio_set_dns(wifi_radio_obj_t *self, mp_obj_t dns_addrs_obj) {
+    mp_int_t len = mp_obj_get_int(mp_obj_len(dns_addrs_obj));
+    mp_arg_validate_length_max(len, 1, MP_QSTR_dns);
+    ip_addr_t addr;
+    if (len == 0) {
+        addr.addr = IPADDR_NONE;
+    } else {
+        mp_obj_t dns_addr_obj = mp_obj_subscr(dns_addrs_obj, MP_OBJ_NEW_SMALL_INT(0), MP_OBJ_SENTINEL);
+        socketpool_resolve_host_raise(dns_addr_obj, &addr);
+    }
+    dns_setserver(0, &addr);
 }

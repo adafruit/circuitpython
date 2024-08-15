@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2018 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2018 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "shared-bindings/fourwire/FourWire.h"
 
@@ -47,8 +27,6 @@ void common_hal_fourwire_fourwire_construct(fourwire_fourwire_obj_t *self,
     self->polarity = polarity;
     self->phase = phase;
 
-    common_hal_digitalio_digitalinout_construct(&self->chip_select, chip_select);
-    common_hal_digitalio_digitalinout_switch_to_output(&self->chip_select, true, DRIVE_MODE_PUSH_PULL);
 
     self->command.base.type = &mp_type_NoneType;
     if (command != NULL) {
@@ -66,7 +44,14 @@ void common_hal_fourwire_fourwire_construct(fourwire_fourwire_obj_t *self,
         common_hal_fourwire_fourwire_reset(self);
     }
 
-    common_hal_never_reset_pin(chip_select);
+    self->chip_select.base.type = &mp_type_NoneType;
+    if (chip_select != NULL) {
+        self->chip_select.base.type = &digitalio_digitalinout_type;
+        common_hal_digitalio_digitalinout_construct(&self->chip_select, chip_select);
+        common_hal_digitalio_digitalinout_switch_to_output(&self->chip_select, true, DRIVE_MODE_PUSH_PULL);
+        common_hal_never_reset_pin(chip_select);
+    }
+
 }
 
 void common_hal_fourwire_fourwire_deinit(fourwire_fourwire_obj_t *self) {
@@ -107,7 +92,9 @@ bool common_hal_fourwire_fourwire_begin_transaction(mp_obj_t obj) {
     }
     common_hal_busio_spi_configure(self->bus, self->frequency, self->polarity,
         self->phase, 8);
-    common_hal_digitalio_digitalinout_set_value(&self->chip_select, false);
+    if (self->chip_select.base.type != &mp_type_NoneType) {
+        common_hal_digitalio_digitalinout_set_value(&self->chip_select, false);
+    }
     return true;
 }
 
@@ -146,10 +133,12 @@ void common_hal_fourwire_fourwire_send(mp_obj_t obj, display_byte_type_t data_ty
         if (bits > 0) {
             buffer = buffer << (8 - bits);
             common_hal_busio_spi_write(self->bus, &buffer, 1);
-            // toggle CS to discard superfluous bits
-            common_hal_digitalio_digitalinout_set_value(&self->chip_select, true);
-            common_hal_mcu_delay_us(1);
-            common_hal_digitalio_digitalinout_set_value(&self->chip_select, false);
+            if (self->chip_select.base.type != &mp_type_NoneType) {
+                // toggle CS to discard superfluous bits
+                common_hal_digitalio_digitalinout_set_value(&self->chip_select, true);
+                common_hal_mcu_delay_us(1);
+                common_hal_digitalio_digitalinout_set_value(&self->chip_select, false);
+            }
         }
     } else {
         common_hal_digitalio_digitalinout_set_value(&self->command, data_type == DISPLAY_DATA);
@@ -158,9 +147,11 @@ void common_hal_fourwire_fourwire_send(mp_obj_t obj, display_byte_type_t data_ty
             // IC latches commands based on it.
             for (size_t i = 0; i < data_length; i++) {
                 common_hal_busio_spi_write(self->bus, &data[i], 1);
-                common_hal_digitalio_digitalinout_set_value(&self->chip_select, true);
-                common_hal_mcu_delay_us(1);
-                common_hal_digitalio_digitalinout_set_value(&self->chip_select, false);
+                if (self->chip_select.base.type != &mp_type_NoneType) {
+                    common_hal_digitalio_digitalinout_set_value(&self->chip_select, true);
+                    common_hal_mcu_delay_us(1);
+                    common_hal_digitalio_digitalinout_set_value(&self->chip_select, false);
+                }
             }
         } else {
             common_hal_busio_spi_write(self->bus, data, data_length);
@@ -170,7 +161,9 @@ void common_hal_fourwire_fourwire_send(mp_obj_t obj, display_byte_type_t data_ty
 
 void common_hal_fourwire_fourwire_end_transaction(mp_obj_t obj) {
     fourwire_fourwire_obj_t *self = MP_OBJ_TO_PTR(obj);
-    common_hal_digitalio_digitalinout_set_value(&self->chip_select, true);
+    if (self->chip_select.base.type != &mp_type_NoneType) {
+        common_hal_digitalio_digitalinout_set_value(&self->chip_select, true);
+    }
     common_hal_busio_spi_unlock(self->bus);
 }
 

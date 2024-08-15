@@ -1,29 +1,9 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2020 microDev
- * Copyright (c) 2023 Bob Abeles
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2020 microDev
+// SPDX-FileCopyrightText: Copyright (c) 2023 Bob Abeles
+//
+// SPDX-License-Identifier: MIT
 
 #include <string.h>
 
@@ -34,6 +14,7 @@
 #include "hardware/regs/addressmap.h"
 
 // RP2 address map ranges, must be arranged in order by ascending start address
+#ifdef PICO_RP2040
 addressmap_rp2_range_t rp2_ranges[] = {
     {(uint8_t *)ROM_BASE,           0x00004000, ROM},        // boot ROM
     {(uint8_t *)XIP_BASE,           0x00100000, XIP},        // XIP normal cache operation
@@ -54,6 +35,28 @@ addressmap_rp2_range_t rp2_ranges[] = {
     {(uint8_t *)SIO_BASE,           0x00001000, IO},         // SIO registers, no aliases
     {(uint8_t *)PPB_BASE,           0x00004000, IO}          // PPB registers
 };
+#endif
+#ifdef PICO_RP2350
+addressmap_rp2_range_t rp2_ranges[] = {
+    {(uint8_t *)ROM_BASE,           0x00004000, ROM},        // boot ROM
+    {(uint8_t *)XIP_BASE,           0x00100000, XIP},        // XIP normal cache operation
+    {(uint8_t *)XIP_NOCACHE_NOALLOC_BASE, 0x00100000, XIP},  // XIP bypass cache completely
+    {(uint8_t *)XIP_MAINTENANCE_BASE,     0x00100000, XIP},  // XIP cache maintenance based on lower 3 address bits. Data is ignored
+    {(uint8_t *)XIP_NOCACHE_NOALLOC_NOTRANSLATE_BASE, 0x00100000, XIP},  // XIP skip cache and address translation
+    {(uint8_t *)SRAM_BASE,          SRAM_END - SRAM_BASE, SRAM},       // SRAM 256KB striped plus 16KB contiguous
+    {(uint8_t *)SYSINFO_BASE,       0x00070000, IO},         // APB peripherals
+    {(uint8_t *)XIP_CTRL_BASE,      0x00004000, IO},         // XIP control registers
+    {(uint8_t *)XIP_QMI_BASE,       0x00004000, IO},         // XIP QMI registers
+    {(uint8_t *)DMA_BASE,           0x00004000, IO},         // DMA registers
+    {(uint8_t *)USBCTRL_DPRAM_BASE, 0x00001000, SRAM},       // USB DPSRAM 4KB
+    {(uint8_t *)USBCTRL_REGS_BASE,  0x00004000, IO},         // USB registers
+    {(uint8_t *)PIO0_BASE,          0x00004000, IO},         // PIO0 registers
+    {(uint8_t *)PIO1_BASE,          0x00004000, IO},         // PIO1 registers
+    {(uint8_t *)PIO2_BASE,          0x00004000, IO},         // PIO2 registers
+    {(uint8_t *)SIO_BASE,           0x00001000, IO},         // SIO registers, no aliases
+    {(uint8_t *)PPB_BASE,           0x00004000, IO}          // PPB registers
+};
+#endif
 
 void common_hal_memorymap_addressrange_construct(memorymap_addressrange_obj_t *self,
     uint8_t *start_address, size_t length) {

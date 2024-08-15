@@ -1,28 +1,8 @@
-/*
- * This file is part of the Micro Python project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2018 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2018 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include <string.h>
 
@@ -54,6 +34,11 @@
 #include "shared-module/sharpdisplay/SharpMemoryFramebuffer.h"
 #endif
 
+#if CIRCUITPY_AURORA_EPAPER
+#include "shared-bindings/aurora_epaper/aurora_framebuffer.h"
+#include "shared-module/aurora_epaper/aurora_framebuffer.h"
+#endif
+
 #ifdef BOARD_USE_INTERNAL_SPI
 #include "supervisor/spi_flash_api.h"
 #endif
@@ -74,8 +59,8 @@ displayio_buffer_transform_t null_transform = {
     .transpose_xy = false
 };
 
-#if CIRCUITPY_RGBMATRIX || CIRCUITPY_IS31FL3741 || CIRCUITPY_VIDEOCORE
-STATIC bool any_display_uses_this_framebuffer(mp_obj_base_t *obj) {
+#if CIRCUITPY_RGBMATRIX || CIRCUITPY_IS31FL3741 || CIRCUITPY_VIDEOCORE || CIRCUITPY_PICODVI
+static bool any_display_uses_this_framebuffer(mp_obj_base_t *obj) {
     for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
         if (displays[i].display_base.type == &framebufferio_framebufferdisplay_type) {
             framebufferio_framebufferdisplay_obj_t *display = &displays[i].framebuffer_display;
@@ -313,6 +298,17 @@ void reset_displays(void) {
                 common_hal_picodvi_framebuffer_deinit(vc);
             }
         #endif
+        #if CIRCUITPY_AURORA_EPAPER
+        } else if (display_bus_type == &aurora_framebuffer_type) {
+            #if CIRCUITPY_BOARD_SPI
+            aurora_epaper_framebuffer_obj_t *aurora = &display_buses[i].aurora_epaper;
+            if (common_hal_board_is_spi(aurora->bus)) {
+                common_hal_aurora_epaper_framebuffer_set_free_bus(false);
+            }
+            #endif
+            // Set to None, gets deinit'd up by display_base
+            display_buses[i].bus_base.type = &mp_type_NoneType;
+        #endif
         } else {
             // Not an active display bus.
             continue;
@@ -361,6 +357,11 @@ void displayio_gc_collect(void) {
         #if CIRCUITPY_SHARPDISPLAY
         if (display_bus_type == &sharpdisplay_framebuffer_type) {
             common_hal_sharpdisplay_framebuffer_collect_ptrs(&display_buses[i].sharpdisplay);
+        }
+        #endif
+        #if CIRCUITPY_AURORA_EPAPER
+        if (display_bus_type == &aurora_framebuffer_type) {
+            common_hal_aurora_epaper_framebuffer_collect_ptrs(&display_buses[i].aurora_epaper);
         }
         #endif
     }

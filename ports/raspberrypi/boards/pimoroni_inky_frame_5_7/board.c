@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "supervisor/board.h"
 
@@ -33,14 +13,17 @@
 #include "shared-module/displayio/__init__.h"
 #include "shared-bindings/board/__init__.h"
 #include "supervisor/shared/board.h"
+#include "inky-shared.h"
 
 #define DELAY 0x80
+
+digitalio_digitalinout_obj_t enable_pin_obj;
 
 // This is an SPD1656 control chip. The display is a 5.7" ACeP EInk.
 
 const uint8_t display_start_sequence[] = {
     0x01, 4, 0x37, 0x00, 0x23, 0x23, // power setting
-    0x00, 2, 0xef, 0x08, // panel setting (PSR)
+    0x00, 2, 0xe3, 0x08, // panel setting (PSR, 0xe3: no rotation)
     0x03, 1, 0x00, // PFS
     0x06, 3, 0xc7, 0xc7, 0x1d, // booster
     0x30, 1, 0x3c, // PLL setting
@@ -62,6 +45,13 @@ const uint8_t refresh_sequence[] = {
 };
 
 void board_init(void) {
+    // Drive the EN_3V3 pin high so the board stays awake on battery power
+    enable_pin_obj.base.type = &digitalio_digitalinout_type;
+    common_hal_digitalio_digitalinout_construct(&enable_pin_obj, &pin_GPIO2);
+    common_hal_digitalio_digitalinout_switch_to_output(&enable_pin_obj, true, DRIVE_MODE_PUSH_PULL);
+
+    // Never reset
+    common_hal_digitalio_digitalinout_never_reset(&enable_pin_obj);
     fourwire_fourwire_obj_t *bus = &allocate_display_bus()->fourwire_bus;
     busio_spi_obj_t *spi = common_hal_board_create_spi(0);
 
@@ -89,7 +79,7 @@ void board_init(void) {
         480,  // ram_height
         0,  // colstart
         0,  // rowstart
-        180,  // rotation
+        0,  // rotation
         NO_COMMAND,  // set_column_window_command
         NO_COMMAND,  // set_row_window_command
         NO_COMMAND,  // set_current_column_command
@@ -103,7 +93,7 @@ void board_init(void) {
         28.0,  // refresh_time
         NULL,  // busy_pin
         false,  // busy_state
-        30.0, // seconds_per_frame
+        40.0, // seconds_per_frame
         false,  // always_toggle_chip_select
         false, // grayscale
         true, // acep

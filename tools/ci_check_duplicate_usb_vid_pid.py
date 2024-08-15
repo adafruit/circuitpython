@@ -54,8 +54,9 @@ DEFAULT_CLUSTERLIST = {
         "espressif_esp32s3_devkitc_1_n8",
         "espressif_esp32s3_devkitc_1_n8r2",
         "espressif_esp32s3_devkitc_1_n8r8",
-        "espressif_esp32s3_devkitc_1_n32r8",
         "espressif_esp32s3_devkitc_1_n8r8_hacktablet",
+        "espressif_esp32s3_devkitc_1_n16",
+        "espressif_esp32s3_devkitc_1_n32r8",
     ],
     "0x303A:0x7009": [
         "espressif_esp32s2_devkitc_1_n4",
@@ -66,6 +67,7 @@ DEFAULT_CLUSTERLIST = {
     "0x303A:0x8166": ["yd_esp32_s3_n8r8", "yd_esp32_s3_n16r8"],
     "0x2341:0x056B": ["arduino_nano_esp32s3", "arduino_nano_esp32s3_inverted_statusled"],
     "0x2E8A:0x1020": ["waveshare_rp2040_plus_4mb", "waveshare_rp2040_plus_16mb"],
+    "0x2341:0x805A": ["arduino_nano_33_ble", "arduino_nano_33_ble_rev2"],
 }
 
 cli_parser = argparse.ArgumentParser(
@@ -96,7 +98,8 @@ def check_vid_pid(files, clusterlist):
     """
 
     usb_pattern = re.compile(
-        r"^CIRCUITPY_USB\s*=\s*0$|^IDF_TARGET = (esp32|esp32c3|esp32c6|esp32h2)$", flags=re.M
+        r"^CIRCUITPY_USB_DEVICE\s*=\s*0$|^IDF_TARGET = (esp32|esp32c2|esp32c3|esp32c6|esp32h2)$|^MCU_SERIES = MG24$",
+        flags=re.M,
     )
 
     usb_ids = defaultdict(set)
@@ -109,6 +112,10 @@ def check_vid_pid(files, clusterlist):
         creation = CREATION_PATTERN.search(src_text)
         non_usb = usb_pattern.search(src_text)
         board_name = board_config.parts[-2]
+        port_name = board_config.parts[-4]
+
+        if port_name == "renode":
+            continue
 
         if usb_vid and usb_pid:
             id_group = f"0x{int(usb_vid.group(1), 16):04X}:0x{int(usb_pid.group(1), 16):04X}"

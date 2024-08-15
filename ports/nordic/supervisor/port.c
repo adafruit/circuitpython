@@ -1,29 +1,9 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
- * Copyright (c) 2021 Junji Sakai
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
+// SPDX-FileCopyrightText: Copyright (c) 2021 Junji Sakai
+//
+// SPDX-License-Identifier: MIT
 
 #include "supervisor/port.h"
 
@@ -95,7 +75,7 @@ static volatile struct {
     uint32_t suffix;
 } overflow_tracker __attribute__((section(".uninitialized")));
 
-STATIC void rtc_handler(nrfx_rtc_int_type_t int_type) {
+static void rtc_handler(nrfx_rtc_int_type_t int_type) {
     if (int_type == NRFX_RTC_INT_OVERFLOW) {
         // Our RTC is 24 bits and we're clocking it at 32.768khz which is 32 (2 ** 5) subticks per
         // tick.
@@ -114,7 +94,7 @@ STATIC void rtc_handler(nrfx_rtc_int_type_t int_type) {
     }
 }
 
-STATIC void tick_init(void) {
+static void tick_init(void) {
     if (!nrf_clock_lf_is_running(NRF_CLOCK)) {
         nrf_clock_task_trigger(NRF_CLOCK, NRF_CLOCK_TASK_LFCLKSTART);
     }
@@ -135,7 +115,7 @@ STATIC void tick_init(void) {
     }
 }
 
-STATIC void tick_uninit(void) {
+static void tick_uninit(void) {
     nrfx_rtc_counter_clear(&rtc_instance);
     nrfx_rtc_disable(&rtc_instance);
     nrfx_rtc_uninit(&rtc_instance);
@@ -283,14 +263,16 @@ uint32_t *port_stack_get_top(void) {
     return &_estack;
 }
 
-// Place the word in the uninitialized section so it won't get overwritten.
-__attribute__((section(".uninitialized"))) uint32_t _saved_word;
+// Place the word in the first 32k of RAM. This is saved by us and the
+// bootloader for the soft device. We only use it before the soft device uses
+// that memory.
+#define SAVED_WORD ((uint32_t *)(0x20008000 - 4))
 void port_set_saved_word(uint32_t value) {
-    _saved_word = value;
+    *SAVED_WORD = value;
 }
 
 uint32_t port_get_saved_word(void) {
-    return _saved_word;
+    return *SAVED_WORD;
 }
 
 uint64_t port_get_raw_ticks(uint8_t *subticks) {
