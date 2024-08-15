@@ -13,7 +13,4 @@ CIRCUITPY_ESP_PSRAM_MODE = opi
 CIRCUITPY_ESP_PSRAM_SIZE = 8MB
 CIRCUITPY_ESP_PSRAM_FREQ = 80m
 
-# No OTA partition: larger firmware partition
-FLASH_SIZE_SDKCONFIG = esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-ota.defaults
-
 CIRCUITPY_ESPCAMERA = 1
