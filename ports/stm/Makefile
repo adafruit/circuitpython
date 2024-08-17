@@ -134,7 +134,6 @@ SRC_STM32 = $(addprefix $(HAL_DIR)/Src/stm32$(MCU_SERIES_LOWER)xx_,\
 	hal_gpio.c \
 	hal_i2c.c \
 	hal_i2c_ex.c \
-	hal_ospi.c \
 	hal_pcd.c \
 	hal_pcd_ex.c \
 	hal_pwr.c \
@@ -171,6 +170,10 @@ endif
 # Does not exist for F4 and lower
 ifeq ($(MCU_VARIANT),$(filter $(MCU_VARIANT),STM32F765xx STM32F767xx STM32F769xx STM32H743xx STM32H723xx STM32L4R5xx))
 	SRC_STM32 += $(HAL_DIR)/Src/stm32$(MCU_SERIES_LOWER)xx_hal_uart_ex.c
+endif
+
+ifeq ($(MCU_VARIANT),$(filter $(MCU_VARIANT),STM32H723xx))
+	SRC_STM32 += $(HAL_DIR)/Src/stm32$(MCU_SERIES_LOWER)xx_hal_ospi.c
 endif
 
 SRC_STM32 += boards/system_stm32$(MCU_SERIES_LOWER)xx.c

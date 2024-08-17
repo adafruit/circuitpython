@@ -13,34 +13,38 @@
 
 #include "common-hal/microcontroller/Pin.h"
 
+#ifndef USB_OTG_FS
+#define USB_OTG_FS USB_OTG_HS
+#endif
+
 static void init_usb_vbus_sense(void) {
 
     #if (BOARD_NO_VBUS_SENSE)
     // Disable VBUS sensing
     #ifdef USB_OTG_GCCFG_VBDEN
     // Deactivate VBUS Sensing B
-    USB_OTG_HS->GCCFG &= ~USB_OTG_GCCFG_VBDEN;
+    USB_OTG_FS->GCCFG &= ~USB_OTG_GCCFG_VBDEN;
 
     #if (BOARD_NO_USB_OTG_ID_SENSE)
-    USB_OTG_HS->GUSBCFG &= ~USB_OTG_GUSBCFG_FHMOD;
-    USB_OTG_HS->GUSBCFG |= USB_OTG_GUSBCFG_FDMOD;
+    USB_OTG_FS->GUSBCFG &= ~USB_OTG_GUSBCFG_FHMOD;
+    USB_OTG_FS->GUSBCFG |= USB_OTG_GUSBCFG_FDMOD;
     #endif
 
     // B-peripheral session valid override enable
-    USB_OTG_HS->GOTGCTL |= USB_OTG_GOTGCTL_BVALOEN;
-    USB_OTG_HS->GOTGCTL |= USB_OTG_GOTGCTL_BVALOVAL;
+    USB_OTG_FS->GOTGCTL |= USB_OTG_GOTGCTL_BVALOEN;
+    USB_OTG_FS->GOTGCTL |= USB_OTG_GOTGCTL_BVALOVAL;
     #else
-    USB_OTG_HS->GCCFG |= USB_OTG_GCCFG_NOVBUSSENS;
-    USB_OTG_HS->GCCFG &= ~USB_OTG_GCCFG_VBUSBSEN;
-    USB_OTG_HS->GCCFG &= ~USB_OTG_GCCFG_VBUSASEN;
+    USB_OTG_FS->GCCFG |= USB_OTG_GCCFG_NOVBUSSENS;
+    USB_OTG_FS->GCCFG &= ~USB_OTG_GCCFG_VBUSBSEN;
+    USB_OTG_FS->GCCFG &= ~USB_OTG_GCCFG_VBUSASEN;
     #endif
     #else
     // Enable VBUS hardware sensing
     #ifdef USB_OTG_GCCFG_VBDEN
-    USB_OTG_HS->GCCFG |= USB_OTG_GCCFG_VBDEN;
+    USB_OTG_FS->GCCFG |= USB_OTG_GCCFG_VBDEN;
     #else
-    USB_OTG_HS->GCCFG &= ~USB_OTG_GCCFG_NOVBUSSENS;
-    USB_OTG_HS->GCCFG |= USB_OTG_GCCFG_VBUSBSEN;     // B Device sense
+    USB_OTG_FS->GCCFG &= ~USB_OTG_GCCFG_NOVBUSSENS;
+    USB_OTG_FS->GCCFG |= USB_OTG_GCCFG_VBUSBSEN;     // B Device sense
     #endif
     #endif
 }

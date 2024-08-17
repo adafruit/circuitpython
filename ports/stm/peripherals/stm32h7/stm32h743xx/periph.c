@@ -175,8 +175,8 @@ const mcu_periph_obj_t mcu_uart_rx_list[26] = {
 // Timers
 // TIM6 and TIM7 are basic timers that are only used by DAC, and don't have pins
 // TODO: H7 has more timers than this, but are they tied to pins?
-TIM_TypeDef *mcu_tim_banks[14] = {TIM1, TIM2, TIM3, TIM4, TIM5, NULL, NULL, TIM8, NULL, NULL,
-                                  NULL, TIM12, TIM13, TIM14};
+TIM_TypeDef *mcu_tim_banks[17] = {TIM1, TIM2, TIM3, TIM4, TIM5, NULL, NULL, TIM8, NULL, NULL,
+                                  NULL, TIM12, TIM13, TIM14, TIM15, TIM16, TIM17};
 
 const mcu_tim_pin_obj_t mcu_tim_pin_list[58] = {
     TIM(2, 1, 1, &pin_PA00),

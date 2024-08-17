@@ -14,6 +14,7 @@
 #endif
 #ifdef STM32H723xx
 #include "stm32h7/stm32h723xx/clocks.h"
+#define RCC_PERIPHCLK_QSPI RCC_PERIPHCLK_OSPI
 #endif
 
 void stm32_peripherals_clocks_init(void) {
@@ -79,7 +80,7 @@ void stm32_peripherals_clocks_init(void) {
     // Set up non-bus peripherals
     // TODO: I2S settings go here
     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_RTC | RCC_PERIPHCLK_USART3
-        | RCC_PERIPHCLK_USB | RCC_PERIPHCLK_OSPI;
+        | RCC_PERIPHCLK_USB | RCC_PERIPHCLK_QSPI;
     #if (BOARD_HAS_LOW_SPEED_CRYSTAL)
     PeriphClkInitStruct.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
     #else
@@ -99,12 +100,18 @@ void stm32_peripherals_clocks_init(void) {
     PeriphClkInitStruct.PLL2.PLL2RGE = RCC_PLL2VCIRANGE_3;
     PeriphClkInitStruct.PLL2.PLL2VCOSEL = RCC_PLL2VCOWIDE;
     PeriphClkInitStruct.PLL2.PLL2FRACN = 0;
+    #ifdef RCC_OSPICLKSOURCE_PLL2
     PeriphClkInitStruct.OspiClockSelection = RCC_OSPICLKSOURCE_PLL2;
+    #else
+    PeriphClkInitStruct.QspiClockSelection = RCC_QSPICLKSOURCE_PLL2;
+    #endif
     HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct);
 
+    #ifdef __HAL_RCC_OSPI1_CLK_ENABLE
     /* OCTOSPI1 clock enable */
     __HAL_RCC_OCTOSPIM_CLK_ENABLE();
     __HAL_RCC_OSPI1_CLK_ENABLE();
+    #endif
 
     // Enable USB Voltage detector
     HAL_PWREx_EnableUSBVoltageDetector();
