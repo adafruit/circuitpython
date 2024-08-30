@@ -44,3 +44,15 @@ typedef struct _vectorio_draw_protocol_t {
     // Implementation functions for the draw protocol
     vectorio_draw_protocol_impl_t *draw_protocol_impl;
 } vectorio_draw_protocol_t;
+
+bool common_hal_vectorio_circle_rectangle_intersects(
+    int16_t cx, int16_t cy, int16_t cr,
+    int16_t rx, int16_t ry, int16_t rw, int16_t rh);
+
+bool common_hal_vectorio_rectangle_rectangle_intersects(
+    int16_t r1x, int16_t r1y, int16_t r1w, int16_t r1h,
+    int16_t r2x, int16_t r2y, int16_t r2w, int16_t r2h);
+
+bool common_hal_vectorio_circle_circle_intersects(
+    int16_t c1x, int16_t c1y, int16_t c1r,
+    int16_t c2x, int16_t c2y, int16_t c2r);
