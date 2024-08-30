@@ -30,7 +30,7 @@
 //|     mosi_bit: int,
 //|     clk_bit: int,
 //|     reset_bit: Optional[int],
-//| ):
+//| ) -> None:
 //|     """Send a displayio-style initialization sequence over an I2C I/O expander
 //|
 //|     This function is highly generic in order to support various I/O expanders.

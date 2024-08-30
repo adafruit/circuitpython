@@ -13,7 +13,7 @@
 #include "py/objproperty.h"
 
 //| class ULP:
-//|     def __init__(self, arch: Architecture = Architecture.FSM):
+//|     def __init__(self, arch: Architecture = Architecture.FSM) -> None:
 //|         """The ultra-low-power processor.
 //|
 //|         Raises an exception if another ULP has been instantiated. This

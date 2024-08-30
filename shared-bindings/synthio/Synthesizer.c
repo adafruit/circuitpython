@@ -106,7 +106,7 @@ static MP_DEFINE_CONST_FUN_OBJ_2(synthio_synthesizer_release_obj, synthio_synthe
 //|         self,
 //|         release: NoteOrNoteSequence = (),
 //|         press: NoteOrNoteSequence = (),
-//|         retrigger=LFOOrLFOSequence,
+//|         retrigger: LFOOrLFOSequence = (),
 //|     ) -> None:
 //|         """Start notes, stop them, and/or re-trigger some LFOs.
 //|

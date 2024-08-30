@@ -6,7 +6,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-01-04 12:55-0600\n"
-"PO-Revision-Date: 2024-07-24 22:09+0000\n"
+"PO-Revision-Date: 2024-08-23 07:09+0000\n"
 "Last-Translator: Wellington Terumi Uemura <wellingtonuemura@gmail.com>\n"
 "Language-Team: \n"
 "Language: pt_BR\n"
@@ -14,7 +14,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.7-dev\n"
+"X-Generator: Weblate 5.7.1-dev\n"
 
 #: main.c
 msgid ""
@@ -122,7 +122,8 @@ msgstr "%q em %q deve ser do tipo %q e não %q"
 #: ports/espressif/common-hal/espulp/ULP.c
 #: ports/mimxrt10xx/common-hal/audiobusio/__init__.c
 #: ports/mimxrt10xx/common-hal/usb_host/Port.c
-#: ports/raspberrypi/common-hal/picodvi/Framebuffer.c
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2350.c
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 #: ports/raspberrypi/common-hal/usb_host/Port.c
 #: shared-bindings/digitalio/DigitalInOut.c
@@ -166,7 +167,7 @@ msgstr "o comprimento de %q deve ser <= %d"
 msgid "%q length must be >= %d"
 msgstr "o comprimento de %q deve ser >= %d"
 
-#: py/objmodule.c py/runtime.c
+#: py/modsys.c py/objmodule.c py/runtime.c
 msgid "%q moved from %q to %q"
 msgstr "%q foi movido de %q para %q"
 
@@ -524,7 +525,7 @@ msgid "All event channels in use"
 msgstr "Todos os canais de eventos em uso"
 
 #: ports/raspberrypi/common-hal/floppyio/__init__.c
-#: ports/raspberrypi/common-hal/picodvi/Framebuffer.c
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 #: ports/raspberrypi/common-hal/usb_host/Port.c
 msgid "All state machines in use"
@@ -534,7 +535,7 @@ msgstr "O estado de todas as máquinas em uso"
 msgid "All sync event channels in use"
 msgstr "Todos os canais dos eventos de sincronização em uso"
 
-#: ports/raspberrypi/common-hal/picodvi/Framebuffer.c
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
 msgid "All timers for this pin are in use"
 msgstr "Todos os temporizadores para este pino estão em uso"
 
@@ -1195,7 +1196,9 @@ msgstr "Erro interno #%d"
 #: ports/atmel-samd/common-hal/ps2io/Ps2.c
 #: ports/atmel-samd/common-hal/pulseio/PulseIn.c
 #: ports/atmel-samd/common-hal/rotaryio/IncrementalEncoder.c
-#: ports/cxd56/common-hal/pulseio/PulseIn.c shared-bindings/pwmio/PWMOut.c
+#: ports/cxd56/common-hal/pulseio/PulseIn.c
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2350.c
+#: shared-bindings/pwmio/PWMOut.c
 msgid "Internal resource(s) in use"
 msgstr "Recurso(s) interno(s) em uso"
 
@@ -1216,11 +1219,17 @@ msgstr "Interrompido pela função de saída"
 #: ports/mimxrt10xx/common-hal/audiobusio/__init__.c
 #: ports/mimxrt10xx/common-hal/pwmio/PWMOut.c
 #: ports/raspberrypi/bindings/picodvi/Framebuffer.c
-#: ports/raspberrypi/common-hal/picodvi/Framebuffer.c py/argcheck.c
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c py/argcheck.c
 #: shared-bindings/digitalio/DigitalInOut.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c shared-bindings/pwmio/PWMOut.c
+#: shared-module/aurora_epaper/aurora_framebuffer.c
 msgid "Invalid %q"
 msgstr "%q Inválido"
+
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2350.c
+#: shared-module/aurora_epaper/aurora_framebuffer.c
+msgid "Invalid %q and %q"
+msgstr "%q e %q é inválido"
 
 #: ports/atmel-samd/common-hal/microcontroller/Pin.c
 #: ports/espressif/common-hal/dotclockframebuffer/DotClockFramebuffer.c
@@ -1406,10 +1415,6 @@ msgstr "Erro NVS"
 #: shared-bindings/socketpool/SocketPool.c
 msgid "Name or service not known"
 msgstr "Nome ou serviço desconhecido"
-
-#: py/qstr.c
-msgid "Name too long"
-msgstr "Nome muito longo"
 
 #: shared-bindings/displayio/TileGrid.c
 msgid "New bitmap must be same size as old bitmap"
@@ -2399,6 +2404,7 @@ msgid "You pressed the SW38 button at start up."
 msgstr "Você pressionou o botão SW38 na inicialização."
 
 #: ports/espressif/boards/hardkernel_odroid_go/mpconfigboard.h
+#: ports/espressif/boards/vidi_x/mpconfigboard.h
 msgid "You pressed the VOLUME button at start up."
 msgstr "Você pressionou o botão VOLUME na inicialização."
 
@@ -3592,6 +3598,10 @@ msgstr "o nome '%q' não está definido"
 msgid "name not defined"
 msgstr "nome não definido"
 
+#: py/qstr.c
+msgid "name too long"
+msgstr "nome muito longo"
+
 #: py/persistentcode.c
 msgid "native code in .mpy unsupported"
 msgstr "código nativo em .mpy não é compatível"
@@ -4435,6 +4445,9 @@ msgstr "zi deve ser de um tipo float"
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr "zi deve estar na forma (n_section, 2)"
+
+#~ msgid "Name too long"
+#~ msgstr "Nome muito longo"
 
 #~ msgid "Update Failed"
 #~ msgstr "A atualização falou"

@@ -19,7 +19,7 @@
 //|     mul: float | None = None,
 //|     add: float = 0,
 //|     mask: displayio.Bitmap | None = None,
-//|     threshold=False,
+//|     threshold: bool = False,
 //|     offset: int = 0,
 //|     invert: bool = False,
 //| ) -> displayio.Bitmap:
@@ -406,7 +406,11 @@ static mp_obj_t bitmapfilter_mix(size_t n_args, const mp_obj_t *pos_args, mp_map
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(bitmapfilter_mix_obj, 0, bitmapfilter_mix);
 
-//| def solarize(bitmap, threshold: float = 0.5, mask: displayio.Bitmap | None = None):
+//| def solarize(
+//|     bitmap: displayio.Bitmap,
+//|     threshold: float = 0.5,
+//|     mask: displayio.Bitmap | None = None,
+//| ) -> displayio.Bitmap:
 //|     """Create a "solarization" effect on an image
 //|
 //|     This filter inverts pixels with brightness values above ``threshold``, while leaving

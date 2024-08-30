@@ -13,8 +13,7 @@
 #include "shared-module/displayio/mipi_constants.h"
 #include "shared-bindings/board/__init__.h"
 #include "shared-bindings/microcontroller/Pin.h"
-#include "components/driver/gpio/include/driver/gpio.h"
-#include "components/hal/include/hal/gpio_hal.h"
+#include "driver/gpio.h"
 #include "common-hal/microcontroller/Pin.h"
 
 #include "../../pmic/axp192/axp192.h"
@@ -217,8 +216,7 @@ void board_init(void) {
 bool espressif_board_reset_pin_number(gpio_num_t pin_number) {
     // Set IR led gpio high to prevent power drain from the led
     if (pin_number == 9) {
-        gpio_set_direction(pin_number, GPIO_MODE_DEF_OUTPUT);
-        gpio_set_level(pin_number, true);
+        config_pin_as_output_with_level(pin_number, true);
         return true;
     }
     return false;

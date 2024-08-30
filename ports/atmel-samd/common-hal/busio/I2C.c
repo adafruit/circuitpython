@@ -147,6 +147,9 @@ bool common_hal_busio_i2c_probe(busio_i2c_obj_t *self, uint8_t addr) {
 }
 
 bool common_hal_busio_i2c_try_lock(busio_i2c_obj_t *self) {
+    if (common_hal_busio_i2c_deinited(self)) {
+        return false;
+    }
     bool grabbed_lock = false;
     CRITICAL_SECTION_ENTER()
     if (!self->has_lock) {

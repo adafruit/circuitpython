@@ -1,0 +1,2 @@
+[tool.setuptools_scm]
+# can be empty if no extra settings are needed, presence enables setuptools-scm

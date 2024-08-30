@@ -27,6 +27,7 @@ def get_board_pins(pin_filename):
                 continue
 
             board_member = search.group(1)
+            extra_typing = None
 
             board_type_search = re.search(r"MP_ROM_PTR\(&pin_(.*?)\)", line)
             if board_type_search:
@@ -38,8 +39,18 @@ def get_board_pins(pin_filename):
                     board_type_search = re.search(
                         r"MP_ROM_PTR\(&(.*?)\[0\].[display|epaper_display]", line
                     )
+
                 if board_type_search is None:
-                    records.append(["unmapped", None, line])
+                    board_type_search = re.search(r"MP_ROM_PTR\(&(.*?)_tuple", line)
+                    if board_type_search is not None:
+                        extra_typing = "Tuple[Any]"
+                if board_type_search is None:
+                    board_type_search = re.search(r"MP_ROM_PTR\(&(.*?)_dict", line)
+                    if board_type_search is not None:
+                        extra_typing = "Dict[str, Any]"
+
+                if board_type_search is None:
+                    records.append(["unmapped", None, line, extra_typing])
                     continue
 
                 board_type = board_type_search.group(1)
@@ -56,7 +67,7 @@ def get_board_pins(pin_filename):
             if extra_search:
                 extra = extra_search.group(1)
 
-            records.append([board_type, board_member, extra])
+            records.append([board_type, board_member, extra, extra_typing])
 
     return records
 
@@ -69,8 +80,10 @@ def create_board_stubs(board_id, records, mappings, board_filename):
     needs_busio = False
     needs_displayio = False
     needs_microcontroller = False
+    needs_dict = False
+    needs_tuple = False
 
-    for board_type, board_member, extra in records:
+    for board_type, board_member, extra, extra_typing in records:
         if board_type == "pin":
             needs_microcontroller = True
             comment = f"  # {extra}"
@@ -121,6 +134,13 @@ def create_board_stubs(board_id, records, mappings, board_filename):
             member_data += f"{board_member}: {class_name}\n"
             members.append(member_data)
 
+        elif extra_typing is not None:
+            if "Dict" in extra_typing:
+                needs_dict = True
+            elif "Tuple" in extra_typing:
+                needs_tuple = True
+            members.append(f"{board_member}: {extra_typing}\n")
+
         elif board_type == "unmapped":
             unmapped.append(extra)
 
@@ -151,6 +171,14 @@ def create_board_stubs(board_id, records, mappings, board_filename):
             boards_file.write("import displayio\n")
         if needs_microcontroller:
             boards_file.write("import microcontroller\n")
+
+        if needs_dict:
+            if needs_tuple:
+                boards_file.write("from typing import Any, Dict, Tuple\n")
+            else:
+                boards_file.write("from typing import Any, Dict\n")
+        elif needs_tuple:
+            boards_file.write("from typing import Any, Tuple\n")
 
         boards_file.write("\n\n")
         boards_file.write("# Board Info:\n")
@@ -200,7 +228,7 @@ def process(board_mappings, export_dir):
             records = get_board_pins(pin_filename)
             create_board_stubs(board_id, records, mappings, f"{sub_dir}/__init__.pyi")
 
-            for board_type, board_member, extra in records:
+            for board_type, board_member, extra, extra_typing in records:
                 if board_type == "pin":
                     total_pins += 1
                 elif board_type == "unmapped":

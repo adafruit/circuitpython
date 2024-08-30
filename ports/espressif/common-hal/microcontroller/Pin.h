@@ -36,3 +36,7 @@ extern void clear_pin_preservations(void);
 // Return true to indicate that the pin was reset. Returning false will lead to
 // the port-default reset behavior.
 extern bool espressif_board_reset_pin_number(gpio_num_t pin_number);
+
+// Configure the IOMUX for the pin as GPIO, set the pin as output, and then set output the level.
+// This ensures the IOMUX setting is correct.
+extern void config_pin_as_output_with_level(gpio_num_t pin_number, bool level);

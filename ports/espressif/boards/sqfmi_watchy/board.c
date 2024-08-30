@@ -11,12 +11,11 @@
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-module/displayio/__init__.h"
 #include "supervisor/shared/board.h"
-#include "components/driver/gpio/include/driver/gpio.h"
-#include "components/hal/include/hal/gpio_hal.h"
+#include "driver/gpio.h"
 
 #include "common-hal/microcontroller/Pin.h"
 
-#include "components/log/include/esp_log.h"
+#include "esp_log.h"
 #include "supervisor/filesystem.h"
 
 #define DELAY               0x80
@@ -202,20 +201,16 @@ bool board_requests_safe_mode(void) {
 
 bool espressif_board_reset_pin_number(gpio_num_t pin_number) {
     if (pin_number == 13) {
-        gpio_set_direction(pin_number, GPIO_MODE_DEF_OUTPUT);
-        gpio_set_level(pin_number, false);
+        config_pin_as_output_with_level(pin_number, false);
         return true;
     }
     return false;
 }
 
 void reset_board(void) {
-    gpio_set_direction(13, GPIO_MODE_OUTPUT);
-    gpio_set_level(13, false);
-
+    config_pin_as_output_with_level(13, false);
 }
 
 void board_deinit(void) {
-    gpio_set_direction(13, GPIO_MODE_DEF_OUTPUT);
-    gpio_set_level(13, false);
+    config_pin_as_output_with_level(13, false);
 }

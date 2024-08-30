@@ -186,6 +186,9 @@ bool common_hal_busio_spi_configure(busio_spi_obj_t *self,
 
 // Lock SPI bus
 bool common_hal_busio_spi_try_lock(busio_spi_obj_t *self) {
+    if (common_hal_busio_spi_deinited(self)) {
+        return false;
+    }
     bool grabbed_lock = false;
     if (!self->has_lock) {
         grabbed_lock = true;

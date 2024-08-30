@@ -7,13 +7,19 @@
 #include "supervisor/board.h"
 #include "mpconfigboard.h"
 #include "shared-bindings/microcontroller/Pin.h"
-#include "components/driver/gpio/include/driver/gpio.h"
+#include "driver/gpio.h"
 
 bool espressif_board_reset_pin_number(gpio_num_t pin_number) {
     if (pin_number == 13) {
         // Set D13 LED to input when not in use
-        gpio_set_direction(pin_number, GPIO_MODE_DEF_INPUT);
-        gpio_set_pull_mode(pin_number, GPIO_PULLDOWN_ONLY);
+        gpio_config_t cfg = {
+            .pin_bit_mask = BIT64(pin_number),
+            .mode = GPIO_MODE_INPUT,
+            .pull_up_en = false,
+            .pull_down_en = true,
+            .intr_type = GPIO_INTR_DISABLE,
+        };
+        gpio_config(&cfg);
         return true;
     }
 

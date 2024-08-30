@@ -46,7 +46,17 @@ static void pin_check(const uint8_t uart, const mcu_pin_obj_t *pin, const uint8_
     if (pin == NULL) {
         return;
     }
-    if (!(((pin->number % 4) == pin_type) && ((((pin->number + 4) / 8) % NUM_UARTS) == uart))) {
+    uint8_t pins_uart = (pin->number + 4) / 8 % NUM_UARTS;
+    if (pins_uart != uart) {
+        raise_ValueError_invalid_pins();
+    }
+    #ifdef PICO_RP2350
+    if ((pin_type == 0 && pin->number % 4 == 2) ||
+        (pin_type == 1 && pin->number % 4 == 3)) {
+        return;
+    }
+    #endif
+    if ((pin->number % 4) != pin_type) {
         raise_ValueError_invalid_pins();
     }
 }
@@ -56,7 +66,15 @@ static uint8_t pin_init(const uint8_t uart, const mcu_pin_obj_t *pin, const uint
         return NO_PIN;
     }
     claim_pin(pin);
-    gpio_set_function(pin->number, GPIO_FUNC_UART);
+    gpio_function_t function = GPIO_FUNC_UART;
+    #ifdef PICO_RP2350
+    if ((pin_type == 0 && pin->number % 4 == 2) ||
+        (pin_type == 1 && pin->number % 4 == 3)) {
+        function = GPIO_FUNC_UART_AUX;
+    }
+    #endif
+
+    gpio_set_function(pin->number, function);
     return pin->number;
 }
 
@@ -122,7 +140,7 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
         gpio_disable_pulls(pin);
 
         // Turn on "strong" pin driving (more current available).
-        hw_write_masked(&padsbank0_hw->io[pin],
+        hw_write_masked(&pads_bank0_hw->io[pin],
             PADS_BANK0_GPIO0_DRIVE_VALUE_12MA << PADS_BANK0_GPIO0_DRIVE_LSB,
                 PADS_BANK0_GPIO0_DRIVE_BITS);
 

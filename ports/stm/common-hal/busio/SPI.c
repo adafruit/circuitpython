@@ -297,6 +297,9 @@ bool common_hal_busio_spi_configure(busio_spi_obj_t *self,
 }
 
 bool common_hal_busio_spi_try_lock(busio_spi_obj_t *self) {
+    if (common_hal_busio_spi_deinited(self)) {
+        return false;
+    }
     bool grabbed_lock = false;
 
     // Critical section code that may be required at some point.

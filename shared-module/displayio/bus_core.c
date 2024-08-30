@@ -90,6 +90,10 @@ bool displayio_display_bus_is_free(displayio_display_bus_t *self) {
 }
 
 bool displayio_display_bus_begin_transaction(displayio_display_bus_t *self) {
+    mp_obj_base_t *bus_base = MP_OBJ_TO_PTR(self->bus);
+    if (bus_base->type == &mp_type_NoneType) {
+        return false;
+    }
     return self->begin_transaction(self->bus);
 }
 

@@ -71,6 +71,8 @@ void common_hal_analogbufio_bufferedin_construct(analogbufio_bufferedin_obj_t *s
     }
     #endif
 
+    mp_arg_validate_int_range(sample_rate, SOC_ADC_SAMPLE_FREQ_THRES_LOW, SOC_ADC_SAMPLE_FREQ_THRES_HIGH, MP_QSTR_sample_rate);
+
     common_hal_mcu_pin_claim(pin);
 }
 
@@ -109,7 +111,7 @@ static void start_dma(analogbufio_bufferedin_obj_t *self, adc_digi_convert_mode_
     };
 
     #if defined(DEBUG_ANALOGBUFIO)
-    mp_printf(&mp_plat_print, "pin:%d, ADC channel:%d, ADC index:%d, adc1_chan_mask:0x%x, adc2_chan_mask:0x%x\n", pin->number, pin->adc_channel, pin->adc_index, adc1_chan_mask, adc2_chan_mask);
+    mp_printf(&mp_plat_print, "pin:%d, ADC channel:%d, ADC index:%d\n", pin->number, pin->adc_channel, pin->adc_index);
     #endif // DEBUG_ANALOGBUFIO
     esp_err_t err = adc_continuous_new_handle(&adc_dma_config, &self->handle);
     if (ESP_OK != err) {

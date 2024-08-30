@@ -489,16 +489,6 @@ void port_post_boot_py(bool heap_valid) {
 }
 
 
-#if CIRCUITPY_CONSOLE_UART
-static int vprintf_adapter(const char *fmt, va_list ap) {
-    return mp_vprintf(&mp_plat_print, fmt, ap);
-}
-
-void port_serial_early_init(void) {
-    esp_log_set_vprintf(vprintf_adapter);
-}
-#endif
-
 // Wrap main in app_main that the IDF expects.
 extern void main(void);
 extern void app_main(void);

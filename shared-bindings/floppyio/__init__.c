@@ -23,7 +23,7 @@
 //|     buffer: WriteableBuffer,
 //|     data: digitalio.DigitalInOut,
 //|     index: digitalio.DigitalInOut,
-//|     index_wait=0.220,
+//|     index_wait: float = 0.220,
 //| ) -> int:
 //|     """Read flux transition information into the buffer.
 //|

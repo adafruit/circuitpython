@@ -54,7 +54,7 @@
 //|     """
 //|
 
-//|     def __init__(self, *, start, length) -> None:
+//|     def __init__(self, *, start: int, length: int) -> None:
 //|         """Constructs an address range starting at ``start`` and ending at
 //|         ``start + length``. An exception will be raised if any of the
 //|         addresses are invalid or protected."""

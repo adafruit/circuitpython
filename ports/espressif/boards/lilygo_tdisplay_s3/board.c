@@ -101,8 +101,7 @@ bool espressif_board_reset_pin_number(gpio_num_t pin_number) {
     // Override the I2C/TFT power pin reset to prevent resetting the display.
     if (pin_number == 15) {
         // Turn on TFT
-        gpio_set_direction(pin_number, GPIO_MODE_DEF_OUTPUT);
-        gpio_set_level(pin_number, true);
+        config_pin_as_output_with_level(pin_number, true);
         return true;
     }
     return false;

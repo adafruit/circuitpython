@@ -103,7 +103,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(usb_core_device_get_manufacturer_obj, usb_core_device_
 MP_PROPERTY_GETTER(usb_core_device_manufacturer_obj,
     (mp_obj_t)&usb_core_device_get_manufacturer_obj);
 
-//|     def set_configuration(self, configuration=1):
+//|     def set_configuration(self, configuration: int = 1) -> None:
 //|         """Set the active configuration.
 //|
 //|         The configuration parameter is the bConfigurationValue field of the

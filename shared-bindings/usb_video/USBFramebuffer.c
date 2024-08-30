@@ -31,7 +31,7 @@ static void check_for_deinit(usb_video_uvcframebuffer_obj_t *self) {
 //|     it also supports the ``WritableBuffer`` protocol and can be accessed
 //|     as an array of ``H`` (unsigned 16-bit values)."""
 //|
-//|     def __new__(self):
+//|     def __init__(self) -> None:
 //|         """Returns the singleton framebuffer object, if USB video is enabled"""
 static mp_obj_t usb_video_uvcframebuffer_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     static const mp_arg_t allowed_args[] = {};

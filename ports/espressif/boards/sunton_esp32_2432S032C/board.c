@@ -14,8 +14,7 @@
 #include "supervisor/shared/board.h"
 
 #include "shared-module/displayio/mipi_constants.h"
-#include "components/driver/gpio/include/driver/gpio.h"
-#include "components/hal/include/hal/gpio_hal.h"
+#include "driver/gpio.h"
 #include "common-hal/microcontroller/Pin.h"
 
 #define DELAY 0x80
@@ -93,8 +92,7 @@ bool espressif_board_reset_pin_number(gpio_num_t pin_number) {
     // Pull the speaker pin low to reduce noise on reset
     if (pin_number == 26) {
         // Turn on audio
-        gpio_set_direction(pin_number, GPIO_MODE_DEF_OUTPUT);
-        gpio_set_level(pin_number, false);
+        config_pin_as_output_with_level(pin_number, false);
         return true;
     }
     return false;

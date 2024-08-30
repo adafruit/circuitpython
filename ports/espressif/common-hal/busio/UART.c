@@ -8,7 +8,7 @@
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/busio/UART.h"
 
-#include "components/driver/uart/include/driver/uart.h"
+#include "driver/uart.h"
 
 #include "mpconfigport.h"
 #include "shared/readline/readline.h"
@@ -56,7 +56,7 @@ void uart_reset(void) {
     for (uart_port_t num = 0; num < UART_NUM_MAX; num++) {
         #ifdef CONFIG_ESP_CONSOLE_UART_NUM
         // Do not reset the UART used by the IDF for logging.
-        if (num == CONFIG_ESP_CONSOLE_UART_NUM) {
+        if ((int)num == CONFIG_ESP_CONSOLE_UART_NUM) {
             continue;
         }
         #endif
@@ -106,9 +106,22 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     self->timeout_ms = timeout * 1000;
 
     self->uart_num = UART_NUM_MAX;
-    for (uart_port_t num = 0; num < UART_NUM_MAX; num++) {
+
+    // ESP32-C6 and ESP32-P4 both have a single LP (low power) UART, which is
+    // limited in what it can do and which pins it can use. Ignore it for now.
+    // Its UART number is higher than the numbers for the regular ("HP", high-power) UARTs.
+
+    // SOC_UART_LP_NUM is not defined for chips without an LP UART.
+    #if defined(SOC_UART_LP_NUM) && (SOC_UART_LP_NUM >= 1)
+    #define UART_LIMIT LP_UART_NUM_0
+    #else
+    #define UART_LIMIT UART_NUM_MAX
+    #endif
+
+    for (uart_port_t num = 0; num < UART_LIMIT; num++) {
         if (!uart_is_driver_installed(num)) {
             self->uart_num = num;
+            break;
         }
     }
     if (self->uart_num == UART_NUM_MAX) {
@@ -224,6 +237,7 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     int rx_num = -1;
     int rts_num = -1;
     int cts_num = -1;
+
     if (have_tx) {
         claim_pin(tx);
         self->tx_pin = tx;
@@ -254,9 +268,13 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
         self->rts_pin = rs485_dir;
         rts_num = rs485_dir->number;
     }
+
     if (uart_set_pin(self->uart_num, tx_num, rx_num, rts_num, cts_num) != ESP_OK) {
+        // Uninstall driver and clean up.
+        common_hal_busio_uart_deinit(self);
         raise_ValueError_invalid_pins();
     }
+
     if (have_rx) {
         // On ESP32-C3 and ESP32-S3 (at least),  a junk byte with zero or more consecutive 1's can be
         // generated, even if the pin is pulled high (normal UART resting state) to begin with.

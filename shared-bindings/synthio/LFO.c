@@ -74,9 +74,9 @@ static const uint16_t triangle[] = {0, 32767, 0, -32767};
 //|         scale: BlockInput = 1.0,
 //|         offset: BlockInput = 0.0,
 //|         phase_offset: BlockInput = 0.0,
-//|         once=False,
-//|         interpolate=True
-//|     ):
+//|         once: bool = False,
+//|         interpolate: bool = True,
+//|     ) -> None:
 //|         pass
 static const mp_arg_t lfo_properties[] = {
     { MP_QSTR_waveform, MP_ARG_OBJ, {.u_obj = MP_ROM_NONE } },
@@ -268,7 +268,7 @@ MP_PROPERTY_GETTER(synthio_lfo_value_obj,
 
 
 //|
-//|     def retrigger(self):
+//|     def retrigger(self) -> None:
 //|         """Reset the LFO's internal index to the start of the waveform. Most useful when it its `once` property is `True`."""
 //|
 static mp_obj_t synthio_lfo_retrigger(mp_obj_t self_in) {

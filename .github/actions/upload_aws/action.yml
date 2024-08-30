@@ -20,8 +20,11 @@ runs:
   steps:
     - name: Upload to S3
       if: >-
-        (github.event_name == 'push' && github.ref == 'refs/heads/main' && github.repository_owner == 'adafruit') ||
-        (github.event_name == 'release' && (github.event.action == 'published' || github.event.action == 'rerequested'))
+        (github.event_name == 'push' && github.repository_owner == 'adafruit') &&
+         (github.ref == 'refs/heads/main' ||
+          (startswith(github.ref, 'refs/heads/') && endswith(github.ref, '.x'))) ||
+        (github.event_name == 'release' &&
+         (github.event.action == 'published' || github.event.action == 'rerequested'))
       run: >-
         [ -z "$AWS_ACCESS_KEY_ID" ] ||
         aws s3 cp ${{ inputs.source }} s3://adafruit-circuit-python/bin/${{ inputs.destination }}

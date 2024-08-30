@@ -92,11 +92,10 @@ void board_init(void) {
 }
 
 bool espressif_board_reset_pin_number(gpio_num_t pin_number) {
-    // Hold pind must be set high to avoid a power off when battery powered
+    // Hold pin must be set high to avoid a power off when battery powered
     if (pin_number == 46) {
         // Turn on hold output
-        gpio_set_direction(46, GPIO_MODE_DEF_OUTPUT);
-        gpio_set_level(46, true);
+        config_pin_as_output_with_level(pin_number, true);
         return true;
     }
     return false;

@@ -133,7 +133,7 @@ MAKE_ENUM_TYPE(synthio, MathOperation, synthio_math_operation,
 //|         a: BlockInput,
 //|         b: BlockInput = 0.0,
 //|         c: BlockInput = 1.0,
-//|     ):
+//|     ) -> None:
 //|         pass
 static const mp_arg_t math_properties[] = {
     { MP_QSTR_operation, MP_ARG_OBJ | MP_ARG_REQUIRED, {.u_obj = NULL } },

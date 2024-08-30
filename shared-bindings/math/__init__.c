@@ -328,6 +328,34 @@ MATH_FUN_1(gamma, tgamma)
 //|     ...
 //|
 MATH_FUN_1(lgamma, lgamma)
+
+//| def dist(p: tuple, q: tuple) -> float:
+//|     """Return the Euclidean distance between two points ``p`` and ``q``.
+//|
+//|     May not be available on some boards.
+//|     """
+//|     ...
+//|
+static mp_obj_t mp_math_dist(mp_obj_t p_obj, mp_obj_t q_obj) {
+    mp_obj_t *p_items;
+    mp_obj_get_array_fixed_n(p_obj, 2, &p_items);
+
+    mp_obj_t *q_items;
+    mp_obj_get_array_fixed_n(q_obj, 2, &q_items);
+
+    mp_float_t px_in = mp_obj_get_float(p_items[0]);
+    mp_float_t py_in = mp_obj_get_float(p_items[1]);
+
+    mp_float_t qx_in = mp_obj_get_float(q_items[0]);
+    mp_float_t qy_in = mp_obj_get_float(q_items[1]);
+
+    mp_float_t dist_x = px_in - qx_in;
+    mp_float_t dist_y = py_in - qy_in;
+
+    return mp_obj_new_float(sqrtf((dist_x * dist_x) + (dist_y * dist_y)));
+}
+static MP_DEFINE_CONST_FUN_OBJ_2(mp_math_dist_obj, mp_math_dist);
+
 #endif
 // TODO: factorial, fsum
 
@@ -415,6 +443,7 @@ static const mp_rom_map_elem_t mp_module_math_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_acosh), MP_ROM_PTR(&mp_math_acosh_obj) },
     { MP_ROM_QSTR(MP_QSTR_asinh), MP_ROM_PTR(&mp_math_asinh_obj) },
     { MP_ROM_QSTR(MP_QSTR_atanh), MP_ROM_PTR(&mp_math_atanh_obj) },
+    { MP_ROM_QSTR(MP_QSTR_dist), MP_ROM_PTR(&mp_math_dist_obj) },
     #endif
     { MP_ROM_QSTR(MP_QSTR_cos), MP_ROM_PTR(&mp_math_cos_obj) },
     { MP_ROM_QSTR(MP_QSTR_sin), MP_ROM_PTR(&mp_math_sin_obj) },
