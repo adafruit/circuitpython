@@ -38,18 +38,23 @@
 //|     group.append(polygon)
 //|
 //| """
+//|
 
 
 //| def circle_rectangle_intersects(
 //|     cx: int, cy: int, cr: int, rx: int, ry: int, rw: int, rh: int
+//| ) -> bool:
+//|     """Checks for intersection between a cricle and a rectangle.
+//|
 //|     :param int cx: Circle center x coordinate
 //|     :param int cy: Circle center y coordinate
 //|     :param int cr: Circle radius
 //|     :param int rx: Rectangle x coordinate
 //|     :param int ry: Rectangle y coordinate
 //|     :param int rw: Rectangle width
-//|     :param int rh: Rectangle height
-//| ) -> None:
+//|     :param int rh: Rectangle height"""
+//|     ...
+//|
 static mp_obj_t vectorio_circle_rectangle_intersects(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum {ARG_cx, ARG_cy, ARG_cr, ARG_rx, ARG_ry, ARG_rw, ARG_rh};
 
@@ -75,9 +80,9 @@ static mp_obj_t vectorio_circle_rectangle_intersects(size_t n_args, const mp_obj
     int16_t rh = args[ARG_rh].u_int;
 
     bool result = common_hal_vectorio_circle_rectangle_intersects(cx, cy, cr, rx, ry, rw, rh);
-    if (result){
+    if (result) {
         return mp_const_true;
-    }else{
+    } else {
         return mp_const_false;
     }
 }
@@ -85,18 +90,20 @@ MP_DEFINE_CONST_FUN_OBJ_KW(vectorio_circle_rectangle_intersects_obj, 0, vectorio
 
 
 //| def rectangle_rectangle_intersects(
-//|     r1x: int, r1y: int, r1w: int, r1h: int,
-//      r2x: int, r2y: int, r2w: int, r2h: int
+//|     r1x: int, r1y: int, r1w: int, r1h: int, r2x: int, r2y: int, r2w: int, r2h: int
+//| ) -> bool:
+//|     """Checks for intersection between a two rectangles.
 //|
-//|     :param int r1x: Rectangle x coordinate
-//|     :param int r1y: Rectangle y coordinate
-//|     :param int r1w: Rectangle width
-//|     :param int r1h: Rectangle height
-//|     :param int r2x: Other Rectangle x coordinate
-//|     :param int r2y: Other Rectangle y coordinate
-//|     :param int r2w: Other Rectangle width
-//|     :param int r2h: Other Rectangle height
-//| ) -> None:
+//|     :param int r1x: First Rectangle x coordinate
+//|     :param int r1y: First Rectangle y coordinate
+//|     :param int r1w: First Rectangle width
+//|     :param int r1h: First Rectangle height
+//|     :param int r2x: Second Rectangle x coordinate
+//|     :param int r2y: Second Rectangle y coordinate
+//|     :param int r2w: Second Rectangle width
+//|     :param int r2h: Second Rectangle height"""
+//|     ...
+//|
 static mp_obj_t vectorio_rectangle_rectangle_intersects(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum {ARG_r1x, ARG_r1y, ARG_r1w, ARG_r1h, ARG_r2x, ARG_r2y, ARG_r2w, ARG_r2h};
 
@@ -126,24 +133,27 @@ static mp_obj_t vectorio_rectangle_rectangle_intersects(size_t n_args, const mp_
 
 
     bool result = common_hal_vectorio_rectangle_rectangle_intersects(r1x, r1y, r1w, r1h, r2x, r2y, r2w, r2h);
-    if (result){
+    if (result) {
         return mp_const_true;
-    }else{
+    } else {
         return mp_const_false;
     }
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(vectorio_rectangle_rectangle_intersects_obj, 0, vectorio_rectangle_rectangle_intersects);
 
-
 //| def circle_circle_intersects(
-//|     cx: int, cy: int, cr: int, rx: int, ry: int, rw: int, rh: int
-//|     :param int c1x: Circle center x coordinate
-//|     :param int c1y: Circle center y coordinate
-//|     :param int c1r: Circle radius
-//|     :param int c2x: Other Circle center x coordinate
-//|     :param int c2y: Other Circle center y coordinate
-//|     :param int c2r: Other Circle radius
-//| ) -> None:
+//|     c1x: int, c1y: int, c1r: int, c2x: int, c2y: int, c2r: int
+//| ) -> bool:
+//|     """Checks for intersection between two circles.
+//|
+//|     :param int c1x: First Circle center x coordinate
+//|     :param int c1y: First Circle center y coordinate
+//|     :param int c1r: First Circle radius
+//|     :param int c2x: Second Circle center x coordinate
+//|     :param int c2y: Second Circle center y coordinate
+//|     :param int c2r: Second Circle radius"""
+//|     ...
+//|
 static mp_obj_t vectorio_circle_circle_intersects(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum {ARG_c1x, ARG_c1y, ARG_c1r, ARG_c2x, ARG_c2y, ARG_c2r};
 
@@ -167,9 +177,9 @@ static mp_obj_t vectorio_circle_circle_intersects(size_t n_args, const mp_obj_t 
     int16_t c2r = args[ARG_c2r].u_int;
 
     bool result = common_hal_vectorio_circle_circle_intersects(c1x, c1y, c1r, c2x, c2y, c2r);
-    if (result){
+    if (result) {
         return mp_const_true;
-    }else{
+    } else {
         return mp_const_false;
     }
 }

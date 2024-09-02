@@ -13,7 +13,7 @@
 
 bool common_hal_vectorio_circle_rectangle_intersects(
     int16_t cx, int16_t cy, int16_t cr,
-    int16_t rx, int16_t ry, int16_t rw, int16_t rh){
+    int16_t rx, int16_t ry, int16_t rw, int16_t rh) {
 
     mp_int_t rect_left = rx;
     mp_int_t rect_right = rect_left + rw;
@@ -39,13 +39,13 @@ bool common_hal_vectorio_circle_rectangle_intersects(
     mp_int_t dist_y = cy - test_y;
     mp_int_t dist = (dist_x * dist_x) + (dist_y * dist_y);
 
-    return dist <= cr*cr;
+    return dist <= cr * cr;
 }
 
 bool common_hal_vectorio_circle_circle_intersects(
     int16_t c1x, int16_t c1y, int16_t c1r,
     int16_t c2x, int16_t c2y, int16_t c2r
-){
+    ) {
 
     mp_int_t dist_x = c1x - c2x;
     mp_int_t dist_y = c1y - c2y;
@@ -58,7 +58,7 @@ bool common_hal_vectorio_circle_circle_intersects(
 
 bool common_hal_vectorio_rectangle_rectangle_intersects(
     int16_t r1x, int16_t r1y, int16_t r1w, int16_t r1h,
-    int16_t r2x, int16_t r2y, int16_t r2w, int16_t r2h){
+    int16_t r2x, int16_t r2y, int16_t r2w, int16_t r2h) {
 
 
     mp_int_t r1_left = r1x;

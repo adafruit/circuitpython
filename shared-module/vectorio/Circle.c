@@ -81,63 +81,6 @@ void common_hal_vectorio_circle_set_color_index(void *obj, uint16_t color_index)
     }
 }
 
-bool common_hal_vectorio_circle_intersects(vectorio_circle_t *self, mp_obj_t other_shape) {
-
-    mp_obj_t possible_rect = mp_obj_cast_to_native_base(other_shape, &vectorio_rectangle_type);
-    if (possible_rect != MP_OBJ_NULL) {
-
-        vectorio_rectangle_t *other_rect = possible_rect;
-
-        mp_int_t self_x = common_hal_vectorio_vector_shape_get_x(self->draw_protocol_instance);
-        mp_int_t self_y = common_hal_vectorio_vector_shape_get_y(self->draw_protocol_instance);
-
-        mp_int_t other_left = common_hal_vectorio_vector_shape_get_x(other_rect->draw_protocol_instance);
-        mp_int_t other_right = other_left + other_rect->width;
-        mp_int_t other_top = common_hal_vectorio_vector_shape_get_y(other_rect->draw_protocol_instance);
-        mp_int_t other_bottom = other_top + other_rect->height;
-
-        mp_int_t test_x = self_x;
-        mp_int_t test_y = self_y;
-
-        if (self_x < other_left) {
-            test_x = other_left;
-        } else if (self_x > other_right) {
-            test_x = other_right;
-        }
-
-        if (self_y < other_top) {
-            test_y = other_top;
-        } else if (self_y > other_bottom) {
-            test_y = other_bottom;
-        }
-
-        mp_int_t dist_x = self_x - test_x;
-        mp_int_t dist_y = self_y - test_y;
-        mp_int_t dist = sqrtf((dist_x * dist_x) + (dist_y * dist_y));
-
-        return dist <= self->radius;
-    }
-    mp_obj_t possible_circle = mp_obj_cast_to_native_base(other_shape, &vectorio_circle_type);
-    if (possible_circle != MP_OBJ_NULL) {
-        vectorio_circle_t *other_circle = possible_circle;
-
-        mp_int_t self_x = common_hal_vectorio_vector_shape_get_x(self->draw_protocol_instance);
-        mp_int_t self_y = common_hal_vectorio_vector_shape_get_y(self->draw_protocol_instance);
-
-        mp_int_t other_circle_x = common_hal_vectorio_vector_shape_get_x(other_circle->draw_protocol_instance);
-        mp_int_t other_circle_y = common_hal_vectorio_vector_shape_get_y(other_circle->draw_protocol_instance);
-
-        mp_int_t dist_x = self_x - other_circle_x;
-        mp_int_t dist_y = self_y - other_circle_y;
-
-        mp_int_t dist = sqrtf((dist_x * dist_x) + (dist_y * dist_y));
-
-        return dist <= self->radius + other_circle->radius;
-
-    }
-
-    return false;
-}
 
 mp_obj_t common_hal_vectorio_circle_get_draw_protocol(void *circle) {
     vectorio_circle_t *self = circle;
