@@ -56,3 +56,18 @@ bool common_hal_vectorio_rectangle_rectangle_intersects(
 bool common_hal_vectorio_circle_circle_intersects(
     int16_t c1x, int16_t c1y, int16_t c1r,
     int16_t c2x, int16_t c2y, int16_t c2r);
+
+bool common_hal_vectorio_circle_contains_point(
+    int16_t cx, int16_t cy, int16_t cr,
+    int16_t px, int16_t py);
+
+bool common_hal_vectorio_rectangle_contains_point(
+    int16_t rx, int16_t ry, int16_t rw, int16_t rh,
+    int16_t px, int16_t py);
+
+bool common_hal_vectorio_line_contains_point(
+    int16_t x1, int16_t y1, int16_t x2, int16_t y2,
+    int16_t px, int16_t py, mp_float_t padding);
+
+bool common_hal_vectorio_polygon_circle_intersects(
+	mp_obj_t points_list, int16_t cx, int16_t cy, int16_t cr);
