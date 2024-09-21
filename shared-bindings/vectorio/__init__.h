@@ -69,5 +69,10 @@ bool common_hal_vectorio_line_contains_point(
     int16_t x1, int16_t y1, int16_t x2, int16_t y2,
     int16_t px, int16_t py, mp_float_t padding);
 
+bool common_hal_vectorio_line_circle_intersects(
+    int16_t x1, int16_t y1, int16_t x2, int16_t y2,
+    int16_t cx, int16_t cy, int16_t cr, mp_float_t padding);
+
 bool common_hal_vectorio_polygon_circle_intersects(
-	mp_obj_t points_list, int16_t cx, int16_t cy, int16_t cr);
+	mp_obj_t points_list, int16_t polygon_x, int16_t polygon_y,
+	int16_t cx, int16_t cy, int16_t cr, mp_float_t padding);

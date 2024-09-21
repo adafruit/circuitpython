@@ -91,9 +91,9 @@ bool common_hal_vectorio_rectangle_contains_point(
     return true;
 }
 
-float measure_distance(int x1, int y1, int x2, int y2){
-	int dist_x = x1 - x2;
-	int dist_y = y1 - y2;
+float measure_distance(float x1, float y1, float x2, float y2){
+	float dist_x = x1 - x2;
+	float dist_y = y1 - y2;
 	return sqrtf((dist_x * dist_x) + (dist_y * dist_y));
 }
 
@@ -113,7 +113,34 @@ bool common_hal_vectorio_line_contains_point(
 
 }
 
+bool common_hal_vectorio_line_circle_intersects(
+	int16_t x1, int16_t y1, int16_t x2, int16_t y2,
+	int16_t cx, int16_t cy, int16_t cr, mp_float_t padding
+){
+	if (common_hal_vectorio_circle_contains_point(cx, cy, cr, x1, y1)){
+		return true;
+	}
+	if (common_hal_vectorio_circle_contains_point(cx, cy, cr, x2, y2)){
+		return true;
+	}
+	float line_length = measure_distance(x1, y1, x2, y2);
 
+	float dot = ( ((cx-x1)*(x2-x1)) + ((cy-y1)*(y2-y1)) ) / pow(line_length,2);
+
+	float closestX = x1 + (dot * (x2-x1));
+	float closestY = y1 + (dot * (y2-y1));
+
+	if (!common_hal_vectorio_line_contains_point(x1,y1,x2,y2, closestX,closestY, padding)){
+		return false;
+	}
+	float distance = measure_distance(closestX, closestY, cx, cy);
+	if (distance <= cr){
+		return true;
+	}else{
+		return false;
+	}
+
+}
 
 bool common_hal_vectorio_rectangle_rectangle_intersects(
     int16_t r1x, int16_t r1y, int16_t r1w, int16_t r1h,
@@ -135,7 +162,7 @@ bool common_hal_vectorio_rectangle_rectangle_intersects(
 }
 
 bool common_hal_vectorio_polygon_circle_intersects(
-	mp_obj_t points_list, int16_t cx, int16_t cy, int16_t cr
+	mp_obj_t points_list, int16_t polygon_x, int16_t polygon_y, int16_t cx, int16_t cy, int16_t cr, mp_float_t padding
 ) {
 	size_t len = 0;
 	mp_obj_t *points_list_items;
@@ -147,8 +174,8 @@ bool common_hal_vectorio_polygon_circle_intersects(
         mp_arg_validate_type(points_list_items[i], &mp_type_tuple, MP_QSTR_point);
         mp_obj_tuple_get(points_list_items[i], &cur_tuple_len, &cur_point_tuple);
 
-		mp_int_t cur_x = mp_arg_validate_type_int(cur_point_tuple[0], MP_QSTR_x);
-		mp_int_t cur_y = mp_arg_validate_type_int(cur_point_tuple[1], MP_QSTR_y);
+		mp_int_t cur_x = mp_arg_validate_type_int(cur_point_tuple[0], MP_QSTR_x) + polygon_x;
+		mp_int_t cur_y = mp_arg_validate_type_int(cur_point_tuple[1], MP_QSTR_y) + polygon_y;
 
 		size_t next_tuple_len = 0;
 		mp_obj_t *next_point_tuple;
@@ -156,11 +183,17 @@ bool common_hal_vectorio_polygon_circle_intersects(
         mp_arg_validate_type(points_list_items[next_index], &mp_type_tuple, MP_QSTR_point);
         mp_obj_tuple_get(points_list_items[next_index], &next_tuple_len, &next_point_tuple);
 
-		mp_int_t next_x = mp_arg_validate_type_int(next_point_tuple[0], MP_QSTR_x);
-		mp_int_t next_y = mp_arg_validate_type_int(next_point_tuple[1], MP_QSTR_y);
+		mp_int_t next_x = mp_arg_validate_type_int(next_point_tuple[0], MP_QSTR_x) + polygon_x;
+		mp_int_t next_y = mp_arg_validate_type_int(next_point_tuple[1], MP_QSTR_y) + polygon_y;
 
-		mp_printf(&mp_plat_print, "%d,%d - %d,%d \n", cur_x, cur_y, next_x, next_y);
+		//mp_printf(&mp_plat_print, "%d,%d - %d,%d \n", cur_x, cur_y, next_x, next_y);
 
+		if(common_hal_vectorio_line_circle_intersects(
+			cur_x, cur_y, next_x, next_y,
+			cx, cy, cr, padding
+		)){
+			return true;
+		}
 
 
 	}
