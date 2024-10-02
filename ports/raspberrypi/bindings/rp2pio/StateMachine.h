@@ -33,7 +33,7 @@ void common_hal_rp2pio_statemachine_construct(rp2pio_statemachine_obj_t *self,
     bool wait_for_txstall,
     bool auto_push, uint8_t push_threshold, bool in_shift_right,
     bool user_interruptible,
-    int wrap_taget, int wrap,
+    int wrap_target, int wrap,
     int offset,
     int fifo_type,
     int mov_status_type,
@@ -50,10 +50,24 @@ void common_hal_rp2pio_statemachine_run(rp2pio_statemachine_obj_t *self, const u
 
 // Lengths are in bytes.
 bool common_hal_rp2pio_statemachine_write(rp2pio_statemachine_obj_t *self, const uint8_t *data, size_t len, uint8_t stride_in_bytes, bool swap);
-bool common_hal_rp2pio_statemachine_background_write(rp2pio_statemachine_obj_t *self, const sm_buf_info *once_obj, const sm_buf_info *loop_obj, uint8_t stride_in_bytes, bool swap);
+
+bool common_hal_rp2pio_statemachine_background_write(rp2pio_statemachine_obj_t *self,
+    const sm_buf_info *once_write_buf, const sm_buf_info *loop_write_buf, const sm_buf_info *loop2_write_buf,
+    uint8_t stride_in_bytes, bool swap);
+
+bool common_hal_rp2pio_statemachine_background_read(rp2pio_statemachine_obj_t *self,
+    const sm_buf_info *once_read_buf, const sm_buf_info *loop_read_buf, const sm_buf_info *loop2_read_buf,
+    uint8_t stride_in_bytes, bool swap);
+
 bool common_hal_rp2pio_statemachine_stop_background_write(rp2pio_statemachine_obj_t *self);
-mp_int_t common_hal_rp2pio_statemachine_get_pending(rp2pio_statemachine_obj_t *self);
+bool common_hal_rp2pio_statemachine_stop_background_read(rp2pio_statemachine_obj_t *self);
+
+mp_int_t common_hal_rp2pio_statemachine_get_pending_write(rp2pio_statemachine_obj_t *self);
+mp_int_t common_hal_rp2pio_statemachine_get_pending_read(rp2pio_statemachine_obj_t *self);
+
 bool common_hal_rp2pio_statemachine_get_writing(rp2pio_statemachine_obj_t *self);
+bool common_hal_rp2pio_statemachine_get_reading(rp2pio_statemachine_obj_t *self);
+
 bool common_hal_rp2pio_statemachine_readinto(rp2pio_statemachine_obj_t *self, uint8_t *data, size_t len, uint8_t stride_in_bytes, bool swap);
 bool common_hal_rp2pio_statemachine_write_readinto(rp2pio_statemachine_obj_t *self,
     const uint8_t *data_out, size_t out_len, uint8_t out_stride_in_bytes,
@@ -65,6 +79,7 @@ void common_hal_rp2pio_statemachine_set_frequency(rp2pio_statemachine_obj_t *sel
 
 bool common_hal_rp2pio_statemachine_get_rxstall(rp2pio_statemachine_obj_t *self);
 void common_hal_rp2pio_statemachine_clear_rxfifo(rp2pio_statemachine_obj_t *self);
+
 bool common_hal_rp2pio_statemachine_get_txstall(rp2pio_statemachine_obj_t *self);
 void common_hal_rp2pio_statemachine_clear_txstall(rp2pio_statemachine_obj_t *self);
 size_t common_hal_rp2pio_statemachine_get_in_waiting(rp2pio_statemachine_obj_t *self);
@@ -75,3 +90,6 @@ int common_hal_rp2pio_statemachine_get_pc(rp2pio_statemachine_obj_t *self);
 void common_hal_rp2pio_statemachine_set_interrupt_handler(rp2pio_statemachine_obj_t *self, void (*handler)(void *), void *arg, int mask);
 
 mp_obj_t common_hal_rp2pio_statemachine_get_rxfifo(rp2pio_statemachine_obj_t *self);
+
+mp_obj_t common_hal_rp2pio_statemachine_get_last_read(rp2pio_statemachine_obj_t *self);
+mp_obj_t common_hal_rp2pio_statemachine_get_last_write(rp2pio_statemachine_obj_t *self);
