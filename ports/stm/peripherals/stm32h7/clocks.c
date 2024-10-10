@@ -12,6 +12,10 @@
 #ifdef STM32H743xx
 #include "stm32h7/stm32h743xx/clocks.h"
 #endif
+#ifdef STM32H723xx
+#include "stm32h7/stm32h723xx/clocks.h"
+#define RCC_PERIPHCLK_QSPI RCC_PERIPHCLK_OSPI
+#endif
 
 void stm32_peripherals_clocks_init(void) {
     RCC_OscInitTypeDef RCC_OscInitStruct = {0};
@@ -44,12 +48,12 @@ void stm32_peripherals_clocks_init(void) {
     RCC_OscInitStruct.HSEState = BOARD_HSE_SOURCE;
     RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
     RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-    RCC_OscInitStruct.PLL.PLLM = HSE_VALUE / 2000000;
+    RCC_OscInitStruct.PLL.PLLM = 2;
     RCC_OscInitStruct.PLL.PLLN = CPY_CLK_PLLN;
     RCC_OscInitStruct.PLL.PLLP = CPY_CLK_PLLP;
     RCC_OscInitStruct.PLL.PLLQ = CPY_CLK_PLLQ;
     RCC_OscInitStruct.PLL.PLLR = 2;
-    RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_1;
+    RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1VCIRANGE_3;
     RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1VCOWIDE;
     RCC_OscInitStruct.PLL.PLLFRACN = 0;
     if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
@@ -76,7 +80,7 @@ void stm32_peripherals_clocks_init(void) {
     // Set up non-bus peripherals
     // TODO: I2S settings go here
     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_RTC | RCC_PERIPHCLK_USART3
-        | RCC_PERIPHCLK_USB;
+        | RCC_PERIPHCLK_USB | RCC_PERIPHCLK_QSPI;
     #if (BOARD_HAS_LOW_SPEED_CRYSTAL)
     PeriphClkInitStruct.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
     #else
@@ -88,7 +92,26 @@ void stm32_peripherals_clocks_init(void) {
     #else
     PeriphClkInitStruct.UsbClockSelection = RCC_USBCLKSOURCE_PLL;
     #endif
+    PeriphClkInitStruct.PLL2.PLL2M = 2;
+    PeriphClkInitStruct.PLL2.PLL2N = 20;
+    PeriphClkInitStruct.PLL2.PLL2P = 2;
+    PeriphClkInitStruct.PLL2.PLL2Q = 2;
+    PeriphClkInitStruct.PLL2.PLL2R = 2;
+    PeriphClkInitStruct.PLL2.PLL2RGE = RCC_PLL2VCIRANGE_3;
+    PeriphClkInitStruct.PLL2.PLL2VCOSEL = RCC_PLL2VCOWIDE;
+    PeriphClkInitStruct.PLL2.PLL2FRACN = 0;
+    #ifdef RCC_OSPICLKSOURCE_PLL2
+    PeriphClkInitStruct.OspiClockSelection = RCC_OSPICLKSOURCE_PLL2;
+    #else
+    PeriphClkInitStruct.QspiClockSelection = RCC_QSPICLKSOURCE_PLL2;
+    #endif
     HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct);
+
+    #ifdef __HAL_RCC_OSPI1_CLK_ENABLE
+    /* OCTOSPI1 clock enable */
+    __HAL_RCC_OCTOSPIM_CLK_ENABLE();
+    __HAL_RCC_OSPI1_CLK_ENABLE();
+    #endif
 
     // Enable USB Voltage detector
     HAL_PWREx_EnableUSBVoltageDetector();

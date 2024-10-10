@@ -13,6 +13,10 @@
 
 #include "common-hal/microcontroller/Pin.h"
 
+#ifndef USB_OTG_FS
+#define USB_OTG_FS USB_OTG_HS
+#endif
+
 static void init_usb_vbus_sense(void) {
 
     #if (BOARD_NO_VBUS_SENSE)
@@ -68,7 +72,7 @@ void init_usb_hardware(void) {
     GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     #if CPY_STM32H7
-    GPIO_InitStruct.Alternate = GPIO_AF10_OTG1_FS;
+    GPIO_InitStruct.Alternate = GPIO_AF10_OTG1_HS;
     #elif CPY_STM32F4 || CPY_STM32F7 || CPY_STM32L4
     GPIO_InitStruct.Alternate = GPIO_AF10_OTG_FS;
     #endif
@@ -95,7 +99,7 @@ void init_usb_hardware(void) {
     GPIO_InitStruct.Pull = GPIO_PULLUP;
     GPIO_InitStruct.Speed = GPIO_SPEED_HIGH;
     #if CPY_STM32H7
-    GPIO_InitStruct.Alternate = GPIO_AF10_OTG1_FS;
+    GPIO_InitStruct.Alternate = GPIO_AF10_OTG1_HS;
     #elif CPY_STM32F4 || CPY_STM32F7 || CPY_STM32L4
     GPIO_InitStruct.Alternate = GPIO_AF10_OTG_FS;
     #endif
@@ -115,17 +119,27 @@ void init_usb_hardware(void) {
     #endif
 
     #if CPY_STM32H7
+    RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
+
+    /** Initializes the peripherals clock */
+    PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_USB;
+    PeriphClkInitStruct.UsbClockSelection = RCC_USBCLKSOURCE_HSI48;
+    HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct);
+
     HAL_PWREx_EnableUSBVoltageDetector();
-    __HAL_RCC_USB2_OTG_FS_CLK_ENABLE();
+    __HAL_RCC_USB_OTG_HS_CLK_ENABLE();
     #else
     /* Peripheral clock enable */
     __HAL_RCC_USB_OTG_FS_CLK_ENABLE();
     #endif
 
-
     init_usb_vbus_sense();
 }
 
 void OTG_FS_IRQHandler(void) {
+    usb_irq_handler(0);
+}
+
+void OTG_HS_IRQHandler(void) {
     usb_irq_handler(0);
 }
