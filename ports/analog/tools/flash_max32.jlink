@@ -1,0 +1,6 @@
+si 1
+erase
+loadbin build-APARD/firmware.bin 0x10000000
+r
+g
+exit

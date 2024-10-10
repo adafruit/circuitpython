@@ -176,6 +176,12 @@ size_t usb_midi_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *des
     descriptor_buf[MIDI_STREAMING_IN_ENDPOINT_INDEX] =
         0x80 | (USB_MIDI_EP_NUM_IN ? USB_MIDI_EP_NUM_IN : descriptor_counts->current_endpoint);
     descriptor_counts->num_in_endpoints++;
+
+    // Some TinyUSB devices have issues with bi-directional endpoints
+    #ifdef TUD_ENDPOINT_ONE_DIRECTION_ONLY
+    descriptor_counts->current_endpoint++;
+    #endif
+
     descriptor_buf[MIDI_STREAMING_OUT_ENDPOINT_INDEX] =
         USB_MIDI_EP_NUM_OUT ? USB_MIDI_EP_NUM_OUT : descriptor_counts->current_endpoint;
     descriptor_counts->num_out_endpoints++;
