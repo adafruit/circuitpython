@@ -7,9 +7,11 @@
 #include "shared-bindings/vectorio/Circle.h"
 #include "shared-module/vectorio/__init__.h"
 #include "shared-module/displayio/area.h"
-
+#include "shared-bindings/vectorio/Rectangle.h"
+#include "shared-bindings/vectorio/VectorShape.h"
 #include "py/runtime.h"
 #include "stdlib.h"
+#include <math.h>
 
 
 void common_hal_vectorio_circle_construct(vectorio_circle_t *self, uint16_t radius, uint16_t color_index) {
@@ -78,6 +80,7 @@ void common_hal_vectorio_circle_set_color_index(void *obj, uint16_t color_index)
         self->on_dirty.event(self->on_dirty.obj);
     }
 }
+
 
 mp_obj_t common_hal_vectorio_circle_get_draw_protocol(void *circle) {
     vectorio_circle_t *self = circle;
