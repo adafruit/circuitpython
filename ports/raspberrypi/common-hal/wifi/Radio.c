@@ -574,7 +574,7 @@ void common_hal_wifi_radio_set_dns(wifi_radio_obj_t *self, mp_obj_t dns_addrs_ob
         addr.addr = IPADDR_NONE;
     } else {
         mp_obj_t dns_addr_obj = mp_obj_subscr(dns_addrs_obj, MP_OBJ_NEW_SMALL_INT(0), MP_OBJ_SENTINEL);
-        socketpool_resolve_host_raise(dns_addr_obj, &addr);
+        socketpool_resolve_host_raise(mp_obj_str_get_str(dns_addr_obj), &addr);
     }
     dns_setserver(0, &addr);
 }
