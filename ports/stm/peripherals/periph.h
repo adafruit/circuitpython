@@ -130,3 +130,10 @@ typedef struct {
 #define HAS_BASIC_TIM 0
 #include "stm32h7/stm32h743xx/periph.h"
 #endif
+
+#ifdef STM32H723xx
+#define HAS_DAC 0
+#define HAS_TRNG 0
+#define HAS_BASIC_TIM 1
+#include "stm32h7/stm32h723xx/periph.h"
+#endif
