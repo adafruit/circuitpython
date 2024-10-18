@@ -127,6 +127,7 @@ MP_PROPERTY_GETSET(vectorio_rectangle_color_index_obj,
     (mp_obj_t)&vectorio_rectangle_get_color_index_obj,
     (mp_obj_t)&vectorio_rectangle_set_color_index_obj);
 
+
 // Documentation for properties inherited from VectorShape.
 
 //|     x: int
