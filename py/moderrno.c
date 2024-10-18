@@ -35,6 +35,7 @@
 // This list can be defined per port in mpconfigport.h to tailor it to a
 // specific port's needs.  If it's not defined then we provide a default.
 #ifndef MICROPY_PY_ERRNO_LIST
+// CIRCUITPY-CHANGE: add ENOSPC and EROFS, because they are in mp_common_errno_to_str().
 #define MICROPY_PY_ERRNO_LIST \
     X(EPERM) \
     X(ENOENT) \
@@ -47,6 +48,8 @@
     X(ENODEV) \
     X(EISDIR) \
     X(EINVAL) \
+    X(ENOSPC) \
+    X(EROFS) \
     X(EOPNOTSUPP) \
     X(EADDRINUSE) \
     X(ECONNABORTED) \
