@@ -66,7 +66,10 @@ static MP_DEFINE_CONST_FUN_OBJ_1(bleio_connection_disconnect_obj, bleio_connecti
 
 
 //|     def pair(self, *, bond: bool = True) -> None:
-//|         """Pair to the peer to improve security."""
+//|         """Pair to the peer to improve security.
+//|
+//|         **Limitation**: Currently ``bond``must be ``True``: bonding always occurs.
+//|         """
 //|         ...
 static mp_obj_t bleio_connection_pair(mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     bleio_connection_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
@@ -79,6 +82,9 @@ static mp_obj_t bleio_connection_pair(mp_uint_t n_args, const mp_obj_t *pos_args
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
+    if (args[ARG_bond].u_bool == false) {
+        mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("%q=%q"), MP_QSTR_bond, MP_QSTR_False);
+    }
     bleio_connection_ensure_connected(self);
 
     common_hal_bleio_connection_pair(self->connection, args[ARG_bond].u_bool);

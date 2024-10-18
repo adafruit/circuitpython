@@ -35,6 +35,9 @@ void check_nrf_error(uint32_t err_code) {
         case NRF_ERROR_INVALID_PARAM:
             mp_raise_ValueError(MP_ERROR_TEXT("Invalid BLE parameter"));
             return;
+        case NRF_ERROR_INVALID_STATE:
+            mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Invalid state"));
+            return;
         case BLE_ERROR_INVALID_CONN_HANDLE:
             mp_raise_ConnectionError(MP_ERROR_TEXT("Not connected"));
             return;

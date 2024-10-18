@@ -103,6 +103,9 @@ void check_nimble_error(int rc, const char *file, size_t line) {
         case BLE_HS_ENOTCONN:
             mp_raise_ConnectionError(MP_ERROR_TEXT("Not connected"));
             return;
+        case BLE_HS_EALREADY:
+            mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Already in progress"));
+            return;
         default:
             #if CIRCUITPY_VERBOSE_BLE || CIRCUITPY_DEBUG
             if (file) {

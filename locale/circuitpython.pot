@@ -268,7 +268,8 @@ msgstr ""
 msgid "%q, %q, and %q must all be the same length"
 msgstr ""
 
-#: py/objint.c shared-bindings/storage/__init__.c
+#: py/objint.c shared-bindings/_bleio/Connection.c
+#: shared-bindings/storage/__init__.c
 msgid "%q=%q"
 msgstr ""
 
@@ -548,6 +549,10 @@ msgstr ""
 
 #: ports/atmel-samd/common-hal/canio/Listener.c
 msgid "Already have all-matches listener"
+msgstr ""
+
+#: ports/espressif/common-hal/_bleio/__init__.c
+msgid "Already in progress"
 msgstr ""
 
 #: ports/espressif/bindings/espnow/ESPNow.c
@@ -3171,10 +3176,6 @@ msgstr ""
 
 #: extmod/ulab/code/ndarray.c
 msgid "indices must be integers, slices, or Boolean lists"
-msgstr ""
-
-#: ports/espressif/common-hal/busio/I2C.c
-msgid "init I2C"
 msgstr ""
 
 #: extmod/ulab/code/scipy/optimize/optimize.c
