@@ -46,6 +46,12 @@ def matching_submodules(s):
 # Submodules needed by port builds outside of their ports directory.
 # Should we try and detect these?
 PORT_DEPS = {
+    "analog": [
+        "extmod/ulab/",
+        "lib/tlsf/",
+        "lib/tinyusb/",
+        "lib/protomatter",
+    ],
     "atmel-samd": [
         "extmod/ulab/",
         "lib/adafruit_floppy/",
