@@ -136,7 +136,6 @@ const mp_obj_property_t vectorio_rectangle_color_index_obj = {
               MP_ROM_NONE},
 };
 
-
 // Documentation for properties inherited from VectorShape.
 
 //|     x: int

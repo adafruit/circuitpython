@@ -6,13 +6,10 @@
 
 #include "shared-module/vectorio/__init__.h"
 #include "shared-bindings/vectorio/Rectangle.h"
-#include "shared-bindings/vectorio/VectorShape.h"
-#include "shared-bindings/vectorio/Circle.h"
 #include "shared-module/displayio/area.h"
 
 #include "py/runtime.h"
 #include "stdlib.h"
-#include <math.h>
 
 
 void common_hal_vectorio_rectangle_construct(vectorio_rectangle_t *self, uint32_t width, uint32_t height, uint16_t color_index) {
@@ -50,7 +47,6 @@ mp_obj_t common_hal_vectorio_rectangle_get_draw_protocol(void *rectangle) {
     vectorio_rectangle_t *self = rectangle;
     return self->draw_protocol_instance;
 }
-
 
 int16_t common_hal_vectorio_rectangle_get_width(void *obj) {
     vectorio_rectangle_t *self = obj;

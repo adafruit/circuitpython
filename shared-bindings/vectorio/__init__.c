@@ -185,16 +185,14 @@ static mp_obj_t vectorio_circle_circle_intersects(size_t n_args, const mp_obj_t 
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(vectorio_circle_circle_intersects_obj, 0, vectorio_circle_circle_intersects);
 
-//| def circle_contains_point(
-//|     cx: int, cy: int, cr: int, px: int, py: int
-//| ) -> bool:
+//| def circle_contains_point(cx: int, cy: int, cr: int, px: int, py: int) -> bool:
 //|     """Checks whether a circle contains the given point
 //|
 //|     :param int cx: Circle center x coordinate
 //|     :param int cy: Circle center y coordinate
 //|     :param int cr: Circle radius
 //|     :param int px: Point x coordinate
-//|     :param int py: Point y coordinate
+//|     :param int py: Point y coordinate"""
 //|     ...
 //|
 static mp_obj_t vectorio_circle_contains_point(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
@@ -226,9 +224,7 @@ static mp_obj_t vectorio_circle_contains_point(size_t n_args, const mp_obj_t *po
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(vectorio_circle_contains_point_obj, 0, vectorio_circle_contains_point);
 
-//| def rectangle_contains_point(
-//|     rx: int, ry: int, rw: int, rh: int, px: int, py: int
-//| ) -> bool:
+//| def rectangle_contains_point(rx: int, ry: int, rw: int, rh: int, px: int, py: int) -> bool:
 //|     """Checks whether a rectangle contains the given point
 //|
 //|     :param int rx: Rectangle x coordinate
@@ -236,7 +232,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(vectorio_circle_contains_point_obj, 0, vectorio_circl
 //|     :param int rw: Rectangle width
 //|     :param int rh: Rectangle height
 //|     :param int px: Point x coordinate
-//|     :param int py: Point y coordinate
+//|     :param int py: Point y coordinate"""
 //|     ...
 //|
 static mp_obj_t vectorio_rectangle_contains_point(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
@@ -271,9 +267,7 @@ static mp_obj_t vectorio_rectangle_contains_point(size_t n_args, const mp_obj_t 
 MP_DEFINE_CONST_FUN_OBJ_KW(vectorio_rectangle_contains_point_obj, 0, vectorio_rectangle_contains_point);
 
 
-//| def line_contains_point(
-//|     x1: int, y1: int, x2: int, y2: int, px: int, py: int
-//| ) -> bool:
+//| def line_contains_point(x1: int, y1: int, x2: int, y2: int, px: int, py: int) -> bool:
 //|     """Checks whether a line contains the given point
 //|
 //|     :param int x1: Line x1 coordinate
@@ -282,7 +276,8 @@ MP_DEFINE_CONST_FUN_OBJ_KW(vectorio_rectangle_contains_point_obj, 0, vectorio_re
 //|     :param int y2: Line y2 coordinate
 //|     :param int px: Point x coordinate
 //|     :param int py: Point y coordinate
-//|     :param float padding: Extra padding outside of the line to consider as positive intersection"""
+//|     :param float padding: Extra padding outside of the line to consider as positive intersection
+//|     """
 //|     ...
 //|
 static mp_obj_t vectorio_line_contains_point(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
@@ -325,7 +320,10 @@ MP_DEFINE_CONST_FUN_OBJ_KW(vectorio_line_contains_point_obj, 0, vectorio_line_co
 
 
 //| def line_circle_intersects(
-//|     x1: int, y1: int, x2: int, y2: int,
+//|     x1: int,
+//|     y1: int,
+//|     x2: int,
+//|     y2: int,
 //      cx: int, cy: int, cr: int
 //| ) -> bool:
 //|     """Checks whether a line intersects with a circle
@@ -338,6 +336,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(vectorio_line_contains_point_obj, 0, vectorio_line_co
 //|     :param int cy: Circle center y coordinate
 //|     :param int cr: Circle radius
 //|     :param float padding: Extra padding outside of the line to consider as positive intersection
+//|     """
 //|     ...
 //|
 static mp_obj_t vectorio_line_circle_intersects(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
@@ -383,8 +382,13 @@ MP_DEFINE_CONST_FUN_OBJ_KW(vectorio_line_circle_intersects_obj, 0, vectorio_line
 
 
 //| def polygon_circle_intersects(
-//|     points: List[Tuple[int, int]], polygon_x: int, polygon_y: int,
-//|     cx: int, cy: int, cr: int, padding: float
+//|     points: List[Tuple[int, int]],
+//|     polygon_x: int,
+//|     polygon_y: int,
+//|     cx: int,
+//|     cy: int,
+//|     cr: int,
+//|     padding: float,
 //| ) -> bool:
 //|     """Checks for intersection between a polygon and a cricle.
 //|
@@ -394,14 +398,15 @@ MP_DEFINE_CONST_FUN_OBJ_KW(vectorio_line_circle_intersects_obj, 0, vectorio_line
 //|     :param int cx: Circle center x coordinate
 //|     :param int cy: Circle center y coordinate
 //|     :param int cr: Circle radius
-//|     :param float padding: Extra padding outside of the line to consider as positive intersection"""
+//|     :param float padding: Extra padding outside of the line to consider as positive intersection
+//|     """
 //|     ...
 //|
 static mp_obj_t vectorio_polygon_circle_intersects(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum {ARG_points_list, ARG_polygon_x, ARG_polygon_y, ARG_cx, ARG_cy, ARG_cr, ARG_padding};
 
     static const mp_arg_t allowed_args[] = {
-		{MP_QSTR_points, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL}},
+        {MP_QSTR_points, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL}},
         {MP_QSTR_polygon_x, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
         {MP_QSTR_polygon_y, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
         {MP_QSTR_cx, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
@@ -413,7 +418,7 @@ static mp_obj_t vectorio_polygon_circle_intersects(size_t n_args, const mp_obj_t
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-	mp_obj_t points_list = mp_arg_validate_type(args[ARG_points_list].u_obj, &mp_type_list, MP_QSTR_points);
+    mp_obj_t points_list = mp_arg_validate_type(args[ARG_points_list].u_obj, &mp_type_list, MP_QSTR_points);
 
     int16_t polygon_x = args[ARG_polygon_x].u_int;
     int16_t polygon_y = args[ARG_polygon_y].u_int;
@@ -431,7 +436,7 @@ static mp_obj_t vectorio_polygon_circle_intersects(size_t n_args, const mp_obj_t
     bool result = common_hal_vectorio_polygon_circle_intersects(
         points_list, polygon_x, polygon_y,
         cx, cy, cr, padding
-    );
+        );
 
     if (result) {
         return mp_const_true;
@@ -443,8 +448,14 @@ MP_DEFINE_CONST_FUN_OBJ_KW(vectorio_polygon_circle_intersects_obj, 0, vectorio_p
 
 
 //| def line_line_intersects(
-//|     x1: int, y1: int, x2: int, y2: int,
-//|     x3: int, y3: int, x4: int, y4: int,
+//|     x1: int,
+//|     y1: int,
+//|     x2: int,
+//|     y2: int,
+//|     x3: int,
+//|     y3: int,
+//|     x4: int,
+//|     y4: int,
 //| ) -> bool:
 //|     """Checks whether a line intersects with another line
 //|
@@ -455,7 +466,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(vectorio_polygon_circle_intersects_obj, 0, vectorio_p
 //|     :param int x3: Other Line x3 coordinate
 //|     :param int y3: Other Line y3 coordinate
 //|     :param int x4: Other Line x4 coordinate
-//|     :param int y4: Other Line y4 coordinate
+//|     :param int y4: Other Line y4 coordinate"""
 //|     ...
 //|
 static mp_obj_t vectorio_line_line_intersects(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
@@ -496,8 +507,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(vectorio_line_line_intersects_obj, 0, vectorio_line_l
 
 
 //| def line_rectangle_intersects(
-//|     x1: int, y1: int, x2: int, y2: int,
-//|     rx: int, ry: int, rw: int, rh: int
+//|     x1: int, y1: int, x2: int, y2: int, rx: int, ry: int, rw: int, rh: int
 //| ) -> bool:
 //|     """Checks whether a line intersects with another line
 //|
@@ -508,7 +518,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(vectorio_line_line_intersects_obj, 0, vectorio_line_l
 //|     :param int rx: Rectangle x coordinate
 //|     :param int ry: Rectangle y coordinate
 //|     :param int rw: Rectangle width
-//|     :param int rh: Rectangle height
+//|     :param int rh: Rectangle height"""
 //|     ...
 //|
 static mp_obj_t vectorio_line_rectangle_intersects(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
@@ -523,7 +533,6 @@ static mp_obj_t vectorio_line_rectangle_intersects(size_t n_args, const mp_obj_t
         {MP_QSTR_ry, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
         {MP_QSTR_rw, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
         {MP_QSTR_rh, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
-
     };
 
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
@@ -549,6 +558,67 @@ static mp_obj_t vectorio_line_rectangle_intersects(size_t n_args, const mp_obj_t
 MP_DEFINE_CONST_FUN_OBJ_KW(vectorio_line_rectangle_intersects_obj, 0, vectorio_line_rectangle_intersects);
 
 
+//| def polygon_rectangle_intersects(
+//|     points: List[Tuple[int, int]],
+//|     polygon_x: int,
+//|     polygon_y: int,
+//|     rx: int,
+//|     ry: int,
+//|     rw: int,
+//|     rh: int,
+//| ) -> bool:
+//|     """Checks for intersection between a polygon and a cricle.
+//|
+//|     :param List[Tuple[int,int]] points: Vertices for the polygon
+//|     :param int polygon_x: Polygon x coordinate. All other polygon points are relative to this
+//|     :param int polygon_y: Polygon y coordinate. All other polygon points are relative to this
+//|     :param int rx: Rectangle x coordinate
+//|     :param int ry: Rectangle y coordinate
+//|     :param int rw: Rectangle width
+//|     :param int rh: Rectangle height"""
+//|     ...
+//|
+static mp_obj_t vectorio_polygon_rectangle_intersects(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    enum {ARG_points_list, ARG_polygon_x, ARG_polygon_y, ARG_rx, ARG_ry, ARG_rw, ARG_rh};
+
+    static const mp_arg_t allowed_args[] = {
+        {MP_QSTR_points, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL}},
+        {MP_QSTR_polygon_x, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
+        {MP_QSTR_polygon_y, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
+        {MP_QSTR_rx, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
+        {MP_QSTR_ry, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
+        {MP_QSTR_rw, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
+        {MP_QSTR_rh, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
+        {MP_QSTR_padding, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} }, // None convert to 0.0
+    };
+
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    mp_obj_t points_list = mp_arg_validate_type(args[ARG_points_list].u_obj, &mp_type_list, MP_QSTR_points);
+
+    int16_t polygon_x = args[ARG_polygon_x].u_int;
+    int16_t polygon_y = args[ARG_polygon_y].u_int;
+
+    int16_t rx = args[ARG_rx].u_int;
+    int16_t ry = args[ARG_ry].u_int;
+    int16_t rw = args[ARG_rw].u_int;
+    int16_t rh = args[ARG_rh].u_int;
+
+    bool result = common_hal_vectorio_polygon_rectangle_intersects(
+        points_list, polygon_x, polygon_y,
+        rx, ry, rw, rh
+        );
+
+    if (result) {
+        return mp_const_true;
+    } else {
+        return mp_const_false;
+    }
+}
+MP_DEFINE_CONST_FUN_OBJ_KW(vectorio_polygon_rectangle_intersects_obj, 0, vectorio_polygon_rectangle_intersects);
+
+
 static const mp_rom_map_elem_t vectorio_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_vectorio) },
     { MP_ROM_QSTR(MP_QSTR_circle_rectangle_intersects), MP_ROM_PTR(&vectorio_circle_rectangle_intersects_obj) },
@@ -557,6 +627,7 @@ static const mp_rom_map_elem_t vectorio_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_line_circle_intersects), MP_ROM_PTR(&vectorio_line_circle_intersects_obj) },
     { MP_ROM_QSTR(MP_QSTR_line_line_intersects), MP_ROM_PTR(&vectorio_line_line_intersects_obj) },
     { MP_ROM_QSTR(MP_QSTR_line_rectangle_intersects), MP_ROM_PTR(&vectorio_line_rectangle_intersects_obj) },
+    { MP_ROM_QSTR(MP_QSTR_polygon_rectangle_intersects), MP_ROM_PTR(&vectorio_polygon_rectangle_intersects_obj) },
     { MP_ROM_QSTR(MP_QSTR_circle_contains_point), MP_ROM_PTR(&vectorio_circle_contains_point_obj) },
     { MP_ROM_QSTR(MP_QSTR_rectangle_contains_point), MP_ROM_PTR(&vectorio_rectangle_contains_point_obj) },
     { MP_ROM_QSTR(MP_QSTR_line_contains_point), MP_ROM_PTR(&vectorio_line_contains_point_obj) },
