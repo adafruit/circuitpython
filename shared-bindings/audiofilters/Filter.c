@@ -155,7 +155,7 @@ MP_PROPERTY_GETSET(audiofilters_filter_filter_obj,
 
 //|     def low_pass_filter(
 //|         self, frequency: float, q_factor: float = 0.7071067811865475
-//|     ) -> Biquad:
+//|     ) -> synthio.Biquad:
 //|         """Construct a low-pass filter with the given parameters and update the `filter` property.
 //|
 //|         ``frequency``, called f0 in the cookbook, is the corner frequency in Hz
@@ -198,7 +198,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(audiofilters_filter_lpf_obj, 1, audiofilters_filter_o
 
 //|     def high_pass_filter(
 //|         self, frequency: float, q_factor: float = 0.7071067811865475
-//|     ) -> Biquad:
+//|     ) -> synthio.Biquad:
 //|         """Construct a high-pass filter with the given parameters and update the `filter` property.
 //|
 //|         ``frequency``, called f0 in the cookbook, is the corner frequency in Hz
@@ -230,7 +230,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(audiofilters_filter_hpf_obj, 1, audiofilters_filter_o
 
 //|     def band_pass_filter(
 //|         self, frequency: float, q_factor: float = 0.7071067811865475
-//|     ) -> Biquad:
+//|     ) -> synthio.Biquad:
 //|         """Construct a band-pass filter with the given parameters and update the `filter` property.
 //|
 //|         ``frequency``, called f0 in the cookbook, is the center frequency in Hz
