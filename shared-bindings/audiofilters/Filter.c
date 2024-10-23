@@ -15,8 +15,7 @@
 #include "py/runtime.h"
 #include "shared-bindings/util.h"
 #include "shared-module/synthio/block.h"
-
-#define MIX_DEFAULT 1.0f
+#include "shared-bindings/synthio/Biquad.h"
 
 //| class Filter:
 //|     """A Filter effect"""
@@ -31,9 +30,8 @@
 //|         samples_signed: bool = True,
 //|         channel_count: int = 1,
 //|     ) -> None:
-//|         """Create a Filter effect where the original sample is processed through a biquad filter
-//|            created by a synthio.Synthesizer object. This can be used to generate a low-pass,
-//|            high-pass, or band-pass filter.
+//|         """Create a Filter effect where the original sample is processed through a biquad filter.
+//|            This can be used to generate a low-pass, high-pass, or band-pass filter.
 //|
 //|            The mix parameter allows you to change how much of the unchanged sample passes through to
 //|            the output to how much of the effect audio you hear as the output.
@@ -155,6 +153,115 @@ MP_PROPERTY_GETSET(audiofilters_filter_filter_obj,
     (mp_obj_t)&audiofilters_filter_set_filter_obj);
 
 
+//|     def low_pass_filter(
+//|         self, frequency: float, q_factor: float = 0.7071067811865475
+//|     ) -> Biquad:
+//|         """Construct a low-pass filter with the given parameters and update the `filter` property.
+//|
+//|         ``frequency``, called f0 in the cookbook, is the corner frequency in Hz
+//|         of the filter.
+//|
+//|         ``q_factor``, called ``Q`` in the cookbook.  Controls how peaked the response will be at the cutoff frequency. A large value makes the response more peaked.
+//|         """
+
+enum passfilter_arg_e { ARG_f0, ARG_Q };
+
+// M_PI is not part of the math.h standard and may not be defined
+// And by defining our own we can ensure it uses the correct const format.
+#define MP_PI MICROPY_FLOAT_CONST(3.14159265358979323846)
+
+static const mp_arg_t passfilter_properties[] = {
+    { MP_QSTR_frequency, MP_ARG_OBJ | MP_ARG_REQUIRED, {.u_obj = MP_ROM_NONE} },
+    { MP_QSTR_Q, MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL } },
+};
+
+static mp_obj_t audiofilters_filter_obj_lpf(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    audiofilters_filter_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
+    check_for_deinit(self);
+    mp_arg_val_t args[MP_ARRAY_SIZE(passfilter_properties)];
+    mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(passfilter_properties), passfilter_properties, args);
+
+    mp_float_t f0 = mp_arg_validate_type_float(args[ARG_f0].u_obj, MP_QSTR_f0);
+    mp_float_t Q =
+        args[ARG_Q].u_obj == MP_OBJ_NULL ? MICROPY_FLOAT_CONST(0.7071067811865475) :
+        mp_arg_validate_type_float(args[ARG_Q].u_obj, MP_QSTR_Q);
+
+    mp_float_t w0 = f0 / self->sample_rate * 2 * MP_PI;
+
+    mp_obj_t biquad = common_hal_synthio_new_lpf(w0, Q);
+    common_hal_audiofilters_filter_set_filter(self, biquad);
+    return biquad;
+}
+
+MP_DEFINE_CONST_FUN_OBJ_KW(audiofilters_filter_lpf_obj, 1, audiofilters_filter_obj_lpf);
+
+
+//|     def high_pass_filter(
+//|         self, frequency: float, q_factor: float = 0.7071067811865475
+//|     ) -> Biquad:
+//|         """Construct a high-pass filter with the given parameters and update the `filter` property.
+//|
+//|         ``frequency``, called f0 in the cookbook, is the corner frequency in Hz
+//|         of the filter.
+//|
+//|         ``q_factor``, called ``Q`` in the cookbook.  Controls how peaked the response will be at the cutoff frequency. A large value makes the response more peaked.
+//|         """
+
+static mp_obj_t audiofilters_filter_obj_hpf(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    audiofilters_filter_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
+    check_for_deinit(self);
+    mp_arg_val_t args[MP_ARRAY_SIZE(passfilter_properties)];
+    mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(passfilter_properties), passfilter_properties, args);
+
+    mp_float_t f0 = mp_arg_validate_type_float(args[ARG_f0].u_obj, MP_QSTR_f0);
+    mp_float_t Q =
+        args[ARG_Q].u_obj == MP_OBJ_NULL ? MICROPY_FLOAT_CONST(0.7071067811865475) :
+        mp_arg_validate_type_float(args[ARG_Q].u_obj, MP_QSTR_Q);
+
+    mp_float_t w0 = f0 / self->sample_rate * 2 * MP_PI;
+
+    mp_obj_t biquad = common_hal_synthio_new_hpf(w0, Q);
+    common_hal_audiofilters_filter_set_filter(self, biquad);
+    return biquad;
+}
+
+MP_DEFINE_CONST_FUN_OBJ_KW(audiofilters_filter_hpf_obj, 1, audiofilters_filter_obj_hpf);
+
+
+//|     def band_pass_filter(
+//|         self, frequency: float, q_factor: float = 0.7071067811865475
+//|     ) -> Biquad:
+//|         """Construct a band-pass filter with the given parameters and update the `filter` property.
+//|
+//|         ``frequency``, called f0 in the cookbook, is the center frequency in Hz
+//|         of the filter.
+//|
+//|         ``q_factor``, called ``Q`` in the cookbook.  Controls how peaked the response will be at the cutoff frequency. A large value makes the response more peaked.
+//|
+//|         The coefficients are scaled such that the filter has a 0dB peak gain.
+//|         """
+
+static mp_obj_t audiofilters_filter_obj_bpf(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    audiofilters_filter_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
+    check_for_deinit(self);
+    mp_arg_val_t args[MP_ARRAY_SIZE(passfilter_properties)];
+    mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(passfilter_properties), passfilter_properties, args);
+
+    mp_float_t f0 = mp_arg_validate_type_float(args[ARG_f0].u_obj, MP_QSTR_f0);
+    mp_float_t Q =
+        args[ARG_Q].u_obj == MP_OBJ_NULL ? MICROPY_FLOAT_CONST(0.7071067811865475) :
+        mp_arg_validate_type_float(args[ARG_Q].u_obj, MP_QSTR_Q);
+
+    mp_float_t w0 = f0 / self->sample_rate * 2 * MP_PI;
+
+    mp_obj_t biquad = common_hal_synthio_new_bpf(w0, Q);
+    common_hal_audiofilters_filter_set_filter(self, biquad);
+    return biquad;
+}
+
+MP_DEFINE_CONST_FUN_OBJ_KW(audiofilters_filter_bpf_obj, 1, audiofilters_filter_obj_bpf);
+
+
 //|     mix: synthio.BlockInput
 //|     """The rate the filtered signal mix between 0 and 1 where 0 is only sample and 1 is all effect."""
 static mp_obj_t audiofilters_filter_obj_get_mix(mp_obj_t self_in) {
@@ -238,6 +345,9 @@ static const mp_rom_map_elem_t audiofilters_filter_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&audiofilters_filter___exit___obj) },
     { MP_ROM_QSTR(MP_QSTR_play), MP_ROM_PTR(&audiofilters_filter_play_obj) },
     { MP_ROM_QSTR(MP_QSTR_stop), MP_ROM_PTR(&audiofilters_filter_stop_obj) },
+    { MP_ROM_QSTR(MP_QSTR_low_pass_filter), MP_ROM_PTR(&audiofilters_filter_lpf_obj) },
+    { MP_ROM_QSTR(MP_QSTR_high_pass_filter), MP_ROM_PTR(&audiofilters_filter_hpf_obj) },
+    { MP_ROM_QSTR(MP_QSTR_band_pass_filter), MP_ROM_PTR(&audiofilters_filter_bpf_obj) },
 
     // Properties
     { MP_ROM_QSTR(MP_QSTR_playing), MP_ROM_PTR(&audiofilters_filter_playing_obj) },
