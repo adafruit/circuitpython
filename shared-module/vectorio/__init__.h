@@ -14,3 +14,6 @@ typedef struct {
     mp_obj_t obj;
     event_function *event;
 } vectorio_event_t;
+
+float measure_distance(
+    float x1, float y1, float x2, float y2);
