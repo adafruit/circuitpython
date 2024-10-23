@@ -442,12 +442,121 @@ static mp_obj_t vectorio_polygon_circle_intersects(size_t n_args, const mp_obj_t
 MP_DEFINE_CONST_FUN_OBJ_KW(vectorio_polygon_circle_intersects_obj, 0, vectorio_polygon_circle_intersects);
 
 
+//| def line_line_intersects(
+//|     x1: int, y1: int, x2: int, y2: int,
+//|     x3: int, y3: int, x4: int, y4: int,
+//| ) -> bool:
+//|     """Checks whether a line intersects with another line
+//|
+//|     :param int x1: Line x1 coordinate
+//|     :param int y1: Line y1 coordinate
+//|     :param int x2: Line x2 coordinate
+//|     :param int y2: Line y2 coordinate
+//|     :param int x3: Other Line x3 coordinate
+//|     :param int y3: Other Line y3 coordinate
+//|     :param int x4: Other Line x4 coordinate
+//|     :param int y4: Other Line y4 coordinate
+//|     ...
+//|
+static mp_obj_t vectorio_line_line_intersects(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    enum {ARG_x1, ARG_y1, ARG_x2, ARG_y2, ARG_x3, ARG_y3, ARG_x4, ARG_y4 };
+
+    static const mp_arg_t allowed_args[] = {
+        {MP_QSTR_x1, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
+        {MP_QSTR_y1, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
+        {MP_QSTR_x2, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
+        {MP_QSTR_y2, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
+        {MP_QSTR_x3, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
+        {MP_QSTR_y3, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
+        {MP_QSTR_x4, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
+        {MP_QSTR_y4, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
+    };
+
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    int16_t x1 = args[ARG_x1].u_int;
+    int16_t y1 = args[ARG_y1].u_int;
+    int16_t x2 = args[ARG_x2].u_int;
+    int16_t y2 = args[ARG_y2].u_int;
+    int16_t x3 = args[ARG_x3].u_int;
+    int16_t y3 = args[ARG_y3].u_int;
+    int16_t x4 = args[ARG_x4].u_int;
+    int16_t y4 = args[ARG_y4].u_int;
+
+    bool result = common_hal_vectorio_line_line_intersects(x1, y1, x2, y2, x3, y3, x4, y4);
+
+    if (result) {
+        return mp_const_true;
+    } else {
+        return mp_const_false;
+    }
+}
+MP_DEFINE_CONST_FUN_OBJ_KW(vectorio_line_line_intersects_obj, 0, vectorio_line_line_intersects);
+
+
+//| def line_rectangle_intersects(
+//|     x1: int, y1: int, x2: int, y2: int,
+//|     rx: int, ry: int, rw: int, rh: int
+//| ) -> bool:
+//|     """Checks whether a line intersects with another line
+//|
+//|     :param int x1: Line x1 coordinate
+//|     :param int y1: Line y1 coordinate
+//|     :param int x2: Line x2 coordinate
+//|     :param int y2: Line y2 coordinate
+//|     :param int rx: Rectangle x coordinate
+//|     :param int ry: Rectangle y coordinate
+//|     :param int rw: Rectangle width
+//|     :param int rh: Rectangle height
+//|     ...
+//|
+static mp_obj_t vectorio_line_rectangle_intersects(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    enum {ARG_x1, ARG_y1, ARG_x2, ARG_y2, ARG_rx, ARG_ry, ARG_rw, ARG_rh };
+
+    static const mp_arg_t allowed_args[] = {
+        {MP_QSTR_x1, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
+        {MP_QSTR_y1, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
+        {MP_QSTR_x2, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
+        {MP_QSTR_y2, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
+        {MP_QSTR_rx, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
+        {MP_QSTR_ry, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
+        {MP_QSTR_rw, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
+        {MP_QSTR_rh, MP_ARG_REQUIRED | MP_ARG_INT, {.u_obj = MP_OBJ_NULL}},
+
+    };
+
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    int16_t x1 = args[ARG_x1].u_int;
+    int16_t y1 = args[ARG_y1].u_int;
+    int16_t x2 = args[ARG_x2].u_int;
+    int16_t y2 = args[ARG_y2].u_int;
+    int16_t rx = args[ARG_rx].u_int;
+    int16_t ry = args[ARG_ry].u_int;
+    int16_t rw = args[ARG_rw].u_int;
+    int16_t rh = args[ARG_rh].u_int;
+
+    bool result = common_hal_vectorio_line_rectangle_intersects(x1, y1, x2, y2, rx, ry, rw, rh);
+
+    if (result) {
+        return mp_const_true;
+    } else {
+        return mp_const_false;
+    }
+}
+MP_DEFINE_CONST_FUN_OBJ_KW(vectorio_line_rectangle_intersects_obj, 0, vectorio_line_rectangle_intersects);
+
+
 static const mp_rom_map_elem_t vectorio_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_vectorio) },
     { MP_ROM_QSTR(MP_QSTR_circle_rectangle_intersects), MP_ROM_PTR(&vectorio_circle_rectangle_intersects_obj) },
     { MP_ROM_QSTR(MP_QSTR_polygon_circle_intersects), MP_ROM_PTR(&vectorio_polygon_circle_intersects_obj) },
     { MP_ROM_QSTR(MP_QSTR_circle_circle_intersects), MP_ROM_PTR(&vectorio_circle_circle_intersects_obj) },
     { MP_ROM_QSTR(MP_QSTR_line_circle_intersects), MP_ROM_PTR(&vectorio_line_circle_intersects_obj) },
+    { MP_ROM_QSTR(MP_QSTR_line_line_intersects), MP_ROM_PTR(&vectorio_line_line_intersects_obj) },
+    { MP_ROM_QSTR(MP_QSTR_line_rectangle_intersects), MP_ROM_PTR(&vectorio_line_rectangle_intersects_obj) },
     { MP_ROM_QSTR(MP_QSTR_circle_contains_point), MP_ROM_PTR(&vectorio_circle_contains_point_obj) },
     { MP_ROM_QSTR(MP_QSTR_rectangle_contains_point), MP_ROM_PTR(&vectorio_rectangle_contains_point_obj) },
     { MP_ROM_QSTR(MP_QSTR_line_contains_point), MP_ROM_PTR(&vectorio_line_contains_point_obj) },

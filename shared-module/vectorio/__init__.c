@@ -167,7 +167,7 @@ bool common_hal_vectorio_polygon_circle_intersects(
 	size_t len = 0;
 	mp_obj_t *points_list_items;
     mp_obj_list_get(points_list, &len, &points_list_items);
-
+	bool polygon_contains_point = false;
 	for(uint16_t i = 0; i < len; i++){
 		size_t cur_tuple_len = 0;
 		mp_obj_t *cur_point_tuple;
@@ -195,8 +195,75 @@ bool common_hal_vectorio_polygon_circle_intersects(
 			return true;
 		}
 
+		if (((cur_y >= cy && cy > next_y) || (cur_y < cy && cy <= next_y)) &&
+             (cx < (next_x - cur_x) * (cy - cur_y) / (next_y - cur_y) + cur_x)){
+
+			polygon_contains_point = !polygon_contains_point;
+		}
 
 	}
-
+	if (polygon_contains_point == true){
+		return true;
+	}
 	return false;
+}
+
+
+
+bool common_hal_vectorio_line_line_intersects(
+	int16_t x1, int16_t y1, int16_t x2, int16_t y2,
+	int16_t x3, int16_t y3, int16_t x4, int16_t y4
+){
+
+    double denom = ((y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1));
+
+    if (denom >= 0 && denom <= 0){
+        return false;
+    }
+
+    double dx1 = x1;
+    double dy1 = y1;
+    double dx2 = x2;
+    double dy2 = y2;
+    double dx3 = x3;
+    double dy3 = y3;
+    double dx4 = x4;
+    double dy4 = y4;
+
+
+    double dist_a = ((dx4 - dx3) * (dy1 - dy3) - (dy4 - dy3) * (dx1 - dx3)) / denom;
+    double dist_b = ((dx2 - dx1) * (dy1 - dy3) - (dy2 - dy1) * (dx1 - dx3)) / denom;
+
+    if ((0 <= dist_a) && (dist_a <= 1) && (0 <= dist_b) && (dist_b <= 1)){
+        return true;
+    }
+    return false;
+
+}
+
+bool common_hal_vectorio_line_rectangle_intersects(
+	int16_t x1, int16_t y1, int16_t x2, int16_t y2,
+    int16_t rx, int16_t ry, int16_t rw, int16_t rh
+){
+
+
+    if (common_hal_vectorio_line_line_intersects(x1, y1, x2, y2,
+        rx, ry, rx, ry + rh)){
+        return true;
+    }
+    if (common_hal_vectorio_line_line_intersects(x1, y1, x2, y2,
+        rx + rw, ry, rx + rw, ry + rh)){
+        return true;
+    }
+    if (common_hal_vectorio_line_line_intersects(x1, y1, x2, y2,
+        rx, ry, rx + rw, ry)){
+        return true;
+    }
+    if (common_hal_vectorio_line_line_intersects(x1, y1, x2, y2,
+         rx, ry + rh, rx + rw, ry + rh)){
+        return true;
+    }
+
+    return false;
+
 }
