@@ -8,6 +8,8 @@
 
 #include "py/obj.h"
 
+#define BIQUAD_SHIFT (15)
+
 typedef struct {
     int32_t a1, a2, b0, b1, b2;
     int32_t x[2], y[2];

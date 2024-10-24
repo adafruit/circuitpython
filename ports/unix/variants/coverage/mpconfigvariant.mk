@@ -56,6 +56,7 @@ SRC_BITMAP := \
 	shared-bindings/synthio/LFO.c \
 	shared-bindings/synthio/Note.c \
 	shared-bindings/synthio/Biquad.c \
+	shared-bindings/synthio/BlockBiquad.c \
 	shared-bindings/synthio/Synthesizer.c \
 	shared-bindings/traceback/__init__.c \
 	shared-bindings/util.c \
@@ -87,6 +88,7 @@ SRC_BITMAP := \
 	shared-module/synthio/LFO.c \
 	shared-module/synthio/Note.c \
 	shared-module/synthio/Biquad.c \
+	shared-module/synthio/BlockBiquad.c \
 	shared-module/synthio/Synthesizer.c \
 	shared-module/traceback/__init__.c \
 	shared-module/zlib/__init__.c \

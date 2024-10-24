@@ -88,6 +88,6 @@ int synthio_lfo_step(synthio_lfo_state_t *state, uint16_t dur);
 int synthio_sweep_step(synthio_lfo_state_t *state, uint16_t dur);
 int synthio_sweep_in_step(synthio_lfo_state_t *state, uint16_t dur);
 
-extern mp_float_t synthio_global_rate_scale;
+extern mp_float_t synthio_global_rate_scale, synthio_global_W_scale;
 extern uint8_t synthio_global_tick;
 void shared_bindings_synthio_lfo_tick(uint32_t sample_rate);
