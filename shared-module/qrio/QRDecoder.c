@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2021 Jeff Epler for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2021 Jeff Epler for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include <string.h>
 
@@ -62,7 +42,7 @@ void shared_module_qrio_qrdecoder_set_width(qrdecoder_qrdecoder_obj_t *self, int
     }
 }
 
-STATIC mp_obj_t data_type(int type) {
+static mp_obj_t data_type(int type) {
     switch (type) {
         case QUIRC_ECI_ISO_8859_1:
             return MP_OBJ_NEW_QSTR(MP_QSTR_iso_8859_hyphen_1);
@@ -98,21 +78,21 @@ STATIC mp_obj_t data_type(int type) {
     return mp_obj_new_int(type);
 }
 
-mp_obj_t shared_module_qrio_qrdecoder_decode(qrdecoder_qrdecoder_obj_t *self, const mp_buffer_info_t *bufinfo, qrio_pixel_policy_t policy) {
+static void quirc_fill_buffer(qrdecoder_qrdecoder_obj_t *self, void *buf, qrio_pixel_policy_t policy) {
     int width, height;
     uint8_t *framebuffer = quirc_begin(self->quirc, &width, &height);
-    uint8_t *src = bufinfo->buf;
+    uint8_t *src = buf;
 
     switch (policy) {
         case QRIO_RGB565: {
-            uint16_t *src16 = bufinfo->buf;
+            uint16_t *src16 = buf;
             for (int i = 0; i < width * height; i++) {
                 framebuffer[i] = (src16[i] >> 3) & 0xfc;
             }
             break;
         }
         case QRIO_RGB565_SWAPPED: {
-            uint16_t *src16 = bufinfo->buf;
+            uint16_t *src16 = buf;
             for (int i = 0; i < width * height; i++) {
                 framebuffer[i] = (__builtin_bswap16(src16[i]) >> 3) & 0xfc;
             }
@@ -133,11 +113,16 @@ mp_obj_t shared_module_qrio_qrdecoder_decode(qrdecoder_qrdecoder_obj_t *self, co
             break;
     }
     quirc_end(self->quirc);
+}
 
+
+mp_obj_t shared_module_qrio_qrdecoder_decode(qrdecoder_qrdecoder_obj_t *self, const mp_buffer_info_t *bufinfo, qrio_pixel_policy_t policy) {
+    quirc_fill_buffer(self, bufinfo->buf, policy);
     int count = quirc_count(self->quirc);
     mp_obj_t result = mp_obj_new_list(0, NULL);
     for (int i = 0; i < count; i++) {
         quirc_extract(self->quirc, i, &self->code);
+        mp_obj_t code_obj;
         if (quirc_decode(&self->code, &self->data) != QUIRC_SUCCESS) {
             continue;
         }
@@ -145,7 +130,32 @@ mp_obj_t shared_module_qrio_qrdecoder_decode(qrdecoder_qrdecoder_obj_t *self, co
             mp_obj_new_bytes(self->data.payload, self->data.payload_len),
             data_type(self->data.data_type),
         };
-        mp_obj_t code_obj = namedtuple_make_new((const mp_obj_type_t *)&qrio_qrinfo_type_obj, 2, 0, elems);
+        code_obj = namedtuple_make_new((const mp_obj_type_t *)&qrio_qrinfo_type_obj, 2, 0, elems);
+        mp_obj_list_append(result, code_obj);
+    }
+    return result;
+}
+
+
+mp_obj_t shared_module_qrio_qrdecoder_find(qrdecoder_qrdecoder_obj_t *self, const mp_buffer_info_t *bufinfo, qrio_pixel_policy_t policy) {
+    quirc_fill_buffer(self, bufinfo->buf, policy);
+    int count = quirc_count(self->quirc);
+    mp_obj_t result = mp_obj_new_list(0, NULL);
+    for (int i = 0; i < count; i++) {
+        quirc_extract(self->quirc, i, &self->code);
+        mp_obj_t code_obj;
+        mp_obj_t elems[9] = {
+            mp_obj_new_int(self->code.corners[0].x),
+            mp_obj_new_int(self->code.corners[0].y),
+            mp_obj_new_int(self->code.corners[1].x),
+            mp_obj_new_int(self->code.corners[1].y),
+            mp_obj_new_int(self->code.corners[2].x),
+            mp_obj_new_int(self->code.corners[2].y),
+            mp_obj_new_int(self->code.corners[3].x),
+            mp_obj_new_int(self->code.corners[3].y),
+            mp_obj_new_int(self->code.size),
+        };
+        code_obj = namedtuple_make_new((const mp_obj_type_t *)&qrio_qrposition_type_obj, 9, 0, elems);
         mp_obj_list_append(result, code_obj);
     }
     return result;

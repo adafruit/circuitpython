@@ -1,36 +1,21 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
-#ifndef MICROPY_INCLUDED_RASPBERRYPI_COMMON_HAL_RP2PIO_STATEMACHINE_H
-#define MICROPY_INCLUDED_RASPBERRYPI_COMMON_HAL_RP2PIO_STATEMACHINE_H
+#pragma once
 
 #include "py/obj.h"
 
 #include "common-hal/microcontroller/Pin.h"
+#include "common-hal/memorymap/AddressRange.h"
 #include "src/rp2_common/hardware_pio/include/hardware/pio.h"
+
+enum { PIO_ANY_OFFSET = -1 };
+enum { PIO_FIFO_JOIN_AUTO = -1, PIO_FIFO_TYPE_DEFAULT = PIO_FIFO_JOIN_AUTO };
+enum { PIO_MOV_STATUS_DEFAULT = STATUS_TX_LESSTHAN };
+enum { PIO_MOV_N_DEFAULT = 0 };
 
 typedef struct sm_buf_info {
     mp_obj_t obj;
@@ -59,12 +44,16 @@ typedef struct {
     bool in_shift_right;
     bool user_interruptible;
     uint8_t offset;
+    uint8_t fifo_depth;  // Either 4 if FIFOs are not joined, or 8 if they are.
 
     // dma-related items
     volatile int pending_buffers;
     sm_buf_info current, once, loop;
     int background_stride_in_bytes;
     bool dma_completed, byteswap;
+    #if PICO_PIO_VERSION > 0
+    memorymap_addressrange_obj_t rxfifo_obj;
+    #endif
 } rp2pio_statemachine_obj_t;
 
 void reset_rp2pio_statemachine(void);
@@ -88,13 +77,19 @@ bool rp2pio_statemachine_construct(rp2pio_statemachine_obj_t *self,
     bool claim_pins,
     bool interruptible,
     bool sideset_enable,
-    int wrap_target, int wrap);
+    int wrap_target, int wrap, int offset,
+    int fifo_type,
+    int mov_status_type, int mov_status_n
+    );
 
 uint8_t rp2pio_statemachine_program_offset(rp2pio_statemachine_obj_t *self);
 
 void rp2pio_statemachine_deinit(rp2pio_statemachine_obj_t *self, bool leave_pins);
 void rp2pio_statemachine_dma_complete(rp2pio_statemachine_obj_t *self, int channel);
 
-extern const mp_obj_type_t rp2pio_statemachine_type;
+void rp2pio_statemachine_reset_ok(PIO pio, int sm);
+void rp2pio_statemachine_never_reset(PIO pio, int sm);
 
-#endif // MICROPY_INCLUDED_RASPBERRYPI_COMMON_HAL_RP2PIO_STATEMACHINE_H
+uint8_t rp2pio_statemachine_find_pio(int program_size, int sm_count);
+
+extern const mp_obj_type_t rp2pio_statemachine_type;

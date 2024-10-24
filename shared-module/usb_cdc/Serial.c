@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2021 Dan Halbert for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2021 Dan Halbert for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "shared/runtime/interrupt_char.h"
 #include "shared-bindings/usb_cdc/Serial.h"
@@ -38,7 +18,10 @@ size_t common_hal_usb_cdc_serial_read(usb_cdc_serial_obj_t *self, uint8_t *data,
 
     // Read up to len bytes immediately.
     // The number of bytes read will not be larger than what is already in the TinyUSB FIFO.
-    uint32_t total_num_read = tud_cdc_n_read(self->idx, data, len);
+    uint32_t total_num_read = 0;
+    if (tud_cdc_n_connected(self->idx)) {
+        total_num_read = tud_cdc_n_read(self->idx, data, len);
+    }
 
     if (wait_forever || wait_for_timeout) {
         // Continue filling the buffer past what we already read.
@@ -65,7 +48,9 @@ size_t common_hal_usb_cdc_serial_read(usb_cdc_serial_obj_t *self, uint8_t *data,
             data += num_read;
 
             // Try to read another batch of bytes.
-            num_read = tud_cdc_n_read(self->idx, data, len);
+            if (tud_cdc_n_connected(self->idx)) {
+                num_read = tud_cdc_n_read(self->idx, data, len);
+            }
             total_num_read += num_read;
         }
     }

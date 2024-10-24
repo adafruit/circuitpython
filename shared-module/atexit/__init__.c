@@ -1,28 +1,8 @@
-/*
- * This file is part of the Micro Python project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2021 microDev
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2021 microDev
+//
+// SPDX-License-Identifier: MIT
 
 #include "py/gc.h"
 #include "py/runtime.h"
@@ -43,14 +23,14 @@ void atexit_gc_collect(void) {
 
 void shared_module_atexit_register(mp_obj_t *func, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     if (!mp_obj_is_callable(func)) {
-        mp_raise_TypeError_varg(translate("'%q' object is not callable"), mp_obj_get_type_qstr(func));
+        mp_raise_TypeError_varg(MP_ERROR_TEXT("'%q' object is not callable"), mp_obj_get_type_qstr(func));
     }
     size_t n_kw_args = (kw_args) ? kw_args->used : 0;
     atexit_callback_t cb = {
         .n_pos = 0,
         .n_kw = 0,
         .func = func,
-        .args = (n_args + n_kw_args) ? m_malloc((n_args + (n_kw_args * 2)) * sizeof(mp_obj_t), false) : NULL
+        .args = (n_args + n_kw_args) ? m_malloc((n_args + (n_kw_args * 2)) * sizeof(mp_obj_t)) : NULL
     };
     for (; cb.n_pos < n_args; cb.n_pos++) {
         cb.args[cb.n_pos] = pos_args[cb.n_pos];

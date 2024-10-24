@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * SPDX-FileCopyrightText: Copyright (c) 2016 Damien P. George
+ * Copyright (c) 2016 Damien P. George
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -203,12 +203,17 @@ static inline void asm_xtensa_op_movi(asm_xtensa_t *as, uint reg_dest, int32_t i
     asm_xtensa_op24(as, ASM_XTENSA_ENCODE_RRI8(2, 10, (imm12 >> 8) & 0xf, reg_dest, imm12 & 0xff));
 }
 
-static inline void asm_xtensa_op_movi_n(asm_xtensa_t *as, uint reg_dest, int imm4) {
-    asm_xtensa_op16(as, ASM_XTENSA_ENCODE_RI7(12, reg_dest, imm4));
+// Argument must be in the range (-32 .. 95) inclusive.
+static inline void asm_xtensa_op_movi_n(asm_xtensa_t *as, uint reg_dest, int imm7) {
+    asm_xtensa_op16(as, ASM_XTENSA_ENCODE_RI7(12, reg_dest, imm7));
 }
 
 static inline void asm_xtensa_op_mull(asm_xtensa_t *as, uint reg_dest, uint reg_src_a, uint reg_src_b) {
     asm_xtensa_op24(as, ASM_XTENSA_ENCODE_RRR(0, 2, 8, reg_dest, reg_src_a, reg_src_b));
+}
+
+static inline void asm_xtensa_op_neg(asm_xtensa_t *as, uint reg_dest, uint reg_src) {
+    asm_xtensa_op24(as, ASM_XTENSA_ENCODE_RRR(0, 0, 6, reg_dest, 0, reg_src));
 }
 
 static inline void asm_xtensa_op_or(asm_xtensa_t *as, uint reg_dest, uint reg_src_a, uint reg_src_b) {
@@ -278,6 +283,8 @@ void asm_xtensa_mov_local_reg(asm_xtensa_t *as, int local_num, uint reg_src);
 void asm_xtensa_mov_reg_local(asm_xtensa_t *as, uint reg_dest, int local_num);
 void asm_xtensa_mov_reg_local_addr(asm_xtensa_t *as, uint reg_dest, int local_num);
 void asm_xtensa_mov_reg_pcrel(asm_xtensa_t *as, uint reg_dest, uint label);
+void asm_xtensa_l32i_optimised(asm_xtensa_t *as, uint reg_dest, uint reg_base, uint word_offset);
+void asm_xtensa_s32i_optimised(asm_xtensa_t *as, uint reg_src, uint reg_base, uint word_offset);
 void asm_xtensa_call_ind(asm_xtensa_t *as, uint idx);
 void asm_xtensa_call_ind_win(asm_xtensa_t *as, uint idx);
 
@@ -285,6 +292,7 @@ void asm_xtensa_call_ind_win(asm_xtensa_t *as, uint idx);
 #define ASM_XTENSA_REG_FUN_TABLE ASM_XTENSA_REG_A15
 #define ASM_XTENSA_REG_FUN_TABLE_WIN ASM_XTENSA_REG_A7
 
+// CIRCUITPY-CHANGE: prevent #if warning
 #if defined(GENERIC_ASM_API) && GENERIC_ASM_API
 
 // The following macros provide a (mostly) arch-independent API to
@@ -364,13 +372,12 @@ void asm_xtensa_call_ind_win(asm_xtensa_t *as, uint idx);
 
 #define ASM_MOV_LOCAL_REG(as, local_num, reg_src) asm_xtensa_mov_local_reg((as), ASM_NUM_REGS_SAVED + (local_num), (reg_src))
 #define ASM_MOV_REG_IMM(as, reg_dest, imm) asm_xtensa_mov_reg_i32_optimised((as), (reg_dest), (imm))
-#define ASM_MOV_REG_IMM_FIX_U16(as, reg_dest, imm) asm_xtensa_mov_reg_i32((as), (reg_dest), (imm))
-#define ASM_MOV_REG_IMM_FIX_WORD(as, reg_dest, imm) asm_xtensa_mov_reg_i32((as), (reg_dest), (imm))
 #define ASM_MOV_REG_LOCAL(as, reg_dest, local_num) asm_xtensa_mov_reg_local((as), (reg_dest), ASM_NUM_REGS_SAVED + (local_num))
 #define ASM_MOV_REG_REG(as, reg_dest, reg_src) asm_xtensa_op_mov_n((as), (reg_dest), (reg_src))
 #define ASM_MOV_REG_LOCAL_ADDR(as, reg_dest, local_num) asm_xtensa_mov_reg_local_addr((as), (reg_dest), ASM_NUM_REGS_SAVED + (local_num))
 #define ASM_MOV_REG_PCREL(as, reg_dest, label) asm_xtensa_mov_reg_pcrel((as), (reg_dest), (label))
 
+#define ASM_NEG_REG(as, reg_dest) asm_xtensa_op_neg((as), (reg_dest), (reg_dest))
 #define ASM_LSL_REG_REG(as, reg_dest, reg_shift) \
     do { \
         asm_xtensa_op_ssl((as), (reg_shift)); \
@@ -393,12 +400,13 @@ void asm_xtensa_call_ind_win(asm_xtensa_t *as, uint idx);
 #define ASM_SUB_REG_REG(as, reg_dest, reg_src) asm_xtensa_op_sub((as), (reg_dest), (reg_dest), (reg_src))
 #define ASM_MUL_REG_REG(as, reg_dest, reg_src) asm_xtensa_op_mull((as), (reg_dest), (reg_dest), (reg_src))
 
-#define ASM_LOAD_REG_REG_OFFSET(as, reg_dest, reg_base, word_offset) asm_xtensa_op_l32i_n((as), (reg_dest), (reg_base), (word_offset))
+#define ASM_LOAD_REG_REG_OFFSET(as, reg_dest, reg_base, word_offset) asm_xtensa_l32i_optimised((as), (reg_dest), (reg_base), (word_offset))
 #define ASM_LOAD8_REG_REG(as, reg_dest, reg_base) asm_xtensa_op_l8ui((as), (reg_dest), (reg_base), 0)
 #define ASM_LOAD16_REG_REG(as, reg_dest, reg_base) asm_xtensa_op_l16ui((as), (reg_dest), (reg_base), 0)
+#define ASM_LOAD16_REG_REG_OFFSET(as, reg_dest, reg_base, uint16_offset) asm_xtensa_op_l16ui((as), (reg_dest), (reg_base), (uint16_offset))
 #define ASM_LOAD32_REG_REG(as, reg_dest, reg_base) asm_xtensa_op_l32i_n((as), (reg_dest), (reg_base), 0)
 
-#define ASM_STORE_REG_REG_OFFSET(as, reg_dest, reg_base, word_offset) asm_xtensa_op_s32i_n((as), (reg_dest), (reg_base), (word_offset))
+#define ASM_STORE_REG_REG_OFFSET(as, reg_dest, reg_base, word_offset) asm_xtensa_s32i_optimised((as), (reg_dest), (reg_base), (word_offset))
 #define ASM_STORE8_REG_REG(as, reg_src, reg_base) asm_xtensa_op_s8i((as), (reg_src), (reg_base), 0)
 #define ASM_STORE16_REG_REG(as, reg_src, reg_base) asm_xtensa_op_s16i((as), (reg_src), (reg_base), 0)
 #define ASM_STORE32_REG_REG(as, reg_src, reg_base) asm_xtensa_op_s32i_n((as), (reg_src), (reg_base), 0)

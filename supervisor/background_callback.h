@@ -1,31 +1,10 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2020 Jeff Epler for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2020 Jeff Epler for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
-#ifndef CIRCUITPY_INCLUDED_SUPERVISOR_BACKGROUND_CALLBACK_H
-#define CIRCUITPY_INCLUDED_SUPERVISOR_BACKGROUND_CALLBACK_H
+#pragma once
 
 #include <stdbool.h>
 
@@ -37,8 +16,9 @@
  * To schedule the work, use background_callback_add, with fun as the
  * function to call and data pointing to the object itself.
  *
- * Next time run_background_tasks_if_tick is called, the callback will
- * be run and removed from the linked list.
+ * Next time background_callback_run_all() is called, the callback will
+ * be run and removed from the linked list. Use `RUN_BACKGROUND_TASKS;` instead
+ * of calling background_callback_run_all() directly.
  *
  * Queueing a task that is already queued does nothing.  Unconditionally
  * re-queueing it from its own background task will cause it to run during the
@@ -46,6 +26,12 @@
  * don't do that.
  *
  * background_callback_add can be called from interrupt context.
+ *
+ * If your work isn't triggered by an event, then it may be better implemented
+ * using ticks, which runs tasks every millisecond or so. Ticks are enabled with
+ * supervisor_enable_tick() and disabled with supervisor_disable_tick(). When
+ * enabled, a timer will schedule a callback to supervisor_background_tick(),
+ * which includes port_background_tick(), every millisecond.
  */
 typedef void (*background_callback_fun)(void *data);
 typedef struct background_callback {
@@ -82,12 +68,10 @@ void background_callback_reset(void);
  * bracket the section of code where this is the case.  These calls nest, and
  * begins must be balanced with ends.
  */
-void background_callback_begin_critical_section(void);
-void background_callback_end_critical_section(void);
+void background_callback_prevent(void);
+void background_callback_allow(void);
 
 /*
  * Background callbacks may stop objects from being collected
  */
 void background_callback_gc_collect(void);
-
-#endif

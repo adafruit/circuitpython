@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * SPDX-FileCopyrightText: Copyright (c) 2016 Damien P. George
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2016 Damien P. George
+//
+// SPDX-License-Identifier: MIT
 
 #include "common-hal/pulseio/PulseOut.h"
 
@@ -36,7 +16,7 @@
 #include "py/gc.h"
 #include "py/runtime.h"
 #include "shared-bindings/pulseio/PulseOut.h"
-#include "supervisor/shared/translate/translate.h"
+#include "supervisor/samd_prevent_sleep.h"
 #include "timer_handler.h"
 
 // This timer is shared amongst all PulseOut objects under the assumption that
@@ -59,7 +39,7 @@ static void turn_off(__IO PORT_PINCFG_Type *pincfg) {
     pincfg->reg = PORT_PINCFG_RESETVALUE;
 }
 
-STATIC void pulse_finish(void) {
+static void pulse_finish(void) {
     pulse_index++;
 
     if (active_pincfg == NULL) {
@@ -93,15 +73,6 @@ void pulseout_interrupt_handler(uint8_t index) {
     tc->COUNT16.INTFLAG.reg = TC_INTFLAG_MC0;
 }
 
-void pulseout_reset() {
-    refcount = 0;
-    pulseout_tc_index = 0xff;
-    active_pincfg = NULL;
-    #ifdef SAMD21
-    rtc_end_pulse();
-    #endif
-}
-
 void common_hal_pulseio_pulseout_construct(pulseio_pulseout_obj_t *self,
     const mcu_pin_obj_t *pin,
     uint32_t frequency,
@@ -124,7 +95,7 @@ void common_hal_pulseio_pulseout_construct(pulseio_pulseout_obj_t *self,
             }
         }
         if (tc == NULL) {
-            mp_raise_RuntimeError(translate("All timers in use"));
+            mp_raise_RuntimeError(MP_ERROR_TEXT("All timers in use"));
         }
 
         pulseout_tc_index = index;
@@ -169,9 +140,8 @@ void common_hal_pulseio_pulseout_construct(pulseio_pulseout_obj_t *self,
     // Turn off the pinmux which should connect the port output.
     turn_off(self->pincfg);
     #ifdef SAMD21
-    rtc_start_pulse();
+    samd_prevent_sleep();
     #endif
-
 }
 
 bool common_hal_pulseio_pulseout_deinited(pulseio_pulseout_obj_t *self) {
@@ -195,13 +165,13 @@ void common_hal_pulseio_pulseout_deinit(pulseio_pulseout_obj_t *self) {
     self->pin = NO_PIN;
     common_hal_pwmio_pwmout_deinit(&self->pwmout);
     #ifdef SAMD21
-    rtc_end_pulse();
+    samd_allow_sleep();
     #endif
 }
 
 void common_hal_pulseio_pulseout_send(pulseio_pulseout_obj_t *self, uint16_t *pulses, uint16_t length) {
     if (active_pincfg != NULL) {
-        mp_raise_RuntimeError(translate("Another send is already active"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Another send is already active"));
     }
     active_pincfg = self->pincfg;
     pulse_buffer = pulses;

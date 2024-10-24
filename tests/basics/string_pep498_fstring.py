@@ -1,3 +1,4 @@
+# CIRCUITPY-CHANGE: micropython does not have this test file
 # Tests against https://www.python.org/dev/peps/pep-0498/
 
 assert f'no interpolation' == 'no interpolation'

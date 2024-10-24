@@ -14,7 +14,7 @@ LD_COMMON = boards/common_default.ld
 LD_FILE = boards/STM32F401xd_fs.ld
 
 # Disable ulab as we're nearly out of space on this board due to
-# INTERNAL_FLASH_FILESYSTEM.  It can probably be reenabled if we enable
+# INTERNAL_FLASH_FILESYSTEM.  It can probably be re-enabled if we enable
 # lto for this port, and if other stuff hasn't been added in the
 # meantime
 CIRCUITPY_AESIO = 0
@@ -22,6 +22,7 @@ CIRCUITPY_AUDIOCORE = 0
 CIRCUITPY_AUDIOPWMIO = 0
 CIRCUITPY_BLEIO_HCI = 0
 CIRCUITPY_BUSDEVICE = 0
+CIRCUITPY_BITMAPFILTER = 0
 CIRCUITPY_BITMAPTOOLS = 0
 CIRCUITPY_FRAMEBUFFERIO = 0
 CIRCUITPY_GIFIO = 0

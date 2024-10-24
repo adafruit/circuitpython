@@ -25,6 +25,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+# CIRCUITPY-CHANGE: more imports
 import argparse
 import glob
 import fnmatch
@@ -36,6 +37,7 @@ import sys
 import subprocess
 
 # Relative to top-level repo dir.
+# CIRCUITPY-CHANGE: different directory trees
 PATHS = [
     # C
     "main.c",
@@ -55,20 +57,25 @@ PATHS = [
     "ports/**/*.py",
     "py/**/*.py",
     "tools/**/*.py",
-    "tests/**/*.py",
+    "tests/circuitpython-*/**/*.py",
 ]
 
+# CIRCUITPY-CHANGE: different exclusions
 EXCLUSIONS = [
     # STM32 build includes generated Python code.
     "ports/*/build*",
     # gitignore in ports/unix ignores *.py, so also do it here.
-    "ports/unix/*.py",
+    "ports/unix/**/*.py",
     # not real python files
     "tests/**/repl_*.py",
-    # needs careful attention before applying automatic formatting
-    "tests/basics/*.py",
+    # don't reindent this third-party code we vendored in
+    "ports/raspberrypi/lwip_src",
+    # line breaks
+    "tools/mpy-tool.py",
 ]
 
+
+# CIRCUITPY-CHANGE
 # None of the standard Python path matching routines implement the matching
 # we want, which is most like git's "pathspec" version of globs.
 # In particular, we want "**/" to match all directories.
@@ -112,7 +119,7 @@ path_rx = re.compile(path_re)
 TOP = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 UNCRUSTIFY_CFG = os.path.join(TOP, "tools/uncrustify.cfg")
-
+# CIRCUITPY-CHANGE
 C_EXTS = (
     ".c",
     ".h",
@@ -139,6 +146,7 @@ def list_files(args):
     return sorted(arg for arg in args if path_rx.match(relative_filename(arg)))
 
 
+# CIRCUITPY-CHANGE: handle inline documentation
 def fixup_c(filename):
     # Read file.
     with open(filename) as f:
@@ -187,6 +195,7 @@ def fixup_c(filename):
         assert not dedent_stack, filename
 
 
+# CIRCUITPY-CHANGE: different options and logic.
 def main():
     cmd_parser = argparse.ArgumentParser(
         description="Auto-format C and Python files -- to be used via pre-commit only."
@@ -214,8 +223,13 @@ def main():
             if os.path.splitext(file)[1].lower() in exts:
                 yield file
 
+    def bindings_files():
+        for file in lang_files(C_EXTS):
+            if file.startswith("shared-bindings/") or "/bindings/" in file:
+                yield file
+
     # Run tool on N files at a time (to avoid making the command line too long).
-    def batch(cmd, files, N=200):
+    def batch(cmd, files, N=200, check=False):
         while True:
             file_args = list(itertools.islice(files, N))
             if not file_args:
@@ -223,7 +237,10 @@ def main():
             if args.dry_run:
                 print(" ".join(cmd + file_args))
             else:
-                subprocess.call(cmd + file_args)
+                if check:
+                    subprocess.check_call(cmd + file_args)
+                else:
+                    subprocess.run(cmd + file_args)
 
     # Format C files with uncrustify.
     if format_c:
@@ -234,6 +251,10 @@ def main():
         batch(command, lang_files(C_EXTS))
         for file in lang_files(C_EXTS):
             fixup_c(file)
+        # Format bindings with black_bindings
+        if format_py:
+            command = ["python3", "tools/black_bindings.py"]
+            batch(command, bindings_files(), check=True)
 
     # Format Python files with black.
     if format_py:

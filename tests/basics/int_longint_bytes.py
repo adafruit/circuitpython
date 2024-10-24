@@ -1,3 +1,4 @@
+# CIRCUITPY-CHANGE: micropython does not have this test file
 # Skip if long ints are not supported.
 import skip_if
 skip_if.no_bigint()

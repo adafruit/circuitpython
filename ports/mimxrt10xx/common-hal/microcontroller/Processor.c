@@ -1,29 +1,9 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2017 Dan Halbert for Adafruit Industries
- * Copyright (c) 2019 Artur Pacholec
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2017 Dan Halbert for Adafruit Industries
+// SPDX-FileCopyrightText: Copyright (c) 2019 Artur Pacholec
+//
+// SPDX-License-Identifier: MIT
 
 #include <math.h>
 
@@ -33,11 +13,14 @@
 #include "shared-bindings/microcontroller/Processor.h"
 #include "shared-bindings/microcontroller/ResetReason.h"
 
-#include "fsl_tempmon.h"
-#include "fsl_ocotp.h"
+#if CIRCUITPY_ANALOGIO
+#include "sdk/drivers/tempmon/fsl_tempmon.h"
+#endif
+#include "sdk/drivers/ocotp/fsl_ocotp.h"
 #include "clocks.h"
 
 float common_hal_mcu_processor_get_temperature(void) {
+    #if CIRCUITPY_ANALOGIO
     tempmon_config_t config;
     TEMPMON_GetDefaultConfig(&config);
 
@@ -50,17 +33,19 @@ float common_hal_mcu_processor_get_temperature(void) {
     OCOTP_Deinit(OCOTP);
 
     return temp;
+    #else
+    return NAN;
+    #endif
 }
 
-uint32_t common_hal_mcu_processor_set_frequency(mcu_processor_obj_t *self,
+void common_hal_mcu_processor_set_frequency(mcu_processor_obj_t *self,
     uint32_t frequency) {
     uint32_t freq = frequency / 1000000;
     if (freq != 24 && freq != 150 && freq != 396 && freq != 450 && freq != 528 && freq != 600 &&
         freq != 720 && freq != 816 && freq != 912 && freq != 960 && freq != 1008) {
-        mp_raise_ValueError(translate("Frequency must be 24, 150, 396, 450, 528, 600, 720, 816, 912, 960 or 1008 Mhz"));
+        mp_raise_ValueError(MP_ERROR_TEXT("Frequency must be 24, 150, 396, 450, 528, 600, 720, 816, 912, 960 or 1008 Mhz"));
     }
     SystemCoreClock = setarmclock(frequency);
-    return SystemCoreClock;
 }
 
 
@@ -73,7 +58,11 @@ uint32_t common_hal_mcu_processor_get_frequency(void) {
 }
 
 void common_hal_mcu_processor_get_uid(uint8_t raw_id[]) {
+    #if IMXRT11XX
+    OCOTP_Init(OCOTP, CLOCK_GetFreq(kCLOCK_Ocotp));
+    #else
     OCOTP_Init(OCOTP, CLOCK_GetFreq(kCLOCK_IpgClk));
+    #endif
 
     // Reads shadow registers 0x01 - 0x04 (Configuration and Manufacturing Info)
     // into 8 bit wide destination, avoiding punning.

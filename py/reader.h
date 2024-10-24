@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * SPDX-FileCopyrightText: Copyright (c) 2013-2016 Damien P. George
+ * Copyright (c) 2013-2016 Damien P. George
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -40,7 +40,7 @@ typedef struct _mp_reader_t {
 } mp_reader_t;
 
 void mp_reader_new_mem(mp_reader_t *reader, const byte *buf, size_t len, size_t free_len);
-void mp_reader_new_file(mp_reader_t *reader, const char *filename);
+void mp_reader_new_file(mp_reader_t *reader, qstr filename);
 void mp_reader_new_file_from_fd(mp_reader_t *reader, int fd, bool close_fd);
 
 #endif // MICROPY_INCLUDED_PY_READER_H

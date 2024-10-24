@@ -1,6 +1,11 @@
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2024 Adafruit Industries LLC
+//
+// SPDX-License-Identifier: MIT
+
 /* Auto-generated config file hpl_tc_config.h */
-#ifndef HPL_TC_CONFIG_H
-#define HPL_TC_CONFIG_H
+#pragma once
 
 // <<< Use Configuration Wizard in Context Menu >>>
 
@@ -42,7 +47,7 @@
 #define CONF_TC0_WAVE_DUTY_VAL 0x1f4
 #endif
 
-/* Caculate pwm ccx register value based on WAVE_PER_VAL and Waveform Duty Value */
+/* Calculate pwm ccx register value based on WAVE_PER_VAL and Waveform Duty Value */
 #if CONF_TC0_PRESCALER < TC_CTRLA_PRESCALER_DIV64_Val
 #define CONF_TC0_CC0                                                                                                   \
     ((uint32_t)(((double)CONF_TC0_WAVE_PER_VAL * CONF_GCLK_TC0_FREQUENCY) / 1000000 / (1 << CONF_TC0_PRESCALER) - 1))
@@ -205,5 +210,3 @@
 // </h>
 
 // <<< end of configuration section >>>
-
-#endif // HPL_TC_CONFIG_H

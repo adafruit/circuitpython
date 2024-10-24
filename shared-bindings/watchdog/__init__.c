@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2016 Paul Sokolovsky
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2016 Paul Sokolovsky
+//
+// SPDX-License-Identifier: MIT
 
 #include <string.h>
 
@@ -49,6 +29,7 @@
 //|     w.timeout=2.5 # Set a timeout of 2.5 seconds
 //|     w.mode = WatchDogMode.RAISE
 //|     w.feed()"""
+//|
 
 //| class WatchDogTimeout(Exception):
 //|     """Exception raised when the watchdog timer is set to
@@ -76,14 +57,16 @@
 //|
 //|         print("Exited loop")
 //|     """
+//|
 
-const mp_obj_type_t mp_type_WatchDogTimeout = {
-    { &mp_type_type },
-    .name = MP_QSTR_WatchDogTimeout,
-    .make_new = mp_obj_exception_make_new,
-    .attr = mp_obj_exception_attr,
-    .parent = &mp_type_Exception,
-};
+MP_DEFINE_CONST_OBJ_TYPE(
+    mp_type_WatchDogTimeout,
+    MP_QSTR_WatchDogTimeout,
+    MP_TYPE_FLAG_NONE,
+    make_new, mp_obj_exception_make_new,
+    attr, mp_obj_exception_attr,
+    parent, &mp_type_Exception
+    );
 
 mp_obj_exception_t mp_watchdog_timeout_exception = {
     .base.type = &mp_type_WatchDogTimeout,
@@ -91,17 +74,17 @@ mp_obj_exception_t mp_watchdog_timeout_exception = {
     .traceback = (mp_obj_traceback_t *)&mp_const_empty_traceback_obj,
 };
 
-STATIC const mp_rom_map_elem_t watchdog_module_globals_table[] = {
+static const mp_rom_map_elem_t watchdog_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_watchdog) },
     { MP_ROM_QSTR(MP_QSTR_WatchDogMode),   MP_ROM_PTR(&watchdog_watchdogmode_type) },
     { MP_ROM_QSTR(MP_QSTR_WatchDogTimeout),   MP_ROM_PTR(&mp_type_WatchDogTimeout) },
 };
 
-STATIC MP_DEFINE_CONST_DICT(watchdog_module_globals, watchdog_module_globals_table);
+static MP_DEFINE_CONST_DICT(watchdog_module_globals, watchdog_module_globals_table);
 
 const mp_obj_module_t watchdog_module = {
     .base = { &mp_type_module },
     .globals = (mp_obj_dict_t *)&watchdog_module_globals,
 };
 
-MP_REGISTER_MODULE(MP_QSTR_watchdog, watchdog_module, CIRCUITPY_WATCHDOG);
+MP_REGISTER_MODULE(MP_QSTR_watchdog, watchdog_module);

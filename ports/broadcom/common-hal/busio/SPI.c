@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "shared-bindings/busio/SPI.h"
 
@@ -42,16 +22,16 @@
 
 #if BCM_VERSION == 2711
 #define NUM_SPI (7)
-STATIC SPI0_Type *spi[NUM_SPI] = {SPI0, NULL, NULL, SPI3, SPI4, SPI5, SPI6};
-STATIC SPI1_Type *aux_spi[NUM_SPI] = {NULL, SPI1, SPI2, NULL, NULL, NULL, NULL};
+static SPI0_Type *spi[NUM_SPI] = {SPI0, NULL, NULL, SPI3, SPI4, SPI5, SPI6};
+static SPI1_Type *aux_spi[NUM_SPI] = {NULL, SPI1, SPI2, NULL, NULL, NULL, NULL};
 #else
 #define NUM_SPI (3)
-STATIC SPI0_Type *spi[NUM_SPI] = {SPI0, NULL, NULL};
-STATIC SPI1_Type *aux_spi[NUM_SPI] = {NULL, SPI1, SPI2};
+static SPI0_Type *spi[NUM_SPI] = {SPI0, NULL, NULL};
+static SPI1_Type *aux_spi[NUM_SPI] = {NULL, SPI1, SPI2};
 #endif
 
-STATIC bool never_reset_spi[NUM_SPI];
-STATIC bool spi_in_use[NUM_SPI];
+static bool never_reset_spi[NUM_SPI];
+static bool spi_in_use[NUM_SPI];
 
 void reset_spi(void) {
     for (size_t i = 0; i < NUM_SPI; i++) {
@@ -84,9 +64,11 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
     BP_Function_Enum miso_alt = 0;
 
     if (half_duplex) {
-        mp_raise_NotImplementedError(translate("Half duplex SPI is not implemented"));
+        mp_raise_NotImplementedError(MP_ERROR_TEXT("Half duplex SPI is not implemented"));
     }
 
+    // BCM_VERSION != 2711 have 3 SPI but as listed in peripherals/gen/pins.c two are on
+    // index 0, once one index 0 SPI is found the other will throw an invalid_pins error.
     for (size_t i = 0; i < NUM_SPI; i++) {
         if (spi_in_use[i]) {
             continue;
@@ -157,6 +139,7 @@ void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
     common_hal_reset_pin(self->MOSI);
     common_hal_reset_pin(self->MISO);
     self->clock = NULL;
+    spi_in_use[self->index] = false;
 
     if (self->index == 1 ||
         self->index == 2) {
@@ -180,7 +163,7 @@ bool common_hal_busio_spi_configure(busio_spi_obj_t *self,
 
     if (self->index == 1 || self->index == 2) {
         SPI1_Type *p = aux_spi[self->index];
-        uint32_t source_clock = vcmailbox_get_clock_rate_measured(VCMAILBOX_CLOCK_CORE);
+        uint32_t source_clock = vcmailbox_get_clock_rate(VCMAILBOX_CLOCK_CORE);
         uint16_t clock_divider = source_clock / baudrate;
         if (source_clock % baudrate > 0) {
             clock_divider += 2;
@@ -198,7 +181,7 @@ bool common_hal_busio_spi_configure(busio_spi_obj_t *self,
         SPI0_Type *p = spi[self->index];
         p->CS = polarity << SPI0_CS_CPOL_Pos |
             phase << SPI0_CS_CPHA_Pos;
-        uint32_t source_clock = vcmailbox_get_clock_rate_measured(VCMAILBOX_CLOCK_CORE);
+        uint32_t source_clock = vcmailbox_get_clock_rate(VCMAILBOX_CLOCK_CORE);
         uint16_t clock_divider = source_clock / baudrate;
         if (source_clock % baudrate > 0) {
             clock_divider += 2;
@@ -217,6 +200,9 @@ bool common_hal_busio_spi_configure(busio_spi_obj_t *self,
 }
 
 bool common_hal_busio_spi_try_lock(busio_spi_obj_t *self) {
+    if (common_hal_busio_spi_deinited(self)) {
+        return false;
+    }
     bool grabbed_lock = false;
     if (!self->has_lock) {
         grabbed_lock = true;
@@ -233,7 +219,7 @@ void common_hal_busio_spi_unlock(busio_spi_obj_t *self) {
     self->has_lock = false;
 }
 
-STATIC void _spi_transfer(SPI0_Type *p,
+static void _spi_transfer(SPI0_Type *p,
     const uint8_t *data_out, size_t out_len,
     uint8_t *data_in, size_t in_len) {
     size_t len = MAX(out_len, in_len);
@@ -269,7 +255,7 @@ STATIC void _spi_transfer(SPI0_Type *p,
     COMPLETE_MEMORY_READS;
 }
 
-STATIC void _aux_spi_transfer(SPI1_Type *p,
+static void _aux_spi_transfer(SPI1_Type *p,
     const uint8_t *data_out, size_t out_len,
     uint8_t *data_in, size_t in_len) {
     size_t len = MAX(out_len, in_len);

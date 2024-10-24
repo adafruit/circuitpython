@@ -1,28 +1,8 @@
-/*
- * This file is part of the Micro Python project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2021 Dan Halbert for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2021 Dan Halbert for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include <string.h>
 
@@ -44,12 +24,12 @@ static keypad_scanner_funcs_t keys_funcs = {
     .get_key_count = keys_get_key_count,
 };
 
-void common_hal_keypad_keys_construct(keypad_keys_obj_t *self, mp_uint_t num_pins, const mcu_pin_obj_t *pins[], bool value_when_pressed, bool pull, mp_float_t interval, size_t max_events) {
+void common_hal_keypad_keys_construct(keypad_keys_obj_t *self, mp_uint_t num_pins, const mcu_pin_obj_t *pins[], bool value_when_pressed, bool pull, mp_float_t interval, size_t max_events, uint8_t debounce_threshold) {
     mp_obj_t dios[num_pins];
 
     for (size_t i = 0; i < num_pins; i++) {
-        digitalio_digitalinout_obj_t *dio = m_new_obj(digitalio_digitalinout_obj_t);
-        dio->base.type = &digitalio_digitalinout_type;
+        digitalio_digitalinout_obj_t *dio =
+            mp_obj_malloc(digitalio_digitalinout_obj_t, &digitalio_digitalinout_type);
         common_hal_digitalio_digitalinout_construct(dio, pins[i]);
         if (pull) {
             common_hal_digitalio_digitalinout_set_pull(dio, value_when_pressed ? PULL_DOWN : PULL_UP);
@@ -58,12 +38,10 @@ void common_hal_keypad_keys_construct(keypad_keys_obj_t *self, mp_uint_t num_pin
     }
 
     self->digitalinouts = mp_obj_new_tuple(num_pins, dios);
-    self->currently_pressed = (bool *)gc_alloc(sizeof(bool) * num_pins, false, false);
-    self->previously_pressed = (bool *)gc_alloc(sizeof(bool) * num_pins, false, false);
     self->value_when_pressed = value_when_pressed;
     self->funcs = &keys_funcs;
 
-    keypad_construct_common((keypad_scanner_obj_t *)self, interval, max_events);
+    keypad_construct_common((keypad_scanner_obj_t *)self, interval, max_events, debounce_threshold);
 
 }
 
@@ -93,18 +71,13 @@ static void keypad_keys_scan_now(void *self_in, mp_obj_t timestamp) {
     size_t key_count = keys_get_key_count(self);
 
     for (mp_uint_t key_number = 0; key_number < key_count; key_number++) {
-        // Remember the previous up/down state.
-        const bool previous = self->currently_pressed[key_number];
-        self->previously_pressed[key_number] = previous;
-
         // Get the current state.
         const bool current =
             common_hal_digitalio_digitalinout_get_value(self->digitalinouts->items[key_number]) ==
             self->value_when_pressed;
-        self->currently_pressed[key_number] = current;
 
         // Record any transitions.
-        if (previous != current) {
+        if (keypad_debounce((keypad_scanner_obj_t *)self, key_number, current)) {
             keypad_eventqueue_record(self->events, key_number, current, timestamp);
         }
     }

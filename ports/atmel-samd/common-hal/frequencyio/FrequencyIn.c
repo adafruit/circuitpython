@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2018 Michael Schroeder
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2018 Michael Schroeder
+//
+// SPDX-License-Identifier: MIT
 
 #include "shared-bindings/frequencyio/FrequencyIn.h"
 
@@ -48,7 +28,6 @@
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/time/__init__.h"
 #include "supervisor/shared/tick.h"
-#include "supervisor/shared/translate/translate.h"
 
 #ifdef SAMD21
 #include "hpl/gclk/hpl_gclk_base.h"
@@ -156,7 +135,7 @@ void frequencyin_interrupt_handler(uint8_t index) {
             }
 
             // Check if we've reached the upper limit of detection
-            if (!supervisor_background_tasks_ok() || self->errored_too_fast) {
+            if (!supervisor_background_ticks_ok() || self->errored_too_fast) {
                 self->errored_too_fast = true;
                 frequencyin_emergency_cancel_capture(i);
             }
@@ -296,12 +275,12 @@ void common_hal_frequencyio_frequencyin_construct(frequencyio_frequencyin_obj_t*
     #ifdef SAM_D5X_E5X
     ((EIC->INTENSET.bit.EXTINT & mask) != 0 || (EIC->EVCTRL.bit.EXTINTEO & mask) != 0)) {
     #endif
-        mp_raise_RuntimeError(translate("EXTINT channel already in use"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Internal resource(s) in use"));
     }
 
     uint8_t timer_index = find_free_timer();
     if (timer_index == 0xff) {
-        mp_raise_RuntimeError(translate("All timers in use"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Internal resource(s) in use"));
     }
     Tc *tc = tc_insts[timer_index];
 
@@ -330,7 +309,7 @@ void common_hal_frequencyio_frequencyin_construct(frequencyio_frequencyin_obj_t*
     frequencyin_samd51_start_dpll();
     if (dpll_gclk == 0xff && !clock_get_enabled(0, GCLK_SOURCE_DPLL1)) {
         common_hal_frequencyio_frequencyin_deinit(self);
-        mp_raise_RuntimeError(translate("No available clocks"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Internal resource(s) in use"));
     }
     set_timer_handler(timer_index, dpll_gclk, TC_HANDLER_NO_INTERRUPT);
     turn_on_clocks(true, timer_index, dpll_gclk);
@@ -400,7 +379,7 @@ void common_hal_frequencyio_frequencyin_construct(frequencyio_frequencyin_obj_t*
         reference_tc = find_free_timer();
         if (reference_tc == 0xff) {
             common_hal_frequencyio_frequencyin_deinit(self);
-            mp_raise_RuntimeError(translate("All timers in use"));
+            mp_raise_RuntimeError(MP_ERROR_TEXT("Internal resource(s) in use"));
         }
         frequencyin_reference_tc_init();
     }
@@ -482,7 +461,7 @@ uint32_t common_hal_frequencyio_frequencyin_get_item(frequencyio_frequencyin_obj
         float time_each_event = self->factor / self->frequency; // get the time for each event during actual period
         float capture_diff = self->factor - self->capture_period; // get the difference of actual and base periods
         // we only need to adjust if the capture_diff can contain 1 or more events
-        // if so, we add how many events could have occured during the diff time
+        // if so, we add how many events could have occurred during the diff time
         if (time_each_event > capture_diff) {
             frequency_adjustment = capture_diff / time_each_event;
         }

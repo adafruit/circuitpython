@@ -1,34 +1,16 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include <string.h>
 #include <stdlib.h>
 
 #include "supervisor/board.h"
 #include "supervisor/port.h"
+
+#include "supervisor/samd_prevent_sleep.h"
 
 // ASF 4
 #include "atmel_start_pins.h"
@@ -77,15 +59,6 @@
 
 #include "common-hal/microcontroller/Pin.h"
 
-#if CIRCUITPY_PULSEIO
-#include "common-hal/pulseio/PulseIn.h"
-#include "common-hal/pulseio/PulseOut.h"
-#endif
-
-#if CIRCUITPY_PWMIO
-#include "common-hal/pwmio/PWMOut.h"
-#endif
-
 #if CIRCUITPY_PS2IO
 #include "common-hal/ps2io/Ps2.h"
 #endif
@@ -111,9 +84,7 @@
 #include "samd/dma.h"
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/rtc/__init__.h"
-#include "shared_timers.h"
 #include "reset.h"
-#include "common-hal/pulseio/PulseIn.h"
 
 #include "supervisor/background_callback.h"
 #include "supervisor/shared/safe_mode.h"
@@ -125,7 +96,7 @@
 #if CIRCUITPY_PEW
 #include "common-hal/_pew/PewPew.h"
 #endif
-static volatile bool sleep_ok = true;
+static volatile size_t sleep_disable_count = 0;
 
 #ifdef SAMD21
 static uint8_t _tick_event_channel = EVSYS_SYNCH_NUM;
@@ -137,12 +108,16 @@ static bool tick_enabled(void) {
 // Sleeping requires a register write that can stall interrupt handling. Turning
 // off sleeps allows for more accurate interrupt timing. (Python still thinks
 // it is sleeping though.)
-void rtc_start_pulse(void) {
-    sleep_ok = false;
+void samd_prevent_sleep(void) {
+    sleep_disable_count++;
 }
 
-void rtc_end_pulse(void) {
-    sleep_ok = true;
+void samd_allow_sleep(void) {
+    if (sleep_disable_count == 0) {
+        // We should never reach this!
+        return;
+    }
+    sleep_disable_count--;
 }
 #endif // SAMD21
 
@@ -307,7 +282,7 @@ safe_mode_t port_init(void) {
     // because it was hard enough to figure out, and maybe there's
     // a mistake that could make it work in the future.
     #if 0
-    // Designate QSPI memory mapped region as not cachable.
+    // Designate QSPI memory mapped region as not cacheable.
 
     // Turn off MPU in case it is on.
     MPU->CTRL = 0;
@@ -320,7 +295,7 @@ safe_mode_t port_init(void) {
         0b011 << MPU_RASR_AP_Pos |     // full read/write access for privileged and user mode
             0b000 << MPU_RASR_TEX_Pos | // caching not allowed, strongly ordered
             1 << MPU_RASR_S_Pos |      // sharable
-            0 << MPU_RASR_C_Pos |      // not cachable
+            0 << MPU_RASR_C_Pos |      // not cacheable
             0 << MPU_RASR_B_Pos |      // not bufferable
             0b10111 << MPU_RASR_SIZE_Pos | // 16MB region size
             1 << MPU_RASR_ENABLE_Pos   // enable this region
@@ -353,10 +328,10 @@ safe_mode_t port_init(void) {
     if (strcmp((char *)CIRCUITPY_INTERNAL_CONFIG_START_ADDR, "CIRCUITPYTHON1") == 0) {
         fine = ((uint16_t *)CIRCUITPY_INTERNAL_CONFIG_START_ADDR)[8];
     }
-    clock_init(BOARD_HAS_CRYSTAL, fine);
+    clock_init(BOARD_HAS_CRYSTAL, BOARD_XOSC_FREQ_HZ, BOARD_XOSC_IS_CRYSTAL, fine);
     #else
     // Use a default fine value
-    clock_init(BOARD_HAS_CRYSTAL, DEFAULT_DFLL48M_FINE_CALIBRATION);
+    clock_init(BOARD_HAS_CRYSTAL, BOARD_XOSC_FREQ_HZ, BOARD_XOSC_IS_CRYSTAL, DEFAULT_DFLL48M_FINE_CALIBRATION);
     #endif
 
     rtc_init();
@@ -368,33 +343,35 @@ safe_mode_t port_init(void) {
 
     #ifdef SAMD21
     if (PM->RCAUSE.bit.BOD33 == 1 || PM->RCAUSE.bit.BOD12 == 1) {
-        return BROWNOUT;
+        return SAFE_MODE_BROWNOUT;
     }
     #endif
     #ifdef SAM_D5X_E5X
     if (RSTC->RCAUSE.bit.BODVDD == 1 || RSTC->RCAUSE.bit.BODCORE == 1) {
-        return BROWNOUT;
+        return SAFE_MODE_BROWNOUT;
     }
     #endif
 
     if (board_requests_safe_mode()) {
-        return USER_SAFE_MODE;
+        return SAFE_MODE_USER;
     }
 
-    return NO_SAFE_MODE;
+    return SAFE_MODE_NONE;
 }
 
 void reset_port(void) {
     #if CIRCUITPY_BUSIO
     reset_sercoms();
     #endif
+
     #if CIRCUITPY_AUDIOIO
     audio_dma_reset();
-    audioout_reset();
     #endif
+
     #if CIRCUITPY_AUDIOBUSIO
     pdmin_reset();
     #endif
+
     #if CIRCUITPY_AUDIOBUSIO_I2SOUT
     i2sout_reset();
     #endif
@@ -406,21 +383,16 @@ void reset_port(void) {
     #if CIRCUITPY_TOUCHIO && CIRCUITPY_TOUCHIO_USE_NATIVE
     touchin_reset();
     #endif
+
     eic_reset();
-    #if CIRCUITPY_PULSEIO
-    pulsein_reset();
-    pulseout_reset();
-    #endif
-    #if CIRCUITPY_PWMIO
-    pwmout_reset();
-    #endif
-    #if CIRCUITPY_PWMIO || CIRCUITPY_AUDIOIO || CIRCUITPY_FREQUENCYIO
-    reset_timers();
-    #endif
 
     #if CIRCUITPY_ANALOGIO
     analogin_reset();
     analogout_reset();
+    #endif
+
+    #if CIRCUITPY_WATCHDOG
+    watchdog_reset();
     #endif
 
     reset_gclks();
@@ -466,24 +438,21 @@ void reset_cpu(void) {
     reset();
 }
 
-bool port_has_fixed_stack(void) {
-    return false;
-}
-
 uint32_t *port_stack_get_limit(void) {
-    return &_ebss;
+    return port_stack_get_top() - (CIRCUITPY_DEFAULT_STACK_SIZE + CIRCUITPY_EXCEPTION_STACK_SIZE) / sizeof(uint32_t);
 }
 
 uint32_t *port_stack_get_top(void) {
     return &_estack;
 }
 
+// Used for the shared heap allocator.
 uint32_t *port_heap_get_bottom(void) {
-    return port_stack_get_limit();
+    return &_ebss;
 }
 
 uint32_t *port_heap_get_top(void) {
-    return port_stack_get_top();
+    return port_stack_get_limit();
 }
 
 // Place the word to save 8k from the end of RAM so we and the bootloader don't clobber it.
@@ -644,6 +613,10 @@ void port_disable_tick(void) {
     RTC->MODE0.INTENCLR.reg = RTC_MODE0_INTENCLR_PER2;
     #endif
     #ifdef SAMD21
+    if (_tick_event_channel == EVSYS_SYNCH_NUM) {
+        return;
+    }
+
     if (_tick_event_channel >= 8) {
         uint8_t value = 1 << (_tick_event_channel - 8);
         EVSYS->INTENCLR.reg = EVSYS_INTENSET_EVDp8(value);
@@ -651,6 +624,7 @@ void port_disable_tick(void) {
         uint8_t value = 1 << _tick_event_channel;
         EVSYS->INTENCLR.reg = EVSYS_INTENSET_EVD(value);
     }
+    disable_event_channel(_tick_event_channel);
     _tick_event_channel = EVSYS_SYNCH_NUM;
     #endif
 }
@@ -662,7 +636,11 @@ void port_interrupt_after_ticks(uint32_t ticks) {
         return;
     }
     #ifdef SAMD21
-    if (!sleep_ok) {
+    if (sleep_disable_count > 0) {
+        // "wake" immediately even if sleep_disable_count is set to 0 between
+        // now and when port_idle_until_interrupt is called. Otherwise we may
+        // sleep too long.
+        _woken_up = true;
         return;
     }
     #endif
@@ -698,7 +676,7 @@ void port_idle_until_interrupt(void) {
     }
     #endif
     common_hal_mcu_disable_interrupts();
-    if (!background_callback_pending() && sleep_ok && !_woken_up) {
+    if (!background_callback_pending() && sleep_disable_count == 0 && !_woken_up) {
         __DSB();
         __WFI();
     }
@@ -715,7 +693,7 @@ __attribute__((used)) void HardFault_Handler(void) {
     REG_MTB_MASTER = 0x00000000 + 6;
     #endif
 
-    reset_into_safe_mode(HARD_CRASH);
+    reset_into_safe_mode(SAFE_MODE_HARD_FAULT);
     while (true) {
         asm ("nop;");
     }

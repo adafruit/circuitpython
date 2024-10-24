@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * SPDX-FileCopyrightText: Copyright (c) 2013, 2014 Damien P. George
+ * Copyright (c) 2013, 2014 Damien P. George
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,6 +34,7 @@
 #include "py/emitglue.h"
 #include "py/runtime0.h"
 #include "py/bc.h"
+#include "py/objfun.h"
 #include "py/profile.h"
 
 #if MICROPY_DEBUG_VERBOSE // print debugging info
@@ -42,6 +43,8 @@
 #define DEBUG_printf DEBUG_printf
 #define DEBUG_OP_printf(...) DEBUG_printf(__VA_ARGS__)
 #else // don't print debugging info
+// CIRCUITPY-CHANGE: prevent warnings
+#define DEBUG_PRINT (0)
 #define DEBUG_printf(...) (void)0
 #define DEBUG_OP_printf(...) (void)0
 #endif
@@ -60,23 +63,24 @@ mp_raw_code_t *mp_emit_glue_new_raw_code(void) {
 }
 
 void mp_emit_glue_assign_bytecode(mp_raw_code_t *rc, const byte *code,
-    #if MICROPY_PERSISTENT_CODE_SAVE || MICROPY_DEBUG_PRINTERS
-    size_t len,
-    #endif
-    const mp_uint_t *const_table,
+    mp_raw_code_t **children,
     #if MICROPY_PERSISTENT_CODE_SAVE
-    uint16_t n_obj, uint16_t n_raw_code,
+    size_t len,
+    uint16_t n_children,
     #endif
-    mp_uint_t scope_flags) {
+    uint16_t scope_flags) {
 
     rc->kind = MP_CODE_BYTECODE;
-    rc->scope_flags = scope_flags;
+    rc->is_generator = (scope_flags & MP_SCOPE_FLAG_GENERATOR) != 0;
+    // CIRCUITPY-CHANGE: async and generator are distinguished
+    // For async, BOTH is_generator and is_async will be set.
+    rc->is_async = (scope_flags & MP_SCOPE_FLAG_ASYNC) != 0;
     rc->fun_data = code;
-    rc->const_table = const_table;
+    rc->children = children;
+
     #if MICROPY_PERSISTENT_CODE_SAVE
     rc->fun_data_len = len;
-    rc->n_obj = n_obj;
-    rc->n_raw_code = n_raw_code;
+    rc->n_children = n_children;
     #endif
 
     #if MICROPY_PY_SYS_SETTRACE
@@ -84,27 +88,24 @@ void mp_emit_glue_assign_bytecode(mp_raw_code_t *rc, const byte *code,
     mp_prof_extract_prelude(code, prelude);
     #endif
 
-    #ifdef DEBUG_PRINT
-    #if !MICROPY_DEBUG_PRINTERS
+    // CIRCUITPY-CHANGE: prevent warning
+    #if defined(DEBUG_PRINT) && DEBUG_PRINT
+    #if !MICROPY_PERSISTENT_CODE_SAVE
     const size_t len = 0;
     #endif
     DEBUG_printf("assign byte code: code=%p len=" UINT_FMT " flags=%x\n", code, len, (uint)scope_flags);
     #endif
-    #if MICROPY_DEBUG_PRINTERS
-    if (mp_verbose_flag >= 2) {
-        mp_bytecode_print(&mp_plat_print, rc, code, len, const_table);
-    }
-    #endif
 }
 
 #if MICROPY_EMIT_MACHINE_CODE
-void mp_emit_glue_assign_native(mp_raw_code_t *rc, mp_raw_code_kind_t kind, void *fun_data, mp_uint_t fun_len, const mp_uint_t *const_table,
+void mp_emit_glue_assign_native(mp_raw_code_t *rc, mp_raw_code_kind_t kind, const void *fun_data, mp_uint_t fun_len,
+    mp_raw_code_t **children,
     #if MICROPY_PERSISTENT_CODE_SAVE
+    uint16_t n_children,
     uint16_t prelude_offset,
-    uint16_t n_obj, uint16_t n_raw_code,
-    uint16_t n_qstr, mp_qstr_link_entry_t *qstr_link,
     #endif
-    mp_uint_t n_pos_args, mp_uint_t scope_flags, mp_uint_t type_sig) {
+    uint16_t scope_flags, uint32_t asm_n_pos_args, uint32_t asm_type_sig
+    ) {
 
     assert(kind == MP_CODE_NATIVE_PY || kind == MP_CODE_NATIVE_VIPER || kind == MP_CODE_NATIVE_ASM);
 
@@ -112,6 +113,7 @@ void mp_emit_glue_assign_native(mp_raw_code_t *rc, mp_raw_code_kind_t kind, void
     // so that the generated native code which was created in data RAM will
     // be available for execution from instruction RAM.
     #if MICROPY_EMIT_THUMB || MICROPY_EMIT_INLINE_THUMB
+    // CIRCUITPY-CHANGE: prevent warning
     #if defined(__ICACHE_PRESENT) && __ICACHE_PRESENT == 1
     // Flush D-cache, so the code emitted is stored in RAM.
     MP_HAL_CLEAN_DCACHE(fun_data, fun_len);
@@ -120,7 +122,7 @@ void mp_emit_glue_assign_native(mp_raw_code_t *rc, mp_raw_code_kind_t kind, void
     #endif
     #elif MICROPY_EMIT_ARM
     #if (defined(__linux__) && defined(__GNUC__)) || __ARM_ARCH == 7
-    __builtin___clear_cache(fun_data, (uint8_t *)fun_data + fun_len);
+    __builtin___clear_cache((void *)fun_data, (uint8_t *)fun_data + fun_len);
     #elif defined(__arm__)
     // Flush I-cache and D-cache.
     asm volatile (
@@ -134,28 +136,35 @@ void mp_emit_glue_assign_native(mp_raw_code_t *rc, mp_raw_code_kind_t kind, void
     #endif
 
     rc->kind = kind;
-    rc->scope_flags = scope_flags;
-    rc->n_pos_args = n_pos_args;
+    rc->is_generator = (scope_flags & MP_SCOPE_FLAG_GENERATOR) != 0;
+    // CIRCUITPY-CHANGE: async and generator are distinguished
+    // For async, BOTH is_generator and is_async will be set.
+    rc->is_async = (scope_flags & MP_SCOPE_FLAG_ASYNC) != 0;
     rc->fun_data = fun_data;
-    rc->const_table = const_table;
-    rc->type_sig = type_sig;
 
     #if MICROPY_PERSISTENT_CODE_SAVE
     rc->fun_data_len = fun_len;
+    #endif
+    rc->children = children;
+
+    #if MICROPY_PERSISTENT_CODE_SAVE
+    rc->n_children = n_children;
     rc->prelude_offset = prelude_offset;
-    rc->n_obj = n_obj;
-    rc->n_raw_code = n_raw_code;
-    rc->n_qstr = n_qstr;
-    rc->qstr_link = qstr_link;
     #endif
 
-    #ifdef DEBUG_PRINT
-    DEBUG_printf("assign native: kind=%d fun=%p len=" UINT_FMT " n_pos_args=" UINT_FMT " flags=%x\n", kind, fun_data, fun_len, n_pos_args, (uint)scope_flags);
+    #if MICROPY_EMIT_INLINE_ASM
+    // These two entries are only needed for MP_CODE_NATIVE_ASM.
+    rc->asm_n_pos_args = asm_n_pos_args;
+    rc->asm_type_sig = asm_type_sig;
+    #endif
+
+    #if DEBUG_PRINT
+    DEBUG_printf("assign native: kind=%d fun=%p len=" UINT_FMT " flags=%x\n", kind, fun_data, fun_len, (uint)scope_flags);
     for (mp_uint_t i = 0; i < fun_len; i++) {
         if (i > 0 && i % 16 == 0) {
             DEBUG_printf("\n");
         }
-        DEBUG_printf(" %02x", ((byte *)fun_data)[i]);
+        DEBUG_printf(" %02x", ((const byte *)fun_data)[i]);
     }
     DEBUG_printf("\n");
 
@@ -170,62 +179,105 @@ void mp_emit_glue_assign_native(mp_raw_code_t *rc, mp_raw_code_kind_t kind, void
 }
 #endif
 
-mp_obj_t mp_make_function_from_raw_code(const mp_raw_code_t *rc, mp_obj_t def_args, mp_obj_t def_kw_args) {
-    DEBUG_OP_printf("make_function_from_raw_code %p\n", rc);
-    assert(rc != NULL);
+mp_obj_t mp_make_function_from_proto_fun(mp_proto_fun_t proto_fun, const mp_module_context_t *context, const mp_obj_t *def_args) {
+    DEBUG_OP_printf("make_function_from_proto_fun %p\n", proto_fun);
+    assert(proto_fun != NULL);
 
     // def_args must be MP_OBJ_NULL or a tuple
-    assert(def_args == MP_OBJ_NULL || mp_obj_is_type(def_args, &mp_type_tuple));
+    assert(def_args == NULL || def_args[0] == MP_OBJ_NULL || mp_obj_is_type(def_args[0], &mp_type_tuple));
 
     // def_kw_args must be MP_OBJ_NULL or a dict
-    assert(def_kw_args == MP_OBJ_NULL || mp_obj_is_type(def_kw_args, &mp_type_dict));
+    assert(def_args == NULL || def_args[1] == MP_OBJ_NULL || mp_obj_is_type(def_args[1], &mp_type_dict));
+
+    #if MICROPY_MODULE_FROZEN_MPY
+    if (mp_proto_fun_is_bytecode(proto_fun)) {
+        const uint8_t *bc = proto_fun;
+        mp_obj_t fun = mp_obj_new_fun_bc(def_args, bc, context, NULL);
+        MP_BC_PRELUDE_SIG_DECODE(bc);
+        // CIRCUITPY-CHANGE: distinguish generators and async
+        // A coroutine is MP_SCOPE_FLAG_ASYNC | MP_SCOPE_FLAG_GENERATOR,
+        // so check for ASYNC first.
+        #if MICROPY_PY_ASYNC_AWAIT
+        if (scope_flags & MP_SCOPE_FLAG_ASYNC) {
+            ((mp_obj_base_t *)MP_OBJ_TO_PTR(fun))->type = &mp_type_coro_wrap;
+        } else
+        #endif
+        if (scope_flags & MP_SCOPE_FLAG_GENERATOR) {
+            ((mp_obj_base_t *)MP_OBJ_TO_PTR(fun))->type = &mp_type_gen_wrap;
+        }
+        return fun;
+    }
+    #endif
+
+    // the proto-function is a mp_raw_code_t
+    const mp_raw_code_t *rc = proto_fun;
 
     // make the function, depending on the raw code kind
     mp_obj_t fun;
     switch (rc->kind) {
         #if MICROPY_EMIT_NATIVE
         case MP_CODE_NATIVE_PY:
+            fun = mp_obj_new_fun_native(def_args, rc->fun_data, context, rc->children);
+            // Check for a generator function, and if so change the type of the object
+            // CIRCUITPY-CHANGE: distinguish generators and async
+            #if MICROPY_PY_ASYNC_AWAIT
+            // For async, BOTH is_async and is_generator will be set,
+            // so check is_async first.
+            if ((rc->is_async) != 0) {
+                ((mp_obj_base_t *)MP_OBJ_TO_PTR(fun))->type = &mp_type_native_coro_wrap;
+            } else
+            #endif
+            if ((rc->is_generator) != 0) {
+                ((mp_obj_base_t *)MP_OBJ_TO_PTR(fun))->type = &mp_type_native_gen_wrap;
+            }
+            break;
         case MP_CODE_NATIVE_VIPER:
-            fun = mp_obj_new_fun_native(def_args, def_kw_args, rc->fun_data, rc->const_table);
+            fun = mp_obj_new_fun_viper(rc->fun_data, context, rc->children);
             break;
         #endif
         #if MICROPY_EMIT_INLINE_ASM
         case MP_CODE_NATIVE_ASM:
-            fun = mp_obj_new_fun_asm(rc->n_pos_args, rc->fun_data, rc->type_sig);
+            fun = mp_obj_new_fun_asm(rc->asm_n_pos_args, rc->fun_data, rc->asm_type_sig);
             break;
         #endif
         default:
             // rc->kind should always be set and BYTECODE is the only remaining case
             assert(rc->kind == MP_CODE_BYTECODE);
-            fun = mp_obj_new_fun_bc(def_args, def_kw_args, rc->fun_data, rc->const_table);
+            fun = mp_obj_new_fun_bc(def_args, rc->fun_data, context, rc->children);
+            // check for generator functions and if so change the type of the object
+            // CIRCUITPY-CHANGE: distinguish generators and async
+            // For async, BOTH is_async and is_generator will be set,
+            // so check is_async first.
+            #if MICROPY_PY_ASYNC_AWAIT
+            if ((rc->is_async) != 0) {
+                ((mp_obj_base_t *)MP_OBJ_TO_PTR(fun))->type = &mp_type_coro_wrap;
+            } else
+            #endif
+            if ((rc->is_generator) != 0) {
+                ((mp_obj_base_t *)MP_OBJ_TO_PTR(fun))->type = &mp_type_gen_wrap;
+            }
+
+            #if MICROPY_PY_SYS_SETTRACE
+            mp_obj_fun_bc_t *self_fun = (mp_obj_fun_bc_t *)MP_OBJ_TO_PTR(fun);
+            self_fun->rc = rc;
+            #endif
+
             break;
     }
-
-    // check for generator functions and if so wrap in generator object
-    if ((rc->scope_flags & MP_SCOPE_FLAG_GENERATOR) != 0) {
-        fun = mp_obj_new_gen_wrap(fun, (rc->scope_flags & MP_SCOPE_FLAG_ASYNC) != 0);
-    }
-
-    #if MICROPY_PY_SYS_SETTRACE
-    if (rc->kind == MP_CODE_BYTECODE) {
-        mp_obj_fun_bc_t *self_fun = (mp_obj_fun_bc_t *)MP_OBJ_TO_PTR(fun);
-        self_fun->rc = rc;
-    }
-    #endif
 
     return fun;
 }
 
-mp_obj_t mp_make_closure_from_raw_code(const mp_raw_code_t *rc, mp_uint_t n_closed_over, const mp_obj_t *args) {
-    DEBUG_OP_printf("make_closure_from_raw_code %p " UINT_FMT " %p\n", rc, n_closed_over, args);
+mp_obj_t mp_make_closure_from_proto_fun(mp_proto_fun_t proto_fun, const mp_module_context_t *context, mp_uint_t n_closed_over, const mp_obj_t *args) {
+    DEBUG_OP_printf("make_closure_from_proto_fun %p " UINT_FMT " %p\n", proto_fun, n_closed_over, args);
     // make function object
     mp_obj_t ffun;
     if (n_closed_over & 0x100) {
         // default positional and keyword args given
-        ffun = mp_make_function_from_raw_code(rc, args[0], args[1]);
+        ffun = mp_make_function_from_proto_fun(proto_fun, context, args);
     } else {
         // default positional and keyword args not given
-        ffun = mp_make_function_from_raw_code(rc, MP_OBJ_NULL, MP_OBJ_NULL);
+        ffun = mp_make_function_from_proto_fun(proto_fun, context, NULL);
     }
     // wrap function in closure object
     return mp_obj_new_closure(ffun, n_closed_over & 0xff, args + ((n_closed_over >> 7) & 2));

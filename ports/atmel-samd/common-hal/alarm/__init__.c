@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2021 Lucian Copeland for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2021 Lucian Copeland for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "py/gc.h"
 #include "py/obj.h"
@@ -39,7 +19,7 @@
 #include "supervisor/port.h"
 #include "supervisor/workflow.h"
 
-STATIC uint32_t TAMPID = 0;
+static uint32_t TAMPID = 0;
 
 // Singleton instance of SleepMemory.
 const alarm_sleep_memory_obj_t alarm_sleep_memory_obj = {
@@ -47,6 +27,10 @@ const alarm_sleep_memory_obj_t alarm_sleep_memory_obj = {
         .type = &alarm_sleep_memory_type,
     },
 };
+
+// Non-heap alarm object recording alarm (if any) that woke up CircuitPython after light or deep sleep.
+// This object lives across VM instantiations, so none of these objects can contain references to the heap.
+alarm_wake_alarm_union_t alarm_wake_alarm;
 
 void alarm_reset(void) {
     // Reset the alarm flag
@@ -57,7 +41,7 @@ void alarm_reset(void) {
 void alarm_get_wakeup_cause(void) {
     // Called from rtc_init, just before SWRST of RTC.  It is called
     // at an early stage of main(), to save TAMPID from SWRST.  Later,
-    // common_hal_alarm_create_wake_alarm is called to make a wakeup
+    // common_hal_alarm_record_wake_alarm is called to make a wakeup
     // alarm from the deep sleep.
 
     TAMPID = RTC->MODE0.TAMPID.reg;
@@ -67,7 +51,7 @@ bool common_hal_alarm_woken_from_sleep(void) {
     return alarm_pin_pinalarm_woke_this_cycle() || alarm_time_timealarm_woke_this_cycle();
 }
 
-mp_obj_t common_hal_alarm_create_wake_alarm(void) {
+mp_obj_t common_hal_alarm_record_wake_alarm(void) {
     // Called from main.c on the first start up, just before alarm_reset.
     // Return a copy of wakeup alarm from deep sleep / fake deep sleep.
     // In case of fake sleep, status should be left in TimeAlarm/PinAlarm.
@@ -76,19 +60,19 @@ mp_obj_t common_hal_alarm_create_wake_alarm(void) {
     if (alarm_pin_pinalarm_woke_this_cycle()) {
         TAMPID = RTC->MODE0.TAMPID.reg;
         RTC->MODE0.TAMPID.reg = TAMPID;         // clear register
-        return alarm_pin_pinalarm_create_wakeup_alarm(TAMPID);
+        return alarm_pin_pinalarm_record_wake_alarm(TAMPID);
     }
     if (alarm_time_timealarm_woke_this_cycle() || (true_deep && TAMPID == 0)) {
-        return alarm_time_timealarm_create_wakeup_alarm();
+        return alarm_time_timealarm_record_wake_alarm();
     }
     if (true_deep) {
-        return alarm_pin_pinalarm_create_wakeup_alarm(TAMPID);
+        return alarm_pin_pinalarm_record_wake_alarm(TAMPID);
     }
     return mp_const_none;
 }
 
 // Set up light sleep or deep sleep alarms.
-STATIC void _setup_sleep_alarms(bool deep_sleep, size_t n_alarms, const mp_obj_t *alarms) {
+static void _setup_sleep_alarms(bool deep_sleep, size_t n_alarms, const mp_obj_t *alarms) {
     alarm_pin_pinalarm_set_alarms(deep_sleep, n_alarms, alarms);
     alarm_time_timealarm_set_alarms(deep_sleep, n_alarms, alarms);
 }
@@ -109,11 +93,11 @@ mp_obj_t common_hal_alarm_light_sleep_until_alarms(size_t n_alarms, const mp_obj
         RUN_BACKGROUND_TASKS;
         // Detect if interrupt was alarm or ctrl-C interrupt.
         if (alarm_time_timealarm_woke_this_cycle()) {
-            wake_alarm = alarm_time_timealarm_find_triggered_alarm(n_alarms,alarms);
+            wake_alarm = alarm_time_timealarm_find_triggered_alarm(n_alarms, alarms);
             break;
         }
         if (alarm_pin_pinalarm_woke_this_cycle()) {
-            wake_alarm = alarm_pin_pinalarm_find_triggered_alarm(n_alarms,alarms);
+            wake_alarm = alarm_pin_pinalarm_find_triggered_alarm(n_alarms, alarms);
             break;
         }
 
@@ -142,7 +126,10 @@ mp_obj_t common_hal_alarm_light_sleep_until_alarms(size_t n_alarms, const mp_obj
     return wake_alarm;
 }
 
-void common_hal_alarm_set_deep_sleep_alarms(size_t n_alarms, const mp_obj_t *alarms) {
+void common_hal_alarm_set_deep_sleep_alarms(size_t n_alarms, const mp_obj_t *alarms, size_t n_dios, digitalio_digitalinout_obj_t **preserve_dios) {
+    if (n_dios > 0) {
+        mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("%q"), MP_QSTR_preserve_dios);
+    }
     _setup_sleep_alarms(true, n_alarms, alarms);
 }
 

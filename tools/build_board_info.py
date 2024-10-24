@@ -6,10 +6,13 @@
 
 import json
 import os
+import re
+import requests
 import subprocess
 import sys
 import sh
 import base64
+from io import StringIO
 from datetime import date
 from sh.contrib import git
 
@@ -58,9 +61,13 @@ def get_languages(list_all=False):
 
 def get_version_info():
     version = None
-    sha = git("rev-parse", "--short", "HEAD").stdout.decode("utf-8")
+    buffer = StringIO()
+    git("rev-parse", "--short", "HEAD", _out=buffer)
+    sha = buffer.getvalue().strip()
     try:
-        version = git("describe", "--tags", "--exact-match").stdout.decode("utf-8").strip()
+        buffer = StringIO()
+        git("describe", "--tags", "--exact-match", _out=buffer)
+        version = buffer.getvalue().strip()
     except sh.ErrorReturnCode_128:
         # No exact match
         pass
@@ -69,7 +76,35 @@ def get_version_info():
         sha = os.environ["GITHUB_SHA"]
 
     if not version:
-        version = "{}-{}".format(date.today().strftime("%Y%m%d"), sha[:7])
+        # Get branch we are PR'ing into, if any.
+        # Works for pull_request actions.
+        branch = os.environ.get("GITHUB_BASE_REF", "")
+        if not branch:
+            # Works for push actions (usually a PR merge).
+            branch = os.environ.get("GITHUB_REF_NAME", "")
+        if not branch:
+            branch = "no-branch"
+        # replace slashes with underscores to prevent path subdirs.
+        branch = branch.strip().replace("/", "_")
+
+        # Get PR number, if any
+        # PR jobs put the PR number in PULL.
+        pull_request = os.environ.get("PULL", "")
+        if not pull_request:
+            # PR merge jobs put a commit message that includes the PR number in HEAD_COMMIT_MESSAGE.
+            head_commit_message = os.environ.get("HEAD_COMMIT_MESSAGE", "")
+            if head_commit_message:
+                match = re.match(r"Merge pull request #(\d+) from", head_commit_message)
+                if match:
+                    pull_request = match.group(1)
+
+        if pull_request:
+            pull_request = f"-PR{pull_request}"
+
+        date_stamp = date.today().strftime("%Y%m%d")
+        short_sha = sha[:7]
+        # Example: 20231121-8.2.x-PR9876-123abcd
+        version = f"{date_stamp}-{branch}{pull_request}-{short_sha}"
 
     return sha, version
 
@@ -91,7 +126,19 @@ def get_current_info():
     response = response.json()
 
     git_info = commit_sha, response["sha"]
-    current_list = json.loads(base64.b64decode(response["content"]).decode("utf-8"))
+
+    if response["content"] != "":
+        # if the file is there
+        current_list = json.loads(base64.b64decode(response["content"]).decode("utf-8"))
+    else:
+        # if too big, the file is not included
+        download_url = response["download_url"]
+        response = requests.get(download_url)
+        if not response.ok:
+            print(response.text)
+            raise RuntimeError("cannot get previous files.json")
+        current_list = response.json()
+
     current_info = {}
     for info in current_list:
         current_info[info["id"]] = info
@@ -118,10 +165,10 @@ def create_pr(changes, updated, git_info, user):
     pr_title = "Automated website update for release {}".format(changes["new_release"])
     boards = ""
     if changes["new_boards"]:
-        boards = "New boards:\n* " + "\n* ".join(changes["new_boards"])
+        boards = "New boards:\n* " + "\n* ".join(sorted(changes["new_boards"]))
     languages = ""
     if changes["new_languages"]:
-        languages = "New languages:\n* " + "\n* ".join(changes["new_languages"])
+        languages = "New languages:\n* " + "\n* ".join(sorted(changes["new_languages"]))
     message = "Automated website update for release {} by Blinka.\n\n{}\n\n{}\n".format(
         changes["new_release"], boards, languages
     )
@@ -129,9 +176,7 @@ def create_pr(changes, updated, git_info, user):
     create_branch = {"ref": "refs/heads/" + branch_name, "sha": commit_sha}
     response = github.post("/repos/{}/circuitpython-org/git/refs".format(user), json=create_branch)
     if not response.ok and response.json()["message"] != "Reference already exists":
-        print("unable to create branch")
-        print(response.text)
-        return
+        raise SystemExit(f"unable to create branch: {response.text}")
 
     update_file = {
         "message": message,
@@ -144,9 +189,7 @@ def create_pr(changes, updated, git_info, user):
         "/repos/{}/circuitpython-org/contents/_data/files.json".format(user), json=update_file
     )
     if not response.ok:
-        print("unable to post new file")
-        print(response.text)
-        return
+        raise SystemExit(f"unable to post new file: {response.text}")
     pr_info = {
         "title": pr_title,
         "head": user + ":" + branch_name,
@@ -156,9 +199,7 @@ def create_pr(changes, updated, git_info, user):
     }
     response = github.post("/repos/adafruit/circuitpython-org/pulls", json=pr_info)
     if not response.ok:
-        print("unable to create pr")
-        print(response.text)
-        return
+        raise SystemExit(f"unable to create pr: {response.text}")
     print(changes)
     print(pr_info)
 

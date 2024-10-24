@@ -1,3 +1,11 @@
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
+
+#pragma once
+
 /* Adafruit Feather M0 Express with an 8MB SPI flash instead of the usual 2MB */
 
 #define MICROPY_HW_BOARD_NAME "Hacked Feather M0 Express with 8Mbyte SPI flash"
@@ -22,6 +30,24 @@
 #define DEFAULT_UART_BUS_RX (&pin_PA11)
 #define DEFAULT_UART_BUS_TX (&pin_PA10)
 
+// Other some pins that do not appear in the pinout & are not used internally
+// this list is not (yet) exhaustive
+#define IGNORE_PIN_PA03     1
+#define IGNORE_PIN_PB01     1
+#define IGNORE_PIN_PB03     1
+#define IGNORE_PIN_PB04     1
+#define IGNORE_PIN_PB05     1
+#define IGNORE_PIN_PB06     1
+#define IGNORE_PIN_PB07     1
+#define IGNORE_PIN_PB12     1
+
 // USB is always used internally so skip the pin objects for it.
 #define IGNORE_PIN_PA24     1
 #define IGNORE_PIN_PA25     1
+
+// USBHOSTEN on the schematic but not connected.
+#define IGNORE_PIN_PA28     1
+
+// SWD pins
+#define IGNORE_PIN_PA30     1
+#define IGNORE_PIN_PA31     1

@@ -1,28 +1,8 @@
-/*
- * This file is part of the Micro Python project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2019 Lucian Copeland for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2019 Lucian Copeland for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "peripherals/gpio.h"
 #include "stm32f4xx_hal.h"
@@ -40,12 +20,12 @@ void stm32_peripherals_gpio_init(void) {
     // Never reset pins
     // TODO: Move this out of peripherals. These helpers shouldn't reference anything CircuitPython
     // specific.
-    never_reset_pin_number(2,14); // PC14 OSC32_IN
-    never_reset_pin_number(2,15); // PC15 OSC32_OUT
+    never_reset_pin_number(2, 14); // PC14 OSC32_IN
+    never_reset_pin_number(2, 15); // PC15 OSC32_OUT
 
     #if !(BOARD_OVERWRITE_SWD)
-    never_reset_pin_number(0,13); // PA13 SWDIO
-    never_reset_pin_number(0,14); // PA14 SWCLK
+    never_reset_pin_number(0, 13); // PA13 SWDIO
+    never_reset_pin_number(0, 14); // PA14 SWCLK
     #endif
 
     // Port H is not included in GPIO port array

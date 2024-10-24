@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * SPDX-FileCopyrightText: Copyright (c) 2013, 2014 Damien P. George
+ * Copyright (c) 2013, 2014 Damien P. George
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,13 +32,12 @@
 #include "py/parsenum.h"
 #include "py/runtime.h"
 
-#include "supervisor/shared/translate/translate.h"
-
 #if MICROPY_PY_BUILTINS_FLOAT
 
 #include <math.h>
 #include "py/formatfloat.h"
 
+// CIRCUITPY-CHANGE: avoid compiler warning
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-equal"
 
@@ -59,6 +58,14 @@ typedef struct _mp_obj_float_t {
 
 const mp_obj_float_t mp_const_float_e_obj = {{&mp_type_float}, (mp_float_t)M_E};
 const mp_obj_float_t mp_const_float_pi_obj = {{&mp_type_float}, (mp_float_t)M_PI};
+#if MICROPY_PY_MATH_CONSTANTS
+#ifndef NAN
+#error NAN macro is not defined
+#endif
+const mp_obj_float_t mp_const_float_tau_obj = {{&mp_type_float}, (mp_float_t)(2.0 * M_PI)};
+const mp_obj_float_t mp_const_float_inf_obj = {{&mp_type_float}, (mp_float_t)INFINITY};
+const mp_obj_float_t mp_const_float_nan_obj = {{&mp_type_float}, (mp_float_t)NAN};
+#endif
 
 #endif
 
@@ -99,7 +106,7 @@ mp_int_t mp_float_hash(mp_float_t src) {
 }
 #endif
 
-STATIC void float_print(const mp_print_t *print, mp_obj_t o_in, mp_print_kind_t kind) {
+static void float_print(const mp_print_t *print, mp_obj_t o_in, mp_print_kind_t kind) {
     (void)kind;
     mp_float_t o_val = mp_obj_float_get(o_in);
     #if MICROPY_FLOAT_IMPL == MICROPY_FLOAT_IMPL_FLOAT
@@ -121,7 +128,7 @@ STATIC void float_print(const mp_print_t *print, mp_obj_t o_in, mp_print_kind_t 
     }
 }
 
-STATIC mp_obj_t float_make_new(const mp_obj_type_t *type_in, size_t n_args, size_t n_kw, const mp_obj_t *args) {
+static mp_obj_t float_make_new(const mp_obj_type_t *type_in, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     (void)type_in;
     mp_arg_check_num(n_args, n_kw, 0, 1, false);
 
@@ -134,7 +141,7 @@ STATIC mp_obj_t float_make_new(const mp_obj_type_t *type_in, size_t n_args, size
             mp_buffer_info_t bufinfo;
             if (mp_get_buffer(args[0], &bufinfo, MP_BUFFER_READ)) {
                 // a textual representation, parse it
-                return mp_parse_num_decimal(bufinfo.buf, bufinfo.len, false, false, NULL);
+                return mp_parse_num_float(bufinfo.buf, bufinfo.len, false, NULL);
             } else if (mp_obj_is_float(args[0])) {
                 // a float, just return it
                 return args[0];
@@ -146,7 +153,7 @@ STATIC mp_obj_t float_make_new(const mp_obj_type_t *type_in, size_t n_args, size
     }
 }
 
-STATIC mp_obj_t float_unary_op(mp_unary_op_t op, mp_obj_t o_in) {
+static mp_obj_t float_unary_op(mp_unary_op_t op, mp_obj_t o_in) {
     mp_float_t val = mp_obj_float_get(o_in);
     switch (op) {
         case MP_UNARY_OP_BOOL:
@@ -169,7 +176,7 @@ STATIC mp_obj_t float_unary_op(mp_unary_op_t op, mp_obj_t o_in) {
     }
 }
 
-STATIC mp_obj_t float_binary_op(mp_binary_op_t op, mp_obj_t lhs_in, mp_obj_t rhs_in) {
+static mp_obj_t float_binary_op(mp_binary_op_t op, mp_obj_t lhs_in, mp_obj_t rhs_in) {
     mp_float_t lhs_val = mp_obj_float_get(lhs_in);
     #if MICROPY_PY_BUILTINS_COMPLEX
     if (mp_obj_is_type(rhs_in, &mp_type_complex)) {
@@ -179,22 +186,19 @@ STATIC mp_obj_t float_binary_op(mp_binary_op_t op, mp_obj_t lhs_in, mp_obj_t rhs
     return mp_obj_float_binary_op(op, lhs_val, rhs_in);
 }
 
-const mp_obj_type_t mp_type_float = {
-    { &mp_type_type },
-    .flags = MP_TYPE_FLAG_EQ_NOT_REFLEXIVE | MP_TYPE_FLAG_EQ_CHECKS_OTHER_TYPE | MP_TYPE_FLAG_EXTENDED,
-    .name = MP_QSTR_float,
-    .print = float_print,
-    .make_new = float_make_new,
-    MP_TYPE_EXTENDED_FIELDS(
-        .unary_op = float_unary_op,
-        .binary_op = float_binary_op,
-        ),
-};
+MP_DEFINE_CONST_OBJ_TYPE(
+    mp_type_float, MP_QSTR_float, MP_TYPE_FLAG_EQ_NOT_REFLEXIVE | MP_TYPE_FLAG_EQ_CHECKS_OTHER_TYPE,
+    make_new, float_make_new,
+    print, float_print,
+    unary_op, float_unary_op,
+    binary_op, float_binary_op
+    );
 
 #if MICROPY_OBJ_REPR != MICROPY_OBJ_REPR_C && MICROPY_OBJ_REPR != MICROPY_OBJ_REPR_D
 
 mp_obj_t mp_obj_new_float(mp_float_t value) {
-    mp_obj_float_t *o = m_new(mp_obj_float_t, 1);
+    // Don't use mp_obj_malloc here to avoid extra function call overhead.
+    mp_obj_float_t *o = m_new_obj(mp_obj_float_t);
     o->base.type = &mp_type_float;
     o->value = value;
     return MP_OBJ_FROM_PTR(o);
@@ -208,7 +212,7 @@ mp_float_t mp_obj_float_get(mp_obj_t self_in) {
 
 #endif
 
-STATIC void mp_obj_float_divmod(mp_float_t *x, mp_float_t *y) {
+static void mp_obj_float_divmod(mp_float_t *x, mp_float_t *y) {
     // logic here follows that of CPython
     // https://docs.python.org/3/reference/expressions.html#binary-arithmetic-operations
     // x == (x//y)*y + (x%y)
@@ -266,7 +270,8 @@ mp_obj_t mp_obj_float_binary_op(mp_binary_op_t op, mp_float_t lhs_val, mp_obj_t 
         case MP_BINARY_OP_INPLACE_FLOOR_DIVIDE:
             if (rhs_val == 0) {
             zero_division_error:
-                mp_raise_msg(&mp_type_ZeroDivisionError, MP_ERROR_TEXT("divide by zero"));
+                // CIRCUITPY-CHANGE: a message here is redundant
+                mp_raise_ZeroDivisionError();
             }
             // Python specs require that x == (x//y)*y + (x%y) so we must
             // call divmod to compute the correct floor division, which
@@ -343,6 +348,7 @@ mp_obj_t mp_obj_float_binary_op(mp_binary_op_t op, mp_float_t lhs_val, mp_obj_t 
     return mp_obj_new_float(lhs_val);
 }
 
+// CIRCUITPY-CHANGE
 // Convert a uint64_t to a 32-bit float without invoking the double-precision math routines,
 // which are large.
 mp_float_t uint64_to_float(uint64_t ui64) {
@@ -350,6 +356,7 @@ mp_float_t uint64_to_float(uint64_t ui64) {
     return (mp_float_t)((uint32_t)(ui64 >> 32) * 4294967296.0f + (uint32_t)(ui64 & 0xffffffff));
 }
 
+// CIRCUITPY-CHANGE
 // Convert a uint64_t to a 32-bit float to a uint64_t without invoking extra math routines.
 // which are large.
 // Assume f >= 0.

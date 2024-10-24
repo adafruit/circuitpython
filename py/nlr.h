@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * SPDX-FileCopyrightText: Copyright (c) 2013, 2014 Damien P. George
+ * Copyright (c) 2013-2023 Damien P. George
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,6 +31,7 @@
 
 #include <limits.h>
 #include <assert.h>
+#include <stdbool.h>
 
 #include "py/mpconfig.h"
 
@@ -40,12 +41,14 @@
 #define MICROPY_NLR_NUM_REGS_ARM_THUMB      (10)
 #define MICROPY_NLR_NUM_REGS_ARM_THUMB_FP   (10 + 6)
 #define MICROPY_NLR_NUM_REGS_AARCH64        (13)
+#define MICROPY_NLR_NUM_REGS_MIPS           (13)
 #define MICROPY_NLR_NUM_REGS_XTENSA         (10)
 #define MICROPY_NLR_NUM_REGS_XTENSAWIN      (17)
 
 // *FORMAT-OFF*
 
 // If MICROPY_NLR_SETJMP is not enabled then auto-detect the machine arch
+// CIRCUITPY-CHANGE: avoid warning
 #if !defined(MICROPY_NLR_SETJMP) || !MICROPY_NLR_SETJMP
 // A lot of nlr-related things need different treatment on Windows
 #if defined(_WIN32) || defined(__CYGWIN__)
@@ -54,10 +57,12 @@
 #define MICROPY_NLR_OS_WINDOWS 0
 #endif
 #if defined(__i386__)
+    // CIRCUITPY-CHANGE: turn off explicitly to avoid warnings
     #define MICROPY_NLR_SETJMP (0)
     #define MICROPY_NLR_X86 (1)
     #define MICROPY_NLR_NUM_REGS (MICROPY_NLR_NUM_REGS_X86)
 #elif defined(__x86_64__)
+    // CIRCUITPY-CHANGE: turn off explicitly to avoid warnings
     #define MICROPY_NLR_SETJMP (0)
     #define MICROPY_NLR_X64 (1)
     #if MICROPY_NLR_OS_WINDOWS
@@ -66,6 +71,7 @@
         #define MICROPY_NLR_NUM_REGS (MICROPY_NLR_NUM_REGS_X64)
     #endif
 #elif defined(__thumb2__) || defined(__thumb__) || defined(__arm__)
+    // CIRCUITPY-CHANGE: turn off explicitly to avoid warnings
     #define MICROPY_NLR_SETJMP (0)
     #define MICROPY_NLR_THUMB (1)
     #if defined(__SOFTFP__)
@@ -80,20 +86,26 @@
     #define MICROPY_NLR_AARCH64 (1)
     #define MICROPY_NLR_NUM_REGS (MICROPY_NLR_NUM_REGS_AARCH64)
 #elif defined(__xtensa__)
+    // CIRCUITPY-CHANGE: turn off explicitly to avoid warnings
     #define MICROPY_NLR_SETJMP (0)
     #define MICROPY_NLR_XTENSA (1)
     #define MICROPY_NLR_NUM_REGS (MICROPY_NLR_NUM_REGS_XTENSA)
 #elif defined(__powerpc__)
+    // CIRCUITPY-CHANGE: turn off explicitly to avoid warnings
     #define MICROPY_NLR_SETJMP (0)
     #define MICROPY_NLR_POWERPC (1)
     // this could be less but using 128 for safety
     #define MICROPY_NLR_NUM_REGS (128)
+#elif defined(__mips__)
+    #define MICROPY_NLR_MIPS (1)
+    #define MICROPY_NLR_NUM_REGS (MICROPY_NLR_NUM_REGS_MIPS)
 #else
     #define MICROPY_NLR_SETJMP (1)
-// #warning "No native NLR support for this arch, using setjmp implementation"
+    //#warning "No native NLR support for this arch, using setjmp implementation"
 #endif
 #endif
 
+// CIRCUITPY-CHANGE
 // If MICROPY_NLR_SETJMP is not defined above -  define/disable it here
 #if !defined(MICROPY_NLR_SETJMP)
     #define MICROPY_NLR_SETJMP (0)
@@ -107,9 +119,16 @@
 
 typedef struct _nlr_buf_t nlr_buf_t;
 struct _nlr_buf_t {
-    // the entries here must all be machine word size
+    // The entries in this struct must all be machine word size.
+
+    // Pointer to the previous nlr_buf_t in the chain.
+    // Or NULL if it's the top-level one.
     nlr_buf_t *prev;
-    void *ret_val; // always a concrete object (an exception instance)
+
+    // The exception that is being raised:
+    // - NULL means the jump is because of a VM abort (only if MICROPY_ENABLE_VM_ABORT enabled)
+    // - otherwise it's always a concrete object (an exception instance)
+    void *ret_val;
 
     #if MICROPY_NLR_SETJMP
     jmp_buf jmpbuf;
@@ -120,6 +139,15 @@ struct _nlr_buf_t {
     #if MICROPY_ENABLE_PYSTACK
     void *pystack;
     #endif
+};
+
+typedef void (*nlr_jump_callback_fun_t)(void *ctx);
+
+typedef struct _nlr_jump_callback_node_t nlr_jump_callback_node_t;
+
+struct _nlr_jump_callback_node_t {
+    nlr_jump_callback_node_t *prev;
+    nlr_jump_callback_fun_t fun;
 };
 
 // Helper macros to save/restore the pystack state
@@ -139,6 +167,7 @@ struct _nlr_buf_t {
         nlr_jump_fail(val); \
     } \
     top->ret_val = val; \
+    nlr_call_jump_callbacks(top); \
     MP_NLR_RESTORE_PYSTACK(top); \
     *_top_ptr = top->prev; \
 
@@ -155,6 +184,12 @@ unsigned int nlr_push_tail(nlr_buf_t *top);
 void nlr_pop(void);
 NORETURN void nlr_jump(void *val);
 
+#if MICROPY_ENABLE_VM_ABORT
+#define nlr_set_abort(buf) MP_STATE_VM(nlr_abort) = buf
+#define nlr_get_abort() MP_STATE_VM(nlr_abort)
+NORETURN void nlr_jump_abort(void);
+#endif
+
 // This must be implemented by a port.  It's called by nlr_jump
 // if no nlr buf has been pushed.  It must not return, but rather
 // should bail out with a fatal error.
@@ -164,11 +199,9 @@ NORETURN void nlr_jump_fail(void *val);
 #ifndef MICROPY_DEBUG_NLR
 #define nlr_raise(val) nlr_jump(MP_OBJ_TO_PTR(val))
 #else
-#include "mpstate.h"
+
 #define nlr_raise(val) \
     do { \
-        /*printf("nlr_raise: nlr_top=%p\n", MP_STATE_THREAD(nlr_top)); \
-        fflush(stdout);*/ \
         void *_val = MP_OBJ_TO_PTR(val); \
         assert(_val != NULL); \
         assert(mp_obj_is_exception_instance(val)); \
@@ -177,14 +210,21 @@ NORETURN void nlr_jump_fail(void *val);
 
 #if !MICROPY_NLR_SETJMP
 #define nlr_push(val) \
-    assert(MP_STATE_THREAD(nlr_top) != val),nlr_push(val)
-
-/*
-#define nlr_push(val) \
-    printf("nlr_push: before: nlr_top=%p, val=%p\n", MP_STATE_THREAD(nlr_top), val),assert(MP_STATE_THREAD(nlr_top) != val),nlr_push(val)
-*/
+    assert(MP_STATE_THREAD(nlr_top) != val), nlr_push(val)
 #endif
 
 #endif
+
+// Push a callback on to the linked-list of NLR jump callbacks.  The `node` pointer must
+// be on the C stack.  The `fun` callback will be executed if an NLR jump is taken which
+// unwinds the C stack through this `node`.
+void nlr_push_jump_callback(nlr_jump_callback_node_t *node, nlr_jump_callback_fun_t fun);
+
+// Pop a callback from the linked-list of NLR jump callbacks.  The corresponding function
+// will be called if `run_callback` is true.
+void nlr_pop_jump_callback(bool run_callback);
+
+// Pop and call all NLR jump callbacks that were registered after `nlr` buffer was pushed.
+void nlr_call_jump_callbacks(nlr_buf_t *nlr);
 
 #endif // MICROPY_INCLUDED_PY_NLR_H

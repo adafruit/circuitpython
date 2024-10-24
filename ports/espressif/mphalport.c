@@ -1,49 +1,43 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2015 Glenn Ruben Bakke
- * Copyright (c) 2018 Artur Pacholec
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2015 Glenn Ruben Bakke
+// SPDX-FileCopyrightText: Copyright (c) 2018 Artur Pacholec
+//
+// SPDX-License-Identifier: MIT
 
 #include "py/mphal.h"
 #include "supervisor/cpu.h"
 
 #if defined(CONFIG_IDF_TARGET_ESP32)
 #include "components/esp_rom/include/esp32/rom/ets_sys.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32C2)
+#include "components/esp_rom/include/esp32c2/rom/ets_sys.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32P4)
+#include "components/esp_rom/include/esp32p4/rom/ets_sys.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32C3)
 #include "components/esp_rom/include/esp32c3/rom/ets_sys.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32C6)
+#include "components/esp_rom/include/esp32c6/rom/ets_sys.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32H2)
+#include "components/esp_rom/include/esp32h2/rom/ets_sys.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32S2)
 #include "components/esp_rom/include/esp32s2/rom/ets_sys.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32S3)
 #include "components/esp_rom/include/esp32s3/rom/ets_sys.h"
+#else
+#error Unknown CONFIG_IDF_TARGET_xxx
 #endif
 
-void mp_hal_delay_us(mp_uint_t delay) {
+#include "esp_attr.h"
+
+// This is used by ProtoMatter's interrupt so make sure it is available when
+// flash isn't.
+void IRAM_ATTR mp_hal_delay_us(mp_uint_t delay) {
     ets_delay_us(delay);
 }
 
 // This is provided by the esp-idf/components/xtensa/esp32s2/libhal.a binary blob.
-#ifndef CONFIG_IDF_TARGET_ESP32C3
+#ifndef CONFIG_IDF_TARGET_ARCH_RISCV
 extern void xthal_window_spill(void);
 #endif
 
@@ -61,7 +55,7 @@ mp_uint_t cpu_get_regs_and_sp(mp_uint_t *regs) {
     // there is a HAL call to do it. There is a bit of a race condition here
     // because the register value could change after it's been restored but that
     // is unlikely to happen with a heap pointer while we do a GC.
-    #ifndef CONFIG_IDF_TARGET_ESP32C3
+    #ifndef CONFIG_IDF_TARGET_ARCH_RISCV
     xthal_window_spill();
     #endif
     return (mp_uint_t)__builtin_frame_address(0);

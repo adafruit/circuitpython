@@ -1,29 +1,9 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2019 Lucian Copeland for Adafruit Industries
- * Copyright (c) 2020 Artur Pacholec
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2019 Lucian Copeland for Adafruit Industries
+// SPDX-FileCopyrightText: Copyright (c) 2020 Artur Pacholec
+//
+// SPDX-License-Identifier: MIT
 
 #include "shared-bindings/neopixel_write/__init__.h"
 
@@ -64,9 +44,7 @@ void PLACE_IN_ITCM(common_hal_neopixel_write)(const digitalio_digitalinout_obj_t
     const uint32_t pin = digitalinout->pin->number;
 
     __disable_irq();
-    // Enable DWT in debug core. Useable when interrupts disabled, as opposed to Systick->VAL
-    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+    // Use DWT in debug core. Usable when interrupts disabled, as opposed to Systick->VAL
     DWT->CYCCNT = 0;
 
     for (;;) {
@@ -88,12 +66,12 @@ void PLACE_IN_ITCM(common_hal_neopixel_write)(const digitalio_digitalinout_obj_t
             mask = 0x80;
         }
     }
+    // Enable interrupts again
+    __enable_irq();
 
     // Update the next start.
     next_start_raw_ticks = port_get_raw_ticks(NULL) + 4;
 
-    // Enable interrupts again
-    __enable_irq();
 }
 
 #pragma GCC pop_options

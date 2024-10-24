@@ -1,0 +1,15 @@
+USB_VID = 0x239A
+USB_PID = 0x8128
+USB_PRODUCT = "Feather RP2040 DVI"
+USB_MANUFACTURER = "Adafruit"
+
+CHIP_VARIANT = RP2040
+CHIP_FAMILY = rp2
+
+EXTERNAL_FLASH_DEVICES = "GD25Q64C,W25Q64JVxQ"
+
+CIRCUITPY_MAX3421E = 1
+CIRCUITPY_PICODVI = 1
+# Disable native USB host because it won't work alongside DVI anyway. (They both
+# use the second core.)
+CIRCUITPY_USB_HOST = 0

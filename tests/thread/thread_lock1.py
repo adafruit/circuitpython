@@ -1,8 +1,6 @@
 # test _thread lock object using a single thread
 #
-# SPDX-FileCopyrightText: Copyright (c) 2016 Damien P. George on behalf of Pycom Ltd
-#
-# SPDX-License-Identifier: MIT
+# MIT license; Copyright (c) 2016 Damien P. George on behalf of Pycom Ltd
 
 import _thread
 
@@ -32,7 +30,7 @@ print(lock.locked())
 with lock:
     print(lock.locked())
 
-# test that lock is unlocked if an error is rasied
+# test that lock is unlocked if an error is raised
 try:
     with lock:
         print(lock.locked())

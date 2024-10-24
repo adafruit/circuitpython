@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2017 Radomir Dopieralski
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2017 Radomir Dopieralski
+//
+// SPDX-License-Identifier: MIT
 
 #include "Layer.h"
 #include "Text.h"
@@ -37,7 +17,7 @@ void render_stage(
     int16_t vx, int16_t vy,
     mp_obj_t *layers, size_t layers_size,
     uint16_t *buffer, size_t buffer_size,
-    displayio_display_obj_t *display,
+    busdisplay_busdisplay_obj_t *display,
     uint8_t scale, uint16_t background) {
 
 
@@ -46,15 +26,12 @@ void render_stage(
     area.y1 = y0 * scale;
     area.x2 = x1 * scale;
     area.y2 = y1 * scale;
-    displayio_display_core_set_region_to_update(
-        &display->core, display->set_column_command, display->set_row_command,
-        NO_COMMAND, NO_COMMAND, display->data_as_commands, false, &area,
-        display->SH1107_addressing);
+    displayio_display_bus_set_region_to_update(&display->bus, &display->core, &area);
 
-    while (!displayio_display_core_begin_transaction(&display->core)) {
+    while (!displayio_display_bus_begin_transaction(&display->bus)) {
         RUN_BACKGROUND_TASKS;
     }
-    display->core.send(display->core.bus, DISPLAY_COMMAND,
+    display->bus.send(display->bus.bus, DISPLAY_COMMAND,
         CHIP_SELECT_TOGGLE_EVERY_BYTE,
         &display->write_ram_command, 1);
     size_t index = 0;
@@ -81,7 +58,7 @@ void render_stage(
                     index += 1;
                     // The buffer is full, send it.
                     if (index >= buffer_size) {
-                        display->core.send(display->core.bus, DISPLAY_DATA,
+                        display->bus.send(display->bus.bus, DISPLAY_DATA,
                             CHIP_SELECT_UNTOUCHED,
                             ((uint8_t *)buffer), buffer_size * 2);
                         index = 0;
@@ -92,10 +69,10 @@ void render_stage(
     }
     // Send the remaining data.
     if (index) {
-        display->core.send(display->core.bus, DISPLAY_DATA,
+        display->bus.send(display->bus.bus, DISPLAY_DATA,
             CHIP_SELECT_UNTOUCHED,
             ((uint8_t *)buffer), index * 2);
     }
 
-    displayio_display_core_end_transaction(&display->core);
+    displayio_display_bus_end_transaction(&display->bus);
 }

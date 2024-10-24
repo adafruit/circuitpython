@@ -1,28 +1,8 @@
-/*
- * This file is part of the CircuitPython project, https://github.com/adafruit/circuitpython
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2018 Rose Hooper
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2018 Rose Hooper
+//
+// SPDX-License-Identifier: MIT
 
 
 #include "py/obj.h"
@@ -50,13 +30,10 @@ void common_hal_adafruit_pixelbuf_pixelbuf_construct(pixelbuf_pixelbuf_obj_t *se
     self->auto_write = false;
 
     size_t pixel_len = self->pixel_count * self->bytes_per_pixel;
-    self->transmit_buffer_obj = mp_obj_new_bytes_of_zeros(header_len + pixel_len + trailer_len);
-    mp_obj_str_t *o = MP_OBJ_TO_PTR(self->transmit_buffer_obj);
+    self->transmit_buffer_obj = mp_obj_new_bytearray_of_zeros(header_len + pixel_len + trailer_len);
+    mp_obj_array_t *o = MP_OBJ_TO_PTR(self->transmit_buffer_obj);
 
-    // Abuse the bytes object a bit by mutating it's data by dropping the const. If the user's
-    // Python code holds onto it, they'll find out that it changes. At least this way it isn't
-    // mutable by the code itself.
-    uint8_t *transmit_buffer = (uint8_t *)o->data;
+    uint8_t *transmit_buffer = o->items;
     memcpy(transmit_buffer, header, header_len);
     memcpy(transmit_buffer + header_len + pixel_len, trailer, trailer_len);
     self->post_brightness_buffer = transmit_buffer + header_len;
@@ -123,7 +100,7 @@ void common_hal_adafruit_pixelbuf_pixelbuf_set_brightness(mp_obj_t self_in, mp_f
         return;
     } else {
         if (self->pre_brightness_buffer == NULL) {
-            self->pre_brightness_buffer = m_malloc(pixel_len, false);
+            self->pre_brightness_buffer = m_malloc(pixel_len);
             memcpy(self->pre_brightness_buffer, self->post_brightness_buffer, pixel_len);
         }
         for (size_t i = 0; i < pixel_len; i++) {
@@ -140,19 +117,21 @@ void common_hal_adafruit_pixelbuf_pixelbuf_set_brightness(mp_obj_t self_in, mp_f
     }
 }
 
-STATIC uint8_t _pixelbuf_get_as_uint8(mp_obj_t obj) {
+static uint8_t _pixelbuf_get_as_uint8(mp_obj_t obj) {
     if (mp_obj_is_small_int(obj)) {
         return MP_OBJ_SMALL_INT_VALUE(obj);
+    #if MICROPY_LONGINT_IMPL != MICROPY_LONGINT_IMPL_NONE
     } else if (mp_obj_is_int(obj)) {
         return mp_obj_get_int_truncated(obj);
+    #endif
     } else if (mp_obj_is_float(obj)) {
         return (uint8_t)mp_obj_get_float(obj);
     }
     mp_raise_TypeError_varg(
-        translate("can't convert %q to %q"), mp_obj_get_type_qstr(obj), MP_QSTR_int);
+        MP_ERROR_TEXT("can't convert %q to %q"), mp_obj_get_type_qstr(obj), MP_QSTR_int);
 }
 
-STATIC void _pixelbuf_parse_color(pixelbuf_pixelbuf_obj_t *self, mp_obj_t color, uint8_t *r, uint8_t *g, uint8_t *b, uint8_t *w) {
+static void pixelbuf_parse_color(pixelbuf_pixelbuf_obj_t *self, mp_obj_t color, uint8_t *r, uint8_t *g, uint8_t *b, uint8_t *w) {
     pixelbuf_byteorder_details_t *byteorder = &self->byteorder;
     // w is shared between white in NeoPixels and brightness in dotstars (so that DotStars can have
     // per-pixel brightness). Set the defaults here in case it isn't set below.
@@ -195,7 +174,12 @@ STATIC void _pixelbuf_parse_color(pixelbuf_pixelbuf_obj_t *self, mp_obj_t color,
     }
 }
 
-STATIC void _pixelbuf_set_pixel_color(pixelbuf_pixelbuf_obj_t *self, size_t index, uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
+void common_hal_adafruit_pixelbuf_pixelbuf_parse_color(mp_obj_t self_in, mp_obj_t color, uint8_t *r, uint8_t *g, uint8_t *b, uint8_t *w) {
+    pixelbuf_pixelbuf_obj_t *self = native_pixelbuf(self_in);
+    pixelbuf_parse_color(self, color, r, g, b, w);
+}
+
+static void pixelbuf_set_pixel_color(pixelbuf_pixelbuf_obj_t *self, size_t index, uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
     // DotStars don't have white, instead they have 5 bit brightness so pack it into w. Shift right
     // by three to leave the top five bits.
     if (self->bytes_per_pixel == 4 && self->byteorder.is_dotstar) {
@@ -232,14 +216,18 @@ STATIC void _pixelbuf_set_pixel_color(pixelbuf_pixelbuf_obj_t *self, size_t inde
         scaled_buffer[rgbw_order->b] = (b * self->scaled_brightness) / 256;
     }
 }
+void common_hal_adafruit_pixelbuf_pixelbuf_set_pixel_color(mp_obj_t self_in, size_t index, uint8_t r, uint8_t g, uint8_t b, uint8_t w) {
+    pixelbuf_pixelbuf_obj_t *self = native_pixelbuf(self_in);
+    pixelbuf_set_pixel_color(self, index, r, g, b, w);
+}
 
-STATIC void _pixelbuf_set_pixel(pixelbuf_pixelbuf_obj_t *self, size_t index, mp_obj_t value) {
+static void _pixelbuf_set_pixel(pixelbuf_pixelbuf_obj_t *self, size_t index, mp_obj_t value) {
     uint8_t r;
     uint8_t g;
     uint8_t b;
     uint8_t w;
-    _pixelbuf_parse_color(self, value, &r, &g, &b, &w);
-    _pixelbuf_set_pixel_color(self, index, r, g, b, w);
+    common_hal_adafruit_pixelbuf_pixelbuf_parse_color(self, value, &r, &g, &b, &w);
+    common_hal_adafruit_pixelbuf_pixelbuf_set_pixel_color(self, index, r, g, b, w);
 }
 
 void common_hal_adafruit_pixelbuf_pixelbuf_set_pixels(mp_obj_t self_in, size_t start, mp_int_t step, size_t slice_len, mp_obj_t *values,
@@ -322,10 +310,10 @@ void common_hal_adafruit_pixelbuf_pixelbuf_fill(mp_obj_t self_in, mp_obj_t fill_
     uint8_t g;
     uint8_t b;
     uint8_t w;
-    _pixelbuf_parse_color(self, fill_color, &r, &g, &b, &w);
+    common_hal_adafruit_pixelbuf_pixelbuf_parse_color(self, fill_color, &r, &g, &b, &w);
 
     for (size_t i = 0; i < self->pixel_count; i++) {
-        _pixelbuf_set_pixel_color(self, i, r, g, b, w);
+        common_hal_adafruit_pixelbuf_pixelbuf_set_pixel_color(self, i, r, g, b, w);
     }
     if (self->auto_write) {
         common_hal_adafruit_pixelbuf_pixelbuf_show(self_in);

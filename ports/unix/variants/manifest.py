@@ -1,2 +1,3 @@
-freeze_as_mpy("$(MPY_DIR)/tools", "upip.py")
-freeze_as_mpy("$(MPY_DIR)/tools", "upip_utarfile.py", opt=3)
+add_library("unix-ffi", "$(MPY_LIB_DIR)/unix-ffi")
+require("mip-cmdline")
+require("ssl")

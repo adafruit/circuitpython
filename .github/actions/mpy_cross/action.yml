@@ -1,0 +1,42 @@
+name: Set up mpy-cross
+
+inputs:
+  download:
+    required: false
+    default: true
+    type: boolean
+  cp-version:
+    required: true
+    type: string
+
+runs:
+  using: composite
+  steps:
+    - name: Download mpy-cross
+      id: download-mpy-cross
+      if: inputs.download == 'true'
+      continue-on-error: true
+      uses: actions/download-artifact@v4
+      with:
+        name: mpy-cross
+        path: mpy-cross/build
+
+    - name: Make mpy-cross executable
+      if: inputs.download == 'true' && steps.download-mpy-cross.outcome == 'success'
+      run: sudo chmod +x mpy-cross/build/mpy-cross
+      shell: bash
+
+    - name: Build mpy-cross
+      if: inputs.download == 'false' || steps.download-mpy-cross.outcome == 'failure'
+      run: make -C mpy-cross -j4
+      shell: bash
+      env:
+        CP_VERSION: ${{ inputs.cp-version }}
+
+    - name: Upload mpy-cross
+      if: inputs.download == 'false' || steps.download-mpy-cross.outcome == 'failure'
+      continue-on-error: true
+      uses: actions/upload-artifact@v4
+      with:
+        name: mpy-cross
+        path: mpy-cross/build/mpy-cross

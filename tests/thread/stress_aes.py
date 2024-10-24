@@ -11,9 +11,7 @@
 # aggressive by changing the amount of data to encrypt, the number of loops and
 # the number of threads.
 #
-# SPDX-FileCopyrightText: Copyright (c) 2016 Damien P. George on behalf of Pycom Ltd
-#
-# SPDX-License-Identifier: MIT
+# MIT license; Copyright (c) 2016 Damien P. George on behalf of Pycom Ltd
 
 ##################################################################
 # discrete arithmetic routines, mostly from a precomputed table
@@ -39,6 +37,7 @@ aes_s_box_table = bytes((
     0x8c,0xa1,0x89,0x0d,0xbf,0xe6,0x42,0x68,0x41,0x99,0x2d,0x0f,0xb0,0x54,0xbb,0x16,
 ))
 # fmt: on
+
 
 # multiplication of polynomials modulo x^8 + x^4 + x^3 + x + 1 = 0x11b
 def aes_gf8_mul_2(x):
@@ -81,6 +80,7 @@ def aes_r_con(a):
 # provides such a sequence.  En/de-cryption is implemented here
 # using OCB, where the sequence is xored against the plaintext.
 # Care must be taken to (almost) always choose a different IV.
+
 
 # all inputs must be size 16
 def aes_add_round_key(state, w):
@@ -216,10 +216,7 @@ class AES:
 ##################################################################
 # test code
 
-try:
-    import utime as time
-except ImportError:
-    import time
+import time
 import _thread
 
 
@@ -269,7 +266,11 @@ def thread_entry(n_loop):
 if __name__ == "__main__":
     import sys
 
-    if sys.platform == "rp2":
+    if hasattr(sys, "settrace"):
+        # Builds with sys.settrace enabled are slow, so make the test short.
+        n_thread = 2
+        n_loop = 2
+    elif sys.platform == "rp2":
         n_thread = 1
         n_loop = 2
     elif sys.platform in ("esp32", "pyboard"):

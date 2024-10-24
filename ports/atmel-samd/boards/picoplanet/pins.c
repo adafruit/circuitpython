@@ -1,21 +1,27 @@
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
+
 #include "shared-bindings/board/__init__.h"
 
-STATIC const mp_rom_map_elem_t board_module_globals_table[] = {
+static const mp_rom_map_elem_t board_module_globals_table[] = {
     CIRCUITPYTHON_BOARD_DICT_STANDARD_ITEMS
 
     { MP_ROM_QSTR(MP_QSTR_A1), MP_ROM_PTR(&pin_PA02) },
     { MP_ROM_QSTR(MP_QSTR_A0), MP_ROM_PTR(&pin_PA03) },
     { MP_ROM_QSTR(MP_QSTR_A2), MP_ROM_PTR(&pin_PA04) },
 
-    { MP_ROM_QSTR(MP_QSTR_D5),MP_ROM_PTR(&pin_PA05) },
-    { MP_ROM_QSTR(MP_QSTR_GREEN_LED),MP_ROM_PTR(&pin_PA05) },
+    { MP_ROM_QSTR(MP_QSTR_D5), MP_ROM_PTR(&pin_PA05) },
+    { MP_ROM_QSTR(MP_QSTR_GREEN_LED), MP_ROM_PTR(&pin_PA05) },
 
-    { MP_ROM_QSTR(MP_QSTR_D6),MP_ROM_PTR(&pin_PA06) },
-    { MP_ROM_QSTR(MP_QSTR_RED_LED),MP_ROM_PTR(&pin_PA06) },
-    { MP_ROM_QSTR(MP_QSTR_LED),MP_ROM_PTR(&pin_PA06) },
+    { MP_ROM_QSTR(MP_QSTR_D6), MP_ROM_PTR(&pin_PA06) },
+    { MP_ROM_QSTR(MP_QSTR_RED_LED), MP_ROM_PTR(&pin_PA06) },
+    { MP_ROM_QSTR(MP_QSTR_LED), MP_ROM_PTR(&pin_PA06) },
 
-    { MP_ROM_QSTR(MP_QSTR_D7),MP_ROM_PTR(&pin_PA07) },
-    { MP_ROM_QSTR(MP_QSTR_BLUE_LED),MP_ROM_PTR(&pin_PA07) },
+    { MP_ROM_QSTR(MP_QSTR_D7), MP_ROM_PTR(&pin_PA07) },
+    { MP_ROM_QSTR(MP_QSTR_BLUE_LED), MP_ROM_PTR(&pin_PA07) },
 
     { MP_ROM_QSTR(MP_QSTR_D1), MP_ROM_PTR(&pin_PA08) },
     { MP_ROM_QSTR(MP_QSTR_A3), MP_ROM_PTR(&pin_PA08) },

@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2020 Jeff Epler for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2020 Jeff Epler for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include <string.h>
 
@@ -36,9 +16,9 @@
 
 #include "hal/twai_types.h"
 
-STATIC bool reserved_can;
+static bool reserved_can;
 
-STATIC twai_timing_config_t get_t_config(int baudrate) {
+static twai_timing_config_t get_t_config(int baudrate) {
     switch (baudrate) {
         case 1000000: {
             // TWAI_TIMING_CONFIG_abc expands to a C designated initializer list
@@ -113,7 +93,7 @@ STATIC twai_timing_config_t get_t_config(int baudrate) {
         }
         #endif
         default:
-            mp_raise_ValueError(translate("Baudrate not supported by peripheral"));
+            mp_raise_ValueError(MP_ERROR_TEXT("Baudrate not supported by peripheral"));
     }
 }
 
@@ -121,11 +101,11 @@ void common_hal_canio_can_construct(canio_can_obj_t *self, const mcu_pin_obj_t *
 #define DIV_ROUND(a, b) (((a) + (b) / 2) / (b))
 #define DIV_ROUND_UP(a, b) (((a) + (b) - 1) / (b))
     if (reserved_can) {
-        mp_raise_ValueError(translate("All CAN peripherals are in use"));
+        mp_raise_ValueError(MP_ERROR_TEXT("All CAN peripherals are in use"));
     }
 
     if (loopback && silent) {
-        mp_raise_ValueError(translate("loopback + silent mode not supported by peripheral"));
+        mp_raise_ValueError(MP_ERROR_TEXT("loopback + silent mode not supported by peripheral"));
     }
 
     twai_timing_config_t t_config = get_t_config(baudrate);
@@ -143,16 +123,16 @@ void common_hal_canio_can_construct(canio_can_obj_t *self, const mcu_pin_obj_t *
 
     esp_err_t result = twai_driver_install(&g_config, &t_config, &f_config);
     if (result == ESP_ERR_NO_MEM) {
-        mp_raise_msg(&mp_type_MemoryError, translate("ESP-IDF memory allocation failed"));
+        mp_raise_msg(&mp_type_MemoryError, MP_ERROR_TEXT("ESP-IDF memory allocation failed"));
     } else if (result == ESP_ERR_INVALID_ARG) {
         raise_ValueError_invalid_pins();
     } else if (result != ESP_OK) {
-        mp_raise_OSError_msg_varg(translate("twai_driver_install returned esp-idf error #%d"), (int)result);
+        mp_raise_OSError_msg_varg(MP_ERROR_TEXT("twai_driver_install returned esp-idf error #%d"), (int)result);
     }
 
     result = twai_start();
     if (result != ESP_OK) {
-        mp_raise_OSError_msg_varg(translate("twai_start returned esp-idf error #%d"), (int)result);
+        mp_raise_OSError_msg_varg(MP_ERROR_TEXT("twai_start returned esp-idf error #%d"), (int)result);
     }
 
     self->silent = silent;
@@ -216,7 +196,7 @@ static void can_restart(void) {
     } while (port_get_raw_ticks(NULL) < deadline && (info.state == TWAI_STATE_BUS_OFF || info.state == TWAI_STATE_RECOVERING));
 }
 
-STATIC void canio_maybe_auto_restart(canio_can_obj_t *self) {
+static void canio_maybe_auto_restart(canio_can_obj_t *self) {
     if (self->auto_restart) {
         can_restart();
     }

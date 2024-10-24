@@ -40,21 +40,13 @@ functions = [
     ("erf", erf, test_values),
     ("erfc", erfc, test_values),
     ("gamma", gamma, pos_test_values),
-    (
-        "lgamma",
-        lgamma,
-        pos_test_values
-        + [
-            50.0,
-            100.0,
-        ],
-    ),
+    ("lgamma", lgamma, pos_test_values + [50.0, 100.0]),
 ]
 
 for function_name, function, test_vals in functions:
-    print(function_name)
     for value in test_vals:
         try:
-            print("{:.4g}".format(function(value)))
+            ans = "{:.4g}".format(function(value))
         except ValueError as e:
-            print(str(e))
+            ans = str(e)
+        print("{}({:.4g}) = {}".format(function_name, value, ans))

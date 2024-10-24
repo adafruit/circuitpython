@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2020 Mark Komus
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2020 Mark Komus
+//
+// SPDX-License-Identifier: MIT
 
 // This file contains all of the Python API definitions for the
 // busio.I2C class.
@@ -36,14 +16,12 @@
 #include "shared/runtime/context_manager_helpers.h"
 #include "py/runtime.h"
 #include "py/smallint.h"
-#include "supervisor/shared/translate/translate.h"
 
 
 //| class I2CDevice:
 //|     """I2C Device Manager"""
 //|
 //|     def __init__(self, i2c: busio.I2C, device_address: int, probe: bool = True) -> None:
-//|
 //|         """Represents a single I2C device and manages locking the bus and the device
 //|         address.
 //|
@@ -64,12 +42,11 @@
 //|                 # A second transaction
 //|                 with device:
 //|                     device.write(bytes_read)
-//|     """
+//|         """
 //|     ...
-//|
-STATIC mp_obj_t adafruit_bus_device_i2cdevice_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
-    adafruit_bus_device_i2cdevice_obj_t *self = m_new_obj(adafruit_bus_device_i2cdevice_obj_t);
-    self->base.type = &adafruit_bus_device_i2cdevice_type;
+static mp_obj_t adafruit_bus_device_i2cdevice_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
+    adafruit_bus_device_i2cdevice_obj_t *self =
+        mp_obj_malloc(adafruit_bus_device_i2cdevice_obj_t, &adafruit_bus_device_i2cdevice_type);
     enum { ARG_i2c, ARG_device_address, ARG_probe };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_i2c, MP_ARG_REQUIRED | MP_ARG_OBJ },
@@ -92,26 +69,26 @@ STATIC mp_obj_t adafruit_bus_device_i2cdevice_make_new(const mp_obj_type_t *type
 //|     def __enter__(self) -> I2CDevice:
 //|         """Context manager entry to lock bus."""
 //|         ...
-//|
-STATIC mp_obj_t adafruit_bus_device_i2cdevice_obj___enter__(mp_obj_t self_in) {
+static mp_obj_t adafruit_bus_device_i2cdevice_obj___enter__(mp_obj_t self_in) {
     adafruit_bus_device_i2cdevice_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_adafruit_bus_device_i2cdevice_lock(self);
     return self;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(adafruit_bus_device_i2cdevice___enter___obj, adafruit_bus_device_i2cdevice_obj___enter__);
+static MP_DEFINE_CONST_FUN_OBJ_1(adafruit_bus_device_i2cdevice___enter___obj, adafruit_bus_device_i2cdevice_obj___enter__);
 
 //|     def __exit__(self) -> None:
 //|         """Automatically unlocks the bus on exit."""
 //|         ...
-//|
-STATIC mp_obj_t adafruit_bus_device_i2cdevice_obj___exit__(size_t n_args, const mp_obj_t *args) {
+static mp_obj_t adafruit_bus_device_i2cdevice_obj___exit__(size_t n_args, const mp_obj_t *args) {
     common_hal_adafruit_bus_device_i2cdevice_unlock(MP_OBJ_TO_PTR(args[0]));
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(adafruit_bus_device_i2cdevice___exit___obj, 4, 4, adafruit_bus_device_i2cdevice_obj___exit__);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(adafruit_bus_device_i2cdevice___exit___obj, 4, 4, adafruit_bus_device_i2cdevice_obj___exit__);
 
 //|     import sys
-//|     def readinto(self, buffer: WriteableBuffer, *, start: int = 0, end: int = sys.maxsize) -> None:
+//|     def readinto(
+//|         self, buffer: WriteableBuffer, *, start: int = 0, end: int = sys.maxsize
+//|     ) -> None:
 //|         """Read into ``buffer`` from the device.
 //|
 //|         If ``start`` or ``end`` is provided, then the buffer will be sliced
@@ -123,8 +100,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(adafruit_bus_device_i2cdevice___exit_
 //|         :param int end: end of buffer slice; if not specified, use ``len(buffer)``
 //|         """
 //|         ...
-//|
-STATIC mp_obj_t adafruit_bus_device_i2cdevice_readinto(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+static mp_obj_t adafruit_bus_device_i2cdevice_readinto(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_buffer, ARG_start, ARG_end };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_buffer,     MP_ARG_REQUIRED | MP_ARG_OBJ },
@@ -155,7 +131,7 @@ STATIC mp_obj_t adafruit_bus_device_i2cdevice_readinto(size_t n_args, const mp_o
 
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_KW(adafruit_bus_device_i2cdevice_readinto_obj, 1, adafruit_bus_device_i2cdevice_readinto);
+static MP_DEFINE_CONST_FUN_OBJ_KW(adafruit_bus_device_i2cdevice_readinto_obj, 1, adafruit_bus_device_i2cdevice_readinto);
 
 //|     import sys
 //|     def write(self, buffer: ReadableBuffer, *, start: int = 0, end: int = sys.maxsize) -> None:
@@ -170,8 +146,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_KW(adafruit_bus_device_i2cdevice_readinto_obj, 1,
 //|         :param int end: end of buffer slice; if not specified, use ``len(buffer)``
 //|         """
 //|         ...
-//|
-STATIC mp_obj_t adafruit_bus_device_i2cdevice_write(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+static mp_obj_t adafruit_bus_device_i2cdevice_write(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_buffer, ARG_start, ARG_end };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_buffer,     MP_ARG_REQUIRED | MP_ARG_OBJ },
@@ -205,7 +180,16 @@ MP_DEFINE_CONST_FUN_OBJ_KW(adafruit_bus_device_i2cdevice_write_obj, 1, adafruit_
 
 
 //|     import sys
-//|     def write_then_readinto(self, out_buffer: ReadableBuffer, in_buffer: WriteableBuffer, *, out_start: int = 0, out_end: int = sys.maxsize, in_start: int = 0, in_end: int = sys.maxsize) -> None:
+//|     def write_then_readinto(
+//|         self,
+//|         out_buffer: ReadableBuffer,
+//|         in_buffer: WriteableBuffer,
+//|         *,
+//|         out_start: int = 0,
+//|         out_end: int = sys.maxsize,
+//|         in_start: int = 0,
+//|         in_end: int = sys.maxsize
+//|     ) -> None:
 //|         """Write the bytes from ``out_buffer`` to the device, then immediately
 //|         reads into ``in_buffer`` from the device.
 //|
@@ -226,7 +210,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(adafruit_bus_device_i2cdevice_write_obj, 1, adafruit_
 //|         """
 //|         ...
 //|
-STATIC mp_obj_t adafruit_bus_device_i2cdevice_write_then_readinto(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+static mp_obj_t adafruit_bus_device_i2cdevice_write_then_readinto(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_out_buffer, ARG_in_buffer, ARG_out_start, ARG_out_end, ARG_in_start, ARG_in_end };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_out_buffer,    MP_ARG_REQUIRED | MP_ARG_OBJ },
@@ -270,7 +254,7 @@ STATIC mp_obj_t adafruit_bus_device_i2cdevice_write_then_readinto(size_t n_args,
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(adafruit_bus_device_i2cdevice_write_then_readinto_obj, 1, adafruit_bus_device_i2cdevice_write_then_readinto);
 
-STATIC const mp_rom_map_elem_t adafruit_bus_device_i2cdevice_locals_dict_table[] = {
+static const mp_rom_map_elem_t adafruit_bus_device_i2cdevice_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&adafruit_bus_device_i2cdevice___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&adafruit_bus_device_i2cdevice___exit___obj) },
     { MP_ROM_QSTR(MP_QSTR_readinto), MP_ROM_PTR(&adafruit_bus_device_i2cdevice_readinto_obj) },
@@ -278,11 +262,12 @@ STATIC const mp_rom_map_elem_t adafruit_bus_device_i2cdevice_locals_dict_table[]
     { MP_ROM_QSTR(MP_QSTR_write_then_readinto), MP_ROM_PTR(&adafruit_bus_device_i2cdevice_write_then_readinto_obj) },
 };
 
-STATIC MP_DEFINE_CONST_DICT(adafruit_bus_device_i2cdevice_locals_dict, adafruit_bus_device_i2cdevice_locals_dict_table);
+static MP_DEFINE_CONST_DICT(adafruit_bus_device_i2cdevice_locals_dict, adafruit_bus_device_i2cdevice_locals_dict_table);
 
-const mp_obj_type_t adafruit_bus_device_i2cdevice_type = {
-    { &mp_type_type },
-    .name = MP_QSTR_I2CDevice,
-    .make_new = adafruit_bus_device_i2cdevice_make_new,
-    .locals_dict = (mp_obj_dict_t *)&adafruit_bus_device_i2cdevice_locals_dict,
-};
+MP_DEFINE_CONST_OBJ_TYPE(
+    adafruit_bus_device_i2cdevice_type,
+    MP_QSTR_I2CDevice,
+    MP_TYPE_FLAG_NONE,
+    make_new, adafruit_bus_device_i2cdevice_make_new,
+    locals_dict, &adafruit_bus_device_i2cdevice_locals_dict
+    );

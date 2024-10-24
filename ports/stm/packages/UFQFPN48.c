@@ -2,7 +2,7 @@
 #include "common-hal/microcontroller/Pin.h"
 #include "py/obj.h"
 
-STATIC const mp_rom_map_elem_t mcu_pin_globals_table[] = {
+static const mp_rom_map_elem_t mcu_pin_globals_table[] = {
 // Pins 1-12
     /* VBAT -------------------------------------------*/
     { MP_ROM_QSTR(MP_QSTR_PC13), MP_ROM_PTR(&pin_PC13) },

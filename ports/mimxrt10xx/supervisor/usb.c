@@ -1,35 +1,19 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2017, 2018 Scott Shawcroft for Adafruit Industries
- * Copyright (c) 2019 Artur Pacholec
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2017, 2018 Scott Shawcroft for Adafruit Industries
+// SPDX-FileCopyrightText: Copyright (c) 2019 Artur Pacholec
+//
+// SPDX-License-Identifier: MIT
 
 #include "fsl_clock.h"
 #include "tusb.h"
+
+#include "supervisor/linker.h"
 #include "supervisor/usb.h"
 
-STATIC void init_usb_instance(mp_int_t instance) {
+#include "imx_usb.h"
+
+void init_usb_instance(mp_int_t instance) {
     if (instance < 0) {
         return;
     }
@@ -70,21 +54,23 @@ STATIC void init_usb_instance(mp_int_t instance) {
 
     void init_usb_hardware(void) {
         init_usb_instance(CIRCUITPY_USB_DEVICE_INSTANCE);
-        // We can't dynamically start the USB Host port at the moment, so do it
-        // up front.
-        init_usb_instance(CIRCUITPY_USB_HOST_INSTANCE);
     }
 
 // Provide the prototypes for the interrupt handlers. The iMX RT SDK doesn't.
 // The SDK only links to them from assembly.
+    #ifdef MIMXRT1042_SERIES
+    void USB_OTG_IRQHandler(void);
+    void PLACE_IN_ITCM(USB_OTG_IRQHandler)(void) {
+    #else
     void USB_OTG1_IRQHandler(void);
-    void USB_OTG1_IRQHandler(void) {
+    void PLACE_IN_ITCM(USB_OTG1_IRQHandler)(void) {
+        #endif
         usb_irq_handler(0);
     }
 
     #ifdef USBPHY2
     void USB_OTG2_IRQHandler(void);
-    void USB_OTG2_IRQHandler(void) {
+    void PLACE_IN_ITCM(USB_OTG2_IRQHandler)(void) {
         usb_irq_handler(1);
     }
     #endif

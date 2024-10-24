@@ -1,5 +1,10 @@
-#ifndef __IRQ_H
-#define __IRQ_H
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2024 Adafruit Industries LLC
+//
+// SPDX-License-Identifier: MIT
+
+#pragma once
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,9 +46,9 @@ static inline unsigned int irq_getie(void) {
 
 static inline void irq_setie(unsigned int ie) {
     if (ie) {
-        csrs(mstatus,CSR_MSTATUS_MIE);
+        csrs(mstatus, CSR_MSTATUS_MIE);
     } else {
-        csrc(mstatus,CSR_MSTATUS_MIE);
+        csrc(mstatus, CSR_MSTATUS_MIE);
     }
 }
 
@@ -66,5 +71,3 @@ static inline unsigned int irq_pending(void) {
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* __IRQ_H */

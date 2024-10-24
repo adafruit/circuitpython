@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2020 Jeff Epler for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2020 Jeff Epler for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include <string.h>
 
@@ -34,15 +14,19 @@
 #include "supervisor/shared/tick.h"
 #include "shared-bindings/microcontroller/__init__.h"
 
-STATIC volatile background_callback_t *volatile callback_head, *volatile callback_tail;
+static volatile background_callback_t *volatile callback_head, *volatile callback_tail;
 
+#ifndef CALLBACK_CRITICAL_BEGIN
 #define CALLBACK_CRITICAL_BEGIN (common_hal_mcu_disable_interrupts())
+#endif
+#ifndef CALLBACK_CRITICAL_END
 #define CALLBACK_CRITICAL_END (common_hal_mcu_enable_interrupts())
+#endif
 
-MP_WEAK void port_wake_main_task(void) {
+MP_WEAK void PLACE_IN_ITCM(port_wake_main_task)(void) {
 }
 
-void background_callback_add_core(background_callback_t *cb) {
+void PLACE_IN_ITCM(background_callback_add_core)(background_callback_t * cb) {
     CALLBACK_CRITICAL_BEGIN;
     if (cb->prev || callback_head == cb) {
         CALLBACK_CRITICAL_END;
@@ -62,27 +46,29 @@ void background_callback_add_core(background_callback_t *cb) {
     port_wake_main_task();
 }
 
-void background_callback_add(background_callback_t *cb, background_callback_fun fun, void *data) {
+void PLACE_IN_ITCM(background_callback_add)(background_callback_t * cb, background_callback_fun fun, void *data) {
     cb->fun = fun;
     cb->data = data;
     background_callback_add_core(cb);
 }
 
-bool PLACE_IN_ITCM(background_callback_pending)(void) {
+inline bool background_callback_pending(void) {
     return callback_head != NULL;
 }
 
-static bool in_background_callback;
+static int background_prevention_count;
+
 void PLACE_IN_ITCM(background_callback_run_all)() {
+    port_background_task();
     if (!background_callback_pending()) {
         return;
     }
     CALLBACK_CRITICAL_BEGIN;
-    if (in_background_callback) {
+    if (background_prevention_count) {
         CALLBACK_CRITICAL_END;
         return;
     }
-    in_background_callback = true;
+    ++background_prevention_count;
     background_callback_t *cb = (background_callback_t *)callback_head;
     callback_head = NULL;
     callback_tail = NULL;
@@ -99,15 +85,19 @@ void PLACE_IN_ITCM(background_callback_run_all)() {
         CALLBACK_CRITICAL_BEGIN;
         cb = next;
     }
-    in_background_callback = false;
+    --background_prevention_count;
     CALLBACK_CRITICAL_END;
 }
 
-void background_callback_begin_critical_section() {
+void background_callback_prevent() {
     CALLBACK_CRITICAL_BEGIN;
+    ++background_prevention_count;
+    CALLBACK_CRITICAL_END;
 }
 
-void background_callback_end_critical_section() {
+void background_callback_allow() {
+    CALLBACK_CRITICAL_BEGIN;
+    --background_prevention_count;
     CALLBACK_CRITICAL_END;
 }
 
@@ -121,19 +111,27 @@ void background_callback_reset() {
     background_callback_t *cb = (background_callback_t *)callback_head;
     while (cb) {
         background_callback_t *next = cb->next;
-        if (!HEAP_PTR((void *)cb)) {
-            *previous_next = cb;
-            previous_next = &cb->next;
-            cb->next = NULL;
-            new_tail = cb;
+        cb->next = NULL;
+        // Unlink any callbacks that are allocated on the python heap or if they
+        // reference data on the python heap. The python heap will be disappear
+        // soon after this.
+        if (gc_ptr_on_heap((void *)cb) || gc_ptr_on_heap(cb->data)) {
+            cb->prev = NULL; // Used to indicate a callback isn't queued.
         } else {
-            memset(cb, 0, sizeof(*cb));
+            // Set .next of the previous callback.
+            *previous_next = cb;
+            // Set our .next for the next callback.
+            previous_next = &cb->next;
+            // Set our prev to the last callback.
+            cb->prev = new_tail;
+            // Now we're the tail of the list.
+            new_tail = cb;
         }
         cb = next;
     }
     callback_head = new_head;
     callback_tail = new_tail;
-    in_background_callback = false;
+    background_prevention_count = 0;
     CALLBACK_CRITICAL_END;
 }
 

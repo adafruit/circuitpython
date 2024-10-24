@@ -270,9 +270,9 @@ def do_all_the_things(
         manual_symbol_map["0x200015e0"] = "mp_state_ctx.vm.dict_main"
 
         for i in range(READLINE_HIST_SIZE):
-            manual_symbol_map[
-                "mp_state_ctx+{}".format(148 + i * 4)
-            ] = "mp_state_ctx.vm.readline_hist[{}]".format(i)
+            manual_symbol_map["mp_state_ctx+{}".format(148 + i * 4)] = (
+                "mp_state_ctx.vm.readline_hist[{}]".format(i)
+            )
 
         tuple_type = symbols["mp_type_tuple"][0]
         type_type = symbols["mp_type_type"][0]
@@ -287,10 +287,6 @@ def do_all_the_things(
         bytearray_type = symbols["mp_type_bytearray"][0]
 
         dynamic_type = 0x40000000  # placeholder, doesn't match any memory
-
-        long_lived_start = load_pointer(
-            mp_state_ctx + 272
-        )  # (gdb) p &mp_state_ctx.mem.gc_lowest_long_lived_ptr
 
         type_colors = {
             dict_type: "red",
@@ -368,10 +364,7 @@ def do_all_the_things(
             potential_type = None
             node = ownership_graph.get_node(address)
             node.attr["height"] = 0.25 * current_allocation
-            if address >= long_lived_start:
-                node.attr["fontcolor"] = "hotpink"
-            else:
-                node.attr["fontcolor"] = "black"
+            node.attr["fontcolor"] = "black"
             block_data[address] = data
             for k in range(len(data) // 4):
                 word = struct.unpack_from("<I", data, offset=(k * 4))[0]
@@ -446,7 +439,7 @@ def do_all_the_things(
                     current_allocation = 1
                 elif block_state == AT_TAIL and current_allocation > 0:
                     # In gc_free the logging happens before the tail is freed. So checking
-                    # current_allocation > 0 ensures we only extend an allocation thats started.
+                    # current_allocation > 0 ensures we only extend an allocation that's started.
                     current_allocation += 1
                 longest_free = max(longest_free, current_free)
         # if current_free > 0:
@@ -541,10 +534,10 @@ def do_all_the_things(
                 )
             node.attr["shape"] = "plaintext"
             node.attr["style"] = "invisible"
-            node.attr[
-                "label"
-            ] = '<<table bgcolor="gold" border="1" cellpadding="0" cellspacing="0"><tr><td colspan="2">0x{:08x}</td></tr>{}</table>>'.format(
-                block, rows
+            node.attr["label"] = (
+                '<<table bgcolor="gold" border="1" cellpadding="0" cellspacing="0"><tr><td colspan="2">0x{:08x}</td></tr>{}</table>>'.format(
+                    block, rows
+                )
             )
 
         for node, degree in ownership_graph.in_degree_iter():
@@ -623,10 +616,10 @@ def do_all_the_things(
                 remaining_bytecode -= 16
             for i in range(remaining_bytecode // 16):
                 rows += '<tr><td colspan="16" bgcolor="seagreen" height="18" width="80"></td></tr>'
-            node.attr[
-                "label"
-            ] = '<<table border="1" cellspacing="0"><tr><td colspan="16" bgcolor="lightseagreen" height="18" width="80">0x{:08x}</td></tr>{}</table>>'.format(
-                block, rows
+            node.attr["label"] = (
+                '<<table border="1" cellspacing="0"><tr><td colspan="16" bgcolor="lightseagreen" height="18" width="80">0x{:08x}</td></tr>{}</table>>'.format(
+                    block, rows
+                )
             )
 
         for block in qstr_chunks:
@@ -660,16 +653,13 @@ def do_all_the_things(
             for i in range(0, len(printable_qstrs), 16):
                 wrapped.append(html.escape(printable_qstrs[i : i + 16]))
             node = ownership_graph.get_node(block)
-            node.attr[
-                "label"
-            ] = '<<table border="1" cellspacing="0" bgcolor="lightsalmon" width="80"><tr><td height="18" >0x{:08x}</td></tr><tr><td height="{}" >{}</td></tr></table>>'.format(
-                block, 18 * (len(wrapped) - 1), "<br/>".join(wrapped)
+            node.attr["label"] = (
+                '<<table border="1" cellspacing="0" bgcolor="lightsalmon" width="80"><tr><td height="18" >0x{:08x}</td></tr><tr><td height="{}" >{}</td></tr></table>>'.format(
+                    block, 18 * (len(wrapped) - 1), "<br/>".join(wrapped)
+                )
             )
             node.attr["fontname"] = "FiraCode-Bold"
-            if block >= long_lived_start:
-                node.attr["fontcolor"] = "hotpink"
-            else:
-                node.attr["fontcolor"] = "black"
+            node.attr["fontcolor"] = "black"
             node.attr["fontpath"] = "/Users/tannewt/Library/Fonts/"
             node.attr["fontsize"] = 8
 
@@ -744,10 +734,10 @@ def do_all_the_things(
                 rows += '<tr><td port="{}" height="18" width="40">{}</td><td port="{}" height="18" width="40">{}</td></tr>'.format(
                     cells[2 * i][0], cells[2 * i][1], cells[2 * i + 1][0], cells[2 * i + 1][1]
                 )
-            node.attr[
-                "label"
-            ] = '<<table bgcolor="gold" border="1" cellpadding="0" cellspacing="0">{}</table>>'.format(
-                rows
+            node.attr["label"] = (
+                '<<table bgcolor="gold" border="1" cellpadding="0" cellspacing="0">{}</table>>'.format(
+                    rows
+                )
             )
 
         ownership_graph.add_node(

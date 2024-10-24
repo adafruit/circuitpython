@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * SPDX-FileCopyrightText: Copyright (c) 2013, 2014 Damien P. George
+ * Copyright (c) 2013, 2014 Damien P. George
  * Copyright (c) 2014 Paul Sokolovsky
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -33,7 +33,6 @@
 #include "py/objtuple.h"
 #include "py/binary.h"
 #include "py/parsenum.h"
-#include "supervisor/shared/translate/translate.h"
 
 #if MICROPY_PY_STRUCT
 
@@ -53,7 +52,7 @@
         character data".
  */
 
-STATIC char get_fmt_type(const char **fmt) {
+static char get_fmt_type(const char **fmt) {
     char t = **fmt;
     switch (t) {
         case '!':
@@ -72,7 +71,7 @@ STATIC char get_fmt_type(const char **fmt) {
     return t;
 }
 
-STATIC mp_uint_t get_fmt_num(const char **p) {
+static mp_uint_t get_fmt_num(const char **p) {
     const char *num = *p;
     uint len = 1;
     while (unichar_isdigit(*++num)) {
@@ -83,7 +82,7 @@ STATIC mp_uint_t get_fmt_num(const char **p) {
     return val;
 }
 
-STATIC size_t calc_size_items(const char *fmt, size_t *total_sz) {
+static size_t calc_size_items(const char *fmt, size_t *total_sz) {
     char fmt_type = get_fmt_type(&fmt);
     size_t total_cnt = 0;
     size_t size;
@@ -93,14 +92,13 @@ STATIC size_t calc_size_items(const char *fmt, size_t *total_sz) {
             cnt = get_fmt_num(&fmt);
         }
 
-        if (*fmt == 's') {
+        if (*fmt == 'x') {
+            size += cnt;
+        } else if (*fmt == 's') {
             total_cnt += 1;
             size += cnt;
         } else {
-            // Pad bytes are skipped and don't get included in the item count.
-            if (*fmt != 'x') {
-                total_cnt += cnt;
-            }
+            total_cnt += cnt;
             size_t align;
             size_t sz = mp_binary_get_size(fmt_type, *fmt, &align);
             while (cnt--) {
@@ -114,7 +112,7 @@ STATIC size_t calc_size_items(const char *fmt, size_t *total_sz) {
     return total_cnt;
 }
 
-STATIC mp_obj_t struct_calcsize(mp_obj_t fmt_in) {
+static mp_obj_t struct_calcsize(mp_obj_t fmt_in) {
     const char *fmt = mp_obj_str_get_str(fmt_in);
     size_t size;
     calc_size_items(fmt, &size);
@@ -122,7 +120,7 @@ STATIC mp_obj_t struct_calcsize(mp_obj_t fmt_in) {
 }
 MP_DEFINE_CONST_FUN_OBJ_1(struct_calcsize_obj, struct_calcsize);
 
-STATIC mp_obj_t struct_unpack_from(size_t n_args, const mp_obj_t *args) {
+static mp_obj_t struct_unpack_from(size_t n_args, const mp_obj_t *args) {
     // unpack requires that the buffer be exactly the right size.
     // unpack_from requires that the buffer be "big enough".
     // Since we implement unpack and unpack_from using the same function
@@ -163,17 +161,16 @@ STATIC mp_obj_t struct_unpack_from(size_t n_args, const mp_obj_t *args) {
             cnt = get_fmt_num(&fmt);
         }
         mp_obj_t item;
-        if (*fmt == 's') {
+        if (*fmt == 'x') {
+            p += cnt;
+        } else if (*fmt == 's') {
             item = mp_obj_new_bytes(p, cnt);
             p += cnt;
             res->items[i++] = item;
         } else {
             while (cnt--) {
                 item = mp_binary_get_val(fmt_type, *fmt, p_base, &p);
-                // Pad bytes ('x') are just skipped.
-                if (*fmt != 'x') {
-                    res->items[i++] = item;
-                }
+                res->items[i++] = item;
             }
         }
         fmt++;
@@ -183,7 +180,8 @@ STATIC mp_obj_t struct_unpack_from(size_t n_args, const mp_obj_t *args) {
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(struct_unpack_from_obj, 2, 3, struct_unpack_from);
 
 // This function assumes there is enough room in p to store all the values
-STATIC void struct_pack_into_internal(mp_obj_t fmt_in, byte *p, size_t n_args, const mp_obj_t *args) {
+static void struct_pack_into_internal(mp_obj_t fmt_in, byte *p, size_t n_args, const mp_obj_t *args) {
+    // CIRCUITPY-CHANGE: additional error checking
     size_t size;
     size_t count = calc_size_items(mp_obj_str_get_str(fmt_in), &size);
     if (count != n_args) {
@@ -200,11 +198,18 @@ STATIC void struct_pack_into_internal(mp_obj_t fmt_in, byte *p, size_t n_args, c
     size_t i;
     for (i = 0; i < n_args;) {
         mp_uint_t cnt = 1;
+        if (*fmt == '\0') {
+            // more arguments given than used by format string; CPython raises struct.error here
+            break;
+        }
         if (unichar_isdigit(*fmt)) {
             cnt = get_fmt_num(&fmt);
         }
 
-        if (*fmt == 's') {
+        if (*fmt == 'x') {
+            memset(p, 0, cnt);
+            p += cnt;
+        } else if (*fmt == 's') {
             mp_buffer_info_t bufinfo;
             mp_get_buffer_raise(args[i++], &bufinfo, MP_BUFFER_READ);
             mp_uint_t to_copy = cnt;
@@ -215,32 +220,28 @@ STATIC void struct_pack_into_internal(mp_obj_t fmt_in, byte *p, size_t n_args, c
             memset(p + to_copy, 0, cnt - to_copy);
             p += cnt;
         } else {
-            while (cnt--) {
-                // Pad bytes don't have a corresponding argument.
-                if (*fmt == 'x') {
-                    mp_binary_set_val(fmt_type, *fmt, MP_OBJ_NEW_SMALL_INT(0), p_base, &p);
-                } else {
-                    mp_binary_set_val(fmt_type, *fmt, args[i], p_base, &p);
-                    i++;
-                }
+            // If we run out of args then we just finish; CPython would raise struct.error
+            while (cnt-- && i < n_args) {
+                mp_binary_set_val(fmt_type, *fmt, args[i++], p_base, &p);
             }
         }
         fmt++;
     }
 }
 
-STATIC mp_obj_t struct_pack(size_t n_args, const mp_obj_t *args) {
+static mp_obj_t struct_pack(size_t n_args, const mp_obj_t *args) {
+    // TODO: "The arguments must match the values required by the format exactly."
     mp_int_t size = MP_OBJ_SMALL_INT_VALUE(struct_calcsize(args[0]));
     vstr_t vstr;
     vstr_init_len(&vstr, size);
     byte *p = (byte *)vstr.buf;
     memset(p, 0, size);
     struct_pack_into_internal(args[0], p, n_args - 1, &args[1]);
-    return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr);
+    return mp_obj_new_bytes_from_vstr(&vstr);
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(struct_pack_obj, 1, MP_OBJ_FUN_ARGS_MAX, struct_pack);
 
-STATIC mp_obj_t struct_pack_into(size_t n_args, const mp_obj_t *args) {
+static mp_obj_t struct_pack_into(size_t n_args, const mp_obj_t *args) {
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(args[1], &bufinfo, MP_BUFFER_WRITE);
     mp_int_t offset = mp_obj_get_int(args[2]);
@@ -266,8 +267,8 @@ STATIC mp_obj_t struct_pack_into(size_t n_args, const mp_obj_t *args) {
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(struct_pack_into_obj, 3, MP_OBJ_FUN_ARGS_MAX, struct_pack_into);
 
-STATIC const mp_rom_map_elem_t mp_module_struct_globals_table[] = {
-    { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_ustruct) },
+static const mp_rom_map_elem_t mp_module_struct_globals_table[] = {
+    { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_struct) },
     { MP_ROM_QSTR(MP_QSTR_calcsize), MP_ROM_PTR(&struct_calcsize_obj) },
     { MP_ROM_QSTR(MP_QSTR_pack), MP_ROM_PTR(&struct_pack_obj) },
     { MP_ROM_QSTR(MP_QSTR_pack_into), MP_ROM_PTR(&struct_pack_into_obj) },
@@ -275,11 +276,13 @@ STATIC const mp_rom_map_elem_t mp_module_struct_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_unpack_from), MP_ROM_PTR(&struct_unpack_from_obj) },
 };
 
-STATIC MP_DEFINE_CONST_DICT(mp_module_struct_globals, mp_module_struct_globals_table);
+static MP_DEFINE_CONST_DICT(mp_module_struct_globals, mp_module_struct_globals_table);
 
-const mp_obj_module_t mp_module_ustruct = {
+const mp_obj_module_t mp_module_struct = {
     .base = { &mp_type_module },
     .globals = (mp_obj_dict_t *)&mp_module_struct_globals,
 };
+
+MP_REGISTER_EXTENSIBLE_MODULE(MP_QSTR_struct, mp_module_struct);
 
 #endif

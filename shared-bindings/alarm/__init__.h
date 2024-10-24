@@ -1,38 +1,18 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2020 Dan Halbert for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2020 Dan Halbert for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
-#ifndef MICROPY_INCLUDED_SHARED_BINDINGS_ALARM___INIT___H
-#define MICROPY_INCLUDED_SHARED_BINDINGS_ALARM___INIT___H
+#pragma once
 
 #include "py/obj.h"
 
 #include "common-hal/alarm/__init__.h"
+#include "common-hal/digitalio/DigitalInOut.h"
 
 // Light sleep fully self-contained and does not exit user code. It will return
-// the same alarm object that was orignally passed in, unlike deep sleep, which
+// the same alarm object that was originally passed in, unlike deep sleep, which
 // must create an identical copy due to the VM reset
 extern mp_obj_t common_hal_alarm_light_sleep_until_alarms(size_t n_alarms, const mp_obj_t *alarms);
 
@@ -42,7 +22,7 @@ extern mp_obj_t common_hal_alarm_light_sleep_until_alarms(size_t n_alarms, const
 // supervisor will idle using `port_wait_for_interrupt`. After each call, it will
 // call alarm_woken_from_sleep to see if we've been woken by an alarm and if so,
 // it will exit idle as if deep sleep was exited
-extern void common_hal_alarm_set_deep_sleep_alarms(size_t n_alarms, const mp_obj_t *alarms);
+extern void common_hal_alarm_set_deep_sleep_alarms(size_t n_alarms, const mp_obj_t *alarms, size_t n_dios, digitalio_digitalinout_obj_t **preserve_dios);
 
 extern NORETURN void common_hal_alarm_enter_deep_sleep(void);
 
@@ -54,7 +34,7 @@ extern void common_hal_alarm_pretending_deep_sleep(void);
 extern mp_obj_t shared_alarm_get_wake_alarm(void);
 
 // Creates a new alarm object after exiting deep sleep (real or fake)
-extern mp_obj_t common_hal_alarm_create_wake_alarm(void);
+extern mp_obj_t common_hal_alarm_record_wake_alarm(void);
 
 // Saves alarm to global array
 void shared_alarm_save_wake_alarm(mp_obj_t alarm);
@@ -63,5 +43,3 @@ void shared_alarm_save_wake_alarm(mp_obj_t alarm);
 extern bool common_hal_alarm_woken_from_sleep(void);
 
 extern void common_hal_alarm_gc_collect(void);
-
-#endif  // MICROPY_INCLUDED_SHARED_BINDINGS_ALARM___INIT___H

@@ -1,3 +1,4 @@
+# CIRCUITPY-CHANGE: micropython does not have this test file
 class C1:
     def __init__(self, value):
         self.value = value

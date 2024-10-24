@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2020 Dan Halbert for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2020 Dan Halbert for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "py/nlr.h"
 #include "py/obj.h"
@@ -33,34 +13,33 @@
 #include "shared-bindings/rtc/__init__.h"
 #include "shared-bindings/time/__init__.h"
 
-#include "supervisor/shared/translate/translate.h"
-
 #if MICROPY_LONGINT_IMPL != MICROPY_LONGINT_IMPL_NONE
 mp_obj_t MP_WEAK rtc_get_time_source_time(void) {
-    mp_raise_RuntimeError(translate("RTC is not supported on this board"));
+    mp_raise_RuntimeError(MP_ERROR_TEXT("RTC is not supported on this board"));
 }
 #endif
 
 //| class TimeAlarm:
 //|     """Trigger an alarm when the specified time is reached."""
 //|
-//|     def __init__(self, monotonic_time: Optional[float] = None, epoch_time: Optional[int] = None) -> None:
+//|     def __init__(
+//|         self, *, monotonic_time: Optional[float] = None, epoch_time: Optional[int] = None
+//|     ) -> None:
 //|         """Create an alarm that will be triggered when `time.monotonic()` would equal
 //|         ``monotonic_time``, or when `time.time()` would equal ``epoch_time``.
 //|         Only one of the two arguments can be given.
 //|         The alarm is not active until it is passed to an
-//|         `alarm`-enabling function, such as `alarm.light_sleep_until_alarms()` or
+//|         `alarm`-enabling sleep function, such as `alarm.light_sleep_until_alarms()` or
 //|         `alarm.exit_and_deep_sleep_until_alarms()`.
 //|
-//|         If the given time is in the past when sleep occurs, the alarm will be triggered
-//|         immediately.
+//|         If the given time is already in the past, then an exception is raised.
+//|         If the sleep happens after the given time, then it will wake immediately
+//|         due to this time alarm.
 //|         """
 //|         ...
-//|
-STATIC mp_obj_t alarm_time_timealarm_make_new(const mp_obj_type_t *type,
+static mp_obj_t alarm_time_timealarm_make_new(const mp_obj_type_t *type,
     size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
-    alarm_time_timealarm_obj_t *self = m_new_obj(alarm_time_timealarm_obj_t);
-    self->base.type = &alarm_time_timealarm_type;
+    alarm_time_timealarm_obj_t *self = mp_obj_malloc(alarm_time_timealarm_obj_t, &alarm_time_timealarm_type);
 
     enum { ARG_monotonic_time, ARG_epoch_time };
     static const mp_arg_t allowed_args[] = {
@@ -75,7 +54,7 @@ STATIC mp_obj_t alarm_time_timealarm_make_new(const mp_obj_type_t *type,
     bool have_epoch = args[ARG_epoch_time].u_obj != mp_const_none;
 
     if (!(have_monotonic ^ have_epoch)) {
-        mp_raise_ValueError(translate("Supply one of monotonic_time or epoch_time"));
+        mp_raise_ValueError(MP_ERROR_TEXT("Supply one of monotonic_time or epoch_time"));
     }
 
     mp_float_t monotonic_time = 0;   // To avoid compiler warning.
@@ -87,7 +66,7 @@ STATIC mp_obj_t alarm_time_timealarm_make_new(const mp_obj_type_t *type,
 
     if (have_epoch) {
         #if MICROPY_LONGINT_IMPL == MICROPY_LONGINT_IMPL_NONE
-        mp_raise_ValueError(translate("epoch_time not supported on this board"));
+        mp_raise_ValueError(MP_ERROR_TEXT("epoch_time not supported on this board"));
         #else
         mp_uint_t epoch_time_secs = mp_obj_int_get_checked(args[ARG_epoch_time].u_obj);
 
@@ -103,7 +82,7 @@ STATIC mp_obj_t alarm_time_timealarm_make_new(const mp_obj_type_t *type,
     }
 
     if (monotonic_time < monotonic_time_now) {
-        mp_raise_ValueError(translate("Time is in the past."));
+        mp_raise_ValueError(MP_ERROR_TEXT("Time is in the past."));
     }
 
     common_hal_alarm_time_timealarm_construct(self, monotonic_time);
@@ -117,7 +96,7 @@ STATIC mp_obj_t alarm_time_timealarm_make_new(const mp_obj_type_t *type,
 //|        by this property only as a `time.monotonic()` time.
 //|        """
 //|
-STATIC mp_obj_t alarm_time_timealarm_obj_get_monotonic_time(mp_obj_t self_in) {
+static mp_obj_t alarm_time_timealarm_obj_get_monotonic_time(mp_obj_t self_in) {
     alarm_time_timealarm_obj_t *self = MP_OBJ_TO_PTR(self_in);
     return mp_obj_new_float(common_hal_alarm_time_timealarm_get_monotonic_time(self));
 }
@@ -126,15 +105,16 @@ MP_DEFINE_CONST_FUN_OBJ_1(alarm_time_timealarm_get_monotonic_time_obj, alarm_tim
 MP_PROPERTY_GETTER(alarm_time_timealarm_monotonic_time_obj,
     (mp_obj_t)&alarm_time_timealarm_get_monotonic_time_obj);
 
-STATIC const mp_rom_map_elem_t alarm_time_timealarm_locals_dict_table[] = {
+static const mp_rom_map_elem_t alarm_time_timealarm_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_monotonic_time), MP_ROM_PTR(&alarm_time_timealarm_monotonic_time_obj) },
 };
 
-STATIC MP_DEFINE_CONST_DICT(alarm_time_timealarm_locals_dict, alarm_time_timealarm_locals_dict_table);
+static MP_DEFINE_CONST_DICT(alarm_time_timealarm_locals_dict, alarm_time_timealarm_locals_dict_table);
 
-const mp_obj_type_t alarm_time_timealarm_type = {
-    { &mp_type_type },
-    .name = MP_QSTR_TimeAlarm,
-    .make_new = alarm_time_timealarm_make_new,
-    .locals_dict = (mp_obj_t)&alarm_time_timealarm_locals_dict,
-};
+MP_DEFINE_CONST_OBJ_TYPE(
+    alarm_time_timealarm_type,
+    MP_QSTR_TimeAlarm,
+    MP_TYPE_FLAG_HAS_SPECIAL_ACCESSORS,
+    make_new, alarm_time_timealarm_make_new,
+    locals_dict, &alarm_time_timealarm_locals_dict
+    );

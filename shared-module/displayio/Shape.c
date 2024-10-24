@@ -1,28 +1,8 @@
-/*
- * This file is part of the Micro Python project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2019 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2019 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "shared-bindings/displayio/Shape.h"
 
@@ -49,7 +29,7 @@ void common_hal_displayio_shape_construct(displayio_shape_t *self, uint32_t widt
     }
     self->half_height = height;
 
-    self->data = m_malloc(height * sizeof(uint32_t), false);
+    self->data = m_malloc(height * sizeof(uint32_t));
 
     for (uint16_t i = 0; i < height; i++) {
         self->data[2 * i] = 0;
@@ -63,15 +43,17 @@ void common_hal_displayio_shape_construct(displayio_shape_t *self, uint32_t widt
 }
 
 void common_hal_displayio_shape_set_boundary(displayio_shape_t *self, uint16_t y, uint16_t start_x, uint16_t end_x) {
-    if (y < 0 || y >= self->height || (self->mirror_y && y >= self->half_height)) {
-        mp_raise_ValueError(translate("y value out of bounds"));
+    uint16_t max_y = self->height - 1;
+    if (self->mirror_y) {
+        max_y = self->half_height - 1;
     }
-    if (start_x < 0 || start_x >= self->width || end_x < 0 || end_x >= self->width) {
-        mp_raise_ValueError(translate("x value out of bounds"));
+    mp_arg_validate_int_range(y, 0, max_y, MP_QSTR_y);
+    uint16_t max_x = self->width - 1;
+    if (self->mirror_x) {
+        max_x = self->half_width - 1;
     }
-    if (self->mirror_x && (start_x >= self->half_width || end_x >= self->half_width)) {
-        mp_raise_ValueError_varg(translate("Maximum x value when mirrored is %d"), self->half_width);
-    }
+    mp_arg_validate_int_range(start_x, 0, max_x, MP_QSTR_start_x);
+    mp_arg_validate_int_range(end_x, 0, max_x, MP_QSTR_end_x);
 
     uint16_t lower_x, upper_x, lower_y, upper_y;
 

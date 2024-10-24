@@ -1,7 +1,13 @@
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
+
 #include "shared-bindings/board/__init__.h"
 #include "shared-module/displayio/__init__.h"
 
-STATIC const mp_rom_map_elem_t board_module_globals_table[] = {
+static const mp_rom_map_elem_t board_module_globals_table[] = {
     CIRCUITPYTHON_BOARD_DICT_STANDARD_ITEMS
 
 
@@ -76,14 +82,15 @@ STATIC const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_BUTTON_2),  MP_ROM_PTR(&pin_PC27) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_BUTTON_3),  MP_ROM_PTR(&pin_PC28) },
 
-    // Special named pins
+    // Special named pins - follows the schematic, but see comments
+    // The WIO Terminal has an accelerometer, not a gyroscope
     { MP_OBJ_NEW_QSTR(MP_QSTR_LIGHT),  MP_ROM_PTR(&pin_PD01) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_BUZZER),  MP_ROM_PTR(&pin_PD11) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_IR),  MP_ROM_PTR(&pin_PB31) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_MIC),  MP_ROM_PTR(&pin_PC30) },
-    { MP_ROM_QSTR(MP_QSTR_GYROSCOPE_SCL),  MP_ROM_PTR(&pin_PA12) },
-    { MP_ROM_QSTR(MP_QSTR_GYROSCOPE_SDA),  MP_ROM_PTR(&pin_PA13) },
-    { MP_ROM_QSTR(MP_QSTR_GYROSCOPE_INT),  MP_ROM_PTR(&pin_PC21) },
+    { MP_ROM_QSTR(MP_QSTR_GYROSCOPE_SCL),  MP_ROM_PTR(&pin_PA12) },     // Despite the name, this is the ACCELEROMETER
+    { MP_ROM_QSTR(MP_QSTR_GYROSCOPE_SDA),  MP_ROM_PTR(&pin_PA13) },     // Despite the name, this is the ACCELEROMETER
+    { MP_ROM_QSTR(MP_QSTR_GYROSCOPE_INT),  MP_ROM_PTR(&pin_PC21) },     // Despite the name, this is the ACCELEROMETER
 
     // DAC
     { MP_OBJ_NEW_QSTR(MP_QSTR_DAC0),  MP_ROM_PTR(&pin_PA02) },
@@ -95,13 +102,13 @@ STATIC const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_I2S_SDIN),  MP_ROM_PTR(&pin_PA22) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_I2S_BCLK),  MP_ROM_PTR(&pin_PB16) },
 
-    // RTL8720D
+    // RTL8720D - follows the schematic, but see comments
     { MP_OBJ_NEW_QSTR(MP_QSTR_RTL_PWR),  MP_ROM_PTR(&pin_PA18) },       // CHIP_PU
-    { MP_OBJ_NEW_QSTR(MP_QSTR_RTL_RXD),  MP_ROM_PTR(&pin_PC22) },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_RTL_TXD),  MP_ROM_PTR(&pin_PC23) },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_RTL_MOSI),  MP_ROM_PTR(&pin_PB24) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_RTL_RXD),  MP_ROM_PTR(&pin_PC22) },       // *NOT* THE MAIN RX FOR THE RTL CHIP (may be a log UART?)
+    { MP_OBJ_NEW_QSTR(MP_QSTR_RTL_TXD),  MP_ROM_PTR(&pin_PC23) },       // *NOT* THE MAIN TX FOR THE RTL CHIP (may be a log UART?)
+    { MP_OBJ_NEW_QSTR(MP_QSTR_RTL_MOSI),  MP_ROM_PTR(&pin_PB24) },      // used as the UART TX for the RTL chip
     { MP_OBJ_NEW_QSTR(MP_QSTR_RTL_CLK),  MP_ROM_PTR(&pin_PB25) },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_RTL_MISO),  MP_ROM_PTR(&pin_PC24) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_RTL_MISO),  MP_ROM_PTR(&pin_PC24) },      // used as the UART RX for the RTL chip
     { MP_OBJ_NEW_QSTR(MP_QSTR_RTL_CS),  MP_ROM_PTR(&pin_PC25) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_RTL_READY),  MP_ROM_PTR(&pin_PC20) },     // IRQ0
     { MP_OBJ_NEW_QSTR(MP_QSTR_RTL_DIR),  MP_ROM_PTR(&pin_PA19) },       // SYNC

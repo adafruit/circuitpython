@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "shared-bindings/neopixel_write/__init__.h"
 
@@ -45,7 +25,10 @@ void common_hal_neopixel_write(const digitalio_digitalinout_obj_t *digitalinout,
     uint8_t *pixels, uint32_t num_bytes) {
     // Wait to make sure we don't append onto the last transmission. This should only be a tick or
     // two.
-    while (port_get_raw_ticks(NULL) < next_start_raw_ticks) {
+    int icnt;
+    while ((port_get_raw_ticks(NULL) < next_start_raw_ticks) &&
+           (next_start_raw_ticks - port_get_raw_ticks(NULL) < 100)) {
+        RUN_BACKGROUND_TASKS;
     }
 
     BP_Function_Enum alt_function = GPIO_FUNCTION_OUTPUT;
@@ -63,7 +46,7 @@ void common_hal_neopixel_write(const digitalio_digitalinout_obj_t *digitalinout,
         }
     }
     if (!found) {
-        mp_raise_ValueError(translate("NeoPixel not supported on pin"));
+        mp_raise_ValueError(MP_ERROR_TEXT("NeoPixel not supported on pin"));
         return;
     }
 
@@ -92,7 +75,8 @@ void common_hal_neopixel_write(const digitalio_digitalinout_obj_t *digitalinout,
 
         // Wait for the clock to start up.
         COMPLETE_MEMORY_READS;
-        while (CM_PWM->CS_b.BUSY == 0) {
+        icnt = 0;
+        while ((CM_PWM->CS_b.BUSY == 0) && (icnt++ < 1000)) {
         }
     }
 
@@ -134,24 +118,45 @@ void common_hal_neopixel_write(const digitalio_digitalinout_obj_t *digitalinout,
                 expanded |= 0x80000000;
             }
         }
-        while (pwm->STA_b.FULL1 == 1) {
-            RUN_BACKGROUND_TASKS;
-        }
         if (channel == 1) {
+            icnt = 0;
+            while ((pwm->STA_b.FULL1 == 1) && (icnt++ < 150)) {
+                RUN_BACKGROUND_TASKS;
+            }
             // Dummy value for the first channel.
             pwm->FIF1 = 0x000000;
         }
+        icnt = 0;
+        while ((pwm->STA_b.FULL1 == 1) && (icnt++ < 150)) {
+            RUN_BACKGROUND_TASKS;
+        }
         pwm->FIF1 = expanded;
         if (channel == 0) {
+            icnt = 0;
+            while ((pwm->STA_b.FULL1 == 1) && (icnt++ < 150)) {
+                RUN_BACKGROUND_TASKS;
+            }
             // Dummy value for the second channel.
             pwm->FIF1 = 0x000000;
         }
     }
-    // Wait just a little bit so that transmission can start.
-    common_hal_mcu_delay_us(2);
-    while (pwm->STA_b.STA1 == 1) {
+
+    icnt = 0;
+    while ((pwm->STA_b.EMPT1 == 0) && (icnt++ < 2500)) {
         RUN_BACKGROUND_TASKS;
     }
+    // Wait for transmission to start.
+    icnt = 0;
+    while (((pwm->STA_b.STA1 == 0) && (pwm->STA_b.STA2 == 0)) && (icnt++ < 150)) {
+        RUN_BACKGROUND_TASKS;
+    }
+    // Wait for transmission to complete.
+    icnt = 0;
+    while (((pwm->STA_b.STA1 == 1) || (pwm->STA_b.STA2 == 1)) && (icnt++ < 150)) {
+        RUN_BACKGROUND_TASKS;
+    }
+    // Shouldn't be anything left in queue but clear it so the clock doesn't crash if there is
+    pwm->CTL = PWM0_CTL_CLRF1_Msk;
 
     gpio_set_function(digitalinout->pin->number, GPIO_FUNCTION_OUTPUT);
 

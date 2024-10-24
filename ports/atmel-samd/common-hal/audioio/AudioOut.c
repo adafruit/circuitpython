@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include <stdint.h>
 #include <string.h>
@@ -35,7 +15,6 @@
 #include "shared-bindings/audioio/AudioOut.h"
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/microcontroller/Pin.h"
-#include "supervisor/shared/translate/translate.h"
 
 #include "atmel_start_pins.h"
 #include "hal/include/hal_gpio.h"
@@ -97,26 +76,6 @@ static void ramp_value(uint16_t start, uint16_t end) {
 }
 #endif
 
-void audioout_reset(void) {
-    #if defined(SAMD21) && !defined(PIN_PA02)
-    return;
-    #endif
-    #ifdef SAMD21
-    while (DAC->STATUS.reg & DAC_STATUS_SYNCBUSY) {
-    }
-    #endif
-    #ifdef SAM_D5X_E5X
-    while (DAC->SYNCBUSY.reg & DAC_SYNCBUSY_SWRST) {
-    }
-    #endif
-    if (DAC->CTRLA.bit.ENABLE) {
-        ramp_value(0x8000, 0);
-    }
-    DAC->CTRLA.reg |= DAC_CTRLA_SWRST;
-
-    // TODO(tannewt): Turn off the DAC clocks to save power.
-}
-
 // Caller validates that pins are free.
 void common_hal_audioio_audioout_construct(audioio_audioout_obj_t *self,
     const mcu_pin_obj_t *left_channel, const mcu_pin_obj_t *right_channel, uint16_t quiescent_value) {
@@ -129,11 +88,11 @@ void common_hal_audioio_audioout_construct(audioio_audioout_obj_t *self,
     #endif
     // Only support exclusive use of the DAC.
     if (dac_clock_enabled && DAC->CTRLA.bit.ENABLE == 1) {
-        mp_raise_RuntimeError(translate("DAC already in use"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("DAC already in use"));
     }
     #ifdef SAMD21
     if (right_channel != NULL) {
-        mp_raise_ValueError(translate("Right channel unsupported"));
+        mp_raise_ValueError(MP_ERROR_TEXT("Right channel unsupported"));
     }
     if (left_channel != &pin_PA02) {
         raise_ValueError_invalid_pin();
@@ -149,7 +108,7 @@ void common_hal_audioio_audioout_construct(audioio_audioout_obj_t *self,
         raise_ValueError_invalid_pin_name(MP_QSTR_right_channel);
     }
     if (right_channel == left_channel) {
-        mp_raise_ValueError_varg(translate("%q and %q must be different"),
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("%q and %q must be different"),
             MP_QSTR_left_channel, MP_QSTR_right_channel);
     }
     claim_pin(left_channel);
@@ -232,22 +191,16 @@ void common_hal_audioio_audioout_construct(audioio_audioout_obj_t *self,
     }
     #endif
 
+
     // Use a timer to coordinate when DAC conversions occur.
-    Tc *t = NULL;
-    uint8_t tc_index = TC_INST_NUM;
-    for (uint8_t i = TC_INST_NUM; i > 0; i--) {
-        if (tc_insts[i - 1]->COUNT16.CTRLA.bit.ENABLE == 0) {
-            t = tc_insts[i - 1];
-            tc_index = i - 1;
-            break;
-        }
-    }
-    if (t == NULL) {
+    uint8_t tc_index = find_free_timer();
+    if (tc_index == 0xFF) {
         common_hal_audioio_audioout_deinit(self);
-        mp_raise_RuntimeError(translate("All timers in use"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("All timers in use"));
         return;
     }
     self->tc_index = tc_index;
+    Tc *t = tc_insts[tc_index];
 
     // Use the 48MHz clocks on both the SAMD21 and 51 because we will be going much slower.
     uint8_t tc_gclk = 0;
@@ -287,7 +240,7 @@ void common_hal_audioio_audioout_construct(audioio_audioout_obj_t *self,
     // path.
     uint8_t channel = find_async_event_channel();
     if (channel >= EVSYS_CHANNELS) {
-        mp_raise_RuntimeError(translate("All event channels in use"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("All event channels in use"));
     }
 
     #ifdef SAM_D5X_E5X
@@ -323,10 +276,6 @@ void common_hal_audioio_audioout_deinit(audioio_audioout_obj_t *self) {
         common_hal_audioio_audioout_stop(self);
     }
 
-    // Ramp the DAC down.
-    ramp_value(self->quiescent_value, 0);
-
-    DAC->CTRLA.bit.ENABLE = 0;
     #ifdef SAMD21
     while (DAC->STATUS.bit.SYNCBUSY == 1) {
     }
@@ -335,6 +284,15 @@ void common_hal_audioio_audioout_deinit(audioio_audioout_obj_t *self) {
     while (DAC->SYNCBUSY.bit.ENABLE == 1) {
     }
     #endif
+
+    // Ramp the DAC down.
+    ramp_value(self->quiescent_value, 0);
+
+    DAC->CTRLA.reg |= DAC_CTRLA_SWRST;
+
+    // TODO(tannewt): Turn off the DAC clocks to save power.
+
+    DAC->CTRLA.bit.ENABLE = 0;
 
     disable_event_channel(self->tc_to_dac_event_channel);
 
@@ -405,7 +363,13 @@ void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
     if (self->right_channel == &pin_PA02) {
         right_channel_reg = (uint32_t)&DAC->DATABUF[0].reg;
     }
-    if (right_channel_reg == left_channel_reg + 2 && audiosample_bits_per_sample(sample) == 16) {
+
+    size_t num_channels = audiosample_channel_count(sample);
+
+    if (num_channels == 2 &&
+        // Are DAC channels sequential?
+        left_channel_reg + 2 == right_channel_reg &&
+        audiosample_bits_per_sample(sample) == 16) {
         result = audio_dma_setup_playback(&self->left_dma, sample, loop, false, 0,
             false /* output unsigned */,
             left_channel_reg,
@@ -415,7 +379,11 @@ void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
             false /* output unsigned */,
             left_channel_reg,
             left_channel_trigger);
-        if (right_channel_reg != 0 && result == AUDIO_DMA_OK) {
+        // Don't play back on right channel unless stereo.
+        // TODO possibility: Set up non-incrementing DMA on one channel so they use the same samples?
+        // Right now, playing back mono on both channels causes sample to play twice as fast.
+        if (num_channels == 2 &&
+            right_channel_reg != 0 && result == AUDIO_DMA_OK) {
             result = audio_dma_setup_playback(&self->right_dma, sample, loop, true, 1,
                 false /* output unsigned */,
                 right_channel_reg,
@@ -429,9 +397,9 @@ void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
         audio_dma_stop(&self->right_dma);
         #endif
         if (result == AUDIO_DMA_DMA_BUSY) {
-            mp_raise_RuntimeError(translate("No DMA channel found"));
+            mp_raise_RuntimeError(MP_ERROR_TEXT("No DMA channel found"));
         } else if (result == AUDIO_DMA_MEMORY_ERROR) {
-            mp_raise_RuntimeError(translate("Unable to allocate buffers for signed conversion"));
+            mp_raise_RuntimeError(MP_ERROR_TEXT("Unable to allocate buffers for signed conversion"));
         }
     }
     Tc *timer = tc_insts[self->tc_index];

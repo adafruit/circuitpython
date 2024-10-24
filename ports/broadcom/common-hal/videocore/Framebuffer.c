@@ -1,3 +1,9 @@
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2024 Adafruit Industries LLC
+//
+// SPDX-License-Identifier: MIT
+
 
 #include "bindings/videocore/Framebuffer.h"
 
@@ -25,7 +31,7 @@ void common_hal_videocore_framebuffer_construct(videocore_framebuffer_obj_t *sel
         &bits_per_pixel);
     if (self->framebuffer == NULL) {
         if (gc_alloc_possible()) {
-            mp_raise_ValueError(translate("no fb"));
+            mp_raise_ValueError(MP_ERROR_TEXT("no fb"));
         } else {
             mp_printf(&mp_plat_print, "no fb\n");
         }
@@ -42,6 +48,7 @@ void common_hal_videocore_framebuffer_deinit(videocore_framebuffer_obj_t *self) 
     if (vcmailbox_release_framebuffer()) {
         self->framebuffer = NULL;
     }
+    self->base.type = &mp_type_NoneType;
 }
 
 bool common_hal_videocore_framebuffer_deinited(videocore_framebuffer_obj_t *self) {

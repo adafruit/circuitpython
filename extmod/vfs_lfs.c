@@ -26,11 +26,12 @@
 
 #include "py/runtime.h"
 #include "py/mphal.h"
+
+#if MICROPY_VFS && (MICROPY_VFS_LFS1 || MICROPY_VFS_LFS2)
+
 #include "shared/timeutils/timeutils.h"
 #include "extmod/vfs.h"
 #include "extmod/vfs_lfs.h"
-
-#if MICROPY_VFS && (MICROPY_VFS_LFS1 || MICROPY_VFS_LFS2)
 
 enum { LFS_MAKE_ARG_bdev, LFS_MAKE_ARG_readsize, LFS_MAKE_ARG_progsize, LFS_MAKE_ARG_lookahead, LFS_MAKE_ARG_mtime };
 
@@ -126,7 +127,7 @@ typedef struct _mp_obj_vfs_lfs2_file_t {
 const char *mp_vfs_lfs2_make_path(mp_obj_vfs_lfs2_t *self, mp_obj_t path_in);
 mp_obj_t mp_vfs_lfs2_file_open(mp_obj_t self_in, mp_obj_t path_in, mp_obj_t mode_in);
 
-STATIC void lfs_get_mtime(uint8_t buf[8]) {
+static void lfs_get_mtime(uint8_t buf[8]) {
     // On-disk storage of timestamps uses 1970 as the Epoch, so convert from host's Epoch.
     uint64_t ns = timeutils_nanoseconds_since_epoch_to_nanoseconds_since_1970(mp_hal_time_ns());
     // Store "ns" to "buf" in little-endian format (essentially htole64).

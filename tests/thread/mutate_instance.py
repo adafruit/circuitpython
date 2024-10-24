@@ -1,10 +1,9 @@
 # test concurrent mutating access to a shared user instance
 #
-# SPDX-FileCopyrightText: Copyright (c) 2016 Damien P. George on behalf of Pycom Ltd
-#
-# SPDX-License-Identifier: MIT
+# MIT license; Copyright (c) 2016 Damien P. George on behalf of Pycom Ltd
 
 import _thread
+
 
 # the shared user class and instance
 class User:
@@ -15,6 +14,7 @@ class User:
 
 
 user = User()
+
 
 # main thread function
 def th(n, lo, hi):

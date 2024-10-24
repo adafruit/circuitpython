@@ -1,3 +1,4 @@
+# CIRCUITPY-CHANGE: micropython does not have this test file
 """
 test that calling super() getter property in subclass will return the value
 """

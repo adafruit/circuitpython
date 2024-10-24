@@ -9,7 +9,6 @@
 //|
 //|     def __init__(self) -> None:
 //|         """Enum-like class to define the position fix mode."""
-//|
 //|     INVALID: PositionFix
 //|     """No measurement."""
 //|
@@ -55,14 +54,14 @@ mp_obj_t gnss_positionfix_type_to_obj(gnss_positionfix_t posfix) {
     }
 }
 
-STATIC const mp_rom_map_elem_t gnss_positionfix_locals_dict_table[] = {
+static const mp_rom_map_elem_t gnss_positionfix_locals_dict_table[] = {
     {MP_ROM_QSTR(MP_QSTR_INVALID), MP_ROM_PTR(&gnss_positionfix_invalid_obj)},
     {MP_ROM_QSTR(MP_QSTR_FIX_2D), MP_ROM_PTR(&gnss_positionfix_fix2d_obj)},
     {MP_ROM_QSTR(MP_QSTR_FIX_3D), MP_ROM_PTR(&gnss_positionfix_fix3d_obj)},
 };
-STATIC MP_DEFINE_CONST_DICT(gnss_positionfix_locals_dict, gnss_positionfix_locals_dict_table);
+static MP_DEFINE_CONST_DICT(gnss_positionfix_locals_dict, gnss_positionfix_locals_dict_table);
 
-STATIC void gnss_positionfix_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
+static void gnss_positionfix_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     qstr posfix = MP_QSTR_INVALID;
     if (MP_OBJ_TO_PTR(self_in) == MP_ROM_PTR(&gnss_positionfix_fix2d_obj)) {
         posfix = MP_QSTR_FIX_2D;
@@ -72,9 +71,10 @@ STATIC void gnss_positionfix_print(const mp_print_t *print, mp_obj_t self_in, mp
     mp_printf(print, "%q.%q.%q", MP_QSTR_gnss, MP_QSTR_PositionFix, posfix);
 }
 
-const mp_obj_type_t gnss_positionfix_type = {
-    { &mp_type_type },
-    .name = MP_QSTR_PositionFix,
-    .print = gnss_positionfix_print,
-    .locals_dict = (mp_obj_t)&gnss_positionfix_locals_dict,
-};
+MP_DEFINE_CONST_OBJ_TYPE(
+    gnss_positionfix_type,
+    MP_QSTR_PositionFix,
+    MP_TYPE_FLAG_NONE,
+    print, gnss_positionfix_print,
+    locals_dict, &gnss_positionfix_locals_dict
+    );

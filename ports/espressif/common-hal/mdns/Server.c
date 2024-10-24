@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2022 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2022 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "shared-bindings/mdns/Server.h"
 
@@ -31,20 +11,33 @@
 #include "shared-bindings/mdns/RemoteService.h"
 #include "shared-bindings/wifi/__init__.h"
 
-#include "components/mdns/include/mdns.h"
+#include "mdns.h"
 
-STATIC bool inited = false;
+// Track whether the underlying IDF mdns has been started so that we only
+// create a single inited MDNS object to CircuitPython. (After deinit, another
+// could be created.)
+static mdns_server_obj_t *_active_object = NULL;
 
 void mdns_server_construct(mdns_server_obj_t *self, bool workflow) {
-    if (inited) {
+    if (_active_object != NULL) {
+        if (self == _active_object) {
+            return;
+        }
+        // Mark this object as deinited because another is already using MDNS.
+        self->inited = false;
         return;
     }
-    mdns_init();
+    esp_err_t ret = mdns_init();
+    if (ret != ESP_OK) {
+        return;
+    }
+    _active_object = self;
 
-    uint8_t mac[6];
-    esp_netif_get_mac(common_hal_wifi_radio_obj.netif, mac);
-    snprintf(self->default_hostname, sizeof(self->default_hostname), "cpy-%02x%02x%02x", mac[3], mac[4], mac[5]);
-    common_hal_mdns_server_set_hostname(self, self->default_hostname);
+    // Match the netif hostname set when `import wifi` was called.
+    esp_netif_get_hostname(common_hal_wifi_radio_obj.netif, &self->hostname);
+    common_hal_mdns_server_set_hostname(self, self->hostname);
+
+    self->inited = true;
 
     if (workflow) {
         // Set a delegated entry to ourselves. This allows us to respond to "circuitpython.local"
@@ -64,24 +57,32 @@ void mdns_server_construct(mdns_server_obj_t *self, bool workflow) {
 
 void common_hal_mdns_server_construct(mdns_server_obj_t *self, mp_obj_t network_interface) {
     if (network_interface != MP_OBJ_FROM_PTR(&common_hal_wifi_radio_obj)) {
-        mp_raise_ValueError(translate("mDNS only works with built-in WiFi"));
+        mp_raise_ValueError(MP_ERROR_TEXT("mDNS only works with built-in WiFi"));
         return;
     }
-    if (inited) {
-        mp_raise_RuntimeError(translate("mDNS already initialized"));
-    }
     mdns_server_construct(self, false);
+    if (common_hal_mdns_server_deinited(self)) {
+        mp_raise_RuntimeError(MP_ERROR_TEXT("mDNS already initialized"));
+    }
 }
 
 void common_hal_mdns_server_deinit(mdns_server_obj_t *self) {
-    inited = false;
+    if (common_hal_mdns_server_deinited(self)) {
+        return;
+    }
+    self->inited = false;
+    _active_object = NULL;
     mdns_free();
 }
 
+void mdns_server_deinit_singleton(void) {
+    if (_active_object != NULL) {
+        common_hal_mdns_server_deinit(_active_object);
+    }
+}
+
 bool common_hal_mdns_server_deinited(mdns_server_obj_t *self) {
-    // This returns INVALID_STATE when not initialized and INVALID_PARAM when it
-    // is.
-    return mdns_instance_name_set(NULL) == ESP_ERR_INVALID_STATE;
+    return !self->inited;
 }
 
 const char *common_hal_mdns_server_get_hostname(mdns_server_obj_t *self) {
@@ -115,22 +116,13 @@ size_t mdns_server_find(mdns_server_obj_t *self, const char *service_type, const
     if (search == NULL) {
         return 0;
     }
+    uint8_t num_results;
     mdns_result_t *results;
-    while (!mdns_query_async_get_results(search, 1, &results)) {
+    while (!mdns_query_async_get_results(search, 1, &results, &num_results)) {
         RUN_BACKGROUND_TASKS;
     }
     mdns_query_async_delete(search);
-    // Count how many results we got.
-    // TODO: Remove this loop when moving off 4.4. Newer APIs will give us num_results
-    // back directly.
     mdns_result_t *next = results;
-    uint8_t num_results = 0;
-    while (next != NULL) {
-        num_results++;
-        next = next->next;
-    }
-
-    next = results;
     // Don't error if we're out of memory. Instead, truncate the tuple.
     uint8_t added = 0;
     while (next != NULL && added < out_len) {
@@ -154,33 +146,25 @@ size_t mdns_server_find(mdns_server_obj_t *self, const char *service_type, const
 mp_obj_t common_hal_mdns_server_find(mdns_server_obj_t *self, const char *service_type, const char *protocol, mp_float_t timeout) {
     mdns_search_once_t *search = mdns_query_async_new(NULL, service_type, protocol, MDNS_TYPE_PTR, timeout * 1000, 255, NULL);
     if (search == NULL) {
-        mp_raise_RuntimeError(translate("Unable to start mDNS query"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Unable to start mDNS query"));
     }
+    uint8_t num_results;
     mdns_result_t *results;
-    while (!mdns_query_async_get_results(search, 1, &results)) {
+    while (!mdns_query_async_get_results(search, 1, &results, &num_results)) {
         RUN_BACKGROUND_TASKS;
     }
     mdns_query_async_delete(search);
-    // Count how many results we got.
-    // TODO: Remove this loop when moving off 4.4. Newer APIs will give us num_results
-    // back directly.
-    mdns_result_t *next = results;
-    uint8_t num_results = 0;
-    while (next != NULL) {
-        num_results++;
-        next = next->next;
-    }
     mp_obj_tuple_t *tuple = MP_OBJ_TO_PTR(mp_obj_new_tuple(num_results, NULL));
     // The empty tuple object is shared and stored in flash so return early if
     // we got it. Without this we'll crash when trying to set len below.
     if (num_results == 0) {
         return MP_OBJ_FROM_PTR(tuple);
     }
-    next = results;
+    mdns_result_t *next = results;
     // Don't error if we're out of memory. Instead, truncate the tuple.
     uint8_t added = 0;
     while (next != NULL) {
-        mdns_remoteservice_obj_t *service = gc_alloc(sizeof(mdns_remoteservice_obj_t), GC_ALLOC_FLAG_HAS_FINALISER, false);
+        mdns_remoteservice_obj_t *service = gc_alloc(sizeof(mdns_remoteservice_obj_t), GC_ALLOC_FLAG_HAS_FINALISER);
         if (service == NULL) {
             if (added == 0) {
                 m_malloc_fail(sizeof(mdns_remoteservice_obj_t));
@@ -203,10 +187,25 @@ mp_obj_t common_hal_mdns_server_find(mdns_server_obj_t *self, const char *servic
     return MP_OBJ_FROM_PTR(tuple);
 }
 
-void common_hal_mdns_server_advertise_service(mdns_server_obj_t *self, const char *service_type, const char *protocol, mp_int_t port) {
+void common_hal_mdns_server_advertise_service(mdns_server_obj_t *self, const char *service_type, const char *protocol, mp_int_t port, const char *txt_records[], size_t num_txt_records) {
     if (mdns_service_exists(service_type, protocol, NULL)) {
         mdns_service_port_set(service_type, protocol, port);
     } else {
+        // TODO: Add support for TXT record
+        /* NOTE: The `mdns_txt_item_t *txt` argument of mdns_service_add uses a struct
+         * that splits out the TXT record into keys and values, though it seems little
+         * is done with those fields aside from concatenating them with an optional
+         * equals sign and calculating the total length of the concatenated string.
+         *
+         * There should be little issue with the underlying implementation to populate
+         * the mdns_txt_item_t struct with only a key containing exactly the desired TXT
+         * record. As long as the underlying implementation calculates the length of the
+         * key + NULL value correctly, it should work.
+         *
+         * Ref: RFC 6763, section 6.1:
+         * > The format of each constituent string within the DNS TXT record is a single
+         * > length byte, followed by 0-255 bytes of text data.
+         */
         mdns_service_add(NULL, service_type, protocol, port, NULL, 0);
     }
 }

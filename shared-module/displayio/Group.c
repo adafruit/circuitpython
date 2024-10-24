@@ -1,28 +1,8 @@
-/*
- * This file is part of the Micro Python project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2018 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2018 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "shared-bindings/displayio/Group.h"
 
@@ -34,6 +14,11 @@
 #include "shared-bindings/vectorio/VectorShape.h"
 #endif
 
+static void check_readonly(displayio_group_t *self) {
+    if (self->readonly) {
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Read-only"));
+    }
+}
 
 void common_hal_displayio_group_construct(displayio_group_t *self, uint32_t scale, mp_int_t x, mp_int_t y) {
     mp_obj_list_t *members = mp_obj_new_list(0, NULL);
@@ -48,6 +33,7 @@ void common_hal_displayio_group_set_hidden(displayio_group_t *self, bool hidden)
     if (self->hidden == hidden) {
         return;
     }
+    check_readonly(self);
     self->hidden = hidden;
     if (self->hidden_by_parent) {
         return;
@@ -81,6 +67,7 @@ void displayio_group_set_hidden_by_parent(displayio_group_t *self, bool hidden) 
     if (self->hidden_by_parent == hidden) {
         return;
     }
+    check_readonly(self);
     self->hidden_by_parent = hidden;
     // If we're already hidden, then we're done.
     if (self->hidden) {
@@ -209,6 +196,7 @@ void common_hal_displayio_group_set_scale(displayio_group_t *self, uint32_t scal
     if (self->scale == scale) {
         return;
     }
+    check_readonly(self);
     uint8_t parent_scale = self->absolute_transform.scale / self->scale;
     self->absolute_transform.dx = self->absolute_transform.dx / self->scale * scale;
     self->absolute_transform.dy = self->absolute_transform.dy / self->scale * scale;
@@ -225,6 +213,7 @@ void common_hal_displayio_group_set_x(displayio_group_t *self, mp_int_t x) {
     if (self->x == x) {
         return;
     }
+    check_readonly(self);
     if (self->absolute_transform.transpose_xy) {
         int16_t dy = self->absolute_transform.dy / self->scale;
         self->absolute_transform.y += dy * (x - self->x);
@@ -245,6 +234,7 @@ void common_hal_displayio_group_set_y(displayio_group_t *self, mp_int_t y) {
     if (self->y == y) {
         return;
     }
+    check_readonly(self);
     if (self->absolute_transform.transpose_xy) {
         int8_t dx = self->absolute_transform.dx / self->scale;
         self->absolute_transform.x += dx * (y - self->y);
@@ -257,6 +247,7 @@ void common_hal_displayio_group_set_y(displayio_group_t *self, mp_int_t y) {
 }
 
 static void _add_layer(displayio_group_t *self, mp_obj_t layer) {
+    check_readonly(self);
     #if CIRCUITPY_VECTORIO
     const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, layer);
     if (draw_protocol != NULL) {
@@ -268,7 +259,7 @@ static void _add_layer(displayio_group_t *self, mp_obj_t layer) {
     if (native_layer != MP_OBJ_NULL) {
         displayio_tilegrid_t *tilegrid = native_layer;
         if (tilegrid->in_group) {
-            mp_raise_ValueError(translate("Layer already in a group"));
+            mp_raise_ValueError(MP_ERROR_TEXT("Layer already in a group"));
         } else {
             tilegrid->in_group = true;
         }
@@ -281,7 +272,7 @@ static void _add_layer(displayio_group_t *self, mp_obj_t layer) {
     if (native_layer != MP_OBJ_NULL) {
         displayio_group_t *group = native_layer;
         if (group->in_group) {
-            mp_raise_ValueError(translate("Layer already in a group"));
+            mp_raise_ValueError(MP_ERROR_TEXT("Layer already in a group"));
         } else {
             group->in_group = true;
         }
@@ -290,10 +281,11 @@ static void _add_layer(displayio_group_t *self, mp_obj_t layer) {
             group, self->hidden || self->hidden_by_parent);
         return;
     }
-    mp_raise_ValueError(translate("Layer must be a Group or TileGrid subclass"));
+    mp_raise_ValueError(MP_ERROR_TEXT("Layer must be a Group or TileGrid subclass"));
 }
 
 static void _remove_layer(displayio_group_t *self, size_t index) {
+    check_readonly(self);
     mp_obj_t layer;
     displayio_area_t layer_area;
     bool rendered_last_frame = false;
@@ -310,6 +302,7 @@ static void _remove_layer(displayio_group_t *self, size_t index) {
         self->members->items[index], &displayio_tilegrid_type);
     if (layer != MP_OBJ_NULL) {
         displayio_tilegrid_t *tilegrid = layer;
+        tilegrid->in_group = false;
         rendered_last_frame = displayio_tilegrid_get_previous_area(tilegrid, &layer_area);
         displayio_tilegrid_update_transform(tilegrid, NULL);
     }
@@ -317,6 +310,7 @@ static void _remove_layer(displayio_group_t *self, size_t index) {
         self->members->items[index], &displayio_group_type);
     if (layer != MP_OBJ_NULL) {
         displayio_group_t *group = layer;
+        group->in_group = false;
         rendered_last_frame = displayio_group_get_previous_area(group, &layer_area);
         displayio_group_update_transform(group, NULL);
     }
@@ -369,6 +363,7 @@ void displayio_group_construct(displayio_group_t *self, mp_obj_list_t *members, 
     self->item_removed = false;
     self->scale = scale;
     self->in_group = false;
+    self->readonly = false;
 }
 
 bool displayio_group_fill_area(displayio_group_t *self, const _displayio_colorspace_t *colorspace, const displayio_area_t *area, uint32_t *mask, uint32_t *buffer) {
@@ -454,7 +449,9 @@ displayio_area_t *displayio_group_get_refresh_areas(displayio_group_t *self, dis
         layer = mp_obj_cast_to_native_base(
             self->members->items[i], &displayio_tilegrid_type);
         if (layer != MP_OBJ_NULL) {
-            tail = displayio_tilegrid_get_refresh_areas(layer, tail);
+            if (!displayio_tilegrid_get_rendered_hidden(layer)) {
+                tail = displayio_tilegrid_get_refresh_areas(layer, tail);
+            }
             continue;
         }
         layer = mp_obj_cast_to_native_base(

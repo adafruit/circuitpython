@@ -1,28 +1,8 @@
-/*
- * This file is part of the Micro Python project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2018 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2018 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "shared-bindings/displayio/TileGrid.h"
 
@@ -31,7 +11,6 @@
 #include "shared-bindings/displayio/ColorConverter.h"
 #include "shared-bindings/displayio/OnDiskBitmap.h"
 #include "shared-bindings/displayio/Palette.h"
-#include "shared-bindings/displayio/Shape.h"
 
 void common_hal_displayio_tilegrid_construct(displayio_tilegrid_t *self, mp_obj_t bitmap,
     uint16_t bitmap_width_in_tiles, uint16_t bitmap_height_in_tiles,
@@ -48,7 +27,7 @@ void common_hal_displayio_tilegrid_construct(displayio_tilegrid_t *self, mp_obj_
         }
         self->inline_tiles = true;
     } else {
-        self->tiles = (uint8_t *)m_malloc(total_tiles, false);
+        self->tiles = (uint8_t *)m_malloc(total_tiles);
         for (uint32_t i = 0; i < total_tiles; i++) {
             self->tiles[i] = default_tile;
         }
@@ -82,8 +61,13 @@ bool common_hal_displayio_tilegrid_get_hidden(displayio_tilegrid_t *self) {
     return self->hidden;
 }
 
+bool displayio_tilegrid_get_rendered_hidden(displayio_tilegrid_t *self) {
+    return self->rendered_hidden;
+}
+
 void common_hal_displayio_tilegrid_set_hidden(displayio_tilegrid_t *self, bool hidden) {
     self->hidden = hidden;
+    self->rendered_hidden = false;
     if (!hidden) {
         self->full_change = true;
     }
@@ -91,6 +75,7 @@ void common_hal_displayio_tilegrid_set_hidden(displayio_tilegrid_t *self, bool h
 
 void displayio_tilegrid_set_hidden_by_parent(displayio_tilegrid_t *self, bool hidden) {
     self->hidden_by_parent = hidden;
+    self->rendered_hidden = false;
     if (!hidden) {
         self->full_change = true;
     }
@@ -104,7 +89,7 @@ bool displayio_tilegrid_get_previous_area(displayio_tilegrid_t *self, displayio_
     return true;
 }
 
-STATIC void _update_current_x(displayio_tilegrid_t *self) {
+static void _update_current_x(displayio_tilegrid_t *self) {
     uint16_t width;
     if (self->transpose_xy) {
         width = self->pixel_height;
@@ -137,7 +122,7 @@ STATIC void _update_current_x(displayio_tilegrid_t *self) {
     }
 }
 
-STATIC void _update_current_y(displayio_tilegrid_t *self) {
+static void _update_current_y(displayio_tilegrid_t *self) {
     uint16_t height;
     if (self->transpose_xy) {
         height = self->pixel_width;
@@ -259,7 +244,7 @@ uint8_t common_hal_displayio_tilegrid_get_tile(displayio_tilegrid_t *self, uint1
 
 void common_hal_displayio_tilegrid_set_tile(displayio_tilegrid_t *self, uint16_t x, uint16_t y, uint8_t tile_index) {
     if (tile_index >= self->tiles_in_bitmap) {
-        mp_raise_ValueError(translate("Tile index out of bounds"));
+        mp_raise_ValueError(MP_ERROR_TEXT("Tile index out of bounds"));
     }
     uint8_t *tiles = self->tiles;
     if (self->inline_tiles) {
@@ -298,7 +283,7 @@ void common_hal_displayio_tilegrid_set_tile(displayio_tilegrid_t *self, uint16_t
 
 void common_hal_displayio_tilegrid_set_all_tiles(displayio_tilegrid_t *self, uint8_t tile_index) {
     if (tile_index >= self->tiles_in_bitmap) {
-        mp_raise_ValueError(translate("Tile index out of bounds"));
+        mp_raise_ValueError(MP_ERROR_TEXT("Tile index out of bounds"));
     }
     uint8_t *tiles = self->tiles;
     if (self->inline_tiles) {
@@ -497,8 +482,6 @@ bool displayio_tilegrid_fill_area(displayio_tilegrid_t *self,
             // buffer because most bitmaps are row associated.
             if (mp_obj_is_type(self->bitmap, &displayio_bitmap_type)) {
                 input_pixel.pixel = common_hal_displayio_bitmap_get_pixel(self->bitmap, input_pixel.tile_x, input_pixel.tile_y);
-            } else if (mp_obj_is_type(self->bitmap, &displayio_shape_type)) {
-                input_pixel.pixel = common_hal_displayio_shape_get_pixel(self->bitmap, input_pixel.tile_x, input_pixel.tile_y);
             } else if (mp_obj_is_type(self->bitmap, &displayio_ondiskbitmap_type)) {
                 input_pixel.pixel = common_hal_displayio_ondiskbitmap_get_pixel(self->bitmap, input_pixel.tile_x, input_pixel.tile_y);
             }
@@ -507,7 +490,7 @@ bool displayio_tilegrid_fill_area(displayio_tilegrid_t *self,
             if (self->pixel_shader == mp_const_none) {
                 output_pixel.pixel = input_pixel.pixel;
             } else if (mp_obj_is_type(self->pixel_shader, &displayio_palette_type)) {
-                output_pixel.opaque = displayio_palette_get_color(self->pixel_shader, colorspace, input_pixel.pixel, &output_pixel.pixel);
+                displayio_palette_get_color(self->pixel_shader, colorspace, &input_pixel, &output_pixel);
             } else if (mp_obj_is_type(self->pixel_shader, &displayio_colorconverter_type)) {
                 displayio_colorconverter_convert(self->pixel_shader, colorspace, &input_pixel, &output_pixel);
             }
@@ -543,7 +526,6 @@ bool displayio_tilegrid_fill_area(displayio_tilegrid_t *self,
                     ((uint8_t *)buffer)[offset / pixels_per_byte] |= output_pixel.pixel << shift;
                 }
             }
-            (void)input_pixel;
         }
     }
     return full_coverage;
@@ -568,8 +550,6 @@ void displayio_tilegrid_finish_refresh(displayio_tilegrid_t *self) {
     }
     if (mp_obj_is_type(self->bitmap, &displayio_bitmap_type)) {
         displayio_bitmap_finish_refresh(self->bitmap);
-    } else if (mp_obj_is_type(self->bitmap, &displayio_shape_type)) {
-        displayio_shape_finish_refresh(self->bitmap);
     } else if (mp_obj_is_type(self->bitmap, &displayio_ondiskbitmap_type)) {
         // OnDiskBitmap changes will trigger a complete reload so no need to
         // track changes.
@@ -583,6 +563,7 @@ displayio_area_t *displayio_tilegrid_get_refresh_areas(displayio_tilegrid_t *sel
     bool hidden = self->hidden || self->hidden_by_parent;
     // Check hidden first because it trumps all other changes.
     if (hidden) {
+        self->rendered_hidden = true;
         if (!first_draw) {
             self->previous_area.next = tail;
             return &self->previous_area;
@@ -612,12 +593,6 @@ displayio_area_t *displayio_tilegrid_get_refresh_areas(displayio_tilegrid_t *sel
             } else {
                 self->full_change = true;
             }
-        }
-    } else if (mp_obj_is_type(self->bitmap, &displayio_shape_type)) {
-        displayio_area_t *refresh_area = displayio_shape_get_refresh_areas(self->bitmap, tail);
-        if (refresh_area != tail) {
-            displayio_area_copy(refresh_area, &self->dirty_area);
-            self->partial_change = true;
         }
     }
 

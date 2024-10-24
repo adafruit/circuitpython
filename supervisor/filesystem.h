@@ -1,31 +1,10 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
-#ifndef MICROPY_INCLUDED_SUPERVISOR_FILESYSTEM_H
-#define MICROPY_INCLUDED_SUPERVISOR_FILESYSTEM_H
+#pragma once
 
 #include <stdbool.h>
 
@@ -42,9 +21,27 @@ void filesystem_set_internal_writable_by_usb(bool usb_writable);
 void filesystem_set_internal_concurrent_write_protection(bool concurrent_write_protection);
 void filesystem_set_writable_by_usb(fs_user_mount_t *vfs, bool usb_writable);
 void filesystem_set_concurrent_write_protection(fs_user_mount_t *vfs, bool concurrent_write_protection);
+
+// Whether user code can modify the filesystem. It doesn't depend on the state
+// of USB. Don't use this for a workflow. In workflows, grab the shared file
+// system lock.
 bool filesystem_is_writable_by_python(fs_user_mount_t *vfs);
+
+// This controls whether USB tries to grab the underlying block device lock
+// during enumeration. If another workflow is modifying the filesystem when this
+// happens, then USB will be readonly.
 bool filesystem_is_writable_by_usb(fs_user_mount_t *vfs);
 
-FATFS *filesystem_circuitpy(void);
+fs_user_mount_t *filesystem_circuitpy(void);
+fs_user_mount_t *filesystem_for_path(const char *path_in, const char **path_under_mount);
+bool filesystem_native_fatfs(fs_user_mount_t *fs_mount);
 
-#endif  // MICROPY_INCLUDED_SUPERVISOR_FILESYSTEM_H
+// We have two levels of locking. filesystem_* calls grab a shared blockdev lock to allow
+// CircuitPython's fatfs code to edit the blocks. blockdev_* calls grab a lock to mutate blocks
+// directly, excluding any filesystem_* locks.
+
+bool filesystem_lock(fs_user_mount_t *fs_mount);
+void filesystem_unlock(fs_user_mount_t *fs_mount);
+
+bool blockdev_lock(fs_user_mount_t *fs_mount);
+void blockdev_unlock(fs_user_mount_t *fs_mount);

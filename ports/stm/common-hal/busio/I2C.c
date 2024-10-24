@@ -1,37 +1,15 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2016 Scott Shawcroft
- * Copyright (c) 2019 Lucian Copeland for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2016 Scott Shawcroft
+// SPDX-FileCopyrightText: Copyright (c) 2019 Lucian Copeland for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 #include <stdbool.h>
 
 #include "shared-bindings/busio/I2C.h"
 #include "py/mperrno.h"
 #include "py/runtime.h"
 
-#include "shared-bindings/microcontroller/__init__.h"
-#include "supervisor/shared/translate/translate.h"
 #include "shared-bindings/microcontroller/Pin.h"
 
 // I2C timing specs for the H7 and F7
@@ -62,28 +40,18 @@
 // Arrays use 0 based numbering: I2C1 is stored at index 0
 #define MAX_I2C 4
 
-STATIC bool reserved_i2c[MAX_I2C];
-STATIC bool never_reset_i2c[MAX_I2C];
+static bool reserved_i2c[MAX_I2C];
 
 #define ALL_CLOCKS 0xFF
-STATIC void i2c_clock_enable(uint8_t mask);
-STATIC void i2c_clock_disable(uint8_t mask);
-STATIC void i2c_assign_irq(busio_i2c_obj_t *self, I2C_TypeDef *I2Cx);
-
-void i2c_reset(void) {
-    uint16_t never_reset_mask = 0x00;
-    for (int i = 0; i < MAX_I2C; i++) {
-        if (!never_reset_i2c[i]) {
-            reserved_i2c[i] = false;
-        } else {
-            never_reset_mask |= 1 << i;
-        }
-    }
-    i2c_clock_disable(ALL_CLOCKS & ~(never_reset_mask));
-}
+static void i2c_clock_enable(uint8_t mask);
+static void i2c_clock_disable(uint8_t mask);
+static void i2c_assign_irq(busio_i2c_obj_t *self, I2C_TypeDef *I2Cx);
 
 void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
     const mcu_pin_obj_t *scl, const mcu_pin_obj_t *sda, uint32_t frequency, uint32_t timeout) {
+
+    // Ensure the object starts in its deinit state.
+    common_hal_busio_i2c_mark_deinit(self);
 
     // Match pins to I2C objects
     I2C_TypeDef *I2Cx;
@@ -118,7 +86,7 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
         I2Cx = mcu_i2c_banks[self->sda->periph_index - 1];
     } else {
         if (i2c_taken) {
-            mp_raise_ValueError(translate("Hardware busy, try alternative pins"));
+            mp_raise_ValueError(MP_ERROR_TEXT("Hardware in use, try alternative pins"));
         } else {
             raise_ValueError_invalid_pins();
         }
@@ -171,7 +139,7 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
     self->handle.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
     self->handle.State = HAL_I2C_STATE_RESET;
     if (HAL_I2C_Init(&(self->handle)) != HAL_OK) {
-        mp_raise_RuntimeError(translate("I2C init error"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("I2C init error"));
     }
     common_hal_mcu_pin_claim(sda);
     common_hal_mcu_pin_claim(scl);
@@ -185,15 +153,8 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
 }
 
 void common_hal_busio_i2c_never_reset(busio_i2c_obj_t *self) {
-    for (size_t i = 0; i < MP_ARRAY_SIZE(mcu_i2c_banks); i++) {
-        if (self->handle.Instance == mcu_i2c_banks[i]) {
-            never_reset_i2c[i] = true;
-
-            never_reset_pin_number(self->scl->pin->port, self->scl->pin->number);
-            never_reset_pin_number(self->sda->pin->port, self->sda->pin->number);
-            break;
-        }
-    }
+    never_reset_pin_number(self->scl->pin->port, self->scl->pin->number);
+    never_reset_pin_number(self->sda->pin->port, self->sda->pin->number);
 }
 
 bool common_hal_busio_i2c_deinited(busio_i2c_obj_t *self) {
@@ -207,12 +168,14 @@ void common_hal_busio_i2c_deinit(busio_i2c_obj_t *self) {
 
     i2c_clock_disable(1 << (self->sda->periph_index - 1));
     reserved_i2c[self->sda->periph_index - 1] = false;
-    never_reset_i2c[self->sda->periph_index - 1] = false;
 
-    reset_pin_number(self->sda->pin->port,self->sda->pin->number);
-    reset_pin_number(self->scl->pin->port,self->scl->pin->number);
+    reset_pin_number(self->sda->pin->port, self->sda->pin->number);
+    reset_pin_number(self->scl->pin->port, self->scl->pin->number);
+    common_hal_busio_i2c_mark_deinit(self);
+}
+
+void common_hal_busio_i2c_mark_deinit(busio_i2c_obj_t *self) {
     self->sda = NULL;
-    self->scl = NULL;
 }
 
 bool common_hal_busio_i2c_probe(busio_i2c_obj_t *self, uint8_t addr) {
@@ -220,6 +183,9 @@ bool common_hal_busio_i2c_probe(busio_i2c_obj_t *self, uint8_t addr) {
 }
 
 bool common_hal_busio_i2c_try_lock(busio_i2c_obj_t *self) {
+    if (common_hal_busio_i2c_deinited(self)) {
+        return false;
+    }
     bool grabbed_lock = false;
 
     // Critical section code that may be required at some point.
@@ -246,7 +212,7 @@ void common_hal_busio_i2c_unlock(busio_i2c_obj_t *self) {
     self->has_lock = false;
 }
 
-STATIC uint8_t _common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr,
+static uint8_t _common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr,
     const uint8_t *data, size_t len, bool transmit_stop_bit) {
     HAL_StatusTypeDef result;
     if (!transmit_stop_bit) {
@@ -303,7 +269,7 @@ uint8_t common_hal_busio_i2c_write_read(busio_i2c_obj_t *self, uint16_t addr,
     return common_hal_busio_i2c_read(self, addr, in_data, in_len);
 }
 
-STATIC void i2c_clock_enable(uint8_t mask) {
+static void i2c_clock_enable(uint8_t mask) {
     // Note: hard reset required due to soft reboot issue.
     #ifdef I2C1
     if (mask & (1 << 0)) {
@@ -335,7 +301,7 @@ STATIC void i2c_clock_enable(uint8_t mask) {
     #endif
 }
 
-STATIC void i2c_clock_disable(uint8_t mask) {
+static void i2c_clock_disable(uint8_t mask) {
     #ifdef I2C1
     if (mask & (1 << 0)) {
         __HAL_RCC_I2C1_CLK_DISABLE();
@@ -358,7 +324,7 @@ STATIC void i2c_clock_disable(uint8_t mask) {
     #endif
 }
 
-STATIC void i2c_assign_irq(busio_i2c_obj_t *self, I2C_TypeDef *I2Cx) {
+static void i2c_assign_irq(busio_i2c_obj_t *self, I2C_TypeDef *I2Cx) {
     #ifdef I2C1
     if (I2Cx == I2C1) {
         self->irq = I2C1_EV_IRQn;
@@ -381,7 +347,7 @@ STATIC void i2c_assign_irq(busio_i2c_obj_t *self, I2C_TypeDef *I2Cx) {
     #endif
 }
 
-STATIC void call_hal_irq(int i2c_num) {
+static void call_hal_irq(int i2c_num) {
     // Create casted context pointer
     busio_i2c_obj_t *context = (busio_i2c_obj_t *)MP_STATE_PORT(cpy_i2c_obj_all)[i2c_num - 1];
     if (context != NULL) {
@@ -402,3 +368,5 @@ void I2C3_EV_IRQHandler(void) {
 void I2C4_EV_IRQHandler(void) {
     call_hal_irq(4);
 }
+
+MP_REGISTER_ROOT_POINTER(void *cpy_i2c_obj_all[MAX_I2C]);

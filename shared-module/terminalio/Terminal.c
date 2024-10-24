@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2019 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2019 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "shared-module/terminalio/Terminal.h"
 
@@ -30,20 +10,31 @@
 #include "shared-bindings/displayio/TileGrid.h"
 #include "shared-bindings/terminalio/Terminal.h"
 
+#if CIRCUITPY_STATUS_BAR
+#include "shared-bindings/supervisor/__init__.h"
+#include "shared-bindings/supervisor/StatusBar.h"
+#endif
+
+void terminalio_terminal_clear_status_bar(terminalio_terminal_obj_t *self) {
+    if (self->status_bar) {
+        common_hal_displayio_tilegrid_set_all_tiles(self->status_bar, 0);
+    }
+}
+
 void common_hal_terminalio_terminal_construct(terminalio_terminal_obj_t *self,
     displayio_tilegrid_t *scroll_area, const fontio_builtinfont_t *font,
-    displayio_tilegrid_t *title_bar) {
+    displayio_tilegrid_t *status_bar) {
     self->cursor_x = 0;
     self->cursor_y = 0;
     self->font = font;
     self->scroll_area = scroll_area;
-    self->title_bar = title_bar;
-    self->title_x = 0;
-    self->title_y = 0;
+    self->status_bar = status_bar;
+    self->status_x = 0;
+    self->status_y = 0;
     self->first_row = 0;
     common_hal_displayio_tilegrid_set_all_tiles(self->scroll_area, 0);
-    if (self->title_bar) {
-        common_hal_displayio_tilegrid_set_all_tiles(self->title_bar, 0);
+    if (self->status_bar) {
+        common_hal_displayio_tilegrid_set_all_tiles(self->status_bar, 0);
     }
 
     common_hal_displayio_tilegrid_set_top_left(self->scroll_area, 0, 1);
@@ -54,6 +45,7 @@ size_t common_hal_terminalio_terminal_write(terminalio_terminal_obj_t *self, con
     if (self->scroll_area == NULL) {
         return len;
     }
+
     const byte *i = data;
     uint16_t start_y = self->cursor_y;
     while (i < data + len) {
@@ -62,21 +54,24 @@ size_t common_hal_terminalio_terminal_write(terminalio_terminal_obj_t *self, con
         if (self->in_osc_command) {
             if (c == 0x1b && i[0] == '\\') {
                 self->in_osc_command = false;
-                self->title_x = 0;
-                self->title_y = 0;
+                self->status_x = 0;
+                self->status_y = 0;
                 i += 1;
-            } else if (self->osc_command == 0 && self->title_bar != NULL && self->title_y < self->title_bar->height_in_tiles) {
+            } else if (
+                self->osc_command == 0 &&
+                self->status_bar != NULL &&
+                self->status_y < self->status_bar->height_in_tiles) {
                 uint8_t tile_index = fontio_builtinfont_get_glyph_index(self->font, c);
                 if (tile_index != 0xff) {
                     // Clear the tile grid before we start putting new info.
-                    if (self->title_x == 0 && self->title_y == 0) {
-                        common_hal_displayio_tilegrid_set_all_tiles(self->title_bar, 0);
+                    if (self->status_x == 0 && self->status_y == 0) {
+                        common_hal_displayio_tilegrid_set_all_tiles(self->status_bar, 0);
                     }
-                    common_hal_displayio_tilegrid_set_tile(self->title_bar, self->title_x, self->title_y, tile_index);
-                    self->title_x++;
-                    if (self->title_x >= self->title_bar->width_in_tiles) {
-                        self->title_y++;
-                        self->title_x %= self->title_bar->width_in_tiles;
+                    common_hal_displayio_tilegrid_set_tile(self->status_bar, self->status_x, self->status_y, tile_index);
+                    self->status_x++;
+                    if (self->status_x >= self->status_bar->width_in_tiles) {
+                        self->status_y++;
+                        self->status_x %= self->status_bar->width_in_tiles;
                     }
                 }
             }
@@ -98,7 +93,7 @@ size_t common_hal_terminalio_terminal_write(terminalio_terminal_obj_t *self, con
                     self->cursor_x--;
                 }
             } else if (c == 0x1b) {
-                // Handle commands of the form \x1b.####D where . is ignored.
+                // Handle commands of the form [ESC].<digits><command-char> where . is not yet known.
                 uint16_t n = 0;
                 uint8_t j = 1;
                 for (; j < 6; j++) {

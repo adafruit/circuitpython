@@ -1,3 +1,4 @@
+# CIRCUITPY-CHANGE: micropython does not have this test file
 # Skip this test if reversed() isn't built in.
 import skip_if
 skip_if.no_reversed()

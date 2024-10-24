@@ -1,9 +1,15 @@
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
+
 #include "py/objtuple.h"
 #include "shared-bindings/board/__init__.h"
 #include "board.h"
 
 // extended pins
-STATIC const mp_rom_map_elem_t board_module_carrier_table[] = {
+static const mp_rom_map_elem_t board_module_carrier_table[] = {
     { MP_ROM_QSTR(MP_QSTR_D0), MP_ROM_PTR(&pin_PD09) },
     { MP_ROM_QSTR(MP_QSTR_D1), MP_ROM_PTR(&pin_PD08) },
     { MP_ROM_QSTR(MP_QSTR_D2), MP_ROM_PTR(&pin_PF15) },
@@ -74,15 +80,16 @@ STATIC const mp_rom_map_elem_t board_module_carrier_table[] = {
 
 MP_DEFINE_CONST_DICT(board_module_carrier, board_module_carrier_table);
 
-const mp_obj_type_t carrier_type = {
-    { &mp_type_type },
-    .name = MP_QSTR_Ext,
-    .locals_dict = (mp_obj_dict_t *)&board_module_carrier,
-};
+MP_DEFINE_CONST_OBJ_TYPE(
+    carrier_type,
+    MP_QSTR_Ext,
+    MP_TYPE_FLAG_NONE,
+    locals_dict, &board_module_carrier
+    );
 
 
 // Core Feather Pins
-STATIC const mp_rom_map_elem_t board_module_globals_table[] = {
+static const mp_rom_map_elem_t board_module_globals_table[] = {
     CIRCUITPYTHON_BOARD_DICT_STANDARD_ITEMS
 
     { MP_ROM_QSTR(MP_QSTR_ext), MP_ROM_PTR(&carrier_type) },
@@ -129,5 +136,8 @@ STATIC const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_I2C), MP_ROM_PTR(&board_i2c_obj) },
     { MP_ROM_QSTR(MP_QSTR_SPI), MP_ROM_PTR(&board_spi_obj) },
     { MP_ROM_QSTR(MP_QSTR_UART), MP_ROM_PTR(&board_uart_obj) },
+
+    { MP_ROM_QSTR(MP_QSTR_MICROPHONE_CLOCK), MP_ROM_PTR(&pin_PA03) },
+    { MP_ROM_QSTR(MP_QSTR_MICROPHONE_DATA), MP_ROM_PTR(&pin_PC03) },
 };
 MP_DEFINE_CONST_DICT(board_module_globals, board_module_globals_table);

@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * SPDX-FileCopyrightText: Copyright (c) 2013, 2014 Damien P. George
+ * Copyright (c) 2013, 2014 Damien P. George
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -40,15 +40,22 @@
 #define DEBUG_printf(...) (void)0
 #endif
 
-#define READLINE_HIST_SIZE (MP_ARRAY_SIZE(MP_STATE_PORT(readline_hist)))
+// flags for readline_t.auto_indent_state
+#define AUTO_INDENT_ENABLED (0x01)
+#define AUTO_INDENT_JUST_ADDED (0x02)
 
 enum { ESEQ_NONE, ESEQ_ESC, ESEQ_ESC_BRACKET, ESEQ_ESC_BRACKET_DIGIT, ESEQ_ESC_O };
 
+#ifdef _MSC_VER
+// work around MSVC compiler bug: https://stackoverflow.com/q/62259834/1976323
+#pragma warning(disable : 4090)
+#endif
+
 void readline_init0(void) {
-    memset(MP_STATE_PORT(readline_hist), 0, READLINE_HIST_SIZE * sizeof(const char*));
+    memset(MP_STATE_PORT(readline_hist), 0, MICROPY_READLINE_HISTORY_SIZE * sizeof(const char*));
 }
 
-STATIC char *str_dup_maybe(const char *str) {
+static char *str_dup_maybe(const char *str) {
     uint32_t len = strlen(str);
     char *s2 = m_new_maybe(char, len + 1);
     if (s2 == NULL) {
@@ -58,7 +65,8 @@ STATIC char *str_dup_maybe(const char *str) {
     return s2;
 }
 
-STATIC size_t count_cont_bytes(char *start, char *end) {
+// CIRCUITPY-CHANGE
+static size_t count_cont_bytes(char *start, char *end) {
     int count = 0;
     for (char *pos = start; pos < end; pos++) {
         if(UTF8_IS_CONT(*pos)) {
@@ -75,7 +83,7 @@ STATIC size_t count_cont_bytes(char *start, char *end) {
 
 // ...and provide the implementation using them
 #if MICROPY_HAL_HAS_VT100
-STATIC void mp_hal_move_cursor_back(uint pos) {
+static void mp_hal_move_cursor_back(uint pos) {
     if (pos <= 4) {
         // fast path for most common case of 1 step back
         mp_hal_stdout_tx_strn("\b\b\b\b", pos);
@@ -91,7 +99,7 @@ STATIC void mp_hal_move_cursor_back(uint pos) {
     }
 }
 
-STATIC void mp_hal_erase_line_from_cursor(uint n_chars_to_erase) {
+static void mp_hal_erase_line_from_cursor(uint n_chars_to_erase) {
     (void)n_chars_to_erase;
     mp_hal_stdout_tx_strn("\x1b[K", 3);
 }
@@ -103,15 +111,19 @@ typedef struct _readline_t {
     int escape_seq;
     int hist_cur;
     size_t cursor_pos;
+    // CIRCUITPY-CHANGE
     uint8_t utf8_cont_chars;
     char escape_seq_buf[1];
+    #if MICROPY_REPL_AUTO_INDENT
+    uint8_t auto_indent_state;
+    #endif
     const char *prompt;
 } readline_t;
 
-STATIC readline_t rl;
+static readline_t rl;
 
 #if MICROPY_REPL_EMACS_WORDS_MOVE
-STATIC size_t cursor_count_word(int forward) {
+static size_t cursor_count_word(int forward) {
     const char *line_buf = vstr_str(rl.line);
     size_t pos = rl.cursor_pos;
     bool in_word = false;
@@ -140,6 +152,7 @@ STATIC size_t cursor_count_word(int forward) {
 #endif
 
 int readline_process_char(int c) {
+    // CIRCUITPY-CHANGE
     size_t last_line_len = utf8_charlen((byte *)rl.line->buf, rl.line->len);
     int cont_chars = 0;
     int redraw_step_back = 0;
@@ -178,6 +191,7 @@ int readline_process_char(int c) {
             // set redraw parameters
             redraw_from_cursor = true;
         #endif
+        // CIRCUITPY-CHANGE: add ctrl-L
         } else if (c == CHAR_CTRL_L) {
             // CTRL-L is clear screen / redraw. This specific sequence is used
             // (instead of a slightly more minimal sequence) for compatibility
@@ -196,6 +210,7 @@ int readline_process_char(int c) {
             goto up_arrow_key;
         } else if (c == CHAR_CTRL_U) {
             // CTRL-U is kill from beginning-of-line up to cursor
+            // CIRCUITPY-CHANGE
             cont_chars = count_cont_bytes(rl.line->buf+rl.orig_line_len, rl.line->buf+rl.cursor_pos);
             vstr_cut_out_bytes(rl.line, rl.orig_line_len, rl.cursor_pos - rl.orig_line_len);
             // set redraw parameters
@@ -236,6 +251,7 @@ int readline_process_char(int c) {
                 int nspace = 1;
                 #endif
 
+                // CIRCUITPY-CHANGE
                 // Check if we have moved into a UTF-8 continuation byte
                 while (UTF8_IS_CONT(rl.line->buf[rl.cursor_pos-nspace])) {
                     nspace++;
@@ -248,11 +264,37 @@ int readline_process_char(int c) {
                 redraw_step_back = nspace;
                 redraw_from_cursor = true;
             }
+        #if MICROPY_REPL_AUTO_INDENT
+        } else if ((rl.auto_indent_state & AUTO_INDENT_JUST_ADDED) && (c == 9 || c == ' ')) {
+            // tab/space after auto-indent: disable auto-indent
+            //  - if it's a tab then leave existing indent
+            //  - if it's a space then remove 3 spaces from existing indent
+            rl.auto_indent_state = 0;
+            if (c == ' ') {
+                redraw_step_back = 3;
+                vstr_cut_tail_bytes(rl.line, 3);
+            }
+        #endif
         #if MICROPY_HELPER_REPL
         } else if (c == 9) {
             // tab magic
             const char *compl_str;
-            size_t compl_len = mp_repl_autocomplete(rl.line->buf + rl.orig_line_len, rl.cursor_pos - rl.orig_line_len, &mp_plat_print, &compl_str);
+            size_t compl_len;
+            if (vstr_len(rl.line) != 0 && unichar_isspace(vstr_str(rl.line)[rl.cursor_pos - 1])) {
+                // expand tab to 4 spaces if it follows whitespace:
+                //  - includes the case of additional indenting
+                //  - includes the case of indenting the start of a line that's not the first line,
+                //    because a newline will be the previous character
+                //  - doesn't include the case when at the start of the first line, because we still
+                //    want to use auto-complete there
+                compl_str = "    ";
+                compl_len = 4;
+            } else {
+                // try to auto-complete a word
+                const char *cur_line_buf = vstr_str(rl.line) + rl.orig_line_len;
+                size_t cur_line_len = rl.cursor_pos - rl.orig_line_len;
+                compl_len = mp_repl_autocomplete(cur_line_buf, cur_line_len, &mp_plat_print, &compl_str);
+            }
             if (compl_len == 0) {
                 // no match
             } else if (compl_len == (size_t)(-1)) {
@@ -270,6 +312,7 @@ int readline_process_char(int c) {
                 redraw_step_forward = compl_len;
             }
         #endif
+        // CIRCUITPY-CHANGE: UTF8 handling
         } else if (32 <= c) {
             // printable character
             uint8_t lcp = rl.line->buf[rl.cursor_pos];
@@ -346,7 +389,8 @@ backward_kill_word:
 up_arrow_key:
 #endif
                 // up arrow
-                if (rl.hist_cur + 1 < (int)READLINE_HIST_SIZE && MP_STATE_PORT(readline_hist)[rl.hist_cur + 1] != NULL) {
+                if (rl.hist_cur + 1 < MICROPY_READLINE_HISTORY_SIZE && MP_STATE_PORT(readline_hist)[rl.hist_cur + 1] != NULL) {
+                    // CIRCUITPY-CHANGE
                     // Check for continuation characters
                     cont_chars = count_cont_bytes(rl.line->buf+rl.orig_line_len, rl.line->buf+rl.cursor_pos);
                     // increase hist num
@@ -365,6 +409,7 @@ down_arrow_key:
 #endif
                 // down arrow
                 if (rl.hist_cur >= 0) {
+                    // CIRCUITPY-CHANGE
                     // Check for continuation characters
                     cont_chars = count_cont_bytes(rl.line->buf+rl.orig_line_len, rl.line->buf+rl.cursor_pos);
                     // decrease hist num
@@ -386,11 +431,6 @@ right_arrow_key:
                 // right arrow
                 if (rl.cursor_pos < rl.line->len) {
                     redraw_step_forward = 1;
-                    // Check if we have moved into a UTF-8 continuation byte
-                    while (UTF8_IS_CONT(rl.line->buf[rl.cursor_pos+redraw_step_forward]) &&
-                            rl.cursor_pos+redraw_step_forward < rl.line->len) {
-                        redraw_step_forward++;
-                    }
                 }
             } else if (c == 'D') {
 #if MICROPY_REPL_EMACS_KEYS
@@ -399,11 +439,6 @@ left_arrow_key:
                 // left arrow
                 if (rl.cursor_pos > rl.orig_line_len) {
                     redraw_step_back = 1;
-                    // Check if we have moved into a UTF-8 continuation byte
-                    while (UTF8_IS_CONT(rl.line->buf[rl.cursor_pos-redraw_step_back])) {
-                        redraw_step_back++;
-                        cont_chars++;
-                    }
                 }
             } else if (c == 'H') {
                 // home
@@ -419,6 +454,7 @@ left_arrow_key:
         if (c == '~') {
             if (rl.escape_seq_buf[0] == '1' || rl.escape_seq_buf[0] == '7') {
 home_key:
+                // CIRCUITPY-CHANGE
                 cont_chars = count_cont_bytes(rl.line->buf+rl.orig_line_len, rl.line->buf+rl.cursor_pos);
                 redraw_step_back = rl.cursor_pos - rl.orig_line_len;
             } else if (rl.escape_seq_buf[0] == '4' || rl.escape_seq_buf[0] == '8') {
@@ -430,6 +466,7 @@ end_key:
 delete_key:
 #endif
                 if (rl.cursor_pos < rl.line->len) {
+                    // CIRCUITPY-CHANGE
                     size_t len = 1;
                     while (UTF8_IS_CONT(rl.line->buf[rl.cursor_pos+len]) &&
                             rl.cursor_pos+len < rl.line->len) {
@@ -483,19 +520,23 @@ redraw:
 
     // redraw command prompt, efficiently
     if (redraw_step_back > 0) {
+        // CIRCUITPY-CHANGE
         mp_hal_move_cursor_back(redraw_step_back-cont_chars);
         rl.cursor_pos -= redraw_step_back;
     }
     if (redraw_from_cursor) {
+        // CIRCUITPY-CHANGE
         if (utf8_charlen((byte *)rl.line->buf, rl.line->len) < last_line_len) {
             // erase old chars
             mp_hal_erase_line_from_cursor(last_line_len - rl.cursor_pos);
         }
+        // CIRCUITPY-CHANGE
         // Check for continuation characters
         cont_chars = count_cont_bytes(rl.line->buf+rl.cursor_pos+redraw_step_forward, rl.line->buf+rl.line->len);
         // draw new chars
         mp_hal_stdout_tx_strn(rl.line->buf + rl.cursor_pos, rl.line->len - rl.cursor_pos);
         // move cursor forward if needed (already moved forward by length of line, so move it back)
+        // CIRCUITPY-CHANGE
         mp_hal_move_cursor_back(rl.line->len - (rl.cursor_pos + redraw_step_forward) - cont_chars);
         rl.cursor_pos += redraw_step_forward;
     } else if (redraw_step_forward > 0) {
@@ -504,11 +545,18 @@ redraw:
         rl.cursor_pos += redraw_step_forward;
     }
 
+    #if MICROPY_REPL_AUTO_INDENT
+    rl.auto_indent_state &= ~AUTO_INDENT_JUST_ADDED;
+    #endif
+
     return -1;
 }
 
 #if MICROPY_REPL_AUTO_INDENT
-STATIC void readline_auto_indent(void) {
+static void readline_auto_indent(void) {
+    if (!(rl.auto_indent_state & AUTO_INDENT_ENABLED)) {
+        return;
+    }
     vstr_t *line = rl.line;
     if (line->len > 1 && line->buf[line->len - 1] == '\n') {
         int i;
@@ -544,6 +592,7 @@ STATIC void readline_auto_indent(void) {
             vstr_add_strn(line, "    ", 4);
             mp_hal_stdout_tx_strn("    ", 4);
             rl.cursor_pos += 4;
+            rl.auto_indent_state |= AUTO_INDENT_JUST_ADDED;
         }
     }
 }
@@ -569,6 +618,10 @@ void readline_init(vstr_t *line, const char *prompt) {
     rl.prompt = prompt;
     mp_hal_stdout_tx_str(prompt);
     #if MICROPY_REPL_AUTO_INDENT
+    if (vstr_len(line) == 0) {
+        // start with auto-indent enabled
+        rl.auto_indent_state = AUTO_INDENT_ENABLED;
+    }
     readline_auto_indent();
     #endif
 }
@@ -592,10 +645,12 @@ void readline_push_history(const char *line) {
         // so update the history
         char *most_recent_hist = str_dup_maybe(line);
         if (most_recent_hist != NULL) {
-            for (int i = READLINE_HIST_SIZE - 1; i > 0; i--) {
+            for (int i = MICROPY_READLINE_HISTORY_SIZE - 1; i > 0; i--) {
                 MP_STATE_PORT(readline_hist)[i] = MP_STATE_PORT(readline_hist)[i - 1];
             }
             MP_STATE_PORT(readline_hist)[0] = most_recent_hist;
         }
     }
 }
+
+MP_REGISTER_ROOT_POINTER(const char *readline_hist[MICROPY_READLINE_HISTORY_SIZE]);

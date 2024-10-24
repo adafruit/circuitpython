@@ -1,36 +1,28 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2017-2020 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2017-2020 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "shared-bindings/digitalio/DigitalInOut.h"
 #include "py/runtime.h"
-#include "supervisor/shared/translate/translate.h"
 
-#include "components/driver/include/driver/gpio.h"
+#include "driver/gpio.h"
+#include "hal/gpio_hal.h"
 
-#include "components/hal/include/hal/gpio_hal.h"
+static bool _pin_is_input(uint8_t pin_number) {
+    const uint32_t iomux = READ_PERI_REG(GPIO_PIN_MUX_REG[pin_number]);
+    return (iomux & FUN_IE) != 0;
+}
+
+void digitalio_digitalinout_preserve_for_deep_sleep(size_t n_dios, digitalio_digitalinout_obj_t *preserve_dios[]) {
+    // Mark the pin states of the given DigitalInOuts for preservation during deep sleep
+    for (size_t i = 0; i < n_dios; i++) {
+        if (!common_hal_digitalio_digitalinout_deinited(preserve_dios[i])) {
+            preserve_pin_number(preserve_dios[i]->pin->number);
+        }
+    }
+}
 
 void common_hal_digitalio_digitalinout_never_reset(
     digitalio_digitalinout_obj_t *self) {
@@ -68,10 +60,11 @@ void common_hal_digitalio_digitalinout_deinit(digitalio_digitalinout_obj_t *self
     self->pin = NULL;
 }
 
-void common_hal_digitalio_digitalinout_switch_to_input(
+digitalinout_result_t common_hal_digitalio_digitalinout_switch_to_input(
     digitalio_digitalinout_obj_t *self, digitalio_pull_t pull) {
     common_hal_digitalio_digitalinout_set_pull(self, pull);
     gpio_set_direction(self->pin->number, GPIO_MODE_INPUT);
+    return DIGITALINOUT_OK;
 }
 
 digitalinout_result_t common_hal_digitalio_digitalinout_switch_to_output(
@@ -83,8 +76,7 @@ digitalinout_result_t common_hal_digitalio_digitalinout_switch_to_output(
 
 digitalio_direction_t common_hal_digitalio_digitalinout_get_direction(
     digitalio_digitalinout_obj_t *self) {
-    uint32_t iomux = READ_PERI_REG(GPIO_PIN_MUX_REG[self->pin->number]);
-    if ((iomux & FUN_IE) != 0) {
+    if (_pin_is_input(self->pin->number)) {
         return DIRECTION_INPUT;
     }
     return DIRECTION_OUTPUT;
@@ -127,7 +119,7 @@ digitalio_drive_mode_t common_hal_digitalio_digitalinout_get_drive_mode(
     return DRIVE_MODE_PUSH_PULL;
 }
 
-void common_hal_digitalio_digitalinout_set_pull(
+digitalinout_result_t common_hal_digitalio_digitalinout_set_pull(
     digitalio_digitalinout_obj_t *self, digitalio_pull_t pull) {
     gpio_num_t number = self->pin->number;
     gpio_pullup_dis(number);
@@ -137,6 +129,7 @@ void common_hal_digitalio_digitalinout_set_pull(
     } else if (pull == PULL_DOWN) {
         gpio_pulldown_en(number);
     }
+    return DIGITALINOUT_OK;
 }
 
 digitalio_pull_t common_hal_digitalio_digitalinout_get_pull(

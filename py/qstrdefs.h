@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * SPDX-FileCopyrightText: Copyright (c) 2013, 2014 Damien P. George
+ * Copyright (c) 2013, 2014 Damien P. George
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,10 +35,16 @@
 QCFG(BYTES_IN_LEN, MICROPY_QSTR_BYTES_IN_LEN)
 QCFG(BYTES_IN_HASH, MICROPY_QSTR_BYTES_IN_HASH)
 
+// CIRCUITPY-CHANGE: translatable messages removed
+
 Q()
 Q(*)
 Q(_)
 Q(/)
+#if MICROPY_PY_SYS_PS1_PS2
+Q(>>> )
+Q(... )
+#endif
 #if MICROPY_PY_BUILTINS_STR_OP_MODULO
 Q(%#o)
 Q(%#x)
@@ -49,7 +55,6 @@ Q({:#x})
 Q({:#b})
 Q( )
 Q(\n)
-Q(maximum recursion depth exceeded)
 Q(<module>)
 Q(<lambda>)
 Q(<listcomp>)
@@ -62,8 +67,4 @@ Q(utf-8)
 
 #if MICROPY_MODULE_FROZEN
 Q(.frozen)
-#endif
-
-#if MICROPY_ENABLE_PYSTACK
-Q(pystack exhausted)
 #endif

@@ -1,29 +1,9 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2016 Scott Shawcroft for Adafruit Industries
- * Copyright (c) 2019 Lucian Copeland for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2016 Scott Shawcroft for Adafruit Industries
+// SPDX-FileCopyrightText: Copyright (c) 2019 Lucian Copeland for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "py/obj.h"
 #include "py/mphal.h"
@@ -42,21 +22,35 @@
 
 #include "freertos/FreeRTOS.h"
 
-#include "soc/rtc_cntl_reg.h"
 #include "esp_private/system_internal.h"
 
 #if defined(CONFIG_IDF_TARGET_ESP32)
+#include "soc/rtc_cntl_reg.h"
 #include "esp32/rom/rtc.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32C2)
+#include "soc/rtc_cntl_reg.h"
+#include "esp32c2/rom/rtc.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32C3)
+#include "soc/rtc_cntl_reg.h"
 #include "esp32c3/rom/rtc.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32C6)
+#include "soc/lp_aon_reg.h"
+#include "esp32c6/rom/rtc.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32P4)
+#include "esp32p4/rom/rtc.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32S2)
+#include "soc/rtc_cntl_reg.h"
 #include "esp32s2/rom/rtc.h"
 #include "esp32s2/rom/usb/usb_persist.h"
 #include "esp32s2/rom/usb/chip_usb_dw_wrapper.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32S3)
+#include "soc/rtc_cntl_reg.h"
 #include "esp32s3/rom/rtc.h"
 #include "esp32s3/rom/usb/usb_persist.h"
 #include "esp32s3/rom/usb/chip_usb_dw_wrapper.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32H2)
+#include "soc/lp_aon_reg.h"
+#include "esp32h2/rom/rtc.h"
 #else
 #error No known CONFIG_IDF_TARGET_xxx found
 #endif
@@ -89,7 +83,7 @@ void common_hal_mcu_enable_interrupts(void) {
 void common_hal_mcu_on_next_reset(mcu_runmode_t runmode) {
     switch (runmode) {
         case RUNMODE_UF2:
-            #if defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32C3)
+            #if defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32C6)
             mp_arg_error_invalid(MP_QSTR_run_mode);
             #else
             // 0x11F2 is APP_REQUEST_UF2_RESET_HINT & is defined by TinyUF2
@@ -97,26 +91,47 @@ void common_hal_mcu_on_next_reset(mcu_runmode_t runmode) {
             #endif
             break;
         case RUNMODE_NORMAL:
-            #if defined(CONFIG_IDF_TARGET_ESP32)
-            safe_mode_on_next_reset(NO_SAFE_MODE);
-            #else
             // revert back to normal boot
+            #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3)
             REG_WRITE(RTC_RESET_CAUSE_REG, 0);  // reset uf2
+            #endif
+            #if defined(CONFIG_IDF_TARGET_ESP32P4)
+            REG_WRITE(LP_SYSTEM_REG_LP_STORE15_REG, 0);
+            #elif defined(SOC_LP_AON_SUPPORTED)
+            REG_WRITE(LP_AON_STORE0_REG, 0);  // reset safe mode
+            #else
             REG_WRITE(RTC_CNTL_STORE0_REG, 0);  // reset safe mode
+            #endif
+            #if defined(CONFIG_IDF_TARGET_ESP32)
+            // No UF2 bootloader.
+            #elif defined(CONFIG_IDF_TARGET_ESP32P4)
+            REG_WRITE(LP_SYSTEM_REG_SYS_CTRL_REG, 0);
+            #elif defined(SOC_LP_AON_SUPPORTED)
+            REG_WRITE(LP_AON_SYS_CFG_REG, 0); // reset bootloader
+            #else
             REG_WRITE(RTC_CNTL_OPTION1_REG, 0); // reset bootloader
             #endif
             break;
         case RUNMODE_SAFE_MODE:
             // enter safe mode on next boot
-            safe_mode_on_next_reset(PROGRAMMATIC_SAFE_MODE);
+            safe_mode_on_next_reset(SAFE_MODE_PROGRAMMATIC);
             break;
         case RUNMODE_BOOTLOADER:
             // DFU download
-            #if defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32C3)
+            #if defined(CONFIG_IDF_TARGET_ESP32)
             mp_arg_error_invalid(MP_QSTR_run_mode);
             #else
+            #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3)
             chip_usb_set_persist_flags(USBDC_BOOT_DFU);
+            #endif
+
+            #if defined(CONFIG_IDF_TARGET_ESP32P4)
+            REG_WRITE(LP_SYSTEM_REG_SYS_CTRL_REG, LP_SYSTEM_REG_FORCE_DOWNLOAD_BOOT);
+            #elif defined(SOC_LP_AON_SUPPORTED)
+            REG_WRITE(LP_AON_SYS_CFG_REG, LP_AON_FORCE_DOWNLOAD_BOOT);
+            #else
             REG_WRITE(RTC_CNTL_OPTION1_REG, RTC_CNTL_FORCE_DOWNLOAD_BOOT);
+            #endif
             #endif
             break;
         default:
@@ -160,7 +175,7 @@ watchdog_watchdogtimer_obj_t common_hal_mcu_watchdogtimer_obj = {
 #endif
 
 // This maps MCU pin names to pin objects.
-STATIC const mp_rom_map_elem_t mcu_pin_global_dict_table[] = {
+static const mp_rom_map_elem_t mcu_pin_global_dict_table[] = {
     #ifdef GPIO0_EXISTS
     { MP_ROM_QSTR(MP_QSTR_GPIO0), MP_ROM_PTR(&pin_GPIO0) },
     #endif
@@ -301,6 +316,30 @@ STATIC const mp_rom_map_elem_t mcu_pin_global_dict_table[] = {
     #endif
     #ifdef GPIO46_EXISTS
     { MP_ROM_QSTR(MP_QSTR_GPIO46), MP_ROM_PTR(&pin_GPIO46) },
+    #endif
+    #ifdef GPIO47_EXISTS
+    { MP_ROM_QSTR(MP_QSTR_GPIO47), MP_ROM_PTR(&pin_GPIO47) },
+    #endif
+    #ifdef GPIO48_EXISTS
+    { MP_ROM_QSTR(MP_QSTR_GPIO48), MP_ROM_PTR(&pin_GPIO48) },
+    #endif
+    #ifdef GPIO49_EXISTS
+    { MP_ROM_QSTR(MP_QSTR_GPIO49), MP_ROM_PTR(&pin_GPIO49) },
+    #endif
+    #ifdef GPIO50_EXISTS
+    { MP_ROM_QSTR(MP_QSTR_GPIO50), MP_ROM_PTR(&pin_GPIO50) },
+    #endif
+    #ifdef GPIO51_EXISTS
+    { MP_ROM_QSTR(MP_QSTR_GPIO51), MP_ROM_PTR(&pin_GPIO51) },
+    #endif
+    #ifdef GPIO52_EXISTS
+    { MP_ROM_QSTR(MP_QSTR_GPIO52), MP_ROM_PTR(&pin_GPIO52) },
+    #endif
+    #ifdef GPIO53_EXISTS
+    { MP_ROM_QSTR(MP_QSTR_GPIO53), MP_ROM_PTR(&pin_GPIO53) },
+    #endif
+    #ifdef GPIO54_EXISTS
+    { MP_ROM_QSTR(MP_QSTR_GPIO54), MP_ROM_PTR(&pin_GPIO54) },
     #endif
 };
 MP_DEFINE_CONST_DICT(mcu_pin_globals, mcu_pin_global_dict_table);

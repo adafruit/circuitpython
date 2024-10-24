@@ -1,33 +1,16 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2020 Jeff Epler for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2020 Jeff Epler for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 //| """CAN bus access
 //|
 //| The `canio` module contains low level classes to support the CAN bus
-//| protocol.
+//| protocol on microcontrollers that have built-in CAN peripherals.
+//|
+//| Boards like the Adafruit RP2040 CAN Bus Feather that use an MCP2515 or
+//| compatible chip use the `mcp2515:adafruit_mcp2515` module instead.
 //|
 //| CAN and Listener classes change hardware state and should be deinitialized when they
 //| are no longer needed if the program continues after use. To do so, either
@@ -54,6 +37,9 @@
 //| Other implementations of the CAN device may exist (for instance, attached
 //| via an SPI bus).  If so their constructor arguments may differ, but
 //| otherwise we encourage implementors to follow the API that the core uses.
+//|
+//| For more information on working with this module, refer to
+//| `this Learn Guide on using it <https://learn.adafruit.com/using-canio-circuitpython>`_.
 //| """
 //|
 
@@ -101,13 +87,13 @@ MAKE_ENUM_MAP(canio_bus_state) {
     MAKE_ENUM_MAP_ENTRY(bus_state, ERROR_WARNING),
     MAKE_ENUM_MAP_ENTRY(bus_state, BUS_OFF),
 };
-STATIC MP_DEFINE_CONST_DICT(canio_bus_state_locals_dict, canio_bus_state_locals_table);
+static MP_DEFINE_CONST_DICT(canio_bus_state_locals_dict, canio_bus_state_locals_table);
 
 MAKE_PRINTER(canio, canio_bus_state);
 
 MAKE_ENUM_TYPE(canio, BusState, canio_bus_state);
 
-STATIC const mp_rom_map_elem_t canio_module_globals_table[] = {
+static const mp_rom_map_elem_t canio_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_canio) },
     { MP_ROM_QSTR(MP_QSTR_BusState), MP_ROM_PTR(&canio_bus_state_type) },
     { MP_ROM_QSTR(MP_QSTR_CAN), MP_ROM_PTR(&canio_can_type) },
@@ -118,11 +104,11 @@ STATIC const mp_rom_map_elem_t canio_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR__canio) },
 };
 
-STATIC MP_DEFINE_CONST_DICT(canio_module_globals, canio_module_globals_table);
+static MP_DEFINE_CONST_DICT(canio_module_globals, canio_module_globals_table);
 
 const mp_obj_module_t canio_module = {
     .base = { &mp_type_module },
     .globals = (mp_obj_dict_t *)&canio_module_globals,
 };
 
-MP_REGISTER_MODULE(MP_QSTR_canio, canio_module, CIRCUITPY_CANIO);
+MP_REGISTER_MODULE(MP_QSTR_canio, canio_module);

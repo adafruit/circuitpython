@@ -1,13 +1,12 @@
 # test concurrent mutating access to a shared set object
 #
-# SPDX-FileCopyrightText: Copyright (c) 2016 Damien P. George on behalf of Pycom Ltd
-#
-# SPDX-License-Identifier: MIT
+# MIT license; Copyright (c) 2016 Damien P. George on behalf of Pycom Ltd
 
 import _thread
 
 # the shared set
 se = set([-1, -2, -3, -4])
+
 
 # main thread function
 def th(n, lo, hi):

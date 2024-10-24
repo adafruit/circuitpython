@@ -1,24 +1,19 @@
 try:
-    import uerrno
-    import uos
-except ImportError:
-    print("SKIP")
-    raise SystemExit
+    import errno, os, vfs
 
-try:
-    uos.VfsFat
-except AttributeError:
+    vfs.VfsFat
+except (ImportError, AttributeError):
     print("SKIP")
     raise SystemExit
 
 
 class RAMFS:
-
     SEC_SIZE = 512
 
     def __init__(self, blocks):
         self.data = bytearray(blocks * self.SEC_SIZE)
 
+    # CIRCUITPY-CHANGES: made during v1.12 merge
     # Don't do any allocations in the below functions because they may be called
     # during a gc_sweep from a finalizer.
     def readblocks(self, n, buf):
@@ -40,14 +35,14 @@ class RAMFS:
 
 try:
     bdev = RAMFS(50)
+    vfs.VfsFat.mkfs(bdev)
 except MemoryError:
     print("SKIP")
     raise SystemExit
 
-uos.VfsFat.mkfs(bdev)
-vfs = uos.VfsFat(bdev)
-uos.mount(vfs, "/ramdisk")
-uos.chdir("/ramdisk")
+fs = vfs.VfsFat(bdev)
+vfs.mount(fs, "/ramdisk")
+os.chdir("/ramdisk")
 
 # file IO
 f = open("foo_file.txt", "w")
@@ -59,22 +54,22 @@ f.close()  # allowed
 try:
     f.write("world!")
 except OSError as e:
-    print(e.errno == uerrno.EINVAL)
+    print(e.errno == errno.EINVAL)
 
 try:
     f.read()
 except OSError as e:
-    print(e.errno == uerrno.EINVAL)
+    print(e.errno == errno.EINVAL)
 
 try:
     f.flush()
 except OSError as e:
-    print(e.errno == uerrno.EINVAL)
+    print(e.errno == errno.EINVAL)
 
 try:
     open("foo_file.txt", "x")
 except OSError as e:
-    print(e.errno == uerrno.EEXIST)
+    print(e.errno == errno.EEXIST)
 
 with open("foo_file.txt", "a") as f:
     f.write("world!")
@@ -101,12 +96,12 @@ with open("foo_file.txt") as f2:
 #    print(f.read())
 
 # dirs
-vfs.mkdir("foo_dir")
+fs.mkdir("foo_dir")
 
 try:
-    vfs.rmdir("foo_file.txt")
+    fs.rmdir("foo_file.txt")
 except OSError as e:
-    print(e.errno == 20)  # uerrno.ENOTDIR
+    print(e.errno == 20)  # errno.ENOTDIR
 
-vfs.remove("foo_file.txt")
-print(list(vfs.ilistdir()))
+fs.remove("foo_file.txt")
+print(list(fs.ilistdir()))

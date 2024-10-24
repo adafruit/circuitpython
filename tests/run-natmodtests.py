@@ -9,26 +9,27 @@ import subprocess
 import sys
 import argparse
 
+#CIRCUITPY-CHANGE: no pyboard
+
 # Paths for host executables
 CPYTHON3 = os.getenv("MICROPY_CPYTHON3", "python3")
-MICROPYTHON = os.getenv("MICROPY_MICROPYTHON", "../ports/unix/micropython-coverage")
+MICROPYTHON = os.getenv("MICROPY_MICROPYTHON", "../ports/unix/build-coverage/micropython")
 
 NATMOD_EXAMPLE_DIR = "../examples/natmod/"
 
+#CIRCUITPY-CHANGE: different TEST_MAPPINGS
 # Supported tests and their corresponding mpy module
 TEST_MAPPINGS = {
-    "btree": "btree/btree_$(ARCH).mpy",
-    "framebuf": "framebuf/framebuf_$(ARCH).mpy",
-    "uheapq": "uheapq/uheapq_$(ARCH).mpy",
-    "urandom": "urandom/urandom_$(ARCH).mpy",
-    "ure": "ure/ure_$(ARCH).mpy",
-    "uzlib": "uzlib/uzlib_$(ARCH).mpy",
+    "heapq": "heapq/heapq_$(ARCH).mpy",
+    "random": "random/random_$(ARCH).mpy",
+    "re": "re/re_$(ARCH).mpy",
 }
 
 # Code to allow a target MicroPython to import an .mpy from RAM
 injected_import_hook_code = """\
-import sys, uos, uio
-class __File(uio.IOBase):
+# CIRCUITPY-CHANGE: no vfs, but still have os
+import sys, io, os
+class __File(io.IOBase):
   def __init__(self):
     self.off = 0
   def ioctl(self, request, arg):
@@ -43,14 +44,15 @@ class __FS:
   def chdir(self, path):
     pass
   def stat(self, path):
-    if path == '__injected.mpy':
+    if path == '/__injected.mpy':
       return tuple(0 for _ in range(10))
     else:
       raise OSError(-2) # ENOENT
   def open(self, path, mode):
     return __File()
-uos.mount(__FS(), '/__remote')
-uos.chdir('/__remote')
+# CIRCUITPY-CHANGE: no vfs, but still have os
+os.mount(__FS(), '/__remote')
+sys.path.insert(0, '/__remote')
 sys.modules['{}'] = __import__('__injected')
 """
 
@@ -94,8 +96,9 @@ class TargetPyboard:
 def run_tests(target_truth, target, args, stats):
     for test_file in args.files:
         # Find supported test
+        test_file_basename = os.path.basename(test_file)
         for k, v in TEST_MAPPINGS.items():
-            if test_file.find(k) != -1:
+            if test_file_basename.startswith(k):
                 test_module = k
                 test_mpy = v.replace("$(ARCH)", args.arch)
                 break
@@ -108,9 +111,10 @@ def run_tests(target_truth, target, args, stats):
             test_file_data = f.read()
 
         # Create full test with embedded .mpy
+        test_script = b"import sys\nsys.path.remove('')\n\n"
         try:
             with open(NATMOD_EXAMPLE_DIR + test_mpy, "rb") as f:
-                test_script = b"__buf=" + bytes(repr(f.read()), "ascii") + b"\n"
+                test_script += b"__buf=" + bytes(repr(f.read()), "ascii") + b"\n"
         except OSError:
             print("----  {} - mpy file not compiled".format(test_file))
             continue
@@ -175,10 +179,6 @@ def main():
     target_truth = TargetSubprocess([CPYTHON3])
 
     if args.pyboard:
-        global pyboard
-        sys.path.append("../tools")
-        import pyboard
-
         target = TargetPyboard(pyboard.Pyboard(args.device))
     else:
         target = TargetSubprocess([MICROPYTHON])

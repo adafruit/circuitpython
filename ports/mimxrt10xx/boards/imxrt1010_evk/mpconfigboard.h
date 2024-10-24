@@ -1,3 +1,12 @@
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2019 Scott Shawcroft for Adafruit Industries
+// SPDX-FileCopyrightText: Copyright (c) 2019 Artur Pacholec
+//
+// SPDX-License-Identifier: MIT
+
+#pragma once
+
 #define MICROPY_HW_BOARD_NAME "IMXRT1010-EVK"
 #define MICROPY_HW_MCU_NAME "IMXRT1011DAE5A"
 
@@ -16,3 +25,8 @@
 
 #define DEFAULT_UART_BUS_RX (&pin_GPIO_09)
 #define DEFAULT_UART_BUS_TX (&pin_GPIO_10)
+
+// #define CIRCUITPY_CONSOLE_UART_RX (&pin_GPIO_09)
+// #define CIRCUITPY_CONSOLE_UART_TX (&pin_GPIO_10)
+
+#define MICROPY_HW_LED_STATUS (&pin_GPIO_11)

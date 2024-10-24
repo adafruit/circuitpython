@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "py/mperrno.h"
 #include "py/mphal.h"
@@ -37,14 +17,14 @@
 
 #if BCM_VERSION == 2711
 #define NUM_I2C (8)
-STATIC BSC0_Type *i2c[NUM_I2C] = {BSC0, BSC1, NULL, BSC3, BSC4, BSC5, BSC6, NULL};
+static BSC0_Type *i2c[NUM_I2C] = {BSC0, BSC1, NULL, BSC3, BSC4, BSC5, BSC6, NULL};
 #else
 #define NUM_I2C (3)
-STATIC BSC0_Type *i2c[NUM_I2C] = {BSC0, BSC1, NULL};
+static BSC0_Type *i2c[NUM_I2C] = {BSC0, BSC1, NULL};
 #endif
 
-STATIC bool never_reset_i2c[NUM_I2C];
-STATIC bool i2c_in_use[NUM_I2C];
+static bool never_reset_i2c[NUM_I2C];
+static bool i2c_in_use[NUM_I2C];
 
 void reset_i2c(void) {
     // BSC2 is dedicated to the first HDMI output.
@@ -67,9 +47,14 @@ void reset_i2c(void) {
 
 void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
     const mcu_pin_obj_t *scl, const mcu_pin_obj_t *sda, uint32_t frequency, uint32_t timeout) {
+
+    // Ensure the object starts in its deinit state.
+    common_hal_busio_i2c_mark_deinit(self);
+
     size_t instance_index = NUM_I2C;
     uint8_t scl_alt = 0;
     uint8_t sda_alt = 0;
+
     for (scl_alt = 0; scl_alt < 6; scl_alt++) {
         if (scl->functions[scl_alt].type != PIN_FUNCTION_I2C ||
             i2c_in_use[scl->functions[scl_alt].index] ||
@@ -98,7 +83,7 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
     self->sda_pin = sda;
     self->scl_pin = scl;
 
-    uint32_t source_clock = vcmailbox_get_clock_rate_measured(VCMAILBOX_CLOCK_CORE);
+    uint32_t source_clock = vcmailbox_get_clock_rate(VCMAILBOX_CLOCK_CORE);
     uint16_t clock_divider = source_clock / frequency;
     self->peripheral->DIV_b.CDIV = clock_divider;
 
@@ -110,17 +95,19 @@ bool common_hal_busio_i2c_deinited(busio_i2c_obj_t *self) {
     return self->sda_pin == NULL;
 }
 
+void common_hal_busio_i2c_mark_deinit(busio_i2c_obj_t *self) {
+    self->sda_pin = NULL;
+}
+
 void common_hal_busio_i2c_deinit(busio_i2c_obj_t *self) {
     if (common_hal_busio_i2c_deinited(self)) {
         return;
     }
-    never_reset_i2c[self->index] = false;
     i2c_in_use[self->index] = false;
 
     common_hal_reset_pin(self->sda_pin);
     common_hal_reset_pin(self->scl_pin);
-    self->sda_pin = NULL;
-    self->scl_pin = NULL;
+    common_hal_busio_i2c_mark_deinit(self);
 }
 
 bool common_hal_busio_i2c_probe(busio_i2c_obj_t *self, uint8_t addr) {
@@ -129,6 +116,9 @@ bool common_hal_busio_i2c_probe(busio_i2c_obj_t *self, uint8_t addr) {
 }
 
 bool common_hal_busio_i2c_try_lock(busio_i2c_obj_t *self) {
+    if (common_hal_busio_i2c_deinited(self)) {
+        return false;
+    }
     bool grabbed_lock = false;
     if (!self->has_lock) {
         grabbed_lock = true;
@@ -147,7 +137,7 @@ void common_hal_busio_i2c_unlock(busio_i2c_obj_t *self) {
 
 // Discussion of I2C implementation is here: https://github.com/raspberrypi/linux/issues/254
 
-STATIC uint8_t _common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr,
+static uint8_t _common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr,
     const uint8_t *data, size_t len, bool transmit_stop_bit) {
     COMPLETE_MEMORY_READS;
     self->peripheral->S_b.DONE = true;

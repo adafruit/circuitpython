@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2020 Jeff Epler for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2020 Jeff Epler for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 #include <stdbool.h>
 
 #include "shared-bindings/sdioio/SDCard.h"
@@ -32,14 +12,13 @@
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/util.h"
 #include "supervisor/board.h"
-#include "supervisor/shared/translate/translate.h"
 #include "common-hal/microcontroller/Pin.h"
 #include "shared-bindings/microcontroller/Pin.h"
 
-STATIC bool reserved_sdio[MP_ARRAY_SIZE(mcu_sdio_banks)];
-STATIC bool never_reset_sdio[MP_ARRAY_SIZE(mcu_sdio_banks)];
+static bool reserved_sdio[MP_ARRAY_SIZE(mcu_sdio_banks)];
+static bool never_reset_sdio[MP_ARRAY_SIZE(mcu_sdio_banks)];
 
-STATIC const mcu_periph_obj_t *find_pin_function(const mcu_periph_obj_t *table, size_t sz, const mcu_pin_obj_t *pin, int periph_index) {
+static const mcu_periph_obj_t *find_pin_function(const mcu_periph_obj_t *table, size_t sz, const mcu_pin_obj_t *pin, int periph_index) {
     for (size_t i = 0; i < sz; i++, table++) {
         if (periph_index == table->periph_index && pin == table->pin) {
             return table;
@@ -49,7 +28,7 @@ STATIC const mcu_periph_obj_t *find_pin_function(const mcu_periph_obj_t *table, 
 }
 
 // match pins to SDIO objects
-STATIC int check_pins(sdioio_sdcard_obj_t *self,
+static int check_pins(sdioio_sdcard_obj_t *self,
     const mcu_pin_obj_t *clock, const mcu_pin_obj_t *command,
     uint8_t num_data, const mcu_pin_obj_t **data) {
     bool sdio_taken = false;
@@ -113,7 +92,7 @@ STATIC int check_pins(sdioio_sdcard_obj_t *self,
     }
 
     if (sdio_taken) {
-        mp_raise_ValueError(translate("Hardware busy, try alternative pins"));
+        mp_raise_ValueError(MP_ERROR_TEXT("Hardware in use, try alternative pins"));
     } else {
         raise_ValueError_invalid_pin();
     }
@@ -161,13 +140,13 @@ void common_hal_sdioio_sdcard_construct(sdioio_sdcard_obj_t *self,
 
     HAL_StatusTypeDef r = HAL_SD_Init(&self->handle);
     if (r != HAL_OK) {
-        mp_raise_ValueError_varg(translate("SDIO Init Error %d"), (int)r);
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("SDIO Init Error %x"), (unsigned int)r);
     }
 
     HAL_SD_CardInfoTypeDef info;
     r = HAL_SD_GetCardInfo(&self->handle, &info);
     if (r != HAL_OK) {
-        mp_raise_ValueError_varg(translate("SDIO GetCardInfo Error %d"), (int)r);
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("SDIO GetCardInfo Error %d"), (int)r);
     }
 
     self->num_data = 1;
@@ -205,13 +184,13 @@ uint8_t common_hal_sdioio_sdcard_get_width(sdioio_sdcard_obj_t *self) {
     return self->num_data;
 }
 
-STATIC void check_whole_block(mp_buffer_info_t *bufinfo) {
+static void check_whole_block(mp_buffer_info_t *bufinfo) {
     if (bufinfo->len % 512) {
-        mp_raise_ValueError(translate("Buffer must be a multiple of 512 bytes"));
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("Buffer must be a multiple of %d bytes"), 512);
     }
 }
 
-STATIC void wait_write_complete(sdioio_sdcard_obj_t *self) {
+static void wait_write_complete(sdioio_sdcard_obj_t *self) {
     if (self->state_programming) {
         HAL_SD_CardStateTypedef st = HAL_SD_CARD_PROGRAMMING;
         // This waits up to 60s for programming to complete.  This seems like
@@ -225,7 +204,7 @@ STATIC void wait_write_complete(sdioio_sdcard_obj_t *self) {
     }
 }
 
-STATIC void check_for_deinit(sdioio_sdcard_obj_t *self) {
+static void check_for_deinit(sdioio_sdcard_obj_t *self) {
     if (common_hal_sdioio_sdcard_deinited(self)) {
         raise_deinited_error();
     }
@@ -267,15 +246,15 @@ bool common_hal_sdioio_sdcard_deinited(sdioio_sdcard_obj_t *self) {
     return self->command == NULL;
 }
 
-STATIC void never_reset_mcu_periph(const mcu_periph_obj_t *periph) {
+static void never_reset_mcu_periph(const mcu_periph_obj_t *periph) {
     if (periph) {
-        never_reset_pin_number(periph->pin->port,periph->pin->number);
+        never_reset_pin_number(periph->pin->port, periph->pin->number);
     }
 }
 
-STATIC void reset_mcu_periph(const mcu_periph_obj_t *periph) {
+static void reset_mcu_periph(const mcu_periph_obj_t *periph) {
     if (periph) {
-        reset_pin_number(periph->pin->port,periph->pin->number);
+        reset_pin_number(periph->pin->port, periph->pin->number);
     }
 }
 

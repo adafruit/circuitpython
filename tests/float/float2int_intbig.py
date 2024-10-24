@@ -1,10 +1,6 @@
 # check cases converting float to int, relying only on single precision float
 
-try:
-    import ustruct as struct
-except:
-    import struct
-
+import struct
 import sys
 
 maxsize_bits = 0
@@ -51,7 +47,8 @@ print("power of  2 test: %s" % (testpass and "passed" or "failed"))
 
 # TODO why does 10**12 fail this test for single precision float?
 testpass = True
-p10_rng = 9 if (ll_type == 0 and ~is_64bit) else 11
+# CIRCUITPY-CHANGE: correct negation
+p10_rng = 9 if (ll_type == 0 and not is_64bit) else 11
 for i in range(0, p10_rng):
     digcnt = len(str(int(10.0**i))) - 1
     if i != digcnt:
@@ -63,7 +60,7 @@ print("power of 10 test: %s" % (testpass and "passed" or "failed"))
 def fp2int_test(num, name, should_fail):
     try:
         x = int(num)
-        passed = ~should_fail
+        passed = not should_fail
     except:
         passed = should_fail
     print("%s: %s" % (name, passed and "passed" or "failed"))

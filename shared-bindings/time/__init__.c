@@ -1,30 +1,10 @@
-/*
- * This file is part of the Micro Python project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * SPDX-FileCopyrightText: Copyright (c) 2013, 2014 Damien P. George
- * Copyright (c) 2015 Josef Gajdusek
- * Copyright (c) 2016 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2013, 2014 Damien P. George
+// SPDX-FileCopyrightText: Copyright (c) 2015 Josef Gajdusek
+// SPDX-FileCopyrightText: Copyright (c) 2016 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include <string.h>
 
@@ -34,7 +14,6 @@
 #include "shared/timeutils/timeutils.h"
 #include "shared-bindings/rtc/__init__.h"
 #include "shared-bindings/time/__init__.h"
-#include "supervisor/shared/translate/translate.h"
 
 //| """time and timing related functions
 //|
@@ -43,7 +22,8 @@
 //|
 //| def monotonic() -> float:
 //|     """Returns an always increasing value of time with an unknown reference
-//|     point. Only use it to compare against other values from `time.monotonic()`.
+//|     point. Only use it to compare against other values from `time.monotonic()`
+//|     during the same code run.
 //|
 //|     On most boards, `time.monotonic()` converts a 64-bit millisecond tick counter
 //|     to a float. Floats on most boards are encoded in 30 bits internally, with
@@ -63,9 +43,9 @@
 //|     :rtype: float"""
 //|     ...
 //|
-STATIC mp_obj_t time_monotonic(void) {
+static mp_obj_t time_monotonic(void) {
     uint64_t ticks_ms = common_hal_time_monotonic_ms();
-    return mp_obj_new_float(uint64_to_float(ticks_ms) / 1000.0f);
+    return mp_obj_new_float(uint64_to_float(ticks_ms) / MICROPY_FLOAT_CONST(1000.0));
 }
 MP_DEFINE_CONST_FUN_OBJ_0(time_monotonic_obj, time_monotonic);
 
@@ -75,31 +55,27 @@ MP_DEFINE_CONST_FUN_OBJ_0(time_monotonic_obj, time_monotonic);
 //|     :param float seconds: the time to sleep in fractional seconds"""
 //|     ...
 //|
-STATIC mp_obj_t time_sleep(mp_obj_t seconds_o) {
+static mp_obj_t time_sleep(mp_obj_t seconds_o) {
     #if MICROPY_PY_BUILTINS_FLOAT
     mp_float_t seconds = mp_obj_get_float(seconds_o);
-    mp_float_t msecs = 1000.0f * seconds + 0.5f;
+    mp_float_t msecs = MICROPY_FLOAT_CONST(1000.0) * seconds + MICROPY_FLOAT_CONST(0.5);
     #else
     mp_int_t seconds = mp_obj_get_int(seconds_o);
     mp_int_t msecs = 1000 * seconds;
     #endif
-    if (seconds < 0) {
-        mp_raise_ValueError(translate("sleep length must be non-negative"));
-    }
+    mp_arg_validate_int_min(msecs, 0, MP_QSTR_seconds);
     common_hal_time_delay_ms(msecs);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_1(time_sleep_obj, time_sleep);
 
 #if MICROPY_PY_COLLECTIONS
-STATIC mp_obj_t struct_time_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
+static mp_obj_t struct_time_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     mp_arg_check_num(n_args, n_kw, 1, 1, false);
     size_t len;
     mp_obj_t *items;
     mp_obj_get_array(args[0], &len, &items);
-    if (len != 9) {
-        mp_raise_TypeError(translate("time.struct_time() takes a 9-sequence"));
-    }
+    mp_arg_validate_length(len, 9, MP_QSTR_value);
     return namedtuple_make_new(type, len, 0, items);
 }
 
@@ -121,23 +97,7 @@ STATIC mp_obj_t struct_time_make_new(const mp_obj_type_t *type, size_t n_args, s
 //|         ...
 //|
 const mp_obj_namedtuple_type_t struct_time_type_obj = {
-    .base = {
-        .base = {
-            .type = &mp_type_type
-        },
-        .flags = MP_TYPE_FLAG_EXTENDED,
-        .name = MP_QSTR_struct_time,
-        .print = namedtuple_print,
-        .parent = &mp_type_tuple,
-        .make_new = struct_time_make_new,
-        .attr = namedtuple_attr,
-        MP_TYPE_EXTENDED_FIELDS(
-            .unary_op = mp_obj_tuple_unary_op,
-            .binary_op = mp_obj_tuple_binary_op,
-            .subscr = mp_obj_tuple_subscr,
-            .getiter = mp_obj_tuple_getiter,
-            ),
-    },
+    NAMEDTUPLE_TYPE_BASE_AND_SLOTS_MAKE_NEW(MP_QSTR_struct_time, struct_time_make_new),
     .n_fields = 9,
     .fields = {
         MP_QSTR_tm_year,
@@ -179,13 +139,13 @@ void struct_time_to_tm(mp_obj_t t, timeutils_struct_time_t *tm) {
     mp_obj_t *elems;
     size_t len;
 
-    if (!mp_obj_is_type(t, &mp_type_tuple) && !mp_obj_is_type(t, &struct_time_type_obj.base)) {
-        mp_raise_TypeError(translate("Tuple or struct_time argument required"));
+    if (!mp_obj_is_type(t, &mp_type_tuple)) {
+        mp_arg_validate_type(t, (mp_obj_type_t *)&struct_time_type_obj.base, MP_QSTR_value);
     }
 
     mp_obj_tuple_get(t, &len, &elems);
     if (len != 9) {
-        mp_raise_TypeError(translate("function takes exactly 9 arguments"));
+        mp_raise_TypeError_varg(MP_ERROR_TEXT("function takes %d positional arguments but %d were given"), 9, len);
     }
 
     tm->tm_year = mp_obj_get_int(elems[0]);
@@ -201,15 +161,15 @@ void struct_time_to_tm(mp_obj_t t, timeutils_struct_time_t *tm) {
 #if MICROPY_LONGINT_IMPL == MICROPY_LONGINT_IMPL_NONE
 // Function to return a NotImplementedError on platforms that don't
 // support long integers
-STATIC mp_obj_t time_not_implemented(void) {
-    mp_raise_NotImplementedError(translate("No long integer support"));
+static mp_obj_t time_not_implemented(void) {
+    mp_raise_NotImplementedError(MP_ERROR_TEXT("No long integer support"));
 }
 MP_DEFINE_CONST_FUN_OBJ_0(time_not_implemented_obj, time_not_implemented);
 #endif
 
 #if MICROPY_LONGINT_IMPL != MICROPY_LONGINT_IMPL_NONE
 mp_obj_t MP_WEAK rtc_get_time_source_time(void) {
-    mp_raise_RuntimeError(translate("RTC is not supported on this board"));
+    mp_raise_RuntimeError(MP_ERROR_TEXT("RTC is not supported on this board"));
 }
 
 //| def time() -> int:
@@ -219,7 +179,7 @@ mp_obj_t MP_WEAK rtc_get_time_source_time(void) {
 //|     :rtype: int"""
 //|     ...
 //|
-STATIC mp_obj_t time_time(void) {
+static mp_obj_t time_time(void) {
     timeutils_struct_time_t tm;
     struct_time_to_tm(rtc_get_time_source_time(), &tm);
     mp_uint_t secs = timeutils_seconds_since_epoch(tm.tm_year, tm.tm_mon, tm.tm_mday,
@@ -231,12 +191,14 @@ MP_DEFINE_CONST_FUN_OBJ_0(time_time_obj, time_time);
 //| def monotonic_ns() -> int:
 //|     """Return the time of the monotonic clock, which cannot go backward, in nanoseconds.
 //|     Not available on boards without long integer support.
+//|     Only use it to compare against other values from `time.monotonic()`
+//|     during a single code run.
 //|
 //|     :return: the current time
 //|     :rtype: int"""
 //|     ...
 //|
-STATIC mp_obj_t time_monotonic_ns(void) {
+static mp_obj_t time_monotonic_ns(void) {
     uint64_t time64 = common_hal_time_monotonic_ns();
     return mp_obj_new_int_from_ll((long long)time64);
 }
@@ -252,7 +214,7 @@ MP_DEFINE_CONST_FUN_OBJ_0(time_monotonic_ns_obj, time_monotonic_ns);
 //|     :rtype: time.struct_time"""
 //|     ...
 //|
-STATIC mp_obj_t time_localtime(size_t n_args, const mp_obj_t *args) {
+static mp_obj_t time_localtime(size_t n_args, const mp_obj_t *args) {
     if (n_args == 0 || args[0] == mp_const_none) {
         return rtc_get_time_source_time();
     }
@@ -269,7 +231,7 @@ STATIC mp_obj_t time_localtime(size_t n_args, const mp_obj_t *args) {
     #else
     if (secs < 0) {
         #endif
-        mp_raise_msg(&mp_type_OverflowError, translate("timestamp out of range for platform time_t"));
+        mp_raise_msg(&mp_type_OverflowError, MP_ERROR_TEXT("timestamp out of range for platform time_t"));
     }
 
     timeutils_struct_time_t tm;
@@ -289,21 +251,21 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(time_localtime_obj, 0, 1, time_localtime);
 //|     :rtype: int"""
 //|     ...
 //|
-STATIC mp_obj_t time_mktime(mp_obj_t t) {
+static mp_obj_t time_mktime(mp_obj_t t) {
     mp_obj_t *elem;
     size_t len;
 
-    if (!mp_obj_is_type(t, &mp_type_tuple) && !mp_obj_is_type(t, &struct_time_type_obj.base)) {
-        mp_raise_TypeError(translate("Tuple or struct_time argument required"));
+    if (!mp_obj_is_type(t, &mp_type_tuple)) {
+        mp_arg_validate_type(t, (mp_obj_type_t *)&struct_time_type_obj.base, MP_QSTR_value);
     }
 
     mp_obj_tuple_get(t, &len, &elem);
     if (len != 9) {
-        mp_raise_TypeError_varg(translate("function takes %d positional arguments but %d were given"), 9, len);
+        mp_raise_TypeError_varg(MP_ERROR_TEXT("function takes %d positional arguments but %d were given"), 9, len);
     }
 
     if (mp_obj_get_int(elem[0]) < 2000) {
-        mp_raise_msg(&mp_type_OverflowError, translate("timestamp out of range for platform time_t"));
+        mp_raise_msg_varg(&mp_type_OverflowError, MP_ERROR_TEXT("%q out of range"), MP_QSTR_tm_year);
     }
 
     mp_uint_t secs = timeutils_mktime(mp_obj_get_int(elem[0]), mp_obj_get_int(elem[1]), mp_obj_get_int(elem[2]),
@@ -314,7 +276,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(time_mktime_obj, time_mktime);
 #endif // MICROPY_LONGINT_IMPL
 #endif // MICROPY_PY_COLLECTIONS
 
-STATIC const mp_rom_map_elem_t time_module_globals_table[] = {
+static const mp_rom_map_elem_t time_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_time) },
 
     { MP_ROM_QSTR(MP_QSTR_monotonic), MP_ROM_PTR(&time_monotonic_obj) },
@@ -338,11 +300,11 @@ STATIC const mp_rom_map_elem_t time_module_globals_table[] = {
     #endif
 };
 
-STATIC MP_DEFINE_CONST_DICT(time_module_globals, time_module_globals_table);
+static MP_DEFINE_CONST_DICT(time_module_globals, time_module_globals_table);
 
 const mp_obj_module_t time_module = {
     .base = { &mp_type_module },
     .globals = (mp_obj_dict_t *)&time_module_globals,
 };
 
-MP_REGISTER_MODULE(MP_QSTR_time, time_module, CIRCUITPY_TIME);
+MP_REGISTER_MODULE(MP_QSTR_time, time_module);

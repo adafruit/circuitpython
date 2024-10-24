@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2019  Bernhard Boser
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2019  Bernhard Boser
+//
+// SPDX-License-Identifier: MIT
 
 #include <stdio.h>
 #include <inttypes.h>
@@ -36,7 +16,6 @@
 #include "py/runtime.h"
 #include "py/stream.h"
 
-#include "supervisor/shared/translate/translate.h"
 #include "shared-bindings/msgpack/ExtType.h"
 #include "shared-bindings/msgpack/__init__.h"
 #include "shared-module/msgpack/__init__.h"
@@ -51,7 +30,7 @@ typedef struct _msgpack_stream_t {
     int errcode;
 } msgpack_stream_t;
 
-STATIC msgpack_stream_t get_stream(mp_obj_t stream_obj, int flags) {
+static msgpack_stream_t get_stream(mp_obj_t stream_obj, int flags) {
     const mp_stream_p_t *stream_p = mp_get_stream_raise(stream_obj, flags);
     msgpack_stream_t s = {stream_obj, stream_p->read, stream_p->write, 0};
     return s;
@@ -60,7 +39,7 @@ STATIC msgpack_stream_t get_stream(mp_obj_t stream_obj, int flags) {
 ////////////////////////////////////////////////////////////////
 // readers
 
-STATIC void read(msgpack_stream_t *s, void *buf, mp_uint_t size) {
+static void read(msgpack_stream_t *s, void *buf, mp_uint_t size) {
     if (size == 0) {
         return;
     }
@@ -72,17 +51,17 @@ STATIC void read(msgpack_stream_t *s, void *buf, mp_uint_t size) {
         mp_raise_msg(&mp_type_EOFError, NULL);
     }
     if (ret < size) {
-        mp_raise_ValueError(translate("short read"));
+        mp_raise_ValueError(MP_ERROR_TEXT("short read"));
     }
 }
 
-STATIC uint8_t read1(msgpack_stream_t *s) {
+static uint8_t read1(msgpack_stream_t *s) {
     uint8_t res = 0;
     read(s, &res, 1);
     return res;
 }
 
-STATIC uint16_t read2(msgpack_stream_t *s) {
+static uint16_t read2(msgpack_stream_t *s) {
     uint16_t res = 0;
     read(s, &res, 2);
     int n = 1;
@@ -92,7 +71,7 @@ STATIC uint16_t read2(msgpack_stream_t *s) {
     return res;
 }
 
-STATIC uint32_t read4(msgpack_stream_t *s) {
+static uint32_t read4(msgpack_stream_t *s) {
     uint32_t res = 0;
     read(s, &res, 4);
     int n = 1;
@@ -102,7 +81,17 @@ STATIC uint32_t read4(msgpack_stream_t *s) {
     return res;
 }
 
-STATIC size_t read_size(msgpack_stream_t *s, uint8_t len_index) {
+static uint64_t read8(msgpack_stream_t *s) {
+    uint64_t res = 0;
+    read(s, &res, 8);
+    int n = 1;
+    if (*(char *)&n == 1) {
+        res = __builtin_bswap64(res);
+    }
+    return res;
+}
+
+static size_t read_size(msgpack_stream_t *s, uint8_t len_index) {
     size_t res = 0;
     switch (len_index) {
         case 0:
@@ -121,7 +110,7 @@ STATIC size_t read_size(msgpack_stream_t *s, uint8_t len_index) {
 ////////////////////////////////////////////////////////////////
 // writers
 
-STATIC void write(msgpack_stream_t *s, const void *buf, mp_uint_t size) {
+static void write(msgpack_stream_t *s, const void *buf, mp_uint_t size) {
     mp_uint_t ret = s->write(s->stream_obj, buf, size, &s->errcode);
     if (s->errcode != 0) {
         mp_raise_OSError(s->errcode);
@@ -131,11 +120,11 @@ STATIC void write(msgpack_stream_t *s, const void *buf, mp_uint_t size) {
     }
 }
 
-STATIC void write1(msgpack_stream_t *s, uint8_t obj) {
+static void write1(msgpack_stream_t *s, uint8_t obj) {
     write(s, &obj, 1);
 }
 
-STATIC void write2(msgpack_stream_t *s, uint16_t obj) {
+static void write2(msgpack_stream_t *s, uint16_t obj) {
     int n = 1;
     if (*(char *)&n == 1) {
         obj = __builtin_bswap16(obj);
@@ -143,7 +132,7 @@ STATIC void write2(msgpack_stream_t *s, uint16_t obj) {
     write(s, &obj, 2);
 }
 
-STATIC void write4(msgpack_stream_t *s, uint32_t obj) {
+static void write4(msgpack_stream_t *s, uint32_t obj) {
     int n = 1;
     if (*(char *)&n == 1) {
         obj = __builtin_bswap32(obj);
@@ -152,7 +141,7 @@ STATIC void write4(msgpack_stream_t *s, uint32_t obj) {
 }
 
 // compute and write msgpack size code (array structures)
-STATIC void write_size(msgpack_stream_t *s, uint8_t code, size_t size) {
+static void write_size(msgpack_stream_t *s, uint8_t code, size_t size) {
     if ((uint8_t)size == size) {
         write1(s, code);
         write1(s, size);
@@ -171,7 +160,7 @@ STATIC void write_size(msgpack_stream_t *s, uint8_t code, size_t size) {
 // This is a helper function to iterate through a dictionary.  The state of
 // the iteration is held in *cur and should be initialised with zero for the
 // first call.  Will return NULL when no more elements are available.
-STATIC mp_map_elem_t *dict_iter_next(mp_obj_dict_t *dict, size_t *cur) {
+static mp_map_elem_t *dict_iter_next(mp_obj_dict_t *dict, size_t *cur) {
     size_t max = dict->map.alloc;
     mp_map_t *map = &dict->map;
 
@@ -185,7 +174,7 @@ STATIC mp_map_elem_t *dict_iter_next(mp_obj_dict_t *dict, size_t *cur) {
     return NULL;
 }
 
-STATIC void pack_int(msgpack_stream_t *s, int32_t x) {
+static void pack_int(msgpack_stream_t *s, int32_t x) {
     if (x > -32 && x < 128) {
         write1(s, x);
     } else if ((int8_t)x == x) {
@@ -200,14 +189,14 @@ STATIC void pack_int(msgpack_stream_t *s, int32_t x) {
     }
 }
 
-STATIC void pack_bin(msgpack_stream_t *s, const uint8_t *data, size_t len) {
+static void pack_bin(msgpack_stream_t *s, const uint8_t *data, size_t len) {
     write_size(s, 0xc4, len);
     if (len > 0) {
         write(s, data, len);
     }
 }
 
-STATIC void  pack_ext(msgpack_stream_t *s, int8_t code, const uint8_t *data, size_t len) {
+static void pack_ext(msgpack_stream_t *s, int8_t code, const uint8_t *data, size_t len) {
     if (len == 1) {
         write1(s, 0xd4);
     } else if (len == 2) {
@@ -227,7 +216,7 @@ STATIC void  pack_ext(msgpack_stream_t *s, int8_t code, const uint8_t *data, siz
     }
 }
 
-STATIC void pack_str(msgpack_stream_t *s, const char *str, size_t len) {
+static void pack_str(msgpack_stream_t *s, const char *str, size_t len) {
     if (len < 32) {
         write1(s, 0b10100000 | (uint8_t)len);
     } else {
@@ -238,7 +227,7 @@ STATIC void pack_str(msgpack_stream_t *s, const char *str, size_t len) {
     }
 }
 
-STATIC void pack_array(msgpack_stream_t *s, size_t len) {
+static void pack_array(msgpack_stream_t *s, size_t len) {
     // only writes the header, manually write the objects after calling pack_array!
     if (len < 16) {
         write1(s, 0b10010000 | (uint8_t)len);
@@ -251,7 +240,7 @@ STATIC void pack_array(msgpack_stream_t *s, size_t len) {
     }
 }
 
-STATIC void pack_dict(msgpack_stream_t *s, size_t len) {
+static void pack_dict(msgpack_stream_t *s, size_t len) {
     // only writes the header, manually write the objects after calling pack_array!
     if (len < 16) {
         write1(s, 0b10000000 | (uint8_t)len);
@@ -264,7 +253,7 @@ STATIC void pack_dict(msgpack_stream_t *s, size_t len) {
     }
 }
 
-STATIC void pack(mp_obj_t obj, msgpack_stream_t *s, mp_obj_t default_handler) {
+static void pack(mp_obj_t obj, msgpack_stream_t *s, mp_obj_t default_handler) {
     if (mp_obj_is_small_int(obj)) {
         // int
         int32_t x = MP_OBJ_SMALL_INT_VALUE(obj);
@@ -327,7 +316,7 @@ STATIC void pack(mp_obj_t obj, msgpack_stream_t *s, mp_obj_t default_handler) {
             // this also precludes some valid outputs
             pack(mp_call_function_1(default_handler, obj), s, mp_const_none);
         } else {
-            mp_raise_ValueError(translate("no default packer"));
+            mp_raise_ValueError(MP_ERROR_TEXT("no default packer"));
         }
     }
 }
@@ -335,9 +324,9 @@ STATIC void pack(mp_obj_t obj, msgpack_stream_t *s, mp_obj_t default_handler) {
 ////////////////////////////////////////////////////////////////
 // unpacker
 
-STATIC mp_obj_t unpack(msgpack_stream_t *s, mp_obj_t ext_hook, bool use_list);
+static mp_obj_t unpack(msgpack_stream_t *s, mp_obj_t ext_hook, bool use_list);
 
-STATIC mp_obj_t unpack_array_elements(msgpack_stream_t *s, size_t size, mp_obj_t ext_hook, bool use_list) {
+static mp_obj_t unpack_array_elements(msgpack_stream_t *s, size_t size, mp_obj_t ext_hook, bool use_list) {
     if (use_list) {
         mp_obj_list_t *t = MP_OBJ_TO_PTR(mp_obj_new_list(size, NULL));
         for (size_t i = 0; i < size; i++) {
@@ -353,7 +342,7 @@ STATIC mp_obj_t unpack_array_elements(msgpack_stream_t *s, size_t size, mp_obj_t
     }
 }
 
-STATIC mp_obj_t unpack_bytes(msgpack_stream_t *s, size_t size) {
+static mp_obj_t unpack_bytes(msgpack_stream_t *s, size_t size) {
     vstr_t vstr;
     vstr_init_len(&vstr, size);
     byte *p = (byte *)vstr.buf;
@@ -366,24 +355,23 @@ STATIC mp_obj_t unpack_bytes(msgpack_stream_t *s, size_t size) {
         size -= n;
         p += n;
     }
-    return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr);
+    return mp_obj_new_bytes_from_vstr(&vstr);
 }
 
-STATIC mp_obj_t unpack_ext(msgpack_stream_t *s, size_t size, mp_obj_t ext_hook) {
+static mp_obj_t unpack_ext(msgpack_stream_t *s, size_t size, mp_obj_t ext_hook) {
     int8_t code = read1(s);
     mp_obj_t data = unpack_bytes(s, size);
     if (ext_hook != mp_const_none) {
         return mp_call_function_2(ext_hook, MP_OBJ_NEW_SMALL_INT(code), data);
     } else {
-        mod_msgpack_extype_obj_t *o = m_new_obj(mod_msgpack_extype_obj_t);
-        o->base.type = &mod_msgpack_exttype_type;
+        mod_msgpack_extype_obj_t *o = mp_obj_malloc(mod_msgpack_extype_obj_t, &mod_msgpack_exttype_type);
         o->code = code;
         o->data = data;
         return MP_OBJ_FROM_PTR(o);
     }
 }
 
-STATIC mp_obj_t unpack(msgpack_stream_t *s, mp_obj_t ext_hook, bool use_list) {
+static mp_obj_t unpack(msgpack_stream_t *s, mp_obj_t ext_hook, bool use_list) {
     uint8_t code = read1(s);
     if (((code & 0b10000000) == 0) || ((code & 0b11100000) == 0b11100000)) {
         // int
@@ -424,21 +412,38 @@ STATIC mp_obj_t unpack(msgpack_stream_t *s, mp_obj_t ext_hook, bool use_list) {
             return unpack_bytes(s, read_size(s, code - 0xc4));
         }
         case 0xcc: // uint8
+            return MP_OBJ_NEW_SMALL_INT((uint8_t)read1(s));
         case 0xd0: // int8
             return MP_OBJ_NEW_SMALL_INT((int8_t)read1(s));
         case 0xcd: // uint16
+            return MP_OBJ_NEW_SMALL_INT((uint16_t)read2(s));
         case 0xd1: // int16
             return MP_OBJ_NEW_SMALL_INT((int16_t)read2(s));
         case 0xce: // uint32
+            return mp_obj_new_int_from_uint((uint32_t)read4(s));
         case 0xd2: // int32
-            return MP_OBJ_NEW_SMALL_INT((int32_t)read4(s));
-        case 0xca: {
-            union Float { mp_float_t f;
-                          uint32_t u;
+            return mp_obj_new_int((int32_t)read4(s));
+        case 0xcf: // uint 64
+            return mp_obj_new_int_from_ull((uint64_t)read8(s));
+        case 0xd3: // int 64
+            return mp_obj_new_int_from_ll((int64_t)read8(s));
+        case 0xca: { // float
+            union Float {
+                mp_float_t f;
+                uint32_t u;
             };
             union Float data;
             data.u = read4(s);
             return mp_obj_new_float(data.f);
+        }
+        case 0xcb: { // double
+            union Double {
+                uint64_t u;
+                double d;
+            };
+            union Double data;
+            data.u = read8(s);
+            return mp_obj_new_float_from_d(data.d);
         }
         case 0xd9:
         case 0xda:
@@ -449,7 +454,7 @@ STATIC mp_obj_t unpack(msgpack_stream_t *s, mp_obj_t ext_hook, bool use_list) {
             vstr_init_len(&vstr, size);
             byte *p = (byte *)vstr.buf;
             read(s, p, size);
-            return mp_obj_new_str_from_vstr(&mp_type_str, &vstr);
+            return mp_obj_new_str_from_vstr(&vstr);
         }
         case 0xde:
         case 0xdf: {
@@ -483,11 +488,8 @@ STATIC mp_obj_t unpack(msgpack_stream_t *s, mp_obj_t ext_hook, bool use_list) {
             // ext 8, 16, 32
             return unpack_ext(s, read_size(s, code - 0xc7), ext_hook);
         case 0xc1:      // never used
-        case 0xcb:      // float 64
-        case 0xcf:      // uint 64
-        case 0xd3:      // int 64
         default:
-            mp_raise_NotImplementedError(translate("64 bit types"));
+            mp_raise_ValueError(MP_ERROR_TEXT("Invalid format"));
     }
 }
 

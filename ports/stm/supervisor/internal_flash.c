@@ -1,40 +1,15 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * SPDX-FileCopyrightText: Copyright (c) 2013, 2014 Damien P. George
- * Copyright (c) 2020 Lucian Copeland for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2013, 2014 Damien P. George
+// SPDX-FileCopyrightText: Copyright (c) 2020 Lucian Copeland for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 #include "supervisor/internal_flash.h"
 
 #include <stdint.h>
 #include <string.h>
 
-#include "extmod/vfs.h"
-#include "extmod/vfs_fat.h"
-#include "py/mphal.h"
 #include "py/obj.h"
-#include "py/runtime.h"
-#include "lib/oofatfs/ff.h"
 #include "supervisor/flash.h"
 #include "supervisor/shared/safe_mode.h"
 
@@ -52,7 +27,7 @@ typedef struct {
 
 #if defined(STM32F4)
 
-STATIC const flash_layout_t flash_layout[] = {
+static const flash_layout_t flash_layout[] = {
     { 0x08000000, 0x04000, 4 },
     { 0x08010000, 0x10000, 1 },
     { 0x08020000, 0x20000, 3 },
@@ -65,7 +40,7 @@ STATIC const flash_layout_t flash_layout[] = {
     { 0x08120000, 0x20000, 7 },
     #endif
 };
-STATIC uint8_t _flash_cache[0x4000] __attribute__((aligned(4)));
+static uint8_t _flash_cache[0x4000] __attribute__((aligned(4)));
 
 #elif defined(STM32F7)
 
@@ -78,27 +53,27 @@ static const flash_layout_t flash_layout[] = {
     { 0x08010000, 0x10000, 1 },
     { 0x08020000, 0x20000, 3 },
 };
-STATIC uint8_t _flash_cache[0x4000] __attribute__((aligned(4)));
+static uint8_t _flash_cache[0x4000] __attribute__((aligned(4)));
     #else
 static const flash_layout_t flash_layout[] = {
     { 0x08000000, 0x08000, 4 },
     { 0x08020000, 0x20000, 1 },
     { 0x08040000, 0x40000, 3 },
 };
-STATIC uint8_t _flash_cache[0x8000] __attribute__((aligned(4)));
+static uint8_t _flash_cache[0x8000] __attribute__((aligned(4)));
     #endif
 #elif defined(STM32H7)
 
-STATIC const flash_layout_t flash_layout[] = {
+static const flash_layout_t flash_layout[] = {
     { 0x08000000, 0x20000, 16 },
 };
-STATIC uint8_t _flash_cache[0x20000] __attribute__((aligned(4)));
+static uint8_t _flash_cache[0x20000] __attribute__((aligned(4)));
 
 #elif defined(STM32L4)
-STATIC const flash_layout_t flash_layout[] = {
+static const flash_layout_t flash_layout[] = {
     { 0x08100000, 0x1000, 256 },
 };
-STATIC uint8_t _flash_cache[0x1000] __attribute__((aligned(4)));
+static uint8_t _flash_cache[0x1000] __attribute__((aligned(4)));
 
 #else
     #error Unsupported processor
@@ -108,11 +83,11 @@ STATIC uint8_t _flash_cache[0x1000] __attribute__((aligned(4)));
 #define MAX_CACHE       0x4000
 
 
-STATIC uint32_t _cache_flash_addr = NO_CACHE;
+static uint32_t _cache_flash_addr = NO_CACHE;
 
 #if defined(STM32H7)
 // get the bank of a given flash address
-STATIC uint32_t get_bank(uint32_t addr) {
+static uint32_t get_bank(uint32_t addr) {
     if (READ_BIT(FLASH->OPTCR, FLASH_OPTCR_SWAP_BANK) == 0) {
         // no bank swap
         if (addr < (FLASH_BASE + FLASH_BANK_SIZE)) {
@@ -220,7 +195,7 @@ void port_internal_flash_flush(void) {
     EraseInitStruct.NbSectors = 1;
     #endif
     if (sector_size > sizeof(_flash_cache) || sector_start_addr == 0xffffffff) {
-        reset_into_safe_mode(FLASH_WRITE_FAIL);
+        reset_into_safe_mode(SAFE_MODE_FLASH_WRITE_FAIL);
     }
 
     // Skip if data is the same
@@ -233,7 +208,7 @@ void port_internal_flash_flush(void) {
         if (HAL_FLASHEx_Erase(&EraseInitStruct, &SectorError) != HAL_OK) {
             // error occurred during sector erase
             HAL_FLASH_Lock(); // lock the flash
-            reset_into_safe_mode(FLASH_WRITE_FAIL);
+            reset_into_safe_mode(SAFE_MODE_FLASH_WRITE_FAIL);
         }
 
         uint32_t *cache_addr = (uint32_t *)_flash_cache;
@@ -245,7 +220,7 @@ void port_internal_flash_flush(void) {
                 (uint32_t)cache_addr) != HAL_OK) {
                 // error occurred during flash write
                 HAL_FLASH_Lock(); // lock the flash
-                reset_into_safe_mode(FLASH_WRITE_FAIL);
+                reset_into_safe_mode(SAFE_MODE_FLASH_WRITE_FAIL);
             }
             // RAM memory is by word (4 byte), but flash memory is by byte
             cache_addr += 8;
@@ -258,7 +233,7 @@ void port_internal_flash_flush(void) {
                 *(uint64_t *)cache_addr) != HAL_OK) {
                 // error occurred during flash write
                 HAL_FLASH_Lock(); // lock the flash
-                reset_into_safe_mode(FLASH_WRITE_FAIL);
+                reset_into_safe_mode(SAFE_MODE_FLASH_WRITE_FAIL);
             }
             // RAM memory is by word (4 byte), but flash memory is by byte
             cache_addr += 2;
@@ -272,7 +247,7 @@ void port_internal_flash_flush(void) {
                 (uint64_t)*cache_addr) != HAL_OK) {
                 // error occurred during flash write
                 HAL_FLASH_Lock(); // lock the flash
-                reset_into_safe_mode(FLASH_WRITE_FAIL);
+                reset_into_safe_mode(SAFE_MODE_FLASH_WRITE_FAIL);
             }
             // RAM memory is by word (4 byte), but flash memory is by byte
             cache_addr += 1;
@@ -307,10 +282,9 @@ mp_uint_t supervisor_flash_read_blocks(uint8_t *dest, uint32_t block, uint32_t n
     uint32_t sector_start_addr;
     flash_get_sector_info(src, &sector_start_addr, &sector_size);
     // Count how many blocks are left in the sector
-    uint32_t count = (sector_size - (src - sector_start_addr)) / FILESYSTEM_BLOCK_SIZE;
-    count = MIN(num_blocks, count);
+    uint32_t blocks_left_in_sector = (sector_size - (src - sector_start_addr)) / FILESYSTEM_BLOCK_SIZE;
 
-    if (count < num_blocks && _cache_flash_addr == sector_start_addr) {
+    if (num_blocks <= blocks_left_in_sector && _cache_flash_addr == sector_start_addr) {
         // Read is contained in the cache, so just read cache
         memcpy(dest, (_flash_cache + (src - sector_start_addr)), FILESYSTEM_BLOCK_SIZE * num_blocks);
     } else {
@@ -340,7 +314,7 @@ mp_uint_t supervisor_flash_write_blocks(const uint8_t *src, uint32_t block_num, 
 
         // Fail for any sector outside what's supported by the cache
         if (sector_size > sizeof(_flash_cache)) {
-            reset_into_safe_mode(FLASH_WRITE_FAIL);
+            reset_into_safe_mode(SAFE_MODE_FLASH_WRITE_FAIL);
         }
 
         // Find how many blocks are left in the sector

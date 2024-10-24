@@ -9,7 +9,6 @@
 //|
 //|     def __init__(self) -> None:
 //|         """Enum-like class to define the satellite system type."""
-//|
 //|     GPS: SatelliteSystem
 //|     """Global Positioning System."""
 //|
@@ -80,16 +79,16 @@ mp_obj_t gnss_satellitesystem_type_to_obj(gnss_satellitesystem_t system) {
     }
 }
 
-STATIC const mp_rom_map_elem_t gnss_satellitesystem_locals_dict_table[] = {
+static const mp_rom_map_elem_t gnss_satellitesystem_locals_dict_table[] = {
     {MP_ROM_QSTR(MP_QSTR_GPS), MP_ROM_PTR(&gnss_satellitesystem_gps_obj)},
     {MP_ROM_QSTR(MP_QSTR_GLONASS), MP_ROM_PTR(&gnss_satellitesystem_glonass_obj)},
     {MP_ROM_QSTR(MP_QSTR_SBAS), MP_ROM_PTR(&gnss_satellitesystem_sbas_obj)},
     {MP_ROM_QSTR(MP_QSTR_QZSS_L1CA), MP_ROM_PTR(&gnss_satellitesystem_qzss_l1ca_obj)},
     {MP_ROM_QSTR(MP_QSTR_QZSS_L1S), MP_ROM_PTR(&gnss_satellitesystem_qzss_l1s_obj)},
 };
-STATIC MP_DEFINE_CONST_DICT(gnss_satellitesystem_locals_dict, gnss_satellitesystem_locals_dict_table);
+static MP_DEFINE_CONST_DICT(gnss_satellitesystem_locals_dict, gnss_satellitesystem_locals_dict_table);
 
-STATIC void gnss_satellitesystem_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
+static void gnss_satellitesystem_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     qstr system = MP_QSTR_None;
     if (MP_OBJ_TO_PTR(self_in) == MP_ROM_PTR(&gnss_satellitesystem_gps_obj)) {
         system = MP_QSTR_GPS;
@@ -105,9 +104,10 @@ STATIC void gnss_satellitesystem_print(const mp_print_t *print, mp_obj_t self_in
     mp_printf(print, "%q.%q.%q", MP_QSTR_gnss, MP_QSTR_SatelliteSystem, system);
 }
 
-const mp_obj_type_t gnss_satellitesystem_type = {
-    { &mp_type_type },
-    .name = MP_QSTR_SatelliteSystem,
-    .print = gnss_satellitesystem_print,
-    .locals_dict = (mp_obj_t)&gnss_satellitesystem_locals_dict,
-};
+MP_DEFINE_CONST_OBJ_TYPE(
+    gnss_satellitesystem_type,
+    MP_QSTR_SatelliteSystem,
+    MP_TYPE_FLAG_NONE,
+    print, gnss_satellitesystem_print,
+    locals_dict, &gnss_satellitesystem_locals_dict
+    );

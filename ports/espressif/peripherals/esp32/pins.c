@@ -1,28 +1,8 @@
-/*
- * This file is part of the Micro Python project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2020 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2020 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "peripherals/pins.h"
 
@@ -59,7 +39,7 @@ const mcu_pin_obj_t pin_GPIO27 = PIN(27, ADC_UNIT_2, ADC_CHANNEL_7, TOUCH_PAD_NU
 // no GPIO29
 // no GPIO30
 // no GPIO31
-const mcu_pin_obj_t pin_GPIO32 = PIN(32, ADC_UNIT_1, ADC_CHANNEL_1, TOUCH_PAD_NUM9);
+const mcu_pin_obj_t pin_GPIO32 = PIN(32, ADC_UNIT_1, ADC_CHANNEL_4, TOUCH_PAD_NUM9);
 const mcu_pin_obj_t pin_GPIO33 = PIN(33, ADC_UNIT_1, ADC_CHANNEL_5, TOUCH_PAD_NUM8);
 const mcu_pin_obj_t pin_GPIO34 = PIN(34, ADC_UNIT_1, ADC_CHANNEL_6, NO_TOUCH_CHANNEL);
 const mcu_pin_obj_t pin_GPIO35 = PIN(35, ADC_UNIT_1, ADC_CHANNEL_7, NO_TOUCH_CHANNEL);

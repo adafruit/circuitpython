@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "py/obj.h"
 #include "py/mphal.h"
@@ -31,12 +11,9 @@
 #include "shared-bindings/usb_hid/__init__.h"
 #include "shared-bindings/usb_hid/Device.h"
 
-#include "supervisor/shared/translate/translate.h"
-
 //| """USB Human Interface Device
 //|
 //| The `usb_hid` module allows you to output data as a HID device."""
-//|
 
 //| devices: Tuple[Device, ...]
 //| """Tuple of all active HID device interfaces.
@@ -59,9 +36,9 @@
 //|     as `usb_cdc` or `storage` to free up endpoints for use by `usb_hid`.
 //|     """
 //|
-STATIC mp_obj_t usb_hid_disable(void) {
+static mp_obj_t usb_hid_disable(void) {
     if (!common_hal_usb_hid_disable()) {
-        mp_raise_RuntimeError(translate("Cannot change USB devices now"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Cannot change USB devices now"));
     }
     return mp_const_none;
 }
@@ -111,7 +88,7 @@ MP_DEFINE_CONST_FUN_OBJ_0(usb_hid_disable_obj, usb_hid_disable);
 //|     """
 //|     ...
 //|
-STATIC mp_obj_t usb_hid_enable(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+static mp_obj_t usb_hid_enable(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_devices, ARG_boot_device };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_devices, MP_ARG_REQUIRED | MP_ARG_OBJ },
@@ -125,16 +102,14 @@ STATIC mp_obj_t usb_hid_enable(size_t n_args, const mp_obj_t *pos_args, mp_map_t
     const mp_int_t len = mp_obj_get_int(mp_obj_len(devices));
     for (mp_int_t i = 0; i < len; i++) {
         mp_obj_t item = mp_obj_subscr(devices, MP_OBJ_NEW_SMALL_INT(i), MP_OBJ_SENTINEL);
-        if (!mp_obj_is_type(item, &usb_hid_device_type)) {
-            mp_raise_ValueError_varg(translate("non-Device in %q"), MP_QSTR_devices);
-        }
+        mp_arg_validate_type(item, &usb_hid_device_type, MP_QSTR___class__);
     }
 
     uint8_t boot_device =
         (uint8_t)mp_arg_validate_int_range(args[ARG_boot_device].u_int, 0, 2, MP_QSTR_boot_device);
 
     if (!common_hal_usb_hid_enable(devices, boot_device)) {
-        mp_raise_RuntimeError(translate("Cannot change USB devices now"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Cannot change USB devices now"));
     }
 
     return mp_const_none;
@@ -155,22 +130,56 @@ MP_DEFINE_CONST_FUN_OBJ_KW(usb_hid_enable_obj, 1, usb_hid_enable);
 //|     :rtype int:
 //|     """
 //|
-STATIC mp_obj_t usb_hid_get_boot_device(void) {
+static mp_obj_t usb_hid_get_boot_device(void) {
     return MP_OBJ_NEW_SMALL_INT(common_hal_usb_hid_get_boot_device());
 }
 MP_DEFINE_CONST_FUN_OBJ_0(usb_hid_get_boot_device_obj, usb_hid_get_boot_device);
 
+
+//| def set_interface_name(interface_name: str) -> None:
+//|     """Override HID interface name in the USB Interface Descriptor.
+//|
+//|     ``interface_name`` must be an ASCII string (or buffer) of at most 126.
+//|
+//|     This method must be called in boot.py to have any effect.
+//|
+//|     Not available on boards without native USB support.
+//|     """
+//|     ...
+//|
+static mp_obj_t usb_hid_set_interface_name(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_interface_name, MP_ARG_OBJ | MP_ARG_REQUIRED, {.u_rom_obj = mp_const_none} }
+    };
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, (mp_arg_val_t *)&args);
+
+    mp_buffer_info_t interface_name;
+    mp_get_buffer_raise(args[0].u_obj, &interface_name, MP_BUFFER_READ);
+    mp_arg_validate_length_range(interface_name.len, 1, 126, MP_QSTR_interface_name);
+
+    if (custom_usb_hid_interface_name == NULL) {
+        custom_usb_hid_interface_name = port_malloc(sizeof(char) * 128, false);
+    }
+    memcpy(custom_usb_hid_interface_name, interface_name.buf, interface_name.len);
+    custom_usb_hid_interface_name[interface_name.len] = 0;
+
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_KW(usb_hid_set_interface_name_obj, 1, usb_hid_set_interface_name);
+
 // usb_hid.devices is set once the usb devices are determined, after boot.py runs.
-STATIC mp_map_elem_t usb_hid_module_globals_table[] = {
+static mp_map_elem_t usb_hid_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__),        MP_OBJ_NEW_QSTR(MP_QSTR_usb_hid) },
     { MP_ROM_QSTR(MP_QSTR_Device),          MP_OBJ_FROM_PTR(&usb_hid_device_type) },
     { MP_ROM_QSTR(MP_QSTR_devices),         mp_const_none },
     { MP_ROM_QSTR(MP_QSTR_disable),         MP_OBJ_FROM_PTR(&usb_hid_disable_obj) },
     { MP_ROM_QSTR(MP_QSTR_enable),          MP_OBJ_FROM_PTR(&usb_hid_enable_obj) },
     { MP_ROM_QSTR(MP_QSTR_get_boot_device), MP_OBJ_FROM_PTR(&usb_hid_get_boot_device_obj) },
+    { MP_ROM_QSTR(MP_QSTR_set_interface_name), MP_OBJ_FROM_PTR(&usb_hid_set_interface_name_obj) },
 };
 
-STATIC MP_DEFINE_MUTABLE_DICT(usb_hid_module_globals, usb_hid_module_globals_table);
+static MP_DEFINE_MUTABLE_DICT(usb_hid_module_globals, usb_hid_module_globals_table);
 
 const mp_obj_module_t usb_hid_module = {
     .base = { &mp_type_module },
@@ -185,4 +194,4 @@ void usb_hid_set_devices(mp_obj_t devices) {
     }
 }
 
-MP_REGISTER_MODULE(MP_QSTR_usb_hid, usb_hid_module, CIRCUITPY_USB_HID);
+MP_REGISTER_MODULE(MP_QSTR_usb_hid, usb_hid_module);

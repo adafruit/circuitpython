@@ -1,28 +1,8 @@
-/*
- * This file is part of the Micro Python project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2020 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2020 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "shared-bindings/memorymonitor/AllocationSize.h"
 
@@ -44,7 +24,7 @@ void common_hal_memorymonitor_allocationsize_pause(memorymonitor_allocationsize_
 
 void common_hal_memorymonitor_allocationsize_resume(memorymonitor_allocationsize_obj_t *self) {
     if (self->previous != NULL) {
-        mp_raise_RuntimeError(translate("Already running"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Already running"));
     }
     self->next = MP_STATE_VM(active_allocationsizes);
     self->previous = (memorymonitor_allocationsize_obj_t **)&MP_STATE_VM(active_allocationsizes);
@@ -89,3 +69,6 @@ void memorymonitor_allocationsizes_track_allocation(size_t block_count) {
 void memorymonitor_allocationsizes_reset(void) {
     MP_STATE_VM(active_allocationsizes) = NULL;
 }
+
+MP_REGISTER_ROOT_POINTER(mp_obj_t active_allocationsizes);
+MP_REGISTER_ROOT_POINTER(mp_obj_t active_allocationalarms);

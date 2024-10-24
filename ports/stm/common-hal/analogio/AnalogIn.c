@@ -1,33 +1,12 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2016 Scott Shawcroft for Adafruit Industries
- * Copyright (c) 2019 Lucian Copeland for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2016 Scott Shawcroft for Adafruit Industries
+// SPDX-FileCopyrightText: Copyright (c) 2019 Lucian Copeland for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "common-hal/analogio/AnalogIn.h"
 #include "py/runtime.h"
-#include "supervisor/shared/translate/translate.h"
 
 #include "shared-bindings/microcontroller/Pin.h"
 
@@ -65,7 +44,7 @@ void common_hal_analogio_analogin_construct(analogio_analogin_obj_t *self,
         LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_ADC3);
         #endif
     } else {
-        mp_raise_RuntimeError(translate("Invalid ADC Unit value"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Invalid ADC Unit value"));
     }
     common_hal_mcu_pin_claim(pin);
     self->pin = pin;
@@ -79,7 +58,7 @@ void common_hal_analogio_analogin_deinit(analogio_analogin_obj_t *self) {
     if (common_hal_analogio_analogin_deinited(self)) {
         return;
     }
-    reset_pin_number(self->pin->port,self->pin->number);
+    reset_pin_number(self->pin->port, self->pin->number);
     self->pin = NULL;
 }
 
@@ -147,7 +126,7 @@ uint16_t common_hal_analogio_analogin_get_value(analogio_analogin_obj_t *self) {
         ADCx = ADC3;
         #endif
     } else {
-        mp_raise_RuntimeError(translate("Invalid ADC Unit value"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Invalid ADC Unit value"));
     }
 
     LL_GPIO_SetPinMode(pin_port(self->pin->port), (uint32_t)pin_mask(self->pin->number), LL_GPIO_MODE_ANALOG);
@@ -200,7 +179,7 @@ uint16_t common_hal_analogio_analogin_get_value(analogio_analogin_obj_t *self) {
     if (HAL_ADC_Start(&AdcHandle) != HAL_OK) {
         return 0;
     }
-    HAL_ADC_PollForConversion(&AdcHandle,1);
+    HAL_ADC_PollForConversion(&AdcHandle, 1);
     uint16_t value = (uint16_t)HAL_ADC_GetValue(&AdcHandle);
     HAL_ADC_Stop(&AdcHandle);
 

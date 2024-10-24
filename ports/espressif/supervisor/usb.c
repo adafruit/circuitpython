@@ -1,29 +1,9 @@
-/*
- * This file is part of the Micro Python project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2018 hathach for Adafruit Industries
- * Copyright (c) 2019 Lucian Copeland for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2018 hathach for Adafruit Industries
+// SPDX-FileCopyrightText: Copyright (c) 2019 Lucian Copeland for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "py/runtime.h"
 #include "supervisor/usb.h"
@@ -32,14 +12,18 @@
 #include "shared/readline/readline.h"
 
 #include "hal/gpio_ll.h"
-#include "hal/usb_hal.h"
+
+#include "esp_err.h"
+#include "esp_private/usb_phy.h"
 #include "soc/usb_periph.h"
 
-#include "components/driver/include/driver/gpio.h"
-#include "components/driver/include/driver/periph_ctrl.h"
+#include "driver/gpio.h"
+#include "esp_private/periph_ctrl.h"
 
-#ifdef CONFIG_IDF_TARGET_ESP32C3
+#if defined(CONFIG_IDF_TARGET_ESP32C3)
 #include "components/esp_rom/include/esp32c3/rom/gpio.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32C6)
+#include "components/esp_rom/include/esp32c6/rom/gpio.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32S2)
 #include "components/esp_rom/include/esp32s2/rom/gpio.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32S3)
@@ -51,6 +35,7 @@
 
 #include "tusb.h"
 
+#if CIRCUITPY_USB_DEVICE
 #ifdef CFG_TUSB_DEBUG
   #define USBD_STACK_SIZE     (3 * configMINIMAL_STACK_SIZE)
 #else
@@ -60,9 +45,11 @@
 StackType_t usb_device_stack[USBD_STACK_SIZE];
 StaticTask_t usb_device_taskdef;
 
+static usb_phy_handle_t phy_hdl;
+
 // USB Device Driver task
 // This top level thread process all usb events and invoke callbacks
-STATIC void usb_device_task(void *param) {
+static void usb_device_task(void *param) {
     (void)param;
 
     // RTOS forever loop
@@ -74,50 +61,6 @@ STATIC void usb_device_task(void *param) {
         }
         vTaskDelay(1);
     }
-}
-
-static void configure_pins(usb_hal_context_t *usb) {
-    /* usb_periph_iopins currently configures USB_OTG as USB Device.
-     * Introduce additional parameters in usb_hal_context_t when adding support
-     * for USB Host.
-     */
-    for (const usb_iopin_dsc_t *iopin = usb_periph_iopins; iopin->pin != -1; ++iopin) {
-        if ((usb->use_external_phy) || (iopin->ext_phy_only == 0)) {
-            gpio_pad_select_gpio(iopin->pin);
-            if (iopin->is_output) {
-                gpio_matrix_out(iopin->pin, iopin->func, false, false);
-            } else {
-                gpio_matrix_in(iopin->pin, iopin->func, false);
-                gpio_pad_input_enable(iopin->pin);
-            }
-            gpio_pad_unhold(iopin->pin);
-        }
-    }
-    if (!usb->use_external_phy) {
-        gpio_set_drive_capability(USBPHY_DP_NUM, GPIO_DRIVE_CAP_3);
-        gpio_set_drive_capability(USBPHY_DP_NUM, GPIO_DRIVE_CAP_3);
-    }
-}
-
-void init_usb_hardware(void) {
-    periph_module_reset(PERIPH_USB_MODULE);
-    periph_module_enable(PERIPH_USB_MODULE);
-    usb_hal_context_t hal = {
-        .use_external_phy = false // use built-in PHY
-    };
-    usb_hal_init(&hal);
-    configure_pins(&hal);
-
-    // Pin the USB task to the same core as CircuitPython. This way we leave
-    // the other core for networking.
-    (void)xTaskCreateStaticPinnedToCore(usb_device_task,
-        "usbd",
-        USBD_STACK_SIZE,
-        NULL,
-        5,
-        usb_device_stack,
-        &usb_device_taskdef,
-        xPortGetCoreID());
 }
 
 /**
@@ -143,4 +86,27 @@ void tud_cdc_rx_cb(uint8_t itf) {
     // Workaround for "press any key to enter REPL" response being delayed on espressif.
     // Wake main task when any key is pressed.
     port_wake_main_task();
+}
+#endif // CIRCUITPY_USB_DEVICE
+
+void init_usb_hardware(void) {
+    #if CIRCUITPY_USB_DEVICE
+    // Configure USB PHY
+    usb_phy_config_t phy_conf = {
+        .controller = USB_PHY_CTRL_OTG,
+        .otg_mode = USB_OTG_MODE_DEVICE,
+    };
+    usb_new_phy(&phy_conf, &phy_hdl);
+
+    // Pin the USB task to the same core as CircuitPython. This way we leave
+    // the other core for networking.
+    (void)xTaskCreateStaticPinnedToCore(usb_device_task,
+        "usbd",
+        USBD_STACK_SIZE,
+        NULL,
+        5,
+        usb_device_stack,
+        &usb_device_taskdef,
+        xPortGetCoreID());
+    #endif
 }

@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2021 Dan Halbert for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2021 Dan Halbert for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "py/gc.h"
 #include "py/obj.h"
@@ -36,8 +16,7 @@
 #include "tusb.h"
 
 #if CIRCUITPY_USB_VENDOR
-// todo - this doesn't feel like it should be here.
-#include "supervisor/memory.h"
+#include "supervisor/port.h"
 #endif
 
 #if CFG_TUD_CDC != 2
@@ -370,27 +349,25 @@ size_t usb_vendor_descriptor_length(void) {
     return sizeof(usb_vendor_descriptor_template);
 }
 
-static supervisor_allocation *ms_os_20_descriptor_allocation;
+static uint8_t *ms_os_20_descriptor = NULL;
 
 size_t vendor_ms_os_20_descriptor_length() {
-    return sizeof(ms_os_20_descriptor_template);
+    return ms_os_20_descriptor != NULL ? sizeof(ms_os_20_descriptor_template) : 0;
 }
 uint8_t const *vendor_ms_os_20_descriptor() {
-    return (uint8_t *)ms_os_20_descriptor_allocation->ptr;
+    return ms_os_20_descriptor;
 }
 
-
 size_t usb_vendor_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *descriptor_counts, uint8_t *current_interface_string) {
-
-    if (ms_os_20_descriptor_template[MS_OS_20_ITF_NUM_OFFSET] == MS_OS_20_ITF_NUM_MAGIC) {
-        ms_os_20_descriptor_allocation =
-            allocate_memory(align32_size(sizeof(ms_os_20_descriptor_template)),
-                /*high_address*/ false, /*movable*/ false);
-        uint8_t *ms_os_20_descriptor_buf = (uint8_t *)ms_os_20_descriptor_allocation->ptr;
-        memcpy(ms_os_20_descriptor_buf, ms_os_20_descriptor_template, sizeof(ms_os_20_descriptor_template));
-        ms_os_20_descriptor_buf[MS_OS_20_ITF_NUM_OFFSET] = descriptor_counts->current_interface;
-        ms_os_20_descriptor_buf[VENDOR_IN_ENDPOINT_INDEX] = 0x80 | descriptor_counts->current_endpoint;
-        ms_os_20_descriptor_buf[VENDOR_OUT_ENDPOINT_INDEX] = descriptor_counts->current_endpoint;
+    if (ms_os_20_descriptor == NULL) {
+        ms_os_20_descriptor = port_malloc(sizeof(ms_os_20_descriptor_template), false);
+        if (ms_os_20_descriptor == NULL) {
+            return 0;
+        }
+        memcpy(ms_os_20_descriptor, ms_os_20_descriptor_template, sizeof(ms_os_20_descriptor_template));
+        ms_os_20_descriptor[MS_OS_20_ITF_NUM_OFFSET] = descriptor_counts->current_interface;
+        ms_os_20_descriptor[VENDOR_IN_ENDPOINT_INDEX] = 0x80 | descriptor_counts->current_endpoint;
+        ms_os_20_descriptor[VENDOR_OUT_ENDPOINT_INDEX] = descriptor_counts->current_endpoint;
     }
 
     memcpy(descriptor_buf, usb_vendor_descriptor_template, sizeof(usb_vendor_descriptor_template));
@@ -410,8 +387,5 @@ size_t usb_vendor_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *d
 
     return sizeof(usb_vendor_descriptor_template);
 }
-
-
-
 
 #endif

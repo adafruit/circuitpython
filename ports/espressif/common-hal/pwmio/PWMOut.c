@@ -1,46 +1,25 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2020 Lucian Copeland for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2020 Lucian Copeland for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 #include <math.h>
 
 #include "common-hal/pwmio/PWMOut.h"
 #include "shared-bindings/pwmio/PWMOut.h"
 #include "py/runtime.h"
-#include "components/driver/include/driver/ledc.h"
+#include "driver/ledc.h"
+#include "soc/soc.h"
 
 #define INDEX_EMPTY 0xFF
 
-STATIC uint32_t reserved_timer_freq[LEDC_TIMER_MAX];
-STATIC bool varfreq_timers[LEDC_TIMER_MAX];
-STATIC uint8_t reserved_channels[LEDC_CHANNEL_MAX] = { [0 ... LEDC_CHANNEL_MAX - 1] = INDEX_EMPTY};
-STATIC bool never_reset_tim[LEDC_TIMER_MAX];
-STATIC bool never_reset_chan[LEDC_CHANNEL_MAX];
+static uint32_t reserved_timer_freq[LEDC_TIMER_MAX];
+static bool varfreq_timers[LEDC_TIMER_MAX];
+static uint8_t reserved_channels[LEDC_CHANNEL_MAX] = { [0 ... LEDC_CHANNEL_MAX - 1] = INDEX_EMPTY};
 
-STATIC uint32_t calculate_duty_cycle(uint32_t frequency) {
+static uint32_t calculate_duty_cycle(uint32_t frequency) {
     uint32_t duty_bits = 0;
-    uint32_t interval = LEDC_APB_CLK_HZ / frequency;
+    uint32_t interval = APB_CLK_FREQ / frequency;
     for (size_t i = 0; i < 32; i++) {
         if (!(interval >> i)) {
             duty_bits = i - 1;
@@ -51,26 +30,6 @@ STATIC uint32_t calculate_duty_cycle(uint32_t frequency) {
         duty_bits = LEDC_TIMER_13_BIT;
     }
     return duty_bits;
-}
-
-void pwmout_reset(void) {
-    for (size_t i = 0; i < LEDC_CHANNEL_MAX; i++) {
-        if (reserved_channels[i] != INDEX_EMPTY) {
-            ledc_stop(LEDC_LOW_SPEED_MODE, i, 0);
-        }
-        if (!never_reset_chan[i]) {
-            reserved_channels[i] = INDEX_EMPTY;
-        }
-    }
-    for (size_t i = 0; i < LEDC_TIMER_MAX; i++) {
-        if (reserved_timer_freq[i]) {
-            ledc_timer_rst(LEDC_LOW_SPEED_MODE, i);
-        }
-        if (!never_reset_tim[i]) {
-            reserved_timer_freq[i] = 0;
-            varfreq_timers[i] = false;
-        }
-    }
 }
 
 pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
@@ -106,7 +65,7 @@ pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
     }
     if (timer_index == INDEX_EMPTY) {
         // Running out of timers isn't pin related on ESP32S2.
-        return PWMOUT_ALL_TIMERS_IN_USE;
+        return PWMOUT_INTERNAL_RESOURCES_IN_USE;
     }
 
     // Find a viable channel
@@ -117,7 +76,7 @@ pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
         }
     }
     if (channel_index == INDEX_EMPTY) {
-        return PWMOUT_ALL_CHANNELS_IN_USE;
+        return PWMOUT_INTERNAL_RESOURCES_IN_USE;
     }
 
     // Run configuration
@@ -162,15 +121,7 @@ pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
 }
 
 void common_hal_pwmio_pwmout_never_reset(pwmio_pwmout_obj_t *self) {
-    never_reset_tim[self->tim_handle.timer_num] = true;
-    never_reset_chan[self->chan_handle.channel] = true;
-
     never_reset_pin_number(self->pin->number);
-}
-
-void common_hal_pwmio_pwmout_reset_ok(pwmio_pwmout_obj_t *self) {
-    never_reset_tim[self->tim_handle.timer_num] = false;
-    never_reset_chan[self->chan_handle.channel] = false;
 }
 
 bool common_hal_pwmio_pwmout_deinited(pwmio_pwmout_obj_t *self) {
@@ -186,18 +137,20 @@ void common_hal_pwmio_pwmout_deinit(pwmio_pwmout_obj_t *self) {
         ledc_stop(LEDC_LOW_SPEED_MODE, self->chan_handle.channel, 0);
     }
     reserved_channels[self->chan_handle.channel] = INDEX_EMPTY;
+
     // Search if any other channel is using the timer
     bool taken = false;
     for (size_t i = 0; i < LEDC_CHANNEL_MAX; i++) {
         if (reserved_channels[i] == self->tim_handle.timer_num) {
             taken = true;
+            break;
         }
     }
     // Variable frequency means there's only one channel on the timer
     if (!taken || self->variable_frequency) {
         ledc_timer_rst(LEDC_LOW_SPEED_MODE, self->tim_handle.timer_num);
         reserved_timer_freq[self->tim_handle.timer_num] = 0;
-        // if timer isn't varfreq this will be off aleady
+        // if timer isn't varfreq this will be off already
         varfreq_timers[self->tim_handle.timer_num] = false;
     }
     common_hal_reset_pin(self->pin);

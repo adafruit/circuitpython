@@ -1,29 +1,9 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
- * SPDX-FileCopyrightText: Copyright (c) 2016 Damien P. George
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
+// SPDX-FileCopyrightText: Copyright (c) 2016 Damien P. George
+//
+// SPDX-License-Identifier: MIT
 
 #include <stdint.h>
 
@@ -31,14 +11,12 @@
 #include "common-hal/pwmio/PWMOut.h"
 #include "shared-bindings/pwmio/PWMOut.h"
 #include "shared-bindings/microcontroller/Processor.h"
-#include "shared_timers.h"
 #include "timer_handler.h"
 
 #include "atmel_start_pins.h"
 #include "hal/utils/include/utils_repeat_macro.h"
 #include "samd/pins.h"
 #include "samd/timers.h"
-#include "supervisor/shared/translate/translate.h"
 
 #undef ENABLE
 
@@ -62,27 +40,7 @@ uint8_t tcc_channels[5];   // Set by pwmout_reset() to {0xc0, 0xf0, 0xf8, 0xfc, 
 
 
 void common_hal_pwmio_pwmout_never_reset(pwmio_pwmout_obj_t *self) {
-    timer_never_reset(self->timer->index, self->timer->is_tc);
-
     never_reset_pin_number(self->pin->number);
-}
-
-void common_hal_pwmio_pwmout_reset_ok(pwmio_pwmout_obj_t *self) {
-    timer_reset_ok(self->timer->index, self->timer->is_tc);
-}
-
-void pwmout_reset(void) {
-    // Reset all timers
-    for (int i = 0; i < TCC_INST_NUM; i++) {
-        target_tcc_frequencies[i] = 0;
-        tcc_refcount[i] = 0;
-    }
-    for (int i = 0; i < TCC_INST_NUM; i++) {
-        if (!timer_ok_to_reset(i, false)) {
-            continue;
-        }
-        tcc_channels[i] = 0xff << tcc_cc_num[i];
-    }
 }
 
 static uint8_t tcc_channel(const pin_timer_t *t) {
@@ -91,7 +49,7 @@ static uint8_t tcc_channel(const pin_timer_t *t) {
     return t->wave_output % tcc_cc_num[t->index];
 }
 
-STATIC bool channel_ok(const pin_timer_t *t) {
+static bool channel_ok(const pin_timer_t *t) {
     uint8_t channel_bit = 1 << tcc_channel(t);
     return (!t->is_tc && ((tcc_channels[t->index] & channel_bit) == 0)) ||
            t->is_tc;
@@ -102,7 +60,6 @@ pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
     uint16_t duty,
     uint32_t frequency,
     bool variable_frequency) {
-    self->pin = pin;
     self->variable_frequency = variable_frequency;
     self->duty_cycle = duty;
 
@@ -155,7 +112,6 @@ pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
         // one output so we start with the TCs to see if they work.
         int8_t direction = -1;
         uint8_t start = NUM_TIMERS_PER_PIN - 1;
-        bool found = false;
         if (variable_frequency) {
             direction = 1;
             start = 0;
@@ -167,7 +123,6 @@ pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
                 continue;
             }
             if (t->is_tc) {
-                found = true;
                 Tc *tc = tc_insts[t->index];
                 if (tc->COUNT16.CTRLA.bit.ENABLE == 0 && t->wave_output == 1) {
                     timer = t;
@@ -183,10 +138,7 @@ pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
         }
 
         if (timer == NULL) {
-            if (found) {
-                return PWMOUT_ALL_TIMERS_ON_PIN_IN_USE;
-            }
-            return PWMOUT_ALL_TIMERS_IN_USE;
+            return PWMOUT_INTERNAL_RESOURCES_IN_USE;
         }
 
         uint8_t resolution = 0;
@@ -252,6 +204,7 @@ pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
     }
 
     self->timer = timer;
+    self->pin = pin;
 
     gpio_set_pin_function(pin->number, GPIO_PIN_FUNCTION_E + mux_position);
 

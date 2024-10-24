@@ -1,31 +1,10 @@
-/*
- * This file is part of the Micro Python project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2018 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2018 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
-#ifndef MICROPY_INCLUDED_SHARED_MODULE_DISPLAYIO_PALETTE_H
-#define MICROPY_INCLUDED_SHARED_MODULE_DISPLAYIO_PALETTE_H
+#pragma once
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -40,6 +19,7 @@ typedef struct {
     uint8_t grayscale_bit; // The lowest grayscale bit. Normally 8 - depth.
     bool grayscale;
     bool tricolor;
+    bool sevencolor; // Acep e-ink screens.
     bool pixels_in_byte_share_row;
     bool reverse_pixels_in_byte;
     bool reverse_bytes_in_word;
@@ -48,10 +28,10 @@ typedef struct {
 
 typedef struct {
     uint32_t rgb888;
-    uint16_t rgb565;
-    uint8_t luma;
-    uint8_t hue;
-    uint8_t chroma;
+    const _displayio_colorspace_t *cached_colorspace;
+    uint32_t cached_color;
+    uint8_t cached_colorspace_grayscale_bit;
+    bool cached_colorspace_grayscale;
     bool transparent; // This may have additional bits added later for blending.
 } _displayio_color_t;
 
@@ -74,12 +54,11 @@ typedef struct displayio_palette {
     _displayio_color_t *colors;
     uint32_t color_count;
     bool needs_refresh;
+    bool dither;
 } displayio_palette_t;
 
-// Returns false if color fetch did not succeed (out of range or transparent).
-// Returns true if color is opaque, and sets color.
-bool displayio_palette_get_color(displayio_palette_t *palette, const _displayio_colorspace_t *colorspace, uint32_t palette_index, uint32_t *color);
+
+void displayio_palette_get_color(displayio_palette_t *palette, const _displayio_colorspace_t *colorspace, const displayio_input_pixel_t *input_pixel, displayio_output_pixel_t *output_color);
+;
 bool displayio_palette_needs_refresh(displayio_palette_t *self);
 void displayio_palette_finish_refresh(displayio_palette_t *self);
-
-#endif // MICROPY_INCLUDED_SHARED_MODULE_DISPLAYIO_PALLETE_H

@@ -1,6 +1,12 @@
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
+
 #include "shared-bindings/board/__init__.h"
 
-STATIC const mp_rom_map_elem_t board_module_globals_table[] = {
+static const mp_rom_map_elem_t board_module_globals_table[] = {
     CIRCUITPYTHON_BOARD_DICT_STANDARD_ITEMS
 
     { MP_ROM_QSTR(MP_QSTR_D0), MP_ROM_PTR(&pin_PA08) },
@@ -41,8 +47,8 @@ STATIC const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_RX), MP_ROM_PTR(&pin_PA07) },
     { MP_ROM_QSTR(MP_QSTR_SCK), MP_ROM_PTR(&pin_PA07) },
 
-    { MP_ROM_QSTR(MP_QSTR_LED),MP_ROM_PTR(&pin_PA10) },
-    { MP_ROM_QSTR(MP_QSTR_D13),MP_ROM_PTR(&pin_PA10) },
+    { MP_ROM_QSTR(MP_QSTR_LED), MP_ROM_PTR(&pin_PA10) },
+    { MP_ROM_QSTR(MP_QSTR_D13), MP_ROM_PTR(&pin_PA10) },
 
     { MP_ROM_QSTR(MP_QSTR_APA102_MOSI), MP_ROM_PTR(&pin_PA00) },
     { MP_ROM_QSTR(MP_QSTR_DOTSTAR_DATA), MP_ROM_PTR(&pin_PA00) },

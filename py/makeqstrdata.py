@@ -3,26 +3,21 @@ Process raw qstr file and output qstr data with length, hash and data bytes.
 
 This script works with Python 2.7, 3.3 and 3.4.
 
+CIRCUITPY-CHANGE:
 For documentation about the format of compressed translated strings, see
 supervisor/shared/translate/translate.h
 """
 
 from __future__ import print_function
 
-import bisect
+
 import re
 import sys
 
-import collections
-import gettext
-import os.path
-
+# CIRCUITPY-CHANGE
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(errors="backslashreplace")
-
-py = os.path.dirname(sys.argv[0])
-top = os.path.dirname(py)
 
 # Python 2/3 compatibility:
 #   - iterating through bytes is different
@@ -67,20 +62,9 @@ codepoint2name[ord("^")] = "caret"
 codepoint2name[ord("|")] = "pipe"
 codepoint2name[ord("~")] = "tilde"
 
-C_ESCAPES = {
-    "\a": "\\a",
-    "\b": "\\b",
-    "\f": "\\f",
-    "\n": "\\n",
-    "\r": "\\r",
-    "\t": "\\t",
-    "\v": "\\v",
-    "'": "\\'",
-    '"': '\\"',
-}
+# static qstrs, these must maintain a specific order for .mpy compatibility
+# See QSTR_LAST_STATIC at the top of py/persistentcode.c
 
-# static qstrs, should be sorted
-# These are qstrs that are always included and always have the same number. It allows mpy files to omit them.
 static_qstr_list = [
     "",
     "__dir__",  # Put __dir__ after empty qstr for builtin dir() to work
@@ -249,13 +233,87 @@ static_qstr_list = [
     "zip",
 ]
 
+# Additional QSTRs that must have index <255 because they are stored as `byte` values.
+# These are not part of the .mpy compatibility list, but we place them in the
+# fixed unsorted pool (i.e. QDEF0) to ensure their indices are small.
+unsorted_qstr_list = {
+    # From py/objtype.c: used in the `mp_binary_op_method_name` and `mp_unary_op_method_name` tables.
+    "__bool__",
+    "__pos__",
+    "__neg__",
+    "__invert__",
+    "__abs__",
+    "__float__",
+    "__complex__",
+    "__sizeof__",
+    "__lt__",
+    "__gt__",
+    "__eq__",
+    "__le__",
+    "__ge__",
+    "__ne__",
+    "__contains__",
+    "__iadd__",
+    "__isub__",
+    "__imul__",
+    "__imatmul__",
+    "__ifloordiv__",
+    "__itruediv__",
+    "__imod__",
+    "__ipow__",
+    "__ior__",
+    "__ixor__",
+    "__iand__",
+    "__ilshift__",
+    "__irshift__",
+    "__add__",
+    "__sub__",
+    "__mul__",
+    "__matmul__",
+    "__floordiv__",
+    "__truediv__",
+    "__mod__",
+    "__divmod__",
+    "__pow__",
+    "__or__",
+    "__xor__",
+    "__and__",
+    "__lshift__",
+    "__rshift__",
+    "__radd__",
+    "__rsub__",
+    "__rmul__",
+    "__rmatmul__",
+    "__rfloordiv__",
+    "__rtruediv__",
+    "__rmod__",
+    "__rpow__",
+    "__ror__",
+    "__rxor__",
+    "__rand__",
+    "__rlshift__",
+    "__rrshift__",
+    "__get__",
+    "__set__",
+    "__delete__",
+    # From py/scope.c: used in `scope_simple_name_table` table.
+    # Note: "<module>" is already in `static_qstr_list`.
+    "<lambda>",
+    "<listcomp>",
+    "<dictcomp>",
+    "<setcomp>",
+    "<genexpr>",
+}
+
+
 # this must match the equivalent function in qstr.c
 def compute_hash(qstr, bytes_hash):
     hash = 5381
     for b in qstr:
         hash = (hash * 33) ^ b
     # Make sure that valid hash is never zero, zero means "hash not computed"
-    return (hash & ((1 << (8 * bytes_hash)) - 1)) or 1
+    # if bytes_hash is zero, assume a 16-bit mask (to match qstr.c)
+    return (hash & ((1 << (8 * (bytes_hash or 2))) - 1)) or 1
 
 
 def qstr_escape(qst):
@@ -270,22 +328,15 @@ def qstr_escape(qst):
     return re.sub(r"[^A-Za-z0-9_]", esc_char, qst)
 
 
-def parse_input_headers(infiles):
+static_qstr_list_ident = list(map(qstr_escape, static_qstr_list))
+
+
+# CIRCUITPY-CHANGE: add translations handling
+def parse_input_headers_with_translations(infiles):
     qcfgs = {}
     qstrs = {}
-    i18ns = set()
-
-    # add static qstrs
-    for qstr in static_qstr_list:
-        # work out the corresponding qstr name
-        ident = qstr_escape(qstr)
-
-        # don't add duplicates
-        assert ident not in qstrs
-
-        # add the qstr to the list, with order number to retain original order in file
-        order = len(qstrs) - 300000
-        qstrs[ident] = (order, ident, qstr)
+    # CIRCUITPY-CHANGE: add translations
+    translations = set()
 
     # read the qstrs in from the input files
     for infile in infiles:
@@ -303,9 +354,10 @@ def parse_input_headers(infiles):
                     qcfgs[match.group(1)] = value
                     continue
 
+                # CIRCUITPY-CHANGE
                 match = re.match(r'^TRANSLATE\("(.*)"\)$', line)
                 if match:
-                    i18ns.add(match.group(1))
+                    translations.add(match.group(1))
                     continue
 
                 # is this a QSTR line?
@@ -326,37 +378,33 @@ def parse_input_headers(infiles):
                 ident = qstr_escape(qstr)
 
                 # don't add duplicates
+                if ident in static_qstr_list_ident:
+                    continue
                 if ident in qstrs:
                     continue
 
-                # add the qstr to the list, with order number to retain original order in file
-                order = len(qstrs)
-                # but put special method names like __add__ at the top of list, so
-                # that their id's fit into a byte
-                if ident == "":
-                    # Sort empty qstr above all still
-                    order = -200000
-                elif ident == "__dir__":
-                    # Put __dir__ after empty qstr for builtin dir() to work
-                    order = -190000
-                elif ident.startswith("__"):
-                    order -= 100000
-                qstrs[ident] = (order, ident, qstr)
+                qstrs[ident] = (ident, qstr)
 
-    if not qcfgs and qstrs:
+    if not qcfgs:
         sys.stderr.write("ERROR: Empty preprocessor output - check for errors above\n")
         sys.exit(1)
 
-    return qcfgs, qstrs, i18ns
+    # CIRCUITPY-CHANGE
+    return qcfgs, qstrs, translations
 
 
-def escape_bytes(qstr):
+# CIRCUITPY-CHANGE: Used externally by mpy-tool.py. Don't pass back translations.
+def parse_input_headers(infiles):
+    qcfgs, qstrs, translations = parse_input_headers_with_translations(infiles)
+    return (qcfgs, qstrs)
+
+
+def escape_bytes(qstr, qbytes):
     if all(32 <= ord(c) <= 126 and c != "\\" and c != '"' for c in qstr):
         # qstr is all printable ASCII so render it as-is (for easier debugging)
         return qstr
     else:
         # qstr contains non-printable codes so render entire thing as hex pairs
-        qbytes = bytes_cons(qstr, "utf8")
         return "".join(("\\x%02x" % b) for b in qbytes)
 
 
@@ -367,11 +415,12 @@ def make_bytes(cfg_bytes_len, cfg_bytes_hash, qstr):
     if qlen >= (1 << (8 * cfg_bytes_len)):
         print("qstr is too long:", qstr)
         assert False
-    qdata = escape_bytes(qstr)
+    qdata = escape_bytes(qstr, qbytes)
     return '%d, %d, "%s"' % (qhash, qlen, qdata)
 
 
-def print_qstr_data(qcfgs, qstrs, i18ns):
+# CIRCUITPY-CHANGE: add translations
+def print_qstr_data(qcfgs, qstrs, translations):
     # get config variables
     cfg_bytes_len = int(qcfgs["BYTES_IN_LEN"])
     cfg_bytes_hash = int(qcfgs["BYTES_IN_HASH"])
@@ -381,61 +430,42 @@ def print_qstr_data(qcfgs, qstrs, i18ns):
     print("")
 
     # add NULL qstr with no hash or data
-    print('QDEF(MP_QSTRnull, 0, 0, "")')
+    print('QDEF0(MP_QSTRnull, 0, 0, "")')
 
-    total_qstr_size = 0
-    # go through each qstr and print it out
-    for order, ident, qstr in sorted(qstrs.values(), key=lambda x: x[0]):
+    # add static qstrs to the first unsorted pool
+    for qstr in static_qstr_list:
         qbytes = make_bytes(cfg_bytes_len, cfg_bytes_hash, qstr)
-        print("QDEF(MP_QSTR_%s, %s)" % (ident, qbytes))
+        print("QDEF0(MP_QSTR_%s, %s)" % (qstr_escape(qstr), qbytes))
 
+    # CIRCUITPY-CHANGE: track total qstr size
+    total_qstr_size = 0
+
+    # add remaining qstrs to the sorted (by value) pool (unless they're in
+    # unsorted_qstr_list, in which case add them to the unsorted pool)
+    for ident, qstr in sorted(qstrs.values(), key=lambda x: x[1]):
+        qbytes = make_bytes(cfg_bytes_len, cfg_bytes_hash, qstr)
+        pool = 0 if qstr in unsorted_qstr_list else 1
+        print("QDEF%d(MP_QSTR_%s, %s)" % (pool, ident, qbytes))
+
+        # CIRCUITPY-CHANGE: track total qstr size
         total_qstr_size += len(qstr)
 
+    # CIRCUITPY-CHANGE: translations
     print(
         "// Enumerate translated texts but don't actually include translations. Instead, the linker will link them in."
     )
-    for i, original in enumerate(i18ns):
+    for i, original in enumerate(sorted(translations)):
         print('TRANSLATION("{}", {})'.format(original, i))
 
     print()
     print("// {} bytes worth of qstr".format(total_qstr_size))
 
 
-def print_qstr_enums(qstrs):
-    # print out the starter of the generated C header file
-    print("// This file was automatically generated by makeqstrdata.py")
-    print("")
-
-    # add NULL qstr with no hash or data
-    print("QENUM(MP_QSTRnull)")
-
-    # go through each qstr and print it out
-    for order, ident, qstr in sorted(qstrs.values(), key=lambda x: x[0]):
-        print("QENUM(MP_QSTR_%s)" % (ident,))
+def do_work(infiles):
+    # CIRCUITPY-CHANGE: include translations
+    qcfgs, qstrs, translations = parse_input_headers_with_translations(infiles)
+    print_qstr_data(qcfgs, qstrs, translations)
 
 
 if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser(
-        description="Process QSTR definitions into headers for compilation"
-    )
-    parser.add_argument(
-        "infiles", metavar="N", type=str, nargs="+", help="an integer for the accumulator"
-    )
-    parser.add_argument(
-        "--output_type",
-        default="enums",
-        type=str,
-        help="output definitions",
-        choices=("enums", "data"),
-    )
-
-    args = parser.parse_args()
-
-    qcfgs, qstrs, i18ns = parse_input_headers(args.infiles)
-    if args.output_type == "data":
-        i18ns = sorted(i18ns)
-        print_qstr_data(qcfgs, qstrs, i18ns)
-    else:
-        print_qstr_enums(qstrs)
+    do_work(sys.argv[1:])

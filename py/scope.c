@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * SPDX-FileCopyrightText: Copyright (c) 2013, 2014 Damien P. George
+ * Copyright (c) 2013, 2014 Damien P. George
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,7 +31,9 @@
 #if MICROPY_ENABLE_COMPILER
 
 // These low numbered qstrs should fit in 8 bits.  See assertions below.
-STATIC const uint8_t scope_simple_name_table[] = {
+// The (unescaped) names appear in `unsorted_str_list` in the QSTR
+// generator script py/makeqstrdata.py to ensure they are assigned low numbers.
+static const uint8_t scope_simple_name_table[] = {
     [SCOPE_MODULE] = MP_QSTR__lt_module_gt_,
     [SCOPE_LAMBDA] = MP_QSTR__lt_lambda_gt_,
     [SCOPE_LIST_COMP] = MP_QSTR__lt_listcomp_gt_,
@@ -40,7 +42,7 @@ STATIC const uint8_t scope_simple_name_table[] = {
     [SCOPE_GEN_EXPR] = MP_QSTR__lt_genexpr_gt_,
 };
 
-scope_t *scope_new(scope_kind_t kind, mp_parse_node_t pn, qstr source_file, mp_uint_t emit_options) {
+scope_t *scope_new(scope_kind_t kind, mp_parse_node_t pn, mp_uint_t emit_options) {
     // Make sure those qstrs indeed fit in an uint8_t.
     MP_STATIC_ASSERT(MP_QSTR__lt_module_gt_ <= UINT8_MAX);
     MP_STATIC_ASSERT(MP_QSTR__lt_lambda_gt_ <= UINT8_MAX);
@@ -52,7 +54,6 @@ scope_t *scope_new(scope_kind_t kind, mp_parse_node_t pn, qstr source_file, mp_u
     scope_t *scope = m_new0(scope_t, 1);
     scope->kind = kind;
     scope->pn = pn;
-    scope->source_file = source_file;
     if (kind == SCOPE_FUNCTION || kind == SCOPE_CLASS) {
         assert(MP_PARSE_NODE_IS_STRUCT(pn));
         scope->simple_name = MP_PARSE_NODE_LEAF_ARG(((mp_parse_node_struct_t *)pn)->nodes[0]);
@@ -112,7 +113,7 @@ id_info_t *scope_find_global(scope_t *scope, qstr qst) {
     return scope_find(scope, qst);
 }
 
-STATIC void scope_close_over_in_parents(scope_t *scope, qstr qst) {
+static void scope_close_over_in_parents(scope_t *scope, qstr qst) {
     assert(scope->parent != NULL); // we should have at least 1 parent
     for (scope_t *s = scope->parent;; s = s->parent) {
         assert(s->parent != NULL); // we should not get to the outer scope

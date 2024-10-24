@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: MIT
 
+# CIRCUITPY-CHANGES: many additions
+
 # Compiled Sources
 ###################
 *.o
@@ -9,6 +11,7 @@
 !atmel-samd/asf/**/*.a
 *.elf
 *.bin
+!*.toml.bin
 *.map
 *.hex
 *.dis
@@ -90,3 +93,7 @@ TAGS
 
 # Uncrustify formatting
 *.uncrustify
+
+# clangd cache
+##############
+.cache

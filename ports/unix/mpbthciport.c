@@ -46,11 +46,15 @@
 #include <string.h>
 
 #define DEBUG_printf(...) // printf(__VA_ARGS__)
-#define DEBUG_HCI_DUMP (0)
+
+#define HCI_TRACE (0)
+#define COL_OFF "\033[0m"
+#define COL_GREEN "\033[0;32m"
+#define COL_BLUE "\033[0;34m"
 
 uint8_t mp_bluetooth_hci_cmd_buf[4 + 256];
 
-STATIC int uart_fd = -1;
+static int uart_fd = -1;
 
 // Must be provided by the stack bindings (e.g. mpnimbleport.c or mpbtstackport.c).
 extern bool mp_bluetooth_hci_poll(void);
@@ -64,9 +68,9 @@ extern bool mp_bluetooth_hci_poll(void);
 extern bool mp_bluetooth_hci_active(void);
 
 // Prevent double-enqueuing of the scheduled task.
-STATIC volatile bool events_task_is_scheduled = false;
+static volatile bool events_task_is_scheduled = false;
 
-STATIC mp_obj_t run_events_scheduled_task(mp_obj_t none_in) {
+static mp_obj_t run_events_scheduled_task(mp_obj_t none_in) {
     (void)none_in;
     MICROPY_PY_BLUETOOTH_ENTER
         events_task_is_scheduled = false;
@@ -74,14 +78,14 @@ STATIC mp_obj_t run_events_scheduled_task(mp_obj_t none_in) {
     mp_bluetooth_hci_poll();
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(run_events_scheduled_task_obj, run_events_scheduled_task);
+static MP_DEFINE_CONST_FUN_OBJ_1(run_events_scheduled_task_obj, run_events_scheduled_task);
 
 #endif // MICROPY_PY_BLUETOOTH_USE_SYNC_EVENTS
 
-STATIC const useconds_t UART_POLL_INTERVAL_US = 1000;
-STATIC pthread_t hci_poll_thread_id;
+static const useconds_t UART_POLL_INTERVAL_US = 1000;
+static pthread_t hci_poll_thread_id;
 
-STATIC void *hci_poll_thread(void *arg) {
+static void *hci_poll_thread(void *arg) {
     (void)arg;
 
     DEBUG_printf("hci_poll_thread: starting\n");
@@ -114,7 +118,7 @@ STATIC void *hci_poll_thread(void *arg) {
     return NULL;
 }
 
-STATIC int configure_uart(void) {
+static int configure_uart(void) {
     struct termios toptions;
 
     // Get existing config.
@@ -234,8 +238,8 @@ int mp_bluetooth_hci_uart_readchar(void) {
     ssize_t bytes_read = read(uart_fd, &c, 1);
 
     if (bytes_read == 1) {
-        #if DEBUG_HCI_DUMP
-        printf("[% 8ld] RX: %02x\n", mp_hal_ticks_ms(), c);
+        #if HCI_TRACE
+        printf(COL_BLUE "> [% 8ld] RX: %02x" COL_OFF "\n", mp_hal_ticks_ms(), c);
         #endif
         return c;
     } else {
@@ -250,12 +254,12 @@ int mp_bluetooth_hci_uart_write(const uint8_t *buf, size_t len) {
         return 0;
     }
 
-    #if DEBUG_HCI_DUMP
-    printf("[% 8ld] TX: %02x", mp_hal_ticks_ms(), buf[0]);
+    #if HCI_TRACE
+    printf(COL_GREEN "< [% 8ld] TX: %02x", mp_hal_ticks_ms(), buf[0]);
     for (size_t i = 1; i < len; ++i) {
         printf(":%02x", buf[i]);
     }
-    printf("\n");
+    printf(COL_OFF "\n");
     #endif
 
     return write(uart_fd, buf, len);

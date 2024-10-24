@@ -1,117 +1,107 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
- * Copyright (c) 2019 Lucian Copeland for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
+// SPDX-FileCopyrightText: Copyright (c) 2019 Lucian Copeland for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
+#include <stdarg.h>
 #include <stdint.h>
 #include <sys/time.h>
 #include "supervisor/board.h"
 #include "supervisor/port.h"
 #include "supervisor/filesystem.h"
+#include "supervisor/shared/reload.h"
+#include "supervisor/shared/serial.h"
+#include "py/mpprint.h"
 #include "py/runtime.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
 #include "bindings/espidf/__init__.h"
+#include "bindings/espnow/__init__.h"
+#include "bindings/espulp/__init__.h"
 #include "common-hal/microcontroller/Pin.h"
 #include "common-hal/analogio/AnalogOut.h"
-#include "common-hal/busio/I2C.h"
 #include "common-hal/busio/SPI.h"
 #include "common-hal/busio/UART.h"
 #include "common-hal/dualbank/__init__.h"
 #include "common-hal/ps2io/Ps2.h"
-#include "common-hal/pulseio/PulseIn.h"
-#include "common-hal/pwmio/PWMOut.h"
 #include "common-hal/watchdog/WatchDogTimer.h"
 #include "common-hal/socketpool/Socket.h"
 #include "common-hal/wifi/__init__.h"
 #include "supervisor/background_callback.h"
-#include "supervisor/memory.h"
 #include "supervisor/shared/tick.h"
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/microcontroller/RunMode.h"
 #include "shared-bindings/rtc/__init__.h"
 #include "shared-bindings/socketpool/__init__.h"
-#include "shared-module/dotenv/__init__.h"
+#include "shared-module/os/__init__.h"
 
-#include "peripherals/rmt.h"
-#include "peripherals/timer.h"
-
-#if CIRCUITPY_COUNTIO || CIRCUITPY_ROTARYIO || CIRCUITPY_FREQUENCYIO
-#include "peripherals/pcnt.h"
+#if CIRCUITPY_SDIOIO
+#include "common-hal/sdioio/SDCard.h"
 #endif
 
 #if CIRCUITPY_TOUCHIO_USE_NATIVE
 #include "peripherals/touch.h"
 #endif
 
-#if CIRCUITPY_AUDIOBUSIO
-#include "common-hal/audiobusio/__init__.h"
-#endif
-
 #if CIRCUITPY_BLEIO
 #include "shared-bindings/_bleio/__init__.h"
 #endif
 
-#if CIRCUITPY_ESP32_CAMERA
+#if CIRCUITPY_ESPCAMERA
 #include "esp_camera.h"
 #endif
 
-#ifndef CONFIG_IDF_TARGET_ESP32
-#include "soc/cache_memory.h"
+#include "soc/efuse_reg.h"
+#if defined(SOC_LP_AON_SUPPORTED)
+#include "soc/lp_aon_reg.h"
+#define CP_SAVED_WORD_REGISTER LP_AON_STORE0_REG
+#else
+#ifdef CONFIG_IDF_TARGET_ESP32P4
+#include "soc/lp_system_reg.h"
+#define CP_SAVED_WORD_REGISTER LP_SYSTEM_REG_LP_STORE15_REG
+
+#else
+// To-do idf v5.0: remove following include
+#include "soc/rtc_cntl_reg.h"
+#define CP_SAVED_WORD_REGISTER RTC_CNTL_STORE0_REG
 #endif
 
-#include "soc/efuse_reg.h"
-#include "soc/rtc_cntl_reg.h"
+#endif
 
-#include "esp_debug_helpers.h"
+#include "soc/spi_pins.h"
 
 #include "bootloader_flash_config.h"
+
+#include "esp_debug_helpers.h"
 #include "esp_efuse.h"
 #include "esp_ipc.h"
 #include "esp_rom_efuse.h"
+#include "esp_timer.h"
 
 #ifdef CONFIG_IDF_TARGET_ESP32
+#include "hal/efuse_hal.h"
 #include "esp32/rom/efuse.h"
+#endif
+
+#if CIRCUITPY_SSL
+#include "shared-module/ssl/__init__.h"
 #endif
 
 #include "esp_log.h"
 #define TAG "port"
 
-uint32_t *heap;
-uint32_t heap_size;
-
-STATIC esp_timer_handle_t _tick_timer;
-STATIC esp_timer_handle_t _sleep_timer;
+static esp_timer_handle_t _tick_timer;
+static esp_timer_handle_t _sleep_timer;
 
 TaskHandle_t circuitpython_task = NULL;
 
 extern void esp_restart(void) NORETURN;
 
-STATIC void tick_on_cp_core(void *arg) {
+static void tick_on_cp_core(void *arg) {
     supervisor_tick();
 
     // CircuitPython's VM is run in a separate FreeRTOS task from timer callbacks. So, we have to
@@ -121,7 +111,7 @@ STATIC void tick_on_cp_core(void *arg) {
 
 // This function may happen on the PRO core when CP is on the APP core. So, make
 // sure we run on the CP core.
-STATIC void tick_timer_cb(void *arg) {
+static void tick_timer_cb(void *arg) {
     #if defined(CONFIG_FREERTOS_UNICORE) && CONFIG_FREERTOS_UNICORE
     tick_on_cp_core(arg);
     #else
@@ -181,7 +171,7 @@ static void _never_reset_spi_ram_flash(void) {
     if (pkg_ver == EFUSE_RD_CHIP_VER_PKG_ESP32D2WDQ5) {
         never_reset_pin_number(D2WD_PSRAM_CLK_IO);
         never_reset_pin_number(D2WD_PSRAM_CS_IO);
-    } else if (pkg_ver == EFUSE_RD_CHIP_VER_PKG_ESP32PICOD4 && esp_efuse_get_chip_ver() >= 3) {
+    } else if (pkg_ver == EFUSE_RD_CHIP_VER_PKG_ESP32PICOD4 && efuse_hal_get_major_chip_version() >= 3) {
         // This chip is ESP32-PICO-V3 and doesn't have PSRAM.
     } else if ((pkg_ver == EFUSE_RD_CHIP_VER_PKG_ESP32PICOD2) || (pkg_ver == EFUSE_RD_CHIP_VER_PKG_ESP32PICOD4)) {
         never_reset_pin_number(PICO_PSRAM_CLK_IO);
@@ -240,15 +230,13 @@ safe_mode_t port_init(void) {
 
     circuitpython_task = xTaskGetCurrentTaskHandle();
 
-    // Send the ROM output out of the UART. This includes early logs.
-    #ifdef DEBUG
-    ets_install_uart_printf();
+    #if !defined(DEBUG)
+    #define DEBUG (0)
     #endif
 
-    heap = NULL;
-
-    #ifndef DEBUG
-    #define DEBUG (0)
+    // Send the ROM output out of the UART. This includes early logs.
+    #if DEBUG
+    esp_rom_install_uart_printf();
     #endif
 
     #define pin_GPIOn(n) pin_GPIO##n
@@ -262,24 +250,14 @@ safe_mode_t port_init(void) {
     common_hal_never_reset_pin(&pin_GPIOn_EXPAND(CONFIG_CONSOLE_UART_RX_GPIO));
     #endif
 
-    #if DEBUG
-    // debug UART
-    #ifdef CONFIG_IDF_TARGET_ESP32C3
-    common_hal_never_reset_pin(&pin_GPIO20);
-    common_hal_never_reset_pin(&pin_GPIO21);
-    #elif defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3)
-    common_hal_never_reset_pin(&pin_GPIO43);
-    common_hal_never_reset_pin(&pin_GPIO44);
-    #endif
-    #endif
-
     #ifndef ENABLE_JTAG
-    #define ENABLE_JTAG (defined(DEBUG) && DEBUG)
+    #define ENABLE_JTAG (0)
     #endif
 
     #if ENABLE_JTAG
+    ESP_LOGI(TAG, "Marking JTAG pins never_reset");
     // JTAG
-    #ifdef CONFIG_IDF_TARGET_ESP32C3
+    #if defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32C6)
     common_hal_never_reset_pin(&pin_GPIO4);
     common_hal_never_reset_pin(&pin_GPIO5);
     common_hal_never_reset_pin(&pin_GPIO6);
@@ -289,58 +267,76 @@ safe_mode_t port_init(void) {
     common_hal_never_reset_pin(&pin_GPIO40);
     common_hal_never_reset_pin(&pin_GPIO41);
     common_hal_never_reset_pin(&pin_GPIO42);
+    #elif defined(CONFIG_IDF_TARGET_ESP32P4)
+    common_hal_never_reset_pin(&pin_GPIO3);
+    common_hal_never_reset_pin(&pin_GPIO4);
+    common_hal_never_reset_pin(&pin_GPIO5);
+    common_hal_never_reset_pin(&pin_GPIO6);
     #endif
-    #endif
-
-    #ifdef CONFIG_SPIRAM
-    {
-        intptr_t heap_start = common_hal_espidf_get_psram_start();
-        intptr_t heap_end = common_hal_espidf_get_psram_end();
-        size_t spiram_size = heap_end - heap_start;
-        if (spiram_size > 0) {
-            heap = (uint32_t *)heap_start;
-            heap_size = (heap_end - heap_start) / sizeof(uint32_t);
-        } else {
-            ESP_LOGE(TAG, "CONFIG_SPIRAM enabled but no spiram heap available");
-        }
-    }
     #endif
 
     _never_reset_spi_ram_flash();
 
-    if (heap == NULL) {
-        size_t heap_total = heap_caps_get_total_size(MALLOC_CAP_8BIT);
-        heap_size = MIN(heap_caps_get_largest_free_block(MALLOC_CAP_8BIT), heap_total / 2);
-        heap = malloc(heap_size);
-        heap_size = heap_size / sizeof(uint32_t);
-    }
-    if (heap == NULL) {
-        heap_size = 0;
-        return NO_HEAP;
-    }
-
     esp_reset_reason_t reason = esp_reset_reason();
     switch (reason) {
         case ESP_RST_BROWNOUT:
-            return BROWNOUT;
+            return SAFE_MODE_BROWNOUT;
         case ESP_RST_PANIC:
-            return HARD_CRASH;
+            return SAFE_MODE_HARD_FAULT;
         case ESP_RST_INT_WDT:
             // The interrupt watchdog is used internally to make sure that latency sensitive
             // interrupt code isn't blocked. User watchdog resets come through ESP_RST_WDT.
-            return WATCHDOG_RESET;
+            return SAFE_MODE_WATCHDOG;
         case ESP_RST_WDT:
         default:
             break;
     }
 
-    return NO_SAFE_MODE;
+    return SAFE_MODE_NONE;
+}
+
+void port_heap_init(void) {
+    // The IDF sets up the heap, so we don't need to.
+}
+
+void *port_malloc(size_t size, bool dma_capable) {
+    size_t caps = MALLOC_CAP_8BIT;
+    if (dma_capable) {
+        caps |= MALLOC_CAP_DMA;
+    }
+
+    void *ptr = NULL;
+    // Try SPIRAM first when available.
+    #ifdef CONFIG_SPIRAM
+    ptr = heap_caps_malloc(size, caps | MALLOC_CAP_SPIRAM);
+    #endif
+    if (ptr == NULL) {
+        ptr = heap_caps_malloc(size, caps);
+    }
+    return ptr;
+}
+
+void port_free(void *ptr) {
+    heap_caps_free(ptr);
+}
+
+void *port_realloc(void *ptr, size_t size) {
+    return heap_caps_realloc(ptr, size, MALLOC_CAP_8BIT);
+}
+
+size_t port_heap_get_largest_free_size(void) {
+    size_t free_size = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
+    return free_size;
 }
 
 void reset_port(void) {
     // TODO deinit for esp32-camera
-    #if CIRCUITPY_ESP32_CAMERA
+    #if CIRCUITPY_ESPCAMERA
     esp_camera_deinit();
+    #endif
+
+    #if CIRCUITPY_SSL
+    ssl_reset();
     #endif
 
     reset_all_pins();
@@ -349,39 +345,29 @@ void reset_port(void) {
     analogout_reset();
     #endif
 
-    #if CIRCUITPY_AUDIOBUSIO
-    i2s_reset();
-    #endif
-
     #if CIRCUITPY_BUSIO
-    i2c_reset();
     spi_reset();
     uart_reset();
     #endif
 
-    #if CIRCUITPY_COUNTIO || CIRCUITPY_ROTARYIO || CIRCUITPY_FREQUENCYIO
-    peripherals_pcnt_reset();
+    #if CIRCUITPY_SDIOIO
+    sdioio_reset();
     #endif
 
     #if CIRCUITPY_DUALBANK
     dualbank_reset();
     #endif
 
-    #if CIRCUITPY_FREQUENCYIO
-    peripherals_timer_reset();
+    #if CIRCUITPY_ESPNOW
+    espnow_reset();
+    #endif
+
+    #if CIRCUITPY_ESPULP
+    espulp_reset();
     #endif
 
     #if CIRCUITPY_PS2IO
     ps2_reset();
-    #endif
-
-    #if CIRCUITPY_PULSEIO
-    peripherals_rmt_reset();
-    pulsein_reset();
-    #endif
-
-    #if CIRCUITPY_PWMIO
-    pwmout_reset();
     #endif
 
     #if CIRCUITPY_RTC
@@ -410,18 +396,10 @@ void reset_to_bootloader(void) {
 }
 
 void reset_cpu(void) {
-    #ifndef CONFIG_IDF_TARGET_ESP32C3
+    #if CIRCUITPY_DEBUG
     esp_backtrace_print(100);
     #endif
     esp_restart();
-}
-
-uint32_t *port_heap_get_bottom(void) {
-    return heap;
-}
-
-uint32_t *port_heap_get_top(void) {
-    return heap + heap_size;
 }
 
 uint32_t *port_stack_get_limit(void) {
@@ -446,17 +424,12 @@ uint32_t *port_stack_get_top(void) {
     return port_stack_get_limit() + ESP_TASK_MAIN_STACK / (sizeof(uint32_t) / sizeof(StackType_t));
 }
 
-bool port_has_fixed_stack(void) {
-    return true;
-}
-
-// Place the word to save just after our BSS section that gets blanked.
 void port_set_saved_word(uint32_t value) {
-    REG_WRITE(RTC_CNTL_STORE0_REG, value);
+    REG_WRITE(CP_SAVED_WORD_REGISTER, value);
 }
 
 uint32_t port_get_saved_word(void) {
-    return REG_READ(RTC_CNTL_STORE0_REG);
+    return REG_READ(CP_SAVED_WORD_REGISTER);
 }
 
 uint64_t port_get_raw_ticks(uint8_t *subticks) {
@@ -511,20 +484,16 @@ void port_interrupt_after_ticks(uint32_t ticks) {
 // On the ESP we use FreeRTOS notifications instead of interrupts so this is a
 // bit of a misnomer.
 void port_idle_until_interrupt(void) {
-    if (!background_callback_pending()) {
+    if (!background_callback_pending() && !autoreload_pending()) {
         xTaskNotifyWait(0x01, 0x01, NULL, portMAX_DELAY);
     }
 }
 
 void port_post_boot_py(bool heap_valid) {
     if (!heap_valid && filesystem_present()) {
-        mp_int_t reserved;
-        if (dotenv_get_key_int("/.env", "CIRCUITPY_RESERVED_PSRAM", &reserved)) {
-            common_hal_espidf_set_reserved_psram(reserved);
-        }
-        common_hal_espidf_reserve_psram();
     }
 }
+
 
 // Wrap main in app_main that the IDF expects.
 extern void main(void);
@@ -532,3 +501,5 @@ extern void app_main(void);
 void app_main(void) {
     main();
 }
+
+portMUX_TYPE background_task_mutex = portMUX_INITIALIZER_UNLOCKED;

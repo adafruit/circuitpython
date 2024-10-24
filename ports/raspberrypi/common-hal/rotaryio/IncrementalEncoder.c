@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2018 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2018 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "py/runtime.h"
 
@@ -33,7 +13,7 @@
 #include "bindings/rp2pio/__init__.h"
 #include "bindings/rp2pio/StateMachine.h"
 
-STATIC const uint16_t encoder[] = {
+static const uint16_t encoder[] = {
     //  again:
     //      in pins, 2
     0x4002,
@@ -52,24 +32,25 @@ STATIC const uint16_t encoder[] = {
     0xa041,
 };
 
-STATIC const uint16_t encoder_init[] = {
+static const uint16_t encoder_init[] = {
     //      set y, 31
     0xe05f,
 };
 
-STATIC void incrementalencoder_interrupt_handler(void *self_in);
+static void incrementalencoder_interrupt_handler(void *self_in);
 
 void common_hal_rotaryio_incrementalencoder_construct(rotaryio_incrementalencoder_obj_t *self,
     const mcu_pin_obj_t *pin_a, const mcu_pin_obj_t *pin_b) {
-    mp_obj_t pins[] = {MP_OBJ_FROM_PTR(pin_a), MP_OBJ_FROM_PTR(pin_b)};
+    const mcu_pin_obj_t *pins[] = { pin_a, pin_b };
+
     // Start out with swapped to match behavior with other ports.
     self->swapped = true;
     if (!common_hal_rp2pio_pins_are_sequential(2, pins)) {
-        pins[0] = MP_OBJ_FROM_PTR(pin_b);
-        pins[1] = MP_OBJ_FROM_PTR(pin_a);
+        pins[0] = pin_b;
+        pins[1] = pin_a;
         self->swapped = false;
         if (!common_hal_rp2pio_pins_are_sequential(2, pins)) {
-            mp_raise_RuntimeError(translate("Pins must be sequential GPIO pins"));
+            mp_raise_RuntimeError(MP_ERROR_TEXT("Pins must be sequential GPIO pins"));
         }
     }
 
@@ -80,6 +61,7 @@ void common_hal_rotaryio_incrementalencoder_construct(rotaryio_incrementalencode
         encoder, MP_ARRAY_SIZE(encoder),
         1000000,
         encoder_init, MP_ARRAY_SIZE(encoder_init), // init
+        NULL, 0, // may_exec
         NULL, 0, 0, 0, // out pin
         pins[0], 2, // in pins
         3, 0, // in pulls
@@ -93,8 +75,10 @@ void common_hal_rotaryio_incrementalencoder_construct(rotaryio_incrementalencode
         false, // Wait for txstall
         false, 32, false, // in settings
         false, // Not user-interruptible.
-        0, MP_ARRAY_SIZE(encoder) - 1 // wrap settings
-        );
+        0, MP_ARRAY_SIZE(encoder) - 1, // wrap settings
+        PIO_ANY_OFFSET,
+        PIO_FIFO_TYPE_DEFAULT,
+        PIO_MOV_STATUS_DEFAULT, PIO_MOV_N_DEFAULT);
 
     // We're guaranteed by the init code that some output will be available promptly
     uint8_t quiescent_state;
@@ -116,7 +100,7 @@ void common_hal_rotaryio_incrementalencoder_deinit(rotaryio_incrementalencoder_o
     common_hal_rp2pio_statemachine_deinit(&self->state_machine);
 }
 
-STATIC void incrementalencoder_interrupt_handler(void *self_in) {
+static void incrementalencoder_interrupt_handler(void *self_in) {
     rotaryio_incrementalencoder_obj_t *self = self_in;
 
     while (common_hal_rp2pio_statemachine_get_in_waiting(&self->state_machine)) {

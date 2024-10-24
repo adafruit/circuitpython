@@ -39,7 +39,7 @@ try:
 except NotImplementedError:
     print("NotImplementedError")
 
-# uPy raises TypeError, shold be ValueError
+# uPy raises TypeError, should be ValueError
 try:
     "%c" % b"\x01\x02"
 except (TypeError, ValueError):
@@ -54,8 +54,8 @@ except NotImplementedError:
 # str(...) with keywords not implemented
 try:
     str(b"abc", encoding="utf8")
-except TypeError:
-    print("TypeError")
+except NotImplementedError:
+    print("NotImplementedError")
 
 # str.rsplit(None, n) not implemented
 try:
@@ -105,11 +105,19 @@ try:
 except NotImplementedError:
     print("NotImplementedError")
 
+# CIRCUITPY-CHANGE: We do check these.
+# struct pack with too many args, not checked by uPy
+# print(struct.pack("bb", 1, 2, 3))
+
+# struct pack with too few args, not checked by uPy
+# print(struct.pack("bb", 1))
+
 # array slice assignment with unsupported RHS
 try:
     bytearray(4)[0:1] = [1, 2]
 except NotImplementedError:
     print("NotImplementedError")
+
 
 # can't assign attributes to a function
 def f():
@@ -127,6 +135,7 @@ try:
 except TypeError:
     print("TypeError")
 
+
 # test when object explicitly listed at not-last position in parent tuple
 # this is not compliant with CPython because of illegal MRO
 class A:
@@ -139,6 +148,7 @@ class B(object, A):
 
 
 B().foo()
+
 
 # can't assign property (or other special accessors) to already-subclassed class
 class A:

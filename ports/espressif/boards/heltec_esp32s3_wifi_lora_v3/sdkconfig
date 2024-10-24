@@ -1,0 +1,15 @@
+#
+# Espressif IoT Development Framework Configuration
+#
+#
+# Component config
+#
+#
+# LWIP
+#
+CONFIG_ESP_PHY_ENABLE_USB=n
+# end of LWIP
+
+# end of Component config
+
+# end of Espressif IoT Development Framework Configuration

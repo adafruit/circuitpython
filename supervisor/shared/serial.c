@@ -1,47 +1,31 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include <stdarg.h>
 #include <string.h>
 
 #include "py/mpconfig.h"
+#include "py/mphal.h"
 
 #include "supervisor/shared/cpu.h"
 #include "supervisor/shared/display.h"
 #include "shared-bindings/terminalio/Terminal.h"
-#include "supervisor/serial.h"
-#include "supervisor/usb.h"
+#include "supervisor/shared/serial.h"
 #include "shared-bindings/microcontroller/Pin.h"
-#include "shared-module/usb_cdc/__init__.h"
 
 #if CIRCUITPY_SERIAL_BLE
 #include "supervisor/shared/bluetooth/serial.h"
 #endif
 
-#if CIRCUITPY_USB
+#if CIRCUITPY_USB_DEVICE
+#include "shared-module/usb_cdc/__init__.h"
+#endif
+
+#if CIRCUITPY_TINYUSB
+#include "supervisor/usb.h"
 #include "tusb.h"
 #endif
 
@@ -62,12 +46,25 @@ byte console_uart_rx_buf[64];
 #endif
 #endif
 
-#if CIRCUITPY_USB_VENDOR
+#if CIRCUITPY_USB_DEVICE || CIRCUITPY_CONSOLE_UART
+// Flag to note whether this is the first write after connection.
+// Delay slightly on the first write to allow time for the host to set up things,
+// including turning off echo mode.
+static bool _first_write_done = false;
+#endif
+
+#if CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_VENDOR
 bool tud_vendor_connected(void);
 #endif
 
+// Set to true to temporarily discard writes to the console only.
+static bool _serial_console_write_disabled;
+
+// Set to true to temporarily discard writes to the display terminal only.
+static bool _serial_display_write_disabled;
+
 #if CIRCUITPY_CONSOLE_UART
-STATIC void console_uart_print_strn(void *env, const char *str, size_t len) {
+static void console_uart_print_strn(void *env, const char *str, size_t len) {
     (void)env;
     int uart_errcode;
     common_hal_busio_uart_write(&console_uart, (const uint8_t *)str, len, &uart_errcode);
@@ -93,6 +90,29 @@ int console_uart_printf(const char *fmt, ...) {
     #endif
 }
 
+MP_WEAK void board_serial_early_init(void) {
+}
+
+MP_WEAK void board_serial_init(void) {
+}
+
+MP_WEAK bool board_serial_connected(void) {
+    return false;
+}
+
+MP_WEAK char board_serial_read(void) {
+    return -1;
+}
+
+MP_WEAK uint32_t board_serial_bytes_available(void) {
+    return 0;
+}
+
+MP_WEAK void board_serial_write_substring(const char *text, uint32_t length) {
+    (void)text;
+    (void)length;
+}
+
 MP_WEAK void port_serial_early_init(void) {
 }
 
@@ -107,8 +127,8 @@ MP_WEAK char port_serial_read(void) {
     return -1;
 }
 
-MP_WEAK bool port_serial_bytes_available(void) {
-    return false;
+MP_WEAK uint32_t port_serial_bytes_available(void) {
+    return 0;
 }
 
 MP_WEAK void port_serial_write_substring(const char *text, uint32_t length) {
@@ -126,7 +146,7 @@ void serial_early_init(void) {
     const mcu_pin_obj_t *console_tx = MP_OBJ_TO_PTR(CIRCUITPY_CONSOLE_UART_TX);
 
     common_hal_busio_uart_construct(&console_uart, console_tx, console_rx, NULL, NULL, NULL,
-        false, 115200, 8, BUSIO_UART_PARITY_NONE, 1, 1.0f, sizeof(console_uart_rx_buf),
+        false, CIRCUITPY_CONSOLE_UART_BAUDRATE, 8, BUSIO_UART_PARITY_NONE, 1, 1.0f, sizeof(console_uart_rx_buf),
         console_uart_rx_buf, true);
     common_hal_busio_uart_never_reset(&console_uart);
 
@@ -134,15 +154,21 @@ void serial_early_init(void) {
     console_uart_printf("Serial console setup\r\n");
     #endif
 
+    board_serial_early_init();
     port_serial_early_init();
 }
 
 void serial_init(void) {
+    #if CIRCUITPY_USB_DEVICE || CIRCUITPY_CONSOLE_UART
+    _first_write_done = false;
+    #endif
+
+    board_serial_init();
     port_serial_init();
 }
 
 bool serial_connected(void) {
-    #if CIRCUITPY_USB_VENDOR
+    #if CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_VENDOR
     if (tud_vendor_connected()) {
         return true;
     }
@@ -158,11 +184,11 @@ bool serial_connected(void) {
     }
     #endif
 
-    #if CIRCUITPY_USB_CDC
+    #if CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_CDC
     if (usb_cdc_console_enabled() && tud_cdc_connected()) {
         return true;
     }
-    #elif CIRCUITPY_USB
+    #elif CIRCUITPY_USB_DEVICE
     if (tud_cdc_connected()) {
         return true;
     }
@@ -174,15 +200,26 @@ bool serial_connected(void) {
     }
     #endif
 
+    #if CIRCUITPY_TERMINALIO
+    if (supervisor_terminal_started()) {
+        return true;
+    }
+    #endif
+
+
+    if (board_serial_connected()) {
+        return true;
+    }
 
     if (port_serial_connected()) {
         return true;
     }
+
     return false;
 }
 
 char serial_read(void) {
-    #if CIRCUITPY_USB_VENDOR
+    #if CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_VENDOR
     if (tud_vendor_connected() && tud_vendor_available() > 0) {
         char tiny_buffer;
         tud_vendor_read(&tiny_buffer, 1);
@@ -214,83 +251,108 @@ char serial_read(void) {
     }
     #endif
 
+    #if CIRCUITPY_USB_KEYBOARD_WORKFLOW
+    if (usb_keyboard_chars_available() > 0) {
+        return usb_keyboard_read_char();
+    }
+    #endif
+
+    if (board_serial_bytes_available() > 0) {
+        return board_serial_read();
+    }
+
     if (port_serial_bytes_available() > 0) {
         return port_serial_read();
     }
 
-    #if CIRCUITPY_USB_CDC
+    #if CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_CDC
     if (!usb_cdc_console_enabled()) {
         return -1;
     }
     #endif
-    #if CIRCUITPY_USB
+    #if CIRCUITPY_USB_DEVICE
     return (char)tud_cdc_read_char();
     #endif
 
     return -1;
 }
 
-bool serial_bytes_available(void) {
-    #if CIRCUITPY_USB_VENDOR
-    if (tud_vendor_connected() && tud_vendor_available() > 0) {
-        return true;
+uint32_t serial_bytes_available(void) {
+    // There may be multiple serial input channels, so sum the count from all.
+    uint32_t count = 0;
+
+    #if CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_VENDOR
+    if (tud_vendor_connected()) {
+        count += tud_vendor_available();
     }
     #endif
 
     #if CIRCUITPY_CONSOLE_UART
-    if (common_hal_busio_uart_rx_characters_available(&console_uart)) {
-        return true;
-    }
+    count += common_hal_busio_uart_rx_characters_available(&console_uart);
     #endif
 
     #if CIRCUITPY_SERIAL_BLE
-    if (ble_serial_available()) {
-        return true;
-    }
+    count += ble_serial_available();
     #endif
 
     #if CIRCUITPY_WEB_WORKFLOW
-    if (websocket_available()) {
-        return true;
+    count += websocket_available();
+    #endif
+
+    #if CIRCUITPY_USB_KEYBOARD_WORKFLOW
+    count += usb_keyboard_chars_available();
+    #endif
+
+    #if CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_CDC
+    if (usb_cdc_console_enabled()) {
+        count += tud_cdc_available();
     }
     #endif
 
-    #if CIRCUITPY_USB_CDC
-    if (usb_cdc_console_enabled() && tud_cdc_available() > 0) {
-        return true;
-    }
-    #endif
-    #if CIRCUITPY_USB
-    if (tud_cdc_available() > 0) {
-        return true;
-    }
-    #endif
+    // Board-specific serial input.
+    count += board_serial_bytes_available();
 
-    if (port_serial_bytes_available() > 0) {
-        return true;
-    }
-    return false;
+    // Port-specific serial input.
+    count += port_serial_bytes_available();
+
+    return count;
 }
 
-void serial_write_substring(const char *text, uint32_t length) {
+uint32_t serial_write_substring(const char *text, uint32_t length) {
     if (length == 0) {
-        return;
+        return 0;
     }
+
+    // See https://github.com/micropython/micropython/pull/11850 for the motivation for returning
+    // the number of chars written.
+
+    // Assume that unless otherwise reported, we sent all that we got.
+    uint32_t length_sent = length;
+
     #if CIRCUITPY_TERMINALIO
     int errcode;
-    common_hal_terminalio_terminal_write(&supervisor_terminal, (const uint8_t *)text, length, &errcode);
+    if (!_serial_display_write_disabled) {
+        length_sent = common_hal_terminalio_terminal_write(&supervisor_terminal, (const uint8_t *)text, length, &errcode);
+    }
     #endif
 
-    #if CIRCUITPY_USB_VENDOR
+    if (_serial_console_write_disabled) {
+        return length_sent;
+    }
+
+    #if CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_VENDOR
     if (tud_vendor_connected()) {
-        tud_vendor_write(text, length);
+        length_sent = tud_vendor_write(text, length);
     }
     #endif
 
     #if CIRCUITPY_CONSOLE_UART
+    if (!_first_write_done) {
+        mp_hal_delay_ms(50);
+        _first_write_done = true;
+    }
     int uart_errcode;
-
-    common_hal_busio_uart_write(&console_uart, (const uint8_t *)text, length, &uart_errcode);
+    length_sent = common_hal_busio_uart_write(&console_uart, (const uint8_t *)text, length, &uart_errcode);
     #endif
 
     #if CIRCUITPY_SERIAL_BLE
@@ -301,27 +363,49 @@ void serial_write_substring(const char *text, uint32_t length) {
     websocket_write(text, length);
     #endif
 
-    #if CIRCUITPY_USB_CDC
+    #if CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_CDC
     if (!usb_cdc_console_enabled()) {
-        return;
+        return length;
     }
     #endif
 
-    #if CIRCUITPY_USB
+    #if CIRCUITPY_USB_DEVICE
+    // Delay the very first write
+    if (tud_cdc_connected() && !_first_write_done) {
+        mp_hal_delay_ms(50);
+        _first_write_done = true;
+    }
     uint32_t count = 0;
-    while (count < length && tud_cdc_connected()) {
-        count += tud_cdc_write(text + count, length - count);
-        // If we're in an interrupt, then don't wait for more room. Queue up what we can.
-        if (cpu_interrupt_active()) {
-            break;
+    if (tud_cdc_connected()) {
+        while (count < length) {
+            count += tud_cdc_write(text + count, length - count);
+            // If we're in an interrupt, then don't wait for more room. Queue up what we can.
+            if (cpu_interrupt_active()) {
+                break;
+            }
+            usb_background();
         }
-        usb_background();
     }
     #endif
 
+    board_serial_write_substring(text, length);
     port_serial_write_substring(text, length);
+
+    return length_sent;
 }
 
 void serial_write(const char *text) {
     serial_write_substring(text, strlen(text));
+}
+
+bool serial_console_write_disable(bool disabled) {
+    bool now = _serial_console_write_disabled;
+    _serial_console_write_disabled = disabled;
+    return now;
+}
+
+bool serial_display_write_disable(bool disabled) {
+    bool now = _serial_display_write_disabled;
+    _serial_display_write_disabled = disabled;
+    return now;
 }

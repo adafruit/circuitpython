@@ -1,37 +1,16 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2019 Lucian Copeland for Adafruit Industries
- * Copyright (c) 2019 Artur Pacholec
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2019 Lucian Copeland for Adafruit Industries
+// SPDX-FileCopyrightText: Copyright (c) 2019 Artur Pacholec
+//
+// SPDX-License-Identifier: MIT
 
-#ifndef MICROPY_INCLUDED_MIMXRT10XX_PERIPHERALS_PERIPH_H
-#define MICROPY_INCLUDED_MIMXRT10XX_PERIPHERALS_PERIPH_H
+#pragma once
 
 #include "pins.h"
 
 typedef struct {
-    uint8_t bank_idx : 4;
+    uint8_t bank_idx : 4; // e.g. the peripheral number
     uint8_t mux_mode : 4;
     uint32_t input_reg;
     uint8_t input_idx;
@@ -72,16 +51,22 @@ typedef struct {
         .pin = p_pin, \
     }
 
-extern LPI2C_Type *mcu_i2c_banks[];
-extern LPSPI_Type *mcu_spi_banks[];
-extern LPUART_Type *mcu_uart_banks[];
+extern LPI2C_Type *const mcu_i2c_banks[];
+extern LPSPI_Type *const mcu_spi_banks[];
+extern LPUART_Type *const mcu_uart_banks[];
 
 #ifdef MIMXRT1011_SERIES
 #include "MIMXRT1011/periph.h"
+#elif defined(MIMXRT1015_SERIES)
+#include "MIMXRT1015/periph.h"
 #elif defined(MIMXRT1021_SERIES)
 #include "MIMXRT1021/periph.h"
+#elif defined(MIMXRT1042_SERIES)
+#include "MIMXRT1042/periph.h"
+#elif defined(MIMXRT1052_SERIES)
+#include "MIMXRT1052/periph.h"
 #elif defined(MIMXRT1062_SERIES)
 #include "MIMXRT1062/periph.h"
+#elif defined(MIMXRT1176_cm7_SERIES)
+#include "MIMXRT1176/periph.h"
 #endif
-
-#endif // MICROPY_INCLUDED_MIMXRT10XX_PERIPHERALS_PERIPH_H

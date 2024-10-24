@@ -1,31 +1,10 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2019 Dan Halbert for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2019 Dan Halbert for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
-#ifndef __INCLUDED_MPCONFIGPORT_H
-#define __INCLUDED_MPCONFIGPORT_H
+#pragma once
 
 // Definitions for which SAMD chip we're using.
 #include "include/sam.h"
@@ -48,7 +27,7 @@
 #define MICROPY_PY_REVERSE_SPECIAL_METHODS          (0)
 #define MICROPY_PY_COLLECTIONS_DEQUE                (0)
 #define MICROPY_PY_COLLECTIONS_ORDEREDDICT          (0)
-#define MICROPY_PY_UERRNO_LIST \
+#define MICROPY_PY_ERRNO_LIST \
     X(EPERM) \
     X(ENOENT) \
     X(EIO) \
@@ -60,10 +39,18 @@
     X(EISDIR) \
     X(EINVAL) \
 
-#define MICROPY_FATFS_EXFAT 0
+#define MICROPY_FATFS_EXFAT    (0)
+// FAT32 mkfs takes about 500 bytes.
+#define MICROPY_FATFS_MKFS_FAT32 (0)
 
 // Only support simpler HID descriptors on SAMD21.
 #define CIRCUITPY_USB_HID_MAX_REPORT_IDS_PER_DESCRIPTOR (1)
+
+// Avoid linker error:
+// <artificial>:(.text.nlr_push+0x20): relocation truncated to fit: R_ARM_THM_JUMP11 against symbol `nlr_push_tail' defined in .text.nlr_push_tail section in /tmp/ccvHNpPQ.ltrans0.ltrans.o
+// See https://github.com/micropython/micropython/pull/11353
+#define MICROPY_NLR_THUMB_USE_LONG_JUMP (1)
+
 
 #endif // SAMD21
 
@@ -83,7 +70,7 @@
 #define SPI_FLASH_MAX_BAUDRATE 24000000
 #define MICROPY_PY_BUILTINS_NOTIMPLEMENTED          (1)
 #define MICROPY_PY_FUNCTION_ATTRS                   (1)
-//      MICROPY_PY_UERRNO_LIST - Use the default
+//      MICROPY_PY_ERRNO_LIST - Use the default
 
 #endif // SAM_D5X_E5X
 
@@ -171,6 +158,30 @@
 #define BOARD_HAS_CRYSTAL (0)
 #endif
 
+#ifndef BOARD_XOSC_FREQ_HZ
+// 0 Indicates XOSC is not used.
+  #define BOARD_XOSC_FREQ_HZ (0)
+#else
+// For now, only allow external clock sources that divide cleanly into
+// the system clock frequency of 120 MHz.
+  #if (120000000 % BOARD_XOSC_FREQ_HZ) != 0
+    #error "BOARD_XOSC_FREQ_HZ must be an integer factor of 120 MHz"
+  #endif
+#endif
+
+#if BOARD_XOSC_FREQ_HZ != 0
+// External clock sources are currently not implemented for SAMD21 chips.
+  #ifdef SAMD21
+    #error "BOARD_XOSC_FREQ_HZ is non-zero but external clock sources are not yet supported for SAMD21 chips"
+  #endif
+  #ifndef BOARD_XOSC_IS_CRYSTAL
+    #error "BOARD_XOSC_IS_CRYSTAL must be defined to 0 or 1 if BOARD_XOSC_FREQ_HZ is not 0"
+  #endif
+#else
+// It doesn't matter what the value is in this case.
+  #define BOARD_XOSC_IS_CRYSTAL (0)
+#endif
+
 // if CALIBRATE_CRYSTALLESS is requested, make room for storing
 // calibration data generated from external USB.
 #ifndef CIRCUITPY_INTERNAL_CONFIG_SIZE
@@ -187,7 +198,7 @@
 // - firmware
 // - internal CIRCUITPY flash filesystem (optional)
 // - internal config, used to store crystalless clock calibration info (optional)
-// - microntroller.nvm (optional)
+// - microcontroller.nvm (optional)
 
 // Define these regions starting up from the bottom of flash:
 
@@ -243,14 +254,3 @@
 // due to limitations of chips is handled in mpconfigboard.mk
 
 #include "peripherals/samd/dma.h"
-
-#if CIRCUITPY_AUDIOCORE
-#define MICROPY_PORT_ROOT_POINTERS \
-    CIRCUITPY_COMMON_ROOT_POINTERS \
-    mp_obj_t playing_audio[AUDIO_DMA_CHANNEL_COUNT];
-#else
-#define MICROPY_PORT_ROOT_POINTERS \
-    CIRCUITPY_COMMON_ROOT_POINTERS
-#endif
-
-#endif  // __INCLUDED_MPCONFIGPORT_H

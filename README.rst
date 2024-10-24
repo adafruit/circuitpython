@@ -56,10 +56,6 @@ Specifically useful documentation when starting out:
 - `CircuitPython Essentials <https://learn.adafruit.com/circuitpython-essentials>`__
 - `Example Code <https://github.com/adafruit/Adafruit_Learning_System_Guides/tree/master/CircuitPython_Essentials>`__
 
-Code Search
-------------
-GitHub doesn't currently support code search on forks. Therefore, CircuitPython doesn't have code search through GitHub because it is a fork of MicroPython. Luckily, `SourceGraph <https://sourcegraph.com/github.com/adafruit/circuitpython>`_ has free code search for public repos like CircuitPython. So, visit `sourcegraph.com/github.com/adafruit/circuitpython <https://sourcegraph.com/github.com/adafruit/circuitpython>`_ to search the CircuitPython codebase online.
-
 Contributing
 ------------
 
@@ -84,17 +80,19 @@ common set of requirements.
 
 If you'd like to use the term "CircuitPython" and Blinka for your product here is what we ask:
 
-* Your product is supported by the primary
+- Your product is supported by the primary
   `"adafruit/circuitpython" <https://github.com/adafruit/circuitpython>`_ repo. This way we can
   update any custom code as we update the CircuitPython internals.
-* Your product is listed on `circuitpython.org <https://circuitpython.org>`__ (source
+- Your product is listed on `circuitpython.org <https://circuitpython.org>`__ (source
   `here <https://github.com/adafruit/circuitpython-org/>`_). This is to ensure that a user of your
   product can always download the latest version of CircuitPython from the standard place.
-* Your product supports at least one standard "`Workflow <https://docs.circuitpython.org/en/latest/docs/workflows.html>`__" for serial and file access:
-  * With a user accessible USB plug which appears as a CIRCUITPY drive when plugged in.
-  * With file and serial access over Bluetooth Low Energy using the BLE Workflow.
-  * With file access over WiFi using the WiFi Workflow with serial access over USB and/or WebSocket.
-* Boards that do not support the USB Workflow should be clearly marked.
+- Your product supports at least one standard "`Workflow <https://docs.circuitpython.org/en/latest/docs/workflows.html>`__" for serial and file access:
+
+  - With a user accessible USB plug which appears as a CIRCUITPY drive when plugged in.
+  - With file and serial access over Bluetooth Low Energy using the BLE Workflow.
+  - With file access over WiFi using the WiFi Workflow with serial access over USB and/or WebSocket.
+
+- Boards that do not support the USB Workflow should be clearly marked.
 
 If you choose not to meet these requirements, then we ask you call your version of CircuitPython
 something else (for example, SuperDuperPython) and not use the Blinka logo. You can say it is
@@ -131,11 +129,23 @@ Behavior
       ``code.py`` **in the REPL anymore, as the REPL is a fresh vm.** CircuitPython's goal for this
       change includes reducing confusion about pins and memory being used.
    -  After the main code is finished the REPL can be entered by pressing any key.
+      - If the file ``repl.py`` exists, it is executed before the REPL Prompt is shown
+      - In safe mode this functionality is disabled, to ensure the REPL Prompt can always be reached
    -  Autoreload state will be maintained across reload.
 
 -  Adds a safe mode that does not run user code after a hard crash or brown out. This makes it
    possible to fix code that causes nasty crashes by making it available through mass storage after
    the crash. A reset (the button) is needed after it's fixed to get back into normal mode.
+-  Safe mode may be handled programmatically by providing a ``safemode.py``.
+   ``safemode.py`` is run if the board has reset due to entering safe mode, unless the safe mode
+   initiated by the user by pressing button(s).
+   USB is not available so nothing can be printed.
+   ``safemode.py`` can determine why the safe mode occurred
+   using ``supervisor.runtime.safe_mode_reason``, and take appropriate action. For instance,
+   if a hard crash occurred, ``safemode.py`` may do a ``microcontroller.reset()``
+   to automatically restart despite the crash.
+   If the battery is low, but is being charged, ``safemode.py`` may put the board in deep sleep
+   for a while. Or it may simply reset, and have ``code.py`` check the voltage and do the sleep.
 -  RGB status LED indicating CircuitPython state.
    - One green flash - code completed without error.
    - Two red flashes - code ended due to an exception.
@@ -143,9 +153,9 @@ Behavior
 -  Re-runs ``code.py`` or other main file after file system writes by a workflow. (Disable with
    ``supervisor.disable_autoreload()``)
 -  Autoreload is disabled while the REPL is active.
--  Main is one of these: ``code.txt``, ``code.py``, ``main.py``,
-   ``main.txt``
--  Boot is one of these: ``boot.py``, ``boot.txt``
+-  ``code.py`` may also be named ``code.txt``, ``main.py``, or ``main.txt``.
+-  ``boot.py`` may also be named ``boot.txt``.
+-  ``safemode.py`` may also be named ``safemode.txt``.
 
 API
 ~~~
@@ -213,23 +223,10 @@ Ports
 
 Ports include the code unique to a microcontroller line.
 
-================  ============================================================
-Supported         Support status
-================  ============================================================
-atmel-samd        ``SAMD21`` stable | ``SAMD51`` stable
-cxd56             stable
-espressif         ``ESP32-C3`` beta | ``ESP32-S2`` stable | ``ESP32-S3`` beta
-litex             alpha
-mimxrt10xx        alpha
-nrf               stable
-raspberrypi       stable
-stm               ``F4`` stable | ``others`` beta
-unix              alpha
-================  ============================================================
+The following ports are available: ``atmel-samd``, ``cxd56``, ``espressif``, ``litex``, ``mimxrt10xx``, ``nordic``, ``raspberrypi``, ``renode``, ``silabs`` (``efr32``), ``stm``, ``unix``.
 
--  ``stable`` Highly unlikely to have bugs or missing functionality.
--  ``beta``   Being actively improved but may be missing functionality and have bugs.
--  ``alpha``  Will have bugs and missing functionality.
+However, not all ports are fully functional. Some have limited functionality and known serious bugs.
+For details, refer to the **Port status** section in the `latest release <https://github.com/adafruit/circuitpython/releases/latest>`__ notes.
 
 Boards
 ~~~~~~

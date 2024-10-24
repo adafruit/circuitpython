@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2016 Scott Shawcroft
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2016 Scott Shawcroft
+//
+// SPDX-License-Identifier: MIT
 
 #include "shared-bindings/busio/I2C.h"
 #include "py/mperrno.h"
@@ -35,7 +15,6 @@
 #include "samd/sercom.h"
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/microcontroller/Pin.h"
-#include "supervisor/shared/translate/translate.h"
 
 #include "common-hal/busio/__init__.h"
 
@@ -74,7 +53,8 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
     uint32_t sda_pinmux, scl_pinmux;
 
     // Ensure the object starts in its deinit state.
-    self->sda_pin = NO_PIN;
+    common_hal_busio_i2c_mark_deinit(self);
+
     Sercom *sercom = samd_i2c_get_sercom(scl, sda, &sercom_index, &sda_pinmux, &scl_pinmux);
     if (sercom == NULL) {
         raise_ValueError_invalid_pins();
@@ -101,7 +81,7 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
     if (!gpio_get_pin_level(sda->number) || !gpio_get_pin_level(scl->number)) {
         reset_pin_number(sda->number);
         reset_pin_number(scl->number);
-        mp_raise_RuntimeError(translate("No pull up found on SDA or SCL; check your wiring"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("No pull up found on SDA or SCL; check your wiring"));
     }
     #endif
 
@@ -125,10 +105,13 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
     // exact cutoff, but no frequency well under 100kHz is available)
     if ((frequency < 95000) ||
         (i2c_m_sync_set_baudrate(&self->i2c_desc, 0, frequency / 1000) != ERR_NONE)) {
-        reset_pin_number(sda->number);
-        reset_pin_number(scl->number);
         common_hal_busio_i2c_deinit(self);
         mp_arg_error_invalid(MP_QSTR_frequency);
+    }
+
+    if (i2c_m_sync_enable(&self->i2c_desc) != ERR_NONE) {
+        common_hal_busio_i2c_deinit(self);
+        mp_raise_OSError(MP_EIO);
     }
 
     self->sda_pin = sda->number;
@@ -136,14 +119,16 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
     claim_pin(sda);
     claim_pin(scl);
 
-    if (i2c_m_sync_enable(&self->i2c_desc) != ERR_NONE) {
-        common_hal_busio_i2c_deinit(self);
-        mp_raise_OSError(MP_EIO);
-    }
+    // Prevent bulk sercom reset from resetting us. The finalizer will instead.
+    never_reset_sercom(self->i2c_desc.device.hw);
 }
 
 bool common_hal_busio_i2c_deinited(busio_i2c_obj_t *self) {
     return self->sda_pin == NO_PIN;
+}
+
+void common_hal_busio_i2c_mark_deinit(busio_i2c_obj_t *self) {
+    self->sda_pin = NO_PIN;
 }
 
 void common_hal_busio_i2c_deinit(busio_i2c_obj_t *self) {
@@ -156,8 +141,7 @@ void common_hal_busio_i2c_deinit(busio_i2c_obj_t *self) {
 
     reset_pin_number(self->sda_pin);
     reset_pin_number(self->scl_pin);
-    self->sda_pin = NO_PIN;
-    self->scl_pin = NO_PIN;
+    common_hal_busio_i2c_mark_deinit(self);
 }
 
 bool common_hal_busio_i2c_probe(busio_i2c_obj_t *self, uint8_t addr) {
@@ -170,6 +154,9 @@ bool common_hal_busio_i2c_probe(busio_i2c_obj_t *self, uint8_t addr) {
 }
 
 bool common_hal_busio_i2c_try_lock(busio_i2c_obj_t *self) {
+    if (common_hal_busio_i2c_deinited(self)) {
+        return false;
+    }
     bool grabbed_lock = false;
     CRITICAL_SECTION_ENTER()
     if (!self->has_lock) {
@@ -188,7 +175,7 @@ void common_hal_busio_i2c_unlock(busio_i2c_obj_t *self) {
     self->has_lock = false;
 }
 
-STATIC uint8_t _common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr,
+static uint8_t _common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr,
     const uint8_t *data, size_t len, bool transmit_stop_bit) {
 
     uint16_t attempts = ATTEMPTS;
@@ -256,8 +243,6 @@ uint8_t common_hal_busio_i2c_write_read(busio_i2c_obj_t *self, uint16_t addr,
 }
 
 void common_hal_busio_i2c_never_reset(busio_i2c_obj_t *self) {
-    never_reset_sercom(self->i2c_desc.device.hw);
-
     never_reset_pin_number(self->scl_pin);
     never_reset_pin_number(self->sda_pin);
 }

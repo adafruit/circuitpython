@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * SPDX-FileCopyrightText: Copyright (c) 2013-2017 Damien P. George
+ * Copyright (c) 2013-2017 Damien P. George
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -39,8 +39,6 @@
 #include "py/objstr.h"
 #include "py/builtin.h"
 
-#include "supervisor/shared/translate/translate.h"
-
 #if MICROPY_ENABLE_COMPILER
 
 #define RULE_ACT_ARG_MASK       (0x0f)
@@ -63,7 +61,7 @@ enum {
 // define rules with a compile function
 #define DEF_RULE(rule, comp, kind, ...) RULE_##rule,
 #define DEF_RULE_NC(rule, kind, ...)
-    #include "py/grammar.h"
+#include "py/grammar.h"
 #undef DEF_RULE
 #undef DEF_RULE_NC
     RULE_const_object, // special node for a constant, generic Python object
@@ -71,13 +69,13 @@ enum {
 // define rules without a compile function
 #define DEF_RULE(rule, comp, kind, ...)
 #define DEF_RULE_NC(rule, kind, ...) RULE_##rule,
-    #include "py/grammar.h"
+#include "py/grammar.h"
 #undef DEF_RULE
 #undef DEF_RULE_NC
 };
 
 // Define an array of actions corresponding to each rule
-STATIC const uint8_t rule_act_table[] = {
+static const uint8_t rule_act_table[] = {
 #define or(n)                   (RULE_ACT_OR | n)
 #define and(n)                  (RULE_ACT_AND | n)
 #define and_ident(n)            (RULE_ACT_AND | n | RULE_ACT_ALLOW_IDENT)
@@ -88,7 +86,7 @@ STATIC const uint8_t rule_act_table[] = {
 
 #define DEF_RULE(rule, comp, kind, ...) kind,
 #define DEF_RULE_NC(rule, kind, ...)
-    #include "py/grammar.h"
+#include "py/grammar.h"
 #undef DEF_RULE
 #undef DEF_RULE_NC
 
@@ -96,7 +94,7 @@ STATIC const uint8_t rule_act_table[] = {
 
 #define DEF_RULE(rule, comp, kind, ...)
 #define DEF_RULE_NC(rule, kind, ...) kind,
-    #include "py/grammar.h"
+#include "py/grammar.h"
 #undef DEF_RULE
 #undef DEF_RULE_NC
 
@@ -110,20 +108,20 @@ STATIC const uint8_t rule_act_table[] = {
 };
 
 // Define the argument data for each rule, as a combined array
-STATIC const uint16_t rule_arg_combined_table[] = {
+static const uint16_t rule_arg_combined_table[] = {
 #define tok(t)                  (RULE_ARG_TOK | MP_TOKEN_##t)
 #define rule(r)                 (RULE_ARG_RULE | RULE_##r)
 #define opt_rule(r)             (RULE_ARG_OPT_RULE | RULE_##r)
 
 #define DEF_RULE(rule, comp, kind, ...) __VA_ARGS__,
 #define DEF_RULE_NC(rule, kind, ...)
-    #include "py/grammar.h"
+#include "py/grammar.h"
 #undef DEF_RULE
 #undef DEF_RULE_NC
 
 #define DEF_RULE(rule, comp, kind, ...)
 #define DEF_RULE_NC(rule, kind, ...)  __VA_ARGS__,
-    #include "py/grammar.h"
+#include "py/grammar.h"
 #undef DEF_RULE
 #undef DEF_RULE_NC
 
@@ -143,12 +141,12 @@ STATIC const uint16_t rule_arg_combined_table[] = {
 enum {
 #define DEF_RULE(rule, comp, kind, ...) RULE_PADDING(rule, __VA_ARGS__)
 #define DEF_RULE_NC(rule, kind, ...)
-    #include "py/grammar.h"
+#include "py/grammar.h"
 #undef DEF_RULE
 #undef DEF_RULE_NC
 #define DEF_RULE(rule, comp, kind, ...)
 #define DEF_RULE_NC(rule, kind, ...) RULE_PADDING(rule, __VA_ARGS__)
-    #include "py/grammar.h"
+#include "py/grammar.h"
 #undef DEF_RULE
 #undef DEF_RULE_NC
 };
@@ -163,16 +161,16 @@ enum {
 // data, which indexes rule_arg_combined_table.  The offsets require 9 bits of
 // storage but only the lower 8 bits are stored here.  The 9th bit is computed
 // in get_rule_arg using the FIRST_RULE_WITH_OFFSET_ABOVE_255 constant.
-STATIC const uint8_t rule_arg_offset_table[] = {
+static const uint8_t rule_arg_offset_table[] = {
 #define DEF_RULE(rule, comp, kind, ...) RULE_ARG_OFFSET(rule, __VA_ARGS__) & 0xff,
 #define DEF_RULE_NC(rule, kind, ...)
-    #include "py/grammar.h"
+#include "py/grammar.h"
 #undef DEF_RULE
 #undef DEF_RULE_NC
     0, // RULE_const_object
 #define DEF_RULE(rule, comp, kind, ...)
 #define DEF_RULE_NC(rule, kind, ...) RULE_ARG_OFFSET(rule, __VA_ARGS__) & 0xff,
-    #include "py/grammar.h"
+#include "py/grammar.h"
 #undef DEF_RULE
 #undef DEF_RULE_NC
 };
@@ -189,20 +187,20 @@ static const size_t FIRST_RULE_WITH_OFFSET_ABOVE_255 =
 #include "py/grammar.h"
 #undef DEF_RULE
 #undef DEF_RULE_NC
-    0;
+0;
 
 #if MICROPY_DEBUG_PARSE_RULE_NAME
 // Define an array of rule names corresponding to each rule
-STATIC const char *const rule_name_table[] = {
+static const char *const rule_name_table[] = {
 #define DEF_RULE(rule, comp, kind, ...) #rule,
 #define DEF_RULE_NC(rule, kind, ...)
-    #include "py/grammar.h"
+#include "py/grammar.h"
 #undef DEF_RULE
 #undef DEF_RULE_NC
     "", // RULE_const_object
 #define DEF_RULE(rule, comp, kind, ...)
 #define DEF_RULE_NC(rule, kind, ...) #rule,
-    #include "py/grammar.h"
+#include "py/grammar.h"
 #undef DEF_RULE
 #undef DEF_RULE_NC
 };
@@ -244,7 +242,9 @@ typedef struct _parser_t {
     #endif
 } parser_t;
 
-STATIC const uint16_t *get_rule_arg(uint8_t r_id) {
+static void push_result_rule(parser_t *parser, size_t src_line, uint8_t rule_id, size_t num_args);
+
+static const uint16_t *get_rule_arg(uint8_t r_id) {
     size_t off = rule_arg_offset_table[r_id];
     if (r_id >= FIRST_RULE_WITH_OFFSET_ABOVE_255) {
         off |= 0x100;
@@ -252,10 +252,11 @@ STATIC const uint16_t *get_rule_arg(uint8_t r_id) {
     return &rule_arg_combined_table[off];
 }
 
+// CIRCUITPY-CHANGE: ignore compiler warning
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-align"
 
-STATIC void *parser_alloc(parser_t *parser, size_t num_bytes) {
+static void *parser_alloc(parser_t *parser, size_t num_bytes) {
     // use a custom memory allocator to store parse nodes sequentially in large chunks
 
     mp_parse_chunk_t *chunk = parser->cur_chunk;
@@ -297,7 +298,17 @@ STATIC void *parser_alloc(parser_t *parser, size_t num_bytes) {
 }
 #pragma GCC diagnostic pop
 
-STATIC void push_rule(parser_t *parser, size_t src_line, uint8_t rule_id, size_t arg_i) {
+#if MICROPY_COMP_CONST_TUPLE
+static void parser_free_parse_node_struct(parser_t *parser, mp_parse_node_struct_t *pns) {
+    mp_parse_chunk_t *chunk = parser->cur_chunk;
+    if (chunk->data <= (byte *)pns && (byte *)pns < chunk->data + chunk->union_.used) {
+        size_t num_bytes = sizeof(mp_parse_node_struct_t) + sizeof(mp_parse_node_t) * MP_PARSE_NODE_STRUCT_NUM_NODES(pns);
+        chunk->union_.used -= num_bytes;
+    }
+}
+#endif
+
+static void push_rule(parser_t *parser, size_t src_line, uint8_t rule_id, size_t arg_i) {
     if (parser->rule_stack_top >= parser->rule_stack_alloc) {
         rule_stack_t *rs = m_renew(rule_stack_t, parser->rule_stack, parser->rule_stack_alloc, parser->rule_stack_alloc + MICROPY_ALLOC_PARSE_RULE_INC);
         parser->rule_stack = rs;
@@ -309,13 +320,13 @@ STATIC void push_rule(parser_t *parser, size_t src_line, uint8_t rule_id, size_t
     rs->arg_i = arg_i;
 }
 
-STATIC void push_rule_from_arg(parser_t *parser, size_t arg) {
+static void push_rule_from_arg(parser_t *parser, size_t arg) {
     assert((arg & RULE_ARG_KIND_MASK) == RULE_ARG_RULE || (arg & RULE_ARG_KIND_MASK) == RULE_ARG_OPT_RULE);
     size_t rule_id = arg & RULE_ARG_ARG_MASK;
     push_rule(parser, parser->lexer->tok_line, rule_id, 0);
 }
 
-STATIC uint8_t pop_rule(parser_t *parser, size_t *arg_i, size_t *src_line) {
+static uint8_t pop_rule(parser_t *parser, size_t *arg_i, size_t *src_line) {
     parser->rule_stack_top -= 1;
     uint8_t rule_id = parser->rule_stack[parser->rule_stack_top].rule_id;
     *arg_i = parser->rule_stack[parser->rule_stack_top].arg_i;
@@ -323,15 +334,12 @@ STATIC uint8_t pop_rule(parser_t *parser, size_t *arg_i, size_t *src_line) {
     return rule_id;
 }
 
-bool mp_parse_node_is_const_false(mp_parse_node_t pn) {
-    return MP_PARSE_NODE_IS_TOKEN_KIND(pn, MP_TOKEN_KW_FALSE)
-           || (MP_PARSE_NODE_IS_SMALL_INT(pn) && MP_PARSE_NODE_LEAF_SMALL_INT(pn) == 0);
+#if MICROPY_COMP_CONST_TUPLE
+static uint8_t peek_rule(parser_t *parser, size_t n) {
+    assert(parser->rule_stack_top > n);
+    return parser->rule_stack[parser->rule_stack_top - 1 - n].rule_id;
 }
-
-bool mp_parse_node_is_const_true(mp_parse_node_t pn) {
-    return MP_PARSE_NODE_IS_TOKEN_KIND(pn, MP_TOKEN_KW_TRUE)
-           || (MP_PARSE_NODE_IS_SMALL_INT(pn) && MP_PARSE_NODE_LEAF_SMALL_INT(pn) != 0);
-}
+#endif
 
 bool mp_parse_node_get_int_maybe(mp_parse_node_t pn, mp_obj_t *o) {
     if (MP_PARSE_NODE_IS_SMALL_INT(pn)) {
@@ -339,16 +347,99 @@ bool mp_parse_node_get_int_maybe(mp_parse_node_t pn, mp_obj_t *o) {
         return true;
     } else if (MP_PARSE_NODE_IS_STRUCT_KIND(pn, RULE_const_object)) {
         mp_parse_node_struct_t *pns = (mp_parse_node_struct_t *)pn;
-        #if MICROPY_OBJ_REPR == MICROPY_OBJ_REPR_D
-        // nodes are 32-bit pointers, but need to extract 64-bit object
-        *o = (uint64_t)pns->nodes[0] | ((uint64_t)pns->nodes[1] << 32);
-        #else
-        *o = (mp_obj_t)pns->nodes[0];
-        #endif
+        *o = mp_parse_node_extract_const_object(pns);
         return mp_obj_is_int(*o);
     } else {
         return false;
     }
+}
+
+#if MICROPY_COMP_CONST_TUPLE || MICROPY_COMP_CONST
+static bool mp_parse_node_is_const(mp_parse_node_t pn) {
+    if (MP_PARSE_NODE_IS_SMALL_INT(pn)) {
+        // Small integer.
+        return true;
+    } else if (MP_PARSE_NODE_IS_LEAF(pn)) {
+        // Possible str, or constant literal.
+        uintptr_t kind = MP_PARSE_NODE_LEAF_KIND(pn);
+        if (kind == MP_PARSE_NODE_STRING) {
+            return true;
+        } else if (kind == MP_PARSE_NODE_TOKEN) {
+            uintptr_t arg = MP_PARSE_NODE_LEAF_ARG(pn);
+            return arg == MP_TOKEN_KW_NONE
+                   || arg == MP_TOKEN_KW_FALSE
+                   || arg == MP_TOKEN_KW_TRUE
+                   || arg == MP_TOKEN_ELLIPSIS;
+        }
+    } else if (MP_PARSE_NODE_IS_STRUCT_KIND(pn, RULE_const_object)) {
+        // Constant object.
+        return true;
+    } else if (MP_PARSE_NODE_IS_STRUCT_KIND(pn, RULE_atom_paren)) {
+        // Possible empty tuple.
+        mp_parse_node_struct_t *pns = (mp_parse_node_struct_t *)pn;
+        return MP_PARSE_NODE_IS_NULL(pns->nodes[0]);
+    }
+    return false;
+}
+
+static mp_obj_t mp_parse_node_convert_to_obj(mp_parse_node_t pn) {
+    assert(mp_parse_node_is_const(pn));
+    if (MP_PARSE_NODE_IS_SMALL_INT(pn)) {
+        mp_int_t arg = MP_PARSE_NODE_LEAF_SMALL_INT(pn);
+        #if MICROPY_DYNAMIC_COMPILER
+        mp_uint_t sign_mask = -((mp_uint_t)1 << (mp_dynamic_compiler.small_int_bits - 1));
+        if (!((arg & sign_mask) == 0 || (arg & sign_mask) == sign_mask)) {
+            // Integer doesn't fit in a small-int, so create a multi-precision int object.
+            return mp_obj_new_int_from_ll(arg);
+        }
+        #endif
+        return MP_OBJ_NEW_SMALL_INT(arg);
+    } else if (MP_PARSE_NODE_IS_LEAF(pn)) {
+        uintptr_t kind = MP_PARSE_NODE_LEAF_KIND(pn);
+        uintptr_t arg = MP_PARSE_NODE_LEAF_ARG(pn);
+        if (kind == MP_PARSE_NODE_STRING) {
+            return MP_OBJ_NEW_QSTR(arg);
+        } else {
+            assert(MP_PARSE_NODE_LEAF_KIND(pn) == MP_PARSE_NODE_TOKEN);
+            switch (arg) {
+                case MP_TOKEN_KW_NONE:
+                    return mp_const_none;
+                case MP_TOKEN_KW_FALSE:
+                    return mp_const_false;
+                case MP_TOKEN_KW_TRUE:
+                    return mp_const_true;
+                default:
+                    assert(arg == MP_TOKEN_ELLIPSIS);
+                    return MP_OBJ_FROM_PTR(&mp_const_ellipsis_obj);
+            }
+        }
+    } else if (MP_PARSE_NODE_IS_STRUCT_KIND(pn, RULE_const_object)) {
+        mp_parse_node_struct_t *pns = (mp_parse_node_struct_t *)pn;
+        return mp_parse_node_extract_const_object(pns);
+    } else {
+        assert(MP_PARSE_NODE_IS_STRUCT_KIND(pn, RULE_atom_paren));
+        assert(MP_PARSE_NODE_IS_NULL(((mp_parse_node_struct_t *)pn)->nodes[0]));
+        return mp_const_empty_tuple;
+    }
+}
+#endif
+
+static bool parse_node_is_const_bool(mp_parse_node_t pn, bool value) {
+    // Returns true if 'pn' is a constant whose boolean value is equivalent to 'value'
+    #if MICROPY_COMP_CONST_TUPLE || MICROPY_COMP_CONST
+    return mp_parse_node_is_const(pn) && mp_obj_is_true(mp_parse_node_convert_to_obj(pn)) == value;
+    #else
+    return MP_PARSE_NODE_IS_TOKEN_KIND(pn, value ? MP_TOKEN_KW_TRUE : MP_TOKEN_KW_FALSE)
+           || (MP_PARSE_NODE_IS_SMALL_INT(pn) && !!MP_PARSE_NODE_LEAF_SMALL_INT(pn) == value);
+    #endif
+}
+
+bool mp_parse_node_is_const_false(mp_parse_node_t pn) {
+    return parse_node_is_const_bool(pn, false);
+}
+
+bool mp_parse_node_is_const_true(mp_parse_node_t pn) {
+    return parse_node_is_const_bool(pn, true);
 }
 
 size_t mp_parse_node_extract_list(mp_parse_node_t *pn, size_t pn_kind, mp_parse_node_t **nodes) {
@@ -394,9 +485,6 @@ void mp_parse_node_print(const mp_print_t *print, mp_parse_node_t pn, size_t ind
             case MP_PARSE_NODE_STRING:
                 mp_printf(print, "str(%s)\n", qstr_str(arg));
                 break;
-            case MP_PARSE_NODE_BYTES:
-                mp_printf(print, "bytes(%s)\n", qstr_str(arg));
-                break;
             default:
                 assert(MP_PARSE_NODE_LEAF_KIND(pn) == MP_PARSE_NODE_TOKEN);
                 mp_printf(print, "tok(%u)\n", (uint)arg);
@@ -406,11 +494,14 @@ void mp_parse_node_print(const mp_print_t *print, mp_parse_node_t pn, size_t ind
         // node must be a mp_parse_node_struct_t
         mp_parse_node_struct_t *pns = (mp_parse_node_struct_t *)pn;
         if (MP_PARSE_NODE_STRUCT_KIND(pns) == RULE_const_object) {
+            mp_obj_t obj = mp_parse_node_extract_const_object(pns);
             #if MICROPY_OBJ_REPR == MICROPY_OBJ_REPR_D
-            mp_printf(print, "literal const(%016llx)\n", (uint64_t)pns->nodes[0] | ((uint64_t)pns->nodes[1] << 32));
+            mp_printf(print, "literal const(%016llx)=", obj);
             #else
-            mp_printf(print, "literal const(%p)\n", (mp_obj_t)pns->nodes[0]);
+            mp_printf(print, "literal const(%p)=", obj);
             #endif
+            mp_obj_print_helper(print, obj, PRINT_REPR);
+            mp_printf(print, "\n");
         } else {
             size_t n = MP_PARSE_NODE_STRUCT_NUM_NODES(pns);
             #if MICROPY_DEBUG_PARSE_RULE_NAME
@@ -427,7 +518,7 @@ void mp_parse_node_print(const mp_print_t *print, mp_parse_node_t pn, size_t ind
 #endif // MICROPY_DEBUG_PRINTERS
 
 /*
-STATIC void result_stack_show(const mp_print_t *print, parser_t *parser) {
+static void result_stack_show(const mp_print_t *print, parser_t *parser) {
     mp_printf(print, "result stack, most recent first\n");
     for (ssize_t i = parser->result_stack_top - 1; i >= 0; i--) {
         mp_parse_node_print(print, parser->result_stack[i], 0);
@@ -435,17 +526,17 @@ STATIC void result_stack_show(const mp_print_t *print, parser_t *parser) {
 }
 */
 
-STATIC mp_parse_node_t pop_result(parser_t *parser) {
+static mp_parse_node_t pop_result(parser_t *parser) {
     assert(parser->result_stack_top > 0);
     return parser->result_stack[--parser->result_stack_top];
 }
 
-STATIC mp_parse_node_t peek_result(parser_t *parser, size_t pos) {
+static mp_parse_node_t peek_result(parser_t *parser, size_t pos) {
     assert(parser->result_stack_top > pos);
     return parser->result_stack[parser->result_stack_top - 1 - pos];
 }
 
-STATIC void push_result_node(parser_t *parser, mp_parse_node_t pn) {
+static void push_result_node(parser_t *parser, mp_parse_node_t pn) {
     if (parser->result_stack_top >= parser->result_stack_alloc) {
         mp_parse_node_t *stack = m_renew(mp_parse_node_t, parser->result_stack, parser->result_stack_alloc, parser->result_stack_alloc + MICROPY_ALLOC_PARSE_RESULT_INC);
         parser->result_stack = stack;
@@ -454,7 +545,7 @@ STATIC void push_result_node(parser_t *parser, mp_parse_node_t pn) {
     parser->result_stack[parser->result_stack_top++] = pn;
 }
 
-STATIC mp_parse_node_t make_node_const_object(parser_t *parser, size_t src_line, mp_obj_t obj) {
+static mp_parse_node_t make_node_const_object(parser_t *parser, size_t src_line, mp_obj_t obj) {
     mp_parse_node_struct_t *pn = parser_alloc(parser, sizeof(mp_parse_node_struct_t) + sizeof(mp_obj_t));
     pn->source_line = src_line;
     #if MICROPY_OBJ_REPR == MICROPY_OBJ_REPR_D
@@ -469,19 +560,31 @@ STATIC mp_parse_node_t make_node_const_object(parser_t *parser, size_t src_line,
     return (mp_parse_node_t)pn;
 }
 
-STATIC mp_parse_node_t mp_parse_node_new_small_int_checked(parser_t *parser, mp_obj_t o_val) {
-    (void)parser;
-    mp_int_t val = MP_OBJ_SMALL_INT_VALUE(o_val);
-    #if MICROPY_OBJ_REPR == MICROPY_OBJ_REPR_D
-    // A parse node is only 32-bits and the small-int value must fit in 31-bits
-    if (((val ^ (val << 1)) & 0xffffffff80000000) != 0) {
-        return make_node_const_object(parser, 0, o_val);
+// Create a parse node representing a constant object, possibly optimising the case of
+// an integer, by putting the (small) integer value directly in the parse node itself.
+static mp_parse_node_t make_node_const_object_optimised(parser_t *parser, size_t src_line, mp_obj_t obj) {
+    if (mp_obj_is_small_int(obj)) {
+        mp_int_t val = MP_OBJ_SMALL_INT_VALUE(obj);
+        #if MICROPY_OBJ_REPR == MICROPY_OBJ_REPR_D
+        // A parse node is only 32-bits and the small-int value must fit in 31-bits
+        if (((val ^ (val << 1)) & 0xffffffff80000000) != 0) {
+            return make_node_const_object(parser, src_line, obj);
+        }
+        #endif
+        #if MICROPY_DYNAMIC_COMPILER
+        // Check that the integer value fits in target runtime's small-int
+        mp_uint_t sign_mask = -((mp_uint_t)1 << (mp_dynamic_compiler.small_int_bits - 1));
+        if (!((val & sign_mask) == 0 || (val & sign_mask) == sign_mask)) {
+            return make_node_const_object(parser, src_line, obj);
+        }
+        #endif
+        return mp_parse_node_new_small_int(val);
+    } else {
+        return make_node_const_object(parser, src_line, obj);
     }
-    #endif
-    return mp_parse_node_new_small_int(val);
 }
 
-STATIC void push_result_token(parser_t *parser, uint8_t rule_id) {
+static void push_result_token(parser_t *parser, uint8_t rule_id) {
     mp_parse_node_t pn;
     mp_lexer_t *lex = parser->lexer;
     if (lex->tok_kind == MP_TOKEN_NAME) {
@@ -491,11 +594,7 @@ STATIC void push_result_token(parser_t *parser, uint8_t rule_id) {
         mp_map_elem_t *elem;
         if (rule_id == RULE_atom
             && (elem = mp_map_lookup(&parser->consts, MP_OBJ_NEW_QSTR(id), MP_MAP_LOOKUP)) != NULL) {
-            if (mp_obj_is_small_int(elem->value)) {
-                pn = mp_parse_node_new_small_int_checked(parser, elem->value);
-            } else {
-                pn = make_node_const_object(parser, lex->tok_line, elem->value);
-            }
+            pn = make_node_const_object_optimised(parser, lex->tok_line, elem->value);
         } else {
             pn = mp_parse_node_new_leaf(MP_PARSE_NODE_ID, id);
         }
@@ -505,16 +604,12 @@ STATIC void push_result_token(parser_t *parser, uint8_t rule_id) {
         #endif
     } else if (lex->tok_kind == MP_TOKEN_INTEGER) {
         mp_obj_t o = mp_parse_num_integer(lex->vstr.buf, lex->vstr.len, 0, lex);
-        if (mp_obj_is_small_int(o)) {
-            pn = mp_parse_node_new_small_int_checked(parser, o);
-        } else {
-            pn = make_node_const_object(parser, lex->tok_line, o);
-        }
+        pn = make_node_const_object_optimised(parser, lex->tok_line, o);
     } else if (lex->tok_kind == MP_TOKEN_FLOAT_OR_IMAG) {
-        mp_obj_t o = mp_parse_num_decimal(lex->vstr.buf, lex->vstr.len, true, false, lex);
+        mp_obj_t o = mp_parse_num_float(lex->vstr.buf, lex->vstr.len, true, lex);
         pn = make_node_const_object(parser, lex->tok_line, o);
-    } else if (lex->tok_kind == MP_TOKEN_STRING || lex->tok_kind == MP_TOKEN_BYTES) {
-        // Don't automatically intern all strings/bytes.  doc strings (which are usually large)
+    } else if (lex->tok_kind == MP_TOKEN_STRING) {
+        // Don't automatically intern all strings.  Doc strings (which are usually large)
         // will be discarded by the compiler, and so we shouldn't intern them.
         qstr qst = MP_QSTRnull;
         if (lex->vstr.len <= MICROPY_ALLOC_PARSE_INTERN_STRING_LEN) {
@@ -526,24 +621,28 @@ STATIC void push_result_token(parser_t *parser, uint8_t rule_id) {
         }
         if (qst != MP_QSTRnull) {
             // qstr exists, make a leaf node
-            pn = mp_parse_node_new_leaf(lex->tok_kind == MP_TOKEN_STRING ? MP_PARSE_NODE_STRING : MP_PARSE_NODE_BYTES, qst);
+            pn = mp_parse_node_new_leaf(MP_PARSE_NODE_STRING, qst);
         } else {
-            // not interned, make a node holding a pointer to the string/bytes object
-            mp_obj_t o = mp_obj_new_str_copy(
-                lex->tok_kind == MP_TOKEN_STRING ? &mp_type_str : &mp_type_bytes,
-                (const byte *)lex->vstr.buf, lex->vstr.len);
+            // not interned, make a node holding a pointer to the string object
+            mp_obj_t o = mp_obj_new_str_copy(&mp_type_str, (const byte *)lex->vstr.buf, lex->vstr.len);
             pn = make_node_const_object(parser, lex->tok_line, o);
         }
+    } else if (lex->tok_kind == MP_TOKEN_BYTES) {
+        // make a node holding a pointer to the bytes object
+        mp_obj_t o = mp_obj_new_bytes((const byte *)lex->vstr.buf, lex->vstr.len);
+        pn = make_node_const_object(parser, lex->tok_line, o);
     } else {
         pn = mp_parse_node_new_leaf(MP_PARSE_NODE_TOKEN, lex->tok_kind);
     }
     push_result_node(parser, pn);
 }
 
+#if MICROPY_COMP_CONST_FOLDING
+
 #if MICROPY_COMP_MODULE_CONST
-STATIC const mp_rom_map_elem_t mp_constants_table[] = {
-    #if MICROPY_PY_UERRNO
-    { MP_ROM_QSTR(MP_QSTR_errno), MP_ROM_PTR(&mp_module_uerrno) },
+static const mp_rom_map_elem_t mp_constants_table[] = {
+    #if MICROPY_PY_ERRNO
+    { MP_ROM_QSTR(MP_QSTR_errno), MP_ROM_PTR(&mp_module_errno) },
     #endif
     #if MICROPY_PY_UCTYPES
     { MP_ROM_QSTR(MP_QSTR_uctypes), MP_ROM_PTR(&mp_module_uctypes) },
@@ -551,13 +650,16 @@ STATIC const mp_rom_map_elem_t mp_constants_table[] = {
     // Extra constants as defined by a port
     MICROPY_PORT_CONSTANTS
 };
-STATIC MP_DEFINE_CONST_MAP(mp_constants_map, mp_constants_table);
+static MP_DEFINE_CONST_MAP(mp_constants_map, mp_constants_table);
 #endif
 
-STATIC void push_result_rule(parser_t *parser, size_t src_line, uint8_t rule_id, size_t num_args);
-
-#if MICROPY_COMP_CONST_FOLDING
-STATIC bool fold_logical_constants(parser_t *parser, uint8_t rule_id, size_t *num_args) {
+// CIRCUITPY-CHANGE: avoid compiler warning
+#if defined(MICROPY_COMP_CONST_FOLDING_COMPILER_WORKAROUND) && MICROPY_COMP_CONST_FOLDING_COMPILER_WORKAROUND
+// Some versions of the xtensa-esp32-elf-gcc compiler generate wrong code if this
+// function is static, so provide a hook for them to work around this problem.
+MP_NOINLINE
+#endif
+static bool fold_logical_constants(parser_t *parser, uint8_t rule_id, size_t *num_args) {
     if (rule_id == RULE_or_test
         || rule_id == RULE_and_test) {
         // folding for binary logical ops: or and
@@ -614,7 +716,7 @@ STATIC bool fold_logical_constants(parser_t *parser, uint8_t rule_id, size_t *nu
     return false;
 }
 
-STATIC bool fold_constants(parser_t *parser, uint8_t rule_id, size_t num_args) {
+static bool fold_constants(parser_t *parser, uint8_t rule_id, size_t num_args) {
     // this code does folding of arbitrary integer expressions, eg 1 + 2 * 3 + 4
     // it does not do partial folding, eg 1 + 2 + x -> 3 + x
 
@@ -721,14 +823,14 @@ STATIC bool fold_constants(parser_t *parser, uint8_t rule_id, size_t num_args) {
 
                 // get the value
                 mp_parse_node_t pn_value = ((mp_parse_node_struct_t *)((mp_parse_node_struct_t *)pn1)->nodes[1])->nodes[0];
-                mp_obj_t value;
-                if (!mp_parse_node_get_int_maybe(pn_value, &value)) {
+                if (!mp_parse_node_is_const(pn_value)) {
                     mp_obj_t exc = mp_obj_new_exception_msg(&mp_type_SyntaxError,
-                        MP_ERROR_TEXT("constant must be an integer"));
+                        MP_ERROR_TEXT("not a constant"));
                     mp_obj_exception_add_traceback(exc, parser->lexer->source_name,
                         ((mp_parse_node_struct_t *)pn1)->source_line, MP_QSTRnull);
                     nlr_raise(exc);
                 }
+                mp_obj_t value = mp_parse_node_convert_to_obj(pn_value);
 
                 // store the value in the table of dynamic constants
                 mp_map_elem_t *elem = mp_map_lookup(&parser->consts, MP_OBJ_NEW_QSTR(id), MP_MAP_LOOKUP_ADD_IF_NOT_FOUND);
@@ -790,18 +892,67 @@ STATIC bool fold_constants(parser_t *parser, uint8_t rule_id, size_t num_args) {
     for (size_t i = num_args; i > 0; i--) {
         pop_result(parser);
     }
-    if (mp_obj_is_small_int(arg0)) {
-        push_result_node(parser, mp_parse_node_new_small_int_checked(parser, arg0));
-    } else {
-        // TODO reuse memory for parse node struct?
-        push_result_node(parser, make_node_const_object(parser, 0, arg0));
-    }
+    push_result_node(parser, make_node_const_object_optimised(parser, 0, arg0));
 
     return true;
 }
+
+#endif // MICROPY_COMP_CONST_FOLDING
+
+#if MICROPY_COMP_CONST_TUPLE
+static bool build_tuple_from_stack(parser_t *parser, size_t src_line, size_t num_args) {
+    for (size_t i = num_args; i > 0;) {
+        mp_parse_node_t pn = peek_result(parser, --i);
+        if (!mp_parse_node_is_const(pn)) {
+            return false;
+        }
+    }
+    mp_obj_tuple_t *tuple = MP_OBJ_TO_PTR(mp_obj_new_tuple(num_args, NULL));
+    for (size_t i = num_args; i > 0;) {
+        mp_parse_node_t pn = pop_result(parser);
+        tuple->items[--i] = mp_parse_node_convert_to_obj(pn);
+        if (MP_PARSE_NODE_IS_STRUCT(pn)) {
+            parser_free_parse_node_struct(parser, (mp_parse_node_struct_t *)pn);
+        }
+    }
+    push_result_node(parser, make_node_const_object(parser, src_line, MP_OBJ_FROM_PTR(tuple)));
+    return true;
+}
+
+static bool build_tuple(parser_t *parser, size_t src_line, uint8_t rule_id, size_t num_args) {
+    if (rule_id == RULE_testlist_comp) {
+        if (peek_rule(parser, 0) == RULE_atom_paren) {
+            // Tuple of the form "(a,)".
+            return build_tuple_from_stack(parser, src_line, num_args);
+        }
+    }
+    if (rule_id == RULE_testlist_comp_3c) {
+        assert(peek_rule(parser, 0) == RULE_testlist_comp_3b);
+        assert(peek_rule(parser, 1) == RULE_testlist_comp);
+        if (peek_rule(parser, 2) == RULE_atom_paren) {
+            // Tuple of the form "(a, b)".
+            if (build_tuple_from_stack(parser, src_line, num_args)) {
+                parser->rule_stack_top -= 2; // discard 2 rules
+                return true;
+            }
+        }
+    }
+    if (rule_id == RULE_testlist_star_expr
+        || rule_id == RULE_testlist
+        || rule_id == RULE_subscriptlist) {
+        // Tuple of the form:
+        //  - x = a, b
+        //  - return a, b
+        //  - for x in a, b: pass
+        //  - x[a, b]
+        return build_tuple_from_stack(parser, src_line, num_args);
+    }
+
+    return false;
+}
 #endif
 
-STATIC void push_result_rule(parser_t *parser, size_t src_line, uint8_t rule_id, size_t num_args) {
+static void push_result_rule(parser_t *parser, size_t src_line, uint8_t rule_id, size_t num_args) {
     // Simplify and optimise certain rules, to reduce memory usage and simplify the compiler.
     if (rule_id == RULE_atom_paren) {
         // Remove parenthesis around a single expression if possible.
@@ -857,6 +1008,13 @@ STATIC void push_result_rule(parser_t *parser, size_t src_line, uint8_t rule_id,
     }
     #endif
 
+    #if MICROPY_COMP_CONST_TUPLE
+    if (build_tuple(parser, src_line, rule_id, num_args)) {
+        // we built a tuple from this rule so return straight away
+        return;
+    }
+    #endif
+
     mp_parse_node_struct_t *pn = parser_alloc(parser, sizeof(mp_parse_node_struct_t) + sizeof(mp_parse_node_t) * num_args);
     pn->source_line = src_line;
     pn->kind_num_nodes = (rule_id & 0xff) | (num_args << 8);
@@ -871,6 +1029,9 @@ STATIC void push_result_rule(parser_t *parser, size_t src_line, uint8_t rule_id,
 }
 
 mp_parse_tree_t mp_parse(mp_lexer_t *lex, mp_parse_input_kind_t input_kind) {
+    // Set exception handler to free the lexer if an exception is raised.
+    MP_DEFINE_NLR_JUMP_CALLBACK_FUNCTION_1(ctx, mp_lexer_free, lex);
+    nlr_push_jump_callback(&ctx.callback, mp_call_function_1_from_nlr_jump_callback);
 
     // initialise parser and allocate memory for its stacks
 
@@ -878,6 +1039,8 @@ mp_parse_tree_t mp_parse(mp_lexer_t *lex, mp_parse_input_kind_t input_kind) {
 
     parser.rule_stack_alloc = MICROPY_ALLOC_PARSE_RULE_INIT;
     parser.rule_stack_top = 0;
+    // CIRCUITPY-CHANGE: make parsing more memory flexible
+    // https://github.com/adafruit/circuitpython/pull/552
     parser.rule_stack = NULL;
     while (parser.rule_stack_alloc > 1) {
         parser.rule_stack = m_new_maybe(rule_stack_t, parser.rule_stack_alloc);
@@ -961,7 +1124,6 @@ mp_parse_tree_t mp_parse(mp_lexer_t *lex, mp_parse_input_kind_t input_kind) {
                     backtrack = false;
                 }
                 for (; i < n; ++i) {
-                    // printf("--> inside for @L924\n");
                     uint16_t kind = rule_arg[i] & RULE_ARG_KIND_MASK;
                     if (kind == RULE_ARG_TOK) {
                         if (lex->tok_kind == (rule_arg[i] & RULE_ARG_ARG_MASK)) {
@@ -1238,8 +1400,8 @@ mp_parse_tree_t mp_parse(mp_lexer_t *lex, mp_parse_input_kind_t input_kind) {
     m_del(rule_stack_t, parser.rule_stack, parser.rule_stack_alloc);
     m_del(mp_parse_node_t, parser.result_stack, parser.result_stack_alloc);
 
-    // we also free the lexer on behalf of the caller
-    mp_lexer_free(lex);
+    // Deregister exception handler and free the lexer.
+    nlr_pop_jump_callback(true);
 
     return parser.tree;
 }
@@ -1251,6 +1413,7 @@ void mp_parse_tree_clear(mp_parse_tree_t *tree) {
         m_del(byte, chunk, sizeof(mp_parse_chunk_t) + chunk->alloc);
         chunk = next;
     }
+    tree->chunk = NULL; // Avoid dangling pointer that may live on stack
 }
 
 #endif // MICROPY_ENABLE_COMPILER

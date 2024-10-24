@@ -15,6 +15,7 @@ for endian in ("NATIVE", "LITTLE_ENDIAN", "BIG_ENDIAN"):
         data = bytearray(sz)
         s = uctypes.struct(uctypes.addressof(data), desc, getattr(uctypes, endian))
         for i in range(N):
+            # CIRCUITPY-CHANGE: overflow checks
             try:
                 s.arr[i] = i - 2
             except OverflowError:

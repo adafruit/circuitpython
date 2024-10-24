@@ -1,33 +1,13 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
- * Copyright (c) 2021 Chris Wilson
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
+// SPDX-FileCopyrightText: Copyright (c) 2021 Chris Wilson
+//
+// SPDX-License-Identifier: MIT
 
 #include "shared-bindings/board/__init__.h"
 
-STATIC const mp_rom_map_elem_t board_module_globals_table[] = {
+static const mp_rom_map_elem_t board_module_globals_table[] = {
     CIRCUITPYTHON_BOARD_DICT_STANDARD_ITEMS
     // The SparkFun MicroMod spec uses a zero-based peripheral numbering scheme.
     // The 0th peripheral is the default and the "0" is omitted from the
@@ -77,8 +57,8 @@ STATIC const mp_rom_map_elem_t board_module_globals_table[] = {
     // MicroMod UART1 pins
     { MP_ROM_QSTR(MP_QSTR_UART_TX1), MP_ROM_PTR(&pin_PB31) },     // MicroMod UART_TX1 | CircuitPython TX (PB31)
     { MP_ROM_QSTR(MP_QSTR_UART_RX1), MP_ROM_PTR(&pin_PB30) },     // MicroMod UART_RX1 | CircuitPython RX (PB30)
-    // { MP_ROM_QSTR(MP_QSTR_UART_RTS1), MP_ROM_PTR() },          // MicroMod RTS1 (not connected)
-    // { MP_ROM_QSTR(MP_QSTR_UART_CTS1), MP_ROM_PTR() },          // MicroMod CTS1 (not connected)
+    { MP_ROM_QSTR(MP_QSTR_UART_RTS1), MP_ROM_PTR(&pin_PB00) },          // MicroMod RTS1
+    { MP_ROM_QSTR(MP_QSTR_UART_CTS1), MP_ROM_PTR(&pin_PB01) },          // MicroMod CTS1
 
     // CircuitPython default UART pins
     { MP_ROM_QSTR(MP_QSTR_TX), MP_ROM_PTR(&pin_PB31) },           // CircuitPython TX | MicroMod UART_TX1 (PB31)

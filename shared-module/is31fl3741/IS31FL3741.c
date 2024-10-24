@@ -1,28 +1,8 @@
-/*
- * This file is part of the Micro Python project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2021 Mark Komus
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2021 Mark Komus
+//
+// SPDX-License-Identifier: MIT
 
 #include <string.h>
 
@@ -40,7 +20,7 @@ void common_hal_is31fl3741_IS31FL3741_construct(is31fl3741_IS31FL3741_obj_t *sel
     // Probe the bus to see if a device acknowledges the given address.
     if (!common_hal_busio_i2c_probe(i2c, addr)) {
         self->base.type = &mp_type_NoneType;
-        mp_raise_ValueError_varg(translate("Unable to find I2C Display at %x"), addr);
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("Unable to find I2C Display at %x"), addr);
     }
 
     self->i2c = i2c;
@@ -148,16 +128,17 @@ void common_hal_is31fl3741_set_led(is31fl3741_IS31FL3741_obj_t *self, uint16_t l
     common_hal_busio_i2c_write(self->i2c, self->device_address, cmd, 2);
 }
 
-void common_hal_is31fl3741_draw_pixel(is31fl3741_IS31FL3741_obj_t *self, int16_t x, int16_t y, uint32_t color, uint16_t *mapping) {
+void common_hal_is31fl3741_draw_pixel(is31fl3741_IS31FL3741_obj_t *self, int16_t x, int16_t y, uint32_t color, uint16_t *mapping, uint8_t display_height) {
     uint8_t r = color >> 16 & 0xFF;
     uint8_t g = color >> 8 & 0xFF;
     uint8_t b = color & 0xFF;
 
-    int16_t x1 = (x * 5 + y) * 3;
+    int16_t x1 = (x * display_height + y) * 3;
     uint16_t ridx = mapping[x1 + 2];
     if (ridx != 65535) {
         uint16_t gidx = mapping[x1 + 1];
         uint16_t bidx = mapping[x1 + 0];
+
         common_hal_is31fl3741_set_led(self, ridx, r, 0);
         common_hal_is31fl3741_set_led(self, gidx, g, 0);
         common_hal_is31fl3741_set_led(self, bidx, b, 0);

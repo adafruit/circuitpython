@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2018 hathach for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2018 hathach for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "tusb.h"
 // // #include "supervisor/flash.h"
@@ -41,58 +21,7 @@
 #define MSC_FLASH_BLOCK_SIZE    512
 
 static bool ejected[1] = {true};
-
-// Lock to track if something else is using the filesystem when USB is plugged in. If so, the drive
-// will be made available once the lock is released.
-static bool _usb_msc_lock = false;
-static bool _usb_connected_while_locked = false;
-
-STATIC void _usb_msc_uneject(void) {
-    for (uint8_t i = 0; i < sizeof(ejected); i++) {
-        ejected[i] = false;
-    }
-}
-
-void usb_msc_mount(void) {
-    // Reset the ejection tracking every time we're plugged into USB. This allows for us to battery
-    // power the device, eject, unplug and plug it back in to get the drive.
-    if (_usb_msc_lock) {
-        _usb_connected_while_locked = true;
-        return;
-    }
-    _usb_msc_uneject();
-    _usb_connected_while_locked = false;
-}
-
-void usb_msc_umount(void) {
-}
-
-bool usb_msc_ejected(void) {
-    bool all_ejected = true;
-    for (uint8_t i = 0; i < sizeof(ejected); i++) {
-        all_ejected &= ejected[i];
-    }
-    return all_ejected;
-}
-
-bool usb_msc_lock(void) {
-    if ((storage_usb_enabled() && !usb_msc_ejected()) || _usb_msc_lock) {
-        return false;
-    }
-    _usb_msc_lock = true;
-    return true;
-}
-
-void usb_msc_unlock(void) {
-    if (!_usb_msc_lock) {
-        // Mismatched unlock.
-        return;
-    }
-    if (_usb_connected_while_locked) {
-        _usb_msc_uneject();
-    }
-    _usb_msc_lock = false;
-}
+static bool locked[1] = {false};
 
 // The root FS is always at the end of the list.
 static fs_user_mount_t *get_vfs(int lun) {
@@ -109,6 +38,36 @@ static fs_user_mount_t *get_vfs(int lun) {
         current_mount = current_mount->next;
     }
     return current_mount->obj;
+}
+
+static void _usb_msc_uneject(void) {
+    for (uint8_t i = 0; i < sizeof(ejected); i++) {
+        ejected[i] = false;
+        locked[i] = false;
+    }
+}
+
+void usb_msc_mount(void) {
+    _usb_msc_uneject();
+}
+
+void usb_msc_umount(void) {
+    for (uint8_t i = 0; i < sizeof(ejected); i++) {
+        fs_user_mount_t *vfs = get_vfs(i + 1);
+        if (vfs == NULL) {
+            continue;
+        }
+        blockdev_unlock(vfs);
+        locked[i] = false;
+    }
+}
+
+bool usb_msc_ejected(void) {
+    bool all_ejected = true;
+    for (uint8_t i = 0; i < sizeof(ejected); i++) {
+        all_ejected &= ejected[i];
+    }
+    return all_ejected;
 }
 
 // Callback invoked when received an SCSI command not in built-in list below
@@ -164,6 +123,11 @@ bool tud_msc_is_writable_cb(uint8_t lun) {
     if (vfs->blockdev.writeblocks[0] == MP_OBJ_NULL || !filesystem_is_writable_by_usb(vfs)) {
         return false;
     }
+    // Lock the blockdev once we say we're writable.
+    if (!locked[lun] && !blockdev_lock(vfs)) {
+        return false;
+    }
+    locked[lun] = true;
     return true;
 }
 
@@ -175,6 +139,13 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void *buff
     const uint32_t block_count = bufsize / MSC_FLASH_BLOCK_SIZE;
 
     fs_user_mount_t *vfs = get_vfs(lun);
+    uint32_t disk_block_count;
+    disk_ioctl(vfs, GET_SECTOR_COUNT, &disk_block_count);
+
+    if (lba + block_count > disk_block_count) {
+        return -1;
+    }
+
     disk_read(vfs, buffer, lba, block_count);
 
     return block_count * MSC_FLASH_BLOCK_SIZE;
@@ -195,7 +166,7 @@ int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t *
     // MicroPython let's update the cached FatFs sector if it's the one
     // we just wrote.
     #if FF_MAX_SS != FF_MIN_SS
-    if (vfs->ssize == MSC_FLASH_BLOCK_SIZE) {
+    if (vfs->fatfs.ssize == MSC_FLASH_BLOCK_SIZE) {
     #else
     // The compiler can optimize this away.
     if (FF_MAX_SS == FILESYSTEM_BLOCK_SIZE) {
@@ -267,7 +238,9 @@ bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, boo
             if (disk_ioctl(current_mount, CTRL_SYNC, NULL) != RES_OK) {
                 return false;
             } else {
+                blockdev_unlock(current_mount);
                 ejected[lun] = true;
+                locked[lun] = false;
             }
         } else {
             // We can only load if it hasn't been ejected.

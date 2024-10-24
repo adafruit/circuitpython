@@ -1,30 +1,10 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2019 Dan Halbert for Adafruit Industries
- * Copyright (c) 2018 Artur Pacholec
- * Copyright (c) 2017 Glenn Ruben Bakke
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2019 Dan Halbert for Adafruit Industries
+// SPDX-FileCopyrightText: Copyright (c) 2018 Artur Pacholec
+// SPDX-FileCopyrightText: Copyright (c) 2017 Glenn Ruben Bakke
+//
+// SPDX-License-Identifier: MIT
 
 #include <string.h>
 
@@ -50,12 +30,10 @@
 //|         :param value: The uuid value to encapsulate
 //|         :type value: int, ~circuitpython_typing.ReadableBuffer or str"""
 //|         ...
-//|
-STATIC mp_obj_t bleio_uuid_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
+static mp_obj_t bleio_uuid_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     mp_arg_check_num(n_args, n_kw, 1, 1, false);
 
-    bleio_uuid_obj_t *self = m_new_obj(bleio_uuid_obj_t);
-    self->base.type = type;
+    bleio_uuid_obj_t *self = mp_obj_malloc(bleio_uuid_obj_t, &bleio_uuid_type);
 
     const mp_obj_t value = all_args[0];
     uint8_t uuid128[16];
@@ -63,7 +41,7 @@ STATIC mp_obj_t bleio_uuid_make_new(const mp_obj_type_t *type, size_t n_args, si
     if (mp_obj_is_int(value)) {
         mp_int_t uuid16 = mp_obj_get_int(value);
         if (uuid16 < 0 || uuid16 > 0xffff) {
-            mp_raise_ValueError(translate("UUID integer value must be 0-0xffff"));
+            mp_raise_ValueError(MP_ERROR_TEXT("UUID integer value must be 0-0xffff"));
         }
 
         // NULL means no 128-bit value.
@@ -88,7 +66,7 @@ STATIC mp_obj_t bleio_uuid_make_new(const mp_obj_type_t *type, size_t n_args, si
                 good_uuid = hex_idx == 32;
             }
             if (!good_uuid) {
-                mp_raise_ValueError(translate("UUID string not 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'"));
+                mp_raise_ValueError(MP_ERROR_TEXT("UUID string not 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'"));
             }
 
             size_t hex_idx = 0;
@@ -100,11 +78,11 @@ STATIC mp_obj_t bleio_uuid_make_new(const mp_obj_type_t *type, size_t n_args, si
             // Last possibility is that it's a buf.
             mp_buffer_info_t bufinfo;
             if (!mp_get_buffer(value, &bufinfo, MP_BUFFER_READ)) {
-                mp_raise_ValueError(translate("UUID value is not str, int or byte buffer"));
+                mp_raise_ValueError(MP_ERROR_TEXT("UUID value is not str, int or byte buffer"));
             }
 
             if (bufinfo.len != 16) {
-                mp_raise_ValueError(translate("Byte buffer must be 16 bytes."));
+                mp_raise_ValueError(MP_ERROR_TEXT("Byte buffer must be 16 bytes."));
             }
 
             memcpy(uuid128, bufinfo.buf, 16);
@@ -124,8 +102,7 @@ STATIC mp_obj_t bleio_uuid_make_new(const mp_obj_type_t *type, size_t n_args, si
 //|     """The 16-bit part of the UUID. (read-only)
 //|
 //|     :type: int"""
-//|
-STATIC mp_obj_t bleio_uuid_get_uuid16(mp_obj_t self_in) {
+static mp_obj_t bleio_uuid_get_uuid16(mp_obj_t self_in) {
     bleio_uuid_obj_t *self = MP_OBJ_TO_PTR(self_in);
     return MP_OBJ_NEW_SMALL_INT(common_hal_bleio_uuid_get_uuid16(self));
 }
@@ -140,13 +117,12 @@ MP_PROPERTY_GETTER(bleio_uuid_uuid16_obj,
 //|     Raises AttributeError if this is a 16-bit UUID. (read-only)
 //|
 //|     :type: bytes"""
-//|
-STATIC mp_obj_t bleio_uuid_get_uuid128(mp_obj_t self_in) {
+static mp_obj_t bleio_uuid_get_uuid128(mp_obj_t self_in) {
     bleio_uuid_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
     uint8_t uuid128[16];
     if (common_hal_bleio_uuid_get_size(self) != 128) {
-        mp_raise_AttributeError(translate("not a 128-bit UUID"));
+        mp_raise_AttributeError(MP_ERROR_TEXT("not a 128-bit UUID"));
     }
     common_hal_bleio_uuid_get_uuid128(self, uuid128);
     return mp_obj_new_bytes(uuid128, 16);
@@ -162,8 +138,7 @@ MP_PROPERTY_GETTER(bleio_uuid_uuid128_obj,
 //|     16-bit Bluetooth SIG assigned UUID. (read-only) 32-bit UUIDs are not currently supported.
 //|
 //|     :type: int"""
-//|
-STATIC mp_obj_t bleio_uuid_get_size(mp_obj_t self_in) {
+static mp_obj_t bleio_uuid_get_size(mp_obj_t self_in) {
     bleio_uuid_obj_t *self = MP_OBJ_TO_PTR(self_in);
     return MP_OBJ_NEW_SMALL_INT(common_hal_bleio_uuid_get_size(self));
 }
@@ -177,8 +152,7 @@ MP_PROPERTY_GETTER(bleio_uuid_size_obj,
 //|     def pack_into(self, buffer: WriteableBuffer, offset: int = 0) -> None:
 //|         """Packs the UUID into the given buffer at the given offset."""
 //|         ...
-//|
-STATIC mp_obj_t bleio_uuid_pack_into(mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+static mp_obj_t bleio_uuid_pack_into(mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     bleio_uuid_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
 
     enum { ARG_buffer, ARG_offset };
@@ -196,24 +170,24 @@ STATIC mp_obj_t bleio_uuid_pack_into(mp_uint_t n_args, const mp_obj_t *pos_args,
 
     size_t offset = args[ARG_offset].u_int;
     if (offset + common_hal_bleio_uuid_get_size(self) / 8 > bufinfo.len) {
-        mp_raise_ValueError(translate("Buffer + offset too small %d %d %d"));
+        mp_raise_ValueError(MP_ERROR_TEXT("Buffer + offset too small %d %d %d"));
     }
 
     common_hal_bleio_uuid_pack_into(self, bufinfo.buf + offset);
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_KW(bleio_uuid_pack_into_obj, 1, bleio_uuid_pack_into);
+static MP_DEFINE_CONST_FUN_OBJ_KW(bleio_uuid_pack_into_obj, 1, bleio_uuid_pack_into);
 
-STATIC const mp_rom_map_elem_t bleio_uuid_locals_dict_table[] = {
+static const mp_rom_map_elem_t bleio_uuid_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_uuid16), MP_ROM_PTR(&bleio_uuid_uuid16_obj) },
     { MP_ROM_QSTR(MP_QSTR_uuid128), MP_ROM_PTR(&bleio_uuid_uuid128_obj) },
     { MP_ROM_QSTR(MP_QSTR_size), MP_ROM_PTR(&bleio_uuid_size_obj) },
     { MP_ROM_QSTR(MP_QSTR_pack_into), MP_ROM_PTR(&bleio_uuid_pack_into_obj) },
 };
 
-STATIC MP_DEFINE_CONST_DICT(bleio_uuid_locals_dict, bleio_uuid_locals_dict_table);
+static MP_DEFINE_CONST_DICT(bleio_uuid_locals_dict, bleio_uuid_locals_dict_table);
 
-STATIC mp_obj_t bleio_uuid_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
+static mp_obj_t bleio_uuid_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
     bleio_uuid_obj_t *self = MP_OBJ_TO_PTR(self_in);
     switch (op) {
         case MP_UNARY_OP_HASH:
@@ -240,7 +214,7 @@ STATIC mp_obj_t bleio_uuid_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
 //|         """Two UUID objects are equal if their values match and they are both 128-bit or both 16-bit."""
 //|         ...
 //|
-STATIC mp_obj_t bleio_uuid_binary_op(mp_binary_op_t op, mp_obj_t lhs_in, mp_obj_t rhs_in) {
+static mp_obj_t bleio_uuid_binary_op(mp_binary_op_t op, mp_obj_t lhs_in, mp_obj_t rhs_in) {
     switch (op) {
         // Two UUID's are equal if their uuid16 values match or their uuid128 values match.
         case MP_BINARY_OP_EQUAL:
@@ -286,15 +260,13 @@ void bleio_uuid_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t
     }
 }
 
-const mp_obj_type_t bleio_uuid_type = {
-    { &mp_type_type },
-    .flags = MP_TYPE_FLAG_EXTENDED,
-    .name = MP_QSTR_UUID,
-    .print = bleio_uuid_print,
-    .make_new = bleio_uuid_make_new,
-    .locals_dict = (mp_obj_dict_t *)&bleio_uuid_locals_dict,
-    MP_TYPE_EXTENDED_FIELDS(
-        .unary_op = bleio_uuid_unary_op,
-        .binary_op = bleio_uuid_binary_op,
-        ),
-};
+MP_DEFINE_CONST_OBJ_TYPE(
+    bleio_uuid_type,
+    MP_QSTR_UUID,
+    MP_TYPE_FLAG_HAS_SPECIAL_ACCESSORS,
+    print, bleio_uuid_print,
+    make_new, bleio_uuid_make_new,
+    locals_dict, &bleio_uuid_locals_dict,
+    unary_op, bleio_uuid_unary_op,
+    binary_op, bleio_uuid_binary_op
+    );

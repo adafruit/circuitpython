@@ -1,30 +1,10 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2019 Dan Halbert for Adafruit Industries
- * Copyright (c) 2018 Artur Pacholec
- * Copyright (c) 2017 Glenn Ruben Bakke
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2019 Dan Halbert for Adafruit Industries
+// SPDX-FileCopyrightText: Copyright (c) 2018 Artur Pacholec
+// SPDX-FileCopyrightText: Copyright (c) 2017 Glenn Ruben Bakke
+//
+// SPDX-License-Identifier: MIT
 
 #include <string.h>
 
@@ -35,9 +15,8 @@
 #include "shared-bindings/_bleio/ScanResults.h"
 
 bleio_scanresults_obj_t *shared_module_bleio_new_scanresults(size_t buffer_size, uint8_t *prefixes, size_t prefixes_len, mp_int_t minimum_rssi) {
-    bleio_scanresults_obj_t *self = m_new_obj(bleio_scanresults_obj_t);
-    self->base.type = &bleio_scanresults_type;
-    ringbuf_alloc(&self->buf, buffer_size, false);
+    bleio_scanresults_obj_t *self = mp_obj_malloc(bleio_scanresults_obj_t, &bleio_scanresults_type);
+    ringbuf_alloc(&self->buf, buffer_size);
     self->prefixes = prefixes;
     self->prefix_length = prefixes_len;
     self->minimum_rssi = minimum_rssi;
@@ -53,27 +32,30 @@ mp_obj_t common_hal_bleio_scanresults_next(bleio_scanresults_obj_t *self) {
     }
 
     // Create a ScanEntry out of the data on the buffer.
+
+    // Remove data atomically.
+    common_hal_mcu_disable_interrupts();
+
     uint8_t type = ringbuf_get(&self->buf);
     bool connectable = (type & (1 << 0)) != 0;
     bool scan_response = (type & (1 << 1)) != 0;
     uint64_t ticks_ms;
     ringbuf_get_n(&self->buf, (uint8_t *)&ticks_ms, sizeof(ticks_ms));
-    uint8_t rssi = ringbuf_get(&self->buf);
+    int8_t rssi = ringbuf_get(&self->buf);
     uint8_t peer_addr[NUM_BLEIO_ADDRESS_BYTES];
     ringbuf_get_n(&self->buf, peer_addr, sizeof(peer_addr));
     uint8_t addr_type = ringbuf_get(&self->buf);
     uint16_t len;
     ringbuf_get_n(&self->buf, (uint8_t *)&len, sizeof(len));
-
     mp_obj_str_t *o = MP_OBJ_TO_PTR(mp_obj_new_bytes_of_zeros(len));
     ringbuf_get_n(&self->buf, (uint8_t *)o->data, len);
 
-    bleio_scanentry_obj_t *entry = m_new_obj(bleio_scanentry_obj_t);
-    entry->base.type = &bleio_scanentry_type;
+    common_hal_mcu_enable_interrupts();
+
+    bleio_scanentry_obj_t *entry = mp_obj_malloc(bleio_scanentry_obj_t, &bleio_scanentry_type);
     entry->rssi = rssi;
 
-    bleio_address_obj_t *address = m_new_obj(bleio_address_obj_t);
-    address->base.type = &bleio_address_type;
+    bleio_address_obj_t *address = mp_obj_malloc(bleio_address_obj_t, &bleio_address_type);
     common_hal_bleio_address_construct(MP_OBJ_TO_PTR(address), peer_addr, addr_type);
     entry->address = address;
 
@@ -95,13 +77,6 @@ void shared_module_bleio_scanresults_append(bleio_scanresults_obj_t *self,
     uint8_t addr_type,
     const uint8_t *data,
     uint16_t len) {
-    int32_t packet_size = sizeof(uint8_t) + sizeof(ticks_ms) + sizeof(rssi) + NUM_BLEIO_ADDRESS_BYTES +
-        sizeof(addr_type) + sizeof(len) + len;
-    int32_t empty_space = self->buf.size - ringbuf_num_filled(&self->buf);
-    if (packet_size >= empty_space) {
-        // We can't fit the packet so skip it.
-        return;
-    }
     // Filter the packet.
     if (rssi < self->minimum_rssi) {
         return;
@@ -119,14 +94,26 @@ void shared_module_bleio_scanresults_append(bleio_scanresults_obj_t *self,
         type |= 1 << 1;
     }
 
-    // Add the packet to the buffer.
-    ringbuf_put(&self->buf, type);
-    ringbuf_put_n(&self->buf, (uint8_t *)&ticks_ms, sizeof(ticks_ms));
-    ringbuf_put(&self->buf, rssi);
-    ringbuf_put_n(&self->buf, peer_addr, NUM_BLEIO_ADDRESS_BYTES);
-    ringbuf_put(&self->buf, addr_type);
-    ringbuf_put_n(&self->buf, (uint8_t *)&len, sizeof(len));
-    ringbuf_put_n(&self->buf, data, len);
+    // Add the packet to the buffer, atomically.
+    common_hal_mcu_disable_interrupts();
+
+    // Check whether  will fit.
+    int32_t packet_size = sizeof(uint8_t) + sizeof(ticks_ms) + sizeof(rssi) + NUM_BLEIO_ADDRESS_BYTES +
+        sizeof(addr_type) + sizeof(len) + len;
+    int32_t empty_space = self->buf.size - ringbuf_num_filled(&self->buf);
+
+    if (packet_size <= empty_space) {
+        // Packet will fit.
+        ringbuf_put(&self->buf, type);
+        ringbuf_put_n(&self->buf, (uint8_t *)&ticks_ms, sizeof(ticks_ms));
+        ringbuf_put(&self->buf, rssi);
+        ringbuf_put_n(&self->buf, peer_addr, NUM_BLEIO_ADDRESS_BYTES);
+        ringbuf_put(&self->buf, addr_type);
+        ringbuf_put_n(&self->buf, (uint8_t *)&len, sizeof(len));
+        ringbuf_put_n(&self->buf, data, len);
+    }
+
+    common_hal_mcu_enable_interrupts();
 }
 
 bool shared_module_bleio_scanresults_get_done(bleio_scanresults_obj_t *self) {

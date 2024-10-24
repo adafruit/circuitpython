@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * SPDX-FileCopyrightText: Copyright (c) 2013, 2014 Damien P. George
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2013, 2014 Damien P. George
+//
+// SPDX-License-Identifier: MIT
 
 #include "py/mpconfig.h"
 #include "py/obj.h"
@@ -32,7 +12,6 @@
 #include "shared-bindings/bitbangio/SPI.h"
 #include "shared-bindings/digitalio/DigitalInOut.h"
 #include "shared-bindings/microcontroller/__init__.h"
-#include "supervisor/shared/translate/translate.h"
 
 #define MAX_BAUDRATE (common_hal_mcu_get_clock_frequency() / 48)
 
@@ -41,7 +20,7 @@ void shared_module_bitbangio_spi_construct(bitbangio_spi_obj_t *self,
     const mcu_pin_obj_t *miso) {
     digitalinout_result_t result = common_hal_digitalio_digitalinout_construct(&self->clock, clock);
     if (result != DIGITALINOUT_OK) {
-        mp_raise_ValueError_varg(translate("%q init failed"), MP_QSTR_clock);
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("%q init failed"), MP_QSTR_clock);
     }
     common_hal_digitalio_digitalinout_switch_to_output(&self->clock, self->polarity == 1, DRIVE_MODE_PUSH_PULL);
 
@@ -49,7 +28,7 @@ void shared_module_bitbangio_spi_construct(bitbangio_spi_obj_t *self,
         result = common_hal_digitalio_digitalinout_construct(&self->mosi, mosi);
         if (result != DIGITALINOUT_OK) {
             common_hal_digitalio_digitalinout_deinit(&self->clock);
-            mp_raise_ValueError_varg(translate("%q init failed"), MP_QSTR_mosi);
+            mp_raise_ValueError_varg(MP_ERROR_TEXT("%q init failed"), MP_QSTR_mosi);
         }
         self->has_mosi = true;
         common_hal_digitalio_digitalinout_switch_to_output(&self->mosi, false, DRIVE_MODE_PUSH_PULL);
@@ -63,7 +42,7 @@ void shared_module_bitbangio_spi_construct(bitbangio_spi_obj_t *self,
             if (mosi != NULL) {
                 common_hal_digitalio_digitalinout_deinit(&self->mosi);
             }
-            mp_raise_ValueError_varg(translate("%q init failed"), MP_QSTR_miso);
+            mp_raise_ValueError_varg(MP_ERROR_TEXT("%q init failed"), MP_QSTR_miso);
         }
         self->has_miso = true;
     }
@@ -97,7 +76,12 @@ void shared_module_bitbangio_spi_configure(bitbangio_spi_obj_t *self,
         self->delay_half += 1;
     }
 
-    self->polarity = polarity;
+    if (polarity != self->polarity) {
+        // If the polarity has changed, make sure we re-initialize the idle state
+        // of the clock as well.
+        self->polarity = polarity;
+        common_hal_digitalio_digitalinout_switch_to_output(&self->clock, polarity == 1, DRIVE_MODE_PUSH_PULL);
+    }
     self->phase = phase;
 }
 
@@ -123,7 +107,7 @@ void shared_module_bitbangio_spi_unlock(bitbangio_spi_obj_t *self) {
 // Writes out the given data.
 bool shared_module_bitbangio_spi_write(bitbangio_spi_obj_t *self, const uint8_t *data, size_t len) {
     if (len > 0 && !self->has_mosi) {
-        mp_raise_ValueError(translate("No MOSI pin"));
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("No %q pin"), MP_QSTR_mosi);
     }
     uint32_t delay_half = self->delay_half;
 
@@ -178,7 +162,7 @@ bool shared_module_bitbangio_spi_write(bitbangio_spi_obj_t *self, const uint8_t 
 // Reads in len bytes while outputting zeroes.
 bool shared_module_bitbangio_spi_read(bitbangio_spi_obj_t *self, uint8_t *data, size_t len, uint8_t write_data) {
     if (len > 0 && !self->has_miso) {
-        mp_raise_ValueError(translate("No MISO pin"));
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("No %q pin"), MP_QSTR_miso);
     }
 
     uint32_t delay_half = self->delay_half;
@@ -245,8 +229,11 @@ bool shared_module_bitbangio_spi_read(bitbangio_spi_obj_t *self, uint8_t *data, 
 
 // transfer
 bool shared_module_bitbangio_spi_transfer(bitbangio_spi_obj_t *self, const uint8_t *dout, uint8_t *din, size_t len) {
-    if (len > 0 && (!self->has_mosi || !self->has_miso)) {
-        mp_raise_ValueError(translate("Cannot transfer without MOSI and MISO pins"));
+    if (!self->has_mosi && dout != NULL) {
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("No %q pin"), MP_QSTR_mosi);
+    }
+    if (!self->has_miso && din != NULL) {
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("No %q pin"), MP_QSTR_miso);
     }
     uint32_t delay_half = self->delay_half;
 

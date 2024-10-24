@@ -1,4 +1,4 @@
-Adafruit's CircuitPython Documentation
+Adafruit CircuitPython Documentation
 =========================
 
 The latest documentation can be found at:

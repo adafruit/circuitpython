@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include <stdint.h>
 #include <string.h>
@@ -37,7 +17,6 @@
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-module/audiocore/__init__.h"
 #include "bindings/rp2pio/StateMachine.h"
-#include "supervisor/shared/translate/translate.h"
 
 const uint16_t i2s_program[] = {
 // ; Load the next set of samples
@@ -84,7 +63,7 @@ const uint16_t i2s_program_left_justified[] = {
     0x6201,
 //     jmp y-- bitloop1  side 0b01 [2]
     0x0a83,
-//     out pins 1        side 0b10 [2]
+//     out pins 1        side 0b00 [2]
     0x6201,
 //     set y 14          side 0b01 [2]
     0xea4e,
@@ -97,23 +76,105 @@ const uint16_t i2s_program_left_justified[] = {
     0x7201
 };
 
+// Another version of i2s_program with the LRCLC and BCLK pin swapped
+const uint16_t i2s_program_swap[] = {
+// ; Load the next set of samples
+//                     ;        /--- BCLK
+//                     ;        |/-- LRCLK
+//                     ;        ||
+//     pull noblock      side 0b11 ; Loads OSR with the next FIFO value or X
+    0x9880,
+//     mov x osr         side 0b11 ; Save the new value in case we need it again
+    0xb827,
+//     set y 14          side 0b11
+    0xf84e,
+// bitloop1:
+//     out pins 1        side 0b01 [2]
+    0x6a01,
+//     jmp y-- bitloop1  side 0b11 [2]
+    0x1a83,
+//     out pins 1        side 0b00 [2]
+    0x6201,
+//     set y 14          side 0b10 [2]
+    0xf24e,
+// bitloop0:
+//     out pins 1        side 0b00 [2]
+    0x6201,
+//     jmp y-- bitloop0  side 0b10 [2]
+    0x1287,
+//     out pins 1        side 0b01 [2]
+    0x6a01
+};
+
+// Another version of i2s_program_left_justified with the LRCLC and BCLK pin
+// swapped.
+const uint16_t i2s_program_left_justified_swap[] = {
+// ; Load the next set of samples
+//                     ;        /--- BCLK
+//                     ;        |/-- LRCLK
+//                     ;        ||
+//     pull noblock      side 0b11 ; Loads OSR with the next FIFO value or X
+    0x9880,
+//     mov x osr         side 0b11 ; Save the new value in case we need it again
+    0xb827,
+//     set y 14          side 0b11
+    0xf84e,
+// bitloop1:
+//     out pins 1        side 0b00 [2]
+    0x6201,
+//     jmp y-- bitloop1  side 0b10 [2]
+    0x1283,
+//     out pins 1        side 0b00 [2]
+    0x6201,
+//     set y 14          side 0b10 [2]
+    0xf24e,
+// bitloop0:
+//     out pins 1        side 0b01 [2]
+    0x6a01,
+//     jmp y-- bitloop0  side 0b11 [2]
+    0x1a87,
+//     out pins 1        side 0b01 [2]
+    0x6a01
+};
+
 void i2sout_reset(void) {
 }
 
 // Caller validates that pins are free.
 void common_hal_audiobusio_i2sout_construct(audiobusio_i2sout_obj_t *self,
     const mcu_pin_obj_t *bit_clock, const mcu_pin_obj_t *word_select,
-    const mcu_pin_obj_t *data, bool left_justified) {
-    if (bit_clock->number != word_select->number - 1) {
-        mp_raise_ValueError(translate("Bit clock and word select must be sequential pins"));
+    const mcu_pin_obj_t *data, const mcu_pin_obj_t *main_clock, bool left_justified) {
+    if (main_clock != NULL) {
+        mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("%q"), MP_QSTR_main_clock);
     }
+    const mcu_pin_obj_t *sideset_pin = NULL;
+    const uint16_t *program = NULL;
+    size_t program_len = 0;
 
-    const uint16_t *program = i2s_program;
-    size_t program_len = sizeof(i2s_program) / sizeof(i2s_program[0]);
-    if (left_justified) {
-        program = i2s_program_left_justified;
-        program_len = sizeof(i2s_program_left_justified) / sizeof(i2s_program_left_justified[0]);
-        ;
+    if (bit_clock->number == word_select->number - 1) {
+        sideset_pin = bit_clock;
+
+        if (left_justified) {
+            program_len = MP_ARRAY_SIZE(i2s_program_left_justified);
+            program = i2s_program_left_justified;
+        } else {
+            program_len = MP_ARRAY_SIZE(i2s_program);
+            program = i2s_program;
+        }
+
+    } else if (bit_clock->number == word_select->number + 1) {
+        sideset_pin = word_select;
+
+        if (left_justified) {
+            program_len = MP_ARRAY_SIZE(i2s_program_left_justified_swap);
+            program = i2s_program_left_justified_swap;
+        } else {
+            program_len = MP_ARRAY_SIZE(i2s_program_swap);
+            program = i2s_program_swap;
+        }
+
+    } else {
+        mp_raise_ValueError(MP_ERROR_TEXT("Bit clock and word select must be sequential GPIO pins"));
     }
 
     // Use the state machine to manage pins.
@@ -121,12 +182,13 @@ void common_hal_audiobusio_i2sout_construct(audiobusio_i2sout_obj_t *self,
         &self->state_machine,
         program, program_len,
         44100 * 32 * 6, // Clock at 44.1 khz to warm the DAC up.
-        NULL, 0,
+        NULL, 0, // init
+        NULL, 0, // may_exec
         data, 1, 0, 0xffffffff, // out pin
         NULL, 0, // in pins
         0, 0, // in pulls
         NULL, 0, 0, 0x1f, // set pins
-        bit_clock, 2, 0, 0x1f, // sideset pins
+        sideset_pin, 2, 0, 0x1f, // sideset pins
         false, // No sideset enable
         NULL, PULL_NONE, // jump pin
         0, // wait gpio pins
@@ -135,7 +197,12 @@ void common_hal_audiobusio_i2sout_construct(audiobusio_i2sout_obj_t *self,
         false, // Wait for txstall
         false, 32, false, // in settings
         false, // Not user-interruptible.
-        0, -1); // wrap settings
+        0, -1, // wrap settings
+        PIO_ANY_OFFSET,
+        PIO_FIFO_TYPE_DEFAULT,
+        PIO_MOV_STATUS_DEFAULT,
+        PIO_MOV_N_DEFAULT
+        );
 
     self->playing = false;
     audio_dma_init(&self->dma);
@@ -178,7 +245,7 @@ void common_hal_audiobusio_i2sout_play(audiobusio_i2sout_obj_t *self,
     uint32_t frequency = bits_per_sample_output * audiosample_sample_rate(sample);
     uint8_t channel_count = audiosample_channel_count(sample);
     if (channel_count > 2) {
-        mp_raise_ValueError(translate("Too many channels in sample."));
+        mp_raise_ValueError(MP_ERROR_TEXT("Too many channels in sample."));
     }
 
     common_hal_rp2pio_statemachine_set_frequency(&self->state_machine, clocks_per_bit * frequency);
@@ -198,14 +265,15 @@ void common_hal_audiobusio_i2sout_play(audiobusio_i2sout_obj_t *self,
         true,  // output signed
         bits_per_sample,
         (uint32_t)&self->state_machine.pio->txf[self->state_machine.state_machine],  // output register
-        self->state_machine.tx_dreq); // data request line
+        self->state_machine.tx_dreq, // data request line
+        false); // swap channel
 
     if (result == AUDIO_DMA_DMA_BUSY) {
         common_hal_audiobusio_i2sout_stop(self);
-        mp_raise_RuntimeError(translate("No DMA channel found"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("No DMA channel found"));
     } else if (result == AUDIO_DMA_MEMORY_ERROR) {
         common_hal_audiobusio_i2sout_stop(self);
-        mp_raise_RuntimeError(translate("Unable to allocate buffers for signed conversion"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Unable to allocate buffers for signed conversion"));
     }
 
     self->playing = true;

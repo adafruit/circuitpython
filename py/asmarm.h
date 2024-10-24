@@ -4,7 +4,7 @@
  * The MIT License (MIT)
  *
  * Copyright (c) 2014 Fabian Vogt
- * SPDX-FileCopyrightText: Copyright (c) 2013, 2014 Damien P. George
+ * Copyright (c) 2013, 2014 Damien P. George
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -94,8 +94,10 @@ void asm_arm_cmp_reg_i8(asm_arm_t *as, uint rd, int imm);
 void asm_arm_cmp_reg_reg(asm_arm_t *as, uint rd, uint rn);
 
 // arithmetic
+void asm_arm_mvn_reg_reg(asm_arm_t *as, uint rd, uint rm);
 void asm_arm_add_reg_reg_reg(asm_arm_t *as, uint rd, uint rn, uint rm);
 void asm_arm_sub_reg_reg_reg(asm_arm_t *as, uint rd, uint rn, uint rm);
+void asm_arm_rsb_reg_reg_imm(asm_arm_t *as, uint rd, uint rn, uint imm);
 void asm_arm_mul_reg_reg_reg(asm_arm_t *as, uint rd, uint rn, uint rm);
 void asm_arm_and_reg_reg_reg(asm_arm_t *as, uint rd, uint rn, uint rm);
 void asm_arm_eor_reg_reg_reg(asm_arm_t *as, uint rd, uint rn, uint rm);
@@ -109,6 +111,7 @@ void asm_arm_asr_reg_reg(asm_arm_t *as, uint rd, uint rs);
 // memory
 void asm_arm_ldr_reg_reg(asm_arm_t *as, uint rd, uint rn, uint byte_offset);
 void asm_arm_ldrh_reg_reg(asm_arm_t *as, uint rd, uint rn);
+void asm_arm_ldrh_reg_reg_offset(asm_arm_t *as, uint rd, uint rn, uint byte_offset);
 void asm_arm_ldrb_reg_reg(asm_arm_t *as, uint rd, uint rn);
 void asm_arm_str_reg_reg(asm_arm_t *as, uint rd, uint rm, uint byte_offset);
 void asm_arm_strh_reg_reg(asm_arm_t *as, uint rd, uint rm);
@@ -131,6 +134,7 @@ void asm_arm_bx_reg(asm_arm_t *as, uint reg_src);
 // Holds a pointer to mp_fun_table
 #define ASM_ARM_REG_FUN_TABLE ASM_ARM_REG_R7
 
+// CIRCUITPY-CHANGE: prevent #if warning
 #if defined(GENERIC_ASM_API) && GENERIC_ASM_API
 
 // The following macros provide a (mostly) arch-independent API to
@@ -182,13 +186,13 @@ void asm_arm_bx_reg(asm_arm_t *as, uint reg_src);
 
 #define ASM_MOV_LOCAL_REG(as, local_num, reg_src) asm_arm_mov_local_reg((as), (local_num), (reg_src))
 #define ASM_MOV_REG_IMM(as, reg_dest, imm) asm_arm_mov_reg_i32_optimised((as), (reg_dest), (imm))
-#define ASM_MOV_REG_IMM_FIX_U16(as, reg_dest, imm) asm_arm_mov_reg_i32((as), (reg_dest), (imm))
-#define ASM_MOV_REG_IMM_FIX_WORD(as, reg_dest, imm) asm_arm_mov_reg_i32((as), (reg_dest), (imm))
 #define ASM_MOV_REG_LOCAL(as, reg_dest, local_num) asm_arm_mov_reg_local((as), (reg_dest), (local_num))
 #define ASM_MOV_REG_REG(as, reg_dest, reg_src) asm_arm_mov_reg_reg((as), (reg_dest), (reg_src))
 #define ASM_MOV_REG_LOCAL_ADDR(as, reg_dest, local_num) asm_arm_mov_reg_local_addr((as), (reg_dest), (local_num))
 #define ASM_MOV_REG_PCREL(as, reg_dest, label) asm_arm_mov_reg_pcrel((as), (reg_dest), (label))
 
+#define ASM_NOT_REG(as, reg_dest) asm_arm_mvn_reg_reg((as), (reg_dest), (reg_dest))
+#define ASM_NEG_REG(as, reg_dest) asm_arm_rsb_reg_reg_imm((as), (reg_dest), (reg_dest), 0)
 #define ASM_LSL_REG_REG(as, reg_dest, reg_shift) asm_arm_lsl_reg_reg((as), (reg_dest), (reg_shift))
 #define ASM_LSR_REG_REG(as, reg_dest, reg_shift) asm_arm_lsr_reg_reg((as), (reg_dest), (reg_shift))
 #define ASM_ASR_REG_REG(as, reg_dest, reg_shift) asm_arm_asr_reg_reg((as), (reg_dest), (reg_shift))
@@ -203,6 +207,7 @@ void asm_arm_bx_reg(asm_arm_t *as, uint reg_src);
 #define ASM_LOAD_REG_REG_OFFSET(as, reg_dest, reg_base, word_offset) asm_arm_ldr_reg_reg((as), (reg_dest), (reg_base), 4 * (word_offset))
 #define ASM_LOAD8_REG_REG(as, reg_dest, reg_base) asm_arm_ldrb_reg_reg((as), (reg_dest), (reg_base))
 #define ASM_LOAD16_REG_REG(as, reg_dest, reg_base) asm_arm_ldrh_reg_reg((as), (reg_dest), (reg_base))
+#define ASM_LOAD16_REG_REG_OFFSET(as, reg_dest, reg_base, uint16_offset) asm_arm_ldrh_reg_reg_offset((as), (reg_dest), (reg_base), 2 * (uint16_offset))
 #define ASM_LOAD32_REG_REG(as, reg_dest, reg_base) asm_arm_ldr_reg_reg((as), (reg_dest), (reg_base), 0)
 
 #define ASM_STORE_REG_REG(as, reg_value, reg_base) asm_arm_str_reg_reg((as), (reg_value), (reg_base), 0)

@@ -1,28 +1,8 @@
-/*
- * This file is part of the Micro Python project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2018 DeanM for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2018 DeanM for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 #include "shared-bindings/audiomixer/Mixer.h"
 #include "shared-bindings/audiomixer/MixerVoice.h"
 #include "shared-module/audiomixer/MixerVoice.h"
@@ -42,23 +22,23 @@ void common_hal_audiomixer_mixervoice_set_parent(audiomixer_mixervoice_obj_t *se
     self->parent = parent;
 }
 
-float common_hal_audiomixer_mixervoice_get_level(audiomixer_mixervoice_obj_t *self) {
-    return (float)self->level / (1 << 15);
+mp_float_t common_hal_audiomixer_mixervoice_get_level(audiomixer_mixervoice_obj_t *self) {
+    return (mp_float_t)self->level / (1 << 15);
 }
 
-void common_hal_audiomixer_mixervoice_set_level(audiomixer_mixervoice_obj_t *self, float level) {
-    self->level = level * (1 << 15);
+void common_hal_audiomixer_mixervoice_set_level(audiomixer_mixervoice_obj_t *self, mp_float_t level) {
+    self->level = (uint16_t)(level * (1 << 15));
 }
 
 void common_hal_audiomixer_mixervoice_play(audiomixer_mixervoice_obj_t *self, mp_obj_t sample, bool loop) {
     if (audiosample_sample_rate(sample) != self->parent->sample_rate) {
-        mp_raise_ValueError(translate("The sample's sample rate does not match the mixer's"));
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("The sample's %q does not match"), MP_QSTR_sample_rate);
     }
     if (audiosample_channel_count(sample) != self->parent->channel_count) {
-        mp_raise_ValueError(translate("The sample's channel count does not match the mixer's"));
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("The sample's %q does not match"), MP_QSTR_channel_count);
     }
     if (audiosample_bits_per_sample(sample) != self->parent->bits_per_sample) {
-        mp_raise_ValueError(translate("The sample's bits_per_sample does not match the mixer's"));
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("The sample's %q does not match"), MP_QSTR_bits_per_sample);
     }
     bool single_buffer;
     bool samples_signed;
@@ -67,7 +47,7 @@ void common_hal_audiomixer_mixervoice_play(audiomixer_mixervoice_obj_t *self, mp
     audiosample_get_buffer_structure(sample, false, &single_buffer, &samples_signed,
         &max_buffer_length, &spacing);
     if (samples_signed != self->parent->samples_signed) {
-        mp_raise_ValueError(translate("The sample's signedness does not match the mixer's"));
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("The sample's %q does not match"), MP_QSTR_signedness);
     }
     self->sample = sample;
     self->loop = loop;

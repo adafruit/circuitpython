@@ -1,33 +1,12 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2016 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2016 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "py/runtime.h"
 
 #include "shared-bindings/microcontroller/Pin.h"
-#include "supervisor/shared/translate/translate.h"
 
 #include "atmel_start_pins.h"
 #include "hal/include/hal_gpio.h"
@@ -47,13 +26,13 @@ bool speaker_enable_in_use;
 #define SWD_MUX GPIO_PIN_FUNCTION_G
 #endif
 
-STATIC uint32_t never_reset_pins[PORT_COUNT];
+static uint32_t never_reset_pins[PORT_COUNT];
 
 void reset_all_pins(void) {
     uint32_t pin_mask[PORT_COUNT] = PORT_OUT_IMPLEMENTED;
 
     // Do not full reset USB lines.
-    #if CIRCUITPY_USB
+    #if CIRCUITPY_USB_DEVICE
     pin_mask[0] &= ~(PORT_PA24 | PORT_PA25);
     #endif
 
@@ -162,12 +141,11 @@ bool pin_number_is_free(uint8_t pin_number) {
             return false;
         }
         if (pin_number == PIN_PA30
-            #ifdef SAM_D5X_E5X
-            ) {
-            #endif
             #ifdef SAMD21
-            || pin_number == PIN_PA31) {
-            #endif) {
+            || pin_number == PIN_PA31
+            #endif
+            )
+            {
             return state->bit.PMUXEN == 1 && ((pmux->reg >> (4 * pin_index % 2)) & 0xf) == SWD_MUX;
         }
     }
@@ -211,5 +189,5 @@ mcu_pin_function_t *mcu_find_pin_function(mcu_pin_function_t *table, const mcu_p
             return table;
         }
     }
-    mp_raise_ValueError_varg(translate("%q pin invalid"), name);
+    mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q pin"), name);
 }

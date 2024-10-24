@@ -1,37 +1,17 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2016 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2016 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "reload.h"
 
 #include "py/mphal.h"
 #include "py/mpstate.h"
+#include "supervisor/port.h"
 #include "supervisor/shared/reload.h"
 #include "supervisor/shared/tick.h"
 
-supervisor_allocation *next_code_allocation;
 #include "shared-bindings/supervisor/Runtime.h"
 
 // True if user has disabled autoreload.
@@ -52,6 +32,7 @@ void reload_initiate(supervisor_run_reason_t run_reason) {
         MP_STATE_VM(sched_state) = MP_SCHED_PENDING;
     }
     #endif
+    port_wake_main_task();
 }
 
 void autoreload_reset() {
@@ -80,15 +61,19 @@ inline bool autoreload_is_enabled() {
 }
 
 void autoreload_trigger() {
-    if (autoreload_enabled & !autoreload_suspended) {
-        last_autoreload_trigger = supervisor_ticks_ms32();
-        // Guard against the rare time that ticks is 0;
-        if (last_autoreload_trigger == 0) {
-            last_autoreload_trigger += 1;
-        }
-        // Initiate a reload of the VM immediately. Later code will pause to
-        // wait for the autoreload to become ready. Doing the VM exit
-        // immediately is clearer for the user.
+    if (!autoreload_enabled || autoreload_suspended != 0) {
+        return;
+    }
+    bool reload_initiated = autoreload_pending();
+    last_autoreload_trigger = supervisor_ticks_ms32();
+    // Guard against the rare time that ticks is 0;
+    if (last_autoreload_trigger == 0) {
+        last_autoreload_trigger += 1;
+    }
+    // Initiate a reload of the VM immediately. Later code will pause to
+    // wait for the autoreload to become ready. Doing the VM exit
+    // immediately is clearer for the user.
+    if (!reload_initiated) {
         reload_initiate(RUN_REASON_AUTO_RELOAD);
     }
 }
@@ -109,5 +94,5 @@ bool autoreload_ready() {
 }
 
 bool autoreload_pending(void) {
-    return last_autoreload_trigger != 0;
+    return last_autoreload_trigger > 0;
 }

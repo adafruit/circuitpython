@@ -1,12 +1,10 @@
 :mod:`sys` -- system specific functions
-========================================
-
-.. include:: ../templates/unsupported_in_circuitpython.inc
+=======================================
 
 .. module:: sys
    :synopsis: system specific functions
 
-|see_cpython_module| :mod:`cpython:sys`.
+|see_cpython_module| :mod:`python:sys`.
 
 Functions
 ---------
@@ -16,6 +14,23 @@ Functions
    Terminate current program with a given exit code. Underlyingly, this
    function raise as `SystemExit` exception. If an argument is given, its
    value given as an argument to `SystemExit`.
+
+.. function:: print_exception(exc, file=sys.stdout, /)
+
+   This function is deprecated and will be removed starting in
+   CircuitPython 10.x, `traceback.print_exception()` should be used instead.
+
+   Print exception with a traceback to a file-like object *file* (or
+   `sys.stdout` by default).
+
+   .. admonition:: Difference to CPython
+      :class: attention
+
+      This is simplified version of a function which appears in the
+      `traceback` module in CPython. Unlike `traceback.print_exception()`,
+      this function takes just exception value instead of exception type,
+      exception value, and traceback object; *file* argument should be
+      positional; further arguments are not supported.
 
 Constants
 ---------
@@ -35,6 +50,8 @@ Constants
 
    * *name* - string "circuitpython"
    * *version* - tuple (major, minor, micro), e.g. (1, 7, 0)
+   * *_machine* - string describing the underlying machine
+   * *_mpy* - supported mpy file-format version (optional attribute)
 
    This object is the recommended way to distinguish CircuitPython from other
    Python implementations (note that it still may not exist in the very
@@ -49,7 +66,7 @@ Constants
 .. data:: maxsize
 
    Maximum value which a native integer type can hold on the current platform,
-   or maximum value representable by CircuitPython integer type, if it's smaller
+   or maximum value representable by the CircuitPython integer type, if it's smaller
    than platform max value (that is the case for CircuitPython ports without
    long int support).
 

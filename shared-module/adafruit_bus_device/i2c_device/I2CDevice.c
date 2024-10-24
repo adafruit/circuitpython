@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2020 Mark Komus
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2020 Mark Komus
+//
+// SPDX-License-Identifier: MIT
 
 #include "shared-bindings/adafruit_bus_device/i2c_device/I2CDevice.h"
 #include "shared-bindings/busio/I2C.h"
@@ -61,30 +41,14 @@ void common_hal_adafruit_bus_device_i2cdevice_unlock(adafruit_bus_device_i2cdevi
 void common_hal_adafruit_bus_device_i2cdevice_probe_for_device(adafruit_bus_device_i2cdevice_obj_t *self) {
     common_hal_adafruit_bus_device_i2cdevice_lock(self);
 
-    mp_buffer_info_t write_bufinfo;
-    mp_obj_t write_buffer = mp_obj_new_bytearray_of_zeros(0);
-    mp_get_buffer_raise(write_buffer, &write_bufinfo, MP_BUFFER_READ);
-
-    mp_obj_t dest[4];
-
-    /* catch exceptions that may be thrown while probing for the device */
-    nlr_buf_t nlr;
-    if (nlr_push(&nlr) == 0) {
-        mp_load_method(self->i2c, MP_QSTR_writeto, dest);
-        dest[2] = MP_OBJ_NEW_SMALL_INT(self->device_address);
-        dest[3] = write_buffer;
-        mp_call_method_n_kw(2, 0, dest);
-        nlr_pop();
-    } else {
-        common_hal_adafruit_bus_device_i2cdevice_unlock(self);
-
-        if (mp_obj_is_subclass_fast(MP_OBJ_FROM_PTR(((mp_obj_base_t *)nlr.ret_val)->type), MP_OBJ_FROM_PTR(&mp_type_OSError))) {
-            mp_raise_ValueError_varg(translate("No I2C device at address: 0x%x"), self->device_address);
-        } else {
-            /* In case we receive an unrelated exception pass it up */
-            nlr_raise(MP_OBJ_FROM_PTR(nlr.ret_val));
-        }
-    }
+    mp_obj_t dest[3];
+    mp_load_method(self->i2c, MP_QSTR_probe, dest);
+    dest[2] = MP_OBJ_NEW_SMALL_INT(self->device_address);
+    const bool found = mp_obj_is_true(mp_call_method_n_kw(1, 0, dest));
 
     common_hal_adafruit_bus_device_i2cdevice_unlock(self);
+
+    if (!found) {
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("No I2C device at address: 0x%x"), self->device_address);
+    }
 }

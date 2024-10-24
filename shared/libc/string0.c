@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * SPDX-FileCopyrightText: Copyright (c) 2013, 2014 Damien P. George
+ * Copyright (c) 2013, 2014 Damien P. George
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,15 +26,22 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <string.h>
 
+// CIRCUITPY-CHANGE: additional includes
+#include <string.h>
+#include "py/mpconfig.h"
+
+// CIRCUITPY-CHANGE: ifndef
 #ifndef likely
 #define likely(x) __builtin_expect((x), 1)
 #endif
 
+// CIRCUITPY-CHANGE: avoid compiler warnings
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wcast-align"
 void *memcpy(void *dst, const void *src, size_t n) {
+// CIRCUITPY-CHANGE: fancier copy only for full build
+#if CIRCUITPY_FULL_BUILD
     if (likely(!(((uintptr_t)dst) & 3) && !(((uintptr_t)src) & 3))) {
         // pointers aligned
         uint32_t *d = dst;
@@ -56,7 +63,9 @@ void *memcpy(void *dst, const void *src, size_t n) {
             // copy byte
             *((uint8_t*)d) = *((const uint8_t*)s);
         }
-    } else {
+    } else
+#endif
+    {
         // unaligned access, copy bytes
         uint8_t *d = dst;
         const uint8_t *s = src;
@@ -69,6 +78,7 @@ void *memcpy(void *dst, const void *src, size_t n) {
     return dst;
 }
 
+// CIRCUITPY-CHANGE: extern
 extern void *__memcpy_chk(void *dest, const void *src, size_t len, size_t slen);
 void *__memcpy_chk(void *dest, const void *src, size_t len, size_t slen) {
     if (len > slen) {
@@ -93,6 +103,8 @@ void *memmove(void *dest, const void *src, size_t n) {
 }
 
 void *memset(void *s, int c, size_t n) {
+// CIRCUITPY-CHANGE: fancier copy only for full build
+#if CIRCUITPY_FULL_BUILD
     if (c == 0 && ((uintptr_t)s & 3) == 0) {
         // aligned store of 0
         uint32_t *s32 = s;
@@ -106,7 +118,9 @@ void *memset(void *s, int c, size_t n) {
         if (n & 1) {
             *((uint8_t*)s32) = 0;
         }
-    } else {
+    } else
+#endif
+    {
         uint8_t *s2 = s;
         for (; n > 0; n--) {
             *s2++ = c;
@@ -115,6 +129,7 @@ void *memset(void *s, int c, size_t n) {
     return s;
 }
 
+// CIRCUITPY-CHANGE
 #pragma GCC diagnostic pop
 
 int memcmp(const void *s1, const void *s2, size_t n) {
@@ -162,7 +177,7 @@ int strcmp(const char *s1, const char *s2) {
 }
 
 int strncmp(const char *s1, const char *s2, size_t n) {
-    while (*s1 && *s2 && n > 0) {
+    while (n > 0 && *s1 && *s2) {
         char c1 = *s1++; // XXX UTF8 get char, next char
         char c2 = *s2++; // XXX UTF8 get char, next char
         n--;

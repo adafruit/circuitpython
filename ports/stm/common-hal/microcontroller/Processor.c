@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2019 Lucian Copeland for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2019 Lucian Copeland for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include <math.h>
 #include "py/runtime.h"
@@ -32,7 +12,6 @@
 #endif
 #include "common-hal/microcontroller/Processor.h"
 #include "shared-bindings/microcontroller/ResetReason.h"
-#include "supervisor/shared/translate/translate.h"
 
 #include STM32_HAL_H
 
@@ -47,9 +26,9 @@
 #define VREFIN_CAL ((uint16_t *)ADC_CAL_ADDRESS)
 
 // correction factor for reference value
-STATIC volatile float adc_refcor = 1.0f;
+static volatile float adc_refcor = 1.0f;
 
-STATIC void set_adc_params(ADC_HandleTypeDef *AdcHandle) {
+static void set_adc_params(ADC_HandleTypeDef *AdcHandle) {
     AdcHandle->Instance = ADC1;
     AdcHandle->Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
     AdcHandle->Init.Resolution = ADC_RESOLUTION_12B;
@@ -86,8 +65,8 @@ float common_hal_mcu_processor_get_temperature(void) {
     HAL_ADC_ConfigChannel(&AdcHandle, &sConfig);
 
     HAL_ADC_Start(&AdcHandle);
-    if (HAL_ADC_PollForConversion(&AdcHandle,1) != HAL_OK) {
-        mp_raise_RuntimeError(translate("Temperature read timed out"));
+    if (HAL_ADC_PollForConversion(&AdcHandle, 1) != HAL_OK) {
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Temperature read timed out"));
     }
     uint32_t value = (uint32_t)HAL_ADC_GetValue(&AdcHandle);
     HAL_ADC_Stop(&AdcHandle);
@@ -96,7 +75,7 @@ float common_hal_mcu_processor_get_temperature(void) {
     float core_temp_avg_slope = (*ADC_CAL2 - *ADC_CAL1) / 80.0;
     return (((float)value * adc_refcor - *ADC_CAL1) / core_temp_avg_slope) + 30.0f;
     #else
-    return false;
+    return NAN;
     #endif
 }
 
@@ -118,8 +97,8 @@ float common_hal_mcu_processor_get_voltage(void) {
     HAL_ADC_ConfigChannel(&AdcHandle, &sConfig);
 
     HAL_ADC_Start(&AdcHandle);
-    if (HAL_ADC_PollForConversion(&AdcHandle,1) != HAL_OK) {
-        mp_raise_RuntimeError(translate("Voltage read timed out"));
+    if (HAL_ADC_PollForConversion(&AdcHandle, 1) != HAL_OK) {
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Voltage read timed out"));
     }
     uint32_t value = (uint32_t)HAL_ADC_GetValue(&AdcHandle);
     HAL_ADC_Stop(&AdcHandle);
@@ -129,7 +108,7 @@ float common_hal_mcu_processor_get_voltage(void) {
 
     return adc_refcor * 3.3f;
     #else
-    return false;
+    return NAN;
     #endif
 }
 

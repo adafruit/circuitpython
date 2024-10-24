@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2020 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2020 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "bindings/espidf/__init__.h"
 #include "common-hal/wifi/__init__.h"
@@ -31,7 +11,9 @@
 #include "shared-bindings/ipaddress/IPv4Address.h"
 #include "shared-bindings/wifi/Monitor.h"
 #include "shared-bindings/wifi/Radio.h"
+#include "common-hal/socketpool/__init__.h"
 
+#include "py/gc.h"
 #include "py/mpstate.h"
 #include "py/runtime.h"
 
@@ -44,8 +26,13 @@ wifi_radio_obj_t common_hal_wifi_radio_obj;
 #include "components/log/include/esp_log.h"
 
 #include "supervisor/port.h"
-#include "supervisor/shared/title_bar.h"
 #include "supervisor/workflow.h"
+
+#include "lwip/sockets.h"
+
+#if CIRCUITPY_STATUS_BAR
+#include "supervisor/shared/status_bar.h"
+#endif
 
 #include "esp_ipc.h"
 
@@ -53,10 +40,14 @@ wifi_radio_obj_t common_hal_wifi_radio_obj;
 #include "nvs_flash.h"
 #endif
 
+#define MAC_ADDRESS_LENGTH 6
+
 static const char *TAG = "CP wifi";
 
-STATIC void schedule_background_on_cp_core(void *arg) {
-    supervisor_title_bar_request_update(false);
+static void schedule_background_on_cp_core(void *arg) {
+    #if CIRCUITPY_STATUS_BAR
+    supervisor_status_bar_request_update(false);
+    #endif
 
     // CircuitPython's VM is run in a separate FreeRTOS task from wifi callbacks. So, we have to
     // notify the main task every time in case it's waiting for us.
@@ -116,7 +107,7 @@ static void event_handler(void *arg, esp_event_base_t event_base,
             // Cases to handle later.
             // case WIFI_EVENT_STA_AUTHMODE_CHANGE:
             default: {
-                ESP_LOGW(TAG, "event %d 0x%02x", event_id, event_id);
+                ESP_LOGW(TAG, "event %ld 0x%02ld", event_id, event_id);
                 break;
             }
         }
@@ -157,8 +148,8 @@ void common_hal_wifi_init(bool user_initiated) {
     if (!wifi_ever_inited) {
         ESP_ERROR_CHECK(esp_netif_init());
         ESP_ERROR_CHECK(esp_event_loop_create_default());
+        wifi_ever_inited = true;
     }
-    wifi_ever_inited = true;
 
     self->netif = esp_netif_create_default_wifi_sta();
     self->ap_netif = esp_netif_create_default_wifi_ap();
@@ -167,7 +158,7 @@ void common_hal_wifi_init(bool user_initiated) {
     // Even though we just called esp_netif_create_default_wifi_sta,
     //   station mode isn't actually ready for use until esp_wifi_set_mode()
     //   is called and the configuration is loaded via esp_wifi_set_config().
-    // Set both convienence flags to false so it's not forgotten.
+    // Set both convenience flags to false so it's not forgotten.
     self->sta_mode = 0;
     self->ap_mode = 0;
 
@@ -184,7 +175,8 @@ void common_hal_wifi_init(bool user_initiated) {
         &self->handler_instance_got_ip));
 
     wifi_init_config_t config = WIFI_INIT_CONFIG_DEFAULT();
-    #ifdef CONFIG_IDF_TARGET_ESP32
+    #ifdef CONFIG_ESP32_WIFI_NVS_ENABLED
+    // Generally we don't use this because we store ssid and passwords ourselves in the filesystem.
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         // NVS partition was truncated and needs to be erased
@@ -196,10 +188,34 @@ void common_hal_wifi_init(bool user_initiated) {
     #endif
     esp_err_t result = esp_wifi_init(&config);
     if (result == ESP_ERR_NO_MEM) {
-        mp_raise_msg(&mp_type_MemoryError, translate("Failed to allocate Wifi memory"));
+        if (gc_alloc_possible()) {
+            mp_raise_msg(&mp_type_MemoryError, MP_ERROR_TEXT("Failed to allocate Wifi memory"));
+        }
+        ESP_LOGE(TAG, "Failed to allocate Wifi memory");
     } else if (result != ESP_OK) {
-        raise_esp_error(result);
+        if (gc_alloc_possible()) {
+            raise_esp_error(result);
+        }
+        ESP_LOGE(TAG, "WiFi error code: %x", result);
+        return;
     }
+    // Set the default lwip_local_hostname capped at 32 characters. We trim off
+    // the start of the board name (likely manufacturer) because the end is
+    // often more unique to the board.
+    size_t board_len = MIN(32 - ((MAC_ADDRESS_LENGTH * 2) + 6), strlen(CIRCUITPY_BOARD_ID));
+    size_t board_trim = strlen(CIRCUITPY_BOARD_ID) - board_len;
+    // Avoid double _ in the hostname.
+    if (CIRCUITPY_BOARD_ID[board_trim] == '_') {
+        board_trim++;
+    }
+
+    char cpy_default_hostname[board_len + (MAC_ADDRESS_LENGTH * 2) + 6];
+    uint8_t mac[MAC_ADDRESS_LENGTH];
+    esp_wifi_get_mac(ESP_IF_WIFI_STA, mac);
+    snprintf(cpy_default_hostname, sizeof(cpy_default_hostname), "cpy-%s-%02x%02x%02x%02x%02x%02x", CIRCUITPY_BOARD_ID + board_trim, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
+    const char *default_lwip_local_hostname = cpy_default_hostname;
+    ESP_ERROR_CHECK(esp_netif_set_hostname(self->netif, default_lwip_local_hostname));
     // set station mode to avoid the default SoftAP
     common_hal_wifi_radio_start_station(self);
     // start wifi
@@ -238,19 +254,21 @@ void wifi_reset(void) {
 }
 
 void ipaddress_ipaddress_to_esp_idf(mp_obj_t ip_address, ip_addr_t *esp_ip_address) {
-    if (!mp_obj_is_type(ip_address, &ipaddress_ipv4address_type)) {
-        mp_raise_ValueError(translate("Only IPv4 addresses supported"));
+    if (mp_obj_is_type(ip_address, &ipaddress_ipv4address_type)) {
+        ipaddress_ipaddress_to_esp_idf_ip4(ip_address, (esp_ip4_addr_t *)esp_ip_address);
+        #if LWIP_IPV6
+        esp_ip_address->type = IPADDR_TYPE_V4;
+        #endif
+    } else {
+        struct sockaddr_storage addr_storage;
+        socketpool_resolve_host_or_throw(AF_UNSPEC, SOCK_STREAM, mp_obj_str_get_str(ip_address), &addr_storage, 1);
+        sockaddr_to_espaddr(&addr_storage, (esp_ip_addr_t *)esp_ip_address);
     }
-    mp_obj_t packed = common_hal_ipaddress_ipv4address_get_packed(ip_address);
-    size_t len;
-    const char *bytes = mp_obj_str_get_data(packed, &len);
-
-    IP_ADDR4(esp_ip_address, bytes[0], bytes[1], bytes[2], bytes[3]);
 }
 
 void ipaddress_ipaddress_to_esp_idf_ip4(mp_obj_t ip_address, esp_ip4_addr_t *esp_ip_address) {
     if (!mp_obj_is_type(ip_address, &ipaddress_ipv4address_type)) {
-        mp_raise_ValueError(translate("Only IPv4 addresses supported"));
+        mp_raise_ValueError(MP_ERROR_TEXT("Only IPv4 addresses supported"));
     }
     mp_obj_t packed = common_hal_ipaddress_ipv4address_get_packed(ip_address);
     size_t len;
@@ -260,4 +278,95 @@ void ipaddress_ipaddress_to_esp_idf_ip4(mp_obj_t ip_address, esp_ip4_addr_t *esp
 
 void common_hal_wifi_gc_collect(void) {
     common_hal_wifi_radio_gc_collect(&common_hal_wifi_radio_obj);
+}
+
+static mp_obj_t espaddrx_to_str(const void *espaddr, uint8_t esptype) {
+    char buf[IPADDR_STRLEN_MAX];
+    inet_ntop(esptype == ESP_IPADDR_TYPE_V6 ? AF_INET6 : AF_INET, espaddr, buf, sizeof(buf));
+    return mp_obj_new_str(buf, strlen(buf));
+}
+
+mp_obj_t espaddr_to_str(const esp_ip_addr_t *espaddr) {
+    return espaddrx_to_str(espaddr, espaddr->type);
+}
+
+mp_obj_t espaddr4_to_str(const esp_ip4_addr_t *espaddr) {
+    return espaddrx_to_str(espaddr, ESP_IPADDR_TYPE_V4);
+}
+
+mp_obj_t espaddr6_to_str(const esp_ip6_addr_t *espaddr) {
+    return espaddrx_to_str(espaddr, ESP_IPADDR_TYPE_V6);
+}
+
+mp_obj_t sockaddr_to_str(const struct sockaddr_storage *sockaddr) {
+    char buf[IPADDR_STRLEN_MAX];
+    #if CIRCUITPY_SOCKETPOOL_IPV6
+    if (sockaddr->ss_family == AF_INET6) {
+        const struct sockaddr_in6 *addr6 = (const void *)sockaddr;
+        inet_ntop(AF_INET6, &addr6->sin6_addr, buf, sizeof(buf));
+    } else
+    #endif
+    {
+        const struct sockaddr_in *addr = (const void *)sockaddr;
+        inet_ntop(AF_INET, &addr->sin_addr, buf, sizeof(buf));
+    }
+    return mp_obj_new_str(buf, strlen(buf));
+}
+
+mp_obj_t sockaddr_to_tuple(const struct sockaddr_storage *sockaddr) {
+    mp_obj_t args[4] = {
+        sockaddr_to_str(sockaddr),
+    };
+    int n = 2;
+    #if CIRCUITPY_SOCKETPOOL_IPV6
+    if (sockaddr->ss_family == AF_INET6) {
+        const struct sockaddr_in6 *addr6 = (const void *)sockaddr;
+        args[1] = MP_OBJ_NEW_SMALL_INT(htons(addr6->sin6_port));
+        args[2] = MP_OBJ_NEW_SMALL_INT(addr6->sin6_flowinfo);
+        args[3] = MP_OBJ_NEW_SMALL_INT(addr6->sin6_scope_id);
+        n = 4;
+    } else
+    #endif
+    {
+        const struct sockaddr_in *addr = (const void *)sockaddr;
+        args[1] = MP_OBJ_NEW_SMALL_INT(htons(addr->sin_port));
+    }
+    return mp_obj_new_tuple(n, args);
+}
+
+void sockaddr_to_espaddr(const struct sockaddr_storage *sockaddr, esp_ip_addr_t *espaddr) {
+    #if CIRCUITPY_SOCKETPOOL_IPV6
+    MP_STATIC_ASSERT(IPADDR_TYPE_V4 == ESP_IPADDR_TYPE_V4);
+    MP_STATIC_ASSERT(IPADDR_TYPE_V6 == ESP_IPADDR_TYPE_V6);
+    MP_STATIC_ASSERT(sizeof(ip_addr_t) == sizeof(esp_ip_addr_t));
+    MP_STATIC_ASSERT(offsetof(ip_addr_t, u_addr) == offsetof(esp_ip_addr_t, u_addr));
+    MP_STATIC_ASSERT(offsetof(ip_addr_t, type) == offsetof(esp_ip_addr_t, type));
+    if (sockaddr->ss_family == AF_INET6) {
+        const struct sockaddr_in6 *addr6 = (const void *)sockaddr;
+        MP_STATIC_ASSERT(sizeof(espaddr->u_addr.ip6.addr) == sizeof(addr6->sin6_addr));
+        memcpy(&espaddr->u_addr.ip6.addr, &addr6->sin6_addr, sizeof(espaddr->u_addr.ip6.addr));
+        espaddr->u_addr.ip6.zone = addr6->sin6_scope_id;
+        espaddr->type = ESP_IPADDR_TYPE_V6;
+    } else
+    #endif
+    {
+        const struct sockaddr_in *addr = (const void *)sockaddr;
+        MP_STATIC_ASSERT(sizeof(espaddr->u_addr.ip4.addr) == sizeof(addr->sin_addr));
+        memcpy(&espaddr->u_addr.ip4.addr, &addr->sin_addr, sizeof(espaddr->u_addr.ip4.addr));
+        espaddr->type = ESP_IPADDR_TYPE_V4;
+    }
+}
+
+void espaddr_to_sockaddr(const esp_ip_addr_t *espaddr, struct sockaddr_storage *sockaddr, int port) {
+    #if CIRCUITPY_SOCKETPOOL_IPV6
+    if (espaddr->type == ESP_IPADDR_TYPE_V6) {
+        struct sockaddr_in6 *addr6 = (void *)sockaddr;
+        memcpy(&addr6->sin6_addr, &espaddr->u_addr.ip6.addr, sizeof(espaddr->u_addr.ip6.addr));
+        addr6->sin6_scope_id = espaddr->u_addr.ip6.zone;
+    } else
+    #endif
+    {
+        struct sockaddr_in *addr = (void *)sockaddr;
+        memcpy(&addr->sin_addr, &espaddr->u_addr.ip4.addr, sizeof(espaddr->u_addr.ip4.addr));
+    }
 }

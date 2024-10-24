@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2021 microDev
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2021 microDev
+//
+// SPDX-License-Identifier: MIT
 
 #include "shared-bindings/busio/UART.h"
 
@@ -62,15 +42,39 @@ void never_reset_uart(uint8_t num) {
     uart_status[num] = STATUS_NEVER_RESET;
 }
 
+static void pin_check(const uint8_t uart, const mcu_pin_obj_t *pin, const uint8_t pin_type) {
+    if (pin == NULL) {
+        return;
+    }
+    uint8_t pins_uart = (pin->number + 4) / 8 % NUM_UARTS;
+    if (pins_uart != uart) {
+        raise_ValueError_invalid_pins();
+    }
+    #ifdef PICO_RP2350
+    if ((pin_type == 0 && pin->number % 4 == 2) ||
+        (pin_type == 1 && pin->number % 4 == 3)) {
+        return;
+    }
+    #endif
+    if ((pin->number % 4) != pin_type) {
+        raise_ValueError_invalid_pins();
+    }
+}
+
 static uint8_t pin_init(const uint8_t uart, const mcu_pin_obj_t *pin, const uint8_t pin_type) {
     if (pin == NULL) {
         return NO_PIN;
     }
-    if (!(((pin->number % 4) == pin_type) && ((((pin->number + 4) / 8) % NUM_UARTS) == uart))) {
-        raise_ValueError_invalid_pins();
-    }
     claim_pin(pin);
-    gpio_set_function(pin->number, GPIO_FUNC_UART);
+    gpio_function_t function = GPIO_FUNC_UART;
+    #ifdef PICO_RP2350
+    if ((pin_type == 0 && pin->number % 4 == 2) ||
+        (pin_type == 1 && pin->number % 4 == 3)) {
+        function = GPIO_FUNC_UART_AUX;
+    }
+    #endif
+
+    gpio_set_function(pin->number, function);
     return pin->number;
 }
 
@@ -110,10 +114,15 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
 
     uint8_t uart_id = ((((tx != NULL) ? tx->number : rx->number) + 4) / 8) % NUM_UARTS;
 
+    pin_check(uart_id, tx, 0);
+    pin_check(uart_id, rx, 1);
+    pin_check(uart_id, cts, 2);
+    pin_check(uart_id, rts, 3);
+
     if (uart_status[uart_id] != STATUS_FREE) {
-        mp_raise_RuntimeError(translate("All UART peripherals are in use"));
+        mp_raise_ValueError(MP_ERROR_TEXT("UART peripheral in use"));
     }
-    // These may raise exceptions if pins are already in use.
+
     self->tx_pin = pin_init(uart_id, tx, 0);
     self->rx_pin = pin_init(uart_id, rx, 1);
     self->cts_pin = pin_init(uart_id, cts, 2);
@@ -131,7 +140,7 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
         gpio_disable_pulls(pin);
 
         // Turn on "strong" pin driving (more current available).
-        hw_write_masked(&padsbank0_hw->io[pin],
+        hw_write_masked(&pads_bank0_hw->io[pin],
             PADS_BANK0_GPIO0_DRIVE_VALUE_12MA << PADS_BANK0_GPIO0_DRIVE_LSB,
                 PADS_BANK0_GPIO0_DRIVE_BITS);
 
@@ -155,27 +164,27 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     uart_set_hw_flow(self->uart, (cts != NULL), (rts != NULL));
 
     if (rx != NULL) {
-        // Initially allocate the UART's buffer in the long-lived part of the
-        // heap. UARTs are generally long-lived objects, but the "make long-
-        // lived" machinery is incapable of moving internal pointers like
-        // self->buffer, so do it manually.  (However, as long as internal
-        // pointers like this are NOT moved, allocating the buffer
-        // in the long-lived pool is not strictly necessary)
-        // (This is a macro.)
-        if (!ringbuf_alloc(&self->ringbuf, receiver_buffer_size, true)) {
-            m_malloc_fail(receiver_buffer_size);
-        }
-        active_uarts[uart_id] = self;
-        if (uart_id == 1) {
-            self->uart_irq_id = UART1_IRQ;
-            irq_set_exclusive_handler(self->uart_irq_id, uart1_callback);
+        // Use the provided buffer when given.
+        if (receiver_buffer != NULL) {
+            ringbuf_init(&self->ringbuf, receiver_buffer, receiver_buffer_size);
         } else {
-            self->uart_irq_id = UART0_IRQ;
-            irq_set_exclusive_handler(self->uart_irq_id, uart0_callback);
+            if (!ringbuf_alloc(&self->ringbuf, receiver_buffer_size)) {
+                uart_deinit(self->uart);
+                m_malloc_fail(receiver_buffer_size);
+            }
         }
-        irq_set_enabled(self->uart_irq_id, true);
-        uart_set_irq_enables(self->uart, true /* rx has data */, false /* tx needs data */);
     }
+
+    active_uarts[uart_id] = self;
+    if (uart_id == 1) {
+        self->uart_irq_id = UART1_IRQ;
+        irq_set_exclusive_handler(self->uart_irq_id, uart1_callback);
+    } else {
+        self->uart_irq_id = UART0_IRQ;
+        irq_set_exclusive_handler(self->uart_irq_id, uart0_callback);
+    }
+    irq_set_enabled(self->uart_irq_id, true);
+    uart_set_irq_enables(self->uart, true /* rx has data */, false /* tx needs data */);
 }
 
 bool common_hal_busio_uart_deinited(busio_uart_obj_t *self) {
@@ -187,7 +196,7 @@ void common_hal_busio_uart_deinit(busio_uart_obj_t *self) {
         return;
     }
     uart_deinit(self->uart);
-    ringbuf_free(&self->ringbuf);
+    ringbuf_deinit(&self->ringbuf);
     active_uarts[self->uart_id] = NULL;
     uart_status[self->uart_id] = STATUS_FREE;
     reset_pin_number(self->tx_pin);
@@ -205,7 +214,7 @@ void common_hal_busio_uart_deinit(busio_uart_obj_t *self) {
 // Write characters.
 size_t common_hal_busio_uart_write(busio_uart_obj_t *self, const uint8_t *data, size_t len, int *errcode) {
     if (self->tx_pin == NO_PIN) {
-        mp_raise_ValueError(translate("No TX pin"));
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("No %q pin"), MP_QSTR_tx);
     }
 
     if (self->rs485_dir_pin != NO_PIN) {
@@ -233,7 +242,7 @@ size_t common_hal_busio_uart_write(busio_uart_obj_t *self, const uint8_t *data, 
 // Read characters.
 size_t common_hal_busio_uart_read(busio_uart_obj_t *self, uint8_t *data, size_t len, int *errcode) {
     if (self->rx_pin == NO_PIN) {
-        mp_raise_ValueError(translate("No RX pin"));
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("No %q pin"), MP_QSTR_rx);
     }
 
     if (len == 0) {
@@ -332,4 +341,19 @@ bool common_hal_busio_uart_ready_to_tx(busio_uart_obj_t *self) {
         return false;
     }
     return uart_is_writable(self->uart);
+}
+
+static void pin_never_reset(uint8_t pin) {
+    if (pin != NO_PIN) {
+        never_reset_pin_number(pin);
+    }
+}
+
+void common_hal_busio_uart_never_reset(busio_uart_obj_t *self) {
+    never_reset_uart(self->uart_id);
+    pin_never_reset(self->tx_pin);
+    pin_never_reset(self->rx_pin);
+    pin_never_reset(self->cts_pin);
+    pin_never_reset(self->rs485_dir_pin);
+    pin_never_reset(self->rts_pin);
 }

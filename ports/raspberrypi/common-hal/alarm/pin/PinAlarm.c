@@ -1,57 +1,46 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2021 Lucian Copeland for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2021 Lucian Copeland for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "py/runtime.h"
 
+#include "shared-bindings/alarm/__init__.h"
 #include "shared-bindings/alarm/pin/PinAlarm.h"
 #include "shared-bindings/microcontroller/__init__.h"
 #include "common-hal/microcontroller/__init__.h"
-#include "shared-bindings/microcontroller/Pin.h"
 
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
 #include "hardware/structs/iobank0.h"
 
-STATIC bool woke_up;
-STATIC uint64_t alarm_triggered_pins; // 36 actual pins
-STATIC uint64_t alarm_reserved_pins; // 36 actual pins
-STATIC bool _pinalarm_set = false;
+static bool woke_up;
+static uint64_t alarm_triggered_pins; // 36 actual pins
+static uint64_t alarm_reserved_pins; // 36 actual pins
+static bool _not_yet_deep_sleeping = false;
 
 #define GPIO_IRQ_ALL_EVENTS 0x15u
 
-STATIC void gpio_callback(uint gpio, uint32_t events) {
+static void gpio_callback(uint gpio, uint32_t events) {
     alarm_triggered_pins |= (1 << gpio);
     woke_up = true;
 
-    // does this need to be called, to prevent IRQ from constantly going off?
-    gpio_acknowledge_irq(gpio, events);
+    // gpio_acknowledge_irq(gpio, events) is called automatically, before this callback is called.
 
-    // Disable IRQ automatically
-    gpio_set_irq_enabled(gpio, events, false);
-    gpio_set_dormant_irq_enabled(gpio, events, false);
+    if (_not_yet_deep_sleeping) {
+        // Event went off prematurely, before we went to sleep, so set it again.
+        gpio_set_irq_enabled(gpio, events, false);
+    } else {
+        // Went off during sleep.
+        // Disable IRQ automatically.
+        gpio_set_irq_enabled(gpio, events, false);
+        gpio_set_dormant_irq_enabled(gpio, events, false);
+    }
+}
+
+void alarm_pin_pinalarm_entering_deep_sleep() {
+    _not_yet_deep_sleeping = false;
 }
 
 void common_hal_alarm_pin_pinalarm_construct(alarm_pin_pinalarm_obj_t *self, const mcu_pin_obj_t *pin, bool value, bool edge, bool pull) {
@@ -94,10 +83,12 @@ mp_obj_t alarm_pin_pinalarm_find_triggered_alarm(size_t n_alarms, const mp_obj_t
     return mp_const_none;
 }
 
-mp_obj_t alarm_pin_pinalarm_create_wakeup_alarm(void) {
-    alarm_pin_pinalarm_obj_t *alarm = m_new_obj(alarm_pin_pinalarm_obj_t);
+mp_obj_t alarm_pin_pinalarm_record_wake_alarm(void) {
+    alarm_pin_pinalarm_obj_t *const alarm = &alarm_wake_alarm.pin_alarm;
+
     alarm->base.type = &alarm_pin_pinalarm_type;
     // TODO: how to obtain the correct pin from memory?
+    alarm->pin = NULL;
     return alarm;
 }
 
@@ -111,7 +102,7 @@ void alarm_pin_pinalarm_reset(void) {
     }
 
     // Reset pins and pin IRQs
-    for (size_t i = 0; i < TOTAL_GPIO_COUNT; i++) {
+    for (size_t i = 0; i < NUM_BANK0_GPIOS; i++) {
         if (alarm_reserved_pins & (1 << i)) {
             gpio_set_irq_enabled(i, GPIO_IRQ_ALL_EVENTS, false);
             reset_pin_number(i);
@@ -154,11 +145,7 @@ void alarm_pin_pinalarm_set_alarms(bool deep_sleep, size_t n_alarms, const mp_ob
                 gpio_set_dormant_irq_enabled((uint)alarm->pin->number, event, true);
             }
 
-            _pinalarm_set = true;
+            _not_yet_deep_sleeping = true;
         }
     }
-}
-
-bool alarm_pin_pinalarm_is_set(void) {
-    return _pinalarm_set;
 }

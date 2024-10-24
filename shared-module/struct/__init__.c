@@ -1,48 +1,27 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2016 Paul Sokolovsky
- * Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
- * Copyright (c) 2017 Michael McWethy
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2016 Paul Sokolovsky
+// SPDX-FileCopyrightText: Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
+// SPDX-FileCopyrightText: Copyright (c) 2017 Michael McWethy
+//
+// SPDX-License-Identifier: MIT
 #include <assert.h>
 #include <string.h>
 
 #include "py/runtime.h"
 #include "py/binary.h"
 #include "py/parsenum.h"
-#include "supervisor/shared/translate/translate.h"
 #include "shared-bindings/struct/__init__.h"
 
-STATIC void struct_validate_format(char fmt) {
+static void struct_validate_format(char fmt) {
     #if MICROPY_NONSTANDARD_TYPECODES
     if (fmt == 'S' || fmt == 'O') {
-        mp_raise_RuntimeError(translate("'S' and 'O' are not supported format types"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("'S' and 'O' are not supported format types"));
     }
     #endif
 }
 
-STATIC char get_fmt_type(const char **fmt) {
+static char get_fmt_type(const char **fmt) {
     char t = **fmt;
     switch (t) {
         case '!':
@@ -61,7 +40,7 @@ STATIC char get_fmt_type(const char **fmt) {
     return t;
 }
 
-STATIC mp_uint_t get_fmt_num(const char **p) {
+static mp_uint_t get_fmt_num(const char **p) {
     const char *num = *p;
     uint len = 1;
     while (unichar_isdigit(*++num)) {
@@ -72,7 +51,7 @@ STATIC mp_uint_t get_fmt_num(const char **p) {
     return val;
 }
 
-STATIC mp_uint_t calcsize_items(const char *fmt) {
+static mp_uint_t calcsize_items(const char *fmt) {
     mp_uint_t cnt = 0;
     while (*fmt) {
         int num = 1;
@@ -126,17 +105,13 @@ void shared_modules_struct_pack_into(mp_obj_t fmt_in, byte *p, byte *end_p, size
     const mp_uint_t total_sz = shared_modules_struct_calcsize(fmt_in);
 
     if (p + total_sz > end_p) {
-        mp_raise_RuntimeError(translate("buffer too small"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Buffer too small"));
     }
 
-    size_t i;
+    size_t i = 0;
     byte *p_base = p;
-    for (i = 0; i < n_args;) {
+    while (*fmt) {
         mp_uint_t sz = 1;
-        if (*fmt == '\0') {
-            // more arguments given than used by format string; CPython raises struct.error here
-            mp_raise_RuntimeError(translate("too many arguments provided with the given format"));
-        }
         struct_validate_format(*fmt);
 
         if (unichar_isdigit(*fmt)) {
@@ -144,14 +119,17 @@ void shared_modules_struct_pack_into(mp_obj_t fmt_in, byte *p, byte *end_p, size
         }
 
         if (*fmt == 's') {
-            mp_buffer_info_t bufinfo;
-            mp_get_buffer_raise(args[i++], &bufinfo, MP_BUFFER_READ);
-            mp_uint_t to_copy = sz;
-            if (bufinfo.len < to_copy) {
-                to_copy = bufinfo.len;
+            if (i < n_args) {
+                mp_buffer_info_t bufinfo;
+                mp_get_buffer_raise(args[i], &bufinfo, MP_BUFFER_READ);
+                mp_uint_t to_copy = sz;
+                if (bufinfo.len < to_copy) {
+                    to_copy = bufinfo.len;
+                }
+                memcpy(p, bufinfo.buf, to_copy);
+                memset(p + to_copy, 0, sz - to_copy);
             }
-            memcpy(p, bufinfo.buf, to_copy);
-            memset(p + to_copy, 0, sz - to_copy);
+            i++;
             p += sz;
         } else {
             while (sz--) {
@@ -159,13 +137,16 @@ void shared_modules_struct_pack_into(mp_obj_t fmt_in, byte *p, byte *end_p, size
                 if (*fmt == 'x') {
                     mp_binary_set_val(fmt_type, *fmt, MP_OBJ_NEW_SMALL_INT(0), p_base, &p);
                 } else {
-                    mp_binary_set_val(fmt_type, *fmt, args[i], p_base, &p);
+                    if (i < n_args) {
+                        mp_binary_set_val(fmt_type, *fmt, args[i], p_base, &p);
+                    }
                     i++;
                 }
             }
         }
         fmt++;
     }
+    (void)mp_arg_validate_length(n_args, i, MP_QSTR_values);
 }
 
 mp_obj_tuple_t *shared_modules_struct_unpack_from(mp_obj_t fmt_in, byte *p, byte *end_p, bool exact_size) {
@@ -180,11 +161,11 @@ mp_obj_tuple_t *shared_modules_struct_unpack_from(mp_obj_t fmt_in, byte *p, byte
     // Otherwise just make sure it's big enough.
     if (exact_size) {
         if (p + total_sz != end_p) {
-            mp_raise_RuntimeError(translate("buffer size must match format"));
+            mp_raise_RuntimeError(MP_ERROR_TEXT("buffer size must match format"));
         }
     } else {
         if (p + total_sz > end_p) {
-            mp_raise_RuntimeError(translate("buffer too small"));
+            mp_raise_RuntimeError(MP_ERROR_TEXT("buffer too small"));
         }
     }
 

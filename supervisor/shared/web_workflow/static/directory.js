@@ -1,20 +1,48 @@
 let new_directory_name = document.getElementById("name");
 let files = document.getElementById("files");
+let dirs = document.getElementById("dirs");
 
 var url_base = window.location;
 var current_path;
-var editable = undefined;
+
+// From: https://stackoverflow.com/questions/10420352/converting-file-size-in-bytes-to-human-readable-string
+function humanFileSize(bytes) {
+  const thresh = 1000;
+
+  if (Math.abs(bytes) < thresh) {
+    return bytes + ' B';
+  }
+
+  const units = ['kB', 'MB', 'GB', 'TB'];
+  let u = -1;
+  const r = 10;
+
+  do {
+    bytes /= thresh;
+    ++u;
+  } while (Math.round(Math.abs(bytes) * r) / r >= thresh && u < units.length - 1);
+
+
+  return bytes.toFixed(1) + ' ' + units[u];
+}
+
+
+function compareValues(a, b) {
+    if (a.directory == b.directory && a.name.toLowerCase() === b.name.toLowerCase()) {
+      return 0;
+    } else if (a.directory != b.directory) {
+      return a.directory < b.directory ? 1 : -1;
+    } else {
+      return a.name.toLowerCase() < b.name.toLowerCase() ? -1 : 1;
+    }
+}
+
+function set_upload_enabled(enabled) {
+    files.disabled = !enabled;
+    dirs.disabled = !enabled;
+}
 
 async function refresh_list() {
-
-    function compareValues(a, b) {
-        if (a.directory == b.directory && a.name.toLowerCase() === b.name.toLowerCase()) {
-          return 0;
-        } else {
-          return a.directory.toString().substring(3,4)+a.name.toLowerCase() < b.directory.toString().substring(3,4)+b.name.toLowerCase() ? -1 : 1;
-        }
-    }
-
     current_path = window.location.hash.substr(1);
     if (current_path == "") {
         current_path = "/";
@@ -35,24 +63,23 @@ async function refresh_list() {
     var path = document.querySelector("#path");
     path.textContent = current_path;
     var template = document.querySelector('#row');
+    var disk_usage = document.querySelector('#usage');
 
-    if (editable === undefined) {
-        const status = await fetch(new URL("/fs/", url_base),
-            {
-                method: "OPTIONS",
-                credentials: "include"
-            }
-        );
-        editable = status.headers.get("Access-Control-Allow-Methods").includes("DELETE");
-        new_directory_name.disabled = !editable;
-        files.disabled = !editable;
-        if (!editable) {
-            let usbwarning = document.querySelector("#usbwarning");
-            usbwarning.style.display = "block";
-        }
+    let used = humanFileSize((data.total - data.free) * data.block_size);
+    let total = humanFileSize(data.total * data.block_size);
+    disk_usage.textContent = `${used} out of ${total}`;
+
+    let editable = data.writable;
+    new_directory_name.disabled = !editable;
+    set_upload_enabled(editable);
+    let usbwarning = document.querySelector("#usbwarning");
+    if (!editable) {
+        usbwarning.style.display = "block";
+    } else {
+        usbwarning.style.display = "none";
     }
 
-    if (window.location.path != "/fs/") {
+    if (current_path != "/") {
         var clone = template.content.cloneNode(true);
         var td = clone.querySelectorAll("td");
         td[0].textContent = "📁";
@@ -62,12 +89,14 @@ async function refresh_list() {
         path.textContent = "..";
         // Remove the delete button
         td[4].replaceChildren();
+        td[5].replaceChildren();
+        td[6].replaceChildren();
         new_children.push(clone);
     }
 
-    data.sort(compareValues);
+    data.files.sort(compareValues);
 
-    for (const f of data) {
+    for (const f of data.files) {
         // Clone the new row and insert it into the table
         var clone = template.content.cloneNode(true);
         var td = clone.querySelectorAll("td");
@@ -82,31 +111,46 @@ async function refresh_list() {
             file_path = api_url;
         }
 
+        var text_file = false;
         if (f.directory) {
             icon = "📁";
         } else if(f.name.endsWith(".txt") ||
+                  f.name.endsWith(".toml") ||
                   f.name.endsWith(".py") ||
                   f.name.endsWith(".js") ||
                   f.name.endsWith(".json")) {
             icon = "📄";
+            text_file = true;
         } else if (f.name.endsWith(".html")) {
             icon = "🌐";
+            text_file = true;
         }
         td[0].textContent = icon;
-        td[1].textContent = f.file_size;
-        var path = clone.querySelector("a");
+        td[1].textContent = humanFileSize(f.file_size);
+        var path = clone.querySelector("a.path");
         path.href = file_path;
         path.textContent = f.name;
-        td[3].textContent = (new Date(f.modified_ns / 1000000)).toLocaleString();
+        let modtime = clone.querySelector("td.modtime");
+        modtime.textContent = (new Date(f.modified_ns / 1000000)).toLocaleString();
         var delete_button = clone.querySelector("button.delete");
         delete_button.value = api_url;
         delete_button.disabled = !editable;
         delete_button.onclick = del;
 
-        if (editable && !f.directory) {
+
+        var rename_button = clone.querySelector("button.rename");
+        rename_button.value = api_url;
+        rename_button.disabled = !editable;
+        rename_button.onclick = rename;
+
+        let edit_link = clone.querySelector(".edit_link");
+        if (text_file && editable && !f.directory) {
             edit_url = new URL(edit_url, url_base);
-            let edit_link = clone.querySelector(".edit_link");
             edit_link.href = edit_url
+        } else if (f.directory) {
+            edit_link.style = "display: none;";
+        } else {
+            edit_link.querySelector("button").disabled = true;
         }
 
         new_children.push(clone);
@@ -147,9 +191,39 @@ async function mkdir(e) {
     }
 }
 
+const beforeUnloadHandler = function(event){
+    // Recommended
+    event.preventDefault();
+
+    // Included for legacy support, e.g. Chrome/Edge < 119
+    event.returnValue = true;
+}
+
 async function upload(e) {
-    for (const file of files.files) {
-        let file_path = new URL("/fs" + current_path + file.name, url_base);
+    const upload_path = current_path;
+    window.addEventListener("beforeunload",  beforeUnloadHandler);
+    set_upload_enabled(false);
+    let progress = document.querySelector("#progress");
+    let made_dirs = new Set();
+    let total = files.files.length + dirs.files.length;
+
+    var uploaded = 0;
+    var failed = 0;
+    progress.textContent = `Uploaded ${uploaded} out of ${total} files`;
+    for (const file of [...files.files, ...dirs.files]) {
+        let file_name = file.name;
+        if (file.webkitRelativePath) {
+            file_name = file.webkitRelativePath;
+            let components = file_name.split("/");
+            components.pop();
+            let parent_dir = components.join("/");
+            if (!made_dirs.has(parent_dir)) {
+                new_directory_name.value = parent_dir;
+                await mkdir(null);
+                made_dirs.add(parent_dir);
+            }
+        }
+        let file_path = new URL("/fs" + upload_path + file_name, url_base);
         const response = await fetch(file_path,
             {
                 method: "PUT",
@@ -162,10 +236,23 @@ async function upload(e) {
         )
         if (response.ok) {
             refresh_list();
+            uploaded += 1;
+        } else {
+            failed += 1;
         }
+        progress.textContent = `Uploaded ${uploaded} out of ${total} files`;
+    }
+    var s = "";
+    if (failed > 0) {
+        if (failed > 1) {
+            s = "s";
+        }
+        progress.textContent = `${failed} upload${s} failed`;
     }
     files.value = "";
-    upload_button.disabled = true;
+    dirs.value = "";
+    set_upload_enabled(true);
+    window.removeEventListener("beforeunload",  beforeUnloadHandler);
 }
 
 async function del(e) {
@@ -188,19 +275,33 @@ async function del(e) {
     }
 }
 
+async function rename(e) {
+    let fn = new URL(e.target.value);
+    var new_fn = prompt("Rename to ", fn.pathname.substr(3));
+    if (new_fn === null) {
+        return;
+    }
+    let new_uri = new URL("/fs" + new_fn, fn);
+    const response = await fetch(e.target.value,
+        {
+            method: "MOVE",
+            headers: {
+                'X-Destination': new_uri.pathname,
+            },
+        }
+    )
+    if (response.ok) {
+        refresh_list();
+    }
+}
+
 find_devices();
 
 let mkdir_button = document.getElementById("mkdir");
 mkdir_button.onclick = mkdir;
 
-let upload_button = document.getElementById("upload");
-upload_button.onclick = upload;
-
-upload_button.disabled = files.files.length == 0;
-
-files.onchange = () => {
-    upload_button.disabled = files.files.length == 0;
-}
+files.onchange = upload;
+dirs.onchange = upload;
 
 mkdir_button.disabled = new_directory_name.value.length == 0;
 
@@ -209,3 +310,13 @@ new_directory_name.oninput = () => {
 }
 
 window.onhashchange = refresh_list;
+
+window.addEventListener("pageshow", function (event) {
+  var historyTraversal = event.persisted ||
+                         (typeof window.performance != "undefined" &&
+                              window.performance.navigation.type === 2);
+  if (historyTraversal) {
+    // Handle page restore.
+    window.location.reload();
+  }
+});

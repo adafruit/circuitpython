@@ -1,64 +1,33 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2015 Glenn Ruben Bakke
- * Copyright (c) 2019 Dan Halbert for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2015 Glenn Ruben Bakke
+// SPDX-FileCopyrightText: Copyright (c) 2019 Dan Halbert for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
-#ifndef MICROPY_INCLUDED_ESPRESSIF_MPCONFIGPORT_H
-#define MICROPY_INCLUDED_ESPRESSIF_MPCONFIGPORT_H
+#pragma once
+
+// Enable for debugging.
+// #define CIRCUITPY_VERBOSE_BLE               (1)
 
 #define MICROPY_NLR_THUMB                   (0)
 
 #define MICROPY_USE_INTERNAL_PRINTF         (0)
 #define MICROPY_PY_SYS_PLATFORM             "Espressif"
 
+#define CIRCUITPY_DIGITALIO_HAVE_INPUT_ONLY (1)
+
 #include "py/circuitpy_mpconfig.h"
-
-#if CIRCUITPY_BLEIO
-#include "common-hal/_bleio/ble_events.h"
-#endif
-
-#if CIRCUITPY_BLEIO
-#define MICROPY_PORT_ROOT_POINTERS                              \
-    CIRCUITPY_COMMON_ROOT_POINTERS                              \
-    ble_event_handler_entry_t *ble_event_handler_entries;
-#else
-#define MICROPY_PORT_ROOT_POINTERS \
-    CIRCUITPY_COMMON_ROOT_POINTERS
-#endif
 
 #define MICROPY_NLR_SETJMP                  (1)
 #define CIRCUITPY_DEFAULT_STACK_SIZE        0x6000
 
 // Nearly all boards have this because it is used to enter the ROM bootloader.
 #ifndef CIRCUITPY_BOOT_BUTTON
-  #ifdef CONFIG_IDF_TARGET_ESP32C3
+  #if defined(CONFIG_IDF_TARGET_ESP32C2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32C6) || defined(CONFIG_IDF_TARGET_ESP32H2)
     #define CIRCUITPY_BOOT_BUTTON (&pin_GPIO9)
-  #else
-    #ifndef CONFIG_IDF_TARGET_ESP32
-      #define CIRCUITPY_BOOT_BUTTON (&pin_GPIO0)
-    #endif
+  #elif !defined(CONFIG_IDF_TARGET_ESP32)
+    #define CIRCUITPY_BOOT_BUTTON (&pin_GPIO0)
   #endif
 #endif
 
@@ -84,19 +53,15 @@
 #define CIRCUITPY_I2C_ALLOW_INTERNAL_PULL_UP (0)
 #endif
 
-// Define to (1) in mpconfigboard.h if the board uses the internal USB to
-// Serial/JTAG to connect do USB.
-#ifndef CIRCUITPY_ESP_USB_SERIAL_JTAG
-#define CIRCUITPY_ESP_USB_SERIAL_JTAG (0)
-#endif
+// Protect the background queue with a lock because both cores may modify it.
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+extern portMUX_TYPE background_task_mutex;
+#define CALLBACK_CRITICAL_BEGIN (taskENTER_CRITICAL(&background_task_mutex))
+#define CALLBACK_CRITICAL_END (taskEXIT_CRITICAL(&background_task_mutex))
 
-#ifndef DEFAULT_RESERVED_PSRAM
-#define DEFAULT_RESERVED_PSRAM (0)
+// 20 dBm is the default and the highest max tx power.
+// Allow a different value to be specified for boards that have trouble with using the maximum power.
+#ifndef CIRCUITPY_WIFI_DEFAULT_TX_POWER
+#define CIRCUITPY_WIFI_DEFAULT_TX_POWER (20)
 #endif
-
-#if defined(CONFIG_SPIRAM)
-#undef CIRCUITPY_PORT_NUM_SUPERVISOR_ALLOCATIONS
-#define CIRCUITPY_PORT_NUM_SUPERVISOR_ALLOCATIONS (1)
-#endif
-
-#endif  // MICROPY_INCLUDED_ESPRESSIF_MPCONFIGPORT_H

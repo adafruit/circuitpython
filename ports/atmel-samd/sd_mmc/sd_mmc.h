@@ -1,3 +1,9 @@
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2024 Adafruit Industries LLC
+//
+// SPDX-License-Identifier: MIT
+
 /**
  * \file
  *
@@ -34,8 +40,7 @@
  * Support and FAQ: visit <a href="https://www.microchip.com/support/">Microchip Support</a>
  */
 
-#ifndef SD_MMC_H_INCLUDED
-#define SD_MMC_H_INCLUDED
+#pragma once
 
 #include "compiler.h"
 #include "conf_sd_mmc.h"
@@ -67,7 +72,7 @@ typedef uint8_t sd_mmc_err_t; /**< Type of return error code */
 #define SD_MMC_INIT_ONGOING 1 /**< Card not initialized */
 #define SD_MMC_ERR_NO_CARD 2  /**< No SD/MMC card inserted */
 #define SD_MMC_ERR_UNUSABLE 3 /**< Unusable card */
-#define SD_MMC_ERR_SLOT 4     /**< Slot unknow */
+#define SD_MMC_ERR_SLOT 4     /**< Slot unknown */
 #define SD_MMC_ERR_COMM 5     /**< General communication error */
 #define SD_MMC_ERR_PARAM 6    /**< Illeage input parameter */
 #define SD_MMC_ERR_WP 7       /**< Card write protected */
@@ -166,7 +171,7 @@ uint32_t sd_mmc_get_capacity(uint8_t slot);
  *
  * \param[in] slot     Card slot
  *
- * \return true, if write portected
+ * \return true, if write protected
  */
 bool sd_mmc_is_write_protected(uint8_t slot);
 
@@ -306,5 +311,3 @@ sd_mmc_err_t sdio_write_extended(uint8_t slot, uint8_t func_num, uint32_t addr, 
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* SD_MMC_H_INCLUDED */

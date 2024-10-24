@@ -1,31 +1,10 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
-#ifndef MICROPY_INCLUDED_RASPBERRYPI_AUDIO_DMA_OUT_H
-#define MICROPY_INCLUDED_RASPBERRYPI_AUDIO_DMA_OUT_H
+#pragma once
 
 #include "py/obj.h"
 #include "supervisor/background_callback.h"
@@ -51,6 +30,7 @@ typedef struct {
     bool unsigned_to_signed;
     bool output_signed;
     bool playing_in_progress;
+    bool swap_channel;
 } audio_dma_t;
 
 typedef enum {
@@ -81,7 +61,8 @@ audio_dma_result audio_dma_setup_playback(audio_dma_t *dma,
     bool output_signed,
     uint8_t output_resolution,
     uint32_t output_register_address,
-    uint8_t dma_trigger_source);
+    uint8_t dma_trigger_source,
+    bool swap_channel);
 
 void audio_dma_stop(audio_dma_t *dma);
 bool audio_dma_get_playing(audio_dma_t *dma);
@@ -89,4 +70,5 @@ void audio_dma_pause(audio_dma_t *dma);
 void audio_dma_resume(audio_dma_t *dma);
 bool audio_dma_get_paused(audio_dma_t *dma);
 
-#endif  // MICROPY_INCLUDED_RASPBERRYPI_AUDIO_DMA_OUT_H
+uint32_t audio_dma_pause_all(void);
+void audio_dma_unpause_mask(uint32_t channel_mask);

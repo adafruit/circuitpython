@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright 2019 Sony Semiconductor Solutions Corporation
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright 2019 Sony Semiconductor Solutions Corporation
+//
+// SPDX-License-Identifier: MIT
 
 #include <string.h>
 #include <unistd.h>
@@ -49,7 +29,7 @@ typedef struct {
     int fd;
 } busio_uart_dev_t;
 
-STATIC busio_uart_dev_t busio_uart_dev[] = {
+static busio_uart_dev_t busio_uart_dev[] = {
     {"/dev/ttyS2", &pin_UART2_TXD, &pin_UART2_RXD, -1},
 };
 
@@ -66,7 +46,7 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     struct termios tio;
 
     if ((rts != NULL) || (cts != NULL) || (rs485_dir != NULL) || (rs485_invert)) {
-        mp_raise_NotImplementedError(translate("RS485"));
+        mp_raise_NotImplementedError(MP_ERROR_TEXT("RS485"));
     }
 
     mp_arg_validate_int(bits, 8, MP_QSTR_bits);
@@ -90,7 +70,7 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     if (busio_uart_dev[self->number].fd < 0) {
         busio_uart_dev[self->number].fd = open(busio_uart_dev[self->number].devpath, O_RDWR);
         if (busio_uart_dev[self->number].fd < 0) {
-            mp_raise_RuntimeError(translate("UART init"));
+            mp_raise_RuntimeError(MP_ERROR_TEXT("UART init"));
         }
 
         // Wait to make sure the UART is ready

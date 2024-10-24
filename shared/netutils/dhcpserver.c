@@ -32,8 +32,12 @@
 #include <string.h>
 #include "py/mperrno.h"
 #include "py/mphal.h"
+#include "lwip/opt.h"
 
-#if MICROPY_PY_LWIP
+// CIRCUITPY-CHANGE: comment
+// Used in CIRCUITPY without MICROPY_PY_LWIP
+
+#if LWIP_UDP
 
 #include "shared/netutils/dhcpserver.h"
 #include "lwip/udp.h"
@@ -65,7 +69,7 @@
 #define PORT_DHCP_SERVER (67)
 #define PORT_DHCP_CLIENT (68)
 
-#define DEFAULT_DNS MAKE_IP4(8, 8, 8, 8)
+#define DEFAULT_DNS MAKE_IP4(192, 168, 4, 1)
 #define DEFAULT_LEASE_TIME_S (24 * 60 * 60) // in seconds
 
 #define MAC_LEN (6)
@@ -113,12 +117,12 @@ static void dhcp_socket_free(struct udp_pcb **udp) {
 
 static int dhcp_socket_bind(struct udp_pcb **udp, uint32_t ip, uint16_t port) {
     ip_addr_t addr;
-    IP4_ADDR(&addr, ip >> 24 & 0xff, ip >> 16 & 0xff, ip >> 8 & 0xff, ip & 0xff);
+    IP_ADDR4(&addr, ip >> 24 & 0xff, ip >> 16 & 0xff, ip >> 8 & 0xff, ip & 0xff);
     // TODO convert lwIP errors to errno
     return udp_bind(*udp, &addr, port);
 }
 
-static int dhcp_socket_sendto(struct udp_pcb **udp, const void *buf, size_t len, uint32_t ip, uint16_t port) {
+static int dhcp_socket_sendto(struct udp_pcb **udp, struct netif *netif, const void *buf, size_t len, uint32_t ip, uint16_t port) {
     if (len > 0xffff) {
         len = 0xffff;
     }
@@ -131,8 +135,13 @@ static int dhcp_socket_sendto(struct udp_pcb **udp, const void *buf, size_t len,
     memcpy(p->payload, buf, len);
 
     ip_addr_t dest;
-    IP4_ADDR(&dest, ip >> 24 & 0xff, ip >> 16 & 0xff, ip >> 8 & 0xff, ip & 0xff);
-    err_t err = udp_sendto(*udp, p, &dest, port);
+    IP_ADDR4(&dest, ip >> 24 & 0xff, ip >> 16 & 0xff, ip >> 8 & 0xff, ip & 0xff);
+    err_t err;
+    if (netif != NULL) {
+        err = udp_sendto_if(*udp, p, &dest, port, netif);
+    } else {
+        err = udp_sendto(*udp, p, &dest, port);
+    }
 
     pbuf_free(p);
 
@@ -153,7 +162,7 @@ static uint8_t *opt_find(uint8_t *opt, uint8_t cmd) {
     return NULL;
 }
 
-static void opt_write_n(uint8_t **opt, uint8_t cmd, size_t n, void *data) {
+static void opt_write_n(uint8_t **opt, uint8_t cmd, size_t n, const void *data) {
     uint8_t *o = *opt;
     *o++ = cmd;
     *o++ = n;
@@ -200,7 +209,7 @@ static void dhcp_server_process(void *arg, struct udp_pcb *upcb, struct pbuf *p,
     }
 
     dhcp_msg.op = DHCPOFFER;
-    memcpy(&dhcp_msg.yiaddr, &d->ip.addr, 4);
+    memcpy(&dhcp_msg.yiaddr, &ip_2_ip4(&d->ip)->addr, 4);
 
     uint8_t *opt = (uint8_t *)&dhcp_msg.options;
     opt += 4; // assume magic cookie: 99, 130, 83, 99
@@ -243,7 +252,7 @@ static void dhcp_server_process(void *arg, struct udp_pcb *upcb, struct pbuf *p,
                 // Should be NACK
                 goto ignore_request;
             }
-            if (memcmp(o + 2, &d->ip.addr, 3) != 0) {
+            if (memcmp(o + 2, &ip_2_ip4(&d->ip)->addr, 3) != 0) {
                 // Should be NACK
                 goto ignore_request;
             }
@@ -265,9 +274,10 @@ static void dhcp_server_process(void *arg, struct udp_pcb *upcb, struct pbuf *p,
             d->lease[yi].expiry = (mp_hal_ticks_ms() + DEFAULT_LEASE_TIME_S * 1000) >> 16;
             dhcp_msg.yiaddr[3] = DHCPS_BASE_IP + yi;
             opt_write_u8(&opt, DHCP_OPT_MSG_TYPE, DHCPACK);
-            printf("DHCPS: client connected: MAC=%02x:%02x:%02x:%02x:%02x:%02x IP=%u.%u.%u.%u\n",
+            // CIRCUITPY-CHANGE: use LWIP_DEBUGF instead of printf
+            LWIP_DEBUGF(DHCP_DEBUG, ("DHCPS: client connected: MAC=%02x:%02x:%02x:%02x:%02x:%02x IP=%u.%u.%u.%u\n",
                 dhcp_msg.chaddr[0], dhcp_msg.chaddr[1], dhcp_msg.chaddr[2], dhcp_msg.chaddr[3], dhcp_msg.chaddr[4], dhcp_msg.chaddr[5],
-                dhcp_msg.yiaddr[0], dhcp_msg.yiaddr[1], dhcp_msg.yiaddr[2], dhcp_msg.yiaddr[3]);
+                dhcp_msg.yiaddr[0], dhcp_msg.yiaddr[1], dhcp_msg.yiaddr[2], dhcp_msg.yiaddr[3]));
             break;
         }
 
@@ -275,13 +285,14 @@ static void dhcp_server_process(void *arg, struct udp_pcb *upcb, struct pbuf *p,
             goto ignore_request;
     }
 
-    opt_write_n(&opt, DHCP_OPT_SERVER_ID, 4, &d->ip.addr);
-    opt_write_n(&opt, DHCP_OPT_SUBNET_MASK, 4, &d->nm.addr);
-    opt_write_n(&opt, DHCP_OPT_ROUTER, 4, &d->ip.addr); // aka gateway; can have mulitple addresses
-    opt_write_u32(&opt, DHCP_OPT_DNS, DEFAULT_DNS); // can have mulitple addresses
+    opt_write_n(&opt, DHCP_OPT_SERVER_ID, 4, &ip_2_ip4(&d->ip)->addr);
+    opt_write_n(&opt, DHCP_OPT_SUBNET_MASK, 4, &ip_2_ip4(&d->nm)->addr);
+    opt_write_n(&opt, DHCP_OPT_ROUTER, 4, &ip_2_ip4(&d->ip)->addr); // aka gateway; can have multiple addresses
+    opt_write_u32(&opt, DHCP_OPT_DNS, DEFAULT_DNS); // can have multiple addresses
     opt_write_u32(&opt, DHCP_OPT_IP_LEASE_TIME, DEFAULT_LEASE_TIME_S);
     *opt++ = DHCP_OPT_END;
-    dhcp_socket_sendto(&d->udp, &dhcp_msg, opt - (uint8_t *)&dhcp_msg, 0xffffffff, PORT_DHCP_CLIENT);
+    struct netif *netif = ip_current_input_netif();
+    dhcp_socket_sendto(&d->udp, netif, &dhcp_msg, opt - (uint8_t *)&dhcp_msg, 0xffffffff, PORT_DHCP_CLIENT);
 
 ignore_request:
     pbuf_free(p);

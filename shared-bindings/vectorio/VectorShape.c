@@ -1,3 +1,8 @@
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2020 by kvc0/WarriorOfWire
+//
+// SPDX-License-Identifier: MIT
 
 #include "shared-module/vectorio/__init__.h"
 #include "shared-bindings/vectorio/VectorShape.h"
@@ -16,7 +21,6 @@
 #include "py/objproperty.h"
 #include "py/objtype.h"
 #include "py/runtime.h"
-#include "supervisor/shared/translate/translate.h"
 
 
 // shape: The shape implementation to draw.
@@ -26,7 +30,7 @@
 mp_obj_t vectorio_vector_shape_make_new(const mp_obj_t shape, const mp_obj_t pixel_shader, int32_t x, int32_t y) {
     if (!mp_obj_is_type(pixel_shader, &displayio_colorconverter_type) &&
         !mp_obj_is_type(pixel_shader, &displayio_palette_type)) {
-        mp_raise_TypeError_varg(translate("unsupported %q type"), MP_QSTR_pixel_shader);
+        mp_raise_TypeError_varg(MP_ERROR_TEXT("unsupported %q type"), MP_QSTR_pixel_shader);
     }
 
     vectorio_ishape_t ishape;
@@ -44,11 +48,10 @@ mp_obj_t vectorio_vector_shape_make_new(const mp_obj_t shape, const mp_obj_t pix
         ishape.get_area = &common_hal_vectorio_circle_get_area;
         ishape.get_pixel = &common_hal_vectorio_circle_get_pixel;
     } else {
-        mp_raise_TypeError_varg(translate("unsupported %q type"), MP_QSTR_shape);
+        mp_raise_TypeError_varg(MP_ERROR_TEXT("unsupported %q type"), MP_QSTR_shape);
     }
 
-    vectorio_vector_shape_t *self = m_new_obj(vectorio_vector_shape_t);
-    self->base.type = &vectorio_vector_shape_type;
+    vectorio_vector_shape_t *self = mp_obj_malloc(vectorio_vector_shape_t, &vectorio_vector_shape_type);
     common_hal_vectorio_vector_shape_construct(self,
         ishape, pixel_shader, x, y
         );
@@ -66,7 +69,7 @@ mp_obj_t vectorio_vector_shape_make_new(const mp_obj_t shape, const mp_obj_t pix
     } else if (mp_obj_is_type(shape, &vectorio_circle_type)) {
         common_hal_vectorio_circle_set_on_dirty(self->ishape.shape, on_dirty);
     } else {
-        mp_raise_TypeError_varg(translate("unsupported %q type"), MP_QSTR_shape);
+        mp_raise_TypeError_varg(MP_ERROR_TEXT("unsupported %q type"), MP_QSTR_shape);
     }
 
     return MP_OBJ_FROM_PTR(self);
@@ -86,7 +89,7 @@ vectorio_draw_protocol_impl_t vectorio_vector_shape_draw_protocol_impl = {
 //     y: int
 //     """true if x,y lies inside the shape."""
 //
-STATIC mp_obj_t vectorio_vector_shape_obj_contains(mp_obj_t wrapper_shape, mp_obj_t x_obj, mp_obj_t y_obj) {
+static mp_obj_t vectorio_vector_shape_obj_contains(mp_obj_t wrapper_shape, mp_obj_t x_obj, mp_obj_t y_obj) {
     // Relies on the fact that only vector_shape impl gets matched with a VectorShape.
     const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, wrapper_shape);
     vectorio_vector_shape_t *self = MP_OBJ_TO_PTR(draw_protocol->draw_get_protocol_self(wrapper_shape));
@@ -101,7 +104,7 @@ MP_DEFINE_CONST_FUN_OBJ_3(vectorio_vector_shape_contains_obj, vectorio_vector_sh
 //     x: int
 //     """X position of the center point of the shape in the parent."""
 //
-STATIC mp_obj_t vectorio_vector_shape_obj_get_x(mp_obj_t wrapper_shape) {
+static mp_obj_t vectorio_vector_shape_obj_get_x(mp_obj_t wrapper_shape) {
     // Relies on the fact that only vector_shape impl gets matched with a VectorShape.
     const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, wrapper_shape);
     vectorio_vector_shape_t *self = MP_OBJ_TO_PTR(draw_protocol->draw_get_protocol_self(wrapper_shape));
@@ -110,7 +113,7 @@ STATIC mp_obj_t vectorio_vector_shape_obj_get_x(mp_obj_t wrapper_shape) {
 }
 MP_DEFINE_CONST_FUN_OBJ_1(vectorio_vector_shape_get_x_obj, vectorio_vector_shape_obj_get_x);
 
-STATIC mp_obj_t vectorio_vector_shape_obj_set_x(mp_obj_t wrapper_shape, mp_obj_t x_obj) {
+static mp_obj_t vectorio_vector_shape_obj_set_x(mp_obj_t wrapper_shape, mp_obj_t x_obj) {
     // Relies on the fact that only vector_shape impl gets matched with a VectorShape.
     const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, wrapper_shape);
     vectorio_vector_shape_t *self = MP_OBJ_TO_PTR(draw_protocol->draw_get_protocol_self(wrapper_shape));
@@ -129,7 +132,7 @@ MP_PROPERTY_GETSET(vectorio_vector_shape_x_obj,
 //     y: int
 //     """Y position of the center point of the shape in the parent."""
 //
-STATIC mp_obj_t vectorio_vector_shape_obj_get_y(mp_obj_t wrapper_shape) {
+static mp_obj_t vectorio_vector_shape_obj_get_y(mp_obj_t wrapper_shape) {
     // Relies on the fact that only vector_shape impl gets matched with a VectorShape.
     const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, wrapper_shape);
     vectorio_vector_shape_t *self = MP_OBJ_TO_PTR(draw_protocol->draw_get_protocol_self(wrapper_shape));
@@ -138,7 +141,7 @@ STATIC mp_obj_t vectorio_vector_shape_obj_get_y(mp_obj_t wrapper_shape) {
 }
 MP_DEFINE_CONST_FUN_OBJ_1(vectorio_vector_shape_get_y_obj, vectorio_vector_shape_obj_get_y);
 
-STATIC mp_obj_t vectorio_vector_shape_obj_set_y(mp_obj_t wrapper_shape, mp_obj_t y_obj) {
+static mp_obj_t vectorio_vector_shape_obj_set_y(mp_obj_t wrapper_shape, mp_obj_t y_obj) {
     // Relies on the fact that only vector_shape impl gets matched with a VectorShape.
     const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, wrapper_shape);
     vectorio_vector_shape_t *self = MP_OBJ_TO_PTR(draw_protocol->draw_get_protocol_self(wrapper_shape));
@@ -157,7 +160,7 @@ MP_PROPERTY_GETSET(vectorio_vector_shape_y_obj,
 //     location: Tuple[int, int]
 //     """location of the center point of the shape in the parent."""
 //
-STATIC mp_obj_t vectorio_vector_shape_obj_get_location(mp_obj_t wrapper_shape) {
+static mp_obj_t vectorio_vector_shape_obj_get_location(mp_obj_t wrapper_shape) {
     // Relies on the fact that only vector_shape impl gets matched with a VectorShape.
     const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, wrapper_shape);
     vectorio_vector_shape_t *self = MP_OBJ_TO_PTR(draw_protocol->draw_get_protocol_self(wrapper_shape));
@@ -166,7 +169,7 @@ STATIC mp_obj_t vectorio_vector_shape_obj_get_location(mp_obj_t wrapper_shape) {
 }
 MP_DEFINE_CONST_FUN_OBJ_1(vectorio_vector_shape_get_location_obj, vectorio_vector_shape_obj_get_location);
 
-STATIC mp_obj_t vectorio_vector_shape_obj_set_location(mp_obj_t wrapper_shape, mp_obj_t location_obj) {
+static mp_obj_t vectorio_vector_shape_obj_set_location(mp_obj_t wrapper_shape, mp_obj_t location_obj) {
     // Relies on the fact that only vector_shape impl gets matched with a VectorShape.
     const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, wrapper_shape);
     vectorio_vector_shape_t *self = MP_OBJ_TO_PTR(draw_protocol->draw_get_protocol_self(wrapper_shape));
@@ -181,10 +184,37 @@ MP_PROPERTY_GETSET(vectorio_vector_shape_location_obj,
     (mp_obj_t)&vectorio_vector_shape_set_location_obj);
 
 
+// Stub checker does not approve of these shared properties.
+//     hidden: bool
+//     """Hide the shape or not."""
+//
+static mp_obj_t vectorio_vector_shape_obj_get_hidden(mp_obj_t wrapper_shape) {
+    // Relies on the fact that only vector_shape impl gets matched with a VectorShape.
+    const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, wrapper_shape);
+    vectorio_vector_shape_t *self = MP_OBJ_TO_PTR(draw_protocol->draw_get_protocol_self(wrapper_shape));
+    return mp_obj_new_bool(common_hal_vectorio_vector_shape_get_hidden(self));
+}
+MP_DEFINE_CONST_FUN_OBJ_1(vectorio_vector_shape_get_hidden_obj, vectorio_vector_shape_obj_get_hidden);
+
+static mp_obj_t vectorio_vector_shape_obj_set_hidden(mp_obj_t wrapper_shape, mp_obj_t hidden_obj) {
+    // Relies on the fact that only vector_shape impl gets matched with a VectorShape.
+    const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, wrapper_shape);
+    vectorio_vector_shape_t *self = MP_OBJ_TO_PTR(draw_protocol->draw_get_protocol_self(wrapper_shape));
+
+    common_hal_vectorio_vector_shape_set_hidden(self, mp_obj_is_true(hidden_obj));
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_2(vectorio_vector_shape_set_hidden_obj, vectorio_vector_shape_obj_set_hidden);
+
+MP_PROPERTY_GETSET(vectorio_vector_shape_hidden_obj,
+    (mp_obj_t)&vectorio_vector_shape_get_hidden_obj,
+    (mp_obj_t)&vectorio_vector_shape_set_hidden_obj);
+
+
 //     pixel_shader: Union[ColorConverter, Palette]
 //     """The pixel shader of the shape."""
 //
-STATIC mp_obj_t vectorio_vector_shape_obj_get_pixel_shader(mp_obj_t wrapper_shape) {
+static mp_obj_t vectorio_vector_shape_obj_get_pixel_shader(mp_obj_t wrapper_shape) {
     // Relies on the fact that only vector_shape impl gets matched with a VectorShape.
     const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, wrapper_shape);
     vectorio_vector_shape_t *self = MP_OBJ_TO_PTR(draw_protocol->draw_get_protocol_self(wrapper_shape));
@@ -193,13 +223,13 @@ STATIC mp_obj_t vectorio_vector_shape_obj_get_pixel_shader(mp_obj_t wrapper_shap
 }
 MP_DEFINE_CONST_FUN_OBJ_1(vectorio_vector_shape_get_pixel_shader_obj, vectorio_vector_shape_obj_get_pixel_shader);
 
-STATIC mp_obj_t vectorio_vector_shape_obj_set_pixel_shader(mp_obj_t wrapper_shape, mp_obj_t pixel_shader) {
+static mp_obj_t vectorio_vector_shape_obj_set_pixel_shader(mp_obj_t wrapper_shape, mp_obj_t pixel_shader) {
     // Relies on the fact that only vector_shape impl gets matched with a VectorShape.
     const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, wrapper_shape);
     vectorio_vector_shape_t *self = MP_OBJ_TO_PTR(draw_protocol->draw_get_protocol_self(wrapper_shape));
 
     if (!mp_obj_is_type(pixel_shader, &displayio_palette_type) && !mp_obj_is_type(pixel_shader, &displayio_colorconverter_type)) {
-        mp_raise_TypeError(translate("pixel_shader must be displayio.Palette or displayio.ColorConverter"));
+        mp_raise_TypeError_varg(MP_ERROR_TEXT("unsupported %q type"), MP_QSTR_pixel_shader);
     }
 
     common_hal_vectorio_vector_shape_set_pixel_shader(self, pixel_shader);
@@ -213,12 +243,13 @@ MP_PROPERTY_GETSET(vectorio_vector_shape_pixel_shader_obj,
     (mp_obj_t)&vectorio_vector_shape_set_pixel_shader_obj);
 
 
-STATIC const mp_rom_map_elem_t vectorio_vector_shape_locals_dict_table[] = {
+static const mp_rom_map_elem_t vectorio_vector_shape_locals_dict_table[] = {
 };
-STATIC MP_DEFINE_CONST_DICT(vectorio_vector_shape_locals_dict, vectorio_vector_shape_locals_dict_table);
+static MP_DEFINE_CONST_DICT(vectorio_vector_shape_locals_dict, vectorio_vector_shape_locals_dict_table);
 
-const mp_obj_type_t vectorio_vector_shape_type = {
-    { &mp_type_type },
-    .name = MP_QSTR_VectorShape,
-    .locals_dict = (mp_obj_dict_t *)&vectorio_vector_shape_locals_dict,
-};
+MP_DEFINE_CONST_OBJ_TYPE(
+    vectorio_vector_shape_type,
+    MP_QSTR_VectorShape,
+    MP_TYPE_FLAG_HAS_SPECIAL_ACCESSORS,
+    locals_dict, &vectorio_vector_shape_locals_dict
+    );

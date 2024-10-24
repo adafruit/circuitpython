@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2021 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "shared-bindings/busio/SPI.h"
 
@@ -39,8 +19,8 @@
 
 #define NO_INSTANCE 0xff
 
-STATIC bool never_reset_spi[2];
-STATIC spi_inst_t *spi[2] = {spi0, spi1};
+static bool never_reset_spi[2];
+static spi_inst_t *spi[2] = {spi0, spi1};
 
 void reset_spi(void) {
     for (size_t i = 0; i < 2; i++) {
@@ -58,7 +38,7 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
     size_t instance_index = NO_INSTANCE;
 
     if (half_duplex) {
-        mp_raise_NotImplementedError(translate("Half duplex SPI is not implemented"));
+        mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("%q"), MP_QSTR_half_duplex);
     }
 
     if (clock->number % 4 == 2) {
@@ -92,7 +72,7 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
     }
 
     if ((spi_get_hw(self->peripheral)->cr1 & SPI_SSPCR1_SSE_BITS) != 0) {
-        mp_raise_ValueError(translate("SPI peripheral in use"));
+        mp_raise_ValueError(MP_ERROR_TEXT("SPI peripheral in use"));
     }
 
     self->target_frequency = 250000;
@@ -151,6 +131,15 @@ bool common_hal_busio_spi_configure(busio_spi_obj_t *self,
 
     spi_set_format(self->peripheral, bits, polarity, phase, SPI_MSB_FIRST);
 
+    // Workaround to start with clock line high if polarity=1. The hw SPI peripheral does not do this
+    // automatically. See https://github.com/raspberrypi/pico-sdk/issues/868 and
+    // https://forums.raspberrypi.com/viewtopic.php?t=336142
+    // TODO: scheduled to be be fixed in pico-sdk 1.5.0.
+    if (polarity) {
+        hw_clear_bits(&spi_get_hw(self->peripheral)->cr1, SPI_SSPCR1_SSE_BITS); // disable the SPI
+        hw_set_bits(&spi_get_hw(self->peripheral)->cr1, SPI_SSPCR1_SSE_BITS); // re-enable the SPI
+    }
+
     self->polarity = polarity;
     self->phase = phase;
     self->bits = bits;
@@ -161,6 +150,9 @@ bool common_hal_busio_spi_configure(busio_spi_obj_t *self,
 }
 
 bool common_hal_busio_spi_try_lock(busio_spi_obj_t *self) {
+    if (common_hal_busio_spi_deinited(self)) {
+        return false;
+    }
     bool grabbed_lock = false;
     if (!self->has_lock) {
         grabbed_lock = true;

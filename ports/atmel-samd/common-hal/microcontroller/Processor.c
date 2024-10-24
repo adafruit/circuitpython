@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2017 Dan Halbert for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2017 Dan Halbert for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 /*
  * Includes code from ASF sample code adc_temp.h and adc_temp.c,
@@ -73,46 +53,37 @@
 #include "peripheral_clk_config.h"
 
 #define ADC_TEMP_SAMPLE_LENGTH 4
-#define INT1V_VALUE_FLOAT 1.0
-#define INT1V_DIVIDER_1000 1000.0
-#define ADC_12BIT_FULL_SCALE_VALUE_FLOAT 4095.0
+#define INT1V_VALUE_FLOAT MICROPY_FLOAT_CONST(1.0)
+#define INT1V_DIVIDER_1000 MICROPY_FLOAT_CONST(1000.0)
+#define ADC_12BIT_FULL_SCALE_VALUE_FLOAT MICROPY_FLOAT_CONST(4095.0)
 
 // channel argument (ignored in calls below)
 #define IGNORED_CHANNEL 0
 
-// Decimal to fraction conversion. (adapted from ASF sample).
-STATIC float convert_dec_to_frac(uint8_t val) {
-    float float_val = (float)val;
-    if (val < 10) {
-        return float_val / 10.0;
-    } else if (val < 100) {
-        return float_val / 100.0;
-    } else {
-        return float_val / 1000.0;
-    }
-}
 
 // Extract the production calibration data information from NVM (adapted from ASF sample),
 // then calculate the temperature
+//
+// This code performs almost all operations with scaled integers.  For
+// instance, tempR is in units of 1/10°C, INT1VR is in units of 1mV, etc,
+// This is important to reduce the code size of the function. The effect on
+// precision is a ~.9°C difference vs the floating point algorithm on an
+// approximate 0..60°C range with a difference of ~.5°C at 25°C. When the fine
+// calculation step is skipped, the additional error approximately doubles.
+//
+// To save code size, rounding is neglected. However, trying to add back rounding
+// (by computing (a + b/2) / b instead of just a / b) actually didn't help
+// accuracy anyway.
 #ifdef SAMD21
-STATIC float calculate_temperature(uint16_t raw_value) {
-    volatile uint32_t val1;    /* Temperature Log Row Content first 32 bits */
-    volatile uint32_t val2;    /* Temperature Log Row Content another 32 bits */
-    uint8_t room_temp_val_int; /* Integer part of room temperature in °C */
-    uint8_t room_temp_val_dec; /* Decimal part of room temperature in °C */
-    uint8_t hot_temp_val_int;  /* Integer part of hot temperature in °C */
-    uint8_t hot_temp_val_dec;  /* Decimal part of hot temperature in °C */
-    int8_t room_int1v_val;     /* internal 1V reference drift at room temperature */
-    int8_t hot_int1v_val;      /* internal 1V reference drift at hot temperature*/
-
-    float tempR;       // Production Room temperature
-    float tempH;       // Production Hot temperature
-    float INT1VR;      // Room temp 2's complement of the internal 1V reference value
-    float INT1VH;      // Hot temp 2's complement of the internal 1V reference value
-    uint16_t ADCR;     // Production Room temperature ADC value
-    uint16_t ADCH;     // Production Hot temperature ADC value
-    float VADCR;       // Room temperature ADC voltage
-    float VADCH;       // Hot temperature ADC voltage
+static float calculate_temperature(uint16_t raw_value) {
+    uint32_t val1;    /* Temperature Log Row Content first 32 bits */
+    uint32_t val2;    /* Temperature Log Row Content another 32 bits */
+    int room_temp_val_int; /* Integer part of room temperature in °C */
+    int room_temp_val_dec; /* Decimal part of room temperature in °C */
+    int hot_temp_val_int;  /* Integer part of hot temperature in °C */
+    int hot_temp_val_dec;  /* Decimal part of hot temperature in °C */
+    int room_int1v_val;     /* internal 1V reference drift at room temperature */
+    int hot_int1v_val;      /* internal 1V reference drift at hot temperature*/
 
     uint32_t *temp_log_row_ptr = (uint32_t *)NVMCTRL_TEMP_LOG;
 
@@ -120,32 +91,29 @@ STATIC float calculate_temperature(uint16_t raw_value) {
     temp_log_row_ptr++;
     val2 = *temp_log_row_ptr;
 
-    room_temp_val_int = (uint8_t)((val1 & FUSES_ROOM_TEMP_VAL_INT_Msk) >> FUSES_ROOM_TEMP_VAL_INT_Pos);
-    room_temp_val_dec = (uint8_t)((val1 & FUSES_ROOM_TEMP_VAL_DEC_Msk) >> FUSES_ROOM_TEMP_VAL_DEC_Pos);
+    room_temp_val_int = ((val1 & FUSES_ROOM_TEMP_VAL_INT_Msk) >> FUSES_ROOM_TEMP_VAL_INT_Pos);
+    room_temp_val_dec = ((val1 & FUSES_ROOM_TEMP_VAL_DEC_Msk) >> FUSES_ROOM_TEMP_VAL_DEC_Pos);
 
-    hot_temp_val_int = (uint8_t)((val1 & FUSES_HOT_TEMP_VAL_INT_Msk) >> FUSES_HOT_TEMP_VAL_INT_Pos);
-    hot_temp_val_dec = (uint8_t)((val1 & FUSES_HOT_TEMP_VAL_DEC_Msk) >> FUSES_HOT_TEMP_VAL_DEC_Pos);
+    hot_temp_val_int = ((val1 & FUSES_HOT_TEMP_VAL_INT_Msk) >> FUSES_HOT_TEMP_VAL_INT_Pos);
+    hot_temp_val_dec = ((val1 & FUSES_HOT_TEMP_VAL_DEC_Msk) >> FUSES_HOT_TEMP_VAL_DEC_Pos);
 
+    // necessary casts: must interpret 8 bits as signed
     room_int1v_val = (int8_t)((val1 & FUSES_ROOM_INT1V_VAL_Msk) >> FUSES_ROOM_INT1V_VAL_Pos);
     hot_int1v_val = (int8_t)((val2 & FUSES_HOT_INT1V_VAL_Msk) >> FUSES_HOT_INT1V_VAL_Pos);
 
-    ADCR = (uint16_t)((val2 & FUSES_ROOM_ADC_VAL_Msk) >> FUSES_ROOM_ADC_VAL_Pos);
-    ADCH = (uint16_t)((val2 & FUSES_HOT_ADC_VAL_Msk) >> FUSES_HOT_ADC_VAL_Pos);
+    int ADCR = ((val2 & FUSES_ROOM_ADC_VAL_Msk) >> FUSES_ROOM_ADC_VAL_Pos);
+    int ADCH = ((val2 & FUSES_HOT_ADC_VAL_Msk) >> FUSES_HOT_ADC_VAL_Pos);
 
-    tempR = room_temp_val_int + convert_dec_to_frac(room_temp_val_dec);
-    tempH = hot_temp_val_int + convert_dec_to_frac(hot_temp_val_dec);
+    int tempR = 10 * room_temp_val_int + room_temp_val_dec;
+    int tempH = 10 * hot_temp_val_int + hot_temp_val_dec;
 
-    INT1VR = 1 - ((float)room_int1v_val / INT1V_DIVIDER_1000);
-    INT1VH = 1 - ((float)hot_int1v_val / INT1V_DIVIDER_1000);
+    int INT1VR = 1000 - room_int1v_val;
+    int INT1VH = 1000 - hot_int1v_val;
 
-    VADCR = ((float)ADCR * INT1VR) / ADC_12BIT_FULL_SCALE_VALUE_FLOAT;
-    VADCH = ((float)ADCH * INT1VH) / ADC_12BIT_FULL_SCALE_VALUE_FLOAT;
+    int VADCR = ADCR * INT1VR;
+    int VADCH = ADCH * INT1VH;
 
-    float VADC;      /* Voltage calculation using ADC result for Coarse Temp calculation */
-    float VADCM;     /* Voltage calculation using ADC result for Fine Temp calculation. */
-    float INT1VM;    /* Voltage calculation for reality INT1V value during the ADC conversion */
-
-    VADC = ((float)raw_value * INT1V_VALUE_FLOAT) / ADC_12BIT_FULL_SCALE_VALUE_FLOAT;
+    int VADC = raw_value * 1000;
 
     // Hopefully compiler will remove common subepxressions here.
 
@@ -153,22 +121,32 @@ STATIC float calculate_temperature(uint16_t raw_value) {
     // 1b as mentioned in data sheet section "Temperature Sensor Characteristics"
     // of Electrical Characteristics. (adapted from ASF sample code).
     // Coarse Temp Calculation by assume INT1V=1V for this ADC conversion
-    float coarse_temp = tempR + (((tempH - tempR) / (VADCH - VADCR)) * (VADC - VADCR));
+    int coarse_temp = tempR + (tempH - tempR) * (VADC - VADCR) / (VADCH - VADCR);
 
+    #if CIRCUITPY_FULL_BUILD
     // Calculation to find the real INT1V value during the ADC conversion
+    int INT1VM;    /* Voltage calculation for reality INT1V value during the ADC conversion */
+
     INT1VM = INT1VR + (((INT1VH - INT1VR) * (coarse_temp - tempR)) / (tempH - tempR));
 
-    VADCM = ((float)raw_value * INT1VM) / ADC_12BIT_FULL_SCALE_VALUE_FLOAT;
+    int VADCM = raw_value * INT1VM;
 
     // Fine Temp Calculation by replace INT1V=1V by INT1V = INT1Vm for ADC conversion
-    float fine_temp = tempR + (((tempH - tempR) / (VADCH - VADCR)) * (VADCM - VADCR));
+    float fine_temp = tempR + (((tempH - tempR) * (VADCM - VADCR)) / (VADCH - VADCR));
 
-    return fine_temp;
+    return fine_temp / 10;
+    #else
+    return coarse_temp / 10.;
+    #endif
 }
 #endif // SAMD21
 
 #ifdef SAM_D5X_E5X
-STATIC float calculate_temperature(uint16_t TP, uint16_t TC) {
+// Decimal to fraction conversion. (adapted from ASF sample).
+static float convert_dec_to_frac(uint8_t val) {
+    return val / MICROPY_FLOAT_CONST(10.);
+}
+static float calculate_temperature(uint16_t TP, uint16_t TC) {
     uint32_t TLI = (*(uint32_t *)FUSES_ROOM_TEMP_VAL_INT_ADDR & FUSES_ROOM_TEMP_VAL_INT_Msk) >> FUSES_ROOM_TEMP_VAL_INT_Pos;
     uint32_t TLD = (*(uint32_t *)FUSES_ROOM_TEMP_VAL_DEC_ADDR & FUSES_ROOM_TEMP_VAL_DEC_Msk) >> FUSES_ROOM_TEMP_VAL_DEC_Pos;
     float TL = TLI + convert_dec_to_frac(TLD);

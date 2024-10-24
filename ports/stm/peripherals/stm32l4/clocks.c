@@ -1,28 +1,8 @@
-/*
- * This file is part of the Micro Python project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2021 Blues Wireless Contributors
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2021 Blues Wireless Contributors
+//
+// SPDX-License-Identifier: MIT
 
 #include "stm32l4xx_hal.h"
 #include "supervisor/shared/safe_mode.h"
@@ -39,6 +19,8 @@
 #error HSE support needs to be added for the L4 family.
 #elif !BOARD_HAS_LOW_SPEED_CRYSTAL
   #error LSE clock source required
+#elif !defined(BOARD_LSE_DRIVE_LEVEL)
+  #error BOARD_LSE_DRIVE_LEVEL is not defined for this board. The board should define the drive strength of 32kHz external crystal in line with calculations specified in ST AN2867 sections 3.3, 3.4, and STM32L4 datasheet DS12023 Table 58, LSE oscillator characteristics.
 #endif
 
 void Error_Handler(void) {
@@ -57,7 +39,7 @@ void stm32_peripherals_clocks_init(void) {
 
     // Configure LSE Drive
     HAL_PWR_EnableBkUpAccess();
-    __HAL_RCC_LSEDRIVE_CONFIG(RCC_LSEDRIVE_LOW);
+    __HAL_RCC_LSEDRIVE_CONFIG(BOARD_LSE_DRIVE_LEVEL);
     __HAL_RCC_PWR_CLK_ENABLE();
 
     /** Configure the main internal regulator output voltage

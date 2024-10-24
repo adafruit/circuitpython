@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2016 Scott Shawcroft for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2016 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include <stdint.h>
 
@@ -59,12 +39,15 @@
 //|   from board import *
 //|
 //|   i2c = busio.I2C(SCL, SDA)
+//|   i2c.try_lock()
 //|   print(i2c.scan())
+//|   i2c.unlock()
 //|   i2c.deinit()
 //|
-//| This example will initialize the the device, run
-//| :py:meth:`~busio.I2C.scan` and then :py:meth:`~busio.I2C.deinit` the
-//| hardware. The last step is optional because CircuitPython automatically
+//| This example will initialize the the device, lock the I2C bus, run
+//| :py:meth:`~busio.I2C.scan`, unlock the bus,
+//| and then :py:meth:`~busio.I2C.deinit` the hardware.
+//| The last step is optional because CircuitPython automatically
 //| resets hardware after a program finishes.
 //|
 //| Note that drivers will typically handle communication if provided the bus
@@ -77,21 +60,22 @@
 //|
 //| Tutorial for UART:
 //| https://learn.adafruit.com/circuitpython-essentials/circuitpython-uart-serial
-//| """
 //|
+//| .. jinja
+//| """
 
-STATIC const mp_rom_map_elem_t busio_module_globals_table[] = {
+static const mp_rom_map_elem_t busio_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_busio) },
     { MP_ROM_QSTR(MP_QSTR_I2C),   MP_ROM_PTR(&busio_i2c_type) },
     { MP_ROM_QSTR(MP_QSTR_SPI),   MP_ROM_PTR(&busio_spi_type) },
     { MP_ROM_QSTR(MP_QSTR_UART),   MP_ROM_PTR(&busio_uart_type) },
 };
 
-STATIC MP_DEFINE_CONST_DICT(busio_module_globals, busio_module_globals_table);
+static MP_DEFINE_CONST_DICT(busio_module_globals, busio_module_globals_table);
 
 const mp_obj_module_t busio_module = {
     .base = { &mp_type_module },
     .globals = (mp_obj_dict_t *)&busio_module_globals,
 };
 
-MP_REGISTER_MODULE(MP_QSTR_busio, busio_module, CIRCUITPY_BUSIO);
+MP_REGISTER_MODULE(MP_QSTR_busio, busio_module);

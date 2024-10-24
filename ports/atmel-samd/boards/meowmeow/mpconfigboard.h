@@ -1,3 +1,11 @@
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2017 Andrés Sabas for Electronic Cats
+//
+// SPDX-License-Identifier: MIT
+
+#pragma once
+
 #define MICROPY_HW_BOARD_NAME "Meow Meow"
 #define MICROPY_HW_MCU_NAME "samd21g18"
 
@@ -6,7 +14,7 @@
 #define CALIBRATE_CRYSTALLESS 1
 
 // Explanation of how a user got into safe mode.
-#define BOARD_USER_SAFE_MODE_ACTION translate("pressing both buttons at start up.\n")
+#define BOARD_USER_SAFE_MODE_ACTION MP_ERROR_TEXT("You pressed both buttons at start up.")
 
 #define DEFAULT_I2C_BUS_SCL (&pin_PA01)
 #define DEFAULT_I2C_BUS_SDA (&pin_PA00)

@@ -1,29 +1,9 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2018 Scott Shawcroft for Adafruit Industries
- * Copyright (c) 2020 Jeff Epler for Adafruit Industries
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2018 Scott Shawcroft for Adafruit Industries
+// SPDX-FileCopyrightText: Copyright (c) 2020 Jeff Epler for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
 
 #include "shared-bindings/framebufferio/FramebufferDisplay.h"
 
@@ -35,7 +15,10 @@
 #include "shared-module/displayio/display_core.h"
 #include "supervisor/shared/display.h"
 #include "supervisor/shared/tick.h"
+
+#if CIRCUITPY_TINYUSB
 #include "supervisor/usb.h"
+#endif
 
 #include <stdint.h>
 #include <string.h>
@@ -54,18 +37,11 @@ void common_hal_framebufferio_framebufferdisplay_construct(framebufferio_framebu
     self->framebuffer = framebuffer;
     self->framebuffer_protocol = mp_proto_get_or_throw(MP_QSTR_protocol_framebuffer, framebuffer);
 
-    uint16_t ram_width = 0x100;
-    uint16_t ram_height = 0x100;
     uint16_t depth = fb_getter_default(get_color_depth, 16);
     displayio_display_core_construct(
         &self->core,
-        NULL,
         self->framebuffer_protocol->get_width(self->framebuffer),
         self->framebuffer_protocol->get_height(self->framebuffer),
-        ram_width,
-        ram_height,
-        0,
-        0,
         0, // rotation
         depth,
         fb_getter_default(get_grayscale, (depth < 8)),
@@ -82,7 +58,7 @@ void common_hal_framebufferio_framebufferdisplay_construct(framebufferio_framebu
     }
 
     self->framebuffer_protocol->get_bufinfo(self->framebuffer, &self->bufinfo);
-    size_t framebuffer_size = self->first_pixel_offset + self->row_stride * self->core.height;
+    size_t framebuffer_size = self->first_pixel_offset + self->row_stride * (self->core.height - 1) + self->core.width * self->core.colorspace.depth / 8;
 
     mp_arg_validate_length_min(self->bufinfo.len, framebuffer_size, MP_QSTR_framebuffer);
 
@@ -97,12 +73,8 @@ void common_hal_framebufferio_framebufferdisplay_construct(framebufferio_framebu
 
     // Set the group after initialization otherwise we may send pixels while we delay in
     // initialization.
-    common_hal_framebufferio_framebufferdisplay_show(self, &circuitpython_splash);
+    displayio_display_core_set_root_group(&self->core, &circuitpython_splash);
     common_hal_framebufferio_framebufferdisplay_set_auto_refresh(self, auto_refresh);
-}
-
-bool common_hal_framebufferio_framebufferdisplay_show(framebufferio_framebufferdisplay_obj_t *self, displayio_group_t *root_group) {
-    return displayio_display_core_show(&self->core, root_group);
 }
 
 uint16_t common_hal_framebufferio_framebufferdisplay_get_width(framebufferio_framebufferdisplay_obj_t *self) {
@@ -133,7 +105,7 @@ mp_obj_t common_hal_framebufferio_framebufferdisplay_get_framebuffer(framebuffer
     return self->framebuffer;
 }
 
-STATIC const displayio_area_t *_get_refresh_areas(framebufferio_framebufferdisplay_obj_t *self) {
+static const displayio_area_t *_get_refresh_areas(framebufferio_framebufferdisplay_obj_t *self) {
     if (self->core.full_refresh) {
         self->core.area.next = NULL;
         return &self->core.area;
@@ -144,7 +116,7 @@ STATIC const displayio_area_t *_get_refresh_areas(framebufferio_framebufferdispl
 }
 
 #define MARK_ROW_DIRTY(r) (dirty_row_bitmask[r / 8] |= (1 << (r & 7)))
-STATIC bool _refresh_area(framebufferio_framebufferdisplay_obj_t *self, const displayio_area_t *area, uint8_t *dirty_row_bitmask) {
+static bool _refresh_area(framebufferio_framebufferdisplay_obj_t *self, const displayio_area_t *area, uint8_t *dirty_row_bitmask) {
     uint16_t buffer_size = CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE / sizeof(uint32_t); // In uint32_ts
 
     displayio_area_t clipped;
@@ -231,14 +203,14 @@ STATIC bool _refresh_area(framebufferio_framebufferdisplay_obj_t *self, const di
 
         // TODO(tannewt): Make refresh displays faster so we don't starve other
         // background tasks.
-        #if CIRCUITPY_USB
+        #if CIRCUITPY_TINYUSB
         usb_background();
         #endif
     }
     return true;
 }
 
-STATIC void _refresh_display(framebufferio_framebufferdisplay_obj_t *self) {
+static void _refresh_display(framebufferio_framebufferdisplay_obj_t *self) {
     self->framebuffer_protocol->get_bufinfo(self->framebuffer, &self->bufinfo);
     if (!self->bufinfo.buf) {
         return;
@@ -246,7 +218,9 @@ STATIC void _refresh_display(framebufferio_framebufferdisplay_obj_t *self) {
     displayio_display_core_start_refresh(&self->core);
     const displayio_area_t *current_area = _get_refresh_areas(self);
     if (current_area) {
-        uint8_t dirty_row_bitmask[(self->core.height + 7) / 8];
+        bool transposed = (self->core.rotation == 90 || self->core.rotation == 270);
+        int row_count = transposed ? self->core.width : self->core.height;
+        uint8_t dirty_row_bitmask[(row_count + 7) / 8];
         memset(dirty_row_bitmask, 0, sizeof(dirty_row_bitmask));
         self->framebuffer_protocol->get_bufinfo(self->framebuffer, &self->bufinfo);
         while (current_area != NULL) {
@@ -282,12 +256,12 @@ uint16_t common_hal_framebufferio_framebufferdisplay_get_rotation(framebufferio_
 
 
 bool common_hal_framebufferio_framebufferdisplay_refresh(framebufferio_framebufferdisplay_obj_t *self, uint32_t target_ms_per_frame, uint32_t maximum_ms_per_real_frame) {
-    if (!self->auto_refresh && !self->first_manual_refresh) {
+    if (!self->auto_refresh && !self->first_manual_refresh && (target_ms_per_frame != NO_FPS_LIMIT)) {
         uint64_t current_time = supervisor_ticks_ms64();
         uint32_t current_ms_since_real_refresh = current_time - self->core.last_refresh;
         // Test to see if the real frame time is below our minimum.
         if (current_ms_since_real_refresh > maximum_ms_per_real_frame) {
-            mp_raise_RuntimeError(translate("Below minimum frame rate"));
+            mp_raise_RuntimeError(MP_ERROR_TEXT("Below minimum frame rate"));
         }
         uint32_t current_ms_since_last_call = current_time - self->last_refresh_call;
         self->last_refresh_call = current_time;
@@ -323,7 +297,7 @@ void common_hal_framebufferio_framebufferdisplay_set_auto_refresh(framebufferio_
     self->auto_refresh = auto_refresh;
 }
 
-STATIC void _update_backlight(framebufferio_framebufferdisplay_obj_t *self) {
+static void _update_backlight(framebufferio_framebufferdisplay_obj_t *self) {
     // TODO(tannewt): Fade the backlight based on it's existing value and a target value. The target
     // should account for ambient light when possible.
 }
@@ -352,7 +326,7 @@ void framebufferio_framebufferdisplay_reset(framebufferio_framebufferdisplay_obj
     const mp_obj_type_t *fb_type = mp_obj_get_type(self->framebuffer);
     if (fb_type != NULL && fb_type != &mp_type_NoneType) {
         common_hal_framebufferio_framebufferdisplay_set_auto_refresh(self, true);
-        common_hal_framebufferio_framebufferdisplay_show(self, NULL);
+        displayio_display_core_set_root_group(&self->core, &circuitpython_splash);
         self->core.full_refresh = true;
     } else {
         release_framebufferdisplay(self);
@@ -360,5 +334,16 @@ void framebufferio_framebufferdisplay_reset(framebufferio_framebufferdisplay_obj
 }
 
 mp_obj_t common_hal_framebufferio_framebufferdisplay_get_root_group(framebufferio_framebufferdisplay_obj_t *self) {
+    if (self->core.current_group == NULL) {
+        return mp_const_none;
+    }
     return self->core.current_group;
+}
+
+mp_obj_t common_hal_framebufferio_framebufferdisplay_set_root_group(framebufferio_framebufferdisplay_obj_t *self, displayio_group_t *root_group) {
+    bool ok = displayio_display_core_set_root_group(&self->core, root_group);
+    if (!ok) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Group already used"));
+    }
+    return mp_const_none;
 }

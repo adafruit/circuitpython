@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * SPDX-FileCopyrightText: Copyright (c) 2014 Damien P. George
+ * Copyright (c) 2014 Damien P. George
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,9 +29,11 @@
 #include <string.h>
 #include <assert.h>
 
+#include "py/binary.h"
 #include "py/runtime.h"
 #include "py/smallint.h"
 #include "py/nativeglue.h"
+// CIRCUITPY-CHANGE
 #include "py/objtype.h"
 #include "py/gc.h"
 
@@ -105,6 +107,8 @@ mp_obj_t mp_native_to_obj(mp_uint_t val, mp_uint_t type) {
             return mp_obj_new_int(val);
         case MP_NATIVE_TYPE_UINT:
             return mp_obj_new_int_from_uint(val);
+        case MP_NATIVE_TYPE_QSTR:
+            return MP_OBJ_NEW_QSTR(val);
         default: // a pointer
             // we return just the value of the pointer as an integer
             return mp_obj_new_int_from_uint(val);
@@ -138,7 +142,7 @@ mp_obj_t mp_obj_new_slice(mp_obj_t ostart, mp_obj_t ostop, mp_obj_t ostep) {
 }
 #endif
 
-STATIC mp_obj_dict_t *mp_native_swap_globals(mp_obj_dict_t *new_globals) {
+static mp_obj_dict_t *mp_native_swap_globals(mp_obj_dict_t *new_globals) {
     if (new_globals == NULL) {
         // Globals were the originally the same so don't restore them
         return NULL;
@@ -154,20 +158,20 @@ STATIC mp_obj_dict_t *mp_native_swap_globals(mp_obj_dict_t *new_globals) {
 
 // wrapper that accepts n_args and n_kw in one argument
 // (native emitter can only pass at most 3 arguments to a function)
-STATIC mp_obj_t mp_native_call_function_n_kw(mp_obj_t fun_in, size_t n_args_kw, const mp_obj_t *args) {
+static mp_obj_t mp_native_call_function_n_kw(mp_obj_t fun_in, size_t n_args_kw, const mp_obj_t *args) {
     return mp_call_function_n_kw(fun_in, n_args_kw & 0xff, (n_args_kw >> 8) & 0xff, args);
 }
 
 // wrapper that makes raise obj and raises it
 // END_FINALLY opcode requires that we don't raise if o==None
-STATIC void mp_native_raise(mp_obj_t o) {
+static void mp_native_raise(mp_obj_t o) {
     if (o != MP_OBJ_NULL && o != mp_const_none) {
         nlr_raise(mp_make_raise_obj(o));
     }
 }
 
 // wrapper that handles iterator buffer
-STATIC mp_obj_t mp_native_getiter(mp_obj_t obj, mp_obj_iter_buf_t *iter) {
+static mp_obj_t mp_native_getiter(mp_obj_t obj, mp_obj_iter_buf_t *iter) {
     if (iter == NULL) {
         return mp_getiter(obj, NULL);
     } else {
@@ -182,7 +186,7 @@ STATIC mp_obj_t mp_native_getiter(mp_obj_t obj, mp_obj_iter_buf_t *iter) {
 }
 
 // wrapper that handles iterator buffer
-STATIC mp_obj_t mp_native_iternext(mp_obj_iter_buf_t *iter) {
+static mp_obj_t mp_native_iternext(mp_obj_iter_buf_t *iter) {
     mp_obj_t obj;
     if (iter->base.type == MP_OBJ_NULL) {
         obj = iter->buf[0];
@@ -192,7 +196,7 @@ STATIC mp_obj_t mp_native_iternext(mp_obj_iter_buf_t *iter) {
     return mp_iternext(obj);
 }
 
-STATIC bool mp_native_yield_from(mp_obj_t gen, mp_obj_t send_value, mp_obj_t *ret_value) {
+static bool mp_native_yield_from(mp_obj_t gen, mp_obj_t send_value, mp_obj_t *ret_value) {
     mp_vm_return_kind_t ret_kind;
     nlr_buf_t nlr_buf;
     mp_obj_t throw_value = *ret_value;
@@ -230,22 +234,22 @@ STATIC bool mp_native_yield_from(mp_obj_t gen, mp_obj_t send_value, mp_obj_t *re
 
 #if !MICROPY_PY_BUILTINS_FLOAT
 
-STATIC mp_obj_t mp_obj_new_float_from_f(float f) {
+static mp_obj_t mp_obj_new_float_from_f(float f) {
     (void)f;
     mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("float unsupported"));
 }
 
-STATIC mp_obj_t mp_obj_new_float_from_d(double d) {
+static mp_obj_t mp_obj_new_float_from_d(double d) {
     (void)d;
     mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("float unsupported"));
 }
 
-STATIC float mp_obj_get_float_to_f(mp_obj_t o) {
+static float mp_obj_get_float_to_f(mp_obj_t o) {
     (void)o;
     mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("float unsupported"));
 }
 
-STATIC double mp_obj_get_float_to_d(mp_obj_t o) {
+static double mp_obj_get_float_to_d(mp_obj_t o) {
     (void)o;
     mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("float unsupported"));
 }
@@ -280,7 +284,7 @@ const mp_fun_table_t mp_fun_table = {
     mp_obj_set_store,
     mp_obj_list_append,
     mp_obj_dict_store,
-    mp_make_function_from_raw_code,
+    mp_make_function_from_proto_fun,
     mp_native_call_function_n_kw,
     mp_call_method_n_kw,
     mp_call_method_n_kw_var,
@@ -301,9 +305,9 @@ const mp_fun_table_t mp_fun_table = {
     mp_unpack_ex,
     mp_delete_name,
     mp_delete_global,
-    mp_make_closure_from_raw_code,
+    mp_obj_new_closure,
     mp_arg_check_num_sig,
-    mp_setup_code_state,
+    mp_setup_code_state_native,
     mp_small_int_floor_divide,
     mp_small_int_modulo,
     mp_native_yield_from,
@@ -318,6 +322,7 @@ const mp_fun_table_t mp_fun_table = {
     gc_realloc,
     mp_printf,
     mp_vprintf,
+    // CIRCUITPY-CHANGE: mp_raise_msg_str instead of mp_raise_msg
     mp_raise_msg_str,
     mp_obj_get_type,
     mp_obj_new_str,
@@ -327,9 +332,16 @@ const mp_fun_table_t mp_fun_table = {
     mp_obj_new_float_from_d,
     mp_obj_get_float_to_f,
     mp_obj_get_float_to_d,
-    mp_get_buffer_raise,
+    mp_load_method_maybe,
+    mp_get_buffer,
     mp_get_stream_raise,
+    // CIRCUITPY-CHANGE: add mp_obj_assert_native_inited
     mp_obj_assert_native_inited,
+    mp_arg_parse_all,
+    mp_arg_parse_all_kw_array,
+    mp_binary_get_size,
+    mp_binary_get_val_array,
+    mp_binary_set_val_array,
     &mp_plat_print,
     &mp_type_type,
     &mp_type_str,
@@ -340,10 +352,15 @@ const mp_fun_table_t mp_fun_table = {
     &mp_type_fun_builtin_2,
     &mp_type_fun_builtin_3,
     &mp_type_fun_builtin_var,
+    &mp_type_Exception,
     &mp_stream_read_obj,
     &mp_stream_readinto_obj,
     &mp_stream_unbuffered_readline_obj,
     &mp_stream_write_obj,
 };
+
+#elif MICROPY_EMIT_NATIVE && MICROPY_DYNAMIC_COMPILER
+
+const int mp_fun_table;
 
 #endif // MICROPY_EMIT_NATIVE

@@ -29,7 +29,9 @@
 // This header file contains definitions to dynamically implement the static
 // MicroPython runtime API defined in py/obj.h and py/runtime.h.
 
+#include "py/binary.h"
 #include "py/nativeglue.h"
+#include "py/objfun.h"
 #include "py/objstr.h"
 #include "py/objtype.h"
 
@@ -43,13 +45,14 @@
 #undef mp_const_none
 #undef mp_const_false
 #undef mp_const_true
+#undef mp_const_empty_bytes
 #undef mp_const_empty_tuple
 #undef nlr_raise
 
 /******************************************************************************/
 // Memory allocation
 
-#define m_malloc(n,_)                   (m_malloc_dyn((n)))
+#define m_malloc(n)                     (m_malloc_dyn((n)))
 #define m_free(ptr)                     (m_free_dyn((ptr)))
 #define m_realloc(ptr, new_num_bytes)   (m_realloc_dyn((ptr), (new_num_bytes)))
 
@@ -77,12 +80,18 @@ static inline void *m_realloc_dyn(void *ptr, size_t new_num_bytes) {
 /******************************************************************************/
 // Types and objects
 
-#define MP_OBJ_NEW_QSTR(x) MP_OBJ_NEW_QSTR_##x
+#define MP_OBJ_NEW_QSTR(x)                  (mp_fun_table.native_to_obj(x, MP_NATIVE_TYPE_QSTR))
 
 #define mp_type_type                        (*mp_fun_table.type_type)
+#define mp_type_NoneType                    (*mp_obj_get_type(mp_const_none))
+#define mp_type_bool                        (*mp_obj_get_type(mp_const_false))
+#define mp_type_int                         (*(mp_obj_type_t *)(mp_load_global(MP_QSTR_int)))
 #define mp_type_str                         (*mp_fun_table.type_str)
+#define mp_type_bytes                       (*(mp_obj_type_t *)(mp_load_global(MP_QSTR_bytes)))
+#define mp_type_bytearray                   (*(mp_obj_type_t *)(mp_load_global(MP_QSTR_bytearray)))
 #define mp_type_tuple                       (*((mp_obj_base_t *)mp_const_empty_tuple)->type)
 #define mp_type_list                        (*mp_fun_table.type_list)
+#define mp_type_Exception                   (*mp_fun_table.type_Exception)
 #define mp_type_EOFError                    (*(mp_obj_type_t *)(mp_load_global(MP_QSTR_EOFError)))
 #define mp_type_IndexError                  (*(mp_obj_type_t *)(mp_load_global(MP_QSTR_IndexError)))
 #define mp_type_KeyError                    (*(mp_obj_type_t *)(mp_load_global(MP_QSTR_KeyError)))
@@ -99,6 +108,7 @@ static inline void *m_realloc_dyn(void *ptr, size_t new_num_bytes) {
 #define mp_const_none                       ((mp_obj_t)mp_fun_table.const_none)
 #define mp_const_false                      ((mp_obj_t)mp_fun_table.const_false)
 #define mp_const_true                       ((mp_obj_t)mp_fun_table.const_true)
+#define mp_const_empty_bytes                (MP_OBJ_TYPE_GET_SLOT(&mp_type_bytes, make_new)(NULL, 0, 0, NULL))
 #define mp_const_empty_tuple                (mp_fun_table.new_tuple(0, NULL))
 
 #define mp_obj_new_bool(b)                  ((b) ? (mp_obj_t)mp_fun_table.const_true : (mp_obj_t)mp_fun_table.const_false)
@@ -110,6 +120,7 @@ static inline void *m_realloc_dyn(void *ptr, size_t new_num_bytes) {
 #define mp_obj_new_bytearray_by_ref(n, i)   (mp_fun_table.obj_new_bytearray_by_ref((n), (i)))
 #define mp_obj_new_tuple(n, items)          (mp_fun_table.new_tuple((n), (items)))
 #define mp_obj_new_list(n, items)           (mp_fun_table.new_list((n), (items)))
+#define mp_obj_new_dict(n)                  (mp_fun_table.new_dict((n)))
 
 #define mp_obj_get_type(o)                  (mp_fun_table.obj_get_type((o)))
 #define mp_obj_cast_to_native_base(o, t)    (mp_obj_cast_to_native_base_dyn((o), (t)))
@@ -117,14 +128,20 @@ static inline void *m_realloc_dyn(void *ptr, size_t new_num_bytes) {
 #define mp_obj_get_int_truncated(o)         (mp_fun_table.native_from_obj(o, MP_NATIVE_TYPE_UINT))
 #define mp_obj_str_get_str(s)               (mp_obj_str_get_data_dyn((s), NULL))
 #define mp_obj_str_get_data(o, len)         (mp_obj_str_get_data_dyn((o), (len)))
-#define mp_get_buffer_raise(o, bufinfo, fl) (mp_fun_table.get_buffer_raise((o), (bufinfo), (fl)))
+#define mp_get_buffer(o, bufinfo, fl)       (mp_fun_table.get_buffer((o), (bufinfo), (fl)))
+#define mp_get_buffer_raise(o, bufinfo, fl) (mp_fun_table.get_buffer((o), (bufinfo), (fl) | MP_BUFFER_RAISE_IF_UNSUPPORTED))
 #define mp_get_stream_raise(s, flags)       (mp_fun_table.get_stream_raise((s), (flags)))
+#define mp_obj_is_true(o)                   (mp_fun_table.native_from_obj(o, MP_NATIVE_TYPE_BOOL))
 
 #define mp_obj_len(o)                       (mp_obj_len_dyn(o))
 #define mp_obj_subscr(base, index, val)     (mp_fun_table.obj_subscr((base), (index), (val)))
 #define mp_obj_get_array(o, len, items)     (mp_obj_get_array_dyn((o), (len), (items)))
 #define mp_obj_list_append(list, item)      (mp_fun_table.list_append((list), (item)))
+#define mp_obj_dict_store(dict, key, val)   (mp_fun_table.dict_store((dict), (key), (val)))
 
+#define mp_obj_malloc_helper(n, t)          (mp_obj_malloc_helper_dyn(n, t))
+
+// CIRCUITPY-CHANGE: new routine
 #define mp_obj_assert_native_inited(o)      (mp_fun_table.assert_native_inited((o)))
 
 static inline mp_obj_t mp_obj_new_str_of_type_dyn(const mp_obj_type_t *type, const byte *data, size_t len) {
@@ -140,8 +157,7 @@ static inline mp_obj_t mp_obj_cast_to_native_base_dyn(mp_obj_t self_in, mp_const
 
     if (MP_OBJ_FROM_PTR(self_type) == native_type) {
         return self_in;
-    }
-    if (self_type->parent != native_type) {
+    } else if (MP_OBJ_TYPE_GET_SLOT_OR_NULL(self_type, parent) != native_type) {
         // The self_in object is not a direct descendant of native_type, so fail the cast.
         // This is a very simple version of mp_obj_is_subclass_fast that could be improved.
         return MP_OBJ_NULL;
@@ -165,14 +181,24 @@ static inline mp_obj_t mp_obj_len_dyn(mp_obj_t o) {
     return mp_fun_table.call_function_n_kw(mp_fun_table.load_name(MP_QSTR_len), 1, &o);
 }
 
+static inline void *mp_obj_malloc_helper_dyn(size_t num_bytes, const mp_obj_type_t *type) {
+    mp_obj_base_t *base = (mp_obj_base_t *)m_malloc(num_bytes);
+    base->type = type;
+    return base;
+}
 
 /******************************************************************************/
 // General runtime functions
+
+#define mp_binary_get_size(struct_type, val_type, palign) (mp_fun_table.binary_get_size((struct_type), (val_type), (palign)))
+#define mp_binary_get_val_array(typecode, p, index) (mp_fun_table.binary_get_val_array((typecode), (p), (index)))
+#define mp_binary_set_val_array(typecode, p, index, val_in) (mp_fun_table.binary_set_val_array((typecode), (p), (index), (val_in)))
 
 #define mp_load_name(qst)                 (mp_fun_table.load_name((qst)))
 #define mp_load_global(qst)               (mp_fun_table.load_global((qst)))
 #define mp_load_attr(base, attr)          (mp_fun_table.load_attr((base), (attr)))
 #define mp_load_method(base, attr, dest)  (mp_fun_table.load_method((base), (attr), (dest)))
+#define mp_load_method_maybe(base, attr, dest) (mp_fun_table.load_method_maybe((base), (attr), (dest)))
 #define mp_load_super_method(attr, dest)  (mp_fun_table.load_super_method((attr), (dest)))
 #define mp_store_name(qst, obj)           (mp_fun_table.store_name((qst), (obj)))
 #define mp_store_global(qst, obj)         (mp_fun_table.store_global((qst), (obj)))
@@ -181,8 +207,8 @@ static inline mp_obj_t mp_obj_len_dyn(mp_obj_t o) {
 #define mp_unary_op(op, obj)        (mp_fun_table.unary_op((op), (obj)))
 #define mp_binary_op(op, lhs, rhs)  (mp_fun_table.binary_op((op), (lhs), (rhs)))
 
-#define mp_make_function_from_raw_code(rc, def_args, def_kw_args) \
-    (mp_fun_table.make_function_from_raw_code((rc), (def_args), (def_kw_args)))
+#define mp_make_function_from_proto_fun(rc, context, def_args) \
+    (mp_fun_table.make_function_from_proto_fun((rc), (context), (def_args)))
 
 #define mp_call_function_n_kw(fun, n_args, n_kw, args) \
     (mp_fun_table.call_function_n_kw((fun), (n_args) | ((n_kw) << 8), args))
@@ -190,12 +216,21 @@ static inline mp_obj_t mp_obj_len_dyn(mp_obj_t o) {
 #define mp_arg_check_num(n_args, n_kw, n_args_min, n_args_max, takes_kw) \
     (mp_fun_table.arg_check_num_sig((n_args), (n_kw), MP_OBJ_FUN_MAKE_SIG((n_args_min), (n_args_max), (takes_kw))))
 
+#define mp_arg_parse_all(n_pos, pos, kws, n_allowed, allowed, out_vals) \
+    (mp_fun_table.arg_parse_all((n_pos), (pos), (kws), (n_allowed), (allowed), (out_vals)))
+
+#define mp_arg_parse_all_kw_array(n_pos, n_kw, args, n_allowed, allowed, out_vals) \
+    (mp_fun_table.arg_parse_all_kw_array((n_pos), (n_kw), (args), (n_allowed), (allowed), (out_vals)))
+
+// CIRCUITPY-CHANGE: .is_async
 #define MP_DYNRUNTIME_INIT_ENTRY \
-    mp_obj_t old_globals = mp_fun_table.swap_globals(self->globals); \
-    mp_raw_code_t rc; \
+    mp_obj_t old_globals = mp_fun_table.swap_globals(self->context->module.globals); \
+    mp_raw_code_truncated_t rc; \
+    rc.proto_fun_indicator[0] = MP_PROTO_FUN_INDICATOR_RAW_CODE_0; \
+    rc.proto_fun_indicator[1] = MP_PROTO_FUN_INDICATOR_RAW_CODE_1; \
     rc.kind = MP_CODE_NATIVE_VIPER; \
-    rc.scope_flags = 0; \
-    rc.const_table = (void *)self->const_table; \
+    rc.is_generator = 0; \
+    rc.is_async = 0; \
     (void)rc;
 
 #define MP_DYNRUNTIME_INIT_EXIT \
@@ -203,7 +238,7 @@ static inline mp_obj_t mp_obj_len_dyn(mp_obj_t o) {
     return mp_const_none;
 
 #define MP_DYNRUNTIME_MAKE_FUNCTION(f) \
-    (mp_make_function_from_raw_code((rc.fun_data = (f), &rc), MP_OBJ_NULL, MP_OBJ_NULL))
+    (mp_make_function_from_proto_fun((rc.fun_data = (f), (const mp_raw_code_t *)&rc), self->context, NULL))
 
 #define mp_import_name(name, fromlist, level) \
     (mp_fun_table.import_name((name), (fromlist), (level)))
@@ -215,11 +250,16 @@ static inline mp_obj_t mp_obj_len_dyn(mp_obj_t o) {
 /******************************************************************************/
 // Exceptions
 
+#define mp_obj_exception_make_new               (MP_OBJ_TYPE_GET_SLOT(&mp_type_Exception, make_new))
+#define mp_obj_exception_print                  (MP_OBJ_TYPE_GET_SLOT(&mp_type_Exception, print))
+#define mp_obj_exception_attr                   (MP_OBJ_TYPE_GET_SLOT(&mp_type_Exception, attr))
+
 #define mp_obj_new_exception(o)                 ((mp_obj_t)(o)) // Assumes returned object will be raised, will create instance then
 #define mp_obj_new_exception_arg1(e_type, arg)  (mp_obj_new_exception_arg1_dyn((e_type), (arg)))
 
 #define nlr_raise(o)                            (mp_raise_dyn(o))
 #define mp_raise_type_arg(type, arg)            (mp_raise_dyn(mp_obj_new_exception_arg1_dyn((type), (arg))))
+// CIRCUITPY-CHANGE: use str
 #define mp_raise_msg(type, msg)                 (mp_fun_table.raise_msg_str((type), (msg)))
 #define mp_raise_OSError(er)                    (mp_raise_OSError_dyn(er))
 #define mp_raise_NotImplementedError(msg)       (mp_raise_msg(&mp_type_NotImplementedError, (msg)))
@@ -237,6 +277,7 @@ static NORETURN inline void mp_raise_dyn(mp_obj_t o) {
     }
 }
 
+// CIRCUITPY-CHANGE: new routine
 static NORETURN inline void mp_raise_arg1(const mp_obj_type_t *exc_type, mp_obj_t arg) {
     mp_fun_table.raise(mp_obj_new_exception_arg1_dyn(exc_type, arg));
     for (;;) {
@@ -247,6 +288,16 @@ static NORETURN inline void mp_raise_arg1(const mp_obj_type_t *exc_type, mp_obj_
 static inline void mp_raise_OSError_dyn(int er) {
     mp_obj_t args[1] = { MP_OBJ_NEW_SMALL_INT(er) };
     nlr_raise(mp_call_function_n_kw(mp_load_global(MP_QSTR_OSError), 1, 0, &args[0]));
+}
+
+static inline void mp_obj_exception_init(mp_obj_full_type_t *exc, qstr name, const mp_obj_type_t *base) {
+    exc->base.type = &mp_type_type;
+    exc->flags = MP_TYPE_FLAG_NONE;
+    exc->name = name;
+    MP_OBJ_TYPE_SET_SLOT(exc, make_new, mp_obj_exception_make_new, 0);
+    MP_OBJ_TYPE_SET_SLOT(exc, print, mp_obj_exception_print, 1);
+    MP_OBJ_TYPE_SET_SLOT(exc, attr, mp_obj_exception_attr, 2);
+    MP_OBJ_TYPE_SET_SLOT(exc, parent, base, 3);
 }
 
 /******************************************************************************/

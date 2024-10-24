@@ -1,29 +1,9 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2017-2018 Scott Shawcroft for Adafruit Industries
- * Copyright (c) 2019 Elvis Pfutzenreuter <epxx@epxx.co>
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2017-2018 Scott Shawcroft for Adafruit Industries
+// SPDX-FileCopyrightText: Copyright (c) 2019 Elvis Pfutzenreuter <epxx@epxx.co>
+//
+// SPDX-License-Identifier: MIT
 
 #include "common-hal/ps2io/Ps2.h"
 #include "shared-bindings/ps2io/Ps2.h"
@@ -43,7 +23,6 @@
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/ps2io/Ps2.h"
 #include "supervisor/port.h"
-#include "supervisor/shared/translate/translate.h"
 
 #define STATE_IDLE 0
 #define STATE_RECV 1
@@ -249,7 +228,7 @@ void common_hal_ps2io_ps2_construct(ps2io_ps2_obj_t *self,
         mp_arg_error_invalid(MP_QSTR_clock_pin);
     }
     if (eic_get_enable() && !eic_channel_free(clock_pin->extint_channel)) {
-        mp_raise_RuntimeError(translate("EXTINT channel already in use"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Internal resource(s) in use"));
     }
 
     clk_hi(self);

@@ -1,30 +1,10 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2019 Dan Halbert for Adafruit Industries
- * Copyright (c) 2018 Artur Pacholec
- * Copyright (c) 2016 Glenn Ruben Bakke
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2019 Dan Halbert for Adafruit Industries
+// SPDX-FileCopyrightText: Copyright (c) 2018 Artur Pacholec
+// SPDX-FileCopyrightText: Copyright (c) 2016 Glenn Ruben Bakke
+//
+// SPDX-License-Identifier: MIT
 
 #include <stdarg.h>
 
@@ -54,7 +34,6 @@
 //| CircuitPython library instead, which builds on `_bleio`, and
 //| provides higher-level convenience functionality, including predefined beacons, clients,
 //| servers."""
-//|
 
 //| adapter: Adapter
 //| """BLE Adapter used to manage device discovery and connections.
@@ -63,11 +42,13 @@
 
 //| class BluetoothError(Exception):
 //|     """Catchall exception for Bluetooth related errors."""
+//|
 //|     ...
+//|
 MP_DEFINE_BLEIO_EXCEPTION(BluetoothError, Exception)
-NORETURN void mp_raise_bleio_BluetoothError(const compressed_string_t *fmt, ...) {
+NORETURN void mp_raise_bleio_BluetoothError(mp_rom_error_text_t fmt, ...) {
     va_list argptr;
-    va_start(argptr,fmt);
+    va_start(argptr, fmt);
     mp_obj_t exception = mp_obj_new_exception_msg_vlist(&mp_type_bleio_BluetoothError, fmt, argptr);
     va_end(argptr);
     nlr_raise(exception);
@@ -76,40 +57,43 @@ NORETURN void mp_raise_bleio_BluetoothError(const compressed_string_t *fmt, ...)
 //| class RoleError(BluetoothError):
 //|     """Raised when a resource is used as the mismatched role. For example, if a local CCCD is
 //|     attempted to be set but they can only be set when remote."""
+//|
 //|     ...
 //|
 MP_DEFINE_BLEIO_EXCEPTION(RoleError, bleio_BluetoothError)
-NORETURN void mp_raise_bleio_RoleError(const compressed_string_t *msg) {
+NORETURN void mp_raise_bleio_RoleError(mp_rom_error_text_t msg) {
     mp_raise_msg(&mp_type_bleio_RoleError, msg);
 }
 
 //| class SecurityError(BluetoothError):
 //|     """Raised when a security related error occurs."""
+//|
 //|     ...
 //|
 MP_DEFINE_BLEIO_EXCEPTION(SecurityError, bleio_BluetoothError)
-NORETURN void mp_raise_bleio_SecurityError(const compressed_string_t *fmt, ...) {
+NORETURN void mp_raise_bleio_SecurityError(mp_rom_error_text_t fmt, ...) {
     va_list argptr;
-    va_start(argptr,fmt);
+    va_start(argptr, fmt);
     mp_obj_t exception = mp_obj_new_exception_msg_vlist(&mp_type_bleio_SecurityError, fmt, argptr);
     va_end(argptr);
     nlr_raise(exception);
 }
 
 // Called when _bleio is imported.
-STATIC mp_obj_t bleio___init__(void) {
+static mp_obj_t bleio___init__(void) {
 // HCI cannot be enabled on import, because we need to setup the HCI adapter first.
+    common_hal_bleio_init();
     #if !CIRCUITPY_BLEIO_HCI
     common_hal_bleio_adapter_set_enabled(&common_hal_bleio_adapter_obj, true);
     #endif
     return mp_const_none;
 }
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(bleio___init___obj, bleio___init__);
+static MP_DEFINE_CONST_FUN_OBJ_0(bleio___init___obj, bleio___init__);
 
 
 // Need a forward reference due to mutual references.
 #if CIRCUITPY_BLEIO_HCI
-STATIC mp_obj_dict_t bleio_module_globals;
+static mp_obj_dict_t bleio_module_globals;
 #endif
 
 //| def set_adapter(adapter: Optional[_bleio.Adapter]) -> None:
@@ -119,9 +103,7 @@ STATIC mp_obj_dict_t bleio_module_globals;
 //|
 mp_obj_t bleio_set_adapter(mp_obj_t adapter_obj) {
     #if CIRCUITPY_BLEIO_HCI
-    if (adapter_obj != mp_const_none && !mp_obj_is_type(adapter_obj, &bleio_adapter_type)) {
-        mp_raise_TypeError_varg(translate("Expected a %q"), bleio_adapter_type.name);
-    }
+    (void)mp_arg_validate_type_or_none(adapter_obj, &bleio_adapter_type, MP_QSTR_adapter);
 
     // Equivalent of:
     // bleio.adapter = adapter_obj
@@ -130,7 +112,7 @@ mp_obj_t bleio_set_adapter(mp_obj_t adapter_obj) {
         elem->value = adapter_obj;
     }
     #else
-    mp_raise_NotImplementedError(translate("Not settable"));
+    mp_raise_NotImplementedError(MP_ERROR_TEXT("Read-only"));
     #endif
     return mp_const_none;
 }
@@ -140,10 +122,10 @@ MP_DEFINE_CONST_FUN_OBJ_1(bleio_set_adapter_obj, bleio_set_adapter);
 // Make the module dictionary be in RAM, so that _bleio.adapter can be set.
 // Use a local macro to define how table entries should be converted.
 #define OBJ_FROM_PTR MP_OBJ_FROM_PTR
-STATIC mp_map_elem_t bleio_module_globals_table[] = {
+static mp_map_elem_t bleio_module_globals_table[] = {
 #else
 #define OBJ_FROM_PTR MP_ROM_PTR
-STATIC const mp_rom_map_elem_t bleio_module_globals_table[] = {
+static const mp_rom_map_elem_t bleio_module_globals_table[] = {
     #endif
     // Name must be the first entry so that the exception printing below is correct.
     { MP_ROM_QSTR(MP_QSTR___name__),             MP_ROM_QSTR(MP_QSTR__bleio) },
@@ -182,9 +164,9 @@ STATIC const mp_rom_map_elem_t bleio_module_globals_table[] = {
 
 #if CIRCUITPY_BLEIO_HCI
 // Module dict is mutable to allow setting _bleio.adapter.
-STATIC MP_DEFINE_MUTABLE_DICT(bleio_module_globals, bleio_module_globals_table);
+static MP_DEFINE_MUTABLE_DICT(bleio_module_globals, bleio_module_globals_table);
 #else
-STATIC MP_DEFINE_CONST_DICT(bleio_module_globals, bleio_module_globals_table);
+static MP_DEFINE_CONST_DICT(bleio_module_globals, bleio_module_globals_table);
 #endif
 
 void bleio_exception_print(const mp_print_t *print, mp_obj_t o_in, mp_print_kind_t kind) {
@@ -202,4 +184,4 @@ const mp_obj_module_t bleio_module = {
     .globals = (mp_obj_dict_t *)&bleio_module_globals,
 };
 
-MP_REGISTER_MODULE(MP_QSTR__bleio, bleio_module, CIRCUITPY_BLEIO);
+MP_REGISTER_MODULE(MP_QSTR__bleio, bleio_module);

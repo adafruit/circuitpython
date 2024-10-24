@@ -1,28 +1,8 @@
-/*
- * This file is part of the MicroPython project, http://micropython.org/
- *
- * The MIT License (MIT)
- *
- * Copyright (c) 2019  Bernhard Boser
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2019  Bernhard Boser
+//
+// SPDX-License-Identifier: MIT
 
 #include <stdio.h>
 #include "py/obj.h"
@@ -86,7 +66,12 @@
 //| """
 //|
 
-//| def pack(obj: object, stream: circuitpython_typing.ByteStream, *, default: Union[Callable[[object], None], None] = None) -> None:
+//| def pack(
+//|     obj: object,
+//|     stream: circuitpython_typing.ByteStream,
+//|     *,
+//|     default: Union[Callable[[object], None], None] = None
+//| ) -> None:
 //|     """Output object to stream in msgpack format.
 //|
 //|     :param object obj: Object to convert to msgpack format.
@@ -97,9 +82,9 @@
 //|     """
 //|     ...
 //|
-STATIC mp_obj_t mod_msgpack_pack(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+static mp_obj_t mod_msgpack_pack(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_obj, ARG_buffer, ARG_default };
-    STATIC const mp_arg_t allowed_args[] = {
+    static const mp_arg_t allowed_args[] = {
         { MP_QSTR_obj, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_stream, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_default, MP_ARG_KW_ONLY | MP_ARG_OBJ, { .u_obj = mp_const_none } },
@@ -109,7 +94,7 @@ STATIC mp_obj_t mod_msgpack_pack(size_t n_args, const mp_obj_t *pos_args, mp_map
 
     mp_obj_t handler = args[ARG_default].u_obj;
     if (handler != mp_const_none && !mp_obj_is_fun(handler) && !MP_OBJ_IS_METH(handler)) {
-        mp_raise_ValueError(translate("default is not a function"));
+        mp_raise_ValueError(MP_ERROR_TEXT("default is not a function"));
     }
 
     common_hal_msgpack_pack(args[ARG_obj].u_obj, args[ARG_buffer].u_obj, handler);
@@ -118,7 +103,12 @@ STATIC mp_obj_t mod_msgpack_pack(size_t n_args, const mp_obj_t *pos_args, mp_map
 MP_DEFINE_CONST_FUN_OBJ_KW(mod_msgpack_pack_obj, 0, mod_msgpack_pack);
 
 
-//| def unpack(stream: circuitpython_typing.ByteStream, *, ext_hook: Union[Callable[[int, bytes], object], None] = None, use_list: bool=True) -> object:
+//| def unpack(
+//|     stream: circuitpython_typing.ByteStream,
+//|     *,
+//|     ext_hook: Union[Callable[[int, bytes], object], None] = None,
+//|     use_list: bool = True
+//| ) -> object:
 //|     """Unpack and return one object from stream.
 //|
 //|     :param ~circuitpython_typing.ByteStream stream: stream to read from
@@ -130,9 +120,9 @@ MP_DEFINE_CONST_FUN_OBJ_KW(mod_msgpack_pack_obj, 0, mod_msgpack_pack);
 //|     """
 //|     ...
 //|
-STATIC mp_obj_t mod_msgpack_unpack(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+static mp_obj_t mod_msgpack_unpack(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_buffer, ARG_ext_hook, ARG_use_list };
-    STATIC const mp_arg_t allowed_args[] = {
+    static const mp_arg_t allowed_args[] = {
         { MP_QSTR_stream, MP_ARG_REQUIRED | MP_ARG_OBJ, },
         { MP_QSTR_ext_hook, MP_ARG_KW_ONLY | MP_ARG_OBJ, { .u_obj = mp_const_none } },
         { MP_QSTR_use_list, MP_ARG_KW_ONLY | MP_ARG_BOOL, { .u_bool = true } },
@@ -142,7 +132,7 @@ STATIC mp_obj_t mod_msgpack_unpack(size_t n_args, const mp_obj_t *pos_args, mp_m
 
     mp_obj_t hook = args[ARG_ext_hook].u_obj;
     if (hook != mp_const_none && !mp_obj_is_fun(hook) && !MP_OBJ_IS_METH(hook)) {
-        mp_raise_ValueError(translate("ext_hook is not a function"));
+        mp_raise_ValueError(MP_ERROR_TEXT("ext_hook is not a function"));
     }
 
     return common_hal_msgpack_unpack(args[ARG_buffer].u_obj, hook, args[ARG_use_list].u_bool);
@@ -150,18 +140,18 @@ STATIC mp_obj_t mod_msgpack_unpack(size_t n_args, const mp_obj_t *pos_args, mp_m
 MP_DEFINE_CONST_FUN_OBJ_KW(mod_msgpack_unpack_obj, 0, mod_msgpack_unpack);
 
 
-STATIC const mp_rom_map_elem_t msgpack_module_globals_table[] = {
+static const mp_rom_map_elem_t msgpack_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_msgpack) },
     { MP_ROM_QSTR(MP_QSTR_ExtType), MP_ROM_PTR(&mod_msgpack_exttype_type) },
     { MP_ROM_QSTR(MP_QSTR_pack), MP_ROM_PTR(&mod_msgpack_pack_obj) },
     { MP_ROM_QSTR(MP_QSTR_unpack), MP_ROM_PTR(&mod_msgpack_unpack_obj) },
 };
 
-STATIC MP_DEFINE_CONST_DICT(msgpack_module_globals, msgpack_module_globals_table);
+static MP_DEFINE_CONST_DICT(msgpack_module_globals, msgpack_module_globals_table);
 
 const mp_obj_module_t msgpack_module = {
     .base = { &mp_type_module },
     .globals = (mp_obj_dict_t *)&msgpack_module_globals,
 };
 
-MP_REGISTER_MODULE(MP_QSTR_msgpack, msgpack_module, CIRCUITPY_MSGPACK);
+MP_REGISTER_MODULE(MP_QSTR_msgpack, msgpack_module);
