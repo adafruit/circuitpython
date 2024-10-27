@@ -33,7 +33,14 @@
 //| `adafruit_ble <https://circuitpython.readthedocs.io/projects/ble/en/latest/>`_
 //| CircuitPython library instead, which builds on `_bleio`, and
 //| provides higher-level convenience functionality, including predefined beacons, clients,
-//| servers."""
+//| servers.
+//|
+//| .. note:: `_bleio` uses native BLE capability on boards that support it, including Nordic nRF,
+//|   Espressif (except ESP32-S2 and ESP32-P4), and SiLabs.
+//|   On other boards, `_bleio`, if present, supports BLE using an AirLift co-processor.
+//|   Pico W boards do *not* support BLE using the on-board CYW43 co-processor,
+//|   but do support using an external AirLift.
+//| """
 
 //| adapter: Adapter
 //| """BLE Adapter used to manage device discovery and connections.
