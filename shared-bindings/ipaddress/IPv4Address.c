@@ -146,7 +146,11 @@ static void ipaddress_ipv4address_print(const mp_print_t *print, mp_obj_t self_i
     mp_get_buffer_raise(address_bytes, &buf_info, MP_BUFFER_READ);
 
     const uint8_t *buf = (uint8_t *)buf_info.buf;
-    mp_printf(print, "%d.%d.%d.%d", buf[0], buf[1], buf[2], buf[3]);
+    if (kind == PRINT_JSON) {
+        mp_printf(print, "\"%d.%d.%d.%d\"", buf[0], buf[1], buf[2], buf[3]);
+    } else {
+        mp_printf(print, "%d.%d.%d.%d", buf[0], buf[1], buf[2], buf[3]);
+    }
 }
 
 static const mp_rom_map_elem_t ipaddress_ipv4address_locals_dict_table[] = {
