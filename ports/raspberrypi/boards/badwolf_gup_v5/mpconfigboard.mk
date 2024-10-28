@@ -12,6 +12,7 @@ EXTERNAL_FLASH_DEVICES = "W25Q128JVxQ"
 CIRCUITPY__EVE = 1
 
 FROZEN_MPY_DIRS += $(TOP)/ports/raspberrypi/boards/solderparty_rp2040_stamp
+FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_asyncio
 FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_BusDevice
 FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_HID
 FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_NeoPixel
