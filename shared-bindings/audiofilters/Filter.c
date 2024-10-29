@@ -188,9 +188,7 @@ static mp_obj_t audiofilters_filter_obj_lpf(size_t n_args, const mp_obj_t *pos_a
 
     mp_float_t w0 = f0 / self->sample_rate * 2 * MP_PI;
 
-    mp_obj_t biquad = common_hal_synthio_new_lpf(w0, Q);
-    common_hal_audiofilters_filter_set_filter(self, biquad);
-    return biquad;
+    return common_hal_synthio_new_lpf(w0, Q);
 }
 
 MP_DEFINE_CONST_FUN_OBJ_KW(audiofilters_filter_lpf_obj, 1, audiofilters_filter_obj_lpf);
@@ -220,9 +218,7 @@ static mp_obj_t audiofilters_filter_obj_hpf(size_t n_args, const mp_obj_t *pos_a
 
     mp_float_t w0 = f0 / self->sample_rate * 2 * MP_PI;
 
-    mp_obj_t biquad = common_hal_synthio_new_hpf(w0, Q);
-    common_hal_audiofilters_filter_set_filter(self, biquad);
-    return biquad;
+    return common_hal_synthio_new_hpf(w0, Q);
 }
 
 MP_DEFINE_CONST_FUN_OBJ_KW(audiofilters_filter_hpf_obj, 1, audiofilters_filter_obj_hpf);
@@ -254,9 +250,7 @@ static mp_obj_t audiofilters_filter_obj_bpf(size_t n_args, const mp_obj_t *pos_a
 
     mp_float_t w0 = f0 / self->sample_rate * 2 * MP_PI;
 
-    mp_obj_t biquad = common_hal_synthio_new_bpf(w0, Q);
-    common_hal_audiofilters_filter_set_filter(self, biquad);
-    return biquad;
+    return common_hal_synthio_new_bpf(w0, Q);
 }
 
 MP_DEFINE_CONST_FUN_OBJ_KW(audiofilters_filter_bpf_obj, 1, audiofilters_filter_obj_bpf);
