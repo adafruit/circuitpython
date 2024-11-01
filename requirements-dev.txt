@@ -25,9 +25,7 @@ intelhex
 # for building & testing natmods
 pyelftools
 
-# for mbedtls certificate store
-# version limit due to espressif
-cryptography<36.1,>=2.1.4
+cryptography
 
 # for web workflow minify
 minify_html

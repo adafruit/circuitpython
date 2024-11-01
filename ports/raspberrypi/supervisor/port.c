@@ -244,7 +244,7 @@ void port_heap_init(void) {
     _heap = tlsf_create_with_pool(heap_bottom, size, 64 * 1024 * 1024);
     _ram_pool = tlsf_get_pool(_heap);
     if (_psram_size > 0) {
-        _psram_pool = tlsf_add_pool(_heap, (void *)0x11000004, _psram_size - 4);
+        _psram_pool = tlsf_add_pool(_heap, (void *)0x11000000, _psram_size);
     }
 }
 

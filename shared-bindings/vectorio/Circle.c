@@ -34,8 +34,8 @@
 static mp_obj_t vectorio_circle_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_pixel_shader, ARG_radius, ARG_x, ARG_y, ARG_color_index };
     static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_pixel_shader, MP_ARG_OBJ | MP_ARG_KW_ONLY | MP_ARG_REQUIRED },
-        { MP_QSTR_radius, MP_ARG_REQUIRED | MP_ARG_INT },
+        { MP_QSTR_pixel_shader, MP_ARG_OBJ | MP_ARG_KW_ONLY | MP_ARG_REQUIRED, { .u_obj = NULL } },
+        { MP_QSTR_radius, MP_ARG_REQUIRED | MP_ARG_INT, { .u_obj = NULL } },
         { MP_QSTR_x, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 0} },
         { MP_QSTR_y, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 0} },
         { MP_QSTR_color_index, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 0} },

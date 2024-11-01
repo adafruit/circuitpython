@@ -59,6 +59,11 @@ SRC_BITMAP := \
 	shared-bindings/synthio/Synthesizer.c \
 	shared-bindings/traceback/__init__.c \
 	shared-bindings/util.c \
+	shared-bindings/vectorio/Circle.c \
+	shared-bindings/vectorio/__init__.c \
+	shared-bindings/vectorio/Polygon.c \
+	shared-bindings/vectorio/Rectangle.c \
+	shared-bindings/vectorio/VectorShape.c \
 	shared-bindings/zlib/__init__.c \
 	shared-module/aesio/aes.c \
 	shared-module/aesio/__init__.c \
@@ -88,6 +93,12 @@ SRC_BITMAP := \
 	shared-module/synthio/Note.c \
 	shared-module/synthio/Biquad.c \
 	shared-module/synthio/Synthesizer.c \
+	shared-bindings/vectorio/Circle.c \
+	shared-module/vectorio/Circle.c \
+	shared-module/vectorio/__init__.c \
+	shared-module/vectorio/Polygon.c \
+	shared-module/vectorio/Rectangle.c \
+	shared-module/vectorio/VectorShape.c \
 	shared-module/traceback/__init__.c \
 	shared-module/zlib/__init__.c \
 
@@ -134,6 +145,7 @@ CFLAGS += \
 	-DCIRCUITPY_SYNTHIO=1 \
 	-DCIRCUITPY_SYNTHIO_MAX_CHANNELS=14 \
 	-DCIRCUITPY_TRACEBACK=1 \
+	-DCIRCUITPY_VECTORIO=1 \
 	-DCIRCUITPY_ZLIB=1
 
 # CIRCUITPY-CHANGE: test native base classes.

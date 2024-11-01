@@ -134,6 +134,9 @@ endif
 ifeq ($(CIRCUITPY_AUDIODELAYS),1)
 SRC_PATTERNS += audiodelays/%
 endif
+ifeq ($(CIRCUITPY_AUDIOFILTERS),1)
+SRC_PATTERNS += audiofilters/%
+endif
 ifeq ($(CIRCUITPY_AUDIOMIXER),1)
 SRC_PATTERNS += audiomixer/%
 endif
@@ -622,6 +625,8 @@ SRC_SHARED_MODULE_ALL = \
 	audiocore/__init__.c \
 	audiodelays/Echo.c \
 	audiodelays/__init__.c \
+	audiofilters/Filter.c \
+	audiofilters/__init__.c \
 	audioio/__init__.c \
 	audiomixer/Mixer.c \
 	audiomixer/MixerVoice.c \

@@ -74,3 +74,16 @@ const mp_obj_module_t displayio_module = {
 };
 
 MP_REGISTER_MODULE(MP_QSTR_displayio, displayio_module);
+
+displayio_buffer_transform_t null_transform = {
+    .x = 0,
+    .y = 0,
+    .dx = 1,
+    .dy = 1,
+    .scale = 1,
+    .width = 0,
+    .height = 0,
+    .mirror_x = false,
+    .mirror_y = false,
+    .transpose_xy = false
+};
