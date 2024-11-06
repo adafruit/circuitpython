@@ -106,7 +106,7 @@ bool common_hal_vectorio_line_contains_point(
     float d1 = measure_distance(x1, y1, px, py);
     float d2 = measure_distance(x2, y2, px, py);
 
-    if (d1 + d2 >= line_length - padding && d1 + d2 <= line_length + padding) {
+    if (d1 + d2 >= line_length - (float)padding && d1 + d2 <= line_length + (float)padding) {
         return true;
     }
     return false;
@@ -125,12 +125,12 @@ bool common_hal_vectorio_line_circle_intersects(
     }
     float line_length = measure_distance(x1, y1, x2, y2);
 
-    float dot = (((cx - x1) * (x2 - x1)) + ((cy - y1) * (y2 - y1))) / pow(line_length, 2);
+    float dot = (float)(((cx - x1) * (x2 - x1)) + ((cy - y1) * (y2 - y1))) / (float)pow(line_length, 2);
 
     float closestX = x1 + (dot * (x2 - x1));
     float closestY = y1 + (dot * (y2 - y1));
 
-    if (!common_hal_vectorio_line_contains_point(x1, y1, x2, y2, closestX, closestY, padding)) {
+    if (!common_hal_vectorio_line_contains_point(x1, y1, x2, y2, (int)closestX, (int)closestY, padding)) {
         return false;
     }
     float distance = measure_distance(closestX, closestY, cx, cy);

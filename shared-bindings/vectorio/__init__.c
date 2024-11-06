@@ -324,7 +324,10 @@ MP_DEFINE_CONST_FUN_OBJ_KW(vectorio_line_contains_point_obj, 0, vectorio_line_co
 //|     y1: int,
 //|     x2: int,
 //|     y2: int,
-//      cx: int, cy: int, cr: int
+//|     cx: int,
+//|     cy: int,
+//|     cr: int,
+//|     padding: float
 //| ) -> bool:
 //|     """Checks whether a line intersects with a circle
 //|
