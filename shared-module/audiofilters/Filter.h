@@ -16,9 +16,10 @@ extern const mp_obj_type_t audiofilters_filter_type;
 
 typedef struct {
     mp_obj_base_t base;
-    mp_obj_t *filter;
+    mp_obj_t filter;
     synthio_block_slot_t mix;
 
+    mp_obj_t *filter_objs;
     size_t filter_states_len;
     biquad_filter_state *filter_states;
 
@@ -41,8 +42,6 @@ typedef struct {
 
     mp_obj_t sample;
 } audiofilters_filter_obj_t;
-
-void reset_filter_states(audiofilters_filter_obj_t *self);
 
 void audiofilters_filter_reset_buffer(audiofilters_filter_obj_t *self,
     bool single_channel_output,
