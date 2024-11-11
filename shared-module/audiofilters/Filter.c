@@ -48,15 +48,8 @@ void common_hal_audiofilters_filter_construct(audiofilters_filter_obj_t *self,
 
     // The below section sets up the effect's starting values.
 
-    if (filter == MP_OBJ_NULL) {
-        filter = mp_const_none;
-    }
     common_hal_audiofilters_filter_set_filter(self, filter);
 
-    // If we did not receive a BlockInput we need to create a default float value
-    if (mix == MP_OBJ_NULL) {
-        mix = mp_obj_new_float(1.0);
-    }
     synthio_block_assign_slot(mix, &self->mix, MP_QSTR_mix);
 }
 
