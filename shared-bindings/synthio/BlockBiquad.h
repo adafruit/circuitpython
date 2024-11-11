@@ -25,4 +25,4 @@ void common_hal_synthio_block_biquad_set_frequency(synthio_block_biquad_t *self,
 
 synthio_filter_mode common_hal_synthio_block_biquad_get_mode(synthio_block_biquad_t *self);
 
-mp_obj_t common_hal_synthio_block_biquad_new(synthio_filter_mode mode, mp_obj_t frequency, mp_obj_t Q);
+mp_obj_t common_hal_synthio_block_biquad_new(synthio_filter_mode mode);

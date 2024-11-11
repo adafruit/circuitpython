@@ -81,7 +81,9 @@ static mp_obj_t synthio_block_biquad_make_new(const mp_obj_type_t *type_in, size
     }
 
     synthio_filter_mode mode = validate_synthio_filter_mode(args[ARG_mode].u_obj, MP_QSTR_mode);
-    return common_hal_synthio_block_biquad_new(mode, args[ARG_frequency].u_obj, args[ARG_Q].u_obj);
+    mp_obj_t result = common_hal_synthio_block_biquad_new(mode);
+    properties_construct_helper(result, block_biquad_properties + 1, args + 1, MP_ARRAY_SIZE(block_biquad_properties) - 1);
+    return result;
 }
 
 //|
