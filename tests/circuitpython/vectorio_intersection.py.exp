@@ -1,0 +1,16 @@
+circle circle validate False: (50, 50, 10, 50, 71, 10)
+False
+circle circle validate True: (50, 50, 10, 50, 70, 10)
+True
+circle rectangle validate False: (50, 50, 10, 50, 29, 10, 10)
+False
+circle rectangle validate True: (50, 50, 10, 50, 30, 10, 10)
+True
+line circle validate True: (0, 0, 50, 50, 50, 60, 10), 0.1
+True
+line circle validate False: (0, 0, 50, 50, 50, 61, 10), 0.1
+False
+polygon circle validate False: ([(50, 0), (100, 0), (150, 50), (0, 50)], 0, 0, 161, 50, 10), 0.1
+False
+polygon circle validate True: ([(50, 0), (100, 0), (150, 50), (0, 50)], 0, 0, 160, 50, 10), 0.1
+True
