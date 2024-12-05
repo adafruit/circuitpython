@@ -33,7 +33,7 @@
 //| """
 //|
 
-//| AnyBiquad = "Biquad | BlockBiquad"
+//| AnyBiquad = Union["Biquad", "BlockBiquad"]
 //|
 //| class EnvelopeState:
 //|     ATTACK: EnvelopeState
