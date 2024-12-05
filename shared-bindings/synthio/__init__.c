@@ -33,7 +33,7 @@
 //| """
 //|
 
-//| AnyBiquad = Biquad | BlockBiquad
+//| AnyBiquad = "Biquad | BlockBiquad"
 //|
 //| class EnvelopeState:
 //|     ATTACK: EnvelopeState
