@@ -95,7 +95,7 @@ static mp_obj_t audiobusio_pdmin_make_new(const mp_obj_type_t *type, size_t n_ar
     const mcu_pin_obj_t *data_pin = validate_obj_is_free_pin(args[ARG_data_pin].u_obj, MP_QSTR_data_pin);
 
     // create PDMIn object from the given pin
-    audiobusio_pdmin_obj_t *self = mp_obj_malloc(audiobusio_pdmin_obj_t, &audiobusio_pdmin_type);
+    audiobusio_pdmin_obj_t *self = mp_obj_malloc_with_finaliser(audiobusio_pdmin_obj_t, &audiobusio_pdmin_type);
 
     uint32_t sample_rate = args[ARG_sample_rate].u_int;
     uint8_t bit_depth = args[ARG_bit_depth].u_int;
@@ -210,6 +210,7 @@ MP_PROPERTY_GETTER(audiobusio_pdmin_sample_rate_obj,
 
 static const mp_rom_map_elem_t audiobusio_pdmin_locals_dict_table[] = {
     // Methods
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&audiobusio_pdmin_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&audiobusio_pdmin_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&audiobusio_pdmin___exit___obj) },

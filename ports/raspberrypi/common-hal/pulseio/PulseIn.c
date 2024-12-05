@@ -44,7 +44,7 @@ void common_hal_pulseio_pulsein_construct(pulseio_pulsein_obj_t *self,
         NULL, 0, 0, 0, // first out pin, # out pins, initial_out_pin_state
         pin, 1, 0, 0, // first in pin, # in pins
         NULL, 0, 0, 0, // first set pin
-        NULL, 0, 0, 0, // first sideset pin
+        NULL, 0, false, 0, 0, // first sideset pin
         false, // No sideset enable
         NULL, PULL_NONE, // jump pin, jmp_pull
         0, // wait gpio pins

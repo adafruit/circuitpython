@@ -88,7 +88,7 @@ int common_hal_floppyio_flux_readinto(void *buf, size_t len, digitalio_digitalin
         index->pin, 1, // in
         1, 0, // in pull up/down
         NULL, 0, // set
-        NULL, 0, // sideset
+        NULL, 0, false, // sideset
         0, 0, // initial pin state
         data->pin, // jump pin
         pins_we_use, false, true,

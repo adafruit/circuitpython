@@ -65,15 +65,16 @@ MP_DEFINE_CONST_FUN_OBJ_0(usb_hid_disable_obj, usb_hid_disable);
 //|
 //|     **Boot Devices**
 //|
-//|     Boot devices implement a fixed, predefined report descriptor, defined in
-//|     https://www.usb.org/sites/default/files/hid1_12.pdf, Appendix B. A USB host
-//|     can request to use the boot device if the USB device says it is available.
-//|     Usually only a BIOS or other kind of limited-functionality
-//|     host needs boot keyboard support.
+//|     A USB HID boot device implements a fixed, predefined report descriptor,
+//|     as defined in https://www.usb.org/sites/default/files/hid1_12.pdf, Appendix B.
+//|     Currently the only HID boot devices defined in the USB specification are a keyboard and a mouse.
+//|     A USB host can ask a USB device to use a boot device if the USB device says it is available.
+//|     Usually only a limited-functionality host like a BIOS or other boot-time software
+//|     needs boot device support.
 //|
 //|     For example, to make a boot keyboard available, you can use this code::
 //|
-//|       usb_hid.enable((Device.KEYBOARD), boot_device=1)  # 1 for a keyboard
+//|       usb_hid.enable((Device.KEYBOARD,), boot_device=1)  # 1 for a keyboard, 2 for a mouse
 //|
 //|     If the host requests the boot keyboard, the report descriptor provided by `Device.KEYBOARD`
 //|     will be ignored, and the predefined report descriptor will be used.

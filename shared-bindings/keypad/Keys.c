@@ -147,6 +147,9 @@ static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(keypad_keys___exit___obj, 4, 4, keypa
 //|         """Reset the internal state of the scanner to assume that all keys are now released.
 //|         Any key that is already pressed at the time of this call will therefore immediately cause
 //|         a new key-pressed event to occur.
+//|         For instance, if you call `reset()` immediately after creating a `Keys` object
+//|         at the beginning of your program, the events it generates will let you determine which keys
+//|         were being held down at program start.
 //|         """
 //|         ...
 

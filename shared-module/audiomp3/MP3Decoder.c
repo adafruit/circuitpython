@@ -20,6 +20,7 @@
 #include "shared-module/audiomp3/MP3Decoder.h"
 #include "supervisor/background_callback.h"
 #include "lib/mp3/src/mp3common.h"
+#include "lib/mp3/src/coder.h"
 
 #define MAX_BUFFER_LEN (MAX_NSAMP * MAX_NGRAN * MAX_NCHAN * sizeof(int16_t))
 
@@ -360,6 +361,17 @@ void common_hal_audiomp3_mp3file_set_file(audiomp3_mp3file_obj_t *self, mp_obj_t
     // get_buffer() that I didn't understand.
     memset(self->pcm_buffer[0], 0, MAX_BUFFER_LEN);
     memset(self->pcm_buffer[1], 0, MAX_BUFFER_LEN);
+
+    /* important to do this - DSP primitives assume a bunch of state variables are 0 on first use */
+    struct _MP3DecInfo *decoder = self->decoder;
+    memset(decoder->FrameHeaderPS, 0, sizeof(FrameHeader));
+    memset(decoder->SideInfoPS, 0, sizeof(SideInfo));
+    memset(decoder->ScaleFactorInfoPS, 0, sizeof(ScaleFactorInfo));
+    memset(decoder->HuffmanInfoPS, 0, sizeof(HuffmanInfo));
+    memset(decoder->DequantInfoPS, 0, sizeof(DequantInfo));
+    memset(decoder->IMDCTInfoPS, 0, sizeof(IMDCTInfo));
+    memset(decoder->SubbandInfoPS, 0, sizeof(SubbandInfo));
+
     MP3FrameInfo fi;
     bool result = mp3file_get_next_frame_info(self, &fi, true);
     background_callback_allow();

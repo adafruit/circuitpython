@@ -8,7 +8,7 @@
 
 // Micropython setup
 
-#define MICROPY_HW_BOARD_NAME       "LILYGO T-DECK"
+#define MICROPY_HW_BOARD_NAME       "LILYGO T-Deck (Plus)"
 #define MICROPY_HW_MCU_NAME         "ESP32S3"
 
 #define DEFAULT_SPI_BUS_SCK         (&pin_GPIO40)

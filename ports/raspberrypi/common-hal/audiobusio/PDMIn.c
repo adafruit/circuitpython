@@ -50,7 +50,7 @@ void common_hal_audiobusio_pdmin_construct(audiobusio_pdmin_obj_t *self,
         data_pin, 1, // in pins
         0, 0, // in pulls
         NULL, 0, 0, 0x1f, // set pins
-        clock_pin, 1, 0, 0x1f, // sideset pins
+        clock_pin, 1, false, 0, 0x1f, // sideset pins
         false, // No sideset enable
         NULL, PULL_NONE, // jump pin
         0, // wait gpio pins

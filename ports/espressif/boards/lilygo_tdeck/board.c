@@ -72,4 +72,13 @@ void board_init(void) {
         50000); // backlight pwm frequency
 }
 
+bool espressif_board_reset_pin_number(gpio_num_t pin_number) {
+    if (pin_number == 10) {
+        // Pull screen power high
+        config_pin_as_output_with_level(pin_number, true);
+        return true;
+    }
+    return false;
+}
+
 // Use the MP_WEAK supervisor/shared/board.c versions of routines not defined here.

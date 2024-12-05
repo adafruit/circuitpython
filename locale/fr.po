@@ -8,15 +8,15 @@ msgstr ""
 "Project-Id-Version: 0.1\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-01-04 12:55-0600\n"
-"PO-Revision-Date: 2023-11-20 16:56+0000\n"
-"Last-Translator: jessyjones <amarsy.alya@gmail.com>\n"
+"PO-Revision-Date: 2024-11-27 20:00+0000\n"
+"Last-Translator: Olivier Deveault <olivierdeveault+g@gmail.com>\n"
 "Language-Team: \n"
 "Language: fr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.2\n"
+"X-Generator: Weblate 5.9-dev\n"
 
 #: main.c
 msgid ""
@@ -104,11 +104,11 @@ msgstr "%q et %q doivent être différents"
 
 #: ports/atmel-samd/common-hal/audiobusio/I2SOut.c
 msgid "%q and %q must share a clock unit"
-msgstr ""
+msgstr "%q et %q doivent partager une unité d'horloge"
 
 #: ports/nordic/common-hal/watchdog/WatchDogTimer.c
 msgid "%q cannot be changed once mode is set to %q"
-msgstr ""
+msgstr "%q ne peut être modifié lorsque le mode est configuré à %q"
 
 #: shared-bindings/microcontroller/Pin.c
 msgid "%q contains duplicate pins"
@@ -205,7 +205,7 @@ msgstr "%q doit être >= %d"
 
 #: shared-module/audiofilters/Filter.c
 msgid "%q must be a %q object, %q, or %q"
-msgstr ""
+msgstr "%q doit être un objet %q, %q ou %q"
 
 #: shared-bindings/analogbufio/BufferedIn.c
 msgid "%q must be a bytearray or array of type 'H' or 'B'"
@@ -229,7 +229,7 @@ msgstr "%q doit être un array de type 'h'"
 
 #: shared-bindings/audiobusio/PDMIn.c
 msgid "%q must be multiple of 8."
-msgstr ""
+msgstr "%q doit être un multiple de 8."
 
 #: ports/raspberrypi/bindings/cyw43/__init__.c py/argcheck.c py/objexcept.c
 #: shared-bindings/bitmapfilter/__init__.c shared-bindings/canio/CAN.c
@@ -240,7 +240,7 @@ msgstr "%q doit être de type %q ou %q, pas %q"
 
 #: shared-bindings/jpegio/JpegDecoder.c
 msgid "%q must be of type %q, %q, or %q, not %q"
-msgstr ""
+msgstr "%q doit être de type %q, %q ou %q, pas %q"
 
 #: py/argcheck.c py/runtime.c shared-bindings/bitmapfilter/__init__.c
 #: shared-module/synthio/__init__.c
@@ -274,7 +274,7 @@ msgstr "le pas ne peut être zéro dans %q"
 
 #: shared-module/bitbangio/I2C.c
 msgid "%q too long"
-msgstr ""
+msgstr "%q trop long"
 
 #: py/bc.c py/objnamedtuple.c
 msgid "%q() takes %d positional arguments but %d were given"
@@ -282,7 +282,7 @@ msgstr "%q() prend %d paramètres de position mais %d ont été donnés"
 
 #: shared-module/jpegio/JpegDecoder.c
 msgid "%q() without %q()"
-msgstr ""
+msgstr "%q() sans %q()"
 
 #: shared-bindings/usb_hid/Device.c
 msgid "%q, %q, and %q must all be the same length"
@@ -439,7 +439,7 @@ msgstr "'label' nécessite 1 paramètre"
 
 #: py/emitnative.c
 msgid "'not' not implemented"
-msgstr ""
+msgstr "'not' n'est pas implémenté"
 
 #: py/compile.c
 msgid "'return' outside function"
@@ -576,7 +576,7 @@ msgstr "Il y a déjà un auditeur all-matches"
 
 #: ports/espressif/common-hal/_bleio/__init__.c
 msgid "Already in progress"
-msgstr ""
+msgstr "Déjà en cours"
 
 #: ports/espressif/bindings/espnow/ESPNow.c
 #: ports/espressif/common-hal/espulp/ULP.c
@@ -697,7 +697,7 @@ msgstr "La longueur du tampon %d est trop grande. Il doit être inférieur à %d
 #: shared-module/sdcardio/SDCard.c
 #, c-format
 msgid "Buffer must be a multiple of %d bytes"
-msgstr ""
+msgstr "Tampon doit être un multiple de %d octets"
 
 #: shared-bindings/_bleio/PacketBuffer.c
 #, c-format
@@ -899,6 +899,7 @@ msgstr "Un bloc de données doit suivre un bloc fmt"
 #: shared-module/jpegio/JpegDecoder.c
 msgid "Data format error (may be broken data)"
 msgstr ""
+"Erreur de format de données (celles-ci sont potentiellement endommagées)"
 
 #: ports/espressif/common-hal/_bleio/Adapter.c
 #: ports/nordic/common-hal/_bleio/Adapter.c
@@ -2583,6 +2584,10 @@ msgstr "mauvais code type"
 msgid "binary op %q not implemented"
 msgstr "opération binaire '%q' non implémentée"
 
+#: ports/espressif/common-hal/audiobusio/PDMIn.c
+msgid "bit_depth must be 8, 16, 24, or 32."
+msgstr ""
+
 #: shared-module/bitmapfilter/__init__.c
 msgid "bitmap size and depth must match"
 msgstr ""
@@ -2678,7 +2683,7 @@ msgstr "ne peut pas assigner à une expression"
 msgid "can't cancel self"
 msgstr "ne peut pas s'annuler soi-même"
 
-#: shared-module/adafruit_pixelbuf/PixelBuf.c
+#: py/obj.c shared-module/adafruit_pixelbuf/PixelBuf.c
 msgid "can't convert %q to %q"
 msgstr "impossible de convertir %q en %q"
 

@@ -90,7 +90,7 @@ void common_hal_imagecapture_parallelimagecapture_construct(imagecapture_paralle
         #if DEBUG_STATE_MACHINE
         &pin_GPIO26, 3, 7, 7, // sideset pins
         #else
-        NULL, 0, 0, 0, // sideset pins
+        NULL, 0, false, 0, 0, // sideset pins
         #endif
         false, // No sideset enable
         NULL, PULL_NONE, // jump pin

@@ -31,6 +31,7 @@ import subprocess
 from concurrent.futures import ThreadPoolExecutor
 
 SUPPORTED_PORTS = [
+    "analog",
     "atmel-samd",
     "broadcom",
     "cxd56",

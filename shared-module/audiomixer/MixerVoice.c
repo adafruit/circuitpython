@@ -30,6 +30,14 @@ void common_hal_audiomixer_mixervoice_set_level(audiomixer_mixervoice_obj_t *sel
     self->level = (uint16_t)(level * (1 << 15));
 }
 
+bool common_hal_audiomixer_mixervoice_get_loop(audiomixer_mixervoice_obj_t *self) {
+    return self->loop;
+}
+
+void common_hal_audiomixer_mixervoice_set_loop(audiomixer_mixervoice_obj_t *self, bool loop) {
+    self->loop = loop;
+}
+
 void common_hal_audiomixer_mixervoice_play(audiomixer_mixervoice_obj_t *self, mp_obj_t sample, bool loop) {
     if (audiosample_sample_rate(sample) != self->parent->sample_rate) {
         mp_raise_ValueError_varg(MP_ERROR_TEXT("The sample's %q does not match"), MP_QSTR_sample_rate);

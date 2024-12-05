@@ -49,7 +49,7 @@ void common_hal_neopixel_write(const digitalio_digitalinout_obj_t *digitalinout,
         NULL, 1, // in
         0, 0, // in pulls
         NULL, 1, // set
-        digitalinout->pin, 1, // sideset
+        digitalinout->pin, 1, false, // sideset
         0, pins_we_use, // initial pin state
         NULL, // jump pin
         pins_we_use, true, false,

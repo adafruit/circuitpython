@@ -92,6 +92,11 @@ size_t storage_usb_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *
     descriptor_buf[MSC_IN_ENDPOINT_INDEX] =
         0x80 | (USB_MSC_EP_NUM_IN ? USB_MSC_EP_NUM_IN : descriptor_counts->current_endpoint);
     descriptor_counts->num_in_endpoints++;
+    // Some TinyUSB devices have issues with bi-directional endpoints
+    #ifdef TUD_ENDPOINT_ONE_DIRECTION_ONLY
+    descriptor_counts->current_endpoint++;
+    #endif
+
     descriptor_buf[MSC_OUT_ENDPOINT_INDEX] =
         USB_MSC_EP_NUM_OUT ? USB_MSC_EP_NUM_OUT : descriptor_counts->current_endpoint;
     descriptor_counts->num_out_endpoints++;

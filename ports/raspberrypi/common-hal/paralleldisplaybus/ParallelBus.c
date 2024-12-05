@@ -82,7 +82,7 @@ void common_hal_paralleldisplaybus_parallelbus_construct(paralleldisplaybus_para
         data0, 8, 0, 255, // first out pin, # out pins
         NULL, 0, 0, 0, // first in pin, # in pins
         NULL, 0, 0, 0, // first set pin
-        write, 1, 0, 1, // first sideset pin
+        write, 1, false, 0, 1, // first sideset pin
         false, // No sideset enable
         NULL, PULL_NONE, // jump pin
         0, // wait gpio pins

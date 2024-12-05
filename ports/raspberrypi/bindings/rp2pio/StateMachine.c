@@ -64,6 +64,7 @@
 //|         initial_set_pin_direction: int = 0x1F,
 //|         first_sideset_pin: Optional[microcontroller.Pin] = None,
 //|         sideset_pin_count: int = 1,
+//|         sideset_pindirs: bool = False,
 //|         initial_sideset_pin_state: int = 0,
 //|         initial_sideset_pin_direction: int = 0x1F,
 //|         sideset_enable: bool = False,
@@ -133,6 +134,7 @@
 //|         :param int in_pin_count: the count of consecutive pins to use with IN starting at first_in_pin
 //|         :param int set_pin_count: the count of consecutive pins to use with SET starting at first_set_pin
 //|         :param int sideset_pin_count: the count of consecutive pins to use with a side set starting at first_sideset_pin. Does not include sideset enable
+//|         :param bool sideset_pindirs: `True` to indicate that the side set values should be applied to the PINDIRs and not the PINs
 //|         :param int pio_version: The version of the PIO peripheral required by the program. The constructor will raise an error if the actual hardware is not compatible with this program version.
 //|         :param bool auto_push: When True, automatically save data from input shift register
 //|              (ISR) into the rx FIFO when an IN instruction shifts more than push_threshold bits
@@ -173,7 +175,8 @@ static mp_obj_t rp2pio_statemachine_make_new(const mp_obj_type_t *type, size_t n
            ARG_first_in_pin, ARG_in_pin_count,
            ARG_pull_in_pin_up, ARG_pull_in_pin_down,
            ARG_first_set_pin, ARG_set_pin_count, ARG_initial_set_pin_state, ARG_initial_set_pin_direction,
-           ARG_first_sideset_pin, ARG_sideset_pin_count, ARG_initial_sideset_pin_state, ARG_initial_sideset_pin_direction,
+           ARG_first_sideset_pin, ARG_sideset_pin_count, ARG_sideset_pindirs,
+           ARG_initial_sideset_pin_state, ARG_initial_sideset_pin_direction,
            ARG_sideset_enable,
            ARG_jmp_pin, ARG_jmp_pin_pull,
            ARG_exclusive_pin_use,
@@ -211,6 +214,7 @@ static mp_obj_t rp2pio_statemachine_make_new(const mp_obj_type_t *type, size_t n
 
         { MP_QSTR_first_sideset_pin, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
         { MP_QSTR_sideset_pin_count, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 1} },
+        { MP_QSTR_sideset_pindirs, MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = false} },
         { MP_QSTR_initial_sideset_pin_state, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
         { MP_QSTR_initial_sideset_pin_direction, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0x1f} },
 
@@ -329,7 +333,8 @@ static mp_obj_t rp2pio_statemachine_make_new(const mp_obj_type_t *type, size_t n
         first_out_pin, out_pin_count, args[ARG_initial_out_pin_state].u_int, args[ARG_initial_out_pin_direction].u_int,
         first_in_pin, in_pin_count, args[ARG_pull_in_pin_up].u_int, args[ARG_pull_in_pin_down].u_int,
         first_set_pin, set_pin_count, args[ARG_initial_set_pin_state].u_int, args[ARG_initial_set_pin_direction].u_int,
-        first_sideset_pin, sideset_pin_count, args[ARG_initial_sideset_pin_state].u_int, args[ARG_initial_sideset_pin_direction].u_int,
+        first_sideset_pin, sideset_pin_count, args[ARG_sideset_pindirs].u_bool,
+        args[ARG_initial_sideset_pin_state].u_int, args[ARG_initial_sideset_pin_direction].u_int,
         args[ARG_sideset_enable].u_bool,
         jmp_pin, jmp_pin_pull,
         0,
@@ -496,6 +501,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(rp2pio_statemachine_write_obj, 2, rp2pio_statemachine
 //|         once: Optional[ReadableBuffer] = None,
 //|         *,
 //|         loop: Optional[ReadableBuffer] = None,
+//|         loop2: Optional[ReadableBuffer] = None,
 //|         swap: bool = False,
 //|     ) -> None:
 //|         """Write data to the TX fifo in the background, with optional looping.
@@ -504,7 +510,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(rp2pio_statemachine_write_obj, 2, rp2pio_statemachine
 //|         This means that any ``once`` or ``loop`` buffer will be written at least once.
 //|         Then the ``once`` and/or ``loop`` buffers are queued. and the function returns.
 //|         The ``once`` buffer (if specified) will be written just once.
-//|         Finally, the ``loop`` buffer (if specified) will continue being looped indefinitely.
+//|         Finally, the ``loop`` and/or ``loop2`` buffer (if specified) will continue being looped indefinitely.  If both ``loop`` and ``loop2`` are specified, they will alternate.
 //|
 //|         Writes to the FIFO will match the input buffer's element size. For example, bytearray elements
 //|         will perform 8 bit writes to the PIO FIFO. The RP2040's memory bus will duplicate the value into
@@ -531,14 +537,15 @@ MP_DEFINE_CONST_FUN_OBJ_KW(rp2pio_statemachine_write_obj, 2, rp2pio_statemachine
 //|
 //|         :param ~Optional[circuitpython_typing.ReadableBuffer] once: Data to be written once
 //|         :param ~Optional[circuitpython_typing.ReadableBuffer] loop: Data to be written repeatedly
+//|         :param ~Optional[circuitpython_typing.ReadableBuffer] loop2: Data to be written repeatedly
 //|         :param bool swap: For 2- and 4-byte elements, swap (reverse) the byte order
 //|         """
 //|         ...
 
-static void fill_buf_info(sm_buf_info *info, mp_obj_t obj, size_t *stride_in_bytes) {
+static void fill_buf_info(sm_buf_info *info, mp_obj_t obj, size_t *stride_in_bytes, mp_uint_t direction) {
     if (obj != mp_const_none) {
         info->obj = obj;
-        mp_get_buffer_raise(obj, &info->info, MP_BUFFER_READ);
+        mp_get_buffer_raise(obj, &info->info, direction);
         size_t stride = mp_binary_get_size('@', info->info.typecode, NULL);
         if (stride > 4) {
             mp_raise_ValueError(MP_ERROR_TEXT("Buffer elements must be 4 bytes long or less"));
@@ -553,27 +560,29 @@ static void fill_buf_info(sm_buf_info *info, mp_obj_t obj, size_t *stride_in_byt
 }
 
 static mp_obj_t rp2pio_statemachine_background_write(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    enum { ARG_once, ARG_loop, ARG_swap };
+    enum { ARG_once, ARG_loop, ARG_loop2, ARG_swap };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_once,     MP_ARG_OBJ, {.u_obj = mp_const_none} },
         { MP_QSTR_loop,     MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = mp_const_none} },
-        { MP_QSTR_swap,   MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = false} },
+        { MP_QSTR_loop2,    MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = mp_const_none} },
+        { MP_QSTR_swap,     MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = false} },
     };
     rp2pio_statemachine_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
     check_for_deinit(self);
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    sm_buf_info once_info;
-    sm_buf_info loop_info;
     size_t stride_in_bytes = 0;
-    fill_buf_info(&once_info, args[ARG_once].u_obj, &stride_in_bytes);
-    fill_buf_info(&loop_info, args[ARG_loop].u_obj, &stride_in_bytes);
+
+    fill_buf_info(&self->once_write_buf_info, args[ARG_once].u_obj, &stride_in_bytes, MP_BUFFER_READ);
+    fill_buf_info(&self->loop_write_buf_info, args[ARG_loop].u_obj, &stride_in_bytes, MP_BUFFER_READ);
+    fill_buf_info(&self->loop2_write_buf_info, args[ARG_loop2].u_obj, &stride_in_bytes, MP_BUFFER_READ);
+
     if (!stride_in_bytes) {
         return mp_const_none;
     }
 
-    bool ok = common_hal_rp2pio_statemachine_background_write(self, &once_info, &loop_info, stride_in_bytes, args[ARG_swap].u_bool);
+    bool ok = common_hal_rp2pio_statemachine_background_write(self, stride_in_bytes, args[ARG_swap].u_bool);
 
     if (mp_hal_is_interrupted()) {
         return mp_const_none;
@@ -602,6 +611,7 @@ static mp_obj_t rp2pio_statemachine_obj_stop_background_write(mp_obj_t self_in) 
 }
 MP_DEFINE_CONST_FUN_OBJ_1(rp2pio_statemachine_stop_background_write_obj, rp2pio_statemachine_obj_stop_background_write);
 
+
 //|     writing: bool
 //|     """Returns True if a background write is in progress"""
 static mp_obj_t rp2pio_statemachine_obj_get_writing(mp_obj_t self_in) {
@@ -613,18 +623,147 @@ MP_DEFINE_CONST_FUN_OBJ_1(rp2pio_statemachine_get_writing_obj, rp2pio_statemachi
 MP_PROPERTY_GETTER(rp2pio_statemachine_writing_obj,
     (mp_obj_t)&rp2pio_statemachine_get_writing_obj);
 
+//|     pending_write: int
 //|     pending: int
 //|     """Returns the number of pending buffers for background writing.
 //|
-//|     If the number is 0, then a `StateMachine.background_write` call will not block."""
-static mp_obj_t rp2pio_statemachine_obj_get_pending(mp_obj_t self_in) {
+//|     If the number is 0, then a `StateMachine.background_write` call will not block.
+//|     Note that `pending` is a deprecated alias for `pending_write` and will be removed
+//|     in a future version of CircuitPython."""
+
+
+static mp_obj_t rp2pio_statemachine_obj_get_pending_write(mp_obj_t self_in) {
     rp2pio_statemachine_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    return mp_obj_new_int(common_hal_rp2pio_statemachine_get_pending(self));
+    return mp_obj_new_int(common_hal_rp2pio_statemachine_get_pending_write(self));
 }
-MP_DEFINE_CONST_FUN_OBJ_1(rp2pio_statemachine_get_pending_obj, rp2pio_statemachine_obj_get_pending);
+MP_DEFINE_CONST_FUN_OBJ_1(rp2pio_statemachine_get_pending_write_obj, rp2pio_statemachine_obj_get_pending_write);
 
 MP_PROPERTY_GETTER(rp2pio_statemachine_pending_obj,
-    (mp_obj_t)&rp2pio_statemachine_get_pending_obj);
+    (mp_obj_t)&rp2pio_statemachine_get_pending_write_obj);
+
+MP_PROPERTY_GETTER(rp2pio_statemachine_pending_write_obj,
+    (mp_obj_t)&rp2pio_statemachine_get_pending_write_obj);
+
+
+// =================================================================================================================================
+
+//|     def background_read(
+//|         self,
+//|         once: Optional[WriteableBuffer] = None,
+//|         *,
+//|         loop: Optional[WriteableBuffer] = None,
+//|         loop2: Optional[WriteableBuffer] = None,
+//|         swap: bool = False,
+//|     ) -> None:
+//|         """Read data from the RX fifo in the background, with optional looping.
+//|
+//|         First, if any previous ``once`` or ``loop`` buffer has not been started, this function blocks until they have been started.
+//|         This means that any ``once`` or ``loop`` buffer will be read at least once.
+//|         Then the ``once`` and/or ``loop`` buffers are queued. and the function returns.
+//|         The ``once`` buffer (if specified) will be read just once.
+//|         Finally, the ``loop`` and/or ``loop2`` buffer (if specified) will continue being read indefinitely.  If both ``loop`` and ``loop2`` are specified, they will alternate.
+//|
+//|         Reads from the FIFO will match the input buffer's element size. For example, bytearray elements
+//|         will perform 8 bit reads from the PIO FIFO. The RP2040's memory bus will duplicate the value into
+//|         the other byte positions. So, pulling more data in the PIO assembly will read the duplicated values.
+//|
+//|         To perform 16 or 32 bits reads from the FIFO use an `array.array` with a type code of the desired
+//|         size, or use `memoryview.cast` to change the interpretation of an
+//|         existing buffer.  To receive just part of a larger buffer, slice a `memoryview`
+//|         of it.
+//|
+//|         Most use cases will probably only use one of ``once`` or ``loop``.
+//|
+//|         Having neither ``once`` nor ``loop`` terminates an existing
+//|         background looping read after exactly a whole loop. This is in contrast to
+//|         `stop_background_read`, which interrupts an ongoing DMA operation.
+//|
+//|         :param ~Optional[circuitpython_typing.WriteableBuffer] once: Data to be read once
+//|         :param ~Optional[circuitpython_typing.WriteableBuffer] loop: Data to be read repeatedly
+//|         :param ~Optional[circuitpython_typing.WriteableBuffer] loop2: Data to be read repeatedly
+//|         :param bool swap: For 2- and 4-byte elements, swap (reverse) the byte order
+//|         """
+//|         ...
+
+
+static mp_obj_t rp2pio_statemachine_background_read(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    enum { ARG_once, ARG_loop, ARG_loop2, ARG_swap };
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_once,     MP_ARG_OBJ, {.u_obj = mp_const_none} },
+        { MP_QSTR_loop,     MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = mp_const_none} },
+        { MP_QSTR_loop2,    MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = mp_const_none} },
+        { MP_QSTR_swap,     MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = false} },
+    };
+    rp2pio_statemachine_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
+    check_for_deinit(self);
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    size_t stride_in_bytes = 0;
+
+    fill_buf_info(&self->once_read_buf_info, args[ARG_once].u_obj, &stride_in_bytes, MP_BUFFER_WRITE);
+    fill_buf_info(&self->loop_read_buf_info, args[ARG_loop].u_obj, &stride_in_bytes, MP_BUFFER_WRITE);
+    fill_buf_info(&self->loop2_read_buf_info, args[ARG_loop2].u_obj, &stride_in_bytes, MP_BUFFER_WRITE);
+
+    if (!stride_in_bytes) {
+        return mp_const_none;
+    }
+
+    bool ok = common_hal_rp2pio_statemachine_background_read(self, stride_in_bytes, args[ARG_swap].u_bool);
+
+    if (mp_hal_is_interrupted()) {
+        return mp_const_none;
+    }
+    if (!ok) {
+        mp_raise_OSError(MP_EIO);
+    }
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_KW(rp2pio_statemachine_background_read_obj, 1, rp2pio_statemachine_background_read);
+
+//|     def stop_background_read(self) -> None:
+//|         """Immediately stop a background read, if one is in progress.  Any
+//|         DMA in progress is halted, but items already in the RX FIFO are not
+//|         affected."""
+static mp_obj_t rp2pio_statemachine_obj_stop_background_read(mp_obj_t self_in) {
+    rp2pio_statemachine_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    bool ok = common_hal_rp2pio_statemachine_stop_background_read(self);
+    if (mp_hal_is_interrupted()) {
+        return mp_const_none;
+    }
+    if (!ok) {
+        mp_raise_OSError(MP_EIO);
+    }
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(rp2pio_statemachine_stop_background_read_obj, rp2pio_statemachine_obj_stop_background_read);
+
+//|     reading: bool
+//|     """Returns True if a background read is in progress"""
+static mp_obj_t rp2pio_statemachine_obj_get_reading(mp_obj_t self_in) {
+    rp2pio_statemachine_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    return mp_obj_new_bool(common_hal_rp2pio_statemachine_get_reading(self));
+}
+MP_DEFINE_CONST_FUN_OBJ_1(rp2pio_statemachine_get_reading_obj, rp2pio_statemachine_obj_get_reading);
+
+MP_PROPERTY_GETTER(rp2pio_statemachine_reading_obj,
+    (mp_obj_t)&rp2pio_statemachine_get_reading_obj);
+
+//|     pending_read: int
+//|     """Returns the number of pending buffers for background reading.
+//|
+//|     If the number is 0, then a `StateMachine.background_read` call will not block."""
+static mp_obj_t rp2pio_statemachine_obj_get_pending_read(mp_obj_t self_in) {
+    rp2pio_statemachine_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    return mp_obj_new_int(common_hal_rp2pio_statemachine_get_pending_read(self));
+}
+MP_DEFINE_CONST_FUN_OBJ_1(rp2pio_statemachine_get_pending_read_obj, rp2pio_statemachine_obj_get_pending_read);
+
+MP_PROPERTY_GETTER(rp2pio_statemachine_pending_read_obj,
+    (mp_obj_t)&rp2pio_statemachine_get_pending_read_obj);
+
+
+// =================================================================================================================================
 
 //|     def readinto(
 //|         self,
@@ -924,6 +1063,42 @@ MP_PROPERTY_GETTER(rp2pio_statemachine_rxfifo_obj,
     (mp_obj_t)&rp2pio_statemachine_get_rxfifo_obj);
 
 
+//|     last_read: array.array
+//|     """Returns the buffer most recently filled by background reads.
+//|
+//|     This property is self-clearing -- once read, subsequent reads
+//|     will return a zero-length buffer until the background read buffer
+//|     changes or restarts.
+//|     """
+static mp_obj_t rp2pio_statemachine_obj_get_last_read(mp_obj_t self_in) {
+    rp2pio_statemachine_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    check_for_deinit(self);
+    return common_hal_rp2pio_statemachine_get_last_read(self);
+}
+MP_DEFINE_CONST_FUN_OBJ_1(rp2pio_statemachine_get_last_read_obj, rp2pio_statemachine_obj_get_last_read);
+
+MP_PROPERTY_GETTER(rp2pio_statemachine_last_read_obj,
+    (mp_obj_t)&rp2pio_statemachine_get_last_read_obj);
+
+
+//|     last_write: array.array
+//|     """Returns the buffer most recently emptied by background writes.
+//|
+//|     This property is self-clearing -- once read, subsequent reads
+//|     will return a zero-length buffer until the background write buffer
+//|     changes or restarts.
+//|     """
+//|
+static mp_obj_t rp2pio_statemachine_obj_get_last_write(mp_obj_t self_in) {
+    rp2pio_statemachine_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    check_for_deinit(self);
+    return common_hal_rp2pio_statemachine_get_last_write(self);
+}
+MP_DEFINE_CONST_FUN_OBJ_1(rp2pio_statemachine_get_last_write_obj, rp2pio_statemachine_obj_get_last_write);
+
+MP_PROPERTY_GETTER(rp2pio_statemachine_last_write_obj,
+    (mp_obj_t)&rp2pio_statemachine_get_last_write_obj);
+
 static const mp_rom_map_elem_t rp2pio_statemachine_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&rp2pio_statemachine_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
@@ -938,10 +1113,17 @@ static const mp_rom_map_elem_t rp2pio_statemachine_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_readinto), MP_ROM_PTR(&rp2pio_statemachine_readinto_obj) },
     { MP_ROM_QSTR(MP_QSTR_write), MP_ROM_PTR(&rp2pio_statemachine_write_obj) },
     { MP_ROM_QSTR(MP_QSTR_write_readinto), MP_ROM_PTR(&rp2pio_statemachine_write_readinto_obj) },
+
     { MP_ROM_QSTR(MP_QSTR_background_write), MP_ROM_PTR(&rp2pio_statemachine_background_write_obj) },
     { MP_ROM_QSTR(MP_QSTR_stop_background_write), MP_ROM_PTR(&rp2pio_statemachine_stop_background_write_obj) },
     { MP_ROM_QSTR(MP_QSTR_writing), MP_ROM_PTR(&rp2pio_statemachine_writing_obj) },
-    { MP_ROM_QSTR(MP_QSTR_pending), MP_ROM_PTR(&rp2pio_statemachine_pending_obj) },
+    { MP_ROM_QSTR(MP_QSTR_pending), MP_ROM_PTR(&rp2pio_statemachine_pending_write_obj) },
+    { MP_ROM_QSTR(MP_QSTR_pending_write), MP_ROM_PTR(&rp2pio_statemachine_pending_write_obj) },
+
+    { MP_ROM_QSTR(MP_QSTR_background_read), MP_ROM_PTR(&rp2pio_statemachine_background_read_obj) },
+    { MP_ROM_QSTR(MP_QSTR_stop_background_read), MP_ROM_PTR(&rp2pio_statemachine_stop_background_read_obj) },
+    { MP_ROM_QSTR(MP_QSTR_reading), MP_ROM_PTR(&rp2pio_statemachine_reading_obj) },
+    { MP_ROM_QSTR(MP_QSTR_pending_read), MP_ROM_PTR(&rp2pio_statemachine_pending_read_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_frequency), MP_ROM_PTR(&rp2pio_statemachine_frequency_obj) },
     { MP_ROM_QSTR(MP_QSTR_rxstall), MP_ROM_PTR(&rp2pio_statemachine_rxstall_obj) },
@@ -952,6 +1134,10 @@ static const mp_rom_map_elem_t rp2pio_statemachine_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_pc), MP_ROM_PTR(&rp2pio_statemachine_pc_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_rxfifo), MP_ROM_PTR(&rp2pio_statemachine_rxfifo_obj) },
+
+    { MP_ROM_QSTR(MP_QSTR_last_read), MP_ROM_PTR(&rp2pio_statemachine_last_read_obj) },
+    { MP_ROM_QSTR(MP_QSTR_last_write), MP_ROM_PTR(&rp2pio_statemachine_last_write_obj) },
+
 };
 static MP_DEFINE_CONST_DICT(rp2pio_statemachine_locals_dict, rp2pio_statemachine_locals_dict_table);
 

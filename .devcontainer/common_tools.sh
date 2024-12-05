@@ -15,6 +15,11 @@ cd "$REPO_ROOT"
 
 # --- repositories and tools   ------------------------------------------------
 
+echo -e "[common_tools.sh] adding kitware-archive (for current CMAKE)"
+sudo .devcontainer/add_kitware_archive.sh
+echo -e "[common_tools.sh] installing current version of CMAKE"
+sudo apt-get -y install cmake
+
 echo -e "[common_tools.sh] adding pybricks/ppa"
 sudo add-apt-repository -y ppa:pybricks/ppa
 echo -e "[common_tools.sh] installing uncrustify and mtools"

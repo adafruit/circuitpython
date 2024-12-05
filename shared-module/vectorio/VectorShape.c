@@ -96,10 +96,12 @@ static void _get_screen_area(vectorio_vector_shape_t *self, displayio_area_t *ou
         x = self->absolute_transform->x + self->absolute_transform->dx * self->y;
         y = self->absolute_transform->y + self->absolute_transform->dy * self->x;
         if (self->absolute_transform->dx < 1) {
+            x -= 1;
             out_area->y1 = out_area->y1 * -1 + 1;
             out_area->y2 = out_area->y2 * -1 + 1;
         }
         if (self->absolute_transform->dy < 1) {
+            y -= 1;
             out_area->x1 = out_area->x1 * -1 + 1;
             out_area->x2 = out_area->x2 * -1 + 1;
         }
@@ -109,10 +111,12 @@ static void _get_screen_area(vectorio_vector_shape_t *self, displayio_area_t *ou
         y = self->absolute_transform->y + self->absolute_transform->dy * self->y;
 
         if (self->absolute_transform->dx < 1) {
+            x -= 1;
             out_area->x1 = out_area->x1 * -1 + 1;
             out_area->x2 = out_area->x2 * -1 + 1;
         }
         if (self->absolute_transform->dy < 1) {
+            y -= 1;
             out_area->y1 = out_area->y1 * -1 + 1;
             out_area->y2 = out_area->y2 * -1 + 1;
         }
@@ -132,11 +136,12 @@ static void screen_to_shape_coordinates(vectorio_vector_shape_t *self, uint16_t 
         VECTORIO_SHAPE_PIXEL_DEBUG(" a(%3d, %3d)", *out_shape_x, *out_shape_y);
         if (self->absolute_transform->dx < 1) {
             *out_shape_y *= -1;
+            *out_shape_y -= 1;
         }
         if (self->absolute_transform->dy < 1) {
             *out_shape_x *= -1;
+            *out_shape_x -= 1;
         }
-        VECTORIO_SHAPE_PIXEL_DEBUG(" b(%3d, %3d)", *out_shape_x, *out_shape_y);
     } else {
         *out_shape_x = x - self->absolute_transform->x - self->absolute_transform->dx * self->x;
         *out_shape_y = y - self->absolute_transform->y - self->absolute_transform->dy * self->y;
@@ -144,12 +149,12 @@ static void screen_to_shape_coordinates(vectorio_vector_shape_t *self, uint16_t 
         VECTORIO_SHAPE_PIXEL_DEBUG(" a(%3d, %3d)", *out_shape_x, *out_shape_y);
         if (self->absolute_transform->dx < 1) {
             *out_shape_x *= -1;
+            *out_shape_x -= 1;
         }
         if (self->absolute_transform->dy < 1) {
             *out_shape_y *= -1;
+            *out_shape_y -= 1;
         }
-        VECTORIO_SHAPE_PIXEL_DEBUG(" b(%3d, %3d)", *out_shape_x, *out_shape_y);
-
         // It's mirrored via dx. Maybe we need to add support for also separately mirroring?
         // if (self->absolute_transform->mirror_x) {
         //     pixel_to_get_x = (shape_area.x2 - shape_area.x1) - (pixel_to_get_x - shape_area.x1) + shape_area.x1 - 1;
@@ -158,6 +163,7 @@ static void screen_to_shape_coordinates(vectorio_vector_shape_t *self, uint16_t 
         //     pixel_to_get_y = (shape_area.y2 - shape_area.y1) - (pixel_to_get_y - shape_area.y1) + +shape_area.y1 - 1;
         // }
     }
+    VECTORIO_SHAPE_PIXEL_DEBUG(" b(%3d, %3d)", *out_shape_x, *out_shape_y);
 }
 
 static void check_bounds_and_set_x(vectorio_vector_shape_t *self, mp_int_t x) {

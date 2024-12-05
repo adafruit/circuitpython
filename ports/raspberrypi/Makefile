@@ -21,7 +21,19 @@ INC_CYW43 := \
 	-isystem sdk/src/rp2_common/pico_lwip/include/ \
 	-isystem sdk/src/rp2_common/pico_rand/include/ \
 
-CFLAGS_CYW43 := -DCYW43_LWIP=1 -DPICO_CYW43_ARCH_THREADSAFE_BACKGROUND=1 -DCYW43_USE_SPI -DIGNORE_GPIO25 -DIGNORE_GPIO23 -DIGNORE_GPIO24 -DCYW43_LOGIC_DEBUG=0 -DCYW43_USE_STATS=0 -DPICO_BUILD -DCYW43_ENABLE_BLUETOOTH=0 -DPICO_CYW43_ARCH_POLL=0
+CFLAGS_CYW43 := \
+	-DCYW43_LWIP=1 \
+	-DPICO_CYW43_ARCH_THREADSAFE_BACKGROUND=1 \
+	-DCYW43_USE_SPI \
+	-DIGNORE_GPIO25 \
+	-DIGNORE_GPIO23 \
+	-DIGNORE_GPIO24 \
+	-DCYW43_LOGIC_DEBUG=0 \
+	-DCYW43_USE_STATS=0 \
+	-DPICO_BUILD \
+	-DCYW43_ENABLE_BLUETOOTH=0 \
+	-DPICO_CYW43_ARCH_POLL=0
+
 SRC_SDK_CYW43 := \
 	src/common/pico_sync/sem.c \
 	src/rp2_common/pico_async_context/async_context_base.c \
@@ -93,6 +105,7 @@ INC += \
 	-isystem sdk/src/$(CHIP_VARIANT_LOWER)/hardware_regs/include/ \
 	-isystem sdk/src/$(CHIP_VARIANT_LOWER)/hardware_structs/include/ \
 	-isystem sdk/src/$(CHIP_VARIANT_LOWER)/pico_platform/include/ \
+	-isystem sdk/src/rp2_common/boot_bootrom_headers/include/ \
 	-isystem sdk/src/rp2_common/cmsis/ \
 	-isystem sdk/src/rp2_common/hardware_adc/include/ \
 	-isystem sdk/src/rp2_common/hardware_base/include/ \
@@ -120,10 +133,12 @@ INC += \
 	-isystem sdk/src/rp2_common/hardware_vreg/include/ \
 	-isystem sdk/src/rp2_common/hardware_watchdog/include/ \
 	-isystem sdk/src/rp2_common/hardware_xosc/include/ \
+	-isystem sdk/src/rp2_common/hardware_xip_cache/include/ \
 	-isystem sdk/src/rp2_common/pico_aon_timer/include/ \
 	-isystem sdk/src/rp2_common/pico_atomic/include/ \
 	-isystem sdk/src/rp2_common/pico_bootrom/include/ \
 	-isystem sdk/src/rp2_common/pico_double/include/ \
+	-isystem sdk/src/rp2_common/pico_flash/include/ \
 	-isystem sdk/src/rp2_common/pico_mem_ops/include/ \
 	-isystem sdk/src/rp2_common/pico_multicore/include/ \
 	-isystem sdk/src/rp2_common/pico_fix/rp2040_usb_device_enumeration/include/ \
@@ -483,6 +498,7 @@ SRC_SDK := \
 	src/rp2_common/hardware_uart/uart.c \
 	src/rp2_common/hardware_vreg/vreg.c \
 	src/rp2_common/hardware_watchdog/watchdog.c \
+	src/rp2_common/hardware_xip_cache/xip_cache.c \
 	src/rp2_common/hardware_xosc/xosc.c \
 	src/rp2_common/pico_aon_timer/aon_timer.c \
 	src/rp2_common/pico_atomic/atomic.c \

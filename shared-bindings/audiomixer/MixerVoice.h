@@ -19,3 +19,6 @@ mp_float_t common_hal_audiomixer_mixervoice_get_level(audiomixer_mixervoice_obj_
 void common_hal_audiomixer_mixervoice_set_level(audiomixer_mixervoice_obj_t *self, mp_float_t gain);
 
 bool common_hal_audiomixer_mixervoice_get_playing(audiomixer_mixervoice_obj_t *self);
+
+void common_hal_audiomixer_mixervoice_set_loop(audiomixer_mixervoice_obj_t *self, bool loop);
+bool common_hal_audiomixer_mixervoice_get_loop(audiomixer_mixervoice_obj_t *self);

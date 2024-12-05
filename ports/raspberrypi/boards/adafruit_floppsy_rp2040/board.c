@@ -34,8 +34,8 @@ void board_init(void) {
     bus->base.type = &fourwire_fourwire_type;
     common_hal_fourwire_fourwire_construct(bus,
         spi,
-        &pin_GPIO25, // TFT_DC Command or data
-        &pin_GPIO29, // TFT_CS Chip select
+        CIRCUITPY_BOARD_TFT_DC,
+        CIRCUITPY_BOARD_TFT_CS,
         NULL, // TFT_RESET Reset
         40000000, // Baudrate
         0, // Polarity
@@ -62,7 +62,7 @@ void board_init(void) {
         MIPI_COMMAND_WRITE_MEMORY_START, // Write memory command
         display_init_sequence,
         sizeof(display_init_sequence),
-        &pin_GPIO28,  // backlight pin
+        CIRCUITPY_BOARD_TFT_BACKLIGHT,
         NO_BRIGHTNESS_COMMAND,
         1.0f, // brightness
         false, // single_byte_bounds

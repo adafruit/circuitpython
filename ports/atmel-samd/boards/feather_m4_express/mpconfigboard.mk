@@ -11,9 +11,11 @@ EXTERNAL_FLASH_DEVICES = "GD25Q16C,W25Q16JVxQ"
 LONGINT_IMPL = MPZ
 
 CIRCUITPY__EVE = 1
+CIRCUITPY_CODEOP = 0
 CIRCUITPY_FLOPPYIO = 0
 CIRCUITPY_JPEGIO = 0
 CIRCUITPY_SYNTHIO = 0
+CIRCUITPY_VECTORIO = 0
 
 # We don't have room for the fonts for terminalio for certain languages,
 # so turn off terminalio, and if it's off and displayio is on,

@@ -140,7 +140,7 @@ void keypad_never_reset(keypad_scanner_obj_t *self) {
 void common_hal_keypad_generic_reset(void *self_in) {
     keypad_scanner_obj_t *self = self_in;
     size_t key_count = common_hal_keypad_generic_get_key_count(self);
-    memset(self->debounce_counter, self->debounce_threshold, key_count);
+    memset(self->debounce_counter, -self->debounce_threshold, key_count);
     keypad_scan_now(self, port_get_raw_ticks(NULL));
 }
 

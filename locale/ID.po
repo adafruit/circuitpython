@@ -6,7 +6,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-01-04 12:55-0600\n"
-"PO-Revision-Date: 2024-11-11 07:05+0000\n"
+"PO-Revision-Date: 2024-11-12 08:09+0000\n"
 "Last-Translator: Iqbal Rifai <iqbalrifai@163.com>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: ID\n"
@@ -658,7 +658,7 @@ msgstr "Perangkat boot harus menjadi yang pertama (interface #0)."
 
 #: ports/mimxrt10xx/common-hal/busio/UART.c
 msgid "Both RX and TX required for flow control"
-msgstr ""
+msgstr "RX dan TX diperlukan untuk kontrol aliran"
 
 #: shared-bindings/busdisplay/BusDisplay.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
@@ -672,7 +672,7 @@ msgstr "Buffer + offset terlalu kecil %d %d %d"
 
 #: ports/raspberrypi/bindings/rp2pio/StateMachine.c
 msgid "Buffer elements must be 4 bytes long or less"
-msgstr ""
+msgstr "Elemen buffer harus berukuran panjang 4 byte atau kurang"
 
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 msgid "Buffer is not a bytearray."
@@ -690,7 +690,7 @@ msgstr "Panjang buffer %d terlalu besar. Itu harus kurang dari %d"
 #: shared-module/sdcardio/SDCard.c
 #, c-format
 msgid "Buffer must be a multiple of %d bytes"
-msgstr ""
+msgstr "Buffer harus kelipatan %d byte"
 
 #: shared-bindings/_bleio/PacketBuffer.c
 #, c-format
@@ -702,7 +702,7 @@ msgstr "Buffer terlalu pendek untuk %d byte"
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 #: shared-bindings/struct/__init__.c shared-module/struct/__init__.c
 msgid "Buffer too small"
-msgstr ""
+msgstr "Buffer terlalu kecil"
 
 #: ports/atmel-samd/common-hal/paralleldisplaybus/ParallelBus.c
 #: ports/espressif/common-hal/paralleldisplaybus/ParallelBus.c
@@ -722,11 +722,11 @@ msgstr "Blok CBC harus merupakan kelipatan 16 byte"
 
 #: supervisor/shared/safe_mode.c
 msgid "CIRCUITPY drive could not be found or created."
-msgstr ""
+msgstr "Drive CIRCUITPY tidak bisa ditemukan atau dibuat."
 
 #: ports/espressif/common-hal/espidf/__init__.c
 msgid "CRC or checksum was invalid"
-msgstr ""
+msgstr "CRC atau checksum tidak valid"
 
 #: py/objtype.c
 msgid "Call super().__init__() before accessing native object."
@@ -734,19 +734,25 @@ msgstr "Panggil super().__init__() sebelum mengakses objek asli."
 
 #: ports/cxd56/common-hal/camera/Camera.c
 msgid "Camera init"
-msgstr ""
+msgstr "Inisialisasi kamera"
 
 #: ports/espressif/common-hal/alarm/pin/PinAlarm.c
 msgid "Can only alarm on RTC IO from deep sleep."
 msgstr ""
+"Hanya dapat mengaktifkan alarm pada RTC IO dari mode tidur dalam (deep "
+"sleep)."
 
 #: ports/espressif/common-hal/alarm/pin/PinAlarm.c
 msgid "Can only alarm on one low pin while others alarm high from deep sleep."
 msgstr ""
+"Hanya dapat mengaktifkan alarm pada satu pin rendah sementara pin lainnya "
+"dalam keadaan tinggi dari mode tidur dalam (deep sleep)."
 
 #: ports/espressif/common-hal/alarm/pin/PinAlarm.c
 msgid "Can only alarm on two low pins from deep sleep."
 msgstr ""
+"Hanya dapat mengaktifkan alarm pada dua pin rendah dari mode tidur dalam "
+"(deep sleep)."
 
 #: ports/espressif/common-hal/_bleio/Characteristic.c
 #: ports/nordic/common-hal/_bleio/Characteristic.c
@@ -757,11 +763,11 @@ msgstr "Tidak dapat mengatur CCCD pada Karakteristik lokal"
 #: shared-bindings/usb_hid/__init__.c shared-bindings/usb_midi/__init__.c
 #: shared-bindings/usb_video/__init__.c
 msgid "Cannot change USB devices now"
-msgstr ""
+msgstr "Tidak dapat mengganti perangkat USB saat ini"
 
 #: shared-bindings/_bleio/Adapter.c
 msgid "Cannot create a new Adapter; use _bleio.adapter;"
-msgstr ""
+msgstr "Tidak dapat membuat Adapter baru; gunakan _bleio.adapter;"
 
 #: shared-bindings/displayio/Bitmap.c
 #: shared-bindings/memorymonitor/AllocationSize.c
@@ -788,7 +794,7 @@ msgstr ""
 
 #: ports/espressif/common-hal/alarm/pin/PinAlarm.c
 msgid "Cannot pull on input-only pin."
-msgstr ""
+msgstr "Tidak dapat menarik pin input saja."
 
 #: shared-bindings/audiobusio/PDMIn.c
 msgid "Cannot record to a file"
@@ -796,7 +802,7 @@ msgstr "Tidak dapat merekam ke file"
 
 #: shared-module/storage/__init__.c
 msgid "Cannot remount '/' when visible via USB."
-msgstr ""
+msgstr "Tidak dapat memasang kembali '/' saat terlihat melalui USB."
 
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Cannot set value when direction is input."
@@ -813,11 +819,11 @@ msgstr "Tidak dapat membuat subkelas dari irisan"
 
 #: ports/nordic/common-hal/alarm/pin/PinAlarm.c
 msgid "Cannot wake on pin edge, only level"
-msgstr ""
+msgstr "Tidak dapat bangun di tepi pin, hanya level"
 
 #: ports/espressif/common-hal/alarm/pin/PinAlarm.c
 msgid "Cannot wake on pin edge. Only level."
-msgstr ""
+msgstr "Tidak dapat bergerak di tepi pin. Hanya level."
 
 #: shared-bindings/_bleio/CharacteristicBuffer.c
 msgid "CharacteristicBuffer writing not provided"
@@ -840,15 +846,15 @@ msgstr ""
 
 #: shared-bindings/bitmaptools/__init__.c
 msgid "Coordinate arrays have different lengths"
-msgstr ""
+msgstr "Deretan koordinat memiliki panjang yang berbeda"
 
 #: shared-bindings/bitmaptools/__init__.c
 msgid "Coordinate arrays types have different sizes"
-msgstr ""
+msgstr "Tipe array koordinat memiliki ukuran yang berbeda"
 
 #: shared-bindings/_bleio/Adapter.c
 msgid "Could not set address"
-msgstr ""
+msgstr "Tidak dapat mengatur alamat"
 
 #: ports/stm/common-hal/busio/UART.c
 msgid "Could not start interrupt, RX busy"
@@ -881,12 +887,12 @@ msgstr "Potongan data harus mengikuti fmt chunk"
 
 #: shared-module/jpegio/JpegDecoder.c
 msgid "Data format error (may be broken data)"
-msgstr ""
+msgstr "Kesalahan format data (mungkin data rusak)"
 
 #: ports/espressif/common-hal/_bleio/Adapter.c
 #: ports/nordic/common-hal/_bleio/Adapter.c
 msgid "Data not supported with directed advertising"
-msgstr ""
+msgstr "Data tidak didukung dengan iklan terarah"
 
 #: ports/espressif/common-hal/_bleio/Adapter.c
 #: ports/nordic/common-hal/_bleio/Adapter.c
@@ -896,6 +902,8 @@ msgstr "Data terlalu besar untuk paket advertisment"
 #: ports/stm/common-hal/alarm/pin/PinAlarm.c
 msgid "Deep sleep pins must use a rising edge with pulldown"
 msgstr ""
+"Pin tidur dalam (deep sleep) harus menggunakan tepi naik dengan penarik ke "
+"bawah (pulldown)."
 
 #: shared-bindings/audiobusio/PDMIn.c
 msgid "Destination capacity is smaller than destination_length."
@@ -903,7 +911,7 @@ msgstr "Kapasitas tujuan lebih kecil dari destination_length."
 
 #: shared-module/jpegio/JpegDecoder.c
 msgid "Device error or wrong termination of input stream"
-msgstr ""
+msgstr "Kesalahan perangkat atau penghentian aliran input yang salah"
 
 #: ports/nordic/common-hal/audiobusio/I2SOut.c
 msgid "Device in use"
@@ -922,7 +930,7 @@ msgstr "Rotasi tampilan harus dalam kelipatan 90 derajat"
 
 #: main.c
 msgid "Done"
-msgstr ""
+msgstr "Selesai"
 
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Drive mode not used when direction is input."
@@ -930,7 +938,7 @@ msgstr "Mode kendara tidak digunakan saat arah input."
 
 #: py/obj.c
 msgid "During handling of the above exception, another exception occurred:"
-msgstr ""
+msgstr "Selama penanganan pengecualian di atas, pengecualian lain terjadi:"
 
 #: shared-bindings/aesio/aes.c
 msgid "ECB only operates on 16 bytes at a time"
@@ -939,7 +947,7 @@ msgstr "ECB hanya beroperasi pada 16 byte di satu waktu"
 #: ports/espressif/common-hal/busio/SPI.c
 #: ports/espressif/common-hal/canio/CAN.c
 msgid "ESP-IDF memory allocation failed"
-msgstr ""
+msgstr "Alokasi memori ESP-IDF gagal"
 
 #: extmod/modre.c
 msgid "Error in regex"
@@ -947,11 +955,11 @@ msgstr "Error pada regex"
 
 #: supervisor/shared/safe_mode.c
 msgid "Error in safemode.py."
-msgstr ""
+msgstr "Kesalahan dalam safemode.py."
 
 #: shared-bindings/alarm/__init__.c
 msgid "Expected a kind of %q"
-msgstr ""
+msgstr "Diharapkan semacam %q"
 
 #: ports/espressif/common-hal/_bleio/Adapter.c
 #: ports/nordic/common-hal/_bleio/Adapter.c
@@ -964,7 +972,7 @@ msgstr "FFT didefinisikan hanya untuk ndarrays"
 
 #: extmod/ulab/code/numpy/fft/fft_tools.c
 msgid "FFT is implemented for linear arrays only"
-msgstr ""
+msgstr "FFT diimplementasikan hanya untuk array linier"
 
 #: shared-bindings/ps2io/Ps2.c
 msgid "Failed sending command."
@@ -2541,6 +2549,10 @@ msgstr "typecode buruk"
 msgid "binary op %q not implemented"
 msgstr ""
 
+#: ports/espressif/common-hal/audiobusio/PDMIn.c
+msgid "bit_depth must be 8, 16, 24, or 32."
+msgstr ""
+
 #: shared-module/bitmapfilter/__init__.c
 msgid "bitmap size and depth must match"
 msgstr ""
@@ -2635,7 +2647,7 @@ msgstr "tidak dapat menetapkan ke ekspresi"
 msgid "can't cancel self"
 msgstr ""
 
-#: shared-module/adafruit_pixelbuf/PixelBuf.c
+#: py/obj.c shared-module/adafruit_pixelbuf/PixelBuf.c
 msgid "can't convert %q to %q"
 msgstr ""
 

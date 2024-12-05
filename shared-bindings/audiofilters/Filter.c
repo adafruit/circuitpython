@@ -139,20 +139,12 @@ static mp_obj_t audiofilters_filter_obj_get_filter(mp_obj_t self_in) {
 }
 MP_DEFINE_CONST_FUN_OBJ_1(audiofilters_filter_get_filter_obj, audiofilters_filter_obj_get_filter);
 
-static mp_obj_t audiofilters_filter_obj_set_filter(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    enum { ARG_filter };
-    static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_filter,     MP_ARG_OBJ | MP_ARG_REQUIRED, {} },
-    };
-    audiofilters_filter_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
-    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
-    mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
-
-    common_hal_audiofilters_filter_set_filter(self, args[ARG_filter].u_obj);
-
+static mp_obj_t audiofilters_filter_obj_set_filter(mp_obj_t self_in, mp_obj_t filter_in) {
+    audiofilters_filter_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    common_hal_audiofilters_filter_set_filter(self, filter_in);
     return mp_const_none;
 }
-MP_DEFINE_CONST_FUN_OBJ_KW(audiofilters_filter_set_filter_obj, 1, audiofilters_filter_obj_set_filter);
+MP_DEFINE_CONST_FUN_OBJ_2(audiofilters_filter_set_filter_obj, audiofilters_filter_obj_set_filter);
 
 MP_PROPERTY_GETSET(audiofilters_filter_filter_obj,
     (mp_obj_t)&audiofilters_filter_get_filter_obj,
@@ -166,20 +158,12 @@ static mp_obj_t audiofilters_filter_obj_get_mix(mp_obj_t self_in) {
 }
 MP_DEFINE_CONST_FUN_OBJ_1(audiofilters_filter_get_mix_obj, audiofilters_filter_obj_get_mix);
 
-static mp_obj_t audiofilters_filter_obj_set_mix(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    enum { ARG_mix };
-    static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_mix,     MP_ARG_OBJ | MP_ARG_REQUIRED, {} },
-    };
-    audiofilters_filter_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
-    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
-    mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
-
-    common_hal_audiofilters_filter_set_mix(self, args[ARG_mix].u_obj);
-
+static mp_obj_t audiofilters_filter_obj_set_mix(mp_obj_t self_in, mp_obj_t mix_in) {
+    audiofilters_filter_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    common_hal_audiofilters_filter_set_mix(self, mix_in);
     return mp_const_none;
 }
-MP_DEFINE_CONST_FUN_OBJ_KW(audiofilters_filter_set_mix_obj, 1, audiofilters_filter_obj_set_mix);
+MP_DEFINE_CONST_FUN_OBJ_2(audiofilters_filter_set_mix_obj, audiofilters_filter_obj_set_mix);
 
 MP_PROPERTY_GETSET(audiofilters_filter_mix_obj,
     (mp_obj_t)&audiofilters_filter_get_mix_obj,
