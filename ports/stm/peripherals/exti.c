@@ -10,8 +10,6 @@
 
 #include "peripherals/exti.h"
 
-#if !(CPY_STM32H7)
-
 static bool stm_exti_reserved[STM32_GPIO_PORT_SIZE];
 static bool stm_exti_never_reset[STM32_GPIO_PORT_SIZE];
 static void (*stm_exti_callback[STM32_GPIO_PORT_SIZE])(uint8_t num);
@@ -101,7 +99,7 @@ void EXTI4_IRQHandler(void) {
     stm_exti_callback[4](4);
 }
 
-#ifdef STM32L4
+#if defined(STM32L4) || defined(STM32H7)
 #define PR PR1
 #endif
 void EXTI9_5_IRQHandler(void) {
@@ -121,9 +119,6 @@ void EXTI15_10_IRQHandler(void) {
         }
     }
 }
-#ifdef STM32L4
+#if defined(STM32L4) || defined(STM32H7)
 #undef PR
-#endif
-
-
 #endif
