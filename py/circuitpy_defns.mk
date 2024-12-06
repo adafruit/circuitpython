@@ -626,6 +626,7 @@ SRC_SHARED_MODULE_ALL = \
 	audiodelays/Echo.c \
 	audiodelays/__init__.c \
 	audiofilters/Filter.c \
+	audiofilters/Distortion.c \
 	audiofilters/__init__.c \
 	audioio/__init__.c \
 	audiomixer/Mixer.c \
