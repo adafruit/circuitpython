@@ -80,7 +80,7 @@ SECTIONS
     _ld_d1_ram_bss_start = ADDR(.bss);
     _ld_d1_ram_bss_size = SIZEOF(.bss);
     _ld_heap_start = _ld_d1_ram_bss_start + _ld_d1_ram_bss_size;
-    _ld_heap_end = ORIGIN(RAM) + LENGTH(RAM);
+    _ld_heap_end = ORIGIN(RAM) + LENGTH(RAM) - 1;
 
     /* this is to define the start of the heap, and make sure we have a minimum size */
     .heap :
