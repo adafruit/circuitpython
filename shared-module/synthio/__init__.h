@@ -14,6 +14,9 @@
 #define SYNTHIO_NOTE_IS_PLAYING(synth, i) ((synth)->envelope_state[(i)].state != SYNTHIO_ENVELOPE_STATE_RELEASE)
 #define SYNTHIO_FREQUENCY_SHIFT (16)
 
+#include "shared-bindings/synthio/Biquad.h"
+#include "shared-bindings/synthio/BlockBiquad.h"
+
 #include "shared-module/audiocore/__init__.h"
 #include "shared-bindings/synthio/__init__.h"
 
@@ -91,3 +94,8 @@ int synthio_sweep_in_step(synthio_lfo_state_t *state, uint16_t dur);
 extern mp_float_t synthio_global_rate_scale, synthio_global_W_scale;
 extern uint8_t synthio_global_tick;
 void shared_bindings_synthio_lfo_tick(uint32_t sample_rate);
+
+static inline bool synthio_is_any_biquad(mp_obj_t biquad_maybe) {
+    return mp_obj_is_type(biquad_maybe, &synthio_block_biquad_type_obj)
+           || mp_obj_is_type(biquad_maybe, (const mp_obj_type_t *)&synthio_biquad_type_obj);
+}
