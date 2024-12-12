@@ -13,6 +13,7 @@
 #include "supervisor/shared/cpu.h"
 #include "supervisor/shared/display.h"
 #include "shared-bindings/terminalio/Terminal.h"
+#include "supervisor/port.h"
 #include "supervisor/shared/serial.h"
 #include "shared-bindings/microcontroller/Pin.h"
 
@@ -44,6 +45,10 @@ byte console_uart_rx_buf[SOC_UART_FIFO_LEN + 1];
 #else
 byte console_uart_rx_buf[64];
 #endif
+#endif
+
+#if CIRCUITPY_CONSOLE_UART
+static uint64_t _console_uart_rx_timestamp = 0;
 #endif
 
 #if CIRCUITPY_USB_DEVICE || CIRCUITPY_CONSOLE_UART
@@ -175,7 +180,9 @@ bool serial_connected(void) {
     #endif
 
     #if CIRCUITPY_CONSOLE_UART
-    return true;
+    if (_console_uart_rx_timestamp && (_console_uart_rx_timestamp + (60 * 1024 * 5) > port_get_raw_ticks(NULL))) {
+        return true;
+    }
     #endif
 
     #if CIRCUITPY_SERIAL_BLE
@@ -232,6 +239,7 @@ char serial_read(void) {
         int uart_errcode;
         char text;
         common_hal_busio_uart_read(&console_uart, (uint8_t *)&text, 1, &uart_errcode);
+        _console_uart_rx_timestamp = port_get_raw_ticks(NULL);
         return text;
     }
     #endif
