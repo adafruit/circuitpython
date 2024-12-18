@@ -53,10 +53,6 @@ void common_hal_audiofilters_filter_construct(audiofilters_filter_obj_t *self,
     }
     common_hal_audiofilters_filter_set_filter(self, filter);
 
-    // If we did not receive a BlockInput we need to create a default float value
-    if (mix == MP_OBJ_NULL) {
-        mix = mp_obj_new_float(1.0);
-    }
     synthio_block_assign_slot(mix, &self->mix, MP_QSTR_mix);
 }
 
@@ -250,9 +246,6 @@ audioio_get_buffer_result_t audiofilters_filter_get_buffer(audiofilters_filter_o
         channel = 0;
     }
 
-    // get the effect values we need from the BlockInput. These may change at run time so you need to do bounds checking if required
-    mp_float_t mix = MIN(1.0, MAX(synthio_block_slot_get(&self->mix), 0.0));
-
     // Switch our buffers to the other buffer
     self->last_buf_idx = !self->last_buf_idx;
 
@@ -296,16 +289,24 @@ audioio_get_buffer_result_t audiofilters_filter_get_buffer(audiofilters_filter_o
                 }
             }
 
+            // tick all block inputs
+            shared_bindings_synthio_lfo_tick(self->sample_rate, length / self->channel_count);
+            (void)synthio_block_slot_get(&self->mix);
+
             length = 0;
         } else {
             // we have a sample to play and filter
             // Determine how many bytes we can process to our buffer, the less of the sample we have left and our buffer remaining
-            uint32_t n = MIN(self->sample_buffer_length, length);
+            uint32_t n = MIN(MIN(self->sample_buffer_length, length), SYNTHIO_MAX_DUR * self->channel_count);
 
             int16_t *sample_src = (int16_t *)self->sample_remaining_buffer; // for 16-bit samples
             int8_t *sample_hsrc = (int8_t *)self->sample_remaining_buffer; // for 8-bit samples
 
-            if (mix <= 0.01 || !self->filter_states) { // if mix is zero pure sample only or no biquad filter objects are provided
+            // get the effect values we need from the BlockInput. These may change at run time so you need to do bounds checking if required
+            shared_bindings_synthio_lfo_tick(self->sample_rate, n / self->channel_count);
+            mp_float_t mix = synthio_block_slot_get_limited(&self->mix, MICROPY_FLOAT_CONST(0.0), MICROPY_FLOAT_CONST(1.0));
+
+            if (mix <= MICROPY_FLOAT_CONST(0.01) || !self->filter_states) { // if mix is zero pure sample only or no biquad filter objects are provided
                 for (uint32_t i = 0; i < n; i++) {
                     if (MP_LIKELY(self->bits_per_sample == 16)) {
                         word_buffer[i] = sample_src[i];
@@ -346,7 +347,7 @@ audioio_get_buffer_result_t audiofilters_filter_get_buffer(audiofilters_filter_o
                             }
                         } else {
                             if (self->samples_signed) {
-                                hword_buffer[i + j] = (int8_t)((sample_hsrc[i + j] * (1.0 - mix)) + (self->filter_buffer[j] * mix));
+                                hword_buffer[i + j] = (int8_t)((sample_hsrc[i + j] * (MICROPY_FLOAT_CONST(1.0) - mix)) + (self->filter_buffer[j] * mix));
                             } else {
                                 hword_buffer[i + j] = (uint8_t)(((int8_t)(((uint8_t)sample_hsrc[i + j]) ^ 0x80) * (MICROPY_FLOAT_CONST(1.0) - mix)) + (self->filter_buffer[j] * mix)) ^ 0x80;
                             }
