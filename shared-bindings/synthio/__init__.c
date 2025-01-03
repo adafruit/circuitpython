@@ -292,7 +292,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(synthio_voct_to_hz_obj, voct_to_hz);
 
 #if CIRCUITPY_AUDIOCORE_DEBUG
 static mp_obj_t synthio_lfo_tick(size_t n, const mp_obj_t *args) {
-    shared_bindings_synthio_lfo_tick(48000);
+    shared_bindings_synthio_lfo_tick(48000, SYNTHIO_MAX_DUR);
     mp_obj_t result[n];
     for (size_t i = 0; i < n; i++) {
         synthio_block_slot_t slot;

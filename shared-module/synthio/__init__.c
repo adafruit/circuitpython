@@ -294,7 +294,7 @@ void synthio_synth_synthesize(synthio_synth_t *synth, uint8_t **bufptr, uint32_t
         return;
     }
 
-    shared_bindings_synthio_lfo_tick(synth->sample_rate);
+    shared_bindings_synthio_lfo_tick(synth->sample_rate, SYNTHIO_MAX_DUR);
 
     synth->buffer_index = !synth->buffer_index;
     synth->other_channel = 1 - channel;
@@ -487,9 +487,9 @@ uint32_t synthio_frequency_convert_scaled_to_dds(uint64_t frequency_scaled, int3
     return (sample_rate / 2 + frequency_scaled) / sample_rate;
 }
 
-void shared_bindings_synthio_lfo_tick(uint32_t sample_rate) {
+void shared_bindings_synthio_lfo_tick(uint32_t sample_rate, uint16_t num_samples) {
     mp_float_t recip_sample_rate = MICROPY_FLOAT_CONST(1.) / sample_rate;
-    synthio_global_rate_scale = SYNTHIO_MAX_DUR * recip_sample_rate;
+    synthio_global_rate_scale = num_samples * recip_sample_rate;
     synthio_global_W_scale = (2 * MP_PI) * recip_sample_rate;
     synthio_global_tick++;
 }
