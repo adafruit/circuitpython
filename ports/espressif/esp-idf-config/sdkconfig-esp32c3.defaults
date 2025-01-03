@@ -1,6 +1,10 @@
 #
 # Espressif IoT Development Framework Configuration
 #
+# Compiler options
+#
+CONFIG_COMPILER_SAVE_RESTORE_LIBCALLS=y
+# end of Compiler options
 #
 # Component config
 #
