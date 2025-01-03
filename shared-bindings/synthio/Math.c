@@ -121,7 +121,7 @@ MAKE_ENUM_TYPE(synthio, MathOperation, synthio_math_operation,
 //|     including indirectly via a `Note` or another intermediate Math.
 //|
 //|     Using the same Math as an input to multiple other Maths or Notes is OK, but
-//|     the result if an Math is tied to multiple Synthtesizer objects is undefined.
+//|     the result if an Math is tied to multiple `Synthesizer` objects is undefined.
 //|
 //|     In the current implementation, Maths are updated every 256 samples. This
 //|     should be considered an implementation detail.
