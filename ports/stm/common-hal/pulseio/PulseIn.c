@@ -41,7 +41,7 @@ static void pulsein_exti_event_handler(uint8_t num) {
     uint32_t current_count = tim_handle.Instance->CNT;
 
     // Interrupt register must be cleared manually
-    #if CPY_STM32L4
+    #if CPY_STM32L4 || CPY_STM32H7
     EXTI->PR1 = 1 << num;
     #else
     EXTI->PR = 1 << num;

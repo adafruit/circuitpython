@@ -238,3 +238,25 @@ const mcu_tim_pin_obj_t mcu_tim_pin_list[58] = {
     TIM(8, 3, 3, &pin_PK00),
     TIM(1, 1, 1, &pin_PK01),
 };
+
+// SDIO
+SDMMC_TypeDef *mcu_sdio_banks[1] = {SDMMC1};
+
+const mcu_periph_obj_t mcu_sdio_clock_list[1] = {
+    PERIPH(1, 12, &pin_PC12),
+};
+const mcu_periph_obj_t mcu_sdio_command_list[1] = {
+    PERIPH(1, 12, &pin_PD02),
+};
+const mcu_periph_obj_t mcu_sdio_data0_list[1] = {
+    PERIPH(1, 12, &pin_PC08),
+};
+const mcu_periph_obj_t mcu_sdio_data1_list[1] = {
+    PERIPH(1, 12, &pin_PC09),
+};
+const mcu_periph_obj_t mcu_sdio_data2_list[1] = {
+    PERIPH(1, 12, &pin_PC10),
+};
+const mcu_periph_obj_t mcu_sdio_data3_list[1] = {
+    PERIPH(1, 12, &pin_PC11),
+};
