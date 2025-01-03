@@ -87,8 +87,8 @@ $(Q)$(CXX) $(CXXFLAGS) -c -MD -MF $(@:.o=.d) -o $@ $< || (echo -e $(HELP_BUILD_E
   $(RM) -f $(@:.o=.d)
 endef
 
-# CIRCUITPY-CHANGE: add $(DEVICES_MODULES) and $(BUILD)
-vpath %.c . $(TOP) $(USER_C_MODULES) $(DEVICES_MODULES) $(BUILD)
+# CIRCUITPY-CHANGE: add $(BUILD)
+vpath %.c . $(TOP) $(USER_C_MODULES) $(BUILD)
 $(BUILD)/%.o: %.c
 	$(call compile_c)
 
