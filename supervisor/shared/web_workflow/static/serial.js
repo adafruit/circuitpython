@@ -43,6 +43,8 @@ ws.onmessage = function(e) {
   } else if (e.data == "\x1b[K") { // Clear line
     log.textContent = log.textContent.slice(0, -left_count);
     left_count = 0;
+  } else if (e.data == "\x1b[2K\x1b[0G") {
+    // ignore
   } else {
     log.textContent += e.data;
   }
