@@ -17,6 +17,16 @@
 #include "py/ringbuf.h"
 #include "shared/runtime/interrupt_char.h"
 
+// ROS TESTING
+// #include <uros_network_interfaces.h>
+#include <rcl/rcl/rcl.h>
+#include <rcl/rcl/error_handling.h>
+#include <std_msgs/msg/int32.h>
+#include <rclc/rclc.h>
+#include <rclc/executor.h>
+// END ROS TESTING
+
+
 
 #define DELAY 0x80
 
@@ -42,6 +52,15 @@ uint8_t display_init_sequence[] = {
 
 // Overrides the weakly linked function from supervisor/shared/board.c
 void board_init(void) {
+
+    // ROS TESTING
+    rcl_allocator_t allocator = rcl_get_default_allocator();
+    rcl_init_options_t init_options = rcl_get_zero_initialized_init_options();
+    rcl_init_options_init(&init_options, allocator);
+
+    // END ROS TESTING
+
+
     busio_spi_obj_t *spi = common_hal_board_create_spi(0);
     fourwire_fourwire_obj_t *bus = &allocate_display_bus()->fourwire_bus;
     bus->base.type = &fourwire_fourwire_type;

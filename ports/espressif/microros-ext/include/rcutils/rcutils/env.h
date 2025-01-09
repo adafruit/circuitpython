@@ -55,6 +55,36 @@ RCUTILS_WARN_UNUSED
 bool
 rcutils_set_env(const char * env_name, const char * env_value);
 
+/// Set or un-set a process-scoped environment variable while specifying overwrite behavior.
+/**
+ * This function modifies the environment variables for the current process by
+ * copying given string values into the process' global environment variable
+ * store.
+ *
+ * \par Thread Safety:
+ * This function is not thread-safe. Take care not to modify the environment variables while
+ * another thread might be reading or writing environment variables.
+ *
+ * \par Platform Consistency:
+ * The behavior when setting a variable to an empty string (`""`) differs
+ * between platforms. On Windows, the variable is un-set (as if \p env_value was
+ * `NULL`), while on other platforms the variable is set to an empty string as
+ * expected.
+ *
+ * \param[in] env_name Name of the environment variable to modify.
+ * \param[in] env_value Value to set the environment variable to, or `NULL` to
+ *   un-set.
+ * \param[in] overwrite If true, the environemnt variable value will not be overwritten
+ *   if previously set.
+ * \return `true` if success, or
+ * \return `false` if env_name is invalid or NULL, or
+ * \return `false` on failure.
+ */
+RCUTILS_PUBLIC
+RCUTILS_WARN_UNUSED
+bool
+rcutils_set_env_overwrite(const char * env_name, const char * env_value, bool overwrite);
+
 /// Retrieve the value of the given environment variable if it exists, or "".
 /** The c-string which is returned in the env_value output parameter is only
  * valid until the next time this function is called, because it is a direct

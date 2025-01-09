@@ -10,6 +10,7 @@ extern "C"
 #define RCUTILS_NO_FILESYSTEM
 #define RCUTILS_AVOID_DYNAMIC_ALLOCATION
 #define RCUTILS_NO_THREAD_SUPPORT
+#define RCUTILS_MICROROS
 
 #ifdef __cplusplus
 }

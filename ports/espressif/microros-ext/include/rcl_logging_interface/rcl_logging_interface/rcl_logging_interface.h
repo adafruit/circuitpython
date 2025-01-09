@@ -33,6 +33,10 @@ typedef enum
 
 /// Initialize the external logging library.
 /**
+ * \param[in] file_name_prefix The prefix for log file name that external
+ *   logging library should use to configure itself.
+ *   If provided, it must be a null terminated C string.
+ *   If set to NULL or the empty string, the logging library will use defaults.
  * \param[in] config_file The location of a config file that the external
  *   logging library should use to configure itself.
  *   If provided, it must be a null terminated C string.
@@ -50,7 +54,10 @@ typedef enum
 RCL_LOGGING_INTERFACE_PUBLIC
 RCUTILS_WARN_UNUSED
 rcl_logging_ret_t
-rcl_logging_external_initialize(const char * config_file, rcutils_allocator_t allocator);
+rcl_logging_external_initialize(
+  const char * file_name_prefix,
+  const char * config_file,
+  rcutils_allocator_t allocator);
 
 /// Free the resources allocated for the external logging system.
 /**
@@ -62,7 +69,7 @@ rcl_logging_external_initialize(const char * config_file, rcutils_allocator_t al
 RCL_LOGGING_INTERFACE_PUBLIC
 RCUTILS_WARN_UNUSED
 rcl_logging_ret_t
-rcl_logging_external_shutdown();
+rcl_logging_external_shutdown(void);
 
 /// Log a message.
 /**

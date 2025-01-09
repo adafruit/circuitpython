@@ -57,7 +57,7 @@ typedef struct RCUTILS_PUBLIC_TYPE rcutils_string_map_s
 RCUTILS_PUBLIC
 RCUTILS_WARN_UNUSED
 rcutils_string_map_t
-rcutils_get_zero_initialized_string_map();
+rcutils_get_zero_initialized_string_map(void);
 
 /// Initialize a rcutils_string_map_t, allocating space for given capacity.
 /**

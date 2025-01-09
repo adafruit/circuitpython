@@ -119,7 +119,7 @@ rcutils_hash_map_string_cmp_func(const void * val1, const void * val2);
 RCUTILS_PUBLIC
 RCUTILS_WARN_UNUSED
 rcutils_hash_map_t
-rcutils_get_zero_initialized_hash_map();
+rcutils_get_zero_initialized_hash_map(void);
 
 /// Initialize a rcutils_hash_map_t, allocating space for given capacity.
 /**

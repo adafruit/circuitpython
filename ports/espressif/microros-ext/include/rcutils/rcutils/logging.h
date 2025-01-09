@@ -237,7 +237,7 @@ typedef void (* rcutils_logging_output_handler_t)(
  */
 RCUTILS_PUBLIC
 RCUTILS_WARN_UNUSED
-rcutils_logging_output_handler_t rcutils_logging_get_output_handler();
+rcutils_logging_output_handler_t rcutils_logging_get_output_handler(void);
 
 /// Set the current output handler.
 /**
@@ -297,7 +297,7 @@ rcutils_ret_t rcutils_logging_format_message(
  */
 RCUTILS_PUBLIC
 RCUTILS_WARN_UNUSED
-int rcutils_logging_get_default_logger_level();
+int rcutils_logging_get_default_logger_level(void);
 
 /// Set the default severity level for loggers.
 /**

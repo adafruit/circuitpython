@@ -91,9 +91,7 @@
  */
 
 #define ATOMIC_VAR_INIT(value) {.__val = (value)}
-#define atomic_init(obj, value) do { \
-    (obj)->__val = (value); \
-} while (0)
+#define atomic_init(obj, value) do {(obj)->__val = (value);} while (0)
 
 /*
  * Clang and recent GCC both provide predefined macros for the memory
