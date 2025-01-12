@@ -56,8 +56,10 @@ void board_init(void) {
     // ROS TESTING
     rcl_allocator_t allocator = rcl_get_default_allocator();
     rcl_init_options_t init_options = rcl_get_zero_initialized_init_options();
-    rcl_init_options_init(&init_options, allocator);
-
+    rcl_ret_t temp_rc = rcl_init_options_init(&init_options, allocator);
+    if ((temp_rc != RCL_RET_OK)) {
+        common_hal_board_create_spi(0);
+    }
     // END ROS TESTING
 
 
