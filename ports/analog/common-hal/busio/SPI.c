@@ -34,17 +34,9 @@
 // Note that any bugs introduced in this file can cause crashes
 // at startupfor chips using external SPI flash.
 
-static SPIDRV_HandleData_t spidrv_eusart_handle;
-static SPIDRV_Init_t spidrv_eusart_init = SPIDRV_MASTER_EUSART1;
-static bool in_used = false;
-static bool never_reset = false;
-
 // Reset SPI when reload
 void spi_reset(void) {
-    if (!never_reset && in_used) {
-        SPIDRV_DeInit(&spidrv_eusart_handle);
-        in_used = false;
-    }
+    // FIXME: Implement
     return;
 }
 
@@ -54,64 +46,14 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
     const mcu_pin_obj_t *mosi,
     const mcu_pin_obj_t *miso,
     bool half_duplex) {
-    Ecode_t sc = ECODE_OK;
 
-    if (half_duplex) {
-        mp_raise_NotImplementedError(
-            MP_ERROR_TEXT("Half duplex SPI is not implemented"));
-    }
 
-    if ((sck != NULL) && (mosi != NULL) && (miso != NULL)) {
-        if (sck->function_list[FN_EUSART1_SCLK] == 1
-            && miso->function_list[FN_EUSART1_RX] == 1
-            && mosi->function_list[FN_EUSART1_TX] == 1) {
-
-            self->sck = sck;
-            self->mosi = mosi;
-            self->miso = miso;
-            self->handle = &spidrv_eusart_handle;
-            self->polarity = 0;
-            self->phase = 0;
-            self->bits = 8;
-
-            spidrv_eusart_init.portTx = mosi->port;
-            spidrv_eusart_init.portRx = miso->port;
-            spidrv_eusart_init.portClk = sck->port;
-            spidrv_eusart_init.pinTx = mosi->number;
-            spidrv_eusart_init.pinRx = miso->number;
-            spidrv_eusart_init.pinClk = sck->number;
-            spidrv_eusart_init.bitRate = 1000000;
-            spidrv_eusart_init.frameLength = 8;
-            spidrv_eusart_init.dummyTxValue = 0;
-            spidrv_eusart_init.type = spidrvMaster;
-            spidrv_eusart_init.bitOrder = spidrvBitOrderMsbFirst;
-            spidrv_eusart_init.clockMode = spidrvClockMode0;
-            spidrv_eusart_init.csControl = spidrvCsControlApplication;
-            spidrv_eusart_init.slaveStartMode = spidrvSlaveStartImmediate;
-
-            sc = SPIDRV_Init(self->handle, &spidrv_eusart_init);
-            if (sc != ECODE_EMDRV_SPIDRV_OK) {
-                mp_raise_ValueError(MP_ERROR_TEXT("SPI init error"));
-            }
-        } else {
-            mp_raise_ValueError(MP_ERROR_TEXT("Hardware in use, try alternative pins"));
-        }
-    } else {
-        raise_ValueError_invalid_pins();
-    }
-
-    in_used = true;
-    common_hal_mcu_pin_claim(sck);
-    common_hal_mcu_pin_claim(mosi);
-    common_hal_mcu_pin_claim(miso);
+    // FIXME: Implement
 }
 
 // Never reset SPI when reload
 void common_hal_busio_spi_never_reset(busio_spi_obj_t *self) {
-    never_reset = true;
-    common_hal_never_reset_pin(self->mosi);
-    common_hal_never_reset_pin(self->miso);
-    common_hal_never_reset_pin(self->sck);
+    // FIXME: Implement
 }
 
 // Check SPI status, deinited or not
@@ -122,23 +64,7 @@ bool common_hal_busio_spi_deinited(busio_spi_obj_t *self) {
 // Deinit SPI obj
 void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
 
-    if (common_hal_busio_spi_deinited(self)) {
-        return;
-    }
-
-    Ecode_t sc = SPIDRV_DeInit(self->handle);
-    if (sc != ECODE_EMDRV_SPIDRV_OK) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("SPI re-init"));
-    }
-
-    in_used = false;
-    self->sck = NULL;
-    self->mosi = NULL;
-    self->miso = NULL;
-    self->handle = NULL;
-    common_hal_reset_pin(self->mosi);
-    common_hal_reset_pin(self->miso);
-    common_hal_reset_pin(self->sck);
+    // FIXME: Implement
 }
 
 // Configures the SPI bus. The SPI object must be locked.
@@ -147,55 +73,15 @@ bool common_hal_busio_spi_configure(busio_spi_obj_t *self,
     uint8_t polarity,
     uint8_t phase,
     uint8_t bits) {
-    Ecode_t sc;
-    // This resets the SPI, so check before updating it redundantly
-    if (baudrate == self->baudrate && polarity == self->polarity
-        && phase == self->phase && bits == self->bits) {
-        return true;
-    }
 
-    sc = SPIDRV_DeInit(self->handle);
-    if (sc != ECODE_EMDRV_SPIDRV_OK) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("SPI re-init"));
-    }
-    in_used = false;
-    self->baudrate = baudrate;
-    self->phase = phase;
-    self->bits = bits;
-    self->polarity = polarity;
-
-    spidrv_eusart_init.bitRate = baudrate;
-    spidrv_eusart_init.frameLength = 8;
-    if (polarity == 0 && phase == 0) {
-        spidrv_eusart_init.clockMode = spidrvClockMode0;
-    } else if (polarity == 0 && phase == 1) {
-        spidrv_eusart_init.clockMode = spidrvClockMode1;
-    } else if (polarity == 1 && phase == 0) {
-        spidrv_eusart_init.clockMode = spidrvClockMode2;
-    } else if (polarity == 1 && phase == 1) {
-        spidrv_eusart_init.clockMode = spidrvClockMode3;
-    }
-
-    sc = SPIDRV_Init(self->handle, &spidrv_eusart_init);
-    if (sc != ECODE_EMDRV_SPIDRV_OK) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("SPI re-init"));
-    }
-    in_used = true;
+    // FIXME: Implement
     return true;
 }
 
 // Lock SPI bus
 bool common_hal_busio_spi_try_lock(busio_spi_obj_t *self) {
-    if (common_hal_busio_spi_deinited(self)) {
-        return false;
-    }
-    bool grabbed_lock = false;
-    if (!self->has_lock) {
-        grabbed_lock = true;
-        self->has_lock = true;
-    }
-
-    return grabbed_lock;
+    // FIXME: Implement
+    return false;
 }
 
 // Check SPI lock status
@@ -213,8 +99,8 @@ bool common_hal_busio_spi_write(busio_spi_obj_t *self,
     const uint8_t *data,
     size_t len) {
 
-    Ecode_t result = SPIDRV_MTransmitB(self->handle, data, len);
-    return result == ECODE_EMDRV_SPIDRV_OK;
+    // FIXME: Implement
+    return false;
 }
 
 // Read data into buffer
@@ -222,9 +108,8 @@ bool common_hal_busio_spi_read(busio_spi_obj_t *self,
     uint8_t *data, size_t len,
     uint8_t write_value) {
 
-    self->handle->initData.dummyTxValue = write_value;
-    Ecode_t result = SPIDRV_MReceiveB(self->handle, data, len);
-    return result == ECODE_EMDRV_SPIDRV_OK;
+    // FIXME: Implement
+    return false;
 }
 
 // Write out the data in data_out
@@ -234,8 +119,8 @@ bool common_hal_busio_spi_transfer(busio_spi_obj_t *self,
     uint8_t *data_in,
     size_t len) {
 
-    Ecode_t result = SPIDRV_MTransferB(self->handle, data_out, data_in, len);
-    return result == ECODE_EMDRV_SPIDRV_OK;
+    // FIXME: Implement
+    return false;
 }
 
 // Get SPI baudrate

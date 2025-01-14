@@ -26,7 +26,10 @@
 
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/microcontroller/Pin.h"
+#include "supervisor/shared/tick.h"
 #include "shared-bindings/busio/UART.h"
+
+#include "shared-bindings/microcontroller/Pin.h"
 
 #include "mpconfigport.h"
 #include "shared/readline/readline.h"
@@ -35,42 +38,403 @@
 #include "py/mperrno.h"
 #include "py/runtime.h"
 
-#include "uart.h"
+#include "max32_port.h"
 #include "UART.h"
+#include "nvic_table.h"
+
+// UART IRQ Priority
+#define UART_PRIORITY 1
+
+/**
+ *
+// Define a struct for what BUSIO.UART should contain
+typedef struct {
+    mp_obj_base_t base;
+    int uart_id;
+    mxc_uart_regs_t* uart_regs;
+
+    const mcu_pin_obj_t *rx_pin;
+    const mcu_pin_obj_t *tx_pin;
+    const mcu_pin_obj_t *rts_pin;
+    const mcu_pin_obj_t *cts_pin;
+
+    uint8_t bits;
+    uint32_t baudrate;
+    bool parity;
+    uint8_t stop_bits;
+
+    uint32_t timeout_ms;
+    bool error;
+} busio_uart_obj_t;
+ */
 
 typedef enum {
-    BUSIO_UART_PARITY_NONE,
-    BUSIO_UART_PARITY_EVEN,
-    BUSIO_UART_PARITY_ODD
-} busio_uart_parity_t;
+    UART_9600 = 9600,
+    UART_14400 = 14400,
+    UART_19200 = 19200,
+    UART_38400 = 38400,
+    UART_57600 = 57600,
+    UART_115200 = 115200,
+    UART_230400 = 230400,
+    UART_460800 = 460800,
+    UART_921600 = 921600,
+} uart_valid_baudrates;
+
+
+typedef enum {
+    UART_FREE = 0,
+    UART_BUSY,
+    UART_NEVER_RESET,
+} uart_status_t;
+
+static uint32_t timeout_ms=0;
+
+// Set each bit to indicate an active UART
+// will be checked by ISR Handler for which ones to call
+static uint8_t uarts_active = 0;
+static uart_status_t uart_status[NUM_UARTS];
+// static uint8_t uart_never_reset_mask = 0;
+
+static int isValidBaudrate(uint32_t baudrate) {
+    switch(baudrate) {
+        case UART_9600:
+            return 1;
+            break;
+        case UART_14400:
+            return 1;
+            break;
+        case UART_19200:
+            return 1;
+            break;
+        case UART_38400:
+            return 1;
+            break;
+        case UART_57600:
+            return 1;
+            break;
+        case UART_115200:
+            return 1;
+            break;
+        case UART_230400:
+            return 1;
+            break;
+        case UART_460800:
+            return 1;
+            break;
+        case UART_921600:
+            return 1;
+            break;
+        default:
+            return 0;
+            break;
+    }
+}
+
+static mxc_uart_parity_t convertParity(busio_uart_parity_t busio_parity)
+{
+    switch(busio_parity) {
+    case BUSIO_UART_PARITY_NONE:
+        return MXC_UART_PARITY_DISABLE;
+    case BUSIO_UART_PARITY_EVEN:
+        return MXC_UART_PARITY_EVEN_0;
+    case BUSIO_UART_PARITY_ODD:
+        return MXC_UART_PARITY_ODD_0;
+    default:
+        mp_raise_ValueError(MP_ERROR_TEXT("Parity must be ODD, EVEN, or NONE\n"));
+    }
+}
+
+// FIXME: Find a better way of doing t his without a for loop
+void UartISR(void) {
+    for (int i=0; i< NUM_UARTS; i++) {
+        if (uarts_active & (1 << i) ) {
+            MXC_UART_AsyncHandler(MXC_UART_GET_UART(i));
+            uart_status[i] = UART_FREE;
+        }
+    }
+}
+
+void uartCallback(mxc_uart_req_t *req, int error) {
+
+}
 
 // Construct an underlying UART object.
-extern void common_hal_busio_uart_construct(busio_uart_obj_t *self,
+void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     const mcu_pin_obj_t *tx, const mcu_pin_obj_t *rx,
     const mcu_pin_obj_t *rts, const mcu_pin_obj_t *cts,
     const mcu_pin_obj_t *rs485_dir, bool rs485_invert,
     uint32_t baudrate, uint8_t bits, busio_uart_parity_t parity, uint8_t stop,
     mp_float_t timeout, uint16_t receiver_buffer_size, byte *receiver_buffer,
-    bool sigint_enabled);
+    bool sigint_enabled)
+{
+    int err, temp;
 
-extern void common_hal_busio_uart_deinit(busio_uart_obj_t *self);
-extern bool common_hal_busio_uart_deinited(busio_uart_obj_t *self);
+    // Check for NULL Pointers && valid UART settings
+    assert( self );
 
+    // Assign UART ID based on pins
+    temp = pinsToUart(tx, rx);
+    if (temp == -1) {
+        // Error will be indicated by pinsToUart(tx, rx) function
+        return;
+    }
+    else {
+        self->uart_id = temp;
+        self->uart_regs = MXC_UART_GET_UART(temp);
+    }
+
+    assert( (self->uart_id >= 0) && (self->uart_id < NUM_UARTS) );
+
+    // Indicate RS485 not implemented
+    if ( (rs485_dir != NULL) || (rs485_invert) ) {
+        mp_raise_NotImplementedError(MP_ERROR_TEXT("RS485"));
+    }
+
+    if ((rx != NULL) && (tx != NULL)) {
+        err =  MXC_UART_Init(self->uart_regs, baudrate, MXC_UART_IBRO_CLK);
+        if (err != E_NO_ERROR) {
+            mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to initialize UART.\n"));
+        }
+
+        // attach & configure pins
+        self->tx_pin = tx;
+        self->rx_pin = rx;
+        common_hal_mcu_pin_claim(self->tx_pin);
+        common_hal_mcu_pin_claim(self->rx_pin);
+    }
+    else if (tx != NULL) {
+        mp_raise_NotImplementedError(MP_ERROR_TEXT("UART needs TX & RX"));
+    }
+    else if (rx != NULL) {
+        mp_raise_NotImplementedError(MP_ERROR_TEXT("UART needs TX & RX"));
+    }
+    else {
+        // Should not get here, as shared-bindings API should not call this way
+    }
+
+    if ((cts) && (rts)) {
+        MXC_UART_SetFlowCtrl(self->uart_regs, MXC_UART_FLOW_EN, 8);
+        self->cts_pin = cts;
+        self->rts_pin = rts;
+        common_hal_mcu_pin_claim(self->cts_pin);
+        common_hal_mcu_pin_claim(self->rts_pin);
+    }
+    else if (cts || rts) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Flow Ctrl needs both CTS & RTS"));
+    }
+
+    // Set stop bits & data size
+    assert( (stop == 1) || (stop == 2) );
+    mp_arg_validate_int(bits, 8, MP_QSTR_bits);
+    MXC_UART_SetDataSize(self->uart_regs, bits);
+    MXC_UART_SetStopBits(self->uart_regs, stop);
+
+    // Set parity
+    MXC_UART_SetParity(self->uart_regs, convertParity(parity));
+
+    // attach UART parameters
+    self->stop_bits = stop; // must be 1 or 2
+    self->bits = bits;
+    self->parity = parity;
+    self->baudrate = baudrate;
+    self->error = E_NO_ERROR;
+
+    // Initialize ringbuffer for receiving data
+    if (self->rx_pin) {
+        // if given a ringbuff, use that
+        if (receiver_buffer) {
+            ringbuf_init(&self->ringbuf, receiver_buffer, receiver_buffer_size);
+        }
+        // else create one and attach it
+        else {
+            if (!ringbuf_alloc(&self->ringbuf, receiver_buffer_size)) {
+                m_malloc_fail(receiver_buffer_size);
+            }
+        }
+    }
+
+    // Indicate to this module that the UART is active
+    uarts_active |= (1 << self->uart_id);
+
+    MXC_UART_ClearFlags(self->uart_regs, self->uart_regs->int_fl);
+
+    /* Enable UART interrupt */
+    NVIC_ClearPendingIRQ(MXC_UART_GET_IRQ(self->uart_id));
+    NVIC_DisableIRQ(MXC_UART_GET_IRQ(self->uart_id));
+    NVIC_SetPriority(MXC_UART_GET_IRQ(self->uart_id), UART_PRIORITY);
+    NVIC_SetVector(MXC_UART_GET_IRQ(self->uart_id), (uint32_t)UartISR);
+
+    // FIXME: UART ISRs are NOT WORKING!
+    // MXC_UART_EnableInt(self->uart_regs, ???)
+    // NVIC_EnableIRQ(MXC_UART_GET_IRQ(self->uart_id));
+
+    return;
+}
+
+void common_hal_busio_uart_deinit(busio_uart_obj_t *self)
+{
+    assert(self);
+
+    if (!common_hal_busio_uart_deinited(self)) {
+        // First disable the ISR to avoid pre-emption
+        NVIC_DisableIRQ(UART0_IRQn);
+
+        MXC_UART_Shutdown(self->uart_regs);
+        self->error = E_UNINITIALIZED;
+
+        assert(self->rx_pin && self->tx_pin);
+        reset_pin_number(self->rx_pin->port, self->rx_pin->mask);
+        reset_pin_number(self->tx_pin->port, self->tx_pin->mask);
+
+        if (self->cts_pin && self->rts_pin) {
+            reset_pin_number(self->cts_pin->port, self->cts_pin->mask);
+            reset_pin_number(self->rts_pin->port, self->rts_pin->mask);
+        }
+
+        self->tx_pin = NULL;
+        self->rx_pin = NULL;
+        self->cts_pin = NULL;
+        self->rts_pin = NULL;
+
+        // Indicate to this module that the UART is not active
+        uarts_active &= ~(1 << self->uart_id);
+    }
+}
+
+bool common_hal_busio_uart_deinited(busio_uart_obj_t *self)
+{
+    if (uarts_active & (1 << self->uart_id)) {
+        return false;
+    }
+    else {
+        return true;
+    };
+}
+
+// todo: test
 // Read characters. len is in characters NOT bytes!
-extern size_t common_hal_busio_uart_read(busio_uart_obj_t *self,
-    uint8_t *data, size_t len, int *errcode);
+size_t common_hal_busio_uart_read(busio_uart_obj_t *self,
+    uint8_t *data, size_t len, int *errcode)
+{
+    int err;
+    static size_t bytes_remaining;
 
+    bytes_remaining = len * 4;
+
+    while(bytes_remaining > 0) {
+        mxc_uart_req_t uart_wr_req;
+        uart_wr_req.rxCnt = 0;
+        uart_wr_req.txCnt = 0;
+        uart_wr_req.rxData = data;
+        uart_wr_req.txData = NULL;
+        uart_wr_req.rxLen = (uint32_t)( (bytes_remaining >= 255) ? 255 : bytes_remaining );
+        uart_wr_req.txLen = 0;
+        uart_wr_req.uart = self->uart_regs;
+
+        err = MXC_UART_Transaction(&uart_wr_req);
+        if (err != E_NO_ERROR) {
+            *errcode = err;
+            return ((len * 4) - bytes_remaining);
+        }
+        bytes_remaining -= uart_wr_req.rxLen;
+    }
+    return len;
+}
+
+//todo: test
 // Write characters. len is in characters NOT bytes!
-extern size_t common_hal_busio_uart_write(busio_uart_obj_t *self,
-    const uint8_t *data, size_t len, int *errcode);
+ size_t common_hal_busio_uart_write(busio_uart_obj_t *self,
+    const uint8_t *data, size_t len, int *errcode)
+{
+    int err;
+    uint32_t start_time=0;
+    static size_t bytes_remaining;
 
-extern uint32_t common_hal_busio_uart_get_baudrate(busio_uart_obj_t *self);
-extern void common_hal_busio_uart_set_baudrate(busio_uart_obj_t *self, uint32_t baudrate);
-extern mp_float_t common_hal_busio_uart_get_timeout(busio_uart_obj_t *self);
-extern void common_hal_busio_uart_set_timeout(busio_uart_obj_t *self, mp_float_t timeout);
+    bytes_remaining = len * 4;
 
-extern uint32_t common_hal_busio_uart_rx_characters_available(busio_uart_obj_t *self);
-extern void common_hal_busio_uart_clear_rx_buffer(busio_uart_obj_t *self);
-extern bool common_hal_busio_uart_ready_to_tx(busio_uart_obj_t *self);
+    while(bytes_remaining > 0) {
+        mxc_uart_req_t uart_wr_req;
+        uart_wr_req.rxCnt = 0;
+        uart_wr_req.txCnt = 0;
+        uart_wr_req.rxData = NULL;
+        uart_wr_req.txData = data;
+        uart_wr_req.txLen = (uint32_t)( (bytes_remaining >= 255) ? 255 : bytes_remaining );
+        uart_wr_req.rxLen = 0;
+        uart_wr_req.uart = self->uart_regs;
 
-extern void common_hal_busio_uart_never_reset(busio_uart_obj_t *self);
+        uart_status[self->uart_id] = UART_BUSY;
+        start_time = supervisor_ticks_ms64();
+        err = MXC_UART_Transaction(&uart_wr_req);
+        if (err != E_NO_ERROR) {
+            *errcode = err;
+            return ((len * 4) - bytes_remaining);
+        }
+
+        // FIXME: NOT ENTERING ISR, NOT HANDLING TIMEOUT
+        // Wait for transaction completion
+        // FIXME: Test timeout & status flags
+        while ( (supervisor_ticks_ms64() - start_time < 500)
+                && (uart_status[self->uart_id] != UART_FREE)
+              ) {};
+
+        bytes_remaining -= uart_wr_req.txLen;
+    }
+    return len;
+}
+
+ uint32_t common_hal_busio_uart_get_baudrate(busio_uart_obj_t *self)
+{
+    return self->baudrate;
+}
+
+// Validate baudrate
+void common_hal_busio_uart_set_baudrate(busio_uart_obj_t *self, uint32_t baudrate)
+{
+    if ( isValidBaudrate(baudrate) ) {
+        self->baudrate = baudrate;
+    }
+    else {
+        mp_raise_ValueError(MP_ERROR_TEXT("Baudrate invalid. Must be a standard UART baudrate.\n"));
+    }
+}
+
+mp_float_t common_hal_busio_uart_get_timeout(busio_uart_obj_t *self)
+{
+    return self->timeout;
+}
+
+void common_hal_busio_uart_set_timeout(busio_uart_obj_t *self, mp_float_t timeout)
+{
+    if (timeout > 100.0) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Timeout must be < 100 seconds"));
+    }
+
+    timeout_ms = 1000 * (uint32_t)timeout;
+    self->timeout = (uint32_t)timeout;
+
+    return;
+}
+
+uint32_t common_hal_busio_uart_rx_characters_available(busio_uart_obj_t *self)
+{
+    return MXC_UART_GetRXFIFOAvailable(self->uart_regs);
+}
+
+void common_hal_busio_uart_clear_rx_buffer(busio_uart_obj_t *self)
+{
+    MXC_UART_ClearRXFIFO(self->uart_regs);
+}
+
+bool common_hal_busio_uart_ready_to_tx(busio_uart_obj_t *self)
+{
+    return !(MXC_UART_GetStatus(self->uart_regs) & (MXC_F_UART_STATUS_TX_BUSY));
+}
+
+void common_hal_busio_uart_never_reset(busio_uart_obj_t *self)
+{
+    common_hal_never_reset_pin(self->tx_pin);
+    common_hal_never_reset_pin(self->rx_pin);
+    common_hal_never_reset_pin(self->cts_pin);
+    common_hal_never_reset_pin(self->rts_pin);
+    // uart_never_reset_mask |= ( 1 << (self->uart_id) );
+}
