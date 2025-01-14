@@ -6,11 +6,12 @@
 #
 # SPDX-License-Identifier: MIT
 
+BOARD ?= apard32690
+CROSS_COMPILE = arm-none-eabi-
+
 # Includes mpconfigboard.mk & mpconfigport.mk,
 # along with numerous other shared environment makefiles.
 include ../../py/circuitpy_mkenv.mk
-
-CROSS_COMPILE = arm-none-eabi-
 
 # MCU_SERIES e.g. 	"max32"
 # MCU_VARIANT e.g. 	"max32690"
@@ -19,6 +20,7 @@ MCU_SERIES_LOWER := $(shell echo $(MCU_SERIES) | tr '[:upper:]' '[:lower:]')
 MCU_SERIES_UPPER := $(shell echo $(MCU_SERIES) | tr '[:lower:]' '[:upper:]')
 MCU_VARIANT_LOWER := $(shell echo $(MCU_VARIANT) | tr '[:upper:]' '[:lower:]')
 MCU_VARIANT_UPPER := $(shell echo $(MCU_VARIANT) | tr '[:lower:]' '[:upper:]')
+
 
 # *******************************************************************************
 #### MSDK INCLUDES ####
@@ -59,6 +61,7 @@ DIE_TYPE=me18
 endif
 
 PERIPH_SRC = $(ADI_PERIPH)/Source
+PERIPH_INC = $(ADI_PERIPH)/Include/$(MCU_VARIANT_UPPER)
 
 INC += -I.
 INC += -I../..
@@ -75,7 +78,7 @@ INC += \
 	-I$(TOP)/lib/cmsis/inc \
 	-I$(CMSIS_ROOT)/Include \
 	-I$(CMSIS_ROOT)/Device/Maxim/$(MCU_VARIANT_UPPER)/Include \
-	-I$(ADI_PERIPH)/Include/$(MCU_VARIANT_UPPER) \
+	-I$(PERIPH_INC) \
 	-I$(PERIPH_SRC)/SYS \
 	-I$(PERIPH_SRC)/CTB \
 	-I$(PERIPH_SRC)/DMA \
@@ -126,7 +129,8 @@ SRC_C += $(SRC_MAX32) \
 			boards/$(BOARD)/board.c \
 			boards/$(BOARD)/pins.c \
 			peripherals/$(MCU_VARIANT_LOWER)/pins.c \
-			peripherals/$(MCU_VARIANT_LOWER)/gpios.c
+			peripherals/$(MCU_VARIANT_LOWER)/gpios.c \
+			peripherals/$(MCU_VARIANT_LOWER)/max32_uart.c
 
 # *******************************************************************************
 ### Compiler & Linker Flags ###
