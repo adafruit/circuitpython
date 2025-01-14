@@ -4,28 +4,43 @@
 //
 // SPDX-License-Identifier: MIT
 
-#ifndef MICROPY_INCLUDED_EFR32_COMMON_HAL_BUSIO_UART_H
-#define MICROPY_INCLUDED_EFR32_COMMON_HAL_BUSIO_UART_H
+#ifndef MICROPY_INCLUDED_MAX32_COMMON_HAL_BUSIO_UART_H
+#define MICROPY_INCLUDED_MAX32_COMMON_HAL_BUSIO_UART_H
 
 #include "common-hal/microcontroller/Pin.h"
-#include "peripherals/periph.h"
 #include "py/obj.h"
 #include "py/ringbuf.h"
 
-#include "uart.h"
+// #include "uart.h"
+// #include "uart_regs.h"
+// #include "mxc_sys.h"
+
+#include "max32_port.h"
 
 // Define a struct for what BUSIO.UART should contain
 typedef struct {
     mp_obj_base_t base;
+
+    int uart_id;
+    int uart_map;
     mxc_uart_regs_t* uart_regs;
-    const mcu_pin_obj_t *rx;
-    const mcu_pin_obj_t *tx;
-    uint32_t baudrate;
+
     bool parity;
-    uint8_t stop_bits;
     uint8_t bits;
+    uint8_t stop_bits;
+    uint32_t baudrate;
+
+    int error;
+    float timeout;
+
+    ringbuf_t ringbuf;
+
+    const mcu_pin_obj_t *rx_pin;
+    const mcu_pin_obj_t *tx_pin;
+    const mcu_pin_obj_t *rts_pin;
+    const mcu_pin_obj_t *cts_pin;
 } busio_uart_obj_t;
 
 void uart_reset(void);
 
-#endif  // MICROPY_INCLUDED_EFR32_COMMON_HAL_BUSIO_UART_H
+#endif  // MICROPY_INCLUDED_MAX32_COMMON_HAL_BUSIO_UART_H
