@@ -4,21 +4,30 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "py/runtime.h"
+#include <sys/time.h>
 
+#include "py/runtime.h"
 #include "shared-bindings/alarm/__init__.h"
 #include "shared-bindings/alarm/time/TimeAlarm.h"
 #include "shared-bindings/time/__init__.h"
 
 #include "shared/timeutils/timeutils.h"
 
-#include "hardware/gpio.h"
-#include "hardware/rtc.h"
+#include "pico/aon_timer.h"
+
+#ifdef SLEEP_DEBUG
+#include <inttypes.h>
+#include "py/mpprint.h"
+#define DEBUG_PRINT(fmt, ...) ((void)mp_printf(&mp_plat_print, "DBG:%s:%04d: " fmt "\n", __FILE__, __LINE__,##__VA_ARGS__))
+#else
+#define DEBUG_PRINT(fmt, ...)((void)0)
+#endif
 
 static bool woke_up = false;
 static bool _timealarm_set = false;
 
 static void timer_callback(void) {
+    DEBUG_PRINT("AON Timer woke us up");
     woke_up = true;
 }
 
@@ -53,57 +62,53 @@ bool alarm_time_timealarm_woke_this_cycle(void) {
 }
 
 void alarm_time_timealarm_reset(void) {
-    rtc_disable_alarm();
+    aon_timer_disable_alarm();
     woke_up = false;
 }
 
 void alarm_time_timealarm_set_alarms(bool deep_sleep, size_t n_alarms, const mp_obj_t *alarms) {
-    bool timealarm_set = false;
+    _timealarm_set = false;
     alarm_time_timealarm_obj_t *timealarm = MP_OBJ_NULL;
 
     for (size_t i = 0; i < n_alarms; i++) {
         if (!mp_obj_is_type(alarms[i], &alarm_time_timealarm_type)) {
             continue;
         }
-        if (timealarm_set) {
+        if (_timealarm_set) {
             mp_raise_ValueError(MP_ERROR_TEXT("Only one alarm.time alarm can be set."));
         }
         timealarm = MP_OBJ_TO_PTR(alarms[i]);
-        timealarm_set = true;
-    }
-    if (!timealarm_set) {
-        return;
-    }
-    if (deep_sleep) {
         _timealarm_set = true;
+    }
+    if (!_timealarm_set) {
+        return;
     }
 
     // Compute how long to actually sleep, considering the time now.
     mp_float_t mono_seconds_to_date = uint64_to_float(common_hal_time_monotonic_ms()) / 1000.0f;
     mp_float_t wakeup_in_secs = MAX(0.0f, timealarm->monotonic_time - mono_seconds_to_date);
-    datetime_t t;
 
-    rtc_get_datetime(&t);
+    uint32_t rtc_seconds_to_date;
 
-    uint32_t rtc_seconds_to_date = timeutils_seconds_since_2000(t.year, t.month,
-        t.day, t.hour, t.min, t.sec);
+    // the SDK suggests not using aon_timer_get_time for the RP2040, because
+    // this inflates the binary size by pulling in local_time_r (496 bytes
+    // according to nm). But since common-hal/rtc/RTC.c also uses
+    // aon_timer_get_time, we use it here too. Any optimization will have to
+    // change this everywhere.
+
+    struct timespec t;
+    aon_timer_get_time(&t);
+    rtc_seconds_to_date = t.tv_sec;
+    DEBUG_PRINT("rtc_seconds_to_date: %u", rtc_seconds_to_date);
 
     // The float value is always slightly under, so add 1 to compensate
     uint32_t alarm_seconds = rtc_seconds_to_date + (uint32_t)wakeup_in_secs + 1;
-    timeutils_struct_time_t tm;
-    timeutils_seconds_since_2000_to_struct_time(alarm_seconds, &tm);
 
     // reuse t
-    t.hour = tm.tm_hour;
-    t.min = tm.tm_min;
-    t.sec = tm.tm_sec;
-    t.day = tm.tm_mday;
-    t.month = tm.tm_mon;
-    t.year = tm.tm_year;
-    t.dotw = (tm.tm_wday + 1) % 7;
-
-    rtc_set_alarm(&t, &timer_callback);
-
+    // also see note above regarding aon_timer_get_time, also true here
+    t.tv_sec = alarm_seconds;
+    DEBUG_PRINT("alarm_seconds: %d", t.tv_sec);
+    aon_timer_enable_alarm(&t, &timer_callback, deep_sleep);
     woke_up = false;
 }
 

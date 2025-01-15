@@ -141,9 +141,7 @@ void alarm_pin_pinalarm_set_alarms(bool deep_sleep, size_t n_alarms, const mp_ob
             }
 
             gpio_set_irq_enabled_with_callback((uint)alarm->pin->number, event, true, &gpio_callback);
-            if (deep_sleep) {
-                gpio_set_dormant_irq_enabled((uint)alarm->pin->number, event, true);
-            }
+            gpio_set_dormant_irq_enabled((uint)alarm->pin->number, event, true);
 
             _not_yet_deep_sleeping = true;
         }

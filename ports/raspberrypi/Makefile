@@ -207,7 +207,7 @@ CFLAGS += $(OPTIMIZATION_FLAGS)
 CFLAGS += $(CFLAGS_CYW43)
 #Debugging/Optimization
 ifeq ($(DEBUG), 1)
-  CFLAGS += -ggdb3 -Og
+  CFLAGS += -ggdb3 -O3
   # No LTO because we may place some functions in RAM instead of flash.
 else
   CFLAGS += -DNDEBUG
@@ -219,7 +219,8 @@ else
   endif
 endif
 
-DISABLE_WARNINGS = -Wno-cast-align
+# Remove -Wno-stringop-overflow after we can test with CI's GCC 10. Mac's looks weird.
+DISABLE_WARNINGS = -Wno-stringop-overflow -Wno-cast-align
 
 CFLAGS += $(INC) -Wall -Werror -std=gnu11 -fshort-enums $(BASE_CFLAGS) $(CFLAGS_MOD) $(COPT) $(DISABLE_WARNINGS) -Werror=missing-prototypes
 
@@ -530,6 +531,7 @@ SRC_C += \
 	bindings/rp2pio/__init__.c \
 	common-hal/rp2pio/StateMachine.c \
 	common-hal/rp2pio/__init__.c \
+	common-hal/alarm/rosc.c \
 	audio_dma.c \
 	background.c \
 	peripherals/pins.c \
