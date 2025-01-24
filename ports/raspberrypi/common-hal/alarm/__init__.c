@@ -99,6 +99,25 @@ static inline void _sleep_run_from_lposc(void) {
 }
 #endif
 
+#ifdef PICO_RP2040
+// Light sleep turns off nonvolatile Busio and other wake-only peripherals.
+// This does not save a considerable amount of current (~2mA), but
+// it is only used during fake (USB-connected) LightSleep anyway.
+const uint32_t RP_LIGHTSLEEP_EN0_MASK = ~(
+    CLOCKS_SLEEP_EN0_CLK_SYS_SPI1_BITS |
+    CLOCKS_SLEEP_EN0_CLK_PERI_SPI1_BITS |
+    CLOCKS_SLEEP_EN0_CLK_SYS_SPI0_BITS |
+    CLOCKS_SLEEP_EN0_CLK_PERI_SPI0_BITS |
+    CLOCKS_SLEEP_EN0_CLK_SYS_PWM_BITS |
+    CLOCKS_SLEEP_EN0_CLK_SYS_PIO1_BITS |
+    CLOCKS_SLEEP_EN0_CLK_SYS_PIO0_BITS |
+    CLOCKS_SLEEP_EN0_CLK_SYS_I2C1_BITS |
+    CLOCKS_SLEEP_EN0_CLK_SYS_I2C0_BITS |
+    CLOCKS_SLEEP_EN0_CLK_SYS_ADC_BITS |
+    CLOCKS_SLEEP_EN0_CLK_ADC_ADC_BITS
+    );
+#endif
+
 static dormant_source_t _dormant_source;
 
 // State of the serial connection
@@ -205,12 +224,13 @@ static void _sleep_goto_sleep_until(void) {
     DEBUG_PRINT("_sleep_goto_sleep_until");
     SLEEP(10);
 
-    clocks_hw->sleep_en0 = CLOCKS_SLEEP_EN0_CLK_RTC_RTC_BITS;
     if (_serial_connected) {
-        DEBUG_PRINT("serial connected: using sleep_en1 = CLOCKS_SLEEP_EN1_RESET");
+        DEBUG_PRINT("serial connected: using old clock-masks");
         SLEEP(10);
+        clocks_hw->sleep_en0 &= RP_LIGHTSLEEP_EN0_MASK;
         clocks_hw->sleep_en1 = CLOCKS_SLEEP_EN1_RESET;
     } else {
+        clocks_hw->sleep_en0 = CLOCKS_SLEEP_EN0_CLK_RTC_RTC_BITS;
         clocks_hw->sleep_en1 = 0x0;
     }
 
