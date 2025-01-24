@@ -22,7 +22,7 @@ inputs:
     - restore
 
   version:
-    description: 'Whether to generate CP version'
+    description: 'Whether to fetch tags to identify CP version'
     required: false
     default: false
     type: boolean

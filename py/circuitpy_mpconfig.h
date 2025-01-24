@@ -328,9 +328,20 @@ typedef long mp_off_t;
 #define CIRCUITPY_CONSOLE_UART (1)
 #ifndef CIRCUITPY_CONSOLE_UART_BAUDRATE
 #define CIRCUITPY_CONSOLE_UART_BAUDRATE (115200)
+#if !defined(CIRCUITPY_CONSOLE_UART_PRINTF)
+#define CIRCUITPY_CONSOLE_UART_PRINTF(...) mp_printf(&console_uart_print, __VA_ARGS__)
+#endif
+#if !defined(CIRCUITPY_CONSOLE_UART_HEXDUMP)
+#define CIRCUITPY_CONSOLE_UART_HEXDUMP(pfx, buf, len) print_hexdump(&console_uart_print, pfx, (const uint8_t *)buf, len)
+#endif
+#if !defined(CIRCUITPY_CONSOLE_UART_TIMESTAMP)
+#define CIRCUITPY_CONSOLE_UART_TIMESTAMP (0)
+#endif
 #endif
 #else
 #define CIRCUITPY_CONSOLE_UART (0)
+#define CIRCUITPY_CONSOLE_UART_PRINTF(...) (void)0
+#define CIRCUITPY_CONSOLE_UART_HEXDUMP(...) (void)0
 #endif
 
 // These CIRCUITPY_xxx values should all be defined in the *.mk files as being on or off.

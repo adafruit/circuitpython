@@ -78,6 +78,7 @@ def copy_and_process(in_dir, out_dir):
                         if line.startswith("__version__"):
                             module_version = version_string(root, valid_semver=True)
                             line = line.replace("0.0.0-auto.0", module_version)
+                            line = line.replace("0.0.0+auto.0", module_version)
                         output.write(line)
 
 

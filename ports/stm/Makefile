@@ -48,8 +48,8 @@ CFLAGS += $(OPTIMIZATION_FLAGS)
 # Add -ftree-vrp optimization and checking to all builds. It's not enabled for -Os by default.
 CFLAGS += -ftree-vrp
 
-# MCU Series is defined by the HAL package and doesn't need to be specified here
-C_DEFS = -D$(MCU_PACKAGE) -DUSE_HAL_DRIVER -DUSE_FULL_LL_DRIVER -D$(MCU_VARIANT)
+# STM32 MCU series must be defined. See supervisor/linker.h
+C_DEFS = -D$(MCU_PACKAGE) -DUSE_HAL_DRIVER -DUSE_FULL_LL_DRIVER -D$(MCU_VARIANT) -DSTM32$(MCU_SERIES)
 
 CFLAGS += $(INC) -Werror -Wall -std=gnu11 -fshort-enums $(BASE_CFLAGS) $(C_DEFS) $(CFLAGS_MOD) $(COPT) -nostdlib -nostartfiles
 
@@ -197,7 +197,9 @@ ifneq ($(CIRCUITPY_AUDIOBUSIO_PDMIN),0)
 endif
 
 ifneq ($(CIRCUITPY_USB),0)
-SRC_C += lib/tinyusb/src/portable/synopsys/dwc2/dcd_dwc2.c
+SRC_C += \
+	lib/tinyusb/src/portable/synopsys/dwc2/dcd_dwc2.c \
+	lib/tinyusb/src/portable/synopsys/dwc2/dwc2_common.c
 endif
 
 SRC_S = \

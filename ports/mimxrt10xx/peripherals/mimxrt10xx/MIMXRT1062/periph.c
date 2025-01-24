@@ -276,6 +276,40 @@ const mcu_periph_obj_t mcu_mqs_right_list[3] = {
     PERIPH_PIN(3, 2, 0, 0, &pin_GPIO_B0_00),
 };
 
+CAN_Type *const mcu_can_banks[3] = { CAN1, CAN2, CAN3 };
+
+const mcu_periph_obj_t mcu_can_rx_list[11] = {
+    PERIPH_PIN(1, 4, kIOMUXC_FLEXCAN1_RX_SELECT_INPUT, 0, &pin_GPIO_SD_B1_03),
+    PERIPH_PIN(1, 3, kIOMUXC_FLEXCAN1_RX_SELECT_INPUT, 1, &pin_GPIO_EMC_18),
+    PERIPH_PIN(1, 2, kIOMUXC_FLEXCAN1_RX_SELECT_INPUT, 2, &pin_GPIO_AD_B1_09),
+    PERIPH_PIN(1, 2, kIOMUXC_FLEXCAN1_RX_SELECT_INPUT, 3, &pin_GPIO_B0_03),
+
+    PERIPH_PIN(2, 3, kIOMUXC_FLEXCAN2_RX_SELECT_INPUT, 0, &pin_GPIO_EMC_10),
+    PERIPH_PIN(2, 0, kIOMUXC_FLEXCAN2_RX_SELECT_INPUT, 1, &pin_GPIO_AD_B0_03),
+    PERIPH_PIN(2, 6, kIOMUXC_FLEXCAN2_RX_SELECT_INPUT, 2, &pin_GPIO_AD_B0_15),
+    PERIPH_PIN(2, 6, kIOMUXC_FLEXCAN2_RX_SELECT_INPUT, 3, &pin_GPIO_B1_09),
+
+    PERIPH_PIN(3, 9, 0, 0, &pin_GPIO_EMC_37),
+    PERIPH_PIN(3, 8, 0, 0, &pin_GPIO_AD_B0_11),
+    PERIPH_PIN(3, 8, 0, 0, &pin_GPIO_AD_B0_15),
+};
+
+const mcu_periph_obj_t mcu_can_tx_list[11] = {
+    PERIPH_PIN(1, 3, 0, 0, &pin_GPIO_EMC_17),
+    PERIPH_PIN(1, 2, 0, 0, &pin_GPIO_AD_B1_08),
+    PERIPH_PIN(1, 2, 0, 0, &pin_GPIO_B0_02),
+    PERIPH_PIN(1, 4, 0, 0, &pin_GPIO_SD_B1_02),
+
+    PERIPH_PIN(2, 3, 0, 0, &pin_GPIO_EMC_09),
+    PERIPH_PIN(2, 0, 0, 0, &pin_GPIO_AD_B0_02),
+    PERIPH_PIN(2, 6, 0, 0, &pin_GPIO_AD_B0_14),
+    PERIPH_PIN(2, 6, 0, 0, &pin_GPIO_B1_08),
+
+    PERIPH_PIN(3, 9, 0, 0, &pin_GPIO_EMC_36),
+    PERIPH_PIN(3, 8, 0, 0, &pin_GPIO_AD_B0_10),
+    PERIPH_PIN(3, 8, 0, 0, &pin_GPIO_AD_B0_14),
+};
+
 const mcu_pwm_obj_t mcu_pwm_list[67] = {
     PWM_PIN(PWM1, kPWM_Module_0, kPWM_PwmA, IOMUXC_GPIO_EMC_23_FLEXPWM1_PWMA00, &pin_GPIO_EMC_23),
     PWM_PIN(PWM1, kPWM_Module_0, kPWM_PwmA, IOMUXC_GPIO_SD_B0_00_FLEXPWM1_PWMA00, &pin_GPIO_SD_B0_00),

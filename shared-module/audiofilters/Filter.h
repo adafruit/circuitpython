@@ -9,6 +9,7 @@
 
 #include "shared-bindings/synthio/Biquad.h"
 #include "shared-module/audiocore/__init__.h"
+#include "shared-module/synthio/__init__.h"
 #include "shared-module/synthio/block.h"
 #include "shared-module/synthio/Biquad.h"
 

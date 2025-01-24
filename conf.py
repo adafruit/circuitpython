@@ -174,74 +174,22 @@ version = release = final_version
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ["**/build*",
-                    ".git",
-                    ".github",
-                    ".env",
-                    ".venv",
-                    ".direnv",
-                    ".devcontainer/Readme.md",
-                    "circuitpython-stubs",
-                    "data",
-                    "docs/autoapi",
-                    "docs/README.md",
-                    "drivers",
-                    "examples",
-                    "extmod",
-                    "frozen",
-                    "lib",
-                    "main.c",
-                    "mpy-cross",
-                    "ports/*/*.c",
-                    "ports/*/*.h",
-                    "ports/*/boards",
-                    "ports/*/common-hal",
-                    "ports/*/supervisor",
-                    "ports/atmel-samd/asf4",
-                    "ports/atmel-samd/asf4_conf",
-                    "ports/atmel-samd/external_flash",
-                    "ports/atmel-samd/freetouch",
-                    "ports/atmel-samd/peripherals",
-                    "ports/atmel-samd/QTouch",
-                    "ports/atmel-samd/tools",
-                    "ports/broadcom/firmware",
-                    "ports/broadcom/peripherals",
-                    "ports/cxd56/mkspk",
-                    "ports/cxd56/spresense-exported-sdk",
-                    "ports/espressif/certificates",
-                    "ports/espressif/esp-idf",
-                    "ports/espressif/esp-camera",
-                    "ports/espressif/esp-protocols",
-                    "ports/espressif/.idf_tools",
-                    "ports/espressif/peripherals",
-                    "ports/litex/hw",
-                    "ports/minimal",
-                    "ports/mimxrt10xx/peripherals",
-                    "ports/mimxrt10xx/sdk",
-                    "ports/nordic/device",
-                    "ports/nordic/bluetooth",
-                    "ports/nordic/modules",
-                    "ports/nordic/nrfx",
-                    "ports/nordic/peripherals",
-                    "ports/nordic/usb",
-                    "ports/raspberrypi/sdk",
-                    "ports/raspberrypi/pioasm",
-                    "ports/raspberrypi/lib",
-                    "ports/silabs/gecko_sdk",
-                    "ports/silabs/tools",
-                    "ports/stm/st_driver",
-                    "ports/stm/packages",
-                    "ports/stm/peripherals",
-                    "ports/stm/ref",
-                    "py",
-                    "shared/*",
-                    "shared-bindings/util.*",
-                    "shared-module",
-                    "supervisor",
-                    "tests",
-                    "test-stubs",
-                    "tools",
-                    "circuitpython-stubs/README.rst"]
+include_patterns = [
+    # Top directory documentation
+    "*.rst",
+    "*.md",
+
+    # Docs inherited from microypython (but not templates or README.md, see below)
+    "docs/**",
+
+    # Module documentation
+    "shared-bindings/**",
+    "ports/*/bindings/**",
+
+    # Port READMEs in various formats
+    "ports/*/README*",
+]
+exclude_patterns = ["docs/autoapi/templates/**", "docs/README.md"]
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.

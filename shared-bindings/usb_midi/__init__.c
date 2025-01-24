@@ -93,6 +93,9 @@ static void set_name(mp_obj_t name_obj, qstr arg_name_qstr, char **custom_name_p
 //|     This method must be called in boot.py to have any effect.
 //|
 //|     Not available on boards without native USB support.
+//|
+//|     .. warning:: On Windows, if ``audio_control_interface_name`` is more than 31 characters long, Windows
+//|       will not recognize the device. This issue is not present on macOS or Linux.
 //|     """
 //|     ...
 //|

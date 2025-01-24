@@ -96,6 +96,20 @@ static bool _has_program_room(uint8_t pio_index, uint8_t program_size) {
     return pio_can_add_program(pio, &program_struct);
 }
 
+// from pico-sdk/src/rp2_common/hardware_pio/pio.c
+static bool is_gpio_compatible(PIO pio, uint32_t used_gpio_ranges) {
+    #if PICO_PIO_VERSION > 0
+    bool gpio_base = pio_get_gpio_base(pio);
+    return !((gpio_base && (used_gpio_ranges & 1)) ||
+        (!gpio_base && (used_gpio_ranges & 4)));
+    #else
+    ((void)pio);
+    ((void)used_gpio_ranges);
+    return true;
+    #endif
+}
+
+
 usb_host_port_obj_t *common_hal_usb_host_port_construct(const mcu_pin_obj_t *dp, const mcu_pin_obj_t *dm) {
     if (dp->number + 1 != dm->number) {
         raise_ValueError_invalid_pins();
@@ -113,6 +127,15 @@ usb_host_port_obj_t *common_hal_usb_host_port_construct(const mcu_pin_obj_t *dp,
     assert_pin_free(dp);
     assert_pin_free(dm);
 
+    #if PICO_PIO_VERSION == 0
+    uint32_t used_gpio_ranges = 0;
+    #else
+    uint gpio_base = dm->number;
+    uint gpio_count = 2;
+    uint32_t used_gpio_ranges = (1u << (gpio_base >> 4)) |
+        (1u << ((gpio_base + gpio_count - 1) >> 4));
+    #endif
+
     pio_usb_configuration_t pio_cfg = PIO_USB_DEFAULT_CONFIG;
     pio_cfg.skip_alarm_pool = true;
     pio_cfg.pin_dp = dp->number;
@@ -120,8 +143,15 @@ usb_host_port_obj_t *common_hal_usb_host_port_construct(const mcu_pin_obj_t *dp,
     // "preferred PIO" for the cyw43 wifi chip is PIO 1.
     pio_cfg.pio_tx_num = 1; // uses 22 instructions and 1 SM
     pio_cfg.pio_rx_num = 0; // uses 31 instructions and 2 SM.
-    if (!_has_program_room(pio_cfg.pio_tx_num, 22) || _sm_free_count(pio_cfg.pio_tx_num) < 1 ||
-        !_has_program_room(pio_cfg.pio_rx_num, 31) || _sm_free_count(pio_cfg.pio_rx_num) < 2) {
+    uint8_t tx_sm_free = _sm_free_count(pio_cfg.pio_tx_num);
+    uint8_t rx_sm_free = _sm_free_count(pio_cfg.pio_rx_num);
+    PIO pio_tx = pio_instances[pio_cfg.pio_tx_num];
+    PIO pio_rx = pio_instances[pio_cfg.pio_rx_num];
+
+    if (!_has_program_room(pio_cfg.pio_tx_num, 22) || tx_sm_free < 1 ||
+        !(tx_sm_free == 4 || is_gpio_compatible(pio_tx, used_gpio_ranges)) ||
+        !_has_program_room(pio_cfg.pio_rx_num, 31) || rx_sm_free < 2 ||
+        !(rx_sm_free == 4 || is_gpio_compatible(pio_rx, used_gpio_ranges))) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("All state machines in use"));
     }
     pio_cfg.tx_ch = dma_claim_unused_channel(false); // DMA channel

@@ -36,6 +36,8 @@
 //|         self,
 //|         row_addr_pins: Sequence[microcontroller.Pin],
 //|         column_pins: Sequence[microcontroller.Pin],
+//|         columns_to_anodes: bool = True,
+//|         transpose: bool = False,
 //|         interval: float = 0.020,
 //|         max_events: int = 64,
 //|         debounce_threshold: int = 1,
@@ -51,7 +53,18 @@
 //|         An `keypad.EventQueue` is created when this object is created and is available in the `events` attribute.
 //|
 //|         :param Sequence[microcontroller.Pin] row_addr_pins: The pins attached to the rows demultiplexer.
+//|           If your columns are multiplexed, set ``transpose`` to ``True``.
 //|         :param Sequence[microcontroller.Pin] column_pins: The pins attached to the columns.
+//|         :param bool columns_to_anodes: Default ``True``.
+//|           If the matrix uses diodes, the diode anodes are typically connected to the column pins
+//|           with the cathodes connected to the row pins.  This implies an inverting multiplexer that drives
+//|           the selected row pin low.  If your diodes are reversed, with a non-inverting multiplexer
+//|           that drives the selected row high, set ``columns_to_anodes`` to ``False``.
+//|           If ``transpose`` is ``True`` the sense of columns and rows are reversed here.
+//|         :param bool transpose: Default ``False``.
+//|           If your matrix is multiplexed on columns rather than rows, set ``transpose`` to ``True``.
+//|           This swaps the meaning of ``row_addr_pins`` to ``column_addr_pins``;
+//|           ``column_pins`` to ``row_pins``; and ``columns_to_anodes`` to ``rows_to_anodes``.
 //|         :param float interval: Scan keys no more often than ``interval`` to allow for debouncing.
 //|           ``interval`` is in float seconds. The default is 0.020 (20 msecs).
 //|         :param int max_events: maximum size of `events` `keypad.EventQueue`:
@@ -67,10 +80,12 @@
 
 static mp_obj_t keypad_demux_demuxkeymatrix_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     keypad_demux_demuxkeymatrix_obj_t *self = mp_obj_malloc(keypad_demux_demuxkeymatrix_obj_t, &keypad_demux_demuxkeymatrix_type);
-    enum { ARG_row_addr_pins, ARG_column_pins, ARG_interval, ARG_max_events, ARG_debounce_threshold };
+    enum { ARG_row_addr_pins, ARG_column_pins, ARG_columns_to_anodes, ARG_transpose, ARG_interval, ARG_max_events, ARG_debounce_threshold };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_row_addr_pins, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_column_pins, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_columns_to_anodes, MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = true} },
+        { MP_QSTR_transpose, MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = false} },
         { MP_QSTR_interval, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
         { MP_QSTR_max_events, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 64} },
         { MP_QSTR_debounce_threshold, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 1} },
@@ -107,7 +122,7 @@ static mp_obj_t keypad_demux_demuxkeymatrix_make_new(const mp_obj_type_t *type, 
         column_pins_array[column] = pin;
     }
 
-    common_hal_keypad_demux_demuxkeymatrix_construct(self, num_row_addr_pins, row_addr_pins_array, num_column_pins, column_pins_array, interval, max_events, debounce_threshold);
+    common_hal_keypad_demux_demuxkeymatrix_construct(self, num_row_addr_pins, row_addr_pins_array, num_column_pins, column_pins_array, args[ARG_columns_to_anodes].u_bool, args[ARG_transpose].u_bool, interval, max_events, debounce_threshold);
     return MP_OBJ_FROM_PTR(self);
 }
 

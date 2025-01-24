@@ -448,8 +448,6 @@ bool displayio_tilegrid_fill_area(displayio_tilegrid_t *self,
         y_shift = temp_shift;
     }
 
-    uint8_t pixels_per_byte = 8 / colorspace->depth;
-
     displayio_input_pixel_t input_pixel;
     displayio_output_pixel_t output_pixel;
 
@@ -503,9 +501,13 @@ bool displayio_tilegrid_fill_area(displayio_tilegrid_t *self,
                     *(((uint16_t *)buffer) + offset) = output_pixel.pixel;
                 } else if (colorspace->depth == 32) {
                     *(((uint32_t *)buffer) + offset) = output_pixel.pixel;
+                } else if (colorspace->depth == 24) {
+                    memcpy(((uint8_t *)buffer) + offset * 3, &output_pixel.pixel, 3);
                 } else if (colorspace->depth == 8) {
                     *(((uint8_t *)buffer) + offset) = output_pixel.pixel;
                 } else if (colorspace->depth < 8) {
+                    uint8_t pixels_per_byte = 8 / colorspace->depth;
+
                     // Reorder the offsets to pack multiple rows into a byte (meaning they share a column).
                     if (!colorspace->pixels_in_byte_share_row) {
                         uint16_t width = displayio_area_width(area);

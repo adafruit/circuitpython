@@ -11,6 +11,7 @@
 #include <stdio.h>
 
 #include "py/mpconfig.h"
+#include "py/mpprint.h"
 
 #ifdef CIRCUITPY_BOOT_OUTPUT_FILE
 #include "py/misc.h"
@@ -47,4 +48,6 @@ char board_serial_read(void);
 uint32_t board_serial_bytes_available(void);
 void board_serial_write_substring(const char *text, uint32_t length);
 
-int console_uart_printf(const char *fmt, ...) __attribute__((format(printf, 1, 2)));
+extern const mp_print_t console_uart_print;
+
+void print_hexdump(const mp_print_t *printer, const char *prefix, const uint8_t *buf, size_t len);

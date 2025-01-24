@@ -184,14 +184,14 @@ void common_hal_audiobusio_i2sout_construct(audiobusio_i2sout_obj_t *self,
         44100 * 32 * 6, // Clock at 44.1 khz to warm the DAC up.
         NULL, 0, // init
         NULL, 0, // may_exec
-        data, 1, 0, 0xffffffff, // out pin
+        data, 1, PIO_PINMASK32_NONE, PIO_PINMASK32_ALL, // out pin
         NULL, 0, // in pins
-        0, 0, // in pulls
-        NULL, 0, 0, 0x1f, // set pins
-        sideset_pin, 2, false, 0, 0x1f, // sideset pins
+        PIO_PINMASK32_NONE, PIO_PINMASK32_NONE, // in pulls
+        NULL, 0, PIO_PINMASK32_NONE, PIO_PINMASK32_FROM_VALUE(0x1f), // set pins
+        sideset_pin, 2, false, PIO_PINMASK32_NONE, PIO_PINMASK32_FROM_VALUE(0x1f), // sideset pins
         false, // No sideset enable
         NULL, PULL_NONE, // jump pin
-        0, // wait gpio pins
+        PIO_PINMASK_NONE, // wait gpio pins
         true, // exclusive pin use
         false, 32, false, // shift out left to start with MSB
         false, // Wait for txstall
@@ -274,6 +274,9 @@ void common_hal_audiobusio_i2sout_play(audiobusio_i2sout_obj_t *self,
     } else if (result == AUDIO_DMA_MEMORY_ERROR) {
         common_hal_audiobusio_i2sout_stop(self);
         mp_raise_RuntimeError(MP_ERROR_TEXT("Unable to allocate buffers for signed conversion"));
+    } else if (result == AUDIO_DMA_SOURCE_ERROR) {
+        common_hal_audiobusio_i2sout_stop(self);
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Audio source error"));
     }
 
     self->playing = true;

@@ -6,7 +6,7 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-01-04 12:55-0600\n"
-"PO-Revision-Date: 2024-12-04 19:57+0000\n"
+"PO-Revision-Date: 2025-01-22 14:04+0000\n"
 "Last-Translator: Wellington Terumi Uemura <wellingtonuemura@gmail.com>\n"
 "Language-Team: \n"
 "Language: pt_BR\n"
@@ -14,7 +14,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.9-dev\n"
+"X-Generator: Weblate 5.10-dev\n"
 
 #: main.c
 msgid ""
@@ -231,7 +231,7 @@ msgstr "%q deve ser um múltiplo de 8."
 #: ports/raspberrypi/bindings/cyw43/__init__.c py/argcheck.c py/objexcept.c
 #: shared-bindings/bitmapfilter/__init__.c shared-bindings/canio/CAN.c
 #: shared-bindings/digitalio/Pull.c shared-bindings/supervisor/__init__.c
-#: shared-module/synthio/Synthesizer.c
+#: shared-module/synthio/Biquad.c shared-module/synthio/Synthesizer.c
 msgid "%q must be of type %q or %q, not %q"
 msgstr "%q deve ser do tipo %q ou %q e não %q"
 
@@ -618,6 +618,11 @@ msgstr "Tentativa de alocar %d blocos"
 msgid "Audio conversion not implemented"
 msgstr "A conversão de áudio ainda não foi implementada"
 
+#: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
+#: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
+msgid "Audio source error"
+msgstr ""
+
 #: shared-bindings/wifi/Radio.c
 msgid "AuthMode.OPEN is not used with password"
 msgstr "O AuthMode.OPEN não é usado com senha"
@@ -816,6 +821,10 @@ msgstr "Não é possível definir o RTS ou CTS no modo RS485"
 #: py/objslice.c
 msgid "Cannot subclass slice"
 msgstr "Não é possível subclassificar a fatia"
+
+#: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
+msgid "Cannot use GPIO0..15 together with GPIO32..47"
+msgstr "Não é possível usar GPIO0..15 junto com GPIO32..47"
 
 #: ports/nordic/common-hal/alarm/pin/PinAlarm.c
 msgid "Cannot wake on pin edge, only level"
@@ -1041,6 +1050,7 @@ msgstr "Arquivo não encontrado"
 
 #: ports/atmel-samd/common-hal/canio/Listener.c
 #: ports/espressif/common-hal/canio/Listener.c
+#: ports/mimxrt10xx/common-hal/canio/Listener.c
 #: ports/stm/common-hal/canio/Listener.c
 msgid "Filters too complex"
 msgstr "Os filtros são muito complexos"
@@ -2197,6 +2207,12 @@ msgstr "Não foi possível iniciar o analisador"
 msgid "Unable to read color palette data"
 msgstr "Não foi possível ler os dados da paleta de cores"
 
+#: ports/mimxrt10xx/common-hal/canio/CAN.c
+msgid "Unable to send CAN Message: all Tx message buffers are busy"
+msgstr ""
+"Não é possível enviar uma mensagem CAN: todos os buffers de mensagens Tx "
+"estão ocupados"
+
 #: ports/espressif/common-hal/mdns/Server.c
 #: ports/raspberrypi/common-hal/mdns/Server.c
 msgid "Unable to start mDNS query"
@@ -2381,6 +2397,7 @@ msgstr "Você pressionou os dois botões durante a inicialização."
 #: ports/espressif/boards/m5stack_core_fire/mpconfigboard.h
 #: ports/espressif/boards/m5stack_stick_c/mpconfigboard.h
 #: ports/espressif/boards/m5stack_stick_c_plus/mpconfigboard.h
+#: ports/espressif/boards/m5stack_stick_c_plus2/mpconfigboard.h
 msgid "You pressed button A at start up."
 msgstr "Você pressionou o botão A na inicialização."
 
@@ -2394,6 +2411,7 @@ msgstr "Você pressionou o botão BOOT na inicialização"
 
 #: ports/espressif/boards/adafruit_feather_esp32c6_4mbflash_nopsram/mpconfigboard.h
 #: ports/espressif/boards/adafruit_itsybitsy_esp32/mpconfigboard.h
+#: ports/espressif/boards/waveshare_esp32_c6_lcd_1_47/mpconfigboard.h
 msgid "You pressed the BOOT button at start up."
 msgstr "Você pressionou o botão BOOT ao iniciar."
 
@@ -3467,10 +3485,6 @@ msgstr "o rótulo '%q' não foi definido"
 msgid "label redefined"
 msgstr "o rótulo foi redefinido"
 
-#: shared-bindings/audiomixer/MixerVoice.c
-msgid "level must be between 0 and 1"
-msgstr "o nível deve estar entre 0 e 1"
-
 #: py/objarray.c
 msgid "lhs and rhs should be compatible"
 msgstr "o lhs e rhs devem ser compatíveis"
@@ -4459,6 +4473,9 @@ msgstr "zi deve ser de um tipo float"
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr "zi deve estar na forma (n_section, 2)"
+
+#~ msgid "level must be between 0 and 1"
+#~ msgstr "o nível deve estar entre 0 e 1"
 
 #~ msgid "init I2C"
 #~ msgstr "inicialização do I2C"

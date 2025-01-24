@@ -111,6 +111,7 @@ during power up at 1024x600 otherwise the display will be initialized at a resol
 of 800x480.
 
 `Sunton ESP32-2432S028 <https://circuitpython.org/board/sunton_esp32_2432S028/>`_
+`Sunton ESP32-2432S024C <https://circuitpython.org/board/sunton_esp32_2432S024C/>`_
 
 CIRCUITPY_DISPLAY_ROTATION
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -119,3 +120,13 @@ If the CIRCUITPY_DISPLAY_ROTATION parameter is set the display will be initializ
 during power up with the selected rotation, otherwise the display will be initialized with
 a rotation of 0. Attempting to initialize the screen with a rotation other than 0,
 90, 180 or 270 is not supported and will result in an unexpected screen rotation.
+
+`Sunton ESP32-8048S050 <https://circuitpython.org/board/sunton_esp32_8048S050/>`_
+
+CIRCUITPY_DISPLAY_FREQUENCY
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Allows the entry of a display frequency used during the "dotclock" framebuffer construction.
+If a valid frequency is not defined the board will initialize the framebuffer with a
+frequency of 12500000hz (12.5Mhz). The value should be entered as an integer in hertz
+i.e. CIRCUITPY_DISPLAY_FREQUENCY=16000000 will override the default value with a 16Mhz
+display frequency.

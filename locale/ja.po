@@ -232,7 +232,7 @@ msgstr "%q は 8 の倍数である必要があります"
 #: ports/raspberrypi/bindings/cyw43/__init__.c py/argcheck.c py/objexcept.c
 #: shared-bindings/bitmapfilter/__init__.c shared-bindings/canio/CAN.c
 #: shared-bindings/digitalio/Pull.c shared-bindings/supervisor/__init__.c
-#: shared-module/synthio/Synthesizer.c
+#: shared-module/synthio/Biquad.c shared-module/synthio/Synthesizer.c
 msgid "%q must be of type %q or %q, not %q"
 msgstr "%q は %q 型か %q 型である必要があります、 %q 型は使用できません"
 
@@ -618,6 +618,11 @@ msgstr "%d個のブロックの確保を試みました"
 msgid "Audio conversion not implemented"
 msgstr ""
 
+#: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
+#: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
+msgid "Audio source error"
+msgstr ""
+
 #: shared-bindings/wifi/Radio.c
 msgid "AuthMode.OPEN is not used with password"
 msgstr ""
@@ -813,6 +818,10 @@ msgstr "RS485モードにRTSまたはCTSを指定できません"
 #: py/objslice.c
 msgid "Cannot subclass slice"
 msgstr "sliceをサブクラス化することはできません"
+
+#: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
+msgid "Cannot use GPIO0..15 together with GPIO32..47"
+msgstr ""
 
 #: ports/nordic/common-hal/alarm/pin/PinAlarm.c
 msgid "Cannot wake on pin edge, only level"
@@ -1034,6 +1043,7 @@ msgstr ""
 
 #: ports/atmel-samd/common-hal/canio/Listener.c
 #: ports/espressif/common-hal/canio/Listener.c
+#: ports/mimxrt10xx/common-hal/canio/Listener.c
 #: ports/stm/common-hal/canio/Listener.c
 msgid "Filters too complex"
 msgstr ""
@@ -2161,6 +2171,10 @@ msgstr "パーザを初期化できません"
 msgid "Unable to read color palette data"
 msgstr "カラーパレットデータを読み込めません"
 
+#: ports/mimxrt10xx/common-hal/canio/CAN.c
+msgid "Unable to send CAN Message: all Tx message buffers are busy"
+msgstr ""
+
 #: ports/espressif/common-hal/mdns/Server.c
 #: ports/raspberrypi/common-hal/mdns/Server.c
 msgid "Unable to start mDNS query"
@@ -2336,6 +2350,7 @@ msgstr ""
 #: ports/espressif/boards/m5stack_core_fire/mpconfigboard.h
 #: ports/espressif/boards/m5stack_stick_c/mpconfigboard.h
 #: ports/espressif/boards/m5stack_stick_c_plus/mpconfigboard.h
+#: ports/espressif/boards/m5stack_stick_c_plus2/mpconfigboard.h
 msgid "You pressed button A at start up."
 msgstr ""
 
@@ -2349,6 +2364,7 @@ msgstr ""
 
 #: ports/espressif/boards/adafruit_feather_esp32c6_4mbflash_nopsram/mpconfigboard.h
 #: ports/espressif/boards/adafruit_itsybitsy_esp32/mpconfigboard.h
+#: ports/espressif/boards/waveshare_esp32_c6_lcd_1_47/mpconfigboard.h
 msgid "You pressed the BOOT button at start up."
 msgstr ""
 
@@ -3413,10 +3429,6 @@ msgstr "ラベル'%q'は定義されていません"
 msgid "label redefined"
 msgstr "ラベルの再定義"
 
-#: shared-bindings/audiomixer/MixerVoice.c
-msgid "level must be between 0 and 1"
-msgstr "levelは0から1の間でなければなりません"
-
 #: py/objarray.c
 msgid "lhs and rhs should be compatible"
 msgstr "左辺と右辺が互換でなければなりません"
@@ -4395,6 +4407,9 @@ msgstr "ziはfloat値でなければなりません"
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr ""
+
+#~ msgid "level must be between 0 and 1"
+#~ msgstr "levelは0から1の間でなければなりません"
 
 #~ msgid "The sample's bits_per_sample does not match the mixer's"
 #~ msgstr "サンプルのbits_per_sampleがミキサーのそれと一致しません"

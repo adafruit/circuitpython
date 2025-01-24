@@ -187,6 +187,10 @@ static MP_DEFINE_CONST_FUN_OBJ_1(canio_can_restart_obj, canio_can_restart);
 //|
 //|         ESP32S2 supports one Listener.  There is a single filter block, which can either match a
 //|         standard address with mask or an extended address with mask.
+//|
+//|         i.MX RT10xx supports one Listener and 8 filter blocks per CAN interface.
+//|         Each interface is fully independent from the other.  A filter block can match
+//|         either a single address or a mask of addresses, both standard or extended.
 //|         """
 //|         ...
 static mp_obj_t canio_can_listen(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {

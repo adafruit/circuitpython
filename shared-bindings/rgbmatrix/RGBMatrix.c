@@ -116,16 +116,6 @@ static void preflight_pins_or_throw(uint8_t clock_pin, uint8_t *rgb_pins, uint8_
     #endif
 }
 
-typedef struct {
-    nlr_jump_callback_node_t callback;
-    mp_obj_base_t *base_ptr;
-} nlr_jump_callback_node_clear_displaybus_t;
-
-static void clear_display_bus(void *node_in) {
-    nlr_jump_callback_node_clear_displaybus_t *node = node_in;
-    node->base_ptr->type = &mp_type_NoneType;
-}
-
 //|     def __init__(
 //|         self,
 //|         *,
@@ -227,13 +217,6 @@ static mp_obj_t rgbmatrix_rgbmatrix_make_new(const mp_obj_type_t *type, size_t n
     rgbmatrix_rgbmatrix_obj_t *self = &allocate_display_bus_or_raise()->rgbmatrix;
     self->base.type = &rgbmatrix_RGBMatrix_type;
 
-    // If an exception is thrown, ensure the display bus object's type is set
-    // back to the uninitialized/deinitialied type. **note that all other resource
-    // deallocations must be handled by the shared-module code**
-    nlr_jump_callback_node_clear_displaybus_t node;
-    node.base_ptr = &self->base;
-    nlr_push_jump_callback(&node.callback, clear_display_bus);
-
     uint8_t rgb_count, addr_count;
     uint8_t rgb_pins[MP_ARRAY_SIZE(self->rgb_pins)];
     uint8_t addr_pins[MP_ARRAY_SIZE(self->addr_pins)];
@@ -271,6 +254,7 @@ static mp_obj_t rgbmatrix_rgbmatrix_make_new(const mp_obj_type_t *type, size_t n
         clock_pin, latch_pin, output_enable_pin,
         args[ARG_doublebuffer].u_bool,
         args[ARG_framebuffer].u_obj, tile, args[ARG_serpentine].u_bool, NULL);
+
     claim_and_never_reset_pins(args[ARG_rgb_list].u_obj);
     claim_and_never_reset_pins(args[ARG_addr_list].u_obj);
     claim_and_never_reset_pin(args[ARG_clock_pin].u_obj);

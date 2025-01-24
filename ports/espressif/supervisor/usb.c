@@ -94,7 +94,12 @@ void init_usb_hardware(void) {
     // Configure USB PHY
     usb_phy_config_t phy_conf = {
         .controller = USB_PHY_CTRL_OTG,
+        .target = USB_PHY_TARGET_INT,
+
         .otg_mode = USB_OTG_MODE_DEVICE,
+        // https://github.com/hathach/tinyusb/issues/2943#issuecomment-2601888322
+        // Set speed to undefined (auto-detect) to avoid timing/race issue with S3 with host such as macOS
+        .otg_speed = USB_PHY_SPEED_UNDEFINED,
     };
     usb_new_phy(&phy_conf, &phy_hdl);
 

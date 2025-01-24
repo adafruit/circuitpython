@@ -7,6 +7,7 @@
 #include "py/objstr.h"
 #include "supervisor/background_callback.h"
 #include "supervisor/linker.h"
+#include "supervisor/shared/tick.h"
 #include "supervisor/usb.h"
 #include "shared/readline/readline.h"
 
@@ -150,6 +151,10 @@ void usb_background(void) {
         usb_video_task();
         #endif
     }
+}
+
+uint32_t tusb_time_millis_api(void) {
+    return supervisor_ticks_ms32();
 }
 
 static background_callback_t usb_callback;

@@ -214,6 +214,10 @@ void common_hal_audiopwmio_pwmaudioout_play(audiopwmio_pwmaudioout_obj_t *self, 
         common_hal_audiopwmio_pwmaudioout_stop(self);
         mp_raise_RuntimeError(MP_ERROR_TEXT("Unable to allocate buffers for signed conversion"));
     }
+    if (result == AUDIO_DMA_SOURCE_ERROR) {
+        common_hal_audiopwmio_pwmaudioout_stop(self);
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Audio source error"));
+    }
     // OK! We got all of the resources we need and dma is ready.
 }
 

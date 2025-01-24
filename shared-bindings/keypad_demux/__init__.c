@@ -11,8 +11,14 @@
 
 //| """Support for scanning key matrices that use a demultiplexer
 //|
-//| The `keypad_demux` module provides native support to scan sets of keys or buttons,
-//| connected in a row-and-column matrix.
+//| The `keypad_demux` module provides native support to scan a matrix of keys or buttons
+//| where either the row or column axis is controlled by a demultiplexer or decoder IC
+//| such as the 74LS138 or 74LS238.  In this arrangement a binary input value
+//| determines which column (or row) to select, thereby reducing the number of input pins.
+//| For example the input 101 would select line 5 in the matrix.
+//| Set ``columns_to_anodes`` to ``False`` with a non-inverting demultiplexer
+//| which drives the selected line high.
+//| Set ``transpose`` to ``True`` if columns are multiplexed rather than rows.
 //|
 //| .. jinja
 //| """

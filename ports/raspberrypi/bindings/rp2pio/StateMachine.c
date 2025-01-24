@@ -24,9 +24,13 @@
 //| import memorymap
 //|
 //| FifoType = Literal["auto", "txrx", "tx", "rx", "txput", "txget", "putget"]
+//| """A type representing one of the strings ``"auto"``, ``"txrx"``, ``"tx"``, ``"rx"``, ``"txput"``, ``"txget"`` or ``"putget"``. These values are supported on RP2350. For type-checking only, not actually defined in CircuitPython."""
 //| FifoType_piov0 = Literal["auto", "txrx", "tx", "rx"]
+//| """A type representing one of the strings ``"auto"``, ``"txrx"``, ``"tx"``, or ``"rx"``. These values are supported on both RP2350 and RP2040. For type-checking only, not actually defined in CircuitPython."""
 //| MovStatusType = Literal["txfifo", "rxfifo", "irq"]
+//| """A type representing one of the strings ``"txfifo"``, ``"rxfifo"``, or ``"irq"``. These values are supported on RP2350. For type-checking only, not actually defined in CircuitPython."""
 //| MovStatusType_piov0 = Literal["txfifo"]
+//| """A type representing the string ``"txfifo"``. This value is supported on RP2350 and RP2040. For type-checking only, not actually defined in CircuitPython."""
 //|
 //| class StateMachine:
 //|     """A single PIO StateMachine
@@ -152,8 +156,8 @@
 //|         :param int wrap: The instruction after which to wrap to the ``wrap``
 //|             instruction. As a special case, -1 (the default) indicates the
 //|             last instruction of the program.
-//|         :param FifoType fifo_type: How the program accessess the FIFOs. PIO version 0 only supports a subset of values.
-//|         :param MovStatusType mov_status_type: What condition the ``mov status`` instruction checks. PIO version 0 only supports a subset of values.
+//|         :param FifoType fifo_type: How the program accessess the FIFOs. PIO version 0 in the RP2040 only supports a subset of values, `FifoType_piov0`.
+//|         :param MovStatusType mov_status_type: What condition the ``mov status`` instruction checks. PIO version 0 in the RP2040 only supports a subset of values, `MovStatusType_piov0`.
 //|         :param MovStatusType mov_status_n: The FIFO depth or IRQ the ``mov status`` instruction checks for. For ``mov_status irq`` this includes the encoding of the ``next``/``prev`` selection bits.
 //|         """
 //|         ...
@@ -330,14 +334,14 @@ static mp_obj_t rp2pio_statemachine_make_new(const mp_obj_type_t *type, size_t n
         args[ARG_frequency].u_int,
         init_bufinfo.buf, init_bufinfo.len / 2,
         may_exec_bufinfo.buf, may_exec_bufinfo.len / 2,
-        first_out_pin, out_pin_count, args[ARG_initial_out_pin_state].u_int, args[ARG_initial_out_pin_direction].u_int,
-        first_in_pin, in_pin_count, args[ARG_pull_in_pin_up].u_int, args[ARG_pull_in_pin_down].u_int,
-        first_set_pin, set_pin_count, args[ARG_initial_set_pin_state].u_int, args[ARG_initial_set_pin_direction].u_int,
+        first_out_pin, out_pin_count, PIO_PINMASK32_FROM_VALUE(args[ARG_initial_out_pin_state].u_int), PIO_PINMASK32_FROM_VALUE(args[ARG_initial_out_pin_direction].u_int),
+        first_in_pin, in_pin_count, PIO_PINMASK32_FROM_VALUE(args[ARG_pull_in_pin_up].u_int), PIO_PINMASK32_FROM_VALUE(args[ARG_pull_in_pin_down].u_int),
+        first_set_pin, set_pin_count, PIO_PINMASK32_FROM_VALUE(args[ARG_initial_set_pin_state].u_int), PIO_PINMASK32_FROM_VALUE(args[ARG_initial_set_pin_direction].u_int),
         first_sideset_pin, sideset_pin_count, args[ARG_sideset_pindirs].u_bool,
-        args[ARG_initial_sideset_pin_state].u_int, args[ARG_initial_sideset_pin_direction].u_int,
+        PIO_PINMASK32_FROM_VALUE(args[ARG_initial_sideset_pin_state].u_int), PIO_PINMASK32_FROM_VALUE(args[ARG_initial_sideset_pin_direction].u_int),
         args[ARG_sideset_enable].u_bool,
         jmp_pin, jmp_pin_pull,
-        0,
+        PIO_PINMASK_FROM_VALUE(0), // wait_gpio_mask
         args[ARG_exclusive_pin_use].u_bool,
         args[ARG_auto_pull].u_bool, pull_threshold, args[ARG_out_shift_right].u_bool,
         args[ARG_wait_for_txstall].u_bool,

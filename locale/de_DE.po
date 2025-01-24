@@ -6,14 +6,14 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-01-04 12:55-0600\n"
-"PO-Revision-Date: 2024-10-23 01:15+0000\n"
-"Last-Translator: Sokromatrix <kroschewski1971@gmail.com>\n"
+"PO-Revision-Date: 2024-12-15 14:00+0000\n"
+"Last-Translator: Exp3rt <jannik.homberg@gmail.com>\n"
 "Language: de_DE\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.8.2-dev\n"
+"X-Generator: Weblate 5.9-rc\n"
 
 #: main.c
 msgid ""
@@ -202,7 +202,7 @@ msgstr "%q muss >= %d sein"
 
 #: shared-module/audiofilters/Filter.c
 msgid "%q must be a %q object, %q, or %q"
-msgstr ""
+msgstr "%q muss ein %q Objekt, %q, oder %q sein"
 
 #: shared-bindings/analogbufio/BufferedIn.c
 msgid "%q must be a bytearray or array of type 'H' or 'B'"
@@ -232,7 +232,7 @@ msgstr "%q muss ein Vielfaches von 8 sein."
 #: ports/raspberrypi/bindings/cyw43/__init__.c py/argcheck.c py/objexcept.c
 #: shared-bindings/bitmapfilter/__init__.c shared-bindings/canio/CAN.c
 #: shared-bindings/digitalio/Pull.c shared-bindings/supervisor/__init__.c
-#: shared-module/synthio/Synthesizer.c
+#: shared-module/synthio/Biquad.c shared-module/synthio/Synthesizer.c
 msgid "%q must be of type %q or %q, not %q"
 msgstr "%q muss von Typ %q oder %q sein, nicht %q"
 
@@ -618,6 +618,11 @@ msgstr "Versuche %d Blöcke zu allokieren"
 msgid "Audio conversion not implemented"
 msgstr "Audio-Konvertierung nicht implementiert"
 
+#: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
+#: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
+msgid "Audio source error"
+msgstr ""
+
 #: shared-bindings/wifi/Radio.c
 msgid "AuthMode.OPEN is not used with password"
 msgstr "AuthMode.OPEN wird mit Passwort nicht verwendet"
@@ -814,6 +819,10 @@ msgstr "RTS oder CTS können im RS485-Modus nicht angegeben werden"
 #: py/objslice.c
 msgid "Cannot subclass slice"
 msgstr "Slice kann keine sub-klasse sein"
+
+#: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
+msgid "Cannot use GPIO0..15 together with GPIO32..47"
+msgstr ""
 
 #: ports/nordic/common-hal/alarm/pin/PinAlarm.c
 msgid "Cannot wake on pin edge, only level"
@@ -1040,6 +1049,7 @@ msgstr "Datei nicht gefunden"
 
 #: ports/atmel-samd/common-hal/canio/Listener.c
 #: ports/espressif/common-hal/canio/Listener.c
+#: ports/mimxrt10xx/common-hal/canio/Listener.c
 #: ports/stm/common-hal/canio/Listener.c
 msgid "Filters too complex"
 msgstr "Filter zu komplex"
@@ -2187,6 +2197,10 @@ msgstr "Parser konnte nicht gestartet werden"
 msgid "Unable to read color palette data"
 msgstr "Konnte Farbpalettendaten nicht lesen"
 
+#: ports/mimxrt10xx/common-hal/canio/CAN.c
+msgid "Unable to send CAN Message: all Tx message buffers are busy"
+msgstr ""
+
 #: ports/espressif/common-hal/mdns/Server.c
 #: ports/raspberrypi/common-hal/mdns/Server.c
 msgid "Unable to start mDNS query"
@@ -2374,6 +2388,7 @@ msgstr "Beide Knöpfe wurden beim Starten gedrückt."
 #: ports/espressif/boards/m5stack_core_fire/mpconfigboard.h
 #: ports/espressif/boards/m5stack_stick_c/mpconfigboard.h
 #: ports/espressif/boards/m5stack_stick_c_plus/mpconfigboard.h
+#: ports/espressif/boards/m5stack_stick_c_plus2/mpconfigboard.h
 msgid "You pressed button A at start up."
 msgstr "Knopf A wurde beim Starten gedrückt."
 
@@ -2387,6 +2402,7 @@ msgstr "Der BOOT-Knopf wurde beim Starten gedrückt"
 
 #: ports/espressif/boards/adafruit_feather_esp32c6_4mbflash_nopsram/mpconfigboard.h
 #: ports/espressif/boards/adafruit_itsybitsy_esp32/mpconfigboard.h
+#: ports/espressif/boards/waveshare_esp32_c6_lcd_1_47/mpconfigboard.h
 msgid "You pressed the BOOT button at start up."
 msgstr "Der BOOT-Knopf wurde beim Starten gedrückt."
 
@@ -3464,10 +3480,6 @@ msgstr "Label '%q' nicht definiert"
 msgid "label redefined"
 msgstr "Label neu definiert"
 
-#: shared-bindings/audiomixer/MixerVoice.c
-msgid "level must be between 0 and 1"
-msgstr "Der Pegel muss zwischen 0 und 1 liegen"
-
 #: py/objarray.c
 msgid "lhs and rhs should be compatible"
 msgstr "lhs und rhs sollten kompatibel sein"
@@ -4458,6 +4470,9 @@ msgstr "zi muss eine Gleitkommazahl sein"
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr "zi muss die Form (n_section, 2) haben"
+
+#~ msgid "level must be between 0 and 1"
+#~ msgstr "Der Pegel muss zwischen 0 und 1 liegen"
 
 #~ msgid "init I2C"
 #~ msgstr "initialisiere I2C"

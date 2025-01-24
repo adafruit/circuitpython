@@ -53,10 +53,6 @@ void common_hal_audiofilters_filter_construct(audiofilters_filter_obj_t *self,
     }
     common_hal_audiofilters_filter_set_filter(self, filter);
 
-    // If we did not receive a BlockInput we need to create a default float value
-    if (mix == MP_OBJ_NULL) {
-        mix = mp_obj_new_float(1.0);
-    }
     synthio_block_assign_slot(mix, &self->mix, MP_QSTR_mix);
 }
 
@@ -216,32 +212,6 @@ void common_hal_audiofilters_filter_stop(audiofilters_filter_obj_t *self) {
     return;
 }
 
-#define RANGE_LOW_16 (-28000)
-#define RANGE_HIGH_16 (28000)
-#define RANGE_SHIFT_16 (16)
-#define RANGE_SCALE_16 (0xfffffff / (32768 * 2 - RANGE_HIGH_16)) // 2 for echo+sample
-
-// dynamic range compression via a downward compressor with hard knee
-//
-// When the output value is within the range +-28000 (about 85% of full scale),
-// it is unchanged. Otherwise, it undergoes a gain reduction so that the
-// largest possible values, (+32768,-32767) * 2 (2 for echo and sample),
-// still fit within the output range
-//
-// This produces a much louder overall volume with multiple voices, without
-// much additional processing.
-//
-// https://en.wikipedia.org/wiki/Dynamic_range_compression
-static
-int16_t mix_down_sample(int32_t sample) {
-    if (sample < RANGE_LOW_16) {
-        sample = (((sample - RANGE_LOW_16) * RANGE_SCALE_16) >> RANGE_SHIFT_16) + RANGE_LOW_16;
-    } else if (sample > RANGE_HIGH_16) {
-        sample = (((sample - RANGE_HIGH_16) * RANGE_SCALE_16) >> RANGE_SHIFT_16) + RANGE_HIGH_16;
-    }
-    return sample;
-}
-
 audioio_get_buffer_result_t audiofilters_filter_get_buffer(audiofilters_filter_obj_t *self, bool single_channel_output, uint8_t channel,
     uint8_t **buffer, uint32_t *buffer_length) {
     (void)channel;
@@ -249,9 +219,6 @@ audioio_get_buffer_result_t audiofilters_filter_get_buffer(audiofilters_filter_o
     if (!single_channel_output) {
         channel = 0;
     }
-
-    // get the effect values we need from the BlockInput. These may change at run time so you need to do bounds checking if required
-    mp_float_t mix = MIN(1.0, MAX(synthio_block_slot_get(&self->mix), 0.0));
 
     // Switch our buffers to the other buffer
     self->last_buf_idx = !self->last_buf_idx;
@@ -282,6 +249,10 @@ audioio_get_buffer_result_t audiofilters_filter_get_buffer(audiofilters_filter_o
         }
 
         if (self->sample == NULL) {
+            // tick all block inputs
+            shared_bindings_synthio_lfo_tick(self->sample_rate, length / self->channel_count);
+            (void)synthio_block_slot_get(&self->mix);
+
             if (self->samples_signed) {
                 memset(word_buffer, 0, length * (self->bits_per_sample / 8));
             } else {
@@ -300,12 +271,16 @@ audioio_get_buffer_result_t audiofilters_filter_get_buffer(audiofilters_filter_o
         } else {
             // we have a sample to play and filter
             // Determine how many bytes we can process to our buffer, the less of the sample we have left and our buffer remaining
-            uint32_t n = MIN(self->sample_buffer_length, length);
+            uint32_t n = MIN(MIN(self->sample_buffer_length, length), SYNTHIO_MAX_DUR * self->channel_count);
 
             int16_t *sample_src = (int16_t *)self->sample_remaining_buffer; // for 16-bit samples
             int8_t *sample_hsrc = (int8_t *)self->sample_remaining_buffer; // for 8-bit samples
 
-            if (mix <= 0.01 || !self->filter_states) { // if mix is zero pure sample only or no biquad filter objects are provided
+            // get the effect values we need from the BlockInput. These may change at run time so you need to do bounds checking if required
+            shared_bindings_synthio_lfo_tick(self->sample_rate, n / self->channel_count);
+            mp_float_t mix = synthio_block_slot_get_limited(&self->mix, MICROPY_FLOAT_CONST(0.0), MICROPY_FLOAT_CONST(1.0));
+
+            if (mix <= MICROPY_FLOAT_CONST(0.01) || !self->filter_states) { // if mix is zero pure sample only or no biquad filter objects are provided
                 for (uint32_t i = 0; i < n; i++) {
                     if (MP_LIKELY(self->bits_per_sample == 16)) {
                         word_buffer[i] = sample_src[i];
@@ -340,13 +315,13 @@ audioio_get_buffer_result_t audiofilters_filter_get_buffer(audiofilters_filter_o
                     // Mix processed signal with original sample and transfer to output buffer
                     for (uint32_t j = 0; j < n_samples; j++) {
                         if (MP_LIKELY(self->bits_per_sample == 16)) {
-                            word_buffer[i + j] = mix_down_sample((int32_t)((sample_src[i + j] * (MICROPY_FLOAT_CONST(1.0) - mix)) + (self->filter_buffer[j] * mix)));
+                            word_buffer[i + j] = synthio_mix_down_sample((int32_t)((sample_src[i + j] * (MICROPY_FLOAT_CONST(1.0) - mix)) + (self->filter_buffer[j] * mix)), SYNTHIO_MIX_DOWN_SCALE(2));
                             if (!self->samples_signed) {
                                 word_buffer[i + j] ^= 0x8000;
                             }
                         } else {
                             if (self->samples_signed) {
-                                hword_buffer[i + j] = (int8_t)((sample_hsrc[i + j] * (1.0 - mix)) + (self->filter_buffer[j] * mix));
+                                hword_buffer[i + j] = (int8_t)((sample_hsrc[i + j] * (MICROPY_FLOAT_CONST(1.0) - mix)) + (self->filter_buffer[j] * mix));
                             } else {
                                 hword_buffer[i + j] = (uint8_t)(((int8_t)(((uint8_t)sample_hsrc[i + j]) ^ 0x80) * (MICROPY_FLOAT_CONST(1.0) - mix)) + (self->filter_buffer[j] * mix)) ^ 0x80;
                             }

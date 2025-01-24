@@ -139,10 +139,9 @@ def sym_default(sym):
     # to n or the symbol to m in those cases).
     if (
         sym.choice
-        and not sym.choice.is_optional
         and sym.choice._selection_from_defaults() is sym
-        and sym.orig_type is kconfiglib.core.BOOL
-        and sym.tri_value == 2
+        and sym.orig_type == kconfiglib.core.BOOL
+        and sym.bool_value == 2
     ):
         return True
 

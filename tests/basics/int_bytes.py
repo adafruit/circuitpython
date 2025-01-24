@@ -43,3 +43,7 @@ try:
     (-256).to_bytes(2, "little", signed=False)
 except OverflowError:
     print("OverflowError")
+
+# byteorder arg can be omitted; default is "big"
+print(int.from_bytes(b"\x01\0"))
+print((100).to_bytes(10))

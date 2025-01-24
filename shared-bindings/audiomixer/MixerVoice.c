@@ -13,6 +13,9 @@
 #include "py/objproperty.h"
 #include "py/runtime.h"
 #include "shared-bindings/util.h"
+#if CIRCUITPY_SYNTHIO
+#include "shared-module/synthio/block.h"
+#endif
 
 //| class MixerVoice:
 //|     """Voice objects used with Mixer
@@ -75,17 +78,18 @@ static mp_obj_t audiomixer_mixervoice_obj_stop(size_t n_args, const mp_obj_t *po
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(audiomixer_mixervoice_stop_obj, 1, audiomixer_mixervoice_obj_stop);
 
-//|     level: float
-//|     """The volume level of a voice, as a floating point number between 0 and 1."""
+//|     level: synthio.BlockInput
+//|     """The volume level of a voice, as a floating point number between 0 and 1. If your board
+//|     does not support synthio, this property will only accept a float value.
+//|     """
 static mp_obj_t audiomixer_mixervoice_obj_get_level(mp_obj_t self_in) {
-    return mp_obj_new_float(common_hal_audiomixer_mixervoice_get_level(self_in));
+    return common_hal_audiomixer_mixervoice_get_level(self_in);
 }
 MP_DEFINE_CONST_FUN_OBJ_1(audiomixer_mixervoice_get_level_obj, audiomixer_mixervoice_obj_get_level);
 
 static mp_obj_t audiomixer_mixervoice_obj_set_level(mp_obj_t self_in, mp_obj_t level_in) {
     audiomixer_mixervoice_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    mp_float_t level = mp_arg_validate_obj_float_range(level_in, 0, 1, MP_QSTR_level);
-    common_hal_audiomixer_mixervoice_set_level(self, level);
+    common_hal_audiomixer_mixervoice_set_level(self, level_in);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(audiomixer_mixervoice_set_level_obj, audiomixer_mixervoice_obj_set_level);

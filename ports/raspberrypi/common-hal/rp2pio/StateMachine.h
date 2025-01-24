@@ -12,6 +12,75 @@
 #include "common-hal/memorymap/AddressRange.h"
 #include "src/rp2_common/hardware_pio/include/hardware/pio.h"
 
+// pio_pinmask_t can hold ANY pin masks, so it is used before selection of gpiobase
+#if NUM_BANK0_GPIOS > 32
+typedef struct { uint64_t value;
+} pio_pinmask_t;
+typedef uint64_t pio_pinmask_value_t;
+#define PIO_PINMASK_C(c) UINT64_C(c)
+#define PIO_PINMASK_BIT (64)
+#define PIO_PINMASK(i) (UINT64_C(1) << (i))
+#define PIO_PINMASK_PRINT(p) mp_printf(&mp_plat_print, \
+    "%s:%d: %s = %08x %08x\n", \
+    __FILE__, __LINE__, #p, \
+    (uint32_t)(PIO_PINMASK_VALUE(p) >> 32), \
+    (uint32_t)PIO_PINMASK_VALUE(p));
+#define PIO_PINMASK_ALL PIO_PINMASK_FROM_VALUE(~UINT64_C(0))
+#else
+typedef struct { uint32_t value;
+} pio_pinmask_t;
+typedef uint32_t pio_pinmask_value_t;
+#define PIO_PINMASK_C(c) UINT32_C(c)
+#define PIO_PINMASK_BIT (32)
+#define PIO_PINMASK(i) (UINT32_C(1) << (i))
+#define PIO_PINMASK_PRINT(p) mp_printf(&mp_plat_print, "%s:%d: %s = %08x\n", \
+    __FILE__, __LINE__, #p, \
+    (uint32_t)(PIO_PINMASK_VALUE(p)));
+#define PIO_PINMASK_ALL PIO_PINMASK_FROM_VALUE(~UINT32_C(0))
+#endif
+#define PIO_PINMASK_VALUE(p) ((p).value)
+#define PIO_PINMASK_FROM_VALUE(v) ((pio_pinmask_t) {(v)})
+#define PIO_PINMASK_FROM_PIN(i) ((pio_pinmask_t) {(PIO_PINMASK(i))})
+#define PIO_PINMASK_NONE PIO_PINMASK_FROM_VALUE(0)
+#define PIO_PINMASK_SET(p, i) ((p).value |= PIO_PINMASK(i))
+#define PIO_PINMASK_CLEAR(p, i) ((p).value &= ~PIO_PINMASK(i))
+#define PIO_PINMASK_IS_SET(p, i) (((p).value & PIO_PINMASK(i)) != 0)
+#define PIO_PINMASK_BINOP(op, p, q) PIO_PINMASK_FROM_VALUE((p).value op(q).value)
+#define PIO_PINMASK_BINOP_ASSIGN(op, p, q) ((p).value op(q).value)
+#define PIO_PINMASK_EQUAL(p, q) ((p).value == (q).value)
+#define PIO_PINMASK_AND(p, q) PIO_PINMASK_BINOP(&, (p), (q))
+#define PIO_PINMASK_AND_NOT(p, q) PIO_PINMASK_BINOP(&~, (p), (q))
+#define PIO_PINMASK_OR(p, q) PIO_PINMASK_BINOP(|, (p), (q))
+#define PIO_PINMASK_OR3(p, q, r) PIO_PINMASK_OR((p), PIO_PINMASK_OR((q), (r)))
+#define PIO_PINMASK_INTERSECT(p, q) PIO_PINMASK_BINOP_ASSIGN( &=, (p), (q))
+#define PIO_PINMASK_DIFFERENCE(p, q) PIO_PINMASK_BINOP_ASSIGN( &= ~, (p), (q))
+#define PIO_PINMASK_MERGE(p, q) PIO_PINMASK_BINOP_ASSIGN( |=, (p), (q))
+
+// pio peripheral registers only work 32 bits at a time and depend on the selection of base
+// (0 only on RP2040 & RP2350A; 0 or 16 on RP2350B)
+typedef struct { uint32_t value32;
+} pio_pinmask32_t;
+#define PIO_PINMASK32(i) (1u << (i))
+#define PIO_PINMASK32_C(c) UINT32_C(c)
+#define PIO_PINMASK32_NONE PIO_PINMASK32_FROM_VALUE(0)
+#define PIO_PINMASK32_ALL PIO_PINMASK32_FROM_VALUE(~UINT32_C(0))
+#define PIO_PINMASK32_BASE(i, base) PIO_PINMASK32((i) - (base))
+#define PIO_PINMASK32_VALUE(p) ((p).value32)
+#define PIO_PINMASK32_FROM_VALUE(v) ((pio_pinmask32_t) {(v)})
+#define PIO_PINMASK32_SET(p, i) ((p).value32 |= PIO_PINMASK32_VALUE(i))
+#define PIO_PINMASK32_CLEAR(p, i) ((p).value32 &= ~PIO_PINMASK32_VALUE(i))
+#define PIO_PINMASK32_IS_SET(p, i) (((p).value32 & PIO_PINMASK32_VALUE(i)) != 0)
+#define PIO_PINMASK32_BINOP(op, p, q) PIO_PINMASK32_FROM_VALUE((p).value32 op(q).value32)
+#define PIO_PINMASK32_AND(p, q) PIO_PINMASK32_BINOP(&, (p), (q))
+#define PIO_PINMASK32_AND_NOT(p, q) PIO_PINMASK32_BINOP(&~, (p), (q))
+#define PIO_PINMASK32_OR(p, q) PIO_PINMASK32_BINOP(|, (p), (q))
+#define PIO_PINMASK32_OR3(p, q, r) PIO_PINMASK32_OR((p), PIO_PINMASK32_OR((q), (r)))
+#define PIO_PINMASK32_INTERSECT(p, q) PIO_PINMASK32_BINOP( &=, (p), (q))
+#define PIO_PINMASK32_DIFFERENCE(p, q) PIO_PINMASK32_BINOP( &= ~, (p), (q))
+#define PIO_PINMASK32_MERGE(p, q) PIO_PINMASK32_BINOP( |=, (p), (q))
+#define PIO_PINMASK32_FROM_PINMASK_WITH_OFFSET(p, gpio_offset) PIO_PINMASK32_FROM_VALUE(PIO_PINMASK_VALUE((p)) >> (gpio_offset))
+#define PIO_PINMASK_FROM_PINMASK32_WITH_OFFSET(p, gpio_offset) PIO_PINMASK_FROM_VALUE(PIO_PINMASK32_VALUE((p)) << (gpio_offset))
+
 enum { PIO_ANY_OFFSET = -1 };
 enum { PIO_FIFO_JOIN_AUTO = -1, PIO_FIFO_TYPE_DEFAULT = PIO_FIFO_JOIN_AUTO };
 enum { PIO_MOV_STATUS_DEFAULT = STATUS_TX_LESSTHAN };
@@ -26,15 +95,15 @@ typedef struct sm_buf_info {
 
 typedef struct {
     mp_obj_base_t base;
-    uint32_t pins; // Bitmask of what pins this state machine uses.
+    pio_pinmask32_t pins; // Bitmask of what pins this state machine uses.
     int state_machine;
     PIO pio;
     const uint16_t *init;
     size_t init_len;
-    uint32_t initial_pin_state;
-    uint32_t initial_pin_direction;
-    uint32_t pull_pin_up;
-    uint32_t pull_pin_down;
+    pio_pinmask_t initial_pin_state;
+    pio_pinmask_t initial_pin_direction;
+    pio_pinmask_t pull_pin_up;
+    pio_pinmask_t pull_pin_down;
     uint tx_dreq;
     uint rx_dreq;
     uint32_t actual_frequency;
@@ -45,6 +114,9 @@ typedef struct {
     bool out_shift_right;
     bool in_shift_right;
     bool user_interruptible;
+    #if NUM_BANK0_GPIOS > 32
+    uint8_t pio_gpio_offset;
+    #endif
     uint8_t offset;
     uint8_t fifo_depth;  // Either 4 if FIFOs are not joined, or 8 if they are.
 
@@ -79,12 +151,12 @@ bool rp2pio_statemachine_construct(rp2pio_statemachine_obj_t *self,
     const uint16_t *init, size_t init_len,
     const mcu_pin_obj_t *first_out_pin, uint8_t out_pin_count,
     const mcu_pin_obj_t *first_in_pin, uint8_t in_pin_count,
-    uint32_t pull_pin_up, uint32_t pull_pin_down,
+    pio_pinmask_t pull_pin_up, pio_pinmask_t pull_pin_down,
     const mcu_pin_obj_t *first_set_pin, uint8_t set_pin_count,
     const mcu_pin_obj_t *first_sideset_pin, uint8_t sideset_pin_count, bool sideset_pindirs,
-    uint32_t initial_pin_state, uint32_t initial_pin_direction,
+    pio_pinmask_t initial_pin_state, pio_pinmask_t initial_pin_direction,
     const mcu_pin_obj_t *jmp_pin,
-    uint32_t pins_we_use, bool tx_fifo, bool rx_fifo,
+    pio_pinmask_t pins_we_use, bool tx_fifo, bool rx_fifo,
     bool auto_pull, uint8_t pull_threshold, bool out_shift_right,
     bool wait_for_txstall,
     bool auto_push, uint8_t push_threshold, bool in_shift_right,

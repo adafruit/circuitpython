@@ -183,6 +183,8 @@ jobs:
         python-version: 3.x
     - name: Set up submodules
       uses: ./.github/actions/deps/submodules
+      with:
+        version: true
     - name: Install dependencies
       run: |
         sudo apt-get update

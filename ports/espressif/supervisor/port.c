@@ -292,6 +292,10 @@ safe_mode_t port_init(void) {
             break;
     }
 
+    if (board_requests_safe_mode()) {
+        return SAFE_MODE_USER;
+    }
+
     return SAFE_MODE_NONE;
 }
 

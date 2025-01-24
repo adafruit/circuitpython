@@ -237,7 +237,7 @@ msgstr ""
 #: ports/raspberrypi/bindings/cyw43/__init__.c py/argcheck.c py/objexcept.c
 #: shared-bindings/bitmapfilter/__init__.c shared-bindings/canio/CAN.c
 #: shared-bindings/digitalio/Pull.c shared-bindings/supervisor/__init__.c
-#: shared-module/synthio/Synthesizer.c
+#: shared-module/synthio/Biquad.c shared-module/synthio/Synthesizer.c
 msgid "%q must be of type %q or %q, not %q"
 msgstr "%q는 %q가 아닌 %q 또는 %q 유형이어야 합니다"
 
@@ -645,6 +645,11 @@ msgstr "%d 블록 할당 시도"
 msgid "Audio conversion not implemented"
 msgstr "오디오 변환이 구현되지 않음"
 
+#: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
+#: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
+msgid "Audio source error"
+msgstr ""
+
 #: shared-bindings/wifi/Radio.c
 msgid "AuthMode.OPEN is not used with password"
 msgstr "AuthMode.OPEN은 암호와 함께 사용되지 않습니다"
@@ -838,6 +843,10 @@ msgstr "RS485 모드에서는 RTS 또는 CTS를 지정할 수 없습니다"
 
 #: py/objslice.c
 msgid "Cannot subclass slice"
+msgstr ""
+
+#: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
+msgid "Cannot use GPIO0..15 together with GPIO32..47"
 msgstr ""
 
 #: ports/nordic/common-hal/alarm/pin/PinAlarm.c
@@ -1067,6 +1076,7 @@ msgstr "파일을 찾을 수 없습니다"
 
 #: ports/atmel-samd/common-hal/canio/Listener.c
 #: ports/espressif/common-hal/canio/Listener.c
+#: ports/mimxrt10xx/common-hal/canio/Listener.c
 #: ports/stm/common-hal/canio/Listener.c
 msgid "Filters too complex"
 msgstr "필터가 너무 복잡합니다"
@@ -2216,6 +2226,10 @@ msgstr "파서를 초기화(init) 할 수 없습니다"
 msgid "Unable to read color palette data"
 msgstr ""
 
+#: ports/mimxrt10xx/common-hal/canio/CAN.c
+msgid "Unable to send CAN Message: all Tx message buffers are busy"
+msgstr ""
+
 #: ports/espressif/common-hal/mdns/Server.c
 #: ports/raspberrypi/common-hal/mdns/Server.c
 msgid "Unable to start mDNS query"
@@ -2391,6 +2405,7 @@ msgstr ""
 #: ports/espressif/boards/m5stack_core_fire/mpconfigboard.h
 #: ports/espressif/boards/m5stack_stick_c/mpconfigboard.h
 #: ports/espressif/boards/m5stack_stick_c_plus/mpconfigboard.h
+#: ports/espressif/boards/m5stack_stick_c_plus2/mpconfigboard.h
 msgid "You pressed button A at start up."
 msgstr ""
 
@@ -2404,6 +2419,7 @@ msgstr ""
 
 #: ports/espressif/boards/adafruit_feather_esp32c6_4mbflash_nopsram/mpconfigboard.h
 #: ports/espressif/boards/adafruit_itsybitsy_esp32/mpconfigboard.h
+#: ports/espressif/boards/waveshare_esp32_c6_lcd_1_47/mpconfigboard.h
 msgid "You pressed the BOOT button at start up."
 msgstr ""
 
@@ -3461,10 +3477,6 @@ msgstr ""
 
 #: py/compile.c
 msgid "label redefined"
-msgstr ""
-
-#: shared-bindings/audiomixer/MixerVoice.c
-msgid "level must be between 0 and 1"
 msgstr ""
 
 #: py/objarray.c

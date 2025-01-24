@@ -17,6 +17,8 @@ typedef struct {
     KEYPAD_SCANNER_COMMON_FIELDS;
     mp_obj_tuple_t *row_addr_digitalinouts;
     mp_obj_tuple_t *column_digitalinouts;
+    bool columns_to_anodes;
+    bool transpose;
 } keypad_demux_demuxkeymatrix_obj_t;
 
 void keypad_demux_demuxkeymatrix_scan(keypad_demux_demuxkeymatrix_obj_t *self);

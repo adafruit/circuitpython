@@ -317,18 +317,14 @@ safe_mode_t port_init(void) {
     critical_section_init(&background_queue_lock);
 
     #if CIRCUITPY_CYW43
-    never_reset_pin_number(23);
-    never_reset_pin_number(24);
-    never_reset_pin_number(25);
-    never_reset_pin_number(29);
+    never_reset_pin_number(CYW43_DEFAULT_PIN_WL_REG_ON);
+    never_reset_pin_number(CYW43_DEFAULT_PIN_WL_DATA_IN);
+    never_reset_pin_number(CYW43_DEFAULT_PIN_WL_CS);
+    never_reset_pin_number(CYW43_DEFAULT_PIN_WL_CLOCK);
     #endif
 
     // Reset everything into a known state before board_init.
     reset_port();
-
-    #ifdef CIRCUITPY_PSRAM_CHIP_SELECT
-    setup_psram();
-    #endif
 
     // Initialize RTC
     #if CIRCUITPY_RTC
@@ -338,6 +334,15 @@ safe_mode_t port_init(void) {
     // For the tick.
     hardware_alarm_claim(0);
     hardware_alarm_set_callback(0, _tick_callback);
+
+    // RP2 port-specific early serial initialization for psram debug.
+    // The RTC must already be initialized, otherwise the serial UART
+    // will hang.
+    serial_early_init();
+
+    #ifdef CIRCUITPY_PSRAM_CHIP_SELECT
+    setup_psram();
+    #endif
 
     // Check brownout.
 

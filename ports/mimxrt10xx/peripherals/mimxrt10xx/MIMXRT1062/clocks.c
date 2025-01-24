@@ -167,9 +167,9 @@ void clocks_init(void) {
     CLOCK_DisableClock(kCLOCK_Can2S);
     CLOCK_DisableClock(kCLOCK_Can3S);
     /* Set CAN_CLK_PODF. */
-    CLOCK_SetDiv(kCLOCK_CanDiv, 1);
+    CLOCK_SetDiv(kCLOCK_CanDiv, 2); // Clock divider for master flexcan clock source
     /* Set Can clock source. */
-    CLOCK_SetMux(kCLOCK_CanMux, 2);
+    CLOCK_SetMux(kCLOCK_CanMux, 0); // Select 60M clock divided by USB1 PLL (480 MHz) as master flexcan clock source
     /* Disable UART clock gate. */
     CLOCK_DisableClock(kCLOCK_Lpuart1);
     CLOCK_DisableClock(kCLOCK_Lpuart2);

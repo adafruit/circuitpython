@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: circuitpython-cn\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-01-04 12:55-0600\n"
-"PO-Revision-Date: 2024-11-17 01:00+0000\n"
+"PO-Revision-Date: 2024-12-21 21:01+0000\n"
 "Last-Translator: hexthat <hexthat@gmail.com>\n"
 "Language-Team: Chinese Hanyu Pinyin\n"
 "Language: zh_Latn_pinyin\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 5.9-dev\n"
+"X-Generator: Weblate 5.10-dev\n"
 
 #: main.c
 msgid ""
@@ -233,7 +233,7 @@ msgstr "%q bìxū shì 8 debèishù."
 #: ports/raspberrypi/bindings/cyw43/__init__.c py/argcheck.c py/objexcept.c
 #: shared-bindings/bitmapfilter/__init__.c shared-bindings/canio/CAN.c
 #: shared-bindings/digitalio/Pull.c shared-bindings/supervisor/__init__.c
-#: shared-module/synthio/Synthesizer.c
+#: shared-module/synthio/Biquad.c shared-module/synthio/Synthesizer.c
 msgid "%q must be of type %q or %q, not %q"
 msgstr "%q de lèi xíng bì xū shì %q huò %q, ér bù shì %q"
 
@@ -618,6 +618,11 @@ msgstr "shìtú fēnpèi %d blocks"
 msgid "Audio conversion not implemented"
 msgstr "yīnpín zhuǎnhuàn wèi bèi shíxiàn"
 
+#: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
+#: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
+msgid "Audio source error"
+msgstr ""
+
 #: shared-bindings/wifi/Radio.c
 msgid "AuthMode.OPEN is not used with password"
 msgstr "AuthMode.OPEN wèi shǐyòng mìmǎ"
@@ -814,6 +819,10 @@ msgstr "wúfǎ zài RS485 móshì xià zhǐdìng RTS huò CTS"
 #: py/objslice.c
 msgid "Cannot subclass slice"
 msgstr "bùnéng zǐlèihuà qiēpiàn"
+
+#: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
+msgid "Cannot use GPIO0..15 together with GPIO32..47"
+msgstr ""
 
 #: ports/nordic/common-hal/alarm/pin/PinAlarm.c
 msgid "Cannot wake on pin edge, only level"
@@ -1039,6 +1048,7 @@ msgstr "zhǎo bú dào wén jiàn"
 
 #: ports/atmel-samd/common-hal/canio/Listener.c
 #: ports/espressif/common-hal/canio/Listener.c
+#: ports/mimxrt10xx/common-hal/canio/Listener.c
 #: ports/stm/common-hal/canio/Listener.c
 msgid "Filters too complex"
 msgstr "guò lǜ qì tài fù zá"
@@ -2181,6 +2191,10 @@ msgstr "Wúfǎ chūshǐhuà jiěxī qì"
 msgid "Unable to read color palette data"
 msgstr "Wúfǎ dúqǔ tiáosèbǎn shùjù"
 
+#: ports/mimxrt10xx/common-hal/canio/CAN.c
+msgid "Unable to send CAN Message: all Tx message buffers are busy"
+msgstr ""
+
 #: ports/espressif/common-hal/mdns/Server.c
 #: ports/raspberrypi/common-hal/mdns/Server.c
 msgid "Unable to start mDNS query"
@@ -2363,6 +2377,7 @@ msgstr "nín zài qǐ dòng shí àn xià le liǎng gè àn niǔ."
 #: ports/espressif/boards/m5stack_core_fire/mpconfigboard.h
 #: ports/espressif/boards/m5stack_stick_c/mpconfigboard.h
 #: ports/espressif/boards/m5stack_stick_c_plus/mpconfigboard.h
+#: ports/espressif/boards/m5stack_stick_c_plus2/mpconfigboard.h
 msgid "You pressed button A at start up."
 msgstr "nín zài qǐ dòng shí àn xià le àn niǔ A."
 
@@ -2376,6 +2391,7 @@ msgstr "nín zài qǐ dòng shí àn xià le qǐ dòng àn niǔ"
 
 #: ports/espressif/boards/adafruit_feather_esp32c6_4mbflash_nopsram/mpconfigboard.h
 #: ports/espressif/boards/adafruit_itsybitsy_esp32/mpconfigboard.h
+#: ports/espressif/boards/waveshare_esp32_c6_lcd_1_47/mpconfigboard.h
 msgid "You pressed the BOOT button at start up."
 msgstr "nínzài qǐdòngshí ànxià le BOOTànniǔ."
 
@@ -2552,7 +2568,7 @@ msgstr "èrjìnzhì bǎn qián bǎn %q wèi zhíxíng"
 
 #: ports/espressif/common-hal/audiobusio/PDMIn.c
 msgid "bit_depth must be 8, 16, 24, or 32."
-msgstr ""
+msgstr "bit_depth bìxū shì 8, 16, 24, huò 32."
 
 #: shared-module/bitmapfilter/__init__.c
 msgid "bitmap size and depth must match"
@@ -3441,10 +3457,6 @@ msgstr "biāoqiān '%q' wèi dìngyì"
 #: py/compile.c
 msgid "label redefined"
 msgstr "biāoqiān chóngxīn dìngyì"
-
-#: shared-bindings/audiomixer/MixerVoice.c
-msgid "level must be between 0 and 1"
-msgstr "Level bìxū jiè yú 0 hé 1 zhī jiān"
 
 #: py/objarray.c
 msgid "lhs and rhs should be compatible"
@@ -4430,6 +4442,9 @@ msgstr "zi bìxū wèi fú diǎn xíng"
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr "zi bìxū jùyǒu xíngzhuàng (n_section,2)"
+
+#~ msgid "level must be between 0 and 1"
+#~ msgstr "Level bìxū jiè yú 0 hé 1 zhī jiān"
 
 #~ msgid "init I2C"
 #~ msgstr "chūshǐhuà I2C"

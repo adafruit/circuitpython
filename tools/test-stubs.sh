@@ -2,7 +2,7 @@
 rm -rf test-stubs
 python3 -m venv test-stubs
 . test-stubs/bin/activate
-pip install mypy isort black adafruit-circuitpython-typing wheel build
+pip install mypy isort black adafruit-circuitpython-typing wheel build setuptools_scm
 rm -rf circuitpython-stubs .mypy_cache
 make stubs
 # Allow either dash or underscore as separator. setuptools v69.3.0 changed from "-" to "_".

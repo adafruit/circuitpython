@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 #include "py/runtime.h"
+#include <math.h>
 
 void common_hal_audiodelays_echo_construct(audiodelays_echo_obj_t *self, uint32_t max_delay_ms,
     mp_obj_t delay_ms, mp_obj_t decay, mp_obj_t mix,
@@ -57,17 +58,17 @@ void common_hal_audiodelays_echo_construct(audiodelays_echo_obj_t *self, uint32_
 
     // If we did not receive a BlockInput we need to create a default float value
     if (decay == MP_OBJ_NULL) {
-        decay = mp_obj_new_float(0.7);
+        decay = mp_obj_new_float(MICROPY_FLOAT_CONST(0.7));
     }
     synthio_block_assign_slot(decay, &self->decay, MP_QSTR_decay);
 
     if (delay_ms == MP_OBJ_NULL) {
-        delay_ms = mp_obj_new_float(250.0);
+        delay_ms = mp_obj_new_float(MICROPY_FLOAT_CONST(250.0));
     }
     synthio_block_assign_slot(delay_ms, &self->delay_ms, MP_QSTR_delay_ms);
 
     if (mix == MP_OBJ_NULL) {
-        mix = mp_obj_new_float(0.5);
+        mix = mp_obj_new_float(MICROPY_FLOAT_CONST(0.5));
     }
     synthio_block_assign_slot(mix, &self->mix, MP_QSTR_mix);
 
@@ -77,13 +78,16 @@ void common_hal_audiodelays_echo_construct(audiodelays_echo_obj_t *self, uint32_
 
     // Allocate the echo buffer for the max possible delay, echo is always 16-bit
     self->max_delay_ms = max_delay_ms;
-    self->max_echo_buffer_len = (uint32_t)(self->sample_rate / 1000.0f * max_delay_ms) * (self->channel_count * sizeof(uint16_t)); // bytes
+    self->max_echo_buffer_len = (uint32_t)(self->sample_rate / MICROPY_FLOAT_CONST(1000.0) * max_delay_ms) * (self->channel_count * sizeof(uint16_t)); // bytes
     self->echo_buffer = m_malloc(self->max_echo_buffer_len);
     if (self->echo_buffer == NULL) {
         common_hal_audiodelays_echo_deinit(self);
         m_malloc_fail(self->max_echo_buffer_len);
     }
     memset(self->echo_buffer, 0, self->max_echo_buffer_len);
+
+    // calculate the length of a single sample in milliseconds
+    self->sample_ms = MICROPY_FLOAT_CONST(1000.0) / self->sample_rate;
 
     // calculate everything needed for the current delay
     mp_float_t f_delay_ms = synthio_block_slot_get(&self->delay_ms);
@@ -125,6 +129,9 @@ void common_hal_audiodelays_echo_set_delay_ms(audiodelays_echo_obj_t *self, mp_o
 }
 
 void recalculate_delay(audiodelays_echo_obj_t *self, mp_float_t f_delay_ms) {
+    // Require that delay is at least 1 sample long
+    f_delay_ms = MAX(f_delay_ms, self->sample_ms);
+
     if (self->freq_shift) {
         // Calculate the rate of iteration over the echo buffer with 8 sub-bits
         self->echo_buffer_rate = (uint32_t)MAX(self->max_delay_ms / f_delay_ms * MICROPY_FLOAT_CONST(256.0), MICROPY_FLOAT_CONST(1.0));
@@ -138,7 +145,7 @@ void recalculate_delay(audiodelays_echo_obj_t *self, mp_float_t f_delay_ms) {
         memset(self->echo_buffer + self->echo_buffer_len, 0, self->max_echo_buffer_len - self->echo_buffer_len);
     }
 
-    self->current_delay_ms = (uint32_t)f_delay_ms;
+    self->current_delay_ms = f_delay_ms;
 }
 
 mp_obj_t common_hal_audiodelays_echo_get_decay(audiodelays_echo_obj_t *self) {
@@ -242,46 +249,11 @@ void common_hal_audiodelays_echo_stop(audiodelays_echo_obj_t *self) {
     return;
 }
 
-#define RANGE_LOW_16 (-28000)
-#define RANGE_HIGH_16 (28000)
-#define RANGE_SHIFT_16 (16)
-#define RANGE_SCALE_16 (0xfffffff / (32768 * 2 - RANGE_HIGH_16)) // 2 for echo+sample
-
-// dynamic range compression via a downward compressor with hard knee
-//
-// When the output value is within the range +-28000 (about 85% of full scale),
-// it is unchanged. Otherwise, it undergoes a gain reduction so that the
-// largest possible values, (+32768,-32767) * 2 (2 for echo and sample),
-// still fit within the output range
-//
-// This produces a much louder overall volume with multiple voices, without
-// much additional processing.
-//
-// https://en.wikipedia.org/wiki/Dynamic_range_compression
-static
-int16_t mix_down_sample(int32_t sample) {
-    if (sample < RANGE_LOW_16) {
-        sample = (((sample - RANGE_LOW_16) * RANGE_SCALE_16) >> RANGE_SHIFT_16) + RANGE_LOW_16;
-    } else if (sample > RANGE_HIGH_16) {
-        sample = (((sample - RANGE_HIGH_16) * RANGE_SCALE_16) >> RANGE_SHIFT_16) + RANGE_HIGH_16;
-    }
-    return sample;
-}
-
 audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *self, bool single_channel_output, uint8_t channel,
     uint8_t **buffer, uint32_t *buffer_length) {
 
     if (!single_channel_output) {
         channel = 0;
-    }
-
-    // get the effect values we need from the BlockInput. These may change at run time so you need to do bounds checking if required
-    mp_float_t mix = MIN(1.0, MAX(synthio_block_slot_get(&self->mix), 0.0));
-    mp_float_t decay = MIN(1.0, MAX(synthio_block_slot_get(&self->decay), 0.0));
-
-    uint32_t delay_ms = (uint32_t)synthio_block_slot_get(&self->delay_ms);
-    if (self->current_delay_ms != delay_ms) {
-        recalculate_delay(self, delay_ms);
     }
 
     // Switch our buffers to the other buffer
@@ -294,11 +266,6 @@ audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *
 
     // The echo buffer is always stored as a 16-bit value internally
     int16_t *echo_buffer = (int16_t *)self->echo_buffer;
-    uint32_t echo_buf_len = self->echo_buffer_len / sizeof(uint16_t);
-    uint32_t echo_buf_pos = self->echo_buffer_pos;
-    if (self->freq_shift && channel == 1) {
-        echo_buf_pos = self->echo_buffer_right_pos;
-    }
 
     // Loop over the entire length of our buffer to fill it, this may require several calls to get data from the sample
     while (length != 0) {
@@ -320,9 +287,36 @@ audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *
             }
         }
 
+        // Determine how many bytes we can process to our buffer, the less of the sample we have left and our buffer remaining
+        uint32_t n;
+        if (self->sample == NULL) {
+            n = MIN(length, SYNTHIO_MAX_DUR * self->channel_count);
+        } else {
+            n = MIN(MIN(self->sample_buffer_length, length), SYNTHIO_MAX_DUR * self->channel_count);
+        }
+
+        // get the effect values we need from the BlockInput. These may change at run time so you need to do bounds checking if required
+        shared_bindings_synthio_lfo_tick(self->sample_rate, n / self->channel_count);
+        mp_float_t mix = synthio_block_slot_get_limited(&self->mix, MICROPY_FLOAT_CONST(0.0), MICROPY_FLOAT_CONST(1.0));
+        mp_float_t decay = synthio_block_slot_get_limited(&self->decay, MICROPY_FLOAT_CONST(0.0), MICROPY_FLOAT_CONST(1.0));
+
+        mp_float_t f_delay_ms = synthio_block_slot_get(&self->delay_ms);
+        if (MICROPY_FLOAT_C_FUN(fabs)(self->current_delay_ms - f_delay_ms) >= self->sample_ms) {
+            recalculate_delay(self, f_delay_ms);
+        }
+
+        uint32_t echo_buf_len = self->echo_buffer_len / sizeof(uint16_t);
+
+        // Set our echo buffer position
+        uint32_t echo_buf_pos = self->echo_buffer_pos;
+        // Use a separate buffer position if using single channel output
+        if (self->freq_shift && channel == 1) {
+            echo_buf_pos = self->echo_buffer_right_pos;
+        }
+
         // If we have no sample keep the echo echoing
         if (self->sample == NULL) {
-            if (mix <= 0.01) {  // Mix of 0 is pure sample sound. We have no sample so no sound
+            if (mix <= MICROPY_FLOAT_CONST(0.01)) {  // Mix of 0 is pure sample sound. We have no sample so no sound
                 if (self->samples_signed) {
                     memset(word_buffer, 0, length * (self->bits_per_sample / 8));
                 } else {
@@ -382,13 +376,10 @@ audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *
             length = 0;
         } else {
             // we have a sample to play and echo
-            // Determine how many bytes we can process to our buffer, the less of the sample we have left and our buffer remaining
-            uint32_t n = MIN(self->sample_buffer_length, length);
-
             int16_t *sample_src = (int16_t *)self->sample_remaining_buffer; // for 16-bit samples
             int8_t *sample_hsrc = (int8_t *)self->sample_remaining_buffer; // for 8-bit samples
 
-            if (mix <= 0.01) { // if mix is zero pure sample only
+            if (mix <= MICROPY_FLOAT_CONST(0.01)) { // if mix is zero pure sample only
                 for (uint32_t i = 0; i < n; i++) {
                     if (MP_LIKELY(self->bits_per_sample == 16)) {
                         word_buffer[i] = sample_src[i];
@@ -422,7 +413,7 @@ audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *
                     word = (int32_t)(echo * decay + sample_word);
 
                     if (MP_LIKELY(self->bits_per_sample == 16)) {
-                        word = mix_down_sample(word);
+                        word = synthio_mix_down_sample(word, SYNTHIO_MIX_DOWN_SCALE(2));
                         if (self->freq_shift) {
                             for (uint32_t j = echo_buf_pos >> 8; j < next_buffer_pos >> 8; j++) {
                                 echo_buffer[(j % echo_buf_len) + echo_buf_len * echo_buf_offset] = (int16_t)word;
@@ -447,14 +438,15 @@ audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *
                     }
 
                     word = echo + sample_word;
+                    word = synthio_mix_down_sample(word, SYNTHIO_MIX_DOWN_SCALE(2));
 
                     if (MP_LIKELY(self->bits_per_sample == 16)) {
-                        word_buffer[i] = (int16_t)((sample_word * (1.0 - mix)) + (word * mix));
+                        word_buffer[i] = (int16_t)((sample_word * (MICROPY_FLOAT_CONST(1.0) - mix)) + (word * mix));
                         if (!self->samples_signed) {
                             word_buffer[i] ^= 0x8000;
                         }
                     } else {
-                        int8_t mixed = (int16_t)((sample_word * (1.0 - mix)) + (word * mix));
+                        int8_t mixed = (int16_t)((sample_word * (MICROPY_FLOAT_CONST(1.0) - mix)) + (word * mix));
                         if (self->samples_signed) {
                             hword_buffer[i] = mixed;
                         } else {
@@ -477,13 +469,13 @@ audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *
             self->sample_remaining_buffer += (n * (self->bits_per_sample / 8));
             self->sample_buffer_length -= n;
         }
-    }
 
-    // Update buffer position
-    if (self->freq_shift && channel == 1) {
-        self->echo_buffer_right_pos = echo_buf_pos;
-    } else {
-        self->echo_buffer_pos = echo_buf_pos;
+        // Update buffer position
+        if (self->freq_shift && channel == 1) {
+            self->echo_buffer_right_pos = echo_buf_pos;
+        } else {
+            self->echo_buffer_pos = echo_buf_pos;
+        }
     }
 
     // Finally pass our buffer and length to the calling audio function
