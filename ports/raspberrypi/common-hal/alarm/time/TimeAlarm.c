@@ -108,7 +108,11 @@ void alarm_time_timealarm_set_alarms(bool deep_sleep, size_t n_alarms, const mp_
     // also see note above regarding aon_timer_get_time, also true here
     t.tv_sec = alarm_seconds;
     DEBUG_PRINT("alarm_seconds: %d", t.tv_sec);
+    #ifdef PICO_RP2040
     aon_timer_enable_alarm(&t, &timer_callback, deep_sleep);
+    #else
+    aon_timer_enable_alarm(&t, &timer_callback, true);
+    #endif
     woke_up = false;
 }
 
