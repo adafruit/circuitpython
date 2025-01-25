@@ -97,7 +97,11 @@ void alarm_pin_pinalarm_reset(void) {
     woke_up = false;
 
     // Clear all GPIO interrupts
+    #ifdef PICO_RP2040
     for (uint8_t i = 0; i < 4; i++) {
+    #else
+    for (uint8_t i = 0; i < 6; i++) {
+        #endif
         iobank0_hw->intr[i] = 0;
     }
 
