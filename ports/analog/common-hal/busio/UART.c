@@ -95,6 +95,7 @@ static uint32_t timeout_ms=0;
 // will be checked by ISR Handler for which ones to call
 static uint8_t uarts_active = 0;
 static uart_status_t uart_status[NUM_UARTS];
+static volatile int uart_err;
 // static uint8_t uart_never_reset_mask = 0;
 
 static int isValidBaudrate(uint32_t baudrate) {
@@ -146,12 +147,9 @@ static mxc_uart_parity_t convertParity(busio_uart_parity_t busio_parity)
     }
 }
 
-// FIXME: Find a better way of doing this without a for loop
-// FIXME: Fixed @ UART0 for TESTING BUGFIXES!!!
 void UART0_IRQHandler(void) {
-    // MXC_UART_AsyncHandler(MXC_UART_GET_UART(0));
-    for (int i=0; i < NUM_UARTS; i++) {
-        if (uarts_active & (1 << i) ) {
+    for (int i = 0; i < NUM_UARTS; i++) {
+        if (uarts_active & (1 << i)) {
             MXC_UART_AsyncHandler(MXC_UART_GET_UART(i));
         }
     }
@@ -161,6 +159,7 @@ void UART0_IRQHandler(void) {
 // (e.g. txLen == txCnt)
 static volatile void uartCallback(mxc_uart_req_t *req, int error) {
     uart_status[MXC_UART_GET_IDX(req->uart)] = UART_FREE;
+    uart_err = error;
 }
 
 // Construct an underlying UART object.
@@ -262,7 +261,7 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     uarts_active |= (1 << self->uart_id);
 
 
-    /* Enable UART interrupt */
+    /* Setup UART interrupt */
     NVIC_ClearPendingIRQ(MXC_UART_GET_IRQ(self->uart_id));
     NVIC_DisableIRQ(MXC_UART_GET_IRQ(self->uart_id));
     NVIC_SetPriority(MXC_UART_GET_IRQ(self->uart_id), UART_PRIORITY);
@@ -311,45 +310,67 @@ bool common_hal_busio_uart_deinited(busio_uart_obj_t *self)
     };
 }
 
-// todo: test
 // Read characters. len is in characters NOT bytes!
 size_t common_hal_busio_uart_read(busio_uart_obj_t *self,
     uint8_t *data, size_t len, int *errcode)
 {
     int err;
+    uint32_t start_time=0;
     static size_t bytes_remaining;
 
-    bytes_remaining = len * 4;
+    // Setup globals & status tracking
+    uart_err = E_NO_ERROR;
+    uarts_active |= (1 << self->uart_id);
+    uart_status[self->uart_id] = UART_BUSY;
+    bytes_remaining = len;
 
-    MXC_UART_ClearFlags(self->uart_regs, 0xFFFFFFFF);
     NVIC_EnableIRQ(MXC_UART_GET_IRQ(self->uart_id));
 
-    while(bytes_remaining > 0) {
-        mxc_uart_req_t uart_rd_req;
-        uart_rd_req.rxCnt = 0;
-        uart_rd_req.txCnt = 0;
-        uart_rd_req.rxData = data;
-        uart_rd_req.txData = NULL;
-        uart_rd_req.rxLen = (uint32_t)( (bytes_remaining >= 255) ? 255 : bytes_remaining );
-        uart_rd_req.txLen = 0;
-        uart_rd_req.uart = self->uart_regs;
-        uart_rd_req.callback = (void *)uartCallback;
+    mxc_uart_req_t uart_rd_req;
+    uart_rd_req.rxCnt = 0;
+    uart_rd_req.txCnt = 0;
+    uart_rd_req.rxData = data;
+    uart_rd_req.txData = NULL;
+    uart_rd_req.rxLen = bytes_remaining;
+    uart_rd_req.txLen = 0;
+    uart_rd_req.uart = self->uart_regs;
+    uart_rd_req.callback = (void *)uartCallback;
 
-        err = MXC_UART_TransactionAsync(&uart_rd_req);
-        if (err != E_NO_ERROR) {
-            *errcode = err;
-            NVIC_DisableIRQ(MXC_UART_GET_IRQ(self->uart_id));
-            return ((len * 4) - bytes_remaining);
-        }
-        bytes_remaining -= uart_rd_req.rxLen;
+    // Initiate the read transaction
+    start_time = supervisor_ticks_ms64();
+    err = MXC_UART_TransactionAsync(&uart_rd_req);
+    if (err != E_NO_ERROR) {
+        *errcode = err;
+        MXC_UART_AbortAsync(self->uart_regs);
+        NVIC_DisableIRQ(MXC_UART_GET_IRQ(self->uart_id));
+        mp_raise_RuntimeError_varg(MP_ERROR_TEXT("\nERR: Error starting trasaction: %d\n"), err);
     }
-    NVIC_DisableIRQ(MXC_UART_GET_IRQ(self->uart_id));
 
+    // Wait for transaction completion or timeout
+    while ( (uart_status[self->uart_id] != UART_FREE) &&
+        (supervisor_ticks_ms64() - start_time < (self->timeout * 1000))) {
+    }
+
+    // If the timeout gets hit, abort and error out
+    if (uart_status[self->uart_id] != UART_FREE) {
+        MXC_UART_AbortAsync(self->uart_regs);
+        NVIC_DisableIRQ(MXC_UART_GET_IRQ(self->uart_id));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("\nERR: Uart transaction timed out.\n"));
+    }
+
+    // Check for errors from the callback
+    else if (uart_err != E_NO_ERROR) {
+        MXC_UART_AbortAsync(self->uart_regs);
+        NVIC_DisableIRQ(MXC_UART_GET_IRQ(self->uart_id));
+        mp_raise_RuntimeError_varg(MP_ERROR_TEXT("MAX32 ERR: %d\n"), uart_err);
+    }
+
+    NVIC_DisableIRQ(MXC_UART_GET_IRQ(self->uart_id));
     return len;
 }
 
-//todo: test
 // Write characters. len is in characters NOT bytes!
+// This function blocks until the timeout finishes
  size_t common_hal_busio_uart_write(busio_uart_obj_t *self,
     const uint8_t *data, size_t len, int *errcode)
 {
@@ -357,49 +378,62 @@ size_t common_hal_busio_uart_read(busio_uart_obj_t *self,
     uint32_t start_time=0;
     static size_t bytes_remaining;
 
+    // Setup globals & status tracking
+    uart_err = E_NO_ERROR;
+    uarts_active |= (1 << self->uart_id);
+    uart_status[self->uart_id] = UART_BUSY;
     bytes_remaining = len;
 
-    MXC_UART_ClearFlags(self->uart_regs, 0xFFFFFFFF);
-    NVIC_EnableIRQ(MXC_UART_GET_IRQ(self->uart_id));
+    mxc_uart_req_t uart_wr_req = {};
 
-    while(bytes_remaining > 0) {
-        mxc_uart_req_t uart_wr_req;
-        uart_wr_req.rxCnt = 0;
-        uart_wr_req.txCnt = 0;
-        uart_wr_req.rxData = NULL;
-        uart_wr_req.txData = data;
-        uart_wr_req.txLen = bytes_remaining;
-        uart_wr_req.rxLen = 0;
-        uart_wr_req.uart = self->uart_regs;
-        uart_wr_req.callback = (void *)uartCallback;
+    // Setup transaction
+    uart_wr_req.rxCnt = 0;
+    uart_wr_req.txCnt = 0;
+    uart_wr_req.rxData = NULL;
+    uart_wr_req.txData = data;
+    uart_wr_req.txLen = bytes_remaining;
+    uart_wr_req.rxLen = 0;
+    uart_wr_req.uart = self->uart_regs;
+    uart_wr_req.callback = (void *)uartCallback;
 
-        uart_status[self->uart_id] = UART_BUSY;
-        start_time = supervisor_ticks_ms64();
-        err = MXC_UART_TransactionAsync(&uart_wr_req);
-        if (err != E_NO_ERROR) {
-            *errcode = err;
-            MXC_UART_AbortAsync(self->uart_regs);
-            NVIC_DisableIRQ(MXC_UART_GET_IRQ(self->uart_id));
-            mp_raise_ConnectionError(MP_ERROR_TEXT("\nERR: Requested bus is busy\n"));
-        }
-
-        // Wait for transaction completion
-        while ( (uart_status[self->uart_id] != UART_FREE) &&
-                (supervisor_ticks_ms64() - start_time < (self->timeout * 1000))
-              ) {};
-
-        // If the timeout gets hit, abort and error out
-        if (uart_status[self->uart_id] != UART_FREE) {
-            MXC_UART_AbortAsync(self->uart_regs);
-            NVIC_DisableIRQ(MXC_UART_GET_IRQ(self->uart_id));
-            mp_raise_ConnectionError(MP_ERROR_TEXT("\nERR: Uart transaction timed out.\n"));
-        }
-
-        bytes_remaining -= uart_wr_req.txCnt;
+    // Start the transaction
+    start_time = supervisor_ticks_ms64();
+    err = MXC_UART_TransactionAsync(&uart_wr_req);
+    if (err != E_NO_ERROR) {
+        *errcode = err;
+        MXC_UART_AbortAsync(self->uart_regs);
+        NVIC_DisableIRQ(MXC_UART_GET_IRQ(self->uart_id));
+        mp_raise_ConnectionError(MP_ERROR_TEXT("\nERR: Requested bus is busy\n"));
     }
-    NVIC_DisableIRQ(MXC_UART_GET_IRQ(self->uart_id));
-    return len;
 
+    // Wait for transaction completion or timeout
+    while ( (uart_status[self->uart_id] != UART_FREE) &&
+        (supervisor_ticks_ms64() - start_time < (self->timeout * 1000))) {
+
+        // Call the handler and abort if errors
+        uart_err = MXC_UART_AsyncHandler(MXC_UART_GET_UART(0));
+        if (uart_err != E_NO_ERROR) {
+            MXC_UART_AbortAsync(MXC_UART_GET_UART(0));
+            NVIC_DisableIRQ(MXC_UART_GET_IRQ(0));
+            mp_raise_RuntimeError_varg(MP_ERROR_TEXT("MAX32 ERR: %d\n"), uart_err);
+        }
+    }
+
+    // If the timeout gets hit, abort and error out
+    if (uart_status[self->uart_id] != UART_FREE) {
+        MXC_UART_AbortAsync(self->uart_regs);
+        NVIC_DisableIRQ(MXC_UART_GET_IRQ(self->uart_id));
+        mp_raise_ConnectionError(MP_ERROR_TEXT("\nERR: Uart transaction timed out.\n"));
+    }
+
+    // Check for errors from the callback
+    else if (uart_err != E_NO_ERROR) {
+        MXC_UART_AbortAsync(self->uart_regs);
+        NVIC_DisableIRQ(MXC_UART_GET_IRQ(self->uart_id));
+        mp_raise_RuntimeError_varg(MP_ERROR_TEXT("MAX32 ERR: %d\n"), uart_err);
+    }
+
+    return len;
 }
 
  uint32_t common_hal_busio_uart_get_baudrate(busio_uart_obj_t *self)
