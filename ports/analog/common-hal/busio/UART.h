@@ -23,7 +23,7 @@ typedef struct {
 
     int uart_id;
     int uart_map;
-    mxc_uart_regs_t* uart_regs;
+    mxc_uart_regs_t *uart_regs;
 
     bool parity;
     uint8_t bits;

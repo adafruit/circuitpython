@@ -17,7 +17,7 @@
 // Define a struct for what BUSIO.I2C should carry
 typedef struct {
     mp_obj_base_t base;
-    mxc_i2c_regs_t* i2c_regs;
+    mxc_i2c_regs_t *i2c_regs;
     bool has_lock;
     const mcu_pin_obj_t *scl;
     const mcu_pin_obj_t *sda;
