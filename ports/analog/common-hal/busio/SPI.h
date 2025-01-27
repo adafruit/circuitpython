@@ -17,7 +17,7 @@
 // Define a struct for what BUSIO.SPI should carry
 typedef struct {
     mp_obj_base_t base;
-    mxc_spi_regs_t* spi_regs;
+    mxc_spi_regs_t *spi_regs;
     bool has_lock;
     const mcu_pin_obj_t *sck;
     const mcu_pin_obj_t *mosi;

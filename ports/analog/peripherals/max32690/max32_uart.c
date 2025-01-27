@@ -23,21 +23,21 @@
 
 const mxc_gpio_cfg_t uart_maps[NUM_UARTS] = {
     { MXC_GPIO2, (MXC_GPIO_PIN_11 | MXC_GPIO_PIN_12), MXC_GPIO_FUNC_ALT1,
-                                        MXC_GPIO_PAD_WEAK_PULL_UP, MXC_GPIO_VSSEL_VDDIO, MXC_GPIO_DRVSTR_0 },
+      MXC_GPIO_PAD_WEAK_PULL_UP, MXC_GPIO_VSSEL_VDDIO, MXC_GPIO_DRVSTR_0 },
     { MXC_GPIO2, (MXC_GPIO_PIN_14 | MXC_GPIO_PIN_16), MXC_GPIO_FUNC_ALT1,
-                                        MXC_GPIO_PAD_WEAK_PULL_UP, MXC_GPIO_VSSEL_VDDIO, MXC_GPIO_DRVSTR_0 },
+      MXC_GPIO_PAD_WEAK_PULL_UP, MXC_GPIO_VSSEL_VDDIO, MXC_GPIO_DRVSTR_0 },
     { MXC_GPIO1, (MXC_GPIO_PIN_9 | MXC_GPIO_PIN_10),
-                                        MXC_GPIO_FUNC_ALT1, MXC_GPIO_PAD_WEAK_PULL_UP,
-                                        MXC_GPIO_VSSEL_VDDIO, MXC_GPIO_DRVSTR_0 },
+      MXC_GPIO_FUNC_ALT1, MXC_GPIO_PAD_WEAK_PULL_UP,
+      MXC_GPIO_VSSEL_VDDIO, MXC_GPIO_DRVSTR_0 },
     { MXC_GPIO3, (MXC_GPIO_PIN_0 | MXC_GPIO_PIN_1),
-                                        MXC_GPIO_FUNC_ALT2, MXC_GPIO_PAD_WEAK_PULL_UP,
-                                        MXC_GPIO_VSSEL_VDDIO, MXC_GPIO_DRVSTR_0 }
+      MXC_GPIO_FUNC_ALT2, MXC_GPIO_PAD_WEAK_PULL_UP,
+      MXC_GPIO_VSSEL_VDDIO, MXC_GPIO_DRVSTR_0 }
 };
 
 int pinsToUart(const mcu_pin_obj_t *rx, const mcu_pin_obj_t *tx) {
     for (int i = 0; i < NUM_UARTS; i++) {
-        if ( (uart_maps[i].port == (MXC_GPIO_GET_GPIO(tx->port)))
-          && (uart_maps[i].mask == (( tx->mask) | (rx->mask))) ) {
+        if ((uart_maps[i].port == (MXC_GPIO_GET_GPIO(tx->port)))
+            && (uart_maps[i].mask == ((tx->mask) | (rx->mask)))) {
             return i;
         }
     }
