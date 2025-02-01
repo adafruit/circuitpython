@@ -146,7 +146,7 @@ static mxc_uart_parity_t convertParity(busio_uart_parity_t busio_parity) {
     }
 }
 
-void UART0_IRQHandler(void) {
+void uart_isr(void) {
     for (int i = 0; i < NUM_UARTS; i++) {
         if (uarts_active & (1 << i)) {
             MXC_UART_AsyncHandler(MXC_UART_GET_UART(i));
@@ -237,6 +237,7 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     self->error = E_NO_ERROR;
 
     // Initialize ringbuffer for receiving data
+    // FIXME: Either the use the ringbuf or get rid of it!
     if (self->rx_pin) {
         // if given a ringbuff, use that
         if (receiver_buffer) {
@@ -253,12 +254,18 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     // Indicate to this module that the UART is active
     uarts_active |= (1 << self->uart_id);
 
+    // Set the timeout to a default value
+    if (((timeout < 0.0) || (timeout > 100.0))) {
+        self->timeout = 1.0;
+    } else {
+        self->timeout = timeout;
+    }
 
     /* Setup UART interrupt */
     NVIC_ClearPendingIRQ(MXC_UART_GET_IRQ(self->uart_id));
     NVIC_DisableIRQ(MXC_UART_GET_IRQ(self->uart_id));
     NVIC_SetPriority(MXC_UART_GET_IRQ(self->uart_id), UART_PRIORITY);
-    NVIC_SetVector(MXC_UART_GET_IRQ(self->uart_id), (uint32_t)&UART0_IRQHandler);
+    NVIC_SetVector(MXC_UART_GET_IRQ(self->uart_id), (uint32_t)uart_isr);
 
     return;
 }

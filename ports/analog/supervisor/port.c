@@ -39,6 +39,7 @@
 
 // Sys includes
 #include "max32_port.h"
+#include "nvic_table.h"
 
 // Timers
 #include "mxc_delay.h"
@@ -77,6 +78,13 @@ void SysTick_Handler(void) {
 
 safe_mode_t port_init(void) {
     int err = E_NO_ERROR;
+
+    // Set Vector Table to RAM & configure ARM core to use RAM-based ISRs
+    // This allows definition of ISRs with custom names
+    //
+    // Useful for mapping ISRs with names not related to a specific IRQn.
+    // Source: https://arm-software.github.io/CMSIS_5/Core/html/using_VTOR_pg.html
+    NVIC_SetRAM();
 
     // 1ms tick timer
     SysTick_Config(SystemCoreClock / 1000);
