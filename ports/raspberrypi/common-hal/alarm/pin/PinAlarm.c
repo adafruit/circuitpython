@@ -30,7 +30,7 @@ static void gpio_callback(uint gpio, uint32_t events) {
 
     if (_not_yet_deep_sleeping) {
         // Event went off prematurely, before we went to sleep, so set it again.
-        gpio_set_irq_enabled(gpio, events, false);
+        gpio_set_irq_enabled(gpio, events, true);
     } else {
         // Went off during sleep.
         // Disable IRQ automatically.
@@ -109,6 +109,7 @@ void alarm_pin_pinalarm_reset(void) {
     for (size_t i = 0; i < NUM_BANK0_GPIOS; i++) {
         if (alarm_reserved_pins & (1 << i)) {
             gpio_set_irq_enabled(i, GPIO_IRQ_ALL_EVENTS, false);
+            gpio_set_dormant_irq_enabled(i, GPIO_IRQ_ALL_EVENTS, false);
             reset_pin_number(i);
         }
     }

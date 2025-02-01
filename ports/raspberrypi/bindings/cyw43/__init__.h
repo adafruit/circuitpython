@@ -33,4 +33,5 @@ const mcu_pin_obj_t *validate_obj_is_pin_including_cyw43(mp_obj_t obj, qstr arg_
 #define PM_DISABLED CONSTANT_CYW43_PM_VALUE(CYW43_NO_POWERSAVE_MODE, 200, 1, 1, 10)
 
 extern void bindings_cyw43_wifi_enforce_pm(void);
-void cyw43_enter_deep_sleep(void);
+extern void bindings_cyw43_power_down(void);
+extern bool bindings_cyw43_power_up(void);

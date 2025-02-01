@@ -23,6 +23,7 @@
 
 #if CIRCUITPY_CYW43
 #include "bindings/cyw43/__init__.h"
+#include "common-hal/wifi/__init__.h"
 #endif
 
 #include "supervisor/port.h"
@@ -97,25 +98,6 @@ static inline void _sleep_run_from_xosc(void) {
 static inline void _sleep_run_from_lposc(void) {
     _sleep_run_from_dormant_source(DORMANT_SOURCE_LPOSC);
 }
-#endif
-
-#ifdef PICO_RP2040
-// Light sleep turns off nonvolatile Busio and other wake-only peripherals.
-// This does not save a considerable amount of current (~2mA), but
-// it is only used during fake (USB-connected) LightSleep anyway.
-const uint32_t RP_LIGHTSLEEP_EN0_MASK = ~(
-    CLOCKS_SLEEP_EN0_CLK_SYS_SPI1_BITS |
-    CLOCKS_SLEEP_EN0_CLK_PERI_SPI1_BITS |
-    CLOCKS_SLEEP_EN0_CLK_SYS_SPI0_BITS |
-    CLOCKS_SLEEP_EN0_CLK_PERI_SPI0_BITS |
-    CLOCKS_SLEEP_EN0_CLK_SYS_PWM_BITS |
-    CLOCKS_SLEEP_EN0_CLK_SYS_PIO1_BITS |
-    CLOCKS_SLEEP_EN0_CLK_SYS_PIO0_BITS |
-    CLOCKS_SLEEP_EN0_CLK_SYS_I2C1_BITS |
-    CLOCKS_SLEEP_EN0_CLK_SYS_I2C0_BITS |
-    CLOCKS_SLEEP_EN0_CLK_SYS_ADC_BITS |
-    CLOCKS_SLEEP_EN0_CLK_ADC_ADC_BITS
-    );
 #endif
 
 static dormant_source_t _dormant_source;
@@ -217,6 +199,10 @@ static void _sleep_processor_deep_sleep(void) {
     #endif
 }
 
+// saved values of the clocks
+uint32_t _saved_sleep_en0;
+uint32_t _saved_sleep_en1;
+
 // slightly modified compared to pico-extras, since we set the
 // alarm and callback elsewhere and only use it with RP2040
 #ifdef PICO_RP2040
@@ -224,23 +210,16 @@ static void _sleep_goto_sleep_until(void) {
     DEBUG_PRINT("_sleep_goto_sleep_until");
     SLEEP(10);
 
-    if (_serial_connected) {
-        DEBUG_PRINT("serial connected: using old clock-masks");
-        SLEEP(10);
-        clocks_hw->sleep_en0 &= RP_LIGHTSLEEP_EN0_MASK;
-        clocks_hw->sleep_en1 = CLOCKS_SLEEP_EN1_RESET;
-    } else {
-        clocks_hw->sleep_en0 = CLOCKS_SLEEP_EN0_CLK_RTC_RTC_BITS;
-        clocks_hw->sleep_en1 = 0x0;
-    }
+    _saved_sleep_en0 = clocks_hw->sleep_en0;
+    _saved_sleep_en1 = clocks_hw->sleep_en1;
+    clocks_hw->sleep_en0 = CLOCKS_SLEEP_EN0_CLK_RTC_RTC_BITS;
+    clocks_hw->sleep_en1 = 0x0;
 
     // Enable deep sleep at the proc
     _sleep_processor_deep_sleep();
 
     // Go to sleep
-    DEBUG_PRINT("before __wfi()");   // !!! don't sleep here !!!
     __wfi();
-    DEBUG_PRINT("after __wfi()");
 }
 #endif
 
@@ -265,6 +244,8 @@ static void _sleep_goto_dormant_until(void) {
     powman_timer_set_1khz_tick_source_lposc();
     powman_timer_set_ms(restore_ms);
 
+    _saved_sleep_en0 = clocks_hw->sleep_en0;
+    _saved_sleep_en1 = clocks_hw->sleep_en1;
     clocks_hw->sleep_en0 = CLOCKS_SLEEP_EN0_CLK_REF_POWMAN_BITS;
     clocks_hw->sleep_en1 = 0x0;
 
@@ -282,8 +263,8 @@ static void _sleep_power_up(void) {
     rosc_enable();
 
     // Reset the sleep enable register so peripherals and other hardware can be used
-    clocks_hw->sleep_en0 |= ~(0u);
-    clocks_hw->sleep_en1 |= ~(0u);
+    clocks_hw->sleep_en0 = _saved_sleep_en0;
+    clocks_hw->sleep_en1 = _saved_sleep_en1;
 
     // Restore all clocks
     clocks_init();
@@ -293,6 +274,11 @@ static void _sleep_power_up(void) {
     uint64_t restore_ms = powman_timer_get_ms();
     powman_timer_set_1khz_tick_source_xosc();
     powman_timer_set_ms(restore_ms);
+    #endif
+
+    #if CIRCUITPY_CYW43
+    bindings_cyw43_power_up();
+    wifi_power_up_reset();
     #endif
 }
 
@@ -312,26 +298,32 @@ static void _goto_sleep_or_dormant(void) {
     DEBUG_PRINT("time-alarm: %s", timealarm_set ? "true": "false");
     DEBUG_PRINT("serial: %s", _serial_connected ? "true": "false");
     SLEEP(10);
-    #ifdef PICO_RP2040
-    if (!_serial_connected) {
-        _sleep_run_from_xosc();     // calls _sleep_run_from_dormant_source
+
+    // Just before sleep, enable the pinalarm interrupt.
+    alarm_pin_pinalarm_entering_deep_sleep();
+
+    // when serial is connected, only fake sleep/dormant
+    if (_serial_connected) {
+        __wfi();
+        return;
     }
-    if (_serial_connected || timealarm_set) {
+
+    #if CIRCUITPY_CYW43
+    bindings_cyw43_power_down();
+    #endif
+
+    #ifdef PICO_RP2040
+    _sleep_run_from_xosc();     // calls _sleep_run_from_dormant_source
+    if (timealarm_set) {
         _sleep_goto_sleep_until();
     } else {
         _sleep_go_dormant();
     }
-    if (!_serial_connected) {
-        _sleep_power_up();
-    }
+    _sleep_power_up();
     #else
-    if (!_serial_connected) {
-        _sleep_run_from_lposc();
-    }
+    _sleep_run_from_lposc();
     if (timealarm_set) {
         _sleep_goto_dormant_until();
-    } else {
-        // not calling _sleep_goto_dormant_until_pin() (pin-alarms already setup)
     }
     _sleep_go_dormant();
     _sleep_power_up();
@@ -365,13 +357,15 @@ void alarm_reset(void) {
 }
 
 static uint8_t _get_wakeup_cause(void) {
-    DEBUG_PRINT("_get_wakeup_cause");
-    SLEEP(10);
     // First check if the modules remember what last woke up
     if (alarm_pin_pinalarm_woke_this_cycle()) {
+        DEBUG_PRINT("_get_wakeup_cause: pin-alarm");
+        SLEEP(10);
         return RP_SLEEP_WAKEUP_GPIO;
     }
     if (alarm_time_timealarm_woke_this_cycle()) {
+        DEBUG_PRINT("_get_wakeup_cause: time-alarm");
+        SLEEP(10);
         return RP_SLEEP_WAKEUP_RTC;
     }
     // If waking from true deep sleep, modules will have lost their state,
@@ -444,11 +438,7 @@ mp_obj_t common_hal_alarm_light_sleep_until_alarms(size_t n_alarms, const mp_obj
             shared_alarm_save_wake_alarm(wake_alarm);
             break;
         }
-        DEBUG_PRINT("common_hal_alarm_light_sleep_until_alarms (before sleep/dormant)");
-        SLEEP(10);
         _goto_sleep_or_dormant();
-        DEBUG_PRINT("common_hal_alarm_light_sleep_until_alarms (after sleep/dormant)");
-        SLEEP(10);
     }
 
     if (mp_hal_is_interrupted()) {
@@ -468,17 +458,11 @@ void common_hal_alarm_set_deep_sleep_alarms(size_t n_alarms, const mp_obj_t *ala
 
 void NORETURN common_hal_alarm_enter_deep_sleep(void) {
 
-    #if CIRCUITPY_CYW43
-    cyw43_enter_deep_sleep();
-    #endif
-
     _goto_sleep_or_dormant();
 
     // Reset uses the watchdog. Use scratch registers to store wake reason
     watchdog_hw->scratch[RP_WKUP_SCRATCH_REG] = _get_wakeup_cause();
 
-    // Just before reset, enable the pinalarm interrupt.
-    alarm_pin_pinalarm_entering_deep_sleep();
     reset_cpu();
 }
 

@@ -49,6 +49,19 @@ void common_hal_wifi_init(bool user_initiated) {
     common_hal_wifi_radio_set_enabled(self, true);
 }
 
+// reset after sleep (called from common-hal/alarm/__init__.c)
+void wifi_power_up_reset(void) {
+    if (!wifi_ever_inited) {
+        // nothing to do
+        return;
+    } else {
+        // start station, regardless if wifi is currently disabled
+        // (enabling does not start station, why?)
+        wifi_radio_obj_t *self = &common_hal_wifi_radio_obj;
+        common_hal_wifi_radio_start_station(self);
+    }
+}
+
 void wifi_user_reset(void) {
     if (wifi_user_initiated) {
         wifi_reset();

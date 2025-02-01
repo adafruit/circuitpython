@@ -27,6 +27,7 @@
 #endif
 
 #if CIRCUITPY_WIFI
+#include "py/mphal.h"
 #include "common-hal/wifi/__init__.h"
 #endif
 
@@ -43,7 +44,7 @@
 #include "src/rp2_common/hardware_sync/include/hardware/sync.h"
 #include "src/rp2_common/hardware_timer/include/hardware/timer.h"
 #if CIRCUITPY_CYW43
-#include "py/mphal.h"
+#include "bindings/cyw43/__init__.h"
 #include "pico/cyw43_arch.h"
 #endif
 #include "src/common/pico_time/include/pico/time.h"
@@ -347,9 +348,7 @@ safe_mode_t port_init(void) {
     // are intended to meet the power on timing requirements, but apparently
     // are inadequate. We'll back off this long delay based on future testing.
     mp_hal_delay_ms(1000);
-    // Change this as a placeholder as to how to init with country code.
-    // Default country code is CYW43_COUNTRY_WORLDWIDE)
-    if (cyw43_arch_init_with_country(PICO_CYW43_ARCH_DEFAULT_COUNTRY_CODE)) {
+    if (bindings_cyw43_power_up()) {
         serial_write("WiFi init failed\n");
     } else {
         cyw_ever_init = true;
