@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: circuitpython-cn\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-01-04 12:55-0600\n"
-"PO-Revision-Date: 2024-12-21 21:01+0000\n"
+"PO-Revision-Date: 2025-01-31 07:02+0000\n"
 "Last-Translator: hexthat <hexthat@gmail.com>\n"
 "Language-Team: Chinese Hanyu Pinyin\n"
 "Language: zh_Latn_pinyin\n"
@@ -621,7 +621,7 @@ msgstr "yīnpín zhuǎnhuàn wèi bèi shíxiàn"
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 #: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
 msgid "Audio source error"
-msgstr ""
+msgstr "yīnpín yuán cuòwù"
 
 #: shared-bindings/wifi/Radio.c
 msgid "AuthMode.OPEN is not used with password"
@@ -759,6 +759,10 @@ msgid "Can only alarm on two low pins from deep sleep."
 msgstr ""
 "Zhǐ néng cóng shēndù shuìmián zhōng de liǎng gè dī yǐn jiǎo shàng bàojǐng."
 
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Can't construct AudioOut because continuous channel already open"
+msgstr ""
+
 #: ports/espressif/common-hal/_bleio/Characteristic.c
 #: ports/nordic/common-hal/_bleio/Characteristic.c
 msgid "Can't set CCCD on local Characteristic"
@@ -822,7 +826,7 @@ msgstr "bùnéng zǐlèihuà qiēpiàn"
 
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 msgid "Cannot use GPIO0..15 together with GPIO32..47"
-msgstr ""
+msgstr "wúfǎ shǐyòng GPIO0..15 liántóng GPIO32..47"
 
 #: ports/nordic/common-hal/alarm/pin/PinAlarm.c
 msgid "Cannot wake on pin edge, only level"
@@ -1025,14 +1029,42 @@ msgstr "Liánjiē shībài: Nèibù cuòwù"
 msgid "Failed to connect: timeout"
 msgstr "Liánjiē shībài: Chāoshí"
 
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: invalid arg"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: invalid state"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: no mem"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: not found"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to enable continuous"
+msgstr ""
+
 #: shared-module/audiomp3/MP3Decoder.c
 msgid "Failed to parse MP3 file"
 msgstr "Wúfǎ jiěxī MP3 wénjiàn"
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to register continuous events callback"
+msgstr ""
 
 #: ports/nordic/sd_mutex.c
 #, c-format
 msgid "Failed to release mutex, err 0x%04x"
 msgstr "Wúfǎ shìfàng mutex, err 0x%04x"
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to start async audio"
+msgstr ""
 
 #: supervisor/shared/safe_mode.c
 msgid "Failed to write internal flash."
@@ -2193,7 +2225,7 @@ msgstr "Wúfǎ dúqǔ tiáosèbǎn shùjù"
 
 #: ports/mimxrt10xx/common-hal/canio/CAN.c
 msgid "Unable to send CAN Message: all Tx message buffers are busy"
-msgstr ""
+msgstr "wúfǎ fāsòng CAN xiāoxi: suǒyǒuTx xiāoxi huǎnchōngqū dōumáng"
 
 #: ports/espressif/common-hal/mdns/Server.c
 #: ports/raspberrypi/common-hal/mdns/Server.c
@@ -2452,6 +2484,10 @@ msgstr "xūyào yīgè zì jié lèi duìxiàng"
 msgid "addresses is empty"
 msgstr "dìzhǐ wèi kōng"
 
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "already playing"
+msgstr ""
+
 #: py/compile.c
 msgid "annotation must be an identifier"
 msgstr "zhù shì bì xū shì biāo zhì fú"
@@ -2529,6 +2565,10 @@ msgstr "chángshì huòqǔ kōng xùliè de argmin/ argmax"
 #: py/objstr.c
 msgid "attributes not supported"
 msgstr "bù zhīchí de shǔxìng"
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "audio format not supported"
+msgstr ""
 
 #: extmod/ulab/code/ulab_tools.c
 msgid "axis is out of bounds"

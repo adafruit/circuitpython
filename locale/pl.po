@@ -751,6 +751,10 @@ msgstr ""
 msgid "Can only alarm on two low pins from deep sleep."
 msgstr ""
 
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Can't construct AudioOut because continuous channel already open"
+msgstr ""
+
 #: ports/espressif/common-hal/_bleio/Characteristic.c
 #: ports/nordic/common-hal/_bleio/Characteristic.c
 msgid "Can't set CCCD on local Characteristic"
@@ -1019,14 +1023,42 @@ msgstr "Nie udało się połączyć: błąd wewnętrzny"
 msgid "Failed to connect: timeout"
 msgstr "Nie udało się połączyć: upłynął limit czasu"
 
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: invalid arg"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: invalid state"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: no mem"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: not found"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to enable continuous"
+msgstr ""
+
 #: shared-module/audiomp3/MP3Decoder.c
 msgid "Failed to parse MP3 file"
 msgstr "Nie można przeanalizować pliku MP3"
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to register continuous events callback"
+msgstr ""
 
 #: ports/nordic/sd_mutex.c
 #, c-format
 msgid "Failed to release mutex, err 0x%04x"
 msgstr "Nie udało się zwolnić blokady, błąd 0x%04x"
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to start async audio"
+msgstr ""
 
 #: supervisor/shared/safe_mode.c
 msgid "Failed to write internal flash."
@@ -2432,6 +2464,10 @@ msgstr "wymagany obiekt typu bytes"
 msgid "addresses is empty"
 msgstr "adres jest pusty"
 
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "already playing"
+msgstr ""
+
 #: py/compile.c
 msgid "annotation must be an identifier"
 msgstr ""
@@ -2508,6 +2544,10 @@ msgstr "próba uzyskania argmin / argmax pustej sekwencji"
 
 #: py/objstr.c
 msgid "attributes not supported"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "audio format not supported"
 msgstr ""
 
 #: extmod/ulab/code/ulab_tools.c

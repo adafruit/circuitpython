@@ -51,32 +51,12 @@ static int8_t _sm_dma_plus_one_read[NUM_PIOS][NUM_PIO_STATE_MACHINES];
 #define SM_DMA_CLEAR_CHANNEL_READ(pio_index, sm) (_sm_dma_plus_one_read[(pio_index)][(sm)] = 0)
 #define SM_DMA_SET_CHANNEL_READ(pio_index, sm, channel) (_sm_dma_plus_one_read[(pio_index)][(sm)] = (channel) + 1)
 
-static PIO pio_instances[NUM_PIOS] = {
-    pio0,
-    pio1
-    #if NUM_PIOS == 3
-    , pio2
-    #endif
-};
 typedef void (*interrupt_handler_type)(void *);
 static interrupt_handler_type _interrupt_handler[NUM_PIOS][NUM_PIO_STATE_MACHINES];
 static void *_interrupt_arg[NUM_PIOS][NUM_PIO_STATE_MACHINES];
 
 static void rp2pio_statemachine_interrupt_handler(void);
 
-// Workaround for sdk bug: https://github.com/raspberrypi/pico-sdk/issues/1878
-// This workaround can be removed when we upgrade to sdk 2.0.1
-static inline void sm_config_set_in_pin_count_issue1878(pio_sm_config *c, uint in_count) {
-    #if PICO_PIO_VERSION == 0
-    // can't be changed from 32 on PIO v0
-    ((void)c);
-    valid_params_if(HARDWARE_PIO, in_count == 32);
-    #else
-    valid_params_if(HARDWARE_PIO, in_count && in_count <= 32);
-    c->shiftctrl = (c->shiftctrl & ~PIO_SM0_SHIFTCTRL_IN_COUNT_BITS) |
-        ((in_count & 0x1fu) << PIO_SM0_SHIFTCTRL_IN_COUNT_LSB);
-    #endif
-}
 static void rp2pio_statemachine_set_pull(pio_pinmask_t pull_pin_up, pio_pinmask_t pull_pin_down, pio_pinmask_t pins_we_use) {
     for (size_t i = 0; i < NUM_BANK0_GPIOS; i++) {
         bool used = PIO_PINMASK_IS_SET(pins_we_use, i);
@@ -162,7 +142,7 @@ static void _reset_statemachine(PIO pio, uint8_t sm, bool leave_pins) {
 
 void reset_rp2pio_statemachine(void) {
     for (size_t i = 0; i < NUM_PIOS; i++) {
-        PIO pio = pio_instances[i];
+        PIO pio = pio_get_instance(i);
         for (size_t j = 0; j < NUM_PIO_STATE_MACHINES; j++) {
             if (_never_reset[i][j]) {
                 continue;
@@ -252,7 +232,7 @@ static bool use_existing_program(PIO *pio_out, uint *sm_out, int *offset_inout, 
     }
 
     for (size_t i = 0; i < NUM_PIOS; i++) {
-        PIO pio = pio_instances[i];
+        PIO pio = pio_get_instance(i);
         if (!is_gpio_compatible(pio, required_gpio_ranges)) {
             continue;
         }
@@ -260,10 +240,12 @@ static bool use_existing_program(PIO *pio_out, uint *sm_out, int *offset_inout, 
             if (_current_program_id[i][j] == program_id &&
                 _current_program_len[i][j] == program_len &&
                 (*offset_inout == -1 || *offset_inout == _current_program_offset[i][j])) {
-                *pio_out = pio;
-                *sm_out = j;
-                *offset_inout = _current_program_offset[i][j];
-                return true;
+                *sm_out = pio_claim_unused_sm(pio, false);
+                if (*sm_out >= 0) {
+                    *pio_out = pio;
+                    *offset_inout = _current_program_offset[i][j];
+                    return true;
+                }
             }
         }
     }
@@ -322,7 +304,7 @@ bool rp2pio_statemachine_construct(rp2pio_statemachine_obj_t *self,
     pio_program_t program_struct = {
         .instructions = (uint16_t *)program,
         .length = program_len,
-        .origin = -1
+        .origin = offset,
     };
     PIO pio;
     uint state_machine;
@@ -442,7 +424,7 @@ bool rp2pio_statemachine_construct(rp2pio_statemachine_obj_t *self,
     sm_config_set_wrap(&c, wrap_target, wrap);
     sm_config_set_in_shift(&c, in_shift_right, auto_push, push_threshold);
     #if PICO_PIO_VERSION > 0
-    sm_config_set_in_pin_count_issue1878(&c, in_pin_count);
+    sm_config_set_in_pin_count(&c, in_pin_count);
     #endif
 
     sm_config_set_out_shift(&c, out_shift_right, auto_pull, pull_threshold);
@@ -1097,7 +1079,7 @@ void common_hal_rp2pio_statemachine_set_interrupt_handler(rp2pio_statemachine_ob
 
 static void rp2pio_statemachine_interrupt_handler(void) {
     for (size_t pio_index = 0; pio_index < NUM_PIOS; pio_index++) {
-        PIO pio = pio_instances[pio_index];
+        PIO pio = pio_get_instance(pio_index);
         for (size_t sm = 0; sm < NUM_PIO_STATE_MACHINES; sm++) {
             if (!_interrupt_handler[pio_index][sm]) {
                 continue;
@@ -1452,7 +1434,7 @@ int common_hal_rp2pio_statemachine_get_offset(rp2pio_statemachine_obj_t *self) {
 
 int common_hal_rp2pio_statemachine_get_pc(rp2pio_statemachine_obj_t *self) {
     uint8_t pio_index = pio_get_index(self->pio);
-    PIO pio = pio_instances[pio_index];
+    PIO pio = pio_get_instance(pio_index);
     uint8_t sm = self->state_machine;
     return pio_sm_get_pc(pio, sm);
 }

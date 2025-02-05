@@ -761,6 +761,10 @@ msgstr ""
 msgid "Can only alarm on two low pins from deep sleep."
 msgstr "Solo puede alerta en dos low pines viniendo de deep sleep."
 
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Can't construct AudioOut because continuous channel already open"
+msgstr ""
+
 #: ports/espressif/common-hal/_bleio/Characteristic.c
 #: ports/nordic/common-hal/_bleio/Characteristic.c
 msgid "Can't set CCCD on local Characteristic"
@@ -1030,14 +1034,42 @@ msgstr "Error al conectar: error interno"
 msgid "Failed to connect: timeout"
 msgstr "Error al conectar: tiempo de espera agotado"
 
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: invalid arg"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: invalid state"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: no mem"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: not found"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to enable continuous"
+msgstr ""
+
 #: shared-module/audiomp3/MP3Decoder.c
 msgid "Failed to parse MP3 file"
 msgstr "Error al analizar el archivo MP3"
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to register continuous events callback"
+msgstr ""
 
 #: ports/nordic/sd_mutex.c
 #, c-format
 msgid "Failed to release mutex, err 0x%04x"
 msgstr "No se puede liberar el mutex, err 0x%04x"
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to start async audio"
+msgstr ""
 
 #: supervisor/shared/safe_mode.c
 msgid "Failed to write internal flash."
@@ -2470,6 +2502,10 @@ msgstr "se requiere un objeto bytes-like"
 msgid "addresses is empty"
 msgstr "addresses esta vacío"
 
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "already playing"
+msgstr ""
+
 #: py/compile.c
 msgid "annotation must be an identifier"
 msgstr "la anotación debe ser un identificador"
@@ -2547,6 +2583,10 @@ msgstr "intento de obtener argmin/argmax de una secuencia vacía"
 #: py/objstr.c
 msgid "attributes not supported"
 msgstr "atributos no compatibles"
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "audio format not supported"
+msgstr ""
 
 #: extmod/ulab/code/ulab_tools.c
 msgid "axis is out of bounds"

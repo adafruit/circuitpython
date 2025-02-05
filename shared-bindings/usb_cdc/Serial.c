@@ -22,11 +22,15 @@
 //|         The available instances are in the ``usb_cdc.serials`` tuple."""
 //|         ...
 //|
-//|     def read(self, size: int = 1) -> bytes:
-//|         """Read at most ``size`` bytes. If ``size`` exceeds the internal buffer size
-//|         only the bytes in the buffer will be read. If `timeout` is > 0 or ``None``,
-//|         and fewer than ``size`` bytes are available, keep waiting until the timeout
-//|         expires or ``size`` bytes are available.
+//|     def read(self, size: int = -1) -> bytes:
+//|         """Read at most ``size`` bytes. If ``size`` exceeds the internal buffer size,
+//|         only the bytes in the buffer will be read. If ``size`` is not specified or is ``-1``,
+//|         read as many bytes as possible, until the timeout expires.
+//|         If `timeout` is > 0 or ``None``, and fewer than ``size`` bytes are available,
+//|         keep waiting until the timeout expires or ``size`` bytes are available.
+//|
+//|         If no bytes are read, return ``b''``. This is unlike, say, `busio.UART.read()`, which
+//|         would return ``None``.
 //|
 //|         :return: Data read
 //|         :rtype: bytes"""

@@ -756,6 +756,10 @@ msgstr ""
 msgid "Can only alarm on two low pins from deep sleep."
 msgstr "Kan bara larma från djup sömn på två låga pinnar."
 
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Can't construct AudioOut because continuous channel already open"
+msgstr ""
+
 #: ports/espressif/common-hal/_bleio/Characteristic.c
 #: ports/nordic/common-hal/_bleio/Characteristic.c
 msgid "Can't set CCCD on local Characteristic"
@@ -1024,14 +1028,42 @@ msgstr "Det gick inte att ansluta: internt fel"
 msgid "Failed to connect: timeout"
 msgstr "Det gick inte att ansluta: timeout"
 
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: invalid arg"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: invalid state"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: no mem"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: not found"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to enable continuous"
+msgstr ""
+
 #: shared-module/audiomp3/MP3Decoder.c
 msgid "Failed to parse MP3 file"
 msgstr "Det gick inte att tolka MP3-filen"
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to register continuous events callback"
+msgstr ""
 
 #: ports/nordic/sd_mutex.c
 #, c-format
 msgid "Failed to release mutex, err 0x%04x"
 msgstr "Det gick inte att frigöra mutex, fel 0x%04x"
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to start async audio"
+msgstr ""
 
 #: supervisor/shared/safe_mode.c
 msgid "Failed to write internal flash."
@@ -2446,6 +2478,10 @@ msgstr "ett bytesliknande objekt krävs"
 msgid "addresses is empty"
 msgstr "adresserna är tomma"
 
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "already playing"
+msgstr ""
+
 #: py/compile.c
 msgid "annotation must be an identifier"
 msgstr "Annoteringen måste vara en identifierare"
@@ -2523,6 +2559,10 @@ msgstr "försök att få argmin/argmax för en tom sekvens"
 #: py/objstr.c
 msgid "attributes not supported"
 msgstr "Attribut stöds ej"
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "audio format not supported"
+msgstr ""
 
 #: extmod/ulab/code/ulab_tools.c
 msgid "axis is out of bounds"

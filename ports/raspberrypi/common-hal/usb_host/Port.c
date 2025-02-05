@@ -33,7 +33,6 @@
 
 usb_host_port_obj_t usb_host_instance;
 
-static PIO pio_instances[2] = {pio0, pio1};
 volatile bool _core1_ready = false;
 
 static void __not_in_flash_func(core1_main)(void) {
@@ -76,7 +75,7 @@ static void __not_in_flash_func(core1_main)(void) {
 }
 
 static uint8_t _sm_free_count(uint8_t pio_index) {
-    PIO pio = pio_instances[pio_index];
+    PIO pio = pio_get_instance(pio_index);
     uint8_t free_count = 0;
     for (size_t j = 0; j < NUM_PIO_STATE_MACHINES; j++) {
         if (!pio_sm_is_claimed(pio, j)) {
@@ -87,7 +86,7 @@ static uint8_t _sm_free_count(uint8_t pio_index) {
 }
 
 static bool _has_program_room(uint8_t pio_index, uint8_t program_size) {
-    PIO pio = pio_instances[pio_index];
+    PIO pio = pio_get_instance(pio_index);
     pio_program_t program_struct = {
         .instructions = NULL,
         .length = program_size,
@@ -96,22 +95,26 @@ static bool _has_program_room(uint8_t pio_index, uint8_t program_size) {
     return pio_can_add_program(pio, &program_struct);
 }
 
-// from pico-sdk/src/rp2_common/hardware_pio/pio.c
-static bool is_gpio_compatible(PIO pio, uint32_t used_gpio_ranges) {
-    #if PICO_PIO_VERSION > 0
-    bool gpio_base = pio_get_gpio_base(pio);
-    return !((gpio_base && (used_gpio_ranges & 1)) ||
-        (!gpio_base && (used_gpio_ranges & 4)));
-    #else
-    ((void)pio);
-    ((void)used_gpio_ranges);
-    return true;
-    #endif
+// As of 0.6.1, the PIO resource requirement is 1 PIO with 3 state machines &
+// 32 instructions. Since there are only 32 instructions in a state machine, it should
+// be impossible to have an allocated state machine but 32 instruction slots available;
+// go ahead and check for it anyway.
+//
+// Since we check that ALL state machines are available, it's not possible for the GPIO
+// ranges to mismatch on rp2350b
+static size_t get_usb_pio(void) {
+    for (size_t i = 0; i < NUM_PIOS; i++) {
+        if (_has_program_room(i, 32) && _sm_free_count(i) == NUM_PIO_STATE_MACHINES) {
+            return i;
+        }
+    }
+    mp_raise_RuntimeError(MP_ERROR_TEXT("All state machines in use"));
 }
 
 
 usb_host_port_obj_t *common_hal_usb_host_port_construct(const mcu_pin_obj_t *dp, const mcu_pin_obj_t *dm) {
-    if (dp->number + 1 != dm->number) {
+    if ((dp->number + 1 != dm->number)
+        && (dp->number - 1 != dm->number)) {
         raise_ValueError_invalid_pins();
     }
     usb_host_port_obj_t *self = &usb_host_instance;
@@ -127,33 +130,14 @@ usb_host_port_obj_t *common_hal_usb_host_port_construct(const mcu_pin_obj_t *dp,
     assert_pin_free(dp);
     assert_pin_free(dm);
 
-    #if PICO_PIO_VERSION == 0
-    uint32_t used_gpio_ranges = 0;
-    #else
-    uint gpio_base = dm->number;
-    uint gpio_count = 2;
-    uint32_t used_gpio_ranges = (1u << (gpio_base >> 4)) |
-        (1u << ((gpio_base + gpio_count - 1) >> 4));
-    #endif
-
     pio_usb_configuration_t pio_cfg = PIO_USB_DEFAULT_CONFIG;
     pio_cfg.skip_alarm_pool = true;
     pio_cfg.pin_dp = dp->number;
-    // Allocating the peripherals like this works on Pico W, where the
-    // "preferred PIO" for the cyw43 wifi chip is PIO 1.
-    pio_cfg.pio_tx_num = 1; // uses 22 instructions and 1 SM
-    pio_cfg.pio_rx_num = 0; // uses 31 instructions and 2 SM.
-    uint8_t tx_sm_free = _sm_free_count(pio_cfg.pio_tx_num);
-    uint8_t rx_sm_free = _sm_free_count(pio_cfg.pio_rx_num);
-    PIO pio_tx = pio_instances[pio_cfg.pio_tx_num];
-    PIO pio_rx = pio_instances[pio_cfg.pio_rx_num];
-
-    if (!_has_program_room(pio_cfg.pio_tx_num, 22) || tx_sm_free < 1 ||
-        !(tx_sm_free == 4 || is_gpio_compatible(pio_tx, used_gpio_ranges)) ||
-        !_has_program_room(pio_cfg.pio_rx_num, 31) || rx_sm_free < 2 ||
-        !(rx_sm_free == 4 || is_gpio_compatible(pio_rx, used_gpio_ranges))) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("All state machines in use"));
+    if (dp->number - 1 == dm->number) {
+        pio_cfg.pinout = PIO_USB_PINOUT_DMDP;
     }
+    pio_cfg.pio_tx_num = get_usb_pio();
+    pio_cfg.pio_rx_num = pio_cfg.pio_tx_num;
     pio_cfg.tx_ch = dma_claim_unused_channel(false); // DMA channel
     if (pio_cfg.tx_ch < 0) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("All dma channels in use"));
@@ -163,22 +147,15 @@ usb_host_port_obj_t *common_hal_usb_host_port_construct(const mcu_pin_obj_t *dp,
     self->dp = dp;
     self->dm = dm;
 
-    PIO tx_pio = pio_instances[pio_cfg.pio_tx_num];
-    pio_cfg.sm_tx = pio_claim_unused_sm(tx_pio, false);
-    PIO rx_pio = pio_instances[pio_cfg.pio_rx_num];
-    pio_cfg.sm_rx = pio_claim_unused_sm(rx_pio, false);
-    pio_cfg.sm_eop = pio_claim_unused_sm(rx_pio, false);
+    PIO pio = pio_get_instance(pio_cfg.pio_tx_num);
 
     // Unclaim everything so that the library can.
     dma_channel_unclaim(pio_cfg.tx_ch);
-    pio_sm_unclaim(tx_pio, pio_cfg.sm_tx);
-    pio_sm_unclaim(rx_pio, pio_cfg.sm_rx);
-    pio_sm_unclaim(rx_pio, pio_cfg.sm_eop);
 
     // Set all of the state machines to never reset.
-    rp2pio_statemachine_never_reset(tx_pio, pio_cfg.sm_tx);
-    rp2pio_statemachine_never_reset(rx_pio, pio_cfg.sm_rx);
-    rp2pio_statemachine_never_reset(rx_pio, pio_cfg.sm_eop);
+    rp2pio_statemachine_never_reset(pio, pio_cfg.sm_tx);
+    rp2pio_statemachine_never_reset(pio, pio_cfg.sm_rx);
+    rp2pio_statemachine_never_reset(pio, pio_cfg.sm_eop);
 
     common_hal_never_reset_pin(dp);
     common_hal_never_reset_pin(dm);

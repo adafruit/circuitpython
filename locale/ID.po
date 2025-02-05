@@ -759,6 +759,10 @@ msgstr ""
 "Hanya dapat mengaktifkan alarm pada dua pin rendah dari mode tidur dalam "
 "(deep sleep)."
 
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Can't construct AudioOut because continuous channel already open"
+msgstr ""
+
 #: ports/espressif/common-hal/_bleio/Characteristic.c
 #: ports/nordic/common-hal/_bleio/Characteristic.c
 msgid "Can't set CCCD on local Characteristic"
@@ -1026,14 +1030,42 @@ msgstr "Gagal terhubung: kesalahan internal"
 msgid "Failed to connect: timeout"
 msgstr "Gagal terhubung: habis waktu"
 
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: invalid arg"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: invalid state"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: no mem"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: not found"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to enable continuous"
+msgstr ""
+
 #: shared-module/audiomp3/MP3Decoder.c
 msgid "Failed to parse MP3 file"
 msgstr "Gagal mengurai file MP3"
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to register continuous events callback"
+msgstr ""
 
 #: ports/nordic/sd_mutex.c
 #, c-format
 msgid "Failed to release mutex, err 0x%04x"
 msgstr "Gagal melepaskan mutex, err 0x%04x"
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to start async audio"
+msgstr ""
 
 #: supervisor/shared/safe_mode.c
 msgid "Failed to write internal flash."
@@ -2451,6 +2483,10 @@ msgstr "sebuah objek menyerupai byte (bytes-like) dibutuhkan"
 msgid "addresses is empty"
 msgstr "alamatnya kosong"
 
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "already playing"
+msgstr ""
+
 #: py/compile.c
 msgid "annotation must be an identifier"
 msgstr "anotasi harus merupakan pengidentifikasi"
@@ -2527,6 +2563,10 @@ msgstr "berusaha mendapatkan argmin/argmax dari urutan kosong"
 
 #: py/objstr.c
 msgid "attributes not supported"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "audio format not supported"
 msgstr ""
 
 #: extmod/ulab/code/ulab_tools.c
