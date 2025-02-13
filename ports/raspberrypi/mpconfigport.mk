@@ -46,8 +46,9 @@ CIRCUITPY_AUDIOPWMIO ?= 1
 
 CIRCUITPY_AUDIOMIXER ?= 1
 
-ifeq ($(CHIP_VARIANT),RP2040)
 CIRCUITPY_ALARM ?= 1
+
+ifeq ($(CHIP_VARIANT),RP2040)
 
 # Default PICODVI off because it uses RAM to store code run on the second CPU for RP2040.
 CIRCUITPY_PICODVI ?= 0
@@ -56,8 +57,6 @@ CIRCUITPY_TOUCHIO ?= 1
 endif
 
 ifeq ($(CHIP_VARIANT),RP2350)
-# This needs to be implemented.
-CIRCUITPY_ALARM = 0
 # Default PICODVI on because it doesn't require much code in RAM to talk to HSTX.
 CIRCUITPY_PICODVI ?= 1
 

@@ -30,7 +30,7 @@ static void gpio_callback(uint gpio, uint32_t events) {
 
     if (_not_yet_deep_sleeping) {
         // Event went off prematurely, before we went to sleep, so set it again.
-        gpio_set_irq_enabled(gpio, events, false);
+        gpio_set_irq_enabled(gpio, events, true);
     } else {
         // Went off during sleep.
         // Disable IRQ automatically.
@@ -97,7 +97,11 @@ void alarm_pin_pinalarm_reset(void) {
     woke_up = false;
 
     // Clear all GPIO interrupts
+    #ifdef PICO_RP2040
     for (uint8_t i = 0; i < 4; i++) {
+    #else
+    for (uint8_t i = 0; i < 6; i++) {
+        #endif
         iobank0_hw->intr[i] = 0;
     }
 
@@ -105,6 +109,7 @@ void alarm_pin_pinalarm_reset(void) {
     for (size_t i = 0; i < NUM_BANK0_GPIOS; i++) {
         if (alarm_reserved_pins & (1 << i)) {
             gpio_set_irq_enabled(i, GPIO_IRQ_ALL_EVENTS, false);
+            gpio_set_dormant_irq_enabled(i, GPIO_IRQ_ALL_EVENTS, false);
             reset_pin_number(i);
         }
     }
@@ -141,9 +146,7 @@ void alarm_pin_pinalarm_set_alarms(bool deep_sleep, size_t n_alarms, const mp_ob
             }
 
             gpio_set_irq_enabled_with_callback((uint)alarm->pin->number, event, true, &gpio_callback);
-            if (deep_sleep) {
-                gpio_set_dormant_irq_enabled((uint)alarm->pin->number, event, true);
-            }
+            gpio_set_dormant_irq_enabled((uint)alarm->pin->number, event, true);
 
             _not_yet_deep_sleeping = true;
         }
