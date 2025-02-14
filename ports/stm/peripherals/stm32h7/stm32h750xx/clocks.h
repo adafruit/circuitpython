@@ -1,14 +1,12 @@
 // This file is part of the CircuitPython project: https://circuitpython.org
 //
-// SPDX-FileCopyrightText: Copyright (c) 2020 Lucian Copeland for Adafruit Industries
+// SPDX-FileCopyrightText: Copyright (c) 2024 snkYmkrct
 //
 // SPDX-License-Identifier: MIT
 
-#pragma once
-
 #include "stm32h7xx_hal.h"
 
-// Chip:                STM32H743
+// Chip:                STM32H750
 // Line Type:           Single-Core
 // Speed:               480MHz (MAX)
 
@@ -17,22 +15,22 @@
 #define CPY_CLK_VSCALE (PWR_REGULATOR_VOLTAGE_SCALE0)
 #endif
 #ifndef CPY_CLK_PLLM
-#define CPY_CLK_PLLM (HSE_VALUE / 2000000)
+#define CPY_CLK_PLLM (1)
 #endif
 #ifndef CPY_CLK_PLLN
-#define CPY_CLK_PLLN (480)
+#define CPY_CLK_PLLN (50)
 #endif
 #ifndef CPY_CLK_PLLP
 #define CPY_CLK_PLLP (2)
 #endif
 #ifndef CPY_CLK_PLLQ
-#define CPY_CLK_PLLQ (20)
+#define CPY_CLK_PLLQ (4)
 #endif
 #ifndef CPY_CLK_PLLR
 #define CPY_CLK_PLLR (2)
 #endif
 #ifndef CPY_CLK_PLLRGE
-#define CPY_CLK_PLLRGE (RCC_PLL1VCIRANGE_1)
+#define CPY_CLK_PLLRGE (RCC_PLL1VCIRANGE_3)
 #endif
 #ifndef CPY_CLK_PLLVCOSEL
 #define CPY_CLK_PLLVCOSEL (RCC_PLL1VCOWIDE)
@@ -56,7 +54,7 @@
 #define CPY_CLK_APB4DIV (RCC_APB4_DIV2)
 #endif
 #ifndef CPY_CLK_FLASH_LATENCY
-#define CPY_CLK_FLASH_LATENCY (FLASH_LATENCY_4)
+#define CPY_CLK_FLASH_LATENCY (FLASH_LATENCY_2)
 #endif
 #ifndef CPY_CLK_USB_USES_AUDIOPLL
 #define CPY_CLK_USB_USES_AUDIOPLL (0)
