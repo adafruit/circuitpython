@@ -69,7 +69,7 @@ CFLAGS += -DCIRCUITPY_OPTIMIZE_PROPERTY_FLASH_SIZE=$(CIRCUITPY_OPTIMIZE_PROPERTY
 
 # The contents of compiled-in code.py file.
 # Ports can override to import frozen modules to compile-in running code
-CIRCUITPY_CODEPY_CONTENTS ?= "print(\"Hellooo World!\")\n"
+CIRCUITPY_CODEPY_CONTENTS ?= "print(\"Hello World!\")\n"
 CFLAGS += -DCIRCUITPY_CODEPY_CONTENTS='$(CIRCUITPY_CODEPY_CONTENTS)'
 
 # async/await language keyword support
