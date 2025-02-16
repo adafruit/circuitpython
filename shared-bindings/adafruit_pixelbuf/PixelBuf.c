@@ -41,7 +41,7 @@ static void parse_byteorder(mp_obj_t byteorder_obj, pixelbuf_byteorder_details_t
 //|         brightness: float = 0,
 //|         auto_write: bool = False,
 //|         header: ReadableBuffer = b"",
-//|         trailer: ReadableBuffer = b""
+//|         trailer: ReadableBuffer = b"",
 //|     ) -> None:
 //|         """Create a PixelBuf object of the specified size, byteorder, and bits per pixel.
 //|
@@ -61,6 +61,7 @@ static void parse_byteorder(mp_obj_t byteorder_obj, pixelbuf_byteorder_details_t
 //|         :param ~circuitpython_typing.ReadableBuffer trailer: Sequence of bytes to always send after pixel values.
 //|         """
 //|         ...
+//|
 static mp_obj_t pixelbuf_pixelbuf_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_size, ARG_byteorder, ARG_brightness, ARG_auto_write, ARG_header, ARG_trailer };
     static const mp_arg_t allowed_args[] = {
@@ -201,6 +202,7 @@ MP_PROPERTY_GETSET(pixelbuf_pixelbuf_auto_write_obj,
 
 //|     byteorder: str
 //|     """byteorder string for the buffer (read-only)"""
+//|
 static mp_obj_t pixelbuf_pixelbuf_obj_get_byteorder(mp_obj_t self_in) {
     return common_hal_adafruit_pixelbuf_pixelbuf_get_byteorder_string(self_in);
 }
@@ -224,6 +226,7 @@ static mp_obj_t pixelbuf_pixelbuf_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
 //|         """Transmits the color data to the pixels so that they are shown. This is done automatically
 //|         when `auto_write` is True."""
 //|         ...
+//|
 
 static mp_obj_t pixelbuf_pixelbuf_show(mp_obj_t self_in) {
     common_hal_adafruit_pixelbuf_pixelbuf_show(self_in);
@@ -234,6 +237,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(pixelbuf_pixelbuf_show_obj, pixelbuf_pixelbuf_s
 //|     def fill(self, color: PixelType) -> None:
 //|         """Fills the given pixelbuf with the given color."""
 //|         ...
+//|
 
 static mp_obj_t pixelbuf_pixelbuf_fill(mp_obj_t self_in, mp_obj_t value) {
     common_hal_adafruit_pixelbuf_pixelbuf_fill(self_in, value);
@@ -258,6 +262,7 @@ static MP_DEFINE_CONST_FUN_OBJ_2(pixelbuf_pixelbuf_fill_obj, pixelbuf_pixelbuf_f
 //|
 //|     @overload
 //|     def __setitem__(self, index: slice, value: PixelSequence) -> None: ...
+//|
 //|     @overload
 //|     def __setitem__(self, index: int, value: PixelType) -> None:
 //|         """Sets the pixel value at the given index.  Value can either be a tuple or integer.  Tuples are
@@ -266,6 +271,7 @@ static MP_DEFINE_CONST_FUN_OBJ_2(pixelbuf_pixelbuf_fill_obj, pixelbuf_pixelbuf_f
 //|         For RGBW byteorders, if given only RGB values either as an int or as a tuple, the white value
 //|         is used instead when the red, green, and blue values are the same."""
 //|         ...
+//|
 //|
 static mp_obj_t pixelbuf_pixelbuf_subscr(mp_obj_t self_in, mp_obj_t index_in, mp_obj_t value) {
     if (value == MP_OBJ_NULL) {

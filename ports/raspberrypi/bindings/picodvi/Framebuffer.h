@@ -12,6 +12,9 @@
 
 extern const mp_obj_type_t picodvi_framebuffer_type;
 
+bool common_hal_picodvi_framebuffer_preflight(
+    mp_uint_t width, mp_uint_t height,
+    mp_uint_t color_depth);
 void common_hal_picodvi_framebuffer_construct(picodvi_framebuffer_obj_t *self,
     mp_uint_t width, mp_uint_t height,
     const mcu_pin_obj_t *clk_dp, const mcu_pin_obj_t *clk_dn,

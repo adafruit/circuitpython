@@ -7,8 +7,12 @@
 #include "shared/runtime/context_manager_helpers.h"
 
 #include "py/obj.h"
+#include "py/runtime.h"
 
-static mp_obj_t default___enter__(mp_obj_t self_in) {
-    return self_in;
+static mp_obj_t default___exit__(size_t n_args, const mp_obj_t *args) {
+    mp_obj_t dest[2];
+    mp_load_method(args[0], MP_QSTR_deinit, dest);
+    mp_call_method_n_kw(0, 0, dest);
+    return mp_const_none;
 }
-MP_DEFINE_CONST_FUN_OBJ_1(default___enter___obj, default___enter__);
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(default___exit___obj, 4, 4, default___exit__);

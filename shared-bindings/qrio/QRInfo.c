@@ -18,6 +18,7 @@
 //|     data_type: Union[str, int]
 //|     """The encoding of the payload as a string (if a standard encoding) or int (if not standard)"""
 //|
+//|
 
 const mp_obj_namedtuple_type_t qrio_qrinfo_type_obj = {
     NAMEDTUPLE_TYPE_BASE_AND_SLOTS(MP_QSTR_QRInfo),
@@ -57,6 +58,7 @@ const mp_obj_namedtuple_type_t qrio_qrinfo_type_obj = {
 //|
 //|     size: int
 //|     """The number of bits the code contains"""
+//|
 //|
 
 const mp_obj_namedtuple_type_t qrio_qrposition_type_obj = {

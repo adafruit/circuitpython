@@ -11,6 +11,7 @@
 
 //| """Routines for low-level manipulation of binary data"""
 //|
+//|
 
 //| def bit_transpose(
 //|     input: ReadableBuffer, output: WriteableBuffer, width: int = 8
@@ -34,6 +35,7 @@
 //|
 //|     Returns the output buffer."""
 //|     ...
+//|
 //|
 
 static mp_obj_t bit_transpose(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {

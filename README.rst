@@ -136,6 +136,9 @@ Behavior
 -  Adds a safe mode that does not run user code after a hard crash or brown out. This makes it
    possible to fix code that causes nasty crashes by making it available through mass storage after
    the crash. A reset (the button) is needed after it's fixed to get back into normal mode.
+-  A 1 second delay is added to the boot process during which time the status LED will flash, and
+   resetting the device or pressing the boot button will force the device into safe mode. This delay
+   can be removed by a compile time option (``CIRCUITPY_SKIP_SAFE_MODE_WAIT``).
 -  Safe mode may be handled programmatically by providing a ``safemode.py``.
    ``safemode.py`` is run if the board has reset due to entering safe mode, unless the safe mode
    initiated by the user by pressing button(s).

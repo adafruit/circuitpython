@@ -187,7 +187,7 @@ void common_hal_audiopwmio_pwmaudioout_play(audiopwmio_pwmaudioout_obj_t *self, 
     // to trigger the DMA. Each has a 16 bit fractional divisor system clock * X / Y where X and Y
     // are 16-bit.
 
-    uint32_t sample_rate = audiosample_sample_rate(sample);
+    uint32_t sample_rate = audiosample_get_sample_rate(sample);
 
     uint32_t system_clock = common_hal_mcu_processor_get_frequency();
     uint32_t best_denominator;
@@ -213,6 +213,10 @@ void common_hal_audiopwmio_pwmaudioout_play(audiopwmio_pwmaudioout_obj_t *self, 
     if (result == AUDIO_DMA_MEMORY_ERROR) {
         common_hal_audiopwmio_pwmaudioout_stop(self);
         mp_raise_RuntimeError(MP_ERROR_TEXT("Unable to allocate buffers for signed conversion"));
+    }
+    if (result == AUDIO_DMA_SOURCE_ERROR) {
+        common_hal_audiopwmio_pwmaudioout_stop(self);
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Audio source error"));
     }
     // OK! We got all of the resources we need and dma is ready.
 }

@@ -56,6 +56,7 @@
 //|           # Resume with an 80 microsecond active pulse
 //|           pulses.resume(80)"""
 //|         ...
+//|
 static mp_obj_t pulseio_pulsein_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_pin, ARG_maxlen, ARG_idle_state };
     static const mp_arg_t allowed_args[] = {
@@ -78,6 +79,7 @@ static mp_obj_t pulseio_pulsein_make_new(const mp_obj_type_t *type, size_t n_arg
 //|     def deinit(self) -> None:
 //|         """Deinitialises the PulseIn and releases any hardware resources for reuse."""
 //|         ...
+//|
 static mp_obj_t pulseio_pulsein_deinit(mp_obj_t self_in) {
     pulseio_pulsein_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_pulseio_pulsein_deinit(self);
@@ -94,22 +96,20 @@ static void check_for_deinit(pulseio_pulsein_obj_t *self) {
 //|     def __enter__(self) -> PulseIn:
 //|         """No-op used by Context Managers."""
 //|         ...
+//|
 //  Provided by context manager helper.
 
 //|     def __exit__(self) -> None:
 //|         """Automatically deinitializes the hardware when exiting a context. See
 //|         :ref:`lifetime-and-contextmanagers` for more info."""
 //|         ...
-static mp_obj_t pulseio_pulsein_obj___exit__(size_t n_args, const mp_obj_t *args) {
-    (void)n_args;
-    common_hal_pulseio_pulsein_deinit(args[0]);
-    return mp_const_none;
-}
-static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(pulseio_pulsein___exit___obj, 4, 4, pulseio_pulsein_obj___exit__);
+//|
+//  Provided by context manager helper.
 
 //|     def pause(self) -> None:
 //|         """Pause pulse capture"""
 //|         ...
+//|
 static mp_obj_t pulseio_pulsein_obj_pause(mp_obj_t self_in) {
     pulseio_pulsein_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -129,6 +129,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(pulseio_pulsein_pause_obj, pulseio_pulsein_obj_pause);
 //|
 //|         :param int trigger_duration: trigger pulse duration in microseconds"""
 //|         ...
+//|
 static mp_obj_t pulseio_pulsein_obj_resume(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_trigger_duration };
     static const mp_arg_t allowed_args[] = {
@@ -148,6 +149,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(pulseio_pulsein_resume_obj, 1, pulseio_pulsein_obj_re
 //|     def clear(self) -> None:
 //|         """Clears all captured pulses"""
 //|         ...
+//|
 static mp_obj_t pulseio_pulsein_obj_clear(mp_obj_t self_in) {
     pulseio_pulsein_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -160,6 +162,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(pulseio_pulsein_clear_obj, pulseio_pulsein_obj_clear);
 //|     def popleft(self) -> int:
 //|         """Removes and returns the oldest read pulse duration in microseconds."""
 //|         ...
+//|
 static mp_obj_t pulseio_pulsein_obj_popleft(mp_obj_t self_in) {
     pulseio_pulsein_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -185,6 +188,7 @@ MP_PROPERTY_GETTER(pulseio_pulsein_maxlen_obj,
 //|     paused: bool
 //|     """True when pulse capture is paused as a result of :py:func:`pause` or an error during capture
 //|     such as a signal that is too fast."""
+//|
 static mp_obj_t pulseio_pulsein_obj_get_paused(mp_obj_t self_in) {
     pulseio_pulsein_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -205,6 +209,7 @@ MP_PROPERTY_GETTER(pulseio_pulsein_paused_obj,
 //|           pulses = pulseio.PulseIn(pin)
 //|           print(len(pulses))"""
 //|         ...
+//|
 static mp_obj_t pulsein_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
     pulseio_pulsein_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -227,6 +232,7 @@ static mp_obj_t pulsein_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
 //|           pulses = pulseio.PulseIn(pin)
 //|           print(pulses[0])"""
 //|         ...
+//|
 //|
 static mp_obj_t pulsein_subscr(mp_obj_t self_in, mp_obj_t index_obj, mp_obj_t value) {
     if (value == mp_const_none) {
@@ -256,7 +262,7 @@ static const mp_rom_map_elem_t pulseio_pulsein_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&pulseio_pulsein_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&pulseio_pulsein_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
-    { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&pulseio_pulsein___exit___obj) },
+    { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
     { MP_ROM_QSTR(MP_QSTR_pause), MP_ROM_PTR(&pulseio_pulsein_pause_obj) },
     { MP_ROM_QSTR(MP_QSTR_resume), MP_ROM_PTR(&pulseio_pulsein_resume_obj) },
     { MP_ROM_QSTR(MP_QSTR_clear), MP_ROM_PTR(&pulseio_pulsein_clear_obj) },

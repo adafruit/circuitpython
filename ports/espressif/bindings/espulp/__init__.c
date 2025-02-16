@@ -33,13 +33,16 @@
 //|     print(shared_mem[0])
 //|     # ulp.halt()
 //| """
+//|
 //| ...
+//|
 //|
 
 //| def get_rtc_gpio_number(pin: microcontroller.Pin) -> Optional[int]:
 //|     """Return the RTC GPIO number of the given pin or None if not connected
 //|     to RTC GPIO."""
 //|     ...
+//|
 //|
 
 static mp_obj_t espulp_get_rtc_gpio_number(mp_obj_t pin_obj) {

@@ -44,6 +44,9 @@
 #include "supervisor/spi_flash_api.h"
 #endif
 
+// The default indicates no primary display
+static int primary_display_number = -1;
+
 primary_display_bus_t display_buses[CIRCUITPY_DISPLAY_LIMIT];
 primary_display_t displays[CIRCUITPY_DISPLAY_LIMIT];
 
@@ -108,10 +111,16 @@ void displayio_background(void) {
 
 }
 
-void common_hal_displayio_release_displays(void) {
+static void common_hal_displayio_release_displays_impl(bool keep_primary) {
     // Release displays before busses so that they can send any final commands to turn the display
     // off properly.
+    if (!keep_primary) {
+        primary_display_number = -1;
+    }
     for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
+        if (i == primary_display_number) {
+            continue;
+        }
         mp_const_obj_t display_type = displays[i].display_base.type;
         if (display_type == NULL || display_type == &mp_type_NoneType) {
             continue;
@@ -177,7 +186,14 @@ void common_hal_displayio_release_displays(void) {
     supervisor_stop_terminal();
 }
 
+void common_hal_displayio_release_displays(void) {
+    common_hal_displayio_release_displays_impl(false);
+}
+
 void reset_displays(void) {
+    // In CircuitPython 10, release secondary displays before doing anything else:
+    // common_hal_displayio_release_displays_impl(true);
+
     // The SPI buses used by FourWires may be allocated on the heap so we need to move them inline.
     for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
         mp_const_obj_t display_bus_type = display_buses[i].bus_base.type;
@@ -392,10 +408,13 @@ void displayio_gc_collect(void) {
     }
 }
 
+static bool is_display_active(mp_obj_base_t *display_maybe) {
+    return display_maybe->type != &mp_type_NoneType && display_maybe->type != NULL;
+}
+
 primary_display_t *allocate_display(void) {
     for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
-        mp_const_obj_t display_type = displays[i].display_base.type;
-        if (display_type == NULL || display_type == &mp_type_NoneType) {
+        if (!is_display_active(&displays[i].display_base)) {
             // Clear this memory so it is in a known state before init.
             memset(&displays[i], 0, sizeof(displays[i]));
             // Default to None so that it works as board.DISPLAY.
@@ -433,4 +452,43 @@ primary_display_bus_t *allocate_display_bus_or_raise(void) {
         return result;
     }
     mp_raise_RuntimeError(MP_ERROR_TEXT("Too many display busses; forgot displayio.release_displays() ?"));
+}
+
+mp_obj_t common_hal_displayio_get_primary_display(void) {
+    if (primary_display_number == -1 || primary_display_number >= CIRCUITPY_DISPLAY_LIMIT) {
+        return mp_const_none;
+    }
+    mp_obj_base_t *primary_display = &displays[primary_display_number].display_base;
+    if (is_display_active(primary_display)) {
+        return MP_OBJ_FROM_PTR(primary_display);
+    }
+    return mp_const_none;
+}
+
+void common_hal_displayio_set_primary_display(mp_obj_t new_primary_display) {
+    if (new_primary_display == mp_const_none) {
+        primary_display_number = -1;
+        return;
+    }
+    for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
+        mp_obj_t display = MP_OBJ_FROM_PTR(&displays[i]);
+        if (new_primary_display == display && is_display_active(display)) {
+            primary_display_number = i;
+            return;
+        }
+    }
+    // object was not a display after all...
+    mp_raise_TypeError_varg(MP_ERROR_TEXT("%q must be of type %q or %q, not %q"), MP_QSTR_Display, MP_QSTR_AnyDisplay, MP_QSTR_None, mp_obj_get_type(new_primary_display)->name);
+}
+
+void common_hal_displayio_auto_primary_display(void) {
+    if (primary_display_number != -1) {
+        return;
+    }
+    for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
+        if (is_display_active(&displays[i].display_base)) {
+            primary_display_number = i;
+            return;
+        }
+    }
 }

@@ -40,17 +40,17 @@ void common_hal_neopixel_write(const digitalio_digitalinout_obj_t *digitalinout,
 
     // TODO: Cache the state machine after we create it once. We'll need a way to
     // change the pins then though.
-    uint32_t pins_we_use = 1 << digitalinout->pin->number;
+    pio_pinmask_t pins_we_use = PIO_PINMASK_FROM_PIN(digitalinout->pin->number);
     bool ok = rp2pio_statemachine_construct(&state_machine,
         neopixel_program, MP_ARRAY_SIZE(neopixel_program),
         12800000, // 12.8MHz, to get appropriate sub-bit times in PIO program.
         NULL, 0, // init program
         NULL, 1, // out
         NULL, 1, // in
-        0, 0, // in pulls
+        PIO_PINMASK_NONE, PIO_PINMASK_NONE, // gpio pulls
         NULL, 1, // set
-        digitalinout->pin, 1, // sideset
-        0, pins_we_use, // initial pin state
+        digitalinout->pin, 1, false, // sideset
+        PIO_PINMASK_NONE, pins_we_use, // initial pin state
         NULL, // jump pin
         pins_we_use, true, false,
         true, 8, false, // TX, auto pull every 8 bits. shift left to output msb first

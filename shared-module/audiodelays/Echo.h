@@ -8,22 +8,19 @@
 #include "py/obj.h"
 
 #include "shared-module/audiocore/__init__.h"
+#include "shared-module/synthio/__init__.h"
 #include "shared-module/synthio/block.h"
 
 extern const mp_obj_type_t audiodelays_echo_type;
 
 typedef struct {
-    mp_obj_base_t base;
+    audiosample_base_t base;
     uint32_t max_delay_ms;
     synthio_block_slot_t delay_ms;
-    uint32_t current_delay_ms;
+    mp_float_t current_delay_ms;
+    mp_float_t sample_ms;
     synthio_block_slot_t decay;
     synthio_block_slot_t mix;
-
-    uint8_t bits_per_sample;
-    bool samples_signed;
-    uint8_t channel_count;
-    uint32_t sample_rate;
 
     int8_t *buffer[2];
     uint8_t last_buf_idx;
@@ -61,7 +58,3 @@ audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *
     uint8_t channel,
     uint8_t **buffer,
     uint32_t *buffer_length);  // length in bytes
-
-void audiodelays_echo_get_buffer_structure(audiodelays_echo_obj_t *self, bool single_channel_output,
-    bool *single_buffer, bool *samples_signed,
-    uint32_t *max_buffer_length, uint8_t *spacing);

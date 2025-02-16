@@ -73,8 +73,10 @@ except Exception as e:
     print_exc_info(e)
 print()
 
+
 class SomeException(RuntimeError):
     pass
+
 
 try:
     try:

@@ -19,7 +19,7 @@
 //|         usage: int,
 //|         report_ids: Sequence[int],
 //|         in_report_lengths: Sequence[int],
-//|         out_report_lengths: Sequence[int]
+//|         out_report_lengths: Sequence[int],
 //|     ) -> None:
 //|         """Create a description of a USB HID device. The actual device is created when you
 //|         pass a `Device` to `usb_hid.enable()`.
@@ -57,6 +57,7 @@
 //|         See `send_report()` for details.
 //|         """
 //|         ...
+//|
 //|     KEYBOARD: Device
 //|     """Standard keyboard device supporting keycodes 0x00-0xDD, modifiers 0xE-0xE7, and five LED indicators.
 //|     Uses Report ID 1 for its IN and OUT reports.
@@ -71,6 +72,7 @@
 //|     CONSUMER_CONTROL: Device
 //|     """Consumer Control device supporting sent values from 1-652, with no rollover.
 //|     Uses Report ID 3 for its IN report."""
+//|
 
 static mp_obj_t usb_hid_device_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     usb_hid_device_obj_t *self = mp_obj_malloc(usb_hid_device_obj_t, &usb_hid_device_type);
@@ -161,6 +163,7 @@ static mp_obj_t usb_hid_device_make_new(const mp_obj_type_t *type, size_t n_args
 //|         In addition, there may be USB wakeup settings in the host computer BIOS/UEFI.
 //|         """
 //|         ...
+//|
 static mp_obj_t usb_hid_device_send_report(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     usb_hid_device_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
 
@@ -195,6 +198,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(usb_hid_device_send_report_obj, 1, usb_hid_device_sen
 //|         will return `None` until next report is received.
 //|         """
 //|         ...
+//|
 static mp_obj_t usb_hid_device_get_last_received_report(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     usb_hid_device_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
 
@@ -232,6 +236,7 @@ MP_PROPERTY_GETTER(usb_hid_device_usage_page_obj,
 //|
 //|     For example, Keyboard is 0x06 within the generic desktop usage page 0x01.
 //|     Mouse is 0x02 within the same usage page."""
+//|
 //|
 static mp_obj_t usb_hid_device_obj_get_usage(mp_obj_t self_in) {
     usb_hid_device_obj_t *self = MP_OBJ_TO_PTR(self_in);

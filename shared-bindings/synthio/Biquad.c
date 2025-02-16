@@ -47,7 +47,10 @@ static const mp_arg_t biquad_properties[] = {
 //|         rather than directly from coefficients.
 //|
 //|         https://github.com/WebAudio/Audio-EQ-Cookbook/blob/main/Audio-EQ-Cookbook.txt
+//|
+//|         .. note:: This is deprecated in ``9.x.x`` and will be removed in ``10.0.0``. Use `BlockBiquad` objects instead.
 //|         """
+//|
 //|
 static mp_obj_t synthio_biquad_make_new(const mp_obj_type_t *type_in, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     mp_arg_val_t args[MP_ARRAY_SIZE(biquad_properties)];

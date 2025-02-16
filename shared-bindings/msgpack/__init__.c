@@ -65,12 +65,13 @@
 //|
 //| """
 //|
+//|
 
 //| def pack(
 //|     obj: object,
 //|     stream: circuitpython_typing.ByteStream,
 //|     *,
-//|     default: Union[Callable[[object], None], None] = None
+//|     default: Union[Callable[[object], None], None] = None,
 //| ) -> None:
 //|     """Output object to stream in msgpack format.
 //|
@@ -81,6 +82,7 @@
 //|           a representation in msgpack format.
 //|     """
 //|     ...
+//|
 //|
 static mp_obj_t mod_msgpack_pack(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_obj, ARG_buffer, ARG_default };
@@ -107,7 +109,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(mod_msgpack_pack_obj, 0, mod_msgpack_pack);
 //|     stream: circuitpython_typing.ByteStream,
 //|     *,
 //|     ext_hook: Union[Callable[[int, bytes], object], None] = None,
-//|     use_list: bool = True
+//|     use_list: bool = True,
 //| ) -> object:
 //|     """Unpack and return one object from stream.
 //|
@@ -119,6 +121,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(mod_msgpack_pack_obj, 0, mod_msgpack_pack);
 //|     :return object: object read from stream.
 //|     """
 //|     ...
+//|
 //|
 static mp_obj_t mod_msgpack_unpack(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_buffer, ARG_ext_hook, ARG_use_list };

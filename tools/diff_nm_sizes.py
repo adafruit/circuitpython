@@ -44,8 +44,7 @@ for line in new.read_text().split("\n"):
             continue
         print(f"{name:<{longest_symbol}}{size - old_size:>+6}")
 
-for name in old_symbols:
-    old_size = old_symbols[name]
+for name, old_size in old_symbols.items():
     print(f"{name:<{longest_symbol}}{-old_size:>+6}")
 
 print()

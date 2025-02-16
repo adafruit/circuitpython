@@ -36,6 +36,7 @@ MAKE_ENUM_VALUE(synthio_math_operation_type, math_op, ABS, OP_ABS);
 //|
 //|     def __call__(self, a: BlockInput, b: BlockInput = 0.0, c: BlockInput = 1.0) -> Math:
 //|         """A MathOperation enumeration value can be called to construct a Math block that performs that operation"""
+//|
 //|     SUM: "MathOperation"
 //|     """Computes ``a+b+c``. For 2-input sum, set one argument to ``0.0``. To hold a control value for multiple subscribers, set two arguments to ``0.0``."""
 //|
@@ -77,6 +78,7 @@ MAKE_ENUM_VALUE(synthio_math_operation_type, math_op, ABS, OP_ABS);
 //|
 //|     ABS: "MathOperation"
 //|     """Returns the absolute value of ``a``."""
+//|
 //|
 MAKE_ENUM_MAP(synthio_math_operation) {
     MAKE_ENUM_MAP_ENTRY(math_op, SUM),
@@ -121,7 +123,7 @@ MAKE_ENUM_TYPE(synthio, MathOperation, synthio_math_operation,
 //|     including indirectly via a `Note` or another intermediate Math.
 //|
 //|     Using the same Math as an input to multiple other Maths or Notes is OK, but
-//|     the result if an Math is tied to multiple Synthtesizer objects is undefined.
+//|     the result if an Math is tied to multiple `Synthesizer` objects is undefined.
 //|
 //|     In the current implementation, Maths are updated every 256 samples. This
 //|     should be considered an implementation detail.
@@ -135,6 +137,7 @@ MAKE_ENUM_TYPE(synthio, MathOperation, synthio_math_operation,
 //|         c: BlockInput = 1.0,
 //|     ) -> None:
 //|         pass
+//|
 static const mp_arg_t math_properties[] = {
     { MP_QSTR_operation, MP_ARG_OBJ | MP_ARG_REQUIRED, {.u_obj = NULL } },
     { MP_QSTR_a, MP_ARG_OBJ | MP_ARG_REQUIRED, {.u_obj = NULL } },
@@ -240,6 +243,7 @@ MP_PROPERTY_GETSET(synthio_math_operation_obj,
 //|
 //|     value: float
 //|     """The value of the oscillator (read-only)"""
+//|
 //|
 static mp_obj_t synthio_math_get_value(mp_obj_t self_in) {
     synthio_math_obj_t *self = MP_OBJ_TO_PTR(self_in);

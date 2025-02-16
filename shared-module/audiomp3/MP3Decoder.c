@@ -6,6 +6,7 @@
 // SPDX-License-Identifier: MIT
 
 #include "shared-bindings/audiomp3/MP3Decoder.h"
+#include "shared-bindings/audiocore/__init__.h"
 
 #include <math.h>
 #include <stdint.h>
@@ -20,6 +21,7 @@
 #include "shared-module/audiomp3/MP3Decoder.h"
 #include "supervisor/background_callback.h"
 #include "lib/mp3/src/mp3common.h"
+#include "lib/mp3/src/coder.h"
 
 #define MAX_BUFFER_LEN (MAX_NSAMP * MAX_NGRAN * MAX_NCHAN * sizeof(int16_t))
 
@@ -167,7 +169,7 @@ static bool mp3file_update_inbuf_always(audiomp3_mp3file_obj_t *self, bool block
  */
 static void mp3file_update_inbuf_cb(void *self_in) {
     audiomp3_mp3file_obj_t *self = self_in;
-    if (common_hal_audiomp3_mp3file_deinited(self_in)) {
+    if (audiosample_deinited(&self->base)) {
         return;
     }
     if (!self->eof && stream_readable(self->stream)) {
@@ -360,6 +362,17 @@ void common_hal_audiomp3_mp3file_set_file(audiomp3_mp3file_obj_t *self, mp_obj_t
     // get_buffer() that I didn't understand.
     memset(self->pcm_buffer[0], 0, MAX_BUFFER_LEN);
     memset(self->pcm_buffer[1], 0, MAX_BUFFER_LEN);
+
+    /* important to do this - DSP primitives assume a bunch of state variables are 0 on first use */
+    struct _MP3DecInfo *decoder = self->decoder;
+    memset(decoder->FrameHeaderPS, 0, sizeof(FrameHeader));
+    memset(decoder->SideInfoPS, 0, sizeof(SideInfo));
+    memset(decoder->ScaleFactorInfoPS, 0, sizeof(ScaleFactorInfo));
+    memset(decoder->HuffmanInfoPS, 0, sizeof(HuffmanInfo));
+    memset(decoder->DequantInfoPS, 0, sizeof(DequantInfo));
+    memset(decoder->IMDCTInfoPS, 0, sizeof(IMDCTInfo));
+    memset(decoder->SubbandInfoPS, 0, sizeof(SubbandInfo));
+
     MP3FrameInfo fi;
     bool result = mp3file_get_next_frame_info(self, &fi, true);
     background_callback_allow();
@@ -368,14 +381,18 @@ void common_hal_audiomp3_mp3file_set_file(audiomp3_mp3file_obj_t *self, mp_obj_t
             MP_ERROR_TEXT("Failed to parse MP3 file"));
     }
 
-    self->sample_rate = fi.samprate;
-    self->channel_count = fi.nChans;
-    self->frame_buffer_size = fi.outputSamps * sizeof(int16_t);
-    self->len = 2 * self->frame_buffer_size;
+    self->base.sample_rate = fi.samprate;
+    self->base.channel_count = fi.nChans;
+    self->base.single_buffer = false;
+    self->base.bits_per_sample = 16;
+    self->base.samples_signed = false;
+    self->base.max_buffer_length = fi.outputSamps * sizeof(int16_t);
+    self->len = 2 * self->base.max_buffer_length;
     self->samples_decoded = 0;
 }
 
 void common_hal_audiomp3_mp3file_deinit(audiomp3_mp3file_obj_t *self) {
+    audiosample_mark_deinit(&self->base);
     if (self->decoder) {
         MP3FreeDecoder(self->decoder);
     }
@@ -386,27 +403,6 @@ void common_hal_audiomp3_mp3file_deinit(audiomp3_mp3file_obj_t *self) {
     self->stream = mp_const_none;
     self->settimeout_args[0] = MP_OBJ_NULL;
     self->samples_decoded = 0;
-}
-
-bool common_hal_audiomp3_mp3file_deinited(audiomp3_mp3file_obj_t *self) {
-    return self->pcm_buffer[0] == NULL;
-}
-
-uint32_t common_hal_audiomp3_mp3file_get_sample_rate(audiomp3_mp3file_obj_t *self) {
-    return self->sample_rate;
-}
-
-void common_hal_audiomp3_mp3file_set_sample_rate(audiomp3_mp3file_obj_t *self,
-    uint32_t sample_rate) {
-    self->sample_rate = sample_rate;
-}
-
-uint8_t common_hal_audiomp3_mp3file_get_bits_per_sample(audiomp3_mp3file_obj_t *self) {
-    return 16;
-}
-
-uint8_t common_hal_audiomp3_mp3file_get_channel_count(audiomp3_mp3file_obj_t *self) {
-    return self->channel_count;
 }
 
 void audiomp3_mp3file_reset_buffer(audiomp3_mp3file_obj_t *self,
@@ -445,7 +441,7 @@ audioio_get_buffer_result_t audiomp3_mp3file_get_buffer(audiomp3_mp3file_obj_t *
         channel = 0;
     }
 
-    size_t frame_buffer_size_bytes = self->frame_buffer_size;
+    size_t frame_buffer_size_bytes = self->base.max_buffer_length;
     *buffer_length = frame_buffer_size_bytes;
 
     if (channel == self->other_channel) {
@@ -467,7 +463,7 @@ audioio_get_buffer_result_t audiomp3_mp3file_get_buffer(audiomp3_mp3file_obj_t *
 
     mp3file_skip_id3v2(self, false);
     if (!mp3file_find_sync_word(self, false)) {
-        memset(buffer, 0, self->frame_buffer_size);
+        memset(buffer, 0, self->base.max_buffer_length);
         *buffer_length = 0;
         return self->eof ? GET_BUFFER_DONE : GET_BUFFER_ERROR;
     }
@@ -483,7 +479,7 @@ audioio_get_buffer_result_t audiomp3_mp3file_get_buffer(audiomp3_mp3file_obj_t *
             mp_printf(&mp_plat_print, "%s:%d err=%d\n", __FILE__, __LINE__, err);
         }
         if (self->eof || (err != ERR_MP3_INDATA_UNDERFLOW && err != ERR_MP3_MAINDATA_UNDERFLOW)) {
-            memset(buffer, 0, self->frame_buffer_size);
+            memset(buffer, 0, self->base.max_buffer_length);
             *buffer_length = 0;
             self->eof = true;
             return GET_BUFFER_ERROR;
@@ -511,27 +507,14 @@ audioio_get_buffer_result_t audiomp3_mp3file_get_buffer(audiomp3_mp3file_obj_t *
     return result;
 }
 
-void audiomp3_mp3file_get_buffer_structure(audiomp3_mp3file_obj_t *self, bool single_channel_output,
-    bool *single_buffer, bool *samples_signed,
-    uint32_t *max_buffer_length, uint8_t *spacing) {
-    *single_buffer = false;
-    *samples_signed = true;
-    *max_buffer_length = self->frame_buffer_size;
-    if (single_channel_output) {
-        *spacing = self->channel_count;
-    } else {
-        *spacing = 1;
-    }
-}
-
 float common_hal_audiomp3_mp3file_get_rms_level(audiomp3_mp3file_obj_t *self) {
     float sumsq = 0.f;
     // Assumes no DC component to the audio.  Is that a safe assumption?
     int16_t *buffer = (int16_t *)(void *)self->pcm_buffer[self->buffer_index];
-    for (size_t i = 0; i < self->frame_buffer_size / sizeof(int16_t); i++) {
+    for (size_t i = 0; i < self->base.max_buffer_length / sizeof(int16_t); i++) {
         sumsq += (float)buffer[i] * buffer[i];
     }
-    return sqrtf(sumsq) / (self->frame_buffer_size / sizeof(int16_t));
+    return sqrtf(sumsq) / (self->base.max_buffer_length / sizeof(int16_t));
 }
 
 uint32_t common_hal_audiomp3_mp3file_get_samples_decoded(audiomp3_mp3file_obj_t *self) {

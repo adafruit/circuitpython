@@ -101,6 +101,7 @@
 //|         is not limited but images that are too large will cause a memory exception.
 //|         """
 //|         ...
+//|
 static mp_obj_t gifio_ondiskgif_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_filename, ARG_use_palette, NUM_ARGS };
     static const mp_arg_t allowed_args[] = {
@@ -135,18 +136,15 @@ static void check_for_deinit(gifio_ondiskgif_t *self) {
 //|     def __enter__(self) -> OnDiskGif:
 //|         """No-op used by Context Managers."""
 //|         ...
+//|
 //  Provided by context manager helper.
 
 //|     def __exit__(self) -> None:
 //|         """Automatically deinitializes the GIF when exiting a context. See
 //|         :ref:`lifetime-and-contextmanagers` for more info."""
 //|         ...
-static mp_obj_t gifio_ondiskgif_obj___exit__(size_t n_args, const mp_obj_t *args) {
-    (void)n_args;
-    common_hal_gifio_ondiskgif_deinit(args[0]);
-    return mp_const_none;
-}
-static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(gifio_ondiskgif___exit___obj, 4, 4, gifio_ondiskgif_obj___exit__);
+//|
+//  Provided by context manager helper.
 
 //|     width: int
 //|     """Width of the gif. (read only)"""
@@ -192,6 +190,7 @@ MP_PROPERTY_GETTER(gifio_ondiskgif_bitmap_obj,
 
 //|     palette: Optional[displayio.Palette]
 //|     """The palette for the current frame if it exists."""
+//|
 static mp_obj_t gifio_ondiskgif_obj_get_palette(mp_obj_t self_in) {
     gifio_ondiskgif_t *self = MP_OBJ_TO_PTR(self_in);
 
@@ -206,6 +205,7 @@ MP_PROPERTY_GETTER(gifio_ondiskgif_palette_obj,
 
 //|     def next_frame(self) -> float:
 //|         """Loads the next frame. Returns expected delay before the next frame in seconds."""
+//|
 static mp_obj_t gifio_ondiskgif_obj_next_frame(mp_obj_t self_in) {
     gifio_ondiskgif_t *self = MP_OBJ_TO_PTR(self_in);
 
@@ -277,6 +277,7 @@ MP_PROPERTY_GETTER(gifio_ondiskgif_max_delay_obj,
 //|         """Release resources allocated by OnDiskGif."""
 //|         ...
 //|
+//|
 static mp_obj_t gifio_ondiskgif_obj_deinit(mp_obj_t self_in) {
     gifio_ondiskgif_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_gifio_ondiskgif_deinit(self);
@@ -287,7 +288,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(gifio_ondiskgif_deinit_obj, gifio_ondiskgif_obj_deinit
 static const mp_rom_map_elem_t gifio_ondiskgif_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&gifio_ondiskgif_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
-    { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&gifio_ondiskgif___exit___obj) },
+    { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
     { MP_ROM_QSTR(MP_QSTR_height), MP_ROM_PTR(&gifio_ondiskgif_height_obj) },
     { MP_ROM_QSTR(MP_QSTR_bitmap), MP_ROM_PTR(&gifio_ondiskgif_bitmap_obj) },
     { MP_ROM_QSTR(MP_QSTR_palette), MP_ROM_PTR(&gifio_ondiskgif_palette_obj) },

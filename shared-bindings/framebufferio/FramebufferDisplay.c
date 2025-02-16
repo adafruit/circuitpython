@@ -31,7 +31,7 @@
 //|         framebuffer: circuitpython_typing.FrameBuffer,
 //|         *,
 //|         rotation: int = 0,
-//|         auto_refresh: bool = True
+//|         auto_refresh: bool = True,
 //|     ) -> None:
 //|         """Create a Display object with the given framebuffer (a buffer, array, ulab.array, etc)
 //|
@@ -40,6 +40,7 @@
 //|         :param int rotation: The rotation of the display in degrees clockwise. Must be in 90 degree increments (0, 90, 180, 270)
 //|         """
 //|         ...
+//|
 static mp_obj_t framebufferio_framebufferdisplay_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_framebuffer, ARG_rotation, ARG_auto_refresh, NUM_ARGS };
     static const mp_arg_t allowed_args[] = {
@@ -89,7 +90,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(framebufferio_framebufferdisplay_show_obj, framebuffer
 //|         self,
 //|         *,
 //|         target_frames_per_second: Optional[int] = None,
-//|         minimum_frames_per_second: int = 0
+//|         minimum_frames_per_second: int = 0,
 //|     ) -> bool:
 //|         """When auto_refresh is off, and :py:attr:`target_frames_per_second` is not `None` this waits
 //|         for the target frame rate and then refreshes the display,
@@ -111,6 +112,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(framebufferio_framebufferdisplay_show_obj, framebuffer
 //|         :param int minimum_frames_per_second: The minimum number of times the screen should be updated per second.
 //|         """
 //|         ...
+//|
 static mp_obj_t framebufferio_framebufferdisplay_obj_refresh(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_target_frames_per_second, ARG_minimum_frames_per_second };
     static const mp_arg_t allowed_args[] = {
@@ -232,6 +234,7 @@ MP_PROPERTY_GETSET(framebufferio_framebufferdisplay_rotation_obj,
 
 //|     framebuffer: circuitpython_typing.FrameBuffer
 //|     """The framebuffer being used by the display"""
+//|
 static mp_obj_t framebufferio_framebufferdisplay_obj_get_framebuffer(mp_obj_t self_in) {
     framebufferio_framebufferdisplay_obj_t *self = native_display(self_in);
     return common_hal_framebufferio_framebufferdisplay_get_framebuffer(self);
@@ -249,6 +252,7 @@ MP_PROPERTY_GETTER(framebufferio_framebufferframebuffer_obj,
 //|         :param ~circuitpython_typing.WriteableBuffer buffer: The buffer in which to place the pixel data
 //|         """
 //|         ...
+//|
 static mp_obj_t framebufferio_framebufferdisplay_obj_fill_row(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_y, ARG_buffer };
     static const mp_arg_t allowed_args[] = {
@@ -308,6 +312,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(framebufferio_framebufferdisplay_fill_row_obj, 1, fra
 //|     If the root group is set to `displayio.CIRCUITPYTHON_TERMINAL`, the default CircuitPython terminal will be shown.
 //|     If the root group is set to ``None``, no output will be shown.
 //|     """
+//|
 //|
 static mp_obj_t framebufferio_framebufferdisplay_obj_get_root_group(mp_obj_t self_in) {
     framebufferio_framebufferdisplay_obj_t *self = native_display(self_in);

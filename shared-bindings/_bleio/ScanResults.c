@@ -40,6 +40,7 @@ static mp_obj_t scanresults_iternext(mp_obj_t self_in) {
 //|         """
 //|         ...
 //|
+//|
 
 MP_DEFINE_CONST_OBJ_TYPE(
     bleio_scanresults_type,

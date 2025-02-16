@@ -1,3 +1,23 @@
+ifeq ($(IDF_TARGET),esp32c2)
+IDF_TARGET_ARCH = riscv
+CROSS_COMPILE = riscv32-esp-elf-
+else ifeq ($(IDF_TARGET),esp32c3)
+IDF_TARGET_ARCH = riscv
+CROSS_COMPILE = riscv32-esp-elf-
+else ifeq ($(IDF_TARGET),esp32p4)
+IDF_TARGET_ARCH = riscv
+CROSS_COMPILE = riscv32-esp-elf-
+else ifeq ($(IDF_TARGET),esp32c6)
+IDF_TARGET_ARCH = riscv
+CROSS_COMPILE = riscv32-esp-elf-
+else ifeq ($(IDF_TARGET),esp32h2)
+IDF_TARGET_ARCH = riscv
+CROSS_COMPILE = riscv32-esp-elf-
+else
+IDF_TARGET_ARCH = xtensa
+CROSS_COMPILE = xtensa-$(IDF_TARGET)-elf-
+endif
+
 # Use internal flash for CIRCUITPY drive
 INTERNAL_FLASH_FILESYSTEM = 1
 
@@ -25,6 +45,8 @@ CIRCUITPY_WIFI_RADIO_SETTABLE_LISTEN_INTERVAL = 1
 
 # Never use our copy of MBEDTLS
 CIRCUITPY_HASHLIB_MBEDTLS_ONLY = 0
+
+CIRCUITPY_PORT_SERIAL = 1
 
 # These modules are implemented in ports/<port>/common-hal:
 CIRCUITPY_ALARM ?= 1
@@ -65,6 +87,7 @@ CIRCUITPY__EVE ?= 1
 ifeq ($(IDF_TARGET),esp32)
 # Modules
 CIRCUITPY_ALARM_TOUCH = 1
+CIRCUITPY_AUDIOIO = 1
 CIRCUITPY_RGBMATRIX = 0
 
 # SDMMC not supported yet
@@ -196,9 +219,14 @@ CIRCUITPY_SSL = 0
 CIRCUITPY_TOUCHIO = 1
 CIRCUITPY_TOUCHIO_USE_NATIVE = 0
 
-# TinyUSB doesn't have it upstreamed
-# https://github.com/hathach/tinyusb/issues/2791
-CIRCUITPY_USB_DEVICE = 0
+# Second stage bootloader doesn't work when the factory partition is empty due to
+# UF2 missing.
+UF2_BOOTLOADER = 0
+USB_HIGHSPEED = 1
+CIRCUITPY_USB_HID = 0
+CIRCUITPY_USB_MIDI = 0
+CIRCUITPY_TUSB_MEM_ALIGN = 64
+
 CIRCUITPY_MAX3421E = 0
 
 # Update this for the 40mhz processor.
@@ -219,6 +247,7 @@ CIRCUITPY_ESPCAMERA = 0
 else ifeq ($(IDF_TARGET),esp32s2)
 # Modules
 CIRCUITPY_ALARM_TOUCH = 1
+CIRCUITPY_AUDIOIO = 1
 # No BLE in hw
 CIRCUITPY_BLEIO = 0
 
@@ -230,6 +259,7 @@ CIRCUITPY_ESP_USB_SERIAL_JTAG ?= 0
 else ifeq ($(IDF_TARGET),esp32s3)
 # Modules
 CIRCUITPY_ALARM_TOUCH = 1
+CIRCUITPY_AUDIOBUSIO_PDMIN = 1
 CIRCUITPY_ESP_USB_SERIAL_JTAG ?= 0
 
 # No room for _bleio on boards with 4MB flash
@@ -307,6 +337,3 @@ USB_NUM_IN_ENDPOINTS = 5
 
 # Usually lots of flash space available
 CIRCUITPY_MESSAGE_COMPRESSION_LEVEL ?= 1
-
-CIRCUITPY_AUDIOMP3 ?= 1
-CIRCUITPY_AUDIOMP3_USE_PORT_ALLOCATOR ?= 1

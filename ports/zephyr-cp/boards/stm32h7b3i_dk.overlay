@@ -1,0 +1,7 @@
+&mx25lm51245 {
+    /delete-node/ partitions;
+};
+
+&rng {
+    status = "okay";
+};

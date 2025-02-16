@@ -85,6 +85,7 @@
 //|         :param int color_depth: the color depth of the framebuffer in bits. 1, 2 for grayscale
 //|           and 4 (RP2350 only), 8 or 16 for color
 //|         """
+//|
 
 static mp_obj_t picodvi_framebuffer_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_width, ARG_height, ARG_clk_dp, ARG_clk_dn, ARG_red_dp, ARG_red_dn, ARG_green_dp,
@@ -136,6 +137,7 @@ static mp_obj_t picodvi_framebuffer_make_new(const mp_obj_type_t *type, size_t n
 //|         `picodvi.Framebuffer` instance.  After deinitialization, no further operations
 //|         may be performed."""
 //|         ...
+//|
 static mp_obj_t picodvi_framebuffer_deinit(mp_obj_t self_in) {
     picodvi_framebuffer_obj_t *self = (picodvi_framebuffer_obj_t *)self_in;
     common_hal_picodvi_framebuffer_deinit(self);
@@ -163,6 +165,7 @@ MP_PROPERTY_GETTER(picodvi_framebuffer_width_obj,
 
 //|     height: int
 //|     """The width of the framebuffer, in pixels. It may be doubled for output."""
+//|
 //|
 static mp_obj_t picodvi_framebuffer_get_height(mp_obj_t self_in) {
     picodvi_framebuffer_obj_t *self = (picodvi_framebuffer_obj_t *)self_in;

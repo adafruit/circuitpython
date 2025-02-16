@@ -35,6 +35,7 @@ SRC_BITMAP := \
 	shared-bindings/audiocore/WaveFile.c \
 	shared-bindings/audiodelays/Echo.c \
 	shared-bindings/audiodelays/__init__.c \
+	shared-bindings/audiofilters/Distortion.c \
 	shared-bindings/audiofilters/Filter.c \
 	shared-bindings/audiofilters/__init__.c \
 	shared-bindings/audiomixer/__init__.c \
@@ -77,6 +78,7 @@ SRC_BITMAP := \
 	shared-module/audiocore/WaveFile.c \
 	shared-module/audiodelays/Echo.c \
 	shared-module/audiodelays/__init__.c \
+	shared-module/audiofilters/Distortion.c \
 	shared-module/audiofilters/Filter.c \
 	shared-module/audiofilters/__init__.c \
 	shared-module/audiomixer/__init__.c \
@@ -142,7 +144,6 @@ CFLAGS += \
 	-DCIRCUITPY_AUDIOFILTERS=1 \
 	-DCIRCUITPY_AUDIOMIXER=1 \
 	-DCIRCUITPY_AUDIOMP3=1 \
-	-DCIRCUITPY_AUDIOMP3_USE_PORT_ALLOCATOR=0 \
 	-DCIRCUITPY_AUDIOCORE_DEBUG=1 \
 	-DCIRCUITPY_BITMAPTOOLS=1 \
 	-DCIRCUITPY_CODEOP=1 \

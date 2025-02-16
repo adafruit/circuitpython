@@ -24,7 +24,7 @@
 //|         data: microcontroller.Pin,
 //|         *,
 //|         main_clock: Optional[microcontroller.Pin] = None,
-//|         left_justified: bool = False
+//|         left_justified: bool = False,
 //|     ) -> None:
 //|         """Create a I2SOut object associated with the given pins.
 //|
@@ -76,6 +76,7 @@
 //|             pass
 //|           print("stopped")"""
 //|         ...
+//|
 static mp_obj_t audiobusio_i2sout_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     #if !CIRCUITPY_AUDIOBUSIO_I2SOUT
     mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("%q"), MP_QSTR_I2SOut);
@@ -109,6 +110,7 @@ static mp_obj_t audiobusio_i2sout_make_new(const mp_obj_type_t *type, size_t n_a
 //|     def deinit(self) -> None:
 //|         """Deinitialises the I2SOut and releases any hardware resources for reuse."""
 //|         ...
+//|
 static mp_obj_t audiobusio_i2sout_deinit(mp_obj_t self_in) {
     audiobusio_i2sout_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_audiobusio_i2sout_deinit(self);
@@ -125,18 +127,15 @@ static void check_for_deinit(audiobusio_i2sout_obj_t *self) {
 //|     def __enter__(self) -> I2SOut:
 //|         """No-op used by Context Managers."""
 //|         ...
+//|
 //  Provided by context manager helper.
 
 //|     def __exit__(self) -> None:
 //|         """Automatically deinitializes the hardware when exiting a context. See
 //|         :ref:`lifetime-and-contextmanagers` for more info."""
 //|         ...
-static mp_obj_t audiobusio_i2sout_obj___exit__(size_t n_args, const mp_obj_t *args) {
-    (void)n_args;
-    common_hal_audiobusio_i2sout_deinit(args[0]);
-    return mp_const_none;
-}
-static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(audiobusio_i2sout___exit___obj, 4, 4, audiobusio_i2sout_obj___exit__);
+//|
+//  Provided by context manager helper.
 
 
 //|     def play(self, sample: circuitpython_typing.AudioSample, *, loop: bool = False) -> None:
@@ -147,6 +146,7 @@ static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(audiobusio_i2sout___exit___obj, 4, 4,
 //|
 //|         The sample itself should consist of 8 bit or 16 bit samples."""
 //|         ...
+//|
 static mp_obj_t audiobusio_i2sout_obj_play(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_sample, ARG_loop };
     static const mp_arg_t allowed_args[] = {
@@ -168,6 +168,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(audiobusio_i2sout_play_obj, 1, audiobusio_i2sout_obj_
 //|     def stop(self) -> None:
 //|         """Stops playback."""
 //|         ...
+//|
 static mp_obj_t audiobusio_i2sout_obj_stop(mp_obj_t self_in) {
     audiobusio_i2sout_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -178,6 +179,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(audiobusio_i2sout_stop_obj, audiobusio_i2sout_obj_stop
 
 //|     playing: bool
 //|     """True when the audio sample is being output. (read-only)"""
+//|
 static mp_obj_t audiobusio_i2sout_obj_get_playing(mp_obj_t self_in) {
     audiobusio_i2sout_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -191,6 +193,7 @@ MP_PROPERTY_GETTER(audiobusio_i2sout_playing_obj,
 //|     def pause(self) -> None:
 //|         """Stops playback temporarily while remembering the position. Use `resume` to resume playback."""
 //|         ...
+//|
 static mp_obj_t audiobusio_i2sout_obj_pause(mp_obj_t self_in) {
     audiobusio_i2sout_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -206,6 +209,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(audiobusio_i2sout_pause_obj, audiobusio_i2sout_obj_pau
 //|     def resume(self) -> None:
 //|         """Resumes sample playback after :py:func:`pause`."""
 //|         ...
+//|
 static mp_obj_t audiobusio_i2sout_obj_resume(mp_obj_t self_in) {
     audiobusio_i2sout_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -220,6 +224,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(audiobusio_i2sout_resume_obj, audiobusio_i2sout_obj_re
 
 //|     paused: bool
 //|     """True when playback is paused. (read-only)"""
+//|
 //|
 static mp_obj_t audiobusio_i2sout_obj_get_paused(mp_obj_t self_in) {
     audiobusio_i2sout_obj_t *self = MP_OBJ_TO_PTR(self_in);
@@ -238,7 +243,7 @@ static const mp_rom_map_elem_t audiobusio_i2sout_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&audiobusio_i2sout_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&audiobusio_i2sout_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
-    { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&audiobusio_i2sout___exit___obj) },
+    { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
     { MP_ROM_QSTR(MP_QSTR_play), MP_ROM_PTR(&audiobusio_i2sout_play_obj) },
     { MP_ROM_QSTR(MP_QSTR_stop), MP_ROM_PTR(&audiobusio_i2sout_stop_obj) },
     { MP_ROM_QSTR(MP_QSTR_pause), MP_ROM_PTR(&audiobusio_i2sout_pause_obj) },

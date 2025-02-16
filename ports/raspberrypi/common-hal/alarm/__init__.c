@@ -141,6 +141,10 @@ mp_obj_t common_hal_alarm_light_sleep_until_alarms(size_t n_alarms, const mp_obj
 
     mp_obj_t wake_alarm = mp_const_none;
 
+    // Save current clocks.
+    uint32_t saved_sleep_en0 = clocks_hw->sleep_en0;
+    uint32_t saved_sleep_en1 = clocks_hw->sleep_en1;
+
     while (!mp_hal_is_interrupted()) {
         RUN_BACKGROUND_TASKS;
         // Detect if interrupt was alarm or ctrl-C interrupt.
@@ -163,20 +167,24 @@ mp_obj_t common_hal_alarm_light_sleep_until_alarms(size_t n_alarms, const mp_obj
             break;
         }
 
-        // Prune the clock for sleep
+        // Prune the clocks for sleep.
         clocks_hw->sleep_en0 &= RP_LIGHTSLEEP_EN0_MASK;
         clocks_hw->sleep_en1 = RP_LIGHTSLEEP_EN1_MASK;
 
         // Enable System Control Block (SCB) deep sleep
-        uint save = scb_hw->scr;
-        scb_hw->scr = save | M0PLUS_SCR_SLEEPDEEP_BITS;
+        scb_hw->scr |= M0PLUS_SCR_SLEEPDEEP_BITS;
 
         __wfi();
     }
 
+    // Restore clocks so other wfi() uses, like time.sleep(), won't use the light-sleep settings.
+    clocks_hw->sleep_en0 = saved_sleep_en0;
+    clocks_hw->sleep_en1 = saved_sleep_en1;
+
     if (mp_hal_is_interrupted()) {
         return mp_const_none; // Shouldn't be given to python code because exception handling should kick in.
     }
+
 
     alarm_reset();
     return wake_alarm;

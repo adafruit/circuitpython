@@ -1,5 +1,7 @@
 """Source this file into gdb `source ../../tools/gdb-stack-size.py` then run
-   `stack-size` to print a backtrace with each frame size next to it."""
+`stack-size` to print a backtrace with each frame size next to it."""
+
+import gdb
 
 
 class StackSize(gdb.Command):

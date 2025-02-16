@@ -25,6 +25,7 @@
 //|
 //| import typing
 //|
+//|
 
 //| def warn(message: str, category: type = Warning) -> None:
 //|     """Issue a warning with an optional category. Use `simplefilter()` to
@@ -32,6 +33,7 @@
 //|
 //|     """
 //|     ...
+//|
 //|
 static mp_obj_t warnings_warn(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_message, ARG_category };
@@ -57,6 +59,7 @@ static MP_DEFINE_CONST_FUN_OBJ_KW(warnings_warn_obj, 1, warnings_warn);
 //|     """Set the action to take on all warnings. This is a subset of the CPython
 //|     behavior because it allows for per-category changes."""
 //|     ...
+//|
 //|
 static mp_obj_t warnings_simplefilter(mp_obj_t action_in) {
     const char *action_str = mp_obj_str_get_str(action_in);

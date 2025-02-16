@@ -6,6 +6,7 @@
 
 #include "py/runtime.h"
 #include "shared-bindings/synthio/MidiTrack.h"
+#include "shared-bindings/audiocore/__init__.h"
 
 
 static void record_midi_stream_error(synthio_miditrack_obj_t *self) {
@@ -42,7 +43,7 @@ static int decode_duration(synthio_miditrack_obj_t *self) {
         self->pos = self->track.len;
         record_midi_stream_error(self);
     }
-    return delta * self->synth.sample_rate / self->tempo;
+    return delta * self->synth.base.sample_rate / self->tempo;
 }
 
 // invariant: pointing at a MIDI message
@@ -111,22 +112,8 @@ void common_hal_synthio_miditrack_deinit(synthio_miditrack_obj_t *self) {
     synthio_synth_deinit(&self->synth);
 }
 
-bool common_hal_synthio_miditrack_deinited(synthio_miditrack_obj_t *self) {
-    return synthio_synth_deinited(&self->synth);
-}
-
 mp_int_t common_hal_synthio_miditrack_get_error_location(synthio_miditrack_obj_t *self) {
     return self->error_location;
-}
-
-uint32_t common_hal_synthio_miditrack_get_sample_rate(synthio_miditrack_obj_t *self) {
-    return self->synth.sample_rate;
-}
-uint8_t common_hal_synthio_miditrack_get_bits_per_sample(synthio_miditrack_obj_t *self) {
-    return SYNTHIO_BITS_PER_SAMPLE;
-}
-uint8_t common_hal_synthio_miditrack_get_channel_count(synthio_miditrack_obj_t *self) {
-    return 1;
 }
 
 void synthio_miditrack_reset_buffer(synthio_miditrack_obj_t *self,
@@ -137,7 +124,7 @@ void synthio_miditrack_reset_buffer(synthio_miditrack_obj_t *self,
 
 audioio_get_buffer_result_t synthio_miditrack_get_buffer(synthio_miditrack_obj_t *self,
     bool single_channel_output, uint8_t channel, uint8_t **buffer, uint32_t *buffer_length) {
-    if (common_hal_synthio_miditrack_deinited(self)) {
+    if (audiosample_deinited(&self->synth.base)) {
         *buffer_length = 0;
         return GET_BUFFER_ERROR;
     }
@@ -151,9 +138,4 @@ audioio_get_buffer_result_t synthio_miditrack_get_buffer(synthio_miditrack_obj_t
         }
     }
     return GET_BUFFER_MORE_DATA;
-}
-
-void synthio_miditrack_get_buffer_structure(synthio_miditrack_obj_t *self, bool single_channel_output,
-    bool *single_buffer, bool *samples_signed, uint32_t *max_buffer_length, uint8_t *spacing) {
-    return synthio_synth_get_buffer_structure(&self->synth, single_channel_output, single_buffer, samples_signed, max_buffer_length, spacing);
 }

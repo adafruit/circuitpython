@@ -1,0 +1,7 @@
+manifest:
+  projects:
+    - name: zephyr
+      url: https://github.com/adafruit/zephyr
+      revision: circuitpython
+      clone-depth: 100
+      import: true

@@ -93,6 +93,7 @@
 //|         #:param int overscan_right: Allocate additional non-visible columns right of the last display column
 //|         #:param int overscan_bottom: Allocate additional non-visible rows below the last display row
 //|         ...
+//|
 static mp_obj_t dotclockframebuffer_framebuffer_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_de, ARG_vsync, ARG_hsync, ARG_dclk, ARG_red, ARG_green, ARG_blue,
            ARG_frequency, ARG_width, ARG_height,
@@ -176,6 +177,7 @@ static void check_for_deinit(dotclockframebuffer_framebuffer_obj_t *self) {
 //|         If this function is not called, the results are unpredictable; updates may be partially shown.
 //|         """
 //|         ...
+//|
 static mp_obj_t dotclockframebuffer_framebuffer_refresh(mp_obj_t self_in) {
     dotclockframebuffer_framebuffer_obj_t *self = (dotclockframebuffer_framebuffer_obj_t *)self_in;
     check_for_deinit(self);
@@ -256,6 +258,7 @@ MP_PROPERTY_GETTER(dotclockframebuffer_framebuffer_row_stride_obj,
 //|     This property gives the stride in **bytes**.
 //|
 //|     On Espressif this value is **guaranteed** to be a multiple of the 2 (i.e., it is a whole number of pixels)"""
+//|
 //|
 static mp_obj_t dotclockframebuffer_framebuffer_get_first_pixel_offset(mp_obj_t self_in) {
     dotclockframebuffer_framebuffer_obj_t *self = (dotclockframebuffer_framebuffer_obj_t *)self_in;

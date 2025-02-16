@@ -20,10 +20,12 @@
 //|    that could be implemented by other frameworks. It should only include ESP-IDF specific
 //|    things."""
 //|
+//|
 
 //| def heap_caps_get_total_size() -> int:
 //|     """Return the total size of the ESP-IDF, which includes the CircuitPython heap."""
 //|     ...
+//|
 //|
 
 static mp_obj_t espidf_heap_caps_get_total_size(void) {
@@ -35,6 +37,7 @@ MP_DEFINE_CONST_FUN_OBJ_0(espidf_heap_caps_get_total_size_obj, espidf_heap_caps_
 //|     """Return total free memory in the ESP-IDF heap."""
 //|     ...
 //|
+//|
 
 static mp_obj_t espidf_heap_caps_get_free_size(void) {
     return MP_OBJ_NEW_SMALL_INT(heap_caps_get_free_size(MALLOC_CAP_8BIT));
@@ -44,6 +47,7 @@ MP_DEFINE_CONST_FUN_OBJ_0(espidf_heap_caps_get_free_size_obj, espidf_heap_caps_g
 //| def heap_caps_get_largest_free_block() -> int:
 //|     """Return the size of largest free memory block in the ESP-IDF heap."""
 //|     ...
+//|
 //|
 
 static mp_obj_t espidf_heap_caps_get_largest_free_block(void) {
@@ -57,6 +61,7 @@ MP_DEFINE_CONST_FUN_OBJ_0(espidf_heap_caps_get_largest_free_block_obj, espidf_he
 //|     This is necessary when upgrading from CircuitPython 6.3.0 or earlier to CircuitPython 7.0.0, because the
 //|     layout of data in nvs has changed. The old data will be lost when you perform this operation.
 //|     """
+//|
 //|
 static mp_obj_t espidf_erase_nvs(void) {
     ESP_ERROR_CHECK(nvs_flash_deinit());
@@ -84,6 +89,7 @@ static void espidf_exception_print(const mp_print_t *print, mp_obj_t o_in, mp_pr
 //|
 //|     ...
 //|
+//|
 MP_DEFINE_CONST_OBJ_TYPE(
     mp_type_espidf_IDFError,
     MP_QSTR_IDFError,
@@ -98,6 +104,7 @@ MP_DEFINE_CONST_OBJ_TYPE(
 //|     """Raised when an ``ESP-IDF`` memory allocation fails."""
 //|
 //|     ...
+//|
 //|
 NORETURN void mp_raise_espidf_MemoryError(void) {
     nlr_raise(mp_obj_new_exception(&mp_type_espidf_MemoryError));
@@ -115,6 +122,7 @@ MP_DEFINE_CONST_OBJ_TYPE(
 
 //| def get_total_psram() -> int:
 //|     """Returns the number of bytes of psram detected, or 0 if psram is not present or not configured"""
+//|
 //|
 static mp_obj_t espidf_get_total_psram(void) {
     return MP_OBJ_NEW_SMALL_INT(common_hal_espidf_get_total_psram());

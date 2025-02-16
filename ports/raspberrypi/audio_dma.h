@@ -11,6 +11,13 @@
 
 #include "src/rp2_common/hardware_dma/include/hardware/dma.h"
 
+typedef enum {
+    AUDIO_DMA_OK,
+    AUDIO_DMA_DMA_BUSY,
+    AUDIO_DMA_MEMORY_ERROR,
+    AUDIO_DMA_SOURCE_ERROR,
+} audio_dma_result;
+
 typedef struct {
     mp_obj_t sample;
     uint8_t *buffer[2];
@@ -24,6 +31,7 @@ typedef struct {
     uint8_t sample_spacing;
     uint8_t output_resolution; // in bits
     uint8_t sample_resolution; // in bits
+    audio_dma_result dma_result;
     bool loop;
     bool single_channel_output;
     bool signed_to_unsigned;
@@ -32,13 +40,6 @@ typedef struct {
     bool playing_in_progress;
     bool swap_channel;
 } audio_dma_t;
-
-typedef enum {
-    AUDIO_DMA_OK,
-    AUDIO_DMA_DMA_BUSY,
-    AUDIO_DMA_MEMORY_ERROR,
-} audio_dma_result;
-
 
 void audio_dma_init(audio_dma_t *dma);
 void audio_dma_deinit(audio_dma_t *dma);

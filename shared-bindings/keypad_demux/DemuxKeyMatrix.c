@@ -36,6 +36,8 @@
 //|         self,
 //|         row_addr_pins: Sequence[microcontroller.Pin],
 //|         column_pins: Sequence[microcontroller.Pin],
+//|         columns_to_anodes: bool = True,
+//|         transpose: bool = False,
 //|         interval: float = 0.020,
 //|         max_events: int = 64,
 //|         debounce_threshold: int = 1,
@@ -51,7 +53,18 @@
 //|         An `keypad.EventQueue` is created when this object is created and is available in the `events` attribute.
 //|
 //|         :param Sequence[microcontroller.Pin] row_addr_pins: The pins attached to the rows demultiplexer.
+//|           If your columns are multiplexed, set ``transpose`` to ``True``.
 //|         :param Sequence[microcontroller.Pin] column_pins: The pins attached to the columns.
+//|         :param bool columns_to_anodes: Default ``True``.
+//|           If the matrix uses diodes, the diode anodes are typically connected to the column pins
+//|           with the cathodes connected to the row pins.  This implies an inverting multiplexer that drives
+//|           the selected row pin low.  If your diodes are reversed, with a non-inverting multiplexer
+//|           that drives the selected row high, set ``columns_to_anodes`` to ``False``.
+//|           If ``transpose`` is ``True`` the sense of columns and rows are reversed here.
+//|         :param bool transpose: Default ``False``.
+//|           If your matrix is multiplexed on columns rather than rows, set ``transpose`` to ``True``.
+//|           This swaps the meaning of ``row_addr_pins`` to ``column_addr_pins``;
+//|           ``column_pins`` to ``row_pins``; and ``columns_to_anodes`` to ``rows_to_anodes``.
 //|         :param float interval: Scan keys no more often than ``interval`` to allow for debouncing.
 //|           ``interval`` is in float seconds. The default is 0.020 (20 msecs).
 //|         :param int max_events: maximum size of `events` `keypad.EventQueue`:
@@ -64,13 +77,16 @@
 //|           The default is 1, which resolves immediately. The maximum is 127.
 //|         """
 //|         ...
+//|
 
 static mp_obj_t keypad_demux_demuxkeymatrix_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     keypad_demux_demuxkeymatrix_obj_t *self = mp_obj_malloc(keypad_demux_demuxkeymatrix_obj_t, &keypad_demux_demuxkeymatrix_type);
-    enum { ARG_row_addr_pins, ARG_column_pins, ARG_interval, ARG_max_events, ARG_debounce_threshold };
+    enum { ARG_row_addr_pins, ARG_column_pins, ARG_columns_to_anodes, ARG_transpose, ARG_interval, ARG_max_events, ARG_debounce_threshold };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_row_addr_pins, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_column_pins, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_columns_to_anodes, MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = true} },
+        { MP_QSTR_transpose, MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = false} },
         { MP_QSTR_interval, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
         { MP_QSTR_max_events, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 64} },
         { MP_QSTR_debounce_threshold, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 1} },
@@ -107,13 +123,14 @@ static mp_obj_t keypad_demux_demuxkeymatrix_make_new(const mp_obj_type_t *type, 
         column_pins_array[column] = pin;
     }
 
-    common_hal_keypad_demux_demuxkeymatrix_construct(self, num_row_addr_pins, row_addr_pins_array, num_column_pins, column_pins_array, interval, max_events, debounce_threshold);
+    common_hal_keypad_demux_demuxkeymatrix_construct(self, num_row_addr_pins, row_addr_pins_array, num_column_pins, column_pins_array, args[ARG_columns_to_anodes].u_bool, args[ARG_transpose].u_bool, interval, max_events, debounce_threshold);
     return MP_OBJ_FROM_PTR(self);
 }
 
 //|     def deinit(self) -> None:
 //|         """Stop scanning and release the pins."""
 //|         ...
+//|
 static mp_obj_t keypad_demux_demuxkeymatrix_deinit(mp_obj_t self_in) {
     keypad_demux_demuxkeymatrix_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_keypad_demux_demuxkeymatrix_deinit(self);
@@ -124,18 +141,15 @@ MP_DEFINE_CONST_FUN_OBJ_1(keypad_demux_demuxkeymatrix_deinit_obj, keypad_demux_d
 //|     def __enter__(self) -> DemuxKeyMatrix:
 //|         """No-op used by Context Managers."""
 //|         ...
+//|
 //  Provided by context manager helper.
 
 //|     def __exit__(self) -> None:
 //|         """Automatically deinitializes when exiting a context. See
 //|         :ref:`lifetime-and-contextmanagers` for more info."""
 //|         ...
-static mp_obj_t keypad_demux_demuxkeymatrix___exit__(size_t n_args, const mp_obj_t *args) {
-    (void)n_args;
-    common_hal_keypad_demux_demuxkeymatrix_deinit(args[0]);
-    return MP_ROM_NONE;
-}
-static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(keypad_demux_demuxkeymatrix___exit___obj, 4, 4, keypad_demux_demuxkeymatrix___exit__);
+//|
+//  Provided by context manager helper.
 
 static void check_for_deinit(keypad_demux_demuxkeymatrix_obj_t *self) {
     if (common_hal_keypad_deinited(self)) {
@@ -152,10 +166,12 @@ static void check_for_deinit(keypad_demux_demuxkeymatrix_obj_t *self) {
 //|         were being held down at program start.
 //|         """
 //|         ...
+//|
 
 //|     key_count: int
 //|     """The number of keys that are being scanned. (read-only)
 //|     """
+//|
 
 //|     def key_number_to_row_column(self, key_number: int) -> Tuple[int]:
 //|         """Return the row and column for the given key number.
@@ -166,6 +182,7 @@ static void check_for_deinit(keypad_demux_demuxkeymatrix_obj_t *self) {
 //|         :rtype: Tuple[int]
 //|         """
 //|         ...
+//|
 static mp_obj_t keypad_demux_demuxkeymatrix_key_number_to_row_column(mp_obj_t self_in, mp_obj_t key_number_in) {
     keypad_demux_demuxkeymatrix_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -192,6 +209,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(keypad_demux_demuxkeymatrix_key_number_to_row_column_o
 //|         The key number is ``row * len(column_pins) + column``.
 //|         """
 //|         ...
+//|
 static mp_obj_t keypad_demux_demuxkeymatrix_row_column_to_key_number(mp_obj_t self_in, mp_obj_t row_in, mp_obj_t column_in) {
     keypad_demux_demuxkeymatrix_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -211,11 +229,12 @@ MP_DEFINE_CONST_FUN_OBJ_3(keypad_demux_demuxkeymatrix_row_column_to_key_number_o
 //|     """The `keypad.EventQueue` associated with this `keypad.Keys` object. (read-only)
 //|     """
 //|
+//|
 
 static const mp_rom_map_elem_t keypad_demux_demuxkeymatrix_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit),                   MP_ROM_PTR(&keypad_demux_demuxkeymatrix_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__),                MP_ROM_PTR(&default___enter___obj) },
-    { MP_ROM_QSTR(MP_QSTR___exit__),                 MP_ROM_PTR(&keypad_demux_demuxkeymatrix___exit___obj) },
+    { MP_ROM_QSTR(MP_QSTR___exit__),                 MP_ROM_PTR(&default___exit___obj) },
 
     { MP_ROM_QSTR(MP_QSTR_events),                   MP_ROM_PTR(&keypad_generic_events_obj) },
     { MP_ROM_QSTR(MP_QSTR_key_count),                MP_ROM_PTR(&keypad_generic_key_count_obj) },

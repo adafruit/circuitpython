@@ -20,6 +20,7 @@ MAKE_ENUM_VALUE(watchdog_watchdogmode_type, watchdogmode, RESET, WATCHDOGMODE_RE
 //|     RESET: WatchDogMode
 //|     """Reset the system when the `WatchDogTimer` expires."""
 //|
+//|
 MAKE_ENUM_MAP(watchdog_watchdogmode) {
     MAKE_ENUM_MAP_ENTRY(watchdogmode, RAISE),
     MAKE_ENUM_MAP_ENTRY(watchdogmode, RESET),

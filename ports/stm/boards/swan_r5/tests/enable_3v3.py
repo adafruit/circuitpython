@@ -13,9 +13,9 @@ assert board.ENABLE_3V3 is not None
 # Then the symbol "board.DISCHARGE_3V3" is defined
 assert board.DISCHARGE_3V3 is not None
 # And the symbol "board.DISABLE_DISCHARGING" is defined to be "True"
-assert board.DISABLE_DISCHARGING is not None and board.DISABLE_DISCHARGING == True
+assert board.DISABLE_DISCHARGING is not None and board.DISABLE_DISCHARGING
 # And the symbol "board.ENABLE_DISCHARGING" is defined to be "False"
-assert board.ENABLE_DISCHARGING is not None and board.ENABLE_DISCHARGING == False
+assert board.ENABLE_DISCHARGING is not None and not board.ENABLE_DISCHARGING
 
 # Scenario: Toggle ENBLE_3V3
 # Given I have a LED connected between the 3V3 and GND pins

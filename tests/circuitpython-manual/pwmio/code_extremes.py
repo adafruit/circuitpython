@@ -80,7 +80,7 @@ while True:
                 if time.monotonic() > freq_time:
                     break
             t0 = freq_time
-            print(f"({freq}, {i/freq_duration:.0f}), ", end="")
+            print(f"({freq}, {i / freq_duration:.0f}), ", end="")
         print(")")
         print("done.")
         pwm.deinit()

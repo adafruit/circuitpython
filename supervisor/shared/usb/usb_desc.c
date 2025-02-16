@@ -137,9 +137,13 @@ static bool usb_build_configuration_descriptor(void) {
     #endif
 
     #if CIRCUITPY_USB_MSC
+    #if CIRCUITPY_STORAGE
     if (storage_usb_enabled()) {
-        total_descriptor_length += storage_usb_descriptor_length();
-    }
+    #endif
+    total_descriptor_length += usb_msc_descriptor_length();
+    #if CIRCUITPY_STORAGE
+}
+    #endif
     #endif
 
     #if CIRCUITPY_USB_HID
@@ -210,11 +214,15 @@ static bool usb_build_configuration_descriptor(void) {
     #endif
 
     #if CIRCUITPY_USB_MSC
+    #if CIRCUITPY_STORAGE
     if (storage_usb_enabled()) {
-        // Concatenate and fix up the MSC descriptor.
-        descriptor_buf_remaining += storage_usb_add_descriptor(
-            descriptor_buf_remaining, &descriptor_counts, &current_interface_string);
-    }
+    #endif
+    // Concatenate and fix up the MSC descriptor.
+    descriptor_buf_remaining += usb_msc_add_descriptor(
+        descriptor_buf_remaining, &descriptor_counts, &current_interface_string);
+    #if CIRCUITPY_STORAGE
+}
+    #endif
     #endif
 
     #if CIRCUITPY_USB_HID

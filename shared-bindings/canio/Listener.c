@@ -29,6 +29,7 @@
 //|         If no message is received in time, `None` is returned.  Otherwise,
 //|         a `Message` or `RemoteTransmissionRequest` is returned."""
 //|         ...
+//|
 static mp_obj_t canio_listener_receive(mp_obj_t self_in) {
     canio_listener_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_canio_listener_check_for_deinit(self);
@@ -47,6 +48,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(canio_listener_receive_obj, canio_listener_rece
 //|         """Returns the number of messages (including remote
 //|         transmission requests) waiting"""
 //|         ...
+//|
 static mp_obj_t canio_listener_in_waiting(mp_obj_t self_in) {
     canio_listener_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_canio_listener_check_for_deinit(self);
@@ -70,6 +72,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(canio_listener_in_waiting_obj, canio_listener_i
 //|         This method enables the `Listener` to be used as an
 //|         iterable, for instance in a for-loop."""
 //|         ...
+//|
 static mp_obj_t canio_iternext(mp_obj_t self_in) {
     mp_obj_t result = canio_listener_receive(self_in);
     if (result == mp_const_none) {
@@ -81,6 +84,7 @@ static mp_obj_t canio_iternext(mp_obj_t self_in) {
 //|     def deinit(self) -> None:
 //|         """Deinitialize this object, freeing its hardware resources"""
 //|         ...
+//|
 static mp_obj_t canio_listener_deinit(mp_obj_t self_in) {
     canio_listener_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_canio_listener_deinit(self);
@@ -91,6 +95,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(canio_listener_deinit_obj, canio_listener_deini
 //|     def __enter__(self) -> CAN:
 //|         """Returns self, to allow the object to be used in a `with` statement for resource control"""
 //|         ...
+//|
 static mp_obj_t canio_listener_enter(mp_obj_t self_in) {
     canio_listener_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_canio_listener_check_for_deinit(self);
@@ -106,6 +111,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(canio_listener_enter_obj, canio_listener_enter)
 //|     ) -> None:
 //|         """Calls deinit()"""
 //|         ...
+//|
 static mp_obj_t canio_listener_exit(size_t num_args, const mp_obj_t args[]) {
     canio_listener_obj_t *self = MP_OBJ_TO_PTR(args[0]);
     common_hal_canio_listener_deinit(self);
@@ -115,6 +121,7 @@ static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(canio_listener_exit_obj, 4, 4, canio_
 
 
 //|     timeout: float
+//|
 //|
 static mp_obj_t canio_listener_timeout_get(mp_obj_t self_in) {
     canio_listener_obj_t *self = MP_OBJ_TO_PTR(self_in);

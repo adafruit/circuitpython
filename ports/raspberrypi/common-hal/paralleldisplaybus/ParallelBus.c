@@ -79,13 +79,13 @@ void common_hal_paralleldisplaybus_parallelbus_construct(paralleldisplaybus_para
         frequency * 2, // frequency multiplied by 2 as 2 PIO instructions
         NULL, 0, // init
         NULL, 0, // may_exec
-        data0, 8, 0, 255, // first out pin, # out pins
-        NULL, 0, 0, 0, // first in pin, # in pins
-        NULL, 0, 0, 0, // first set pin
-        write, 1, 0, 1, // first sideset pin
+        data0, 8, PIO_PINMASK32_NONE, PIO_PINMASK32_FROM_VALUE(255), // first out pin, # out pins
+        NULL, 0, PIO_PINMASK32_NONE, PIO_PINMASK32_NONE, // first in pin, # in pins
+        NULL, 0, PIO_PINMASK32_NONE, PIO_PINMASK32_NONE, // first set pin
+        write, 1, false, PIO_PINMASK32_NONE, PIO_PINMASK32_FROM_VALUE(1), // first sideset pin
         false, // No sideset enable
         NULL, PULL_NONE, // jump pin
-        0, // wait gpio pins
+        PIO_PINMASK_NONE, // wait gpio pins
         true, // exclusive pin usage
         true, 8, true, // TX, auto pull every 8 bits. shift left to output msb first
         false, // wait for TX stall

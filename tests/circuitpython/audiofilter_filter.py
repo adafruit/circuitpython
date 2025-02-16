@@ -1,6 +1,7 @@
 from audiofilters import Filter
 from audiofilterhelper import synth_test, sine8k
 
+
 @synth_test
 def basic_filter():
     effect = Filter(

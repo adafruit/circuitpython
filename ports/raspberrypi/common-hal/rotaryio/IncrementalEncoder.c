@@ -62,14 +62,14 @@ void common_hal_rotaryio_incrementalencoder_construct(rotaryio_incrementalencode
         1000000,
         encoder_init, MP_ARRAY_SIZE(encoder_init), // init
         NULL, 0, // may_exec
-        NULL, 0, 0, 0, // out pin
+        NULL, 0, PIO_PINMASK32_NONE, PIO_PINMASK32_NONE, // out pin
         pins[0], 2, // in pins
-        3, 0, // in pulls
-        NULL, 0, 0, 0x1f, // set pins
-        NULL, 0, 0, 0x1f, // sideset pins
+        PIO_PINMASK32_FROM_VALUE(3), PIO_PINMASK32_NONE, // in pulls
+        NULL, 0, PIO_PINMASK32_NONE, PIO_PINMASK32_FROM_VALUE(0x1f), // set pins
+        NULL, 0, false, PIO_PINMASK32_NONE, PIO_PINMASK32_FROM_VALUE(0x1f), // sideset pins
         false, // No sideset enable
         NULL, PULL_NONE, // jump pin
-        0, // wait gpio pins
+        PIO_PINMASK_NONE, // wait gpio pins
         true, // exclusive pin use
         false, 32, false, // out settings
         false, // Wait for txstall

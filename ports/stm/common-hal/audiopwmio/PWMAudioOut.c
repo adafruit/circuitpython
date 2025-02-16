@@ -240,8 +240,8 @@ void common_hal_audiopwmio_pwmaudioout_play(audiopwmio_pwmaudioout_obj_t *self, 
     self->sample = sample;
     self->loop = loop;
 
-    uint32_t sample_rate = audiosample_sample_rate(sample);
-    self->bytes_per_sample = audiosample_bits_per_sample(sample) / 8;
+    uint32_t sample_rate = audiosample_get_sample_rate(sample);
+    self->bytes_per_sample = audiosample_get_bits_per_sample(sample) / 8;
 
     uint32_t max_buffer_length;
     uint8_t spacing;
@@ -249,7 +249,7 @@ void common_hal_audiopwmio_pwmaudioout_play(audiopwmio_pwmaudioout_obj_t *self, 
     bool samples_signed;
     audiosample_get_buffer_structure(sample, /* single channel */ false,
         &single_buffer, &samples_signed, &max_buffer_length, &spacing);
-    self->sample_channel_count = audiosample_channel_count(sample);
+    self->sample_channel_count = audiosample_get_channel_count(sample);
     self->sample_offset = (samples_signed ? 0x8000 : 0) - self->quiescent_value;
 
     free_buffers(self);

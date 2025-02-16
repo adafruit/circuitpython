@@ -15,9 +15,11 @@
 
 //| from adafruit_pixelbuf import PixelBuf, PixelReturnType, PixelSequence, PixelType
 //|
+//|
 //| class PixelMap:
 //|     def __init__(self, pixelbuf: PixelBuf, indices: Tuple[Union[int, Tuple[int]]]) -> None:
 //|         """Construct a PixelMap object that uses the given indices of the underlying pixelbuf"""
+//|
 
 static mp_obj_t pixelmap_pixelmap_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_pixelbuf, ARG_indices };
@@ -116,6 +118,7 @@ MP_PROPERTY_GETTER(pixelmap_pixelmap_byteorder_obj,
 //|
 //|     def fill(self, color: PixelType) -> None:
 //|         """Fill all the pixels in the map with the given color"""
+//|
 static mp_obj_t pixelmap_pixelmap_fill(const mp_obj_t self_in, const mp_obj_t color) {
     pixelmap_pixelmap_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
@@ -127,6 +130,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(pixelmap_pixelmap_fill_obj, pixelmap_pixelmap_fill);
 //|
 //|     def indices(self, index: int) -> Tuple[int]:
 //|         """Return the PixelBuf indices for a PixelMap index"""
+//|
 static mp_obj_t pixelmap_pixelmap_indices(const mp_obj_t self_in, const mp_obj_t index) {
     pixelmap_pixelmap_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
@@ -148,6 +152,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(pixelmap_pixelmap_indices_obj, pixelmap_pixelmap_indic
 //|
 //|     @overload
 //|     def __setitem__(self, index: slice, value: PixelSequence) -> None: ...
+//|
 //|     @overload
 //|     def __setitem__(self, index: int, value: PixelType) -> None:
 //|         """Sets the pixel value at the given index.  Value can either be a tuple or integer.  Tuples are
@@ -156,6 +161,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(pixelmap_pixelmap_indices_obj, pixelmap_pixelmap_indic
 //|         For RGBW byteorders, if given only RGB values either as an int or as a tuple, the white value
 //|         is used instead when the red, green, and blue values are the same."""
 //|         ...
+//|
 static mp_obj_t pixelmap_pixelmap_subscr(mp_obj_t self_in, mp_obj_t index_in, mp_obj_t value) {
     pixelmap_pixelmap_obj_t *self = MP_OBJ_TO_PTR(self_in);
     if (value == MP_OBJ_NULL) {
@@ -200,6 +206,7 @@ static mp_obj_t pixelmap_pixelmap_subscr(mp_obj_t self_in, mp_obj_t index_in, mp
 
 //|     def __len__(self) -> int:
 //|         """Length of the map"""
+//|
 static mp_obj_t pixelmap_pixelmap_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
     pixelmap_pixelmap_obj_t *self = MP_OBJ_TO_PTR(self_in);
     switch (op) {
@@ -216,6 +223,7 @@ static mp_obj_t pixelmap_pixelmap_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
 //|         """Transmits the color data to the pixels so that they are shown. This is done automatically
 //|         when `auto_write` is True."""
 //|         ...
+//|
 //|
 
 static mp_obj_t pixelmap_pixelmap_show(mp_obj_t self_in) {

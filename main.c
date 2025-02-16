@@ -772,6 +772,9 @@ static bool __attribute__((noinline)) run_code_py(safe_mode_t safe_mode, bool *s
     #if CIRCUITPY_ALARM
     if (fake_sleeping) {
         board_init();
+        #if CIRCUITPY_DISPLAYIO
+        common_hal_displayio_auto_primary_display();
+        #endif
         // Pretend that the next run is the first run, as if we were reset.
         *simulate_reset = true;
     }
@@ -974,7 +977,13 @@ static int run_repl(safe_mode_t safe_mode) {
     return exit_code;
 }
 
+#if defined(__ZEPHYR__) && __ZEPHYR__ == 1
+#include <zephyr/console/console.h>
+
+int circuitpython_main(void) {
+#else
 int __attribute__((used)) main(void) {
+    #endif
 
     // initialise the cpu and peripherals
     set_safe_mode(port_init());
@@ -1046,6 +1055,10 @@ int __attribute__((used)) main(void) {
 
     // displays init after filesystem, since they could share the flash SPI
     board_init();
+
+    #if CIRCUITPY_DISPLAYIO
+    common_hal_displayio_auto_primary_display();
+    #endif
 
     mp_hal_stdout_tx_str(line_clear);
 

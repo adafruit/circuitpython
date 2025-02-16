@@ -24,6 +24,7 @@
 //|         :param int timestamp: The time in milliseconds that the keypress occurred in the `supervisor.ticks_ms` time system.  If specified as None, the current value of `supervisor.ticks_ms` is used.
 //|         """
 //|         ...
+//|
 static mp_obj_t keypad_event_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     keypad_event_obj_t *self = mp_obj_malloc(keypad_event_obj_t, &keypad_event_type);
     enum { ARG_key_number, ARG_pressed, ARG_timestamp };
@@ -87,6 +88,7 @@ MP_PROPERTY_GETTER(keypad_event_released_obj,
 
 //|     timestamp: int
 //|     """The timestamp."""
+//|
 static mp_obj_t keypad_event_get_timestamp(mp_obj_t self_in) {
     keypad_event_obj_t *self = MP_OBJ_TO_PTR(self_in);
     return common_hal_keypad_event_get_timestamp(self);
@@ -103,6 +105,7 @@ MP_PROPERTY_GETTER(keypad_event_timestamp_obj,
 //|         Note that this does not compare the event timestamps.
 //|         """
 //|         ...
+//|
 static mp_obj_t keypad_event_binary_op(mp_binary_op_t op, mp_obj_t lhs_in, mp_obj_t rhs_in) {
     switch (op) {
         case MP_BINARY_OP_EQUAL:
@@ -130,6 +133,7 @@ static mp_obj_t keypad_event_binary_op(mp_binary_op_t op, mp_obj_t lhs_in, mp_ob
 //|         Note that as events with different timestamps compare equal, they also hash to the same value.
 //|         """
 //|         ...
+//|
 //|
 static mp_obj_t keypad_event_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
     keypad_event_obj_t *self = MP_OBJ_TO_PTR(self_in);

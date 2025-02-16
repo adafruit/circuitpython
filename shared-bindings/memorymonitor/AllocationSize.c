@@ -40,6 +40,7 @@
 //|
 //|         """
 //|         ...
+//|
 static mp_obj_t memorymonitor_allocationsize_make_new(const mp_obj_type_t *type, size_t n_args, const mp_obj_t *all_args, mp_map_t *kw_args) {
     memorymonitor_allocationsize_obj_t *self =
         m_new_obj(memorymonitor_allocationsize_obj_t, &memorymonitor_allocationsize_type);
@@ -52,6 +53,7 @@ static mp_obj_t memorymonitor_allocationsize_make_new(const mp_obj_type_t *type,
 //|     def __enter__(self) -> AllocationSize:
 //|         """Clears counts and resumes tracking."""
 //|         ...
+//|
 static mp_obj_t memorymonitor_allocationsize_obj___enter__(mp_obj_t self_in) {
     common_hal_memorymonitor_allocationsize_clear(self_in);
     common_hal_memorymonitor_allocationsize_resume(self_in);
@@ -63,6 +65,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(memorymonitor_allocationsize___enter___obj, memorymoni
 //|         """Automatically pauses allocation tracking when exiting a context. See
 //|         :ref:`lifetime-and-contextmanagers` for more info."""
 //|         ...
+//|
 static mp_obj_t memorymonitor_allocationsize_obj___exit__(size_t n_args, const mp_obj_t *args) {
     (void)n_args;
     common_hal_memorymonitor_allocationsize_pause(args[0]);
@@ -72,6 +75,7 @@ static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(memorymonitor_allocationsize___exit__
 
 //|     bytes_per_block: int
 //|     """Number of bytes per block"""
+//|
 static mp_obj_t memorymonitor_allocationsize_obj_get_bytes_per_block(mp_obj_t self_in) {
     memorymonitor_allocationsize_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
@@ -90,6 +94,7 @@ MP_PROPERTY_GETTER(memorymonitor_allocationsize_bytes_per_block_obj,
 //|           mm = memorymonitor.AllocationSize()
 //|           print(len(mm))"""
 //|         ...
+//|
 static mp_obj_t memorymonitor_allocationsize_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
     memorymonitor_allocationsize_obj_t *self = MP_OBJ_TO_PTR(self_in);
     uint16_t len = common_hal_memorymonitor_allocationsize_get_len(self);
@@ -111,6 +116,7 @@ static mp_obj_t memorymonitor_allocationsize_unary_op(mp_unary_op_t op, mp_obj_t
 //|           mm = memorymonitor.AllocationSize()
 //|           print(mm[0])"""
 //|         ...
+//|
 //|
 static mp_obj_t memorymonitor_allocationsize_subscr(mp_obj_t self_in, mp_obj_t index_obj, mp_obj_t value) {
     if (value == mp_const_none) {

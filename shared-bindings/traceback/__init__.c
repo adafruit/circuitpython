@@ -16,7 +16,9 @@
 //|
 //| |see_cpython_module| :mod:`cpython:traceback`.
 //| """
+//|
 //| ...
+//|
 //|
 
 static void traceback_exception_common(bool is_print_exception, mp_print_t *print, size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
@@ -133,6 +135,7 @@ static void traceback_exception_common(bool is_print_exception, mp_print_t *prin
 //|     :param bool chain: If `True` then chained exceptions will be printed.
 //|     """
 //|
+//|
 static mp_obj_t traceback_format_exception(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     mp_print_t print;
     vstr_t vstr;
@@ -175,6 +178,7 @@ static MP_DEFINE_CONST_FUN_OBJ_KW(traceback_format_exception_obj, 0, traceback_f
 //|
 //|     """
 //|     ...
+//|
 //|
 
 static mp_obj_t traceback_print_exception(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {

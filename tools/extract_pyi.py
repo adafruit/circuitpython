@@ -62,7 +62,7 @@ def is_typed(node, allow_any=False):
         return False
     elif (
         isinstance(node, ast.Attribute)
-        and type(node.value) == ast.Name
+        and type(node.value) is ast.Name
         and node.value.id == "typing"
         and node.attr == "Any"
     ):

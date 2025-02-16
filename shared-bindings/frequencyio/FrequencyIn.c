@@ -49,6 +49,7 @@
 //|               # as the value.
 //|               frequency.clear()"""
 //|         ...
+//|
 static mp_obj_t frequencyio_frequencyin_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     mp_arg_check_num(n_args, n_kw, 1, 1, true);
 
@@ -73,6 +74,7 @@ static mp_obj_t frequencyio_frequencyin_make_new(const mp_obj_type_t *type, size
 //|     def deinit(self) -> None:
 //|         """Deinitialises the FrequencyIn and releases any hardware resources for reuse."""
 //|         ...
+//|
 static mp_obj_t frequencyio_frequencyin_deinit(mp_obj_t self_in) {
     frequencyio_frequencyin_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_frequencyio_frequencyin_deinit(self);
@@ -89,22 +91,20 @@ static void check_for_deinit(frequencyio_frequencyin_obj_t *self) {
 //|     def __enter__(self) -> FrequencyIn:
 //|         """No-op used by Context Managers."""
 //|         ...
+//|
 //  Provided by context manager helper.
 
 //|     def __exit__(self) -> None:
 //|         """Automatically deinitializes the hardware when exiting a context. See
 //|         :ref:`lifetime-and-contextmanagers` for more info."""
 //|         ...
-static mp_obj_t frequencyio_frequencyin_obj___exit__(size_t n_args, const mp_obj_t *args) {
-    (void)n_args;
-    common_hal_frequencyio_frequencyin_deinit(args[0]);
-    return mp_const_none;
-}
-static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(frequencyio_frequencyin___exit___obj, 4, 4, frequencyio_frequencyin_obj___exit__);
+//|
+//  Provided by context manager helper.
 
 //|     def pause(self) -> None:
 //|         """Pause frequency capture."""
 //|         ...
+//|
 static mp_obj_t frequencyio_frequencyin_obj_pause(mp_obj_t self_in) {
     frequencyio_frequencyin_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -117,6 +117,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(frequencyio_frequencyin_pause_obj, frequencyio_frequen
 //|     def resume(self) -> None:
 //|         """Resumes frequency capture."""
 //|         ...
+//|
 static mp_obj_t frequencyio_frequencyin_obj_resume(mp_obj_t self_in) {
     frequencyio_frequencyin_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -129,6 +130,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(frequencyio_frequencyin_resume_obj, frequencyio_freque
 //|     def clear(self) -> None:
 //|         """Clears the last detected frequency capture value."""
 //|         ...
+//|
 
 static mp_obj_t frequencyio_frequencyin_obj_clear(mp_obj_t self_in) {
     frequencyio_frequencyin_obj_t *self = MP_OBJ_TO_PTR(self_in);
@@ -146,6 +148,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(frequencyio_frequencyin_clear_obj, frequencyio_frequen
 //|
 //|     .. note:: When setting a new ``capture_period``, all previous capture information is
 //|               cleared with a call to ``clear()``."""
+//|
 static mp_obj_t frequencyio_frequencyin_obj_get_capture_period(mp_obj_t self_in) {
     frequencyio_frequencyin_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -171,6 +174,7 @@ MP_PROPERTY_GETSET(frequencyio_frequencyin_capture_period_obj,
 //|         """Returns the value of the last frequency captured."""
 //|         ...
 //|
+//|
 static mp_obj_t frequencyio_frequencyin_obj_get_value(mp_obj_t self_in) {
     frequencyio_frequencyin_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -188,7 +192,7 @@ static const mp_rom_map_elem_t frequencyio_frequencyin_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&frequencyio_frequencyin_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&frequencyio_frequencyin_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
-    { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&frequencyio_frequencyin___exit___obj) },
+    { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
     { MP_ROM_QSTR(MP_QSTR_value), MP_ROM_PTR(&frequencyio_frequencyin_value_obj) },
     { MP_ROM_QSTR(MP_QSTR_pause), MP_ROM_PTR(&frequencyio_frequencyin_pause_obj) },
     { MP_ROM_QSTR(MP_QSTR_resume), MP_ROM_PTR(&frequencyio_frequencyin_resume_obj) },

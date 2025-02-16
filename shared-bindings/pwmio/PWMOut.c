@@ -70,7 +70,7 @@ void common_hal_pwmio_pwmout_raise_error(pwmout_result_t result) {
 //|         *,
 //|         duty_cycle: int = 0,
 //|         frequency: int = 500,
-//|         variable_frequency: bool = False
+//|         variable_frequency: bool = False,
 //|     ) -> None:
 //|         """Create a PWM object associated with the given pin. This allows you to
 //|         write PWM signals out on the given pin. Frequency is fixed after init
@@ -131,6 +131,7 @@ void common_hal_pwmio_pwmout_raise_error(pwmout_result_t result) {
 //|
 //|         """
 //|         ...
+//|
 static mp_obj_t pwmio_pwmout_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     enum { ARG_pin, ARG_duty_cycle, ARG_frequency, ARG_variable_frequency };
     static const mp_arg_t allowed_args[] = {
@@ -159,6 +160,7 @@ static mp_obj_t pwmio_pwmout_make_new(const mp_obj_type_t *type, size_t n_args, 
 //|     def deinit(self) -> None:
 //|         """Deinitialises the PWMOut and releases any hardware resources for reuse."""
 //|         ...
+//|
 static mp_obj_t pwmio_pwmout_deinit(mp_obj_t self_in) {
     pwmio_pwmout_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_pwmio_pwmout_deinit(self);
@@ -175,18 +177,15 @@ static void check_for_deinit(pwmio_pwmout_obj_t *self) {
 //|     def __enter__(self) -> PWMOut:
 //|         """No-op used by Context Managers."""
 //|         ...
+//|
 //  Provided by context manager helper.
 
 //|     def __exit__(self) -> None:
 //|         """Automatically deinitializes the hardware when exiting a context. See
 //|         :ref:`lifetime-and-contextmanagers` for more info."""
 //|         ...
-static mp_obj_t pwmio_pwmout_obj___exit__(size_t n_args, const mp_obj_t *args) {
-    (void)n_args;
-    common_hal_pwmio_pwmout_deinit(args[0]);
-    return mp_const_none;
-}
-static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(pwmio_pwmout___exit___obj, 4, 4, pwmio_pwmout_obj___exit__);
+//|
+//  Provided by context manager helper.
 
 //|     duty_cycle: int
 //|     """16 bit value that dictates how much of one cycle is high (1) versus low
@@ -231,6 +230,7 @@ MP_PROPERTY_GETSET(pwmio_pwmout_duty_cycle_obj,
 //|     to manually re-set the duty cycle. However, an output glitch may occur during the adjustment.
 //|     """
 //|
+//|
 static mp_obj_t pwmio_pwmout_obj_get_frequency(mp_obj_t self_in) {
     pwmio_pwmout_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -262,7 +262,7 @@ static const mp_rom_map_elem_t pwmio_pwmout_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&pwmio_pwmout_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&pwmio_pwmout_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
-    { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&pwmio_pwmout___exit___obj) },
+    { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
 
     // Properties
     { MP_ROM_QSTR(MP_QSTR_duty_cycle), MP_ROM_PTR(&pwmio_pwmout_duty_cycle_obj) },

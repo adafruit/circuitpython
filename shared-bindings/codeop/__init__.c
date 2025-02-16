@@ -18,6 +18,7 @@ static const char *get_arg_str(mp_obj_t arg, qstr name) {
 //|
 //| from types import CodeType
 //|
+//|
 
 //| def compile_command(
 //|     source: str, filename: str = "<input>", symbol: str = "single"
@@ -28,6 +29,7 @@ static const char *get_arg_str(mp_obj_t arg, qstr name) {
 //|     (it's whatever the internal function ``mp_repl_continue_with_input`` does).
 //|     In particular, it's important that the code not end with a newline character
 //|     or it is likely to be treated as a complete command."""
+//|
 //|
 static mp_obj_t compile_command(mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_source, ARG_filename, ARG_symbol };

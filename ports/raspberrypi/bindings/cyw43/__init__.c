@@ -35,6 +35,7 @@ void bindings_cyw43_wifi_enforce_pm(void) {
 //|     in :py:mod:`board`. A `CywPin` can be used as a DigitalInOut, but not with other
 //|     peripherals such as `PWMOut`."""
 //|
+//|
 MP_DEFINE_CONST_OBJ_TYPE(
     cyw43_pin_type,
     MP_QSTR_CywPin,
@@ -50,6 +51,7 @@ MP_DEFINE_CONST_OBJ_TYPE(
 //| """Performance power management mode where more power is used to increase performance"""
 //| PM_DISABLED: int
 //| """Disable power management and always use highest power mode. CircuitPython sets this value at reset time, because it provides the best connectivity reliability."""
+//|
 //|
 //| def set_power_management(value: int) -> None:
 //|     """Set the power management register
@@ -80,6 +82,7 @@ MP_DEFINE_CONST_OBJ_TYPE(
 //|     usage.
 //|     """
 //|
+//|
 static mp_obj_t cyw43_set_power_management(const mp_obj_t value_in) {
     mp_int_t value = mp_obj_get_int(value_in);
     power_management_value = value;
@@ -90,6 +93,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(cyw43_set_power_management_obj, cyw43_set_power
 
 //| def get_power_management() -> int:
 //|     """Retrieve the power management register"""
+//|
 //|
 static mp_obj_t cyw43_get_power_management() {
     return mp_obj_new_int(power_management_value);

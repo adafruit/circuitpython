@@ -17,6 +17,7 @@
 //| RTC using :class:`rtc.RTC`. It also backs the :func:`time.time` and :func:`time.localtime`
 //| functions using the onboard RTC if present."""
 //|
+//|
 
 void rtc_reset(void) {
     MP_STATE_VM(rtc_time_source) = (mp_obj_t)&rtc_rtc_obj;
@@ -46,6 +47,7 @@ mp_obj_t rtc_get_time_source_time(void) {
 //|       r = RTC()
 //|       rtc.set_time_source(r)"""
 //|     ...
+//|
 //|
 static mp_obj_t rtc_set_time_source(mp_obj_t time_source) {
     MP_STATE_VM(rtc_time_source) = time_source;

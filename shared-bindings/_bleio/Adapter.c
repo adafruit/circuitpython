@@ -62,6 +62,7 @@
 //|         Use `_bleio.adapter` to access the sole instance already available.
 //|         """
 //|         ...
+//|
 static mp_obj_t bleio_adapter_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     #if CIRCUITPY_BLEIO_HCI
     bleio_adapter_obj_t *self = common_hal_bleio_allocate_adapter_or_raise();
@@ -135,6 +136,7 @@ MP_PROPERTY_GETSET(bleio_adapter_address_obj,
 //|     """name of the BLE adapter used once connected.
 //|     The name is "CIRCUITPY" + the last four hex digits of ``adapter.address``,
 //|     to make it easy to distinguish multiple CircuitPython boards."""
+//|
 static mp_obj_t _bleio_adapter_get_name(mp_obj_t self) {
     return MP_OBJ_FROM_PTR(common_hal_bleio_adapter_get_name(self));
 }
@@ -161,7 +163,7 @@ MP_PROPERTY_GETSET(bleio_adapter_name_obj,
 //|         timeout: int = 0,
 //|         interval: float = 0.1,
 //|         tx_power: int = 0,
-//|         directed_to: Optional[Address] = None
+//|         directed_to: Optional[Address] = None,
 //|     ) -> None:
 //|         """Starts advertising until `stop_advertising` is called or if connectable, another device
 //|         connects to us.
@@ -181,6 +183,7 @@ MP_PROPERTY_GETSET(bleio_adapter_name_obj,
 //|         :param int tx_power: transmitter power while advertising in dBm
 //|         :param Address directed_to: peer to advertise directly to"""
 //|         ...
+//|
 static mp_obj_t bleio_adapter_start_advertising(mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     bleio_adapter_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
 
@@ -243,6 +246,7 @@ static MP_DEFINE_CONST_FUN_OBJ_KW(bleio_adapter_start_advertising_obj, 1, bleio_
 //|     def stop_advertising(self) -> None:
 //|         """Stop sending advertising packets."""
 //|         ...
+//|
 static mp_obj_t bleio_adapter_stop_advertising(mp_obj_t self_in) {
     bleio_adapter_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
@@ -262,7 +266,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(bleio_adapter_stop_advertising_obj, bleio_adapt
 //|         interval: float = 0.1,
 //|         window: float = 0.1,
 //|         minimum_rssi: int = -80,
-//|         active: bool = True
+//|         active: bool = True,
 //|     ) -> Iterable[ScanEntry]:
 //|         """Starts a BLE scan and returns an iterator of results. Advertisements and scan responses are
 //|         filtered and returned separately.
@@ -282,6 +286,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(bleio_adapter_stop_advertising_obj, bleio_adapt
 //|         :returns: an iterable of `_bleio.ScanEntry` objects
 //|         :rtype: iterable"""
 //|         ...
+//|
 static mp_obj_t bleio_adapter_start_scan(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_prefixes, ARG_buffer_size, ARG_extended, ARG_timeout, ARG_interval, ARG_window, ARG_minimum_rssi, ARG_active };
     static const mp_arg_t allowed_args[] = {
@@ -346,6 +351,7 @@ static MP_DEFINE_CONST_FUN_OBJ_KW(bleio_adapter_start_scan_obj, 1, bleio_adapter
 //|     def stop_scan(self) -> None:
 //|         """Stop the current scan."""
 //|         ...
+//|
 static mp_obj_t bleio_adapter_stop_scan(mp_obj_t self_in) {
     bleio_adapter_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
@@ -381,6 +387,7 @@ MP_PROPERTY_GETTER(bleio_adapter_connected_obj,
 //|     connections: Tuple[Connection]
 //|     """Tuple of active connections including those initiated through
 //|     :py:meth:`_bleio.Adapter.connect`. (read-only)"""
+//|
 static mp_obj_t bleio_adapter_get_connections(mp_obj_t self) {
     return common_hal_bleio_adapter_get_connections(self);
 }
@@ -395,6 +402,7 @@ MP_PROPERTY_GETTER(bleio_adapter_connections_obj,
 //|         :param Address address: The address of the peripheral to connect to
 //|         :param float/int timeout: Try to connect for timeout seconds."""
 //|         ...
+//|
 static mp_obj_t bleio_adapter_connect(mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     bleio_adapter_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
 
@@ -417,6 +425,7 @@ static MP_DEFINE_CONST_FUN_OBJ_KW(bleio_adapter_connect_obj, 1, bleio_adapter_co
 //|     def erase_bonding(self) -> None:
 //|         """Erase all bonding information stored in flash memory."""
 //|         ...
+//|
 //|
 static mp_obj_t bleio_adapter_erase_bonding(mp_obj_t self_in) {
     bleio_adapter_obj_t *self = MP_OBJ_TO_PTR(self_in);

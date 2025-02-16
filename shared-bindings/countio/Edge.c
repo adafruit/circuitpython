@@ -20,6 +20,7 @@ MAKE_ENUM_VALUE(countio_edge_type, edge, RISE_AND_FALL, EDGE_RISE_AND_FALL);
 //|     def __init__(self) -> None:
 //|         """Enum-like class to define which signal transitions to count."""
 //|         ...
+//|
 //|     RISE: Edge
 //|     """Count the rising edges."""
 //|
@@ -31,6 +32,7 @@ MAKE_ENUM_VALUE(countio_edge_type, edge, RISE_AND_FALL, EDGE_RISE_AND_FALL);
 //|
 //|     **Limitations:** ``RISE_AND_FALL`` is not available to RP2040 due to hardware limitations.
 //|     """
+//|
 //|
 MAKE_ENUM_MAP(countio_edge) {
     MAKE_ENUM_MAP_ENTRY(edge, RISE),

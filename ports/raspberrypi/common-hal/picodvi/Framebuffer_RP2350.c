@@ -129,6 +129,20 @@ static void __not_in_flash_func(dma_irq_handler)(void) {
     ch->al3_read_addr_trig = (uintptr_t)active_picodvi->dma_commands;
 }
 
+bool common_hal_picodvi_framebuffer_preflight(
+    mp_uint_t width, mp_uint_t height,
+    mp_uint_t color_depth) {
+
+    // for each supported resolution, check the color depth is supported
+    if (width == 640 && height == 480) {
+        return color_depth == 1 || color_depth == 2 || color_depth == 4 || color_depth == 8;
+    }
+    if (width == 320 && height == 240) {
+        return color_depth == 8 || color_depth == 16;
+    }
+    return false;
+}
+
 void common_hal_picodvi_framebuffer_construct(picodvi_framebuffer_obj_t *self,
     mp_uint_t width, mp_uint_t height,
     const mcu_pin_obj_t *clk_dp, const mcu_pin_obj_t *clk_dn,
@@ -140,7 +154,7 @@ void common_hal_picodvi_framebuffer_construct(picodvi_framebuffer_obj_t *self,
         mp_raise_msg_varg(&mp_type_RuntimeError, MP_ERROR_TEXT("%q in use"), MP_QSTR_picodvi);
     }
 
-    if (!(width == 640 && height == 480) && !(width == 320 && height == 240 && (color_depth == 16 || color_depth == 8))) {
+    if (!common_hal_picodvi_framebuffer_preflight(width, height, color_depth)) {
         mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q and %q"), MP_QSTR_width, MP_QSTR_height);
     }
 
@@ -430,6 +444,7 @@ void common_hal_picodvi_framebuffer_construct(picodvi_framebuffer_obj_t *self,
     dma_hw->inte1 = (1u << self->dma_pixel_channel);
     irq_set_exclusive_handler(DMA_IRQ_1, dma_irq_handler);
     irq_set_enabled(DMA_IRQ_1, true);
+    irq_set_priority(DMA_IRQ_1, PICO_HIGHEST_IRQ_PRIORITY);
 
     bus_ctrl_hw->priority = BUSCTRL_BUS_PRIORITY_DMA_W_BITS | BUSCTRL_BUS_PRIORITY_DMA_R_BITS;
 

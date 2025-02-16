@@ -97,7 +97,7 @@ jobs:
         download: false
     - name: Versions
       run: |
-        tools/describe
+        python py/version.py
         gcc --version
         python3 --version
         cmake --version || true

@@ -20,6 +20,7 @@
 //|         :param int height: The pixel height of the image to decode
 //|         """
 //|         ...
+//|
 
 static mp_obj_t qrio_qrdecoder_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args_in) {
     enum { ARG_width, ARG_height };
@@ -53,6 +54,7 @@ static void verify_buffer_size(qrio_qrdecoder_obj_t *self, mp_obj_t *buffer, siz
 //|         self, buffer: ReadableBuffer, pixel_policy: PixelPolicy = PixelPolicy.EVERY_BYTE
 //|     ) -> List[QRInfo]:
 //|         """Decode zero or more QR codes from the given image.  The size of the buffer must be at least ``length``×``width`` bytes for `EVERY_BYTE`, and 2×``length``×``width`` bytes for `EVEN_BYTES` or `ODD_BYTES`."""
+//|
 static mp_obj_t qrio_qrdecoder_decode(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     qrio_qrdecoder_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
 
@@ -78,6 +80,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(qrio_qrdecoder_decode_obj, 1, qrio_qrdecoder_decode);
 //|         self, buffer: ReadableBuffer, pixel_policy: PixelPolicy = PixelPolicy.EVERY_BYTE
 //|     ) -> List[QRPosition]:
 //|         """Find all visible QR codes from the given image.  The size of the buffer must be at least ``length``×``width`` bytes for `EVERY_BYTE`, and 2×``length``×``width`` bytes for `EVEN_BYTES` or `ODD_BYTES`."""
+//|
 static mp_obj_t qrio_qrdecoder_find(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     qrio_qrdecoder_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
 
@@ -121,6 +124,7 @@ MP_PROPERTY_GETSET(qrio_qrdecoder_width_obj,
 
 //|     height: int
 //|     """The height of image the decoder expects"""
+//|
 //|
 static mp_obj_t qrio_qrdecoder_get_height(mp_obj_t self_in) {
     qrio_qrdecoder_obj_t *self = MP_OBJ_TO_PTR(self_in);

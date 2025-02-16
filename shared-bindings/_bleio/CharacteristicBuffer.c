@@ -37,6 +37,7 @@ static void raise_error_if_not_connected(bleio_characteristic_buffer_obj_t *self
 //|         :param int buffer_size: Size of ring buffer that stores incoming data coming from client.
 //|           Must be >= 1."""
 //|         ...
+//|
 static mp_obj_t bleio_characteristic_buffer_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_characteristic, ARG_timeout, ARG_buffer_size, };
     static const mp_arg_t allowed_args[] = {
@@ -95,6 +96,7 @@ static void check_for_deinit(bleio_characteristic_buffer_obj_t *self) {
 //|         :return: the line read
 //|         :rtype: int or None"""
 //|         ...
+//|
 
 // These three methods are used by the shared stream methods.
 static mp_uint_t bleio_characteristic_buffer_read(mp_obj_t self_in, void *buf_in, mp_uint_t size, int *errcode) {
@@ -140,6 +142,7 @@ static mp_uint_t bleio_characteristic_buffer_ioctl(mp_obj_t self_in, mp_uint_t r
 
 //|     in_waiting: int
 //|     """The number of bytes in the input buffer, available to be read"""
+//|
 static mp_obj_t bleio_characteristic_buffer_obj_get_in_waiting(mp_obj_t self_in) {
     bleio_characteristic_buffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -158,6 +161,7 @@ MP_PROPERTY_GETTER(bleio_characteristic_buffer_in_waiting_obj,
 //|     def reset_input_buffer(self) -> None:
 //|         """Discard any unread characters in the input buffer."""
 //|         ...
+//|
 static mp_obj_t bleio_characteristic_buffer_obj_reset_input_buffer(mp_obj_t self_in) {
     bleio_characteristic_buffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -170,6 +174,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(bleio_characteristic_buffer_reset_input_buffer_
 //|         """Disable permanently."""
 //|         ...
 //|
+//|
 static mp_obj_t bleio_characteristic_buffer_deinit(mp_obj_t self_in) {
     bleio_characteristic_buffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_bleio_characteristic_buffer_deinit(self);
@@ -181,13 +186,13 @@ static const mp_rom_map_elem_t bleio_characteristic_buffer_locals_dict_table[] =
     { MP_ROM_QSTR(MP_QSTR_deinit),        MP_ROM_PTR(&bleio_characteristic_buffer_deinit_obj) },
 
     // Standard stream methods.
-    { MP_OBJ_NEW_QSTR(MP_QSTR_read),     MP_ROM_PTR(&mp_stream_read_obj) },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_readline), MP_ROM_PTR(&mp_stream_unbuffered_readline_obj)},
-    { MP_OBJ_NEW_QSTR(MP_QSTR_readinto), MP_ROM_PTR(&mp_stream_readinto_obj) },
+    { MP_ROM_QSTR(MP_QSTR_read),     MP_ROM_PTR(&mp_stream_read_obj) },
+    { MP_ROM_QSTR(MP_QSTR_readline), MP_ROM_PTR(&mp_stream_unbuffered_readline_obj)},
+    { MP_ROM_QSTR(MP_QSTR_readinto), MP_ROM_PTR(&mp_stream_readinto_obj) },
     // CharacteristicBuffer is currently read-only.
-    // { MP_OBJ_NEW_QSTR(MP_QSTR_write),    MP_ROM_PTR(&mp_stream_write_obj) },
+    // { MP_ROM_QSTR(MP_QSTR_write),    MP_ROM_PTR(&mp_stream_write_obj) },
 
-    { MP_OBJ_NEW_QSTR(MP_QSTR_reset_input_buffer), MP_ROM_PTR(&bleio_characteristic_buffer_reset_input_buffer_obj) },
+    { MP_ROM_QSTR(MP_QSTR_reset_input_buffer), MP_ROM_PTR(&bleio_characteristic_buffer_reset_input_buffer_obj) },
     // Properties
     { MP_ROM_QSTR(MP_QSTR_in_waiting), MP_ROM_PTR(&bleio_characteristic_buffer_in_waiting_obj) },
 

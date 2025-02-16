@@ -43,6 +43,7 @@
 //|     def __len__(self) -> int:
 //|         """Return the length. This is used by (`len`)"""
 //|         ...
+//|
 static mp_obj_t alarm_sleep_memory_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
     alarm_sleep_memory_obj_t *self = MP_OBJ_TO_PTR(self_in);
     uint16_t len = common_hal_alarm_sleep_memory_get_length(self);
@@ -74,6 +75,7 @@ static MP_DEFINE_CONST_DICT(alarm_sleep_memory_locals_dict, alarm_sleep_memory_l
 //|     def __setitem__(self, index: int, value: int) -> None:
 //|         """Set the value at the given index."""
 //|         ...
+//|
 //|
 static mp_obj_t alarm_sleep_memory_subscr(mp_obj_t self_in, mp_obj_t index_in, mp_obj_t value) {
     if (value == MP_OBJ_NULL) {

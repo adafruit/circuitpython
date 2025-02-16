@@ -46,6 +46,7 @@ MP_WEAK const mcu_pin_obj_t *common_hal_analogio_analogin_validate_pin(mp_obj_t 
 //|         when you read a value. You can retry the read.
 //|         """
 //|         ...
+//|
 static mp_obj_t analogio_analogin_make_new(const mp_obj_type_t *type,
     mp_uint_t n_args, size_t n_kw, const mp_obj_t *args) {
     // check number of arguments
@@ -62,6 +63,7 @@ static mp_obj_t analogio_analogin_make_new(const mp_obj_type_t *type,
 //|     def deinit(self) -> None:
 //|         """Turn off the AnalogIn and release the pin for other use."""
 //|         ...
+//|
 static mp_obj_t analogio_analogin_deinit(mp_obj_t self_in) {
     analogio_analogin_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_analogio_analogin_deinit(self);
@@ -77,18 +79,15 @@ static void check_for_deinit(analogio_analogin_obj_t *self) {
 //|     def __enter__(self) -> AnalogIn:
 //|         """No-op used by Context Managers."""
 //|         ...
+//|
 //  Provided by context manager helper.
 
 //|     def __exit__(self) -> None:
 //|         """Automatically deinitializes the hardware when exiting a context. See
 //|         :ref:`lifetime-and-contextmanagers` for more info."""
 //|         ...
-static mp_obj_t analogio_analogin___exit__(size_t n_args, const mp_obj_t *args) {
-    (void)n_args;
-    common_hal_analogio_analogin_deinit(args[0]);
-    return mp_const_none;
-}
-static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(analogio_analogin___exit___obj, 4, 4, analogio_analogin___exit__);
+//|
+//  Provided by context manager helper.
 
 //|     value: int
 //|     """The value on the analog pin between 0 and 65535 inclusive (16-bit). (read-only)
@@ -110,6 +109,7 @@ MP_PROPERTY_GETTER(analogio_analogin_value_obj,
 //|     ``float`` in Volts.  Note the ADC value may not scale to the actual voltage linearly
 //|     at ends of the analog range."""
 //|
+//|
 static mp_obj_t analogio_analogin_obj_get_reference_voltage(mp_obj_t self_in) {
     analogio_analogin_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -130,7 +130,7 @@ MP_PROPERTY_GETTER(analogio_analogin_reference_voltage_obj,
 static const mp_rom_map_elem_t analogio_analogin_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit),             MP_ROM_PTR(&analogio_analogin_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__),          MP_ROM_PTR(&default___enter___obj) },
-    { MP_ROM_QSTR(MP_QSTR___exit__),           MP_ROM_PTR(&analogio_analogin___exit___obj) },
+    { MP_ROM_QSTR(MP_QSTR___exit__),           MP_ROM_PTR(&default___exit___obj) },
     { MP_ROM_QSTR(MP_QSTR_value),              MP_ROM_PTR(&analogio_analogin_value_obj)},
     { MP_ROM_QSTR(MP_QSTR_reference_voltage),  MP_ROM_PTR(&analogio_analogin_reference_voltage_obj)},
 };

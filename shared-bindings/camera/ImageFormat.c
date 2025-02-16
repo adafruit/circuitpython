@@ -11,11 +11,13 @@
 //|
 //|     def __init__(self) -> None:
 //|         """Enum-like class to define the image format."""
+//|
 //|     JPG: ImageFormat
 //|     """JPG format."""
 //|
 //|     RGB565: ImageFormat
 //|     """RGB565 format."""
+//|
 //|
 
 const camera_imageformat_obj_t camera_imageformat_jpg_obj = {

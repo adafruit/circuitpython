@@ -20,6 +20,7 @@
 //|     def __init__(self) -> None:
 //|         """Cannot be instantiated directly. Use `mdns.Server.find`."""
 //|         ...
+//|
 
 //|     hostname: str
 //|     """The hostname of the device (read-only),."""
@@ -82,6 +83,7 @@ MP_PROPERTY_GETTER(mdns_remoteservice_port_obj,
 
 //|     ipv4_address: Optional[ipaddress.IPv4Address]
 //|     """IP v4 Address of the remote service. None if no A records are found."""
+//|
 static mp_obj_t _mdns_remoteservice_get_ipv4_address(mp_obj_t self) {
     return common_hal_mdns_remoteservice_get_ipv4_address(self);
 
@@ -94,6 +96,7 @@ MP_PROPERTY_GETTER(mdns_remoteservice_ipv4_address_obj,
 //|     def __del__(self) -> None:
 //|         """Deletes the RemoteService object."""
 //|         ...
+//|
 //|
 static mp_obj_t mdns_remoteservice_obj_deinit(mp_obj_t self_in) {
     mdns_remoteservice_obj_t *self = MP_OBJ_TO_PTR(self_in);

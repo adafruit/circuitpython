@@ -40,11 +40,12 @@
 //|         scroll_area: displayio.TileGrid,
 //|         font: fontio.BuiltinFont,
 //|         *,
-//|         status_bar: Optional[displayio.TileGrid] = None
+//|         status_bar: Optional[displayio.TileGrid] = None,
 //|     ) -> None:
 //|         """Terminal manages tile indices and cursor position based on VT100 commands. The font should be
 //|         a `fontio.BuiltinFont` and the TileGrid's bitmap should match the font's bitmap."""
 //|         ...
+//|
 
 static mp_obj_t terminalio_terminal_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_scroll_area, ARG_font, ARG_status_bar };
@@ -82,6 +83,7 @@ static mp_obj_t terminalio_terminal_make_new(const mp_obj_type_t *type, size_t n
 //|         :rtype: int or None"""
 //|         ...
 //|
+//|
 static mp_uint_t terminalio_terminal_write(mp_obj_t self_in, const void *buf_in, mp_uint_t size, int *errcode) {
     terminalio_terminal_obj_t *self = MP_OBJ_TO_PTR(self_in);
     const byte *buf = buf_in;
@@ -107,7 +109,7 @@ static mp_uint_t terminalio_terminal_ioctl(mp_obj_t self_in, mp_uint_t request, 
 
 static const mp_rom_map_elem_t terminalio_terminal_locals_dict_table[] = {
     // Standard stream methods.
-    { MP_OBJ_NEW_QSTR(MP_QSTR_write),    MP_ROM_PTR(&mp_stream_write_obj) },
+    { MP_ROM_QSTR(MP_QSTR_write),    MP_ROM_PTR(&mp_stream_write_obj) },
 };
 static MP_DEFINE_CONST_DICT(terminalio_terminal_locals_dict, terminalio_terminal_locals_dict_table);
 

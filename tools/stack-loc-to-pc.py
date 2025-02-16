@@ -1,10 +1,10 @@
 """Prints the pcs that access each stack location in a function. Useful for finding
-   infrequently used stack space.
+infrequently used stack space.
 
-   Pipe in disassembly like so:
+Pipe in disassembly like so:
 
-   arm-none-eabi-objdump --disassemble=mp_execute_bytecode build-metro_m0_express/firmware.elf | python ../../tools/stack-loc-to-pc.py
-   """
+arm-none-eabi-objdump --disassemble=mp_execute_bytecode build-metro_m0_express/firmware.elf | python ../../tools/stack-loc-to-pc.py
+"""
 
 import sys
 import re

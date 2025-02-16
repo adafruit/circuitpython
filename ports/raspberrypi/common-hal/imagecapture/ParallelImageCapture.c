@@ -83,18 +83,19 @@ void common_hal_imagecapture_parallelimagecapture_construct(imagecapture_paralle
         common_hal_mcu_processor_get_frequency(), // full speed (4 instructions per loop -> max pclk 30MHz @ 120MHz)
         0, 0, // init
         NULL, 0, // may_exec
-        NULL, 0, 0, 0, // out pins
+        NULL, 0, PIO_PINMASK32_NONE, PIO_PINMASK32_NONE, // out pins
         pin_from_number(data_pins[0]), data_count, // in pins
-        0, 0, // in pulls
-        NULL, 0, 0, 0, // set pins
+        PIO_PINMASK32_NONE, PIO_PINMASK32_NONE, // in pulls
+        NULL, 0, PIO_PINMASK32_NONE, PIO_PINMASK32_NONE, // set pins
         #if DEBUG_STATE_MACHINE
-        &pin_GPIO26, 3, 7, 7, // sideset pins
+        &pin_GPIO26, 3, PIO_PINMASK32_FROM_VALUE(7), PIO_PINMASK32_FROM_VALUE(7), // sideset pins
         #else
-        NULL, 0, 0, 0, // sideset pins
+        NULL, 0, false, PIO_PINMASK32_NONE, PIO_PINMASK32_NONE, // sideset pins
         #endif
         false, // No sideset enable
         NULL, PULL_NONE, // jump pin
-        (1 << vertical_sync->number) | (1 << horizontal_reference->number) | (1 << data_clock->number), // wait gpio pins
+        PIO_PINMASK_OR3(PIO_PINMASK_FROM_PIN(vertical_sync->number), PIO_PINMASK_FROM_PIN(horizontal_reference->number), PIO_PINMASK_FROM_PIN(data_clock->number)),
+        // wait gpio pins
         true, // exclusive pin use
         false, 32, false, // out settings
         false, // wait for txstall

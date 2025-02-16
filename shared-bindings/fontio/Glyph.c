@@ -34,6 +34,7 @@
 //|         :param shift_y: the y difference to the next glyph"""
 //|         ...
 //|
+//|
 const mp_obj_namedtuple_type_t fontio_glyph_type = {
     NAMEDTUPLE_TYPE_BASE_AND_SLOTS(MP_QSTR_Glyph),
     .n_fields = 8,

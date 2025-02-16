@@ -52,10 +52,15 @@
 #include "pico/bootrom.h"
 #include "hardware/watchdog.h"
 
+#ifdef PICO_RP2350
+#include "src/rp2_common/cmsis/stub/CMSIS/Device/RP2350/Include/RP2350.h"
+#endif
+
 #include "supervisor/shared/serial.h"
 
 #include "tusb.h"
 #include <cmsis_compiler.h>
+#include "lib/tlsf/tlsf.h"
 
 critical_section_t background_queue_lock;
 
@@ -83,19 +88,17 @@ extern uint32_t _ld_itcm_destination;
 extern uint32_t _ld_itcm_size;
 extern uint32_t _ld_itcm_flash_copy;
 
-#ifdef CIRCUITPY_PSRAM_CHIP_SELECT
+static tlsf_t _heap = NULL;
+static pool_t _ram_pool = NULL;
+static pool_t _psram_pool = NULL;
+static size_t _psram_size = 0;
 
-#include "lib/tlsf/tlsf.h"
+#ifdef CIRCUITPY_PSRAM_CHIP_SELECT
 
 #include "src/rp2350/hardware_regs/include/hardware/regs/qmi.h"
 #include "src/rp2350/hardware_regs/include/hardware/regs/xip.h"
 #include "src/rp2350/hardware_structs/include/hardware/structs/qmi.h"
 #include "src/rp2350/hardware_structs/include/hardware/structs/xip_ctrl.h"
-
-static tlsf_t _heap = NULL;
-static pool_t _ram_pool = NULL;
-static pool_t _psram_pool = NULL;
-static size_t _psram_size = 0;
 
 static void __no_inline_not_in_flash_func(setup_psram)(void) {
     gpio_set_function(CIRCUITPY_PSRAM_CHIP_SELECT->number, GPIO_FUNC_XIP_CS1);
@@ -236,8 +239,9 @@ static void __no_inline_not_in_flash_func(setup_psram)(void) {
         return;
     }
 }
+#endif
 
-void port_heap_init(void) {
+static void _port_heap_init(void) {
     uint32_t *heap_bottom = port_heap_get_bottom();
     uint32_t *heap_top = port_heap_get_top();
     size_t size = (heap_top - heap_bottom) * sizeof(uint32_t);
@@ -246,6 +250,10 @@ void port_heap_init(void) {
     if (_psram_size > 0) {
         _psram_pool = tlsf_add_pool(_heap, (void *)0x11000000, _psram_size);
     }
+}
+
+void port_heap_init(void) {
+    // We call _port_heap_init from port_init to initialize the heap early.
 }
 
 void *port_malloc(size_t size, bool dma_capable) {
@@ -278,7 +286,6 @@ size_t port_heap_get_largest_free_size(void) {
     // IDF does this. Not sure why.
     return tlsf_fit_size(_heap, max_size);
 }
-#endif
 
 safe_mode_t port_init(void) {
     _binary_info();
@@ -317,18 +324,14 @@ safe_mode_t port_init(void) {
     critical_section_init(&background_queue_lock);
 
     #if CIRCUITPY_CYW43
-    never_reset_pin_number(23);
-    never_reset_pin_number(24);
-    never_reset_pin_number(25);
-    never_reset_pin_number(29);
+    never_reset_pin_number(CYW43_DEFAULT_PIN_WL_REG_ON);
+    never_reset_pin_number(CYW43_DEFAULT_PIN_WL_DATA_IN);
+    never_reset_pin_number(CYW43_DEFAULT_PIN_WL_CS);
+    never_reset_pin_number(CYW43_DEFAULT_PIN_WL_CLOCK);
     #endif
 
     // Reset everything into a known state before board_init.
     reset_port();
-
-    #ifdef CIRCUITPY_PSRAM_CHIP_SELECT
-    setup_psram();
-    #endif
 
     // Initialize RTC
     #if CIRCUITPY_RTC
@@ -339,6 +342,18 @@ safe_mode_t port_init(void) {
     hardware_alarm_claim(0);
     hardware_alarm_set_callback(0, _tick_callback);
 
+    // RP2 port-specific early serial initialization for psram debug.
+    // The RTC must already be initialized, otherwise the serial UART
+    // will hang.
+    serial_early_init();
+
+    #ifdef CIRCUITPY_PSRAM_CHIP_SELECT
+    setup_psram();
+    #endif
+
+    // Initialize heap early to allow for early allocation.
+    _port_heap_init();
+
     // Check brownout.
 
     #if CIRCUITPY_CYW43
@@ -346,7 +361,8 @@ safe_mode_t port_init(void) {
     // initializing the cyw43 chip. Delays inside cyw43_arch_init_with_country
     // are intended to meet the power on timing requirements, but apparently
     // are inadequate. We'll back off this long delay based on future testing.
-    mp_hal_delay_ms(1000);
+    mp_hal_delay_ms(CIRCUITPY_CYW43_INIT_DELAY);
+
     // Change this as a placeholder as to how to init with country code.
     // Default country code is CYW43_COUNTRY_WORLDWIDE)
     if (cyw43_arch_init_with_country(PICO_CYW43_ARCH_DEFAULT_COUNTRY_CODE)) {
@@ -492,6 +508,7 @@ void port_interrupt_after_ticks(uint32_t ticks) {
 }
 
 void port_idle_until_interrupt(void) {
+    #ifdef PICO_RP2040
     common_hal_mcu_disable_interrupts();
     #if CIRCUITPY_USB_HOST
     if (!background_callback_pending() && !tud_task_event_ready() && !tuh_task_event_ready() && !_woken_up) {
@@ -502,6 +519,31 @@ void port_idle_until_interrupt(void) {
         __WFI();
     }
     common_hal_mcu_enable_interrupts();
+    #else
+    // because we use interrupt priority, don't use
+    // common_hal_mcu_disable_interrupts (because an interrupt masked by
+    // BASEPRI will not occur)
+    uint32_t state = save_and_disable_interrupts();
+
+    // Ensure BASEPRI is at 0...
+    uint32_t oldBasePri = __get_BASEPRI();
+    __set_BASEPRI(0);
+    __isb();
+    #if CIRCUITPY_USB_HOST
+    if (!background_callback_pending() && !tud_task_event_ready() && !tuh_task_event_ready() && !_woken_up) {
+    #else
+    if (!background_callback_pending() && !tud_task_event_ready() && !_woken_up) {
+        #endif
+        __DSB();
+        __WFI();
+    }
+
+    // and restore basepri before reenabling interrupts
+    __set_BASEPRI(oldBasePri);
+    __isb();
+
+    restore_interrupts(state);
+    #endif
 }
 
 /**

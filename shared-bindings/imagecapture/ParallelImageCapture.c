@@ -34,6 +34,7 @@
 //|         :param microcontroller.Pin href: The horizontal reference input, which is high whenever the camera is transmitting valid pixel information.
 //|         """
 //|         ...
+//|
 static mp_obj_t imagecapture_parallelimagecapture_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_data_pins, ARG_clock, ARG_vsync, ARG_href,
            NUM_ARGS };
@@ -68,6 +69,7 @@ static mp_obj_t imagecapture_parallelimagecapture_make_new(const mp_obj_type_t *
 //|
 //|         This will stop a continuous-mode capture, if one is in progress."""
 //|         ...
+//|
 static mp_obj_t imagecapture_parallelimagecapture_capture(mp_obj_t self_in, mp_obj_t buffer) {
     imagecapture_parallelimagecapture_obj_t *self = (imagecapture_parallelimagecapture_obj_t *)self_in;
     common_hal_imagecapture_parallelimagecapture_singleshot_capture(self, buffer);
@@ -88,6 +90,7 @@ static MP_DEFINE_CONST_FUN_OBJ_2(imagecapture_parallelimagecapture_capture_obj, 
 //|         `ParallelImageCapture` object keeps references to ``buffer1`` and
 //|         ``buffer2``, so the objects will not be garbage collected."""
 //|         ...
+//|
 static mp_obj_t imagecapture_parallelimagecapture_continuous_capture_start(mp_obj_t self_in, mp_obj_t buffer1, mp_obj_t buffer2) {
     imagecapture_parallelimagecapture_obj_t *self = (imagecapture_parallelimagecapture_obj_t *)self_in;
     common_hal_imagecapture_parallelimagecapture_continuous_capture_start(self, buffer1, buffer2);
@@ -99,6 +102,7 @@ static MP_DEFINE_CONST_FUN_OBJ_3(imagecapture_parallelimagecapture_continuous_ca
 //|     def continuous_capture_get_frame(self) -> WriteableBuffer:
 //|         """Return the next available frame, one of the two buffers passed to `continuous_capture_start`"""
 //|         ...
+//|
 static mp_obj_t imagecapture_parallelimagecapture_continuous_capture_get_frame(mp_obj_t self_in) {
     imagecapture_parallelimagecapture_obj_t *self = (imagecapture_parallelimagecapture_obj_t *)self_in;
     return common_hal_imagecapture_parallelimagecapture_continuous_capture_get_frame(self);
@@ -114,6 +118,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(imagecapture_parallelimagecapture_continuous_ca
 //|         references to the buffers passed to `continuous_capture_start`,
 //|         potentially allowing the objects to be garbage collected."""
 //|         ...
+//|
 static mp_obj_t imagecapture_parallelimagecapture_continuous_capture_stop(mp_obj_t self_in) {
     imagecapture_parallelimagecapture_obj_t *self = (imagecapture_parallelimagecapture_obj_t *)self_in;
     common_hal_imagecapture_parallelimagecapture_continuous_capture_stop(self);
@@ -128,6 +133,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(imagecapture_parallelimagecapture_continuous_ca
 //|     def deinit(self) -> None:
 //|         """Deinitialize this instance"""
 //|         ...
+//|
 static mp_obj_t imagecapture_parallelimagecapture_deinit(mp_obj_t self_in) {
     imagecapture_parallelimagecapture_obj_t *self = (imagecapture_parallelimagecapture_obj_t *)self_in;
     common_hal_imagecapture_parallelimagecapture_deinit(self);
@@ -139,6 +145,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(imagecapture_parallelimagecapture_deinit_obj, i
 //|     def __enter__(self) -> ParallelImageCapture:
 //|         """No-op used in Context Managers."""
 //|         ...
+//|
 //  Provided by context manager helper.
 
 //|     def __exit__(self) -> None:
@@ -146,19 +153,14 @@ static MP_DEFINE_CONST_FUN_OBJ_1(imagecapture_parallelimagecapture_deinit_obj, i
 //|         :ref:`lifetime-and-contextmanagers` for more info."""
 //|         ...
 //|
-static mp_obj_t imagecapture_parallelimagecapture___exit__(size_t n_args, const mp_obj_t *args) {
-    (void)n_args;
-    common_hal_imagecapture_parallelimagecapture_deinit(args[0]);
-    return mp_const_none;
-}
-
-static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(imagecapture_parallelimagecapture___exit___obj, 4, 4, imagecapture_parallelimagecapture___exit__);
+//|
+//  Provided by context manager helper.
 
 
 static const mp_rom_map_elem_t imagecapture_parallelimagecapture_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&imagecapture_parallelimagecapture_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
-    { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&imagecapture_parallelimagecapture___exit___obj) },
+    { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
 
     { MP_ROM_QSTR(MP_QSTR_capture), MP_ROM_PTR(&imagecapture_parallelimagecapture_capture_obj) },
     { MP_ROM_QSTR(MP_QSTR_continuous_capture_start), MP_ROM_PTR(&imagecapture_parallelimagecapture_continuous_capture_start_obj) },

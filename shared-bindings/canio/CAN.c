@@ -42,6 +42,7 @@
 //|         :param bool auto_restart: If True, will restart communications after entering bus-off state
 //|         """
 //|         ...
+//|
 static mp_obj_t canio_can_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_tx, ARG_rx, ARG_baudrate, ARG_loopback, ARG_silent, ARG_auto_restart, NUM_ARGS };
     static const mp_arg_t allowed_args[] = {
@@ -132,6 +133,7 @@ MP_PROPERTY_GETTER(canio_can_receive_error_count_obj,
 
 //|     state: BusState
 //|     """The current state of the bus. (read-only)"""
+//|
 static mp_obj_t canio_can_state_get(mp_obj_t self_in) {
     canio_can_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_canio_can_check_for_deinit(self);
@@ -147,6 +149,7 @@ MP_PROPERTY_GETTER(canio_can_state_obj,
 //|     def restart(self) -> None:
 //|         """If the device is in the bus off state, restart it."""
 //|         ...
+//|
 static mp_obj_t canio_can_restart(mp_obj_t self_in) {
     canio_can_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_canio_can_check_for_deinit(self);
@@ -187,8 +190,13 @@ static MP_DEFINE_CONST_FUN_OBJ_1(canio_can_restart_obj, canio_can_restart);
 //|
 //|         ESP32S2 supports one Listener.  There is a single filter block, which can either match a
 //|         standard address with mask or an extended address with mask.
+//|
+//|         i.MX RT10xx supports one Listener and 8 filter blocks per CAN interface.
+//|         Each interface is fully independent from the other.  A filter block can match
+//|         either a single address or a mask of addresses, both standard or extended.
 //|         """
 //|         ...
+//|
 static mp_obj_t canio_can_listen(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     canio_can_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
     common_hal_canio_can_check_for_deinit(self);
@@ -226,6 +234,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(canio_can_listen_obj, 1, canio_can_listen);
 //|     loopback: bool
 //|     """True if the device was created in loopback mode, False
 //|     otherwise (read-only)"""
+//|
 static mp_obj_t canio_can_loopback_get(mp_obj_t self_in) {
     canio_can_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_canio_can_check_for_deinit(self);
@@ -242,6 +251,7 @@ MP_PROPERTY_GETTER(canio_can_loopback_obj,
 //|         If the message could not be sent due to a full fifo or a bus error condition, RuntimeError is raised.
 //|         """
 //|         ...
+//|
 static mp_obj_t canio_can_send(mp_obj_t self_in, mp_obj_t message_in) {
     canio_can_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_canio_can_check_for_deinit(self);
@@ -259,6 +269,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(canio_can_send_obj, canio_can_send);
 //|     silent: bool
 //|     """True if the device was created in silent mode, False
 //|     otherwise (read-only)"""
+//|
 static mp_obj_t canio_can_silent_get(mp_obj_t self_in) {
     canio_can_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_canio_can_check_for_deinit(self);
@@ -273,6 +284,7 @@ MP_PROPERTY_GETTER(canio_can_silent_obj,
 //|     def deinit(self) -> None:
 //|         """Deinitialize this object, freeing its hardware resources"""
 //|         ...
+//|
 static mp_obj_t canio_can_deinit(mp_obj_t self_in) {
     canio_can_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_canio_can_deinit(self);
@@ -283,6 +295,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(canio_can_deinit_obj, canio_can_deinit);
 //|     def __enter__(self) -> CAN:
 //|         """Returns self, to allow the object to be used in a `with` statement for resource control"""
 //|         ...
+//|
 static mp_obj_t canio_can_enter(mp_obj_t self_in) {
     canio_can_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_canio_can_check_for_deinit(self);
@@ -298,6 +311,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(canio_can_enter_obj, canio_can_enter);
 //|     ) -> None:
 //|         """Calls deinit()"""
 //|         ...
+//|
 //|
 static mp_obj_t canio_can_exit(size_t num_args, const mp_obj_t args[]) {
     canio_can_obj_t *self = MP_OBJ_TO_PTR(args[0]);

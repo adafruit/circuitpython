@@ -16,6 +16,7 @@
 //|         """Constructor
 //|         :param int code: type code in range 0~127.
 //|         :param bytes data: representation."""
+//|
 static mp_obj_t mod_msgpack_exttype_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     mod_msgpack_extype_obj_t *self = mp_obj_malloc(mod_msgpack_extype_obj_t, &mod_msgpack_exttype_type);
     enum { ARG_code, ARG_data };
@@ -63,6 +64,7 @@ MP_PROPERTY_GETSET(mod_msgpack_exttype_code_obj,
 //|     data: bytes
 //|     """Data."""
 //|     ...
+//|
 //|
 static mp_obj_t mod_msgpack_exttype_get_data(mp_obj_t self_in) {
     mod_msgpack_extype_obj_t *self = MP_OBJ_TO_PTR(self_in);

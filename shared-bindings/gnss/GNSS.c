@@ -36,6 +36,7 @@
 //|
 //|         :param system: satellite system to use"""
 //|         ...
+//|
 static mp_obj_t gnss_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     gnss_obj_t *self = mp_obj_malloc(gnss_obj_t, &gnss_type);
     enum { ARG_system };
@@ -69,6 +70,7 @@ static mp_obj_t gnss_make_new(const mp_obj_type_t *type, size_t n_args, size_t n
 //|     def deinit(self) -> None:
 //|         """Turn off the GNSS."""
 //|         ...
+//|
 static mp_obj_t gnss_obj_deinit(mp_obj_t self_in) {
     gnss_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_gnss_deinit(self);
@@ -85,6 +87,7 @@ static void check_for_deinit(gnss_obj_t *self) {
 //|     def update(self) -> None:
 //|         """Update GNSS positioning information."""
 //|         ...
+//|
 static mp_obj_t gnss_obj_update(mp_obj_t self_in) {
     gnss_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -146,6 +149,7 @@ MP_PROPERTY_GETTER(gnss_timestamp_obj,
 
 //|     fix: PositionFix
 //|     """Fix mode."""
+//|
 //|
 static mp_obj_t gnss_obj_get_fix(mp_obj_t self_in) {
     gnss_obj_t *self = MP_OBJ_TO_PTR(self_in);

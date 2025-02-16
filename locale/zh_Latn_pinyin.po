@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: circuitpython-cn\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-01-04 12:55-0600\n"
-"PO-Revision-Date: 2024-11-17 01:00+0000\n"
+"PO-Revision-Date: 2025-01-31 07:02+0000\n"
 "Last-Translator: hexthat <hexthat@gmail.com>\n"
 "Language-Team: Chinese Hanyu Pinyin\n"
 "Language: zh_Latn_pinyin\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 5.9-dev\n"
+"X-Generator: Weblate 5.10-dev\n"
 
 #: main.c
 msgid ""
@@ -233,7 +233,7 @@ msgstr "%q bìxū shì 8 debèishù."
 #: ports/raspberrypi/bindings/cyw43/__init__.c py/argcheck.c py/objexcept.c
 #: shared-bindings/bitmapfilter/__init__.c shared-bindings/canio/CAN.c
 #: shared-bindings/digitalio/Pull.c shared-bindings/supervisor/__init__.c
-#: shared-module/synthio/Synthesizer.c
+#: shared-module/synthio/Biquad.c shared-module/synthio/Synthesizer.c
 msgid "%q must be of type %q or %q, not %q"
 msgstr "%q de lèi xíng bì xū shì %q huò %q, ér bù shì %q"
 
@@ -609,6 +609,10 @@ msgstr "Shùzǔ bìxū bāohán halfwords (type 'H')"
 msgid "Array values should be single bytes."
 msgstr "shùzǔ de zhí yīnggāi shì dān'gè zìjié."
 
+#: ports/atmel-samd/common-hal/spitarget/SPITarget.c
+msgid "Async SPI transfer in progress on this bus, keep awaiting."
+msgstr ""
+
 #: shared-module/memorymonitor/AllocationAlarm.c
 #, c-format
 msgid "Attempt to allocate %d blocks"
@@ -617,6 +621,11 @@ msgstr "shìtú fēnpèi %d blocks"
 #: ports/raspberrypi/audio_dma.c
 msgid "Audio conversion not implemented"
 msgstr "yīnpín zhuǎnhuàn wèi bèi shíxiàn"
+
+#: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
+#: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
+msgid "Audio source error"
+msgstr "yīnpín yuán cuòwù"
 
 #: shared-bindings/wifi/Radio.c
 msgid "AuthMode.OPEN is not used with password"
@@ -754,6 +763,10 @@ msgid "Can only alarm on two low pins from deep sleep."
 msgstr ""
 "Zhǐ néng cóng shēndù shuìmián zhōng de liǎng gè dī yǐn jiǎo shàng bàojǐng."
 
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Can't construct AudioOut because continuous channel already open"
+msgstr ""
+
 #: ports/espressif/common-hal/_bleio/Characteristic.c
 #: ports/nordic/common-hal/_bleio/Characteristic.c
 msgid "Can't set CCCD on local Characteristic"
@@ -814,6 +827,10 @@ msgstr "wúfǎ zài RS485 móshì xià zhǐdìng RTS huò CTS"
 #: py/objslice.c
 msgid "Cannot subclass slice"
 msgstr "bùnéng zǐlèihuà qiēpiàn"
+
+#: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
+msgid "Cannot use GPIO0..15 together with GPIO32..47"
+msgstr "wúfǎ shǐyòng GPIO0..15 liántóng GPIO32..47"
 
 #: ports/nordic/common-hal/alarm/pin/PinAlarm.c
 msgid "Cannot wake on pin edge, only level"
@@ -1016,14 +1033,42 @@ msgstr "Liánjiē shībài: Nèibù cuòwù"
 msgid "Failed to connect: timeout"
 msgstr "Liánjiē shībài: Chāoshí"
 
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: invalid arg"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: invalid state"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: no mem"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: not found"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to enable continuous"
+msgstr ""
+
 #: shared-module/audiomp3/MP3Decoder.c
 msgid "Failed to parse MP3 file"
 msgstr "Wúfǎ jiěxī MP3 wénjiàn"
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to register continuous events callback"
+msgstr ""
 
 #: ports/nordic/sd_mutex.c
 #, c-format
 msgid "Failed to release mutex, err 0x%04x"
 msgstr "Wúfǎ shìfàng mutex, err 0x%04x"
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to start async audio"
+msgstr ""
 
 #: supervisor/shared/safe_mode.c
 msgid "Failed to write internal flash."
@@ -1039,6 +1084,7 @@ msgstr "zhǎo bú dào wén jiàn"
 
 #: ports/atmel-samd/common-hal/canio/Listener.c
 #: ports/espressif/common-hal/canio/Listener.c
+#: ports/mimxrt10xx/common-hal/canio/Listener.c
 #: ports/stm/common-hal/canio/Listener.c
 msgid "Filters too complex"
 msgstr "guò lǜ qì tài fù zá"
@@ -1721,6 +1767,10 @@ msgstr "yǐ jīng zài shǐ yòng de PWM qiē piàn"
 msgid "PWM slice channel A already in use"
 msgstr "PWM qiē piàn tōng dào A yǐ zài shǐ yòng zhōng"
 
+#: shared-bindings/spitarget/SPITarget.c
+msgid "Packet buffers for an SPI transfer must have the same length."
+msgstr ""
+
 #: shared-module/jpegio/JpegDecoder.c
 msgid "Parameter error"
 msgstr "cānshù cuòwù"
@@ -2018,8 +2068,8 @@ msgstr "shàng shù yì cháng shì yǐ xià yì cháng de zhí jiē yuán yīn:
 msgid "The length of rgb_pins must be 6, 12, 18, 24, or 30"
 msgstr "Rgb_pins de chángdù bìxū wèi 6,12,18,24 huò 30"
 
-#: shared-module/audiodelays/Echo.c shared-module/audiofilters/Filter.c
-#: shared-module/audiomixer/MixerVoice.c
+#: shared-module/audiodelays/Echo.c shared-module/audiofilters/Distortion.c
+#: shared-module/audiofilters/Filter.c shared-module/audiomixer/MixerVoice.c
 msgid "The sample's %q does not match"
 msgstr "yàngběn de %q bù pǐpèi"
 
@@ -2180,6 +2230,10 @@ msgstr "Wúfǎ chūshǐhuà jiěxī qì"
 #: shared-module/displayio/OnDiskBitmap.c
 msgid "Unable to read color palette data"
 msgstr "Wúfǎ dúqǔ tiáosèbǎn shùjù"
+
+#: ports/mimxrt10xx/common-hal/canio/CAN.c
+msgid "Unable to send CAN Message: all Tx message buffers are busy"
+msgstr "wúfǎ fāsòng CAN xiāoxi: suǒyǒuTx xiāoxi huǎnchōngqū dōumáng"
 
 #: ports/espressif/common-hal/mdns/Server.c
 #: ports/raspberrypi/common-hal/mdns/Server.c
@@ -2363,6 +2417,7 @@ msgstr "nín zài qǐ dòng shí àn xià le liǎng gè àn niǔ."
 #: ports/espressif/boards/m5stack_core_fire/mpconfigboard.h
 #: ports/espressif/boards/m5stack_stick_c/mpconfigboard.h
 #: ports/espressif/boards/m5stack_stick_c_plus/mpconfigboard.h
+#: ports/espressif/boards/m5stack_stick_c_plus2/mpconfigboard.h
 msgid "You pressed button A at start up."
 msgstr "nín zài qǐ dòng shí àn xià le àn niǔ A."
 
@@ -2376,6 +2431,7 @@ msgstr "nín zài qǐ dòng shí àn xià le qǐ dòng àn niǔ"
 
 #: ports/espressif/boards/adafruit_feather_esp32c6_4mbflash_nopsram/mpconfigboard.h
 #: ports/espressif/boards/adafruit_itsybitsy_esp32/mpconfigboard.h
+#: ports/espressif/boards/waveshare_esp32_c6_lcd_1_47/mpconfigboard.h
 msgid "You pressed the BOOT button at start up."
 msgstr "nínzài qǐdòngshí ànxià le BOOTànniǔ."
 
@@ -2435,6 +2491,10 @@ msgstr "xūyào yīgè zì jié lèi duìxiàng"
 #: shared-bindings/i2ctarget/I2CTarget.c
 msgid "addresses is empty"
 msgstr "dìzhǐ wèi kōng"
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "already playing"
+msgstr ""
 
 #: py/compile.c
 msgid "annotation must be an identifier"
@@ -2514,6 +2574,10 @@ msgstr "chángshì huòqǔ kōng xùliè de argmin/ argmax"
 msgid "attributes not supported"
 msgstr "bù zhīchí de shǔxìng"
 
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "audio format not supported"
+msgstr ""
+
 #: extmod/ulab/code/ulab_tools.c
 msgid "axis is out of bounds"
 msgstr "zhóu chāo chū biān jiè"
@@ -2550,6 +2614,10 @@ msgstr "cuòwù de dàimǎ lèixíng"
 msgid "binary op %q not implemented"
 msgstr "èrjìnzhì bǎn qián bǎn %q wèi zhíxíng"
 
+#: ports/espressif/common-hal/audiobusio/PDMIn.c
+msgid "bit_depth must be 8, 16, 24, or 32."
+msgstr "bit_depth bìxū shì 8, 16, 24, huò 32."
+
 #: shared-module/bitmapfilter/__init__.c
 msgid "bitmap size and depth must match"
 msgstr "wèitú dà xiǎohé shēndù bìxū pǐpèi"
@@ -2562,8 +2630,8 @@ msgstr "wèi tú dà xiǎo bì xū pǐ pèi"
 msgid "bits must be 32 or less"
 msgstr "wèi bì xū shì 32 huò gèng shǎo"
 
-#: shared-bindings/audiodelays/Echo.c shared-bindings/audiofilters/Filter.c
-#: shared-bindings/audiomixer/Mixer.c
+#: shared-bindings/audiodelays/Echo.c shared-bindings/audiofilters/Distortion.c
+#: shared-bindings/audiofilters/Filter.c shared-bindings/audiomixer/Mixer.c
 msgid "bits_per_sample must be 8 or 16"
 msgstr "měi jiàn yàngběn bìxū wèi 8 huò 16"
 
@@ -2644,7 +2712,7 @@ msgstr "bùnéng fēnpèi dào biǎodá shì"
 msgid "can't cancel self"
 msgstr "bù néng qǔ xiāo zì wǒ"
 
-#: shared-module/adafruit_pixelbuf/PixelBuf.c
+#: py/obj.c shared-module/adafruit_pixelbuf/PixelBuf.c
 msgid "can't convert %q to %q"
 msgstr "Wúfǎ jiāng %q zhuǎnhuàn wèi %q"
 
@@ -3437,10 +3505,6 @@ msgstr "biāoqiān '%q' wèi dìngyì"
 #: py/compile.c
 msgid "label redefined"
 msgstr "biāoqiān chóngxīn dìngyì"
-
-#: shared-bindings/audiomixer/MixerVoice.c
-msgid "level must be between 0 and 1"
-msgstr "Level bìxū jiè yú 0 hé 1 zhī jiān"
 
 #: py/objarray.c
 msgid "lhs and rhs should be compatible"
@@ -4426,6 +4490,9 @@ msgstr "zi bìxū wèi fú diǎn xíng"
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr "zi bìxū jùyǒu xíngzhuàng (n_section,2)"
+
+#~ msgid "level must be between 0 and 1"
+#~ msgstr "Level bìxū jiè yú 0 hé 1 zhī jiān"
 
 #~ msgid "init I2C"
 #~ msgstr "chūshǐhuà I2C"

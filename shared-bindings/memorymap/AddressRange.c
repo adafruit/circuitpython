@@ -63,6 +63,7 @@
 //|         ``start + length``. An exception will be raised if any of the
 //|         addresses are invalid or protected."""
 //|         ...
+//|
 static mp_obj_t memorymap_addressrange_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_start, ARG_length };
     static const mp_arg_t allowed_args[] = {
@@ -101,6 +102,7 @@ static mp_obj_t memorymap_addressrange_make_new(const mp_obj_type_t *type, size_
 //|     def __len__(self) -> int:
 //|         """Return the length. This is used by (`len`)"""
 //|         ...
+//|
 static mp_obj_t memorymap_addressrange_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
     memorymap_addressrange_obj_t *self = MP_OBJ_TO_PTR(self_in);
     uint16_t len = common_hal_memorymap_addressrange_get_length(self);
@@ -132,6 +134,7 @@ static MP_DEFINE_CONST_DICT(memorymap_addressrange_locals_dict, memorymap_addres
 //|
 //|     @overload
 //|     def __setitem__(self, index: slice, value: ReadableBuffer) -> None: ...
+//|
 //|     @overload
 //|     def __setitem__(self, index: int, value: int) -> None:
 //|         """Set the value(s) at the given index.
@@ -140,6 +143,7 @@ static MP_DEFINE_CONST_DICT(memorymap_addressrange_locals_dict, memorymap_addres
 //|         when possible.
 //|         All others may use multiple transactions."""
 //|         ...
+//|
 //|
 static mp_obj_t memorymap_addressrange_subscr(mp_obj_t self_in, mp_obj_t index_in, mp_obj_t value) {
     if (value == MP_OBJ_NULL) {

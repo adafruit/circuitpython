@@ -9,6 +9,7 @@
 //|
 //|     def __init__(self) -> None:
 //|         """Enum-like class to define the satellite system type."""
+//|
 //|     GPS: SatelliteSystem
 //|     """Global Positioning System."""
 //|
@@ -23,6 +24,7 @@
 //|
 //|     QZSS_L1S: SatelliteSystem
 //|     """Quasi-Zenith Satellite System L1S."""
+//|
 //|
 const mp_obj_type_t gnss_satellitesystem_type;
 

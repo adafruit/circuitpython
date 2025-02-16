@@ -23,12 +23,14 @@
 #include "src/rp2_common/hardware_sync/include/hardware/sync.h"
 
 #include "hardware/watchdog.h"
+#include "hardware/irq.h"
 
 void common_hal_mcu_delay_us(uint32_t delay) {
     mp_hal_delay_us(delay);
 }
 
 volatile uint32_t nesting_count = 0;
+#ifdef PICO_RP2040
 void common_hal_mcu_disable_interrupts(void) {
     // We don't use save_and_disable_interrupts() from the sdk because we don't want to worry about PRIMASK.
     // This is what we do on the SAMD21 via CMSIS.
@@ -48,6 +50,38 @@ void common_hal_mcu_enable_interrupts(void) {
     __dmb();
     asm volatile ("cpsie i" : : : "memory");
 }
+#else
+#include "src/rp2_common/cmsis/stub/CMSIS/Device/RP2350/Include/RP2350.h"
+#define PICO_ELEVATED_IRQ_PRIORITY (0x60) // between PICO_DEFAULT and PIOCO_HIGHEST_IRQ_PRIORITY
+static uint32_t oldBasePri = 0; // 0 (default) masks nothing, other values mask equal-or-larger priority values
+void common_hal_mcu_disable_interrupts(void) {
+    if (nesting_count == 0) {
+        // We must keep DMA_IRQ_1 (reserved for pico dvi) enabled at all times,
+        // including during flash writes. Do this by setting the priority mask (BASEPRI
+        // register).
+        // grab old base priority
+        oldBasePri = __get_BASEPRI();
+        // and set the new one
+        __set_BASEPRI_MAX(PICO_ELEVATED_IRQ_PRIORITY);
+        __isb(); // Instruction synchronization barrier
+    }
+    nesting_count++;
+}
+
+void common_hal_mcu_enable_interrupts(void) {
+    uint32_t my_interrupts = save_and_disable_interrupts();
+    if (nesting_count == 0) {
+        reset_into_safe_mode(SAFE_MODE_INTERRUPT_ERROR);
+    }
+    nesting_count--;
+    if (nesting_count == 0) {
+        // return to the old priority setting
+        __set_BASEPRI(oldBasePri);
+        __isb(); // Instruction synchronization barrier
+    }
+    restore_interrupts(my_interrupts);
+}
+#endif
 
 static bool next_reset_to_bootloader = false;
 

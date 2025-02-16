@@ -40,6 +40,7 @@ static mp_obj_t ssl_sslcontext_make_new(const mp_obj_type_t *type, size_t n_args
 //|         needed to establish the certificate's authenticity.  The keyfile string
 //|         must point to a file containing the private key.
 //|         """
+//|
 
 static void get_file_contents(mp_obj_t name_obj, mp_buffer_info_t *bufinfo) {
     mp_obj_t file = mp_call_function_2(MP_OBJ_FROM_PTR(&mp_builtin_open_obj), name_obj, MP_OBJ_NEW_QSTR(MP_QSTR_rb));
@@ -88,6 +89,7 @@ static MP_DEFINE_CONST_FUN_OBJ_KW(ssl_sslcontext_load_cert_chain_obj, 1, ssl_ssl
 //|         :param str cadata: A single CA certificate in PEM format. **Limitation**: CPython allows one
 //|           or more certificates, but this implementation is limited to one.
 //|         """
+//|
 static mp_obj_t ssl_sslcontext_load_verify_locations(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_cafile, ARG_capath, ARG_cadata };
     static const mp_arg_t allowed_args[] = {
@@ -117,6 +119,7 @@ static MP_DEFINE_CONST_FUN_OBJ_KW(ssl_sslcontext_load_verify_locations_obj, 1, s
 
 //|     def set_default_verify_paths(self) -> None:
 //|         """Load a set of default certification authority (CA) certificates."""
+//|
 
 static mp_obj_t ssl_sslcontext_set_default_verify_paths(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     ssl_sslcontext_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
@@ -128,6 +131,7 @@ static MP_DEFINE_CONST_FUN_OBJ_KW(ssl_sslcontext_set_default_verify_paths_obj, 1
 
 //|     check_hostname: bool
 //|     """Whether to match the peer certificate's hostname."""
+//|
 
 static mp_obj_t ssl_sslcontext_get_check_hostname(mp_obj_t self_in) {
     ssl_sslcontext_obj_t *self = MP_OBJ_TO_PTR(self_in);
@@ -153,10 +157,11 @@ MP_PROPERTY_GETSET(ssl_sslcontext_check_hostname_obj,
 //|         sock: socketpool.Socket,
 //|         *,
 //|         server_side: bool = False,
-//|         server_hostname: Optional[str] = None
+//|         server_hostname: Optional[str] = None,
 //|     ) -> ssl.SSLSocket:
 //|         """Wraps the socket into a socket-compatible class that handles SSL negotiation.
 //|         The socket must be of type SOCK_STREAM."""
+//|
 //|
 
 static mp_obj_t ssl_sslcontext_wrap_socket(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {

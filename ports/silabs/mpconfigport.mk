@@ -15,6 +15,8 @@ CIRCUITPY_RTC ?= 1
 CIRCUITPY_USB_DEVICE = 0
 CIRCUITPY_WATCHDOG ?=1
 
+CIRCUITPY_PORT_SERIAL = 1
+
 ifeq ($(MCU_SERIES),MG24)
         # Not yet implemented common-hal modules:
         CIRCUITPY_AUDIOIO ?= 0

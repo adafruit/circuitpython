@@ -26,7 +26,7 @@
 //|         i2c_bus: busio.I2C,
 //|         *,
 //|         device_address: int,
-//|         reset: Optional[microcontroller.Pin] = None
+//|         reset: Optional[microcontroller.Pin] = None,
 //|     ) -> None:
 //|         """Create a I2CDisplayBus object associated with the given I2C bus and reset pin.
 //|
@@ -40,6 +40,7 @@
 //|         :param microcontroller.Pin reset: Reset pin. When None only software reset can be used
 //|         """
 //|         ...
+//|
 static mp_obj_t i2cdisplaybus_i2cdisplaybus_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_i2c_bus, ARG_device_address, ARG_reset };
     static const mp_arg_t allowed_args[] = {
@@ -65,6 +66,7 @@ static mp_obj_t i2cdisplaybus_i2cdisplaybus_make_new(const mp_obj_type_t *type, 
 //|         """Performs a hardware reset via the reset pin. Raises an exception if called when no reset pin
 //|         is available."""
 //|         ...
+//|
 static mp_obj_t i2cdisplaybus_i2cdisplaybus_obj_reset(mp_obj_t self_in) {
     i2cdisplaybus_i2cdisplaybus_obj_t *self = self_in;
 
@@ -79,6 +81,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(i2cdisplaybus_i2cdisplaybus_reset_obj, i2cdisplaybus_i
 //|         """Sends the given command value followed by the full set of data. Display state, such as
 //|         vertical scroll, set via ``send`` may or may not be reset once the code is done."""
 //|         ...
+//|
 //|
 static mp_obj_t i2cdisplaybus_i2cdisplaybus_obj_send(mp_obj_t self, mp_obj_t command_obj, mp_obj_t data_obj) {
     mp_int_t command_int = mp_obj_get_int(command_obj);

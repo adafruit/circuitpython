@@ -179,5 +179,23 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     {MP_OBJ_NEW_QSTR(MP_QSTR_TX7), MP_ROM_PTR(&pin_GPIO_EMC_31)},
     {MP_OBJ_NEW_QSTR(MP_QSTR_RX8), MP_ROM_PTR(&pin_GPIO_B1_13)},
     {MP_OBJ_NEW_QSTR(MP_QSTR_TX8), MP_ROM_PTR(&pin_GPIO_B1_12)},
+
+    // CAN and CAN-FD
+    {MP_OBJ_NEW_QSTR(MP_QSTR_CAN1_RX),  MP_ROM_PTR(&pin_GPIO_AD_B1_09)},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_CAN1_TX),  MP_ROM_PTR(&pin_GPIO_AD_B1_08)},
+
+    {MP_OBJ_NEW_QSTR(MP_QSTR_CAN2_RX),  MP_ROM_PTR(&pin_GPIO_AD_B0_03)},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_CAN2_TX),  MP_ROM_PTR(&pin_GPIO_AD_B0_02)},
+
+    {MP_OBJ_NEW_QSTR(MP_QSTR_CAN3_RX),  MP_ROM_PTR(&pin_GPIO_EMC_37)},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_CAN3_TX),  MP_ROM_PTR(&pin_GPIO_EMC_36)},
+
+    // "CAN" is an alias for CAN1
+    {MP_OBJ_NEW_QSTR(MP_QSTR_CAN_RX),  MP_ROM_PTR(&pin_GPIO_AD_B1_09)},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_CAN_TX),  MP_ROM_PTR(&pin_GPIO_AD_B1_08)},
+
+    // "CANFD" is an alias for CAN3
+    {MP_OBJ_NEW_QSTR(MP_QSTR_CANFD_RX),  MP_ROM_PTR(&pin_GPIO_EMC_37)},
+    {MP_OBJ_NEW_QSTR(MP_QSTR_CANFD_TX),  MP_ROM_PTR(&pin_GPIO_EMC_36)},
 };
 MP_DEFINE_CONST_DICT(board_module_globals, board_module_globals_table);

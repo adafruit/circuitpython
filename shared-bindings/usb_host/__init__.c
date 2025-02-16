@@ -18,6 +18,7 @@
 //| with devices use the `usb` module that is a subset of PyUSB's API.
 //| """
 //|
+//|
 //| def set_user_keymap(keymap: ReadableBuffer, /) -> None:
 //|     """Set the keymap used by a USB HID keyboard in kernel mode
 //|
@@ -39,6 +40,7 @@
 //|
 //|     This function is a CircuitPython extension not present in PyUSB
 //|     """
+//|
 //|
 static mp_obj_t usb_set_user_keymap(mp_obj_t buf_in) {
     mp_buffer_info_t bufinfo;

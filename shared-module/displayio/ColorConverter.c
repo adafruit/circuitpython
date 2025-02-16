@@ -292,7 +292,7 @@ void displayio_convert_color(const _displayio_colorspace_t *colorspace, bool dit
         output_color->pixel = (luma >> colorspace->grayscale_bit) & bitmask;
         output_color->opaque = true;
         return;
-    } else if (colorspace->depth == 32) {
+    } else if (colorspace->depth == 32 || colorspace->depth == 24) {
         output_color->pixel = pixel;
         output_color->opaque = true;
         return;

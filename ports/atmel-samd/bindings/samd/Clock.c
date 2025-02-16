@@ -74,6 +74,7 @@ MP_PROPERTY_GETTER(samd_clock_frequency_obj,
 //|     calibration: int
 //|     """Clock calibration. Not all clocks can be calibrated."""
 //|
+//|
 static mp_obj_t samd_clock_get_calibration(mp_obj_t self_in) {
     samd_clock_obj_t *self = MP_OBJ_TO_PTR(self_in);
     return mp_obj_new_int_from_uint(clock_get_calibration(self->type, self->index));

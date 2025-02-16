@@ -27,11 +27,13 @@
 //|
 //| _T = TypeVar("_T")
 //|
+//|
 
 //| def seed(seed: int) -> None:
 //|     """Sets the starting seed of the random  number generation. Further calls to
 //|     `random` will return deterministic results afterwards."""
 //|     ...
+//|
 //|
 static mp_obj_t random_seed(mp_obj_t seed_in) {
     mp_uint_t seed = mp_obj_get_int_truncated(seed_in);
@@ -43,6 +45,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(random_seed_obj, random_seed);
 //| def getrandbits(k: int) -> int:
 //|     """Returns an integer with *k* random bits."""
 //|     ...
+//|
 //|
 static mp_obj_t random_getrandbits(mp_obj_t num_in) {
     mp_int_t n = mp_obj_get_int(num_in);
@@ -61,6 +64,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(random_getrandbits_obj, random_getrandbits);
 //| def randrange(start: int, stop: int, step: int) -> int:
 //|     """Returns a randomly selected integer from ``range(start[, stop[, step]])``."""
 //|     ...
+//|
 //|
 static mp_obj_t random_randrange(size_t n_args, const mp_obj_t *args) {
     mp_int_t start = 0;
@@ -105,6 +109,7 @@ static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(random_randrange_obj, 1, 3, random_ra
 //|     to ``randrange(a, b + 1, 1)``"""
 //|     ...
 //|
+//|
 static mp_obj_t random_randint(mp_obj_t a_in, mp_obj_t b_in) {
     mp_int_t a = mp_obj_get_int(a_in);
     mp_int_t b = mp_obj_get_int(b_in);
@@ -120,6 +125,7 @@ static MP_DEFINE_CONST_FUN_OBJ_2(random_randint_obj, random_randint);
 //|     IndexError when the sequence is empty."""
 //|     ...
 //|
+//|
 static mp_obj_t random_choice(mp_obj_t seq) {
     mp_int_t len = mp_obj_get_int(mp_obj_len(seq));
     if (len == 0) {
@@ -133,6 +139,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(random_choice_obj, random_choice);
 //|     """Returns a random float between 0 and 1.0."""
 //|     ...
 //|
+//|
 static mp_obj_t random_random(void) {
     return mp_obj_new_float(shared_modules_random_random());
 }
@@ -142,6 +149,7 @@ static MP_DEFINE_CONST_FUN_OBJ_0(random_random_obj, random_random);
 //|     """Returns a random float between a and b. It may or may not be inclusive
 //|     depending on float rounding."""
 //|     ...
+//|
 //|
 static mp_obj_t random_uniform(mp_obj_t a_in, mp_obj_t b_in) {
     mp_float_t a = mp_obj_get_float(a_in);

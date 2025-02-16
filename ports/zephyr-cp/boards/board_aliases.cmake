@@ -1,0 +1,8 @@
+set(pca10056_BOARD_ALIAS nrf52840dk/nrf52840)
+set(renesas_ek_ra6m5_BOARD_ALIAS ek_ra6m5)
+set(renesas_ek_ra8d1_BOARD_ALIAS ek_ra8d1)
+set(nordic_nrf54l15dk_BOARD_ALIAS nrf54l15dk/nrf54l15/cpuapp)
+set(nordic_nrf5340dk_BOARD_ALIAS nrf5340dk/nrf5340/cpuapp)
+set(nordic_nrf7002dk_BOARD_ALIAS nrf7002dk/nrf5340/cpuapp)
+set(st_stm32h7b3i_dk_BOARD_ALIAS stm32h7b3i_dk)
+set(st_nucleo_u575zi_q_BOARD_ALIAS nucleo_u575zi_q/stm32u575xx)

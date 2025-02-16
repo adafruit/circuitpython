@@ -25,6 +25,7 @@
 //|         :param int x: Initial x position within the parent.
 //|         :param int y: Initial y position within the parent."""
 //|         ...
+//|
 static mp_obj_t displayio_group_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_scale, ARG_x, ARG_y };
     static const mp_arg_t allowed_args[] = {
@@ -120,6 +121,7 @@ MP_PROPERTY_GETSET(displayio_group_x_obj,
 
 //|     y: int
 //|     """Y position of the Group in the parent."""
+//|
 static mp_obj_t displayio_group_obj_get_y(mp_obj_t self_in) {
     displayio_group_t *self = native_group(self_in);
     return MP_OBJ_NEW_SMALL_INT(common_hal_displayio_group_get_y(self));
@@ -145,6 +147,7 @@ MP_PROPERTY_GETSET(displayio_group_y_obj,
 //|     ) -> None:
 //|         """Append a layer to the group. It will be drawn above other layers."""
 //|         ...
+//|
 static mp_obj_t displayio_group_obj_append(mp_obj_t self_in, mp_obj_t layer) {
     displayio_group_t *self = native_group(self_in);
     common_hal_displayio_group_insert(self, common_hal_displayio_group_get_len(self), layer);
@@ -159,6 +162,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(displayio_group_append_obj, displayio_group_obj_append
 //|     ) -> None:
 //|         """Insert a layer into the group."""
 //|         ...
+//|
 static mp_obj_t displayio_group_obj_insert(mp_obj_t self_in, mp_obj_t index_obj, mp_obj_t layer) {
     displayio_group_t *self = native_group(self_in);
     if ((size_t)MP_OBJ_SMALL_INT_VALUE(index_obj) == common_hal_displayio_group_get_len(self)) {
@@ -177,6 +181,7 @@ MP_DEFINE_CONST_FUN_OBJ_3(displayio_group_insert_obj, displayio_group_obj_insert
 //|     ) -> int:
 //|         """Returns the index of the first copy of layer. Raises ValueError if not found."""
 //|         ...
+//|
 static mp_obj_t displayio_group_obj_index(mp_obj_t self_in, mp_obj_t layer) {
     displayio_group_t *self = native_group(self_in);
     mp_int_t index = common_hal_displayio_group_index(self, layer);
@@ -192,6 +197,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(displayio_group_index_obj, displayio_group_obj_index);
 //|     ) -> Union[vectorio.Circle, vectorio.Rectangle, vectorio.Polygon, Group, TileGrid]:
 //|         """Remove the ith item and return it."""
 //|         ...
+//|
 static mp_obj_t displayio_group_obj_pop(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_i };
     static const mp_arg_t allowed_args[] = {
@@ -217,6 +223,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(displayio_group_pop_obj, 1, displayio_group_obj_pop);
 //|     ) -> None:
 //|         """Remove the first copy of layer. Raises ValueError if it is not present."""
 //|         ...
+//|
 static mp_obj_t displayio_group_obj_remove(mp_obj_t self_in, mp_obj_t layer) {
     mp_obj_t index = displayio_group_obj_index(self_in, layer);
     displayio_group_t *self = native_group(self_in);
@@ -239,6 +246,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(displayio_group_remove_obj, displayio_group_obj_remove
 //|     def __len__(self) -> int:
 //|         """Returns the number of layers in a Group"""
 //|         ...
+//|
 static mp_obj_t group_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
     displayio_group_t *self = native_group(self_in);
     uint16_t len = common_hal_displayio_group_get_len(self);
@@ -281,6 +289,7 @@ static mp_obj_t group_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
 //|
 //|           del group[0]"""
 //|         ...
+//|
 static mp_obj_t group_subscr(mp_obj_t self_in, mp_obj_t index_obj, mp_obj_t value) {
     displayio_group_t *self = native_group(self_in);
 
@@ -304,6 +313,7 @@ static mp_obj_t group_subscr(mp_obj_t self_in, mp_obj_t index_obj, mp_obj_t valu
 //|     def sort(self, key: function, reverse: bool) -> None:
 //|         """Sort the members of the group."""
 //|         ...
+//|
 //|
 static mp_obj_t displayio_group_obj_sort(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     displayio_group_t *self = native_group(pos_args[0]);

@@ -229,7 +229,7 @@ msgstr ""
 #: ports/raspberrypi/bindings/cyw43/__init__.c py/argcheck.c py/objexcept.c
 #: shared-bindings/bitmapfilter/__init__.c shared-bindings/canio/CAN.c
 #: shared-bindings/digitalio/Pull.c shared-bindings/supervisor/__init__.c
-#: shared-module/synthio/Synthesizer.c
+#: shared-module/synthio/Biquad.c shared-module/synthio/Synthesizer.c
 msgid "%q must be of type %q or %q, not %q"
 msgstr "%q musí být typu %q nebo %q, ne %q"
 
@@ -605,6 +605,10 @@ msgstr "Pole musí obsahovat poloviční slova (typ „H“)"
 msgid "Array values should be single bytes."
 msgstr "Hodnoty pole by měly být jednoduché bajty."
 
+#: ports/atmel-samd/common-hal/spitarget/SPITarget.c
+msgid "Async SPI transfer in progress on this bus, keep awaiting."
+msgstr ""
+
 #: shared-module/memorymonitor/AllocationAlarm.c
 #, c-format
 msgid "Attempt to allocate %d blocks"
@@ -613,6 +617,11 @@ msgstr "Pokus o alokování %d bloků"
 #: ports/raspberrypi/audio_dma.c
 msgid "Audio conversion not implemented"
 msgstr "Konverze audia není implementována"
+
+#: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
+#: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
+msgid "Audio source error"
+msgstr ""
 
 #: shared-bindings/wifi/Radio.c
 msgid "AuthMode.OPEN is not used with password"
@@ -750,6 +759,10 @@ msgid "Can only alarm on two low pins from deep sleep."
 msgstr ""
 "Lze nastavit alarm na maximálně dvou pinech ve stavu low při hlubokém spánku."
 
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Can't construct AudioOut because continuous channel already open"
+msgstr ""
+
 #: ports/espressif/common-hal/_bleio/Characteristic.c
 #: ports/nordic/common-hal/_bleio/Characteristic.c
 msgid "Can't set CCCD on local Characteristic"
@@ -810,6 +823,10 @@ msgstr "Nelze určit RTS nebo CTS v režimu RS485"
 #: py/objslice.c
 msgid "Cannot subclass slice"
 msgstr "Nelze použít řez podtřídy"
+
+#: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
+msgid "Cannot use GPIO0..15 together with GPIO32..47"
+msgstr ""
 
 #: ports/nordic/common-hal/alarm/pin/PinAlarm.c
 msgid "Cannot wake on pin edge, only level"
@@ -1010,14 +1027,42 @@ msgstr "Připojení se nezdařilo: interní chyba"
 msgid "Failed to connect: timeout"
 msgstr "Nepodařilo se připojit: časový limit"
 
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: invalid arg"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: invalid state"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: no mem"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to create continuous channels: not found"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to enable continuous"
+msgstr ""
+
 #: shared-module/audiomp3/MP3Decoder.c
 msgid "Failed to parse MP3 file"
 msgstr "Soubor MP3 se nepodařilo analyzovat"
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to register continuous events callback"
+msgstr ""
 
 #: ports/nordic/sd_mutex.c
 #, c-format
 msgid "Failed to release mutex, err 0x%04x"
 msgstr "Nepodařilo se uvolnit mutex, err 0x%04x"
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "Failed to start async audio"
+msgstr ""
 
 #: supervisor/shared/safe_mode.c
 msgid "Failed to write internal flash."
@@ -1033,6 +1078,7 @@ msgstr "Soubor nenalezen"
 
 #: ports/atmel-samd/common-hal/canio/Listener.c
 #: ports/espressif/common-hal/canio/Listener.c
+#: ports/mimxrt10xx/common-hal/canio/Listener.c
 #: ports/stm/common-hal/canio/Listener.c
 msgid "Filters too complex"
 msgstr "Filtry jsou příliš komplexní"
@@ -1706,6 +1752,10 @@ msgstr "PWM kanál je již využíván"
 msgid "PWM slice channel A already in use"
 msgstr "PWM kanál A je již využíván"
 
+#: shared-bindings/spitarget/SPITarget.c
+msgid "Packet buffers for an SPI transfer must have the same length."
+msgstr ""
+
 #: shared-module/jpegio/JpegDecoder.c
 msgid "Parameter error"
 msgstr ""
@@ -2000,8 +2050,8 @@ msgstr "Výše uvedená výjimka byla přímá příčina následující výjimk
 msgid "The length of rgb_pins must be 6, 12, 18, 24, or 30"
 msgstr "Počet prvků rgb_pin musí být 6, 12, 18, 24, nebo 30"
 
-#: shared-module/audiodelays/Echo.c shared-module/audiofilters/Filter.c
-#: shared-module/audiomixer/MixerVoice.c
+#: shared-module/audiodelays/Echo.c shared-module/audiofilters/Distortion.c
+#: shared-module/audiofilters/Filter.c shared-module/audiomixer/MixerVoice.c
 msgid "The sample's %q does not match"
 msgstr ""
 
@@ -2161,6 +2211,10 @@ msgstr ""
 #: shared-module/displayio/OnDiskBitmap.c
 msgid "Unable to read color palette data"
 msgstr "Nelze číst data palety barev"
+
+#: ports/mimxrt10xx/common-hal/canio/CAN.c
+msgid "Unable to send CAN Message: all Tx message buffers are busy"
+msgstr ""
 
 #: ports/espressif/common-hal/mdns/Server.c
 #: ports/raspberrypi/common-hal/mdns/Server.c
@@ -2342,6 +2396,7 @@ msgstr "Při spuštění jsi stiskl obě tlačítka."
 #: ports/espressif/boards/m5stack_core_fire/mpconfigboard.h
 #: ports/espressif/boards/m5stack_stick_c/mpconfigboard.h
 #: ports/espressif/boards/m5stack_stick_c_plus/mpconfigboard.h
+#: ports/espressif/boards/m5stack_stick_c_plus2/mpconfigboard.h
 msgid "You pressed button A at start up."
 msgstr "Při spuštění jsi stiskl tlačítko A."
 
@@ -2355,6 +2410,7 @@ msgstr "Při spuštění jsi stiskl tlačítko BOOT"
 
 #: ports/espressif/boards/adafruit_feather_esp32c6_4mbflash_nopsram/mpconfigboard.h
 #: ports/espressif/boards/adafruit_itsybitsy_esp32/mpconfigboard.h
+#: ports/espressif/boards/waveshare_esp32_c6_lcd_1_47/mpconfigboard.h
 msgid "You pressed the BOOT button at start up."
 msgstr ""
 
@@ -2413,6 +2469,10 @@ msgstr ""
 
 #: shared-bindings/i2ctarget/I2CTarget.c
 msgid "addresses is empty"
+msgstr ""
+
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "already playing"
 msgstr ""
 
 #: py/compile.c
@@ -2493,6 +2553,10 @@ msgstr ""
 msgid "attributes not supported"
 msgstr ""
 
+#: ports/espressif/common-hal/audioio/AudioOut.c
+msgid "audio format not supported"
+msgstr ""
+
 #: extmod/ulab/code/ulab_tools.c
 msgid "axis is out of bounds"
 msgstr "osa je mimo rozsah"
@@ -2529,6 +2593,10 @@ msgstr ""
 msgid "binary op %q not implemented"
 msgstr ""
 
+#: ports/espressif/common-hal/audiobusio/PDMIn.c
+msgid "bit_depth must be 8, 16, 24, or 32."
+msgstr ""
+
 #: shared-module/bitmapfilter/__init__.c
 msgid "bitmap size and depth must match"
 msgstr ""
@@ -2541,8 +2609,8 @@ msgstr "velikosti bitmapy musí odpovídat"
 msgid "bits must be 32 or less"
 msgstr "počet bitů nesmí přesáhnout 32"
 
-#: shared-bindings/audiodelays/Echo.c shared-bindings/audiofilters/Filter.c
-#: shared-bindings/audiomixer/Mixer.c
+#: shared-bindings/audiodelays/Echo.c shared-bindings/audiofilters/Distortion.c
+#: shared-bindings/audiofilters/Filter.c shared-bindings/audiomixer/Mixer.c
 msgid "bits_per_sample must be 8 or 16"
 msgstr ""
 
@@ -2623,7 +2691,7 @@ msgstr ""
 msgid "can't cancel self"
 msgstr "nelze zrušit sám sebe"
 
-#: shared-module/adafruit_pixelbuf/PixelBuf.c
+#: py/obj.c shared-module/adafruit_pixelbuf/PixelBuf.c
 msgid "can't convert %q to %q"
 msgstr "není možné převést %q na %q"
 
@@ -3408,10 +3476,6 @@ msgstr ""
 
 #: py/compile.c
 msgid "label redefined"
-msgstr ""
-
-#: shared-bindings/audiomixer/MixerVoice.c
-msgid "level must be between 0 and 1"
 msgstr ""
 
 #: py/objarray.c

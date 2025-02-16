@@ -595,11 +595,11 @@ def main():
         if subprocess.call("cd " + sys.path[0] + "; ./reset_board.sh", shell=True) == 0:
             print("auto reset board success!!")
             do_wait_reset = False
-            bootrom_msg = writer.cancel_autoboot()
+            writer.cancel_autoboot()
 
     if ConfigArgs.DTR_RESET:
         do_wait_reset = False
-        bootrom_msg = writer.cancel_autoboot()
+        writer.cancel_autoboot()
 
     if ConfigArgs.WAIT_RESET is False and do_wait_reset is True:
         rx = writer.recv()
@@ -617,7 +617,7 @@ def main():
         # Wait to reset the board
         print("Please press RESET button on target board")
         sys.stdout.flush()
-        bootrom_msg = writer.cancel_autoboot()
+        writer.cancel_autoboot()
 
     # Remove files
     if ConfigArgs.ERASE_NAME:

@@ -11,6 +11,7 @@
 #include "bindings/samd/Clock.h"
 
 //| """SAMD implementation settings"""
+//|
 
 //| """:mod:`samd.clock` --- samd clock names
 //| --------------------------------------------------------

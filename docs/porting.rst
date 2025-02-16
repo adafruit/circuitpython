@@ -72,6 +72,7 @@ as a natural "TODO" list. An example minimal build list is shown below:
     CIRCUITPY_FRAMEBUFFERIO = 0
     CIRCUITPY_FREQUENCYIO = 0
     CIRCUITPY_I2CTARGET = 0
+    CIRCUITPY_SPITARGET = 0
     # Requires SPI, PulseIO (stub ok):
     CIRCUITPY_DISPLAYIO = 0
 

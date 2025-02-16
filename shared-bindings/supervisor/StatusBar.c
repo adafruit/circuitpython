@@ -26,6 +26,7 @@
 //|         """You cannot create an instance of `supervisor.StatusBar`.
 //|         Use `supervisor.status_bar` to access the sole instance available."""
 //|         ...
+//|
 
 //|     console: bool
 //|     """Whether status bar information is sent over the console (REPL) serial connection,
@@ -64,6 +65,7 @@ MP_PROPERTY_GETSET(supervisor_status_bar_console_obj,
 //|     May be set in ``boot.py`` or later.  Persists across soft restarts.
 //|     Not available if `terminalio` is not available.
 //|     """
+//|
 //|
 static mp_obj_t supervisor_status_bar_get_display(mp_obj_t self_in) {
     #if CIRCUITPY_STATUS_BAR && CIRCUITPY_TERMINALIO

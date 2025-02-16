@@ -24,7 +24,7 @@ SPECIAL_NODE_COLORS = {"main": "pink", "exception_table": "green"}
 
 @click.command()
 @click.argument("elf_filename")
-def do_all_the_things(elf_filename):
+def do_all_the_things(elf_filename):  # noqa: C901: too complex
     symbol = None
     last_address = 0
     all_symbols = {}
@@ -124,7 +124,7 @@ def do_all_the_things(elf_filename):
                     if not symbol_stack[-1]["subtype"]:
                         symbol_stack[-1]["subtype"] = symbol
                     elif symbol_stack[-1]["subtype"]["type"] == symbol["type"]:
-                        second_subtype = True
+                        pass
                     else:
                         raise RuntimeError()
             elif tag == "DW_AT_upper_bound":
@@ -164,7 +164,6 @@ def do_all_the_things(elf_filename):
             # print(line)
             pass
 
-    MEMORY_NONE = 0
     MEMORY_POINTER = 1
     MEMORY_PY_OBJECT = 2
 
@@ -214,15 +213,14 @@ def do_all_the_things(elf_filename):
         return {}
 
     # Do a second pass to dereference the types
-    for symbol_address in symbols_by_memory_address:
-        symbol = symbols_by_memory_address[symbol_address]
+    for symbol_address, symbol in symbols_by_memory_address.items():
         if "type" in symbol:
             if symbol["debug_type"] == "DW_TAG_variable":
                 symbol["pointer_map"] = get_pointer_map(symbols_by_debug_address[symbol["type"]])
             type_string = []
             t = symbol["type"]
             offset = []
-            while t != None:
+            while t is not None:
                 t_symbol = symbols_by_debug_address[t]
                 t = t_symbol.get("type", None)
                 if "name" in t_symbol:
@@ -252,7 +250,6 @@ def do_all_the_things(elf_filename):
     text_dump_lines = text_dump.stdout.decode("utf-8").split("\n")
     section = None
     symbol = None
-    symbol_type = None
     for line in text_dump_lines[4:]:
         if line.startswith("Disassembly of section"):
             section = line.split()[-1].strip(":")
@@ -267,7 +264,6 @@ def do_all_the_things(elf_filename):
             symbol_address = parse_hex(symbol_address)
             symbol_name = symbol_name.strip("<>:")
             if symbol_name in symbols_by_linkage_name:
-                linked_name = symbol_name
                 symbol = symbols_by_linkage_name[symbol_name]
                 if "name" in symbol:
                     non_linkage = symbol["name"]
@@ -303,10 +299,8 @@ def do_all_the_things(elf_filename):
             if symbol["debug_type"] == "DW_TAG_subprogram":
                 symbol["outgoing_jumps"] = set()
                 symbol["incoming_jumps"] = set()
-                symbol_type = None
             elif symbol["debug_type"] == "DW_TAG_variable":
                 symbol["outgoing_pointers"] = set()
-                symbol_type = symbols_by_debug_address[symbol["type"]]
             all_symbols[symbol_name] = symbol
 
         elif line[0] == " ":
@@ -360,8 +354,7 @@ def do_all_the_things(elf_filename):
     print("converting outgoing pointers to names")
 
     # Convert outgoing pointers to names from addresses
-    for symbol_name in all_symbols:
-        symbol = all_symbols[symbol_name]
+    for symbol_name, symbol in all_symbols.items():
         if "outgoing_pointers" not in symbol:
             continue
         converted = set()
@@ -378,8 +371,7 @@ def do_all_the_things(elf_filename):
 
     print("linking back")
     # Link back
-    for symbol_name in all_symbols:
-        symbol = all_symbols[symbol_name]
+    for symbol_name, symbol in all_symbols.items():
         if "outgoing_jumps" in symbol:
             for outgoing in symbol["outgoing_jumps"]:
                 if outgoing not in all_symbols:

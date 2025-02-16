@@ -15,7 +15,10 @@ void common_hal_audiomixer_mixervoice_construct(audiomixer_mixervoice_obj_t *sel
 void common_hal_audiomixer_mixervoice_set_parent(audiomixer_mixervoice_obj_t *self, audiomixer_mixer_obj_t *parent);
 void common_hal_audiomixer_mixervoice_play(audiomixer_mixervoice_obj_t *self, mp_obj_t sample, bool loop);
 void common_hal_audiomixer_mixervoice_stop(audiomixer_mixervoice_obj_t *self);
-mp_float_t common_hal_audiomixer_mixervoice_get_level(audiomixer_mixervoice_obj_t *self);
-void common_hal_audiomixer_mixervoice_set_level(audiomixer_mixervoice_obj_t *self, mp_float_t gain);
+mp_obj_t common_hal_audiomixer_mixervoice_get_level(audiomixer_mixervoice_obj_t *self);
+void common_hal_audiomixer_mixervoice_set_level(audiomixer_mixervoice_obj_t *self, mp_obj_t gain);
 
 bool common_hal_audiomixer_mixervoice_get_playing(audiomixer_mixervoice_obj_t *self);
+
+void common_hal_audiomixer_mixervoice_set_loop(audiomixer_mixervoice_obj_t *self, bool loop);
+bool common_hal_audiomixer_mixervoice_get_loop(audiomixer_mixervoice_obj_t *self);

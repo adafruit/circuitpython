@@ -33,6 +33,7 @@ static void check_for_deinit(usb_video_uvcframebuffer_obj_t *self) {
 //|
 //|     def __init__(self) -> None:
 //|         """Returns the singleton framebuffer object, if USB video is enabled"""
+//|
 static mp_obj_t usb_video_uvcframebuffer_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     static const mp_arg_t allowed_args[] = {};
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
@@ -45,6 +46,7 @@ static mp_obj_t usb_video_uvcframebuffer_make_new(const mp_obj_type_t *type, siz
 //|         """Transmits the color data in the buffer to the pixels so that
 //|         they are shown."""
 //|         ...
+//|
 static mp_obj_t usb_video_uvcframebuffer_refresh(mp_obj_t self_in) {
     usb_video_uvcframebuffer_obj_t *self = (usb_video_uvcframebuffer_obj_t *)self_in;
     check_for_deinit(self);
@@ -66,6 +68,7 @@ MP_PROPERTY_GETTER(usb_video_uvcframebuffer_width_obj,
 
 //|     height: int
 //|     """The height of the display, in pixels"""
+//|
 //|
 static mp_obj_t usb_video_uvcframebuffer_get_height(mp_obj_t self_in) {
     usb_video_uvcframebuffer_obj_t *self = (usb_video_uvcframebuffer_obj_t *)self_in;

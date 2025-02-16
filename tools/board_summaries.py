@@ -61,7 +61,7 @@ def frozen_incidence_matrix_csvs(support_matrix, rows=1000, present="1", absent=
     all_frozen = set()
     for info in support_matrix.values():
         frozen = info["frozen_libraries"]
-        frozen = [f[0] if type(f) == tuple else f for f in frozen]
+        frozen = [f[0] if isinstance(f, tuple) else f for f in frozen]
         all_frozen.update(frozen)
     all_frozen = sorted(all_frozen)
     csvs = []
@@ -75,7 +75,7 @@ def frozen_incidence_matrix_csvs(support_matrix, rows=1000, present="1", absent=
         chip_pin_set = set([chip_pin for _, chip_pin in info["pins"]])
         n_chip_pins = len(chip_pin_set)
 
-        frozen = [f[0] if type(f) == tuple else f for f in frozen]
+        frozen = [f[0] if isinstance(f, tuple) else f for f in frozen]
         frozen_incidence = [present if f in frozen else absent for f in all_frozen]
         line = (
             f"{board},{info.get('branded_name')},{info.get('mcu')},"
@@ -150,8 +150,7 @@ def board_pins_matrix_csvs(support_matrix, rows=1000):
     for board, info in support_matrix.items():
         if (row % rows) == 0:
             csv = [
-                "board,branded_name,mcu,flash,port,n_board_pins,"
-                "board_pins,n_chip_pins,chip_pins\n"
+                "board,branded_name,mcu,flash,port,n_board_pins,board_pins,n_chip_pins,chip_pins\n"
             ]
         board_pins = [board_pin for board_pin, _ in info["pins"]]
         chip_pins = [chip_pin for _, chip_pin in info["pins"]]
@@ -186,12 +185,12 @@ def write_csvs(rows=1000, present="1", absent="0"):
         "frozen": frozen_incidence_matrix_csvs(s, rows=rows, present=present, absent=absent),
         "pins": board_pins_matrix_csvs(s, rows=rows),
     }
-    for key in csvs:
-        for i in range(len(csvs[key])):
+    for key, values in csvs:
+        for i in range(len(values)):
             filename = f"{key}_{i}.csv"
             print(f"writing {filename}")
             with open(filename, "w") as f:
-                f.writelines(csvs[key][i])
+                f.writelines(values[i])
 
 
 if __name__ == "__main__":

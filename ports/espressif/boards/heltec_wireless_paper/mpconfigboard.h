@@ -16,7 +16,7 @@
 #define CIRCUITPY_BOARD_SPI         (2)
 #define CIRCUITPY_BOARD_SPI_PIN     { \
         {.clock = &pin_GPIO3, .mosi = &pin_GPIO2, .miso = NULL}, \
-        {.clock = &pin_GPIO9, .mosi = &pin_GPIO11, .miso = &pin_GPIO11}, \
+        {.clock = &pin_GPIO9, .mosi = &pin_GPIO10, .miso = &pin_GPIO11}, \
 }
 
 // UART definition for UART connected to the CP210x

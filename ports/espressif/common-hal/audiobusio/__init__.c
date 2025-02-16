@@ -149,8 +149,8 @@ void port_i2s_play(i2s_t *self, mp_obj_t sample, bool loop) {
     port_i2s_pause(self);
     self->sample = sample;
     self->loop = loop;
-    self->bytes_per_sample = audiosample_bits_per_sample(sample) / 8;
-    self->channel_count = audiosample_channel_count(sample);
+    self->bytes_per_sample = audiosample_get_bits_per_sample(sample) / 8;
+    self->channel_count = audiosample_get_channel_count(sample);
     bool single_buffer;
     bool samples_signed;
     uint32_t max_buffer_length;
@@ -164,7 +164,7 @@ void port_i2s_play(i2s_t *self, mp_obj_t sample, bool loop) {
 
     audiosample_reset_buffer(self->sample, false, 0);
 
-    uint32_t sample_rate = audiosample_sample_rate(sample);
+    uint32_t sample_rate = audiosample_get_sample_rate(sample);
     i2s_std_clk_config_t clk_config = I2S_STD_CLK_DEFAULT_CONFIG(sample_rate);
     CHECK_ESP_RESULT(i2s_channel_reconfig_std_clock(self->handle, &clk_config));
 

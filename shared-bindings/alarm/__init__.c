@@ -44,6 +44,7 @@
 //| For more information about working with alarms and light/deep sleep in CircuitPython,
 //| see `this Learn guide <https://learn.adafruit.com/deep-sleep-with-circuitpython>`_.
 //| """
+//|
 
 //| sleep_memory: SleepMemory
 //| """Memory that persists during deep sleep.
@@ -53,6 +54,7 @@
 //| """The most recently triggered alarm. If CircuitPython was sleeping, the alarm that woke it from sleep.
 //| If no alarm occurred since the last hard reset or soft restart, value is ``None``.
 //| """
+//|
 //|
 
 // wake_alarm is implemented as a dictionary entry, so there's no code here.
@@ -89,6 +91,7 @@ static void validate_objs_are_alarms(size_t n_args, const mp_obj_t *objs) {
 //|     it may be necessary to disconnect from the host.
 //|     """
 //|     ...
+//|
 //|
 static mp_obj_t alarm_light_sleep_until_alarms(size_t n_args, const mp_obj_t *args) {
     if (n_args == 0) {
@@ -171,6 +174,7 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(alarm_light_sleep_until_alarms_obj, 1, MP_OB
 //|         alarm.exit_and_deep_sleep_until_alarms(time_alarm, pin_alarm)
 //|     """
 //|     ...
+//|
 //|
 static mp_obj_t alarm_exit_and_deep_sleep_until_alarms(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_preserve_dios };

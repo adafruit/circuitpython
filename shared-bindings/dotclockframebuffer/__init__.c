@@ -17,6 +17,7 @@
 //|
 //| Length = typing.Literal[1, 2]
 //|
+//|
 //| def ioexpander_send_init_sequence(
 //|     bus: busio.I2C,
 //|     init_sequence: ReadableBuffer,
@@ -60,6 +61,7 @@
 //|     :param Optional[int] reset_value: The bit number (from 0 to 7, or from 0 to 15) of the display reset bit in the GPIO register
 //|     :param Optional[ReadableBuffer] i2c_init_sequence: An initialization sequence to send to the I2C expander
 //|     """
+//|
 //|
 
 static mp_obj_t ioexpander_send_init_sequence(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {

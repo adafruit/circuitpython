@@ -76,75 +76,75 @@ ZeroDivisionError: division by zero
 
 ------------------------------------------------------------------------
 Traceback (most recent call last):
-  File "circuitpython/traceback_test_chained.py", line 81, in <module>
+  File "circuitpython/traceback_test_chained.py", line 83, in <module>
 Exception: inner
 
 During handling of the above exception, another exception occurred:
 
 Traceback (most recent call last):
-  File "circuitpython/traceback_test_chained.py", line 83, in <module>
+  File "circuitpython/traceback_test_chained.py", line 85, in <module>
 SomeException: outer
 ------------------------------------------------------------------------
 
 ------------------------------------------------------------------------
 Traceback (most recent call last):
-  File "circuitpython/traceback_test_chained.py", line 89, in <module>
+  File "circuitpython/traceback_test_chained.py", line 91, in <module>
 Exception: inner
 
 The above exception was the direct cause of the following exception:
 
 Traceback (most recent call last):
-  File "circuitpython/traceback_test_chained.py", line 92, in <module>
+  File "circuitpython/traceback_test_chained.py", line 94, in <module>
 SomeException: outer
 ------------------------------------------------------------------------
 
 
 ------------------------------------------------------------------------
-Traceback (most recent call last):
-  File "circuitpython/traceback_test_chained.py", line 99, in <module>
-RuntimeError: inner
-
-The above exception was the direct cause of the following exception:
-
 Traceback (most recent call last):
   File "circuitpython/traceback_test_chained.py", line 101, in <module>
-Exception: outer
-------------------------------------------------------------------------
-
-------------------------------------------------------------------------
-Traceback (most recent call last):
-  File "circuitpython/traceback_test_chained.py", line 107, in <module>
 RuntimeError: inner
 
 The above exception was the direct cause of the following exception:
 
 Traceback (most recent call last):
-  File "circuitpython/traceback_test_chained.py", line 110, in <module>
+  File "circuitpython/traceback_test_chained.py", line 103, in <module>
+Exception: outer
+------------------------------------------------------------------------
+
+------------------------------------------------------------------------
+Traceback (most recent call last):
+  File "circuitpython/traceback_test_chained.py", line 109, in <module>
+RuntimeError: inner
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "circuitpython/traceback_test_chained.py", line 112, in <module>
 Exception: outer
 ------------------------------------------------------------------------
 
 
 ------------------------------------------------------------------------
 Traceback (most recent call last):
-  File "circuitpython/traceback_test_chained.py", line 117, in <module>
+  File "circuitpython/traceback_test_chained.py", line 119, in <module>
 RuntimeError: inner
 
 During handling of the above exception, another exception occurred:
 
 Traceback (most recent call last):
-  File "circuitpython/traceback_test_chained.py", line 119, in <module>
+  File "circuitpython/traceback_test_chained.py", line 121, in <module>
 SomeException: outer
 ------------------------------------------------------------------------
 
 ------------------------------------------------------------------------
 Traceback (most recent call last):
-  File "circuitpython/traceback_test_chained.py", line 125, in <module>
+  File "circuitpython/traceback_test_chained.py", line 127, in <module>
 RuntimeError: inner
 
 The above exception was the direct cause of the following exception:
 
 Traceback (most recent call last):
-  File "circuitpython/traceback_test_chained.py", line 128, in <module>
+  File "circuitpython/traceback_test_chained.py", line 130, in <module>
 SomeException: outer
 ------------------------------------------------------------------------
 

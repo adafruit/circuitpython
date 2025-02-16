@@ -12,6 +12,7 @@ except ImportError:
 async def foo():
     return 42
 
+
 try:
     fooc = foo()
     fooc.__await__

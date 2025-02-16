@@ -29,7 +29,7 @@ def validate(sdk_config, circuitpy_config):
         if circuitpy_config.get(var):
             with open(partition_table) as f:
                 content = f.read()
-                if not "ota_1" in content:
+                if "ota_1" not in content:
                     raise SystemExit(
                         f"{var} is incompatible with {partition_table=} (no ota_1 partition)"
                     )

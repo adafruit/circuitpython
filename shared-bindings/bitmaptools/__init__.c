@@ -52,6 +52,7 @@ bitmaptools_rect_t bitmaptools_validate_coord_range_pair(const mp_arg_val_t in[4
 //|     for information about using the :py:mod:`displayio` module.
 //| """
 //|
+//|
 
 static int16_t validate_point(mp_obj_t point, int16_t default_value) {
     // Checks if point is None and returns default_value, otherwise decodes integer value
@@ -141,7 +142,7 @@ static void validate_clip_region(displayio_bitmap_t *bitmap, mp_obj_t clip0_tupl
 //|     source_clip1: Tuple[int, int],
 //|     angle: float,
 //|     scale: float,
-//|     skip_index: int
+//|     skip_index: int,
 //| ) -> None:
 //|     """Inserts the source bitmap region into the destination bitmap with rotation
 //|     (angle), scale and clipping (both on source and destination bitmaps).
@@ -175,6 +176,7 @@ static void validate_clip_region(displayio_bitmap_t *bitmap, mp_obj_t clip0_tupl
 //|     :param int skip_index: Bitmap palette index in the source that will not be copied,
 //|            set to None to copy all pixels"""
 //|     ...
+//|
 //|
 static mp_obj_t bitmaptools_obj_rotozoom(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum {ARG_dest_bitmap, ARG_source_bitmap,
@@ -284,6 +286,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(bitmaptools_rotozoom_obj, 0, bitmaptools_obj_rotozoom
 //|     Screen: BlendMode
 //|     """Blend based on the value in each color channel. The result keeps the lighter colors and discards darker colors."""
 //|
+//|
 MAKE_ENUM_VALUE(bitmaptools_blendmode_type, bitmaptools_blendmode, Normal, BITMAPTOOLS_BLENDMODE_NORMAL);
 MAKE_ENUM_VALUE(bitmaptools_blendmode_type, bitmaptools_blendmode, Screen, BITMAPTOOLS_BLENDMODE_SCREEN);
 
@@ -326,6 +329,7 @@ MAKE_ENUM_TYPE(bitmaptools, BlendMode, bitmaptools_blendmode);
 //|
 //|     For the L8 colorspace, the bitmaps must have a bits-per-value of 8.
 //|     For the RGB colorspaces, they must have a bits-per-value of 16."""
+//|
 //|
 
 static mp_obj_t bitmaptools_alphablend(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
@@ -429,6 +433,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(bitmaptools_alphablend_obj, 0, bitmaptools_alphablend
 //|            fill region in the destination bitmap"""
 //|     ...
 //|
+//|
 static mp_obj_t bitmaptools_obj_fill_region(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum {ARG_dest_bitmap, ARGS_X1_Y1_X2_Y2, ARG_value};
 
@@ -476,6 +481,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(bitmaptools_fill_region_obj, 0, bitmaptools_obj_fill_
 //|     :param int replaced_color_value: Bitmap palette index that will filled with the
 //|            value color in the enclosed area in the destination bitmap"""
 //|     ...
+//|
 //|
 static mp_obj_t bitmaptools_obj_boundary_fill(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum {ARG_dest_bitmap, ARG_x, ARG_y, ARG_fill_color_value, ARG_replaced_color_value};
@@ -536,6 +542,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(bitmaptools_boundary_fill_obj, 0, bitmaptools_obj_bou
 //|     :param int value: Bitmap palette index that will be written into the
 //|            line in the destination bitmap"""
 //|     ...
+//|
 //|
 static mp_obj_t bitmaptools_obj_draw_line(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum {ARG_dest_bitmap, ARG_x1, ARG_y1, ARG_x2, ARG_y2, ARG_value};
@@ -623,6 +630,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(bitmaptools_draw_line_obj, 0, bitmaptools_obj_draw_li
 //|     """
 //|     ...
 //|
+//|
 static mp_obj_t bitmaptools_obj_draw_polygon(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum {ARG_dest_bitmap, ARG_xs, ARG_ys, ARG_value, ARG_close};
 
@@ -705,6 +713,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(bitmaptools_draw_polygon_obj, 0, bitmaptools_obj_draw
 //|     """
 //|     ...
 //|
+//|
 static mp_obj_t bitmaptools_arrayblit(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_bitmap, ARG_data, ARGS_X1_Y1_X2_Y2, ARG_skip_index };
     static const mp_arg_t allowed_args[] = {
@@ -768,6 +777,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(bitmaptools_arrayblit_obj, 0, bitmaptools_arrayblit);
 //|     """
 //|     ...
 //|
+//|
 
 static mp_obj_t bitmaptools_readinto(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_bitmap, ARG_file, ARG_bits_per_pixel, ARG_element_size, ARG_reverse_pixels_in_element, ARG_swap_bytes_in_element, ARG_reverse_rows };
@@ -830,6 +840,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(bitmaptools_readinto_obj, 0, bitmaptools_readinto);
 //|     FloydStenberg: "DitherAlgorithm"
 //|     """The Floyd-Stenberg dither"""
 //|
+//|
 MAKE_ENUM_VALUE(bitmaptools_dither_algorithm_type, dither_algorithm, Atkinson, DITHER_ALGORITHM_ATKINSON);
 MAKE_ENUM_VALUE(bitmaptools_dither_algorithm_type, dither_algorithm, FloydStenberg, DITHER_ALGORITHM_FLOYD_STENBERG);
 
@@ -857,6 +868,7 @@ MAKE_ENUM_TYPE(bitmaptools, DitherAlgorithm, bitmaptools_dither_algorithm);
 //|     :param algorithm: The dither algorithm to use, one of the `DitherAlgorithm` values.
 //|     """
 //|     ...
+//|
 //|
 static mp_obj_t bitmaptools_dither(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_dest_bitmap, ARG_source_bitmap, ARG_source_colorspace, ARG_algorithm };
@@ -951,6 +963,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(bitmaptools_dither_obj, 0, bitmaptools_dither);
 //|
 //|     ...
 //|
+//|
 static mp_obj_t bitmaptools_obj_draw_circle(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum {ARG_dest_bitmap, ARG_x, ARG_y, ARG_radius, ARG_value};
 
@@ -1000,7 +1013,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(bitmaptools_draw_circle_obj, 0, bitmaptools_obj_draw_
 //|     x2: int | None = None,
 //|     y2: int | None = None,
 //|     skip_source_index: int | None = None,
-//|     skip_dest_index: int | None = None
+//|     skip_dest_index: int | None = None,
 //| ) -> None:
 //|     """Inserts the source_bitmap region defined by rectangular boundaries
 //|     (x1,y1) and (x2,y2) into the bitmap at the specified (x,y) location.
@@ -1020,6 +1033,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(bitmaptools_draw_circle_obj, 0, bitmaptools_obj_draw_
 //|     :param int skip_dest_index: bitmap palette index in the destination bitmap that will not get overwritten
 //|                             by the pixels from the source"""
 //|     ...
+//|
 //|
 static mp_obj_t bitmaptools_obj_blit(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum {ARG_destination, ARG_source, ARG_x, ARG_y, ARG_x1, ARG_y1, ARG_x2, ARG_y2, ARG_skip_source_index, ARG_skip_dest_index};

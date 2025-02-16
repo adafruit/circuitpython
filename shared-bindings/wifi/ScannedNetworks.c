@@ -40,6 +40,7 @@ static mp_obj_t scannednetworks_iternext(mp_obj_t self_in) {
 //|         Raises `StopIteration` if scanning is finished and no other results are available."""
 //|         ...
 //|
+//|
 
 MP_DEFINE_CONST_OBJ_TYPE(
     wifi_scannednetworks_type,

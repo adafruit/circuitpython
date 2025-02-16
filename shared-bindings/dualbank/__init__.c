@@ -44,7 +44,9 @@
 //|     dualbank.flash(buffer, offset)
 //|     dualbank.switch()
 //| """
+//|
 //| ...
+//|
 //|
 
 #if CIRCUITPY_STORAGE_EXTEND
@@ -64,6 +66,7 @@ static void raise_error_if_storage_extended(void) {
 //|     :param int offset: Start writing at this offset in the app partition.
 //|     """
 //|     ...
+//|
 //|
 static mp_obj_t dualbank_flash(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_buffer, ARG_offset };
@@ -97,6 +100,7 @@ static MP_DEFINE_CONST_FUN_OBJ_KW(dualbank_flash_obj, 0, dualbank_flash);
 //|     On next reset, firmware will be loaded from the partition just switched over to.
 //|     """
 //|     ...
+//|
 //|
 static mp_obj_t dualbank_switch(void) {
     #if CIRCUITPY_STORAGE_EXTEND

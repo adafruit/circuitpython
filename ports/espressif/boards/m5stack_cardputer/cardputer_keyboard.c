@@ -110,6 +110,8 @@ void cardputer_keyboard_init(void) {
         row_addr_pins,           // row_addr_pins
         7,                       // num_column_pins
         column_pins,             // column_pins
+        true,                    // columns_to_anodes
+        false,                   // transpose
         0.01f,                   // interval
         20,                      // max_events
         2                        // debounce_threshold

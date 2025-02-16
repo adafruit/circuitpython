@@ -17,10 +17,12 @@
 //| |see_cpython_module| :mod:`cpython:ssl`.
 //| """
 //|
+//|
 
 //| def create_default_context() -> ssl.SSLContext:
 //|     """Return the default SSLContext."""
 //|     ...
+//|
 //|
 
 static mp_obj_t ssl_create_default_context(void) {

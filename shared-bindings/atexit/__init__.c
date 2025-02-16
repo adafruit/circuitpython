@@ -16,7 +16,9 @@
 //|
 //| |see_cpython_module| :mod:`cpython:atexit`.
 //| """
+//|
 //| ...
+//|
 //|
 
 //| def register(
@@ -38,6 +40,7 @@
 //|     """
 //|     ...
 //|
+//|
 static mp_obj_t atexit_register(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     shared_module_atexit_register(pos_args[0], (n_args - 1), ((n_args > 1) ? &pos_args[1] : NULL), kw_args);
     return pos_args[0];
@@ -52,6 +55,7 @@ static MP_DEFINE_CONST_FUN_OBJ_KW(atexit_register_obj, 1, atexit_register);
 //|
 //|     """
 //|     ...
+//|
 //|
 static mp_obj_t atexit_unregister(const mp_obj_t self_in) {
     shared_module_atexit_unregister(&self_in);

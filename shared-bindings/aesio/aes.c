@@ -19,6 +19,7 @@
 //| MODE_CBC: int
 //| MODE_CTR: int
 //|
+//|
 //| class AES:
 //|     """Encrypt and decrypt AES streams"""
 //|
@@ -50,6 +51,7 @@
 //|           cipher.encrypt_into(inp, outp)
 //|           hexlify(outp)"""
 //|         ...
+//|
 
 static mp_obj_t aesio_aes_make_new(const mp_obj_type_t *type, size_t n_args,
     size_t n_kw, const mp_obj_t *all_args) {
@@ -114,6 +116,7 @@ static mp_obj_t aesio_aes_make_new(const mp_obj_type_t *type, size_t n_args,
 //|         :param ~circuitpython_typing.ReadableBuffer IV: Initialization vector to use
 //|                                                         for CBC or CTR mode"""
 //|         ...
+//|
 static mp_obj_t aesio_aes_rekey(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     aesio_aes_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
     enum { ARG_key, ARG_IV };
@@ -177,6 +180,7 @@ static void validate_length(aesio_aes_obj_t *self, size_t src_length,
 //|         buffers must be a multiple of 16 bytes, and must be equal length.  For
 //|         CTR mode, there are no restrictions."""
 //|         ...
+//|
 static mp_obj_t aesio_aes_encrypt_into(mp_obj_t self_in, mp_obj_t src, mp_obj_t dest) {
     aesio_aes_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
@@ -199,6 +203,7 @@ static MP_DEFINE_CONST_FUN_OBJ_3(aesio_aes_encrypt_into_obj, aesio_aes_encrypt_i
 //|         buffers must be a multiple of 16 bytes, and must be equal length.  For
 //|         CTR mode, there are no restrictions."""
 //|         ...
+//|
 //|
 static mp_obj_t aesio_aes_decrypt_into(mp_obj_t self_in, mp_obj_t src, mp_obj_t dest) {
     aesio_aes_obj_t *self = MP_OBJ_TO_PTR(self_in);
@@ -247,7 +252,7 @@ MP_PROPERTY_GETSET(aesio_aes_mode_obj,
 
 static const mp_rom_map_elem_t aesio_locals_dict_table[] = {
     // Methods
-    {MP_ROM_QSTR(MP_QSTR___name__), MP_OBJ_NEW_QSTR(MP_QSTR_AES)},
+    {MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_AES)},
     {MP_ROM_QSTR(MP_QSTR_encrypt_into), (mp_obj_t)&aesio_aes_encrypt_into_obj},
     {MP_ROM_QSTR(MP_QSTR_decrypt_into), (mp_obj_t)&aesio_aes_decrypt_into_obj},
     {MP_ROM_QSTR(MP_QSTR_rekey), (mp_obj_t)&aesio_aes_rekey_obj},

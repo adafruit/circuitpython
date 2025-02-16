@@ -24,9 +24,14 @@
 //| import memorymap
 //|
 //| FifoType = Literal["auto", "txrx", "tx", "rx", "txput", "txget", "putget"]
+//| """A type representing one of the strings ``"auto"``, ``"txrx"``, ``"tx"``, ``"rx"``, ``"txput"``, ``"txget"`` or ``"putget"``. These values are supported on RP2350. For type-checking only, not actually defined in CircuitPython."""
 //| FifoType_piov0 = Literal["auto", "txrx", "tx", "rx"]
+//| """A type representing one of the strings ``"auto"``, ``"txrx"``, ``"tx"``, or ``"rx"``. These values are supported on both RP2350 and RP2040. For type-checking only, not actually defined in CircuitPython."""
 //| MovStatusType = Literal["txfifo", "rxfifo", "irq"]
+//| """A type representing one of the strings ``"txfifo"``, ``"rxfifo"``, or ``"irq"``. These values are supported on RP2350. For type-checking only, not actually defined in CircuitPython."""
 //| MovStatusType_piov0 = Literal["txfifo"]
+//| """A type representing the string ``"txfifo"``. This value is supported on RP2350 and RP2040. For type-checking only, not actually defined in CircuitPython."""
+//|
 //|
 //| class StateMachine:
 //|     """A single PIO StateMachine
@@ -64,6 +69,7 @@
 //|         initial_set_pin_direction: int = 0x1F,
 //|         first_sideset_pin: Optional[microcontroller.Pin] = None,
 //|         sideset_pin_count: int = 1,
+//|         sideset_pindirs: bool = False,
 //|         initial_sideset_pin_state: int = 0,
 //|         initial_sideset_pin_direction: int = 0x1F,
 //|         sideset_enable: bool = False,
@@ -133,6 +139,7 @@
 //|         :param int in_pin_count: the count of consecutive pins to use with IN starting at first_in_pin
 //|         :param int set_pin_count: the count of consecutive pins to use with SET starting at first_set_pin
 //|         :param int sideset_pin_count: the count of consecutive pins to use with a side set starting at first_sideset_pin. Does not include sideset enable
+//|         :param bool sideset_pindirs: `True` to indicate that the side set values should be applied to the PINDIRs and not the PINs
 //|         :param int pio_version: The version of the PIO peripheral required by the program. The constructor will raise an error if the actual hardware is not compatible with this program version.
 //|         :param bool auto_push: When True, automatically save data from input shift register
 //|              (ISR) into the rx FIFO when an IN instruction shifts more than push_threshold bits
@@ -150,11 +157,12 @@
 //|         :param int wrap: The instruction after which to wrap to the ``wrap``
 //|             instruction. As a special case, -1 (the default) indicates the
 //|             last instruction of the program.
-//|         :param FifoType fifo_type: How the program accessess the FIFOs. PIO version 0 only supports a subset of values.
-//|         :param MovStatusType mov_status_type: What condition the ``mov status`` instruction checks. PIO version 0 only supports a subset of values.
+//|         :param FifoType fifo_type: How the program accessess the FIFOs. PIO version 0 in the RP2040 only supports a subset of values, `FifoType_piov0`.
+//|         :param MovStatusType mov_status_type: What condition the ``mov status`` instruction checks. PIO version 0 in the RP2040 only supports a subset of values, `MovStatusType_piov0`.
 //|         :param MovStatusType mov_status_n: The FIFO depth or IRQ the ``mov status`` instruction checks for. For ``mov_status irq`` this includes the encoding of the ``next``/``prev`` selection bits.
 //|         """
 //|         ...
+//|
 
 static int one_of(qstr_short_t what, mp_obj_t arg, size_t n_options, const qstr_short_t options[], const int values[]) {
     for (size_t i = 0; i < n_options; i++) {
@@ -173,7 +181,8 @@ static mp_obj_t rp2pio_statemachine_make_new(const mp_obj_type_t *type, size_t n
            ARG_first_in_pin, ARG_in_pin_count,
            ARG_pull_in_pin_up, ARG_pull_in_pin_down,
            ARG_first_set_pin, ARG_set_pin_count, ARG_initial_set_pin_state, ARG_initial_set_pin_direction,
-           ARG_first_sideset_pin, ARG_sideset_pin_count, ARG_initial_sideset_pin_state, ARG_initial_sideset_pin_direction,
+           ARG_first_sideset_pin, ARG_sideset_pin_count, ARG_sideset_pindirs,
+           ARG_initial_sideset_pin_state, ARG_initial_sideset_pin_direction,
            ARG_sideset_enable,
            ARG_jmp_pin, ARG_jmp_pin_pull,
            ARG_exclusive_pin_use,
@@ -211,6 +220,7 @@ static mp_obj_t rp2pio_statemachine_make_new(const mp_obj_type_t *type, size_t n
 
         { MP_QSTR_first_sideset_pin, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
         { MP_QSTR_sideset_pin_count, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 1} },
+        { MP_QSTR_sideset_pindirs, MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = false} },
         { MP_QSTR_initial_sideset_pin_state, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
         { MP_QSTR_initial_sideset_pin_direction, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0x1f} },
 
@@ -326,13 +336,14 @@ static mp_obj_t rp2pio_statemachine_make_new(const mp_obj_type_t *type, size_t n
         args[ARG_frequency].u_int,
         init_bufinfo.buf, init_bufinfo.len / 2,
         may_exec_bufinfo.buf, may_exec_bufinfo.len / 2,
-        first_out_pin, out_pin_count, args[ARG_initial_out_pin_state].u_int, args[ARG_initial_out_pin_direction].u_int,
-        first_in_pin, in_pin_count, args[ARG_pull_in_pin_up].u_int, args[ARG_pull_in_pin_down].u_int,
-        first_set_pin, set_pin_count, args[ARG_initial_set_pin_state].u_int, args[ARG_initial_set_pin_direction].u_int,
-        first_sideset_pin, sideset_pin_count, args[ARG_initial_sideset_pin_state].u_int, args[ARG_initial_sideset_pin_direction].u_int,
+        first_out_pin, out_pin_count, PIO_PINMASK32_FROM_VALUE(args[ARG_initial_out_pin_state].u_int), PIO_PINMASK32_FROM_VALUE(args[ARG_initial_out_pin_direction].u_int),
+        first_in_pin, in_pin_count, PIO_PINMASK32_FROM_VALUE(args[ARG_pull_in_pin_up].u_int), PIO_PINMASK32_FROM_VALUE(args[ARG_pull_in_pin_down].u_int),
+        first_set_pin, set_pin_count, PIO_PINMASK32_FROM_VALUE(args[ARG_initial_set_pin_state].u_int), PIO_PINMASK32_FROM_VALUE(args[ARG_initial_set_pin_direction].u_int),
+        first_sideset_pin, sideset_pin_count, args[ARG_sideset_pindirs].u_bool,
+        PIO_PINMASK32_FROM_VALUE(args[ARG_initial_sideset_pin_state].u_int), PIO_PINMASK32_FROM_VALUE(args[ARG_initial_sideset_pin_direction].u_int),
         args[ARG_sideset_enable].u_bool,
         jmp_pin, jmp_pin_pull,
-        0,
+        PIO_PINMASK_FROM_VALUE(0), // wait_gpio_mask
         args[ARG_exclusive_pin_use].u_bool,
         args[ARG_auto_pull].u_bool, pull_threshold, args[ARG_out_shift_right].u_bool,
         args[ARG_wait_for_txstall].u_bool,
@@ -348,6 +359,7 @@ static mp_obj_t rp2pio_statemachine_make_new(const mp_obj_type_t *type, size_t n
 //|     def deinit(self) -> None:
 //|         """Turn off the state machine and release its resources."""
 //|         ...
+//|
 static mp_obj_t rp2pio_statemachine_obj_deinit(mp_obj_t self_in) {
     rp2pio_statemachine_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_rp2pio_statemachine_deinit(self);
@@ -359,17 +371,13 @@ MP_DEFINE_CONST_FUN_OBJ_1(rp2pio_statemachine_deinit_obj, rp2pio_statemachine_ob
 //|         """No-op used by Context Managers.
 //|         Provided by context manager helper."""
 //|         ...
+//|
 
 //|     def __exit__(self) -> None:
 //|         """Automatically deinitializes the hardware when exiting a context. See
 //|         :ref:`lifetime-and-contextmanagers` for more info."""
 //|         ...
-static mp_obj_t rp2pio_statemachine_obj___exit__(size_t n_args, const mp_obj_t *args) {
-    (void)n_args;
-    common_hal_rp2pio_statemachine_deinit(args[0]);
-    return mp_const_none;
-}
-static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(rp2pio_statemachine_obj___exit___obj, 4, 4, rp2pio_statemachine_obj___exit__);
+//|
 
 
 static void check_for_deinit(rp2pio_statemachine_obj_t *self) {
@@ -381,6 +389,7 @@ static void check_for_deinit(rp2pio_statemachine_obj_t *self) {
 //|     def restart(self) -> None:
 //|         """Resets this state machine, runs any init and enables the clock."""
 //|         ...
+//|
 // TODO: "and any others given. They must share an underlying PIO. An exception will be raised otherwise.""
 static mp_obj_t rp2pio_statemachine_restart(mp_obj_t self_obj) {
     rp2pio_statemachine_obj_t *self = MP_OBJ_TO_PTR(self_obj);
@@ -399,6 +408,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(rp2pio_statemachine_restart_obj, rp2pio_statemachine_r
 //|         This can be used to output internal state to the RX FIFO and then
 //|         read with `readinto`."""
 //|         ...
+//|
 static mp_obj_t rp2pio_statemachine_run(mp_obj_t self_obj, mp_obj_t instruction_obj) {
     rp2pio_statemachine_obj_t *self = MP_OBJ_TO_PTR(self_obj);
     check_for_deinit(self);
@@ -417,6 +427,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(rp2pio_statemachine_run_obj, rp2pio_statemachine_run);
 //|     def stop(self) -> None:
 //|         """Stops the state machine clock. Use `restart` to enable it."""
 //|         ...
+//|
 static mp_obj_t rp2pio_statemachine_stop(mp_obj_t self_obj) {
     rp2pio_statemachine_obj_t *self = MP_OBJ_TO_PTR(self_obj);
     check_for_deinit(self);
@@ -448,6 +459,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(rp2pio_statemachine_stop_obj, rp2pio_statemachine_stop
 //|         :param int end: End of the slice; this index is not included. Defaults to ``len(buffer)``
 //|         :param bool swap: For 2- and 4-byte elements, swap (reverse) the byte order"""
 //|         ...
+//|
 static mp_obj_t rp2pio_statemachine_write(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_buffer, ARG_start, ARG_end, ARG_swap };
     static const mp_arg_t allowed_args[] = {
@@ -536,6 +548,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(rp2pio_statemachine_write_obj, 2, rp2pio_statemachine
 //|         :param bool swap: For 2- and 4-byte elements, swap (reverse) the byte order
 //|         """
 //|         ...
+//|
 
 static void fill_buf_info(sm_buf_info *info, mp_obj_t obj, size_t *stride_in_bytes, mp_uint_t direction) {
     if (obj != mp_const_none) {
@@ -593,6 +606,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(rp2pio_statemachine_background_write_obj, 1, rp2pio_s
 //|         """Immediately stop a background write, if one is in progress.  Any
 //|         DMA in progress is halted, but items already in the TX FIFO are not
 //|         affected."""
+//|
 static mp_obj_t rp2pio_statemachine_obj_stop_background_write(mp_obj_t self_in) {
     rp2pio_statemachine_obj_t *self = MP_OBJ_TO_PTR(self_in);
     bool ok = common_hal_rp2pio_statemachine_stop_background_write(self);
@@ -625,6 +639,7 @@ MP_PROPERTY_GETTER(rp2pio_statemachine_writing_obj,
 //|     If the number is 0, then a `StateMachine.background_write` call will not block.
 //|     Note that `pending` is a deprecated alias for `pending_write` and will be removed
 //|     in a future version of CircuitPython."""
+//|
 
 
 static mp_obj_t rp2pio_statemachine_obj_get_pending_write(mp_obj_t self_in) {
@@ -679,6 +694,7 @@ MP_PROPERTY_GETTER(rp2pio_statemachine_pending_write_obj,
 //|         :param bool swap: For 2- and 4-byte elements, swap (reverse) the byte order
 //|         """
 //|         ...
+//|
 
 
 static mp_obj_t rp2pio_statemachine_background_read(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
@@ -720,6 +736,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(rp2pio_statemachine_background_read_obj, 1, rp2pio_st
 //|         """Immediately stop a background read, if one is in progress.  Any
 //|         DMA in progress is halted, but items already in the RX FIFO are not
 //|         affected."""
+//|
 static mp_obj_t rp2pio_statemachine_obj_stop_background_read(mp_obj_t self_in) {
     rp2pio_statemachine_obj_t *self = MP_OBJ_TO_PTR(self_in);
     bool ok = common_hal_rp2pio_statemachine_stop_background_read(self);
@@ -748,6 +765,7 @@ MP_PROPERTY_GETTER(rp2pio_statemachine_reading_obj,
 //|     """Returns the number of pending buffers for background reading.
 //|
 //|     If the number is 0, then a `StateMachine.background_read` call will not block."""
+//|
 static mp_obj_t rp2pio_statemachine_obj_get_pending_read(mp_obj_t self_in) {
     rp2pio_statemachine_obj_t *self = MP_OBJ_TO_PTR(self_in);
     return mp_obj_new_int(common_hal_rp2pio_statemachine_get_pending_read(self));
@@ -784,6 +802,7 @@ MP_PROPERTY_GETTER(rp2pio_statemachine_pending_read_obj,
 //|         :param int end: End of the slice; this index is not included. Defaults to ``len(buffer)``
 //|         :param bool swap: For 2- and 4-byte elements, swap (reverse) the byte order"""
 //|         ...
+//|
 
 static mp_obj_t rp2pio_statemachine_readinto(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_buffer, ARG_start, ARG_end, ARG_swap };
@@ -854,6 +873,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(rp2pio_statemachine_readinto_obj, 2, rp2pio_statemach
 //|         :param bool swap_in: For 2- and 4-rx elements, swap (reverse) the byte order for the buffer being received (read)
 //|         """
 //|         ...
+//|
 
 static mp_obj_t rp2pio_statemachine_write_readinto(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_buffer_out, ARG_buffer_in, ARG_out_start, ARG_out_end, ARG_in_start, ARG_in_end, ARG_swap_out, ARG_swap_in };
@@ -919,6 +939,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(rp2pio_statemachine_write_readinto_obj, 2, rp2pio_sta
 //|     def clear_rxfifo(self) -> None:
 //|         """Clears any unread bytes in the rxfifo."""
 //|         ...
+//|
 static mp_obj_t rp2pio_statemachine_obj_clear_rxfifo(mp_obj_t self_in) {
     rp2pio_statemachine_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_rp2pio_statemachine_clear_rxfifo(self);
@@ -929,6 +950,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(rp2pio_statemachine_clear_rxfifo_obj, rp2pio_statemach
 //|     def clear_txstall(self) -> None:
 //|         """Clears the txstall flag."""
 //|         ...
+//|
 static mp_obj_t rp2pio_statemachine_obj_clear_txstall(mp_obj_t self_in) {
     rp2pio_statemachine_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_rp2pio_statemachine_clear_txstall(self);
@@ -1084,6 +1106,7 @@ MP_PROPERTY_GETTER(rp2pio_statemachine_last_read_obj,
 //|     changes or restarts.
 //|     """
 //|
+//|
 static mp_obj_t rp2pio_statemachine_obj_get_last_write(mp_obj_t self_in) {
     rp2pio_statemachine_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -1097,7 +1120,7 @@ MP_PROPERTY_GETTER(rp2pio_statemachine_last_write_obj,
 static const mp_rom_map_elem_t rp2pio_statemachine_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&rp2pio_statemachine_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
-    { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&rp2pio_statemachine_obj___exit___obj) },
+    { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
 
     { MP_ROM_QSTR(MP_QSTR_stop), MP_ROM_PTR(&rp2pio_statemachine_stop_obj) },
     { MP_ROM_QSTR(MP_QSTR_restart), MP_ROM_PTR(&rp2pio_statemachine_restart_obj) },

@@ -1,0 +1,21 @@
+#
+# Espressif IoT Development Framework Configuration
+#
+#
+# Component config
+#
+#
+# Bluetooth
+#
+# CONFIG_BT_ENABLED is not set
+# end of Bluetooth
+
+#
+# mbedTLS
+#
+# CONFIG_MBEDTLS_CMAC_C is not set
+# end of mbedTLS
+
+# end of Component config
+
+# end of Espressif IoT Development Framework Configuration

@@ -43,6 +43,7 @@
 //| refer to `this Learn guide
 //| <https://learn.adafruit.com/circuitpython-display-support-using-displayio>`_.
 //| """
+//|
 
 //| CIRCUITPYTHON_TERMINAL: Group
 //| """The `displayio.Group` that is the displayed serial terminal (REPL)."""
@@ -53,6 +54,7 @@
 //| from fourwire import FourWire
 //| from i2cdisplaybus import I2CDisplayBus as I2CDisplay
 //|
+//|
 
 //| def release_displays() -> None:
 //|     """Releases any actively used displays so their buses and pins can be used again. This will also
@@ -62,6 +64,7 @@
 //|     Use this once in your code.py if you initialize a display. Place it right before the
 //|     initialization so the display is active as long as possible."""
 //|     ...
+//|
 //|
 static mp_obj_t displayio_release_displays(void) {
     common_hal_displayio_release_displays();

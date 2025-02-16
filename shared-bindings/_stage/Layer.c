@@ -33,6 +33,7 @@
 //|         This class is intended for internal use in the ``stage`` library and
 //|         it shouldn't be used on its own."""
 //|         ...
+//|
 static mp_obj_t layer_make_new(const mp_obj_type_t *type, size_t n_args,
     size_t n_kw, const mp_obj_t *args) {
     mp_arg_check_num(n_args, n_kw, 4, 5, false);
@@ -75,6 +76,7 @@ static mp_obj_t layer_make_new(const mp_obj_type_t *type, size_t n_args,
 //|     def move(self, x: int, y: int) -> None:
 //|         """Set the offset of the layer to the specified values."""
 //|         ...
+//|
 static mp_obj_t layer_move(mp_obj_t self_in, mp_obj_t x_in, mp_obj_t y_in) {
     layer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     self->x = mp_obj_get_int(x_in);
@@ -87,6 +89,7 @@ static MP_DEFINE_CONST_FUN_OBJ_3(layer_move_obj, layer_move);
 //|         """Set the animation frame of the sprite, and optionally rotation its
 //|         graphic."""
 //|         ...
+//|
 //|
 static mp_obj_t layer_frame(mp_obj_t self_in, mp_obj_t frame_in,
     mp_obj_t rotation_in) {

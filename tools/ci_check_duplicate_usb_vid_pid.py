@@ -138,9 +138,9 @@ def check_vid_pid(files, clusterlist):
         cluster = set(clusterlist.get(key, []))
         if cluster != boards:
             if key == "":
-                duplicates.append(f"- Non-USB:\n" f"  Boards: {', '.join(sorted(boards))}")
+                duplicates.append(f"- Non-USB:\n  Boards: {', '.join(sorted(boards))}")
             else:
-                duplicates.append(f"- VID/PID: {key}\n" f"  Boards: {', '.join(sorted(boards))}")
+                duplicates.append(f"- VID/PID: {key}\n  Boards: {', '.join(sorted(boards))}")
 
     if duplicates:
         duplicates = "\n".join(duplicates)

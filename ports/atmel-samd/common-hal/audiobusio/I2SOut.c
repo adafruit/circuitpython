@@ -216,10 +216,10 @@ void common_hal_audiobusio_i2sout_play(audiobusio_i2sout_obj_t *self,
         mp_raise_RuntimeError(MP_ERROR_TEXT("Clock unit in use"));
     }
     #endif
-    uint8_t bits_per_sample = audiosample_bits_per_sample(sample);
+    uint8_t bits_per_sample = audiosample_get_bits_per_sample(sample);
     // We always output stereo so output twice as many bits.
     uint16_t bits_per_sample_output = bits_per_sample * 2;
-    uint16_t divisor = 48000000 / (bits_per_sample_output * audiosample_sample_rate(sample));
+    uint16_t divisor = 48000000 / (bits_per_sample_output * audiosample_get_sample_rate(sample));
     // Find a free GCLK to generate the MCLK signal.
     uint8_t gclk = find_free_gclk(divisor);
     if (gclk > GCLK_GEN_NUM) {
@@ -235,7 +235,7 @@ void common_hal_audiobusio_i2sout_play(audiobusio_i2sout_obj_t *self,
     } else {
         clkctrl |= I2S_CLKCTRL_FSOUTINV | I2S_CLKCTRL_BITDELAY_I2S;
     }
-    uint8_t channel_count = audiosample_channel_count(sample);
+    uint8_t channel_count = audiosample_get_channel_count(sample);
     if (channel_count > 2) {
         mp_raise_ValueError(MP_ERROR_TEXT("Too many channels in sample"));
     }
@@ -245,7 +245,7 @@ void common_hal_audiobusio_i2sout_play(audiobusio_i2sout_obj_t *self,
     #ifdef SAM_D5X_E5X
     uint32_t serctrl = (self->clock_unit << I2S_RXCTRL_CLKSEL_Pos) | I2S_TXCTRL_TXSAME_SAME;
     #endif
-    if (audiosample_channel_count(sample) == 1) {
+    if (audiosample_get_channel_count(sample) == 1) {
         serctrl |= SERCTRL(MONO_MONO);
     } else {
         serctrl |= SERCTRL(MONO_STEREO);

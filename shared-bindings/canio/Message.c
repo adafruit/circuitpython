@@ -21,6 +21,7 @@
 //|         In CAN, messages can have a length from 0 to 8 bytes.
 //|         """
 //|         ...
+//|
 static mp_obj_t canio_message_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_id, ARG_data, ARG_extended, NUM_ARGS };
     static const mp_arg_t allowed_args[] = {
@@ -90,6 +91,7 @@ MP_PROPERTY_GETSET(canio_message_data_obj,
 
 //|     extended: bool
 //|     """True if the message's id is an extended id"""
+//|
 //|
 static mp_obj_t canio_message_extended_get(const mp_obj_t self_in) {
     canio_message_obj_t *self = self_in;

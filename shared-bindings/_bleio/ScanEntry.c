@@ -30,6 +30,7 @@
 //|         than the scan filtering which accepts any advertisements that match any of the prefixes
 //|         where ``match_all`` is False."""
 //|         ...
+//|
 static mp_obj_t bleio_scanentry_matches(mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     bleio_scanentry_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
 
@@ -96,6 +97,7 @@ MP_PROPERTY_GETTER(bleio_scanentry_connectable_obj,
 
 //|     scan_response: bool
 //|     """True if the entry was a scan response. (read-only)"""
+//|
 //|
 static mp_obj_t scanentry_get_scan_response(mp_obj_t self_in) {
     bleio_scanentry_obj_t *self = MP_OBJ_TO_PTR(self_in);

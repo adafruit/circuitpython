@@ -223,15 +223,15 @@ void common_hal_audiopwmio_pwmaudioout_play(audiopwmio_pwmaudioout_obj_t *self, 
     self->sample = sample;
     self->loop = loop;
 
-    uint32_t sample_rate = audiosample_sample_rate(sample);
-    self->bytes_per_sample = audiosample_bits_per_sample(sample) / 8;
+    uint32_t sample_rate = audiosample_get_sample_rate(sample);
+    self->bytes_per_sample = audiosample_get_bits_per_sample(sample) / 8;
 
     uint32_t max_buffer_length;
     uint8_t spacing;
     audiosample_get_buffer_structure(sample, /* single channel */ false,
         &self->single_buffer, &self->signed_to_unsigned, &max_buffer_length,
         &spacing);
-    self->sample_channel_count = audiosample_channel_count(sample);
+    self->sample_channel_count = audiosample_get_channel_count(sample);
 
     mp_arg_validate_length_max(max_buffer_length, UINT16_MAX, MP_QSTR_buffer);
 

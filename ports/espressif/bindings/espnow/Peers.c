@@ -21,6 +21,7 @@
 //|     def __init__(self) -> None:
 //|         """You cannot create an instance of `Peers`."""
 //|         ...
+//|
 
 //|     def append(self, peer: Peer) -> None:
 //|         """Append peer.
@@ -28,6 +29,7 @@
 //|         :param Peer peer: The peer object to append.
 //|         """
 //|         ...
+//|
 static mp_obj_t espnow_peers_append(mp_obj_t self_in, mp_obj_t arg) {
     espnow_peer_obj_t *peer = MP_OBJ_TO_PTR(mp_arg_validate_type(arg, &espnow_peer_type, MP_QSTR_Peer));
     CHECK_ESP_RESULT(esp_now_add_peer(&peer->peer_info));
@@ -42,6 +44,7 @@ static MP_DEFINE_CONST_FUN_OBJ_2(espnow_peers_append_obj, espnow_peers_append);
 //|         :param Peer peer: The peer object to remove.
 //|         """
 //|         ...
+//|
 //|
 static mp_obj_t espnow_peers_remove(mp_obj_t self_in, mp_obj_t arg) {
     espnow_peer_obj_t *peer = MP_OBJ_TO_PTR(mp_arg_validate_type(arg, &espnow_peer_type, MP_QSTR_Peer));

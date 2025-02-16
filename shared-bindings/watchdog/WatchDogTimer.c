@@ -32,11 +32,13 @@
 //|     def __init__(self) -> None:
 //|         """Access the sole instance through `microcontroller.watchdog`."""
 //|         ...
+//|
 
 //|     def feed(self) -> None:
 //|         """Feed the watchdog timer. This must be called regularly, otherwise
 //|         the timer will expire. Silently does nothing if the watchdog isn't active."""
 //|         ...
+//|
 static mp_obj_t watchdog_watchdogtimer_feed(mp_obj_t self_in) {
     watchdog_watchdogtimer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     if (common_hal_watchdog_get_mode(self) != WATCHDOGMODE_NONE) {
@@ -56,6 +58,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(watchdog_watchdogtimer_feed_obj, watchdog_watch
 //|
 //|         """
 //|         ...
+//|
 static mp_obj_t watchdog_watchdogtimer_deinit(mp_obj_t self_in) {
     watchdog_watchdogtimer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_watchdog_deinit(self);
@@ -101,6 +104,7 @@ MP_PROPERTY_GETSET(watchdog_watchdogtimer_timeout_obj,
 //|
 //|
 //|     Once set, the `WatchDogTimer` will perform the specified action if the timer expires."""
+//|
 //|
 static mp_obj_t watchdog_watchdogtimer_obj_get_mode(mp_obj_t self_in) {
     watchdog_watchdogtimer_obj_t *self = MP_OBJ_TO_PTR(self_in);

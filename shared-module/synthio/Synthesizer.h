@@ -12,7 +12,6 @@
 #include "shared-module/synthio/__init__.h"
 
 typedef struct {
-    mp_obj_base_t base;
     synthio_synth_t synth;
     mp_obj_t blocks;
 } synthio_synthesizer_obj_t;
@@ -28,7 +27,3 @@ audioio_get_buffer_result_t synthio_synthesizer_get_buffer(synthio_synthesizer_o
     uint8_t channel,
     uint8_t **buffer,
     uint32_t *buffer_length); // length in bytes
-
-void synthio_synthesizer_get_buffer_structure(synthio_synthesizer_obj_t *self, bool single_channel_output,
-    bool *single_buffer, bool *samples_signed,
-    uint32_t *max_buffer_length, uint8_t *spacing);

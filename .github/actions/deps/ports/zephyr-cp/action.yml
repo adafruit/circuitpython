@@ -1,0 +1,15 @@
+name: Fetch Zephyr port deps
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Zephyr project
+      uses: zephyrproject-rtos/action-zephyr-setup@v1
+      with:
+        app-path: zephyr-config
+        base-path: ports/zephyr-cp
+        toolchains: arm-zephyr-eabi
+    - name: Export cmake info
+      run: west zephyr-export
+      shell: bash
+      working-directory: ports/zephyr-cp

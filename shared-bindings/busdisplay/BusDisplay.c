@@ -28,6 +28,7 @@
 //| ]
 //| """:py:class:`fourwire.FourWire`, :py:class:`paralleldisplaybus.ParallelBus` or :py:class:`i2cdisplaybus.I2CDisplayBus`"""
 //|
+//|
 
 //| class BusDisplay:
 //|     """Manage updating a display over a display bus
@@ -65,7 +66,7 @@
 //|         auto_refresh: bool = True,
 //|         native_frames_per_second: int = 60,
 //|         backlight_on_high: bool = True,
-//|         SH1107_addressing: bool = False
+//|         SH1107_addressing: bool = False,
 //|     ) -> None:
 //|         r"""Create a Display object on the given display bus (`FourWire`, `paralleldisplaybus.ParallelBus` or `I2CDisplayBus`).
 //|
@@ -125,6 +126,7 @@
 //|         :param int backlight_pwm_frequency: The frequency to use to drive the PWM for backlight brightness control. Default is 50000.
 //|         """
 //|         ...
+//|
 static mp_obj_t busdisplay_busdisplay_make_new(const mp_obj_type_t *type, size_t n_args,
     size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_display_bus, ARG_init_sequence, ARG_width, ARG_height, ARG_colstart, ARG_rowstart,
@@ -236,7 +238,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(busdisplay_busdisplay_show_obj, busdisplay_busdisplay_
 //|         self,
 //|         *,
 //|         target_frames_per_second: Optional[int] = None,
-//|         minimum_frames_per_second: int = 0
+//|         minimum_frames_per_second: int = 0,
 //|     ) -> bool:
 //|         """When auto_refresh is off, and :py:attr:`target_frames_per_second` is not `None` this waits
 //|         for the target frame rate and then refreshes the display,
@@ -258,6 +260,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(busdisplay_busdisplay_show_obj, busdisplay_busdisplay_
 //|         :param int minimum_frames_per_second: The minimum number of times the screen should be updated per second.
 //|         """
 //|         ...
+//|
 static mp_obj_t busdisplay_busdisplay_obj_refresh(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_target_frames_per_second, ARG_minimum_frames_per_second };
     static const mp_arg_t allowed_args[] = {
@@ -395,6 +398,7 @@ MP_PROPERTY_GETTER(busdisplay_busdisplay_bus_obj,
 //|     If the root group is set to `displayio.CIRCUITPYTHON_TERMINAL`, the default CircuitPython terminal will be shown.
 //|     If the root group is set to ``None``, no output will be shown.
 //|     """
+//|
 static mp_obj_t busdisplay_busdisplay_obj_get_root_group(mp_obj_t self_in) {
     busdisplay_busdisplay_obj_t *self = native_display(self_in);
     return common_hal_busdisplay_busdisplay_get_root_group(self);
@@ -425,6 +429,7 @@ MP_PROPERTY_GETSET(busdisplay_busdisplay_root_group_obj,
 //|         :param ~circuitpython_typing.WriteableBuffer buffer: The buffer in which to place the pixel data
 //|         """
 //|         ...
+//|
 //|
 static mp_obj_t busdisplay_busdisplay_obj_fill_row(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_y, ARG_buffer };

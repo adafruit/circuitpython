@@ -7,6 +7,7 @@
 #include "py/runtime.h"
 #include "shared-bindings/synthio/LFO.h"
 #include "shared-bindings/synthio/Note.h"
+#include "shared-bindings/audiocore/__init__.h"
 #include "shared-bindings/synthio/Synthesizer.h"
 #include "shared-module/synthio/Note.h"
 
@@ -23,19 +24,6 @@ void common_hal_synthio_synthesizer_construct(synthio_synthesizer_obj_t *self,
 void common_hal_synthio_synthesizer_deinit(synthio_synthesizer_obj_t *self) {
     synthio_synth_deinit(&self->synth);
 }
-bool common_hal_synthio_synthesizer_deinited(synthio_synthesizer_obj_t *self) {
-    return synthio_synth_deinited(&self->synth);
-}
-
-uint32_t common_hal_synthio_synthesizer_get_sample_rate(synthio_synthesizer_obj_t *self) {
-    return self->synth.sample_rate;
-}
-uint8_t common_hal_synthio_synthesizer_get_bits_per_sample(synthio_synthesizer_obj_t *self) {
-    return SYNTHIO_BITS_PER_SAMPLE;
-}
-uint8_t common_hal_synthio_synthesizer_get_channel_count(synthio_synthesizer_obj_t *self) {
-    return self->synth.channel_count;
-}
 
 void synthio_synthesizer_reset_buffer(synthio_synthesizer_obj_t *self,
     bool single_channel_output, uint8_t channel) {
@@ -44,7 +32,7 @@ void synthio_synthesizer_reset_buffer(synthio_synthesizer_obj_t *self,
 
 audioio_get_buffer_result_t synthio_synthesizer_get_buffer(synthio_synthesizer_obj_t *self,
     bool single_channel_output, uint8_t channel, uint8_t **buffer, uint32_t *buffer_length) {
-    if (common_hal_synthio_synthesizer_deinited(self)) {
+    if (audiosample_deinited(&self->synth.base)) {
         *buffer_length = 0;
         return GET_BUFFER_ERROR;
     }
@@ -65,11 +53,6 @@ audioio_get_buffer_result_t synthio_synthesizer_get_buffer(synthio_synthesizer_o
         (void)synthio_block_slot_get(&slot);
     }
     return GET_BUFFER_MORE_DATA;
-}
-
-void synthio_synthesizer_get_buffer_structure(synthio_synthesizer_obj_t *self, bool single_channel_output,
-    bool *single_buffer, bool *samples_signed, uint32_t *max_buffer_length, uint8_t *spacing) {
-    return synthio_synth_get_buffer_structure(&self->synth, single_channel_output, single_buffer, samples_signed, max_buffer_length, spacing);
 }
 
 void common_hal_synthio_synthesizer_release_all(synthio_synthesizer_obj_t *self) {
@@ -114,7 +97,7 @@ void common_hal_synthio_synthesizer_press(synthio_synthesizer_obj_t *self, mp_ob
     if (is_note(to_press)) {
         if (!mp_obj_is_small_int(to_press)) {
             synthio_note_obj_t *note = MP_OBJ_TO_PTR(to_press);
-            synthio_note_start(note, self->synth.sample_rate);
+            synthio_note_start(note, self->synth.base.sample_rate);
         }
         synthio_span_change_note(&self->synth, SYNTHIO_SILENCE, validate_note(to_press));
         return;
@@ -127,7 +110,7 @@ void common_hal_synthio_synthesizer_press(synthio_synthesizer_obj_t *self, mp_ob
         note_obj = validate_note(note_obj);
         if (!mp_obj_is_small_int(note_obj)) {
             synthio_note_obj_t *note = MP_OBJ_TO_PTR(note_obj);
-            synthio_note_start(note, self->synth.sample_rate);
+            synthio_note_start(note, self->synth.base.sample_rate);
         }
         synthio_span_change_note(&self->synth, SYNTHIO_SILENCE, note_obj);
     }

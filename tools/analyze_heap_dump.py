@@ -82,7 +82,7 @@ SKIP_SYMBOLS = [
     help="Draw the ownership graph of blocks on the heap",
 )
 @click.option("--analyze-snapshots", default="last", type=click.Choice(["all", "last"]))
-def do_all_the_things(
+def do_all_the_things(  # noqa: C901: too complex
     ram_filename,
     bin_filename,
     map_filename,

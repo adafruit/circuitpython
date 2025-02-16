@@ -15,6 +15,7 @@
 //| The `wifi` module provides necessary low-level functionality for managing
 //| wifi connections. Use `socketpool` for communicating over the network.
 //| """
+//|
 
 //| radio: Radio
 //| """Wifi radio used to manage both station and AP modes.

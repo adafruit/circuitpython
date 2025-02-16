@@ -77,7 +77,8 @@ int common_hal_floppyio_flux_readinto(void *buf, size_t len, digitalio_digitalin
 
     memset(buf, 0, len);
 
-    uint32_t pins_we_use = 1 << data->pin->number;
+
+    pio_pinmask_t pins_we_use = PIO_PINMASK_FROM_PIN(data->pin->number);
 
     rp2pio_statemachine_obj_t state_machine;
     bool ok = rp2pio_statemachine_construct(&state_machine,
@@ -86,10 +87,10 @@ int common_hal_floppyio_flux_readinto(void *buf, size_t len, digitalio_digitalin
         NULL, 0, // init program
         NULL, 0, // out
         index->pin, 1, // in
-        1, 0, // in pull up/down
+        PIO_PINMASK_FROM_PIN(index->pin->number), PIO_PINMASK_FROM_VALUE(0), // pull up/down
         NULL, 0, // set
-        NULL, 0, // sideset
-        0, 0, // initial pin state
+        NULL, 0, false, // sideset
+        PIO_PINMASK_FROM_VALUE(0), PIO_PINMASK_FROM_VALUE(0), // initial pin state
         data->pin, // jump pin
         pins_we_use, false, true,
         true, 32, false, // TX setting we don't use

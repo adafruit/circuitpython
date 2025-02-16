@@ -23,6 +23,7 @@ const rtc_rtc_obj_t rtc_rtc_obj = {{&rtc_rtc_type}};
 //|     def __init__(self) -> None:
 //|         """This class represents the onboard Real Time Clock. It is a singleton and will always return the same instance."""
 //|         ...
+//|
 static mp_obj_t rtc_rtc_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     // No arguments
     mp_arg_check_num(n_args, n_kw, 0, 0, false);
@@ -73,7 +74,7 @@ MP_PROPERTY_GETSET(rtc_rtc_datetime_obj,
 //|
 //|     A positive value speeds up the clock and a negative value slows it down.
 //|
-//|     **Limitations:** Calibration not supported on SAMD, Nordic, RP240, Spresense, and STM.
+//|     **Limitations:** Calibration not supported on SAMD, Nordic, RP2040, Spresense, and STM.
 //|
 //|     Range and value is hardware specific, but one step is often approximately 1 ppm::
 //|
@@ -82,6 +83,7 @@ MP_PROPERTY_GETSET(rtc_rtc_datetime_obj,
 //|
 //|       r = rtc.RTC()
 //|       r.calibration = 1"""
+//|
 //|
 static mp_obj_t rtc_rtc_obj_get_calibration(mp_obj_t self_in) {
     int calibration = common_hal_rtc_get_calibration();

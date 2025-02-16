@@ -13,9 +13,7 @@
 #include "shared-bindings/epaperdisplay/__init__.h"
 #include "shared-bindings/epaperdisplay/EPaperDisplay.h"
 
-//| """Displays a `displayio` object tree on an e-paper display
-//|
-//| """
+//| """Displays a `displayio` object tree on an e-paper display"""
 
 static const mp_rom_map_elem_t epaperdisplay_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_displayio) },

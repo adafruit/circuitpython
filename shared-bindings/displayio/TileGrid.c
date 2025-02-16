@@ -37,7 +37,7 @@
 //|         tile_height: Optional[int] = None,
 //|         default_tile: int = 0,
 //|         x: int = 0,
-//|         y: int = 0
+//|         y: int = 0,
 //|     ) -> None:
 //|         """Create a TileGrid object. The bitmap is source for 2d pixels. The pixel_shader is used to
 //|         convert the value and its location to a display native pixel color. This may be a simple color
@@ -56,6 +56,7 @@
 //|         :param int default_tile: Default tile index to show.
 //|         :param int x: Initial x position of the left edge within the parent.
 //|         :param int y: Initial y position of the top edge within the parent."""
+//|
 static mp_obj_t displayio_tilegrid_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_bitmap, ARG_pixel_shader, ARG_width, ARG_height, ARG_tile_width, ARG_tile_height, ARG_default_tile, ARG_x, ARG_y };
     static const mp_arg_t allowed_args[] = {
@@ -275,6 +276,7 @@ MP_PROPERTY_GETSET(displayio_tilegrid_flip_y_obj,
 //|     transpose_xy: bool
 //|     """If true, the TileGrid's axis will be swapped. When combined with mirroring, any 90 degree
 //|     rotation can be achieved along with the corresponding mirrored version."""
+//|
 static mp_obj_t displayio_tilegrid_obj_get_transpose_xy(mp_obj_t self_in) {
     displayio_tilegrid_t *self = native_tilegrid(self_in);
     return mp_obj_new_bool(common_hal_displayio_tilegrid_get_transpose_xy(self));
@@ -296,6 +298,7 @@ MP_PROPERTY_GETSET(displayio_tilegrid_transpose_xy_obj,
 //|     def contains(self, touch_tuple: tuple) -> bool:
 //|         """Returns True if the first two values in ``touch_tuple`` represent an x,y coordinate
 //|         inside the tilegrid rectangle bounds."""
+//|
 static mp_obj_t displayio_tilegrid_obj_contains(mp_obj_t self_in, mp_obj_t touch_tuple) {
     displayio_tilegrid_t *self = MP_OBJ_TO_PTR(self_in);
 
@@ -336,6 +339,7 @@ MP_PROPERTY_GETSET(displayio_tilegrid_pixel_shader_obj,
 
 //|     bitmap: Union[Bitmap, OnDiskBitmap]
 //|     """The bitmap of the tilegrid."""
+//|
 static mp_obj_t displayio_tilegrid_obj_get_bitmap(mp_obj_t self_in) {
     displayio_tilegrid_t *self = native_tilegrid(self_in);
     return common_hal_displayio_tilegrid_get_bitmap(self);
@@ -402,6 +406,7 @@ MP_PROPERTY_GETSET(displayio_tilegrid_bitmap_obj,
 //|
 //|           grid[0,0] = 10"""
 //|         ...
+//|
 //|
 static mp_obj_t tilegrid_subscr(mp_obj_t self_in, mp_obj_t index_obj, mp_obj_t value_obj) {
     displayio_tilegrid_t *self = native_tilegrid(self_in);

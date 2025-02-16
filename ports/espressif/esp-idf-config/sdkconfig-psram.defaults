@@ -22,6 +22,11 @@ CONFIG_SPIRAM_USE_CAPS_ALLOC=y
 CONFIG_ESP_WIFI_CACHE_TX_BUFFER_NUM=16
 # end of Wi-Fi
 
+#
+# mbedTLS
+#
+CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC=y
+
 # end of Component config
 
 # end of Espressif IoT Development Framework Configuration

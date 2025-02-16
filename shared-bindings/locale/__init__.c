@@ -9,6 +9,7 @@
 
 //| """Locale support module"""
 //|
+//|
 //| def getlocale() -> None:
 //|     """Returns the current locale setting as a tuple ``(language code, "utf-8")``
 //|
@@ -17,6 +18,7 @@
 //|
 //|     Differences from CPython: No ``LC_*`` argument is permitted.
 //|     """
+//|
 //|
 static mp_obj_t getlocale(void) {
 

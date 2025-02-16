@@ -9,7 +9,7 @@ import subprocess
 import sys
 import argparse
 
-#CIRCUITPY-CHANGE: no pyboard
+# CIRCUITPY-CHANGE: no pyboard
 
 # Paths for host executables
 CPYTHON3 = os.getenv("MICROPY_CPYTHON3", "python3")
@@ -17,7 +17,7 @@ MICROPYTHON = os.getenv("MICROPY_MICROPYTHON", "../ports/unix/build-coverage/mic
 
 NATMOD_EXAMPLE_DIR = "../examples/natmod/"
 
-#CIRCUITPY-CHANGE: different TEST_MAPPINGS
+# CIRCUITPY-CHANGE: different TEST_MAPPINGS
 # Supported tests and their corresponding mpy module
 TEST_MAPPINGS = {
     "heapq": "heapq/heapq_$(ARCH).mpy",

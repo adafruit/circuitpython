@@ -32,7 +32,9 @@
 //|         # .. do something with bitmap
 //|     """
 //|
-//|     def __init__(self) -> None: ...
+//|     def __init__(self) -> None:
+//|         """Create a JpegDecoder"""
+//|         ...
 //|
 static mp_obj_t jpegio_jpegdecoder_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     static const mp_arg_t allowed_args[] = {
@@ -47,6 +49,7 @@ static mp_obj_t jpegio_jpegdecoder_make_new(const mp_obj_type_t *type, size_t n_
     return MP_OBJ_FROM_PTR(self);
 }
 
+//|
 //|     @overload
 //|     def open(self, filename: str) -> Tuple[int, int]: ...
 //|     @overload
@@ -62,6 +65,7 @@ static mp_obj_t jpegio_jpegdecoder_make_new(const mp_obj_type_t *type, size_t n_
 //|         not shown in the function signature in the documentation.
 //|
 //|         Returns the image size as the tuple ``(width, height)``."""
+//|
 static mp_obj_t jpegio_jpegdecoder_open(mp_obj_t self_in, mp_obj_t arg) {
     jpegio_jpegdecoder_obj_t *self = MP_OBJ_TO_PTR(self_in);
     if (mp_obj_is_str(arg)) {
@@ -131,6 +135,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(jpegio_jpegdecoder_open_obj, jpegio_jpegdecoder_open);
 //|         :param int skip_dest_index: bitmap palette index in the destination bitmap that will not get overwritten
 //|                                 by the pixels from the source
 //|         """
+//|
 //|
 static mp_obj_t jpegio_jpegdecoder_decode(mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     jpegio_jpegdecoder_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);

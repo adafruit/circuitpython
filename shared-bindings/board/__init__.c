@@ -33,11 +33,13 @@
 //|
 //| .. warning:: The board module varies by board. The APIs documented here may or may not be
 //|              available on a specific board."""
+//|
 
 //| board_id: str
 //| """Board ID string. The unique identifier for the board model in
 //| circuitpython, as well as on circuitpython.org.
 //| Example: "hallowing_m0_express"."""
+//|
 //|
 
 //| def I2C() -> busio.I2C:
@@ -45,6 +47,7 @@
 //|     The object created is a singleton, and uses the default parameter values for `busio.I2C`.
 //|     """
 //|     ...
+//|
 //|
 #if CIRCUITPY_BOARD_I2C
 static mp_obj_t board_i2c_0(void) {
@@ -64,6 +67,7 @@ MP_DEFINE_CONST_FUN_OBJ_0(board_i2c_obj, board_i2c_0);
 //|     """
 //|     ...
 //|
+//|
 #if CIRCUITPY_BOARD_SPI
 static mp_obj_t board_spi_0(void) {
     return common_hal_board_create_spi(0);
@@ -81,6 +85,7 @@ MP_DEFINE_CONST_FUN_OBJ_0(board_spi_obj, board_spi_0);
 //|     The object created is a singleton, and uses the default parameter values for `busio.UART`.
 //|     """
 //|     ...
+//|
 //|
 #if CIRCUITPY_BOARD_UART
 static mp_obj_t board_uart_0(void) {

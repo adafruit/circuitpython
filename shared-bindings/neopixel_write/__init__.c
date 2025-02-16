@@ -84,6 +84,7 @@ static void check_for_deinit(digitalio_digitalinout_obj_t *self) {
 //|
 //| """
 //|
+//|
 //| def neopixel_write(digitalinout: digitalio.DigitalInOut, buf: ReadableBuffer) -> None:
 //|     """Write buf out on the given DigitalInOut.
 //|
@@ -91,6 +92,7 @@ static void check_for_deinit(digitalio_digitalinout_obj_t *self) {
 //|     :param ~circuitpython_typing.ReadableBuffer buf: The bytes to clock out. No assumption is made about color order
 //|     """
 //|     ...
+//|
 //|
 static mp_obj_t neopixel_write_neopixel_write_(mp_obj_t digitalinout_obj, mp_obj_t buf) {
     const digitalio_digitalinout_obj_t *digitalinout =
@@ -108,8 +110,8 @@ static mp_obj_t neopixel_write_neopixel_write_(mp_obj_t digitalinout_obj, mp_obj
 static MP_DEFINE_CONST_FUN_OBJ_2(neopixel_write_neopixel_write_obj, neopixel_write_neopixel_write_);
 
 static const mp_rom_map_elem_t neopixel_write_module_globals_table[] = {
-    { MP_OBJ_NEW_QSTR(MP_QSTR___name__), MP_OBJ_NEW_QSTR(MP_QSTR_neopixel_write) },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_neopixel_write), (mp_obj_t)&neopixel_write_neopixel_write_obj },
+    { MP_ROM_QSTR(MP_QSTR___name__), MP_OBJ_NEW_QSTR(MP_QSTR_neopixel_write) },
+    { MP_ROM_QSTR(MP_QSTR_neopixel_write), (mp_obj_t)&neopixel_write_neopixel_write_obj },
 };
 
 static MP_DEFINE_CONST_DICT(neopixel_write_module_globals, neopixel_write_module_globals_table);

@@ -124,7 +124,7 @@ def make_pin_function_lists(functions, pins):
             fcn_list[pin][i] = 1
         i += 1
     for pin in pins.keys():
-        if not pin in fcn_list:
+        if pin not in fcn_list:
             fcn_list[pin] = []
 
         decl += make_pin_function_list_decl(pin, fcn_list[pin])

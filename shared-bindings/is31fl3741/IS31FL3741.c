@@ -25,6 +25,7 @@
 //|         :param ~busio.I2C i2c: I2C bus the IS31FL3741 is on
 //|         :param int addr: device address"""
 //|         ...
+//|
 static mp_obj_t is31fl3741_IS31FL3741_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_i2c, ARG_addr };
     static const mp_arg_t allowed_args[] = {
@@ -52,6 +53,7 @@ static mp_obj_t is31fl3741_IS31FL3741_make_new(const mp_obj_type_t *type, size_t
 //|         may be performed."""
 //|         ...
 //|
+//|
 static mp_obj_t is31fl3741_IS31FL3741_deinit(mp_obj_t self_in) {
     is31fl3741_IS31FL3741_obj_t *self = (is31fl3741_IS31FL3741_obj_t *)self_in;
     common_hal_is31fl3741_IS31FL3741_deinit(self);
@@ -63,6 +65,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(is31fl3741_IS31FL3741_deinit_obj, is31fl3741_IS
 //|     """Resets the IS31FL3741 chip."""
 //|     ...
 //|
+//|
 static mp_obj_t is31fl3741_IS31FL3741_reset(mp_obj_t self_in) {
     is31fl3741_IS31FL3741_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_is31fl3741_send_reset(self);
@@ -73,6 +76,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(is31fl3741_IS31FL3741_reset_obj, is31fl3741_IS31FL3741
 //| def enable(self) -> None:
 //|     """Enables the IS31FL3741 chip."""
 //|     ...
+//|
 //|
 static mp_obj_t is31fl3741_IS31FL3741_enable(mp_obj_t self_in) {
     is31fl3741_IS31FL3741_obj_t *self = MP_OBJ_TO_PTR(self_in);
@@ -86,6 +90,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(is31fl3741_IS31FL3741_enable_obj, is31fl3741_IS31FL374
 //|
 //|     :param int current: global current value 0x00 to 0xFF"""
 //|     ...
+//|
 //|
 static mp_obj_t is31fl3741_IS31FL3741_set_global_current(mp_obj_t self_in, mp_obj_t value) {
     is31fl3741_IS31FL3741_obj_t *self = MP_OBJ_TO_PTR(self_in);
@@ -105,6 +110,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(is31fl3741_IS31FL3741_set_global_current_obj, is31fl37
 //|       of 0 or 2)"""
 //|     ...
 //|
+//|
 static mp_obj_t is31fl3741_IS31FL3741_set_led(size_t n_args, const mp_obj_t *args) {
     is31fl3741_IS31FL3741_obj_t *self = MP_OBJ_TO_PTR(args[0]);
     mp_int_t led = mp_obj_get_int(args[1]);
@@ -122,6 +128,7 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(is31fl3741_IS31FL3741_set_led_obj, 4, 4, is3
 //|     :param ~_typing.ReadableBuffer buf: The bytes to clock out. No assumption is made about color order
 //|     """
 //|     ...
+//|
 //|
 static mp_obj_t is31fl3741_IS31FL3741_write(mp_obj_t self_in, mp_obj_t mapping, mp_obj_t buffer) {
     is31fl3741_IS31FL3741_obj_t *self = MP_OBJ_TO_PTR(self_in);
@@ -143,11 +150,11 @@ MP_DEFINE_CONST_FUN_OBJ_3(is31fl3741_IS31FL3741_write_obj, is31fl3741_IS31FL3741
 
 static const mp_rom_map_elem_t is31fl3741_IS31FL3741_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&is31fl3741_IS31FL3741_deinit_obj) },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_write), (mp_obj_t)&is31fl3741_IS31FL3741_write_obj },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_reset), (mp_obj_t)&is31fl3741_IS31FL3741_reset_obj },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_enable), (mp_obj_t)&is31fl3741_IS31FL3741_enable_obj },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_set_global_current), (mp_obj_t)&is31fl3741_IS31FL3741_set_global_current_obj },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_set_led), (mp_obj_t)&is31fl3741_IS31FL3741_set_led_obj },
+    { MP_ROM_QSTR(MP_QSTR_write), (mp_obj_t)&is31fl3741_IS31FL3741_write_obj },
+    { MP_ROM_QSTR(MP_QSTR_reset), (mp_obj_t)&is31fl3741_IS31FL3741_reset_obj },
+    { MP_ROM_QSTR(MP_QSTR_enable), (mp_obj_t)&is31fl3741_IS31FL3741_enable_obj },
+    { MP_ROM_QSTR(MP_QSTR_set_global_current), (mp_obj_t)&is31fl3741_IS31FL3741_set_global_current_obj },
+    { MP_ROM_QSTR(MP_QSTR_set_led), (mp_obj_t)&is31fl3741_IS31FL3741_set_led_obj },
 };
 static MP_DEFINE_CONST_DICT(is31fl3741_IS31FL3741_locals_dict, is31fl3741_IS31FL3741_locals_dict_table);
 

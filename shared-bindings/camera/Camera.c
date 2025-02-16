@@ -39,6 +39,7 @@
 //|     def __init__(self) -> None:
 //|         """Initialize camera."""
 //|         ...
+//|
 static mp_obj_t camera_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     camera_obj_t *self = mp_obj_malloc(camera_obj_t, &camera_type);
     // No arguments
@@ -51,6 +52,7 @@ static mp_obj_t camera_make_new(const mp_obj_type_t *type, size_t n_args, size_t
 //|     def deinit(self) -> None:
 //|         """De-initialize camera."""
 //|         ...
+//|
 static mp_obj_t camera_obj_deinit(mp_obj_t self_in) {
     camera_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_camera_deinit(self);
@@ -71,6 +73,7 @@ static void check_for_deinit(camera_obj_t *self) {
 //|         :return: the number of bytes written into buf
 //|         :rtype: int"""
 //|         ...
+//|
 //|
 static mp_obj_t camera_obj_take_picture(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_buffer, ARG_width, ARG_height, ARG_format };

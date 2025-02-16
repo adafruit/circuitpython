@@ -216,9 +216,6 @@ def print_active_user():
 
 
 def generate_download_info():
-    boards = {}
-    errors = []
-
     new_tag = os.environ["RELEASE_TAG"]
 
     changes = {"new_release": new_tag, "new_boards": [], "new_languages": []}
@@ -255,7 +252,6 @@ def generate_download_info():
         board_path = os.path.join("../ports", port, "boards")
         for board_path in os.scandir(board_path):
             if board_path.is_dir():
-                board_files = os.listdir(board_path.path)
                 board_id = board_path.name
                 board_info = board_mapping[board_id]
                 for alias in [board_id] + board_info["aliases"]:

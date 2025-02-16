@@ -28,6 +28,7 @@ ifeq ($(MCU_SERIES),F4)
         CIRCUITPY_NVM ?= 0
         CIRCUITPY_ROTARYIO ?= 0
         CIRCUITPY_RTC ?= 1
+        CIRCUITPY_PORT_SERIAL ?= 1
         USB_NUM_ENDPOINT_PAIRS = 4
         UF2_FAMILY_ID ?= 0x57755a57
 endif

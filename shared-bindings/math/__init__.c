@@ -24,6 +24,7 @@
 //|
 //| |see_cpython_module| :mod:`cpython:math`.
 //| """
+//|
 
 static NORETURN void math_error(void) {
     mp_raise_ValueError(MP_ERROR_TEXT("math domain error"));
@@ -66,54 +67,67 @@ static NORETURN void math_error(void) {
 //| pi: float
 //| """the ratio of a circle's circumference to its diameter"""
 //|
+//|
 
 //| def acos(x: float) -> float:
 //|     """Return the inverse cosine of ``x``."""
 //|     ...
 //|
+//|
 //| def asin(x: float) -> float:
 //|     """Return the inverse sine of ``x``."""
 //|     ...
+//|
 //|
 //| def atan(x: float) -> float:
 //|     """Return the inverse tangent of ``x``."""
 //|     ...
 //|
+//|
 //| def atan2(y: float, x: float) -> float:
 //|     """Return the principal value of the inverse tangent of ``y/x``."""
 //|     ...
+//|
 //|
 //| def ceil(x: float) -> int:
 //|     """Return an integer, being ``x`` rounded towards positive infinity."""
 //|     ...
 //|
+//|
 //| def copysign(x: float, y: float) -> float:
 //|     """Return ``x`` with the sign of ``y``."""
 //|     ...
+//|
 //|
 //| def cos(x: float) -> float:
 //|     """Return the cosine of ``x``."""
 //|     ...
 //|
+//|
 //| def degrees(x: float) -> float:
 //|     """Return radians ``x`` converted to degrees."""
 //|     ...
+//|
 //|
 //| def exp(x: float) -> float:
 //|     """Return the exponential of ``x``."""
 //|     ...
 //|
+//|
 //| def fabs(x: float) -> float:
 //|     """Return the absolute value of ``x``."""
 //|     ...
+//|
 //|
 //| def floor(x: float) -> int:
 //|     """Return an integer, being ``x`` rounded towards negative infinity."""
 //|     ...
 //|
+//|
 //| def fmod(x: float, y: float) -> int:
 //|     """Return the remainder of ``x/y``."""
 //|     ...
+//|
 //|
 //| def frexp(x: float) -> Tuple[int, int]:
 //|     """Decomposes a floating-point number into its mantissa and exponent.
@@ -122,53 +136,66 @@ static NORETURN void math_error(void) {
 //|     the relation ``0.5 <= abs(m) < 1`` holds."""
 //|     ...
 //|
+//|
 //| def isfinite(x: float) -> bool:
 //|     """Return ``True`` if ``x`` is finite."""
 //|     ...
+//|
 //|
 //| def isinf(x: float) -> bool:
 //|     """Return ``True`` if ``x`` is infinite."""
 //|     ...
 //|
+//|
 //| def isnan(x: float) -> bool:
 //|     """Return ``True`` if ``x`` is not-a-number"""
 //|     ...
 //|
+//|
 //| def ldexp(x: float, exp: float) -> float:
 //|     """Return ``x * (2**exp)``."""
 //|     ...
+//|
 //|
 //| def log(x: float, base: float = e) -> float:
 //|     """Return the logarithm of x to the given base. If base is not specified,
 //|     returns the natural logarithm (base e) of x"""
 //|     ...
 //|
+//|
 //| def modf(x: float) -> Tuple[float, float]:
 //|     """Return a tuple of two floats, being the fractional and integral parts of
 //|     ``x``.  Both return values have the same sign as ``x``."""
 //|     ...
 //|
+//|
 //| def pow(x: float, y: float) -> float:
 //|     """Returns ``x`` to the power of ``y``."""
 //|
+//|
 //| def radians(x: float) -> float:
 //|     """Return degrees ``x`` converted to radians."""
+//|
 //|
 //| def sin(x: float) -> float:
 //|     """Return the sine of ``x``."""
 //|     ...
 //|
+//|
 //| def sqrt(x: float) -> float:
 //|     """Returns the square root of ``x``."""
 //|     ...
+//|
 //|
 //| def tan(x: float) -> float:
 //|     """Return the tangent of ``x``."""
 //|     ...
 //|
+//|
 //| def trunc(x: float) -> int:
 //|     """Return an integer, being ``x`` rounded towards 0."""
 //|     ...
+//|
 //|
 MATH_FUN_1_ERRCOND(sqrt, sqrt, (x < (mp_float_t)0.0))
 
@@ -183,6 +210,7 @@ MATH_FUN_1(exp, exp)
 //|     """
 //|     ...
 //|
+//|
 MATH_FUN_1(expm1, expm1)
 
 //| def log2(x: float) -> float:
@@ -191,6 +219,7 @@ MATH_FUN_1(expm1, expm1)
 //|     May not be available on some boards.
 //|     """
 //|     ...
+//|
 //|
 MATH_FUN_1_ERRCOND(log2, log2, (x <= (mp_float_t)0.0))
 
@@ -201,6 +230,7 @@ MATH_FUN_1_ERRCOND(log2, log2, (x <= (mp_float_t)0.0))
 //|     """
 //|     ...
 //|
+//|
 MATH_FUN_1_ERRCOND(log10, log10, (x <= (mp_float_t)0.0))
 
 //| def cosh(x: float) -> float:
@@ -209,6 +239,7 @@ MATH_FUN_1_ERRCOND(log10, log10, (x <= (mp_float_t)0.0))
 //|     May not be available on some boards.
 //|     """
 //|     ...
+//|
 //|
 MATH_FUN_1(cosh, cosh)
 
@@ -219,6 +250,7 @@ MATH_FUN_1(cosh, cosh)
 //|     """
 //|     ...
 //|
+//|
 MATH_FUN_1(sinh, sinh)
 
 //| def tanh(x: float) -> float:
@@ -227,6 +259,7 @@ MATH_FUN_1(sinh, sinh)
 //|     May not be available on some boards.
 //|     """
 //|     ...
+//|
 //|
 MATH_FUN_1(tanh, tanh)
 
@@ -237,6 +270,7 @@ MATH_FUN_1(tanh, tanh)
 //|     """
 //|     ...
 //|
+//|
 MATH_FUN_1(acosh, acosh)
 
 //| def asinh(x: float) -> float:
@@ -246,6 +280,7 @@ MATH_FUN_1(acosh, acosh)
 //|     """
 //|     ...
 //|
+//|
 MATH_FUN_1(asinh, asinh)
 
 //| def atanh(x: float) -> float:
@@ -254,6 +289,7 @@ MATH_FUN_1(asinh, asinh)
 //|     May not be available on some boards.
 //|     """
 //|     ...
+//|
 //|
 MATH_FUN_1(atanh, atanh)
 #endif
@@ -300,6 +336,7 @@ MATH_FUN_2(ldexp, ldexp)
 //|     """
 //|     ...
 //|
+//|
 MATH_FUN_1(erf, erf)
 
 //| def erfc(x: float) -> float:
@@ -308,6 +345,7 @@ MATH_FUN_1(erf, erf)
 //|     May not be available on some boards.
 //|     """
 //|     ...
+//|
 //|
 MATH_FUN_1(erfc, erfc)
 
@@ -318,6 +356,7 @@ MATH_FUN_1(erfc, erfc)
 //|     """
 //|     ...
 //|
+//|
 MATH_FUN_1(gamma, tgamma)
 
 //| def lgamma(x: float) -> float:
@@ -327,6 +366,7 @@ MATH_FUN_1(gamma, tgamma)
 //|     """
 //|     ...
 //|
+//|
 MATH_FUN_1(lgamma, lgamma)
 
 //| def dist(p: tuple, q: tuple) -> float:
@@ -335,6 +375,7 @@ MATH_FUN_1(lgamma, lgamma)
 //|     May not be available on some boards.
 //|     """
 //|     ...
+//|
 //|
 static mp_obj_t mp_math_dist(mp_obj_t p_obj, mp_obj_t q_obj) {
     mp_obj_t *p_items;

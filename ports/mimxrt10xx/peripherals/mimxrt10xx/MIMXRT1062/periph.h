@@ -41,4 +41,8 @@ extern const mcu_periph_obj_t mcu_i2s_mclk_list[7];
 extern const mcu_periph_obj_t mcu_mqs_left_list[3];
 extern const mcu_periph_obj_t mcu_mqs_right_list[3];
 
+extern CAN_Type *const mcu_can_banks[3];
+extern const mcu_periph_obj_t mcu_can_rx_list[11];
+extern const mcu_periph_obj_t mcu_can_tx_list[11];
+
 extern const mcu_pwm_obj_t mcu_pwm_list[67];

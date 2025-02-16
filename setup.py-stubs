@@ -45,12 +45,7 @@ setup(
     packages=list(package_data.keys()),
     package_data=package_data,
     package_dir = package_dir,
-    setup_requires=["setuptools_scm", "setuptools>=38.6.0"],
-    use_scm_version = {
-        "root": "..",
-        "relative_to": __file__,
-        "local_scheme": local_scheme,
-        "git_describe_command": "tools/describe --long",
-    },
+    setup_requires=["setuptools>=38.6.0"],
+    version="__version__",
     zip_safe=False,
 )

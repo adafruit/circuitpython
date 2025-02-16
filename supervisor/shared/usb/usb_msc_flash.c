@@ -23,6 +23,80 @@
 static bool ejected[1] = {true};
 static bool locked[1] = {false};
 
+#include "tusb.h"
+
+static const uint8_t usb_msc_descriptor_template[] = {
+    // MSC Interface Descriptor
+    0x09,        //  0 bLength
+    0x04,        //  1 bDescriptorType (Interface)
+    0xFF,        //  2 bInterfaceNumber [SET AT RUNTIME]
+#define MSC_INTERFACE_INDEX (2)
+    0x00,        //  3 bAlternateSetting
+    0x02,        //  4 bNumEndpoints 2
+    0x08,        //  5 bInterfaceClass: MSC
+    0x06,        //  6 bInterfaceSubClass: TRANSPARENT
+    0x50,        //  7 bInterfaceProtocol: BULK
+    0xFF,        //  8 iInterface (String Index) [SET AT RUNTIME]
+#define MSC_INTERFACE_STRING_INDEX (8)
+
+    // MSC Endpoint IN Descriptor
+    0x07,        //  9 bLength
+    0x05,        // 10 bDescriptorType (Endpoint)
+    0xFF,        // 11 bEndpointAddress (IN/D2H) [SET AT RUNTIME: 0x80 | number]
+#define MSC_IN_ENDPOINT_INDEX (11)
+    0x02,        // 12 bmAttributes (Bulk)
+    #if USB_HIGHSPEED
+    0x00, 0x02,  // 13,14 wMaxPacketSize 512
+    #else
+    0x40, 0x00,  // 13,14 wMaxPacketSize 64
+    #endif
+    0x00,        // 15 bInterval 0 (unit depends on device speed)
+
+    // MSC Endpoint OUT Descriptor
+    0x07,        // 16 bLength
+    0x05,        // 17 bDescriptorType (Endpoint)
+    0xFF,        // 18 bEndpointAddress (OUT/H2D) [SET AT RUNTIME]
+#define MSC_OUT_ENDPOINT_INDEX (18)
+    0x02,        // 19 bmAttributes (Bulk)
+    #if USB_HIGHSPEED
+    0x00, 0x02,  // 20,21 wMaxPacketSize 512
+    #else
+    0x40, 0x00,  // 20,21 wMaxPacketSize 64
+    #endif
+    0x00,        // 22 bInterval 0 (unit depends on device speed)
+};
+
+size_t usb_msc_descriptor_length(void) {
+    return sizeof(usb_msc_descriptor_template);
+}
+
+static const char storage_interface_name[] = USB_INTERFACE_NAME " Mass Storage";
+
+size_t usb_msc_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *descriptor_counts, uint8_t *current_interface_string) {
+    memcpy(descriptor_buf, usb_msc_descriptor_template, sizeof(usb_msc_descriptor_template));
+    descriptor_buf[MSC_INTERFACE_INDEX] = descriptor_counts->current_interface;
+    descriptor_counts->current_interface++;
+
+    descriptor_buf[MSC_IN_ENDPOINT_INDEX] =
+        0x80 | (USB_MSC_EP_NUM_IN ? USB_MSC_EP_NUM_IN : descriptor_counts->current_endpoint);
+    descriptor_counts->num_in_endpoints++;
+    // Some TinyUSB devices have issues with bi-directional endpoints
+    #ifdef TUD_ENDPOINT_ONE_DIRECTION_ONLY
+    descriptor_counts->current_endpoint++;
+    #endif
+
+    descriptor_buf[MSC_OUT_ENDPOINT_INDEX] =
+        USB_MSC_EP_NUM_OUT ? USB_MSC_EP_NUM_OUT : descriptor_counts->current_endpoint;
+    descriptor_counts->num_out_endpoints++;
+    descriptor_counts->current_endpoint++;
+
+    usb_add_interface_string(*current_interface_string, storage_interface_name);
+    descriptor_buf[MSC_INTERFACE_STRING_INDEX] = *current_interface_string;
+    (*current_interface_string)++;
+
+    return sizeof(usb_msc_descriptor_template);
+}
+
 // The root FS is always at the end of the list.
 static fs_user_mount_t *get_vfs(int lun) {
     // TODO(tannewt): Return the mount which matches the lun where 0 is the end

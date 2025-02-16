@@ -28,6 +28,7 @@
 //|         """
 //|         ...
 //|
+//|
 static mp_obj_t usb_host_port_make_new(const mp_obj_type_t *type,
     size_t n_args, size_t n_kw, const mp_obj_t *args) {
     // check number of arguments

@@ -10,6 +10,7 @@
 #include "py/runtime.h"
 
 #include "shared-bindings/audiofilters/__init__.h"
+#include "shared-bindings/audiofilters/Distortion.h"
 #include "shared-bindings/audiofilters/Filter.h"
 
 //| """Support for audio filter effects
@@ -21,6 +22,10 @@
 static const mp_rom_map_elem_t audiofilters_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_audiofilters) },
     { MP_ROM_QSTR(MP_QSTR_Filter), MP_ROM_PTR(&audiofilters_filter_type) },
+    { MP_ROM_QSTR(MP_QSTR_Distortion), MP_ROM_PTR(&audiofilters_distortion_type) },
+
+    // Enum-like Classes.
+    { MP_ROM_QSTR(MP_QSTR_DistortionMode), MP_ROM_PTR(&audiofilters_distortion_mode_type) },
 };
 
 static MP_DEFINE_CONST_DICT(audiofilters_module_globals, audiofilters_module_globals_table);

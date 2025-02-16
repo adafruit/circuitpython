@@ -126,6 +126,10 @@ SRC_SDK +=	drivers/adc_12b1msps_sar/fsl_adc.c \
 	drivers/tempmon/fsl_tempmon.c
 endif
 
+ifeq ($(CIRCUITPY_CANIO), 1)
+SRC_SDK +=	drivers/flexcan/fsl_flexcan.c
+endif
+
 ifeq ($(CHIP_FAMILY), MIMXRT1176)
 SRC_SDK += devices/$(CHIP_FAMILY)/drivers/fsl_anatop_ai.c \
 	devices/$(CHIP_FAMILY)/drivers/fsl_dcdc.c \
