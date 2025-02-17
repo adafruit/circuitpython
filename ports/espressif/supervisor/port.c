@@ -47,7 +47,7 @@
 #include "peripherals/touch.h"
 #endif
 
-#if CIRCUITPY_BLEIO
+#if CIRCUITPY_BLEIO_NATIVE
 #include "shared-bindings/_bleio/__init__.h"
 #endif
 
