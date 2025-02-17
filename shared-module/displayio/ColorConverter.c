@@ -197,9 +197,12 @@ uint32_t displayio_colorconverter_convert_pixel(displayio_colorspace_t colorspac
             pixel = __builtin_bswap16(pixel);
             MP_FALLTHROUGH;
         case DISPLAYIO_COLORSPACE_RGB555: {
-            uint32_t r8 = (pixel >> 10) << 3;
-            uint32_t g8 = ((pixel >> 5) << 3) & 0xff;
-            uint32_t b8 = (pixel << 3) & 0xff;
+            uint32_t r8 = (pixel >> 10) & 0x1f;
+            uint32_t g8 = (pixel >> 5) & 0x1f;
+            uint32_t b8 = pixel & 0x1f;
+            r8 = (r8 << 3) | ((r8 >> 2) & 0b111);
+            g8 = (g8 << 3) | ((g8 >> 2) & 0b111);
+            b8 = (b8 << 3) | ((b8 >> 2) & 0b111);
             pixel = (r8 << 16) | (g8 << 8) | b8;
         }
         break;
@@ -219,9 +222,12 @@ uint32_t displayio_colorconverter_convert_pixel(displayio_colorspace_t colorspac
             pixel = __builtin_bswap16(pixel);
             MP_FALLTHROUGH;
         case DISPLAYIO_COLORSPACE_BGR555: {
-            uint32_t b8 = (pixel >> 10) << 3;
-            uint32_t g8 = ((pixel >> 5) << 3) & 0xff;
-            uint32_t r8 = (pixel << 3) & 0xff;
+            uint32_t b8 = (pixel >> 10) & 0x1f;
+            uint32_t g8 = (pixel >> 5) & 0x1f;
+            uint32_t r8 = pixel & 0x1f;
+            r8 = (r8 << 3) | ((r8 >> 2) & 0b111);
+            g8 = (g8 << 3) | ((g8 >> 2) & 0b111);
+            b8 = (b8 << 3) | ((b8 >> 2) & 0b111);
             pixel = (r8 << 16) | (g8 << 8) | b8;
         }
         break;
