@@ -629,6 +629,7 @@ SRC_SHARED_MODULE_ALL = \
 	audiocore/WaveFile.c \
 	audiocore/__init__.c \
 	audiodelays/Echo.c \
+	audiodelays/PitchShift.c \
 	audiodelays/__init__.c \
 	audiofilters/Distortion.c \
 	audiofilters/Filter.c \
