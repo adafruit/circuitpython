@@ -141,7 +141,7 @@ void common_hal_picodvi_framebuffer_construct(picodvi_framebuffer_obj_t *self,
 
     // If the width is > 400, then it must not be color frame buffer and vice
     // versa.
-    if ((width > 400) == color_framebuffer || color_depth == 4) {
+    if ((width > 400) == color_framebuffer || color_depth == 4 || color_depth == 32) {
         mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q"), MP_QSTR_color_depth);
     }
 
@@ -383,6 +383,10 @@ int common_hal_picodvi_framebuffer_get_height(picodvi_framebuffer_obj_t *self) {
 
 int common_hal_picodvi_framebuffer_get_color_depth(picodvi_framebuffer_obj_t *self) {
     return self->color_depth;
+}
+
+int common_hal_picodvi_framebuffer_get_native_frames_per_second(picodvi_framebuffer_obj_t *self) {
+    return 60;
 }
 
 bool common_hal_picodvi_framebuffer_get_grayscale(picodvi_framebuffer_obj_t *self) {

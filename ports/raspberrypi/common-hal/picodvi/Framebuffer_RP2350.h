@@ -36,6 +36,7 @@ typedef struct {
     size_t dma_commands_len; // in words
     mp_uint_t width;
     mp_uint_t height;
+    mp_uint_t output_width;
     uint16_t pitch; // Number of words between rows. (May be more than a width's worth.)
     uint8_t color_depth;
     uint8_t dma_pixel_channel;
