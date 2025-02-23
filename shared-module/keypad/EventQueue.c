@@ -39,7 +39,13 @@ mp_obj_t common_hal_keypad_eventqueue_get(keypad_eventqueue_obj_t *self) {
     if (result) {
         return event;
     }
+
+    #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
+    m_free(event, sizeof(keypad_event_obj_t));
+    #else
     m_free(event);
+    #endif
+
     return MP_ROM_NONE;
 }
 

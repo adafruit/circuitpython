@@ -116,7 +116,12 @@ void wifi_scannednetworks_deinit(wifi_scannednetworks_obj_t *self) {
     // Free any results we don't need.
     while (!k_fifo_is_empty(&self->fifo)) {
         wifi_network_obj_t *entry = k_fifo_get(&self->fifo, K_NO_WAIT);
+
+        #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
+        m_free(entry, sizeof(wifi_network_obj_t));
+        #else
         m_free(entry);
+        #endif
     }
     wifi_scannednetworks_done(self);
 }

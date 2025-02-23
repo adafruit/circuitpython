@@ -200,15 +200,27 @@ audio_dma_result audio_dma_setup_playback(audio_dma_t *dma,
     }
 
 
-    dma->buffer[0] = (uint8_t *)m_realloc(dma->buffer[0], max_buffer_length);
+    dma->buffer[0] = (uint8_t *)m_realloc(dma->buffer[0],
+        #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
+        dma->buffer_length[0], // Old size
+        #endif
+        max_buffer_length);
+
     dma->buffer_length[0] = max_buffer_length;
+
     if (dma->buffer[0] == NULL) {
         return AUDIO_DMA_MEMORY_ERROR;
     }
 
     if (!dma->single_buffer) {
-        dma->buffer[1] = (uint8_t *)m_realloc(dma->buffer[1], max_buffer_length);
+        dma->buffer[1] = (uint8_t *)m_realloc(dma->buffer[1],
+            #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
+            dma->buffer_length[1], // Old size
+            #endif
+            max_buffer_length);
+
         dma->buffer_length[1] = max_buffer_length;
+
         if (dma->buffer[1] == NULL) {
             return AUDIO_DMA_MEMORY_ERROR;
         }
