@@ -541,6 +541,17 @@ SRC_C += \
 	$(SRC_CYW43) \
 	$(SRC_LWIP) \
 
+ifeq ($(CIRCUITPY_RP2CLOCK),1)
+SRC_C += \
+	bindings/rp2clock/__init__.c \
+	bindings/rp2clock/OutputPin.c \
+	bindings/rp2clock/InputPin.c \
+	bindings/rp2clock/AuxSrc.c \
+	bindings/rp2clock/Index.c \
+	common-hal/rp2clock/OutputPin.c \
+	common-hal/rp2clock/InputPin.c \
+
+endif
 
 ifeq ($(CIRCUITPY_USB_HOST), 1)
 SRC_C += \
