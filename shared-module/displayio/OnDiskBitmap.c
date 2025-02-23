@@ -95,7 +95,12 @@ void common_hal_displayio_ondiskbitmap_construct(displayio_ondiskbitmap_t *self,
             for (uint16_t i = 0; i < number_of_colors; i++) {
                 common_hal_displayio_palette_set_color(palette, i, palette_data[i]);
             }
+
+            #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
+            m_free(palette_data, palette_size);
+            #else
             m_free(palette_data);
+            #endif
         } else {
             common_hal_displayio_palette_set_color(palette, 0, 0x0);
             common_hal_displayio_palette_set_color(palette, 1, 0xffffff);
