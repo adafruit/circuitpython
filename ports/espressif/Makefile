@@ -426,6 +426,55 @@ CFLAGS += -isystem esp-camera/driver/include
 CFLAGS += -isystem esp-camera/conversions/include
 endif
 
+ifneq ($(CIRCUITPY_MICROROS),0)
+CFLAGS += -isystem microros-ext/include
+CFLAGS += -isystem microros-ext/include/rcl
+CFLAGS += -isystem microros-ext/include/statistics_msgs
+CFLAGS += -isystem microros-ext/include/composition_interfaces
+CFLAGS += -isystem microros-ext/include/example_interfaces
+CFLAGS += -isystem microros-ext/include/rmw_microxrcedds_c
+CFLAGS += -isystem microros-ext/include/test_msgs
+CFLAGS += -isystem microros-ext/include/std_msgs
+CFLAGS += -isystem microros-ext/include/rcutils
+CFLAGS += -isystem microros-ext/include/lifecycle_msgs
+CFLAGS += -isystem microros-ext/include/rosidl_typesupport_interface
+CFLAGS += -isystem microros-ext/include/service_msgs
+CFLAGS += -isystem microros-ext/include/visualization_msgs
+CFLAGS += -isystem microros-ext/include/rosidl_dynamic_typesupport
+CFLAGS += -isystem microros-ext/include/stereo_msgs
+CFLAGS += -isystem microros-ext/include/ucdr
+CFLAGS += -isystem microros-ext/include/rosidl_typesupport_c
+CFLAGS += -isystem microros-ext/include/std_srvs
+CFLAGS += -isystem microros-ext/include/rcl_lifecycle
+CFLAGS += -isystem microros-ext/include/action_msgs
+CFLAGS += -isystem microros-ext/include/micro_ros_utilities
+CFLAGS += -isystem microros-ext/include/rcl_action
+CFLAGS += -isystem microros-ext/include/rcl_logging_interface
+CFLAGS += -isystem microros-ext/include/type_description_interfaces
+CFLAGS += -isystem microros-ext/include/nav_msgs
+CFLAGS += -isystem microros-ext/include/actionlib_msgs
+CFLAGS += -isystem microros-ext/include/rmw
+CFLAGS += -isystem microros-ext/include/rclc_parameter
+CFLAGS += -isystem microros-ext/include/geometry_msgs
+CFLAGS += -isystem microros-ext/include/sensor_msgs
+CFLAGS += -isystem microros-ext/include/trajectory_msgs
+CFLAGS += -isystem microros-ext/include/shape_msgs
+CFLAGS += -isystem microros-ext/include/rosidl_runtime_c
+CFLAGS += -isystem microros-ext/include/rclc
+CFLAGS += -isystem microros-ext/include/rosgraph_msgs
+CFLAGS += -isystem microros-ext/include/rclc_lifecycle
+CFLAGS += -isystem microros-ext/include/rcl_interfaces
+CFLAGS += -isystem microros-ext/include/diagnostic_msgs
+CFLAGS += -isystem microros-ext/include/micro_ros_msgs
+CFLAGS += -isystem microros-ext/include/rosidl_typesupport_introspection_c
+CFLAGS += -isystem microros-ext/include/uxr
+CFLAGS += -isystem microros-ext/include/unique_identifier_msgs
+CFLAGS += -isystem microros-ext/include/rosidl_typesupport_microxrcedds_c
+CFLAGS += -isystem microros-ext/include/builtin_interfaces
+CFLAGS += -isystem microros-ext/include/tracetools
+CFLAGS += -isystem microros-ext/include/rmw_microros
+endif
+
 ifneq ($(CIRCUITPY_ESPIDF),0)
 SRC_ESPIDF := \
 	$(wildcard common-hal/espidf/*.c) \
@@ -670,6 +719,16 @@ endif
 ifneq ($(CIRCUITPY_ESPCAMERA),0)
 ESP_IDF_COMPONENTS_EXPANDED += $(BUILD)/esp-idf/esp-idf/esp-camera/libesp-camera.a
 #$(error $(ESP_IDF_COMPONENTS_EXPANDED))
+endif
+
+ifeq ($(CIRCUITPY_MICROROS),1)
+ifeq ($(IDF_TARGET),esp32)
+BINARY_BLOBS += microros-ext/esp32/libmicroros.a
+else ifeq ($(IDF_TARGET),esp32s2)
+BINARY_BLOBS+= microros-ext/esp32s2/libmicroros.a
+else ifeq ($(IDF_TARGET),esp32s3)
+BINARY_BLOBS += microros-ext/esp32s3/libmicroros.a
+endif
 endif
 
 ifneq ($(VALID_BOARD),)

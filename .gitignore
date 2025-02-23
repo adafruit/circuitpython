@@ -9,6 +9,7 @@
 *.o
 *.a
 !atmel-samd/asf/**/*.a
+!ports/espressif/microros-ext/**/*.a
 *.elf
 *.bin
 !*.toml.bin
