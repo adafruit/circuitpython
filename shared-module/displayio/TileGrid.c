@@ -371,6 +371,7 @@ bool common_hal_displayio_tilegrid_get_inverted(displayio_tilegrid_t *self, uint
 void common_hal_displayio_tilegrid_set_inverted(displayio_tilegrid_t *self, uint16_t x, uint16_t y, bool inverted) {
     uint16_t tile_location = y * self->width_in_tiles + x;
     self->inverts[tile_location] = inverted;
+    common_hal_displayio_tilegrid_set_tile(self, x, y, common_hal_displayio_tilegrid_get_tile(self, x, y));
 }
 
 void common_hal_displayio_tilegrid_set_top_left(displayio_tilegrid_t *self, uint16_t x, uint16_t y) {
