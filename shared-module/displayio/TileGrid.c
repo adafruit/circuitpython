@@ -68,11 +68,11 @@ bool displayio_tilegrid_get_rendered_hidden(displayio_tilegrid_t *self) {
 }
 
 void displayio_tilegird_clear_inverts(displayio_tilegrid_t *self) {
-  for (uint16_t x = 0; x < self->width_in_tiles; x++) {
-    for (uint16_t y = 0; y < self->height_in_tiles; y++) {
-      self->inverts[y * self->width_in_tiles + x] = false;
+    for (uint16_t x = 0; x < self->width_in_tiles; x++) {
+        for (uint16_t y = 0; y < self->height_in_tiles; y++) {
+            self->inverts[y * self->width_in_tiles + x] = false;
+        }
     }
-  }
 }
 
 void common_hal_displayio_tilegrid_set_hidden(displayio_tilegrid_t *self, bool hidden) {
@@ -366,13 +366,13 @@ bool common_hal_displayio_tilegrid_contains(displayio_tilegrid_t *self, uint16_t
 }
 
 bool common_hal_displayio_tilegrid_get_inverted(displayio_tilegrid_t *self, uint16_t x, uint16_t y) {
-  uint16_t tile_location = y * self->width_in_tiles + x;
-  return self->inverts[tile_location];
+    uint16_t tile_location = y * self->width_in_tiles + x;
+    return self->inverts[tile_location];
 }
 
 void common_hal_displayio_tilegrid_set_inverted(displayio_tilegrid_t *self, uint16_t x, uint16_t y, bool inverted) {
-  uint16_t tile_location = y * self->width_in_tiles + x;
-  self->inverts[tile_location] = inverted;
+    uint16_t tile_location = y * self->width_in_tiles + x;
+    self->inverts[tile_location] = inverted;
 }
 
 void common_hal_displayio_tilegrid_set_top_left(displayio_tilegrid_t *self, uint16_t x, uint16_t y) {
@@ -505,13 +505,13 @@ bool displayio_tilegrid_fill_area(displayio_tilegrid_t *self,
             }
 
             if (mp_obj_is_type(self->pixel_shader, &displayio_palette_type) && common_hal_displayio_palette_get_len(self->pixel_shader) == 2) {
-              if (self->inverts[tile_location]) {
-                if (input_pixel.pixel == 0) {
-                  input_pixel.pixel = 1;
-                }else if (input_pixel.pixel == 1) {
-                  input_pixel.pixel = 0;
+                if (self->inverts[tile_location]) {
+                    if (input_pixel.pixel == 0) {
+                        input_pixel.pixel = 1;
+                    } else if (input_pixel.pixel == 1) {
+                        input_pixel.pixel = 0;
+                    }
                 }
-              }
             }
 
             output_pixel.opaque = true;

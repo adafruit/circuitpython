@@ -389,16 +389,16 @@ MP_PROPERTY_GETSET(displayio_tilegrid_bitmap_obj,
 //|         """Returns True if the tile at the given x, y coordinates is inverted."""
 //|
 static mp_obj_t displayio_tilegrid_obj_get_inverted(mp_obj_t self_in, mp_obj_t tile_coords) {
-  displayio_tilegrid_t *self = MP_OBJ_TO_PTR(self_in);
+    displayio_tilegrid_t *self = MP_OBJ_TO_PTR(self_in);
 
-  mp_obj_t *tile_coords_items;
-  mp_obj_get_array_fixed_n(tile_coords, 2, &tile_coords_items);
-  uint16_t x = 0;
-  uint16_t y = 0;
-  x = mp_obj_get_int(tile_coords_items[0]);
-  y = mp_obj_get_int(tile_coords_items[1]);
+    mp_obj_t *tile_coords_items;
+    mp_obj_get_array_fixed_n(tile_coords, 2, &tile_coords_items);
+    uint16_t x = 0;
+    uint16_t y = 0;
+    x = mp_obj_get_int(tile_coords_items[0]);
+    y = mp_obj_get_int(tile_coords_items[1]);
 
-  return mp_obj_new_bool(common_hal_displayio_tilegrid_get_inverted(self, x, y));
+    return mp_obj_new_bool(common_hal_displayio_tilegrid_get_inverted(self, x, y));
 }
 MP_DEFINE_CONST_FUN_OBJ_2(displayio_tilegrid_get_inverted_obj, displayio_tilegrid_obj_get_inverted);
 
@@ -406,18 +406,18 @@ MP_DEFINE_CONST_FUN_OBJ_2(displayio_tilegrid_get_inverted_obj, displayio_tilegri
 //|         """Set the tile at the given x, y coordinates to be inverted or not."""
 //|
 static mp_obj_t displayio_tilegrid_obj_set_inverted(mp_obj_t self_in, mp_obj_t tile_coords, mp_obj_t inverted_obj) {
-  displayio_tilegrid_t *self = MP_OBJ_TO_PTR(self_in);
+    displayio_tilegrid_t *self = MP_OBJ_TO_PTR(self_in);
 
-  mp_obj_t *tile_coords_items;
-  mp_obj_get_array_fixed_n(tile_coords, 2, &tile_coords_items);
-  uint16_t x = 0;
-  uint16_t y = 0;
-  x = mp_obj_get_int(tile_coords_items[0]);
-  y = mp_obj_get_int(tile_coords_items[1]);
-  bool inverted = mp_obj_is_true(inverted_obj);
+    mp_obj_t *tile_coords_items;
+    mp_obj_get_array_fixed_n(tile_coords, 2, &tile_coords_items);
+    uint16_t x = 0;
+    uint16_t y = 0;
+    x = mp_obj_get_int(tile_coords_items[0]);
+    y = mp_obj_get_int(tile_coords_items[1]);
+    bool inverted = mp_obj_is_true(inverted_obj);
 
-  common_hal_displayio_tilegrid_set_inverted(self, x, y, inverted);
-  return mp_const_none;
+    common_hal_displayio_tilegrid_set_inverted(self, x, y, inverted);
+    return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_3(displayio_tilegrid_set_inverted_obj, displayio_tilegrid_obj_set_inverted);
 

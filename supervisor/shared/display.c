@@ -95,19 +95,19 @@ void supervisor_start_terminal(uint16_t width_px, uint16_t height_px) {
         }
     }
     if (tilegrid_inverts) {
-      if (tilegrid_tiles_size != total_tiles) {
-        port_free(tilegrid_inverts);
-        tilegrid_inverts = NULL;
-        tilegrid_tiles_size = 0;
-        reset_tiles = true;
-      }
+        if (tilegrid_tiles_size != total_tiles) {
+            port_free(tilegrid_inverts);
+            tilegrid_inverts = NULL;
+            tilegrid_tiles_size = 0;
+            reset_tiles = true;
+        }
     }
     if (!tilegrid_inverts) {
-      tilegrid_inverts = port_malloc(total_tiles, false);
-      reset_tiles = true;
-      if (!tilegrid_inverts) {
-        return;
-      }
+        tilegrid_inverts = port_malloc(total_tiles, false);
+        reset_tiles = true;
+        if (!tilegrid_inverts) {
+            return;
+        }
     }
 
     if (reset_tiles) {
