@@ -68,10 +68,8 @@ bool displayio_tilegrid_get_rendered_hidden(displayio_tilegrid_t *self) {
 }
 
 void displayio_tilegird_clear_inverts(displayio_tilegrid_t *self) {
-    for (uint16_t x = 0; x < self->width_in_tiles; x++) {
-        for (uint16_t y = 0; y < self->height_in_tiles; y++) {
-            self->inverts[y * self->width_in_tiles + x] = false;
-        }
+    for (uint32_t i = 0; i < self->width_in_tiles * self->height_in_tiles; i++) {
+        self->inverts[i] = false;
     }
 }
 
@@ -504,20 +502,15 @@ bool displayio_tilegrid_fill_area(displayio_tilegrid_t *self,
                 input_pixel.pixel = common_hal_displayio_ondiskbitmap_get_pixel(self->bitmap, input_pixel.tile_x, input_pixel.tile_y);
             }
 
-            if (mp_obj_is_type(self->pixel_shader, &displayio_palette_type) && common_hal_displayio_palette_get_len(self->pixel_shader) == 2) {
-                if (self->inverts[tile_location]) {
-                    if (input_pixel.pixel == 0) {
-                        input_pixel.pixel = 1;
-                    } else if (input_pixel.pixel == 1) {
-                        input_pixel.pixel = 0;
-                    }
-                }
-            }
-
             output_pixel.opaque = true;
             if (self->pixel_shader == mp_const_none) {
                 output_pixel.pixel = input_pixel.pixel;
             } else if (mp_obj_is_type(self->pixel_shader, &displayio_palette_type)) {
+                if (common_hal_displayio_palette_get_len(self->pixel_shader) == 2) {
+                    if (self->inverts[tile_location]) {
+                        input_pixel.pixel = (input_pixel.pixel + 1) % 2;
+                    }
+                }
                 displayio_palette_get_color(self->pixel_shader, colorspace, &input_pixel, &output_pixel);
             } else if (mp_obj_is_type(self->pixel_shader, &displayio_colorconverter_type)) {
                 displayio_colorconverter_convert(self->pixel_shader, colorspace, &input_pixel, &output_pixel);
