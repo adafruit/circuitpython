@@ -385,6 +385,42 @@ MP_PROPERTY_GETSET(displayio_tilegrid_bitmap_obj,
     (mp_obj_t)&displayio_tilegrid_get_bitmap_obj,
     (mp_obj_t)&displayio_tilegrid_set_bitmap_obj);
 
+//|     def get_inverted(self, tile_coords: tuple) -> bool:
+//|         """Returns True if the tile at the given x, y coordinates is inverted."""
+//|
+static mp_obj_t displayio_tilegrid_obj_get_inverted(mp_obj_t self_in, mp_obj_t tile_coords) {
+  displayio_tilegrid_t *self = MP_OBJ_TO_PTR(self_in);
+
+  mp_obj_t *tile_coords_items;
+  mp_obj_get_array_fixed_n(tile_coords, 2, &tile_coords_items);
+  uint16_t x = 0;
+  uint16_t y = 0;
+  x = mp_obj_get_int(tile_coords_items[0]);
+  y = mp_obj_get_int(tile_coords_items[1]);
+
+  return mp_obj_new_bool(common_hal_displayio_tilegrid_get_inverted(self, x, y));
+}
+MP_DEFINE_CONST_FUN_OBJ_2(displayio_tilegrid_get_inverted_obj, displayio_tilegrid_obj_get_inverted);
+
+//|     def set_inverted(self, tile_coords: tuple, inverted: bool) -> None:
+//|         """Set the tile at the given x, y coordinates to be inverted or not."""
+//|
+static mp_obj_t displayio_tilegrid_obj_set_inverted(mp_obj_t self_in, mp_obj_t tile_coords, mp_obj_t inverted_obj) {
+  displayio_tilegrid_t *self = MP_OBJ_TO_PTR(self_in);
+
+  mp_obj_t *tile_coords_items;
+  mp_obj_get_array_fixed_n(tile_coords, 2, &tile_coords_items);
+  uint16_t x = 0;
+  uint16_t y = 0;
+  x = mp_obj_get_int(tile_coords_items[0]);
+  y = mp_obj_get_int(tile_coords_items[1]);
+  bool inverted = mp_obj_is_true(inverted_obj);
+
+  common_hal_displayio_tilegrid_set_inverted(self, x, y, inverted);
+  return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_3(displayio_tilegrid_set_inverted_obj, displayio_tilegrid_obj_set_inverted);
+
 //|     def __getitem__(self, index: Union[Tuple[int, int], int]) -> int:
 //|         """Returns the tile index at the given index. The index can either be an x,y tuple or an int equal
 //|         to ``y * width + x``.
@@ -461,6 +497,8 @@ static const mp_rom_map_elem_t displayio_tilegrid_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_flip_y), MP_ROM_PTR(&displayio_tilegrid_flip_y_obj) },
     { MP_ROM_QSTR(MP_QSTR_transpose_xy), MP_ROM_PTR(&displayio_tilegrid_transpose_xy_obj) },
     { MP_ROM_QSTR(MP_QSTR_contains), MP_ROM_PTR(&displayio_tilegrid_contains_obj) },
+    { MP_ROM_QSTR(MP_QSTR_get_inverted), MP_ROM_PTR(&displayio_tilegrid_get_inverted_obj) },
+    { MP_ROM_QSTR(MP_QSTR_set_inverted), MP_ROM_PTR(&displayio_tilegrid_set_inverted_obj) },
     { MP_ROM_QSTR(MP_QSTR_pixel_shader), MP_ROM_PTR(&displayio_tilegrid_pixel_shader_obj) },
     { MP_ROM_QSTR(MP_QSTR_bitmap), MP_ROM_PTR(&displayio_tilegrid_bitmap_obj) },
 };

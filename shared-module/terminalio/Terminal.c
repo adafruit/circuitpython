@@ -8,6 +8,7 @@
 
 #include "shared-module/fontio/BuiltinFont.h"
 #include "shared-bindings/displayio/TileGrid.h"
+#include "shared-module/displayio/TileGrid.h"
 #include "shared-bindings/terminalio/Terminal.h"
 
 #if CIRCUITPY_STATUS_BAR
@@ -33,8 +34,10 @@ void common_hal_terminalio_terminal_construct(terminalio_terminal_obj_t *self,
     self->status_y = 0;
     self->first_row = 0;
     common_hal_displayio_tilegrid_set_all_tiles(self->scroll_area, 0);
+    displayio_tilegird_clear_inverts(scroll_area);
     if (self->status_bar) {
         common_hal_displayio_tilegrid_set_all_tiles(self->status_bar, 0);
+        displayio_tilegird_clear_inverts(self->status_bar);
     }
 
     common_hal_displayio_tilegrid_set_top_left(self->scroll_area, 0, 1);

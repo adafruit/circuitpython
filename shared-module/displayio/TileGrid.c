@@ -17,6 +17,7 @@ void common_hal_displayio_tilegrid_construct(displayio_tilegrid_t *self, mp_obj_
     mp_obj_t pixel_shader, uint16_t width, uint16_t height,
     uint16_t tile_width, uint16_t tile_height, uint16_t x, uint16_t y, uint8_t default_tile) {
     uint32_t total_tiles = width * height;
+    self->inverts = (bool *)m_malloc(total_tiles);
     // Sprites will only have one tile so save a little memory by inlining values in the pointer.
     uint8_t inline_tiles = sizeof(uint8_t *);
     if (total_tiles <= inline_tiles) {
@@ -54,6 +55,7 @@ void common_hal_displayio_tilegrid_construct(displayio_tilegrid_t *self, mp_obj_
     self->flip_y = false;
     self->transpose_xy = false;
     self->absolute_transform = NULL;
+    displayio_tilegird_clear_inverts(self);
 }
 
 
@@ -63,6 +65,14 @@ bool common_hal_displayio_tilegrid_get_hidden(displayio_tilegrid_t *self) {
 
 bool displayio_tilegrid_get_rendered_hidden(displayio_tilegrid_t *self) {
     return self->rendered_hidden;
+}
+
+void displayio_tilegird_clear_inverts(displayio_tilegrid_t *self) {
+  for (uint16_t x = 0; x < self->width_in_tiles; x++) {
+    for (uint16_t y = 0; y < self->height_in_tiles; y++) {
+      self->inverts[y * self->width_in_tiles + x] = false;
+    }
+  }
 }
 
 void common_hal_displayio_tilegrid_set_hidden(displayio_tilegrid_t *self, bool hidden) {
@@ -355,6 +365,16 @@ bool common_hal_displayio_tilegrid_contains(displayio_tilegrid_t *self, uint16_t
            y >= self->y && y < bottom_edge;
 }
 
+bool common_hal_displayio_tilegrid_get_inverted(displayio_tilegrid_t *self, uint16_t x, uint16_t y) {
+  uint16_t tile_location = y * self->width_in_tiles + x;
+  return self->inverts[tile_location];
+}
+
+void common_hal_displayio_tilegrid_set_inverted(displayio_tilegrid_t *self, uint16_t x, uint16_t y, bool inverted) {
+  uint16_t tile_location = y * self->width_in_tiles + x;
+  self->inverts[tile_location] = inverted;
+}
+
 void common_hal_displayio_tilegrid_set_top_left(displayio_tilegrid_t *self, uint16_t x, uint16_t y) {
     self->top_left_x = x;
     self->top_left_y = y;
@@ -482,6 +502,16 @@ bool displayio_tilegrid_fill_area(displayio_tilegrid_t *self,
                 input_pixel.pixel = common_hal_displayio_bitmap_get_pixel(self->bitmap, input_pixel.tile_x, input_pixel.tile_y);
             } else if (mp_obj_is_type(self->bitmap, &displayio_ondiskbitmap_type)) {
                 input_pixel.pixel = common_hal_displayio_ondiskbitmap_get_pixel(self->bitmap, input_pixel.tile_x, input_pixel.tile_y);
+            }
+
+            if (mp_obj_is_type(self->pixel_shader, &displayio_palette_type) && common_hal_displayio_palette_get_len(self->pixel_shader) == 2) {
+              if (self->inverts[tile_location]) {
+                if (input_pixel.pixel == 0) {
+                  input_pixel.pixel = 1;
+                }else if (input_pixel.pixel == 1) {
+                  input_pixel.pixel = 0;
+                }
+              }
             }
 
             output_pixel.opaque = true;

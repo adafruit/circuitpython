@@ -46,6 +46,7 @@ extern displayio_group_t circuitpython_splash;
 
 #if CIRCUITPY_TERMINALIO
 static uint8_t *tilegrid_tiles = NULL;
+static bool *tilegrid_inverts = NULL;
 static size_t tilegrid_tiles_size = 0;
 #endif
 
@@ -93,6 +94,21 @@ void supervisor_start_terminal(uint16_t width_px, uint16_t height_px) {
             return;
         }
     }
+    if (tilegrid_inverts) {
+      if (tilegrid_tiles_size != total_tiles) {
+        port_free(tilegrid_inverts);
+        tilegrid_inverts = NULL;
+        tilegrid_tiles_size = 0;
+        reset_tiles = true;
+      }
+    }
+    if (!tilegrid_inverts) {
+      tilegrid_inverts = port_malloc(total_tiles, false);
+      reset_tiles = true;
+      if (!tilegrid_inverts) {
+        return;
+      }
+    }
 
     if (reset_tiles) {
         // Adjust the display dimensions to account for scale of the outer group.
@@ -117,6 +133,7 @@ void supervisor_start_terminal(uint16_t width_px, uint16_t height_px) {
         status_bar->x = width_px - status_bar->pixel_width;
         status_bar->top_left_y = 0;
         status_bar->tiles = tilegrid_tiles;
+        status_bar->inverts = tilegrid_inverts;
         status_bar->full_change = true;
 
         scroll_area->width_in_tiles = width_in_tiles;
@@ -131,6 +148,7 @@ void supervisor_start_terminal(uint16_t width_px, uint16_t height_px) {
         // may be clipped by the status bar and that's ok.
         scroll_area->y = height_px - scroll_area->pixel_height;
         scroll_area->tiles = tilegrid_tiles + width_in_tiles;
+        scroll_area->inverts = tilegrid_inverts + width_in_tiles;
         scroll_area->full_change = true;
 
         common_hal_terminalio_terminal_construct(&supervisor_terminal, scroll_area, &supervisor_terminal_font, status_bar);

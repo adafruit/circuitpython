@@ -31,6 +31,7 @@ typedef struct {
     uint16_t top_left_x;
     uint16_t top_left_y;
     uint8_t *tiles;
+    bool *inverts;
     const displayio_buffer_transform_t *absolute_transform;
     displayio_area_t dirty_area; // Stored as a relative area until the refresh area is fetched.
     displayio_area_t previous_area; // Stored as an absolute area.
@@ -67,3 +68,5 @@ bool displayio_tilegrid_get_previous_area(displayio_tilegrid_t *self, displayio_
 void displayio_tilegrid_finish_refresh(displayio_tilegrid_t *self);
 
 bool displayio_tilegrid_get_rendered_hidden(displayio_tilegrid_t *self);
+
+void displayio_tilegird_clear_inverts(displayio_tilegrid_t *self);
