@@ -4,6 +4,7 @@
 //
 // SPDX-License-Identifier: MIT
 #include "shared-bindings/audiodelays/Echo.h"
+#include "shared-bindings/audiocore/__init__.h"
 
 #include <stdint.h>
 #include "py/runtime.h"
@@ -104,17 +105,8 @@ void common_hal_audiodelays_echo_construct(audiodelays_echo_obj_t *self, uint32_
     self->echo_buffer_left_pos = self->echo_buffer_right_pos = 0;
 }
 
-bool common_hal_audiodelays_echo_deinited(audiodelays_echo_obj_t *self) {
-    if (self->echo_buffer == NULL) {
-        return true;
-    }
-    return false;
-}
-
 void common_hal_audiodelays_echo_deinit(audiodelays_echo_obj_t *self) {
-    if (common_hal_audiodelays_echo_deinited(self)) {
-        return;
-    }
+    audiosample_mark_deinit(&self->base);
     self->echo_buffer = NULL;
     self->buffer[0] = NULL;
     self->buffer[1] = NULL;

@@ -11,6 +11,7 @@
 
 #include "py/runtime.h"
 #include "shared-module/audiocore/__init__.h"
+#include "shared-bindings/audiocore/__init__.h"
 
 #if defined(__arm__) && __arm__
 #include "cmsis_compiler.h"
@@ -47,12 +48,9 @@ void common_hal_audiomixer_mixer_construct(audiomixer_mixer_obj_t *self,
 }
 
 void common_hal_audiomixer_mixer_deinit(audiomixer_mixer_obj_t *self) {
+    audiosample_mark_deinit(&self->base);
     self->first_buffer = NULL;
     self->second_buffer = NULL;
-}
-
-bool common_hal_audiomixer_mixer_deinited(audiomixer_mixer_obj_t *self) {
-    return self->first_buffer == NULL;
 }
 
 bool common_hal_audiomixer_mixer_get_playing(audiomixer_mixer_obj_t *self) {
