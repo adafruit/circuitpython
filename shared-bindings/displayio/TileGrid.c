@@ -395,8 +395,8 @@ static mp_obj_t displayio_tilegrid_obj_get_inverted(mp_obj_t self_in, mp_obj_t t
     mp_obj_get_array_fixed_n(tile_coords, 2, &tile_coords_items);
     uint16_t x = 0;
     uint16_t y = 0;
-    x = mp_obj_get_int(tile_coords_items[0]);
-    y = mp_obj_get_int(tile_coords_items[1]);
+    x = mp_arg_validate_int_range(mp_obj_get_int(tile_coords_items[0]), 0, self->width_in_tiles - 1, MP_QSTR_x);
+    y = mp_arg_validate_int_range(mp_obj_get_int(tile_coords_items[1]), 0, self->height_in_tiles - 1, MP_QSTR_y);
 
     return mp_obj_new_bool(common_hal_displayio_tilegrid_get_inverted(self, x, y));
 }
@@ -412,8 +412,8 @@ static mp_obj_t displayio_tilegrid_obj_set_inverted(mp_obj_t self_in, mp_obj_t t
     mp_obj_get_array_fixed_n(tile_coords, 2, &tile_coords_items);
     uint16_t x = 0;
     uint16_t y = 0;
-    x = mp_obj_get_int(tile_coords_items[0]);
-    y = mp_obj_get_int(tile_coords_items[1]);
+    x = mp_arg_validate_int_range(mp_obj_get_int(tile_coords_items[0]), 0, self->width_in_tiles - 1, MP_QSTR_x);
+    y = mp_arg_validate_int_range(mp_obj_get_int(tile_coords_items[1]), 0, self->height_in_tiles - 1, MP_QSTR_y);
     bool inverted = mp_obj_is_true(inverted_obj);
 
     common_hal_displayio_tilegrid_set_inverted(self, x, y, inverted);
