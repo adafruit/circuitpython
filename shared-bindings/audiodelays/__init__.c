@@ -11,6 +11,7 @@
 
 #include "shared-bindings/audiodelays/__init__.h"
 #include "shared-bindings/audiodelays/Echo.h"
+#include "shared-bindings/audiodelays/Chorus.h"
 
 //| """Support for audio delay effects
 //|
@@ -21,6 +22,7 @@
 static const mp_rom_map_elem_t audiodelays_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_audiodelays) },
     { MP_ROM_QSTR(MP_QSTR_Echo), MP_ROM_PTR(&audiodelays_echo_type) },
+    { MP_ROM_QSTR(MP_QSTR_Chorus), MP_ROM_PTR(&audiodelays_chorus_type) },
 };
 
 static MP_DEFINE_CONST_DICT(audiodelays_module_globals, audiodelays_module_globals_table);
