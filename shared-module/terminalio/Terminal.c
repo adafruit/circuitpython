@@ -33,6 +33,8 @@ void common_hal_terminalio_terminal_construct(terminalio_terminal_obj_t *self,
     self->status_x = 0;
     self->status_y = 0;
     self->first_row = 0;
+    self->vt_scroll_top = 0;
+    self->vt_scroll_end = self->scroll_area->height_in_tiles - 1;
     common_hal_displayio_tilegrid_set_all_tiles(self->scroll_area, 0);
     if (self->status_bar) {
         common_hal_displayio_tilegrid_set_all_tiles(self->status_bar, 0);
@@ -42,6 +44,8 @@ void common_hal_terminalio_terminal_construct(terminalio_terminal_obj_t *self,
 }
 
 size_t common_hal_terminalio_terminal_write(terminalio_terminal_obj_t *self, const byte *data, size_t len, int *errcode) {
+    #define scrnmod(x) (((x) + (self->scroll_area->top_left_y)) % (self->scroll_area->height_in_tiles))
+
     // Make sure the terminal is initialized before we do anything with it.
     if (self->scroll_area == NULL) {
         return len;
@@ -114,7 +118,7 @@ size_t common_hal_terminalio_terminal_write(terminalio_terminal_obj_t *self, con
                 }
             } else if (c == 0x1b) {
                 // Handle commands of the form [ESC].<digits><command-char> where . is not yet known.
-                uint8_t vt_args[3] = {0, -1, -1};
+                int16_t vt_args[3] = {0, -1, -1};
                 uint8_t j = 1;
                 #if CIRCUITPY_TERMINALIO_VT100
                 uint8_t n_args = 1;
@@ -158,8 +162,8 @@ size_t common_hal_terminalio_terminal_write(terminalio_terminal_obj_t *self, con
                         #endif
                     } else {
                         if (c == 'K') {
-                            uint8_t clr_start = self->cursor_x;
-                            uint8_t clr_end = self->scroll_area->width_in_tiles;
+                            int16_t clr_start = self->cursor_x;
+                            int16_t clr_end = self->scroll_area->width_in_tiles;
                             #if CIRCUITPY_TERMINALIO_VT100
                             if (vt_args[0] == 1) {
                                 clr_start = 0;
@@ -200,7 +204,7 @@ size_t common_hal_terminalio_terminal_write(terminalio_terminal_obj_t *self, con
                             if (vt_args[1] >= self->scroll_area->width_in_tiles) {
                                 vt_args[1] = self->scroll_area->width_in_tiles - 1;
                             }
-                            vt_args[0] = (vt_args[0] + self->scroll_area->top_left_y) % self->scroll_area->height_in_tiles;
+                            vt_args[0] = scrnmod(vt_args[0]);
                             self->cursor_x = vt_args[1];
                             self->cursor_y = vt_args[0];
                             start_y = self->cursor_y;
@@ -215,39 +219,77 @@ size_t common_hal_terminalio_terminal_write(terminalio_terminal_obj_t *self, con
                                     common_hal_displayio_palette_set_color(terminal_palette, 1, 0xffffff);
                                 }
                             }
+                        } else if (c == 'r') {
+                            if (vt_args[0] < vt_args[1] && vt_args[0] >= 1 && vt_args[1] <= self->scroll_area->height_in_tiles) {
+                                self->vt_scroll_top = vt_args[0] - 1;
+                                self->vt_scroll_end = vt_args[1] - 1;
+                            } else {
+                                self->vt_scroll_top = 0;
+                                self->vt_scroll_end = self->scroll_area->height_in_tiles - 1;
+                            }
+                            self->cursor_x = 0;
+                            self->cursor_y = self->scroll_area->top_left_y % self->scroll_area->height_in_tiles;
+                            start_y = self->cursor_y;
                         #endif
                         }
                         i += j + 1;
                     }
                 #if CIRCUITPY_TERMINALIO_VT100
                 } else if (i[0] == 'M') {
-                    if (self->cursor_y != self->scroll_area->top_left_y) {
+                    if (self->cursor_y != scrnmod(self->vt_scroll_top)) {
                         if (self->cursor_y > 0) {
                             self->cursor_y = self->cursor_y - 1;
                         } else {
                             self->cursor_y = self->scroll_area->height_in_tiles - 1;
                         }
                     } else {
-                        if (self->cursor_y > 0) {
-                            common_hal_displayio_tilegrid_set_top_left(self->scroll_area, 0, self->cursor_y - 1);
+                        if (self->vt_scroll_top != 0 || self->vt_scroll_end != self->scroll_area->height_in_tiles) {
+                            // Scroll range defined, manually move tiles to perform scroll
+                            for (int16_t irow = self->vt_scroll_end - 1; irow >= self->vt_scroll_top; irow--) {
+                                for (int16_t icol = 0; icol < self->scroll_area->width_in_tiles; icol++) {
+                                    common_hal_displayio_tilegrid_set_tile(self->scroll_area, icol, scrnmod(irow + 1), common_hal_displayio_tilegrid_get_tile(self->scroll_area, icol, scrnmod(irow)));
+                                }
+                            }
+                            for (int16_t icol = 0; icol < self->scroll_area->width_in_tiles; icol++) {
+                                common_hal_displayio_tilegrid_set_tile(self->scroll_area, icol, self->cursor_y, 0);
+                            }
                         } else {
-                            common_hal_displayio_tilegrid_set_top_left(self->scroll_area, 0, self->scroll_area->height_in_tiles - 1);
+                            // Full screen scroll, just set new top_y pointer and clear row
+                            if (self->cursor_y > 0) {
+                                common_hal_displayio_tilegrid_set_top_left(self->scroll_area, 0, self->cursor_y - 1);
+                            } else {
+                                common_hal_displayio_tilegrid_set_top_left(self->scroll_area, 0, self->scroll_area->height_in_tiles - 1);
+                            }
+                            for (uint16_t icol = 0; icol < self->scroll_area->width_in_tiles; icol++) {
+                                common_hal_displayio_tilegrid_set_tile(self->scroll_area, icol, self->scroll_area->top_left_y, 0);
+                            }
+                            self->cursor_y = self->scroll_area->top_left_y;
                         }
-                        for (uint8_t icol = 0; icol < self->scroll_area->width_in_tiles; icol++) {
-                            common_hal_displayio_tilegrid_set_tile(self->scroll_area, icol, self->scroll_area->top_left_y, 0);
-                        }
-
                         self->cursor_x = 0;
-                        self->cursor_y = self->scroll_area->top_left_y;
                     }
                     start_y = self->cursor_y;
                     i++;
                 } else if (i[0] == 'D') {
-                    self->cursor_y = (self->cursor_y + 1) % self->scroll_area->height_in_tiles;
-                    if (self->cursor_y == self->scroll_area->top_left_y) {
-                        common_hal_displayio_tilegrid_set_top_left(self->scroll_area, 0, (self->cursor_y + 1) % self->scroll_area->height_in_tiles);
-                        for (uint8_t icol = 0; icol < self->scroll_area->width_in_tiles; icol++) {
-                            common_hal_displayio_tilegrid_set_tile(self->scroll_area, icol, self->cursor_y, 0);
+                    if (self->cursor_y != scrnmod(self->vt_scroll_end)) {
+                        self->cursor_y = (self->cursor_y + 1) % self->scroll_area->height_in_tiles;
+                    } else {
+                        if (self->vt_scroll_top != 0 || self->vt_scroll_end != self->scroll_area->height_in_tiles) {
+                            // Scroll range defined, manually move tiles to perform scroll
+                            for (int16_t irow = self->vt_scroll_top; irow < self->vt_scroll_end; irow++) {
+                                for (int16_t icol = 0; icol < self->scroll_area->width_in_tiles; icol++) {
+                                    common_hal_displayio_tilegrid_set_tile(self->scroll_area, icol, scrnmod(irow), common_hal_displayio_tilegrid_get_tile(self->scroll_area, icol, scrnmod(irow + 1)));
+                                }
+                            }
+                            for (int16_t icol = 0; icol < self->scroll_area->width_in_tiles; icol++) {
+                                common_hal_displayio_tilegrid_set_tile(self->scroll_area, icol, self->cursor_y, 0);
+                            }
+                        } else {
+                            // Full screen scroll, just set new top_y pointer and clear row
+                            self->cursor_y = (self->cursor_y + 1) % self->scroll_area->height_in_tiles;
+                            common_hal_displayio_tilegrid_set_top_left(self->scroll_area, 0, (self->cursor_y + 1) % self->scroll_area->height_in_tiles);
+                            for (int16_t icol = 0; icol < self->scroll_area->width_in_tiles; icol++) {
+                                common_hal_displayio_tilegrid_set_tile(self->scroll_area, icol, self->cursor_y, 0);
+                            }
                         }
                         self->cursor_x = 0;
                     }
@@ -276,12 +318,28 @@ size_t common_hal_terminalio_terminal_write(terminalio_terminal_obj_t *self, con
             self->cursor_y %= self->scroll_area->height_in_tiles;
         }
         if (self->cursor_y != start_y) {
-            // clear the new row in case of scroll up
-            if (self->cursor_y == self->scroll_area->top_left_y) {
-                for (uint16_t j = 0; j < self->scroll_area->width_in_tiles; j++) {
-                    common_hal_displayio_tilegrid_set_tile(self->scroll_area, j, self->cursor_y, 0);
+            if (((self->cursor_y + self->scroll_area->height_in_tiles) - 1) % self->scroll_area->height_in_tiles == scrnmod(self->vt_scroll_end)) {
+                #if CIRCUITPY_TERMINALIO_VT100
+                if (self->vt_scroll_top != 0 || self->vt_scroll_end != self->scroll_area->height_in_tiles) {
+                    // Scroll range defined, manually move tiles to perform scroll
+                    self->cursor_y = scrnmod(self->vt_scroll_end);
+
+                    for (int16_t irow = self->vt_scroll_top; irow < self->vt_scroll_end; irow++) {
+                        for (int16_t icol = 0; icol < self->scroll_area->width_in_tiles; icol++) {
+                            common_hal_displayio_tilegrid_set_tile(self->scroll_area, icol, scrnmod(irow), common_hal_displayio_tilegrid_get_tile(self->scroll_area, icol, scrnmod(irow + 1)));
+                        }
+                    }
                 }
-                common_hal_displayio_tilegrid_set_top_left(self->scroll_area, 0, (self->cursor_y + self->scroll_area->height_in_tiles + 1) % self->scroll_area->height_in_tiles);
+                #endif
+                if (self->vt_scroll_top == 0 && self->vt_scroll_end == self->scroll_area->height_in_tiles) {
+                    // Full screen scroll, just set new top_y pointer
+                    common_hal_displayio_tilegrid_set_top_left(self->scroll_area, 0, (self->cursor_y + self->scroll_area->height_in_tiles + 1) % self->scroll_area->height_in_tiles);
+                }
+                // clear the new row in case of scroll up
+                for (int16_t icol = 0; icol < self->scroll_area->width_in_tiles; icol++) {
+                    common_hal_displayio_tilegrid_set_tile(self->scroll_area, icol, self->cursor_y, 0);
+                }
+                self->cursor_x = 0;
             }
             start_y = self->cursor_y;
         }

@@ -39,6 +39,8 @@
 //|     * ``ESC [ H`` - Move the cursor to 0,0.
 //|     * ``ESC M`` - Move the cursor up one line, scrolling if necessary.
 //|     * ``ESC D`` - Move the cursor down one line, scrolling if necessary.
+//|     * ``ESC [ r`` - Disable scrolling range (set to fullscreen).
+//|     * ``ESC [ nnnn ; mmmm r`` - Set scrolling range between rows nnnn and mmmm.
 //|     * ``ESC [ ## m`` - Set the terminal display attributes.
 //|     * ``ESC [ ## ; ## m`` - Set the terminal display attributes.
 //|     * ``ESC [ ## ; ## ; ## m`` - Set the terminal display attributes.
