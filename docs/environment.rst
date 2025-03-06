@@ -158,9 +158,13 @@ Selects the desired resolution and color depth.
 
 Supported resolutions are:
  * 640x480 with color depth 1, 2, 4 or 8 bits per pixel
- * 320x240 with color depth 8 or 16 bits per pixel
+ * 320x240 with pixel doubling and color depth 8, 16, or 32 bits per pixel
+ * 360x200 with pixel doubling and color depth 8, 16, or 32 bits per pixel
 
-The default value, if unspecified, is 320x240 with 16 bits per pixel.
+See :py:class:`picodvi.Framebuffer` for more details.
+
+The default value, if unspecified, is 360x200 16 bits per pixel if the connected
+display is 1920x1080 or a multiple of it, otherwise 320x240 with 16 bits per pixel.
 
 If height is unspecified, it is set from the width. For example, a width of 640
 implies a height of 480.
