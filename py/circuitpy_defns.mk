@@ -396,6 +396,9 @@ endif
 ifeq ($(CIRCUITPY_FONTIO),1)
 SRC_PATTERNS += fontio/%
 endif
+ifeq ($(CIRCUITPY_TILEPALETTEMAPPER),1)
+SRC_PATTERNS += tilepalettemapper/%
+endif
 ifeq ($(CIRCUITPY_TIME),1)
 SRC_PATTERNS += time/%
 endif
@@ -733,6 +736,8 @@ SRC_SHARED_MODULE_ALL = \
 	synthio/__init__.c \
 	terminalio/Terminal.c \
 	terminalio/__init__.c \
+	tilepalettemapper/__init__.c \
+	tilepalettemapper/TilePaletteMapper.c \
 	time/__init__.c \
 	traceback/__init__.c \
 	uheap/__init__.c \

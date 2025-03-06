@@ -17,6 +17,25 @@
 #include "shared-bindings/displayio/ColorConverter.h"
 #include "shared-bindings/displayio/OnDiskBitmap.h"
 #include "shared-bindings/displayio/Palette.h"
+#ifdef CIRCUITPY_TILEPALETTEMAPPER
+#include "shared-bindings/tilepalettemapper/TilePaletteMapper.h"
+#endif
+
+
+void displayio_tilegrid_validate_pixel_shader(mp_obj_t pixel_shader) {
+    bool valid_type = true;
+    if (!mp_obj_is_type(pixel_shader, &displayio_palette_type) && !mp_obj_is_type(pixel_shader, &displayio_colorconverter_type)) {
+        valid_type = false;
+    }
+    #if CIRCUITPY_TILEPALETTEMAPPER
+    if (mp_obj_is_type(pixel_shader, &tilepalettemapper_tilepalettemapper_type)) {
+        valid_type = true;
+    }
+    #endif
+    if (!valid_type) {
+        mp_raise_TypeError_varg(MP_ERROR_TEXT("unsupported %q type"), MP_QSTR_pixel_shader);
+    }
+}
 
 //| class TileGrid:
 //|     """A grid of tiles sourced out of one bitmap
@@ -89,10 +108,7 @@ static mp_obj_t displayio_tilegrid_make_new(const mp_obj_type_t *type, size_t n_
         mp_raise_TypeError_varg(MP_ERROR_TEXT("unsupported %q type"), MP_QSTR_bitmap);
     }
     mp_obj_t pixel_shader = args[ARG_pixel_shader].u_obj;
-    if (!mp_obj_is_type(pixel_shader, &displayio_colorconverter_type) &&
-        !mp_obj_is_type(pixel_shader, &displayio_palette_type)) {
-        mp_raise_TypeError_varg(MP_ERROR_TEXT("unsupported %q type"), MP_QSTR_pixel_shader);
-    }
+    displayio_tilegrid_validate_pixel_shader(pixel_shader);
     uint16_t tile_width = args[ARG_tile_width].u_int;
     if (tile_width == 0) {
         tile_width = bitmap_width;
@@ -323,10 +339,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(displayio_tilegrid_get_pixel_shader_obj, displayio_til
 
 static mp_obj_t displayio_tilegrid_obj_set_pixel_shader(mp_obj_t self_in, mp_obj_t pixel_shader) {
     displayio_tilegrid_t *self = native_tilegrid(self_in);
-    if (!mp_obj_is_type(pixel_shader, &displayio_palette_type) && !mp_obj_is_type(pixel_shader, &displayio_colorconverter_type)) {
-        mp_raise_TypeError_varg(MP_ERROR_TEXT("unsupported %q type"), MP_QSTR_pixel_shader);
-    }
-
+    displayio_tilegrid_validate_pixel_shader(pixel_shader);
     common_hal_displayio_tilegrid_set_pixel_shader(self, pixel_shader);
 
     return mp_const_none;

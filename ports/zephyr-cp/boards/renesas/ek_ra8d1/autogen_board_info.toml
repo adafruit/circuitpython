@@ -90,6 +90,7 @@ struct = true
 supervisor = false
 synthio = false
 terminalio = false
+tilepalettemapper = false
 time = true
 touchio = false
 traceback = false

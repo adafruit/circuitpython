@@ -67,3 +67,4 @@ bool displayio_tilegrid_get_previous_area(displayio_tilegrid_t *self, displayio_
 void displayio_tilegrid_finish_refresh(displayio_tilegrid_t *self);
 
 bool displayio_tilegrid_get_rendered_hidden(displayio_tilegrid_t *self);
+void displayio_tilegrid_validate_pixel_shader(mp_obj_t pixel_shader);
