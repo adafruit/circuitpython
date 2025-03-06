@@ -39,6 +39,6 @@ typedef struct {
     mp_uint_t output_width;
     uint16_t pitch; // Number of words between rows. (May be more than a width's worth.)
     uint8_t color_depth;
-    uint8_t dma_pixel_channel;
-    uint8_t dma_command_channel;
+    int dma_pixel_channel;
+    int dma_command_channel;
 } picodvi_framebuffer_obj_t;

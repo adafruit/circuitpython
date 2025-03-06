@@ -27,21 +27,16 @@ static void write_page(uint32_t page_addr, uint32_t offset, uint32_t len, uint8_
     // Write a whole page to flash, buffering it first and then erasing and rewriting it
     // since we can only write a whole page at a time.
     if (offset == 0 && len == FLASH_PAGE_SIZE) {
-        // disable interrupts to prevent core hang on rp2040
-        common_hal_mcu_disable_interrupts();
         supervisor_flash_pre_write();
         flash_range_program(RMV_OFFSET(page_addr), bytes, FLASH_PAGE_SIZE);
         supervisor_flash_post_write();
-        common_hal_mcu_enable_interrupts();
     } else {
         uint8_t buffer[FLASH_PAGE_SIZE];
         memcpy(buffer, (uint8_t *)page_addr, FLASH_PAGE_SIZE);
         memcpy(buffer + offset, bytes, len);
-        common_hal_mcu_disable_interrupts();
         supervisor_flash_pre_write();
         flash_range_program(RMV_OFFSET(page_addr), buffer, FLASH_PAGE_SIZE);
         supervisor_flash_post_write();
-        common_hal_mcu_enable_interrupts();
     }
 
 }
