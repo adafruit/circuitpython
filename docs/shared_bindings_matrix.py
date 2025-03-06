@@ -362,7 +362,7 @@ def support_matrix_by_board(
         if use_branded_name:
             board_name = branded_name
         else:
-            board_name = board_directory.name
+            board_name = board_id
 
         if add_chips:
             with open(board_directory / "mpconfigboard.h") as get_name:

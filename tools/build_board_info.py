@@ -248,28 +248,23 @@ def generate_download_info():
 
     board_mapping = get_board_mapping()
 
-    for port in SUPPORTED_PORTS:
-        board_path = os.path.join("../ports", port, "boards")
-        for board_path in os.scandir(board_path):
-            if board_path.is_dir():
-                board_id = board_path.name
-                board_info = board_mapping[board_id]
-                for alias in [board_id] + board_info["aliases"]:
-                    alias_info = board_mapping[alias]
-                    if alias not in current_info:
-                        changes["new_boards"].append(alias)
-                        current_info[alias] = {"downloads": 0, "versions": []}
-                    new_version = {
-                        "stable": new_stable,
-                        "version": new_tag,
-                        "languages": languages,
-                        # add modules, extensions, frozen_libraries explicitly
-                        "modules": support_matrix[alias]["modules"],
-                        "extensions": support_matrix[alias]["extensions"],
-                        "frozen_libraries": support_matrix[alias]["frozen_libraries"],
-                    }
-                    current_info[alias]["downloads"] = alias_info["download_count"]
-                    current_info[alias]["versions"].append(new_version)
+    for board_id, board_info in board_mapping.items():
+        for alias in [board_id] + board_info["aliases"]:
+            alias_info = board_mapping[alias]
+            if alias not in current_info:
+                changes["new_boards"].append(alias)
+                current_info[alias] = {"downloads": 0, "versions": []}
+            new_version = {
+                "stable": new_stable,
+                "version": new_tag,
+                "languages": languages,
+                # add modules, extensions, frozen_libraries explicitly
+                "modules": support_matrix[alias]["modules"],
+                "extensions": support_matrix[alias]["extensions"],
+                "frozen_libraries": support_matrix[alias]["frozen_libraries"],
+            }
+            current_info[alias]["downloads"] = alias_info["download_count"]
+            current_info[alias]["versions"].append(new_version)
 
     changes["new_languages"] = set(languages) - previous_languages
 
