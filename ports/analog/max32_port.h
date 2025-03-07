@@ -24,7 +24,7 @@
 
 // UART Ports & pins
 #include "peripherals/max32690/max32_uart.h"
-#define NUM_UARTS 4
+#include "peripherals/max32690/max32_i2c.h"
 
 /** START: GPIO4 Handling specific to MAX32690 */
     #define GPIO4_PIN_MASK 0x00000003
