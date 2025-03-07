@@ -20,8 +20,14 @@
 
 #define MSC_FLASH_BLOCK_SIZE    512
 
-static bool ejected[1] = {true};
-static bool locked[1] = {false};
+#if CIRCUITPY_SAVES_PARTITION_SIZE > 0
+#define LUN_COUNT 2
+#else
+#define LUN_COUNT 1
+#endif
+
+static bool ejected[LUN_COUNT];
+static bool locked[LUN_COUNT];
 
 #include "tusb.h"
 
@@ -99,23 +105,26 @@ size_t usb_msc_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *desc
 
 // The root FS is always at the end of the list.
 static fs_user_mount_t *get_vfs(int lun) {
-    // TODO(tannewt): Return the mount which matches the lun where 0 is the end
-    // and is counted in reverse.
-    if (lun > 0) {
-        return NULL;
-    }
+    // Keep a history of the mounts we pass so we can search back.
+    mp_vfs_mount_t *mounts[LUN_COUNT];
     mp_vfs_mount_t *current_mount = MP_STATE_VM(vfs_mount_table);
     if (current_mount == NULL) {
         return NULL;
     }
+    // i is the last entry filled
+    size_t i = 0;
+    mounts[i] = current_mount;
     while (current_mount->next != NULL) {
         current_mount = current_mount->next;
+        i = (i + 1) % LUN_COUNT;
+        mounts[i] = current_mount;
     }
-    return current_mount->obj;
+    fs_user_mount_t *vfs = mounts[(i - lun) % LUN_COUNT]->obj;
+    return vfs;
 }
 
 static void _usb_msc_uneject(void) {
-    for (uint8_t i = 0; i < sizeof(ejected); i++) {
+    for (uint8_t i = 0; i < LUN_COUNT; i++) {
         ejected[i] = false;
         locked[i] = false;
     }
@@ -126,7 +135,7 @@ void usb_msc_mount(void) {
 }
 
 void usb_msc_umount(void) {
-    for (uint8_t i = 0; i < sizeof(ejected); i++) {
+    for (uint8_t i = 0; i < LUN_COUNT; i++) {
         fs_user_mount_t *vfs = get_vfs(i + 1);
         if (vfs == NULL) {
             continue;
@@ -138,10 +147,14 @@ void usb_msc_umount(void) {
 
 bool usb_msc_ejected(void) {
     bool all_ejected = true;
-    for (uint8_t i = 0; i < sizeof(ejected); i++) {
+    for (uint8_t i = 0; i < LUN_COUNT; i++) {
         all_ejected &= ejected[i];
     }
     return all_ejected;
+}
+
+uint8_t tud_msc_get_maxlun_cb(void) {
+    return LUN_COUNT;
 }
 
 // Callback invoked when received an SCSI command not in built-in list below
@@ -186,7 +199,7 @@ void tud_msc_capacity_cb(uint8_t lun, uint32_t *block_count, uint16_t *block_siz
 }
 
 bool tud_msc_is_writable_cb(uint8_t lun) {
-    if (lun > 1) {
+    if (lun >= LUN_COUNT) {
         return false;
     }
 
@@ -278,7 +291,7 @@ void tud_msc_inquiry_cb(uint8_t lun, uint8_t vendor_id[8], uint8_t product_id[16
 // Invoked when received Test Unit Ready command.
 // return true allowing host to read/write this LUN e.g SD card inserted
 bool tud_msc_test_unit_ready_cb(uint8_t lun) {
-    if (lun > 1) {
+    if (lun >= LUN_COUNT) {
         return false;
     }
 
@@ -299,7 +312,7 @@ bool tud_msc_test_unit_ready_cb(uint8_t lun) {
 // - Start = 0 : stopped power mode, if load_eject = 1 : unload disk storage
 // - Start = 1 : active mode, if load_eject = 1 : load disk storage
 bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, bool load_eject) {
-    if (lun > 1) {
+    if (lun >= LUN_COUNT) {
         return false;
     }
     fs_user_mount_t *current_mount = get_vfs(lun);

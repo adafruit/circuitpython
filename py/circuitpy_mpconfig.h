@@ -615,6 +615,10 @@ void background_callback_run_all(void);
 #define CIRCUITPY_MIN_GCC_VERSION 13
 #endif
 
+#ifndef CIRCUITPY_SAVES_PARTITION_SIZE
+#define CIRCUITPY_SAVES_PARTITION_SIZE 0
+#endif
+
 #if defined(__GNUC__) && !defined(__ZEPHYR__)
 #if __GNUC__ < CIRCUITPY_MIN_GCC_VERSION
 // (the 3 level scheme here is required to get expansion & stringization

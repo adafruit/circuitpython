@@ -214,6 +214,10 @@ static void stop_mp(void) {
         vfs = vfs->next;
     }
     MP_STATE_VM(vfs_mount_table) = vfs;
+    // The last vfs is CIRCUITPY and the root directory.
+    while (vfs->next != NULL) {
+        vfs = vfs->next;
+    }
     MP_STATE_VM(vfs_cur) = vfs;
     #endif
 
@@ -863,7 +867,7 @@ static void __attribute__ ((noinline)) run_boot_py(safe_mode_t safe_mode) {
 
         #ifdef CIRCUITPY_BOOT_OUTPUT_FILE
         // Get the base filesystem.
-        fs_user_mount_t *vfs = (fs_user_mount_t *)MP_STATE_VM(vfs_mount_table)->obj;
+        fs_user_mount_t *vfs = filesystem_circuitpy();
         FATFS *fs = &vfs->fatfs;
 
         boot_output = NULL;

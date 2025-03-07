@@ -71,6 +71,10 @@ typedef struct _mp_vfs_proto_t {
 typedef struct _mp_vfs_blockdev_t {
     uint16_t flags;
     size_t block_size;
+    #if CIRCUITPY_SAVES_PARTITION_SIZE > 0
+    size_t offset;
+    int size;
+    #endif
     mp_obj_t readblocks[5];
     mp_obj_t writeblocks[5];
     // new protocol uses just ioctl, old uses sync (optional) and count
