@@ -86,7 +86,8 @@ INC += \
 	-I$(PERIPH_SRC)/ICC \
 	-I$(PERIPH_SRC)/TMR \
 	-I$(PERIPH_SRC)/RTC \
-	-I$(PERIPH_SRC)/UART
+	-I$(PERIPH_SRC)/UART \
+	-I$(PERIPH_SRC)/I2C
 
 INC += -I$(CMSIS_ROOT)/Device/Maxim/$(MCU_VARIANT_UPPER)/Source/GCC
 
@@ -119,14 +120,18 @@ SRC_MAX32 += \
 	$(PERIPH_SRC)/TMR/tmr_$(DIE_TYPE).c \
 	$(PERIPH_SRC)/UART/uart_common.c \
 	$(PERIPH_SRC)/UART/uart_$(DIE_TYPE).c \
-	$(PERIPH_SRC)/UART/uart_revb.c
+	$(PERIPH_SRC)/UART/uart_revb.c \
+	$(PERIPH_SRC)/I2C/i2c_$(DIE_TYPE).c \
+	$(PERIPH_SRC)/I2C/i2c_reva.c
 
 SRC_C += $(SRC_MAX32) \
 			boards/$(BOARD)/board.c \
 			boards/$(BOARD)/pins.c \
 			peripherals/$(MCU_VARIANT_LOWER)/pins.c \
 			peripherals/$(MCU_VARIANT_LOWER)/gpios.c \
-			peripherals/$(MCU_VARIANT_LOWER)/max32_uart.c
+			peripherals/$(MCU_VARIANT_LOWER)/max32_uart.c \
+			peripherals/$(MCU_VARIANT_LOWER)/max32_i2c.c
+
 
 # *******************************************************************************
 ### Compiler & Linker Flags ###
@@ -265,6 +270,11 @@ OPENOCD_SCRIPTS ?= $(MAXIM_PATH)/Tools/OpenOCD/scripts
 flash-msdk:
 	$(OPENOCD) -s $(OPENOCD_SCRIPTS) \
 		-f interface/cmsis-dap.cfg -f target/$(MCU_VARIANT_LOWER).cfg \
+		-c "program $(BUILD)/firmware.elf verify; init; reset; exit"
+
+flash-openocd-jlink:
+	$(OPENOCD) -s $(OPENOCD_SCRIPTS) \
+		-f interface/jlink.cfg -f target/$(MCU_VARIANT_LOWER).cfg \
 		-c "program $(BUILD)/firmware.elf verify; init; reset; exit"
 
 # flash target using JLink
