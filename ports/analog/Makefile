@@ -288,7 +288,7 @@ flash-openocd-jlink:
 JLINK_DEVICE = $(MCU_VARIANT_LOWER)
 
 JLINKEXE 		?= JLink.exe
-JLINKEXE     	+= -if SWD -device ${JLINK_DEVICE} -speed 10000
+JLINKEXE     	+= -if SWD -device ${JLINK_DEVICE} -speed 4000
 COMMAND_FILE 	:= tools/flash_max32.jlink
 
 flash-jlink: $(BUILD)/firmware.bin

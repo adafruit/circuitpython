@@ -46,6 +46,9 @@ static uint8_t i2c_active = 0;
 static i2c_status_t i2c_status[NUM_I2C];
 static volatile int i2c_err;
 
+// I2C struct for configuring GPIO pins
+extern const mxc_gpio_cfg_t i2c_maps[NUM_I2C];
+
 // I2C Interrupt Handler
 void i2c_isr(void) {
     for (int i = 0; i < NUM_I2C; i++) {
@@ -88,13 +91,14 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
 
     // Init I2C as main / controller node (0x00 is ignored)
     if ((scl != NULL) && (sda != NULL)) {
+        MXC_GPIO_Config(&i2c_maps[self->i2c_id]);
         err = MXC_I2C_Init(self->i2c_regs, 1, 0x00);
         if (err) {
-            mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to init I2C.\n"));
+            mp_raise_RuntimeError_varg(MP_ERROR_TEXT("Failed to init I2C. ERR: %d\n"), err);
         }
         err = MXC_I2C_SetFrequency(self->i2c_regs, frequency);
         if (err < 0) {
-            mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to set I2C frequency\n"));
+            mp_raise_RuntimeError_varg(MP_ERROR_TEXT("Failed to set I2C frequency. ERR: %d\n"), err);
         }
     } else if (scl != NULL) {
         mp_raise_NotImplementedError(MP_ERROR_TEXT("I2C needs SDA & SCL"));
