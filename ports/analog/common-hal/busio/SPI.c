@@ -31,8 +31,34 @@
 #include "supervisor/board.h"
 #include "shared-bindings/microcontroller/Pin.h"
 
+#include "max32_port.h"
+#include "spi_reva1.h"
+
 // Note that any bugs introduced in this file can cause crashes
 // at startupfor chips using external SPI flash.
+
+#define SPI_PRIORITY 1
+
+typedef enum {
+    SPI_FREE = 0,
+    SPI_BUSY,
+    SPI_NEVER_RESET,
+} spi_status_t;
+
+// Set each bit to indicate an active SPI
+// will be checked by ISR Handler for which ones to call
+static uint8_t spi_active = 0;
+static spi_status_t spi_status[NUM_SPI];
+static volatile int spi_err;
+
+// SPI Interrupt Handler
+void spi_isr(void) {
+    for (int i = 0; i < NUM_SPI; i++) {
+        if (spi_active & (1 << i)) {
+            MXC_SPI_AsyncHandler(MXC_SPI_GET_SPI(i));
+        }
+    }
+}
 
 // Reset SPI when reload
 void spi_reset(void) {
@@ -41,19 +67,69 @@ void spi_reset(void) {
 }
 
 // Construct SPI protocol, this function init SPI peripheral
+// todo: figure out Chip select behavior
 void common_hal_busio_spi_construct(busio_spi_obj_t *self,
     const mcu_pin_obj_t *sck,
     const mcu_pin_obj_t *mosi,
     const mcu_pin_obj_t *miso,
     bool half_duplex) {
+    int temp, err = 0;
 
+    // Check for NULL Pointers && valid I2C settings
+    assert(self);
 
-    // FIXME: Implement
+    // Assign I2C ID based on pins
+    temp = pinsToSpi(mosi, miso, sck);
+    if (temp == -1) {
+        // Error will be indicated by pinsToUart(tx, rx) function
+        return;
+    } else {
+        self->spi_id = temp;
+        self->spi_regs = MXC_SPI_GET_SPI(temp);
+    }
+
+    assert((self->spi_id >= 0) && (self->spi_id < NUM_SPI));
+
+    // Init I2C as main / controller node (0x00 is ignored)
+    // FIXME: MUST map the SPI pins to a spi_pins_t struct
+    if ((mosi != NULL) && (miso != NULL) && (sck != NULL)) {
+        // spi, mastermode, quadModeUsed, numSubs, ssPolarity, frequency
+        err = MXC_SPI_RevA1_Init((mxc_spi_reva_regs_t *)self->spi_regs, 1, 0, 1, 0x00, 1000000);
+        if (err) {
+            mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to init SPI.\n"));
+        }
+    } else {
+        mp_raise_NotImplementedError(MP_ERROR_TEXT("SPI needs MOSI, MISO, and SCK"));
+    }
+
+    // Attach SPI pins
+    self->mosi = mosi;
+    self->miso = miso;
+    self->sck = sck;
+    common_hal_mcu_pin_claim(self->mosi);
+    common_hal_mcu_pin_claim(self->miso);
+    common_hal_mcu_pin_claim(self->sck);
+
+    // Indicate to this module that the SPI is active
+    spi_active |= (1 << self->spi_id);
+
+    /* Setup I2C interrupt */
+    NVIC_ClearPendingIRQ(MXC_SPI_GET_IRQ(self->spi_id));
+    NVIC_DisableIRQ(MXC_SPI_GET_IRQ(self->spi_id));
+    NVIC_SetPriority(MXC_SPI_GET_IRQ(self->spi_id), SPI_PRIORITY);
+    NVIC_SetVector(MXC_SPI_GET_IRQ(self->spi_id), (uint32_t)spi_isr);
+
+    return;
 }
 
 // Never reset SPI when reload
 void common_hal_busio_spi_never_reset(busio_spi_obj_t *self) {
-    // FIXME: Implement
+    common_hal_never_reset_pin(self->mosi);
+    common_hal_never_reset_pin(self->miso);
+    common_hal_never_reset_pin(self->sck);
+    common_hal_never_reset_pin(self->nss);
+
+    spi_status[self->spi_id] = SPI_NEVER_RESET;
 }
 
 // Check SPI status, deinited or not
@@ -64,7 +140,16 @@ bool common_hal_busio_spi_deinited(busio_spi_obj_t *self) {
 // Deinit SPI obj
 void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
 
-    // FIXME: Implement
+    MXC_SPI_Shutdown(self->spi_regs);
+    common_hal_reset_pin(self->mosi);
+    common_hal_reset_pin(self->miso);
+    common_hal_reset_pin(self->sck);
+    common_hal_reset_pin(self->nss);
+
+    self->mosi = NULL;
+    self->miso = NULL;
+    self->sck = NULL;
+    self->nss = NULL;
 }
 
 // Configures the SPI bus. The SPI object must be locked.
@@ -74,14 +159,58 @@ bool common_hal_busio_spi_configure(busio_spi_obj_t *self,
     uint8_t phase,
     uint8_t bits) {
 
-    // FIXME: Implement
+    mxc_spi_clkmode_t clk_mode;
+    int ret;
+
+    self->baudrate = baudrate;
+    self->polarity = polarity;
+    self->phase = phase;
+    self->bits = bits;
+
+    switch ((polarity << 1) | (phase)) {
+        case 0b00:
+            clk_mode = MXC_SPI_CLKMODE_0;
+            break;
+        case 0b01:
+            clk_mode = MXC_SPI_CLKMODE_1;
+            break;
+        case 0b10:
+            clk_mode = MXC_SPI_CLKMODE_2;
+            break;
+        case 0b11:
+            clk_mode = MXC_SPI_CLKMODE_3;
+            break;
+        default:
+            mp_raise_ValueError(MP_ERROR_TEXT("CPOL / CPHA must both be either 0 or 1\n"));
+            return false;
+    }
+
+    ret = MXC_SPI_SetFrequency(self->spi_regs, baudrate);
+    if (ret) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Failed to set SPI Frequency\n"));
+        return false;
+    }
+    ret = MXC_SPI_SetDataSize(self->spi_regs, bits);
+    if (ret) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Failed to set SPI Frame Size\n"));
+        return false;
+    }
+    ret = MXC_SPI_SetMode(self->spi_regs, clk_mode);
+    if (ret) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Failed to set SPI Clock Mode\n"));
+        return false;
+    }
     return true;
 }
 
 // Lock SPI bus
 bool common_hal_busio_spi_try_lock(busio_spi_obj_t *self) {
-    // FIXME: Implement
-    return false;
+    if (spi_status[self->spi_id] != SPI_BUSY) {
+        self->has_lock = true;
+        return true;
+    } else {
+        return false;
+    }
 }
 
 // Check SPI lock status
@@ -98,9 +227,27 @@ void common_hal_busio_spi_unlock(busio_spi_obj_t *self) {
 bool common_hal_busio_spi_write(busio_spi_obj_t *self,
     const uint8_t *data,
     size_t len) {
+    int ret = 0;
 
-    // FIXME: Implement
-    return false;
+    mxc_spi_req_t wr_req = {
+        .spi = self->spi_regs,
+        .ssIdx = 0,
+        .txCnt = 0,
+        .rxCnt = 0,
+        .txData = (uint8_t *)data,
+        .txLen = len,
+        .rxData = NULL,
+        .rxLen = 0,
+        .ssDeassert = 1,
+        .completeCB = NULL,
+        .txDummyValue = 0xFF,
+    };
+    ret = MXC_SPI_MasterTransaction(&wr_req);
+    if (ret) {
+        return false;
+    } else {
+        return true;
+    }
 }
 
 // Read data into buffer
@@ -108,8 +255,32 @@ bool common_hal_busio_spi_read(busio_spi_obj_t *self,
     uint8_t *data, size_t len,
     uint8_t write_value) {
 
-    // FIXME: Implement
-    return false;
+    int ret = 0;
+    // uint8_t tx_buffer[len] = {0x0};
+
+    // for (int i = 0; i < len; i++) {
+    //     tx_buffer[i] = write_value;
+    // }
+
+    mxc_spi_req_t rd_req = {
+        .spi = self->spi_regs,
+        .ssIdx = 0,
+        .txCnt = 0,
+        .rxCnt = 0,
+        .txData = NULL,
+        .txLen = len,
+        .rxData = data,
+        .rxLen = len,
+        .ssDeassert = 1,
+        .completeCB = NULL,
+        .txDummyValue = write_value,
+    };
+    ret = MXC_SPI_MasterTransaction(&rd_req);
+    if (ret) {
+        return false;
+    } else {
+        return true;
+    }
 }
 
 // Write out the data in data_out
@@ -119,8 +290,27 @@ bool common_hal_busio_spi_transfer(busio_spi_obj_t *self,
     uint8_t *data_in,
     size_t len) {
 
-    // FIXME: Implement
-    return false;
+    int ret = 0;
+
+    mxc_spi_req_t rd_req = {
+        .spi = self->spi_regs,
+        .ssIdx = 0,
+        .txCnt = 0,
+        .rxCnt = 0,
+        .txData = (uint8_t *)data_out,
+        .txLen = len,
+        .rxData = data_in,
+        .rxLen = len,
+        .ssDeassert = 1,
+        .completeCB = NULL,
+        .txDummyValue = 0xFF,
+    };
+    ret = MXC_SPI_MasterTransaction(&rd_req);
+    if (ret) {
+        return false;
+    } else {
+        return true;
+    }
 }
 
 // Get SPI baudrate
