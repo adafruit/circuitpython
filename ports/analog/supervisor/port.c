@@ -73,6 +73,8 @@ volatile uint32_t system_ticks = 0;
 
 void SysTick_Handler(void) {
     system_ticks++;
+
+    MXC_DelayHandler();
 }
 
 
