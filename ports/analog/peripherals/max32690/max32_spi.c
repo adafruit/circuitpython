@@ -1,0 +1,49 @@
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2024 Brandon Hurst, Analog Devices, Inc.
+//
+// SPDX-License-Identifier: MIT
+
+#include "peripherals/pins.h"
+
+#include "common-hal/busio/SPI.h"
+#include "max32_spi.h"
+#include "max32690.h"
+
+#include "py/runtime.h"
+#include "py/mperrno.h"
+
+// TODO Decouple from APARD board
+const mxc_gpio_cfg_t spi_maps[NUM_SPI] = {
+    // DUMMY entry for SPI0 (not on APARD board)
+    { MXC_GPIO0, 0xFFFFFFFF, 0, 0, 0, 0},
+
+    // SPI1A
+    { MXC_GPIO1, (MXC_GPIO_PIN_23 | MXC_GPIO_PIN_26 | MXC_GPIO_PIN_28 | MXC_GPIO_PIN_29),
+      MXC_GPIO_FUNC_ALT1, MXC_GPIO_PAD_NONE, MXC_GPIO_VSSEL_VDDIO, MXC_GPIO_DRVSTR_0 },
+    // SPI2A
+    { MXC_GPIO2, (MXC_GPIO_PIN_2 | MXC_GPIO_PIN_3 | MXC_GPIO_PIN_4 | MXC_GPIO_PIN_5),
+      MXC_GPIO_FUNC_ALT1, MXC_GPIO_PAD_NONE, MXC_GPIO_VSSEL_VDDIO, MXC_GPIO_DRVSTR_0 },
+    // SPI3A
+    { MXC_GPIO0, (MXC_GPIO_PIN_16 | MXC_GPIO_PIN_19 | MXC_GPIO_PIN_20 | MXC_GPIO_PIN_21),
+      MXC_GPIO_FUNC_ALT1, MXC_GPIO_PAD_NONE, MXC_GPIO_VSSEL_VDDIO, MXC_GPIO_DRVSTR_0 },
+    // SPI4A
+    { MXC_GPIO1, (MXC_GPIO_PIN_0 | MXC_GPIO_PIN_1 | MXC_GPIO_PIN_2 | MXC_GPIO_PIN_3),
+      MXC_GPIO_FUNC_ALT1, MXC_GPIO_PAD_NONE, MXC_GPIO_VSSEL_VDDIO, MXC_GPIO_DRVSTR_0 },
+};
+
+int pinsToSpi(const mcu_pin_obj_t *mosi, const mcu_pin_obj_t *miso,
+    const mcu_pin_obj_t *sck, const mcu_pin_obj_t *cs) {
+    for (int i = 0; i < NUM_SPI; i++) {
+        if ((spi_maps[i].port == (MXC_GPIO_GET_GPIO(mosi->port)))
+            && (spi_maps[i].mask == ((cs->mask) | (mosi->mask) | (miso->mask) | (sck->mask)))) {
+            return i;
+        }
+    }
+    mp_raise_RuntimeError_varg(MP_ERROR_TEXT("ERR: Unable to find an SPI matching pins... \
+        \nMOSI: port %d mask %d\nMISO: port %d mask %d\n \
+        \nSCK: port %d mask %d\nCS: port %d mask%d\n"),
+        mosi->port, mosi->mask, miso->port, miso->mask,
+        sck->port, sck->mask, cs->port, cs->mask);
+    return -1;
+}

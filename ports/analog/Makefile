@@ -88,11 +88,9 @@ INC += \
 	-I$(PERIPH_SRC)/TMR \
 	-I$(PERIPH_SRC)/RTC \
 	-I$(PERIPH_SRC)/UART \
-<<<<<<< HEAD
-	-I$(PERIPH_SRC)/TRNG
-=======
-	-I$(PERIPH_SRC)/I2C
->>>>>>> edf069d0e7 (Add BUSIO.I2C and MAX32690 I2C structure)
+	-I$(PERIPH_SRC)/TRNG \
+	-I$(PERIPH_SRC)/I2C \
+	-I$(PERIPH_SRC)/SPI
 
 INC += -I$(CMSIS_ROOT)/Device/Maxim/$(MCU_VARIANT_UPPER)/Source/GCC
 
@@ -129,7 +127,9 @@ SRC_MAX32 += \
 	$(PERIPH_SRC)/TRNG/trng_revb.c \
 	$(PERIPH_SRC)/TRNG/trng_$(DIE_TYPE).c
 	$(PERIPH_SRC)/I2C/i2c_$(DIE_TYPE).c \
-	$(PERIPH_SRC)/I2C/i2c_reva.c
+	$(PERIPH_SRC)/I2C/i2c_reva.c \
+	$(PERIPH_SRC)/SPI/spi_$(DIE_TYPE).c \
+	$(PERIPH_SRC)/SPI/spi_reva1.c
 
 SRC_C += $(SRC_MAX32) \
 			boards/$(BOARD)/board.c \
@@ -137,8 +137,8 @@ SRC_C += $(SRC_MAX32) \
 			peripherals/$(MCU_VARIANT_LOWER)/pins.c \
 			peripherals/$(MCU_VARIANT_LOWER)/gpios.c \
 			peripherals/$(MCU_VARIANT_LOWER)/max32_uart.c \
-			peripherals/$(MCU_VARIANT_LOWER)/max32_i2c.c
-
+			peripherals/$(MCU_VARIANT_LOWER)/max32_i2c.c \
+			peripherals/$(MCU_VARIANT_LOWER)/max32_spi.c
 
 # *******************************************************************************
 ### Compiler & Linker Flags ###
