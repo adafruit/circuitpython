@@ -200,28 +200,72 @@ void common_hal_busio_i2c_unlock(busio_i2c_obj_t *self) {
 }
 
 // Write data to the device selected by address
+// todo test
 uint8_t common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr,
     const uint8_t *data, size_t len) {
 
-    // FIXME: Implement
+    int ret;
+    mxc_i2c_req_t wr_req = {
+        .addr = addr,
+        .i2c = self->i2c_regs,
+        .tx_buf = (uint8_t *)data,
+        .tx_len = len,
+        .rx_buf = NULL,
+        .rx_len = 0,
+        .callback = NULL
+    };
+    ret = MXC_I2C_MasterTransaction(&wr_req);
+    if (ret) {
+        mp_raise_RuntimeError(MP_ERROR_TEXT("ERROR during I2C Transaction\n"));
+    }
+
     return 0;
 }
 
 // Read into buffer from the device selected by address
+// todo test
 uint8_t common_hal_busio_i2c_read(busio_i2c_obj_t *self,
     uint16_t addr,
     uint8_t *data, size_t len) {
 
-    // FIXME: Implement
+    int ret;
+    mxc_i2c_req_t rd_req = {
+        .addr = addr,
+        .i2c = self->i2c_regs,
+        .tx_buf = NULL,
+        .tx_len = 0,
+        .rx_buf = data,
+        .rx_len = len,
+        .callback = NULL
+    };
+    ret = MXC_I2C_MasterTransaction(&rd_req);
+    if (ret) {
+        mp_raise_RuntimeError(MP_ERROR_TEXT("ERROR during I2C Transaction\n"));
+    }
+
     return 0;
 }
 
 // Write the bytes from out_data to the device selected by address,
+// todo test
 uint8_t common_hal_busio_i2c_write_read(busio_i2c_obj_t *self, uint16_t addr,
     uint8_t *out_data, size_t out_len,
     uint8_t *in_data, size_t in_len) {
 
-    // FIXME: Implement
+    int ret;
+    mxc_i2c_req_t wr_rd_req = {
+        .addr = addr,
+        .i2c = self->i2c_regs,
+        .tx_buf = out_data,
+        .tx_len = out_len,
+        .rx_buf = in_data,
+        .rx_len = in_len,
+        .callback = NULL
+    };
+    ret = MXC_I2C_MasterTransaction(&wr_rd_req);
+    if (ret) {
+        mp_raise_RuntimeError(MP_ERROR_TEXT("ERROR during I2C Transaction\n"));
+    }
 
     return 0;
 }
