@@ -51,11 +51,11 @@
 //|         The framebuffer pixel format varies depending on color_depth:
 //|
 //|         * 1 - Each bit is a pixel. Either white (1) or black (0).
-//|         * 2 - Each 2 bits is a pixels. Grayscale between white (0x3) and black (0x0).
-//|         * 4 - Each nibble is a pixels in RGB format. The fourth bit is ignored. (RP2350 only)
-//|         * 8 - Each byte is a pixels in RGB332 format.
-//|         * 16 - Each two bytes are a pixel in RGB565 format.
-//|         * 32 - Each four bytes are a pixel in RGB888 format. The top byte is ignored.
+//|         * 2 - Each two bits is a pixel. Grayscale between white (0x3) and black (0x0).
+//|         * 4 - Each nibble is a pixel in RGB format. The fourth bit is ignored. (RP2350 only)
+//|         * 8 - Each byte is a pixel in RGB332 format.
+//|         * 16 - Each two bytes is a pixel in RGB565 format.
+//|         * 32 - Each four bytes is a pixel in RGB888 format. The top byte is ignored.
 //|
 //|         Output resolution support varies between the RP2040 and RP2350.
 //|
