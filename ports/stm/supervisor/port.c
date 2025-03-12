@@ -134,8 +134,14 @@ __attribute__((used, naked)) void Reset_Handler(void) {
     for (uint32_t i = 0; i < ((size_t)&_ld_d1_ram_bss_size) / 4; i++) {
         (&_ld_d1_ram_bss_start)[i] = 0;
     }
-
+    #ifdef STM32H750xx
+    __DMB(); /* ARM says to use a DMB instruction before relocating VTOR */
+    SCB->VTOR = 0x90000000u; /* We relocate vector table to the QSPI sector 1 */
+    __DSB(); /* ARM says to use a DSB instruction just after relocating VTOR */
+    /* SystemInit call is not necessary, initializations are done in the H750 special bootloader */
+    #else
     SystemInit();
+    #endif
     __enable_irq();
     main();
 }
