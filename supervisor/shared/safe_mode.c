@@ -69,7 +69,7 @@ safe_mode_t wait_for_safe_mode_reset(void) {
     uint64_t diff = 0;
     bool boot_in_safe_mode = false;
     while (diff < 1000) {
-        #ifdef CIRCUITPY_STATUS_LED
+        #if CIRCUITPY_STATUS_LED
         // Blink on for 100, off for 100
         bool led_on = (diff % 250) < 125;
         if (led_on) {
