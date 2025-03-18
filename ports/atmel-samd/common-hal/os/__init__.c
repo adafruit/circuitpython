@@ -20,14 +20,8 @@ static const qstr os_uname_info_fields[] = {
     MP_QSTR_sysname, MP_QSTR_nodename,
     MP_QSTR_release, MP_QSTR_version, MP_QSTR_machine
 };
-#ifdef SAMD21
-static const MP_DEFINE_STR_OBJ(os_uname_info_sysname_obj, "samd21");
-static const MP_DEFINE_STR_OBJ(os_uname_info_nodename_obj, "samd21");
-#endif
-#ifdef SAM_D5X_E5X
-static const MP_DEFINE_STR_OBJ(os_uname_info_sysname_obj, "samd51");
-static const MP_DEFINE_STR_OBJ(os_uname_info_nodename_obj, "samd51");
-#endif
+static const MP_DEFINE_STR_OBJ(os_uname_info_sysname_obj, MICROPY_HW_MCU_NAME);
+static const MP_DEFINE_STR_OBJ(os_uname_info_nodename_obj, MICROPY_HW_MCU_NAME);
 static const MP_DEFINE_STR_OBJ(os_uname_info_release_obj, MICROPY_VERSION_STRING);
 static const MP_DEFINE_STR_OBJ(os_uname_info_version_obj, MICROPY_GIT_TAG " on " MICROPY_BUILD_DATE);
 static const MP_DEFINE_STR_OBJ(os_uname_info_machine_obj, MICROPY_HW_BOARD_NAME " with " MICROPY_HW_MCU_NAME);
