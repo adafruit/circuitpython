@@ -48,24 +48,6 @@ static mp_obj_t watchdog_watchdogtimer_feed(mp_obj_t self_in) {
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(watchdog_watchdogtimer_feed_obj, watchdog_watchdogtimer_feed);
 
-//|     def deinit(self) -> None:
-//|         """Stop the watchdog timer.
-//|
-//|         :raises RuntimeError: if the watchdog timer cannot be disabled on this platform.
-//|
-//|         .. note:: This is deprecated in ``9.0.0`` and will be removed in ``10.0.0``.
-//|             Set watchdog `mode` to `None` instead.
-//|
-//|         """
-//|         ...
-//|
-static mp_obj_t watchdog_watchdogtimer_deinit(mp_obj_t self_in) {
-    watchdog_watchdogtimer_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    common_hal_watchdog_deinit(self);
-    return mp_const_none;
-}
-static MP_DEFINE_CONST_FUN_OBJ_1(watchdog_watchdogtimer_deinit_obj, watchdog_watchdogtimer_deinit);
-
 //|     timeout: float
 //|     """The maximum number of seconds that can elapse between calls
 //|     to `feed()`. Setting the timeout will also feed the watchdog."""
@@ -126,7 +108,6 @@ MP_PROPERTY_GETSET(watchdog_watchdogtimer_mode_obj,
 
 static const mp_rom_map_elem_t watchdog_watchdogtimer_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_feed), MP_ROM_PTR(&watchdog_watchdogtimer_feed_obj) },
-    { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&watchdog_watchdogtimer_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR_timeout), MP_ROM_PTR(&watchdog_watchdogtimer_timeout_obj) },
     { MP_ROM_QSTR(MP_QSTR_mode), MP_ROM_PTR(&watchdog_watchdogtimer_mode_obj) },
 };
