@@ -24,3 +24,5 @@ typedef struct {
     uint32_t next_block;
     bool in_cmd25;
 } sdcardio_sdcard_obj_t;
+
+mp_rom_error_text_t sdcardio_sdcard_construct(sdcardio_sdcard_obj_t *self, busio_spi_obj_t *bus, const mcu_pin_obj_t *cs, int baudrate);

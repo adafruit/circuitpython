@@ -90,20 +90,18 @@ mp_obj_t common_hal_os_getcwd(void) {
 mp_obj_t common_hal_os_listdir(const char *path) {
     mp_obj_t path_out;
     mp_vfs_mount_t *vfs = lookup_dir_path(path, &path_out);
-
-    mp_vfs_ilistdir_it_t iter;
-    mp_obj_t iter_obj = MP_OBJ_FROM_PTR(&iter);
-
     if (vfs == MP_VFS_ROOT) {
-        // list the root directory
-        iter.base.type = &mp_type_polymorph_iter;
-        iter.iternext = mp_vfs_ilistdir_it_iternext;
-        iter.cur.vfs = MP_STATE_VM(vfs_mount_table);
-        iter.is_str = true;
-        iter.is_iter = false;
-    } else {
-        iter_obj = mp_vfs_proxy_call(vfs, MP_QSTR_ilistdir, 1, &path_out);
+        vfs = MP_STATE_VM(vfs_mount_table);
+        while (vfs != NULL) {
+            if (vfs->len == 1) {
+                break;
+            }
+            vfs = vfs->next;
+        }
+        path_out = MP_OBJ_NEW_QSTR(MP_QSTR__slash_);
     }
+
+    mp_obj_t iter_obj = mp_vfs_proxy_call(vfs, MP_QSTR_ilistdir, 1, &path_out);
 
     mp_obj_t dir_list = mp_obj_new_list(0, NULL);
     mp_obj_t next;

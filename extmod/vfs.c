@@ -47,6 +47,11 @@
 #include "extmod/vfs_posix.h"
 #endif
 
+
+#if CIRCUITPY_SDCARDIO
+#include "shared-module/sdcardio/__init__.h"
+#endif
+
 // For mp_vfs_proxy_call, the maximum number of additional args that can be passed.
 // A fixed maximum size is used to avoid the need for a costly variable array.
 #define PROXY_MAX_ARGS (2)
@@ -67,6 +72,10 @@ mp_vfs_mount_t *mp_vfs_lookup_path(const char *path, const char **path_out) {
             // path is "" or "/" so return virtual root
             return MP_VFS_ROOT;
         }
+        // CIRCUITPY-CHANGE: Try and automount the SD card.
+        #if CIRCUITPY_SDCARDIO
+        automount_sd_card();
+        #endif
         for (mp_vfs_mount_t *vfs = MP_STATE_VM(vfs_mount_table); vfs != NULL; vfs = vfs->next) {
             size_t len = vfs->len - 1;
             if (len == 0) {
@@ -367,8 +376,18 @@ mp_obj_t mp_vfs_getcwd(void) {
 }
 MP_DEFINE_CONST_FUN_OBJ_0(mp_vfs_getcwd_obj, mp_vfs_getcwd);
 
-// CIRCUITPY-CHANGE: accessible from shared-module/os/__init__.c
-mp_obj_t mp_vfs_ilistdir_it_iternext(mp_obj_t self_in) {
+typedef struct _mp_vfs_ilistdir_it_t {
+    mp_obj_base_t base;
+    mp_fun_1_t iternext;
+    union {
+        mp_vfs_mount_t *vfs;
+        mp_obj_t iter;
+    } cur;
+    bool is_str;
+    bool is_iter;
+} mp_vfs_ilistdir_it_t;
+
+static mp_obj_t mp_vfs_ilistdir_it_iternext(mp_obj_t self_in) {
     mp_vfs_ilistdir_it_t *self = MP_OBJ_TO_PTR(self_in);
     if (self->is_iter) {
         // continue delegating to root dir

@@ -94,19 +94,6 @@ typedef struct _mp_vfs_mount_t {
     struct _mp_vfs_mount_t *next;
 } mp_vfs_mount_t;
 
-// CIRCUITPY-CHANGE: allow outside use of ilistdir_it_iternext
-typedef struct _mp_vfs_ilistdir_it_t {
-    mp_obj_base_t base;
-    mp_fun_1_t iternext;
-    union {
-        mp_vfs_mount_t *vfs;
-        mp_obj_t iter;
-    } cur;
-    bool is_str;
-    bool is_iter;
-} mp_vfs_ilistdir_it_t;
-
-mp_obj_t mp_vfs_ilistdir_it_iternext(mp_obj_t self_in);
 void mp_vfs_blockdev_init(mp_vfs_blockdev_t *self, mp_obj_t bdev);
 int mp_vfs_blockdev_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_blocks, uint8_t *buf);
 int mp_vfs_blockdev_read_ext(mp_vfs_blockdev_t *self, size_t block_num, size_t block_off, size_t len, uint8_t *buf);

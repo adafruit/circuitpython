@@ -15,6 +15,10 @@
 #include "supervisor/flash.h"
 #include "supervisor/linker.h"
 
+#if CIRCUITPY_SDCARDIO
+#include "shared-module/sdcardio/__init__.h"
+#endif
+
 static mp_vfs_mount_t _circuitpy_vfs;
 static fs_user_mount_t _circuitpy_usermount;
 
@@ -214,6 +218,10 @@ bool filesystem_init(bool create_allowed, bool force_create) {
     supervisor_flash_update_extended();
     #endif
 
+    #if CIRCUITPY_SDCARDIO
+    sdcardio_init();
+    #endif
+
     return true;
 }
 
@@ -288,7 +296,7 @@ fs_user_mount_t *filesystem_for_path(const char *path_in, const char **path_unde
         // because otherwise the path will be adjusted by os.getcwd() when it's looked up.
         if (strlen(vfs->str) != 1) {
             // Remove the mount point directory name, such as "/sd".
-            path_under_mount += strlen(vfs->str);
+            *path_under_mount += strlen(vfs->str);
         }
     }
     return fs_mount;
