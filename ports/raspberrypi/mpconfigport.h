@@ -16,9 +16,6 @@
 #define MICROPY_PY_SYS_PLATFORM             "RP2350"
 #endif
 
-#define MICROPY_PY_FUNCTION_ATTRS           (1)
-#define MICROPY_PY_REVERSE_SPECIAL_METHODS  (1)
-
 // Setting a non-default value also requires a non-default link.ld
 #ifndef CIRCUITPY_FIRMWARE_SIZE
 #define CIRCUITPY_FIRMWARE_SIZE (1020 * 1024)

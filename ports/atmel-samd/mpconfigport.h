@@ -68,8 +68,7 @@
 #define MICROPY_PY_SYS_PLATFORM                     "MicroChip SAME54"
 #endif
 #define SPI_FLASH_MAX_BAUDRATE 24000000
-#define MICROPY_PY_BUILTINS_NOTIMPLEMENTED          (1)
-#define MICROPY_PY_FUNCTION_ATTRS                   (1)
+
 //      MICROPY_PY_ERRNO_LIST - Use the default
 
 #endif // SAM_D5X_E5X

@@ -13,8 +13,6 @@
 #include "nrf_sdm.h"  // for SD_FLASH_SIZE
 #include "peripherals/nrf/nvm.h" // for FLASH_PAGE_SIZE
 
-#define MICROPY_PY_FUNCTION_ATTRS                (1)
-#define MICROPY_PY_REVERSE_SPECIAL_METHODS       (1)
 #define MICROPY_PY_SYS_STDIO_BUFFER              (1)
 
 // 24kiB stack
