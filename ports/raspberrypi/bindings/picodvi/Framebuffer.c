@@ -51,10 +51,11 @@
 //|         The framebuffer pixel format varies depending on color_depth:
 //|
 //|         * 1 - Each bit is a pixel. Either white (1) or black (0).
-//|         * 2 - Each 2 bits is a pixels. Grayscale between white (0x3) and black (0x0).
-//|         * 4 - Each nibble is a pixels in RGB format. The fourth bit is ignored. (RP2350 only)
-//|         * 8 - Each byte is a pixels in RGB332 format.
-//|         * 16 - Each two bytes are a pixel in RGB565 format.
+//|         * 2 - Each two bits is a pixel. Grayscale between white (0x3) and black (0x0).
+//|         * 4 - Each nibble is a pixel in RGB format. The fourth bit is ignored. (RP2350 only)
+//|         * 8 - Each byte is a pixel in RGB332 format.
+//|         * 16 - Each two bytes is a pixel in RGB565 format.
+//|         * 32 - Each four bytes is a pixel in RGB888 format. The top byte is ignored.
 //|
 //|         Output resolution support varies between the RP2040 and RP2350.
 //|
@@ -63,17 +64,17 @@
 //|         full resolution. Color framebuffers must be half resolution (320x240
 //|         or 400x240) and pixels will be duplicated to create the signal.
 //|
-//|         On RP2350, output resolution is always 640x480. Monochrome
+//|         On RP2350, output resolution is either 640x480 or 720x400. Monochrome
 //|         framebuffers (color_depth=1 or 2) must be full resolution. 4-bit
-//|         color must also be full resolution. 8-bit color can be half or full
-//|         resolution. 16-bit color must be half resolution due to RAM
-//|         limitations.
+//|         color must also be full resolution. 8-bit color can be quarter, half
+//|         or full resolution. 16-bit color and 32-bit color must be quarter or
+//|         half resolution due to internal RAM limitations.
 //|
 //|         A Framebuffer is often used in conjunction with a
 //|         `framebufferio.FramebufferDisplay`.
 //|
-//|         :param int width: the width of the target display signal. Only 320, 400, 640 or 800 is currently supported depending on color_depth and chip set.
-//|         :param int height: the height of the target display signal. Only 240 or 480 is currently supported depending on color_depth and chip set.
+//|         :param int width: the width of the source framebuffer. Support varies with chipset.
+//|         :param int height: the height of the source framebuffer. Support varies with chipset.
 //|         :param ~microcontroller.Pin clk_dp: the positive clock signal pin
 //|         :param ~microcontroller.Pin clk_dn: the negative clock signal pin
 //|         :param ~microcontroller.Pin red_dp: the positive red signal pin
@@ -83,8 +84,9 @@
 //|         :param ~microcontroller.Pin blue_dp: the positive blue signal pin
 //|         :param ~microcontroller.Pin blue_dn: the negative blue signal pin
 //|         :param int color_depth: the color depth of the framebuffer in bits. 1, 2 for grayscale
-//|           and 4 (RP2350 only), 8 or 16 for color
+//|           and 4 (RP2350 only), 8 or 16 for color, 32 for color (RP2350 only)
 //|         """
+//|
 
 static mp_obj_t picodvi_framebuffer_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_width, ARG_height, ARG_clk_dp, ARG_clk_dn, ARG_red_dp, ARG_red_dn, ARG_green_dp,
@@ -113,7 +115,7 @@ static mp_obj_t picodvi_framebuffer_make_new(const mp_obj_type_t *type, size_t n
     mp_uint_t width = (mp_uint_t)mp_arg_validate_int_min(args[ARG_width].u_int, 0, MP_QSTR_width);
     mp_uint_t height = (mp_uint_t)mp_arg_validate_int_min(args[ARG_height].u_int, 0, MP_QSTR_height);
     mp_uint_t color_depth = args[ARG_color_depth].u_int;
-    if (color_depth != 1 && color_depth != 2 && color_depth != 4 && color_depth != 8 && color_depth != 16) {
+    if (color_depth != 1 && color_depth != 2 && color_depth != 4 && color_depth != 8 && color_depth != 16 && color_depth != 32) {
         mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q"), MP_QSTR_color_depth);
     }
     common_hal_picodvi_framebuffer_construct(self,
@@ -136,6 +138,7 @@ static mp_obj_t picodvi_framebuffer_make_new(const mp_obj_type_t *type, size_t n
 //|         `picodvi.Framebuffer` instance.  After deinitialization, no further operations
 //|         may be performed."""
 //|         ...
+//|
 static mp_obj_t picodvi_framebuffer_deinit(mp_obj_t self_in) {
     picodvi_framebuffer_obj_t *self = (picodvi_framebuffer_obj_t *)self_in;
     common_hal_picodvi_framebuffer_deinit(self);
@@ -163,6 +166,7 @@ MP_PROPERTY_GETTER(picodvi_framebuffer_width_obj,
 
 //|     height: int
 //|     """The width of the framebuffer, in pixels. It may be doubled for output."""
+//|
 //|
 static mp_obj_t picodvi_framebuffer_get_height(mp_obj_t self_in) {
     picodvi_framebuffer_obj_t *self = (picodvi_framebuffer_obj_t *)self_in;
@@ -218,7 +222,7 @@ static int picodvi_framebuffer_get_bytes_per_cell_proto(mp_obj_t self_in) {
 }
 
 static int picodvi_framebuffer_get_native_frames_per_second_proto(mp_obj_t self_in) {
-    return 60;
+    return common_hal_picodvi_framebuffer_get_native_frames_per_second(self_in);
 }
 
 static bool picodvi_framebuffer_get_pixels_in_byte_share_row_proto(mp_obj_t self_in) {

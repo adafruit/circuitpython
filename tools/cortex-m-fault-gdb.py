@@ -1,5 +1,7 @@
 """Source this file into gdb `source ../../tools/cortex-m-fault-gdb.py` then run
-   `cortex-m-fault` to print basic info about the fault registers."""
+`cortex-m-fault` to print basic info about the fault registers."""
+
+import gdb
 
 SCS = 0xE000E000
 SCB = SCS + 0x0D00
@@ -180,7 +182,7 @@ class CortexMFault(gdb.Command):
         architecture = (cpuid >> 16) & 0xF
         revision = cpuid & 0xF
         part_no = (cpuid >> 4) & 0xFFF
-        print(PARTS[part_no])
+        print(PARTS[part_no], variant, revision)
 
         if part_no == 0xD21:
             self._armv8m_fault()

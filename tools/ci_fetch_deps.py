@@ -35,14 +35,6 @@ def _all_submodules():
 all_submodules = _all_submodules()
 
 
-def matching_submodules(s):
-    if s.endswith("/"):
-        return [m for m in all_submodules if m.startswith(s)]
-    elif s not in all_submodules:
-        raise ValueError(f"{s!r} is not a submodule")
-    return [s]
-
-
 # Submodules needed by port builds outside of their ports directory.
 # Should we try and detect these?
 PORT_DEPS = {
@@ -103,6 +95,11 @@ PORT_DEPS = {
         "lib/tinyusb/",
         "lib/tlsf",
         "data/nvm.toml/",
+    ],
+    "zephyr-cp": [
+        "lib/certificates/",
+        "lib/tinyusb/",
+        "lib/tlsf",
     ],
     # omit unix which is part of the "test" target below
 }
@@ -188,6 +185,9 @@ def main(target):
             submodules.extend(PORT_DEPS[port])
         unique_submodules = set(submodules)
         submodules = list(unique_submodules)
+    elif target == "windows-zephyr":
+        submodules.append("ports/zephyr-cp")
+        submodules.extend(PORT_DEPS["zephyr-cp"])
     elif target == "website":
         submodules = ["tools/adabot", "frozen"]
     elif target == "pre-commit":
@@ -197,28 +197,47 @@ def main(target):
             target
         ]
     else:
-        p = list(pathlib.Path(TOP).glob(f"ports/*/boards/{target}/mpconfigboard.mk"))
+        p = list(TOP.glob(f"ports/*/boards/{target}/mpconfigboard.mk"))
+        # Check to see if the board is nested under vendor.
+        if not p:
+            next_underscore = target.find("_")
+            while next_underscore != -1:
+                vendor = target[:next_underscore]
+                board = target[next_underscore + 1 :]
+                p = list(TOP.glob(f"ports/*/boards/{vendor}/{board}/circuitpython.toml"))
+                if p:
+                    break
+                next_underscore = target.find("_", next_underscore + 1)
+
         if not p:
             raise RuntimeError(f"Unsupported target: {target}")
 
         config = p[0]
         # Add the ports folder to init submodules
-        port_folder = config.parents[2]
+
+        if config.suffix == ".mk":
+            port_folder = config.parents[2]
+        else:
+            port_folder = config.parents[3]
         port = port_folder.name
         submodules.append(f"ports/{port}")
         submodules.append("tools/")  # for huffman
         submodules.extend(PORT_DEPS[port])
-        with config.open() as f:
-            for line in f.readlines():
-                prefix = "FROZEN_MPY_DIRS += $(TOP)/"
-                if line.startswith(prefix):
-                    lib_folder = line.strip()[len(prefix) :]
-                    # Drop everything after the second folder because the frozen
-                    # folder may be inside the submodule.
-                    if lib_folder.count("/") > 1:
-                        lib_folder = lib_folder.split("/", maxsplit=2)
-                        lib_folder = "/".join(lib_folder[:2])
-                    submodules.append(lib_folder)
+        if config.suffix == ".mk":
+            with config.open() as f:
+                for line in f.readlines():
+                    prefix = "FROZEN_MPY_DIRS += $(TOP)/"
+                    if line.startswith(prefix):
+                        lib_folder = line.strip()[len(prefix) :]
+                        # Drop everything after the second folder because the frozen
+                        # folder may be inside the submodule.
+                        if lib_folder.count("/") > 1:
+                            lib_folder = lib_folder.split("/", maxsplit=2)
+                            lib_folder = "/".join(lib_folder[:2])
+                        submodules.append(lib_folder)
+        else:
+            # TODO: Add a way to specify frozen modules in circuitpython.toml
+            pass
 
     print("Submodules:", " ".join(submodules))
 

@@ -11,6 +11,7 @@
 
 #include "py/runtime.h"
 #include "shared-module/audiocore/__init__.h"
+#include "shared-bindings/audiocore/__init__.h"
 
 #if defined(__arm__) && __arm__
 #include "cmsis_compiler.h"
@@ -37,32 +38,19 @@ void common_hal_audiomixer_mixer_construct(audiomixer_mixer_obj_t *self,
         m_malloc_fail(self->len);
     }
 
-    self->bits_per_sample = bits_per_sample;
-    self->samples_signed = samples_signed;
-    self->channel_count = channel_count;
-    self->sample_rate = sample_rate;
+    self->base.bits_per_sample = bits_per_sample;
+    self->base.samples_signed = samples_signed;
+    self->base.channel_count = channel_count;
+    self->base.sample_rate = sample_rate;
+    self->base.single_buffer = false;
     self->voice_count = voice_count;
+    self->base.max_buffer_length = buffer_size;
 }
 
 void common_hal_audiomixer_mixer_deinit(audiomixer_mixer_obj_t *self) {
+    audiosample_mark_deinit(&self->base);
     self->first_buffer = NULL;
     self->second_buffer = NULL;
-}
-
-bool common_hal_audiomixer_mixer_deinited(audiomixer_mixer_obj_t *self) {
-    return self->first_buffer == NULL;
-}
-
-uint32_t common_hal_audiomixer_mixer_get_sample_rate(audiomixer_mixer_obj_t *self) {
-    return self->sample_rate;
-}
-
-uint8_t common_hal_audiomixer_mixer_get_channel_count(audiomixer_mixer_obj_t *self) {
-    return self->channel_count;
-}
-
-uint8_t common_hal_audiomixer_mixer_get_bits_per_sample(audiomixer_mixer_obj_t *self) {
-    return self->bits_per_sample;
 }
 
 bool common_hal_audiomixer_mixer_get_playing(audiomixer_mixer_obj_t *self) {
@@ -191,10 +179,10 @@ static void mix_down_one_voice(audiomixer_mixer_obj_t *self,
         uint32_t *src = voice->remaining_buffer;
 
         #if CIRCUITPY_SYNTHIO
-        uint32_t n = MIN(MIN(voice->buffer_length, length), SYNTHIO_MAX_DUR * self->channel_count);
+        uint32_t n = MIN(MIN(voice->buffer_length, length), SYNTHIO_MAX_DUR * self->base.channel_count);
 
         // Get the current level from the BlockInput. These may change at run time so you need to do bounds checking if required.
-        shared_bindings_synthio_lfo_tick(self->sample_rate, n / self->channel_count);
+        shared_bindings_synthio_lfo_tick(self->base.sample_rate, n / self->base.channel_count);
         uint16_t level = (uint16_t)(synthio_block_slot_get_limited(&voice->level, MICROPY_FLOAT_CONST(0.0), MICROPY_FLOAT_CONST(1.0)) * (1 << 15));
         #else
         uint32_t n = MIN(voice->buffer_length, length);
@@ -203,8 +191,8 @@ static void mix_down_one_voice(audiomixer_mixer_obj_t *self,
 
         // First active voice gets copied over verbatim.
         if (!voices_active) {
-            if (MP_LIKELY(self->bits_per_sample == 16)) {
-                if (MP_LIKELY(self->samples_signed)) {
+            if (MP_LIKELY(self->base.bits_per_sample == 16)) {
+                if (MP_LIKELY(self->base.samples_signed)) {
                     for (uint32_t i = 0; i < n; i++) {
                         uint32_t v = src[i];
                         word_buffer[i] = mult16signed(v, level);
@@ -221,7 +209,7 @@ static void mix_down_one_voice(audiomixer_mixer_obj_t *self,
                 uint16_t *hsrc = (uint16_t *)src;
                 for (uint32_t i = 0; i < n * 2; i++) {
                     uint32_t word = unpack8(hsrc[i]);
-                    if (MP_LIKELY(!self->samples_signed)) {
+                    if (MP_LIKELY(!self->base.samples_signed)) {
                         word = tosigned16(word);
                     }
                     word = mult16signed(word, level);
@@ -229,8 +217,8 @@ static void mix_down_one_voice(audiomixer_mixer_obj_t *self,
                 }
             }
         } else {
-            if (MP_LIKELY(self->bits_per_sample == 16)) {
-                if (MP_LIKELY(self->samples_signed)) {
+            if (MP_LIKELY(self->base.bits_per_sample == 16)) {
+                if (MP_LIKELY(self->base.samples_signed)) {
                     for (uint32_t i = 0; i < n; i++) {
                         uint32_t word = src[i];
                         word_buffer[i] = add16signed(mult16signed(word, level), word_buffer[i]);
@@ -247,7 +235,7 @@ static void mix_down_one_voice(audiomixer_mixer_obj_t *self,
                 uint16_t *hsrc = (uint16_t *)src;
                 for (uint32_t i = 0; i < n * 2; i++) {
                     uint32_t word = unpack8(hsrc[i]);
-                    if (MP_LIKELY(!self->samples_signed)) {
+                    if (MP_LIKELY(!self->base.samples_signed)) {
                         word = tosigned16(word);
                     }
                     word = mult16signed(word, level);
@@ -312,8 +300,8 @@ audioio_get_buffer_result_t audiomixer_mixer_get_buffer(audiomixer_mixer_obj_t *
             }
         }
 
-        if (!self->samples_signed) {
-            if (self->bits_per_sample == 16) {
+        if (!self->base.samples_signed) {
+            if (self->base.bits_per_sample == 16) {
                 for (uint32_t i = 0; i < length; i++) {
                     word_buffer[i] = tounsigned16(word_buffer[i]);
                 }
@@ -336,20 +324,7 @@ audioio_get_buffer_result_t audiomixer_mixer_get_buffer(audiomixer_mixer_obj_t *
         self->left_read_count += 1;
     } else if (channel == 1) {
         self->right_read_count += 1;
-        *buffer = *buffer + self->bits_per_sample / 8;
+        *buffer = *buffer + self->base.bits_per_sample / 8;
     }
     return GET_BUFFER_MORE_DATA;
-}
-
-void audiomixer_mixer_get_buffer_structure(audiomixer_mixer_obj_t *self, bool single_channel_output,
-    bool *single_buffer, bool *samples_signed,
-    uint32_t *max_buffer_length, uint8_t *spacing) {
-    *single_buffer = false;
-    *samples_signed = self->samples_signed;
-    *max_buffer_length = self->len;
-    if (single_channel_output) {
-        *spacing = self->channel_count;
-    } else {
-        *spacing = 1;
-    }
 }

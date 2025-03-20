@@ -73,11 +73,18 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: 3.x
+    - name: Board to port
+      id: board-to-port
+      run: |
+        PORT=$(python tools/board_to_port.py "${{ inputs.board }}")
+        echo "port=$PORT" >> $GITHUB_OUTPUT
+      shell: bash
     - name: Set up port
       id: set-up-port
       uses: ./.github/actions/deps/ports
       with:
         board: ${{ inputs.board }}
+        port: ${{ steps.board-to-port.outputs.port }}
     - name: Set up submodules
       id: set-up-submodules
       uses: ./.github/actions/deps/submodules
@@ -88,7 +95,7 @@ jobs:
       uses: ./.github/actions/deps/external
       with:
         action: cache
-        port: ${{ steps.set-up-port.outputs.port }}
+        port: ${{ steps.board-to-port.outputs.port }}
     - name: Set up mpy-cross
       if: steps.set-up-submodules.outputs.frozen == 'True'
       uses: ./.github/actions/mpy_cross
@@ -97,7 +104,7 @@ jobs:
         download: false
     - name: Versions
       run: |
-        tools/describe
+        python py/version.py
         gcc --version
         python3 --version
         cmake --version || true
@@ -115,9 +122,9 @@ jobs:
         FLAGS: ${{ inputs.flags }}
         DEBUG: ${{ inputs.debug && '1' || '0' }}
       run: make -j4 $FLAGS BOARD="$BOARD" DEBUG=$DEBUG TRANSLATION="$TRANSLATION"
-      working-directory: ports/${{ steps.set-up-port.outputs.port }}
+      working-directory: ports/${{ steps.board-to-port.outputs.port }}
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: ${{ inputs.board }}-${{ inputs.language }}-${{ inputs.version }}${{ inputs.flags != '' && '-custom' || '' }}${{ inputs.debug && '-debug' || '' }}
-        path: ports/${{ steps.set-up-port.outputs.port }}/build-${{ inputs.board }}/firmware.*
+        path: ports/${{ steps.board-to-port.outputs.port }}/build-${{ inputs.board }}/firmware.*

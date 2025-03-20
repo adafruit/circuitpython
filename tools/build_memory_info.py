@@ -38,8 +38,7 @@ with open(sys.argv[1], "r") as f:
         if line.startswith(("FLASH_FIRMWARE", "RAM")):
             regions[line.split()[0]] = line.split("=")[-1]
 
-for region in regions:
-    space = regions[region]
+for region, space in regions.items():
     if "/*" in space:
         space = space.split("/*")[0]
     space = K_PATTERN.sub(K_REPLACE, space)

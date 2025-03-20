@@ -374,11 +374,11 @@ static void set_sai_clocking_for_sample_rate(uint32_t sample_rate) {
 void port_i2s_play(i2s_t *self, mp_obj_t sample, bool loop) {
     self->sample = sample;
     self->loop = loop;
-    self->bytes_per_sample = audiosample_bits_per_sample(sample) / 8;
-    self->channel_count = audiosample_channel_count(sample);
+    self->bytes_per_sample = audiosample_get_bits_per_sample(sample) / 8;
+    self->channel_count = audiosample_get_channel_count(sample);
     int instance = SAI_GetInstance(self->peripheral);
     i2s_playing |= (1 << instance);
-    uint32_t sample_rate = audiosample_sample_rate(sample);
+    uint32_t sample_rate = audiosample_get_sample_rate(sample);
     if (sample_rate != self->sample_rate) {
         if (__builtin_popcount(i2s_playing) <= 1) {
             // as this is the first/only i2s instance playing audio, we can

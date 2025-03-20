@@ -12,7 +12,11 @@ typedef struct {
     mp_obj_base_t base;
     mp_obj_t *sample;
     NRF_PWM_Type *pwm;
+
     uint16_t *buffers[2];
+    #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
+    size_t buffer_size[2]; // Keeps track of allocated size
+    #endif
 
     uint16_t quiescent_value;
     uint16_t scale;

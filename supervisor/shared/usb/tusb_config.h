@@ -55,7 +55,11 @@ extern "C" {
 // When debugging TinyUSB, only output to the console UART link.
 #if CIRCUITPY_DEBUG_TINYUSB > 0 && defined(CIRCUITPY_CONSOLE_UART)
 #define CFG_TUSB_DEBUG              CIRCUITPY_DEBUG_TINYUSB
+#ifdef __ZEPHYR__
+#define CFG_TUSB_DEBUG_PRINTF       zephyr_printk
+#else
 #define CFG_TUSB_DEBUG_PRINTF       console_uart_printf
+#endif
 
 // Raise the device log level to 3 so we can debug host-only at level 2.
 #define CFG_TUD_LOG_LEVEL           3
@@ -173,7 +177,8 @@ extern "C" {
 #endif
 
 #if CIRCUITPY_USB_KEYBOARD_WORKFLOW
-#define CFG_TUH_HID                 2
+// One keyboard, one mouse and two other HID like gamepad.
+#define CFG_TUH_HID                 4
 #else
 #define CFG_TUH_HID                 0
 #endif
@@ -195,6 +200,11 @@ extern "C" {
 #define CFG_TUH_MAX3421 (CIRCUITPY_MAX3421E)
 
 #endif
+
+// Hack to work with older nrfx than what TinyUSB is designed for.
+#define nrf52_errata_187 errata_187
+#define nrf52_errata_171 errata_171
+#define nrf52_errata_166 errata_166
 
 #ifdef __cplusplus
 }

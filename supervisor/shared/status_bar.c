@@ -25,6 +25,10 @@
 #include "supervisor/shared/bluetooth/bluetooth.h"
 #endif
 
+#if CIRCUITPY_USB_KEYBOARD_WORKFLOW
+#include "supervisor/usb.h"
+#endif
+
 static background_callback_t status_bar_background_cb;
 
 static bool _forced_dirty = false;
@@ -74,6 +78,10 @@ void supervisor_status_bar_update(void) {
     // but some may be cut off.
     serial_write("\x1b" "]0;");
     serial_write("🐍");
+
+    #if CIRCUITPY_USB_KEYBOARD_WORKFLOW
+    usb_keyboard_status();
+    #endif
 
     #if CIRCUITPY_WEB_WORKFLOW
     supervisor_web_workflow_status();

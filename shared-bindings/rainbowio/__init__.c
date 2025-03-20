@@ -13,11 +13,13 @@
 //|
 //| Provides the `colorwheel()` function."""
 //|
+//|
 //| def colorwheel(n: float) -> int:
 //|     """C implementation of the common colorwheel() function found in many examples.
 //|     Returns the colorwheel RGB value as an integer value for n (usable in neopixel and dotstar).
 //|     """
 //|     ...
+//|
 //|
 static mp_obj_t rainbowio_colorwheel(mp_obj_t n) {
     mp_float_t f = mp_obj_get_float(n);

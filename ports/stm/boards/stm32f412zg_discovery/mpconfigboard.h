@@ -9,7 +9,7 @@
 // Micropython setup
 
 #define MICROPY_HW_BOARD_NAME       "STM32F412G_DISCO"
-#define MICROPY_HW_MCU_NAME         "STM32F412xGS"
+#define MICROPY_HW_MCU_NAME         "STM32F412xG"
 
 #define FLASH_SIZE                  (0x100000)
 #define FLASH_PAGE_SIZE             (0x4000)

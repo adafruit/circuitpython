@@ -44,6 +44,7 @@
 //|                   print(position)
 //|               last_position = position"""
 //|         ...
+//|
 static mp_obj_t rotaryio_incrementalencoder_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_pin_a, ARG_pin_b, ARG_divisor };
     static const mp_arg_t allowed_args[] = {
@@ -68,6 +69,7 @@ static mp_obj_t rotaryio_incrementalencoder_make_new(const mp_obj_type_t *type, 
 //|     def deinit(self) -> None:
 //|         """Deinitializes the IncrementalEncoder and releases any hardware resources for reuse."""
 //|         ...
+//|
 static mp_obj_t rotaryio_incrementalencoder_deinit(mp_obj_t self_in) {
     rotaryio_incrementalencoder_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_rotaryio_incrementalencoder_deinit(self);
@@ -84,18 +86,15 @@ static void check_for_deinit(rotaryio_incrementalencoder_obj_t *self) {
 //|     def __enter__(self) -> IncrementalEncoder:
 //|         """No-op used by Context Managers."""
 //|         ...
+//|
 //  Provided by context manager helper.
 
 //|     def __exit__(self) -> None:
 //|         """Automatically deinitializes the hardware when exiting a context. See
 //|         :ref:`lifetime-and-contextmanagers` for more info."""
 //|         ...
-static mp_obj_t rotaryio_incrementalencoder_obj___exit__(size_t n_args, const mp_obj_t *args) {
-    (void)n_args;
-    common_hal_rotaryio_incrementalencoder_deinit(args[0]);
-    return mp_const_none;
-}
-static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(rotaryio_incrementalencoder___exit___obj, 4, 4, rotaryio_incrementalencoder_obj___exit__);
+//|
+//  Provided by context manager helper.
 
 
 //|     divisor: int
@@ -127,6 +126,7 @@ MP_PROPERTY_GETSET(rotaryio_incrementalencoder_divisor_obj,
 //|     """The current position in terms of pulses. The number of pulses per rotation is defined by the
 //|     specific hardware and by the divisor."""
 //|
+//|
 static mp_obj_t rotaryio_incrementalencoder_obj_get_position(mp_obj_t self_in) {
     rotaryio_incrementalencoder_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -153,7 +153,7 @@ static const mp_rom_map_elem_t rotaryio_incrementalencoder_locals_dict_table[] =
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&rotaryio_incrementalencoder_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&rotaryio_incrementalencoder_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
-    { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&rotaryio_incrementalencoder___exit___obj) },
+    { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
     { MP_ROM_QSTR(MP_QSTR_position), MP_ROM_PTR(&rotaryio_incrementalencoder_position_obj) },
     { MP_ROM_QSTR(MP_QSTR_divisor), MP_ROM_PTR(&rotaryio_incrementalencoder_divisor_obj) },
 };

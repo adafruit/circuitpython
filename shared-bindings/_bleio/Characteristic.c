@@ -25,6 +25,7 @@
 //|         Remote Characteristic objects are created by `Connection.discover_remote_services()`
 //|         as part of remote Services."""
 //|         ...
+//|
 
 //|     @classmethod
 //|     def add_to_service(
@@ -38,7 +39,7 @@
 //|         max_length: int = 20,
 //|         fixed_length: bool = False,
 //|         initial_value: Optional[ReadableBuffer] = None,
-//|         user_description: Optional[str] = None
+//|         user_description: Optional[str] = None,
 //|     ) -> Characteristic:
 //|         """Create a new Characteristic object, and add it to this Service.
 //|
@@ -63,6 +64,7 @@
 //|
 //|         :return: the new Characteristic."""
 //|         ...
+//|
 static mp_obj_t bleio_characteristic_add_to_service(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     // class is arg[0], which we can ignore.
 
@@ -143,6 +145,7 @@ static MP_DEFINE_CONST_CLASSMETHOD_OBJ(bleio_characteristic_add_to_service_obj, 
 //|     def deinit(self) -> None:
 //|         """Deinitialises the Characteristic and releases any hardware resources for reuse."""
 //|         ...
+//|
 static mp_obj_t bleio_characteristic_deinit(mp_obj_t self_in) {
     bleio_characteristic_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_bleio_characteristic_deinit(self);
@@ -246,6 +249,7 @@ MP_PROPERTY_GETTER(bleio_characteristic_descriptors_obj,
 
 //|     service: Service
 //|     """The Service this Characteristic is a part of."""
+//|
 static mp_obj_t bleio_characteristic_get_service(mp_obj_t self_in) {
     bleio_characteristic_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -264,6 +268,7 @@ MP_PROPERTY_GETTER(bleio_characteristic_service_obj,
 //|         :param float indicate: True if Characteristic should receive indications of remote writes
 //|         """
 //|         ...
+//|
 static mp_obj_t bleio_characteristic_set_cccd(mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     bleio_characteristic_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
     check_for_deinit(self);
@@ -312,6 +317,7 @@ static const mp_rom_map_elem_t bleio_characteristic_locals_dict_table[] = {
 //|
 //|     WRITE_NO_RESPONSE: int
 //|     """property: clients may write this characteristic; no response will be sent back"""
+//|
 //|
     { MP_ROM_QSTR(MP_QSTR_BROADCAST),         MP_ROM_INT(CHAR_PROP_BROADCAST) },
     { MP_ROM_QSTR(MP_QSTR_INDICATE),          MP_ROM_INT(CHAR_PROP_INDICATE) },

@@ -42,6 +42,47 @@
 
 #include "tusb.h"
 
+#if CFG_TUSB_OS == OPT_OS_ZEPHYR
+#include <zephyr/kernel.h>
+int CFG_TUSB_DEBUG_PRINTF(const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    printk(format, args);
+    va_end(args);
+    return 0;
+}
+
+#ifdef CFG_TUSB_DEBUG
+  #define USBD_STACK_SIZE     (5 * CONFIG_IDLE_STACK_SIZE)
+#else
+  #define USBD_STACK_SIZE     (5 * CONFIG_IDLE_STACK_SIZE / 2)
+#endif
+
+struct k_thread tinyusb_thread_data;
+K_THREAD_STACK_DEFINE(tinyusb_thread_stack, USBD_STACK_SIZE);
+k_tid_t _tinyusb_tid;
+
+// USB Device Driver task
+// This top level thread process all usb events and invoke callbacks
+static void tinyusb_thread(void *unused0, void *unused1, void *unused2) {
+    (void)unused0;
+    (void)unused1;
+    (void)unused2;
+
+    // RTOS forever loop
+    while (1) {
+        // tinyusb device task
+        if (tusb_inited()) {
+            tud_task();
+            tud_cdc_write_flush();
+        } else {
+            k_sleep(K_MSEC(1000));
+        }
+    }
+}
+
+#endif
+
 bool usb_enabled(void) {
     return tusb_inited();
 }
@@ -91,6 +132,15 @@ void usb_init(void) {
         // Console will always be itf 0.
         tud_cdc_set_wanted_char(CHAR_CTRL_C);
     }
+    #endif
+
+    #if CFG_TUSB_OS == OPT_OS_ZEPHYR
+    _tinyusb_tid = k_thread_create(&tinyusb_thread_data, tinyusb_thread_stack,
+        K_THREAD_STACK_SIZEOF(tinyusb_thread_stack),
+        tinyusb_thread,
+        NULL, NULL, NULL,
+        CONFIG_MAIN_THREAD_PRIORITY - 1, 0, K_NO_WAIT);
+    k_thread_name_set(_tinyusb_tid, "tinyusb");
     #endif
 }
 

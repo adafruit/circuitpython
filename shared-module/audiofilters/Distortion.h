@@ -21,18 +21,13 @@ typedef enum {
 extern const mp_obj_type_t audiofilters_distortion_type;
 
 typedef struct {
-    mp_obj_base_t base;
+    audiosample_base_t base;
     synthio_block_slot_t drive;
     synthio_block_slot_t pre_gain;
     synthio_block_slot_t post_gain;
     audiofilters_distortion_mode mode;
     bool soft_clip;
     synthio_block_slot_t mix;
-
-    uint8_t bits_per_sample;
-    bool samples_signed;
-    uint8_t channel_count;
-    uint32_t sample_rate;
 
     int8_t *buffer[2];
     uint8_t last_buf_idx;
@@ -54,7 +49,3 @@ void audiofilters_distortion_reset_buffer(audiofilters_distortion_obj_t *self,
 audioio_get_buffer_result_t audiofilters_distortion_get_buffer(audiofilters_distortion_obj_t *self,
     bool single_channel_output, uint8_t channel,
     uint8_t **buffer, uint32_t *buffer_length);
-
-void audiofilters_distortion_get_buffer_structure(audiofilters_distortion_obj_t *self,
-    bool single_channel_output, bool *single_buffer, bool *samples_signed,
-    uint32_t *max_buffer_length, uint8_t *spacing);

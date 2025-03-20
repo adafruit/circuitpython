@@ -65,7 +65,7 @@ SECTIONS
 
         *(EXCLUDE_FILE(*libgcc.a: *libc.a:*lib_a-mem*.o *libm.a: *interp.o *divider.o *tusb_fifo.o *mem_ops_aeabi.o *usbh.o *string0.o) .text*)
         /* Allow everything in usbh.o except tuh_task_event_ready because we read it from core 1. */
-        *usbh.o (.text.[_uphc]* .text.tuh_[cmvied]* .text.tuh_task_ext*)
+        *usbh.o (.text.[_uphc]* .text.tuh_[cmved]* .text.tuh_task_ext*)
         *(.fini)
         /* Pull all c'tors into .text */
         *crtbegin.o(.ctors)

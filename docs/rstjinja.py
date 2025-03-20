@@ -3,10 +3,12 @@
 
 import re
 
+
 def render_with_jinja(docname, source):
-    if re.search('^\s*.. jinja$', source[0], re.M):
+    if re.search("^\s*.. jinja$", source[0], re.M):
         return True
     return False
+
 
 def rstjinja(app, docname, source):
     """
@@ -24,18 +26,15 @@ def rstjinja(app, docname, source):
     print(f"rendering {docname} as jinja templates")
 
     if app.builder.format == "html":
-        rendered = app.builder.templates.render_string(
-            src, app.config.html_context
-        )
+        rendered = app.builder.templates.render_string(src, app.config.html_context)
     else:
         from sphinx.util.template import BaseRenderer
+
         renderer = BaseRenderer()
-        rendered = renderer.render_string(
-            src,
-            app.config.html_context
-        )
+        rendered = renderer.render_string(src, app.config.html_context)
 
     source[0] = rendered
+
 
 def setup(app):
     app.connect("source-read", rstjinja)

@@ -40,6 +40,7 @@
 //|     """
 //|     ...
 //|
+//|
 static mp_obj_t floppyio_flux_readinto(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     #if CIRCUITPY_DIGITALIO
     enum { ARG_buffer, ARG_data, ARG_index, ARG_index_wait };
@@ -118,6 +119,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(floppyio_flux_readinto_obj, 0, floppyio_flux_readinto
 //|     :return: The actual number of sectors read
 //|     """
 //|     ...
+//|
 //|
 static mp_obj_t floppyio_mfm_readinto(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_buffer, ARG_flux, ARG_t2_max, ARG_t3_max, ARG_validity, ARG_clear_validity };

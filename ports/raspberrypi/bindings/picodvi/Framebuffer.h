@@ -12,6 +12,9 @@
 
 extern const mp_obj_type_t picodvi_framebuffer_type;
 
+bool common_hal_picodvi_framebuffer_preflight(
+    mp_uint_t width, mp_uint_t height,
+    mp_uint_t color_depth);
 void common_hal_picodvi_framebuffer_construct(picodvi_framebuffer_obj_t *self,
     mp_uint_t width, mp_uint_t height,
     const mcu_pin_obj_t *clk_dp, const mcu_pin_obj_t *clk_dn,
@@ -26,5 +29,6 @@ int common_hal_picodvi_framebuffer_get_width(picodvi_framebuffer_obj_t *self);
 int common_hal_picodvi_framebuffer_get_height(picodvi_framebuffer_obj_t *self);
 int common_hal_picodvi_framebuffer_get_row_stride(picodvi_framebuffer_obj_t *self);
 int common_hal_picodvi_framebuffer_get_color_depth(picodvi_framebuffer_obj_t *self);
+int common_hal_picodvi_framebuffer_get_native_frames_per_second(picodvi_framebuffer_obj_t *self);
 bool common_hal_picodvi_framebuffer_get_grayscale(picodvi_framebuffer_obj_t *self);
 mp_int_t common_hal_picodvi_framebuffer_get_buffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_uint_t flags);

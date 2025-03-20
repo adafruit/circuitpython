@@ -539,10 +539,14 @@ mp_obj_t mp_obj_new_exception_msg_vlist(const mp_obj_type_t *exc_type, mp_rom_er
     assert(MP_OBJ_TYPE_GET_SLOT_OR_NULL(exc_type, make_new) == mp_obj_exception_make_new);
 
     // Try to allocate memory for the message
-    mp_obj_str_t *o_str = m_new_obj_maybe(mp_obj_str_t);
+    mp_obj_str_t *o_str = NULL;
+    byte *o_str_buf = NULL;
     // CIRCUITPY-CHANGE: here and more below
     size_t o_str_alloc = decompress_length(fmt);
-    byte *o_str_buf = m_new_maybe(byte, o_str_alloc);
+    if (gc_alloc_possible()) {
+        o_str = m_new_obj_maybe(mp_obj_str_t);
+        o_str_buf = m_new_maybe(byte, o_str_alloc);
+    }
 
     bool used_emg_buf = false;
     #if MICROPY_ENABLE_EMERGENCY_EXCEPTION_BUF

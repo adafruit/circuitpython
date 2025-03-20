@@ -174,29 +174,6 @@ MP_WEAK void board_serial_write_substring(const char *text, uint32_t length) {
     (void)length;
 }
 
-MP_WEAK void port_serial_early_init(void) {
-}
-
-MP_WEAK void port_serial_init(void) {
-}
-
-MP_WEAK bool port_serial_connected(void) {
-    return false;
-}
-
-MP_WEAK char port_serial_read(void) {
-    return -1;
-}
-
-MP_WEAK uint32_t port_serial_bytes_available(void) {
-    return 0;
-}
-
-MP_WEAK void port_serial_write_substring(const char *text, uint32_t length) {
-    (void)text;
-    (void)length;
-}
-
 void serial_early_init(void) {
     // Ignore duplicate calls to initialize allowing port-specific code to
     // call this function early.
@@ -215,11 +192,13 @@ void serial_early_init(void) {
         false, CIRCUITPY_CONSOLE_UART_BAUDRATE, 8, BUSIO_UART_PARITY_NONE, 1, 1.0f, sizeof(console_uart_rx_buf),
         console_uart_rx_buf, true);
     common_hal_busio_uart_never_reset(&console_uart);
-
     #endif
 
     board_serial_early_init();
+
+    #if CIRCUITPY_PORT_SERIAL
     port_serial_early_init();
+    #endif
 
     _serial_console_early_inited = true;
 
@@ -233,7 +212,10 @@ void serial_init(void) {
     #endif
 
     board_serial_init();
+
+    #if CIRCUITPY_PORT_SERIAL
     port_serial_init();
+    #endif
 }
 
 bool serial_connected(void) {
@@ -280,9 +262,12 @@ bool serial_connected(void) {
         return true;
     }
 
+
+    #if CIRCUITPY_PORT_SERIAL
     if (port_serial_connected()) {
         return true;
     }
+    #endif
 
     return false;
 }
@@ -330,9 +315,12 @@ char serial_read(void) {
         return board_serial_read();
     }
 
+
+    #if CIRCUITPY_PORT_SERIAL
     if (port_serial_bytes_available() > 0) {
         return port_serial_read();
     }
+    #endif
 
     #if CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_CDC
     if (!usb_cdc_console_enabled()) {
@@ -381,8 +369,10 @@ uint32_t serial_bytes_available(void) {
     // Board-specific serial input.
     count += board_serial_bytes_available();
 
+    #if CIRCUITPY_PORT_SERIAL
     // Port-specific serial input.
     count += port_serial_bytes_available();
+    #endif
 
     return count;
 }
@@ -453,7 +443,10 @@ uint32_t serial_write_substring(const char *text, uint32_t length) {
     #endif
 
     board_serial_write_substring(text, length);
+
+    #if CIRCUITPY_PORT_SERIAL
     port_serial_write_substring(text, length);
+    #endif
 
     return length_sent;
 }
@@ -530,4 +523,16 @@ void print_hexdump(const mp_print_t *printer, const char *prefix, const uint8_t 
         }
         mp_printf(printer, "\n");
     }
+}
+
+int console_uart_printf(const char *fmt, ...) {
+    #if CIRCUITPY_CONSOLE_UART
+    va_list args;
+    va_start(args, fmt);
+    int ret = mp_vprintf(&console_uart_print, fmt, args);
+    va_end(args);
+    return ret;
+    #else
+    return 0;
+    #endif
 }

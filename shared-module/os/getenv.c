@@ -27,6 +27,8 @@
 
 #include "extmod/vfs.h"
 #include "extmod/vfs_fat.h"
+
+#if CIRCUITPY_OS_GETENV
 typedef FIL file_arg;
 static bool open_file(const char *name, file_arg *active_file) {
     #if defined(UNIX)
@@ -412,3 +414,4 @@ os_getenv_err_t common_hal_os_getenv_int(const char *key, mp_int_t *value) {
     common_hal_os_getenv_showerr(key, result);
     return result;
 }
+#endif

@@ -26,11 +26,13 @@
 //|     def __init__(self) -> None:
 //|         """Not currently dynamically supported. Access the sole instance through `microcontroller.nvm`."""
 //|         ...
+//|
 
 //|     def __bool__(self) -> bool: ...
 //|     def __len__(self) -> int:
 //|         """Return the length. This is used by (`len`)"""
 //|         ...
+//|
 static mp_obj_t nvm_bytearray_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
     nvm_bytearray_obj_t *self = MP_OBJ_TO_PTR(self_in);
     uint16_t len = common_hal_nvm_bytearray_get_length(self);
@@ -62,6 +64,7 @@ static MP_DEFINE_CONST_DICT(nvm_bytearray_locals_dict, nvm_bytearray_locals_dict
 //|     def __setitem__(self, index: int, value: int) -> None:
 //|         """Set the value at the given index."""
 //|         ...
+//|
 //|
 static mp_obj_t nvm_bytearray_subscr(mp_obj_t self_in, mp_obj_t index_in, mp_obj_t value) {
     if (value == MP_OBJ_NULL) {

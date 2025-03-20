@@ -23,6 +23,9 @@ typedef enum displayio_colorspace {
 } displayio_colorspace_t;
 
 void common_hal_displayio_release_displays(void);
+mp_obj_t common_hal_displayio_get_primary_display(void);
+void common_hal_displayio_set_primary_display(mp_obj_t o);
+void common_hal_displayio_auto_primary_display(void);
 
 extern const mp_obj_type_t displayio_colorspace_type;
 extern const cp_enum_obj_t displayio_colorspace_RGB888_obj;

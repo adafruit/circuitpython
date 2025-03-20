@@ -19,10 +19,5 @@ void common_hal_audiomp3_mp3file_construct(audiomp3_mp3file_obj_t *self,
 
 void common_hal_audiomp3_mp3file_set_file(audiomp3_mp3file_obj_t *self, mp_obj_t stream);
 void common_hal_audiomp3_mp3file_deinit(audiomp3_mp3file_obj_t *self);
-bool common_hal_audiomp3_mp3file_deinited(audiomp3_mp3file_obj_t *self);
-uint32_t common_hal_audiomp3_mp3file_get_sample_rate(audiomp3_mp3file_obj_t *self);
-void common_hal_audiomp3_mp3file_set_sample_rate(audiomp3_mp3file_obj_t *self, uint32_t sample_rate);
-uint8_t common_hal_audiomp3_mp3file_get_bits_per_sample(audiomp3_mp3file_obj_t *self);
-uint8_t common_hal_audiomp3_mp3file_get_channel_count(audiomp3_mp3file_obj_t *self);
 float common_hal_audiomp3_mp3file_get_rms_level(audiomp3_mp3file_obj_t *self);
 uint32_t common_hal_audiomp3_mp3file_get_samples_decoded(audiomp3_mp3file_obj_t *self);

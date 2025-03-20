@@ -19,6 +19,7 @@
 //|         the nonzero bits in mask. Otherwise, it matches exactly the given id.
 //|         If extended is true then only extended ids are matched, otherwise
 //|         only standard ids are matched."""
+//|
 
 static mp_obj_t canio_match_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_id, ARG_mask, ARG_extended, NUM_ARGS };
@@ -75,6 +76,7 @@ MP_PROPERTY_GETTER(canio_match_mask_obj,
 
 //|     extended: bool
 //|     """True to match extended ids, False to match standard ides"""
+//|
 //|
 
 static mp_obj_t canio_match_extended_get(mp_obj_t self_in) {

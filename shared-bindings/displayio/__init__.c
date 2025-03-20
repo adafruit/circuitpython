@@ -43,7 +43,25 @@
 //| refer to `this Learn guide
 //| <https://learn.adafruit.com/circuitpython-display-support-using-displayio>`_.
 //| """
+//|
 
+//| AnyDisplayBus = fourwire.FourWire | i2cdisplaybus.I2CDisplayBus | is31fl3741.IS31FL3741
+//| """Type-checking shorthand for any kind of display bus. Not actually defined in CircuitPython."""
+//|
+//| AnyFramebuffer = (
+//|     rgbmatrix.RGBMatrix
+//|     | is31fl3741.IS31FL3741_FrameBuffer
+//|     | sharpdisplay.SharpMemoryFramebuffer
+//|     | videocore.Framebuffer
+//|     | picodvi.Framebuffer
+//|     | aurora_epaper.AuroraMemoryFramebuffer
+//| )
+//| """Type-checking shorthand for any kind of framebuffer. Not actually defined in CircuitPython."""
+//|
+//| AnyDisplay = (
+//|     busdisplay.BusDisplay | epaperdisplay.EPaperDisplay | framebufferio.FramebufferDisplay
+//| )
+//| """Type-checking shorthand for any kind of display. Not actually defined in CircuitPython."""
 //| CIRCUITPYTHON_TERMINAL: Group
 //| """The `displayio.Group` that is the displayed serial terminal (REPL)."""
 //|
@@ -52,6 +70,7 @@
 //| from epaperdisplay import EPaperDisplay
 //| from fourwire import FourWire
 //| from i2cdisplaybus import I2CDisplayBus as I2CDisplay
+//|
 //|
 
 //| def release_displays() -> None:
@@ -62,6 +81,7 @@
 //|     Use this once in your code.py if you initialize a display. Place it right before the
 //|     initialization so the display is active as long as possible."""
 //|     ...
+//|
 //|
 static mp_obj_t displayio_release_displays(void) {
     common_hal_displayio_release_displays();

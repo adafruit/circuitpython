@@ -88,7 +88,7 @@ def process_one_file(fn):
     with open(fn, "r", encoding="utf-8") as f:
         c_content = f.read()
 
-    if not "\n//| " in c_content:
+    if "\n//| " not in c_content:
         return
 
     py_content = swap_comment_markers(c_content, Mode.C)
@@ -96,13 +96,13 @@ def process_one_file(fn):
     try:
         # Line length is 95 so that with "//| " the max is 99
         result = subprocess.run(
-            ["black", "--pyi", "-l95", "-q", "-"],
+            ["ruff", "format", "--line-length", "95", "-q", "-"],
             input=py_content,
             check=True,
             stdout=subprocess.PIPE,
             encoding="utf-8",
         )
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError:
         print(f"{fn}:0: Failed to process file ")
         raise
 

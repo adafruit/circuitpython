@@ -23,6 +23,8 @@ typedef struct  {
     uint16_t status_x;
     uint16_t status_y;
     uint16_t first_row;
+    uint16_t vt_scroll_top;
+    uint16_t vt_scroll_end;
     uint16_t osc_command;
     bool in_osc_command;
 } terminalio_terminal_obj_t;

@@ -24,6 +24,7 @@
 //|
 //|         The value itself can either be bytes or a string formatted address."""
 //|         ...
+//|
 static mp_obj_t ipaddress_ipv4address_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_address };
     static const mp_arg_t allowed_args[] = {
@@ -78,6 +79,7 @@ MP_PROPERTY_GETTER(ipaddress_ipv4address_packed_obj,
 
 //|     version: int
 //|     """4 for IPv4, 6 for IPv6"""
+//|
 static mp_obj_t ipaddress_ipv4address_get_version(mp_obj_t self_in) {
     ipaddress_ipv4address_obj_t *self = MP_OBJ_TO_PTR(self_in);
     mp_buffer_info_t buf_info;
@@ -98,6 +100,7 @@ MP_PROPERTY_GETTER(ipaddress_ipv4address_version_obj,
 //|     def __eq__(self, other: object) -> bool:
 //|         """Two Address objects are equal if their addresses and address types are equal."""
 //|         ...
+//|
 static mp_obj_t ipaddress_ipv4address_binary_op(mp_binary_op_t op, mp_obj_t lhs_in, mp_obj_t rhs_in) {
     switch (op) {
         // Two Addresses are equal if their address bytes and address_type are equal
@@ -121,6 +124,7 @@ static mp_obj_t ipaddress_ipv4address_binary_op(mp_binary_op_t op, mp_obj_t lhs_
 //|     def __hash__(self) -> int:
 //|         """Returns a hash for the IPv4Address data."""
 //|         ...
+//|
 //|
 static mp_obj_t ipaddress_ipv4address_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
     switch (op) {

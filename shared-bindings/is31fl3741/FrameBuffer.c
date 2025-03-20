@@ -29,7 +29,7 @@
 //|         *,
 //|         framebuffer: Optional[WriteableBuffer] = None,
 //|         scale: bool = False,
-//|         gamma: bool = False
+//|         gamma: bool = False,
 //|     ) -> None:
 //|         """Create a IS31FL3741_FrameBuffer object with the given attributes.
 //|
@@ -51,6 +51,7 @@
 //|         :param bool scale: if True display is scaled down by 3 when displayed
 //|         :param bool gamma: if True apply gamma correction to all LEDs"""
 //|         ...
+//|
 static mp_obj_t is31fl3741_framebuffer_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_is31, ARG_width, ARG_height, ARG_mapping, ARG_framebuffer, ARG_scale, ARG_gamma };
     static const mp_arg_t allowed_args[] = {
@@ -111,6 +112,7 @@ static mp_obj_t is31fl3741_framebuffer_make_new(const mp_obj_type_t *type, size_
 //|         IS31FL3741 instance.  After deinitialization, no further operations
 //|         may be performed."""
 //|         ...
+//|
 static mp_obj_t is31fl3741_framebuffer_deinit(mp_obj_t self_in) {
     is31fl3741_framebuffer_obj_t *self = (is31fl3741_framebuffer_obj_t *)self_in;
     common_hal_is31fl3741_framebuffer_deinit(self);
@@ -127,6 +129,7 @@ static void check_for_deinit(is31fl3741_framebuffer_obj_t *self) {
 //|     brightness: float
 //|     """In the current implementation, 0.0 turns the display off entirely
 //|     and any other value up to 1.0 turns the display on fully."""
+//|
 static mp_obj_t is31fl3741_framebuffer_get_brightness(mp_obj_t self_in) {
     is31fl3741_framebuffer_obj_t *self = (is31fl3741_framebuffer_obj_t *)self_in;
     check_for_deinit(self);
@@ -160,6 +163,7 @@ MP_PROPERTY_GETSET(is31fl3741_framebuffer_brightness_obj,
 //|         """Transmits the color data in the buffer to the pixels so that
 //|         they are shown."""
 //|         ...
+//|
 static mp_obj_t is31fl3741_framebuffer_refresh(mp_obj_t self_in) {
     is31fl3741_framebuffer_obj_t *self = (is31fl3741_framebuffer_obj_t *)self_in;
     check_for_deinit(self);
@@ -181,6 +185,7 @@ MP_PROPERTY_GETTER(is31fl3741_framebuffer_width_obj,
 
 //|     height: int
 //|     """The height of the display, in pixels"""
+//|
 //|
 static mp_obj_t is31fl3741_framebuffer_get_height(mp_obj_t self_in) {
     is31fl3741_framebuffer_obj_t *self = (is31fl3741_framebuffer_obj_t *)self_in;

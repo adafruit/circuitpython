@@ -20,6 +20,7 @@
 //| |see_cpython_module| :mod:`cpython:time`.
 //| """
 //|
+//|
 //| def monotonic() -> float:
 //|     """Returns an always increasing value of time with an unknown reference
 //|     point. Only use it to compare against other values from `time.monotonic()`
@@ -43,6 +44,7 @@
 //|     :rtype: float"""
 //|     ...
 //|
+//|
 static mp_obj_t time_monotonic(void) {
     uint64_t ticks_ms = common_hal_time_monotonic_ms();
     return mp_obj_new_float(uint64_to_float(ticks_ms) / MICROPY_FLOAT_CONST(1000.0));
@@ -54,6 +56,7 @@ MP_DEFINE_CONST_FUN_OBJ_0(time_monotonic_obj, time_monotonic);
 //|
 //|     :param float seconds: the time to sleep in fractional seconds"""
 //|     ...
+//|
 //|
 static mp_obj_t time_sleep(mp_obj_t seconds_o) {
     #if MICROPY_PY_BUILTINS_FLOAT
@@ -95,6 +98,7 @@ static mp_obj_t struct_time_make_new(const mp_obj_type_t *type, size_t n_args, s
 //|           * ``tm_yday``: the day of the year, range [1, 366], -1 indicates not known
 //|           * ``tm_isdst``: 1 when in daylight savings, 0 when not, -1 if unknown."""
 //|         ...
+//|
 //|
 const mp_obj_namedtuple_type_t struct_time_type_obj = {
     NAMEDTUPLE_TYPE_BASE_AND_SLOTS_MAKE_NEW(MP_QSTR_struct_time, struct_time_make_new),
@@ -179,6 +183,7 @@ mp_obj_t MP_WEAK rtc_get_time_source_time(void) {
 //|     :rtype: int"""
 //|     ...
 //|
+//|
 static mp_obj_t time_time(void) {
     timeutils_struct_time_t tm;
     struct_time_to_tm(rtc_get_time_source_time(), &tm);
@@ -198,6 +203,7 @@ MP_DEFINE_CONST_FUN_OBJ_0(time_time_obj, time_time);
 //|     :rtype: int"""
 //|     ...
 //|
+//|
 static mp_obj_t time_monotonic_ns(void) {
     uint64_t time64 = common_hal_time_monotonic_ns();
     return mp_obj_new_int_from_ll((long long)time64);
@@ -213,6 +219,7 @@ MP_DEFINE_CONST_FUN_OBJ_0(time_monotonic_ns_obj, time_monotonic_ns);
 //|     :return: the current time
 //|     :rtype: time.struct_time"""
 //|     ...
+//|
 //|
 static mp_obj_t time_localtime(size_t n_args, const mp_obj_t *args) {
     if (n_args == 0 || args[0] == mp_const_none) {
@@ -250,6 +257,7 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(time_localtime_obj, 0, 1, time_localtime);
 //|     :return: seconds
 //|     :rtype: int"""
 //|     ...
+//|
 //|
 static mp_obj_t time_mktime(mp_obj_t t) {
     mp_obj_t *elem;

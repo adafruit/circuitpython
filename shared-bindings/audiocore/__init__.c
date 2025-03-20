@@ -7,12 +7,14 @@
 #include <stdint.h>
 
 #include "py/obj.h"
+#include "py/objproperty.h"
 #include "py/gc.h"
 #include "py/runtime.h"
 
 #include "shared-bindings/audiocore/__init__.h"
 #include "shared-bindings/audiocore/RawSample.h"
 #include "shared-bindings/audiocore/WaveFile.h"
+#include "shared-bindings/util.h"
 // #include "shared-bindings/audiomixer/Mixer.h"
 
 //| """Support for audio samples"""
@@ -24,6 +26,9 @@ static mp_obj_t audiocore_get_buffer(mp_obj_t sample_in) {
     uint32_t buffer_length = 0;
     audioio_get_buffer_result_t gbr = audiosample_get_buffer(sample_in, false, 0, &buffer, &buffer_length);
 
+    // audiosample_get_buffer checked that we're a sample so this is a safe cast
+    audiosample_base_t *sample = MP_OBJ_TO_PTR(sample_in);
+
     mp_obj_t result[2] = {mp_obj_new_int_from_uint(gbr), mp_const_none};
 
     if (gbr != GET_BUFFER_ERROR) {
@@ -31,8 +36,8 @@ static mp_obj_t audiocore_get_buffer(mp_obj_t sample_in) {
         uint32_t max_buffer_length;
         uint8_t spacing;
 
-        uint8_t bits_per_sample = audiosample_bits_per_sample(sample_in);
-        audiosample_get_buffer_structure(sample_in, false, &single_buffer, &samples_signed, &max_buffer_length, &spacing);
+        uint8_t bits_per_sample = audiosample_get_bits_per_sample(sample);
+        audiosample_get_buffer_structure(sample, false, &single_buffer, &samples_signed, &max_buffer_length, &spacing);
         // copies the data because the gc semantics of get_buffer are unclear
         void *result_buf = m_malloc(buffer_length);
         memcpy(result_buf, buffer, buffer_length);
@@ -55,7 +60,7 @@ static mp_obj_t audiocore_get_structure(mp_obj_t sample_in) {
     uint32_t max_buffer_length;
     uint8_t spacing;
 
-    audiosample_get_buffer_structure(sample_in, false, &single_buffer, &samples_signed, &max_buffer_length, &spacing);
+    audiosample_get_buffer_structure_checked(sample_in, false, &single_buffer, &samples_signed, &max_buffer_length, &spacing);
     mp_obj_t result[4] = {
         mp_obj_new_int_from_uint(single_buffer),
         mp_obj_new_int_from_uint(samples_signed),
@@ -91,5 +96,62 @@ const mp_obj_module_t audiocore_module = {
     .base = { &mp_type_module },
     .globals = (mp_obj_dict_t *)&audiocore_module_globals,
 };
+
+bool audiosample_deinited(const audiosample_base_t *self) {
+    return self->channel_count == 0;
+}
+
+void audiosample_check_for_deinit(const audiosample_base_t *self) {
+    if (audiosample_deinited(self)) {
+        raise_deinited_error();
+    }
+}
+
+void audiosample_mark_deinit(audiosample_base_t *self) {
+    self->channel_count = 0;
+}
+
+// common implementation of channel_count property for audio samples
+static mp_obj_t audiosample_obj_get_channel_count(mp_obj_t self_in) {
+    audiosample_base_t *self = MP_OBJ_TO_PTR(self_in);
+    audiosample_check_for_deinit(self);
+    return MP_OBJ_NEW_SMALL_INT(audiosample_get_channel_count(self));
+}
+MP_DEFINE_CONST_FUN_OBJ_1(audiosample_get_channel_count_obj, audiosample_obj_get_channel_count);
+
+MP_PROPERTY_GETTER(audiosample_channel_count_obj,
+    (mp_obj_t)&audiosample_get_channel_count_obj);
+
+
+// common implementation of bits_per_sample property for audio samples
+static mp_obj_t audiosample_obj_get_bits_per_sample(mp_obj_t self_in) {
+    audiosample_base_t *self = MP_OBJ_TO_PTR(self_in);
+    audiosample_check_for_deinit(self);
+    return MP_OBJ_NEW_SMALL_INT(audiosample_get_bits_per_sample(self));
+}
+MP_DEFINE_CONST_FUN_OBJ_1(audiosample_get_bits_per_sample_obj, audiosample_obj_get_bits_per_sample);
+
+MP_PROPERTY_GETTER(audiosample_bits_per_sample_obj,
+    (mp_obj_t)&audiosample_get_bits_per_sample_obj);
+
+// common implementation of sample_rate property for audio samples
+static mp_obj_t audiosample_obj_get_sample_rate(mp_obj_t self_in) {
+    audiosample_base_t *self = MP_OBJ_TO_PTR(self_in);
+    audiosample_check_for_deinit(self);
+    return MP_OBJ_NEW_SMALL_INT(audiosample_get_sample_rate(audiosample_check(self_in)));
+}
+MP_DEFINE_CONST_FUN_OBJ_1(audiosample_get_sample_rate_obj, audiosample_obj_get_sample_rate);
+
+static mp_obj_t audiosample_obj_set_sample_rate(mp_obj_t self_in, mp_obj_t sample_rate) {
+    audiosample_base_t *self = MP_OBJ_TO_PTR(self_in);
+    audiosample_check_for_deinit(self);
+    audiosample_set_sample_rate(audiosample_check(self_in), mp_obj_get_int(sample_rate));
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_2(audiosample_set_sample_rate_obj, audiosample_obj_set_sample_rate);
+
+MP_PROPERTY_GETSET(audiosample_sample_rate_obj,
+    (mp_obj_t)&audiosample_get_sample_rate_obj,
+    (mp_obj_t)&audiosample_set_sample_rate_obj);
 
 MP_REGISTER_MODULE(MP_QSTR_audiocore, audiocore_module);

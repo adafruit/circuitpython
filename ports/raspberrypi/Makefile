@@ -32,6 +32,7 @@ CFLAGS_CYW43 := \
 	-DCYW43_USE_STATS=0 \
 	-DPICO_BUILD \
 	-DCYW43_ENABLE_BLUETOOTH=0 \
+	-DCIRCUITPY_CYW43_INIT_DELAY=$(CIRCUITPY_CYW43_INIT_DELAY) \
 	-DPICO_CYW43_ARCH_POLL=0
 
 SRC_SDK_CYW43 := \
@@ -454,7 +455,7 @@ SRC_S_UPPER_CHIP_VARIANT := \
 	sdk/src/rp2_common/pico_double/double_fma_dcp.S \
 	sdk/src/rp2_common/pico_double/double_sci_m33.S \
 	sdk/src/rp2_common/pico_float/float_sci_m33_vfp.S \
-	sdk/src/rp2_common/pico_float/float_conv_m33.S \
+	sdk/src/rp2_common/pico_float/float_common_m33.S \
 
 PICO_LDFLAGS += $(PICO_WRAP_FLOAT_SCI_FLAGS) $(PICO_WRAP_DOUBLE_FLAGS)
 
@@ -556,6 +557,7 @@ ifeq ($(CIRCUITPY_PICODVI),1)
 SRC_C += \
 	bindings/picodvi/__init__.c \
 	bindings/picodvi/Framebuffer.c \
+	common-hal/picodvi/__init__.c \
 	common-hal/picodvi/Framebuffer_$(CHIP_VARIANT).c \
 
 ifeq ($(CHIP_VARIANT),RP2040)

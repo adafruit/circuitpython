@@ -21,6 +21,7 @@
 //|         In CAN, messages can have a length from 0 to 8 bytes.
 //|         """
 //|         ...
+//|
 static mp_obj_t canio_remote_transmission_request_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_id, ARG_length, ARG_extended, NUM_ARGS };
     static const mp_arg_t allowed_args[] = {
@@ -86,6 +87,7 @@ MP_PROPERTY_GETSET(canio_remote_transmission_request_extended_obj,
 
 //|     length: int
 //|     """The length of the requested message."""
+//|
 //|
 static mp_obj_t canio_remote_transmission_request_length_get(const mp_obj_t self_in) {
     canio_remote_transmission_request_obj_t *self = self_in;

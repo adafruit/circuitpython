@@ -30,32 +30,12 @@ static audio_dma_t *audio_dma_state[AUDIO_DMA_CHANNEL_COUNT];
 // This cannot be in audio_dma_state because it's volatile.
 static volatile bool audio_dma_pending[AUDIO_DMA_CHANNEL_COUNT];
 
-static bool audio_dma_allocated[AUDIO_DMA_CHANNEL_COUNT];
-
 uint8_t find_sync_event_channel_raise() {
     uint8_t event_channel = find_sync_event_channel();
     if (event_channel >= EVSYS_SYNCH_NUM) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("All sync event channels in use"));
     }
     return event_channel;
-}
-
-uint8_t dma_allocate_channel(void) {
-    uint8_t channel;
-    for (channel = 0; channel < AUDIO_DMA_CHANNEL_COUNT; channel++) {
-        if (!audio_dma_allocated[channel]) {
-            audio_dma_allocated[channel] = true;
-            return channel;
-        }
-    }
-    return channel; // i.e., return failure
-}
-
-void dma_free_channel(uint8_t channel) {
-    assert(channel < AUDIO_DMA_CHANNEL_COUNT);
-    assert(audio_dma_allocated[channel]);
-    audio_dma_disable_channel(channel);
-    audio_dma_allocated[channel] = false;
 }
 
 void audio_dma_disable_channel(uint8_t channel) {
@@ -191,7 +171,7 @@ audio_dma_result audio_dma_setup_playback(audio_dma_t *dma,
     bool output_signed,
     uint32_t output_register_address,
     uint8_t dma_trigger_source) {
-    uint8_t dma_channel = dma_allocate_channel();
+    uint8_t dma_channel = dma_allocate_channel(true);
     if (dma_channel >= AUDIO_DMA_CHANNEL_COUNT) {
         return AUDIO_DMA_DMA_BUSY;
     }
@@ -220,15 +200,27 @@ audio_dma_result audio_dma_setup_playback(audio_dma_t *dma,
     }
 
 
-    dma->buffer[0] = (uint8_t *)m_realloc(dma->buffer[0], max_buffer_length);
+    dma->buffer[0] = (uint8_t *)m_realloc(dma->buffer[0],
+        #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
+        dma->buffer_length[0], // Old size
+        #endif
+        max_buffer_length);
+
     dma->buffer_length[0] = max_buffer_length;
+
     if (dma->buffer[0] == NULL) {
         return AUDIO_DMA_MEMORY_ERROR;
     }
 
     if (!dma->single_buffer) {
-        dma->buffer[1] = (uint8_t *)m_realloc(dma->buffer[1], max_buffer_length);
+        dma->buffer[1] = (uint8_t *)m_realloc(dma->buffer[1],
+            #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
+            dma->buffer_length[1], // Old size
+            #endif
+            max_buffer_length);
+
         dma->buffer_length[1] = max_buffer_length;
+
         if (dma->buffer[1] == NULL) {
             return AUDIO_DMA_MEMORY_ERROR;
         }
@@ -251,7 +243,7 @@ audio_dma_result audio_dma_setup_playback(audio_dma_t *dma,
     }
 
 
-    if (audiosample_bits_per_sample(sample) == 16) {
+    if (audiosample_get_bits_per_sample(sample) == 16) {
         dma->beat_size = 2;
         dma->bytes_per_sample = 2;
     } else {
@@ -262,7 +254,7 @@ audio_dma_result audio_dma_setup_playback(audio_dma_t *dma,
         }
     }
     // Transfer both channels at once.
-    if (!single_channel_output && audiosample_channel_count(sample) == 2) {
+    if (!single_channel_output && audiosample_get_channel_count(sample) == 2) {
         dma->beat_size *= 2;
     }
 
@@ -342,8 +334,7 @@ void audio_dma_reset(void) {
     for (uint8_t i = 0; i < AUDIO_DMA_CHANNEL_COUNT; i++) {
         audio_dma_state[i] = NULL;
         audio_dma_pending[i] = false;
-        audio_dma_allocated[i] = false;
-        audio_dma_disable_channel(i);
+        dma_free_channel(i);
         dma_descriptor(i)->BTCTRL.bit.VALID = false;
         MP_STATE_PORT(playing_audio)[i] = NULL;
     }

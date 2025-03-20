@@ -32,6 +32,7 @@
 //|         :param bool encrypted: Whether or not to use encryption.
 //|         """
 //|         ...
+//|
 static mp_obj_t espnow_peer_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_mac, ARG_lmk, ARG_channel, ARG_interface, ARG_encrypted };
     static const mp_arg_t allowed_args[] = {
@@ -166,6 +167,7 @@ MP_PROPERTY_GETSET(espnow_peer_interface_obj,
 
 //|     encrypted: bool
 //|     """Whether or not to use encryption."""
+//|
 //|
 static mp_obj_t espnow_peer_get_encrypted(const mp_obj_t self_in) {
     espnow_peer_obj_t *self = MP_OBJ_TO_PTR(self_in);

@@ -31,7 +31,7 @@ def test_dac_digital(p_in, p_out):
 
 def test_dual(pair1, pair2):
     # verifies that the DACs can be set independently
-    print(f"Running pair test\n")
+    print("Running pair test\n")
     pin1_in = analogio.AnalogIn(pair1[0])
     pin1_out = analogio.AnalogOut(pair1[1])
     pin2_in = analogio.AnalogIn(pair2[0])

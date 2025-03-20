@@ -115,7 +115,7 @@ msgstr "%q에 중복된 핀이 포함"
 msgid "%q failure: %d"
 msgstr "%q 실패: %d"
 
-#: py/argcheck.c
+#: py/argcheck.c shared-module/audiofilters/Filter.c
 msgid "%q in %q must be of type %q, not %q"
 msgstr "%q의 %q는 %q가 아니라 %q 유형이어야 합니다"
 
@@ -204,10 +204,6 @@ msgstr "%q 는 <= %u 여야 합니다"
 msgid "%q must be >= %d"
 msgstr "%q 는 >= %d 여야 합니다"
 
-#: shared-module/audiofilters/Filter.c
-msgid "%q must be a %q object, %q, or %q"
-msgstr ""
-
 #: shared-bindings/analogbufio/BufferedIn.c
 msgid "%q must be a bytearray or array of type 'H' or 'B'"
 msgstr "%q는 'H' 또는 'B' 타입의 바이트 배열 또는 배열이어야 합니다"
@@ -237,6 +233,7 @@ msgstr ""
 #: ports/raspberrypi/bindings/cyw43/__init__.c py/argcheck.c py/objexcept.c
 #: shared-bindings/bitmapfilter/__init__.c shared-bindings/canio/CAN.c
 #: shared-bindings/digitalio/Pull.c shared-bindings/supervisor/__init__.c
+#: shared-module/audiofilters/Filter.c shared-module/displayio/__init__.c
 #: shared-module/synthio/Biquad.c shared-module/synthio/Synthesizer.c
 msgid "%q must be of type %q or %q, not %q"
 msgstr "%q는 %q가 아닌 %q 또는 %q 유형이어야 합니다"
@@ -579,7 +576,6 @@ msgstr "핀의 모든 타이머가 사용 중입니다"
 #: ports/nordic/common-hal/pulseio/PulseIn.c
 #: ports/nordic/peripherals/nrf/timers.c
 #: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
-#: ports/stm/peripherals/timers.c
 msgid "All timers in use"
 msgstr "모든 타이머가 사용 중입니다"
 
@@ -607,6 +603,7 @@ msgstr "이미 실행 중입니다"
 
 #: ports/espressif/common-hal/wifi/Radio.c
 #: ports/raspberrypi/common-hal/wifi/Radio.c
+#: ports/zephyr-cp/common-hal/wifi/Radio.c
 #, fuzzy
 msgid "Already scanning for wifi networks"
 msgstr "이미 wifi 네트워크를 찾고 있습니다"
@@ -635,6 +632,10 @@ msgstr "배열은 하프워드(유형 'H')가 포함되어야 합니다"
 #, fuzzy
 msgid "Array values should be single bytes."
 msgstr "배열 값은 1바이트 여야합니다."
+
+#: ports/atmel-samd/common-hal/spitarget/SPITarget.c
+msgid "Async SPI transfer in progress on this bus, keep awaiting."
+msgstr ""
 
 #: shared-module/memorymonitor/AllocationAlarm.c
 #, c-format
@@ -918,10 +919,6 @@ msgstr "DAC가 현재 사용 중입니다"
 msgid "Data 0 pin must be byte aligned"
 msgstr "데이터 0 핀은 바이트 정렬되어야 합니다"
 
-#: shared-module/audiocore/WaveFile.c
-msgid "Data chunk must follow fmt chunk"
-msgstr "데이터 청크는 fmt 청크를 따라야 합니다"
-
 #: shared-module/jpegio/JpegDecoder.c
 msgid "Data format error (may be broken data)"
 msgstr "데이터 형식 오류(손상된 데이터일 수 있습니다)"
@@ -1089,6 +1086,10 @@ msgstr ""
 msgid "Failed to release mutex, err 0x%04x"
 msgstr "뮤텍스 해제에 실패했습니다, 오류 0x%04x"
 
+#: ports/zephyr-cp/common-hal/wifi/Radio.c
+msgid "Failed to set hostname"
+msgstr ""
+
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "Failed to start async audio"
 msgstr ""
@@ -1243,6 +1244,7 @@ msgid "Insufficient stream input buffer"
 msgstr "불충분한 스트림 입력 버퍼"
 
 #: ports/espressif/common-hal/wifi/Radio.c
+#: ports/zephyr-cp/common-hal/wifi/Radio.c
 msgid "Interface must be started"
 msgstr "인터페이스를 시작해야 합니다"
 
@@ -1362,6 +1364,7 @@ msgid "Invalid hex password"
 msgstr "잘못된 16진수 패스워드"
 
 #: ports/espressif/common-hal/wifi/Radio.c
+#: ports/zephyr-cp/common-hal/wifi/Radio.c
 msgid "Invalid multicast MAC address"
 msgstr "잘못된 멀티캐스트 MAC 주소"
 
@@ -1467,7 +1470,8 @@ msgstr "jmp_pin이 누락되었습니다. %q[%u] 핀으로 점프합니다"
 msgid "Mount point directory missing"
 msgstr ""
 
-#: shared-bindings/busio/UART.c shared-bindings/displayio/Group.c
+#: ports/zephyr-cp/bindings/zephyr_serial/UART.c shared-bindings/busio/UART.c
+#: shared-bindings/displayio/Group.c
 msgid "Must be a %q subclass."
 msgstr "%q의 하위클래스여야 합니다."
 
@@ -1713,15 +1717,6 @@ msgstr "이 하드웨어에서는 에지 감지만 가능합니다"
 msgid "Only int or string supported for ip"
 msgstr "ip에는 정수 또는 문자열만 지원됩니다"
 
-#: shared-module/displayio/OnDiskBitmap.c
-#, fuzzy, c-format
-msgid ""
-"Only monochrome, indexed 4bpp or 8bpp, and 16bpp or greater BMPs supported: "
-"%d bpp given"
-msgstr ""
-"흑백, 인덱싱된 4bpp 또는 8bpp, 그리고 16bpp 또는 그 이상의 BMP만 지원됩니다: "
-"%d bpp가 지정되었습니다"
-
 #: ports/espressif/common-hal/alarm/touch/TouchAlarm.c
 msgid "Only one %q can be set in deep sleep."
 msgstr "딥 슬립에서는 하나의 %q만 설정할 수 있습니다."
@@ -1777,6 +1772,7 @@ msgstr "메모리 부족"
 
 #: ports/espressif/common-hal/socketpool/Socket.c
 #: ports/raspberrypi/common-hal/socketpool/Socket.c
+#: ports/zephyr-cp/common-hal/socketpool/Socket.c
 msgid "Out of sockets"
 msgstr "소켓 부족"
 
@@ -1798,6 +1794,10 @@ msgstr "PWM slice가 이미 사용 중입니다"
 #, fuzzy
 msgid "PWM slice channel A already in use"
 msgstr "PWM slice channel A가 이미 사용 중입니다"
+
+#: shared-bindings/spitarget/SPITarget.c
+msgid "Packet buffers for an SPI transfer must have the same length."
+msgstr ""
 
 #: shared-module/jpegio/JpegDecoder.c
 #, fuzzy
@@ -2057,6 +2057,7 @@ msgstr ""
 
 #: ports/espressif/common-hal/socketpool/SocketPool.c
 #: ports/raspberrypi/common-hal/socketpool/SocketPool.c
+#: ports/zephyr-cp/common-hal/socketpool/SocketPool.c
 msgid "SocketPool can only be used with wifi.radio"
 msgstr ""
 
@@ -2096,8 +2097,7 @@ msgstr ""
 msgid "The length of rgb_pins must be 6, 12, 18, 24, or 30"
 msgstr ""
 
-#: shared-module/audiodelays/Echo.c shared-module/audiofilters/Filter.c
-#: shared-module/audiomixer/MixerVoice.c
+#: shared-module/audiocore/__init__.c
 msgid "The sample's %q does not match"
 msgstr ""
 
@@ -2363,6 +2363,7 @@ msgid "Unsupported hash algorithm"
 msgstr ""
 
 #: ports/espressif/common-hal/socketpool/Socket.c
+#: ports/zephyr-cp/common-hal/socketpool/Socket.c
 msgid "Unsupported socket type"
 msgstr ""
 
@@ -2650,8 +2651,9 @@ msgstr ""
 msgid "bits must be 32 or less"
 msgstr ""
 
-#: shared-bindings/audiodelays/Echo.c shared-bindings/audiofilters/Filter.c
-#: shared-bindings/audiomixer/Mixer.c
+#: shared-bindings/audiodelays/Echo.c shared-bindings/audiodelays/PitchShift.c
+#: shared-bindings/audiofilters/Distortion.c
+#: shared-bindings/audiofilters/Filter.c shared-bindings/audiomixer/Mixer.c
 msgid "bits_per_sample must be 8 or 16"
 msgstr "bits_per_sample은 8 또는 16이어야합니다."
 
@@ -4433,6 +4435,7 @@ msgstr ""
 
 #: ports/espressif/common-hal/wifi/Radio.c
 #: ports/raspberrypi/common-hal/wifi/Radio.c
+#: ports/zephyr-cp/common-hal/wifi/Radio.c
 msgid "wifi is not enabled"
 msgstr ""
 
@@ -4497,6 +4500,17 @@ msgstr ""
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr ""
+
+#~ msgid "Data chunk must follow fmt chunk"
+#~ msgstr "데이터 청크는 fmt 청크를 따라야 합니다"
+
+#, fuzzy, c-format
+#~ msgid ""
+#~ "Only monochrome, indexed 4bpp or 8bpp, and 16bpp or greater BMPs "
+#~ "supported: %d bpp given"
+#~ msgstr ""
+#~ "흑백, 인덱싱된 4bpp 또는 8bpp, 그리고 16bpp 또는 그 이상의 BMP만 지원됩니"
+#~ "다: %d bpp가 지정되었습니다"
 
 #~ msgid "Buffer length must be a multiple of 512"
 #~ msgstr "버퍼 길이는 512의 배수여야 합니다"

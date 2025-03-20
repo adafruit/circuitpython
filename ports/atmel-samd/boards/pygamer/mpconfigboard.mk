@@ -18,6 +18,17 @@ CIRCUITPY_I2CDISPLAYBUS = 0
 CIRCUITPY_JPEGIO = 0
 CIRCUITPY_KEYPAD = 1
 CIRCUITPY_PARALLELDISPLAYBUS= 0
+CIRCUITPY_SPITARGET = 0
 CIRCUITPY_STAGE = 1
 
 FROZEN_MPY_DIRS += $(TOP)/frozen/circuitpython-stage/pygamer
+
+# We don't have room for the fonts for terminalio for certain languages,
+# so turn off terminalio, and if it's off and displayio is on,
+# force a clean build.
+# Note that we cannot test $(CIRCUITPY_DISPLAYIO) directly with an
+# ifeq, because it's not set yet.
+ifneq (,$(filter $(TRANSLATION),ja ko ru))
+CIRCUITPY_TERMINALIO = 0
+RELEASE_NEEDS_CLEAN_BUILD = $(CIRCUITPY_DISPLAYIO)
+endif

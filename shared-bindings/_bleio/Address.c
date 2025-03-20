@@ -26,6 +26,7 @@
 //|         :param int address_type: one of the integer values: `PUBLIC`, `RANDOM_STATIC`,
 //|           `RANDOM_PRIVATE_RESOLVABLE`, or `RANDOM_PRIVATE_NON_RESOLVABLE`."""
 //|         ...
+//|
 static mp_obj_t bleio_address_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_address, ARG_address_type };
     static const mp_arg_t allowed_args[] = {
@@ -86,6 +87,7 @@ MP_PROPERTY_GETTER(bleio_address_address_bytes_obj,
 //|
 //|     One of the integer values: `PUBLIC`, `RANDOM_STATIC`, `RANDOM_PRIVATE_RESOLVABLE`,
 //|     or `RANDOM_PRIVATE_NON_RESOLVABLE`."""
+//|
 static mp_obj_t bleio_address_get_type(mp_obj_t self_in) {
     bleio_address_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
@@ -99,6 +101,7 @@ MP_PROPERTY_GETTER(bleio_address_type_obj,
 //|     def __eq__(self, other: object) -> bool:
 //|         """Two Address objects are equal if their addresses and address types are equal."""
 //|         ...
+//|
 static mp_obj_t bleio_address_binary_op(mp_binary_op_t op, mp_obj_t lhs_in, mp_obj_t rhs_in) {
     switch (op) {
         // Two Addresses are equal if their address bytes and address_type are equal
@@ -124,6 +127,7 @@ static mp_obj_t bleio_address_binary_op(mp_binary_op_t op, mp_obj_t lhs_in, mp_o
 //|     def __hash__(self) -> int:
 //|         """Returns a hash for the Address data."""
 //|         ...
+//|
 static mp_obj_t bleio_address_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
     switch (op) {
         // Two Addresses are equal if their address bytes and address_type are equal
@@ -165,6 +169,7 @@ static void bleio_address_print(const mp_print_t *print, mp_obj_t self_in, mp_pr
 //|
 //|     RANDOM_PRIVATE_NON_RESOLVABLE: int
 //|     """A randomly generated address that changes on every connection."""
+//|
 //|
 static const mp_rom_map_elem_t bleio_address_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_address_bytes),                 MP_ROM_PTR(&bleio_address_address_bytes_obj) },

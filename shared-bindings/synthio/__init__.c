@@ -33,6 +33,9 @@
 //| """
 //|
 
+//| AnyBiquad = Union["Biquad", "BlockBiquad"]
+//|
+//|
 //| class EnvelopeState:
 //|     ATTACK: EnvelopeState
 //|     """The note is in its attack phase"""
@@ -42,6 +45,7 @@
 //|     """The note is in its sustain phase"""
 //|     RELEASE: EnvelopeState
 //|     """The note is in its release phase"""
+//|
 //|
 MAKE_ENUM_VALUE(synthio_note_state_type, note_state, ATTACK, SYNTHIO_ENVELOPE_STATE_ATTACK);
 MAKE_ENUM_VALUE(synthio_note_state_type, note_state, DECAY, SYNTHIO_ENVELOPE_STATE_DECAY);
@@ -79,6 +83,7 @@ static const mp_arg_t envelope_properties[] = {
 //| A BlockInput can be any of the following types: `Math`, `LFO`, `builtins.float`, `None` (treated same as 0).
 //| """
 //|
+//|
 //| class Envelope:
 //|     def __init__(
 //|         self,
@@ -103,6 +108,7 @@ static const mp_arg_t envelope_properties[] = {
 //|         :param float attack_level: The level, in the range ``0.0`` to ``1.0`` of the peak volume of the attack phase
 //|         :param float sustain_level: The level, in the range ``0.0`` to ``1.0`` of the volume of the sustain phase relative to the attack level
 //|         """
+//|
 //|     attack_time: float
 //|     """The time in seconds it takes to ramp from 0 volume to attack_volume"""
 //|
@@ -117,6 +123,7 @@ static const mp_arg_t envelope_properties[] = {
 //|
 //|     sustain_level: float
 //|     """The level, in the range ``0.0`` to ``1.0`` of the volume of the sustain phase relative to the attack level"""
+//|
 //|
 
 static mp_obj_t synthio_envelope_make_new(const mp_obj_type_t *type_in, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
@@ -195,6 +202,7 @@ const mp_obj_namedtuple_type_t synthio_envelope_type_obj = {
 //|           print("stopped")"""
 //|     ...
 //|
+//|
 static mp_obj_t synthio_from_file(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_file, ARG_sample_rate, ARG_waveform, ARG_envelope };
     static const mp_arg_t allowed_args[] = {
@@ -266,6 +274,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(synthio_from_file_obj, 1, synthio_from_file);
 //| def midi_to_hz(midi_note: float) -> float:
 //|     """Converts the given midi note (60 = middle C, 69 = concert A) to Hz"""
 //|
+//|
 
 static mp_obj_t midi_to_hz(mp_obj_t arg) {
     mp_float_t note = mp_arg_validate_type_float(arg, MP_QSTR_note);
@@ -277,6 +286,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(synthio_midi_to_hz_obj, midi_to_hz);
 //|     """Converts a 1v/octave signal to Hz.
 //|
 //|     24/12 (2.0) corresponds to middle C, 33/12 (2.75) is concert A."""
+//|
 //|
 
 static mp_obj_t voct_to_hz(mp_obj_t arg) {

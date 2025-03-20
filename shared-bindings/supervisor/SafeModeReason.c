@@ -128,6 +128,7 @@ MAKE_ENUM_MAP(supervisor_safe_mode_reason) {
 //|     WATCHDOG: object
 //|     """An internal watchdog timer expired."""
 //|
+//|
     MAKE_ENUM_MAP_ENTRY(safe_mode_reason, WATCHDOG),
 };
 

@@ -130,7 +130,7 @@ static void preflight_pins_or_throw(uint8_t clock_pin, uint8_t *rgb_pins, uint8_
 //|         framebuffer: Optional[WriteableBuffer] = None,
 //|         height: int = 0,
 //|         tile: int = 1,
-//|         serpentine: bool = True
+//|         serpentine: bool = True,
 //|     ) -> None:
 //|         """Create a RGBMatrix object with the given attributes.  The height of
 //|         the display is determined by the number of rgb and address pins and the number of tiles:
@@ -193,6 +193,7 @@ static void preflight_pins_or_throw(uint8_t clock_pin, uint8_t *rgb_pins, uint8_
 //|         :param Optional[WriteableBuffer] framebuffer: A pre-allocated framebuffer to use. If unspecified, a framebuffer is allocated
 //|         :param int height: The optional overall height of the whole matrix in pixels. This value is not required because it can be calculated as described above.
 //|         """
+//|
 
 static mp_obj_t rgbmatrix_rgbmatrix_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_width, ARG_bit_depth, ARG_rgb_list, ARG_addr_list,
@@ -269,6 +270,7 @@ static mp_obj_t rgbmatrix_rgbmatrix_make_new(const mp_obj_type_t *type, size_t n
 //|         rgbmatrix instance.  After deinitialization, no further operations
 //|         may be performed."""
 //|         ...
+//|
 static mp_obj_t rgbmatrix_rgbmatrix_deinit(mp_obj_t self_in) {
     rgbmatrix_rgbmatrix_obj_t *self = (rgbmatrix_rgbmatrix_obj_t *)self_in;
     common_hal_rgbmatrix_rgbmatrix_deinit(self);
@@ -286,6 +288,7 @@ static void check_for_deinit(rgbmatrix_rgbmatrix_obj_t *self) {
 //|     brightness: float
 //|     """In the current implementation, 0.0 turns the display off entirely
 //|     and any other value up to 1.0 turns the display on fully."""
+//|
 static mp_obj_t rgbmatrix_rgbmatrix_get_brightness(mp_obj_t self_in) {
     rgbmatrix_rgbmatrix_obj_t *self = (rgbmatrix_rgbmatrix_obj_t *)self_in;
     check_for_deinit(self);
@@ -314,6 +317,7 @@ MP_PROPERTY_GETSET(rgbmatrix_rgbmatrix_brightness_obj,
 //|         """Transmits the color data in the buffer to the pixels so that
 //|         they are shown."""
 //|         ...
+//|
 static mp_obj_t rgbmatrix_rgbmatrix_refresh(mp_obj_t self_in) {
     rgbmatrix_rgbmatrix_obj_t *self = (rgbmatrix_rgbmatrix_obj_t *)self_in;
     check_for_deinit(self);
@@ -335,6 +339,7 @@ MP_PROPERTY_GETTER(rgbmatrix_rgbmatrix_width_obj,
 
 //|     height: int
 //|     """The height of the display, in pixels"""
+//|
 //|
 static mp_obj_t rgbmatrix_rgbmatrix_get_height(mp_obj_t self_in) {
     rgbmatrix_rgbmatrix_obj_t *self = (rgbmatrix_rgbmatrix_obj_t *)self_in;

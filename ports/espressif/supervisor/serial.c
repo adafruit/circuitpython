@@ -15,6 +15,9 @@
 #include "supervisor/usb_serial_jtag.h"
 #endif
 
+void port_serial_early_init(void) {
+}
+
 void port_serial_init(void) {
     #if CIRCUITPY_ESP_USB_SERIAL_JTAG
     usb_serial_jtag_init();

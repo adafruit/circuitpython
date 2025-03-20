@@ -16,6 +16,10 @@
 UART_HandleTypeDef huart2;
 #endif
 
+void port_serial_early_init(void) {
+
+}
+
 void port_serial_init(void) {
     #if CPY_STM32F4
     huart2.Instance = USART2;

@@ -15,11 +15,13 @@
 
 //| """Memory monitoring helpers"""
 //|
+//|
 
 //| class AllocationError(Exception):
 //|     """Catchall exception for allocation related errors."""
 //|
 //|     ...
+//|
 //|
 MP_DEFINE_MEMORYMONITOR_EXCEPTION(AllocationError, Exception)
 

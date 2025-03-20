@@ -22,6 +22,7 @@
 //| ports: Tuple[Union[PortIn, PortOut], ...]
 //| """Tuple of all MIDI ports. Each item is ether `PortIn` or `PortOut`."""
 //|
+//|
 
 //| def disable() -> None:
 //|     """Disable presenting a USB MIDI device to the host.
@@ -29,6 +30,7 @@
 //|     including ESP32-S2 and certain STM boards, it is disabled by default.
 //|     Can be called in ``boot.py``, before USB is connected."""
 //|     ...
+//|
 //|
 static mp_obj_t usb_midi_disable(void) {
     if (!common_hal_usb_midi_disable()) {
@@ -49,6 +51,7 @@ MP_DEFINE_CONST_FUN_OBJ_0(usb_midi_disable_obj, usb_midi_disable);
 //|     not enough endpoints are available.
 //|     """
 //|     ...
+//|
 //|
 static mp_obj_t usb_midi_enable(void) {
     if (!common_hal_usb_midi_enable()) {
@@ -81,7 +84,7 @@ static void set_name(mp_obj_t name_obj, qstr arg_name_qstr, char **custom_name_p
 //|     streaming_interface_name: Optional[str] = None,
 //|     audio_control_interface_name: Optional[str] = None,
 //|     in_jack_name: Optional[str] = None,
-//|     out_jack_name: Optional[str] = None
+//|     out_jack_name: Optional[str] = None,
 //| ) -> None:
 //|     """Override the MIDI interface names in the USB Interface Descriptor.
 //|
@@ -98,6 +101,7 @@ static void set_name(mp_obj_t name_obj, qstr arg_name_qstr, char **custom_name_p
 //|       will not recognize the device. This issue is not present on macOS or Linux.
 //|     """
 //|     ...
+//|
 //|
 static mp_obj_t usb_midi_set_names(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_streaming_interface_name, ARG_audio_control_interface_name, ARG_in_jack_name, ARG_out_jack_name };

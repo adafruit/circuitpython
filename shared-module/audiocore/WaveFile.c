@@ -13,6 +13,7 @@
 #include "py/runtime.h"
 
 #include "shared-module/audiocore/WaveFile.h"
+#include "shared-bindings/audiocore/__init__.h"
 
 struct wave_format_chunk {
     uint16_t audio_format;
@@ -71,9 +72,12 @@ void common_hal_audioio_wavefile_construct(audioio_wavefile_obj_t *self,
         mp_raise_ValueError(MP_ERROR_TEXT("Unsupported format"));
     }
     // Get the sample_rate
-    self->sample_rate = format.sample_rate;
-    self->channel_count = format.num_channels;
-    self->bits_per_sample = format.bits_per_sample;
+    self->base.sample_rate = format.sample_rate;
+    self->base.channel_count = format.num_channels;
+    self->base.bits_per_sample = format.bits_per_sample;
+    self->base.samples_signed = format.bits_per_sample > 8;
+    self->base.max_buffer_length = 512;
+    self->base.single_buffer = false;
 
     uint8_t chunk_tag[4];
     uint32_t chunk_length;
@@ -132,27 +136,7 @@ void common_hal_audioio_wavefile_construct(audioio_wavefile_obj_t *self,
 void common_hal_audioio_wavefile_deinit(audioio_wavefile_obj_t *self) {
     self->buffer = NULL;
     self->second_buffer = NULL;
-}
-
-bool common_hal_audioio_wavefile_deinited(audioio_wavefile_obj_t *self) {
-    return self->buffer == NULL;
-}
-
-uint32_t common_hal_audioio_wavefile_get_sample_rate(audioio_wavefile_obj_t *self) {
-    return self->sample_rate;
-}
-
-void common_hal_audioio_wavefile_set_sample_rate(audioio_wavefile_obj_t *self,
-    uint32_t sample_rate) {
-    self->sample_rate = sample_rate;
-}
-
-uint8_t common_hal_audioio_wavefile_get_bits_per_sample(audioio_wavefile_obj_t *self) {
-    return self->bits_per_sample;
-}
-
-uint8_t common_hal_audioio_wavefile_get_channel_count(audioio_wavefile_obj_t *self) {
-    return self->channel_count;
+    audiosample_mark_deinit(&self->base);
 }
 
 void audioio_wavefile_reset_buffer(audioio_wavefile_obj_t *self,
@@ -211,11 +195,11 @@ audioio_get_buffer_result_t audioio_wavefile_get_buffer(audioio_wavefile_obj_t *
         if (self->bytes_remaining == 0 && length_read % sizeof(uint32_t) != 0) {
             uint32_t pad = length_read % sizeof(uint32_t);
             length_read += pad;
-            if (self->bits_per_sample == 8) {
+            if (self->base.bits_per_sample == 8) {
                 for (uint32_t i = 0; i < pad; i++) {
                     ((uint8_t *)(*buffer))[length_read / sizeof(uint8_t) - i - 1] = 0x80;
                 }
-            } else if (self->bits_per_sample == 16) {
+            } else if (self->base.bits_per_sample == 16) {
                 // We know the buffer is aligned because we allocated it onto the heap ourselves.
                 #pragma GCC diagnostic push
                 #pragma GCC diagnostic ignored "-Wcast-align"
@@ -246,22 +230,8 @@ audioio_get_buffer_result_t audioio_wavefile_get_buffer(audioio_wavefile_obj_t *
         self->left_read_count += 1;
     } else if (channel == 1) {
         self->right_read_count += 1;
-        *buffer = *buffer + self->bits_per_sample / 8;
+        *buffer = *buffer + self->base.bits_per_sample / 8;
     }
 
     return self->bytes_remaining == 0 ? GET_BUFFER_DONE : GET_BUFFER_MORE_DATA;
-}
-
-void audioio_wavefile_get_buffer_structure(audioio_wavefile_obj_t *self, bool single_channel_output,
-    bool *single_buffer, bool *samples_signed,
-    uint32_t *max_buffer_length, uint8_t *spacing) {
-    *single_buffer = false;
-    // In WAV files, 8-bit samples are always unsigned, and larger samples are always signed.
-    *samples_signed = self->bits_per_sample > 8;
-    *max_buffer_length = 512;
-    if (single_channel_output) {
-        *spacing = self->channel_count;
-    } else {
-        *spacing = 1;
-    }
 }

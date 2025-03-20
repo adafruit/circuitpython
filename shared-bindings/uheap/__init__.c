@@ -13,11 +13,13 @@
 
 //| """Heap size analysis"""
 //|
+//|
 
 //| def info(object: object) -> int:
 //|     """Prints memory debugging info for the given object and returns the
 //|     estimated size."""
 //|     ...
+//|
 //|
 static mp_obj_t uheap_info(mp_obj_t obj) {
     uint32_t size = shared_module_uheap_info(obj);

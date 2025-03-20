@@ -33,6 +33,7 @@
 //|         :param dither: If True, and the image is in color, a simple ordered dither is applied.
 //|         """
 //|         ...
+//|
 static mp_obj_t gifio_gifwriter_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_file, ARG_width, ARG_height, ARG_colorspace, ARG_loop, ARG_dither };
     static const mp_arg_t allowed_args[] = {
@@ -71,12 +72,14 @@ static mp_obj_t gifio_gifwriter_make_new(const mp_obj_type_t *type, size_t n_arg
 //|     def __enter__(self) -> GifWriter:
 //|         """No-op used by Context Managers."""
 //|         ...
+//|
 //  Provided by context manager helper.
 
 //|     def __exit__(self) -> None:
 //|         """Automatically deinitializes the hardware when exiting a context. See
 //|         :ref:`lifetime-and-contextmanagers` for more info."""
 //|         ...
+//|
 static mp_obj_t gifio_gifwriter___exit__(size_t n_args, const mp_obj_t *args) {
     gifio_gifwriter_t *self = MP_OBJ_TO_PTR(args[0]);
     shared_module_gifio_gifwriter_deinit(self);
@@ -87,6 +90,7 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(gifio_gifwriter___exit___obj, 4, 4, gifio_gi
 //|     def deinit(self) -> None:
 //|         """Close the underlying file."""
 //|         ...
+//|
 static mp_obj_t gifio_gifwriter_deinit(mp_obj_t self_in) {
     gifio_gifwriter_t *self = MP_OBJ_TO_PTR(self_in);
     shared_module_gifio_gifwriter_deinit(self);
@@ -101,6 +105,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(gifio_gifwriter_deinit_obj, gifio_gifwriter_deinit);
 //|         :param delay: The frame delay in seconds.  The GIF format rounds this to the nearest 1/100 second, and the largest permitted value is 655 seconds.
 //|         """
 //|         ...
+//|
 //|
 static mp_obj_t gifio_gifwriter_add_frame(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_bitmap, ARG_delay };
@@ -131,7 +136,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(gifio_gifwriter_add_frame_obj, 1, gifio_gifwriter_add
 static const mp_rom_map_elem_t gifio_gifwriter_locals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_GifWriter) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
-    { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&gifio_gifwriter___exit___obj) },
+    { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&gifio_gifwriter_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR_add_frame), MP_ROM_PTR(&gifio_gifwriter_add_frame_obj) },
 };

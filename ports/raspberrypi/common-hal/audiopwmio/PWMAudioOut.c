@@ -187,7 +187,7 @@ void common_hal_audiopwmio_pwmaudioout_play(audiopwmio_pwmaudioout_obj_t *self, 
     // to trigger the DMA. Each has a 16 bit fractional divisor system clock * X / Y where X and Y
     // are 16-bit.
 
-    uint32_t sample_rate = audiosample_sample_rate(sample);
+    uint32_t sample_rate = audiosample_get_sample_rate(sample);
 
     uint32_t system_clock = common_hal_mcu_processor_get_frequency();
     uint32_t best_denominator;

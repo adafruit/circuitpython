@@ -23,6 +23,7 @@
 //|         **Limitations:** Not available on SAMD, Nordic, or RP2040.
 //|         """
 //|         ...
+//|
 static mp_obj_t alarm_touch_touchalarm_make_new(const mp_obj_type_t *type,
     size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     alarm_touch_touchalarm_obj_t *self = mp_obj_malloc(alarm_touch_touchalarm_obj_t, &alarm_touch_touchalarm_type);
@@ -44,6 +45,7 @@ static mp_obj_t alarm_touch_touchalarm_make_new(const mp_obj_type_t *type,
 
 //|     pin: microcontroller.Pin
 //|     """The trigger pin."""
+//|
 //|
 static mp_obj_t alarm_touch_touchalarm_obj_get_pin(mp_obj_t self_in) {
     alarm_touch_touchalarm_obj_t *self = MP_OBJ_TO_PTR(self_in);

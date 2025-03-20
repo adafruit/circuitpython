@@ -36,6 +36,9 @@
 
 #if CIRCUITPY_TERMINALIO
 #include "supervisor/port.h"
+#if CIRCUITPY_OS_GETENV
+#include "shared-module/os/__init__.h"
+#endif
 #endif
 
 #if CIRCUITPY_REPL_LOGO
@@ -55,7 +58,7 @@ void supervisor_start_terminal(uint16_t width_px, uint16_t height_px) {
     }
     // Default the scale to 2 because we may show blinka without the terminal for
     // languages that don't have font support.
-    uint8_t scale = 2;
+    mp_int_t scale = 2;
 
     #if CIRCUITPY_TERMINALIO
     displayio_tilegrid_t *scroll_area = &supervisor_terminal_scroll_area_text_grid;
@@ -66,6 +69,9 @@ void supervisor_start_terminal(uint16_t width_px, uint16_t height_px) {
     if (width_in_tiles <= 80) {
         scale = 1;
     }
+    #if CIRCUITPY_OS_GETENV
+    (void)common_hal_os_getenv_int("CIRCUITPY_TERMINAL_SCALE", &scale);
+    #endif
 
     width_in_tiles = MAX(1, width_px / (scroll_area->tile_width * scale));
     uint16_t height_in_tiles = MAX(2, height_px / (scroll_area->tile_height * scale));

@@ -13,9 +13,7 @@
 #include "shared-bindings/fourwire/__init__.h"
 #include "shared-bindings/fourwire/FourWire.h"
 
-//| """Connects to a BusDisplay over a four wire bus
-//|
-//| """
+//| """Connects to a BusDisplay over a four wire bus"""
 
 static const mp_rom_map_elem_t fourwire_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_fourwire) },

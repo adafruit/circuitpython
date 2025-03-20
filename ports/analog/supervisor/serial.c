@@ -23,6 +23,10 @@
 #endif
 #endif
 
+void port_serial_early_init(void) {
+
+}
+
 void port_serial_init(void) {
     #if MAX32_SERIAL
     MXC_GCR->clkctrl |= MXC_F_GCR_CLKCTRL_IBRO_EN;

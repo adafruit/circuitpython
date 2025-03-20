@@ -35,7 +35,7 @@
 //|         write_perm: int = Attribute.OPEN,
 //|         max_length: int = 20,
 //|         fixed_length: bool = False,
-//|         initial_value: ReadableBuffer = b""
+//|         initial_value: ReadableBuffer = b"",
 //|     ) -> Descriptor:
 //|         """Create a new Descriptor object, and add it to this Service.
 //|
@@ -55,6 +55,7 @@
 //|
 //|         :return: the new Descriptor."""
 //|         ...
+//|
 static mp_obj_t bleio_descriptor_add_to_characteristic(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     // class is arg[0], which we can ignore.
 
@@ -146,6 +147,7 @@ MP_PROPERTY_GETTER(bleio_descriptor_characteristic_obj,
 
 //|     value: bytearray
 //|     """The value of this descriptor."""
+//|
 //|
 static mp_obj_t bleio_descriptor_get_value(mp_obj_t self_in) {
     bleio_descriptor_obj_t *self = MP_OBJ_TO_PTR(self_in);

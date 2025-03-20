@@ -6,8 +6,9 @@ workaround: Use the + operator between literal strings when either or both are f
 """
 
 x, y = 1, 2
-print("aa" f"{x}")  # works
-print(f"{x}" "ab")  # works
-print("a{}a" f"{x}")  # fails
-print(f"{x}" "a{}b")  # fails
-print(f"{x}" f"{y}")  # fails
+# fmt: off
+print(f"aa{x}")  # works
+print(f"{x}ab")  # works
+print(f"a{{}}a{x}")  # fails
+print(f"{x}a{{}}b")  # fails
+print(f"{x}{y}")  # fails

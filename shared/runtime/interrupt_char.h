@@ -29,6 +29,16 @@
 // CIRCUITPY-CHANGE
 #include <stdbool.h>
 
+#ifdef __ZEPHYR__
+#include <zephyr/kernel.h>
+
+// This semaphore is released when an interrupt character is seen. Core CP code
+// can wait for this release but shouldn't take it. They should return instead
+// after cancelling what they were doing.
+extern struct k_sem mp_interrupt_sem;
+#endif
+
+
 extern int mp_interrupt_char;
 void mp_hal_set_interrupt_char(int c);
 // CIRCUITPY-CHANGE

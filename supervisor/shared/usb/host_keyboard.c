@@ -12,6 +12,8 @@
 #include "shared/runtime/interrupt_char.h"
 #include "supervisor/usb.h"
 #include "supervisor/background_callback.h"
+#include "supervisor/shared/serial.h"
+#include "supervisor/shared/status_bar.h"
 #include "supervisor/shared/tick.h"
 
 #ifndef DEBUG
@@ -316,6 +318,7 @@ void usb_keyboard_detach(uint8_t dev_addr, uint8_t interface) {
     tuh_hid_receive_abort(dev_addr, interface);
     _dev_addr = 0;
     _interface = 0;
+    supervisor_status_bar_request_update(false);
 }
 
 void usb_keyboard_attach(uint8_t dev_addr, uint8_t interface) {
@@ -328,6 +331,7 @@ void usb_keyboard_attach(uint8_t dev_addr, uint8_t interface) {
         _interface = interface;
         tuh_hid_receive_report(dev_addr, interface);
     }
+    supervisor_status_bar_request_update(false);
 }
 
 void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t interface, uint8_t const *desc_report, uint16_t desc_len) {
@@ -361,4 +365,10 @@ char usb_keyboard_read_char(void) {
         return ringbuf_get(&_incoming_ringbuf);
     }
     return -1;
+}
+
+void usb_keyboard_status(void) {
+    if (_dev_addr != 0 && _interface != 0) {
+        serial_write("🖮");
+    }
 }

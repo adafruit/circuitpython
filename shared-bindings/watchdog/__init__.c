@@ -30,6 +30,7 @@
 //|     w.mode = WatchDogMode.RAISE
 //|     w.feed()"""
 //|
+//|
 
 //| class WatchDogTimeout(Exception):
 //|     """Exception raised when the watchdog timer is set to
@@ -57,6 +58,7 @@
 //|
 //|         print("Exited loop")
 //|     """
+//|
 //|
 
 MP_DEFINE_CONST_OBJ_TYPE(

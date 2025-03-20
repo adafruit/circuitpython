@@ -6,6 +6,7 @@
 
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/util.h"
+#include "shared/runtime/context_manager_helpers.h"
 #include "bindings/espulp/ULP.h"
 
 #include "py/enum.h"
@@ -22,6 +23,7 @@
 //|         :param Architecture arch: The ulp arch.
 //|         """
 //|         ...
+//|
 static mp_obj_t espulp_ulp_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_arch };
     static const mp_arg_t allowed_args[] = {
@@ -49,6 +51,7 @@ static void check_for_deinit(espulp_ulp_obj_t *self) {
 //|     def deinit(self) -> None:
 //|         """Deinitialises the ULP and releases it for another program."""
 //|         ...
+//|
 static mp_obj_t espulp_ulp_deinit(mp_obj_t self_in) {
     espulp_ulp_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_espulp_ulp_deinit(self);
@@ -59,17 +62,15 @@ static MP_DEFINE_CONST_FUN_OBJ_1(espulp_ulp_deinit_obj, espulp_ulp_deinit);
 //|     def __enter__(self) -> ULP:
 //|         """No-op used by Context Managers."""
 //|         ...
+//|
 //  Provided by context manager helper.
 
 //|     def __exit__(self) -> None:
 //|         """Automatically deinitializes the hardware when exiting a context. See
 //|         :ref:`lifetime-and-contextmanagers` for more info."""
 //|         ...
-static mp_obj_t espulp_ulp_obj___exit__(size_t n_args, const mp_obj_t *args) {
-    (void)n_args;
-    return espulp_ulp_deinit(args[0]);
-}
-static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(espulp_ulp___exit___obj, 4, 4, espulp_ulp_obj___exit__);
+//|
+//  Provided by context manager helper.
 
 //|     def set_wakeup_period(self, period_index: int, period_us: int) -> None:
 //|         """Sets the wakeup period for the ULP.
@@ -79,6 +80,7 @@ static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(espulp_ulp___exit___obj, 4, 4, espulp
 //|             By default, the value stored in period index 0 is used.
 //|         :param int period_us: The wakeup period given in microseconds."""
 //|         ...
+//|
 static mp_obj_t espulp_ulp_set_wakeup_period(mp_obj_t self_in, mp_obj_t period_index, mp_obj_t period_us) {
     espulp_ulp_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -95,7 +97,7 @@ static MP_DEFINE_CONST_FUN_OBJ_3(espulp_ulp_set_wakeup_period_obj, espulp_ulp_se
 //|         program: ReadableBuffer,
 //|         *,
 //|         entrypoint: int = 0,
-//|         pins: Sequence[microcontroller.Pin] = ()
+//|         pins: Sequence[microcontroller.Pin] = (),
 //|     ) -> None:
 //|         """Loads the program into ULP memory and then runs the program.
 //|
@@ -107,6 +109,7 @@ static MP_DEFINE_CONST_FUN_OBJ_3(espulp_ulp_set_wakeup_period_obj, espulp_ulp_se
 //|         :param Sequence[microcontroller.Pin] pins: Pins made available to the ULP.
 //|            The pins are claimed and not reset until `halt()` is called."""
 //|         ...
+//|
 static mp_obj_t espulp_ulp_run(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     espulp_ulp_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
     check_for_deinit(self);
@@ -155,6 +158,7 @@ static MP_DEFINE_CONST_FUN_OBJ_KW(espulp_ulp_run_obj, 2, espulp_ulp_run);
 //|         Note: for the FSM ULP, a running ULP program is not actually interrupted.
 //|         Instead, only the wakeup timer is stopped."""
 //|         ...
+//|
 static mp_obj_t espulp_ulp_halt(mp_obj_t self_in) {
     espulp_ulp_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -166,6 +170,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(espulp_ulp_halt_obj, espulp_ulp_halt);
 
 //|     arch: Architecture
 //|     """The ulp architecture. (read-only)"""
+//|
 //|
 static mp_obj_t espulp_ulp_get_arch(mp_obj_t self_in) {
     espulp_ulp_obj_t *self = MP_OBJ_TO_PTR(self_in);
@@ -180,8 +185,8 @@ MP_PROPERTY_GETTER(espulp_ulp_arch_obj,
 
 static const mp_rom_map_elem_t espulp_ulp_locals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit),              MP_ROM_PTR(&espulp_ulp_deinit_obj) },
-    { MP_ROM_QSTR(MP_QSTR___enter__),           MP_ROM_PTR(&mp_identity_obj) },
-    { MP_ROM_QSTR(MP_QSTR___exit__),            MP_ROM_PTR(&espulp_ulp___exit___obj) },
+    { MP_ROM_QSTR(MP_QSTR___enter__),           MP_ROM_PTR(&default___enter___obj) },
+    { MP_ROM_QSTR(MP_QSTR___exit__),            MP_ROM_PTR(&default___exit___obj) },
     { MP_ROM_QSTR(MP_QSTR_set_wakeup_period),   MP_ROM_PTR(&espulp_ulp_set_wakeup_period_obj) },
     { MP_ROM_QSTR(MP_QSTR_run),                 MP_ROM_PTR(&espulp_ulp_run_obj) },
     { MP_ROM_QSTR(MP_QSTR_halt),                MP_ROM_PTR(&espulp_ulp_halt_obj) },

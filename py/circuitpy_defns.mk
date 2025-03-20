@@ -369,6 +369,9 @@ endif
 ifeq ($(CIRCUITPY_SOCKETPOOL),1)
 SRC_PATTERNS += socketpool/%
 endif
+ifeq ($(CIRCUITPY_SPITARGET),1)
+SRC_PATTERNS += spitarget/%
+endif
 ifeq ($(CIRCUITPY_SSL),1)
 SRC_PATTERNS += ssl/%
 endif
@@ -392,6 +395,9 @@ SRC_PATTERNS += terminalio/% fontio/%
 endif
 ifeq ($(CIRCUITPY_FONTIO),1)
 SRC_PATTERNS += fontio/%
+endif
+ifeq ($(CIRCUITPY_TILEPALETTEMAPPER),1)
+SRC_PATTERNS += tilepalettemapper/%
 endif
 ifeq ($(CIRCUITPY_TIME),1)
 SRC_PATTERNS += time/%
@@ -539,6 +545,8 @@ SRC_COMMON_HAL_ALL = \
 	socketpool/__init__.c \
 	socketpool/SocketPool.c \
 	socketpool/Socket.c \
+	spitarget/SPITarget.c \
+	spitarget/__init__.c \
 	usb_host/__init__.c \
 	usb_host/Port.c \
 	watchdog/WatchDogMode.c \
@@ -624,6 +632,7 @@ SRC_SHARED_MODULE_ALL = \
 	audiocore/WaveFile.c \
 	audiocore/__init__.c \
 	audiodelays/Echo.c \
+	audiodelays/PitchShift.c \
 	audiodelays/__init__.c \
 	audiofilters/Distortion.c \
 	audiofilters/Filter.c \
@@ -727,12 +736,15 @@ SRC_SHARED_MODULE_ALL = \
 	synthio/__init__.c \
 	terminalio/Terminal.c \
 	terminalio/__init__.c \
+	tilepalettemapper/__init__.c \
+	tilepalettemapper/TilePaletteMapper.c \
 	time/__init__.c \
 	traceback/__init__.c \
 	uheap/__init__.c \
 	usb/__init__.c \
 	usb/core/__init__.c \
 	usb/core/Device.c \
+	usb/util/__init__.c \
 	ustack/__init__.c \
 	vectorio/Circle.c \
 	vectorio/Polygon.c \

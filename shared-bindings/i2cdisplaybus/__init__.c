@@ -13,9 +13,7 @@
 #include "shared-bindings/i2cdisplaybus/__init__.h"
 #include "shared-bindings/i2cdisplaybus/I2CDisplayBus.h"
 
-//| """Communicates to a display IC over I2C
-//|
-//| """
+//| """Communicates to a display IC over I2C"""
 
 static const mp_rom_map_elem_t i2cdisplaybus_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_i2cdisplaybus) },

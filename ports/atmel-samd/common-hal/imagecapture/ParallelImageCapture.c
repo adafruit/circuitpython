@@ -135,7 +135,7 @@ void common_hal_imagecapture_parallelimagecapture_singleshot_capture(imagecaptur
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(buffer, &bufinfo, MP_BUFFER_RW);
 
-    uint8_t dma_channel = dma_allocate_channel();
+    uint8_t dma_channel = dma_allocate_channel(true);
 
     uint32_t *dest = bufinfo.buf;
     size_t count = bufinfo.len / 4; // PCC receives 4 bytes (2 pixels) at a time

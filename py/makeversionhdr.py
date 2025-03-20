@@ -14,76 +14,8 @@ import pathlib
 import datetime
 import subprocess
 
-# CIRCUITPY-CHANGE: use external script that can override git describe output with an
-# environment variable.
-tools_describe = str(pathlib.Path(__file__).resolve().parent.parent / "tools/describe")
-
-
-def get_version_info_from_git(repo_path):
-    # Python 2.6 doesn't have check_output, so check for that
-    try:
-        subprocess.check_output
-        # CIRCUITPY-CHANGE: check for check_call
-        subprocess.check_call
-    except AttributeError:
-        return None
-
-    # Note: git describe doesn't work if no tag is available
-    try:
-        git_tag = subprocess.check_output(
-            # CIRCUITPY-CHANGE
-            [tools_describe],
-            cwd=repo_path,
-            shell=True,
-            stderr=subprocess.STDOUT,
-            universal_newlines=True,
-        ).strip()
-    # CIRCUITPY-CHANGE
-    except subprocess.CalledProcessError as er:
-        if er.returncode == 128:
-            # git exit code of 128 means no repository found
-            return None
-        git_tag = ""
-    except OSError:
-        return None
-    try:
-        # CIRCUITPY-CHANGE
-        git_hash = subprocess.check_output(
-            ["git", "rev-parse", "--short", "HEAD"],
-            cwd=repo_path,
-            stderr=subprocess.STDOUT,
-            universal_newlines=True,
-        ).strip()
-    except subprocess.CalledProcessError:
-        # CIRCUITPY-CHANGE
-        git_hash = "unknown"
-    except OSError:
-        return None
-
-    # CIRCUITPY-CHANGE
-    try:
-        # Check if there are any modified files.
-        subprocess.check_call(
-            ["git", "diff", "--no-ext-diff", "--quiet", "--exit-code"],
-            cwd=repo_path,
-            stderr=subprocess.STDOUT,
-        )
-        # Check if there are any staged files.
-        subprocess.check_call(
-            ["git", "diff-index", "--cached", "--quiet", "HEAD", "--"],
-            cwd=repo_path,
-            stderr=subprocess.STDOUT,
-        )
-    except subprocess.CalledProcessError:
-        git_hash += "-dirty"
-    except OSError:
-        return None
-
-    # CIRCUITPY-CHANGE
-    # Try to extract MicroPython version from git tag
-    ver = git_tag.split("-")[0].split(".")
-
-    return git_tag, git_hash, ver
+# CIRCUITPY-CHANGE: Factor out version computation to py/version.py
+import version
 
 
 # CIRCUITPY-CHANGE
@@ -100,7 +32,7 @@ If you cloned from a fork, fetch the tags from adafruit/circuitpython as follows
 
 def make_version_header(repo_path, filename):
     # Get version info using git (required)
-    info = get_version_info_from_git(repo_path)
+    info = version.get_version_info_from_git(repo_path)
     if info is None:
         cannot_determine_version()
     git_tag, git_hash, ver = info
@@ -133,7 +65,7 @@ def make_version_header(repo_path, filename):
 """ % (
         git_tag,
         git_hash,
-        datetime.date.today().strftime("%Y-%m-%d"),
+        build_date.strftime("%Y-%m-%d"),
         ver[0].replace("v", ""),
         ver[1],
         ver[2],

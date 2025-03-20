@@ -13,6 +13,7 @@
 #include "shared-bindings/bitmapfilter/__init__.h"
 
 //|
+//|
 //| def morph(
 //|     bitmap: displayio.Bitmap,
 //|     weights: Sequence[int],
@@ -78,6 +79,7 @@
 //|             \"""Blur the bitmap with a 3x3 gaussian kernel\"""
 //|             bitmapfilter.morph(bitmap, kernel_gauss_3, 1/sum(kernel_gauss_3))
 //|     """
+//|
 //|
 
 
@@ -165,6 +167,7 @@ static mp_float_t float_subscr(mp_obj_t o, int i) {
 //|         The ``r`` parameter gives the scale factor for the red channel of
 //|         pixels, and so forth."""
 //|
+//|
 static const mp_obj_namedtuple_type_t bitmapfilter_channel_scale_type = {
     NAMEDTUPLE_TYPE_BASE_AND_SLOTS(MP_QSTR_ChannelScale),
     .n_fields = 3,
@@ -197,6 +200,7 @@ static const mp_obj_namedtuple_type_t bitmapfilter_channel_scale_type = {
 //|         self, r: float, r_add: float, g: float, g_add: float, b: float, b_add: float
 //|     ) -> None:
 //|         """Construct a ChannelScaleOffset object"""
+//|
 //|
 static const mp_obj_namedtuple_type_t bitmapfilter_channel_scale_offset_type = {
     NAMEDTUPLE_TYPE_BASE_AND_SLOTS(MP_QSTR_ChannelScaleOffset),
@@ -253,6 +257,7 @@ static const mp_obj_namedtuple_type_t bitmapfilter_channel_scale_offset_type = {
 //|     ) -> None:
 //|         """Construct a ChannelMixer object"""
 //|
+//|
 static const mp_obj_namedtuple_type_t bitmapfilter_channel_mixer_type = {
     NAMEDTUPLE_TYPE_BASE_AND_SLOTS(MP_QSTR_ChannelMixer),
     .n_fields = 9,
@@ -305,6 +310,7 @@ static const mp_obj_namedtuple_type_t bitmapfilter_channel_mixer_type = {
 //|     ) -> None:
 //|         """Construct a ChannelMixerOffset object"""
 //|
+//|
 static const mp_obj_namedtuple_type_t bitmapfilter_channel_mixer_offset_type = {
     NAMEDTUPLE_TYPE_BASE_AND_SLOTS(MP_QSTR_ChannelMixerOffset),
     .n_fields = 12,
@@ -350,6 +356,7 @@ static const mp_obj_namedtuple_type_t bitmapfilter_channel_mixer_offset_type = {
 //|     The mask should be an image the same size as the image being operated on.
 //|     Only pixels set to a non-zero value in the mask are modified.
 //|     """
+//|
 //|
 static mp_obj_t bitmapfilter_mix(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_bitmap, ARG_weights, ARG_mask };
@@ -424,6 +431,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(bitmapfilter_mix_obj, 0, bitmapfilter_mix);
 //|     PIL and ImageMagic both call this "solarize".
 //|     """
 //|
+//|
 static mp_obj_t bitmapfilter_solarize(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_bitmap, ARG_threshold, ARG_mask };
     static const mp_arg_t allowed_args[] = {
@@ -458,6 +466,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(bitmapfilter_solarize_obj, 0, bitmapfilter_solarize);
 //| ThreeLookupFunctions = Tuple[LookupFunction, LookupFunction, LookupFunction]
 //| """Any sequenceof three `LookupFunction` objects"""
 //|
+//|
 //| def lookup(
 //|     bitmap: displayio.Bitmap,
 //|     lookup: LookupFunction | ThreeLookupFunctions,
@@ -486,6 +495,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(bitmapfilter_solarize_obj, 0, bitmapfilter_solarize);
 //|     The mask should be an image the same size as the image being operated on.
 //|     Only pixels set to a non-zero value in the mask are modified.
 //|     """
+//|
 //|
 
 static int scaled_lut(int maxval, mp_obj_t func, int i) {
@@ -566,6 +576,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(bitmapfilter_lookup_obj, 0, bitmapfilter_lookup);
 //|     Only pixels set to a non-zero value in the mask are modified.
 //|     """
 //|
+//|
 static mp_obj_t bitmapfilter_false_color(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_bitmap, ARG_palette, ARG_mask };
     static const mp_arg_t allowed_args[] = {
@@ -612,6 +623,7 @@ static uint8_t *get_blend_table(mp_obj_t lookup, int mode) {
 //| There is not actually a BlendTable type. The real type is actually any
 //| buffer 4096 bytes in length."""
 //|
+//|
 //| def blend_precompute(lookup: BlendFunction, table: BlendTable | None = None) -> BlendTable:
 //|     """Precompute a BlendTable from a BlendFunction
 //|
@@ -627,6 +639,7 @@ static uint8_t *get_blend_table(mp_obj_t lookup, int mode) {
 //|         def blend_one_third(a, b):
 //|             return a * .33 + b * .67
 //|     """
+//|
 //|
 static mp_obj_t blend_precompute(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_lookup, ARG_table };
@@ -653,6 +666,7 @@ static mp_obj_t blend_precompute(size_t n_args, const mp_obj_t *pos_args, mp_map
 MP_DEFINE_CONST_FUN_OBJ_KW(bitmapfilter_blend_precompute_obj, 0, blend_precompute);
 
 //|
+//|
 //| def blend(
 //|     dest: displayio.Bitmap,
 //|     src1: displayio.Bitmap,
@@ -672,6 +686,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(bitmapfilter_blend_precompute_obj, 0, blend_precomput
 //|
 //|     The destination bitmap is returned.
 //|     """
+//|
 //|
 
 static mp_obj_t bitmapfilter_blend(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {

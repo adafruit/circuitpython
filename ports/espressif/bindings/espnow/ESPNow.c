@@ -12,6 +12,7 @@
 #include "py/stream.h"
 
 #include "shared-bindings/util.h"
+#include "shared/runtime/context_manager_helpers.h"
 
 #include "bindings/espnow/ESPNow.h"
 #include "bindings/espnow/Peer.h"
@@ -41,6 +42,7 @@ static void espnow_check_for_deinit(espnow_obj_t *self) {
 //|             `wifi_phy_rate_t <https://docs.espressif.com/projects/esp-idf/en/release-v4.4/esp32/api-reference/network/esp_wifi.html#_CPPv415wifi_phy_rate_t>`_
 //|         """
 //|         ...
+//|
 static mp_obj_t espnow_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_buffer_size, ARG_phy_rate };
     static const mp_arg_t allowed_args[] = {
@@ -71,6 +73,7 @@ static mp_obj_t espnow_make_new(const mp_obj_type_t *type, size_t n_args, size_t
 //|     def deinit(self) -> None:
 //|         """Deinitializes ESP-NOW and releases it for another program."""
 //|         ...
+//|
 static mp_obj_t espnow_deinit(mp_obj_t self_in) {
     espnow_obj_t *self = MP_OBJ_TO_PTR(self_in);
     espnow_check_for_deinit(self);
@@ -82,17 +85,15 @@ static MP_DEFINE_CONST_FUN_OBJ_1(espnow_deinit_obj, espnow_deinit);
 //|     def __enter__(self) -> ESPNow:
 //|         """No-op used by Context Managers."""
 //|         ...
+//|
 //  Provided by context manager helper.
 
 //|     def __exit__(self) -> None:
 //|         """Automatically deinitializes the hardware when exiting a context. See
 //|         :ref:`lifetime-and-contextmanagers` for more info."""
 //|         ...
-static mp_obj_t espnow_obj___exit__(size_t n_args, const mp_obj_t *args) {
-    (void)n_args;
-    return espnow_deinit(args[0]);
-}
-static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(espnow___exit___obj, 4, 4, espnow_obj___exit__);
+//|
+//  Provided by context manager helper.
 
 // --- Send and Read messages ---
 
@@ -109,6 +110,7 @@ static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(espnow___exit___obj, 4, 4, espnow_obj
 //|         :param Peer peer: Send message to this peer. If `None`, send to all registered peers.
 //|         """
 //|         ...
+//|
 static mp_obj_t espnow_send(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_message, ARG_peer };
     static const mp_arg_t allowed_args[] = {
@@ -143,6 +145,7 @@ static MP_DEFINE_CONST_FUN_OBJ_KW(espnow_send_obj, 2, espnow_send);
 //|
 //|         :returns: An `ESPNowPacket` if available in the buffer, otherwise `None`."""
 //|         ...
+//|
 static mp_obj_t espnow_read(mp_obj_t self_in) {
     espnow_obj_t *self = MP_OBJ_TO_PTR(self_in);
     espnow_check_for_deinit(self);
@@ -204,6 +207,7 @@ MP_PROPERTY_GETTER(espnow_read_failure_obj,
 //|
 //|         :param ReadableBuffer pmk: The ESP-NOW Primary Master Key (length = 16 bytes)."""
 //|         ...
+//|
 static mp_obj_t espnow_set_pmk(mp_obj_t self_in, mp_obj_t key) {
     espnow_obj_t *self = MP_OBJ_TO_PTR(self_in);
     espnow_check_for_deinit(self);
@@ -263,8 +267,8 @@ MP_PROPERTY_GETTER(espnow_peers_obj,
 
 static const mp_rom_map_elem_t espnow_locals_dict_table[] = {
     // Context managers
-    { MP_ROM_QSTR(MP_QSTR___enter__),    MP_ROM_PTR(&mp_identity_obj) },
-    { MP_ROM_QSTR(MP_QSTR___exit__),     MP_ROM_PTR(&espnow___exit___obj) },
+    { MP_ROM_QSTR(MP_QSTR___enter__),    MP_ROM_PTR(&default___enter___obj) },
+    { MP_ROM_QSTR(MP_QSTR___exit__),     MP_ROM_PTR(&default___exit___obj) },
 
     // Deinit the object
     { MP_ROM_QSTR(MP_QSTR_deinit),       MP_ROM_PTR(&espnow_deinit_obj) },
@@ -324,6 +328,7 @@ static const mp_stream_p_t espnow_stream_p = {
 //|     def __len__(self) -> int:
 //|         """Return the number of `bytes` available to read. Used to implement ``len()``."""
 //|         ...
+//|
 //|
 static mp_obj_t espnow_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
     espnow_obj_t *self = MP_OBJ_TO_PTR(self_in);

@@ -107,7 +107,7 @@ def read(
         for duty in duty_labels:
             draw.text(
                 (left - 10, y0 + (y1 - y0) * (1 - duty)),
-                f"{int(100*duty):d}%",
+                f"{int(100 * duty):d}%",
                 duty_color,
                 anchor="rm",
             )

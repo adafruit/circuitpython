@@ -40,41 +40,26 @@
 static uint8_t _cache[SECTOR_SIZE];
 static uint32_t _cache_lba = NO_CACHE;
 static uint32_t _flash_size = 0;
-
-#ifdef PICO_RP2350
-static uint32_t m1_rfmt;
-static uint32_t m1_timing;
+#if CIRCUITPY_AUDIOCORE
+static uint32_t _audio_channel_mask;
 #endif
 
-static void __no_inline_not_in_flash_func(save_psram_settings)(void) {
-    #ifdef PICO_RP2350
-    // We're about to invalidate the XIP cache, clean it first to commit any dirty writes to PSRAM
-    // From https://forums.raspberrypi.com/viewtopic.php?t=378249#p2263677
-    // Perform clean-by-set/way on all lines
-    for (uint32_t i = 0; i < 2048; ++i) {
-        // Use the upper 16k of the maintenance space (0x1bffc000 through 0x1bffffff):
-        *(volatile uint8_t *)(XIP_SRAM_BASE + (XIP_MAINTENANCE_BASE - XIP_BASE) + i * 8u + 0x1u) = 0;
-    }
-
-    m1_timing = qmi_hw->m[1].timing;
-    m1_rfmt = qmi_hw->m[1].rfmt;
-    #endif
-}
-
-static void __no_inline_not_in_flash_func(restore_psram_settings)(void) {
-    #ifdef PICO_RP2350
-    qmi_hw->m[1].timing = m1_timing;
-    qmi_hw->m[1].rfmt = m1_rfmt;
-    __compiler_memory_barrier();
-    #endif
-}
-
 void supervisor_flash_pre_write(void) {
-    save_psram_settings();
+    // Disable interrupts. XIP accesses will fault during flash writes.
+    common_hal_mcu_disable_interrupts();
+    #if CIRCUITPY_AUDIOCORE
+    // Pause audio DMA to avoid noise while interrupts are disabled.
+    _audio_channel_mask = audio_dma_pause_all();
+    #endif
 }
 
 void supervisor_flash_post_write(void) {
-    restore_psram_settings();
+    #if CIRCUITPY_AUDIOCORE
+    // Unpause audio DMA.
+    audio_dma_unpause_mask(_audio_channel_mask);
+    #endif
+    // Re-enable interrupts.
+    common_hal_mcu_enable_interrupts();
 }
 
 void supervisor_flash_init(void) {
@@ -117,21 +102,11 @@ void port_internal_flash_flush(void) {
     if (_cache_lba == NO_CACHE) {
         return;
     }
-    // Make sure we don't have an interrupt while we do flash operations.
-    common_hal_mcu_disable_interrupts();
-    // and audio DMA must be paused as well
-    #if CIRCUITPY_AUDIOCORE
-    uint32_t channel_mask = audio_dma_pause_all();
-    #endif
     supervisor_flash_pre_write();
     flash_range_erase(CIRCUITPY_CIRCUITPY_DRIVE_START_ADDR + _cache_lba, SECTOR_SIZE);
     flash_range_program(CIRCUITPY_CIRCUITPY_DRIVE_START_ADDR + _cache_lba, _cache, SECTOR_SIZE);
-    supervisor_flash_post_write();
     _cache_lba = NO_CACHE;
-    #if CIRCUITPY_AUDIOCORE
-    audio_dma_unpause_mask(channel_mask);
-    #endif
-    common_hal_mcu_enable_interrupts();
+    supervisor_flash_post_write();
 }
 
 mp_uint_t supervisor_flash_read_blocks(uint8_t *dest, uint32_t block, uint32_t num_blocks) {

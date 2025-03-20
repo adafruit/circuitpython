@@ -40,20 +40,30 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(BASEOPTS)
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(BASEOPTS)
 
-TRANSLATE_SOURCES = extmod lib main.c ports/atmel-samd ports/analog ports/cxd56 ports/espressif ports/mimxrt10xx ports/nordic ports/raspberrypi ports/renode ports/stm py shared-bindings shared-module supervisor
+TRANSLATE_SOURCES = extmod lib main.c ports/atmel-samd ports/analog ports/cxd56 ports/espressif ports/mimxrt10xx ports/nordic ports/raspberrypi ports/renode ports/stm ports/zephyr-cp py shared-bindings shared-module supervisor
 # Paths to exclude from TRANSLATE_SOURCES
 # Each must be preceded by "-path"; if any wildcards, enclose in quotes.
 # Separate by "-o" (Find's "or" operand)
 TRANSLATE_SOURCES_EXC = -path "ports/*/build-*" \
 	-o -path "ports/*/build" \
+	-o -path ports/analog/msdk \
 	-o -path ports/atmel-samd/asf4 \
 	-o -path ports/cxd56/spresense-exported-sdk \
+	-o -path ports/espressif/esp-camera \
 	-o -path ports/espressif/esp-idf \
+	-o -path ports/espressif/esp-protocols \
 	-o -path ports/mimxrt10xx/sdk \
+	-o -path ports/nordic/bluetooth \
+	-o -path ports/nordic/nrfx \
+	-o -path ports/raspberrypi/lib \
 	-o -path ports/raspberrypi/sdk \
+	-o -path ports/stm/peripherals \
 	-o -path ports/stm/st_driver \
-	-o -path lib/tinyusb \
-	-o -path lib/lwip \
+	-o -path ports/zephyr-cp/bootloader \
+	-o -path ports/zephyr-cp/modules \
+	-o -path ports/zephyr-cp/tools \
+	-o -path ports/zephyr-cp/zephyr \
+	-o -path lib \
 	-o -path extmod/ulab/circuitpython \
 	-o -path extmod/ulab/micropython \
 
@@ -265,9 +275,8 @@ stubs:
 	@mkdir circuitpython-stubs
 	@$(PYTHON) tools/extract_pyi.py shared-bindings/ $(STUBDIR)
 	@$(PYTHON) tools/extract_pyi.py extmod/ulab/code/ $(STUBDIR)/ulab
-	@$(PYTHON) tools/extract_pyi.py ports/atmel-samd/bindings $(STUBDIR)
-	@$(PYTHON) tools/extract_pyi.py ports/espressif/bindings $(STUBDIR)
-	@$(PYTHON) tools/extract_pyi.py ports/raspberrypi/bindings $(STUBDIR)
+	@for d in ports/*/bindings; do \
+	    $(PYTHON) tools/extract_pyi.py "$$d" $(STUBDIR); done
 	@sed -e "s,__version__,`python -msetuptools_scm`," < setup.py-stubs > circuitpython-stubs/setup.py
 	@cp README.rst-stubs circuitpython-stubs/README.rst
 	@cp MANIFEST.in-stubs circuitpython-stubs/MANIFEST.in

@@ -5,6 +5,8 @@
 // Common settings used in most of the pico_w examples
 // (see https://www.nongnu.org/lwip/2_1_x/group__lwip__opts.html for details)
 
+#include "lwip_mem.h"
+
 // allow override in some examples
 #ifndef NO_SYS
 #define NO_SYS                      1
@@ -20,14 +22,62 @@
 #define MEM_LIBC_MALLOC             0
 #endif
 #define MEM_ALIGNMENT               4
-#define MEM_SIZE                    4000
-#define MEMP_NUM_TCP_SEG            32
-#define MEMP_NUM_ARP_QUEUE          10
-#define PBUF_POOL_SIZE              24
+// MEM_USE_POOLS: mem_malloc uses pools of fixed size memory blocks. Default is 0.
+#define MEM_USE_POOLS               0
+// MEM_USE_POOLS_TRY_BIGGER_POOL: if one pool is empty, try the next bigger pool. Default is 0.
+#define MEM_USE_POOLS_TRY_BIGGER_POOL 0
+// MEMP_USE_CUSTOM_POOLS: Use custom pools defined in lwippools.h. Default is 0.
+#define MEMP_USE_CUSTOM_POOLS       0
+// MEMP_MEM_MALLOC: Use mem_malloc() for pool memory. Default is 0.
+#define MEMP_MEM_MALLOC             1
+#define MEM_CUSTOM_ALLOCATOR        1
+#define MEM_CUSTOM_FREE             lwip_heap_free
+#define MEM_CUSTOM_MALLOC           lwip_heap_malloc
+#define MEM_CUSTOM_CALLOC           lwip_heap_calloc
+
+// MEM_SIZE: The LWIP heap size. Memory for mem_malloc and mem_calloc are allocated from
+// this heap. If MEMP_MEM_MALLOC is set to 1, memory for memp_malloc is also allocated from
+// this heap; if it is 0, memory is statically pre-allocated for each pool.
+// Default is 1600.
+#define MEM_SIZE                    1600
+// MEMP_NUM_PBUF: memp pbufs used when sending from static memory. Default is 16.
+#define MEMP_NUM_PBUF               16
+// MEMP_NUM_RAW_PCB: Number of raw connection PCBs. Default is 4.
+#define MEMP_NUM_RAW_PCB            4
+// MEMP_NUM_UDP_PCB: Number of UDP PCBs. Default is 4.
+#define MEMP_NUM_UDP_PCB            4
+// MEMP_NUM_TCP_PCB: Number of simultaneously active TCP connections. Default is 5.
+#define MEMP_NUM_TCP_PCB            5
+// MEMP_NUM_TCP_PCB_LISTEN: Number of listening TCP PCBs. Default is 8.
+#define MEMP_NUM_TCP_PCB_LISTEN     8
+// MEMP_NUM_TCP_SEG: Number of simultaneously queued TCP segments. Default is 16.
+#define MEMP_NUM_TCP_SEG            16
+// MEMP_NUM_ALTCP_PCB: Number of simultaneously active altcp connections. Default is 5.
+#define MEMP_NUM_ALTCP_PCB          5
+// MEMP_NUM_REASSDATA: Number of simultaneously IP packets queued for reassembly. Default is 5.
+#define MEMP_NUM_REASSDATA          5
+// MEMP_NUM_FRAG_PBUF: Number of simultaneously IP fragments. Default is 15.
+#define MEMP_NUM_FRAG_PBUF          15
+// MEMP_NUM_ARP_QUEUE: Number of simultaneously queued ARP packets. Default is 30.
+#define MEMP_NUM_ARP_QUEUE          30
+// MEMP_NUM_IGMP_GROUP: Number of simultaneously active IGMP groups. Default is 8.
+#define MEMP_NUM_IGMP_GROUP         8
+// MEMP_NUM_SYS_TIMEOUT: Number of simultaneously active timeouts.
+// Use calculated default based on enabled modules.
+
+// PBUF_POOL_SIZE: Number of pbufs in the pbuf pool. Default is 16.
+#define PBUF_POOL_SIZE              16
+
+// LWIP's default 250 ms periodic timer interval is too long, resulting in network
+// performance issues. We reduce it to 25 ms giving a slow-timer of 50 ms and a
+// fast-timer of 25 ms.
+#define TCP_TMR_INTERVAL            25
+
 #define LWIP_ARP                    1
 #define LWIP_ETHERNET               1
 #define LWIP_ICMP                   1
 #define LWIP_RAW                    1
+
 #define TCP_WND                     (8 * TCP_MSS)
 #define TCP_MSS                     1460
 #define TCP_SND_BUF                 (8 * TCP_MSS)

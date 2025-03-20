@@ -25,6 +25,7 @@
 //| This module allows to decompress binary data compressed with DEFLATE algorithm
 //| (commonly used in zlib library and gzip archiver). Compression is not yet implemented."""
 //|
+//|
 
 //| def decompress(data: bytes, wbits: Optional[int] = 0, bufsize: Optional[int] = 0) -> bytes:
 //|     """Return decompressed *data* as bytes. *wbits* is DEFLATE dictionary window
@@ -47,6 +48,7 @@
 //|     :param int bufsize: ignored for compatibility with CPython only
 //|     """
 //|     ...
+//|
 //|
 static mp_obj_t zlib_decompress(size_t n_args, const mp_obj_t *args) {
     mp_int_t wbits = 0;

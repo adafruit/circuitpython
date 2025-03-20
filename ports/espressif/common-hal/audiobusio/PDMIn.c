@@ -80,9 +80,7 @@ bool common_hal_audiobusio_pdmin_deinited(audiobusio_pdmin_obj_t *self) {
 }
 
 void common_hal_audiobusio_pdmin_deinit(audiobusio_pdmin_obj_t *self) {
-    mp_printf(MP_PYTHON_PRINTER, "Deinit\n");
     if (common_hal_audiobusio_pdmin_deinited(self)) {
-        mp_printf(MP_PYTHON_PRINTER, "Already deinitted, bailing\n");
         return;
     }
 

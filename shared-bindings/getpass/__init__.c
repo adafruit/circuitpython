@@ -12,7 +12,9 @@
 //| This module provides a way to get input from user without echoing it.
 //|
 //| """
+//|
 //| ...
+//|
 //|
 
 //| def getpass(prompt: Optional[str] = "Password: ", stream: Optional[io.FileIO] = None) -> str:
@@ -23,6 +25,7 @@
 //|
 //|     """
 //|     ...
+//|
 //|
 static mp_obj_t getpass_getpass(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_prompt, ARG_stream };

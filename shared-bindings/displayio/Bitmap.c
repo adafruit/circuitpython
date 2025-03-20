@@ -39,6 +39,7 @@
 //|         :param int height: The number of values high
 //|         :param int value_count: The number of possible pixel values."""
 //|         ...
+//|
 static mp_obj_t displayio_bitmap_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     mp_arg_check_num(n_args, n_kw, 3, 3, false);
     uint32_t width = mp_arg_validate_int_range(mp_obj_get_int(all_args[0]), 0, 32767, MP_QSTR_width);
@@ -96,6 +97,7 @@ MP_PROPERTY_GETTER(displayio_bitmap_height_obj,
 
 //|     bits_per_value: int
 //|     """Bits per Pixel of the bitmap. (read only)"""
+//|
 static mp_obj_t displayio_bitmap_obj_get_bits_per_value(mp_obj_t self_in) {
     displayio_bitmap_t *self = MP_OBJ_TO_PTR(self_in);
 
@@ -126,6 +128,7 @@ MP_PROPERTY_GETTER(displayio_bitmap_bits_per_value_obj,
 //|
 //|           bitmap[0,1] = 3"""
 //|         ...
+//|
 static mp_obj_t bitmap_subscr(mp_obj_t self_in, mp_obj_t index_obj, mp_obj_t value_obj) {
     if (value_obj == mp_const_none) {
         // delete item
@@ -183,6 +186,7 @@ static mp_obj_t bitmap_subscr(mp_obj_t self_in, mp_obj_t index_obj, mp_obj_t val
 //|     def fill(self, value: int) -> None:
 //|         """Fills the bitmap with the supplied palette index value."""
 //|         ...
+//|
 static mp_obj_t displayio_bitmap_obj_fill(mp_obj_t self_in, mp_obj_t value_obj) {
     displayio_bitmap_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -213,6 +217,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(displayio_bitmap_fill_obj, displayio_bitmap_obj_fill);
 //|         notified of the "dirty rectangle" that encloses all modified
 //|         pixels."""
 //|         ...
+//|
 static mp_obj_t displayio_bitmap_obj_dirty(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     displayio_bitmap_t *self = MP_OBJ_TO_PTR(pos_args[0]);
     check_for_deinit(self);
@@ -243,6 +248,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(displayio_bitmap_dirty_obj, 0, displayio_bitmap_obj_d
 //|     def deinit(self) -> None:
 //|         """Release resources allocated by Bitmap."""
 //|         ...
+//|
 //|
 static mp_obj_t displayio_bitmap_obj_deinit(mp_obj_t self_in) {
     displayio_bitmap_t *self = MP_OBJ_TO_PTR(self_in);

@@ -41,8 +41,8 @@ static mbedtls_x509_crt s_dummy_crt;
 #define LOGD(tag, fmt, ...) do {} while (0)
 #endif
 
-extern const uint8_t x509_crt_imported_bundle_bin_start[] asm ("_binary_x509_crt_bundle_start");
-extern const uint8_t x509_crt_imported_bundle_bin_end[]   asm ("_binary_x509_crt_bundle_end");
+extern const uint8_t x509_crt_imported_bundle_bin_start[] __asm__ ("_binary_x509_crt_bundle_start");
+extern const uint8_t x509_crt_imported_bundle_bin_end[]   __asm__ ("_binary_x509_crt_bundle_end");
 
 
 typedef struct crt_bundle_t {

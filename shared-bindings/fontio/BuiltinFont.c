@@ -17,6 +17,7 @@
 
 //| from typing_extensions import Protocol  # for compat with python < 3.8
 //|
+//|
 //| class FontProtocol(Protocol):
 //|     """A protocol shared by `BuiltinFont` and classes in ``adafruit_bitmap_font``"""
 //|
@@ -34,6 +35,7 @@
 //|         If the code point is not present in the font, `None` is returned."""
 //|         pass
 //|
+//|
 
 //| class BuiltinFont:
 //|     """A font built into CircuitPython"""
@@ -43,11 +45,13 @@
 //|         `Adafruit_CircuitPython_Bitmap_Font <https://github.com/adafruit/Adafruit_CircuitPython_Bitmap_Font>`_
 //|         library for dynamically loaded fonts."""
 //|         ...
+//|
 
 //|     bitmap: displayio.Bitmap
 //|     """Bitmap containing all font glyphs starting with ASCII and followed by unicode. Use
 //|     `get_glyph` in most cases. This is useful for use with `displayio.TileGrid` and
 //|     `terminalio.Terminal`."""
+//|
 static mp_obj_t fontio_builtinfont_obj_get_bitmap(mp_obj_t self_in) {
     fontio_builtinfont_t *self = MP_OBJ_TO_PTR(self_in);
     return common_hal_fontio_builtinfont_get_bitmap(self);
@@ -60,6 +64,7 @@ MP_PROPERTY_GETTER(fontio_builtinfont_bitmap_obj,
 //|     def get_bounding_box(self) -> Tuple[int, int]:
 //|         """Returns the maximum bounds of all glyphs in the font in a tuple of two values: width, height."""
 //|         ...
+//|
 static mp_obj_t fontio_builtinfont_obj_get_bounding_box(mp_obj_t self_in) {
     fontio_builtinfont_t *self = MP_OBJ_TO_PTR(self_in);
 
@@ -71,6 +76,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(fontio_builtinfont_get_bounding_box_obj, fontio_builti
 //|     def get_glyph(self, codepoint: int) -> Glyph:
 //|         """Returns a `fontio.Glyph` for the given codepoint or None if no glyph is available."""
 //|         ...
+//|
 //|
 static mp_obj_t fontio_builtinfont_obj_get_glyph(mp_obj_t self_in, mp_obj_t codepoint_obj) {
     fontio_builtinfont_t *self = MP_OBJ_TO_PTR(self_in);

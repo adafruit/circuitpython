@@ -10,7 +10,7 @@
 
 typedef struct {
     mp_obj_base_t base;
-    uint8_t device_number;
+    uint8_t device_address;
     uint8_t configuration_index; // not bConfigurationValue
     uint8_t *configuration_descriptor; // Contains the length of the all descriptors.
     uint8_t open_endpoints[8];

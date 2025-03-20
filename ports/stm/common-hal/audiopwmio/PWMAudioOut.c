@@ -206,6 +206,11 @@ void common_hal_audiopwmio_pwmaudioout_construct(audiopwmio_pwmaudioout_obj_t *s
     self->buffer[0] = NULL;
     self->buffer[1] = NULL;
 
+    #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
+    self->buffer_size[0] = 0;
+    self->buffer_size[1] = 0;
+    #endif
+
     self->quiescent_value = quiescent_value;
 }
 
@@ -214,9 +219,22 @@ bool common_hal_audiopwmio_pwmaudioout_deinited(audiopwmio_pwmaudioout_obj_t *se
 }
 
 static void free_buffers(audiopwmio_pwmaudioout_obj_t *self) {
+    #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
+    m_free(self->buffer[0], self->buffer_size[0]);
+    self->buffer_size[0] = 0;
+    #else
     m_free(self->buffer[0]);
+    #endif
+
     self->buffer[0] = NULL;
+
+    #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
+    m_free(self->buffer[1], self->buffer_size[1]);
+    self->buffer_size[1] = 0;
+    #else
     m_free(self->buffer[1]);
+    #endif
+
     self->buffer[1] = NULL;
 }
 
@@ -240,8 +258,8 @@ void common_hal_audiopwmio_pwmaudioout_play(audiopwmio_pwmaudioout_obj_t *self, 
     self->sample = sample;
     self->loop = loop;
 
-    uint32_t sample_rate = audiosample_sample_rate(sample);
-    self->bytes_per_sample = audiosample_bits_per_sample(sample) / 8;
+    uint32_t sample_rate = audiosample_get_sample_rate(sample);
+    self->bytes_per_sample = audiosample_get_bits_per_sample(sample) / 8;
 
     uint32_t max_buffer_length;
     uint8_t spacing;
@@ -249,7 +267,7 @@ void common_hal_audiopwmio_pwmaudioout_play(audiopwmio_pwmaudioout_obj_t *self, 
     bool samples_signed;
     audiosample_get_buffer_structure(sample, /* single channel */ false,
         &single_buffer, &samples_signed, &max_buffer_length, &spacing);
-    self->sample_channel_count = audiosample_channel_count(sample);
+    self->sample_channel_count = audiosample_get_channel_count(sample);
     self->sample_offset = (samples_signed ? 0x8000 : 0) - self->quiescent_value;
 
     free_buffers(self);
@@ -257,11 +275,21 @@ void common_hal_audiopwmio_pwmaudioout_play(audiopwmio_pwmaudioout_obj_t *self, 
     if (max_buffer_length > UINT16_MAX) {
         mp_raise_ValueError_varg(MP_ERROR_TEXT("Buffer length %d too big. It must be less than %d"), max_buffer_length, UINT16_MAX);
     }
+
     uint16_t buffer_length = (uint16_t)max_buffer_length / self->bytes_per_sample;
-    self->buffer[0] = m_malloc(buffer_length * sizeof(uint16_t));
+    size_t buffer_size = buffer_length * sizeof(uint16_t);
+
+    self->buffer[0] = m_malloc(buffer_size);
+    #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
+    self->buffer_size[0] = buffer_size;
+    #endif
     self->buffer_ptr[0] = self->buffer_length[0] = 0;
+
     if (self->pin[1]) {
-        self->buffer[1] = m_malloc(buffer_length * sizeof(uint16_t));
+        self->buffer[1] = m_malloc(buffer_size);
+        #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
+        self->buffer_size[1] = buffer_size;
+        #endif
         self->buffer_ptr[1] = self->buffer_length[1] = 0;
     }
 

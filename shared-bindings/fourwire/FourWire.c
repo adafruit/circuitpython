@@ -31,7 +31,7 @@
 //|         reset: Optional[microcontroller.Pin] = None,
 //|         baudrate: int = 24000000,
 //|         polarity: int = 0,
-//|         phase: int = 0
+//|         phase: int = 0,
 //|     ) -> None:
 //|         """Create a FourWire object associated with the given pins.
 //|
@@ -54,6 +54,7 @@
 //|         :param int phase: the edge of the clock that data is captured. First (0)
 //|             or second (1). Rising or falling depends on clock polarity."""
 //|         ...
+//|
 static mp_obj_t fourwire_fourwire_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_spi_bus, ARG_command, ARG_chip_select, ARG_reset, ARG_baudrate, ARG_polarity, ARG_phase };
     static const mp_arg_t allowed_args[] = {
@@ -89,6 +90,7 @@ static mp_obj_t fourwire_fourwire_make_new(const mp_obj_type_t *type, size_t n_a
 //|         """Performs a hardware reset via the reset pin. Raises an exception if called when no reset pin
 //|         is available."""
 //|         ...
+//|
 static mp_obj_t fourwire_fourwire_obj_reset(mp_obj_t self_in) {
     fourwire_fourwire_obj_t *self = self_in;
 
@@ -105,6 +107,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(fourwire_fourwire_reset_obj, fourwire_fourwire_obj_res
 //|         """Sends the given command value followed by the full set of data. Display state, such as
 //|         vertical scroll, set via ``send`` may or may not be reset once the code is done."""
 //|         ...
+//|
 //|
 static mp_obj_t fourwire_fourwire_obj_send(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_command, ARG_data, ARG_toggle_every_byte };

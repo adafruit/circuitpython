@@ -17,6 +17,8 @@ print(device.manufacturer, device.product)
 if device.is_kernel_driver_active(0):
     device.detach_kernel_driver(0)
 
+device.set_configuration()
+
 # Boot mice have 4 byte reports
 buf = array.array("b", [0] * 4)
 report_count = 0

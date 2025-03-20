@@ -229,7 +229,7 @@ class RawCode:
         while bc.peek(1)[0] == 0xFF:
             bc.read(1)
         bc = bytearray(bc.read())
-        # print(encoded_code_info, bc)
+        print(encoded_code_info, bc)
 
         self.qstrs = []
 

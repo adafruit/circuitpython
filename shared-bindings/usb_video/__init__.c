@@ -46,6 +46,7 @@
 //| This interface is experimental and may change without notice even in stable
 //| versions of CircuitPython."""
 //|
+//|
 
 //| def enable_framebuffer(width: int, height: int) -> None:
 //|     """Enable a USB video framebuffer, setting the given width & height
@@ -58,6 +59,7 @@
 //|     of 4×``width``×``height`` bytes is required, reducing the amount available
 //|     for Python objects. If the allocation fails, a MemoryError is raised.
 //|     This message can be seen in ``boot_out.txt``."""
+//|
 //|
 
 static mp_obj_t usb_video_enable_framebuffer(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {

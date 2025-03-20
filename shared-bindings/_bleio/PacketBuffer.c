@@ -21,7 +21,7 @@
 //|         characteristic: Characteristic,
 //|         *,
 //|         buffer_size: int,
-//|         max_packet_size: Optional[int] = None
+//|         max_packet_size: Optional[int] = None,
 //|     ) -> None:
 //|         """Accumulates a Characteristic's incoming packets in a FIFO buffer and facilitates packet aware
 //|         outgoing writes. A packet's size is either the characteristic length or the maximum transmission
@@ -39,6 +39,7 @@
 //|         :param int max_packet_size: Maximum size of packets. Overrides value from the characteristic.
 //|           (Remote characteristics may not have the correct length.)"""
 //|         ...
+//|
 static mp_obj_t bleio_packet_buffer_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_characteristic, ARG_buffer_size, ARG_max_packet_size };
     static const mp_arg_t allowed_args[] = {
@@ -79,6 +80,7 @@ static void check_for_deinit(bleio_packet_buffer_obj_t *self) {
 //|         :return: number of bytes read and stored into ``buf``
 //|         :rtype: int"""
 //|         ...
+//|
 static mp_obj_t bleio_packet_buffer_readinto(mp_obj_t self_in, mp_obj_t buffer_obj) {
     bleio_packet_buffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -104,6 +106,7 @@ static MP_DEFINE_CONST_FUN_OBJ_2(bleio_packet_buffer_readinto_obj, bleio_packet_
 //|         :return: number of bytes written. May include header bytes when packet is empty.
 //|         :rtype: int"""
 //|         ...
+//|
 // TODO: Add a kwarg `merge=False` to dictate whether subsequent writes are merged into a pending
 // one.
 static mp_obj_t bleio_packet_buffer_write(mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
@@ -149,6 +152,7 @@ static MP_DEFINE_CONST_FUN_OBJ_KW(bleio_packet_buffer_write_obj, 1, bleio_packet
 //|     def deinit(self) -> None:
 //|         """Disable permanently."""
 //|         ...
+//|
 static mp_obj_t bleio_packet_buffer_deinit(mp_obj_t self_in) {
     bleio_packet_buffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_bleio_packet_buffer_deinit(self);
@@ -175,6 +179,7 @@ MP_PROPERTY_GETTER(bleio_packet_buffer_incoming_packet_length_obj,
 //|     outgoing_packet_length: int
 //|     """Maximum length in bytes of a packet we are writing."""
 //|
+//|
 static mp_obj_t bleio_packet_buffer_get_outgoing_packet_length(mp_obj_t self_in) {
     bleio_packet_buffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
@@ -193,11 +198,11 @@ static const mp_rom_map_elem_t bleio_packet_buffer_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit),                     MP_ROM_PTR(&bleio_packet_buffer_deinit_obj) },
 
     // Standard stream methods.
-    { MP_OBJ_NEW_QSTR(MP_QSTR_readinto),               MP_ROM_PTR(&bleio_packet_buffer_readinto_obj) },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_write),                  MP_ROM_PTR(&bleio_packet_buffer_write_obj) },
+    { MP_ROM_QSTR(MP_QSTR_readinto),               MP_ROM_PTR(&bleio_packet_buffer_readinto_obj) },
+    { MP_ROM_QSTR(MP_QSTR_write),                  MP_ROM_PTR(&bleio_packet_buffer_write_obj) },
 
-    { MP_OBJ_NEW_QSTR(MP_QSTR_incoming_packet_length), MP_ROM_PTR(&bleio_packet_buffer_incoming_packet_length_obj) },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_outgoing_packet_length), MP_ROM_PTR(&bleio_packet_buffer_outgoing_packet_length_obj) },
+    { MP_ROM_QSTR(MP_QSTR_incoming_packet_length), MP_ROM_PTR(&bleio_packet_buffer_incoming_packet_length_obj) },
+    { MP_ROM_QSTR(MP_QSTR_outgoing_packet_length), MP_ROM_PTR(&bleio_packet_buffer_outgoing_packet_length_obj) },
 };
 
 static MP_DEFINE_CONST_DICT(bleio_packet_buffer_locals_dict, bleio_packet_buffer_locals_dict_table);

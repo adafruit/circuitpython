@@ -134,8 +134,21 @@ __attribute__((used, naked)) void Reset_Handler(void) {
     for (uint32_t i = 0; i < ((size_t)&_ld_d1_ram_bss_size) / 4; i++) {
         (&_ld_d1_ram_bss_start)[i] = 0;
     }
-
+    #ifdef STM32H750xx
+    __DMB(); /* ARM says to use a DMB instruction before relocating VTOR */
+    SCB->VTOR = 0x90000000u; /* We relocate vector table to the QSPI sector 1 */
+    __DSB(); /* ARM says to use a DSB instruction just after relocating VTOR */
+    /*
+       Since the STM32H750 microcontroller has only 128kB internal flash,
+       CircuitPython has to run from an external flash (QSPI or FMC).
+       This means a custom bootloader, like tinyUF2, is needed on the internal
+       flash to initialize the clocks, PLLs and (QSPI) controller, and to
+       start execution of the firmware from the external flash.
+       It also makes the SystemInit() call not necessary for this chip.
+    */
+    #else
     SystemInit();
+    #endif
     __enable_irq();
     main();
 }

@@ -42,6 +42,7 @@
 //|         """You cannot create an instance of `microcontroller.Processor`.
 //|         Use `microcontroller.cpu` to access the sole instance available."""
 //|         ...
+//|
 
 //|     frequency: int
 //|     """The CPU operating frequency in Hertz.
@@ -129,6 +130,7 @@ MP_PROPERTY_GETTER(mcu_processor_uid_obj,
 //|     """The input voltage to the microcontroller, as a float. (read-only)
 //|
 //|     Is `None` if the voltage is not available."""
+//|
 //|
 static mp_obj_t mcu_processor_get_voltage(mp_obj_t self) {
     float voltage = common_hal_mcu_processor_get_voltage();

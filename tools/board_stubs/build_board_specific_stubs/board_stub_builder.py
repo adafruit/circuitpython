@@ -157,10 +157,10 @@ def create_board_stubs(board_id, records, mappings, board_filename):
         boards_file.write("#\n")
         boards_file.write("# SPDX-License-Identifier: MIT\n")
         boards_file.write('"""\n')
-        boards_file.write(f'Board stub for {mappings["board_name"]}\n')
-        boards_file.write(f' - port: {mappings["port"]}\n')
+        boards_file.write(f"Board stub for {mappings['board_name']}\n")
+        boards_file.write(f" - port: {mappings['port']}\n")
         boards_file.write(f" - board_id: {board_id}\n")
-        boards_file.write(f' - NVM size: {mappings["nvm_size"]}\n')
+        boards_file.write(f" - NVM size: {mappings['nvm_size']}\n")
         boards_file.write(f" - Included modules: {included_modules}\n")
         boards_file.write(f" - Frozen libraries: {frozen_libraries}\n")
         boards_file.write('"""\n\n')
@@ -297,7 +297,7 @@ def build_stubs(circuitpython_dir, circuitpython_org_dir, export_dir, version="8
         else:
             lookup = board
 
-        port_path = f'{circuitpython_dir}ports/{board_data["port"]}/'
+        port_path = f"{circuitpython_dir}ports/{board_data['port']}/"
         board_path = f"{port_path}boards/{lookup}/"
         pins_path = f"{board_path}pins.c"
         if not os.path.isfile(pins_path):

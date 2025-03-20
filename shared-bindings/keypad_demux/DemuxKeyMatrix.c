@@ -77,6 +77,7 @@
 //|           The default is 1, which resolves immediately. The maximum is 127.
 //|         """
 //|         ...
+//|
 
 static mp_obj_t keypad_demux_demuxkeymatrix_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     keypad_demux_demuxkeymatrix_obj_t *self = mp_obj_malloc(keypad_demux_demuxkeymatrix_obj_t, &keypad_demux_demuxkeymatrix_type);
@@ -129,6 +130,7 @@ static mp_obj_t keypad_demux_demuxkeymatrix_make_new(const mp_obj_type_t *type, 
 //|     def deinit(self) -> None:
 //|         """Stop scanning and release the pins."""
 //|         ...
+//|
 static mp_obj_t keypad_demux_demuxkeymatrix_deinit(mp_obj_t self_in) {
     keypad_demux_demuxkeymatrix_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_keypad_demux_demuxkeymatrix_deinit(self);
@@ -139,18 +141,15 @@ MP_DEFINE_CONST_FUN_OBJ_1(keypad_demux_demuxkeymatrix_deinit_obj, keypad_demux_d
 //|     def __enter__(self) -> DemuxKeyMatrix:
 //|         """No-op used by Context Managers."""
 //|         ...
+//|
 //  Provided by context manager helper.
 
 //|     def __exit__(self) -> None:
 //|         """Automatically deinitializes when exiting a context. See
 //|         :ref:`lifetime-and-contextmanagers` for more info."""
 //|         ...
-static mp_obj_t keypad_demux_demuxkeymatrix___exit__(size_t n_args, const mp_obj_t *args) {
-    (void)n_args;
-    common_hal_keypad_demux_demuxkeymatrix_deinit(args[0]);
-    return MP_ROM_NONE;
-}
-static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(keypad_demux_demuxkeymatrix___exit___obj, 4, 4, keypad_demux_demuxkeymatrix___exit__);
+//|
+//  Provided by context manager helper.
 
 static void check_for_deinit(keypad_demux_demuxkeymatrix_obj_t *self) {
     if (common_hal_keypad_deinited(self)) {
@@ -167,10 +166,12 @@ static void check_for_deinit(keypad_demux_demuxkeymatrix_obj_t *self) {
 //|         were being held down at program start.
 //|         """
 //|         ...
+//|
 
 //|     key_count: int
 //|     """The number of keys that are being scanned. (read-only)
 //|     """
+//|
 
 //|     def key_number_to_row_column(self, key_number: int) -> Tuple[int]:
 //|         """Return the row and column for the given key number.
@@ -181,6 +182,7 @@ static void check_for_deinit(keypad_demux_demuxkeymatrix_obj_t *self) {
 //|         :rtype: Tuple[int]
 //|         """
 //|         ...
+//|
 static mp_obj_t keypad_demux_demuxkeymatrix_key_number_to_row_column(mp_obj_t self_in, mp_obj_t key_number_in) {
     keypad_demux_demuxkeymatrix_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -207,6 +209,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(keypad_demux_demuxkeymatrix_key_number_to_row_column_o
 //|         The key number is ``row * len(column_pins) + column``.
 //|         """
 //|         ...
+//|
 static mp_obj_t keypad_demux_demuxkeymatrix_row_column_to_key_number(mp_obj_t self_in, mp_obj_t row_in, mp_obj_t column_in) {
     keypad_demux_demuxkeymatrix_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -226,11 +229,12 @@ MP_DEFINE_CONST_FUN_OBJ_3(keypad_demux_demuxkeymatrix_row_column_to_key_number_o
 //|     """The `keypad.EventQueue` associated with this `keypad.Keys` object. (read-only)
 //|     """
 //|
+//|
 
 static const mp_rom_map_elem_t keypad_demux_demuxkeymatrix_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit),                   MP_ROM_PTR(&keypad_demux_demuxkeymatrix_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__),                MP_ROM_PTR(&default___enter___obj) },
-    { MP_ROM_QSTR(MP_QSTR___exit__),                 MP_ROM_PTR(&keypad_demux_demuxkeymatrix___exit___obj) },
+    { MP_ROM_QSTR(MP_QSTR___exit__),                 MP_ROM_PTR(&default___exit___obj) },
 
     { MP_ROM_QSTR(MP_QSTR_events),                   MP_ROM_PTR(&keypad_generic_events_obj) },
     { MP_ROM_QSTR(MP_QSTR_key_count),                MP_ROM_PTR(&keypad_generic_key_count_obj) },

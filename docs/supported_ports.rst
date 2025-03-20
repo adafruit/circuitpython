@@ -25,3 +25,4 @@ Additional testing is limited.
     ../ports/silabs/README
     ../ports/stm/README
     ../ports/unix/README
+    ../ports/zephyr-cp/README

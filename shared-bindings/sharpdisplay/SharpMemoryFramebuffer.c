@@ -40,6 +40,7 @@
 //|         :param bool jdi_display: When True, work with an 8-color JDI display. Otherwise, a monochrome Sharp display.
 //|         """
 //|         ...
+//|
 static mp_obj_t sharpdisplay_framebuffer_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_spi_bus, ARG_chip_select, ARG_width, ARG_height, ARG_baudrate, ARG_jdi_display, NUM_ARGS };
     static const mp_arg_t allowed_args[] = {
@@ -82,6 +83,7 @@ static mp_int_t sharpdisplay_framebuffer_get_buffer(mp_obj_t self_in, mp_buffer_
 //|         SharpMemoryFramebuffer instance.  After deinitialization, no further operations
 //|         may be performed."""
 //|         ...
+//|
 //|
 static mp_obj_t sharpdisplay_framebuffer_deinit(mp_obj_t self_in) {
     sharpdisplay_framebuffer_obj_t *self = (sharpdisplay_framebuffer_obj_t *)self_in;

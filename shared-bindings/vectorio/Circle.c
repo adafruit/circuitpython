@@ -31,6 +31,7 @@
 //|         :param int y: Initial y position of the axis.
 //|         :param int color_index: Initial color_index to use when selecting color from the palette.
 //|         """
+//|
 static mp_obj_t vectorio_circle_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_pixel_shader, ARG_radius, ARG_x, ARG_y, ARG_color_index };
     static const mp_arg_t allowed_args[] = {
@@ -122,6 +123,7 @@ MP_PROPERTY_GETSET(vectorio_circle_color_index_obj,
 //|
 //|     pixel_shader: Union[displayio.ColorConverter, displayio.Palette]
 //|     """The pixel shader of the circle."""
+//|
 //|
 
 static const mp_rom_map_elem_t vectorio_circle_locals_dict_table[] = {

@@ -11,6 +11,8 @@
 
 #if defined(TFBGA216)
 GPIO_TypeDef *ports[] = {GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI, GPIOJ, GPIOK};
+#elif defined(UFBGA176)
+GPIO_TypeDef *ports[] = {GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG, GPIOH, GPIOI};
 #elif defined(LQFP144) || defined(WLCSP144)
 GPIO_TypeDef *ports[] = {GPIOA, GPIOB, GPIOC, GPIOD, GPIOE, GPIOF, GPIOG};
 #elif defined(LQFP100_f4) || (LQFP100_x7)

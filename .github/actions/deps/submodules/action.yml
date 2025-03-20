@@ -80,7 +80,7 @@ runs:
         git fetch --no-recurse-submodules --shallow-since="2021-07-01" origin $GITHUB_SHA
         git repack -d
         echo "::endgroup::"
-        CP_VERSION=$(tools/describe)
+        CP_VERSION=$(python py/version.py)
         echo "$CP_VERSION"
         echo "CP_VERSION=$CP_VERSION" >> $GITHUB_ENV
         echo "cp-version=$CP_VERSION" >> $GITHUB_OUTPUT

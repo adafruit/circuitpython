@@ -17,6 +17,7 @@
 //| |see_cpython_module| :mod:`cpython:hashlib`.
 //| """
 //|
+//|
 //| def new(name: str, data: bytes = b"") -> hashlib.Hash:
 //|     """Returns a Hash object setup for the named algorithm. Raises ValueError when the named
 //|        algorithm is unsupported.
@@ -24,6 +25,7 @@
 //|     :return: a hash object for the given algorithm
 //|     :rtype: hashlib.Hash"""
 //|     ...
+//|
 //|
 static mp_obj_t hashlib_new(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_name, ARG_data };

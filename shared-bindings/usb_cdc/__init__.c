@@ -40,12 +40,14 @@
 //| the host.
 //| Note that `data` is *disabled* by default. ``data`` is ``None`` if disabled."""
 //|
+//|
 
 //| def disable() -> None:
 //|     """Do not present any USB CDC device to the host.
 //|     Can be called in ``boot.py``, before USB is connected.
 //|     Equivalent to ``usb_cdc.enable(console=False, data=False)``."""
 //|     ...
+//|
 //|
 static mp_obj_t usb_cdc_disable(void) {
     if (!common_hal_usb_cdc_disable()) {
@@ -69,6 +71,7 @@ MP_DEFINE_CONST_FUN_OBJ_0(usb_cdc_disable_obj, usb_cdc_disable);
 //|     not enough endpoints are available.
 //|     """
 //|     ...
+//|
 //|
 static mp_obj_t usb_cdc_enable(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_console, ARG_data };

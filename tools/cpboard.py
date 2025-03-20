@@ -343,7 +343,6 @@ class CPboard:
 
         dev = usb.core.find(**kwargs)
         if not dev:
-            s = "Can't find USB device: "
             args = []
             for x in kwargs.items():
                 try:

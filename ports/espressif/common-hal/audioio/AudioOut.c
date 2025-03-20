@@ -595,7 +595,7 @@ void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
 
     self->sample = sample;
     self->looping = loop;
-    freq_hz = audiosample_sample_rate(self->sample);
+    freq_hz = audiosample_get_sample_rate(self->sample);
 
     if (freq_hz != self->freq_hz) {
         common_hal_audioio_audioout_deinit(self);
@@ -603,8 +603,8 @@ void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
         audioout_init(self);
     }
 
-    samples_size = audiosample_bits_per_sample(self->sample);
-    channel_count = audiosample_channel_count(self->sample);
+    samples_size = audiosample_get_bits_per_sample(self->sample);
+    channel_count = audiosample_get_channel_count(self->sample);
     audiosample_get_buffer_structure(self->sample, false,
         &_single_buffer, &samples_signed,
         &_max_buffer_length, &_spacing);

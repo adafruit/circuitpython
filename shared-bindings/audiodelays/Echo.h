@@ -16,11 +16,6 @@ void common_hal_audiodelays_echo_construct(audiodelays_echo_obj_t *self, uint32_
     uint8_t channel_count, uint32_t sample_rate, bool freq_shift);
 
 void common_hal_audiodelays_echo_deinit(audiodelays_echo_obj_t *self);
-bool common_hal_audiodelays_echo_deinited(audiodelays_echo_obj_t *self);
-
-uint32_t common_hal_audiodelays_echo_get_sample_rate(audiodelays_echo_obj_t *self);
-uint8_t common_hal_audiodelays_echo_get_channel_count(audiodelays_echo_obj_t *self);
-uint8_t common_hal_audiodelays_echo_get_bits_per_sample(audiodelays_echo_obj_t *self);
 
 mp_obj_t common_hal_audiodelays_echo_get_delay_ms(audiodelays_echo_obj_t *self);
 void common_hal_audiodelays_echo_set_delay_ms(audiodelays_echo_obj_t *self, mp_obj_t delay_ms);

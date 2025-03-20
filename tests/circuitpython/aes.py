@@ -100,7 +100,10 @@ print()
 
 print("truncated-CTR-1")
 ## Truncated CTR test case
-plaintext = unhexlify("6bc1bee22e409f96e93d7e117393172a" "ae2d")
+plaintext = unhexlify(
+    "6bc1bee22e409f96e93d7e117393172a"
+    "ae2d"
+)  # fmt: skip
 
 key = unhexlify("2b7e151628aed2a6abf7158809cf4f3c")
 counter = unhexlify("f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff")
@@ -122,7 +125,10 @@ print()
 
 print("truncated-CTR-2")
 ## Truncated CTR test case #2
-plaintext = unhexlify("6bc1bee22e409f96e93d7e117393172a" "ae")
+plaintext = unhexlify(
+    "6bc1bee22e409f96e93d7e117393172a"
+    "ae"
+)  # fmt: skip
 
 key = unhexlify("2b7e151628aed2a6abf7158809cf4f3c")
 counter = unhexlify("f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff")

@@ -29,6 +29,10 @@
 #include "py/mphal.h"
 #include "py/runtime.h"
 
+#ifdef __ZEPHYR__
+#include <zephyr/kernel.h>
+#endif
+
 // Schedules an exception on the main thread (for exceptions "thrown" by async
 // sources such as interrupts and UNIX signal handlers).
 void MICROPY_WRAP_MP_SCHED_EXCEPTION(mp_sched_exception)(mp_obj_t exc) {
@@ -50,6 +54,10 @@ void MICROPY_WRAP_MP_SCHED_KEYBOARD_INTERRUPT(mp_sched_keyboard_interrupt)(void)
     // CIRCUITPY-CHANGE: traceback differences
     MP_STATE_VM(mp_kbd_exception).traceback = (mp_obj_traceback_t *)&mp_const_empty_traceback_obj;
     mp_sched_exception(MP_OBJ_FROM_PTR(&MP_STATE_VM(mp_kbd_exception)));
+
+    #ifdef __ZEPHYR__
+    k_sem_give(&mp_interrupt_sem);
+    #endif
 }
 #endif
 

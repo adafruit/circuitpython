@@ -30,6 +30,7 @@
 //|         :param value: The uuid value to encapsulate
 //|         :type value: int, ~circuitpython_typing.ReadableBuffer or str"""
 //|         ...
+//|
 static mp_obj_t bleio_uuid_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     mp_arg_check_num(n_args, n_kw, 1, 1, false);
 
@@ -138,6 +139,7 @@ MP_PROPERTY_GETTER(bleio_uuid_uuid128_obj,
 //|     16-bit Bluetooth SIG assigned UUID. (read-only) 32-bit UUIDs are not currently supported.
 //|
 //|     :type: int"""
+//|
 static mp_obj_t bleio_uuid_get_size(mp_obj_t self_in) {
     bleio_uuid_obj_t *self = MP_OBJ_TO_PTR(self_in);
     return MP_OBJ_NEW_SMALL_INT(common_hal_bleio_uuid_get_size(self));
@@ -152,6 +154,7 @@ MP_PROPERTY_GETTER(bleio_uuid_size_obj,
 //|     def pack_into(self, buffer: WriteableBuffer, offset: int = 0) -> None:
 //|         """Packs the UUID into the given buffer at the given offset."""
 //|         ...
+//|
 static mp_obj_t bleio_uuid_pack_into(mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     bleio_uuid_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
 
@@ -213,6 +216,7 @@ static mp_obj_t bleio_uuid_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
 //|     def __eq__(self, other: object) -> bool:
 //|         """Two UUID objects are equal if their values match and they are both 128-bit or both 16-bit."""
 //|         ...
+//|
 //|
 static mp_obj_t bleio_uuid_binary_op(mp_binary_op_t op, mp_obj_t lhs_in, mp_obj_t rhs_in) {
     switch (op) {

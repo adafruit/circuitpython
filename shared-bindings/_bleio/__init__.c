@@ -41,16 +41,19 @@
 //|   Pico W boards do *not* support BLE using the on-board CYW43 co-processor,
 //|   but do support using an external AirLift.
 //| """
+//|
 
 //| adapter: Adapter
 //| """BLE Adapter used to manage device discovery and connections.
 //| This object is the sole instance of `_bleio.Adapter`."""
+//|
 //|
 
 //| class BluetoothError(Exception):
 //|     """Catchall exception for Bluetooth related errors."""
 //|
 //|     ...
+//|
 //|
 MP_DEFINE_BLEIO_EXCEPTION(BluetoothError, Exception)
 NORETURN void mp_raise_bleio_BluetoothError(mp_rom_error_text_t fmt, ...) {
@@ -67,6 +70,7 @@ NORETURN void mp_raise_bleio_BluetoothError(mp_rom_error_text_t fmt, ...) {
 //|
 //|     ...
 //|
+//|
 MP_DEFINE_BLEIO_EXCEPTION(RoleError, bleio_BluetoothError)
 NORETURN void mp_raise_bleio_RoleError(mp_rom_error_text_t msg) {
     mp_raise_msg(&mp_type_bleio_RoleError, msg);
@@ -76,6 +80,7 @@ NORETURN void mp_raise_bleio_RoleError(mp_rom_error_text_t msg) {
 //|     """Raised when a security related error occurs."""
 //|
 //|     ...
+//|
 //|
 MP_DEFINE_BLEIO_EXCEPTION(SecurityError, bleio_BluetoothError)
 NORETURN void mp_raise_bleio_SecurityError(mp_rom_error_text_t fmt, ...) {
@@ -107,6 +112,7 @@ static mp_obj_dict_t bleio_module_globals;
 //|     """Set the adapter to use for BLE, such as when using an HCI adapter.
 //|     Raises `NotImplementedError` when the adapter is a singleton and cannot be set."""
 //|     ...
+//|
 //|
 mp_obj_t bleio_set_adapter(mp_obj_t adapter_obj) {
     #if CIRCUITPY_BLEIO_HCI

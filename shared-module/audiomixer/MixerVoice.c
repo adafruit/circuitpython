@@ -46,25 +46,10 @@ void common_hal_audiomixer_mixervoice_set_loop(audiomixer_mixervoice_obj_t *self
     self->loop = loop;
 }
 
-void common_hal_audiomixer_mixervoice_play(audiomixer_mixervoice_obj_t *self, mp_obj_t sample, bool loop) {
-    if (audiosample_sample_rate(sample) != self->parent->sample_rate) {
-        mp_raise_ValueError_varg(MP_ERROR_TEXT("The sample's %q does not match"), MP_QSTR_sample_rate);
-    }
-    if (audiosample_channel_count(sample) != self->parent->channel_count) {
-        mp_raise_ValueError_varg(MP_ERROR_TEXT("The sample's %q does not match"), MP_QSTR_channel_count);
-    }
-    if (audiosample_bits_per_sample(sample) != self->parent->bits_per_sample) {
-        mp_raise_ValueError_varg(MP_ERROR_TEXT("The sample's %q does not match"), MP_QSTR_bits_per_sample);
-    }
-    bool single_buffer;
-    bool samples_signed;
-    uint32_t max_buffer_length;
-    uint8_t spacing;
-    audiosample_get_buffer_structure(sample, false, &single_buffer, &samples_signed,
-        &max_buffer_length, &spacing);
-    if (samples_signed != self->parent->samples_signed) {
-        mp_raise_ValueError_varg(MP_ERROR_TEXT("The sample's %q does not match"), MP_QSTR_signedness);
-    }
+void common_hal_audiomixer_mixervoice_play(audiomixer_mixervoice_obj_t *self, mp_obj_t sample_in, bool loop) {
+    audiosample_must_match(&self->parent->base, sample_in);
+    // cast is safe, checked by must_match
+    audiosample_base_t *sample = MP_OBJ_TO_PTR(sample_in);
     self->sample = sample;
     self->loop = loop;
 

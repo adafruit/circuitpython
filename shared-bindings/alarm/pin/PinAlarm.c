@@ -40,6 +40,7 @@
 //|           pulls it high.
 //|         """
 //|         ...
+//|
 static mp_obj_t alarm_pin_pinalarm_make_new(const mp_obj_type_t *type, mp_uint_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     alarm_pin_pinalarm_obj_t *self = mp_obj_malloc(alarm_pin_pinalarm_obj_t, &alarm_pin_pinalarm_type);
     enum { ARG_pin, ARG_value, ARG_edge, ARG_pull };
@@ -80,6 +81,7 @@ MP_PROPERTY_GETTER(alarm_pin_pinalarm_pin_obj,
 
 //|     value: bool
 //|     """The value on which to trigger."""
+//|
 //|
 static mp_obj_t alarm_pin_pinalarm_obj_get_value(mp_obj_t self_in) {
     alarm_pin_pinalarm_obj_t *self = MP_OBJ_TO_PTR(self_in);

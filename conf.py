@@ -32,17 +32,15 @@ from docutils import nodes
 from sphinx import addnodes
 from sphinx.ext import intersphinx
 
-tools_describe = str(pathlib.Path(__file__).parent / "tools/describe")
-
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.insert(0, os.path.abspath('docs'))
-sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath("docs"))
+sys.path.insert(0, os.path.abspath("."))
 
 import shared_bindings_matrix
 
-master_doc = 'docs/index'
+master_doc = "docs/index"
 
 # Grab the JSON values to use while building the module support matrix
 # in 'shared-bindings/index.rst'
@@ -50,7 +48,7 @@ master_doc = 'docs/index'
 # The stubs must be built before we calculate the shared bindings matrix
 subprocess.check_output(["make", "stubs"])
 
-#modules_support_matrix = shared_bindings_matrix.support_matrix_excluded_boards()
+# modules_support_matrix = shared_bindings_matrix.support_matrix_excluded_boards()
 modules_support_matrix = shared_bindings_matrix.support_matrix_by_board()
 modules_support_matrix_reverse = defaultdict(list)
 for board, matrix_info in modules_support_matrix.items():
@@ -58,55 +56,65 @@ for board, matrix_info in modules_support_matrix.items():
         modules_support_matrix_reverse[module].append(board)
 
 modules_support_matrix_reverse = dict(
-    (module, sorted(boards))
-    for module, boards in modules_support_matrix_reverse.items()
+    (module, sorted(boards)) for module, boards in modules_support_matrix_reverse.items()
 )
 
 html_context = {
-    'support_matrix': modules_support_matrix,
-    'support_matrix_reverse': modules_support_matrix_reverse
+    "support_matrix": modules_support_matrix,
+    "support_matrix_reverse": modules_support_matrix_reverse,
 }
 
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = '1.3'
+needs_sphinx = "1.3"
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.doctest',
+    "sphinx.ext.autodoc",
+    "sphinx.ext.doctest",
     "sphinxcontrib.jquery",
-    'sphinxcontrib.rsvgconverter',
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.todo',
-    'sphinx.ext.coverage',
-    'sphinx_search.extension',
-    'rstjinja',
-    'myst_parser',
+    "sphinxcontrib.rsvgconverter",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.todo",
+    "sphinx.ext.coverage",
+    "sphinx_search.extension",
+    "rstjinja",
+    "myst_parser",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['templates', "docs/templates"]
+templates_path = ["templates", "docs/templates"]
 
 # The suffix of source filenames.
 source_suffix = {
-    '.rst': 'restructuredtext',
-    '.md': 'markdown',
+    ".rst": "restructuredtext",
+    ".md": "markdown",
 }
 
-extensions.append('autoapi.extension')
+extensions.append("autoapi.extension")
 
-autoapi_type = 'python'
+autoapi_type = "python"
 # Uncomment this if debugging autoapi
 autoapi_keep_files = True
-autoapi_dirs = [os.path.join('circuitpython-stubs', x) for x in os.listdir('circuitpython-stubs') if os.path.exists(os.path.join("circuitpython-stubs", x, "__init__.pyi"))]
+autoapi_dirs = [
+    os.path.join("circuitpython-stubs", x)
+    for x in os.listdir("circuitpython-stubs")
+    if os.path.exists(os.path.join("circuitpython-stubs", x, "__init__.pyi"))
+]
 print("autoapi_dirs", autoapi_dirs)
 autoapi_add_toctree_entry = False
-autoapi_options = ['members', 'undoc-members', 'private-members', 'show-inheritance', 'special-members', 'show-module-summary']
-autoapi_template_dir = 'docs/autoapi/templates'
+autoapi_options = [
+    "members",
+    "undoc-members",
+    "private-members",
+    "show-inheritance",
+    "special-members",
+    "show-module-summary",
+]
+autoapi_template_dir = "docs/autoapi/templates"
 autoapi_python_class_content = "both"
 autoapi_python_use_implicit_namespaces = True
 autoapi_root = "shared-bindings"
@@ -117,23 +125,25 @@ autoapi_file_patterns = ["*.pyi"]
 # See https://github.com/sphinx-doc/sphinx/issues/12300
 suppress_warnings = ["config.cache"]
 
-def autoapi_prepare_jinja_env(jinja_env):
-    jinja_env.globals['support_matrix_reverse'] = modules_support_matrix_reverse
 
-redirects_file = 'docs/redirects.txt'
+def autoapi_prepare_jinja_env(jinja_env):
+    jinja_env.globals["support_matrix_reverse"] = modules_support_matrix_reverse
+
+
+redirects_file = "docs/redirects.txt"
 
 # The encoding of source files.
-#source_encoding = 'utf-8-sig'
+# source_encoding = 'utf-8-sig'
 
 # The master toctree document.
-#master_doc = 'index'
+# master_doc = 'index'
 
 # Get current date (execution) for copyright year
 current_date = time.localtime()
 
 # General information about the project.
-project = 'Adafruit CircuitPython'
-copyright = f'2014-{current_date.tm_year}, MicroPython & CircuitPython contributors (https://github.com/adafruit/circuitpython/graphs/contributors)'
+project = "Adafruit CircuitPython"
+copyright = f"2014-{current_date.tm_year}, MicroPython & CircuitPython contributors (https://github.com/adafruit/circuitpython/graphs/contributors)"
 
 # These are overwritten on ReadTheDocs.
 # The version info for the project you're documenting, acts as replacement for
@@ -145,15 +155,11 @@ copyright = f'2014-{current_date.tm_year}, MicroPython & CircuitPython contribut
 
 final_version = ""
 git_describe = subprocess.run(
-    [tools_describe],
-    stdout=subprocess.PIPE,
-    stderr=subprocess.STDOUT,
-    encoding="utf-8"
+    ["python", "py/version.py"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, encoding="utf-8"
 )
 if git_describe.returncode == 0:
     git_version = re.search(
-        r"^\d(?:\.\d){0,2}(?:\-(?:alpha|beta|rc)\.\d+){0,1}",
-        str(git_describe.stdout)
+        r"^\d(?:\.\d){0,2}(?:\-(?:alpha|beta|rc)\.\d+){0,1}", str(git_describe.stdout)
     )
     if git_version:
         final_version = git_version[0]
@@ -164,13 +170,13 @@ version = release = final_version
 
 # The language for content autogenerated by Sphinx. Refer to documentation
 # for a list of supported languages.
-#language = None
+# language = None
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
-#today = ''
+# today = ''
 # Else, today_fmt is used as the format for a strftime call.
-#today_fmt = '%B %d, %Y'
+# today_fmt = '%B %d, %Y'
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -178,14 +184,11 @@ include_patterns = [
     # Top directory documentation
     "*.rst",
     "*.md",
-
     # Docs inherited from microypython (but not templates or README.md, see below)
     "docs/**",
-
     # Module documentation
     "shared-bindings/**",
     "ports/*/bindings/**",
-
     # Port READMEs in various formats
     "ports/*/README*",
 ]
@@ -193,27 +196,27 @@ exclude_patterns = ["docs/autoapi/templates/**", "docs/README.md"]
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
-default_role = 'any'
+default_role = "any"
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
-#add_function_parentheses = True
+# add_function_parentheses = True
 
 # If true, the current module name will be prepended to all description
 # unit titles (such as .. function::).
-#add_module_names = True
+# add_module_names = True
 
 # If true, sectionauthor and moduleauthor directives will be shown in the
 # output. They are ignored by default.
-#show_authors = False
+# show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+pygments_style = "sphinx"
 
 # A list of ignored prefixes for module index sorting.
-#modindex_common_prefix = []
+# modindex_common_prefix = []
 
 # If true, keep warnings as "system message" paragraphs in the built documents.
-#keep_warnings = False
+# keep_warnings = False
 
 # Global include files. Sphinx docs suggest using rst_epilog in preference
 # of rst_prolog, so we follow. Absolute paths below mean "from the base
@@ -225,137 +228,141 @@ rst_epilog = """
 # -- Options for HTML output ----------------------------------------------
 
 import sphinx_rtd_theme
-html_theme = 'sphinx_rtd_theme'
+
+html_theme = "sphinx_rtd_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-#html_theme_options = {}
+# html_theme_options = {}
 
 # Add any paths that contain custom themes here, relative to this directory.
 # html_theme_path = ['.']
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
-#html_title = None
+# html_title = None
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
-#html_short_title = None
+# html_short_title = None
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-#html_logo = '../../logo/trans-logo.png'
+# html_logo = '../../logo/trans-logo.png'
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
-html_favicon = 'docs/static/favicon.ico'
+html_favicon = "docs/static/favicon.ico"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['docs/static']
+html_static_path = ["docs/static"]
 
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
 # directly to the root of the documentation.
-#html_extra_path = []
+# html_extra_path = []
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
-html_last_updated_fmt = '%d %b %Y'
+html_last_updated_fmt = "%d %b %Y"
 
 # If true, SmartyPants will be used to convert quotes and dashes to
 # typographically correct entities.
-#html_use_smartypants = True
+# html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
-#html_sidebars = {}
+# html_sidebars = {}
 
 # Additional templates that should be rendered to pages, maps page names to
 # template names.
-#html_additional_pages = {"index": "topindex.html"}
+# html_additional_pages = {"index": "topindex.html"}
 
 # If false, no module index is generated.
-#html_domain_indices = True
+# html_domain_indices = True
 
 # If false, no index is generated.
-#html_use_index = True
+# html_use_index = True
 
 # If true, the index is split into individual pages for each letter.
-#html_split_index = False
+# html_split_index = False
 
 # If true, links to the reST sources are added to the pages.
-#html_show_sourcelink = True
+# html_show_sourcelink = True
 
 # If true, "Created using Sphinx" is shown in the HTML footer. Default is True.
-#html_show_sphinx = True
+# html_show_sphinx = True
 
 # If true, "(C) Copyright ..." is shown in the HTML footer. Default is True.
-#html_show_copyright = True
+# html_show_copyright = True
 
 # If true, an OpenSearch description file will be output, and all pages will
 # contain a <link> tag referring to it.  The value of this option must be the
 # base URL from which the finished HTML is served.
-#html_use_opensearch = ''
+# html_use_opensearch = ''
 
 # This is the file name suffix for HTML files (e.g. ".xhtml").
-#html_file_suffix = None
+# html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'CircuitPythondoc'
+htmlhelp_basename = "CircuitPythondoc"
 
 
 # -- Options for LaTeX output ---------------------------------------------
 
 latex_elements = {
-# The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
-
-# The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
-
-# Additional stuff for the LaTeX preamble.
-#'preamble': '',
-# Include 3 levels of headers in PDF ToC
-'preamble': r'''
+    # The paper size ('letterpaper' or 'a4paper').
+    #'papersize': 'letterpaper',
+    # The font size ('10pt', '11pt' or '12pt').
+    #'pointsize': '10pt',
+    # Additional stuff for the LaTeX preamble.
+    #'preamble': '',
+    # Include 3 levels of headers in PDF ToC
+    "preamble": r"""
 \setcounter{tocdepth}{2}
 \hbadness=99999
 \hfuzz=20pt
 \usepackage{pdflscape}
-''',
+""",
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ("docs/pdf", 'CircuitPython.tex', 'CircuitPython Documentation',
-   'CircuitPython Contributors', 'manual'),
-  # Uncomment this if you want to build a PDF of the board -> module support matrix.
-  # ("shared-bindings/support_matrix", 'SupportMatrix.tex', 'Board Support Matrix',
-  # 'CircuitPython Contributors', 'manual'),
+    (
+        "docs/pdf",
+        "CircuitPython.tex",
+        "CircuitPython Documentation",
+        "CircuitPython Contributors",
+        "manual",
+    ),
+    # Uncomment this if you want to build a PDF of the board -> module support matrix.
+    # ("shared-bindings/support_matrix", 'SupportMatrix.tex', 'Board Support Matrix',
+    # 'CircuitPython Contributors', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
-#latex_logo = None
+# latex_logo = None
 
 # For "manual" documents, if this is true, then toplevel headings are parts,
 # not chapters.
-#latex_use_parts = False
+# latex_use_parts = False
 
 # If true, show page references after internal links.
-#latex_show_pagerefs = False
+# latex_show_pagerefs = False
 
 # If true, show URL addresses after external links.
-#latex_show_urls = False
+# latex_show_urls = False
 
 # Documents to append as an appendix to all manuals.
-#latex_appendices = []
+# latex_appendices = []
 
 # If false, no module index is generated.
-#latex_domain_indices = True
+# latex_domain_indices = True
 
 
 # -- Options for manual page output ---------------------------------------
@@ -363,12 +370,11 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'CircuitPython', 'CircuitPython Documentation',
-     ['CircuitPython contributors'], 1),
+    ("index", "CircuitPython", "CircuitPython Documentation", ["CircuitPython contributors"], 1),
 ]
 
 # If true, show URL addresses after external links.
-#man_show_urls = False
+# man_show_urls = False
 
 
 # -- Options for Texinfo output -------------------------------------------
@@ -377,29 +383,40 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  (master_doc, 'CircuitPython', 'CircuitPython Documentation',
-   'CircuitPython contributors', 'CircuitPython', 'Python for Microcontrollers.',
-   'Miscellaneous'),
+    (
+        master_doc,
+        "CircuitPython",
+        "CircuitPython Documentation",
+        "CircuitPython contributors",
+        "CircuitPython",
+        "Python for Microcontrollers.",
+        "Miscellaneous",
+    ),
 ]
 
 # Documents to append as an appendix to all manuals.
-#texinfo_appendices = []
+# texinfo_appendices = []
 
 # If false, no module index is generated.
-#texinfo_domain_indices = True
+# texinfo_domain_indices = True
 
 # How to display URL addresses: 'footnote', 'no', or 'inline'.
-#texinfo_show_urls = 'footnote'
+# texinfo_show_urls = 'footnote'
 
 # If true, do not generate a @detailmenu in the "Top" node's menu.
-#texinfo_no_detailmenu = False
+# texinfo_no_detailmenu = False
 
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {"python": ('https://docs.python.org/3/', None),
-                       "register": ('https://circuitpython.readthedocs.io/projects/register/en/latest/', None),
-                       "mcp2515": ('https://circuitpython.readthedocs.io/projects/mcp2515/en/latest/', None),
-                       "typing": ('https://circuitpython.readthedocs.io/projects/adafruit-circuitpython-typing/en/latest/', None)}
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3/", None),
+    "register": ("https://circuitpython.readthedocs.io/projects/register/en/latest/", None),
+    "mcp2515": ("https://circuitpython.readthedocs.io/projects/mcp2515/en/latest/", None),
+    "typing": (
+        "https://circuitpython.readthedocs.io/projects/adafruit-circuitpython-typing/en/latest/",
+        None,
+    ),
+}
 
 # Adapted from sphinxcontrib-redirects
 from sphinx.builders import html as builders
@@ -417,20 +434,21 @@ def generate_redirects(app):
         return
 
     if not isinstance(app.builder, builders.StandaloneHTMLBuilder):
-        logging.warn("The 'sphinxcontib-redirects' plugin is only supported "
-                 "by the 'html' builder and subclasses. Skipping...")
+        logging.warn(
+            "The 'sphinxcontib-redirects' plugin is only supported "
+            "by the 'html' builder and subclasses. Skipping..."
+        )
         logging.warn(f"Builder is {app.builder.name} ({type(app.builder)})")
         return
 
     with open(path) as redirects:
         for line in redirects.readlines():
-            from_path, to_path = line.rstrip().split(' ')
+            from_path, to_path = line.rstrip().split(" ")
 
             logging.debug("Redirecting '%s' to '%s'" % (from_path, to_path))
 
             from_path = os.path.splitext(from_path)[0] + ".html"
-            to_path_prefix = '..%s' % os.path.sep * (
-                len(from_path.split(os.path.sep)) - 1)
+            to_path_prefix = "..%s" % os.path.sep * (len(from_path.split(os.path.sep)) - 1)
             to_path = to_path_prefix + to_path
 
             redirected_filename = os.path.join(app.builder.outdir, from_path)
@@ -438,8 +456,9 @@ def generate_redirects(app):
             if not os.path.exists(redirected_directory):
                 os.makedirs(redirected_directory)
 
-            with open(redirected_filename, 'w') as f:
-                f.write(TEMPLATE % urllib.parse.quote(to_path, '#/'))
+            with open(redirected_filename, "w") as f:
+                f.write(TEMPLATE % urllib.parse.quote(to_path, "#/"))
+
 
 def adafruit_typing_workaround(app, env, node, contnode):
     # Sphinx marks a requesting node that uses circuitpython-typing
@@ -495,7 +514,7 @@ def setup(app):
     app.add_css_file("customstyle.css")
     app.add_css_file("filter.css")
     app.add_js_file("filter.js")
-    app.add_config_value('redirects_file', 'redirects', 'env')
-    app.connect('builder-inited', generate_redirects)
-    app.connect('missing-reference', adafruit_typing_workaround)
+    app.add_config_value("redirects_file", "redirects", "env")
+    app.connect("builder-inited", generate_redirects)
+    app.connect("missing-reference", adafruit_typing_workaround)
     app.add_transform(CoreModuleTransform)

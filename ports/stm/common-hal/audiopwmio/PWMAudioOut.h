@@ -14,6 +14,9 @@ typedef struct {
     uint16_t quiescent_value;
 
     uint16_t *buffer[2];
+    #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
+    uint16_t buffer_size[2]; // Keeps track of allocated size
+    #endif
     uint16_t buffer_length[2];
     uint16_t buffer_ptr[2];
 

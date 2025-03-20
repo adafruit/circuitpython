@@ -14,7 +14,7 @@ requests-cache
 polib
 
 # For pre-commit
-black
+ruff==0.9.4 # ruff version must exactly match pre-commit-config.yaml
 pyyaml
 pre-commit
 micropython-uncrustify
@@ -37,3 +37,6 @@ colorama
 
 # for silabs builds
 setuptools
+
+# For zephyr port
+tomlkit

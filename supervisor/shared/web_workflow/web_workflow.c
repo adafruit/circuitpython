@@ -243,7 +243,7 @@ bool supervisor_start_web_workflow(void) {
     char password[64];
 
     os_getenv_err_t result = common_hal_os_getenv_str("CIRCUITPY_WIFI_SSID", ssid, sizeof(ssid));
-    if (result != GETENV_OK) {
+    if (result != GETENV_OK || strlen(ssid) < 1) {
         return false;
     }
 

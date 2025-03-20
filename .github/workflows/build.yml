@@ -299,6 +299,35 @@ jobs:
     # ERROR: Platform MINGW64_NT-10.0-17763-x86_64 appears to be unsupported
     # https://github.com/espressif/esp-idf/issues/7062
 
+  windows-zephyr:
+    strategy:
+      matrix:
+        os: [windows-2022, windows-2025]
+    runs-on: ${{ matrix.os }}
+    needs: scheduler
+    if: needs.scheduler.outputs.windows == 'True'
+    env:
+      CP_VERSION: ${{ needs.scheduler.outputs.cp-version }}
+    steps:
+    - name: Set up repository
+      uses: actions/checkout@v4
+      with:
+        submodules: false
+        show-progress: false
+        fetch-depth: 1
+        persist-credentials: false
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+    - name: Set up Zephyr
+      uses: ./.github/actions/deps/ports/zephyr-cp
+    - name: Set up submodules
+      uses: ./.github/actions/deps/submodules
+    - name: build mpy-cross
+      run: make -j4 -C mpy-cross
+    - name: build ek_ra8d1
+      run: make -j4 -C ports/zephyr-cp BOARD=renesas_ek_ra8d1
+
   ports:
     needs: [scheduler, mpy-cross, tests]
     if: needs.scheduler.outputs.ports != '{}'
@@ -311,3 +340,4 @@ jobs:
     with:
       boards: ${{ toJSON(fromJSON(needs.scheduler.outputs.ports)[matrix.port]) }}
       cp-version: ${{ needs.scheduler.outputs.cp-version }}
+      port: ${{ matrix.port }}

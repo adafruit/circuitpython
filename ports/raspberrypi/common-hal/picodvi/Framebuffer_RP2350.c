@@ -53,25 +53,37 @@
 #define SYNC_V1_H0 (TMDS_CTRL_10 | (TMDS_CTRL_00 << 10) | (TMDS_CTRL_00 << 20))
 #define SYNC_V1_H1 (TMDS_CTRL_11 | (TMDS_CTRL_00 << 10) | (TMDS_CTRL_00 << 20))
 
-#define MODE_H_SYNC_POLARITY 0
-#define MODE_H_FRONT_PORCH   16
-#define MODE_H_SYNC_WIDTH    96
-#define MODE_H_BACK_PORCH    48
-#define MODE_H_ACTIVE_PIXELS 640
+#define MODE_720_H_SYNC_POLARITY 0
+#define MODE_720_H_FRONT_PORCH   24
+#define MODE_720_H_SYNC_WIDTH    64
+#define MODE_720_H_BACK_PORCH    88
+#define MODE_720_H_ACTIVE_PIXELS 720
 
-#define MODE_V_SYNC_POLARITY 0
-#define MODE_V_FRONT_PORCH   10
-#define MODE_V_SYNC_WIDTH    2
-#define MODE_V_BACK_PORCH    33
-#define MODE_V_ACTIVE_LINES  480
+#define MODE_720_V_SYNC_POLARITY 0
+#define MODE_720_V_FRONT_PORCH   3
+#define MODE_720_V_SYNC_WIDTH    4
+#define MODE_720_V_BACK_PORCH    13
+#define MODE_720_V_ACTIVE_LINES  400
 
-#define MODE_H_TOTAL_PIXELS ( \
-    MODE_H_FRONT_PORCH + MODE_H_SYNC_WIDTH + \
-    MODE_H_BACK_PORCH + MODE_H_ACTIVE_PIXELS \
+#define MODE_640_H_SYNC_POLARITY 0
+#define MODE_640_H_FRONT_PORCH   16
+#define MODE_640_H_SYNC_WIDTH    96
+#define MODE_640_H_BACK_PORCH    48
+#define MODE_640_H_ACTIVE_PIXELS 640
+
+#define MODE_640_V_SYNC_POLARITY 0
+#define MODE_640_V_FRONT_PORCH   10
+#define MODE_640_V_SYNC_WIDTH    2
+#define MODE_640_V_BACK_PORCH    33
+#define MODE_640_V_ACTIVE_LINES  480
+
+#define MODE_720_V_TOTAL_LINES  ( \
+    MODE_720_V_FRONT_PORCH + MODE_720_V_SYNC_WIDTH + \
+    MODE_720_V_BACK_PORCH + MODE_720_V_ACTIVE_LINES \
     )
-#define MODE_V_TOTAL_LINES  ( \
-    MODE_V_FRONT_PORCH + MODE_V_SYNC_WIDTH + \
-    MODE_V_BACK_PORCH + MODE_V_ACTIVE_LINES \
+#define MODE_640_V_TOTAL_LINES  ( \
+    MODE_640_V_FRONT_PORCH + MODE_640_V_SYNC_WIDTH + \
+    MODE_640_V_BACK_PORCH + MODE_640_V_ACTIVE_LINES \
     )
 
 #define HSTX_CMD_RAW         (0x0u << 12)
@@ -83,34 +95,67 @@
 // ----------------------------------------------------------------------------
 // HSTX command lists
 
-static uint32_t vblank_line_vsync_off[] = {
-    HSTX_CMD_RAW_REPEAT | MODE_H_FRONT_PORCH,
+#define VSYNC_LEN 6
+#define VACTIVE_LEN 9
+
+static uint32_t vblank_line640_vsync_off[VSYNC_LEN] = {
+    HSTX_CMD_RAW_REPEAT | MODE_640_H_FRONT_PORCH,
     SYNC_V1_H1,
-    HSTX_CMD_RAW_REPEAT | MODE_H_SYNC_WIDTH,
+    HSTX_CMD_RAW_REPEAT | MODE_640_H_SYNC_WIDTH,
     SYNC_V1_H0,
-    HSTX_CMD_RAW_REPEAT | (MODE_H_BACK_PORCH + MODE_H_ACTIVE_PIXELS),
+    HSTX_CMD_RAW_REPEAT | (MODE_640_H_BACK_PORCH + MODE_640_H_ACTIVE_PIXELS),
     SYNC_V1_H1
 };
 
-static uint32_t vblank_line_vsync_on[] = {
-    HSTX_CMD_RAW_REPEAT | MODE_H_FRONT_PORCH,
+static uint32_t vblank_line640_vsync_on[VSYNC_LEN] = {
+    HSTX_CMD_RAW_REPEAT | MODE_640_H_FRONT_PORCH,
     SYNC_V0_H1,
-    HSTX_CMD_RAW_REPEAT | MODE_H_SYNC_WIDTH,
+    HSTX_CMD_RAW_REPEAT | MODE_640_H_SYNC_WIDTH,
     SYNC_V0_H0,
-    HSTX_CMD_RAW_REPEAT | (MODE_H_BACK_PORCH + MODE_H_ACTIVE_PIXELS),
+    HSTX_CMD_RAW_REPEAT | (MODE_640_H_BACK_PORCH + MODE_640_H_ACTIVE_PIXELS),
     SYNC_V0_H1
 };
 
-static uint32_t vactive_line[] = {
-    HSTX_CMD_RAW_REPEAT | MODE_H_FRONT_PORCH,
+static uint32_t vactive_line640[VACTIVE_LEN] = {
+    HSTX_CMD_RAW_REPEAT | MODE_640_H_FRONT_PORCH,
     SYNC_V1_H1,
     HSTX_CMD_NOP,
-    HSTX_CMD_RAW_REPEAT | MODE_H_SYNC_WIDTH,
+    HSTX_CMD_RAW_REPEAT | MODE_640_H_SYNC_WIDTH,
     SYNC_V1_H0,
     HSTX_CMD_NOP,
-    HSTX_CMD_RAW_REPEAT | MODE_H_BACK_PORCH,
+    HSTX_CMD_RAW_REPEAT | MODE_640_H_BACK_PORCH,
     SYNC_V1_H1,
-    HSTX_CMD_TMDS | MODE_H_ACTIVE_PIXELS
+    HSTX_CMD_TMDS | MODE_640_H_ACTIVE_PIXELS
+};
+
+static uint32_t vblank_line720_vsync_off[VSYNC_LEN] = {
+    HSTX_CMD_RAW_REPEAT | MODE_720_H_FRONT_PORCH,
+    SYNC_V1_H1,
+    HSTX_CMD_RAW_REPEAT | MODE_720_H_SYNC_WIDTH,
+    SYNC_V1_H0,
+    HSTX_CMD_RAW_REPEAT | (MODE_720_H_BACK_PORCH + MODE_720_H_ACTIVE_PIXELS),
+    SYNC_V1_H1
+};
+
+static uint32_t vblank_line720_vsync_on[VSYNC_LEN] = {
+    HSTX_CMD_RAW_REPEAT | MODE_720_H_FRONT_PORCH,
+    SYNC_V0_H1,
+    HSTX_CMD_RAW_REPEAT | MODE_720_H_SYNC_WIDTH,
+    SYNC_V0_H0,
+    HSTX_CMD_RAW_REPEAT | (MODE_720_H_BACK_PORCH + MODE_720_H_ACTIVE_PIXELS),
+    SYNC_V0_H1
+};
+
+static uint32_t vactive_line720[VACTIVE_LEN] = {
+    HSTX_CMD_RAW_REPEAT | MODE_720_H_FRONT_PORCH,
+    SYNC_V1_H1,
+    HSTX_CMD_NOP,
+    HSTX_CMD_RAW_REPEAT | MODE_720_H_SYNC_WIDTH,
+    SYNC_V1_H0,
+    HSTX_CMD_NOP,
+    HSTX_CMD_RAW_REPEAT | MODE_720_H_BACK_PORCH,
+    SYNC_V1_H1,
+    HSTX_CMD_TMDS | MODE_720_H_ACTIVE_PIXELS
 };
 
 picodvi_framebuffer_obj_t *active_picodvi = NULL;
@@ -120,13 +165,47 @@ static void __not_in_flash_func(dma_irq_handler)(void) {
         return;
     }
     uint ch_num = active_picodvi->dma_pixel_channel;
-    dma_channel_hw_t *ch = &dma_hw->ch[ch_num];
     dma_hw->intr = 1u << ch_num;
 
     // Set the read_addr back to the start and trigger the first transfer (which
     // will trigger the pixel channel).
-    ch = &dma_hw->ch[active_picodvi->dma_command_channel];
+    dma_channel_hw_t *ch = &dma_hw->ch[active_picodvi->dma_command_channel];
     ch->al3_read_addr_trig = (uintptr_t)active_picodvi->dma_commands;
+}
+
+bool common_hal_picodvi_framebuffer_preflight(
+    mp_uint_t width, mp_uint_t height,
+    mp_uint_t color_depth) {
+
+    // These modes don't duplicate pixels so we can do sub-byte colors. They
+    // take too much ram for more than 8bit color though.
+    bool full_resolution = color_depth == 1 || color_depth == 2 || color_depth == 4 || color_depth == 8;
+    // These modes rely on the memory transfer to duplicate values across bytes.
+    bool doubled = color_depth == 8 || color_depth == 16 || color_depth == 32;
+
+    // for each supported resolution, check the color depth is supported
+    if (width == 640 && height == 480) {
+        return full_resolution;
+    }
+    if (width == 320 && height == 240) {
+        return doubled;
+    }
+    if (width == 160 && height == 120) {
+        return doubled;
+    }
+
+    if (width == 720 && height == 400) {
+        return full_resolution;
+    }
+
+    if (width == 360 && height == 200) {
+        return doubled;
+    }
+
+    if (width == 180 && height == 100) {
+        return doubled;
+    }
+    return false;
 }
 
 void common_hal_picodvi_framebuffer_construct(picodvi_framebuffer_obj_t *self,
@@ -140,11 +219,19 @@ void common_hal_picodvi_framebuffer_construct(picodvi_framebuffer_obj_t *self,
         mp_raise_msg_varg(&mp_type_RuntimeError, MP_ERROR_TEXT("%q in use"), MP_QSTR_picodvi);
     }
 
-    if (!(width == 640 && height == 480) && !(width == 320 && height == 240 && (color_depth == 16 || color_depth == 8))) {
+    if (!common_hal_picodvi_framebuffer_preflight(width, height, color_depth)) {
         mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q and %q"), MP_QSTR_width, MP_QSTR_height);
     }
 
-    bool pixel_doubled = width == 320 && height == 240;
+    self->dma_command_channel = -1;
+    self->dma_pixel_channel = -1;
+
+    if (width % 160 == 0) {
+        self->output_width = 640;
+    } else {
+        self->output_width = 720;
+    }
+    size_t output_scaling = self->output_width / width;
 
     size_t all_allocated = 0;
     int8_t pins[8] = {
@@ -173,68 +260,86 @@ void common_hal_picodvi_framebuffer_construct(picodvi_framebuffer_obj_t *self,
 
     self->width = width;
     self->height = height;
-    self->pitch = (self->width * color_depth) / 8;
     self->color_depth = color_depth;
-    // Align each row to words.
-    if (self->pitch % sizeof(uint32_t) != 0) {
-        self->pitch += sizeof(uint32_t) - (self->pitch % sizeof(uint32_t));
-    }
-    self->pitch /= sizeof(uint32_t);
+    // Pitch is number of 32-bit words per line. We round up pitch_bytes to the nearest word
+    // so that each scanline begins on a natural 32-bit word boundary.
+    size_t pitch_bytes = (self->width * color_depth) / 8;
+    self->pitch = (pitch_bytes + sizeof(uint32_t) - 1) / sizeof(uint32_t);
     size_t framebuffer_size = self->pitch * self->height;
 
     // We check that allocations aren't in PSRAM because we haven't added XIP
     // streaming support.
     self->framebuffer = (uint32_t *)port_malloc(framebuffer_size * sizeof(uint32_t), true);
     if (self->framebuffer == NULL || ((size_t)self->framebuffer & 0xf0000000) == 0x10000000) {
+        common_hal_picodvi_framebuffer_deinit(self);
         m_malloc_fail(framebuffer_size * sizeof(uint32_t));
         return;
     }
+    memset(self->framebuffer, 0, framebuffer_size * sizeof(uint32_t));
 
     // We compute all DMA transfers needed for a single frame. This ensure we don't have any super
     // quick interrupts that we need to respond to. Each transfer takes two words, trans_count and
     // read_addr. Active pixel lines need two transfers due to different read addresses. When pixel
     // doubling, then we must also set transfer size.
     size_t dma_command_size = 2;
-    if (pixel_doubled) {
+    if (output_scaling > 1) {
         dma_command_size = 4;
     }
-    self->dma_commands_len = (MODE_V_FRONT_PORCH + MODE_V_SYNC_WIDTH + MODE_V_BACK_PORCH + 2 * MODE_V_ACTIVE_LINES + 1) * dma_command_size;
+
+    if (self->output_width == 640) {
+        self->dma_commands_len = (MODE_640_V_FRONT_PORCH + MODE_640_V_SYNC_WIDTH + MODE_640_V_BACK_PORCH + 2 * MODE_640_V_ACTIVE_LINES + 1) * dma_command_size;
+    } else {
+        self->dma_commands_len = (MODE_720_V_FRONT_PORCH + MODE_720_V_SYNC_WIDTH + MODE_720_V_BACK_PORCH + 2 * MODE_720_V_ACTIVE_LINES + 1) * dma_command_size;
+    }
     self->dma_commands = (uint32_t *)port_malloc(self->dma_commands_len * sizeof(uint32_t), true);
-    if (self->dma_commands == NULL || ((size_t)self->framebuffer & 0xf0000000) == 0x10000000) {
-        port_free(self->framebuffer);
+    if (self->dma_commands == NULL || ((size_t)self->dma_commands & 0xf0000000) == 0x10000000) {
+        common_hal_picodvi_framebuffer_deinit(self);
         m_malloc_fail(self->dma_commands_len * sizeof(uint32_t));
         return;
     }
 
-    int dma_pixel_channel_maybe = dma_claim_unused_channel(false);
-    if (dma_pixel_channel_maybe < 0) {
+    // The command channel and the pixel channel form a pipeline that feeds combined HSTX
+    // commands and pixel data to the HSTX FIFO. The command channel reads a pre-computed
+    // list of control/status words from the dma_commands buffer and writes them to the
+    // pixel channel's control/status registers. Under control of the command channel, the
+    // pixel channel smears/swizzles pixel data from the framebuffer and combines
+    // it with HSTX commands, forwarding the combined stream to the HSTX FIFO.
+
+    self->dma_pixel_channel = dma_claim_unused_channel(false);
+    self->dma_command_channel = dma_claim_unused_channel(false);
+    if (self->dma_pixel_channel < 0 || self->dma_command_channel < 0) {
+        common_hal_picodvi_framebuffer_deinit(self);
         mp_raise_RuntimeError(MP_ERROR_TEXT("Internal resource(s) in use"));
         return;
-    }
-
-    int dma_command_channel_maybe = dma_claim_unused_channel(false);
-    if (dma_command_channel_maybe < 0) {
-        dma_channel_unclaim((uint)dma_pixel_channel_maybe);
-        mp_raise_RuntimeError(MP_ERROR_TEXT("Internal resource(s) in use"));
-        return;
-    }
-    self->dma_pixel_channel = dma_pixel_channel_maybe;
-    self->dma_command_channel = dma_command_channel_maybe;
-
-    size_t words_per_line;
-    if (self->color_depth > 8) {
-        words_per_line = (self->width * (self->color_depth / 8)) / sizeof(uint32_t);
-    } else {
-        words_per_line = (self->width / (8 / self->color_depth)) / sizeof(uint32_t);
     }
 
     size_t command_word = 0;
-    size_t frontporch_start = MODE_V_TOTAL_LINES - MODE_V_FRONT_PORCH;
-    size_t frontporch_end = frontporch_start + MODE_V_FRONT_PORCH;
+    size_t frontporch_start;
+    if (self->output_width == 640) {
+        frontporch_start = MODE_640_V_TOTAL_LINES - MODE_640_V_FRONT_PORCH;
+    } else {
+        frontporch_start = MODE_720_V_TOTAL_LINES - MODE_720_V_FRONT_PORCH;
+    }
+    size_t frontporch_end = frontporch_start;
+    if (self->output_width == 640) {
+        frontporch_end += MODE_640_V_FRONT_PORCH;
+    } else {
+        frontporch_end += MODE_720_V_FRONT_PORCH;
+    }
     size_t vsync_start = 0;
-    size_t vsync_end = vsync_start + MODE_V_SYNC_WIDTH;
+    size_t vsync_end = vsync_start;
+    if (self->output_width == 640) {
+        vsync_end += MODE_640_V_SYNC_WIDTH;
+    } else {
+        vsync_end += MODE_720_V_SYNC_WIDTH;
+    }
     size_t backporch_start = vsync_end;
-    size_t backporch_end = backporch_start + MODE_V_BACK_PORCH;
+    size_t backporch_end = backporch_start;
+    if (self->output_width == 640) {
+        backporch_end += MODE_640_V_BACK_PORCH;
+    } else {
+        backporch_end += MODE_720_V_BACK_PORCH;
+    }
     size_t active_start = backporch_end;
 
     uint32_t dma_ctrl = self->dma_command_channel << DMA_CH0_CTRL_TRIG_CHAIN_TO_LSB |
@@ -243,10 +348,12 @@ void common_hal_picodvi_framebuffer_construct(picodvi_framebuffer_obj_t *self,
         DMA_CH0_CTRL_TRIG_INCR_READ_BITS |
         DMA_CH0_CTRL_TRIG_EN_BITS;
     uint32_t dma_pixel_ctrl;
-    if (pixel_doubled) {
+    if (output_scaling > 1) {
         // We do color_depth size transfers when pixel doubling. The memory bus will
-        // duplicate the 16 bits to produce 32 bits for the HSTX.
-        if (color_depth == 16) {
+        // duplicate the bytes read to produce 32 bits for the HSTX.
+        if (color_depth == 32) {
+            dma_pixel_ctrl = dma_ctrl | DMA_SIZE_32 << DMA_CH0_CTRL_TRIG_DATA_SIZE_LSB;
+        } else if (color_depth == 16) {
             dma_pixel_ctrl = dma_ctrl | DMA_SIZE_16 << DMA_CH0_CTRL_TRIG_DATA_SIZE_LSB;
         } else {
             dma_pixel_ctrl = dma_ctrl | DMA_SIZE_8 << DMA_CH0_CTRL_TRIG_DATA_SIZE_LSB;
@@ -263,34 +370,46 @@ void common_hal_picodvi_framebuffer_construct(picodvi_framebuffer_obj_t *self,
     // Write ctrl and write_addr once when not pixel doubling because they don't
     // change. (write_addr doesn't change when pixel doubling either but we need
     // to rewrite it because it is after the ctrl register.)
-    if (!pixel_doubled) {
+    if (output_scaling == 1) {
         dma_channel_hw_addr(self->dma_pixel_channel)->al1_ctrl = dma_ctrl;
         dma_channel_hw_addr(self->dma_pixel_channel)->al1_write_addr = dma_write_addr;
     }
-    for (size_t v_scanline = 0; v_scanline < MODE_V_TOTAL_LINES; v_scanline++) {
-        if (pixel_doubled) {
+
+    uint32_t *vblank_line_vsync_on = self->output_width == 640 ?  vblank_line640_vsync_on : vblank_line720_vsync_on;
+    uint32_t *vblank_line_vsync_off = self->output_width == 640 ?  vblank_line640_vsync_off : vblank_line720_vsync_off;
+    uint32_t *vactive_line = self->output_width == 640 ?  vactive_line640 : vactive_line720;
+
+    size_t mode_v_total_lines;
+    if (self->output_width == 640) {
+        mode_v_total_lines = MODE_640_V_TOTAL_LINES;
+    } else {
+        mode_v_total_lines = MODE_720_V_TOTAL_LINES;
+    }
+
+    for (size_t v_scanline = 0; v_scanline < mode_v_total_lines; v_scanline++) {
+        if (output_scaling > 1) {
             self->dma_commands[command_word++] = dma_ctrl;
             self->dma_commands[command_word++] = dma_write_addr;
         }
         if (vsync_start <= v_scanline && v_scanline < vsync_end) {
-            self->dma_commands[command_word++] = count_of(vblank_line_vsync_on);
+            self->dma_commands[command_word++] = VSYNC_LEN;
             self->dma_commands[command_word++] = (uintptr_t)vblank_line_vsync_on;
         } else if (backporch_start <= v_scanline && v_scanline < backporch_end) {
-            self->dma_commands[command_word++] = count_of(vblank_line_vsync_off);
+            self->dma_commands[command_word++] = VSYNC_LEN;
             self->dma_commands[command_word++] = (uintptr_t)vblank_line_vsync_off;
         } else if (frontporch_start <= v_scanline && v_scanline < frontporch_end) {
-            self->dma_commands[command_word++] = count_of(vblank_line_vsync_off);
+            self->dma_commands[command_word++] = VSYNC_LEN;
             self->dma_commands[command_word++] = (uintptr_t)vblank_line_vsync_off;
         } else {
-            self->dma_commands[command_word++] = count_of(vactive_line);
+            self->dma_commands[command_word++] = VACTIVE_LEN;
             self->dma_commands[command_word++] = (uintptr_t)vactive_line;
             size_t row = v_scanline - active_start;
-            size_t transfer_count = words_per_line;
-            if (pixel_doubled) {
+            size_t transfer_count = self->pitch;
+            if (output_scaling > 1) {
                 self->dma_commands[command_word++] = dma_pixel_ctrl;
                 self->dma_commands[command_word++] = dma_write_addr;
-                row /= 2;
-                // When pixel doubling, we do one transfer per pixel and it gets
+                row /= output_scaling;
+                // When pixel scaling, we do one transfer per pixel and it gets
                 // mirrored into the rest of the word.
                 transfer_count = self->width;
             }
@@ -300,7 +419,7 @@ void common_hal_picodvi_framebuffer_construct(picodvi_framebuffer_obj_t *self,
         }
     }
     // Last command is NULL which will trigger an IRQ.
-    if (pixel_doubled) {
+    if (output_scaling > 1) {
         self->dma_commands[command_word++] = DMA_CH0_CTRL_TRIG_IRQ_QUIET_BITS |
             DMA_CH0_CTRL_TRIG_EN_BITS;
         self->dma_commands[command_word++] = 0;
@@ -308,7 +427,16 @@ void common_hal_picodvi_framebuffer_construct(picodvi_framebuffer_obj_t *self,
     self->dma_commands[command_word++] = 0;
     self->dma_commands[command_word++] = 0;
 
-    if (color_depth == 16) {
+    if (color_depth == 32) {
+        // Configure HSTX's TMDS encoder for RGB888
+        hstx_ctrl_hw->expand_tmds =
+            7 << HSTX_CTRL_EXPAND_TMDS_L2_NBITS_LSB |
+                16 << HSTX_CTRL_EXPAND_TMDS_L2_ROT_LSB |
+                7 << HSTX_CTRL_EXPAND_TMDS_L1_NBITS_LSB |
+                8 << HSTX_CTRL_EXPAND_TMDS_L1_ROT_LSB |
+                7 << HSTX_CTRL_EXPAND_TMDS_L0_NBITS_LSB |
+                0 << HSTX_CTRL_EXPAND_TMDS_L0_ROT_LSB;
+    } else if (color_depth == 16) {
         // Configure HSTX's TMDS encoder for RGB565
         hstx_ctrl_hw->expand_tmds =
             4 << HSTX_CTRL_EXPAND_TMDS_L2_NBITS_LSB |
@@ -346,18 +474,25 @@ void common_hal_picodvi_framebuffer_construct(picodvi_framebuffer_obj_t *self,
                     (color_depth - 1) << HSTX_CTRL_EXPAND_TMDS_L0_NBITS_LSB |
                 rot << HSTX_CTRL_EXPAND_TMDS_L0_ROT_LSB;
     }
-    size_t shifts_before_empty = ((32 / color_depth) % 32);
-    if (pixel_doubled && color_depth == 8) {
-        // All but 320x240 at 8bits will shift through all 32 bits. We are only
-        // doubling so we only need 16 bits (2 x 8) to get our doubled pixel.
-        shifts_before_empty = 2;
+    size_t pixels_per_word;
+    if (output_scaling == 1) {
+        pixels_per_word = 32 / color_depth;
+    } else {
+        pixels_per_word = 1;
     }
+
+    size_t shifts_before_empty = (pixels_per_word % 32);
+    if (output_scaling > 1) {
+        shifts_before_empty *= output_scaling;
+    }
+
+    size_t shift_amount = color_depth % 32;
 
     // Pixels come in 32 bits at a time. color_depth dictates the number
     // of pixels per word. Control symbols (RAW) are an entire 32-bit word.
     hstx_ctrl_hw->expand_shift =
         shifts_before_empty << HSTX_CTRL_EXPAND_SHIFT_ENC_N_SHIFTS_LSB |
-            color_depth << HSTX_CTRL_EXPAND_SHIFT_ENC_SHIFT_LSB |
+            shift_amount << HSTX_CTRL_EXPAND_SHIFT_ENC_SHIFT_LSB |
             1 << HSTX_CTRL_EXPAND_SHIFT_RAW_N_SHIFTS_LSB |
             0 << HSTX_CTRL_EXPAND_SHIFT_RAW_SHIFT_LSB;
 
@@ -410,7 +545,7 @@ void common_hal_picodvi_framebuffer_construct(picodvi_framebuffer_obj_t *self,
     // This wraps the transfer back to the start of the write address.
     size_t wrap = 3; // 8 bytes because we write two DMA registers.
     volatile uint32_t *write_addr = &dma_hw->ch[self->dma_pixel_channel].al3_transfer_count;
-    if (pixel_doubled) {
+    if (output_scaling > 1) {
         wrap = 4; // 16 bytes because we write all four DMA registers.
         write_addr = &dma_hw->ch[self->dma_pixel_channel].al3_ctrl;
     }
@@ -430,6 +565,7 @@ void common_hal_picodvi_framebuffer_construct(picodvi_framebuffer_obj_t *self,
     dma_hw->inte1 = (1u << self->dma_pixel_channel);
     irq_set_exclusive_handler(DMA_IRQ_1, dma_irq_handler);
     irq_set_enabled(DMA_IRQ_1, true);
+    irq_set_priority(DMA_IRQ_1, PICO_HIGHEST_IRQ_PRIORITY);
 
     bus_ctrl_hw->priority = BUSCTRL_BUS_PRIORITY_DMA_W_BITS | BUSCTRL_BUS_PRIORITY_DMA_R_BITS;
 
@@ -442,7 +578,10 @@ void common_hal_picodvi_framebuffer_construct(picodvi_framebuffer_obj_t *self,
     dma_irq_handler();
 }
 
-static void _turn_off_dma(uint8_t channel) {
+static void _turn_off_dma(int channel) {
+    if (channel < 0) {
+        return;
+    }
     dma_channel_config c = dma_channel_get_default_config(channel);
     channel_config_set_enable(&c, false);
     dma_channel_set_config(channel, &c, false /* trigger */);
@@ -465,6 +604,8 @@ void common_hal_picodvi_framebuffer_deinit(picodvi_framebuffer_obj_t *self) {
 
     _turn_off_dma(self->dma_pixel_channel);
     _turn_off_dma(self->dma_command_channel);
+    self->dma_pixel_channel = -1;
+    self->dma_command_channel = -1;
 
     active_picodvi = NULL;
 
@@ -496,6 +637,10 @@ int common_hal_picodvi_framebuffer_get_color_depth(picodvi_framebuffer_obj_t *se
     return self->color_depth;
 }
 
+int common_hal_picodvi_framebuffer_get_native_frames_per_second(picodvi_framebuffer_obj_t *self) {
+    return self->output_width == 640 ? 60 : 70;
+}
+
 bool common_hal_picodvi_framebuffer_get_grayscale(picodvi_framebuffer_obj_t *self) {
     return self->color_depth < 4;
 }
@@ -503,7 +648,13 @@ bool common_hal_picodvi_framebuffer_get_grayscale(picodvi_framebuffer_obj_t *sel
 mp_int_t common_hal_picodvi_framebuffer_get_buffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_uint_t flags) {
     picodvi_framebuffer_obj_t *self = (picodvi_framebuffer_obj_t *)self_in;
     bufinfo->buf = self->framebuffer;
-    bufinfo->typecode = self->color_depth > 8 ? 'H' : 'B';
+    if (self->color_depth == 32) {
+        bufinfo->typecode = 'I';
+    } else if (self->color_depth == 16) {
+        bufinfo->typecode = 'H';
+    } else {
+        bufinfo->typecode = 'B';
+    }
     bufinfo->len = self->framebuffer_len * sizeof(uint32_t);
     return 0;
 }

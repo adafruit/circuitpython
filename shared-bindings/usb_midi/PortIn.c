@@ -23,6 +23,7 @@
 //|         PortIn objects are constructed for every corresponding entry in the USB
 //|         descriptor and added to the ``usb_midi.ports`` tuple."""
 //|         ...
+//|
 
 // These are standard stream methods. Code is in py/stream.c.
 //
@@ -43,6 +44,7 @@
 //|         :return: number of bytes read and stored into ``buf``
 //|         :rtype: bytes or None"""
 //|         ...
+//|
 //|
 
 // These three methods are used by the shared stream methods.
@@ -76,8 +78,8 @@ static mp_uint_t usb_midi_portin_ioctl(mp_obj_t self_in, mp_uint_t request, mp_u
 
 static const mp_rom_map_elem_t usb_midi_portin_locals_dict_table[] = {
     // Standard stream methods.
-    { MP_OBJ_NEW_QSTR(MP_QSTR_read),     MP_ROM_PTR(&mp_stream_read_obj) },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_readinto), MP_ROM_PTR(&mp_stream_readinto_obj) },
+    { MP_ROM_QSTR(MP_QSTR_read),     MP_ROM_PTR(&mp_stream_read_obj) },
+    { MP_ROM_QSTR(MP_QSTR_readinto), MP_ROM_PTR(&mp_stream_readinto_obj) },
 };
 static MP_DEFINE_CONST_DICT(usb_midi_portin_locals_dict, usb_midi_portin_locals_dict_table);
 

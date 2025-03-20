@@ -20,6 +20,10 @@
 #include "supervisor/shared/status_leds.h"
 #include "supervisor/shared/bluetooth/bluetooth.h"
 
+#if CIRCUITPY_DISPLAYIO
+#include "shared-bindings/displayio/__init__.h"
+#endif
+
 #if CIRCUITPY_TINYUSB
 #include "tusb.h"
 #endif
@@ -42,6 +46,7 @@ static supervisor_run_reason_t _run_reason;
 //|         """You cannot create an instance of `supervisor.Runtime`.
 //|         Use `supervisor.runtime` to access the sole instance available."""
 //|         ...
+//|
 
 //|     usb_connected: bool
 //|     """Returns the USB enumeration status (read-only)."""
@@ -202,6 +207,39 @@ MP_PROPERTY_GETSET(supervisor_runtime_rgb_status_brightness_obj,
     (mp_obj_t)&supervisor_runtime_get_rgb_status_brightness_obj,
     (mp_obj_t)&supervisor_runtime_set_rgb_status_brightness_obj);
 
+#if CIRCUITPY_DISPLAYIO
+//|     display: displayio.AnyDisplay | None
+//|     """The primary configured displayio display, if any.
+//|
+//|     If the board has a display that is hard coded, or that was explicitly set
+//|     in boot.py or code.py (including a previous run of code.py), it is
+//|     available here until it is released with ``displayio.release_displays()``.
+//|
+//|     The display can be of any supported display type, such as `busdisplay.BusDisplay`.
+//|
+//|     If no display is configured, this property is `None`.
+//|
+//|     In a future release of CircuitPython, any display that is not the primary display
+//|     will be automatically released at the end of running a code file.
+//|
+//|     On boards without displayio, this property is present but the value is always `None`."""
+//|
+//|
+static mp_obj_t supervisor_runtime_get_display(mp_obj_t self) {
+    return common_hal_displayio_get_primary_display();
+}
+MP_DEFINE_CONST_FUN_OBJ_1(supervisor_runtime_get_display_obj, supervisor_runtime_get_display);
+static mp_obj_t supervisor_runtime_set_display(mp_obj_t self, mp_obj_t new_primary_display) {
+    common_hal_displayio_set_primary_display(new_primary_display);
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_2(supervisor_runtime_set_display_obj, supervisor_runtime_set_display);
+
+MP_PROPERTY_GETSET(supervisor_runtime_display_obj,
+    (mp_obj_t)&supervisor_runtime_get_display_obj,
+    (mp_obj_t)&supervisor_runtime_set_display_obj);
+#endif
+
 static const mp_rom_map_elem_t supervisor_runtime_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_usb_connected), MP_ROM_PTR(&supervisor_runtime_usb_connected_obj) },
     { MP_ROM_QSTR(MP_QSTR_serial_connected), MP_ROM_PTR(&supervisor_runtime_serial_connected_obj) },
@@ -211,6 +249,11 @@ static const mp_rom_map_elem_t supervisor_runtime_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_autoreload), MP_ROM_PTR(&supervisor_runtime_autoreload_obj) },
     { MP_ROM_QSTR(MP_QSTR_ble_workflow),  MP_ROM_PTR(&supervisor_runtime_ble_workflow_obj) },
     { MP_ROM_QSTR(MP_QSTR_rgb_status_brightness),  MP_ROM_PTR(&supervisor_runtime_rgb_status_brightness_obj) },
+    #if CIRCUITPY_DISPLAYIO
+    { MP_ROM_QSTR(MP_QSTR_display),  MP_ROM_PTR(&supervisor_runtime_display_obj) },
+    #else
+    { MP_ROM_QSTR(MP_QSTR_display),  MP_ROM_NONE },
+    #endif
 };
 
 static MP_DEFINE_CONST_DICT(supervisor_runtime_locals_dict, supervisor_runtime_locals_dict_table);

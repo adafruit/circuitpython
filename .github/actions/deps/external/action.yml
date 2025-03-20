@@ -22,7 +22,8 @@ runs:
       if: >-
         inputs.port != 'none' &&
         inputs.port != 'litex' &&
-        inputs.port != 'espressif'
+        inputs.port != 'espressif' &&
+        inputs.port != 'zephyr-cp'
       uses: carlosperate/arm-none-eabi-gcc-action@v1
       with:
         # When changing this update what Windows grabs too!
@@ -51,7 +52,7 @@ runs:
 
     # common
     - name: Cache python dependencies
-      if: inputs.port != 'espressif'
+      if: inputs.port != 'espressif' && inputs.port != 'zephyr-cp'
       uses: ./.github/actions/deps/python
       with:
         action: ${{ inputs.action }}

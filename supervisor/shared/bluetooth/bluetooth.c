@@ -229,7 +229,7 @@ void supervisor_bluetooth_init(void) {
     }
     #endif
     while (diff < 1000) {
-        #ifdef CIRCUITPY_STATUS_LED
+        #if CIRCUITPY_STATUS_LED
         // Blink on for 50 and off for 100
         bool led_on = boot_in_discovery_mode || (diff % 150) <= 50;
         if (led_on) {

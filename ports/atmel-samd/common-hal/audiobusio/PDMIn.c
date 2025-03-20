@@ -364,7 +364,7 @@ static uint16_t filter_sample(uint32_t pdm_samples[4]) {
 // output_buffer_length is the number of slots, not the number of bytes.
 uint32_t common_hal_audiobusio_pdmin_record_to_buffer(audiobusio_pdmin_obj_t *self,
     uint16_t *output_buffer, uint32_t output_buffer_length) {
-    uint8_t dma_channel = dma_allocate_channel();
+    uint8_t dma_channel = dma_allocate_channel(true);
     pdmin_event_channel = find_sync_event_channel_raise();
     pdmin_dma_block_done = false;
 

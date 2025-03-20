@@ -188,6 +188,26 @@ bool common_hal_audiopwmio_pwmaudioout_deinited(audiopwmio_pwmaudioout_obj_t *se
     return !self->pwm;
 }
 
+static void free_buffers(audiopwmio_pwmaudioout_obj_t *self) {
+    #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
+    m_free(self->buffers[0], self->buffer_size[0]);
+    self->buffer_size[0] = 0;
+    #else
+    m_free(self->buffers[0]);
+    #endif
+
+    self->buffers[0] = NULL;
+
+    #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
+    m_free(self->buffers[1], self->buffer_size[1]);
+    self->buffer_size[1] = 0;
+    #else
+    m_free(self->buffers[1]);
+    #endif
+
+    self->buffers[1] = NULL;
+}
+
 void common_hal_audiopwmio_pwmaudioout_deinit(audiopwmio_pwmaudioout_obj_t *self) {
     if (common_hal_audiopwmio_pwmaudioout_deinited(self)) {
         return;
@@ -209,11 +229,7 @@ void common_hal_audiopwmio_pwmaudioout_deinit(audiopwmio_pwmaudioout_obj_t *self
 
     self->pwm = NULL;
 
-    m_free(self->buffers[0]);
-    self->buffers[0] = NULL;
-
-    m_free(self->buffers[1]);
-    self->buffers[1] = NULL;
+    free_buffers(self);
 }
 
 void common_hal_audiopwmio_pwmaudioout_play(audiopwmio_pwmaudioout_obj_t *self, mp_obj_t sample, bool loop) {
@@ -223,22 +239,30 @@ void common_hal_audiopwmio_pwmaudioout_play(audiopwmio_pwmaudioout_obj_t *self, 
     self->sample = sample;
     self->loop = loop;
 
-    uint32_t sample_rate = audiosample_sample_rate(sample);
-    self->bytes_per_sample = audiosample_bits_per_sample(sample) / 8;
+    uint32_t sample_rate = audiosample_get_sample_rate(sample);
+    self->bytes_per_sample = audiosample_get_bits_per_sample(sample) / 8;
 
     uint32_t max_buffer_length;
     uint8_t spacing;
     audiosample_get_buffer_structure(sample, /* single channel */ false,
         &self->single_buffer, &self->signed_to_unsigned, &max_buffer_length,
         &spacing);
-    self->sample_channel_count = audiosample_channel_count(sample);
+    self->sample_channel_count = audiosample_get_channel_count(sample);
 
     mp_arg_validate_length_max(max_buffer_length, UINT16_MAX, MP_QSTR_buffer);
 
-    uint16_t buffer_length = (uint16_t)max_buffer_length;
-    self->buffers[0] = m_malloc(buffer_length * 2 * sizeof(uint16_t));
+    size_t buffer_size = (size_t)max_buffer_length * 2 * sizeof(uint16_t);
+
+    self->buffers[0] = m_malloc(buffer_size);
+    #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
+    self->buffer_size[0] = buffer_size;
+    #endif
+
     if (!self->single_buffer) {
-        self->buffers[1] = m_malloc(buffer_length * 2 * sizeof(uint16_t));
+        self->buffers[1] = m_malloc(buffer_size);
+        #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
+        self->buffer_size[1] = buffer_size;
+        #endif
     }
 
 
@@ -274,11 +298,7 @@ void common_hal_audiopwmio_pwmaudioout_stop(audiopwmio_pwmaudioout_obj_t *self) 
     self->stopping = false;
     self->paused = false;
 
-    m_free(self->buffers[0]);
-    self->buffers[0] = NULL;
-
-    m_free(self->buffers[1]);
-    self->buffers[1] = NULL;
+    free_buffers(self);
 }
 
 bool common_hal_audiopwmio_pwmaudioout_get_playing(audiopwmio_pwmaudioout_obj_t *self) {

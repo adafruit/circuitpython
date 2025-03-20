@@ -386,8 +386,11 @@ def parse_input_headers_with_translations(infiles):
                 qstrs[ident] = (ident, qstr)
 
     if not qcfgs:
-        sys.stderr.write("ERROR: Empty preprocessor output - check for errors above\n")
-        sys.exit(1)
+        # CIRCUITPY-CHANGE: These values are hardcoded for CircuitPython so
+        # don't error if they are missing.
+        qcfgs = {}
+        qcfgs["BYTES_IN_LEN"] = 1
+        qcfgs["BYTES_IN_HASH"] = 1
 
     # CIRCUITPY-CHANGE
     return qcfgs, qstrs, translations

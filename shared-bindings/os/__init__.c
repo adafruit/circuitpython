@@ -26,11 +26,13 @@
 //|
 //| import typing
 //|
+//|
 
 //| def uname() -> _Uname:
 //|     """Returns a named tuple of operating specific and CircuitPython port
 //|     specific information."""
 //|     ...
+//|
 //|
 //| class _Uname(typing.NamedTuple):
 //|     """The type of values that :py:func:`.uname()` returns"""
@@ -41,6 +43,7 @@
 //|     version: str
 //|     machine: str
 //|
+//|
 static mp_obj_t os_uname(void) {
     return common_hal_os_uname();
 }
@@ -49,6 +52,7 @@ static MP_DEFINE_CONST_FUN_OBJ_0(os_uname_obj, os_uname);
 //| def chdir(path: str) -> None:
 //|     """Change current directory."""
 //|     ...
+//|
 //|
 static mp_obj_t os_chdir(mp_obj_t path_in) {
     const char *path = mp_obj_str_get_str(path_in);
@@ -60,6 +64,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(os_chdir_obj, os_chdir);
 //| def getcwd() -> str:
 //|     """Get the current directory."""
 //|     ...
+//|
 //|
 static mp_obj_t os_getcwd(void) {
     return common_hal_os_getcwd();
@@ -89,6 +94,7 @@ MP_DEFINE_CONST_FUN_OBJ_0(os_getcwd_obj, os_getcwd);
 //|     """
 //|     ...
 //|
+//|
 static mp_obj_t os_getenv(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     #if CIRCUITPY_OS_GETENV
     enum { ARG_key, ARG_default };
@@ -110,6 +116,7 @@ static MP_DEFINE_CONST_FUN_OBJ_KW(os_getenv_obj, 1, os_getenv);
 //|     """With no argument, list the current directory.  Otherwise list the given directory."""
 //|     ...
 //|
+//|
 static mp_obj_t os_listdir(size_t n_args, const mp_obj_t *args) {
     const char *path;
     if (n_args == 1) {
@@ -125,6 +132,7 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(os_listdir_obj, 0, 1, os_listdir);
 //|     """Create a new directory."""
 //|     ...
 //|
+//|
 static mp_obj_t os_mkdir(mp_obj_t path_in) {
     const char *path = mp_obj_str_get_str(path_in);
     common_hal_os_mkdir(path);
@@ -135,6 +143,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(os_mkdir_obj, os_mkdir);
 //| def remove(path: str) -> None:
 //|     """Remove a file."""
 //|     ...
+//|
 //|
 static mp_obj_t os_remove(mp_obj_t path_in) {
     const char *path = mp_obj_str_get_str(path_in);
@@ -147,6 +156,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(os_remove_obj, os_remove);
 //|     """Remove a directory."""
 //|     ...
 //|
+//|
 static mp_obj_t os_rename(mp_obj_t old_path_in, mp_obj_t new_path_in) {
     const char *old_path = mp_obj_str_get_str(old_path_in);
     const char *new_path = mp_obj_str_get_str(new_path_in);
@@ -158,6 +168,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(os_rename_obj, os_rename);
 //| def rename(old_path: str, new_path: str) -> str:
 //|     """Rename a file."""
 //|     ...
+//|
 //|
 static mp_obj_t os_rmdir(mp_obj_t path_in) {
     const char *path = mp_obj_str_get_str(path_in);
@@ -189,6 +200,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(os_rmdir_obj, os_rmdir);
 //|        which is the number of seconds corresponding to 1999-12-31."""
 //|     ...
 //|
+//|
 static mp_obj_t os_stat(mp_obj_t path_in) {
     const char *path = mp_obj_str_get_str(path_in);
     return common_hal_os_stat(path);
@@ -216,6 +228,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(os_stat_obj, os_stat);
 //|     in a port-specific implementation."""
 //|     ...
 //|
+//|
 static mp_obj_t os_statvfs(mp_obj_t path_in) {
     const char *path = mp_obj_str_get_str(path_in);
     return common_hal_os_statvfs(path);
@@ -225,6 +238,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(os_statvfs_obj, os_statvfs);
 //| def sync() -> None:
 //|     """Sync all filesystems."""
 //|     ...
+//|
 //|
 static mp_obj_t os_sync(void) {
     for (mp_vfs_mount_t *vfs = MP_STATE_VM(vfs_mount_table); vfs != NULL; vfs = vfs->next) {
@@ -243,6 +257,7 @@ MP_DEFINE_CONST_FUN_OBJ_0(os_sync_obj, os_sync);
 //|     """
 //|     ...
 //|
+//|
 static mp_obj_t os_urandom(mp_obj_t size_in) {
     mp_int_t size = mp_obj_get_int(size_in);
     mp_obj_str_t *result = MP_OBJ_TO_PTR(mp_obj_new_bytes_of_zeros(size));
@@ -256,6 +271,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(os_urandom_obj, os_urandom);
 //| def utime(path: str, times: Tuple[int, int]) -> None:
 //|     """Change the timestamp of a file."""
 //|     ...
+//|
 //|
 static mp_obj_t os_utime(mp_obj_t path_in, mp_obj_t times_in) {
     const char *path = mp_obj_str_get_str(path_in);

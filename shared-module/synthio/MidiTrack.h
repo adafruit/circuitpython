@@ -11,7 +11,6 @@
 #include "shared-module/synthio/__init__.h"
 
 typedef struct {
-    mp_obj_base_t base;
     synthio_synth_t synth;
     mp_buffer_info_t track;
     // invariant: after initial startup, pos always points just after an encoded duration, i.e., at a midi message (or at EOF)
@@ -31,7 +30,3 @@ audioio_get_buffer_result_t synthio_miditrack_get_buffer(synthio_miditrack_obj_t
     uint8_t channel,
     uint8_t **buffer,
     uint32_t *buffer_length); // length in bytes
-
-void synthio_miditrack_get_buffer_structure(synthio_miditrack_obj_t *self, bool single_channel_output,
-    bool *single_buffer, bool *samples_signed,
-    uint32_t *max_buffer_length, uint8_t *spacing);

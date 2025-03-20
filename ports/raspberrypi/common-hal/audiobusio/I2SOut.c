@@ -232,7 +232,7 @@ void common_hal_audiobusio_i2sout_play(audiobusio_i2sout_obj_t *self,
         common_hal_audiobusio_i2sout_stop(self);
     }
 
-    uint8_t bits_per_sample = audiosample_bits_per_sample(sample);
+    uint8_t bits_per_sample = audiosample_get_bits_per_sample(sample);
     // Make sure we transmit a minimum of 16 bits.
     // TODO: Maybe we need an intermediate object to upsample instead. This is
     // only needed for some I2S devices that expect at least 8.
@@ -242,8 +242,8 @@ void common_hal_audiobusio_i2sout_play(audiobusio_i2sout_obj_t *self,
     // We always output stereo so output twice as many bits.
     uint16_t bits_per_sample_output = bits_per_sample * 2;
     size_t clocks_per_bit = 6;
-    uint32_t frequency = bits_per_sample_output * audiosample_sample_rate(sample);
-    uint8_t channel_count = audiosample_channel_count(sample);
+    uint32_t frequency = bits_per_sample_output * audiosample_get_sample_rate(sample);
+    uint8_t channel_count = audiosample_get_channel_count(sample);
     if (channel_count > 2) {
         mp_raise_ValueError(MP_ERROR_TEXT("Too many channels in sample."));
     }

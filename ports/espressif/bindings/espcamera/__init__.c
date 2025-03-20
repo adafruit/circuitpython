@@ -26,6 +26,7 @@
 //|
 //| """
 //|
+//|
 
 //| class GrabMode:
 //|     """Controls when a new frame is grabbed."""
@@ -35,6 +36,7 @@
 //|
 //|     LATEST: GrabMode
 //|     """Except when 1 frame buffer is used, queue will always contain the last ``fb_count`` frames"""
+//|
 //|
 
 MAKE_ENUM_VALUE(espcamera_grab_mode_type, grab_mode, WHEN_EMPTY, CAMERA_GRAB_WHEN_EMPTY);
@@ -64,6 +66,7 @@ camera_grab_mode_t validate_grab_mode(mp_obj_t obj, qstr arg_name) {
 //|
 //|     JPEG: PixelFormat
 //|     """A compressed format"""
+//|
 //|
 
 MAKE_ENUM_VALUE(espcamera_pixel_format_type, pixel_format, RGB565, PIXFORMAT_RGB565);
@@ -153,6 +156,7 @@ pixformat_t validate_pixel_format(mp_obj_t obj, qstr arg_name) {
 //|     QSXGA: FrameSize
 //|     """2560x1920"""
 //|
+//|
 
 MAKE_ENUM_VALUE(espcamera_frame_size_type, frame_size, R96X96, FRAMESIZE_96X96);
 MAKE_ENUM_VALUE(espcamera_frame_size_type, frame_size, R240X240, FRAMESIZE_240X240);
@@ -221,6 +225,7 @@ framesize_t validate_frame_size(mp_obj_t obj, qstr arg_name) {
 //|     GAIN_32X: GainCeiling
 //|     GAIN_64X: GainCeiling
 //|     GAIN_128X: GainCeiling
+//|
 //|
 
 MAKE_ENUM_VALUE(espcamera_gain_ceiling_type, gain_ceiling, GAIN_2X, GAINCEILING_2X);

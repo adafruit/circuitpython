@@ -20,28 +20,111 @@
 
 #define MSC_FLASH_BLOCK_SIZE    512
 
-static bool ejected[1] = {true};
-static bool locked[1] = {false};
+#if CIRCUITPY_SAVES_PARTITION_SIZE > 0
+#define LUN_COUNT 2
+#else
+#define LUN_COUNT 1
+#endif
+
+static bool ejected[LUN_COUNT];
+static bool locked[LUN_COUNT];
+
+#include "tusb.h"
+
+static const uint8_t usb_msc_descriptor_template[] = {
+    // MSC Interface Descriptor
+    0x09,        //  0 bLength
+    0x04,        //  1 bDescriptorType (Interface)
+    0xFF,        //  2 bInterfaceNumber [SET AT RUNTIME]
+#define MSC_INTERFACE_INDEX (2)
+    0x00,        //  3 bAlternateSetting
+    0x02,        //  4 bNumEndpoints 2
+    0x08,        //  5 bInterfaceClass: MSC
+    0x06,        //  6 bInterfaceSubClass: TRANSPARENT
+    0x50,        //  7 bInterfaceProtocol: BULK
+    0xFF,        //  8 iInterface (String Index) [SET AT RUNTIME]
+#define MSC_INTERFACE_STRING_INDEX (8)
+
+    // MSC Endpoint IN Descriptor
+    0x07,        //  9 bLength
+    0x05,        // 10 bDescriptorType (Endpoint)
+    0xFF,        // 11 bEndpointAddress (IN/D2H) [SET AT RUNTIME: 0x80 | number]
+#define MSC_IN_ENDPOINT_INDEX (11)
+    0x02,        // 12 bmAttributes (Bulk)
+    #if USB_HIGHSPEED
+    0x00, 0x02,  // 13,14 wMaxPacketSize 512
+    #else
+    0x40, 0x00,  // 13,14 wMaxPacketSize 64
+    #endif
+    0x00,        // 15 bInterval 0 (unit depends on device speed)
+
+    // MSC Endpoint OUT Descriptor
+    0x07,        // 16 bLength
+    0x05,        // 17 bDescriptorType (Endpoint)
+    0xFF,        // 18 bEndpointAddress (OUT/H2D) [SET AT RUNTIME]
+#define MSC_OUT_ENDPOINT_INDEX (18)
+    0x02,        // 19 bmAttributes (Bulk)
+    #if USB_HIGHSPEED
+    0x00, 0x02,  // 20,21 wMaxPacketSize 512
+    #else
+    0x40, 0x00,  // 20,21 wMaxPacketSize 64
+    #endif
+    0x00,        // 22 bInterval 0 (unit depends on device speed)
+};
+
+size_t usb_msc_descriptor_length(void) {
+    return sizeof(usb_msc_descriptor_template);
+}
+
+static const char storage_interface_name[] = USB_INTERFACE_NAME " Mass Storage";
+
+size_t usb_msc_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *descriptor_counts, uint8_t *current_interface_string) {
+    memcpy(descriptor_buf, usb_msc_descriptor_template, sizeof(usb_msc_descriptor_template));
+    descriptor_buf[MSC_INTERFACE_INDEX] = descriptor_counts->current_interface;
+    descriptor_counts->current_interface++;
+
+    descriptor_buf[MSC_IN_ENDPOINT_INDEX] =
+        0x80 | (USB_MSC_EP_NUM_IN ? USB_MSC_EP_NUM_IN : descriptor_counts->current_endpoint);
+    descriptor_counts->num_in_endpoints++;
+    // Some TinyUSB devices have issues with bi-directional endpoints
+    #ifdef TUD_ENDPOINT_ONE_DIRECTION_ONLY
+    descriptor_counts->current_endpoint++;
+    #endif
+
+    descriptor_buf[MSC_OUT_ENDPOINT_INDEX] =
+        USB_MSC_EP_NUM_OUT ? USB_MSC_EP_NUM_OUT : descriptor_counts->current_endpoint;
+    descriptor_counts->num_out_endpoints++;
+    descriptor_counts->current_endpoint++;
+
+    usb_add_interface_string(*current_interface_string, storage_interface_name);
+    descriptor_buf[MSC_INTERFACE_STRING_INDEX] = *current_interface_string;
+    (*current_interface_string)++;
+
+    return sizeof(usb_msc_descriptor_template);
+}
 
 // The root FS is always at the end of the list.
 static fs_user_mount_t *get_vfs(int lun) {
-    // TODO(tannewt): Return the mount which matches the lun where 0 is the end
-    // and is counted in reverse.
-    if (lun > 0) {
-        return NULL;
-    }
+    // Keep a history of the mounts we pass so we can search back.
+    mp_vfs_mount_t *mounts[LUN_COUNT];
     mp_vfs_mount_t *current_mount = MP_STATE_VM(vfs_mount_table);
     if (current_mount == NULL) {
         return NULL;
     }
+    // i is the last entry filled
+    size_t i = 0;
+    mounts[i] = current_mount;
     while (current_mount->next != NULL) {
         current_mount = current_mount->next;
+        i = (i + 1) % LUN_COUNT;
+        mounts[i] = current_mount;
     }
-    return current_mount->obj;
+    fs_user_mount_t *vfs = mounts[(i - lun) % LUN_COUNT]->obj;
+    return vfs;
 }
 
 static void _usb_msc_uneject(void) {
-    for (uint8_t i = 0; i < sizeof(ejected); i++) {
+    for (uint8_t i = 0; i < LUN_COUNT; i++) {
         ejected[i] = false;
         locked[i] = false;
     }
@@ -52,7 +135,7 @@ void usb_msc_mount(void) {
 }
 
 void usb_msc_umount(void) {
-    for (uint8_t i = 0; i < sizeof(ejected); i++) {
+    for (uint8_t i = 0; i < LUN_COUNT; i++) {
         fs_user_mount_t *vfs = get_vfs(i + 1);
         if (vfs == NULL) {
             continue;
@@ -64,10 +147,14 @@ void usb_msc_umount(void) {
 
 bool usb_msc_ejected(void) {
     bool all_ejected = true;
-    for (uint8_t i = 0; i < sizeof(ejected); i++) {
+    for (uint8_t i = 0; i < LUN_COUNT; i++) {
         all_ejected &= ejected[i];
     }
     return all_ejected;
+}
+
+uint8_t tud_msc_get_maxlun_cb(void) {
+    return LUN_COUNT;
 }
 
 // Callback invoked when received an SCSI command not in built-in list below
@@ -112,7 +199,7 @@ void tud_msc_capacity_cb(uint8_t lun, uint32_t *block_count, uint16_t *block_siz
 }
 
 bool tud_msc_is_writable_cb(uint8_t lun) {
-    if (lun > 1) {
+    if (lun >= LUN_COUNT) {
         return false;
     }
 
@@ -204,7 +291,7 @@ void tud_msc_inquiry_cb(uint8_t lun, uint8_t vendor_id[8], uint8_t product_id[16
 // Invoked when received Test Unit Ready command.
 // return true allowing host to read/write this LUN e.g SD card inserted
 bool tud_msc_test_unit_ready_cb(uint8_t lun) {
-    if (lun > 1) {
+    if (lun >= LUN_COUNT) {
         return false;
     }
 
@@ -225,7 +312,7 @@ bool tud_msc_test_unit_ready_cb(uint8_t lun) {
 // - Start = 0 : stopped power mode, if load_eject = 1 : unload disk storage
 // - Start = 1 : active mode, if load_eject = 1 : load disk storage
 bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, bool load_eject) {
-    if (lun > 1) {
+    if (lun >= LUN_COUNT) {
         return false;
     }
     fs_user_mount_t *current_mount = get_vfs(lun);

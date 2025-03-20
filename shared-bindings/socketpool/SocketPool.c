@@ -86,6 +86,7 @@ MP_DEFINE_EXCEPTION(gaierror, OSError)
 //|         in CPython is not supported.
 //|         """
 //|         ...
+//|
 static mp_obj_t socketpool_socketpool_socket(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_family, ARG_type, ARG_proto };
     static const mp_arg_t allowed_args[] = {
@@ -125,6 +126,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(socketpool_socketpool_socket_obj, 1, socketpool_socke
 //|         address information to call socket.socket() and socket.connect() with,
 //|         as a tuple."""
 //|         ...
+//|
 //|
 static mp_obj_t socketpool_socketpool_getaddrinfo(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_host, ARG_port, ARG_family, ARG_type, ARG_proto, ARG_flags };

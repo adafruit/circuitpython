@@ -117,7 +117,7 @@ msgstr "%q содержит пины дупликаты"
 msgid "%q failure: %d"
 msgstr "%q сбой: %d"
 
-#: py/argcheck.c
+#: py/argcheck.c shared-module/audiofilters/Filter.c
 msgid "%q in %q must be of type %q, not %q"
 msgstr "%q в %q должно быть типа %q, а не %q"
 
@@ -202,10 +202,6 @@ msgstr "%q должно быть <= %u"
 msgid "%q must be >= %d"
 msgstr "%q должно быть >= %d"
 
-#: shared-module/audiofilters/Filter.c
-msgid "%q must be a %q object, %q, or %q"
-msgstr "%q должен быть объектом %q, %q или %q"
-
 #: shared-bindings/analogbufio/BufferedIn.c
 msgid "%q must be a bytearray or array of type 'H' or 'B'"
 msgstr "%q должен быть массивом байтов или массивом типа «H» или «B»"
@@ -233,6 +229,7 @@ msgstr "%q должно быть кратно 8."
 #: ports/raspberrypi/bindings/cyw43/__init__.c py/argcheck.c py/objexcept.c
 #: shared-bindings/bitmapfilter/__init__.c shared-bindings/canio/CAN.c
 #: shared-bindings/digitalio/Pull.c shared-bindings/supervisor/__init__.c
+#: shared-module/audiofilters/Filter.c shared-module/displayio/__init__.c
 #: shared-module/synthio/Biquad.c shared-module/synthio/Synthesizer.c
 msgid "%q must be of type %q or %q, not %q"
 msgstr "%q должно быть типа%q или%q, а не%q"
@@ -557,7 +554,6 @@ msgstr "Все таймеры для этого пина уже использу
 #: ports/nordic/common-hal/pulseio/PulseIn.c
 #: ports/nordic/peripherals/nrf/timers.c
 #: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
-#: ports/stm/peripherals/timers.c
 msgid "All timers in use"
 msgstr "Все таймеры уже используются"
 
@@ -583,6 +579,7 @@ msgstr "Уже запущен"
 
 #: ports/espressif/common-hal/wifi/Radio.c
 #: ports/raspberrypi/common-hal/wifi/Radio.c
+#: ports/zephyr-cp/common-hal/wifi/Radio.c
 msgid "Already scanning for wifi networks"
 msgstr "Поиск сетей wifi уже происходит"
 
@@ -608,6 +605,10 @@ msgstr "Массив должен содержать полуслова (тип 
 #: shared-bindings/nvm/ByteArray.c
 msgid "Array values should be single bytes."
 msgstr "Значения массива должны быть однобайтовыми."
+
+#: ports/atmel-samd/common-hal/spitarget/SPITarget.c
+msgid "Async SPI transfer in progress on this bus, keep awaiting."
+msgstr ""
 
 #: shared-module/memorymonitor/AllocationAlarm.c
 #, c-format
@@ -897,10 +898,6 @@ msgstr "DAC уже используется"
 msgid "Data 0 pin must be byte aligned"
 msgstr "Пин data 0 должен быть байтово выровнен"
 
-#: shared-module/audiocore/WaveFile.c
-msgid "Data chunk must follow fmt chunk"
-msgstr "Блок данных должен следовать за блоком fmt"
-
 #: shared-module/jpegio/JpegDecoder.c
 msgid "Data format error (may be broken data)"
 msgstr "Ошибка формата данных (возможно, данные повреждены)"
@@ -1069,6 +1066,10 @@ msgstr ""
 msgid "Failed to release mutex, err 0x%04x"
 msgstr "Не удалось освободить mutex, ошибка 0x%04x"
 
+#: ports/zephyr-cp/common-hal/wifi/Radio.c
+msgid "Failed to set hostname"
+msgstr ""
+
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "Failed to start async audio"
 msgstr ""
@@ -1230,6 +1231,7 @@ msgid "Insufficient stream input buffer"
 msgstr "Недостаточный буфер ввода потока"
 
 #: ports/espressif/common-hal/wifi/Radio.c
+#: ports/zephyr-cp/common-hal/wifi/Radio.c
 msgid "Interface must be started"
 msgstr "Интерфейс должен быть запущен"
 
@@ -1349,6 +1351,7 @@ msgid "Invalid hex password"
 msgstr "Неверный шестнадцатеричный пароль"
 
 #: ports/espressif/common-hal/wifi/Radio.c
+#: ports/zephyr-cp/common-hal/wifi/Radio.c
 msgid "Invalid multicast MAC address"
 msgstr "Неверный MAC-адрес многоадресной рассылки"
 
@@ -1451,7 +1454,8 @@ msgstr "Не хватает jmp_pin.%q [%u] прыгает на пин"
 msgid "Mount point directory missing"
 msgstr "Отсутствует каталог точки монтирования"
 
-#: shared-bindings/busio/UART.c shared-bindings/displayio/Group.c
+#: ports/zephyr-cp/bindings/zephyr_serial/UART.c shared-bindings/busio/UART.c
+#: shared-bindings/displayio/Group.c
 msgid "Must be a %q subclass."
 msgstr "Должен быть субклассом %q."
 
@@ -1696,15 +1700,6 @@ msgstr "На этом аппаратном обеспечении доступн
 msgid "Only int or string supported for ip"
 msgstr "Для IP поддерживаются только int или строка"
 
-#: shared-module/displayio/OnDiskBitmap.c
-#, c-format
-msgid ""
-"Only monochrome, indexed 4bpp or 8bpp, and 16bpp or greater BMPs supported: "
-"%d bpp given"
-msgstr ""
-"Только монохром, индексированный 4bpp или 8bpp, и 16bpp или больше BMP "
-"поддерживаются: %d bpp"
-
 #: ports/espressif/common-hal/alarm/touch/TouchAlarm.c
 msgid "Only one %q can be set in deep sleep."
 msgstr "Только один %q может быть переведен в режим глубокого сна."
@@ -1755,6 +1750,7 @@ msgstr "Не хватает памяти"
 
 #: ports/espressif/common-hal/socketpool/Socket.c
 #: ports/raspberrypi/common-hal/socketpool/Socket.c
+#: ports/zephyr-cp/common-hal/socketpool/Socket.c
 msgid "Out of sockets"
 msgstr "Вне розеток"
 
@@ -1773,6 +1769,10 @@ msgstr "PWM уже используется"
 #: ports/raspberrypi/common-hal/countio/Counter.c
 msgid "PWM slice channel A already in use"
 msgstr "PWM канал среза A уже используется"
+
+#: shared-bindings/spitarget/SPITarget.c
+msgid "Packet buffers for an SPI transfer must have the same length."
+msgstr ""
 
 #: shared-module/jpegio/JpegDecoder.c
 msgid "Parameter error"
@@ -2033,6 +2033,7 @@ msgstr "Фрагменты не поддерживаются"
 
 #: ports/espressif/common-hal/socketpool/SocketPool.c
 #: ports/raspberrypi/common-hal/socketpool/SocketPool.c
+#: ports/zephyr-cp/common-hal/socketpool/SocketPool.c
 msgid "SocketPool can only be used with wifi.radio"
 msgstr "SocketPool можно использовать только с wifi.radio"
 
@@ -2075,8 +2076,7 @@ msgstr ""
 msgid "The length of rgb_pins must be 6, 12, 18, 24, or 30"
 msgstr "Длина rgb_pins должна быть 6, 12, 18, 24 или 30"
 
-#: shared-module/audiodelays/Echo.c shared-module/audiofilters/Filter.c
-#: shared-module/audiomixer/MixerVoice.c
+#: shared-module/audiocore/__init__.c
 msgid "The sample's %q does not match"
 msgstr "%q образца не совпадает"
 
@@ -2346,6 +2346,7 @@ msgid "Unsupported hash algorithm"
 msgstr "Неподдерживаемый алгоритм хеширования"
 
 #: ports/espressif/common-hal/socketpool/Socket.c
+#: ports/zephyr-cp/common-hal/socketpool/Socket.c
 msgid "Unsupported socket type"
 msgstr "Неподдерживаемый тип сокета"
 
@@ -2644,8 +2645,9 @@ msgstr "Размеры растровых изображений должны с
 msgid "bits must be 32 or less"
 msgstr "биты должны быть 32 или менее"
 
-#: shared-bindings/audiodelays/Echo.c shared-bindings/audiofilters/Filter.c
-#: shared-bindings/audiomixer/Mixer.c
+#: shared-bindings/audiodelays/Echo.c shared-bindings/audiodelays/PitchShift.c
+#: shared-bindings/audiofilters/Distortion.c
+#: shared-bindings/audiofilters/Filter.c shared-bindings/audiomixer/Mixer.c
 msgid "bits_per_sample must be 8 or 16"
 msgstr "bits_per_sample должно быть 8 или 16"
 
@@ -4451,6 +4453,7 @@ msgstr "ширина должна быть больше нуля"
 
 #: ports/espressif/common-hal/wifi/Radio.c
 #: ports/raspberrypi/common-hal/wifi/Radio.c
+#: ports/zephyr-cp/common-hal/wifi/Radio.c
 msgid "wifi is not enabled"
 msgstr "Wi-Fi не включен"
 
@@ -4515,6 +4518,20 @@ msgstr "zi должно быть типа float"
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr "zi должен иметь форму (n_section, 2)"
+
+#~ msgid "%q must be a %q object, %q, or %q"
+#~ msgstr "%q должен быть объектом %q, %q или %q"
+
+#~ msgid "Data chunk must follow fmt chunk"
+#~ msgstr "Блок данных должен следовать за блоком fmt"
+
+#, c-format
+#~ msgid ""
+#~ "Only monochrome, indexed 4bpp or 8bpp, and 16bpp or greater BMPs "
+#~ "supported: %d bpp given"
+#~ msgstr ""
+#~ "Только монохром, индексированный 4bpp или 8bpp, и 16bpp или больше BMP "
+#~ "поддерживаются: %d bpp"
 
 #~ msgid "level must be between 0 and 1"
 #~ msgstr "уровень должен быть между 0 и 1"

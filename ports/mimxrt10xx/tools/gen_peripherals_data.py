@@ -288,7 +288,7 @@ for device in devices:
     pins_h.append("// Pads can be reset. Other pins like USB cannot be.")
     pins_h.append(f"#define PAD_COUNT ({pin_number})")
     pins_h.append(f"#define PIN_COUNT (PAD_COUNT + {len(usb_pins)})")
-    pins_h.append(f"extern const mcu_pin_obj_t mcu_pin_list[PIN_COUNT];")
+    pins_h.append("extern const mcu_pin_obj_t mcu_pin_list[PIN_COUNT];")
     pins_h.append("")
 
     out_dir.mkdir(exist_ok=True)
@@ -307,7 +307,7 @@ for device in devices:
         "",
     ]
 
-    for ptype in SIGNALS:
+    for ptype, signals in SIGNALS:
         instances = all_peripherals[ptype]
         short_name = ptype.lower()
         if short_name.startswith("lp"):
@@ -323,7 +323,7 @@ for device in devices:
                 f"{ptype}_Type *const mcu_{short_name}_banks[{len(instances)}] = {{ {joined_instances} }};"
             )
             periph_c.append("")
-        for signal in SIGNALS[ptype]:
+        for signal in signals:
             pin_count = 0
             for instance in instances:
                 if instance not in peripheral_inputs or signal not in peripheral_inputs[instance]:
@@ -357,8 +357,8 @@ for device in devices:
                     periph_c.append(
                         f"    PERIPH_PIN({instance_number}, {alt}, {select_input}, {input_value}, &pin_{pin_name}),"
                     )
-            periph_c.append(f"}};")
-            periph_c.append(f"")
+            periph_c.append("};")
+            periph_c.append("")
         periph_h.append("")
 
     pwm_outputs.sort(key=lambda x: x[:3])
@@ -373,7 +373,7 @@ for device in devices:
         periph_c.append(
             f"    PWM_PIN(PWM{pwm_instance}, kPWM_Module_{module}, kPWM_Pwm{channel}, IOMUXC_{pin_name}_{connection}, &pin_{pin_name}),"
         )
-    periph_c.append(f"}};")
+    periph_c.append("};")
     periph_c.append("")
 
     periph_h.append("")

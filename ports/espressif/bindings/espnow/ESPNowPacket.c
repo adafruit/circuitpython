@@ -21,6 +21,7 @@
 //|     time: int
 //|     """The time in milliseconds since the device last booted when the packet was received."""
 //|
+//|
 
 const mp_obj_namedtuple_type_t espnow_packet_type_obj = {
     NAMEDTUPLE_TYPE_BASE_AND_SLOTS(MP_QSTR_ESPNowPacket),

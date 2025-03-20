@@ -1,6 +1,0 @@
-#!/bin/sh
-if [ -z "$CP_VERSION" ]; then
-    git describe --first-parent --dirty --tags --match "[1-9].*" "$@"
-else
-    echo $CP_VERSION
-fi

@@ -12,8 +12,13 @@ static size_t callback_len = 0;
 static atexit_callback_t *callback = NULL;
 
 void atexit_reset(void) {
-    callback_len = 0;
+    #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
+    m_free(callback, callback_len * sizeof(atexit_callback_t));
+    #else
     m_free(callback);
+    #endif
+
+    callback_len = 0;
     callback = NULL;
 }
 
@@ -39,7 +44,13 @@ void shared_module_atexit_register(mp_obj_t *func, size_t n_args, const mp_obj_t
         cb.args[i] = kw_args->table[cb.n_kw].key;
         cb.args[i += 1] = kw_args->table[cb.n_kw].value;
     }
-    callback = (atexit_callback_t *)m_realloc(callback, (callback_len + 1) * sizeof(cb));
+
+    callback = (atexit_callback_t *)m_realloc(callback,
+        #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
+        callback_len *sizeof(cb), // Old size
+        #endif
+        (callback_len + 1) * sizeof(cb));
+
     callback[callback_len++] = cb;
 }
 

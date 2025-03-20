@@ -27,7 +27,7 @@
 //|         baudrate: int = 100000,
 //|         polarity: int = 0,
 //|         phase: int = 0,
-//|         extra_clocks: int = 0
+//|         extra_clocks: int = 0,
 //|     ) -> None:
 //|         """
 //|         Represents a single SPI device and manages locking the bus and the device address.
@@ -55,7 +55,9 @@
 //|                 # A second transaction
 //|                 with device as spi:
 //|                     spi.write(bytes_read)"""
+//|
 //|     ...
+//|
 static mp_obj_t adafruit_bus_device_spidevice_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     adafruit_bus_device_spidevice_obj_t *self =
         mp_obj_malloc(adafruit_bus_device_spidevice_obj_t, &adafruit_bus_device_spidevice_type);
@@ -97,6 +99,7 @@ static mp_obj_t adafruit_bus_device_spidevice_make_new(const mp_obj_type_t *type
 //|     def __enter__(self) -> busio.SPI:
 //|         """Starts a SPI transaction by configuring the SPI and asserting chip select."""
 //|         ...
+//|
 static mp_obj_t adafruit_bus_device_spidevice_obj___enter__(mp_obj_t self_in) {
     adafruit_bus_device_spidevice_obj_t *self = MP_OBJ_TO_PTR(self_in);
     return common_hal_adafruit_bus_device_spidevice_enter(self);
@@ -108,6 +111,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(adafruit_bus_device_spidevice___enter___obj, ad
 //|         """Ends a SPI transaction by deasserting chip select. See
 //|         :ref:`lifetime-and-contextmanagers` for more info."""
 //|         ...
+//|
 //|
 static mp_obj_t adafruit_bus_device_spidevice_obj___exit__(size_t n_args, const mp_obj_t *args) {
     common_hal_adafruit_bus_device_spidevice_exit(MP_OBJ_TO_PTR(args[0]));

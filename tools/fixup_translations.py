@@ -84,8 +84,7 @@ for po_filename in po_filenames:
     first_translations.save(po_filename)
 
 print()
-for commit in bad_commits:
-    files = bad_commits[commit]
+for commit, files in bad_commits.items():
     print(commit)
     for file in files:
         print("\t", file)

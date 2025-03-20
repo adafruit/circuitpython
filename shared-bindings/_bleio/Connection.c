@@ -56,6 +56,7 @@ void bleio_connection_ensure_connected(bleio_connection_obj_t *self) {
 //|     def disconnect(self) -> None:
 //|         """Disconnects from the remote peripheral. Does nothing if already disconnected."""
 //|         ...
+//|
 static mp_obj_t bleio_connection_disconnect(mp_obj_t self_in) {
     bleio_connection_obj_t *self = MP_OBJ_TO_PTR(self_in);
     // common_hal_bleio_connection_disconnect() does nothing if already disconnected.
@@ -71,6 +72,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(bleio_connection_disconnect_obj, bleio_connecti
 //|         **Limitation**: Currently ``bond``must be ``True``: bonding always occurs.
 //|         """
 //|         ...
+//|
 static mp_obj_t bleio_connection_pair(mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     bleio_connection_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
 
@@ -117,6 +119,7 @@ static MP_DEFINE_CONST_FUN_OBJ_KW(bleio_connection_pair_obj, 1, bleio_connection
 //|
 //|         :return: A tuple of `_bleio.Service` objects provided by the remote peripheral."""
 //|         ...
+//|
 static mp_obj_t bleio_connection_discover_remote_services(mp_uint_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     bleio_connection_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
 
@@ -187,6 +190,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(bleio_connection_get_connection_interval_obj, b
 //|     which must be sent in a single packet.
 //|     But for a regular characteristic read or write, may be sent in multiple packets,
 //|     so this limit does not apply."""
+//|
 //|
 static mp_obj_t bleio_connection_get_max_packet_length(mp_obj_t self_in) {
     bleio_connection_obj_t *self = MP_OBJ_TO_PTR(self_in);

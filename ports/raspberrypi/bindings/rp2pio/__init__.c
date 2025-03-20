@@ -24,10 +24,12 @@
 //|    See the warning in `digitalio` for more information.
 //| """
 //|
+//|
 
 //| def pins_are_sequential(pins: List[microcontroller.Pin]) -> bool:
 //|     """Return True if the pins have sequential GPIO numbers, False otherwise"""
 //|     ...
+//|
 //|
 static mp_obj_t rp2pio_pins_are_sequential(mp_obj_t pins_obj) {
     size_t len;

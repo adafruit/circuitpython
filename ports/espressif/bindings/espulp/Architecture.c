@@ -20,6 +20,7 @@ MAKE_ENUM_VALUE(espulp_architecture_type, architecture, RISCV, RISCV);
 //|     RISCV: Architecture
 //|     """The ULP RISC-V Coprocessor."""
 //|
+//|
 MAKE_ENUM_MAP(espulp_architecture) {
     MAKE_ENUM_MAP_ENTRY(architecture, FSM),
     MAKE_ENUM_MAP_ENTRY(architecture, RISCV),

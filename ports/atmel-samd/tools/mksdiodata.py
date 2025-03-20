@@ -14,8 +14,8 @@ def defines(name, function):
     {{&pin_{pin}, {instance}, PIN_{pin}, {pinmux} & 0xffff}},
 #endif"""
                 )
-    print(f"{{NULL, 0, 0}}")
-    print(f"}};")
+    print("{NULL, 0, 0}")
+    print("};")
     print()
 
 

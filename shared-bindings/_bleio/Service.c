@@ -27,6 +27,7 @@
 //|
 //|         :return: the new Service"""
 //|         ...
+//|
 static mp_obj_t bleio_service_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_uuid, ARG_secondary };
     static const mp_arg_t allowed_args[] = {
@@ -51,6 +52,7 @@ static mp_obj_t bleio_service_make_new(const mp_obj_type_t *type, size_t n_args,
 //|     def deinit(self) -> None:
 //|         """Disable and deinitialise the Service."""
 //|         ...
+//|
 static mp_obj_t bleio_service_deinit(mp_obj_t self_in) {
     bleio_service_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_bleio_service_deinit(self);
@@ -98,6 +100,7 @@ MP_PROPERTY_GETTER(bleio_service_secondary_obj,
 //|     """The UUID of this service. (read-only)
 //|
 //|     Will be ``None`` if the 128-bit UUID for this service is not known."""
+//|
 //|
 static mp_obj_t bleio_service_get_uuid(mp_obj_t self_in) {
     bleio_service_obj_t *self = MP_OBJ_TO_PTR(self_in);

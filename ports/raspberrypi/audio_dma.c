@@ -203,7 +203,7 @@ audio_dma_result audio_dma_setup_playback(
     dma->output_signed = output_signed;
     dma->sample_spacing = 1;
     dma->output_resolution = output_resolution;
-    dma->sample_resolution = audiosample_bits_per_sample(sample);
+    dma->sample_resolution = audiosample_get_bits_per_sample(sample);
     dma->output_register_address = output_register_address;
     dma->swap_channel = swap_channel;
 
@@ -227,15 +227,27 @@ audio_dma_result audio_dma_setup_playback(
         max_buffer_length /= dma->sample_spacing;
     }
 
-    dma->buffer[0] = (uint8_t *)m_realloc(dma->buffer[0], max_buffer_length);
+    dma->buffer[0] = (uint8_t *)m_realloc(dma->buffer[0],
+        #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
+        dma->buffer_length[0], // Old size
+        #endif
+        max_buffer_length);
+
     dma->buffer_length[0] = max_buffer_length;
+
     if (dma->buffer[0] == NULL) {
         return AUDIO_DMA_MEMORY_ERROR;
     }
 
     if (!single_buffer) {
-        dma->buffer[1] = (uint8_t *)m_realloc(dma->buffer[1], max_buffer_length);
+        dma->buffer[1] = (uint8_t *)m_realloc(dma->buffer[1],
+            #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
+            dma->buffer_length[1], // Old size
+            #endif
+            max_buffer_length);
+
         dma->buffer_length[1] = max_buffer_length;
+
         if (dma->buffer[1] == NULL) {
             return AUDIO_DMA_MEMORY_ERROR;
         }
@@ -250,7 +262,7 @@ audio_dma_result audio_dma_setup_playback(
         dma->output_size = 1;
     }
     // Transfer both channels at once.
-    if (!single_channel_output && audiosample_channel_count(sample) == 2) {
+    if (!single_channel_output && audiosample_get_channel_count(sample) == 2) {
         dma->output_size *= 2;
     }
     enum dma_channel_transfer_size dma_size = DMA_SIZE_8;
@@ -419,16 +431,31 @@ void audio_dma_init(audio_dma_t *dma) {
     dma->buffer[0] = NULL;
     dma->buffer[1] = NULL;
 
+    dma->buffer_length[0] = 0;
+    dma->buffer_length[1] = 0;
+
     dma->channel[0] = NUM_DMA_CHANNELS;
     dma->channel[1] = NUM_DMA_CHANNELS;
 }
 
 void audio_dma_deinit(audio_dma_t *dma) {
+    #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
+    m_free(dma->buffer[0], dma->buffer_length[0]);
+    #else
     m_free(dma->buffer[0]);
-    dma->buffer[0] = NULL;
+    #endif
 
+    dma->buffer[0] = NULL;
+    dma->buffer_length[0] = 0;
+
+    #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
+    m_free(dma->buffer[1], dma->buffer_length[1]);
+    #else
     m_free(dma->buffer[1]);
+    #endif
+
     dma->buffer[1] = NULL;
+    dma->buffer_length[1] = 0;
 }
 
 bool audio_dma_get_playing(audio_dma_t *dma) {

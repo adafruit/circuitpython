@@ -1,5 +1,8 @@
 #! /usr/bin/env python3
-# Written by Martin v. Löwis <loewis@informatik.hu-berlin.de>
+
+# From: https://github.com/python/cpython/blob/main/Tools/i18n/msgfmt.py
+# SPDX-License-Identifier: PSF-2.0
+# SPDX-FileCopyrightText: Written by Martin v. Löwis <loewis@informatik.hu-berlin.de>
 
 """Generate binary message catalog from textual translation description.
 This program converts a textual Uniforum-style message catalog (.po file) into

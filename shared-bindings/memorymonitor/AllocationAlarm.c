@@ -33,6 +33,7 @@
 //|
 //|         """
 //|         ...
+//|
 static mp_obj_t memorymonitor_allocationalarm_make_new(const mp_obj_type_t *type, size_t n_args, const mp_obj_t *all_args, mp_map_t *kw_args) {
     enum { ARG_minimum_block_count };
     static const mp_arg_t allowed_args[] = {
@@ -64,6 +65,7 @@ static mp_obj_t memorymonitor_allocationalarm_make_new(const mp_obj_type_t *type
 //|               x = bytearray(20)
 //|         """
 //|         ...
+//|
 static mp_obj_t memorymonitor_allocationalarm_obj_ignore(mp_obj_t self_in, mp_obj_t count_obj) {
     mp_int_t count = mp_obj_get_int(count_obj);
     mp_arg_validate_int_min(count, 0, MP_QSTR_count);
@@ -76,6 +78,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(memorymonitor_allocationalarm_ignore_obj, memorymonito
 //|     def __enter__(self) -> AllocationAlarm:
 //|         """Enables the alarm."""
 //|         ...
+//|
 static mp_obj_t memorymonitor_allocationalarm_obj___enter__(mp_obj_t self_in) {
     common_hal_memorymonitor_allocationalarm_resume(self_in);
     return self_in;
@@ -86,6 +89,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(memorymonitor_allocationalarm___enter___obj, memorymon
 //|         """Automatically disables the allocation alarm when exiting a context. See
 //|         :ref:`lifetime-and-contextmanagers` for more info."""
 //|         ...
+//|
 //|
 static mp_obj_t memorymonitor_allocationalarm_obj___exit__(size_t n_args, const mp_obj_t *args) {
     (void)n_args;

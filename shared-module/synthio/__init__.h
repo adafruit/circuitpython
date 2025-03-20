@@ -20,6 +20,8 @@
 
 #include "shared-module/audiocore/__init__.h"
 #include "shared-bindings/synthio/__init__.h"
+#include "shared-bindings/synthio/Biquad.h"
+#include "shared-bindings/synthio/BlockBiquad.h"
 
 typedef struct {
     uint16_t dur;
@@ -41,10 +43,9 @@ typedef struct {
 } synthio_envelope_state_t;
 
 typedef struct synthio_synth {
-    uint32_t sample_rate;
+    audiosample_base_t base;
     uint32_t total_envelope;
     int16_t *buffers[2];
-    uint8_t channel_count;
     uint16_t buffer_length;
     uint16_t last_buffer_length;
     uint8_t other_channel, buffer_index, other_buffer_index;
@@ -71,8 +72,6 @@ void synthio_synth_synthesize(synthio_synth_t *synth, uint8_t **buffer, uint32_t
 void synthio_synth_deinit(synthio_synth_t *synth);
 bool synthio_synth_deinited(synthio_synth_t *synth);
 void synthio_synth_init(synthio_synth_t *synth, uint32_t sample_rate, int channel_count, mp_obj_t waveform_obj, mp_obj_t envelope);
-void synthio_synth_get_buffer_structure(synthio_synth_t *synth, bool single_channel_output,
-    bool *single_buffer, bool *samples_signed, uint32_t *max_buffer_length, uint8_t *spacing);
 void synthio_synth_reset_buffer(synthio_synth_t *synth, bool single_channel_output, uint8_t channel);
 void synthio_synth_parse_waveform(mp_buffer_info_t *bufinfo_waveform, mp_obj_t waveform_obj);
 void synthio_synth_parse_filter(mp_buffer_info_t *bufinfo_filter, mp_obj_t filter_obj);
@@ -97,3 +96,8 @@ int synthio_sweep_in_step(synthio_lfo_state_t *state, uint16_t dur);
 extern mp_float_t synthio_global_rate_scale, synthio_global_W_scale;
 extern uint8_t synthio_global_tick;
 void shared_bindings_synthio_lfo_tick(uint32_t sample_rate, uint16_t num_samples);
+
+static inline bool synthio_is_any_biquad(mp_obj_t biquad_maybe) {
+    return mp_obj_is_type(biquad_maybe, &synthio_block_biquad_type_obj)
+           || mp_obj_is_type(biquad_maybe, (const mp_obj_type_t *)&synthio_biquad_type_obj);
+}

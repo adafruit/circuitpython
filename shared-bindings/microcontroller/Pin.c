@@ -20,10 +20,12 @@
 //|         hardware so they cannot be constructed on demand. Instead, use
 //|         :mod:`board` or :mod:`microcontroller.pin` to reference the desired pin."""
 //|         ...
+//|
 
 //|     def __hash__(self) -> int:
 //|         """Returns a hash for the Pin."""
 //|         ...
+//|
 //|
 // Provided inherently.
 // See https://github.com/micropython/micropython/pull/10348.

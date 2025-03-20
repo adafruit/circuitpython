@@ -13,11 +13,16 @@
 extern const mp_obj_type_t usb_core_device_type;
 
 bool common_hal_usb_core_device_construct(usb_core_device_obj_t *self, uint8_t device_number);
+void common_hal_usb_core_device_deinit(usb_core_device_obj_t *self);
 uint16_t common_hal_usb_core_device_get_idVendor(usb_core_device_obj_t *self);
 uint16_t common_hal_usb_core_device_get_idProduct(usb_core_device_obj_t *self);
 mp_obj_t common_hal_usb_core_device_get_serial_number(usb_core_device_obj_t *self);
 mp_obj_t common_hal_usb_core_device_get_product(usb_core_device_obj_t *self);
 mp_obj_t common_hal_usb_core_device_get_manufacturer(usb_core_device_obj_t *self);
+mp_int_t common_hal_usb_core_device_get_bus(usb_core_device_obj_t *self);
+mp_obj_t common_hal_usb_core_device_get_port_numbers(usb_core_device_obj_t *self);
+mp_int_t common_hal_usb_core_device_get_speed(usb_core_device_obj_t *self);
+
 void common_hal_usb_core_device_set_configuration(usb_core_device_obj_t *self, mp_int_t configuration);
 mp_int_t common_hal_usb_core_device_write(usb_core_device_obj_t *self, mp_int_t endpoint, const uint8_t *buffer, mp_int_t len, mp_int_t timeout);
 mp_int_t common_hal_usb_core_device_read(usb_core_device_obj_t *self, mp_int_t endpoint, uint8_t *buffer, mp_int_t len, mp_int_t timeout);

@@ -42,7 +42,7 @@ static const mp_arg_t note_properties[] = {
 //|         envelope: Optional[Envelope] = None,
 //|         amplitude: BlockInput = 1.0,
 //|         bend: BlockInput = 0.0,
-//|         filter: Optional[Biquad] = None,
+//|         filter: Optional[AnyBiquad] = None,
 //|         ring_frequency: float = 0.0,
 //|         ring_bend: float = 0.0,
 //|         ring_waveform: Optional[ReadableBuffer] = None,
@@ -55,6 +55,7 @@ static const mp_arg_t note_properties[] = {
 //|
 //|         If the same Note object is played on multiple Synthesizer objects, the result is undefined.
 //|         """
+//|
 static mp_obj_t synthio_note_make_new(const mp_obj_type_t *type_in, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     mp_arg_val_t args[MP_ARRAY_SIZE(note_properties)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(note_properties), note_properties, args);
@@ -85,7 +86,7 @@ MP_PROPERTY_GETSET(synthio_note_frequency_obj,
     (mp_obj_t)&synthio_note_get_frequency_obj,
     (mp_obj_t)&synthio_note_set_frequency_obj);
 
-//|     filter: Optional[Biquad]
+//|     filter: Optional[AnyBiquad]
 //|     """If not None, the output of this Note is filtered according to the provided coefficients.
 //|
 //|     Construct an appropriate filter by calling a filter-making method on the
@@ -355,6 +356,7 @@ MP_PROPERTY_GETSET(synthio_note_ring_waveform_loop_start_obj,
 //|     The value is limited to the range ``ring_waveform_loop_start+1`` to ``len(ring_waveform)`` (inclusive).
 //|
 //|     Use the `synthio.waveform_max_length` constant to set the loop point at the end of the wave form, no matter its length."""
+//|
 //|
 static mp_obj_t synthio_note_get_ring_waveform_loop_end(mp_obj_t self_in) {
     synthio_note_obj_t *self = MP_OBJ_TO_PTR(self_in);

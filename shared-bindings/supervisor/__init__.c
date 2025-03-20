@@ -27,6 +27,7 @@
 #include "shared-bindings/supervisor/StatusBar.h"
 
 //| """Supervisor settings"""
+//|
 
 //| runtime: Runtime
 //| """Runtime information, such as ``runtime.serial_connected``
@@ -40,10 +41,12 @@
 //| the last exception name and location, and firmware version information.
 //| This object is the sole instance of `supervisor.StatusBar`."""
 //|
+//|
 
 //| def reload() -> None:
 //|     """Reload the main Python code and run it (equivalent to hitting Ctrl-D at the REPL)."""
 //|     ...
+//|
 //|
 static mp_obj_t supervisor_reload(void) {
     reload_initiate(RUN_REASON_SUPERVISOR_RELOAD);
@@ -58,7 +61,7 @@ MP_DEFINE_CONST_FUN_OBJ_0(supervisor_reload_obj, supervisor_reload);
 //|     reload_on_error: bool = False,
 //|     sticky_on_success: bool = False,
 //|     sticky_on_error: bool = False,
-//|     sticky_on_reload: bool = False
+//|     sticky_on_reload: bool = False,
 //| ) -> None:
 //|     """Set what file to run on the next vm run.
 //|
@@ -91,6 +94,7 @@ MP_DEFINE_CONST_FUN_OBJ_0(supervisor_reload_obj, supervisor_reload);
 //|     settings made by previous ones. This is the main use of passing ``None`` as a filename: to
 //|     reset to the standard search sequence."""
 //|     ...
+//|
 //|
 static mp_obj_t supervisor_set_next_code_file(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     static const mp_arg_t allowed_args[] = {
@@ -194,6 +198,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(supervisor_set_next_code_file_obj, 0, supervisor_set_
 //|     """
 //|     ...
 //|
+//|
 mp_obj_t supervisor_ticks_ms(void) {
     uint64_t ticks_ms = common_hal_time_monotonic_ms();
     return mp_obj_new_int((ticks_ms + 0x1fff0000) % (1 << 29));
@@ -209,6 +214,7 @@ MP_DEFINE_CONST_FUN_OBJ_0(supervisor_ticks_ms_obj, supervisor_ticks_ms);
 //|
 //|     Only code (main or boot) runs are considered, not REPL runs."""
 //|     ...
+//|
 //|
 static mp_obj_t supervisor_get_previous_traceback(void) {
     if (prev_traceback_string) {
@@ -229,6 +235,7 @@ MP_DEFINE_CONST_FUN_OBJ_0(supervisor_get_previous_traceback_obj, supervisor_get_
 //| def reset_terminal(x_pixels: int, y_pixels: int) -> None:
 //|     """Reset the CircuitPython serial terminal with new dimensions."""
 //|     ...
+//|
 //|
 static mp_obj_t supervisor_reset_terminal(mp_obj_t x_pixels, mp_obj_t y_pixels) {
     #if CIRCUITPY_DISPLAYIO
@@ -257,6 +264,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(supervisor_reset_terminal_obj, supervisor_reset_termin
 //|     Not available on boards without native USB support.
 //|     """
 //|     ...
+//|
 //|
 static mp_obj_t supervisor_set_usb_identification(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     #if CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_IDENTIFICATION
