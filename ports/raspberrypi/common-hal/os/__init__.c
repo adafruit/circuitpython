@@ -18,32 +18,6 @@
 
 #include <string.h>
 
-static const qstr os_uname_info_fields[] = {
-    MP_QSTR_sysname, MP_QSTR_nodename,
-    MP_QSTR_release, MP_QSTR_version, MP_QSTR_machine
-};
-static const MP_DEFINE_STR_OBJ(os_uname_info_sysname_obj, MICROPY_HW_MCU_NAME);
-static const MP_DEFINE_STR_OBJ(os_uname_info_nodename_obj, MICROPY_HW_MCU_NAME);
-static const MP_DEFINE_STR_OBJ(os_uname_info_release_obj, MICROPY_VERSION_STRING);
-static const MP_DEFINE_STR_OBJ(os_uname_info_version_obj, MICROPY_GIT_TAG " on " MICROPY_BUILD_DATE);
-static const MP_DEFINE_STR_OBJ(os_uname_info_machine_obj, MICROPY_HW_BOARD_NAME " with " MICROPY_HW_MCU_NAME);
-
-
-static MP_DEFINE_ATTRTUPLE(
-    os_uname_info_obj,
-    os_uname_info_fields,
-    5,
-    (mp_obj_t)&os_uname_info_sysname_obj,
-    (mp_obj_t)&os_uname_info_nodename_obj,
-    (mp_obj_t)&os_uname_info_release_obj,
-    (mp_obj_t)&os_uname_info_version_obj,
-    (mp_obj_t)&os_uname_info_machine_obj
-    );
-
-mp_obj_t common_hal_os_uname(void) {
-    return (mp_obj_t)&os_uname_info_obj;
-}
-
 // NIST Special Publication 800-90B (draft) recommends several extractors,
 // including the SHA hash family and states that if the amount of entropy input
 // is twice the number of bits output from them, that output can be considered

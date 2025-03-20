@@ -17,7 +17,7 @@
 #include "shared-bindings/os/__init__.h"
 
 // This provides all VFS related OS functions so that ports can share the code
-// as needed. It does not provide uname.
+// as needed.
 
 // Version of mp_vfs_lookup_path that takes and returns uPy string objects.
 static mp_vfs_mount_t *lookup_path(const char *path, mp_obj_t *path_out) {
