@@ -1567,7 +1567,7 @@ static bool supervisor_filesystem_access_could_block(void) {
     (void)common_hal_os_getenv_int("CIRCUITPY_DISPLAY_LIMIT", &max_num_displays);
     #endif
     // Check displays to see if it's on a fourwire (SPI) bus. If it is, blocking is possible
-    for (size_t i = 0; i < max_num_displays; i++) {
+    for (mp_int_t i = 0; i < max_num_displays; i++) {
         if (display_buses[i].bus_base.type != &fourwire_fourwire_type) {
             continue;
         }

@@ -99,8 +99,8 @@ typedef struct {
     };
 } primary_display_t;
 
-extern primary_display_bus_t display_busesx[];
-extern primary_display_t displaysx[];
+extern primary_display_bus_t display_busesx[CIRCUITPY_DISPLAY_LIMIT];
+extern primary_display_t displaysx[CIRCUITPY_DISPLAY_LIMIT];
 extern primary_display_bus_t *display_buses;
 extern primary_display_t *displays;
 
