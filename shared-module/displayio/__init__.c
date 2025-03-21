@@ -208,6 +208,7 @@ void malloc_display_memory(void) {
 
         for (uint8_t i = CIRCUITPY_DISPLAY_LIMIT; i < max_num_displays; i++) {
             memset(&displays[i], 0, sizeof(displays[i]));
+            memset(&display_buses[i], 0, sizeof(display_buses[i]));
             display_buses[i].bus_base.type = &mp_type_NoneType;
             displays[i].display_base.type = &mp_type_NoneType;
         }
