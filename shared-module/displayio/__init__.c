@@ -201,10 +201,10 @@ void malloc_display_memory(void) {
     #if CIRCUITPY_OS_GETENV
     (void)common_hal_os_getenv_int("CIRCUITPY_DISPLAY_LIMIT", &max_num_displays);
     if (max_num_displays > CIRCUITPY_DISPLAY_LIMIT) {
-        display_buses = (primary_display_bus_t*)port_malloc(sizeof(primary_display_bus_t) * max_num_displays, false);
-        displays = (primary_display_t*)port_malloc(sizeof(primary_display_t) * max_num_displays, false);
+        display_buses = (primary_display_bus_t *)port_malloc(sizeof(primary_display_bus_t) * max_num_displays, false);
+        displays = (primary_display_t *)port_malloc(sizeof(primary_display_t) * max_num_displays, false);
         memcpy(display_buses, &display_busesx[0], sizeof(primary_display_bus_t) * max_num_displays);
-        memcpy(displays, &displaysx[0], sizeof(primary_display_t) * max_num_displays);    
+        memcpy(displays, &displaysx[0], sizeof(primary_display_t) * max_num_displays);
     }
     #endif
 }

@@ -1058,7 +1058,7 @@ int __attribute__((used)) main(void) {
     reset_board();
 
     #if CIRCUITPY_DISPLAYIO
-    // If number of displays has been overriden in settings.toml allocate memory and dynamic memory
+    // If number of displays has been overridden in settings.toml allocate memory and dynamic memory
     malloc_display_memory();
     #endif
 

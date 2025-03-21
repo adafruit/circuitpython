@@ -190,3 +190,27 @@ flag has been set to 0. Currently this is primarily boards with limited flash in
 of the Atmel_samd boards based on the SAMD21/M0 microprocessor.
 
 `boards that the terminalio core module is available on <https://docs.circuitpython.org/en/latest/shared-bindings/terminalio/>`_
+
+CIRCUITPY_DISPLAY_LIMIT
+~~~~~~~~~~~~~~~~~~~~~~~
+Set the maximum supported number of displayio displays. This value overrides the
+CIRCUITPY_DISPLAY_LIMIT compile-time flag defined in mpconfigport.h.
+It specifies the maximum number of active display objects that can be supported simultaneously
+on a CircuitPython board. This setting is used to manage memory and resource allocation for
+display handling.
+
+By default, the value of CIRCUITPY_DISPLAY_LIMIT is set to 1 for most boards, meaning only
+one display can be active at a time. Users can modify this value by adding a settings.toml entry
+to support additional displays, depending on the hardware capabilities and available resources.
+
+The value of CIRCUITPY_DISPLAY_LIMIT should be set to a value that is supported by the
+hardware and does not exceed the available memory and resources on the board.
+
+*** Note: Setting CIRCUITPY_DISPLAY_LIMIT to a value greater than 1 should be considered an
+ALPHA feature and may result in unexpected behavior or crashes. ***
+
+Example: Set the maximum supported number of displayio displays to 2:
+
+.. code-block::
+
+    CIRCUITPY_DISPLAY_LIMIT=2
