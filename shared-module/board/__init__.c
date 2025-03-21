@@ -10,7 +10,7 @@
 #include "mpconfigboard.h"
 #include "py/runtime.h"
 
-#if CIRCUITPY_OS_GETENV
+#if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
 #include "shared-module/os/__init__.h"
 #endif
 
@@ -178,14 +178,11 @@ mp_obj_t common_hal_board_create_uart(const mp_int_t instance) {
 void reset_board_buses(void) {
     #if (CIRCUITPY_BOARD_I2C && CIRCUITPY_I2CDISPLAYBUS) || (CIRCUITPY_BOARD_SPI && (CIRCUITPY_FOURWIRE || CIRCUITPY_SHARPDISPLAY || CIRCUITPY_AURORA_EPAPER))
     mp_int_t max_num_displays = CIRCUITPY_DISPLAY_LIMIT;
-    #if CIRCUITPY_OS_GETENV
+    #if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
     #define DYN_DISPLAY_BUSES(indx) (indx < CIRCUITPY_DISPLAY_LIMIT ? display_buses[indx] : display_buses_dyn[indx - CIRCUITPY_DISPLAY_LIMIT])
+    (void)common_hal_os_getenv_int("CIRCUITPY_DISPLAY_LIMIT", &max_num_displays);
     #else
     #define DYN_DISPLAY_BUSES(indx) (display_buses[indx])
-    #endif
-
-    #if CIRCUITPY_OS_GETENV
-    (void)common_hal_os_getenv_int("CIRCUITPY_DISPLAY_LIMIT", &max_num_displays);
     #endif
     #endif
 

@@ -22,7 +22,7 @@
 
 #include "py/mpconfig.h"
 
-#if CIRCUITPY_OS_GETENV
+#if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
 #include "shared-module/os/__init__.h"
 #endif
 
@@ -54,7 +54,7 @@ static mp_int_t max_num_displays = CIRCUITPY_DISPLAY_LIMIT;
 
 primary_display_bus_t display_buses[CIRCUITPY_DISPLAY_LIMIT];
 primary_display_t displays[CIRCUITPY_DISPLAY_LIMIT];
-#if CIRCUITPY_OS_GETENV
+#if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
 primary_display_bus_t *display_buses_dyn = &display_buses[0];
 primary_display_t *displays_dyn = &displays[0];
 #define DYN_DISPLAY_BUSES(indx) (indx < CIRCUITPY_DISPLAY_LIMIT ? display_buses[indx] : display_buses_dyn[indx - CIRCUITPY_DISPLAY_LIMIT])
@@ -159,13 +159,15 @@ static void common_hal_displayio_release_displays_impl(bool keep_primary) {
             release_framebufferdisplay(DYN_DISPLAYS_ADR(i, framebuffer_display));
         #endif
         }
+        #if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
         if (i < CIRCUITPY_DISPLAY_LIMIT) {
             displays[i].display_base.type = &mp_type_NoneType;
-        #if CIRCUITPY_OS_GETENV
         } else {
             displays_dyn[i - CIRCUITPY_DISPLAY_LIMIT].display_base.type = &mp_type_NoneType;
-        #endif
         }
+        #else
+        displays[i].display_base.type = &mp_type_NoneType;
+        #endif
     }
     for (uint8_t i = 0; i < max_num_displays; i++) {
         mp_const_obj_t bus_type = DYN_DISPLAY_BUSES(i).bus_base.type;
@@ -208,13 +210,15 @@ static void common_hal_displayio_release_displays_impl(bool keep_primary) {
             common_hal_picodvi_framebuffer_deinit(DYN_DISPLAY_BUSES_ADR(i, picodvi));
         #endif
         }
+        #if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
         if (i < CIRCUITPY_DISPLAY_LIMIT) {
             display_buses[i].bus_base.type = &mp_type_NoneType;
-        #if CIRCUITPY_OS_GETENV
         } else {
             display_buses_dyn[i - CIRCUITPY_DISPLAY_LIMIT].bus_base.type = &mp_type_NoneType;
-        #endif
         }
+        #else
+        display_buses[i].bus_base.type = &mp_type_NoneType;
+        #endif
     }
 
     supervisor_stop_terminal();
@@ -225,7 +229,7 @@ void common_hal_displayio_release_displays(void) {
 }
 
 void malloc_display_memory(void) {
-    #if CIRCUITPY_OS_GETENV
+    #if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
     (void)common_hal_os_getenv_int("CIRCUITPY_DISPLAY_LIMIT", &max_num_displays);
     if (max_num_displays > CIRCUITPY_DISPLAY_LIMIT) {
         display_buses_dyn = (primary_display_bus_t *)port_malloc(sizeof(primary_display_bus_t) * (max_num_displays - CIRCUITPY_DISPLAY_LIMIT), false);
@@ -470,13 +474,15 @@ primary_display_t *allocate_display(void) {
 //            memset(DYN_DISPLAYS_ADR0(i), 0, sizeof(DYN_DISPLAYS(i)));
             memset(DYN_DISPLAYS_ADR0(i), 0, sizeof(displays[0]));
             // Default to None so that it works as board.DISPLAY.
+            #if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
             if (i < CIRCUITPY_DISPLAY_LIMIT) {
                 displays[i].display_base.type = &mp_type_NoneType;
-            #if CIRCUITPY_OS_GETENV
             } else {
                 displays_dyn[i - CIRCUITPY_DISPLAY_LIMIT].display_base.type = &mp_type_NoneType;
-            #endif
             }
+            #else
+            displays[i].display_base.type = &mp_type_NoneType;
+            #endif
             return DYN_DISPLAYS_ADR0(i);
         }
     }
@@ -498,13 +504,15 @@ primary_display_bus_t *allocate_display_bus(void) {
             // Clear this memory so it is in a known state before init.
 //            memset(DYN_DISPLAY_BUSES_ADR0(i), 0, sizeof(DYN_DISPLAY_BUSES(i)));
             memset(DYN_DISPLAY_BUSES_ADR0(i), 0, sizeof(display_buses[0]));
+            #if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
             if (i < CIRCUITPY_DISPLAY_LIMIT) {
                 display_buses[i].bus_base.type = &mp_type_NoneType;
-            #if CIRCUITPY_OS_GETENV
             } else {
                 display_buses_dyn[i - CIRCUITPY_DISPLAY_LIMIT].bus_base.type = &mp_type_NoneType;
-            #endif
             }
+            #else
+            display_buses[i].bus_base.type = &mp_type_NoneType;
+            #endif
             return DYN_DISPLAY_BUSES_ADR0(i);
         }
     }
