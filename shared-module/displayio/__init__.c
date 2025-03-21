@@ -205,6 +205,12 @@ void malloc_display_memory(void) {
         displays = (primary_display_t *)port_malloc(sizeof(primary_display_t) * max_num_displays, false);
         memcpy(display_buses, &display_busesx[0], sizeof(primary_display_bus_t) * CIRCUITPY_DISPLAY_LIMIT);
         memcpy(displays, &displaysx[0], sizeof(primary_display_t) * CIRCUITPY_DISPLAY_LIMIT);
+
+        for (uint8_t i=CIRCUITPY_DISPLAY_LIMIT; i<max_num_displays; i++) {
+            memset(&displays[i], 0, sizeof(displays[i]));
+            display_buses[i].bus_base.type = &mp_type_NoneType;
+            displays[i].display_base.type = &mp_type_NoneType;
+        }
     }
     #endif
 }
