@@ -1554,24 +1554,29 @@ static void _process_request(socketpool_socket_obj_t *socket, _request *request)
 }
 
 static bool supervisor_filesystem_access_could_block(void) {
+    bool could_block = false;
     #if CIRCUITPY_FOURWIRE
     mp_vfs_mount_t *vfs = MP_STATE_VM(vfs_mount_table);
     if (!vfs->next) {
         // Assume that the CIRCUITPY root is not sharing a SPI bus with the display SPI bus
         return false;
     }
-    // Check display 0 to see if it's on a fourwire (SPI) bus. If it is, blocking is possible
-    // in theory other displays could block but also in reality there's generally 0 or 1 displays
-    for (size_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
+
+    mp_int_t max_num_displays = CIRCUITPY_DISPLAY_LIMIT;
+    #if CIRCUITPY_OS_GETENV
+    (void)common_hal_os_getenv_int("CIRCUITPY_DISPLAY_LIMIT", &max_num_displays);
+    #endif
+    // Check displays to see if it's on a fourwire (SPI) bus. If it is, blocking is possible
+    for (size_t i = 0; i < max_num_displays; i++) {
         if (display_buses[i].bus_base.type != &fourwire_fourwire_type) {
             continue;
         }
         if (!common_hal_fourwire_fourwire_bus_free(MP_OBJ_FROM_PTR(&display_buses[i].bus_base))) {
-            return true;
+            could_block = true;
         }
     }
     #endif
-    return false;
+    return could_block;
 }
 
 void supervisor_web_workflow_background(void *data) {

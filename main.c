@@ -1057,6 +1057,11 @@ int __attribute__((used)) main(void) {
     reset_devices();
     reset_board();
 
+    #if CIRCUITPY_DISPLAYIO
+    // If number of displays has been overriden in settings.toml allocate memory and dynamic memory
+    malloc_display_memory();
+    #endif
+
     // displays init after filesystem, since they could share the flash SPI
     board_init();
 

@@ -22,6 +22,10 @@
 
 #include "py/mpconfig.h"
 
+#if CIRCUITPY_OS_GETENV
+#include "shared-module/os/__init__.h"
+#endif
+
 #if CIRCUITPY_BUSDISPLAY
 #include "shared-bindings/busdisplay/BusDisplay.h"
 #endif
@@ -46,9 +50,12 @@
 
 // The default indicates no primary display
 static int primary_display_number = -1;
+static int max_num_displays = CIRCUITPY_DISPLAY_LIMIT;
 
-primary_display_bus_t display_buses[CIRCUITPY_DISPLAY_LIMIT];
-primary_display_t displays[CIRCUITPY_DISPLAY_LIMIT];
+primary_display_bus_t display_busesx[CIRCUITPY_DISPLAY_LIMIT];
+primary_display_t displaysx[CIRCUITPY_DISPLAY_LIMIT];
+primary_display_bus_t *display_buses = &display_busesx[0];
+primary_display_t *displays = &displaysx[0];
 
 displayio_buffer_transform_t null_transform = {
     .x = 0,
@@ -65,7 +72,7 @@ displayio_buffer_transform_t null_transform = {
 
 #if CIRCUITPY_RGBMATRIX || CIRCUITPY_IS31FL3741 || CIRCUITPY_VIDEOCORE || CIRCUITPY_PICODVI
 static bool any_display_uses_this_framebuffer(mp_obj_base_t *obj) {
-    for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
+    for (uint8_t i = 0; i < max_num_displays; i++) {
         if (displays[i].display_base.type == &framebufferio_framebufferdisplay_type) {
             framebufferio_framebufferdisplay_obj_t *display = &displays[i].framebuffer_display;
             if (display->framebuffer == obj) {
@@ -87,7 +94,7 @@ void displayio_background(void) {
         return;
     }
 
-    for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
+    for (uint8_t i = 0; i < max_num_displays; i++) {
         mp_const_obj_t display_type = displays[i].display_base.type;
         if (display_type == NULL || display_type == &mp_type_NoneType) {
             // Skip null display.
@@ -117,7 +124,7 @@ static void common_hal_displayio_release_displays_impl(bool keep_primary) {
     if (!keep_primary) {
         primary_display_number = -1;
     }
-    for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
+    for (uint8_t i = 0; i < max_num_displays; i++) {
         if (i == primary_display_number) {
             continue;
         }
@@ -139,7 +146,7 @@ static void common_hal_displayio_release_displays_impl(bool keep_primary) {
         }
         displays[i].display_base.type = &mp_type_NoneType;
     }
-    for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
+    for (uint8_t i = 0; i < max_num_displays; i++) {
         mp_const_obj_t bus_type = display_buses[i].bus_base.type;
         if (bus_type == NULL || bus_type == &mp_type_NoneType) {
             continue;
@@ -190,12 +197,24 @@ void common_hal_displayio_release_displays(void) {
     common_hal_displayio_release_displays_impl(false);
 }
 
+void malloc_display_memory(void) {
+    #if CIRCUITPY_OS_GETENV
+    (void)common_hal_os_getenv_int("CIRCUITPY_DISPLAY_LIMIT", &max_num_displays);
+    if (max_num_displays > CIRCUITPY_DISPLAY_LIMIT) {
+        display_buses = (primary_display_bus_t*)port_malloc(sizeof(primary_display_bus_t) * max_num_displays, false);
+        displays = (primary_display_t*)port_malloc(sizeof(primary_display_t) * max_num_displays, false);
+        memcpy(display_buses, &display_busesx[0], sizeof(primary_display_bus_t) * max_num_displays);
+        memcpy(displays, &displaysx[0], sizeof(primary_display_t) * max_num_displays);    
+    }
+    #endif
+}
+
 void reset_displays(void) {
     // In CircuitPython 10, release secondary displays before doing anything else:
     // common_hal_displayio_release_displays_impl(true);
 
     // The SPI buses used by FourWires may be allocated on the heap so we need to move them inline.
-    for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
+    for (uint8_t i = 0; i < max_num_displays; i++) {
         mp_const_obj_t display_bus_type = display_buses[i].bus_base.type;
         if (display_bus_type == NULL || display_bus_type == &mp_type_NoneType) {
             continue;
@@ -203,7 +222,7 @@ void reset_displays(void) {
         } else if (display_bus_type == &fourwire_fourwire_type) {
             fourwire_fourwire_obj_t *fourwire = &display_buses[i].fourwire_bus;
             if (((size_t)fourwire->bus) < ((size_t)&display_buses) ||
-                ((size_t)fourwire->bus) > ((size_t)&display_buses + CIRCUITPY_DISPLAY_LIMIT * sizeof(primary_display_bus_t))) {
+                ((size_t)fourwire->bus) > ((size_t)&display_buses + max_num_displays * sizeof(primary_display_bus_t))) {
                 busio_spi_obj_t *original_spi = fourwire->bus;
                 #if CIRCUITPY_BOARD_SPI
                 // We don't need to move original_spi if it is a board.SPI object because it is
@@ -221,7 +240,7 @@ void reset_displays(void) {
                 memcpy(&fourwire->inline_bus, original_spi, sizeof(busio_spi_obj_t));
                 fourwire->bus = &fourwire->inline_bus;
                 // Check for other display buses that use the same spi bus and swap them too.
-                for (uint8_t j = i + 1; j < CIRCUITPY_DISPLAY_LIMIT; j++) {
+                for (uint8_t j = i + 1; j < max_num_displays; j++) {
                     if (display_buses[j].fourwire_bus.base.type == &fourwire_fourwire_type &&
                         display_buses[j].fourwire_bus.bus == original_spi) {
                         display_buses[j].fourwire_bus.bus = &fourwire->inline_bus;
@@ -234,7 +253,7 @@ void reset_displays(void) {
             i2cdisplaybus_i2cdisplaybus_obj_t *i2c = &display_buses[i].i2cdisplay_bus;
             // Check to see if we need to inline the I2C bus.
             if (((size_t)i2c->bus) < ((size_t)&display_buses) ||
-                ((size_t)i2c->bus) > ((size_t)&display_buses + CIRCUITPY_DISPLAY_LIMIT * sizeof(primary_display_bus_t))) {
+                ((size_t)i2c->bus) > ((size_t)&display_buses + max_num_displays * sizeof(primary_display_bus_t))) {
                 busio_i2c_obj_t *original_i2c = i2c->bus;
                 #if CIRCUITPY_BOARD_I2C
                 // We don't need to move original_i2c if it is a board.I2C object because it is
@@ -247,7 +266,7 @@ void reset_displays(void) {
                 memcpy(&i2c->inline_bus, original_i2c, sizeof(busio_i2c_obj_t));
                 i2c->bus = &i2c->inline_bus;
                 // Check for other displays that use the same i2c bus and swap them too.
-                for (uint8_t j = i + 1; j < CIRCUITPY_DISPLAY_LIMIT; j++) {
+                for (uint8_t j = i + 1; j < max_num_displays; j++) {
                     if (display_buses[j].i2cdisplay_bus.base.type == &i2cdisplaybus_i2cdisplaybus_type &&
                         display_buses[j].i2cdisplay_bus.bus == original_i2c) {
                         display_buses[j].i2cdisplay_bus.bus = &i2c->inline_bus;
@@ -271,7 +290,7 @@ void reset_displays(void) {
             is31fl3741_framebuffer_obj_t *is31fb = &display_buses[i].is31fl3741;
 
             if (((uint32_t)is31fb->is31fl3741->i2c) < ((uint32_t)&display_buses) ||
-                ((uint32_t)is31fb->is31fl3741->i2c) > ((uint32_t)&display_buses + CIRCUITPY_DISPLAY_LIMIT)) {
+                ((uint32_t)is31fb->is31fl3741->i2c) > ((uint32_t)&display_buses + max_num_displays)) {
                 #if CIRCUITPY_BOARD_I2C
                 // We don't need to move original_i2c if it is the board.I2C object because it is
                 // statically allocated already. (Doing so would also make it impossible to reference in
@@ -334,7 +353,7 @@ void reset_displays(void) {
         }
     }
 
-    for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
+    for (uint8_t i = 0; i < max_num_displays; i++) {
         // Reset the displayed group. Only the first will get the terminal but
         // that's ok.
         mp_const_obj_t display_type = displays[i].display_base.type;
@@ -358,7 +377,7 @@ void reset_displays(void) {
 }
 
 void displayio_gc_collect(void) {
-    for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
+    for (uint8_t i = 0; i < max_num_displays; i++) {
         mp_const_obj_t display_bus_type = display_buses[i].bus_base.type;
         if (display_bus_type == NULL || display_bus_type == &mp_type_NoneType) {
             continue;
@@ -385,7 +404,7 @@ void displayio_gc_collect(void) {
         #endif
     }
 
-    for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
+    for (uint8_t i = 0; i < max_num_displays; i++) {
         mp_const_obj_t display_type = displays[i].display_base.type;
         if (display_type == NULL || display_type == &mp_type_NoneType) {
             continue;
@@ -413,7 +432,7 @@ static bool is_display_active(mp_obj_base_t *display_maybe) {
 }
 
 primary_display_t *allocate_display(void) {
-    for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
+    for (uint8_t i = 0; i < max_num_displays; i++) {
         if (!is_display_active(&displays[i].display_base)) {
             // Clear this memory so it is in a known state before init.
             memset(&displays[i], 0, sizeof(displays[i]));
@@ -434,7 +453,7 @@ primary_display_t *allocate_display_or_raise(void) {
 }
 
 primary_display_bus_t *allocate_display_bus(void) {
-    for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
+    for (uint8_t i = 0; i < max_num_displays; i++) {
         mp_const_obj_t display_bus_type = display_buses[i].bus_base.type;
         if (display_bus_type == NULL || display_bus_type == &mp_type_NoneType) {
             // Clear this memory so it is in a known state before init.
@@ -455,7 +474,7 @@ primary_display_bus_t *allocate_display_bus_or_raise(void) {
 }
 
 mp_obj_t common_hal_displayio_get_primary_display(void) {
-    if (primary_display_number == -1 || primary_display_number >= CIRCUITPY_DISPLAY_LIMIT) {
+    if (primary_display_number == -1 || primary_display_number >= max_num_displays) {
         return mp_const_none;
     }
     mp_obj_base_t *primary_display = &displays[primary_display_number].display_base;
@@ -470,7 +489,7 @@ void common_hal_displayio_set_primary_display(mp_obj_t new_primary_display) {
         primary_display_number = -1;
         return;
     }
-    for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
+    for (uint8_t i = 0; i < max_num_displays; i++) {
         mp_obj_t display = MP_OBJ_FROM_PTR(&displays[i]);
         if (new_primary_display == display && is_display_active(display)) {
             primary_display_number = i;
@@ -485,7 +504,7 @@ void common_hal_displayio_auto_primary_display(void) {
     if (primary_display_number != -1) {
         return;
     }
-    for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
+    for (uint8_t i = 0; i < max_num_displays; i++) {
         if (is_display_active(&displays[i].display_base)) {
             primary_display_number = i;
             return;
