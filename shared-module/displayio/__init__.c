@@ -58,17 +58,17 @@ primary_display_t displays[CIRCUITPY_DISPLAY_LIMIT];
 primary_display_bus_t *display_buses_dyn = &display_buses[0];
 primary_display_t *displays_dyn = &displays[0];
 #define DYN_DISPLAY_BUSES(indx) (indx < CIRCUITPY_DISPLAY_LIMIT ? display_buses[indx] : display_buses_dyn[indx - CIRCUITPY_DISPLAY_LIMIT])
-#define DYN_DISPLAY_BUSES_ADR(indx,membr) (indx < CIRCUITPY_DISPLAY_LIMIT ? &display_buses[indx].membr : &display_buses_dyn[indx - CIRCUITPY_DISPLAY_LIMIT].membr)
+#define DYN_DISPLAY_BUSES_ADR(indx, membr) (indx < CIRCUITPY_DISPLAY_LIMIT ? &display_buses[indx].membr : &display_buses_dyn[indx - CIRCUITPY_DISPLAY_LIMIT].membr)
 #define DYN_DISPLAY_BUSES_ADR0(indx) (indx < CIRCUITPY_DISPLAY_LIMIT ? &display_buses[indx] : &display_buses_dyn[indx - CIRCUITPY_DISPLAY_LIMIT])
 #define DYN_DISPLAYS(indx) (indx < CIRCUITPY_DISPLAY_LIMIT ? displays[indx] : displays_dyn[indx - CIRCUITPY_DISPLAY_LIMIT])
-#define DYN_DISPLAYS_ADR(indx,membr) (indx < CIRCUITPY_DISPLAY_LIMIT ? &displays[indx].membr : &displays_dyn[indx - CIRCUITPY_DISPLAY_LIMIT].membr)
+#define DYN_DISPLAYS_ADR(indx, membr) (indx < CIRCUITPY_DISPLAY_LIMIT ? &displays[indx].membr : &displays_dyn[indx - CIRCUITPY_DISPLAY_LIMIT].membr)
 #define DYN_DISPLAYS_ADR0(indx) (indx < CIRCUITPY_DISPLAY_LIMIT ? &displays[indx] : &displays_dyn[indx - CIRCUITPY_DISPLAY_LIMIT])
 #else
 #define DYN_DISPLAY_BUSES(indx) (display_buses[indx])
-#define DYN_DISPLAY_BUSES_ADR(indx,membr) (&display_buses[indx].membr)
+#define DYN_DISPLAY_BUSES_ADR(indx, membr) (&display_buses[indx].membr)
 #define DYN_DISPLAY_BUSES_ADR0(indx) (&display_buses[indx])
 #define DYN_DISPLAYS(indx) (displays[indx])
-#define DYN_DISPLAYS_ADR(indx,membr) (&displays[indx].membr)
+#define DYN_DISPLAYS_ADR(indx, membr) (&displays[indx].membr)
 #define DYN_DISPLAYS_ADR0(indx) (&displays[indx])
 #endif
 
@@ -89,7 +89,7 @@ displayio_buffer_transform_t null_transform = {
 static bool any_display_uses_this_framebuffer(mp_obj_base_t *obj) {
     for (uint8_t i = 0; i < max_num_displays; i++) {
         if (DYN_DISPLAYS(i).display_base.type == &framebufferio_framebufferdisplay_type) {
-            framebufferio_framebufferdisplay_obj_t *display = DYN_DISPLAYS_ADR(i,framebuffer_display);
+            framebufferio_framebufferdisplay_obj_t *display = DYN_DISPLAYS_ADR(i, framebuffer_display);
             if (display->framebuffer == obj) {
                 return true;
             }
@@ -118,15 +118,15 @@ void displayio_background(void) {
         if (false) {
         #if CIRCUITPY_BUSDISPLAY
         } else if (display_type == &busdisplay_busdisplay_type) {
-            busdisplay_busdisplay_background(DYN_DISPLAYS_ADR(i,display));
+            busdisplay_busdisplay_background(DYN_DISPLAYS_ADR(i, display));
         #endif
         #if CIRCUITPY_FRAMEBUFFERIO
         } else if (display_type == &framebufferio_framebufferdisplay_type) {
-            framebufferio_framebufferdisplay_background(DYN_DISPLAYS_ADR(i,framebuffer_display));
+            framebufferio_framebufferdisplay_background(DYN_DISPLAYS_ADR(i, framebuffer_display));
         #endif
         #if CIRCUITPY_EPAPERDISPLAY
         } else if (display_type == &epaperdisplay_epaperdisplay_type) {
-            epaperdisplay_epaperdisplay_background(DYN_DISPLAYS_ADR(i,epaper_display));
+            epaperdisplay_epaperdisplay_background(DYN_DISPLAYS_ADR(i, epaper_display));
         #endif
         }
     }
@@ -148,15 +148,15 @@ static void common_hal_displayio_release_displays_impl(bool keep_primary) {
             continue;
         #if CIRCUITPY_BUSDISPLAY
         } else if (display_type == &busdisplay_busdisplay_type) {
-            release_busdisplay(DYN_DISPLAYS_ADR(i,display));
+            release_busdisplay(DYN_DISPLAYS_ADR(i, display));
         #endif
         #if CIRCUITPY_EPAPERDISPLAY
         } else if (display_type == &epaperdisplay_epaperdisplay_type) {
-            release_epaperdisplay(DYN_DISPLAYS_ADR(i,epaper_display));
+            release_epaperdisplay(DYN_DISPLAYS_ADR(i, epaper_display));
         #endif
         #if CIRCUITPY_FRAMEBUFFERIO
         } else if (display_type == &framebufferio_framebufferdisplay_type) {
-            release_framebufferdisplay(DYN_DISPLAYS_ADR(i,framebuffer_display));
+            release_framebufferdisplay(DYN_DISPLAYS_ADR(i, framebuffer_display));
         #endif
         }
         if (i < CIRCUITPY_DISPLAY_LIMIT) {
@@ -173,39 +173,39 @@ static void common_hal_displayio_release_displays_impl(bool keep_primary) {
             continue;
         #if CIRCUITPY_FOURWIRE
         } else if (bus_type == &fourwire_fourwire_type) {
-            common_hal_fourwire_fourwire_deinit(DYN_DISPLAY_BUSES_ADR(i,fourwire_bus));
+            common_hal_fourwire_fourwire_deinit(DYN_DISPLAY_BUSES_ADR(i, fourwire_bus));
         #endif
         #if CIRCUITPY_I2CDISPLAYBUS
         } else if (bus_type == &i2cdisplaybus_i2cdisplaybus_type) {
-            common_hal_i2cdisplaybus_i2cdisplaybus_deinit(DYN_DISPLAY_BUSES_ADR(i,i2cdisplay_bus));
+            common_hal_i2cdisplaybus_i2cdisplaybus_deinit(DYN_DISPLAY_BUSES_ADR(i, i2cdisplay_bus));
         #endif
         #if CIRCUITPY_DOTCLOCKFRAMEBUFFER
         } else if (bus_type == &dotclockframebuffer_framebuffer_type) {
-            common_hal_dotclockframebuffer_framebuffer_deinit(DYN_DISPLAY_BUSES_ADR(i,dotclock));
+            common_hal_dotclockframebuffer_framebuffer_deinit(DYN_DISPLAY_BUSES_ADR(i, dotclock));
         #endif
         #if CIRCUITPY_PARALLELDISPLAYBUS
         } else if (bus_type == &paralleldisplaybus_parallelbus_type) {
-            common_hal_paralleldisplaybus_parallelbus_deinit(DYN_DISPLAY_BUSES_ADR(i,parallel_bus));
+            common_hal_paralleldisplaybus_parallelbus_deinit(DYN_DISPLAY_BUSES_ADR(i, parallel_bus));
         #endif
         #if CIRCUITPY_RGBMATRIX
         } else if (bus_type == &rgbmatrix_RGBMatrix_type) {
-            common_hal_rgbmatrix_rgbmatrix_deinit(DYN_DISPLAY_BUSES_ADR(i,rgbmatrix));
+            common_hal_rgbmatrix_rgbmatrix_deinit(DYN_DISPLAY_BUSES_ADR(i, rgbmatrix));
         #endif
         #if CIRCUITPY_IS31FL3741
         } else if (bus_type == &is31fl3741_framebuffer_type) {
-            common_hal_is31fl3741_framebuffer_deinit(DYN_DISPLAY_BUSES_ADR(i,is31fl3741));
+            common_hal_is31fl3741_framebuffer_deinit(DYN_DISPLAY_BUSES_ADR(i, is31fl3741));
         #endif
         #if CIRCUITPY_SHARPDISPLAY
         } else if (bus_type == &sharpdisplay_framebuffer_type) {
-            common_hal_sharpdisplay_framebuffer_deinit(DYN_DISPLAY_BUSES_ADR(i,sharpdisplay));
+            common_hal_sharpdisplay_framebuffer_deinit(DYN_DISPLAY_BUSES_ADR(i, sharpdisplay));
         #endif
         #if CIRCUITPY_VIDEOCORE
         } else if (bus_type == &videocore_framebuffer_type) {
-            common_hal_videocore_framebuffer_deinit(DYN_DISPLAY_BUSES_ADR(i,videocore));
+            common_hal_videocore_framebuffer_deinit(DYN_DISPLAY_BUSES_ADR(i, videocore));
         #endif
         #if CIRCUITPY_PICODVI
         } else if (bus_type == &picodvi_framebuffer_type) {
-            common_hal_picodvi_framebuffer_deinit(DYN_DISPLAY_BUSES_ADR(i,picodvi));
+            common_hal_picodvi_framebuffer_deinit(DYN_DISPLAY_BUSES_ADR(i, picodvi));
         #endif
         }
         if (i < CIRCUITPY_DISPLAY_LIMIT) {
@@ -230,7 +230,7 @@ void malloc_display_memory(void) {
     if (max_num_displays > CIRCUITPY_DISPLAY_LIMIT) {
         display_buses_dyn = (primary_display_bus_t *)port_malloc(sizeof(primary_display_bus_t) * (max_num_displays - CIRCUITPY_DISPLAY_LIMIT), false);
         displays_dyn = (primary_display_t *)port_malloc(sizeof(primary_display_t) * (max_num_displays - CIRCUITPY_DISPLAY_LIMIT), false);
-        
+
         for (uint8_t i = CIRCUITPY_DISPLAY_LIMIT; i < max_num_displays; i++) {
             memset(&displays_dyn[i - CIRCUITPY_DISPLAY_LIMIT], 0, sizeof(displays_dyn[i - CIRCUITPY_DISPLAY_LIMIT]));
             memset(&display_buses_dyn[i - CIRCUITPY_DISPLAY_LIMIT], 0, sizeof(display_buses_dyn[i - CIRCUITPY_DISPLAY_LIMIT]));
@@ -252,7 +252,7 @@ void reset_displays(void) {
             continue;
         #if CIRCUITPY_FOURWIRE
         } else if (display_bus_type == &fourwire_fourwire_type) {
-            fourwire_fourwire_obj_t *fourwire = DYN_DISPLAY_BUSES_ADR(i,fourwire_bus);
+            fourwire_fourwire_obj_t *fourwire = DYN_DISPLAY_BUSES_ADR(i, fourwire_bus);
             if (((size_t)fourwire->bus) < ((size_t)&display_buses) ||
                 ((size_t)fourwire->bus) > ((size_t)&display_buses + max_num_displays * sizeof(primary_display_bus_t))) {
                 busio_spi_obj_t *original_spi = fourwire->bus;
@@ -282,7 +282,7 @@ void reset_displays(void) {
         #endif
         #if CIRCUITPY_I2CDISPLAYBUS
         } else if (display_bus_type == &i2cdisplaybus_i2cdisplaybus_type) {
-            i2cdisplaybus_i2cdisplaybus_obj_t *i2c = DYN_DISPLAY_BUSES_ADR(i,i2cdisplay_bus);
+            i2cdisplaybus_i2cdisplaybus_obj_t *i2c = DYN_DISPLAY_BUSES_ADR(i, i2cdisplay_bus);
             // Check to see if we need to inline the I2C bus.
             if (((size_t)i2c->bus) < ((size_t)&display_buses) ||
                 ((size_t)i2c->bus) > ((size_t)&display_buses + max_num_displays * sizeof(primary_display_bus_t))) {
@@ -310,7 +310,7 @@ void reset_displays(void) {
         #endif
         #if CIRCUITPY_RGBMATRIX
         } else if (display_bus_type == &rgbmatrix_RGBMatrix_type) {
-            rgbmatrix_rgbmatrix_obj_t *pm = DYN_DISPLAY_BUSES_ADR(i,rgbmatrix);
+            rgbmatrix_rgbmatrix_obj_t *pm = DYN_DISPLAY_BUSES_ADR(i, rgbmatrix);
             if (!any_display_uses_this_framebuffer(&pm->base)) {
                 common_hal_rgbmatrix_rgbmatrix_deinit(pm);
             } else {
@@ -319,7 +319,7 @@ void reset_displays(void) {
         #endif
         #if CIRCUITPY_IS31FL3741
         } else if (display_bus_type == &is31fl3741_framebuffer_type) {
-            is31fl3741_framebuffer_obj_t *is31fb = DYN_DISPLAY_BUSES_ADR(i,is31fl3741);
+            is31fl3741_framebuffer_obj_t *is31fb = DYN_DISPLAY_BUSES_ADR(i, is31fl3741);
 
             if (((uint32_t)is31fb->is31fl3741->i2c) < ((uint32_t)&display_buses) ||
                 ((uint32_t)is31fb->is31fl3741->i2c) > ((uint32_t)&display_buses + max_num_displays)) {
@@ -349,12 +349,12 @@ void reset_displays(void) {
         #endif
         #if CIRCUITPY_SHARPDISPLAY
         } else if (display_bus_type == &sharpdisplay_framebuffer_type) {
-            sharpdisplay_framebuffer_obj_t *sharp = DYN_DISPLAY_BUSES_ADR(i,sharpdisplay);
+            sharpdisplay_framebuffer_obj_t *sharp = DYN_DISPLAY_BUSES_ADR(i, sharpdisplay);
             common_hal_sharpdisplay_framebuffer_reset(sharp);
         #endif
         #if CIRCUITPY_VIDEOCORE
         } else if (display_bus_type == &videocore_framebuffer_type) {
-            videocore_framebuffer_obj_t *vc = DYN_DISPLAY_BUSES_ADR(i,videocore);
+            videocore_framebuffer_obj_t *vc = DYN_DISPLAY_BUSES_ADR(i, videocore);
             if (!any_display_uses_this_framebuffer(&vc->base)) {
                 common_hal_videocore_framebuffer_deinit(vc);
             }
@@ -363,7 +363,7 @@ void reset_displays(void) {
         #endif
         #if CIRCUITPY_PICODVI
         } else if (display_bus_type == &picodvi_framebuffer_type) {
-            picodvi_framebuffer_obj_t *vc = DYN_DISPLAY_BUSES_ADR(i,picodvi);
+            picodvi_framebuffer_obj_t *vc = DYN_DISPLAY_BUSES_ADR(i, picodvi);
             if (!any_display_uses_this_framebuffer(&vc->base)) {
                 common_hal_picodvi_framebuffer_deinit(vc);
             }
@@ -371,7 +371,7 @@ void reset_displays(void) {
         #if CIRCUITPY_AURORA_EPAPER
         } else if (display_bus_type == &aurora_framebuffer_type) {
             #if CIRCUITPY_BOARD_SPI
-            aurora_epaper_framebuffer_obj_t *aurora = DYN_DISPLAY_BUSES_ADR(i,aurora_epaper);
+            aurora_epaper_framebuffer_obj_t *aurora = DYN_DISPLAY_BUSES_ADR(i, aurora_epaper);
             if (common_hal_board_is_spi(aurora->bus)) {
                 common_hal_aurora_epaper_framebuffer_set_free_bus(false);
             }
@@ -393,16 +393,16 @@ void reset_displays(void) {
             continue;
         #if CIRCUITPY_BUSDISPLAY
         } else if (display_type == &busdisplay_busdisplay_type) {
-            reset_busdisplay(DYN_DISPLAYS_ADR(i,display));
+            reset_busdisplay(DYN_DISPLAYS_ADR(i, display));
         #endif
         #if CIRCUITPY_EPAPERDISPLAY
         } else if (display_type == &epaperdisplay_epaperdisplay_type) {
-            epaperdisplay_epaperdisplay_obj_t *display = DYN_DISPLAYS_ADR(i,epaper_display);
+            epaperdisplay_epaperdisplay_obj_t *display = DYN_DISPLAYS_ADR(i, epaper_display);
             epaperdisplay_epaperdisplay_reset(display);
         #endif
         #if CIRCUITPY_FRAMEBUFFERIO
         } else if (display_type == &framebufferio_framebufferdisplay_type) {
-            framebufferio_framebufferdisplay_reset(DYN_DISPLAYS_ADR(i,framebuffer_display));
+            framebufferio_framebufferdisplay_reset(DYN_DISPLAYS_ADR(i, framebuffer_display));
         #endif
         }
     }
@@ -416,22 +416,22 @@ void displayio_gc_collect(void) {
         }
         #if CIRCUITPY_RGBMATRIX
         if (display_bus_type == &rgbmatrix_RGBMatrix_type) {
-            rgbmatrix_rgbmatrix_collect_ptrs(DYN_DISPLAY_BUSES_ADR(i,rgbmatrix));
+            rgbmatrix_rgbmatrix_collect_ptrs(DYN_DISPLAY_BUSES_ADR(i, rgbmatrix));
         }
         #endif
         #if CIRCUITPY_IS31FL3741
         if (display_bus_type == &is31fl3741_framebuffer_type) {
-            is31fl3741_framebuffer_collect_ptrs(DYN_DISPLAY_BUSES_ADR(i,is31fl3741));
+            is31fl3741_framebuffer_collect_ptrs(DYN_DISPLAY_BUSES_ADR(i, is31fl3741));
         }
         #endif
         #if CIRCUITPY_SHARPDISPLAY
         if (display_bus_type == &sharpdisplay_framebuffer_type) {
-            common_hal_sharpdisplay_framebuffer_collect_ptrs(DYN_DISPLAY_BUSES_ADR(i,sharpdisplay));
+            common_hal_sharpdisplay_framebuffer_collect_ptrs(DYN_DISPLAY_BUSES_ADR(i, sharpdisplay));
         }
         #endif
         #if CIRCUITPY_AURORA_EPAPER
         if (display_bus_type == &aurora_framebuffer_type) {
-            common_hal_aurora_epaper_framebuffer_collect_ptrs(DYN_DISPLAY_BUSES_ADR(i,aurora_epaper));
+            common_hal_aurora_epaper_framebuffer_collect_ptrs(DYN_DISPLAY_BUSES_ADR(i, aurora_epaper));
         }
         #endif
     }
@@ -445,15 +445,15 @@ void displayio_gc_collect(void) {
             // but this is more precise, and is the only field that needs marking.
         #if CIRCUITPY_BUSDISPLAY
         } else if (display_type == &busdisplay_busdisplay_type) {
-            busdisplay_busdisplay_collect_ptrs(DYN_DISPLAYS_ADR(i,display));
+            busdisplay_busdisplay_collect_ptrs(DYN_DISPLAYS_ADR(i, display));
         #endif
         #if CIRCUITPY_FRAMEBUFFERIO
         } else if (display_type == &framebufferio_framebufferdisplay_type) {
-            framebufferio_framebufferdisplay_collect_ptrs(DYN_DISPLAYS_ADR(i,framebuffer_display));
+            framebufferio_framebufferdisplay_collect_ptrs(DYN_DISPLAYS_ADR(i, framebuffer_display));
         #endif
         #if CIRCUITPY_EPAPERDISPLAY
         } else if (display_type == &epaperdisplay_epaperdisplay_type) {
-            epaperdisplay_epaperdisplay_collect_ptrs(DYN_DISPLAYS_ADR(i,epaper_display));
+            epaperdisplay_epaperdisplay_collect_ptrs(DYN_DISPLAYS_ADR(i, epaper_display));
         #endif
         }
     }
@@ -465,7 +465,7 @@ static bool is_display_active(mp_obj_base_t *display_maybe) {
 
 primary_display_t *allocate_display(void) {
     for (uint8_t i = 0; i < max_num_displays; i++) {
-        if (!is_display_active(DYN_DISPLAYS_ADR(i,display_base))) {
+        if (!is_display_active(DYN_DISPLAYS_ADR(i, display_base))) {
             // Clear this memory so it is in a known state before init.
 //            memset(DYN_DISPLAYS_ADR0(i), 0, sizeof(DYN_DISPLAYS(i)));
             memset(DYN_DISPLAYS_ADR0(i), 0, sizeof(displays[0]));
@@ -551,7 +551,7 @@ void common_hal_displayio_auto_primary_display(void) {
         return;
     }
     for (uint8_t i = 0; i < max_num_displays; i++) {
-        if (is_display_active(DYN_DISPLAYS_ADR(i,display_base))) {
+        if (is_display_active(DYN_DISPLAYS_ADR(i, display_base))) {
             primary_display_number = i;
             return;
         }

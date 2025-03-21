@@ -525,7 +525,7 @@ size_t maybe_refresh_epaperdisplay(void) {
                 // Skip regular displays and those not showing the splash.
                 continue;
             }
-        #endif            
+        #endif
         }
 
         epaperdisplay_epaperdisplay_obj_t *display;
