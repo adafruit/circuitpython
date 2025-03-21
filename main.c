@@ -1051,7 +1051,7 @@ int __attribute__((used)) main(void) {
     alarm_reset();
     #endif
 
-    #if CIRCUITPY_DISPLAYIO
+    #if CIRCUITPY_DISPLAYIO && CIRCUITPY_OS_GETENV
     // If number of displays has been overridden in settings.toml allocate memory and
     // move existing displays
     malloc_display_memory();

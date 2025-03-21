@@ -99,16 +99,20 @@ typedef struct {
     };
 } primary_display_t;
 
-extern primary_display_bus_t display_busesx[CIRCUITPY_DISPLAY_LIMIT];
-extern primary_display_t displaysx[CIRCUITPY_DISPLAY_LIMIT];
-extern primary_display_bus_t *display_buses;
-extern primary_display_t *displays;
+extern primary_display_bus_t display_buses[CIRCUITPY_DISPLAY_LIMIT];
+extern primary_display_t displays[CIRCUITPY_DISPLAY_LIMIT];
+#if CIRCUITPY_OS_GETENV
+extern primary_display_bus_t *display_buses_dyn;
+extern primary_display_t *displays_dyn;
+#endif
 
 extern displayio_group_t circuitpython_splash;
 
 void displayio_background(void);
 void reset_displays(void);
+#if CIRCUITPY_OS_GETENV
 void malloc_display_memory(void);
+#endif
 void displayio_gc_collect(void);
 
 primary_display_t *allocate_display(void);
