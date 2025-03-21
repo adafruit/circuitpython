@@ -50,7 +50,7 @@
 
 // The default indicates no primary display
 static int primary_display_number = -1;
-static int max_num_displays = CIRCUITPY_DISPLAY_LIMIT;
+static mp_int_t max_num_displays = CIRCUITPY_DISPLAY_LIMIT;
 
 primary_display_bus_t display_buses[CIRCUITPY_DISPLAY_LIMIT];
 primary_display_t displays[CIRCUITPY_DISPLAY_LIMIT];

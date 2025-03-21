@@ -110,9 +110,7 @@ extern displayio_group_t circuitpython_splash;
 
 void displayio_background(void);
 void reset_displays(void);
-#if CIRCUITPY_OS_GETENV
 void malloc_display_memory(void);
-#endif
 void displayio_gc_collect(void);
 
 primary_display_t *allocate_display(void);
