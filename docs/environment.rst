@@ -196,12 +196,11 @@ CIRCUITPY_DISPLAY_LIMIT
 Set the maximum supported number of displayio displays. This value overrides the
 CIRCUITPY_DISPLAY_LIMIT compile-time flag defined in mpconfigport.h.
 It specifies the maximum number of active display objects that can be supported simultaneously
-on a CircuitPython board. This setting is used to manage memory and resource allocation for
-display handling.
+on a CircuitPython board.
 
 By default, the value of CIRCUITPY_DISPLAY_LIMIT is set to 1 for most boards, meaning only
 one display can be active at a time. Users can modify this value by adding a settings.toml entry
-to support additional displays, depending on the hardware capabilities and available resources.
+to support additional displays.
 
 The value of CIRCUITPY_DISPLAY_LIMIT should be set to a value that is supported by the
 hardware and does not exceed the available memory and resources on the board.

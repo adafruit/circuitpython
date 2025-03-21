@@ -1051,16 +1051,17 @@ int __attribute__((used)) main(void) {
     alarm_reset();
     #endif
 
+    #if CIRCUITPY_DISPLAYIO
+    // If number of displays has been overridden in settings.toml allocate memory and
+    // move existing displays
+    malloc_display_memory();
+    #endif
+
     // Reset everything and prep MicroPython to run boot.py.
     reset_port();
     // Port-independent devices, like CIRCUITPY_BLEIO_HCI.
     reset_devices();
     reset_board();
-
-    #if CIRCUITPY_DISPLAYIO
-    // If number of displays has been overridden in settings.toml allocate memory and dynamic memory
-    malloc_display_memory();
-    #endif
 
     // displays init after filesystem, since they could share the flash SPI
     board_init();

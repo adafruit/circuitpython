@@ -185,7 +185,7 @@ void reset_board_buses(void) {
     #endif
 
     #if CIRCUITPY_BOARD_I2C
-    for (uint8_t instance = 0; instance < CIRCUITPY_BOARD_I2C; instance++) {
+    for (uint8_t instance = 0; instance < max_num_displays; instance++) {
         bool display_using_i2c = false;
         #if CIRCUITPY_I2CDISPLAYBUS
         for (uint8_t i = 0; i < max_num_displays; i++) {
