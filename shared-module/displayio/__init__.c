@@ -471,7 +471,6 @@ primary_display_t *allocate_display(void) {
     for (uint8_t i = 0; i < max_num_displays; i++) {
         if (!is_display_active(DYN_DISPLAYS_ADR(i, display_base))) {
             // Clear this memory so it is in a known state before init.
-//            memset(DYN_DISPLAYS_ADR0(i), 0, sizeof(DYN_DISPLAYS(i)));
             memset(DYN_DISPLAYS_ADR0(i), 0, sizeof(displays[0]));
             // Default to None so that it works as board.DISPLAY.
             #if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
@@ -502,7 +501,6 @@ primary_display_bus_t *allocate_display_bus(void) {
         mp_const_obj_t display_bus_type = DYN_DISPLAY_BUSES(i).bus_base.type;
         if (display_bus_type == NULL || display_bus_type == &mp_type_NoneType) {
             // Clear this memory so it is in a known state before init.
-//            memset(DYN_DISPLAY_BUSES_ADR0(i), 0, sizeof(DYN_DISPLAY_BUSES(i)));
             memset(DYN_DISPLAY_BUSES_ADR0(i), 0, sizeof(display_buses[0]));
             #if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
             if (i < CIRCUITPY_DISPLAY_LIMIT) {
