@@ -11,8 +11,8 @@
 #include "py/runtime.h"
 #include "shared/timeutils/timeutils.h"
 
-#include "src/common/pico_util/include/pico/util/datetime.h"
-#include "src/rp2_common/pico_aon_timer/include/pico/aon_timer.h"
+#include "pico/util/datetime.h"
+#include "pico/aon_timer.h"
 
 void common_hal_rtc_init(void) {
     // We start the RTC at 0 which mark as January 1, 2000.

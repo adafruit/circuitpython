@@ -316,7 +316,7 @@ MP_PROPERTY_GETSET(displayio_tilegrid_transpose_xy_obj,
 //|         inside the tilegrid rectangle bounds."""
 //|
 static mp_obj_t displayio_tilegrid_obj_contains(mp_obj_t self_in, mp_obj_t touch_tuple) {
-    displayio_tilegrid_t *self = MP_OBJ_TO_PTR(self_in);
+    displayio_tilegrid_t *self = native_tilegrid(self_in);
 
     mp_obj_t *touch_tuple_items;
     mp_obj_get_array_fixed_n(touch_tuple, 3, &touch_tuple_items);

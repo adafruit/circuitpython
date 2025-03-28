@@ -12,7 +12,7 @@
 #include "shared-bindings/microcontroller/Pin.h"
 #include "bindings/cyw43/__init__.h"
 
-#include "src/rp2_common/hardware_gpio/include/hardware/gpio.h"
+#include "hardware/gpio.h"
 
 #include "lib/cyw43-driver/src/cyw43.h"
 

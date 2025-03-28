@@ -39,6 +39,9 @@
 //|             bit unpacking. Instead, use an existing driver or make one with
 //|             :ref:`Register <register-module-reference>` data descriptors.
 //|
+//|         .. seealso:: This class provides an I2C controller, which controls I2C targets (peripherals).
+//|             To act as an I2C target, use `i2ctarget.I2CTarget`.
+//|
 //|         :param ~microcontroller.Pin scl: The clock pin
 //|         :param ~microcontroller.Pin sda: The data pin
 //|         :param int frequency: The clock frequency in Hertz

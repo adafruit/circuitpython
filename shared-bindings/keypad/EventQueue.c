@@ -23,7 +23,8 @@
 //|
 
 //|     def get(self) -> Optional[Event]:
-//|         """Return the next key transition event. Return ``None`` if no events are pending.
+//|         """Remove the next key transition event from the `EventQueue` and return it.
+//|         Return ``None`` if no events are pending.
 //|
 //|         Note that the queue size is limited; see ``max_events`` in the constructor of
 //|         a scanner such as `Keys` or `KeyMatrix`.
@@ -43,7 +44,7 @@ static mp_obj_t keypad_eventqueue_get(mp_obj_t self_in) {
 MP_DEFINE_CONST_FUN_OBJ_1(keypad_eventqueue_get_obj, keypad_eventqueue_get);
 
 //|     def get_into(self, event: Event) -> bool:
-//|         """Store the next key transition event in the supplied event, if available,
+//|         """Remove the next key transition event from the ``EventQueue`, store it in ``event``,
 //|         and return ``True``.
 //|         If there are no queued events, do not touch ``event`` and return ``False``.
 //|

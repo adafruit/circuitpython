@@ -54,6 +54,9 @@ bool common_hal_pulseio_pulseout_deinited(pulseio_pulseout_obj_t *self) {
 }
 
 void common_hal_pulseio_pulseout_deinit(pulseio_pulseout_obj_t *self) {
+    if (common_hal_pulseio_pulseout_deinited(self)) {
+        return;
+    }
     rmt_disable(self->channel);
     rmt_del_encoder(self->encoder);
     rmt_del_channel(self->channel);

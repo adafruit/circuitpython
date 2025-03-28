@@ -8,7 +8,7 @@
 
 #include "common-hal/microcontroller/Pin.h"
 #include "common-hal/pwmio/PWMOut.h"
-#include "src/common/pico_time/include/pico/time.h"
+#include "pico/time.h"
 
 #include "py/obj.h"
 

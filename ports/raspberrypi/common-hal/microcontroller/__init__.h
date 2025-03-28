@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "src/rp2040/hardware_regs/include/hardware/platform_defs.h"
+#include "hardware/platform_defs.h"
 #include "peripherals/pins.h"
 
 const mcu_pin_obj_t *mcu_get_pin_by_number(int);

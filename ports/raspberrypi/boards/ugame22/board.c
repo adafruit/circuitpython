@@ -7,7 +7,7 @@
 #include "supervisor/board.h"
 
 #include "shared-bindings/microcontroller/Pin.h"
-#include "src/rp2_common/hardware_gpio/include/hardware/gpio.h"
+#include "hardware/gpio.h"
 
 #include "shared-bindings/busio/SPI.h"
 #include "shared-bindings/fourwire/FourWire.h"

@@ -13,9 +13,9 @@
 #include "shared-bindings/digitalio/Pull.h"
 #include "common-hal/pwmio/PWMOut.h"
 
-#include "src/rp2_common/hardware_gpio/include/hardware/gpio.h"
-#include "src/rp2_common/hardware_pwm/include/hardware/pwm.h"
-#include "src/rp2_common/hardware_irq/include/hardware/irq.h"
+#include "hardware/gpio.h"
+#include "hardware/pwm.h"
+#include "hardware/irq.h"
 
 
 void common_hal_countio_counter_construct(countio_counter_obj_t *self,

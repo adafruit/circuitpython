@@ -385,7 +385,7 @@ void common_hal_audiomp3_mp3file_set_file(audiomp3_mp3file_obj_t *self, mp_obj_t
     self->base.channel_count = fi.nChans;
     self->base.single_buffer = false;
     self->base.bits_per_sample = 16;
-    self->base.samples_signed = false;
+    self->base.samples_signed = true;
     self->base.max_buffer_length = fi.outputSamps * sizeof(int16_t);
     self->len = 2 * self->base.max_buffer_length;
     self->samples_decoded = 0;

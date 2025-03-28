@@ -9,9 +9,6 @@
 
 #include <stdint.h>
 
-#define MICROPY_PY_FUNCTION_ATTRS                (1)
-#define MICROPY_PY_REVERSE_SPECIAL_METHODS       (1)
-
 // 24KiB stack
 #define CIRCUITPY_DEFAULT_STACK_SIZE            0x6000
 

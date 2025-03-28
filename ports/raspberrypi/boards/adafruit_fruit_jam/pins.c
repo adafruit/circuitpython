@@ -13,6 +13,7 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     // On JST PH connector.
     { MP_OBJ_NEW_QSTR(MP_QSTR_A0), MP_ROM_PTR(&pin_GPIO40) },
 
+    // On header
     { MP_OBJ_NEW_QSTR(MP_QSTR_A1), MP_ROM_PTR(&pin_GPIO41) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_A2), MP_ROM_PTR(&pin_GPIO42) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_A3), MP_ROM_PTR(&pin_GPIO43) },
@@ -27,11 +28,11 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
 
     { MP_OBJ_NEW_QSTR(MP_QSTR_LED), MP_ROM_PTR(&pin_GPIO29) },
 
-    { MP_OBJ_NEW_QSTR(MP_QSTR_BUTTON), MP_ROM_PTR(&pin_GPIO0) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_BUTTON1), MP_ROM_PTR(&pin_GPIO0) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_BOOT), MP_ROM_PTR(&pin_GPIO0) },
 
-    { MP_OBJ_NEW_QSTR(MP_QSTR_BUTTON1), MP_ROM_PTR(&pin_GPIO4) },
-    { MP_OBJ_NEW_QSTR(MP_QSTR_BUTTON2), MP_ROM_PTR(&pin_GPIO5) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_BUTTON2), MP_ROM_PTR(&pin_GPIO4) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_BUTTON3), MP_ROM_PTR(&pin_GPIO5) },
 
     { MP_OBJ_NEW_QSTR(MP_QSTR_SDA), MP_ROM_PTR(&pin_GPIO20) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_SCL), MP_ROM_PTR(&pin_GPIO21) },

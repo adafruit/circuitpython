@@ -100,21 +100,8 @@ static const mp_rom_map_elem_t displayio_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_Palette), MP_ROM_PTR(&displayio_palette_type) },
     { MP_ROM_QSTR(MP_QSTR_TileGrid), MP_ROM_PTR(&displayio_tilegrid_type) },
 
-    // Remove these in CircuitPython 10
-    #if CIRCUITPY_BUSDISPLAY
-    { MP_ROM_QSTR(MP_QSTR_Display), MP_ROM_PTR(&busdisplay_busdisplay_type) },
-    #endif
-    #if CIRCUITPY_EPAPERDISPLAY
-    { MP_ROM_QSTR(MP_QSTR_EPaperDisplay), MP_ROM_PTR(&epaperdisplay_epaperdisplay_type) },
-    #endif
-    #if CIRCUITPY_FOURWIRE
-    { MP_ROM_QSTR(MP_QSTR_FourWire), MP_ROM_PTR(&fourwire_fourwire_type) },
-    #endif
-    #if CIRCUITPY_I2CDISPLAYBUS
-    { MP_ROM_QSTR(MP_QSTR_I2CDisplay), MP_ROM_PTR(&i2cdisplaybus_i2cdisplaybus_type) },
-    #endif
-
     { MP_ROM_QSTR(MP_QSTR_release_displays), MP_ROM_PTR(&displayio_release_displays_obj) },
+
     { MP_ROM_QSTR(MP_QSTR_CIRCUITPYTHON_TERMINAL), MP_ROM_PTR(&circuitpython_splash) },
 };
 static MP_DEFINE_CONST_DICT(displayio_module_globals, displayio_module_globals_table);

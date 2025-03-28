@@ -7,6 +7,6 @@
 #include "supervisor/board.h"
 
 #include "shared-bindings/microcontroller/Pin.h"
-#include "src/rp2_common/hardware_gpio/include/hardware/gpio.h"
+#include "hardware/gpio.h"
 
 // Use the MP_WEAK supervisor/shared/board.c versions of routines not defined here.

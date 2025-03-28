@@ -13,6 +13,7 @@
 extern const mp_obj_type_t usb_core_device_type;
 
 bool common_hal_usb_core_device_construct(usb_core_device_obj_t *self, uint8_t device_number);
+bool common_hal_usb_core_device_deinited(usb_core_device_obj_t *self);
 void common_hal_usb_core_device_deinit(usb_core_device_obj_t *self);
 uint16_t common_hal_usb_core_device_get_idVendor(usb_core_device_obj_t *self);
 uint16_t common_hal_usb_core_device_get_idProduct(usb_core_device_obj_t *self);

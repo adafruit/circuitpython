@@ -12,8 +12,8 @@
 #include "shared-bindings/pwmio/PWMOut.h"
 #include "shared-module/rgbmatrix/RGBMatrix.h"
 
-#include "src/rp2_common/hardware_pwm/include/hardware/pwm.h"
-#include "src/rp2_common/hardware_irq/include/hardware/irq.h"
+#include "hardware/pwm.h"
+#include "hardware/irq.h"
 
 void *common_hal_rgbmatrix_timer_allocate(rgbmatrix_rgbmatrix_obj_t *self) {
     // Choose a PWM channel based on the first RGB pin

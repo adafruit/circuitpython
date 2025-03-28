@@ -13,9 +13,11 @@
 #define EVENT_PRESSED (1 << 15)
 #define EVENT_KEY_NUM_MASK ((1 << 15) - 1)
 
+#define EVENT_SIZE_BYTES (sizeof(uint16_t) + sizeof(mp_obj_t))
+
 void common_hal_keypad_eventqueue_construct(keypad_eventqueue_obj_t *self, size_t max_events) {
     // Event queue is 16-bit values.
-    ringbuf_alloc(&self->encoded_events, max_events * (sizeof(uint16_t) + sizeof(mp_obj_t)));
+    ringbuf_alloc(&self->encoded_events, max_events * EVENT_SIZE_BYTES);
     self->overflowed = false;
     self->event_handler = NULL;
 }
@@ -63,7 +65,7 @@ void common_hal_keypad_eventqueue_clear(keypad_eventqueue_obj_t *self) {
 }
 
 size_t common_hal_keypad_eventqueue_get_length(keypad_eventqueue_obj_t *self) {
-    return ringbuf_num_filled(&self->encoded_events);
+    return ringbuf_num_filled(&self->encoded_events) / EVENT_SIZE_BYTES;
 }
 
 void common_hal_keypad_eventqueue_set_event_handler(keypad_eventqueue_obj_t *self, void (*event_handler)(keypad_eventqueue_obj_t *)) {

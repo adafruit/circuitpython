@@ -10,7 +10,7 @@
 #include "shared-bindings/busio/SPI.h"
 #include "supervisor/usb.h"
 
-#include "src/rp2_common/hardware_gpio/include/hardware/gpio.h"
+#include "hardware/gpio.h"
 
 static max3421e_max3421e_obj_t *active_max = NULL;
 

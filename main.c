@@ -131,9 +131,9 @@ static uint8_t *_allocate_memory(safe_mode_t safe_mode, const char *env_key, siz
     *final_size = default_size;
     #if CIRCUITPY_OS_GETENV
     if (safe_mode == SAFE_MODE_NONE) {
-        (void)common_hal_os_getenv_int(env_key, (mp_int_t *)final_size);
-        if (*final_size < 0) {
-            *final_size = default_size;
+        mp_int_t size;
+        if (common_hal_os_getenv_int(env_key, &size) == GETENV_OK && size > 0) {
+            *final_size = size;
         }
     }
     #endif

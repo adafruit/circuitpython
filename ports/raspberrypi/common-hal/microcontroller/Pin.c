@@ -9,7 +9,7 @@
 #include "common-hal/microcontroller/__init__.h"
 #include "shared-bindings/microcontroller/Pin.h"
 
-#include "src/rp2_common/hardware_gpio/include/hardware/gpio.h"
+#include "hardware/gpio.h"
 
 static uint64_t gpio_bank0_pin_claimed;
 

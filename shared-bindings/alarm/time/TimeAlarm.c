@@ -35,6 +35,12 @@ mp_obj_t MP_WEAK rtc_get_time_source_time(void) {
 //|         If the given time is already in the past, then an exception is raised.
 //|         If the sleep happens after the given time, then it will wake immediately
 //|         due to this time alarm.
+//|
+//|         Example::
+//|
+//|           # Deep sleep for 30 seconds.
+//|           time_alarm = alarm.time.TimeAlarm(monotonic_time=time.monotonic() + 30)
+//|           alarm.exit_and_deep_sleep_until_alarms(time_alarm)
 //|         """
 //|         ...
 //|

@@ -11,17 +11,16 @@
 #include "supervisor/shared/serial.h"
 #include "supervisor/usb.h"
 
-#include "src/common/pico_time/include/pico/time.h"
+#include "pico/time.h"
+#include "hardware/structs/mpu.h"
 #ifdef PICO_RP2040
-#include "src/rp2040/hardware_structs/include/hardware/structs/mpu.h"
-#include "src/rp2_common/cmsis/stub/CMSIS/Device/RP2040/Include/RP2040.h"
+#include "RP2040.h" // (cmsis)
 #endif
 #ifdef PICO_RP2350
-#include "src/rp2350/hardware_structs/include/hardware/structs/mpu.h"
-#include "src/rp2_common/cmsis/stub/CMSIS/Device/RP2350/Include/RP2350.h"
+#include "RP2350.h" // (cmsis)
 #endif
-#include "src/rp2_common/hardware_dma/include/hardware/dma.h"
-#include "src/rp2_common/pico_multicore/include/pico/multicore.h"
+#include "hardware/dma.h"
+#include "pico/multicore.h"
 
 #include "py/runtime.h"
 
@@ -138,10 +137,11 @@ usb_host_port_obj_t *common_hal_usb_host_port_construct(const mcu_pin_obj_t *dp,
     }
     pio_cfg.pio_tx_num = get_usb_pio();
     pio_cfg.pio_rx_num = pio_cfg.pio_tx_num;
-    pio_cfg.tx_ch = dma_claim_unused_channel(false); // DMA channel
-    if (pio_cfg.tx_ch < 0) {
+    int dma_ch = dma_claim_unused_channel(false);
+    if (dma_ch < 0) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("All dma channels in use"));
     }
+    pio_cfg.tx_ch = dma_ch;
 
     self->base.type = &usb_host_port_type;
     self->dp = dp;

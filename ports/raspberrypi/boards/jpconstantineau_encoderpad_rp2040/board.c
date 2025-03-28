@@ -6,7 +6,7 @@
 
 #include "shared-bindings/board/__init__.h"
 #include "shared-bindings/microcontroller/Pin.h"
-#include "src/rp2_common/hardware_gpio/include/hardware/gpio.h"
+#include "hardware/gpio.h"
 #include "supervisor/shared/board.h"
 #include "supervisor/board.h"
 

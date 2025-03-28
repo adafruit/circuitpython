@@ -13,9 +13,7 @@
 
 #define CIRCUITPY_MCU_FAMILY                        broadcom
 #define MICROPY_PY_SYS_PLATFORM                     "BROADCOM"
-#define MICROPY_PY_BUILTINS_NOTIMPLEMENTED          (1)
-#define MICROPY_PY_FUNCTION_ATTRS                   (1)
-#define MICROPY_PY_REVERSE_SPECIAL_METHODS          (1)
+
 #if BCM_VERSION == 2837 || BCM_VERSION == 2711
 #define MICROPY_OBJ_REPR            (MICROPY_OBJ_REPR_A)
 #elif BCM_VERSION == 2835

@@ -37,23 +37,23 @@
 #include "supervisor/shared/stack.h"
 #include "supervisor/shared/tick.h"
 
-#include "src/rp2040/hardware_structs/include/hardware/structs/watchdog.h"
-#include "src/rp2_common/hardware_gpio/include/hardware/gpio.h"
-#include "src/rp2_common/hardware_uart/include/hardware/uart.h"
-#include "src/rp2_common/hardware_sync/include/hardware/sync.h"
-#include "src/rp2_common/hardware_timer/include/hardware/timer.h"
+#include "hardware/structs/watchdog.h"
+#include "hardware/gpio.h"
+#include "hardware/uart.h"
+#include "hardware/sync.h"
+#include "hardware/timer.h"
 #if CIRCUITPY_CYW43
 #include "py/mphal.h"
 #include "pico/cyw43_arch.h"
 #endif
-#include "src/common/pico_time/include/pico/time.h"
-#include "src/common/pico_binary_info/include/pico/binary_info.h"
+#include "pico/time.h"
+#include "pico/binary_info.h"
 
 #include "pico/bootrom.h"
 #include "hardware/watchdog.h"
 
 #ifdef PICO_RP2350
-#include "src/rp2_common/cmsis/stub/CMSIS/Device/RP2350/Include/RP2350.h"
+#include "RP2350.h" // CMSIS
 #endif
 
 #include "supervisor/shared/serial.h"
@@ -95,10 +95,10 @@ static size_t _psram_size = 0;
 
 #ifdef CIRCUITPY_PSRAM_CHIP_SELECT
 
-#include "src/rp2350/hardware_regs/include/hardware/regs/qmi.h"
-#include "src/rp2350/hardware_regs/include/hardware/regs/xip.h"
-#include "src/rp2350/hardware_structs/include/hardware/structs/qmi.h"
-#include "src/rp2350/hardware_structs/include/hardware/structs/xip_ctrl.h"
+#include "hardware/regs/qmi.h"
+#include "hardware/regs/xip.h"
+#include "hardware/structs/qmi.h"
+#include "hardware/structs/xip_ctrl.h"
 
 static void __no_inline_not_in_flash_func(setup_psram)(void) {
     gpio_set_function(CIRCUITPY_PSRAM_CHIP_SELECT->number, GPIO_FUNC_XIP_CS1);

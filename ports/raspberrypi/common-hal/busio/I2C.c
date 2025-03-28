@@ -13,7 +13,7 @@
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/bitbangio/I2C.h"
 
-#include "src/rp2_common/hardware_gpio/include/hardware/gpio.h"
+#include "hardware/gpio.h"
 
 // Synopsys  DW_apb_i2c  (v2.01)  IP
 

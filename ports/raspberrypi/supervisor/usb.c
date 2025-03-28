@@ -7,9 +7,9 @@
 #include "lib/tinyusb/src/device/usbd.h"
 #include "supervisor/background_callback.h"
 #include "supervisor/usb.h"
-#include "src/rp2_common/hardware_irq/include/hardware/irq.h"
+#include "hardware/irq.h"
 #include "pico/platform.h"
-#include "src/rp2040/hardware_regs/include/hardware/regs/intctrl.h"
+#include "hardware/regs/intctrl.h"
 
 void init_usb_hardware(void) {
 }

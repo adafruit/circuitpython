@@ -12,7 +12,7 @@
 
 #include "supervisor/port.h"
 
-#include "sdk/src/rp2_common/pico_cyw43_driver/include/cyw43_configport.h"
+#include_next "cyw43_configport.h"
 
 #define CYW43_NETUTILS                  (1)
 

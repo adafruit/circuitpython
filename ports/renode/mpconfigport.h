@@ -8,9 +8,6 @@
 
 #define MICROPY_PY_SYS_PLATFORM             "Renode"
 
-#define MICROPY_PY_FUNCTION_ATTRS           (1)
-#define MICROPY_PY_REVERSE_SPECIAL_METHODS  (1)
-
 #define MICROPY_USE_INTERNAL_PRINTF         (1)
 
 // This also includes mpconfigboard.h.

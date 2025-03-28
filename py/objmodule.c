@@ -67,33 +67,6 @@ static void module_attr_try_delegation(mp_obj_t self_in, qstr attr, mp_obj_t *de
 static void module_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
     mp_obj_module_t *self = MP_OBJ_TO_PTR(self_in);
     if (dest[0] == MP_OBJ_NULL) {
-        // CIRCUITPY-CHANGE
-        #if CIRCUITPY_9_10_WARNINGS && CIRCUITPY_DISPLAYIO && CIRCUITPY_WARNINGS
-        if (self == &displayio_module) {
-            #if CIRCUITPY_BUSDISPLAY
-            if (attr == MP_QSTR_Display) {
-                warnings_warn(&mp_type_FutureWarning, MP_ERROR_TEXT("%q moved from %q to %q"), MP_QSTR_Display, MP_QSTR_displayio, MP_QSTR_busdisplay);
-                warnings_warn(&mp_type_FutureWarning, MP_ERROR_TEXT("%q renamed %q"), MP_QSTR_Display, MP_QSTR_BusDisplay);
-            }
-            #endif
-            #if CIRCUITPY_EPAPERDISPLAY
-            if (attr == MP_QSTR_EPaperDisplay) {
-                warnings_warn(&mp_type_FutureWarning, MP_ERROR_TEXT("%q moved from %q to %q"), MP_QSTR_EPaperDisplay, MP_QSTR_displayio, MP_QSTR_epaperdisplay);
-            }
-            #endif
-            #if CIRCUITPY_FOURWIRE
-            if (attr == MP_QSTR_FourWire) {
-                warnings_warn(&mp_type_FutureWarning, MP_ERROR_TEXT("%q moved from %q to %q"), MP_QSTR_FourWire, MP_QSTR_displayio, MP_QSTR_fourwire);
-            }
-            #endif
-            #if CIRCUITPY_I2CDISPLAYBUS
-            if (attr == MP_QSTR_I2CDisplay) {
-                warnings_warn(&mp_type_FutureWarning, MP_ERROR_TEXT("%q moved from %q to %q"), MP_QSTR_I2CDisplay, MP_QSTR_displayio, MP_QSTR_i2cdisplaybus);
-                warnings_warn(&mp_type_FutureWarning, MP_ERROR_TEXT("%q renamed %q"), MP_QSTR_I2CDisplay, MP_QSTR_I2CDisplayBus);
-            }
-            #endif
-        }
-        #endif
         // load attribute
         mp_map_elem_t *elem = mp_map_lookup(&self->globals->map, MP_OBJ_NEW_QSTR(attr), MP_MAP_LOOKUP);
         if (elem != NULL) {

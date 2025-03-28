@@ -14,7 +14,7 @@
 #include "shared-bindings/microcontroller/Pin.h"
 #include "py/runtime.h"
 
-#include "src/rp2_common/hardware_gpio/include/hardware/gpio.h"
+#include "hardware/gpio.h"
 
 static i2c_inst_t *i2c[2] = {i2c0, i2c1};
 

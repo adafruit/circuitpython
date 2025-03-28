@@ -14,7 +14,7 @@
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/digitalio/DigitalInOut.h"
 
-#include "src/rp2_common/hardware_gpio/include/hardware/gpio.h"
+#include "hardware/gpio.h"
 
 #if CIRCUITPY_CYW43
 #include "pico/cyw43_arch.h"

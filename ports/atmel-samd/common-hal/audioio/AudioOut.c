@@ -79,6 +79,9 @@ static void ramp_value(uint16_t start, uint16_t end) {
 // Caller validates that pins are free.
 void common_hal_audioio_audioout_construct(audioio_audioout_obj_t *self,
     const mcu_pin_obj_t *left_channel, const mcu_pin_obj_t *right_channel, uint16_t quiescent_value) {
+
+    // The case of left_channel == right_channel is already disallowed in shared-bindings.
+
     #ifdef SAM_D5X_E5X
     bool dac_clock_enabled = hri_mclk_get_APBDMASK_DAC_bit(MCLK);
     #endif
@@ -106,10 +109,6 @@ void common_hal_audioio_audioout_construct(audioio_audioout_obj_t *self,
     }
     if (right_channel != NULL && right_channel != &pin_PA02 && right_channel != &pin_PA05) {
         raise_ValueError_invalid_pin_name(MP_QSTR_right_channel);
-    }
-    if (right_channel == left_channel) {
-        mp_raise_ValueError_varg(MP_ERROR_TEXT("%q and %q must be different"),
-            MP_QSTR_left_channel, MP_QSTR_right_channel);
     }
     claim_pin(left_channel);
     if (right_channel != NULL) {

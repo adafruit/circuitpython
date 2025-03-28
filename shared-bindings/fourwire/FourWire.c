@@ -20,7 +20,11 @@
 
 //| class FourWire:
 //|     """Manage updating a display over SPI four wire protocol in the background while Python code runs.
-//|     It doesn't handle display initialization."""
+//|     It doesn't handle display initialization.
+//|
+//|     .. seealso:: See `busdisplay.BusDisplay` and `epaperdisplay.EPaperDisplay`
+//|         for how to initialize a display, given a `FourWire` bus.
+//|     """
 //|
 //|     def __init__(
 //|         self,

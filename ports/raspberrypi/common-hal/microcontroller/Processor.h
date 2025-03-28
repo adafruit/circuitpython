@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "src/rp2_common/pico_unique_id/include/pico/unique_id.h"
+#include "pico/unique_id.h"
 
 #define COMMON_HAL_MCU_PROCESSOR_UID_LENGTH PICO_UNIQUE_BOARD_ID_SIZE_BYTES
 

@@ -14,8 +14,8 @@
 #include "common-hal/microcontroller/Pin.h"
 #include "shared-bindings/microcontroller/Pin.h"
 
-#include "src/rp2_common/hardware_dma/include/hardware/dma.h"
-#include "src/rp2_common/hardware_gpio/include/hardware/gpio.h"
+#include "hardware/dma.h"
+#include "hardware/gpio.h"
 
 #define NO_INSTANCE 0xff
 

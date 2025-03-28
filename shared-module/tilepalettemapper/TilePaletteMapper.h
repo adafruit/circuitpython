@@ -15,11 +15,11 @@
 
 typedef struct {
     mp_obj_base_t base;
-    mp_obj_t palette;
+    mp_obj_t pixel_shader;
     uint16_t width_in_tiles;
     uint16_t height_in_tiles;
     uint16_t input_color_count;
-    uint16_t **tile_mappings;
+    uint32_t **tile_mappings;
     bool needs_refresh;
 } tilepalettemapper_tilepalettemapper_t;
 

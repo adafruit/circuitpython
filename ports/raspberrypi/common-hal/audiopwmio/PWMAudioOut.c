@@ -20,8 +20,8 @@
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/microcontroller/Processor.h"
 
-#include "src/rp2040/hardware_structs/include/hardware/structs/dma.h"
-#include "src/rp2_common/hardware_pwm/include/hardware/pwm.h"
+#include "hardware/structs/dma.h"
+#include "hardware/pwm.h"
 
 // The PWM clock frequency is base_clock_rate / PWM_TOP, typically 125_000_000 / PWM_TOP.
 // We pick BITS_PER_SAMPLE so we get a clock frequency that is above what would cause aliasing.

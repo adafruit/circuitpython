@@ -4,7 +4,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "src/rp2_common/hardware_gpio/include/hardware/gpio.h"
+#include "hardware/gpio.h"
 
 #include <stdint.h>
 

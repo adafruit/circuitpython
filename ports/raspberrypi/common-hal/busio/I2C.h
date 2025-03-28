@@ -11,7 +11,7 @@
 
 #include "py/obj.h"
 
-#include "src/rp2_common/hardware_i2c/include/hardware/i2c.h"
+#include "hardware/i2c.h"
 
 typedef struct {
     mp_obj_base_t base;

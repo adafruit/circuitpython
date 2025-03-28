@@ -7,7 +7,7 @@
 |see_cpython_module| :mod:`python:errno`.
 
 This module provides access to symbolic error codes for `OSError` exception.
-The codes available may vary per CircuitPython build.
+Some codes are not available on the smallest CircuitPython builds, such as SAMD21, for space reasons.
 
 Constants
 ---------

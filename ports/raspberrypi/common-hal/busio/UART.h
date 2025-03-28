@@ -9,7 +9,7 @@
 #include "py/obj.h"
 #include "py/ringbuf.h"
 
-#include "src/rp2_common/hardware_uart/include/hardware/uart.h"
+#include "hardware/uart.h"
 
 typedef struct {
     mp_obj_base_t base;

@@ -12,6 +12,7 @@ HAL_DIR=hal/$(MCU_SERIES)
 
 ifeq ($(CIRCUITPY_CYW43),1)
 INC_CYW43 := \
+	-isystem lib/cyw43-driver \
 	-isystem lib/cyw43-driver/firmware \
 	-isystem lib/cyw43-driver/src \
 	-isystem lib/lwip/src/include \
@@ -92,8 +93,6 @@ INC += \
 	-I../shared/timeutils \
 	-Iboards/$(BOARD) \
 	-Iboards/ \
-	-isystem ./../../lib/cmsis/inc \
-	-isystem sdk/ \
 	-isystem sdk/src/common/boot_picobin_headers/include/ \
 	-isystem sdk/src/common/boot_picoboot_headers/include/ \
 	-isystem sdk/src/common/hardware_claim/include/ \
@@ -107,6 +106,8 @@ INC += \
 	-isystem sdk/src/$(CHIP_VARIANT_LOWER)/hardware_structs/include/ \
 	-isystem sdk/src/$(CHIP_VARIANT_LOWER)/pico_platform/include/ \
 	-isystem sdk/src/rp2_common/boot_bootrom_headers/include/ \
+	-isystem sdk/src/rp2_common/cmsis/stub/CMSIS/Core/Include/ \
+	-isystem sdk/src/rp2_common/cmsis/stub/CMSIS/Device/${CHIP_VARIANT}/Include \
 	-isystem sdk/src/rp2_common/cmsis/ \
 	-isystem sdk/src/rp2_common/hardware_adc/include/ \
 	-isystem sdk/src/rp2_common/hardware_base/include/ \
@@ -153,7 +154,7 @@ INC += \
 	-isystem sdk/src/rp2_common/pico_platform_panic/include/ \
 	-isystem sdk/src/rp2_common/pico_time_adapter/include/ \
 	-isystem sdk/src/rp2_common/pico_unique_id/include/ \
-$(INC_CYW43) \
+	$(INC_CYW43) \
 	-Isdk_config \
 	-I../../lib/tinyusb/src \
 	-I../../supervisor/shared/usb \
@@ -222,7 +223,7 @@ endif
 
 DISABLE_WARNINGS = -Wno-cast-align
 
-CFLAGS += $(INC) -Wall -Werror -std=gnu11 -fshort-enums $(BASE_CFLAGS) $(CFLAGS_MOD) $(COPT) $(DISABLE_WARNINGS) -Werror=missing-prototypes
+CFLAGS += $(INC) -Wtype-limits -Wall -Werror -std=gnu11 -fshort-enums $(BASE_CFLAGS) $(CFLAGS_MOD) $(COPT) $(DISABLE_WARNINGS) -Werror=missing-prototypes
 
 PICO_LDFLAGS = --specs=nosys.specs --specs=nano.specs
 

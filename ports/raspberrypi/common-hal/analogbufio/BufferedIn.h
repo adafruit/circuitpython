@@ -8,7 +8,7 @@
 #pragma once
 
 #include "common-hal/microcontroller/Pin.h"
-#include "src/rp2_common/hardware_dma/include/hardware/dma.h"
+#include "hardware/dma.h"
 
 #include "py/obj.h"
 

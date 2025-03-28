@@ -30,17 +30,8 @@ uint8_t display_init_sequence[] = {
 };
 
 static void display_init(void) {
-
     busio_spi_obj_t *spi = common_hal_board_create_spi(0);
     fourwire_fourwire_obj_t *bus = &allocate_display_bus()->fourwire_bus;
-
-    common_hal_busio_spi_construct(
-        spi,
-        &pin_GPIO12,    // CLK
-        &pin_GPIO11,    // MOSI
-        NULL,           // MISO not connected
-        false);         // Not half-duplex
-
 
     bus->base.type = &fourwire_fourwire_type;
 

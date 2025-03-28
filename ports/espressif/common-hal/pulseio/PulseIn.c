@@ -127,6 +127,9 @@ bool common_hal_pulseio_pulsein_deinited(pulseio_pulsein_obj_t *self) {
 }
 
 void common_hal_pulseio_pulsein_deinit(pulseio_pulsein_obj_t *self) {
+    if (common_hal_pulseio_pulsein_deinited(self)) {
+        return;
+    }
     rmt_disable(self->channel);
     reset_pin_number(self->pin->number);
     rmt_del_channel(self->channel);

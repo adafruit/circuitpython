@@ -26,9 +26,9 @@
 #include "shared-module/displayio/__init__.h"
 #include "supervisor/shared/board.h"
 
-#include "src/rp2_common/hardware_gpio/include/hardware/gpio.h"
+#include "hardware/gpio.h"
 
-#include "src/rp2_common/hardware_adc/include/hardware/adc.h"
+#include "hardware/adc.h"
 #define ADC_FIRST_PIN_NUMBER 26
 #define ADC_PIN_COUNT 4
 extern void common_hal_mcu_delay_us(uint32_t);

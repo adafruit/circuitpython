@@ -8,9 +8,6 @@
 
 #define MICROPY_PY_SYS_PLATFORM                 "CXD56"
 
-#define MICROPY_PY_FUNCTION_ATTRS                (1)
-#define MICROPY_PY_REVERSE_SPECIAL_METHODS       (1)
-
 // 64kiB stack
 #define CIRCUITPY_DEFAULT_STACK_SIZE            (0x10000)
 

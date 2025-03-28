@@ -7,7 +7,7 @@
 #pragma once
 
 #include "common-hal/microcontroller/Pin.h"
-#include "src/rp2_common/hardware_pio/include/hardware/pio.h"
+#include "hardware/pio.h"
 #include "common-hal/rp2pio/StateMachine.h"
 
 #include "py/obj.h"

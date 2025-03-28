@@ -10,7 +10,7 @@
 
 #include "py/obj.h"
 
-#include "src/rp2_common/hardware_spi/include/hardware/spi.h"
+#include "hardware/spi.h"
 
 typedef struct {
     mp_obj_base_t base;

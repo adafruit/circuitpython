@@ -10,7 +10,7 @@
 
 #include "common-hal/microcontroller/Pin.h"
 #include "common-hal/memorymap/AddressRange.h"
-#include "src/rp2_common/hardware_pio/include/hardware/pio.h"
+#include "hardware/pio.h"
 
 // pio_pinmask_t can hold ANY pin masks, so it is used before selection of gpiobase
 #if NUM_BANK0_GPIOS > 32

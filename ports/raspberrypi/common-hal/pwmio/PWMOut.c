@@ -12,10 +12,10 @@
 #include "shared-bindings/pwmio/PWMOut.h"
 #include "shared-bindings/microcontroller/Processor.h"
 
-#include "src/rp2040/hardware_regs/include/hardware/platform_defs.h"
-#include "src/rp2_common/hardware_clocks/include/hardware/clocks.h"
-#include "src/rp2_common/hardware_gpio/include/hardware/gpio.h"
-#include "src/rp2_common/hardware_pwm/include/hardware/pwm.h"
+#include "hardware/platform_defs.h"
+#include "hardware/clocks.h"
+#include "hardware/gpio.h"
+#include "hardware/pwm.h"
 
 uint32_t target_slice_frequencies[NUM_PWM_SLICES];
 uint32_t slice_variable_frequency;

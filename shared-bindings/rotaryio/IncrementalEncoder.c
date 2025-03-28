@@ -42,7 +42,13 @@
 //|               position = enc.position
 //|               if last_position == None or position != last_position:
 //|                   print(position)
-//|               last_position = position"""
+//|               last_position = position
+//|
+//|         .. warning:: On RP2350 boards, any pulldowns used must be 8.2 kohms or less,
+//|            to overcome a hardware issue.
+//|            See the RP2350 warning in `digitalio` for more information.
+//|         """
+//|
 //|         ...
 //|
 static mp_obj_t rotaryio_incrementalencoder_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {

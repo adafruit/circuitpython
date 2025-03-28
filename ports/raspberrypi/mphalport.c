@@ -19,7 +19,7 @@
 #include "mphalport.h"
 #include "supervisor/shared/tick.h"
 
-#include "src/rp2_common/hardware_timer/include/hardware/timer.h"
+#include "hardware/timer.h"
 
 extern uint32_t common_hal_mcu_processor_get_frequency(void);
 

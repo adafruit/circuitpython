@@ -29,7 +29,8 @@
 //|     is called. This is done so that CircuitPython can use the display itself.
 //|
 //|     Most people should not use this class directly. Use a specific display driver instead that will
-//|     contain the startup and shutdown sequences at minimum."""
+//|     contain the startup and shutdown sequences at minimum.
+//|     """
 //|
 //|     def __init__(
 //|         self,

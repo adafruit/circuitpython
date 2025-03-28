@@ -15,6 +15,12 @@ a list of modules supported on each board.
 Modules
 ---------
 
+.. note:: Some modules are documented in :doc:`/docs/library/index`, not here:
+    `builtins`, `heapq`, `array`, `binascii`, `collections`, `errno`, `gc`,
+    `io`, `json`, `re`, `sys`, `select`.
+
+     The documentation for :func:`help` is at the end of this page.
+
 .. toctree::
     :glob:
     :maxdepth: 2

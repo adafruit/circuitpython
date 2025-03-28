@@ -18,8 +18,8 @@
 #include "shared-bindings/microcontroller/Processor.h"
 #include "shared-bindings/microcontroller/__init__.h"
 
-#include "src/rp2_common/hardware_pio/include/hardware/pio.h"
-#include "src/rp2_common/hardware_pio/include/hardware/pio_instructions.h"
+#include "hardware/pio.h"
+#include "hardware/pio_instructions.h"
 
 // Define this to (1), and you can scope the instruction-pointer of the state machine on D26..28 (note the weird encoding though!)
 #define DEBUG_STATE_MACHINE (0)

@@ -28,10 +28,15 @@
 //|         """Create a AudioOut object associated with the given pin(s). This allows you to
 //|         play audio signals out on the given pin(s).
 //|
-//|         :param ~microcontroller.Pin left_channel: The pin to output the left channel to
-//|         :param ~microcontroller.Pin right_channel: The pin to output the right channel to
+//|         :param ~microcontroller.Pin left_channel: Output left channel data to this pin
+//|         :param ~microcontroller.Pin right_channel: Output right channel data to this pin. May be ``None``.
 //|         :param int quiescent_value: The output value when no signal is present. Samples should start
 //|             and end with this value to prevent audible popping.
+//|
+//|         .. note:: On ESP32 and ESP32-S2, the DAC channels are usually designated
+//|           as ``DAC_1`` (right stereo channel) and DAC_2 (left stereo channel).
+//|           These pins are sometimes labelled as ``A0`` and ``A1``, but they may be assigned
+//|           in either order. Check your board's pinout to verify which pin is which channel.
 //|
 //|         Simple 8ksps 440 Hz sin wave::
 //|
@@ -89,6 +94,12 @@ static mp_obj_t audioio_audioout_make_new(const mp_obj_type_t *type, size_t n_ar
         validate_obj_is_free_pin(args[ARG_left_channel].u_obj, MP_QSTR_left_channel);
     const mcu_pin_obj_t *right_channel_pin =
         validate_obj_is_free_pin_or_none(args[ARG_right_channel].u_obj, MP_QSTR_right_channel);
+
+    // Can't use the same pin for both left and right channels.
+    if (left_channel_pin == right_channel_pin) {
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("%q and %q must be different"),
+            MP_QSTR_left_channel, MP_QSTR_right_channel);
+    }
 
     // create AudioOut object from the given pin
     audioio_audioout_obj_t *self = mp_obj_malloc_with_finaliser(audioio_audioout_obj_t, &audioio_audioout_type);
