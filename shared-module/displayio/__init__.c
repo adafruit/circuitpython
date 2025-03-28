@@ -463,37 +463,13 @@ void displayio_gc_collect(void) {
     }
 }
 
-/*
 static bool is_display_active(mp_obj_base_t *display_maybe) {
     return display_maybe->type != &mp_type_NoneType && display_maybe->type != NULL;
-}
-*/
-
-static bool is_any_display_active(primary_display_t *display_maybe) {
-    if (display_maybe->display_base.type != &mp_type_NoneType && display_maybe->display_base.type != NULL) {
-        return true;
-    }
-    #if CIRCUITPY_BUSDISPLAY
-    if (display_maybe->display.base.type != &mp_type_NoneType && display_maybe->display.base.type != NULL) {
-        return true;
-    }
-    #endif
-    #if CIRCUITPY_FRAMEBUFFERIO
-    if (display_maybe->framebuffer_display.base.type != &mp_type_NoneType && display_maybe->framebuffer_display.base.type != NULL) {
-        return true;
-    }
-    #endif
-    #if CIRCUITPY_EPAPERDISPLAY
-    if (display_maybe->epaper_display.base.type != &mp_type_NoneType && display_maybe->epaper_display.base.type != NULL) {
-        return true;
-    }
-    #endif
-    return false;
 }
 
 primary_display_t *allocate_display(void) {
     for (uint8_t i = 0; i < max_num_displays; i++) {
-        if (!is_any_display_active(DYN_DISPLAYS_ADR0(i))) {
+        if (!is_display_active(DYN_DISPLAYS_ADR(i, display_base))) {
             // Clear this memory so it is in a known state before init.
             memset(DYN_DISPLAYS_ADR0(i), 0, sizeof(displays[0]));
             // Default to None so that it works as board.DISPLAY.
@@ -553,8 +529,8 @@ mp_obj_t common_hal_displayio_get_primary_display(void) {
     if (primary_display_number == -1 || primary_display_number >= max_num_displays) {
         return mp_const_none;
     }
-    primary_display_t *primary_display = DYN_DISPLAYS_ADR0(primary_display_number);
-    if (is_any_display_active(primary_display)) {
+    mp_obj_base_t *primary_display = DYN_DISPLAYS_ADR(primary_display_number, display_base);
+    if (is_display_active(primary_display)) {
         return MP_OBJ_FROM_PTR(primary_display);
     }
     return mp_const_none;
@@ -567,7 +543,7 @@ void common_hal_displayio_set_primary_display(mp_obj_t new_primary_display) {
     }
     for (uint8_t i = 0; i < max_num_displays; i++) {
         mp_obj_t display = MP_OBJ_FROM_PTR(DYN_DISPLAYS_ADR0(i));
-        if (new_primary_display == display && is_any_display_active(display)) {
+        if (new_primary_display == display && is_display_active(display)) {
             primary_display_number = i;
             return;
         }
@@ -581,7 +557,7 @@ void common_hal_displayio_auto_primary_display(void) {
         return;
     }
     for (uint8_t i = 0; i < max_num_displays; i++) {
-        if (is_any_display_active(DYN_DISPLAYS_ADR0(i))) {
+        if (is_display_active(DYN_DISPLAYS_ADR(i, display_base))) {
             primary_display_number = i;
             return;
         }
