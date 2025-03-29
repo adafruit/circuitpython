@@ -9,7 +9,7 @@
 #include "py/obj.h"
 #include "supervisor/background_callback.h"
 
-#include "hardware/dma.h"
+#include "src/rp2_common/hardware_dma/include/hardware/dma.h"
 
 typedef enum {
     AUDIO_DMA_OK,

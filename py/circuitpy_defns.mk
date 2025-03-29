@@ -944,7 +944,7 @@ SRC_CIRCUITPY_COMMON = \
 
 ifeq ($(CIRCUITPY_QRIO),1)
 SRC_CIRCUITPY_COMMON += lib/quirc/lib/decode.c lib/quirc/lib/identify.c lib/quirc/lib/quirc.c lib/quirc/lib/version_db.c
-$(BUILD)/lib/quirc/lib/%.o: CFLAGS += -Wno-type-limits -Wno-shadow -Wno-sign-compare -include shared-module/qrio/quirc_alloc.h
+$(BUILD)/lib/quirc/lib/%.o: CFLAGS += -Wno-shadow -Wno-sign-compare -include shared-module/qrio/quirc_alloc.h
 endif
 
 ifdef LD_TEMPLATE_FILE

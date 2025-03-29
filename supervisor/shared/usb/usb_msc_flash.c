@@ -26,10 +26,8 @@
 #define LUN_COUNT 1
 #endif
 
-// The ellipsis range in the designated initializer of `ejected` is not standard C,
-// but it works in both gcc and clang.
-static bool ejected[LUN_COUNT] = { [0 ... (LUN_COUNT - 1)] = true};
-static bool locked[LUN_COUNT] = {false};
+static bool ejected[LUN_COUNT];
+static bool locked[LUN_COUNT];
 
 #include "tusb.h"
 

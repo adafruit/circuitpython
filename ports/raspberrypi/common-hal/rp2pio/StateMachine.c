@@ -14,12 +14,12 @@
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/memorymap/AddressRange.h"
 
-#include "hardware/platform_defs.h"
-#include "hardware/structs/iobank0.h"
-#include "hardware/clocks.h"
-#include "hardware/dma.h"
-#include "hardware/pio_instructions.h"
-#include "hardware/irq.h"
+#include "src/rp2040/hardware_regs/include/hardware/platform_defs.h"
+#include "src/rp2_common/hardware_clocks/include/hardware/clocks.h"
+#include "src/rp2_common/hardware_dma/include/hardware/dma.h"
+#include "src/rp2_common/hardware_pio/include/hardware/pio_instructions.h"
+#include "src/rp2040/hardware_structs/include/hardware/structs/iobank0.h"
+#include "src/rp2_common/hardware_irq/include/hardware/irq.h"
 
 #include "shared/runtime/interrupt_char.h"
 #include "py/obj.h"
@@ -222,7 +222,7 @@ static bool is_gpio_compatible(PIO pio, uint32_t used_gpio_ranges) {
     #endif
 }
 
-static bool use_existing_program(PIO *pio_out, int *sm_out, int *offset_inout, uint32_t program_id, size_t program_len, uint gpio_base, uint gpio_count) {
+static bool use_existing_program(PIO *pio_out, uint *sm_out, int *offset_inout, uint32_t program_id, size_t program_len, uint gpio_base, uint gpio_count) {
     uint32_t required_gpio_ranges;
     if (gpio_count) {
         required_gpio_ranges = (1u << (gpio_base >> 4)) |
@@ -307,12 +307,12 @@ bool rp2pio_statemachine_construct(rp2pio_statemachine_obj_t *self,
         .origin = offset,
     };
     PIO pio;
-    int state_machine;
+    uint state_machine;
     bool added = false;
 
     if (!use_existing_program(&pio, &state_machine, &offset, program_id, program_len, gpio_base, gpio_count)) {
         uint program_offset;
-        bool r = pio_claim_free_sm_and_add_program_for_gpio_range(&program_struct, &pio, (uint *)&state_machine, &program_offset, gpio_base, gpio_count, true);
+        bool r = pio_claim_free_sm_and_add_program_for_gpio_range(&program_struct, &pio, &state_machine, &program_offset, gpio_base, gpio_count, true);
         if (!r) {
             return false;
         }
@@ -336,8 +336,6 @@ bool rp2pio_statemachine_construct(rp2pio_statemachine_obj_t *self,
         }
     }
 
-    // Sanity check that state_machine number is valid.
-    assert(state_machine >= 0);
     self->pio = pio;
     self->state_machine = state_machine;
     self->offset = offset;
@@ -741,8 +739,6 @@ void common_hal_rp2pio_statemachine_construct(rp2pio_statemachine_obj_t *self,
         fifo_type,
         mov_status_type, mov_status_n);
     if (!ok) {
-        // indicate state machine never inited
-        self->state_machine = NUM_PIO_STATE_MACHINES;
         mp_raise_RuntimeError(MP_ERROR_TEXT("All state machines in use"));
     }
 }

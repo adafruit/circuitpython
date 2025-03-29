@@ -13,13 +13,13 @@
 #include "common-hal/rp2pio/StateMachine.h"
 #include "supervisor/port.h"
 
-#include "pico/stdlib.h"
-#include "hardware/structs/mpu.h"
-#include "RP2040.h" // (cmsis)
-#include "hardware/clocks.h"
-#include "hardware/pwm.h"
-#include "hardware/vreg.h"
-#include "pico/multicore.h"
+#include "src/common/pico_stdlib_headers/include/pico/stdlib.h"
+#include "src/rp2040/hardware_structs/include/hardware/structs/mpu.h"
+#include "src/rp2_common/cmsis/stub/CMSIS/Device/RP2040/Include/RP2040.h"
+#include "src/rp2_common/hardware_clocks/include/hardware/clocks.h"
+#include "src/rp2_common/hardware_pwm/include/hardware/pwm.h"
+#include "src/rp2_common/hardware_vreg/include/hardware/vreg.h"
+#include "src/rp2_common/pico_multicore/include/pico/multicore.h"
 
 #include "lib/PicoDVI/software/libdvi/tmds_encode.h"
 

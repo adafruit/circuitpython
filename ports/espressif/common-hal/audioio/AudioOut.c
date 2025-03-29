@@ -11,6 +11,7 @@
 
 #include "driver/dac_continuous.h"
 
+
 #if defined(CONFIG_IDF_TARGET_ESP32)
 #define pin_CHANNEL_0 pin_GPIO25
 #define pin_CHANNEL_1 pin_GPIO26
@@ -303,32 +304,6 @@ static audioout_sample_convert_func_t audioout_get_samples_convert_func(
     }
 }
 
-static void audioio_audioout_start(audioio_audioout_obj_t *self) {
-    esp_err_t ret;
-
-    self->playing = true;
-    self->paused = false;
-
-    ret = dac_continuous_start_async_writing(self->handle);
-    if (ret != ESP_OK) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to start async audio"));
-    }
-}
-
-static void audioio_audioout_stop(audioio_audioout_obj_t *self, bool full_stop) {
-    dac_continuous_stop_async_writing(self->handle);
-    if (full_stop) {
-        self->get_buffer_index = 0;
-        self->put_buffer_index = 0;
-        self->sample_buffer = NULL;
-        self->sample = NULL;
-        self->playing = false;
-        self->paused = false;
-    } else {
-        self->paused = true;
-    }
-}
-
 static bool audioout_fill_buffer(audioio_audioout_obj_t *self) {
     if (!self->playing) {
         return false;
@@ -367,7 +342,7 @@ static bool audioout_fill_buffer(audioio_audioout_obj_t *self) {
             &raw_sample_buf, &raw_sample_buf_size);
 
         if (get_buffer_result == GET_BUFFER_ERROR) {
-            audioio_audioout_stop(self, true);
+            common_hal_audioio_audioout_stop(self);
             return false;
         }
 
@@ -415,7 +390,7 @@ static bool audioout_fill_buffer(audioio_audioout_obj_t *self) {
         } else {
             // TODO: figure out if it is ok to call this here or do we need
             // to somehow wait for all of the samples to be flushed
-            audioio_audioout_stop(self, true);
+            common_hal_audioio_audioout_stop(self);
             return false;
         }
     }
@@ -517,8 +492,11 @@ void common_hal_audioio_audioout_construct(audioio_audioout_obj_t *self,
     self->paused = false;
     self->freq_hz = DEFAULT_SAMPLE_RATE;
 
-    // The case of left_channel == right_channel is already disallowed in shared-bindings.
-
+    /* espressif has two dac channels and it can support true stereo or
+     * outputting the same signal to both channels (dual mono).
+     * if different pins are supplied for left and right then use true stereo.
+     * if the same pin is supplied for left and right then use dual mono.
+     */
     if ((left_channel_pin == &pin_CHANNEL_0 &&
          right_channel_pin == &pin_CHANNEL_1) ||
         (left_channel_pin == &pin_CHANNEL_1 &&
@@ -526,6 +504,12 @@ void common_hal_audioio_audioout_construct(audioio_audioout_obj_t *self,
         self->channel_mask = DAC_CHANNEL_MASK_ALL;
         self->num_channels = 2;
         self->channel_mode = DAC_CHANNEL_MODE_ALTER;
+    } else if ((left_channel_pin == &pin_CHANNEL_0 ||
+                left_channel_pin == &pin_CHANNEL_1) &&
+               right_channel_pin == left_channel_pin) {
+        self->channel_mask = DAC_CHANNEL_MASK_ALL;
+        self->num_channels = 1;
+        self->channel_mode = DAC_CHANNEL_MODE_SIMUL;
     } else if (left_channel_pin == &pin_CHANNEL_0 &&
                right_channel_pin == NULL) {
         self->channel_mask = DAC_CHANNEL_MASK_CH0;
@@ -566,6 +550,32 @@ void common_hal_audioio_audioout_deinit(audioio_audioout_obj_t *self) {
     _active_handle = NULL;
 }
 
+static void audioio_audioout_start(audioio_audioout_obj_t *self) {
+    esp_err_t ret;
+
+    self->playing = true;
+    self->paused = false;
+
+    ret = dac_continuous_start_async_writing(self->handle);
+    if (ret != ESP_OK) {
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to start async audio"));
+    }
+}
+
+static void audioio_audioout_stop(audioio_audioout_obj_t *self, bool full_stop) {
+    dac_continuous_stop_async_writing(self->handle);
+    if (full_stop) {
+        self->get_buffer_index = 0;
+        self->put_buffer_index = 0;
+        self->sample_buffer = NULL;
+        self->sample = NULL;
+        self->playing = false;
+        self->paused = false;
+    } else {
+        self->paused = true;
+    }
+}
+
 void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
     mp_obj_t sample, bool loop) {
 
@@ -587,11 +597,7 @@ void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
     self->looping = loop;
     freq_hz = audiosample_get_sample_rate(self->sample);
 
-    // Workaround: always reset the DAC completely between plays,
-    // due to a bug that causes the left and right channels to be swapped randomly.
-    // See https://github.com/espressif/esp-idf/issues/11425
-    // TODO: Remove the `true` when this issue is fixed.
-    if (true || freq_hz != self->freq_hz) {
+    if (freq_hz != self->freq_hz) {
         common_hal_audioio_audioout_deinit(self);
         self->freq_hz = freq_hz;
         audioout_init(self);

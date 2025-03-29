@@ -177,10 +177,8 @@ static void validate_length(aesio_aes_obj_t *self, size_t src_length,
 //|         """Encrypt the buffer from ``src`` into ``dest``.
 //|
 //|         For ECB mode, the buffers must be 16 bytes long.  For CBC mode, the
-//|         buffers must be a multiple of 16 bytes, and must be equal length.
-//|         Any included padding must conform to the required padding style for the given mode.
-//|         For CTR mode, there are no restrictions.
-//|         """
+//|         buffers must be a multiple of 16 bytes, and must be equal length.  For
+//|         CTR mode, there are no restrictions."""
 //|         ...
 //|
 static mp_obj_t aesio_aes_encrypt_into(mp_obj_t self_in, mp_obj_t src, mp_obj_t dest) {

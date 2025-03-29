@@ -19,11 +19,7 @@
 
 //| class I2CDisplayBus:
 //|     """Manage updating a display over I2C in the background while Python code runs.
-//|     It doesn't handle display initialization.
-//|
-//|     .. seealso:: See `busdisplay.BusDisplay` and `epaperdisplay.EPaperDisplay`
-//|         for how to initialize a display, given an `I2CDisplayBus`.
-//|     """
+//|     It doesn't handle display initialization."""
 //|
 //|     def __init__(
 //|         self,

@@ -10,7 +10,7 @@
 #include <string.h>
 
 #include "py/runtime.h"
-#include "hardware/flash.h"
+#include "src/rp2_common/hardware_flash/include/hardware/flash.h"
 #include "shared-bindings/microcontroller/__init__.h"
 #include "supervisor/internal_flash.h"
 

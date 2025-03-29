@@ -10,7 +10,7 @@
 #include "shared-bindings/microcontroller/Pin.h"
 #include "py/runtime.h"
 
-#include "hardware/adc.h"
+#include "src/rp2_common/hardware_adc/include/hardware/adc.h"
 
 #define ADC_PIN_COUNT (NUM_ADC_CHANNELS - 1)
 

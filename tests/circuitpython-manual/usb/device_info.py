@@ -9,8 +9,7 @@ if hasattr(board, "USB_HOST_POWER"):
     d.switch_to_output(value=True)
     print("USB power on")
 
-if hasattr(board, "USB_HOST_DP") and hasattr(board, "USB_HOST_DM"):
-    h = usb_host.Port(board.USB_HOST_DP, board.USB_HOST_DM)
+h = usb_host.Port(board.USB_HOST_DP, board.USB_HOST_DM)
 
 while True:
     for device in usb.core.find(find_all=True):
