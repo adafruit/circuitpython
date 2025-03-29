@@ -28,7 +28,7 @@
 //|     main device.  It is typically faster than :py:class:`~bitbangio.I2C` because a
 //|     separate pin is used to select a device rather than a transmitted
 //|     address. This class only manages three of the four SPI lines: `!clock`,
-//|     `!MOSI`, `!MISO`. It is up to the client to manage the appropriate
+//|     `!MOSI`, `!MISO`. Its up to the client to manage the appropriate
 //|     select line, often abbreviated `!CS` or `!SS`. (This is common because
 //|     multiple secondaries can share the `!clock`, `!MOSI` and `!MISO` lines
 //|     and therefore the hardware.)
@@ -46,8 +46,6 @@
 //|         </details>
 //|         </p>
 //|
-//|     .. seealso:: This class acts as an SPI main (controller).
-//|         To act as an SPI secondary (target), use `spitarget.SPITarget`.
 //|     """
 //|
 //|     def __init__(

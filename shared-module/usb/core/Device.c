@@ -49,22 +49,10 @@ bool common_hal_usb_core_device_construct(usb_core_device_obj_t *self, uint8_t d
     return true;
 }
 
-bool common_hal_usb_core_device_deinited(usb_core_device_obj_t *self) {
-    return self->device_address == 0;
-}
-
 void common_hal_usb_core_device_deinit(usb_core_device_obj_t *self) {
-    if (common_hal_usb_core_device_deinited(self)) {
-        return;
-    }
-    size_t open_size = sizeof(self->open_endpoints);
-    for (size_t i = 0; i < open_size; i++) {
-        if (self->open_endpoints[i] != 0) {
-            tuh_edpt_close(self->device_address, self->open_endpoints[i]);
-            self->open_endpoints[i] = 0;
-        }
-    }
-    self->device_address = 0;
+    // TODO: Close all of the endpoints we've opened. Some drivers store state
+    // for each open endpoint. If we don't close them, then we'll leak memory.
+    // Waiting for TinyUSB to add this.
 }
 
 uint16_t common_hal_usb_core_device_get_idVendor(usb_core_device_obj_t *self) {

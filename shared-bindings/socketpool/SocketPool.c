@@ -103,6 +103,10 @@ static mp_obj_t socketpool_socketpool_socket(size_t n_args, const mp_obj_t *pos_
     socketpool_socketpool_sock_t type = args[ARG_type].u_int;
     socketpool_socketpool_ipproto_t proto = args[ARG_proto].u_int;
 
+    if (proto < 0) {
+        proto = 0;
+    }
+
     return common_hal_socketpool_socket(self, family, type, proto);
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(socketpool_socketpool_socket_obj, 1, socketpool_socketpool_socket);

@@ -15,7 +15,7 @@
 #include "py/mpstate.h"
 #include "py/runtime.h"
 
-#include "hardware/irq.h"
+#include "src/rp2_common/hardware_irq/include/hardware/irq.h"
 #include "hardware/regs/intctrl.h" // For isr_ macro.
 
 

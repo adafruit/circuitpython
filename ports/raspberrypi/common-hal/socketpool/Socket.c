@@ -35,7 +35,7 @@
 #include "lwip/timeouts.h"
 #include "lwip/udp.h"
 
-#include "pico/cyw43_arch.h"
+#include "sdk/src/rp2_common/pico_cyw43_arch/include/pico/cyw43_arch.h"
 
 mp_obj_t socketpool_ip_addr_to_str(const ip_addr_t *addr) {
     char ip_str[IPADDR_STRLEN_MAX]; // big enough for any supported address type

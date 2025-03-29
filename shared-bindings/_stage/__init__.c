@@ -16,8 +16,8 @@
 
 //| """C-level helpers for animation of sprites on a stage
 //|
-//| The `_stage` module contains native code to speed-up the ``stage``
-//| `library <https://github.com/python-ugame/circuitpython-stage>`_."""
+//| The `_stage` module contains native code to speed-up the ```stage`` Library
+//| <https://github.com/python-ugame/circuitpython-stage>`_."""
 //|
 //|
 //| def render(

@@ -1,4 +1,5 @@
 import audiomp3, audiocore
+import ulab.numpy as np
 
 TEST_FILE = (
     __file__.rsplit("/", 1)[0]
@@ -6,14 +7,19 @@ TEST_FILE = (
 )
 
 
-def loudness(values):
-    return sum(abs(a) for a in values)
+def normalized_rms_ulab(values):
+    values = np.frombuffer(values, dtype=np.int16)
+    # this function works with ndarrays only
+    minbuf = np.mean(values)
+    values = values - minbuf
+    samples_sum = np.sum(values * values)
+    return (samples_sum / len(values)) ** 0.5
 
 
 def print_frame_loudness(decoder, n):
     for i in range(n):
         result, buf = audiocore.get_buffer(decoder)
-        print(f"{i} {result} {loudness(buf):5.0f}")
+        print(f"{i} {result} {normalized_rms_ulab(buf):5.0f}")
     print()
 
 

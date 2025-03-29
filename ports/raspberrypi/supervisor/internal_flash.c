@@ -24,11 +24,11 @@
 #include "supervisor/usb.h"
 
 #ifdef PICO_RP2350
-#include "hardware/structs/qmi.h"
+#include "src/rp2350/hardware_structs/include/hardware/structs/qmi.h"
 #endif
-#include "hardware/structs/sio.h"
-#include "hardware/flash.h"
-#include "pico/binary_info.h"
+#include "src/rp2040/hardware_structs/include/hardware/structs/sio.h"
+#include "src/rp2_common/hardware_flash/include/hardware/flash.h"
+#include "src/common/pico_binary_info/include/pico/binary_info.h"
 
 #if !defined(TOTAL_FLASH_MINIMUM)
 #define TOTAL_FLASH_MINIMUM (2 * 1024 * 1024)

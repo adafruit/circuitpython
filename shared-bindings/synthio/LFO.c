@@ -43,7 +43,7 @@ static const uint16_t triangle[] = {0, 32767, 0, -32767};
 //|     An LFO's ``value`` property is computed once when it is constructed, and then
 //|     when its associated synthesizer updates it.
 //|
-//|     This means that for instance an LFO **created** with ``offset=1`` has ``value==1``
+//|     This means that for instance an LFO **created** with ``offset=1`` has ```value==1``
 //|     immediately, but **updating** the ``offset`` property alone does not
 //|     change ``value``; it only updates through an association with an active synthesizer.
 //|

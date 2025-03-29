@@ -31,14 +31,14 @@
 #include "shared-bindings/time/__init__.h"
 #include "supervisor/port.h"
 
-#include "pico/stdlib.h"
+#include "src/common/pico_stdlib_headers/include/pico/stdlib.h"
 
 // This is from: https://github.com/raspberrypi/pico-examples-rp2350/blob/a1/hstx/dvi_out_hstx_encoder/dvi_out_hstx_encoder.c
 
-#include "hardware/dma.h"
-#include "hardware/structs/bus_ctrl.h"
-#include "hardware/structs/hstx_ctrl.h"
-#include "hardware/structs/hstx_fifo.h"
+#include "sdk/src/rp2_common/hardware_dma/include/hardware/dma.h"
+#include "sdk/src/rp2350/hardware_structs/include/hardware/structs/bus_ctrl.h"
+#include "sdk/src/rp2350/hardware_structs/include/hardware/structs/hstx_ctrl.h"
+#include "sdk/src/rp2350/hardware_structs/include/hardware/structs/hstx_fifo.h"
 
 // ----------------------------------------------------------------------------
 // DVI constants
