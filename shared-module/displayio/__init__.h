@@ -101,11 +101,16 @@ typedef struct {
 
 extern primary_display_bus_t display_buses[CIRCUITPY_DISPLAY_LIMIT];
 extern primary_display_t displays[CIRCUITPY_DISPLAY_LIMIT];
+#if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
+extern primary_display_bus_t *display_buses_dyn;
+extern primary_display_t *displays_dyn;
+#endif
 
 extern displayio_group_t circuitpython_splash;
 
 void displayio_background(void);
 void reset_displays(void);
+void malloc_display_memory(void);
 void displayio_gc_collect(void);
 
 primary_display_t *allocate_display(void);
