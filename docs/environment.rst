@@ -203,10 +203,8 @@ one display can be active at a time. Users can modify this value by adding a set
 to support additional displays.
 
 The value of CIRCUITPY_DISPLAY_LIMIT should be set to a value that is supported by the
-hardware and does not exceed the available memory and resources on the board.
-
-*** Note: Setting CIRCUITPY_DISPLAY_LIMIT to a value greater than 1 should be considered an
-ALPHA feature and may result in unexpected behavior or crashes. ***
+hardware and does not exceed the available memory and resources on the board. Setting the
+value too high may result in unexpected behavior or crashes.
 
 Example: Set the maximum supported number of displayio displays to 2:
 
