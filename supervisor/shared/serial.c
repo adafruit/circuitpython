@@ -298,7 +298,7 @@ char serial_read(void) {
 
     #if CIRCUITPY_WEB_WORKFLOW
     if (websocket_available()) {
-        int c = websocket_read_char();
+        char c = websocket_read_char();
         if (c != -1) {
             return c;
         }

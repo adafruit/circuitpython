@@ -15,21 +15,26 @@
 #include "shared-bindings/time/__init__.h"
 
 #include "pico/stdlib.h"
-#include "hardware/adc.h"
-#include "hardware/clocks.h"
-#include "hardware/vreg.h"
-#include "hardware/watchdog.h"
+#include "src/rp2_common/hardware_adc/include/hardware/adc.h"
+#include "src/rp2_common/hardware_clocks/include/hardware/clocks.h"
+#include "src/rp2_common/hardware_vreg/include/hardware/vreg.h"
+#include "src/rp2_common/hardware_watchdog/include/hardware/watchdog.h"
 
 #ifdef PICO_RP2040
-#include "hardware/regs/vreg_and_chip_reset.h"
-#include "hardware/structs/vreg_and_chip_reset.h"
+#include "src/rp2040/hardware_regs/include/hardware/regs/vreg_and_chip_reset.h"
 #endif
 #ifdef PICO_RP2350
-#include "hardware/regs/powman.h"
-#include "hardware/structs/powman.h"
+#include "src/rp2350/hardware_regs/include/hardware/regs/powman.h"
 #endif
-#include "hardware/regs/watchdog.h"
-#include "hardware/structs/watchdog.h"
+#include "src/rp2040/hardware_regs/include/hardware/regs/watchdog.h"
+
+#ifdef PICO_RP2040
+#include "src/rp2040/hardware_structs/include/hardware/structs/vreg_and_chip_reset.h"
+#endif
+#ifdef PICO_RP2350
+#include "src/rp2350/hardware_structs/include/hardware/structs/powman.h"
+#endif
+#include "src/rp2040/hardware_structs/include/hardware/structs/watchdog.h"
 
 float common_hal_mcu_processor_get_temperature(void) {
     adc_init();

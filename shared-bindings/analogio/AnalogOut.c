@@ -20,9 +20,6 @@
 //|
 //|     **Limitations:** Not available on Nordic, RP2040, Spresense, as there is no on-chip DAC.
 //|     On Espressif, available only on ESP32 and ESP32-S2; other chips do not have a DAC.
-//|     On ESP32-S2 boards, GPIO18 (DAC2) is often connected to a pull-up resistor, which causes
-//|     `unexpected output values in the lower part of the output range
-//|     <https://github.com/adafruit/circuitpython/issues/7871>`_.
 //|
 //|     Example usage::
 //|
