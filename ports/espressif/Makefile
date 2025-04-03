@@ -423,6 +423,10 @@ CFLAGS += -isystem esp-camera/conversions/include
 endif
 
 ifneq ($(CIRCUITPY_MICROROS),0)
+SRC_MICROROS := \
+	$(wildcard common-hal/rclcpy/*.c) \
+	$(wildcard shared-bindings/rclcpy/*.c)
+SRC_C += $(SRC_MICROROS)
 CFLAGS += -isystem microros-lib/include
 CFLAGS += -isystem microros-lib/include/rcl
 CFLAGS += -isystem microros-lib/include/statistics_msgs
