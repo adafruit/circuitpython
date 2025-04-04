@@ -26,3 +26,6 @@ os_getenv_err_t common_hal_os_getenv_str(const char *key, char *value, size_t va
 // If any error code is returned, value is guaranteed not modified
 // An error that is not 'open' or 'not found' is printed on the repl.
 os_getenv_err_t common_hal_os_getenv_int(const char *key, mp_int_t *value);
+
+// Not made available to the VM but used by other modules to normalize paths.
+const char *common_hal_os_path_abspath(const char *path);

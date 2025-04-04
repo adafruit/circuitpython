@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include <stddef.h>
+#include <stdint.h>
 // #include "py/mpconfig.h"
 #include "py/obj.h"
 
@@ -18,7 +20,8 @@
 
 typedef struct {
     uint8_t options;
-    char filename[];
+    const char *working_directory;
+    const char *filename;
 } supervisor_next_code_info_t;
 
 extern const super_runtime_obj_t common_hal_supervisor_runtime_obj;
