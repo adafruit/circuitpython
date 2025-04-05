@@ -422,11 +422,7 @@ CFLAGS += -isystem esp-camera/driver/include
 CFLAGS += -isystem esp-camera/conversions/include
 endif
 
-ifneq ($(CIRCUITPY_MICROROS),0)
-SRC_MICROROS := \
-	$(wildcard common-hal/rclcpy/*.c) \
-	$(wildcard shared-bindings/rclcpy/*.c)
-SRC_C += $(SRC_MICROROS)
+ifneq ($(CIRCUITPY_RCLCPY),0)
 CFLAGS += -isystem microros-lib/include
 CFLAGS += -isystem microros-lib/include/rcl
 CFLAGS += -isystem microros-lib/include/statistics_msgs
@@ -717,7 +713,7 @@ ESP_IDF_COMPONENTS_EXPANDED += $(BUILD)/esp-idf/esp-idf/esp-camera/libesp-camera
 #$(error $(ESP_IDF_COMPONENTS_EXPANDED))
 endif
 
-ifeq ($(CIRCUITPY_MICROROS),1)
+ifneq ($(CIRCUITPY_RCLCPY),0)
 ifeq ($(IDF_TARGET),esp32)
 BINARY_BLOBS += microros-lib/esp32/libmicroros.a
 else ifeq ($(IDF_TARGET),esp32s2)
