@@ -179,6 +179,27 @@ Example: Configure the display to 640x480 black and white (1 bit per pixel):
 `Adafruit Feather RP2350 <https://circuitpython.org/board/adafruit_feather_rp2350/>`_
 `Adafruit Metro RP2350 <https://circuitpython.org/board/adafruit_metro_rp2350/>`_
 
+CIRCUITPY_DISPLAY_LIMIT
+~~~~~~~~~~~~~~~~~~~~~~~
+Set the maximum supported number of displayio displays. This value overrides the
+CIRCUITPY_DISPLAY_LIMIT compile-time flag defined in mpconfigport.h.
+It specifies the maximum number of active display objects that can be supported simultaneously
+on a CircuitPython board.
+
+By default, the value of CIRCUITPY_DISPLAY_LIMIT is set to 1 for most boards, meaning only
+one display can be active at a time. Users can modify this value by adding a settings.toml entry
+to support additional displays.
+
+The value of CIRCUITPY_DISPLAY_LIMIT should be set to a value that is supported by the
+hardware and does not exceed the available memory and resources on the board. Setting the
+value too high may result in unexpected behavior or crashes.
+
+Example: Set the maximum supported number of displayio displays to 2:
+
+.. code-block::
+
+    CIRCUITPY_DISPLAY_LIMIT=2
+
 CIRCUITPY_TERMINAL_SCALE
 ~~~~~~~~~~~~~~~~~~~~~~~~
 Allows the entry of a display scaling factor used during the terminalio console construction.

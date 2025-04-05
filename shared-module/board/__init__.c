@@ -10,6 +10,10 @@
 #include "mpconfigboard.h"
 #include "py/runtime.h"
 
+#if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
+#include "shared-module/os/__init__.h"
+#endif
+
 #if CIRCUITPY_BUSIO
 #include "shared-bindings/busio/I2C.h"
 #include "shared-bindings/busio/SPI.h"
@@ -172,12 +176,22 @@ mp_obj_t common_hal_board_create_uart(const mp_int_t instance) {
 #endif
 
 void reset_board_buses(void) {
+    #if (CIRCUITPY_BOARD_I2C && CIRCUITPY_I2CDISPLAYBUS) || (CIRCUITPY_BOARD_SPI && (CIRCUITPY_FOURWIRE || CIRCUITPY_SHARPDISPLAY || CIRCUITPY_AURORA_EPAPER))
+    mp_int_t max_num_displays = CIRCUITPY_DISPLAY_LIMIT;
+    #if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
+    #define DYN_DISPLAY_BUSES(indx) (indx < CIRCUITPY_DISPLAY_LIMIT ? display_buses[indx] : display_buses_dyn[indx - CIRCUITPY_DISPLAY_LIMIT])
+    (void)common_hal_os_getenv_int("CIRCUITPY_DISPLAY_LIMIT", &max_num_displays);
+    #else
+    #define DYN_DISPLAY_BUSES(indx) (display_buses[indx])
+    #endif
+    #endif
+
     #if CIRCUITPY_BOARD_I2C
     for (uint8_t instance = 0; instance < CIRCUITPY_BOARD_I2C; instance++) {
         bool display_using_i2c = false;
         #if CIRCUITPY_I2CDISPLAYBUS
-        for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
-            if (display_buses[i].bus_base.type == &i2cdisplaybus_i2cdisplaybus_type && display_buses[i].i2cdisplay_bus.bus == &i2c_obj[instance]) {
+        for (uint8_t i = 0; i < max_num_displays; i++) {
+            if (DYN_DISPLAY_BUSES(i).bus_base.type == &i2cdisplaybus_i2cdisplaybus_type && DYN_DISPLAY_BUSES(i).i2cdisplay_bus.bus == &i2c_obj[instance]) {
                 display_using_i2c = true;
                 break;
             }
@@ -197,22 +211,22 @@ void reset_board_buses(void) {
     for (uint8_t instance = 0; instance < CIRCUITPY_BOARD_SPI; instance++) {
         bool display_using_spi = false;
         #if CIRCUITPY_FOURWIRE || CIRCUITPY_SHARPDISPLAY || CIRCUITPY_AURORA_EPAPER
-        for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
-            mp_const_obj_t bus_type = display_buses[i].bus_base.type;
+        for (uint8_t i = 0; i < max_num_displays; i++) {
+            mp_const_obj_t bus_type = DYN_DISPLAY_BUSES(i).bus_base.type;
             #if CIRCUITPY_FOURWIRE
-            if (bus_type == &fourwire_fourwire_type && display_buses[i].fourwire_bus.bus == &spi_obj[instance]) {
+            if (bus_type == &fourwire_fourwire_type && DYN_DISPLAY_BUSES(i).fourwire_bus.bus == &spi_obj[instance]) {
                 display_using_spi = true;
                 break;
             }
             #endif
             #if CIRCUITPY_SHARPDISPLAY
-            if (bus_type == &sharpdisplay_framebuffer_type && display_buses[i].sharpdisplay.bus == &spi_obj[instance]) {
+            if (bus_type == &sharpdisplay_framebuffer_type && DYN_DISPLAY_BUSES(i).sharpdisplay.bus == &spi_obj[instance]) {
                 display_using_spi = true;
                 break;
             }
             #endif
             #if CIRCUITPY_AURORA_EPAPER
-            if (bus_type == &aurora_epaper_framebuffer_type && display_buses[i].aurora_epaper.bus == &spi_obj[instance]) {
+            if (bus_type == &aurora_epaper_framebuffer_type && DYN_DISPLAY_BUSES(i).aurora_epaper.bus == &spi_obj[instance]) {
                 display_using_spi = true;
                 break;
             }
