@@ -637,6 +637,7 @@ SRC_SHARED_MODULE_ALL = \
 	audiodelays/Echo.c \
 	audiodelays/Chorus.c \
 	audiodelays/PitchShift.c \
+	audiodelays/Reverb.c \
 	audiodelays/__init__.c \
 	audiofilters/Distortion.c \
 	audiofilters/Filter.c \
