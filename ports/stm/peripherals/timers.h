@@ -7,13 +7,12 @@
 #pragma once
 
 #include <stdint.h>
-#include "py/mphal.h"
-#include "peripherals/periph.h"
+#include <stdbool.h>
 
 #include STM32_HAL_H
 
-void tim_clock_enable(uint16_t mask);
-void tim_clock_disable(uint16_t mask);
+void tim_clock_enable(uint32_t mask);
+void tim_clock_disable(uint32_t mask);
 uint32_t stm_peripherals_timer_get_source_freq(TIM_TypeDef *timer);
 size_t stm_peripherals_timer_get_irqnum(TIM_TypeDef *instance);
 void timers_reset(void);

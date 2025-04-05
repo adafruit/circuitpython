@@ -30,3 +30,4 @@ extern const mcu_periph_obj_t mcu_uart_rx_list[26];
 #define TIM_BANK_ARRAY_LEN 14
 #define TIM_PIN_ARRAY_LEN 58
 extern TIM_TypeDef *mcu_tim_banks[TIM_BANK_ARRAY_LEN];
+extern const mcu_tim_pin_obj_t mcu_tim_pin_list[TIM_PIN_ARRAY_LEN];

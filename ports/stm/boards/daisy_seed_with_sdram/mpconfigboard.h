@@ -31,3 +31,10 @@
 
 // for RNG not audio
 #define CPY_CLK_USB_USES_AUDIOPLL (1)
+
+// SDRAM and MPU region
+
+#define CIRCUITPY_HW_SDRAM_SIZE               (64 * 1024 * 1024)  // 64 MByte
+
+#define CPY_SDRAM_REGION        MPU_REGION_NUMBER10
+#define CPY_SDRAM_REGION_SIZE   MPU_REGION_SIZE_64MB

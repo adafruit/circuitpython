@@ -169,6 +169,13 @@ ifeq ($(MCU_VARIANT),$(filter $(MCU_VARIANT),STM32F765xx STM32F767xx STM32F769xx
 	SRC_STM32 += $(HAL_DIR)/Src/stm32$(MCU_SERIES_LOWER)xx_hal_uart_ex.c
 endif
 
+ifeq ($(MCU_VARIANT),$(filter $(MCU_VARIANT),STM32H750xx))
+	C_DEFS += -DHAL_SDRAM_MODULE_ENABLED
+	SRC_STM32 += st_driver/stm32$(MCU_SERIES_LOWER)xx_hal_driver/Src/stm32h7xx_hal_sdram.c
+	SRC_STM32 += st_driver/stm32$(MCU_SERIES_LOWER)xx_hal_driver/Src/stm32h7xx_ll_fmc.c
+	SRC_C += peripherals/sdram.c
+endif
+
 SRC_STM32 += boards/system_stm32$(MCU_SERIES_LOWER)xx.c
 
 SRC_C += \
