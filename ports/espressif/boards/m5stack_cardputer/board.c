@@ -17,7 +17,6 @@
 #include "py/ringbuf.h"
 #include "shared/runtime/interrupt_char.h"
 
-
 #define DELAY 0x80
 
 uint8_t display_init_sequence[] = {
@@ -42,6 +41,7 @@ uint8_t display_init_sequence[] = {
 
 // Overrides the weakly linked function from supervisor/shared/board.c
 void board_init(void) {
+
     busio_spi_obj_t *spi = common_hal_board_create_spi(0);
     fourwire_fourwire_obj_t *bus = &allocate_display_bus()->fourwire_bus;
     bus->base.type = &fourwire_fourwire_type;

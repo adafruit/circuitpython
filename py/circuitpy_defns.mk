@@ -285,6 +285,9 @@ endif
 ifeq ($(CIRCUITPY_MICROCONTROLLER),1)
 SRC_PATTERNS += microcontroller/%
 endif
+ifeq ($(CIRCUITPY_MICROROS),1)
+SRC_PATTERNS += rclcpy/%
+endif
 ifeq ($(CIRCUITPY_MDNS),1)
 SRC_PATTERNS += mdns/%
 endif
