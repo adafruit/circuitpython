@@ -1298,12 +1298,26 @@ msgstr ""
 msgid "Invalid data_pins[%d]"
 msgstr ""
 
+#: ports/raspberrypi/common-hal/rp2clock/OutputPin.c
+msgid "Invalid divisor: [1, 2-16777215]"
+msgstr ""
+
 #: shared-module/msgpack/__init__.c
 msgid "Invalid format"
 msgstr ""
 
 #: shared-module/audiocore/WaveFile.c
 msgid "Invalid format chunk size"
+msgstr ""
+
+#: ports/raspberrypi/common-hal/rp2clock/InputPin.c
+#, c-format
+msgid "Invalid freq: %u"
+msgstr ""
+
+#: ports/raspberrypi/common-hal/rp2clock/InputPin.c
+#, c-format
+msgid "Invalid freqs: %u > %u"
 msgstr ""
 
 #: shared-bindings/wifi/Radio.c
@@ -1738,6 +1752,16 @@ msgstr ""
 
 #: py/moderrno.c
 msgid "Permission denied"
+msgstr ""
+
+#: ports/raspberrypi/common-hal/rp2clock/InputPin.c
+#, c-format
+msgid "Pin %d invalid, valid pins are: 20,22"
+msgstr ""
+
+#: ports/raspberrypi/common-hal/rp2clock/OutputPin.c
+#, c-format
+msgid "Pin %d invalid, valid pins are: 21,23,24,25"
 msgstr ""
 
 #: ports/stm/common-hal/alarm/pin/PinAlarm.c
@@ -2839,6 +2863,10 @@ msgstr ""
 
 #: shared-bindings/bitmaptools/__init__.c
 msgid "clip point must be (x,y) tuple"
+msgstr ""
+
+#: ports/raspberrypi/common-hal/rp2clock/InputPin.c
+msgid "clock_configure_gpin failed!"
 msgstr ""
 
 #: shared-bindings/msgpack/ExtType.c
