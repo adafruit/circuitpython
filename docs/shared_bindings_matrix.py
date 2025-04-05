@@ -66,6 +66,8 @@ ALIASES_BRAND_NAMES = {
 
 ADDITIONAL_MODULES = {
     "_asyncio": "MICROPY_PY_ASYNCIO",
+    "_bleio (native)": "CIRCUITPY_BLEIO_NATIVE",
+    "_bleio (HCI co-processor)": "CIRCUITPY_BLEIO_HCI",
     "_eve": "CIRCUITPY__EVE",
     "adafruit_bus_device": "CIRCUITPY_BUSDEVICE",
     "adafruit_pixelbuf": "CIRCUITPY_PIXELBUF",

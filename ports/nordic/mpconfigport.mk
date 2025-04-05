@@ -25,7 +25,7 @@ CIRCUITPY_SYNTHIO_MAX_CHANNELS = 12
 # Native BLEIO is not compatible with HCI _bleio.
 CIRCUITPY_BLEIO_HCI = 0
 
-CIRCUITPY_BLEIO ?= 1
+CIRCUITPY_BLEIO_NATIVE ?= 1
 
 # No I2CPeripheral implementation
 CIRCUITPY_I2CTARGET = 0

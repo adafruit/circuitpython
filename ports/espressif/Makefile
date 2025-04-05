@@ -406,7 +406,7 @@ ifneq ($(CIRCUITPY_AUDIOBUSIO),0)
 CHIP_COMPONENTS += esp_driver_i2s
 endif
 
-ifneq ($(CIRCUITPY_BLEIO),0)
+ifneq ($(CIRCUITPY_BLEIO_NATIVE),0)
 SRC_C += common-hal/_bleio/ble_events.c
 endif
 
@@ -471,24 +471,13 @@ ifneq ($(CIRCUITPY_FREQUENCYIO),0)
 CHIP_COMPONENTS += esp_driver_pcnt
 endif
 
-SRC_COMMON_HAL_EXPANDED = \
-	$(addprefix shared-bindings/, $(SRC_COMMON_HAL)) \
-	$(addprefix shared-bindings/, $(SRC_BINDINGS_ENUMS)) \
-	$(addprefix common-hal/, $(SRC_COMMON_HAL))
-
-SRC_SHARED_MODULE_EXPANDED = \
-	$(addprefix shared-bindings/, $(SRC_SHARED_MODULE)) \
-	$(addprefix shared-module/, $(SRC_SHARED_MODULE)) \
-	$(addprefix shared-module/, $(SRC_SHARED_MODULE_INTERNAL))
-
 ifneq ($(FROZEN_MPY_DIR),)
 FROZEN_MPY_PY_FILES := $(shell find -L $(FROZEN_MPY_DIR) -type f -name '*.py')
 FROZEN_MPY_MPY_FILES := $(addprefix $(BUILD)/,$(FROZEN_MPY_PY_FILES:.py=.mpy))
 endif
 
 OBJ += $(PY_O) $(SUPERVISOR_O) $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
-OBJ += $(addprefix $(BUILD)/, $(SRC_COMMON_HAL_EXPANDED:.c=.o))
-OBJ += $(addprefix $(BUILD)/, $(SRC_SHARED_MODULE_EXPANDED:.c=.o))
+OBJ += $(addprefix $(BUILD)/, $(SRC_COMMON_HAL_SHARED_MODULE_EXPANDED:.c=.o))
 ifeq ($(INTERNAL_LIBM),1)
 OBJ += $(addprefix $(BUILD)/, $(SRC_LIBM:.c=.o))
 endif
@@ -501,7 +490,7 @@ $(filter $(PY_BUILD)/../extmod/vfs_fat_%.o, $(PY_O)): COPT += -Os
 $(BUILD)/lib/protomatter/src/core.o: CFLAGS += -DESP32
 
 # List of sources for qstr extraction
-SRC_QSTR += $(SRC_C) $(SRC_SUPERVISOR) $(SRC_MOD) $(SRC_COMMON_HAL_EXPANDED) $(SRC_SHARED_MODULE_EXPANDED) $(SRC_CIRCUITPY_COMMON)
+SRC_QSTR += $(SRC_C) $(SRC_SUPERVISOR) $(SRC_MOD) $(SRC_COMMON_HAL_SHARED_MODULE_EXPANDED) $(SRC_CIRCUITPY_COMMON)
 
 # IDF build commands
 IDF_PATH = $(realpath ./esp-idf)
@@ -547,7 +536,7 @@ else
 endif
 
 SDKCONFIGS := esp-idf-config/sdkconfig.defaults;$(DEBUG_SDKCONFIG);$(FLASH_SIZE_SDKCONFIG);$(FLASH_MODE_SDKCONFIG);$(FLASH_SPEED_SDKCONFIG);$(PSRAM_SDKCONFIG);$(PSRAM_SIZE_SDKCONFIG);$(PSRAM_MODE_SDKCONFIG);$(PSRAM_SPEED_SDKCONFIG);$(TARGET_SDKCONFIG);boards/$(BOARD)/sdkconfig
-ifneq ($(CIRCUITPY_BLEIO),0)
+ifneq ($(CIRCUITPY_BLEIO_NATIVE),0)
 	SDKCONFIGS := esp-idf-config/sdkconfig-ble.defaults;$(SDKCONFIGS)
 endif
 # create the config headers
@@ -607,7 +596,7 @@ ESP_IDF_COMPONENTS_LINK = $(IDF_TARGET_ARCH) $(CHIP_COMPONENTS) app_update bootl
 ifneq ($(CIRCUITPY_WIFI),0)
 	ESP_IDF_COMPONENTS_LINK += esp_coex esp_netif esp-tls esp_wifi lwip mbedtls mdns wpa_supplicant esp_phy
 endif
-ifneq ($(CIRCUITPY_BLEIO),0)
+ifneq ($(CIRCUITPY_BLEIO_NATIVE),0)
 	BLE_IMPL_esp32 := esp32
 	BLE_IMPL_esp32s3 := esp32c3
 	BLE_IMPL_esp32c2 := libble

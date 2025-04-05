@@ -162,7 +162,7 @@ endif
 ifeq ($(CIRCUITPY_BITOPS),1)
 SRC_PATTERNS += bitops/%
 endif
-ifeq ($(CIRCUITPY_BLEIO),1)
+ifeq ($(CIRCUITPY_BLEIO_NATIVE),1)
 SRC_PATTERNS += _bleio/%
 endif
 ifeq ($(CIRCUITPY_BOARD),1)
@@ -561,15 +561,27 @@ SRC_COMMON_HAL_ALL = \
 	wifi/ScannedNetworks.c \
 	wifi/__init__.c \
 
-ifeq ($(CIRCUITPY_BLEIO_HCI),1)
-# Helper code for _bleio HCI.
-SRC_C += \
-	common-hal/_bleio/att.c \
-	common-hal/_bleio/hci.c \
-
-endif
-
 SRC_COMMON_HAL = $(filter $(SRC_PATTERNS), $(SRC_COMMON_HAL_ALL))
+
+ifeq ($(CIRCUITPY_BLEIO_HCI),1)
+# HCI device-specific HAL and helper sources.
+SRC_DEVICES_HAL += \
+	_bleio/att.c \
+	_bleio/hci.c \
+    _bleio/Adapter.c \
+	_bleio/Attribute.c \
+	_bleio/Characteristic.c \
+	_bleio/CharacteristicBuffer.c \
+	_bleio/Connection.c \
+	_bleio/Descriptor.c \
+	_bleio/PacketBuffer.c \
+	_bleio/Service.c \
+	_bleio/UUID.c \
+	_bleio/__init__.c
+# HCI device-specific bindings.
+SRC_DEVICES_BINDINGS += \
+	supervisor/bluetooth.c
+endif
 
 # These don't have corresponding files in each port but are still located in
 # shared-bindings to make it clear what the contents of the modules are.
@@ -606,6 +618,23 @@ $(filter $(SRC_PATTERNS), \
 	wifi/AuthMode.c \
 	wifi/Packet.c \
 )
+
+ifeq ($(CIRCUITPY_BLEIO_HCI),1)
+# Common _bleio bindings used by HCI.
+SRC_BINDINGS_ENUMS += \
+	_bleio/Address.c \
+	_bleio/Adapter.c \
+	_bleio/Attribute.c \
+	_bleio/Characteristic.c \
+	_bleio/CharacteristicBuffer.c \
+	_bleio/Connection.c \
+	_bleio/Descriptor.c \
+	_bleio/PacketBuffer.c \
+	_bleio/ScanEntry.c \
+	_bleio/Service.c \
+	_bleio/UUID.c \
+	_bleio/__init__.c
+endif
 
 ifeq ($(CIRCUITPY_SAFEMODE_PY),1)
 SRC_BINDINGS_ENUMS += \
@@ -763,6 +792,21 @@ SRC_SHARED_MODULE_ALL = \
 # All possible sources are listed here, and are filtered by SRC_PATTERNS.
 SRC_SHARED_MODULE = $(filter $(SRC_PATTERNS), $(SRC_SHARED_MODULE_ALL))
 
+SRC_COMMON_HAL_EXPANDED = $(addprefix shared-bindings/, $(SRC_COMMON_HAL)) \
+                          $(addprefix shared-bindings/, $(SRC_BINDINGS_ENUMS)) \
+                          $(addprefix common-hal/, $(SRC_COMMON_HAL)) \
+						  $(addprefix devices/ble_hci/common-hal/, $(SRC_DEVICES_HAL)) \
+						  $(addprefix devices/ble_hci/, $(SRC_DEVICES_BINDINGS))
+
+SRC_SHARED_MODULE_EXPANDED = $(addprefix shared-bindings/, $(SRC_SHARED_MODULE)) \
+                             $(addprefix shared-module/, $(SRC_SHARED_MODULE)) \
+                             $(addprefix shared-module/, $(SRC_SHARED_MODULE_INTERNAL))
+
+# There may be duplicates between SRC_COMMON_HAL_EXPANDED and SRC_SHARED_MODULE_EXPANDED,
+# because a few modules have files both in common-hal/ and shared-module/.
+# Doing a $(sort ...) removes duplicates as part of sorting.
+SRC_COMMON_HAL_SHARED_MODULE_EXPANDED = $(sort $(SRC_COMMON_HAL_EXPANDED) $(SRC_SHARED_MODULE_EXPANDED))
+
 # Use the native touchio if requested. This flag is set conditionally in, say, mpconfigport.h.
 # The presence of common-hal/touchio/* does not imply it's available for all chips in a port,
 # so there is an explicit flag. For example, SAMD21 touchio is native, but SAMD51 is not.
@@ -794,11 +838,15 @@ SRC_SHARED_MODULE_ALL += \
 	keypad_demux/DemuxKeyMatrix.c
 endif
 
-# If supporting _bleio via HCI, make devices/ble_hci/common-hal/_bleio be includable,
-# and use C source files in devices/ble_hci/common-hal.
 ifeq ($(CIRCUITPY_BLEIO_HCI),1)
+# Add HCI device-specific includes to search path.
 INC += -I$(TOP)/devices/ble_hci
-DEVICES_MODULES += $(TOP)/devices/ble_hci
+# Add HCI shared modules to build.
+SRC_SHARED_MODULE += \
+	_bleio/Address.c \
+	_bleio/Attribute.c \
+	_bleio/ScanEntry.c \
+	_bleio/ScanResults.c
 endif
 
 ifeq ($(CIRCUITPY_AUDIOMP3),1)
@@ -886,11 +934,6 @@ $(filter $(SRC_PATTERNS), \
 	displayio/display_core.c \
 	os/getenv.c \
 	usb/utf16le.c \
-)
-
-SRC_COMMON_HAL_INTERNAL = \
-$(filter $(SRC_PATTERNS), \
-	_bleio/ \
 )
 
 ifeq ($(INTERNAL_LIBM),1)
