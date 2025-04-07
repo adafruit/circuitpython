@@ -512,28 +512,6 @@ size_t maybe_refresh_epaperdisplay(void) {
     #endif
 
     for (uint8_t i = 0; i < max_num_displays; i++) {
-        #if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
-        if (i < CIRCUITPY_DISPLAY_LIMIT) {
-            if (displays[i].epaper_display.base.type != &epaperdisplay_epaperdisplay_type ||
-                displays[i].epaper_display.core.current_group != &circuitpython_splash) {
-                // Skip regular displays and those not showing the splash.
-                continue;
-            }
-        } else {
-            if (displays_dyn[i - CIRCUITPY_DISPLAY_LIMIT].epaper_display.base.type != &epaperdisplay_epaperdisplay_type ||
-                displays_dyn[i - CIRCUITPY_DISPLAY_LIMIT].epaper_display.core.current_group != &circuitpython_splash) {
-                // Skip regular displays and those not showing the splash.
-                continue;
-            }
-        }
-        #else
-        if (displays[i].epaper_display.base.type != &epaperdisplay_epaperdisplay_type ||
-            displays[i].epaper_display.core.current_group != &circuitpython_splash) {
-            // Skip regular displays and those not showing the splash.
-            continue;
-        }
-        #endif
-
         epaperdisplay_epaperdisplay_obj_t *display;
         #if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
         if (i < CIRCUITPY_DISPLAY_LIMIT) {
@@ -544,6 +522,13 @@ size_t maybe_refresh_epaperdisplay(void) {
         #else
         display = &displays[i].epaper_display;
         #endif
+
+        if (display.base.type != &epaperdisplay_epaperdisplay_type ||
+            display.core.current_group != &circuitpython_splash) {
+            // Skip regular displays and those not showing the splash.
+            continue;
+        }
+
         size_t time_to_refresh = common_hal_epaperdisplay_epaperdisplay_get_time_to_refresh(display);
         if (time_to_refresh > 0) {
             return time_to_refresh;
