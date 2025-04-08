@@ -523,8 +523,8 @@ size_t maybe_refresh_epaperdisplay(void) {
         display = &displays[i].epaper_display;
         #endif
 
-        if (display.base.type != &epaperdisplay_epaperdisplay_type ||
-            display.core.current_group != &circuitpython_splash) {
+        if (display->base.type != &epaperdisplay_epaperdisplay_type ||
+            display->core.current_group != &circuitpython_splash) {
             // Skip regular displays and those not showing the splash.
             continue;
         }
