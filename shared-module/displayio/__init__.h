@@ -101,6 +101,7 @@ typedef struct {
 
 extern primary_display_bus_t display_buses[CIRCUITPY_DISPLAY_LIMIT];
 extern primary_display_t displays[CIRCUITPY_DISPLAY_LIMIT];
+extern mp_int_t max_allocated_display;
 #if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
 extern primary_display_bus_t *display_buses_dyn;
 extern primary_display_t *displays_dyn;

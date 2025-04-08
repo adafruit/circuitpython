@@ -505,13 +505,7 @@ void epaperdisplay_epaperdisplay_collect_ptrs(epaperdisplay_epaperdisplay_obj_t 
 }
 
 size_t maybe_refresh_epaperdisplay(void) {
-    mp_int_t max_num_displays = CIRCUITPY_DISPLAY_LIMIT;
-
-    #if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
-    (void)common_hal_os_getenv_int("CIRCUITPY_DISPLAY_LIMIT", &max_num_displays);
-    #endif
-
-    for (uint8_t i = 0; i < max_num_displays; i++) {
+    for (uint8_t i = 0; i < max_allocated_display; i++) {
         epaperdisplay_epaperdisplay_obj_t *display;
         #if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
         if (i < CIRCUITPY_DISPLAY_LIMIT) {

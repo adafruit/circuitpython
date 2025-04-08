@@ -177,10 +177,8 @@ mp_obj_t common_hal_board_create_uart(const mp_int_t instance) {
 
 void reset_board_buses(void) {
     #if (CIRCUITPY_BOARD_I2C && CIRCUITPY_I2CDISPLAYBUS) || (CIRCUITPY_BOARD_SPI && (CIRCUITPY_FOURWIRE || CIRCUITPY_SHARPDISPLAY || CIRCUITPY_AURORA_EPAPER))
-    mp_int_t max_num_displays = CIRCUITPY_DISPLAY_LIMIT;
     #if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
     #define DYN_DISPLAY_BUSES(indx) (indx < CIRCUITPY_DISPLAY_LIMIT ? display_buses[indx] : display_buses_dyn[indx - CIRCUITPY_DISPLAY_LIMIT])
-    (void)common_hal_os_getenv_int("CIRCUITPY_DISPLAY_LIMIT", &max_num_displays);
     #else
     #define DYN_DISPLAY_BUSES(indx) (display_buses[indx])
     #endif
@@ -190,7 +188,7 @@ void reset_board_buses(void) {
     for (uint8_t instance = 0; instance < CIRCUITPY_BOARD_I2C; instance++) {
         bool display_using_i2c = false;
         #if CIRCUITPY_I2CDISPLAYBUS
-        for (uint8_t i = 0; i < max_num_displays; i++) {
+        for (uint8_t i = 0; i < max_allocated_display; i++) {
             if (DYN_DISPLAY_BUSES(i).bus_base.type == &i2cdisplaybus_i2cdisplaybus_type && DYN_DISPLAY_BUSES(i).i2cdisplay_bus.bus == &i2c_obj[instance]) {
                 display_using_i2c = true;
                 break;
@@ -211,7 +209,7 @@ void reset_board_buses(void) {
     for (uint8_t instance = 0; instance < CIRCUITPY_BOARD_SPI; instance++) {
         bool display_using_spi = false;
         #if CIRCUITPY_FOURWIRE || CIRCUITPY_SHARPDISPLAY || CIRCUITPY_AURORA_EPAPER
-        for (uint8_t i = 0; i < max_num_displays; i++) {
+        for (uint8_t i = 0; i < max_allocated_display; i++) {
             mp_const_obj_t bus_type = DYN_DISPLAY_BUSES(i).bus_base.type;
             #if CIRCUITPY_FOURWIRE
             if (bus_type == &fourwire_fourwire_type && DYN_DISPLAY_BUSES(i).fourwire_bus.bus == &spi_obj[instance]) {

@@ -24,6 +24,7 @@
 
 #if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
 #include "shared-module/os/__init__.h"
+#include "py/misc.h"
 #endif
 
 #if CIRCUITPY_BUSDISPLAY
@@ -51,6 +52,7 @@
 // The default indicates no primary display
 static int primary_display_number = -1;
 static mp_int_t max_num_displays = CIRCUITPY_DISPLAY_LIMIT;
+mp_int_t max_allocated_display = CIRCUITPY_DISPLAY_LIMIT;
 
 primary_display_bus_t display_buses[CIRCUITPY_DISPLAY_LIMIT];
 primary_display_t displays[CIRCUITPY_DISPLAY_LIMIT];
@@ -87,7 +89,7 @@ displayio_buffer_transform_t null_transform = {
 
 #if CIRCUITPY_RGBMATRIX || CIRCUITPY_IS31FL3741 || CIRCUITPY_VIDEOCORE || CIRCUITPY_PICODVI
 static bool any_display_uses_this_framebuffer(mp_obj_base_t *obj) {
-    for (uint8_t i = 0; i < max_num_displays; i++) {
+    for (uint8_t i = 0; i < max_allocated_display; i++) {
         if (DYN_DISPLAYS(i).display_base.type == &framebufferio_framebufferdisplay_type) {
             framebufferio_framebufferdisplay_obj_t *display = DYN_DISPLAYS_ADR(i, framebuffer_display);
             if (display->framebuffer == obj) {
@@ -109,7 +111,7 @@ void displayio_background(void) {
         return;
     }
 
-    for (uint8_t i = 0; i < max_num_displays; i++) {
+    for (uint8_t i = 0; i < max_allocated_display; i++) {
         mp_const_obj_t display_type = DYN_DISPLAYS(i).display_base.type;
         if (display_type == NULL || display_type == &mp_type_NoneType) {
             // Skip null display.
@@ -139,7 +141,7 @@ static void common_hal_displayio_release_displays_impl(bool keep_primary) {
     if (!keep_primary) {
         primary_display_number = -1;
     }
-    for (uint8_t i = (keep_primary ? CIRCUITPY_DISPLAY_LIMIT: 0); i < max_num_displays; i++) {
+    for (uint8_t i = (keep_primary ? CIRCUITPY_DISPLAY_LIMIT: 0); i < max_allocated_display; i++) {
         if (i == primary_display_number) {
             continue;
         }
@@ -169,7 +171,7 @@ static void common_hal_displayio_release_displays_impl(bool keep_primary) {
         displays[i].display_base.type = &mp_type_NoneType;
         #endif
     }
-    for (uint8_t i = (keep_primary ? CIRCUITPY_DISPLAY_LIMIT: 0); i < max_num_displays; i++) {
+    for (uint8_t i = (keep_primary ? CIRCUITPY_DISPLAY_LIMIT: 0); i < max_allocated_display; i++) {
         if (i == primary_display_number) {
             continue;
         }
@@ -237,15 +239,14 @@ void malloc_display_memory(void) {
     #if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
     (void)common_hal_os_getenv_int("CIRCUITPY_DISPLAY_LIMIT", &max_num_displays);
     if (max_num_displays > CIRCUITPY_DISPLAY_LIMIT) {
-        display_buses_dyn = (primary_display_bus_t *)port_malloc(sizeof(primary_display_bus_t) * (max_num_displays - CIRCUITPY_DISPLAY_LIMIT), false);
-        displays_dyn = (primary_display_t *)port_malloc(sizeof(primary_display_t) * (max_num_displays - CIRCUITPY_DISPLAY_LIMIT), false);
+        display_buses_dyn = m_new0(primary_display_bus_t, (max_num_displays - CIRCUITPY_DISPLAY_LIMIT));
+        displays_dyn = m_new0(primary_display_t, (max_num_displays - CIRCUITPY_DISPLAY_LIMIT));
 
         for (uint8_t i = CIRCUITPY_DISPLAY_LIMIT; i < max_num_displays; i++) {
-            memset(&displays_dyn[i - CIRCUITPY_DISPLAY_LIMIT], 0, sizeof(displays_dyn[i - CIRCUITPY_DISPLAY_LIMIT]));
-            memset(&display_buses_dyn[i - CIRCUITPY_DISPLAY_LIMIT], 0, sizeof(display_buses_dyn[i - CIRCUITPY_DISPLAY_LIMIT]));
             display_buses_dyn[i - CIRCUITPY_DISPLAY_LIMIT].bus_base.type = &mp_type_NoneType;
             displays_dyn[i - CIRCUITPY_DISPLAY_LIMIT].display_base.type = &mp_type_NoneType;
         }
+        max_allocated_display = max_num_displays;
     }
     #endif
 }
@@ -418,7 +419,7 @@ void reset_displays(void) {
 }
 
 void displayio_gc_collect(void) {
-    for (uint8_t i = 0; i < max_num_displays; i++) {
+    for (uint8_t i = 0; i < max_allocated_display; i++) {
         mp_const_obj_t display_bus_type = DYN_DISPLAY_BUSES(i).bus_base.type;
         if (display_bus_type == NULL || display_bus_type == &mp_type_NoneType) {
             continue;
@@ -445,7 +446,7 @@ void displayio_gc_collect(void) {
         #endif
     }
 
-    for (uint8_t i = 0; i < max_num_displays; i++) {
+    for (uint8_t i = 0; i < max_allocated_display; i++) {
         mp_const_obj_t display_type = DYN_DISPLAYS(i).display_base.type;
         if (display_type == NULL || display_type == &mp_type_NoneType) {
             continue;
@@ -473,7 +474,7 @@ static bool is_display_active(mp_obj_base_t *display_maybe) {
 }
 
 primary_display_t *allocate_display(void) {
-    for (uint8_t i = 0; i < max_num_displays; i++) {
+    for (uint8_t i = 0; i < max_allocated_display; i++) {
         if (!is_display_active(DYN_DISPLAYS_ADR(i, display_base))) {
             // Clear this memory so it is in a known state before init.
             memset(DYN_DISPLAYS_ADR0(i), 0, sizeof(displays[0]));
@@ -490,6 +491,14 @@ primary_display_t *allocate_display(void) {
             return DYN_DISPLAYS_ADR0(i);
         }
     }
+    #if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
+    // malloc_display_memory allocates both displays and buses
+    if (max_allocated_display == CIRCUITPY_DISPLAY_LIMIT) {
+        // See if we can allocate more displays and buses
+        malloc_display_memory();
+        return &displays_dyn[0];
+    }
+    #endif
     return NULL;
 }
 
@@ -502,7 +511,7 @@ primary_display_t *allocate_display_or_raise(void) {
 }
 
 primary_display_bus_t *allocate_display_bus(void) {
-    for (uint8_t i = 0; i < max_num_displays; i++) {
+    for (uint8_t i = 0; i < max_allocated_display; i++) {
         mp_const_obj_t display_bus_type = DYN_DISPLAY_BUSES(i).bus_base.type;
         if (display_bus_type == NULL || display_bus_type == &mp_type_NoneType) {
             // Clear this memory so it is in a known state before init.
@@ -519,6 +528,14 @@ primary_display_bus_t *allocate_display_bus(void) {
             return DYN_DISPLAY_BUSES_ADR0(i);
         }
     }
+    #if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
+    // malloc_display_memory allocates both displays and buses
+    if (max_allocated_display == CIRCUITPY_DISPLAY_LIMIT) {
+        // See if e can allocate more displays and buses
+        malloc_display_memory();
+        return &display_buses_dyn[0];
+    }
+    #endif
     return NULL;
 }
 
@@ -531,7 +548,7 @@ primary_display_bus_t *allocate_display_bus_or_raise(void) {
 }
 
 mp_obj_t common_hal_displayio_get_primary_display(void) {
-    if (primary_display_number == -1 || primary_display_number >= max_num_displays) {
+    if (primary_display_number == -1 || primary_display_number >= max_allocated_display) {
         return mp_const_none;
     }
     mp_obj_base_t *primary_display = DYN_DISPLAYS_ADR(primary_display_number, display_base);
@@ -546,7 +563,7 @@ void common_hal_displayio_set_primary_display(mp_obj_t new_primary_display) {
         primary_display_number = -1;
         return;
     }
-    for (uint8_t i = 0; i < max_num_displays; i++) {
+    for (uint8_t i = 0; i < max_allocated_display; i++) {
         mp_obj_t display = MP_OBJ_FROM_PTR(DYN_DISPLAYS_ADR0(i));
         if (new_primary_display == display && is_display_active(display)) {
             primary_display_number = i;
@@ -561,7 +578,7 @@ void common_hal_displayio_auto_primary_display(void) {
     if (primary_display_number != -1) {
         return;
     }
-    for (uint8_t i = 0; i < max_num_displays; i++) {
+    for (uint8_t i = 0; i < max_allocated_display; i++) {
         if (is_display_active(DYN_DISPLAYS_ADR(i, display_base))) {
             primary_display_number = i;
             return;

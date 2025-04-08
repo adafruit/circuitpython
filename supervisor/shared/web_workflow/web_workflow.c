@@ -1562,9 +1562,7 @@ static bool supervisor_filesystem_access_could_block(void) {
         return false;
     }
 
-    mp_int_t max_num_displays = CIRCUITPY_DISPLAY_LIMIT;
     #if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
-    (void)common_hal_os_getenv_int("CIRCUITPY_DISPLAY_LIMIT", &max_num_displays);
     #define DYN_DISPLAY_BUSES(indx) (indx < CIRCUITPY_DISPLAY_LIMIT ? display_buses[indx] : display_buses_dyn[indx - CIRCUITPY_DISPLAY_LIMIT])
     #define DYN_DISPLAY_BUSES_ADR(indx, membr) (indx < CIRCUITPY_DISPLAY_LIMIT ? &display_buses[indx].membr : &display_buses_dyn[indx - CIRCUITPY_DISPLAY_LIMIT].membr)
     #else
@@ -1572,7 +1570,7 @@ static bool supervisor_filesystem_access_could_block(void) {
     #define DYN_DISPLAY_BUSES_ADR(indx, membr) (&display_buses[indx].membr)
     #endif
     // Check displays to see if it's on a fourwire (SPI) bus. If it is, blocking is possible
-    for (mp_int_t i = 0; i < max_num_displays; i++) {
+    for (mp_int_t i = 0; i < max_allocated_display; i++) {
         if (DYN_DISPLAY_BUSES(i).bus_base.type != &fourwire_fourwire_type) {
             continue;
         }
