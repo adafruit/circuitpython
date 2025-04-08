@@ -51,7 +51,6 @@
 
 // The default indicates no primary display
 static int primary_display_number = -1;
-static mp_int_t max_num_displays = CIRCUITPY_DISPLAY_LIMIT;
 mp_int_t max_allocated_display = CIRCUITPY_DISPLAY_LIMIT;
 
 primary_display_bus_t display_buses[CIRCUITPY_DISPLAY_LIMIT];
@@ -237,6 +236,7 @@ void common_hal_displayio_release_displays(void) {
 
 void malloc_display_memory(void) {
     #if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
+    mp_int_t max_num_displays = CIRCUITPY_DISPLAY_LIMIT;
     (void)common_hal_os_getenv_int("CIRCUITPY_DISPLAY_LIMIT", &max_num_displays);
     if (max_num_displays > CIRCUITPY_DISPLAY_LIMIT) {
         display_buses_dyn = m_new0(primary_display_bus_t, (max_num_displays - CIRCUITPY_DISPLAY_LIMIT));
