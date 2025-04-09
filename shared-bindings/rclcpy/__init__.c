@@ -13,23 +13,22 @@
 #include "py/objstr.h"
 #include "py/runtime.h"
 
-static mp_obj_t rclcpy_init(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
-    // allocate object
-    rclcpy_context_obj_t *self = mp_obj_malloc_with_finaliser(rclcpy_context_obj_t, &rclcpy_context_type);
-
-    // common hal generation and return
-    common_hal_rclcpy_init(self);
+static mp_obj_t rclcpy_init(void) {
+    common_hal_rclcpy_init();
     return mp_const_none;
 }
+static MP_DEFINE_CONST_FUN_OBJ_0(rclcpy_init_obj, rclcpy_init);
+
 
 // TODO: parallel implementation to Node constructor
 // static mp_obj_t rclcpy_create_node(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
 // }
 
-static const mp_rom_map_elem_t rclcpy_globals_table[] = {
+static const mp_rom_map_elem_t rclcpy_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_rclcpy) },
     { MP_ROM_QSTR(MP_QSTR_Node),   MP_ROM_PTR(&rclcpy_node_type) },
     { MP_ROM_QSTR(MP_QSTR_Publisher),   MP_ROM_PTR(&rclcpy_publisher_type) },
+    { MP_ROM_QSTR(MP_QSTR_init),   MP_ROM_PTR(&rclcpy_init_obj) },
 };
 
 static MP_DEFINE_CONST_DICT(rclcpy_module_globals, rclcpy_module_globals_table);

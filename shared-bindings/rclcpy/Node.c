@@ -26,26 +26,26 @@ static mp_obj_t rclcpy_node_make_new(const mp_obj_type_t *type, size_t n_args, s
     }
 
     rclcpy_node_obj_t *self = mp_obj_malloc_with_finaliser(rclcpy_node_obj_t, &rclcpy_node_type);
-    common_hal_rclcpy_node_construct(self, node_name, context, namespace);
+    common_hal_rclcpy_node_construct(self, node_name, namespace);
     return (mp_obj_t)self;
 }
 
 static mp_obj_t rclcpy_node_create_publisher(mp_obj_t self_in, mp_obj_t topic) {
     rclcpy_node_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    const char *topic_name = mp_obj_str_get_str(mp_obj_t);
+    const char *topic_name = mp_obj_str_get_str(topic);
 
     rclcpy_publisher_obj_t *publisher = mp_obj_malloc_with_finaliser(rclcpy_publisher_obj_t, &rclcpy_publisher_type);
-    common_hal_rclcpy_publisher_construct(publisher, self,topic_name)
+    common_hal_rclcpy_publisher_construct(publisher, self,topic_name);
     return (mp_obj_t)publisher;
 }
-static MP_DEFINE_CONST_FUN_OBJ_1(rclcpy_node_create_publisher_obj, rclcpy_node_create_publisher);
+static MP_DEFINE_CONST_FUN_OBJ_2(rclcpy_node_create_publisher_obj, rclcpy_node_create_publisher);
 
 static mp_obj_t rclcpy_node_get_name(mp_obj_t self_in) {
     // TODO: probably a good idea
     // check_for_deinit(self);
     rclcpy_node_obj_t *self = MP_OBJ_TO_PTR(self_in);
     const char * name_str = common_hal_rclcpy_node_get_name(self);
-    return mp_obj_new_str(name_str);
+    return mp_obj_new_str(name_str,strlen(name_str));
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(rclcpy_node_get_name_obj, rclcpy_node_get_name);
 
@@ -54,7 +54,7 @@ static mp_obj_t rclcpy_node_get_namespace(mp_obj_t self_in) {
     // check_for_deinit(self);
     rclcpy_node_obj_t *self = MP_OBJ_TO_PTR(self_in);
     const char * namespace_str = common_hal_rclcpy_node_get_namespace(self);
-    return mp_obj_new_str(namespace_str);
+    return mp_obj_new_str(namespace_str,strlen(namespace_str));
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(rclcpy_node_get_namespace_obj, rclcpy_node_get_namespace);
 
@@ -70,8 +70,8 @@ MP_DEFINE_CONST_OBJ_TYPE(
     rclcpy_node_type,
     MP_QSTR_Node,
     MP_TYPE_FLAG_HAS_SPECIAL_ACCESSORS,
-    locals_dict, &rclcpy_node_locals_dict,
     make_new, rclcpy_node_make_new,
+    locals_dict, &rclcpy_node_locals_dict
 );
 
 // Examples:

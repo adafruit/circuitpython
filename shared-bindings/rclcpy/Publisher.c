@@ -17,16 +17,17 @@ static mp_obj_t rclcpy_publisher_make_new(const mp_obj_type_t *type, size_t n_ar
 static mp_obj_t rclcpy_publisher_publish_int32(mp_obj_t self_in, mp_obj_t in_msg) {
     rclcpy_publisher_obj_t *self = MP_OBJ_TO_PTR(self_in);
     int32_t msg = mp_obj_get_int(in_msg);
-    common_hal_rclcpy_publisher_publish_int32(self_in,msg);
+    common_hal_rclcpy_publisher_publish_int32(self,msg);
+    return mp_const_none;
 }
-static MP_DEFINE_CONST_FUN_OBJ_1(rclcpy_publisher_publish_int32_obj, rclcpy_publisher_publish_int32);
+static MP_DEFINE_CONST_FUN_OBJ_2(rclcpy_publisher_publish_int32_obj, rclcpy_publisher_publish_int32);
 
 static mp_obj_t rclcpy_publisher_get_topic_name(mp_obj_t self_in) {
     // TODO: probably a good idea
     // check_for_deinit(self);
     rclcpy_publisher_obj_t *self = MP_OBJ_TO_PTR(self_in);
     const char * topic_str = common_hal_rclcpy_publisher_get_topic_name(self);
-    return mp_obj_new_str(topic_str);
+    return mp_obj_new_str(topic_str,strlen(topic_str));
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(rclcpy_publisher_get_topic_name_obj, rclcpy_publisher_get_topic_name);
 
@@ -42,6 +43,6 @@ MP_DEFINE_CONST_OBJ_TYPE(
     rclcpy_publisher_type,
     MP_QSTR_Publisher,
     MP_TYPE_FLAG_HAS_SPECIAL_ACCESSORS,
-    locals_dict, &rclcpy_publisher_locals_dict,
     make_new, rclcpy_publisher_make_new,
+    locals_dict, &rclcpy_publisher_locals_dict
 );
