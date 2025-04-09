@@ -56,8 +56,8 @@ mp_int_t max_allocated_display = CIRCUITPY_DISPLAY_LIMIT;
 primary_display_bus_t display_buses[CIRCUITPY_DISPLAY_LIMIT];
 primary_display_t displays[CIRCUITPY_DISPLAY_LIMIT];
 #if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
-primary_display_bus_t *display_buses_dyn = &display_buses[0];
-primary_display_t *displays_dyn = &displays[0];
+primary_display_bus_t *display_buses_dyn;
+primary_display_t *displays_dyn;
 #define DYN_DISPLAY_BUSES(indx) (indx < CIRCUITPY_DISPLAY_LIMIT ? display_buses[indx] : display_buses_dyn[indx - CIRCUITPY_DISPLAY_LIMIT])
 #define DYN_DISPLAY_BUSES_ADR(indx, membr) (indx < CIRCUITPY_DISPLAY_LIMIT ? &display_buses[indx].membr : &display_buses_dyn[indx - CIRCUITPY_DISPLAY_LIMIT].membr)
 #define DYN_DISPLAY_BUSES_ADR0(indx) (indx < CIRCUITPY_DISPLAY_LIMIT ? &display_buses[indx] : &display_buses_dyn[indx - CIRCUITPY_DISPLAY_LIMIT])
@@ -260,9 +260,9 @@ void reset_displays(void) {
         m_del(primary_display_t, displays_dyn, (max_allocated_display - CIRCUITPY_DISPLAY_LIMIT));
         display_buses_dyn = NULL;
         displays_dyn = NULL;
+        // Set dynamically allocated displays to 0 (CIRCUITPY_DISPLAY_LIMIT)
+        max_allocated_display = CIRCUITPY_DISPLAY_LIMIT;
     }
-    // Set dynamically allocated displays to 0 (CIRCUITPY_DISPLAY_LIMIT)
-    max_allocated_display = CIRCUITPY_DISPLAY_LIMIT;
     #endif
 
     // The SPI buses used by FourWires may be allocated on the heap so we need to move them inline.
@@ -498,6 +498,10 @@ primary_display_t *allocate_display(void) {
             #else
             displays[i].display_base.type = &mp_type_NoneType;
             #endif
+            if (i == 0) {
+                // The first display is the primary display.
+                primary_display_number = 0;
+            }
             return DYN_DISPLAYS_ADR0(i);
         }
     }
