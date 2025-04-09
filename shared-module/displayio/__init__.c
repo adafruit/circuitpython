@@ -224,8 +224,6 @@ static void common_hal_displayio_release_displays_impl(bool keep_primary) {
         display_buses[i].bus_base.type = &mp_type_NoneType;
         #endif
     }
-    max_allocated_display = CIRCUITPY_DISPLAY_LIMIT;
-
     if (!keep_primary) {
         supervisor_stop_terminal();
     }
@@ -255,6 +253,8 @@ void malloc_display_memory(void) {
 void reset_displays(void) {
     // In CircuitPython 10, release secondary displays before doing anything else:
     common_hal_displayio_release_displays_impl(true);
+    // Set dynamically allocated displays to 0 (CIRCUITPY_DISPLAY_LIMIT)
+    max_allocated_display = CIRCUITPY_DISPLAY_LIMIT;
 
     // The SPI buses used by FourWires may be allocated on the heap so we need to move them inline.
     for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
