@@ -253,13 +253,13 @@ void reset_displays(void) {
     // In CircuitPython 10, release secondary displays before doing anything else:
     common_hal_displayio_release_displays_impl(true);
     #if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
-    // Set dynamically allocated displays to 0 (CIRCUITPY_DISPLAY_LIMIT)
-    max_allocated_display = CIRCUITPY_DISPLAY_LIMIT;
-    // Does this need to be done or dos port_free effectively do this?
+    // Does this need to be done or does port_free effectively do this?
     m_del(primary_display_bus_t, display_buses_dyn, (max_allocated_display - CIRCUITPY_DISPLAY_LIMIT));
     m_del(primary_display_t, displays_dyn, (max_allocated_display - CIRCUITPY_DISPLAY_LIMIT));
     display_buses_dyn = NULL;
     displays_dyn = NULL;
+    // Set dynamically allocated displays to 0 (CIRCUITPY_DISPLAY_LIMIT)
+    max_allocated_display = CIRCUITPY_DISPLAY_LIMIT;
     #endif
 
     // The SPI buses used by FourWires may be allocated on the heap so we need to move them inline.
