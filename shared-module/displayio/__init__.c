@@ -100,7 +100,6 @@ static bool any_display_uses_this_framebuffer(mp_obj_base_t *obj) {
 }
 #endif
 
-
 void displayio_background(void) {
     if (mp_hal_is_interrupted()) {
         return;
@@ -253,8 +252,15 @@ void malloc_display_memory(void) {
 void reset_displays(void) {
     // In CircuitPython 10, release secondary displays before doing anything else:
     common_hal_displayio_release_displays_impl(true);
+    #if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
     // Set dynamically allocated displays to 0 (CIRCUITPY_DISPLAY_LIMIT)
     max_allocated_display = CIRCUITPY_DISPLAY_LIMIT;
+    // Does this need to be done or dos port_free effectively do this?
+    m_del(primary_display_bus_t, display_buses_dyn, (max_allocated_display - CIRCUITPY_DISPLAY_LIMIT));
+    m_del(primary_display_t, displays_dyn, (max_allocated_display - CIRCUITPY_DISPLAY_LIMIT));
+    display_buses_dyn = NULL;
+    displays_dyn = NULL;
+    #endif
 
     // The SPI buses used by FourWires may be allocated on the heap so we need to move them inline.
     for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
