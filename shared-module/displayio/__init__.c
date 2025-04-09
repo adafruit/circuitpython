@@ -257,7 +257,6 @@ void reset_displays(void) {
     if (max_allocated_display > CIRCUITPY_DISPLAY_LIMIT) {
         // Free the dynamically allocated display buses and displays.
         m_del(primary_display_bus_t, display_buses_dyn, (max_allocated_display - CIRCUITPY_DISPLAY_LIMIT));
-        m_del(primary_display_bus_t, display_buses_dyn, (max_allocated_display - CIRCUITPY_DISPLAY_LIMIT));
         m_del(primary_display_t, displays_dyn, (max_allocated_display - CIRCUITPY_DISPLAY_LIMIT));
         display_buses_dyn = NULL;
         displays_dyn = NULL;
