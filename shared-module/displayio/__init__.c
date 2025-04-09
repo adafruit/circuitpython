@@ -224,6 +224,7 @@ static void common_hal_displayio_release_displays_impl(bool keep_primary) {
         display_buses[i].bus_base.type = &mp_type_NoneType;
         #endif
     }
+    max_allocated_display = CIRCUITPY_DISPLAY_LIMIT;
 
     if (!keep_primary) {
         supervisor_stop_terminal();
