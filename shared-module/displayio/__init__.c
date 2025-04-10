@@ -49,8 +49,8 @@
 #include "supervisor/spi_flash_api.h"
 #endif
 
-// The default indicates no primary display
-static int primary_display_number = -1;
+// The default indicates the first display is the primary display
+static int primary_display_number = 0;
 mp_int_t max_allocated_display = CIRCUITPY_DISPLAY_LIMIT;
 
 primary_display_bus_t display_buses[CIRCUITPY_DISPLAY_LIMIT];
@@ -527,8 +527,7 @@ primary_display_t *allocate_display_or_raise(void) {
 primary_display_bus_t *allocate_display_bus(void) {
     for (uint8_t i = 0; i < max_allocated_display; i++) {
         mp_const_obj_t display_bus_type = DYN_DISPLAY_BUSES(i).bus_base.type;
-        if ((display_bus_type == NULL || display_bus_type == &mp_type_NoneType) &&
-            (i >= CIRCUITPY_DISPLAY_LIMIT || (!is_display_active(DYN_DISPLAYS_ADR(i, display_base))))) {
+        if (display_bus_type == NULL || display_bus_type == &mp_type_NoneType) {
             // Clear this memory so it is in a known state before init.
             memset(DYN_DISPLAY_BUSES_ADR0(i), 0, sizeof(display_buses[0]));
             #if CIRCUITPY_OS_GETENV && CIRCUITPY_SET_DISPLAY_LIMIT
