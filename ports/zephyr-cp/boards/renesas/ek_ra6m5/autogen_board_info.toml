@@ -71,6 +71,7 @@ nvm = false
 onewireio = false
 os = true
 paralleldisplaybus = false
+pathlib = false
 ps2io = false
 pulseio = false
 pwmio = false

@@ -8,6 +8,8 @@
 
 #include "shared-bindings/util.h"
 
+#include "shared-bindings/os/__init__.h"
+
 // If so, deinit() has already been called on the object, so complain.
 void raise_deinited_error(void) {
     mp_raise_ValueError(MP_ERROR_TEXT("Object has been deinitialized and can no longer be used. Create a new object."));
@@ -31,5 +33,18 @@ void properties_construct_helper(mp_obj_t self_in, const mp_arg_t *args, const m
         if (vals[i].u_obj != NULL) {
             mp_store_attr(self_in, args[i].qst, vals[i].u_obj);
         }
+    }
+}
+
+bool path_exists(const char *path) {
+    // Use common_hal_os_stat to check if path exists
+    nlr_buf_t nlr;
+    if (nlr_push(&nlr) == 0) {
+        common_hal_os_stat(path);
+        nlr_pop();
+        return true;
+    } else {
+        // Path doesn't exist
+        return false;
     }
 }

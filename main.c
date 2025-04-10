@@ -457,14 +457,19 @@ static bool __attribute__((noinline)) run_code_py(safe_mode_t safe_mode, bool *s
         usb_setup_with_vm();
         #endif
 
+        // Always return to root before trying to run files.
+        common_hal_os_chdir("/");
         // Check if a different run file has been allocated
         if (next_code_configuration != NULL) {
             next_code_configuration->options &= ~SUPERVISOR_NEXT_CODE_OPT_NEWLY_SET;
             next_code_options = next_code_configuration->options;
             if (next_code_configuration->filename[0] != '\0') {
+                if (next_code_configuration->working_directory != NULL) {
+                    common_hal_os_chdir(next_code_configuration->working_directory);
+                }
                 // This is where the user's python code is actually executed:
                 const char *const filenames[] = { next_code_configuration->filename };
-                found_main = maybe_run_list(filenames, MP_ARRAY_SIZE(filenames));
+                found_main = maybe_run_list(filenames, 1);
                 if (!found_main) {
                     serial_write(next_code_configuration->filename);
                     serial_write_compressed(MP_ERROR_TEXT(" not found.\n"));
@@ -1108,9 +1113,6 @@ int __attribute__((used)) main(void) {
                 serial_write_compressed(MP_ERROR_TEXT("soft reboot\n"));
             }
             simulate_reset = false;
-
-            // Always return to root before trying to run files.
-            common_hal_os_chdir("/");
 
             if (pyexec_mode_kind == PYEXEC_MODE_FRIENDLY_REPL) {
                 // If code.py did a fake deep sleep, pretend that we

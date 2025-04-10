@@ -303,6 +303,9 @@ endif
 ifeq ($(CIRCUITPY_OS),1)
 SRC_PATTERNS += os/%
 endif
+ifeq ($(CIRCUITPY_PATHLIB),1)
+SRC_PATTERNS += pathlib/%
+endif
 ifeq ($(CIRCUITPY_DUALBANK),1)
 SRC_PATTERNS += dualbank/%
 endif
@@ -744,6 +747,8 @@ SRC_SHARED_MODULE_ALL = \
 	onewireio/__init__.c \
 	onewireio/OneWire.c \
 	os/__init__.c \
+	pathlib/__init__.c \
+	pathlib/PosixPath.c \
 	paralleldisplaybus/ParallelBus.c \
 	qrio/__init__.c \
 	qrio/QRDecoder.c \
