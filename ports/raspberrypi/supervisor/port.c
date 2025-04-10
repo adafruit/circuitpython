@@ -57,6 +57,13 @@
 #include "RP2350.h" // CMSIS
 #endif
 
+#ifdef CIRCUITPY_BOOT_BUTTON_NO_GPIO
+#include "hardware/gpio.h"
+#include "hardware/sync.h"
+#include "hardware/structs/ioqspi.h"
+#include "hardware/structs/sio.h"
+#endif
+
 #include "supervisor/shared/serial.h"
 
 #include "tusb.h"
@@ -592,3 +599,53 @@ void port_boot_info(void) {
     mp_printf(&mp_plat_print, "\n");
     #endif
 }
+
+#if defined(CIRCUITPY_BOOT_BUTTON_NO_GPIO)
+bool __no_inline_not_in_flash_func(port_boot_button_pressed)(void) {
+    // Sense the state of the boot button. Because this function
+    // disables flash, it cannot be safely called once the second
+    // core has been started. When the BOOTSEL button is sensed as
+    // pressed, return is delayed until the button is released and
+    // a delay has passed in order to debounce the button.
+    const uint32_t CS_PIN_INDEX = 1;
+    #if defined(PICO_RP2040)
+    const uint32_t CS_BIT = 1u << 1;
+    #else
+    const uint32_t CS_BIT = SIO_GPIO_HI_IN_QSPI_CSN_BITS;
+    #endif
+    uint32_t int_state = save_and_disable_interrupts();
+    // Wait for any outstanding XIP activity to finish. Flash
+    // must be quiescent before disabling the chip select. Since
+    // there's no XIP busy indication we can test, we delay a
+    // generous 5 ms to allow any XIP activity to finish.
+    busy_wait_us(5000);
+    // Float the flash chip select pin. The line will HI-Z due to
+    // the external 10K pull-up resistor.
+    hw_write_masked(&ioqspi_hw->io[CS_PIN_INDEX].ctrl,
+        GPIO_OVERRIDE_LOW << IO_QSPI_GPIO_QSPI_SS_CTRL_OEOVER_LSB,
+            IO_QSPI_GPIO_QSPI_SS_CTRL_OEOVER_BITS);
+    // Delay 100 us to allow the CS line to stabilize. If BOOTSEL is
+    // pressed, the line will be pulled low by the button and its
+    // 1K external resistor to ground.
+    busy_wait_us(100);
+    bool button_pressed = !(sio_hw->gpio_hi_in & CS_BIT);
+    // Wait for the button to be released.
+    if (button_pressed) {
+        while (!(sio_hw->gpio_hi_in & CS_BIT)) {
+            tight_loop_contents();
+        }
+        // Wait for 50 ms to debounce the button.
+        busy_wait_us(50000);
+    }
+    // Restore the flash chip select pin to its original state.
+    hw_write_masked(&ioqspi_hw->io[CS_PIN_INDEX].ctrl,
+        GPIO_OVERRIDE_NORMAL << IO_QSPI_GPIO_QSPI_SS_CTRL_OEOVER_LSB,
+            IO_QSPI_GPIO_QSPI_SS_CTRL_OEOVER_BITS);
+    // Delay 5 ms to allow the flash chip to re-enable and for the
+    // flash CS pin to stabilize.
+    busy_wait_us(5000);
+    // Restore the interrupt state.
+    restore_interrupts(int_state);
+    return button_pressed;
+}
+#endif

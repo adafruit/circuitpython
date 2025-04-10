@@ -12,6 +12,11 @@
 
 #include "lib/tlsf/tlsf.h"
 
+#ifdef CIRCUITPY_BOOT_BUTTON
+#include "shared-bindings/digitalio/DigitalInOut.h"
+#include "shared-bindings/time/__init__.h"
+#endif
+
 static tlsf_t heap;
 
 MP_WEAK void port_wake_main_task(void) {
@@ -59,4 +64,19 @@ MP_WEAK size_t port_heap_get_largest_free_size(void) {
     tlsf_walk_pool(tlsf_get_pool(heap), max_size_walker, &max_size);
     // IDF does this. Not sure why.
     return tlsf_fit_size(heap, max_size);
+}
+
+MP_WEAK bool port_boot_button_pressed(void) {
+    #if defined(CIRCUITPY_BOOT_BUTTON)
+    // Init/deinit the boot button every time in case it is used for LEDs.
+    digitalio_digitalinout_obj_t boot_button;
+    common_hal_digitalio_digitalinout_construct(&boot_button, CIRCUITPY_BOOT_BUTTON);
+    common_hal_digitalio_digitalinout_switch_to_input(&boot_button, PULL_UP);
+    common_hal_time_delay_ms(1);
+    bool button_pressed = !common_hal_digitalio_digitalinout_get_value(&boot_button);
+    common_hal_digitalio_digitalinout_deinit(&boot_button);
+    return button_pressed;
+    #else
+    return false;
+    #endif
 }

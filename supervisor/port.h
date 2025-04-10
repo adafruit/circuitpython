@@ -108,3 +108,8 @@ void port_boot_info(void);
 // Some ports want to mark additional pointers as gc roots.
 // A default weak implementation is provided that does nothing.
 void port_gc_collect(void);
+
+// Most ports that implement CIRCUITPY_BOOT_BUTTON use a generic version of
+// this function to sense the button. Ports that need to can override this
+// function to provide their own implementation.
+bool port_boot_button_pressed(void);
