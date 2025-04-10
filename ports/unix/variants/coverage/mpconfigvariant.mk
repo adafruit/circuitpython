@@ -36,6 +36,7 @@ SRC_BITMAP := \
 	shared-bindings/audiodelays/Echo.c \
 	shared-bindings/audiodelays/Chorus.c \
 	shared-bindings/audiodelays/PitchShift.c \
+	shared-bindings/audiodelays/Reverb.c \
 	shared-bindings/audiodelays/__init__.c \
 	shared-bindings/audiofilters/Distortion.c \
 	shared-bindings/audiofilters/Filter.c \
@@ -80,6 +81,7 @@ SRC_BITMAP := \
 	shared-module/audiodelays/Echo.c \
 	shared-module/audiodelays/Chorus.c \
 	shared-module/audiodelays/PitchShift.c \
+	shared-module/audiodelays/Reverb.c \
 	shared-module/audiodelays/__init__.c \
 	shared-module/audiofilters/Distortion.c \
 	shared-module/audiofilters/Filter.c \
