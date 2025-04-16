@@ -465,8 +465,9 @@ bool rp2pio_statemachine_construct(rp2pio_statemachine_obj_t *self,
 
     sm_config_set_fifo_join(&c, join);
 
+    sm_config_set_mov_status(&c, mov_status_type, mov_status_n);
+
     // TODO: these arguments
-    // int mov_status_type, int mov_status_n,
     // int set_count, int out_count
 
     self->sm_config = c;
