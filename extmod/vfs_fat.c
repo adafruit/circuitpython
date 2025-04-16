@@ -38,6 +38,7 @@
 
 // CIRCUITPY-CHANGE: extra includes
 #include <string.h>
+#include "py/gc.h"
 #include "py/obj.h"
 #include "py/objproperty.h"
 #include "py/runtime.h"
@@ -342,7 +343,10 @@ static mp_obj_t fat_vfs_stat(mp_obj_t vfs_in, mp_obj_t path_in) {
         FRESULT res = f_stat(&self->fatfs, path, &fno);
         if (res != FR_OK) {
             // CIRCUITPY-CHANGE
-            mp_raise_OSError_fresult(res);
+            if (gc_alloc_possible()) {
+                mp_raise_OSError_fresult(res);
+            }
+            return mp_const_none;
         }
     }
 

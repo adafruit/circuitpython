@@ -10,6 +10,7 @@
 #include <stdbool.h>
 
 #include "py/objtuple.h"
+#include "shared-module/os/__init__.h"
 
 void common_hal_os_chdir(const char *path);
 mp_obj_t common_hal_os_getcwd(void);
