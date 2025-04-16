@@ -30,10 +30,6 @@ LONGINT_IMPL = MPZ
 # Default to no-psram
 CIRCUITPY_ESP_PSRAM_SIZE ?= 0
 
-# New 4MB boards will not have OTA support but more room for alarm, ble and other
-# newer features.
-CIRCUITPY_LEGACY_4MB_FLASH_LAYOUT ?= 0
-
 # Enable more features
 CIRCUITPY_FULL_BUILD ?= 1
 
@@ -55,7 +51,6 @@ CIRCUITPY_AUDIOIO ?= 0
 CIRCUITPY_BLEIO_HCI = 0
 CIRCUITPY_CANIO ?= 1
 CIRCUITPY_COUNTIO ?= 1
-CIRCUITPY_ESPCAMERA ?= 1
 CIRCUITPY_ESPIDF ?= 1
 CIRCUITPY_ESPULP ?= 1
 CIRCUITPY_FRAMEBUFFERIO ?= 1
@@ -70,6 +65,7 @@ CIRCUITPY_PS2IO ?= 1
 CIRCUITPY_RGBMATRIX ?= 1
 CIRCUITPY_ROTARYIO ?= 1
 CIRCUITPY_SDIOIO ?= 1
+CIRCUITPY_SETTABLE_PROCESSOR_FREQUENCY ?= 1
 CIRCUITPY_SYNTHIO_MAX_CHANNELS ?= 12
 CIRCUITPY_TOUCHIO_USE_NATIVE ?= 1
 CIRCUITPY_WATCHDOG ?= 1
@@ -94,7 +90,7 @@ CIRCUITPY_USB_DEVICE = 0
 
 else ifeq ($(IDF_TARGET),esp32c2)
 
-# C2 ROM spits out the UART at 74880 when connected to a 26mhz crystal! Debug
+# C2 ROM spits out the UART at 74880 when connected to a 26 MHz crystal! Debug
 # prints will default to that too.
 # Modules
 CIRCUITPY_ESPCAMERA = 0
@@ -261,53 +257,35 @@ CIRCUITPY_ALARM_TOUCH = 1
 CIRCUITPY_AUDIOBUSIO_PDMIN = 1
 CIRCUITPY_ESP_USB_SERIAL_JTAG ?= 0
 
-# No room for _bleio on boards with 4MB flash
-ifeq ($(CIRCUITPY_ESP_FLASH_SIZE),4MB)
-CIRCUITPY_BLEIO_NATIVE ?= 0
 endif
+# end of IDF_TARGET-specific conditionals
 
-endif
-
-# bitmapfilter does not fit on 4MB boards unless they are set up as camera boards
-ifeq ($(CIRCUITPY_ESP_FLASH_SIZE),4MB)
-CIRCUITPY_BITMAPFILTER ?= 0
-OPTIMIZATION_FLAGS ?= -Os
-CIRCUITPY_DUALBANK ?= 0
-else
-CIRCUITPY_DUALBANK ?= 1
-endif
-
-# We used to default to OTA partition layout but are moving away from it so that
-# BLE and alarm can be included. This setting prevents the partition layout from
-# changing.
-ifeq ($(CIRCUITPY_LEGACY_4MB_FLASH_LAYOUT), 1)
-ifeq ($(IDF_TARGET_ARCH), xtensa)
-	CIRCUITPY_ALARM ?= 1
-else
-CIRCUITPY_ALARM = 0
-endif
-CIRCUITPY_DUALBANK = 1
-CIRCUITPY_BLEIO_NATIVE ?= 0
-CIRCUITPY_SETTABLE_PROCESSOR_FREQUENCY = 0
-else
-CIRCUITPY_SETTABLE_PROCESSOR_FREQUENCY = 1
-endif
+##############################################################################
 
 # No room for dualbank or mp3 on boards with 2MB flash
 ifeq ($(CIRCUITPY_ESP_FLASH_SIZE),2MB)
-CIRCUITPY_BITMAPFILTER ?= 0
-CIRCUITPY_DUALBANK = 0
 CIRCUITPY_AUDIOMP3 = 0
+CIRCUITPY_BITMAPFILTER ?= 0
 CIRCUITPY_BLEIO_NATIVE ?= 0
+CIRCUITPY_DUALBANK = 0
+OPTIMIZATION_FLAGS ?= -Os
+else ifeq ($(CIRCUITPY_ESP_FLASH_SIZE),4MB)
+CIRCUITPY_DUALBANK ?= 0
+OPTIMIZATION_FLAGS ?= -Os
+else
+# > 4MB flash will usually have an OTA update partition
+CIRCUITPY_DUALBANK ?= 1
 endif
 
-# No room for _eve on boards with 4MB flash
-ifeq ($(CIRCUITPY_ESP_FLASH_SIZE),4MB)
-CIRCUITPY__EVE = 0
-endif
-
-# default BLEIO after flash-size based defaults
+# after chip and flash-size defaults: assume BLE native is possible unless turned off (e.g., ESP32-S2)
 CIRCUITPY_BLEIO_NATIVE ?= 1
+
+# CIRCUITPY_ESPCAMERA needs PSRAM.
+ifeq ($(CIRCUITPY_ESP_PSRAM_SIZE),0)
+CIRCUITPY_ESPCAMERA = 0
+else
+CIRCUITPY_ESPCAMERA ?= 1
+endif
 
 # Modules dependent on other modules
 CIRCUITPY_ESPNOW ?= $(CIRCUITPY_WIFI)
