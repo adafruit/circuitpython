@@ -285,6 +285,9 @@ endif
 ifeq ($(CIRCUITPY_MICROCONTROLLER),1)
 SRC_PATTERNS += microcontroller/%
 endif
+ifeq ($(CIRCUITPY_RCLCPY),1)
+SRC_PATTERNS += rclcpy/%
+endif
 ifeq ($(CIRCUITPY_MDNS),1)
 SRC_PATTERNS += mdns/%
 endif
@@ -537,6 +540,9 @@ SRC_COMMON_HAL_ALL = \
 	pulseio/__init__.c \
 	pwmio/PWMOut.c \
 	pwmio/__init__.c \
+	rclcpy/__init__.c \
+	rclcpy/Node.c \
+	rclcpy/Publisher.c \
 	rgbmatrix/RGBMatrix.c \
 	rgbmatrix/__init__.c \
 	rotaryio/IncrementalEncoder.c \
