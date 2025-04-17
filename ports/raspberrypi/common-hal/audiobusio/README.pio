@@ -1,0 +1,7 @@
+.pio files right now are compiled by hand with pico-sdk/tools/pioasm and inserted into I2SOut.c
+
+i2s.pio           regular pin order, not left_justified
+i2s_left.pio      regular pin order, left_justified
+
+i2s_swap.pio      swapped pin order, not left_justified
+i2s_swap_left.pio swapped pin order, left_justified
