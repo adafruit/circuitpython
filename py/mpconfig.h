@@ -881,6 +881,10 @@ typedef double mp_float_t;
 #define MICROPY_PY_BUILTINS_COMPLEX (MICROPY_PY_BUILTINS_FLOAT)
 #endif
 
+#ifndef MICROPY_PY_DOUBLE_TYPECODE
+#define MICROPY_PY_DOUBLE_TYPECODE (MICROPY_PY_BUILTINS_FLOAT)
+#endif
+
 // Whether to use the native _Float16 for 16-bit float support
 #ifndef MICROPY_FLOAT_USE_NATIVE_FLT16
 #ifdef __FLT16_MAX__

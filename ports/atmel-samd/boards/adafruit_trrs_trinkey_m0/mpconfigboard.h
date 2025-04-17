@@ -40,3 +40,6 @@
 // no PA29
 #define IGNORE_PIN_PA30     1
 #define IGNORE_PIN_PA31     1
+
+// A couple Learn examples do `array.array('d', ...)` so enable it.
+#define MICROPY_PY_DOUBLE_TYPECODE 1

@@ -289,8 +289,10 @@ mp_obj_t mp_binary_get_val_array(char typecode, void *p, size_t index) {
         #if MICROPY_PY_BUILTINS_FLOAT
         case 'f':
             return mp_obj_new_float_from_f(((float *)p)[index]);
+        #if MICROPY_PY_DOUBLE_TYPECODE
         case 'd':
             return mp_obj_new_float_from_d(((double *)p)[index]);
+        #endif
         #endif
             // CIRCUITPY-CHANGE: non-standard typecodes can be turned off
             #if MICROPY_NONSTANDARD_TYPECODES
@@ -367,12 +369,14 @@ mp_obj_t mp_binary_get_val(char struct_type, char val_type, byte *p_base, byte *
             float f;
         } fpu = {val};
         return mp_obj_new_float_from_f(fpu.f);
+    #if MICROPY_PY_DOUBLE_TYPECODE
     } else if (val_type == 'd') {
         union {
             uint64_t i;
             double f;
         } fpu = {val};
         return mp_obj_new_float_from_d(fpu.f);
+    #endif
     #endif
     } else if (is_signed(val_type)) {
         if ((long long)MP_SMALL_INT_MIN <= val && val <= (long long)MP_SMALL_INT_MAX) {
@@ -445,6 +449,7 @@ void mp_binary_set_val(char struct_type, char val_type, mp_obj_t val_in, byte *p
             val = fp_sp.i;
             break;
         }
+        #if MICROPY_PY_DOUBLE_TYPECODE
         case 'd': {
             union {
                 uint64_t i64;
@@ -462,6 +467,7 @@ void mp_binary_set_val(char struct_type, char val_type, mp_obj_t val_in, byte *p
             }
             break;
         }
+        #endif
         #endif
         default: {
             // CIRCUITPY-CHANGE: add overflow checks
@@ -501,9 +507,11 @@ void mp_binary_set_val_array(char typecode, void *p, size_t index, mp_obj_t val_
         case 'f':
             ((float *)p)[index] = mp_obj_get_float_to_f(val_in);
             break;
+        #if MICROPY_PY_DOUBLE_TYPECODE
         case 'd':
             ((double *)p)[index] = mp_obj_get_float_to_d(val_in);
             break;
+        #endif
         #endif
         // CIRCUITPY-CHANGE: non-standard typecodes can be turned off
         #if MICROPY_NONSTANDARD_TYPECODES
@@ -574,9 +582,11 @@ void mp_binary_set_val_array_from_int(char typecode, void *p, size_t index, mp_i
         case 'f':
             ((float *)p)[index] = (float)val;
             break;
+        #if MICROPY_PY_DOUBLE_TYPECODE
         case 'd':
             ((double *)p)[index] = (double)val;
             break;
+        #endif
         #endif
             // CIRCUITPY-CHANGE: non-standard typecodes can be turned off
             #if MICROPY_NONSTANDARD_TYPECODES

@@ -117,7 +117,7 @@ CFLAGS += \
 	-msoft-float \
 	-mfloat-abi=soft \
 	-DSAMD21
-LIBS := libs/libgcc-12.1.0-Os-v6-m-nofp.a -lc
+LIBS := libs/libgcc-14.2.0-Os-v6-m-nofp.a -lc
 else
 LIBS := -lgcc -lc
 endif

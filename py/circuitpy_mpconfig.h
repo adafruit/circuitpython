@@ -70,6 +70,7 @@ extern void common_hal_mcu_enable_interrupts(void);
 #define MICROPY_ERROR_REPORTING          (CIRCUITPY_FULL_BUILD ? MICROPY_ERROR_REPORTING_NORMAL : MICROPY_ERROR_REPORTING_TERSE)
 #define MICROPY_FLOAT_HIGH_QUALITY_HASH  (0)
 #define MICROPY_FLOAT_IMPL               (MICROPY_FLOAT_IMPL_FLOAT)
+#define MICROPY_PY_DOUBLE_TYPECODE       (CIRCUITPY_FULL_BUILD ? 1 : 0)
 #define MICROPY_GC_ALLOC_THRESHOLD       (0)
 #define MICROPY_GC_SPLIT_HEAP            (1)
 #define MICROPY_GC_SPLIT_HEAP_AUTO       (1)
@@ -141,7 +142,11 @@ extern void common_hal_mcu_enable_interrupts(void);
 #define MICROPY_PY_UCTYPES               (0)
 #define MICROPY_PY___FILE__              (1)
 
+#if CIRCUITPY_FULL_BUILD
 #define MICROPY_QSTR_BYTES_IN_HASH       (1)
+#else
+#define MICROPY_QSTR_BYTES_IN_HASH       (0)
+#endif
 #define MICROPY_REPL_AUTO_INDENT         (1)
 #define MICROPY_REPL_EVENT_DRIVEN        (0)
 #define MICROPY_STACK_CHECK              (1)
