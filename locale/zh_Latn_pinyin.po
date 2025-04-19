@@ -116,6 +116,10 @@ msgstr "%q bāo hán chóng fù de yǐn jiǎo"
 msgid "%q failure: %d"
 msgstr "%q Shībài: %d"
 
+#: shared-module/audiodelays/MultiTapDelay.c
+msgid "%q in %q must be of type %q or %q, not %q"
+msgstr ""
+
 #: py/argcheck.c shared-module/audiofilters/Filter.c
 msgid "%q in %q must be of type %q, not %q"
 msgstr "%q zhōng de %q bì xū shì %q lèi xíng, ér bù shì %q"
@@ -239,7 +243,8 @@ msgid "%q must be of type %q, %q, or %q, not %q"
 msgstr "%q bìxūshì %q, %q huò %q lèixíng, érbùshì %q"
 
 #: py/argcheck.c py/runtime.c shared-bindings/bitmapfilter/__init__.c
-#: shared-module/synthio/Note.c shared-module/synthio/__init__.c
+#: shared-module/audiodelays/MultiTapDelay.c shared-module/synthio/Note.c
+#: shared-module/synthio/__init__.c
 msgid "%q must be of type %q, not %q"
 msgstr "%q de lèi xíng bì xū shì %q, ér bù shì %q"
 
@@ -2638,6 +2643,7 @@ msgid "bits must be 32 or less"
 msgstr "wèi bì xū shì 32 huò gèng shǎo"
 
 #: shared-bindings/audiodelays/Chorus.c shared-bindings/audiodelays/Echo.c
+#: shared-bindings/audiodelays/MultiTapDelay.c
 #: shared-bindings/audiodelays/PitchShift.c
 #: shared-bindings/audiofilters/Distortion.c
 #: shared-bindings/audiofilters/Filter.c shared-bindings/audiomixer/Mixer.c

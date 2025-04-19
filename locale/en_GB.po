@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"PO-Revision-Date: 2025-03-06 13:42+0000\n"
+"PO-Revision-Date: 2025-04-19 15:42+0000\n"
 "Last-Translator: Andi Chandler <andi@gowling.com>\n"
 "Language-Team: none\n"
 "Language: en_GB\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.10.3-dev\n"
+"X-Generator: Weblate 5.11.1-dev\n"
 
 #: main.c
 msgid ""
@@ -114,6 +114,10 @@ msgstr "%q contains duplicate pins"
 #: ports/atmel-samd/common-hal/sdioio/SDCard.c
 msgid "%q failure: %d"
 msgstr "%q failure: %d"
+
+#: shared-module/audiodelays/MultiTapDelay.c
+msgid "%q in %q must be of type %q or %q, not %q"
+msgstr ""
 
 #: py/argcheck.c shared-module/audiofilters/Filter.c
 msgid "%q in %q must be of type %q, not %q"
@@ -237,7 +241,8 @@ msgid "%q must be of type %q, %q, or %q, not %q"
 msgstr "%q must be of type %q, %q, or %q, not %q"
 
 #: py/argcheck.c py/runtime.c shared-bindings/bitmapfilter/__init__.c
-#: shared-module/synthio/Note.c shared-module/synthio/__init__.c
+#: shared-module/audiodelays/MultiTapDelay.c shared-module/synthio/Note.c
+#: shared-module/synthio/__init__.c
 msgid "%q must be of type %q, not %q"
 msgstr "%q must be of type %q, not %q"
 
@@ -805,7 +810,7 @@ msgstr "Cannot record to a file"
 
 #: shared-module/storage/__init__.c
 msgid "Cannot remount path when visible via USB."
-msgstr ""
+msgstr "Cannot remount path when visible via USB."
 
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Cannot set value when direction is input."
@@ -1391,7 +1396,7 @@ msgstr "MITM security is not supported"
 #: ports/stm/common-hal/sdioio/SDCard.c
 #, c-format
 msgid "MMC/SDIO Clock Error %x"
-msgstr ""
+msgstr "MMC/SDIO Clock Error %x"
 
 #: shared-bindings/is31fl3741/IS31FL3741.c
 msgid "Mapping must be a tuple"
@@ -1581,7 +1586,7 @@ msgstr "No pulldown on pin; 1Mohm recommended"
 
 #: shared-module/touchio/TouchIn.c
 msgid "No pullup on pin; 1Mohm recommended"
-msgstr ""
+msgstr "No pullup on pin; 1Mohm recommended"
 
 #: py/moderrno.c
 msgid "No space left on device"
@@ -2620,6 +2625,7 @@ msgid "bits must be 32 or less"
 msgstr "bits must be 32 or less"
 
 #: shared-bindings/audiodelays/Chorus.c shared-bindings/audiodelays/Echo.c
+#: shared-bindings/audiodelays/MultiTapDelay.c
 #: shared-bindings/audiodelays/PitchShift.c
 #: shared-bindings/audiofilters/Distortion.c
 #: shared-bindings/audiofilters/Filter.c shared-bindings/audiomixer/Mixer.c

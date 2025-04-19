@@ -114,6 +114,10 @@ msgstr "%q innehåller dubblettstift"
 msgid "%q failure: %d"
 msgstr "%q-fel: %d"
 
+#: shared-module/audiodelays/MultiTapDelay.c
+msgid "%q in %q must be of type %q or %q, not %q"
+msgstr ""
+
 #: py/argcheck.c shared-module/audiofilters/Filter.c
 msgid "%q in %q must be of type %q, not %q"
 msgstr "%q i %q måste vara av typen %q, inte %q"
@@ -238,7 +242,8 @@ msgid "%q must be of type %q, %q, or %q, not %q"
 msgstr "%q måste vara av typen %q, %q, eller %q, inte %q"
 
 #: py/argcheck.c py/runtime.c shared-bindings/bitmapfilter/__init__.c
-#: shared-module/synthio/Note.c shared-module/synthio/__init__.c
+#: shared-module/audiodelays/MultiTapDelay.c shared-module/synthio/Note.c
+#: shared-module/synthio/__init__.c
 msgid "%q must be of type %q, not %q"
 msgstr "%q måste vara av typen %q, inte %q"
 
@@ -2631,6 +2636,7 @@ msgid "bits must be 32 or less"
 msgstr "bits måste vara 32 eller färre"
 
 #: shared-bindings/audiodelays/Chorus.c shared-bindings/audiodelays/Echo.c
+#: shared-bindings/audiodelays/MultiTapDelay.c
 #: shared-bindings/audiodelays/PitchShift.c
 #: shared-bindings/audiofilters/Distortion.c
 #: shared-bindings/audiofilters/Filter.c shared-bindings/audiomixer/Mixer.c
