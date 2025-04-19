@@ -40,6 +40,8 @@ SRC_BITMAP := \
 	shared-bindings/audiofilters/Distortion.c \
 	shared-bindings/audiofilters/Filter.c \
 	shared-bindings/audiofilters/__init__.c \
+	shared-bindings/audiofreeverb/Freeverb.c \
+	shared-bindings/audiofreeverb/__init__.c \
 	shared-bindings/audiomixer/__init__.c \
 	shared-bindings/audiomixer/Mixer.c \
 	shared-bindings/audiomixer/MixerVoice.c \
@@ -84,6 +86,8 @@ SRC_BITMAP := \
 	shared-module/audiofilters/Distortion.c \
 	shared-module/audiofilters/Filter.c \
 	shared-module/audiofilters/__init__.c \
+	shared-module/audiofreeverb/Freeverb.c \
+	shared-module/audiofreeverb/__init__.c \
 	shared-module/audiomixer/__init__.c \
 	shared-module/audiomp3/MP3Decoder.c \
 	shared-module/audiomixer/Mixer.c \

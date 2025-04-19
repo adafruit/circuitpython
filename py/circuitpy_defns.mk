@@ -137,6 +137,9 @@ endif
 ifeq ($(CIRCUITPY_AUDIOFILTERS),1)
 SRC_PATTERNS += audiofilters/%
 endif
+ifeq ($(CIRCUITPY_AUDIOFREEVERB),1)
+SRC_PATTERNS += audiofreeverb/%
+endif
 ifeq ($(CIRCUITPY_AUDIOMIXER),1)
 SRC_PATTERNS += audiomixer/%
 endif
@@ -670,6 +673,8 @@ SRC_SHARED_MODULE_ALL = \
 	audiofilters/Distortion.c \
 	audiofilters/Filter.c \
 	audiofilters/__init__.c \
+	audiofreeverb/__init__.c \
+	audiofreeverb/Freeverb.c \
 	audioio/__init__.c \
 	audiomixer/Mixer.c \
 	audiomixer/MixerVoice.c \
