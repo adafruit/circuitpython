@@ -83,6 +83,9 @@ INC += \
 	-isystem esp-idf/components/esp_psram/include \
 	-isystem esp-idf/components/esp_ringbuf/include \
 	-isystem esp-idf/components/esp_rom/include \
+	-isystem esp-idf/components/esp_rom/$(IDF_TARGET)/include \
+	-isystem esp-idf/components/esp_rom/$(IDF_TARGET)/include/$(IDF_TARGET) \
+	-isystem esp-idf/components/esp_security/include \
 	-isystem esp-idf/components/esp_system/include \
 	-isystem esp-idf/components/esp_timer/include \
 	-isystem esp-idf/components/esp_wifi/include \
@@ -115,6 +118,7 @@ INC += \
 	-isystem esp-idf/components/sdmmc/include \
 	-isystem esp-idf/components/soc/include \
 	-isystem esp-idf/components/soc/$(IDF_TARGET)/include \
+	-isystem esp-idf/components/soc/$(IDF_TARGET)/register \
 	-isystem esp-idf/components/spi_flash/include \
 	-isystem esp-idf/components/usb/include \
 	-isystem esp-idf/components/ulp/ulp_fsm/include \
@@ -594,7 +598,7 @@ endif
 
 ESP_IDF_COMPONENTS_LINK = $(IDF_TARGET_ARCH) $(CHIP_COMPONENTS) app_update bootloader_support driver esp_driver_gpio esp_driver_gptimer esp_driver_i2c esp_driver_ledc esp_driver_spi esp_driver_uart efuse esp_adc esp_app_format esp_common esp_event esp_hw_support esp_mm esp_partition esp_pm esp_ringbuf esp_rom esp_system esp_timer freertos hal heap log newlib nvs_flash pthread soc spi_flash vfs esp_vfs_console
 ifneq ($(CIRCUITPY_WIFI),0)
-	ESP_IDF_COMPONENTS_LINK += esp_coex esp_netif esp-tls esp_wifi lwip mbedtls mdns wpa_supplicant esp_phy
+	ESP_IDF_COMPONENTS_LINK += esp_coex esp_netif esp_security esp-tls esp_wifi lwip mbedtls mdns wpa_supplicant esp_phy
 endif
 ifneq ($(CIRCUITPY_BLEIO_NATIVE),0)
 	BLE_IMPL_esp32 := esp32
@@ -605,7 +609,7 @@ ifneq ($(CIRCUITPY_BLEIO_NATIVE),0)
 	BLE_IMPL_esp32h2 := libble
 	BLE_IMPL = $(BLE_IMPL_$(IDF_TARGET))
 
-	ESP_IDF_COMPONENTS_LINK += bt esp_phy
+	ESP_IDF_COMPONENTS_LINK += bt esp_phy esp_security
 	ifeq ($(BLE_IMPL),esp32)
 		# BLE will hang the ESP32 and trigger an interrupt watchdog without this undefined symbol at
 		# link because a weak version of the interrupt that BLE uses will be linked incorrectly.
@@ -626,6 +630,9 @@ ifneq ($(CIRCUITPY_BLEIO_NATIVE),0)
 		BINARY_BLOBS += esp-idf/components/bt/controller/lib_$(IDF_TARGET)/$(IDF_TARGET)-bt-lib/libble_app.a
 	endif
 	endif
+endif
+ifeq ($(IDF_TARGET),esp32p4)
+    ESP_IDF_COMPONENTS_LINK += esp_security
 endif
 ifneq ($(CIRCUITPY_ESPULP),0)
 	ESP_IDF_COMPONENTS_LINK += ulp

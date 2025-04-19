@@ -142,8 +142,8 @@
 	url = https://github.com/adafruit/Adafruit_CircuitPython_RFM69.git
 [submodule "ports/espressif/esp-idf"]
 	path = ports/espressif/esp-idf
-	url = https://github.com/adafruit/esp-idf.git
-	branch = circuitpython-v5.3.2
+	url = https://github.com/eightycc/esp-idf.git
+	branch = circuitpython-v5.4.1
 [submodule "ports/espressif/esp-protocols"]
 	path = ports/espressif/esp-protocols
 	url = https://github.com/adafruit/esp-protocols.git

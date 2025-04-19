@@ -8,25 +8,7 @@
 #include "py/mphal.h"
 #include "supervisor/cpu.h"
 
-#if defined(CONFIG_IDF_TARGET_ESP32)
-#include "components/esp_rom/include/esp32/rom/ets_sys.h"
-#elif defined(CONFIG_IDF_TARGET_ESP32C2)
-#include "components/esp_rom/include/esp32c2/rom/ets_sys.h"
-#elif defined(CONFIG_IDF_TARGET_ESP32P4)
-#include "components/esp_rom/include/esp32p4/rom/ets_sys.h"
-#elif defined(CONFIG_IDF_TARGET_ESP32C3)
-#include "components/esp_rom/include/esp32c3/rom/ets_sys.h"
-#elif defined(CONFIG_IDF_TARGET_ESP32C6)
-#include "components/esp_rom/include/esp32c6/rom/ets_sys.h"
-#elif defined(CONFIG_IDF_TARGET_ESP32H2)
-#include "components/esp_rom/include/esp32h2/rom/ets_sys.h"
-#elif defined(CONFIG_IDF_TARGET_ESP32S2)
-#include "components/esp_rom/include/esp32s2/rom/ets_sys.h"
-#elif defined(CONFIG_IDF_TARGET_ESP32S3)
-#include "components/esp_rom/include/esp32s3/rom/ets_sys.h"
-#else
-#error Unknown CONFIG_IDF_TARGET_xxx
-#endif
+#include "rom/ets_sys.h"
 
 #include "esp_attr.h"
 

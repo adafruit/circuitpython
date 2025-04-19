@@ -190,8 +190,8 @@ static void _never_reset_spi_ram_flash(void) {
 
     const uint32_t spiconfig = esp_rom_efuse_get_flash_gpio_info();
     if (spiconfig == ESP_ROM_EFUSE_FLASH_DEFAULT_SPI) {
-        never_reset_pin_number(SPI_IOMUX_PIN_NUM_CLK);
-        never_reset_pin_number(SPI_IOMUX_PIN_NUM_CS);
+        never_reset_pin_number(MSPI_IOMUX_PIN_NUM_CLK);
+        never_reset_pin_number(MSPI_IOMUX_PIN_NUM_CS0);
         never_reset_pin_number(PSRAM_SPIQ_SD0_IO);
         never_reset_pin_number(PSRAM_SPID_SD1_IO);
         never_reset_pin_number(PSRAM_SPIWP_SD3_IO);
