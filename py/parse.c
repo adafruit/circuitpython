@@ -286,7 +286,7 @@ static void *parser_alloc(parser_t *parser, size_t num_bytes) {
         if (alloc < num_bytes) {
             alloc = num_bytes;
         }
-        chunk = (mp_parse_chunk_t *)m_new(byte, sizeof(mp_parse_chunk_t) + alloc);
+        chunk = (mp_parse_chunk_t *)m_malloc_with_collect(sizeof(mp_parse_chunk_t) + alloc);
         chunk->alloc = alloc;
         chunk->union_.used = 0;
         parser->cur_chunk = chunk;
@@ -1055,7 +1055,7 @@ mp_parse_tree_t mp_parse(mp_lexer_t *lex, mp_parse_input_kind_t input_kind) {
     parser.result_stack_top = 0;
     parser.result_stack = NULL;
     while (parser.result_stack_alloc > 1) {
-        parser.result_stack = m_new_maybe(mp_parse_node_t, parser.result_stack_alloc);
+        parser.result_stack = m_malloc_maybe_with_collect(sizeof(mp_parse_node_t) * parser.result_stack_alloc);
         if (parser.result_stack != NULL) {
             break;
         } else {

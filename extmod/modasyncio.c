@@ -179,7 +179,8 @@ mp_obj_t mp_asyncio_context = MP_OBJ_NULL;
 
 static mp_obj_t task_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     mp_arg_check_num(n_args, n_kw, 1, 2, false);
-    mp_obj_task_t *self = m_new_obj(mp_obj_task_t);
+    // CIRCUITPY-CHANGE: Task holds onto core and data so collect it.
+    mp_obj_task_t *self = m_malloc_with_collect(sizeof(mp_obj_task_t));
     self->pairheap.base.type = type;
     mp_pairheap_init_node(task_lt, &self->pairheap);
     self->coro = args[0];

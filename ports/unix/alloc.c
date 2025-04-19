@@ -58,7 +58,8 @@ void mp_unix_alloc_exec(size_t min_size, void **ptr, size_t *size) {
     }
 
     // add new link to the list of mmap'd regions
-    mmap_region_t *rg = m_new_obj(mmap_region_t);
+    // CIRCUITPY-CHANGE: Collect the mmap region because it points to others.
+    mmap_region_t *rg = m_malloc_with_collect(sizeof(mmap_region_t));
     rg->ptr = *ptr;
     rg->len = min_size;
     rg->next = MP_STATE_VM(mmap_region_head);

@@ -250,7 +250,8 @@ static qstr qstr_add(mp_uint_t len, const char *q_ptr) {
                 + sizeof(qstr_hash_t)
                 #endif
                 + sizeof(qstr_len_t)) * new_alloc;
-        qstr_pool_t *pool = (qstr_pool_t *)m_malloc_maybe(pool_size);
+        // CIRCUITPY-CHANGE: Use m_malloc_helper because pools reference previous pools
+        qstr_pool_t *pool = (qstr_pool_t *)m_malloc_helper(pool_size, M_MALLOC_COLLECT);
         if (pool == NULL) {
             // Keep qstr_last_chunk consistent with qstr_pool_t: qstr_last_chunk is not scanned
             // at garbage collection since it's reachable from a qstr_pool_t.  And the caller of

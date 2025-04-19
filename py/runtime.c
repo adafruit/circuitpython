@@ -1387,7 +1387,8 @@ mp_obj_t mp_getiter(mp_obj_t o_in, mp_obj_iter_buf_t *iter_buf) {
         if (iter_buf == NULL && MP_OBJ_TYPE_GET_SLOT(type, iter) != mp_obj_instance_getiter) {
             // if caller did not provide a buffer then allocate one on the heap
             // mp_obj_instance_getiter is special, it will allocate only if needed
-            iter_buf = m_new_obj(mp_obj_iter_buf_t);
+            // CIRCUITPY-CHANGE: Use m_new_struct_with_collect because iters reference the iternext function
+            iter_buf = m_new_struct_with_collect(mp_obj_iter_buf_t, 1);
         }
         mp_getiter_fun_t getiter;
         if (type->flags & MP_TYPE_FLAG_ITER_IS_CUSTOM) {
@@ -1408,7 +1409,8 @@ mp_obj_t mp_getiter(mp_obj_t o_in, mp_obj_iter_buf_t *iter_buf) {
         // __getitem__ exists, create and return an iterator
         if (iter_buf == NULL) {
             // if caller did not provide a buffer then allocate one on the heap
-            iter_buf = m_new_obj(mp_obj_iter_buf_t);
+            // CIRCUITPY-CHANGE: Use m_new_struct_with_collect because iters reference the iternext function
+            iter_buf = m_new_struct_with_collect(mp_obj_iter_buf_t, 1);
         }
         return mp_obj_new_getitem_iter(dest, iter_buf);
     }

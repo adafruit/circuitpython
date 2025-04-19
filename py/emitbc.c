@@ -76,7 +76,7 @@ struct _emit_t {
 };
 
 emit_t *emit_bc_new(mp_emit_common_t *emit_common) {
-    emit_t *emit = m_new0(emit_t, 1);
+    emit_t *emit = m_new_struct_with_collect(emit_t, 1);
     emit->emit_common = emit_common;
     return emit;
 }

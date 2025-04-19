@@ -51,7 +51,7 @@ scope_t *scope_new(scope_kind_t kind, mp_parse_node_t pn, mp_uint_t emit_options
     MP_STATIC_ASSERT(MP_QSTR__lt_setcomp_gt_ <= UINT8_MAX);
     MP_STATIC_ASSERT(MP_QSTR__lt_genexpr_gt_ <= UINT8_MAX);
 
-    scope_t *scope = m_new0(scope_t, 1);
+    scope_t *scope = m_new_struct_with_collect(scope_t, 1);
     scope->kind = kind;
     scope->pn = pn;
     if (kind == SCOPE_FUNCTION || kind == SCOPE_CLASS) {

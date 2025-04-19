@@ -82,7 +82,8 @@ static inline void mp_local_free(void *ptr) {
 }
 
 static inline void *mp_nonlocal_alloc(size_t n_bytes) {
-    return m_new(uint8_t, n_bytes);
+    // CIRCUITPY-CHANGE: Collect the allocated memory because it holds function arguments.
+    return m_malloc_with_collect(n_bytes);
 }
 
 static inline void *mp_nonlocal_realloc(void *ptr, size_t old_n_bytes, size_t new_n_bytes) {

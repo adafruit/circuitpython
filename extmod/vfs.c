@@ -237,7 +237,8 @@ mp_obj_t mp_vfs_mount(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args
     }
 
     // create new object
-    mp_vfs_mount_t *vfs = m_new_obj(mp_vfs_mount_t);
+    // CIRCUITPY-CHANGE: Collect the mount object because it references others
+    mp_vfs_mount_t *vfs = m_malloc_with_collect(sizeof(mp_vfs_mount_t));
     vfs->str = mnt_str;
     vfs->len = mnt_len;
     vfs->obj = vfs_obj;

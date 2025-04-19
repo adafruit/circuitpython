@@ -221,7 +221,8 @@ static void mp_emit_common_start_pass(mp_emit_common_t *emit, pass_kind_t pass) 
         if (emit->ct_cur_child == 0) {
             emit->children = NULL;
         } else {
-            emit->children = m_new0(mp_raw_code_t *, emit->ct_cur_child);
+            // CIRCUITPY-CHANGE: Use m_malloc_helper with collect flag to support selective collection
+            emit->children = m_malloc_helper(sizeof(mp_raw_code_t *) * (emit->ct_cur_child), M_MALLOC_ENSURE_ZEROED | M_MALLOC_RAISE_ERROR | M_MALLOC_COLLECT);
         }
     }
     emit->ct_cur_child = 0;
@@ -3688,7 +3689,7 @@ void mp_compile_to_raw_code(mp_parse_tree_t *parse_tree, qstr source_file, bool 
 
 mp_obj_t mp_compile(mp_parse_tree_t *parse_tree, qstr source_file, bool is_repl) {
     mp_compiled_module_t cm;
-    cm.context = m_new_obj(mp_module_context_t);
+    cm.context = m_malloc_with_collect(sizeof(mp_module_context_t));
     cm.context->module.globals = mp_globals_get();
     mp_compile_to_raw_code(parse_tree, source_file, is_repl, &cm);
     // return function that executes the outer module

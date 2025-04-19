@@ -318,7 +318,8 @@ static mp_raw_code_t *load_raw_code(mp_reader_t *reader, mp_module_context_t *co
     // Load children if any.
     if (has_children) {
         n_children = read_uint(reader);
-        children = m_new(mp_raw_code_t *, n_children + (kind == MP_CODE_NATIVE_PY));
+        // CIRCUITPY-CHANGE: Collect children pointers
+        children = m_malloc_with_collect(sizeof(mp_raw_code_t *) * (n_children + (kind == MP_CODE_NATIVE_PY)));
         for (size_t i = 0; i < n_children; ++i) {
             children[i] = load_raw_code(reader, context);
         }

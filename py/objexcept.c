@@ -94,7 +94,7 @@ mp_obj_t mp_alloc_emergency_exception_buf(mp_obj_t size_in) {
     mp_int_t size = mp_obj_get_int(size_in);
     void *buf = NULL;
     if (size > 0) {
-        buf = m_new(byte, size);
+        buf = m_malloc_with_collect(size);
     }
 
     int old_size = mp_emergency_exception_buf_size;
@@ -220,7 +220,7 @@ mp_obj_t mp_obj_exception_make_new(const mp_obj_type_t *type, size_t n_args, siz
     mp_arg_check_num(n_args, n_kw, 0, MP_OBJ_FUN_ARGS_MAX, false);
 
     // Try to allocate memory for the exception, with fallback to emergency exception object
-    mp_obj_exception_t *o_exc = m_new_obj_maybe(mp_obj_exception_t);
+    mp_obj_exception_t *o_exc = m_malloc_maybe_with_collect(sizeof(mp_obj_exception_t));
     if (o_exc == NULL) {
         o_exc = &MP_STATE_VM(mp_emergency_exception_obj);
     }
@@ -544,7 +544,7 @@ mp_obj_t mp_obj_new_exception_msg_vlist(const mp_obj_type_t *exc_type, mp_rom_er
     // CIRCUITPY-CHANGE: here and more below
     size_t o_str_alloc = decompress_length(fmt);
     if (gc_alloc_possible()) {
-        o_str = m_new_obj_maybe(mp_obj_str_t);
+        o_str = m_malloc_maybe_with_collect(sizeof(mp_obj_str_t));
         o_str_buf = m_new_maybe(byte, o_str_alloc);
     }
 
@@ -661,7 +661,7 @@ void mp_obj_exception_add_traceback(mp_obj_t self_in, qstr file, size_t line, qs
 
     // Try to allocate memory for the traceback, with fallback to emergency traceback object
     if (self->traceback == NULL || self->traceback == (mp_obj_traceback_t *)&mp_const_empty_traceback_obj) {
-        self->traceback = m_new_obj_maybe(mp_obj_traceback_t);
+        self->traceback = m_malloc_maybe_with_collect(sizeof(mp_obj_traceback_t));
         if (self->traceback == NULL) {
             self->traceback = &MP_STATE_VM(mp_emergency_traceback_obj);
         }

@@ -840,7 +840,7 @@ void mp_lexer_to_next(mp_lexer_t *lex) {
 }
 
 mp_lexer_t *mp_lexer_new(qstr src_name, mp_reader_t reader) {
-    mp_lexer_t *lex = m_new_obj(mp_lexer_t);
+    mp_lexer_t *lex = m_new_struct_with_collect(mp_lexer_t, 1);
 
     lex->source_name = src_name;
     lex->reader = reader;

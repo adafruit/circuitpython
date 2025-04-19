@@ -16,7 +16,8 @@ mp_obj_t common_hal_fontio_builtinfont_get_bitmap(const fontio_builtinfont_t *se
 }
 
 mp_obj_t common_hal_fontio_builtinfont_get_bounding_box(const fontio_builtinfont_t *self) {
-    mp_obj_t *items = m_new(mp_obj_t, 2);
+    // Stack allocation is ok because tuple copies the values out.
+    mp_obj_t items[2];
     items[0] = MP_OBJ_NEW_SMALL_INT(self->width);
     items[1] = MP_OBJ_NEW_SMALL_INT(self->height);
     return mp_obj_new_tuple(2, items);
