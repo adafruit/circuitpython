@@ -185,7 +185,7 @@ extern "C" {
 
 // 2 hubs so we can support "7 port" hubs which have two internal hubs.
 #define CFG_TUH_HUB                 2
-#define CFG_TUH_CDC                 0
+#define CFG_TUH_CDC                 2
 #define CFG_TUH_MSC                 0
 #define CFG_TUH_VENDOR              0
 #define CFG_TUH_API_EDPT_XFER       1
