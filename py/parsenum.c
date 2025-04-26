@@ -234,6 +234,7 @@ mp_obj_t mp_parse_num_float(const char *str, size_t len, bool allow_imag, mp_lex
     mp_float_t dec_real = 0;
 parse_start:
     #endif
+    dec_neg = false;
 
     // skip leading space
     for (; str < top && unichar_isspace(*str); str++) {
