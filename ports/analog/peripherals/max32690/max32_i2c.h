@@ -11,6 +11,6 @@
 #include "i2c.h"
 #include "peripherals/pins.h"
 
-#define NUM_I2C 2
+#define NUM_I2C 3
 
 int pinsToI2c(const mcu_pin_obj_t *sda, const mcu_pin_obj_t *scl);

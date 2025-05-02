@@ -60,12 +60,6 @@ void spi_isr(void) {
     }
 }
 
-// Reset SPI when reload
-void spi_reset(void) {
-    // FIXME: Implement
-    return;
-}
-
 // Construct SPI protocol, this function init SPI peripheral
 // todo: figure out Chip select behavior
 void common_hal_busio_spi_construct(busio_spi_obj_t *self,
@@ -102,11 +96,9 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
 
     assert((self->spi_id >= 0) && (self->spi_id < NUM_SPI));
 
-    // Init I2C as main / controller node (0x00 is ignored)
-    // FIXME: MUST map the SPI pins to a spi_pins_t struct
+    // Init SPI controller
     if ((mosi != NULL) && (miso != NULL) && (sck != NULL)) {
         // spi, mastermode, quadModeUsed, numSubs, ssPolarity, frequency
-        // err = MXC_SPI_Init((mxc_spi_reva_regs_t *)self->spi_regs, 1, 0, 1, 0x00, 1000000, &spi_pins);
         err = MXC_SPI_Init(self->spi_regs, MXC_SPI_TYPE_CONTROLLER, MXC_SPI_INTERFACE_STANDARD,
             1, 0x01, 1000000, spi_pins);
         MXC_GPIO_SetVSSEL(MXC_GPIO_GET_GPIO(sck->port), MXC_GPIO_VSSEL_VDDIOH, (sck->mask | miso->mask | mosi->mask | MXC_GPIO_PIN_0));
@@ -116,9 +108,6 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
     } else {
         mp_raise_NotImplementedError(MP_ERROR_TEXT("SPI needs MOSI, MISO, and SCK"));
     }
-
-    // FIXME: Debugging
-
 
     // Attach SPI pins
     self->mosi = mosi;

@@ -33,8 +33,6 @@ typedef struct {
     int error;
     float timeout;
 
-    ringbuf_t ringbuf;
-
     const mcu_pin_obj_t *rx_pin;
     const mcu_pin_obj_t *tx_pin;
     const mcu_pin_obj_t *rts_pin;
