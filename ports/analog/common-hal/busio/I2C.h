@@ -7,7 +7,6 @@
 #pragma once
 
 #include "common-hal/microcontroller/Pin.h"
-// FIXME: Silabs includes "peripherals/periph.h. Figure out what's in this file. "
 #include "py/obj.h"
 
 // HAL-specific

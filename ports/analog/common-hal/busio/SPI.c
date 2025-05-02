@@ -46,22 +46,11 @@ typedef enum {
 } spi_status_t;
 
 // Set each bit to indicate an active SPI
-// will be checked by ISR Handler for which ones to call
 static uint8_t spi_active = 0;
 static spi_status_t spi_status[NUM_SPI];
 static volatile int spi_err;
 
-// SPI Interrupt Handler
-void spi_isr(void) {
-    for (int i = 0; i < NUM_SPI; i++) {
-        if (spi_active & (1 << i)) {
-            MXC_SPI_AsyncHandler(MXC_SPI_GET_SPI(i));
-        }
-    }
-}
-
 // Construct SPI protocol, this function init SPI peripheral
-// todo: figure out Chip select behavior
 void common_hal_busio_spi_construct(busio_spi_obj_t *self,
     const mcu_pin_obj_t *sck,
     const mcu_pin_obj_t *mosi,
@@ -69,13 +58,12 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
     bool half_duplex) {
     int temp, err = 0;
 
-    // Check for NULL Pointers && valid I2C settings
+    // Check for NULL Pointer
     assert(self);
 
-    // Assign I2C ID based on pins
+    // Assign SPI ID based on pins
     temp = pinsToSpi(mosi, miso, sck);
     if (temp == -1) {
-        // Error will be indicated by pinsToUart(tx, rx) function
         return;
     } else {
         self->spi_id = temp;
@@ -119,12 +107,6 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
 
     // Indicate to this module that the SPI is active
     spi_active |= (1 << self->spi_id);
-
-    /* Setup I2C interrupt */
-    NVIC_ClearPendingIRQ(MXC_SPI_GET_IRQ(self->spi_id));
-    NVIC_DisableIRQ(MXC_SPI_GET_IRQ(self->spi_id));
-    NVIC_SetPriority(MXC_SPI_GET_IRQ(self->spi_id), SPI_PRIORITY);
-    NVIC_SetVector(MXC_SPI_GET_IRQ(self->spi_id), (uint32_t)spi_isr);
 
     return;
 }

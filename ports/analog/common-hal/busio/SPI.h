@@ -8,7 +8,6 @@
 #define MICROPY_INCLUDED_MAX32_COMMON_HAL_BUSIO_SPI_H
 
 #include "common-hal/microcontroller/Pin.h"
-// FIXME: Silabs includes "peripherals/periph.h. Figure out what's in this file. "
 #include "py/obj.h"
 
 // HAL-specific
