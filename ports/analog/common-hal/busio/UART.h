@@ -9,11 +9,6 @@
 
 #include "common-hal/microcontroller/Pin.h"
 #include "py/obj.h"
-#include "py/ringbuf.h"
-
-// #include "uart.h"
-// #include "uart_regs.h"
-// #include "mxc_sys.h"
 
 #include "max32_port.h"
 

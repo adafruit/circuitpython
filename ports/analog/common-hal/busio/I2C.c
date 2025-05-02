@@ -40,31 +40,13 @@ typedef enum {
     I2C_NEVER_RESET,
 } i2c_status_t;
 
-// Set each bit to indicate an active UART
-// will be checked by ISR Handler for which ones to call
+// Set each bit to indicate an active I2c
 static uint8_t i2c_active = 0;
 static i2c_status_t i2c_status[NUM_I2C];
 static volatile int i2c_err;
 
 // I2C struct for configuring GPIO pins
 extern const mxc_gpio_cfg_t i2c_maps[NUM_I2C];
-
-// I2C Interrupt Handler
-void i2c_isr(void) {
-    for (int i = 0; i < NUM_I2C; i++) {
-        if (i2c_active & (1 << i)) {
-            // NOTE: I2C_GET_TMR actually returns the I2C registers
-            MXC_I2C_AsyncHandler(MXC_I2C_GET_I2C(i));
-        }
-    }
-}
-
-// Callback gets called when AsyncRequest is COMPLETE
-// (e.g. txLen == txCnt)
-// static volatile void i2cCallback(mxc_i2c_req_t *req, int error) {
-//     i2c_status[MXC_I2C_GET_IDX(req->i2c)] = I2C_FREE;
-//     i2c_err = error;
-// }
 
 // Construct I2C protocol, this function init i2c peripheral
 void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
@@ -80,7 +62,6 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
     // Assign I2C ID based on pins
     temp = pinsToI2c(sda, scl);
     if (temp == -1) {
-        // Error will be indicated by pinsToUart(tx, rx) function
         return;
     } else {
         self->i2c_id = temp;
@@ -123,12 +104,6 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
     } else {
         self->timeout = timeout;
     }
-
-    /* Setup I2C interrupt */
-    NVIC_ClearPendingIRQ(MXC_I2C_GET_IRQ(self->i2c_id));
-    NVIC_DisableIRQ(MXC_I2C_GET_IRQ(self->i2c_id));
-    NVIC_SetPriority(MXC_I2C_GET_IRQ(self->i2c_id), I2C_PRIORITY);
-    NVIC_SetVector(MXC_I2C_GET_IRQ(self->i2c_id), (uint32_t)i2c_isr);
 
     return;
 }
