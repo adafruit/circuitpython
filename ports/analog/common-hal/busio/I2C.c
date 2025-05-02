@@ -155,10 +155,6 @@ void common_hal_busio_i2c_deinit(busio_i2c_obj_t *self) {
     self->scl = NULL;
 }
 
-void common_hal_busio_i2c_mark_deinit(busio_i2c_obj_t *self) {
-    // FIXME: Implement
-}
-
 // Probe device in I2C bus
 bool common_hal_busio_i2c_probe(busio_i2c_obj_t *self, uint8_t addr) {
     int nack = 0;

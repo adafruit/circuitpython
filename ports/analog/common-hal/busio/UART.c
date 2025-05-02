@@ -96,7 +96,7 @@ static uint32_t timeout_ms = 0;
 static uint8_t uarts_active = 0;
 static uart_status_t uart_status[NUM_UARTS];
 static volatile int uart_err;
-// static uint8_t uart_never_reset_mask = 0;
+static uint8_t uart_never_reset_mask = 0;
 
 static int isValidBaudrate(uint32_t baudrate) {
     switch (baudrate) {
@@ -167,8 +167,7 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     const mcu_pin_obj_t *rts, const mcu_pin_obj_t *cts,
     const mcu_pin_obj_t *rs485_dir, bool rs485_invert,
     uint32_t baudrate, uint8_t bits, busio_uart_parity_t parity, uint8_t stop,
-    mp_float_t timeout, uint16_t receiver_buffer_size, byte *receiver_buffer,
-    bool sigint_enabled) {
+    mp_float_t timeout, bool sigint_enabled) {
     int err, temp;
 
     // Check for NULL Pointers && valid UART settings
@@ -236,21 +235,6 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     self->baudrate = baudrate;
     self->error = E_NO_ERROR;
 
-    // Initialize ringbuffer for receiving data
-    // FIXME: Either the use the ringbuf or get rid of it!
-    if (self->rx_pin) {
-        // if given a ringbuff, use that
-        if (receiver_buffer) {
-            ringbuf_init(&self->ringbuf, receiver_buffer, receiver_buffer_size);
-        }
-        // else create one and attach it
-        else {
-            if (!ringbuf_alloc(&self->ringbuf, receiver_buffer_size)) {
-                m_malloc_fail(receiver_buffer_size);
-            }
-        }
-    }
-
     // Indicate to this module that the UART is active
     uarts_active |= (1 << self->uart_id);
 
@@ -277,6 +261,7 @@ void common_hal_busio_uart_deinit(busio_uart_obj_t *self) {
         // First disable the ISR to avoid pre-emption
         NVIC_DisableIRQ(UART0_IRQn);
 
+        // Shutdown the UART Controller
         MXC_UART_Shutdown(self->uart_regs);
         self->error = E_UNINITIALIZED;
 
@@ -307,7 +292,7 @@ bool common_hal_busio_uart_deinited(busio_uart_obj_t *self) {
     };
 }
 
-// Read characters. len is in characters NOT bytes!
+// Read characters. len is in characters.
 size_t common_hal_busio_uart_read(busio_uart_obj_t *self,
     uint8_t *data, size_t len, int *errcode) {
     int err;
@@ -474,7 +459,7 @@ void common_hal_busio_uart_never_reset(busio_uart_obj_t *self) {
     common_hal_never_reset_pin(self->rx_pin);
     common_hal_never_reset_pin(self->cts_pin);
     common_hal_never_reset_pin(self->rts_pin);
-    // uart_never_reset_mask |= ( 1 << (self->uart_id) );
+    uart_never_reset_mask |= (1 << (self->uart_id));
 }
 
 #endif // CIRCUITPY_BUSIO_UART
