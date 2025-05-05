@@ -24,20 +24,27 @@
  * THE SOFTWARE.
  */
 
+/** TODO:
+ * - Fix readline issue
+ *
+*/
+
 #if CIRCUITPY_BUSIO_UART
+
+#include "mpconfigport.h"
+#include "supervisor/shared/tick.h"
 
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/microcontroller/Pin.h"
-#include "supervisor/shared/tick.h"
 #include "shared-bindings/busio/UART.h"
-
 #include "shared-bindings/microcontroller/Pin.h"
-
-#include "mpconfigport.h"
 #include "shared/readline/readline.h"
 #include "shared/runtime/interrupt_char.h"
+
 #include "py/gc.h"
+#include "py/ringbuf.h"
 #include "py/mperrno.h"
+#include "py/mpprint.h"
 #include "py/runtime.h"
 
 #include "max32_port.h"
@@ -46,29 +53,6 @@
 
 // UART IRQ Priority
 #define UART_PRIORITY 1
-
-/**
- *
-// Define a struct for what BUSIO.UART should contain
-typedef struct {
-    mp_obj_base_t base;
-    int uart_id;
-    mxc_uart_regs_t* uart_regs;
-
-    const mcu_pin_obj_t *rx_pin;
-    const mcu_pin_obj_t *tx_pin;
-    const mcu_pin_obj_t *rts_pin;
-    const mcu_pin_obj_t *cts_pin;
-
-    uint8_t bits;
-    uint32_t baudrate;
-    bool parity;
-    uint8_t stop_bits;
-
-    uint32_t timeout_ms;
-    bool error;
-} busio_uart_obj_t;
- */
 
 typedef enum {
     UART_9600 = 9600,
@@ -81,7 +65,6 @@ typedef enum {
     UART_460800 = 460800,
     UART_921600 = 921600,
 } uart_valid_baudrates;
-
 
 typedef enum {
     UART_FREE = 0,
@@ -97,6 +80,7 @@ static uint8_t uarts_active = 0;
 static uart_status_t uart_status[NUM_UARTS];
 static volatile int uart_err;
 static uint8_t uart_never_reset_mask = 0;
+static busio_uart_obj_t *context;
 
 static int isValidBaudrate(uint32_t baudrate) {
     switch (baudrate) {
@@ -159,6 +143,10 @@ void uart_isr(void) {
 static volatile void uartCallback(mxc_uart_req_t *req, int error) {
     uart_status[MXC_UART_GET_IDX(req->uart)] = UART_FREE;
     uart_err = error;
+
+    MXC_SYS_Crit_Enter();
+    ringbuf_put_n(context->ringbuf, req->rxData, req->rxLen);
+    MXC_SYS_Crit_Exit();
 }
 
 // Construct an underlying UART object.
@@ -183,8 +171,14 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
         self->uart_id = temp;
         self->uart_regs = MXC_UART_GET_UART(temp);
     }
-
     assert((self->uart_id >= 0) && (self->uart_id < NUM_UARTS));
+
+    // Check for size of ringbuffer, desire powers of 2
+    // At least use 1 byte if no size is given
+    assert((receiver_buffer_size & (receiver_buffer_size - 1)) == 0);
+    if (receiver_buffer_size == 0) {
+        receiver_buffer_size += 1;
+    }
 
     // Indicate RS485 not implemented
     if ((rs485_dir != NULL) || (rs485_invert)) {
@@ -246,11 +240,30 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
         self->timeout = timeout;
     }
 
-    /* Setup UART interrupt */
+    // Initialize ringbuffer
+    if (receiver_buffer == NULL) {
+        self->ringbuf = gc_alloc(receiver_buffer_size, false);
+        if (!ringbuf_alloc(self->ringbuf, receiver_buffer_size)) {
+            m_malloc_fail(receiver_buffer_size);
+            mp_raise_RuntimeError(MP_ERROR_TEXT("ERR: Could not init ringbuffer\n"));
+        }
+    } else {
+        if (!(ringbuf_init(self->ringbuf, receiver_buffer, receiver_buffer_size))) {
+            mp_raise_RuntimeError(MP_ERROR_TEXT("ERR: Could not init ringbuffer\n"));
+        }
+        ;
+    }
+
+    context = self;
+
+    // Setup UART interrupt
+
     NVIC_ClearPendingIRQ(MXC_UART_GET_IRQ(self->uart_id));
     NVIC_DisableIRQ(MXC_UART_GET_IRQ(self->uart_id));
     NVIC_SetPriority(MXC_UART_GET_IRQ(self->uart_id), UART_PRIORITY);
     NVIC_SetVector(MXC_UART_GET_IRQ(self->uart_id), (uint32_t)uart_isr);
+
+    NVIC_EnableIRQ(MXC_UART_GET_IRQ(self->uart_id));
 
     return;
 }
@@ -260,7 +273,7 @@ void common_hal_busio_uart_deinit(busio_uart_obj_t *self) {
 
     if (!common_hal_busio_uart_deinited(self)) {
         // First disable the ISR to avoid pre-emption
-        NVIC_DisableIRQ(UART0_IRQn);
+        NVIC_DisableIRQ(MXC_UART_GET_IRQ(self->uart_id));
 
         // Shutdown the UART Controller
         MXC_UART_Shutdown(self->uart_regs);
@@ -279,6 +292,8 @@ void common_hal_busio_uart_deinit(busio_uart_obj_t *self) {
         self->rx_pin = NULL;
         self->cts_pin = NULL;
         self->rts_pin = NULL;
+
+        ringbuf_deinit(self->ringbuf);
 
         // Indicate to this module that the UART is not active
         uarts_active &= ~(1 << self->uart_id);
@@ -305,8 +320,6 @@ size_t common_hal_busio_uart_read(busio_uart_obj_t *self,
     uarts_active |= (1 << self->uart_id);
     uart_status[self->uart_id] = UART_BUSY;
     bytes_remaining = len;
-
-    NVIC_EnableIRQ(MXC_UART_GET_IRQ(self->uart_id));
 
     mxc_uart_req_t uart_rd_req;
     uart_rd_req.rxCnt = 0;
@@ -341,13 +354,16 @@ size_t common_hal_busio_uart_read(busio_uart_obj_t *self,
     }
     // Check for errors from the callback
     else if (uart_err != E_NO_ERROR) {
+        mp_printf(&mp_sys_stdout_print, "MAX32 ERR: %d\n", uart_err);
         MXC_UART_AbortAsync(self->uart_regs);
-        NVIC_DisableIRQ(MXC_UART_GET_IRQ(self->uart_id));
-        mp_raise_RuntimeError_varg(MP_ERROR_TEXT("MAX32 ERR: %d\n"), uart_err);
     }
 
-    NVIC_DisableIRQ(MXC_UART_GET_IRQ(self->uart_id));
-    return len;
+    // Copy the data from the ringbuf (or return error)
+    MXC_SYS_Crit_Enter();
+    err = ringbuf_get_n(context->ringbuf, data, len);
+    MXC_SYS_Crit_Exit();
+
+    return err;
 }
 
 // Write characters. len is in characters NOT bytes!
@@ -391,11 +407,10 @@ size_t common_hal_busio_uart_write(busio_uart_obj_t *self,
            (supervisor_ticks_ms64() - start_time < (self->timeout * 1000))) {
 
         // Call the handler and abort if errors
-        uart_err = MXC_UART_AsyncHandler(MXC_UART_GET_UART(0));
+        uart_err = MXC_UART_AsyncHandler(self->uart_regs);
         if (uart_err != E_NO_ERROR) {
-            MXC_UART_AbortAsync(MXC_UART_GET_UART(0));
-            NVIC_DisableIRQ(MXC_UART_GET_IRQ(0));
-            mp_raise_RuntimeError_varg(MP_ERROR_TEXT("MAX32 ERR: %d\n"), uart_err);
+            mp_printf(&mp_sys_stdout_print, "MAX32 ERR: %d\n", uart_err);
+            MXC_UART_AbortAsync(self->uart_regs);
         }
     }
 
@@ -407,9 +422,8 @@ size_t common_hal_busio_uart_write(busio_uart_obj_t *self,
     }
     // Check for errors from the callback
     else if (uart_err != E_NO_ERROR) {
+        mp_printf(&mp_sys_stdout_print, "MAX32 ERR: %d\n", uart_err);
         MXC_UART_AbortAsync(self->uart_regs);
-        NVIC_DisableIRQ(MXC_UART_GET_IRQ(self->uart_id));
-        mp_raise_RuntimeError_varg(MP_ERROR_TEXT("MAX32 ERR: %d\n"), uart_err);
     }
 
     return len;
@@ -444,11 +458,12 @@ void common_hal_busio_uart_set_timeout(busio_uart_obj_t *self, mp_float_t timeou
 }
 
 uint32_t common_hal_busio_uart_rx_characters_available(busio_uart_obj_t *self) {
-    return MXC_UART_GetRXFIFOAvailable(self->uart_regs);
+    return ringbuf_num_filled(self->ringbuf);
 }
 
 void common_hal_busio_uart_clear_rx_buffer(busio_uart_obj_t *self) {
     MXC_UART_ClearRXFIFO(self->uart_regs);
+    ringbuf_clear(self->ringbuf);
 }
 
 bool common_hal_busio_uart_ready_to_tx(busio_uart_obj_t *self) {
