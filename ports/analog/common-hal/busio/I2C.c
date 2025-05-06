@@ -132,25 +132,49 @@ void common_hal_busio_i2c_deinit(busio_i2c_obj_t *self) {
 
 // Probe device in I2C bus
 bool common_hal_busio_i2c_probe(busio_i2c_obj_t *self, uint8_t addr) {
-    int nack = 0;
+    int32_t flags = 0x0;
+    bool ret = false;
 
-    mxc_i2c_req_t addr_req = {
-        .addr = addr,
-        .i2c = self->i2c_regs,
-        .tx_len = 0,
-        .tx_buf = NULL,
-        .rx_len = 0,
-        .rx_buf = NULL,
-        .callback = NULL
-    };
+    MXC_I2C_ClearFlags(self->i2c_regs, 0xFF, 0xFF);
+    MXC_I2C_EnableInt(self->i2c_regs, 0xFF, 0xFF);
 
-    // Probe the address
-    nack = MXC_I2C_MasterTransaction(&addr_req);
-    if (nack) {
-        return false;
-    } else {
-        return true;
+    // Pre-load target address into transmit FIFO
+    addr = (addr << 1);
+    self->i2c_regs->fifo = addr;
+
+    // Set start bit & wait for it to clear
+    self->i2c_regs->mstctrl |= MXC_F_I2C_MSTCTRL_START;
+
+    // wait for ACK/NACK
+    // if tx_lockout occurs, clear the error and re-load the target address
+    while (!(self->i2c_regs->intfl0 & MXC_F_I2C_INTFL0_ADDR_ACK) &&
+           !(self->i2c_regs->intfl0 & MXC_F_I2C_INTFL0_ADDR_NACK_ERR)) {
+        if (self->i2c_regs->intfl0 & MXC_F_I2C_INTFL0_TX_LOCKOUT) {
+            self->i2c_regs->intfl0 |= MXC_F_I2C_INTFL0_TX_LOCKOUT;
+            self->i2c_regs->fifo = addr;
+        }
     }
+    flags = self->i2c_regs->intfl0;
+    self->i2c_regs->intfl0 = MXC_F_I2C_INTFL0_ADDR_ACK | MXC_F_I2C_INTFL0_ADDR_NACK_ERR
+
+        // Set / Wait for stop
+        self->i2c_regs->mstctrl |= MXC_F_I2C_MSTCTRL_STOP;
+    while ((self->i2c_regs->mstctrl & MXC_F_I2C_MSTCTRL_STOP)) {
+        ;
+    }
+
+    // Wait for controller not busy, then clear flags
+    while (self->i2c_regs->status & MXC_F_I2C_STATUS_BUSY) {
+        ;
+    }
+
+    if (flags & MXC_F_I2C_INTFL0_ADDR_ACK) {
+        ret = true;
+    } else {
+        ret = false;
+    }
+    MXC_I2C_ClearFlags(self->i2c_regs, 0xff, 0xff);
+    return ret;
 }
 
 // Lock I2C bus
