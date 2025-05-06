@@ -34,15 +34,8 @@
 
 #define I2C_PRIORITY 1
 
-typedef enum {
-    I2C_FREE = 0,
-    I2C_BUSY,
-    I2C_NEVER_RESET,
-} i2c_status_t;
-
 // Set each bit to indicate an active I2c
 static uint8_t i2c_active = 0;
-static i2c_status_t i2c_status[NUM_I2C];
 static volatile int i2c_err;
 
 // I2C struct for configuring GPIO pins
@@ -68,7 +61,9 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
         self->i2c_regs = MXC_I2C_GET_I2C(temp);
     }
 
+    // Check for valid I2C controller
     assert((self->i2c_id >= 0) && (self->i2c_id < NUM_I2C));
+    assert(!(i2c_active & (1 << self->i2c_id)));
 
     // Init I2C as main / controller node (0x00 is ignored)
     if ((scl != NULL) && (sda != NULL)) {
@@ -132,48 +127,43 @@ void common_hal_busio_i2c_deinit(busio_i2c_obj_t *self) {
 
 // Probe device in I2C bus
 bool common_hal_busio_i2c_probe(busio_i2c_obj_t *self, uint8_t addr) {
-    int32_t flags = 0x0;
-    bool ret = false;
+    uint32_t int_fl0, int_fl1;
+    bool ret = 0;
 
-    MXC_I2C_ClearFlags(self->i2c_regs, 0xFF, 0xFF);
-    MXC_I2C_EnableInt(self->i2c_regs, 0xFF, 0xFF);
+    // Clear FIFOs & all interrupt flags
+    MXC_I2C_ClearRXFIFO(self->i2c_regs);
+    MXC_I2C_ClearTXFIFO(self->i2c_regs);
+    MXC_I2C_ClearFlags(self->i2c_regs, 0xFFFFFF, 0xFFFFFF);
 
     // Pre-load target address into transmit FIFO
     addr = (addr << 1);
     self->i2c_regs->fifo = addr;
 
     // Set start bit & wait for it to clear
-    self->i2c_regs->mstctrl |= MXC_F_I2C_MSTCTRL_START;
+    MXC_I2C_Start(self->i2c_regs);
 
     // wait for ACK/NACK
-    // if tx_lockout occurs, clear the error and re-load the target address
     while (!(self->i2c_regs->intfl0 & MXC_F_I2C_INTFL0_ADDR_ACK) &&
            !(self->i2c_regs->intfl0 & MXC_F_I2C_INTFL0_ADDR_NACK_ERR)) {
-        if (self->i2c_regs->intfl0 & MXC_F_I2C_INTFL0_TX_LOCKOUT) {
-            self->i2c_regs->intfl0 |= MXC_F_I2C_INTFL0_TX_LOCKOUT;
-            self->i2c_regs->fifo = addr;
-        }
     }
-    flags = self->i2c_regs->intfl0;
-    self->i2c_regs->intfl0 = MXC_F_I2C_INTFL0_ADDR_ACK | MXC_F_I2C_INTFL0_ADDR_NACK_ERR
 
-        // Set / Wait for stop
-        self->i2c_regs->mstctrl |= MXC_F_I2C_MSTCTRL_STOP;
-    while ((self->i2c_regs->mstctrl & MXC_F_I2C_MSTCTRL_STOP)) {
-        ;
-    }
+    // Save interrupt flags for ACK/NACK checking
+    int_fl0 = self->i2c_regs->intfl0;
+
+    // Set / Wait for stop
+    MXC_I2C_Stop(self->i2c_regs);
 
     // Wait for controller not busy, then clear flags
     while (self->i2c_regs->status & MXC_F_I2C_STATUS_BUSY) {
         ;
     }
+    MXC_I2C_ClearFlags(self->i2c_regs, 0xFFFFFF, 0xFFFFFF);
 
-    if (flags & MXC_F_I2C_INTFL0_ADDR_ACK) {
+    if (int_fl0 & MXC_F_I2C_INTFL0_ADDR_ACK) {
         ret = true;
     } else {
         ret = false;
     }
-    MXC_I2C_ClearFlags(self->i2c_regs, 0xff, 0xff);
     return ret;
 }
 
