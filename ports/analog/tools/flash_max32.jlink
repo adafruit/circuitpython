@@ -1,4 +1,4 @@
-si 1
+selectinterface swd
 erase
 loadbin build-apard32690/firmware.bin 0x10000000
 reset
