@@ -71,7 +71,7 @@ const char *common_hal_os_path_abspath(const char *path) {
     } else {
         cwd = MP_STATE_VM(cwd_path);
         if (cwd == NULL) {
-            char *new_cwd = m_malloc(2);
+            char *new_cwd = m_malloc_without_collect(2);
             strcpy(new_cwd, "/");
             MP_STATE_VM(cwd_path) = new_cwd;
             cwd = new_cwd;
@@ -79,7 +79,7 @@ const char *common_hal_os_path_abspath(const char *path) {
     }
 
     // Store the current output length for previous components so we can rewind to before them.
-    char *full_path = m_malloc(strlen(cwd) + strlen(path) + 2);
+    char *full_path = m_malloc_without_collect(strlen(cwd) + strlen(path) + 2);
     size_t full_path_len = 0;
     memcpy(full_path, cwd, strlen(cwd));
     full_path_len += strlen(cwd);

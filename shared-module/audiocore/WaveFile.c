@@ -119,13 +119,13 @@ void common_hal_audioio_wavefile_construct(audioio_wavefile_obj_t *self,
         self->second_buffer = buffer + self->len;
     } else {
         self->len = 256;
-        self->buffer = m_malloc(self->len);
+        self->buffer = m_malloc_without_collect(self->len);
         if (self->buffer == NULL) {
             common_hal_audioio_wavefile_deinit(self);
             m_malloc_fail(self->len);
         }
 
-        self->second_buffer = m_malloc(self->len);
+        self->second_buffer = m_malloc_without_collect(self->len);
         if (self->second_buffer == NULL) {
             common_hal_audioio_wavefile_deinit(self);
             m_malloc_fail(self->len);

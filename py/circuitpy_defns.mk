@@ -674,6 +674,7 @@ SRC_SHARED_MODULE_ALL = \
 	audiodelays/__init__.c \
 	audiofilters/Distortion.c \
 	audiofilters/Filter.c \
+	audiofilters/Phaser.c \
 	audiofilters/__init__.c \
 	audiofreeverb/__init__.c \
 	audiofreeverb/Freeverb.c \

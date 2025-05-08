@@ -32,9 +32,7 @@ void common_hal_keypad_shiftregisterkeys_construct(keypad_shiftregisterkeys_obj_
     common_hal_digitalio_digitalinout_switch_to_output(clock, false, DRIVE_MODE_PUSH_PULL);
     self->clock = clock;
 
-    digitalio_digitalinout_obj_t *latch = m_new_obj(digitalio_digitalinout_obj_t);
-    latch->base.type = &digitalio_digitalinout_type;
-
+    digitalio_digitalinout_obj_t *latch = mp_obj_malloc(digitalio_digitalinout_obj_t, &digitalio_digitalinout_type);
     common_hal_digitalio_digitalinout_construct(latch, latch_pin);
     common_hal_digitalio_digitalinout_switch_to_output(latch, true, DRIVE_MODE_PUSH_PULL);
     self->latch = latch;
@@ -42,8 +40,7 @@ void common_hal_keypad_shiftregisterkeys_construct(keypad_shiftregisterkeys_obj_
     mp_obj_t dios[num_data_pins];
 
     for (size_t i = 0; i < num_data_pins; i++) {
-        digitalio_digitalinout_obj_t *dio = m_new_obj(digitalio_digitalinout_obj_t);
-        dio->base.type = &digitalio_digitalinout_type;
+        digitalio_digitalinout_obj_t *dio = mp_obj_malloc(digitalio_digitalinout_obj_t, &digitalio_digitalinout_type);
         common_hal_digitalio_digitalinout_construct(dio, data_pins[i]);
         common_hal_digitalio_digitalinout_switch_to_input(dio, PULL_NONE);
         dios[i] = dio;
@@ -52,7 +49,7 @@ void common_hal_keypad_shiftregisterkeys_construct(keypad_shiftregisterkeys_obj_
     // Allocate a tuple object with the data pins
     self->data_pins = mp_obj_new_tuple(num_data_pins, dios);
 
-    self->key_counts = (mp_uint_t *)m_malloc(sizeof(mp_uint_t) * num_key_counts);
+    self->key_counts = (mp_uint_t *)m_malloc_without_collect(sizeof(mp_uint_t) * num_key_counts);
     self->num_key_counts = num_key_counts;
 
     // copy to an m_malloc() and on the fly record pin with largest Shift register

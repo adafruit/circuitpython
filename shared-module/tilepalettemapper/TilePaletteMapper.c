@@ -20,7 +20,7 @@ void common_hal_tilepalettemapper_tilepalettemapper_construct(tilepalettemapper_
     int mappings_len = width * height;
     self->tile_mappings = (uint32_t **)m_malloc(mappings_len * sizeof(uint32_t *));
     for (int i = 0; i < mappings_len; i++) {
-        self->tile_mappings[i] = (uint32_t *)m_malloc(input_color_count * sizeof(uint32_t));
+        self->tile_mappings[i] = (uint32_t *)m_malloc_without_collect(input_color_count * sizeof(uint32_t));
         if (mp_obj_is_type(self->pixel_shader, &displayio_palette_type)) {
             for (uint16_t j = 0; j < input_color_count; j++) {
                 self->tile_mappings[i][j] = j;

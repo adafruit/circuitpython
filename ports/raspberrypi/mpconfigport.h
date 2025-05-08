@@ -14,6 +14,9 @@
 
 #ifdef PICO_RP2350
 #define MICROPY_PY_SYS_PLATFORM             "RP2350"
+
+// PSRAM can require more stack space for GC.
+#define MICROPY_ALLOC_GC_STACK_SIZE         (128)
 #endif
 
 // Setting a non-default value also requires a non-default link.ld

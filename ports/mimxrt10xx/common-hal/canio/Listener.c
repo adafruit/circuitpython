@@ -123,7 +123,13 @@ mp_obj_t common_hal_canio_listener_receive(canio_listener_obj_t *self) {
     // allows the CPU to serve the next FIFO entry
     FLEXCAN_ClearMbStatusFlags(self->can->data->base, (uint32_t)kFLEXCAN_RxFifoFrameAvlFlag);
 
-    canio_message_obj_t *message = m_new_obj(canio_message_obj_t);
+    const mp_obj_type_t *type;
+    if (rx_frame.type == kFLEXCAN_FrameTypeRemote) {
+        type = &canio_remote_transmission_request_type;
+    } else {
+        type = &canio_message_type;
+    }
+    canio_message_obj_t *message = mp_obj_malloc(canio_message_obj_t, type);
     memset(message, 0, sizeof(canio_message_obj_t));
 
     if (rx_frame.format == kFLEXCAN_FrameFormatExtend) {
@@ -134,11 +140,6 @@ mp_obj_t common_hal_canio_listener_receive(canio_listener_obj_t *self) {
         message->id = rx_frame.id >> 18; // standard ids are left-aligned
     }
 
-    if (rx_frame.type == kFLEXCAN_FrameTypeRemote) {
-        message->base.type = &canio_remote_transmission_request_type;
-    } else {
-        message->base.type = &canio_message_type;
-    }
 
     message->size = rx_frame.length;
 

@@ -40,14 +40,14 @@ void common_hal_audiofilters_distortion_construct(audiofilters_distortion_obj_t 
     // Samples are set sequentially. For stereo audio they are passed L/R/L/R/...
     self->buffer_len = buffer_size; // in bytes
 
-    self->buffer[0] = m_malloc(self->buffer_len);
+    self->buffer[0] = m_malloc_without_collect(self->buffer_len);
     if (self->buffer[0] == NULL) {
         common_hal_audiofilters_distortion_deinit(self);
         m_malloc_fail(self->buffer_len);
     }
     memset(self->buffer[0], 0, self->buffer_len);
 
-    self->buffer[1] = m_malloc(self->buffer_len);
+    self->buffer[1] = m_malloc_without_collect(self->buffer_len);
     if (self->buffer[1] == NULL) {
         common_hal_audiofilters_distortion_deinit(self);
         m_malloc_fail(self->buffer_len);

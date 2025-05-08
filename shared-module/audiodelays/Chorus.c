@@ -30,14 +30,14 @@ void common_hal_audiodelays_chorus_construct(audiodelays_chorus_obj_t *self, uin
     // Samples are set sequentially. For stereo audio they are passed L/R/L/R/...
     self->buffer_len = buffer_size; // in bytes
 
-    self->buffer[0] = m_malloc(self->buffer_len);
+    self->buffer[0] = m_malloc_without_collect(self->buffer_len);
     if (self->buffer[0] == NULL) {
         common_hal_audiodelays_chorus_deinit(self);
         m_malloc_fail(self->buffer_len);
     }
     memset(self->buffer[0], 0, self->buffer_len);
 
-    self->buffer[1] = m_malloc(self->buffer_len);
+    self->buffer[1] = m_malloc_without_collect(self->buffer_len);
     if (self->buffer[1] == NULL) {
         common_hal_audiodelays_chorus_deinit(self);
         m_malloc_fail(self->buffer_len);
@@ -78,7 +78,7 @@ void common_hal_audiodelays_chorus_construct(audiodelays_chorus_obj_t *self, uin
     // Allocate the chorus buffer for the max possible delay, chorus is always 16-bit
     self->max_delay_ms = max_delay_ms;
     self->max_chorus_buffer_len = (uint32_t)(self->base.sample_rate / MICROPY_FLOAT_CONST(1000.0) * max_delay_ms * (self->base.channel_count * sizeof(uint16_t))); // bytes
-    self->chorus_buffer = m_malloc(self->max_chorus_buffer_len);
+    self->chorus_buffer = m_malloc_without_collect(self->max_chorus_buffer_len);
     if (self->chorus_buffer == NULL) {
         common_hal_audiodelays_chorus_deinit(self);
         m_malloc_fail(self->max_chorus_buffer_len);

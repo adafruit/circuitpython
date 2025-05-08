@@ -96,7 +96,8 @@ static mp_obj_t native_base_init_wrapper(size_t n_args, const mp_obj_t *pos_args
     pos_args++;
     n_args--;
 
-    mp_obj_t *args2 = m_new(mp_obj_t, n_args + 2 * n_kw);
+    // CIRCUITPY-CHANGE
+    mp_obj_t *args2 = m_malloc_items(n_args + 2 * n_kw);
     // copy in args
     memcpy(args2, pos_args, n_args * sizeof(mp_obj_t));
     // copy in kwargs
@@ -340,7 +341,8 @@ static mp_obj_t mp_obj_instance_make_new(const mp_obj_type_t *self, size_t n_arg
             mp_obj_t args2[1] = {MP_OBJ_FROM_PTR(self)};
             new_ret = mp_call_function_n_kw(init_fn[0], 1, 0, args2);
         } else {
-            mp_obj_t *args2 = m_new(mp_obj_t, 1 + n_args + 2 * n_kw);
+            // CIRCUITPY-CHANGE
+            mp_obj_t *args2 = m_malloc_items(1 + n_args + 2 * n_kw);
             args2[0] = MP_OBJ_FROM_PTR(self);
             memcpy(args2 + 1, args, (n_args + 2 * n_kw) * sizeof(mp_obj_t));
             new_ret = mp_call_function_n_kw(init_fn[0], n_args + 1, n_kw, args2);
@@ -371,7 +373,8 @@ static mp_obj_t mp_obj_instance_make_new(const mp_obj_type_t *self, size_t n_arg
         if (n_args == 0 && n_kw == 0) {
             init_ret = mp_call_method_n_kw(0, 0, init_fn);
         } else {
-            mp_obj_t *args2 = m_new(mp_obj_t, 2 + n_args + 2 * n_kw);
+            // CIRCUITPY-CHANGE
+            mp_obj_t *args2 = m_malloc_items(2 + n_args + 2 * n_kw);
             args2[0] = init_fn[0];
             args2[1] = init_fn[1];
             memcpy(args2 + 2, args, (n_args + 2 * n_kw) * sizeof(mp_obj_t));
@@ -1513,13 +1516,15 @@ mp_obj_t mp_obj_cast_to_native_base(mp_obj_t self_in, mp_const_obj_t native_type
 /******************************************************************************/
 // staticmethod and classmethod types (probably should go in a different file)
 
-static mp_obj_t static_class_method_make_new(const mp_obj_type_t *self, size_t n_args, size_t n_kw, const mp_obj_t *args) {
-    assert(self == &mp_type_staticmethod || self == &mp_type_classmethod);
+// CIRCUITPY-CHANGE: better arg name
+static mp_obj_t static_class_method_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
+    assert(type == &mp_type_staticmethod || type == &mp_type_classmethod);
 
     mp_arg_check_num(n_args, n_kw, 1, 1, false);
 
-    mp_obj_static_class_method_t *o = m_new_obj(mp_obj_static_class_method_t);
-    *o = (mp_obj_static_class_method_t) {{self}, args[0]};
+    // CIRCUITPY-CHANGE: Use mp_obj_malloc because it is a Python object
+    mp_obj_static_class_method_t *o = mp_obj_malloc(mp_obj_static_class_method_t, type);
+    o->fun = args[0];
     return MP_OBJ_FROM_PTR(o);
 }
 

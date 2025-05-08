@@ -64,7 +64,7 @@ void ble_event_add_handler(ble_gap_event_fn *func, void *param) {
     }
 
     // Add a new handler to the front of the list
-    ble_event_handler_entry_t *handler = m_new(ble_event_handler_entry_t, 1);
+    ble_event_handler_entry_t *handler = m_new_obj(ble_event_handler_entry_t);
     ble_event_add_handler_entry(handler, func, param);
 }
 

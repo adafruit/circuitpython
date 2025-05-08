@@ -240,17 +240,17 @@ void common_hal_bleio_packet_buffer_construct(
     uint32_t *incoming_buffer = NULL;
     if (incoming) {
         incoming_buffer_size = buffer_size * (sizeof(uint16_t) + max_packet_size);
-        incoming_buffer = m_malloc(incoming_buffer_size);
+        incoming_buffer = m_malloc_without_collect(incoming_buffer_size);
     }
 
     uint32_t *outgoing1 = NULL;
     uint32_t *outgoing2 = NULL;
     if (outgoing) {
-        outgoing1 = m_malloc(max_packet_size);
+        outgoing1 = m_malloc_without_collect(max_packet_size);
         // Only allocate the second buffer if we are doing writes with responses.
         // Without responses, we just write as quickly as we can.
         if (outgoing == CHAR_PROP_WRITE || outgoing == CHAR_PROP_INDICATE) {
-            outgoing2 = m_malloc(max_packet_size);
+            outgoing2 = m_malloc_without_collect(max_packet_size);
         }
     }
     _common_hal_bleio_packet_buffer_construct(self, characteristic,

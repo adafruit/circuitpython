@@ -302,14 +302,16 @@ static inline void mp_module_context_alloc_tables(mp_module_context_t *context, 
     #if MICROPY_EMIT_BYTECODE_USES_QSTR_TABLE
     size_t nq = (n_qstr * sizeof(qstr_short_t) + sizeof(mp_uint_t) - 1) / sizeof(mp_uint_t);
     size_t no = n_obj;
-    mp_uint_t *mem = m_new(mp_uint_t, nq + no);
+    // CIRCUITPY-CHANGE
+    mp_uint_t *mem = m_malloc_items(nq + no);
     context->constants.qstr_table = (qstr_short_t *)mem;
     context->constants.obj_table = (mp_obj_t *)(mem + nq);
     #else
     if (n_obj == 0) {
         context->constants.obj_table = NULL;
     } else {
-        context->constants.obj_table = m_new(mp_obj_t, n_obj);
+        // CIRCUITPY-CHANGE
+        context->constants.obj_table = m_malloc_items(n_obj);
     }
     #endif
 }

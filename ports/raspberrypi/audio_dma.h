@@ -38,6 +38,7 @@ typedef struct {
     bool unsigned_to_signed;
     bool output_signed;
     bool playing_in_progress;
+    bool paused;
     bool swap_channel;
 } audio_dma_t;
 

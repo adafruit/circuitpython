@@ -325,7 +325,7 @@ size_t common_hal_busio_uart_write(busio_uart_obj_t *self, const uint8_t *data, 
     if (!nrfx_is_in_ram(data)) {
         // Allocate long strings on the heap.
         if (len > 128 && gc_alloc_possible()) {
-            tx_buf = (uint8_t *)m_malloc(len);
+            tx_buf = (uint8_t *)m_malloc_without_collect(len);
         } else {
             tx_buf = alloca(len);
         }

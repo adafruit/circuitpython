@@ -37,7 +37,7 @@ mp_obj_t common_hal_zlib_decompress(mp_obj_t data, mp_int_t wbits) {
     DEBUG_printf("sizeof(TINF_DATA)=" UINT_FMT "\n", sizeof(*decomp));
     uzlib_uncompress_init(decomp, NULL, 0);
     mp_uint_t dest_buf_size = (bufinfo.len + 15) & ~15;
-    byte *dest_buf = m_new(byte, dest_buf_size);
+    byte *dest_buf = m_malloc_without_collect(dest_buf_size);
 
     decomp->dest = dest_buf;
     decomp->dest_limit = dest_buf + dest_buf_size;

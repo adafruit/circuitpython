@@ -7,6 +7,7 @@ runs:
       run: |
         echo >> $GITHUB_ENV "IDF_PATH=$GITHUB_WORKSPACE/ports/espressif/esp-idf"
         echo >> $GITHUB_ENV "IDF_TOOLS_PATH=$GITHUB_WORKSPACE/.idf_tools"
+        echo >> $GITHUB_ENV "ESP_ROM_ELF_DIR=$GITHUB_WORKSPACE/.idf_tools"
       shell: bash
 
     - name: Get IDF commit

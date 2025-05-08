@@ -173,6 +173,14 @@ def create_pr(changes, updated, git_info, user):
         changes["new_release"], boards, languages
     )
 
+    # Sync main so that the fork has the same commit sha1
+    sync_main = {"branch": "main"}
+    response = github.post(
+        "/repos/{}/circuitpython-org/merge-upstream".format(user), json=sync_main
+    )
+    if not response.ok:
+        raise SystemExit(f"unable to sync main: {response.text}")
+
     create_branch = {"ref": "refs/heads/" + branch_name, "sha": commit_sha}
     response = github.post("/repos/{}/circuitpython-org/git/refs".format(user), json=create_branch)
     if not response.ok and response.json()["message"] != "Reference already exists":

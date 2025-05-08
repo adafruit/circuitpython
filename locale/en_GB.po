@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"PO-Revision-Date: 2025-04-19 15:42+0000\n"
+"PO-Revision-Date: 2025-04-25 15:04+0000\n"
 "Last-Translator: Andi Chandler <andi@gowling.com>\n"
 "Language-Team: none\n"
 "Language: en_GB\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.11.1-dev\n"
+"X-Generator: Weblate 5.12-dev\n"
 
 #: main.c
 msgid ""
@@ -117,7 +117,7 @@ msgstr "%q failure: %d"
 
 #: shared-module/audiodelays/MultiTapDelay.c
 msgid "%q in %q must be of type %q or %q, not %q"
-msgstr ""
+msgstr "%q in %q must be of type %q or %q, not %q"
 
 #: py/argcheck.c shared-module/audiofilters/Filter.c
 msgid "%q in %q must be of type %q, not %q"
@@ -2630,7 +2630,7 @@ msgstr "bits must be 32 or less"
 #: shared-bindings/audiofilters/Distortion.c
 #: shared-bindings/audiodelays/Reverb.c
 msgid "bits_per_sample must be 16"
-msgstr ""
+msgstr "bits_per_sample must be 16"
 
 #: shared-bindings/audiodelays/Echo.c shared-bindings/audiofilters/Distortion.c
 #: shared-bindings/audiofilters/Filter.c shared-bindings/audiomixer/Mixer.c
@@ -4055,7 +4055,7 @@ msgstr "rsplit(None,n)"
 
 #: shared-bindings/audiodelays/Reverb.c
 msgid "samples_signed must be true"
-msgstr ""
+msgstr "samples_signed must be true"
 
 #: ports/atmel-samd/common-hal/audiobusio/PDMIn.c
 #: ports/raspberrypi/common-hal/audiobusio/PDMIn.c

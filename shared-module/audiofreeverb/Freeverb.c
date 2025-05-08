@@ -8,6 +8,7 @@
 // Fixed point ideas from - Paul Stoffregen in the Teensy audio library https://github.com/PaulStoffregen/Audio/blob/master/effect_freeverb.cpp
 //
 #include "shared-bindings/audiofreeverb/Freeverb.h"
+#include "shared-module/synthio/__init__.h"
 
 #include <stdint.h>
 #include "py/runtime.h"
@@ -217,27 +218,6 @@ void common_hal_audiofreeverb_freeverb_stop(audiofreeverb_freeverb_obj_t *self) 
     return;
 }
 
-// cleaner sat16 by http://www.moseleyinstruments.com/
-static int16_t sat16(int32_t n, int rshift) {
-    // we should always round towards 0
-    // to avoid recirculating round-off noise
-    //
-    // a 2s complement positive number is always
-    // rounded down, so we only need to take
-    // care of negative numbers
-    if (n < 0) {
-        n = n + (~(0xFFFFFFFFUL << rshift));
-    }
-    n = n >> rshift;
-    if (n > 32767) {
-        return 32767;
-    }
-    if (n < -32768) {
-        return -32768;
-    }
-    return n;
-}
-
 audioio_get_buffer_result_t audiofreeverb_freeverb_get_buffer(audiofreeverb_freeverb_obj_t *self, bool single_channel_output, uint8_t channel,
     uint8_t **buffer, uint32_t *buffer_length) {
 
@@ -301,27 +281,27 @@ audioio_get_buffer_result_t audiofreeverb_freeverb_get_buffer(audiofreeverb_free
             int16_t input, bufout, output;
             uint32_t channel_comb_offset = 0, channel_allpass_offset = 0;
 
-            input = sat16(sample_word * 8738, 17); // Initial input scaled down so we can add reverb
+            input = synthio_sat16(sample_word * 8738, 17); // Initial input scaled down so we can add reverb
             sum = 0;
 
             // Calculate each of the 8 comb buffers
             for (uint32_t j = 0 + channel_comb_offset; j < 8 + channel_comb_offset; j++) {
                 bufout = self->combbuffers[j][self->combbufferindex[j]];
                 sum += bufout;
-                self->combfitlers[j] = sat16(bufout * damp2 + self->combfitlers[j] * damp1, 15);
-                self->combbuffers[j][self->combbufferindex[j]] = sat16(input + sat16(self->combfitlers[j] * feedback, 15), 0);
+                self->combfitlers[j] = synthio_sat16(bufout * damp2 + self->combfitlers[j] * damp1, 15);
+                self->combbuffers[j][self->combbufferindex[j]] = synthio_sat16(input + synthio_sat16(self->combfitlers[j] * feedback, 15), 0);
                 if (++self->combbufferindex[j] >= self->combbuffersizes[j]) {
                     self->combbufferindex[j] = 0;
                 }
             }
 
-            output = sat16(sum * 31457, 17); // 31457 = 0.24f with shift of 17
+            output = synthio_sat16(sum * 31457, 17); // 31457 = 0.24f with shift of 17
 
             // Calculate each of the 4 all pass buffers
             for (uint32_t j = 0 + channel_allpass_offset; j < 4 + channel_allpass_offset; j++) {
                 bufout = self->allpassbuffers[j][self->allpassbufferindex[j]];
                 self->allpassbuffers[j][self->allpassbufferindex[j]] = output + (bufout >> 1); // bufout >> 1 same as bufout*0.5f
-                output = sat16(bufout - output, 1);
+                output = synthio_sat16(bufout - output, 1);
                 if (++self->allpassbufferindex[j] >= self->allpassbuffersizes[j]) {
                     self->allpassbufferindex[j] = 0;
                 }
@@ -329,7 +309,7 @@ audioio_get_buffer_result_t audiofreeverb_freeverb_get_buffer(audiofreeverb_free
 
             word = output * 30; // Add some volume back don't have to saturate as next step will
 
-            word = sat16(sample_word * mix_sample, 15) + sat16(word * mix_effect, 15);
+            word = synthio_sat16(sample_word * mix_sample, 15) + synthio_sat16(word * mix_effect, 15);
             word = synthio_mix_down_sample(word, SYNTHIO_MIX_DOWN_SCALE(2));
             word_buffer[i] = (int16_t)word;
 

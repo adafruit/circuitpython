@@ -1071,7 +1071,8 @@ bool common_hal_socketpool_socket_listen(socketpool_socket_obj_t *socket, int ba
         socket->incoming.connection.tcp.item = NULL;
     } else {
         socket->incoming.connection.alloc = backlog;
-        socket->incoming.connection.tcp.array = m_new0(struct tcp_pcb *, backlog);
+        socket->incoming.connection.tcp.array = m_malloc_without_collect(sizeof(struct tcp_pcb *) * backlog);
+        memset(socket->incoming.connection.tcp.array, 0, sizeof(struct tcp_pcb *) * backlog);
     }
     socket->incoming.connection.iget = 0;
     socket->incoming.connection.iput = 0;

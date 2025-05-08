@@ -24,6 +24,7 @@
  * THE SOFTWARE.
  */
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -53,11 +54,9 @@
 // freely accessed - for interfacing with system and 3rd-party libs for
 // example. On the other hand, some (e.g. bare-metal) ports may use GC
 // heap as system heap, so, to avoid warnings, we do undef's first.
-#undef malloc
+// CIRCUITPY-CHANGE: Add selective collect support to malloc to optimize GC for large buffers
 #undef free
 #undef realloc
-#define malloc(b) gc_alloc((b), false)
-#define malloc_with_finaliser(b) gc_alloc((b), true)
 #define free gc_free
 #define realloc(ptr, n) gc_realloc(ptr, n, true)
 #define realloc_ext(ptr, n, mv) gc_realloc(ptr, n, mv)
@@ -67,6 +66,10 @@
 
 #if MICROPY_ENABLE_FINALISER
 #error MICROPY_ENABLE_FINALISER requires MICROPY_ENABLE_GC
+#endif
+
+#if MICROPY_ENABLE_SELECTIVE_COLLECT
+#error MICROPY_ENABLE_SELECTIVE_COLLECT requires MICROPY_ENABLE_GC
 #endif
 
 static void *realloc_ext(void *ptr, size_t n_bytes, bool allow_move) {
@@ -82,9 +85,26 @@ static void *realloc_ext(void *ptr, size_t n_bytes, bool allow_move) {
 
 #endif // MICROPY_ENABLE_GC
 
-void *m_malloc(size_t num_bytes) {
-    void *ptr = malloc(num_bytes);
-    if (ptr == NULL && num_bytes != 0) {
+// CIRCUITPY-CHANGE: Add malloc helper with flags instead of a list of bools.
+void *m_malloc_helper(size_t num_bytes, uint8_t flags) {
+    void *ptr;
+    #if MICROPY_ENABLE_GC
+    uint8_t gc_flags = 0;
+    #if MICROPY_ENABLE_SELECTIVE_COLLECT
+    if ((flags & M_MALLOC_COLLECT) == 0) {
+        gc_flags |= GC_ALLOC_FLAG_DO_NOT_COLLECT;
+    }
+    #endif
+    #if MICROPY_ENABLE_FINALISER
+    if ((flags & M_MALLOC_WITH_FINALISER) != 0) {
+        gc_flags |= GC_ALLOC_FLAG_HAS_FINALISER;
+    }
+    #endif
+    ptr = gc_alloc(num_bytes, gc_flags);
+    #else
+    ptr = malloc(num_bytes);
+    #endif
+    if (ptr == NULL && num_bytes != 0 && (flags & M_MALLOC_RAISE_ERROR)) {
         m_malloc_fail(num_bytes);
     }
     #if MICROPY_MEM_STATS
@@ -92,44 +112,39 @@ void *m_malloc(size_t num_bytes) {
     MP_STATE_MEM(current_bytes_allocated) += num_bytes;
     UPDATE_PEAK();
     #endif
+    // CIRCUITPY-CHANGE
+    // If this config is set then the GC clears all memory, so we don't need to.
+    #if !MICROPY_GC_CONSERVATIVE_CLEAR
+    if (flags & M_MALLOC_ENSURE_ZEROED) {
+        memset(ptr, 0, num_bytes);
+    }
+    #endif
     DEBUG_printf("malloc %d : %p\n", num_bytes, ptr);
     return ptr;
+}
+
+void *m_malloc(size_t num_bytes) {
+    // CIRCUITPY-CHANGE
+    return m_malloc_helper(num_bytes, M_MALLOC_RAISE_ERROR | M_MALLOC_COLLECT);
 }
 
 void *m_malloc_maybe(size_t num_bytes) {
-    void *ptr = malloc(num_bytes);
-    #if MICROPY_MEM_STATS
-    MP_STATE_MEM(total_bytes_allocated) += num_bytes;
-    MP_STATE_MEM(current_bytes_allocated) += num_bytes;
-    UPDATE_PEAK();
-    #endif
-    DEBUG_printf("malloc %d : %p\n", num_bytes, ptr);
-    return ptr;
+    // CIRCUITPY-CHANGE
+    return m_malloc_helper(num_bytes, M_MALLOC_COLLECT);
 }
-
-#if MICROPY_ENABLE_FINALISER
-void *m_malloc_with_finaliser(size_t num_bytes) {
-    void *ptr = malloc_with_finaliser(num_bytes);
-    if (ptr == NULL && num_bytes != 0) {
-        m_malloc_fail(num_bytes);
-    }
-    #if MICROPY_MEM_STATS
-    MP_STATE_MEM(total_bytes_allocated) += num_bytes;
-    MP_STATE_MEM(current_bytes_allocated) += num_bytes;
-    UPDATE_PEAK();
-    #endif
-    DEBUG_printf("malloc %d : %p\n", num_bytes, ptr);
-    return ptr;
-}
-#endif
 
 void *m_malloc0(size_t num_bytes) {
-    void *ptr = m_malloc(num_bytes);
-    // If this config is set then the GC clears all memory, so we don't need to.
-    #if !MICROPY_GC_CONSERVATIVE_CLEAR
-    memset(ptr, 0, num_bytes);
-    #endif
-    return ptr;
+    return m_malloc_helper(num_bytes, M_MALLOC_ENSURE_ZEROED | M_MALLOC_RAISE_ERROR | M_MALLOC_COLLECT);
+}
+
+void *m_malloc_without_collect(size_t num_bytes) {
+    // CIRCUITPY-CHANGE
+    return m_malloc_helper(num_bytes, M_MALLOC_RAISE_ERROR);
+}
+
+void *m_malloc_maybe_without_collect(size_t num_bytes) {
+    // CIRCUITPY-CHANGE
+    return m_malloc_helper(num_bytes, 0);
 }
 
 #if MICROPY_MALLOC_USES_ALLOCATED_SIZE

@@ -74,14 +74,14 @@ static bool _done_callback(rmt_channel_handle_t rx_chan,
 
 void common_hal_pulseio_pulsein_construct(pulseio_pulsein_obj_t *self, const mcu_pin_obj_t *pin,
     uint16_t maxlen, bool idle_state) {
-    self->buffer = (uint16_t *)m_malloc(maxlen * sizeof(uint16_t));
+    self->buffer = (uint16_t *)m_malloc_without_collect(maxlen * sizeof(uint16_t));
     if (self->buffer == NULL) {
         m_malloc_fail(maxlen * sizeof(uint16_t));
     }
     // We add one to the maxlen version to ensure that two symbols at lease are
     // captured because we may skip the first portion of a symbol.
     self->raw_symbols_size = MIN(64, maxlen / 2 + 1) * sizeof(rmt_symbol_word_t);
-    self->raw_symbols = (rmt_symbol_word_t *)m_malloc(self->raw_symbols_size);
+    self->raw_symbols = (rmt_symbol_word_t *)m_malloc_without_collect(self->raw_symbols_size);
     if (self->raw_symbols == NULL) {
         m_free(self->buffer);
         m_malloc_fail(self->raw_symbols_size);

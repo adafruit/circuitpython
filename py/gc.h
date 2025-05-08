@@ -73,6 +73,10 @@ void gc_sweep_all(void);
 
 enum {
     GC_ALLOC_FLAG_HAS_FINALISER = 1,
+    // CIRCUITPY-CHANGE
+    #if MICROPY_ENABLE_SELECTIVE_COLLECT
+    GC_ALLOC_FLAG_DO_NOT_COLLECT = 2,
+    #endif
 };
 
 void *gc_alloc(size_t n_bytes, unsigned int alloc_flags);

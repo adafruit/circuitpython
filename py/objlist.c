@@ -504,12 +504,14 @@ void mp_obj_list_init(mp_obj_list_t *o, size_t n) {
     o->base.type = &mp_type_list;
     o->alloc = n < LIST_MIN_ALLOC ? LIST_MIN_ALLOC : n;
     o->len = n;
-    o->items = m_new(mp_obj_t, o->alloc);
+    // CIRCUITPY-CHANGE: Use m_malloc_items because these are mp_obj_t
+    o->items = m_malloc_items(o->alloc);
     mp_seq_clear(o->items, n, o->alloc, sizeof(*o->items));
 }
 
 static mp_obj_list_t *list_new(size_t n) {
-    mp_obj_list_t *o = m_new_obj(mp_obj_list_t);
+    // CIRCUITPY-CHANGE: Use mp_obj_malloc because it is a Python object
+    mp_obj_list_t *o = mp_obj_malloc(mp_obj_list_t, &mp_type_list);
     mp_obj_list_init(o, n);
     return o;
 }

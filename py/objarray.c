@@ -105,18 +105,22 @@ static mp_obj_array_t *array_new(char typecode, size_t n) {
         mp_raise_ValueError(MP_ERROR_TEXT("bad typecode"));
     }
     int typecode_size = mp_binary_get_size('@', typecode, NULL);
-    mp_obj_array_t *o = m_new_obj(mp_obj_array_t);
+
+    // CIRCUITPY-CHANGE: refactor to use m_obj_malloc()
+    const mp_obj_type_t *type;
     #if MICROPY_PY_BUILTINS_BYTEARRAY && MICROPY_PY_ARRAY
-    o->base.type = (typecode == BYTEARRAY_TYPECODE) ? &mp_type_bytearray : &mp_type_array;
+    type = (typecode == BYTEARRAY_TYPECODE) ? &mp_type_bytearray : &mp_type_array;
     #elif MICROPY_PY_BUILTINS_BYTEARRAY
-    o->base.type = &mp_type_bytearray;
+    type = &mp_type_bytearray;
     #else
-    o->base.type = &mp_type_array;
+    type = &mp_type_array;
     #endif
+    mp_obj_array_t *o = mp_obj_malloc(mp_obj_array_t, type);
     o->typecode = typecode;
     o->free = 0;
     o->len = n;
-    o->items = m_new(byte, typecode_size * o->len);
+    // CIRCUITPY-CHANGE
+    o->items = m_malloc_without_collect(typecode_size * o->len);
     return o;
 }
 #endif
@@ -225,7 +229,8 @@ static mp_obj_t bytearray_make_new(const mp_obj_type_t *type_in, size_t n_args, 
 #if MICROPY_PY_BUILTINS_MEMORYVIEW
 
 mp_obj_t mp_obj_new_memoryview(byte typecode, size_t nitems, void *items) {
-    mp_obj_array_t *self = m_new_obj(mp_obj_array_t);
+    // CIRCUITPY-CHANGE
+    mp_obj_array_t *self = mp_obj_malloc(mp_obj_array_t, &mp_type_memoryview);
     mp_obj_memoryview_init(self, typecode, 0, nitems, items);
     return MP_OBJ_FROM_PTR(self);
 }
@@ -684,7 +689,8 @@ static mp_obj_t array_subscr(mp_obj_t self_in, mp_obj_t index_in, mp_obj_t value
                 if (slice.start > memview_offset_max) {
                     mp_raise_msg(&mp_type_OverflowError, MP_ERROR_TEXT("memoryview offset too large"));
                 }
-                res = m_new_obj(mp_obj_array_t);
+                // CIRCUITPY-CHANGE
+                res = mp_obj_malloc(mp_obj_array_t, &mp_type_memoryview);
                 *res = *o;
                 res->memview_offset += slice.start;
                 res->len = slice.stop - slice.start;

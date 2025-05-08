@@ -47,13 +47,13 @@ void common_hal_displayio_tilegrid_construct(displayio_tilegrid_t *self, mp_obj_
         self->inline_tiles = true;
     } else {
         if (use_uint16) {
-            uint16_t *tiles16 = (uint16_t *)m_malloc(total_tiles * sizeof(uint16_t));
+            uint16_t *tiles16 = (uint16_t *)m_malloc_without_collect(total_tiles * sizeof(uint16_t));
             for (uint32_t i = 0; i < total_tiles; i++) {
                 tiles16[i] = default_tile;
             }
             self->tiles = tiles16;
         } else {
-            uint8_t *tiles8 = (uint8_t *)m_malloc(total_tiles);
+            uint8_t *tiles8 = (uint8_t *)m_malloc_without_collect(total_tiles);
             for (uint32_t i = 0; i < total_tiles; i++) {
                 tiles8[i] = (uint8_t)default_tile;
             }

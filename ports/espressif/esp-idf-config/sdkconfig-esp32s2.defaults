@@ -58,6 +58,12 @@ CONFIG_ULP_COPROC_TYPE_RISCV=y  # Note: enabling both ULPs simultaneously only w
 CONFIG_ULP_COPROC_RESERVE_MEM=8176
 # end of Ultra Low Power (ULP) Co-processor
 
+#
+# FreeRTOS
+#
+CONFIG_FREERTOS_PLACE_FUNCTIONS_INTO_FLASH=y
+# end of FreeRTOS
+
 # end of Component config
 
 # end of Espressif IoT Development Framework Configuration

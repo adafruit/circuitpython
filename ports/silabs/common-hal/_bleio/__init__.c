@@ -194,8 +194,7 @@ void sl_bt_on_event(sl_bt_msg_t *evt) {
             uuid = m_new_obj_maybe(bleio_uuid_obj_t);
             if (NULL == uuid) {
                 osMutexRelease(bluetooth_connection_mutex_id);
-                mp_raise_bleio_BluetoothError(
-                    MP_ERROR_TEXT("Create new service uuid obj fail"));
+                m_malloc_fail(sizeof(bleio_uuid_obj_t));
                 break;
             }
             uuid->base.type = &bleio_uuid_type;

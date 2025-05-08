@@ -165,7 +165,9 @@ static void audio_dma_load_next_block(audio_dma_t *dma, size_t buffer_idx) {
         }
     }
     // Enable the channel so that it can be played.
-    dma_hw->ch[dma_channel].al1_ctrl |= DMA_CH1_CTRL_TRIG_EN_BITS;
+    if (!dma->paused) {
+        dma_hw->ch[dma_channel].al1_ctrl |= DMA_CH1_CTRL_TRIG_EN_BITS;
+    }
     dma->dma_result = AUDIO_DMA_OK;
 }
 
@@ -301,6 +303,8 @@ audio_dma_result audio_dma_setup_playback(
     MP_STATE_PORT(playing_audio)[dma->channel[0]] = dma;
     MP_STATE_PORT(playing_audio)[dma->channel[1]] = dma;
 
+    dma->paused = false;
+
     // Load the first two blocks up front.
     audio_dma_load_next_block(dma, 0);
     if (dma->dma_result != AUDIO_DMA_OK) {
@@ -331,6 +335,8 @@ audio_dma_result audio_dma_setup_playback(
             1, // transaction count
             false); // trigger
     } else {
+        // Clear any latent interrupts so that we don't immediately disable channels.
+        dma_hw->ints0 |= (1 << dma->channel[0]) | (1 << dma->channel[1]);
         // Enable our DMA channels on DMA_IRQ_0 to the CPU. This will wake us up when
         // we're WFI.
         dma_hw->inte0 |= (1 << dma->channel[0]) | (1 << dma->channel[1]);
@@ -344,6 +350,8 @@ audio_dma_result audio_dma_setup_playback(
 }
 
 void audio_dma_stop(audio_dma_t *dma) {
+    dma->paused = true;
+
     // Disable our interrupts.
     uint32_t channel_mask = 0;
     if (dma->channel[0] < NUM_DMA_CHANNELS) {
@@ -363,12 +371,13 @@ void audio_dma_stop(audio_dma_t *dma) {
 
     for (size_t i = 0; i < 2; i++) {
         size_t channel = dma->channel[i];
+        dma->channel[i] = NUM_DMA_CHANNELS;
         if (channel == NUM_DMA_CHANNELS) {
             // Channel not in use.
             continue;
         }
 
-        dma_channel_config c = dma_channel_get_default_config(dma->channel[i]);
+        dma_channel_config c = dma_channel_get_default_config(channel);
         channel_config_set_enable(&c, false);
         dma_channel_set_config(channel, &c, false /* trigger */);
 
@@ -381,7 +390,6 @@ void audio_dma_stop(audio_dma_t *dma) {
         dma_channel_set_trans_count(channel, 0, false /* trigger */);
         dma_channel_unclaim(channel);
         MP_STATE_PORT(playing_audio)[channel] = NULL;
-        dma->channel[i] = NUM_DMA_CHANNELS;
     }
     dma->playing_in_progress = false;
 
@@ -393,6 +401,7 @@ void audio_dma_stop(audio_dma_t *dma) {
 void audio_dma_pause(audio_dma_t *dma) {
     dma_hw->ch[dma->channel[0]].al1_ctrl &= ~DMA_CH0_CTRL_TRIG_EN_BITS;
     dma_hw->ch[dma->channel[1]].al1_ctrl &= ~DMA_CH1_CTRL_TRIG_EN_BITS;
+    dma->paused = true;
 }
 
 void audio_dma_resume(audio_dma_t *dma) {
@@ -405,15 +414,14 @@ void audio_dma_resume(audio_dma_t *dma) {
         dma_hw->ch[dma->channel[0]].al1_ctrl |= DMA_CH0_CTRL_TRIG_EN_BITS;
         dma_hw->ch[dma->channel[1]].al1_ctrl |= DMA_CH1_CTRL_TRIG_EN_BITS;
     }
+    dma->paused = false;
 }
 
 bool audio_dma_get_paused(audio_dma_t *dma) {
     if (dma->channel[0] >= NUM_DMA_CHANNELS) {
         return false;
     }
-    uint32_t control = dma_hw->ch[dma->channel[0]].ctrl_trig;
-
-    return (control & DMA_CH0_CTRL_TRIG_EN_BITS) == 0;
+    return dma->playing_in_progress && dma->paused;
 }
 
 uint32_t audio_dma_pause_all(void) {
@@ -446,6 +454,9 @@ void audio_dma_init(audio_dma_t *dma) {
 
     dma->channel[0] = NUM_DMA_CHANNELS;
     dma->channel[1] = NUM_DMA_CHANNELS;
+
+    dma->playing_in_progress = false;
+    dma->paused = false;
 }
 
 void audio_dma_deinit(audio_dma_t *dma) {
@@ -486,6 +497,8 @@ bool audio_dma_get_playing(audio_dma_t *dma) {
 // NOTE(dhalbert): I successfully printed from here while debugging.
 // So it's possible, but be careful.
 static void dma_callback_fun(void *arg) {
+    // Any audio interrupts that happen below will requeue the background task
+    // after updating channels_to_load_mask.
     audio_dma_t *dma = arg;
     if (dma == NULL) {
         return;
@@ -493,30 +506,29 @@ static void dma_callback_fun(void *arg) {
 
     common_hal_mcu_disable_interrupts();
     uint32_t channels_to_load_mask = dma->channels_to_load_mask;
+    // This can be 0 if the background task was queued between the call to
+    // dma_callback_fun and the above read of channels_to_load_mask.
     dma->channels_to_load_mask = 0;
     common_hal_mcu_enable_interrupts();
 
-    // Load the blocks for the requested channels.
-    uint32_t channel = 0;
+    uint8_t first_filled_channel = NUM_DMA_CHANNELS;
     size_t filled_count = 0;
-    while (channels_to_load_mask) {
-        if (channels_to_load_mask & 1) {
-            if (dma->channel[0] == channel) {
-                audio_dma_load_next_block(dma, 0);
-                filled_count++;
-            }
-            if (dma->channel[1] == channel) {
-                audio_dma_load_next_block(dma, 1);
-                filled_count++;
-            }
-        }
-        channels_to_load_mask >>= 1;
-        channel++;
+    if (dma->channel[0] != NUM_DMA_CHANNELS && (channels_to_load_mask & (1 << dma->channel[0]))) {
+        audio_dma_load_next_block(dma, 0);
+        first_filled_channel = dma->channel[0];
+        filled_count++;
     }
-    // If we had to fill both buffers, then we missed the trigger from the other
-    // buffer. So restart the DMA.
-    if (filled_count == 2) {
-        dma_channel_start(dma->channel[0]);
+    if (dma->channel[1] != NUM_DMA_CHANNELS && (channels_to_load_mask & (1 << dma->channel[1]))) {
+        audio_dma_load_next_block(dma, 1);
+        first_filled_channel = dma->channel[1];
+        filled_count++;
+    }
+
+    // Restart if the other channel has been queued while we were filling the first or we filled two
+    // now. (Two get filled if the second buffer completes while the first is waiting in the
+    // background task queue.)
+    if (first_filled_channel != NUM_DMA_CHANNELS && (dma->channels_to_load_mask != 0 || filled_count == 2)) {
+        dma_channel_start(first_filled_channel);
     }
 }
 
@@ -537,6 +549,7 @@ void __not_in_flash_func(isr_dma_0)(void) {
             dma->channels_to_load_mask |= mask;
             // Disable the channel so that we don't play it without filling it.
             dma_hw->ch[i].al1_ctrl &= ~DMA_CH0_CTRL_TRIG_EN_BITS;
+            // This is a noop if the callback is already queued.
             background_callback_add(&dma->callback, dma_callback_fun, (void *)dma);
         }
         if (MP_STATE_PORT(background_pio_read)[i] != NULL) {

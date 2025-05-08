@@ -70,7 +70,7 @@ void shared_module_gifio_gifwriter_construct(gifio_gifwriter_t *self, mp_obj_t *
 
     size_t nblocks = (width * height + 125) / 126;
     self->size = nblocks * 128 + 4;
-    self->data = m_malloc(self->size);
+    self->data = m_malloc_without_collect(self->size);
     self->cur = 0;
     self->error = 0;
 

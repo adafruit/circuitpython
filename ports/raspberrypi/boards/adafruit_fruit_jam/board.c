@@ -16,8 +16,8 @@
 
 #define I2S_RESET_PIN_NUMBER 22
 
-#if defined(DEFAULT_USB_HOST_5V_POWER)
 bool board_reset_pin_number(uint8_t pin_number) {
+    #if defined(DEFAULT_USB_HOST_5V_POWER)
     if (pin_number == DEFAULT_USB_HOST_5V_POWER->number) {
         // doing this (rather than gpio_init) in this specific order ensures no
         // glitch if pin was already configured as a high output. gpio_init() temporarily
@@ -29,6 +29,7 @@ bool board_reset_pin_number(uint8_t pin_number) {
 
         return true;
     }
+    #endif
     // Set I2S out of reset.
     if (pin_number == I2S_RESET_PIN_NUMBER) {
         gpio_put(pin_number, 1);
@@ -39,7 +40,6 @@ bool board_reset_pin_number(uint8_t pin_number) {
     }
     return false;
 }
-#endif
 
 void board_init(void) {
     // Reset the DAC to put it in a known state.

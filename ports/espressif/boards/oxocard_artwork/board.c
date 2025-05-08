@@ -60,7 +60,7 @@ static void display_init(void) {
         240,            // width (after rotation)
         240,            // height (after rotation)
         0,              // column start
-        80,             // row start
+        0,              // row start
         0,              // rotation
         16,             // color depth
         false,          // grayscale

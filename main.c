@@ -203,6 +203,9 @@ static void start_mp(safe_mode_t safe_mode) {
     mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR__slash_lib));
 
     mp_obj_list_init((mp_obj_list_t *)mp_sys_argv, 0);
+
+    // Always return to root
+    common_hal_os_chdir("/");
 }
 
 static void stop_mp(void) {
@@ -457,8 +460,6 @@ static bool __attribute__((noinline)) run_code_py(safe_mode_t safe_mode, bool *s
         usb_setup_with_vm();
         #endif
 
-        // Always return to root before trying to run files.
-        common_hal_os_chdir("/");
         // Check if a different run file has been allocated
         if (next_code_configuration != NULL) {
             next_code_configuration->options &= ~SUPERVISOR_NEXT_CODE_OPT_NEWLY_SET;

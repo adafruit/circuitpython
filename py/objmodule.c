@@ -134,8 +134,8 @@ mp_obj_t mp_obj_new_module(qstr module_name) {
     }
 
     // create new module object
-    mp_module_context_t *o = m_new_obj(mp_module_context_t);
-    o->module.base.type = &mp_type_module;
+    // CIRCUITPY-CHANGE: Use mp_obj_malloc because it is a Python object
+    mp_module_context_t *o = mp_obj_malloc(mp_module_context_t, &mp_type_module);
     o->module.globals = MP_OBJ_TO_PTR(mp_obj_new_dict(MICROPY_MODULE_DICT_SIZE));
 
     // store __name__ entry in the module

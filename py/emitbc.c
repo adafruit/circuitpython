@@ -83,7 +83,8 @@ emit_t *emit_bc_new(mp_emit_common_t *emit_common) {
 
 void emit_bc_set_max_num_labels(emit_t *emit, mp_uint_t max_num_labels) {
     emit->max_num_labels = max_num_labels;
-    emit->label_offsets = m_new(size_t, emit->max_num_labels);
+    // CIRCUITPY-CHANGE: Don't collect the label offsets
+    emit->label_offsets = m_malloc_without_collect(sizeof(size_t) * emit->max_num_labels);
 }
 
 void emit_bc_free(emit_t *emit) {
@@ -373,7 +374,8 @@ bool mp_emit_bc_end_pass(emit_t *emit) {
         // calculate size of total code-info + bytecode, in bytes
         emit->code_info_size = emit->code_info_offset;
         emit->bytecode_size = emit->bytecode_offset;
-        emit->code_base = m_new0(byte, emit->code_info_size + emit->bytecode_size);
+        // CIRCUITPY-CHANGE: Don't collect the bytecode or code info.
+        emit->code_base = m_malloc_without_collect(sizeof(byte) * (emit->code_info_size + emit->bytecode_size));
 
     } else if (emit->pass == MP_PASS_EMIT) {
         // Code info and/or bytecode can shrink during this pass.

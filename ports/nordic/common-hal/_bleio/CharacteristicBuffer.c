@@ -97,7 +97,7 @@ void common_hal_bleio_characteristic_buffer_construct(bleio_characteristic_buffe
     bleio_characteristic_obj_t *characteristic,
     mp_float_t timeout,
     size_t buffer_size) {
-    uint8_t *buffer = m_malloc(buffer_size);
+    uint8_t *buffer = m_malloc_without_collect(buffer_size);
     _common_hal_bleio_characteristic_buffer_construct(self, characteristic, timeout, buffer, buffer_size, NULL, false);
 }
 

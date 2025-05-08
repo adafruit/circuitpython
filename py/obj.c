@@ -31,6 +31,7 @@
 
 // CIRCUITPY-CHANGE
 #include "shared/runtime/interrupt_char.h"
+#include "py/misc.h"
 #include "py/obj.h"
 #include "py/objtype.h"
 #include "py/objint.h"
@@ -46,7 +47,8 @@
 
 // Allocates an object and also sets type, for mp_obj_malloc{,_var} macros.
 MP_NOINLINE void *mp_obj_malloc_helper(size_t num_bytes, const mp_obj_type_t *type) {
-    mp_obj_base_t *base = (mp_obj_base_t *)m_malloc(num_bytes);
+    // CIRCUITPY-CHANGE
+    mp_obj_base_t *base = (mp_obj_base_t *)m_malloc_helper(num_bytes, M_MALLOC_RAISE_ERROR | M_MALLOC_COLLECT);
     base->type = type;
     return base;
 }
@@ -54,7 +56,8 @@ MP_NOINLINE void *mp_obj_malloc_helper(size_t num_bytes, const mp_obj_type_t *ty
 #if MICROPY_ENABLE_FINALISER
 // Allocates an object and also sets type, for mp_obj_malloc{,_var}_with_finaliser macros.
 MP_NOINLINE void *mp_obj_malloc_with_finaliser_helper(size_t num_bytes, const mp_obj_type_t *type) {
-    mp_obj_base_t *base = (mp_obj_base_t *)m_malloc_with_finaliser(num_bytes);
+    // CIRCUITPY-CHANGE
+    mp_obj_base_t *base = (mp_obj_base_t *)m_malloc_helper(num_bytes, M_MALLOC_RAISE_ERROR | M_MALLOC_COLLECT | M_MALLOC_WITH_FINALISER);
     base->type = type;
     return base;
 }

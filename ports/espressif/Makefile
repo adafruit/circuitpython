@@ -83,6 +83,9 @@ INC += \
 	-isystem esp-idf/components/esp_psram/include \
 	-isystem esp-idf/components/esp_ringbuf/include \
 	-isystem esp-idf/components/esp_rom/include \
+	-isystem esp-idf/components/esp_rom/$(IDF_TARGET)/include \
+	-isystem esp-idf/components/esp_rom/$(IDF_TARGET)/include/$(IDF_TARGET) \
+	-isystem esp-idf/components/esp_security/include \
 	-isystem esp-idf/components/esp_system/include \
 	-isystem esp-idf/components/esp_timer/include \
 	-isystem esp-idf/components/esp_wifi/include \
@@ -115,6 +118,7 @@ INC += \
 	-isystem esp-idf/components/sdmmc/include \
 	-isystem esp-idf/components/soc/include \
 	-isystem esp-idf/components/soc/$(IDF_TARGET)/include \
+	-isystem esp-idf/components/soc/$(IDF_TARGET)/register \
 	-isystem esp-idf/components/spi_flash/include \
 	-isystem esp-idf/components/usb/include \
 	-isystem esp-idf/components/ulp/ulp_fsm/include \
@@ -171,12 +175,12 @@ ifeq ($(DEBUG), 1)
 		OPTIMIZATION_FLAGS ?= -Og
 		CFLAGS += -DDEBUG
 	endif
-	# You may want to enable these flags to make setting breakpoints easier.
-	# CFLAGS += -fno-inline -fno-ipa-sra
+#	You may want to enable these flags to make setting breakpoints easier.
+#	CFLAGS += -fno-inline -fno-ipa-sra
 else
 	CFLAGS += -DNDEBUG
-	# RISC-V is larger than xtensa
-	# Use -Os for RISC-V when it overflows
+#	RISC-V is larger than xtensa
+#	Use -Os for RISC-V when it overflows
 	ifeq ($(IDF_TARGET_ARCH),riscv)
 		OPTIMIZATION_FLAGS ?= -Os
 	else
@@ -238,7 +242,6 @@ ifeq ($(IDF_TARGET),esp32)
 LDFLAGS += \
 	-Tesp32.rom.newlib-data.ld \
 	-Tesp32.rom.newlib-funcs.ld \
-	-Tesp32.rom.newlib-time.ld \
 	-Tesp32.rom.spiflash_legacy.ld
 
 CHIP_COMPONENTS = \
@@ -261,7 +264,6 @@ CHIP_COMPONENTS = \
 else ifeq ($(IDF_TARGET),esp32c3)
 LDFLAGS += \
 	-Tesp32c3.rom.newlib.ld \
-	-Tesp32c3.rom.newlib-time.ld \
 	-Tesp32c3.rom.version.ld \
 	-Tesp32c3.rom.eco3.ld \
 	-Tesp32c3.rom.bt_funcs.ld
@@ -308,7 +310,6 @@ else ifeq ($(IDF_TARGET),esp32s2)
 LDFLAGS += \
 	-Tesp32s2.rom.newlib-data.ld \
 	-Tesp32s2.rom.newlib-funcs.ld \
-	-Tesp32s2.rom.newlib-time.ld \
 	-Tesp32s2.rom.spiflash_legacy.ld
 
 CHIP_COMPONENTS = \
@@ -360,10 +361,19 @@ CFLAGS += \
 	-DCFG_TUD_TASK_QUEUE_SZ=32
 endif
 ifeq ($(CIRCUITPY_USB_DEVICE),1)
+ifeq ($(IDF_TARGET),esp32s2)
+# Make more room in internal RAM on the S2.
+CFLAGS += \
+	-DCFG_TUD_CDC_RX_BUFSIZE=128 \
+	-DCFG_TUD_CDC_TX_BUFSIZE=128 \
+	-DCFG_TUD_MSC_BUFSIZE=1024
+else
 CFLAGS += \
 	-DCFG_TUD_CDC_RX_BUFSIZE=1024 \
 	-DCFG_TUD_CDC_TX_BUFSIZE=1024 \
-	-DCFG_TUD_MSC_BUFSIZE=4096 \
+	-DCFG_TUD_MSC_BUFSIZE=4096
+endif
+CFLAGS += \
 	-DCFG_TUD_MIDI_RX_BUFSIZE=128 \
 	-DCFG_TUD_MIDI_TX_BUFSIZE=128 \
 	-DCFG_TUD_VENDOR_RX_BUFSIZE=128 \
@@ -383,7 +393,7 @@ SRC_C += \
 	peripherals/$(IDF_TARGET)/pins.c
 
 ifeq ($(CIRCUITPY_SSL),1)
-SRC_C += lib/mbedtls_config/crt_bundle.c
+SRC_C += common-hal/ssl/crt_bundle.c
 endif
 
 SRC_C += $(wildcard common-hal/espidf/*.c)
@@ -594,7 +604,7 @@ endif
 
 ESP_IDF_COMPONENTS_LINK = $(IDF_TARGET_ARCH) $(CHIP_COMPONENTS) app_update bootloader_support driver esp_driver_gpio esp_driver_gptimer esp_driver_i2c esp_driver_ledc esp_driver_spi esp_driver_uart efuse esp_adc esp_app_format esp_common esp_event esp_hw_support esp_mm esp_partition esp_pm esp_ringbuf esp_rom esp_system esp_timer freertos hal heap log newlib nvs_flash pthread soc spi_flash vfs esp_vfs_console
 ifneq ($(CIRCUITPY_WIFI),0)
-	ESP_IDF_COMPONENTS_LINK += esp_coex esp_netif esp-tls esp_wifi lwip mbedtls mdns wpa_supplicant esp_phy
+	ESP_IDF_COMPONENTS_LINK += esp_coex esp_netif esp_security esp-tls esp_wifi lwip mbedtls mdns wpa_supplicant esp_phy
 endif
 ifneq ($(CIRCUITPY_BLEIO_NATIVE),0)
 	BLE_IMPL_esp32 := esp32
@@ -605,10 +615,10 @@ ifneq ($(CIRCUITPY_BLEIO_NATIVE),0)
 	BLE_IMPL_esp32h2 := libble
 	BLE_IMPL = $(BLE_IMPL_$(IDF_TARGET))
 
-	ESP_IDF_COMPONENTS_LINK += bt esp_phy
+	ESP_IDF_COMPONENTS_LINK += bt esp_phy esp_security
 	ifeq ($(BLE_IMPL),esp32)
-		# BLE will hang the ESP32 and trigger an interrupt watchdog without this undefined symbol at
-		# link because a weak version of the interrupt that BLE uses will be linked incorrectly.
+#		BLE will hang the ESP32 and trigger an interrupt watchdog without this undefined symbol at
+#		link because a weak version of the interrupt that BLE uses will be linked incorrectly.
 		REGISTRATION_FUNCTIONS += -u ld_include_hli_vectors_bt
 		BINARY_BLOBS += esp-idf/components/bt/controller/lib_esp32/$(IDF_TARGET)/libbtdm_app.a
 	endif
@@ -626,6 +636,9 @@ ifneq ($(CIRCUITPY_BLEIO_NATIVE),0)
 		BINARY_BLOBS += esp-idf/components/bt/controller/lib_$(IDF_TARGET)/$(IDF_TARGET)-bt-lib/libble_app.a
 	endif
 	endif
+endif
+ifeq ($(IDF_TARGET),esp32p4)
+    ESP_IDF_COMPONENTS_LINK += esp_security
 endif
 ifneq ($(CIRCUITPY_ESPULP),0)
 	ESP_IDF_COMPONENTS_LINK += ulp

@@ -100,6 +100,10 @@ typedef struct _mp_state_mem_area_t {
     #if MICROPY_ENABLE_FINALISER
     byte *gc_finaliser_table_start;
     #endif
+    // CIRCUITPY-CHANGE
+    #if MICROPY_ENABLE_SELECTIVE_COLLECT
+    byte *gc_collect_table_start;
+    #endif
     byte *gc_pool_start;
     byte *gc_pool_end;
 

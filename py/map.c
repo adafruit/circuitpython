@@ -86,13 +86,17 @@ static size_t get_hash_alloc_greater_or_equal_to(size_t x) {
 /******************************************************************************/
 /* map                                                                        */
 
+// CIRCUITPY-CHANGE: Helper for allocating tables of elements
+#define malloc_table(num) m_new0(mp_map_elem_t, num)
+
 void mp_map_init(mp_map_t *map, size_t n) {
     if (n == 0) {
         map->alloc = 0;
         map->table = NULL;
     } else {
         map->alloc = n;
-        map->table = m_new0(mp_map_elem_t, map->alloc);
+        // CIRCUITPY-CHANGE
+        map->table = malloc_table(map->alloc);
     }
     map->used = 0;
     map->all_keys_are_qstrs = 1;
@@ -133,7 +137,8 @@ static void mp_map_rehash(mp_map_t *map) {
     size_t new_alloc = get_hash_alloc_greater_or_equal_to(map->alloc + 1);
     DEBUG_printf("mp_map_rehash(%p): " UINT_FMT " -> " UINT_FMT "\n", map, old_alloc, new_alloc);
     mp_map_elem_t *old_table = map->table;
-    mp_map_elem_t *new_table = m_new0(mp_map_elem_t, new_alloc);
+    // CIRCUITPY-CHANGE
+    mp_map_elem_t *new_table = malloc_table(new_alloc);
     // If we reach this point, table resizing succeeded, now we can edit the old map.
     map->alloc = new_alloc;
     map->used = 0;
@@ -329,7 +334,8 @@ mp_map_elem_t *MICROPY_WRAP_MP_MAP_LOOKUP(mp_map_lookup)(mp_map_t * map, mp_obj_
 void mp_set_init(mp_set_t *set, size_t n) {
     set->alloc = n;
     set->used = 0;
-    set->table = m_new0(mp_obj_t, set->alloc);
+    // CIRCUITPY-CHANGE
+    set->table = m_malloc_items0(set->alloc);
 }
 
 static void mp_set_rehash(mp_set_t *set) {
@@ -337,7 +343,8 @@ static void mp_set_rehash(mp_set_t *set) {
     mp_obj_t *old_table = set->table;
     set->alloc = get_hash_alloc_greater_or_equal_to(set->alloc + 1);
     set->used = 0;
-    set->table = m_new0(mp_obj_t, set->alloc);
+    // CIRCUITPY-CHANGE
+    set->table = m_malloc_items0(set->alloc);
     for (size_t i = 0; i < old_alloc; i++) {
         if (old_table[i] != MP_OBJ_NULL && old_table[i] != MP_OBJ_SENTINEL) {
             mp_set_lookup(set, old_table[i], MP_MAP_LOOKUP_ADD_IF_NOT_FOUND);

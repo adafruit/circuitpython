@@ -29,7 +29,7 @@ void common_hal_displayio_shape_construct(displayio_shape_t *self, uint32_t widt
     }
     self->half_height = height;
 
-    self->data = m_malloc(height * sizeof(uint32_t));
+    self->data = m_malloc_without_collect(height * sizeof(uint32_t));
 
     for (uint16_t i = 0; i < height; i++) {
         self->data[2 * i] = 0;

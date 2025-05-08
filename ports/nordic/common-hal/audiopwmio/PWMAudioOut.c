@@ -253,13 +253,13 @@ void common_hal_audiopwmio_pwmaudioout_play(audiopwmio_pwmaudioout_obj_t *self, 
 
     size_t buffer_size = (size_t)max_buffer_length * 2 * sizeof(uint16_t);
 
-    self->buffers[0] = m_malloc(buffer_size);
+    self->buffers[0] = m_malloc_without_collect(buffer_size);
     #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
     self->buffer_size[0] = buffer_size;
     #endif
 
     if (!self->single_buffer) {
-        self->buffers[1] = m_malloc(buffer_size);
+        self->buffers[1] = m_malloc_without_collect(buffer_size);
         #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
         self->buffer_size[1] = buffer_size;
         #endif

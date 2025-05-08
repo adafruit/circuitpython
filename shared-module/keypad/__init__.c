@@ -87,7 +87,7 @@ void keypad_deregister_scanner(keypad_scanner_obj_t *scanner) {
 
 void keypad_construct_common(keypad_scanner_obj_t *self, mp_float_t interval, size_t max_events, uint8_t debounce_threshold) {
     size_t key_count = common_hal_keypad_generic_get_key_count(self);
-    self->debounce_counter = (int8_t *)m_malloc(sizeof(int8_t) * key_count);
+    self->debounce_counter = (int8_t *)m_malloc_without_collect(sizeof(int8_t) * key_count);
 
     self->interval_ticks = (mp_uint_t)(interval * 1024);   // interval * 1000 * (1024/1000)
 

@@ -26,13 +26,13 @@ void common_hal_audiomixer_mixer_construct(audiomixer_mixer_obj_t *self,
     uint32_t sample_rate) {
     self->len = buffer_size / 2 / sizeof(uint32_t) * sizeof(uint32_t);
 
-    self->first_buffer = m_malloc(self->len);
+    self->first_buffer = m_malloc_without_collect(self->len);
     if (self->first_buffer == NULL) {
         common_hal_audiomixer_mixer_deinit(self);
         m_malloc_fail(self->len);
     }
 
-    self->second_buffer = m_malloc(self->len);
+    self->second_buffer = m_malloc_without_collect(self->len);
     if (self->second_buffer == NULL) {
         common_hal_audiomixer_mixer_deinit(self);
         m_malloc_fail(self->len);

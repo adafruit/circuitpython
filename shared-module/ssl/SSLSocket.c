@@ -37,7 +37,7 @@
 static void mbedtls_debug(void *ctx, int level, const char *file, int line, const char *str) {
     (void)ctx;
     (void)level;
-    mp_printf(&mp_plat_print, "DBG:%s:%04d: %s\n", file, line, str);
+    mp_printf(&mp_plat_print, "DBG:%s:%04d: %s", file, line, str);
 }
 #define DEBUG_PRINT(fmt, ...) mp_printf(&mp_plat_print, "DBG:%s:%04d: " fmt "\n", __FILE__, __LINE__,##__VA_ARGS__)
 #else
@@ -65,7 +65,7 @@ static NORETURN void mbedtls_raise_error(int err) {
     // Try to allocate memory for the message
     #define ERR_STR_MAX 80  // mbedtls_strerror truncates if it doesn't fit
     mp_obj_str_t *o_str = m_new_obj_maybe(mp_obj_str_t);
-    byte *o_str_buf = m_new_maybe(byte, ERR_STR_MAX);
+    byte *o_str_buf = m_malloc_without_collect(ERR_STR_MAX);
     if (o_str == NULL || o_str_buf == NULL) {
         mp_raise_OSError(err);
     }

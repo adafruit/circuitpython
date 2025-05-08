@@ -112,6 +112,8 @@ typedef long mp_off_t;
 
 // Always enable GC.
 #define MICROPY_ENABLE_GC           (1)
+// CIRCUITPY-CHANGE
+#define MICROPY_ENABLE_SELECTIVE_COLLECT (1)
 
 #if !(defined(MICROPY_GCREGS_SETJMP) || defined(__x86_64__) || defined(__i386__) || defined(__thumb2__) || defined(__thumb__) || defined(__arm__))
 // Fall back to setjmp() implementation for discovery of GC pointers in registers.

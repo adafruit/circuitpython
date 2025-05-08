@@ -22,6 +22,9 @@
 #define MICROPY_NLR_SETJMP                  (1)
 #define CIRCUITPY_DEFAULT_STACK_SIZE        0x6000
 
+// PSRAM can require more stack space for GC.
+#define MICROPY_ALLOC_GC_STACK_SIZE         (128)
+
 // Nearly all boards have this because it is used to enter the ROM bootloader.
 #ifndef CIRCUITPY_BOOT_BUTTON
   #if defined(CONFIG_IDF_TARGET_ESP32C2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32C6) || defined(CONFIG_IDF_TARGET_ESP32H2)
