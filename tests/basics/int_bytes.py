@@ -9,16 +9,16 @@ print((100).to_bytes(10, "little"))
 print((-100).to_bytes(10, "little", signed=True))
 
 # check that extra zero bytes don't change the internal int value
-print(int.from_bytes(bytes(20), "little") == 0)
-print(int.from_bytes(b"\x01" + bytes(20), "little") == 1)
+print(int.from_bytes(bytes(20), "little", signed=False) == 0)
+print(int.from_bytes(b"\x01" + bytes(20), "little", signed=False) == 1)
 
 # big-endian conversion
 print((10).to_bytes(1, "big"))
 print((-10).to_bytes(1, "big", signed=True))
 print((100).to_bytes(10, "big"))
 print((-100).to_bytes(10, "big", signed=True))
-print(int.from_bytes(b"\0\0\0\0\0\0\0\0\0\x01", "big"))
-print(int.from_bytes(b"\x01\0", "big"))
+print(int.from_bytes(b"\0\0\0\0\0\0\0\0\0\x01", "big", signed=False))
+print(int.from_bytes(b"\x01\0", "big", signed=False))
 
 # negative number of bytes should raise an error
 try:
@@ -45,5 +45,5 @@ except OverflowError:
     print("OverflowError")
 
 # byteorder arg cannot be omitted in standard Python
-print(int.from_bytes(b"\x01\0", "big"))
+print(int.from_bytes(b"\x01\0", "big", signed=False))
 print((100).to_bytes(10, "big"))
