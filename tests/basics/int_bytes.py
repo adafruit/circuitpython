@@ -44,6 +44,6 @@ try:
 except OverflowError:
     print("OverflowError")
 
-# byteorder arg can be omitted; default is "big"
-print(int.from_bytes(b"\x01\0"))
-print((100).to_bytes(10))
+# byteorder arg cannot be omitted in standard Python
+print(int.from_bytes(b"\x01\0", "big"))
+print((100).to_bytes(10, "big"))
