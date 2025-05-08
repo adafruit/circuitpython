@@ -12,6 +12,6 @@
 
 // Use the MP_WEAK supervisor/shared/board.c versions of routines not defined here.
 
-void board_init(void){
-	common_hal_usb_host_port_construct(&pin_GPIO12, &pin_GPIO13);
+void board_init(void) {
+    common_hal_usb_host_port_construct(&pin_GPIO12, &pin_GPIO13);
 }
