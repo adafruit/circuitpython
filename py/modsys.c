@@ -170,29 +170,7 @@ static mp_obj_t mp_sys_exit(size_t n_args, const mp_obj_t *args) {
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_sys_exit_obj, 0, 1, mp_sys_exit);
 
-static mp_obj_t mp_sys_print_exception(size_t n_args, const mp_obj_t *args) {
-    // CIRCUITPY-CHANGE
-    #if CIRCUITPY_WARNINGS
-    warnings_warn(&mp_type_FutureWarning, MP_ERROR_TEXT("%q moved from %q to %q"), MP_QSTR_print_exception, MP_QSTR_sys, MP_QSTR_traceback);
-    #endif
-
-    #if MICROPY_PY_IO && MICROPY_PY_SYS_STDFILES
-    void *stream_obj = &mp_sys_stdout_obj;
-    if (n_args > 1) {
-        mp_get_stream_raise(args[1], MP_STREAM_OP_WRITE);
-        stream_obj = MP_OBJ_TO_PTR(args[1]);
-    }
-
-    mp_print_t print = {stream_obj, mp_stream_write_adaptor};
-    mp_obj_print_exception(&print, args[0]);
-    #else
-    (void)n_args;
-    mp_obj_print_exception(&mp_plat_print, args[0]);
-    #endif
-
-    return mp_const_none;
-}
-MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_sys_print_exception_obj, 1, 2, mp_sys_print_exception);
+// CIRCUITPY-CHANGE: Removed print_exception because it isn't in CPython.
 
 #if MICROPY_PY_SYS_EXC_INFO
 static mp_obj_t mp_sys_exc_info(void) {
@@ -347,8 +325,6 @@ static const mp_rom_map_elem_t mp_module_sys_globals_table[] = {
     /*
      * Extensions to CPython
      */
-
-    { MP_ROM_QSTR(MP_QSTR_print_exception), MP_ROM_PTR(&mp_sys_print_exception_obj) },
     #if MICROPY_PY_SYS_ATEXIT
     { MP_ROM_QSTR(MP_QSTR_atexit), MP_ROM_PTR(&mp_sys_atexit_obj) },
     #endif
