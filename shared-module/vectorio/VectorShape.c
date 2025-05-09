@@ -555,3 +555,9 @@ void vectorio_vector_shape_update_transform(vectorio_vector_shape_t *self, displ
     self->absolute_transform = group_transform == NULL ? &null_transform : group_transform;
     common_hal_vectorio_vector_shape_set_dirty(self);
 }
+
+bool vectorio_vector_shape_set_in_group(vectorio_vector_shape_t *self, bool in_group) {
+    bool was_in_group = self->in_group;
+    self->in_group = in_group;
+    return was_in_group;
+}

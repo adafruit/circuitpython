@@ -251,7 +251,11 @@ static void _add_layer(displayio_group_t *self, mp_obj_t layer) {
     #if CIRCUITPY_VECTORIO
     const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, layer);
     if (draw_protocol != NULL) {
-        draw_protocol->draw_protocol_impl->draw_update_transform(draw_protocol->draw_get_protocol_self(layer), &self->absolute_transform);
+        mp_obj_t protocol_self = draw_protocol->draw_get_protocol_self(layer);
+        if (draw_protocol->draw_protocol_impl->draw_set_in_group(protocol_self, true)) {
+            mp_raise_ValueError(MP_ERROR_TEXT("Layer already in a group"));
+        }
+        draw_protocol->draw_protocol_impl->draw_update_transform(protocol_self, &self->absolute_transform);
         return;
     }
     #endif
@@ -296,6 +300,7 @@ static void _remove_layer(displayio_group_t *self, size_t index) {
         bool has_dirty_area = draw_protocol->draw_protocol_impl->draw_get_dirty_area(layer, &layer_area);
         rendered_last_frame = has_dirty_area;
         draw_protocol->draw_protocol_impl->draw_update_transform(layer, NULL);
+        draw_protocol->draw_protocol_impl->draw_set_in_group(layer, false);
     }
     #endif
     layer = mp_obj_cast_to_native_base(
