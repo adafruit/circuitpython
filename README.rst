@@ -1,14 +1,24 @@
 CircuitPython
 =============
 
+.. contents:: Table of Contents
+   :depth: 3
+   :local:
+
 .. image:: https://s3.amazonaws.com/adafruit-circuit-python/CircuitPython_Repo_header_logo.png
 
 |Build Status| |Doc Status| |License| |Discord| |Weblate|
 
-`circuitpython.org <https://circuitpython.org>`__ \| `Get CircuitPython <#get-circuitpython>`__ \|
-`Documentation <#documentation>`__ \| `Contributing <#contributing>`__ \|
-`Branding <#branding>`__ \| `Differences from Micropython <#differences-from-micropython>`__ \|
-`Project Structure <#project-structure>`__
+Quick Links
+-----------
+- `Official Website <https://circuitpython.org>`__
+- `Downloads <#get-circuitpython>`__
+- `Documentation <#documentation>`__ 
+- `Contributing Guide <#contributing>`__
+- `Community Discord <https://adafru.it/discord>`__
+
+About CircuitPython
+-------------------
 
 **CircuitPython** is a *beginner friendly*, open source version of Python for tiny, inexpensive
 computers called microcontrollers. Microcontrollers are the brains of many electronics including a
@@ -43,32 +53,41 @@ continuous builds. Full release notes are available through
 Documentation
 -------------
 
-Guides and videos are available through the `Adafruit Learning
-System <https://learn.adafruit.com/>`__ under the `CircuitPython
-category <https://learn.adafruit.com/category/circuitpython>`__. An API
-reference is also available on `Read the Docs
-<http://circuitpython.readthedocs.io/en/latest/?>`__. A collection of awesome
-resources can be found at `Awesome CircuitPython <https://github.com/adafruit/awesome-circuitpython>`__.
+**Official Resources:**
+- Guides and videos: `Adafruit Learning System <https://learn.adafruit.com/category/circuitpython>`__
+- API Reference: `Read the Docs <http://circuitpython.readthedocs.io/>`__
+- `Awesome CircuitPython <https://github.com/adafruit/awesome-circuitpython>`__ resource collection
 
-Specifically useful documentation when starting out:
+**Technical Documentation:**
+- `Building CircuitPython <BUILDING.md>`__ - Complete build instructions
+- `WebUSB Implementation <WEBUSB_README.md>`__ - Details about WebUSB support
 
-- `Welcome to CircuitPython <https://learn.adafruit.com/welcome-to-circuitpython>`__
-- `CircuitPython Essentials <https://learn.adafruit.com/circuitpython-essentials>`__
-- `Example Code <https://github.com/adafruit/Adafruit_Learning_System_Guides/tree/master/CircuitPython_Essentials>`__
+**Getting Started Guides:**
+- `Welcome to CircuitPython <https://learn.adafruit.com/welcome-to-circuitpython>`__ - First steps tutorial
+- `CircuitPython Essentials <https://learn.adafruit.com/circuitpython-essentials>`__ - Core concepts and examples
+- `Community Bundle <https://github.com/adafruit/CircuitPython_Community_Bundle>`__ - Community-contributed libraries
+- `Adafruit Learning System <https://learn.adafruit.com/category/circuitpython>`__ - Full collection of guides
 
-Contributing
-------------
+How to Contribute
+-----------------
 
-See
-`CONTRIBUTING.md <https://github.com/adafruit/circuitpython/blob/main/CONTRIBUTING.md>`__
-for full guidelines but please be aware that by contributing to this
-project you are agreeing to the `Code of
-Conduct <https://github.com/adafruit/circuitpython/blob/main/CODE_OF_CONDUCT.md>`__.
-Contributors who follow the `Code of
-Conduct <https://github.com/adafruit/circuitpython/blob/main/CODE_OF_CONDUCT.md>`__
-are welcome to submit pull requests and they will be promptly reviewed
-by project admins. Please join the
-`Discord <https://adafru.it/discord>`__ too.
+We welcome contributions from everyone! Here's how to get started:
+
+1. **Read the Guidelines**
+   - Full contribution guide: `CONTRIBUTING.md <https://github.com/adafruit/circuitpython/blob/main/CONTRIBUTING.md>`__
+   - Please review our `Code of Conduct <https://github.com/adafruit/circuitpython/blob/main/CODE_OF_CONDUCT.md>`__
+
+2. **Choose How to Help**
+   - Report bugs or request features via GitHub Issues
+   - Submit pull requests for fixes/improvements
+   - Help with documentation
+   - Translate error messages via `Weblate <https://hosted.weblate.org/engage/circuitpython/>`__
+
+3. **Join the Community**
+   - Chat with us on `Discord <https://adafru.it/discord>`__
+   - Attend our weekly `Community Meeting <https://adafru.it/cp-meeting>`__
+
+All constructive contributions are appreciated!
 
 Branding
 ------------
@@ -100,20 +119,21 @@ something else (for example, SuperDuperPython) and not use the Blinka logo. You 
 
 --------------
 
-Differences from `MicroPython <https://github.com/micropython/micropython>`__
------------------------------------------------------------------------------
+Key Differences from MicroPython
+-------------------------------
 
-CircuitPython:
+Core Features
+~~~~~~~~~~~~~
+- Native USB/BLE support for file editing without special tools
+- Floats (decimals) enabled for all builds
+- Translated error messages in 10+ languages
+- Simplified concurrency model:
+  - No interrupts or threading
+  - async/await available on some boards
+  - Native modules handle tasks requiring concurrency (e.g., audio playback)
 
--  Supports native USB on most boards and BLE otherwise, allowing file editing without special tools.
--  Floats (aka decimals) are enabled for all builds.
--  Error messages are translated into 10+ languages.
--  Concurrency within Python is not well supported. Interrupts and threading are disabled.
-   async/await keywords are available on some boards for cooperative multitasking. Some concurrency
-   is achieved with native modules for tasks that require it such as audio file playback.
-
-Behavior
-~~~~~~~~
+Behavior Differences
+~~~~~~~~~~~~~~~~~~~
 
 -  The order that files are run and the state that is shared between
    them. CircuitPython's goal is to clarify the role of each file and

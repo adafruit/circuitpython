@@ -1,0 +1,55 @@
+# Waveshare ESP32-S3-Zero Configuration
+[metadata]
+name = "Waveshare ESP32-S3-Zero"
+vendor = "Waveshare Electronics"
+url = "https://www.waveshare.com"
+mcu = "ESP32S3"
+
+[usb]
+vid = "0x303a"
+pid = "0x81B4"
+product = "Waveshare ESP32-S3-Zero"
+manufacturer = "Waveshare Electronics"
+
+[build]
+idf_target = "esp32s3"
+flash_mode = "qio"
+flash_freq = "80m"
+flash_size = "4MB"
+psram_size = "2MB"
+psram_mode = "qio"
+psram_freq = "80m"
+
+[features]
+circuitpy_esp_camera = false
+circuitpy_bitmapfilter = false
+circuitpy_codeop = false
+circuitpy_paralleldisplaybus = false
+
+[frozen]
+libraries = [
+    "Adafruit_CircuitPython_NeoPixel"
+]
+
+[pins]
+# Digital/Analog Pins
+button = {number = 0, capabilities = ["digital"]}
+neopixel = {number = 21, capabilities = ["digital"]}
+
+# UART Defaults
+uart_rx = {number = 44, capabilities = ["digital", "uart"]}
+uart_tx = {number = 43, capabilities = ["digital", "uart"]}
+
+# All other pins (abbreviated for example)
+io1 = {number = 1, capabilities = ["digital", "analog"]}
+io2 = {number = 2, capabilities = ["digital", "analog"]}
+# ... (remaining pins would follow same pattern)
+
+[default_interfaces]
+uart_rx = 44
+uart_tx = 43
+i2c_scl = null  # Not configured by default
+i2c_sda = null
+spi_sck = null
+spi_mosi = null
+spi_miso = null

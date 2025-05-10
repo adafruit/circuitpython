@@ -1,0 +1,37 @@
+# Example Raspberry Pi Pico Configuration
+[metadata]
+name = "Raspberry Pi Pico"
+vendor = "Raspberry Pi"
+url = "https://www.raspberrypi.com"
+mcu = "RP2040"
+
+[usb]
+vid = "0x2E8A"
+pid = "0x0005"
+product = "Raspberry Pi Pico"
+manufacturer = "Raspberry Pi"
+
+[build]
+cpu = "cortex-m0plus"
+fpu = ""
+float_abi = ""
+
+[features]
+circuitpy_bitmapfilter = false
+circuitpy_paralleldisplaybus = false
+
+[frozen]
+libraries = ["Adafruit_CircuitPython_BusDevice"]
+
+[pins]
+led = {number = 25, capabilities = ["digital"]}
+button = {number = 23, capabilities = ["digital"]}
+
+[default_interfaces]
+uart_rx = 1
+uart_tx = 0
+i2c_scl = 5
+i2c_sda = 4
+spi_sck = 18
+spi_mosi = 19
+spi_miso = 16

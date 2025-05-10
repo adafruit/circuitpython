@@ -1,0 +1,32 @@
+# Example NodeMCU ESP8266 Configuration
+[metadata]
+name = "NodeMCU ESP8266"
+vendor = "Espressif"
+url = "https://www.espressif.com"
+mcu = "ESP8266"
+
+[usb]
+vid = "0x10C4"
+pid = "0xEA60"
+product = "NodeMCU ESP8266"
+manufacturer = "Espressif"
+
+[build]
+flash_mode = "dio"
+flash_freq = "40m"
+flash_size = "4MB"
+
+[features]
+circuitpy_wifi = true
+circuitpy_ssl = false
+
+[frozen]
+libraries = ["Adafruit_CircuitPython_ESP32SPI"]
+
+[pins]
+led = {number = 2, capabilities = ["digital"]}
+button = {number = 0, capabilities = ["digital"]}
+
+[default_interfaces]
+uart_rx = 3
+uart_tx = 1

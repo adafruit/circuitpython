@@ -1,0 +1,47 @@
+# CircuitPython Board Configuration Template
+[metadata]
+name = "Board Name"
+vendor = "Vendor Name"
+url = "https://example.com"
+mcu = "MCU Type"  # e.g. ESP32S3, SAMD21, etc.
+
+[usb]
+vid = "0x303a"
+pid = "0x81B4"
+product = "USB Product Name"
+manufacturer = "Manufacturer Name"
+
+[build]
+idf_target = "esp32s3"  # MCU-specific
+flash_mode = "qio"
+flash_freq = "80m"
+flash_size = "4MB"
+psram_size = "2MB"
+psram_mode = "qio"
+psram_freq = "80m"
+
+[features]
+circuitpy_esp_camera = false
+circuitpy_bitmapfilter = false
+circuitpy_codeop = false
+circuitpy_paralleldisplaybus = false
+
+[frozen]
+libraries = [
+    "Adafruit_CircuitPython_NeoPixel"
+]
+
+[pins]
+# Format: pin_name = {number = XX, capabilities = ["digital", "analog", "i2c", "spi", "uart"]}
+# Example:
+neopixel = {number = 21, capabilities = ["digital"]}
+button = {number = 0, capabilities = ["digital"]}
+
+[default_interfaces]
+uart_rx = 44
+uart_tx = 43
+i2c_scl = null
+i2c_sda = null
+spi_sck = null
+spi_mosi = null
+spi_miso = null
