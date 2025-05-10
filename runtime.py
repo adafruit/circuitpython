@@ -14,7 +14,7 @@ for p in paths:
     # Skip files in esp-idf directories
     if "esp-idf" in str(p):
         continue
-        
+
     # Process file if it contains both runtime.h and translate.h
     lines = p.read_text().split("\n")
     if '#include "py/runtime.h"' in lines and translate_h in lines:

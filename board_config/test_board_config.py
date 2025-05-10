@@ -10,13 +10,14 @@ import shutil
 from pathlib import Path
 import generate_board_config  # Import the generator module
 
+
 class TestBoardConfigGenerator(unittest.TestCase):
     def setUp(self):
         # Create a temporary directory
         self.test_dir = tempfile.mkdtemp()
         self.board_dir = os.path.join(self.test_dir, "test_board")
         os.makedirs(self.board_dir)
-        
+
         # Create a sample board_setting.toml
         self.toml_content = """\
 [metadata]
@@ -63,19 +64,14 @@ uart_tx = 43
     def test_generate_config_files(self):
         # Run the generator
         generate_board_config.generate_config_files(self.board_dir)
-        
+
         # Verify files were created
-        expected_files = [
-            "mpconfigboard.h",
-            "mpconfigboard.mk",
-            "pins.c", 
-            "board.c"
-        ]
-        
+        expected_files = ["mpconfigboard.h", "mpconfigboard.mk", "pins.c", "board.c"]
+
         for file in expected_files:
             path = os.path.join(self.board_dir, file)
             self.assertTrue(os.path.exists(path), f"{file} was not generated")
-            
+
             # Basic content verification
             with open(path) as f:
                 content = f.read()
@@ -85,6 +81,7 @@ uart_tx = 43
     def tearDown(self):
         # Clean up
         shutil.rmtree(self.test_dir)
+
 
 if __name__ == "__main__":
     unittest.main()

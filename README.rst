@@ -13,7 +13,7 @@ Quick Links
 -----------
 - `Official Website <https://circuitpython.org>`__
 - `Downloads <#get-circuitpython>`__
-- `Documentation <#documentation>`__ 
+- `Documentation <#documentation>`__
 - `Contributing Guide <#contributing>`__
 - `Community Discord <https://adafru.it/discord>`__
 

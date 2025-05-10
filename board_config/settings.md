@@ -62,7 +62,7 @@ contributors = ["Developer Name <email@example.com>"]
 # Note: Must be officially assigned by USB-IF for commercial products
 vid = "0x303a"
 
-# REQUIRED: Product ID (PID) in hexadecimal format  
+# REQUIRED: Product ID (PID) in hexadecimal format
 # Format: 0x followed by 4 hex digits (e.g., 0x80AB)
 # Note: Must be unique under your VID
 pid = "0x80AB"
@@ -74,7 +74,7 @@ product = "Product Name"
 
 # REQUIRED: Manufacturer string (shown in USB descriptors)
 # Format: Max 32 characters, company name
-# Example: "Adafruit Industries LLC"  
+# Example: "Adafruit Industries LLC"
 manufacturer = "Company"
 
 # OPTIONAL: Serial number generation method
@@ -107,7 +107,7 @@ device_protocol = "0x01"
 idf_target = "esp32"
 
 # OPTIONAL: Flash interface mode (affects performance)
-# Values: "qio" (Quad I/O, fastest), "qout" (Quad Output), 
+# Values: "qio" (Quad I/O, fastest), "qout" (Quad Output),
 #         "dio" (Dual I/O), "dout" (Dual Output)
 # Default: "qio" for most boards
 flash_mode = "qio"
@@ -246,21 +246,21 @@ libraries = [
     # USB HID Devices
     "adafruit_hid",
     "usb_hid/__init__.py",
-    
+
     # Display Output
     "adafruit_display_text",
     "adafruit_displayio_ssd1306",
-    
+
     # Audio Devices
     "adafruit_audiobus",
     "adafruit_audioio",
-    
+
     # Camera
     "adafruit_esp32spi/adafruit_esp32cam.py",
-    
+
     # Touchscreen
     "adafruit_focaltouch",
-    
+
     # Utility Libraries
     "adafruit_bus_device",
     "neopixel"
@@ -402,7 +402,7 @@ i2c_sda = {
 
 # Communication:
 # - "i2c"       : I2C bus
-# - "spi"       : SPI bus  
+# - "spi"       : SPI bus
 # - "uart"      : UART serial
 # - "can"       : CAN bus
 

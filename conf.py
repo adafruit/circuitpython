@@ -5,7 +5,7 @@ CircuitPython Documentation Configuration
 
 This Sphinx configuration file handles:
 - Documentation build settings
-- AutoAPI documentation generation 
+- AutoAPI documentation generation
 - Module support matrix generation
 - Custom documentation transforms
 - Theme and output configuration
