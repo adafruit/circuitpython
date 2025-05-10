@@ -214,40 +214,107 @@ SPDX-FileCopyrightText: 2014 MicroPython & CircuitPython contributors (https://g
 SPDX-License-Identifier: MIT
 -->
 
-# Building CircuitPython
+Building CircuitPython
+====================
 
-Detailed guides on how to build CircuitPython can be found in the Adafruit Learn system at
-https://learn.adafruit.com/building-circuitpython/
+For complete build instructions, see:
+https://learn.adafruit.com/building-circuitpython
 
-## Setup
+Requirements
+------------
 
-Please ensure you set up your build environment appropriately, as per the guide.  You will need:
+- POSIX environment (Linux/macOS/WSL recommended)
+- ARM GCC toolchain (version depends on CircuitPython version)
+- Python 3.7+ with venv support
+- git 2.36+ and git-lfs
+- make, cmake, gettext, uncrustify
+- Required Python packages (from requirements-dev.txt)
 
-* Linux: https://learn.adafruit.com/building-circuitpython/linux
-* MacOS: https://learn.adafruit.com/building-circuitpython/macos
-* Windows Subsystem for Linux (WSL): https://learn.adafruit.com/building-circuitpython/windows-subsystem-for-linux
+Setup Guides
+------------
 
-### Submodules
+- `Linux Setup <https://learn.adafruit.com/building-circuitpython/linux>`_
+- `macOS Setup <https://learn.adafruit.com/building-circuitpython/macos>`_
+- `WSL Setup <https://learn.adafruit.com/building-circuitpython/windows-subsystem-for-linux>`_
 
-This project has a bunch of git submodules.  You will need to update them regularly.
+Build Process
+-------------
 
-In the root folder of the CircuitPython repository, execute the following:
+1. Clone repository:
 
-    make fetch-all-submodules
+.. code-block:: bash
 
-Or, in the ports directory for the particular port you are building, do:
+   git clone https://github.com/adafruit/circuitpython.git
+   cd circuitpython
 
-    make fetch-port-submodules
+2. Fetch submodules:
 
-### Required Python Packages
+- For all ports (full build environment):
 
-Failing to install these will prevent from properly building.
+  .. code-block:: bash
 
-    pip3 install -r requirements-dev.txt
+     make fetch-all-submodules
 
-If you run into an error installing minify_html, you may need to install `rust`.
+- For specific port only (saves time/space):
 
-### mpy-cross
+  .. code-block:: bash
+
+     cd ports/atmel-samd  # or other port directory
+     make fetch-port-submodules
+
+3. Set up Python environment:
+
+.. code-block:: bash
+
+   pip install -r requirements-dev.txt
+   pre-commit install
+
+4. Build mpy-cross:
+
+.. code-block:: bash
+
+   make -C mpy-cross
+
+5. Build by port:
+
+- atmel-samd (M0/M4 boards):
+
+  .. code-block:: bash
+
+     cd ports/atmel-samd
+     make BOARD=circuitplayground_express
+
+- nrf (Nordic boards):
+
+  .. code-block:: bash
+
+     cd ports/nrf
+     make BOARD=circuitplayground_bluefruit
+
+- espressif (ESP32 boards):
+
+  .. code-block:: bash
+
+     cd ports/espressif
+     source esp-idf/export.sh  # Required for ESP builds
+     make BOARD=adafruit_feather_esp32s2
+
+- raspberrypi (RP2040 boards):
+
+  .. code-block:: bash
+
+     cd ports/raspberrypi
+     make BOARD=raspberry_pi_pico
+
+Note: Always fetch port submodules before building
+
+Advanced Options
+---------------
+
+- Parallel builds: ``make -j$(nproc) BOARD=...``
+- Language support: Add ``TRANSLATION=lang_code``
+- Frozen modules: Edit mpconfigboard.mk
+- Module customization: Set CIRCUITPY_* flags
 
 As part of the build process, mpy-cross is needed to compile .py files into .mpy files.
 To compile (or recompile) mpy-cross:
