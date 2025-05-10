@@ -68,57 +68,6 @@ Documentation
 - `Community Bundle <https://github.com/adafruit/CircuitPython_Community_Bundle>`__ - Community-contributed libraries
 - `Adafruit Learning System <https://learn.adafruit.com/category/circuitpython>`__ - Full collection of guides
 
-How to Contribute
------------------
-
-We welcome contributions from everyone! Here's how to get started:
-
-1. **Read the Guidelines**
-   - Full contribution guide: `CONTRIBUTING.md <https://github.com/adafruit/circuitpython/blob/main/CONTRIBUTING.md>`__
-   - Please review our `Code of Conduct <https://github.com/adafruit/circuitpython/blob/main/CODE_OF_CONDUCT.md>`__
-
-2. **Choose How to Help**
-   - Report bugs or request features via GitHub Issues
-   - Submit pull requests for fixes/improvements
-   - Help with documentation
-   - Translate error messages via `Weblate <https://hosted.weblate.org/engage/circuitpython/>`__
-
-3. **Join the Community**
-   - Chat with us on `Discord <https://adafru.it/discord>`__
-   - Attend our weekly `Community Meeting <https://adafru.it/cp-meeting>`__
-
-All constructive contributions are appreciated!
-
-Branding
-------------
-
-While we are happy to see CircuitPython forked and modified, we'd appreciate it if forked releases
-not use the name "CircuitPython" or the Blinka logo. "CircuitPython" means something special to
-us and those who learn about it. As a result, we'd like to make sure products referring to it meet a
-common set of requirements.
-
-If you'd like to use the term "CircuitPython" and Blinka for your product here is what we ask:
-
-- Your product is supported by the primary
-  `"adafruit/circuitpython" <https://github.com/adafruit/circuitpython>`_ repo. This way we can
-  update any custom code as we update the CircuitPython internals.
-- Your product is listed on `circuitpython.org <https://circuitpython.org>`__ (source
-  `here <https://github.com/adafruit/circuitpython-org/>`_). This is to ensure that a user of your
-  product can always download the latest version of CircuitPython from the standard place.
-- Your product supports at least one standard "`Workflow <https://docs.circuitpython.org/en/latest/docs/workflows.html>`__" for serial and file access:
-
-  - With a user accessible USB plug which appears as a CIRCUITPY drive when plugged in.
-  - With file and serial access over Bluetooth Low Energy using the BLE Workflow.
-  - With file access over WiFi using the WiFi Workflow with serial access over USB and/or WebSocket.
-
-- Boards that do not support the USB Workflow should be clearly marked.
-
-If you choose not to meet these requirements, then we ask you call your version of CircuitPython
-something else (for example, SuperDuperPython) and not use the Blinka logo. You can say it is
-"CircuitPython-compatible" if most CircuitPython drivers will work with it.
-
---------------
-
 Key Differences from MicroPython
 -------------------------------
 
@@ -258,6 +207,189 @@ Boards
    which belong to a specific microcontroller line.
 -  A list of native modules supported by a particular board can be found
    `here <https://circuitpython.readthedocs.io/en/latest/shared-bindings/support_matrix.html>`__.
+
+<!--
+SPDX-FileCopyrightText: 2014 MicroPython & CircuitPython contributors (https://github.com/adafruit/circuitpython/graphs/contributors)
+
+SPDX-License-Identifier: MIT
+-->
+
+# Building CircuitPython
+
+Detailed guides on how to build CircuitPython can be found in the Adafruit Learn system at
+https://learn.adafruit.com/building-circuitpython/
+
+## Setup
+
+Please ensure you set up your build environment appropriately, as per the guide.  You will need:
+
+* Linux: https://learn.adafruit.com/building-circuitpython/linux
+* MacOS: https://learn.adafruit.com/building-circuitpython/macos
+* Windows Subsystem for Linux (WSL): https://learn.adafruit.com/building-circuitpython/windows-subsystem-for-linux
+
+### Submodules
+
+This project has a bunch of git submodules.  You will need to update them regularly.
+
+In the root folder of the CircuitPython repository, execute the following:
+
+    make fetch-all-submodules
+
+Or, in the ports directory for the particular port you are building, do:
+
+    make fetch-port-submodules
+
+### Required Python Packages
+
+Failing to install these will prevent from properly building.
+
+    pip3 install -r requirements-dev.txt
+
+If you run into an error installing minify_html, you may need to install `rust`.
+
+### mpy-cross
+
+As part of the build process, mpy-cross is needed to compile .py files into .mpy files.
+To compile (or recompile) mpy-cross:
+
+    make -C mpy-cross
+
+## Building
+
+There a number of ports of CircuitPython!  To build for your board, change to the appropriate ports directory and build.
+
+Examples:
+
+    cd ports/atmel-samd
+    make BOARD=circuitplayground_express
+
+    cd ports/nordic
+    make BOARD=circuitplayground_bluefruit
+
+If you aren't sure what boards exist, have a peek in the boards subdirectory of your port.
+If you have a fast computer with many cores, consider adding `-j` to your build flags, such as `-j17` on
+a 6-core 12-thread machine.
+
+## Testing
+
+If you are working on changes to the core language, you might find it useful to run the test suite.
+The test suite in the top level `tests` directory.  It needs the unix port to run.
+
+    cd ports/unix
+    make axtls
+    make micropython
+
+Then you can run the test suite:
+
+    cd ../../tests
+    ./run-tests.py
+
+A successful run will say something like
+
+    676 tests performed (19129 individual testcases)
+    676 tests passed
+    30 tests skipped: buffered_writer builtin_help builtin_range_binop class_delattr_setattr cmd_parsetree extra_coverage framebuf1 framebuf16 framebuf2 framebuf4 framebuf8 framebuf_subclass mpy_invalid namedtuple_asdict non_compliant resource_stream schedule sys_getsizeof urandom_extra ure_groups ure_span ure_sub ure_sub_unmatched vfs_basic vfs_fat_fileio1 vfs_fat_fileio2 vfs_fat_more vfs_fat_oldproto vfs_fat_ramdisk vfs_userfs
+
+## Debugging
+
+The easiest way to debug CircuitPython on hardware is with a JLink device, JLinkGDBServer, and an appropriate GDB.
+Instructions can be found at https://learn.adafruit.com/debugging-the-samd21-with-gdb
+
+If using JLink, you'll need both the `JLinkGDBServer` and `arm-none-eabi-gdb` running.
+
+Example:
+
+    JLinkGDBServer -if SWD -device ATSAMD51J19
+    arm-none-eabi-gdb build-metro_m4_express/firmware.elf -iex "target extended-remote :2331"
+
+If your port/build includes `arm-none-eabi-gdb-py`, consider using it instead, as it can be used for better register
+debugging with https://github.com/bnahill/PyCortexMDebug
+
+## Code Quality Checks
+
+We apply code quality checks using pre-commit.  Install pre-commit once per system with
+
+    python3 -mpip install pre-commit
+
+Activate it once per git clone with
+
+    pre-commit install
+
+Pre-commit also requires some additional programs to be installed through your package manager:
+
+ * Standard Unix tools such as make, find, etc
+ * The gettext package, any modern version
+ * uncrustify version 0.71 (0.72 is also tested and OK; 0.75 is not OK)
+
+Each time you create a git commit, the pre-commit quality checks will be run.  You can also run them e.g., with `pre-commit run foo.c` or `pre-commit run --all` to run on all files whether modified or not.
+
+Some pre-commit quality checks require your active attention to resolve, others (such as the formatting checks of uncrustify) are made automatically and must simply be incorporated into your code changes by committing them.
+
+<!--
+SPDX-FileCopyrightText: 2014 MicroPython & CircuitPython contributors (https://github.com/adafruit/circuitpython/graphs/contributors)
+
+SPDX-License-Identifier: MIT
+-->
+
+# WebUSB Serial Support
+
+To date, this has only been tested on one port (espressif), on one board (espressif_kaluga_1).
+
+## What it does
+
+If you have ever used CircuitPython on a platform with a graphical LCD display, you have probably
+already seen multiple "consoles" in use (although the LCD console is "output only").
+
+New compile-time option CIRCUITPY_USB_VENDOR enables an additional "console" that can be used in
+parallel with the original (CDC) serial console.
+
+Web pages that support the WebUSB standard can connect to the "vendor" interface and activate
+this WebUSB serial console at any time.
+
+You can type into either console, and CircuitPython output is sent to all active consoles.
+
+One example of a web page you can use to test drive this feature can be found at:
+
+https://adafruit.github.io/Adafruit_TinyUSB_Arduino/examples/webusb-serial/index.html
+
+## How to enable
+
+Update your platform's mpconfigboard.mk file to enable and disable specific types of USB interfaces.
+
+CIRCUITPY_USB_HID = xxx
+CIRCUITPY_USB_MIDI = xxx
+CIRCUITPY_USB_VENDOR = xxx
+
+On at least some of the hardware platforms, the maximum number of USB endpoints is fixed.
+For example, on the ESP32S2, you must pick only one of the above 3 interfaces to be enabled.
+
+Original espressif_kaluga_1 mpconfigboard.mk settings:
+
+CIRCUITPY_USB_HID = 1
+CIRCUITPY_USB_MIDI = 0
+CIRCUITPY_USB_VENDOR = 0
+
+Settings to enable WebUSB instead:
+
+CIRCUITPY_USB_HID = 0
+CIRCUITPY_USB_MIDI = 0
+CIRCUITPY_USB_VENDOR = 1
+
+Notice that to enable VENDOR on ESP32-S2, we had to give up HID. There may be platforms that can have both, or even all three.
+
+## Implementation Notes
+
+CircuitPython uses the tinyusb library.
+
+The tinyusb library already has support for WebUSB serial.
+The tinyusb examples already include a "WebUSB serial" example.
+
+    Sidenote - The use of the term "vendor" instead of "WebUSB" was done to match tinyusb.
+
+Basically, this feature was ported into CircuitPython by pulling code snippets out of the
+tinyusb example, and putting them where they best belonged in the CircuitPython codebase.
+
+### TODO: This needs to be reworked for dynamic USB descriptors.
 
 `Back to Top <#circuitpython>`__
 
