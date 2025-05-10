@@ -243,7 +243,7 @@ bool common_hal_wifi_radio_get_ap_active(wifi_radio_obj_t *self) {
 
 void common_hal_wifi_radio_stop_ap(wifi_radio_obj_t *self) {
     if (!common_hal_wifi_radio_get_enabled(self)) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("wifi is not enabled"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("WiFi is not enabled"));
     }
 
     cyw43_arch_disable_ap_mode();

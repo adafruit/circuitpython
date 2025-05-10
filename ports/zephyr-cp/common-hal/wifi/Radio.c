@@ -214,8 +214,8 @@ mp_obj_t common_hal_wifi_radio_start_scanning_networks(wifi_radio_obj_t *self, u
         mp_raise_RuntimeError(MP_ERROR_TEXT("Already scanning for wifi networks"));
     }
     if (!common_hal_wifi_radio_get_enabled(self)) {
-        printk("wifi is not enabled\n");
-        mp_raise_RuntimeError(MP_ERROR_TEXT("wifi is not enabled"));
+        printk("WiFi is not enabled\n");
+        mp_raise_RuntimeError(MP_ERROR_TEXT("WiFi is not enabled"));
     }
 
     wifi_scannednetworks_obj_t *scan = mp_obj_malloc(wifi_scannednetworks_obj_t, &wifi_scannednetworks_type);
@@ -349,7 +349,7 @@ mp_obj_t common_hal_wifi_radio_get_stations_ap(wifi_radio_obj_t *self) {
 
 wifi_radio_error_t common_hal_wifi_radio_connect(wifi_radio_obj_t *self, uint8_t *ssid, size_t ssid_len, uint8_t *password, size_t password_len, uint8_t channel, mp_float_t timeout, uint8_t *bssid, size_t bssid_len) {
     if (!common_hal_wifi_radio_get_enabled(self)) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("wifi is not enabled"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("WiFi is not enabled"));
     }
     // wifi_config_t *config = &self->sta_config;
 
