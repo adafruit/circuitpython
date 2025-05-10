@@ -18,6 +18,8 @@
 #include "shared-module/audiocore/__init__.h"
 #include "bindings/rp2pio/StateMachine.h"
 
+#if CIRCUITPY_AUDIOBUSIO_I2SOUT && !CIRCUITPY_AUDIOBUSIO_I2SIN
+
 const uint16_t i2s_program[] = {
 
 /* From i2s.pio:
@@ -341,3 +343,5 @@ bool common_hal_audiobusio_i2sout_get_playing(audiobusio_i2sout_obj_t *self) {
     }
     return playing;
 }
+
+#endif // CIRCUITPY_AUDIOBUSIO_I2SOUT && !CIRCUITPY_AUDIOBUSIO_I2SIN
