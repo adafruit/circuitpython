@@ -215,96 +215,121 @@ SPDX-License-Identifier: MIT
 -->
 
 Building CircuitPython
-====================
+=====================
 
-For complete build instructions, see:
-https://learn.adafruit.com/building-circuitpython
+Prerequisites
+-------------
+- **System Requirements**:
+  - Linux/macOS/WSL (POSIX environment)
+  - Python 3.7+ with venv support
+  - git 2.36+ and git-lfs
+  - Build tools: make, cmake, gettext, uncrustify
 
-Requirements
-------------
-
-- POSIX environment (Linux/macOS/WSL recommended)
-- ARM GCC toolchain (version depends on CircuitPython version)
-- Python 3.7+ with venv support
-- git 2.36+ and git-lfs
-- make, cmake, gettext, uncrustify
-- Required Python packages (from requirements-dev.txt)
+- **Toolchains**:
+  - ARM GCC (version varies by CircuitPython release)
+  - ESP-IDF (for ESP32 boards)
+  - nRF SDK (for Nordic boards)
 
 Setup Guides
 ------------
-
 - `Linux Setup <https://learn.adafruit.com/building-circuitpython/linux>`_
 - `macOS Setup <https://learn.adafruit.com/building-circuitpython/macos>`_
 - `WSL Setup <https://learn.adafruit.com/building-circuitpython/windows-subsystem-for-linux>`_
 
-Build Process
--------------
+Build Workflow
+--------------
 
-1. Clone repository:
-
-.. code-block:: bash
-
+1. **Clone Repository**:
+   ```bash
    git clone https://github.com/adafruit/circuitpython.git
    cd circuitpython
+   ```
 
-2. Fetch submodules:
-
-- For all ports (full build environment):
-
-  .. code-block:: bash
-
+2. **Initialize Submodules**:
+   - For full development environment:
+     ```bash
      make fetch-all-submodules
-
-- For specific port only (saves time/space):
-
-  .. code-block:: bash
-
-     cd ports/atmel-samd  # or other port directory
+     ```
+   - For specific port (recommended):
+     ```bash
+     cd ports/<port_name>
      make fetch-port-submodules
+     ```
 
-3. Set up Python environment:
-
-.. code-block:: bash
-
+3. **Setup Environment**:
+   ```bash
    pip install -r requirements-dev.txt
    pre-commit install
+   ```
 
-4. Build mpy-cross:
-
-.. code-block:: bash
-
+4. **Build mpy-cross**:
+   ```bash
    make -C mpy-cross
+   ```
 
-5. Build by port:
+Port-Specific Builds
+--------------------
 
-- atmel-samd (M0/M4 boards):
+### atmel-samd (M0/M4 Boards)
+```bash
+cd ports/atmel-samd
+make BOARD=circuitplayground_express
+```
 
-  .. code-block:: bash
+### nrf (Nordic Boards)
+```bash
+cd ports/nrf
+make BOARD=circuitplayground_bluefruit
+```
 
-     cd ports/atmel-samd
-     make BOARD=circuitplayground_express
+### espressif (ESP32 Boards)
+```bash
+cd ports/espressif
+source esp-idf/export.sh  # Required for ESP builds
+make BOARD=adafruit_feather_esp32s2
+```
 
-- nrf (Nordic boards):
+### raspberrypi (RP2040 Boards)
+```bash
+cd ports/raspberrypi
+make BOARD=raspberry_pi_pico
+```
 
-  .. code-block:: bash
+Advanced Configuration
+---------------------
 
-     cd ports/nrf
-     make BOARD=circuitplayground_bluefruit
+- **Parallel Builds**:
+  ```bash
+  make -j$(nproc) BOARD=<board_name>
+  ```
 
-- espressif (ESP32 boards):
+- **Language Support**:
+  ```bash
+  make BOARD=<board_name> TRANSLATION=es
+  ```
 
-  .. code-block:: bash
+- **Custom Features**:
+  - Edit `mpconfigboard.mk` for frozen modules
+  - Set `CIRCUITPY_*` flags for module customization
 
-     cd ports/espressif
-     source esp-idf/export.sh  # Required for ESP builds
-     make BOARD=adafruit_feather_esp32s2
+Troubleshooting
+--------------
+- **Clean Build**:
+  ```bash
+  make clean BOARD=<board_name>
+  make BOARD=<board_name>
+  ```
 
-- raspberrypi (RP2040 boards):
+- **Submodule Issues**:
+  ```bash
+  make remove-all-submodules
+  make fetch-all-submodules
+  ```
 
-  .. code-block:: bash
+For complete documentation, see:
+https://learn.adafruit.com/building-circuitpython
 
-     cd ports/raspberrypi
-     make BOARD=raspberry_pi_pico
+
 
 Note: Always fetch port submodules before building
 
