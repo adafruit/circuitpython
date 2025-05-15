@@ -517,25 +517,24 @@ $(BUILD)/esp-idf:
 
 TARGET_SDKCONFIG = esp-idf-config/sdkconfig-$(IDF_TARGET).defaults
 
-
-ifeq ($(CIRCUITPY_ESP_FLASH_SIZE), 2MB)
-	FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-ota-no-uf2.defaults
-else
 UF2_BOOTLOADER ?= $(CIRCUITPY_USB_DEVICE)
-ifeq ($(UF2_BOOTLOADER), 1)
-	FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE).defaults
-else
-ifeq ($(CIRCUITPY_ESP_FLASH_SIZE), 4MB)
-	ifeq ($(CIRCUITPY_LEGACY_4MB_FLASH_LAYOUT), 1)
-		FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-uf2.defaults
+ifeq ($(CIRCUITPY_ESP_FLASH_SIZE), 2MB)
+# No 2MB UF2 boards, so don't check for that.
+	FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-ota-no-uf2.defaults
+else ifeq ($(CIRCUITPY_ESP_FLASH_SIZE), 4MB)
+	ifeq ($(UF2_BOOTLOADER), 1)
+		FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-ota.defaults
 	else
 		FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-ota-no-uf2.defaults
 	endif
-else
-	FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-uf2.defaults
+else # >4MB flash
+	ifeq ($(UF2_BOOTLOADER), 1)
+		FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE).defaults
+	else
+		FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-uf2.defaults
+	endif
 endif
-endif
-endif
+
 FLASH_MODE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_MODE).defaults
 FLASH_SPEED_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_FREQ).defaults
 
