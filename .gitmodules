@@ -412,3 +412,6 @@
 [submodule "ports/analog/msdk"]
 	path = ports/analog/msdk
 	url = https://github.com/analogdevicesinc/msdk.git
+[submodule "ports/espressif/microros-lib"]
+	path = ports/espressif/microros-lib
+	url = https://github.com/hierophect/microros-lib.git
