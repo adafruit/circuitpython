@@ -539,6 +539,7 @@ displayio_area_t *vectorio_vector_shape_get_refresh_areas(vectorio_vector_shape_
             self->ephemeral_dirty_area.next = tail;
             tail = &self->ephemeral_dirty_area;
         } else {
+            self->current_area_dirty = true;
             self->current_area.next = tail;
             tail = &self->current_area;
             VECTORIO_SHAPE_DEBUG("%p get_refresh_area: redrawing current: {(%3d,%3d), (%3d,%3d)}\n", self, self->current_area.x1, self->current_area.y1, self->current_area.x2, self->current_area.y2);
