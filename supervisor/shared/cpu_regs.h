@@ -7,7 +7,7 @@
 #pragma once
 
 #ifdef __arm__
-#define INTEGER_REGS 8
+#define INTEGER_REGS 10
 #ifdef __ARM_FP
 #define FLOATING_POINT_REGS 16
 #endif
