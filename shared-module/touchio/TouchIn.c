@@ -86,7 +86,7 @@ void common_hal_touchio_touchin_deinit(touchio_touchin_obj_t *self) {
     self->digitalinout = MP_OBJ_NULL;
 }
 
-void touchin_reset() {
+void touchin_reset(void) {
 }
 
 bool common_hal_touchio_touchin_get_value(touchio_touchin_obj_t *self) {

@@ -223,7 +223,7 @@ endif
 
 DISABLE_WARNINGS = -Wno-cast-align
 
-CFLAGS += $(INC) -Wtype-limits -Wall -Werror -std=gnu11 -fshort-enums $(BASE_CFLAGS) $(CFLAGS_MOD) $(COPT) $(DISABLE_WARNINGS) -Werror=missing-prototypes
+CFLAGS += $(INC) -Wtype-limits -Wall -Werror -std=gnu11 -fshort-enums $(BASE_CFLAGS) $(CFLAGS_MOD) $(COPT) $(DISABLE_WARNINGS) -Werror=missing-prototypes -Wold-style-definition
 
 PICO_LDFLAGS = --specs=nosys.specs --specs=nano.specs
 

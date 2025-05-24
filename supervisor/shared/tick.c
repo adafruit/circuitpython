@@ -92,14 +92,14 @@ static uint64_t _get_raw_subticks(void) {
     return (ticks << 5) | subticks;
 }
 
-uint64_t supervisor_ticks_ms64() {
+uint64_t supervisor_ticks_ms64(void) {
     uint64_t result;
     result = port_get_raw_ticks(NULL);
     result = result * 1000 / 1024;
     return result;
 }
 
-uint32_t supervisor_ticks_ms32() {
+uint32_t supervisor_ticks_ms32(void) {
     return supervisor_ticks_ms64();
 }
 
