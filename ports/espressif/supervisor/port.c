@@ -55,6 +55,10 @@
 #include "esp_camera.h"
 #endif
 
+#if CIRCUITPY_RCLCPY
+#include "common-hal/rclcpy/__init__.h"
+#endif
+
 #include "soc/efuse_reg.h"
 #if defined(SOC_LP_AON_SUPPORTED)
 #include "soc/lp_aon_reg.h"
@@ -376,6 +380,10 @@ void reset_port(void) {
 
     #if CIRCUITPY_PS2IO
     ps2_reset();
+    #endif
+
+    #if CIRCUITPY_RCLCPY
+    rclcpy_reset();
     #endif
 
     #if CIRCUITPY_RTC
