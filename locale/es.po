@@ -1085,7 +1085,8 @@ msgstr "Error al escribir el flash interno."
 msgid "File exists"
 msgstr "El archivo ya existe"
 
-#: shared-module/lvfontio/OnDiskFont.c shared-module/os/getenv.c
+#: shared-bindings/supervisor/__init__.c shared-module/lvfontio/OnDiskFont.c
+#: shared-module/os/getenv.c
 msgid "File not found"
 msgstr "Archivo no encontrado"
 
@@ -1119,7 +1120,7 @@ msgstr ""
 "Para espacios de colores RGB, el bitmap de entrada debe tener 16 bits por "
 "pixel"
 
-#: ports/cxd56/common-hal/camera/Camera.c
+#: ports/cxd56/common-hal/camera/Camera.c shared-module/audiocore/WaveFile.c
 msgid "Format not supported"
 msgstr "Sin capacidades para el formato"
 
@@ -1292,6 +1293,7 @@ msgstr "Interrumpido por resultado de función"
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c py/argcheck.c
 #: shared-bindings/digitalio/DigitalInOut.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c shared-bindings/pwmio/PWMOut.c
+#: shared-bindings/supervisor/__init__.c
 #: shared-module/aurora_epaper/aurora_framebuffer.c
 #: shared-module/lvfontio/OnDiskFont.c
 msgid "Invalid %q"
@@ -2125,6 +2127,10 @@ msgstr "Índice de mosaico fuera de límites"
 msgid "Tile width must exactly divide bitmap width"
 msgstr "Ancho del Tile debe dividir exactamente el ancho de mapa de bits"
 
+#: shared-module/tilepalettemapper/TilePaletteMapper.c
+msgid "TilePaletteMapper may only be bound to a TileGrid once"
+msgstr ""
+
 #: shared-bindings/alarm/time/TimeAlarm.c
 msgid "Time is in the past."
 msgstr "Tiempo suministrado esta en el pasado."
@@ -2358,10 +2364,6 @@ msgstr "Espacio de color no sportado"
 msgid "Unsupported display bus type"
 msgstr "Sin capacidad de bus tipo display"
 
-#: shared-module/audiocore/WaveFile.c
-msgid "Unsupported format"
-msgstr "Formato no soportado"
-
 #: shared-bindings/hashlib/__init__.c
 msgid "Unsupported hash algorithm"
 msgstr "Algoritmo hash no soportado"
@@ -2424,9 +2426,11 @@ msgstr ""
 msgid "Wi-Fi: "
 msgstr "Wi-Fi: "
 
+#: ports/espressif/common-hal/wifi/Radio.c
 #: ports/raspberrypi/common-hal/wifi/Radio.c
-msgid "Wifi is not enabled"
-msgstr "Wifi no esta activado"
+#: ports/zephyr-cp/common-hal/wifi/Radio.c
+msgid "WiFi is not enabled"
+msgstr ""
 
 #: main.c
 msgid "Woken up by alarm.\n"
@@ -2661,16 +2665,16 @@ msgstr "los tamaños de los bitmap deben coincidir"
 msgid "bits must be 32 or less"
 msgstr "los bits deben ser 32 o menos"
 
+#: shared-bindings/audiofreeverb/Freeverb.c
+msgid "bits_per_sample must be 16"
+msgstr ""
+
 #: shared-bindings/audiodelays/Chorus.c shared-bindings/audiodelays/Echo.c
 #: shared-bindings/audiodelays/MultiTapDelay.c
 #: shared-bindings/audiodelays/PitchShift.c
 #: shared-bindings/audiofilters/Distortion.c
-#: shared-bindings/audiodelays/Reverb.c
-msgid "bits_per_sample must be 16"
-msgstr ""
-
-#: shared-bindings/audiodelays/Echo.c shared-bindings/audiofilters/Distortion.c
-#: shared-bindings/audiofilters/Filter.c shared-bindings/audiomixer/Mixer.c
+#: shared-bindings/audiofilters/Filter.c shared-bindings/audiofilters/Phaser.c
+#: shared-bindings/audiomixer/Mixer.c
 msgid "bits_per_sample must be 8 or 16"
 msgstr "bits_per_sample debe ser 8 ó 16"
 
@@ -4099,7 +4103,7 @@ msgstr "argumento enrolado tiene que ser un ndarray"
 msgid "rsplit(None,n)"
 msgstr "rsplit(None,n)"
 
-#: shared-bindings/audiodelays/Reverb.c
+#: shared-bindings/audiofreeverb/Freeverb.c
 msgid "samples_signed must be true"
 msgstr ""
 
@@ -4471,12 +4475,6 @@ msgstr "los pesos deben ser un tipo de objetos %q, %q, %q, or %q, y no %q. "
 msgid "width must be greater than zero"
 msgstr "el ancho debe ser mayor que cero"
 
-#: ports/espressif/common-hal/wifi/Radio.c
-#: ports/raspberrypi/common-hal/wifi/Radio.c
-#: ports/zephyr-cp/common-hal/wifi/Radio.c
-msgid "wifi is not enabled"
-msgstr "wifi no esta habilitado"
-
 #: ports/raspberrypi/common-hal/wifi/Monitor.c
 msgid "wifi.Monitor not available"
 msgstr "wifi.Monitor no esta disponible"
@@ -4538,6 +4536,15 @@ msgstr "zi debe ser de tipo flotante"
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr "zi debe ser una forma (n_section,2)"
+
+#~ msgid "Unsupported format"
+#~ msgstr "Formato no soportado"
+
+#~ msgid "Wifi is not enabled"
+#~ msgstr "Wifi no esta activado"
+
+#~ msgid "wifi is not enabled"
+#~ msgstr "wifi no esta habilitado"
 
 #~ msgid "Cannot remount '/' when visible via USB."
 #~ msgstr "No se puede remountar '/' cuanto se es visible vía USB."

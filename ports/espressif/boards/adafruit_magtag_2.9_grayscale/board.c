@@ -141,6 +141,7 @@ void board_init(void) {
         false,  // always_toggle_chip_select
         true, // grayscale
         false, // acep
+        false, // spectra6
         false,  // two_byte_sequence_length
         false); // address_little_endian
 }

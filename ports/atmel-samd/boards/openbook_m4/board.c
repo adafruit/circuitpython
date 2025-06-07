@@ -85,6 +85,7 @@ void board_init(void) {
         false, // chip_select (don't always toggle chip select)
         false, // grayscale
         false, // acep
+        false, // spectra6
         false, // two_byte_sequence_length
         false); // address_little_endian
 }

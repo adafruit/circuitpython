@@ -85,38 +85,49 @@ void supervisor_tick(void) {
     background_callback_add(&tick_callback, supervisor_background_tick, NULL);
 }
 
-uint64_t supervisor_ticks_ms64() {
+static uint64_t _get_raw_subticks(void) {
+    uint64_t ticks;
+    uint8_t subticks;
+    ticks = port_get_raw_ticks(&subticks);
+    return (ticks << 5) | subticks;
+}
+
+uint64_t supervisor_ticks_ms64(void) {
     uint64_t result;
     result = port_get_raw_ticks(NULL);
     result = result * 1000 / 1024;
     return result;
 }
 
-uint32_t supervisor_ticks_ms32() {
+uint32_t supervisor_ticks_ms32(void) {
     return supervisor_ticks_ms64();
 }
 
 void mp_hal_delay_ms(mp_uint_t delay_ms) {
-    uint64_t start_tick = port_get_raw_ticks(NULL);
-    // Adjust the delay to ticks vs ms.
-    uint64_t delay_ticks = (delay_ms * (uint64_t)1024) / 1000;
-    uint64_t end_tick = start_tick + delay_ticks;
-    int64_t remaining = delay_ticks;
+    uint64_t start_subtick = _get_raw_subticks();
+    // Convert delay from ms to subticks
+    uint64_t delay_subticks = (delay_ms * (uint64_t)32768) / 1000;
+    uint64_t end_subtick = start_subtick + delay_subticks;
+    int64_t remaining = delay_subticks;
 
     // Loop until we've waited long enough or we've been CTRL-Ced by autoreload
     // or the user.
     while (remaining > 0 && !mp_hal_is_interrupted()) {
         RUN_BACKGROUND_TASKS;
-        remaining = end_tick - port_get_raw_ticks(NULL);
-        // We break a bit early so we don't risk setting the alarm before the time when we call
-        // sleep.
-        if (remaining < 1) {
+        // Exit if interrupted while running background tasks
+        if (mp_hal_is_interrupted()) {
             break;
         }
-        port_interrupt_after_ticks(remaining);
-        // Idle until an interrupt happens.
-        port_idle_until_interrupt();
-        remaining = end_tick - port_get_raw_ticks(NULL);
+        // Recalculate remaining delay after running background tasks
+        remaining = end_subtick - _get_raw_subticks();
+        // If remaining delay is less than 1 tick, idle loop until end of delay
+        int64_t remaining_ticks = remaining / 32;
+        if (remaining_ticks > 0) {
+            port_interrupt_after_ticks(remaining_ticks);
+            // Idle until an interrupt happens.
+            port_idle_until_interrupt();
+        }
+        remaining = end_subtick - _get_raw_subticks();
     }
 }
 

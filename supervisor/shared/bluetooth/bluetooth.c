@@ -189,6 +189,7 @@ void supervisor_bluetooth_init(void) {
     boot_in_discovery_mode = false;
     if (reset_reason != RESET_REASON_POWER_ON &&
         reset_reason != RESET_REASON_RESET_PIN &&
+        reset_reason != RESET_REASON_DEEP_SLEEP_ALARM &&
         reset_reason != RESET_REASON_UNKNOWN &&
         reset_reason != RESET_REASON_SOFTWARE) {
         return;

@@ -30,7 +30,7 @@ static audio_dma_t *audio_dma_state[AUDIO_DMA_CHANNEL_COUNT];
 // This cannot be in audio_dma_state because it's volatile.
 static volatile bool audio_dma_pending[AUDIO_DMA_CHANNEL_COUNT];
 
-uint8_t find_sync_event_channel_raise() {
+uint8_t find_sync_event_channel_raise(void) {
     uint8_t event_channel = find_sync_event_channel();
     if (event_channel >= EVSYS_SYNCH_NUM) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("All sync event channels in use"));

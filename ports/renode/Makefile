@@ -21,7 +21,7 @@ INC += \
 CFLAGS += -ggdb3 -Os
 
 DISABLE_WARNINGS = -Wno-cast-align
-CFLAGS += $(INC) -Wall -Werror -std=gnu11 -fshort-enums $(BASE_CFLAGS) $(CFLAGS_MOD) $(COPT) $(DISABLE_WARNINGS) -Werror=missing-prototypes
+CFLAGS += $(INC) -Wall -Werror -std=gnu11 -fshort-enums $(BASE_CFLAGS) $(CFLAGS_MOD) $(COPT) $(DISABLE_WARNINGS) -Werror=missing-prototypes -Werror=old-style-definition
 
 CFLAGS += \
 	-march=armv6-m \
@@ -45,7 +45,7 @@ SRC_C += \
 	background.c \
 	mphalport.c \
 
-SRC_S = supervisor/$(CPU)_cpu.s
+SRC_S_UPPER = supervisor/shared/cpu_regs.S
 
 OBJ = $(PY_O) $(SUPERVISOR_O) $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_COMMON_HAL_SHARED_MODULE_EXPANDED:.c=.o))

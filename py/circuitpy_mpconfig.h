@@ -639,7 +639,7 @@ void background_callback_run_all(void);
 #define MICROPY_PY_BUILTINS_COMPILE (1)
 
 #ifndef CIRCUITPY_MIN_GCC_VERSION
-#define CIRCUITPY_MIN_GCC_VERSION 13
+#define CIRCUITPY_MIN_GCC_VERSION 14
 #endif
 
 #ifndef CIRCUITPY_SAVES_PARTITION_SIZE

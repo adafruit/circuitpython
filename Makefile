@@ -156,7 +156,9 @@ epub:
 	@echo "Build finished. The epub file is in $(BUILDDIR)/epub."
 
 latex:
+	$(PYTHON) docs/prepare_readme_for_latex.py
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
+	mv README.rst.bak README.rst
 	@echo
 	@echo "Build finished; the LaTeX files are in $(BUILDDIR)/latex."
 	@echo "Run \`make' in that directory to run these through (pdf)latex" \
@@ -164,14 +166,18 @@ latex:
 
 # seems to be malfunctioning
 latexpdf:
+	$(PYTHON) docs/prepare_readme_for_latex.py
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
+	mv README.rst.bak README.rst
 	@echo "Running LaTeX files through pdflatex..."
 	$(MAKE) -C $(BUILDDIR)/latex all-pdf
 	@echo "pdflatex finished; the PDF files are in $(BUILDDIR)/latex."
 
 # seems to be malfunctioning
 latexpdfja:
+	$(PYTHON) docs/prepare_readme_for_latex.py
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
+	mv README.rst.bak README.rst
 	@echo "Running LaTeX files through platex and dvipdfmx..."
 	$(MAKE) -C $(BUILDDIR)/latex all-pdf-ja
 	@echo "pdflatex finished; the PDF files are in $(BUILDDIR)/latex."
@@ -236,7 +242,7 @@ pseudoxml:
 .PHONY: all-source
 all-source:
 
-TRANSLATE_CHECK_SUBMODULES=if ! [ -f extmod/ulab/README.md ]; then python tools/ci_fetch_deps.py translate; fi
+TRANSLATE_CHECK_SUBMODULES=if ! [ -f extmod/ulab/README.md ]; then $(PYTHON) tools/ci_fetch_deps.py translate; fi
 TRANSLATE_COMMAND=find $(TRANSLATE_SOURCES) -type d \( $(TRANSLATE_SOURCES_EXC) \) -prune -o -type f \( -iname "*.c" -o -iname "*.h" \) -print | (LC_ALL=C sort) | xgettext -x locale/synthetic.pot -f- -L C -s --add-location=file --keyword=MP_ERROR_TEXT -o - | sed -e '/"POT-Creation-Date: /d'
 locale/circuitpython.pot: all-source
 	$(TRANSLATE_CHECK_SUBMODULES)

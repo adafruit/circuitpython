@@ -41,5 +41,6 @@ uint8_t displayio_colorconverter_compute_rgbd(uint32_t color_rgb888);
 uint8_t displayio_colorconverter_compute_luma(uint32_t color_rgb888);
 uint8_t displayio_colorconverter_compute_chroma(uint32_t color_rgb888);
 uint8_t displayio_colorconverter_compute_hue(uint32_t color_rgb888);
+uint8_t displayio_colorconverter_compute_sixcolor(uint32_t color_rgb888);
 uint8_t displayio_colorconverter_compute_sevencolor(uint32_t color_rgb888);
 void displayio_colorconverter_compute_tricolor(const _displayio_colorspace_t *colorspace, uint8_t pixel_hue, uint32_t *color);

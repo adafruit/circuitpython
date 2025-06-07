@@ -461,11 +461,11 @@ void port_disable_tick(void) {
     esp_timer_stop(_tick_timer);
 }
 
-void port_wake_main_task() {
+void port_wake_main_task(void) {
     xTaskNotifyGive(circuitpython_task);
 }
 
-void port_wake_main_task_from_isr() {
+void port_wake_main_task_from_isr(void) {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     vTaskNotifyGiveFromISR(circuitpython_task, &xHigherPriorityTaskWoken);
     if (xHigherPriorityTaskWoken == pdTRUE) {
@@ -473,7 +473,7 @@ void port_wake_main_task_from_isr() {
     }
 }
 
-void port_yield() {
+void port_yield(void) {
     vTaskDelay(4);
 }
 

@@ -191,7 +191,7 @@ endif
 # option to override compiler optimization level, set in boards/$(BOARD)/mpconfigboard.mk
 CFLAGS += $(OPTIMIZATION_FLAGS)
 
-CFLAGS += $(INC) -Werror -Wall -std=gnu11 -Wl,--gc-sections $(BASE_CFLAGS) $(C_DEFS) $(CFLAGS_MOD) $(COPT) -Werror=missing-prototypes
+CFLAGS += $(INC) -Werror -Wall -std=gnu11 -Wl,--gc-sections $(BASE_CFLAGS) $(C_DEFS) $(CFLAGS_MOD) $(COPT) -Werror=missing-prototypes -Werror=old-style-definition
 
 # Most current ESPs have nano versions of newlib in ROM so we use them.
 ifneq ($(IDF_TARGET),esp32c6)
@@ -202,21 +202,24 @@ else
 endif
 
 ifeq ($(IDF_TARGET_ARCH),xtensa)
-# Remove the last two flags once TinyUSB is updated with the `#include <xtensa_api.h>` instead of
-# `#include "xtensa/xtensa_api.h"`.
+	# Remove the last two flags once TinyUSB is updated with the `#include <xtensa_api.h>` instead of
+	# `#include "xtensa/xtensa_api.h"`.
 
-CFLAGS += -mlongcalls -isystem esp-idf/components/xtensa/deprecated_include/ -Wno-error=cpp
+	CFLAGS += -mlongcalls -isystem esp-idf/components/xtensa/deprecated_include/ -Wno-error=cpp
+
+	# Wrap longjmp with a patched version that protects register window update with a critical section
+	LDFLAGS += -Wl,--wrap=longjmp
 else ifeq ($(IDF_TARGET_ARCH),riscv)
 
-ifeq ($(IDF_TARGET),esp32p4)
-CFLAGS += -march=rv32imafc_zicsr_zifencei_xesppie -mabi=ilp32f
-else
-CFLAGS += -march=rv32imac_zicsr_zifencei
-endif
+	ifeq ($(IDF_TARGET),esp32p4)
+		CFLAGS += -march=rv32imafc_zicsr_zifencei_xesppie -mabi=ilp32f
+	else
+		CFLAGS += -march=rv32imac_zicsr_zifencei
+	endif
 
-LDFLAGS += \
-	-Lesp-idf/components/riscv/ld \
-	-Trom.api.ld
+	LDFLAGS += \
+		-Lesp-idf/components/riscv/ld \
+		-Trom.api.ld
 endif
 
 $(BUILD)/lib/tlsf/tlsf.o: CFLAGS += -Wno-cast-align
@@ -265,6 +268,7 @@ else ifeq ($(IDF_TARGET),esp32c3)
 LDFLAGS += \
 	-Tesp32c3.rom.newlib.ld \
 	-Tesp32c3.rom.version.ld \
+	-Tesp32c3.rom.eco3_bt_funcs.ld \
 	-Tesp32c3.rom.eco3.ld \
 	-Tesp32c3.rom.bt_funcs.ld
 
@@ -486,6 +490,8 @@ FROZEN_MPY_PY_FILES := $(shell find -L $(FROZEN_MPY_DIR) -type f -name '*.py')
 FROZEN_MPY_MPY_FILES := $(addprefix $(BUILD)/,$(FROZEN_MPY_PY_FILES:.py=.mpy))
 endif
 
+SRC_S_UPPER = supervisor/shared/cpu_regs.S
+
 OBJ += $(PY_O) $(SUPERVISOR_O) $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_COMMON_HAL_SHARED_MODULE_EXPANDED:.c=.o))
 ifeq ($(INTERNAL_LIBM),1)
@@ -493,6 +499,7 @@ OBJ += $(addprefix $(BUILD)/, $(SRC_LIBM:.c=.o))
 endif
 OBJ += $(addprefix $(BUILD)/, $(SRC_CIRCUITPY_COMMON:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_MOD:.c=.o))
+OBJ += $(addprefix $(BUILD)/, $(SRC_S_UPPER:.S=.o))
 
 $(BUILD)/$(FATFS_DIR)/ff.o: COPT += -Os
 $(filter $(PY_BUILD)/../extmod/vfs_fat_%.o, $(PY_O)): COPT += -Os
@@ -543,6 +550,10 @@ ifeq ($(DEBUG), 1)
 	DEBUG_SDKCONFIG = esp-idf-config/sdkconfig-debug.defaults
 else
 	DEBUG_SDKCONFIG = esp-idf-config/sdkconfig-opt.defaults
+endif
+
+ifeq ($(ENABLE_JTAG), 1)
+	CFLAGS += -DENABLE_JTAG=1
 endif
 
 SDKCONFIGS := esp-idf-config/sdkconfig.defaults;$(DEBUG_SDKCONFIG);$(FLASH_SIZE_SDKCONFIG);$(FLASH_MODE_SDKCONFIG);$(FLASH_SPEED_SDKCONFIG);$(PSRAM_SDKCONFIG);$(PSRAM_SIZE_SDKCONFIG);$(PSRAM_MODE_SDKCONFIG);$(PSRAM_SPEED_SDKCONFIG);$(TARGET_SDKCONFIG);boards/$(BOARD)/sdkconfig

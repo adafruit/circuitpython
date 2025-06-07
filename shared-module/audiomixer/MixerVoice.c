@@ -67,3 +67,9 @@ bool common_hal_audiomixer_mixervoice_get_playing(audiomixer_mixervoice_obj_t *s
 void common_hal_audiomixer_mixervoice_stop(audiomixer_mixervoice_obj_t *self) {
     self->sample = NULL;
 }
+
+void common_hal_audiomixer_mixervoice_end(audiomixer_mixervoice_obj_t *self) {
+    if (self->sample != NULL) {
+        self->loop = false;
+    }
+}

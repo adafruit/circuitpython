@@ -91,9 +91,8 @@ static int parse_compile_execute(const void *source, mp_parse_input_kind_t input
     nlr_buf_t nlr;
     nlr.ret_val = NULL;
     if (nlr_push(&nlr) == 0) {
-        // CIRCUITPY-CHANGE: Made volatile to prevent gcc from re-ordering store of function pointer into stack frame
-        // after call to gc_collect. For RISC-V this was causing free of the compiled function before execution.
-        volatile mp_obj_t module_fun = mp_const_none;
+        // CIRCUITPY-CHANGE
+        mp_obj_t module_fun = mp_const_none;
         // CIRCUITPY-CHANGE
         #if CIRCUITPY_ATEXIT
         if (!(exec_flags & EXEC_FLAG_SOURCE_IS_ATEXIT))

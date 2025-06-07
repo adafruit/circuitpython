@@ -719,7 +719,7 @@ CIRCUITPY_SWO_TRACE ?= 0
 CFLAGS += -DCIRCUITPY_SWO_TRACE=$(CIRCUITPY_SWO_TRACE)
 
 # Check for a minimum GCC version during build (set to 0 to disable)
-CIRCUITPY_MIN_GCC_VERSION ?= 13
+CIRCUITPY_MIN_GCC_VERSION ?= 14
 CFLAGS += -DCIRCUITPY_MIN_GCC_VERSION=$(CIRCUITPY_MIN_GCC_VERSION)
 
 # Define an equivalent for MICROPY_LONGINT_IMPL, to pass to $(MPY-TOOL) in py/mkrules.mk

@@ -75,7 +75,7 @@ static mp_obj_t sensor_init(mp_obj_t i2c_in) {
     return mp_const_true;
 }
 
-static mp_obj_t sensor_deinit() {
+static mp_obj_t sensor_deinit(void) {
 
     sl_sensor_hall_deinit();
     sl_sensor_lux_deinit();

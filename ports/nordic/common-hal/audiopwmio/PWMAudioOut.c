@@ -136,7 +136,7 @@ static void audiopwmout_background_obj(audiopwmio_pwmaudioout_obj_t *self) {
     }
 }
 
-void audiopwmout_background() {
+void audiopwmout_background(void) {
     // Check the NVIC first because it is part of the CPU and fast to read.
     if (!NVIC_GetPendingIRQ(PWM0_IRQn) &&
         !NVIC_GetPendingIRQ(PWM1_IRQn) &&

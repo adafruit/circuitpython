@@ -141,7 +141,7 @@ void supervisor_start_terminal(uint16_t width_px, uint16_t height_px) {
 
     displayio_tilegrid_t *scroll_area = &supervisor_terminal_scroll_area_text_grid;
     displayio_tilegrid_t *status_bar = &supervisor_terminal_status_bar_text_grid;
-    bool reset_tiles = false;
+    bool reset_tiles = tilegrid_tiles == NULL;
 
     uint16_t glyph_width = 0;
     uint16_t glyph_height = 0;

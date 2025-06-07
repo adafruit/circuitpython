@@ -54,9 +54,3 @@ void isr(void) {
     // Decrease the "nesting count". Note: This should be going from 1 -> 0.
     nesting_count -= 1;
 }
-
-mp_uint_t cpu_get_regs_and_sp(mp_uint_t *regs) {
-    unsigned long __tmp;
-    asm volatile ("mv %0, x2" : "=r" (__tmp));
-    return __tmp;
-}

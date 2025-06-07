@@ -68,3 +68,5 @@ void displayio_tilegrid_finish_refresh(displayio_tilegrid_t *self);
 
 bool displayio_tilegrid_get_rendered_hidden(displayio_tilegrid_t *self);
 void displayio_tilegrid_validate_pixel_shader(mp_obj_t pixel_shader);
+
+void displayio_tilegrid_mark_tile_dirty(displayio_tilegrid_t *self, uint16_t x, uint16_t y);

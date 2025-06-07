@@ -24,7 +24,7 @@ if _last_build_times.exists():
         LAST_BUILD_TIMES = json.load(f)
     logger.info("Build times loaded.")
 else:
-    logger.warn(
+    logger.warning(
         "No last build times found. This is normal if you're running this for the first time."
     )
 

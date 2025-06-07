@@ -226,6 +226,10 @@ size_t common_hal_terminalio_terminal_write(terminalio_terminal_obj_t *self, con
         if (c < 0x20) {
             if (c == '\r') {
                 self->cursor_x = 0;
+            } else if (c == '\t') {
+                for (uint8_t space_i = 0; space_i < 4; space_i++) {
+                    terminalio_terminal_set_tile(self, false, ' ', true);
+                }
             } else if (c == '\n') {
                 self->cursor_y++;
                 // Commands below are used by MicroPython in the REPL

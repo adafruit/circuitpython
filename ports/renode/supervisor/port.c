@@ -210,7 +210,7 @@ __attribute__((used)) void HardFault_Handler(void) {
     }
 }
 
-void port_yield() {
+void port_yield(void) {
 }
 
 void port_boot_info(void) {

@@ -81,6 +81,19 @@ static mp_obj_t audiomixer_mixervoice_obj_stop(size_t n_args, const mp_obj_t *po
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(audiomixer_mixervoice_stop_obj, 1, audiomixer_mixervoice_obj_stop);
 
+//|     def end(self) -> None:
+//|         """ Sets looping to False if sample is playing. This allows the looped
+//|         sample to complete its current playback and end further looping  """
+//|         ...
+//|
+static mp_obj_t audiomixer_mixervoice_obj_end(mp_obj_t self_in) {
+    audiomixer_mixervoice_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    common_hal_audiomixer_mixervoice_end(self);
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(audiomixer_mixervoice_end_obj, audiomixer_mixervoice_obj_end);
+
+
 //|     level: synthio.BlockInput
 //|     """The volume level of a voice, as a floating point number between 0 and 1. If your board
 //|     does not support synthio, this property will only accept a float value.
@@ -140,6 +153,7 @@ static const mp_rom_map_elem_t audiomixer_mixervoice_locals_dict_table[] = {
     // Methods
     { MP_ROM_QSTR(MP_QSTR_play), MP_ROM_PTR(&audiomixer_mixervoice_play_obj) },
     { MP_ROM_QSTR(MP_QSTR_stop), MP_ROM_PTR(&audiomixer_mixervoice_stop_obj) },
+    { MP_ROM_QSTR(MP_QSTR_end), MP_ROM_PTR(&audiomixer_mixervoice_end_obj) },
 
     // Properties
     { MP_ROM_QSTR(MP_QSTR_playing), MP_ROM_PTR(&audiomixer_mixervoice_playing_obj) },

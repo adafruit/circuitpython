@@ -281,6 +281,7 @@ void board_init(void) {
             true,                                                                                           // always_toggle_chip_select
             false,                                                                                          // not grayscale
             false,                                                                                          // not acep
+            false,                                                                                          // not spectra6
             false,                                                                                          // not two_byte_sequence_length
             true);                                                                                          // address_little_endian
     } else if (vid_setting == 2) {  // Explorer SSD1608 BW
@@ -314,6 +315,7 @@ void board_init(void) {
             true,                                                                                           // always_toggle_chip_select
             false,                                                                                          // not grayscale
             false,                                                                                          // not acep
+            false,                                                                                          // not spectra6
             false,                                                                                          // not two_byte_sequence_length
             true);                                                                                          // address_little_endian
     } else {

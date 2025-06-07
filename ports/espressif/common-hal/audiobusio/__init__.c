@@ -184,7 +184,7 @@ void port_i2s_play(i2s_t *self, mp_obj_t sample, bool loop) {
         self->next_buffer_size = sizeof(starting_frame);
         i2s_fill_buffer(self);
         i2s_channel_preload_data(self->handle, &starting_frame, sizeof(uint32_t), &bytes_loaded);
-        preloaded += 1;
+        preloaded += bytes_loaded;
     }
 
     // enable the channel

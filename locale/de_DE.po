@@ -1081,7 +1081,8 @@ msgstr "Interner Flash konnte nicht geschrieben werden."
 msgid "File exists"
 msgstr "Datei existiert"
 
-#: shared-module/lvfontio/OnDiskFont.c shared-module/os/getenv.c
+#: shared-bindings/supervisor/__init__.c shared-module/lvfontio/OnDiskFont.c
+#: shared-module/os/getenv.c
 msgid "File not found"
 msgstr "Datei nicht gefunden"
 
@@ -1112,7 +1113,7 @@ msgstr "Für den L8-Farbraum muss die Eingabe-Bitmap 8 Bit pro Pixel aufweisen"
 msgid "For RGB colorspaces, input bitmap must have 16 bits per pixel"
 msgstr "Für RGB-Farbräume muss die Eingabe-Bitmap 16 Bit pro Pixel haben"
 
-#: ports/cxd56/common-hal/camera/Camera.c
+#: ports/cxd56/common-hal/camera/Camera.c shared-module/audiocore/WaveFile.c
 msgid "Format not supported"
 msgstr "Format nicht unterstützt"
 
@@ -1282,6 +1283,7 @@ msgstr "Unterbrochen durch Ausgabefunktion"
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c py/argcheck.c
 #: shared-bindings/digitalio/DigitalInOut.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c shared-bindings/pwmio/PWMOut.c
+#: shared-bindings/supervisor/__init__.c
 #: shared-module/aurora_epaper/aurora_framebuffer.c
 #: shared-module/lvfontio/OnDiskFont.c
 msgid "Invalid %q"
@@ -2116,6 +2118,10 @@ msgstr "Kachelindex außerhalb der Grenzen"
 msgid "Tile width must exactly divide bitmap width"
 msgstr "Die Kachelbreite muss die Bitmap-Breite genau teilen"
 
+#: shared-module/tilepalettemapper/TilePaletteMapper.c
+msgid "TilePaletteMapper may only be bound to a TileGrid once"
+msgstr ""
+
 #: shared-bindings/alarm/time/TimeAlarm.c
 msgid "Time is in the past."
 msgstr "Zeit liegt in der Vergangenheit."
@@ -2347,10 +2353,6 @@ msgstr "Nicht unterstützter Farbraum"
 msgid "Unsupported display bus type"
 msgstr "Nicht unterstützter display bus type"
 
-#: shared-module/audiocore/WaveFile.c
-msgid "Unsupported format"
-msgstr "Nicht unterstütztes Format"
-
 #: shared-bindings/hashlib/__init__.c
 msgid "Unsupported hash algorithm"
 msgstr "Hash Algorithmus wird nicht unterstützt"
@@ -2415,9 +2417,11 @@ msgstr ""
 msgid "Wi-Fi: "
 msgstr "Wi-Fi: "
 
+#: ports/espressif/common-hal/wifi/Radio.c
 #: ports/raspberrypi/common-hal/wifi/Radio.c
-msgid "Wifi is not enabled"
-msgstr "WLAN ist nicht aktiviert"
+#: ports/zephyr-cp/common-hal/wifi/Radio.c
+msgid "WiFi is not enabled"
+msgstr ""
 
 #: main.c
 msgid "Woken up by alarm.\n"
@@ -2652,16 +2656,16 @@ msgstr "Bitmap-Größen müssen übereinstimmen"
 msgid "bits must be 32 or less"
 msgstr "bits müssen 32 oder kleiner sein"
 
+#: shared-bindings/audiofreeverb/Freeverb.c
+msgid "bits_per_sample must be 16"
+msgstr ""
+
 #: shared-bindings/audiodelays/Chorus.c shared-bindings/audiodelays/Echo.c
 #: shared-bindings/audiodelays/MultiTapDelay.c
 #: shared-bindings/audiodelays/PitchShift.c
 #: shared-bindings/audiofilters/Distortion.c
-#: shared-bindings/audiodelays/Reverb.c
-msgid "bits_per_sample must be 16"
-msgstr ""
-
-#: shared-bindings/audiodelays/Echo.c shared-bindings/audiofilters/Distortion.c
-#: shared-bindings/audiofilters/Filter.c shared-bindings/audiomixer/Mixer.c
+#: shared-bindings/audiofilters/Filter.c shared-bindings/audiofilters/Phaser.c
+#: shared-bindings/audiomixer/Mixer.c
 msgid "bits_per_sample must be 8 or 16"
 msgstr "Es müssen 8 oder 16 bits_per_sample sein"
 
@@ -4104,7 +4108,7 @@ msgstr "Roll-Argument muss ein ndarray sein"
 msgid "rsplit(None,n)"
 msgstr "rsplit(None,n)"
 
-#: shared-bindings/audiodelays/Reverb.c
+#: shared-bindings/audiofreeverb/Freeverb.c
 msgid "samples_signed must be true"
 msgstr ""
 
@@ -4477,12 +4481,6 @@ msgstr "Gewichte müssen ein Objekt des Typs %q, %q, %q, or %q, not %q sein "
 msgid "width must be greater than zero"
 msgstr "Breite muss größer als 0 sein"
 
-#: ports/espressif/common-hal/wifi/Radio.c
-#: ports/raspberrypi/common-hal/wifi/Radio.c
-#: ports/zephyr-cp/common-hal/wifi/Radio.c
-msgid "wifi is not enabled"
-msgstr "wifi ist nicht aktiviert"
-
 #: ports/raspberrypi/common-hal/wifi/Monitor.c
 msgid "wifi.Monitor not available"
 msgstr "wifi.Monitor nicht verfügbar"
@@ -4544,6 +4542,15 @@ msgstr "zi muss eine Gleitkommazahl sein"
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr "zi muss die Form (n_section, 2) haben"
+
+#~ msgid "Unsupported format"
+#~ msgstr "Nicht unterstütztes Format"
+
+#~ msgid "Wifi is not enabled"
+#~ msgstr "WLAN ist nicht aktiviert"
+
+#~ msgid "wifi is not enabled"
+#~ msgstr "wifi ist nicht aktiviert"
 
 #~ msgid "Cannot remount '/' when visible via USB."
 #~ msgstr "'/' kann nicht wiedereingehängt werden, wenn per USB sichtbar."

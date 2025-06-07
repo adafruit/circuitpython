@@ -143,7 +143,11 @@ uint64_t port_get_raw_ticks(uint8_t *subticks) {
     }
     COMPLETE_MEMORY_READS;
     uint64_t microseconds = hi << 32 | lo;
-    return 1024 * (microseconds / 1000000) + (microseconds % 1000000) / 977;
+    int64_t all_subticks = microseconds * 512 / 15625;
+    if (subticks != NULL) {
+        *subticks = all_subticks % 32;
+    }
+    return all_subticks / 32;
 }
 
 void TIMER_1_IRQHandler(void) {

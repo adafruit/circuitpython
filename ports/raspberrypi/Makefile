@@ -223,7 +223,7 @@ endif
 
 DISABLE_WARNINGS = -Wno-cast-align
 
-CFLAGS += $(INC) -Wtype-limits -Wall -Werror -std=gnu11 -fshort-enums $(BASE_CFLAGS) $(CFLAGS_MOD) $(COPT) $(DISABLE_WARNINGS) -Werror=missing-prototypes
+CFLAGS += $(INC) -Wtype-limits -Wall -Werror -std=gnu11 -fshort-enums $(BASE_CFLAGS) $(CFLAGS_MOD) $(COPT) $(DISABLE_WARNINGS) -Werror=missing-prototypes -Wold-style-definition
 
 PICO_LDFLAGS = --specs=nosys.specs --specs=nano.specs
 
@@ -562,11 +562,14 @@ SRC_C += \
 	common-hal/picodvi/Framebuffer_$(CHIP_VARIANT).c \
 
 ifeq ($(CHIP_VARIANT),RP2040)
-SRC_C += \
+SRC_PICODVI := \
 	lib/PicoDVI/software/libdvi/dvi.c \
 	lib/PicoDVI/software/libdvi/dvi_serialiser.c \
 	lib/PicoDVI/software/libdvi/dvi_timing.c \
 	lib/PicoDVI/software/libdvi/tmds_encode.c \
+
+SRC_C += $(SRC_PICODVI)
+$(patsubst %.c,$(BUILD)/%.o,$(SRC_PICODVI))): CFLAGS += -Wno-old-style-definition
 
 endif
 
@@ -660,13 +663,13 @@ else
 OBJ_MBEDTLS :=
 endif
 
-SRC_S = supervisor/$(CHIP_FAMILY)_cpu.s
 BOOT2_S_CFLAGS ?= -DPICO_FLASH_SPI_CLKDIV=4
 SRC_S_UPPER = sdk/src/rp2_common/hardware_irq/irq_handler_chain.S \
               sdk/src/rp2_common/pico_bit_ops/bit_ops_aeabi.S \
               sdk/src/rp2_common/pico_double/double_aeabi_$(DOUBLE_EABI).S \
               sdk/src/rp2_common/pico_int64_ops/pico_int64_ops_aeabi.S \
               sdk/src/rp2_common/pico_crt0/crt0.S \
+              supervisor/shared/cpu_regs.S \
               $(SRC_S_UPPER_CHIP_VARIANT)
 
 ifeq ($(CIRCUITPY_PICODVI),1)

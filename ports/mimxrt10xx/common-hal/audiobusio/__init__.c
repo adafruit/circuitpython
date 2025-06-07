@@ -439,6 +439,6 @@ void port_i2s_resume(i2s_t *self) {
     self->paused = false;
 }
 
-void i2s_reset() {
+void i2s_reset(void) {
 // this port relies on object finalizers for reset
 }

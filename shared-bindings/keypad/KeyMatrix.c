@@ -67,6 +67,14 @@
 //|           in the respective state for ``debounce_threshold`` times on average.
 //|           Successive measurements are spaced apart by ``interval`` seconds.
 //|           The default is 1, which resolves immediately. The maximum is 127.
+//|
+//|         .. warning:: On Raspberry Pi RP2350, using ``columns_to_anodes=False``
+//|            normally depends on the internal pull-down resistors.
+//|            This will not work, due to an RP2350 issue.
+//|            The easiest fix is simply to swap the ``row_pins`` and ```column_pins`` and to set
+//|            ``columns_to_anodes=True``. This requires no external components.
+//|            An alternative is to add external pull-downs of 8.2 kohms or less, but that will draw more current.
+//|            See the Warning in `digitalio` for more information.
 //|         """
 //|         ...
 //|

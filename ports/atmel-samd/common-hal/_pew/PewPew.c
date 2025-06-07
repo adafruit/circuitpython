@@ -38,7 +38,7 @@ void pewpew_interrupt_handler(uint8_t index) {
     tc->COUNT16.INTFLAG.reg = TC_INTFLAG_MC0;
 }
 
-void pew_init() {
+void pew_init(void) {
     pew_obj_t *pew = MP_STATE_VM(pew_singleton);
 
     common_hal_digitalio_digitalinout_switch_to_input(pew->buttons, PULL_UP);
@@ -105,6 +105,6 @@ void pew_reset(void) {
     MP_STATE_VM(pew_singleton) = NULL;
 }
 
-uint16_t pew_get_ticks() {
+uint16_t pew_get_ticks(void) {
     return pewpew_ticks;
 }

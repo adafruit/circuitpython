@@ -434,11 +434,11 @@ def generate_redirects(app):
         return
 
     if not isinstance(app.builder, builders.StandaloneHTMLBuilder):
-        logging.warn(
+        logging.warning(
             "The 'sphinxcontib-redirects' plugin is only supported "
             "by the 'html' builder and subclasses. Skipping..."
         )
-        logging.warn(f"Builder is {app.builder.name} ({type(app.builder)})")
+        logging.warning(f"Builder is {app.builder.name} ({type(app.builder)})")
         return
 
     with open(path) as redirects:

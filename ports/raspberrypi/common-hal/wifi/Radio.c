@@ -157,7 +157,7 @@ mp_obj_t common_hal_wifi_radio_start_scanning_networks(wifi_radio_obj_t *self, u
         mp_raise_RuntimeError(MP_ERROR_TEXT("Already scanning for wifi networks"));
     }
     if (!common_hal_wifi_radio_get_enabled(self)) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("Wifi is not enabled"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("WiFi is not enabled"));
     }
     wifi_scannednetworks_obj_t *scan = mp_obj_malloc(wifi_scannednetworks_obj_t, &wifi_scannednetworks_type);
     mp_obj_t args[] = { mp_const_empty_tuple, MP_OBJ_NEW_SMALL_INT(16) };
@@ -193,7 +193,7 @@ void common_hal_wifi_radio_stop_station(wifi_radio_obj_t *self) {
 
 void common_hal_wifi_radio_start_ap(wifi_radio_obj_t *self, uint8_t *ssid, size_t ssid_len, uint8_t *password, size_t password_len, uint8_t channel, uint32_t authmode, uint8_t max_connections) {
     if (!common_hal_wifi_radio_get_enabled(self)) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("Wifi is not enabled"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("WiFi is not enabled"));
     }
 
     /* TODO: If the AP is stopped once it cannot be restarted.
@@ -243,7 +243,7 @@ bool common_hal_wifi_radio_get_ap_active(wifi_radio_obj_t *self) {
 
 void common_hal_wifi_radio_stop_ap(wifi_radio_obj_t *self) {
     if (!common_hal_wifi_radio_get_enabled(self)) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("wifi is not enabled"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("WiFi is not enabled"));
     }
 
     cyw43_arch_disable_ap_mode();
@@ -321,7 +321,7 @@ static bool connection_unchanged(wifi_radio_obj_t *self, const uint8_t *ssid, si
 
 wifi_radio_error_t common_hal_wifi_radio_connect(wifi_radio_obj_t *self, uint8_t *ssid, size_t ssid_len, uint8_t *password, size_t password_len, uint8_t channel, mp_float_t timeout, uint8_t *bssid, size_t bssid_len) {
     if (!common_hal_wifi_radio_get_enabled(self)) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("Wifi is not enabled"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("WiFi is not enabled"));
     }
 
     if (ssid_len > 32) {

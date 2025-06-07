@@ -13,7 +13,7 @@
 #include "common-hal/alarm/touch/TouchAlarm.h"
 
 typedef enum {
-    NRF_SLEEP_WAKEUP_UNDEFINED,
+    NRF_SLEEP_WAKEUP_UNDEFINED = 0,
     NRF_SLEEP_WAKEUP_GPIO,
     NRF_SLEEP_WAKEUP_TIMER,
     NRF_SLEEP_WAKEUP_TOUCHPAD,
@@ -33,8 +33,9 @@ extern const alarm_sleep_memory_obj_t alarm_sleep_memory_obj;
 
 enum {
     SLEEPMEM_WAKEUP_BY_NONE  = 0,
-    SLEEPMEM_WAKEUP_BY_PIN   = 1,
-    SLEEPMEM_WAKEUP_BY_TIMER = 2,
+    SLEEPMEM_WAKEUP_BY_PIN,
+    SLEEPMEM_WAKEUP_BY_TIMER,
+    SLEEPMEM_WAKEUP_BY_TOUCH,
 };
 #define WAKEUP_PIN_UNDEF 0xFF
 extern uint8_t sleepmem_wakeup_event;

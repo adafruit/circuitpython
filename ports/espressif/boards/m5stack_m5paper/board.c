@@ -74,6 +74,7 @@ void board_init(void) {
     //     false,  // always_toggle_chip_select
     //     false, // grayscale
     //     true, // acep
+    //     false, // spectra6
     //     false,  // two_byte_sequence_length
     //     false  // address_little_endian
     // );
