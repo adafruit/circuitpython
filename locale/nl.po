@@ -6,15 +6,15 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-01-04 12:55-0600\n"
-"PO-Revision-Date: 2023-11-16 15:03+0000\n"
-"Last-Translator: Jeff Epler <jepler@gmail.com>\n"
+"PO-Revision-Date: 2025-06-09 12:01+0000\n"
+"Last-Translator: MAE <martin-aehle@hotmail.de>\n"
 "Language-Team: none\n"
 "Language: nl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.2\n"
+"X-Generator: Weblate 5.12-dev\n"
 
 #: main.c
 msgid ""
@@ -61,7 +61,7 @@ msgstr ""
 
 #: main.c
 msgid " not found.\n"
-msgstr ""
+msgstr " niet gevonden.\n"
 
 #: main.c
 msgid " output:\n"
@@ -558,7 +558,7 @@ msgstr "Heeft al een luisteraar voor 'all-matches'"
 
 #: ports/espressif/common-hal/_bleio/__init__.c
 msgid "Already in progress"
-msgstr ""
+msgstr "Al in uitvoering"
 
 #: ports/espressif/bindings/espnow/ESPNow.c
 #: ports/espressif/common-hal/espulp/ULP.c
@@ -612,7 +612,7 @@ msgstr ""
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 #: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
 msgid "Audio source error"
-msgstr ""
+msgstr "Audiobronfout"
 
 #: shared-bindings/wifi/Radio.c
 msgid "AuthMode.OPEN is not used with password"
@@ -701,7 +701,7 @@ msgstr "Buffer is %d bytes te klein"
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 #: shared-bindings/struct/__init__.c shared-module/struct/__init__.c
 msgid "Buffer too small"
-msgstr ""
+msgstr "Buffer te klein"
 
 #: ports/atmel-samd/common-hal/paralleldisplaybus/ParallelBus.c
 #: ports/espressif/common-hal/paralleldisplaybus/ParallelBus.c
@@ -925,7 +925,7 @@ msgstr "Beeldscherm rotatie moet in stappen van 90 graden"
 
 #: main.c
 msgid "Done"
-msgstr ""
+msgstr "Gedaan"
 
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Drive mode not used when direction is input."
@@ -1064,7 +1064,7 @@ msgstr "Bestand bestaat"
 #: shared-bindings/supervisor/__init__.c shared-module/lvfontio/OnDiskFont.c
 #: shared-module/os/getenv.c
 msgid "File not found"
-msgstr ""
+msgstr "Bestand niet gevonden"
 
 #: ports/atmel-samd/common-hal/canio/Listener.c
 #: ports/espressif/common-hal/canio/Listener.c
@@ -1075,11 +1075,11 @@ msgstr "Filters zijn te complex"
 
 #: ports/espressif/common-hal/dualbank/__init__.c
 msgid "Firmware is duplicate"
-msgstr ""
+msgstr "Firmware is duplicaat"
 
 #: ports/espressif/common-hal/dualbank/__init__.c
 msgid "Firmware is invalid"
-msgstr ""
+msgstr "Firmware is ongeldig"
 
 #: ports/espressif/common-hal/dualbank/__init__.c
 msgid "Firmware is too big"
@@ -1113,7 +1113,7 @@ msgstr ""
 
 #: ports/espressif/common-hal/espidf/__init__.c
 msgid "Generic Failure"
-msgstr ""
+msgstr "Generieke mislukking"
 
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 #: shared-module/busdisplay/BusDisplay.c
@@ -1215,7 +1215,7 @@ msgstr "Interne define fout"
 
 #: shared-bindings/pwmio/PWMOut.c shared-module/os/getenv.c
 msgid "Internal error"
-msgstr ""
+msgstr "Interne fout"
 
 #: shared-module/rgbmatrix/RGBMatrix.c
 #, c-format
@@ -1241,7 +1241,7 @@ msgstr ""
 
 #: supervisor/shared/safe_mode.c
 msgid "Interrupt error."
-msgstr ""
+msgstr "Interruptfout."
 
 #: shared-module/jpegio/JpegDecoder.c
 msgid "Interrupted by output function"
@@ -1282,7 +1282,7 @@ msgstr "Ongeldige ADC Unit waarde"
 #: ports/espressif/common-hal/_bleio/__init__.c
 #: ports/nordic/common-hal/_bleio/__init__.c
 msgid "Invalid BLE parameter"
-msgstr ""
+msgstr "Ongeldige BLE-parameter"
 
 #: shared-bindings/wifi/Radio.c
 msgid "Invalid BSSID"
@@ -1290,7 +1290,7 @@ msgstr "Ongeldig BSSID"
 
 #: shared-bindings/wifi/Radio.c
 msgid "Invalid MAC address"
-msgstr ""
+msgstr "Ongeldig MAC-adres"
 
 #: ports/espressif/common-hal/espidf/__init__.c py/moderrno.c
 msgid "Invalid argument"
@@ -1312,7 +1312,7 @@ msgstr ""
 
 #: shared-module/msgpack/__init__.c
 msgid "Invalid format"
-msgstr ""
+msgstr "Ongeldig formaat"
 
 #: shared-module/audiocore/WaveFile.c
 msgid "Invalid format chunk size"
@@ -1329,7 +1329,7 @@ msgstr ""
 
 #: ports/espressif/common-hal/espidf/__init__.c
 msgid "Invalid size"
-msgstr ""
+msgstr "Ongeldige grootte"
 
 #: shared-module/ssl/SSLSocket.c
 msgid "Invalid socket for TLS"
@@ -1338,11 +1338,11 @@ msgstr ""
 #: ports/espressif/common-hal/espidf/__init__.c
 #: ports/nordic/common-hal/_bleio/__init__.c
 msgid "Invalid state"
-msgstr ""
+msgstr "Ongeldige staat"
 
 #: shared-module/os/getenv.c
 msgid "Invalid unicode escape"
-msgstr ""
+msgstr "Ongeldige unicode escape"
 
 #: shared-bindings/aesio/aes.c
 msgid "Key must be 16, 24, or 32 bytes long"
@@ -1350,7 +1350,7 @@ msgstr "Sleutel moet 16, 24, of 32 bytes lang zijn"
 
 #: shared-module/os/getenv.c
 msgid "Key not found"
-msgstr ""
+msgstr "Sleutel niet gevonden"
 
 #: shared-module/is31fl3741/FrameBuffer.c
 msgid "LED mappings must match display size"
@@ -1878,7 +1878,7 @@ msgstr "RNG Init Fout"
 #: ports/atmel-samd/common-hal/busio/UART.c ports/cxd56/common-hal/busio/UART.c
 #: ports/nordic/common-hal/busio/UART.c ports/stm/common-hal/busio/UART.c
 msgid "RS485"
-msgstr ""
+msgstr "RS485"
 
 #: ports/espressif/common-hal/busio/UART.c
 #: ports/mimxrt10xx/common-hal/busio/UART.c
@@ -1910,7 +1910,7 @@ msgstr ""
 
 #: supervisor/shared/bluetooth/bluetooth.c
 msgid "Reconnecting"
-msgstr ""
+msgstr "Opnieuw aansluiten"
 
 #: shared-bindings/epaperdisplay/EPaperDisplay.c
 msgid "Refresh too soon"
@@ -2378,7 +2378,7 @@ msgstr ""
 #: ports/raspberrypi/common-hal/wifi/Radio.c
 #: ports/zephyr-cp/common-hal/wifi/Radio.c
 msgid "WiFi is not enabled"
-msgstr ""
+msgstr "WiFi is niet ingeschakeld"
 
 #: main.c
 msgid "Woken up by alarm.\n"
@@ -4416,7 +4416,7 @@ msgstr "breedte moet groter dan nul zijn"
 
 #: ports/raspberrypi/common-hal/wifi/Monitor.c
 msgid "wifi.Monitor not available"
-msgstr ""
+msgstr "wifi.monitor niet beschikbaar"
 
 #: shared-bindings/_bleio/Adapter.c
 msgid "window must be <= interval"

@@ -8,15 +8,15 @@ msgstr ""
 "Project-Id-Version: 0.1\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-01-04 12:55-0600\n"
-"PO-Revision-Date: 2025-02-19 11:46+0000\n"
-"Last-Translator: Noel Gaetan <gaetan.noel@viacesi.fr>\n"
+"PO-Revision-Date: 2025-06-09 12:01+0000\n"
+"Last-Translator: MAE <martin-aehle@hotmail.de>\n"
 "Language-Team: \n"
 "Language: fr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.10.1-dev\n"
+"X-Generator: Weblate 5.12-dev\n"
 
 #: main.c
 msgid ""
@@ -118,7 +118,7 @@ msgstr "Échec de %q : %d"
 
 #: shared-module/audiodelays/MultiTapDelay.c
 msgid "%q in %q must be of type %q or %q, not %q"
-msgstr ""
+msgstr "%q dans %q doit être du type %q ou %q, pas %q"
 
 #: py/argcheck.c shared-module/audiofilters/Filter.c
 msgid "%q in %q must be of type %q, not %q"
@@ -823,7 +823,7 @@ msgstr "Impossible d'enregistrer vers un fichier"
 
 #: shared-module/storage/__init__.c
 msgid "Cannot remount path when visible via USB."
-msgstr ""
+msgstr "Impossible de remonter le chemin d'accès lorsqu'il est visible via USB."
 
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Cannot set value when direction is input."
@@ -1424,7 +1424,7 @@ msgstr "Sécurité MITM n'est pas supportée"
 #: ports/stm/common-hal/sdioio/SDCard.c
 #, c-format
 msgid "MMC/SDIO Clock Error %x"
-msgstr ""
+msgstr "Erreur d'horloge MMC/SDIO %x"
 
 #: shared-bindings/is31fl3741/IS31FL3741.c
 msgid "Mapping must be a tuple"
@@ -1622,7 +1622,7 @@ msgstr "Pas de pulldown sur la broche ; 1Mohm requis"
 
 #: shared-module/touchio/TouchIn.c
 msgid "No pullup on pin; 1Mohm recommended"
-msgstr ""
+msgstr "Pas de pullup sur la broche ; 1Mohm recommandé"
 
 #: py/moderrno.c
 msgid "No space left on device"
@@ -2139,6 +2139,8 @@ msgstr "La largeur de la tuile doit diviser exactement la largeur de l'image"
 #: shared-module/tilepalettemapper/TilePaletteMapper.c
 msgid "TilePaletteMapper may only be bound to a TileGrid once"
 msgstr ""
+"Le TilePaletteMapper ne peut être lié à une grille de tuiles qu'une seule "
+"fois"
 
 #: shared-bindings/alarm/time/TimeAlarm.c
 msgid "Time is in the past."
@@ -2439,7 +2441,7 @@ msgstr "Wi-Fi : "
 #: ports/raspberrypi/common-hal/wifi/Radio.c
 #: ports/zephyr-cp/common-hal/wifi/Radio.c
 msgid "WiFi is not enabled"
-msgstr ""
+msgstr "Le WiFi n'est pas activé"
 
 #: main.c
 msgid "Woken up by alarm.\n"
@@ -2677,7 +2679,7 @@ msgstr "les bits doivent être 32 ou moins"
 
 #: shared-bindings/audiofreeverb/Freeverb.c
 msgid "bits_per_sample must be 16"
-msgstr ""
+msgstr "bits_par_échantillon doit être de 16"
 
 #: shared-bindings/audiodelays/Chorus.c shared-bindings/audiodelays/Echo.c
 #: shared-bindings/audiodelays/MultiTapDelay.c
@@ -4126,7 +4128,7 @@ msgstr "rsplit(None, n)"
 
 #: shared-bindings/audiofreeverb/Freeverb.c
 msgid "samples_signed must be true"
-msgstr ""
+msgstr "samples_signed doit être vrai"
 
 #: ports/atmel-samd/common-hal/audiobusio/PDMIn.c
 #: ports/raspberrypi/common-hal/audiobusio/PDMIn.c

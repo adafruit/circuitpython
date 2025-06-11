@@ -246,6 +246,11 @@ void common_hal__eve_PointSize(common_hal__eve_t *eve, mp_float_t size) {
 }
 
 
+void common_hal__eve_Region(common_hal__eve_t *eve, uint32_t y, uint32_t h, uint32_t dest) {
+    C4(eve, ((52 << 24) | ((y & 0x3f) << 18) | ((h & 0x3f) << 12) | (dest & 0xfff)));
+}
+
+
 void common_hal__eve_RestoreContext(common_hal__eve_t *eve) {
     C4(eve, ((35 << 24)));
 }

@@ -8,15 +8,15 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-01-04 12:55-0600\n"
-"PO-Revision-Date: 2025-02-09 17:02+0000\n"
-"Last-Translator: karlos g liberal <karlosgliberal@gmail.com>\n"
+"PO-Revision-Date: 2025-06-09 12:01+0000\n"
+"Last-Translator: MAE <martin-aehle@hotmail.de>\n"
 "Language-Team: \n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.10-dev\n"
+"X-Generator: Weblate 5.12-dev\n"
 
 #: main.c
 msgid ""
@@ -119,7 +119,7 @@ msgstr "%q fallo: %d"
 
 #: shared-module/audiodelays/MultiTapDelay.c
 msgid "%q in %q must be of type %q or %q, not %q"
-msgstr ""
+msgstr "%q en %q debe ser de tipo %q o %q, no %q"
 
 #: py/argcheck.c shared-module/audiofilters/Filter.c
 msgid "%q in %q must be of type %q, not %q"
@@ -836,7 +836,7 @@ msgstr "No se puede manejar la partición en una subclase"
 
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 msgid "Cannot use GPIO0..15 together with GPIO32..47"
-msgstr ""
+msgstr "No se puede utilizar GPIO0..15 junto con GPIO32..47"
 
 #: ports/nordic/common-hal/alarm/pin/PinAlarm.c
 msgid "Cannot wake on pin edge, only level"
@@ -1071,7 +1071,7 @@ msgstr "No se puede liberar el mutex, err 0x%04x"
 
 #: ports/zephyr-cp/common-hal/wifi/Radio.c
 msgid "Failed to set hostname"
-msgstr ""
+msgstr "Fallo al establecer el nombre de host"
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "Failed to start async audio"
@@ -1611,7 +1611,7 @@ msgstr "No hay pulldown en el pin; 1Mohm recomendado"
 
 #: shared-module/touchio/TouchIn.c
 msgid "No pullup on pin; 1Mohm recommended"
-msgstr ""
+msgstr "Sin pullup en el pin; 1Mohm recomendado"
 
 #: py/moderrno.c
 msgid "No space left on device"
@@ -2430,7 +2430,7 @@ msgstr "Wi-Fi: "
 #: ports/raspberrypi/common-hal/wifi/Radio.c
 #: ports/zephyr-cp/common-hal/wifi/Radio.c
 msgid "WiFi is not enabled"
-msgstr ""
+msgstr "WiFi no está habilitado"
 
 #: main.c
 msgid "Woken up by alarm.\n"
@@ -2667,7 +2667,7 @@ msgstr "los bits deben ser 32 o menos"
 
 #: shared-bindings/audiofreeverb/Freeverb.c
 msgid "bits_per_sample must be 16"
-msgstr ""
+msgstr "bits_per_sample debe ser 16"
 
 #: shared-bindings/audiodelays/Chorus.c shared-bindings/audiodelays/Echo.c
 #: shared-bindings/audiodelays/MultiTapDelay.c
@@ -4105,7 +4105,7 @@ msgstr "rsplit(None,n)"
 
 #: shared-bindings/audiofreeverb/Freeverb.c
 msgid "samples_signed must be true"
-msgstr ""
+msgstr "samples_signed debe ser true"
 
 #: ports/atmel-samd/common-hal/audiobusio/PDMIn.c
 #: ports/raspberrypi/common-hal/audiobusio/PDMIn.c

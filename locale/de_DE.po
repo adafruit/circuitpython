@@ -6,14 +6,14 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-01-04 12:55-0600\n"
-"PO-Revision-Date: 2024-12-15 14:00+0000\n"
-"Last-Translator: Exp3rt <jannik.homberg@gmail.com>\n"
+"PO-Revision-Date: 2025-06-07 16:03+0000\n"
+"Last-Translator: MAE <martin-aehle@hotmail.de>\n"
 "Language: de_DE\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.9-rc\n"
+"X-Generator: Weblate 5.12-dev\n"
 
 #: main.c
 msgid ""
@@ -117,7 +117,7 @@ msgstr "%q Fehler: %d"
 
 #: shared-module/audiodelays/MultiTapDelay.c
 msgid "%q in %q must be of type %q or %q, not %q"
-msgstr ""
+msgstr "%q in %q muss vom Typ %q oder %q sein, nicht %q"
 
 #: py/argcheck.c shared-module/audiofilters/Filter.c
 msgid "%q in %q must be of type %q, not %q"
@@ -304,7 +304,7 @@ msgstr "%q[%u] schiebt mehr Bits raus als Pins vorhanden sind"
 
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 msgid "%q[%u] uses extra pin"
-msgstr ""
+msgstr "%q[%u] verwendet zusätzlichen Pin"
 
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 msgid "%q[%u] waits on input outside of count"
@@ -495,7 +495,7 @@ msgstr "Adressbereich nicht erlaubt"
 
 #: shared-bindings/memorymap/AddressRange.c
 msgid "Address range wraps around"
-msgstr ""
+msgstr "Der Adressbereich umfasst folgende Bereiche"
 
 #: ports/espressif/common-hal/canio/CAN.c
 msgid "All CAN peripherals are in use"
@@ -573,7 +573,7 @@ msgstr "All-Matchers-Listener bereits vorhanden"
 
 #: ports/espressif/common-hal/_bleio/__init__.c
 msgid "Already in progress"
-msgstr ""
+msgstr "Bereits in Arbeit"
 
 #: ports/espressif/bindings/espnow/ESPNow.c
 #: ports/espressif/common-hal/espulp/ULP.c
@@ -613,7 +613,7 @@ msgstr "Array-Werte sollten aus Einzelbytes bestehen."
 
 #: ports/atmel-samd/common-hal/spitarget/SPITarget.c
 msgid "Async SPI transfer in progress on this bus, keep awaiting."
-msgstr ""
+msgstr "Asynchroner SPI-Transfer auf diesem Bus im Gange, warten Sie weiter."
 
 #: shared-module/memorymonitor/AllocationAlarm.c
 #, c-format
@@ -627,7 +627,7 @@ msgstr "Audio-Konvertierung nicht implementiert"
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 #: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
 msgid "Audio source error"
-msgstr ""
+msgstr "Audioquellenfehler"
 
 #: shared-bindings/wifi/Radio.c
 msgid "AuthMode.OPEN is not used with password"
@@ -660,7 +660,7 @@ msgstr "Unterhalb der minimalen Frame Rate"
 
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 msgid "Bit clock and word select must be sequential GPIO pins"
-msgstr ""
+msgstr "Bittakt und Wortauswahl müssen aufeinanderfolgende GPIO-Pins sein"
 
 #: shared-bindings/bitmaptools/__init__.c
 msgid "Bitmap size and bits per value must match"
@@ -767,6 +767,8 @@ msgstr "Kann nur auf zwei Pins Alarm als low aus Deep Sleep auslösen."
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "Can't construct AudioOut because continuous channel already open"
 msgstr ""
+"AudioOut kann nicht erstellt werden, da ein kontinuierlicher Kanal bereits "
+"geöffnet ist"
 
 #: ports/espressif/common-hal/_bleio/Characteristic.c
 #: ports/nordic/common-hal/_bleio/Characteristic.c
@@ -816,6 +818,7 @@ msgstr "Aufnahme in eine Datei nicht möglich"
 #: shared-module/storage/__init__.c
 msgid "Cannot remount path when visible via USB."
 msgstr ""
+"Der Pfad kann nicht neu gemountet werden, wenn er über USB sichtbar ist."
 
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Cannot set value when direction is input."
@@ -832,7 +835,7 @@ msgstr "Slice kann keine sub-klasse sein"
 
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 msgid "Cannot use GPIO0..15 together with GPIO32..47"
-msgstr ""
+msgstr "GPIO0..15 kann nicht zusammen mit GPIO32..47 verwendet werden"
 
 #: ports/nordic/common-hal/alarm/pin/PinAlarm.c
 msgid "Cannot wake on pin edge, only level"
@@ -1000,12 +1003,14 @@ msgstr "Mutex konnte nicht akquiriert werden. Status: 0x%04x"
 
 #: ports/raspberrypi/common-hal/mdns/Server.c
 msgid "Failed to add service TXT record"
-msgstr ""
+msgstr "Fehler beim Hinzufügen des TXT-Diensteintrags"
 
 #: shared-bindings/mdns/Server.c
 msgid ""
 "Failed to add service TXT record; non-string or bytes found in txt_records"
 msgstr ""
+"Fehler beim Hinzufügen des TXT-Diensteintrags; Nicht-Zeichenfolge oder Bytes "
+"in txt_records gefunden"
 
 #: shared-module/rgbmatrix/RGBMatrix.c
 msgid "Failed to allocate %q buffer"
@@ -1034,23 +1039,23 @@ msgstr "Verbindung nicht erfolgreich: timeout"
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "Failed to create continuous channels: invalid arg"
-msgstr ""
+msgstr "Erstellen kontinuierlicher Kanäle fehlgeschlagen: ungültiges Argument"
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "Failed to create continuous channels: invalid state"
-msgstr ""
+msgstr "Kontinuierliche Kanäle konnten nicht erstellt werden: ungültiger Status"
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "Failed to create continuous channels: no mem"
-msgstr ""
+msgstr "Erstellen von kontinuierlichen Kanälen fehlgeschlagen: kein Speicher"
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "Failed to create continuous channels: not found"
-msgstr ""
+msgstr "Kontinuierliche Kanäle konnten nicht erstellt werden: nicht gefunden"
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "Failed to enable continuous"
-msgstr ""
+msgstr "ntinuierliche Aktivierung fehlgeschlagen"
 
 #: shared-module/audiomp3/MP3Decoder.c
 msgid "Failed to parse MP3 file"
@@ -1058,7 +1063,7 @@ msgstr "MP3-Datei konnte nicht analysiert werden"
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "Failed to register continuous events callback"
-msgstr ""
+msgstr "Rüclruf für kontinuierliche Ereignisse konnte nicht registriert werden"
 
 #: ports/nordic/sd_mutex.c
 #, c-format
@@ -1067,11 +1072,11 @@ msgstr "Mutex konnte nicht freigegeben werden. Status: 0x%04x"
 
 #: ports/zephyr-cp/common-hal/wifi/Radio.c
 msgid "Failed to set hostname"
-msgstr ""
+msgstr "Hostname konnte nicht gesetzt werden"
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "Failed to start async audio"
-msgstr ""
+msgstr "Start von asynchronem Audio fehlgeschlagen"
 
 #: supervisor/shared/safe_mode.c
 msgid "Failed to write internal flash."
@@ -1224,7 +1229,7 @@ msgstr "Unzureichender Speicherpool für das Bild"
 
 #: shared-module/jpegio/JpegDecoder.c
 msgid "Insufficient stream input buffer"
-msgstr ""
+msgstr "Unzureichender Stream-Eingabepuffer"
 
 #: ports/espressif/common-hal/wifi/Radio.c
 #: ports/zephyr-cp/common-hal/wifi/Radio.c
@@ -1397,6 +1402,8 @@ msgstr "Ebene muss eine Gruppe oder eine TileGrid Subklasse sein"
 #: shared-bindings/audiocore/RawSample.c
 msgid "Length of %q must be an even multiple of channel_count * type_size"
 msgstr ""
+"Die Länge von %q muss ein gerades Vielfaches von channel_count * type_size "
+"sein"
 
 #: ports/espressif/common-hal/espidf/__init__.c
 msgid "MAC address was invalid"
@@ -1410,7 +1417,7 @@ msgstr "MITM-Sicherheit wird nicht unterstützt"
 #: ports/stm/common-hal/sdioio/SDCard.c
 #, c-format
 msgid "MMC/SDIO Clock Error %x"
-msgstr ""
+msgstr "MMC/SDIO-Taktfehler %x"
 
 #: shared-bindings/is31fl3741/IS31FL3741.c
 msgid "Mapping must be a tuple"
@@ -1600,7 +1607,7 @@ msgstr "Kein Pulldown-Widerstand am Pin; 1 MOhm wird vorgeschlagen"
 
 #: shared-module/touchio/TouchIn.c
 msgid "No pullup on pin; 1Mohm recommended"
-msgstr ""
+msgstr "Kein Pullup-Widerstand am Pin; 1Mohm wird vorgeschlagen"
 
 #: py/moderrno.c
 msgid "No space left on device"
@@ -1649,7 +1656,7 @@ msgstr "Nicht unterstützter JPEG-Standard"
 #: ports/espressif/common-hal/sdioio/SDCard.c
 #, c-format
 msgid "Number of data_pins must be %d or %d, not %d"
-msgstr ""
+msgstr "Die Anzahl der data_pins muss %d oder %d sein, nicht %d"
 
 #: shared-bindings/util.c
 msgid ""
@@ -1778,6 +1785,7 @@ msgstr "PWM-Stück-Kanal A wird bereits verwendet"
 #: shared-bindings/spitarget/SPITarget.c
 msgid "Packet buffers for an SPI transfer must have the same length."
 msgstr ""
+"Die Paketpuffer für eine SPI-Übertragung müssen die gleiche Länge haben."
 
 #: shared-module/jpegio/JpegDecoder.c
 msgid "Parameter error"
@@ -1986,7 +1994,7 @@ msgstr "SDIO GetCardInfo-Fehler %d"
 #: ports/stm/common-hal/sdioio/SDCard.c
 #, c-format
 msgid "SDIO Init Error %x"
-msgstr ""
+msgstr "SDIO-Init-Fehler %x"
 
 #: ports/espressif/common-hal/busio/SPI.c
 msgid "SPI configuration failed"
@@ -2086,7 +2094,7 @@ msgstr "Die Länge von rgb_pins muss 6, 12, 18, 24 oder 30 betragen"
 
 #: shared-module/audiocore/__init__.c
 msgid "The sample's %q does not match"
-msgstr ""
+msgstr "Der %q-Wert der Probe stimmt nicht überein"
 
 #: supervisor/shared/safe_mode.c
 msgid "Third-party firmware fatal error."
@@ -2120,7 +2128,7 @@ msgstr "Die Kachelbreite muss die Bitmap-Breite genau teilen"
 
 #: shared-module/tilepalettemapper/TilePaletteMapper.c
 msgid "TilePaletteMapper may only be bound to a TileGrid once"
-msgstr ""
+msgstr "TilePaletteMapper darf nur einmal an ein TileGrid gebunden werden"
 
 #: shared-bindings/alarm/time/TimeAlarm.c
 msgid "Time is in the past."
@@ -2233,7 +2241,7 @@ msgstr "Konnte keine Buffer für Vorzeichenumwandlung allozieren"
 
 #: supervisor/shared/safe_mode.c
 msgid "Unable to allocate to the heap."
-msgstr ""
+msgstr "Die Zuweisung zum Heap ist nicht möglich."
 
 #: ports/espressif/common-hal/busio/I2C.c
 msgid "Unable to create lock"
@@ -2256,6 +2264,8 @@ msgstr "Konnte Farbpalettendaten nicht lesen"
 #: ports/mimxrt10xx/common-hal/canio/CAN.c
 msgid "Unable to send CAN Message: all Tx message buffers are busy"
 msgstr ""
+"CAN-Nachricht kann nicht gesendet werden: alle Sende-Nachrichtenpuffer sind "
+"belegt"
 
 #: ports/espressif/common-hal/mdns/Server.c
 #: ports/raspberrypi/common-hal/mdns/Server.c
@@ -2360,7 +2370,7 @@ msgstr "Hash Algorithmus wird nicht unterstützt"
 #: ports/espressif/common-hal/socketpool/Socket.c
 #: ports/zephyr-cp/common-hal/socketpool/Socket.c
 msgid "Unsupported socket type"
-msgstr ""
+msgstr "Nicht unterstützter Sockeltyp"
 
 #: ports/espressif/common-hal/_bleio/Adapter.c
 #: ports/espressif/common-hal/dualbank/__init__.c
@@ -2421,7 +2431,7 @@ msgstr "Wi-Fi: "
 #: ports/raspberrypi/common-hal/wifi/Radio.c
 #: ports/zephyr-cp/common-hal/wifi/Radio.c
 msgid "WiFi is not enabled"
-msgstr ""
+msgstr "WiFi ist nicht aktiviert"
 
 #: main.c
 msgid "Woken up by alarm.\n"
@@ -2520,7 +2530,7 @@ msgstr "addresses ist leer"
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "already playing"
-msgstr ""
+msgstr "spielt bereits"
 
 #: py/compile.c
 msgid "annotation must be an identifier"
@@ -2549,6 +2559,7 @@ msgstr "argsort ist für flattened Arrays nicht implementiert"
 #: extmod/ulab/code/numpy/random/random.c
 msgid "argument must be None, an integer or a tuple of integers"
 msgstr ""
+"Das Argument muss None, eine Ganzzahl oder ein Tupel von Ganzzahlen sein"
 
 #: py/compile.c
 msgid "argument name reused"
@@ -2602,7 +2613,7 @@ msgstr "Attribute werden nicht unterstützt"
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "audio format not supported"
-msgstr ""
+msgstr "Audioformat wird nicht unterstützt"
 
 #: extmod/ulab/code/ulab_tools.c
 msgid "axis is out of bounds"
@@ -2642,7 +2653,7 @@ msgstr "Der binäre Operator %q ist nicht implementiert"
 
 #: ports/espressif/common-hal/audiobusio/PDMIn.c
 msgid "bit_depth must be 8, 16, 24, or 32."
-msgstr ""
+msgstr "bit_depth muss 8, 16, 24 oder 32 sein."
 
 #: shared-module/bitmapfilter/__init__.c
 msgid "bitmap size and depth must match"
@@ -2658,7 +2669,7 @@ msgstr "bits müssen 32 oder kleiner sein"
 
 #: shared-bindings/audiofreeverb/Freeverb.c
 msgid "bits_per_sample must be 16"
-msgstr ""
+msgstr "bits_per_sample muss 16 sein"
 
 #: shared-bindings/audiodelays/Chorus.c shared-bindings/audiodelays/Echo.c
 #: shared-bindings/audiodelays/MultiTapDelay.c
@@ -2873,7 +2884,7 @@ msgstr ""
 
 #: py/objcomplex.c
 msgid "can't truncate-divide a complex number"
-msgstr ""
+msgstr "kann eine komplexe Zahl nicht kürzen und dividieren"
 
 #: extmod/modasyncio.c
 msgid "can't wait"
@@ -3965,7 +3976,7 @@ msgstr "Ausgabe-Array ist zu klein"
 
 #: extmod/ulab/code/numpy/random/random.c
 msgid "out has wrong type"
-msgstr ""
+msgstr "Ausgabe hat den falschen Typ"
 
 #: extmod/ulab/code/numpy/vector.c
 msgid "out keyword is not supported for complex dtype"
@@ -3993,11 +4004,11 @@ msgstr "Außerhalb des Bereichs des Ziels"
 
 #: extmod/ulab/code/numpy/random/random.c
 msgid "output array has wrong type"
-msgstr ""
+msgstr "Ausgabe-Array hat einen falschen Typ"
 
 #: extmod/ulab/code/numpy/random/random.c
 msgid "output array must be contiguous"
-msgstr ""
+msgstr "Ausgabe-Array muss zusammenhängend sein"
 
 #: py/objint_mpz.c
 msgid "overflow converting long int to machine word"
@@ -4110,7 +4121,7 @@ msgstr "rsplit(None,n)"
 
 #: shared-bindings/audiofreeverb/Freeverb.c
 msgid "samples_signed must be true"
-msgstr ""
+msgstr "samples_signed muss wahr sein"
 
 #: ports/atmel-samd/common-hal/audiobusio/PDMIn.c
 #: ports/raspberrypi/common-hal/audiobusio/PDMIn.c
@@ -4131,7 +4142,7 @@ msgstr "nicht unterstützt"
 
 #: extmod/ulab/code/numpy/random/random.c
 msgid "shape must be None, and integer or a tuple of integers"
-msgstr ""
+msgstr "Form muss Keine, eine Ganzzahl oder ein Tupel von Ganzenahlen sein"
 
 #: extmod/ulab/code/ndarray.c
 msgid "shape must be integer or tuple of integers"
@@ -4155,7 +4166,7 @@ msgstr "Größe ist nur für ndarrays definiert"
 
 #: extmod/ulab/code/numpy/random/random.c
 msgid "size must match out.shape when used together"
-msgstr ""
+msgstr "size muss bei gemeinsamer Verwendung mit out.shape übereinstimmen"
 
 #: py/nativeglue.c
 msgid "slice unsupported"
@@ -4203,7 +4214,7 @@ msgstr "source_bitmap muss value_count von 8 haben"
 
 #: extmod/modre.c
 msgid "splitting with sub-captures"
-msgstr ""
+msgstr "Aufteilung mit Untererfassungen"
 
 #: py/objstr.c
 msgid "start/end indices"
@@ -4244,7 +4255,7 @@ msgstr "Syntaxfehler in JSON"
 
 #: extmod/modtime.c
 msgid "ticks interval overflow"
-msgstr ""
+msgstr "Ticks Intervallüberlauf"
 
 #: ports/nordic/common-hal/watchdog/WatchDogTimer.c
 msgid "timeout duration exceeded the maximum supported value"
@@ -4256,12 +4267,12 @@ msgstr "timeout muss kleiner als 655.35 Sekunden sein"
 
 #: ports/raspberrypi/common-hal/floppyio/__init__.c
 msgid "timeout waiting for flux"
-msgstr ""
+msgstr "Zeitüberschreitung beim Warten auf Fluss"
 
 #: ports/raspberrypi/common-hal/floppyio/__init__.c
 #: shared-module/floppyio/__init__.c
 msgid "timeout waiting for index pulse"
-msgstr ""
+msgstr "Zeitüberschreitung beim Warten auf Indeximpuls"
 
 #: shared-module/sdcardio/SDCard.c
 msgid "timeout waiting for v1 card"
