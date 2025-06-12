@@ -440,6 +440,55 @@ CFLAGS += -isystem esp-camera/driver/include
 CFLAGS += -isystem esp-camera/conversions/include
 endif
 
+ifneq ($(CIRCUITPY_RCLCPY),0)
+CFLAGS += -isystem microros-lib/include
+CFLAGS += -isystem microros-lib/include/rcl
+CFLAGS += -isystem microros-lib/include/statistics_msgs
+CFLAGS += -isystem microros-lib/include/composition_interfaces
+CFLAGS += -isystem microros-lib/include/example_interfaces
+CFLAGS += -isystem microros-lib/include/rmw_microxrcedds_c
+CFLAGS += -isystem microros-lib/include/test_msgs
+CFLAGS += -isystem microros-lib/include/std_msgs
+CFLAGS += -isystem microros-lib/include/rcutils
+CFLAGS += -isystem microros-lib/include/lifecycle_msgs
+CFLAGS += -isystem microros-lib/include/rosidl_typesupport_interface
+CFLAGS += -isystem microros-lib/include/service_msgs
+CFLAGS += -isystem microros-lib/include/visualization_msgs
+CFLAGS += -isystem microros-lib/include/rosidl_dynamic_typesupport
+CFLAGS += -isystem microros-lib/include/stereo_msgs
+CFLAGS += -isystem microros-lib/include/ucdr
+CFLAGS += -isystem microros-lib/include/rosidl_typesupport_c
+CFLAGS += -isystem microros-lib/include/std_srvs
+CFLAGS += -isystem microros-lib/include/rcl_lifecycle
+CFLAGS += -isystem microros-lib/include/action_msgs
+CFLAGS += -isystem microros-lib/include/micro_ros_utilities
+CFLAGS += -isystem microros-lib/include/rcl_action
+CFLAGS += -isystem microros-lib/include/rcl_logging_interface
+CFLAGS += -isystem microros-lib/include/type_description_interfaces
+CFLAGS += -isystem microros-lib/include/nav_msgs
+CFLAGS += -isystem microros-lib/include/actionlib_msgs
+CFLAGS += -isystem microros-lib/include/rmw
+CFLAGS += -isystem microros-lib/include/rclc_parameter
+CFLAGS += -isystem microros-lib/include/geometry_msgs
+CFLAGS += -isystem microros-lib/include/sensor_msgs
+CFLAGS += -isystem microros-lib/include/trajectory_msgs
+CFLAGS += -isystem microros-lib/include/shape_msgs
+CFLAGS += -isystem microros-lib/include/rosidl_runtime_c
+CFLAGS += -isystem microros-lib/include/rclc
+CFLAGS += -isystem microros-lib/include/rosgraph_msgs
+CFLAGS += -isystem microros-lib/include/rclc_lifecycle
+CFLAGS += -isystem microros-lib/include/rcl_interfaces
+CFLAGS += -isystem microros-lib/include/diagnostic_msgs
+CFLAGS += -isystem microros-lib/include/micro_ros_msgs
+CFLAGS += -isystem microros-lib/include/rosidl_typesupport_introspection_c
+CFLAGS += -isystem microros-lib/include/uxr
+CFLAGS += -isystem microros-lib/include/unique_identifier_msgs
+CFLAGS += -isystem microros-lib/include/rosidl_typesupport_microxrcedds_c
+CFLAGS += -isystem microros-lib/include/builtin_interfaces
+CFLAGS += -isystem microros-lib/include/tracetools
+CFLAGS += -isystem microros-lib/include/rmw_microros
+endif
+
 ifneq ($(CIRCUITPY_ESPIDF),0)
 SRC_ESPIDF := \
 	$(wildcard common-hal/espidf/*.c) \
@@ -683,6 +732,18 @@ endif
 ifneq ($(CIRCUITPY_ESPCAMERA),0)
 ESP_IDF_COMPONENTS_EXPANDED += $(BUILD)/esp-idf/esp-idf/esp-camera/libesp-camera.a
 #$(error $(ESP_IDF_COMPONENTS_EXPANDED))
+endif
+
+ifneq ($(CIRCUITPY_RCLCPY),0)
+	ifeq ($(IDF_TARGET),esp32)
+		BINARY_BLOBS += microros-lib/esp32/libmicroros.a
+	else ifeq ($(IDF_TARGET),esp32s2)
+		BINARY_BLOBS+= microros-lib/esp32s2/libmicroros.a
+	else ifeq ($(IDF_TARGET),esp32s3)
+		BINARY_BLOBS += microros-lib/esp32s3/libmicroros.a
+	else
+		$(error Unsupported Espressif target for Micro-ROS: $(IDF_TARGET).)
+	endif
 endif
 
 ifneq ($(VALID_BOARD),)

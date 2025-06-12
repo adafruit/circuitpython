@@ -55,6 +55,10 @@
 #include "esp_camera.h"
 #endif
 
+#if CIRCUITPY_RCLCPY
+#include "common-hal/rclcpy/__init__.h"
+#endif
+
 #include "soc/efuse_reg.h"
 #if defined(SOC_LP_AON_SUPPORTED)
 #include "soc/lp_aon_reg.h"
@@ -304,18 +308,18 @@ void port_heap_init(void) {
 }
 
 void *port_malloc(size_t size, bool dma_capable) {
-    size_t caps = MALLOC_CAP_8BIT;
     if (dma_capable) {
-        caps |= MALLOC_CAP_DMA;
+        // SPIRAM is not DMA-capable, so don't bother to ask for it.
+        return heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_DMA);
     }
 
     void *ptr = NULL;
-    // Try SPIRAM first when available.
+    // Try SPIRAM first if available.
     #ifdef CONFIG_SPIRAM
-    ptr = heap_caps_malloc(size, caps | MALLOC_CAP_SPIRAM);
+    ptr = heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
     #endif
     if (ptr == NULL) {
-        ptr = heap_caps_malloc(size, caps);
+        ptr = heap_caps_malloc(size, MALLOC_CAP_8BIT);
     }
     return ptr;
 }
@@ -376,6 +380,10 @@ void reset_port(void) {
 
     #if CIRCUITPY_PS2IO
     ps2_reset();
+    #endif
+
+    #if CIRCUITPY_RCLCPY
+    rclcpy_reset();
     #endif
 
     #if CIRCUITPY_RTC

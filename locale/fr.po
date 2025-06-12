@@ -823,7 +823,8 @@ msgstr "Impossible d'enregistrer vers un fichier"
 
 #: shared-module/storage/__init__.c
 msgid "Cannot remount path when visible via USB."
-msgstr "Impossible de remonter le chemin d'accès lorsqu'il est visible via USB."
+msgstr ""
+"Impossible de remonter le chemin d'accès lorsqu'il est visible via USB."
 
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Cannot set value when direction is input."
@@ -880,6 +881,10 @@ msgstr "Les tableaux de coordonnées sont de longueur différentes"
 msgid "Coordinate arrays types have different sizes"
 msgstr "Les types des tableaux de coordonnées sont de longueur différentes"
 
+#: ports/espressif/common-hal/rclcpy/Publisher.c
+msgid "Could not publish to ROS topic"
+msgstr ""
+
 #: shared-bindings/_bleio/Adapter.c
 msgid "Could not set address"
 msgstr "Ne peux définir l'adresse"
@@ -891,6 +896,11 @@ msgstr "Ne peux lancer l'interruption, RX occupé"
 #: shared-module/audiomp3/MP3Decoder.c
 msgid "Couldn't allocate decoder"
 msgstr "Ne peux allouer le décodeur"
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+#, c-format
+msgid "Critical ROS failure during soft reboot, reset required: %d"
+msgstr ""
 
 #: ports/stm/common-hal/analogio/AnalogOut.c
 msgid "DAC Channel Init Error"
@@ -1331,6 +1341,10 @@ msgstr "BSSID invalide"
 #: shared-bindings/wifi/Radio.c
 msgid "Invalid MAC address"
 msgstr "Adresse MAC invalide"
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+msgid "Invalid ROS domain ID"
+msgstr ""
 
 #: ports/espressif/common-hal/espidf/__init__.c py/moderrno.c
 msgid "Invalid argument"
@@ -1904,6 +1918,10 @@ msgstr "Taille du programme invalide"
 msgid "Program too long"
 msgstr "Programme trop long"
 
+#: shared-bindings/rclcpy/Publisher.c
+msgid "Publishers can only be created from a parent node"
+msgstr ""
+
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Pull not used when direction is output."
 msgstr "Le tirage 'pull' n'est pas utilisé quand la direction est 'output'."
@@ -1923,6 +1941,26 @@ msgstr "Erreur de désinitialisation du RNG"
 #: ports/stm/common-hal/os/__init__.c
 msgid "RNG Init Error"
 msgstr "Erreur d'initialisation du RNG"
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+msgid "ROS failed to initialize. Is agent connected?"
+msgstr ""
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+msgid "ROS internal setup failure"
+msgstr ""
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+msgid "ROS memory allocator failure"
+msgstr ""
+
+#: ports/espressif/common-hal/rclcpy/Node.c
+msgid "ROS node failed to initialize"
+msgstr ""
+
+#: ports/espressif/common-hal/rclcpy/Publisher.c
+msgid "ROS topic failed to initialize"
+msgstr ""
 
 #: ports/atmel-samd/common-hal/busio/UART.c ports/cxd56/common-hal/busio/UART.c
 #: ports/nordic/common-hal/busio/UART.c ports/stm/common-hal/busio/UART.c

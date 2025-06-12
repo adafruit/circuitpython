@@ -873,6 +873,10 @@ msgstr "Koordinaten-Arrays haben unterschiedliche Längen"
 msgid "Coordinate arrays types have different sizes"
 msgstr "Typen der Koordinaten-Arrays haben unterschiedliche Längen"
 
+#: ports/espressif/common-hal/rclcpy/Publisher.c
+msgid "Could not publish to ROS topic"
+msgstr ""
+
 #: shared-bindings/_bleio/Adapter.c
 msgid "Could not set address"
 msgstr "Konnte Adresse nicht setzen"
@@ -884,6 +888,11 @@ msgstr "Interrupt konnte nicht gestartet werden, RX beschäftigt"
 #: shared-module/audiomp3/MP3Decoder.c
 msgid "Couldn't allocate decoder"
 msgstr "Decoder konnte nicht zugeordnet werden"
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+#, c-format
+msgid "Critical ROS failure during soft reboot, reset required: %d"
+msgstr ""
 
 #: ports/stm/common-hal/analogio/AnalogOut.c
 msgid "DAC Channel Init Error"
@@ -1043,7 +1052,8 @@ msgstr "Erstellen kontinuierlicher Kanäle fehlgeschlagen: ungültiges Argument"
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "Failed to create continuous channels: invalid state"
-msgstr "Kontinuierliche Kanäle konnten nicht erstellt werden: ungültiger Status"
+msgstr ""
+"Kontinuierliche Kanäle konnten nicht erstellt werden: ungültiger Status"
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "Failed to create continuous channels: no mem"
@@ -1322,6 +1332,10 @@ msgstr "Ungültige BSSID"
 #: shared-bindings/wifi/Radio.c
 msgid "Invalid MAC address"
 msgstr "Ungültige MAC-Adresse"
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+msgid "Invalid ROS domain ID"
+msgstr ""
 
 #: ports/espressif/common-hal/espidf/__init__.c py/moderrno.c
 msgid "Invalid argument"
@@ -1892,6 +1906,10 @@ msgstr "Programm-Größe ist ungültig"
 msgid "Program too long"
 msgstr "Programm zu lang"
 
+#: shared-bindings/rclcpy/Publisher.c
+msgid "Publishers can only be created from a parent node"
+msgstr ""
+
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Pull not used when direction is output."
 msgstr "Pull wird nicht verwendet, wenn die Richtung output ist."
@@ -1911,6 +1929,26 @@ msgstr "RNG DeInit-Fehler"
 #: ports/stm/common-hal/os/__init__.c
 msgid "RNG Init Error"
 msgstr "RNG-Init-Fehler"
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+msgid "ROS failed to initialize. Is agent connected?"
+msgstr ""
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+msgid "ROS internal setup failure"
+msgstr ""
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+msgid "ROS memory allocator failure"
+msgstr ""
+
+#: ports/espressif/common-hal/rclcpy/Node.c
+msgid "ROS node failed to initialize"
+msgstr ""
+
+#: ports/espressif/common-hal/rclcpy/Publisher.c
+msgid "ROS topic failed to initialize"
+msgstr ""
 
 #: ports/atmel-samd/common-hal/busio/UART.c ports/cxd56/common-hal/busio/UART.c
 #: ports/nordic/common-hal/busio/UART.c ports/stm/common-hal/busio/UART.c
