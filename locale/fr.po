@@ -325,7 +325,7 @@ msgid "'%q' object does not support '%q'"
 msgstr "l'objet '%q' ne supporte pas '%q'"
 
 #: py/runtime.c
-msgid "'%q' object is not an iterator"
+msgid "'%q' object isn't an iterator"
 msgstr "l'objet '%q' n'est pas un itérateur"
 
 #: py/objtype.c py/runtime.c shared-module/atexit/__init__.c
@@ -333,7 +333,7 @@ msgid "'%q' object is not callable"
 msgstr "l'objet '%q' ne peut pas être appelé"
 
 #: py/runtime.c
-msgid "'%q' object is not iterable"
+msgid "'%q' object isn't iterable"
 msgstr "l'objet '%q' n'est pas itérable"
 
 #: py/emitinlinethumb.c py/emitinlinextensa.c
@@ -3276,7 +3276,7 @@ msgid "format"
 msgstr "format"
 
 #: py/objstr.c
-msgid "format requires a dict"
+msgid "format needs a dict"
 msgstr "le format requier un dict"
 
 #: py/objdeque.c
@@ -3741,7 +3741,7 @@ msgid "must use keyword argument for key function"
 msgstr "doit utiliser un argument nommé pour une fonction key"
 
 #: py/runtime.c
-msgid "name '%q' is not defined"
+msgid "name '%q' isn't defined"
 msgstr "nom '%q' non défini"
 
 #: py/runtime.c
@@ -4385,11 +4385,11 @@ msgid "tx and rx cannot both be None"
 msgstr "tx et rx ne peuvent être 'None' tous les deux"
 
 #: py/objtype.c
-msgid "type '%q' is not an acceptable base type"
+msgid "type '%q' isn't an acceptable base type"
 msgstr "le type '%q' n'est pas un type de base accepté"
 
 #: py/objtype.c
-msgid "type is not an acceptable base type"
+msgid "type isn't an acceptable base type"
 msgstr "le type n'est pas un type de base accepté"
 
 #: py/runtime.c
@@ -4958,13 +4958,13 @@ msgstr "zi doit être de forme (n_section, 2)"
 #~ msgid "'%s' object does not support item deletion"
 #~ msgstr "l'objet '%s' ne supporte pas la suppression d'éléments"
 
-#~ msgid "'%s' object is not an iterator"
+#~ msgid "'%s' object isn't an iterator"
 #~ msgstr "l'objet '%s' n'est pas un itérateur"
 
 #~ msgid "'%s' object is not callable"
 #~ msgstr "l'objet '%s' n'est pas appelable"
 
-#~ msgid "'%s' object is not iterable"
+#~ msgid "'%s' object isn't iterable"
 #~ msgstr "l'objet '%s' n'est pas itérable"
 
 #~ msgid "'%s' object is not subscriptable"
@@ -4982,7 +4982,7 @@ msgstr "zi doit être de forme (n_section, 2)"
 #~ msgid "'continue' outside loop"
 #~ msgstr "'continue' dehors d'une boucle"
 
-#~ msgid "'coroutine' object is not an iterator"
+#~ msgid "'coroutine' object isn't an iterator"
 #~ msgstr "L'objet \"coroutine\" n'est pas un itérateur"
 
 #~ msgid "(x,y) integers required"
@@ -6471,7 +6471,7 @@ msgstr "zi doit être de forme (n_section, 2)"
 #~ msgid "frequency is read-only for this board"
 #~ msgstr "la fréquence est en lecture seule pour cette carte"
 
-#~ msgid "function does not take keyword arguments"
+#~ msgid "function doesn't take keyword arguments"
 #~ msgstr "la fonction ne prend pas d'arguments nommés"
 
 #~ msgid "function is implemented for scalars and ndarrays only"
@@ -6600,7 +6600,7 @@ msgstr "zi doit être de forme (n_section, 2)"
 #~ msgid "name must be a string"
 #~ msgstr "les noms doivent être des chaînes de caractère"
 
-#~ msgid "name reused for argument"
+#~ msgid "argument name reused"
 #~ msgstr "nom réutilisé comme paramètre"
 
 #~ msgid "no available NIC"

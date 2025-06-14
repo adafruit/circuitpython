@@ -322,6 +322,10 @@ typedef struct _mp_state_thread_t {
     struct _mp_code_state_t *current_code_state;
     #endif
 
+    #if MICROPY_PY_SSL_MBEDTLS_NEED_ACTIVE_CONTEXT
+    struct _mp_obj_ssl_context_t *tls_ssl_context;
+    #endif
+
     // CIRCUITPY-CHANGE
     #if CIRCUITPY_WARNINGS
     warnings_action_t warnings_action;

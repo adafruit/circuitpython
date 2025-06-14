@@ -324,7 +324,7 @@ msgid "'%q' object does not support '%q'"
 msgstr "'%q' αντικείμενο δεν υποστηρίζει '%q'"
 
 #: py/runtime.c
-msgid "'%q' object is not an iterator"
+msgid "'%q' object isn't an iterator"
 msgstr "'%q' αντικείμενο δεν είναι επαναλήπτης"
 
 #: py/objtype.c py/runtime.c shared-module/atexit/__init__.c
@@ -332,7 +332,7 @@ msgid "'%q' object is not callable"
 msgstr "'%q' αντικείμενο δεν καλείται"
 
 #: py/runtime.c
-msgid "'%q' object is not iterable"
+msgid "'%q' object isn't iterable"
 msgstr "'%q' αντικείμενο δεν είναι επαναληπτικό"
 
 #: py/emitinlinethumb.c py/emitinlinextensa.c
@@ -3209,7 +3209,7 @@ msgid "format"
 msgstr ""
 
 #: py/objstr.c
-msgid "format requires a dict"
+msgid "format needs a dict"
 msgstr ""
 
 #: py/objdeque.c
@@ -3668,7 +3668,7 @@ msgid "must use keyword argument for key function"
 msgstr ""
 
 #: py/runtime.c
-msgid "name '%q' is not defined"
+msgid "name '%q' isn't defined"
 msgstr ""
 
 #: py/runtime.c
@@ -4309,11 +4309,11 @@ msgid "tx and rx cannot both be None"
 msgstr ""
 
 #: py/objtype.c
-msgid "type '%q' is not an acceptable base type"
+msgid "type '%q' isn't an acceptable base type"
 msgstr ""
 
 #: py/objtype.c
-msgid "type is not an acceptable base type"
+msgid "type isn't an acceptable base type"
 msgstr ""
 
 #: py/runtime.c
@@ -4637,7 +4637,7 @@ msgstr ""
 #~ msgid "'continue' outside loop"
 #~ msgstr "'continue' εκτός επανάληψης"
 
-#~ msgid "'coroutine' object is not an iterator"
+#~ msgid "'coroutine' object isn't an iterator"
 #~ msgstr ""
 #~ "'coroutine' αντικείμενο δεν μπορεί να χρησιμοποιηθεί σαν επαναλήπτης"
 

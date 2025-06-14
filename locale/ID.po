@@ -321,7 +321,7 @@ msgid "'%q' object does not support '%q'"
 msgstr "Objek '%q' tidak mendukung '%q'"
 
 #: py/runtime.c
-msgid "'%q' object is not an iterator"
+msgid "'%q' object isn't an iterator"
 msgstr "Objek '%q' bukan merupakan iterator"
 
 #: py/objtype.c py/runtime.c shared-module/atexit/__init__.c
@@ -329,7 +329,7 @@ msgid "'%q' object is not callable"
 msgstr "Objek '%q' tidak dapat dipanggil"
 
 #: py/runtime.c
-msgid "'%q' object is not iterable"
+msgid "'%q' object isn't iterable"
 msgstr "Objek '%q' tidak dapat diulang"
 
 #: py/emitinlinethumb.c py/emitinlinextensa.c
@@ -3230,7 +3230,7 @@ msgid "format"
 msgstr ""
 
 #: py/objstr.c
-msgid "format requires a dict"
+msgid "format needs a dict"
 msgstr ""
 
 #: py/objdeque.c
@@ -3689,7 +3689,7 @@ msgid "must use keyword argument for key function"
 msgstr ""
 
 #: py/runtime.c
-msgid "name '%q' is not defined"
+msgid "name '%q' isn't defined"
 msgstr ""
 
 #: py/runtime.c
@@ -4330,11 +4330,11 @@ msgid "tx and rx cannot both be None"
 msgstr "tx dan rx keduanya tidak boleh kosong"
 
 #: py/objtype.c
-msgid "type '%q' is not an acceptable base type"
+msgid "type '%q' isn't an acceptable base type"
 msgstr ""
 
 #: py/objtype.c
-msgid "type is not an acceptable base type"
+msgid "type isn't an acceptable base type"
 msgstr ""
 
 #: py/runtime.c
@@ -4747,13 +4747,13 @@ msgstr "Zi harus berbentuk (n_section, 2)"
 #~ msgid "'%s' object does not support item deletion"
 #~ msgstr "Objek '%s' tidak mendukung penghapusan item"
 
-#~ msgid "'%s' object is not an iterator"
+#~ msgid "'%s' object isn't an iterator"
 #~ msgstr "Objek '%s' bukan iterator"
 
 #~ msgid "'%s' object is not callable"
 #~ msgstr "Objek '%s' tidak dapat dipanggil"
 
-#~ msgid "'%s' object is not iterable"
+#~ msgid "'%s' object isn't iterable"
 #~ msgstr "'%s' objek tidak dapat diulang"
 
 #~ msgid "'%s' object is not subscriptable"
@@ -5563,7 +5563,7 @@ msgstr "Zi harus berbentuk (n_section, 2)"
 #~ msgid "frequency can only be either 80Mhz or 160MHz"
 #~ msgstr "frekuensi hanya bisa didefinisikan 80Mhz atau 160Mhz"
 
-#~ msgid "function does not take keyword arguments"
+#~ msgid "function doesn't take keyword arguments"
 #~ msgstr "fungsi tidak dapat mengambil argumen keyword"
 
 #~ msgid "impossible baudrate"
@@ -5618,7 +5618,7 @@ msgstr "Zi harus berbentuk (n_section, 2)"
 #~ msgid "name must be a string"
 #~ msgstr "keyword harus berupa string"
 
-#~ msgid "name reused for argument"
+#~ msgid "argument name reused"
 #~ msgstr "nama digunakan kembali untuk argumen"
 
 #~ msgid "non-keyword arg after */**"

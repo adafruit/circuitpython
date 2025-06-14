@@ -32,7 +32,7 @@
 #include "py/objstr.h"
 #include "py/objlist.h"
 #include "py/runtime.h"
-#include "py/stackctrl.h"
+#include "py/cstack.h"
 
 // CIRCUITPY-CHANGE
 const char nibble_to_hex_upper[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
@@ -1202,7 +1202,7 @@ static vstr_t mp_obj_str_format_helper(const char *str, const char *top, int *ar
             // type        ::=  "b" | "c" | "d" | "e" | "E" | "f" | "F" | "g" | "G" | "n" | "o" | "s" | "x" | "X" | "%"
 
             // recursively call the formatter to format any nested specifiers
-            MP_STACK_CHECK();
+            mp_cstack_check();
             vstr_t format_spec_vstr = mp_obj_str_format_helper(format_spec, str, arg_i, n_args, args, kwargs);
             const char *s = vstr_null_terminated_str(&format_spec_vstr);
             const char *stop = s + format_spec_vstr.len;
@@ -1503,8 +1503,7 @@ static mp_obj_t str_modulo_format(mp_obj_t pattern, size_t n_args, const mp_obj_
         // Dictionary value lookup
         if (*str == '(') {
             if (dict == MP_OBJ_NULL) {
-                // CIRCUITPY-CHANGE: clearer message
-                mp_raise_TypeError(MP_ERROR_TEXT("format requires a dict"));
+                mp_raise_TypeError(MP_ERROR_TEXT("format needs a dict"));
             }
             arg_i = 1; // we used up the single dict argument
             const byte *key = ++str;
@@ -1585,8 +1584,7 @@ static mp_obj_t str_modulo_format(mp_obj_t pattern, size_t n_args, const mp_obj_
         if (arg == MP_OBJ_NULL) {
             if (arg_i >= n_args) {
             not_enough_args:
-                // CIRCUITPY-CHANGE: clearer message
-                mp_raise_TypeError(MP_ERROR_TEXT("not enough arguments for format string"));
+                mp_raise_TypeError(MP_ERROR_TEXT("format string needs more arguments"));
             }
             arg = args[arg_i++];
         }
@@ -1596,16 +1594,14 @@ static mp_obj_t str_modulo_format(mp_obj_t pattern, size_t n_args, const mp_obj_
                     size_t slen;
                     const char *s = mp_obj_str_get_data(arg, &slen);
                     if (slen != 1) {
-                        // CIRCUITPY-CHANGE: clearer message
-                        mp_raise_TypeError(MP_ERROR_TEXT("%%c requires int or char"));
+                        mp_raise_TypeError(MP_ERROR_TEXT("%%c needs int or char"));
                     }
                     mp_print_strn(&print, s, 1, flags, ' ', width);
                 } else if (arg_looks_integer(arg)) {
                     char ch = mp_obj_get_int(arg);
                     mp_print_strn(&print, &ch, 1, flags, ' ', width);
                 } else {
-                    // CIRCUITPY-CHANGE: clearer message
-                    mp_raise_TypeError(MP_ERROR_TEXT("%%c requires int or char"));
+                    mp_raise_TypeError(MP_ERROR_TEXT("%%c needs int or char"));
                 }
                 break;
 
@@ -1677,8 +1673,7 @@ static mp_obj_t str_modulo_format(mp_obj_t pattern, size_t n_args, const mp_obj_
     if (dict == MP_OBJ_NULL && arg_i != n_args) {
         // NOTE: if `dict` exists, then `n_args` is 1 and the dict is always consumed; either
         // positionally, or as a map of named args, even if none were actually referenced.
-        // CIRCUITPY-CHANGE: clearer message
-        mp_raise_TypeError(MP_ERROR_TEXT("not all arguments converted during string formatting"));
+        mp_raise_TypeError(MP_ERROR_TEXT("format string didn't convert all arguments"));
     }
 
     return mp_obj_new_str_type_from_vstr(is_bytes ? &mp_type_bytes : &mp_type_str, &vstr);
@@ -2044,27 +2039,21 @@ mp_obj_t mp_obj_bytes_fromhex(mp_obj_t type_in, mp_obj_t data) {
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(data, &bufinfo, MP_BUFFER_READ);
 
-    if ((bufinfo.len & 1) != 0) {
-        mp_raise_ValueError(MP_ERROR_TEXT("odd-length string"));
-    }
     vstr_t vstr;
     vstr_init_len(&vstr, bufinfo.len / 2);
     byte *in = bufinfo.buf, *out = (byte *)vstr.buf;
-    byte hex_byte = 0;
-    for (mp_uint_t i = bufinfo.len; i--;) {
-        byte hex_ch = *in++;
-        if (unichar_isxdigit(hex_ch)) {
-            hex_byte += unichar_xdigit_value(hex_ch);
-        } else {
-            mp_raise_ValueError(MP_ERROR_TEXT("non-hex digit found"));
+    byte *in_end = in + bufinfo.len;
+    mp_uint_t ch1, ch2;
+    while (in < in_end) {
+        if (unichar_isspace(ch1 = *in++)) {
+            continue;  // Skip whitespace between hex digit pairs
         }
-        if (i & 1) {
-            hex_byte <<= 4;
-        } else {
-            *out++ = hex_byte;
-            hex_byte = 0;
+        if (in == in_end || !unichar_isxdigit(ch1) || !unichar_isxdigit(ch2 = *in++)) {
+            mp_raise_ValueError(MP_ERROR_TEXT("non-hex digit"));
         }
+        *out++ = (byte)((unichar_xdigit_value(ch1) << 4) | unichar_xdigit_value(ch2));
     }
+    vstr.len = out - (byte *)vstr.buf;  // Length may be shorter due to whitespace in input
     return mp_obj_new_str_type_from_vstr(MP_OBJ_TO_PTR(type_in), &vstr);
 }
 
@@ -2340,6 +2329,10 @@ mp_obj_t mp_obj_new_str(const char *data, size_t len) {
         // no existing qstr, don't make one
         return mp_obj_new_str_copy(&mp_type_str, (const byte *)data, len);
     }
+}
+
+mp_obj_t mp_obj_new_str_from_cstr(const char *str) {
+    return mp_obj_new_str(str, strlen(str));
 }
 
 mp_obj_t mp_obj_str_intern(mp_obj_t str) {

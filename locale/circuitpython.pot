@@ -69,7 +69,7 @@ msgstr ""
 
 #: py/objstr.c
 #, c-format
-msgid "%%c requires int or char"
+msgid "%%c needs int or char"
 msgstr ""
 
 #: shared-bindings/rgbmatrix/RGBMatrix.c
@@ -158,7 +158,7 @@ msgstr ""
 msgid "%q length must be >= %d"
 msgstr ""
 
-#: py/modsys.c py/runtime.c
+#: py/runtime.c
 msgid "%q moved from %q to %q"
 msgstr ""
 
@@ -309,15 +309,15 @@ msgid "'%q' object does not support '%q'"
 msgstr ""
 
 #: py/runtime.c
-msgid "'%q' object is not an iterator"
+msgid "'%q' object isn't an iterator"
 msgstr ""
 
 #: py/objtype.c py/runtime.c shared-module/atexit/__init__.c
-msgid "'%q' object is not callable"
+msgid "'%q' object isn't callable"
 msgstr ""
 
 #: py/runtime.c
-msgid "'%q' object is not iterable"
+msgid "'%q' object isn't iterable"
 msgstr ""
 
 #: py/emitinlinethumb.c py/emitinlinextensa.c
@@ -2765,6 +2765,10 @@ msgstr ""
 msgid "can't convert to str implicitly"
 msgstr ""
 
+#: py/objtype.c
+msgid "can't create '%q' instances"
+msgstr ""
+
 #: py/compile.c
 msgid "can't declare nonlocal in outer code"
 msgstr ""
@@ -2861,10 +2865,6 @@ msgstr ""
 
 #: extmod/ulab/code/ndarray.c
 msgid "cannot convert complex type"
-msgstr ""
-
-#: py/objtype.c
-msgid "cannot create '%q' instances"
 msgstr ""
 
 #: py/objtype.c
@@ -3181,7 +3181,15 @@ msgid "format"
 msgstr ""
 
 #: py/objstr.c
-msgid "format requires a dict"
+msgid "format needs a dict"
+msgstr ""
+
+#: py/objstr.c
+msgid "format string didn't convert all arguments"
+msgstr ""
+
+#: py/objstr.c
+msgid "format string needs more arguments"
 msgstr ""
 
 #: py/objdeque.c
@@ -3640,7 +3648,7 @@ msgid "must use keyword argument for key function"
 msgstr ""
 
 #: py/runtime.c
-msgid "name '%q' is not defined"
+msgid "name '%q' isn't defined"
 msgstr ""
 
 #: py/runtime.c
@@ -3730,7 +3738,7 @@ msgid "non-default argument follows default argument"
 msgstr ""
 
 #: py/objstr.c
-msgid "non-hex digit found"
+msgid "non-hex digit"
 msgstr ""
 
 #: ports/nordic/common-hal/_bleio/Adapter.c
@@ -3747,14 +3755,6 @@ msgstr ""
 
 #: py/parse.c
 msgid "not a constant"
-msgstr ""
-
-#: py/objstr.c
-msgid "not all arguments converted during string formatting"
-msgstr ""
-
-#: py/objstr.c
-msgid "not enough arguments for format string"
 msgstr ""
 
 #: extmod/ulab/code/numpy/carray/carray_tools.c
@@ -3817,10 +3817,6 @@ msgstr ""
 
 #: py/obj.c
 msgid "object with buffer protocol required"
-msgstr ""
-
-#: py/objstr.c
-msgid "odd-length string"
 msgstr ""
 
 #: supervisor/shared/web_workflow/web_workflow.c
@@ -4009,10 +4005,6 @@ msgstr ""
 
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 msgid "pull masks conflict with direction masks"
-msgstr ""
-
-#: py/parse.c
-msgid "raw f-strings are not supported"
 msgstr ""
 
 #: extmod/ulab/code/numpy/fft/fft_tools.c
@@ -4281,11 +4273,11 @@ msgid "tx and rx cannot both be None"
 msgstr ""
 
 #: py/objtype.c
-msgid "type '%q' is not an acceptable base type"
+msgid "type '%q' isn't an acceptable base type"
 msgstr ""
 
 #: py/objtype.c
-msgid "type is not an acceptable base type"
+msgid "type isn't an acceptable base type"
 msgstr ""
 
 #: py/runtime.c

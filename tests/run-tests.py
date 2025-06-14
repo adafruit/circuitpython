@@ -3,6 +3,7 @@
 import os
 import subprocess
 import sys
+import sysconfig
 import platform
 import argparse
 import inspect
@@ -466,9 +467,7 @@ def run_tests(pyb, tests, args, result_dir, num_threads=1):
 
     upy_float_precision = 32
 
-    # If we're asked to --list-tests, we can't assume that there's a
-    # connection to target, so we can't run feature checks usefully.
-    if not (args.list_tests or args.write_exp):
+    if True:
         # Even if we run completely different tests in a different directory,
         # we need to access feature_checks from the same directory as the
         # run-tests.py script itself so use base_path.
@@ -564,6 +563,7 @@ def run_tests(pyb, tests, args, result_dir, num_threads=1):
     # These tests don't test slice explicitly but rather use it to perform the test
     misc_slice_tests = (
         "builtin_range",
+        "bytearray1",
         "class_super",
         "containment",
         "errno1",
@@ -574,6 +574,7 @@ def run_tests(pyb, tests, args, result_dir, num_threads=1):
         "memoryview_gc",
         "object1",
         "python34",
+        "string_format_modulo",
         "struct_endian",
     )
 
@@ -581,13 +582,9 @@ def run_tests(pyb, tests, args, result_dir, num_threads=1):
     if os.getenv("GITHUB_ACTIONS") == "true":
         skip_tests.add("thread/stress_schedule.py")  # has reliability issues
 
-        if os.getenv("RUNNER_OS") == "Windows":
+        if os.getenv("RUNNER_OS") == "Windows" and os.getenv("CI_BUILD_CONFIGURATION") == "Debug":
             # fails with stack overflow on Debug builds
             skip_tests.add("misc/sys_settrace_features.py")
-
-            if os.getenv("MSYSTEM") is not None:
-                # fails due to wrong path separator
-                skip_tests.add("import/import_file.py")
 
     if upy_float_precision == 0:
         skip_tests.add("extmod/uctypes_le_float.py")
@@ -640,6 +637,9 @@ def run_tests(pyb, tests, args, result_dir, num_threads=1):
         skip_tests.add("thread/thread_lock2.py")
         skip_tests.add("thread/thread_lock3.py")
         skip_tests.add("thread/thread_shared2.py")
+    elif args.target == "zephyr":
+        skip_tests.add("thread/stress_heap.py")
+        skip_tests.add("thread/thread_lock3.py")
 
     # Some tests shouldn't be run on pyboard
     if args.target != "unix":
@@ -658,6 +658,8 @@ def run_tests(pyb, tests, args, result_dir, num_threads=1):
             skip_tests.add("extmod/random_basic.py")  # requires random
             skip_tests.add("extmod/random_extra.py")  # requires random
         elif args.target == "esp8266":
+            skip_tests.add("micropython/viper_args.py")  # too large
+            skip_tests.add("micropython/viper_binop_arith.py")  # too large
             skip_tests.add("misc/rge_sm.py")  # too large
         elif args.target == "minimal":
             skip_tests.add("basics/class_inplace_op.py")  # all special methods not supported
@@ -678,8 +680,12 @@ def run_tests(pyb, tests, args, result_dir, num_threads=1):
             skip_tests.add(
                 "extmod/time_time_ns.py"
             )  # RA fsp rtc function doesn't support nano sec info
-        elif args.target == "qemu-arm":
-            skip_tests.add("misc/print_exception.py")  # requires sys stdfiles
+        elif args.target == "qemu":
+            skip_tests.add("inlineasm/asmfpaddsub.py")  # requires Cortex-M4
+            skip_tests.add("inlineasm/asmfpcmp.py")
+            skip_tests.add("inlineasm/asmfpldrstr.py")
+            skip_tests.add("inlineasm/asmfpmuldiv.py")
+            skip_tests.add("inlineasm/asmfpsqrt.py")
         elif args.target == "webassembly":
             skip_tests.add("basics/string_format_modulo.py")  # can't print nulls to stdout
             skip_tests.add("basics/string_strip.py")  # can't print nulls to stdout
@@ -711,7 +717,9 @@ def run_tests(pyb, tests, args, result_dir, num_threads=1):
 
     # Some tests use unsupported features on Windows
     if os.name == "nt":
-        skip_tests.add("import/import_file.py")  # works but CPython prints forward slashes
+        if not sysconfig.get_platform().startswith("mingw"):
+            # Works but CPython uses '\' path separator
+            skip_tests.add("import/import_file.py")
 
     # Some tests are known to fail with native emitter
     # Remove them from the below when they work
@@ -806,11 +814,6 @@ def run_tests(pyb, tests, args, result_dir, num_threads=1):
         skip_it |= skip_io_module and is_io_module
         skip_it |= skip_fstring and is_fstring
 
-        if args.list_tests:
-            if not skip_it:
-                print(test_file)
-            return
-
         if skip_it:
             print("skip ", test_file)
             skipped_tests.append(test_name)
@@ -842,22 +845,22 @@ def run_tests(pyb, tests, args, result_dir, num_threads=1):
                     # CIRCUITPY-CHANGE: pass environment
                     env=e,
                 )
-                if args.write_exp:
-                    with open(test_file_expected, "wb") as f:
-                        f.write(output_expected)
             except subprocess.CalledProcessError:
                 output_expected = b"CPYTHON3 CRASH"
 
         # canonical form for all host platforms is to use \n for end-of-line
         output_expected = output_expected.replace(b"\r\n", b"\n")
 
-        if args.write_exp:
-            return
-
         # run MicroPython
         output_mupy = run_micropython(pyb, args, test_file, test_file_abspath)
 
         if output_mupy == b"SKIP\n":
+            if pyb is not None and hasattr(pyb, "read_until"):
+                # Running on a target over a serial connection, and the target requested
+                # to skip the test.  It does this via a SystemExit which triggers a soft
+                # reset.  Wait for the soft reset to finish, so we don't interrupt the
+                # start-up code (eg boot.py) when preparing to run the next test.
+                pyb.read_until(1, b"raw REPL; CTRL-B to exit\r\n")
             print("skip ", test_file)
             skipped_tests.append(test_name)
             return
@@ -882,7 +885,7 @@ def run_tests(pyb, tests, args, result_dir, num_threads=1):
 
         test_count.increment()
 
-    if pyb or args.list_tests:
+    if pyb:
         num_threads = 1
 
     if num_threads > 1:
@@ -891,10 +894,6 @@ def run_tests(pyb, tests, args, result_dir, num_threads=1):
     else:
         for test in tests:
             run_one_test(test)
-
-    # Leave RESULTS_FILE untouched here for future runs.
-    if args.list_tests:
-        return True
 
     print(
         "{} tests performed ({} individual testcases)".format(
@@ -1005,14 +1004,6 @@ the last matching regex is used:
         help="include test by regex on path/name.py",
     )
     cmd_parser.add_argument(
-        "--write-exp",
-        action="store_true",
-        help="use CPython to generate .exp files to run tests w/o CPython",
-    )
-    cmd_parser.add_argument(
-        "--list-tests", action="store_true", help="list tests instead of running them"
-    )
-    cmd_parser.add_argument(
         "--emit", default="bytecode", help="MicroPython emitter to use (bytecode or native)"
     )
     cmd_parser.add_argument("--heapsize", help="heapsize to use (use default if not specified)")
@@ -1069,7 +1060,6 @@ the last matching regex is used:
 
     LOCAL_TARGETS = (
         "unix",
-        "qemu-arm",
         "webassembly",
     )
     EXTERNAL_TARGETS = (
@@ -1079,18 +1069,13 @@ the last matching regex is used:
         "esp32",
         "minimal",
         "nrf",
+        "qemu",
         "renesas-ra",
         "rp2",
+        "zephyr",
     )
-    if args.list_tests:
+    if args.target in LOCAL_TARGETS:
         pyb = None
-    elif args.target in LOCAL_TARGETS:
-        pyb = None
-        if not args.mpy_cross_flags:
-            if args.target == "unix":
-                args.mpy_cross_flags = "-march=host"
-            elif args.target == "qemu-arm":
-                args.mpy_cross_flags = "-march=armv7m"
         if args.target == "webassembly":
             pyb = PyboardNodeRunner()
     elif args.target in EXTERNAL_TARGETS:
@@ -1098,23 +1083,18 @@ the last matching regex is used:
         sys.path.append(base_path("../tools"))
         import pyboard
 
-        if not args.mpy_cross_flags:
-            if args.target == "esp8266":
-                args.mpy_cross_flags = "-march=xtensa"
-            elif args.target == "esp32":
-                args.mpy_cross_flags = "-march=xtensawin"
-            elif args.target == "rp2":
-                args.mpy_cross_flags = "-march=armv6m"
-            elif args.target == "pyboard":
-                args.mpy_cross_flags = "-march=armv7emsp"
-            else:
-                args.mpy_cross_flags = "-march=armv7m"
-
         pyb = pyboard.Pyboard(args.device, args.baudrate, args.user, args.password)
         pyboard.Pyboard.run_script_on_remote_target = run_script_on_remote_target
         pyb.enter_raw_repl()
     else:
         raise ValueError("target must be one of %s" % ", ".join(LOCAL_TARGETS + EXTERNAL_TARGETS))
+
+    # Automatically detect the native architecture for mpy-cross if not given.
+    if not args.mpy_cross_flags:
+        output = run_feature_check(pyb, args, "target_info.py")
+        arch = str(output, "ascii").strip()
+        if arch != "None":
+            args.mpy_cross_flags = "-march=" + arch
 
     if args.run_failures and (any(args.files) or args.test_dirs is not None):
         raise ValueError(
@@ -1147,8 +1127,12 @@ the last matching regex is used:
             elif args.target in ("renesas-ra"):
                 test_dirs += ("float", "inlineasm", "ports/renesas-ra")
             elif args.target == "rp2":
-                test_dirs += ("float", "stress", "inlineasm", "thread", "ports/rp2")
-            elif args.target in ("esp8266", "esp32", "minimal", "nrf"):
+                test_dirs += ("float", "stress", "thread", "ports/rp2")
+                if "arm" in args.mpy_cross_flags:
+                    test_dirs += ("inlineasm",)
+            elif args.target == "esp32":
+                test_dirs += ("float", "stress", "thread")
+            elif args.target in ("esp8266", "minimal", "nrf"):
                 test_dirs += ("float",)
             elif args.target == "wipy":
                 # run WiPy tests
@@ -1164,15 +1148,11 @@ the last matching regex is used:
                     "cmdline",
                     "ports/unix",
                 )
-            elif args.target == "qemu-arm":
-                if not args.write_exp:
-                    raise ValueError("--target=qemu-arm must be used with --write-exp")
-                # Generate expected output files for qemu run.
-                # This list should match the test_dirs tuple in tinytest-codegen.py.
+            elif args.target == "qemu":
                 test_dirs += (
                     "float",
                     "inlineasm",
-                    "ports/qemu-arm",
+                    "ports/qemu",
                 )
         else:
             # run tests from these directories

@@ -317,7 +317,7 @@ msgid "'%q' object does not support '%q'"
 msgstr "Obiekt '%q' nie wspiera '%q'"
 
 #: py/runtime.c
-msgid "'%q' object is not an iterator"
+msgid "'%q' object isn't an iterator"
 msgstr "Obiekt '%q' nie jest iteratorem"
 
 #: py/objtype.c py/runtime.c shared-module/atexit/__init__.c
@@ -325,7 +325,7 @@ msgid "'%q' object is not callable"
 msgstr "Obiekt '%q' nie jest wywoływalny"
 
 #: py/runtime.c
-msgid "'%q' object is not iterable"
+msgid "'%q' object isn't iterable"
 msgstr "Obiekt '%q' nie jest iterowalny"
 
 #: py/emitinlinethumb.c py/emitinlinextensa.c
@@ -3217,7 +3217,7 @@ msgid "format"
 msgstr "format"
 
 #: py/objstr.c
-msgid "format requires a dict"
+msgid "format needs a dict"
 msgstr "format wymaga słownika"
 
 #: py/objdeque.c
@@ -3677,7 +3677,7 @@ msgid "must use keyword argument for key function"
 msgstr "funkcja key musi być podana jako argument nazwany"
 
 #: py/runtime.c
-msgid "name '%q' is not defined"
+msgid "name '%q' isn't defined"
 msgstr "nazwa '%q' niezdefiniowana"
 
 #: py/runtime.c
@@ -4318,11 +4318,11 @@ msgid "tx and rx cannot both be None"
 msgstr "tx i rx nie mogą być oba None"
 
 #: py/objtype.c
-msgid "type '%q' is not an acceptable base type"
+msgid "type '%q' isn't an acceptable base type"
 msgstr "typ '%q' nie może być bazowy"
 
 #: py/objtype.c
-msgid "type is not an acceptable base type"
+msgid "type isn't an acceptable base type"
 msgstr "typ nie może być bazowy"
 
 #: py/runtime.c
@@ -4726,13 +4726,13 @@ msgstr ""
 #~ msgid "'%s' object does not support item deletion"
 #~ msgstr "'%s' obiekt nie wspiera usuwania elementów"
 
-#~ msgid "'%s' object is not an iterator"
+#~ msgid "'%s' object isn't an iterator"
 #~ msgstr "'%s' obiekt nie jest iteratorem"
 
 #~ msgid "'%s' object is not callable"
 #~ msgstr "'%s' nie można wywoływać obiektu"
 
-#~ msgid "'%s' object is not iterable"
+#~ msgid "'%s' object isn't iterable"
 #~ msgstr "'%s' nie można iterować po obiekcie"
 
 #~ msgid "'%s' object is not subscriptable"
@@ -5496,7 +5496,7 @@ msgstr ""
 #~ msgid "firstbit must be MSB"
 #~ msgstr "firstbit musi być MSB"
 
-#~ msgid "function does not take keyword arguments"
+#~ msgid "function doesn't take keyword arguments"
 #~ msgstr "funkcja nie bierze argumentów nazwanych"
 
 #~ msgid "int() arg 2 must be >= 2 and <= 36"
@@ -5544,7 +5544,7 @@ msgstr ""
 #~ msgid "name must be a string"
 #~ msgstr "nazwa musi być łańcuchem"
 
-#~ msgid "name reused for argument"
+#~ msgid "argument name reused"
 #~ msgstr "nazwa użyta ponownie jako argument"
 
 #~ msgid "no available NIC"

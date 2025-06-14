@@ -323,7 +323,7 @@ msgid "'%q' object does not support '%q'"
 msgstr "Objektet '%q' stöder inte '%q'"
 
 #: py/runtime.c
-msgid "'%q' object is not an iterator"
+msgid "'%q' object isn't an iterator"
 msgstr "Objektet '%q' är inte en iterator"
 
 #: py/objtype.c py/runtime.c shared-module/atexit/__init__.c
@@ -331,7 +331,7 @@ msgid "'%q' object is not callable"
 msgstr "Objektet '%q' kan inte anropas"
 
 #: py/runtime.c
-msgid "'%q' object is not iterable"
+msgid "'%q' object isn't iterable"
 msgstr "Objektet '%q' är inte itererbart"
 
 #: py/emitinlinethumb.c py/emitinlinextensa.c
@@ -3231,7 +3231,7 @@ msgid "format"
 msgstr "format"
 
 #: py/objstr.c
-msgid "format requires a dict"
+msgid "format needs a dict"
 msgstr "formatet kräver en dict"
 
 #: py/objdeque.c
@@ -3692,7 +3692,7 @@ msgid "must use keyword argument for key function"
 msgstr "måste använda nyckelordsargument för nyckelfunktion"
 
 #: py/runtime.c
-msgid "name '%q' is not defined"
+msgid "name '%q' isn't defined"
 msgstr "namnet '%q' är inte definierat"
 
 #: py/runtime.c
@@ -4333,11 +4333,11 @@ msgid "tx and rx cannot both be None"
 msgstr "tx och rx kan inte båda vara None"
 
 #: py/objtype.c
-msgid "type '%q' is not an acceptable base type"
+msgid "type '%q' isn't an acceptable base type"
 msgstr "typ '%q' är inte en acceptabel bastyp"
 
 #: py/objtype.c
-msgid "type is not an acceptable base type"
+msgid "type isn't an acceptable base type"
 msgstr "typ är inte en acceptabel bastyp"
 
 #: py/runtime.c
@@ -4923,13 +4923,13 @@ msgstr "zi måste vara i formen (n_section, 2)"
 #~ msgid "'%s' object does not support item deletion"
 #~ msgstr "Objektet '%s' stöder inte borttagning av objekt"
 
-#~ msgid "'%s' object is not an iterator"
+#~ msgid "'%s' object isn't an iterator"
 #~ msgstr "Objektet '%s' är inte en iterator"
 
 #~ msgid "'%s' object is not callable"
 #~ msgstr "Objektet '%s' kan inte anropas"
 
-#~ msgid "'%s' object is not iterable"
+#~ msgid "'%s' object isn't iterable"
 #~ msgstr "Objektet '%s' är inte itererable"
 
 #~ msgid "'%s' object is not subscriptable"
@@ -4947,7 +4947,7 @@ msgstr "zi måste vara i formen (n_section, 2)"
 #~ msgid "'continue' outside loop"
 #~ msgstr "'continue' utanför loop"
 
-#~ msgid "'coroutine' object is not an iterator"
+#~ msgid "'coroutine' object isn't an iterator"
 #~ msgstr "objektet 'coroutine\" är inte en iterator"
 
 #~ msgid "(x,y) integers required"
@@ -6050,7 +6050,7 @@ msgstr "zi måste vara i formen (n_section, 2)"
 #~ msgid "frequency is read-only for this board"
 #~ msgstr "frekvens är skrivskyddad för detta kort"
 
-#~ msgid "function does not take keyword arguments"
+#~ msgid "function doesn't take keyword arguments"
 #~ msgstr "funktionen tar inte nyckelordsargument"
 
 #~ msgid "function is implemented for scalars and ndarrays only"
@@ -6150,7 +6150,7 @@ msgstr "zi måste vara i formen (n_section, 2)"
 #~ msgid "n must be between 0, and 9"
 #~ msgstr "n måste vara mellan 0 och 9"
 
-#~ msgid "name reused for argument"
+#~ msgid "argument name reused"
 #~ msgstr "namn återanvänt för argument"
 
 #~ msgid "no available NIC"

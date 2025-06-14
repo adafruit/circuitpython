@@ -324,7 +324,7 @@ msgid "'%q' object does not support '%q'"
 msgstr "'%q' duì xiàng bù zhī chí '%q'"
 
 #: py/runtime.c
-msgid "'%q' object is not an iterator"
+msgid "'%q' object isn't an iterator"
 msgstr "%q' duìxiàng bùshì yígè diédàiqì"
 
 #: py/objtype.c py/runtime.c shared-module/atexit/__init__.c
@@ -332,7 +332,7 @@ msgid "'%q' object is not callable"
 msgstr "%q' duìxiàng bù kě bèi diàoyòng"
 
 #: py/runtime.c
-msgid "'%q' object is not iterable"
+msgid "'%q' object isn't iterable"
 msgstr "%q' duìxiàng bù kě yòngyú diédài"
 
 #: py/emitinlinethumb.c py/emitinlinextensa.c
@@ -3238,7 +3238,7 @@ msgid "format"
 msgstr "Géshì"
 
 #: py/objstr.c
-msgid "format requires a dict"
+msgid "format needs a dict"
 msgstr "géshì yāoqiú yīgè yǔjù"
 
 #: py/objdeque.c
@@ -3698,7 +3698,7 @@ msgid "must use keyword argument for key function"
 msgstr "bìxū shǐyòng guānjiàn cí cānshù"
 
 #: py/runtime.c
-msgid "name '%q' is not defined"
+msgid "name '%q' isn't defined"
 msgstr "míngchēng '%q' wèi dìngyì"
 
 #: py/runtime.c
@@ -4342,11 +4342,11 @@ msgid "tx and rx cannot both be None"
 msgstr "tx hé rx bùnéng dōu shì wú"
 
 #: py/objtype.c
-msgid "type '%q' is not an acceptable base type"
+msgid "type '%q' isn't an acceptable base type"
 msgstr "lèixíng '%q' bùshì kě jiēshòu de jīchǔ lèixíng"
 
 #: py/objtype.c
-msgid "type is not an acceptable base type"
+msgid "type isn't an acceptable base type"
 msgstr "lèixíng bùshì kě jiēshòu de jīchǔ lèixíng"
 
 #: py/runtime.c
@@ -4926,13 +4926,13 @@ msgstr "zi bìxū jùyǒu xíngzhuàng (n_section,2)"
 #~ msgid "'%s' object does not support item deletion"
 #~ msgstr "'%s' duìxiàng bù zhīchí shānchú xiàngmù"
 
-#~ msgid "'%s' object is not an iterator"
+#~ msgid "'%s' object isn't an iterator"
 #~ msgstr "'%s' duìxiàng bùshì yīgè diédài qì"
 
 #~ msgid "'%s' object is not callable"
 #~ msgstr "'%s' duìxiàng wúfǎ diàoyòng"
 
-#~ msgid "'%s' object is not iterable"
+#~ msgid "'%s' object isn't iterable"
 #~ msgstr "'%s' duìxiàng bùnéng diédài"
 
 #~ msgid "'%s' object is not subscriptable"
@@ -4948,7 +4948,7 @@ msgstr "zi bìxū jùyǒu xíngzhuàng (n_section,2)"
 #~ msgid "'continue' outside loop"
 #~ msgstr "'continue' wèiyú xúnhuán zhīwài"
 
-#~ msgid "'coroutine' object is not an iterator"
+#~ msgid "'coroutine' object isn't an iterator"
 #~ msgstr "'coroutine' duìxiàng búshì yígè diédàiqì"
 
 #~ msgid "(x,y) integers required"
@@ -6296,7 +6296,7 @@ msgstr "zi bìxū jùyǒu xíngzhuàng (n_section,2)"
 #~ msgid "frequency is read-only for this board"
 #~ msgstr "cǐ zhǔ bǎn de pín lǜ wéi zhǐ dú"
 
-#~ msgid "function does not take keyword arguments"
+#~ msgid "function doesn't take keyword arguments"
 #~ msgstr "hánshù méiyǒu guānjiàn cí cānshù"
 
 #~ msgid "function is implemented for scalars and ndarrays only"
@@ -6398,7 +6398,7 @@ msgstr "zi bìxū jùyǒu xíngzhuàng (n_section,2)"
 #~ msgid "name must be a string"
 #~ msgstr "míngchēng bìxū shì yīgè zìfú chuàn"
 
-#~ msgid "name reused for argument"
+#~ msgid "argument name reused"
 #~ msgstr "cān shǔ míngchēng bèi chóngxīn shǐyòng"
 
 #~ msgid "no available NIC"

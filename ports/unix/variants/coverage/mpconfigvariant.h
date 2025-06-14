@@ -45,5 +45,6 @@
 // CIRCUITPY-CHANGE: Disable things never used in circuitpython
 #define MICROPY_PY_CRYPTOLIB          (0)
 #define MICROPY_PY_CRYPTOLIB_CTR      (0)
+#define MICROPY_PY_MICROPYTHON_RINGIO (0)
 // CircuitPython uses shared-bindings struct
 #define MICROPY_PY_STRUCT              (0)

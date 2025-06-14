@@ -1,5 +1,4 @@
 # Test get_event_loop()
-# Note: CPython deprecated get_event_loop() so this test needs a .exp
 
 try:
     import asyncio

@@ -324,7 +324,7 @@ msgid "'%q' object does not support '%q'"
 msgstr "Объект '%q' не поддерживает '%q'"
 
 #: py/runtime.c
-msgid "'%q' object is not an iterator"
+msgid "'%q' object isn't an iterator"
 msgstr "Объект '%q' не является итератором"
 
 #: py/objtype.c py/runtime.c shared-module/atexit/__init__.c
@@ -332,7 +332,7 @@ msgid "'%q' object is not callable"
 msgstr "Объект '%q' не является вызываемым"
 
 #: py/runtime.c
-msgid "'%q' object is not iterable"
+msgid "'%q' object isn't iterable"
 msgstr "Объект '%q' не является итерируемым"
 
 #: py/emitinlinethumb.c py/emitinlinextensa.c
@@ -3264,7 +3264,7 @@ msgid "format"
 msgstr "формат"
 
 #: py/objstr.c
-msgid "format requires a dict"
+msgid "format needs a dict"
 msgstr "Формат требует диктата"
 
 #: py/objdeque.c
@@ -3729,7 +3729,7 @@ msgid "must use keyword argument for key function"
 msgstr "Необходимо использовать аргумент ключевого слова для ключевой функции"
 
 #: py/runtime.c
-msgid "name '%q' is not defined"
+msgid "name '%q' isn't defined"
 msgstr "Имя '%q' не определено"
 
 #: py/runtime.c
@@ -4374,11 +4374,11 @@ msgid "tx and rx cannot both be None"
 msgstr "tx и rx не могут быть одновременно None"
 
 #: py/objtype.c
-msgid "type '%q' is not an acceptable base type"
+msgid "type '%q' isn't an acceptable base type"
 msgstr "Тип '%Q' не является допустимым базовым типом"
 
 #: py/objtype.c
-msgid "type is not an acceptable base type"
+msgid "type isn't an acceptable base type"
 msgstr "Тип не является приемлемым базовым типом"
 
 #: py/runtime.c
@@ -4861,7 +4861,7 @@ msgstr "zi должен иметь форму (n_section, 2)"
 #~ msgid "'continue' outside loop"
 #~ msgstr "«продолжить» вне цикла"
 
-#~ msgid "'coroutine' object is not an iterator"
+#~ msgid "'coroutine' object isn't an iterator"
 #~ msgstr "Объект 'coroutine' не является итератором"
 
 #~ msgid "(x,y) integers required"

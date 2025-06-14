@@ -17,6 +17,11 @@ function ci_gcc_arm_setup {
     arm-none-eabi-gcc --version
 }
 
+function ci_gcc_riscv_setup {
+    sudo apt-get install gcc-riscv64-unknown-elf picolibc-riscv64-unknown-elf
+    riscv64-unknown-elf-gcc --version
+}
+
 ########################################################################################
 # c code formatting
 
@@ -50,12 +55,13 @@ function ci_code_size_setup {
     sudo apt-get install gcc-multilib
     gcc --version
     ci_gcc_arm_setup
+    ci_gcc_riscv_setup
 }
 
 function ci_code_size_build {
     # check the following ports for the change in their code size
-    PORTS_TO_CHECK=bmusxpd
-    SUBMODULES="lib/asf4 lib/berkeley-db-1.xx lib/mbedtls lib/micropython-lib lib/nxp_driver lib/pico-sdk lib/stm32lib lib/tinyusb"
+    PORTS_TO_CHECK=bmusxpdv
+    SUBMODULES="lib/asf4 lib/berkeley-db-1.xx lib/btstack lib/cyw43-driver lib/lwip lib/mbedtls lib/micropython-lib lib/nxp_driver lib/pico-sdk lib/stm32lib lib/tinyusb"
 
     # starts off at either the ref/pull/N/merge FETCH_HEAD, or the current branch HEAD
     git checkout -b pull_request # save the current location
@@ -111,7 +117,7 @@ function ci_cc3200_build {
 # ports/esp32
 
 # GitHub tag of ESP-IDF to use for CI (note: must be a tag or a branch)
-IDF_VER=v5.0.4
+IDF_VER=v5.2.2
 
 export IDF_CCACHE_ENABLE=1
 
@@ -239,24 +245,35 @@ function ci_powerpc_build {
 }
 
 ########################################################################################
-# ports/qemu-arm
+# ports/qemu
 
-function ci_qemu_arm_setup {
+function ci_qemu_setup_arm {
     ci_gcc_arm_setup
     sudo apt-get update
     sudo apt-get install qemu-system
     qemu-system-arm --version
 }
 
-function ci_qemu_arm_build {
+function ci_qemu_setup_rv32 {
+    ci_gcc_riscv_setup
+    sudo apt-get update
+    sudo apt-get install qemu-system
+    qemu-system-riscv32 --version
+}
+
+function ci_qemu_build_arm {
     make ${MAKEOPTS} -C mpy-cross
-    make ${MAKEOPTS} -C ports/qemu-arm submodules
-    make ${MAKEOPTS} -C ports/qemu-arm CFLAGS_EXTRA=-DMP_ENDIANNESS_BIG=1
-    make ${MAKEOPTS} -C ports/qemu-arm clean
-    make ${MAKEOPTS} -C ports/qemu-arm -f Makefile.test submodules
-    make ${MAKEOPTS} -C ports/qemu-arm -f Makefile.test test
-    make ${MAKEOPTS} -C ports/qemu-arm -f Makefile.test clean
-    make ${MAKEOPTS} -C ports/qemu-arm -f Makefile.test BOARD=sabrelite test
+    make ${MAKEOPTS} -C ports/qemu submodules
+    make ${MAKEOPTS} -C ports/qemu CFLAGS_EXTRA=-DMP_ENDIANNESS_BIG=1
+    make ${MAKEOPTS} -C ports/qemu clean
+    make ${MAKEOPTS} -C ports/qemu test
+    make ${MAKEOPTS} -C ports/qemu BOARD=SABRELITE test
+}
+
+function ci_qemu_build_rv32 {
+    make ${MAKEOPTS} -C mpy-cross
+    make ${MAKEOPTS} -C ports/qemu BOARD=VIRT_RV32 submodules
+    make ${MAKEOPTS} -C ports/qemu BOARD=VIRT_RV32 test
 }
 
 ########################################################################################
@@ -292,6 +309,8 @@ function ci_rp2_build {
     make ${MAKEOPTS} -C ports/rp2
     make ${MAKEOPTS} -C ports/rp2 BOARD=RPI_PICO_W submodules
     make ${MAKEOPTS} -C ports/rp2 BOARD=RPI_PICO_W USER_C_MODULES=../../examples/usercmodule/micropython.cmake
+    make ${MAKEOPTS} -C ports/rp2 BOARD=RPI_PICO2 submodules
+    make ${MAKEOPTS} -C ports/rp2 BOARD=RPI_PICO2
     make ${MAKEOPTS} -C ports/rp2 BOARD=W5100S_EVB_PICO submodules
     make ${MAKEOPTS} -C ports/rp2 BOARD=W5100S_EVB_PICO
 
@@ -331,7 +350,7 @@ function ci_stm32_pyb_build {
     git submodule update --init lib/mynewt-nimble
     make ${MAKEOPTS} -C ports/stm32 BOARD=PYBV11 MICROPY_PY_NETWORK_WIZNET5K=5200 USER_C_MODULES=../../examples/usercmodule
     make ${MAKEOPTS} -C ports/stm32 BOARD=PYBD_SF2
-    make ${MAKEOPTS} -C ports/stm32 BOARD=PYBD_SF6 NANBOX=1 MICROPY_BLUETOOTH_NIMBLE=0 MICROPY_BLUETOOTH_BTSTACK=1
+    make ${MAKEOPTS} -C ports/stm32 BOARD=PYBD_SF6 COPT=-O2 NANBOX=1 MICROPY_BLUETOOTH_NIMBLE=0 MICROPY_BLUETOOTH_BTSTACK=1
     make ${MAKEOPTS} -C ports/stm32/mboot BOARD=PYBV10 CFLAGS_EXTRA='-DMBOOT_FSLOAD=1 -DMBOOT_VFS_LFS2=1'
     make ${MAKEOPTS} -C ports/stm32/mboot BOARD=PYBD_SF6
     make ${MAKEOPTS} -C ports/stm32/mboot BOARD=STM32F769DISC CFLAGS_EXTRA='-DMBOOT_ADDRESS_SPACE_64BIT=1 -DMBOOT_SDCARD_ADDR=0x100000000ULL -DMBOOT_SDCARD_BYTE_SIZE=0x400000000ULL -DMBOOT_FSLOAD=1 -DMBOOT_VFS_FAT=1'
@@ -394,11 +413,16 @@ CI_UNIX_OPTS_QEMU_MIPS=(
     CROSS_COMPILE=mips-linux-gnu-
     VARIANT=coverage
     MICROPY_STANDALONE=1
-    LDFLAGS_EXTRA="-static"
 )
 
 CI_UNIX_OPTS_QEMU_ARM=(
     CROSS_COMPILE=arm-linux-gnueabi-
+    VARIANT=coverage
+    MICROPY_STANDALONE=1
+)
+
+CI_UNIX_OPTS_QEMU_RISCV64=(
+    CROSS_COMPILE=riscv64-linux-gnu-
     VARIANT=coverage
     MICROPY_STANDALONE=1
 )
@@ -623,29 +647,30 @@ function ci_unix_macos_build {
 
 function ci_unix_macos_run_tests {
     # Issues with macOS tests:
-    # - import_pkg7 has a problem with relative imports
-    # - random_basic has a problem with getrandbits(0)
-    (cd tests && MICROPY_MICROPYTHON=../ports/unix/build-standard/micropython ./run-tests.py --exclude 'import_pkg7.py' --exclude 'random_basic.py')
+    # - float_parse and float_parse_doubleprec parse/print floats out by a few mantissa bits
+    # - ffi_callback crashes for an unknown reason
+    (cd tests && MICROPY_MICROPYTHON=../ports/unix/build-standard/micropython ./run-tests.py --exclude '(float_parse|float_parse_doubleprec|ffi_callback).py')
 }
 
 function ci_unix_qemu_mips_setup {
     sudo apt-get update
-    sudo apt-get install gcc-mips-linux-gnu g++-mips-linux-gnu
+    sudo apt-get install gcc-mips-linux-gnu g++-mips-linux-gnu libc6-mips-cross
     sudo apt-get install qemu-user
     qemu-mips --version
+    sudo mkdir /etc/qemu-binfmt
+    sudo ln -s /usr/mips-linux-gnu/ /etc/qemu-binfmt/mips
 }
 
 function ci_unix_qemu_mips_build {
-    # qemu-mips on GitHub Actions will seg-fault if not linked statically
     ci_unix_build_helper "${CI_UNIX_OPTS_QEMU_MIPS[@]}"
+    ci_unix_build_ffi_lib_helper mips-linux-gnu-gcc
 }
 
 function ci_unix_qemu_mips_run_tests {
     # Issues with MIPS tests:
     # - (i)listdir does not work, it always returns the empty list (it's an issue with the underlying C call)
-    # - ffi tests do not work
     file ./ports/unix/build-coverage/micropython
-    (cd tests && MICROPY_MICROPYTHON=../ports/unix/build-coverage/micropython ./run-tests.py --exclude 'vfs_posix.*\.py' --exclude 'ffi_(callback|float|float2).py')
+    (cd tests && MICROPY_MICROPYTHON=../ports/unix/build-coverage/micropython ./run-tests.py --exclude 'vfs_posix.*\.py')
 }
 
 function ci_unix_qemu_arm_setup {
@@ -653,6 +678,8 @@ function ci_unix_qemu_arm_setup {
     sudo apt-get install gcc-arm-linux-gnueabi g++-arm-linux-gnueabi
     sudo apt-get install qemu-user
     qemu-arm --version
+    sudo mkdir /etc/qemu-binfmt
+    sudo ln -s /usr/arm-linux-gnueabi/ /etc/qemu-binfmt/arm
 }
 
 function ci_unix_qemu_arm_build {
@@ -663,9 +690,27 @@ function ci_unix_qemu_arm_build {
 function ci_unix_qemu_arm_run_tests {
     # Issues with ARM tests:
     # - (i)listdir does not work, it always returns the empty list (it's an issue with the underlying C call)
-    export QEMU_LD_PREFIX=/usr/arm-linux-gnueabi
     file ./ports/unix/build-coverage/micropython
     (cd tests && MICROPY_MICROPYTHON=../ports/unix/build-coverage/micropython ./run-tests.py --exclude 'vfs_posix.*\.py')
+}
+
+function ci_unix_qemu_riscv64_setup {
+    sudo apt-get update
+    sudo apt-get install gcc-riscv64-linux-gnu g++-riscv64-linux-gnu
+    sudo apt-get install qemu-user
+    qemu-riscv64 --version
+    sudo mkdir /etc/qemu-binfmt
+    sudo ln -s /usr/riscv64-linux-gnu/ /etc/qemu-binfmt/riscv64
+}
+
+function ci_unix_qemu_riscv64_build {
+    ci_unix_build_helper "${CI_UNIX_OPTS_QEMU_RISCV64[@]}"
+    ci_unix_build_ffi_lib_helper riscv64-linux-gnu-gcc
+}
+
+function ci_unix_qemu_riscv64_run_tests {
+    file ./ports/unix/build-coverage/micropython
+    (cd tests && MICROPY_MICROPYTHON=../ports/unix/build-coverage/micropython ./run-tests.py)
 }
 
 ########################################################################################
@@ -684,9 +729,9 @@ function ci_windows_build {
 ########################################################################################
 # ports/zephyr
 
-ZEPHYR_DOCKER_VERSION=v0.21.0
-ZEPHYR_SDK_VERSION=0.13.2
-ZEPHYR_VERSION=v3.1.0
+ZEPHYR_DOCKER_VERSION=v0.26.13
+ZEPHYR_SDK_VERSION=0.16.8
+ZEPHYR_VERSION=v3.7.0
 
 function ci_zephyr_setup {
     docker pull zephyrprojectrtos/ci:${ZEPHYR_DOCKER_VERSION}
@@ -698,6 +743,11 @@ function ci_zephyr_setup {
       -w /micropython/ports/zephyr \
       zephyrprojectrtos/ci:${ZEPHYR_DOCKER_VERSION}
     docker ps -a
+
+    # qemu-system-arm is needed to run the test suite.
+    sudo apt-get update
+    sudo apt-get install qemu-system-arm
+    qemu-system-arm --version
 }
 
 function ci_zephyr_install {
@@ -711,4 +761,11 @@ function ci_zephyr_build {
     docker exec zephyr-ci west build -p auto -b frdm_k64f
     docker exec zephyr-ci west build -p auto -b mimxrt1050_evk
     docker exec zephyr-ci west build -p auto -b nucleo_wb55rg # for bluetooth
+}
+
+function ci_zephyr_run_tests {
+    docker exec zephyr-ci west build -p auto -b qemu_cortex_m3 -- -DCONF_FILE=prj_minimal.conf
+    # Issues with zephyr tests:
+    # - inf_nan_arith fails pow(-1, nan) test
+    (cd tests && ./run-tests.py --target minimal --device execpty:"qemu-system-arm -cpu cortex-m3 -machine lm3s6965evb -nographic -monitor null -serial pty -kernel ../ports/zephyr/build/zephyr/zephyr.elf" -d basics float --exclude inf_nan_arith)
 }

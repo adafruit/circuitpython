@@ -27,7 +27,7 @@
 #include <stdio.h>
 
 #include "py/builtin.h"
-#include "py/stackctrl.h"
+#include "py/cstack.h"
 #include "py/runtime.h"
 #include "py/gc.h"
 #include "py/mphal.h"
@@ -78,9 +78,9 @@ mp_obj_t mp_micropython_mem_info(size_t n_args, const mp_obj_t *args) {
     #endif
     #if MICROPY_STACK_CHECK
     mp_printf(&mp_plat_print, "stack: " UINT_FMT " out of " UINT_FMT "\n",
-        mp_stack_usage(), (mp_uint_t)MP_STATE_THREAD(stack_limit));
+        mp_cstack_usage(), (mp_uint_t)MP_STATE_THREAD(stack_limit));
     #else
-    mp_printf(&mp_plat_print, "stack: " UINT_FMT "\n", mp_stack_usage());
+    mp_printf(&mp_plat_print, "stack: " UINT_FMT "\n", mp_cstack_usage());
     #endif
     #if MICROPY_ENABLE_GC
     gc_dump_info(&mp_plat_print);
@@ -113,7 +113,7 @@ static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_micropython_qstr_info_obj, 0, 1, m
 
 #if MICROPY_PY_MICROPYTHON_STACK_USE
 static mp_obj_t mp_micropython_stack_use(void) {
-    return MP_OBJ_NEW_SMALL_INT(mp_stack_usage());
+    return MP_OBJ_NEW_SMALL_INT(mp_cstack_usage());
 }
 static MP_DEFINE_CONST_FUN_OBJ_0(mp_micropython_stack_use_obj, mp_micropython_stack_use);
 #endif
@@ -212,6 +212,9 @@ static const mp_rom_map_elem_t mp_module_micropython_globals_table[] = {
     // CIRCUITPY-CHANGE: avoid warning
     #if CIRCUITPY_MICROPYTHON_ADVANCED && MICROPY_KBD_EXCEPTION
     { MP_ROM_QSTR(MP_QSTR_kbd_intr), MP_ROM_PTR(&mp_micropython_kbd_intr_obj) },
+    #endif
+    #if MICROPY_PY_MICROPYTHON_RINGIO
+    { MP_ROM_QSTR(MP_QSTR_RingIO), MP_ROM_PTR(&mp_type_ringio) },
     #endif
     #if MICROPY_ENABLE_SCHEDULER
     { MP_ROM_QSTR(MP_QSTR_schedule), MP_ROM_PTR(&mp_micropython_schedule_obj) },

@@ -322,16 +322,16 @@ msgid "'%q' object does not support '%q'"
 msgstr "'%q' object does not support '%q'"
 
 #: py/runtime.c
-msgid "'%q' object is not an iterator"
-msgstr "'%q' object is not an iterator"
+msgid "'%q' object isn't an iterator"
+msgstr "'%q' object isn't an iterator"
 
 #: py/objtype.c py/runtime.c shared-module/atexit/__init__.c
 msgid "'%q' object is not callable"
 msgstr "'%q' object is not callable"
 
 #: py/runtime.c
-msgid "'%q' object is not iterable"
-msgstr "'%q' object is not iterable"
+msgid "'%q' object isn't iterable"
+msgstr "'%q' object isn't iterable"
 
 #: py/emitinlinethumb.c py/emitinlinextensa.c
 #, c-format
@@ -3217,8 +3217,8 @@ msgid "format"
 msgstr "format"
 
 #: py/objstr.c
-msgid "format requires a dict"
-msgstr "format requires a dict"
+msgid "format needs a dict"
+msgstr "format needs a dict"
 
 #: py/objdeque.c
 msgid "full"
@@ -3676,8 +3676,8 @@ msgid "must use keyword argument for key function"
 msgstr "must use keyword argument for key function"
 
 #: py/runtime.c
-msgid "name '%q' is not defined"
-msgstr "name '%q' is not defined"
+msgid "name '%q' isn't defined"
+msgstr "name '%q' isn't defined"
 
 #: py/runtime.c
 msgid "name not defined"
@@ -4317,12 +4317,12 @@ msgid "tx and rx cannot both be None"
 msgstr "tx and rx cannot both be None"
 
 #: py/objtype.c
-msgid "type '%q' is not an acceptable base type"
-msgstr "type '%q' is not an acceptable base type"
+msgid "type '%q' isn't an acceptable base type"
+msgstr "type '%q' isn't an acceptable base type"
 
 #: py/objtype.c
-msgid "type is not an acceptable base type"
-msgstr "type is not an acceptable base type"
+msgid "type isn't an acceptable base type"
+msgstr "type isn't an acceptable base type"
 
 #: py/runtime.c
 msgid "type object '%q' has no attribute '%q'"
@@ -4845,8 +4845,8 @@ msgstr "zi must be of shape (n_section, 2)"
 #~ msgid "'continue' outside loop"
 #~ msgstr "'continue' outside loop"
 
-#~ msgid "'coroutine' object is not an iterator"
-#~ msgstr "'coroutine' object is not an iterator"
+#~ msgid "'coroutine' object isn't an iterator"
+#~ msgstr "'coroutine' object isn't an iterator"
 
 #~ msgid "(x,y) integers required"
 #~ msgstr "(x,y) integers required"
@@ -5716,8 +5716,8 @@ msgstr "zi must be of shape (n_section, 2)"
 #~ msgid "first argument must be an iterable"
 #~ msgstr "first argument must be an iterable"
 
-#~ msgid "function does not take keyword arguments"
-#~ msgstr "function does not take keyword arguments"
+#~ msgid "function doesn't take keyword arguments"
+#~ msgstr "function doesn't take keyword arguments"
 
 #~ msgid "incompatible native .mpy architecture"
 #~ msgstr "incompatible native .mpy architecture"
@@ -5782,8 +5782,8 @@ msgstr "zi must be of shape (n_section, 2)"
 #~ msgid "maximum number of dimensions is 4"
 #~ msgstr "maximum number of dimensions is 4"
 
-#~ msgid "name reused for argument"
-#~ msgstr "name reused for argument"
+#~ msgid "argument name reused"
+#~ msgstr "argument name reused"
 
 #~ msgid "no available NIC"
 #~ msgstr "no available NIC"

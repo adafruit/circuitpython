@@ -32,7 +32,7 @@
 #include "py/objfun.h"
 #include "py/runtime.h"
 #include "py/bc.h"
-#include "py/stackctrl.h"
+#include "py/cstack.h"
 
 #if MICROPY_DEBUG_VERBOSE // print debugging info
 #define DEBUG_PRINT (1)
@@ -110,7 +110,9 @@ static mp_obj_t fun_builtin_var_call(mp_obj_t self_in, size_t n_args, size_t n_k
     if (self->sig & 1) {
         // function allows keywords
 
-        // we create a map directly from the given args array
+        // we create a map directly from the given args array; self->fun.kw does still
+        // expect args to have both positional and keyword arguments, ordered as:
+        // arg0 arg1 ... arg<n_args> key0 value0 key1 value1 ... key<n_kw> value<n_kw>
         mp_map_t kw_args;
         mp_map_init_fixed_table(&kw_args, n_kw, args + n_args);
 
@@ -197,7 +199,7 @@ static void dump_args(const mp_obj_t *a, size_t sz) {
 
 #if MICROPY_STACKLESS
 mp_code_state_t *mp_obj_fun_bc_prepare_codestate(mp_obj_t self_in, size_t n_args, size_t n_kw, const mp_obj_t *args) {
-    MP_STACK_CHECK();
+    mp_cstack_check();
     mp_obj_fun_bc_t *self = MP_OBJ_TO_PTR(self_in);
 
     size_t n_state, state_size;
@@ -229,7 +231,7 @@ mp_code_state_t *mp_obj_fun_bc_prepare_codestate(mp_obj_t self_in, size_t n_args
 
 // CIRCUITPY-CHANGE: PLACE_IN_ITCM
 static mp_obj_t PLACE_IN_ITCM(fun_bc_call)(mp_obj_t self_in, size_t n_args, size_t n_kw, const mp_obj_t *args) {
-    MP_STACK_CHECK();
+    mp_cstack_check();
 
     DEBUG_printf("Input n_args: " UINT_FMT ", n_kw: " UINT_FMT "\n", n_args, n_kw);
     DEBUG_printf("Input pos args: ");
@@ -402,7 +404,7 @@ mp_obj_t mp_obj_new_fun_bc(const mp_obj_t *def_args, const byte *code, const mp_
 
 // CIRCUITPY-CHANGE: PLACE_IN_ITCM
 static mp_obj_t PLACE_IN_ITCM(fun_native_call)(mp_obj_t self_in, size_t n_args, size_t n_kw, const mp_obj_t *args) {
-    MP_STACK_CHECK();
+    mp_cstack_check();
     mp_obj_fun_bc_t *self = MP_OBJ_TO_PTR(self_in);
     mp_call_fun_t fun = mp_obj_fun_native_get_function_start(self);
     return fun(self_in, n_args, n_kw, args);
@@ -436,7 +438,7 @@ MP_DEFINE_CONST_OBJ_TYPE(
 #if MICROPY_EMIT_NATIVE
 
 static mp_obj_t fun_viper_call(mp_obj_t self_in, size_t n_args, size_t n_kw, const mp_obj_t *args) {
-    MP_STACK_CHECK();
+    mp_cstack_check();
     mp_obj_fun_bc_t *self = MP_OBJ_TO_PTR(self_in);
     mp_call_fun_t fun = MICROPY_MAKE_POINTER_CALLABLE((void *)self->bytecode);
     return fun(self_in, n_args, n_kw, args);
