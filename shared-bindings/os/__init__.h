@@ -15,7 +15,6 @@
 void common_hal_os_chdir(const char *path);
 mp_obj_t common_hal_os_getcwd(void);
 mp_obj_t common_hal_os_getenv(const char *key, mp_obj_t default_);
-mp_obj_t common_hal_os_getenv_path(const char *path, const char *key, mp_obj_t default_);
 
 mp_obj_t common_hal_os_listdir(const char *path);
 void common_hal_os_mkdir(const char *path);

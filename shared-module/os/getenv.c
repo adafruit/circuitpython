@@ -365,7 +365,7 @@ os_getenv_err_t common_hal_os_getenv_str(const char *key, char *value, size_t va
     return result;
 }
 
-mp_obj_t common_hal_os_getenv_path(const char *path, const char *key, mp_obj_t default_) {
+static mp_obj_t common_hal_os_getenv_path(const char *path, const char *key, mp_obj_t default_) {
     vstr_t buf;
     bool quoted;
 
@@ -379,7 +379,7 @@ mp_obj_t common_hal_os_getenv_path(const char *path, const char *key, mp_obj_t d
     if (quoted) {
         return mp_obj_new_str_from_vstr(&buf);
     } else {
-        return mp_parse_num_integer(buf.buf, buf.len, 0, NULL);
+        mp_raise_ValueError(MP_ERROR_TEXT("Expected quoted string"));
     }
 }
 
