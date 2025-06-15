@@ -523,11 +523,14 @@ ifeq ($(CIRCUITPY_ESP_FLASH_SIZE), 2MB)
 else
 UF2_BOOTLOADER ?= $(CIRCUITPY_USB_DEVICE)
 ifeq ($(UF2_BOOTLOADER), 1)
+# UF2-capable board
 	FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE).defaults
 else
+# non-UF2 partition layout
 ifeq ($(CIRCUITPY_ESP_FLASH_SIZE), 4MB)
-	ifeq ($(CIRCUITPY_LEGACY_4MB_FLASH_LAYOUT), 1)
-		FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-uf2.defaults
+	ifeq ($(CIRCUITPY_4MB_FLASH_LARGE_USER_FS_LAYOUT), 1)
+# Some boards use a 2MB firmware and almost 2MB user filesystem, for historical reasons.
+		FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-ota-no-uf2-large-user_fs.defaults
 	else
 		FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-ota-no-uf2.defaults
 	endif
