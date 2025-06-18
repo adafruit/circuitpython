@@ -283,7 +283,7 @@ stubs:
 	@$(PYTHON) tools/extract_pyi.py extmod/ulab/code/ $(STUBDIR)/ulab
 	@for d in ports/*/bindings; do \
 	    $(PYTHON) tools/extract_pyi.py "$$d" $(STUBDIR); done
-	@sed -e "s,__version__,`python -msetuptools_scm`," < setup.py-stubs > circuitpython-stubs/setup.py
+	@sed -e "s,__version__,`python -msetuptools_scm | cut -d. -f1-3`," < setup.py-stubs > circuitpython-stubs/setup.py
 	@cp README.rst-stubs circuitpython-stubs/README.rst
 	@cp MANIFEST.in-stubs circuitpython-stubs/MANIFEST.in
 	@$(PYTHON) tools/board_stubs/build_board_specific_stubs/board_stub_builder.py
