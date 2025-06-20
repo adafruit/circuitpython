@@ -960,6 +960,10 @@ msgstr ""
 msgid "Expected a kind of %q"
 msgstr ""
 
+#: shared-module/os/getenv.c
+msgid "Expected quoted string"
+msgstr ""
+
 #: ports/espressif/common-hal/_bleio/Adapter.c
 #: ports/nordic/common-hal/_bleio/Adapter.c
 msgid "Extended advertisements with scan response not supported."
