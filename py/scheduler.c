@@ -277,10 +277,6 @@ void mp_event_wait_indefinite(void) {
     MICROPY_EVENT_POLL_HOOK
     #else
     mp_event_handle_nowait();
-
-    // CIRCUITPY-CHANGE: don't starve CircuitPython background tasks
-    RUN_BACKGROUND_TASKS;
-
     MICROPY_INTERNAL_WFE(-1);
     #endif
 }
@@ -293,10 +289,6 @@ void mp_event_wait_ms(mp_uint_t timeout_ms) {
     MICROPY_EVENT_POLL_HOOK
     #else
     mp_event_handle_nowait();
-
-    // CIRCUITPY-CHANGE: don't starve CircuitPython background tasks
-    RUN_BACKGROUND_TASKS;
-
     MICROPY_INTERNAL_WFE(timeout_ms);
     #endif
 }
