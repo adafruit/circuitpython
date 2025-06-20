@@ -83,6 +83,33 @@ SRC_CYW43 :=
 SRC_LWIP :=
 endif
 
+ifeq ($(CIRCUITPY_WIZNET_PIO_SPI), 1)
+INC_WIZNET_PIO_SPI := \
+	-isystem wiznet_pio_spi \
+
+SRC_WIZNET_PIO_SPI := \
+	wiznet_pio_spi/wizchip_pio_spi.c \
+
+WIZNET_PIOASM = $(BUILD)/pioasm/pioasm/pioasm
+.PHONY: pioasmBuild
+pioasmBuild: $(WIZNET_PIOASM)
+
+$(WIZNET_PIOASM):
+	$(Q)cmake -S pioasm -B $(BUILD)/pioasm
+	$(MAKE) -C $(BUILD)/pioasm pioasmBuild
+
+$(BUILD)/wizchip_pio_spi.pio.h: wiznet_pio_spi/wizchip_pio_spi.pio $(WIZNET_PIOASM)
+	$(Q)$(WIZNET_PIOASM) -o c-sdk $< $@
+$(BUILD)/wiznet_pio_spi/wizchip_pio_spi.o: $(BUILD)/wizchip_pio_spi.pio.h
+
+$(BUILD)/genhdr/qstr.i.last: $(BUILD)/wizchip_pio_spi.pio.h
+
+else
+INC_WIZNET_PIO_SPI :=
+SRC_WIZNET_PIO_SPI :=
+
+endif
+
 CHIP_VARIANT_LOWER = $(shell echo $(CHIP_VARIANT) | tr '[:upper:]' '[:lower:]')
 
 INC += \
@@ -155,6 +182,7 @@ INC += \
 	-isystem sdk/src/rp2_common/pico_time_adapter/include/ \
 	-isystem sdk/src/rp2_common/pico_unique_id/include/ \
 	$(INC_CYW43) \
+	$(INC_WIZNET_PIO_SPI) \
 	-Isdk_config \
 	-I../../lib/tinyusb/src \
 	-I../../supervisor/shared/usb \
@@ -541,6 +569,7 @@ SRC_C += \
 	mphalport.c \
 	$(SRC_CYW43) \
 	$(SRC_LWIP) \
+	$(SRC_WIZNET_PIO_SPI) \
 
 
 ifeq ($(CIRCUITPY_USB_HOST), 1)
