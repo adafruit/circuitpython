@@ -28,6 +28,25 @@ msgid ""
 "Code stopped by auto-reload. Reloading soon.\n"
 msgstr ""
 
+#: ports/analog/common-hal/busio/UART.c
+#, c-format
+msgid ""
+"\n"
+"ERR: Error starting transaction: %d\n"
+msgstr ""
+
+#: ports/analog/common-hal/busio/UART.c
+msgid ""
+"\n"
+"ERR: Requested bus is busy\n"
+msgstr ""
+
+#: ports/analog/common-hal/busio/UART.c
+msgid ""
+"\n"
+"ERR: Uart transaction timed out.\n"
+msgstr ""
+
 #: supervisor/shared/safe_mode.c
 msgid ""
 "\n"
@@ -632,6 +651,10 @@ msgid ""
 "disable.\n"
 msgstr ""
 
+#: ports/analog/common-hal/busio/UART.c
+msgid "Baudrate invalid. Must be a standard UART baudrate.\n"
+msgstr ""
+
 #: ports/espressif/common-hal/canio/CAN.c
 msgid "Baudrate not supported by peripheral"
 msgstr ""
@@ -719,6 +742,10 @@ msgstr ""
 
 #: supervisor/shared/safe_mode.c
 msgid "CIRCUITPY drive could not be found or created."
+msgstr ""
+
+#: ports/analog/common-hal/busio/SPI.c
+msgid "CPOL / CPHA must both be either 0 or 1\n"
 msgstr ""
 
 #: ports/espressif/common-hal/espidf/__init__.c
@@ -943,6 +970,38 @@ msgstr ""
 msgid "ECB only operates on 16 bytes at a time"
 msgstr ""
 
+#: ports/analog/common-hal/busio/UART.c
+msgid "ERR: Could not init ringbuffer\n"
+msgstr ""
+
+#: ports/analog/peripherals/max32690/max32_uart.c
+#, c-format
+msgid ""
+"ERR: Unable to find a uart matching pins...\n"
+"TX: port %d mask %d\n"
+"RX: port %d mask %d\n"
+msgstr ""
+
+#: ports/analog/peripherals/max32690/max32_i2c.c
+#, c-format
+msgid ""
+"ERR: Unable to find an I2C matching pins...\n"
+"SCL: port %d mask %d\n"
+"SDA: port %d mask %d\n"
+msgstr ""
+
+#: ports/analog/peripherals/max32690/max32_spi.c
+#, c-format
+msgid ""
+"ERR: Unable to find an SPI matching pins...         \n"
+"MOSI: port %d mask %d\n"
+"MISO: port %d mask %d\n"
+msgstr ""
+
+#: ports/analog/common-hal/busio/I2C.c
+msgid "ERROR during I2C Transaction\n"
+msgstr ""
+
 #: ports/espressif/common-hal/busio/SPI.c
 #: ports/espressif/common-hal/canio/CAN.c
 msgid "ESP-IDF memory allocation failed"
@@ -1036,6 +1095,19 @@ msgstr ""
 msgid "Failed to enable continuous"
 msgstr ""
 
+#: ports/analog/common-hal/busio/I2C.c
+#, c-format
+msgid "Failed to init I2C. ERR: %d\n"
+msgstr ""
+
+#: ports/analog/common-hal/busio/SPI.c
+msgid "Failed to init SPI.\n"
+msgstr ""
+
+#: ports/analog/common-hal/busio/UART.c
+msgid "Failed to initialize UART.\n"
+msgstr ""
+
 #: shared-module/audiomp3/MP3Decoder.c
 msgid "Failed to parse MP3 file"
 msgstr ""
@@ -1047,6 +1119,23 @@ msgstr ""
 #: ports/nordic/sd_mutex.c
 #, c-format
 msgid "Failed to release mutex, err 0x%04x"
+msgstr ""
+
+#: ports/analog/common-hal/busio/I2C.c
+#, c-format
+msgid "Failed to set I2C frequency. ERR: %d\n"
+msgstr ""
+
+#: ports/analog/common-hal/busio/SPI.c
+msgid "Failed to set SPI Clock Mode\n"
+msgstr ""
+
+#: ports/analog/common-hal/busio/SPI.c
+msgid "Failed to set SPI Frame Size\n"
+msgstr ""
+
+#: ports/analog/common-hal/busio/SPI.c
+msgid "Failed to set SPI Frequency\n"
 msgstr ""
 
 #: ports/zephyr-cp/common-hal/wifi/Radio.c
@@ -1087,6 +1176,10 @@ msgstr ""
 
 #: ports/espressif/common-hal/dualbank/__init__.c
 msgid "Firmware is too big"
+msgstr ""
+
+#: ports/analog/common-hal/busio/UART.c
+msgid "Flow Ctrl needs both CTS & RTS"
 msgstr ""
 
 #: shared-bindings/bitmaptools/__init__.c
@@ -1146,6 +1239,10 @@ msgstr ""
 
 #: ports/stm/common-hal/busio/I2C.c
 msgid "I2C init error"
+msgstr ""
+
+#: ports/analog/common-hal/busio/I2C.c
+msgid "I2C needs SDA & SCL"
 msgstr ""
 
 #: ports/raspberrypi/common-hal/busio/I2C.c
@@ -1761,6 +1858,10 @@ msgstr ""
 msgid "Parameter error"
 msgstr ""
 
+#: ports/analog/common-hal/busio/UART.c
+msgid "Parity must be ODD, EVEN, or NONE\n"
+msgstr ""
+
 #: ports/espressif/common-hal/audiobusio/__init__.c
 msgid "Peripheral in use"
 msgstr ""
@@ -1898,6 +1999,7 @@ msgstr ""
 msgid "ROS topic failed to initialize"
 msgstr ""
 
+#: ports/analog/common-hal/busio/UART.c
 #: ports/atmel-samd/common-hal/busio/UART.c ports/cxd56/common-hal/busio/UART.c
 #: ports/nordic/common-hal/busio/UART.c ports/stm/common-hal/busio/UART.c
 msgid "RS485"
@@ -1988,6 +2090,10 @@ msgstr ""
 
 #: ports/stm/common-hal/busio/SPI.c
 msgid "SPI init error"
+msgstr ""
+
+#: ports/analog/common-hal/busio/SPI.c
+msgid "SPI needs MOSI, MISO, and SCK"
 msgstr ""
 
 #: ports/raspberrypi/common-hal/busio/SPI.c
@@ -2121,6 +2227,10 @@ msgstr ""
 msgid "Timeout is too long: Maximum timeout length is %d seconds"
 msgstr ""
 
+#: ports/analog/common-hal/busio/UART.c
+msgid "Timeout must be < 100 seconds"
+msgstr ""
+
 #: ports/atmel-samd/common-hal/audiobusio/I2SOut.c
 msgid "Too many channels in sample"
 msgstr ""
@@ -2162,6 +2272,10 @@ msgstr ""
 #: ports/cxd56/common-hal/busio/UART.c ports/espressif/common-hal/busio/UART.c
 #: ports/stm/common-hal/busio/UART.c
 msgid "UART init"
+msgstr ""
+
+#: ports/analog/common-hal/busio/UART.c
+msgid "UART needs TX & RX"
 msgstr ""
 
 #: ports/raspberrypi/common-hal/busio/UART.c

@@ -6,10 +6,11 @@
 
 #pragma once
 
-#include "py/obj.h"
-#include "py/mphal.h"
+#include "i2c_regs.h"
+#include "mxc_sys.h"
+#include "i2c.h"
+#include "peripherals/pins.h"
 
-// MSDK HAL includes
-#include "gpio.h"
-#include "gpio_regs.h"
-#include "max32690.h"
+#define NUM_I2C 3
+
+int pinsToI2c(const mcu_pin_obj_t *sda, const mcu_pin_obj_t *scl);
