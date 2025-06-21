@@ -31,14 +31,14 @@
 
 // CIRCUITPY-CHANGE: add
 #include "py/mphal.h"
+
 #include "py/compile.h"
 #include "py/runtime.h"
 #include "py/repl.h"
 #include "py/gc.h"
 #include "py/frozenmod.h"
 #include "py/mphal.h"
-// CIRCUITPY-CHANGE: prevent undefined warning
-#if defined(MICROPY_HW_ENABLE_USB) && MICROPY_HW_ENABLE_USB
+#if MICROPY_HW_ENABLE_USB
 #include "irq.h"
 #include "usb.h"
 #endif
@@ -662,8 +662,7 @@ friendly_repl_reset:
     for (;;) {
     input_restart:
 
-        // CIRCUITPY-CHANGE: prevent undef warning
-        #if defined(MICROPY_HW_ENABLE_USB) && MICROPY_HW_ENABLE_USB
+        #if MICROPY_HW_ENABLE_USB
         if (usb_vcp_is_enabled()) {
             // If the user gets to here and interrupts are disabled then
             // they'll never see the prompt, traceback etc. The USB REPL needs
@@ -829,6 +828,11 @@ int pyexec_exit_handler(const void *source, pyexec_result_t *result) {
     return parse_compile_execute(source, MP_PARSE_FILE_INPUT, EXEC_FLAG_SOURCE_IS_ATEXIT, result);
 }
 #endif
+
+int pyexec_vstr(vstr_t *str, bool allow_keyboard_interrupt, pyexec_result_t *result) {
+    mp_uint_t exec_flags = allow_keyboard_interrupt ? 0 : EXEC_FLAG_NO_INTERRUPT;
+    return parse_compile_execute(str, MP_PARSE_FILE_INPUT, exec_flags | EXEC_FLAG_SOURCE_IS_VSTR, result);
+}
 
 #if MICROPY_REPL_INFO
 mp_obj_t pyb_set_repl_info(mp_obj_t o_value) {

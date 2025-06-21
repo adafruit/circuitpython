@@ -30,6 +30,11 @@
 #include "py/reader.h"
 #include "py/emitglue.h"
 
+// CIRCUITPY-CHANGE: Avoid undefined warnings
+#ifndef MICROPY_PERSISTENT_CODE_TRACK_RELOC_CODE
+#define MICROPY_PERSISTENT_CODE_TRACK_RELOC_CODE (0)
+#endif
+
 // The current version of .mpy files. A bytecode-only .mpy file can be loaded
 // as long as MPY_VERSION matches, but a native .mpy (i.e. one with an arch
 // set) must also match MPY_SUB_VERSION. This allows 3 additional updates to
@@ -121,6 +126,7 @@ void mp_raw_code_load_file(qstr filename, mp_compiled_module_t *ctx);
 
 void mp_raw_code_save(mp_compiled_module_t *cm, mp_print_t *print);
 void mp_raw_code_save_file(mp_compiled_module_t *cm, qstr filename);
+mp_obj_t mp_raw_code_save_fun_to_bytes(const mp_module_constants_t *consts, const uint8_t *bytecode);
 
 void mp_native_relocate(void *reloc, uint8_t *text, uintptr_t reloc_text);
 

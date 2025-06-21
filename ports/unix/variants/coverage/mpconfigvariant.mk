@@ -12,7 +12,8 @@ CFLAGS += \
 LDFLAGS += -fprofile-arcs -ftest-coverage
 
 FROZEN_MANIFEST ?= $(VARIANT_DIR)/manifest.py
-USER_C_MODULES = $(TOP)/examples/usercmodule
+# CIRCUITPY-CHANGE: don't include user C modules
+# USER_C_MODULES = $(TOP)/examples/usercmodule
 
 # CIRCUITPY-CHANGE: use CircuitPython bindings and implementations
 SRC_QRIO := $(patsubst ../../%,%,$(wildcard ../../shared-bindings/qrio/*.c ../../shared-module/qrio/*.c ../../lib/quirc/lib/*.c))

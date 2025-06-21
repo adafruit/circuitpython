@@ -24,6 +24,7 @@ set(MICROPY_SOURCE_PY
     ${MICROPY_PY_DIR}/emitbc.c
     ${MICROPY_PY_DIR}/emitcommon.c
     ${MICROPY_PY_DIR}/emitglue.c
+    ${MICROPY_PY_DIR}/emitinlinerv32.c
     ${MICROPY_PY_DIR}/emitinlinethumb.c
     ${MICROPY_PY_DIR}/emitinlinextensa.c
     ${MICROPY_PY_DIR}/emitnarm.c
@@ -71,6 +72,7 @@ set(MICROPY_SOURCE_PY
     ${MICROPY_PY_DIR}/objattrtuple.c
     ${MICROPY_PY_DIR}/objbool.c
     ${MICROPY_PY_DIR}/objboundmeth.c
+    ${MICROPY_PY_DIR}/objcode.c
     ${MICROPY_PY_DIR}/objcell.c
     ${MICROPY_PY_DIR}/objclosure.c
     ${MICROPY_PY_DIR}/objcomplex.c

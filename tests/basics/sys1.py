@@ -25,6 +25,12 @@ else:
     # Effectively skip subtests
     print(int)
 
+if hasattr(sys.implementation, '_build'):
+    print(type(sys.implementation._build))
+else:
+    # Effectively skip subtests
+    print(str)
+
 try:
     print(sys.intern('micropython') == 'micropython')
     has_intern = True

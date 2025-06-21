@@ -271,20 +271,20 @@ check-translate:
 
 .PHONY: stubs
 stubs:
-	@rm -rf circuitpython-stubs
-	@mkdir circuitpython-stubs
-	@$(PYTHON) tools/extract_pyi.py shared-bindings/ $(STUBDIR)
-	@$(PYTHON) tools/extract_pyi.py extmod/ulab/code/ $(STUBDIR)/ulab
-	@for d in ports/*/bindings; do \
+	rm -rf circuitpython-stubs
+	mkdir circuitpython-stubs
+	$(PYTHON) tools/extract_pyi.py shared-bindings/ $(STUBDIR)
+	$(PYTHON) tools/extract_pyi.py extmod/ulab/code/ $(STUBDIR)/ulab
+	for d in ports/*/bindings; do \
 	    $(PYTHON) tools/extract_pyi.py "$$d" $(STUBDIR); done
-	@sed -e "s,__version__,`python -msetuptools_scm`," < setup.py-stubs > circuitpython-stubs/setup.py
-	@cp README.rst-stubs circuitpython-stubs/README.rst
-	@cp MANIFEST.in-stubs circuitpython-stubs/MANIFEST.in
-	@$(PYTHON) tools/board_stubs/build_board_specific_stubs/board_stub_builder.py
-	@cp -r tools/board_stubs/circuitpython_setboard circuitpython-stubs/circuitpython_setboard
-	@$(PYTHON) -m build circuitpython-stubs
-	@touch circuitpython-stubs/board/__init__.py
-	@touch circuitpython-stubs/board_definitions/__init__.py
+	sed -e "s,__version__,`python -msetuptools_scm`," < setup.py-stubs > circuitpython-stubs/setup.py
+	cp README.rst-stubs circuitpython-stubs/README.rst
+	cp MANIFEST.in-stubs circuitpython-stubs/MANIFEST.in
+	$(PYTHON) tools/board_stubs/build_board_specific_stubs/board_stub_builder.py
+	cp -r tools/board_stubs/circuitpython_setboard circuitpython-stubs/circuitpython_setboard
+	$(PYTHON) -m build circuitpython-stubs
+	touch circuitpython-stubs/board/__init__.py
+	touch circuitpython-stubs/board_definitions/__init__.py
 
 .PHONY: check-stubs
 check-stubs: stubs

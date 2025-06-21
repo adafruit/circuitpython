@@ -48,6 +48,10 @@
 #include "py/cstack.h"
 #include "py/gc.h"
 
+#if MICROPY_VFS_ROM && MICROPY_VFS_ROM_IOCTL
+#include "extmod/vfs.h"
+#endif
+
 // CIRCUITPY-CHANGE
 #if CIRCUITPY_WARNINGS
 #include "shared-module/warnings/__init__.h"
@@ -197,6 +201,11 @@ void mp_init(void) {
     #endif
 
     MP_THREAD_GIL_ENTER();
+
+    #if MICROPY_VFS_ROM && MICROPY_VFS_ROM_IOCTL
+    // Mount ROMFS if it exists.
+    mp_vfs_mount_romfs_protected();
+    #endif
 }
 
 void mp_deinit(void) {
@@ -1681,26 +1690,6 @@ mp_obj_t __attribute__((noinline, )) mp_import_from(mp_obj_t module, qstr name) 
 void mp_import_all(mp_obj_t module) {
     DEBUG_printf("import all %p\n", module);
 
-    // CIRCUITPY-CHANGE: displayio name changes; remove in 10.0
-    #if CIRCUITPY_DISPLAYIO && CIRCUITPY_WARNINGS
-    if (module == &displayio_module) {
-        #if CIRCUITPY_BUSDISPLAY
-        warnings_warn(&mp_type_FutureWarning, MP_ERROR_TEXT("%q moved from %q to %q"), MP_QSTR_Display, MP_QSTR_displayio, MP_QSTR_busdisplay);
-        warnings_warn(&mp_type_FutureWarning, MP_ERROR_TEXT("%q renamed %q"), MP_QSTR_Display, MP_QSTR_BusDisplay);
-        #endif
-        #if CIRCUITPY_EPAPERDISPLAY
-        warnings_warn(&mp_type_FutureWarning, MP_ERROR_TEXT("%q moved from %q to %q"), MP_QSTR_EPaperDisplay, MP_QSTR_displayio, MP_QSTR_epaperdisplay);
-        #endif
-        #if CIRCUITPY_FOURWIRE
-        warnings_warn(&mp_type_FutureWarning, MP_ERROR_TEXT("%q moved from %q to %q"), MP_QSTR_FourWire, MP_QSTR_displayio, MP_QSTR_fourwire);
-        #endif
-        #if CIRCUITPY_I2CDISPLAYBUS
-        warnings_warn(&mp_type_FutureWarning, MP_ERROR_TEXT("%q moved from %q to %q"), MP_QSTR_I2CDisplay, MP_QSTR_displayio, MP_QSTR_i2cdisplaybus);
-        warnings_warn(&mp_type_FutureWarning, MP_ERROR_TEXT("%q renamed %q"), MP_QSTR_I2CDisplay, MP_QSTR_I2CDisplayBus);
-        #endif
-    }
-    #endif
-
     // TODO: Support __all__
     mp_map_t *map = &mp_obj_module_get_globals(module)->map;
     for (size_t i = 0; i < map->alloc; i++) {
@@ -1737,10 +1726,13 @@ mp_obj_t mp_parse_compile_execute(mp_lexer_t *lex, mp_parse_input_kind_t parse_i
     mp_obj_t module_fun = mp_compile(&parse_tree, source_name, parse_input_kind == MP_PARSE_SINGLE_INPUT);
 
     mp_obj_t ret;
-    if (MICROPY_PY_BUILTINS_COMPILE && globals == NULL) {
+    #if MICROPY_PY_BUILTINS_COMPILE && MICROPY_PY_BUILTINS_CODE == MICROPY_PY_BUILTINS_CODE_MINIMUM
+    if (globals == NULL) {
         // for compile only, return value is the module function
         ret = module_fun;
-    } else {
+    } else
+    #endif
+    {
         // execute module function and get return value
         ret = mp_call_function_0(module_fun);
     }
@@ -1939,7 +1931,6 @@ NORETURN MP_COLD void mp_raise_type_arg(const mp_obj_type_t *exc_type, mp_obj_t 
     nlr_raise(mp_obj_new_exception_arg1(exc_type, arg));
 }
 
-// CIRCUITPY-CHANGE: MP_COLD
 NORETURN void mp_raise_StopIteration(mp_obj_t arg) {
     if (arg == MP_OBJ_NULL) {
         mp_raise_type(&mp_type_StopIteration);

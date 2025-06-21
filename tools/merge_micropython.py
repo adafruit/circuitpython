@@ -8,7 +8,7 @@ For instance, there are file renames in the porcelain output that are not handle
 I add a sys.exit(0) after a section, and once a section runs, I delete it temporarily
 and move on to the next section. -- dhalbert
 
-Updated for v1.24.1 merge - dhalbert
+Updated for v1.25.0 merge - dhalbert
 
 """
 
@@ -47,6 +47,7 @@ def checkout_ours(always_ours):
 rm_paths(
     "ports",
     [
+        "alif",
         "bare-arm",
         "cc3200",
         "embed",
@@ -100,6 +101,7 @@ rm_paths(
         "library/time.rst",
         "library/uasyncio.rst",
         "library/uctypes.rst",
+        "library/vfs.rst",
         "library/wipy.rst",
         "library/wm8960.rst",
         "library/zephyr*.rst",
@@ -124,8 +126,11 @@ rm_paths(
         "multi_bluetooth",
         "multi_espnow",
         "multi_net",
+        "multi_pyb_can",
+        "multi_wlan",
         "net_hosted",
         "net_inet",
+        "ports",
         "pyb",
         "wipy",
     ],
@@ -135,11 +140,11 @@ rm_paths(
 rm_paths(
     "lib",
     [
+        "alif*",
         "asf4",
         "btstack",
         "libhydrogen",
         "lwip",
-        "micropython-lib",
         "mynewt-nimble",
         "nrfx",
         "nxp_driver",
@@ -162,17 +167,20 @@ rm_paths(
         "modbtree.*",
         "modframebuf.*",
         "modlwip.*",
+        "modmachine.*",
         "modnetwork.*",
         "modonewire.*",
         "moducryptolib.*",
         "modsocket.*",
-        "modssl_*.*",
+        "modssl_*",
+        "modtls_*",
         "modtimeq.*",
         "modwebsocket.*",
         "modwebrepl.*",
         "mpbthci.*",
-        "network_*.*",
+        "network_*",
         "nimble",
+        "virtpin.*",
     ],
 )
 
@@ -180,6 +188,7 @@ rm_paths(
 rm_paths(
     "shared",
     [
+        "netutils",
         "tinyusb",
         "runtime/softtimer.*",
     ],

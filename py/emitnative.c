@@ -93,7 +93,7 @@
 #endif
 
 #ifndef N_XTENSAWIN
-#define N_XTENSWIN (0)
+#define N_XTENSAWIN (0)
 #endif
 
 #ifndef N_PRELUDE_AS_BYTES_OBJ
@@ -329,6 +329,11 @@ struct _emit_t {
 
     ASM_T *as;
 };
+
+#ifndef REG_ZERO
+#define REG_ZERO REG_TEMP0
+#define ASM_CLR_REG(state, rd) ASM_XOR_REG_REG(state, rd, rd)
+#endif
 
 static void emit_load_reg_with_object(emit_t *emit, int reg, mp_obj_t obj);
 static void emit_native_global_exc_entry(emit_t *emit);
@@ -1242,12 +1247,12 @@ static void emit_native_global_exc_entry(emit_t *emit) {
             ASM_JUMP_IF_REG_ZERO(emit->as, REG_RET, start_label, true);
         } else {
             // Clear the unwind state
-            ASM_XOR_REG_REG(emit->as, REG_TEMP0, REG_TEMP0);
-            ASM_MOV_LOCAL_REG(emit->as, LOCAL_IDX_EXC_HANDLER_UNWIND(emit), REG_TEMP0);
+            ASM_CLR_REG(emit->as, REG_ZERO);
+            ASM_MOV_LOCAL_REG(emit->as, LOCAL_IDX_EXC_HANDLER_UNWIND(emit), REG_ZERO);
 
             // clear nlr.ret_val, because it's passed to mp_native_raise regardless
             // of whether there was an exception or not
-            ASM_MOV_LOCAL_REG(emit->as, LOCAL_IDX_EXC_VAL(emit), REG_TEMP0);
+            ASM_MOV_LOCAL_REG(emit->as, LOCAL_IDX_EXC_VAL(emit), REG_ZERO);
 
             // Put PC of start code block into REG_LOCAL_1
             ASM_MOV_REG_PCREL(emit->as, REG_LOCAL_1, start_label);
@@ -1263,8 +1268,8 @@ static void emit_native_global_exc_entry(emit_t *emit) {
             ASM_JUMP_IF_REG_NONZERO(emit->as, REG_RET, global_except_label, true);
 
             // Clear PC of current code block, and jump there to resume execution
-            ASM_XOR_REG_REG(emit->as, REG_TEMP0, REG_TEMP0);
-            ASM_MOV_LOCAL_REG(emit->as, LOCAL_IDX_EXC_HANDLER_PC(emit), REG_TEMP0);
+            ASM_CLR_REG(emit->as, REG_ZERO);
+            ASM_MOV_LOCAL_REG(emit->as, LOCAL_IDX_EXC_HANDLER_PC(emit), REG_ZERO);
             ASM_JUMP_REG(emit->as, REG_LOCAL_1);
 
             // Global exception handler: check for valid exception handler
@@ -1587,6 +1592,11 @@ static void emit_native_load_subscr(emit_t *emit) {
                             asm_rv32_opcode_lbu(emit->as, REG_RET, reg_base, index_value);
                             break;
                         }
+                        #elif N_XTENSA || N_XTENSAWIN
+                        if (index_value > 0 && index_value < 256) {
+                            asm_xtensa_op_l8ui(emit->as, REG_RET, reg_base, index_value);
+                            break;
+                        }
                         #endif
                         need_reg_single(emit, reg_index, 0);
                         ASM_MOV_REG_IMM(emit->as, reg_index, index_value);
@@ -1610,6 +1620,11 @@ static void emit_native_load_subscr(emit_t *emit) {
                             asm_rv32_opcode_lhu(emit->as, REG_RET, reg_base, index_value << 1);
                             break;
                         }
+                        #elif N_XTENSA || N_XTENSAWIN
+                        if (index_value > 0 && index_value < 256) {
+                            asm_xtensa_op_l16ui(emit->as, REG_RET, reg_base, index_value);
+                            break;
+                        }
                         #endif
                         need_reg_single(emit, reg_index, 0);
                         ASM_MOV_REG_IMM(emit->as, reg_index, index_value << 1);
@@ -1631,6 +1646,11 @@ static void emit_native_load_subscr(emit_t *emit) {
                         #elif N_RV32
                         if (FIT_SIGNED(index_value, 10)) {
                             asm_rv32_opcode_lw(emit->as, REG_RET, reg_base, index_value << 2);
+                            break;
+                        }
+                        #elif N_XTENSA || N_XTENSAWIN
+                        if (index_value > 0 && index_value < 256) {
+                            asm_xtensa_l32i_optimised(emit->as, REG_RET, reg_base, index_value);
                             break;
                         }
                         #endif
@@ -1667,6 +1687,11 @@ static void emit_native_load_subscr(emit_t *emit) {
                 }
                 case VTYPE_PTR16: {
                     // pointer to 16-bit memory
+                    #if N_XTENSA || N_XTENSAWIN
+                    asm_xtensa_op_addx2(emit->as, REG_ARG_1, reg_index, REG_ARG_1);
+                    asm_xtensa_op_l16ui(emit->as, REG_RET, REG_ARG_1, 0);
+                    break;
+                    #endif
                     ASM_ADD_REG_REG(emit->as, REG_ARG_1, reg_index); // add index to base
                     ASM_ADD_REG_REG(emit->as, REG_ARG_1, reg_index); // add index to base
                     ASM_LOAD16_REG_REG(emit->as, REG_RET, REG_ARG_1); // load from (base+2*index)
@@ -1678,6 +1703,10 @@ static void emit_native_load_subscr(emit_t *emit) {
                     asm_rv32_opcode_slli(emit->as, REG_TEMP2, reg_index, 2);
                     asm_rv32_opcode_cadd(emit->as, REG_ARG_1, REG_TEMP2);
                     asm_rv32_opcode_lw(emit->as, REG_RET, REG_ARG_1, 0);
+                    break;
+                    #elif N_XTENSA || N_XTENSAWIN
+                    asm_xtensa_op_addx4(emit->as, REG_ARG_1, reg_index, REG_ARG_1);
+                    asm_xtensa_op_l32i_n(emit->as, REG_RET, REG_ARG_1, 0);
                     break;
                     #endif
                     ASM_ADD_REG_REG(emit->as, REG_ARG_1, reg_index); // add index to base
@@ -1840,6 +1869,11 @@ static void emit_native_store_subscr(emit_t *emit) {
                             asm_rv32_opcode_sb(emit->as, reg_value, reg_base, index_value);
                             break;
                         }
+                        #elif N_XTENSA || N_XTENSAWIN
+                        if (index_value > 0 && index_value < 256) {
+                            asm_xtensa_op_s8i(emit->as, REG_RET, reg_base, index_value);
+                            break;
+                        }
                         #endif
                         ASM_MOV_REG_IMM(emit->as, reg_index, index_value);
                         #if N_ARM
@@ -1866,6 +1900,11 @@ static void emit_native_store_subscr(emit_t *emit) {
                             asm_rv32_opcode_sh(emit->as, reg_value, reg_base, index_value << 1);
                             break;
                         }
+                        #elif N_XTENSA || N_XTENSAWIN
+                        if (index_value > 0 && index_value < 256) {
+                            asm_xtensa_op_s16i(emit->as, REG_RET, reg_base, index_value);
+                            break;
+                        }
                         #endif
                         ASM_MOV_REG_IMM(emit->as, reg_index, index_value << 1);
                         ASM_ADD_REG_REG(emit->as, reg_index, reg_base); // add 2*index to base
@@ -1886,6 +1925,11 @@ static void emit_native_store_subscr(emit_t *emit) {
                         #elif N_RV32
                         if (FIT_SIGNED(index_value, 10)) {
                             asm_rv32_opcode_sw(emit->as, reg_value, reg_base, index_value << 2);
+                            break;
+                        }
+                        #elif N_XTENSA || N_XTENSAWIN
+                        if (index_value > 0 && index_value < 256) {
+                            asm_xtensa_s32i_optimised(emit->as, REG_RET, reg_base, index_value);
                             break;
                         }
                         #elif N_ARM
@@ -1942,6 +1986,10 @@ static void emit_native_store_subscr(emit_t *emit) {
                     #if N_ARM
                     asm_arm_strh_reg_reg_reg(emit->as, reg_value, REG_ARG_1, reg_index);
                     break;
+                    #elif N_XTENSA || N_XTENSAWIN
+                    asm_xtensa_op_addx2(emit->as, REG_ARG_1, reg_index, REG_ARG_1);
+                    asm_xtensa_op_s16i(emit->as, reg_value, REG_ARG_1, 0);
+                    break;
                     #endif
                     ASM_ADD_REG_REG(emit->as, REG_ARG_1, reg_index); // add index to base
                     ASM_ADD_REG_REG(emit->as, REG_ARG_1, reg_index); // add index to base
@@ -1957,6 +2005,10 @@ static void emit_native_store_subscr(emit_t *emit) {
                     asm_rv32_opcode_slli(emit->as, REG_TEMP2, reg_index, 2);
                     asm_rv32_opcode_cadd(emit->as, REG_ARG_1, REG_TEMP2);
                     asm_rv32_opcode_sw(emit->as, reg_value, REG_ARG_1, 0);
+                    break;
+                    #elif N_XTENSA || N_XTENSAWIN
+                    asm_xtensa_op_addx4(emit->as, REG_ARG_1, reg_index, REG_ARG_1);
+                    asm_xtensa_op_s32i_n(emit->as, reg_value, REG_ARG_1, 0);
                     break;
                     #endif
                     ASM_ADD_REG_REG(emit->as, REG_ARG_1, reg_index); // add index to base
@@ -2533,7 +2585,7 @@ static void emit_native_binary_op(emit_t *emit, mp_binary_op_t op) {
             #if N_X64
             asm_x64_xor_r64_r64(emit->as, REG_RET, REG_RET);
             asm_x64_cmp_r64_with_r64(emit->as, reg_rhs, REG_ARG_2);
-            static byte ops[6 + 6] = {
+            static const byte ops[6 + 6] = {
                 // unsigned
                 ASM_X64_CC_JB,
                 ASM_X64_CC_JA,
@@ -2553,7 +2605,7 @@ static void emit_native_binary_op(emit_t *emit, mp_binary_op_t op) {
             #elif N_X86
             asm_x86_xor_r32_r32(emit->as, REG_RET, REG_RET);
             asm_x86_cmp_r32_with_r32(emit->as, reg_rhs, REG_ARG_2);
-            static byte ops[6 + 6] = {
+            static const byte ops[6 + 6] = {
                 // unsigned
                 ASM_X86_CC_JB,
                 ASM_X86_CC_JA,
@@ -2573,7 +2625,7 @@ static void emit_native_binary_op(emit_t *emit, mp_binary_op_t op) {
             #elif N_THUMB
             asm_thumb_cmp_rlo_rlo(emit->as, REG_ARG_2, reg_rhs);
             if (asm_thumb_allow_armv7m(emit->as)) {
-                static uint16_t ops[6 + 6] = {
+                static const uint16_t ops[6 + 6] = {
                     // unsigned
                     ASM_THUMB_OP_ITE_CC,
                     ASM_THUMB_OP_ITE_HI,
@@ -2593,7 +2645,7 @@ static void emit_native_binary_op(emit_t *emit, mp_binary_op_t op) {
                 asm_thumb_mov_rlo_i8(emit->as, REG_RET, 1);
                 asm_thumb_mov_rlo_i8(emit->as, REG_RET, 0);
             } else {
-                static uint16_t ops[6 + 6] = {
+                static const uint16_t ops[6 + 6] = {
                     // unsigned
                     ASM_THUMB_CC_CC,
                     ASM_THUMB_CC_HI,
@@ -2616,7 +2668,7 @@ static void emit_native_binary_op(emit_t *emit, mp_binary_op_t op) {
             }
             #elif N_ARM
             asm_arm_cmp_reg_reg(emit->as, REG_ARG_2, reg_rhs);
-            static uint ccs[6 + 6] = {
+            static const uint ccs[6 + 6] = {
                 // unsigned
                 ASM_ARM_CC_CC,
                 ASM_ARM_CC_HI,
@@ -2634,7 +2686,7 @@ static void emit_native_binary_op(emit_t *emit, mp_binary_op_t op) {
             };
             asm_arm_setcc_reg(emit->as, REG_RET, ccs[op_idx]);
             #elif N_XTENSA || N_XTENSAWIN
-            static uint8_t ccs[6 + 6] = {
+            static const uint8_t ccs[6 + 6] = {
                 // unsigned
                 ASM_XTENSA_CC_LTU,
                 0x80 | ASM_XTENSA_CC_LTU, // for GTU we'll swap args

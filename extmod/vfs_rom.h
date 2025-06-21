@@ -3,7 +3,7 @@
  *
  * The MIT License (MIT)
  *
- * Copyright (c) 2016 Paul Sokolovsky
+ * Copyright (c) 2022 Damien P. George
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,29 +23,25 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef MICROPY_INCLUDED_EXTMOD_VIRTPIN_H
-#define MICROPY_INCLUDED_EXTMOD_VIRTPIN_H
+#ifndef MICROPY_INCLUDED_EXTMOD_VFS_ROM_H
+#define MICROPY_INCLUDED_EXTMOD_VFS_ROM_H
 
+#include "py/builtin.h"
 #include "py/obj.h"
-// CIRCUITPY-CHANGE
-#include "py/proto.h"
 
-#define MP_PIN_READ   (1)
-#define MP_PIN_WRITE  (2)
-#define MP_PIN_INPUT  (3)
-#define MP_PIN_OUTPUT (4)
+#if MICROPY_VFS_ROM
 
-// Pin protocol
-typedef struct _mp_pin_p_t {
-    // CIRCUITPY-CHANGE
-    MP_PROTOCOL_HEAD
-    mp_uint_t (*ioctl)(mp_obj_t obj, mp_uint_t request, uintptr_t arg, int *errcode);
-} mp_pin_p_t;
+typedef struct _mp_obj_vfs_rom_t mp_obj_vfs_rom_t;
 
-int mp_virtual_pin_read(mp_obj_t pin);
-void mp_virtual_pin_write(mp_obj_t pin, int value);
+extern const mp_obj_type_t mp_type_vfs_rom;
 
-// If a port exposes a Pin object, it's constructor should be like this
-mp_obj_t mp_pin_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args);
+static inline const char *mp_vfs_rom_get_path_str(mp_obj_vfs_rom_t *self, mp_obj_t path) {
+    return mp_obj_str_get_str(path);
+}
 
-#endif // MICROPY_INCLUDED_EXTMOD_VIRTPIN_H
+mp_import_stat_t mp_vfs_rom_search_filesystem(mp_obj_vfs_rom_t *self, const char *path, size_t *size_out, const uint8_t **data_out);
+mp_obj_t mp_vfs_rom_file_open(mp_obj_t self_in, mp_obj_t path_in, mp_obj_t mode_in);
+
+#endif // MICROPY_VFS_ROM
+
+#endif // MICROPY_INCLUDED_EXTMOD_VFS_ROM_H

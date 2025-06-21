@@ -36,6 +36,9 @@ ifneq ($(USER_C_MODULES),)
 # pre-define USERMOD variables as expanded so that variables are immediate
 # expanded as they're added to them
 
+# Confirm the provided path exists, show abspath if not to make it clearer to fix.
+$(if $(wildcard $(USER_C_MODULES)/.),,$(error USER_C_MODULES doesn't exist: $(abspath $(USER_C_MODULES))))
+
 # C/C++ files that are included in the QSTR/module build
 SRC_USERMOD_C :=
 SRC_USERMOD_CXX :=
@@ -137,6 +140,7 @@ PY_CORE_O_BASENAME = $(addprefix py/,\
 	emitnxtensawin.o \
 	asmrv32.o \
 	emitnrv32.o \
+	emitinlinerv32.o \
 	emitndebug.o \
 	formatfloat.o \
 	parsenumbase.o \
@@ -163,6 +167,7 @@ PY_CORE_O_BASENAME = $(addprefix py/,\
 	objboundmeth.o \
 	objcell.o \
 	objclosure.o \
+	objcode.o \
 	objcomplex.o \
 	objdeque.o \
 	objdict.o \

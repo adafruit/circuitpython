@@ -31,6 +31,8 @@ Functions and types
 
 .. class:: bytearray()
 
+    |see_cpython| `python:bytearray`.
+
 .. class:: bytes()
 
     |see_cpython| `python:bytes`.

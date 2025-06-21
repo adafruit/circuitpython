@@ -37,6 +37,7 @@ extern void common_hal_mcu_enable_interrupts(void);
 // MicroPython-only options not used by CircuitPython, but present in various files
 // inherited from MicroPython, especially in extmod/
 #define MICROPY_ENABLE_DYNRUNTIME        (0)
+#define MICROPY_HW_ENABLE_USB            (0)
 #define MICROPY_HW_ENABLE_USB_RUNTIME_DEVICE (0)
 #define MICROPY_PY_BLUETOOTH             (0)
 #define MICROPY_PY_LWIP_SLIP             (0)
