@@ -336,8 +336,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        port: ${{ fromJSON(needs.scheduler.outputs.ports).ports }}
+        port: ["rp2"]
     with:
-      boards: ${{ toJSON(fromJSON(needs.scheduler.outputs.ports)[matrix.port]) }}
-      cp-version: ${{ needs.scheduler.outputs.cp-version }}
+      boards: '["waveshare_rp2350_zero"]'
+      cp-version: "9.2.x"
       port: ${{ matrix.port }}
+      make-flags: "CIRCUITPY_USB_HOST=1"
