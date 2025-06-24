@@ -89,7 +89,7 @@ bool common_hal_wiznet_pio_spi_try_lock(wiznet_pio_spi_obj_t *self) {
     if (common_hal_wiznet_pio_spi_deinited(self)) {
         return false;
     }
-    
+
     bool grabbed_lock = false;
     if (!self->has_lock) {
         grabbed_lock = true;

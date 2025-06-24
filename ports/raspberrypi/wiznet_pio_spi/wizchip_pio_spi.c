@@ -351,7 +351,7 @@ void wiznet_pio_spi_write_buffer(const uint8_t *pBuf, uint16_t len) {
         assert(active_state->spi_header_count == 0);
         if (!wiznet_pio_spi_transfer(pBuf, len, NULL, 0)) {
             panic("spi failed writing buffer");
-        } 
+        }
     }
 }
 

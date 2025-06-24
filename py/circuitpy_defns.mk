@@ -460,7 +460,7 @@ ifeq ($(CIRCUITPY_WIFI),1)
 SRC_PATTERNS += wifi/%
 endif
 ifeq ($(CIRCUITPY_WIZNET_PIO_SPI),1)
-SRC_PATTERNS += busio/WIZNET_PIO_SPI.c busio/WIZNET_PIO_SPI.h 
+SRC_PATTERNS += busio/WIZNET_PIO_SPI.c
 endif
 ifeq ($(CIRCUITPY_ZLIB),1)
 SRC_PATTERNS += zlib/%
@@ -847,6 +847,10 @@ SRC_SHARED_MODULE_ALL += \
 	ssl/__init__.c \
 	ssl/SSLContext.c \
 	ssl/SSLSocket.c
+endif
+
+ifeq ($(CIRCUITPY_WIZNET_PIO_SPI),1)
+SRC_COMMON_HAL_ALL += busio/WIZNET_PIO_SPI.c
 endif
 
 ifeq ($(CIRCUITPY_KEYPAD_DEMUX),1)

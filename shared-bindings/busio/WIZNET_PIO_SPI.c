@@ -4,8 +4,9 @@
 //
 // SPDX-License-Identifier: MIT
 
+//TODO: busio.WIZNET_PIO_SPI class.
 // This file contains all of the Python API definitions for the
-// busio.SPI class.
+// busio.WIZNET_PIO_SPI class.
 
 #include <string.h>
 
@@ -20,73 +21,10 @@
 #include "py/objproperty.h"
 #include "py/runtime.h"
 
-#include <stdio.h>
+
+//TODO: class WIZNET_PIO_SPI
 
 
-//| class SPI:
-//|     """A 3-4 wire serial protocol
-//|
-//|     SPI is a serial protocol that has exclusive pins for data in and out of the
-//|     main device.  It is typically faster than :py:class:`~bitbangio.I2C` because a
-//|     separate pin is used to select a device rather than a transmitted
-//|     address. This class only manages three of the four SPI lines: `!clock`,
-//|     `!MOSI`, `!MISO`. It is up to the client to manage the appropriate
-//|     select line, often abbreviated `!CS` or `!SS`. (This is common because
-//|     multiple secondaries can share the `!clock`, `!MOSI` and `!MISO` lines
-//|     and therefore the hardware.)
-//|
-//|     .. raw:: html
-//|
-//|         <p>
-//|         <details>
-//|         <summary>Available on these boards</summary>
-//|         <ul>
-//|         {% for board in support_matrix_reverse["busio.SPI"] %}
-//|         <li> {{ board }}
-//|         {% endfor %}
-//|         </ul>
-//|         </details>
-//|         </p>
-//|
-//|     .. seealso:: This class acts as an SPI main (controller).
-//|         To act as an SPI secondary (target), use `spitarget.SPITarget`.
-//|     """
-//|
-//|     def __init__(
-//|         self,
-//|         clock: microcontroller.Pin,
-//|         MOSI: Optional[microcontroller.Pin] = None,
-//|         MISO: Optional[microcontroller.Pin] = None,
-//|         half_duplex: bool = False,
-//|     ) -> None:
-//|         """Construct an SPI object on the given pins.
-//|
-//|         .. note:: The SPI peripherals allocated in order of desirability, if possible,
-//|            such as highest speed and not shared use first. For instance, on the nRF52840,
-//|            there is a single 32MHz SPI peripheral, and multiple 8MHz peripherals,
-//|            some of which may also be used for I2C. The 32MHz SPI peripheral is returned
-//|            first, then the exclusive 8MHz SPI peripheral, and finally the shared 8MHz
-//|            peripherals.
-//|
-//|         .. seealso:: Using this class directly requires careful lock management.
-//|             Instead, use :class:`~adafruit_bus_device.SPIDevice` to
-//|             manage locks.
-//|
-//|         .. seealso:: Using this class to directly read registers requires manual
-//|             bit unpacking. Instead, use an existing driver or make one with
-//|             :ref:`Register <register-module-reference>` data descriptors.
-//|
-//|         :param ~microcontroller.Pin clock: the pin to use for the clock.
-//|         :param ~microcontroller.Pin MOSI: the Main Out Selected In pin.
-//|         :param ~microcontroller.Pin MISO: the Main In Selected Out pin.
-//|         :param bool half_duplex: True when MOSI is used for bidirectional data. False when SPI is full-duplex or simplex.
-//|
-//|         **Limitations:** ``half_duplex`` is available only on STM; other chips do not have the hardware support.
-//|         """
-//|         ...
-//|
-
-// TODO(tannewt): Support LSB SPI.
 static mp_obj_t wiznet_pio_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     #if CIRCUITPY_WIZNET_PIO_SPI
     wiznet_pio_spi_obj_t *self = mp_obj_malloc(wiznet_pio_spi_obj_t, &busio_wiznet_pio_spi_type);
@@ -116,10 +54,9 @@ static mp_obj_t wiznet_pio_spi_make_new(const mp_obj_type_t *type, size_t n_args
 }
 
 #if CIRCUITPY_WIZNET_PIO_SPI
-//|     def deinit(self) -> None:
-//|         """Turn off the SPI bus."""
-//|         ...
-//|
+
+// TODO: def deinit
+
 static mp_obj_t wiznet_pio_spi_obj_deinit(mp_obj_t self_in) {
     wiznet_pio_spi_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_wiznet_pio_spi_deinit(self);
@@ -127,18 +64,9 @@ static mp_obj_t wiznet_pio_spi_obj_deinit(mp_obj_t self_in) {
 }
 MP_DEFINE_CONST_FUN_OBJ_1(wiznet_pio_spi_deinit_obj, wiznet_pio_spi_obj_deinit);
 
-//|     def __enter__(self) -> SPI:
-//|         """No-op used by Context Managers.
-//|         Provided by context manager helper."""
-//|         ...
-//|
+// TODO: def __enter__
 
-//|     def __exit__(self) -> None:
-//|         """Automatically deinitializes the hardware when exiting a context. See
-//|         :ref:`lifetime-and-contextmanagers` for more info."""
-//|         ...
-//|
-//  Provided by context manager helper.
+// TODO: def __exit__
 
 static void check_lock(wiznet_pio_spi_obj_t *self) {
     asm ("");
@@ -153,31 +81,7 @@ static void check_for_deinit(wiznet_pio_spi_obj_t *self) {
     }
 }
 
-//|     def configure(
-//|         self, *, baudrate: int = 100000, polarity: int = 0, phase: int = 0, bits: int = 8
-//|     ) -> None:
-//|         """Configures the SPI bus. The SPI object must be locked.
-//|
-//|         :param int baudrate: the desired clock rate in Hertz. The actual clock rate may be higher or lower
-//|           due to the granularity of available clock settings.
-//|           Check the `frequency` attribute for the actual clock rate.
-//|         :param int polarity: the base state of the clock line (0 or 1)
-//|         :param int phase: the edge of the clock that data is captured. First (0)
-//|           or second (1). Rising or falling depends on clock polarity.
-//|         :param int bits: the number of bits per word
-//|
-//|         .. note:: On the SAMD21, it is possible to set the baudrate to 24 MHz, but that
-//|            speed is not guaranteed to work. 12 MHz is the next available lower speed, and is
-//|            within spec for the SAMD21.
-//|
-//|         .. note:: On the nRF52840, these baudrates are available: 125kHz, 250kHz, 1MHz, 2MHz, 4MHz,
-//|           and 8MHz.
-//|           If you pick a a baudrate other than one of these, the nearest lower
-//|           baudrate will be chosen, with a minimum of 125kHz.
-//|           Two SPI objects may be created, except on the Circuit Playground Bluefruit,
-//|           which allows only one (to allow for an additional I2C object)."""
-//|         ...
-//|
+// TODO: def configure
 
 static mp_obj_t wiznet_pio_spi_configure(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_baudrate, ARG_polarity, ARG_phase, ARG_bits };
@@ -205,13 +109,7 @@ static mp_obj_t wiznet_pio_spi_configure(size_t n_args, const mp_obj_t *pos_args
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(wiznet_pio_spi_configure_obj, 1, wiznet_pio_spi_configure);
 
-//|     def try_lock(self) -> bool:
-//|         """Attempts to grab the SPI lock. Returns True on success.
-//|
-//|         :return: True when lock has been grabbed
-//|         :rtype: bool"""
-//|         ...
-//|
+// TODO: def try_lock
 
 static mp_obj_t wiznet_pio_spi_obj_try_lock(mp_obj_t self_in) {
     wiznet_pio_spi_obj_t *self = MP_OBJ_TO_PTR(self_in);
@@ -219,10 +117,7 @@ static mp_obj_t wiznet_pio_spi_obj_try_lock(mp_obj_t self_in) {
 }
 MP_DEFINE_CONST_FUN_OBJ_1(wiznet_pio_spi_try_lock_obj, wiznet_pio_spi_obj_try_lock);
 
-//|     def unlock(self) -> None:
-//|         """Releases the SPI lock."""
-//|         ...
-//|
+// TODO: def unlock
 
 static mp_obj_t wiznet_pio_spi_obj_unlock(mp_obj_t self_in) {
     wiznet_pio_spi_obj_t *self = MP_OBJ_TO_PTR(self_in);
@@ -232,22 +127,7 @@ static mp_obj_t wiznet_pio_spi_obj_unlock(mp_obj_t self_in) {
 }
 MP_DEFINE_CONST_FUN_OBJ_1(wiznet_pio_spi_unlock_obj, wiznet_pio_spi_obj_unlock);
 
-//|     import sys
-//|
-//|     def write(self, buffer: ReadableBuffer, *, start: int = 0, end: int = sys.maxsize) -> None:
-//|         """Write the data contained in ``buffer``. The SPI object must be locked.
-//|         If the buffer is empty, nothing happens.
-//|
-//|         If ``start`` or ``end`` is provided, then the buffer will be sliced
-//|         as if ``buffer[start:end]`` were passed, but without copying the data.
-//|         The number of bytes written will be the length of ``buffer[start:end]``.
-//|
-//|         :param ReadableBuffer buffer: write out bytes from this buffer
-//|         :param int start: beginning of buffer slice
-//|         :param int end: end of buffer slice; if not specified, use ``len(buffer)``
-//|         """
-//|         ...
-//|
+// TODO: def write
 
 static mp_obj_t wiznet_pio_spi_write(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_buffer, ARG_start, ARG_end };
@@ -280,7 +160,7 @@ static mp_obj_t wiznet_pio_spi_write(size_t n_args, const mp_obj_t *pos_args, mp
     }
 
     bool ok = common_hal_wiznet_pio_spi_write(self, ((uint8_t *)bufinfo.buf) + start, length);
-    
+
     if (!ok) {
         mp_raise_OSError(MP_EIO);
     }
@@ -288,34 +168,7 @@ static mp_obj_t wiznet_pio_spi_write(size_t n_args, const mp_obj_t *pos_args, mp
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(wiznet_pio_spi_write_obj, 1, wiznet_pio_spi_write);
 
-
-//|     import sys
-//|
-//|     def readinto(
-//|         self,
-//|         buffer: WriteableBuffer,
-//|         *,
-//|         start: int = 0,
-//|         end: int = sys.maxsize,
-//|         write_value: int = 0,
-//|     ) -> None:
-//|         """Read into ``buffer`` while writing ``write_value`` for each byte read.
-//|         The SPI object must be locked.
-//|         If the number of bytes to read is 0, nothing happens.
-//|
-//|         If ``start`` or ``end`` is provided, then the buffer will be sliced
-//|         as if ``buffer[start:end]`` were passed.
-//|         The number of bytes read will be the length of ``buffer[start:end]``.
-//|
-//|         :param WriteableBuffer buffer: read bytes into this buffer
-//|         :param int start: beginning of buffer slice
-//|         :param int end: end of buffer slice; if not specified, it will be the equivalent value
-//|             of ``len(buffer)`` and for any value provided it will take the value of
-//|             ``min(end, len(buffer))``
-//|         :param int write_value: value to write while reading
-//|         """
-//|         ...
-//|
+// TODO: def readinto
 
 static mp_obj_t wiznet_pio_spi_readinto(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_buffer, ARG_start, ARG_end, ARG_write_value };
@@ -355,42 +208,8 @@ static mp_obj_t wiznet_pio_spi_readinto(size_t n_args, const mp_obj_t *pos_args,
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(wiznet_pio_spi_readinto_obj, 1, wiznet_pio_spi_readinto);
 
-//|     import sys
-//|
-//|     def write_readinto(
-//|         self,
-//|         out_buffer: ReadableBuffer,
-//|         in_buffer: WriteableBuffer,
-//|         *,
-//|         out_start: int = 0,
-//|         out_end: int = sys.maxsize,
-//|         in_start: int = 0,
-//|         in_end: int = sys.maxsize,
-//|     ) -> None:
-//|         """Write out the data in ``out_buffer`` while simultaneously reading data into ``in_buffer``.
-//|         The SPI object must be locked.
-//|
-//|         If ``out_start`` or ``out_end`` is provided, then the buffer will be sliced
-//|         as if ``out_buffer[out_start:out_end]`` were passed, but without copying the data.
-//|         The number of bytes written will be the length of ``out_buffer[out_start:out_end]``.
-//|
-//|         If ``in_start`` or ``in_end`` is provided, then the input buffer will be sliced
-//|         as if ``in_buffer[in_start:in_end]`` were passed,
-//|         The number of bytes read will be the length of ``out_buffer[in_start:in_end]``.
-//|
-//|         The lengths of the slices defined by ``out_buffer[out_start:out_end]``
-//|         and ``in_buffer[in_start:in_end]`` must be equal.
-//|         If buffer slice lengths are both 0, nothing happens.
-//|
-//|         :param ReadableBuffer out_buffer: write out bytes from this buffer
-//|         :param WriteableBuffer in_buffer: read bytes into this buffer
-//|         :param int out_start: beginning of ``out_buffer`` slice
-//|         :param int out_end: end of ``out_buffer`` slice; if not specified, use ``len(out_buffer)``
-//|         :param int in_start: beginning of ``in_buffer`` slice
-//|         :param int in_end: end of ``in_buffer slice``; if not specified, use ``len(in_buffer)``
-//|         """
-//|         ...
-//|
+
+// TODO: def write_readinto
 
 static mp_obj_t wiznet_pio_spi_write_readinto(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_out_buffer, ARG_in_buffer, ARG_out_start, ARG_out_end, ARG_in_start, ARG_in_end };
@@ -446,12 +265,6 @@ static mp_obj_t wiznet_pio_spi_write_readinto(size_t n_args, const mp_obj_t *pos
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(wiznet_pio_spi_write_readinto_obj, 1, wiznet_pio_spi_write_readinto);
-
-//|     frequency: int
-//|     """The actual SPI bus frequency. This may not match the frequency requested
-//|     due to internal limitations."""
-//|
-//|
 
 #endif // CIRCUITPY_WIZNET_PIO_SPI
 
