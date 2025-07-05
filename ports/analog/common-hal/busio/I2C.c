@@ -52,6 +52,11 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
     // Check for NULL Pointers && valid I2C settings
     assert(self);
 
+    /* NOTE: The validate_obj_is_free_pin() calls in shared-bindings/busio/I2C.c
+       will ensure that scl and sda are both pins and cannot be null
+       ref: https://github.com/adafruit/circuitpython/pull/10413
+    */
+
     // Assign I2C ID based on pins
     temp = pinsToI2c(sda, scl);
     if (temp == -1) {
@@ -65,25 +70,6 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
     assert((self->i2c_id >= 0) && (self->i2c_id < NUM_I2C));
     assert(!(i2c_active & (1 << self->i2c_id)));
 
-    // Init I2C as main / controller node (0x00 is ignored)
-    if ((scl != NULL) && (sda != NULL)) {
-        MXC_GPIO_Config(&i2c_maps[self->i2c_id]);
-        err = MXC_I2C_Init(self->i2c_regs, 1, 0x00);
-        if (err) {
-            mp_raise_RuntimeError_varg(MP_ERROR_TEXT("Failed to init I2C. ERR: %d\n"), err);
-        }
-        err = MXC_I2C_SetFrequency(self->i2c_regs, frequency);
-        if (err < 0) {
-            mp_raise_RuntimeError_varg(MP_ERROR_TEXT("Failed to set I2C frequency. ERR: %d\n"), err);
-        }
-    } else if (scl != NULL) {
-        mp_raise_NotImplementedError(MP_ERROR_TEXT("I2C needs SDA & SCL"));
-    } else if (sda != NULL) {
-        mp_raise_NotImplementedError(MP_ERROR_TEXT("I2C needs SDA & SCL"));
-    } else {
-        // Should not get here, as shared-bindings API should not call this way
-    }
-
     // Attach I2C pins
     self->sda = sda;
     self->scl = scl;
@@ -94,8 +80,8 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
     i2c_active |= (1 << self->i2c_id);
 
     // Set the timeout to a default value
-    if (((timeout < 0.0) || (timeout > 100.0))) {
-        self->timeout = 1.0;
+    if (timeout > 100) {
+        self->timeout = 1;
     } else {
         self->timeout = timeout;
     }
@@ -212,7 +198,6 @@ uint8_t common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr,
 }
 
 // Read into buffer from the device selected by address
-// todo test
 uint8_t common_hal_busio_i2c_read(busio_i2c_obj_t *self,
     uint16_t addr,
     uint8_t *data, size_t len) {
@@ -229,14 +214,14 @@ uint8_t common_hal_busio_i2c_read(busio_i2c_obj_t *self,
     };
     ret = MXC_I2C_MasterTransaction(&rd_req);
     if (ret) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("ERROR during I2C Transaction\n"));
+        // Return I/O error
+        return MP_EIO;
     }
 
     return 0;
 }
 
 // Write the bytes from out_data to the device selected by address,
-// todo test
 uint8_t common_hal_busio_i2c_write_read(busio_i2c_obj_t *self, uint16_t addr,
     uint8_t *out_data, size_t out_len,
     uint8_t *in_data, size_t in_len) {
@@ -253,7 +238,7 @@ uint8_t common_hal_busio_i2c_write_read(busio_i2c_obj_t *self, uint16_t addr,
     };
     ret = MXC_I2C_MasterTransaction(&wr_rd_req);
     if (ret) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("ERROR during I2C Transaction\n"));
+        return MP_EIO;
     }
 
     return 0;

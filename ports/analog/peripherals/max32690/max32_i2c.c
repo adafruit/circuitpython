@@ -70,7 +70,6 @@ int pinsToI2c(const mcu_pin_obj_t *sda, const mcu_pin_obj_t *scl) {
     }
     #endif
 
-    mp_raise_RuntimeError_varg(MP_ERROR_TEXT("ERR: Unable to find an I2C matching pins...\nSCL: port %d mask %d\nSDA: port %d mask %d\n"),
-        sda->port, sda->mask, scl->port, scl->mask);
+    mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q"), MP_QSTR_pins);
     return -1;
 }

@@ -82,37 +82,37 @@ static volatile int uart_err;
 static uint8_t uart_never_reset_mask = 0;
 static busio_uart_obj_t *context;
 
-static int isValidBaudrate(uint32_t baudrate) {
+static bool isValidBaudrate(uint32_t baudrate) {
     switch (baudrate) {
         case UART_9600:
-            return 1;
+            return true;
             break;
         case UART_14400:
-            return 1;
+            return true;
             break;
         case UART_19200:
-            return 1;
+            return true;
             break;
         case UART_38400:
-            return 1;
+            return true;
             break;
         case UART_57600:
-            return 1;
+            return true;
             break;
         case UART_115200:
-            return 1;
+            return true;
             break;
         case UART_230400:
-            return 1;
+            return true;
             break;
         case UART_460800:
-            return 1;
+            return true;
             break;
         case UART_921600:
-            return 1;
+            return true;
             break;
         default:
-            return 0;
+            return false;
             break;
     }
 }
@@ -126,7 +126,8 @@ static mxc_uart_parity_t convertParity(busio_uart_parity_t busio_parity) {
         case BUSIO_UART_PARITY_ODD:
             return MXC_UART_PARITY_ODD_0;
         default:
-            mp_raise_ValueError(MP_ERROR_TEXT("Parity must be ODD, EVEN, or NONE\n"));
+            // not reachable due to validation in shared-bindings/busio/SPI.c
+            return MXC_UART_PARITY_DISABLE;
     }
 }
 
@@ -188,7 +189,7 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     if ((rx != NULL) && (tx != NULL)) {
         err = MXC_UART_Init(self->uart_regs, baudrate, MXC_UART_IBRO_CLK);
         if (err != E_NO_ERROR) {
-            mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to initialize UART.\n"));
+            mp_raise_RuntimeError_varg(MP_ERROR_TEXT("%q init failed"), MP_QSTR_UART);
         }
 
         // attach & configure pins
@@ -211,7 +212,7 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
         common_hal_mcu_pin_claim(self->cts_pin);
         common_hal_mcu_pin_claim(self->rts_pin);
     } else if (cts || rts) {
-        mp_raise_ValueError(MP_ERROR_TEXT("Flow Ctrl needs both CTS & RTS"));
+        mp_raise_ValueError(MP_ERROR_TEXT("Both RX and TX required for flow control"));
     }
 
     // Set stop bits & data size
@@ -338,7 +339,7 @@ size_t common_hal_busio_uart_read(busio_uart_obj_t *self,
         *errcode = err;
         MXC_UART_AbortAsync(self->uart_regs);
         NVIC_DisableIRQ(MXC_UART_GET_IRQ(self->uart_id));
-        mp_raise_RuntimeError_varg(MP_ERROR_TEXT("\nERR: Error starting transaction: %d\n"), err);
+        mp_raise_RuntimeError_varg(MP_ERROR_TEXT("UART read error"));
     }
 
     // Wait for transaction completion or timeout
@@ -350,11 +351,11 @@ size_t common_hal_busio_uart_read(busio_uart_obj_t *self,
     if (uart_status[self->uart_id] != UART_FREE) {
         MXC_UART_AbortAsync(self->uart_regs);
         NVIC_DisableIRQ(MXC_UART_GET_IRQ(self->uart_id));
-        mp_raise_RuntimeError(MP_ERROR_TEXT("\nERR: Uart transaction timed out.\n"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("UART transaction timeout"));
     }
     // Check for errors from the callback
     else if (uart_err != E_NO_ERROR) {
-        mp_printf(&mp_sys_stdout_print, "MAX32 ERR: %d\n", uart_err);
+        // todo: indicate error?
         MXC_UART_AbortAsync(self->uart_regs);
     }
 
@@ -399,7 +400,7 @@ size_t common_hal_busio_uart_write(busio_uart_obj_t *self,
         *errcode = err;
         MXC_UART_AbortAsync(self->uart_regs);
         NVIC_DisableIRQ(MXC_UART_GET_IRQ(self->uart_id));
-        mp_raise_ConnectionError(MP_ERROR_TEXT("\nERR: Requested bus is busy\n"));
+        mp_raise_ValueError(MP_ERROR_TEXT("All UART peripherals are in use"));
     }
 
     // Wait for transaction completion or timeout
@@ -409,7 +410,7 @@ size_t common_hal_busio_uart_write(busio_uart_obj_t *self,
         // Call the handler and abort if errors
         uart_err = MXC_UART_AsyncHandler(self->uart_regs);
         if (uart_err != E_NO_ERROR) {
-            mp_printf(&mp_sys_stdout_print, "MAX32 ERR: %d\n", uart_err);
+            // todo: indicate error?
             MXC_UART_AbortAsync(self->uart_regs);
         }
     }
@@ -418,11 +419,11 @@ size_t common_hal_busio_uart_write(busio_uart_obj_t *self,
     if (uart_status[self->uart_id] != UART_FREE) {
         MXC_UART_AbortAsync(self->uart_regs);
         NVIC_DisableIRQ(MXC_UART_GET_IRQ(self->uart_id));
-        mp_raise_ConnectionError(MP_ERROR_TEXT("\nERR: Uart transaction timed out.\n"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Uart transaction timed out."));
     }
     // Check for errors from the callback
     else if (uart_err != E_NO_ERROR) {
-        mp_printf(&mp_sys_stdout_print, "MAX32 ERR: %d\n", uart_err);
+        // todo: indicate error?
         MXC_UART_AbortAsync(self->uart_regs);
     }
 
@@ -438,7 +439,7 @@ void common_hal_busio_uart_set_baudrate(busio_uart_obj_t *self, uint32_t baudrat
     if (isValidBaudrate(baudrate)) {
         self->baudrate = baudrate;
     } else {
-        mp_raise_ValueError(MP_ERROR_TEXT("Baudrate invalid. Must be a standard UART baudrate.\n"));
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q"), MP_QSTR_baudrate);
     }
 }
 

@@ -31,7 +31,6 @@ int pinsToUart(const mcu_pin_obj_t *rx, const mcu_pin_obj_t *tx) {
             return i;
         }
     }
-    mp_raise_RuntimeError_varg(MP_ERROR_TEXT("ERR: Unable to find a uart matching pins...\nTX: port %d mask %d\nRX: port %d mask %d\n"),
-        tx->port, tx->mask, rx->port, rx->mask);
+    mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q"), MP_QSTR_pins);
     return -1;
 }

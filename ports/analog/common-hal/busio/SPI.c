@@ -91,7 +91,8 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
             1, 0x01, 1000000, spi_pins);
         MXC_GPIO_SetVSSEL(MXC_GPIO_GET_GPIO(sck->port), MXC_GPIO_VSSEL_VDDIOH, (sck->mask | miso->mask | mosi->mask | MXC_GPIO_PIN_0));
         if (err) {
-            mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to init SPI.\n"));
+            // NOTE: Reuse existing messages from locales/circuitpython.pot to save space
+            mp_raise_RuntimeError_varg(MP_ERROR_TEXT("%q init failed"), MP_QSTR_SPI);
         }
     } else {
         mp_raise_NotImplementedError(MP_ERROR_TEXT("SPI needs MOSI, MISO, and SCK"));
@@ -170,7 +171,7 @@ bool common_hal_busio_spi_configure(busio_spi_obj_t *self,
             clk_mode = MXC_SPI_CLKMODE_3;
             break;
         default:
-            mp_raise_ValueError(MP_ERROR_TEXT("CPOL / CPHA must both be either 0 or 1\n"));
+            // should not be reachable; validated in shared-bindings/busio/SPI.c
             return false;
     }
 

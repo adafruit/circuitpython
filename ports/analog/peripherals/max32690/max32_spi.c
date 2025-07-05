@@ -39,9 +39,6 @@ int pinsToSpi(const mcu_pin_obj_t *mosi, const mcu_pin_obj_t *miso,
             return i;
         }
     }
-    mp_raise_RuntimeError_varg(MP_ERROR_TEXT("ERR: Unable to find an SPI matching pins... \
-        \nMOSI: port %d mask %d\nMISO: port %d mask %d\n"),
-        mosi->port, mosi->mask, miso->port, miso->mask,
-        sck->port, sck->mask);
+    mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q"), MP_QSTR_pins);
     return -1;
 }
