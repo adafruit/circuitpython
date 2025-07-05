@@ -239,7 +239,7 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
 
     // Initialize ringbuffer
     if (receiver_buffer == NULL) {
-        self->ringbuf = m_malloc_without_collect(receiver_buffer_size, false);
+        self->ringbuf = m_malloc_without_collect(receiver_buffer_size);
         if (!ringbuf_alloc(self->ringbuf, receiver_buffer_size)) {
             m_malloc_fail(receiver_buffer_size);
             mp_raise_RuntimeError(MP_ERROR_TEXT("ERR: Could not init ringbuffer\n"));
