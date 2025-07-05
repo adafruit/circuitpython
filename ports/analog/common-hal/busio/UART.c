@@ -197,12 +197,8 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
         self->rx_pin = rx;
         common_hal_mcu_pin_claim(self->tx_pin);
         common_hal_mcu_pin_claim(self->rx_pin);
-    } else if (tx != NULL) {
-        mp_raise_NotImplementedError(MP_ERROR_TEXT("UART needs TX & RX"));
-    } else if (rx != NULL) {
-        mp_raise_NotImplementedError(MP_ERROR_TEXT("UART needs TX & RX"));
     } else {
-        // Should not get here, as shared-bindings API should not call this way
+        mp_raise_NotImplementedError(MP_ERROR_TEXT("UART needs TX & RX"));
     }
 
     if ((cts) && (rts)) {
@@ -243,7 +239,7 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
 
     // Initialize ringbuffer
     if (receiver_buffer == NULL) {
-        self->ringbuf = gc_alloc(receiver_buffer_size, false);
+        self->ringbuf = m_malloc_without_collect(receiver_buffer_size, false);
         if (!ringbuf_alloc(self->ringbuf, receiver_buffer_size)) {
             m_malloc_fail(receiver_buffer_size);
             mp_raise_RuntimeError(MP_ERROR_TEXT("ERR: Could not init ringbuffer\n"));
