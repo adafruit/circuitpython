@@ -47,7 +47,7 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
     const mcu_pin_obj_t *sda,
     uint32_t frequency, uint32_t timeout) {
 
-    int temp, err = 0;
+    int temp = 0;
 
     // Check for NULL Pointers && valid I2C settings
     assert(self);
@@ -113,7 +113,7 @@ void common_hal_busio_i2c_deinit(busio_i2c_obj_t *self) {
 
 // Probe device in I2C bus
 bool common_hal_busio_i2c_probe(busio_i2c_obj_t *self, uint8_t addr) {
-    uint32_t int_fl0, int_fl1;
+    uint32_t int_fl0;
     bool ret = 0;
 
     // Clear FIFOs & all interrupt flags
