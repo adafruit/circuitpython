@@ -7,15 +7,15 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-01-04 12:55-0600\n"
-"PO-Revision-Date: 2023-12-06 22:06+0000\n"
-"Last-Translator: deepserket <deepserket@gmail.com>\n"
+"PO-Revision-Date: 2025-06-18 17:01+0000\n"
+"Last-Translator: Dan Halbert <halbert@halwitz.org>\n"
 "Language-Team: \n"
 "Language: it_IT\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.3-dev\n"
+"X-Generator: Weblate 5.12.1\n"
 
 #: main.c
 msgid ""
@@ -313,7 +313,7 @@ msgid "'%q' object does not support '%q'"
 msgstr "L'oggetto '%q' non supporta '%q'"
 
 #: py/runtime.c
-msgid "'%q' object is not an iterator"
+msgid "'%q' object isn't an iterator"
 msgstr "L'oggetto '%q' non è un iteratore"
 
 #: py/objtype.c py/runtime.c shared-module/atexit/__init__.c
@@ -321,7 +321,7 @@ msgid "'%q' object is not callable"
 msgstr "L'oggetto '%q' non è richiamabile"
 
 #: py/runtime.c
-msgid "'%q' object is not iterable"
+msgid "'%q' object isn't iterable"
 msgstr "L'oggetto '%q' non è iterabile"
 
 #: py/emitinlinethumb.c py/emitinlinextensa.c
@@ -990,7 +990,7 @@ msgstr ""
 #: ports/nordic/sd_mutex.c
 #, c-format
 msgid "Failed to acquire mutex, err 0x%04x"
-msgstr "Impossibile acquisire il mutex, err  0x%04x"
+msgstr "Impossibile acquisire il mutex, err 0x%04x"
 
 #: ports/raspberrypi/common-hal/mdns/Server.c
 msgid "Failed to add service TXT record"
@@ -1057,7 +1057,7 @@ msgstr ""
 #: ports/nordic/sd_mutex.c
 #, c-format
 msgid "Failed to release mutex, err 0x%04x"
-msgstr "Impossibile rilasciare il mutex, err  0x%04x"
+msgstr "Impossibile rilasciare il mutex, err 0x%04x"
 
 #: ports/zephyr-cp/common-hal/wifi/Radio.c
 msgid "Failed to set hostname"
@@ -1829,9 +1829,10 @@ msgid "Pipe error"
 msgstr ""
 
 #: py/builtinhelp.c
-#, fuzzy
 msgid "Plus any modules on the filesystem\n"
-msgstr "Imposssibile rimontare il filesystem"
+msgstr ""
+"Imposssibile rimontare il filesystem\\n"
+"\n"
 
 #: shared-module/vectorio/Polygon.c
 msgid "Polygon needs at least 3 points"
@@ -3207,7 +3208,7 @@ msgid "format"
 msgstr ""
 
 #: py/objstr.c
-msgid "format requires a dict"
+msgid "format needs a dict"
 msgstr "la formattazione richiede un dict"
 
 #: py/objdeque.c
@@ -3670,7 +3671,7 @@ msgid "must use keyword argument for key function"
 msgstr ""
 
 #: py/runtime.c
-msgid "name '%q' is not defined"
+msgid "name '%q' isn't defined"
 msgstr "nome '%q'non definito"
 
 #: py/runtime.c
@@ -4315,11 +4316,11 @@ msgid "tx and rx cannot both be None"
 msgstr "tx e rx non possono essere entrambi None"
 
 #: py/objtype.c
-msgid "type '%q' is not an acceptable base type"
+msgid "type '%q' isn't an acceptable base type"
 msgstr "il tipo '%q' non è un tipo di base accettabile"
 
 #: py/objtype.c
-msgid "type is not an acceptable base type"
+msgid "type isn't an acceptable base type"
 msgstr "il tipo non è un tipo di base accettabile"
 
 #: py/runtime.c
@@ -4679,13 +4680,13 @@ msgstr ""
 #~ msgid "'%s' object does not support item deletion"
 #~ msgstr "oggeto '%s' non supporta eliminamento di item"
 
-#~ msgid "'%s' object is not an iterator"
+#~ msgid "'%s' object isn't an iterator"
 #~ msgstr "l'oggetto '%s' non è un iteratore"
 
 #~ msgid "'%s' object is not callable"
 #~ msgstr "oggeto '%s' non è chiamabile"
 
-#~ msgid "'%s' object is not iterable"
+#~ msgid "'%s' object isn't iterable"
 #~ msgstr "l'oggetto '%s' non è iterabile"
 
 #~ msgid "'%s' object is not subscriptable"
@@ -4701,7 +4702,7 @@ msgstr ""
 #~ msgid "'continue' outside loop"
 #~ msgstr "'continue' fuori del ciclo"
 
-#~ msgid "'coroutine' object is not an iterator"
+#~ msgid "'coroutine' object isn't an iterator"
 #~ msgstr "L'oggetto 'coroutine' non è un iteratore"
 
 #~ msgid "64 bit types"
@@ -5364,7 +5365,7 @@ msgstr ""
 #~ msgid "frequency can only be either 80Mhz or 160MHz"
 #~ msgstr "la frequenza può essere o 80Mhz o 160Mhz"
 
-#~ msgid "function does not take keyword arguments"
+#~ msgid "function doesn't take keyword arguments"
 #~ msgstr "la funzione non prende argomenti nominati"
 
 #~ msgid "impossible baudrate"
@@ -5431,7 +5432,7 @@ msgstr ""
 #~ msgid "name must be a string"
 #~ msgstr "argomenti nominati devono essere stringhe"
 
-#~ msgid "name reused for argument"
+#~ msgid "argument name reused"
 #~ msgstr "nome riutilizzato come argomento"
 
 #, fuzzy

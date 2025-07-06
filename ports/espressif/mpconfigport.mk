@@ -30,9 +30,10 @@ LONGINT_IMPL = MPZ
 # Default to no-psram
 CIRCUITPY_ESP_PSRAM_SIZE ?= 0
 
-# New 4MB boards will not have OTA support but more room for alarm, ble and other
-# newer features.
-CIRCUITPY_LEGACY_4MB_FLASH_LAYOUT ?= 0
+# Some 4MB non-USB boards were initially defined with 2MB firmware, almost 2MB user_fs partitions.
+# Others were defined with 1.4M+1.4M (now a single 2.8MB) firmware partitions / 1.2MB user_fs.
+# Keep the former as is, so that the user filesystem will be unchanged.
+CIRCUITPY_4MB_FLASH_LARGE_USER_FS_LAYOUT ?= 0
 
 # Enable more features
 CIRCUITPY_FULL_BUILD ?= 1

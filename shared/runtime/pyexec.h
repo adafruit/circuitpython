@@ -45,11 +45,6 @@ typedef struct {
 
 extern pyexec_mode_kind_t pyexec_mode_kind;
 
-// Set this to the value (eg PYEXEC_FORCED_EXIT) that will be propagated through
-// the pyexec functions if a SystemExit exception is raised by the running code.
-// It will reset to 0 at the start of each execution (eg each REPL entry).
-extern int pyexec_system_exit;
-
 #define PYEXEC_FORCED_EXIT (0x100)
 // CIRCUITPY-CHANGE: additional flags
 #define PYEXEC_EXCEPTION   (0x200)
@@ -62,6 +57,7 @@ int pyexec_friendly_repl(void);
 int pyexec_file(const char *filename, pyexec_result_t *result);
 int pyexec_file_if_exists(const char *filename, pyexec_result_t *result);
 int pyexec_frozen_module(const char *name, bool allow_keyboard_interrupt, pyexec_result_t *result);
+int pyexec_vstr(vstr_t *str, bool allow_keyboard_interrupt, pyexec_result_t *result);
 void pyexec_event_repl_init(void);
 int pyexec_event_repl_process_char(int c);
 extern uint8_t pyexec_repl_active;

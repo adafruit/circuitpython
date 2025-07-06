@@ -358,7 +358,7 @@ mp_obj_t mp_binary_get_val(char struct_type, char val_type, byte *p_base, byte *
     #if MICROPY_NONSTANDARD_TYPECODES
     } else if (val_type == 'S') {
         const char *s_val = (const char *)(uintptr_t)(mp_uint_t)val;
-        return mp_obj_new_str(s_val, strlen(s_val));
+        return mp_obj_new_str_from_cstr(s_val);
     #endif
     #if MICROPY_PY_BUILTINS_FLOAT
     } else if (val_type == 'e') {

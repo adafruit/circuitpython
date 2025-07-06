@@ -324,7 +324,7 @@ msgid "'%q' object does not support '%q'"
 msgstr "'%q' オブジェクトは '%q' に対応していません"
 
 #: py/runtime.c
-msgid "'%q' object is not an iterator"
+msgid "'%q' object isn't an iterator"
 msgstr "オブジェクト'%q'はイテレータではありません"
 
 #: py/objtype.c py/runtime.c shared-module/atexit/__init__.c
@@ -332,7 +332,7 @@ msgid "'%q' object is not callable"
 msgstr "オブジェクト'%q'は呼び出し可能ではありません"
 
 #: py/runtime.c
-msgid "'%q' object is not iterable"
+msgid "'%q' object isn't iterable"
 msgstr "オブジェクト'%q'はイテレート可能ではありません"
 
 #: py/emitinlinethumb.c py/emitinlinextensa.c
@@ -3210,7 +3210,7 @@ msgid "format"
 msgstr ""
 
 #: py/objstr.c
-msgid "format requires a dict"
+msgid "format needs a dict"
 msgstr "formatにはdictが必要"
 
 #: py/objdeque.c
@@ -3670,7 +3670,7 @@ msgid "must use keyword argument for key function"
 msgstr ""
 
 #: py/runtime.c
-msgid "name '%q' is not defined"
+msgid "name '%q' isn't defined"
 msgstr "名前 '%q' は定義されていません"
 
 #: py/runtime.c
@@ -4311,11 +4311,11 @@ msgid "tx and rx cannot both be None"
 msgstr "txとrxを両方ともNoneにできません"
 
 #: py/objtype.c
-msgid "type '%q' is not an acceptable base type"
+msgid "type '%q' isn't an acceptable base type"
 msgstr "型'%q'はベース型として使えません"
 
 #: py/objtype.c
-msgid "type is not an acceptable base type"
+msgid "type isn't an acceptable base type"
 msgstr "この型はベース型にできません"
 
 #: py/runtime.c
@@ -4686,7 +4686,7 @@ msgstr ""
 #~ msgid "'continue' outside loop"
 #~ msgstr "ループ外でのcontinue"
 
-#~ msgid "'coroutine' object is not an iterator"
+#~ msgid "'coroutine' object isn't an iterator"
 #~ msgstr "'coroutine' オブジェクトはイテレータではありません"
 
 #~ msgid "Address type out of range"
@@ -5286,7 +5286,7 @@ msgstr ""
 #~ msgid "n must be between 0, and 9"
 #~ msgstr "nは0から9まで"
 
-#~ msgid "name reused for argument"
+#~ msgid "argument name reused"
 #~ msgstr "引数で名前が再利用されています"
 
 #~ msgid "no available NIC"

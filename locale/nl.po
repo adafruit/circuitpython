@@ -309,7 +309,7 @@ msgid "'%q' object does not support '%q'"
 msgstr "'%q' object ondersteunt geen '%q'"
 
 #: py/runtime.c
-msgid "'%q' object is not an iterator"
+msgid "'%q' object isn't an iterator"
 msgstr "'%q' object is geen iterator"
 
 #: py/objtype.c py/runtime.c shared-module/atexit/__init__.c
@@ -317,7 +317,7 @@ msgid "'%q' object is not callable"
 msgstr "'%q' object is niet aanroepbaar"
 
 #: py/runtime.c
-msgid "'%q' object is not iterable"
+msgid "'%q' object isn't iterable"
 msgstr "'%q' object is niet itereerbaar"
 
 #: py/emitinlinethumb.c py/emitinlinextensa.c
@@ -3202,7 +3202,7 @@ msgid "format"
 msgstr ""
 
 #: py/objstr.c
-msgid "format requires a dict"
+msgid "format needs a dict"
 msgstr "format vereist een dict"
 
 #: py/objdeque.c
@@ -3664,7 +3664,7 @@ msgid "must use keyword argument for key function"
 msgstr "voor sleutelfunctie moet een trefwoordargument gebruikt worden"
 
 #: py/runtime.c
-msgid "name '%q' is not defined"
+msgid "name '%q' isn't defined"
 msgstr "naam '%q' is niet gedefinieerd"
 
 #: py/runtime.c
@@ -4305,11 +4305,11 @@ msgid "tx and rx cannot both be None"
 msgstr "tx en rx kunnen niet beiden None zijn"
 
 #: py/objtype.c
-msgid "type '%q' is not an acceptable base type"
+msgid "type '%q' isn't an acceptable base type"
 msgstr "type '%q' is geen aanvaardbaar basistype"
 
 #: py/objtype.c
-msgid "type is not an acceptable base type"
+msgid "type isn't an acceptable base type"
 msgstr "type is geen aanvaardbaar basistype"
 
 #: py/runtime.c
@@ -4741,13 +4741,13 @@ msgstr "zi moet vorm (n_section, 2) hebben"
 #~ msgid "'%s' object does not support item deletion"
 #~ msgstr "'%s' object ondersteunt item verwijdering niet"
 
-#~ msgid "'%s' object is not an iterator"
+#~ msgid "'%s' object isn't an iterator"
 #~ msgstr "'%s' object is geen iterator"
 
 #~ msgid "'%s' object is not callable"
 #~ msgstr "'%s' object is niet aanroepbaar"
 
-#~ msgid "'%s' object is not iterable"
+#~ msgid "'%s' object isn't iterable"
 #~ msgstr "'%s' object is niet itereerbaar"
 
 #~ msgid "'%s' object is not subscriptable"
@@ -4765,7 +4765,7 @@ msgstr "zi moet vorm (n_section, 2) hebben"
 #~ msgid "'continue' outside loop"
 #~ msgstr "'continue' buiten de loop"
 
-#~ msgid "'coroutine' object is not an iterator"
+#~ msgid "'coroutine' object isn't an iterator"
 #~ msgstr "'coroutine' object is geen iterator"
 
 #~ msgid "ADC2 is being used by WiFi"
@@ -5542,7 +5542,7 @@ msgstr "zi moet vorm (n_section, 2) hebben"
 #~ msgid "firstbit must be MSB"
 #~ msgstr "het eerste bit moet het MSB zijn"
 
-#~ msgid "function does not take keyword arguments"
+#~ msgid "function doesn't take keyword arguments"
 #~ msgstr "functie accepteert geen keyword argumenten"
 
 #~ msgid "function is implemented for scalars and ndarrays only"
@@ -5620,7 +5620,7 @@ msgstr "zi moet vorm (n_section, 2) hebben"
 #~ msgid "n must be between 0, and 9"
 #~ msgstr "n moet tussen 0 en 9 liggen"
 
-#~ msgid "name reused for argument"
+#~ msgid "argument name reused"
 #~ msgstr "naam hergebruikt voor argument"
 
 #~ msgid "no available NIC"

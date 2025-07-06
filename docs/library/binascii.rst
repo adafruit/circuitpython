@@ -39,6 +39,6 @@ Functions
 
 .. function:: crc32(data, value=0, /)
 
-   Compute CRC-32, the 32-bit checksum of the bytes in *data* starting with an
+   Compute CRC-32, the 32-bit checksum of the bytes in ``data`` starting with an
    initial CRC of *value*. The default initial CRC is 0. The algorithm is
    consistent with the ZIP file checksum.

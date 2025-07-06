@@ -90,9 +90,11 @@ data
 1
 12345
 6
+-1
 # runtime utils
 TypeError: unsupported type for __abs__: 'str'
 TypeError: unsupported types for __divmod__: 'str', 'str'
+0
 1
 2
 OverflowError: overflow converting long int to machine word
@@ -144,6 +146,11 @@ cc99
 22ff
 -1
 -1
+0
+0
+abc123
+-1
+-2
 # pairheap
 create: 0 0 0 0
 pop all: 0 1 2 3
@@ -163,6 +170,8 @@ pop all: 1 2 4 5
 1 1
 1 1
 0 0
+1 1
+# stackctrl
 1 1
 # end coverage.c
 0123456789 b'0123456789'
@@ -203,6 +212,8 @@ ZeroDivisionError
 X
 '\x1b'
 b'\x00\xff'
+frzmpy4 1
+frzmpy4 2
 NULL
 uPy
 a long string that is not interned

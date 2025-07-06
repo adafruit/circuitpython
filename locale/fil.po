@@ -313,7 +313,7 @@ msgid "'%q' object does not support '%q'"
 msgstr ""
 
 #: py/runtime.c
-msgid "'%q' object is not an iterator"
+msgid "'%q' object isn't an iterator"
 msgstr ""
 
 #: py/objtype.c py/runtime.c shared-module/atexit/__init__.c
@@ -321,7 +321,7 @@ msgid "'%q' object is not callable"
 msgstr ""
 
 #: py/runtime.c
-msgid "'%q' object is not iterable"
+msgid "'%q' object isn't iterable"
 msgstr ""
 
 #: py/emitinlinethumb.c py/emitinlinextensa.c
@@ -3210,7 +3210,7 @@ msgid "format"
 msgstr ""
 
 #: py/objstr.c
-msgid "format requires a dict"
+msgid "format needs a dict"
 msgstr "kailangan ng format ng dict"
 
 #: py/objdeque.c
@@ -3672,7 +3672,7 @@ msgid "must use keyword argument for key function"
 msgstr "dapat gumamit ng keyword argument para sa key function"
 
 #: py/runtime.c
-msgid "name '%q' is not defined"
+msgid "name '%q' isn't defined"
 msgstr "name '%q' ay hindi defined"
 
 #: py/runtime.c
@@ -4313,11 +4313,11 @@ msgid "tx and rx cannot both be None"
 msgstr "tx at rx hindi pwedeng parehas na None"
 
 #: py/objtype.c
-msgid "type '%q' is not an acceptable base type"
+msgid "type '%q' isn't an acceptable base type"
 msgstr "hindi maari ang type na '%q' para sa base type"
 
 #: py/objtype.c
-msgid "type is not an acceptable base type"
+msgid "type isn't an acceptable base type"
 msgstr "hindi puede ang type para sa base type"
 
 #: py/runtime.c
@@ -4633,13 +4633,13 @@ msgstr ""
 #~ msgid "'%s' object does not support item deletion"
 #~ msgstr "'%s' object ay hindi sumusuporta sa pagtanggal ng item"
 
-#~ msgid "'%s' object is not an iterator"
+#~ msgid "'%s' object isn't an iterator"
 #~ msgstr "'%s' object ay hindi iterator"
 
 #~ msgid "'%s' object is not callable"
 #~ msgstr "'%s' object hindi matatawag"
 
-#~ msgid "'%s' object is not iterable"
+#~ msgid "'%s' object isn't iterable"
 #~ msgstr "'%s' object ay hindi ma i-iterable"
 
 #~ msgid "'%s' object is not subscriptable"
@@ -5310,7 +5310,7 @@ msgstr ""
 #~ msgid "frequency can only be either 80Mhz or 160MHz"
 #~ msgstr "ang frequency ay dapat 80Mhz or 160MHz lamang"
 
-#~ msgid "function does not take keyword arguments"
+#~ msgid "function doesn't take keyword arguments"
 #~ msgstr "ang function ay hindi kumukuha ng mga argumento ng keyword"
 
 #~ msgid "impossible baudrate"
@@ -5380,7 +5380,7 @@ msgstr ""
 #~ msgid "name must be a string"
 #~ msgstr "ang keywords dapat strings"
 
-#~ msgid "name reused for argument"
+#~ msgid "argument name reused"
 #~ msgstr "name muling ginamit para sa argument"
 
 #~ msgid "no available NIC"

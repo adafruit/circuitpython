@@ -453,6 +453,13 @@ size_t common_hal_terminalio_terminal_write(terminalio_terminal_obj_t *self, con
     return i - data;
 }
 
+uint16_t common_hal_terminalio_terminal_get_cursor_x(terminalio_terminal_obj_t *self) {
+    return self->cursor_x;
+}
+uint16_t common_hal_terminalio_terminal_get_cursor_y(terminalio_terminal_obj_t *self) {
+    return self->cursor_y;
+}
+
 bool common_hal_terminalio_terminal_ready_to_tx(terminalio_terminal_obj_t *self) {
     return self->scroll_area != NULL;
 }

@@ -156,9 +156,7 @@ epub:
 	@echo "Build finished. The epub file is in $(BUILDDIR)/epub."
 
 latex:
-	$(PYTHON) docs/prepare_readme_for_latex.py
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
-	mv README.rst.bak README.rst
 	@echo
 	@echo "Build finished; the LaTeX files are in $(BUILDDIR)/latex."
 	@echo "Run \`make' in that directory to run these through (pdf)latex" \
@@ -166,18 +164,14 @@ latex:
 
 # seems to be malfunctioning
 latexpdf:
-	$(PYTHON) docs/prepare_readme_for_latex.py
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
-	mv README.rst.bak README.rst
 	@echo "Running LaTeX files through pdflatex..."
 	$(MAKE) -C $(BUILDDIR)/latex all-pdf
 	@echo "pdflatex finished; the PDF files are in $(BUILDDIR)/latex."
 
 # seems to be malfunctioning
 latexpdfja:
-	$(PYTHON) docs/prepare_readme_for_latex.py
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
-	mv README.rst.bak README.rst
 	@echo "Running LaTeX files through platex and dvipdfmx..."
 	$(MAKE) -C $(BUILDDIR)/latex all-pdf-ja
 	@echo "pdflatex finished; the PDF files are in $(BUILDDIR)/latex."
@@ -277,20 +271,20 @@ check-translate:
 
 .PHONY: stubs
 stubs:
-	@rm -rf circuitpython-stubs
-	@mkdir circuitpython-stubs
-	@$(PYTHON) tools/extract_pyi.py shared-bindings/ $(STUBDIR)
-	@$(PYTHON) tools/extract_pyi.py extmod/ulab/code/ $(STUBDIR)/ulab
-	@for d in ports/*/bindings; do \
+	rm -rf circuitpython-stubs
+	mkdir circuitpython-stubs
+	$(PYTHON) tools/extract_pyi.py shared-bindings/ $(STUBDIR)
+	$(PYTHON) tools/extract_pyi.py extmod/ulab/code/ $(STUBDIR)/ulab
+	for d in ports/*/bindings; do \
 	    $(PYTHON) tools/extract_pyi.py "$$d" $(STUBDIR); done
-	@sed -e "s,__version__,`python -msetuptools_scm`," < setup.py-stubs > circuitpython-stubs/setup.py
-	@cp README.rst-stubs circuitpython-stubs/README.rst
-	@cp MANIFEST.in-stubs circuitpython-stubs/MANIFEST.in
-	@$(PYTHON) tools/board_stubs/build_board_specific_stubs/board_stub_builder.py
-	@cp -r tools/board_stubs/circuitpython_setboard circuitpython-stubs/circuitpython_setboard
-	@$(PYTHON) -m build circuitpython-stubs
-	@touch circuitpython-stubs/board/__init__.py
-	@touch circuitpython-stubs/board_definitions/__init__.py
+	sed -e "s,__version__,`python -msetuptools_scm`," < setup.py-stubs > circuitpython-stubs/setup.py
+	cp README.rst-stubs circuitpython-stubs/README.rst
+	cp MANIFEST.in-stubs circuitpython-stubs/MANIFEST.in
+	$(PYTHON) tools/board_stubs/build_board_specific_stubs/board_stub_builder.py
+	cp -r tools/board_stubs/circuitpython_setboard circuitpython-stubs/circuitpython_setboard
+	$(PYTHON) -m build circuitpython-stubs
+	touch circuitpython-stubs/board/__init__.py
+	touch circuitpython-stubs/board_definitions/__init__.py
 
 .PHONY: check-stubs
 check-stubs: stubs

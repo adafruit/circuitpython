@@ -136,6 +136,30 @@ static mp_uint_t terminalio_terminal_write(mp_obj_t self_in, const void *buf_in,
     return common_hal_terminalio_terminal_write(self, buf, size, errcode);
 }
 
+//|     cursor_x: int
+//|     """The x position of the cursor."""
+//|
+static mp_obj_t terminalio_terminal_obj_get_cursor_x(mp_obj_t self_in) {
+    terminalio_terminal_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    return MP_OBJ_NEW_SMALL_INT(common_hal_terminalio_terminal_get_cursor_x(self));
+}
+MP_DEFINE_CONST_FUN_OBJ_1(terminalio_terminal_get_cursor_x_obj, terminalio_terminal_obj_get_cursor_x);
+
+MP_PROPERTY_GETTER(terminalio_terminal_cursor_x_obj,
+    (mp_obj_t)&terminalio_terminal_get_cursor_x_obj);
+
+//|     cursor_y: int
+//|     """The y position of the cursor."""
+//|
+static mp_obj_t terminalio_terminal_obj_get_cursor_y(mp_obj_t self_in) {
+    terminalio_terminal_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    return MP_OBJ_NEW_SMALL_INT(common_hal_terminalio_terminal_get_cursor_y(self));
+}
+MP_DEFINE_CONST_FUN_OBJ_1(terminalio_terminal_get_cursor_y_obj, terminalio_terminal_obj_get_cursor_y);
+
+MP_PROPERTY_GETTER(terminalio_terminal_cursor_y_obj,
+    (mp_obj_t)&terminalio_terminal_get_cursor_y_obj);
+
 static mp_uint_t terminalio_terminal_ioctl(mp_obj_t self_in, mp_uint_t request, mp_uint_t arg, int *errcode) {
     terminalio_terminal_obj_t *self = MP_OBJ_TO_PTR(self_in);
     mp_uint_t ret;
@@ -155,6 +179,8 @@ static mp_uint_t terminalio_terminal_ioctl(mp_obj_t self_in, mp_uint_t request, 
 static const mp_rom_map_elem_t terminalio_terminal_locals_dict_table[] = {
     // Standard stream methods.
     { MP_ROM_QSTR(MP_QSTR_write),    MP_ROM_PTR(&mp_stream_write_obj) },
+    { MP_ROM_QSTR(MP_QSTR_cursor_x), MP_ROM_PTR(&terminalio_terminal_cursor_x_obj) },
+    { MP_ROM_QSTR(MP_QSTR_cursor_y), MP_ROM_PTR(&terminalio_terminal_cursor_y_obj) },
 };
 static MP_DEFINE_CONST_DICT(terminalio_terminal_locals_dict, terminalio_terminal_locals_dict_table);
 
@@ -168,7 +194,7 @@ static const mp_stream_p_t terminalio_terminal_stream_p = {
 MP_DEFINE_CONST_OBJ_TYPE(
     terminalio_terminal_type,
     MP_QSTR_Terminal,
-    MP_TYPE_FLAG_ITER_IS_ITERNEXT,
+    MP_TYPE_FLAG_ITER_IS_ITERNEXT | MP_TYPE_FLAG_HAS_SPECIAL_ACCESSORS,
     make_new, terminalio_terminal_make_new,
     locals_dict, (mp_obj_dict_t *)&terminalio_terminal_locals_dict,
     iter, mp_stream_unbuffered_iter,

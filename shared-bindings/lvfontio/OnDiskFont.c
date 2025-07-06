@@ -17,7 +17,11 @@
 #include "shared-bindings/util.h"
 
 //| class OnDiskFont:
-//|     """A font built into CircuitPython for use with LVGL"""
+//|     """A font built into CircuitPython for use with LVGL.
+//|
+//|        There is an in-browser converter here: https://lvgl.io/tools/fontconverter
+//|
+//|        The format is documented here: https://github.com/lvgl/lv_font_conv/tree/master/doc"""
 //|
 //|     def __init__(self, file_path: str, max_glyphs: int = 100) -> None:
 //|         """Create a OnDiskFont by loading an LVGL font file from the filesystem.

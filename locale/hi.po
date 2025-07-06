@@ -71,7 +71,7 @@ msgstr ""
 
 #: py/objstr.c
 #, c-format
-msgid "%%c requires int or char"
+msgid "%%c needs int or char"
 msgstr ""
 
 #: shared-bindings/rgbmatrix/RGBMatrix.c
@@ -158,10 +158,6 @@ msgstr ""
 
 #: py/argcheck.c
 msgid "%q length must be >= %d"
-msgstr ""
-
-#: py/modsys.c py/runtime.c
-msgid "%q moved from %q to %q"
 msgstr ""
 
 #: py/argcheck.c
@@ -252,7 +248,7 @@ msgstr ""
 msgid "%q out of range"
 msgstr ""
 
-#: py/objmodule.c py/runtime.c
+#: py/objmodule.c
 msgid "%q renamed %q"
 msgstr ""
 
@@ -311,15 +307,15 @@ msgid "'%q' object does not support '%q'"
 msgstr ""
 
 #: py/runtime.c
-msgid "'%q' object is not an iterator"
+msgid "'%q' object isn't an iterator"
 msgstr ""
 
 #: py/objtype.c py/runtime.c shared-module/atexit/__init__.c
-msgid "'%q' object is not callable"
+msgid "'%q' object isn't callable"
 msgstr ""
 
 #: py/runtime.c
-msgid "'%q' object is not iterable"
+msgid "'%q' object isn't iterable"
 msgstr ""
 
 #: py/emitinlinethumb.c py/emitinlinextensa.c
@@ -2700,6 +2696,10 @@ msgstr ""
 msgid "can only have one parent"
 msgstr ""
 
+#: py/emitinlinerv32.c
+msgid "can only have up to 4 parameters for RV32 assembly"
+msgstr ""
+
 #: py/emitinlinethumb.c
 msgid "can only have up to 4 parameters to Thumb assembly"
 msgstr ""
@@ -2765,6 +2765,10 @@ msgstr ""
 
 #: py/objstr.c
 msgid "can't convert to str implicitly"
+msgstr ""
+
+#: py/objtype.c
+msgid "can't create '%q' instances"
 msgstr ""
 
 #: py/compile.c
@@ -2863,10 +2867,6 @@ msgstr ""
 
 #: extmod/ulab/code/ndarray.c
 msgid "cannot convert complex type"
-msgstr ""
-
-#: py/objtype.c
-msgid "cannot create '%q' instances"
 msgstr ""
 
 #: py/objtype.c
@@ -3183,7 +3183,15 @@ msgid "format"
 msgstr ""
 
 #: py/objstr.c
-msgid "format requires a dict"
+msgid "format needs a dict"
+msgstr ""
+
+#: py/objstr.c
+msgid "format string didn't convert all arguments"
+msgstr ""
+
+#: py/objstr.c
+msgid "format string needs more arguments"
 msgstr ""
 
 #: py/objdeque.c
@@ -3642,7 +3650,7 @@ msgid "must use keyword argument for key function"
 msgstr ""
 
 #: py/runtime.c
-msgid "name '%q' is not defined"
+msgid "name '%q' isn't defined"
 msgstr ""
 
 #: py/runtime.c
@@ -3732,7 +3740,7 @@ msgid "non-default argument follows default argument"
 msgstr ""
 
 #: py/objstr.c
-msgid "non-hex digit found"
+msgid "non-hex digit"
 msgstr ""
 
 #: ports/nordic/common-hal/_bleio/Adapter.c
@@ -3749,14 +3757,6 @@ msgstr ""
 
 #: py/parse.c
 msgid "not a constant"
-msgstr ""
-
-#: py/objstr.c
-msgid "not all arguments converted during string formatting"
-msgstr ""
-
-#: py/objstr.c
-msgid "not enough arguments for format string"
 msgstr ""
 
 #: extmod/ulab/code/numpy/carray/carray_tools.c
@@ -3821,10 +3821,6 @@ msgstr ""
 msgid "object with buffer protocol required"
 msgstr ""
 
-#: py/objstr.c
-msgid "odd-length string"
-msgstr ""
-
 #: supervisor/shared/web_workflow/web_workflow.c
 msgid "off"
 msgstr ""
@@ -3871,6 +3867,30 @@ msgstr ""
 
 #: py/vm.c
 msgid "opcode"
+msgstr ""
+
+#: py/emitinlinerv32.c
+msgid "opcode '%q' argument %d: expecting %q"
+msgstr ""
+
+#: py/emitinlinerv32.c
+msgid "opcode '%q' argument %d: must not be zero"
+msgstr ""
+
+#: py/emitinlinerv32.c
+msgid "opcode '%q' argument %d: out of range"
+msgstr ""
+
+#: py/emitinlinerv32.c
+msgid "opcode '%q' argument %d: undefined label '%q'"
+msgstr ""
+
+#: py/emitinlinerv32.c
+msgid "opcode '%q' argument %d: unknown register"
+msgstr ""
+
+#: py/emitinlinerv32.c
+msgid "opcode '%q': expecting %d arguments"
 msgstr ""
 
 #: extmod/ulab/code/ndarray.c extmod/ulab/code/numpy/bitwise.c
@@ -3964,6 +3984,10 @@ msgstr ""
 msgid "palette must be 32 bytes long"
 msgstr ""
 
+#: py/emitinlinerv32.c
+msgid "parameters must be registers in sequence a0 to a3"
+msgstr ""
+
 #: py/emitinlinextensa.c
 msgid "parameters must be registers in sequence a2 to a5"
 msgstr ""
@@ -4011,10 +4035,6 @@ msgstr ""
 
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 msgid "pull masks conflict with direction masks"
-msgstr ""
-
-#: py/parse.c
-msgid "raw f-strings are not supported"
 msgstr ""
 
 #: extmod/ulab/code/numpy/fft/fft_tools.c
@@ -4157,10 +4177,6 @@ msgstr ""
 msgid "splitting with sub-captures"
 msgstr ""
 
-#: py/objstr.c
-msgid "start/end indices"
-msgstr ""
-
 #: shared-bindings/random/__init__.c
 msgid "stop not reachable from start"
 msgstr ""
@@ -4283,11 +4299,11 @@ msgid "tx and rx cannot both be None"
 msgstr ""
 
 #: py/objtype.c
-msgid "type '%q' is not an acceptable base type"
+msgid "type '%q' isn't an acceptable base type"
 msgstr ""
 
 #: py/objtype.c
-msgid "type is not an acceptable base type"
+msgid "type isn't an acceptable base type"
 msgstr ""
 
 #: py/runtime.c
@@ -4321,6 +4337,10 @@ msgstr ""
 
 #: py/parse.c
 msgid "unindent doesn't match any outer indent level"
+msgstr ""
+
+#: py/emitinlinerv32.c
+msgid "unknown RV32 instruction '%q'"
 msgstr ""
 
 #: py/objstr.c

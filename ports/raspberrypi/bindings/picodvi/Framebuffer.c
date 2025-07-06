@@ -178,11 +178,24 @@ MP_DEFINE_CONST_FUN_OBJ_1(picodvi_framebuffer_get_height_obj, picodvi_framebuffe
 MP_PROPERTY_GETTER(picodvi_framebuffer_height_obj,
     (mp_obj_t)&picodvi_framebuffer_get_height_obj);
 
+//|     color_depth: int
+//|     """The color depth of the framebuffer."""
+static mp_obj_t picodvi_framebuffer_get_color_depth(mp_obj_t self_in) {
+    picodvi_framebuffer_obj_t *self = (picodvi_framebuffer_obj_t *)self_in;
+    check_for_deinit(self);
+    return MP_OBJ_NEW_SMALL_INT(common_hal_picodvi_framebuffer_get_color_depth(self));
+}
+MP_DEFINE_CONST_FUN_OBJ_1(picodvi_framebuffer_get_color_depth_obj, picodvi_framebuffer_get_color_depth);
+MP_PROPERTY_GETTER(picodvi_framebuffer_color_depth_obj,
+    (mp_obj_t)&picodvi_framebuffer_get_color_depth_obj);
+
+
 static const mp_rom_map_elem_t picodvi_framebuffer_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&picodvi_framebuffer_deinit_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_width), MP_ROM_PTR(&picodvi_framebuffer_width_obj) },
     { MP_ROM_QSTR(MP_QSTR_height), MP_ROM_PTR(&picodvi_framebuffer_height_obj) },
+    { MP_ROM_QSTR(MP_QSTR_color_depth), MP_ROM_PTR(&picodvi_framebuffer_color_depth_obj) },
 };
 static MP_DEFINE_CONST_DICT(picodvi_framebuffer_locals_dict, picodvi_framebuffer_locals_dict_table);
 

@@ -7,6 +7,7 @@
 #pragma once
 
 #include "py/mphal.h"
+#include "py/obj.h"
 
 
 typedef struct {

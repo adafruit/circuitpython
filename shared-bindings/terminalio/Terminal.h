@@ -19,4 +19,7 @@ extern void common_hal_terminalio_terminal_construct(terminalio_terminal_obj_t *
 extern size_t common_hal_terminalio_terminal_write(terminalio_terminal_obj_t *self,
     const uint8_t *data, size_t len, int *errcode);
 
+extern uint16_t common_hal_terminalio_terminal_get_cursor_x(terminalio_terminal_obj_t *self);
+extern uint16_t common_hal_terminalio_terminal_get_cursor_y(terminalio_terminal_obj_t *self);
+
 extern bool common_hal_terminalio_terminal_ready_to_tx(terminalio_terminal_obj_t *self);

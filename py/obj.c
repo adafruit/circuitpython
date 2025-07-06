@@ -39,7 +39,7 @@
 // CIRCUITPY-CHANGE
 #include "py/qstr.h"
 #include "py/runtime.h"
-#include "py/stackctrl.h"
+#include "py/cstack.h"
 #include "py/stream.h" // for mp_obj_print
 
 // CIRCUITPY-CHANGE
@@ -128,7 +128,7 @@ const char *mp_obj_get_type_str(mp_const_obj_t o_in) {
 
 void mp_obj_print_helper(const mp_print_t *print, mp_obj_t o_in, mp_print_kind_t kind) {
     // There can be data structures nested too deep, or just recursive
-    MP_STACK_CHECK();
+    mp_cstack_check();
     // CIRCUITPY-CHANGE
     #ifdef RUN_BACKGROUND_TASKS
     RUN_BACKGROUND_TASKS;
