@@ -162,7 +162,7 @@ MP_PROPERTY_GETSET(bleio_adapter_name_obj,
 //|         anonymous: bool = False,
 //|         timeout: int = 0,
 //|         interval: float = 0.1,
-//|         tx_power: int = 0,
+//|         tx_power: int = -20,
 //|         directed_to: Optional[Address] = None,
 //|     ) -> None:
 //|         """Starts advertising until `stop_advertising` is called or if connectable, another device
@@ -195,7 +195,7 @@ static mp_obj_t bleio_adapter_start_advertising(mp_uint_t n_args, const mp_obj_t
         { MP_QSTR_anonymous, MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = false} },
         { MP_QSTR_timeout, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
         { MP_QSTR_interval, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
-        { MP_QSTR_tx_power, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
+        { MP_QSTR_tx_power, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = -20} },
         { MP_QSTR_directed_to, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
     };
 
