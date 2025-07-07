@@ -715,7 +715,7 @@ static bool advertising_on_ble_evt(ble_evt_t *ble_evt, void *self_in) {
     switch (ble_evt->header.evt_id) {
         case BLE_GAP_EVT_CONNECTED: // Connecting also stops an advertisement.
             // Set the tx_power for the connection higher than the advertisement.
-            sd_ble_gap_tx_power_set(BLE_GAP_TX_POWER_ROLE_CONN, ble_evt->evt.gap_evt.conn_handle, 0);
+            sd_ble_gap_tx_power_set(BLE_GAP_TX_POWER_ROLE_CONN, ble_evt->evt.gap_evt.conn_handle, -20);
             common_hal_bleio_adapter_stop_advertising(self);
             return false;
             break;
