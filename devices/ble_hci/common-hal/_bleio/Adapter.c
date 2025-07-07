@@ -46,7 +46,7 @@
 #define MAX_ADVERTISEMENT_SIZE (31)
 
 // TODO make this settable from Python.
-#define DEFAULT_TX_POWER 0  // 0 dBm
+#define DEFAULT_TX_POWER -20  // -20 dBm
 #define MAX_ANONYMOUS_ADV_TIMEOUT_SECS (60 * 15)
 #define MAX_LIMITED_DISCOVERABLE_ADV_TIMEOUT_SECS (180)
 
@@ -802,8 +802,8 @@ void common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
         }
     }
 
-    if (tx_power != 0) {
-        mp_raise_NotImplementedError(MP_ERROR_TEXT("Only tx_power=0 supported"));
+    if (tx_power != -20) {
+        mp_raise_NotImplementedError(MP_ERROR_TEXT("Only tx_power=-20 supported"));
     }
 
     const uint32_t result = _common_hal_bleio_adapter_start_advertising(
