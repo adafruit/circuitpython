@@ -24,11 +24,6 @@
  * THE SOFTWARE.
  */
 
-/** TODO:
- * - Fix readline issue
- *
-*/
-
 #if CIRCUITPY_BUSIO_UART
 
 #include "mpconfigport.h"
@@ -242,19 +237,19 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
         self->ringbuf = m_malloc_without_collect(receiver_buffer_size);
         if (!ringbuf_alloc(self->ringbuf, receiver_buffer_size)) {
             m_malloc_fail(receiver_buffer_size);
-            mp_raise_RuntimeError(MP_ERROR_TEXT("ERR: Could not init ringbuffer\n"));
+            mp_raise_RuntimeError_varg(MP_ERROR_TEXT("Failed to allocate %q buffer"),
+                MP_QSTR_UART);
         }
     } else {
         if (!(ringbuf_init(self->ringbuf, receiver_buffer, receiver_buffer_size))) {
-            mp_raise_RuntimeError(MP_ERROR_TEXT("ERR: Could not init ringbuffer\n"));
+            mp_raise_RuntimeError_varg(MP_ERROR_TEXT("Failed to allocate %q buffer"),
+                MP_QSTR_UART);
         }
-        ;
     }
 
     context = self;
 
     // Setup UART interrupt
-
     NVIC_ClearPendingIRQ(MXC_UART_GET_IRQ(self->uart_id));
     NVIC_DisableIRQ(MXC_UART_GET_IRQ(self->uart_id));
     NVIC_SetPriority(MXC_UART_GET_IRQ(self->uart_id), UART_PRIORITY);
@@ -351,7 +346,7 @@ size_t common_hal_busio_uart_read(busio_uart_obj_t *self,
     }
     // Check for errors from the callback
     else if (uart_err != E_NO_ERROR) {
-        // todo: indicate error?
+        mp_raise_RuntimeError(MP_ERROR_TEXT("UART read error"));
         MXC_UART_AbortAsync(self->uart_regs);
     }
 
@@ -368,7 +363,6 @@ size_t common_hal_busio_uart_read(busio_uart_obj_t *self,
 size_t common_hal_busio_uart_write(busio_uart_obj_t *self,
     const uint8_t *data, size_t len, int *errcode) {
     int err;
-    uint32_t start_time = 0;
     static size_t bytes_remaining;
 
     // Setup globals & status tracking
@@ -390,7 +384,6 @@ size_t common_hal_busio_uart_write(busio_uart_obj_t *self,
     uart_wr_req.callback = (void *)uartCallback;
 
     // Start the transaction
-    start_time = supervisor_ticks_ms64();
     err = MXC_UART_TransactionAsync(&uart_wr_req);
     if (err != E_NO_ERROR) {
         *errcode = err;
@@ -399,27 +392,16 @@ size_t common_hal_busio_uart_write(busio_uart_obj_t *self,
         mp_raise_ValueError(MP_ERROR_TEXT("All UART peripherals are in use"));
     }
 
-    // Wait for transaction completion or timeout
-    while ((uart_status[self->uart_id] != UART_FREE) &&
-           (supervisor_ticks_ms64() - start_time < (self->timeout * 1000))) {
-
+    // Wait for transaction completion
+    while (uart_status[self->uart_id] != UART_FREE) {
         // Call the handler and abort if errors
         uart_err = MXC_UART_AsyncHandler(self->uart_regs);
         if (uart_err != E_NO_ERROR) {
-            // todo: indicate error?
             MXC_UART_AbortAsync(self->uart_regs);
         }
     }
-
-    // If the timeout gets hit, abort and error out
-    if (uart_status[self->uart_id] != UART_FREE) {
-        MXC_UART_AbortAsync(self->uart_regs);
-        NVIC_DisableIRQ(MXC_UART_GET_IRQ(self->uart_id));
-        mp_raise_RuntimeError(MP_ERROR_TEXT("Uart transaction timed out."));
-    }
     // Check for errors from the callback
-    else if (uart_err != E_NO_ERROR) {
-        // todo: indicate error?
+    if (uart_err != E_NO_ERROR) {
         MXC_UART_AbortAsync(self->uart_regs);
     }
 
