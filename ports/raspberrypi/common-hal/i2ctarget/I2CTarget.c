@@ -85,6 +85,8 @@ void common_hal_i2ctarget_i2c_target_deinit(i2ctarget_i2c_target_obj_t *self) {
 }
 
 int common_hal_i2ctarget_i2c_target_is_addressed(i2ctarget_i2c_target_obj_t *self, uint8_t *address, bool *is_read, bool *is_restart) {
+    common_hal_i2ctarget_i2c_target_is_stop(self);
+
     if (!((self->peripheral->hw->raw_intr_stat & I2C_IC_INTR_STAT_R_RX_FULL_BITS) || (self->peripheral->hw->raw_intr_stat & I2C_IC_INTR_STAT_R_RD_REQ_BITS))) {
         return 0;
     }
@@ -121,6 +123,19 @@ int common_hal_i2ctarget_i2c_target_write_byte(i2ctarget_i2c_target_obj_t *self,
     } else {
         return 0;
     }
+}
+
+int common_hal_i2ctarget_i2c_target_is_stop(i2ctarget_i2c_target_obj_t *self) {
+    // Interrupt bits must be cleared by software. Clear the STOP and
+    // RESTART interrupt bits after an I2C transaction finishes.
+    if (self->peripheral->hw->raw_intr_stat & I2C_IC_INTR_STAT_R_STOP_DET_BITS) {
+        self->peripheral->hw->clr_stop_det;
+        self->peripheral->hw->clr_restart_det;
+        return 1;
+    } else {
+        return 0;
+    }
+
 }
 
 void common_hal_i2ctarget_i2c_target_ack(i2ctarget_i2c_target_obj_t *self, bool ack) {
