@@ -242,6 +242,7 @@ msgstr ""
 msgid "%q out of bounds"
 msgstr ""
 
+#: ports/analog/common-hal/busio/SPI.c
 #: ports/atmel-samd/common-hal/pulseio/PulseIn.c
 #: ports/cxd56/common-hal/pulseio/PulseIn.c
 #: ports/nordic/common-hal/pulseio/PulseIn.c
@@ -946,14 +947,6 @@ msgstr ""
 msgid "ECB only operates on 16 bytes at a time"
 msgstr ""
 
-#: ports/analog/common-hal/busio/UART.c
-msgid "ERR: Could not init ringbuffer\n"
-msgstr ""
-
-#: ports/analog/common-hal/busio/I2C.c
-msgid "ERROR during I2C Transaction\n"
-msgstr ""
-
 #: ports/espressif/common-hal/busio/SPI.c
 #: ports/espressif/common-hal/canio/CAN.c
 msgid "ESP-IDF memory allocation failed"
@@ -1002,7 +995,7 @@ msgid ""
 "Failed to add service TXT record; non-string or bytes found in txt_records"
 msgstr ""
 
-#: shared-module/rgbmatrix/RGBMatrix.c
+#: ports/analog/common-hal/busio/UART.c shared-module/rgbmatrix/RGBMatrix.c
 msgid "Failed to allocate %q buffer"
 msgstr ""
 
@@ -1061,15 +1054,7 @@ msgid "Failed to release mutex, err 0x%04x"
 msgstr ""
 
 #: ports/analog/common-hal/busio/SPI.c
-msgid "Failed to set SPI Clock Mode\n"
-msgstr ""
-
-#: ports/analog/common-hal/busio/SPI.c
-msgid "Failed to set SPI Frame Size\n"
-msgstr ""
-
-#: ports/analog/common-hal/busio/SPI.c
-msgid "Failed to set SPI Frequency\n"
+msgid "Failed to set SPI Clock Mode"
 msgstr ""
 
 #: ports/zephyr-cp/common-hal/wifi/Radio.c
@@ -1370,6 +1355,7 @@ msgstr ""
 msgid "Invalid socket for TLS"
 msgstr ""
 
+#: ports/analog/common-hal/busio/SPI.c
 #: ports/espressif/common-hal/espidf/__init__.c
 #: ports/nordic/common-hal/_bleio/__init__.c
 msgid "Invalid state"
@@ -2254,10 +2240,6 @@ msgstr ""
 
 #: shared-bindings/_bleio/UUID.c
 msgid "UUID value is not str, int or byte buffer"
-msgstr ""
-
-#: ports/analog/common-hal/busio/UART.c
-msgid "Uart transaction timed out."
 msgstr ""
 
 #: ports/raspberrypi/common-hal/memorymap/AddressRange.c

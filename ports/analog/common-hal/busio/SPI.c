@@ -177,17 +177,19 @@ bool common_hal_busio_spi_configure(busio_spi_obj_t *self,
 
     ret = MXC_SPI_SetFrequency(self->spi_regs, baudrate);
     if (ret) {
-        mp_raise_ValueError(MP_ERROR_TEXT("Failed to set SPI Frequency\n"));
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("%q out of range"), MP_QSTR_baudrate);
         return false;
     }
     ret = MXC_SPI_SetDataSize(self->spi_regs, bits);
-    if (ret) {
-        mp_raise_ValueError(MP_ERROR_TEXT("Failed to set SPI Frame Size\n"));
+    if (ret == E_BAD_PARAM) {
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("%q out of range"), MP_QSTR_bits);
         return false;
+    } else if (ret == E_BAD_STATE) {
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Invalid state"));
     }
     ret = MXC_SPI_SetMode(self->spi_regs, clk_mode);
     if (ret) {
-        mp_raise_ValueError(MP_ERROR_TEXT("Failed to set SPI Clock Mode\n"));
+        mp_raise_ValueError(MP_ERROR_TEXT("Failed to set SPI Clock Mode"));
         return false;
     }
     return true;
@@ -246,11 +248,6 @@ bool common_hal_busio_spi_read(busio_spi_obj_t *self,
     uint8_t write_value) {
 
     int ret = 0;
-    // uint8_t tx_buffer[len] = {0x0};
-
-    // for (int i = 0; i < len; i++) {
-    //     tx_buffer[i] = write_value;
-    // }
 
     mxc_spi_req_t rd_req = {
         .spi = self->spi_regs,

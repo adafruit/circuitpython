@@ -191,7 +191,7 @@ uint8_t common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr,
     };
     ret = MXC_I2C_MasterTransaction(&wr_req);
     if (ret) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("ERROR during I2C Transaction\n"));
+        return MP_EIO;
     }
 
     return 0;
