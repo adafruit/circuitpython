@@ -13,7 +13,6 @@
 #include "shared-bindings/mdns/Server.h"
 #include "shared-bindings/wifi/__init__.h"
 #include "supervisor/shared/tick.h"
-
 #include "lwip/apps/mdns.h"
 #include "lwip/prot/dns.h"
 
@@ -38,7 +37,11 @@ void mdns_server_construct(mdns_server_obj_t *self, bool workflow) {
         mdns_resp_init();
         inited = true;
     } else {
-        mdns_resp_restart(NETIF_STA);
+        if (common_hal_wifi_radio_get_ap_active(&common_hal_wifi_radio_obj)) {
+            mdns_resp_restart(NETIF_AP);
+        } else {
+            mdns_resp_restart(NETIF_STA);
+        }
     }
     self->inited = true;
 
@@ -73,7 +76,11 @@ void common_hal_mdns_server_deinit(mdns_server_obj_t *self) {
     }
     self->inited = false;
     object_inited = false;
-    mdns_resp_remove_netif(NETIF_STA);
+    if (common_hal_wifi_radio_get_ap_active(&common_hal_wifi_radio_obj)) {
+        mdns_resp_remove_netif(NETIF_AP);
+    } else {
+        mdns_resp_remove_netif(NETIF_STA);
+    }
 }
 
 bool common_hal_mdns_server_deinited(mdns_server_obj_t *self) {
@@ -85,10 +92,18 @@ const char *common_hal_mdns_server_get_hostname(mdns_server_obj_t *self) {
 }
 
 void common_hal_mdns_server_set_hostname(mdns_server_obj_t *self, const char *hostname) {
-    if (mdns_resp_netif_active(NETIF_STA)) {
-        mdns_resp_rename_netif(NETIF_STA, hostname);
+    if (common_hal_wifi_radio_get_ap_active(&common_hal_wifi_radio_obj)) {
+        if (mdns_resp_netif_active(NETIF_AP)) {
+            mdns_resp_rename_netif(NETIF_AP, hostname);
+        } else {
+            mdns_resp_add_netif(NETIF_AP, hostname);
+        }
     } else {
-        mdns_resp_add_netif(NETIF_STA, hostname);
+        if (mdns_resp_netif_active(NETIF_STA)) {
+            mdns_resp_rename_netif(NETIF_STA, hostname);
+        } else {
+            mdns_resp_add_netif(NETIF_STA, hostname);
+        }
     }
 
     self->hostname = hostname;
@@ -177,9 +192,18 @@ size_t mdns_server_find(mdns_server_obj_t *self, const char *service_type, const
     state.out = out;
     state.out_len = out_len;
 
-    err_t err = mdns_search_service(NULL, service_type, proto,
-        NETIF_STA, &search_result_cb, &state,
-        &state.request_id);
+    err_t err;
+
+    if (common_hal_wifi_radio_get_ap_active(&common_hal_wifi_radio_obj)) {
+        err = mdns_search_service(NULL, service_type, proto,
+            NETIF_AP, &search_result_cb, &state,
+            &state.request_id);
+    } else {
+        err = mdns_search_service(NULL, service_type, proto,
+            NETIF_STA, &search_result_cb, &state,
+            &state.request_id);
+    }
+
     if (err != ERR_OK) {
         return 0;
     }
@@ -240,9 +264,18 @@ mp_obj_t common_hal_mdns_server_find(mdns_server_obj_t *self, const char *servic
     state.count = 0;
     state.head = NULL;
 
-    err_t err = mdns_search_service(NULL, service_type, proto,
-        NETIF_STA, &alloc_search_result_cb, &state,
-        &state.request_id);
+    err_t err;
+
+    if (common_hal_wifi_radio_get_ap_active(&common_hal_wifi_radio_obj)) {
+        err = mdns_search_service(NULL, service_type, proto,
+            NETIF_AP, &alloc_search_result_cb, &state,
+            &state.request_id);
+    } else {
+        err = mdns_search_service(NULL, service_type, proto,
+            NETIF_STA, &alloc_search_result_cb, &state,
+            &state.request_id);
+    }
+
     if (err != ERR_OK) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Unable to start mDNS query"));
     }
@@ -312,11 +345,20 @@ void common_hal_mdns_server_advertise_service(mdns_server_obj_t *self, const cha
         }
     }
     if (existing_slot < MDNS_MAX_SERVICES) {
-        mdns_resp_del_service(NETIF_STA, existing_slot);
+        if (common_hal_wifi_radio_get_ap_active(&common_hal_wifi_radio_obj)) {
+            mdns_resp_del_service(NETIF_AP, existing_slot);
+        } else {
+            mdns_resp_del_service(NETIF_STA, existing_slot);
+        }
     }
 
     assign_txt_records(self, txt_records, num_txt_records);
-    int8_t slot = mdns_resp_add_service(NETIF_STA, self->instance_name, service_type, proto, port, srv_txt_cb, self);
+    int8_t slot;
+    if (common_hal_wifi_radio_get_ap_active(&common_hal_wifi_radio_obj)) {
+        slot = mdns_resp_add_service(NETIF_AP, self->instance_name, service_type, proto, port, srv_txt_cb, self);
+    } else {
+        slot = mdns_resp_add_service(NETIF_STA, self->instance_name, service_type, proto, port, srv_txt_cb, self);
+    }
     if (slot < 0) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Out of MDNS service slots"));
         return;
