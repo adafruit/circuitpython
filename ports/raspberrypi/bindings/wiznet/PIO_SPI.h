@@ -9,10 +9,10 @@
 #include "py/obj.h"
 
 #include "common-hal/microcontroller/Pin.h"
-#include "common-hal/busio/WIZNET_PIO_SPI.h"
+#include "common-hal/wiznet/PIO_SPI.h"
 
 // Type object used in Python. Should be shared between ports.
-extern const mp_obj_type_t busio_wiznet_pio_spi_type;
+extern const mp_obj_type_t wiznet_pio_spi_type;
 
 // Construct an underlying SPI object.
 extern void common_hal_wiznet_pio_spi_construct(wiznet_pio_spi_obj_t *self,

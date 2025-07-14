@@ -4,7 +4,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "shared-bindings/busio/WIZNET_PIO_SPI.h"
+#include "bindings/wiznet/PIO_SPI.h"
 
 #include "shared/runtime/interrupt_char.h"
 #include "py/mperrno.h"
@@ -19,7 +19,7 @@
 #include "hardware/pio.h"
 #include "hardware/clocks.h"
 
-#include "wiznet_pio_spi/wizchip_pio_spi.h"
+#include "wizchip_pio_spi.h"
 
 #define NO_INSTANCE 0xff
 

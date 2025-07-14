@@ -15,10 +15,6 @@
 #include "shared-bindings/busio/SPI.h"
 #include "shared-bindings/busio/UART.h"
 
-#if CIRCUITPY_WIZNET_PIO_SPI
-#include "shared-bindings/busio/WIZNET_PIO_SPI.h"
-#endif
-
 #include "py/runtime.h"
 
 //| """Hardware accelerated external bus access
@@ -73,9 +69,6 @@ static const mp_rom_map_elem_t busio_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_I2C),   MP_ROM_PTR(&busio_i2c_type) },
     { MP_ROM_QSTR(MP_QSTR_SPI),   MP_ROM_PTR(&busio_spi_type) },
     { MP_ROM_QSTR(MP_QSTR_UART),   MP_ROM_PTR(&busio_uart_type) },
-    #if CIRCUITPY_WIZNET_PIO_SPI
-    { MP_ROM_QSTR(MP_QSTR_WIZNET_PIO_SPI),   MP_ROM_PTR(&busio_wiznet_pio_spi_type) },
-    #endif
 };
 
 static MP_DEFINE_CONST_DICT(busio_module_globals, busio_module_globals_table);

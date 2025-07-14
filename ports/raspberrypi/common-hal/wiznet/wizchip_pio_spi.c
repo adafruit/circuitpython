@@ -61,7 +61,7 @@ static void wiznet_pio_spi_gpio_setup(wiznet_pio_spi_state_t *state) {
     gpio_init(state->spi_config->data_out_pin);
     gpio_set_dir(state->spi_config->data_out_pin, GPIO_OUT);
     gpio_put(state->spi_config->data_out_pin, false);
-    
+
     gpio_init(state->spi_config->data_in_pin);
     gpio_set_dir(state->spi_config->data_in_pin, GPIO_IN);
 

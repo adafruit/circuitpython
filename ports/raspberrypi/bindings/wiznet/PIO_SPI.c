@@ -11,7 +11,7 @@
 #include <string.h>
 
 #include "shared-bindings/microcontroller/Pin.h"
-#include "shared-bindings/busio/WIZNET_PIO_SPI.h"
+#include "bindings/wiznet/PIO_SPI.h"
 #include "shared-bindings/util.h"
 
 #include "shared/runtime/buffer_helper.h"
@@ -26,8 +26,8 @@
 
 
 static mp_obj_t wiznet_pio_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
-    #if CIRCUITPY_WIZNET_PIO_SPI
-    wiznet_pio_spi_obj_t *self = mp_obj_malloc(wiznet_pio_spi_obj_t, &busio_wiznet_pio_spi_type);
+    #if CIRCUITPY_WIZNET
+    wiznet_pio_spi_obj_t *self = mp_obj_malloc(wiznet_pio_spi_obj_t, &wiznet_pio_spi_type);
     enum { ARG_clock, ARG_MOSI, ARG_MISO, ARG_half_duplex };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_clock, MP_ARG_REQUIRED | MP_ARG_OBJ },
@@ -50,10 +50,10 @@ static mp_obj_t wiznet_pio_spi_make_new(const mp_obj_type_t *type, size_t n_args
     return MP_OBJ_FROM_PTR(self);
     #else
     mp_raise_NotImplementedError(NULL);
-    #endif // CIRCUITPY_WIZNET_PIO_SPI
+    #endif // CIRCUITPY_WIZNET
 }
 
-#if CIRCUITPY_WIZNET_PIO_SPI
+#if CIRCUITPY_WIZNET
 
 // TODO: def deinit
 
@@ -266,10 +266,10 @@ static mp_obj_t wiznet_pio_spi_write_readinto(size_t n_args, const mp_obj_t *pos
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(wiznet_pio_spi_write_readinto_obj, 1, wiznet_pio_spi_write_readinto);
 
-#endif // CIRCUITPY_WIZNET_PIO_SPI
+#endif // CIRCUITPY_WIZNET
 
 static const mp_rom_map_elem_t wiznet_pio_spi_locals_dict_table[] = {
-    #if CIRCUITPY_WIZNET_PIO_SPI
+    #if CIRCUITPY_WIZNET
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&wiznet_pio_spi_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
@@ -282,18 +282,18 @@ static const mp_rom_map_elem_t wiznet_pio_spi_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_write), MP_ROM_PTR(&wiznet_pio_spi_write_obj) },
     { MP_ROM_QSTR(MP_QSTR_write_readinto), MP_ROM_PTR(&wiznet_pio_spi_write_readinto_obj) },
 
-    #endif // CIRCUITPY_WIZNET_PIO_SPI
+    #endif // CIRCUITPY_WIZNET
 };
 static MP_DEFINE_CONST_DICT(wiznet_pio_spi_locals_dict, wiznet_pio_spi_locals_dict_table);
 
 MP_DEFINE_CONST_OBJ_TYPE(
-    busio_wiznet_pio_spi_type,
-    MP_QSTR_WIZNET_PIO_SPI,
+    wiznet_pio_spi_type,
+    MP_QSTR_PIO_SPI,
     MP_TYPE_FLAG_NONE,
     make_new, wiznet_pio_spi_make_new,
     locals_dict, &wiznet_pio_spi_locals_dict
 );
 
 wiznet_pio_spi_obj_t *validate_obj_is_wiznet_pio_spi_bus(mp_obj_t obj, qstr arg_name) {
-    return mp_arg_validate_type(obj, &busio_wiznet_pio_spi_type, arg_name);
+    return mp_arg_validate_type(obj, &wiznet_pio_spi_type, arg_name);
 }
