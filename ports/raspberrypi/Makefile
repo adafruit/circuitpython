@@ -89,7 +89,7 @@ INC_WIZNET := \
 
 SRC_WIZNET := \
 	common-hal/wiznet/wizchip_pio_spi.c \
-	
+
 WIZNET_PIOASM = $(BUILD)/pioasm/pioasm/pioasm
 .PHONY: pioasmBuild
 pioasmBuild: $(WIZNET_PIOASM)

@@ -4,9 +4,9 @@
 //
 // SPDX-License-Identifier: MIT
 
-//TODO: busio.WIZNET_PIO_SPI class.
+// TODO: wiznet.PIO_SPI class.
 // This file contains all of the Python API definitions for the
-// busio.WIZNET_PIO_SPI class.
+// wiznet.PIO_SPI class.
 
 #include <string.h>
 
@@ -22,7 +22,7 @@
 #include "py/runtime.h"
 
 
-//TODO: class WIZNET_PIO_SPI
+// TODO: class WIZNET_PIO_SPI
 
 
 static mp_obj_t wiznet_pio_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
@@ -292,7 +292,7 @@ MP_DEFINE_CONST_OBJ_TYPE(
     MP_TYPE_FLAG_NONE,
     make_new, wiznet_pio_spi_make_new,
     locals_dict, &wiznet_pio_spi_locals_dict
-);
+    );
 
 wiznet_pio_spi_obj_t *validate_obj_is_wiznet_pio_spi_bus(mp_obj_t obj, qstr arg_name) {
     return mp_arg_validate_type(obj, &wiznet_pio_spi_type, arg_name);
