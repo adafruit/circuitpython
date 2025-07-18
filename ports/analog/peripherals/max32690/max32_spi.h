@@ -6,10 +6,12 @@
 
 #pragma once
 
-#include "py/obj.h"
-#include "py/mphal.h"
+#include "spi_regs.h"
+#include "mxc_sys.h"
+#include "spi.h"
+#include "peripherals/pins.h"
 
-// MSDK HAL includes
-#include "gpio.h"
-#include "gpio_regs.h"
-#include "max32690.h"
+#define NUM_SPI 5
+
+int pinsToSpi(const mcu_pin_obj_t *mosi, const mcu_pin_obj_t *miso,
+    const mcu_pin_obj_t *sck);
