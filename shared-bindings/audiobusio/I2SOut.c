@@ -78,7 +78,7 @@
 //|         ...
 //|
 static mp_obj_t audiobusio_i2sout_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
-    #if !CIRCUITPY_AUDIOBUSIO_I2SOUT
+    #if !CIRCUITPY_AUDIOBUSIO_I2SOUT || CIRCUITPY_AUDIOBUSIO_I2SIN
     mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("%q"), MP_QSTR_I2SOut);
     return NULL;                // Not reachable.
     #else
@@ -88,7 +88,7 @@ static mp_obj_t audiobusio_i2sout_make_new(const mp_obj_type_t *type, size_t n_a
         { MP_QSTR_word_select, MP_ARG_OBJ | MP_ARG_REQUIRED },
         { MP_QSTR_data, MP_ARG_OBJ | MP_ARG_REQUIRED },
         { MP_QSTR_main_clock, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = mp_const_none} },
-        { MP_QSTR_left_justified, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_bool = false} },
+        { MP_QSTR_left_justified, MP_ARG_BOOL | MP_ARG_KW_ONLY, {.u_bool = false} },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
@@ -105,7 +105,7 @@ static mp_obj_t audiobusio_i2sout_make_new(const mp_obj_type_t *type, size_t n_a
     #endif
 }
 
-#if CIRCUITPY_AUDIOBUSIO_I2SOUT
+#if CIRCUITPY_AUDIOBUSIO_I2SOUT && !CIRCUITPY_AUDIOBUSIO_I2SIN
 
 //|     def deinit(self) -> None:
 //|         """Deinitialises the I2SOut and releases any hardware resources for reuse."""
@@ -239,7 +239,7 @@ MP_PROPERTY_GETTER(audiobusio_i2sout_paused_obj,
 
 static const mp_rom_map_elem_t audiobusio_i2sout_locals_dict_table[] = {
     // Methods
-    #if CIRCUITPY_AUDIOBUSIO_I2SOUT
+    #if CIRCUITPY_AUDIOBUSIO_I2SOUT && !CIRCUITPY_AUDIOBUSIO_I2SIN
     { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&audiobusio_i2sout_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&audiobusio_i2sout_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
