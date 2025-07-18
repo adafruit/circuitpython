@@ -54,4 +54,4 @@ the following libraries.
 .. toctree::
    :maxdepth: 1
 
-   micropython.rst
+   ../../shared-bindings/micropython/index.rst
