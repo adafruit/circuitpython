@@ -76,7 +76,7 @@ void common_hal_pulseio_pulsein_construct(pulseio_pulsein_obj_t *self, const mcu
     uint16_t maxlen, bool idle_state) {
 
     // Only use dma when necessary, since dma-rmt might not be available.
-    // If dma is not available, this will raise an error below.
+    // If dma is necessary but not available, this will raise an error below.
     bool use_dma = maxlen > 128;
 
     self->buffer = (uint16_t *)m_malloc_without_collect(maxlen * sizeof(uint16_t));
@@ -122,7 +122,8 @@ void common_hal_pulseio_pulsein_construct(pulseio_pulsein_obj_t *self, const mcu
     esp_err_t result = rmt_new_rx_channel(&config, &self->channel);
     if (result != ESP_OK) {
         port_free(self->raw_symbols);
-        if (result == ESP_ERR_NOT_SUPPORTED) {
+        if (result == ESP_ERR_NOT_SUPPORTED || result == ESP_ERR_NOT_FOUND) {
+            // DMA not available, cannot record long pulse sequences.
             mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q"), MP_QSTR_maxlen);
         } else {
             raise_esp_error(result);
