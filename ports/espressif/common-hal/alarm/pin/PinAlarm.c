@@ -108,7 +108,17 @@ mp_obj_t alarm_pin_pinalarm_record_wake_alarm(void) {
 
     #ifdef SOC_PM_SUPPORT_EXT0_WAKEUP
     if (cause == ESP_SLEEP_WAKEUP_EXT0) {
-        pin_number = REG_GET_FIELD(RTC_IO_EXT_WAKEUP0_REG, RTC_IO_EXT_WAKEUP0_SEL);
+        int rtc_io_pin_number = REG_GET_FIELD(RTC_IO_EXT_WAKEUP0_REG, RTC_IO_EXT_WAKEUP0_SEL);
+        // Look up the GPIO equivalent pin for this RTC GPIO pin. On ESP32, the numbering
+        // is different for RTC_GPIO and regular GPIO, and there's no mapping table.
+        // The RTC and GPIO pin numbers match for all other current chips, so we could skip this
+        // for those chips, but it's not expensive, and maybe there will be another mismatch in the future.
+        for (gpio_num_t gpio_num = 0; gpio_num < SOC_GPIO_PIN_COUNT; gpio_num++) {
+            if (rtc_io_number_get(gpio_num) == rtc_io_pin_number) {
+                pin_number = gpio_num;
+                break;
+            }
+        }
     } else {
     #endif
     #ifdef SOC_PM_SUPPORT_EXT1_WAKEUP
