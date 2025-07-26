@@ -6,10 +6,11 @@
 
 #pragma once
 
-#include "py/obj.h"
-#include "py/mphal.h"
+#include "uart_regs.h"
+#include "mxc_sys.h"
+#include "uart.h"
+#include "peripherals/pins.h"
 
-// MSDK HAL includes
-#include "gpio.h"
-#include "gpio_regs.h"
-#include "max32690.h"
+#define NUM_UARTS 4
+
+int pinsToUart(const mcu_pin_obj_t *rx, const mcu_pin_obj_t *tx);
