@@ -18,6 +18,8 @@ void common_hal_audiomixer_mixervoice_stop(audiomixer_mixervoice_obj_t *self);
 void common_hal_audiomixer_mixervoice_end(audiomixer_mixervoice_obj_t *self);
 mp_obj_t common_hal_audiomixer_mixervoice_get_level(audiomixer_mixervoice_obj_t *self);
 void common_hal_audiomixer_mixervoice_set_level(audiomixer_mixervoice_obj_t *self, mp_obj_t gain);
+mp_obj_t common_hal_audiomixer_mixervoice_get_panning(audiomixer_mixervoice_obj_t *self);
+void common_hal_audiomixer_mixervoice_set_panning(audiomixer_mixervoice_obj_t *self, mp_obj_t value);
 
 bool common_hal_audiomixer_mixervoice_get_playing(audiomixer_mixervoice_obj_t *self);
 

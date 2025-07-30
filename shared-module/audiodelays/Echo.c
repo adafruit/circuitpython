@@ -204,7 +204,7 @@ bool common_hal_audiodelays_echo_get_playing(audiodelays_echo_obj_t *self) {
 }
 
 void common_hal_audiodelays_echo_play(audiodelays_echo_obj_t *self, mp_obj_t sample, bool loop) {
-    audiosample_must_match(&self->base, sample);
+    audiosample_must_match(&self->base, sample, false);
 
     self->sample = sample;
     self->loop = loop;

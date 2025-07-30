@@ -130,7 +130,7 @@ bool common_hal_audiofilters_phaser_get_playing(audiofilters_phaser_obj_t *self)
 }
 
 void common_hal_audiofilters_phaser_play(audiofilters_phaser_obj_t *self, mp_obj_t sample, bool loop) {
-    audiosample_must_match(&self->base, sample);
+    audiosample_must_match(&self->base, sample, false);
 
     self->sample = sample;
     self->loop = loop;
