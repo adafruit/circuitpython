@@ -130,6 +130,7 @@ msgstr ""
 msgid "%q indices must be integers, not %s"
 msgstr ""
 
+#: ports/analog/common-hal/busio/SPI.c ports/analog/common-hal/busio/UART.c
 #: shared-module/bitbangio/SPI.c
 msgid "%q init failed"
 msgstr ""
@@ -237,6 +238,7 @@ msgstr ""
 msgid "%q out of bounds"
 msgstr ""
 
+#: ports/analog/common-hal/busio/SPI.c
 #: ports/atmel-samd/common-hal/pulseio/PulseIn.c
 #: ports/cxd56/common-hal/pulseio/PulseIn.c
 #: ports/nordic/common-hal/pulseio/PulseIn.c
@@ -498,7 +500,8 @@ msgstr ""
 msgid "All SPI peripherals are in use"
 msgstr ""
 
-#: ports/espressif/common-hal/busio/UART.c ports/nordic/common-hal/busio/UART.c
+#: ports/analog/common-hal/busio/UART.c ports/espressif/common-hal/busio/UART.c
+#: ports/nordic/common-hal/busio/UART.c
 msgid "All UART peripherals are in use"
 msgstr ""
 
@@ -649,6 +652,7 @@ msgstr ""
 msgid "Boot device must be first (interface #0)."
 msgstr ""
 
+#: ports/analog/common-hal/busio/UART.c
 #: ports/mimxrt10xx/common-hal/busio/UART.c
 msgid "Both RX and TX required for flow control"
 msgstr ""
@@ -987,7 +991,7 @@ msgid ""
 "Failed to add service TXT record; non-string or bytes found in txt_records"
 msgstr ""
 
-#: shared-module/rgbmatrix/RGBMatrix.c
+#: ports/analog/common-hal/busio/UART.c shared-module/rgbmatrix/RGBMatrix.c
 msgid "Failed to allocate %q buffer"
 msgstr ""
 
@@ -1043,6 +1047,10 @@ msgstr ""
 #: ports/nordic/sd_mutex.c
 #, c-format
 msgid "Failed to release mutex, err 0x%04x"
+msgstr ""
+
+#: ports/analog/common-hal/busio/SPI.c
+msgid "Failed to set SPI Clock Mode"
 msgstr ""
 
 #: ports/zephyr-cp/common-hal/wifi/Radio.c
@@ -1247,6 +1255,10 @@ msgstr ""
 msgid "Interrupted by output function"
 msgstr ""
 
+#: ports/analog/common-hal/busio/UART.c
+#: ports/analog/peripherals/max32690/max32_i2c.c
+#: ports/analog/peripherals/max32690/max32_spi.c
+#: ports/analog/peripherals/max32690/max32_uart.c
 #: ports/espressif/common-hal/_bleio/Service.c
 #: ports/espressif/common-hal/espulp/ULP.c
 #: ports/espressif/common-hal/microcontroller/Processor.c
@@ -1339,6 +1351,7 @@ msgstr ""
 msgid "Invalid socket for TLS"
 msgstr ""
 
+#: ports/analog/common-hal/busio/SPI.c
 #: ports/espressif/common-hal/espidf/__init__.c
 #: ports/nordic/common-hal/_bleio/__init__.c
 msgid "Invalid state"
@@ -1894,6 +1907,7 @@ msgstr ""
 msgid "ROS topic failed to initialize"
 msgstr ""
 
+#: ports/analog/common-hal/busio/UART.c
 #: ports/atmel-samd/common-hal/busio/UART.c ports/cxd56/common-hal/busio/UART.c
 #: ports/nordic/common-hal/busio/UART.c ports/stm/common-hal/busio/UART.c
 msgid "RS485"
@@ -1984,6 +1998,10 @@ msgstr ""
 
 #: ports/stm/common-hal/busio/SPI.c
 msgid "SPI init error"
+msgstr ""
+
+#: ports/analog/common-hal/busio/SPI.c
+msgid "SPI needs MOSI, MISO, and SCK"
 msgstr ""
 
 #: ports/raspberrypi/common-hal/busio/SPI.c
@@ -2117,6 +2135,10 @@ msgstr ""
 msgid "Timeout is too long: Maximum timeout length is %d seconds"
 msgstr ""
 
+#: ports/analog/common-hal/busio/UART.c
+msgid "Timeout must be < 100 seconds"
+msgstr ""
+
 #: ports/atmel-samd/common-hal/audiobusio/I2SOut.c
 msgid "Too many channels in sample"
 msgstr ""
@@ -2160,12 +2182,24 @@ msgstr ""
 msgid "UART init"
 msgstr ""
 
+#: ports/analog/common-hal/busio/UART.c
+msgid "UART needs TX & RX"
+msgstr ""
+
 #: ports/raspberrypi/common-hal/busio/UART.c
 msgid "UART peripheral in use"
 msgstr ""
 
 #: ports/stm/common-hal/busio/UART.c
 msgid "UART re-init"
+msgstr ""
+
+#: ports/analog/common-hal/busio/UART.c
+msgid "UART read error"
+msgstr ""
+
+#: ports/analog/common-hal/busio/UART.c
+msgid "UART transaction timeout"
 msgstr ""
 
 #: ports/stm/common-hal/busio/UART.c
