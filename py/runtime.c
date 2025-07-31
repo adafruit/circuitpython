@@ -1687,11 +1687,89 @@ mp_obj_t __attribute__((noinline, )) mp_import_from(mp_obj_t module, qstr name) 
     #endif
 }
 
+#define IMPORT_ALL_DEBUGGING 0
+
+#if IMPORT_ALL_DEBUGGING
+
+#define IMPORT_ALL_DEBUG_PRINT_OBJECT(object)  mp_obj_print(object, PRINT_REPR);
+#define IMPORT_ALL_DEBUG_PRINTF(fmt, ...) mp_printf(MP_PYTHON_PRINTER, fmt,##__VA_ARGS__)
+
+#else
+
+#define IMPORT_ALL_DEBUG_PRINT_OBJECT(object)  ;
+#define IMPORT_ALL_DEBUG_PRINTF(fmt, ...) ;
+
+#endif
+
 void mp_import_all(mp_obj_t module) {
     DEBUG_printf("import all %p\n", module);
 
-    // TODO: Support __all__
     mp_map_t *map = &mp_obj_module_get_globals(module)->map;
+
+    // check for __all__
+    mp_obj_t all_str = MP_OBJ_NEW_QSTR(MP_QSTR___all__);
+    IMPORT_ALL_DEBUG_PRINTF("allstr = %s\n", mp_obj_str_get_str(all_str));
+
+    qstr module_qname = MP_QSTR_empty;
+    if (IMPORT_ALL_DEBUGGING) {
+        mp_map_elem_t *elem = mp_map_lookup(map, MP_OBJ_NEW_QSTR(MP_QSTR___name__), MP_MAP_LOOKUP);
+        if (elem != NULL) {
+            module_qname = mp_obj_str_get_qstr(elem->value);
+        }
+    }
+
+    mp_map_elem_t *all_elem = mp_map_lookup(map, all_str, MP_MAP_LOOKUP);
+    if (all_elem != 0 && all_elem->value != MP_OBJ_NULL) {
+        // we have __all__ defined, so we only import those symbols
+
+        mp_obj_t all_obj = all_elem->value;
+        IMPORT_ALL_DEBUG_PRINTF("processing import %q with __all__ * allstr = ", module_qname);
+        IMPORT_ALL_DEBUG_PRINT_OBJECT(all_obj);
+        IMPORT_ALL_DEBUG_PRINTF("\n");
+
+        // TODO: How should errors be handled?
+        // Maybe we should also check in the import logic, not
+        // just here? Otherwise we end up with a module that works fine
+        // with `import Module` but fails with `from Module import *`.
+        // And since ``from Module import *` actually imports the module
+        // _before_ calling mp_import_all, you can't simply fix the file
+        // and try again (assuming `supervisor.autoreload` is disabled).
+        //  OTOH, CPython appears to behave them same way, so...
+        //
+        // would be nice to add the module name to the error message
+        #define IMPORT_ALL_KEY_FAILED(errType, message)                       \
+    IMPORT_ALL_DEBUG_PRINTF("CANT_IMPORT_KEY: %s\n",                   \
+            mp_obj_str_get_str(all_key));      \
+    /* continue; */                                                     \
+    mp_raise_msg_varg(&mp_type_##errType##Error,                   \
+            MP_ERROR_TEXT("%S '%s' in module %q"),                    \
+            MP_ERROR_TEXT(message),                                  \
+            mp_obj_str_get_str(all_key),                                \
+            module_qname                                                \
+            );                                                              \
+
+        mp_int_t all_len = mp_obj_get_int(mp_obj_len(all_obj));
+        for (mp_int_t j = 0; j < all_len; j++) {
+            // get each key from __all__
+            mp_obj_t all_key = mp_obj_subscr(all_obj, MP_OBJ_NEW_SMALL_INT(j), MP_OBJ_SENTINEL);
+            if (!mp_obj_is_str(all_key)) {
+                IMPORT_ALL_KEY_FAILED(Type, "__all__ item must be str");
+            }
+            IMPORT_ALL_DEBUG_PRINTF("  symbol: %s\n", mp_obj_str_get_str(all_key));
+
+            // find the matching instance in the module
+            mp_map_elem_t *all_value = mp_map_lookup(map, all_key, MP_MAP_LOOKUP);
+            if (all_value == NULL) {
+                IMPORT_ALL_KEY_FAILED(Attribute, "missing __all__ attribute");
+            }
+            qstr qname = mp_obj_str_get_qstr(all_key);
+            mp_store_name(qname, all_value->value);
+        }
+        return;
+    }
+
+    // no __all__ defined, so we import everything
+    IMPORT_ALL_DEBUG_PRINTF("processing from %q import * without __all__", module_qname);
     for (size_t i = 0; i < map->alloc; i++) {
         if (mp_map_slot_is_filled(map, i)) {
             // Entry in module global scope may be generated programmatically

@@ -72,6 +72,10 @@ msgstr ""
 msgid "%%c needs int or char"
 msgstr ""
 
+#: py/runtime.c
+msgid "%S '%s' in module %q"
+msgstr ""
+
 #: shared-bindings/rgbmatrix/RGBMatrix.c
 #, c-format
 msgid ""
