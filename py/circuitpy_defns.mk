@@ -546,6 +546,10 @@ SRC_COMMON_HAL_ALL = \
 	rclcpy/__init__.c \
 	rclcpy/Node.c \
 	rclcpy/Publisher.c \
+	rclcpy/registry.c \
+	rclcpy/std_msgs/__init__.c \
+	rclcpy/std_msgs/Bool.c \
+	rclcpy/std_msgs/Int32.c \
 	rgbmatrix/RGBMatrix.c \
 	rgbmatrix/__init__.c \
 	rotaryio/IncrementalEncoder.c \

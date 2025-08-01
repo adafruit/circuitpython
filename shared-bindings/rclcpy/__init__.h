@@ -7,6 +7,8 @@
 #pragma once
 #include "common-hal/rclcpy/__init__.h"
 
+extern const mp_obj_module_t rclcpy_std_msgs_module;
+
 void common_hal_rclcpy_init(const char *agent_ip, const char *agent_port, int16_t domain_id);
 rclcpy_context_t *common_hal_rclcpy_get_default_context(void);
 bool common_hal_rclcpy_default_context_is_initialized(void);

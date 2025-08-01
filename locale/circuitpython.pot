@@ -1300,6 +1300,10 @@ msgstr ""
 msgid "Invalid ROS domain ID"
 msgstr ""
 
+#: ports/espressif/common-hal/rclcpy/Publisher.c shared-bindings/rclcpy/Node.c
+msgid "Invalid ROS message type"
+msgstr ""
+
 #: ports/espressif/common-hal/espidf/__init__.c py/moderrno.c
 msgid "Invalid argument"
 msgstr ""
@@ -1328,6 +1332,10 @@ msgstr ""
 
 #: shared-bindings/wifi/Radio.c
 msgid "Invalid hex password"
+msgstr ""
+
+#: ports/espressif/common-hal/rclcpy/Publisher.c
+msgid "Invalid message type"
 msgstr ""
 
 #: ports/espressif/common-hal/wifi/Radio.c
@@ -1855,6 +1863,10 @@ msgid "Program too long"
 msgstr ""
 
 #: shared-bindings/rclcpy/Publisher.c
+msgid "Publish message does not match topic"
+msgstr ""
+
+#: shared-bindings/rclcpy/Publisher.c
 msgid "Publishers can only be created from a parent node"
 msgstr ""
 
@@ -2339,6 +2351,10 @@ msgstr ""
 
 #: shared-bindings/hashlib/__init__.c
 msgid "Unsupported hash algorithm"
+msgstr ""
+
+#: ports/espressif/common-hal/rclcpy/Publisher.c
+msgid "Unsupported message type"
 msgstr ""
 
 #: ports/espressif/common-hal/socketpool/Socket.c
