@@ -299,6 +299,9 @@ update-frozen-libraries:
 
 one-of-each: samd21 litex mimxrt10xx nordic stm
 
+analog:
+	$(MAKE) -C ports/analog/ BOARD=apard32690
+
 samd21:
 	$(MAKE) -C ports/atmel-samd BOARD=trinket_m0
 
