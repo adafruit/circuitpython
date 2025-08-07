@@ -9,12 +9,16 @@
 static const mp_rom_map_elem_t board_module_globals_table[] = {
     CIRCUITPYTHON_BOARD_DICT_STANDARD_ITEMS
 
-    { MP_ROM_QSTR(MP_QSTR_GP0), MP_ROM_PTR(&pin_GPIO0) },
-    { MP_ROM_QSTR(MP_QSTR_GP1), MP_ROM_PTR(&pin_GPIO1) },
-    { MP_ROM_QSTR(MP_QSTR_GP2), MP_ROM_PTR(&pin_GPIO2) },
     { MP_ROM_QSTR(MP_QSTR_GP3), MP_ROM_PTR(&pin_GPIO3) },
+    { MP_ROM_QSTR(MP_QSTR_WROOM), MP_ROM_PTR(&pin_GPIO3) },
+    { MP_ROM_QSTR(MP_QSTR_WIFI), MP_ROM_PTR(&pin_GPIO3) },
+
     { MP_ROM_QSTR(MP_QSTR_GP4), MP_ROM_PTR(&pin_GPIO4) },
+    { MP_ROM_QSTR(MP_QSTR_WROOM_TX), MP_ROM_PTR(&pin_GPIO4) },
+
     { MP_ROM_QSTR(MP_QSTR_GP5), MP_ROM_PTR(&pin_GPIO5) },
+    { MP_ROM_QSTR(MP_QSTR_WROOM_RX), MP_ROM_PTR(&pin_GPIO5) },
+
     { MP_ROM_QSTR(MP_QSTR_GP6), MP_ROM_PTR(&pin_GPIO6) },
     { MP_ROM_QSTR(MP_QSTR_GP7), MP_ROM_PTR(&pin_GPIO7) },
     { MP_ROM_QSTR(MP_QSTR_GP8), MP_ROM_PTR(&pin_GPIO8) },
