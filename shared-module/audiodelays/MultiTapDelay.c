@@ -285,7 +285,7 @@ bool common_hal_audiodelays_multi_tap_delay_get_playing(audiodelays_multi_tap_de
 }
 
 void common_hal_audiodelays_multi_tap_delay_play(audiodelays_multi_tap_delay_obj_t *self, mp_obj_t sample, bool loop) {
-    audiosample_must_match(&self->base, sample);
+    audiosample_must_match(&self->base, sample, false);
 
     self->sample = sample;
     self->loop = loop;
