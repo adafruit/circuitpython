@@ -149,7 +149,7 @@ void common_hal_camera_deinit(camera_obj_t *self) {
         return;
     }
 
-    video_uninitialize();
+    video_uninitialize(camera_dev.devpath);
 
     close(camera_dev.fd);
     camera_dev.fd = -1;
