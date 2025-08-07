@@ -239,6 +239,7 @@ void board_init(void) {
             0x26,  // write_color_ram_command
             false,  // color_bits_inverted
             0x000000,  // highlight_color
+            0x000000,  // highlight_color2
             ssd1680_display_refresh_sequence, sizeof(ssd1680_display_refresh_sequence),
             1.0,  // refresh_time
             &pin_GPIO5,  // busy_pin
@@ -273,6 +274,7 @@ void board_init(void) {
             0x13,  // write_color_ram_command
             false,  // color_bits_inverted
             0x000000,  // highlight_color
+            0x000000,  // highlight_color2
             il0373_display_refresh_sequence, sizeof(il0373_display_refresh_sequence),
             1.0,  // refresh_time
             &pin_GPIO5,  // busy_pin

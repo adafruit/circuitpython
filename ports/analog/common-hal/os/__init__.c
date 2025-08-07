@@ -2,6 +2,7 @@
 //
 // SPDX-FileCopyrightText: Copyright (c) 2017 Scott Shawcroft for Adafruit Industries
 // SPDX-FileCopyrightText: Copyright (c) 2019 Lucian Copeland for Adafruit Industries
+// SPDX-FileCopyrightText: Copyright (c) 2025 Peggy Zhu, Analog Devices, Inc.
 //
 // SPDX-License-Identifier: MIT
 
@@ -15,9 +16,14 @@
 
 // #include "peripherals/periph.h"
 
+// true random number generator, TRNG
+#include "trng.h"
+
 bool common_hal_os_urandom(uint8_t *buffer, uint32_t length) {
     #if (HAS_TRNG)
-    // todo (low prior): implement
+    // get a random number of "length" number of bytes
+    MXC_TRNG_Random(buffer, length);
+    return true;
     #else
     #endif
     return false;

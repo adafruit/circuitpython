@@ -7,8 +7,8 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-01-04 12:55-0600\n"
-"PO-Revision-Date: 2025-07-23 09:07+0000\n"
-"Last-Translator: MuskoM <muskomatt@outlook.com>\n"
+"PO-Revision-Date: 2025-08-06 18:01+0000\n"
+"Last-Translator: MAE <martin-aehle@hotmail.de>\n"
 "Language-Team: pl\n"
 "Language: pl\n"
 "MIME-Version: 1.0\n"
@@ -90,8 +90,8 @@ msgstr "%%c wymaga int lub char"
 msgid ""
 "%d address pins, %d rgb pins and %d tiles indicate a height of %d, not %d"
 msgstr ""
-"%d pinów adresowalnych, %d pinów rgb oraz %d  płytek wskazują na wysokość "
-"%d, nie %d"
+"%d pinów adresowalnych, %d pinów rgb oraz %d płytek wskazują na wysokość %d, "
+"nie %d"
 
 #: shared-bindings/microcontroller/Pin.c
 msgid "%q and %q contain duplicate pins"
@@ -204,7 +204,7 @@ msgstr ""
 
 #: py/argcheck.c
 msgid "%q must be >= %d"
-msgstr ""
+msgstr "%q musi być >= %d"
 
 #: shared-bindings/analogbufio/BufferedIn.c
 msgid "%q must be a bytearray or array of type 'H' or 'B'"

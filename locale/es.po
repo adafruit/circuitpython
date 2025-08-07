@@ -8,8 +8,8 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-01-04 12:55-0600\n"
-"PO-Revision-Date: 2025-07-17 04:01+0000\n"
-"Last-Translator: Jean Serrano <yeanse@aol.com>\n"
+"PO-Revision-Date: 2025-08-03 08:01+0000\n"
+"Last-Translator: MAE <martin-aehle@hotmail.de>\n"
 "Language-Team: \n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
@@ -1803,10 +1803,9 @@ msgid "PWM slice channel A already in use"
 msgstr "Segmento del PWM canal A ya esta en uso"
 
 #: shared-bindings/spitarget/SPITarget.c
-#, fuzzy
 msgid "Packet buffers for an SPI transfer must have the same length."
 msgstr ""
-"Búferes de paquetes para transferencia SPI deben de ser de igual longitud"
+"Búferes de paquetes para transferencia SPI deben de ser de igual longitud."
 
 #: shared-module/jpegio/JpegDecoder.c
 msgid "Parameter error"

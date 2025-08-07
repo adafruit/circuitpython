@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: 0.1\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-01-04 12:55-0600\n"
-"PO-Revision-Date: 2025-06-30 16:01+0000\n"
+"PO-Revision-Date: 2025-08-03 08:01+0000\n"
 "Last-Translator: MAE <martin-aehle@hotmail.de>\n"
 "Language-Team: \n"
 "Language: fr\n"
@@ -49,7 +49,7 @@ msgid ""
 "Press reset to exit safe mode.\n"
 msgstr ""
 "\n"
-"Pour quitter le mode sans échec, appuyez sur reset.\n"
+"Appuyer sur reset pour sortir du mode sans échec.\n"
 
 #: supervisor/shared/safe_mode.c
 msgid ""
@@ -57,7 +57,7 @@ msgid ""
 "You are in safe mode because:\n"
 msgstr ""
 "\n"
-"Le mode sans échec est actif , car:\n"
+"Le mode sans échec est actif pour cette raison:\n"
 
 #: py/obj.c
 msgid "  File \"%q\""
@@ -1879,15 +1879,15 @@ msgstr "Plus tout autres modules présents sur le système de fichiers\n"
 
 #: shared-module/vectorio/Polygon.c
 msgid "Polygon needs at least 3 points"
-msgstr "Polygon a besoin d'au moins 3 points"
+msgstr "Un polygone a besoin d'au moins 3 points"
 
 #: supervisor/shared/safe_mode.c
 msgid "Power dipped. Make sure you are providing enough power."
-msgstr "Chute de puissance.Apportez plus d'énergie."
+msgstr "Chute de puissance. Assurez-vous de fournir assez de puissance."
 
 #: shared-bindings/_bleio/Adapter.c
 msgid "Prefix buffer must be on the heap"
-msgstr "Le tampon de préfixe doit être sur la pile"
+msgstr "Le tampon de préfixe doit être sur le tas"
 
 #: main.c
 msgid "Press any key to enter the REPL. Use CTRL-D to reload.\n"
@@ -1919,11 +1919,12 @@ msgstr "Programme trop long"
 
 #: shared-bindings/rclcpy/Publisher.c
 msgid "Publishers can only be created from a parent node"
-msgstr "Les Publishers ne peuvent etre crées que du noeud parent"
+msgstr "Les Publishers ne peuvent être créés qu'à partir du nœud parent"
 
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Pull not used when direction is output."
-msgstr "Le tirage 'pull' n'est pas utilisé quand la direction est 'output'."
+msgstr ""
+"L'attribut \"pull\" n'est pas utilisé quand la direction est \"output\"."
 
 #: ports/raspberrypi/common-hal/countio/Counter.c
 msgid "RISE_AND_FALL not available on this chip"
@@ -2024,7 +2025,7 @@ msgstr "Format correct mais non supporté"
 
 #: main.c
 msgid "Running in safe mode! Not running saved code.\n"
-msgstr "Mode sans- échec ! Le code sauvegardé n'est pas éxecuté.\n"
+msgstr "Mode sans échec ! Le code sauvegardé n'est pas éxecuté.\n"
 
 #: shared-module/sdcardio/SDCard.c
 msgid "SD card CSD format not supported"
@@ -3971,7 +3972,7 @@ msgstr "seules les tranches avec 'step=1' (cad None) sont supportées"
 
 #: py/vm.c
 msgid "opcode"
-msgstr "opcode"
+msgstr ""
 
 #: extmod/ulab/code/ndarray.c extmod/ulab/code/numpy/bitwise.c
 #: extmod/ulab/code/numpy/compare.c extmod/ulab/code/numpy/vector.c

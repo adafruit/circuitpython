@@ -33,7 +33,7 @@ void common_hal_epaperdisplay_epaperdisplay_construct(epaperdisplay_epaperdispla
     uint16_t set_column_window_command, uint16_t set_row_window_command,
     uint16_t set_current_column_command, uint16_t set_current_row_command,
     uint16_t write_black_ram_command, bool black_bits_inverted,
-    uint16_t write_color_ram_command, bool color_bits_inverted, uint32_t highlight_color,
+    uint16_t write_color_ram_command, bool color_bits_inverted, uint32_t highlight_color, uint32_t highlight_color2,
     const uint8_t *refresh_sequence, uint16_t refresh_sequence_len, mp_float_t refresh_time,
     const mcu_pin_obj_t *busy_pin, bool busy_state, mp_float_t seconds_per_frame,
     bool chip_select, bool grayscale, bool acep, bool spectra6, bool two_byte_sequence_length, bool address_little_endian) {
@@ -42,9 +42,15 @@ void common_hal_epaperdisplay_epaperdisplay_construct(epaperdisplay_epaperdispla
     if (highlight_color != 0x000000) {
         self->core.colorspace.tricolor = true;
         self->core.colorspace.tricolor_hue = displayio_colorconverter_compute_hue(highlight_color);
-        self->core.colorspace.tricolor_luma = displayio_colorconverter_compute_luma(highlight_color);
     } else {
         self->core.colorspace.tricolor = false;
+    }
+    if (highlight_color != 0x000000 && highlight_color2 != 0x000000) {
+        self->core.colorspace.tricolor = false;
+        self->core.colorspace.fourcolor = true;
+        self->core.colorspace.fourcolor_hue = displayio_colorconverter_compute_hue(highlight_color2);
+    } else {
+        self->core.colorspace.fourcolor = false;
     }
     self->acep = acep || spectra6;
     self->core.colorspace.sixcolor = spectra6;
@@ -53,6 +59,11 @@ void common_hal_epaperdisplay_epaperdisplay_construct(epaperdisplay_epaperdispla
         color_depth = 4; // bits. 7 colors + clean
         grayscale = false;
         core_grayscale = false;
+    }
+    if ((highlight_color != 0x000000 || highlight_color2 != 0x000000) && write_color_ram_command == NO_COMMAND) {
+        color_depth = 2;
+        core_grayscale = false;
+        grayscale = false;
     }
 
     displayio_display_core_construct(&self->core, width, height, rotation, color_depth, core_grayscale, true, 1, true, true);
@@ -90,7 +101,7 @@ void common_hal_epaperdisplay_epaperdisplay_construct(epaperdisplay_epaperdispla
     }
 
     // Clear the color memory if it isn't in use.
-    if (highlight_color == 0x00 && write_color_ram_command != NO_COMMAND) {
+    if (highlight_color == 0x00 && highlight_color2 == 0x00 && write_color_ram_command != NO_COMMAND) {
         // TODO: Clear
     }
 

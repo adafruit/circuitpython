@@ -44,6 +44,9 @@
 #include "mxc_delay.h"
 #include "rtc.h"
 
+// true random number generator, TRNG
+#include "trng.h"
+
 // msec to RTC subsec ticks (4 kHz)
 /* Converts a time in milleseconds to equivalent RSSA register value */
 #define MSEC_TO_SS_ALARM(x) (0 - ((x * 4096) / 1000))
@@ -112,7 +115,16 @@ safe_mode_t port_init(void) {
     }
     ;
 
+    // enable TRNG (true random number generator)
+    #ifdef CIRCUITPY_RANDOM
+    MXC_TRNG_Init();
+    #endif
+
     return SAFE_MODE_NONE;
+}
+
+void TRNG_IRQHandler(void) {
+    MXC_TRNG_Handler();
 }
 
 void RTC_IRQHandler(void) {

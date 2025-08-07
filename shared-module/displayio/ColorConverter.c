@@ -163,8 +163,13 @@ uint8_t displayio_colorconverter_compute_sevencolor(uint32_t color_rgb888) {
     }
 }
 
-void displayio_colorconverter_compute_tricolor(const _displayio_colorspace_t *colorspace, uint8_t pixel_hue, uint32_t *color) {
-
+void displayio_colorconverter_compute_tricolor(const _displayio_colorspace_t *colorspace, uint8_t pixel_chroma, uint8_t pixel_hue, uint32_t *color) {
+    if (pixel_chroma <= 16) {
+        if (!colorspace->grayscale) {
+            *color = 0;
+        }
+        return;
+    }
     int16_t hue_diff = colorspace->tricolor_hue - pixel_hue;
     if ((-10 <= hue_diff && hue_diff <= 10) || hue_diff <= -220 || hue_diff >= 220) {
         if (colorspace->grayscale) {
@@ -174,6 +179,21 @@ void displayio_colorconverter_compute_tricolor(const _displayio_colorspace_t *co
         }
     } else if (!colorspace->grayscale) {
         *color = 0;
+    }
+}
+
+void displayio_colorconverter_compute_fourcolor(const _displayio_colorspace_t *colorspace, uint8_t pixel_chroma, uint8_t pixel_hue, uint32_t *color) {
+    *color >>= 1;
+    if (pixel_chroma <= 16) {
+        return;
+    }
+    int16_t hue_diff = colorspace->tricolor_hue - pixel_hue;
+    if ((-10 <= hue_diff && hue_diff <= 10) || hue_diff <= -220 || hue_diff >= 220) {
+        *color = 2;
+    }
+    int16_t hue_diff2 = colorspace->fourcolor_hue - pixel_hue;
+    if ((-10 <= hue_diff2 && hue_diff2 <= 10) || hue_diff2 <= -220 || hue_diff2 >= 220) {
+        *color = 3;
     }
 }
 
@@ -313,18 +333,17 @@ void displayio_convert_color(const _displayio_colorspace_t *colorspace, bool dit
         output_color->pixel = packed;
         output_color->opaque = true;
         return;
-    } else if (colorspace->tricolor) {
+    } else if (colorspace->tricolor || colorspace->fourcolor) {
         uint8_t luma = displayio_colorconverter_compute_luma(pixel);
+        uint8_t pixel_chroma = displayio_colorconverter_compute_chroma(pixel);
         output_color->pixel = luma >> (8 - colorspace->depth);
-        if (displayio_colorconverter_compute_chroma(pixel) <= 16) {
-            if (!colorspace->grayscale) {
-                output_color->pixel = 0;
-            }
-            output_color->opaque = true;
-            return;
-        }
         uint8_t pixel_hue = displayio_colorconverter_compute_hue(pixel);
-        displayio_colorconverter_compute_tricolor(colorspace, pixel_hue, &output_color->pixel);
+        if (colorspace->tricolor) {
+            displayio_colorconverter_compute_tricolor(colorspace, pixel_chroma, pixel_hue, &output_color->pixel);
+        } else if (colorspace->fourcolor) {
+            displayio_colorconverter_compute_fourcolor(colorspace, pixel_chroma, pixel_hue, &output_color->pixel);
+        }
+        output_color->opaque = true;
         return;
     } else if (colorspace->grayscale && colorspace->depth <= 8) {
         uint8_t luma = displayio_colorconverter_compute_luma(pixel);

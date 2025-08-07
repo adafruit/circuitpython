@@ -76,6 +76,7 @@ void board_init(void) {
         NO_COMMAND, // write_color_ram_command (can add this for grayscale eventually)
         false, // color_bits_inverted
         0x000000, // highlight_color
+        0x000000, // highlight_color2
         refresh_sequence, // refresh_display_sequence
         sizeof(refresh_sequence),
         40, // refresh_time

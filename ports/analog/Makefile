@@ -2,6 +2,7 @@
 #
 # SPDX-FileCopyrightText: Copyright (c) 2020 Scott Shawcroft for Adafruit Industries
 # SPDX-FileCopyrightText: Copyright (c) 2024 Brandon Hurst, Analog Devices, Inc.
+# SPDX-FileCopyrightText: Copyright (c) 2025 Peggy Zhu, Analog Devices, Inc.
 #
 # SPDX-License-Identifier: MIT
 
@@ -83,7 +84,8 @@ INC += \
 	-I$(PERIPH_SRC)/ICC \
 	-I$(PERIPH_SRC)/TMR \
 	-I$(PERIPH_SRC)/RTC \
-	-I$(PERIPH_SRC)/UART
+	-I$(PERIPH_SRC)/UART \
+	-I$(PERIPH_SRC)/TRNG
 
 INC += -I$(CMSIS_ROOT)/Device/Maxim/$(MCU_VARIANT_UPPER)/Source/GCC
 
@@ -116,7 +118,9 @@ SRC_MAX32 += \
 	$(PERIPH_SRC)/TMR/tmr_$(DIE_TYPE).c \
 	$(PERIPH_SRC)/UART/uart_common.c \
 	$(PERIPH_SRC)/UART/uart_$(DIE_TYPE).c \
-	$(PERIPH_SRC)/UART/uart_revb.c
+	$(PERIPH_SRC)/UART/uart_revb.c \
+	$(PERIPH_SRC)/TRNG/trng_revb.c \
+	$(PERIPH_SRC)/TRNG/trng_$(DIE_TYPE).c
 
 SRC_C += $(SRC_MAX32) \
 			boards/$(BOARD)/board.c \

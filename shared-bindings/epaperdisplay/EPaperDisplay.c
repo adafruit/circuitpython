@@ -54,6 +54,7 @@
 //|         write_color_ram_command: Optional[int] = None,
 //|         color_bits_inverted: bool = False,
 //|         highlight_color: int = 0x000000,
+//|         highlight_color2: int = 0x000000,
 //|         refresh_display_command: Union[int, circuitpython_typing.ReadableBuffer],
 //|         refresh_time: float = 40,
 //|         busy_pin: Optional[microcontroller.Pin] = None,
@@ -97,6 +98,7 @@
 //|         :param int write_color_ram_command: Command used to write pixels values into the update region
 //|         :param bool color_bits_inverted: True if 0 bits are used to show the color. Otherwise, 1 means to show color.
 //|         :param int highlight_color: RGB888 of source color to highlight with third ePaper color.
+//|         :param int highlight_color2: RGB888 of source color to highlight with fourth ePaper color.
 //|         :param int refresh_display_command: Command used to start a display refresh. Single int or byte-packed command sequence
 //|         :param float refresh_time: Time it takes to refresh the display before the stop_sequence should be sent. Ignored when busy_pin is provided.
 //|         :param microcontroller.Pin busy_pin: Pin used to signify the display is busy
@@ -117,7 +119,7 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
            ARG_ram_width, ARG_ram_height, ARG_colstart, ARG_rowstart, ARG_rotation,
            ARG_set_column_window_command, ARG_set_row_window_command, ARG_set_current_column_command,
            ARG_set_current_row_command, ARG_write_black_ram_command, ARG_black_bits_inverted,
-           ARG_write_color_ram_command, ARG_color_bits_inverted, ARG_highlight_color,
+           ARG_write_color_ram_command, ARG_color_bits_inverted, ARG_highlight_color, ARG_highlight_color2,
            ARG_refresh_display_command,  ARG_refresh_time, ARG_busy_pin, ARG_busy_state,
            ARG_seconds_per_frame, ARG_always_toggle_chip_select, ARG_grayscale, ARG_advanced_color_epaper, ARG_spectra6,
            ARG_two_byte_sequence_length, ARG_start_up_time, ARG_address_little_endian };
@@ -141,6 +143,7 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
         { MP_QSTR_write_color_ram_command, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = mp_const_none} },
         { MP_QSTR_color_bits_inverted, MP_ARG_BOOL | MP_ARG_KW_ONLY, {.u_bool = false} },
         { MP_QSTR_highlight_color, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 0x000000} },
+        { MP_QSTR_highlight_color2, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 0x000000} },
         { MP_QSTR_refresh_display_command, MP_ARG_OBJ | MP_ARG_REQUIRED },
         { MP_QSTR_refresh_time, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = MP_OBJ_NEW_SMALL_INT(40)} },
         { MP_QSTR_busy_pin, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = mp_const_none} },
@@ -181,6 +184,7 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
 
     mp_int_t write_color_ram_command = NO_COMMAND;
     mp_int_t highlight_color = args[ARG_highlight_color].u_int;
+    mp_int_t highlight_color2 = args[ARG_highlight_color2].u_int;
     if (args[ARG_write_color_ram_command].u_obj != mp_const_none) {
         write_color_ram_command = mp_obj_get_int(args[ARG_write_color_ram_command].u_obj);
     }
@@ -216,7 +220,7 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
         args[ARG_set_column_window_command].u_int, args[ARG_set_row_window_command].u_int,
         args[ARG_set_current_column_command].u_int, args[ARG_set_current_row_command].u_int,
         args[ARG_write_black_ram_command].u_int, args[ARG_black_bits_inverted].u_bool, write_color_ram_command,
-        args[ARG_color_bits_inverted].u_bool, highlight_color, refresh_buf, refresh_buf_len, refresh_time,
+        args[ARG_color_bits_inverted].u_bool, highlight_color, highlight_color2, refresh_buf, refresh_buf_len, refresh_time,
         busy_pin, args[ARG_busy_state].u_bool, seconds_per_frame,
         args[ARG_always_toggle_chip_select].u_bool, args[ARG_grayscale].u_bool, args[ARG_advanced_color_epaper].u_bool, args[ARG_spectra6].u_bool,
         two_byte_sequence_length, args[ARG_address_little_endian].u_bool

@@ -295,6 +295,7 @@ void board_init(void) {
         DTM1,  // write_color_ram_command
         false,  // color_bits_inverted
         0x000000,  // highlight_color
+        0x000000,  // highlight_color2
         refresh_sequence, sizeof(refresh_sequence),  // refresh_display_command
         1.0,  // refresh_time
         &pin_GPIO26,  // busy_pin

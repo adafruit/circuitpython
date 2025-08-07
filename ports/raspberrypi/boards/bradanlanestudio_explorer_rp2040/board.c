@@ -273,6 +273,7 @@ void board_init(void) {
             SSD_WRITE_RAM_RED,                                                                              // write_color_ram_command
             false,                                                                                          // color_bits_inverted
             0xFF0000,                                                                                       // highlight_color (RED for tri-color display)
+            0x000000,                                                                                       // highlight_color2
             _refresh_sequence_ssd1681, sizeof(_refresh_sequence_ssd1681),                                   // refresh_display_command
             refresh_time,                                                                                   // refresh_time
             &pin_GPIO9, // DEFAULT_SPI_BUS_BUSY,                                                            // busy_pin
@@ -307,6 +308,7 @@ void board_init(void) {
             NO_COMMAND,                                                                                     // write_color_ram_command
             false,                                                                                          // color_bits_inverted
             0x000000,                                                                                       // highlight_color (RED for tri-color display)
+            0x000000,                                                                                       // highlight_color2
             _refresh_sequence_ssd1608, sizeof(_refresh_sequence_ssd1608),                                   // refresh_display_command
             refresh_time,                                                                                   // refresh_time
             &pin_GPIO9, // DEFAULT_SPI_BUS_BUSY,                                                            // busy_pin

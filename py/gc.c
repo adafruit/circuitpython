@@ -311,8 +311,9 @@ void gc_add(void *start, void *end) {
 #if MICROPY_GC_SPLIT_HEAP_AUTO
 // CIRCUITPY-CHANGE: Added function to compute heap size with selective collect table
 static size_t compute_heap_size(size_t total_blocks) {
-    // Add two blocks to account for allocation alignment.
-    total_blocks += 2;
+    // Round up to the nearest multiple of BLOCKS_PER_ATB. Partial ATB blocks aren't supported and
+    // will result in a heap that is too small.
+    total_blocks = ((total_blocks + BLOCKS_PER_ATB - 1) / BLOCKS_PER_ATB) * BLOCKS_PER_ATB;
     size_t atb_bytes = (total_blocks + BLOCKS_PER_ATB - 1) / BLOCKS_PER_ATB;
     size_t ftb_bytes = 0;
     size_t ctb_bytes = 0;
@@ -326,12 +327,13 @@ static size_t compute_heap_size(size_t total_blocks) {
 
     // Compute bytes needed to build a heap with total_blocks blocks.
     size_t total_heap =
-        atb_bytes
+        sizeof(mp_state_mem_area_t)
+        + atb_bytes
+        + ALLOC_TABLE_GAP_BYTE
         + ftb_bytes
         + ctb_bytes
         + pool_bytes
-        + ALLOC_TABLE_GAP_BYTE
-        + sizeof(mp_state_mem_area_t);
+        + BYTES_PER_BLOCK; // Extra block of bytes to account for end pointer alignment
 
     // Round up size to the nearest multiple of BYTES_PER_BLOCK.
     total_heap = (total_heap + BYTES_PER_BLOCK - 1) / BYTES_PER_BLOCK;
