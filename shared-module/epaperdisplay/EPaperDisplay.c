@@ -162,7 +162,9 @@ static void send_command_sequence(epaperdisplay_epaperdisplay_obj_t *self,
             data_size = ((data_size & ~DELAY) << 8) + *(cmd + 2);
             data = cmd + 3;
         }
-        displayio_display_bus_begin_transaction(&self->bus);
+        while (!displayio_display_bus_begin_transaction(&self->bus)) {
+            RUN_BACKGROUND_TASKS;
+        }
         self->bus.send(self->bus.bus, DISPLAY_COMMAND, self->chip_select, cmd, 1);
         self->bus.send(self->bus.bus, DISPLAY_DATA, self->chip_select, data, data_size);
         displayio_display_bus_end_transaction(&self->bus);
@@ -310,14 +312,21 @@ static bool epaperdisplay_epaperdisplay_refresh_area(epaperdisplay_epaperdisplay
         uint16_t remaining_rows = displayio_area_height(&clipped);
 
         if (self->bus.row_command != NO_COMMAND) {
-            displayio_display_bus_set_region_to_update(&self->bus, &self->core, &clipped);
+            if (!displayio_display_bus_set_region_to_update(&self->bus, &self->core, &clipped)) {
+                // This is a failure to acquire the bus, skip the rest of the refresh.
+                return false;
+            }
         }
 
         uint8_t write_command = self->write_black_ram_command;
         if (pass == 1) {
             write_command = self->write_color_ram_command;
         }
-        displayio_display_bus_begin_transaction(&self->bus);
+
+        if (!displayio_display_bus_begin_transaction(&self->bus)) {
+            // We can't acquire the bus skip the rest of the refresh.
+            return false;
+        }
         self->bus.send(self->bus.bus, DISPLAY_COMMAND, self->chip_select, &write_command, 1);
         displayio_display_bus_end_transaction(&self->bus);
 
@@ -394,24 +403,26 @@ static bool _clean_area(epaperdisplay_epaperdisplay_obj_t *self) {
     memset(buffer, 0x77, width / 2);
 
     uint8_t write_command = self->write_black_ram_command;
-    displayio_display_bus_begin_transaction(&self->bus);
+
+    if (!displayio_display_bus_begin_transaction(&self->bus)) {
+        // Can't acquire display bus; skip the rest of the data. Try next display.
+        return false;
+    }
     self->bus.send(self->bus.bus, DISPLAY_COMMAND, self->chip_select, &write_command, 1);
-    displayio_display_bus_end_transaction(&self->bus);
 
     for (uint16_t j = 0; j < height; j++) {
-        if (!displayio_display_bus_begin_transaction(&self->bus)) {
-            // Can't acquire display bus; skip the rest of the data. Try next display.
-            return false;
-        }
         self->bus.send(self->bus.bus, DISPLAY_DATA, self->chip_select, buffer, width / 2);
-        displayio_display_bus_end_transaction(&self->bus);
 
         // TODO(tannewt): Make refresh displays faster so we don't starve other
         // background tasks.
         #if CIRCUITPY_TINYUSB
-        usb_background();
+        displayio_display_bus_end_transaction(&self->bus);
+        do {
+            usb_background();
+        } while (!displayio_display_bus_begin_transaction(&self->bus));
         #endif
     }
+    displayio_display_bus_end_transaction(&self->bus);
 
     return true;
 }

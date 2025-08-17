@@ -47,7 +47,7 @@ bool displayio_display_bus_is_free(displayio_display_bus_t *self);
 bool displayio_display_bus_begin_transaction(displayio_display_bus_t *self);
 void displayio_display_bus_end_transaction(displayio_display_bus_t *self);
 
-void displayio_display_bus_set_region_to_update(displayio_display_bus_t *self, displayio_display_core_t *display, displayio_area_t *area);
+bool displayio_display_bus_set_region_to_update(displayio_display_bus_t *self, displayio_display_core_t *display, displayio_area_t *area);
 
 void release_display_bus(displayio_display_bus_t *self);
 
