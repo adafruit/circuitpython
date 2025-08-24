@@ -211,20 +211,43 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
     }
 
     self->base.type = &epaperdisplay_epaperdisplay_type;
-    common_hal_epaperdisplay_epaperdisplay_construct(
-        self,
-        display_bus,
-        start_bufinfo.buf, start_bufinfo.len, start_up_time, stop_bufinfo.buf, stop_bufinfo.len,
-        args[ARG_width].u_int, args[ARG_height].u_int, args[ARG_ram_width].u_int, args[ARG_ram_height].u_int,
-        args[ARG_colstart].u_int, args[ARG_rowstart].u_int, rotation,
-        args[ARG_set_column_window_command].u_int, args[ARG_set_row_window_command].u_int,
-        args[ARG_set_current_column_command].u_int, args[ARG_set_current_row_command].u_int,
-        args[ARG_write_black_ram_command].u_int, args[ARG_black_bits_inverted].u_bool, write_color_ram_command,
-        args[ARG_color_bits_inverted].u_bool, highlight_color, highlight_color2, refresh_buf, refresh_buf_len, refresh_time,
-        busy_pin, args[ARG_busy_state].u_bool, seconds_per_frame,
-        args[ARG_always_toggle_chip_select].u_bool, args[ARG_grayscale].u_bool, args[ARG_advanced_color_epaper].u_bool, args[ARG_spectra6].u_bool,
-        two_byte_sequence_length, args[ARG_address_little_endian].u_bool
-        );
+    epaperdisplay_construct_args_t construct_args = EPAPERDISPLAY_CONSTRUCT_ARGS_DEFAULTS;
+    construct_args.bus = display_bus;
+    construct_args.start_sequence = start_bufinfo.buf;
+    construct_args.start_sequence_len = start_bufinfo.len;
+    construct_args.start_up_time = start_up_time;
+    construct_args.stop_sequence = stop_bufinfo.buf;
+    construct_args.stop_sequence_len = stop_bufinfo.len;
+    construct_args.width = args[ARG_width].u_int;
+    construct_args.height = args[ARG_height].u_int;
+    construct_args.ram_width = args[ARG_ram_width].u_int;
+    construct_args.ram_height = args[ARG_ram_height].u_int;
+    construct_args.colstart = args[ARG_colstart].u_int;
+    construct_args.rowstart = args[ARG_rowstart].u_int;
+    construct_args.rotation = rotation;
+    construct_args.set_column_window_command = args[ARG_set_column_window_command].u_int;
+    construct_args.set_row_window_command = args[ARG_set_row_window_command].u_int;
+    construct_args.set_current_column_command = args[ARG_set_current_column_command].u_int;
+    construct_args.set_current_row_command = args[ARG_set_current_row_command].u_int;
+    construct_args.write_black_ram_command = args[ARG_write_black_ram_command].u_int;
+    construct_args.black_bits_inverted = args[ARG_black_bits_inverted].u_bool;
+    construct_args.write_color_ram_command = write_color_ram_command;
+    construct_args.color_bits_inverted = args[ARG_color_bits_inverted].u_bool;
+    construct_args.highlight_color = highlight_color;
+    construct_args.highlight_color2 = highlight_color2;
+    construct_args.refresh_sequence = refresh_buf;
+    construct_args.refresh_sequence_len = refresh_buf_len;
+    construct_args.refresh_time = refresh_time;
+    construct_args.busy_pin = busy_pin;
+    construct_args.busy_state = args[ARG_busy_state].u_bool;
+    construct_args.seconds_per_frame = seconds_per_frame;
+    construct_args.always_toggle_chip_select = args[ARG_always_toggle_chip_select].u_bool;
+    construct_args.grayscale = args[ARG_grayscale].u_bool;
+    construct_args.acep = args[ARG_advanced_color_epaper].u_bool;
+    construct_args.spectra6 = args[ARG_spectra6].u_bool;
+    construct_args.two_byte_sequence_length = two_byte_sequence_length;
+    construct_args.address_little_endian = args[ARG_address_little_endian].u_bool;
+    common_hal_epaperdisplay_epaperdisplay_construct(self, &construct_args);
 
     return self;
 }
