@@ -139,8 +139,8 @@ static void check_for_deinit(audiomp3_mp3file_obj_t *self) {
 //|
 //  Provided by context manager helper.
 
-//|     file: Union[str, typing.BinaryIO] The name of a mp3 file (preferred) or an already opened mp3 file.
-//|     """File to play back."""
+//|     file: Union[str, typing.BinaryIO]
+//|     """The name of a mp3 file (preferred) or an already opened mp3 file."""
 //|
 static mp_obj_t audiomp3_mp3file_obj_get_file(mp_obj_t self_in) {
     audiomp3_mp3file_obj_t *self = MP_OBJ_TO_PTR(self_in);
