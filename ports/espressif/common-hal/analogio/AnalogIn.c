@@ -86,10 +86,8 @@ uint16_t common_hal_analogio_analogin_get_value(analogio_analogin_obj_t *self) {
 
     adc_cali_scheme_ver_t supported_schemes;
     adc_cali_check_scheme(&supported_schemes);
-    #ifndef CONFIG_IDF_TARGET_ESP32P4
     adc_cali_scheme_ver_t calibration_scheme = 0;
     adc_cali_handle_t calibration;
-    #endif
     #if defined(ADC_CALI_SCHEME_CURVE_FITTING_SUPPORTED) && ADC_CALI_SCHEME_CURVE_FITTING_SUPPORTED
     adc_cali_curve_fitting_config_t config = {
         .unit_id = self->pin->adc_index,
@@ -137,11 +135,7 @@ uint16_t common_hal_analogio_analogin_get_value(analogio_analogin_obj_t *self) {
 
     // This corrects non-linear regions of the ADC range with a LUT, so it's a better reading than raw
     int voltage;
-    #ifdef CONFIG_IDF_TARGET_ESP32P4
-    voltage = 0;
-    #else
     adc_cali_raw_to_voltage(calibration, adc_reading, &voltage);
-    #endif
 
     #if defined(ADC_CALI_SCHEME_CURVE_FITTING_SUPPORTED) && ADC_CALI_SCHEME_CURVE_FITTING_SUPPORTED
     if (calibration_scheme == ADC_CALI_SCHEME_VER_CURVE_FITTING) {

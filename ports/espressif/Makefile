@@ -64,6 +64,7 @@ INC += \
 	-isystem esp-idf/components/esp_driver_i2s/include \
 	-isystem esp-idf/components/esp_driver_$(IDF_TARGET)/include \
 	-isystem esp-idf/components/esp_driver_ledc/include \
+	-isystem esp-idf/components/esp_driver_parlio/include \
 	-isystem esp-idf/components/esp_driver_pcnt/include \
 	-isystem esp-idf/components/esp_driver_rmt/include \
 	-isystem esp-idf/components/esp_driver_sdio/include \
@@ -156,11 +157,13 @@ REGISTRATION_FUNCTIONS = \
 	-u __ubsan_include \
 	-u esp_system_include_startup_funcs \
 	-u esp_efuse_startup_include_func \
-	-u newlib_include_heap_impl \
-	-u newlib_include_syscalls_impl \
-	-u newlib_include_pthread_impl \
-	-u newlib_include_assert_impl \
-	-u newlib_include_init_funcs \
+	-u esp_libc_include_heap_impl \
+	-u esp_libc_include_reent_syscalls_impl \
+	-u esp_libc_include_syscalls_impl \
+	-u esp_libc_include_pthread_impl \
+	-u esp_libc_include_assert_impl \
+	-u esp_libc_include_getentropy_impl \
+	-u esp_libc_include_init_funcs \
 	-u include_esp_phy_override \
 	-u vfs_include_syscalls_impl
 
@@ -222,7 +225,6 @@ else ifeq ($(IDF_TARGET_ARCH),riscv)
 		-Trom.api.ld
 endif
 
-$(BUILD)/lib/tlsf/tlsf.o: CFLAGS += -Wno-cast-align
 
 LDFLAGS += $(CFLAGS) -Wl,-nostdlib -Wl,-Map=$@.map -Wl,-cref -Wl,--undefined=uxTopUsedPriority
 
@@ -244,7 +246,8 @@ LDFLAGS += \
 ifeq ($(IDF_TARGET),esp32)
 LDFLAGS += \
 	-Tesp32.rom.newlib-data.ld \
-	-Tesp32.rom.newlib-funcs.ld \
+	-Tesp32.rom.libc-funcs.ld \
+	-Tesp32.rom.newlib-reent-funcs.ld \
 	-Tesp32.rom.spiflash_legacy.ld
 
 CHIP_COMPONENTS = \
@@ -312,8 +315,9 @@ CHIP_COMPONENTS = \
 
 else ifeq ($(IDF_TARGET),esp32s2)
 LDFLAGS += \
+	-Tesp32s2.rom.libc-funcs.ld \
 	-Tesp32s2.rom.newlib-data.ld \
-	-Tesp32s2.rom.newlib-funcs.ld \
+	-Tesp32s2.rom.newlib-reent-funcs.ld \
 	-Tesp32s2.rom.spiflash_legacy.ld
 
 CHIP_COMPONENTS = \
@@ -782,7 +786,7 @@ endif
 
 IDF_CMAKE_TARGETS = \
 		bootloader/bootloader.bin \
-		esp-idf/esp_system/__ldgen_output_sections.ld \
+		__ldgen_output_sections.ld \
 		$(foreach component, $(ESP_IDF_COMPONENTS_LINK), esp-idf/$(component)/lib$(component).a)
 
 PARTITION_TABLE_OFFSET = 0x8000
