@@ -355,7 +355,11 @@ mp_int_t common_hal_usb_core_device_ctrl_transfer(usb_core_device_obj_t *self,
         .complete_cb = _transfer_done_cb,
     };
 
+    // Prepare for transfer. Unless there is a timeout, these static globals will
+    // get modified by the _transfer_done_cb() callback when tinyusb finishes the
+    // transfer or encounters an error condition.
     _xfer_result = XFER_RESULT_INVALID;
+    _actual_len = 0;
 
     if (!tuh_control_xfer(&xfer)) {
         mp_raise_usb_core_USBError(NULL);
@@ -377,7 +381,7 @@ mp_int_t common_hal_usb_core_device_ctrl_transfer(usb_core_device_obj_t *self,
     _xfer_result = XFER_RESULT_INVALID;
     switch (result) {
         case XFER_RESULT_SUCCESS:
-            return len;
+            return _actual_len;
         case XFER_RESULT_FAILED:
             break;
         case XFER_RESULT_STALLED:
