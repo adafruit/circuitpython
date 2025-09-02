@@ -459,6 +459,9 @@ endif
 ifeq ($(CIRCUITPY_WIFI),1)
 SRC_PATTERNS += wifi/%
 endif
+ifeq ($(CIRCUITPY_WIZNET),1)
+SRC_PATTERNS += wiznet/%
+endif
 ifeq ($(CIRCUITPY_ZLIB),1)
 SRC_PATTERNS += zlib/%
 endif

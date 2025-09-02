@@ -84,6 +84,32 @@ SRC_CYW43 :=
 SRC_LWIP :=
 endif
 
+ifeq ($(CIRCUITPY_WIZNET), 1)
+INC_WIZNET := \
+	-isystem common-hal/wiznet \
+
+SRC_WIZNET := \
+	common-hal/wiznet/wizchip_pio_spi.c \
+
+WIZNET_PIOASM = $(BUILD)/pioasm/pioasm/pioasm
+.PHONY: pioasmBuild
+pioasmBuild: $(WIZNET_PIOASM)
+
+$(WIZNET_PIOASM):
+	$(Q)cmake -S pioasm -B $(BUILD)/pioasm
+	$(MAKE) -C $(BUILD)/pioasm pioasmBuild
+
+$(BUILD)/wizchip_pio_spi.pio.h: common-hal/wiznet/wizchip_pio_spi.pio $(WIZNET_PIOASM)
+	$(Q)$(WIZNET_PIOASM) -o c-sdk $< $@
+$(BUILD)/common-hal/wiznet/wizchip_pio_spi.o: $(BUILD)/wizchip_pio_spi.pio.h
+
+$(BUILD)/genhdr/qstr.i.last: $(BUILD)/wizchip_pio_spi.pio.h
+
+else
+INC_WIZNET :=
+SRC_WIZNET :=
+endif
+
 CHIP_VARIANT_LOWER = $(shell echo $(CHIP_VARIANT) | tr '[:upper:]' '[:lower:]')
 
 INC += \
