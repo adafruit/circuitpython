@@ -375,17 +375,21 @@ mp_int_t common_hal_usb_core_device_ctrl_transfer(usb_core_device_obj_t *self,
     }
     xfer_result_t result = _xfer_result;
     _xfer_result = XFER_RESULT_INVALID;
-    if (result == XFER_RESULT_STALLED) {
-        mp_raise_usb_core_USBError(MP_ERROR_TEXT("Pipe error"));
+    switch (result) {
+        case XFER_RESULT_SUCCESS:
+            return len;
+        case XFER_RESULT_FAILED:
+            break;
+        case XFER_RESULT_STALLED:
+            mp_raise_usb_core_USBError(MP_ERROR_TEXT("Pipe error"));
+            break;
+        case XFER_RESULT_TIMEOUT:
+            break;
+        case XFER_RESULT_INVALID:
+            tuh_edpt_abort_xfer(xfer.daddr, xfer.ep_addr);
+            mp_raise_usb_core_USBTimeoutError();
+            break;
     }
-    if (result == XFER_RESULT_INVALID) {
-        tuh_edpt_abort_xfer(xfer.daddr, xfer.ep_addr);
-        mp_raise_usb_core_USBTimeoutError();
-    }
-    if (result == XFER_RESULT_SUCCESS) {
-        return len;
-    }
-
     return 0;
 }
 
