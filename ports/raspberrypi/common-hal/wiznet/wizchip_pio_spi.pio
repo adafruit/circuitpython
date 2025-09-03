@@ -32,7 +32,7 @@ public read_end:
 .program wiznet_pio_spi_quad_write_read
 .side_set 1
 
-write_bits: 
+write_bits:
     out pins, 4             side 0
     jmp x-- write_bits      side 1
     set pins 0              side 0
@@ -42,8 +42,8 @@ read_byte_delay:
 read_byte:
     set x 0                 side 1
 read_bits:
-    in pins, 4              side 0 
+    in pins, 4              side 0
     jmp x-- read_bits       side 1
-    in pins, 4              side 0 
+    in pins, 4              side 0
     jmp y-- read_byte       side 0
 public read_bits_end:

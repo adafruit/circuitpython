@@ -6,7 +6,7 @@
 
 #ifndef _WIZNET_SPI_FUNCS_H_
 #define _WIZNET_SPI_FUNCS_H_
- 
+
 #include <stdint.h>
 
 typedef struct wiznet_pio_spi_funcs** wiznet_pio_spi_handle_t;
@@ -23,7 +23,7 @@ typedef struct wiznet_pio_spi_config
     uint8_t cs_pin;
     uint8_t reset_pin;
     uint8_t irq_pin;
-} wiznet_pio_spi_config_t; 
+} wiznet_pio_spi_config_t;
 
 typedef struct wiznet_pio_spi_funcs {
     void (*close)(wiznet_pio_spi_handle_t funcs);
@@ -63,7 +63,7 @@ typedef struct wiznet_pio_spi_funcs {
 #endif
 
 #endif
- 
+
 #ifndef _WIZNET_SPI_PIO_H_
 #define _WIZNET_SPI_PIO_H_
 

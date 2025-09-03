@@ -77,8 +77,8 @@ static uint16_t mk_cmd_buf(uint8_t *pdst, uint8_t opcode, uint16_t addr)
   pdst[2] = ( (opcode >> 3 & 0x01) << 4 ) | ( (opcode >> 2 & 0x01) << 0 );
   pdst[3] = ( (opcode >> 1 & 0x01) << 4 ) | ( (opcode >> 0 & 0x01) << 0 );
 
-  pdst[4] = ((uint8_t)(addr >> 8) & 0xFF); 
-  pdst[5] = ((uint8_t)(addr >> 0) & 0xFF); 
+  pdst[4] = ((uint8_t)(addr >> 8) & 0xFF);
+  pdst[5] = ((uint8_t)(addr >> 0) & 0xFF);
 
   pdst[6] = 0;
 
@@ -251,7 +251,6 @@ wiznet_pio_spi_handle_t wiznet_pio_spi_open(const wiznet_pio_spi_config_t *wizne
         wiznet_pio_spi_close(&state->funcs);
         return NULL;
     }
-  
     return &state->funcs;
 }
 
@@ -320,7 +319,7 @@ static void wiznet_pio_spi_frame_end(void) {
 
 #if CIRCUITPY_WIZNET_W6300
 
-bool wiznet_pio_spi_read_byte(uint8_t op_code, uint16_t AddrSel, uint8_t *rx, uint16_t rx_length)  
+bool wiznet_pio_spi_read_byte(uint8_t op_code, uint16_t AddrSel, uint8_t *rx, uint16_t rx_length)
 {
     uint8_t command_buf[8] = {0,};
     uint16_t command_len = mk_cmd_buf(command_buf, op_code, AddrSel);
@@ -342,7 +341,7 @@ bool wiznet_pio_spi_read_byte(uint8_t op_code, uint16_t AddrSel, uint8_t *rx, ui
     pio_sm_restart(active_state->pio, active_state->pio_sm);
     pio_sm_clkdiv_restart(active_state->pio, active_state->pio_sm);
 
-    pio_sm_put(active_state->pio, active_state->pio_sm, command_len * loop_cnt - 1);  
+    pio_sm_put(active_state->pio, active_state->pio_sm, command_len * loop_cnt - 1);
     pio_sm_exec(active_state->pio, active_state->pio_sm, pio_encode_out(pio_x, 32));
 
     pio_sm_put(active_state->pio, active_state->pio_sm, rx_length - 1);
@@ -357,7 +356,7 @@ bool wiznet_pio_spi_read_byte(uint8_t op_code, uint16_t AddrSel, uint8_t *rx, ui
     channel_config_set_transfer_data_size(&out_config, DMA_SIZE_8);
     channel_config_set_bswap(&out_config, true);
     channel_config_set_dreq(&out_config, pio_get_dreq(active_state->pio, active_state->pio_sm, true));
-    dma_channel_configure(active_state->dma_out, &out_config, &active_state->pio->txf[active_state->pio_sm], command_buf, command_len, true); 
+    dma_channel_configure(active_state->dma_out, &out_config, &active_state->pio->txf[active_state->pio_sm], command_buf, command_len, true);
 
     dma_channel_config in_config = dma_channel_get_default_config(active_state->dma_in);
     channel_config_set_transfer_data_size(&in_config, DMA_SIZE_8);
@@ -378,30 +377,29 @@ bool wiznet_pio_spi_read_byte(uint8_t op_code, uint16_t AddrSel, uint8_t *rx, ui
     __compiler_memory_barrier();
 
     pio_sm_set_enabled(active_state->pio, active_state->pio_sm, false);
-    pio_sm_exec(active_state->pio, active_state->pio_sm, pio_encode_mov(pio_pins, pio_null)); 
-    
+    pio_sm_exec(active_state->pio, active_state->pio_sm, pio_encode_mov(pio_pins, pio_null));
     #endif
 
     return true;
 }
 
-bool wiznet_pio_spi_write_byte(uint8_t op_code, uint16_t AddrSel, const uint8_t *tx, uint16_t tx_length)  
+bool wiznet_pio_spi_write_byte(uint8_t op_code, uint16_t AddrSel, const uint8_t *tx, uint16_t tx_length)
 {
     uint8_t command_buf[8] = {0,};
     uint16_t command_len = mk_cmd_buf(command_buf, op_code, AddrSel);
     uint32_t loop_cnt = 0;
     tx_length = tx_length + command_len;
-  
+
     pio_sm_set_enabled(active_state->pio, active_state->pio_sm, false);
     pio_sm_set_wrap(active_state->pio, active_state->pio_sm, active_state->pio_offset, active_state->pio_offset + WIZNET_PIO_SPI_OFFSET_WRITE_BITS_END - 1);
     pio_sm_clear_fifos(active_state->pio, active_state->pio_sm);
-  
+
     loop_cnt = 2;
     pio_sm_set_pindirs_with_mask(active_state->pio,
                                   active_state->pio_sm,
                                   (1u << active_state->spi_config->data_io0_pin) | (1u << active_state->spi_config->data_io1_pin) | (1u << active_state->spi_config->data_io2_pin) | (1u << active_state->spi_config->data_io3_pin),
                                   (1u << active_state->spi_config->data_io0_pin) | (1u << active_state->spi_config->data_io1_pin) | (1u << active_state->spi_config->data_io2_pin) | (1u << active_state->spi_config->data_io3_pin));
-  
+
 
 
     pio_sm_restart(active_state->pio, active_state->pio_sm);
@@ -419,14 +417,14 @@ bool wiznet_pio_spi_write_byte(uint8_t op_code, uint16_t AddrSel, const uint8_t 
     channel_config_set_transfer_data_size(&out_config, DMA_SIZE_8);
     channel_config_set_bswap(&out_config, true);
     channel_config_set_dreq(&out_config, pio_get_dreq(active_state->pio, active_state->pio_sm, true));
-  
+
     pio_sm_set_enabled(active_state->pio, active_state->pio_sm, true);
-  
+
     dma_channel_configure(active_state->dma_out, &out_config, &active_state->pio->txf[active_state->pio_sm], command_buf, command_len, true);
     dma_channel_wait_for_finish_blocking(active_state->dma_out);
     dma_channel_configure(active_state->dma_out, &out_config, &active_state->pio->txf[active_state->pio_sm], tx, tx_length - command_len, true);
     dma_channel_wait_for_finish_blocking(active_state->dma_out);
-  
+
     const uint32_t fdebug_tx_stall = 1u << (PIO_FDEBUG_TXSTALL_LSB + active_state->pio_sm);
     active_state->pio->fdebug = fdebug_tx_stall;
     // pio_sm_set_enabled(active_state->pio, active_state->pio_sm, true);
@@ -441,8 +439,7 @@ bool wiznet_pio_spi_write_byte(uint8_t op_code, uint16_t AddrSel, const uint8_t 
 
     pio_sm_set_consecutive_pindirs(active_state->pio, active_state->pio_sm, active_state->spi_config->data_io0_pin, 4, false);
 
-  
-    pio_sm_exec(active_state->pio, active_state->pio_sm, pio_encode_mov(pio_pins, pio_null)); 
+    pio_sm_exec(active_state->pio, active_state->pio_sm, pio_encode_mov(pio_pins, pio_null));
     pio_sm_set_enabled(active_state->pio, active_state->pio_sm, false);
     #endif
 
@@ -587,7 +584,6 @@ void wiznet_pio_spi_write_buffer(const uint8_t *pBuf, uint16_t len) {
                     active_state->spi_header_count = 0;
                     assert(active_state->spi_header_count == 0);
             #else
-            
                 if (!wiznet_pio_spi_transfer(active_state->spi_header, WIZNET_PIO_SPI_HEADER_LEN, NULL, 0)) {
                         panic("spi failed writing header");
                 }
@@ -597,10 +593,10 @@ void wiznet_pio_spi_write_buffer(const uint8_t *pBuf, uint16_t len) {
                 if (!wiznet_pio_spi_transfer(pBuf, len, NULL, 0)) {
                 panic("spi failed writing buffer");
                 }
-            #endif   
+            #endif
         }
     }
-} 
+}
 
 
 static void wiznet_pio_spi_set_active(wiznet_pio_spi_handle_t handle) {

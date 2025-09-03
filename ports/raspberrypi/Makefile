@@ -561,6 +561,10 @@ SRC_C += \
 	bindings/rp2pio/__init__.c \
 	common-hal/rp2pio/StateMachine.c \
 	common-hal/rp2pio/__init__.c \
+	bindings/wiznet/PIO_SPI.c \
+	bindings/wiznet/__init__.c \
+	common-hal/wiznet/PIO_SPI.c \
+	common-hal/wiznet/__init__.c \
 	audio_dma.c \
 	background.c \
 	peripherals/pins.c \
@@ -570,6 +574,7 @@ SRC_C += \
 	mphalport.c \
 	$(SRC_CYW43) \
 	$(SRC_LWIP) \
+	$(SRC_WIZNET) \
 
 
 ifeq ($(CIRCUITPY_USB_HOST), 1)
