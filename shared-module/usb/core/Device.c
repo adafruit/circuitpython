@@ -101,6 +101,59 @@ static bool _wait_for_callback(void) {
     return result == XFER_RESULT_SUCCESS;
 }
 
+static void _prepare_for_transfer(void) {
+    // Prepare for transfer. Unless there is a timeout, these static globals will
+    // get modified by the _transfer_done_cb() callback when tinyusb finishes the
+    // transfer or encounters an error condition.
+    _xfer_result = XFER_RESULT_INVALID;
+    _actual_len = 0;
+}
+
+static size_t _handle_timed_transfer_callback(tuh_xfer_t *xfer, mp_int_t timeout) {
+    if (xfer == NULL) {
+        mp_raise_usb_core_USBError(NULL);
+        return 0;
+    }
+    uint32_t start_time = supervisor_ticks_ms32();
+    while ((timeout == 0 || supervisor_ticks_ms32() - start_time < (uint32_t)timeout) &&
+           !mp_hal_is_interrupted() &&
+           _xfer_result == XFER_RESULT_INVALID) {
+        // The background tasks include TinyUSB which will call the function
+        // we provided above. In other words, the callback isn't in an interrupt.
+        RUN_BACKGROUND_TASKS;
+    }
+    if (mp_hal_is_interrupted()) {
+        // Handle case of VM being interrupted by Ctrl-C or autoreload
+        tuh_edpt_abort_xfer(xfer->daddr, xfer->ep_addr);
+        return 0;
+    }
+    // Handle control transfer result code from TinyUSB
+    xfer_result_t result = _xfer_result;
+    _xfer_result = XFER_RESULT_INVALID;
+    switch (result) {
+        case XFER_RESULT_SUCCESS:
+            return _actual_len;
+        case XFER_RESULT_FAILED:
+            mp_raise_usb_core_USBError(NULL);
+            break;
+        case XFER_RESULT_STALLED:
+            mp_raise_usb_core_USBError(MP_ERROR_TEXT("Pipe error"));
+            break;
+        case XFER_RESULT_TIMEOUT:
+            // This timeout comes from TinyUSB, so assume that it has stopped the
+            // transfer (note: timeout logic may be unimplemented on TinyUSB side)
+            mp_raise_usb_core_USBTimeoutError();
+            break;
+        case XFER_RESULT_INVALID:
+            // This timeout comes from CircuitPython, not TinyUSB, so tell TinyUSB
+            // to stop the transfer
+            tuh_edpt_abort_xfer(xfer->daddr, xfer->ep_addr);
+            mp_raise_usb_core_USBTimeoutError();
+            break;
+    }
+    return 0;
+}
+
 static mp_obj_t _get_string(const uint16_t *temp_buf) {
     size_t utf16_len = ((temp_buf[0] & 0xff) - 2) / sizeof(uint16_t);
     if (utf16_len == 0) {
@@ -225,38 +278,13 @@ void common_hal_usb_core_device_set_configuration(usb_core_device_obj_t *self, m
 }
 
 static size_t _xfer(tuh_xfer_t *xfer, mp_int_t timeout) {
-    _xfer_result = XFER_RESULT_INVALID;
+    _prepare_for_transfer();
     xfer->complete_cb = _transfer_done_cb;
     if (!tuh_edpt_xfer(xfer)) {
         mp_raise_usb_core_USBError(NULL);
         return 0;
     }
-    uint32_t start_time = supervisor_ticks_ms32();
-    while ((timeout == 0 || supervisor_ticks_ms32() - start_time < (uint32_t)timeout) &&
-           !mp_hal_is_interrupted() &&
-           _xfer_result == XFER_RESULT_INVALID) {
-        // The background tasks include TinyUSB which will call the function
-        // we provided above. In other words, the callback isn't in an interrupt.
-        RUN_BACKGROUND_TASKS;
-    }
-    if (mp_hal_is_interrupted()) {
-        tuh_edpt_abort_xfer(xfer->daddr, xfer->ep_addr);
-        return 0;
-    }
-    xfer_result_t result = _xfer_result;
-    _xfer_result = XFER_RESULT_INVALID;
-    if (result == XFER_RESULT_STALLED) {
-        mp_raise_usb_core_USBError(MP_ERROR_TEXT("Pipe error"));
-    }
-    if (result == XFER_RESULT_INVALID) {
-        tuh_edpt_abort_xfer(xfer->daddr, xfer->ep_addr);
-        mp_raise_usb_core_USBTimeoutError();
-    }
-    if (result == XFER_RESULT_SUCCESS) {
-        return _actual_len;
-    }
-
-    return 0;
+    return _handle_timed_transfer_callback(xfer, timeout);
 }
 
 static bool _open_endpoint(usb_core_device_obj_t *self, mp_int_t endpoint) {
@@ -355,54 +383,12 @@ mp_int_t common_hal_usb_core_device_ctrl_transfer(usb_core_device_obj_t *self,
         .complete_cb = _transfer_done_cb,
     };
 
-    // Prepare for transfer. Unless there is a timeout, these static globals will
-    // get modified by the _transfer_done_cb() callback when tinyusb finishes the
-    // transfer or encounters an error condition.
-    _xfer_result = XFER_RESULT_INVALID;
-    _actual_len = 0;
-
+    _prepare_for_transfer();
     if (!tuh_control_xfer(&xfer)) {
         mp_raise_usb_core_USBError(NULL);
         return 0;
     }
-    uint32_t start_time = supervisor_ticks_ms32();
-    while ((timeout == 0 || supervisor_ticks_ms32() - start_time < (uint32_t)timeout) &&
-           !mp_hal_is_interrupted() &&
-           _xfer_result == XFER_RESULT_INVALID) {
-        // The background tasks include TinyUSB which will call the function
-        // we provided above. In other words, the callback isn't in an interrupt.
-        RUN_BACKGROUND_TASKS;
-    }
-    if (mp_hal_is_interrupted()) {
-        // Handle case of VM being interrupted by Ctrl-C or autoreload
-        tuh_edpt_abort_xfer(xfer.daddr, xfer.ep_addr);
-        return 0;
-    }
-    // Handle control transfer result code from TinyUSB
-    xfer_result_t result = _xfer_result;
-    _xfer_result = XFER_RESULT_INVALID;
-    switch (result) {
-        case XFER_RESULT_SUCCESS:
-            return _actual_len;
-        case XFER_RESULT_FAILED:
-            mp_raise_usb_core_USBError(NULL);
-            break;
-        case XFER_RESULT_STALLED:
-            mp_raise_usb_core_USBError(MP_ERROR_TEXT("Pipe error"));
-            break;
-        case XFER_RESULT_TIMEOUT:
-            // This timeout comes from TinyUSB, so assume that it has stopped the
-            // transfer (note: timeout logic may be unimplemented on TinyUSB side)
-            mp_raise_usb_core_USBTimeoutError();
-            break;
-        case XFER_RESULT_INVALID:
-            // This timeout comes from CircuitPython, not TinyUSB, so tell TinyUSB
-            // to stop the transfer
-            tuh_edpt_abort_xfer(xfer.daddr, xfer.ep_addr);
-            mp_raise_usb_core_USBTimeoutError();
-            break;
-    }
-    return 0;
+    return (mp_int_t)_handle_timed_transfer_callback(&xfer, timeout);
 }
 
 bool common_hal_usb_core_device_is_kernel_driver_active(usb_core_device_obj_t *self, mp_int_t interface) {
