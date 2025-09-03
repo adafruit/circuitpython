@@ -374,22 +374,30 @@ mp_int_t common_hal_usb_core_device_ctrl_transfer(usb_core_device_obj_t *self,
         RUN_BACKGROUND_TASKS;
     }
     if (mp_hal_is_interrupted()) {
+        // Handle case of VM being interrupted by Ctrl-C or autoreload
         tuh_edpt_abort_xfer(xfer.daddr, xfer.ep_addr);
         return 0;
     }
+    // Handle control transfer result code from TinyUSB
     xfer_result_t result = _xfer_result;
     _xfer_result = XFER_RESULT_INVALID;
     switch (result) {
         case XFER_RESULT_SUCCESS:
             return _actual_len;
         case XFER_RESULT_FAILED:
+            mp_raise_usb_core_USBError(NULL);
             break;
         case XFER_RESULT_STALLED:
             mp_raise_usb_core_USBError(MP_ERROR_TEXT("Pipe error"));
             break;
         case XFER_RESULT_TIMEOUT:
+            // This timeout comes from TinyUSB, so assume that it has stopped the
+            // transfer (note: timeout logic may be unimplemented on TinyUSB side)
+            mp_raise_usb_core_USBTimeoutError();
             break;
         case XFER_RESULT_INVALID:
+            // This timeout comes from CircuitPython, not TinyUSB, so tell TinyUSB
+            // to stop the transfer
             tuh_edpt_abort_xfer(xfer.daddr, xfer.ep_addr);
             mp_raise_usb_core_USBTimeoutError();
             break;
