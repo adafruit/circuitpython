@@ -38,17 +38,17 @@ typedef struct wiznet_pio_spi_funcs {
     void (*reset)(wiznet_pio_spi_handle_t funcs);
 } wiznet_pio_spi_funcs_t;
 #else // W55RP20
-     typedef struct wiznet_pio_spi_config {
-         uint8_t data_in_pin;
-         uint8_t data_out_pin;
-         uint8_t cs_pin;
-         uint8_t clock_pin;
-         uint8_t irq_pin;
-         uint8_t reset_pin;
-         uint16_t clock_div_major;
-         uint8_t clock_div_minor;
-         uint8_t spi_hw_instance;
-     } wiznet_pio_spi_config_t;
+typedef struct wiznet_pio_spi_config {
+    uint8_t data_in_pin;
+    uint8_t data_out_pin;
+    uint8_t cs_pin;
+    uint8_t clock_pin;
+    uint8_t irq_pin;
+    uint8_t reset_pin;
+    uint16_t clock_div_major;
+    uint8_t clock_div_minor;
+    uint8_t spi_hw_instance;
+} wiznet_pio_spi_config_t;
 
 typedef struct wiznet_pio_spi_funcs {
     void (*close)(wiznet_pio_spi_handle_t funcs);

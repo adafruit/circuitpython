@@ -1,8 +1,3 @@
-/*
- * Copyright (c) 2023 Raspberry Pi (Trading) Ltd.
- *
- * SPDX-License-Identifier: BSD-3-Clause
- */
 
 #include <stdio.h>
 #include <string.h>
@@ -70,26 +65,25 @@ static wiznet_pio_spi_state_t *active_state;
 static wiznet_pio_spi_funcs_t *get_wiznet_pio_spi_impl(void);
 
 #if CIRCUITPY_WIZNET_W6300
-static uint16_t mk_cmd_buf(uint8_t *pdst, uint8_t opcode, uint16_t addr)
-{
-  pdst[0] = ( (opcode >> 7 & 0x01) << 4 ) | ( (opcode >> 6 & 0x01) << 0 );
-  pdst[1] = ( (opcode >> 5 & 0x01) << 4 ) | ( (opcode >> 4 & 0x01) << 0 );
-  pdst[2] = ( (opcode >> 3 & 0x01) << 4 ) | ( (opcode >> 2 & 0x01) << 0 );
-  pdst[3] = ( (opcode >> 1 & 0x01) << 4 ) | ( (opcode >> 0 & 0x01) << 0 );
+static uint16_t mk_cmd_buf(uint8_t *pdst, uint8_t opcode, uint16_t addr){
+    pdst[0] = ( (opcode >> 7 & 0x01) << 4 ) | ( (opcode >> 6 & 0x01) << 0 );
+    pdst[1] = ( (opcode >> 5 & 0x01) << 4 ) | ( (opcode >> 4 & 0x01) << 0 );
+    pdst[2] = ( (opcode >> 3 & 0x01) << 4 ) | ( (opcode >> 2 & 0x01) << 0 );
+    pdst[3] = ( (opcode >> 1 & 0x01) << 4 ) | ( (opcode >> 0 & 0x01) << 0 );
 
-  pdst[4] = ((uint8_t)(addr >> 8) & 0xFF);
-  pdst[5] = ((uint8_t)(addr >> 0) & 0xFF);
+    pdst[4] = ((uint8_t)(addr >> 8) & 0xFF);
+    pdst[5] = ((uint8_t)(addr >> 0) & 0xFF);
 
-  pdst[6] = 0;
+    pdst[6] = 0;
 
-  return 6 + 1;
+    return 6 + 1;
 }
 #endif
 
 // Initialise our gpios
 static void wiznet_pio_spi_gpio_setup(wiznet_pio_spi_state_t *state) {
 
-#if CIRCUITPY_WIZNET_W6300
+    #if CIRCUITPY_WIZNET_W6300
     gpio_init(state->spi_config->data_io0_pin);
     gpio_init(state->spi_config->data_io1_pin);
     gpio_init(state->spi_config->data_io2_pin);
@@ -112,7 +106,7 @@ static void wiznet_pio_spi_gpio_setup(wiznet_pio_spi_state_t *state) {
     gpio_init(state->spi_config->irq_pin);
     gpio_set_dir(state->spi_config->irq_pin, GPIO_IN);
     gpio_set_pulls(state->spi_config->irq_pin, false, false);
-#else // W55RP20
+    #else // W55RP20
     // Setup MOSI, MISO and IRQ
     gpio_init(state->spi_config->data_out_pin);
     gpio_set_dir(state->spi_config->data_out_pin, GPIO_OUT);
@@ -136,14 +130,16 @@ static void wiznet_pio_spi_gpio_setup(wiznet_pio_spi_state_t *state) {
 
 wiznet_pio_spi_handle_t wiznet_pio_spi_open(const wiznet_pio_spi_config_t *wiznet_pio_spi_config) {
     wiznet_pio_spi_state_t *state = NULL;
-    for(size_t i = 0; i < count_of(wiznet_pio_spi_state); i++) {
+    for (size_t i = 0; i < count_of(wiznet_pio_spi_state); i++) {
         if (!wiznet_pio_spi_state[i].funcs) {
             state = &wiznet_pio_spi_state[i];
             break;
         }
     }
     assert(state);
-    if (!state) return NULL;
+    if (!state) {
+        return NULL;
+    }
     state->spi_config = wiznet_pio_spi_config;
     state->funcs = get_wiznet_pio_spi_impl();
 
@@ -182,13 +178,13 @@ wiznet_pio_spi_handle_t wiznet_pio_spi_open(const wiznet_pio_spi_config_t *wizne
 
     sm_config_set_clkdiv_int_frac(&sm_config, state->spi_config->clock_div_major, state->spi_config->clock_div_minor);
     hw_write_masked(&pads_bank0_hw->io[state->spi_config->clock_pin],
-                    (uint)PADS_DRIVE_STRENGTH << PADS_BANK0_GPIO0_DRIVE_LSB,
-                    PADS_BANK0_GPIO0_DRIVE_BITS
-    );
+        (uint)PADS_DRIVE_STRENGTH << PADS_BANK0_GPIO0_DRIVE_LSB,
+            PADS_BANK0_GPIO0_DRIVE_BITS
+        );
     hw_write_masked(&pads_bank0_hw->io[state->spi_config->clock_pin],
-                    (uint)1 << PADS_BANK0_GPIO0_SLEWFAST_LSB,
-                    PADS_BANK0_GPIO0_SLEWFAST_BITS
-    );
+        (uint)1 << PADS_BANK0_GPIO0_SLEWFAST_LSB,
+            PADS_BANK0_GPIO0_SLEWFAST_BITS
+        );
 
     #if CIRCUITPY_WIZNET_W6300
     printf("\r\n[QSPI QUAD MODE]\r\n");
@@ -202,7 +198,7 @@ wiznet_pio_spi_handle_t wiznet_pio_spi_open(const wiznet_pio_spi_config_t *wizne
     sm_config_set_out_shift(&sm_config, false, true, 8);
 
     hw_set_bits(&state->pio->input_sync_bypass,
-                (1u << state->spi_config->data_io0_pin) | (1u << state->spi_config->data_io1_pin) | (1u << state->spi_config->data_io2_pin) | (1u << state->spi_config->data_io3_pin));
+        (1u << state->spi_config->data_io0_pin) | (1u << state->spi_config->data_io1_pin) | (1u << state->spi_config->data_io2_pin) | (1u << state->spi_config->data_io3_pin));
     pio_sm_set_config(state->pio, state->pio_sm, &sm_config);
     pio_sm_set_consecutive_pindirs(state->pio, state->pio_sm, state->spi_config->clock_pin, 1, true);
 
@@ -259,8 +255,9 @@ void wiznet_pio_spi_close(wiznet_pio_spi_handle_t handle) {
     wiznet_pio_spi_state_t *state = (wiznet_pio_spi_state_t *)handle;
     if (state) {
         if (state->pio_sm >= 0) {
-            if (state->pio_offset != -1)
+            if (state->pio_offset != -1) {
                 pio_remove_program(state->pio, &WIZNET_PIO_SPI_PROGRAM_FUNC , state->pio_offset);
+            }
 
             pio_sm_unclaim(state->pio, state->pio_sm);
         }
@@ -289,17 +286,17 @@ static __noinline void ns_delay(uint32_t ns) {
 static void wiznet_pio_spi_frame_start(void) {
     assert(active_state);
     #if CIRCUITPY_WIZNET_W6300
-        gpio_set_function(active_state->spi_config->data_io0_pin, active_state->pio_func_sel);
-        gpio_set_function(active_state->spi_config->data_io1_pin, active_state->pio_func_sel);
-        gpio_set_function(active_state->spi_config->data_io2_pin, active_state->pio_func_sel);
-        gpio_set_function(active_state->spi_config->data_io3_pin, active_state->pio_func_sel);
+    gpio_set_function(active_state->spi_config->data_io0_pin, active_state->pio_func_sel);
+    gpio_set_function(active_state->spi_config->data_io1_pin, active_state->pio_func_sel);
+    gpio_set_function(active_state->spi_config->data_io2_pin, active_state->pio_func_sel);
+    gpio_set_function(active_state->spi_config->data_io3_pin, active_state->pio_func_sel);
 
-        gpio_set_function(active_state->spi_config->clock_pin, active_state->pio_func_sel);
-        gpio_pull_down(active_state->spi_config->clock_pin);
+    gpio_set_function(active_state->spi_config->clock_pin, active_state->pio_func_sel);
+    gpio_pull_down(active_state->spi_config->clock_pin);
     #else
-        gpio_set_function(active_state->spi_config->data_out_pin, active_state->pio_func_sel);
-        gpio_set_function(active_state->spi_config->clock_pin, active_state->pio_func_sel);
-        gpio_pull_down(active_state->spi_config->clock_pin);
+    gpio_set_function(active_state->spi_config->data_out_pin, active_state->pio_func_sel);
+    gpio_set_function(active_state->spi_config->clock_pin, active_state->pio_func_sel);
+    gpio_pull_down(active_state->spi_config->clock_pin);
     #endif
     // Pull CS low
     cs_set(active_state, false);
@@ -319,24 +316,23 @@ static void wiznet_pio_spi_frame_end(void) {
 
 #if CIRCUITPY_WIZNET_W6300
 
-bool wiznet_pio_spi_read_byte(uint8_t op_code, uint16_t AddrSel, uint8_t *rx, uint16_t rx_length)
-{
+bool wiznet_pio_spi_read_byte(uint8_t op_code, uint16_t AddrSel, uint8_t *rx, uint16_t rx_length) {
     uint8_t command_buf[8] = {0,};
     uint16_t command_len = mk_cmd_buf(command_buf, op_code, AddrSel);
     uint32_t loop_cnt = 0;
 
     pio_sm_set_enabled(active_state->pio, active_state->pio_sm, false);
     pio_sm_set_wrap(active_state->pio, active_state->pio_sm, active_state->pio_offset, active_state->pio_offset + WIZNET_PIO_SPI_OFFSET_READ_BITS_END - 1);
-    //pio_sm_set_wrap(active_state->pio, active_state->pio_sm, active_state->pio_offset + PIO_SPI_OFFSET_WRITE_BITS, active_state->pio_offset + PIO_SPI_OFFSET_READ_BITS_END - 1);
+    // pio_sm_set_wrap(active_state->pio, active_state->pio_sm, active_state->pio_offset + PIO_SPI_OFFSET_WRITE_BITS, active_state->pio_offset + PIO_SPI_OFFSET_READ_BITS_END - 1);
     pio_sm_clear_fifos(active_state->pio, active_state->pio_sm);
 
     loop_cnt = 2;
     pio_sm_set_pindirs_with_mask(active_state->pio,
-                                    active_state->pio_sm,
-                                    (1u << active_state->spi_config->data_io0_pin) | (1u << active_state->spi_config->data_io1_pin) | (1u << active_state->spi_config->data_io2_pin) | (1u << active_state->spi_config->data_io3_pin),
-                                    (1u << active_state->spi_config->data_io0_pin) | (1u << active_state->spi_config->data_io1_pin) | (1u << active_state->spi_config->data_io2_pin) | (1u << active_state->spi_config->data_io3_pin));
+        active_state->pio_sm,
+        (1u << active_state->spi_config->data_io0_pin) | (1u << active_state->spi_config->data_io1_pin) | (1u << active_state->spi_config->data_io2_pin) | (1u << active_state->spi_config->data_io3_pin),
+        (1u << active_state->spi_config->data_io0_pin) | (1u << active_state->spi_config->data_io1_pin) | (1u << active_state->spi_config->data_io2_pin) | (1u << active_state->spi_config->data_io3_pin));
 
-        /* @todo: Implement to use. */
+    /* @todo: Implement to use. */
 
     pio_sm_restart(active_state->pio, active_state->pio_sm);
     pio_sm_clkdiv_restart(active_state->pio, active_state->pio_sm);
@@ -383,8 +379,7 @@ bool wiznet_pio_spi_read_byte(uint8_t op_code, uint16_t AddrSel, uint8_t *rx, ui
     return true;
 }
 
-bool wiznet_pio_spi_write_byte(uint8_t op_code, uint16_t AddrSel, const uint8_t *tx, uint16_t tx_length)
-{
+bool wiznet_pio_spi_write_byte(uint8_t op_code, uint16_t AddrSel, const uint8_t *tx, uint16_t tx_length) {
     uint8_t command_buf[8] = {0,};
     uint16_t command_len = mk_cmd_buf(command_buf, op_code, AddrSel);
     uint32_t loop_cnt = 0;
@@ -396,11 +391,9 @@ bool wiznet_pio_spi_write_byte(uint8_t op_code, uint16_t AddrSel, const uint8_t 
 
     loop_cnt = 2;
     pio_sm_set_pindirs_with_mask(active_state->pio,
-                                  active_state->pio_sm,
-                                  (1u << active_state->spi_config->data_io0_pin) | (1u << active_state->spi_config->data_io1_pin) | (1u << active_state->spi_config->data_io2_pin) | (1u << active_state->spi_config->data_io3_pin),
-                                  (1u << active_state->spi_config->data_io0_pin) | (1u << active_state->spi_config->data_io1_pin) | (1u << active_state->spi_config->data_io2_pin) | (1u << active_state->spi_config->data_io3_pin));
-
-
+        active_state->pio_sm,
+        (1u << active_state->spi_config->data_io0_pin) | (1u << active_state->spi_config->data_io1_pin) | (1u << active_state->spi_config->data_io2_pin) | (1u << active_state->spi_config->data_io3_pin),
+        (1u << active_state->spi_config->data_io0_pin) | (1u << active_state->spi_config->data_io1_pin) | (1u << active_state->spi_config->data_io2_pin) | (1u << active_state->spi_config->data_io3_pin));
 
     pio_sm_restart(active_state->pio, active_state->pio_sm);
     pio_sm_clkdiv_restart(active_state->pio, active_state->pio_sm);
@@ -411,7 +404,6 @@ bool wiznet_pio_spi_write_byte(uint8_t op_code, uint16_t AddrSel, const uint8_t 
     pio_sm_exec(active_state->pio, active_state->pio_sm, pio_encode_out(pio_y, 32));
     pio_sm_exec(active_state->pio, active_state->pio_sm, pio_encode_jmp(active_state->pio_offset));
     dma_channel_abort(active_state->dma_out);
-
 
     dma_channel_config out_config = dma_channel_get_default_config(active_state->dma_out);
     channel_config_set_transfer_data_size(&out_config, DMA_SIZE_8);
@@ -428,14 +420,13 @@ bool wiznet_pio_spi_write_byte(uint8_t op_code, uint16_t AddrSel, const uint8_t 
     const uint32_t fdebug_tx_stall = 1u << (PIO_FDEBUG_TXSTALL_LSB + active_state->pio_sm);
     active_state->pio->fdebug = fdebug_tx_stall;
     // pio_sm_set_enabled(active_state->pio, active_state->pio_sm, true);
-    while (!(active_state->pio->fdebug & fdebug_tx_stall))
-    {
-      tight_loop_contents(); // todo timeout
+    while (!(active_state->pio->fdebug & fdebug_tx_stall)) {
+        tight_loop_contents(); // todo timeout
     }
     #if 1
 
     __compiler_memory_barrier();
-    //pio_sm_set_enabled(active_state->pio, active_state->pio_sm, false);
+    // pio_sm_set_enabled(active_state->pio, active_state->pio_sm, false);
 
     pio_sm_set_consecutive_pindirs(active_state->pio, active_state->pio_sm, active_state->spi_config->data_io0_pin, 4, false);
 
@@ -521,13 +512,7 @@ bool wiznet_pio_spi_transfer(const uint8_t *tx, size_t tx_length, uint8_t *rx, s
         state->pio->fdebug = fDebugTxStall;
         pio_sm_set_enabled(state->pio, state->pio_sm, true);
         while (!(state->pio->fdebug & fDebugTxStall)) {
-            // printf("WIZNET_PIO_SPI: waiting for tx stall\n");
             tight_loop_contents(); // todo timeout
-        }
-        uint32_t timeout = 1000000;
-        if (timeout == 0) {
-            printf("ERROR: PIO TXSTALL timeout!\n");
-            return false;
         }
         __compiler_memory_barrier();
         pio_sm_set_enabled(state->pio, state->pio_sm, false);
@@ -549,8 +534,8 @@ void wiznet_pio_spi_read_buffer(uint8_t *pBuf, uint16_t len) {
     #if CIRCUITPY_WIZNET_W6300
 
     if (!wiznet_pio_spi_read_byte(active_state->spi_header[0], (active_state->spi_header[1] << 8) | active_state->spi_header[2], pBuf, len)) {
-                            panic("spi failed writing header");
-                        }
+        panic("spi failed writing header");
+    }
 
     #else // W55RP20
 
@@ -562,10 +547,6 @@ void wiznet_pio_spi_read_buffer(uint8_t *pBuf, uint16_t len) {
 
 }
 
-
-// If we have been asked to write a spi header already, then write it and the rest of the buffer
-// or else if we've been given enough data for just the spi header, save it until the next call
-// or we're writing a byte in which case we're given a buffer including the spi header
 void wiznet_pio_spi_write_buffer(const uint8_t *pBuf, uint16_t len) {
     assert(active_state);
 
@@ -578,21 +559,21 @@ void wiznet_pio_spi_write_buffer(const uint8_t *pBuf, uint16_t len) {
     } else {
         if (active_state->spi_header_count == WIZNET_PIO_SPI_HEADER_LEN) {
             #if CIRCUITPY_WIZNET_W6300
-                if (!wiznet_pio_spi_write_byte(active_state->spi_header[0], (active_state->spi_header[1] << 8) | active_state->spi_header[2], pBuf, len)) {
-                        panic("spi failed writing header");
-                    }
-                    active_state->spi_header_count = 0;
-                    assert(active_state->spi_header_count == 0);
+            if (!wiznet_pio_spi_write_byte(active_state->spi_header[0], (active_state->spi_header[1] << 8) | active_state->spi_header[2], pBuf, len)) {
+                panic("spi failed writing header");
+            }
+            active_state->spi_header_count = 0;
+            assert(active_state->spi_header_count == 0);
             #else
-                if (!wiznet_pio_spi_transfer(active_state->spi_header, WIZNET_PIO_SPI_HEADER_LEN, NULL, 0)) {
-                        panic("spi failed writing header");
-                }
-                active_state->spi_header_count = 0;
-                assert(active_state->spi_header_count == 0);
+            if (!wiznet_pio_spi_transfer(active_state->spi_header, WIZNET_PIO_SPI_HEADER_LEN, NULL, 0)) {
+                panic("spi failed writing header");
+            }
+            active_state->spi_header_count = 0;
+            assert(active_state->spi_header_count == 0);
 
-                if (!wiznet_pio_spi_transfer(pBuf, len, NULL, 0)) {
+            if (!wiznet_pio_spi_transfer(pBuf, len, NULL, 0)) {
                 panic("spi failed writing buffer");
-                }
+            }
             #endif
         }
     }
