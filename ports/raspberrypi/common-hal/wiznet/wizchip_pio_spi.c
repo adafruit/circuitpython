@@ -124,7 +124,7 @@ static void wiznet_pio_spi_gpio_setup(wiznet_pio_spi_state_t *state) {
     gpio_init(state->spi_config->irq_pin);
     gpio_set_dir(state->spi_config->irq_pin, GPIO_IN);
     gpio_set_pulls(state->spi_config->irq_pin, false, false);
-#endif
+    #endif
 
 }
 
