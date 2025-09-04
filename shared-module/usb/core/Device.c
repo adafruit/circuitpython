@@ -1,6 +1,7 @@
 // This file is part of the CircuitPython project: https://circuitpython.org
 //
 // SPDX-FileCopyrightText: Copyright (c) 2022 Scott Shawcroft for Adafruit Industries
+// SPDX-FileCopyrightText: Copyright (c) 2025 Sam Blenny
 //
 // SPDX-License-Identifier: MIT
 
@@ -111,7 +112,7 @@ static void _prepare_for_transfer(void) {
 
 static size_t _handle_timed_transfer_callback(tuh_xfer_t *xfer, mp_int_t timeout) {
     if (xfer == NULL) {
-        mp_raise_usb_core_USBError(NULL);
+        mp_raise_usb_core_USBError(USB_CORE_NULL_PTR);
         return 0;
     }
     uint32_t start_time = supervisor_ticks_ms32();
@@ -134,21 +135,21 @@ static size_t _handle_timed_transfer_callback(tuh_xfer_t *xfer, mp_int_t timeout
         case XFER_RESULT_SUCCESS:
             return _actual_len;
         case XFER_RESULT_FAILED:
-            mp_raise_usb_core_USBError(NULL);
+            mp_raise_usb_core_USBError(USB_CORE_XFER_FAIL);
             break;
         case XFER_RESULT_STALLED:
-            mp_raise_usb_core_USBError(MP_ERROR_TEXT("Pipe error"));
+            mp_raise_usb_core_USBError(USB_CORE_STALLED);
             break;
         case XFER_RESULT_TIMEOUT:
             // This timeout comes from TinyUSB, so assume that it has stopped the
             // transfer (note: timeout logic may be unimplemented on TinyUSB side)
-            mp_raise_usb_core_USBTimeoutError();
+            mp_raise_usb_core_USBTimeoutError(USB_CORE_TIMEOUT);
             break;
         case XFER_RESULT_INVALID:
             // This timeout comes from CircuitPython, not TinyUSB, so tell TinyUSB
             // to stop the transfer
             tuh_edpt_abort_xfer(xfer->daddr, xfer->ep_addr);
-            mp_raise_usb_core_USBTimeoutError();
+            mp_raise_usb_core_USBTimeoutError(USB_CORE_INVALID);
             break;
     }
     return 0;
@@ -281,7 +282,7 @@ static size_t _xfer(tuh_xfer_t *xfer, mp_int_t timeout) {
     _prepare_for_transfer();
     xfer->complete_cb = _transfer_done_cb;
     if (!tuh_edpt_xfer(xfer)) {
-        mp_raise_usb_core_USBError(NULL);
+        mp_raise_usb_core_USBError(USB_CORE_EDPT_XFER);
         return 0;
     }
     return _handle_timed_transfer_callback(xfer, timeout);
@@ -303,7 +304,7 @@ static bool _open_endpoint(usb_core_device_obj_t *self, mp_int_t endpoint) {
     }
 
     if (self->configuration_descriptor == NULL) {
-        mp_raise_usb_core_USBError(MP_ERROR_TEXT("No configuration set"));
+        mp_raise_usb_core_USBError(USB_CORE_NOCONFIG);
         return false;
     }
 
@@ -338,7 +339,7 @@ static bool _open_endpoint(usb_core_device_obj_t *self, mp_int_t endpoint) {
 
 mp_int_t common_hal_usb_core_device_write(usb_core_device_obj_t *self, mp_int_t endpoint, const uint8_t *buffer, mp_int_t len, mp_int_t timeout) {
     if (!_open_endpoint(self, endpoint)) {
-        mp_raise_usb_core_USBError(NULL);
+        mp_raise_usb_core_USBError(USB_CORE_OPEN_ENDPOINT);
         return 0;
     }
     tuh_xfer_t xfer;
@@ -351,7 +352,7 @@ mp_int_t common_hal_usb_core_device_write(usb_core_device_obj_t *self, mp_int_t 
 
 mp_int_t common_hal_usb_core_device_read(usb_core_device_obj_t *self, mp_int_t endpoint, uint8_t *buffer, mp_int_t len, mp_int_t timeout) {
     if (!_open_endpoint(self, endpoint)) {
-        mp_raise_usb_core_USBError(NULL);
+        mp_raise_usb_core_USBError(USB_CORE_OPEN_ENDPOINT);
         return 0;
     }
     tuh_xfer_t xfer;
@@ -385,7 +386,7 @@ mp_int_t common_hal_usb_core_device_ctrl_transfer(usb_core_device_obj_t *self,
 
     _prepare_for_transfer();
     if (!tuh_control_xfer(&xfer)) {
-        mp_raise_usb_core_USBError(NULL);
+        mp_raise_usb_core_USBError(USB_CORE_CONTROL_XFER);
         return 0;
     }
     return (mp_int_t)_handle_timed_transfer_callback(&xfer, timeout);

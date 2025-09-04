@@ -30,17 +30,9 @@
 //|
 //|
 MP_DEFINE_USB_CORE_EXCEPTION(USBError, OSError)
-NORETURN void mp_raise_usb_core_USBError(mp_rom_error_text_t fmt, ...) {
-    mp_obj_t exception;
-    if (fmt == NULL) {
-        exception = mp_obj_new_exception(&mp_type_usb_core_USBError);
-    } else {
-        va_list argptr;
-        va_start(argptr, fmt);
-        exception = mp_obj_new_exception_msg_vlist(&mp_type_usb_core_USBError, fmt, argptr);
-        va_end(argptr);
-    }
-    nlr_raise(exception);
+NORETURN MP_COLD void mp_raise_usb_core_USBError(int errno) {
+    mp_obj_t args[1] = {MP_OBJ_NEW_SMALL_INT(errno)};
+    nlr_raise(mp_obj_new_exception_args(&mp_type_usb_core_USBError, 1, args));
 }
 
 //| class USBTimeoutError(USBError):
@@ -50,8 +42,9 @@ NORETURN void mp_raise_usb_core_USBError(mp_rom_error_text_t fmt, ...) {
 //|
 //|
 MP_DEFINE_USB_CORE_EXCEPTION(USBTimeoutError, usb_core_USBError)
-NORETURN void mp_raise_usb_core_USBTimeoutError(void) {
-    mp_raise_type(&mp_type_usb_core_USBTimeoutError);
+NORETURN void mp_raise_usb_core_USBTimeoutError(int errno) {
+    mp_obj_t args[1] = {MP_OBJ_NEW_SMALL_INT(errno)};
+    nlr_raise(mp_obj_new_exception_args(&mp_type_usb_core_USBTimeoutError, 1, args));
 }
 
 

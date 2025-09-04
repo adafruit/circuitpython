@@ -25,8 +25,8 @@ void usb_core_exception_print(const mp_print_t *print, mp_obj_t o_in, mp_print_k
 extern const mp_obj_type_t mp_type_usb_core_USBError;
 extern const mp_obj_type_t mp_type_usb_core_USBTimeoutError;
 
-NORETURN void mp_raise_usb_core_USBError(mp_rom_error_text_t fmt, ...);
-NORETURN void mp_raise_usb_core_USBTimeoutError(void);
+NORETURN void mp_raise_usb_core_USBError(int errno);
+NORETURN void mp_raise_usb_core_USBTimeoutError(int errno);
 
 // Find is all Python object oriented so we don't need a separate common-hal API
 // for it. It uses the device common-hal instead.
