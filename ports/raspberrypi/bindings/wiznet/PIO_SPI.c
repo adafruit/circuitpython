@@ -47,10 +47,6 @@ static mp_obj_t wiznet_pio_spi_make_new(const mp_obj_type_t *type, size_t n_args
         const mcu_pin_obj_t *quad_io2 = validate_obj_is_free_pin_or_none(args[ARG_quad_io2].u_obj, MP_QSTR_quad_io2);
         const mcu_pin_obj_t *quad_io3 = validate_obj_is_free_pin_or_none(args[ARG_quad_io3].u_obj, MP_QSTR_quad_io3);
 
-        if (!quad_io0 || !quad_io1 || !quad_io2 || !quad_io3) {
-            mp_raise_ValueError(MP_ERROR_TEXT("Must provide all quad_io pins for QSPI"));
-        }
-
         common_hal_wiznet_pio_qspi_construct(self, clock, quad_io0, quad_io1, quad_io2, quad_io3, args[ARG_half_duplex].u_bool);
 
         #else // W55RP20
