@@ -65,11 +65,11 @@ static wiznet_pio_spi_state_t *active_state;
 static wiznet_pio_spi_funcs_t *get_wiznet_pio_spi_impl(void);
 
 #if CIRCUITPY_WIZNET_W6300
-static uint16_t mk_cmd_buf(uint8_t *pdst, uint8_t opcode, uint16_t addr){
-    pdst[0] = ( (opcode >> 7 & 0x01) << 4 ) | ( (opcode >> 6 & 0x01) << 0 );
-    pdst[1] = ( (opcode >> 5 & 0x01) << 4 ) | ( (opcode >> 4 & 0x01) << 0 );
-    pdst[2] = ( (opcode >> 3 & 0x01) << 4 ) | ( (opcode >> 2 & 0x01) << 0 );
-    pdst[3] = ( (opcode >> 1 & 0x01) << 4 ) | ( (opcode >> 0 & 0x01) << 0 );
+static uint16_t mk_cmd_buf(uint8_t *pdst, uint8_t opcode, uint16_t addr) {
+    pdst[0] = ((opcode >> 7 & 0x01) << 4) | ((opcode >> 6 & 0x01) << 0);
+    pdst[1] = ((opcode >> 5 & 0x01) << 4) | ((opcode >> 4 & 0x01) << 0);
+    pdst[2] = ((opcode >> 3 & 0x01) << 4) | ((opcode >> 2 & 0x01) << 0);
+    pdst[3] = ((opcode >> 1 & 0x01) << 4) | ((opcode >> 0 & 0x01) << 0);
 
     pdst[4] = ((uint8_t)(addr >> 8) & 0xFF);
     pdst[5] = ((uint8_t)(addr >> 0) & 0xFF);
@@ -78,7 +78,7 @@ static uint16_t mk_cmd_buf(uint8_t *pdst, uint8_t opcode, uint16_t addr){
 
     return 6 + 1;
 }
-#endif
+    #endif
 
 // Initialise our gpios
 static void wiznet_pio_spi_gpio_setup(wiznet_pio_spi_state_t *state) {
@@ -256,7 +256,7 @@ void wiznet_pio_spi_close(wiznet_pio_spi_handle_t handle) {
     if (state) {
         if (state->pio_sm >= 0) {
             if (state->pio_offset != -1) {
-                pio_remove_program(state->pio, &WIZNET_PIO_SPI_PROGRAM_FUNC , state->pio_offset);
+                pio_remove_program(state->pio, &WIZNET_PIO_SPI_PROGRAM_FUNC, state->pio_offset);
             }
 
             pio_sm_unclaim(state->pio, state->pio_sm);
@@ -317,7 +317,7 @@ static void wiznet_pio_spi_frame_end(void) {
 #if CIRCUITPY_WIZNET_W6300
 
 bool wiznet_pio_spi_read_byte(uint8_t op_code, uint16_t AddrSel, uint8_t *rx, uint16_t rx_length) {
-    uint8_t command_buf[8] = {0,};
+    uint8_t command_buf[8] = {0, };
     uint16_t command_len = mk_cmd_buf(command_buf, op_code, AddrSel);
     uint32_t loop_cnt = 0;
 
@@ -380,7 +380,7 @@ bool wiznet_pio_spi_read_byte(uint8_t op_code, uint16_t AddrSel, uint8_t *rx, ui
 }
 
 bool wiznet_pio_spi_write_byte(uint8_t op_code, uint16_t AddrSel, const uint8_t *tx, uint16_t tx_length) {
-    uint8_t command_buf[8] = {0,};
+    uint8_t command_buf[8] = {0, };
     uint16_t command_len = mk_cmd_buf(command_buf, op_code, AddrSel);
     uint32_t loop_cnt = 0;
     tx_length = tx_length + command_len;

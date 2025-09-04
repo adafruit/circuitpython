@@ -28,48 +28,48 @@
 static mp_obj_t wiznet_pio_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     #if CIRCUITPY_WIZNET
     wiznet_pio_spi_obj_t *self = mp_obj_malloc(wiznet_pio_spi_obj_t, &wiznet_pio_spi_type);
-        #if CIRCUITPY_WIZNET_W6300
-        enum { ARG_clock, ARG_quad_io0, ARG_quad_io1, ARG_quad_io2, ARG_quad_io3, ARG_half_duplex, ARG_quad_spi };
-        static const mp_arg_t allowed_args[] = {
-            { MP_QSTR_clock, MP_ARG_REQUIRED | MP_ARG_OBJ },
-            { MP_QSTR_quad_io0, MP_ARG_OBJ, {.u_obj = mp_const_none} },
-            { MP_QSTR_quad_io1, MP_ARG_OBJ, {.u_obj = mp_const_none} },
-            { MP_QSTR_quad_io2, MP_ARG_OBJ, {.u_obj = mp_const_none} },
-            { MP_QSTR_quad_io3, MP_ARG_OBJ, {.u_obj = mp_const_none} },
-            { MP_QSTR_half_duplex, MP_ARG_BOOL | MP_ARG_KW_ONLY, {.u_bool = false} },
-        };
-        mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
-        mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+    #if CIRCUITPY_WIZNET_W6300
+    enum { ARG_clock, ARG_quad_io0, ARG_quad_io1, ARG_quad_io2, ARG_quad_io3, ARG_half_duplex, ARG_quad_spi };
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_clock, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_quad_io0, MP_ARG_OBJ, {.u_obj = mp_const_none} },
+        { MP_QSTR_quad_io1, MP_ARG_OBJ, {.u_obj = mp_const_none} },
+        { MP_QSTR_quad_io2, MP_ARG_OBJ, {.u_obj = mp_const_none} },
+        { MP_QSTR_quad_io3, MP_ARG_OBJ, {.u_obj = mp_const_none} },
+        { MP_QSTR_half_duplex, MP_ARG_BOOL | MP_ARG_KW_ONLY, {.u_bool = false} },
+    };
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-        const mcu_pin_obj_t *clock = validate_obj_is_free_pin(args[ARG_clock].u_obj, MP_QSTR_clock);
-        const mcu_pin_obj_t *quad_io0 = validate_obj_is_free_pin_or_none(args[ARG_quad_io0].u_obj, MP_QSTR_quad_io0);
-        const mcu_pin_obj_t *quad_io1 = validate_obj_is_free_pin_or_none(args[ARG_quad_io1].u_obj, MP_QSTR_quad_io1);
-        const mcu_pin_obj_t *quad_io2 = validate_obj_is_free_pin_or_none(args[ARG_quad_io2].u_obj, MP_QSTR_quad_io2);
-        const mcu_pin_obj_t *quad_io3 = validate_obj_is_free_pin_or_none(args[ARG_quad_io3].u_obj, MP_QSTR_quad_io3);
+    const mcu_pin_obj_t *clock = validate_obj_is_free_pin(args[ARG_clock].u_obj, MP_QSTR_clock);
+    const mcu_pin_obj_t *quad_io0 = validate_obj_is_free_pin_or_none(args[ARG_quad_io0].u_obj, MP_QSTR_quad_io0);
+    const mcu_pin_obj_t *quad_io1 = validate_obj_is_free_pin_or_none(args[ARG_quad_io1].u_obj, MP_QSTR_quad_io1);
+    const mcu_pin_obj_t *quad_io2 = validate_obj_is_free_pin_or_none(args[ARG_quad_io2].u_obj, MP_QSTR_quad_io2);
+    const mcu_pin_obj_t *quad_io3 = validate_obj_is_free_pin_or_none(args[ARG_quad_io3].u_obj, MP_QSTR_quad_io3);
 
-        common_hal_wiznet_pio_qspi_construct(self, clock, quad_io0, quad_io1, quad_io2, quad_io3, args[ARG_half_duplex].u_bool);
+    common_hal_wiznet_pio_qspi_construct(self, clock, quad_io0, quad_io1, quad_io2, quad_io3, args[ARG_half_duplex].u_bool);
 
-        #else // W55RP20
-        enum { ARG_clock, ARG_MOSI, ARG_MISO, ARG_half_duplex };
-        static const mp_arg_t allowed_args[] = {
-            { MP_QSTR_clock, MP_ARG_REQUIRED | MP_ARG_OBJ },
-            { MP_QSTR_MOSI, MP_ARG_OBJ, {.u_obj = mp_const_none} },
-            { MP_QSTR_MISO, MP_ARG_OBJ, {.u_obj = mp_const_none} },
-            { MP_QSTR_half_duplex, MP_ARG_BOOL | MP_ARG_KW_ONLY, {.u_bool = false} },
-        };
-        mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
-        mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+    #else   // W55RP20
+    enum { ARG_clock, ARG_MOSI, ARG_MISO, ARG_half_duplex };
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_clock, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_MOSI, MP_ARG_OBJ, {.u_obj = mp_const_none} },
+        { MP_QSTR_MISO, MP_ARG_OBJ, {.u_obj = mp_const_none} },
+        { MP_QSTR_half_duplex, MP_ARG_BOOL | MP_ARG_KW_ONLY, {.u_bool = false} },
+    };
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-        const mcu_pin_obj_t *clock = validate_obj_is_free_pin(args[ARG_clock].u_obj, MP_QSTR_clock);
-        const mcu_pin_obj_t *mosi = validate_obj_is_free_pin_or_none(args[ARG_MOSI].u_obj, MP_QSTR_mosi);
-        const mcu_pin_obj_t *miso = validate_obj_is_free_pin_or_none(args[ARG_MISO].u_obj, MP_QSTR_miso);
+    const mcu_pin_obj_t *clock = validate_obj_is_free_pin(args[ARG_clock].u_obj, MP_QSTR_clock);
+    const mcu_pin_obj_t *mosi = validate_obj_is_free_pin_or_none(args[ARG_MOSI].u_obj, MP_QSTR_mosi);
+    const mcu_pin_obj_t *miso = validate_obj_is_free_pin_or_none(args[ARG_MISO].u_obj, MP_QSTR_miso);
 
-        if (!miso && !mosi) {
-            mp_raise_ValueError(MP_ERROR_TEXT("Must provide MISO or MOSI pin"));
-        }
+    if (!miso && !mosi) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Must provide MISO or MOSI pin"));
+    }
 
-        common_hal_wiznet_pio_spi_construct(self, clock, mosi, miso, args[ARG_half_duplex].u_bool);
-        #endif
+    common_hal_wiznet_pio_spi_construct(self, clock, mosi, miso, args[ARG_half_duplex].u_bool);
+    #endif
     return MP_OBJ_FROM_PTR(self);
     #else
     mp_raise_NotImplementedError(NULL);

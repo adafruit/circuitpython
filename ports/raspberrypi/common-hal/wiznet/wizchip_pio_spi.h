@@ -9,7 +9,7 @@
 
 #include <stdint.h>
 
-typedef struct wiznet_pio_spi_funcs** wiznet_pio_spi_handle_t;
+typedef struct wiznet_pio_spi_funcs **wiznet_pio_spi_handle_t;
 #if CIRCUITPY_WIZNET_W6300
 typedef struct wiznet_pio_spi_config
 {
