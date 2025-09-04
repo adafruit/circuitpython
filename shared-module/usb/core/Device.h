@@ -43,3 +43,4 @@ typedef struct {
 #define USB_CORE_EDPT_XFER     (7)
 #define USB_CORE_OPEN_ENDPOINT (8)
 #define USB_CORE_CONTROL_XFER  (9)
+#define USB_CORE_VID_PID_GET  (10)

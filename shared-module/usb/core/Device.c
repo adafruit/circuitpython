@@ -68,17 +68,32 @@ void common_hal_usb_core_device_deinit(usb_core_device_obj_t *self) {
     self->device_address = 0;
 }
 
+static void _wait_then_raise_USBError(int errno) {
+    // 1. Spin for 50 ms in a background task loop because some USB glitches
+    //    will magically clear up if you just wait for a bit
+    // 2. Raise the exception so the calling code knows it needs to try again
+    const uint32_t end = supervisor_ticks_ms32() + 50;
+    while (supervisor_ticks_ms32() < end && !mp_hal_is_interrupted()) {
+        RUN_BACKGROUND_TASKS;
+    }
+    mp_raise_usb_core_USBError(errno);
+}
+
 uint16_t common_hal_usb_core_device_get_idVendor(usb_core_device_obj_t *self) {
     uint16_t vid;
     uint16_t pid;
-    tuh_vid_pid_get(self->device_address, &vid, &pid);
+    if (!tuh_vid_pid_get(self->device_address, &vid, &pid)) {
+        _wait_then_raise_USBError(USB_CORE_VID_PID_GET);
+    }
     return vid;
 }
 
 uint16_t common_hal_usb_core_device_get_idProduct(usb_core_device_obj_t *self) {
     uint16_t vid;
     uint16_t pid;
-    tuh_vid_pid_get(self->device_address, &vid, &pid);
+    if (!tuh_vid_pid_get(self->device_address, &vid, &pid)) {
+        _wait_then_raise_USBError(USB_CORE_VID_PID_GET);
+    }
     return pid;
 }
 
@@ -135,7 +150,15 @@ static size_t _handle_timed_transfer_callback(tuh_xfer_t *xfer, mp_int_t timeout
         case XFER_RESULT_SUCCESS:
             return _actual_len;
         case XFER_RESULT_FAILED:
-            mp_raise_usb_core_USBError(USB_CORE_XFER_FAIL);
+            // TODO: swap this for mp_raise_usb_core_USBError if TinyUSB can be
+            // improved to prevent a series of failures when usb.core.find() is called
+            // in a tight loop after a device has been unplugged.
+            //
+            // This workaround adds a delay before raising the exception because, for
+            // mysterious as-yet unknown reasons, that seems to let TinyUSB clear up
+            // whatever fault condition is triggered by unplugging a device.
+            //
+            _wait_then_raise_USBError(USB_CORE_XFER_FAIL);
             break;
         case XFER_RESULT_STALLED:
             mp_raise_usb_core_USBError(USB_CORE_STALLED);
