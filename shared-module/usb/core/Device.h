@@ -19,6 +19,13 @@ typedef struct {
 } usb_core_device_obj_t;
 
 
+// Number of ms to wait in a background task loop after a TinyUSB tuh_* api call
+// returns a failure result. This delay is part of a kludge to help TinyUSB
+// recognize when a device has been unplugged. Without the delay, usb.core.find()
+// can get super broken. This mechanism can be removed once somebody finds and
+// fixes whatever is causing TinyUSB to get confused about unplugged devices.
+#define USB_CORE_TUH_FAIL_WAIT_MS (15)
+
 // These values get used to set USBError.errno and USBTimeoutError.errno.
 // It would be possible to define these to more closely mimic desktop PyUSB on
 // a given OS (maybe Debian?). But, for USB error handling in CircuitPython,

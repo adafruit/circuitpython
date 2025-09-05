@@ -69,10 +69,17 @@ void common_hal_usb_core_device_deinit(usb_core_device_obj_t *self) {
 }
 
 static void _wait_then_raise_USBError(int errno) {
-    // 1. Spin for 50 ms in a background task loop because some USB glitches
-    //    will magically clear up if you just wait for a bit
-    // 2. Raise the exception so the calling code knows it needs to try again
-    const uint32_t end = supervisor_ticks_ms32() + 50;
+    // 1. Spin briefly in background task loop because this seems to fix the
+    //    enumeration or addressing glitch that can cause tuh_* calls to fail after
+    //    a device is unplugged. Don't know why this works, but things magically
+    //    self correct if you just wait for a bit before attempting another control
+    //    transfer.
+    // 2. Raise the exception so the calling code knows it needs to try again.
+    //
+    // TODO: Consider removing this mechanism if somebody finds and fixes whatever is
+    // causing TinyUSB to get confused about unplugged devices.
+    //
+    const uint32_t end = supervisor_ticks_ms32() + USB_CORE_TUH_FAIL_WAIT_MS;
     while (supervisor_ticks_ms32() < end && !mp_hal_is_interrupted()) {
         RUN_BACKGROUND_TASKS;
     }
