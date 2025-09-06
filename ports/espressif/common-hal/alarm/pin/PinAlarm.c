@@ -14,10 +14,12 @@
 
 #include "esp_sleep.h"
 #include "hal/gpio_ll.h"
+#include "driver/gpio.h"
 #include "esp_debug_helpers.h"
 
 #ifdef SOC_PM_SUPPORT_EXT0_WAKEUP
 #include "soc/rtc_cntl_reg.h"
+#include "soc/rtc_io_reg.h"
 #endif
 
 #include "driver/rtc_io.h"

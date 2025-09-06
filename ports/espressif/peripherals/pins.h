@@ -14,7 +14,7 @@
 
 #include "components/hal/include/hal/gpio_types.h"
 #include "components/hal/include/hal/adc_types.h"
-#include "components/hal/include/hal/touch_sensor_types.h"
+#include "components/hal/include/hal/touch_sensor_legacy_types.h"
 
 typedef struct {
     mp_obj_base_t base;
