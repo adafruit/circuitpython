@@ -35,7 +35,7 @@ void common_hal_audiobusio_i2sout_construct(audiobusio_i2sout_obj_t *self,
     const mcu_pin_obj_t *data, const mcu_pin_obj_t *main_clock, bool left_justified) {
     port_i2s_allocate_init(&self->i2s, left_justified);
 
-#ifdef CIRCUITPY_AUDIOBUSIO_PDMOUT
+    #ifdef CIRCUITPY_AUDIOBUSIO_PDMOUT
     i2s_pdm_tx_config_t pdm_tx_cfg = {
         .clk_cfg = I2S_PDM_TX_CLK_DEFAULT_CONFIG(16000),
         .slot_cfg = I2S_PDM_TX_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO),
@@ -47,7 +47,7 @@ void common_hal_audiobusio_i2sout_construct(audiobusio_i2sout_obj_t *self,
         },
     };
     CHECK_ESP_RESULT(i2s_channel_init_pdm_tx_mode(self->i2s.handle, &pdm_tx_cfg));
-#else
+    #else
     i2s_std_config_t i2s_config = {
         .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(48000),
         .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO),
@@ -60,7 +60,7 @@ void common_hal_audiobusio_i2sout_construct(audiobusio_i2sout_obj_t *self,
         }
     };
     CHECK_ESP_RESULT(i2s_channel_init_std_mode(self->i2s.handle, &i2s_config));
- #endif
+    #endif
     self->bit_clock = bit_clock;
     self->word_select = word_select;
     self->mclk = main_clock;

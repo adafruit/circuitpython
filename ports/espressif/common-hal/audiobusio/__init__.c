@@ -175,15 +175,15 @@ void port_i2s_play(i2s_t *self, mp_obj_t sample, bool loop) {
 
     uint32_t sample_rate = audiosample_get_sample_rate(sample);
 
-#ifdef CIRCUITPY_AUDIOBUSIO_PDMOUT 
+    #ifdef CIRCUITPY_AUDIOBUSIO_PDMOUT
     i2s_pdm_tx_clk_config_t clk_config = I2S_PDM_TX_CLK_DEFAULT_CONFIG(sample_rate);
     CHECK_ESP_RESULT(i2s_channel_reconfig_pdm_tx_clock(self->handle, &clk_config));
     size_t frame_size = sizeof(uint16_t);
-#else
+    #else
     i2s_std_clk_config_t clk_config = I2S_STD_CLK_DEFAULT_CONFIG(sample_rate);
     CHECK_ESP_RESULT(i2s_channel_reconfig_std_clock(self->handle, &clk_config));
     size_t frame_size = sizeof(uint32_t);
-#endif
+    #endif
 
     // preload the data
     self->playing = true;
