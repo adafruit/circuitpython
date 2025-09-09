@@ -25,12 +25,29 @@
 
 #include "driver/i2s_std.h"
 
+#ifdef CIRCUITPY_AUDIOBUSIO_PDMOUT
+#include "driver/i2s_pdm.h"
+#endif
+
 // Caller validates that pins are free.
 void common_hal_audiobusio_i2sout_construct(audiobusio_i2sout_obj_t *self,
     const mcu_pin_obj_t *bit_clock, const mcu_pin_obj_t *word_select,
     const mcu_pin_obj_t *data, const mcu_pin_obj_t *main_clock, bool left_justified) {
     port_i2s_allocate_init(&self->i2s, left_justified);
 
+#ifdef CIRCUITPY_AUDIOBUSIO_PDMOUT
+    i2s_pdm_tx_config_t pdm_tx_cfg = {
+        .clk_cfg = I2S_PDM_TX_CLK_DEFAULT_CONFIG(16000),
+        .slot_cfg = I2S_PDM_TX_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_MONO),
+        .gpio_cfg = {
+            .dout = data->number,
+            .invert_flags = {
+                .clk_inv = false,
+            },
+        },
+    };
+    CHECK_ESP_RESULT(i2s_channel_init_pdm_tx_mode(self->i2s.handle, &pdm_tx_cfg));
+#else
     i2s_std_config_t i2s_config = {
         .clk_cfg = I2S_STD_CLK_DEFAULT_CONFIG(48000),
         .slot_cfg = I2S_STD_PHILIPS_SLOT_DEFAULT_CONFIG(I2S_DATA_BIT_WIDTH_16BIT, I2S_SLOT_MODE_STEREO),
@@ -43,6 +60,7 @@ void common_hal_audiobusio_i2sout_construct(audiobusio_i2sout_obj_t *self,
         }
     };
     CHECK_ESP_RESULT(i2s_channel_init_std_mode(self->i2s.handle, &i2s_config));
+ #endif
     self->bit_clock = bit_clock;
     self->word_select = word_select;
     self->mclk = main_clock;

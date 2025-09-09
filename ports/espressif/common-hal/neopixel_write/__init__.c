@@ -126,11 +126,22 @@ void common_hal_neopixel_write(const digitalio_digitalinout_obj_t *digitalinout,
     // Update the next start to +2 ticks. It ensures that we've gone 300+ us.
     next_start_raw_ticks = port_get_raw_ticks(NULL) + 2;
 
+#if defined(CONFIG_IDF_TARGET_ESP32C3)
+    // Hold the pin, deleting the channel seems to glitch pixels into turning off.
+    gpio_hold_en(digitalinout->pin->number);
+#endif
+
     // Free channel again
     rmt_del_encoder(encoder);
     rmt_disable(channel);
     rmt_del_channel(channel);
     CHECK_ESP_RESULT(result);
+
     // Swap pin back to GPIO mode
     gpio_set_direction(digitalinout->pin->number, GPIO_MODE_OUTPUT);
+
+#if defined(CONFIG_IDF_TARGET_ESP32C3)
+    // Release hold
+    gpio_hold_dis(digitalinout->pin->number);
+#endif
 }
