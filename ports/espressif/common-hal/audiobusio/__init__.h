@@ -12,6 +12,10 @@
 
 #include "driver/i2s_std.h"
 
+#if ESPRESSIF_ESP32C3_LYRA_AUDIOBUSIO_PDMOUT
+#include "driver/i2s_pdm.h"
+#endif
+
 typedef struct {
     mp_obj_t *sample;
     bool left_justified;

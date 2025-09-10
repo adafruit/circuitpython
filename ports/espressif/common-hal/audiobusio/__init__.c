@@ -19,10 +19,18 @@
 #define I2S_DMA_BUFFER_MAX_SIZE     4092
 // The number of DMA buffers to allocate
 #define CIRCUITPY_BUFFER_COUNT (3)
+
+#if ESPRESSIF_ESP32C3_LYRA_AUDIOBUSIO_PDMOUT
+// The maximum DMA buffer size in frames (at mono 16-bit)
+#define CIRCUITPY_BUFFER_SIZE (I2S_DMA_BUFFER_MAX_SIZE / 8)
+// The number of output channels is fixed at 1
+#define CIRCUITPY_OUTPUT_SLOTS (1)
+#else
 // The maximum DMA buffer size in frames (at stereo 16-bit)
 #define CIRCUITPY_BUFFER_SIZE (I2S_DMA_BUFFER_MAX_SIZE / 4)
 // The number of output channels is fixed at 2
 #define CIRCUITPY_OUTPUT_SLOTS (2)
+#endif
 
 static void i2s_fill_buffer(i2s_t *self) {
     if (self->next_buffer_size == 0) {
@@ -31,7 +39,7 @@ static void i2s_fill_buffer(i2s_t *self) {
     }
     int16_t *output_buffer = (int16_t *)self->next_buffer;
     size_t output_buffer_size = self->next_buffer_size;
-    const size_t bytes_per_output_frame = 4;
+    const size_t bytes_per_output_frame = CIRCUITPY_OUTPUT_SLOTS * 2;
     size_t bytes_per_input_frame = self->channel_count * self->bytes_per_sample;
     if (!self->playing || self->paused || !self->sample || self->stopping) {
         memset(output_buffer, 0, self->next_buffer_size);
@@ -62,7 +70,8 @@ static void i2s_fill_buffer(i2s_t *self) {
         size_t sample_bytecount = self->sample_end - self->sample_data;
         // The framecount is the minimum of space left in the output buffer or left in the incoming sample.
         size_t framecount = MIN(output_buffer_size / bytes_per_output_frame, sample_bytecount / bytes_per_input_frame);
-        if (self->samples_signed && self->channel_count == 2) {
+
+        if (self->samples_signed && self->channel_count == CIRCUITPY_OUTPUT_SLOTS) {
             if (self->bytes_per_sample == 2) {
                 memcpy(output_buffer, self->sample_data, framecount * bytes_per_output_frame);
             } else {
@@ -165,8 +174,16 @@ void port_i2s_play(i2s_t *self, mp_obj_t sample, bool loop) {
     audiosample_reset_buffer(self->sample, false, 0);
 
     uint32_t sample_rate = audiosample_get_sample_rate(sample);
+
+    #if ESPRESSIF_ESP32C3_LYRA_AUDIOBUSIO_PDMOUT
+    i2s_pdm_tx_clk_config_t clk_config = I2S_PDM_TX_CLK_DEFAULT_CONFIG(sample_rate);
+    CHECK_ESP_RESULT(i2s_channel_reconfig_pdm_tx_clock(self->handle, &clk_config));
+    size_t frame_size = sizeof(uint16_t);
+    #else
     i2s_std_clk_config_t clk_config = I2S_STD_CLK_DEFAULT_CONFIG(sample_rate);
     CHECK_ESP_RESULT(i2s_channel_reconfig_std_clock(self->handle, &clk_config));
+    size_t frame_size = sizeof(uint32_t);
+    #endif
 
     // preload the data
     self->playing = true;
@@ -183,12 +200,12 @@ void port_i2s_play(i2s_t *self, mp_obj_t sample, bool loop) {
         self->next_buffer = &starting_frame;
         self->next_buffer_size = sizeof(starting_frame);
         i2s_fill_buffer(self);
-        i2s_channel_preload_data(self->handle, &starting_frame, sizeof(uint32_t), &bytes_loaded);
+        i2s_channel_preload_data(self->handle, &starting_frame, frame_size, &bytes_loaded);
         preloaded += bytes_loaded;
     }
 
     // enable the channel
-    i2s_channel_enable(self->handle);
+    CHECK_ESP_RESULT(i2s_channel_enable(self->handle));
 
     // The IDF will call us back when there is a free DMA buffer.
 }
