@@ -16,6 +16,8 @@
 #include "shared-bindings/usb/core/__init__.h"
 #include "shared-bindings/usb/core/Device.h"
 
+#include "lib/tinyusb/src/tusb.h"
+
 //| """USB Core
 //|
 //| This is a subset of the PyUSB core module.
@@ -74,9 +76,14 @@ typedef struct {
 
 // This is an internal iterator type to use with find.
 static mp_obj_t _next_device(usb_core_devices_obj_t *iter) {
+    // Force TinyUSB tasks to run (RUN_BACKGROUND_TASKS does not work for this)
+    #if CIRCUITPY_USB_DEVICE
+    tud_task();
+    #endif
+    tuh_task();
     // Brute force check all possible device numbers for one that matches.
     usb_core_device_obj_t temp_device;
-    for (size_t i = iter->next_index; i < 256; i++) {
+    for (size_t i = iter->next_index; i <= CFG_TUH_DEVICE_MAX + CFG_TUH_HUB; i++) {
         if (!common_hal_usb_core_device_construct(&temp_device, i)) {
             continue;
         }

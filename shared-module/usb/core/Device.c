@@ -9,6 +9,7 @@
 
 #include "tusb_config.h"
 
+#include "lib/tinyusb/src/tusb.h"
 #include "lib/tinyusb/src/host/hcd.h"
 #include "lib/tinyusb/src/host/usbh.h"
 #include "py/runtime.h"
@@ -31,9 +32,24 @@ void tuh_umount_cb(uint8_t dev_addr) {
     _mounted_devices &= ~(1 << dev_addr);
 }
 
+static void _force_tinyusb_tasks_to_run(void) {
+    // TinyUSB uses state machines and task queues that require tud_task()
+    // and tuh_task() to be called very frequently. If you try to use tuh_* API
+    // functions when something interesting has happened (device unplugged, etc),
+    // things can go badly wrong if you wait too long to call the task runners.
+    // For example, although RUN_BACKGROUND_TASKS schedules TinyUSB background
+    // tasks at 1024 Hz, that doesn't seem to be sufficient if you're rapidly
+    // polling usb.core.Device.read().
+    #if CIRCUITPY_USB_DEVICE
+    tud_task();
+    #endif
+    tuh_task();
+}
+
 static xfer_result_t _xfer_result;
 static size_t _actual_len;
 bool common_hal_usb_core_device_construct(usb_core_device_obj_t *self, uint8_t device_address) {
+    _force_tinyusb_tasks_to_run();
     if (!tuh_inited()) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("No usb host port initialized"));
     }
@@ -58,6 +74,7 @@ void common_hal_usb_core_device_deinit(usb_core_device_obj_t *self) {
     if (common_hal_usb_core_device_deinited(self)) {
         return;
     }
+    _force_tinyusb_tasks_to_run();
     size_t open_size = sizeof(self->open_endpoints);
     for (size_t i = 0; i < open_size; i++) {
         if (self->open_endpoints[i] != 0) {
@@ -66,11 +83,13 @@ void common_hal_usb_core_device_deinit(usb_core_device_obj_t *self) {
         }
     }
     self->device_address = 0;
+    _force_tinyusb_tasks_to_run();
 }
 
 uint16_t common_hal_usb_core_device_get_idVendor(usb_core_device_obj_t *self) {
     uint16_t vid;
     uint16_t pid;
+    _force_tinyusb_tasks_to_run();
     if (!tuh_vid_pid_get(self->device_address, &vid, &pid)) {
         mp_raise_usb_core_USBError(NULL);
     }
@@ -80,6 +99,7 @@ uint16_t common_hal_usb_core_device_get_idVendor(usb_core_device_obj_t *self) {
 uint16_t common_hal_usb_core_device_get_idProduct(usb_core_device_obj_t *self) {
     uint16_t vid;
     uint16_t pid;
+    _force_tinyusb_tasks_to_run();
     if (!tuh_vid_pid_get(self->device_address, &vid, &pid)) {
         mp_raise_usb_core_USBError(NULL);
     }
@@ -97,8 +117,8 @@ static void _transfer_done_cb(tuh_xfer_t *xfer) {
 static bool _wait_for_callback(void) {
     while (!mp_hal_is_interrupted() &&
            _xfer_result == XFER_RESULT_INVALID) {
-        // The background tasks include TinyUSB which will call the function
-        // we provided above. In other words, the callback isn't in an interrupt.
+        // The background tasks include TinyUSB which will call _transfer_done_cb().
+        // In other words, the callback isn't in an interrupt.
         RUN_BACKGROUND_TASKS;
     }
     if (mp_hal_is_interrupted()) {
@@ -142,8 +162,8 @@ static size_t _handle_timed_transfer_callback(tuh_xfer_t *xfer, mp_int_t timeout
     while ((timeout == 0 || supervisor_ticks_ms32() - start_time < (uint32_t)timeout) &&
            !mp_hal_is_interrupted() &&
            _xfer_result == XFER_RESULT_INVALID) {
-        // The background tasks include TinyUSB which will call the function
-        // we provided above. In other words, the callback isn't in an interrupt.
+        // The background tasks include TinyUSB which will call _transfer_done_cb().
+        // In other words, the callback isn't in an interrupt.
         RUN_BACKGROUND_TASKS;
     }
     if (mp_hal_is_interrupted()) {
@@ -203,6 +223,7 @@ static void _get_langid(usb_core_device_obj_t *self) {
 mp_obj_t common_hal_usb_core_device_get_serial_number(usb_core_device_obj_t *self) {
     uint16_t temp_buf[127];
     tusb_desc_device_t descriptor;
+    _force_tinyusb_tasks_to_run();
     // First, be sure not to ask TinyUSB for a non-existent string (avoid error)
     if (!tuh_descriptor_get_device_local(self->device_address, &descriptor)) {
         return mp_const_none;
@@ -224,6 +245,7 @@ mp_obj_t common_hal_usb_core_device_get_serial_number(usb_core_device_obj_t *sel
 mp_obj_t common_hal_usb_core_device_get_product(usb_core_device_obj_t *self) {
     uint16_t temp_buf[127];
     tusb_desc_device_t descriptor;
+    _force_tinyusb_tasks_to_run();
     // First, be sure not to ask TinyUSB for a non-existent string (avoid error)
     if (!tuh_descriptor_get_device_local(self->device_address, &descriptor)) {
         return mp_const_none;
@@ -245,6 +267,7 @@ mp_obj_t common_hal_usb_core_device_get_product(usb_core_device_obj_t *self) {
 mp_obj_t common_hal_usb_core_device_get_manufacturer(usb_core_device_obj_t *self) {
     uint16_t temp_buf[127];
     tusb_desc_device_t descriptor;
+    _force_tinyusb_tasks_to_run();
     // First, be sure not to ask TinyUSB for a non-existent string (avoid error)
     if (!tuh_descriptor_get_device_local(self->device_address, &descriptor)) {
         return mp_const_none;
@@ -266,6 +289,7 @@ mp_obj_t common_hal_usb_core_device_get_manufacturer(usb_core_device_obj_t *self
 
 mp_int_t common_hal_usb_core_device_get_bus(usb_core_device_obj_t *self) {
     tuh_bus_info_t bus_info;
+    _force_tinyusb_tasks_to_run();
     if (!tuh_bus_info_get(self->device_address, &bus_info)) {
         return 0;
     }
@@ -274,6 +298,7 @@ mp_int_t common_hal_usb_core_device_get_bus(usb_core_device_obj_t *self) {
 
 mp_obj_t common_hal_usb_core_device_get_port_numbers(usb_core_device_obj_t *self) {
     tuh_bus_info_t bus_info;
+    _force_tinyusb_tasks_to_run();
     if (!tuh_bus_info_get(self->device_address, &bus_info)) {
         return mp_const_none;
     }
@@ -297,6 +322,7 @@ mp_obj_t common_hal_usb_core_device_get_port_numbers(usb_core_device_obj_t *self
 
 mp_int_t common_hal_usb_core_device_get_speed(usb_core_device_obj_t *self) {
     tuh_bus_info_t bus_info;
+    _force_tinyusb_tasks_to_run();
     if (!tuh_bus_info_get(self->device_address, &bus_info)) {
         return 0;
     }
@@ -315,6 +341,7 @@ mp_int_t common_hal_usb_core_device_get_speed(usb_core_device_obj_t *self) {
 void common_hal_usb_core_device_set_configuration(usb_core_device_obj_t *self, mp_int_t configuration) {
     // We assume that the config index is one less than the value.
     uint8_t config_index = configuration - 1;
+    _force_tinyusb_tasks_to_run();
     // Get the configuration descriptor and cache it. We'll use it later to open
     // endpoints.
 
@@ -395,6 +422,7 @@ static bool _open_endpoint(usb_core_device_obj_t *self, mp_int_t endpoint) {
 }
 
 mp_int_t common_hal_usb_core_device_write(usb_core_device_obj_t *self, mp_int_t endpoint, const uint8_t *buffer, mp_int_t len, mp_int_t timeout) {
+    _force_tinyusb_tasks_to_run();
     if (!_open_endpoint(self, endpoint)) {
         mp_raise_usb_core_USBError(NULL);
         return 0;
@@ -408,6 +436,7 @@ mp_int_t common_hal_usb_core_device_write(usb_core_device_obj_t *self, mp_int_t 
 }
 
 mp_int_t common_hal_usb_core_device_read(usb_core_device_obj_t *self, mp_int_t endpoint, uint8_t *buffer, mp_int_t len, mp_int_t timeout) {
+    _force_tinyusb_tasks_to_run();
     if (!_open_endpoint(self, endpoint)) {
         mp_raise_usb_core_USBError(NULL);
         return 0;
@@ -441,6 +470,7 @@ mp_int_t common_hal_usb_core_device_ctrl_transfer(usb_core_device_obj_t *self,
         .complete_cb = _transfer_done_cb,
     };
 
+    _force_tinyusb_tasks_to_run();
     _prepare_for_transfer();
     if (!tuh_control_xfer(&xfer)) {
         mp_raise_usb_core_USBError(NULL);
@@ -450,6 +480,7 @@ mp_int_t common_hal_usb_core_device_ctrl_transfer(usb_core_device_obj_t *self,
 }
 
 bool common_hal_usb_core_device_is_kernel_driver_active(usb_core_device_obj_t *self, mp_int_t interface) {
+    _force_tinyusb_tasks_to_run();
     #if CIRCUITPY_USB_KEYBOARD_WORKFLOW
     if (usb_keyboard_in_use(self->device_address, interface)) {
         return true;
@@ -459,12 +490,14 @@ bool common_hal_usb_core_device_is_kernel_driver_active(usb_core_device_obj_t *s
 }
 
 void common_hal_usb_core_device_detach_kernel_driver(usb_core_device_obj_t *self, mp_int_t interface) {
+    _force_tinyusb_tasks_to_run();
     #if CIRCUITPY_USB_KEYBOARD_WORKFLOW
     usb_keyboard_detach(self->device_address, interface);
     #endif
 }
 
 void common_hal_usb_core_device_attach_kernel_driver(usb_core_device_obj_t *self, mp_int_t interface) {
+    _force_tinyusb_tasks_to_run();
     #if CIRCUITPY_USB_KEYBOARD_WORKFLOW
     usb_keyboard_attach(self->device_address, interface);
     #endif
