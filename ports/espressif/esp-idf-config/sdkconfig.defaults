@@ -20,6 +20,12 @@ CONFIG_GPTIMER_CTRL_FUNC_IN_IRAM=y
 CONFIG_GPTIMER_ISR_IRAM_SAFE=y
 # end of GPTimer Configuration
 
+#
+# Touch Configuration
+#
+CONFIG_TOUCH_SUPPRESS_DEPRECATE_WARN=y
+# end of Touch Configuration
+
 # end of Driver Configurations
 
 #
