@@ -315,10 +315,10 @@ audio_dma_result audio_dma_setup(
             #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
             dma->input_buffer_length[0], // Old size
             #endif
-            max_buffer_length);                                       
+            max_buffer_length);
         #endif
         dma->input_buffer_length[0] = max_buffer_length;
-        
+
         if (dma->input_buffer[0] == NULL) {
             return AUDIO_DMA_MEMORY_ERROR;
         }
@@ -331,10 +331,10 @@ audio_dma_result audio_dma_setup(
                 #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
                 dma->input_buffer_length[1], // Old size
                 #endif
-                max_buffer_length);                                       
+                max_buffer_length);
             #endif
             dma->input_buffer_length[1] = max_buffer_length;
-            
+
             if (dma->input_buffer[1] == NULL) {
                 return AUDIO_DMA_MEMORY_ERROR;
             }
@@ -399,7 +399,7 @@ audio_dma_result audio_dma_setup(
         // contains the audiodma structure.
         MP_STATE_PORT(recording_audio)[dma->input_channel[0]] = dma;
         MP_STATE_PORT(recording_audio)[dma->input_channel[1]] = dma;
-      
+
         // Special case the DMA for a single buffer.
         if (single_buffer) {
             dma_channel_config c = dma_channel_get_default_config(dma->input_channel[1]);
@@ -431,9 +431,9 @@ audio_dma_result audio_dma_setup(
         // contains the audiodma structure.
         MP_STATE_PORT(playing_audio)[dma->output_channel[0]] = dma;
         MP_STATE_PORT(playing_audio)[dma->output_channel[1]] = dma;
-      
+
         dma->paused = false;
-        
+
         // Load the first two blocks up front.
         audio_dma_load_next_block(dma, 0);
         if (dma->dma_result != AUDIO_DMA_OK) {
@@ -694,22 +694,22 @@ void audio_dma_unpause_mask(uint32_t channel_mask) {
 void audio_dma_init(audio_dma_t *dma) {
     dma->output_buffer[0] = NULL;
     dma->output_buffer[1] = NULL;
-  
+
     dma->output_buffer_length[0] = 0;
     dma->output_buffer_length[1] = 0;
-    
+
     dma->output_channel[0] = NUM_DMA_CHANNELS;
     dma->output_channel[1] = NUM_DMA_CHANNELS;
 
     dma->input_buffer[0] = NULL;
     dma->input_buffer[1] = NULL;
-  
+
     dma->input_buffer_length[0] = 0;
     dma->input_buffer_length[1] = 0;
 
     dma->input_channel[0] = NUM_DMA_CHANNELS;
     dma->input_channel[1] = NUM_DMA_CHANNELS;
-  
+
     dma->playing_in_progress = false;
     dma->recording_in_progress = false;
     dma->paused = false;
@@ -739,7 +739,7 @@ void audio_dma_deinit(audio_dma_t *dma) {
     #endif
     dma->output_buffer[1] = NULL;
     dma->output_buffer_length[1] = 0;
-  
+
     #ifdef PICO_RP2350
     port_free(dma->input_buffer[0]);
     #else

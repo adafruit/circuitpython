@@ -792,7 +792,7 @@ msgstr ""
 msgid "Cannot pull on input-only pin."
 msgstr ""
 
-#: shared-bindings/audiobusio/PDMIn.c
+#: shared-bindings/audiobusio/I2S.c shared-bindings/audiobusio/PDMIn.c
 msgid "Cannot record to a file"
 msgstr ""
 
@@ -907,7 +907,7 @@ msgstr ""
 msgid "Deep sleep pins must use a rising edge with pulldown"
 msgstr ""
 
-#: shared-bindings/audiobusio/PDMIn.c
+#: shared-bindings/audiobusio/I2S.c shared-bindings/audiobusio/PDMIn.c
 msgid "Destination capacity is smaller than destination_length."
 msgstr ""
 
@@ -3032,13 +3032,17 @@ msgstr ""
 msgid "default is not a function"
 msgstr ""
 
-#: shared-bindings/audiobusio/PDMIn.c
+#: shared-bindings/audiobusio/I2S.c shared-bindings/audiobusio/PDMIn.c
 msgid ""
 "destination buffer must be a bytearray or array of type 'B' for bit_depth = 8"
 msgstr ""
 
 #: shared-bindings/audiobusio/PDMIn.c
 msgid "destination buffer must be an array of type 'H' for bit_depth = 16"
+msgstr ""
+
+#: shared-bindings/audiobusio/I2S.c
+msgid "destination buffer must be an array of type 'h' for bit_depth = 16"
 msgstr ""
 
 #: py/objdict.c

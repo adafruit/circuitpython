@@ -356,7 +356,7 @@ audioio_get_buffer_result_t audiobusio_i2s_get_buffer(audiobusio_i2s_obj_t *self
     *buffer = (uint8_t *)self->buffer[self->last_buf_idx];
     *buffer_length = self->buffer_size;
 
-    // I2S always returns more data unless an error occured (see audiocore/__init__.h)
+    // I2S always returns more data unless an error occurred (see audiocore/__init__.h)
     return GET_BUFFER_MORE_DATA;
 }
 
