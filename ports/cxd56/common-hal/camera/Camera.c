@@ -44,7 +44,7 @@ static const image_size_t isx019_image_size_table[] = {
     { VIDEO_HSIZE_QUADVGA, VIDEO_VSIZE_QUADVGA },
 };
 
-static const char *get_imgsensor_name() {
+static const char *get_imgsensor_name(void) {
     static struct v4l2_capability cap;
 
     ioctl(camera_dev.fd, VIDIOC_QUERYCAP, (unsigned long)&cap);
@@ -113,7 +113,7 @@ static void camera_start_streaming(enum v4l2_buf_type type) {
     ioctl(camera_dev.fd, VIDIOC_STREAMON, (unsigned long)&type);
 }
 
-static void camera_start_preview() {
+static void camera_start_preview(void) {
     camera_set_format(V4L2_BUF_TYPE_VIDEO_CAPTURE, V4L2_PIX_FMT_UYVY, VIDEO_HSIZE_QVGA, VIDEO_VSIZE_QVGA);
 
     v4l2_buffer_t buf;

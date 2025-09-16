@@ -64,7 +64,7 @@ void common_hal_analogio_analogin_deinit(analogio_analogin_obj_t *self) {
     self->pin = NULL;
 }
 
-void analogin_reset() {
+void analogin_reset(void) {
 }
 
 uint16_t common_hal_analogio_analogin_get_value(analogio_analogin_obj_t *self) {

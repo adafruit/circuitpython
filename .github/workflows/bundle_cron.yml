@@ -1,0 +1,58 @@
+# SPDX-FileCopyrightText: 2019 Michael Schroeder
+#
+# SPDX-License-Identifier: MIT
+
+name: Update Bundles
+
+on:
+  schedule:
+    - cron: 0 5 * * *
+  workflow_dispatch:
+
+jobs:
+  check-repo-owner:
+    # This job is so the entire workflow will end successfully and give some
+    # output to explain why it hasn't run on a non-Adafruit fork.
+    runs-on: ubuntu-latest
+    steps:
+      - name: repository
+        env:
+          OWNER_IS_ADAFRUIT: ${{ startswith(github.repository, 'adafruit/') }}
+        run: |
+          echo "This workflow will only run if Adafruit is the repository owner."
+          echo "Repository owner is Adafruit: $OWNER_IS_ADAFRUIT"
+  update-bundles:
+    runs-on: ubuntu-latest
+    # Only run the build on Adafruit's repository. Forks won't have the secrets.
+    # It's necessary to do this here, since 'schedule' events cannot (currently)
+    # be limited (they run on all forks' default branches).
+    if: startswith(github.repository, 'adafruit/')
+    steps:
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.12
+    - name: Load contributor cache
+      uses: actions/cache@v4
+      with:
+        key: "contributor-cache"
+        path: "contributors.json"
+    - name: Versions
+      run: |
+        python3 --version
+    - uses: actions/checkout@v4
+      with:
+        repository: 'adafruit/adabot'
+        submodules: true
+    - name: Install deps
+      run: |
+        pip install -r requirements.txt
+    - name: Run adabot.circuitpython_bundle
+      env:
+        ADABOT_EMAIL: ${{ secrets.ADABOT_EMAIL }}
+        ADABOT_GITHUB_USER: ${{ secrets.ADABOT_GITHUB_USER }}
+        ADABOT_GITHUB_ACCESS_TOKEN: ${{ secrets.ADABOT_GITHUB_ACCESS_TOKEN }}
+        BIGQUERY_PRIVATE_KEY: ${{ secrets.BIGQUERY_PRIVATE_KEY }}
+        BIGQUERY_CLIENT_EMAIL: ${{ secrets.BIGQUERY_CLIENT_EMAIL }}
+      run: |
+        python3 -u -m adabot.circuitpython_bundle

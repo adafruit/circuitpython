@@ -970,6 +970,7 @@ static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(vertex2ii_obj, 3, 5, _vertex2ii);
     { MP_ROM_QSTR(MP_QSTR_PaletteSource), MP_ROM_PTR(&palettesource_obj) }, \
     { MP_ROM_QSTR(MP_QSTR_PaletteSourceH), MP_ROM_PTR(&palettesourceh_obj) }, \
     { MP_ROM_QSTR(MP_QSTR_PointSize), MP_ROM_PTR(&pointsize_obj) }, \
+    { MP_ROM_QSTR(MP_QSTR_Region), MP_ROM_PTR(&region_obj) }, \
     { MP_ROM_QSTR(MP_QSTR_RestoreContext), MP_ROM_PTR(&restorecontext_obj) }, \
     { MP_ROM_QSTR(MP_QSTR_Return), MP_ROM_PTR(&return_obj) }, \
     { MP_ROM_QSTR(MP_QSTR_SaveContext), MP_ROM_PTR(&savecontext_obj) }, \
@@ -1061,7 +1062,28 @@ static mp_obj_t _pointsize(mp_obj_t self, mp_obj_t a0) {
     common_hal__eve_PointSize(EVEHAL(self), size);
     return mp_const_none;
 }
+
 static MP_DEFINE_CONST_FUN_OBJ_2(pointsize_obj, _pointsize);
+
+//|     def Region(self, y: int, h: int, dest: int) -> None:
+//|         """Specify a cull region in the display list
+//|
+//|         :param int y: Starting Y band in the render buffer. Range 0-63
+//|         :param int h: Y height in the render buffer. Range 0-63
+//|         :param int dest: destination address in the display list if the raster is outside the region
+//|
+//|         """
+//|         ...
+//|
+
+static mp_obj_t _region(size_t n_args, const mp_obj_t *args) {
+    uint32_t y = mp_obj_get_int_truncated(args[1]);
+    uint32_t h = mp_obj_get_int_truncated(args[2]);
+    uint32_t dest = mp_obj_get_int_truncated(args[3]);
+    common_hal__eve_Region(EVEHAL(args[0]), y, h, dest);
+    return mp_const_none;
+}
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(region_obj, 4, 4, _region);
 
 //|     def VertexTranslateX(self, x: float) -> None:
 //|         """Set the vertex transformation's x translation component

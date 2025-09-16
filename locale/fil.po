@@ -6,8 +6,8 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-01-04 12:55-0600\n"
-"PO-Revision-Date: 2024-10-06 01:15+0000\n"
-"Last-Translator: Diamond Rivero <diamant3@proton.me>\n"
+"PO-Revision-Date: 2025-06-30 16:01+0000\n"
+"Last-Translator: MAE <martin-aehle@hotmail.de>\n"
 "Language-Team: fil\n"
 "Language: fil\n"
 "MIME-Version: 1.0\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1 && n != 2 && n != 3 && (n % 10 == 4 "
 "|| n % 10 == 6 || n % 10 == 9);\n"
-"X-Generator: Weblate 5.8-dev\n"
+"X-Generator: Weblate 5.13-dev\n"
 
 #: main.c
 msgid ""
@@ -313,7 +313,7 @@ msgid "'%q' object does not support '%q'"
 msgstr ""
 
 #: py/runtime.c
-msgid "'%q' object is not an iterator"
+msgid "'%q' object isn't an iterator"
 msgstr ""
 
 #: py/objtype.c py/runtime.c shared-module/atexit/__init__.c
@@ -321,7 +321,7 @@ msgid "'%q' object is not callable"
 msgstr ""
 
 #: py/runtime.c
-msgid "'%q' object is not iterable"
+msgid "'%q' object isn't iterable"
 msgstr ""
 
 #: py/emitinlinethumb.c py/emitinlinextensa.c
@@ -472,9 +472,9 @@ msgid "AP could not be started"
 msgstr ""
 
 #: shared-bindings/_bleio/Address.c shared-bindings/ipaddress/IPv4Address.c
-#, fuzzy, c-format
+#, c-format
 msgid "Address must be %d bytes long"
-msgstr "ang palette ay dapat 32 bytes ang haba"
+msgstr "Dapat na %d bytes ang haba ng address"
 
 #: ports/espressif/common-hal/memorymap/AddressRange.c
 #: ports/nordic/common-hal/memorymap/AddressRange.c
@@ -712,14 +712,13 @@ msgstr ""
 #: ports/espressif/common-hal/paralleldisplaybus/ParallelBus.c
 #: ports/nordic/common-hal/paralleldisplaybus/ParallelBus.c
 #: ports/raspberrypi/common-hal/paralleldisplaybus/ParallelBus.c
-#, fuzzy, c-format
+#, c-format
 msgid "Bus pin %d is already in use"
-msgstr "Ginagamit na ang DAC"
+msgstr "Ginagamit na ang bus pin %d"
 
 #: shared-bindings/_bleio/UUID.c
-#, fuzzy
 msgid "Byte buffer must be 16 bytes."
-msgstr "buffer ay dapat bytes-like object"
+msgstr "Ang byte buffer ay dapat na 16 byte."
 
 #: shared-bindings/aesio/aes.c
 msgid "CBC blocks must be multiples of 16 bytes"
@@ -857,6 +856,10 @@ msgstr ""
 msgid "Coordinate arrays types have different sizes"
 msgstr ""
 
+#: ports/espressif/common-hal/rclcpy/Publisher.c
+msgid "Could not publish to ROS topic"
+msgstr ""
+
 #: shared-bindings/_bleio/Adapter.c
 msgid "Could not set address"
 msgstr ""
@@ -867,6 +870,11 @@ msgstr ""
 
 #: shared-module/audiomp3/MP3Decoder.c
 msgid "Couldn't allocate decoder"
+msgstr ""
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+#, c-format
+msgid "Critical ROS failure during soft reboot, reset required: %d"
 msgstr ""
 
 #: ports/stm/common-hal/analogio/AnalogOut.c
@@ -981,9 +989,9 @@ msgid "Failed sending command."
 msgstr ""
 
 #: ports/nordic/sd_mutex.c
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to acquire mutex, err 0x%04x"
-msgstr "Nabigo sa pag kuha ng mutex, status: 0x%08lX"
+msgstr "Nabigong makuha ang mutex, err 0x%04x"
 
 #: ports/raspberrypi/common-hal/mdns/Server.c
 msgid "Failed to add service TXT record"
@@ -1048,9 +1056,9 @@ msgid "Failed to register continuous events callback"
 msgstr ""
 
 #: ports/nordic/sd_mutex.c
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to release mutex, err 0x%04x"
-msgstr "Nabigo sa pagrelease ng mutex, status: 0x%08lX"
+msgstr "Nabigong ilabas ang mutex, err 0x%04x"
 
 #: ports/zephyr-cp/common-hal/wifi/Radio.c
 msgid "Failed to set hostname"
@@ -1068,7 +1076,8 @@ msgstr ""
 msgid "File exists"
 msgstr "Mayroong file"
 
-#: shared-module/lvfontio/OnDiskFont.c shared-module/os/getenv.c
+#: shared-bindings/supervisor/__init__.c shared-module/lvfontio/OnDiskFont.c
+#: shared-module/os/getenv.c
 msgid "File not found"
 msgstr ""
 
@@ -1099,7 +1108,7 @@ msgstr ""
 msgid "For RGB colorspaces, input bitmap must have 16 bits per pixel"
 msgstr ""
 
-#: ports/cxd56/common-hal/camera/Camera.c
+#: ports/cxd56/common-hal/camera/Camera.c shared-module/audiocore/WaveFile.c
 msgid "Format not supported"
 msgstr ""
 
@@ -1263,6 +1272,7 @@ msgstr ""
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c py/argcheck.c
 #: shared-bindings/digitalio/DigitalInOut.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c shared-bindings/pwmio/PWMOut.c
+#: shared-bindings/supervisor/__init__.c
 #: shared-module/aurora_epaper/aurora_framebuffer.c
 #: shared-module/lvfontio/OnDiskFont.c
 msgid "Invalid %q"
@@ -1295,6 +1305,10 @@ msgstr ""
 
 #: shared-bindings/wifi/Radio.c
 msgid "Invalid MAC address"
+msgstr ""
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+msgid "Invalid ROS domain ID"
 msgstr ""
 
 #: ports/espressif/common-hal/espidf/__init__.c py/moderrno.c
@@ -1856,6 +1870,10 @@ msgstr ""
 msgid "Program too long"
 msgstr ""
 
+#: shared-bindings/rclcpy/Publisher.c
+msgid "Publishers can only be created from a parent node"
+msgstr ""
+
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Pull not used when direction is output."
 msgstr "Pull hindi ginagamit kapag ang direksyon ay output."
@@ -1875,6 +1893,26 @@ msgstr "Error sa RNG DeInit"
 #: ports/stm/common-hal/os/__init__.c
 msgid "RNG Init Error"
 msgstr "Error sa RNG Init"
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+msgid "ROS failed to initialize. Is agent connected?"
+msgstr ""
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+msgid "ROS internal setup failure"
+msgstr ""
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+msgid "ROS memory allocator failure"
+msgstr ""
+
+#: ports/espressif/common-hal/rclcpy/Node.c
+msgid "ROS node failed to initialize"
+msgstr ""
+
+#: ports/espressif/common-hal/rclcpy/Publisher.c
+msgid "ROS topic failed to initialize"
+msgstr ""
 
 #: ports/atmel-samd/common-hal/busio/UART.c ports/cxd56/common-hal/busio/UART.c
 #: ports/nordic/common-hal/busio/UART.c ports/stm/common-hal/busio/UART.c
@@ -2083,6 +2121,10 @@ msgstr ""
 
 #: shared-bindings/displayio/TileGrid.c
 msgid "Tile width must exactly divide bitmap width"
+msgstr ""
+
+#: shared-module/tilepalettemapper/TilePaletteMapper.c
+msgid "TilePaletteMapper may only be bound to a TileGrid once"
 msgstr ""
 
 #: shared-bindings/alarm/time/TimeAlarm.c
@@ -2313,10 +2355,6 @@ msgstr ""
 msgid "Unsupported display bus type"
 msgstr "Hindi supportadong tipo ng bitmap"
 
-#: shared-module/audiocore/WaveFile.c
-msgid "Unsupported format"
-msgstr "Hindi supportadong format"
-
 #: shared-bindings/hashlib/__init__.c
 msgid "Unsupported hash algorithm"
 msgstr ""
@@ -2371,10 +2409,12 @@ msgstr ""
 
 #: supervisor/shared/web_workflow/web_workflow.c
 msgid "Wi-Fi: "
-msgstr ""
+msgstr "Wi-Fi: "
 
+#: ports/espressif/common-hal/wifi/Radio.c
 #: ports/raspberrypi/common-hal/wifi/Radio.c
-msgid "Wifi is not enabled"
+#: ports/zephyr-cp/common-hal/wifi/Radio.c
+msgid "WiFi is not enabled"
 msgstr ""
 
 #: main.c
@@ -2610,16 +2650,16 @@ msgstr ""
 msgid "bits must be 32 or less"
 msgstr ""
 
+#: shared-bindings/audiofreeverb/Freeverb.c
+msgid "bits_per_sample must be 16"
+msgstr ""
+
 #: shared-bindings/audiodelays/Chorus.c shared-bindings/audiodelays/Echo.c
 #: shared-bindings/audiodelays/MultiTapDelay.c
 #: shared-bindings/audiodelays/PitchShift.c
 #: shared-bindings/audiofilters/Distortion.c
-#: shared-bindings/audiodelays/Reverb.c
-msgid "bits_per_sample must be 16"
-msgstr ""
-
-#: shared-bindings/audiodelays/Echo.c shared-bindings/audiofilters/Distortion.c
-#: shared-bindings/audiofilters/Filter.c shared-bindings/audiomixer/Mixer.c
+#: shared-bindings/audiofilters/Filter.c shared-bindings/audiofilters/Phaser.c
+#: shared-bindings/audiomixer/Mixer.c
 msgid "bits_per_sample must be 8 or 16"
 msgstr "bits_per_sample ay dapat 8 o 16"
 
@@ -2714,7 +2754,7 @@ msgstr "hindi ma-convert %s sa complex"
 #: py/obj.c
 #, c-format
 msgid "can't convert %s to float"
-msgstr "hindi ma-convert %s sa int"
+msgstr "hindi ma-convert %s sa float"
 
 #: py/objint.c py/runtime.c
 #, c-format
@@ -2865,7 +2905,7 @@ msgstr ""
 
 #: py/emitnative.c
 msgid "casting"
-msgstr "casting"
+msgstr "paghahagis"
 
 #: ports/stm/common-hal/pwmio/PWMOut.c
 msgid "channel re-init"
@@ -3169,7 +3209,7 @@ msgid "format"
 msgstr ""
 
 #: py/objstr.c
-msgid "format requires a dict"
+msgid "format needs a dict"
 msgstr "kailangan ng format ng dict"
 
 #: py/objdeque.c
@@ -3631,7 +3671,7 @@ msgid "must use keyword argument for key function"
 msgstr "dapat gumamit ng keyword argument para sa key function"
 
 #: py/runtime.c
-msgid "name '%q' is not defined"
+msgid "name '%q' isn't defined"
 msgstr "name '%q' ay hindi defined"
 
 #: py/runtime.c
@@ -4012,7 +4052,7 @@ msgstr ""
 
 #: py/builtinimport.c
 msgid "relative import"
-msgstr "relative import"
+msgstr "kamag-anak na import"
 
 #: py/obj.c
 #, c-format
@@ -4049,7 +4089,7 @@ msgstr ""
 msgid "rsplit(None,n)"
 msgstr "rsplit(None,n)"
 
-#: shared-bindings/audiodelays/Reverb.c
+#: shared-bindings/audiofreeverb/Freeverb.c
 msgid "samples_signed must be true"
 msgstr ""
 
@@ -4104,7 +4144,7 @@ msgstr ""
 
 #: py/objint.c py/sequence.c
 msgid "small int overflow"
-msgstr "small int overflow"
+msgstr "maliit na int overflow"
 
 #: main.c
 msgid "soft reboot\n"
@@ -4272,11 +4312,11 @@ msgid "tx and rx cannot both be None"
 msgstr "tx at rx hindi pwedeng parehas na None"
 
 #: py/objtype.c
-msgid "type '%q' is not an acceptable base type"
+msgid "type '%q' isn't an acceptable base type"
 msgstr "hindi maari ang type na '%q' para sa base type"
 
 #: py/objtype.c
-msgid "type is not an acceptable base type"
+msgid "type isn't an acceptable base type"
 msgstr "hindi puede ang type para sa base type"
 
 #: py/runtime.c
@@ -4418,12 +4458,6 @@ msgstr ""
 msgid "width must be greater than zero"
 msgstr ""
 
-#: ports/espressif/common-hal/wifi/Radio.c
-#: ports/raspberrypi/common-hal/wifi/Radio.c
-#: ports/zephyr-cp/common-hal/wifi/Radio.c
-msgid "wifi is not enabled"
-msgstr ""
-
 #: ports/raspberrypi/common-hal/wifi/Monitor.c
 msgid "wifi.Monitor not available"
 msgstr ""
@@ -4485,6 +4519,9 @@ msgstr ""
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr ""
+
+#~ msgid "Unsupported format"
+#~ msgstr "Hindi supportadong format"
 
 #~ msgid "Data chunk must follow fmt chunk"
 #~ msgstr "Dapat sunurin ng Data chunk ang fmt chunk"
@@ -4595,13 +4632,13 @@ msgstr ""
 #~ msgid "'%s' object does not support item deletion"
 #~ msgstr "'%s' object ay hindi sumusuporta sa pagtanggal ng item"
 
-#~ msgid "'%s' object is not an iterator"
+#~ msgid "'%s' object isn't an iterator"
 #~ msgstr "'%s' object ay hindi iterator"
 
 #~ msgid "'%s' object is not callable"
 #~ msgstr "'%s' object hindi matatawag"
 
-#~ msgid "'%s' object is not iterable"
+#~ msgid "'%s' object isn't iterable"
 #~ msgstr "'%s' object ay hindi ma i-iterable"
 
 #~ msgid "'%s' object is not subscriptable"
@@ -5272,7 +5309,7 @@ msgstr ""
 #~ msgid "frequency can only be either 80Mhz or 160MHz"
 #~ msgstr "ang frequency ay dapat 80Mhz or 160MHz lamang"
 
-#~ msgid "function does not take keyword arguments"
+#~ msgid "function doesn't take keyword arguments"
 #~ msgstr "ang function ay hindi kumukuha ng mga argumento ng keyword"
 
 #~ msgid "impossible baudrate"
@@ -5342,7 +5379,7 @@ msgstr ""
 #~ msgid "name must be a string"
 #~ msgstr "ang keywords dapat strings"
 
-#~ msgid "name reused for argument"
+#~ msgid "argument name reused"
 #~ msgstr "name muling ginamit para sa argument"
 
 #~ msgid "no available NIC"

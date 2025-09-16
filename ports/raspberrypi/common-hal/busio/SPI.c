@@ -182,7 +182,10 @@ static bool _transfer(busio_spi_obj_t *self,
         chan_tx = dma_claim_unused_channel(false);
         chan_rx = dma_claim_unused_channel(false);
     }
-    bool use_dma = chan_rx >= 0 && chan_tx >= 0;
+    bool has_dma_channels = chan_rx >= 0 && chan_tx >= 0;
+    // Only use DMA if both data buffers are in SRAM. Otherwise, we'll stall the DMA with PSRAM or flash cache misses.
+    bool data_in_sram = data_in >= (uint8_t *)SRAM_BASE && data_out >= (uint8_t *)SRAM_BASE;
+    bool use_dma = has_dma_channels && data_in_sram;
     if (use_dma) {
         dma_channel_config c = dma_channel_get_default_config(chan_tx);
         channel_config_set_transfer_data_size(&c, DMA_SIZE_8);

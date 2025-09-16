@@ -65,7 +65,7 @@ MP_PROPERTY_GETTER(keypad_generic_events_obj,
 //|    due to a GPIO hardware issue that causes excessive leakage current (~120uA).
 //|    A pin can read as high even when driven or pulled low, if the input signal is high
 //|    impedance or if an attached pull-down resistor is too weak (has too high a value).
-//|    See the warning in `digitalio` for more information.
+//|    See the warnings in `keypad.Keys`, `keypad.KeyMatrix`, and `digitalio` for workarounds and more information.
 //|
 //| .. jinja
 //| """

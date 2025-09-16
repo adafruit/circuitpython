@@ -49,6 +49,7 @@ void common_hal__eve_Nop(common_hal__eve_t *eve);
 void common_hal__eve_PaletteSource(common_hal__eve_t *eve, uint32_t addr);
 void common_hal__eve_PaletteSourceH(common_hal__eve_t *eve, uint32_t addr);
 void common_hal__eve_PointSize(common_hal__eve_t *eve, mp_float_t size);
+void common_hal__eve_Region(common_hal__eve_t *eve, uint32_t y, uint32_t h, uint32_t dest);
 void common_hal__eve_RestoreContext(common_hal__eve_t *eve);
 void common_hal__eve_Return(common_hal__eve_t *eve);
 void common_hal__eve_SaveContext(common_hal__eve_t *eve);

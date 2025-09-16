@@ -1,6 +1,7 @@
 // This file is part of the CircuitPython project: https://circuitpython.org
 //
 // SPDX-FileCopyrightText: Copyright (c) 2022 Scott Shawcroft for Adafruit Industries
+// SPDX-FileCopyrightText: Copyright (c) 2025 Sam Blenny
 //
 // SPDX-License-Identifier: MIT
 
@@ -45,7 +46,7 @@ bool common_hal_usb_core_device_construct(usb_core_device_obj_t *self, uint8_t d
     }
     self->device_address = device_address;
     self->first_langid = 0;
-    _xfer_result = 0xff;
+    _xfer_result = XFER_RESULT_INVALID;
     return true;
 }
 
@@ -70,14 +71,18 @@ void common_hal_usb_core_device_deinit(usb_core_device_obj_t *self) {
 uint16_t common_hal_usb_core_device_get_idVendor(usb_core_device_obj_t *self) {
     uint16_t vid;
     uint16_t pid;
-    tuh_vid_pid_get(self->device_address, &vid, &pid);
+    if (!tuh_vid_pid_get(self->device_address, &vid, &pid)) {
+        mp_raise_usb_core_USBError(NULL);
+    }
     return vid;
 }
 
 uint16_t common_hal_usb_core_device_get_idProduct(usb_core_device_obj_t *self) {
     uint16_t vid;
     uint16_t pid;
-    tuh_vid_pid_get(self->device_address, &vid, &pid);
+    if (!tuh_vid_pid_get(self->device_address, &vid, &pid)) {
+        mp_raise_usb_core_USBError(NULL);
+    }
     return pid;
 }
 
@@ -91,14 +96,86 @@ static void _transfer_done_cb(tuh_xfer_t *xfer) {
 
 static bool _wait_for_callback(void) {
     while (!mp_hal_is_interrupted() &&
-           _xfer_result == 0xff) {
+           _xfer_result == XFER_RESULT_INVALID) {
         // The background tasks include TinyUSB which will call the function
         // we provided above. In other words, the callback isn't in an interrupt.
         RUN_BACKGROUND_TASKS;
     }
+    if (mp_hal_is_interrupted()) {
+        // Handle case of VM being interrupted by Ctrl-C or autoreload
+        return false;
+    }
+    // Handle callback result code from TinyUSB
     xfer_result_t result = _xfer_result;
-    _xfer_result = 0xff;
-    return result == XFER_RESULT_SUCCESS;
+    _xfer_result = XFER_RESULT_INVALID;
+    switch (result) {
+        case XFER_RESULT_SUCCESS:
+            return true;
+        case XFER_RESULT_FAILED:
+            mp_raise_usb_core_USBError(NULL);
+            break;
+        case XFER_RESULT_STALLED:
+            mp_raise_usb_core_USBError(MP_ERROR_TEXT("Pipe error"));
+            break;
+        case XFER_RESULT_TIMEOUT:
+        case XFER_RESULT_INVALID:
+            mp_raise_usb_core_USBTimeoutError();
+            break;
+    }
+    return false;
+}
+
+static void _prepare_for_transfer(void) {
+    // Prepare for transfer. Unless there is a timeout, these static globals will
+    // get modified by the _transfer_done_cb() callback when tinyusb finishes the
+    // transfer or encounters an error condition.
+    _xfer_result = XFER_RESULT_INVALID;
+    _actual_len = 0;
+}
+
+static size_t _handle_timed_transfer_callback(tuh_xfer_t *xfer, mp_int_t timeout) {
+    if (xfer == NULL) {
+        mp_raise_usb_core_USBError(NULL);
+        return 0;
+    }
+    uint32_t start_time = supervisor_ticks_ms32();
+    while ((timeout == 0 || supervisor_ticks_ms32() - start_time < (uint32_t)timeout) &&
+           !mp_hal_is_interrupted() &&
+           _xfer_result == XFER_RESULT_INVALID) {
+        // The background tasks include TinyUSB which will call the function
+        // we provided above. In other words, the callback isn't in an interrupt.
+        RUN_BACKGROUND_TASKS;
+    }
+    if (mp_hal_is_interrupted()) {
+        // Handle case of VM being interrupted by Ctrl-C or autoreload
+        tuh_edpt_abort_xfer(xfer->daddr, xfer->ep_addr);
+        return 0;
+    }
+    // Handle transfer result code from TinyUSB
+    xfer_result_t result = _xfer_result;
+    _xfer_result = XFER_RESULT_INVALID;
+    switch (result) {
+        case XFER_RESULT_SUCCESS:
+            return _actual_len;
+        case XFER_RESULT_FAILED:
+            mp_raise_usb_core_USBError(NULL);
+            break;
+        case XFER_RESULT_STALLED:
+            mp_raise_usb_core_USBError(MP_ERROR_TEXT("Pipe error"));
+            break;
+        case XFER_RESULT_TIMEOUT:
+            // This timeout comes from TinyUSB, so assume that it has stopped the
+            // transfer (note: timeout logic may be unimplemented on TinyUSB side)
+            mp_raise_usb_core_USBTimeoutError();
+            break;
+        case XFER_RESULT_INVALID:
+            // This timeout comes from CircuitPython, not TinyUSB, so tell TinyUSB
+            // to stop the transfer
+            tuh_edpt_abort_xfer(xfer->daddr, xfer->ep_addr);
+            mp_raise_usb_core_USBTimeoutError();
+            break;
+    }
+    return 0;
 }
 
 static mp_obj_t _get_string(const uint16_t *temp_buf) {
@@ -115,72 +192,115 @@ static void _get_langid(usb_core_device_obj_t *self) {
     }
     // Two control bytes and one uint16_t language code.
     uint16_t temp_buf[2];
-    if (!tuh_descriptor_get_string(self->device_address, 0, 0, temp_buf, sizeof(temp_buf), _transfer_done_cb, 0) ||
-        !_wait_for_callback()) {
-        return;
+    _prepare_for_transfer();
+    if (!tuh_descriptor_get_string(self->device_address, 0, 0, temp_buf, sizeof(temp_buf), _transfer_done_cb, 0)) {
+        mp_raise_usb_core_USBError(NULL);
+    } else if (_wait_for_callback()) {
+        self->first_langid = temp_buf[1];
     }
-    self->first_langid = temp_buf[1];
 }
 
 mp_obj_t common_hal_usb_core_device_get_serial_number(usb_core_device_obj_t *self) {
     uint16_t temp_buf[127];
-    _get_langid(self);
-    if (!tuh_descriptor_get_serial_string(self->device_address, self->first_langid, temp_buf, sizeof(temp_buf), _transfer_done_cb, 0) ||
-        !_wait_for_callback()) {
+    tusb_desc_device_t descriptor;
+    // First, be sure not to ask TinyUSB for a non-existent string (avoid error)
+    if (!tuh_descriptor_get_device_local(self->device_address, &descriptor)) {
         return mp_const_none;
     }
-    return _get_string(temp_buf);
+    if (descriptor.iSerialNumber == 0) {
+        return mp_const_none;
+    }
+    // Device does provide this string, so continue
+    _get_langid(self);
+    _prepare_for_transfer();
+    if (!tuh_descriptor_get_serial_string(self->device_address, self->first_langid, temp_buf, sizeof(temp_buf), _transfer_done_cb, 0)) {
+        mp_raise_usb_core_USBError(NULL);
+    } else if (_wait_for_callback()) {
+        return _get_string(temp_buf);
+    }
+    return mp_const_none;
 }
 
 mp_obj_t common_hal_usb_core_device_get_product(usb_core_device_obj_t *self) {
     uint16_t temp_buf[127];
-    _get_langid(self);
-    if (!tuh_descriptor_get_product_string(self->device_address, self->first_langid, temp_buf, sizeof(temp_buf), _transfer_done_cb, 0) ||
-        !_wait_for_callback()) {
+    tusb_desc_device_t descriptor;
+    // First, be sure not to ask TinyUSB for a non-existent string (avoid error)
+    if (!tuh_descriptor_get_device_local(self->device_address, &descriptor)) {
         return mp_const_none;
     }
-    return _get_string(temp_buf);
+    if (descriptor.iProduct == 0) {
+        return mp_const_none;
+    }
+    // Device does provide this string, so continue
+    _get_langid(self);
+    _prepare_for_transfer();
+    if (!tuh_descriptor_get_product_string(self->device_address, self->first_langid, temp_buf, sizeof(temp_buf), _transfer_done_cb, 0)) {
+        mp_raise_usb_core_USBError(NULL);
+    } else if (_wait_for_callback()) {
+        return _get_string(temp_buf);
+    }
+    return mp_const_none;
 }
 
 mp_obj_t common_hal_usb_core_device_get_manufacturer(usb_core_device_obj_t *self) {
     uint16_t temp_buf[127];
-    _get_langid(self);
-    if (!tuh_descriptor_get_manufacturer_string(self->device_address, self->first_langid, temp_buf, sizeof(temp_buf), _transfer_done_cb, 0) ||
-        !_wait_for_callback()) {
+    tusb_desc_device_t descriptor;
+    // First, be sure not to ask TinyUSB for a non-existent string (avoid error)
+    if (!tuh_descriptor_get_device_local(self->device_address, &descriptor)) {
         return mp_const_none;
     }
-    return _get_string(temp_buf);
+    if (descriptor.iManufacturer == 0) {
+        return mp_const_none;
+    }
+    // Device does provide this string, so continue
+    _get_langid(self);
+    _prepare_for_transfer();
+    if (!tuh_descriptor_get_manufacturer_string(self->device_address, self->first_langid, temp_buf, sizeof(temp_buf), _transfer_done_cb, 0)) {
+        mp_raise_usb_core_USBError(NULL);
+    } else if (_wait_for_callback()) {
+        return _get_string(temp_buf);
+    }
+    return mp_const_none;
 }
 
 
 mp_int_t common_hal_usb_core_device_get_bus(usb_core_device_obj_t *self) {
-    hcd_devtree_info_t devtree;
-    hcd_devtree_get_info(self->device_address, &devtree);
-    return devtree.rhport;
+    tuh_bus_info_t bus_info;
+    if (!tuh_bus_info_get(self->device_address, &bus_info)) {
+        return 0;
+    }
+    return bus_info.rhport;
 }
 
 mp_obj_t common_hal_usb_core_device_get_port_numbers(usb_core_device_obj_t *self) {
-    hcd_devtree_info_t devtree;
-    hcd_devtree_get_info(self->device_address, &devtree);
-    if (devtree.hub_addr == 0) {
+    tuh_bus_info_t bus_info;
+    if (!tuh_bus_info_get(self->device_address, &bus_info)) {
+        return mp_const_none;
+    }
+    if (bus_info.hub_addr == 0) {
         return mp_const_none;
     }
     // USB allows for 5 hubs deep chaining. So we're at most 5 ports deep.
     mp_obj_t ports[5];
     size_t port_count = 0;
-    while (devtree.hub_addr != 0 && port_count < MP_ARRAY_SIZE(ports)) {
+    tuh_bus_info_t current_bus_info = bus_info;
+    while (current_bus_info.hub_addr != 0 && port_count < MP_ARRAY_SIZE(ports)) {
         // Reverse the order of the ports so most downstream comes last.
-        ports[MP_ARRAY_SIZE(ports) - 1 - port_count] = MP_OBJ_NEW_SMALL_INT(devtree.hub_port);
+        ports[MP_ARRAY_SIZE(ports) - 1 - port_count] = MP_OBJ_NEW_SMALL_INT(current_bus_info.hub_port);
         port_count++;
-        hcd_devtree_get_info(devtree.hub_addr, &devtree);
+        if (!tuh_bus_info_get(current_bus_info.hub_addr, &current_bus_info)) {
+            break;
+        }
     }
     return mp_obj_new_tuple(port_count, ports + (MP_ARRAY_SIZE(ports) - port_count));
 }
 
 mp_int_t common_hal_usb_core_device_get_speed(usb_core_device_obj_t *self) {
-    hcd_devtree_info_t devtree;
-    hcd_devtree_get_info(self->device_address, &devtree);
-    switch (devtree.speed) {
+    tuh_bus_info_t bus_info;
+    if (!tuh_bus_info_get(self->device_address, &bus_info)) {
+        return 0;
+    }
+    switch (bus_info.speed) {
         case TUSB_SPEED_HIGH:
             return PYUSB_SPEED_HIGH;
         case TUSB_SPEED_FULL:
@@ -216,38 +336,13 @@ void common_hal_usb_core_device_set_configuration(usb_core_device_obj_t *self, m
 }
 
 static size_t _xfer(tuh_xfer_t *xfer, mp_int_t timeout) {
-    _xfer_result = 0xff;
+    _prepare_for_transfer();
     xfer->complete_cb = _transfer_done_cb;
     if (!tuh_edpt_xfer(xfer)) {
         mp_raise_usb_core_USBError(NULL);
         return 0;
     }
-    uint32_t start_time = supervisor_ticks_ms32();
-    while ((timeout == 0 || supervisor_ticks_ms32() - start_time < (uint32_t)timeout) &&
-           !mp_hal_is_interrupted() &&
-           _xfer_result == 0xff) {
-        // The background tasks include TinyUSB which will call the function
-        // we provided above. In other words, the callback isn't in an interrupt.
-        RUN_BACKGROUND_TASKS;
-    }
-    if (mp_hal_is_interrupted()) {
-        tuh_edpt_abort_xfer(xfer->daddr, xfer->ep_addr);
-        return 0;
-    }
-    xfer_result_t result = _xfer_result;
-    _xfer_result = 0xff;
-    if (result == XFER_RESULT_STALLED) {
-        mp_raise_usb_core_USBError(MP_ERROR_TEXT("Pipe error"));
-    }
-    if (result == 0xff) {
-        tuh_edpt_abort_xfer(xfer->daddr, xfer->ep_addr);
-        mp_raise_usb_core_USBTimeoutError();
-    }
-    if (result == XFER_RESULT_SUCCESS) {
-        return _actual_len;
-    }
-
-    return 0;
+    return _handle_timed_transfer_callback(xfer, timeout);
 }
 
 static bool _open_endpoint(usb_core_device_obj_t *self, mp_int_t endpoint) {
@@ -346,38 +441,12 @@ mp_int_t common_hal_usb_core_device_ctrl_transfer(usb_core_device_obj_t *self,
         .complete_cb = _transfer_done_cb,
     };
 
-    _xfer_result = 0xff;
-
+    _prepare_for_transfer();
     if (!tuh_control_xfer(&xfer)) {
         mp_raise_usb_core_USBError(NULL);
         return 0;
     }
-    uint32_t start_time = supervisor_ticks_ms32();
-    while ((timeout == 0 || supervisor_ticks_ms32() - start_time < (uint32_t)timeout) &&
-           !mp_hal_is_interrupted() &&
-           _xfer_result == 0xff) {
-        // The background tasks include TinyUSB which will call the function
-        // we provided above. In other words, the callback isn't in an interrupt.
-        RUN_BACKGROUND_TASKS;
-    }
-    if (mp_hal_is_interrupted()) {
-        tuh_edpt_abort_xfer(xfer.daddr, xfer.ep_addr);
-        return 0;
-    }
-    xfer_result_t result = _xfer_result;
-    _xfer_result = 0xff;
-    if (result == XFER_RESULT_STALLED) {
-        mp_raise_usb_core_USBError(MP_ERROR_TEXT("Pipe error"));
-    }
-    if (result == 0xff) {
-        tuh_edpt_abort_xfer(xfer.daddr, xfer.ep_addr);
-        mp_raise_usb_core_USBTimeoutError();
-    }
-    if (result == XFER_RESULT_SUCCESS) {
-        return len;
-    }
-
-    return 0;
+    return (mp_int_t)_handle_timed_transfer_callback(&xfer, timeout);
 }
 
 bool common_hal_usb_core_device_is_kernel_driver_active(usb_core_device_obj_t *self, mp_int_t interface) {

@@ -33,7 +33,7 @@
 #include "py/objstr.h"
 #include "py/objgenerator.h"
 #include "py/objfun.h"
-#include "py/stackctrl.h"
+#include "py/cstack.h"
 
 // Instance of GeneratorExit exception - needed by generator.close()
 // CIRCUITPY-CHANGE: https://github.com/adafruit/circuitpython/pull/7069 fix
@@ -205,7 +205,7 @@ static void coro_instance_print(const mp_print_t *print, mp_obj_t self_in, mp_pr
 #endif
 
 mp_vm_return_kind_t mp_obj_gen_resume(mp_obj_t self_in, mp_obj_t send_value, mp_obj_t throw_value, mp_obj_t *ret_val) {
-    MP_STACK_CHECK();
+    mp_cstack_check();
     // CIRCUITPY-CHANGE
     // note that self may have as its type either gen or coro,
     // both of which are stored as an mp_obj_gen_instance_t .

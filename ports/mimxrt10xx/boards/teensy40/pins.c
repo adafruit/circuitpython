@@ -120,6 +120,10 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     {MP_ROM_QSTR(MP_QSTR_SPI), MP_ROM_PTR(&board_spi_obj)},
     {MP_ROM_QSTR(MP_QSTR_UART), MP_ROM_PTR(&board_uart_obj)},
 
+    // USB Host (pads)
+    {MP_ROM_QSTR(MP_QSTR_USB_HOST_DP), MP_ROM_PTR(&pin_USB_OTG2_DP)},
+    {MP_ROM_QSTR(MP_QSTR_USB_HOST_DM), MP_ROM_PTR(&pin_USB_OTG2_DN)},
+
     // other i2c ports defined
     {MP_OBJ_NEW_QSTR(MP_QSTR_SDA1), MP_ROM_PTR(&pin_GPIO_AD_B1_06)},
     {MP_OBJ_NEW_QSTR(MP_QSTR_SCL1), MP_ROM_PTR(&pin_GPIO_AD_B1_07)},

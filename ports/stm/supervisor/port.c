@@ -285,7 +285,7 @@ void HAL_Delay(uint32_t delay_ms) {
     }
 }
 
-uint32_t HAL_GetTick() {
+uint32_t HAL_GetTick(void) {
     if (SysTick->CTRL != 0) {
         return systick_ms;
     } else {

@@ -253,8 +253,9 @@ static bool load_font_header(lvfontio_ondiskfont_t *self, FIL *file, size_t *max
                         *max_slots = advance_count[1] * 2 + advance_count[0];
                     }
                 }
+            } else {
+                *max_slots = advance_count[0] + advance_count[1];
             }
-
 
             found_glyf = true;
         }

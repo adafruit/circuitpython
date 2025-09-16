@@ -54,7 +54,7 @@ const osMutexAttr_t bluetooth_connection_mutex_attr = {
 void common_hal_bleio_init(void) {
 }
 
-void bleio_user_reset() {
+void bleio_user_reset(void) {
     // Stop any user scanning or advertising.
     common_hal_bleio_adapter_stop_scan(&common_hal_bleio_adapter_obj);
     common_hal_bleio_adapter_stop_advertising(&common_hal_bleio_adapter_obj);
@@ -63,7 +63,7 @@ void bleio_user_reset() {
     supervisor_bluetooth_background();
 }
 
-void bleio_reset() {
+void bleio_reset(void) {
     reset_dynamic_service();
     reset_packet_buffer_list();
     reset_characteristic_buffer_list();

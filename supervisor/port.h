@@ -9,6 +9,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#include "py/obj.h"
 #include "supervisor/shared/safe_mode.h"
 
 // Provided by the linker;
@@ -107,3 +108,10 @@ void port_gc_collect(void);
 // this function to sense the button. Ports that need to can override this
 // function to provide their own implementation.
 bool port_boot_button_pressed(void);
+
+// Allocating objects on the port heap, not the VM heap.
+#define mp_obj_port_malloc(struct_type, obj_type) ((struct_type *)mp_obj_port_malloc_helper(sizeof(struct_type), obj_type))
+#define mp_obj_port_malloc_var(struct_type, var_field, var_type, var_num, obj_type) ((struct_type *)mp_obj_port_malloc_helper(offsetof(struct_type, var_field) + sizeof(var_type) * (var_num), obj_type))
+
+void *mp_obj_port_malloc_helper(size_t num_bytes, const mp_obj_type_t *type);
+mp_obj_t mp_obj_new_port_tuple(size_t n, const mp_obj_t *items);

@@ -37,12 +37,9 @@ typedef struct {
     uint32_t echo_buffer_len; // bytes
     uint32_t max_echo_buffer_len; // bytes
 
-    uint32_t echo_buffer_read_pos; // words
-    uint32_t echo_buffer_write_pos; // words
-
+    uint32_t echo_buffer_left_pos; // words (<< 8 when freq_shift=True)
+    uint32_t echo_buffer_right_pos; // words (<< 8 when freq_shift=True)
     uint32_t echo_buffer_rate; // words << 8
-    uint32_t echo_buffer_left_pos; // words << 8
-    uint32_t echo_buffer_right_pos; // words << 8
 
     mp_obj_t sample;
 } audiodelays_echo_obj_t;

@@ -71,7 +71,7 @@ void common_hal_keypad_shiftregisterkeys_construct(keypad_shiftregisterkeys_obj_
     self->value_when_pressed = value_when_pressed;
     self->funcs = &shiftregisterkeys_funcs;
 
-    keypad_construct_common((keypad_scanner_obj_t *)self, interval, max_events, debounce_threshold);
+    keypad_construct_common((keypad_scanner_obj_t *)self, interval, max_events, debounce_threshold, true);
 }
 
 void common_hal_keypad_shiftregisterkeys_deinit(keypad_shiftregisterkeys_obj_t *self) {

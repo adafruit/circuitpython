@@ -117,7 +117,7 @@ void common_hal_frequencyio_frequencyin_construct(frequencyio_frequencyin_obj_t 
 
     self->pin = pin->number;
     self->capture_period_ms = capture_period_ms;
-    self->internal_data = heap_caps_malloc(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL, sizeof(_internal_data_t));
+    self->internal_data = heap_caps_malloc(sizeof(_internal_data_t), MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL);
     if (self->internal_data == NULL) {
         raise_esp_error(ESP_ERR_NO_MEM);
     }

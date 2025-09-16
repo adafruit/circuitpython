@@ -21,7 +21,7 @@
 
 static mp_obj_t mp_obj_new_i2ctarget_i2c_target_request(i2ctarget_i2c_target_obj_t *target, uint8_t address, bool is_read, bool is_restart) {
     i2ctarget_i2c_target_request_obj_t *self =
-        mp_obj_malloc(i2ctarget_i2c_target_request_obj_t, &i2ctarget_i2c_target_request_type);
+        mp_obj_malloc_with_finaliser(i2ctarget_i2c_target_request_obj_t, &i2ctarget_i2c_target_request_type);
     self->target = target;
     self->address = address;
     self->is_read = is_read;
@@ -200,7 +200,7 @@ static MP_DEFINE_CONST_DICT(i2ctarget_i2c_target_locals_dict, i2ctarget_i2c_targ
 MP_DEFINE_CONST_OBJ_TYPE(
     i2ctarget_i2c_target_type,
     MP_QSTR_I2CTarget,
-    MP_TYPE_FLAG_NONE,
+    MP_TYPE_FLAG_HAS_SPECIAL_ACCESSORS,
     make_new, i2ctarget_i2c_target_make_new,
     locals_dict, &i2ctarget_i2c_target_locals_dict
     );
@@ -222,23 +222,38 @@ static mp_obj_t i2ctarget_i2c_target_request_make_new(const mp_obj_type_t *type,
     return mp_obj_new_i2ctarget_i2c_target_request(args[0], mp_obj_get_int(args[1]), mp_obj_is_true(args[2]), mp_obj_is_true(args[3]));
 }
 
-//|     def __enter__(self) -> I2CTargetRequest:
-//|         """No-op used in Context Managers."""
-//|         ...
-//|
-//  Provided by context manager helper.
+static void target_request_check_for_deinit(i2ctarget_i2c_target_request_obj_t *self) {
+    if (self->target == NULL) {
+        raise_deinited_error();
+    }
+    check_for_deinit(self->target);
+}
 
-//|     def __exit__(self) -> None:
-//|         """Close the request."""
+//|     def deinit(self) -> None:
+//|         """Disconnects from parent `I2CTarget`.
+//|         Called by `__exit__()` to indicate the `I2CTargetRequest` is no longer useful."""
 //|         ...
 //|
-//  Provided by context manager helper.
+static mp_obj_t i2ctarget_i2c_target_request_deinit(mp_obj_t self_in) {
+    i2ctarget_i2c_target_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    target_request_check_for_deinit(self);
+
+    i2ctarget_i2c_target_obj_t *target = self->target;
+
+    // Deinit I2CTargetRequest first in case _close() fails.
+    self->target = NULL;
+
+    common_hal_i2ctarget_i2c_target_close(target);
+
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(i2ctarget_i2c_target_request_deinit_obj, i2ctarget_i2c_target_request_deinit);
 
 //|     address: int
 //|     """The I2C address of the request."""
 static mp_obj_t i2ctarget_i2c_target_request_get_address(mp_obj_t self_in) {
     i2ctarget_i2c_target_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    check_for_deinit(self->target);
+    target_request_check_for_deinit(self);
 
     return mp_obj_new_int(self->address);
 }
@@ -248,7 +263,7 @@ MP_DEFINE_CONST_PROP_GET(i2ctarget_i2c_target_request_address_obj, i2ctarget_i2c
 //|     """The I2C main controller is reading from this target."""
 static mp_obj_t i2ctarget_i2c_target_request_get_is_read(mp_obj_t self_in) {
     i2ctarget_i2c_target_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    check_for_deinit(self->target);
+    target_request_check_for_deinit(self);
 
     return mp_obj_new_bool(self->is_read);
 }
@@ -259,7 +274,7 @@ MP_DEFINE_CONST_PROP_GET(i2ctarget_i2c_target_request_is_read_obj, i2ctarget_i2c
 //|
 static mp_obj_t i2ctarget_i2c_target_request_get_is_restart(mp_obj_t self_in) {
     i2ctarget_i2c_target_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    check_for_deinit(self->target);
+    target_request_check_for_deinit(self);
 
     return mp_obj_new_bool(self->is_restart);
 }
@@ -276,7 +291,7 @@ MP_DEFINE_CONST_PROP_GET(i2ctarget_i2c_target_request_is_restart_obj, i2ctarget_
 //|
 static mp_obj_t i2ctarget_i2c_target_request_read(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     i2ctarget_i2c_target_request_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
-    check_for_deinit(self->target);
+    target_request_check_for_deinit(self);
 
     enum { ARG_n, ARG_ack };
     static const mp_arg_t allowed_args[] = {
@@ -335,7 +350,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(i2ctarget_i2c_target_request_read_obj, 1, i2ctarget_i
 //|
 static mp_obj_t i2ctarget_i2c_target_request_write(mp_obj_t self_in, mp_obj_t buf_in) {
     i2ctarget_i2c_target_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    check_for_deinit(self->target);
+    target_request_check_for_deinit(self);
 
     if (!self->is_read) {
         mp_raise_OSError(MP_EACCES);
@@ -370,7 +385,7 @@ static MP_DEFINE_CONST_FUN_OBJ_2(i2ctarget_i2c_target_request_write_obj, i2ctarg
 //|
 static mp_obj_t i2ctarget_i2c_target_request_ack(uint n_args, const mp_obj_t *args) {
     i2ctarget_i2c_target_request_obj_t *self = MP_OBJ_TO_PTR(args[0]);
-    check_for_deinit(self->target);
+    target_request_check_for_deinit(self);
 
     bool ack = (n_args == 1) ? true : mp_obj_is_true(args[1]);
 
@@ -383,25 +398,29 @@ static mp_obj_t i2ctarget_i2c_target_request_ack(uint n_args, const mp_obj_t *ar
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(i2ctarget_i2c_target_request_ack_obj, 1, 2, i2ctarget_i2c_target_request_ack);
 
-static mp_obj_t i2ctarget_i2c_target_request_close(mp_obj_t self_in) {
-    i2ctarget_i2c_target_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    check_for_deinit(self->target);
+//|     def __enter__(self) -> I2CTargetRequest:
+//|         """No-op used in Context Managers."""
+//|         ...
+//|
+//  Provided by context manager helper.
 
-    common_hal_i2ctarget_i2c_target_close(self->target);
-    return mp_const_none;
-}
-static MP_DEFINE_CONST_FUN_OBJ_1(i2ctarget_i2c_target_request_close_obj, i2ctarget_i2c_target_request_close);
+//|     def __exit__(self) -> None:
+//|         """Close and deinit the request."""
+//|         ...
+//|
+//  Provided by context manager helper.
 
 static const mp_rom_map_elem_t i2ctarget_i2c_target_request_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
+    { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&i2ctarget_i2c_target_request_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR__del__), MP_ROM_PTR(&i2ctarget_i2c_target_request_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR_address), MP_ROM_PTR(&i2ctarget_i2c_target_request_address_obj) },
     { MP_ROM_QSTR(MP_QSTR_is_read), MP_ROM_PTR(&i2ctarget_i2c_target_request_is_read_obj) },
     { MP_ROM_QSTR(MP_QSTR_is_restart), MP_ROM_PTR(&i2ctarget_i2c_target_request_is_restart_obj) },
     { MP_ROM_QSTR(MP_QSTR_read), MP_ROM_PTR(&i2ctarget_i2c_target_request_read_obj) },
     { MP_ROM_QSTR(MP_QSTR_write), MP_ROM_PTR(&i2ctarget_i2c_target_request_write_obj) },
     { MP_ROM_QSTR(MP_QSTR_ack), MP_ROM_PTR(&i2ctarget_i2c_target_request_ack_obj) },
-    { MP_ROM_QSTR(MP_QSTR_close), MP_ROM_PTR(&i2ctarget_i2c_target_request_close_obj) },
 };
 
 static MP_DEFINE_CONST_DICT(i2ctarget_i2c_target_request_locals_dict, i2ctarget_i2c_target_request_locals_dict_table);

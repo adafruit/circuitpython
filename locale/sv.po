@@ -6,15 +6,15 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-01-04 12:55-0600\n"
-"PO-Revision-Date: 2025-04-23 08:01+0000\n"
-"Last-Translator: Jonny Bergdahl <jonny@bergdahl.it>\n"
+"PO-Revision-Date: 2025-06-15 23:04+0000\n"
+"Last-Translator: Jonny Bergdahl <github@bergdahl.org>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: sv\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.11.1-dev\n"
+"X-Generator: Weblate 5.12-dev\n"
 
 #: main.c
 msgid ""
@@ -323,7 +323,7 @@ msgid "'%q' object does not support '%q'"
 msgstr "Objektet '%q' stöder inte '%q'"
 
 #: py/runtime.c
-msgid "'%q' object is not an iterator"
+msgid "'%q' object isn't an iterator"
 msgstr "Objektet '%q' är inte en iterator"
 
 #: py/objtype.c py/runtime.c shared-module/atexit/__init__.c
@@ -331,13 +331,13 @@ msgid "'%q' object is not callable"
 msgstr "Objektet '%q' kan inte anropas"
 
 #: py/runtime.c
-msgid "'%q' object is not iterable"
+msgid "'%q' object isn't iterable"
 msgstr "Objektet '%q' är inte itererbart"
 
 #: py/emitinlinethumb.c py/emitinlinextensa.c
 #, c-format
 msgid "'%s' expects a label"
-msgstr "'%s' förväntar sig en label"
+msgstr "'%s' förväntar sig en etikett"
 
 #: py/emitinlinethumb.c py/emitinlinextensa.c
 #, c-format
@@ -461,7 +461,7 @@ msgstr "*x måste vara mål för tilldelning"
 
 #: py/obj.c
 msgid ", in %q\n"
-msgstr ", i %q\n"
+msgstr ", i%q\n"
 
 #: shared-bindings/busdisplay/BusDisplay.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c
@@ -868,6 +868,10 @@ msgstr "Arrayer för koordinater har olika längd"
 msgid "Coordinate arrays types have different sizes"
 msgstr "Arrayer för koordinater har olika storlek"
 
+#: ports/espressif/common-hal/rclcpy/Publisher.c
+msgid "Could not publish to ROS topic"
+msgstr "Kan inte publicera till ROS topic"
+
 #: shared-bindings/_bleio/Adapter.c
 msgid "Could not set address"
 msgstr "Kan inte ange adress"
@@ -879,6 +883,11 @@ msgstr "Det gick inte att starta avbrott, RX upptagen"
 #: shared-module/audiomp3/MP3Decoder.c
 msgid "Couldn't allocate decoder"
 msgstr "Det gick inte att allokera avkodaren"
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+#, c-format
+msgid "Critical ROS failure during soft reboot, reset required: %d"
+msgstr "Kritiskt ROS-fel vid mjuk omstart, reset krävs: %d"
 
 #: ports/stm/common-hal/analogio/AnalogOut.c
 msgid "DAC Channel Init Error"
@@ -1079,7 +1088,8 @@ msgstr "Det gick inte att skriva till intern flash."
 msgid "File exists"
 msgstr "Filen finns redan"
 
-#: shared-module/lvfontio/OnDiskFont.c shared-module/os/getenv.c
+#: shared-bindings/supervisor/__init__.c shared-module/lvfontio/OnDiskFont.c
+#: shared-module/os/getenv.c
 msgid "File not found"
 msgstr "Filen hittades inte"
 
@@ -1110,7 +1120,7 @@ msgstr "För L8-färgrymden måste indatabitmappen ha 8 bitar per pixel"
 msgid "For RGB colorspaces, input bitmap must have 16 bits per pixel"
 msgstr "För RGB-färgrymder måste indatabitmappen ha 16 bitar per pixel"
 
-#: ports/cxd56/common-hal/camera/Camera.c
+#: ports/cxd56/common-hal/camera/Camera.c shared-module/audiocore/WaveFile.c
 msgid "Format not supported"
 msgstr "Format stöds inte"
 
@@ -1278,6 +1288,7 @@ msgstr "Avbruten av utgångsfunktion"
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c py/argcheck.c
 #: shared-bindings/digitalio/DigitalInOut.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c shared-bindings/pwmio/PWMOut.c
+#: shared-bindings/supervisor/__init__.c
 #: shared-module/aurora_epaper/aurora_framebuffer.c
 #: shared-module/lvfontio/OnDiskFont.c
 msgid "Invalid %q"
@@ -1311,6 +1322,10 @@ msgstr "Ogiltig BSSID"
 #: shared-bindings/wifi/Radio.c
 msgid "Invalid MAC address"
 msgstr "Ogiltig MAC-adress"
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+msgid "Invalid ROS domain ID"
+msgstr "Ogiltigt ROS domän-id"
 
 #: ports/espressif/common-hal/espidf/__init__.c py/moderrno.c
 msgid "Invalid argument"
@@ -1874,6 +1889,10 @@ msgstr "Programstorlek ogiltig"
 msgid "Program too long"
 msgstr "Programmet är för långt"
 
+#: shared-bindings/rclcpy/Publisher.c
+msgid "Publishers can only be created from a parent node"
+msgstr "Publicerare kan bara skapas from föräldranod"
+
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Pull not used when direction is output."
 msgstr "Pull används inte när riktningen är output."
@@ -1893,6 +1912,26 @@ msgstr "RNG DeInit-fel"
 #: ports/stm/common-hal/os/__init__.c
 msgid "RNG Init Error"
 msgstr "RNG Init-fel"
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+msgid "ROS failed to initialize. Is agent connected?"
+msgstr "Fel vid ROS initialisering, är agent ansluten?"
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+msgid "ROS internal setup failure"
+msgstr "Fel vid ROS intern inställning"
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+msgid "ROS memory allocator failure"
+msgstr "Fel vid ROS minnesallokering"
+
+#: ports/espressif/common-hal/rclcpy/Node.c
+msgid "ROS node failed to initialize"
+msgstr "Fel vid ROS-nods initialisering"
+
+#: ports/espressif/common-hal/rclcpy/Publisher.c
+msgid "ROS topic failed to initialize"
+msgstr "Fel vid initialisering av ROS topic"
 
 #: ports/atmel-samd/common-hal/busio/UART.c ports/cxd56/common-hal/busio/UART.c
 #: ports/nordic/common-hal/busio/UART.c ports/stm/common-hal/busio/UART.c
@@ -2104,6 +2143,10 @@ msgstr "Tile-index utanför gräns"
 #: shared-bindings/displayio/TileGrid.c
 msgid "Tile width must exactly divide bitmap width"
 msgstr "Tile-bredd måste vara jämnt delbar med bredd på bitmap"
+
+#: shared-module/tilepalettemapper/TilePaletteMapper.c
+msgid "TilePaletteMapper may only be bound to a TileGrid once"
+msgstr "TilePaletteMapper får bara bindas till ett TileGrid en gång"
 
 #: shared-bindings/alarm/time/TimeAlarm.c
 msgid "Time is in the past."
@@ -2334,10 +2377,6 @@ msgstr "Färgrymd stöds inte"
 msgid "Unsupported display bus type"
 msgstr "Busstyp för display stöds inte"
 
-#: shared-module/audiocore/WaveFile.c
-msgid "Unsupported format"
-msgstr "Format stöds inte"
-
 #: shared-bindings/hashlib/__init__.c
 msgid "Unsupported hash algorithm"
 msgstr "Hash-algoritmen stöds inte"
@@ -2399,8 +2438,10 @@ msgstr ""
 msgid "Wi-Fi: "
 msgstr "Wi-Fi: "
 
+#: ports/espressif/common-hal/wifi/Radio.c
 #: ports/raspberrypi/common-hal/wifi/Radio.c
-msgid "Wifi is not enabled"
+#: ports/zephyr-cp/common-hal/wifi/Radio.c
+msgid "WiFi is not enabled"
 msgstr "WiFi är inte aktiverat"
 
 #: main.c
@@ -2636,16 +2677,16 @@ msgstr "bitmappsstorlekar måste matcha"
 msgid "bits must be 32 or less"
 msgstr "bits måste vara 32 eller färre"
 
+#: shared-bindings/audiofreeverb/Freeverb.c
+msgid "bits_per_sample must be 16"
+msgstr "bits_per_sample måste vara 16"
+
 #: shared-bindings/audiodelays/Chorus.c shared-bindings/audiodelays/Echo.c
 #: shared-bindings/audiodelays/MultiTapDelay.c
 #: shared-bindings/audiodelays/PitchShift.c
 #: shared-bindings/audiofilters/Distortion.c
-#: shared-bindings/audiodelays/Reverb.c
-msgid "bits_per_sample must be 16"
-msgstr "bits_per_sample måste vara 16"
-
-#: shared-bindings/audiodelays/Echo.c shared-bindings/audiofilters/Distortion.c
-#: shared-bindings/audiofilters/Filter.c shared-bindings/audiomixer/Mixer.c
+#: shared-bindings/audiofilters/Filter.c shared-bindings/audiofilters/Phaser.c
+#: shared-bindings/audiomixer/Mixer.c
 msgid "bits_per_sample must be 8 or 16"
 msgstr "bits_per_sample måste vara 8 eller 16"
 
@@ -3190,7 +3231,7 @@ msgid "format"
 msgstr "format"
 
 #: py/objstr.c
-msgid "format requires a dict"
+msgid "format needs a dict"
 msgstr "formatet kräver en dict"
 
 #: py/objdeque.c
@@ -3651,7 +3692,7 @@ msgid "must use keyword argument for key function"
 msgstr "måste använda nyckelordsargument för nyckelfunktion"
 
 #: py/runtime.c
-msgid "name '%q' is not defined"
+msgid "name '%q' isn't defined"
 msgstr "namnet '%q' är inte definierat"
 
 #: py/runtime.c
@@ -4069,7 +4110,7 @@ msgstr "argumentet roll måste vara en ndarray"
 msgid "rsplit(None,n)"
 msgstr "rsplit(None,n)"
 
-#: shared-bindings/audiodelays/Reverb.c
+#: shared-bindings/audiofreeverb/Freeverb.c
 msgid "samples_signed must be true"
 msgstr "samples_signed måste vara sann"
 
@@ -4292,11 +4333,11 @@ msgid "tx and rx cannot both be None"
 msgstr "tx och rx kan inte båda vara None"
 
 #: py/objtype.c
-msgid "type '%q' is not an acceptable base type"
+msgid "type '%q' isn't an acceptable base type"
 msgstr "typ '%q' är inte en acceptabel bastyp"
 
 #: py/objtype.c
-msgid "type is not an acceptable base type"
+msgid "type isn't an acceptable base type"
 msgstr "typ är inte en acceptabel bastyp"
 
 #: py/runtime.c
@@ -4440,12 +4481,6 @@ msgstr "Vikter måste vara ett objekt av typen %q, %q, %q eller %q, inte %q "
 msgid "width must be greater than zero"
 msgstr "width måste vara större än noll"
 
-#: ports/espressif/common-hal/wifi/Radio.c
-#: ports/raspberrypi/common-hal/wifi/Radio.c
-#: ports/zephyr-cp/common-hal/wifi/Radio.c
-msgid "wifi is not enabled"
-msgstr "WiFi är inte aktiverat"
-
 #: ports/raspberrypi/common-hal/wifi/Monitor.c
 msgid "wifi.Monitor not available"
 msgstr "wifi.Monitor är inte tillgänglig"
@@ -4507,6 +4542,15 @@ msgstr "zi måste vara av typ float"
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr "zi måste vara i formen (n_section, 2)"
+
+#~ msgid "Unsupported format"
+#~ msgstr "Format stöds inte"
+
+#~ msgid "Wifi is not enabled"
+#~ msgstr "WiFi är inte aktiverat"
+
+#~ msgid "wifi is not enabled"
+#~ msgstr "WiFi är inte aktiverat"
 
 #~ msgid "Cannot remount '/' when visible via USB."
 #~ msgstr "Det går inte att montera om '/' när den är synlig via USB."
@@ -4879,13 +4923,13 @@ msgstr "zi måste vara i formen (n_section, 2)"
 #~ msgid "'%s' object does not support item deletion"
 #~ msgstr "Objektet '%s' stöder inte borttagning av objekt"
 
-#~ msgid "'%s' object is not an iterator"
+#~ msgid "'%s' object isn't an iterator"
 #~ msgstr "Objektet '%s' är inte en iterator"
 
 #~ msgid "'%s' object is not callable"
 #~ msgstr "Objektet '%s' kan inte anropas"
 
-#~ msgid "'%s' object is not iterable"
+#~ msgid "'%s' object isn't iterable"
 #~ msgstr "Objektet '%s' är inte itererable"
 
 #~ msgid "'%s' object is not subscriptable"
@@ -4903,7 +4947,7 @@ msgstr "zi måste vara i formen (n_section, 2)"
 #~ msgid "'continue' outside loop"
 #~ msgstr "'continue' utanför loop"
 
-#~ msgid "'coroutine' object is not an iterator"
+#~ msgid "'coroutine' object isn't an iterator"
 #~ msgstr "objektet 'coroutine\" är inte en iterator"
 
 #~ msgid "(x,y) integers required"
@@ -6006,7 +6050,7 @@ msgstr "zi måste vara i formen (n_section, 2)"
 #~ msgid "frequency is read-only for this board"
 #~ msgstr "frekvens är skrivskyddad för detta kort"
 
-#~ msgid "function does not take keyword arguments"
+#~ msgid "function doesn't take keyword arguments"
 #~ msgstr "funktionen tar inte nyckelordsargument"
 
 #~ msgid "function is implemented for scalars and ndarrays only"
@@ -6106,7 +6150,7 @@ msgstr "zi måste vara i formen (n_section, 2)"
 #~ msgid "n must be between 0, and 9"
 #~ msgstr "n måste vara mellan 0 och 9"
 
-#~ msgid "name reused for argument"
+#~ msgid "argument name reused"
 #~ msgstr "namn återanvänt för argument"
 
 #~ msgid "no available NIC"

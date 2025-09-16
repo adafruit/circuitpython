@@ -78,6 +78,7 @@ pwmio = false
 qrio = false
 rainbowio = false
 random = true
+rclcpy = false
 rgbmatrix = false
 rotaryio = false
 rtc = false

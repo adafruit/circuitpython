@@ -8,10 +8,12 @@
 #include <string.h>
 #include "lib/tlsf/tlsf.h"
 #include "lwip_mem.h"
+#include "shared-bindings/microcontroller/__init__.h"
 #include "supervisor/port_heap.h"
 
 void *lwip_heap_malloc(size_t size) {
-    return port_malloc(size, true);
+    void *ptr = port_malloc(size, true);
+    return ptr;
 }
 
 void lwip_heap_free(void *ptr) {

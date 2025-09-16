@@ -1,4 +1,5 @@
 extern "C" {
+// CIRCUITPY-CHANGE: do not include everything: it causes compilation warnings
 #include "py/obj.h"
 }
 

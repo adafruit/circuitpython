@@ -195,7 +195,7 @@ bool common_hal_audiofreeverb_freeverb_get_playing(audiofreeverb_freeverb_obj_t 
 }
 
 void common_hal_audiofreeverb_freeverb_play(audiofreeverb_freeverb_obj_t *self, mp_obj_t sample, bool loop) {
-    audiosample_must_match(&self->base, sample);
+    audiosample_must_match(&self->base, sample, false);
 
     self->sample = sample;
     self->loop = loop;

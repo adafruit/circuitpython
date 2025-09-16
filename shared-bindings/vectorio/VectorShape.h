@@ -43,6 +43,7 @@ mp_obj_t common_hal_vectorio_vector_shape_get_pixel_shader(vectorio_vector_shape
 void common_hal_vectorio_vector_shape_set_pixel_shader(vectorio_vector_shape_t *self, mp_obj_t pixel_shader);
 
 void vectorio_vector_shape_update_transform(vectorio_vector_shape_t *self, displayio_buffer_transform_t *group_transform);
+bool vectorio_vector_shape_set_in_group(vectorio_vector_shape_t *self, bool in_group);
 
 // Composable property definition for shapes that use VectorShape
 extern vectorio_draw_protocol_impl_t vectorio_vector_shape_draw_protocol_impl;

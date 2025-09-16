@@ -23,7 +23,9 @@ typedef struct {
     uint32_t buffer_length;
     #if CIRCUITPY_SYNTHIO
     synthio_block_slot_t level;
+    synthio_block_slot_t panning;
     #else
     uint16_t level;
+    int16_t panning;
     #endif
 } audiomixer_mixervoice_obj_t;

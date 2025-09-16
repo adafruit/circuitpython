@@ -25,7 +25,8 @@ INC_CYW43 := \
 CFLAGS_CYW43 := \
 	-DCYW43_LWIP=1 \
 	-DPICO_CYW43_ARCH_THREADSAFE_BACKGROUND=1 \
-	-DCYW43_USE_SPI \
+	-DCYW43_USE_SPI=1 \
+	-DUSE_SDIOIT=0 \
 	-DIGNORE_GPIO25 \
 	-DIGNORE_GPIO23 \
 	-DIGNORE_GPIO24 \
@@ -125,6 +126,7 @@ INC += \
 	-isystem sdk/src/rp2_common/hardware_powman/include/ \
 	-isystem sdk/src/rp2_common/hardware_pwm/include/ \
 	-isystem sdk/src/rp2_common/hardware_resets/include/ \
+	-isystem sdk/src/rp2_common/hardware_rcp/include/ \
 	-isystem sdk/src/rp2_common/hardware_rtc/include/ \
 	-isystem sdk/src/rp2_common/hardware_spi/include/ \
 	-isystem sdk/src/rp2_common/hardware_sync/include/ \
@@ -149,6 +151,7 @@ INC += \
 	-isystem sdk/src/rp2_common/pico_float/include/ \
 	-isystem sdk/src/rp2_common/pico_runtime/include/ \
 	-isystem sdk/src/rp2_common/pico_runtime_init/include/ \
+	-isystem sdk/src/rp2_common/pico_platform_common/include/ \
 	-isystem sdk/src/rp2_common/pico_platform_compiler/include/ \
 	-isystem sdk/src/rp2_common/pico_platform_sections/include/ \
 	-isystem sdk/src/rp2_common/pico_platform_panic/include/ \
@@ -223,7 +226,7 @@ endif
 
 DISABLE_WARNINGS = -Wno-cast-align
 
-CFLAGS += $(INC) -Wtype-limits -Wall -Werror -std=gnu11 -fshort-enums $(BASE_CFLAGS) $(CFLAGS_MOD) $(COPT) $(DISABLE_WARNINGS) -Werror=missing-prototypes
+CFLAGS += $(INC) -Wtype-limits -Wall -Werror -std=gnu11 -fshort-enums $(BASE_CFLAGS) $(CFLAGS_MOD) $(COPT) $(DISABLE_WARNINGS) -Werror=missing-prototypes -Wold-style-definition
 
 PICO_LDFLAGS = --specs=nosys.specs --specs=nano.specs
 
@@ -562,11 +565,14 @@ SRC_C += \
 	common-hal/picodvi/Framebuffer_$(CHIP_VARIANT).c \
 
 ifeq ($(CHIP_VARIANT),RP2040)
-SRC_C += \
+SRC_PICODVI := \
 	lib/PicoDVI/software/libdvi/dvi.c \
 	lib/PicoDVI/software/libdvi/dvi_serialiser.c \
 	lib/PicoDVI/software/libdvi/dvi_timing.c \
 	lib/PicoDVI/software/libdvi/tmds_encode.c \
+
+SRC_C += $(SRC_PICODVI)
+$(patsubst %.c,$(BUILD)/%.o,$(SRC_PICODVI))): CFLAGS += -Wno-old-style-definition
 
 endif
 
@@ -652,7 +658,7 @@ CFLAGS += \
 	  -isystem $(TOP)/lib/mbedtls/include \
 	  -DMBEDTLS_CONFIG_FILE='"$(TOP)/lib/mbedtls_config/mbedtls_config.h"' \
 
-$(BUILD)/x509_crt_bundle.S: $(TOP)/lib/certificates/data/roots.pem $(TOP)/tools/gen_crt_bundle.py
+$(BUILD)/x509_crt_bundle.S: $(TOP)/lib/certificates/data/roots-full.pem $(TOP)/tools/gen_crt_bundle.py
 	$(Q)$(PYTHON) $(TOP)/tools/gen_crt_bundle.py -i $< -o $@ --asm
 OBJ_MBEDTLS := $(BUILD)/x509_crt_bundle.o
 $(patsubst %.c,$(BUILD)/%.o,$(SRC_MBEDTLS))): CFLAGS += -Wno-suggest-attribute=format
@@ -660,13 +666,13 @@ else
 OBJ_MBEDTLS :=
 endif
 
-SRC_S = supervisor/$(CHIP_FAMILY)_cpu.s
 BOOT2_S_CFLAGS ?= -DPICO_FLASH_SPI_CLKDIV=4
 SRC_S_UPPER = sdk/src/rp2_common/hardware_irq/irq_handler_chain.S \
               sdk/src/rp2_common/pico_bit_ops/bit_ops_aeabi.S \
               sdk/src/rp2_common/pico_double/double_aeabi_$(DOUBLE_EABI).S \
               sdk/src/rp2_common/pico_int64_ops/pico_int64_ops_aeabi.S \
               sdk/src/rp2_common/pico_crt0/crt0.S \
+              supervisor/shared/cpu_regs.S \
               $(SRC_S_UPPER_CHIP_VARIANT)
 
 ifeq ($(CIRCUITPY_PICODVI),1)

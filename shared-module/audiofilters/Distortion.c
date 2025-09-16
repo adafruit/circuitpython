@@ -141,7 +141,7 @@ bool common_hal_audiofilters_distortion_get_playing(audiofilters_distortion_obj_
 }
 
 void common_hal_audiofilters_distortion_play(audiofilters_distortion_obj_t *self, mp_obj_t sample, bool loop) {
-    audiosample_must_match(&self->base, sample);
+    audiosample_must_match(&self->base, sample, false);
 
     self->sample = sample;
     self->loop = loop;

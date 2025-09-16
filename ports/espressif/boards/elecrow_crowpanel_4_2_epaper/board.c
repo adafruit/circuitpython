@@ -63,41 +63,30 @@ void board_init(void) {
         0, // Polarity
         0); // Phase
 
-// Set up the DisplayIO epaper object
+    // Set up the DisplayIO epaper object
     epaperdisplay_epaperdisplay_obj_t *display = &allocate_display()->epaper_display;
     display->base.type = &epaperdisplay_epaperdisplay_type;
-    common_hal_epaperdisplay_epaperdisplay_construct(
-        display,
-        bus,
-        display_start_sequence, sizeof(display_start_sequence),
-        1, // start up time
-        display_stop_sequence, sizeof(display_stop_sequence),
-        400, // width
-        300, // height
-        400, // ram_width
-        300, // ram_height
-        0, // colstart
-        0, // rowstart
-        0, // rotation
-        NO_COMMAND, // set_column_window_command
-        NO_COMMAND, // set_row_window_command
-        NO_COMMAND, // set_current_column_command
-        NO_COMMAND, // set_current_row_command
-        0x24, // write_black_ram_command
-        false, // black_bits_inverted
-        0x26, // write_color_ram_command
-        false, // color_bits_inverted
-        0x000000, // highlight_color
-        refresh_sequence, sizeof(refresh_sequence), // refresh_display_command
-        1.0, // refresh_time
-        &pin_GPIO48, // busy_pin
-        true, // busy_state
-        2.0, // seconds_per_frame
-        false, // always_toggle_chip_select
-        false, // grayscale
-        false, // acep
-        false, // two_byte_sequence_length
-        false); // address_little_endian
+
+    epaperdisplay_construct_args_t args = EPAPERDISPLAY_CONSTRUCT_ARGS_DEFAULTS;
+    args.bus = bus;
+    args.start_sequence = display_start_sequence;
+    args.start_sequence_len = sizeof(display_start_sequence);
+    args.start_up_time = 1.0;
+    args.stop_sequence = display_stop_sequence;
+    args.stop_sequence_len = sizeof(display_stop_sequence);
+    args.width = 400;
+    args.height = 300;
+    args.ram_width = 400;
+    args.ram_height = 300;
+    args.write_black_ram_command = 0x24;
+    args.write_color_ram_command = 0x26;
+    args.refresh_sequence = refresh_sequence;
+    args.refresh_sequence_len = sizeof(refresh_sequence);
+    args.refresh_time = 1.0;
+    args.busy_pin = &pin_GPIO48;
+    args.busy_state = true;
+    args.seconds_per_frame = 2.0;
+    common_hal_epaperdisplay_epaperdisplay_construct(display, &args);
 }
 
 void board_deinit(void) {

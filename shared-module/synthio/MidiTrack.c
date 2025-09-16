@@ -116,6 +116,16 @@ mp_int_t common_hal_synthio_miditrack_get_error_location(synthio_miditrack_obj_t
     return self->error_location;
 }
 
+mp_int_t common_hal_synthio_miditrack_get_tempo(synthio_miditrack_obj_t *self) {
+    return self->tempo;
+}
+
+void common_hal_synthio_miditrack_set_tempo(synthio_miditrack_obj_t *self, mp_int_t value) {
+    mp_int_t val = mp_arg_validate_int_min(value, 1, MP_QSTR_tempo);
+    self->synth.span.dur = (uint32_t)self->synth.span.dur * self->tempo / val;
+    self->tempo = val;
+}
+
 void synthio_miditrack_reset_buffer(synthio_miditrack_obj_t *self,
     bool single_channel_output, uint8_t channel) {
     synthio_synth_reset_buffer(&self->synth, single_channel_output, channel);

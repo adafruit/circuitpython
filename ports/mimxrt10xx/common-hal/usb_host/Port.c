@@ -47,5 +47,8 @@ usb_host_port_obj_t *common_hal_usb_host_port_construct(const mcu_pin_obj_t *dp,
     self->dp = dp;
     self->dm = dm;
 
+    claim_pin(dp);
+    claim_pin(dm);
+
     return self;
 }

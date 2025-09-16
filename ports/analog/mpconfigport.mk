@@ -2,6 +2,7 @@
 #
 # SPDX-FileCopyrightText: Copyright (c) 2020 Scott Shawcroft for Adafruit Industries
 # SPDX-FileCopyrightText: Copyright (c) 2024 Brandon Hurst, Analog Devices, Inc.
+# SPDX-FileCopyrightText: Copyright (c) 2025 Peggy Zhu, Analog Devices, Inc.
 #
 # SPDX-License-Identifier: MIT
 
@@ -23,7 +24,7 @@ INTERNAL_FLASH_FILESYSTEM = 1
 
 # Plan to implement
 CIRCUITPY_BUSIO ?= 0
-CIRCUITPY_RTC ?= 0
+CIRCUITPY_RTC ?= 1
 
 # Other modules (may or may not implement):
 CIRCUITPY_ANALOGIO ?= 0
@@ -51,7 +52,7 @@ CIRCUITPY_BITBANGIO ?= 1
 # Requires Microcontroller
 CIRCUITPY_TOUCHIO ?= 1
 # Requires OS
-CIRCUITPY_RANDOM ?= 0
+CIRCUITPY_RANDOM ?= 1
 # Requires busio.UART
 CIRCUITPY_CONSOLE_UART ?= 0
 # Does nothing without I2C

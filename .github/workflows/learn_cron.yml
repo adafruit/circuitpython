@@ -1,0 +1,41 @@
+# SPDX-FileCopyrightText: 2021 Jeff Epler for Adafruit Industries
+#
+# SPDX-License-Identifier: MIT
+
+name: Tag Learning System Guides
+
+on:
+  schedule:
+    - cron: 0 5 * * *
+
+jobs:
+  check-repo-owner:
+    # This job is so the entire workflow will end successfully and give some
+    # output to explain why it hasn't run on a non-Adafruit fork.
+    runs-on: ubuntu-latest
+    if: ${{ (github.repository_owner != 'adafruit') }}
+    steps:
+      - run: |
+          echo "This workflow is only intended to run in the adafruit fork"
+
+  update-learn:
+    runs-on: ubuntu-latest
+    # Only run the build if the access token has been configured.  This will be
+    # the case on Adafruit's repository.  It's necessary to do this here, since
+    # 'schedule' events cannot (currently) be limited (they run on all forks'
+    # default branches).
+    if: ${{ (github.repository_owner == 'adafruit') }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        repository: ${{ github.repository_owner }}/Adafruit_Learning_System_Guides
+        token: ${{ secrets.ADABOT_GITHUB_ACCESS_TOKEN }}
+    - name: Tag a release
+      env:
+        ADABOT_EMAIL: ${{ secrets.ADABOT_EMAIL }}
+      run: |
+        git config --global user.name adabot
+        git config --global user.email "$ADABOT_EMAIL"
+        TAG_NAME=`date +%Y%m%d`
+        git tag $TAG_NAME
+        git push origin $TAG_NAME

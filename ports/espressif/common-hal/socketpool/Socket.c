@@ -483,7 +483,7 @@ void common_hal_socketpool_socket_connect(socketpool_socket_obj_t *self,
         socklen_t socklen = sizeof(error_code);
         result = getsockopt(self->num, SOL_SOCKET, SO_ERROR, &error_code, &socklen);
         if (result < 0 || error_code != 0) {
-            mp_raise_OSError(errno);
+            mp_raise_OSError(error_code);
         }
         self->connected = true;
         return;

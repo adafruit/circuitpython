@@ -15,9 +15,14 @@
 
 #define EVENT_SIZE_BYTES (sizeof(uint16_t) + sizeof(mp_obj_t))
 
-void common_hal_keypad_eventqueue_construct(keypad_eventqueue_obj_t *self, size_t max_events) {
+void common_hal_keypad_eventqueue_construct(keypad_eventqueue_obj_t *self, size_t max_events, bool use_gc_allocator) {
     // Event queue is 16-bit values.
-    ringbuf_alloc(&self->encoded_events, max_events * EVENT_SIZE_BYTES);
+    const size_t size = max_events * EVENT_SIZE_BYTES;
+    if (use_gc_allocator) {
+        ringbuf_alloc(&self->encoded_events, size);
+    } else {
+        ringbuf_init(&self->encoded_events, port_malloc(size, false), size);
+    }
     self->overflowed = false;
     self->event_handler = NULL;
 }

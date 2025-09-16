@@ -8,7 +8,6 @@ IDF_TARGET = esp32s3
 CIRCUITPY_ESP_FLASH_MODE = qio
 CIRCUITPY_ESP_FLASH_FREQ = 80m
 CIRCUITPY_ESP_FLASH_SIZE = 8MB
-CIRCUITPY_ESPCAMERA = 0
 
 # Include these Python libraries in firmware.
 FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_NeoPixel

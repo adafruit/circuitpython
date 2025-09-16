@@ -143,7 +143,7 @@ bool common_hal_audiofilters_filter_get_playing(audiofilters_filter_obj_t *self)
 }
 
 void common_hal_audiofilters_filter_play(audiofilters_filter_obj_t *self, mp_obj_t sample, bool loop) {
-    audiosample_must_match(&self->base, sample);
+    audiosample_must_match(&self->base, sample, false);
 
     self->sample = sample;
     self->loop = loop;

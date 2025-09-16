@@ -21,6 +21,7 @@
 void port_heap_init(void);
 
 void *port_malloc(size_t size, bool dma_capable);
+void *port_malloc_zero(size_t size, bool dma_capable);
 
 void port_free(void *ptr);
 

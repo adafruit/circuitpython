@@ -6,15 +6,15 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-01-04 12:55-0600\n"
-"PO-Revision-Date: 2023-11-16 15:03+0000\n"
-"Last-Translator: Jeff Epler <jepler@gmail.com>\n"
+"PO-Revision-Date: 2025-07-13 16:01+0000\n"
+"Last-Translator: Mirthe Winter <mirthemwinter@gmail.com>\n"
 "Language-Team: none\n"
 "Language: nl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.2\n"
+"X-Generator: Weblate 5.13-dev\n"
 
 #: main.c
 msgid ""
@@ -49,7 +49,7 @@ msgstr ""
 
 #: py/obj.c
 msgid "  File \"%q\""
-msgstr "  Bestand"
+msgstr "  Bestand \"%q\""
 
 #: py/obj.c
 msgid "  File \"%q\", line %d"
@@ -61,7 +61,7 @@ msgstr ""
 
 #: main.c
 msgid " not found.\n"
-msgstr ""
+msgstr " niet gevonden.\n"
 
 #: main.c
 msgid " output:\n"
@@ -309,7 +309,7 @@ msgid "'%q' object does not support '%q'"
 msgstr "'%q' object ondersteunt geen '%q'"
 
 #: py/runtime.c
-msgid "'%q' object is not an iterator"
+msgid "'%q' object isn't an iterator"
 msgstr "'%q' object is geen iterator"
 
 #: py/objtype.c py/runtime.c shared-module/atexit/__init__.c
@@ -317,7 +317,7 @@ msgid "'%q' object is not callable"
 msgstr "'%q' object is niet aanroepbaar"
 
 #: py/runtime.c
-msgid "'%q' object is not iterable"
+msgid "'%q' object isn't iterable"
 msgstr "'%q' object is niet itereerbaar"
 
 #: py/emitinlinethumb.c py/emitinlinextensa.c
@@ -558,7 +558,7 @@ msgstr "Heeft al een luisteraar voor 'all-matches'"
 
 #: ports/espressif/common-hal/_bleio/__init__.c
 msgid "Already in progress"
-msgstr ""
+msgstr "Al in uitvoering"
 
 #: ports/espressif/bindings/espnow/ESPNow.c
 #: ports/espressif/common-hal/espulp/ULP.c
@@ -612,7 +612,7 @@ msgstr ""
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 #: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
 msgid "Audio source error"
-msgstr ""
+msgstr "Audiobronfout"
 
 #: shared-bindings/wifi/Radio.c
 msgid "AuthMode.OPEN is not used with password"
@@ -631,8 +631,8 @@ msgid ""
 "Auto-reload is on. Simply save files over USB to run them or enter REPL to "
 "disable.\n"
 msgstr ""
-"Auto-herlaad staat aan. Sla bestanden simpelweg op over USB om uit te voeren "
-"of start REPL om uit te schakelen.\n"
+"Auto-herlaad staat aan. Sla bestanden simpelweg via USB op om ze uit te "
+"voeren of start REPL om ze uit te schakelen.\n"
 
 #: ports/espressif/common-hal/canio/CAN.c
 msgid "Baudrate not supported by peripheral"
@@ -701,7 +701,7 @@ msgstr "Buffer is %d bytes te klein"
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 #: shared-bindings/struct/__init__.c shared-module/struct/__init__.c
 msgid "Buffer too small"
-msgstr ""
+msgstr "Buffer te klein"
 
 #: ports/atmel-samd/common-hal/paralleldisplaybus/ParallelBus.c
 #: ports/espressif/common-hal/paralleldisplaybus/ParallelBus.c
@@ -853,6 +853,10 @@ msgstr ""
 msgid "Coordinate arrays types have different sizes"
 msgstr ""
 
+#: ports/espressif/common-hal/rclcpy/Publisher.c
+msgid "Could not publish to ROS topic"
+msgstr ""
+
 #: shared-bindings/_bleio/Adapter.c
 msgid "Could not set address"
 msgstr "Kan adres niet zetten"
@@ -864,6 +868,11 @@ msgstr "Kan interrupt niet starten, RX is bezig"
 #: shared-module/audiomp3/MP3Decoder.c
 msgid "Couldn't allocate decoder"
 msgstr "Kan decoder niet alloceren"
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+#, c-format
+msgid "Critical ROS failure during soft reboot, reset required: %d"
+msgstr ""
 
 #: ports/stm/common-hal/analogio/AnalogOut.c
 msgid "DAC Channel Init Error"
@@ -925,7 +934,7 @@ msgstr "Beeldscherm rotatie moet in stappen van 90 graden"
 
 #: main.c
 msgid "Done"
-msgstr ""
+msgstr "Gedaan"
 
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Drive mode not used when direction is input."
@@ -1061,9 +1070,10 @@ msgstr "Schrijven naar interne flash mislukt."
 msgid "File exists"
 msgstr "Bestand bestaat"
 
-#: shared-module/lvfontio/OnDiskFont.c shared-module/os/getenv.c
+#: shared-bindings/supervisor/__init__.c shared-module/lvfontio/OnDiskFont.c
+#: shared-module/os/getenv.c
 msgid "File not found"
-msgstr ""
+msgstr "Bestand niet gevonden"
 
 #: ports/atmel-samd/common-hal/canio/Listener.c
 #: ports/espressif/common-hal/canio/Listener.c
@@ -1074,11 +1084,11 @@ msgstr "Filters zijn te complex"
 
 #: ports/espressif/common-hal/dualbank/__init__.c
 msgid "Firmware is duplicate"
-msgstr ""
+msgstr "Firmware is duplicaat"
 
 #: ports/espressif/common-hal/dualbank/__init__.c
 msgid "Firmware is invalid"
-msgstr ""
+msgstr "Firmware is ongeldig"
 
 #: ports/espressif/common-hal/dualbank/__init__.c
 msgid "Firmware is too big"
@@ -1092,7 +1102,7 @@ msgstr ""
 msgid "For RGB colorspaces, input bitmap must have 16 bits per pixel"
 msgstr ""
 
-#: ports/cxd56/common-hal/camera/Camera.c
+#: ports/cxd56/common-hal/camera/Camera.c shared-module/audiocore/WaveFile.c
 msgid "Format not supported"
 msgstr "Formaat wordt niet ondersteund"
 
@@ -1112,7 +1122,7 @@ msgstr ""
 
 #: ports/espressif/common-hal/espidf/__init__.c
 msgid "Generic Failure"
-msgstr ""
+msgstr "Generieke mislukking"
 
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 #: shared-module/busdisplay/BusDisplay.c
@@ -1214,7 +1224,7 @@ msgstr "Interne define fout"
 
 #: shared-bindings/pwmio/PWMOut.c shared-module/os/getenv.c
 msgid "Internal error"
-msgstr ""
+msgstr "Interne fout"
 
 #: shared-module/rgbmatrix/RGBMatrix.c
 #, c-format
@@ -1240,7 +1250,7 @@ msgstr ""
 
 #: supervisor/shared/safe_mode.c
 msgid "Interrupt error."
-msgstr ""
+msgstr "Interruptfout."
 
 #: shared-module/jpegio/JpegDecoder.c
 msgid "Interrupted by output function"
@@ -1256,6 +1266,7 @@ msgstr ""
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c py/argcheck.c
 #: shared-bindings/digitalio/DigitalInOut.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c shared-bindings/pwmio/PWMOut.c
+#: shared-bindings/supervisor/__init__.c
 #: shared-module/aurora_epaper/aurora_framebuffer.c
 #: shared-module/lvfontio/OnDiskFont.c
 msgid "Invalid %q"
@@ -1280,7 +1291,7 @@ msgstr "Ongeldige ADC Unit waarde"
 #: ports/espressif/common-hal/_bleio/__init__.c
 #: ports/nordic/common-hal/_bleio/__init__.c
 msgid "Invalid BLE parameter"
-msgstr ""
+msgstr "Ongeldige BLE-parameter"
 
 #: shared-bindings/wifi/Radio.c
 msgid "Invalid BSSID"
@@ -1288,6 +1299,10 @@ msgstr "Ongeldig BSSID"
 
 #: shared-bindings/wifi/Radio.c
 msgid "Invalid MAC address"
+msgstr "Ongeldig MAC-adres"
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+msgid "Invalid ROS domain ID"
 msgstr ""
 
 #: ports/espressif/common-hal/espidf/__init__.c py/moderrno.c
@@ -1310,7 +1325,7 @@ msgstr ""
 
 #: shared-module/msgpack/__init__.c
 msgid "Invalid format"
-msgstr ""
+msgstr "Ongeldig formaat"
 
 #: shared-module/audiocore/WaveFile.c
 msgid "Invalid format chunk size"
@@ -1327,7 +1342,7 @@ msgstr ""
 
 #: ports/espressif/common-hal/espidf/__init__.c
 msgid "Invalid size"
-msgstr ""
+msgstr "Ongeldige grootte"
 
 #: shared-module/ssl/SSLSocket.c
 msgid "Invalid socket for TLS"
@@ -1336,11 +1351,11 @@ msgstr ""
 #: ports/espressif/common-hal/espidf/__init__.c
 #: ports/nordic/common-hal/_bleio/__init__.c
 msgid "Invalid state"
-msgstr ""
+msgstr "Ongeldige staat"
 
 #: shared-module/os/getenv.c
 msgid "Invalid unicode escape"
-msgstr ""
+msgstr "Ongeldige unicode escape"
 
 #: shared-bindings/aesio/aes.c
 msgid "Key must be 16, 24, or 32 bytes long"
@@ -1348,7 +1363,7 @@ msgstr "Sleutel moet 16, 24, of 32 bytes lang zijn"
 
 #: shared-module/os/getenv.c
 msgid "Key not found"
-msgstr ""
+msgstr "Sleutel niet gevonden"
 
 #: shared-module/is31fl3741/FrameBuffer.c
 msgid "LED mappings must match display size"
@@ -1509,7 +1524,7 @@ msgstr ""
 
 #: supervisor/shared/web_workflow/web_workflow.c
 msgid "No IP"
-msgstr ""
+msgstr "Geen IP"
 
 #: ports/atmel-samd/common-hal/microcontroller/__init__.c
 #: ports/cxd56/common-hal/microcontroller/__init__.c
@@ -1830,7 +1845,7 @@ msgstr "Prefix buffer moet op de heap zijn"
 #: main.c
 msgid "Press any key to enter the REPL. Use CTRL-D to reload.\n"
 msgstr ""
-"Druk een willekeurige toets om de REPL te starten. Gebruik CTRL+D om te "
+"Druk op een willekeurige toets om de REPL te starten. Gebruik CTRL+D om te "
 "herstarten.\n"
 
 #: main.c
@@ -1853,6 +1868,10 @@ msgstr ""
 msgid "Program too long"
 msgstr ""
 
+#: shared-bindings/rclcpy/Publisher.c
+msgid "Publishers can only be created from a parent node"
+msgstr ""
+
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Pull not used when direction is output."
 msgstr "Pull niet gebruikt wanneer de richting output is."
@@ -1873,10 +1892,30 @@ msgstr "RNG DeInit Fout"
 msgid "RNG Init Error"
 msgstr "RNG Init Fout"
 
+#: ports/espressif/common-hal/rclcpy/__init__.c
+msgid "ROS failed to initialize. Is agent connected?"
+msgstr ""
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+msgid "ROS internal setup failure"
+msgstr ""
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+msgid "ROS memory allocator failure"
+msgstr ""
+
+#: ports/espressif/common-hal/rclcpy/Node.c
+msgid "ROS node failed to initialize"
+msgstr ""
+
+#: ports/espressif/common-hal/rclcpy/Publisher.c
+msgid "ROS topic failed to initialize"
+msgstr ""
+
 #: ports/atmel-samd/common-hal/busio/UART.c ports/cxd56/common-hal/busio/UART.c
 #: ports/nordic/common-hal/busio/UART.c ports/stm/common-hal/busio/UART.c
 msgid "RS485"
-msgstr ""
+msgstr "RS485"
 
 #: ports/espressif/common-hal/busio/UART.c
 #: ports/mimxrt10xx/common-hal/busio/UART.c
@@ -1908,7 +1947,7 @@ msgstr ""
 
 #: supervisor/shared/bluetooth/bluetooth.c
 msgid "Reconnecting"
-msgstr ""
+msgstr "Opnieuw aansluiten"
 
 #: shared-bindings/epaperdisplay/EPaperDisplay.c
 msgid "Refresh too soon"
@@ -2082,6 +2121,10 @@ msgstr "Tile index buiten bereik"
 msgid "Tile width must exactly divide bitmap width"
 msgstr "Tile breedte moet exact de bitmap breedte verdelen"
 
+#: shared-module/tilepalettemapper/TilePaletteMapper.c
+msgid "TilePaletteMapper may only be bound to a TileGrid once"
+msgstr ""
+
 #: shared-bindings/alarm/time/TimeAlarm.c
 msgid "Time is in the past."
 msgstr "Tijdstip ligt in het verleden."
@@ -2149,7 +2192,7 @@ msgstr ""
 
 #: main.c
 msgid "UID:"
-msgstr ""
+msgstr "UID:"
 
 #: shared-module/usb_hid/Device.c
 msgid "USB busy"
@@ -2310,10 +2353,6 @@ msgstr ""
 msgid "Unsupported display bus type"
 msgstr "Niet-ondersteund beeldscherm bus type"
 
-#: shared-module/audiocore/WaveFile.c
-msgid "Unsupported format"
-msgstr "Niet-ondersteunde format"
-
 #: shared-bindings/hashlib/__init__.c
 msgid "Unsupported hash algorithm"
 msgstr ""
@@ -2370,11 +2409,13 @@ msgstr ""
 
 #: supervisor/shared/web_workflow/web_workflow.c
 msgid "Wi-Fi: "
-msgstr ""
+msgstr "Wi-Fi: "
 
+#: ports/espressif/common-hal/wifi/Radio.c
 #: ports/raspberrypi/common-hal/wifi/Radio.c
-msgid "Wifi is not enabled"
-msgstr ""
+#: ports/zephyr-cp/common-hal/wifi/Radio.c
+msgid "WiFi is not enabled"
+msgstr "WiFi is niet ingeschakeld"
 
 #: main.c
 msgid "Woken up by alarm.\n"
@@ -2609,16 +2650,16 @@ msgstr ""
 msgid "bits must be 32 or less"
 msgstr ""
 
+#: shared-bindings/audiofreeverb/Freeverb.c
+msgid "bits_per_sample must be 16"
+msgstr ""
+
 #: shared-bindings/audiodelays/Chorus.c shared-bindings/audiodelays/Echo.c
 #: shared-bindings/audiodelays/MultiTapDelay.c
 #: shared-bindings/audiodelays/PitchShift.c
 #: shared-bindings/audiofilters/Distortion.c
-#: shared-bindings/audiodelays/Reverb.c
-msgid "bits_per_sample must be 16"
-msgstr ""
-
-#: shared-bindings/audiodelays/Echo.c shared-bindings/audiofilters/Distortion.c
-#: shared-bindings/audiofilters/Filter.c shared-bindings/audiomixer/Mixer.c
+#: shared-bindings/audiofilters/Filter.c shared-bindings/audiofilters/Phaser.c
+#: shared-bindings/audiomixer/Mixer.c
 msgid "bits_per_sample must be 8 or 16"
 msgstr "bits_per_sample moet 8 of 16 zijn"
 
@@ -3161,7 +3202,7 @@ msgid "format"
 msgstr ""
 
 #: py/objstr.c
-msgid "format requires a dict"
+msgid "format needs a dict"
 msgstr "format vereist een dict"
 
 #: py/objdeque.c
@@ -3286,7 +3327,7 @@ msgstr ""
 #: ports/espressif/common-hal/pulseio/PulseIn.c
 #: shared-bindings/bitmaptools/__init__.c
 msgid "index out of range"
-msgstr "index is buiten bereik"
+msgstr "index buiten bereik"
 
 #: py/obj.c
 msgid "indices must be integers"
@@ -3623,7 +3664,7 @@ msgid "must use keyword argument for key function"
 msgstr "voor sleutelfunctie moet een trefwoordargument gebruikt worden"
 
 #: py/runtime.c
-msgid "name '%q' is not defined"
+msgid "name '%q' isn't defined"
 msgstr "naam '%q' is niet gedefinieerd"
 
 #: py/runtime.c
@@ -4041,7 +4082,7 @@ msgstr "roll argument moet een ndarray zijn"
 msgid "rsplit(None,n)"
 msgstr "rsplit(None,n)"
 
-#: shared-bindings/audiodelays/Reverb.c
+#: shared-bindings/audiofreeverb/Freeverb.c
 msgid "samples_signed must be true"
 msgstr ""
 
@@ -4264,11 +4305,11 @@ msgid "tx and rx cannot both be None"
 msgstr "tx en rx kunnen niet beiden None zijn"
 
 #: py/objtype.c
-msgid "type '%q' is not an acceptable base type"
+msgid "type '%q' isn't an acceptable base type"
 msgstr "type '%q' is geen aanvaardbaar basistype"
 
 #: py/objtype.c
-msgid "type is not an acceptable base type"
+msgid "type isn't an acceptable base type"
 msgstr "type is geen aanvaardbaar basistype"
 
 #: py/runtime.c
@@ -4410,15 +4451,9 @@ msgstr ""
 msgid "width must be greater than zero"
 msgstr "breedte moet groter dan nul zijn"
 
-#: ports/espressif/common-hal/wifi/Radio.c
-#: ports/raspberrypi/common-hal/wifi/Radio.c
-#: ports/zephyr-cp/common-hal/wifi/Radio.c
-msgid "wifi is not enabled"
-msgstr ""
-
 #: ports/raspberrypi/common-hal/wifi/Monitor.c
 msgid "wifi.Monitor not available"
-msgstr ""
+msgstr "wifi.monitor niet beschikbaar"
 
 #: shared-bindings/_bleio/Adapter.c
 msgid "window must be <= interval"
@@ -4477,6 +4512,9 @@ msgstr "zi moet van type float zijn"
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr "zi moet vorm (n_section, 2) hebben"
+
+#~ msgid "Unsupported format"
+#~ msgstr "Niet-ondersteunde format"
 
 #~ msgid "Data chunk must follow fmt chunk"
 #~ msgstr "Data chunk moet gevolgd worden door fmt chunk"
@@ -4703,13 +4741,13 @@ msgstr "zi moet vorm (n_section, 2) hebben"
 #~ msgid "'%s' object does not support item deletion"
 #~ msgstr "'%s' object ondersteunt item verwijdering niet"
 
-#~ msgid "'%s' object is not an iterator"
+#~ msgid "'%s' object isn't an iterator"
 #~ msgstr "'%s' object is geen iterator"
 
 #~ msgid "'%s' object is not callable"
 #~ msgstr "'%s' object is niet aanroepbaar"
 
-#~ msgid "'%s' object is not iterable"
+#~ msgid "'%s' object isn't iterable"
 #~ msgstr "'%s' object is niet itereerbaar"
 
 #~ msgid "'%s' object is not subscriptable"
@@ -4727,7 +4765,7 @@ msgstr "zi moet vorm (n_section, 2) hebben"
 #~ msgid "'continue' outside loop"
 #~ msgstr "'continue' buiten de loop"
 
-#~ msgid "'coroutine' object is not an iterator"
+#~ msgid "'coroutine' object isn't an iterator"
 #~ msgstr "'coroutine' object is geen iterator"
 
 #~ msgid "ADC2 is being used by WiFi"
@@ -5504,7 +5542,7 @@ msgstr "zi moet vorm (n_section, 2) hebben"
 #~ msgid "firstbit must be MSB"
 #~ msgstr "het eerste bit moet het MSB zijn"
 
-#~ msgid "function does not take keyword arguments"
+#~ msgid "function doesn't take keyword arguments"
 #~ msgstr "functie accepteert geen keyword argumenten"
 
 #~ msgid "function is implemented for scalars and ndarrays only"
@@ -5582,7 +5620,7 @@ msgstr "zi moet vorm (n_section, 2) hebben"
 #~ msgid "n must be between 0, and 9"
 #~ msgstr "n moet tussen 0 en 9 liggen"
 
-#~ msgid "name reused for argument"
+#~ msgid "argument name reused"
 #~ msgstr "naam hergebruikt voor argument"
 
 #~ msgid "no available NIC"

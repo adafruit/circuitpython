@@ -451,7 +451,9 @@ static mp_obj_t process_import_at_level(qstr full_mod_name, qstr level_mod_name,
 
     if (stat == MP_IMPORT_STAT_NO_EXIST) {
         // Not found -- fail.
-        #if MICROPY_ERROR_REPORTING <= MICROPY_ERROR_REPORTING_TERSE
+        // CIRCUITPY-CHANGE: always the use more verbose error message that names missing module.
+        // Otherwise `import a` where `a` imports `b`, but `b` is missing will give a confusing error.
+        #if 0 && (MICROPY_ERROR_REPORTING <= MICROPY_ERROR_REPORTING_TERSE)
         mp_raise_msg(&mp_type_ImportError, MP_ERROR_TEXT("module not found"));
         #else
         mp_raise_msg_varg(&mp_type_ImportError, MP_ERROR_TEXT("no module named '%q'"), full_mod_name);

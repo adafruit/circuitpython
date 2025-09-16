@@ -141,7 +141,7 @@ static fs_user_mount_t *get_vfs(int lun) {
     if (lun == SDCARD_LUN) {
         const char *path_under_mount;
         fs_user_mount_t *sdcard = filesystem_for_path("/sd", &path_under_mount);
-        if (sdcard != root && (sdcard->blockdev.flags & MP_BLOCKDEV_FLAG_NATIVE) != 0 && gc_nbytes(sdcard) == 0) {
+        if (sdcard != root && (sdcard->blockdev.flags & MP_BLOCKDEV_FLAG_NATIVE) != 0) {
             return sdcard;
         } else {
             // Clear any ejected state so that a re-insert causes it to reappear.
@@ -194,6 +194,7 @@ uint8_t tud_msc_get_maxlun_cb(void) {
 // - READ_CAPACITY10, READ_FORMAT_CAPACITY, INQUIRY, TEST_UNIT_READY, START_STOP_UNIT, MODE_SENSE6, REQUEST_SENSE
 // - READ10 and WRITE10 have their own callbacks
 int32_t tud_msc_scsi_cb(uint8_t lun, const uint8_t scsi_cmd[16], void *buffer, uint16_t bufsize) {
+    // Note that no command uses a response right now.
     const void *response = NULL;
     int32_t resplen = 0;
 
@@ -227,8 +228,10 @@ int32_t tud_msc_scsi_cb(uint8_t lun, const uint8_t scsi_cmd[16], void *buffer, u
 
 void tud_msc_capacity_cb(uint8_t lun, uint32_t *block_count, uint16_t *block_size) {
     fs_user_mount_t *vfs = get_vfs(lun);
-    disk_ioctl(vfs, GET_SECTOR_COUNT, block_count);
-    disk_ioctl(vfs, GET_SECTOR_SIZE, block_size);
+    if (vfs != NULL) {
+        disk_ioctl(vfs, GET_SECTOR_COUNT, block_count);
+        disk_ioctl(vfs, GET_SECTOR_SIZE, block_size);
+    }
 }
 
 bool tud_msc_is_writable_cb(uint8_t lun) {
@@ -259,6 +262,9 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void *buff
     const uint32_t block_count = bufsize / MSC_FLASH_BLOCK_SIZE;
 
     fs_user_mount_t *vfs = get_vfs(lun);
+    if (vfs == NULL) {
+        return -1;
+    }
     uint32_t disk_block_count;
     disk_ioctl(vfs, GET_SECTOR_COUNT, &disk_block_count);
 
@@ -281,6 +287,9 @@ int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t *
     const uint32_t block_count = bufsize / MSC_FLASH_BLOCK_SIZE;
 
     fs_user_mount_t *vfs = get_vfs(lun);
+    if (vfs == NULL) {
+        return -1;
+    }
     disk_write(vfs, buffer, lba, block_count);
     // Since by getting here we assume the mount is read-only to
     // MicroPython let's update the cached FatFs sector if it's the one

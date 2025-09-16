@@ -43,6 +43,15 @@ MP_WEAK void *port_malloc(size_t size, bool dma_capable) {
     return block;
 }
 
+// Ensure allocated memory is zero.
+MP_WEAK void *port_malloc_zero(size_t size, bool dma_capable) {
+    void *ptr = port_malloc(size, dma_capable);
+    if (ptr) {
+        memset(ptr, 0, size);
+    }
+    return ptr;
+}
+
 MP_WEAK void port_free(void *ptr) {
     tlsf_free(heap, ptr);
 }
@@ -79,4 +88,31 @@ MP_WEAK bool port_boot_button_pressed(void) {
     #else
     return false;
     #endif
+}
+
+// Ports may provide an implementation of this function if it is needed
+MP_WEAK void port_gc_collect(void) {
+}
+
+// Allocates an object in the port heap, not the VM heap, and also sets type, for mp_obj_malloc{,_var} macros.
+MP_NOINLINE void *mp_obj_port_malloc_helper(size_t num_bytes, const mp_obj_type_t *type) {
+    mp_obj_base_t *base = (mp_obj_base_t *)port_malloc_zero(num_bytes, false);
+    base->type = type;
+    return base;
+}
+
+// Creates a tuple on the port heap, not the VM heap.
+// Implementation copied from py/objtuple.c.
+mp_obj_t mp_obj_new_port_tuple(size_t n, const mp_obj_t *items) {
+    if (n == 0) {
+        return mp_const_empty_tuple;
+    }
+    mp_obj_tuple_t *o = mp_obj_port_malloc_var(mp_obj_tuple_t, items, mp_obj_t, n, &mp_type_tuple);
+    o->len = n;
+    if (items) {
+        for (size_t i = 0; i < n; i++) {
+            o->items[i] = items[i];
+        }
+    }
+    return MP_OBJ_FROM_PTR(o);
 }

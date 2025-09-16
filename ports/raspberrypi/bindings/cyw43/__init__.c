@@ -43,7 +43,7 @@ MP_DEFINE_CONST_OBJ_TYPE(
     print, shared_bindings_microcontroller_pin_print
     );
 
-uint32_t cyw43_get_power_management_value() {
+uint32_t cyw43_get_power_management_value(void) {
     return power_management_value;
 }
 
@@ -103,7 +103,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(cyw43_set_power_management_obj, cyw43_set_power
 //|     """Retrieve the power management register"""
 //|
 //|
-static mp_obj_t cyw43_get_power_management() {
+static mp_obj_t cyw43_get_power_management(void) {
     return mp_obj_new_int(power_management_value);
 }
 static MP_DEFINE_CONST_FUN_OBJ_0(cyw43_get_power_management_obj, cyw43_get_power_management);

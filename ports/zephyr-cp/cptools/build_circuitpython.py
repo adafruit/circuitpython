@@ -530,7 +530,7 @@ async def build_circuitpython():
 
         if "ssl" in enabled_modules:
             crt_bundle = builddir / "x509_crt_bundle.S"
-            roots_pem = srcdir / "lib/certificates/data/roots.pem"
+            roots_pem = srcdir / "lib/certificates/data/roots-full.pem"
             generator = srcdir / "tools/gen_crt_bundle.py"
             tg.create_task(
                 cpbuild.run_command(
@@ -575,7 +575,7 @@ async def build_circuitpython():
     source_files.append(portdir / "common-hal/zephyr_kernel/__init__.c")
     # source_files.append(srcdir / "ports" / port / "peripherals" / "nrf" / "nrf52840" / "pins.c")
 
-    assembly_files.append(srcdir / "ports/nordic/supervisor/cpu.s")
+    assembly_files.append(srcdir / "supervisor/shared/cpu_regs.S")
 
     source_files.extend(assembly_files)
 

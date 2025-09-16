@@ -26,8 +26,7 @@
 
 #include "py/mpstate.h"
 
-// CIRCUITPY-CHANGE: avoid warning
-#if defined(MICROPY_NLR_XTENSA) && MICROPY_NLR_XTENSA
+#if MICROPY_NLR_XTENSA
 
 #undef nlr_push
 

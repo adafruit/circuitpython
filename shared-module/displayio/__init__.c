@@ -198,6 +198,7 @@ void reset_displays(void) {
     for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
         mp_const_obj_t display_bus_type = display_buses[i].bus_base.type;
         if (display_bus_type == NULL || display_bus_type == &mp_type_NoneType) {
+            display_buses[i].bus_base.type = &mp_type_NoneType;
             continue;
         #if CIRCUITPY_FOURWIRE
         } else if (display_bus_type == &fourwire_fourwire_type) {

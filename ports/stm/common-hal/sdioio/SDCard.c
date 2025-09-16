@@ -338,7 +338,7 @@ void common_hal_sdioio_sdcard_never_reset(sdioio_sdcard_obj_t *self) {
     }
 }
 
-void sdioio_reset() {
+void sdioio_reset(void) {
     for (size_t i = 0; i < MP_ARRAY_SIZE(reserved_sdio); i++) {
         if (!never_reset_sdio[i]) {
             reserved_sdio[i] = false;

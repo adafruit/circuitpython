@@ -156,7 +156,7 @@ bool common_hal_bleio_characteristic_buffer_connected(
                    common_hal_bleio_connection_get_connected(self->characteristic->service->connection)));
 }
 
-void reset_characteristic_buffer_list() {
+void reset_characteristic_buffer_list(void) {
     // Remove characteristic_buffer list
     memset(bleio_characteristic_buffer_list.data, 0,
         sizeof(bleio_characteristic_buffer_list.data));

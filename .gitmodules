@@ -7,7 +7,7 @@
 	url = https://github.com/micropython/axtls.git
 [submodule "lib/libffi"]
 	path = lib/libffi
-	url = https://github.com/atgreen/libffi
+	url = https://github.com/libffi/libffi
 [submodule "lib/berkeley-db-1.xx"]
 	path = lib/berkeley-db-1.xx
 	url = https://github.com/micropython/berkeley-db-1.xx
@@ -172,7 +172,7 @@
 	url = https://github.com/adafruit/Adafruit_CircuitPython_SimpleMath
 [submodule "ports/raspberrypi/sdk"]
 	path = ports/raspberrypi/sdk
-	url = https://github.com/adafruit/pico-sdk.git
+	url = https://github.com/raspberrypi/pico-sdk.git
 	branch = force_inline_critical_section_2.1.1
 [submodule "data/nvm.toml"]
 	path = data/nvm.toml
@@ -412,3 +412,6 @@
 [submodule "ports/analog/msdk"]
 	path = ports/analog/msdk
 	url = https://github.com/analogdevicesinc/msdk.git
+[submodule "ports/espressif/microros-lib"]
+	path = ports/espressif/microros-lib
+	url = https://github.com/hierophect/microros-lib.git

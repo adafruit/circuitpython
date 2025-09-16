@@ -26,8 +26,7 @@
 
 #include "py/mpstate.h"
 
-// CIRCUITPY-CHANGE: avoid warning
-#if defined(MICROPY_NLR_THUMB) && MICROPY_NLR_THUMB
+#if MICROPY_NLR_THUMB
 
 #undef nlr_push
 

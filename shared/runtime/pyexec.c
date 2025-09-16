@@ -31,14 +31,14 @@
 
 // CIRCUITPY-CHANGE: add
 #include "py/mphal.h"
+
 #include "py/compile.h"
 #include "py/runtime.h"
 #include "py/repl.h"
 #include "py/gc.h"
 #include "py/frozenmod.h"
 #include "py/mphal.h"
-// CIRCUITPY-CHANGE: prevent undefined warning
-#if defined(MICROPY_HW_ENABLE_USB) && MICROPY_HW_ENABLE_USB
+#if MICROPY_HW_ENABLE_USB
 #include "irq.h"
 #include "usb.h"
 #endif
@@ -52,7 +52,6 @@
 #endif
 
 pyexec_mode_kind_t pyexec_mode_kind = PYEXEC_MODE_FRIENDLY_REPL;
-int pyexec_system_exit = 0;
 
 #if MICROPY_REPL_INFO
 static bool repl_display_debugging_info = 0;
@@ -85,15 +84,11 @@ static int parse_compile_execute(const void *source, mp_parse_input_kind_t input
     MICROPY_BOARD_BEFORE_PYTHON_EXEC(input_kind, exec_flags);
     #endif
 
-    // by default a SystemExit exception returns 0
-    pyexec_system_exit = 0;
-
     nlr_buf_t nlr;
     nlr.ret_val = NULL;
     if (nlr_push(&nlr) == 0) {
-        // CIRCUITPY-CHANGE: Made volatile to prevent gcc from re-ordering store of function pointer into stack frame
-        // after call to gc_collect. For RISC-V this was causing free of the compiled function before execution.
-        volatile mp_obj_t module_fun = mp_const_none;
+        // CIRCUITPY-CHANGE
+        mp_obj_t module_fun = mp_const_none;
         // CIRCUITPY-CHANGE
         #if CIRCUITPY_ATEXIT
         if (!(exec_flags & EXEC_FLAG_SOURCE_IS_ATEXIT))
@@ -194,7 +189,7 @@ static int parse_compile_execute(const void *source, mp_parse_input_kind_t input
 
         if (mp_obj_is_subclass_fast(MP_OBJ_FROM_PTR(mp_obj_get_type(exception_obj)), MP_OBJ_FROM_PTR(&mp_type_SystemExit))) {
             // at the moment, the value of SystemExit is unused
-            ret = pyexec_system_exit;
+            ret = PYEXEC_FORCED_EXIT;
             // CIRCUITPY-CHANGE
         #if CIRCUITPY_ALARM
         } else if (mp_obj_is_subclass_fast(MP_OBJ_FROM_PTR(mp_obj_get_type(exception_obj)), MP_OBJ_FROM_PTR(&mp_type_DeepSleepRequest))) {
@@ -667,8 +662,7 @@ friendly_repl_reset:
     for (;;) {
     input_restart:
 
-        // CIRCUITPY-CHANGE: prevent undef warning
-        #if defined(MICROPY_HW_ENABLE_USB) && MICROPY_HW_ENABLE_USB
+        #if MICROPY_HW_ENABLE_USB
         if (usb_vcp_is_enabled()) {
             // If the user gets to here and interrupts are disabled then
             // they'll never see the prompt, traceback etc. The USB REPL needs
@@ -834,6 +828,11 @@ int pyexec_exit_handler(const void *source, pyexec_result_t *result) {
     return parse_compile_execute(source, MP_PARSE_FILE_INPUT, EXEC_FLAG_SOURCE_IS_ATEXIT, result);
 }
 #endif
+
+int pyexec_vstr(vstr_t *str, bool allow_keyboard_interrupt, pyexec_result_t *result) {
+    mp_uint_t exec_flags = allow_keyboard_interrupt ? 0 : EXEC_FLAG_NO_INTERRUPT;
+    return parse_compile_execute(str, MP_PARSE_FILE_INPUT, exec_flags | EXEC_FLAG_SOURCE_IS_VSTR, result);
+}
 
 #if MICROPY_REPL_INFO
 mp_obj_t pyb_set_repl_info(mp_obj_t o_value) {

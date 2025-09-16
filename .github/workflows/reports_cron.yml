@@ -1,0 +1,91 @@
+# SPDX-FileCopyrightText: 2019 Michael Schroeder
+#
+# SPDX-License-Identifier: MIT
+
+name: Run Daily Reports
+
+on:
+  schedule:
+    # The actor (github.actor) that runs the cron job may be the user who created the cron job
+    # initially. It does not appear to be settable via a secret or environment variable.
+    - cron: 15 5 * * *
+  workflow_dispatch:
+
+
+jobs:
+  check-repo-owner:
+    # This job is so the entire workflow will end successfully and give some
+    # output to explain why it hasn't run on a non-Adafruit fork.
+    runs-on: ubuntu-latest
+    steps:
+      - name: repository
+        env:
+          OWNER_IS_ADAFRUIT: ${{ startswith(github.repository, 'adafruit/') }}
+        run: |
+          echo "This workflow will only run if Adafruit is the repository owner."
+          echo "Repository owner is Adafruit: $OWNER_IS_ADAFRUIT"
+  run-reports:
+    runs-on: ubuntu-latest
+    # Only run the build on Adafruit's repository. Forks won't have the secrets.
+    # It's necessary to do this here, since 'schedule' events cannot (currently)
+    # be limited (they run on all forks' default branches).
+    if: startswith(github.repository, 'adafruit/')
+    env:
+      ADABOT_GITHUB_USER: ${{ secrets.ADABOT_GITHUB_USER }}
+      ADABOT_GITHUB_ACCESS_TOKEN: ${{ secrets.ADABOT_GITHUB_ACCESS_TOKEN }}
+      RTD_TOKEN: ${{ secrets.RTD_TOKEN }}
+      BIGQUERY_PRIVATE_KEY: ${{ secrets.BIGQUERY_PRIVATE_KEY }}
+      BIGQUERY_CLIENT_EMAIL: ${{ secrets.BIGQUERY_CLIENT_EMAIL }}
+    steps:
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+      - name: Versions
+        run: |
+          python3 --version
+      - uses: actions/checkout@v4
+        with:
+          repository: 'adafruit/adabot'
+          submodules: true
+      - name: Install deps
+        run: |
+          pip install -r requirements.txt
+      - name: Make Directory For Report Files
+        run: mkdir -p bin/adabot
+      - name: Set Date Variable
+        id: today
+        run: |
+          echo date=$(
+          date +%Y%m%d
+          ) >> $GITHUB_OUTPUT
+      - name: Run adabot.circuitpython_libraries
+        env:
+          # LIB_CHECK_CP_FILE is for circuitpython_libraries.py output
+          LIB_CHECK_CP_FILE: bin/adabot/circuitpython_library_report_${{ steps.today.outputs.date }}.txt
+        run: |
+          python3 -u -m adabot.circuitpython_libraries -o $LIB_CHECK_CP_FILE
+        continue-on-error: true
+      - name: Run adabot.circuitpython_library_download_stats
+        env:
+          # LIB_DL_STATS_FILE is for future Bundle and PyPi download stats script
+          LIB_DL_STATS_FILE: bin/adabot/library_download_stats_${{ steps.today.outputs.date }}.txt
+        run: |
+          python3 -u -m adabot.circuitpython_library_download_stats -o $LIB_DL_STATS_FILE
+        continue-on-error: true
+      - name: Run adabot.arduino_libraries
+        env:
+          # LIB_CHECK_ARD_FILE is for arduino_libraries.py output
+          LIB_CHECK_ARD_FILE: bin/adabot/arduino_library_report_${{ steps.today.outputs.date }}.txt
+        run: |
+          python3 -u -m adabot.arduino_libraries -o $LIB_CHECK_ARD_FILE
+        continue-on-error: true
+      - name: Check For Files
+        run: |
+          ls bin/adabot
+      - name: Upload Reports To AWS S3
+        if: ${{ github.event_name != 'workflow_dispatch' }}
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: "[ -z \"$AWS_ACCESS_KEY_ID\" ] || aws s3 cp bin/adabot/ s3://adafruit-circuit-python/adabot/bin/reports/ --recursive --no-progress --region us-east-1"

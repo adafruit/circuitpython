@@ -56,7 +56,7 @@ void common_hal_keypad_keymatrix_construct(keypad_keymatrix_obj_t *self, mp_uint
     self->columns_to_anodes = columns_to_anodes;
     self->funcs = &keymatrix_funcs;
 
-    keypad_construct_common((keypad_scanner_obj_t *)self, interval, max_events, debounce_threshold);
+    keypad_construct_common((keypad_scanner_obj_t *)self, interval, max_events, debounce_threshold, true);
 }
 
 void common_hal_keypad_keymatrix_deinit(keypad_keymatrix_obj_t *self) {

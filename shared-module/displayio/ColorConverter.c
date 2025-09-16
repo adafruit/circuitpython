@@ -91,6 +91,40 @@ uint8_t displayio_colorconverter_compute_hue(uint32_t color_rgb888) {
     return hue;
 }
 
+uint8_t displayio_colorconverter_compute_sixcolor(uint32_t color_rgb888) {
+    // This is DDX=1, the default for the displays.
+    uint8_t chroma = displayio_colorconverter_compute_chroma(color_rgb888);
+    if (chroma >= 64) {
+        uint8_t hue = displayio_colorconverter_compute_hue(color_rgb888);
+        // Red 0
+        if (hue < 10) {
+            return 0x3;
+        }
+        // Yellow 42
+        if (hue < 42 + 21) {
+            return 0x2;
+        }
+        // Green 85
+        if (hue < 85 + 42) {
+            return 0x6;
+        }
+        // Blue 170
+        if (hue < 170 + 42) {
+            return 0x5;
+        }
+
+        // The rest is red to 255
+        return 0x3;
+    } else {
+        uint8_t luma = displayio_colorconverter_compute_luma(color_rgb888);
+        if (luma >= 128) {
+            return 0x1; // White
+        } else {
+            return 0x0; // Black
+        }
+    }
+}
+
 uint8_t displayio_colorconverter_compute_sevencolor(uint32_t color_rgb888) {
     // This is DDX=1, the default for the displays.
     uint8_t chroma = displayio_colorconverter_compute_chroma(color_rgb888);
@@ -129,8 +163,13 @@ uint8_t displayio_colorconverter_compute_sevencolor(uint32_t color_rgb888) {
     }
 }
 
-void displayio_colorconverter_compute_tricolor(const _displayio_colorspace_t *colorspace, uint8_t pixel_hue, uint32_t *color) {
-
+void displayio_colorconverter_compute_tricolor(const _displayio_colorspace_t *colorspace, uint8_t pixel_chroma, uint8_t pixel_hue, uint32_t *color) {
+    if (pixel_chroma <= 16) {
+        if (!colorspace->grayscale) {
+            *color = 0;
+        }
+        return;
+    }
     int16_t hue_diff = colorspace->tricolor_hue - pixel_hue;
     if ((-10 <= hue_diff && hue_diff <= 10) || hue_diff <= -220 || hue_diff >= 220) {
         if (colorspace->grayscale) {
@@ -140,6 +179,21 @@ void displayio_colorconverter_compute_tricolor(const _displayio_colorspace_t *co
         }
     } else if (!colorspace->grayscale) {
         *color = 0;
+    }
+}
+
+void displayio_colorconverter_compute_fourcolor(const _displayio_colorspace_t *colorspace, uint8_t pixel_chroma, uint8_t pixel_hue, uint32_t *color) {
+    *color >>= 1;
+    if (pixel_chroma <= 16) {
+        return;
+    }
+    int16_t hue_diff = colorspace->tricolor_hue - pixel_hue;
+    if ((-10 <= hue_diff && hue_diff <= 10) || hue_diff <= -220 || hue_diff >= 220) {
+        *color = 2;
+    }
+    int16_t hue_diff2 = colorspace->fourcolor_hue - pixel_hue;
+    if ((-10 <= hue_diff2 && hue_diff2 <= 10) || hue_diff2 <= -220 || hue_diff2 >= 220) {
+        *color = 3;
     }
 }
 
@@ -279,18 +333,17 @@ void displayio_convert_color(const _displayio_colorspace_t *colorspace, bool dit
         output_color->pixel = packed;
         output_color->opaque = true;
         return;
-    } else if (colorspace->tricolor) {
+    } else if (colorspace->tricolor || colorspace->fourcolor) {
         uint8_t luma = displayio_colorconverter_compute_luma(pixel);
+        uint8_t pixel_chroma = displayio_colorconverter_compute_chroma(pixel);
         output_color->pixel = luma >> (8 - colorspace->depth);
-        if (displayio_colorconverter_compute_chroma(pixel) <= 16) {
-            if (!colorspace->grayscale) {
-                output_color->pixel = 0;
-            }
-            output_color->opaque = true;
-            return;
-        }
         uint8_t pixel_hue = displayio_colorconverter_compute_hue(pixel);
-        displayio_colorconverter_compute_tricolor(colorspace, pixel_hue, &output_color->pixel);
+        if (colorspace->tricolor) {
+            displayio_colorconverter_compute_tricolor(colorspace, pixel_chroma, pixel_hue, &output_color->pixel);
+        } else if (colorspace->fourcolor) {
+            displayio_colorconverter_compute_fourcolor(colorspace, pixel_chroma, pixel_hue, &output_color->pixel);
+        }
+        output_color->opaque = true;
         return;
     } else if (colorspace->grayscale && colorspace->depth <= 8) {
         uint8_t luma = displayio_colorconverter_compute_luma(pixel);
@@ -309,7 +362,9 @@ void displayio_convert_color(const _displayio_colorspace_t *colorspace, bool dit
         return;
     } else if (colorspace->depth == 4) {
         uint8_t packed;
-        if (colorspace->sevencolor) {
+        if (colorspace->sixcolor) {
+            packed = displayio_colorconverter_compute_sixcolor(pixel);
+        } else if (colorspace->sevencolor) {
             packed = displayio_colorconverter_compute_sevencolor(pixel);
         } else {
             packed = displayio_colorconverter_compute_rgbd(pixel);

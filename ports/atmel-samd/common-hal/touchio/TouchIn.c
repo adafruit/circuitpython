@@ -91,7 +91,7 @@ void common_hal_touchio_touchin_deinit(touchio_touchin_obj_t *self) {
     self->config.pin = NO_PIN;
 }
 
-void touchin_reset() {
+void touchin_reset(void) {
     Ptc *ptc = ((Ptc *)PTC);
     if (ptc->CTRLA.bit.ENABLE == 1) {
         ptc->CTRLA.bit.ENABLE = 0;

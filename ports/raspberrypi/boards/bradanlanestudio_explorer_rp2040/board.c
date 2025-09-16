@@ -251,71 +251,62 @@ void board_init(void) {
     if ((vid_setting == 1) ||   // DCNextGen SSD1681 BWR rotated 270
         (vid_setting == 3) ||   // Explorer  SSD1681 BW  rotated 0
         (vid_setting == 4)) {   // Explorer  SSD1681 BWR rotated 0
-        common_hal_epaperdisplay_epaperdisplay_construct(
-            display,
-            bus,
-            _start_sequence_ssd1681, sizeof(_start_sequence_ssd1681),
-            1.0,         // start up time
-            _stop_sequence_ssd1681, sizeof(_stop_sequence_ssd1681),
-            WIDTH,                                                                                          // width
-            HEIGHT,                                                                                         // height
-            WIDTH,                                                                                          // ram_width
-            HEIGHT + 0x60,                                                                                  // ram_height RAM is actually only 200 bits high but we use 296 to match the 9 bits
-            0,                                                                                              // colstart
-            0,                                                                                              // rowstart
-            rotation,                                                                                       // rotation
-            SSD_SET_RAMXPOS,                                                                                // set_column_window_command
-            SSD_SET_RAMYPOS,                                                                                // set_row_window_command
-            SSD_SET_RAMXCOUNT,                                                                              // set_current_column_command
-            SSD_SET_RAMYCOUNT,                                                                              // set_current_row_command
-            SSD_WRITE_RAM_BLK,                                                                              // write_black_ram_command
-            false,                                                                                          // black_bits_inverted
-            SSD_WRITE_RAM_RED,                                                                              // write_color_ram_command
-            false,                                                                                          // color_bits_inverted
-            0xFF0000,                                                                                       // highlight_color (RED for tri-color display)
-            _refresh_sequence_ssd1681, sizeof(_refresh_sequence_ssd1681),                                   // refresh_display_command
-            refresh_time,                                                                                   // refresh_time
-            &pin_GPIO9, // DEFAULT_SPI_BUS_BUSY,                                                            // busy_pin
-            true,                                                                                           // busy_state
-            seconds_per_frame,                                                                              // seconds_per_frame (does not seem the user can change this)
-            true,                                                                                           // always_toggle_chip_select
-            false,                                                                                          // not grayscale
-            false,                                                                                          // not acep
-            false,                                                                                          // not two_byte_sequence_length
-            true);                                                                                          // address_little_endian
+        epaperdisplay_construct_args_t args = EPAPERDISPLAY_CONSTRUCT_ARGS_DEFAULTS;
+        args.bus = bus;
+        args.start_sequence = _start_sequence_ssd1681;
+        args.start_sequence_len = sizeof(_start_sequence_ssd1681);
+        args.start_up_time = 1.0;
+        args.stop_sequence = _stop_sequence_ssd1681;
+        args.stop_sequence_len = sizeof(_stop_sequence_ssd1681);
+        args.width = WIDTH;
+        args.height = HEIGHT;
+        args.ram_width = WIDTH;
+        args.ram_height = HEIGHT + 0x60;
+        args.rotation = rotation;
+        args.set_column_window_command = SSD_SET_RAMXPOS;
+        args.set_row_window_command = SSD_SET_RAMYPOS;
+        args.set_current_column_command = SSD_SET_RAMXCOUNT;
+        args.set_current_row_command = SSD_SET_RAMYCOUNT;
+        args.write_black_ram_command = SSD_WRITE_RAM_BLK;
+        args.write_color_ram_command = SSD_WRITE_RAM_RED;
+        args.highlight_color = 0xFF0000;
+        args.refresh_sequence = _refresh_sequence_ssd1681;
+        args.refresh_sequence_len = sizeof(_refresh_sequence_ssd1681);
+        args.refresh_time = refresh_time;
+        args.busy_pin = &pin_GPIO9;
+        args.busy_state = true;
+        args.seconds_per_frame = seconds_per_frame;
+        args.always_toggle_chip_select = true;
+        args.address_little_endian = true;
+        common_hal_epaperdisplay_epaperdisplay_construct(display, &args);
     } else if (vid_setting == 2) {  // Explorer SSD1608 BW
-        common_hal_epaperdisplay_epaperdisplay_construct(
-            display,
-            bus,
-            _start_sequence_ssd1608, sizeof(_start_sequence_ssd1608),
-            1.0,         // start up time
-            _stop_sequence_ssd1608, sizeof(_stop_sequence_ssd1608),
-            WIDTH,                                                                                          // width
-            HEIGHT,                                                                                         // height
-            WIDTH,                                                                                          // ram_width
-            HEIGHT /* + 0x60 */,                                                                             // ram_height RAM is actually only 200 bits high but we use 296 to match the 9 bits
-            0,                                                                                              // colstart
-            0,                                                                                              // rowstart
-            rotation,                                                                                       // rotation
-            SSD_SET_RAMXPOS,                                                                                // set_column_window_command
-            SSD_SET_RAMYPOS,                                                                                // set_row_window_command
-            SSD_SET_RAMXCOUNT,                                                                              // set_current_column_command
-            SSD_SET_RAMYCOUNT,                                                                              // set_current_row_command
-            SSD_WRITE_RAM_BLK,                                                                              // write_black_ram_command
-            false,                                                                                          // black_bits_inverted
-            NO_COMMAND,                                                                                     // write_color_ram_command
-            false,                                                                                          // color_bits_inverted
-            0x000000,                                                                                       // highlight_color (RED for tri-color display)
-            _refresh_sequence_ssd1608, sizeof(_refresh_sequence_ssd1608),                                   // refresh_display_command
-            refresh_time,                                                                                   // refresh_time
-            &pin_GPIO9, // DEFAULT_SPI_BUS_BUSY,                                                            // busy_pin
-            true,                                                                                           // busy_state
-            seconds_per_frame,                                                                              // seconds_per_frame (does not seem the user can change this)
-            true,                                                                                           // always_toggle_chip_select
-            false,                                                                                          // not grayscale
-            false,                                                                                          // not acep
-            false,                                                                                          // not two_byte_sequence_length
-            true);                                                                                          // address_little_endian
+        epaperdisplay_construct_args_t args = EPAPERDISPLAY_CONSTRUCT_ARGS_DEFAULTS;
+        args.bus = bus;
+        args.start_sequence = _start_sequence_ssd1608;
+        args.start_sequence_len = sizeof(_start_sequence_ssd1608);
+        args.start_up_time = 1.0;
+        args.stop_sequence = _stop_sequence_ssd1608;
+        args.stop_sequence_len = sizeof(_stop_sequence_ssd1608);
+        args.width = WIDTH;
+        args.height = HEIGHT;
+        args.ram_width = WIDTH;
+        args.ram_height = HEIGHT;
+        args.rotation = rotation;
+        args.set_column_window_command = SSD_SET_RAMXPOS;
+        args.set_row_window_command = SSD_SET_RAMYPOS;
+        args.set_current_column_command = SSD_SET_RAMXCOUNT;
+        args.set_current_row_command = SSD_SET_RAMYCOUNT;
+        args.write_black_ram_command = SSD_WRITE_RAM_BLK;
+        args.write_color_ram_command = NO_COMMAND;
+        args.refresh_sequence = _refresh_sequence_ssd1608;
+        args.refresh_sequence_len = sizeof(_refresh_sequence_ssd1608);
+        args.refresh_time = refresh_time;
+        args.busy_pin = &pin_GPIO9;
+        args.busy_state = true;
+        args.seconds_per_frame = seconds_per_frame;
+        args.always_toggle_chip_select = true;
+        args.address_little_endian = true;
+        common_hal_epaperdisplay_epaperdisplay_construct(display, &args);
     } else {
         // what should happen if this firmware is installed on some other board?
         // currently, we mark the display as None

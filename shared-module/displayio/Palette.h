@@ -15,10 +15,12 @@ typedef struct {
     uint8_t depth;
     uint8_t bytes_per_cell;
     uint8_t tricolor_hue;
-    uint8_t tricolor_luma;
+    uint8_t fourcolor_hue;
     uint8_t grayscale_bit; // The lowest grayscale bit. Normally 8 - depth.
     bool grayscale;
     bool tricolor;
+    bool fourcolor;
+    bool sixcolor; // Spectra6 e-ink screens.
     bool sevencolor; // Acep e-ink screens.
     bool pixels_in_byte_share_row;
     bool reverse_pixels_in_byte;

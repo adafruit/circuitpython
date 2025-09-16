@@ -40,13 +40,13 @@ bool vm_used_ble;
 void common_hal_bleio_init(void) {
 }
 
-void bleio_user_reset() {
+void bleio_user_reset(void) {
     // HCI doesn't support the BLE workflow so just do a full reset.
     bleio_reset();
 }
 
 // Turn off BLE on a reset or reload.
-void bleio_reset() {
+void bleio_reset(void) {
     // Create a UUID object for all CCCD's.
     cccd_uuid.base.type = &bleio_uuid_type;
     common_hal_bleio_uuid_construct(&cccd_uuid, BLE_UUID_CCCD, NULL);

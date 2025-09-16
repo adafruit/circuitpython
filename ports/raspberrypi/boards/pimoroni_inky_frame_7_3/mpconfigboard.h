@@ -14,8 +14,8 @@
 
 #define MICROPY_HW_LED_STATUS   (&pin_GPIO6)
 
-#define DEFAULT_I2C_BUS_SCL (&pin_GPIO4)
-#define DEFAULT_I2C_BUS_SDA (&pin_GPIO5)
+#define DEFAULT_I2C_BUS_SDA (&pin_GPIO4)
+#define DEFAULT_I2C_BUS_SCL (&pin_GPIO5)
 
 #define DEFAULT_UART_BUS_TX (&pin_GPIO0)
 #define DEFAULT_UART_BUS_RX (&pin_GPIO1)

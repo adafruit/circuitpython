@@ -12,6 +12,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "py/obj.h"
+
 #include "nrf_gpio.h"
 
 typedef struct {

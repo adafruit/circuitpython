@@ -166,7 +166,7 @@ bool common_hal_audiodelays_chorus_get_playing(audiodelays_chorus_obj_t *self) {
 }
 
 void common_hal_audiodelays_chorus_play(audiodelays_chorus_obj_t *self, mp_obj_t sample, bool loop) {
-    audiosample_must_match(&self->base, sample);
+    audiosample_must_match(&self->base, sample, false);
 
     self->sample = sample;
     self->loop = loop;

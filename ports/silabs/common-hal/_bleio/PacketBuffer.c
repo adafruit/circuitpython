@@ -391,7 +391,7 @@ void common_hal_bleio_packet_buffer_deinit(bleio_packet_buffer_obj_t *self) {
 }
 
 // Remove packet_buffer list when reload
-void reset_packet_buffer_list() {
+void reset_packet_buffer_list(void) {
     // Remove packet_buffer list
     memset(bleio_packet_buffer_list.data, 0,
         sizeof(bleio_packet_buffer_list.data));

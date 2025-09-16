@@ -35,16 +35,16 @@ void reload_initiate(supervisor_run_reason_t run_reason) {
     port_wake_main_task();
 }
 
-void autoreload_reset() {
+void autoreload_reset(void) {
     last_autoreload_trigger = 0;
 }
 
-void autoreload_enable() {
+void autoreload_enable(void) {
     autoreload_enabled = true;
     last_autoreload_trigger = 0;
 }
 
-void autoreload_disable() {
+void autoreload_disable(void) {
     autoreload_enabled = false;
 }
 
@@ -56,11 +56,11 @@ void autoreload_resume(uint32_t suspend_reason_mask) {
     autoreload_suspended &= ~suspend_reason_mask;
 }
 
-inline bool autoreload_is_enabled() {
+inline bool autoreload_is_enabled(void) {
     return autoreload_enabled;
 }
 
-void autoreload_trigger() {
+void autoreload_trigger(void) {
     if (!autoreload_enabled || autoreload_suspended != 0) {
         return;
     }
@@ -78,7 +78,7 @@ void autoreload_trigger() {
     }
 }
 
-bool autoreload_ready() {
+bool autoreload_ready(void) {
     if (last_autoreload_trigger == 0 || autoreload_suspended != 0) {
         return false;
     }

@@ -9,9 +9,9 @@ CIRCUITPY_ESP_FLASH_MODE=dio
 CIRCUITPY_ESP_FLASH_FREQ=40m
 CIRCUITPY_ESP_FLASH_SIZE=4MB
 
-# Include these Python libraries in firmware.
-FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_NeoPixel
-
 CIRCUITPY_ESP_PSRAM_SIZE = 2MB
 CIRCUITPY_ESP_PSRAM_MODE = qio
 CIRCUITPY_ESP_PSRAM_FREQ = 80m
+
+# Include these Python libraries in firmware.
+FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_NeoPixel

@@ -1,4 +1,4 @@
-# Test that native code loaded from a .mpy file is retained after a GC.
+# Test that native text/BSS/rodata loaded from a .mpy file is retained after a GC.
 
 try:
     import gc, sys, io, vfs
@@ -22,7 +22,9 @@ class UserFile(io.IOBase):
         return n
 
     def ioctl(self, req, arg):
-        return 0
+        if req == 4:  # MP_STREAM_CLOSE
+            return 0
+        return -1
 
 
 class UserFS:
@@ -44,12 +46,14 @@ class UserFS:
         return UserFile(self.files[path])
 
 
-# Pre-compiled examples/natmod/features0 example for various architectures, keyed
+# Pre-compiled import_mpy_native_gc_module example for various architectures, keyed
 # by the required value of sys.implementation._mpy (without sub-version).
-# cd examples/natmod/features0
-# make clean
-# make ARCH=x64 # or ARCH=armv6m
-# cat features0.mpy | python -c 'import sys; print(sys.stdin.buffer.read())'
+# To rebuild:
+#   $ cd import_mpy_native_gc_module
+#   $ make clean
+#   $ make ARCH=x64 # or ARCH=armv6m or ARCH=xtensawin
+# Then copy the bytes object printed on the last line.
+
 # CIRCUITPY-CHANGE: 'C' instead of 'M' mpy marker.
 features0_file_contents = {
     # -march=x64
@@ -77,10 +81,23 @@ sys.path.append("/userfs")
 
 # Import the native function.
 gc.collect()
-from features0 import factorial
+from features0 import get, add1
+
+# Test that the native functions work to begin with.
+print(get())
+print(add1(12))
 
 # Free the module that contained the function.
 del sys.modules["features0"]
+
+
+# Sweep the stack to remove any stray pointers that we are aiming to reclaim.
+def recurse(n):
+    if n:
+        recurse(n - 1)
+
+
+recurse(10)
 
 # Run a GC cycle which should reclaim the module but not the function.
 gc.collect()
@@ -89,8 +106,9 @@ gc.collect()
 for i in range(1000):
     []
 
-# Run the native function, it should not have been freed or overwritten.
-print(factorial(10))
+# Run the native function, its text/BSS/rodata should not have been freed or overwritten.
+print(get())
+print(add1(12))
 
 # Unmount and undo path addition.
 vfs.umount("/userfs")

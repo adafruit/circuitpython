@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"PO-Revision-Date: 2025-01-13 14:00+0000\n"
-"Last-Translator: gfbdrgng <hnaofegnp@hldrive.com>\n"
+"PO-Revision-Date: 2025-06-30 16:01+0000\n"
+"Last-Translator: MAE <martin-aehle@hotmail.de>\n"
 "Language-Team: none\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-"X-Generator: Weblate 5.10-dev\n"
+"X-Generator: Weblate 5.13-dev\n"
 
 #: main.c
 msgid ""
@@ -82,8 +82,8 @@ msgstr " вывод:\n"
 
 #: py/objstr.c
 #, c-format
-msgid "%%c requires int or char"
-msgstr "%%c требует int или char"
+msgid "%%c needs int or char"
+msgstr ""
 
 #: shared-bindings/rgbmatrix/RGBMatrix.c
 #, c-format
@@ -173,10 +173,6 @@ msgstr "Длинна %q должна быть <= %d"
 msgid "%q length must be >= %d"
 msgstr "Длинна %q должна быть >= %d"
 
-#: py/modsys.c py/runtime.c
-msgid "%q moved from %q to %q"
-msgstr "%q переместился из %q в %q"
-
 #: py/argcheck.c
 msgid "%q must be %d"
 msgstr "%q должно быть %d"
@@ -265,7 +261,7 @@ msgstr "%q за пределом"
 msgid "%q out of range"
 msgstr "%q вне диапазона"
 
-#: py/objmodule.c py/runtime.c
+#: py/objmodule.c
 msgid "%q renamed %q"
 msgstr "%q переименован %q"
 
@@ -324,15 +320,15 @@ msgid "'%q' object does not support '%q'"
 msgstr "Объект '%q' не поддерживает '%q'"
 
 #: py/runtime.c
-msgid "'%q' object is not an iterator"
+msgid "'%q' object isn't an iterator"
 msgstr "Объект '%q' не является итератором"
 
 #: py/objtype.c py/runtime.c shared-module/atexit/__init__.c
-msgid "'%q' object is not callable"
-msgstr "Объект '%q' не является вызываемым"
+msgid "'%q' object isn't callable"
+msgstr ""
 
 #: py/runtime.c
-msgid "'%q' object is not iterable"
+msgid "'%q' object isn't iterable"
 msgstr "Объект '%q' не является итерируемым"
 
 #: py/emitinlinethumb.c py/emitinlinextensa.c
@@ -874,6 +870,10 @@ msgstr "Координатные массивы имеют разные длин
 msgid "Coordinate arrays types have different sizes"
 msgstr "Типы массивов координат имеют разные размеры"
 
+#: ports/espressif/common-hal/rclcpy/Publisher.c
+msgid "Could not publish to ROS topic"
+msgstr ""
+
 #: shared-bindings/_bleio/Adapter.c
 msgid "Could not set address"
 msgstr "Не удалось задать адрес"
@@ -885,6 +885,11 @@ msgstr "Не удалось запустить прерывание, RX заня
 #: shared-module/audiomp3/MP3Decoder.c
 msgid "Couldn't allocate decoder"
 msgstr "Не удалось выделить место для декодера"
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+#, c-format
+msgid "Critical ROS failure during soft reboot, reset required: %d"
+msgstr ""
 
 #: ports/stm/common-hal/analogio/AnalogOut.c
 msgid "DAC Channel Init Error"
@@ -1087,7 +1092,8 @@ msgstr "Не удалось записать внутреннюю флэш-па�
 msgid "File exists"
 msgstr "Файл существует"
 
-#: shared-module/lvfontio/OnDiskFont.c shared-module/os/getenv.c
+#: shared-bindings/supervisor/__init__.c shared-module/lvfontio/OnDiskFont.c
+#: shared-module/os/getenv.c
 msgid "File not found"
 msgstr "Файл не найден"
 
@@ -1122,7 +1128,7 @@ msgstr ""
 "Для цветовых пространств RGB входное растровое изображение должно иметь 16 "
 "бит на пиксель"
 
-#: ports/cxd56/common-hal/camera/Camera.c
+#: ports/cxd56/common-hal/camera/Camera.c shared-module/audiocore/WaveFile.c
 msgid "Format not supported"
 msgstr "Формат не поддерживается"
 
@@ -1292,6 +1298,7 @@ msgstr "Прерывается функцией выхода"
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c py/argcheck.c
 #: shared-bindings/digitalio/DigitalInOut.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c shared-bindings/pwmio/PWMOut.c
+#: shared-bindings/supervisor/__init__.c
 #: shared-module/aurora_epaper/aurora_framebuffer.c
 #: shared-module/lvfontio/OnDiskFont.c
 msgid "Invalid %q"
@@ -1325,6 +1332,10 @@ msgstr "Неверный BSSID"
 #: shared-bindings/wifi/Radio.c
 msgid "Invalid MAC address"
 msgstr "Неверный MAC-адрес"
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+msgid "Invalid ROS domain ID"
+msgstr ""
 
 #: ports/espressif/common-hal/espidf/__init__.c py/moderrno.c
 msgid "Invalid argument"
@@ -1423,6 +1434,10 @@ msgstr ""
 #: shared-bindings/is31fl3741/IS31FL3741.c
 msgid "Mapping must be a tuple"
 msgstr "Сопоставление должно быть кортежом"
+
+#: py/persistentcode.c
+msgid "MicroPython .mpy file; use CircuitPython mpy-cross"
+msgstr ""
 
 #: ports/raspberrypi/bindings/rp2pio/StateMachine.c
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
@@ -1892,6 +1907,10 @@ msgstr "Недопустимый размер программы"
 msgid "Program too long"
 msgstr "Слишком длинная программа"
 
+#: shared-bindings/rclcpy/Publisher.c
+msgid "Publishers can only be created from a parent node"
+msgstr ""
+
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Pull not used when direction is output."
 msgstr "Тяга не используется, когда выводится направление."
@@ -1911,6 +1930,26 @@ msgstr "Ошибка деинициализации генератора слу�
 #: ports/stm/common-hal/os/__init__.c
 msgid "RNG Init Error"
 msgstr "Ошибка инициализации RNG"
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+msgid "ROS failed to initialize. Is agent connected?"
+msgstr ""
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+msgid "ROS internal setup failure"
+msgstr ""
+
+#: ports/espressif/common-hal/rclcpy/__init__.c
+msgid "ROS memory allocator failure"
+msgstr ""
+
+#: ports/espressif/common-hal/rclcpy/Node.c
+msgid "ROS node failed to initialize"
+msgstr ""
+
+#: ports/espressif/common-hal/rclcpy/Publisher.c
+msgid "ROS topic failed to initialize"
+msgstr ""
 
 #: ports/atmel-samd/common-hal/busio/UART.c ports/cxd56/common-hal/busio/UART.c
 #: ports/nordic/common-hal/busio/UART.c ports/stm/common-hal/busio/UART.c
@@ -2125,6 +2164,10 @@ msgstr "Выход индекса плитки за пределы"
 #: shared-bindings/displayio/TileGrid.c
 msgid "Tile width must exactly divide bitmap width"
 msgstr "Ширина плитки должна точно делить ширину растрового изображения"
+
+#: shared-module/tilepalettemapper/TilePaletteMapper.c
+msgid "TilePaletteMapper may only be bound to a TileGrid once"
+msgstr ""
 
 #: shared-bindings/alarm/time/TimeAlarm.c
 msgid "Time is in the past."
@@ -2355,10 +2398,6 @@ msgstr "Неподдерживаемое цветовое пространств
 msgid "Unsupported display bus type"
 msgstr "Неподдерживаемый тип шины дисплея"
 
-#: shared-module/audiocore/WaveFile.c
-msgid "Unsupported format"
-msgstr "Неподдерживаемый формат"
-
 #: shared-bindings/hashlib/__init__.c
 msgid "Unsupported hash algorithm"
 msgstr "Неподдерживаемый алгоритм хеширования"
@@ -2422,9 +2461,11 @@ msgstr ""
 msgid "Wi-Fi: "
 msgstr "Wi-Fi: "
 
+#: ports/espressif/common-hal/wifi/Radio.c
 #: ports/raspberrypi/common-hal/wifi/Radio.c
-msgid "Wifi is not enabled"
-msgstr "Wifi не включен"
+#: ports/zephyr-cp/common-hal/wifi/Radio.c
+msgid "WiFi is not enabled"
+msgstr ""
 
 #: main.c
 msgid "Woken up by alarm.\n"
@@ -2663,16 +2704,16 @@ msgstr "Размеры растровых изображений должны с
 msgid "bits must be 32 or less"
 msgstr "биты должны быть 32 или менее"
 
+#: shared-bindings/audiofreeverb/Freeverb.c
+msgid "bits_per_sample must be 16"
+msgstr ""
+
 #: shared-bindings/audiodelays/Chorus.c shared-bindings/audiodelays/Echo.c
 #: shared-bindings/audiodelays/MultiTapDelay.c
 #: shared-bindings/audiodelays/PitchShift.c
 #: shared-bindings/audiofilters/Distortion.c
-#: shared-bindings/audiodelays/Reverb.c
-msgid "bits_per_sample must be 16"
-msgstr ""
-
-#: shared-bindings/audiodelays/Echo.c shared-bindings/audiofilters/Distortion.c
-#: shared-bindings/audiofilters/Filter.c shared-bindings/audiomixer/Mixer.c
+#: shared-bindings/audiofilters/Filter.c shared-bindings/audiofilters/Phaser.c
+#: shared-bindings/audiomixer/Mixer.c
 msgid "bits_per_sample must be 8 or 16"
 msgstr "bits_per_sample должно быть 8 или 16"
 
@@ -2728,6 +2769,10 @@ msgstr "Калибровка доступна только для чтения"
 #: shared-module/vectorio/Rectangle.c
 msgid "can only have one parent"
 msgstr "может иметь только одного родителя"
+
+#: py/emitinlinerv32.c
+msgid "can only have up to 4 parameters for RV32 assembly"
+msgstr ""
 
 #: py/emitinlinethumb.c
 msgid "can only have up to 4 parameters to Thumb assembly"
@@ -2796,6 +2841,10 @@ msgstr "Не удается преобразовать в int"
 #: py/objstr.c
 msgid "can't convert to str implicitly"
 msgstr "не может превратиться в полосу неявно"
+
+#: py/objtype.c
+msgid "can't create '%q' instances"
+msgstr ""
 
 #: py/compile.c
 msgid "can't declare nonlocal in outer code"
@@ -2898,10 +2947,6 @@ msgstr "не может превратить комплекс в dtype"
 #: extmod/ulab/code/ndarray.c
 msgid "cannot convert complex type"
 msgstr "Не удается преобразовать сложный тип"
-
-#: py/objtype.c
-msgid "cannot create '%q' instances"
-msgstr "Не удается создать экземпляры '%q'"
 
 #: py/objtype.c
 msgid "cannot create instance"
@@ -3223,8 +3268,16 @@ msgid "format"
 msgstr "формат"
 
 #: py/objstr.c
-msgid "format requires a dict"
+msgid "format needs a dict"
 msgstr "Формат требует диктата"
+
+#: py/objstr.c
+msgid "format string didn't convert all arguments"
+msgstr ""
+
+#: py/objstr.c
+msgid "format string needs more arguments"
+msgstr ""
 
 #: py/objdeque.c
 msgid "full"
@@ -3688,7 +3741,7 @@ msgid "must use keyword argument for key function"
 msgstr "Необходимо использовать аргумент ключевого слова для ключевой функции"
 
 #: py/runtime.c
-msgid "name '%q' is not defined"
+msgid "name '%q' isn't defined"
 msgstr "Имя '%q' не определено"
 
 #: py/runtime.c
@@ -3780,8 +3833,8 @@ msgstr ""
 "умолчанию"
 
 #: py/objstr.c
-msgid "non-hex digit found"
-msgstr "Ненайдена шестнадцатеричная цифра"
+msgid "non-hex digit"
+msgstr ""
 
 #: ports/nordic/common-hal/_bleio/Adapter.c
 msgid "non-zero timeout must be > 0.01"
@@ -3798,14 +3851,6 @@ msgstr "не 128-битный UUID"
 #: py/parse.c
 msgid "not a constant"
 msgstr "не константа"
-
-#: py/objstr.c
-msgid "not all arguments converted during string formatting"
-msgstr "Не все аргументы преобразуются при форматировании строки"
-
-#: py/objstr.c
-msgid "not enough arguments for format string"
-msgstr "Недостаточно аргументов для строки форматирования"
 
 #: extmod/ulab/code/numpy/carray/carray_tools.c
 msgid "not implemented for complex dtype"
@@ -3869,10 +3914,6 @@ msgstr "объект типа «%s» не имеет len()"
 msgid "object with buffer protocol required"
 msgstr "Объект с обязательным буферным протоколом"
 
-#: py/objstr.c
-msgid "odd-length string"
-msgstr "Строка нечетной длины"
-
 #: supervisor/shared/web_workflow/web_workflow.c
 msgid "off"
 msgstr "выключить"
@@ -3920,6 +3961,30 @@ msgstr "поддерживаются только срезы с шагом = 1 (
 #: py/vm.c
 msgid "opcode"
 msgstr "код операции"
+
+#: py/emitinlinerv32.c
+msgid "opcode '%q' argument %d: expecting %q"
+msgstr ""
+
+#: py/emitinlinerv32.c
+msgid "opcode '%q' argument %d: must not be zero"
+msgstr ""
+
+#: py/emitinlinerv32.c
+msgid "opcode '%q' argument %d: out of range"
+msgstr ""
+
+#: py/emitinlinerv32.c
+msgid "opcode '%q' argument %d: undefined label '%q'"
+msgstr ""
+
+#: py/emitinlinerv32.c
+msgid "opcode '%q' argument %d: unknown register"
+msgstr ""
+
+#: py/emitinlinerv32.c
+msgid "opcode '%q': expecting %d arguments"
+msgstr ""
 
 #: extmod/ulab/code/ndarray.c extmod/ulab/code/numpy/bitwise.c
 #: extmod/ulab/code/numpy/compare.c extmod/ulab/code/numpy/vector.c
@@ -4012,6 +4077,10 @@ msgstr "Упаковка ожидаемых %d товаров для упако�
 msgid "palette must be 32 bytes long"
 msgstr "Длина палитры должна составлять 32 байта"
 
+#: py/emitinlinerv32.c
+msgid "parameters must be registers in sequence a0 to a3"
+msgstr ""
+
 #: py/emitinlinextensa.c
 msgid "parameters must be registers in sequence a2 to a5"
 msgstr "Параметры должны быть регистрами в последовательности от a2 до a5"
@@ -4061,10 +4130,6 @@ msgstr "pow() с 3 аргументами требует целых чисел"
 msgid "pull masks conflict with direction masks"
 msgstr "Маски вытягивания конфликтуют с масками направления"
 
-#: py/parse.c
-msgid "raw f-strings are not supported"
-msgstr "Необработанные F-строки не поддерживаются"
-
 #: extmod/ulab/code/numpy/fft/fft_tools.c
 msgid "real and imaginary parts must be of equal length"
 msgstr "реальные и воображаемые части должны быть одинаковой длины"
@@ -4108,7 +4173,7 @@ msgstr "аргумент roll должен быть массивом ndarray"
 msgid "rsplit(None,n)"
 msgstr "rsplit(Нет;n)"
 
-#: shared-bindings/audiodelays/Reverb.c
+#: shared-bindings/audiofreeverb/Freeverb.c
 msgid "samples_signed must be true"
 msgstr ""
 
@@ -4204,10 +4269,6 @@ msgstr "source_bitmap должен иметь значение_счет 8"
 #: extmod/modre.c
 msgid "splitting with sub-captures"
 msgstr "разделение с помощью подзахватов"
-
-#: py/objstr.c
-msgid "start/end indices"
-msgstr "Начальные/конечные индексы"
 
 #: shared-bindings/random/__init__.c
 msgid "stop not reachable from start"
@@ -4333,11 +4394,11 @@ msgid "tx and rx cannot both be None"
 msgstr "tx и rx не могут быть одновременно None"
 
 #: py/objtype.c
-msgid "type '%q' is not an acceptable base type"
+msgid "type '%q' isn't an acceptable base type"
 msgstr "Тип '%Q' не является допустимым базовым типом"
 
 #: py/objtype.c
-msgid "type is not an acceptable base type"
+msgid "type isn't an acceptable base type"
 msgstr "Тип не является приемлемым базовым типом"
 
 #: py/runtime.c
@@ -4372,6 +4433,10 @@ msgstr "Экранирование имен в Юникоде"
 #: py/parse.c
 msgid "unindent doesn't match any outer indent level"
 msgstr "Отступ не совпадает ни с одним уровнем внешнего отступа"
+
+#: py/emitinlinerv32.c
+msgid "unknown RV32 instruction '%q'"
+msgstr ""
 
 #: py/objstr.c
 #, c-format
@@ -4462,9 +4527,8 @@ msgid "value out of range of target"
 msgstr "Величина выходящая за пределы диапазона цели"
 
 #: extmod/moddeflate.c
-#, fuzzy
 msgid "wbits"
-msgstr "wbits"
+msgstr ""
 
 #: shared-bindings/bitmapfilter/__init__.c
 msgid ""
@@ -4481,12 +4545,6 @@ msgstr "Веса должны быть объектом типа %q, %q, %q ил
 #: shared-bindings/is31fl3741/FrameBuffer.c
 msgid "width must be greater than zero"
 msgstr "ширина должна быть больше нуля"
-
-#: ports/espressif/common-hal/wifi/Radio.c
-#: ports/raspberrypi/common-hal/wifi/Radio.c
-#: ports/zephyr-cp/common-hal/wifi/Radio.c
-msgid "wifi is not enabled"
-msgstr "Wi-Fi не включен"
 
 #: ports/raspberrypi/common-hal/wifi/Monitor.c
 msgid "wifi.Monitor not available"
@@ -4549,6 +4607,46 @@ msgstr "zi должно быть типа float"
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr "zi должен иметь форму (n_section, 2)"
+
+#~ msgid "%q moved from %q to %q"
+#~ msgstr "%q переместился из %q в %q"
+
+#~ msgid "start/end indices"
+#~ msgstr "Начальные/конечные индексы"
+
+#, c-format
+#~ msgid "%%c requires int or char"
+#~ msgstr "%%c требует int или char"
+
+#~ msgid "'%q' object is not callable"
+#~ msgstr "Объект '%q' не является вызываемым"
+
+#~ msgid "cannot create '%q' instances"
+#~ msgstr "Не удается создать экземпляры '%q'"
+
+#~ msgid "non-hex digit found"
+#~ msgstr "Ненайдена шестнадцатеричная цифра"
+
+#~ msgid "not all arguments converted during string formatting"
+#~ msgstr "Не все аргументы преобразуются при форматировании строки"
+
+#~ msgid "not enough arguments for format string"
+#~ msgstr "Недостаточно аргументов для строки форматирования"
+
+#~ msgid "odd-length string"
+#~ msgstr "Строка нечетной длины"
+
+#~ msgid "raw f-strings are not supported"
+#~ msgstr "Необработанные F-строки не поддерживаются"
+
+#~ msgid "Unsupported format"
+#~ msgstr "Неподдерживаемый формат"
+
+#~ msgid "Wifi is not enabled"
+#~ msgstr "Wifi не включен"
+
+#~ msgid "wifi is not enabled"
+#~ msgstr "Wi-Fi не включен"
 
 #~ msgid "Cannot remount '/' when visible via USB."
 #~ msgstr "Невозможно перемонтировать '/' пока он виден через USB."
@@ -4817,7 +4915,7 @@ msgstr "zi должен иметь форму (n_section, 2)"
 #~ msgid "'continue' outside loop"
 #~ msgstr "«продолжить» вне цикла"
 
-#~ msgid "'coroutine' object is not an iterator"
+#~ msgid "'coroutine' object isn't an iterator"
 #~ msgstr "Объект 'coroutine' не является итератором"
 
 #~ msgid "(x,y) integers required"

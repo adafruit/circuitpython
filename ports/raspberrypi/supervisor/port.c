@@ -264,31 +264,42 @@ void port_heap_init(void) {
 
 void *port_malloc(size_t size, bool dma_capable) {
     if (!dma_capable && _psram_size > 0) {
+        common_hal_mcu_disable_interrupts();
         void *block = tlsf_malloc(_psram_heap, size);
+        common_hal_mcu_enable_interrupts();
         if (block) {
             return block;
         }
     }
+    common_hal_mcu_disable_interrupts();
     void *block = tlsf_malloc(_heap, size);
+    common_hal_mcu_enable_interrupts();
     return block;
 }
 
 void port_free(void *ptr) {
+    common_hal_mcu_disable_interrupts();
     if (((size_t)ptr) < SRAM_BASE) {
         tlsf_free(_psram_heap, ptr);
     } else {
         tlsf_free(_heap, ptr);
     }
+    common_hal_mcu_enable_interrupts();
 }
 
 void *port_realloc(void *ptr, size_t size, bool dma_capable) {
     if (_psram_size > 0 && ((ptr != NULL && ((size_t)ptr) < SRAM_BASE) || (ptr == NULL && !dma_capable))) {
+        common_hal_mcu_disable_interrupts();
         void *block = tlsf_realloc(_psram_heap, ptr, size);
+        common_hal_mcu_enable_interrupts();
         if (block) {
             return block;
         }
     }
-    return tlsf_realloc(_heap, ptr, size);
+    common_hal_mcu_disable_interrupts();
+    void *new_ptr = tlsf_realloc(_heap, ptr, size);
+    common_hal_mcu_enable_interrupts();
+    return new_ptr;
 }
 
 static bool max_size_walker(void *ptr, size_t size, int used, void *user) {
@@ -491,11 +502,11 @@ static volatile bool ticks_enabled;
 static volatile bool _woken_up;
 
 uint64_t port_get_raw_ticks(uint8_t *subticks) {
-    uint64_t microseconds = time_us_64();
+    int64_t all_subticks = time_us_64() * 512 / 15625;
     if (subticks != NULL) {
-        *subticks = (uint8_t)(((microseconds % 1000000) % 977) / 31);
+        *subticks = all_subticks % 32;
     }
-    return 1024 * (microseconds / 1000000) + (microseconds % 1000000) / 977;
+    return all_subticks / 32;
 }
 
 static void _tick_callback(uint alarm_num) {
@@ -584,7 +595,7 @@ __attribute__((used)) void __not_in_flash_func(isr_hardfault)(void) {
     }
 }
 
-void port_yield() {
+void port_yield(void) {
     #if CIRCUITPY_CYW43
     cyw43_arch_poll();
     #endif
