@@ -15,8 +15,4 @@ typedef struct {
     uint8_t *configuration_descriptor; // Contains the length of the all descriptors.
     uint8_t open_endpoints[8];
     uint16_t first_langid;
-    #if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
-    uint8_t *temp_buffer;  // Temporary buffer for PSRAM data
-    size_t temp_buffer_size;  // Size of temporary buffer
-    #endif
 } usb_core_device_obj_t;

@@ -844,10 +844,6 @@ msgstr ""
 msgid "Coordinate arrays types have different sizes"
 msgstr ""
 
-#: shared-module/usb/core/Device.c
-msgid "Could not allocate DMA capable buffer"
-msgstr ""
-
 #: ports/espressif/common-hal/rclcpy/Publisher.c
 msgid "Could not publish to ROS topic"
 msgstr ""
