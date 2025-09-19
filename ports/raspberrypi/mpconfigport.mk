@@ -59,6 +59,9 @@ CIRCUITPY_CYW43_INIT_DELAY ?= 1000
 endif
 
 ifeq ($(CHIP_VARIANT),RP2350)
+# RP2350 has PSRAM that is not DMA-capable
+CIRCUITPY_ALL_MEMORY_DMA_CAPABLE = 0
+
 # This needs to be implemented.
 CIRCUITPY_ALARM = 0
 # Default PICODVI on because it doesn't require much code in RAM to talk to HSTX.

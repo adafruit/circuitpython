@@ -8,6 +8,8 @@
 #include "shared-bindings/usb/core/Device.h"
 
 #include "tusb_config.h"
+#include "supervisor/port.h"
+#include "supervisor/port_heap.h"
 
 #include "lib/tinyusb/src/host/hcd.h"
 #include "lib/tinyusb/src/host/usbh.h"
@@ -33,6 +35,44 @@ void tuh_umount_cb(uint8_t dev_addr) {
 
 static xfer_result_t _xfer_result;
 static size_t _actual_len;
+
+#if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
+// Allocate a buffer in SRAM so it's safe to use with DMA
+#define USB_CORE_SRAM_BUF_SIZE (256)
+static uint8_t _dma_safe_buffer[USB_CORE_SRAM_BUF_SIZE];
+
+// Helper to ensure buffer is DMA-capable for transfer operations
+static uint8_t *_ensure_dma_buffer(usb_core_device_obj_t *self, const uint8_t *buffer, size_t len, bool for_write) {
+    if (port_buffer_is_dma_capable(buffer)) {
+        return (uint8_t *)buffer;  // Already DMA-capable, use directly
+    }
+
+    // If buffer was in PSRAM, use DMA-safe static buffer from SRAM instead
+
+    // Copy data to DMA buffer if writing
+    if (for_write && buffer != NULL) {
+        // CAUTION: This will truncate the requested length if it is larger than the
+        // size of the DMA-safe SRAM buffer. If that becomes a problem, then consider
+        // increasing the size of USB_CORE_SRAM_BUF_SIZE.
+        uint32_t dma_len = len;
+        if (len > sizeof(_dma_safe_buffer)) {
+            dma_len = sizeof(_dma_safe_buffer);
+        }
+        memcpy(_dma_safe_buffer, buffer, dma_len);
+    }
+
+    return _dma_safe_buffer;
+}
+
+// Copy data back from DMA buffer to original buffer after read
+static void _copy_from_dma_buffer(uint8_t *original_buffer, size_t len) {
+    if (original_buffer != _dma_safe_buffer) {
+        size_t limit = (len <= sizeof(_dma_safe_buffer)) ? len : sizeof(_dma_safe_buffer);
+        memcpy(original_buffer, _dma_safe_buffer, limit);
+    }
+}
+#endif
+
 bool common_hal_usb_core_device_construct(usb_core_device_obj_t *self, uint8_t device_address) {
     if (!tuh_inited()) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("No usb host port initialized"));
@@ -399,11 +439,27 @@ mp_int_t common_hal_usb_core_device_write(usb_core_device_obj_t *self, mp_int_t 
         mp_raise_usb_core_USBError(NULL);
         return 0;
     }
+
+    #if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
+    // Ensure buffer is in DMA-capable memory
+    uint8_t *dma_buffer = _ensure_dma_buffer(self, buffer, len, true);  // true = for write
+    // CAUTION: This may truncate the requested length if it is larger than the
+    // size of the DMA-safe SRAM buffer. If that becomes a problem, then consider
+    // increasing the size of USB_CORE_SRAM_BUF_SIZE.
+    uint32_t dma_len = len;
+    if ((dma_buffer == _dma_safe_buffer) && (dma_len > sizeof(_dma_safe_buffer))) {
+        dma_len = sizeof(_dma_safe_buffer);
+    }
+    #else
+    uint8_t *dma_buffer = (uint8_t *)buffer;  // All memory is DMA-capable
+    uint32_t dma_len = len;
+    #endif
+
     tuh_xfer_t xfer;
     xfer.daddr = self->device_address;
     xfer.ep_addr = endpoint;
-    xfer.buffer = (uint8_t *)buffer;
-    xfer.buflen = len;
+    xfer.buffer = dma_buffer;
+    xfer.buflen = dma_len;
     return _xfer(&xfer, timeout);
 }
 
@@ -412,12 +468,38 @@ mp_int_t common_hal_usb_core_device_read(usb_core_device_obj_t *self, mp_int_t e
         mp_raise_usb_core_USBError(NULL);
         return 0;
     }
+
+    #if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
+    // Ensure buffer is in DMA-capable memory
+    uint8_t *dma_buffer = _ensure_dma_buffer(self, buffer, len, false);  // false = for read
+    // CAUTION: This may truncate the requested length if it is larger than the
+    // size of the DMA-safe SRAM buffer. If that becomes a problem, then consider
+    // increasing the size of USB_CORE_SRAM_BUF_SIZE.
+    uint32_t dma_len = len;
+    if ((dma_buffer == _dma_safe_buffer) && (dma_len > sizeof(_dma_safe_buffer))) {
+        dma_len = sizeof(_dma_safe_buffer);
+    }
+    #else
+    uint8_t *dma_buffer = buffer;  // All memory is DMA-capable
+    uint32_t dma_len = len;
+    #endif
+
     tuh_xfer_t xfer;
     xfer.daddr = self->device_address;
     xfer.ep_addr = endpoint;
-    xfer.buffer = buffer;
-    xfer.buflen = len;
-    return _xfer(&xfer, timeout);
+    xfer.buffer = dma_buffer;
+    xfer.buflen = dma_len;
+    size_t result = _xfer(&xfer, timeout);
+
+    #if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
+    // Copy data back to original buffer if needed
+    if (result > 0 && (buffer != dma_buffer)) {
+        size_t limit = (result <= dma_len) ? result : dma_len;
+        _copy_from_dma_buffer(buffer, limit);
+    }
+    #endif
+
+    return result;
 }
 
 mp_int_t common_hal_usb_core_device_ctrl_transfer(usb_core_device_obj_t *self,
@@ -426,18 +508,39 @@ mp_int_t common_hal_usb_core_device_ctrl_transfer(usb_core_device_obj_t *self,
     uint8_t *buffer, mp_int_t len, mp_int_t timeout) {
     // Timeout is in ms.
 
+    #if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
+    // Determine if this is a write (host-to-device) or read (device-to-host) transfer
+    bool is_write = (bmRequestType & 0x80) == 0;  // Bit 7: 0=host-to-device, 1=device-to-host
+
+    // Ensure buffer is in DMA-capable memory
+    uint8_t *dma_buffer = NULL;
+    if (len > 0 && buffer != NULL) {
+        dma_buffer = _ensure_dma_buffer(self, buffer, len, is_write);
+    }
+    // CAUTION: This may truncate the requested length if it is larger than the
+    // size of the DMA-safe SRAM buffer. If that becomes a problem, then consider
+    // increasing the size of USB_CORE_SRAM_BUF_SIZE.
+    uint16_t dma_len = len;
+    if ((dma_buffer == _dma_safe_buffer) && (dma_len > sizeof(_dma_safe_buffer))) {
+        dma_len = sizeof(_dma_safe_buffer);
+    }
+    #else
+    uint8_t *dma_buffer = buffer;  // All memory is DMA-capable
+    uint16_t dma_len = len;
+    #endif
+
     tusb_control_request_t request = {
         .bmRequestType = bmRequestType,
         .bRequest = bRequest,
         .wValue = wValue,
         .wIndex = wIndex,
-        .wLength = len
+        .wLength = dma_len
     };
     tuh_xfer_t xfer = {
         .daddr = self->device_address,
         .ep_addr = 0,
         .setup = &request,
-        .buffer = buffer,
+        .buffer = dma_buffer,
         .complete_cb = _transfer_done_cb,
     };
 
@@ -446,7 +549,17 @@ mp_int_t common_hal_usb_core_device_ctrl_transfer(usb_core_device_obj_t *self,
         mp_raise_usb_core_USBError(NULL);
         return 0;
     }
-    return (mp_int_t)_handle_timed_transfer_callback(&xfer, timeout);
+    mp_int_t result = (mp_int_t)_handle_timed_transfer_callback(&xfer, timeout);
+
+    #if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
+    // Copy data back to original buffer if this was a read transfer and we got data
+    if ((bmRequestType & 0x80) != 0 && result > 0 && (buffer != dma_buffer)) {  // Read transfer (device-to-host)
+        size_t limit = (result <= dma_len) ? result : dma_len;
+        _copy_from_dma_buffer(buffer, limit);
+    }
+    #endif
+
+    return result;
 }
 
 bool common_hal_usb_core_device_is_kernel_driver_active(usb_core_device_obj_t *self, mp_int_t interface) {
