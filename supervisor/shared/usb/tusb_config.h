@@ -150,9 +150,9 @@ extern "C" {
 #if CIRCUITPY_USB_HOST || CIRCUITPY_MAX3421E
 #define CFG_TUH_ENABLED 1
 
-// Always use PIO to do host on RP2.
-#if !CIRCUITPY_MAX3421E
-#define CFG_TUH_RPI_PIO_USB 1
+// Don't use RP2 PIO to do host on MAX3421E or when USB device is disabled
+#if CIRCUITPY_MAX3421E || (CIRCUITPY_USB_HOST && !CIRCUITPY_USB_DEVICE)
+#define CFG_TUH_RPI_PIO_USB 0
 #else
 #define CFG_TUH_RPI_PIO_USB 1
 #endif

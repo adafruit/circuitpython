@@ -117,8 +117,10 @@ void usb_init(void) {
     usb_hid_build_report_descriptor();
     #endif
 
+    #if CIRCUITPY_USB_DEVICE
     // Only init device. Host gets inited by the `usb_host` module common-hal.
     tud_init(TUD_OPT_RHPORT);
+    #endif
     #endif
 
     post_usb_init();
@@ -181,7 +183,9 @@ void usb_setup_with_vm(void) {
 void usb_background(void) {
     if (usb_enabled()) {
         #if CFG_TUSB_OS == OPT_OS_NONE || CFG_TUSB_OS == OPT_OS_PICO
+        #if CIRCUITPY_USB_DEVICE
         tud_task();
+        #endif
         #if CIRCUITPY_USB_HOST || CIRCUITPY_MAX3421E
         tuh_task();
         #endif

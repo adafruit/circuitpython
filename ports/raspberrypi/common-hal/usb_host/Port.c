@@ -32,6 +32,7 @@
 
 usb_host_port_obj_t usb_host_instance;
 
+#if CIRCUITPY_USB_DEVICE
 volatile bool _core1_ready = false;
 
 static void __not_in_flash_func(core1_main)(void) {
@@ -109,16 +110,19 @@ static size_t get_usb_pio(void) {
     }
     mp_raise_RuntimeError(MP_ERROR_TEXT("All state machines in use"));
 }
-
+#endif
 
 usb_host_port_obj_t *common_hal_usb_host_port_construct(const mcu_pin_obj_t *dp, const mcu_pin_obj_t *dm) {
+    #if CIRCUITPY_USB_DEVICE
     if ((dp->number + 1 != dm->number)
         && (dp->number - 1 != dm->number)) {
         raise_ValueError_invalid_pins();
     }
+    #endif
     usb_host_port_obj_t *self = &usb_host_instance;
 
     // Return the singleton if given the same pins.
+    #if CIRCUITPY_USB_DEVICE
     if (self->dp != NULL) {
         if (self->dp != dp || self->dm != dm) {
             mp_raise_msg_varg(&mp_type_RuntimeError, MP_ERROR_TEXT("%q in use"), MP_QSTR_usb_host);
@@ -170,6 +174,18 @@ usb_host_port_obj_t *common_hal_usb_host_port_construct(const mcu_pin_obj_t *dp,
 
     tuh_configure(TUH_OPT_RHPORT, TUH_CFGID_RPI_PIO_USB_CONFIGURATION, &pio_cfg);
     tuh_init(TUH_OPT_RHPORT);
+    #else
+    #if CIRCUITPY_USB_HOST
+    // init host stack on configured roothub port
+    tusb_rhport_init_t host_init = {
+        .role = TUSB_ROLE_HOST,
+        .speed = TUSB_SPEED_AUTO
+    };
+    tusb_init(0, &host_init);
+
+    //tuh_init(0);
+    #endif
+    #endif    
 
     return self;
 }

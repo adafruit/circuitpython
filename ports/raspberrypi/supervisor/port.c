@@ -552,10 +552,15 @@ void port_interrupt_after_ticks(uint32_t ticks) {
 void port_idle_until_interrupt(void) {
     #ifdef PICO_RP2040
     common_hal_mcu_disable_interrupts();
-    #if CIRCUITPY_USB_HOST
+    #if CIRCUITPY_USB_HOST && CIRCUITPY_USB_DEVICE
     if (!background_callback_pending() && !tud_task_event_ready() && !tuh_task_event_ready() && !_woken_up) {
     #else
+    #if CIRCUITPY_USB_HOST
+    if (!background_callback_pending() && !tuh_task_event_ready() && !_woken_up) {
+    #endif
+    #if CIRCUITPY_USB_DEVICE
     if (!background_callback_pending() && !tud_task_event_ready() && !_woken_up) {
+        #endif
         #endif
         __DSB();
         __WFI();
@@ -571,10 +576,15 @@ void port_idle_until_interrupt(void) {
     uint32_t oldBasePri = __get_BASEPRI();
     __set_BASEPRI(0);
     __isb();
-    #if CIRCUITPY_USB_HOST
+    #if CIRCUITPY_USB_HOST && CIRCUITPY_USB_DEVICE
     if (!background_callback_pending() && !tud_task_event_ready() && !tuh_task_event_ready() && !_woken_up) {
     #else
+    #if CIRCUITPY_USB_HOST
+    if (!background_callback_pending() && !tuh_task_event_ready() && !_woken_up) {
+    #endif
+    #if CIRCUITPY_USB_DEVICE
     if (!background_callback_pending() && !tud_task_event_ready() && !_woken_up) {
+        #endif
         #endif
         __DSB();
         __WFI();
