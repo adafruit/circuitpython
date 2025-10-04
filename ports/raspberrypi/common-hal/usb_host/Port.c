@@ -183,9 +183,9 @@ usb_host_port_obj_t *common_hal_usb_host_port_construct(const mcu_pin_obj_t *dp,
     };
     tusb_init(0, &host_init);
 
-    //tuh_init(0);
+    // tuh_init(0);
     #endif
-    #endif    
+    #endif
 
     return self;
 }

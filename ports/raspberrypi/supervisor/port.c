@@ -560,7 +560,7 @@ void port_idle_until_interrupt(void) {
     #endif
     #if CIRCUITPY_USB_DEVICE
     if (!background_callback_pending() && !tud_task_event_ready() && !_woken_up) {
-        #endif
+    #endif
         #endif
         __DSB();
         __WFI();
@@ -584,7 +584,7 @@ void port_idle_until_interrupt(void) {
     #endif
     #if CIRCUITPY_USB_DEVICE
     if (!background_callback_pending() && !tud_task_event_ready() && !_woken_up) {
-        #endif
+    #endif
         #endif
         __DSB();
         __WFI();

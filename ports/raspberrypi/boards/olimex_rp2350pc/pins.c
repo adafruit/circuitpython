@@ -18,7 +18,7 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_D43), MP_ROM_PTR(&pin_GPIO43) }, // 8
     { MP_OBJ_NEW_QSTR(MP_QSTR_D44), MP_ROM_PTR(&pin_GPIO44) }, // 7
     { MP_OBJ_NEW_QSTR(MP_QSTR_D45), MP_ROM_PTR(&pin_GPIO45) }, // 10
-     
+
 //    { MP_OBJ_NEW_QSTR(MP_QSTR_SDA), MP_ROM_PTR(&pin_GPIO32) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_SDA0), MP_ROM_PTR(&pin_GPIO36) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_D36), MP_ROM_PTR(&pin_GPIO36) },

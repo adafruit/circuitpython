@@ -40,8 +40,6 @@ bool board_reset_pin_number(uint8_t pin_number) {
 }
 
 void board_init(void) {
-    common_hal_usb_host_port_construct(0,0);
+    common_hal_usb_host_port_construct(0, 0);
     picodvi_autoconstruct();
 }
-
-
