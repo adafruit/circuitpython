@@ -15,6 +15,7 @@
 #include "shared/runtime/buffer_helper.h"
 #include "shared/runtime/context_manager_helpers.h"
 #include "py/runtime.h"
+#include "py/objproperty.h"
 
 //| class SPIDevice:
 //|     """SPI Device Manager"""
@@ -96,6 +97,48 @@ static mp_obj_t adafruit_bus_device_spidevice_make_new(const mp_obj_type_t *type
     return (mp_obj_t)self;
 }
 
+//|     polarity: int
+//|     """Polarity of the SPIDevice."""
+static mp_obj_t adafruit_bus_device_spidevice_obj_get_polarity(mp_obj_t self_in) {
+  adafruit_bus_device_spidevice_obj_t *self = MP_OBJ_TO_PTR(self_in);
+  return MP_OBJ_NEW_SMALL_INT(common_hal_adafruit_bus_device_spidevice_get_polarity(self));
+}
+MP_DEFINE_CONST_FUN_OBJ_1(adafruit_bus_device_spidevice_get_polarity_obj, adafruit_bus_device_spidevice_obj_get_polarity);
+
+static mp_obj_t adafruit_bus_device_spidevice_obj_set_polarity(mp_obj_t self_in, mp_obj_t polarity_obj) {
+  adafruit_bus_device_spidevice_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+  mp_int_t polarity = mp_obj_get_int(polarity_obj);
+  common_hal_adafruit_bus_device_spidevice_set_polarity(self, polarity);
+  return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_2(adafruit_bus_device_spidevice_set_polarity_obj, adafruit_bus_device_spidevice_obj_set_polarity);
+
+MP_PROPERTY_GETSET(adafruit_bus_device_spidevice_polarity_obj,
+    (mp_obj_t)&adafruit_bus_device_spidevice_get_polarity_obj,
+    (mp_obj_t)&adafruit_bus_device_spidevice_set_polarity_obj);
+
+//|     phase: int
+//|     """Phase of the SPIDevice."""
+static mp_obj_t adafruit_bus_device_spidevice_obj_get_phase(mp_obj_t self_in) {
+  adafruit_bus_device_spidevice_obj_t *self = MP_OBJ_TO_PTR(self_in);
+  return MP_OBJ_NEW_SMALL_INT(common_hal_adafruit_bus_device_spidevice_get_phase(self));
+}
+MP_DEFINE_CONST_FUN_OBJ_1(adafruit_bus_device_spidevice_get_phase_obj, adafruit_bus_device_spidevice_obj_get_phase);
+
+static mp_obj_t adafruit_bus_device_spidevice_obj_set_phase(mp_obj_t self_in, mp_obj_t phase_obj) {
+  adafruit_bus_device_spidevice_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+  mp_int_t phase = mp_obj_get_int(phase_obj);
+  common_hal_adafruit_bus_device_spidevice_set_phase(self, phase);
+  return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_2(adafruit_bus_device_spidevice_set_phase_obj, adafruit_bus_device_spidevice_obj_set_phase);
+
+MP_PROPERTY_GETSET(adafruit_bus_device_spidevice_phase_obj,
+    (mp_obj_t)&adafruit_bus_device_spidevice_get_phase_obj,
+    (mp_obj_t)&adafruit_bus_device_spidevice_set_phase_obj);
+
 //|     def __enter__(self) -> busio.SPI:
 //|         """Starts a SPI transaction by configuring the SPI and asserting chip select."""
 //|         ...
@@ -122,6 +165,8 @@ static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(adafruit_bus_device_spidevice___exit_
 static const mp_rom_map_elem_t adafruit_bus_device_spidevice_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&adafruit_bus_device_spidevice___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&adafruit_bus_device_spidevice___exit___obj) },
+    { MP_ROM_QSTR(MP_QSTR_polarity), MP_ROM_PTR(&adafruit_bus_device_spidevice_polarity_obj) },
+    { MP_ROM_QSTR(MP_QSTR_phase), MP_ROM_PTR(&adafruit_bus_device_spidevice_phase_obj) },
 };
 
 static MP_DEFINE_CONST_DICT(adafruit_bus_device_spidevice_locals_dict, adafruit_bus_device_spidevice_locals_dict_table);
@@ -129,7 +174,7 @@ static MP_DEFINE_CONST_DICT(adafruit_bus_device_spidevice_locals_dict, adafruit_
 MP_DEFINE_CONST_OBJ_TYPE(
     adafruit_bus_device_spidevice_type,
     MP_QSTR_SPIDevice,
-    MP_TYPE_FLAG_NONE,
+    MP_TYPE_FLAG_HAS_SPECIAL_ACCESSORS,
     make_new, adafruit_bus_device_spidevice_make_new,
     locals_dict, &adafruit_bus_device_spidevice_locals_dict
     );

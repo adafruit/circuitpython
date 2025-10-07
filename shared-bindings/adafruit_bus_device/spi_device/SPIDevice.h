@@ -25,3 +25,7 @@ extern void common_hal_adafruit_bus_device_spidevice_construct(adafruit_bus_devi
     bool cs_active_value, uint32_t baudrate, uint8_t polarity, uint8_t phase, uint8_t extra_clocks);
 extern mp_obj_t common_hal_adafruit_bus_device_spidevice_enter(adafruit_bus_device_spidevice_obj_t *self);
 extern void common_hal_adafruit_bus_device_spidevice_exit(adafruit_bus_device_spidevice_obj_t *self);
+extern uint8_t common_hal_adafruit_bus_device_spidevice_get_polarity(adafruit_bus_device_spidevice_obj_t *self);
+extern void common_hal_adafruit_bus_device_spidevice_set_polarity(adafruit_bus_device_spidevice_obj_t *self, uint8_t polarity);
+extern uint8_t common_hal_adafruit_bus_device_spidevice_get_phase(adafruit_bus_device_spidevice_obj_t *self);
+extern void common_hal_adafruit_bus_device_spidevice_set_phase(adafruit_bus_device_spidevice_obj_t *self, uint8_t phase);
