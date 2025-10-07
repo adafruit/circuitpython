@@ -100,17 +100,17 @@ static mp_obj_t adafruit_bus_device_spidevice_make_new(const mp_obj_type_t *type
 //|     polarity: int
 //|     """Polarity of the SPIDevice."""
 static mp_obj_t adafruit_bus_device_spidevice_obj_get_polarity(mp_obj_t self_in) {
-  adafruit_bus_device_spidevice_obj_t *self = MP_OBJ_TO_PTR(self_in);
-  return MP_OBJ_NEW_SMALL_INT(common_hal_adafruit_bus_device_spidevice_get_polarity(self));
+    adafruit_bus_device_spidevice_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    return MP_OBJ_NEW_SMALL_INT(common_hal_adafruit_bus_device_spidevice_get_polarity(self));
 }
 MP_DEFINE_CONST_FUN_OBJ_1(adafruit_bus_device_spidevice_get_polarity_obj, adafruit_bus_device_spidevice_obj_get_polarity);
 
 static mp_obj_t adafruit_bus_device_spidevice_obj_set_polarity(mp_obj_t self_in, mp_obj_t polarity_obj) {
-  adafruit_bus_device_spidevice_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    adafruit_bus_device_spidevice_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
-  mp_int_t polarity = mp_obj_get_int(polarity_obj);
-  common_hal_adafruit_bus_device_spidevice_set_polarity(self, polarity);
-  return mp_const_none;
+    mp_int_t polarity = mp_obj_get_int(polarity_obj);
+    common_hal_adafruit_bus_device_spidevice_set_polarity(self, polarity);
+    return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(adafruit_bus_device_spidevice_set_polarity_obj, adafruit_bus_device_spidevice_obj_set_polarity);
 
@@ -121,17 +121,17 @@ MP_PROPERTY_GETSET(adafruit_bus_device_spidevice_polarity_obj,
 //|     phase: int
 //|     """Phase of the SPIDevice."""
 static mp_obj_t adafruit_bus_device_spidevice_obj_get_phase(mp_obj_t self_in) {
-  adafruit_bus_device_spidevice_obj_t *self = MP_OBJ_TO_PTR(self_in);
-  return MP_OBJ_NEW_SMALL_INT(common_hal_adafruit_bus_device_spidevice_get_phase(self));
+    adafruit_bus_device_spidevice_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    return MP_OBJ_NEW_SMALL_INT(common_hal_adafruit_bus_device_spidevice_get_phase(self));
 }
 MP_DEFINE_CONST_FUN_OBJ_1(adafruit_bus_device_spidevice_get_phase_obj, adafruit_bus_device_spidevice_obj_get_phase);
 
 static mp_obj_t adafruit_bus_device_spidevice_obj_set_phase(mp_obj_t self_in, mp_obj_t phase_obj) {
-  adafruit_bus_device_spidevice_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    adafruit_bus_device_spidevice_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
-  mp_int_t phase = mp_obj_get_int(phase_obj);
-  common_hal_adafruit_bus_device_spidevice_set_phase(self, phase);
-  return mp_const_none;
+    mp_int_t phase = mp_obj_get_int(phase_obj);
+    common_hal_adafruit_bus_device_spidevice_set_phase(self, phase);
+    return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(adafruit_bus_device_spidevice_set_phase_obj, adafruit_bus_device_spidevice_obj_set_phase);
 

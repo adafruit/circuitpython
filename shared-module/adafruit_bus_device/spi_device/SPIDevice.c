@@ -24,19 +24,19 @@ void common_hal_adafruit_bus_device_spidevice_construct(adafruit_bus_device_spid
 }
 
 void common_hal_adafruit_bus_device_spidevice_set_polarity(adafruit_bus_device_spidevice_obj_t *self, uint8_t polarity) {
-  self->polarity = polarity;
+    self->polarity = polarity;
 }
 
 void common_hal_adafruit_bus_device_spidevice_set_phase(adafruit_bus_device_spidevice_obj_t *self, uint8_t phase) {
-  self->phase = phase;
+    self->phase = phase;
 }
 
 uint8_t common_hal_adafruit_bus_device_spidevice_get_polarity(adafruit_bus_device_spidevice_obj_t *self) {
-  return self->polarity;
+    return self->polarity;
 }
 
 uint8_t common_hal_adafruit_bus_device_spidevice_get_phase(adafruit_bus_device_spidevice_obj_t *self) {
-  return self->phase;
+    return self->phase;
 }
 
 mp_obj_t common_hal_adafruit_bus_device_spidevice_enter(adafruit_bus_device_spidevice_obj_t *self) {
