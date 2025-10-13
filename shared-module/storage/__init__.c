@@ -126,6 +126,11 @@ void common_hal_storage_mount(mp_obj_t vfs_obj, const char *mount_path, bool rea
     // call the underlying object to do any mounting operation
     mp_vfs_proxy_call(vfs, MP_QSTR_mount, 2, (mp_obj_t *)&args);
 
+    fs_user_mount_t *vfs_fat = MP_OBJ_TO_PTR(vfs_obj);
+    // Filesystem is read-only to USB if writable by CircuitPython, and vice versa.
+    filesystem_set_writable_by_usb(vfs_fat, readonly);
+    filesystem_set_concurrent_write_protection(vfs_fat, true);
+
     // Insert the vfs into the mount table by pushing it onto the front of the
     // mount table.
     mp_vfs_mount_t **vfsp = &MP_STATE_VM(vfs_mount_table);

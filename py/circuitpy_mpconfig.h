@@ -345,6 +345,9 @@ typedef long mp_off_t;
 #endif
 
 
+// For easy debugging printf's.
+#define PLAT_PRINTF(...) mp_printf(&mp_plat_print, __VA_ARGS__)
+
 #if MICROPY_PY_ASYNC_AWAIT && !CIRCUITPY_TRACEBACK
 #error CIRCUITPY_ASYNCIO requires CIRCUITPY_TRACEBACK
 #endif

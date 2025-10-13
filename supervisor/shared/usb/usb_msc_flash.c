@@ -249,7 +249,7 @@ bool tud_msc_is_writable_cb(uint8_t lun) {
     if (vfs == NULL) {
         return false;
     }
-    if (vfs->blockdev.writeblocks[0] == MP_OBJ_NULL || !filesystem_is_writable_by_usb(vfs)) {
+    if (!filesystem_is_writable_by_usb(vfs)) {
         return false;
     }
     // Lock the blockdev once we say we're writable.

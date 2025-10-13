@@ -107,7 +107,7 @@ digitalio_direction_t common_hal_digitalio_digitalinout_get_direction(
 
     if (self->pin->port < 4) {
         // Check that I/O mode is enabled and we don't have in AND out on at the same time
-        MP_STATIC_ASSERT(!((port->en0 & mask) && (port->inen & mask) && (port->outen & mask)));
+        MP_STATIC_ASSERT_NONCONSTEXPR(!((port->en0 & mask) && (port->inen & mask) && (port->outen & mask)));
 
         if ((port->en0 & mask) && (port->outen & mask)) {
             return DIRECTION_OUTPUT;

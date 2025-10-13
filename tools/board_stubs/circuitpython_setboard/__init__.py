@@ -12,7 +12,12 @@ import argparse
 import shutil
 from collections import defaultdict
 from importlib import resources
-from importlib.abc import Traversable
+
+try:
+    from importlib.resources.abc import Traversable
+except ModuleNotFoundError:
+    # 3.10 and earlier.
+    from importlib.abc import Traversable
 
 
 def get_definitions_or_exit(board: str) -> Traversable:

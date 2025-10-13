@@ -427,13 +427,10 @@ static MP_DEFINE_CONST_FUN_OBJ_2(fat_vfs_statvfs_obj, fat_vfs_statvfs);
 static mp_obj_t vfs_fat_mount(mp_obj_t self_in, mp_obj_t readonly, mp_obj_t mkfs) {
     fs_user_mount_t *self = MP_OBJ_TO_PTR(self_in);
 
-    // Read-only device indicated by writeblocks[0] == MP_OBJ_NULL.
-    // User can specify read-only device by:
-    //  1. readonly=True keyword argument
-    //  2. nonexistent writeblocks method (then writeblocks[0] == MP_OBJ_NULL already)
-    if (mp_obj_is_true(readonly)) {
-        self->blockdev.writeblocks[0] = MP_OBJ_NULL;
-    }
+    // CIRCUITPY-CHANGE: Use MP_BLOCKDEV_FLAG_USB_WRITABLE instead of writeblocks[0] =/!= MP_OBJ_NULL
+    // to specify read-write.
+    // If readonly to Python, it's writable by USB and vice versa.
+    filesystem_set_writable_by_usb(self, mp_obj_is_true(readonly));
 
     // check if we need to make the filesystem
     FRESULT res = (self->blockdev.flags & MP_BLOCKDEV_FLAG_NO_FILESYSTEM) ? FR_NO_FILESYSTEM : FR_OK;

@@ -52,6 +52,8 @@
 #define MP_BLOCKDEV_FLAG_CONCURRENT_WRITE_PROTECTED (0x0020)
 // Bit set when something has claimed the right to mutate the blockdev.
 #define MP_BLOCKDEV_FLAG_LOCKED (0x0040)
+// Ignore write protections. Used to override other flags temporarily.
+#define MP_BLOCKDEV_FLAG_IGNORE_WRITE_PROTECTION (0x0080)
 
 // constants for block protocol ioctl
 #define MP_BLOCKDEV_IOCTL_INIT          (1)

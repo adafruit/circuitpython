@@ -21,6 +21,7 @@ void filesystem_set_internal_writable_by_usb(bool usb_writable);
 void filesystem_set_internal_concurrent_write_protection(bool concurrent_write_protection);
 void filesystem_set_writable_by_usb(fs_user_mount_t *vfs, bool usb_writable);
 void filesystem_set_concurrent_write_protection(fs_user_mount_t *vfs, bool concurrent_write_protection);
+void filesystem_set_ignore_write_protection(fs_user_mount_t *vfs, bool ignore_write_protection);
 
 // Whether user code can modify the filesystem. It doesn't depend on the state
 // of USB. Don't use this for a workflow. In workflows, grab the shared file

@@ -211,14 +211,22 @@ static void start_mp(safe_mode_t safe_mode) {
 
 static void stop_mp(void) {
     #if MICROPY_VFS
-    mp_vfs_mount_t *vfs = MP_STATE_VM(vfs_mount_table);
 
     // Unmount all heap allocated vfs mounts.
-    while (gc_ptr_on_heap(vfs)) {
+    mp_vfs_mount_t *vfs = MP_STATE_VM(vfs_mount_table);
+    do {
+        if (gc_ptr_on_heap(vfs)) {
+            // mp_vfs_umount will splice out an unmounted vfs from the vfs_mount_table linked list.
+            mp_vfs_umount(vfs->obj);
+            // Start over at the beginning of the list since the first entry may have been removed.
+            vfs = MP_STATE_VM(vfs_mount_table);
+            continue;
+        }
         vfs = vfs->next;
-    }
-    MP_STATE_VM(vfs_mount_table) = vfs;
+    } while (vfs != NULL);
+
     // The last vfs is CIRCUITPY and the root directory.
+    vfs = MP_STATE_VM(vfs_mount_table);
     while (vfs->next != NULL) {
         vfs = vfs->next;
     }
@@ -855,6 +863,14 @@ static void __attribute__ ((noinline)) run_boot_py(safe_mode_t safe_mode) {
         boot_output = &boot_text;
         #endif
 
+        // Get the base filesystem.
+        fs_user_mount_t *vfs = filesystem_circuitpy();
+        FATFS *fs = &vfs->fatfs;
+
+        // Allow boot.py access to CIRCUITPY, and allow writes to boot_out.txt.
+        // We can't use the regular flags for this, because they might get modified inside boot.py.
+        filesystem_set_ignore_write_protection(vfs, true);
+
         // Write version info
         mp_printf(&mp_plat_print, "%s\nBoard ID:%s\n", MICROPY_FULL_VERSION_INFO, CIRCUITPY_BOARD_ID);
         #if CIRCUITPY_MICROCONTROLLER && COMMON_HAL_MCU_PROCESSOR_UID_LENGTH > 0
@@ -873,10 +889,6 @@ static void __attribute__ ((noinline)) run_boot_py(safe_mode_t safe_mode) {
 
 
         #ifdef CIRCUITPY_BOOT_OUTPUT_FILE
-        // Get the base filesystem.
-        fs_user_mount_t *vfs = filesystem_circuitpy();
-        FATFS *fs = &vfs->fatfs;
-
         boot_output = NULL;
         #if CIRCUITPY_STATUS_BAR
         supervisor_status_bar_resume();
@@ -898,9 +910,6 @@ static void __attribute__ ((noinline)) run_boot_py(safe_mode_t safe_mode) {
             // in case power is momentary or will fail shortly due to, say a low, battery.
             mp_hal_delay_ms(1000);
 
-            // USB isn't up, so we can write the file.
-            // operating at the oofatfs (f_open) layer means the usb concurrent write permission
-            // is not even checked!
             f_open(fs, &boot_output_file, CIRCUITPY_BOOT_OUTPUT_FILE, FA_WRITE | FA_CREATE_ALWAYS);
             UINT chars_written;
             f_write(&boot_output_file, boot_text.buf, boot_text.len, &chars_written);
@@ -908,6 +917,9 @@ static void __attribute__ ((noinline)) run_boot_py(safe_mode_t safe_mode) {
             filesystem_flush();
         }
         #endif
+
+        // Back to regular filesystem protections.
+        filesystem_set_ignore_write_protection(vfs, false);
     }
 
     cleanup_after_vm(_exec_result.exception);
