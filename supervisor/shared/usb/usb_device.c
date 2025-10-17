@@ -166,6 +166,9 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_requ
  * @param wanted_char   The wanted char (set previously)
  */
 void tud_cdc_rx_wanted_cb(uint8_t itf, char wanted_char) {
+    // CircuitPython's VM is run in a separate FreeRTOS task from TinyUSB on ESP.
+    // So, we must notify the other task when a CTRL-C is received.
+    port_wake_main_task();
     // Workaround for using shared/runtime/interrupt_char.c
     // Compare mp_interrupt_char with wanted_char and ignore if not matched
     if (mp_interrupt_char == wanted_char) {
@@ -177,7 +180,14 @@ void tud_cdc_rx_wanted_cb(uint8_t itf, char wanted_char) {
 void tud_cdc_send_break_cb(uint8_t itf, uint16_t duration_ms) {
     if (usb_cdc_console_enabled() && mp_interrupt_char != -1 && itf == 0 && duration_ms > 0) {
         mp_sched_keyboard_interrupt();
+        port_wake_main_task();
     }
 }
 
+void tud_cdc_rx_cb(uint8_t itf) {
+    (void)itf;
+    // Workaround for "press any key to enter REPL" response being delayed on espressif.
+    // Wake main task when any key is pressed.
+    port_wake_main_task();
+}
 #endif

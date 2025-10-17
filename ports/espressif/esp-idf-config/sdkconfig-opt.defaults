@@ -38,6 +38,24 @@ CONFIG_ESP_CONSOLE_SECONDARY_NONE=y
 CONFIG_LOG_DEFAULT_LEVEL_NONE=y
 # end of Log output
 
+#
+# Log
+#
+#
+# Log Level
+#
+#
+# Level Settings
+#
+# CONFIG_LOG_DYNAMIC_LEVEL_CONTROL is not set
+CONFIG_LOG_TAG_LEVEL_IMPL_NONE=y
+# CONFIG_LOG_TAG_LEVEL_IMPL_CACHE_AND_LINKED_LIST is not set
+# end of Level Settings
+
+# end of Log Level
+
+# end of Log
+
 # end of Component config
 
 # end of Espressif IoT Development Framework Configuration
