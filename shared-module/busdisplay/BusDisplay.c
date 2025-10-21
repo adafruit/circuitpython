@@ -273,7 +273,10 @@ static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_are
         }
         remaining_rows -= rows_per_buffer;
 
-        displayio_display_bus_set_region_to_update(&self->bus, &self->core, &subrectangle);
+        if (!displayio_display_bus_set_region_to_update(&self->bus, &self->core, &subrectangle)) {
+            // This is a failure to acquire the bus, skip the rest of the refresh.
+            return false;
+        }
 
         uint16_t subrectangle_size_bytes;
         if (self->core.colorspace.depth >= 8) {
@@ -287,12 +290,11 @@ static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_are
 
         displayio_display_core_fill_area(&self->core, &subrectangle, mask, buffer);
 
-        // Can't acquire display bus; skip the rest of the data.
-        if (!displayio_display_bus_is_free(&self->bus)) {
+        // If we can't acquire display bus; skip the rest of the data.
+        if (!displayio_display_bus_begin_transaction(&self->bus)) {
             return false;
         }
 
-        displayio_display_bus_begin_transaction(&self->bus);
         _send_pixels(self, (uint8_t *)buffer, subrectangle_size_bytes);
         displayio_display_bus_end_transaction(&self->bus);
 
@@ -310,7 +312,7 @@ static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_are
 
 static void _refresh_display(busdisplay_busdisplay_obj_t *self) {
     if (!displayio_display_bus_is_free(&self->bus)) {
-        // A refresh on this bus is already in progress.  Try next display.
+        // Don't bother with the refresh if the bus is already busy
         return;
     }
     displayio_display_core_start_refresh(&self->core);
