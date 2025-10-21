@@ -159,10 +159,6 @@ msgstr ""
 msgid "%q length must be >= %d"
 msgstr ""
 
-#: py/runtime.c
-msgid "%q moved from %q to %q"
-msgstr ""
-
 #: py/argcheck.c
 msgid "%q must be %d"
 msgstr ""
