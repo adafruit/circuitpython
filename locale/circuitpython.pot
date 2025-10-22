@@ -159,10 +159,6 @@ msgstr ""
 msgid "%q length must be >= %d"
 msgstr ""
 
-#: py/runtime.c
-msgid "%q moved from %q to %q"
-msgstr ""
-
 #: py/argcheck.c
 msgid "%q must be %d"
 msgstr ""
@@ -1644,10 +1640,6 @@ msgstr ""
 msgid "Not playing"
 msgstr ""
 
-#: shared-module/jpegio/JpegDecoder.c
-msgid "Not supported JPEG standard"
-msgstr ""
-
 #: ports/espressif/common-hal/paralleldisplaybus/ParallelBus.c
 #: ports/espressif/common-hal/sdioio/SDCard.c
 #, c-format
@@ -2369,6 +2361,10 @@ msgstr ""
 msgid ""
 "Unspecified issue. Can be that the pairing prompt on the other device was "
 "declined or ignored."
+msgstr ""
+
+#: shared-module/jpegio/JpegDecoder.c
+msgid "Unsupported JPEG (may be progressive)"
 msgstr ""
 
 #: shared-bindings/bitmaptools/__init__.c
@@ -3172,10 +3168,6 @@ msgstr ""
 
 #: shared-bindings/traceback/__init__.c
 msgid "file write is not available"
-msgstr ""
-
-#: shared-bindings/storage/__init__.c
-msgid "filesystem must provide mount method"
 msgstr ""
 
 #: extmod/ulab/code/numpy/vector.c
