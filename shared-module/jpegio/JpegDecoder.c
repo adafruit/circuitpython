@@ -46,7 +46,7 @@ static void check_jresult(JRESULT j) {
             msg = MP_ERROR_TEXT("Right format but not supported");
             break;
         case JDR_FMT3:
-            msg = MP_ERROR_TEXT("Not supported JPEG standard");
+            msg = MP_ERROR_TEXT("Unsupported JPEG (may be progressive)");
             break;
     }
     mp_raise_RuntimeError(msg);
