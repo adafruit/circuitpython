@@ -12,17 +12,18 @@
 
 #include "py/obj.h"
 #include "shared-module/displayio/Palette.h"
-#include "shared-module/displayio/TileGrid.h"
 
 typedef struct {
     mp_obj_base_t base;
-    mp_obj_t pixel_shader;
-    mp_obj_t tilegrid;
+    mp_obj_t palette;
     uint16_t width_in_tiles;
     uint16_t height_in_tiles;
     uint16_t input_color_count;
-    uint32_t **tile_mappings;
+    uint16_t **tile_mappings;
+    bool needs_refresh;
 } tilepalettemapper_tilepalettemapper_t;
 
+bool tilepalettemapper_tilepalettemapper_needs_refresh(tilepalettemapper_tilepalettemapper_t *self);
+void tilepalettemapper_tilepalettemapper_finish_refresh(tilepalettemapper_tilepalettemapper_t *self);
+
 void tilepalettemapper_tilepalettemapper_get_color(tilepalettemapper_tilepalettemapper_t *self, const _displayio_colorspace_t *colorspace, displayio_input_pixel_t *input_pixel, displayio_output_pixel_t *output_color, uint16_t x_tile_index, uint16_t y_tile_index);
-void tilepalettemapper_tilepalettemapper_bind(tilepalettemapper_tilepalettemapper_t *self, displayio_tilegrid_t *tilegrid);

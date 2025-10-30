@@ -57,8 +57,7 @@ static mp_obj_t property_make_new(const mp_obj_type_t *type, size_t n_args, size
 }
 
 static mp_obj_t property_getter(mp_obj_t self_in, mp_obj_t getter) {
-    // CIRCUITPY-CHANGE: Use mp_obj_malloc because it is a Python object
-    mp_obj_property_t *p2 = mp_obj_malloc(mp_obj_property_t, &mp_type_property);
+    mp_obj_property_t *p2 = m_new_obj(mp_obj_property_t);
     *p2 = *(mp_obj_property_t *)MP_OBJ_TO_PTR(self_in);
     p2->proxy[0] = getter;
     return MP_OBJ_FROM_PTR(p2);
@@ -67,8 +66,7 @@ static mp_obj_t property_getter(mp_obj_t self_in, mp_obj_t getter) {
 static MP_DEFINE_CONST_FUN_OBJ_2(property_getter_obj, property_getter);
 
 static mp_obj_t property_setter(mp_obj_t self_in, mp_obj_t setter) {
-    // CIRCUITPY-CHANGE: Use mp_obj_malloc because it is a Python object
-    mp_obj_property_t *p2 = mp_obj_malloc(mp_obj_property_t, &mp_type_property);
+    mp_obj_property_t *p2 = m_new_obj(mp_obj_property_t);
     *p2 = *(mp_obj_property_t *)MP_OBJ_TO_PTR(self_in);
     p2->proxy[1] = setter;
     return MP_OBJ_FROM_PTR(p2);
@@ -77,8 +75,7 @@ static mp_obj_t property_setter(mp_obj_t self_in, mp_obj_t setter) {
 static MP_DEFINE_CONST_FUN_OBJ_2(property_setter_obj, property_setter);
 
 static mp_obj_t property_deleter(mp_obj_t self_in, mp_obj_t deleter) {
-    // CIRCUITPY-CHANGE: Use mp_obj_malloc because it is a Python object
-    mp_obj_property_t *p2 = mp_obj_malloc(mp_obj_property_t, &mp_type_property);
+    mp_obj_property_t *p2 = m_new_obj(mp_obj_property_t);
     *p2 = *(mp_obj_property_t *)MP_OBJ_TO_PTR(self_in);
     p2->proxy[2] = deleter;
     return MP_OBJ_FROM_PTR(p2);

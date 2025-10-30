@@ -15,84 +15,19 @@ extern const mp_obj_type_t epaperdisplay_epaperdisplay_type;
 
 #define NO_COMMAND 0x100
 
-typedef struct {
-    mp_obj_t bus;
-    const uint8_t *start_sequence;
-    uint16_t start_sequence_len;
-    mp_float_t start_up_time;
-    const uint8_t *stop_sequence;
-    uint16_t stop_sequence_len;
-    uint16_t width;
-    uint16_t height;
-    uint16_t ram_width;
-    uint16_t ram_height;
-    int16_t colstart;
-    int16_t rowstart;
-    uint16_t rotation;
-    uint16_t set_column_window_command;
-    uint16_t set_row_window_command;
-    uint16_t set_current_column_command;
-    uint16_t set_current_row_command;
-    uint16_t write_black_ram_command;
-    bool black_bits_inverted;
-    uint16_t write_color_ram_command;
-    bool color_bits_inverted;
-    uint32_t highlight_color;
-    uint32_t highlight_color2;
-    const uint8_t *refresh_sequence;
-    uint16_t refresh_sequence_len;
-    mp_float_t refresh_time;
-    const mcu_pin_obj_t *busy_pin;
-    bool busy_state;
-    mp_float_t seconds_per_frame;
-    bool always_toggle_chip_select;
-    bool grayscale;
-    bool acep;
-    bool spectra6;
-    bool two_byte_sequence_length;
-    bool address_little_endian;
-} epaperdisplay_construct_args_t;
-
-#define EPAPERDISPLAY_CONSTRUCT_ARGS_DEFAULTS { \
-        .bus = mp_const_none, \
-        .start_sequence = NULL, \
-        .start_sequence_len = 0, \
-        .start_up_time = 0.0, \
-        .stop_sequence = NULL, \
-        .stop_sequence_len = 0, \
-        .width = 0, \
-        .height = 0, \
-        .ram_width = 0, \
-        .ram_height = 0, \
-        .colstart = 0, \
-        .rowstart = 0, \
-        .rotation = 0, \
-        .set_column_window_command = NO_COMMAND, \
-        .set_row_window_command = NO_COMMAND, \
-        .set_current_column_command = NO_COMMAND, \
-        .set_current_row_command = NO_COMMAND, \
-        .write_black_ram_command = NO_COMMAND, \
-        .black_bits_inverted = false, \
-        .write_color_ram_command = NO_COMMAND, \
-        .color_bits_inverted = false, \
-        .highlight_color = 0x000000, \
-        .highlight_color2 = 0x000000, \
-        .refresh_sequence = NULL, \
-        .refresh_sequence_len = 0, \
-        .refresh_time = 0.0, \
-        .busy_pin = NULL, \
-        .busy_state = false, \
-        .seconds_per_frame = 0.0, \
-        .always_toggle_chip_select = false, \
-        .grayscale = false, \
-        .acep = false, \
-        .spectra6 = false, \
-        .two_byte_sequence_length = false, \
-        .address_little_endian = false \
-}
-
 void common_hal_epaperdisplay_epaperdisplay_construct(epaperdisplay_epaperdisplay_obj_t *self,
-    const epaperdisplay_construct_args_t *args);
+    mp_obj_t bus, const uint8_t *start_sequence, uint16_t start_sequence_len, mp_float_t start_up_time,
+    const uint8_t *stop_sequence, uint16_t stop_sequence_len,
+    uint16_t width, uint16_t height, uint16_t ram_width, uint16_t ram_height,
+    int16_t colstart, int16_t rowstart, uint16_t rotation,
+    uint16_t set_column_window_command, uint16_t set_row_window_command,
+    uint16_t set_current_column_command, uint16_t set_current_row_command,
+    uint16_t write_black_ram_command, bool black_bits_inverted,
+    uint16_t write_color_ram_command, bool color_bits_inverted, uint32_t highlight_color,
+    const uint8_t *refresh_sequence, uint16_t refresh_sequence_len, mp_float_t refresh_time,
+    const mcu_pin_obj_t *busy_pin, bool busy_state, mp_float_t seconds_per_frame,
+    bool always_toggle_chip_select, bool grayscale, bool acep, bool two_byte_sequence_length,
+    bool address_little_endian);
 
 bool common_hal_epaperdisplay_epaperdisplay_refresh(epaperdisplay_epaperdisplay_obj_t *self);
 

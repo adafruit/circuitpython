@@ -114,7 +114,7 @@ void common_hal_displayio_ondiskbitmap_construct(displayio_ondiskbitmap_t *self,
             uint16_t palette_size = number_of_colors * sizeof(uint32_t);
             uint16_t palette_offset = 0xe + header_size;
 
-            uint32_t *palette_data = m_malloc_without_collect(palette_size);
+            uint32_t *palette_data = m_malloc(palette_size);
 
             f_rewind(&self->file->fp);
             f_lseek(&self->file->fp, palette_offset);

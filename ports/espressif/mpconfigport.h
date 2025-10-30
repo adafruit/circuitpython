@@ -17,13 +17,13 @@
 
 #define CIRCUITPY_DIGITALIO_HAVE_INPUT_ONLY (1)
 
+#define MICROPY_PY_FUNCTION_ATTRS           (1)
+#define MICROPY_PY_REVERSE_SPECIAL_METHODS  (1)
+
 #include "py/circuitpy_mpconfig.h"
 
 #define MICROPY_NLR_SETJMP                  (1)
 #define CIRCUITPY_DEFAULT_STACK_SIZE        0x6000
-
-// PSRAM can require more stack space for GC.
-#define MICROPY_ALLOC_GC_STACK_SIZE         (128)
 
 // Nearly all boards have this because it is used to enter the ROM bootloader.
 #ifndef CIRCUITPY_BOOT_BUTTON

@@ -49,7 +49,7 @@ void displayio_tilegrid_validate_pixel_shader(mp_obj_t pixel_shader) {
 //|         self,
 //|         bitmap: Union[Bitmap, OnDiskBitmap],
 //|         *,
-//|         pixel_shader: Union[ColorConverter, Palette, tilepalettemapper.TilePaletteMapper],
+//|         pixel_shader: Union[ColorConverter, Palette],
 //|         width: int = 1,
 //|         height: int = 1,
 //|         tile_width: Optional[int] = None,
@@ -62,13 +62,12 @@ void displayio_tilegrid_validate_pixel_shader(mp_obj_t pixel_shader) {
 //|         convert the value and its location to a display native pixel color. This may be a simple color
 //|         palette lookup, a gradient, a pattern or a color transformer.
 //|
-//|         When the total number of tiles is 256 or less, tile values are stored as single bytes (uint8_t).
-//|         When the total number of tiles is more than 256, tile values are stored as double bytes (uint16_t).
+//|         To save RAM usage, tile values are only allowed in the range from 0 to 255 inclusive (single byte values).
 //|
 //|         tile_width and tile_height match the height of the bitmap by default.
 //|
 //|         :param Bitmap,OnDiskBitmap bitmap: The bitmap storing one or more tiles.
-//|         :param ColorConverter,Palette,tilepalettemapper.TilePaletteMapper pixel_shader: The pixel shader that produces colors from values
+//|         :param ColorConverter,Palette pixel_shader: The pixel shader that produces colors from values
 //|         :param int width: Width of the grid in tiles.
 //|         :param int height: Height of the grid in tiles.
 //|         :param int tile_width: Width of a single tile in pixels. Defaults to the full Bitmap and must evenly divide into the Bitmap's dimensions.
@@ -330,7 +329,7 @@ static mp_obj_t displayio_tilegrid_obj_contains(mp_obj_t self_in, mp_obj_t touch
 }
 MP_DEFINE_CONST_FUN_OBJ_2(displayio_tilegrid_contains_obj, displayio_tilegrid_obj_contains);
 
-//|     pixel_shader: Union[ColorConverter, Palette, tilepalettemapper.TilePaletteMapper]
+//|     pixel_shader: Union[ColorConverter, Palette]
 //|     """The pixel shader of the tilegrid."""
 static mp_obj_t displayio_tilegrid_obj_get_pixel_shader(mp_obj_t self_in) {
     displayio_tilegrid_t *self = native_tilegrid(self_in);
@@ -454,7 +453,7 @@ static mp_obj_t tilegrid_subscr(mp_obj_t self_in, mp_obj_t index_obj, mp_obj_t v
             return MP_OBJ_NULL; // op not supported
         } else {
             mp_int_t value = mp_obj_get_int(value_obj);
-            mp_arg_validate_int_range(value, 0, self->tiles_in_bitmap - 1, MP_QSTR_tile);
+            mp_arg_validate_int_range(value, 0, 255, MP_QSTR_tile);
 
             common_hal_displayio_tilegrid_set_tile(self, x, y, value);
         }

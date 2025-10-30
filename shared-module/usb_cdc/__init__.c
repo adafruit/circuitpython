@@ -356,10 +356,10 @@ size_t usb_vendor_descriptor_length(void) {
 
 static uint8_t *ms_os_20_descriptor = NULL;
 
-size_t vendor_ms_os_20_descriptor_length(void) {
+size_t vendor_ms_os_20_descriptor_length() {
     return ms_os_20_descriptor != NULL ? sizeof(ms_os_20_descriptor_template) : 0;
 }
-uint8_t const *vendor_ms_os_20_descriptor(void) {
+uint8_t const *vendor_ms_os_20_descriptor() {
     return ms_os_20_descriptor;
 }
 

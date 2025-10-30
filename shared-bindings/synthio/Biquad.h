@@ -7,27 +7,9 @@
 #pragma once
 
 #include "py/obj.h"
+#include "py/objnamedtuple.h"
 
-extern const mp_obj_type_t synthio_biquad_type_obj;
-extern const mp_obj_type_t synthio_filter_mode_type;
-typedef struct synthio_biquad synthio_biquad_t;
-
-typedef enum {
-    SYNTHIO_LOW_PASS, SYNTHIO_HIGH_PASS, SYNTHIO_BAND_PASS, SYNTHIO_NOTCH,
-    // filters beyond this line use the "A" parameter (in addition to f0 and Q)
-    SYNTHIO_PEAKING_EQ, SYNTHIO_LOW_SHELF, SYNTHIO_HIGH_SHELF
-} synthio_filter_mode;
-
-
-mp_obj_t common_hal_synthio_biquad_get_A(synthio_biquad_t *self);
-void common_hal_synthio_biquad_set_A(synthio_biquad_t *self, mp_obj_t A);
-
-mp_obj_t common_hal_synthio_biquad_get_Q(synthio_biquad_t *self);
-void common_hal_synthio_biquad_set_Q(synthio_biquad_t *self, mp_obj_t Q);
-
-mp_obj_t common_hal_synthio_biquad_get_frequency(synthio_biquad_t *self);
-void common_hal_synthio_biquad_set_frequency(synthio_biquad_t *self, mp_obj_t frequency);
-
-synthio_filter_mode common_hal_synthio_biquad_get_mode(synthio_biquad_t *self);
-
-mp_obj_t common_hal_synthio_biquad_new(synthio_filter_mode mode);
+extern const mp_obj_namedtuple_type_t synthio_biquad_type_obj;
+mp_obj_t common_hal_synthio_new_lpf(mp_float_t w0, mp_float_t Q);
+mp_obj_t common_hal_synthio_new_hpf(mp_float_t w0, mp_float_t Q);
+mp_obj_t common_hal_synthio_new_bpf(mp_float_t w0, mp_float_t Q);

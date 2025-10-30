@@ -20,7 +20,15 @@
 #include "driver/gpio.h"
 #include "esp_private/periph_ctrl.h"
 
-#include "rom/gpio.h"
+#if defined(CONFIG_IDF_TARGET_ESP32C3)
+#include "components/esp_rom/include/esp32c3/rom/gpio.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32C6)
+#include "components/esp_rom/include/esp32c6/rom/gpio.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32S2)
+#include "components/esp_rom/include/esp32s2/rom/gpio.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+#include "components/esp_rom/include/esp32s3/rom/gpio.h"
+#endif
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"

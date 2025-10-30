@@ -236,7 +236,7 @@ pseudoxml:
 .PHONY: all-source
 all-source:
 
-TRANSLATE_CHECK_SUBMODULES=if ! [ -f extmod/ulab/README.md ]; then $(PYTHON) tools/ci_fetch_deps.py translate; fi
+TRANSLATE_CHECK_SUBMODULES=if ! [ -f extmod/ulab/README.md ]; then python tools/ci_fetch_deps.py translate; fi
 TRANSLATE_COMMAND=find $(TRANSLATE_SOURCES) -type d \( $(TRANSLATE_SOURCES_EXC) \) -prune -o -type f \( -iname "*.c" -o -iname "*.h" \) -print | (LC_ALL=C sort) | xgettext -x locale/synthetic.pot -f- -L C -s --add-location=file --keyword=MP_ERROR_TEXT -o - | sed -e '/"POT-Creation-Date: /d'
 locale/circuitpython.pot: all-source
 	$(TRANSLATE_CHECK_SUBMODULES)
@@ -271,21 +271,20 @@ check-translate:
 
 .PHONY: stubs
 stubs:
-	rm -rf circuitpython-stubs
-	mkdir circuitpython-stubs
-	$(PYTHON) tools/extract_pyi.py shared-bindings/ $(STUBDIR)
-	$(PYTHON) tools/extract_pyi.py extmod/ulab/code/ $(STUBDIR)/ulab
-	for d in ports/*/bindings; do \
+	@rm -rf circuitpython-stubs
+	@mkdir circuitpython-stubs
+	@$(PYTHON) tools/extract_pyi.py shared-bindings/ $(STUBDIR)
+	@$(PYTHON) tools/extract_pyi.py extmod/ulab/code/ $(STUBDIR)/ulab
+	@for d in ports/*/bindings; do \
 	    $(PYTHON) tools/extract_pyi.py "$$d" $(STUBDIR); done
-	sed -e "s,__version__,`python -msetuptools_scm`," < setup.py-stubs > circuitpython-stubs/setup.py
-	cp README.rst-stubs circuitpython-stubs/README.rst
-	cp MANIFEST.in-stubs circuitpython-stubs/MANIFEST.in
-	cp -r stubs/* circuitpython-stubs
-	$(PYTHON) tools/board_stubs/build_board_specific_stubs/board_stub_builder.py
-	cp -r tools/board_stubs/circuitpython_setboard circuitpython-stubs/circuitpython_setboard
-	$(PYTHON) -m build circuitpython-stubs
-	touch circuitpython-stubs/board/__init__.py
-	touch circuitpython-stubs/board_definitions/__init__.py
+	@sed -e "s,__version__,`python -msetuptools_scm`," < setup.py-stubs > circuitpython-stubs/setup.py
+	@cp README.rst-stubs circuitpython-stubs/README.rst
+	@cp MANIFEST.in-stubs circuitpython-stubs/MANIFEST.in
+	@$(PYTHON) tools/board_stubs/build_board_specific_stubs/board_stub_builder.py
+	@cp -r tools/board_stubs/circuitpython_setboard circuitpython-stubs/circuitpython_setboard
+	@$(PYTHON) -m build circuitpython-stubs
+	@touch circuitpython-stubs/board/__init__.py
+	@touch circuitpython-stubs/board_definitions/__init__.py
 
 .PHONY: check-stubs
 check-stubs: stubs
@@ -298,9 +297,6 @@ update-frozen-libraries:
 	cd frozen; for library in *; do cd $$library; ../../tools/git-checkout-latest-tag.sh; cd ..; done
 
 one-of-each: samd21 litex mimxrt10xx nordic stm
-
-analog:
-	$(MAKE) -C ports/analog/ BOARD=apard32690
 
 samd21:
 	$(MAKE) -C ports/atmel-samd BOARD=trinket_m0

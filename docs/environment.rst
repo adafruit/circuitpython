@@ -53,10 +53,8 @@ Details of the toml language subset
 CircuitPython behavior
 ----------------------
 
-CircuitPython will also read the environment to configure its behavior. Some keys are read at
-startup once and others are read on reload (ctrl-D in the REPL). If a reload doesn't change things,
-then try a reset (a power cycle or pressing the reset button). Other keys are ignored by CircuitPython.
-Here are the keys it uses:
+CircuitPython will also read the environment to configure its behavior. Other
+keys are ignored by CircuitPython. Here are the keys it uses:
 
 Core CircuitPython keys
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -190,19 +188,5 @@ the UART, Web Workflow, BLE Workflow, etc consoles.
 This feature is not enabled on boards that the CIRCUITPY_OS_GETENV (os CIRCUIPTY_FULL_BUILD)
 flag has been set to 0. Currently this is primarily boards with limited flash including some
 of the Atmel_samd boards based on the SAMD21/M0 microprocessor.
-
-CIRCUITPY_TERMINAL_FONT
-~~~~~~~~~~~~~~~~~~~~~~~
-Specifies a custom font file path to use for the terminalio console instead of the default
-``/fonts/terminal.lvfontbin``. This allows users to create and use custom fonts for the
-CircuitPython console.
-
-This feature requires both CIRCUITPY_OS_GETENV and CIRCUITPY_LVFONTIO to be enabled.
-
-Example:
-
-.. code-block::
-
-    CIRCUITPY_TERMINAL_FONT="/fonts/myfont.lvfontbin"
 
 `boards that the terminalio core module is available on <https://docs.circuitpython.org/en/latest/shared-bindings/terminalio/>`_

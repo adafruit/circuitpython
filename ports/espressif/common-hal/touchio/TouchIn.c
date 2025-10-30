@@ -9,10 +9,9 @@
 #include "py/runtime.h"
 #include "peripherals/touch.h"
 #include "shared-bindings/microcontroller/Pin.h"
-#include "shared-bindings/digitalio/Pull.h"
 
 void common_hal_touchio_touchin_construct(touchio_touchin_obj_t *self,
-    const mcu_pin_obj_t *pin, const digitalio_pull_t pull) {
+    const mcu_pin_obj_t *pin) {
     if (pin->touch_channel == NO_TOUCH_CHANNEL) {
         raise_ValueError_invalid_pin();
     }

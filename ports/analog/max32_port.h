@@ -22,34 +22,29 @@
 #include "system_max32690.h"
 #include "max32690.h"
 
-// UART Ports & pins
-#include "peripherals/max32690/max32_uart.h"
-#include "peripherals/max32690/max32_i2c.h"
-#include "peripherals/max32690/max32_spi.h"
-
 /** START: GPIO4 Handling specific to MAX32690 */
-    #define GPIO4_PIN_MASK 0x00000003
-    #define GPIO4_RESET_MASK 0xFFFFFF77
-    #define GPIO4_OUTEN_MASK(mask)                                \
+#define GPIO4_PIN_MASK 0x00000003
+#define GPIO4_RESET_MASK 0xFFFFFF77
+#define GPIO4_OUTEN_MASK(mask)                                \
     (((mask & (1 << 0)) << MXC_F_MCR_GPIO4_CTRL_P40_OE_POS) | \
     ((mask & (1 << 1)) << (MXC_F_MCR_GPIO4_CTRL_P41_OE_POS - 1)))
-    #define GPIO4_PULLDIS_MASK(mask)                              \
+#define GPIO4_PULLDIS_MASK(mask)                              \
     (((mask & (1 << 0)) << MXC_F_MCR_GPIO4_CTRL_P40_PE_POS) | \
     ((mask & (1 << 1)) << (MXC_F_MCR_GPIO4_CTRL_P41_PE_POS - 1)))
-    #define GPIO4_DATAOUT_MASK(mask)                              \
+#define GPIO4_DATAOUT_MASK(mask)                              \
     (((mask & (1 << 0)) << MXC_F_MCR_GPIO4_CTRL_P40_DO_POS) | \
     ((mask & (1 << 1)) << (MXC_F_MCR_GPIO4_CTRL_P41_DO_POS - 1)))
-    #define GPIO4_DATAOUT_GET_MASK(mask)                                                             \
+#define GPIO4_DATAOUT_GET_MASK(mask)                                                             \
     ((((MXC_MCR->gpio4_ctrl & MXC_F_MCR_GPIO4_CTRL_P40_DO) >> MXC_F_MCR_GPIO4_CTRL_P40_DO_POS) | \
     ((MXC_MCR->gpio4_ctrl & MXC_F_MCR_GPIO4_CTRL_P41_DO) >>                                    \
     (MXC_F_MCR_GPIO4_CTRL_P41_DO_POS - 1))) &                                                 \
     mask)
-    #define GPIO4_DATAIN_MASK(mask)                                                                  \
+#define GPIO4_DATAIN_MASK(mask)                                                                  \
     ((((MXC_MCR->gpio4_ctrl & MXC_F_MCR_GPIO4_CTRL_P40_IN) >> MXC_F_MCR_GPIO4_CTRL_P40_IN_POS) | \
     ((MXC_MCR->gpio4_ctrl & MXC_F_MCR_GPIO4_CTRL_P41_IN) >>                                    \
     (MXC_F_MCR_GPIO4_CTRL_P41_IN_POS - 1))) &                                                 \
     mask)
-    #define GPIO4_AFEN_MASK(mask)                                  \
+#define GPIO4_AFEN_MASK(mask)                                  \
     (((mask & (1 << 0)) << MXC_F_MCR_OUTEN_PDOWN_OUT_EN_POS) | \
     ((mask & (1 << 1)) >> (MXC_F_MCR_OUTEN_SQWOUT_EN_POS + 1)))
 /** END: GPIO4 Handling specific to MAX32690 */

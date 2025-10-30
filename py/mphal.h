@@ -88,8 +88,6 @@ mp_uint_t mp_hal_ticks_cpu(void);
 uint64_t mp_hal_time_ns(void);
 #endif
 
-// CIRCUITPY-CHANGE: extmod/virtpin.* not used by CircuitPython
-#if 0
 // If port HAL didn't define its own pin API, use generic
 // "virtual pin" API from the core.
 #ifndef mp_hal_pin_obj_t
@@ -98,7 +96,6 @@ uint64_t mp_hal_time_ns(void);
 #define mp_hal_pin_read(pin) mp_virtual_pin_read(pin)
 #define mp_hal_pin_write(pin, v) mp_virtual_pin_write(pin, v)
 #include "extmod/virtpin.h"
-#endif
 #endif
 
 // Event handling and wait-for-event functions.

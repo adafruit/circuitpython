@@ -230,7 +230,7 @@ void common_hal_bleio_service_add_characteristic(bleio_service_obj_t *self,
 }
 
 // Remove dynamic service when reload
-void reset_dynamic_service(void) {
+void reset_dynamic_service() {
 
     uint16_t gattdb_session;
     uint8_t svc_index;

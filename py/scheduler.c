@@ -245,13 +245,7 @@ void mp_handle_pending(bool raise_exc) {
 
     // Handle any pending callbacks.
     #if MICROPY_ENABLE_SCHEDULER
-    bool run_scheduler = (MP_STATE_VM(sched_state) == MP_SCHED_PENDING);
-    #if MICROPY_PY_THREAD && !MICROPY_PY_THREAD_GIL
-    // Avoid races by running the scheduler on the main thread, only.
-    // (Not needed if GIL enabled, as GIL ensures thread safety here.)
-    run_scheduler = run_scheduler && mp_thread_is_main_thread();
-    #endif
-    if (run_scheduler) {
+    if (MP_STATE_VM(sched_state) == MP_SCHED_PENDING) {
         mp_sched_run_pending();
     }
     #endif
@@ -277,6 +271,10 @@ void mp_event_wait_indefinite(void) {
     MICROPY_EVENT_POLL_HOOK
     #else
     mp_event_handle_nowait();
+
+    // CIRCUITPY-CHANGE: don't starve CircuitPython background tasks
+    RUN_BACKGROUND_TASKS;
+
     MICROPY_INTERNAL_WFE(-1);
     #endif
 }
@@ -289,6 +287,10 @@ void mp_event_wait_ms(mp_uint_t timeout_ms) {
     MICROPY_EVENT_POLL_HOOK
     #else
     mp_event_handle_nowait();
+
+    // CIRCUITPY-CHANGE: don't starve CircuitPython background tasks
+    RUN_BACKGROUND_TASKS;
+
     MICROPY_INTERNAL_WFE(timeout_ms);
     #endif
 }

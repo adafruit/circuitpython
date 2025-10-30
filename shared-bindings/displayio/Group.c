@@ -317,14 +317,12 @@ static mp_obj_t group_subscr(mp_obj_t self_in, mp_obj_t index_obj, mp_obj_t valu
 //|
 static mp_obj_t displayio_group_obj_sort(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     displayio_group_t *self = native_group(pos_args[0]);
-    mp_obj_t *args = m_malloc_items(n_args);
+    mp_obj_t *args = m_new(mp_obj_t, n_args);
     for (size_t i = 1; i < n_args; ++i) {
         args[i] = pos_args[i];
     }
     args[0] = MP_OBJ_FROM_PTR(self->members);
-    mp_obj_t res = mp_obj_list_sort(n_args, args, kw_args);
-    m_del(mp_obj_t, args, n_args);
-    return res;
+    return mp_obj_list_sort(n_args, args, kw_args);
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(displayio_group_sort_obj, 1, displayio_group_obj_sort);
 

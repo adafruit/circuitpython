@@ -9,7 +9,6 @@
 #include "py/mpprint.h"
 #include "py/runtime.h"
 
-NORETURN void raise_deinited_error(void);
+void raise_deinited_error(void);
 void properties_print_helper(const mp_print_t *print, mp_obj_t self_in, const mp_arg_t *properties, size_t n_properties);
 void properties_construct_helper(mp_obj_t self_in, const mp_arg_t *args, const mp_arg_val_t *vals, size_t n_properties);
-bool path_exists(const char *path);

@@ -19,13 +19,19 @@ extern const mxc_gpio_cfg_t led_pin[];
 extern const int num_leds;
 
 /** NOTE: ALL "ticks" refer to a 1/1024 s period */
-static int status_ticks = 0;
+static int status_led_ticks = 0;
 
 // This function is where port-specific background
 // tasks should be performed
 // Execute port specific actions during background tick. Only if ticks are enabled.
 void port_background_tick(void) {
-    status_ticks++;
+    status_led_ticks++;
+
+    // Set an LED approx. 1/s
+    if (status_led_ticks > 1024) {
+        MXC_GPIO_OutToggle(led_pin[2].port, led_pin[2].mask);
+        status_led_ticks = 0;
+    }
 }
 
 // Execute port specific actions during background tasks. This is before the

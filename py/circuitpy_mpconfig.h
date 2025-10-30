@@ -17,6 +17,12 @@
 // Always 1: defined in circuitpy_mpconfig.mk
 // #define CIRCUITPY (1)
 
+// Can be removed once CircuitPython 10 is released.
+// Print warnings or not about deprecated names. See objmodule.c.
+#ifndef CIRCUITPY_9_10_WARNINGS
+#define CIRCUITPY_9_10_WARNINGS (1)
+#endif
+
 // REPR_C encodes qstrs, 31-bit ints, and 30-bit floats in a single 32-bit word.
 #ifndef MICROPY_OBJ_REPR
 #define MICROPY_OBJ_REPR            (MICROPY_OBJ_REPR_C)
@@ -37,7 +43,6 @@ extern void common_hal_mcu_enable_interrupts(void);
 // MicroPython-only options not used by CircuitPython, but present in various files
 // inherited from MicroPython, especially in extmod/
 #define MICROPY_ENABLE_DYNRUNTIME        (0)
-#define MICROPY_HW_ENABLE_USB            (0)
 #define MICROPY_HW_ENABLE_USB_RUNTIME_DEVICE (0)
 #define MICROPY_PY_BLUETOOTH             (0)
 #define MICROPY_PY_LWIP_SLIP             (0)
@@ -63,7 +68,6 @@ extern void common_hal_mcu_enable_interrupts(void);
 #define MICROPY_EMIT_X64                 (0)
 #define MICROPY_ENABLE_DOC_STRING        (0)
 #define MICROPY_ENABLE_FINALISER         (1)
-#define MICROPY_ENABLE_SELECTIVE_COLLECT (1)
 #define MICROPY_ENABLE_GC                (1)
 #define MICROPY_ENABLE_PYSTACK           (1)
 #define MICROPY_TRACKED_ALLOC            (CIRCUITPY_SSL_MBEDTLS)
@@ -89,7 +93,6 @@ extern void common_hal_mcu_enable_interrupts(void);
 #define MICROPY_OPT_COMPUTED_GOTO_SAVE_SPACE (CIRCUITPY_COMPUTED_GOTO_SAVE_SPACE)
 #define MICROPY_OPT_LOAD_ATTR_FAST_PATH  (CIRCUITPY_OPT_LOAD_ATTR_FAST_PATH)
 #define MICROPY_OPT_MAP_LOOKUP_CACHE  (CIRCUITPY_OPT_MAP_LOOKUP_CACHE)
-#define MICROPY_OPT_MPZ_BITWISE          (0)
 #define MICROPY_OPT_CACHE_MAP_LOOKUP_IN_BYTECODE (CIRCUITPY_OPT_CACHE_MAP_LOOKUP_IN_BYTECODE)
 #define MICROPY_PERSISTENT_CODE_LOAD     (1)
 
@@ -143,13 +146,7 @@ extern void common_hal_mcu_enable_interrupts(void);
 #define MICROPY_PY_UCTYPES               (0)
 #define MICROPY_PY___FILE__              (1)
 
-#if CIRCUITPY_FULL_BUILD
-#ifndef MICROPY_QSTR_BYTES_IN_HASH
 #define MICROPY_QSTR_BYTES_IN_HASH       (1)
-#endif
-#else
-#define MICROPY_QSTR_BYTES_IN_HASH       (0)
-#endif
 #define MICROPY_REPL_AUTO_INDENT         (1)
 #define MICROPY_REPL_EVENT_DRIVEN        (0)
 #define MICROPY_STACK_CHECK              (1)
@@ -227,56 +224,31 @@ typedef long mp_off_t;
 
 // Turning off FULL_BUILD removes some functionality to reduce flash size on tiny SAMD21s
 #define MICROPY_BUILTIN_METHOD_CHECK_SELF_ARG (CIRCUITPY_FULL_BUILD)
-
 #ifndef MICROPY_CPYTHON_COMPAT
 #define MICROPY_CPYTHON_COMPAT                (CIRCUITPY_FULL_BUILD)
 #endif
-
 #ifndef MICROPY_CPYTHON_EXCEPTION_CHAIN
 #define MICROPY_CPYTHON_EXCEPTION_CHAIN       (CIRCUITPY_FULL_BUILD)
 #endif
-
 #define MICROPY_PY_BUILTINS_POW3              (CIRCUITPY_BUILTINS_POW3)
 #define MICROPY_PY_FSTRINGS                   (1)
 #define MICROPY_MODULE_WEAK_LINKS             (0)
 #define MICROPY_PY_ALL_SPECIAL_METHODS        (CIRCUITPY_FULL_BUILD)
-
 #ifndef MICROPY_PY_BUILTINS_COMPLEX
 #define MICROPY_PY_BUILTINS_COMPLEX           (CIRCUITPY_FULL_BUILD)
 #endif
-
 #define MICROPY_PY_BUILTINS_FROZENSET         (CIRCUITPY_FULL_BUILD)
-
-#ifndef MICROPY_PY_BUILTINS_NOTIMPLEMENTED
-#define MICROPY_PY_BUILTINS_NOTIMPLEMENTED    (CIRCUITPY_FULL_BUILD)
-#endif
-
 #define MICROPY_PY_BUILTINS_STR_CENTER        (CIRCUITPY_FULL_BUILD)
 #define MICROPY_PY_BUILTINS_STR_PARTITION     (CIRCUITPY_FULL_BUILD)
 #define MICROPY_PY_BUILTINS_STR_SPLITLINES    (CIRCUITPY_FULL_BUILD)
-
 #ifndef MICROPY_PY_COLLECTIONS_ORDEREDDICT
 #define MICROPY_PY_COLLECTIONS_ORDEREDDICT    (CIRCUITPY_FULL_BUILD)
 #endif
-
 #ifndef MICROPY_PY_COLLECTIONS_DEQUE
 #define MICROPY_PY_COLLECTIONS_DEQUE          (CIRCUITPY_FULL_BUILD)
 #define MICROPY_PY_COLLECTIONS_DEQUE_ITER     (CIRCUITPY_FULL_BUILD)
 #define MICROPY_PY_COLLECTIONS_DEQUE_SUBSCR   (CIRCUITPY_FULL_BUILD)
 #endif
-
-#ifndef MICROPY_PY_DOUBLE_TYPECODE
-#define MICROPY_PY_DOUBLE_TYPECODE       (CIRCUITPY_FULL_BUILD ? 1 : 0)
-#endif
-
-#ifndef MICROPY_PY_FUNCTION_ATTRS
-#define MICROPY_PY_FUNCTION_ATTRS            (CIRCUITPY_FULL_BUILD)
-#endif
-
-#ifndef MICROPY_PY_REVERSE_SPECIAL_METHODS
-#define MICROPY_PY_REVERSE_SPECIAL_METHODS   (CIRCUITPY_FULL_BUILD)
-#endif
-
 #define MICROPY_PY_RE_MATCH_GROUPS           (CIRCUITPY_RE)
 #define MICROPY_PY_RE_MATCH_SPAN_START_END   (CIRCUITPY_RE)
 #define MICROPY_PY_RE_SUB                    (CIRCUITPY_RE)
@@ -345,9 +317,6 @@ typedef long mp_off_t;
 #endif
 
 
-// For easy debugging printf's.
-#define PLAT_PRINTF(...) mp_printf(&mp_plat_print, __VA_ARGS__)
-
 #if MICROPY_PY_ASYNC_AWAIT && !CIRCUITPY_TRACEBACK
 #error CIRCUITPY_ASYNCIO requires CIRCUITPY_TRACEBACK
 #endif
@@ -359,7 +328,6 @@ typedef long mp_off_t;
 #define CIRCUITPY_CONSOLE_UART (1)
 #ifndef CIRCUITPY_CONSOLE_UART_BAUDRATE
 #define CIRCUITPY_CONSOLE_UART_BAUDRATE (115200)
-#endif
 #if !defined(CIRCUITPY_CONSOLE_UART_PRINTF)
 #define CIRCUITPY_CONSOLE_UART_PRINTF(...) mp_printf(&console_uart_print, __VA_ARGS__)
 #endif
@@ -368,6 +336,7 @@ typedef long mp_off_t;
 #endif
 #if !defined(CIRCUITPY_CONSOLE_UART_TIMESTAMP)
 #define CIRCUITPY_CONSOLE_UART_TIMESTAMP (0)
+#endif
 #endif
 #else
 #define CIRCUITPY_CONSOLE_UART (0)
@@ -456,7 +425,6 @@ void background_callback_run_all(void);
 
 #define MICROPY_VM_HOOK_LOOP RUN_BACKGROUND_TASKS;
 #define MICROPY_VM_HOOK_RETURN RUN_BACKGROUND_TASKS;
-#define MICROPY_INTERNAL_EVENT_HOOK (RUN_BACKGROUND_TASKS)
 
 // CIRCUITPY_AUTORELOAD_DELAY_MS = 0 will completely disable autoreload.
 #ifndef CIRCUITPY_AUTORELOAD_DELAY_MS
@@ -468,7 +436,7 @@ void background_callback_run_all(void);
 #endif
 
 #ifndef CIRCUITPY_PYSTACK_SIZE
-#define CIRCUITPY_PYSTACK_SIZE 2048
+#define CIRCUITPY_PYSTACK_SIZE 1536
 #endif
 
 // The VM heap starts at this size and doubles in size as needed until it runs
@@ -516,18 +484,6 @@ void background_callback_run_all(void);
 #endif
 
 // USB settings
-
-#ifndef CIRCUITPY_SDCARD_USB
-#if CIRCUITPY_USB_DEVICE
-#define CIRCUITPY_SDCARD_USB (CIRCUITPY_SDCARDIO && CIRCUITPY_USB_MSC)
-#else
-#define CIRCUITPY_SDCARD_USB (0)
-#endif
-#endif
-
-#if CIRCUITPY_SDCARD_USB && !(CIRCUITPY_SDCARDIO)
-#error CIRCUITPY_SDCARD_USB requires CIRCUITPY_SDCARDIO
-#endif
 
 // Debug level for TinyUSB. Only outputs over debug UART so it doesn't cause
 // additional USB logging.
@@ -656,20 +612,11 @@ void background_callback_run_all(void);
 #define MICROPY_PY_BUILTINS_COMPILE (1)
 
 #ifndef CIRCUITPY_MIN_GCC_VERSION
-#define CIRCUITPY_MIN_GCC_VERSION 14
+#define CIRCUITPY_MIN_GCC_VERSION 13
 #endif
 
 #ifndef CIRCUITPY_SAVES_PARTITION_SIZE
 #define CIRCUITPY_SAVES_PARTITION_SIZE 0
-#endif
-
-// Boards that have a boot button connected to a GPIO pin should set
-// CIRCUITPY_BOOT_BUTTON_NO_GPIO to 1.
-#ifndef CIRCUITPY_BOOT_BUTTON_NO_GPIO
-#define CIRCUITPY_BOOT_BUTTON_NO_GPIO (0)
-#endif
-#if defined(CIRCUITPY_BOOT_BUTTON) && CIRCUITPY_BOOT_BUTTON_NO_GPIO
-#error "CIRCUITPY_BOOT_BUTTON and CIRCUITPY_BOOT_BUTTON_NO_GPIO are mutually exclusive"
 #endif
 
 #if defined(__GNUC__) && !defined(__ZEPHYR__)

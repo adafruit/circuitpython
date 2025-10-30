@@ -42,15 +42,6 @@
 void NVIC_SystemReset(void) NORETURN;
 
 #if (CPY_STM32H7) || (CPY_STM32F7)
-#if defined(CIRCUITPY_HW_SDRAM_SIZE)
-#include "stm.h"
-#include "sdram.h"
-#include <stdbool.h>
-#include <stddef.h>
-#include "lib/tlsf/tlsf.h"
-// internal SRAM + external SDRAM
-#define CIRCUITPY_RAM_DEVICE_COUNT (2)
-#endif
 
 // Device memories must be accessed in order.
 #define DEVICE 2
@@ -155,16 +146,6 @@ __attribute__((used, naked)) void Reset_Handler(void) {
        start execution of the firmware from the external flash.
        It also makes the SystemInit() call not necessary for this chip.
     */
-    #if defined(__ICACHE_PRESENT) && (__ICACHE_PRESENT == 1U)
-    /* Enable I cache. */
-    SCB_EnableICache();
-    #endif /* __ICACHE_PRESENT */
-
-    #if defined(__DCACHE_PRESENT) && (__DCACHE_PRESENT == 1U)
-    /* Enable D cache. */
-    SCB_EnableDCache();
-    #endif /* __DCACHE_PRESENT */
-
     #else
     SystemInit();
     #endif
@@ -175,62 +156,6 @@ __attribute__((used, naked)) void Reset_Handler(void) {
 
 // Low power clock variables
 static volatile uint32_t systick_ms;
-
-#if  defined(CIRCUITPY_HW_SDRAM_SIZE)
-static tlsf_t _heap = NULL;
-static pool_t pools[CIRCUITPY_RAM_DEVICE_COUNT] = {NULL};
-
-
-void port_heap_init(void) {
-    // heap init in _port_heap_init called from port_init
-}
-
-void stm_add_sdram_to_heap(void) {
-    size_t sdram_memory_size = sdram_size();
-    pools[1] = tlsf_add_pool(_heap, sdram_start(), sdram_memory_size);
-}
-
-static void _port_heap_init(void) {
-    uint32_t *heap_bottom = port_heap_get_bottom();
-    uint32_t *heap_top = port_heap_get_top();
-    size_t size = (heap_top - heap_bottom) * sizeof(uint32_t);
-    size_t sdram_memory_size = sdram_size();
-
-    _heap = tlsf_create_with_pool(heap_bottom, size, size + sdram_memory_size);
-    pools[0] = tlsf_get_pool(_heap);
-}
-
-static bool max_size_walker(void *ptr, size_t size, int used, void *user) {
-    size_t *max_size = (size_t *)user;
-    if (!used && *max_size < size) {
-        *max_size = size;
-    }
-    return true;
-}
-
-size_t port_heap_get_largest_free_size(void) {
-    size_t max_size = 0;
-    for (size_t i = 0; i < CIRCUITPY_RAM_DEVICE_COUNT; i++) {
-        if (pools[i]) {
-            tlsf_walk_pool(pools[i], max_size_walker, &max_size);
-        }
-    }
-    return tlsf_fit_size(_heap, max_size);
-}
-
-void *port_malloc(size_t size, bool dma_capable) {
-    void *block = tlsf_malloc(_heap, size);
-    return block;
-}
-
-void port_free(void *ptr) {
-    tlsf_free(_heap, ptr);
-}
-
-void *port_realloc(void *ptr, size_t size, bool dma_capable) {
-    return tlsf_realloc(_heap, ptr, size);
-}
-#endif
 
 safe_mode_t port_init(void) {
     HAL_Init(); // Turns on SysTick
@@ -265,9 +190,6 @@ safe_mode_t port_init(void) {
     __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
     stm32_peripherals_rtc_reset_alarms();
 
-    #if  defined(CIRCUITPY_HW_SDRAM_SIZE)
-    _port_heap_init();
-    #endif
     // Turn off SysTick
     SysTick->CTRL = 0;
 
@@ -285,7 +207,7 @@ void HAL_Delay(uint32_t delay_ms) {
     }
 }
 
-uint32_t HAL_GetTick(void) {
+uint32_t HAL_GetTick() {
     if (SysTick->CTRL != 0) {
         return systick_ms;
     } else {

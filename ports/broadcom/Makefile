@@ -59,6 +59,19 @@ SRC_C += bindings/videocore/__init__.c \
 
 SRC_S = peripherals/broadcom/boot$(SUFFIX).s
 
+SRC_COMMON_HAL_EXPANDED = $(addprefix shared-bindings/, $(SRC_COMMON_HAL)) \
+						  $(addprefix shared-bindings/, $(SRC_BINDINGS_ENUMS)) \
+					      $(addprefix common-hal/, $(SRC_COMMON_HAL))
+
+SRC_SHARED_MODULE_EXPANDED = $(addprefix shared-bindings/, $(SRC_SHARED_MODULE)) \
+														 $(addprefix shared-module/, $(SRC_SHARED_MODULE)) \
+														 $(addprefix shared-module/, $(SRC_SHARED_MODULE_INTERNAL))
+
+# There may be duplicates between SRC_COMMON_HAL_EXPANDED and SRC_SHARED_MODULE_EXPANDED,
+# because a few modules have files both in common-hal/ and shared-modules/.
+# Doing a $(sort ...) removes duplicates as part of sorting.
+SRC_COMMON_HAL_SHARED_MODULE_EXPANDED = $(sort $(SRC_COMMON_HAL_EXPANDED) $(SRC_SHARED_MODULE_EXPANDED))
+
 OBJ = $(PY_O) $(SUPERVISOR_O) $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_COMMON_HAL_SHARED_MODULE_EXPANDED:.c=.o))
 	ifeq ($(INTERNAL_LIBM),1)
@@ -95,11 +108,11 @@ else
 endif
 
 
-CFLAGS += $(INC) -Wall -Werror -std=gnu11 $(BASE_CFLAGS) $(CFLAGS_MOD) $(COPT) $(DISABLE_WARNINGS) -Werror=old-style-definition
+CFLAGS += $(INC) -Wall -Werror -std=gnu11 $(BASE_CFLAGS) $(CFLAGS_MOD) $(COPT) $(DISABLE_WARNINGS)
 
 $(BUILD)/lib/tlsf/tlsf.o: CFLAGS += -Wno-cast-align
 
-SRC_QSTR += $(SRC_C) $(SRC_SUPERVISOR) $(SRC_COMMON_HAL_SHARED_MODULE_EXPANDED) $(SRC_CIRCUITPY_COMMON)
+SRC_QSTR += $(SRC_C) $(SRC_SUPERVISOR) $(SRC_COMMON_HAL_EXPANDED) $(SRC_SHARED_MODULE_EXPANDED) $(SRC_CIRCUITPY_COMMON)
 
 LDFLAGS += $(CFLAGS) -T peripherals/broadcom/link$(SUFFIX).ld -Wl,--gc-sections -Wl,-Map=$@.map # -Wl,--cref
 

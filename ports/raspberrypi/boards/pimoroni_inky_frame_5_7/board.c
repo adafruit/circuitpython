@@ -67,26 +67,38 @@ void board_init(void) {
 
     epaperdisplay_epaperdisplay_obj_t *display = &allocate_display()->epaper_display;
     display->base.type = &epaperdisplay_epaperdisplay_type;
-
-    epaperdisplay_construct_args_t args = EPAPERDISPLAY_CONSTRUCT_ARGS_DEFAULTS;
-    args.bus = bus;
-    args.start_sequence = display_start_sequence;
-    args.start_sequence_len = sizeof(display_start_sequence);
-    args.start_up_time = 1.0;
-    args.stop_sequence = display_stop_sequence;
-    args.stop_sequence_len = sizeof(display_stop_sequence);
-    args.width = 600;
-    args.height = 448;
-    args.ram_width = 640;
-    args.ram_height = 480;
-    args.write_black_ram_command = 0x10;
-    args.refresh_sequence = refresh_sequence;
-    args.refresh_sequence_len = sizeof(refresh_sequence);
-    args.refresh_time = 28.0;
-    args.busy_pin = NULL;
-    args.seconds_per_frame = 40.0;
-    args.acep = true;
-    common_hal_epaperdisplay_epaperdisplay_construct(display, &args);
+    common_hal_epaperdisplay_epaperdisplay_construct(
+        display,
+        bus,
+        display_start_sequence, sizeof(display_start_sequence),
+        1.0, // start up time
+        display_stop_sequence, sizeof(display_stop_sequence),
+        600,  // width
+        448,  // height
+        640,  // ram_width
+        480,  // ram_height
+        0,  // colstart
+        0,  // rowstart
+        0,  // rotation
+        NO_COMMAND,  // set_column_window_command
+        NO_COMMAND,  // set_row_window_command
+        NO_COMMAND,  // set_current_column_command
+        NO_COMMAND,  // set_current_row_command
+        0x10,  // write_black_ram_command
+        false,  // black_bits_inverted
+        NO_COMMAND,  // write_color_ram_command
+        false,  // color_bits_inverted
+        0x000000,  // highlight_color
+        refresh_sequence, sizeof(refresh_sequence),
+        28.0,  // refresh_time
+        NULL,  // busy_pin
+        false,  // busy_state
+        40.0, // seconds_per_frame
+        false,  // always_toggle_chip_select
+        false, // grayscale
+        true, // acep
+        false,  // two_byte_sequence_length
+        false); // address_little_endian
 }
 
 // Use the MP_WEAK supervisor/shared/board.c versions of routines not defined here.

@@ -124,9 +124,7 @@ void board_timerhook(void) {
 
 uint64_t port_get_raw_ticks(uint8_t *subticks) {
     uint64_t count = cxd56_rtc_count();
-    if (subticks != NULL) {
-        *subticks = count % 32;
-    }
+    *subticks = count % 32;
 
     return count / 32;
 }

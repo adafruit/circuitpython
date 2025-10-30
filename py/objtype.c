@@ -44,7 +44,6 @@
 #define ENABLE_SPECIAL_ACCESSORS \
     (MICROPY_PY_DESCRIPTORS || MICROPY_PY_DELATTR_SETATTR || MICROPY_PY_BUILTINS_PROPERTY)
 
-static mp_obj_t mp_obj_is_subclass(mp_obj_t object, mp_obj_t classinfo);
 static mp_obj_t static_class_method_make_new(const mp_obj_type_t *self_in, size_t n_args, size_t n_kw, const mp_obj_t *args);
 
 /******************************************************************************/
@@ -84,7 +83,7 @@ static int instance_count_native_bases(const mp_obj_type_t *type, const mp_obj_t
 }
 
 // CIRCUITPY-CHANGE: support superclass constructors that take kw args
-// This wrapper function allows a subclass of a native type to call the
+// This wrapper function is allows a subclass of a native type to call the
 // __init__() method (corresponding to type->make_new) of the native type.
 static mp_obj_t native_base_init_wrapper(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     mp_obj_instance_t *self = MP_OBJ_TO_PTR(pos_args[0]);
@@ -97,8 +96,7 @@ static mp_obj_t native_base_init_wrapper(size_t n_args, const mp_obj_t *pos_args
     pos_args++;
     n_args--;
 
-    // CIRCUITPY-CHANGE
-    mp_obj_t *args2 = m_malloc_items(n_args + 2 * n_kw);
+    mp_obj_t *args2 = m_new(mp_obj_t, n_args + 2 * n_kw);
     // copy in args
     memcpy(args2, pos_args, n_args * sizeof(mp_obj_t));
     // copy in kwargs
@@ -342,8 +340,7 @@ static mp_obj_t mp_obj_instance_make_new(const mp_obj_type_t *self, size_t n_arg
             mp_obj_t args2[1] = {MP_OBJ_FROM_PTR(self)};
             new_ret = mp_call_function_n_kw(init_fn[0], 1, 0, args2);
         } else {
-            // CIRCUITPY-CHANGE
-            mp_obj_t *args2 = m_malloc_items(1 + n_args + 2 * n_kw);
+            mp_obj_t *args2 = m_new(mp_obj_t, 1 + n_args + 2 * n_kw);
             args2[0] = MP_OBJ_FROM_PTR(self);
             memcpy(args2 + 1, args, (n_args + 2 * n_kw) * sizeof(mp_obj_t));
             new_ret = mp_call_function_n_kw(init_fn[0], n_args + 1, n_kw, args2);
@@ -374,8 +371,7 @@ static mp_obj_t mp_obj_instance_make_new(const mp_obj_type_t *self, size_t n_arg
         if (n_args == 0 && n_kw == 0) {
             init_ret = mp_call_method_n_kw(0, 0, init_fn);
         } else {
-            // CIRCUITPY-CHANGE
-            mp_obj_t *args2 = m_malloc_items(2 + n_args + 2 * n_kw);
+            mp_obj_t *args2 = m_new(mp_obj_t, 2 + n_args + 2 * n_kw);
             args2[0] = init_fn[0];
             args2[1] = init_fn[1];
             memcpy(args2 + 2, args, (n_args + 2 * n_kw) * sizeof(mp_obj_t));
@@ -689,13 +685,6 @@ static void mp_obj_instance_load_attr(mp_obj_t self_in, qstr attr, mp_obj_t *des
 
     // try __getattr__
     if (attr != MP_QSTR___getattr__) {
-        #if MICROPY_PY_DESCRIPTORS
-        // With descriptors enabled, don't delegate lookups of __get__/__set__/__delete__.
-        if (attr == MP_QSTR___get__ || attr == MP_QSTR___set__ || attr == MP_QSTR___delete__) {
-            return;
-        }
-        #endif
-
         #if MICROPY_PY_DELATTR_SETATTR
         // If the requested attr is __setattr__/__delattr__ then don't delegate the lookup
         // to __getattr__.  If we followed CPython's behaviour then __setattr__/__delattr__
@@ -915,8 +904,7 @@ mp_obj_t mp_obj_instance_call(mp_obj_t self_in, size_t n_args, size_t n_kw, cons
         #if MICROPY_ERROR_REPORTING <= MICROPY_ERROR_REPORTING_TERSE
         mp_raise_TypeError(MP_ERROR_TEXT("object not callable"));
         #else
-        // CIRCUITPY-CHANGE: use more specific raise
-        mp_raise_TypeError_varg(MP_ERROR_TEXT("'%q' object isn't callable"),
+        mp_raise_TypeError_varg(MP_ERROR_TEXT("'%q' object is not callable"),
             mp_obj_get_type_qstr(self_in));
         #endif
     }
@@ -1043,10 +1031,11 @@ static mp_obj_t type_call(mp_obj_t self_in, size_t n_args, size_t n_kw, const mp
 
     if (!MP_OBJ_TYPE_HAS_SLOT(self, make_new)) {
         #if MICROPY_ERROR_REPORTING <= MICROPY_ERROR_REPORTING_TERSE
+        // CIRCUITPY-CHANGE: error message change
         mp_raise_TypeError(MP_ERROR_TEXT("cannot create instance"));
         #else
-        // CIRCUITPY-CHANGE: more specific mp_raise
-        mp_raise_TypeError_varg(MP_ERROR_TEXT("can't create '%q' instances"), self->name);
+        // CIRCUITPY-CHANGE: error message change
+        mp_raise_TypeError_varg(MP_ERROR_TEXT("cannot create '%q' instances"), self->name);
         #endif
     }
 
@@ -1187,11 +1176,12 @@ mp_obj_t mp_obj_new_type(qstr name, mp_obj_t bases_tuple, mp_obj_t locals_dict) 
         // TODO: Verify with CPy, tested on function type
         if (!MP_OBJ_TYPE_HAS_SLOT(t, make_new)) {
             #if MICROPY_ERROR_REPORTING <= MICROPY_ERROR_REPORTING_TERSE
-            mp_raise_TypeError(MP_ERROR_TEXT("type isn't an acceptable base type"));
+            // CIRCUITPY-CHANGE: error message change
+            mp_raise_TypeError(MP_ERROR_TEXT("type is not an acceptable base type"));
             #else
-            // CIRCUITPY-CHANGE: more specific mp_raise
+            // CIRCUITPY-CHANGE: error message change
             mp_raise_TypeError_varg(
-                MP_ERROR_TEXT("type '%q' isn't an acceptable base type"), t->name);
+                MP_ERROR_TEXT("type '%q' is not an acceptable base type"), t->name);
             #endif
         }
         #if ENABLE_SPECIAL_ACCESSORS
@@ -1201,7 +1191,6 @@ mp_obj_t mp_obj_new_type(qstr name, mp_obj_t bases_tuple, mp_obj_t locals_dict) 
         base_flags |= t->flags & MP_TYPE_FLAG_HAS_SPECIAL_ACCESSORS;
         if (mp_obj_is_instance_type(t)) {
             t->flags |= MP_TYPE_FLAG_IS_SUBCLASSED;
-            base_flags |= t->flags & MP_TYPE_FLAG_HAS_SPECIAL_ACCESSORS;
         }
         #endif
     }
@@ -1310,20 +1299,10 @@ static mp_obj_t super_make_new(const mp_obj_type_t *type_in, size_t n_args, size
     // 0 arguments are turned into 2 in the compiler
     // 1 argument is not yet implemented
     mp_arg_check_num(n_args, n_kw, 2, 2, false);
-
-    // CIRCUITPY-CHANGE: check type of first arg
     if (!mp_obj_is_type(args[0], &mp_type_type)) {
+        // CIRCUITPY-CHANGE: error message
         mp_raise_TypeError(MP_ERROR_TEXT("first argument to super() must be type"));
     }
-
-    // Per CPython: "If the second argument is an object, isinstance(obj, type) must be true.
-    // If the second argument is a type, issubclass(type2, type) must be true (this is useful for classmethods)."
-    const mp_obj_type_t *second_arg_type = mp_obj_get_type(args[1]);
-    mp_obj_t second_arg_obj = second_arg_type == &mp_type_type ? args[1] : MP_OBJ_FROM_PTR(second_arg_type);
-    if (mp_obj_is_subclass(second_arg_obj, args[0]) == mp_const_false) {
-        mp_raise_TypeError(NULL);
-    }
-
     mp_obj_super_t *o = m_new_obj(mp_obj_super_t);
     *o = (mp_obj_super_t) {{type_in}, args[0], args[1]};
     return MP_OBJ_FROM_PTR(o);
@@ -1534,15 +1513,13 @@ mp_obj_t mp_obj_cast_to_native_base(mp_obj_t self_in, mp_const_obj_t native_type
 /******************************************************************************/
 // staticmethod and classmethod types (probably should go in a different file)
 
-// CIRCUITPY-CHANGE: better arg name
-static mp_obj_t static_class_method_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
-    assert(type == &mp_type_staticmethod || type == &mp_type_classmethod);
+static mp_obj_t static_class_method_make_new(const mp_obj_type_t *self, size_t n_args, size_t n_kw, const mp_obj_t *args) {
+    assert(self == &mp_type_staticmethod || self == &mp_type_classmethod);
 
     mp_arg_check_num(n_args, n_kw, 1, 1, false);
 
-    // CIRCUITPY-CHANGE: Use mp_obj_malloc because it is a Python object
-    mp_obj_static_class_method_t *o = mp_obj_malloc(mp_obj_static_class_method_t, type);
-    o->fun = args[0];
+    mp_obj_static_class_method_t *o = m_new_obj(mp_obj_static_class_method_t);
+    *o = (mp_obj_static_class_method_t) {{self}, args[0]};
     return MP_OBJ_FROM_PTR(o);
 }
 

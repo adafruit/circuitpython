@@ -6,15 +6,15 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-01-04 12:55-0600\n"
-"PO-Revision-Date: 2025-06-15 23:04+0000\n"
-"Last-Translator: Jonny Bergdahl <github@bergdahl.org>\n"
+"PO-Revision-Date: 2024-01-15 16:06+0000\n"
+"Last-Translator: Jonny Bergdahl <jonny@bergdahl.it>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: sv\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.12-dev\n"
+"X-Generator: Weblate 5.4-dev\n"
 
 #: main.c
 msgid ""
@@ -94,7 +94,7 @@ msgstr ""
 msgid "%q and %q contain duplicate pins"
 msgstr "%q och %q innehåller duplicerade pinnar"
 
-#: shared-bindings/audioio/AudioOut.c
+#: ports/atmel-samd/common-hal/audioio/AudioOut.c
 msgid "%q and %q must be different"
 msgstr "%q och %q måste vara olika"
 
@@ -104,7 +104,7 @@ msgstr "%q och %q måste dela klockenhet"
 
 #: ports/nordic/common-hal/watchdog/WatchDogTimer.c
 msgid "%q cannot be changed once mode is set to %q"
-msgstr "%q kan inte ändras efter att läge satts till %q"
+msgstr ""
 
 #: shared-bindings/microcontroller/Pin.c
 msgid "%q contains duplicate pins"
@@ -113,10 +113,6 @@ msgstr "%q innehåller dubblettstift"
 #: ports/atmel-samd/common-hal/sdioio/SDCard.c
 msgid "%q failure: %d"
 msgstr "%q-fel: %d"
-
-#: shared-module/audiodelays/MultiTapDelay.c
-msgid "%q in %q must be of type %q or %q, not %q"
-msgstr "%q in %1 måste vara av typ %q eller %q, inte %q"
 
 #: py/argcheck.c shared-module/audiofilters/Filter.c
 msgid "%q in %q must be of type %q, not %q"
@@ -170,7 +166,7 @@ msgstr "längden på %q måste vara <= %d"
 msgid "%q length must be >= %d"
 msgstr "längden på %q måste vara >= %d"
 
-#: py/modsys.c py/runtime.c
+#: py/modsys.c py/objmodule.c py/runtime.c
 msgid "%q moved from %q to %q"
 msgstr "%q flyttad från %q till %q"
 
@@ -233,7 +229,7 @@ msgstr "%q måste vara en multipel av 8."
 #: shared-bindings/bitmapfilter/__init__.c shared-bindings/canio/CAN.c
 #: shared-bindings/digitalio/Pull.c shared-bindings/supervisor/__init__.c
 #: shared-module/audiofilters/Filter.c shared-module/displayio/__init__.c
-#: shared-module/synthio/Synthesizer.c
+#: shared-module/synthio/Biquad.c shared-module/synthio/Synthesizer.c
 msgid "%q must be of type %q or %q, not %q"
 msgstr "%q måste vara av typen %q eller %q, inte %q"
 
@@ -242,7 +238,6 @@ msgid "%q must be of type %q, %q, or %q, not %q"
 msgstr "%q måste vara av typen %q, %q, eller %q, inte %q"
 
 #: py/argcheck.c py/runtime.c shared-bindings/bitmapfilter/__init__.c
-#: shared-module/audiodelays/MultiTapDelay.c shared-module/synthio/Note.c
 #: shared-module/synthio/__init__.c
 msgid "%q must be of type %q, not %q"
 msgstr "%q måste vara av typen %q, inte %q"
@@ -323,7 +318,7 @@ msgid "'%q' object does not support '%q'"
 msgstr "Objektet '%q' stöder inte '%q'"
 
 #: py/runtime.c
-msgid "'%q' object isn't an iterator"
+msgid "'%q' object is not an iterator"
 msgstr "Objektet '%q' är inte en iterator"
 
 #: py/objtype.c py/runtime.c shared-module/atexit/__init__.c
@@ -331,13 +326,13 @@ msgid "'%q' object is not callable"
 msgstr "Objektet '%q' kan inte anropas"
 
 #: py/runtime.c
-msgid "'%q' object isn't iterable"
+msgid "'%q' object is not iterable"
 msgstr "Objektet '%q' är inte itererbart"
 
 #: py/emitinlinethumb.c py/emitinlinextensa.c
 #, c-format
 msgid "'%s' expects a label"
-msgstr "'%s' förväntar sig en etikett"
+msgstr "'%s' förväntar sig en label"
 
 #: py/emitinlinethumb.c py/emitinlinextensa.c
 #, c-format
@@ -437,7 +432,7 @@ msgstr "'label' kräver 1 argument"
 
 #: py/emitnative.c
 msgid "'not' not implemented"
-msgstr "'not' är inte implementerat"
+msgstr ""
 
 #: py/compile.c
 msgid "'return' outside function"
@@ -461,7 +456,7 @@ msgstr "*x måste vara mål för tilldelning"
 
 #: py/obj.c
 msgid ", in %q\n"
-msgstr ", i%q\n"
+msgstr ", i %q\n"
 
 #: shared-bindings/busdisplay/BusDisplay.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c
@@ -572,7 +567,7 @@ msgstr "Har redan lyssnare för all-matchningar"
 
 #: ports/espressif/common-hal/_bleio/__init__.c
 msgid "Already in progress"
-msgstr "Pågår redan"
+msgstr ""
 
 #: ports/espressif/bindings/espnow/ESPNow.c
 #: ports/espressif/common-hal/espulp/ULP.c
@@ -612,7 +607,7 @@ msgstr "Matrisvärden ska bestå av enstaka bytes."
 
 #: ports/atmel-samd/common-hal/spitarget/SPITarget.c
 msgid "Async SPI transfer in progress on this bus, keep awaiting."
-msgstr "Async SPI-överföring pågår på denna buss, forsätter vänta."
+msgstr ""
 
 #: shared-module/memorymonitor/AllocationAlarm.c
 #, c-format
@@ -626,7 +621,7 @@ msgstr "Ljudkonvertering inte implementerad"
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 #: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
 msgid "Audio source error"
-msgstr "Fel på ljudkälla"
+msgstr ""
 
 #: shared-bindings/wifi/Radio.c
 msgid "AuthMode.OPEN is not used with password"
@@ -645,8 +640,8 @@ msgid ""
 "Auto-reload is on. Simply save files over USB to run them or enter REPL to "
 "disable.\n"
 msgstr ""
-"Autoladdning är på. Spara filer via USB för att köra dem eller gå till REPL "
-"för att inaktivera.\n"
+"Autoladdning är på. Spara filer via USB för att köra dem eller ange REPL för "
+"att inaktivera.\n"
 
 #: ports/espressif/common-hal/canio/CAN.c
 msgid "Baudrate not supported by peripheral"
@@ -703,7 +698,7 @@ msgstr "Buffertlängd %d för stor. Den måste vara mindre än %d"
 #: shared-module/sdcardio/SDCard.c
 #, c-format
 msgid "Buffer must be a multiple of %d bytes"
-msgstr "Buffer måste vara multipel av %d byte"
+msgstr ""
 
 #: shared-bindings/_bleio/PacketBuffer.c
 #, c-format
@@ -764,7 +759,7 @@ msgstr "Kan bara larma från djup sömn på två låga pinnar."
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "Can't construct AudioOut because continuous channel already open"
-msgstr "Kan inte skapa AudioOut eftersom kontinuerlig kanal redan är öppen"
+msgstr ""
 
 #: ports/espressif/common-hal/_bleio/Characteristic.c
 #: ports/nordic/common-hal/_bleio/Characteristic.c
@@ -812,8 +807,8 @@ msgid "Cannot record to a file"
 msgstr "Det går inte att spela in till en fil"
 
 #: shared-module/storage/__init__.c
-msgid "Cannot remount path when visible via USB."
-msgstr "Kan inte montera sökväg när den är åtkomlig via USB."
+msgid "Cannot remount '/' when visible via USB."
+msgstr "Det går inte att montera om '/' när den är synlig via USB."
 
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Cannot set value when direction is input."
@@ -830,7 +825,7 @@ msgstr "Det går inte att subklassa slice"
 
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 msgid "Cannot use GPIO0..15 together with GPIO32..47"
-msgstr "Kan inte använda GPIO0..15 tillsammans med GPIO32..47"
+msgstr ""
 
 #: ports/nordic/common-hal/alarm/pin/PinAlarm.c
 msgid "Cannot wake on pin edge, only level"
@@ -868,10 +863,6 @@ msgstr "Arrayer för koordinater har olika längd"
 msgid "Coordinate arrays types have different sizes"
 msgstr "Arrayer för koordinater har olika storlek"
 
-#: ports/espressif/common-hal/rclcpy/Publisher.c
-msgid "Could not publish to ROS topic"
-msgstr "Kan inte publicera till ROS topic"
-
 #: shared-bindings/_bleio/Adapter.c
 msgid "Could not set address"
 msgstr "Kan inte ange adress"
@@ -883,11 +874,6 @@ msgstr "Det gick inte att starta avbrott, RX upptagen"
 #: shared-module/audiomp3/MP3Decoder.c
 msgid "Couldn't allocate decoder"
 msgstr "Det gick inte att allokera avkodaren"
-
-#: ports/espressif/common-hal/rclcpy/__init__.c
-#, c-format
-msgid "Critical ROS failure during soft reboot, reset required: %d"
-msgstr "Kritiskt ROS-fel vid mjuk omstart, reset krävs: %d"
 
 #: ports/stm/common-hal/analogio/AnalogOut.c
 msgid "DAC Channel Init Error"
@@ -1041,23 +1027,23 @@ msgstr "Det gick inte att ansluta: timeout"
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "Failed to create continuous channels: invalid arg"
-msgstr "Kan inte skapa kontinuerliga kanaler: ogiltigt argument"
+msgstr ""
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "Failed to create continuous channels: invalid state"
-msgstr "Det gick inte att skapa kontinuerliga kanaler: ogiltigt läge"
+msgstr ""
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "Failed to create continuous channels: no mem"
-msgstr "Det gick inte att skapa kontinuerliga kanaler: Inget minne"
+msgstr ""
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "Failed to create continuous channels: not found"
-msgstr "Det gick inte att skapa kontinuerliga kanaler: inte funnen"
+msgstr ""
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "Failed to enable continuous"
-msgstr "Kan inte skapa kontinuerlig"
+msgstr ""
 
 #: shared-module/audiomp3/MP3Decoder.c
 msgid "Failed to parse MP3 file"
@@ -1065,7 +1051,7 @@ msgstr "Det gick inte att tolka MP3-filen"
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "Failed to register continuous events callback"
-msgstr "Kan inte registrera kontinuerlig händelsers callback"
+msgstr ""
 
 #: ports/nordic/sd_mutex.c
 #, c-format
@@ -1074,11 +1060,11 @@ msgstr "Det gick inte att frigöra mutex, fel 0x%04x"
 
 #: ports/zephyr-cp/common-hal/wifi/Radio.c
 msgid "Failed to set hostname"
-msgstr "Kan inte sätta värdnamn"
+msgstr ""
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "Failed to start async audio"
-msgstr "Kan inte starta async audio"
+msgstr ""
 
 #: supervisor/shared/safe_mode.c
 msgid "Failed to write internal flash."
@@ -1088,7 +1074,6 @@ msgstr "Det gick inte att skriva till intern flash."
 msgid "File exists"
 msgstr "Filen finns redan"
 
-#: shared-bindings/supervisor/__init__.c shared-module/lvfontio/OnDiskFont.c
 #: shared-module/os/getenv.c
 msgid "File not found"
 msgstr "Filen hittades inte"
@@ -1120,7 +1105,7 @@ msgstr "För L8-färgrymden måste indatabitmappen ha 8 bitar per pixel"
 msgid "For RGB colorspaces, input bitmap must have 16 bits per pixel"
 msgstr "För RGB-färgrymder måste indatabitmappen ha 16 bitar per pixel"
 
-#: ports/cxd56/common-hal/camera/Camera.c shared-module/audiocore/WaveFile.c
+#: ports/cxd56/common-hal/camera/Camera.c
 msgid "Format not supported"
 msgstr "Format stöds inte"
 
@@ -1264,7 +1249,7 @@ msgstr "Internt fel #%d"
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2350.c
 #: shared-bindings/pwmio/PWMOut.c
 msgid "Internal resource(s) in use"
-msgstr "Intern(a) resurs(er) används redan"
+msgstr ""
 
 #: supervisor/shared/safe_mode.c
 msgid "Internal watchdog timer expired."
@@ -1288,16 +1273,14 @@ msgstr "Avbruten av utgångsfunktion"
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c py/argcheck.c
 #: shared-bindings/digitalio/DigitalInOut.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c shared-bindings/pwmio/PWMOut.c
-#: shared-bindings/supervisor/__init__.c
 #: shared-module/aurora_epaper/aurora_framebuffer.c
-#: shared-module/lvfontio/OnDiskFont.c
 msgid "Invalid %q"
 msgstr "Ogiltig %q"
 
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2350.c
 #: shared-module/aurora_epaper/aurora_framebuffer.c
 msgid "Invalid %q and %q"
-msgstr "Ogiltig %q och %q"
+msgstr ""
 
 #: ports/atmel-samd/common-hal/microcontroller/Pin.c
 #: ports/espressif/common-hal/dotclockframebuffer/DotClockFramebuffer.c
@@ -1322,10 +1305,6 @@ msgstr "Ogiltig BSSID"
 #: shared-bindings/wifi/Radio.c
 msgid "Invalid MAC address"
 msgstr "Ogiltig MAC-adress"
-
-#: ports/espressif/common-hal/rclcpy/__init__.c
-msgid "Invalid ROS domain ID"
-msgstr "Ogiltigt ROS domän-id"
 
 #: ports/espressif/common-hal/espidf/__init__.c py/moderrno.c
 msgid "Invalid argument"
@@ -1405,7 +1384,7 @@ msgstr "Layer måste vara en underklass av Group eller TileGrid"
 
 #: shared-bindings/audiocore/RawSample.c
 msgid "Length of %q must be an even multiple of channel_count * type_size"
-msgstr "Längden på %q måste vara en jämn multipel av channel_count * type_size"
+msgstr ""
 
 #: ports/espressif/common-hal/espidf/__init__.c
 msgid "MAC address was invalid"
@@ -1414,12 +1393,7 @@ msgstr "MAC-adressen var ogiltig"
 #: ports/espressif/common-hal/_bleio/Characteristic.c
 #: ports/espressif/common-hal/_bleio/Descriptor.c
 msgid "MITM security not supported"
-msgstr "MITM-säkerhet stöds inte"
-
-#: ports/stm/common-hal/sdioio/SDCard.c
-#, c-format
-msgid "MMC/SDIO Clock Error %x"
-msgstr "Fel på MMC/SDIO-klocka: %x"
+msgstr ""
 
 #: shared-bindings/is31fl3741/IS31FL3741.c
 msgid "Mapping must be a tuple"
@@ -1464,7 +1438,7 @@ msgstr "Saknad jmp_pin. %q[%u] hoppar på pin"
 
 #: shared-module/storage/__init__.c
 msgid "Mount point directory missing"
-msgstr "Katalog för monteringspunkt saknas"
+msgstr ""
 
 #: ports/zephyr-cp/bindings/zephyr_serial/UART.c shared-bindings/busio/UART.c
 #: shared-bindings/displayio/Group.c
@@ -1552,7 +1526,7 @@ msgstr "Ingen IP"
 #: ports/cxd56/common-hal/microcontroller/__init__.c
 #: ports/mimxrt10xx/common-hal/microcontroller/__init__.c
 msgid "No bootloader present"
-msgstr "Bootloader saknas"
+msgstr ""
 
 #: shared-module/usb/core/Device.c
 msgid "No configuration set"
@@ -1607,10 +1581,6 @@ msgstr "Ingen pull-up hittades på SDA eller SCL; kontrollera inkopplingen"
 msgid "No pulldown on pin; 1Mohm recommended"
 msgstr "Ingen pulldown på pinnen; 1Mohm rekommenderas"
 
-#: shared-module/touchio/TouchIn.c
-msgid "No pullup on pin; 1Mohm recommended"
-msgstr "Pullup saknas på pinne; 1MOhm rekommenderas"
-
 #: py/moderrno.c
 msgid "No space left on device"
 msgstr "Inget utrymme kvar på enheten"
@@ -1658,7 +1628,7 @@ msgstr "JPEG-standard stöds ej"
 #: ports/espressif/common-hal/sdioio/SDCard.c
 #, c-format
 msgid "Number of data_pins must be %d or %d, not %d"
-msgstr "Antal för data_pins måste vara %d eller %d, inte %d"
+msgstr ""
 
 #: shared-bindings/util.c
 msgid ""
@@ -1785,7 +1755,7 @@ msgstr "PWM-segmentkanal A används redan"
 
 #: shared-bindings/spitarget/SPITarget.c
 msgid "Packet buffers for an SPI transfer must have the same length."
-msgstr "Paketbuffertar för en SPI-överföring måste ha samma längd."
+msgstr ""
 
 #: shared-module/jpegio/JpegDecoder.c
 msgid "Parameter error"
@@ -1889,10 +1859,6 @@ msgstr "Programstorlek ogiltig"
 msgid "Program too long"
 msgstr "Programmet är för långt"
 
-#: shared-bindings/rclcpy/Publisher.c
-msgid "Publishers can only be created from a parent node"
-msgstr "Publicerare kan bara skapas from föräldranod"
-
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Pull not used when direction is output."
 msgstr "Pull används inte när riktningen är output."
@@ -1912,26 +1878,6 @@ msgstr "RNG DeInit-fel"
 #: ports/stm/common-hal/os/__init__.c
 msgid "RNG Init Error"
 msgstr "RNG Init-fel"
-
-#: ports/espressif/common-hal/rclcpy/__init__.c
-msgid "ROS failed to initialize. Is agent connected?"
-msgstr "Fel vid ROS initialisering, är agent ansluten?"
-
-#: ports/espressif/common-hal/rclcpy/__init__.c
-msgid "ROS internal setup failure"
-msgstr "Fel vid ROS intern inställning"
-
-#: ports/espressif/common-hal/rclcpy/__init__.c
-msgid "ROS memory allocator failure"
-msgstr "Fel vid ROS minnesallokering"
-
-#: ports/espressif/common-hal/rclcpy/Node.c
-msgid "ROS node failed to initialize"
-msgstr "Fel vid ROS-nods initialisering"
-
-#: ports/espressif/common-hal/rclcpy/Publisher.c
-msgid "ROS topic failed to initialize"
-msgstr "Fel vid initialisering av ROS topic"
 
 #: ports/atmel-samd/common-hal/busio/UART.c ports/cxd56/common-hal/busio/UART.c
 #: ports/nordic/common-hal/busio/UART.c ports/stm/common-hal/busio/UART.c
@@ -2015,7 +1961,7 @@ msgstr "SDIO GetCardInfo-fel %d"
 #: ports/stm/common-hal/sdioio/SDCard.c
 #, c-format
 msgid "SDIO Init Error %x"
-msgstr "SDIO Init Fel %x"
+msgstr ""
 
 #: ports/espressif/common-hal/busio/SPI.c
 msgid "SPI configuration failed"
@@ -2064,7 +2010,6 @@ msgstr "Slice och värde har olika längd."
 #: shared-bindings/displayio/TileGrid.c
 #: shared-bindings/memorymonitor/AllocationSize.c
 #: shared-bindings/pulseio/PulseIn.c
-#: shared-bindings/tilepalettemapper/TilePaletteMapper.c
 msgid "Slices not supported"
 msgstr "Slice stöds inte"
 
@@ -2084,7 +2029,7 @@ msgstr "Ange en av data0 eller data_pins"
 
 #: supervisor/shared/safe_mode.c
 msgid "Stack overflow. Increase stack size."
-msgstr "Stack overflow. Öka stackstorleken."
+msgstr ""
 
 #: shared-bindings/alarm/time/TimeAlarm.c
 msgid "Supply one of monotonic_time or epoch_time"
@@ -2112,7 +2057,7 @@ msgstr "Längden på rgb_pins vara 6, 12, 18, 24 eller 30"
 
 #: shared-module/audiocore/__init__.c
 msgid "The sample's %q does not match"
-msgstr "Prov %q matchar inte"
+msgstr ""
 
 #: supervisor/shared/safe_mode.c
 msgid "Third-party firmware fatal error."
@@ -2134,19 +2079,13 @@ msgstr ""
 msgid "Tile height must exactly divide bitmap height"
 msgstr "Tile-höjden måste vara jämnt delbar med höjd på bitmap"
 
-#: shared-bindings/displayio/TileGrid.c
-#: shared-bindings/tilepalettemapper/TilePaletteMapper.c
-#: shared-module/displayio/TileGrid.c
+#: shared-bindings/displayio/TileGrid.c shared-module/displayio/TileGrid.c
 msgid "Tile index out of bounds"
 msgstr "Tile-index utanför gräns"
 
 #: shared-bindings/displayio/TileGrid.c
 msgid "Tile width must exactly divide bitmap width"
 msgstr "Tile-bredd måste vara jämnt delbar med bredd på bitmap"
-
-#: shared-module/tilepalettemapper/TilePaletteMapper.c
-msgid "TilePaletteMapper may only be bound to a TileGrid once"
-msgstr "TilePaletteMapper får bara bindas till ett TileGrid en gång"
 
 #: shared-bindings/alarm/time/TimeAlarm.c
 msgid "Time is in the past."
@@ -2168,7 +2107,7 @@ msgstr "För många kanaler i sampling."
 
 #: ports/espressif/common-hal/_bleio/Characteristic.c
 msgid "Too many descriptors"
-msgstr "För många beskrivningar"
+msgstr ""
 
 #: shared-module/displayio/__init__.c
 msgid "Too many display busses; forgot displayio.release_displays() ?"
@@ -2194,7 +2133,7 @@ msgstr "Traceback (senaste anrop):\n"
 
 #: ports/stm/common-hal/busio/UART.c
 msgid "UART de-init"
-msgstr "Avinitiering av UART"
+msgstr "UART omstart"
 
 #: ports/cxd56/common-hal/busio/UART.c ports/espressif/common-hal/busio/UART.c
 #: ports/stm/common-hal/busio/UART.c
@@ -2281,7 +2220,6 @@ msgstr "Det går inte att läsa färgpalettdata"
 #: ports/mimxrt10xx/common-hal/canio/CAN.c
 msgid "Unable to send CAN Message: all Tx message buffers are busy"
 msgstr ""
-"Kan inte skicka CAN-meddelande: alla Tx-meddelandebuffertar är upptagna"
 
 #: ports/espressif/common-hal/mdns/Server.c
 #: ports/raspberrypi/common-hal/mdns/Server.c
@@ -2377,6 +2315,10 @@ msgstr "Färgrymd stöds inte"
 msgid "Unsupported display bus type"
 msgstr "Busstyp för display stöds inte"
 
+#: shared-module/audiocore/WaveFile.c
+msgid "Unsupported format"
+msgstr "Format stöds inte"
+
 #: shared-bindings/hashlib/__init__.c
 msgid "Unsupported hash algorithm"
 msgstr "Hash-algoritmen stöds inte"
@@ -2384,12 +2326,12 @@ msgstr "Hash-algoritmen stöds inte"
 #: ports/espressif/common-hal/socketpool/Socket.c
 #: ports/zephyr-cp/common-hal/socketpool/Socket.c
 msgid "Unsupported socket type"
-msgstr "Sockettyp stöds ej"
+msgstr ""
 
 #: ports/espressif/common-hal/_bleio/Adapter.c
 #: ports/espressif/common-hal/dualbank/__init__.c
 msgid "Update failed"
-msgstr "Uppdatering misslyckades"
+msgstr ""
 
 #: ports/espressif/common-hal/_bleio/Characteristic.c
 #: ports/nordic/common-hal/_bleio/Characteristic.c
@@ -2438,10 +2380,8 @@ msgstr ""
 msgid "Wi-Fi: "
 msgstr "Wi-Fi: "
 
-#: ports/espressif/common-hal/wifi/Radio.c
 #: ports/raspberrypi/common-hal/wifi/Radio.c
-#: ports/zephyr-cp/common-hal/wifi/Radio.c
-msgid "WiFi is not enabled"
+msgid "Wifi is not enabled"
 msgstr "WiFi är inte aktiverat"
 
 #: main.c
@@ -2480,7 +2420,7 @@ msgstr "Du tryckte ner BOOT-knappen vid start"
 #: ports/espressif/boards/adafruit_itsybitsy_esp32/mpconfigboard.h
 #: ports/espressif/boards/waveshare_esp32_c6_lcd_1_47/mpconfigboard.h
 msgid "You pressed the BOOT button at start up."
-msgstr "Du tryckte på BOOT-knappen vid start."
+msgstr ""
 
 #: ports/espressif/boards/adafruit_huzzah32_breakout/mpconfigboard.h
 msgid "You pressed the GPIO0 button at start up."
@@ -2541,7 +2481,7 @@ msgstr "adresserna är tomma"
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "already playing"
-msgstr "spelas redan"
+msgstr ""
 
 #: py/compile.c
 msgid "annotation must be an identifier"
@@ -2569,7 +2509,7 @@ msgstr "argsort är inte implementerad för tillplattade matriser"
 
 #: extmod/ulab/code/numpy/random/random.c
 msgid "argument must be None, an integer or a tuple of integers"
-msgstr "argument måste vara None, en integer eller en tuple av heltal"
+msgstr ""
 
 #: py/compile.c
 msgid "argument name reused"
@@ -2623,7 +2563,7 @@ msgstr "Attribut stöds ej"
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "audio format not supported"
-msgstr "audioformatet stöds inte"
+msgstr ""
 
 #: extmod/ulab/code/ulab_tools.c
 msgid "axis is out of bounds"
@@ -2663,11 +2603,11 @@ msgstr "binär op %q är inte implementerad"
 
 #: ports/espressif/common-hal/audiobusio/PDMIn.c
 msgid "bit_depth must be 8, 16, 24, or 32."
-msgstr "bit_depth måste vara 8, 16, 24, or 32."
+msgstr ""
 
 #: shared-module/bitmapfilter/__init__.c
 msgid "bitmap size and depth must match"
-msgstr "bitmaps size och depth måste matcha"
+msgstr ""
 
 #: shared-bindings/bitmaptools/__init__.c
 msgid "bitmap sizes must match"
@@ -2677,16 +2617,9 @@ msgstr "bitmappsstorlekar måste matcha"
 msgid "bits must be 32 or less"
 msgstr "bits måste vara 32 eller färre"
 
-#: shared-bindings/audiofreeverb/Freeverb.c
-msgid "bits_per_sample must be 16"
-msgstr "bits_per_sample måste vara 16"
-
-#: shared-bindings/audiodelays/Chorus.c shared-bindings/audiodelays/Echo.c
-#: shared-bindings/audiodelays/MultiTapDelay.c
-#: shared-bindings/audiodelays/PitchShift.c
+#: shared-bindings/audiodelays/Echo.c shared-bindings/audiodelays/PitchShift.c
 #: shared-bindings/audiofilters/Distortion.c
-#: shared-bindings/audiofilters/Filter.c shared-bindings/audiofilters/Phaser.c
-#: shared-bindings/audiomixer/Mixer.c
+#: shared-bindings/audiofilters/Filter.c shared-bindings/audiomixer/Mixer.c
 msgid "bits_per_sample must be 8 or 16"
 msgstr "bits_per_sample måste vara 8 eller 16"
 
@@ -2824,7 +2757,7 @@ msgstr "kan inte göra binära op mellan '%q' och '%q'"
 
 #: py/emitnative.c
 msgid "can't do unary op of '%q'"
-msgstr "kan inte göra unary operation av '%q'"
+msgstr ""
 
 #: py/emitnative.c
 msgid "can't implicitly convert '%q' to 'bool'"
@@ -3231,7 +3164,7 @@ msgid "format"
 msgstr "format"
 
 #: py/objstr.c
-msgid "format needs a dict"
+msgid "format requires a dict"
 msgstr "formatet kräver en dict"
 
 #: py/objdeque.c
@@ -3692,7 +3625,7 @@ msgid "must use keyword argument for key function"
 msgstr "måste använda nyckelordsargument för nyckelfunktion"
 
 #: py/runtime.c
-msgid "name '%q' isn't defined"
+msgid "name '%q' is not defined"
 msgstr "namnet '%q' är inte definierat"
 
 #: py/runtime.c
@@ -3701,7 +3634,7 @@ msgstr "namn inte definierat"
 
 #: py/qstr.c
 msgid "name too long"
-msgstr "namn för långt"
+msgstr ""
 
 #: py/persistentcode.c
 msgid "native code in .mpy unsupported"
@@ -3967,7 +3900,7 @@ msgstr "matrisen för out är för liten"
 
 #: extmod/ulab/code/numpy/random/random.c
 msgid "out has wrong type"
-msgstr "out har fel typ"
+msgstr ""
 
 #: extmod/ulab/code/numpy/vector.c
 msgid "out keyword is not supported for complex dtype"
@@ -3995,11 +3928,11 @@ msgstr "utanför räckvidd för target"
 
 #: extmod/ulab/code/numpy/random/random.c
 msgid "output array has wrong type"
-msgstr "output array har fel typ"
+msgstr ""
 
 #: extmod/ulab/code/numpy/random/random.c
 msgid "output array must be contiguous"
-msgstr "output array måste vara kontinuerlig"
+msgstr ""
 
 #: py/objint_mpz.c
 msgid "overflow converting long int to machine word"
@@ -4110,10 +4043,6 @@ msgstr "argumentet roll måste vara en ndarray"
 msgid "rsplit(None,n)"
 msgstr "rsplit(None,n)"
 
-#: shared-bindings/audiofreeverb/Freeverb.c
-msgid "samples_signed must be true"
-msgstr "samples_signed måste vara sann"
-
 #: ports/atmel-samd/common-hal/audiobusio/PDMIn.c
 #: ports/raspberrypi/common-hal/audiobusio/PDMIn.c
 msgid "sampling rate out of range"
@@ -4121,7 +4050,7 @@ msgstr "samplingsfrekvens utanför räckvidden"
 
 #: py/modmicropython.c
 msgid "schedule queue full"
-msgstr "schemakö full"
+msgstr "schemakön full"
 
 #: py/builtinimport.c
 msgid "script compilation not supported"
@@ -4133,7 +4062,7 @@ msgstr "set stöds inte"
 
 #: extmod/ulab/code/numpy/random/random.c
 msgid "shape must be None, and integer or a tuple of integers"
-msgstr "shape måste vara None, integer eller en tuple av integers"
+msgstr ""
 
 #: extmod/ulab/code/ndarray.c
 msgid "shape must be integer or tuple of integers"
@@ -4157,7 +4086,7 @@ msgstr "storlek är enbart definierad ndarrays"
 
 #: extmod/ulab/code/numpy/random/random.c
 msgid "size must match out.shape when used together"
-msgstr "size måste matcha out.shape när dom används tillsammans"
+msgstr ""
 
 #: py/nativeglue.c
 msgid "slice unsupported"
@@ -4258,12 +4187,12 @@ msgstr "timeout måste vara < 655,35 sekunder"
 
 #: ports/raspberrypi/common-hal/floppyio/__init__.c
 msgid "timeout waiting for flux"
-msgstr "tidsgräns överskriden vid väntan på flux"
+msgstr ""
 
 #: ports/raspberrypi/common-hal/floppyio/__init__.c
 #: shared-module/floppyio/__init__.c
 msgid "timeout waiting for index pulse"
-msgstr "Tidsgräns överskriden vid väntan på indexpuls"
+msgstr ""
 
 #: shared-module/sdcardio/SDCard.c
 msgid "timeout waiting for v1 card"
@@ -4333,11 +4262,11 @@ msgid "tx and rx cannot both be None"
 msgstr "tx och rx kan inte båda vara None"
 
 #: py/objtype.c
-msgid "type '%q' isn't an acceptable base type"
+msgid "type '%q' is not an acceptable base type"
 msgstr "typ '%q' är inte en acceptabel bastyp"
 
 #: py/objtype.c
-msgid "type isn't an acceptable base type"
+msgid "type is not an acceptable base type"
 msgstr "typ är inte en acceptabel bastyp"
 
 #: py/runtime.c
@@ -4399,9 +4328,7 @@ msgstr "Omatchad '%c' i format"
 msgid "unreadable attribute"
 msgstr "attribut kan inte läsas"
 
-#: shared-bindings/displayio/TileGrid.c shared-bindings/terminalio/Terminal.c
-#: shared-bindings/tilepalettemapper/TilePaletteMapper.c
-#: shared-bindings/vectorio/VectorShape.c
+#: shared-bindings/displayio/TileGrid.c shared-bindings/vectorio/VectorShape.c
 msgid "unsupported %q type"
 msgstr "typ %q stöds inte"
 
@@ -4417,7 +4344,7 @@ msgstr "Xtensa-instruktion '%s' med %d argument stöds inte"
 
 #: shared-module/bitmapfilter/__init__.c
 msgid "unsupported bitmap depth"
-msgstr "Bitmapps­djupet stöds inte"
+msgstr ""
 
 #: shared-module/gifio/GifWriter.c
 msgid "unsupported colorspace for GifWriter"
@@ -4470,16 +4397,20 @@ msgid ""
 "weights must be a sequence with an odd square number of elements (usually 9 "
 "or 25)"
 msgstr ""
-"vikterna måste vara en sekvens med ett udda kvadrattal antal element "
-"(vanligtvis 9 eller 25)"
 
 #: shared-bindings/bitmapfilter/__init__.c
 msgid "weights must be an object of type %q, %q, %q, or %q, not %q "
-msgstr "Vikter måste vara ett objekt av typen %q, %q, %q eller %q, inte %q "
+msgstr ""
 
 #: shared-bindings/is31fl3741/FrameBuffer.c
 msgid "width must be greater than zero"
 msgstr "width måste vara större än noll"
+
+#: ports/espressif/common-hal/wifi/Radio.c
+#: ports/raspberrypi/common-hal/wifi/Radio.c
+#: ports/zephyr-cp/common-hal/wifi/Radio.c
+msgid "wifi is not enabled"
+msgstr "WiFi är inte aktiverat"
 
 #: ports/raspberrypi/common-hal/wifi/Monitor.c
 msgid "wifi.Monitor not available"
@@ -4542,18 +4473,6 @@ msgstr "zi måste vara av typ float"
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr "zi måste vara i formen (n_section, 2)"
-
-#~ msgid "Unsupported format"
-#~ msgstr "Format stöds inte"
-
-#~ msgid "Wifi is not enabled"
-#~ msgstr "WiFi är inte aktiverat"
-
-#~ msgid "wifi is not enabled"
-#~ msgstr "WiFi är inte aktiverat"
-
-#~ msgid "Cannot remount '/' when visible via USB."
-#~ msgstr "Det går inte att montera om '/' när den är synlig via USB."
 
 #~ msgid "Data chunk must follow fmt chunk"
 #~ msgstr "Datasegmentet måste följa fmt-segmentet"
@@ -4923,13 +4842,13 @@ msgstr "zi måste vara i formen (n_section, 2)"
 #~ msgid "'%s' object does not support item deletion"
 #~ msgstr "Objektet '%s' stöder inte borttagning av objekt"
 
-#~ msgid "'%s' object isn't an iterator"
+#~ msgid "'%s' object is not an iterator"
 #~ msgstr "Objektet '%s' är inte en iterator"
 
 #~ msgid "'%s' object is not callable"
 #~ msgstr "Objektet '%s' kan inte anropas"
 
-#~ msgid "'%s' object isn't iterable"
+#~ msgid "'%s' object is not iterable"
 #~ msgstr "Objektet '%s' är inte itererable"
 
 #~ msgid "'%s' object is not subscriptable"
@@ -4947,7 +4866,7 @@ msgstr "zi måste vara i formen (n_section, 2)"
 #~ msgid "'continue' outside loop"
 #~ msgstr "'continue' utanför loop"
 
-#~ msgid "'coroutine' object isn't an iterator"
+#~ msgid "'coroutine' object is not an iterator"
 #~ msgstr "objektet 'coroutine\" är inte en iterator"
 
 #~ msgid "(x,y) integers required"
@@ -6050,7 +5969,7 @@ msgstr "zi måste vara i formen (n_section, 2)"
 #~ msgid "frequency is read-only for this board"
 #~ msgstr "frekvens är skrivskyddad för detta kort"
 
-#~ msgid "function doesn't take keyword arguments"
+#~ msgid "function does not take keyword arguments"
 #~ msgstr "funktionen tar inte nyckelordsargument"
 
 #~ msgid "function is implemented for scalars and ndarrays only"
@@ -6150,7 +6069,7 @@ msgstr "zi måste vara i formen (n_section, 2)"
 #~ msgid "n must be between 0, and 9"
 #~ msgstr "n måste vara mellan 0 och 9"
 
-#~ msgid "argument name reused"
+#~ msgid "name reused for argument"
 #~ msgstr "namn återanvänt för argument"
 
 #~ msgid "no available NIC"

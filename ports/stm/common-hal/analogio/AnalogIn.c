@@ -17,12 +17,24 @@
 #include "stm32l4xx_ll_bus.h"
 #define ADC_SAMPLETIME ADC_SAMPLETIME_24CYCLES_5
 #define LL_APB2_GRP1_PERIPH_ADC1 LL_AHB2_GRP1_PERIPH_ADC
-#else
+
+#elif CPY_STM32H7
+#include "stm32h7xx_hal.h"
+#include "stm32h7xx_ll_gpio.h"
+#include "stm32h7xx_ll_adc.h"
+#include "stm32h7xx_ll_bus.h"
+#define ADC_SAMPLETIME ADC_SAMPLETIME_16CYCLES_5
+#define LL_APB2_GRP1_PERIPH_ADC1 LL_APB2_GRP1_PERIPH_DFSDM1
+
+#elif CPY_STM32F4
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_ll_gpio.h"
 #include "stm32f4xx_ll_adc.h"
 #include "stm32f4xx_ll_bus.h"
 #define ADC_SAMPLETIME ADC_SAMPLETIME_15CYCLES
+
+#else
+#error "Unsupported microcontroller series!"
 #endif
 
 void common_hal_analogio_analogin_construct(analogio_analogin_obj_t *self,
@@ -120,71 +132,103 @@ uint16_t common_hal_analogio_analogin_get_value(analogio_analogin_obj_t *self) {
         ADCx = ADC1;
         #if CPY_STM32L4
         __HAL_RCC_ADC_CLK_ENABLE();
+        #elif CPY_STM32H7
+        __HAL_RCC_ADC12_CLK_ENABLE();
         #endif
     } else if (self->pin->adc_unit == 0x04) {
         #ifdef ADC3
         ADCx = ADC3;
+        #endif
+        #if CPY_STM32H7
+        __HAL_RCC_ADC3_CLK_ENABLE();
         #endif
     } else {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Invalid ADC Unit value"));
     }
 
     LL_GPIO_SetPinMode(pin_port(self->pin->port), (uint32_t)pin_mask(self->pin->number), LL_GPIO_MODE_ANALOG);
-    // LL_GPIO_PIN_0
+//     // LL_GPIO_PIN_0
 
-    // HAL Implementation
+//     // HAL Implementation
     ADC_HandleTypeDef AdcHandle = {};
-    ADC_ChannelConfTypeDef sConfig = {};
+    ADC_MultiModeTypeDef multimode = {0};
+    ADC_ChannelConfTypeDef sConfig = {0};
 
+    /** Common config
+    */
     AdcHandle.Instance = ADCx;
     AdcHandle.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV2;
+    #if (CPY_STM32H7 && ADCx == ADC12)
+    AdcHandle.Init.Resolution = ADC_RESOLUTION_16B;
+    #else
     AdcHandle.Init.Resolution = ADC_RESOLUTION_12B;
+    #endif
     AdcHandle.Init.ScanConvMode = DISABLE;
     AdcHandle.Init.ContinuousConvMode = DISABLE;
     AdcHandle.Init.DiscontinuousConvMode = DISABLE;
     AdcHandle.Init.NbrOfDiscConversion = 0;
-
     AdcHandle.Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
     AdcHandle.Init.ExternalTrigConv = ADC_SOFTWARE_START;
+    AdcHandle.Init.LowPowerAutoWait = DISABLE;
+    AdcHandle.Init.ConversionDataManagement = ADC_CONVERSIONDATA_DR;
+    AdcHandle.Init.Overrun = ADC_OVR_DATA_PRESERVED;
+    AdcHandle.Init.LeftBitShift = ADC_LEFTBITSHIFT_NONE;
+    AdcHandle.Init.OversamplingMode = DISABLE;
+    AdcHandle.Init.Oversampling.Ratio = 1;
+    #if (!CPY_STM32H7)
     AdcHandle.Init.DataAlign = ADC_DATAALIGN_RIGHT;
-    AdcHandle.Init.NbrOfConversion = 1;
     AdcHandle.Init.DMAContinuousRequests = DISABLE;
+    #endif
+    AdcHandle.Init.NbrOfConversion = 1;
     AdcHandle.Init.EOCSelection = ADC_EOC_SINGLE_CONV;
+
     #ifdef ADC_OVR_DATA_OVERWRITTEN
-    AdcHandle.Init.Overrun = ADC_OVR_DATA_OVERWRITTEN;                    /* DR register is overwritten with the last conversion result in case of overrun */
+    AdcHandle.Init.Overrun = ADC_OVR_DATA_OVERWRITTEN;                   /* DR register is overwritten with the last conversion result in case of overrun */
     #endif
 
     if (HAL_ADC_Init(&AdcHandle) != HAL_OK) {
         return 0;
     }
 
-    sConfig.Channel = adc_channel(self->pin->adc_channel); // ADC_CHANNEL_0 <-normal iteration, not mask
-    sConfig.Rank = 1;
-    sConfig.SamplingTime = ADC_SAMPLETIME;
-    #if CPY_STM32L4
-    sConfig.SingleDiff = ADC_SINGLE_ENDED;                   /* Single-ended input channel */
-    sConfig.OffsetNumber = ADC_OFFSET_NONE;                  /* No offset subtraction */
-    if (!IS_ADC_CHANNEL(&AdcHandle, sConfig.Channel)) {
+    /** Configure the ADC multi-mode
+    */
+    multimode.Mode = ADC_MODE_INDEPENDENT;
+    if (HAL_ADCEx_MultiModeConfigChannel(&AdcHandle, &multimode) != HAL_OK) {
         return 0;
     }
-    #endif
+
+    /** Configure Regular Channel
+    */
+    sConfig.Channel = ADC_CHANNEL_3;
+    sConfig.Rank = ADC_REGULAR_RANK_1;
+    sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
+    sConfig.SingleDiff = ADC_SINGLE_ENDED;
+    sConfig.OffsetNumber = ADC_OFFSET_NONE;
+    sConfig.Offset = 0;
+    sConfig.OffsetSignedSaturation = DISABLE;
     if (HAL_ADC_ConfigChannel(&AdcHandle, &sConfig) != HAL_OK) {
         return 0;
     }
-    #if CPY_STM32L4
-    if (HAL_ADCEx_Calibration_Start(&AdcHandle, ADC_SINGLE_ENDED) != HAL_OK) {
-        return 0;
-    }
+
+    #if CPY_STM32H7
+    HAL_ADCEx_Calibration_Start(&AdcHandle, ADC_CALIB_OFFSET, sConfig.SingleDiff);
     #endif
+
     if (HAL_ADC_Start(&AdcHandle) != HAL_OK) {
         return 0;
     }
-    HAL_ADC_PollForConversion(&AdcHandle, 1);
+    if (HAL_ADC_PollForConversion(&AdcHandle, HAL_MAX_DELAY) != HAL_OK) {
+        return 0;
+    }
     uint16_t value = (uint16_t)HAL_ADC_GetValue(&AdcHandle);
     HAL_ADC_Stop(&AdcHandle);
 
+    #if (CPY_STM32H7 && ADCx == ADC12)
+    return value;
+    #else
     // Stretch 12-bit ADC reading to 16-bit range
     return (value << 4) | (value >> 8);
+    #endif
 }
 
 float common_hal_analogio_analogin_get_reference_voltage(analogio_analogin_obj_t *self) {

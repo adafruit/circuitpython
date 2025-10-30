@@ -7,7 +7,10 @@ workaround: Unknown
 
 import json
 
+a = bytes(x for x in range(256))
 try:
-    print(json.dumps(b"shouldn't be able to serialise bytes"))
+    z = json.dumps(a)
+    x = json.loads(z)
+    print("Should not get here")
 except TypeError:
     print("TypeError")

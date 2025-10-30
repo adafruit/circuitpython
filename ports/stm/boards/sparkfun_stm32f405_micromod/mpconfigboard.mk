@@ -1,5 +1,5 @@
 USB_VID = 0X1B4F
-USB_PID = 0x0029
+USB_PID = 0x0027
 USB_PRODUCT = "SparkFun STM32 MicroMod Processor"
 USB_MANUFACTURER = "SparkFun Electronics"
 

@@ -21,8 +21,6 @@ GPIO_TypeDef *ports[] = {GPIOA, GPIOB, GPIOC, GPIOD, GPIOE};
 GPIO_TypeDef *ports[] = {GPIOA, GPIOB, GPIOC, GPIOD};
 #elif defined(UFQFPN48)
 GPIO_TypeDef *ports[] = {GPIOA, GPIOB, GPIOC};
-#elif defined(LQFP48)
-GPIO_TypeDef *ports[] = {GPIOA, GPIOB, GPIOC};
 #else
     #error Unknown package type
 #endif

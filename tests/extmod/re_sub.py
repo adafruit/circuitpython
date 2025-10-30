@@ -10,8 +10,6 @@ except AttributeError:
     print("SKIP")
     raise SystemExit
 
-import sys
-
 
 def multiply(m):
     return str(int(m.group(0)) * 2)
@@ -49,12 +47,7 @@ print(re.sub("(abc)", r"\g<1>\g<1>", "abc"))
 print(re.sub("a", "b", "c"))
 
 # with maximum substitution count specified
-# CIRCUITPY-CHANGE: was "micropython"
-if sys.implementation.name != "circuitpython":
-    # On CPython 3.13 and later the substitution count must be a keyword argument.
-    print(re.sub("a", "b", "1a2a3a", count=2))
-else:
-    print(re.sub("a", "b", "1a2a3a", 2))
+print(re.sub("a", "b", "1a2a3a", 2))
 
 # invalid group
 try:

@@ -1,210 +1,77 @@
 // This file is part of the CircuitPython project: https://circuitpython.org
 //
-// SPDX-FileCopyrightText: Copyright (c) 2023 Jeff Epler for Adafruit Industries
+// SPDX-FileCopyrightText: Copyright (c) 2021 Artyom Skrobov
 //
 // SPDX-License-Identifier: MIT
 
+#include <math.h>
+#include <string.h>
+
 #include "py/enum.h"
-#include "py/objproperty.h"
+#include "py/mperrno.h"
+#include "py/obj.h"
+#include "py/objnamedtuple.h"
 #include "py/runtime.h"
-#include "shared-bindings/synthio/Biquad.h"
-#include "shared-bindings/util.h"
 
-//| class FilterMode:
-//|     """The type of filter"""
-//|
-//|     LOW_PASS: FilterMode
-//|     """A low-pass filter"""
-//|     HIGH_PASS: FilterMode
-//|     """A high-pass filter"""
-//|     BAND_PASS: FilterMode
-//|     """A band-pass filter"""
-//|     NOTCH: FilterMode
-//|     """A notch filter"""
-//|     LOW_SHELF: FilterMode
-//|     """A low shelf filter"""
-//|     HIGH_SHELF: FilterMode
-//|     """A high shelf filter"""
-//|     PEAKING_EQ: FilterMode
-//|     """A peaking equalizer filter"""
-//|
-//|
+#include "shared-bindings/synthio/__init__.h"
+#include "shared-bindings/synthio/LFO.h"
+#include "shared-bindings/synthio/Math.h"
+#include "shared-bindings/synthio/MidiTrack.h"
+#include "shared-bindings/synthio/Note.h"
+#include "shared-bindings/synthio/Synthesizer.h"
 
-MAKE_ENUM_VALUE(synthio_filter_mode_type, mode, LOW_PASS, SYNTHIO_LOW_PASS);
-MAKE_ENUM_VALUE(synthio_filter_mode_type, mode, HIGH_PASS, SYNTHIO_HIGH_PASS);
-MAKE_ENUM_VALUE(synthio_filter_mode_type, mode, BAND_PASS, SYNTHIO_BAND_PASS);
-MAKE_ENUM_VALUE(synthio_filter_mode_type, mode, NOTCH, SYNTHIO_NOTCH);
-MAKE_ENUM_VALUE(synthio_filter_mode_type, mode, LOW_SHELF, SYNTHIO_LOW_SHELF);
-MAKE_ENUM_VALUE(synthio_filter_mode_type, mode, HIGH_SHELF, SYNTHIO_HIGH_SHELF);
-MAKE_ENUM_VALUE(synthio_filter_mode_type, mode, PEAKING_EQ, SYNTHIO_PEAKING_EQ);
+#include "shared-module/synthio/LFO.h"
 
-MAKE_ENUM_MAP(synthio_filter_mode) {
-    MAKE_ENUM_MAP_ENTRY(mode, LOW_PASS),
-    MAKE_ENUM_MAP_ENTRY(mode, HIGH_PASS),
-    MAKE_ENUM_MAP_ENTRY(mode, BAND_PASS),
-    MAKE_ENUM_MAP_ENTRY(mode, NOTCH),
-    MAKE_ENUM_MAP_ENTRY(mode, LOW_SHELF),
-    MAKE_ENUM_MAP_ENTRY(mode, HIGH_SHELF),
-    MAKE_ENUM_MAP_ENTRY(mode, PEAKING_EQ),
-};
-
-static MP_DEFINE_CONST_DICT(synthio_filter_mode_locals_dict, synthio_filter_mode_locals_table);
-
-MAKE_PRINTER(synthio, synthio_filter_mode);
-
-MAKE_ENUM_TYPE(synthio, FilterMode, synthio_filter_mode);
-
-static synthio_filter_mode validate_synthio_filter_mode(mp_obj_t obj, qstr arg_name) {
-    return cp_enum_value(&synthio_filter_mode_type, obj, arg_name);
-}
-
-//| class Biquad:
-//|     def __init__(
-//|         self,
-//|         mode: FilterMode,
-//|         frequency: BlockInput,
-//|         Q: BlockInput = 0.7071067811865475,
-//|         A: BlockInput = None,
-//|     ) -> None:
-//|         """Construct a biquad filter object with given settings.
-//|
-//|         ``frequency`` gives the center frequency or corner frequency of the filter,
-//|         depending on the mode.
-//|
-//|         ``Q`` gives the gain or sharpness of the filter.
-//|
-//|         ``A`` controls the gain of peaking and shelving filters according to the
-//|         formula ``A = 10^(dBgain/40)``. For other filter types it is ignored.
-//|
-//|         Since ``frequency`` and ``Q`` are `BlockInput` objects, they can
-//|         be varied dynamically. Internally, this is evaluated as "direct form 1"
-//|         biquad filter.
-//|
-//|         The internal filter state x[] and y[] is not updated when the filter
-//|         coefficients change, and there is no theoretical justification for why
-//|         this should result in a stable filter output. However, in practice,
-//|         slowly varying the filter's characteristic frequency and sharpness
-//|         appears to work as you'd expect."""
-//|
+#define default_attack_time (MICROPY_FLOAT_CONST(0.1))
+#define default_decay_time (MICROPY_FLOAT_CONST(0.05))
+#define default_release_time (MICROPY_FLOAT_CONST(0.2))
+#define default_attack_level (MICROPY_FLOAT_CONST(1.))
+#define default_sustain_level (MICROPY_FLOAT_CONST(0.8))
 
 static const mp_arg_t biquad_properties[] = {
-    { MP_QSTR_mode, MP_ARG_OBJ | MP_ARG_REQUIRED, {.u_obj = MP_OBJ_NULL } },
-    { MP_QSTR_frequency, MP_ARG_OBJ | MP_ARG_REQUIRED, {.u_obj = MP_OBJ_NULL } },
-    { MP_QSTR_Q, MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL } },
-    { MP_QSTR_A, MP_ARG_OBJ, {.u_obj = MP_ROM_NONE } },
+    { MP_QSTR_a1, MP_ARG_OBJ | MP_ARG_REQUIRED, {.u_obj = MP_ROM_NONE} },
+    { MP_QSTR_a2, MP_ARG_OBJ | MP_ARG_REQUIRED, {.u_obj = MP_ROM_NONE} },
+    { MP_QSTR_b0, MP_ARG_OBJ | MP_ARG_REQUIRED, {.u_obj = MP_ROM_NONE} },
+    { MP_QSTR_b1, MP_ARG_OBJ | MP_ARG_REQUIRED, {.u_obj = MP_ROM_NONE} },
+    { MP_QSTR_b2, MP_ARG_OBJ | MP_ARG_REQUIRED, {.u_obj = MP_ROM_NONE} },
 };
 
+//| class Biquad:
+//|     def __init__(self, b0: float, b1: float, b2: float, a1: float, a2: float) -> None:
+//|         """Construct a normalized biquad filter object.
+//|
+//|         This implements the "direct form 1" biquad filter, where each coefficient
+//|         has been pre-divided by a0.
+//|
+//|         Biquad objects are usually constructed via one of the related methods on a `Synthesizer` object
+//|         rather than directly from coefficients.
+//|
+//|         https://github.com/WebAudio/Audio-EQ-Cookbook/blob/main/Audio-EQ-Cookbook.txt
+//|
+//|         .. note:: This is deprecated in ``9.x.x`` and will be removed in ``10.0.0``. Use `BlockBiquad` objects instead.
+//|         """
+//|
+//|
 static mp_obj_t synthio_biquad_make_new(const mp_obj_type_t *type_in, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
-    enum { ARG_mode, ARG_frequency, ARG_Q };
-
     mp_arg_val_t args[MP_ARRAY_SIZE(biquad_properties)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(biquad_properties), biquad_properties, args);
 
-    if (args[ARG_Q].u_obj == MP_OBJ_NULL) {
-        args[ARG_Q].u_obj = mp_obj_new_float(MICROPY_FLOAT_CONST(0.7071067811865475));
+    for (size_t i = 0; i < MP_ARRAY_SIZE(biquad_properties); i++) {
+        args[i].u_obj = mp_obj_new_float(mp_arg_validate_type_float(args[i].u_obj, biquad_properties[i].qst));
     }
 
-    synthio_filter_mode mode = validate_synthio_filter_mode(args[ARG_mode].u_obj, MP_QSTR_mode);
-    mp_obj_t result = common_hal_synthio_biquad_new(mode);
-    properties_construct_helper(result, biquad_properties + 1, args + 1, MP_ARRAY_SIZE(biquad_properties) - 1);
-    return result;
+    MP_STATIC_ASSERT(sizeof(mp_arg_val_t) == sizeof(mp_obj_t));
+    return namedtuple_make_new(type_in, MP_ARRAY_SIZE(args), 0, &args[0].u_obj);
 }
 
-//|
-//|     mode: FilterMode
-//|     """The mode of filter (read-only)"""
-static mp_obj_t synthio_biquad_get_mode(mp_obj_t self_in) {
-    synthio_biquad_t *self = MP_OBJ_TO_PTR(self_in);
-    return cp_enum_find(&synthio_filter_mode_type, common_hal_synthio_biquad_get_mode(self));
-}
-MP_DEFINE_CONST_FUN_OBJ_1(synthio_biquad_get_mode_obj, synthio_biquad_get_mode);
-
-MP_PROPERTY_GETTER(synthio_biquad_mode_obj,
-    (mp_obj_t)&synthio_biquad_get_mode_obj);
-
-//|
-//|     frequency: BlockInput
-//|     """The central frequency (in Hz) of the filter"""
-static mp_obj_t synthio_biquad_get_frequency(mp_obj_t self_in) {
-    synthio_biquad_t *self = MP_OBJ_TO_PTR(self_in);
-    return common_hal_synthio_biquad_get_frequency(self);
-}
-MP_DEFINE_CONST_FUN_OBJ_1(synthio_biquad_get_frequency_obj, synthio_biquad_get_frequency);
-
-static mp_obj_t synthio_biquad_set_frequency(mp_obj_t self_in, mp_obj_t arg) {
-    synthio_biquad_t *self = MP_OBJ_TO_PTR(self_in);
-    common_hal_synthio_biquad_set_frequency(self, arg);
-    return mp_const_none;
-}
-MP_DEFINE_CONST_FUN_OBJ_2(synthio_biquad_set_frequency_obj, synthio_biquad_set_frequency);
-MP_PROPERTY_GETSET(synthio_biquad_frequency_obj,
-    (mp_obj_t)&synthio_biquad_get_frequency_obj,
-    (mp_obj_t)&synthio_biquad_set_frequency_obj);
-
-
-//|
-//|     Q: BlockInput
-//|     """The sharpness (Q) of the filter"""
-//|
-static mp_obj_t synthio_biquad_get_Q(mp_obj_t self_in) {
-    synthio_biquad_t *self = MP_OBJ_TO_PTR(self_in);
-    return common_hal_synthio_biquad_get_Q(self);
-}
-MP_DEFINE_CONST_FUN_OBJ_1(synthio_biquad_get_Q_obj, synthio_biquad_get_Q);
-
-static mp_obj_t synthio_biquad_set_Q(mp_obj_t self_in, mp_obj_t arg) {
-    synthio_biquad_t *self = MP_OBJ_TO_PTR(self_in);
-    common_hal_synthio_biquad_set_Q(self, arg);
-    return mp_const_none;
-}
-MP_DEFINE_CONST_FUN_OBJ_2(synthio_biquad_set_Q_obj, synthio_biquad_set_Q);
-MP_PROPERTY_GETSET(synthio_biquad_Q_obj,
-    (mp_obj_t)&synthio_biquad_get_Q_obj,
-    (mp_obj_t)&synthio_biquad_set_Q_obj);
-
-//|
-//|     A: BlockInput
-//|     """The gain (A) of the filter
-//|
-//|     This setting only has an effect for peaking and shelving EQ filters. It is related
-//|     to the filter gain according to the formula ``A = 10^(dBgain/40)``.
-//|     """
-//|
-//|
-static mp_obj_t synthio_biquad_get_A(mp_obj_t self_in) {
-    synthio_biquad_t *self = MP_OBJ_TO_PTR(self_in);
-    return common_hal_synthio_biquad_get_A(self);
-}
-MP_DEFINE_CONST_FUN_OBJ_1(synthio_biquad_get_A_obj, synthio_biquad_get_A);
-
-static mp_obj_t synthio_biquad_set_A(mp_obj_t self_in, mp_obj_t arg) {
-    synthio_biquad_t *self = MP_OBJ_TO_PTR(self_in);
-    common_hal_synthio_biquad_set_A(self, arg);
-    return mp_const_none;
-}
-MP_DEFINE_CONST_FUN_OBJ_2(synthio_biquad_set_A_obj, synthio_biquad_set_A);
-MP_PROPERTY_GETSET(synthio_biquad_A_obj,
-    (mp_obj_t)&synthio_biquad_get_A_obj,
-    (mp_obj_t)&synthio_biquad_set_A_obj);
-
-static const mp_rom_map_elem_t synthio_biquad_locals_dict_table[] = {
-    { MP_ROM_QSTR(MP_QSTR_mode), MP_ROM_PTR(&synthio_biquad_mode_obj) },
-    { MP_ROM_QSTR(MP_QSTR_frequency), MP_ROM_PTR(&synthio_biquad_frequency_obj) },
-    { MP_ROM_QSTR(MP_QSTR_Q), MP_ROM_PTR(&synthio_biquad_Q_obj) },
-    { MP_ROM_QSTR(MP_QSTR_A), MP_ROM_PTR(&synthio_biquad_A_obj) },
+const mp_obj_namedtuple_type_t synthio_biquad_type_obj = {
+    NAMEDTUPLE_TYPE_BASE_AND_SLOTS_MAKE_NEW(MP_QSTR_Biquad, synthio_biquad_make_new),
+    .n_fields = 5,
+    .fields = {
+        MP_QSTR_a1,
+        MP_QSTR_a2,
+        MP_QSTR_b0,
+        MP_QSTR_b1,
+        MP_QSTR_b2,
+    },
 };
-static MP_DEFINE_CONST_DICT(synthio_biquad_locals_dict, synthio_biquad_locals_dict_table);
-
-static void biquad_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
-    (void)kind;
-    properties_print_helper(print, self_in, biquad_properties, MP_ARRAY_SIZE(biquad_properties));
-}
-
-MP_DEFINE_CONST_OBJ_TYPE(
-    synthio_biquad_type_obj,
-    MP_QSTR_Biquad,
-    MP_TYPE_FLAG_HAS_SPECIAL_ACCESSORS,
-    make_new, synthio_biquad_make_new,
-    locals_dict, &synthio_biquad_locals_dict,
-    print, biquad_print
-    );

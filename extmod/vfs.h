@@ -52,8 +52,6 @@
 #define MP_BLOCKDEV_FLAG_CONCURRENT_WRITE_PROTECTED (0x0020)
 // Bit set when something has claimed the right to mutate the blockdev.
 #define MP_BLOCKDEV_FLAG_LOCKED (0x0040)
-// Ignore write protections. Used to override other flags temporarily.
-#define MP_BLOCKDEV_FLAG_IGNORE_WRITE_PROTECTION (0x0080)
 
 // constants for block protocol ioctl
 #define MP_BLOCKDEV_IOCTL_INIT          (1)
@@ -62,13 +60,6 @@
 #define MP_BLOCKDEV_IOCTL_BLOCK_COUNT   (4)
 #define MP_BLOCKDEV_IOCTL_BLOCK_SIZE    (5)
 #define MP_BLOCKDEV_IOCTL_BLOCK_ERASE   (6)
-
-// Constants for vfs.rom_ioctl() function.
-#define MP_VFS_ROM_IOCTL_GET_NUMBER_OF_SEGMENTS     (1) // rom_ioctl(1)
-#define MP_VFS_ROM_IOCTL_GET_SEGMENT                (2) // rom_ioctl(2, <id>)
-#define MP_VFS_ROM_IOCTL_WRITE_PREPARE              (3) // rom_ioctl(3, <id>, <len>)
-#define MP_VFS_ROM_IOCTL_WRITE                      (4) // rom_ioctl(4, <id>, <offset>, <buf>)
-#define MP_VFS_ROM_IOCTL_WRITE_COMPLETE             (5) // rom_ioctl(5, <id>)
 
 // At the moment the VFS protocol just has import_stat, but could be extended to other methods
 typedef struct _mp_vfs_proto_t {
@@ -103,6 +94,19 @@ typedef struct _mp_vfs_mount_t {
     struct _mp_vfs_mount_t *next;
 } mp_vfs_mount_t;
 
+// CIRCUITPY-CHANGE: allow outside use of ilistdir_it_iternext
+typedef struct _mp_vfs_ilistdir_it_t {
+    mp_obj_base_t base;
+    mp_fun_1_t iternext;
+    union {
+        mp_vfs_mount_t *vfs;
+        mp_obj_t iter;
+    } cur;
+    bool is_str;
+    bool is_iter;
+} mp_vfs_ilistdir_it_t;
+
+mp_obj_t mp_vfs_ilistdir_it_iternext(mp_obj_t self_in);
 void mp_vfs_blockdev_init(mp_vfs_blockdev_t *self, mp_obj_t bdev);
 int mp_vfs_blockdev_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_blocks, uint8_t *buf);
 int mp_vfs_blockdev_read_ext(mp_vfs_blockdev_t *self, size_t block_num, size_t block_off, size_t len, uint8_t *buf);
@@ -119,19 +123,14 @@ mp_obj_t mp_vfs_chdir(mp_obj_t path_in);
 mp_obj_t mp_vfs_getcwd(void);
 mp_obj_t mp_vfs_ilistdir(size_t n_args, const mp_obj_t *args);
 mp_obj_t mp_vfs_listdir(size_t n_args, const mp_obj_t *args);
-#if MICROPY_VFS_WRITABLE
 mp_obj_t mp_vfs_mkdir(mp_obj_t path_in);
 mp_obj_t mp_vfs_remove(mp_obj_t path_in);
 mp_obj_t mp_vfs_rename(mp_obj_t old_path_in, mp_obj_t new_path_in);
 mp_obj_t mp_vfs_rmdir(mp_obj_t path_in);
-#endif
 mp_obj_t mp_vfs_stat(mp_obj_t path_in);
 mp_obj_t mp_vfs_statvfs(mp_obj_t path_in);
 
 int mp_vfs_mount_and_chdir_protected(mp_obj_t bdev, mp_obj_t mount_point);
-#if MICROPY_VFS_ROM && MICROPY_VFS_ROM_IOCTL
-int mp_vfs_mount_romfs_protected(void);
-#endif
 
 MP_DECLARE_CONST_FUN_OBJ_KW(mp_vfs_mount_obj);
 MP_DECLARE_CONST_FUN_OBJ_1(mp_vfs_umount_obj);
@@ -140,21 +139,11 @@ MP_DECLARE_CONST_FUN_OBJ_1(mp_vfs_chdir_obj);
 MP_DECLARE_CONST_FUN_OBJ_0(mp_vfs_getcwd_obj);
 MP_DECLARE_CONST_FUN_OBJ_VAR_BETWEEN(mp_vfs_ilistdir_obj);
 MP_DECLARE_CONST_FUN_OBJ_VAR_BETWEEN(mp_vfs_listdir_obj);
-#if MICROPY_VFS_WRITABLE
 MP_DECLARE_CONST_FUN_OBJ_1(mp_vfs_mkdir_obj);
 MP_DECLARE_CONST_FUN_OBJ_1(mp_vfs_remove_obj);
 MP_DECLARE_CONST_FUN_OBJ_2(mp_vfs_rename_obj);
 MP_DECLARE_CONST_FUN_OBJ_1(mp_vfs_rmdir_obj);
-#endif
 MP_DECLARE_CONST_FUN_OBJ_1(mp_vfs_stat_obj);
 MP_DECLARE_CONST_FUN_OBJ_1(mp_vfs_statvfs_obj);
-
-#if MICROPY_VFS_ROM_IOCTL
-// When MICROPY_VFS_ROM_IOCTL is enabled a port must define the following function.
-// This is a generic interface to allow querying and modifying the user-accessible,
-// read-only memory area of a device, if it is configured with such an area.
-// Supported ioctl commands are given by MP_VFS_ROM_IOCTL_xxx.
-mp_obj_t mp_vfs_rom_ioctl(size_t n_args, const mp_obj_t *args);
-#endif
 
 #endif // MICROPY_INCLUDED_EXTMOD_VFS_H

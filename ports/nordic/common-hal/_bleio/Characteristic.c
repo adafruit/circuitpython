@@ -80,8 +80,8 @@ void common_hal_bleio_characteristic_construct(bleio_characteristic_obj_t *self,
         // to allocate.
         self->initial_value_len = initial_value_bufinfo->len;
         if (gc_alloc_possible()) {
-            if (gc_ptr_on_heap(initial_value_bufinfo->buf)) {
-                uint8_t *initial_value = m_malloc_without_collect(self->initial_value_len);
+            if (gc_nbytes(initial_value_bufinfo->buf) > 0) {
+                uint8_t *initial_value = m_malloc(self->initial_value_len);
                 memcpy(initial_value, initial_value_bufinfo->buf, self->initial_value_len);
                 self->initial_value = initial_value;
             } else {

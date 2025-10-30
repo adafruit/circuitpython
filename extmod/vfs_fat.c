@@ -38,7 +38,6 @@
 
 // CIRCUITPY-CHANGE: extra includes
 #include <string.h>
-#include "py/gc.h"
 #include "py/obj.h"
 #include "py/objproperty.h"
 #include "py/runtime.h"
@@ -134,11 +133,6 @@ static mp_obj_t fat_vfs_mkfs(mp_obj_t bdev_in) {
         mp_raise_OSError_fresult(res);
     }
 
-    // set the filesystem label if it's configured
-    #ifdef MICROPY_HW_FLASH_FS_LABEL
-    f_setlabel(&vfs->fatfs, MICROPY_HW_FLASH_FS_LABEL);
-    #endif
-
     return mp_const_none;
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(fat_vfs_mkfs_fun_obj, fat_vfs_mkfs);
@@ -169,7 +163,7 @@ static mp_obj_t mp_vfs_fat_ilistdir_it_iternext(mp_obj_t self_in) {
         // make 4-tuple with info about this entry
         mp_obj_tuple_t *t = MP_OBJ_TO_PTR(mp_obj_new_tuple(4, NULL));
         if (self->is_str) {
-            t->items[0] = mp_obj_new_str_from_cstr(fn);
+            t->items[0] = mp_obj_new_str(fn, strlen(fn));
         } else {
             t->items[0] = mp_obj_new_bytes((const byte *)fn, strlen(fn));
         }
@@ -328,7 +322,7 @@ static mp_obj_t fat_vfs_getcwd(mp_obj_t vfs_in) {
         // CIRCUITPY-CHANGE
         mp_raise_OSError_fresult(res);
     }
-    return mp_obj_new_str_from_cstr(buf);
+    return mp_obj_new_str(buf, strlen(buf));
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(fat_vfs_getcwd_obj, fat_vfs_getcwd);
 
@@ -348,10 +342,7 @@ static mp_obj_t fat_vfs_stat(mp_obj_t vfs_in, mp_obj_t path_in) {
         FRESULT res = f_stat(&self->fatfs, path, &fno);
         if (res != FR_OK) {
             // CIRCUITPY-CHANGE
-            if (gc_alloc_possible()) {
-                mp_raise_OSError_fresult(res);
-            }
-            return mp_const_none;
+            mp_raise_OSError_fresult(res);
         }
     }
 
@@ -427,10 +418,13 @@ static MP_DEFINE_CONST_FUN_OBJ_2(fat_vfs_statvfs_obj, fat_vfs_statvfs);
 static mp_obj_t vfs_fat_mount(mp_obj_t self_in, mp_obj_t readonly, mp_obj_t mkfs) {
     fs_user_mount_t *self = MP_OBJ_TO_PTR(self_in);
 
-    // CIRCUITPY-CHANGE: Use MP_BLOCKDEV_FLAG_USB_WRITABLE instead of writeblocks[0] =/!= MP_OBJ_NULL
-    // to specify read-write.
-    // If readonly to Python, it's writable by USB and vice versa.
-    filesystem_set_writable_by_usb(self, mp_obj_is_true(readonly));
+    // Read-only device indicated by writeblocks[0] == MP_OBJ_NULL.
+    // User can specify read-only device by:
+    //  1. readonly=True keyword argument
+    //  2. nonexistent writeblocks method (then writeblocks[0] == MP_OBJ_NULL already)
+    if (mp_obj_is_true(readonly)) {
+        self->blockdev.writeblocks[0] = MP_OBJ_NULL;
+    }
 
     // check if we need to make the filesystem
     FRESULT res = (self->blockdev.flags & MP_BLOCKDEV_FLAG_NO_FILESYSTEM) ? FR_NO_FILESYSTEM : FR_OK;

@@ -191,7 +191,7 @@ def update(debug, board, update_all):  # noqa: C901: too complex
             psram_freq = value
         elif key == "UF2_BOOTLOADER":
             uf2_bootloader = not (value == "0")
-        elif key == "CIRCUITPY_BLEIO_NATIVE":
+        elif key == "CIRCUITPY_BLEIO":
             ble_enabled = not (value == "0")
 
     os.environ["IDF_TARGET"] = target

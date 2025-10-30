@@ -25,11 +25,7 @@ mp_obj_t common_hal_synthio_note_get_filter_obj(synthio_note_obj_t *self) {
 }
 
 void common_hal_synthio_note_set_filter(synthio_note_obj_t *self, mp_obj_t filter_in) {
-    if (filter_in != mp_const_none && !mp_obj_is_type(filter_in, &synthio_biquad_type_obj)) {
-        mp_raise_TypeError_varg(
-            MP_ERROR_TEXT("%q must be of type %q, not %q"),
-            MP_QSTR_filter, MP_QSTR_Biquad, mp_obj_get_type(filter_in)->name);
-    }
+    synthio_biquad_filter_assign(&self->filter_state, filter_in);
     self->filter_obj = filter_in;
 }
 

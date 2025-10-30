@@ -81,19 +81,6 @@ static mp_obj_t audiomixer_mixervoice_obj_stop(size_t n_args, const mp_obj_t *po
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(audiomixer_mixervoice_stop_obj, 1, audiomixer_mixervoice_obj_stop);
 
-//|     def end(self) -> None:
-//|         """ Sets looping to False if sample is playing. This allows the looped
-//|         sample to complete its current playback and end further looping  """
-//|         ...
-//|
-static mp_obj_t audiomixer_mixervoice_obj_end(mp_obj_t self_in) {
-    audiomixer_mixervoice_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    common_hal_audiomixer_mixervoice_end(self);
-    return mp_const_none;
-}
-MP_DEFINE_CONST_FUN_OBJ_1(audiomixer_mixervoice_end_obj, audiomixer_mixervoice_obj_end);
-
-
 //|     level: synthio.BlockInput
 //|     """The volume level of a voice, as a floating point number between 0 and 1. If your board
 //|     does not support synthio, this property will only accept a float value.
@@ -113,31 +100,6 @@ MP_DEFINE_CONST_FUN_OBJ_2(audiomixer_mixervoice_set_level_obj, audiomixer_mixerv
 MP_PROPERTY_GETSET(audiomixer_mixervoice_level_obj,
     (mp_obj_t)&audiomixer_mixervoice_get_level_obj,
     (mp_obj_t)&audiomixer_mixervoice_set_level_obj);
-
-//|     panning: synthio.BlockInput
-//|     """Defines the channel(s) in which the voice appears, as a floating point number between
-//|     -1 and 1. If your board does not support synthio, this property will only accept a float
-//|     value. This property is ignored if ``audiomixer.Mixer.channel_count=1``.
-//|
-//|     -1 is left channel only, 0 is both channels, and 1 is right channel. For fractional values,
-//|     the note plays at full amplitude in one channel and partial amplitude in the other channel.
-//|     For instance -.5 plays at full amplitude in the left channel and 1/2 amplitude in the right
-//|     channel."""
-static mp_obj_t audiomixer_mixervoice_obj_get_panning(mp_obj_t self_in) {
-    return common_hal_audiomixer_mixervoice_get_panning(self_in);
-}
-MP_DEFINE_CONST_FUN_OBJ_1(audiomixer_mixervoice_get_panning_obj, audiomixer_mixervoice_obj_get_panning);
-
-static mp_obj_t audiomixer_mixervoice_obj_set_panning(mp_obj_t self_in, mp_obj_t panning_in) {
-    audiomixer_mixervoice_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    common_hal_audiomixer_mixervoice_set_panning(self, panning_in);
-    return mp_const_none;
-}
-MP_DEFINE_CONST_FUN_OBJ_2(audiomixer_mixervoice_set_panning_obj, audiomixer_mixervoice_obj_set_panning);
-
-MP_PROPERTY_GETSET(audiomixer_mixervoice_panning_obj,
-    (mp_obj_t)&audiomixer_mixervoice_get_panning_obj,
-    (mp_obj_t)&audiomixer_mixervoice_set_panning_obj);
 
 //|     loop: bool
 //|     """Get or set the loop status of the currently playing sample."""
@@ -178,12 +140,10 @@ static const mp_rom_map_elem_t audiomixer_mixervoice_locals_dict_table[] = {
     // Methods
     { MP_ROM_QSTR(MP_QSTR_play), MP_ROM_PTR(&audiomixer_mixervoice_play_obj) },
     { MP_ROM_QSTR(MP_QSTR_stop), MP_ROM_PTR(&audiomixer_mixervoice_stop_obj) },
-    { MP_ROM_QSTR(MP_QSTR_end), MP_ROM_PTR(&audiomixer_mixervoice_end_obj) },
 
     // Properties
     { MP_ROM_QSTR(MP_QSTR_playing), MP_ROM_PTR(&audiomixer_mixervoice_playing_obj) },
     { MP_ROM_QSTR(MP_QSTR_level), MP_ROM_PTR(&audiomixer_mixervoice_level_obj) },
-    { MP_ROM_QSTR(MP_QSTR_panning), MP_ROM_PTR(&audiomixer_mixervoice_panning_obj) },
     { MP_ROM_QSTR(MP_QSTR_loop), MP_ROM_PTR(&audiomixer_mixervoice_loop_obj) },
 };
 static MP_DEFINE_CONST_DICT(audiomixer_mixervoice_locals_dict, audiomixer_mixervoice_locals_dict_table);

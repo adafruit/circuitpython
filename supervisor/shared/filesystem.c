@@ -15,10 +15,6 @@
 #include "supervisor/flash.h"
 #include "supervisor/linker.h"
 
-#if CIRCUITPY_SDCARDIO
-#include "shared-module/sdcardio/__init__.h"
-#endif
-
 static mp_vfs_mount_t _circuitpy_vfs;
 static fs_user_mount_t _circuitpy_usermount;
 
@@ -148,7 +144,8 @@ bool filesystem_init(bool create_allowed, bool force_create) {
         res = f_mkdir(&circuitpy->fatfs, "/sd");
         #if CIRCUITPY_FULL_BUILD
         MAKE_FILE_WITH_OPTIONAL_CONTENTS(&circuitpy->fatfs, "/sd/placeholder.txt",
-            "SD cards mounted at /sd will hide this file from Python.\n");
+            "SD cards mounted at /sd will hide this file from Python."
+            " SD cards are not visible via USB CIRCUITPY.\n");
         #endif
         #endif
 
@@ -217,10 +214,6 @@ bool filesystem_init(bool create_allowed, bool force_create) {
     supervisor_flash_update_extended();
     #endif
 
-    #if CIRCUITPY_SDCARDIO
-    sdcardio_init();
-    #endif
-
     return true;
 }
 
@@ -247,15 +240,13 @@ void filesystem_set_writable_by_usb(fs_user_mount_t *vfs, bool usb_writable) {
 }
 
 bool filesystem_is_writable_by_python(fs_user_mount_t *vfs) {
-    return ((vfs->blockdev.flags & MP_BLOCKDEV_FLAG_CONCURRENT_WRITE_PROTECTED) == 0) ||
-           ((vfs->blockdev.flags & MP_BLOCKDEV_FLAG_USB_WRITABLE) == 0) ||
-           ((vfs->blockdev.flags & MP_BLOCKDEV_FLAG_IGNORE_WRITE_PROTECTION) != 0);
+    return (vfs->blockdev.flags & MP_BLOCKDEV_FLAG_CONCURRENT_WRITE_PROTECTED) == 0 ||
+           (vfs->blockdev.flags & MP_BLOCKDEV_FLAG_USB_WRITABLE) == 0;
 }
 
 bool filesystem_is_writable_by_usb(fs_user_mount_t *vfs) {
-    return ((vfs->blockdev.flags & MP_BLOCKDEV_FLAG_CONCURRENT_WRITE_PROTECTED) == 0) ||
-           ((vfs->blockdev.flags & MP_BLOCKDEV_FLAG_USB_WRITABLE) != 0) ||
-           ((vfs->blockdev.flags & MP_BLOCKDEV_FLAG_IGNORE_WRITE_PROTECTION) != 0);
+    return (vfs->blockdev.flags & MP_BLOCKDEV_FLAG_CONCURRENT_WRITE_PROTECTED) == 0 ||
+           (vfs->blockdev.flags & MP_BLOCKDEV_FLAG_USB_WRITABLE) != 0;
 }
 
 void filesystem_set_internal_concurrent_write_protection(bool concurrent_write_protection) {
@@ -267,14 +258,6 @@ void filesystem_set_concurrent_write_protection(fs_user_mount_t *vfs, bool concu
         vfs->blockdev.flags |= MP_BLOCKDEV_FLAG_CONCURRENT_WRITE_PROTECTED;
     } else {
         vfs->blockdev.flags &= ~MP_BLOCKDEV_FLAG_CONCURRENT_WRITE_PROTECTED;
-    }
-}
-
-void filesystem_set_ignore_write_protection(fs_user_mount_t *vfs, bool ignore_write_protection) {
-    if (ignore_write_protection) {
-        vfs->blockdev.flags |= MP_BLOCKDEV_FLAG_IGNORE_WRITE_PROTECTION;
-    } else {
-        vfs->blockdev.flags &= ~MP_BLOCKDEV_FLAG_IGNORE_WRITE_PROTECTION;
     }
 }
 
@@ -305,7 +288,7 @@ fs_user_mount_t *filesystem_for_path(const char *path_in, const char **path_unde
         // because otherwise the path will be adjusted by os.getcwd() when it's looked up.
         if (strlen(vfs->str) != 1) {
             // Remove the mount point directory name, such as "/sd".
-            *path_under_mount += strlen(vfs->str);
+            path_under_mount += strlen(vfs->str);
         }
     }
     return fs_mount;

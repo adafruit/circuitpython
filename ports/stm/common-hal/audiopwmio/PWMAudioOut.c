@@ -279,14 +279,14 @@ void common_hal_audiopwmio_pwmaudioout_play(audiopwmio_pwmaudioout_obj_t *self, 
     uint16_t buffer_length = (uint16_t)max_buffer_length / self->bytes_per_sample;
     size_t buffer_size = buffer_length * sizeof(uint16_t);
 
-    self->buffer[0] = m_malloc_without_collect(buffer_size);
+    self->buffer[0] = m_malloc(buffer_size);
     #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
     self->buffer_size[0] = buffer_size;
     #endif
     self->buffer_ptr[0] = self->buffer_length[0] = 0;
 
     if (self->pin[1]) {
-        self->buffer[1] = m_malloc_without_collect(buffer_size);
+        self->buffer[1] = m_malloc(buffer_size);
         #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
         self->buffer_size[1] = buffer_size;
         #endif
@@ -342,6 +342,7 @@ void common_hal_audiopwmio_pwmaudioout_stop(audiopwmio_pwmaudioout_obj_t *self) 
     tim_handle.Instance->CR1 &= ~TIM_CR1_CEN;
     stm_peripherals_timer_free(tim_handle.Instance);
 
+    active_audio = NULL;
     self->stopping = false;
     self->paused = false;
 
@@ -350,8 +351,6 @@ void common_hal_audiopwmio_pwmaudioout_stop(audiopwmio_pwmaudioout_obj_t *self) 
     if (self->pin[1]) {
         set_pin(1, GPIO_PIN_RESET);
     }
-
-    active_audio = NULL;
 
     // Cannot free buffers here because we may be called from
     // the interrupt handler, and the heap is not reentrant.

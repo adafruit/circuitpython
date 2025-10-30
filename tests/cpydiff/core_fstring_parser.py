@@ -5,6 +5,6 @@ cause: MicroPython is optimised for code space.
 workaround: Always use balanced braces and brackets in expressions inside f-strings
 """
 
-# CIRCUITPY-CHANGE: add noqa so ruff won't complain about unmatched braces
-print(f"{'hello { world'}")  # noqa
-print(f"{'hello ] world'}")  # noqa
+# fmt: off
+print(f"{'hello { world'}")
+print(f"{'hello ] world'}")

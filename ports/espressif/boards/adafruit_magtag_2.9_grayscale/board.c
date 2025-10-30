@@ -21,7 +21,7 @@ static const char *TAG = "board";
 
 // This is an ILO373 control chip. The display is a 2.9" grayscale EInk.
 
-const uint8_t il0373_display_start_sequence[] = {
+const uint8_t display_start_sequence[] = {
     0x01, 5, 0x03, 0x00, 0x2b, 0x2b, 0x13, // power setting
     0x06, 3, 0x17, 0x17, 0x17, // booster soft start
     0x04, DELAY, 200, // power on and wait 200 ms
@@ -83,121 +83,17 @@ const uint8_t il0373_display_start_sequence[] = {
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-const uint8_t il0373_display_stop_sequence[] = {
+const uint8_t display_stop_sequence[] = {
     0x50, 0x01, 0x17,  // CDI Setting
     0x82, 0x01, 0x00,  // VCM DC to -0.1V
     0x02, 0x00  // Power off
 };
 
-const uint8_t il0373_display_refresh_sequence[] = {
+const uint8_t refresh_sequence[] = {
     0x12, 0x00
 };
 
-
-// This is an SSD1680 control chip. The display is a 2.9" grayscale EInk.
-const uint8_t ssd1680_display_start_sequence[] = {
-    0x12, DELAY, 0x00, 0x14, // soft reset and wait 20ms
-    0x11, 0x00, 0x01, 0x03, // Ram data entry mode
-    0x3c, 0x00, 0x01, 0x03, // border color
-    0x2c, 0x00, 0x01, 0x28, // Set vcom voltage
-    0x03, 0x00, 0x01, 0x17, // Set gate voltage
-    0x04, 0x00, 0x03, 0x41, 0xae, 0x32, // Set source voltage
-    0x4e, 0x00, 0x01, 0x01, // ram x count
-    0x4f, 0x00, 0x02, 0x00, 0x00, // ram y count
-    0x01, 0x00, 0x03, 0x27, 0x01, 0x00, // set display size
-    0x32, 0x00, 0x99, // Update waveforms
-    0x2a, 0x60, 0x15, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // VS L0
-    0x20, 0x60, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // VS L1
-    0x28, 0x60, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // VS L2
-    0x00, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // VS L3
-    0x00, 0x90, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // VS L4
-    0x00, 0x02, 0x00, 0x05, 0x14, 0x00, 0x00,     // TP, SR, RP of Group0
-    0x1E, 0x1E, 0x00, 0x00, 0x00, 0x00, 0x01,     // TP, SR, RP of Group1
-    0x00, 0x02, 0x00, 0x05, 0x14, 0x00, 0x00,     // TP, SR, RP of Group2
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // TP, SR, RP of Group3
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // TP, SR, RP of Group4
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // TP, SR, RP of Group5
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // TP, SR, RP of Group6
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // TP, SR, RP of Group7
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // TP, SR, RP of Group8
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // TP, SR, RP of Group9
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // TP, SR, RP of Group10
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // TP, SR, RP of Group11
-    0x24, 0x22, 0x22, 0x22, 0x23, 0x32, 0x00, 0x00, 0x00,     // FR, XON
-    0x22, 0x00, 0x01, 0xc7 // display update mode
-};
-
-const uint8_t ssd1680_display_stop_sequence[] = {
-    0x10, DELAY, 0x01, 0x01, 0x64
-};
-
-const uint8_t ssd1680_display_refresh_sequence[] = {
-    0x20, 0x00, 0x00
-};
-
-static bool detect_ssd1680(void) {
-    // Bitbang 4-wire SPI with a bidirectional data line to read register 0x71.
-    // On the IL0373 it will return 0x13 or similar. On the SSD1680 it is
-    // unsupported and will be 0xff.
-    digitalio_digitalinout_obj_t data;
-    digitalio_digitalinout_obj_t clock;
-    digitalio_digitalinout_obj_t chip_select;
-    digitalio_digitalinout_obj_t data_command;
-    digitalio_digitalinout_obj_t reset;
-    data.base.type = &digitalio_digitalinout_type;
-    clock.base.type = &digitalio_digitalinout_type;
-    chip_select.base.type = &digitalio_digitalinout_type;
-    data_command.base.type = &digitalio_digitalinout_type;
-    reset.base.type = &digitalio_digitalinout_type;
-
-    common_hal_digitalio_digitalinout_construct(&data, &pin_GPIO35);
-    common_hal_digitalio_digitalinout_construct(&clock, &pin_GPIO36);
-    common_hal_digitalio_digitalinout_construct(&chip_select, &pin_GPIO8);
-    common_hal_digitalio_digitalinout_construct(&data_command, &pin_GPIO7);
-    common_hal_digitalio_digitalinout_construct(&reset, &pin_GPIO6);
-
-    // Set CS and DC low
-    common_hal_digitalio_digitalinout_switch_to_output(&chip_select, false, DRIVE_MODE_PUSH_PULL);
-    common_hal_digitalio_digitalinout_switch_to_output(&data_command, false, DRIVE_MODE_PUSH_PULL);
-    common_hal_digitalio_digitalinout_switch_to_output(&data, false, DRIVE_MODE_PUSH_PULL);
-    common_hal_digitalio_digitalinout_switch_to_output(&reset, true, DRIVE_MODE_PUSH_PULL);
-    common_hal_digitalio_digitalinout_switch_to_output(&clock, false, DRIVE_MODE_PUSH_PULL);
-
-    uint8_t status_read = 0x71;
-    for (int i = 0; i < 8; i++) {
-        common_hal_digitalio_digitalinout_set_value(&data, (status_read & (1 << (7 - i))) != 0);
-        common_hal_digitalio_digitalinout_set_value(&clock, true);
-        common_hal_digitalio_digitalinout_set_value(&clock, false);
-    }
-
-    // Set DC high for data and switch to input with pull-up in case the SSD1680 doesn't send any
-    // data back (as it should.)
-    common_hal_digitalio_digitalinout_switch_to_input(&data, PULL_UP);
-    common_hal_digitalio_digitalinout_set_value(&data_command, true);
-    uint8_t status = 0;
-    for (int bit = 0; bit < 8; bit++) {
-        status <<= 1;
-        if (common_hal_digitalio_digitalinout_get_value(&data)) {
-            status |= 1;
-        }
-        common_hal_digitalio_digitalinout_set_value(&clock, true);
-        common_hal_digitalio_digitalinout_set_value(&clock, false);
-    }
-
-    // Set CS high
-    common_hal_digitalio_digitalinout_set_value(&chip_select, true);
-
-    common_hal_digitalio_digitalinout_deinit(&data);
-    common_hal_digitalio_digitalinout_deinit(&clock);
-    common_hal_digitalio_digitalinout_deinit(&chip_select);
-    common_hal_digitalio_digitalinout_deinit(&data_command);
-    common_hal_digitalio_digitalinout_deinit(&reset);
-    return status == 0xff;
-}
-
 void board_init(void) {
-    bool is_ssd1680 = detect_ssd1680();
-
     fourwire_fourwire_obj_t *bus = &allocate_display_bus()->fourwire_bus;
     busio_spi_obj_t *spi = &bus->inline_bus;
     common_hal_busio_spi_construct(spi, &pin_GPIO36, &pin_GPIO35, NULL, false);
@@ -215,57 +111,38 @@ void board_init(void) {
 
     epaperdisplay_epaperdisplay_obj_t *display = &allocate_display()->epaper_display;
     display->base.type = &epaperdisplay_epaperdisplay_type;
-
-    if (is_ssd1680) {
-        epaperdisplay_construct_args_t args = EPAPERDISPLAY_CONSTRUCT_ARGS_DEFAULTS;
-        args.bus = bus;
-        args.start_sequence = ssd1680_display_start_sequence;
-        args.start_sequence_len = sizeof(ssd1680_display_start_sequence);
-        args.stop_sequence = ssd1680_display_stop_sequence;
-        args.stop_sequence_len = sizeof(ssd1680_display_stop_sequence);
-        args.width = 296;
-        args.height = 128;
-        args.ram_width = 250;
-        args.ram_height = 296;
-        args.rotation = 270;
-        args.set_column_window_command = 0x44;
-        args.set_row_window_command = 0x45;
-        args.set_current_column_command = 0x4e;
-        args.set_current_row_command = 0x4f;
-        args.write_black_ram_command = 0x24;
-        args.write_color_ram_command = 0x26;
-        args.refresh_sequence = ssd1680_display_refresh_sequence;
-        args.refresh_sequence_len = sizeof(ssd1680_display_refresh_sequence);
-        args.refresh_time = 1.0;
-        args.busy_pin = &pin_GPIO5;
-        args.busy_state = true;
-        args.seconds_per_frame = 5.0;
-        args.grayscale = true;
-        args.two_byte_sequence_length = true;
-        args.address_little_endian = true;
-        common_hal_epaperdisplay_epaperdisplay_construct(display, &args);
-    } else {
-        epaperdisplay_construct_args_t args = EPAPERDISPLAY_CONSTRUCT_ARGS_DEFAULTS;
-        args.bus = bus;
-        args.start_sequence = il0373_display_start_sequence;
-        args.start_sequence_len = sizeof(il0373_display_start_sequence);
-        args.stop_sequence = il0373_display_stop_sequence;
-        args.stop_sequence_len = sizeof(il0373_display_stop_sequence);
-        args.width = 296;
-        args.height = 128;
-        args.ram_width = 160;
-        args.ram_height = 296;
-        args.rotation = 270;
-        args.write_black_ram_command = 0x10;
-        args.write_color_ram_command = 0x13;
-        args.refresh_sequence = il0373_display_refresh_sequence;
-        args.refresh_sequence_len = sizeof(il0373_display_refresh_sequence);
-        args.refresh_time = 1.0;
-        args.busy_pin = &pin_GPIO5;
-        args.seconds_per_frame = 5.0;
-        args.grayscale = true;
-        common_hal_epaperdisplay_epaperdisplay_construct(display, &args);
-    }
+    common_hal_epaperdisplay_epaperdisplay_construct(
+        display,
+        bus,
+        display_start_sequence, sizeof(display_start_sequence),
+        0, // start up time
+        display_stop_sequence, sizeof(display_stop_sequence),
+        296,  // width
+        128,  // height
+        160,  // ram_width
+        296,  // ram_height
+        0,  // colstart
+        0,  // rowstart
+        270,  // rotation
+        NO_COMMAND,  // set_column_window_command
+        NO_COMMAND,  // set_row_window_command
+        NO_COMMAND,  // set_current_column_command
+        NO_COMMAND,  // set_current_row_command
+        0x10,  // write_black_ram_command
+        false,  // black_bits_inverted
+        0x13,  // write_color_ram_command
+        false,  // color_bits_inverted
+        0x000000,  // highlight_color
+        refresh_sequence, sizeof(refresh_sequence),
+        1.0,  // refresh_time
+        &pin_GPIO5,  // busy_pin
+        false,  // busy_state
+        5.0, // seconds_per_frame
+        false,  // always_toggle_chip_select
+        true, // grayscale
+        false, // acep
+        false,  // two_byte_sequence_length
+        false); // address_little_endian
 }
 
 bool espressif_board_reset_pin_number(gpio_num_t pin_number) {

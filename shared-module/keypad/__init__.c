@@ -85,20 +85,14 @@ void keypad_deregister_scanner(keypad_scanner_obj_t *scanner) {
     supervisor_release_lock(&keypad_scanners_linked_list_lock);
 }
 
-void keypad_construct_common(keypad_scanner_obj_t *self, mp_float_t interval, size_t max_events, uint8_t debounce_threshold, bool use_gc_allocator) {
+void keypad_construct_common(keypad_scanner_obj_t *self, mp_float_t interval, size_t max_events, uint8_t debounce_threshold) {
     size_t key_count = common_hal_keypad_generic_get_key_count(self);
-    self->debounce_counter =
-        use_gc_allocator
-        ? (int8_t *)m_malloc_without_collect(sizeof(int8_t) * key_count)
-        : (int8_t *)port_malloc_zero(sizeof(int8_t) * key_count, false);
+    self->debounce_counter = (int8_t *)m_malloc(sizeof(int8_t) * key_count);
 
     self->interval_ticks = (mp_uint_t)(interval * 1024);   // interval * 1000 * (1024/1000)
 
-    keypad_eventqueue_obj_t *events =
-        use_gc_allocator
-        ? mp_obj_malloc(keypad_eventqueue_obj_t, &keypad_eventqueue_type)
-        : mp_obj_port_malloc(keypad_eventqueue_obj_t, &keypad_eventqueue_type);
-    common_hal_keypad_eventqueue_construct(events, max_events, use_gc_allocator);
+    keypad_eventqueue_obj_t *events = mp_obj_malloc(keypad_eventqueue_obj_t, &keypad_eventqueue_type);
+    common_hal_keypad_eventqueue_construct(events, max_events);
     self->events = events;
 
     self->debounce_threshold = debounce_threshold;

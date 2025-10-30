@@ -1,7 +1,6 @@
-selectinterface swd
+si 1
 erase
-loadbin build-apard32690/firmware.bin 0x10000000
-reset
-halt
-go
+loadbin build-APARD/firmware.bin 0x10000000
+r
+g
 exit

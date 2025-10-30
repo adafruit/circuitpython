@@ -51,8 +51,6 @@
 // See https://github.com/micropython/micropython/pull/11353
 #define MICROPY_NLR_THUMB_USE_LONG_JUMP (1)
 
-// Don't store qstr hashes and do string compares instead.
-#define MICROPY_QSTR_BYTES_IN_HASH       (0)
 
 #endif // SAMD21
 
@@ -70,7 +68,8 @@
 #define MICROPY_PY_SYS_PLATFORM                     "MicroChip SAME54"
 #endif
 #define SPI_FLASH_MAX_BAUDRATE 24000000
-
+#define MICROPY_PY_BUILTINS_NOTIMPLEMENTED          (1)
+#define MICROPY_PY_FUNCTION_ATTRS                   (1)
 //      MICROPY_PY_ERRNO_LIST - Use the default
 
 #endif // SAM_D5X_E5X
@@ -100,11 +99,6 @@
 
 #ifndef CIRCUITPY_DEFAULT_STACK_SIZE
 #define CIRCUITPY_DEFAULT_STACK_SIZE                3584
-#endif
-
-#ifndef CIRCUITPY_PYSTACK_SIZE
-// Default for most boards is 2048 starting with CircuitPython 10, but on SAMD21, keep it at previous lower value.
-#define CIRCUITPY_PYSTACK_SIZE 1536
 #endif
 
 #ifndef SAMD21_BOD33_LEVEL

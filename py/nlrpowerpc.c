@@ -26,7 +26,8 @@
 
 #include "py/mpstate.h"
 
-#if MICROPY_NLR_POWERPC
+// CIRCUITPY-CHANGE: avoid warning
+#if defined(MICROPY_NLR_POWERPC) && MICROPY_NLR_POWERPC
 
 #undef nlr_push
 

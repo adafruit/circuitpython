@@ -19,6 +19,7 @@ SRC_SUPERVISOR = \
 	supervisor/shared/traceback.c \
 	supervisor/shared/translate/translate.c \
 	supervisor/shared/workflow.c \
+	supervisor/stub/misc.c \
 
 # For tlsf
 CFLAGS += -D_DEBUG=0

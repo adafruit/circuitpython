@@ -31,14 +31,12 @@ void common_hal_mcu_delay_us(uint32_t delay) {
     SysTick->CTRL = 0UL;
 }
 
-static volatile uint32_t nesting_count = 0;
+volatile uint32_t nesting_count = 0;
 
-// 32-bit increments
 void common_hal_mcu_disable_interrupts(void) {
-    if (++nesting_count == 1) {
-        __disable_irq();
-        __DMB();
-    }
+    __disable_irq();
+    __DMB();
+    nesting_count++;
 }
 
 void common_hal_mcu_enable_interrupts(void) {
@@ -46,10 +44,12 @@ void common_hal_mcu_enable_interrupts(void) {
         // This is very very bad because it means there was mismatched disable/enables.
         reset_into_safe_mode(SAFE_MODE_INTERRUPT_ERROR);
     }
-    if (--nesting_count == 0) {
-        __DMB();
-        __enable_irq();
+    nesting_count--;
+    if (nesting_count > 0) {
+        return;
     }
+    __DMB();
+    __enable_irq();
 }
 
 static bool next_reset_to_bootloader = false;

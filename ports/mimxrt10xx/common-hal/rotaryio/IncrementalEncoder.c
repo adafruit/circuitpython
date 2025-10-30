@@ -26,9 +26,6 @@ static void encoder_change(void *self_in) {
 void common_hal_rotaryio_incrementalencoder_construct(rotaryio_incrementalencoder_obj_t *self,
     const mcu_pin_obj_t *pin_a, const mcu_pin_obj_t *pin_b) {
 
-    // Ensure object starts in its deinit state.
-    common_hal_rotaryio_incrementalencoder_mark_deinit(self);
-
     self->pin_a = pin_a;
     self->pin_b = pin_b;
 
@@ -52,7 +49,7 @@ void common_hal_rotaryio_incrementalencoder_construct(rotaryio_incrementalencode
 }
 
 bool common_hal_rotaryio_incrementalencoder_deinited(rotaryio_incrementalencoder_obj_t *self) {
-    return self->pin_a == NULL;
+    return !self->pin_a;
 }
 
 void common_hal_rotaryio_incrementalencoder_deinit(rotaryio_incrementalencoder_obj_t *self) {
@@ -65,9 +62,6 @@ void common_hal_rotaryio_incrementalencoder_deinit(rotaryio_incrementalencoder_o
     common_hal_reset_pin(self->pin_a);
     common_hal_reset_pin(self->pin_b);
 
-    common_hal_rotaryio_incrementalencoder_mark_deinit(self);
-}
-
-void common_hal_rotaryio_incrementalencoder_mark_deinit(rotaryio_incrementalencoder_obj_t *self) {
     self->pin_a = NULL;
+    self->pin_b = NULL;
 }

@@ -136,7 +136,7 @@ static void audiopwmout_background_obj(audiopwmio_pwmaudioout_obj_t *self) {
     }
 }
 
-void audiopwmout_background(void) {
+void audiopwmout_background() {
     // Check the NVIC first because it is part of the CPU and fast to read.
     if (!NVIC_GetPendingIRQ(PWM0_IRQn) &&
         !NVIC_GetPendingIRQ(PWM1_IRQn) &&
@@ -253,13 +253,13 @@ void common_hal_audiopwmio_pwmaudioout_play(audiopwmio_pwmaudioout_obj_t *self, 
 
     size_t buffer_size = (size_t)max_buffer_length * 2 * sizeof(uint16_t);
 
-    self->buffers[0] = m_malloc_without_collect(buffer_size);
+    self->buffers[0] = m_malloc(buffer_size);
     #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
     self->buffer_size[0] = buffer_size;
     #endif
 
     if (!self->single_buffer) {
-        self->buffers[1] = m_malloc_without_collect(buffer_size);
+        self->buffers[1] = m_malloc(buffer_size);
         #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
         self->buffer_size[1] = buffer_size;
         #endif

@@ -294,7 +294,7 @@ static mp_rom_error_text_t init_card(sdcardio_sdcard_obj_t *self) {
     return NULL;
 }
 
-mp_rom_error_text_t sdcardio_sdcard_construct(sdcardio_sdcard_obj_t *self, busio_spi_obj_t *bus, const mcu_pin_obj_t *cs, int baudrate) {
+void common_hal_sdcardio_sdcard_construct(sdcardio_sdcard_obj_t *self, busio_spi_obj_t *bus, const mcu_pin_obj_t *cs, int baudrate) {
     self->bus = bus;
     common_hal_digitalio_digitalinout_construct(&self->cs, cs);
     common_hal_digitalio_digitalinout_switch_to_output(&self->cs, true, DRIVE_MODE_PUSH_PULL);
@@ -309,19 +309,10 @@ mp_rom_error_text_t sdcardio_sdcard_construct(sdcardio_sdcard_obj_t *self, busio
 
     if (result != NULL) {
         common_hal_digitalio_digitalinout_deinit(&self->cs);
-        return result;
+        mp_raise_OSError_msg(result);
     }
 
     self->baudrate = baudrate;
-    return NULL;
-}
-
-
-void common_hal_sdcardio_sdcard_construct(sdcardio_sdcard_obj_t *self, busio_spi_obj_t *bus, const mcu_pin_obj_t *cs, int baudrate) {
-    mp_rom_error_text_t result = sdcardio_sdcard_construct(self, bus, cs, baudrate);
-    if (result != NULL) {
-        mp_raise_OSError_msg(result);
-    }
 }
 
 void common_hal_sdcardio_sdcard_deinit(sdcardio_sdcard_obj_t *self) {

@@ -114,9 +114,6 @@ uint64_t port_get_raw_ticks(uint8_t *subticks) {
     common_hal_mcu_disable_interrupts();
     uint64_t raw_tick_snapshot = raw_ticks;
     common_hal_mcu_enable_interrupts();
-    if (subticks != NULL) {
-        *subticks = 0;
-    }
     return raw_tick_snapshot;
 }
 

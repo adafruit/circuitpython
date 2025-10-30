@@ -12,7 +12,6 @@
 #include "py/binary.h"
 #include "py/mphal.h"
 #include "shared-bindings/microcontroller/Pin.h"
-#include "shared-bindings/digitalio/Pull.h"
 #include "shared-bindings/touchio/TouchIn.h"
 
 // Native touchio only exists for SAMD21
@@ -39,7 +38,7 @@ static uint16_t get_raw_reading(touchio_touchin_obj_t *self) {
 }
 
 void common_hal_touchio_touchin_construct(touchio_touchin_obj_t *self,
-    const mcu_pin_obj_t *pin, const digitalio_pull_t pull) {
+    const mcu_pin_obj_t *pin) {
     if (!pin->has_touch) {
         raise_ValueError_invalid_pin();
     }
@@ -91,7 +90,7 @@ void common_hal_touchio_touchin_deinit(touchio_touchin_obj_t *self) {
     self->config.pin = NO_PIN;
 }
 
-void touchin_reset(void) {
+void touchin_reset() {
     Ptc *ptc = ((Ptc *)PTC);
     if (ptc->CTRLA.bit.ENABLE == 1) {
         ptc->CTRLA.bit.ENABLE = 0;

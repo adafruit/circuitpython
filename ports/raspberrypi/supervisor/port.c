@@ -4,7 +4,6 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include <stddef.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -57,13 +56,6 @@
 #include "RP2350.h" // CMSIS
 #endif
 
-#if CIRCUITPY_BOOT_BUTTON_NO_GPIO
-#include "hardware/gpio.h"
-#include "hardware/sync.h"
-#include "hardware/structs/ioqspi.h"
-#include "hardware/structs/sio.h"
-#endif
-
 #include "supervisor/shared/serial.h"
 
 #include "tusb.h"
@@ -97,7 +89,8 @@ extern uint32_t _ld_itcm_size;
 extern uint32_t _ld_itcm_flash_copy;
 
 static tlsf_t _heap = NULL;
-static tlsf_t _psram_heap = NULL;
+static pool_t _ram_pool = NULL;
+static pool_t _psram_pool = NULL;
 static size_t _psram_size = 0;
 
 #ifdef CIRCUITPY_PSRAM_CHIP_SELECT
@@ -252,9 +245,10 @@ static void _port_heap_init(void) {
     uint32_t *heap_bottom = port_heap_get_bottom();
     uint32_t *heap_top = port_heap_get_top();
     size_t size = (heap_top - heap_bottom) * sizeof(uint32_t);
-    _heap = tlsf_create_with_pool(heap_bottom, size, size);
+    _heap = tlsf_create_with_pool(heap_bottom, size, 64 * 1024 * 1024);
+    _ram_pool = tlsf_get_pool(_heap);
     if (_psram_size > 0) {
-        _psram_heap = tlsf_create_with_pool((void *)0x11000000, _psram_size, _psram_size);
+        _psram_pool = tlsf_add_pool(_heap, (void *)0x11000000, _psram_size);
     }
 }
 
@@ -263,52 +257,17 @@ void port_heap_init(void) {
 }
 
 void *port_malloc(size_t size, bool dma_capable) {
-    if (!dma_capable && _psram_size > 0) {
-        common_hal_mcu_disable_interrupts();
-        void *block = tlsf_malloc(_psram_heap, size);
-        common_hal_mcu_enable_interrupts();
-        if (block) {
-            return block;
-        }
-    }
-    common_hal_mcu_disable_interrupts();
     void *block = tlsf_malloc(_heap, size);
-    common_hal_mcu_enable_interrupts();
     return block;
 }
 
 void port_free(void *ptr) {
-    common_hal_mcu_disable_interrupts();
-    if (((size_t)ptr) < SRAM_BASE) {
-        tlsf_free(_psram_heap, ptr);
-    } else {
-        tlsf_free(_heap, ptr);
-    }
-    common_hal_mcu_enable_interrupts();
+    tlsf_free(_heap, ptr);
 }
 
-void *port_realloc(void *ptr, size_t size, bool dma_capable) {
-    if (_psram_size > 0 && ((ptr != NULL && ((size_t)ptr) < SRAM_BASE) || (ptr == NULL && !dma_capable))) {
-        common_hal_mcu_disable_interrupts();
-        void *block = tlsf_realloc(_psram_heap, ptr, size);
-        common_hal_mcu_enable_interrupts();
-        if (block) {
-            return block;
-        }
-    }
-    common_hal_mcu_disable_interrupts();
-    void *new_ptr = tlsf_realloc(_heap, ptr, size);
-    common_hal_mcu_enable_interrupts();
-    return new_ptr;
+void *port_realloc(void *ptr, size_t size) {
+    return tlsf_realloc(_heap, ptr, size);
 }
-
-#if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
-bool port_buffer_is_dma_capable(const void *ptr) {
-    // For RP2350, DMA can only access SRAM, not PSRAM
-    // PSRAM addresses are below SRAM_BASE
-    return ptr != NULL && ((size_t)ptr) >= SRAM_BASE;
-}
-#endif
 
 static bool max_size_walker(void *ptr, size_t size, int used, void *user) {
     size_t *max_size = (size_t *)user;
@@ -320,13 +279,12 @@ static bool max_size_walker(void *ptr, size_t size, int used, void *user) {
 
 size_t port_heap_get_largest_free_size(void) {
     size_t max_size = 0;
-    tlsf_walk_pool(tlsf_get_pool(_heap), max_size_walker, &max_size);
-    max_size = tlsf_fit_size(_heap, max_size);
-    if (_psram_heap != NULL) {
-        tlsf_walk_pool(tlsf_get_pool(_psram_heap), max_size_walker, &max_size);
-        max_size = tlsf_fit_size(_psram_heap, max_size);
+    tlsf_walk_pool(_ram_pool, max_size_walker, &max_size);
+    if (_psram_pool != NULL) {
+        tlsf_walk_pool(_psram_pool, max_size_walker, &max_size);
     }
-    return max_size;
+    // IDF does this. Not sure why.
+    return tlsf_fit_size(_heap, max_size);
 }
 
 safe_mode_t port_init(void) {
@@ -510,11 +468,11 @@ static volatile bool ticks_enabled;
 static volatile bool _woken_up;
 
 uint64_t port_get_raw_ticks(uint8_t *subticks) {
-    int64_t all_subticks = time_us_64() * 512 / 15625;
+    uint64_t microseconds = time_us_64();
     if (subticks != NULL) {
-        *subticks = all_subticks % 32;
+        *subticks = (uint8_t)(((microseconds % 1000000) % 977) / 31);
     }
-    return all_subticks / 32;
+    return 1024 * (microseconds / 1000000) + (microseconds % 1000000) / 977;
 }
 
 static void _tick_callback(uint alarm_num) {
@@ -591,7 +549,7 @@ void port_idle_until_interrupt(void) {
 /**
  * \brief Default interrupt handler for unused IRQs.
  */
-extern NORETURN void isr_hardfault(void); // provide a prototype to avoid a missing-prototypes diagnostic
+extern void isr_hardfault(void); // provide a prototype to avoid a missing-prototypes diagnostic
 __attribute__((used)) void __not_in_flash_func(isr_hardfault)(void) {
     // Only safe mode from core 0 which is running CircuitPython. Core 1 faulting
     // should not be fatal to CP. (Fingers crossed.)
@@ -603,7 +561,7 @@ __attribute__((used)) void __not_in_flash_func(isr_hardfault)(void) {
     }
 }
 
-void port_yield(void) {
+void port_yield() {
     #if CIRCUITPY_CYW43
     cyw43_arch_poll();
     #endif
@@ -618,53 +576,3 @@ void port_boot_info(void) {
     mp_printf(&mp_plat_print, "\n");
     #endif
 }
-
-#if CIRCUITPY_BOOT_BUTTON_NO_GPIO
-bool __no_inline_not_in_flash_func(port_boot_button_pressed)(void) {
-    // Sense the state of the boot button. Because this function
-    // disables flash, it cannot be safely called once the second
-    // core has been started. When the BOOTSEL button is sensed as
-    // pressed, return is delayed until the button is released and
-    // a delay has passed in order to debounce the button.
-    const uint32_t CS_PIN_INDEX = 1;
-    #if defined(PICO_RP2040)
-    const uint32_t CS_BIT = 1u << 1;
-    #else
-    const uint32_t CS_BIT = SIO_GPIO_HI_IN_QSPI_CSN_BITS;
-    #endif
-    uint32_t int_state = save_and_disable_interrupts();
-    // Wait for any outstanding XIP activity to finish. Flash
-    // must be quiescent before disabling the chip select. Since
-    // there's no XIP busy indication we can test, we delay a
-    // generous 5 ms to allow any XIP activity to finish.
-    busy_wait_us(5000);
-    // Float the flash chip select pin. The line will HI-Z due to
-    // the external 10K pull-up resistor.
-    hw_write_masked(&ioqspi_hw->io[CS_PIN_INDEX].ctrl,
-        GPIO_OVERRIDE_LOW << IO_QSPI_GPIO_QSPI_SS_CTRL_OEOVER_LSB,
-            IO_QSPI_GPIO_QSPI_SS_CTRL_OEOVER_BITS);
-    // Delay 100 us to allow the CS line to stabilize. If BOOTSEL is
-    // pressed, the line will be pulled low by the button and its
-    // 1K external resistor to ground.
-    busy_wait_us(100);
-    bool button_pressed = !(sio_hw->gpio_hi_in & CS_BIT);
-    // Wait for the button to be released.
-    if (button_pressed) {
-        while (!(sio_hw->gpio_hi_in & CS_BIT)) {
-            tight_loop_contents();
-        }
-        // Wait for 50 ms to debounce the button.
-        busy_wait_us(50000);
-    }
-    // Restore the flash chip select pin to its original state.
-    hw_write_masked(&ioqspi_hw->io[CS_PIN_INDEX].ctrl,
-        GPIO_OVERRIDE_NORMAL << IO_QSPI_GPIO_QSPI_SS_CTRL_OEOVER_LSB,
-            IO_QSPI_GPIO_QSPI_SS_CTRL_OEOVER_BITS);
-    // Delay 5 ms to allow the flash chip to re-enable and for the
-    // flash CS pin to stabilize.
-    busy_wait_us(5000);
-    // Restore the interrupt state.
-    restore_interrupts(int_state);
-    return button_pressed;
-}
-#endif

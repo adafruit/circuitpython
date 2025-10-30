@@ -4,8 +4,6 @@
 //
 // SPDX-License-Identifier: MIT
 
-#pragma once
-
 #include "py/obj.h"
 #include "py/mphal.h"
 

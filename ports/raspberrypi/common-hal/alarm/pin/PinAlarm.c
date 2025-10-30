@@ -39,7 +39,7 @@ static void gpio_callback(uint gpio, uint32_t events) {
     }
 }
 
-void alarm_pin_pinalarm_entering_deep_sleep(void) {
+void alarm_pin_pinalarm_entering_deep_sleep() {
     _not_yet_deep_sleeping = false;
 }
 

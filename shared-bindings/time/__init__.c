@@ -83,16 +83,6 @@ static mp_obj_t struct_time_make_new(const mp_obj_type_t *type, size_t n_args, s
 }
 
 //| class struct_time:
-//|     tm_year: int
-//|     tm_mon: int
-//|     tm_mday: int
-//|     tm_hour: int
-//|     tm_min: int
-//|     tm_sec: int
-//|     tm_wday: int
-//|     tm_yday: int
-//|     tm_isdst: int
-//|
 //|     def __init__(self, time_tuple: Sequence[int]) -> None:
 //|         """Structure used to capture a date and time.  Can be constructed from a `struct_time`, `tuple`, `list`, or `namedtuple` with 9 elements.
 //|
@@ -220,7 +210,7 @@ static mp_obj_t time_monotonic_ns(void) {
 }
 MP_DEFINE_CONST_FUN_OBJ_0(time_monotonic_ns_obj, time_monotonic_ns);
 
-//| def localtime(secs: Optional[int] = None) -> struct_time:
+//| def localtime(secs: int) -> struct_time:
 //|     """Convert a time expressed in seconds since Jan 1, 1970 to a struct_time in
 //|     local time. If secs is not provided or None, the current time as returned
 //|     by time() is used.

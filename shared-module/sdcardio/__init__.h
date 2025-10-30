@@ -5,6 +5,3 @@
 // SPDX-License-Identifier: MIT
 
 #pragma once
-
-void sdcardio_init(void);
-void automount_sd_card(void);

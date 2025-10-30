@@ -30,7 +30,7 @@ typedef struct {
     uint16_t tile_height;
     uint16_t top_left_x;
     uint16_t top_left_y;
-    void *tiles;  // Can be either uint8_t* or uint16_t* depending on tiles_in_bitmap
+    uint8_t *tiles;
     const displayio_buffer_transform_t *absolute_transform;
     displayio_area_t dirty_area; // Stored as a relative area until the refresh area is fetched.
     displayio_area_t previous_area; // Stored as an absolute area.
@@ -68,5 +68,3 @@ void displayio_tilegrid_finish_refresh(displayio_tilegrid_t *self);
 
 bool displayio_tilegrid_get_rendered_hidden(displayio_tilegrid_t *self);
 void displayio_tilegrid_validate_pixel_shader(mp_obj_t pixel_shader);
-
-void displayio_tilegrid_mark_tile_dirty(displayio_tilegrid_t *self, uint16_t x, uint16_t y);

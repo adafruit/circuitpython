@@ -691,7 +691,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(bitmaptools_draw_polygon_obj, 0, bitmaptools_obj_draw
 //|     available in the destination bitmap.
 //|
 //|     If x1 or y1 are not specified, they are taken as 0.  If x2 or y2
-//|     are not specified, or are given as None, they are taken as the width
+//|     are not specified, or are given as -1, they are taken as the width
 //|     and height of the image.
 //|
 //|     The coordinates affected by the blit are ``x1 <= x < x2`` and ``y1 <= y < y2``.
@@ -719,7 +719,7 @@ static mp_obj_t bitmaptools_arrayblit(size_t n_args, const mp_obj_t *pos_args, m
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_bitmap, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
         { MP_QSTR_data, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
-        ALLOWED_ARGS_X1_Y1_X2_Y2(0, 0),
+        ALLOWED_ARGS_X1_Y1_X2_Y2(0, MP_ARG_REQUIRED),
         { MP_QSTR_skip_index, MP_ARG_OBJ, {.u_obj = mp_const_none } },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];

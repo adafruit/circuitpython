@@ -9,6 +9,7 @@
 #include "shared-bindings/audiocore/__init__.h"
 #include "shared-bindings/synthio/__init__.h"
 #include "shared-module/synthio/Biquad.h"
+#include "shared-module/synthio/BlockBiquad.h"
 #include "shared-module/synthio/Note.h"
 #include "py/runtime.h"
 #include <math.h>
@@ -24,26 +25,6 @@ static const int16_t square_wave[] = {-32768, 32767};
 static const uint16_t notes[] = {8372, 8870, 9397, 9956, 10548, 11175, 11840,
                                  12544, 13290, 14080, 14917, 15804}; // 9th octave
 
-// cleaner sat16 by http://www.moseleyinstruments.com/
-int16_t synthio_sat16(int32_t n, int rshift) {
-    // we should always round towards 0
-    // to avoid recirculating round-off noise
-    //
-    // a 2s complement positive number is always
-    // rounded down, so we only need to take
-    // care of negative numbers
-    if (n < 0) {
-        n = n + (~(0xFFFFFFFFUL << rshift));
-    }
-    n = n >> rshift;
-    if (n > 32767) {
-        return 32767;
-    }
-    if (n < -32768) {
-        return -32768;
-    }
-    return n;
-}
 
 static int64_t round_float_to_int64(mp_float_t f) {
     return (int64_t)(f + MICROPY_FLOAT_CONST(0.5));
@@ -270,7 +251,7 @@ static bool synth_note_into_buffer(synthio_synth_t *synth, int chan, int32_t *ou
                 accum = accum - lim + offset;
             }
             int16_t idx = accum >> SYNTHIO_FREQUENCY_SHIFT;
-            int16_t wi = (ring_waveform[idx] * out_buffer32[i]) / 32768; // consider for synthio_sat16 but had a weird artificat
+            int16_t wi = (ring_waveform[idx] * out_buffer32[i]) / 32768;
             out_buffer32[i] = wi;
         }
         synth->ring_accum[chan] = accum;
@@ -292,12 +273,12 @@ static mp_obj_t synthio_synth_get_note_filter(mp_obj_t note_obj) {
 static void sum_with_loudness(int32_t *out_buffer32, int32_t *tmp_buffer32, int16_t loudness[2], size_t dur, int synth_chan) {
     if (synth_chan == 1) {
         for (size_t i = 0; i < dur; i++) {
-            *out_buffer32++ += synthio_sat16((*tmp_buffer32++ *loudness[0]), 16);
+            *out_buffer32++ += (*tmp_buffer32++ *loudness[0]) >> 16;
         }
     } else {
         for (size_t i = 0; i < dur; i++) {
-            *out_buffer32++ += synthio_sat16((*tmp_buffer32 * loudness[0]), 16);
-            *out_buffer32++ += synthio_sat16((*tmp_buffer32++ *loudness[1]), 16);
+            *out_buffer32++ += (*tmp_buffer32 * loudness[0]) >> 16;
+            *out_buffer32++ += (*tmp_buffer32++ *loudness[1]) >> 16;
         }
     }
 }
@@ -346,8 +327,10 @@ void synthio_synth_synthesize(synthio_synth_t *synth, uint8_t **bufptr, uint32_t
         mp_obj_t filter_obj = synthio_synth_get_note_filter(note_obj);
         if (filter_obj != mp_const_none) {
             synthio_note_obj_t *note = MP_OBJ_TO_PTR(note_obj);
-            common_hal_synthio_biquad_tick(filter_obj);
-            synthio_biquad_filter_samples(filter_obj, &note->filter_state, tmp_buffer32, dur);
+            if (mp_obj_is_type(filter_obj, &synthio_block_biquad_type_obj)) {
+                common_hal_synthio_block_biquad_tick(filter_obj, &note->filter_state);
+            }
+            synthio_biquad_filter_samples(&note->filter_state, tmp_buffer32, dur);
         }
 
         // adjust loudness by envelope
@@ -401,8 +384,8 @@ void synthio_synth_init(synthio_synth_t *synth, uint32_t sample_rate, int channe
     synthio_synth_parse_waveform(&synth->waveform_bufinfo, waveform_obj);
     mp_arg_validate_int_range(channel_count, 1, 2, MP_QSTR_channel_count);
     synth->buffer_length = SYNTHIO_MAX_DUR * SYNTHIO_BYTES_PER_SAMPLE * channel_count;
-    synth->buffers[0] = m_malloc_without_collect(synth->buffer_length);
-    synth->buffers[1] = m_malloc_without_collect(synth->buffer_length);
+    synth->buffers[0] = m_malloc(synth->buffer_length);
+    synth->buffers[1] = m_malloc(synth->buffer_length);
     synth->base.channel_count = channel_count;
     synth->base.single_buffer = false;
     synth->other_channel = -1;

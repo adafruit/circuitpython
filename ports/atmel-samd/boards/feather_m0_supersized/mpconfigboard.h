@@ -20,8 +20,6 @@
 #define SPI_FLASH_SCK_PIN           &pin_PA09
 #define SPI_FLASH_CS_PIN            &pin_PA13
 
-#define BOARD_HAS_CRYSTAL 1
-
 #define DEFAULT_I2C_BUS_SCL (&pin_PA23)
 #define DEFAULT_I2C_BUS_SDA (&pin_PA22)
 

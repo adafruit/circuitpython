@@ -30,22 +30,21 @@ static MP_DEFINE_CONST_FUN_OBJ_0(wifi___init___obj, wifi___init__);
 
 static const mp_rom_map_elem_t wifi_module_globals_table[] = {
     // Name
-    { MP_ROM_QSTR(MP_QSTR___name__),        MP_ROM_QSTR(MP_QSTR_wifi) },
+    { MP_ROM_QSTR(MP_QSTR___name__),    MP_ROM_QSTR(MP_QSTR_wifi) },
 
     // Initialization
-    { MP_ROM_QSTR(MP_QSTR___init__),        MP_ROM_PTR(&wifi___init___obj) },
+    { MP_ROM_QSTR(MP_QSTR___init__),    MP_ROM_PTR(&wifi___init___obj) },
 
     // Classes
-    { MP_ROM_QSTR(MP_QSTR_AuthMode),        MP_ROM_PTR(&wifi_authmode_type) },
-    { MP_ROM_QSTR(MP_QSTR_Monitor),         MP_ROM_PTR(&wifi_monitor_type) },
-    { MP_ROM_QSTR(MP_QSTR_Network),         MP_ROM_PTR(&wifi_network_type) },
-    { MP_ROM_QSTR(MP_QSTR_Packet),          MP_ROM_PTR(&wifi_packet_type) },
-    { MP_ROM_QSTR(MP_QSTR_PowerManagement), MP_ROM_PTR(&wifi_power_management_type) },
-    { MP_ROM_QSTR(MP_QSTR_Radio),           MP_ROM_PTR(&wifi_radio_type) },
-    { MP_ROM_QSTR(MP_QSTR_Station),         MP_ROM_PTR(&wifi_radio_station_type) },
+    { MP_ROM_QSTR(MP_QSTR_AuthMode),    MP_ROM_PTR(&wifi_authmode_type) },
+    { MP_ROM_QSTR(MP_QSTR_Monitor),     MP_ROM_PTR(&wifi_monitor_type) },
+    { MP_ROM_QSTR(MP_QSTR_Network),     MP_ROM_PTR(&wifi_network_type) },
+    { MP_ROM_QSTR(MP_QSTR_Packet),      MP_ROM_PTR(&wifi_packet_type) },
+    { MP_ROM_QSTR(MP_QSTR_Radio),       MP_ROM_PTR(&wifi_radio_type) },
+    { MP_ROM_QSTR(MP_QSTR_Station),     MP_ROM_PTR(&wifi_radio_station_type) },
 
     // Properties
-    { MP_ROM_QSTR(MP_QSTR_radio),           MP_ROM_PTR(&common_hal_wifi_radio_obj) },
+    { MP_ROM_QSTR(MP_QSTR_radio),       MP_ROM_PTR(&common_hal_wifi_radio_obj) },
 };
 static MP_DEFINE_CONST_DICT(wifi_module_globals, wifi_module_globals_table);
 

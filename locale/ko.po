@@ -7,15 +7,15 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-01-04 12:55-0600\n"
-"PO-Revision-Date: 2025-06-30 16:01+0000\n"
-"Last-Translator: MAE <martin-aehle@hotmail.de>\n"
+"PO-Revision-Date: 2023-12-23 14:56+0000\n"
+"Last-Translator: 오수아 <tsuki@ajou.ac.kr>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: ko\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 5.13-dev\n"
+"X-Generator: Weblate 5.4-dev\n"
 
 #: main.c
 msgid ""
@@ -81,8 +81,8 @@ msgstr " 산출:\n"
 
 #: py/objstr.c
 #, c-format
-msgid "%%c needs int or char"
-msgstr ""
+msgid "%%c requires int or char"
+msgstr "%%c 전수(int)또는 캐릭터(char)필요합니다"
 
 #: shared-bindings/rgbmatrix/RGBMatrix.c
 #, c-format
@@ -95,7 +95,7 @@ msgstr ""
 msgid "%q and %q contain duplicate pins"
 msgstr "%q 및 %q에 중복된 핀이 포함"
 
-#: shared-bindings/audioio/AudioOut.c
+#: ports/atmel-samd/common-hal/audioio/AudioOut.c
 msgid "%q and %q must be different"
 msgstr "%q와 %q는 달라야 합니다"
 
@@ -114,10 +114,6 @@ msgstr "%q에 중복된 핀이 포함"
 #: ports/atmel-samd/common-hal/sdioio/SDCard.c
 msgid "%q failure: %d"
 msgstr "%q 실패: %d"
-
-#: shared-module/audiodelays/MultiTapDelay.c
-msgid "%q in %q must be of type %q or %q, not %q"
-msgstr ""
 
 #: py/argcheck.c shared-module/audiofilters/Filter.c
 msgid "%q in %q must be of type %q, not %q"
@@ -143,7 +139,6 @@ msgstr "%q 인덱스 범위를 벗어났습니다"
 msgid "%q indices must be integers, not %s"
 msgstr "%q 인덱스는 %s 가 아닌 정수 여야합니다"
 
-#: ports/analog/common-hal/busio/SPI.c ports/analog/common-hal/busio/UART.c
 #: shared-module/bitbangio/SPI.c
 msgid "%q init failed"
 msgstr "%q 초기화 실패"
@@ -172,7 +167,7 @@ msgstr "%q 길이는 <= %d>여야 합니다"
 msgid "%q length must be >= %d"
 msgstr "%q 길이는 >= %d이어야 합니다"
 
-#: py/runtime.c
+#: py/modsys.c py/objmodule.c py/runtime.c
 #, fuzzy
 msgid "%q moved from %q to %q"
 msgstr "%q가 %q에서 %q로 이동했습니다"
@@ -239,7 +234,7 @@ msgstr ""
 #: shared-bindings/bitmapfilter/__init__.c shared-bindings/canio/CAN.c
 #: shared-bindings/digitalio/Pull.c shared-bindings/supervisor/__init__.c
 #: shared-module/audiofilters/Filter.c shared-module/displayio/__init__.c
-#: shared-module/synthio/Synthesizer.c
+#: shared-module/synthio/Biquad.c shared-module/synthio/Synthesizer.c
 msgid "%q must be of type %q or %q, not %q"
 msgstr "%q는 %q가 아닌 %q 또는 %q 유형이어야 합니다"
 
@@ -248,7 +243,6 @@ msgid "%q must be of type %q, %q, or %q, not %q"
 msgstr ""
 
 #: py/argcheck.c py/runtime.c shared-bindings/bitmapfilter/__init__.c
-#: shared-module/audiodelays/MultiTapDelay.c shared-module/synthio/Note.c
 #: shared-module/synthio/__init__.c
 msgid "%q must be of type %q, not %q"
 msgstr "%q는 %q가 아니라 %q 유형이어야 합니다"
@@ -262,7 +256,6 @@ msgstr "%q는 2의 거듭제곱이어야 합니다"
 msgid "%q out of bounds"
 msgstr "%q가 경계를 벗어남"
 
-#: ports/analog/common-hal/busio/SPI.c
 #: ports/atmel-samd/common-hal/pulseio/PulseIn.c
 #: ports/cxd56/common-hal/pulseio/PulseIn.c
 #: ports/nordic/common-hal/pulseio/PulseIn.c
@@ -273,7 +266,7 @@ msgstr "%q가 경계를 벗어남"
 msgid "%q out of range"
 msgstr "%q가 범위를 벗어남"
 
-#: py/objmodule.c
+#: py/objmodule.c py/runtime.c
 msgid "%q renamed %q"
 msgstr "%q가 %q로 이름이 변경되었습니다"
 
@@ -336,15 +329,15 @@ msgid "'%q' object does not support '%q'"
 msgstr "'%q' 개체가 '%q'를 지원하지 않습니다"
 
 #: py/runtime.c
-msgid "'%q' object isn't an iterator"
+msgid "'%q' object is not an iterator"
 msgstr "'%q' 개체가 iterator가 아닙니다"
 
 #: py/objtype.c py/runtime.c shared-module/atexit/__init__.c
-msgid "'%q' object isn't callable"
-msgstr ""
+msgid "'%q' object is not callable"
+msgstr "'%q' 개체를 호출할 수 없습니다"
 
 #: py/runtime.c
-msgid "'%q' object isn't iterable"
+msgid "'%q' object is not iterable"
 msgstr "'%q' 개체를 사용할 수 없습니다"
 
 #: py/emitinlinethumb.c py/emitinlinextensa.c
@@ -504,7 +497,7 @@ msgstr "AP를 시작할 수 없습니다"
 #: shared-bindings/_bleio/Address.c shared-bindings/ipaddress/IPv4Address.c
 #, c-format
 msgid "Address must be %d bytes long"
-msgstr "주소 길이는 %d 바이트 여야합니다"
+msgstr "주소 길이는 % d 바이트 여야합니다"
 
 #: ports/espressif/common-hal/memorymap/AddressRange.c
 #: ports/nordic/common-hal/memorymap/AddressRange.c
@@ -538,8 +531,7 @@ msgstr "모든 RX FIFOs가 사용 중입니다"
 msgid "All SPI peripherals are in use"
 msgstr "사용중인 모든 SPI주변 기기"
 
-#: ports/analog/common-hal/busio/UART.c ports/espressif/common-hal/busio/UART.c
-#: ports/nordic/common-hal/busio/UART.c
+#: ports/espressif/common-hal/busio/UART.c ports/nordic/common-hal/busio/UART.c
 msgid "All UART peripherals are in use"
 msgstr "사용중인 모든 UART주변 기기"
 
@@ -700,7 +692,6 @@ msgstr "비트맵 크기와 값 당 비트가 일치해야 합니다"
 msgid "Boot device must be first (interface #0)."
 msgstr "부팅 장치는 첫 번째(인터페이스 #0)여야 합니다."
 
-#: ports/analog/common-hal/busio/UART.c
 #: ports/mimxrt10xx/common-hal/busio/UART.c
 msgid "Both RX and TX required for flow control"
 msgstr "플로우 제어에 RX와 TX가 모두 필요합니다"
@@ -843,8 +834,8 @@ msgid "Cannot record to a file"
 msgstr "파일에 녹음 할 수 없습니다"
 
 #: shared-module/storage/__init__.c
-msgid "Cannot remount path when visible via USB."
-msgstr ""
+msgid "Cannot remount '/' when visible via USB."
+msgstr "USB를 통해 표시될 때 '/'은 다시 마운트할 수 없습니다."
 
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Cannot set value when direction is input."
@@ -899,14 +890,6 @@ msgstr "좌표 배열의 길이가 다릅니다"
 msgid "Coordinate arrays types have different sizes"
 msgstr "좌표 배열 유형은 크기가 다릅니다"
 
-#: shared-module/usb/core/Device.c
-msgid "Could not allocate DMA capable buffer"
-msgstr ""
-
-#: ports/espressif/common-hal/rclcpy/Publisher.c
-msgid "Could not publish to ROS topic"
-msgstr ""
-
 #: shared-bindings/_bleio/Adapter.c
 msgid "Could not set address"
 msgstr "주소를 설정할 수 없습니다"
@@ -918,11 +901,6 @@ msgstr "인터럽트를 시작할 수 없습니다, RX가 사용 중입니다"
 #: shared-module/audiomp3/MP3Decoder.c
 msgid "Couldn't allocate decoder"
 msgstr "디코더를 할당할 수 없습니다"
-
-#: ports/espressif/common-hal/rclcpy/__init__.c
-#, c-format
-msgid "Critical ROS failure during soft reboot, reset required: %d"
-msgstr ""
 
 #: ports/stm/common-hal/analogio/AnalogOut.c
 msgid "DAC Channel Init Error"
@@ -1050,7 +1028,7 @@ msgstr ""
 "서비스 TXT 레코드를 추가하는 것에 실패했습니다; txt_records에서 비문자열 또"
 "는 바이트가 발견되었습니다"
 
-#: ports/analog/common-hal/busio/UART.c shared-module/rgbmatrix/RGBMatrix.c
+#: shared-module/rgbmatrix/RGBMatrix.c
 msgid "Failed to allocate %q buffer"
 msgstr "%q 버퍼 할당에 실패했습니다"
 
@@ -1108,10 +1086,6 @@ msgstr ""
 msgid "Failed to release mutex, err 0x%04x"
 msgstr "뮤텍스 해제에 실패했습니다, 오류 0x%04x"
 
-#: ports/analog/common-hal/busio/SPI.c
-msgid "Failed to set SPI Clock Mode"
-msgstr ""
-
 #: ports/zephyr-cp/common-hal/wifi/Radio.c
 msgid "Failed to set hostname"
 msgstr ""
@@ -1129,7 +1103,6 @@ msgstr "내부 플래시를 쓰는 것에 실패했습니다."
 msgid "File exists"
 msgstr "파일이 있습니다"
 
-#: shared-bindings/supervisor/__init__.c shared-module/lvfontio/OnDiskFont.c
 #: shared-module/os/getenv.c
 msgid "File not found"
 msgstr "파일을 찾을 수 없습니다"
@@ -1161,7 +1134,7 @@ msgstr "L8 색상 공간의 경우, 입력 비트맵은 픽셀 당 8 비트를 �
 msgid "For RGB colorspaces, input bitmap must have 16 bits per pixel"
 msgstr "RGB 색상 공간의 경우, 입력 비트맵은 픽셀 당 16 비트를 가져야 합니다"
 
-#: ports/cxd56/common-hal/camera/Camera.c shared-module/audiocore/WaveFile.c
+#: ports/cxd56/common-hal/camera/Camera.c
 msgid "Format not supported"
 msgstr "지원되지 않는 형식입니다"
 
@@ -1317,10 +1290,6 @@ msgstr "인터럽트 오류."
 msgid "Interrupted by output function"
 msgstr "출력 함수로 인해 종료되었다"
 
-#: ports/analog/common-hal/busio/UART.c
-#: ports/analog/peripherals/max32690/max32_i2c.c
-#: ports/analog/peripherals/max32690/max32_spi.c
-#: ports/analog/peripherals/max32690/max32_uart.c
 #: ports/espressif/common-hal/_bleio/Service.c
 #: ports/espressif/common-hal/espulp/ULP.c
 #: ports/espressif/common-hal/microcontroller/Processor.c
@@ -1331,9 +1300,7 @@ msgstr "출력 함수로 인해 종료되었다"
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c py/argcheck.c
 #: shared-bindings/digitalio/DigitalInOut.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c shared-bindings/pwmio/PWMOut.c
-#: shared-bindings/supervisor/__init__.c
 #: shared-module/aurora_epaper/aurora_framebuffer.c
-#: shared-module/lvfontio/OnDiskFont.c
 msgid "Invalid %q"
 msgstr "잘못된 %q"
 
@@ -1365,10 +1332,6 @@ msgstr "잘못된 BSSID"
 #: shared-bindings/wifi/Radio.c
 msgid "Invalid MAC address"
 msgstr "잘못된 MAC 주소"
-
-#: ports/espressif/common-hal/rclcpy/__init__.c
-msgid "Invalid ROS domain ID"
-msgstr ""
 
 #: ports/espressif/common-hal/espidf/__init__.c py/moderrno.c
 msgid "Invalid argument"
@@ -1413,7 +1376,6 @@ msgstr "잘못된 크기"
 msgid "Invalid socket for TLS"
 msgstr "TLS에 대한 잘못된 소켓"
 
-#: ports/analog/common-hal/busio/SPI.c
 #: ports/espressif/common-hal/espidf/__init__.c
 #: ports/nordic/common-hal/_bleio/__init__.c
 msgid "Invalid state"
@@ -1460,18 +1422,9 @@ msgstr "MAC 주소는 잘못되었습니다"
 msgid "MITM security not supported"
 msgstr ""
 
-#: ports/stm/common-hal/sdioio/SDCard.c
-#, c-format
-msgid "MMC/SDIO Clock Error %x"
-msgstr ""
-
 #: shared-bindings/is31fl3741/IS31FL3741.c
 msgid "Mapping must be a tuple"
 msgstr "매핑은 투플이어야 합니다"
-
-#: py/persistentcode.c
-msgid "MicroPython .mpy file; use CircuitPython mpy-cross"
-msgstr ""
 
 #: ports/raspberrypi/bindings/rp2pio/StateMachine.c
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
@@ -1661,10 +1614,6 @@ msgstr "SDA 또는 SCL에서 풀업을 찾을 수 없습니다; 케이블 연결
 #: shared-module/touchio/TouchIn.c
 msgid "No pulldown on pin; 1Mohm recommended"
 msgstr "핀에 풀다운이 없습니다; 1Mohm를 권장합니다"
-
-#: shared-module/touchio/TouchIn.c
-msgid "No pullup on pin; 1Mohm recommended"
-msgstr ""
 
 #: py/moderrno.c
 msgid "No space left on device"
@@ -1951,10 +1900,6 @@ msgstr "프로그램 크기가 잘못되었습니다"
 msgid "Program too long"
 msgstr "프로그램이 너무 깁니다"
 
-#: shared-bindings/rclcpy/Publisher.c
-msgid "Publishers can only be created from a parent node"
-msgstr ""
-
 #: shared-bindings/digitalio/DigitalInOut.c
 #, fuzzy
 msgid "Pull not used when direction is output."
@@ -1976,27 +1921,6 @@ msgstr "RNG DeInit 오류"
 msgid "RNG Init Error"
 msgstr "RNG 초기화 오류"
 
-#: ports/espressif/common-hal/rclcpy/__init__.c
-msgid "ROS failed to initialize. Is agent connected?"
-msgstr ""
-
-#: ports/espressif/common-hal/rclcpy/__init__.c
-msgid "ROS internal setup failure"
-msgstr ""
-
-#: ports/espressif/common-hal/rclcpy/__init__.c
-msgid "ROS memory allocator failure"
-msgstr ""
-
-#: ports/espressif/common-hal/rclcpy/Node.c
-msgid "ROS node failed to initialize"
-msgstr ""
-
-#: ports/espressif/common-hal/rclcpy/Publisher.c
-msgid "ROS topic failed to initialize"
-msgstr ""
-
-#: ports/analog/common-hal/busio/UART.c
 #: ports/atmel-samd/common-hal/busio/UART.c ports/cxd56/common-hal/busio/UART.c
 #: ports/nordic/common-hal/busio/UART.c ports/stm/common-hal/busio/UART.c
 msgid "RS485"
@@ -2089,10 +2013,6 @@ msgstr ""
 msgid "SPI init error"
 msgstr ""
 
-#: ports/analog/common-hal/busio/SPI.c
-msgid "SPI needs MOSI, MISO, and SCK"
-msgstr ""
-
 #: ports/raspberrypi/common-hal/busio/SPI.c
 msgid "SPI peripheral in use"
 msgstr ""
@@ -2132,7 +2052,6 @@ msgstr ""
 #: shared-bindings/displayio/TileGrid.c
 #: shared-bindings/memorymonitor/AllocationSize.c
 #: shared-bindings/pulseio/PulseIn.c
-#: shared-bindings/tilepalettemapper/TilePaletteMapper.c
 msgid "Slices not supported"
 msgstr ""
 
@@ -2200,18 +2119,12 @@ msgstr ""
 msgid "Tile height must exactly divide bitmap height"
 msgstr ""
 
-#: shared-bindings/displayio/TileGrid.c
-#: shared-bindings/tilepalettemapper/TilePaletteMapper.c
-#: shared-module/displayio/TileGrid.c
+#: shared-bindings/displayio/TileGrid.c shared-module/displayio/TileGrid.c
 msgid "Tile index out of bounds"
 msgstr ""
 
 #: shared-bindings/displayio/TileGrid.c
 msgid "Tile width must exactly divide bitmap width"
-msgstr ""
-
-#: shared-module/tilepalettemapper/TilePaletteMapper.c
-msgid "TilePaletteMapper may only be bound to a TileGrid once"
 msgstr ""
 
 #: shared-bindings/alarm/time/TimeAlarm.c
@@ -2222,10 +2135,6 @@ msgstr ""
 #: ports/nordic/common-hal/_bleio/Adapter.c
 #, c-format
 msgid "Timeout is too long: Maximum timeout length is %d seconds"
-msgstr ""
-
-#: ports/analog/common-hal/busio/UART.c
-msgid "Timeout must be < 100 seconds"
 msgstr ""
 
 #: ports/atmel-samd/common-hal/audiobusio/I2SOut.c
@@ -2271,10 +2180,6 @@ msgstr ""
 msgid "UART init"
 msgstr ""
 
-#: ports/analog/common-hal/busio/UART.c
-msgid "UART needs TX & RX"
-msgstr ""
-
 #: ports/raspberrypi/common-hal/busio/UART.c
 msgid "UART peripheral in use"
 msgstr ""
@@ -2283,21 +2188,13 @@ msgstr ""
 msgid "UART re-init"
 msgstr ""
 
-#: ports/analog/common-hal/busio/UART.c
-msgid "UART read error"
-msgstr ""
-
-#: ports/analog/common-hal/busio/UART.c
-msgid "UART transaction timeout"
-msgstr ""
-
 #: ports/stm/common-hal/busio/UART.c
 msgid "UART write"
 msgstr ""
 
 #: main.c
 msgid "UID:"
-msgstr "UID:"
+msgstr ""
 
 #: shared-module/usb_hid/Device.c
 msgid "USB busy"
@@ -2457,6 +2354,10 @@ msgstr ""
 msgid "Unsupported display bus type"
 msgstr ""
 
+#: shared-module/audiocore/WaveFile.c
+msgid "Unsupported format"
+msgstr ""
+
 #: shared-bindings/hashlib/__init__.c
 msgid "Unsupported hash algorithm"
 msgstr ""
@@ -2513,10 +2414,8 @@ msgstr ""
 msgid "Wi-Fi: "
 msgstr ""
 
-#: ports/espressif/common-hal/wifi/Radio.c
 #: ports/raspberrypi/common-hal/wifi/Radio.c
-#: ports/zephyr-cp/common-hal/wifi/Radio.c
-msgid "WiFi is not enabled"
+msgid "Wifi is not enabled"
 msgstr ""
 
 #: main.c
@@ -2752,18 +2651,11 @@ msgstr ""
 msgid "bits must be 32 or less"
 msgstr ""
 
-#: shared-bindings/audiofreeverb/Freeverb.c
-msgid "bits_per_sample must be 16"
-msgstr ""
-
-#: shared-bindings/audiodelays/Chorus.c shared-bindings/audiodelays/Echo.c
-#: shared-bindings/audiodelays/MultiTapDelay.c
-#: shared-bindings/audiodelays/PitchShift.c
+#: shared-bindings/audiodelays/Echo.c shared-bindings/audiodelays/PitchShift.c
 #: shared-bindings/audiofilters/Distortion.c
-#: shared-bindings/audiofilters/Filter.c shared-bindings/audiofilters/Phaser.c
-#: shared-bindings/audiomixer/Mixer.c
+#: shared-bindings/audiofilters/Filter.c shared-bindings/audiomixer/Mixer.c
 msgid "bits_per_sample must be 8 or 16"
-msgstr "bits_per_sample은 8 또는 16이어야합니다"
+msgstr "bits_per_sample은 8 또는 16이어야합니다."
 
 #: py/emitinlinethumb.c
 msgid "branch not in range"
@@ -2816,10 +2708,6 @@ msgstr ""
 #: shared-module/vectorio/Circle.c shared-module/vectorio/Polygon.c
 #: shared-module/vectorio/Rectangle.c
 msgid "can only have one parent"
-msgstr ""
-
-#: py/emitinlinerv32.c
-msgid "can only have up to 4 parameters for RV32 assembly"
 msgstr ""
 
 #: py/emitinlinethumb.c
@@ -2887,10 +2775,6 @@ msgstr ""
 
 #: py/objstr.c
 msgid "can't convert to str implicitly"
-msgstr ""
-
-#: py/objtype.c
-msgid "can't create '%q' instances"
 msgstr ""
 
 #: py/compile.c
@@ -2989,6 +2873,10 @@ msgstr ""
 
 #: extmod/ulab/code/ndarray.c
 msgid "cannot convert complex type"
+msgstr ""
+
+#: py/objtype.c
+msgid "cannot create '%q' instances"
 msgstr ""
 
 #: py/objtype.c
@@ -3305,15 +3193,7 @@ msgid "format"
 msgstr ""
 
 #: py/objstr.c
-msgid "format needs a dict"
-msgstr ""
-
-#: py/objstr.c
-msgid "format string didn't convert all arguments"
-msgstr ""
-
-#: py/objstr.c
-msgid "format string needs more arguments"
+msgid "format requires a dict"
 msgstr ""
 
 #: py/objdeque.c
@@ -3772,7 +3652,7 @@ msgid "must use keyword argument for key function"
 msgstr ""
 
 #: py/runtime.c
-msgid "name '%q' isn't defined"
+msgid "name '%q' is not defined"
 msgstr ""
 
 #: py/runtime.c
@@ -3862,7 +3742,7 @@ msgid "non-default argument follows default argument"
 msgstr ""
 
 #: py/objstr.c
-msgid "non-hex digit"
+msgid "non-hex digit found"
 msgstr ""
 
 #: ports/nordic/common-hal/_bleio/Adapter.c
@@ -3879,6 +3759,14 @@ msgstr ""
 
 #: py/parse.c
 msgid "not a constant"
+msgstr ""
+
+#: py/objstr.c
+msgid "not all arguments converted during string formatting"
+msgstr ""
+
+#: py/objstr.c
+msgid "not enough arguments for format string"
 msgstr ""
 
 #: extmod/ulab/code/numpy/carray/carray_tools.c
@@ -3943,6 +3831,10 @@ msgstr ""
 msgid "object with buffer protocol required"
 msgstr ""
 
+#: py/objstr.c
+msgid "odd-length string"
+msgstr ""
+
 #: supervisor/shared/web_workflow/web_workflow.c
 msgid "off"
 msgstr ""
@@ -3989,30 +3881,6 @@ msgstr ""
 
 #: py/vm.c
 msgid "opcode"
-msgstr ""
-
-#: py/emitinlinerv32.c
-msgid "opcode '%q' argument %d: expecting %q"
-msgstr ""
-
-#: py/emitinlinerv32.c
-msgid "opcode '%q' argument %d: must not be zero"
-msgstr ""
-
-#: py/emitinlinerv32.c
-msgid "opcode '%q' argument %d: out of range"
-msgstr ""
-
-#: py/emitinlinerv32.c
-msgid "opcode '%q' argument %d: undefined label '%q'"
-msgstr ""
-
-#: py/emitinlinerv32.c
-msgid "opcode '%q' argument %d: unknown register"
-msgstr ""
-
-#: py/emitinlinerv32.c
-msgid "opcode '%q': expecting %d arguments"
 msgstr ""
 
 #: extmod/ulab/code/ndarray.c extmod/ulab/code/numpy/bitwise.c
@@ -4106,10 +3974,6 @@ msgstr ""
 msgid "palette must be 32 bytes long"
 msgstr ""
 
-#: py/emitinlinerv32.c
-msgid "parameters must be registers in sequence a0 to a3"
-msgstr ""
-
 #: py/emitinlinextensa.c
 msgid "parameters must be registers in sequence a2 to a5"
 msgstr ""
@@ -4159,6 +4023,10 @@ msgstr ""
 msgid "pull masks conflict with direction masks"
 msgstr ""
 
+#: py/parse.c
+msgid "raw f-strings are not supported"
+msgstr ""
+
 #: extmod/ulab/code/numpy/fft/fft_tools.c
 msgid "real and imaginary parts must be of equal length"
 msgstr ""
@@ -4200,10 +4068,6 @@ msgstr ""
 
 #: py/objstr.c
 msgid "rsplit(None,n)"
-msgstr ""
-
-#: shared-bindings/audiofreeverb/Freeverb.c
-msgid "samples_signed must be true"
 msgstr ""
 
 #: ports/atmel-samd/common-hal/audiobusio/PDMIn.c
@@ -4297,6 +4161,10 @@ msgstr ""
 
 #: extmod/modre.c
 msgid "splitting with sub-captures"
+msgstr ""
+
+#: py/objstr.c
+msgid "start/end indices"
 msgstr ""
 
 #: shared-bindings/random/__init__.c
@@ -4421,11 +4289,11 @@ msgid "tx and rx cannot both be None"
 msgstr ""
 
 #: py/objtype.c
-msgid "type '%q' isn't an acceptable base type"
+msgid "type '%q' is not an acceptable base type"
 msgstr ""
 
 #: py/objtype.c
-msgid "type isn't an acceptable base type"
+msgid "type is not an acceptable base type"
 msgstr ""
 
 #: py/runtime.c
@@ -4461,10 +4329,6 @@ msgstr ""
 msgid "unindent doesn't match any outer indent level"
 msgstr ""
 
-#: py/emitinlinerv32.c
-msgid "unknown RV32 instruction '%q'"
-msgstr ""
-
 #: py/objstr.c
 #, c-format
 msgid "unknown conversion specifier %c"
@@ -4491,9 +4355,7 @@ msgstr ""
 msgid "unreadable attribute"
 msgstr ""
 
-#: shared-bindings/displayio/TileGrid.c shared-bindings/terminalio/Terminal.c
-#: shared-bindings/tilepalettemapper/TilePaletteMapper.c
-#: shared-bindings/vectorio/VectorShape.c
+#: shared-bindings/displayio/TileGrid.c shared-bindings/vectorio/VectorShape.c
 msgid "unsupported %q type"
 msgstr ""
 
@@ -4571,6 +4433,12 @@ msgstr ""
 msgid "width must be greater than zero"
 msgstr ""
 
+#: ports/espressif/common-hal/wifi/Radio.c
+#: ports/raspberrypi/common-hal/wifi/Radio.c
+#: ports/zephyr-cp/common-hal/wifi/Radio.c
+msgid "wifi is not enabled"
+msgstr ""
+
 #: ports/raspberrypi/common-hal/wifi/Monitor.c
 msgid "wifi.Monitor not available"
 msgstr ""
@@ -4632,16 +4500,6 @@ msgstr ""
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr ""
-
-#, c-format
-#~ msgid "%%c requires int or char"
-#~ msgstr "%%c 전수(int)또는 캐릭터(char)필요합니다"
-
-#~ msgid "'%q' object is not callable"
-#~ msgstr "'%q' 개체를 호출할 수 없습니다"
-
-#~ msgid "Cannot remount '/' when visible via USB."
-#~ msgstr "USB를 통해 표시될 때 '/'은 다시 마운트할 수 없습니다."
 
 #~ msgid "Data chunk must follow fmt chunk"
 #~ msgstr "데이터 청크는 fmt 청크를 따라야 합니다"
@@ -4768,13 +4626,13 @@ msgstr ""
 #~ msgid "'%s' object does not support item deletion"
 #~ msgstr "'%s' 은 삭제할 수 없습니다"
 
-#~ msgid "'%s' object isn't an iterator"
+#~ msgid "'%s' object is not an iterator"
 #~ msgstr "'%s' 은 수정할 수 없습니다"
 
 #~ msgid "'%s' object is not callable"
 #~ msgstr "'%s' 을 검색 할 수 없습니다"
 
-#~ msgid "'%s' object isn't iterable"
+#~ msgid "'%s' object is not iterable"
 #~ msgstr "'%s' 은 변경할 수 없습니다"
 
 #~ msgid "'break' outside loop"

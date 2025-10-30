@@ -6,15 +6,15 @@ msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-01-04 12:55-0600\n"
-"PO-Revision-Date: 2025-06-30 16:01+0000\n"
-"Last-Translator: MAE <martin-aehle@hotmail.de>\n"
+"PO-Revision-Date: 2023-11-16 15:03+0000\n"
+"Last-Translator: Scott Shawcroft <scott@tannewt.org>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "Language: cs\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=((n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2);\n"
-"X-Generator: Weblate 5.13-dev\n"
+"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
+"X-Generator: Weblate 5.2\n"
 
 #: main.c
 msgid ""
@@ -80,8 +80,8 @@ msgstr " výstup:\n"
 
 #: py/objstr.c
 #, c-format
-msgid "%%c needs int or char"
-msgstr ""
+msgid "%%c requires int or char"
+msgstr "%%c vyžaduje int nebo char"
 
 #: shared-bindings/rgbmatrix/RGBMatrix.c
 #, c-format
@@ -93,7 +93,7 @@ msgstr "%d adresní pin, %d rgb pin a %d dlaždice indikuje výšku %d, ne %d"
 msgid "%q and %q contain duplicate pins"
 msgstr "%q a %q obsahují duplicitní piny"
 
-#: shared-bindings/audioio/AudioOut.c
+#: ports/atmel-samd/common-hal/audioio/AudioOut.c
 msgid "%q and %q must be different"
 msgstr "%q a %q musí být rozdílné"
 
@@ -112,10 +112,6 @@ msgstr "%q obsahuje duplicitní piny"
 #: ports/atmel-samd/common-hal/sdioio/SDCard.c
 msgid "%q failure: %d"
 msgstr "%q: selhání %d"
-
-#: shared-module/audiodelays/MultiTapDelay.c
-msgid "%q in %q must be of type %q or %q, not %q"
-msgstr ""
 
 #: py/argcheck.c shared-module/audiofilters/Filter.c
 msgid "%q in %q must be of type %q, not %q"
@@ -141,7 +137,6 @@ msgstr "Index %q je mimo rozsah"
 msgid "%q indices must be integers, not %s"
 msgstr "Indexy %q musí být celá čísla, nikoli %s"
 
-#: ports/analog/common-hal/busio/SPI.c ports/analog/common-hal/busio/UART.c
 #: shared-module/bitbangio/SPI.c
 msgid "%q init failed"
 msgstr "Inicializace %q selhala"
@@ -170,7 +165,7 @@ msgstr "Délka %q musí být <= %d"
 msgid "%q length must be >= %d"
 msgstr "Délka %q musí být >= %d"
 
-#: py/runtime.c
+#: py/modsys.c py/objmodule.c py/runtime.c
 msgid "%q moved from %q to %q"
 msgstr ""
 
@@ -231,7 +226,7 @@ msgstr ""
 #: shared-bindings/bitmapfilter/__init__.c shared-bindings/canio/CAN.c
 #: shared-bindings/digitalio/Pull.c shared-bindings/supervisor/__init__.c
 #: shared-module/audiofilters/Filter.c shared-module/displayio/__init__.c
-#: shared-module/synthio/Synthesizer.c
+#: shared-module/synthio/Biquad.c shared-module/synthio/Synthesizer.c
 msgid "%q must be of type %q or %q, not %q"
 msgstr "%q musí být typu %q nebo %q, ne %q"
 
@@ -240,7 +235,6 @@ msgid "%q must be of type %q, %q, or %q, not %q"
 msgstr ""
 
 #: py/argcheck.c py/runtime.c shared-bindings/bitmapfilter/__init__.c
-#: shared-module/audiodelays/MultiTapDelay.c shared-module/synthio/Note.c
 #: shared-module/synthio/__init__.c
 msgid "%q must be of type %q, not %q"
 msgstr "%q musí být typu %q, ne %q"
@@ -253,7 +247,6 @@ msgstr "%q musí být mocnina 2"
 msgid "%q out of bounds"
 msgstr "%q je mimo hranice"
 
-#: ports/analog/common-hal/busio/SPI.c
 #: ports/atmel-samd/common-hal/pulseio/PulseIn.c
 #: ports/cxd56/common-hal/pulseio/PulseIn.c
 #: ports/nordic/common-hal/pulseio/PulseIn.c
@@ -263,7 +256,7 @@ msgstr "%q je mimo hranice"
 msgid "%q out of range"
 msgstr "%q je mimo rozsah"
 
-#: py/objmodule.c
+#: py/objmodule.c py/runtime.c
 msgid "%q renamed %q"
 msgstr ""
 
@@ -322,15 +315,15 @@ msgid "'%q' object does not support '%q'"
 msgstr "Objekt '%q' nepodporuje '%q'"
 
 #: py/runtime.c
-msgid "'%q' object isn't an iterator"
+msgid "'%q' object is not an iterator"
 msgstr "Objekt '%q' není iterátor"
 
 #: py/objtype.c py/runtime.c shared-module/atexit/__init__.c
-msgid "'%q' object isn't callable"
-msgstr ""
+msgid "'%q' object is not callable"
+msgstr "Objekt '%q' nelze zavolat"
 
 #: py/runtime.c
-msgid "'%q' object isn't iterable"
+msgid "'%q' object is not iterable"
 msgstr "Objekt '%q' není iterovatelný"
 
 #: py/emitinlinethumb.c py/emitinlinextensa.c
@@ -515,8 +508,7 @@ msgstr "Všechny RX FIFO jsou používány"
 msgid "All SPI peripherals are in use"
 msgstr "Všechny SPI periferie jsou používány"
 
-#: ports/analog/common-hal/busio/UART.c ports/espressif/common-hal/busio/UART.c
-#: ports/nordic/common-hal/busio/UART.c
+#: ports/espressif/common-hal/busio/UART.c ports/nordic/common-hal/busio/UART.c
 msgid "All UART peripherals are in use"
 msgstr "Všechny UART periferie jsou používány"
 
@@ -669,7 +661,6 @@ msgstr "Velikost bitmapy a počet bitů na hodnotu se musí shodovat"
 msgid "Boot device must be first (interface #0)."
 msgstr "Bootovací zařízení musí být první (rozhraní #0)."
 
-#: ports/analog/common-hal/busio/UART.c
 #: ports/mimxrt10xx/common-hal/busio/UART.c
 msgid "Both RX and TX required for flow control"
 msgstr "RX a TX jsou vyžadovány pro kontrolu toku"
@@ -814,8 +805,8 @@ msgid "Cannot record to a file"
 msgstr "Nelze nahrávat do souboru"
 
 #: shared-module/storage/__init__.c
-msgid "Cannot remount path when visible via USB."
-msgstr ""
+msgid "Cannot remount '/' when visible via USB."
+msgstr "Není možné znovu připojit '/', pokud je viditelné pomocí USB."
 
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Cannot set value when direction is input."
@@ -869,14 +860,6 @@ msgstr "Pole souřadnic mají různé délky"
 msgid "Coordinate arrays types have different sizes"
 msgstr ""
 
-#: shared-module/usb/core/Device.c
-msgid "Could not allocate DMA capable buffer"
-msgstr ""
-
-#: ports/espressif/common-hal/rclcpy/Publisher.c
-msgid "Could not publish to ROS topic"
-msgstr ""
-
 #: shared-bindings/_bleio/Adapter.c
 msgid "Could not set address"
 msgstr "Není možné nastavit adresu"
@@ -888,11 +871,6 @@ msgstr "Nelze začít přerušení, RX je zaneprázdněn"
 #: shared-module/audiomp3/MP3Decoder.c
 msgid "Couldn't allocate decoder"
 msgstr "Dekodér nelze přiřadit"
-
-#: ports/espressif/common-hal/rclcpy/__init__.c
-#, c-format
-msgid "Critical ROS failure during soft reboot, reset required: %d"
-msgstr ""
 
 #: ports/stm/common-hal/analogio/AnalogOut.c
 msgid "DAC Channel Init Error"
@@ -1017,7 +995,7 @@ msgid ""
 "Failed to add service TXT record; non-string or bytes found in txt_records"
 msgstr ""
 
-#: ports/analog/common-hal/busio/UART.c shared-module/rgbmatrix/RGBMatrix.c
+#: shared-module/rgbmatrix/RGBMatrix.c
 msgid "Failed to allocate %q buffer"
 msgstr "Chyba alokace %q bufferu"
 
@@ -1075,10 +1053,6 @@ msgstr ""
 msgid "Failed to release mutex, err 0x%04x"
 msgstr "Nepodařilo se uvolnit mutex, err 0x%04x"
 
-#: ports/analog/common-hal/busio/SPI.c
-msgid "Failed to set SPI Clock Mode"
-msgstr ""
-
 #: ports/zephyr-cp/common-hal/wifi/Radio.c
 msgid "Failed to set hostname"
 msgstr ""
@@ -1095,7 +1069,6 @@ msgstr "Nepodařilo se zapsat do interní paměti."
 msgid "File exists"
 msgstr "soubor existuje"
 
-#: shared-bindings/supervisor/__init__.c shared-module/lvfontio/OnDiskFont.c
 #: shared-module/os/getenv.c
 msgid "File not found"
 msgstr "Soubor nenalezen"
@@ -1127,7 +1100,7 @@ msgstr "Pro barevný prostor L8 musí mít vstupní bitmapa 8 bitů na pixel"
 msgid "For RGB colorspaces, input bitmap must have 16 bits per pixel"
 msgstr "Pro barevný prostor RGB musí mít vstupní bitmapa 16 bitů na pixel"
 
-#: ports/cxd56/common-hal/camera/Camera.c shared-module/audiocore/WaveFile.c
+#: ports/cxd56/common-hal/camera/Camera.c
 msgid "Format not supported"
 msgstr "Formát není podporován"
 
@@ -1283,10 +1256,6 @@ msgstr "Chyba přerušení."
 msgid "Interrupted by output function"
 msgstr ""
 
-#: ports/analog/common-hal/busio/UART.c
-#: ports/analog/peripherals/max32690/max32_i2c.c
-#: ports/analog/peripherals/max32690/max32_spi.c
-#: ports/analog/peripherals/max32690/max32_uart.c
 #: ports/espressif/common-hal/_bleio/Service.c
 #: ports/espressif/common-hal/espulp/ULP.c
 #: ports/espressif/common-hal/microcontroller/Processor.c
@@ -1297,9 +1266,7 @@ msgstr ""
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c py/argcheck.c
 #: shared-bindings/digitalio/DigitalInOut.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c shared-bindings/pwmio/PWMOut.c
-#: shared-bindings/supervisor/__init__.c
 #: shared-module/aurora_epaper/aurora_framebuffer.c
-#: shared-module/lvfontio/OnDiskFont.c
 msgid "Invalid %q"
 msgstr "Špatný %s"
 
@@ -1331,10 +1298,6 @@ msgstr "Chybné BSSID"
 #: shared-bindings/wifi/Radio.c
 msgid "Invalid MAC address"
 msgstr "Chybná MAC adresa"
-
-#: ports/espressif/common-hal/rclcpy/__init__.c
-msgid "Invalid ROS domain ID"
-msgstr ""
 
 #: ports/espressif/common-hal/espidf/__init__.c py/moderrno.c
 msgid "Invalid argument"
@@ -1379,7 +1342,6 @@ msgstr "Chybná velikost"
 msgid "Invalid socket for TLS"
 msgstr "Chybný soket pro TLS"
 
-#: ports/analog/common-hal/busio/SPI.c
 #: ports/espressif/common-hal/espidf/__init__.c
 #: ports/nordic/common-hal/_bleio/__init__.c
 msgid "Invalid state"
@@ -1426,17 +1388,8 @@ msgstr "MAC adresa byla chybná"
 msgid "MITM security not supported"
 msgstr ""
 
-#: ports/stm/common-hal/sdioio/SDCard.c
-#, c-format
-msgid "MMC/SDIO Clock Error %x"
-msgstr ""
-
 #: shared-bindings/is31fl3741/IS31FL3741.c
 msgid "Mapping must be a tuple"
-msgstr ""
-
-#: py/persistentcode.c
-msgid "MicroPython .mpy file; use CircuitPython mpy-cross"
 msgstr ""
 
 #: ports/raspberrypi/bindings/rp2pio/StateMachine.c
@@ -1620,10 +1573,6 @@ msgstr "SDA nebo SCL zřejmě nemá pull up; zkontroluj zapojení"
 #: shared-module/touchio/TouchIn.c
 msgid "No pulldown on pin; 1Mohm recommended"
 msgstr "Žádný pulldown na pinu; doporučeno 1Mohm"
-
-#: shared-module/touchio/TouchIn.c
-msgid "No pullup on pin; 1Mohm recommended"
-msgstr ""
 
 #: py/moderrno.c
 msgid "No space left on device"
@@ -1898,10 +1847,6 @@ msgstr "Velikost programu je nesprávná"
 msgid "Program too long"
 msgstr "Program je příliš dlouhý"
 
-#: shared-bindings/rclcpy/Publisher.c
-msgid "Publishers can only be created from a parent node"
-msgstr ""
-
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Pull not used when direction is output."
 msgstr ""
@@ -1922,27 +1867,6 @@ msgstr ""
 msgid "RNG Init Error"
 msgstr ""
 
-#: ports/espressif/common-hal/rclcpy/__init__.c
-msgid "ROS failed to initialize. Is agent connected?"
-msgstr ""
-
-#: ports/espressif/common-hal/rclcpy/__init__.c
-msgid "ROS internal setup failure"
-msgstr ""
-
-#: ports/espressif/common-hal/rclcpy/__init__.c
-msgid "ROS memory allocator failure"
-msgstr ""
-
-#: ports/espressif/common-hal/rclcpy/Node.c
-msgid "ROS node failed to initialize"
-msgstr ""
-
-#: ports/espressif/common-hal/rclcpy/Publisher.c
-msgid "ROS topic failed to initialize"
-msgstr ""
-
-#: ports/analog/common-hal/busio/UART.c
 #: ports/atmel-samd/common-hal/busio/UART.c ports/cxd56/common-hal/busio/UART.c
 #: ports/nordic/common-hal/busio/UART.c ports/stm/common-hal/busio/UART.c
 msgid "RS485"
@@ -2035,10 +1959,6 @@ msgstr "Konfigurace SPI selhala"
 msgid "SPI init error"
 msgstr "Chyba inicializace SPI"
 
-#: ports/analog/common-hal/busio/SPI.c
-msgid "SPI needs MOSI, MISO, and SCK"
-msgstr ""
-
 #: ports/raspberrypi/common-hal/busio/SPI.c
 msgid "SPI peripheral in use"
 msgstr "SPI periferie je používána"
@@ -2078,7 +1998,6 @@ msgstr ""
 #: shared-bindings/displayio/TileGrid.c
 #: shared-bindings/memorymonitor/AllocationSize.c
 #: shared-bindings/pulseio/PulseIn.c
-#: shared-bindings/tilepalettemapper/TilePaletteMapper.c
 msgid "Slices not supported"
 msgstr ""
 
@@ -2146,18 +2065,12 @@ msgstr ""
 msgid "Tile height must exactly divide bitmap height"
 msgstr ""
 
-#: shared-bindings/displayio/TileGrid.c
-#: shared-bindings/tilepalettemapper/TilePaletteMapper.c
-#: shared-module/displayio/TileGrid.c
+#: shared-bindings/displayio/TileGrid.c shared-module/displayio/TileGrid.c
 msgid "Tile index out of bounds"
 msgstr ""
 
 #: shared-bindings/displayio/TileGrid.c
 msgid "Tile width must exactly divide bitmap width"
-msgstr ""
-
-#: shared-module/tilepalettemapper/TilePaletteMapper.c
-msgid "TilePaletteMapper may only be bound to a TileGrid once"
 msgstr ""
 
 #: shared-bindings/alarm/time/TimeAlarm.c
@@ -2169,10 +2082,6 @@ msgstr "Čas je v minulosti."
 #, c-format
 msgid "Timeout is too long: Maximum timeout length is %d seconds"
 msgstr "Časový limit je příliš dlouhý: maximální limit je %d vteřin"
-
-#: ports/analog/common-hal/busio/UART.c
-msgid "Timeout must be < 100 seconds"
-msgstr ""
 
 #: ports/atmel-samd/common-hal/audiobusio/I2SOut.c
 msgid "Too many channels in sample"
@@ -2218,10 +2127,6 @@ msgstr "De-inicializace UART"
 msgid "UART init"
 msgstr "Inicializace UART"
 
-#: ports/analog/common-hal/busio/UART.c
-msgid "UART needs TX & RX"
-msgstr ""
-
 #: ports/raspberrypi/common-hal/busio/UART.c
 msgid "UART peripheral in use"
 msgstr "UART periférie je používána"
@@ -2229,14 +2134,6 @@ msgstr "UART periférie je používána"
 #: ports/stm/common-hal/busio/UART.c
 msgid "UART re-init"
 msgstr "Opětovná inicializace UART"
-
-#: ports/analog/common-hal/busio/UART.c
-msgid "UART read error"
-msgstr ""
-
-#: ports/analog/common-hal/busio/UART.c
-msgid "UART transaction timeout"
-msgstr ""
 
 #: ports/stm/common-hal/busio/UART.c
 msgid "UART write"
@@ -2403,6 +2300,10 @@ msgstr "Nepodporovaný barevný prostor"
 msgid "Unsupported display bus type"
 msgstr "Nepodporovaná sběrnice dispalye"
 
+#: shared-module/audiocore/WaveFile.c
+msgid "Unsupported format"
+msgstr "Nepodporovaný formát"
+
 #: shared-bindings/hashlib/__init__.c
 msgid "Unsupported hash algorithm"
 msgstr "Nepodporovaný hash algoritmus"
@@ -2464,11 +2365,9 @@ msgstr ""
 msgid "Wi-Fi: "
 msgstr "Wi-Fi: "
 
-#: ports/espressif/common-hal/wifi/Radio.c
 #: ports/raspberrypi/common-hal/wifi/Radio.c
-#: ports/zephyr-cp/common-hal/wifi/Radio.c
-msgid "WiFi is not enabled"
-msgstr ""
+msgid "Wifi is not enabled"
+msgstr "Wifi není povoleno"
 
 #: main.c
 msgid "Woken up by alarm.\n"
@@ -2703,16 +2602,9 @@ msgstr "velikosti bitmapy musí odpovídat"
 msgid "bits must be 32 or less"
 msgstr "počet bitů nesmí přesáhnout 32"
 
-#: shared-bindings/audiofreeverb/Freeverb.c
-msgid "bits_per_sample must be 16"
-msgstr ""
-
-#: shared-bindings/audiodelays/Chorus.c shared-bindings/audiodelays/Echo.c
-#: shared-bindings/audiodelays/MultiTapDelay.c
-#: shared-bindings/audiodelays/PitchShift.c
+#: shared-bindings/audiodelays/Echo.c shared-bindings/audiodelays/PitchShift.c
 #: shared-bindings/audiofilters/Distortion.c
-#: shared-bindings/audiofilters/Filter.c shared-bindings/audiofilters/Phaser.c
-#: shared-bindings/audiomixer/Mixer.c
+#: shared-bindings/audiofilters/Filter.c shared-bindings/audiomixer/Mixer.c
 msgid "bits_per_sample must be 8 or 16"
 msgstr ""
 
@@ -2768,10 +2660,6 @@ msgstr ""
 #: shared-module/vectorio/Rectangle.c
 msgid "can only have one parent"
 msgstr "může mít pouze jednoho rodiče"
-
-#: py/emitinlinerv32.c
-msgid "can only have up to 4 parameters for RV32 assembly"
-msgstr ""
 
 #: py/emitinlinethumb.c
 msgid "can only have up to 4 parameters to Thumb assembly"
@@ -2838,10 +2726,6 @@ msgstr "nelze převést na int"
 
 #: py/objstr.c
 msgid "can't convert to str implicitly"
-msgstr ""
-
-#: py/objtype.c
-msgid "can't create '%q' instances"
 msgstr ""
 
 #: py/compile.c
@@ -2941,6 +2825,10 @@ msgstr "nelze převést complex na dtype"
 #: extmod/ulab/code/ndarray.c
 msgid "cannot convert complex type"
 msgstr "nelze převést typ complex"
+
+#: py/objtype.c
+msgid "cannot create '%q' instances"
+msgstr ""
 
 #: py/objtype.c
 msgid "cannot create instance"
@@ -3256,15 +3144,7 @@ msgid "format"
 msgstr ""
 
 #: py/objstr.c
-msgid "format needs a dict"
-msgstr ""
-
-#: py/objstr.c
-msgid "format string didn't convert all arguments"
-msgstr ""
-
-#: py/objstr.c
-msgid "format string needs more arguments"
+msgid "format requires a dict"
 msgstr ""
 
 #: py/objdeque.c
@@ -3723,7 +3603,7 @@ msgid "must use keyword argument for key function"
 msgstr ""
 
 #: py/runtime.c
-msgid "name '%q' isn't defined"
+msgid "name '%q' is not defined"
 msgstr ""
 
 #: py/runtime.c
@@ -3813,7 +3693,7 @@ msgid "non-default argument follows default argument"
 msgstr ""
 
 #: py/objstr.c
-msgid "non-hex digit"
+msgid "non-hex digit found"
 msgstr ""
 
 #: ports/nordic/common-hal/_bleio/Adapter.c
@@ -3831,6 +3711,14 @@ msgstr ""
 #: py/parse.c
 msgid "not a constant"
 msgstr "není konstanta"
+
+#: py/objstr.c
+msgid "not all arguments converted during string formatting"
+msgstr ""
+
+#: py/objstr.c
+msgid "not enough arguments for format string"
+msgstr ""
 
 #: extmod/ulab/code/numpy/carray/carray_tools.c
 msgid "not implemented for complex dtype"
@@ -3894,6 +3782,10 @@ msgstr "objekt typu '%s' nemá len()"
 msgid "object with buffer protocol required"
 msgstr ""
 
+#: py/objstr.c
+msgid "odd-length string"
+msgstr ""
+
 #: supervisor/shared/web_workflow/web_workflow.c
 msgid "off"
 msgstr "vypnuto"
@@ -3941,30 +3833,6 @@ msgstr ""
 #: py/vm.c
 msgid "opcode"
 msgstr "opcode"
-
-#: py/emitinlinerv32.c
-msgid "opcode '%q' argument %d: expecting %q"
-msgstr ""
-
-#: py/emitinlinerv32.c
-msgid "opcode '%q' argument %d: must not be zero"
-msgstr ""
-
-#: py/emitinlinerv32.c
-msgid "opcode '%q' argument %d: out of range"
-msgstr ""
-
-#: py/emitinlinerv32.c
-msgid "opcode '%q' argument %d: undefined label '%q'"
-msgstr ""
-
-#: py/emitinlinerv32.c
-msgid "opcode '%q' argument %d: unknown register"
-msgstr ""
-
-#: py/emitinlinerv32.c
-msgid "opcode '%q': expecting %d arguments"
-msgstr ""
 
 #: extmod/ulab/code/ndarray.c extmod/ulab/code/numpy/bitwise.c
 #: extmod/ulab/code/numpy/compare.c extmod/ulab/code/numpy/vector.c
@@ -4057,10 +3925,6 @@ msgstr ""
 msgid "palette must be 32 bytes long"
 msgstr ""
 
-#: py/emitinlinerv32.c
-msgid "parameters must be registers in sequence a0 to a3"
-msgstr ""
-
 #: py/emitinlinextensa.c
 msgid "parameters must be registers in sequence a2 to a5"
 msgstr ""
@@ -4110,6 +3974,10 @@ msgstr ""
 msgid "pull masks conflict with direction masks"
 msgstr ""
 
+#: py/parse.c
+msgid "raw f-strings are not supported"
+msgstr "surové f-stringy nesjou podporované"
+
 #: extmod/ulab/code/numpy/fft/fft_tools.c
 msgid "real and imaginary parts must be of equal length"
 msgstr ""
@@ -4151,10 +4019,6 @@ msgstr ""
 
 #: py/objstr.c
 msgid "rsplit(None,n)"
-msgstr "rsplit(None,n)"
-
-#: shared-bindings/audiofreeverb/Freeverb.c
-msgid "samples_signed must be true"
 msgstr ""
 
 #: ports/atmel-samd/common-hal/audiobusio/PDMIn.c
@@ -4248,6 +4112,10 @@ msgstr ""
 
 #: extmod/modre.c
 msgid "splitting with sub-captures"
+msgstr ""
+
+#: py/objstr.c
+msgid "start/end indices"
 msgstr ""
 
 #: shared-bindings/random/__init__.c
@@ -4372,11 +4240,11 @@ msgid "tx and rx cannot both be None"
 msgstr ""
 
 #: py/objtype.c
-msgid "type '%q' isn't an acceptable base type"
+msgid "type '%q' is not an acceptable base type"
 msgstr ""
 
 #: py/objtype.c
-msgid "type isn't an acceptable base type"
+msgid "type is not an acceptable base type"
 msgstr ""
 
 #: py/runtime.c
@@ -4412,10 +4280,6 @@ msgstr ""
 msgid "unindent doesn't match any outer indent level"
 msgstr ""
 
-#: py/emitinlinerv32.c
-msgid "unknown RV32 instruction '%q'"
-msgstr ""
-
 #: py/objstr.c
 #, c-format
 msgid "unknown conversion specifier %c"
@@ -4442,9 +4306,7 @@ msgstr "neshoduje se '%c' ve formátu"
 msgid "unreadable attribute"
 msgstr ""
 
-#: shared-bindings/displayio/TileGrid.c shared-bindings/terminalio/Terminal.c
-#: shared-bindings/tilepalettemapper/TilePaletteMapper.c
-#: shared-bindings/vectorio/VectorShape.c
+#: shared-bindings/displayio/TileGrid.c shared-bindings/vectorio/VectorShape.c
 msgid "unsupported %q type"
 msgstr "nepodporovaný typ% q"
 
@@ -4522,6 +4384,12 @@ msgstr ""
 msgid "width must be greater than zero"
 msgstr ""
 
+#: ports/espressif/common-hal/wifi/Radio.c
+#: ports/raspberrypi/common-hal/wifi/Radio.c
+#: ports/zephyr-cp/common-hal/wifi/Radio.c
+msgid "wifi is not enabled"
+msgstr ""
+
 #: ports/raspberrypi/common-hal/wifi/Monitor.c
 msgid "wifi.Monitor not available"
 msgstr "wifi.Monitor není dostupný"
@@ -4583,25 +4451,6 @@ msgstr ""
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr ""
-
-#, c-format
-#~ msgid "%%c requires int or char"
-#~ msgstr "%%c vyžaduje int nebo char"
-
-#~ msgid "'%q' object is not callable"
-#~ msgstr "Objekt '%q' nelze zavolat"
-
-#~ msgid "raw f-strings are not supported"
-#~ msgstr "surové f-stringy nesjou podporované"
-
-#~ msgid "Unsupported format"
-#~ msgstr "Nepodporovaný formát"
-
-#~ msgid "Wifi is not enabled"
-#~ msgstr "Wifi není povoleno"
-
-#~ msgid "Cannot remount '/' when visible via USB."
-#~ msgstr "Není možné znovu připojit '/', pokud je viditelné pomocí USB."
 
 #~ msgid "Data chunk must follow fmt chunk"
 #~ msgstr "Datový blok musí následovat fmt blok"
@@ -4816,7 +4665,7 @@ msgstr ""
 #~ msgid "'continue' outside loop"
 #~ msgstr "'continue' je volán mimo cyklus"
 
-#~ msgid "'coroutine' object isn't an iterator"
+#~ msgid "'coroutine' object is not an iterator"
 #~ msgstr "Objekt 'coroutine' není iterátor"
 
 #~ msgid "64 bit types"

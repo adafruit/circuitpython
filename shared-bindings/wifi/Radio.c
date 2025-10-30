@@ -6,11 +6,9 @@
 
 #include "shared-bindings/wifi/__init__.h"
 #include "shared-bindings/wifi/AuthMode.h"
-#include "shared-bindings/wifi/PowerManagement.h"
 
 #include <string.h>
 
-#include "py/enum.h"
 #include "py/unicode.h"
 #include "py/runtime.h"
 #include "py/objproperty.h"
@@ -99,7 +97,7 @@ MP_PROPERTY_GETSET(wifi_radio_enabled_obj,
     (mp_obj_t)&wifi_radio_get_enabled_obj,
     (mp_obj_t)&wifi_radio_set_enabled_obj);
 
-//|     hostname: Union[str, ReadableBuffer]
+//|     hostname: Union[str | ReadableBuffer]
 //|     """Hostname for wifi interface. When the hostname is altered after interface started/connected
 //|        the changes would only be reflected once the interface restarts/reconnects."""
 static mp_obj_t wifi_radio_get_hostname(mp_obj_t self_in) {
@@ -189,30 +187,33 @@ MP_PROPERTY_GETSET(wifi_radio_tx_power_obj,
     (mp_obj_t)&wifi_radio_get_tx_power_obj,
     (mp_obj_t)&wifi_radio_set_tx_power_obj);
 
-//|     power_management: PowerManagement
-//|     """Wifi power management setting. See `wifi.PowerManagement`. The default is `wifi.PowerManagement.MIN`.
-//|     """
-static mp_obj_t wifi_radio_get_power_management(mp_obj_t self_in) {
+//|     listen_interval: int
+//|     """Wifi power save listen interval, in DTIM periods, or 100ms intervals if TWT is supported."""
+static mp_obj_t wifi_radio_get_listen_interval(mp_obj_t self_in) {
+    #if CIRCUITPY_WIFI_RADIO_SETTABLE_LISTEN_INTERVAL
     wifi_radio_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    return cp_enum_find(&wifi_power_management_type, common_hal_wifi_radio_get_power_management(self));
+    return mp_obj_new_int(common_hal_wifi_radio_get_listen_interval(self));
+    #else
+    return mp_obj_new_int(0);
+    #endif
 }
-MP_DEFINE_CONST_FUN_OBJ_1(wifi_radio_get_power_management_obj, wifi_radio_get_power_management);
+MP_DEFINE_CONST_FUN_OBJ_1(wifi_radio_get_listen_interval_obj, wifi_radio_get_listen_interval);
 
-static mp_obj_t wifi_radio_set_power_management(mp_obj_t self_in, mp_obj_t power_management_in) {
+static mp_obj_t wifi_radio_set_listen_interval(mp_obj_t self_in, mp_obj_t listen_interval_in) {
+    #if CIRCUITPY_WIFI_RADIO_SETTABLE_LISTEN_INTERVAL
+    mp_int_t listen_interval = mp_obj_get_int(listen_interval_in);
     wifi_radio_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    wifi_power_management_t power_management =
-        cp_enum_value(&wifi_power_management_type, power_management_in, MP_QSTR_power_management);
-    if (power_management == POWER_MANAGEMENT_UNKNOWN) {
-        mp_arg_error_invalid(MP_QSTR_power_management);
-    }
-    common_hal_wifi_radio_set_power_management(self, power_management);
+    common_hal_wifi_radio_set_listen_interval(self, listen_interval);
+    #else
+    mp_raise_NotImplementedError(NULL);
+    #endif
     return mp_const_none;
 }
-MP_DEFINE_CONST_FUN_OBJ_2(wifi_radio_set_power_management_obj, wifi_radio_set_power_management);
+MP_DEFINE_CONST_FUN_OBJ_2(wifi_radio_set_listen_interval_obj, wifi_radio_set_listen_interval);
 
-MP_PROPERTY_GETSET(wifi_radio_power_management_obj,
-    (mp_obj_t)&wifi_radio_get_power_management_obj,
-    (mp_obj_t)&wifi_radio_set_power_management_obj);
+MP_PROPERTY_GETSET(wifi_radio_listen_interval_obj,
+    (mp_obj_t)&wifi_radio_get_listen_interval_obj,
+    (mp_obj_t)&wifi_radio_set_listen_interval_obj);
 
 //|     mac_address_ap: ReadableBuffer
 //|     """MAC address for the AP. When the address is altered after interface is started
@@ -325,8 +326,8 @@ MP_DEFINE_CONST_FUN_OBJ_1(wifi_radio_stop_station_obj, wifi_radio_stop_station);
 
 //|     def start_ap(
 //|         self,
-//|         ssid: Union[str, ReadableBuffer],
-//|         password: Union[str, ReadableBuffer] = b"",
+//|         ssid: Union[str | ReadableBuffer],
+//|         password: Union[str | ReadableBuffer] = b"",
 //|         *,
 //|         channel: int = 1,
 //|         authmode: Iterable[AuthMode] = (),
@@ -438,11 +439,11 @@ MP_PROPERTY_GETTER(wifi_radio_ap_active_obj,
 
 //|     def connect(
 //|         self,
-//|         ssid: Union[str, ReadableBuffer],
-//|         password: Union[str, ReadableBuffer] = b"",
+//|         ssid: Union[str | ReadableBuffer],
+//|         password: Union[str | ReadableBuffer] = b"",
 //|         *,
 //|         channel: int = 0,
-//|         bssid: Optional[Union[str, ReadableBuffer]] = None,
+//|         bssid: Optional[Union[str | ReadableBuffer]] = None,
 //|         timeout: Optional[float] = None,
 //|     ) -> None:
 //|         """Connects to the given ssid and waits for an ip address. Reconnections are handled
@@ -867,7 +868,6 @@ static const mp_rom_map_elem_t wifi_radio_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_ipv4_subnet_ap),    MP_ROM_PTR(&wifi_radio_ipv4_subnet_ap_obj) },
     { MP_ROM_QSTR(MP_QSTR_ipv4_address),    MP_ROM_PTR(&wifi_radio_ipv4_address_obj) },
     { MP_ROM_QSTR(MP_QSTR_ipv4_address_ap),    MP_ROM_PTR(&wifi_radio_ipv4_address_ap_obj) },
-    { MP_ROM_QSTR(MP_QSTR_power_management),    MP_ROM_PTR(&wifi_radio_power_management_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_set_ipv4_address),    MP_ROM_PTR(&wifi_radio_set_ipv4_address_obj) },
     { MP_ROM_QSTR(MP_QSTR_set_ipv4_address_ap),    MP_ROM_PTR(&wifi_radio_set_ipv4_address_ap_obj) },

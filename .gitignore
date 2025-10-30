@@ -9,7 +9,6 @@
 *.o
 *.a
 !atmel-samd/asf/**/*.a
-!ports/espressif/microros-lib/**/*.a
 *.elf
 *.bin
 !*.toml.bin
@@ -39,12 +38,10 @@ bin/
 circuitpython-stubs/
 test-stubs/
 build-*/
-docs/genrst/
 
-# Test failure outputs and intermediate artifacts
+# Test failure outputs
 ######################
 tests/results/*
-tests/ports/unix/ffi_lib.so
 
 # Python cache files
 ######################
@@ -78,7 +75,6 @@ TAGS
 ####################
 *~
 
-# MacOS desktop metadata files
 *.DS_Store
 **/*.DS_Store
 *.icloud
@@ -101,9 +97,3 @@ TAGS
 # clangd cache
 ##############
 .cache
-
-**/CLAUDE.local.md
-.claude
-
-# windsurf rules
-.windsurfrules

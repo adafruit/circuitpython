@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: circuitpython-cn\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2021-01-04 12:55-0600\n"
-"PO-Revision-Date: 2025-07-15 00:01+0000\n"
+"PO-Revision-Date: 2025-02-24 05:02+0000\n"
 "Last-Translator: hexthat <hexthat@gmail.com>\n"
 "Language-Team: Chinese Hanyu Pinyin\n"
 "Language: zh_Latn_pinyin\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 5.13-dev\n"
+"X-Generator: Weblate 5.10.1-dev\n"
 
 #: main.c
 msgid ""
@@ -96,7 +96,7 @@ msgstr ""
 msgid "%q and %q contain duplicate pins"
 msgstr "%q hé %q bāo hán chóng fù yǐn jiǎo"
 
-#: shared-bindings/audioio/AudioOut.c
+#: ports/atmel-samd/common-hal/audioio/AudioOut.c
 msgid "%q and %q must be different"
 msgstr "%q hé %q bìxū bùtóng"
 
@@ -115,10 +115,6 @@ msgstr "%q bāo hán chóng fù de yǐn jiǎo"
 #: ports/atmel-samd/common-hal/sdioio/SDCard.c
 msgid "%q failure: %d"
 msgstr "%q Shībài: %d"
-
-#: shared-module/audiodelays/MultiTapDelay.c
-msgid "%q in %q must be of type %q or %q, not %q"
-msgstr "%q zhōngde %q bìxū shì %q huò %q lèixíng, érbùshì %q"
 
 #: py/argcheck.c shared-module/audiofilters/Filter.c
 msgid "%q in %q must be of type %q, not %q"
@@ -172,7 +168,7 @@ msgstr "%q chángdù bìxū <= %d"
 msgid "%q length must be >= %d"
 msgstr "%q chángdù bìxū >= %d"
 
-#: py/modsys.c py/runtime.c
+#: py/modsys.c py/objmodule.c py/runtime.c
 msgid "%q moved from %q to %q"
 msgstr "%q cóng %q yídòngdào %q"
 
@@ -234,7 +230,7 @@ msgstr "%q bìxū shì 8 debèishù."
 #: shared-bindings/bitmapfilter/__init__.c shared-bindings/canio/CAN.c
 #: shared-bindings/digitalio/Pull.c shared-bindings/supervisor/__init__.c
 #: shared-module/audiofilters/Filter.c shared-module/displayio/__init__.c
-#: shared-module/synthio/Synthesizer.c
+#: shared-module/synthio/Biquad.c shared-module/synthio/Synthesizer.c
 msgid "%q must be of type %q or %q, not %q"
 msgstr "%q de lèi xíng bì xū shì %q huò %q, ér bù shì %q"
 
@@ -243,7 +239,6 @@ msgid "%q must be of type %q, %q, or %q, not %q"
 msgstr "%q bìxūshì %q, %q huò %q lèixíng, érbùshì %q"
 
 #: py/argcheck.c py/runtime.c shared-bindings/bitmapfilter/__init__.c
-#: shared-module/audiodelays/MultiTapDelay.c shared-module/synthio/Note.c
 #: shared-module/synthio/__init__.c
 msgid "%q must be of type %q, not %q"
 msgstr "%q de lèi xíng bì xū shì %q, ér bù shì %q"
@@ -324,7 +319,7 @@ msgid "'%q' object does not support '%q'"
 msgstr "'%q' duì xiàng bù zhī chí '%q'"
 
 #: py/runtime.c
-msgid "'%q' object isn't an iterator"
+msgid "'%q' object is not an iterator"
 msgstr "%q' duìxiàng bùshì yígè diédàiqì"
 
 #: py/objtype.c py/runtime.c shared-module/atexit/__init__.c
@@ -332,7 +327,7 @@ msgid "'%q' object is not callable"
 msgstr "%q' duìxiàng bù kě bèi diàoyòng"
 
 #: py/runtime.c
-msgid "'%q' object isn't iterable"
+msgid "'%q' object is not iterable"
 msgstr "%q' duìxiàng bù kě yòngyú diédài"
 
 #: py/emitinlinethumb.c py/emitinlinextensa.c
@@ -814,8 +809,8 @@ msgid "Cannot record to a file"
 msgstr "Wúfǎ jìlù dào wénjiàn"
 
 #: shared-module/storage/__init__.c
-msgid "Cannot remount path when visible via USB."
-msgstr "tōngguò USB kějiàn shí wúfǎ chóngxīn guàzǎi lùjìng."
+msgid "Cannot remount '/' when visible via USB."
+msgstr "tōngguò USB kějiàn shí wúfǎ chóngxīn ānzhuāng '/'."
 
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Cannot set value when direction is input."
@@ -868,10 +863,6 @@ msgstr "zuòbiāo shùzǔ jùyǒu bùtóng de chángdù"
 msgid "Coordinate arrays types have different sizes"
 msgstr "zuòbiāo shùzǔ lèixíng jùyǒu bùtóng de dàxiǎo"
 
-#: ports/espressif/common-hal/rclcpy/Publisher.c
-msgid "Could not publish to ROS topic"
-msgstr "wúfǎ fābù dào ROS zhǔtí"
-
 #: shared-bindings/_bleio/Adapter.c
 msgid "Could not set address"
 msgstr "wúfǎ shèzhì dìzhǐ"
@@ -883,11 +874,6 @@ msgstr "Wúfǎ qǐdòng zhōngduàn,RX máng"
 #: shared-module/audiomp3/MP3Decoder.c
 msgid "Couldn't allocate decoder"
 msgstr "wúfǎ fēnpèi jiěmǎ qì"
-
-#: ports/espressif/common-hal/rclcpy/__init__.c
-#, c-format
-msgid "Critical ROS failure during soft reboot, reset required: %d"
-msgstr "ruǎn chóngqǐ qījiān fāshēng guānjiàn de ROS gùzhàng, xūyàozhòngzhì: %d"
 
 #: ports/stm/common-hal/analogio/AnalogOut.c
 msgid "DAC Channel Init Error"
@@ -1075,7 +1061,7 @@ msgstr "Wúfǎ shìfàng mutex, err 0x%04x"
 
 #: ports/zephyr-cp/common-hal/wifi/Radio.c
 msgid "Failed to set hostname"
-msgstr "wúfǎ shèzhì zhǔjīmíng"
+msgstr ""
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "Failed to start async audio"
@@ -1089,7 +1075,6 @@ msgstr "Wúfǎ xiě rù nèibù shǎncún."
 msgid "File exists"
 msgstr "Wénjiàn cúnzài"
 
-#: shared-bindings/supervisor/__init__.c shared-module/lvfontio/OnDiskFont.c
 #: shared-module/os/getenv.c
 msgid "File not found"
 msgstr "zhǎo bú dào wén jiàn"
@@ -1124,7 +1109,7 @@ msgstr ""
 "zài GRB sè yù zhōng, měi gè shū rù de xiàng sù bì xū shì 16 wèi (16 bit) shù "
 "jù"
 
-#: ports/cxd56/common-hal/camera/Camera.c shared-module/audiocore/WaveFile.c
+#: ports/cxd56/common-hal/camera/Camera.c
 msgid "Format not supported"
 msgstr "Bù zhīyuán géshì"
 
@@ -1294,9 +1279,7 @@ msgstr "bèi shūchū gōngnéng zhōngduàn"
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c py/argcheck.c
 #: shared-bindings/digitalio/DigitalInOut.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c shared-bindings/pwmio/PWMOut.c
-#: shared-bindings/supervisor/__init__.c
 #: shared-module/aurora_epaper/aurora_framebuffer.c
-#: shared-module/lvfontio/OnDiskFont.c
 msgid "Invalid %q"
 msgstr "wú xiào %q"
 
@@ -1328,10 +1311,6 @@ msgstr "Wúxiào de BSSID"
 #: shared-bindings/wifi/Radio.c
 msgid "Invalid MAC address"
 msgstr "wú xiào de MAC dì zhǐ"
-
-#: ports/espressif/common-hal/rclcpy/__init__.c
-msgid "Invalid ROS domain ID"
-msgstr "wúxiàode ROS yù ID"
 
 #: ports/espressif/common-hal/espidf/__init__.c py/moderrno.c
 msgid "Invalid argument"
@@ -1421,11 +1400,6 @@ msgstr "MAC dì zhǐ wú xiào"
 #: ports/espressif/common-hal/_bleio/Descriptor.c
 msgid "MITM security not supported"
 msgstr "bù zhīchí MITM ānquánxìng"
-
-#: ports/stm/common-hal/sdioio/SDCard.c
-#, c-format
-msgid "MMC/SDIO Clock Error %x"
-msgstr "MMC/SDIO shízhōngcuòwù %x"
 
 #: shared-bindings/is31fl3741/IS31FL3741.c
 msgid "Mapping must be a tuple"
@@ -1612,10 +1586,6 @@ msgstr "zài SDA huò SCL shàng wèi zhǎo dào shàng lā; jiǎn chá nín de 
 #: shared-module/touchio/TouchIn.c
 msgid "No pulldown on pin; 1Mohm recommended"
 msgstr "Yǐn jiǎo shàng méiyǒu xiàlā; 1Mohm tuījiàn"
-
-#: shared-module/touchio/TouchIn.c
-msgid "No pullup on pin; 1Mohm recommended"
-msgstr "Yǐn jiǎo shàng wú shàng lā diànzǔ; jiànyì shǐyòng 1Mohm"
 
 #: py/moderrno.c
 msgid "No space left on device"
@@ -1896,10 +1866,6 @@ msgstr "chéng xù dà xiǎo wú xiào"
 msgid "Program too long"
 msgstr "chéng xù tài cháng"
 
-#: shared-bindings/rclcpy/Publisher.c
-msgid "Publishers can only be created from a parent node"
-msgstr "chūbǎnshāng zhǐ néngcóng fù jiédiǎn chuàngjiàn"
-
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Pull not used when direction is output."
 msgstr "Fāngxiàng shūchū shí Pull méiyǒu shǐyòng."
@@ -1919,26 +1885,6 @@ msgstr "RNG qǔxiāo chūshǐhuà cuòwù"
 #: ports/stm/common-hal/os/__init__.c
 msgid "RNG Init Error"
 msgstr "RNG chūshǐhuà cuòwù"
-
-#: ports/espressif/common-hal/rclcpy/__init__.c
-msgid "ROS failed to initialize. Is agent connected?"
-msgstr "ROS chūshǐhuàshībài. dàilǐ yǐ liánjiē ma?"
-
-#: ports/espressif/common-hal/rclcpy/__init__.c
-msgid "ROS internal setup failure"
-msgstr "ROS nèibù shèzhì shībài"
-
-#: ports/espressif/common-hal/rclcpy/__init__.c
-msgid "ROS memory allocator failure"
-msgstr "ROS nèicún fēnpèiqì shībài"
-
-#: ports/espressif/common-hal/rclcpy/Node.c
-msgid "ROS node failed to initialize"
-msgstr "ROS jiédiǎn chūshǐhuà shībài"
-
-#: ports/espressif/common-hal/rclcpy/Publisher.c
-msgid "ROS topic failed to initialize"
-msgstr "ROS zhǔtí chūshǐhuà shībài"
 
 #: ports/atmel-samd/common-hal/busio/UART.c ports/cxd56/common-hal/busio/UART.c
 #: ports/nordic/common-hal/busio/UART.c ports/stm/common-hal/busio/UART.c
@@ -2071,7 +2017,6 @@ msgstr "Qiēpiàn hé zhí bùtóng chángdù."
 #: shared-bindings/displayio/TileGrid.c
 #: shared-bindings/memorymonitor/AllocationSize.c
 #: shared-bindings/pulseio/PulseIn.c
-#: shared-bindings/tilepalettemapper/TilePaletteMapper.c
 msgid "Slices not supported"
 msgstr "Qiēpiàn bù shòu zhīchí"
 
@@ -2141,19 +2086,13 @@ msgstr ""
 msgid "Tile height must exactly divide bitmap height"
 msgstr "Píng pū gāodù bìxū huàfēn wèi tú gāodù"
 
-#: shared-bindings/displayio/TileGrid.c
-#: shared-bindings/tilepalettemapper/TilePaletteMapper.c
-#: shared-module/displayio/TileGrid.c
+#: shared-bindings/displayio/TileGrid.c shared-module/displayio/TileGrid.c
 msgid "Tile index out of bounds"
 msgstr "Píng pū zhǐshù chāochū fànwéi"
 
 #: shared-bindings/displayio/TileGrid.c
 msgid "Tile width must exactly divide bitmap width"
 msgstr "Píng pū kuāndù bìxū huàfēn wèi tú kuāndù"
-
-#: shared-module/tilepalettemapper/TilePaletteMapper.c
-msgid "TilePaletteMapper may only be bound to a TileGrid once"
-msgstr "TilePaletteMapper zhǐnéng bǎngdìng dào yígè TileGrid shàngyícì"
 
 #: shared-bindings/alarm/time/TimeAlarm.c
 msgid "Time is in the past."
@@ -2383,6 +2322,10 @@ msgstr "bú zhī chí de sè cǎi kōng jiān"
 msgid "Unsupported display bus type"
 msgstr "Bù zhīchí de gōnggòng qìchē lèixíng"
 
+#: shared-module/audiocore/WaveFile.c
+msgid "Unsupported format"
+msgstr "Bù zhīchí de géshì"
+
 #: shared-bindings/hashlib/__init__.c
 msgid "Unsupported hash algorithm"
 msgstr "bù zhīchí de hā xī suànfǎ"
@@ -2444,11 +2387,9 @@ msgstr ""
 msgid "Wi-Fi: "
 msgstr "Wi-Fi: "
 
-#: ports/espressif/common-hal/wifi/Radio.c
 #: ports/raspberrypi/common-hal/wifi/Radio.c
-#: ports/zephyr-cp/common-hal/wifi/Radio.c
-msgid "WiFi is not enabled"
-msgstr "WiFi wèi qǐyòng"
+msgid "Wifi is not enabled"
+msgstr "wú xiàn wǎng luò wèi qǐ yòng"
 
 #: main.c
 msgid "Woken up by alarm.\n"
@@ -2683,16 +2624,9 @@ msgstr "wèi tú dà xiǎo bì xū pǐ pèi"
 msgid "bits must be 32 or less"
 msgstr "wèi bì xū shì 32 huò gèng shǎo"
 
-#: shared-bindings/audiofreeverb/Freeverb.c
-msgid "bits_per_sample must be 16"
-msgstr "bits_per_sample bìxū wèi 16"
-
-#: shared-bindings/audiodelays/Chorus.c shared-bindings/audiodelays/Echo.c
-#: shared-bindings/audiodelays/MultiTapDelay.c
-#: shared-bindings/audiodelays/PitchShift.c
+#: shared-bindings/audiodelays/Echo.c shared-bindings/audiodelays/PitchShift.c
 #: shared-bindings/audiofilters/Distortion.c
-#: shared-bindings/audiofilters/Filter.c shared-bindings/audiofilters/Phaser.c
-#: shared-bindings/audiomixer/Mixer.c
+#: shared-bindings/audiofilters/Filter.c shared-bindings/audiomixer/Mixer.c
 msgid "bits_per_sample must be 8 or 16"
 msgstr "měi jiàn yàngběn bìxū wèi 8 huò 16"
 
@@ -3238,7 +3172,7 @@ msgid "format"
 msgstr "Géshì"
 
 #: py/objstr.c
-msgid "format needs a dict"
+msgid "format requires a dict"
 msgstr "géshì yāoqiú yīgè yǔjù"
 
 #: py/objdeque.c
@@ -3698,7 +3632,7 @@ msgid "must use keyword argument for key function"
 msgstr "bìxū shǐyòng guānjiàn cí cānshù"
 
 #: py/runtime.c
-msgid "name '%q' isn't defined"
+msgid "name '%q' is not defined"
 msgstr "míngchēng '%q' wèi dìngyì"
 
 #: py/runtime.c
@@ -4116,10 +4050,6 @@ msgstr "gǔn dòng cān shù bì xū shì ndarray"
 msgid "rsplit(None,n)"
 msgstr "Rchāifēn(wú,N)"
 
-#: shared-bindings/audiofreeverb/Freeverb.c
-msgid "samples_signed must be true"
-msgstr "samples_signed bìxū wéi zhēn"
-
 #: ports/atmel-samd/common-hal/audiobusio/PDMIn.c
 #: ports/raspberrypi/common-hal/audiobusio/PDMIn.c
 msgid "sampling rate out of range"
@@ -4342,11 +4272,11 @@ msgid "tx and rx cannot both be None"
 msgstr "tx hé rx bùnéng dōu shì wú"
 
 #: py/objtype.c
-msgid "type '%q' isn't an acceptable base type"
+msgid "type '%q' is not an acceptable base type"
 msgstr "lèixíng '%q' bùshì kě jiēshòu de jīchǔ lèixíng"
 
 #: py/objtype.c
-msgid "type isn't an acceptable base type"
+msgid "type is not an acceptable base type"
 msgstr "lèixíng bùshì kě jiēshòu de jīchǔ lèixíng"
 
 #: py/runtime.c
@@ -4408,9 +4338,7 @@ msgstr "gé shì bù pǐ pèi de '%c'"
 msgid "unreadable attribute"
 msgstr "bùkě dú shǔxìng"
 
-#: shared-bindings/displayio/TileGrid.c shared-bindings/terminalio/Terminal.c
-#: shared-bindings/tilepalettemapper/TilePaletteMapper.c
-#: shared-bindings/vectorio/VectorShape.c
+#: shared-bindings/displayio/TileGrid.c shared-bindings/vectorio/VectorShape.c
 msgid "unsupported %q type"
 msgstr "bù zhīchí %q lèixíng"
 
@@ -4491,6 +4419,12 @@ msgstr ""
 msgid "width must be greater than zero"
 msgstr "kuāndù bìxū dàyú líng"
 
+#: ports/espressif/common-hal/wifi/Radio.c
+#: ports/raspberrypi/common-hal/wifi/Radio.c
+#: ports/zephyr-cp/common-hal/wifi/Radio.c
+msgid "wifi is not enabled"
+msgstr "wèi qǐ yòng WIFI"
+
 #: ports/raspberrypi/common-hal/wifi/Monitor.c
 msgid "wifi.Monitor not available"
 msgstr "wú xiàn wǎng luò xiǎn shì qì bù kě yòng"
@@ -4552,18 +4486,6 @@ msgstr "zi bìxū wèi fú diǎn xíng"
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr "zi bìxū jùyǒu xíngzhuàng (n_section,2)"
-
-#~ msgid "Unsupported format"
-#~ msgstr "Bù zhīchí de géshì"
-
-#~ msgid "Wifi is not enabled"
-#~ msgstr "wú xiàn wǎng luò wèi qǐ yòng"
-
-#~ msgid "wifi is not enabled"
-#~ msgstr "wèi qǐ yòng WIFI"
-
-#~ msgid "Cannot remount '/' when visible via USB."
-#~ msgstr "tōngguò USB kějiàn shí wúfǎ chóngxīn ānzhuāng '/'."
 
 #~ msgid "%q must be a %q object, %q, or %q"
 #~ msgstr "%q bìxū shì %q duìxiàng, %q huò %q"
@@ -4926,13 +4848,13 @@ msgstr "zi bìxū jùyǒu xíngzhuàng (n_section,2)"
 #~ msgid "'%s' object does not support item deletion"
 #~ msgstr "'%s' duìxiàng bù zhīchí shānchú xiàngmù"
 
-#~ msgid "'%s' object isn't an iterator"
+#~ msgid "'%s' object is not an iterator"
 #~ msgstr "'%s' duìxiàng bùshì yīgè diédài qì"
 
 #~ msgid "'%s' object is not callable"
 #~ msgstr "'%s' duìxiàng wúfǎ diàoyòng"
 
-#~ msgid "'%s' object isn't iterable"
+#~ msgid "'%s' object is not iterable"
 #~ msgstr "'%s' duìxiàng bùnéng diédài"
 
 #~ msgid "'%s' object is not subscriptable"
@@ -4948,7 +4870,7 @@ msgstr "zi bìxū jùyǒu xíngzhuàng (n_section,2)"
 #~ msgid "'continue' outside loop"
 #~ msgstr "'continue' wèiyú xúnhuán zhīwài"
 
-#~ msgid "'coroutine' object isn't an iterator"
+#~ msgid "'coroutine' object is not an iterator"
 #~ msgstr "'coroutine' duìxiàng búshì yígè diédàiqì"
 
 #~ msgid "(x,y) integers required"
@@ -6296,7 +6218,7 @@ msgstr "zi bìxū jùyǒu xíngzhuàng (n_section,2)"
 #~ msgid "frequency is read-only for this board"
 #~ msgstr "cǐ zhǔ bǎn de pín lǜ wéi zhǐ dú"
 
-#~ msgid "function doesn't take keyword arguments"
+#~ msgid "function does not take keyword arguments"
 #~ msgstr "hánshù méiyǒu guānjiàn cí cānshù"
 
 #~ msgid "function is implemented for scalars and ndarrays only"
@@ -6398,7 +6320,7 @@ msgstr "zi bìxū jùyǒu xíngzhuàng (n_section,2)"
 #~ msgid "name must be a string"
 #~ msgstr "míngchēng bìxū shì yīgè zìfú chuàn"
 
-#~ msgid "argument name reused"
+#~ msgid "name reused for argument"
 #~ msgstr "cān shǔ míngchēng bèi chóngxīn shǐyòng"
 
 #~ msgid "no available NIC"

@@ -6,7 +6,7 @@
 #include "shared-bindings/audiofilters/Filter.h"
 #include "shared-bindings/audiocore/__init__.h"
 
-#include "shared-module/synthio/Biquad.h"
+#include "shared-module/synthio/BlockBiquad.h"
 #include <stdint.h>
 #include "py/runtime.h"
 
@@ -31,16 +31,16 @@ void common_hal_audiofilters_filter_construct(audiofilters_filter_obj_t *self,
     // Samples are set sequentially. For stereo audio they are passed L/R/L/R/...
     self->buffer_len = buffer_size; // in bytes
 
-    self->buffer[0] = m_malloc_without_collect(self->buffer_len);
+    self->buffer[0] = m_malloc(self->buffer_len);
     memset(self->buffer[0], 0, self->buffer_len);
 
-    self->buffer[1] = m_malloc_without_collect(self->buffer_len);
+    self->buffer[1] = m_malloc(self->buffer_len);
     memset(self->buffer[1], 0, self->buffer_len);
 
     self->last_buf_idx = 1; // Which buffer to use first, toggle between 0 and 1
 
     // This buffer will be used to process samples through the biquad filter
-    self->filter_buffer = m_malloc_without_collect(SYNTHIO_MAX_DUR * sizeof(int32_t));
+    self->filter_buffer = m_malloc(SYNTHIO_MAX_DUR * sizeof(int32_t));
     memset(self->filter_buffer, 0, SYNTHIO_MAX_DUR * sizeof(int32_t));
 
     // Initialize other values most effects will need.
@@ -80,22 +80,22 @@ void common_hal_audiofilters_filter_set_filter(audiofilters_filter_obj_t *self, 
             &mp_type_tuple, 1, 0, &filter_in);
         mp_obj_tuple_get(filter_in, &n_items, &items);
         for (size_t i = 0; i < n_items; i++) {
-            if (!mp_obj_is_type(items[i], &synthio_biquad_type_obj)) {
+            if (!synthio_is_any_biquad(items[i])) {
                 mp_raise_TypeError_varg(
                     MP_ERROR_TEXT("%q in %q must be of type %q, not %q"),
                     MP_QSTR_object,
                     MP_QSTR_filter,
-                    MP_QSTR_Biquad,
+                    MP_QSTR_AnyBiquad,
                     mp_obj_get_type(items[i])->name);
             }
         }
         filter_objs = items;
     } else {
         n_items = 1;
-        if (!mp_obj_is_type(filter_in, &synthio_biquad_type_obj)) {
+        if (!synthio_is_any_biquad(filter_in)) {
             mp_raise_TypeError_varg(
                 MP_ERROR_TEXT("%q must be of type %q or %q, not %q"),
-                MP_QSTR_filter, MP_QSTR_Biquad, MP_QSTR_iterable, mp_obj_get_type(filter_in)->name);
+                MP_QSTR_filter, MP_QSTR_AnyBiquad, MP_QSTR_iterable, mp_obj_get_type(filter_in)->name);
         }
         filter_objs = &self->filter;
     }
@@ -109,6 +109,10 @@ void common_hal_audiofilters_filter_set_filter(audiofilters_filter_obj_t *self, 
         self->filter_states_len,
         n_items);
     self->filter_states_len = n_items;
+
+    for (size_t i = 0; i < n_items; i++) {
+        synthio_biquad_filter_assign(&self->filter_states[i], items[i]);
+    }
 }
 
 mp_obj_t common_hal_audiofilters_filter_get_filter(audiofilters_filter_obj_t *self) {
@@ -143,7 +147,7 @@ bool common_hal_audiofilters_filter_get_playing(audiofilters_filter_obj_t *self)
 }
 
 void common_hal_audiofilters_filter_play(audiofilters_filter_obj_t *self, mp_obj_t sample, bool loop) {
-    audiosample_must_match(&self->base, sample, false);
+    audiosample_must_match(&self->base, sample);
 
     self->sample = sample;
     self->loop = loop;
@@ -208,7 +212,10 @@ audioio_get_buffer_result_t audiofilters_filter_get_buffer(audiofilters_filter_o
 
             // Tick biquad filters
             for (uint8_t j = 0; j < self->filter_states_len; j++) {
-                common_hal_synthio_biquad_tick(self->filter_objs[j]);
+                mp_obj_t filter_obj = self->filter_objs[j];
+                if (mp_obj_is_type(filter_obj, &synthio_block_biquad_type_obj)) {
+                    common_hal_synthio_block_biquad_tick(filter_obj, &self->filter_states[j]);
+                }
             }
             if (self->base.samples_signed) {
                 memset(word_buffer, 0, length * (self->base.bits_per_sample / 8));
@@ -267,8 +274,10 @@ audioio_get_buffer_result_t audiofilters_filter_get_buffer(audiofilters_filter_o
                     // Process biquad filters
                     for (uint8_t j = 0; j < self->filter_states_len; j++) {
                         mp_obj_t filter_obj = self->filter_objs[j];
-                        common_hal_synthio_biquad_tick(filter_obj);
-                        synthio_biquad_filter_samples(filter_obj, &self->filter_states[j], self->filter_buffer, n_samples);
+                        if (mp_obj_is_type(filter_obj, &synthio_block_biquad_type_obj)) {
+                            common_hal_synthio_block_biquad_tick(filter_obj, &self->filter_states[j]);
+                        }
+                        synthio_biquad_filter_samples(&self->filter_states[j], self->filter_buffer, n_samples);
                     }
 
                     // Mix processed signal with original sample and transfer to output buffer

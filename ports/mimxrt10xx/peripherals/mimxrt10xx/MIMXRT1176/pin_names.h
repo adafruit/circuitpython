@@ -6,7 +6,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-// OK to include more than once because FORMAT_PIN may be different.
+#pragma once
 
 
 // define FORMAT_PIN(pin_name) and then include this file.

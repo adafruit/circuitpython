@@ -86,8 +86,7 @@ static mp_obj_t mp_obj_tuple_make_new(const mp_obj_type_t *type_in, size_t n_arg
 
             size_t alloc = 4;
             size_t len = 0;
-            // CIRCUITPY-CHANGE
-            mp_obj_t *items = m_malloc_items(alloc);
+            mp_obj_t *items = m_new(mp_obj_t, alloc);
 
             mp_obj_t iterable = mp_getiter(args[0], NULL);
             mp_obj_t item;
@@ -250,9 +249,6 @@ MP_DEFINE_CONST_OBJ_TYPE(
 // the zero-length tuple
 const mp_obj_tuple_t mp_const_empty_tuple_obj = {{&mp_type_tuple}, 0};
 
-// CIRCUITPY-CHANGE: No change here, but implementation was copied for
-// mp_obj_new_port_tuple in supervisor/shared/port.c, which allocates using port_malloc().
-// Change that to match if this changes.
 mp_obj_t mp_obj_new_tuple(size_t n, const mp_obj_t *items) {
     if (n == 0) {
         return mp_const_empty_tuple;

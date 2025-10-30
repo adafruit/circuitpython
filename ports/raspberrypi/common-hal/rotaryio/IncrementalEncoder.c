@@ -43,9 +43,6 @@ void common_hal_rotaryio_incrementalencoder_construct(rotaryio_incrementalencode
     const mcu_pin_obj_t *pin_a, const mcu_pin_obj_t *pin_b) {
     const mcu_pin_obj_t *pins[] = { pin_a, pin_b };
 
-    // Ensure object starts in its deinit state.
-    common_hal_rotaryio_incrementalencoder_mark_deinit(self);
-
     // Start out with swapped to match behavior with other ports.
     self->swapped = true;
     if (!common_hal_rp2pio_pins_are_sequential(2, pins)) {
@@ -92,7 +89,6 @@ void common_hal_rotaryio_incrementalencoder_construct(rotaryio_incrementalencode
 }
 
 bool common_hal_rotaryio_incrementalencoder_deinited(rotaryio_incrementalencoder_obj_t *self) {
-    // Use the deinit state of the PIO state machine.
     return common_hal_rp2pio_statemachine_deinited(&self->state_machine);
 }
 
@@ -102,11 +98,6 @@ void common_hal_rotaryio_incrementalencoder_deinit(rotaryio_incrementalencoder_o
     }
     common_hal_rp2pio_statemachine_set_interrupt_handler(&self->state_machine, NULL, NULL, 0);
     common_hal_rp2pio_statemachine_deinit(&self->state_machine);
-}
-
-void common_hal_rotaryio_incrementalencoder_mark_deinit(rotaryio_incrementalencoder_obj_t *self) {
-    // Use the deinit state of the PIO state machine.
-    common_hal_rp2pio_statemachine_mark_deinit(&self->state_machine);
 }
 
 static void incrementalencoder_interrupt_handler(void *self_in) {

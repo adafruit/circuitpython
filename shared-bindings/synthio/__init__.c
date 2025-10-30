@@ -17,6 +17,7 @@
 
 #include "shared-bindings/synthio/__init__.h"
 #include "shared-bindings/synthio/Biquad.h"
+#include "shared-bindings/synthio/BlockBiquad.h"
 #include "shared-bindings/synthio/LFO.h"
 #include "shared-bindings/synthio/Math.h"
 #include "shared-bindings/synthio/MidiTrack.h"
@@ -32,6 +33,7 @@
 //| """
 //|
 
+//| AnyBiquad = Union["Biquad", "BlockBiquad"]
 //|
 //|
 //| class EnvelopeState:
@@ -243,7 +245,7 @@ static mp_obj_t synthio_from_file(size_t n_args, const mp_obj_t *pos_args, mp_ma
     }
     uint32_t track_size = (chunk_header[4] << 24) |
         (chunk_header[5] << 16) | (chunk_header[6] << 8) | chunk_header[7];
-    uint8_t *buffer = m_malloc_without_collect(track_size);
+    uint8_t *buffer = m_malloc(track_size);
     if (f_read(&file->fp, buffer, track_size, &bytes_read) != FR_OK) {
         mp_raise_OSError(MP_EIO);
     }
@@ -316,6 +318,7 @@ MP_DEFINE_CONST_FUN_OBJ_VAR(synthio_lfo_tick_obj, 1, synthio_lfo_tick);
 static const mp_rom_map_elem_t synthio_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_synthio) },
     { MP_ROM_QSTR(MP_QSTR_Biquad), MP_ROM_PTR(&synthio_biquad_type_obj) },
+    { MP_ROM_QSTR(MP_QSTR_BlockBiquad), MP_ROM_PTR(&synthio_block_biquad_type_obj) },
     { MP_ROM_QSTR(MP_QSTR_FilterMode), MP_ROM_PTR(&synthio_filter_mode_type) },
     { MP_ROM_QSTR(MP_QSTR_Math), MP_ROM_PTR(&synthio_math_type) },
     { MP_ROM_QSTR(MP_QSTR_MathOperation), MP_ROM_PTR(&synthio_math_operation_type) },

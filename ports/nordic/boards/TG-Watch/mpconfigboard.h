@@ -13,7 +13,7 @@
 #define MICROPY_HW_MCU_NAME         "nRF52840"
 
 // TG-Gui requires a deeper call stack than normal CircuitPython, this is intentional overkill
-#define CIRCUITPY_PYSTACK_SIZE 8192
+#define CIRCUITPY_PYSTACK_SIZE 8192 // 1536 is the normal size, (32 bytes/frame * 48 frames)
 
 // the board has a 32mhz crystal but NOT a 32khz one
 #define BOARD_HAS_32KHZ_XTAL 0

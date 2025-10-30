@@ -37,7 +37,7 @@ void reset_all_pins(void) {
 }
 
 void reset_pin_number(uint8_t pin_port, uint8_t pin_pad) {
-    if ((pin_port == INVALID_PIN) || (pin_port > NUM_GPIO_PORTS)) {
+    if (pin_port == INVALID_PIN || pin_port > NUM_GPIO_PORTS) {
         return;
     }
 

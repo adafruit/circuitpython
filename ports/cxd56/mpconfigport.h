@@ -8,8 +8,8 @@
 
 #define MICROPY_PY_SYS_PLATFORM                 "CXD56"
 
-// SD card socket on board is configured for sdioio, which is not supported for automatic USB presentation.
-#define CIRCUITPY_SDCARD_USB (0)
+#define MICROPY_PY_FUNCTION_ATTRS                (1)
+#define MICROPY_PY_REVERSE_SPECIAL_METHODS       (1)
 
 // 64kiB stack
 #define CIRCUITPY_DEFAULT_STACK_SIZE            (0x10000)

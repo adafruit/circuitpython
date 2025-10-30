@@ -89,7 +89,7 @@ static inline void audiosample_get_buffer_structure_checked(mp_obj_t self_in, bo
     audiosample_get_buffer_structure(audiosample_check(self_in), single_channel_output, single_buffer, samples_signed, max_buffer_length, spacing);
 }
 
-void audiosample_must_match(audiosample_base_t *self, mp_obj_t other, bool allow_mono_to_stereo);
+void audiosample_must_match(audiosample_base_t *self, mp_obj_t other);
 
 void audiosample_convert_u8m_s16s(int16_t *buffer_out, const uint8_t *buffer_in, size_t nframes);
 void audiosample_convert_u8s_s16s(int16_t *buffer_out, const uint8_t *buffer_in, size_t nframes);

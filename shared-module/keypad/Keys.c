@@ -41,7 +41,7 @@ void common_hal_keypad_keys_construct(keypad_keys_obj_t *self, mp_uint_t num_pin
     self->value_when_pressed = value_when_pressed;
     self->funcs = &keys_funcs;
 
-    keypad_construct_common((keypad_scanner_obj_t *)self, interval, max_events, debounce_threshold, true);
+    keypad_construct_common((keypad_scanner_obj_t *)self, interval, max_events, debounce_threshold);
 
 }
 

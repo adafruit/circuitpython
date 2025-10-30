@@ -26,7 +26,6 @@
  */
 
 #include "py/builtin.h"
-#include "py/objexcept.h"
 #include "py/objlist.h"
 #include "py/objmodule.h"
 #include "py/objtuple.h"
@@ -102,17 +101,6 @@ static const MP_DEFINE_STR_OBJ(mp_sys_implementation_machine_obj, MICROPY_BANNER
 #endif
 
 #if MICROPY_PY_ATTRTUPLE
-
-#if defined(MICROPY_BOARD_BUILD_NAME)
-static const MP_DEFINE_STR_OBJ(mp_sys_implementation__build_obj, MICROPY_BOARD_BUILD_NAME);
-#define MICROPY_BOARD_BUILD (1)
-#define SYS_IMPLEMENTATION_ELEMS__BUILD \
-    , MP_ROM_PTR(&mp_sys_implementation__build_obj)
-#else
-#define MICROPY_BOARD_BUILD (0)
-#define SYS_IMPLEMENTATION_ELEMS__BUILD
-#endif
-
 #if MICROPY_PREVIEW_VERSION_2
 #define SYS_IMPLEMENTATION_ELEMS__V2 \
     , MP_ROM_TRUE
@@ -127,9 +115,6 @@ static const qstr impl_fields[] = {
     #if MICROPY_PERSISTENT_CODE_LOAD
     MP_QSTR__mpy,
     #endif
-    #if defined(MICROPY_BOARD_BUILD_NAME)
-    MP_QSTR__build,
-    #endif
     #if MICROPY_PREVIEW_VERSION_2
     MP_QSTR__v2,
     #endif
@@ -137,20 +122,19 @@ static const qstr impl_fields[] = {
 static MP_DEFINE_ATTRTUPLE(
     mp_sys_implementation_obj,
     impl_fields,
-    3 + MICROPY_PERSISTENT_CODE_LOAD + MICROPY_BOARD_BUILD + MICROPY_PREVIEW_VERSION_2,
+    3 + MICROPY_PERSISTENT_CODE_LOAD + MICROPY_PREVIEW_VERSION_2,
     SYS_IMPLEMENTATION_ELEMS_BASE
     SYS_IMPLEMENTATION_ELEMS__MPY
-    SYS_IMPLEMENTATION_ELEMS__BUILD
     SYS_IMPLEMENTATION_ELEMS__V2
     );
 #else
 static const mp_rom_obj_tuple_t mp_sys_implementation_obj = {
     {&mp_type_tuple},
     3 + MICROPY_PERSISTENT_CODE_LOAD,
-    // Do not include SYS_IMPLEMENTATION_ELEMS__BUILD or SYS_IMPLEMENTATION_ELEMS__V2
-    // because SYS_IMPLEMENTATION_ELEMS__MPY may be empty if
+    // Do not include SYS_IMPLEMENTATION_ELEMS__V2 because
+    // SYS_IMPLEMENTATION_ELEMS__MPY may be empty if
     // MICROPY_PERSISTENT_CODE_LOAD is disabled, which means they'll share
-    // the same index. Cannot query _build or _v2 if MICROPY_PY_ATTRTUPLE is
+    // the same index. Cannot query _v2 if MICROPY_PY_ATTRTUPLE is
     // disabled.
     {
         SYS_IMPLEMENTATION_ELEMS_BASE
@@ -186,7 +170,29 @@ static mp_obj_t mp_sys_exit(size_t n_args, const mp_obj_t *args) {
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_sys_exit_obj, 0, 1, mp_sys_exit);
 
-// CIRCUITPY-CHANGE: Removed print_exception because it isn't in CPython.
+static mp_obj_t mp_sys_print_exception(size_t n_args, const mp_obj_t *args) {
+    // CIRCUITPY-CHANGE
+    #if CIRCUITPY_WARNINGS
+    warnings_warn(&mp_type_FutureWarning, MP_ERROR_TEXT("%q moved from %q to %q"), MP_QSTR_print_exception, MP_QSTR_sys, MP_QSTR_traceback);
+    #endif
+
+    #if MICROPY_PY_IO && MICROPY_PY_SYS_STDFILES
+    void *stream_obj = &mp_sys_stdout_obj;
+    if (n_args > 1) {
+        mp_get_stream_raise(args[1], MP_STREAM_OP_WRITE);
+        stream_obj = MP_OBJ_TO_PTR(args[1]);
+    }
+
+    mp_print_t print = {stream_obj, mp_stream_write_adaptor};
+    mp_obj_print_exception(&print, args[0]);
+    #else
+    (void)n_args;
+    mp_obj_print_exception(&mp_plat_print, args[0]);
+    #endif
+
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_sys_print_exception_obj, 1, 2, mp_sys_print_exception);
 
 #if MICROPY_PY_SYS_EXC_INFO
 static mp_obj_t mp_sys_exc_info(void) {
@@ -203,8 +209,7 @@ static mp_obj_t mp_sys_exc_info(void) {
     t->items[0] = MP_OBJ_FROM_PTR(mp_obj_get_type(cur_exc));
     t->items[1] = cur_exc;
     // CIRCUITPY-CHANGE: has traceback obj
-    mp_obj_exception_t *native_exc = mp_obj_exception_get_native(cur_exc);
-    t->items[2] = native_exc->traceback;
+    t->items[2] = mp_obj_exception_get_traceback_obj(cur_exc);
     return MP_OBJ_FROM_PTR(t);
 }
 MP_DEFINE_CONST_FUN_OBJ_0(mp_sys_exc_info_obj, mp_sys_exc_info);
@@ -342,6 +347,8 @@ static const mp_rom_map_elem_t mp_module_sys_globals_table[] = {
     /*
      * Extensions to CPython
      */
+
+    { MP_ROM_QSTR(MP_QSTR_print_exception), MP_ROM_PTR(&mp_sys_print_exception_obj) },
     #if MICROPY_PY_SYS_ATEXIT
     { MP_ROM_QSTR(MP_QSTR_atexit), MP_ROM_PTR(&mp_sys_atexit_obj) },
     #endif

@@ -42,7 +42,7 @@ static const mp_arg_t note_properties[] = {
 //|         envelope: Optional[Envelope] = None,
 //|         amplitude: BlockInput = 1.0,
 //|         bend: BlockInput = 0.0,
-//|         filter: Optional[Biquad] = None,
+//|         filter: Optional[AnyBiquad] = None,
 //|         ring_frequency: float = 0.0,
 //|         ring_bend: float = 0.0,
 //|         ring_waveform: Optional[ReadableBuffer] = None,
@@ -86,7 +86,7 @@ MP_PROPERTY_GETSET(synthio_note_frequency_obj,
     (mp_obj_t)&synthio_note_get_frequency_obj,
     (mp_obj_t)&synthio_note_set_frequency_obj);
 
-//|     filter: Optional[Biquad]
+//|     filter: Optional[AnyBiquad]
 //|     """If not None, the output of this Note is filtered according to the provided coefficients.
 //|
 //|     Construct an appropriate filter by calling a filter-making method on the

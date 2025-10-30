@@ -83,9 +83,6 @@ INC += \
 	-isystem esp-idf/components/esp_psram/include \
 	-isystem esp-idf/components/esp_ringbuf/include \
 	-isystem esp-idf/components/esp_rom/include \
-	-isystem esp-idf/components/esp_rom/$(IDF_TARGET)/include \
-	-isystem esp-idf/components/esp_rom/$(IDF_TARGET)/include/$(IDF_TARGET) \
-	-isystem esp-idf/components/esp_security/include \
 	-isystem esp-idf/components/esp_system/include \
 	-isystem esp-idf/components/esp_timer/include \
 	-isystem esp-idf/components/esp_wifi/include \
@@ -118,7 +115,6 @@ INC += \
 	-isystem esp-idf/components/sdmmc/include \
 	-isystem esp-idf/components/soc/include \
 	-isystem esp-idf/components/soc/$(IDF_TARGET)/include \
-	-isystem esp-idf/components/soc/$(IDF_TARGET)/register \
 	-isystem esp-idf/components/spi_flash/include \
 	-isystem esp-idf/components/usb/include \
 	-isystem esp-idf/components/ulp/ulp_fsm/include \
@@ -175,12 +171,12 @@ ifeq ($(DEBUG), 1)
 		OPTIMIZATION_FLAGS ?= -Og
 		CFLAGS += -DDEBUG
 	endif
-#	You may want to enable these flags to make setting breakpoints easier.
-#	CFLAGS += -fno-inline -fno-ipa-sra
+	# You may want to enable these flags to make setting breakpoints easier.
+	# CFLAGS += -fno-inline -fno-ipa-sra
 else
 	CFLAGS += -DNDEBUG
-#	RISC-V is larger than xtensa
-#	Use -Os for RISC-V when it overflows
+	# RISC-V is larger than xtensa
+	# Use -Os for RISC-V when it overflows
 	ifeq ($(IDF_TARGET_ARCH),riscv)
 		OPTIMIZATION_FLAGS ?= -Os
 	else
@@ -191,7 +187,7 @@ endif
 # option to override compiler optimization level, set in boards/$(BOARD)/mpconfigboard.mk
 CFLAGS += $(OPTIMIZATION_FLAGS)
 
-CFLAGS += $(INC) -Werror -Wall -std=gnu11 -Wl,--gc-sections $(BASE_CFLAGS) $(C_DEFS) $(CFLAGS_MOD) $(COPT) -Werror=missing-prototypes -Werror=old-style-definition
+CFLAGS += $(INC) -Werror -Wall -std=gnu11 -Wl,--gc-sections $(BASE_CFLAGS) $(C_DEFS) $(CFLAGS_MOD) $(COPT) -Werror=missing-prototypes
 
 # Most current ESPs have nano versions of newlib in ROM so we use them.
 ifneq ($(IDF_TARGET),esp32c6)
@@ -205,21 +201,18 @@ ifeq ($(IDF_TARGET_ARCH),xtensa)
 # Remove the last two flags once TinyUSB is updated with the `#include <xtensa_api.h>` instead of
 # `#include "xtensa/xtensa_api.h"`.
 
-	CFLAGS += -mlongcalls -isystem esp-idf/components/xtensa/deprecated_include/ -Wno-error=cpp
-
-# Wrap longjmp with a patched version that protects register window update with a critical section
-	LDFLAGS += -Wl,--wrap=longjmp
+CFLAGS += -mlongcalls -isystem esp-idf/components/xtensa/deprecated_include/ -Wno-error=cpp
 else ifeq ($(IDF_TARGET_ARCH),riscv)
 
-	ifeq ($(IDF_TARGET),esp32p4)
-		CFLAGS += -march=rv32imafc_zicsr_zifencei_xesppie -mabi=ilp32f
-	else
-		CFLAGS += -march=rv32imac_zicsr_zifencei
-	endif
+ifeq ($(IDF_TARGET),esp32p4)
+CFLAGS += -march=rv32imafc_zicsr_zifencei_xesppie -mabi=ilp32f
+else
+CFLAGS += -march=rv32imac_zicsr_zifencei
+endif
 
-	LDFLAGS += \
-		-Lesp-idf/components/riscv/ld \
-		-Trom.api.ld
+LDFLAGS += \
+	-Lesp-idf/components/riscv/ld \
+	-Trom.api.ld
 endif
 
 $(BUILD)/lib/tlsf/tlsf.o: CFLAGS += -Wno-cast-align
@@ -245,6 +238,7 @@ ifeq ($(IDF_TARGET),esp32)
 LDFLAGS += \
 	-Tesp32.rom.newlib-data.ld \
 	-Tesp32.rom.newlib-funcs.ld \
+	-Tesp32.rom.newlib-time.ld \
 	-Tesp32.rom.spiflash_legacy.ld
 
 CHIP_COMPONENTS = \
@@ -267,8 +261,8 @@ CHIP_COMPONENTS = \
 else ifeq ($(IDF_TARGET),esp32c3)
 LDFLAGS += \
 	-Tesp32c3.rom.newlib.ld \
+	-Tesp32c3.rom.newlib-time.ld \
 	-Tesp32c3.rom.version.ld \
-	-Tesp32c3.rom.eco3_bt_funcs.ld \
 	-Tesp32c3.rom.eco3.ld \
 	-Tesp32c3.rom.bt_funcs.ld
 
@@ -314,6 +308,7 @@ else ifeq ($(IDF_TARGET),esp32s2)
 LDFLAGS += \
 	-Tesp32s2.rom.newlib-data.ld \
 	-Tesp32s2.rom.newlib-funcs.ld \
+	-Tesp32s2.rom.newlib-time.ld \
 	-Tesp32s2.rom.spiflash_legacy.ld
 
 CHIP_COMPONENTS = \
@@ -365,19 +360,10 @@ CFLAGS += \
 	-DCFG_TUD_TASK_QUEUE_SZ=32
 endif
 ifeq ($(CIRCUITPY_USB_DEVICE),1)
-ifeq ($(IDF_TARGET),esp32s2)
-# Make more room in internal RAM on the S2.
-CFLAGS += \
-	-DCFG_TUD_CDC_RX_BUFSIZE=128 \
-	-DCFG_TUD_CDC_TX_BUFSIZE=128 \
-	-DCFG_TUD_MSC_BUFSIZE=1024
-else
 CFLAGS += \
 	-DCFG_TUD_CDC_RX_BUFSIZE=1024 \
 	-DCFG_TUD_CDC_TX_BUFSIZE=1024 \
-	-DCFG_TUD_MSC_BUFSIZE=4096
-endif
-CFLAGS += \
+	-DCFG_TUD_MSC_BUFSIZE=4096 \
 	-DCFG_TUD_MIDI_RX_BUFSIZE=128 \
 	-DCFG_TUD_MIDI_TX_BUFSIZE=128 \
 	-DCFG_TUD_VENDOR_RX_BUFSIZE=128 \
@@ -397,7 +383,7 @@ SRC_C += \
 	peripherals/$(IDF_TARGET)/pins.c
 
 ifeq ($(CIRCUITPY_SSL),1)
-SRC_C += common-hal/ssl/crt_bundle.c
+SRC_C += lib/mbedtls_config/crt_bundle.c
 endif
 
 SRC_C += $(wildcard common-hal/espidf/*.c)
@@ -420,7 +406,7 @@ ifneq ($(CIRCUITPY_AUDIOBUSIO),0)
 CHIP_COMPONENTS += esp_driver_i2s
 endif
 
-ifneq ($(CIRCUITPY_BLEIO_NATIVE),0)
+ifneq ($(CIRCUITPY_BLEIO),0)
 SRC_C += common-hal/_bleio/ble_events.c
 endif
 
@@ -438,55 +424,6 @@ SRC_CAMERA := \
 SRC_C += $(SRC_CAMERA)
 CFLAGS += -isystem esp-camera/driver/include
 CFLAGS += -isystem esp-camera/conversions/include
-endif
-
-ifneq ($(CIRCUITPY_RCLCPY),0)
-CFLAGS += -isystem microros-lib/include
-CFLAGS += -isystem microros-lib/include/rcl
-CFLAGS += -isystem microros-lib/include/statistics_msgs
-CFLAGS += -isystem microros-lib/include/composition_interfaces
-CFLAGS += -isystem microros-lib/include/example_interfaces
-CFLAGS += -isystem microros-lib/include/rmw_microxrcedds_c
-CFLAGS += -isystem microros-lib/include/test_msgs
-CFLAGS += -isystem microros-lib/include/std_msgs
-CFLAGS += -isystem microros-lib/include/rcutils
-CFLAGS += -isystem microros-lib/include/lifecycle_msgs
-CFLAGS += -isystem microros-lib/include/rosidl_typesupport_interface
-CFLAGS += -isystem microros-lib/include/service_msgs
-CFLAGS += -isystem microros-lib/include/visualization_msgs
-CFLAGS += -isystem microros-lib/include/rosidl_dynamic_typesupport
-CFLAGS += -isystem microros-lib/include/stereo_msgs
-CFLAGS += -isystem microros-lib/include/ucdr
-CFLAGS += -isystem microros-lib/include/rosidl_typesupport_c
-CFLAGS += -isystem microros-lib/include/std_srvs
-CFLAGS += -isystem microros-lib/include/rcl_lifecycle
-CFLAGS += -isystem microros-lib/include/action_msgs
-CFLAGS += -isystem microros-lib/include/micro_ros_utilities
-CFLAGS += -isystem microros-lib/include/rcl_action
-CFLAGS += -isystem microros-lib/include/rcl_logging_interface
-CFLAGS += -isystem microros-lib/include/type_description_interfaces
-CFLAGS += -isystem microros-lib/include/nav_msgs
-CFLAGS += -isystem microros-lib/include/actionlib_msgs
-CFLAGS += -isystem microros-lib/include/rmw
-CFLAGS += -isystem microros-lib/include/rclc_parameter
-CFLAGS += -isystem microros-lib/include/geometry_msgs
-CFLAGS += -isystem microros-lib/include/sensor_msgs
-CFLAGS += -isystem microros-lib/include/trajectory_msgs
-CFLAGS += -isystem microros-lib/include/shape_msgs
-CFLAGS += -isystem microros-lib/include/rosidl_runtime_c
-CFLAGS += -isystem microros-lib/include/rclc
-CFLAGS += -isystem microros-lib/include/rosgraph_msgs
-CFLAGS += -isystem microros-lib/include/rclc_lifecycle
-CFLAGS += -isystem microros-lib/include/rcl_interfaces
-CFLAGS += -isystem microros-lib/include/diagnostic_msgs
-CFLAGS += -isystem microros-lib/include/micro_ros_msgs
-CFLAGS += -isystem microros-lib/include/rosidl_typesupport_introspection_c
-CFLAGS += -isystem microros-lib/include/uxr
-CFLAGS += -isystem microros-lib/include/unique_identifier_msgs
-CFLAGS += -isystem microros-lib/include/rosidl_typesupport_microxrcedds_c
-CFLAGS += -isystem microros-lib/include/builtin_interfaces
-CFLAGS += -isystem microros-lib/include/tracetools
-CFLAGS += -isystem microros-lib/include/rmw_microros
 endif
 
 ifneq ($(CIRCUITPY_ESPIDF),0)
@@ -534,21 +471,29 @@ ifneq ($(CIRCUITPY_FREQUENCYIO),0)
 CHIP_COMPONENTS += esp_driver_pcnt
 endif
 
+SRC_COMMON_HAL_EXPANDED = \
+	$(addprefix shared-bindings/, $(SRC_COMMON_HAL)) \
+	$(addprefix shared-bindings/, $(SRC_BINDINGS_ENUMS)) \
+	$(addprefix common-hal/, $(SRC_COMMON_HAL))
+
+SRC_SHARED_MODULE_EXPANDED = \
+	$(addprefix shared-bindings/, $(SRC_SHARED_MODULE)) \
+	$(addprefix shared-module/, $(SRC_SHARED_MODULE)) \
+	$(addprefix shared-module/, $(SRC_SHARED_MODULE_INTERNAL))
+
 ifneq ($(FROZEN_MPY_DIR),)
 FROZEN_MPY_PY_FILES := $(shell find -L $(FROZEN_MPY_DIR) -type f -name '*.py')
 FROZEN_MPY_MPY_FILES := $(addprefix $(BUILD)/,$(FROZEN_MPY_PY_FILES:.py=.mpy))
 endif
 
-SRC_S_UPPER = supervisor/shared/cpu_regs.S
-
 OBJ += $(PY_O) $(SUPERVISOR_O) $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
-OBJ += $(addprefix $(BUILD)/, $(SRC_COMMON_HAL_SHARED_MODULE_EXPANDED:.c=.o))
+OBJ += $(addprefix $(BUILD)/, $(SRC_COMMON_HAL_EXPANDED:.c=.o))
+OBJ += $(addprefix $(BUILD)/, $(SRC_SHARED_MODULE_EXPANDED:.c=.o))
 ifeq ($(INTERNAL_LIBM),1)
 OBJ += $(addprefix $(BUILD)/, $(SRC_LIBM:.c=.o))
 endif
 OBJ += $(addprefix $(BUILD)/, $(SRC_CIRCUITPY_COMMON:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_MOD:.c=.o))
-OBJ += $(addprefix $(BUILD)/, $(SRC_S_UPPER:.S=.o))
 
 $(BUILD)/$(FATFS_DIR)/ff.o: COPT += -Os
 $(filter $(PY_BUILD)/../extmod/vfs_fat_%.o, $(PY_O)): COPT += -Os
@@ -556,7 +501,7 @@ $(filter $(PY_BUILD)/../extmod/vfs_fat_%.o, $(PY_O)): COPT += -Os
 $(BUILD)/lib/protomatter/src/core.o: CFLAGS += -DESP32
 
 # List of sources for qstr extraction
-SRC_QSTR += $(SRC_C) $(SRC_SUPERVISOR) $(SRC_MOD) $(SRC_COMMON_HAL_SHARED_MODULE_EXPANDED) $(SRC_CIRCUITPY_COMMON)
+SRC_QSTR += $(SRC_C) $(SRC_SUPERVISOR) $(SRC_MOD) $(SRC_COMMON_HAL_EXPANDED) $(SRC_SHARED_MODULE_EXPANDED) $(SRC_CIRCUITPY_COMMON)
 
 # IDF build commands
 IDF_PATH = $(realpath ./esp-idf)
@@ -567,34 +512,24 @@ $(BUILD)/esp-idf:
 TARGET_SDKCONFIG = esp-idf-config/sdkconfig-$(IDF_TARGET).defaults
 
 
-# Choose the correct partition layout, based on UF2 or not, flash size, etc.
-UF2_BOOTLOADER ?= $(CIRCUITPY_USB_DEVICE)
-
 ifeq ($(CIRCUITPY_ESP_FLASH_SIZE), 2MB)
-# ..... No 2MB UF2 boards, so always no OTA, not UF2
 	FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-ota-no-uf2.defaults
-else ifeq ($(CIRCUITPY_ESP_FLASH_SIZE), 4MB)
-	ifeq ($(UF2_BOOTLOADER), 1)
-#.............  ESP32-S2 and ESP32-S3 do not have an extra ota partition for OTA update.
-		FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-ota.defaults
+else
+UF2_BOOTLOADER ?= $(CIRCUITPY_USB_DEVICE)
+ifeq ($(UF2_BOOTLOADER), 1)
+	FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE).defaults
+else
+ifeq ($(CIRCUITPY_ESP_FLASH_SIZE), 4MB)
+	ifeq ($(CIRCUITPY_LEGACY_4MB_FLASH_LAYOUT), 1)
+		FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-uf2.defaults
 	else
-# ............. Non-UF2 4MB: C3, C6, etc.
-		ifeq ($(CIRCUITPY_4MB_FLASH_LARGE_USER_FS_LAYOUT), 1)
-# ....................  Some boards use a 2MB firmware and almost 2MB user filesystem, for historical reasons.
-			FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-ota-no-uf2-large-user_fs.defaults
-		else
-			FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-ota-no-uf2.defaults
-		endif
+		FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-ota-no-uf2.defaults
 	endif
 else
-# ..... All the rest are >4MB flash
-	ifeq ($(UF2_BOOTLOADER), 1)
-		FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE).defaults
-	else
-		FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-uf2.defaults
-	endif
+	FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-uf2.defaults
 endif
-
+endif
+endif
 FLASH_MODE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_MODE).defaults
 FLASH_SPEED_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_FREQ).defaults
 
@@ -611,12 +546,8 @@ else
 	DEBUG_SDKCONFIG = esp-idf-config/sdkconfig-opt.defaults
 endif
 
-ifeq ($(ENABLE_JTAG), 1)
-	CFLAGS += -DENABLE_JTAG=1
-endif
-
 SDKCONFIGS := esp-idf-config/sdkconfig.defaults;$(DEBUG_SDKCONFIG);$(FLASH_SIZE_SDKCONFIG);$(FLASH_MODE_SDKCONFIG);$(FLASH_SPEED_SDKCONFIG);$(PSRAM_SDKCONFIG);$(PSRAM_SIZE_SDKCONFIG);$(PSRAM_MODE_SDKCONFIG);$(PSRAM_SPEED_SDKCONFIG);$(TARGET_SDKCONFIG);boards/$(BOARD)/sdkconfig
-ifneq ($(CIRCUITPY_BLEIO_NATIVE),0)
+ifneq ($(CIRCUITPY_BLEIO),0)
 	SDKCONFIGS := esp-idf-config/sdkconfig-ble.defaults;$(SDKCONFIGS)
 endif
 # create the config headers
@@ -674,9 +605,9 @@ endif
 
 ESP_IDF_COMPONENTS_LINK = $(IDF_TARGET_ARCH) $(CHIP_COMPONENTS) app_update bootloader_support driver esp_driver_gpio esp_driver_gptimer esp_driver_i2c esp_driver_ledc esp_driver_spi esp_driver_uart efuse esp_adc esp_app_format esp_common esp_event esp_hw_support esp_mm esp_partition esp_pm esp_ringbuf esp_rom esp_system esp_timer freertos hal heap log newlib nvs_flash pthread soc spi_flash vfs esp_vfs_console
 ifneq ($(CIRCUITPY_WIFI),0)
-	ESP_IDF_COMPONENTS_LINK += esp_coex esp_netif esp_security esp-tls esp_wifi lwip mbedtls mdns wpa_supplicant esp_phy
+	ESP_IDF_COMPONENTS_LINK += esp_coex esp_netif esp-tls esp_wifi lwip mbedtls mdns wpa_supplicant esp_phy
 endif
-ifneq ($(CIRCUITPY_BLEIO_NATIVE),0)
+ifneq ($(CIRCUITPY_BLEIO),0)
 	BLE_IMPL_esp32 := esp32
 	BLE_IMPL_esp32s3 := esp32c3
 	BLE_IMPL_esp32c2 := libble
@@ -685,10 +616,10 @@ ifneq ($(CIRCUITPY_BLEIO_NATIVE),0)
 	BLE_IMPL_esp32h2 := libble
 	BLE_IMPL = $(BLE_IMPL_$(IDF_TARGET))
 
-	ESP_IDF_COMPONENTS_LINK += bt esp_phy esp_security
+	ESP_IDF_COMPONENTS_LINK += bt esp_phy
 	ifeq ($(BLE_IMPL),esp32)
-#		BLE will hang the ESP32 and trigger an interrupt watchdog without this undefined symbol at
-#		link because a weak version of the interrupt that BLE uses will be linked incorrectly.
+		# BLE will hang the ESP32 and trigger an interrupt watchdog without this undefined symbol at
+		# link because a weak version of the interrupt that BLE uses will be linked incorrectly.
 		REGISTRATION_FUNCTIONS += -u ld_include_hli_vectors_bt
 		BINARY_BLOBS += esp-idf/components/bt/controller/lib_esp32/$(IDF_TARGET)/libbtdm_app.a
 	endif
@@ -706,9 +637,6 @@ ifneq ($(CIRCUITPY_BLEIO_NATIVE),0)
 		BINARY_BLOBS += esp-idf/components/bt/controller/lib_$(IDF_TARGET)/$(IDF_TARGET)-bt-lib/libble_app.a
 	endif
 	endif
-endif
-ifeq ($(IDF_TARGET),esp32p4)
-    ESP_IDF_COMPONENTS_LINK += esp_security
 endif
 ifneq ($(CIRCUITPY_ESPULP),0)
 	ESP_IDF_COMPONENTS_LINK += ulp
@@ -742,18 +670,6 @@ endif
 ifneq ($(CIRCUITPY_ESPCAMERA),0)
 ESP_IDF_COMPONENTS_EXPANDED += $(BUILD)/esp-idf/esp-idf/esp-camera/libesp-camera.a
 #$(error $(ESP_IDF_COMPONENTS_EXPANDED))
-endif
-
-ifneq ($(CIRCUITPY_RCLCPY),0)
-	ifeq ($(IDF_TARGET),esp32)
-		BINARY_BLOBS += microros-lib/esp32/libmicroros.a
-	else ifeq ($(IDF_TARGET),esp32s2)
-		BINARY_BLOBS+= microros-lib/esp32s2/libmicroros.a
-	else ifeq ($(IDF_TARGET),esp32s3)
-		BINARY_BLOBS += microros-lib/esp32s3/libmicroros.a
-	else
-		$(error Unsupported Espressif target for Micro-ROS: $(IDF_TARGET).)
-	endif
 endif
 
 ifneq ($(VALID_BOARD),)

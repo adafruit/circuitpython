@@ -1,17 +1,12 @@
-from synthnotehelper import *
-from synthio import Biquad, FilterMode
-import random
+from synthio import Synthesizer
 
-random.seed(41)
-
-white_noise = array.array("h", [random.randint(-32000, 32000) for i in range(600)])
+s = Synthesizer(sample_rate=48000)
 
 
-@synth_test_rms
-def gen(synth):
-    l = LFO(sweep, offset=1440, scale=2880, rate=0.025, once=True)
-    yield [l]
-    b = Biquad(FilterMode.LOW_PASS, l, Q=0.5**0.5)
-    n = Note(100, filter=b, waveform=white_noise)
-    synth.press(n)
-    yield 20
+def print_filter(x):
+    print(" ".join(f"{v:.4g}" for v in x))
+
+
+print_filter(s.low_pass_filter(330))
+print_filter(s.high_pass_filter(330))
+print_filter(s.band_pass_filter(330))

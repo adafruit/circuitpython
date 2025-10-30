@@ -19,152 +19,122 @@
 #include "bindings/rp2pio/StateMachine.h"
 
 const uint16_t i2s_program[] = {
-
-/* From i2s.pio:
-
-.program i2s
-.side_set 2
-
-; Load the next set of samples
-                    ;        /--- LRCLK
-                    ;        |/-- BCLK
-                    ;        ||
-    pull noblock      side 0b11 ; Loads OSR with the next FIFO value or X
-    mov x osr         side 0b11 ; Save the new value in case we need it again
-    set y 14          side 0b11
-bitloop1:
-    out pins 1        side 0b10 [2] ; Right channel first
-    jmp y-- bitloop1  side 0b11 [2]
-    out pins 1        side 0b00 [2]
-    set y 14          side 0b01 [2]
-bitloop0:
-    out pins 1        side 0b00 [2] ; Then left channel
-    jmp y-- bitloop0  side 0b01 [2]
-    out pins 1        side 0b10 [2]
-*/
-    // Above assembled with pioasm.
-    0x9880, //  0: pull   noblock         side 3
-    0xb827, //  1: mov    x, osr          side 3
-    0xf84e, //  2: set    y, 14           side 3
-    0x7201, //  3: out    pins, 1         side 2 [2]
-    0x1a83, //  4: jmp    y--, 3          side 3 [2]
-    0x6201, //  5: out    pins, 1         side 0 [2]
-    0xea4e, //  6: set    y, 14           side 1 [2]
-    0x6201, //  7: out    pins, 1         side 0 [2]
-    0x0a87, //  8: jmp    y--, 7          side 1 [2]
-    0x7201, //  9: out    pins, 1         side 2 [2]
+// ; Load the next set of samples
+//                     ;        /--- LRCLK
+//                     ;        |/-- BCLK
+//                     ;        ||
+//     pull noblock      side 0b01 ; Loads OSR with the next FIFO value or X
+    0x8880,
+//     mov x osr         side 0b01 ; Save the new value in case we need it again
+    0xa827,
+//     set y 14          side 0b01
+    0xe84e,
+// bitloop1:
+//     out pins 1        side 0b00 [2]
+    0x6201,
+//     jmp y-- bitloop1  side 0b01 [2]
+    0x0a83,
+//     out pins 1        side 0b10 [2]
+    0x7201,
+//     set y 14          side 0b11 [2]
+    0xfa4e,
+// bitloop0:
+//     out pins 1        side 0b10 [2]
+    0x7201,
+//     jmp y-- bitloop0  side 0b11 [2]
+    0x1a87,
+//     out pins 1        side 0b00 [2]
+    0x6201
 };
 
-
 const uint16_t i2s_program_left_justified[] = {
-/* From i2s_left.pio:
-
-.program i2s
-.side_set 2
-
-; Load the next set of samples
-                     ;        /--- LRCLK
-                     ;        |/-- BCLK
-                     ;        ||
-    pull noblock      side 0b01 ; Loads OSR with the next FIFO value or X
-    mov x osr         side 0b01 ; Save the new value in case we need it again
-    set y 14          side 0b01
-bitloop1:
-    out pins 1        side 0b10 [2] ; Right channel first
-    jmp y-- bitloop1  side 0b11 [2]
-    out pins 1        side 0b10 [2]
-    set y 14          side 0b11 [2]
-bitloop0:
-    out pins 1        side 0b00 [2] ; Then left channel
-    jmp y-- bitloop0  side 0b01 [2]
-    out pins 1        side 0b00 [2]
-*/
-    // Above assembled with pioasm.
-    0x8880, //  0: pull   noblock         side 1
-    0xa827, //  1: mov    x, osr          side 1
-    0xe84e, //  2: set    y, 14           side 1
-    0x7201, //  3: out    pins, 1         side 2 [2]
-    0x1a83, //  4: jmp    y--, 3          side 3 [2]
-    0x7201, //  5: out    pins, 1         side 2 [2]
-    0xfa4e, //  6: set    y, 14           side 3 [2]
-    0x6201, //  7: out    pins, 1         side 0 [2]
-    0x0a87, //  8: jmp    y--, 7          side 1 [2]
-    0x6201, //  9: out    pins, 1         side 0 [2]
+// ; Load the next set of samples
+//                     ;        /--- LRCLK
+//                     ;        |/-- BCLK
+//                     ;        ||
+//     pull noblock      side 0b11 ; Loads OSR with the next FIFO value or X
+    0x9880,
+//     mov x osr         side 0b11 ; Save the new value in case we need it again
+    0xb827,
+//     set y 14          side 0b11
+    0xf84e,
+// bitloop1:
+//     out pins 1        side 0b00 [2]
+    0x6201,
+//     jmp y-- bitloop1  side 0b01 [2]
+    0x0a83,
+//     out pins 1        side 0b00 [2]
+    0x6201,
+//     set y 14          side 0b01 [2]
+    0xea4e,
+// bitloop0:
+//     out pins 1        side 0b10 [2]
+    0x7201,
+//     jmp y-- bitloop0  side 0b11 [2]
+    0x1a87,
+//     out pins 1        side 0b10 [2]
+    0x7201
 };
 
 // Another version of i2s_program with the LRCLC and BCLK pin swapped
 const uint16_t i2s_program_swap[] = {
-/* From i2s_swap.pio:
-
-.program i2s
-.side_set 2
-
-; Load the next set of samples
-                    ;        /--- BCLK
-                    ;        |/-- LRCLK
-                    ;        ||
-    pull noblock      side 0b11 ; Loads OSR with the next FIFO value or X
-    mov x osr         side 0b11 ; Save the new value in case we need it again
-    set y 14          side 0b11
-bitloop1:
-    out pins 1        side 0b01 [2] ; Right channel first
-    jmp y-- bitloop1  side 0b11 [2]
-    out pins 1        side 0b00 [2]
-    set y 14          side 0b10 [2]
-bitloop0:
-    out pins 1        side 0b00 [2] ; Then left channel
-    jmp y-- bitloop0  side 0b10 [2]
-    out pins 1        side 0b01 [2]
-*/
-    // Above assembled with pioasm.
-    0x9880, //  0: pull   noblock         side 3
-    0xb827, //  1: mov    x, osr          side 3
-    0xf84e, //  2: set    y, 14           side 3
-    0x6a01, //  3: out    pins, 1         side 1 [2]
-    0x1a83, //  4: jmp    y--, 3          side 3 [2]
-    0x6201, //  5: out    pins, 1         side 0 [2]
-    0xf24e, //  6: set    y, 14           side 2 [2]
-    0x6201, //  7: out    pins, 1         side 0 [2]
-    0x1287, //  8: jmp    y--, 7          side 2 [2]
-    0x6a01, //  9: out    pins, 1         side 1 [2]
+// ; Load the next set of samples
+//                     ;        /--- BCLK
+//                     ;        |/-- LRCLK
+//                     ;        ||
+//     pull noblock      side 0b11 ; Loads OSR with the next FIFO value or X
+    0x9880,
+//     mov x osr         side 0b11 ; Save the new value in case we need it again
+    0xb827,
+//     set y 14          side 0b11
+    0xf84e,
+// bitloop1:
+//     out pins 1        side 0b01 [2]
+    0x6a01,
+//     jmp y-- bitloop1  side 0b11 [2]
+    0x1a83,
+//     out pins 1        side 0b00 [2]
+    0x6201,
+//     set y 14          side 0b10 [2]
+    0xf24e,
+// bitloop0:
+//     out pins 1        side 0b00 [2]
+    0x6201,
+//     jmp y-- bitloop0  side 0b10 [2]
+    0x1287,
+//     out pins 1        side 0b01 [2]
+    0x6a01
 };
 
 // Another version of i2s_program_left_justified with the LRCLC and BCLK pin
 // swapped.
 const uint16_t i2s_program_left_justified_swap[] = {
-/* From i2s_swap_left.pio:
-
-.program i2s
-.side_set 2
-
-; Load the next set of samples
-                    ;        /--- BCLK
-                    ;        |/-- LRCLK
-                    ;        ||
-    pull noblock      side 0b10 ; Loads OSR with the next FIFO value or X
-    mov x osr         side 0b10 ; Save the new value in case we need it again
-    set y 14          side 0b10
-bitloop1:
-    out pins 1        side 0b01 [2] ; Right channel first
-    jmp y-- bitloop1  side 0b11 [2]
-    out pins 1        side 0b01 [2]
-    set y 14          side 0b11 [2]
-bitloop0:
-    out pins 1        side 0b00 [2] ; Then left channel
-    jmp y-- bitloop0  side 0b10 [2]
-    out pins 1        side 0b00 [2]
-*/
-    // Above assembled with pioasm.
-    0x9080, //  0: pull   noblock         side 2
-    0xb027, //  1: mov    x, osr          side 2
-    0xf04e, //  2: set    y, 14           side 2
-    0x6a01, //  3: out    pins, 1         side 1 [2]
-    0x1a83, //  4: jmp    y--, 3          side 3 [2]
-    0x6a01, //  5: out    pins, 1         side 1 [2]
-    0xfa4e, //  6: set    y, 14           side 3 [2]
-    0x6201, //  7: out    pins, 1         side 0 [2]
-    0x1287, //  8: jmp    y--, 7          side 2 [2]
-    0x6201, //  9: out    pins, 1         side 0 [2]
+// ; Load the next set of samples
+//                     ;        /--- BCLK
+//                     ;        |/-- LRCLK
+//                     ;        ||
+//     pull noblock      side 0b11 ; Loads OSR with the next FIFO value or X
+    0x9880,
+//     mov x osr         side 0b11 ; Save the new value in case we need it again
+    0xb827,
+//     set y 14          side 0b11
+    0xf84e,
+// bitloop1:
+//     out pins 1        side 0b00 [2]
+    0x6201,
+//     jmp y-- bitloop1  side 0b10 [2]
+    0x1283,
+//     out pins 1        side 0b00 [2]
+    0x6201,
+//     set y 14          side 0b10 [2]
+    0xf24e,
+// bitloop0:
+//     out pins 1        side 0b01 [2]
+    0x6a01,
+//     jmp y-- bitloop0  side 0b11 [2]
+    0x1a87,
+//     out pins 1        side 0b01 [2]
+    0x6a01
 };
 
 void i2sout_reset(void) {

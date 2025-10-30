@@ -105,14 +105,15 @@ instance{}()
 multitest.flush()
 """
 
-# Some ports generate output we can't control, and that can be safely ignored.
+# The btstack implementation on Unix generates some spurious output that we
+# can't control.  Also other platforms may output certain warnings/errors that
+# can be safely ignored.
 IGNORE_OUTPUT_MATCHES = (
-    "libusb: error ",  # unix btstack tries to open devices that it doesn't have access to (libusb prints unconditionally).
+    "libusb: error ",  # It tries to open devices that it doesn't have access to (libusb prints unconditionally).
     "hci_transport_h2_libusb.c",  # Same issue. We enable LOG_ERROR in btstack.
-    "USB Path: ",  # Hardcoded in unix btstack's libusb transport.
-    "hci_number_completed_packet",  # Warning from unix btstack.
+    "USB Path: ",  # Hardcoded in btstack's libusb transport.
+    "hci_number_completed_packet",  # Warning from btstack.
     "lld_pdu_get_tx_flush_nb HCI packet count mismatch (",  # From ESP-IDF, see https://github.com/espressif/esp-idf/issues/5105
-    " ets_task(",  # ESP8266 port debug output
 )
 
 

@@ -46,11 +46,6 @@ static mp_obj_t mp_obj_deque_extend(mp_obj_t self_in, mp_obj_t arg_in);
 static mp_obj_t mp_obj_new_deque_it(mp_obj_t deque, mp_obj_iter_buf_t *iter_buf);
 #endif
 
-// CIRCUITPY-CHANGE
-static mp_obj_deque_t *native_deque(mp_obj_t self_in) {
-    return MP_OBJ_TO_PTR(mp_obj_cast_to_native_base(self_in, MP_OBJ_FROM_PTR(&mp_type_deque)));
-}
-
 static mp_obj_t deque_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     mp_arg_check_num(n_args, n_kw, 2, 3, false);
 
@@ -63,8 +58,7 @@ static mp_obj_t deque_make_new(const mp_obj_type_t *type, size_t n_args, size_t 
     mp_obj_deque_t *o = mp_obj_malloc(mp_obj_deque_t, type);
     o->alloc = maxlen + 1;
     o->i_get = o->i_put = 0;
-    // CIRCUITPY-CHANGE
-    o->items = m_malloc_items(o->alloc);
+    o->items = m_new0(mp_obj_t, o->alloc);
 
     if (n_args > 2) {
         o->flags = mp_obj_get_int(args[2]);
@@ -84,8 +78,7 @@ static size_t deque_len(mp_obj_deque_t *self) {
 }
 
 static mp_obj_t deque_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
-    // CIRCUITPY-CHANGE
-    mp_obj_deque_t *self = native_deque(self_in);
+    mp_obj_deque_t *self = MP_OBJ_TO_PTR(self_in);
     switch (op) {
         case MP_UNARY_OP_BOOL:
             return mp_obj_new_bool(self->i_get != self->i_put);
@@ -104,8 +97,7 @@ static mp_obj_t deque_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
 }
 
 static mp_obj_t mp_obj_deque_append(mp_obj_t self_in, mp_obj_t arg) {
-    // CIRCUITPY-CHANGE
-    mp_obj_deque_t *self = native_deque(self_in);
+    mp_obj_deque_t *self = MP_OBJ_TO_PTR(self_in);
 
     size_t new_i_put = self->i_put + 1;
     if (new_i_put == self->alloc) {
@@ -130,8 +122,7 @@ static mp_obj_t mp_obj_deque_append(mp_obj_t self_in, mp_obj_t arg) {
 static MP_DEFINE_CONST_FUN_OBJ_2(deque_append_obj, mp_obj_deque_append);
 
 static mp_obj_t mp_obj_deque_appendleft(mp_obj_t self_in, mp_obj_t arg) {
-    // CIRCUITPY-CHANGE
-    mp_obj_deque_t *self = native_deque(self_in);
+    mp_obj_deque_t *self = MP_OBJ_TO_PTR(self_in);
 
     size_t new_i_get = self->i_get - 1;
     if (self->i_get == 0) {
@@ -170,8 +161,7 @@ static mp_obj_t mp_obj_deque_extend(mp_obj_t self_in, mp_obj_t arg_in) {
 static MP_DEFINE_CONST_FUN_OBJ_2(deque_extend_obj, mp_obj_deque_extend);
 
 static mp_obj_t deque_popleft(mp_obj_t self_in) {
-    // CIRCUITPY-CHANGE
-    mp_obj_deque_t *self = native_deque(self_in);
+    mp_obj_deque_t *self = MP_OBJ_TO_PTR(self_in);
 
     if (self->i_get == self->i_put) {
         mp_raise_msg(&mp_type_IndexError, MP_ERROR_TEXT("empty"));
@@ -189,8 +179,7 @@ static mp_obj_t deque_popleft(mp_obj_t self_in) {
 static MP_DEFINE_CONST_FUN_OBJ_1(deque_popleft_obj, deque_popleft);
 
 static mp_obj_t deque_pop(mp_obj_t self_in) {
-    // CIRCUITPY-CHANGE
-    mp_obj_deque_t *self = native_deque(self_in);
+    mp_obj_deque_t *self = MP_OBJ_TO_PTR(self_in);
 
     if (self->i_get == self->i_put) {
         mp_raise_msg(&mp_type_IndexError, MP_ERROR_TEXT("empty"));
@@ -215,12 +204,11 @@ static mp_obj_t deque_subscr(mp_obj_t self_in, mp_obj_t index, mp_obj_t value) {
         // delete not supported, fall back to mp_obj_subscr() error message
         return MP_OBJ_NULL;
     }
-    // CIRCUITPY-CHANGE
-    mp_obj_deque_t *self = native_deque(self_in);
+    mp_obj_deque_t *self = MP_OBJ_TO_PTR(self_in);
 
     size_t offset = mp_get_index(self->base.type, deque_len(self), index, false);
     size_t index_val = self->i_get + offset;
-    if (index_val >= self->alloc) {
+    if (index_val > self->alloc) {
         index_val -= self->alloc;
     }
 
@@ -237,8 +225,7 @@ static mp_obj_t deque_subscr(mp_obj_t self_in, mp_obj_t index, mp_obj_t value) {
 
 #if 0
 static mp_obj_t deque_clear(mp_obj_t self_in) {
-    // CIRCUITPY-CHANGE
-    mp_obj_deque_t *self = native_deque(self_in);
+    mp_obj_deque_t *self = MP_OBJ_TO_PTR(self_in);
     self->i_get = self->i_put = 0;
     mp_seq_clear(self->items, 0, self->alloc, sizeof(*self->items));
     return mp_const_none;
@@ -276,7 +263,7 @@ static MP_DEFINE_CONST_DICT(deque_locals_dict, deque_locals_dict_table);
 MP_DEFINE_CONST_OBJ_TYPE(
     mp_type_deque,
     MP_QSTR_deque,
-    DEQUE_TYPE_FLAGS,
+    MP_TYPE_FLAG_ITER_IS_GETITER,
     make_new, deque_make_new,
     unary_op, deque_unary_op,
     DEQUE_TYPE_SUBSCR
@@ -298,8 +285,7 @@ typedef struct _mp_obj_deque_it_t {
 
 static mp_obj_t deque_it_iternext(mp_obj_t self_in) {
     mp_obj_deque_it_t *self = MP_OBJ_TO_PTR(self_in);
-    // CIRCUITPY-CHANGE
-    mp_obj_deque_t *deque = native_deque(self->deque);
+    mp_obj_deque_t *deque = MP_OBJ_TO_PTR(self->deque);
     if (self->cur != deque->i_put) {
         mp_obj_t o_out = deque->items[self->cur];
         if (++self->cur == deque->alloc) {
@@ -311,10 +297,9 @@ static mp_obj_t deque_it_iternext(mp_obj_t self_in) {
     }
 }
 
-static mp_obj_t mp_obj_new_deque_it(mp_obj_t deque_in, mp_obj_iter_buf_t *iter_buf) {
-    // CIRCUITPY-CHANGE
-    mp_obj_deque_t *deque = native_deque(deque_in);
-    size_t i_get = deque->i_get;
+static mp_obj_t mp_obj_new_deque_it(mp_obj_t deque, mp_obj_iter_buf_t *iter_buf) {
+    mp_obj_deque_t *deque_ = MP_OBJ_TO_PTR(deque);
+    size_t i_get = deque_->i_get;
     assert(sizeof(mp_obj_deque_it_t) <= sizeof(mp_obj_iter_buf_t));
     mp_obj_deque_it_t *o = (mp_obj_deque_it_t *)iter_buf;
     o->base.type = &mp_type_polymorph_iter;

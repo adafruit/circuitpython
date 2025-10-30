@@ -135,7 +135,6 @@ void common_hal_busio_i2c_deinit(busio_i2c_obj_t *self) {
     if (common_hal_busio_i2c_deinited(self)) {
         return;
     }
-    allow_reset_sercom(self->i2c_desc.device.hw);
 
     i2c_m_sync_disable(&self->i2c_desc);
     i2c_m_sync_deinit(&self->i2c_desc);

@@ -101,29 +101,41 @@ void board_init(void) {
         0, // Polarity
         0); // Phase
 
-    // Set up the DisplayIO epaper object
+// Set up the DisplayIO epaper object
     epaperdisplay_epaperdisplay_obj_t *display = &allocate_display()->epaper_display;
     display->base.type = &epaperdisplay_epaperdisplay_type;
-
-    epaperdisplay_construct_args_t args = EPAPERDISPLAY_CONSTRUCT_ARGS_DEFAULTS;
-    args.bus = bus;
-    args.start_sequence = display_start_sequence;
-    args.start_sequence_len = sizeof(display_start_sequence);
-    args.stop_sequence = display_stop_sequence;
-    args.stop_sequence_len = sizeof(display_stop_sequence);
-    args.width = 250;
-    args.height = 122;
-    args.ram_width = 128;
-    args.ram_height = 296;
-    args.rotation = 270;
-    args.write_black_ram_command = 0x13;
-    args.write_color_ram_command = 0x10;
-    args.refresh_sequence = refresh_sequence;
-    args.refresh_sequence_len = sizeof(refresh_sequence);
-    args.refresh_time = 1.0;
-    args.busy_pin = &pin_GPIO7;
-    args.seconds_per_frame = 2.0;
-    common_hal_epaperdisplay_epaperdisplay_construct(display, &args);
+    common_hal_epaperdisplay_epaperdisplay_construct(
+        display,
+        bus,
+        display_start_sequence, sizeof(display_start_sequence),
+        0, // start up time
+        display_stop_sequence, sizeof(display_stop_sequence),
+        250, // width
+        122, // height
+        128, // ram_width
+        296, // ram_height
+        0, // colstart
+        0, // rowstart
+        270, // rotation
+        NO_COMMAND, // set_column_window_command
+        NO_COMMAND, // set_row_window_command
+        NO_COMMAND, // set_current_column_command
+        NO_COMMAND, // set_current_row_command
+        0x13, // write_black_ram_command
+        false, // black_bits_inverted
+        0x10, // write_color_ram_command
+        false, // color_bits_inverted
+        0x000000, // highlight_color
+        refresh_sequence, sizeof(refresh_sequence), // refresh_display_command
+        1.0, // refresh_time
+        &pin_GPIO7, // busy_pin
+        false, // busy_state
+        2.0, // seconds_per_frame
+        false, // always_toggle_chip_select
+        false, // grayscale
+        false, // acep
+        false, // two_byte_sequence_length
+        false); // address_little_endian
 }
 
 void board_deinit(void) {

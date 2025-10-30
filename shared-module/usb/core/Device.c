@@ -1,15 +1,12 @@
 // This file is part of the CircuitPython project: https://circuitpython.org
 //
 // SPDX-FileCopyrightText: Copyright (c) 2022 Scott Shawcroft for Adafruit Industries
-// SPDX-FileCopyrightText: Copyright (c) 2025 Sam Blenny
 //
 // SPDX-License-Identifier: MIT
 
 #include "shared-bindings/usb/core/Device.h"
 
 #include "tusb_config.h"
-#include "supervisor/port.h"
-#include "supervisor/port_heap.h"
 
 #include "lib/tinyusb/src/host/hcd.h"
 #include "lib/tinyusb/src/host/usbh.h"
@@ -35,28 +32,6 @@ void tuh_umount_cb(uint8_t dev_addr) {
 
 static xfer_result_t _xfer_result;
 static size_t _actual_len;
-
-#if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
-// Helper to ensure buffer is DMA-capable for transfer operations
-static uint8_t *_ensure_dma_buffer(usb_core_device_obj_t *self, const uint8_t *buffer, size_t len, bool for_write) {
-    if (port_buffer_is_dma_capable(buffer)) {
-        return (uint8_t *)buffer;  // Already DMA-capable, use directly
-    }
-
-    uint8_t *dma_buffer = port_malloc(len, true);  // true = DMA capable
-    if (dma_buffer == NULL) {
-        return NULL;  // Allocation failed
-    }
-
-    // Copy data to DMA buffer if writing
-    if (for_write && buffer != NULL) {
-        memcpy(dma_buffer, buffer, len);
-    }
-
-    return dma_buffer;
-}
-
-#endif
 bool common_hal_usb_core_device_construct(usb_core_device_obj_t *self, uint8_t device_address) {
     if (!tuh_inited()) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("No usb host port initialized"));
@@ -70,43 +45,27 @@ bool common_hal_usb_core_device_construct(usb_core_device_obj_t *self, uint8_t d
     }
     self->device_address = device_address;
     self->first_langid = 0;
-    _xfer_result = XFER_RESULT_INVALID;
+    _xfer_result = 0xff;
     return true;
 }
 
-bool common_hal_usb_core_device_deinited(usb_core_device_obj_t *self) {
-    return self->device_address == 0;
-}
-
 void common_hal_usb_core_device_deinit(usb_core_device_obj_t *self) {
-    if (common_hal_usb_core_device_deinited(self)) {
-        return;
-    }
-    size_t open_size = sizeof(self->open_endpoints);
-    for (size_t i = 0; i < open_size; i++) {
-        if (self->open_endpoints[i] != 0) {
-            tuh_edpt_close(self->device_address, self->open_endpoints[i]);
-            self->open_endpoints[i] = 0;
-        }
-    }
-    self->device_address = 0;
+    // TODO: Close all of the endpoints we've opened. Some drivers store state
+    // for each open endpoint. If we don't close them, then we'll leak memory.
+    // Waiting for TinyUSB to add this.
 }
 
 uint16_t common_hal_usb_core_device_get_idVendor(usb_core_device_obj_t *self) {
     uint16_t vid;
     uint16_t pid;
-    if (!tuh_vid_pid_get(self->device_address, &vid, &pid)) {
-        mp_raise_usb_core_USBError(NULL);
-    }
+    tuh_vid_pid_get(self->device_address, &vid, &pid);
     return vid;
 }
 
 uint16_t common_hal_usb_core_device_get_idProduct(usb_core_device_obj_t *self) {
     uint16_t vid;
     uint16_t pid;
-    if (!tuh_vid_pid_get(self->device_address, &vid, &pid)) {
-        mp_raise_usb_core_USBError(NULL);
-    }
+    tuh_vid_pid_get(self->device_address, &vid, &pid);
     return pid;
 }
 
@@ -120,109 +79,14 @@ static void _transfer_done_cb(tuh_xfer_t *xfer) {
 
 static bool _wait_for_callback(void) {
     while (!mp_hal_is_interrupted() &&
-           _xfer_result == XFER_RESULT_INVALID) {
+           _xfer_result == 0xff) {
         // The background tasks include TinyUSB which will call the function
         // we provided above. In other words, the callback isn't in an interrupt.
         RUN_BACKGROUND_TASKS;
     }
-    if (mp_hal_is_interrupted()) {
-        // Handle case of VM being interrupted by Ctrl-C or autoreload
-        return false;
-    }
-    // Handle callback result code from TinyUSB
     xfer_result_t result = _xfer_result;
-    _xfer_result = XFER_RESULT_INVALID;
-    switch (result) {
-        case XFER_RESULT_SUCCESS:
-            return true;
-        case XFER_RESULT_FAILED:
-            mp_raise_usb_core_USBError(NULL);
-            break;
-        case XFER_RESULT_STALLED:
-            mp_raise_usb_core_USBError(MP_ERROR_TEXT("Pipe error"));
-            break;
-        case XFER_RESULT_TIMEOUT:
-        case XFER_RESULT_INVALID:
-            mp_raise_usb_core_USBTimeoutError();
-            break;
-    }
-    return false;
-}
-
-static void _prepare_for_transfer(void) {
-    // Prepare for transfer. Unless there is a timeout, these static globals will
-    // get modified by the _transfer_done_cb() callback when tinyusb finishes the
-    // transfer or encounters an error condition.
-    _xfer_result = XFER_RESULT_INVALID;
-    _actual_len = 0;
-}
-
-static void _abort_transfer(tuh_xfer_t *xfer) {
-    bool aborted = tuh_edpt_abort_xfer(xfer->daddr, xfer->ep_addr);
-    if (aborted) {
-        // If the transfer was aborted, then we can continue.
-        return;
-    }
-    uint32_t start_time = supervisor_ticks_ms32();
-    // If not, we need to wait for it to finish, otherwise we may free memory out from under it.
-    // Limit the wait time to 10 milliseconds to avoid blocking indefinitely.
-    while (_xfer_result == XFER_RESULT_INVALID && (supervisor_ticks_ms32() - start_time < 10)) {
-        // The background tasks include TinyUSB which will call the function
-        // we provided above. In other words, the callback isn't in an interrupt.
-        RUN_BACKGROUND_TASKS;
-    }
-}
-
-// Only frees the transfer buffer on error.
-static size_t _handle_timed_transfer_callback(tuh_xfer_t *xfer, mp_int_t timeout, bool our_buffer) {
-    if (xfer == NULL) {
-        mp_raise_usb_core_USBError(NULL);
-        return 0;
-    }
-    uint32_t start_time = supervisor_ticks_ms32();
-    while ((timeout == 0 || supervisor_ticks_ms32() - start_time < (uint32_t)timeout) &&
-           !mp_hal_is_interrupted() &&
-           _xfer_result == XFER_RESULT_INVALID) {
-        // The background tasks include TinyUSB which will call the function
-        // we provided above. In other words, the callback isn't in an interrupt.
-        RUN_BACKGROUND_TASKS;
-    }
-    if (mp_hal_is_interrupted()) {
-        // Handle case of VM being interrupted by Ctrl-C or autoreload
-        _abort_transfer(xfer);
-        return 0;
-    }
-    // Handle transfer result code from TinyUSB
-    xfer_result_t result = _xfer_result;
-    _xfer_result = XFER_RESULT_INVALID;
-    if (our_buffer && result != XFER_RESULT_SUCCESS && result != XFER_RESULT_INVALID) {
-        port_free(xfer->buffer);
-    }
-    switch (result) {
-        case XFER_RESULT_SUCCESS:
-            return _actual_len;
-        case XFER_RESULT_FAILED:
-            mp_raise_usb_core_USBError(NULL);
-            break;
-        case XFER_RESULT_STALLED:
-            mp_raise_usb_core_USBError(MP_ERROR_TEXT("Pipe error"));
-            break;
-        case XFER_RESULT_TIMEOUT:
-            // This timeout comes from TinyUSB, so assume that it has stopped the
-            // transfer (note: timeout logic may be unimplemented on TinyUSB side)
-            mp_raise_usb_core_USBTimeoutError();
-            break;
-        case XFER_RESULT_INVALID:
-            // This timeout comes from CircuitPython, not TinyUSB, so tell TinyUSB
-            // to stop the transfer and then wait to free the buffer.
-            _abort_transfer(xfer);
-            if (our_buffer) {
-                port_free(xfer->buffer);
-            }
-            mp_raise_usb_core_USBTimeoutError();
-            break;
-    }
-    return 0;
+    _xfer_result = 0xff;
+    return result == XFER_RESULT_SUCCESS;
 }
 
 static mp_obj_t _get_string(const uint16_t *temp_buf) {
@@ -239,115 +103,72 @@ static void _get_langid(usb_core_device_obj_t *self) {
     }
     // Two control bytes and one uint16_t language code.
     uint16_t temp_buf[2];
-    _prepare_for_transfer();
-    if (!tuh_descriptor_get_string(self->device_address, 0, 0, temp_buf, sizeof(temp_buf), _transfer_done_cb, 0)) {
-        mp_raise_usb_core_USBError(NULL);
-    } else if (_wait_for_callback()) {
-        self->first_langid = temp_buf[1];
+    if (!tuh_descriptor_get_string(self->device_address, 0, 0, temp_buf, sizeof(temp_buf), _transfer_done_cb, 0) ||
+        !_wait_for_callback()) {
+        return;
     }
+    self->first_langid = temp_buf[1];
 }
 
 mp_obj_t common_hal_usb_core_device_get_serial_number(usb_core_device_obj_t *self) {
     uint16_t temp_buf[127];
-    tusb_desc_device_t descriptor;
-    // First, be sure not to ask TinyUSB for a non-existent string (avoid error)
-    if (!tuh_descriptor_get_device_local(self->device_address, &descriptor)) {
-        return mp_const_none;
-    }
-    if (descriptor.iSerialNumber == 0) {
-        return mp_const_none;
-    }
-    // Device does provide this string, so continue
     _get_langid(self);
-    _prepare_for_transfer();
-    if (!tuh_descriptor_get_serial_string(self->device_address, self->first_langid, temp_buf, sizeof(temp_buf), _transfer_done_cb, 0)) {
-        mp_raise_usb_core_USBError(NULL);
-    } else if (_wait_for_callback()) {
-        return _get_string(temp_buf);
+    if (!tuh_descriptor_get_serial_string(self->device_address, self->first_langid, temp_buf, sizeof(temp_buf), _transfer_done_cb, 0) ||
+        !_wait_for_callback()) {
+        return mp_const_none;
     }
-    return mp_const_none;
+    return _get_string(temp_buf);
 }
 
 mp_obj_t common_hal_usb_core_device_get_product(usb_core_device_obj_t *self) {
     uint16_t temp_buf[127];
-    tusb_desc_device_t descriptor;
-    // First, be sure not to ask TinyUSB for a non-existent string (avoid error)
-    if (!tuh_descriptor_get_device_local(self->device_address, &descriptor)) {
-        return mp_const_none;
-    }
-    if (descriptor.iProduct == 0) {
-        return mp_const_none;
-    }
-    // Device does provide this string, so continue
     _get_langid(self);
-    _prepare_for_transfer();
-    if (!tuh_descriptor_get_product_string(self->device_address, self->first_langid, temp_buf, sizeof(temp_buf), _transfer_done_cb, 0)) {
-        mp_raise_usb_core_USBError(NULL);
-    } else if (_wait_for_callback()) {
-        return _get_string(temp_buf);
+    if (!tuh_descriptor_get_product_string(self->device_address, self->first_langid, temp_buf, sizeof(temp_buf), _transfer_done_cb, 0) ||
+        !_wait_for_callback()) {
+        return mp_const_none;
     }
-    return mp_const_none;
+    return _get_string(temp_buf);
 }
 
 mp_obj_t common_hal_usb_core_device_get_manufacturer(usb_core_device_obj_t *self) {
     uint16_t temp_buf[127];
-    tusb_desc_device_t descriptor;
-    // First, be sure not to ask TinyUSB for a non-existent string (avoid error)
-    if (!tuh_descriptor_get_device_local(self->device_address, &descriptor)) {
-        return mp_const_none;
-    }
-    if (descriptor.iManufacturer == 0) {
-        return mp_const_none;
-    }
-    // Device does provide this string, so continue
     _get_langid(self);
-    _prepare_for_transfer();
-    if (!tuh_descriptor_get_manufacturer_string(self->device_address, self->first_langid, temp_buf, sizeof(temp_buf), _transfer_done_cb, 0)) {
-        mp_raise_usb_core_USBError(NULL);
-    } else if (_wait_for_callback()) {
-        return _get_string(temp_buf);
+    if (!tuh_descriptor_get_manufacturer_string(self->device_address, self->first_langid, temp_buf, sizeof(temp_buf), _transfer_done_cb, 0) ||
+        !_wait_for_callback()) {
+        return mp_const_none;
     }
-    return mp_const_none;
+    return _get_string(temp_buf);
 }
 
 
 mp_int_t common_hal_usb_core_device_get_bus(usb_core_device_obj_t *self) {
-    tuh_bus_info_t bus_info;
-    if (!tuh_bus_info_get(self->device_address, &bus_info)) {
-        return 0;
-    }
-    return bus_info.rhport;
+    hcd_devtree_info_t devtree;
+    hcd_devtree_get_info(self->device_address, &devtree);
+    return devtree.rhport;
 }
 
 mp_obj_t common_hal_usb_core_device_get_port_numbers(usb_core_device_obj_t *self) {
-    tuh_bus_info_t bus_info;
-    if (!tuh_bus_info_get(self->device_address, &bus_info)) {
-        return mp_const_none;
-    }
-    if (bus_info.hub_addr == 0) {
+    hcd_devtree_info_t devtree;
+    hcd_devtree_get_info(self->device_address, &devtree);
+    if (devtree.hub_addr == 0) {
         return mp_const_none;
     }
     // USB allows for 5 hubs deep chaining. So we're at most 5 ports deep.
     mp_obj_t ports[5];
     size_t port_count = 0;
-    tuh_bus_info_t current_bus_info = bus_info;
-    while (current_bus_info.hub_addr != 0 && port_count < MP_ARRAY_SIZE(ports)) {
+    while (devtree.hub_addr != 0 && port_count < MP_ARRAY_SIZE(ports)) {
         // Reverse the order of the ports so most downstream comes last.
-        ports[MP_ARRAY_SIZE(ports) - 1 - port_count] = MP_OBJ_NEW_SMALL_INT(current_bus_info.hub_port);
+        ports[MP_ARRAY_SIZE(ports) - 1 - port_count] = MP_OBJ_NEW_SMALL_INT(devtree.hub_port);
         port_count++;
-        if (!tuh_bus_info_get(current_bus_info.hub_addr, &current_bus_info)) {
-            break;
-        }
+        hcd_devtree_get_info(devtree.hub_addr, &devtree);
     }
     return mp_obj_new_tuple(port_count, ports + (MP_ARRAY_SIZE(ports) - port_count));
 }
 
 mp_int_t common_hal_usb_core_device_get_speed(usb_core_device_obj_t *self) {
-    tuh_bus_info_t bus_info;
-    if (!tuh_bus_info_get(self->device_address, &bus_info)) {
-        return 0;
-    }
-    switch (bus_info.speed) {
+    hcd_devtree_info_t devtree;
+    hcd_devtree_get_info(self->device_address, &devtree);
+    switch (devtree.speed) {
         case TUSB_SPEED_HIGH:
             return PYUSB_SPEED_HIGH;
         case TUSB_SPEED_FULL:
@@ -382,18 +203,39 @@ void common_hal_usb_core_device_set_configuration(usb_core_device_obj_t *self, m
     _wait_for_callback();
 }
 
-// Raises an exception on failure. Returns the number of bytes transferred (maybe zero) on success.
-static size_t _xfer(tuh_xfer_t *xfer, mp_int_t timeout, bool our_buffer) {
-    _prepare_for_transfer();
+static size_t _xfer(tuh_xfer_t *xfer, mp_int_t timeout) {
+    _xfer_result = 0xff;
     xfer->complete_cb = _transfer_done_cb;
     if (!tuh_edpt_xfer(xfer)) {
-        if (our_buffer) {
-            port_free(xfer->buffer);
-        }
         mp_raise_usb_core_USBError(NULL);
         return 0;
     }
-    return _handle_timed_transfer_callback(xfer, timeout, our_buffer);
+    uint32_t start_time = supervisor_ticks_ms32();
+    while ((timeout == 0 || supervisor_ticks_ms32() - start_time < (uint32_t)timeout) &&
+           !mp_hal_is_interrupted() &&
+           _xfer_result == 0xff) {
+        // The background tasks include TinyUSB which will call the function
+        // we provided above. In other words, the callback isn't in an interrupt.
+        RUN_BACKGROUND_TASKS;
+    }
+    if (mp_hal_is_interrupted()) {
+        tuh_edpt_abort_xfer(xfer->daddr, xfer->ep_addr);
+        return 0;
+    }
+    xfer_result_t result = _xfer_result;
+    _xfer_result = 0xff;
+    if (result == XFER_RESULT_STALLED) {
+        mp_raise_usb_core_USBError(MP_ERROR_TEXT("Pipe error"));
+    }
+    if (result == 0xff) {
+        tuh_edpt_abort_xfer(xfer->daddr, xfer->ep_addr);
+        mp_raise_usb_core_USBTimeoutError();
+    }
+    if (result == XFER_RESULT_SUCCESS) {
+        return _actual_len;
+    }
+
+    return 0;
 }
 
 static bool _open_endpoint(usb_core_device_obj_t *self, mp_int_t endpoint) {
@@ -450,30 +292,12 @@ mp_int_t common_hal_usb_core_device_write(usb_core_device_obj_t *self, mp_int_t 
         mp_raise_usb_core_USBError(NULL);
         return 0;
     }
-
-    #if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
-    // Ensure buffer is in DMA-capable memory
-    uint8_t *dma_buffer = _ensure_dma_buffer(self, buffer, len, true);  // true = for write
-    if (dma_buffer == NULL) {
-        mp_raise_msg(&mp_type_MemoryError, MP_ERROR_TEXT("Could not allocate DMA capable buffer"));
-        return 0;
-    }
-    #else
-    uint8_t *dma_buffer = (uint8_t *)buffer;  // All memory is DMA-capable
-    #endif
-
     tuh_xfer_t xfer;
     xfer.daddr = self->device_address;
     xfer.ep_addr = endpoint;
-    xfer.buffer = dma_buffer;
+    xfer.buffer = (uint8_t *)buffer;
     xfer.buflen = len;
-    size_t result = _xfer(&xfer, timeout, dma_buffer != buffer);
-    #if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
-    if (dma_buffer != buffer) {
-        port_free(dma_buffer);
-    }
-    #endif
-    return result;
+    return _xfer(&xfer, timeout);
 }
 
 mp_int_t common_hal_usb_core_device_read(usb_core_device_obj_t *self, mp_int_t endpoint, uint8_t *buffer, mp_int_t len, mp_int_t timeout) {
@@ -481,34 +305,12 @@ mp_int_t common_hal_usb_core_device_read(usb_core_device_obj_t *self, mp_int_t e
         mp_raise_usb_core_USBError(NULL);
         return 0;
     }
-
-    #if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
-    // Ensure buffer is in DMA-capable memory
-    uint8_t *dma_buffer = _ensure_dma_buffer(self, buffer, len, false);  // false = for read
-    if (dma_buffer == NULL) {
-        mp_raise_msg(&mp_type_MemoryError, MP_ERROR_TEXT("Could not allocate DMA capable buffer"));
-        return 0;
-    }
-    #else
-    uint8_t *dma_buffer = buffer;  // All memory is DMA-capable
-    #endif
-
     tuh_xfer_t xfer;
     xfer.daddr = self->device_address;
     xfer.ep_addr = endpoint;
-    xfer.buffer = dma_buffer;
+    xfer.buffer = buffer;
     xfer.buflen = len;
-    mp_int_t result = _xfer(&xfer, timeout, dma_buffer != buffer);
-
-    #if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
-    // Copy data back to original buffer if needed
-    if (dma_buffer != buffer) {
-        memcpy(buffer, dma_buffer, result);
-        port_free(dma_buffer);
-    }
-    #endif
-
-    return result;
+    return _xfer(&xfer, timeout);
 }
 
 mp_int_t common_hal_usb_core_device_ctrl_transfer(usb_core_device_obj_t *self,
@@ -516,23 +318,6 @@ mp_int_t common_hal_usb_core_device_ctrl_transfer(usb_core_device_obj_t *self,
     mp_int_t wValue, mp_int_t wIndex,
     uint8_t *buffer, mp_int_t len, mp_int_t timeout) {
     // Timeout is in ms.
-
-    #if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
-    // Determine if this is a write (host-to-device) or read (device-to-host) transfer
-    bool is_write = (bmRequestType & 0x80) == 0;  // Bit 7: 0=host-to-device, 1=device-to-host
-
-    // Ensure buffer is in DMA-capable memory
-    uint8_t *dma_buffer = NULL;
-    if (len > 0 && buffer != NULL) {
-        dma_buffer = _ensure_dma_buffer(self, buffer, len, is_write);
-        if (dma_buffer == NULL) {
-            mp_raise_msg(&mp_type_MemoryError, MP_ERROR_TEXT("Could not allocate DMA capable buffer"));
-            return 0;
-        }
-    }
-    #else
-    uint8_t *dma_buffer = buffer;  // All memory is DMA-capable
-    #endif
 
     tusb_control_request_t request = {
         .bmRequestType = bmRequestType,
@@ -545,28 +330,42 @@ mp_int_t common_hal_usb_core_device_ctrl_transfer(usb_core_device_obj_t *self,
         .daddr = self->device_address,
         .ep_addr = 0,
         .setup = &request,
-        .buffer = dma_buffer,
+        .buffer = buffer,
         .complete_cb = _transfer_done_cb,
     };
 
-    _prepare_for_transfer();
+    _xfer_result = 0xff;
+
     if (!tuh_control_xfer(&xfer)) {
         mp_raise_usb_core_USBError(NULL);
         return 0;
     }
-    mp_int_t result = (mp_int_t)_handle_timed_transfer_callback(&xfer, timeout, dma_buffer != buffer);
-
-    #if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
-    if (dma_buffer != buffer) {
-        // Copy data back to original buffer if this was a read transfer
-        if (buffer != NULL && !is_write) {
-            memcpy(buffer, dma_buffer, result);
-        }
-        port_free(dma_buffer);
+    uint32_t start_time = supervisor_ticks_ms32();
+    while ((timeout == 0 || supervisor_ticks_ms32() - start_time < (uint32_t)timeout) &&
+           !mp_hal_is_interrupted() &&
+           _xfer_result == 0xff) {
+        // The background tasks include TinyUSB which will call the function
+        // we provided above. In other words, the callback isn't in an interrupt.
+        RUN_BACKGROUND_TASKS;
     }
-    #endif
+    if (mp_hal_is_interrupted()) {
+        tuh_edpt_abort_xfer(xfer.daddr, xfer.ep_addr);
+        return 0;
+    }
+    xfer_result_t result = _xfer_result;
+    _xfer_result = 0xff;
+    if (result == XFER_RESULT_STALLED) {
+        mp_raise_usb_core_USBError(MP_ERROR_TEXT("Pipe error"));
+    }
+    if (result == 0xff) {
+        tuh_edpt_abort_xfer(xfer.daddr, xfer.ep_addr);
+        mp_raise_usb_core_USBTimeoutError();
+    }
+    if (result == XFER_RESULT_SUCCESS) {
+        return len;
+    }
 
-    return result;
+    return 0;
 }
 
 bool common_hal_usb_core_device_is_kernel_driver_active(usb_core_device_obj_t *self, mp_int_t interface) {

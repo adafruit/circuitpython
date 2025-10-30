@@ -12,7 +12,6 @@
 #include "extmod/vfs_fat.h"
 #include "lib/oofatfs/diskio.h"
 #include "lib/oofatfs/ff.h"
-#include "py/gc.h"
 #include "py/mpstate.h"
 
 #include "shared-module/storage/__init__.h"
@@ -22,33 +21,15 @@
 #define MSC_FLASH_BLOCK_SIZE    512
 
 #if CIRCUITPY_SAVES_PARTITION_SIZE > 0
-#define SAVES_COUNT 1
-#define SAVES_LUN (1)
+#define LUN_COUNT 2
 #else
-#define SAVES_COUNT 0
+#define LUN_COUNT 1
 #endif
-
-#if CIRCUITPY_SDCARDIO
-#include "shared-module/sdcardio/__init__.h"
-
-#define SDCARD_COUNT 1
-#define SDCARD_LUN (1 + SAVES_COUNT)
-#else
-#define SDCARD_COUNT 0
-#endif
-
-#define LUN_COUNT (1 + SAVES_COUNT + SDCARD_COUNT)
 
 // The ellipsis range in the designated initializer of `ejected` is not standard C,
 // but it works in both gcc and clang.
 static bool ejected[LUN_COUNT] = { [0 ... (LUN_COUNT - 1)] = true};
-static bool eject_once[LUN_COUNT] = { [0 ... (LUN_COUNT - 1)] = false};
-static bool locked[LUN_COUNT] = { [0 ... (LUN_COUNT - 1)] = false};
-
-// Set to true if a write was in a file data or metadata area,
-// as opposed to in the filesystem metadata area (e.g., dirty bit).
-// Used to determine if an auto-reload is warranted.
-static bool content_write[LUN_COUNT] = { [0 ... (LUN_COUNT - 1)] = false};
+static bool locked[LUN_COUNT] = {false};
 
 #include "tusb.h"
 
@@ -124,39 +105,24 @@ size_t usb_msc_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *desc
     return sizeof(usb_msc_descriptor_template);
 }
 
-// We hardcode LUN -> mount mapping so that it doesn't changes with saves and
-// SD card appearing and disappearing.
+// The root FS is always at the end of the list.
 static fs_user_mount_t *get_vfs(int lun) {
-    fs_user_mount_t *root = filesystem_circuitpy();
-    if (lun == 0) {
-        return root;
+    // Keep a history of the mounts we pass so we can search back.
+    mp_vfs_mount_t *mounts[LUN_COUNT];
+    mp_vfs_mount_t *current_mount = MP_STATE_VM(vfs_mount_table);
+    if (current_mount == NULL) {
+        return NULL;
     }
-    // Other filesystems must be native because we don't guard against exceptions.
-    // They must also be off the VM heap so they don't disappear on autoreload.
-    #ifdef SAVES_LUN
-    if (lun == SAVES_LUN) {
-        const char *path_under_mount;
-        fs_user_mount_t *saves = filesystem_for_path("/saves", &path_under_mount);
-        if (saves != root && (saves->blockdev.flags & MP_BLOCKDEV_FLAG_NATIVE) != 0 && !gc_ptr_on_heap(saves)) {
-            return saves;
-        }
+    // i is the last entry filled
+    size_t i = 0;
+    mounts[i] = current_mount;
+    while (current_mount->next != NULL) {
+        current_mount = current_mount->next;
+        i = (i + 1) % LUN_COUNT;
+        mounts[i] = current_mount;
     }
-    #endif
-    #ifdef SDCARD_LUN
-    if (lun == SDCARD_LUN) {
-        const char *path_under_mount;
-        fs_user_mount_t *sdcard = filesystem_for_path("/sd", &path_under_mount);
-        // If "/sd" is on the root filesystem, nothing has been mounted there.
-        if (sdcard != root && (sdcard->blockdev.flags & MP_BLOCKDEV_FLAG_NATIVE) != 0) {
-            return sdcard;
-        } else {
-            // Clear any ejected state so that a re-insert causes it to reappear.
-            ejected[SDCARD_LUN] = false;
-            locked[SDCARD_LUN] = false;
-        }
-    }
-    #endif
-    return NULL;
+    fs_user_mount_t *vfs = mounts[(i - lun) % LUN_COUNT]->obj;
+    return vfs;
 }
 
 static void _usb_msc_uneject(void) {
@@ -172,7 +138,7 @@ void usb_msc_mount(void) {
 
 void usb_msc_umount(void) {
     for (uint8_t i = 0; i < LUN_COUNT; i++) {
-        fs_user_mount_t *vfs = get_vfs(i);
+        fs_user_mount_t *vfs = get_vfs(i + 1);
         if (vfs == NULL) {
             continue;
         }
@@ -181,15 +147,12 @@ void usb_msc_umount(void) {
     }
 }
 
-void usb_msc_remount(fs_user_mount_t *fs_mount) {
+bool usb_msc_ejected(void) {
+    bool all_ejected = true;
     for (uint8_t i = 0; i < LUN_COUNT; i++) {
-        fs_user_mount_t *vfs = get_vfs(i);
-        if (vfs == NULL || vfs != fs_mount) {
-            continue;
-        }
-        ejected[i] = false;
-        eject_once[i] = true;
+        all_ejected &= ejected[i];
     }
+    return all_ejected;
 }
 
 uint8_t tud_msc_get_maxlun_cb(void) {
@@ -200,7 +163,6 @@ uint8_t tud_msc_get_maxlun_cb(void) {
 // - READ_CAPACITY10, READ_FORMAT_CAPACITY, INQUIRY, TEST_UNIT_READY, START_STOP_UNIT, MODE_SENSE6, REQUEST_SENSE
 // - READ10 and WRITE10 have their own callbacks
 int32_t tud_msc_scsi_cb(uint8_t lun, const uint8_t scsi_cmd[16], void *buffer, uint16_t bufsize) {
-    // Note that no command uses a response right now.
     const void *response = NULL;
     int32_t resplen = 0;
 
@@ -234,10 +196,8 @@ int32_t tud_msc_scsi_cb(uint8_t lun, const uint8_t scsi_cmd[16], void *buffer, u
 
 void tud_msc_capacity_cb(uint8_t lun, uint32_t *block_count, uint16_t *block_size) {
     fs_user_mount_t *vfs = get_vfs(lun);
-    if (vfs != NULL) {
-        disk_ioctl(vfs, GET_SECTOR_COUNT, block_count);
-        disk_ioctl(vfs, GET_SECTOR_SIZE, block_size);
-    }
+    disk_ioctl(vfs, GET_SECTOR_COUNT, block_count);
+    disk_ioctl(vfs, GET_SECTOR_SIZE, block_size);
 }
 
 bool tud_msc_is_writable_cb(uint8_t lun) {
@@ -249,7 +209,7 @@ bool tud_msc_is_writable_cb(uint8_t lun) {
     if (vfs == NULL) {
         return false;
     }
-    if (!filesystem_is_writable_by_usb(vfs)) {
+    if (vfs->blockdev.writeblocks[0] == MP_OBJ_NULL || !filesystem_is_writable_by_usb(vfs)) {
         return false;
     }
     // Lock the blockdev once we say we're writable.
@@ -268,9 +228,6 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void *buff
     const uint32_t block_count = bufsize / MSC_FLASH_BLOCK_SIZE;
 
     fs_user_mount_t *vfs = get_vfs(lun);
-    if (vfs == NULL) {
-        return -1;
-    }
     uint32_t disk_block_count;
     disk_ioctl(vfs, GET_SECTOR_COUNT, &disk_block_count);
 
@@ -293,34 +250,21 @@ int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t *
     const uint32_t block_count = bufsize / MSC_FLASH_BLOCK_SIZE;
 
     fs_user_mount_t *vfs = get_vfs(lun);
-    if (vfs == NULL) {
-        return -1;
-    }
-
     disk_write(vfs, buffer, lba, block_count);
     // Since by getting here we assume the mount is read-only to
-    // CircuitPython let's update the cached FatFs sector if it's the one
+    // MicroPython let's update the cached FatFs sector if it's the one
     // we just wrote.
-    if
     #if FF_MAX_SS != FF_MIN_SS
-    (vfs->fatfs.ssize == MSC_FLASH_BLOCK_SIZE)
+    if (vfs->fatfs.ssize == MSC_FLASH_BLOCK_SIZE) {
     #else
     // The compiler can optimize this away.
-    (FF_MAX_SS == FILESYSTEM_BLOCK_SIZE)
-    #endif
-    {
+    if (FF_MAX_SS == FILESYSTEM_BLOCK_SIZE) {
+        #endif
         if (lba == vfs->fatfs.winsect && lba > 0) {
             memcpy(vfs->fatfs.win,
                 buffer + MSC_FLASH_BLOCK_SIZE * (vfs->fatfs.winsect - lba),
                 MSC_FLASH_BLOCK_SIZE);
         }
-    }
-
-    // A write to an lba below fatbase is in the filesystem metadata (BPB) area or the "Reserved Region",
-    // and is probably setting or clearing the dirty bit. This should not trigger auto-reload.
-    // All other writes will trigger auto-reload.
-    if (lba >= vfs->fatfs.fatbase) {
-        content_write[lun] = true;
     }
 
     return block_count * MSC_FLASH_BLOCK_SIZE;
@@ -329,17 +273,11 @@ int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t *
 // Callback invoked when WRITE10 command is completed (status received and accepted by host).
 // used to flush any pending cache.
 void tud_msc_write10_complete_cb(uint8_t lun) {
-    autoreload_resume(AUTORELOAD_SUSPEND_USB);
+    (void)lun;
 
-    // This write is complete; initiate an autoreload if this was a file data or metadata write,
-    // not just a dirty-bit write.
-    if (content_write[lun] &&
-        // Fast path: lun == 0 is CIRCUITPY, which can always trigger auto-reload if enabled.
-        // Don't autoreload if this lun was mounted by the user: that will cause a VM stop and an unmount.
-        (lun == 0 || !gc_ptr_on_heap(get_vfs(lun)))) {
-        autoreload_trigger();
-        content_write[lun] = false;
-    }
+    // This write is complete; initiate an autoreload.
+    autoreload_resume(AUTORELOAD_SUSPEND_USB);
+    autoreload_trigger();
 }
 
 // Invoked when received SCSI_CMD_INQUIRY
@@ -359,18 +297,11 @@ bool tud_msc_test_unit_ready_cb(uint8_t lun) {
         return false;
     }
 
-    #if CIRCUITPY_SDCARD_USB
-    if (lun == SDCARD_LUN) {
-        automount_sd_card();
-    }
-    #endif
-
     fs_user_mount_t *current_mount = get_vfs(lun);
     if (current_mount == NULL) {
         return false;
     }
-    if (ejected[lun] || eject_once[lun]) {
-        eject_once[lun] = false;
+    if (ejected[lun]) {
         // Set 0x3a for media not present.
         tud_msc_set_sense(lun, SCSI_SENSE_NOT_READY, 0x3A, 0x00);
         return false;

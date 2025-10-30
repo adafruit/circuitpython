@@ -80,8 +80,8 @@ typedef struct {
 #define ARGS_X1_Y1_X2_Y2 ARG_x1, ARG_y1, ARG_x2, ARG_y2
 #define ALLOWED_ARGS_X1_Y1_X2_Y2(if_required1, if_required2) \
     {MP_QSTR_x1, if_required1 | MP_ARG_OBJ, {.u_obj = MP_ROM_INT(0)}}, \
-    {MP_QSTR_y1, if_required1 | MP_ARG_OBJ, {.u_obj = MP_ROM_INT(0)}}, \
-    {MP_QSTR_x2, if_required2 | MP_ARG_OBJ, {.u_obj = MP_ROM_NONE}}, \
+    {MP_QSTR_y1, if_required2 | MP_ARG_OBJ, {.u_obj = MP_ROM_INT(0)}}, \
+    {MP_QSTR_x2, if_required1 | MP_ARG_OBJ, {.u_obj = MP_ROM_NONE}}, \
     {MP_QSTR_y2, if_required2 | MP_ARG_OBJ, {.u_obj = MP_ROM_NONE}}
 
 bitmaptools_rect_t bitmaptools_validate_coord_range_pair(const mp_arg_val_t in[4], int width, int height);

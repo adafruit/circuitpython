@@ -2,16 +2,14 @@
 #
 # SPDX-FileCopyrightText: Copyright (c) 2020 Scott Shawcroft for Adafruit Industries
 # SPDX-FileCopyrightText: Copyright (c) 2024 Brandon Hurst, Analog Devices, Inc.
-# SPDX-FileCopyrightText: Copyright (c) 2025 Peggy Zhu, Analog Devices, Inc.
 #
 # SPDX-License-Identifier: MIT
-
-BOARD ?= apard32690
-CROSS_COMPILE = arm-none-eabi-
 
 # Includes mpconfigboard.mk & mpconfigport.mk,
 # along with numerous other shared environment makefiles.
 include ../../py/circuitpy_mkenv.mk
+
+CROSS_COMPILE = arm-none-eabi-
 
 # MCU_SERIES e.g. 	"max32"
 # MCU_VARIANT e.g. 	"max32690"
@@ -20,7 +18,6 @@ MCU_SERIES_LOWER := $(shell echo $(MCU_SERIES) | tr '[:upper:]' '[:lower:]')
 MCU_SERIES_UPPER := $(shell echo $(MCU_SERIES) | tr '[:lower:]' '[:upper:]')
 MCU_VARIANT_LOWER := $(shell echo $(MCU_VARIANT) | tr '[:upper:]' '[:lower:]')
 MCU_VARIANT_UPPER := $(shell echo $(MCU_VARIANT) | tr '[:lower:]' '[:upper:]')
-
 
 # *******************************************************************************
 #### MSDK INCLUDES ####
@@ -61,7 +58,6 @@ DIE_TYPE=me18
 endif
 
 PERIPH_SRC = $(ADI_PERIPH)/Source
-PERIPH_INC = $(ADI_PERIPH)/Include/$(MCU_VARIANT_UPPER)
 
 INC += -I.
 INC += -I../..
@@ -78,7 +74,7 @@ INC += \
 	-I$(TOP)/lib/cmsis/inc \
 	-I$(CMSIS_ROOT)/Include \
 	-I$(CMSIS_ROOT)/Device/Maxim/$(MCU_VARIANT_UPPER)/Include \
-	-I$(PERIPH_INC) \
+	-I$(ADI_PERIPH)/Include/$(MCU_VARIANT_UPPER) \
 	-I$(PERIPH_SRC)/SYS \
 	-I$(PERIPH_SRC)/CTB \
 	-I$(PERIPH_SRC)/DMA \
@@ -87,10 +83,7 @@ INC += \
 	-I$(PERIPH_SRC)/ICC \
 	-I$(PERIPH_SRC)/TMR \
 	-I$(PERIPH_SRC)/RTC \
-	-I$(PERIPH_SRC)/UART \
-	-I$(PERIPH_SRC)/TRNG \
-	-I$(PERIPH_SRC)/I2C \
-	-I$(PERIPH_SRC)/SPI
+	-I$(PERIPH_SRC)/UART
 
 INC += -I$(CMSIS_ROOT)/Device/Maxim/$(MCU_VARIANT_UPPER)/Source/GCC
 
@@ -123,22 +116,13 @@ SRC_MAX32 += \
 	$(PERIPH_SRC)/TMR/tmr_$(DIE_TYPE).c \
 	$(PERIPH_SRC)/UART/uart_common.c \
 	$(PERIPH_SRC)/UART/uart_$(DIE_TYPE).c \
-	$(PERIPH_SRC)/UART/uart_revb.c \
-	$(PERIPH_SRC)/TRNG/trng_revb.c \
-	$(PERIPH_SRC)/TRNG/trng_$(DIE_TYPE).c \
-	$(PERIPH_SRC)/I2C/i2c_$(DIE_TYPE).c \
-	$(PERIPH_SRC)/I2C/i2c_reva.c \
-	$(PERIPH_SRC)/SPI/spi_$(DIE_TYPE).c \
-	$(PERIPH_SRC)/SPI/spi_reva1.c
+	$(PERIPH_SRC)/UART/uart_revb.c
 
 SRC_C += $(SRC_MAX32) \
 			boards/$(BOARD)/board.c \
 			boards/$(BOARD)/pins.c \
 			peripherals/$(MCU_VARIANT_LOWER)/pins.c \
-			peripherals/$(MCU_VARIANT_LOWER)/gpios.c \
-			peripherals/$(MCU_VARIANT_LOWER)/max32_uart.c \
-			peripherals/$(MCU_VARIANT_LOWER)/max32_i2c.c \
-			peripherals/$(MCU_VARIANT_LOWER)/max32_spi.c
+			peripherals/$(MCU_VARIANT_LOWER)/gpios.c
 
 # *******************************************************************************
 ### Compiler & Linker Flags ###
@@ -154,8 +138,8 @@ LINKERFILE = linking/$(MCU_VARIANT_LOWER)_cktpy.ld
 LDFLAGS += -nostartfiles -specs=nano.specs
 endif
 
-SRC_S_UPPER = supervisor/shared/cpu_regs.S
-SRC_S += $(STARTUPFILE)
+SRC_S += supervisor/cpu.s \
+			$(STARTUPFILE)
 
 # Needed to compile some MAX32 headers
 CFLAGS += 	-D$(MCU_VARIANT_UPPER) \
@@ -244,6 +228,19 @@ endif
 # QSTR sources are provided for the initial build step, which generates
 # Python constants to represent C data which gets passed into the GC.
 
+SRC_COMMON_HAL_EXPANDED = $(addprefix shared-bindings/, $(SRC_COMMON_HAL)) \
+                          $(addprefix shared-bindings/, $(SRC_BINDINGS_ENUMS)) \
+                          $(addprefix common-hal/, $(SRC_COMMON_HAL))
+
+SRC_SHARED_MODULE_EXPANDED = $(addprefix shared-bindings/, $(SRC_SHARED_MODULE)) \
+                             $(addprefix shared-module/, $(SRC_SHARED_MODULE)) \
+                             $(addprefix shared-module/, $(SRC_SHARED_MODULE_INTERNAL))
+
+# There are duplicates between SRC_COMMON_HAL_EXPANDED and SRC_SHARED_MODULE_EXPANDED,
+# because a few modules have files both in common-hal/ and shared-module/.
+# Doing a $(sort ...) removes duplicates as part of sorting.
+SRC_COMMON_HAL_SHARED_MODULE_EXPANDED = $(sort $(SRC_COMMON_HAL_EXPANDED) $(SRC_SHARED_MODULE_EXPANDED))
+
 # OBJ includes
 OBJ += $(PY_O) $(SUPERVISOR_O) $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_COMMON_HAL_SHARED_MODULE_EXPANDED:.c=.o))
@@ -252,7 +249,6 @@ OBJ += $(addprefix $(BUILD)/, $(SRC_LIBM:.c=.o))
 endif
 OBJ += $(addprefix $(BUILD)/, $(SRC_CIRCUITPY_COMMON:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_S:.s=.o))
-OBJ += $(addprefix $(BUILD)/, $(SRC_S_UPPER:.S=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_MOD:.c=.o))
 
 # List of sources for qstr extraction
@@ -279,16 +275,11 @@ flash-msdk:
 		-f interface/cmsis-dap.cfg -f target/$(MCU_VARIANT_LOWER).cfg \
 		-c "program $(BUILD)/firmware.elf verify; init; reset; exit"
 
-flash-openocd-jlink:
-	$(OPENOCD) -s $(OPENOCD_SCRIPTS) \
-		-f interface/jlink.cfg -f target/$(MCU_VARIANT_LOWER).cfg \
-		-c "program $(BUILD)/firmware.elf verify; init; reset; exit"
-
 # flash target using JLink
 JLINK_DEVICE = $(MCU_VARIANT_LOWER)
 
 JLINKEXE 		?= JLink.exe
-JLINKEXE     	+= -if SWD -device ${JLINK_DEVICE} -speed 4000
+JLINKEXE     	+= -if SWD -device ${JLINK_DEVICE} -speed 10000
 COMMAND_FILE 	:= tools/flash_max32.jlink
 
 flash-jlink: $(BUILD)/firmware.bin

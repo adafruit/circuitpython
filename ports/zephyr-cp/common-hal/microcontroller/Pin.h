@@ -7,7 +7,6 @@
 #pragma once
 
 #include "py/mphal.h"
-#include "py/obj.h"
 
 #include <zephyr/drivers/gpio.h>
 

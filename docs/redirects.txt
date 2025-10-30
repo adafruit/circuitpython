@@ -1,5 +1,4 @@
 index.rst README.html
-docs/library/micropython.rst shared-bindings/micropython
 shared-bindings//__init__.rst shared-bindings//
 shared-bindings/_bleio/Adapter.rst shared-bindings/_bleio/#_bleio.Adapter
 shared-bindings/_bleio/Address.rst shared-bindings/_bleio/#_bleio.Address

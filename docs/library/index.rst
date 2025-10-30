@@ -33,8 +33,8 @@ These libraries are not currently enabled in any CircuitPython build, but may be
    json.rst
    platform.rst
    re.rst
-   select.rst
    sys.rst
+   select.rst
 
 Omitted ``string`` functions
 ----------------------------
@@ -54,4 +54,4 @@ the following libraries.
 .. toctree::
    :maxdepth: 1
 
-   ../../shared-bindings/micropython/index.rst
+   micropython.rst

@@ -29,7 +29,7 @@
 
 #include "py/objlist.h"
 #include "py/runtime.h"
-#include "py/cstack.h"
+#include "py/stackctrl.h"
 
 static mp_obj_t mp_obj_new_list_iterator(mp_obj_t list, size_t cur, mp_obj_iter_buf_t *iter_buf);
 static mp_obj_list_t *list_new(size_t n);
@@ -201,7 +201,7 @@ static mp_obj_t list_subscr(mp_obj_t self_in, mp_obj_t index, mp_obj_t value) {
         if (mp_obj_is_type(index, &mp_type_slice)) {
             mp_bound_slice_t slice;
             if (!mp_seq_get_fast_slice_indexes(self->len, index, &slice)) {
-                return mp_seq_extract_slice(self->items, &slice);
+                return mp_seq_extract_slice(self->len, self->items, &slice);
             }
             mp_obj_list_t *res = list_new(slice.stop - slice.start);
             mp_seq_copy(res->items, self->items + slice.start, res->len, mp_obj_t);
@@ -312,7 +312,7 @@ static mp_obj_t list_pop(size_t n_args, const mp_obj_t *args) {
 }
 
 static void mp_quicksort(mp_obj_t *head, mp_obj_t *tail, mp_obj_t key_fn, mp_obj_t binop_less_result) {
-    mp_cstack_check();
+    MP_STACK_CHECK();
     while (head < tail) {
         mp_obj_t *h = head - 1;
         mp_obj_t *t = tail;
@@ -504,14 +504,12 @@ void mp_obj_list_init(mp_obj_list_t *o, size_t n) {
     o->base.type = &mp_type_list;
     o->alloc = n < LIST_MIN_ALLOC ? LIST_MIN_ALLOC : n;
     o->len = n;
-    // CIRCUITPY-CHANGE: Use m_malloc_items because these are mp_obj_t
-    o->items = m_malloc_items(o->alloc);
+    o->items = m_new(mp_obj_t, o->alloc);
     mp_seq_clear(o->items, n, o->alloc, sizeof(*o->items));
 }
 
 static mp_obj_list_t *list_new(size_t n) {
-    // CIRCUITPY-CHANGE: Use mp_obj_malloc because it is a Python object
-    mp_obj_list_t *o = mp_obj_malloc(mp_obj_list_t, &mp_type_list);
+    mp_obj_list_t *o = m_new_obj(mp_obj_list_t);
     mp_obj_list_init(o, n);
     return o;
 }

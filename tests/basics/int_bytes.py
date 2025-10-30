@@ -26,12 +26,6 @@ try:
 except ValueError:
     print("ValueError")
 
-# zero byte destination should also raise an error
-try:
-    (1).to_bytes(0, "little")
-except OverflowError:
-    print("OverflowError")
-
 # CIRCUITPY-CHANGE: more tests
 # too small buffer should raise an error
 try:
@@ -44,19 +38,6 @@ try:
     (-256).to_bytes(2, "little")
 except OverflowError:
     print("OverflowError")
-
-# except for converting 0 to a zero-length byte array
-print((0).to_bytes(0, "big"))
-
-# byte length can fit the integer directly
-print((0xFF).to_bytes(1, "little"))
-print((0xFF).to_bytes(1, "big"))
-print((0xEFF).to_bytes(2, "little"))
-print((0xEFF).to_bytes(2, "big"))
-print((0xCDEFF).to_bytes(3, "little"))
-print((0xCDEFF).to_bytes(3, "big"))
-
-# OverFlowError if not big enough
 
 try:
     (-256).to_bytes(2, "little", signed=False)

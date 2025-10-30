@@ -26,7 +26,8 @@
 
 #include "py/mpstate.h"
 
-#if MICROPY_NLR_MIPS
+// CIRCUITPY-CHANGE: avoid warning
+#if defined(MICROPY_NLR_MIPS) && MICROPY_NLR_MIPS
 
 __attribute__((used)) unsigned int nlr_push_tail(nlr_buf_t *nlr);
 

@@ -26,7 +26,8 @@
 
 #include "py/mpstate.h" // needed for NLR defs
 
-#if MICROPY_NLR_AARCH64
+// CIRCUITPY-CHANGE: avoid warnings
+#if defined(MICROPY_NLR_AARCH64) && MICROPY_NLR_AARCH64
 
 // AArch64 callee-saved registers are x19-x29.
 // https://en.wikipedia.org/wiki/Calling_convention#ARM_(A64)

@@ -26,73 +26,70 @@
 #define DELAY 0x80
 
 void common_hal_epaperdisplay_epaperdisplay_construct(epaperdisplay_epaperdisplay_obj_t *self,
-    const epaperdisplay_construct_args_t *args) {
+    mp_obj_t bus, const uint8_t *start_sequence, uint16_t start_sequence_len, mp_float_t start_up_time,
+    const uint8_t *stop_sequence, uint16_t stop_sequence_len,
+    uint16_t width, uint16_t height, uint16_t ram_width, uint16_t ram_height,
+    int16_t colstart, int16_t rowstart, uint16_t rotation,
+    uint16_t set_column_window_command, uint16_t set_row_window_command,
+    uint16_t set_current_column_command, uint16_t set_current_row_command,
+    uint16_t write_black_ram_command, bool black_bits_inverted,
+    uint16_t write_color_ram_command, bool color_bits_inverted, uint32_t highlight_color,
+    const uint8_t *refresh_sequence, uint16_t refresh_sequence_len, mp_float_t refresh_time,
+    const mcu_pin_obj_t *busy_pin, bool busy_state, mp_float_t seconds_per_frame,
+    bool chip_select, bool grayscale, bool acep, bool two_byte_sequence_length, bool address_little_endian) {
     uint16_t color_depth = 1;
     bool core_grayscale = true;
-    if (args->highlight_color != 0x000000) {
+    if (highlight_color != 0x000000) {
         self->core.colorspace.tricolor = true;
-        self->core.colorspace.tricolor_hue = displayio_colorconverter_compute_hue(args->highlight_color);
+        self->core.colorspace.tricolor_hue = displayio_colorconverter_compute_hue(highlight_color);
+        self->core.colorspace.tricolor_luma = displayio_colorconverter_compute_luma(highlight_color);
     } else {
         self->core.colorspace.tricolor = false;
     }
-    if (args->highlight_color != 0x000000 && args->highlight_color2 != 0x000000) {
-        self->core.colorspace.tricolor = false;
-        self->core.colorspace.fourcolor = true;
-        self->core.colorspace.fourcolor_hue = displayio_colorconverter_compute_hue(args->highlight_color2);
-    } else {
-        self->core.colorspace.fourcolor = false;
-    }
-    self->acep = args->acep || args->spectra6;
-    self->core.colorspace.sixcolor = args->spectra6;
-    self->core.colorspace.sevencolor = args->acep;
-    bool grayscale = args->grayscale;
-    if (self->acep) {
+    self->acep = acep;
+    self->core.colorspace.sevencolor = acep;
+    if (acep) {
         color_depth = 4; // bits. 7 colors + clean
         grayscale = false;
         core_grayscale = false;
     }
-    if ((args->highlight_color != 0x000000 || args->highlight_color2 != 0x000000) && args->write_color_ram_command == NO_COMMAND) {
-        color_depth = 2;
-        core_grayscale = false;
-        grayscale = false;
-    }
 
-    displayio_display_core_construct(&self->core, args->width, args->height, args->rotation, color_depth, core_grayscale, true, 1, true, true);
-    displayio_display_bus_construct(&self->bus, args->bus, args->ram_width, args->ram_height,
-        args->colstart, args->rowstart,
-        args->set_column_window_command, args->set_row_window_command, args->set_current_column_command, args->set_current_row_command,
-        false /* data_as_commands */, args->always_toggle_chip_select,
-        false /* SH1107_addressing */, args->address_little_endian);
+    displayio_display_core_construct(&self->core, width, height, rotation, color_depth, core_grayscale, true, 1, true, true);
+    displayio_display_bus_construct(&self->bus, bus, ram_width, ram_height,
+        colstart, rowstart,
+        set_column_window_command, set_row_window_command, set_current_column_command, set_current_row_command,
+        false /* data_as_commands */, chip_select,
+        false /* SH1107_addressing */, address_little_endian);
 
-    self->write_black_ram_command = args->write_black_ram_command;
-    self->black_bits_inverted = args->black_bits_inverted;
-    self->write_color_ram_command = args->write_color_ram_command;
-    self->color_bits_inverted = args->color_bits_inverted;
-    self->refresh_time = args->refresh_time * 1000;
-    self->busy_state = args->busy_state;
+    self->write_black_ram_command = write_black_ram_command;
+    self->black_bits_inverted = black_bits_inverted;
+    self->write_color_ram_command = write_color_ram_command;
+    self->color_bits_inverted = color_bits_inverted;
+    self->refresh_time = refresh_time * 1000;
+    self->busy_state = busy_state;
     self->refreshing = false;
-    self->milliseconds_per_frame = args->seconds_per_frame * 1000;
-    self->chip_select = args->always_toggle_chip_select ? CHIP_SELECT_TOGGLE_EVERY_BYTE : CHIP_SELECT_UNTOUCHED;
+    self->milliseconds_per_frame = seconds_per_frame * 1000;
+    self->chip_select = chip_select ? CHIP_SELECT_TOGGLE_EVERY_BYTE : CHIP_SELECT_UNTOUCHED;
     self->grayscale = grayscale;
 
-    self->start_sequence = args->start_sequence;
-    self->start_sequence_len = args->start_sequence_len;
-    self->start_up_time_ms = args->start_up_time * 1000;
-    self->stop_sequence = args->stop_sequence;
-    self->stop_sequence_len = args->stop_sequence_len;
-    self->refresh_sequence = args->refresh_sequence;
-    self->refresh_sequence_len = args->refresh_sequence_len;
+    self->start_sequence = start_sequence;
+    self->start_sequence_len = start_sequence_len;
+    self->start_up_time_ms = start_up_time * 1000;
+    self->stop_sequence = stop_sequence;
+    self->stop_sequence_len = stop_sequence_len;
+    self->refresh_sequence = refresh_sequence;
+    self->refresh_sequence_len = refresh_sequence_len;
 
     self->busy.base.type = &mp_type_NoneType;
-    self->two_byte_sequence_length = args->two_byte_sequence_length;
-    if (args->busy_pin != NULL) {
+    self->two_byte_sequence_length = two_byte_sequence_length;
+    if (busy_pin != NULL) {
         self->busy.base.type = &digitalio_digitalinout_type;
-        common_hal_digitalio_digitalinout_construct(&self->busy, args->busy_pin);
-        common_hal_never_reset_pin(args->busy_pin);
+        common_hal_digitalio_digitalinout_construct(&self->busy, busy_pin);
+        common_hal_never_reset_pin(busy_pin);
     }
 
     // Clear the color memory if it isn't in use.
-    if (args->highlight_color == 0x00 && args->highlight_color2 == 0x00 && args->write_color_ram_command != NO_COMMAND) {
+    if (highlight_color == 0x00 && write_color_ram_command != NO_COMMAND) {
         // TODO: Clear
     }
 
@@ -341,7 +338,7 @@ static bool epaperdisplay_epaperdisplay_refresh_area(epaperdisplay_epaperdisplay
                 } else if (self->core.colorspace.tricolor) {
                     self->core.colorspace.grayscale = false;
                     displayio_display_core_fill_area(&self->core, &subrectangle, mask, buffer);
-                } else if (self->core.colorspace.sixcolor || self->core.colorspace.sevencolor) {
+                } else if (self->core.colorspace.sevencolor) {
                     displayio_display_core_fill_area(&self->core, &subrectangle, mask, buffer);
                 }
             } else {
@@ -363,11 +360,8 @@ static bool epaperdisplay_epaperdisplay_refresh_area(epaperdisplay_epaperdisplay
             self->bus.send(self->bus.bus, DISPLAY_DATA, self->chip_select, (uint8_t *)buffer, subrectangle_size_bytes);
             displayio_display_bus_end_transaction(&self->bus);
 
-            // Run background tasks so they can run during an explicit refresh.
-            // Auto-refresh won't run background tasks here because it is a background task itself.
-            RUN_BACKGROUND_TASKS;
-
-            // Run USB background tasks so they can run during an implicit refresh.
+            // TODO(tannewt): Make refresh displays faster so we don't starve other
+            // background tasks.
             #if CIRCUITPY_TINYUSB
             usb_background();
             #endif

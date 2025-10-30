@@ -34,6 +34,7 @@ void stm32_peripherals_clocks_init(void) {
 
     // Set up primary PLL and HSE clocks
     RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+    RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
     #if (BOARD_HAS_LOW_SPEED_CRYSTAL)
     RCC_OscInitStruct.OscillatorType |= RCC_OSCILLATORTYPE_LSE;
     RCC_OscInitStruct.LSEState = RCC_LSE_ON;
@@ -80,7 +81,7 @@ void stm32_peripherals_clocks_init(void) {
     // Set up non-bus peripherals
     // TODO: I2S settings go here
     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_RTC | RCC_PERIPHCLK_USART3
-        | RCC_PERIPHCLK_USB;
+        | RCC_PERIPHCLK_USB | RCC_PERIPHCLK_ADC;
     #if (BOARD_HAS_LOW_SPEED_CRYSTAL)
     PeriphClkInitStruct.RTCClockSelection = RCC_RTCCLKSOURCE_LSE;
     #else
@@ -92,6 +93,10 @@ void stm32_peripherals_clocks_init(void) {
     #else
     PeriphClkInitStruct.UsbClockSelection = RCC_USBCLKSOURCE_PLL;
     #endif
+
+    // ADC Clock init
+    PeriphClkInitStruct.AdcClockSelection = RCC_ADCCLKSOURCE_PLL2;
+
     #ifdef STM32H750xx
     // USB
     PeriphClkInitStruct.PLL3.PLL3M = 1;

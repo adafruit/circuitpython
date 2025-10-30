@@ -31,7 +31,6 @@
 
 // CIRCUITPY-CHANGE
 #include "shared/runtime/interrupt_char.h"
-#include "py/misc.h"
 #include "py/obj.h"
 #include "py/objtype.h"
 #include "py/objint.h"
@@ -39,7 +38,7 @@
 // CIRCUITPY-CHANGE
 #include "py/qstr.h"
 #include "py/runtime.h"
-#include "py/cstack.h"
+#include "py/stackctrl.h"
 #include "py/stream.h" // for mp_obj_print
 
 // CIRCUITPY-CHANGE
@@ -47,8 +46,7 @@
 
 // Allocates an object and also sets type, for mp_obj_malloc{,_var} macros.
 MP_NOINLINE void *mp_obj_malloc_helper(size_t num_bytes, const mp_obj_type_t *type) {
-    // CIRCUITPY-CHANGE
-    mp_obj_base_t *base = (mp_obj_base_t *)m_malloc_helper(num_bytes, M_MALLOC_RAISE_ERROR | M_MALLOC_COLLECT);
+    mp_obj_base_t *base = (mp_obj_base_t *)m_malloc(num_bytes);
     base->type = type;
     return base;
 }
@@ -56,8 +54,7 @@ MP_NOINLINE void *mp_obj_malloc_helper(size_t num_bytes, const mp_obj_type_t *ty
 #if MICROPY_ENABLE_FINALISER
 // Allocates an object and also sets type, for mp_obj_malloc{,_var}_with_finaliser macros.
 MP_NOINLINE void *mp_obj_malloc_with_finaliser_helper(size_t num_bytes, const mp_obj_type_t *type) {
-    // CIRCUITPY-CHANGE
-    mp_obj_base_t *base = (mp_obj_base_t *)m_malloc_helper(num_bytes, M_MALLOC_RAISE_ERROR | M_MALLOC_COLLECT | M_MALLOC_WITH_FINALISER);
+    mp_obj_base_t *base = (mp_obj_base_t *)m_malloc_with_finaliser(num_bytes);
     base->type = type;
     return base;
 }
@@ -128,7 +125,7 @@ const char *mp_obj_get_type_str(mp_const_obj_t o_in) {
 
 void mp_obj_print_helper(const mp_print_t *print, mp_obj_t o_in, mp_print_kind_t kind) {
     // There can be data structures nested too deep, or just recursive
-    mp_cstack_check();
+    MP_STACK_CHECK();
     // CIRCUITPY-CHANGE
     #ifdef RUN_BACKGROUND_TASKS
     RUN_BACKGROUND_TASKS;

@@ -465,9 +465,8 @@ bool rp2pio_statemachine_construct(rp2pio_statemachine_obj_t *self,
 
     sm_config_set_fifo_join(&c, join);
 
-    sm_config_set_mov_status(&c, mov_status_type, mov_status_n);
-
     // TODO: these arguments
+    // int mov_status_type, int mov_status_n,
     // int set_count, int out_count
 
     self->sm_config = c;
@@ -523,10 +522,9 @@ static void consider_instruction(introspect_t *state, uint16_t full_instruction,
         }
     }
     if (instruction == pio_instr_bits_wait) {
-        const uint16_t wait_source = (full_instruction & 0x0060) >> 5;
-        const uint16_t wait_index = full_instruction & 0x001f;
-        const uint16_t wait_pin = wait_index + state->inputs.pio_gpio_offset;
-        if (wait_source == 0 && !PIO_PINMASK_IS_SET(state->inputs.pins_we_use, wait_pin)) { // GPIO
+        uint16_t wait_source = (full_instruction & 0x0060) >> 5;
+        uint16_t wait_index = (full_instruction & 0x001f) + state->inputs.pio_gpio_offset;
+        if (wait_source == 0 && !PIO_PINMASK_IS_SET(state->inputs.pins_we_use, wait_index)) { // GPIO
             mp_raise_ValueError_varg(MP_ERROR_TEXT("%q[%u] uses extra pin"), what_program, i);
         } else if (wait_source == 1) { // Input pin
             if (!state->inputs.has_in_pin) {
@@ -627,9 +625,6 @@ void common_hal_rp2pio_statemachine_construct(rp2pio_statemachine_obj_t *self,
     int fifo_type,
     int mov_status_type,
     int mov_status_n) {
-
-    // Ensure object starts in its deinit state.
-    common_hal_rp2pio_statemachine_mark_deinit(self);
 
     // First, check that all pins are free OR already in use by any PIO if exclusive_pin_use is false.
     pio_pinmask_t pins_we_use = wait_gpio_mask;
@@ -747,7 +742,7 @@ void common_hal_rp2pio_statemachine_construct(rp2pio_statemachine_obj_t *self,
         mov_status_type, mov_status_n);
     if (!ok) {
         // indicate state machine never inited
-        common_hal_rp2pio_statemachine_mark_deinit(self);
+        self->state_machine = NUM_PIO_STATE_MACHINES;
         mp_raise_RuntimeError(MP_ERROR_TEXT("All state machines in use"));
     }
 }
@@ -830,10 +825,6 @@ void common_hal_rp2pio_statemachine_deinit(rp2pio_statemachine_obj_t *self) {
     rp2pio_statemachine_deinit(self, false);
 }
 
-void common_hal_rp2pio_statemachine_mark_deinit(rp2pio_statemachine_obj_t *self) {
-    self->state_machine = NUM_PIO_STATE_MACHINES;
-}
-
 void common_hal_rp2pio_statemachine_never_reset(rp2pio_statemachine_obj_t *self) {
     rp2pio_statemachine_never_reset(self->pio, self->state_machine);
     // TODO: never reset all the pins
@@ -861,76 +852,31 @@ static bool _transfer(rp2pio_statemachine_obj_t *self,
     // This implementation is based on SPI but varies because the tx and rx buffers
     // may be different lengths and occur at different times or speeds.
 
+    // Use DMA for large transfers if channels are available.
+    // Don't exceed FIFO size.
+    const size_t dma_min_size_threshold = self->fifo_depth;
     int chan_tx = -1;
     int chan_rx = -1;
     size_t len = MAX(out_len, in_len);
     bool tx = data_out != NULL;
     bool rx = data_in != NULL;
-    bool free_data_out = false;
-    bool free_data_in = false;
-    uint8_t *sram_data_out = (uint8_t *)data_out;
-    uint8_t *sram_data_in = data_in;
-    bool tx_fits_in_fifo = (out_len / out_stride_in_bytes) <= self->fifo_depth;
-    bool rx_fits_in_fifo = (in_len / in_stride_in_bytes) <= self->fifo_depth;
-    bool use_dma = !(tx_fits_in_fifo && rx_fits_in_fifo) || swap_out || swap_in;
-
+    bool use_dma = len >= dma_min_size_threshold || swap_out || swap_in;
     if (use_dma) {
-        // We can only reliably use DMA for SRAM buffers. So, if we're given PSRAM buffers,
-        // then copy them to SRAM first. If we can't, then fail.
-        // Use DMA channels to service the two FIFOs. Fail if we can't allocate DMA channels.
+        // Use DMA channels to service the two FIFOs
         if (tx) {
-            if (data_out < (uint8_t *)SRAM_BASE) {
-                // Try to allocate a temporary buffer for DMA transfer
-                uint8_t *temp_buffer = (uint8_t *)port_malloc(len, true);
-                if (temp_buffer == NULL) {
-                    mp_printf(&mp_plat_print, "Failed to allocate temporary buffer for DMA tx\n");
-                    return false;
-                }
-                memcpy(temp_buffer, data_out, len);
-                sram_data_out = temp_buffer;
-                free_data_out = true;
-            }
             chan_tx = dma_claim_unused_channel(false);
             // DMA allocation failed...
             if (chan_tx < 0) {
-                if (free_data_out) {
-                    port_free(sram_data_out);
-                }
-                if (free_data_in) {
-                    port_free(sram_data_in);
-                }
                 return false;
             }
         }
         if (rx) {
-            if (data_in < (uint8_t *)SRAM_BASE) {
-                // Try to allocate a temporary buffer for DMA transfer
-                uint8_t *temp_buffer = (uint8_t *)port_malloc(len, true);
-                if (temp_buffer == NULL) {
-                    mp_printf(&mp_plat_print, "Failed to allocate temporary buffer for DMA rx\n");
-                    if (chan_tx >= 0) {
-                        dma_channel_unclaim(chan_tx);
-                    }
-                    if (free_data_out) {
-                        port_free(sram_data_out);
-                    }
-                    return false;
-                }
-                sram_data_in = temp_buffer;
-                free_data_in = true;
-            }
             chan_rx = dma_claim_unused_channel(false);
             // DMA allocation failed...
             if (chan_rx < 0) {
                 // may need to free tx channel
                 if (chan_tx >= 0) {
                     dma_channel_unclaim(chan_tx);
-                }
-                if (free_data_out) {
-                    port_free(sram_data_out);
-                }
-                if (free_data_in) {
-                    port_free(sram_data_in);
                 }
                 return false;
             }
@@ -963,7 +909,7 @@ static bool _transfer(rp2pio_statemachine_obj_t *self,
             channel_config_set_bswap(&c, swap_out);
             dma_channel_configure(chan_tx, &c,
                 tx_destination,
-                sram_data_out,
+                data_out,
                 out_len / out_stride_in_bytes,
                 false);
             channel_mask |= 1u << chan_tx;
@@ -976,7 +922,7 @@ static bool _transfer(rp2pio_statemachine_obj_t *self,
             channel_config_set_write_increment(&c, true);
             channel_config_set_bswap(&c, swap_in);
             dma_channel_configure(chan_rx, &c,
-                sram_data_in,
+                data_in,
                 rx_source,
                 in_len / in_stride_in_bytes,
                 false);
@@ -1003,7 +949,8 @@ static bool _transfer(rp2pio_statemachine_obj_t *self,
         self->pio->fdebug = stall_mask;
     }
 
-    // Release the DMA channels after use_dma has been done.
+    // If we have claimed only one channel successfully, we should release immediately. This also
+    // releases the DMA after use_dma has been done.
     if (chan_rx >= 0) {
         dma_channel_unclaim(chan_rx);
     }
@@ -1012,31 +959,31 @@ static bool _transfer(rp2pio_statemachine_obj_t *self,
     }
 
     if (!use_dma && !(self->user_interruptible && mp_hal_is_interrupted())) {
-        // Use software for small transfers
+        // Use software for small transfers, or if couldn't claim two DMA channels
         size_t rx_remaining = in_len / in_stride_in_bytes;
         size_t tx_remaining = out_len / out_stride_in_bytes;
 
         while (rx_remaining || tx_remaining) {
             while (tx_remaining && !pio_sm_is_tx_fifo_full(self->pio, self->state_machine)) {
                 if (out_stride_in_bytes == 1) {
-                    *tx_destination = *sram_data_out;
+                    *tx_destination = *data_out;
                 } else if (out_stride_in_bytes == 2) {
-                    *((uint16_t *)tx_destination) = *((uint16_t *)sram_data_out);
+                    *((uint16_t *)tx_destination) = *((uint16_t *)data_out);
                 } else if (out_stride_in_bytes == 4) {
-                    *((uint32_t *)tx_destination) = *((uint32_t *)sram_data_out);
+                    *((uint32_t *)tx_destination) = *((uint32_t *)data_out);
                 }
-                sram_data_out += out_stride_in_bytes;
+                data_out += out_stride_in_bytes;
                 --tx_remaining;
             }
             while (rx_remaining && !pio_sm_is_rx_fifo_empty(self->pio, self->state_machine)) {
                 if (in_stride_in_bytes == 1) {
-                    *sram_data_in = (uint8_t)*rx_source;
+                    *data_in = (uint8_t)*rx_source;
                 } else if (in_stride_in_bytes == 2) {
-                    *((uint16_t *)sram_data_in) = *((uint16_t *)rx_source);
+                    *((uint16_t *)data_in) = *((uint16_t *)rx_source);
                 } else if (in_stride_in_bytes == 4) {
-                    *((uint32_t *)sram_data_in) = *((uint32_t *)rx_source);
+                    *((uint32_t *)data_in) = *((uint32_t *)rx_source);
                 }
-                sram_data_in += in_stride_in_bytes;
+                data_in += in_stride_in_bytes;
                 --rx_remaining;
             }
             RUN_BACKGROUND_TASKS;
@@ -1048,7 +995,7 @@ static bool _transfer(rp2pio_statemachine_obj_t *self,
         self->pio->fdebug = stall_mask;
     }
     // Wait for the state machine to finish transmitting the data we've queued
-    // up (either from the CPU or via DMA.)
+    // up.
     if (tx) {
         while (!pio_sm_is_tx_fifo_empty(self->pio, self->state_machine) ||
                (self->wait_for_txstall && (self->pio->fdebug & stall_mask) == 0)) {
@@ -1057,14 +1004,6 @@ static bool _transfer(rp2pio_statemachine_obj_t *self,
                 break;
             }
         }
-    }
-    if (free_data_out) {
-        port_free(sram_data_out);
-    }
-    if (free_data_in) {
-        // Copy the data from the SRAM buffer to the user PSRAM buffer.
-        memcpy(data_in, sram_data_in, len);
-        port_free(sram_data_in);
     }
     return true;
 }

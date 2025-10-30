@@ -65,9 +65,7 @@ size_t usb_msc_descriptor_length(void);
 size_t usb_msc_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *descriptor_counts, uint8_t *current_interface_string);
 void usb_msc_mount(void);
 void usb_msc_umount(void);
-
-#include "extmod/vfs_fat.h"
-void usb_msc_remount(fs_user_mount_t *fs_mount);
+bool usb_msc_ejected(void);
 #endif
 
 #if CIRCUITPY_USB_KEYBOARD_WORKFLOW

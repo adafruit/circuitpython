@@ -686,7 +686,7 @@ void port_idle_until_interrupt(void) {
 /**
  * \brief Default interrupt handler for unused IRQs.
  */
-__attribute__((used)) NORETURN void HardFault_Handler(void) {
+__attribute__((used)) void HardFault_Handler(void) {
     #ifdef ENABLE_MICRO_TRACE_BUFFER
     // Turn off the micro trace buffer so we don't fill it up in the infinite
     // loop below.

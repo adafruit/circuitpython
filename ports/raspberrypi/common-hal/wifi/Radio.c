@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: MIT
 
 #include "supervisor/port.h"
-#include "shared-bindings/wifi/PowerManagement.h"
 #include "shared-bindings/wifi/Radio.h"
 #include "shared-bindings/wifi/Network.h"
 
@@ -108,41 +107,6 @@ void common_hal_wifi_radio_set_tx_power(wifi_radio_obj_t *self, const mp_float_t
     cyw43_ioctl(&cyw43_state, CYW43_IOCTL_SET_VAR, 9 + 4, buf, CYW43_ITF_AP);
 }
 
-wifi_power_management_t common_hal_wifi_radio_get_power_management(wifi_radio_obj_t *self) {
-    uint32_t pm_value = cyw43_get_power_management_value();
-
-    switch (pm_value) {
-        case CONST_CYW43_PERFORMANCE_PM:
-            return POWER_MANAGEMENT_MIN;
-        case CONST_CYW43_AGGRESSIVE_PM:
-            return POWER_MANAGEMENT_MAX;
-        case CONST_CYW43_NONE_PM:
-            return POWER_MANAGEMENT_NONE;
-        default:
-            return POWER_MANAGEMENT_UNKNOWN;
-    }
-}
-
-
-void common_hal_wifi_radio_set_power_management(wifi_radio_obj_t *self, wifi_power_management_t power_management) {
-    uint32_t pm_setting = CONST_CYW43_DEFAULT_PM;
-    switch (power_management) {
-        case POWER_MANAGEMENT_MIN:
-            pm_setting = CONST_CYW43_PERFORMANCE_PM;
-            break;
-        case POWER_MANAGEMENT_MAX:
-            pm_setting = CONST_CYW43_AGGRESSIVE_PM;
-            break;
-        case POWER_MANAGEMENT_NONE:
-            pm_setting = CONST_CYW43_NONE_PM;
-            break;
-        default:
-            // Should not get here.
-            break;
-    }
-    cyw43_set_power_management_value(pm_setting);
-}
-
 mp_obj_t common_hal_wifi_radio_get_mac_address_ap(wifi_radio_obj_t *self) {
     return common_hal_wifi_radio_get_mac_address(self);
 }
@@ -157,7 +121,7 @@ mp_obj_t common_hal_wifi_radio_start_scanning_networks(wifi_radio_obj_t *self, u
         mp_raise_RuntimeError(MP_ERROR_TEXT("Already scanning for wifi networks"));
     }
     if (!common_hal_wifi_radio_get_enabled(self)) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("WiFi is not enabled"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Wifi is not enabled"));
     }
     wifi_scannednetworks_obj_t *scan = mp_obj_malloc(wifi_scannednetworks_obj_t, &wifi_scannednetworks_type);
     mp_obj_t args[] = { mp_const_empty_tuple, MP_OBJ_NEW_SMALL_INT(16) };
@@ -193,7 +157,7 @@ void common_hal_wifi_radio_stop_station(wifi_radio_obj_t *self) {
 
 void common_hal_wifi_radio_start_ap(wifi_radio_obj_t *self, uint8_t *ssid, size_t ssid_len, uint8_t *password, size_t password_len, uint8_t channel, uint32_t authmode, uint8_t max_connections) {
     if (!common_hal_wifi_radio_get_enabled(self)) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("WiFi is not enabled"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Wifi is not enabled"));
     }
 
     /* TODO: If the AP is stopped once it cannot be restarted.
@@ -243,7 +207,7 @@ bool common_hal_wifi_radio_get_ap_active(wifi_radio_obj_t *self) {
 
 void common_hal_wifi_radio_stop_ap(wifi_radio_obj_t *self) {
     if (!common_hal_wifi_radio_get_enabled(self)) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("WiFi is not enabled"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("wifi is not enabled"));
     }
 
     cyw43_arch_disable_ap_mode();
@@ -321,7 +285,7 @@ static bool connection_unchanged(wifi_radio_obj_t *self, const uint8_t *ssid, si
 
 wifi_radio_error_t common_hal_wifi_radio_connect(wifi_radio_obj_t *self, uint8_t *ssid, size_t ssid_len, uint8_t *password, size_t password_len, uint8_t channel, mp_float_t timeout, uint8_t *bssid, size_t bssid_len) {
     if (!common_hal_wifi_radio_get_enabled(self)) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("WiFi is not enabled"));
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Wifi is not enabled"));
     }
 
     if (ssid_len > 32) {

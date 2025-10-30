@@ -296,11 +296,8 @@ static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_are
         _send_pixels(self, (uint8_t *)buffer, subrectangle_size_bytes);
         displayio_display_bus_end_transaction(&self->bus);
 
-        // Run background tasks so they can run during an explicit refresh.
-        // Auto-refresh won't run background tasks here because it is a background task itself.
-        RUN_BACKGROUND_TASKS;
-
-        // Run USB background tasks so they can run during an implicit refresh.
+        // TODO(tannewt): Make refresh displays faster so we don't starve other
+        // background tasks.
         #if CIRCUITPY_TINYUSB
         usb_background();
         #endif

@@ -87,7 +87,7 @@ void common_hal_bleio_characteristic_buffer_construct(
     mp_float_t timeout,
     size_t buffer_size) {
 
-    uint8_t *buffer = m_malloc_without_collect(buffer_size);
+    uint8_t *buffer = m_malloc(buffer_size);
     _common_hal_bleio_characteristic_buffer_construct(self,
         characteristic,
         timeout,
@@ -156,7 +156,7 @@ bool common_hal_bleio_characteristic_buffer_connected(
                    common_hal_bleio_connection_get_connected(self->characteristic->service->connection)));
 }
 
-void reset_characteristic_buffer_list(void) {
+void reset_characteristic_buffer_list() {
     // Remove characteristic_buffer list
     memset(bleio_characteristic_buffer_list.data, 0,
         sizeof(bleio_characteristic_buffer_list.data));

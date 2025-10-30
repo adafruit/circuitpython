@@ -7,7 +7,7 @@
 	url = https://github.com/micropython/axtls.git
 [submodule "lib/libffi"]
 	path = lib/libffi
-	url = https://github.com/libffi/libffi
+	url = https://github.com/atgreen/libffi
 [submodule "lib/berkeley-db-1.xx"]
 	path = lib/berkeley-db-1.xx
 	url = https://github.com/micropython/berkeley-db-1.xx
@@ -143,7 +143,7 @@
 [submodule "ports/espressif/esp-idf"]
 	path = ports/espressif/esp-idf
 	url = https://github.com/adafruit/esp-idf.git
-	branch = circuitpython-v5.4.1
+	branch = circuitpython-v5.3.2
 [submodule "ports/espressif/esp-protocols"]
 	path = ports/espressif/esp-protocols
 	url = https://github.com/adafruit/esp-protocols.git
@@ -173,7 +173,6 @@
 [submodule "ports/raspberrypi/sdk"]
 	path = ports/raspberrypi/sdk
 	url = https://github.com/raspberrypi/pico-sdk.git
-	branch = force_inline_critical_section_2.1.1
 [submodule "data/nvm.toml"]
 	path = data/nvm.toml
 	url = https://github.com/adafruit/nvm.toml.git
@@ -346,7 +345,7 @@
 	url = https://github.com/adafruit/Adafruit_CircuitPython_Wave.git
 [submodule "ports/raspberrypi/lib/Pico-PIO-USB"]
 	path = ports/raspberrypi/lib/Pico-PIO-USB
-	url = https://github.com/sekigon-gonnoc/Pico-PIO-USB.git
+	url = https://github.com/adafruit/Pico-PIO-USB.git
 	branch = main
 [submodule "lib/micropython-lib"]
 	path = lib/micropython-lib
@@ -412,6 +411,3 @@
 [submodule "ports/analog/msdk"]
 	path = ports/analog/msdk
 	url = https://github.com/analogdevicesinc/msdk.git
-[submodule "ports/espressif/microros-lib"]
-	path = ports/espressif/microros-lib
-	url = https://github.com/hierophect/microros-lib.git

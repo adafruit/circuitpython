@@ -88,18 +88,6 @@ typedef struct _mp_sched_item_t {
     mp_obj_t arg;
 } mp_sched_item_t;
 
-// gc_lock_depth field is a combination of the GC_COLLECT_FLAG
-// bit and a lock depth shifted GC_LOCK_DEPTH_SHIFT bits left.
-#if MICROPY_ENABLE_FINALISER
-#define GC_COLLECT_FLAG 1
-#define GC_LOCK_DEPTH_SHIFT 1
-#else
-// If finalisers are disabled then this check doesn't matter, as gc_lock()
-// is called anywhere else that heap can't be changed. So save some code size.
-#define GC_COLLECT_FLAG 0
-#define GC_LOCK_DEPTH_SHIFT 0
-#endif
-
 // This structure holds information about a single contiguous area of
 // memory reserved for the memory manager.
 typedef struct _mp_state_mem_area_t {
@@ -111,10 +99,6 @@ typedef struct _mp_state_mem_area_t {
     size_t gc_alloc_table_byte_len;
     #if MICROPY_ENABLE_FINALISER
     byte *gc_finaliser_table_start;
-    #endif
-    // CIRCUITPY-CHANGE
-    #if MICROPY_ENABLE_SELECTIVE_COLLECT
-    byte *gc_collect_table_start;
     #endif
     byte *gc_pool_start;
     byte *gc_pool_end;
@@ -160,7 +144,7 @@ typedef struct _mp_state_mem_t {
 
     #if MICROPY_PY_THREAD && !MICROPY_PY_THREAD_GIL
     // This is a global mutex used to make the GC thread-safe.
-    mp_thread_recursive_mutex_t gc_mutex;
+    mp_thread_mutex_t gc_mutex;
     #endif
 } mp_state_mem_t;
 
@@ -308,7 +292,6 @@ typedef struct _mp_state_thread_t {
     #endif
 
     // Locking of the GC is done per thread.
-    // See GC_LOCK_DEPTH_SHIFT for an explanation of this field.
     uint16_t gc_lock_depth;
 
     ////////////////////////////////////////////////////////////
@@ -333,10 +316,6 @@ typedef struct _mp_state_thread_t {
     mp_obj_t prof_trace_callback;
     bool prof_callback_is_executing;
     struct _mp_code_state_t *current_code_state;
-    #endif
-
-    #if MICROPY_PY_SSL_MBEDTLS_NEED_ACTIVE_CONTEXT
-    struct _mp_obj_ssl_context_t *tls_ssl_context;
     #endif
 
     // CIRCUITPY-CHANGE

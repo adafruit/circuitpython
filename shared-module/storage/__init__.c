@@ -82,11 +82,10 @@ static mp_obj_t mp_vfs_proxy_call(mp_vfs_mount_t *vfs, qstr meth_name, size_t n_
 }
 
 void common_hal_storage_mount(mp_obj_t vfs_obj, const char *mount_path, bool readonly) {
-    const char *abs_mount_path = common_hal_os_path_abspath(mount_path);
     // create new object
     mp_vfs_mount_t *vfs = m_new_obj(mp_vfs_mount_t);
-    vfs->str = abs_mount_path;
-    vfs->len = strlen(abs_mount_path);
+    vfs->str = mount_path;
+    vfs->len = strlen(mount_path);
     vfs->obj = vfs_obj;
     vfs->next = NULL;
 
@@ -99,7 +98,7 @@ void common_hal_storage_mount(mp_obj_t vfs_obj, const char *mount_path, bool rea
     if (strcmp(vfs->str, "/") != 0) {
         nlr_buf_t nlr;
         if (nlr_push(&nlr) == 0) {
-            mp_obj_t mount_point_stat = common_hal_os_stat(abs_mount_path);
+            mp_obj_t mount_point_stat = common_hal_os_stat(mount_path);
             nlr_pop();
             mp_obj_tuple_t *t = MP_OBJ_TO_PTR(mount_point_stat);
             if ((MP_OBJ_SMALL_INT_VALUE(t->items[0]) & MP_S_IFDIR) == 0) {
@@ -113,7 +112,7 @@ void common_hal_storage_mount(mp_obj_t vfs_obj, const char *mount_path, bool rea
 
     // check that the destination mount point is unused
     const char *path_out;
-    mp_vfs_mount_t *existing_mount = mp_vfs_lookup_path(abs_mount_path, &path_out);
+    mp_vfs_mount_t *existing_mount = mp_vfs_lookup_path(mount_path, &path_out);
     if (existing_mount != MP_VFS_NONE && existing_mount != MP_VFS_ROOT) {
         if (vfs->len != 1 && existing_mount->len == 1) {
             // if root dir is mounted, still allow to mount something within a subdir of root
@@ -125,11 +124,6 @@ void common_hal_storage_mount(mp_obj_t vfs_obj, const char *mount_path, bool rea
 
     // call the underlying object to do any mounting operation
     mp_vfs_proxy_call(vfs, MP_QSTR_mount, 2, (mp_obj_t *)&args);
-
-    fs_user_mount_t *vfs_fat = MP_OBJ_TO_PTR(vfs_obj);
-    // Filesystem is read-only to USB if writable by CircuitPython, and vice versa.
-    filesystem_set_writable_by_usb(vfs_fat, readonly);
-    filesystem_set_concurrent_write_protection(vfs_fat, true);
 
     // Insert the vfs into the mount table by pushing it onto the front of the
     // mount table.
@@ -163,9 +157,8 @@ void common_hal_storage_umount_object(mp_obj_t vfs_obj) {
 }
 
 static mp_obj_t storage_object_from_path(const char *mount_path) {
-    const char *abs_mount_path = common_hal_os_path_abspath(mount_path);
     for (mp_vfs_mount_t **vfsp = &MP_STATE_VM(vfs_mount_table); *vfsp != NULL; vfsp = &(*vfsp)->next) {
-        if (strcmp(abs_mount_path, (*vfsp)->str) == 0) {
+        if (strcmp(mount_path, (*vfsp)->str) == 0) {
             return (*vfsp)->obj;
         }
     }
@@ -181,26 +174,18 @@ mp_obj_t common_hal_storage_getmount(const char *mount_path) {
 }
 
 void common_hal_storage_remount(const char *mount_path, bool readonly, bool disable_concurrent_write_protection) {
-    const char *path_under_mount;
-    const char *abs_mount_path = common_hal_os_path_abspath(mount_path);
-    fs_user_mount_t *fs_usermount = filesystem_for_path(abs_mount_path, &path_under_mount);
-    if (path_under_mount[0] != 0 && strcmp(abs_mount_path, "/") != 0) {
+    if (strcmp(mount_path, "/") != 0) {
         mp_raise_OSError(MP_EINVAL);
     }
 
     #if CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_MSC
-    if (!blockdev_lock(fs_usermount)) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("Cannot remount path when visible via USB."));
+    if (!usb_msc_ejected() && storage_usb_is_enabled) {
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Cannot remount '/' when visible via USB."));
     }
     #endif
 
-    filesystem_set_writable_by_usb(fs_usermount, readonly);
-    filesystem_set_concurrent_write_protection(fs_usermount, !disable_concurrent_write_protection);
-    blockdev_unlock(fs_usermount);
-
-    #if CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_MSC
-    usb_msc_remount(fs_usermount);
-    #endif
+    filesystem_set_internal_writable_by_usb(readonly);
+    filesystem_set_internal_concurrent_write_protection(!disable_concurrent_write_protection);
 }
 
 void common_hal_storage_erase_filesystem(bool extended) {

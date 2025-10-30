@@ -18,7 +18,7 @@ CHIP_FAMILY = samd21
 
 SPI_FLASH_FILESYSTEM = 1
 EXTERNAL_FLASH_DEVICES = "W25Q32JVxQ"
-LONGINT_IMPL = MPZ
+LONGINT_IMPL = NONE
 
 # the M0 Coin has limited functionality and many modules can be eliminated
 
@@ -26,7 +26,7 @@ LONGINT_IMPL = MPZ
 
 # Disable modules that are unusable on this special-purpose board.
 
-CIRCUITPY_FULL_BUILD = 1
+CIRCUITPY_FULL_BUILD = 0
 
 CIRCUITPY_AUDIOIO = 1
 CIRCUITPY_DISPLAYIO = 0
@@ -38,8 +38,7 @@ CIRCUITPY_ROTARYIO = 0
 CIRCUITPY_RTC = 0
 CIRCUITPY_USB_HID = 1
 CIRCUITPY_USB_MIDI = 0
-CIRCUITPY_NEOPIXEL_WRITE = 1
-CIRCUITPY_PIXELBUF = 1
+
 
 # Include these Python libraries in firmware.
 FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_HID

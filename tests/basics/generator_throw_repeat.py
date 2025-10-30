@@ -1,3 +1,4 @@
+# CIRCUITPY-CHANGE: micropython does not have this test file
 # Test throwing repeatedly into the same generator.
 
 

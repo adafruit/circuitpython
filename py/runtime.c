@@ -45,12 +45,8 @@
 #include "py/stream.h"
 #include "py/runtime.h"
 #include "py/builtin.h"
-#include "py/cstack.h"
+#include "py/stackctrl.h"
 #include "py/gc.h"
-
-#if MICROPY_VFS_ROM && MICROPY_VFS_ROM_IOCTL
-#include "extmod/vfs.h"
-#endif
 
 // CIRCUITPY-CHANGE
 #if CIRCUITPY_WARNINGS
@@ -134,8 +130,8 @@ void mp_init(void) {
     MP_STATE_VM(mp_module_builtins_override_dict) = NULL;
     #endif
 
-    #if MICROPY_PERSISTENT_CODE_TRACK_FUN_DATA || MICROPY_PERSISTENT_CODE_TRACK_BSS_RODATA
-    MP_STATE_VM(persistent_code_root_pointers) = MP_OBJ_NULL;
+    #if MICROPY_PERSISTENT_CODE_TRACK_RELOC_CODE
+    MP_STATE_VM(track_reloc_code_list) = MP_OBJ_NULL;
     #endif
 
     #if MICROPY_PY_OS_DUPTERM
@@ -201,11 +197,6 @@ void mp_init(void) {
     #endif
 
     MP_THREAD_GIL_ENTER();
-
-    #if MICROPY_VFS_ROM && MICROPY_VFS_ROM_IOCTL
-    // Mount ROMFS if it exists.
-    mp_vfs_mount_romfs_protected();
-    #endif
 }
 
 void mp_deinit(void) {
@@ -260,7 +251,8 @@ mp_obj_t MICROPY_WRAP_MP_LOAD_GLOBAL(mp_load_global)(qstr qst) {
             #if MICROPY_ERROR_REPORTING <= MICROPY_ERROR_REPORTING_TERSE
             mp_raise_msg(&mp_type_NameError, MP_ERROR_TEXT("name not defined"));
             #else
-            mp_raise_msg_varg(&mp_type_NameError, MP_ERROR_TEXT("name '%q' isn't defined"), qst);
+            // CIRCUITPY-CHANGE: slight message change
+            mp_raise_msg_varg(&mp_type_NameError, MP_ERROR_TEXT("name '%q' is not defined"), qst);
             #endif
         }
     }
@@ -747,8 +739,8 @@ mp_obj_t mp_call_function_n_kw(mp_obj_t fun_in, size_t n_args, size_t n_kw, cons
     #if MICROPY_ERROR_REPORTING <= MICROPY_ERROR_REPORTING_TERSE
     mp_raise_TypeError(MP_ERROR_TEXT("object not callable"));
     #else
-    // CIRCUITPY-CHANGE: more specific mp_raise
-    mp_raise_TypeError_varg(MP_ERROR_TEXT("'%q' object isn't callable"), mp_obj_get_type_qstr(fun_in));
+    // CIRCUITPY-CHANGE: use new raise function and different message
+    mp_raise_TypeError_varg(MP_ERROR_TEXT("'%q' object is not callable"), mp_obj_get_type_qstr(fun_in));
     #endif
 }
 
@@ -1425,9 +1417,9 @@ mp_obj_t mp_getiter(mp_obj_t o_in, mp_obj_iter_buf_t *iter_buf) {
     #if MICROPY_ERROR_REPORTING <= MICROPY_ERROR_REPORTING_TERSE
     mp_raise_TypeError(MP_ERROR_TEXT("object not iterable"));
     #else
-    // CIRCUITPY-CHANGE: more specific mp_raise
+    // CIRCUITPY-CHANGE: raise function
     mp_raise_TypeError_varg(
-        MP_ERROR_TEXT("'%q' object isn't iterable"), mp_obj_get_type_qstr(o_in));
+        MP_ERROR_TEXT("'%q' object is not iterable"), mp_obj_get_type_qstr(o_in));
     #endif
 
 }
@@ -1462,8 +1454,8 @@ mp_obj_t mp_iternext_allow_raise(mp_obj_t o_in) {
             #if MICROPY_ERROR_REPORTING <= MICROPY_ERROR_REPORTING_TERSE
             mp_raise_TypeError(MP_ERROR_TEXT("object not an iterator"));
             #else
-            // CIRCUITPY-CHANGE: more specific mp_raise
-            mp_raise_TypeError_varg(MP_ERROR_TEXT("'%q' object isn't an iterator"),
+            // CIRCUITPY-CHANGE: raise function
+            mp_raise_TypeError_varg(MP_ERROR_TEXT("'%q' object is not an iterator"),
                 mp_obj_get_type_qstr(o_in));
             #endif
         }
@@ -1473,7 +1465,7 @@ mp_obj_t mp_iternext_allow_raise(mp_obj_t o_in) {
 // will always return MP_OBJ_STOP_ITERATION instead of raising StopIteration() (or any subclass thereof)
 // may raise other exceptions
 mp_obj_t mp_iternext(mp_obj_t o_in) {
-    mp_cstack_check(); // enumerate, filter, map and zip can recursively call mp_iternext
+    MP_STACK_CHECK(); // enumerate, filter, map and zip can recursively call mp_iternext
     const mp_obj_type_t *type = mp_obj_get_type(o_in);
     if (TYPE_HAS_ITERNEXT(type)) {
         MP_STATE_THREAD(stop_iteration_arg) = MP_OBJ_NULL;
@@ -1500,8 +1492,8 @@ mp_obj_t mp_iternext(mp_obj_t o_in) {
             #if MICROPY_ERROR_REPORTING <= MICROPY_ERROR_REPORTING_TERSE
             mp_raise_TypeError(MP_ERROR_TEXT("object not an iterator"));
             #else
-            // CIRCUITPY-CHANGE: more specific mp_raise
-            mp_raise_TypeError_varg(MP_ERROR_TEXT("'%q' object isn't an iterator"),
+            // CIRCUITPY-CHANGE: raise function
+            mp_raise_TypeError_varg(MP_ERROR_TEXT("'%q' object is not an iterator"),
                 mp_obj_get_type_qstr(o_in));
             #endif
         }
@@ -1690,6 +1682,26 @@ mp_obj_t __attribute__((noinline, )) mp_import_from(mp_obj_t module, qstr name) 
 void mp_import_all(mp_obj_t module) {
     DEBUG_printf("import all %p\n", module);
 
+    // CIRCUITPY-CHANGE: displayio name changes; remove in 10.0
+    #if CIRCUITPY_DISPLAYIO && CIRCUITPY_WARNINGS
+    if (module == &displayio_module) {
+        #if CIRCUITPY_BUSDISPLAY
+        warnings_warn(&mp_type_FutureWarning, MP_ERROR_TEXT("%q moved from %q to %q"), MP_QSTR_Display, MP_QSTR_displayio, MP_QSTR_busdisplay);
+        warnings_warn(&mp_type_FutureWarning, MP_ERROR_TEXT("%q renamed %q"), MP_QSTR_Display, MP_QSTR_BusDisplay);
+        #endif
+        #if CIRCUITPY_EPAPERDISPLAY
+        warnings_warn(&mp_type_FutureWarning, MP_ERROR_TEXT("%q moved from %q to %q"), MP_QSTR_EPaperDisplay, MP_QSTR_displayio, MP_QSTR_epaperdisplay);
+        #endif
+        #if CIRCUITPY_FOURWIRE
+        warnings_warn(&mp_type_FutureWarning, MP_ERROR_TEXT("%q moved from %q to %q"), MP_QSTR_FourWire, MP_QSTR_displayio, MP_QSTR_fourwire);
+        #endif
+        #if CIRCUITPY_I2CDISPLAYBUS
+        warnings_warn(&mp_type_FutureWarning, MP_ERROR_TEXT("%q moved from %q to %q"), MP_QSTR_I2CDisplay, MP_QSTR_displayio, MP_QSTR_i2cdisplaybus);
+        warnings_warn(&mp_type_FutureWarning, MP_ERROR_TEXT("%q renamed %q"), MP_QSTR_I2CDisplay, MP_QSTR_I2CDisplayBus);
+        #endif
+    }
+    #endif
+
     // TODO: Support __all__
     mp_map_t *map = &mp_obj_module_get_globals(module)->map;
     for (size_t i = 0; i < map->alloc; i++) {
@@ -1726,13 +1738,10 @@ mp_obj_t mp_parse_compile_execute(mp_lexer_t *lex, mp_parse_input_kind_t parse_i
     mp_obj_t module_fun = mp_compile(&parse_tree, source_name, parse_input_kind == MP_PARSE_SINGLE_INPUT);
 
     mp_obj_t ret;
-    #if MICROPY_PY_BUILTINS_COMPILE && MICROPY_PY_BUILTINS_CODE == MICROPY_PY_BUILTINS_CODE_MINIMUM
-    if (globals == NULL) {
+    if (MICROPY_PY_BUILTINS_COMPILE && globals == NULL) {
         // for compile only, return value is the module function
         ret = module_fun;
-    } else
-    #endif
-    {
+    } else {
         // execute module function and get return value
         ret = mp_call_function_0(module_fun);
     }
@@ -1931,6 +1940,7 @@ NORETURN MP_COLD void mp_raise_type_arg(const mp_obj_type_t *exc_type, mp_obj_t 
     nlr_raise(mp_obj_new_exception_arg1(exc_type, arg));
 }
 
+// CIRCUITPY-CHANGE: MP_COLD
 NORETURN void mp_raise_StopIteration(mp_obj_t arg) {
     if (arg == MP_OBJ_NULL) {
         mp_raise_type(&mp_type_StopIteration);

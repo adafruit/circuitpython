@@ -146,8 +146,6 @@ usb_host_port_obj_t *common_hal_usb_host_port_construct(const mcu_pin_obj_t *dp,
     self->base.type = &usb_host_port_type;
     self->dp = dp;
     self->dm = dm;
-    claim_pin(dp);
-    claim_pin(dm);
 
     PIO pio = pio_get_instance(pio_cfg.pio_tx_num);
 

@@ -1,0 +1,52 @@
+name: Build RAPID-0 Boards
+
+on:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        board: [nucleo_h743zi_2, rapid_0]
+    steps:
+    - name: Set up repository
+      uses: actions/checkout@v4
+      with:
+        submodules: false
+        show-progress: false
+        fetch-depth: 1
+    - name: Set up python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.x
+    - name: Set up ports
+      id: set-up-port
+      uses: ./.github/actions/deps/ports
+      with:
+        board: ${{ matrix.board }}
+    - name: Set up submodules
+      id: set-up-submodules
+      uses: ./.github/actions/deps/submodules
+      with:
+        action: cache
+        version: true
+    - name: Set up external
+      uses: ./.github/actions/deps/external
+      with:
+        action: cache
+        port: ${{ steps.set-up-port.outputs.port }}
+    - name: Set up mpy-cross
+      if: steps.set-up-submodules.outputs.frozen == 'True'
+      uses: ./.github/actions/mpy_cross
+      with:
+        cp-version: ${{ steps.set-up-submodules.outputs.version }}
+        download: false
+    - name: Build boards
+      run: make -j4 -C ports/stm BOARD=${{ matrix.board }}
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.board }}
+        path: ports/stm/build-${{ matrix.board }}/firmware.*
+        overwrite: true

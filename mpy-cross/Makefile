@@ -25,12 +25,6 @@ CFLAGS += -fdata-sections -ffunction-sections -fno-asynchronous-unwind-tables
 # CIRCUITPY-CHANGE
 CFLAGS += -DCIRCUITPY
 
-# Build a static executable.
-# Useful for builds that must run on multiple operating system versions. Used for published mpy-cross versions.
-ifdef STATIC_BUILD
-CFLAGS += -static -static-libgcc -static-libstdc++
-endif
-
 # Debugging/Optimization
 ifdef DEBUG
 CFLAGS += -g
@@ -52,10 +46,6 @@ else
 LDFLAGS_ARCH = -Wl,-Map=$@.map,--cref -Wl,--gc-sections
 endif
 LDFLAGS += $(LDFLAGS_MOD) $(LDFLAGS_ARCH) -lm $(LDFLAGS_EXTRA)
-
-ifdef STATIC_BUILD
-LDFLAGS += -static -static-libgcc -static-libstdc++
-endif
 
 # source files
 # CIRCUITPY-CHANGE: extra files

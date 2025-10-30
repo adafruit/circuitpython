@@ -32,9 +32,6 @@ static void _intr_handler(nrfx_gpiote_pin_t pin, nrf_gpiote_polarity_t action) {
 void common_hal_rotaryio_incrementalencoder_construct(rotaryio_incrementalencoder_obj_t *self,
     const mcu_pin_obj_t *pin_a, const mcu_pin_obj_t *pin_b) {
 
-    // Ensure object starts in its deinit state.
-    common_hal_rotaryio_incrementalencoder_mark_deinit(self);
-
     self->pin_a = pin_a->number;
     self->pin_b = pin_b->number;
 
@@ -81,10 +78,6 @@ void common_hal_rotaryio_incrementalencoder_deinit(rotaryio_incrementalencoder_o
     nrfx_gpiote_in_uninit(self->pin_b);
     reset_pin_number(self->pin_a);
     reset_pin_number(self->pin_b);
-
-    common_hal_rotaryio_incrementalencoder_mark_deinit(self);
-}
-
-void common_hal_rotaryio_incrementalencoder_mark_deinit(rotaryio_incrementalencoder_obj_t *self) {
     self->pin_a = NO_PIN;
+    self->pin_b = NO_PIN;
 }

@@ -43,9 +43,6 @@
 #include "lib/oofatfs/diskio.h"
 #include "extmod/vfs_fat.h"
 
-// CIRCUITPY-CHANGE
-#include "supervisor/filesystem.h"
-
 typedef void *bdev_t;
 static fs_user_mount_t *disk_get_device(void *bdev) {
     return (fs_user_mount_t *)bdev;
@@ -156,8 +153,7 @@ DRESULT disk_ioctl(
             if (ret != mp_const_none && MP_OBJ_SMALL_INT_VALUE(ret) != 0) {
                 // error initialising
                 stat = STA_NOINIT;
-                // CIRCUITPY-CHANGE: writability from Python check
-            } else if (!filesystem_is_writable_by_python(vfs)) {
+            } else if (vfs->blockdev.writeblocks[0] == MP_OBJ_NULL) {
                 stat = STA_PROTECT;
             } else {
                 stat = 0;

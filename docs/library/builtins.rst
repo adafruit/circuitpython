@@ -31,8 +31,6 @@ Functions and types
 
 .. class:: bytearray()
 
-    |see_cpython| `python:bytearray`.
-
 .. class:: bytes()
 
     |see_cpython| `python:bytes`.
@@ -88,9 +86,15 @@ Functions and types
 
 .. class:: int()
 
-   .. classmethod:: from_bytes(bytes, byteorder="big", *, signed=False)
+   .. classmethod:: from_bytes(bytes, byteorder)
 
-   .. method:: to_bytes(length=1, byteorder="big", *, signed=False)
+      In CircuitPython, the ``byteorder`` parameter must be positional (this is
+      compatible with CPython).
+
+   .. method:: to_bytes(size, byteorder)
+
+      In CircuitPython, the ``byteorder`` parameter must be positional (this is
+      compatible with CPython).
 
 .. function:: isinstance()
 

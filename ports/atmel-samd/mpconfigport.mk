@@ -12,7 +12,6 @@ CIRCUITPY_OPTIMIZE_PROPERTY_FLASH_SIZE ?= 1
 CIRCUITPY_LTO = 1
 
 CIRCUITPY_KEYPAD_DEMUX ?= 0
-CIRCUITPY_LVFONTIO ?= 0
 
 ######################################################################
 # Put samd21-only choices here.

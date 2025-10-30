@@ -73,10 +73,6 @@ void gc_sweep_all(void);
 
 enum {
     GC_ALLOC_FLAG_HAS_FINALISER = 1,
-    // CIRCUITPY-CHANGE
-    #if MICROPY_ENABLE_SELECTIVE_COLLECT
-    GC_ALLOC_FLAG_DO_NOT_COLLECT = 2,
-    #endif
 };
 
 void *gc_alloc(size_t n_bytes, unsigned int alloc_flags);
@@ -87,7 +83,7 @@ void *gc_realloc(void *ptr, size_t n_bytes, bool allow_move);
 // CIRCUITPY-CHANGE
 // True if the pointer is on the MP heap. Doesn't require that it is the start
 // of a block.
-bool gc_ptr_on_heap(const void *ptr);
+bool gc_ptr_on_heap(void *ptr);
 
 typedef struct _gc_info_t {
     size_t total;

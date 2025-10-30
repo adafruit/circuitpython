@@ -24,11 +24,7 @@ typedef struct {
     // status register.
     uint8_t quad_enable_bit_mask;
 
-    // Device has sector-level write protection
     bool has_sector_protection : 1;
-
-    // Device uses global block protection lock instead of status register bits to enable sector writes
-    bool use_global_block_protection_lock : 1;
 
     // Supports the 0x0b fast read command with 8 dummy cycles.
     bool supports_fast_read : 1;

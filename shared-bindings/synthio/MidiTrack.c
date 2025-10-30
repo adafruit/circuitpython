@@ -115,27 +115,6 @@ static void check_for_deinit(synthio_miditrack_obj_t *self) {
 //|     """32 bit value that tells how quickly samples are played in Hertz (cycles per second)."""
 //|
 
-//|     tempo: int
-//|     """Tempo of the streamed events, in MIDI ticks per second."""
-//|
-static mp_obj_t synthio_miditrack_obj_get_tempo(mp_obj_t self_in) {
-    synthio_miditrack_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    check_for_deinit(self);
-    return mp_obj_new_int(common_hal_synthio_miditrack_get_tempo(self));
-}
-MP_DEFINE_CONST_FUN_OBJ_1(synthio_miditrack_get_tempo_obj, synthio_miditrack_obj_get_tempo);
-
-static mp_obj_t synthio_miditrack_obj_set_tempo(mp_obj_t self_in, mp_obj_t arg) {
-    synthio_miditrack_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    check_for_deinit(self);
-    common_hal_synthio_miditrack_set_tempo(self, mp_obj_get_int(arg));
-    return mp_const_none;
-}
-MP_DEFINE_CONST_FUN_OBJ_2(synthio_miditrack_set_tempo_obj, synthio_miditrack_obj_set_tempo);
-MP_PROPERTY_GETSET(synthio_miditrack_tempo_obj,
-    (mp_obj_t)&synthio_miditrack_get_tempo_obj,
-    (mp_obj_t)&synthio_miditrack_set_tempo_obj);
-
 //|     error_location: Optional[int]
 //|     """Offset, in bytes within the midi data, of a decoding error"""
 //|
@@ -162,7 +141,6 @@ static const mp_rom_map_elem_t synthio_miditrack_locals_dict_table[] = {
 
     // Properties
     { MP_ROM_QSTR(MP_QSTR_error_location), MP_ROM_PTR(&synthio_miditrack_error_location_obj) },
-    { MP_ROM_QSTR(MP_QSTR_tempo), MP_ROM_PTR(&synthio_miditrack_tempo_obj) },
     AUDIOSAMPLE_FIELDS,
 };
 static MP_DEFINE_CONST_DICT(synthio_miditrack_locals_dict, synthio_miditrack_locals_dict_table);

@@ -9,8 +9,6 @@ MCU_SERIES = F4
 MCU_VARIANT = STM32F411xE
 MCU_PACKAGE = LQFP100_f4
 
-OPTIMIZATION_FLAGS = -Os
-
 LD_COMMON = boards/common_default.ld
 LD_FILE = boards/STM32F411_fs.ld
 

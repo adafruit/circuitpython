@@ -42,7 +42,7 @@ static bool audioout_convert_u8s_u8m(
 
     bool buffer_changed = false;
     if (in_buffer_size / 2 > *out_buffer_size) {
-        *out_buffer = m_malloc_without_collect(in_buffer_size / 2);
+        *out_buffer = m_malloc(in_buffer_size / 2);
         buffer_changed = true;
     }
     audiosample_convert_u8s_u8m(*out_buffer, (uint8_t *)in_buffer, in_buffer_size / 2);
@@ -58,7 +58,7 @@ static bool audioout_convert_u8m_u8s(
 
     bool buffer_changed = false;
     if (in_buffer_size * 2 > *out_buffer_size) {
-        *out_buffer = m_malloc_without_collect(in_buffer_size * 2);
+        *out_buffer = m_malloc(in_buffer_size * 2);
         buffer_changed = true;
     }
     audiosample_convert_u8m_u8s(*out_buffer, (uint8_t *)in_buffer, in_buffer_size);
@@ -74,7 +74,7 @@ static bool audioout_convert_s8m_u8m(
 
     bool buffer_changed = false;
     if (in_buffer_size > *out_buffer_size) {
-        *out_buffer = m_malloc_without_collect(in_buffer_size);
+        *out_buffer = m_malloc(in_buffer_size);
         buffer_changed = true;
     }
     audiosample_convert_s8m_u8m(*out_buffer, (int8_t *)in_buffer, in_buffer_size);
@@ -90,7 +90,7 @@ static bool audioout_convert_s8s_u8m(
 
     bool buffer_changed = false;
     if (in_buffer_size / 2 > *out_buffer_size) {
-        *out_buffer = m_malloc_without_collect(in_buffer_size / 2);
+        *out_buffer = m_malloc(in_buffer_size / 2);
         buffer_changed = true;
     }
     audiosample_convert_s8s_u8m(*out_buffer, (int8_t *)in_buffer, in_buffer_size / 2);
@@ -106,7 +106,7 @@ static bool audioout_convert_s8m_u8s(
 
     bool buffer_changed = false;
     if (in_buffer_size * 2 > *out_buffer_size) {
-        *out_buffer = m_malloc_without_collect(in_buffer_size * 2);
+        *out_buffer = m_malloc(in_buffer_size * 2);
         buffer_changed = true;
     }
     audiosample_convert_s8m_u8s(*out_buffer, (int8_t *)in_buffer, in_buffer_size);
@@ -122,7 +122,7 @@ static bool audioout_convert_s8s_u8s(
 
     bool buffer_changed = false;
     if (in_buffer_size > *out_buffer_size) {
-        *out_buffer = m_malloc_without_collect(in_buffer_size);
+        *out_buffer = m_malloc(in_buffer_size);
         buffer_changed = true;
     }
     audiosample_convert_s8s_u8s(*out_buffer, (int8_t *)in_buffer, in_buffer_size);
@@ -138,7 +138,7 @@ static bool audioout_convert_u16m_u8m(
 
     bool buffer_changed = false;
     if (in_buffer_size / 2 > *out_buffer_size) {
-        *out_buffer = m_malloc_without_collect(in_buffer_size / 2);
+        *out_buffer = m_malloc(in_buffer_size / 2);
         buffer_changed = true;
     }
     audiosample_convert_u16m_u8m(*out_buffer, (uint16_t *)in_buffer, in_buffer_size / 2);
@@ -154,7 +154,7 @@ static bool audioout_convert_u16m_u8s(
 
     bool buffer_changed = false;
     if (in_buffer_size > *out_buffer_size) {
-        *out_buffer = m_malloc_without_collect(in_buffer_size);
+        *out_buffer = m_malloc(in_buffer_size);
         buffer_changed = true;
     }
     audiosample_convert_u16m_u8s(*out_buffer, (uint16_t *)in_buffer, in_buffer_size / 2);
@@ -186,7 +186,7 @@ static bool audioout_convert_u16s_u8s(
 
     bool buffer_changed = false;
     if (in_buffer_size / 2 > *out_buffer_size) {
-        *out_buffer = m_malloc_without_collect(in_buffer_size / 2);
+        *out_buffer = m_malloc(in_buffer_size / 2);
         buffer_changed = true;
     }
     audiosample_convert_u16s_u8s(*out_buffer, (uint16_t *)in_buffer, in_buffer_size / 4);
@@ -202,7 +202,7 @@ static bool audioout_convert_s16m_u8m(
 
     bool buffer_changed = false;
     if (in_buffer_size / 2 > *out_buffer_size) {
-        *out_buffer = m_malloc_without_collect(in_buffer_size / 2);
+        *out_buffer = m_malloc(in_buffer_size / 2);
         buffer_changed = true;
     }
     audiosample_convert_s16m_u8m(*out_buffer, (int16_t *)in_buffer, in_buffer_size / 2);
@@ -218,7 +218,7 @@ static bool audioout_convert_s16m_u8s(
 
     bool buffer_changed = false;
     if (in_buffer_size > *out_buffer_size) {
-        *out_buffer = m_malloc_without_collect(in_buffer_size);
+        *out_buffer = m_malloc(in_buffer_size);
         buffer_changed = true;
     }
     audiosample_convert_s16m_u8s(*out_buffer, (int16_t *)in_buffer, in_buffer_size / 2);
@@ -250,7 +250,7 @@ static bool audioout_convert_s16s_u8s(
 
     bool buffer_changed = false;
     if (in_buffer_size / 2 > *out_buffer_size) {
-        *out_buffer = m_malloc_without_collect(in_buffer_size / 2);
+        *out_buffer = m_malloc(in_buffer_size / 2);
         buffer_changed = true;
     }
     audiosample_convert_s16s_u8s(*out_buffer, (int16_t *)in_buffer, in_buffer_size / 4);

@@ -11,7 +11,6 @@
 #include "common-hal/microcontroller/__init__.h"
 #include "peripherals/broadcom/defines.h"
 #include "peripherals/broadcom/interrupts.h"
-#include "supervisor/port.h"
 
 #include "mphalport.h"
 
@@ -40,7 +39,6 @@ void common_hal_mcu_on_next_reset(mcu_runmode_t runmode) {
 }
 
 void common_hal_mcu_reset(void) {
-    reset_cpu();
 }
 
 // The singleton microcontroller.Processor object, bound to microcontroller.cpu

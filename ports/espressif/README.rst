@@ -222,3 +222,4 @@ And follow the Espressif GDB tutorial `instructions for connecting <https://docs
     mon reset halt
     flushregs
     thb app_main
+    c

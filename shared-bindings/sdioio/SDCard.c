@@ -55,10 +55,7 @@
 //|             sd = sdioio.SDCard(
 //|                 clock=board.SDIO_CLOCK,
 //|                 command=board.SDIO_COMMAND,
-//|                 # Note that board.SDIO_DATA is a tuple of four pins, not an individual pin.
-//|                 data=board.SDIO_DATA,
-//|                 # On some boards, the data pins are named individually. Use this line instead.
-//|                 #data=(board.SDIO_DATA0, board.SDIO_DATA1, board.SDIO_DATA2, board.SDIO_DATA3),
+//|                 data=[board.SDIO_DATA],
 //|                 frequency=25000000)
 //|             vfs = storage.VfsFat(sd)
 //|             storage.mount(vfs, '/sd')

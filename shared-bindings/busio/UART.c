@@ -368,14 +368,14 @@ static mp_obj_t busio_uart_obj_reset_input_buffer(mp_obj_t self_in) {
     return mp_const_none;
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(busio_uart_reset_input_buffer_obj, busio_uart_obj_reset_input_buffer);
-//|     class Parity:
-//|         """Enum-like class to define the parity used to verify correct data transfer."""
+//| class Parity:
+//|     """Enum-like class to define the parity used to verify correct data transfer."""
 //|
-//|         ODD: int
-//|         """Total number of ones should be odd."""
+//|     ODD: int
+//|     """Total number of ones should be odd."""
 //|
-//|         EVEN: int
-//|         """Total number of ones should be even."""
+//|     EVEN: int
+//|     """Total number of ones should be even."""
 //|
 //|
 const mp_obj_type_t busio_uart_parity_type;

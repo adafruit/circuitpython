@@ -20,6 +20,8 @@
 //|     instance of :class:`SleepMemory` is available at
 //|     :attr:`alarm.sleep_memory`.
 //|
+//|     **Limitations:** Not supported on RP2040.
+//|
 //|     Usage::
 //|
 //|        import alarm

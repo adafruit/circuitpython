@@ -8,7 +8,25 @@
 #include "py/mphal.h"
 #include "supervisor/cpu.h"
 
-#include "rom/ets_sys.h"
+#if defined(CONFIG_IDF_TARGET_ESP32)
+#include "components/esp_rom/include/esp32/rom/ets_sys.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32C2)
+#include "components/esp_rom/include/esp32c2/rom/ets_sys.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32P4)
+#include "components/esp_rom/include/esp32p4/rom/ets_sys.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32C3)
+#include "components/esp_rom/include/esp32c3/rom/ets_sys.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32C6)
+#include "components/esp_rom/include/esp32c6/rom/ets_sys.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32H2)
+#include "components/esp_rom/include/esp32h2/rom/ets_sys.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32S2)
+#include "components/esp_rom/include/esp32s2/rom/ets_sys.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+#include "components/esp_rom/include/esp32s3/rom/ets_sys.h"
+#else
+#error Unknown CONFIG_IDF_TARGET_xxx
+#endif
 
 #include "esp_attr.h"
 
@@ -21,6 +39,7 @@ void IRAM_ATTR mp_hal_delay_us(mp_uint_t delay) {
 // This is provided by the esp-idf/components/xtensa/esp32s2/libhal.a binary blob.
 #ifndef CONFIG_IDF_TARGET_ARCH_RISCV
 extern void xthal_window_spill(void);
+#endif
 
 mp_uint_t cpu_get_regs_and_sp(mp_uint_t *regs) {
     // xtensa has more registers than an instruction can address. The 16 that
@@ -36,7 +55,8 @@ mp_uint_t cpu_get_regs_and_sp(mp_uint_t *regs) {
     // there is a HAL call to do it. There is a bit of a race condition here
     // because the register value could change after it's been restored but that
     // is unlikely to happen with a heap pointer while we do a GC.
+    #ifndef CONFIG_IDF_TARGET_ARCH_RISCV
     xthal_window_spill();
-    return (mp_uint_t)__builtin_stack_address();
+    #endif
+    return (mp_uint_t)__builtin_frame_address(0);
 }
-#endif

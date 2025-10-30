@@ -269,7 +269,6 @@ MP_DEFINE_CONST_FUN_OBJ_2(synthio_synthesizer_note_info_obj, synthio_synthesizer
 //|
 //|     This property is read-only but its contents may be modified by e.g., calling ``synth.blocks.append()`` or ``synth.blocks.remove()``. It is initially an empty list."""
 //|
-//|
 static mp_obj_t synthio_synthesizer_obj_get_blocks(mp_obj_t self_in) {
     synthio_synthesizer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
@@ -279,6 +278,123 @@ MP_DEFINE_CONST_FUN_OBJ_1(synthio_synthesizer_get_blocks_obj, synthio_synthesize
 
 MP_PROPERTY_GETTER(synthio_synthesizer_blocks_obj,
     (mp_obj_t)&synthio_synthesizer_get_blocks_obj);
+
+//|     max_polyphony: int
+//|     """Maximum polyphony of the synthesizer (read-only class property)"""
+//|
+
+//|     def low_pass_filter(cls, frequency: float, Q: float = 0.7071067811865475) -> Biquad:
+//|         """Construct a low-pass filter with the given parameters.
+//|
+//|         ``frequency``, called f0 in the cookbook, is the corner frequency in Hz
+//|         of the filter.
+//|
+//|         ``Q`` controls how peaked the response will be at the cutoff frequency. A large value makes the response more peaked.
+//|
+//|         .. note:: This is deprecated in ``9.x.x`` and will be removed in ``10.0.0``. Use `BlockBiquad` objects instead.
+//|         """
+//|
+
+enum passfilter_arg_e { ARG_f0, ARG_Q };
+
+// M_PI is not part of the math.h standard and may not be defined
+// And by defining our own we can ensure it uses the correct const format.
+#define MP_PI MICROPY_FLOAT_CONST(3.14159265358979323846)
+
+static const mp_arg_t passfilter_properties[] = {
+    { MP_QSTR_frequency, MP_ARG_OBJ | MP_ARG_REQUIRED, {.u_obj = MP_ROM_NONE} },
+    { MP_QSTR_Q, MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL } },
+};
+
+static mp_obj_t synthio_synthesizer_lpf(size_t n_pos, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    mp_arg_val_t args[MP_ARRAY_SIZE(passfilter_properties)];
+
+    mp_obj_t self_in = pos_args[0];
+    synthio_synthesizer_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+    mp_arg_parse_all(n_pos - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(passfilter_properties), passfilter_properties, args);
+
+    mp_float_t f0 = mp_arg_validate_type_float(args[ARG_f0].u_obj, MP_QSTR_f0);
+    mp_float_t Q =
+        args[ARG_Q].u_obj == MP_OBJ_NULL ? MICROPY_FLOAT_CONST(0.7071067811865475) :
+        mp_arg_validate_type_float(args[ARG_Q].u_obj, MP_QSTR_Q);
+
+    mp_float_t w0 = f0 / self->synth.base.sample_rate * 2 * MP_PI;
+
+    return common_hal_synthio_new_lpf(w0, Q);
+
+}
+
+MP_DEFINE_CONST_FUN_OBJ_KW(synthio_synthesizer_lpf_fun_obj, 1, synthio_synthesizer_lpf);
+
+//|     def high_pass_filter(cls, frequency: float, Q: float = 0.7071067811865475) -> Biquad:
+//|         """Construct a high-pass filter with the given parameters.
+//|
+//|         ``frequency``, called f0 in the cookbook, is the corner frequency in Hz
+//|         of the filter.
+//|
+//|         ``Q`` controls how peaked the response will be at the cutoff frequency. A large value makes the response more peaked.
+//|
+//|         .. note:: This is deprecated in ``9.x.x`` and will be removed in ``10.0.0``. Use `BlockBiquad` objects instead.
+//|         """
+//|
+
+static mp_obj_t synthio_synthesizer_hpf(size_t n_pos, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    mp_arg_val_t args[MP_ARRAY_SIZE(passfilter_properties)];
+
+    mp_obj_t self_in = pos_args[0];
+    synthio_synthesizer_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+    mp_arg_parse_all(n_pos - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(passfilter_properties), passfilter_properties, args);
+
+    mp_float_t f0 = mp_arg_validate_type_float(args[ARG_f0].u_obj, MP_QSTR_f0);
+    mp_float_t Q =
+        args[ARG_Q].u_obj == MP_OBJ_NULL ? MICROPY_FLOAT_CONST(0.7071067811865475) :
+        mp_arg_validate_type_float(args[ARG_Q].u_obj, MP_QSTR_Q);
+
+    mp_float_t w0 = f0 / self->synth.base.sample_rate * 2 * MP_PI;
+
+    return common_hal_synthio_new_hpf(w0, Q);
+
+}
+
+//|     def band_pass_filter(cls, frequency: float, Q: float = 0.7071067811865475) -> Biquad:
+//|         """Construct a band-pass filter with the given parameters.
+//|
+//|         ``frequency``, called f0 in the cookbook, is the center frequency in Hz
+//|         of the filter.
+//|
+//|         ``Q`` Controls how peaked the response will be at the cutoff frequency. A large value makes the response more peaked.
+//|
+//|         The coefficients are scaled such that the filter has a 0dB peak gain.
+//|
+//|         .. note:: This is deprecated in ``9.x.x`` and will be removed in ``10.0.0``. Use `BlockBiquad` objects instead.
+//|         """
+//|
+//|
+
+MP_DEFINE_CONST_FUN_OBJ_KW(synthio_synthesizer_hpf_fun_obj, 1, synthio_synthesizer_hpf);
+
+static mp_obj_t synthio_synthesizer_bpf(size_t n_pos, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    mp_arg_val_t args[MP_ARRAY_SIZE(passfilter_properties)];
+
+    mp_obj_t self_in = pos_args[0];
+    synthio_synthesizer_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+    mp_arg_parse_all(n_pos - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(passfilter_properties), passfilter_properties, args);
+
+    mp_float_t f0 = mp_arg_validate_type_float(args[ARG_f0].u_obj, MP_QSTR_f0);
+    mp_float_t Q =
+        args[ARG_Q].u_obj == MP_OBJ_NULL ? MICROPY_FLOAT_CONST(0.7071067811865475) :
+        mp_arg_validate_type_float(args[ARG_Q].u_obj, MP_QSTR_Q);
+
+    mp_float_t w0 = f0 / self->synth.base.sample_rate * 2 * MP_PI;
+
+    return common_hal_synthio_new_bpf(w0, Q);
+
+}
+
+MP_DEFINE_CONST_FUN_OBJ_KW(synthio_synthesizer_bpf_fun_obj, 1, synthio_synthesizer_bpf);
 
 static const mp_rom_map_elem_t synthio_synthesizer_locals_dict_table[] = {
     // Methods
@@ -292,6 +408,9 @@ static const mp_rom_map_elem_t synthio_synthesizer_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
 
+    { MP_ROM_QSTR(MP_QSTR_low_pass_filter), MP_ROM_PTR(&synthio_synthesizer_lpf_fun_obj) },
+    { MP_ROM_QSTR(MP_QSTR_high_pass_filter), MP_ROM_PTR(&synthio_synthesizer_hpf_fun_obj) },
+    { MP_ROM_QSTR(MP_QSTR_band_pass_filter), MP_ROM_PTR(&synthio_synthesizer_bpf_fun_obj) },
     // Properties
     { MP_ROM_QSTR(MP_QSTR_envelope), MP_ROM_PTR(&synthio_synthesizer_envelope_obj) },
     { MP_ROM_QSTR(MP_QSTR_max_polyphony), MP_ROM_INT(CIRCUITPY_SYNTHIO_MAX_CHANNELS) },

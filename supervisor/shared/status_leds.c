@@ -112,7 +112,7 @@ static uint32_t current_status_color = 0;
 #endif
 
 static bool status_led_init_in_progress = false;
-void status_led_init(void) {
+void status_led_init() {
     if (status_led_init_in_progress) {
         // Avoid recursion.
         return;
@@ -186,7 +186,7 @@ void status_led_init(void) {
     status_led_init_in_progress = false;
 }
 
-void status_led_deinit(void) {
+void status_led_deinit() {
     #ifdef MICROPY_HW_NEOPIXEL
     // Make sure the pin stays low for the reset period. The pin reset may pull
     // it up and stop the reset period.

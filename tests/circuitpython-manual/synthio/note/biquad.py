@@ -24,39 +24,33 @@ sine = np.array(
 )
 noise = np.array([random.randint(-VOLUME, VOLUME) for i in range(SAMPLE_SIZE)], dtype=np.int16)
 bend_out = np.linspace(0, 32767, num=SAMPLE_SIZE, endpoint=True, dtype=np.int16)
-sweep = np.linspace(-32767, 32767, num=SAMPLE_SIZE, endpoint=True, dtype=np.int16)
-
-lfos_of_interest = []
 
 
 def synthesize(synth):
-    freq_sweep = synthio.LFO(
-        sweep, offset=synthio.midi_to_hz(72), scale=synthio.midi_to_hz(72), rate=1, once=True
-    )
+    for waveform in (sine, None, noise):
+        for biquad in (
+            None,
+            synth.low_pass_filter(120),
+        ):
+            for midi_note in range(24, 90, 3):
+                n = synthio.Note(
+                    frequency=synthio.midi_to_hz(midi_note),
+                    envelope=envelope,
+                    filter=biquad,
+                    waveform=waveform,
+                    bend=synthio.LFO(bend_out, once=True, rate=1 / 2, scale=5),
+                )
 
-    for biquad in (
-        None,
-        synthio.Biquad(synthio.FilterMode.LOW_PASS, freq_sweep),
-        synthio.Biquad(synthio.FilterMode.HIGH_PASS, freq_sweep),
-        synthio.Biquad(synthio.FilterMode.BAND_PASS, freq_sweep, Q=8),
-        synthio.Biquad(synthio.FilterMode.NOTCH, freq_sweep, Q=8),
-    ):
-        n = synthio.Note(
-            frequency=synthio.midi_to_hz(72),
-            envelope=envelope,
-            filter=biquad,
-            waveform=sine,
-        )
-
-        freq_sweep.retrigger()
-        synth.press(n)
-        print("n", n.frequency)
-        yield 24 * 6
-        synth.release_all()
-        yield 24
+                synth.press(n)
+                print(n.frequency)
+                yield 24
+                synth.release_all()
+                yield 16
+            yield 24
+        yield 48
 
 
-with wave.open("blockfilter.wav", "w") as f:
+with wave.open("biquad.wav", "w") as f:
     f.setnchannels(1)
     f.setsampwidth(2)
     f.setframerate(48000)

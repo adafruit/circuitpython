@@ -30,7 +30,7 @@ static audio_dma_t *audio_dma_state[AUDIO_DMA_CHANNEL_COUNT];
 // This cannot be in audio_dma_state because it's volatile.
 static volatile bool audio_dma_pending[AUDIO_DMA_CHANNEL_COUNT];
 
-uint8_t find_sync_event_channel_raise(void) {
+uint8_t find_sync_event_channel_raise() {
     uint8_t event_channel = find_sync_event_channel();
     if (event_channel >= EVSYS_SYNCH_NUM) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("All sync event channels in use"));
@@ -39,14 +39,14 @@ uint8_t find_sync_event_channel_raise(void) {
 }
 
 void audio_dma_disable_channel(uint8_t channel) {
-    if (channel == NO_DMA_CHANNEL) {
+    if (channel >= AUDIO_DMA_CHANNEL_COUNT) {
         return;
     }
     dma_disable_channel(channel);
 }
 
 void audio_dma_enable_channel(uint8_t channel) {
-    if (channel == NO_DMA_CHANNEL) {
+    if (channel >= AUDIO_DMA_CHANNEL_COUNT) {
         return;
     }
     dma_enable_channel(channel);
@@ -171,8 +171,8 @@ audio_dma_result audio_dma_setup_playback(audio_dma_t *dma,
     bool output_signed,
     uint32_t output_register_address,
     uint8_t dma_trigger_source) {
-    uint8_t dma_channel = dma_allocate_audio_channel();
-    if (dma_channel == NO_DMA_CHANNEL) {
+    uint8_t dma_channel = dma_allocate_channel(true);
+    if (dma_channel >= AUDIO_DMA_CHANNEL_COUNT) {
         return AUDIO_DMA_DMA_BUSY;
     }
 
@@ -298,14 +298,14 @@ audio_dma_result audio_dma_setup_playback(audio_dma_t *dma,
 
 void audio_dma_stop(audio_dma_t *dma) {
     uint8_t channel = dma->dma_channel;
-    if (channel != NO_DMA_CHANNEL) {
+    if (channel < AUDIO_DMA_CHANNEL_COUNT) {
         audio_dma_disable_channel(channel);
         disable_event_channel(dma->event_channel);
         MP_STATE_PORT(playing_audio)[channel] = NULL;
         audio_dma_state[channel] = NULL;
         dma_free_channel(dma->dma_channel);
     }
-    dma->dma_channel = NO_DMA_CHANNEL;
+    dma->dma_channel = AUDIO_DMA_CHANNEL_COUNT;
     dma->playing_in_progress = false;
 }
 
@@ -318,7 +318,7 @@ void audio_dma_resume(audio_dma_t *dma) {
 }
 
 bool audio_dma_get_paused(audio_dma_t *dma) {
-    if (dma->dma_channel == NO_DMA_CHANNEL) {
+    if (dma->dma_channel >= AUDIO_DMA_CHANNEL_COUNT) {
         return false;
     }
     uint32_t status = dma_transfer_status(dma->dma_channel);
@@ -327,7 +327,7 @@ bool audio_dma_get_paused(audio_dma_t *dma) {
 }
 
 void audio_dma_init(audio_dma_t *dma) {
-    dma->dma_channel = NO_DMA_CHANNEL;
+    dma->dma_channel = AUDIO_DMA_CHANNEL_COUNT;
 }
 
 void audio_dma_reset(void) {
@@ -341,7 +341,7 @@ void audio_dma_reset(void) {
 }
 
 bool audio_dma_get_playing(audio_dma_t *dma) {
-    if (dma->dma_channel == NO_DMA_CHANNEL) {
+    if (dma->dma_channel >= AUDIO_DMA_CHANNEL_COUNT) {
         return false;
     }
     return dma->playing_in_progress;

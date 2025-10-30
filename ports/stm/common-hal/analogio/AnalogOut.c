@@ -22,10 +22,19 @@
 #include STM32_HAL_H
 
 #ifndef __HAL_RCC_DAC_CLK_ENABLE
+#if CPY_STM32H7
+#define __HAL_RCC_DAC_CLK_ENABLE __HAL_RCC_DAC12_CLK_ENABLE
+#else
 #define __HAL_RCC_DAC_CLK_ENABLE __HAL_RCC_DAC1_CLK_ENABLE
 #endif
+#endif
+
 #ifndef __HAL_RCC_DAC_CLK_DISABLE
+#if CPY_STM32H7
+#define __HAL_RCC_DAC_CLK_DISABLE __HAL_RCC_DAC12_CLK_DISABLE
+#else
 #define __HAL_RCC_DAC_CLK_DISABLE __HAL_RCC_DAC1_CLK_DISABLE
+#endif
 #endif
 
 // DAC is shared between both channels.
@@ -37,15 +46,18 @@ static bool dac_on[2];
 
 void common_hal_analogio_analogout_construct(analogio_analogout_obj_t *self,
     const mcu_pin_obj_t *pin) {
+    DAC_TypeDef *DACx;
     #if !(HAS_DAC)
     mp_raise_ValueError(MP_ERROR_TEXT("No DAC on chip"));
     #else
     if (pin == &pin_PA04) {
         self->channel = DAC_CHANNEL_1;
         self->dac_index = 0;
+        DACx = DAC1;
     } else if (pin == &pin_PA05) {
         self->channel = DAC_CHANNEL_2;
         self->dac_index = 1;
+        DACx = DAC1;
     } else {
         raise_ValueError_invalid_pin();
     }
@@ -53,7 +65,7 @@ void common_hal_analogio_analogout_construct(analogio_analogout_obj_t *self,
     // Only init if the shared DAC is empty or reset
     if (handle.Instance == NULL || handle.State == HAL_DAC_STATE_RESET) {
         __HAL_RCC_DAC_CLK_ENABLE();
-        handle.Instance = DAC;
+        handle.Instance = DACx;
         if (HAL_DAC_Init(&handle) != HAL_OK) {
             mp_raise_ValueError(MP_ERROR_TEXT("DAC Device Init Error"));
         }

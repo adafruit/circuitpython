@@ -44,8 +44,6 @@
 #define MICROPY_NLR_NUM_REGS_MIPS           (13)
 #define MICROPY_NLR_NUM_REGS_XTENSA         (10)
 #define MICROPY_NLR_NUM_REGS_XTENSAWIN      (17)
-#define MICROPY_NLR_NUM_REGS_RV32I          (14)
-#define MICROPY_NLR_NUM_REGS_RV64I          (14)
 
 // *FORMAT-OFF*
 
@@ -101,65 +99,16 @@
 #elif defined(__mips__)
     #define MICROPY_NLR_MIPS (1)
     #define MICROPY_NLR_NUM_REGS (MICROPY_NLR_NUM_REGS_MIPS)
-#elif defined(__riscv)
-    #if __riscv_xlen == 32
-        #define MICROPY_NLR_NUM_REGS (MICROPY_NLR_NUM_REGS_RV32I)
-        #define MICROPY_NLR_RV32I (1)
-    #elif __riscv_xlen == 64
-        #define MICROPY_NLR_NUM_REGS (MICROPY_NLR_NUM_REGS_RV64I)
-        #define MICROPY_NLR_RV64I (1)
-    #else
-        #error Unsupported RISC-V variant.
-    #endif
 #else
     #define MICROPY_NLR_SETJMP (1)
     //#warning "No native NLR support for this arch, using setjmp implementation"
 #endif
 #endif
 
-// CIRCUITPY-CHANGE: Avoid warnings by defining all these MICROPY_PY_NLR_* macros
-#ifndef MICROPY_NLR_AARCH64
-#define MICROPY_NLR_AARCH64 (0)
-#endif
-
-#ifndef MICROPY_NLR_MIPS
-#define MICROPY_NLR_MIPS (0)
-#endif
-
-#ifndef MICROPY_NLR_OS_WINDOWS
-#define MICROPY_NLR_OS_WINDOWS (0)
-#endif
-
-#ifndef MICROPY_NLR_POWERPC
-#define MICROPY_NLR_POWERPC (0)
-#endif
-
-#ifndef MICROPY_NLR_RV32I
-#define MICROPY_NLR_RV32I (0)
-#endif
-
-#ifndef MICROPY_NLR_RV64I
-#define MICROPY_NLR_RV64I (0)
-#endif
-
-#ifndef MICROPY_NLR_SETJMP
-#define MICROPY_NLR_SETJMP (0)
-#endif
-
-#ifndef MICROPY_NLR_THUMB
-#define MICROPY_NLR_THUMB (0)
-#endif
-
-#ifndef MICROPY_NLR_X64
-#define MICROPY_NLR_X64 (0)
-#endif
-
-#ifndef MICROPY_NLR_X86
-#define MICROPY_NLR_X86 (0)
-#endif
-
-#ifndef MICROPY_NLR_XTENSA
-#define MICROPY_NLR_XTENSA (0)
+// CIRCUITPY-CHANGE
+// If MICROPY_NLR_SETJMP is not defined above -  define/disable it here
+#if !defined(MICROPY_NLR_SETJMP)
+    #define MICROPY_NLR_SETJMP (0)
 #endif
 
 // *FORMAT-ON*

@@ -23,7 +23,7 @@
 #define DEFAULT_SPI_BUS_MOSI (&pin_GPIO35)
 #define DEFAULT_SPI_BUS_MISO (&pin_GPIO37)
 
-#define DEFAULT_UART_BUS_RX (&pin_GPIO38)
-#define DEFAULT_UART_BUS_TX (&pin_GPIO39)
+#define DEFAULT_UART_BUS_RX (&pin_GPIO34)
+#define DEFAULT_UART_BUS_TX (&pin_GPIO35)
 
 #define DOUBLE_TAP_PIN (&pin_GPIO34)

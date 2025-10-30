@@ -27,17 +27,6 @@ OBJ_EXTRA_ORDER_DEPS += $(HEADER_BUILD)/compressed.data.h
 CFLAGS += -DMICROPY_ROM_TEXT_COMPRESSION=1
 endif
 
-# Set the variant or board name.
-ifneq ($(VARIANT),)
-CFLAGS += -DMICROPY_BOARD_BUILD_NAME=\"$(VARIANT)\"
-else ifneq ($(BOARD),)
-ifeq ($(BOARD_VARIANT),)
-CFLAGS += -DMICROPY_BOARD_BUILD_NAME=\"$(BOARD)\"
-else
-CFLAGS += -DMICROPY_BOARD_BUILD_NAME=\"$(BOARD)-$(BOARD_VARIANT)\"
-endif
-endif
-
 # QSTR generation uses the same CFLAGS, with these modifications.
 QSTR_GEN_FLAGS = -DNO_QSTR
 # Note: := to force evaluation immediately.
@@ -98,8 +87,8 @@ $(Q)$(CXX) $(CXXFLAGS) -c -MD -MF $(@:.o=.d) -o $@ $< || (echo -e $(HELP_BUILD_E
   $(RM) -f $(@:.o=.d)
 endef
 
-# CIRCUITPY-CHANGE: add $(BUILD)
-vpath %.c . $(TOP) $(USER_C_MODULES) $(BUILD)
+# CIRCUITPY-CHANGE: add $(DEVICES_MODULES) and $(BUILD)
+vpath %.c . $(TOP) $(USER_C_MODULES) $(DEVICES_MODULES) $(BUILD)
 $(BUILD)/%.o: %.c
 	$(call compile_c)
 
@@ -189,7 +178,7 @@ $(HEADER_BUILD):
 ifneq ($(MICROPY_MPYCROSS_DEPENDENCY),)
 # to automatically build mpy-cross, if needed
 $(MICROPY_MPYCROSS_DEPENDENCY):
-	$(MAKE) -C "$(abspath $(dir $@)..)" USER_C_MODULES=
+	$(MAKE) -C "$(abspath $(dir $@)..)"
 endif
 
 ifneq ($(FROZEN_DIR),)
@@ -251,17 +240,11 @@ clean-prog:
 .PHONY: clean-prog
 endif
 
-# If available, do blobless partial clones of submodules to save time and space.
-# A blobless partial clone lazily fetches data as needed, but has all the metadata available (tags, etc.).
-# Fallback to standard submodule update if blobless isn't available (earlier than 2.36.0)
-#
-# Note: This target has a CMake equivalent in py/mkrules.cmake
 submodules:
 	$(ECHO) "Updating submodules: $(GIT_SUBMODULES)"
 ifneq ($(GIT_SUBMODULES),)
-	$(Q)cd $(TOP) && git submodule sync $(GIT_SUBMODULES)
-	$(Q)cd $(TOP) && git submodule update --init --filter=blob:none $(GIT_SUBMODULES) || \
-	  git submodule update --init $(GIT_SUBMODULES)
+	$(Q)git submodule sync $(addprefix $(TOP)/,$(GIT_SUBMODULES))
+	$(Q)git submodule update --init $(addprefix $(TOP)/,$(GIT_SUBMODULES))
 endif
 .PHONY: submodules
 

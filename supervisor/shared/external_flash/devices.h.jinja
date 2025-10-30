@@ -17,7 +17,6 @@
         .max_clock_speed_mhz = {{ device.max_clock_speed_mhz }}, \
         .quad_enable_bit_mask = {{ device.quad_enable_bit_mask }}, \
         .has_sector_protection = {{ device.has_sector_protection | lower() }}, \
-        .use_global_block_protection_lock = {{ device.use_global_block_protection_lock | lower() }}, \
         .supports_fast_read = {{ device.supports_fast_read | lower() }}, \
         .supports_qspi = {{ device["6b_quad_read"] | lower() }}, \
         .supports_qspi_writes = {{ device["32_qspi_write"] | lower() }}, \

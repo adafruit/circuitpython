@@ -29,8 +29,8 @@
 //| """A type representing one of the strings ``"auto"``, ``"txrx"``, ``"tx"``, or ``"rx"``. These values are supported on both RP2350 and RP2040. For type-checking only, not actually defined in CircuitPython."""
 //| MovStatusType = Literal["txfifo", "rxfifo", "irq"]
 //| """A type representing one of the strings ``"txfifo"``, ``"rxfifo"``, or ``"irq"``. These values are supported on RP2350. For type-checking only, not actually defined in CircuitPython."""
-//| MovStatusType_piov0 = Literal["txfifo", "rxfifo"]
-//| """A type representing one of the strings ``"txfifo"``, ``"rxfifo"``. These values are supported on RP2350 and RP2040. For type-checking only, not actually defined in CircuitPython."""
+//| MovStatusType_piov0 = Literal["txfifo"]
+//| """A type representing the string ``"txfifo"``. This value is supported on RP2350 and RP2040. For type-checking only, not actually defined in CircuitPython."""
 //|
 //|
 //| class StateMachine:

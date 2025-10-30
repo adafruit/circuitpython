@@ -11,7 +11,7 @@
 
 extern const mp_obj_type_t keypad_eventqueue_type;
 
-void common_hal_keypad_eventqueue_construct(keypad_eventqueue_obj_t *self, size_t max_events, bool use_gc_allocator);
+void common_hal_keypad_eventqueue_construct(keypad_eventqueue_obj_t *self, size_t max_events);
 
 void common_hal_keypad_eventqueue_clear(keypad_eventqueue_obj_t *self);
 size_t common_hal_keypad_eventqueue_get_length(keypad_eventqueue_obj_t *self);

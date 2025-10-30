@@ -268,12 +268,8 @@ void supervisor_flash_init(void) {
         write_enable();
 
         // Turn off sector protection
-        if (flash_device->use_global_block_protection_lock) {
-            spi_flash_command(CMD_GLOBAL_BLOCK_PROTECTION_UNLOCK);
-        } else {
-            uint8_t data[1] = {0x00};
-            spi_flash_write_command(CMD_WRITE_STATUS_BYTE1, data, 1);
-        }
+        uint8_t data[1] = {0x00};
+        spi_flash_write_command(CMD_WRITE_STATUS_BYTE1, data, 1);
     }
 
     // Turn off writes in case this is a microcontroller only reset.

@@ -47,16 +47,12 @@
 #include "peripherals/touch.h"
 #endif
 
-#if CIRCUITPY_BLEIO_NATIVE
+#if CIRCUITPY_BLEIO
 #include "shared-bindings/_bleio/__init__.h"
 #endif
 
 #if CIRCUITPY_ESPCAMERA
 #include "esp_camera.h"
-#endif
-
-#if CIRCUITPY_RCLCPY
-#include "common-hal/rclcpy/__init__.h"
 #endif
 
 #include "soc/efuse_reg.h"
@@ -194,8 +190,8 @@ static void _never_reset_spi_ram_flash(void) {
 
     const uint32_t spiconfig = esp_rom_efuse_get_flash_gpio_info();
     if (spiconfig == ESP_ROM_EFUSE_FLASH_DEFAULT_SPI) {
-        never_reset_pin_number(MSPI_IOMUX_PIN_NUM_CLK);
-        never_reset_pin_number(MSPI_IOMUX_PIN_NUM_CS0);
+        never_reset_pin_number(SPI_IOMUX_PIN_NUM_CLK);
+        never_reset_pin_number(SPI_IOMUX_PIN_NUM_CS);
         never_reset_pin_number(PSRAM_SPIQ_SD0_IO);
         never_reset_pin_number(PSRAM_SPID_SD1_IO);
         never_reset_pin_number(PSRAM_SPIWP_SD3_IO);
@@ -308,18 +304,18 @@ void port_heap_init(void) {
 }
 
 void *port_malloc(size_t size, bool dma_capable) {
+    size_t caps = MALLOC_CAP_8BIT;
     if (dma_capable) {
-        // SPIRAM is not DMA-capable, so don't bother to ask for it.
-        return heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_DMA);
+        caps |= MALLOC_CAP_DMA;
     }
 
     void *ptr = NULL;
-    // Try SPIRAM first if available.
+    // Try SPIRAM first when available.
     #ifdef CONFIG_SPIRAM
-    ptr = heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
+    ptr = heap_caps_malloc(size, caps | MALLOC_CAP_SPIRAM);
     #endif
     if (ptr == NULL) {
-        ptr = heap_caps_malloc(size, MALLOC_CAP_8BIT);
+        ptr = heap_caps_malloc(size, caps);
     }
     return ptr;
 }
@@ -328,12 +324,8 @@ void port_free(void *ptr) {
     heap_caps_free(ptr);
 }
 
-void *port_realloc(void *ptr, size_t size, bool dma_capable) {
-    size_t caps = MALLOC_CAP_8BIT;
-    if (dma_capable) {
-        caps |= MALLOC_CAP_DMA;
-    }
-    return heap_caps_realloc(ptr, size, caps);
+void *port_realloc(void *ptr, size_t size) {
+    return heap_caps_realloc(ptr, size, MALLOC_CAP_8BIT);
 }
 
 size_t port_heap_get_largest_free_size(void) {
@@ -380,10 +372,6 @@ void reset_port(void) {
 
     #if CIRCUITPY_PS2IO
     ps2_reset();
-    #endif
-
-    #if CIRCUITPY_RCLCPY
-    rclcpy_reset();
     #endif
 
     #if CIRCUITPY_RTC
@@ -469,11 +457,11 @@ void port_disable_tick(void) {
     esp_timer_stop(_tick_timer);
 }
 
-void port_wake_main_task(void) {
+void port_wake_main_task() {
     xTaskNotifyGive(circuitpython_task);
 }
 
-void port_wake_main_task_from_isr(void) {
+void port_wake_main_task_from_isr() {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     vTaskNotifyGiveFromISR(circuitpython_task, &xHigherPriorityTaskWoken);
     if (xHigherPriorityTaskWoken == pdTRUE) {
@@ -481,7 +469,7 @@ void port_wake_main_task_from_isr(void) {
     }
 }
 
-void port_yield(void) {
+void port_yield() {
     vTaskDelay(4);
 }
 
@@ -505,17 +493,11 @@ void port_idle_until_interrupt(void) {
     }
 }
 
-#if CIRCUITPY_WIFI
-void port_boot_info(void) {
-    uint8_t mac[6];
-    esp_wifi_get_mac(ESP_IF_WIFI_STA, mac);
-    mp_printf(&mp_plat_print, "MAC");
-    for (int i = 0; i < 6; i++) {
-        mp_printf(&mp_plat_print, ":%02X", mac[i]);
+void port_post_boot_py(bool heap_valid) {
+    if (!heap_valid && filesystem_present()) {
     }
-    mp_printf(&mp_plat_print, "\n");
 }
-#endif
+
 
 // Wrap main in app_main that the IDF expects.
 extern void main(void);

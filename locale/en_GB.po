@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"PO-Revision-Date: 2025-06-15 23:04+0000\n"
+"PO-Revision-Date: 2025-03-06 13:42+0000\n"
 "Last-Translator: Andi Chandler <andi@gowling.com>\n"
 "Language-Team: none\n"
 "Language: en_GB\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.12-dev\n"
+"X-Generator: Weblate 5.10.3-dev\n"
 
 #: main.c
 msgid ""
@@ -95,7 +95,7 @@ msgstr ""
 msgid "%q and %q contain duplicate pins"
 msgstr "%q and %q contain duplicate pins"
 
-#: shared-bindings/audioio/AudioOut.c
+#: ports/atmel-samd/common-hal/audioio/AudioOut.c
 msgid "%q and %q must be different"
 msgstr "%q and %q must be different"
 
@@ -114,10 +114,6 @@ msgstr "%q contains duplicate pins"
 #: ports/atmel-samd/common-hal/sdioio/SDCard.c
 msgid "%q failure: %d"
 msgstr "%q failure: %d"
-
-#: shared-module/audiodelays/MultiTapDelay.c
-msgid "%q in %q must be of type %q or %q, not %q"
-msgstr "%q in %q must be of type %q or %q, not %q"
 
 #: py/argcheck.c shared-module/audiofilters/Filter.c
 msgid "%q in %q must be of type %q, not %q"
@@ -171,7 +167,7 @@ msgstr "%q length must be <= %d"
 msgid "%q length must be >= %d"
 msgstr "%q length must be >= %d"
 
-#: py/modsys.c py/runtime.c
+#: py/modsys.c py/objmodule.c py/runtime.c
 msgid "%q moved from %q to %q"
 msgstr "%q moved from %q to %q"
 
@@ -232,7 +228,7 @@ msgstr "%q must be multiple of 8."
 #: shared-bindings/bitmapfilter/__init__.c shared-bindings/canio/CAN.c
 #: shared-bindings/digitalio/Pull.c shared-bindings/supervisor/__init__.c
 #: shared-module/audiofilters/Filter.c shared-module/displayio/__init__.c
-#: shared-module/synthio/Synthesizer.c
+#: shared-module/synthio/Biquad.c shared-module/synthio/Synthesizer.c
 msgid "%q must be of type %q or %q, not %q"
 msgstr "%q must be of type %q or %q, not %q"
 
@@ -241,7 +237,6 @@ msgid "%q must be of type %q, %q, or %q, not %q"
 msgstr "%q must be of type %q, %q, or %q, not %q"
 
 #: py/argcheck.c py/runtime.c shared-bindings/bitmapfilter/__init__.c
-#: shared-module/audiodelays/MultiTapDelay.c shared-module/synthio/Note.c
 #: shared-module/synthio/__init__.c
 msgid "%q must be of type %q, not %q"
 msgstr "%q must be of type %q, not %q"
@@ -322,16 +317,16 @@ msgid "'%q' object does not support '%q'"
 msgstr "'%q' object does not support '%q'"
 
 #: py/runtime.c
-msgid "'%q' object isn't an iterator"
-msgstr "'%q' object isn't an iterator"
+msgid "'%q' object is not an iterator"
+msgstr "'%q' object is not an iterator"
 
 #: py/objtype.c py/runtime.c shared-module/atexit/__init__.c
 msgid "'%q' object is not callable"
 msgstr "'%q' object is not callable"
 
 #: py/runtime.c
-msgid "'%q' object isn't iterable"
-msgstr "'%q' object isn't iterable"
+msgid "'%q' object is not iterable"
+msgstr "'%q' object is not iterable"
 
 #: py/emitinlinethumb.c py/emitinlinextensa.c
 #, c-format
@@ -809,8 +804,8 @@ msgid "Cannot record to a file"
 msgstr "Cannot record to a file"
 
 #: shared-module/storage/__init__.c
-msgid "Cannot remount path when visible via USB."
-msgstr "Cannot remount path when visible via USB."
+msgid "Cannot remount '/' when visible via USB."
+msgstr "Cannot remount '/' when visible via USB."
 
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Cannot set value when direction is input."
@@ -865,10 +860,6 @@ msgstr "Coordinate arrays have different lengths"
 msgid "Coordinate arrays types have different sizes"
 msgstr "Coordinate arrays types have different sizes"
 
-#: ports/espressif/common-hal/rclcpy/Publisher.c
-msgid "Could not publish to ROS topic"
-msgstr "Could not publish to ROS topic"
-
 #: shared-bindings/_bleio/Adapter.c
 msgid "Could not set address"
 msgstr "Could not set address"
@@ -880,11 +871,6 @@ msgstr "Could not start interrupt, RX busy"
 #: shared-module/audiomp3/MP3Decoder.c
 msgid "Couldn't allocate decoder"
 msgstr "Couldn't allocate decoder"
-
-#: ports/espressif/common-hal/rclcpy/__init__.c
-#, c-format
-msgid "Critical ROS failure during soft reboot, reset required: %d"
-msgstr "Critical ROS failure during soft reboot, reset required: %d"
 
 #: ports/stm/common-hal/analogio/AnalogOut.c
 msgid "DAC Channel Init Error"
@@ -1083,7 +1069,6 @@ msgstr "Failed to write internal flash."
 msgid "File exists"
 msgstr "File exists"
 
-#: shared-bindings/supervisor/__init__.c shared-module/lvfontio/OnDiskFont.c
 #: shared-module/os/getenv.c
 msgid "File not found"
 msgstr "File not found"
@@ -1115,7 +1100,7 @@ msgstr "For L8 colourspace, input bitmap must have 8 bits per pixel"
 msgid "For RGB colorspaces, input bitmap must have 16 bits per pixel"
 msgstr "For RGB colourspaces, input bitmap must have 16 bits per pixel"
 
-#: ports/cxd56/common-hal/camera/Camera.c shared-module/audiocore/WaveFile.c
+#: ports/cxd56/common-hal/camera/Camera.c
 msgid "Format not supported"
 msgstr "Format not supported"
 
@@ -1280,9 +1265,7 @@ msgstr "Interrupted by output function"
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c py/argcheck.c
 #: shared-bindings/digitalio/DigitalInOut.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c shared-bindings/pwmio/PWMOut.c
-#: shared-bindings/supervisor/__init__.c
 #: shared-module/aurora_epaper/aurora_framebuffer.c
-#: shared-module/lvfontio/OnDiskFont.c
 msgid "Invalid %q"
 msgstr "Invalid %q"
 
@@ -1314,10 +1297,6 @@ msgstr "Invalid BSSID"
 #: shared-bindings/wifi/Radio.c
 msgid "Invalid MAC address"
 msgstr "Invalid MAC address"
-
-#: ports/espressif/common-hal/rclcpy/__init__.c
-msgid "Invalid ROS domain ID"
-msgstr "Invalid ROS domain ID"
 
 #: ports/espressif/common-hal/espidf/__init__.c py/moderrno.c
 msgid "Invalid argument"
@@ -1407,11 +1386,6 @@ msgstr "MAC address was invalid"
 #: ports/espressif/common-hal/_bleio/Descriptor.c
 msgid "MITM security not supported"
 msgstr "MITM security is not supported"
-
-#: ports/stm/common-hal/sdioio/SDCard.c
-#, c-format
-msgid "MMC/SDIO Clock Error %x"
-msgstr "MMC/SDIO Clock Error %x"
 
 #: shared-bindings/is31fl3741/IS31FL3741.c
 msgid "Mapping must be a tuple"
@@ -1598,10 +1572,6 @@ msgstr "No pull up found on SDA or SCL; check your wiring"
 #: shared-module/touchio/TouchIn.c
 msgid "No pulldown on pin; 1Mohm recommended"
 msgstr "No pulldown on pin; 1Mohm recommended"
-
-#: shared-module/touchio/TouchIn.c
-msgid "No pullup on pin; 1Mohm recommended"
-msgstr "No pullup on pin; 1Mohm recommended"
 
 #: py/moderrno.c
 msgid "No space left on device"
@@ -1878,10 +1848,6 @@ msgstr "Program size invalid"
 msgid "Program too long"
 msgstr "Program too long"
 
-#: shared-bindings/rclcpy/Publisher.c
-msgid "Publishers can only be created from a parent node"
-msgstr "Publishers can only be created from a parent node"
-
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Pull not used when direction is output."
 msgstr "Pull not used when direction is output."
@@ -1901,26 +1867,6 @@ msgstr "RNG deinit Error"
 #: ports/stm/common-hal/os/__init__.c
 msgid "RNG Init Error"
 msgstr "RNG init Error"
-
-#: ports/espressif/common-hal/rclcpy/__init__.c
-msgid "ROS failed to initialize. Is agent connected?"
-msgstr "ROS failed to initialise. Is agent connected?"
-
-#: ports/espressif/common-hal/rclcpy/__init__.c
-msgid "ROS internal setup failure"
-msgstr "ROS internal setup failure"
-
-#: ports/espressif/common-hal/rclcpy/__init__.c
-msgid "ROS memory allocator failure"
-msgstr "ROS memory allocator failure"
-
-#: ports/espressif/common-hal/rclcpy/Node.c
-msgid "ROS node failed to initialize"
-msgstr "ROS node failed to initialise"
-
-#: ports/espressif/common-hal/rclcpy/Publisher.c
-msgid "ROS topic failed to initialize"
-msgstr "ROS topic failed to initialise"
 
 #: ports/atmel-samd/common-hal/busio/UART.c ports/cxd56/common-hal/busio/UART.c
 #: ports/nordic/common-hal/busio/UART.c ports/stm/common-hal/busio/UART.c
@@ -2053,7 +1999,6 @@ msgstr "Slice and value different lengths."
 #: shared-bindings/displayio/TileGrid.c
 #: shared-bindings/memorymonitor/AllocationSize.c
 #: shared-bindings/pulseio/PulseIn.c
-#: shared-bindings/tilepalettemapper/TilePaletteMapper.c
 msgid "Slices not supported"
 msgstr "Slices not supported"
 
@@ -2123,19 +2068,13 @@ msgstr ""
 msgid "Tile height must exactly divide bitmap height"
 msgstr "Tile height must exactly divide bitmap height"
 
-#: shared-bindings/displayio/TileGrid.c
-#: shared-bindings/tilepalettemapper/TilePaletteMapper.c
-#: shared-module/displayio/TileGrid.c
+#: shared-bindings/displayio/TileGrid.c shared-module/displayio/TileGrid.c
 msgid "Tile index out of bounds"
 msgstr "Tile index out of bounds"
 
 #: shared-bindings/displayio/TileGrid.c
 msgid "Tile width must exactly divide bitmap width"
 msgstr "Tile width must exactly divide bitmap width"
-
-#: shared-module/tilepalettemapper/TilePaletteMapper.c
-msgid "TilePaletteMapper may only be bound to a TileGrid once"
-msgstr "TilePaletteMapper may only be bound to a TileGrid once"
 
 #: shared-bindings/alarm/time/TimeAlarm.c
 msgid "Time is in the past."
@@ -2365,6 +2304,10 @@ msgstr "Unsupported colourspace"
 msgid "Unsupported display bus type"
 msgstr "Unsupported display bus type"
 
+#: shared-module/audiocore/WaveFile.c
+msgid "Unsupported format"
+msgstr "Unsupported format"
+
 #: shared-bindings/hashlib/__init__.c
 msgid "Unsupported hash algorithm"
 msgstr "Unsupported hash algorithm"
@@ -2426,11 +2369,9 @@ msgstr ""
 msgid "Wi-Fi: "
 msgstr "Wi-Fi: "
 
-#: ports/espressif/common-hal/wifi/Radio.c
 #: ports/raspberrypi/common-hal/wifi/Radio.c
-#: ports/zephyr-cp/common-hal/wifi/Radio.c
-msgid "WiFi is not enabled"
-msgstr "WiFi is not enabled"
+msgid "Wifi is not enabled"
+msgstr "Wifi is not enabled"
 
 #: main.c
 msgid "Woken up by alarm.\n"
@@ -2665,16 +2606,9 @@ msgstr "bitmap sizes must match"
 msgid "bits must be 32 or less"
 msgstr "bits must be 32 or less"
 
-#: shared-bindings/audiofreeverb/Freeverb.c
-msgid "bits_per_sample must be 16"
-msgstr "bits_per_sample must be 16"
-
-#: shared-bindings/audiodelays/Chorus.c shared-bindings/audiodelays/Echo.c
-#: shared-bindings/audiodelays/MultiTapDelay.c
-#: shared-bindings/audiodelays/PitchShift.c
+#: shared-bindings/audiodelays/Echo.c shared-bindings/audiodelays/PitchShift.c
 #: shared-bindings/audiofilters/Distortion.c
-#: shared-bindings/audiofilters/Filter.c shared-bindings/audiofilters/Phaser.c
-#: shared-bindings/audiomixer/Mixer.c
+#: shared-bindings/audiofilters/Filter.c shared-bindings/audiomixer/Mixer.c
 msgid "bits_per_sample must be 8 or 16"
 msgstr "bits_per_sample must be 8 or 16"
 
@@ -3217,8 +3151,8 @@ msgid "format"
 msgstr "format"
 
 #: py/objstr.c
-msgid "format needs a dict"
-msgstr "format needs a dict"
+msgid "format requires a dict"
+msgstr "format requires a dict"
 
 #: py/objdeque.c
 msgid "full"
@@ -3676,8 +3610,8 @@ msgid "must use keyword argument for key function"
 msgstr "must use keyword argument for key function"
 
 #: py/runtime.c
-msgid "name '%q' isn't defined"
-msgstr "name '%q' isn't defined"
+msgid "name '%q' is not defined"
+msgstr "name '%q' is not defined"
 
 #: py/runtime.c
 msgid "name not defined"
@@ -4094,10 +4028,6 @@ msgstr "roll argument must be an ndarray"
 msgid "rsplit(None,n)"
 msgstr "rsplit(None,n)"
 
-#: shared-bindings/audiofreeverb/Freeverb.c
-msgid "samples_signed must be true"
-msgstr "samples_signed must be true"
-
 #: ports/atmel-samd/common-hal/audiobusio/PDMIn.c
 #: ports/raspberrypi/common-hal/audiobusio/PDMIn.c
 msgid "sampling rate out of range"
@@ -4317,12 +4247,12 @@ msgid "tx and rx cannot both be None"
 msgstr "tx and rx cannot both be None"
 
 #: py/objtype.c
-msgid "type '%q' isn't an acceptable base type"
-msgstr "type '%q' isn't an acceptable base type"
+msgid "type '%q' is not an acceptable base type"
+msgstr "type '%q' is not an acceptable base type"
 
 #: py/objtype.c
-msgid "type isn't an acceptable base type"
-msgstr "type isn't an acceptable base type"
+msgid "type is not an acceptable base type"
+msgstr "type is not an acceptable base type"
 
 #: py/runtime.c
 msgid "type object '%q' has no attribute '%q'"
@@ -4383,9 +4313,7 @@ msgstr "unmatched '%c' in format"
 msgid "unreadable attribute"
 msgstr "unreadable attribute"
 
-#: shared-bindings/displayio/TileGrid.c shared-bindings/terminalio/Terminal.c
-#: shared-bindings/tilepalettemapper/TilePaletteMapper.c
-#: shared-bindings/vectorio/VectorShape.c
+#: shared-bindings/displayio/TileGrid.c shared-bindings/vectorio/VectorShape.c
 msgid "unsupported %q type"
 msgstr "unsupported %q type"
 
@@ -4465,6 +4393,12 @@ msgstr "weights must be an object of type %q, %q, %q, or %q, not %q "
 msgid "width must be greater than zero"
 msgstr "width must be greater than zero"
 
+#: ports/espressif/common-hal/wifi/Radio.c
+#: ports/raspberrypi/common-hal/wifi/Radio.c
+#: ports/zephyr-cp/common-hal/wifi/Radio.c
+msgid "wifi is not enabled"
+msgstr "WiFi is not enabled"
+
 #: ports/raspberrypi/common-hal/wifi/Monitor.c
 msgid "wifi.Monitor not available"
 msgstr "wifi.Monitor not available"
@@ -4526,18 +4460,6 @@ msgstr "zi must be of float type"
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr "zi must be of shape (n_section, 2)"
-
-#~ msgid "Unsupported format"
-#~ msgstr "Unsupported format"
-
-#~ msgid "Wifi is not enabled"
-#~ msgstr "Wifi is not enabled"
-
-#~ msgid "wifi is not enabled"
-#~ msgstr "WiFi is not enabled"
-
-#~ msgid "Cannot remount '/' when visible via USB."
-#~ msgstr "Cannot remount '/' when visible via USB."
 
 #~ msgid "%q must be a %q object, %q, or %q"
 #~ msgstr "%q must be a %q object, %q, or %q"
@@ -4845,8 +4767,8 @@ msgstr "zi must be of shape (n_section, 2)"
 #~ msgid "'continue' outside loop"
 #~ msgstr "'continue' outside loop"
 
-#~ msgid "'coroutine' object isn't an iterator"
-#~ msgstr "'coroutine' object isn't an iterator"
+#~ msgid "'coroutine' object is not an iterator"
+#~ msgstr "'coroutine' object is not an iterator"
 
 #~ msgid "(x,y) integers required"
 #~ msgstr "(x,y) integers required"
@@ -5716,8 +5638,8 @@ msgstr "zi must be of shape (n_section, 2)"
 #~ msgid "first argument must be an iterable"
 #~ msgstr "first argument must be an iterable"
 
-#~ msgid "function doesn't take keyword arguments"
-#~ msgstr "function doesn't take keyword arguments"
+#~ msgid "function does not take keyword arguments"
+#~ msgstr "function does not take keyword arguments"
 
 #~ msgid "incompatible native .mpy architecture"
 #~ msgstr "incompatible native .mpy architecture"
@@ -5782,8 +5704,8 @@ msgstr "zi must be of shape (n_section, 2)"
 #~ msgid "maximum number of dimensions is 4"
 #~ msgstr "maximum number of dimensions is 4"
 
-#~ msgid "argument name reused"
-#~ msgstr "argument name reused"
+#~ msgid "name reused for argument"
+#~ msgstr "name reused for argument"
 
 #~ msgid "no available NIC"
 #~ msgstr "no available NIC"

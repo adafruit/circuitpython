@@ -19,15 +19,7 @@
 #include <stdint.h>
 #include <math.h>
 
-// CIRCUITPY-CHANGE: prevent undefined warnings
-#ifndef FLT_EVAL_METHOD
 #define FLT_EVAL_METHOD 0
-#endif
-
-// These lines verify that FLT_EVAL_METHOD==0, MicroPython's libm requires this.
-// If compilation fails here then check the host compiler's FLT_EVAL_METHOD.
-typedef float float_t;
-typedef double double_t;
 
 #define FORCE_EVAL(x) do {                        \
 	if (sizeof(x) == sizeof(float)) {         \

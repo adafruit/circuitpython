@@ -5,7 +5,7 @@
 // SPDX-License-Identifier: MIT
 
 #define MICROPY_HW_BOARD_NAME "Pimoroni Plasma 2350W"
-#define MICROPY_HW_MCU_NAME "rp2350a"
+#define MICROPY_HW_MCU_NAME "rp2350A"
 
 #define CIRCUITPY_RGB_STATUS_INVERTED_PWM
 #define CIRCUITPY_RGB_STATUS_R (&pin_GPIO16)

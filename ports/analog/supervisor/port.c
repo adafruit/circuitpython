@@ -39,14 +39,10 @@
 
 // Sys includes
 #include "max32_port.h"
-#include "nvic_table.h"
 
 // Timers
 #include "mxc_delay.h"
 #include "rtc.h"
-
-// true random number generator, TRNG
-#include "trng.h"
 
 // msec to RTC subsec ticks (4 kHz)
 /* Converts a time in milleseconds to equivalent RSSA register value */
@@ -73,20 +69,11 @@ volatile uint32_t system_ticks = 0;
 
 void SysTick_Handler(void) {
     system_ticks++;
-
-    MXC_DelayHandler();
 }
 
 
 safe_mode_t port_init(void) {
     int err = E_NO_ERROR;
-
-    // Set Vector Table to RAM & configure ARM core to use RAM-based ISRs
-    // This allows definition of ISRs with custom names
-    //
-    // Useful for mapping ISRs with names not related to a specific IRQn.
-    // Source: https://arm-software.github.io/CMSIS_5/Core/html/using_VTOR_pg.html
-    NVIC_SetRAM();
 
     // 1ms tick timer
     SysTick_Config(SystemCoreClock / 1000);
@@ -125,16 +112,7 @@ safe_mode_t port_init(void) {
     }
     ;
 
-    // enable TRNG (true random number generator)
-    #ifdef CIRCUITPY_RANDOM
-    MXC_TRNG_Init();
-    #endif
-
     return SAFE_MODE_NONE;
-}
-
-void TRNG_IRQHandler(void) {
-    MXC_TRNG_Handler();
 }
 
 void RTC_IRQHandler(void) {

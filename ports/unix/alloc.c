@@ -31,8 +31,9 @@
 #include <sys/mman.h>
 
 #include "py/mpstate.h"
+#include "py/gc.h"
 
-#if MICROPY_EMIT_NATIVE
+#if MICROPY_EMIT_NATIVE || (MICROPY_PY_FFI && MICROPY_FORCE_PLAT_ALLOC_EXEC)
 
 #if defined(__OpenBSD__) || defined(__MACH__)
 #define MAP_ANONYMOUS MAP_ANON
@@ -78,6 +79,31 @@ void mp_unix_free_exec(void *ptr, size_t size) {
     }
 }
 
+void mp_unix_mark_exec(void) {
+    for (mmap_region_t *rg = MP_STATE_VM(mmap_region_head); rg != NULL; rg = rg->next) {
+        gc_collect_root(rg->ptr, rg->len / sizeof(mp_uint_t));
+    }
+}
+
+#if MICROPY_FORCE_PLAT_ALLOC_EXEC
+// Provide implementation of libffi ffi_closure_* functions in terms
+// of the functions above. On a normal Linux system, this save a lot
+// of code size.
+void *ffi_closure_alloc(size_t size, void **code);
+void ffi_closure_free(void *ptr);
+
+void *ffi_closure_alloc(size_t size, void **code) {
+    size_t dummy;
+    mp_unix_alloc_exec(size, code, &dummy);
+    return *code;
+}
+
+void ffi_closure_free(void *ptr) {
+    (void)ptr;
+    // TODO
+}
+#endif
+
 MP_REGISTER_ROOT_POINTER(void *mmap_region_head);
 
-#endif // MICROPY_EMIT_NATIVE
+#endif // MICROPY_EMIT_NATIVE || (MICROPY_PY_FFI && MICROPY_FORCE_PLAT_ALLOC_EXEC)

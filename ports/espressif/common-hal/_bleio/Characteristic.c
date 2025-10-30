@@ -78,7 +78,7 @@ void common_hal_bleio_characteristic_construct(bleio_characteristic_obj_t *self,
     // If max_length is 0, then no storage is allocated.
     if (max_length > 0) {
         if (gc_alloc_possible()) {
-            self->current_value = m_malloc_without_collect(max_length);
+            self->current_value = m_malloc(max_length);
         } else {
             self->current_value = port_malloc(max_length, false);
             if (self->current_value == NULL) {
@@ -120,7 +120,7 @@ void common_hal_bleio_characteristic_deinit(bleio_characteristic_obj_t *self) {
         return;
     }
     if (self->current_value != NULL) {
-        if (gc_ptr_on_heap(self->current_value)) {
+        if (gc_nbytes(self->current_value) > 0) {
             m_free(self->current_value);
         } else {
             port_free(self->current_value);

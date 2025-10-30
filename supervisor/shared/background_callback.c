@@ -58,7 +58,7 @@ inline bool background_callback_pending(void) {
 
 static int background_prevention_count;
 
-void PLACE_IN_ITCM(background_callback_run_all)(void) {
+void PLACE_IN_ITCM(background_callback_run_all)() {
     port_background_task();
     if (!background_callback_pending()) {
         return;
@@ -89,13 +89,13 @@ void PLACE_IN_ITCM(background_callback_run_all)(void) {
     CALLBACK_CRITICAL_END;
 }
 
-void background_callback_prevent(void) {
+void background_callback_prevent() {
     CALLBACK_CRITICAL_BEGIN;
     ++background_prevention_count;
     CALLBACK_CRITICAL_END;
 }
 
-void background_callback_allow(void) {
+void background_callback_allow() {
     CALLBACK_CRITICAL_BEGIN;
     --background_prevention_count;
     CALLBACK_CRITICAL_END;
@@ -103,7 +103,7 @@ void background_callback_allow(void) {
 
 
 // Filter out queued callbacks if they are allocated on the heap.
-void background_callback_reset(void) {
+void background_callback_reset() {
     background_callback_t *new_head = NULL;
     background_callback_t **previous_next = &new_head;
     background_callback_t *new_tail = NULL;

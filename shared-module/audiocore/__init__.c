@@ -196,12 +196,12 @@ void audiosample_convert_s16s_u8s(uint8_t *buffer_out, const int16_t *buffer_in,
     }
 }
 
-void audiosample_must_match(audiosample_base_t *self, mp_obj_t other_in, bool allow_mono_to_stereo) {
+void audiosample_must_match(audiosample_base_t *self, mp_obj_t other_in) {
     const audiosample_base_t *other = audiosample_check(other_in);
     if (other->sample_rate != self->sample_rate) {
         mp_raise_ValueError_varg(MP_ERROR_TEXT("The sample's %q does not match"), MP_QSTR_sample_rate);
     }
-    if ((!allow_mono_to_stereo || (allow_mono_to_stereo && self->channel_count != 2)) && other->channel_count != self->channel_count) {
+    if (other->channel_count != self->channel_count) {
         mp_raise_ValueError_varg(MP_ERROR_TEXT("The sample's %q does not match"), MP_QSTR_channel_count);
     }
     if (other->bits_per_sample != self->bits_per_sample) {

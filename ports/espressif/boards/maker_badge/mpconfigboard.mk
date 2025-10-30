@@ -3,11 +3,13 @@ USB_PID = 0x2030
 USB_PRODUCT = "Maker badge"
 USB_MANUFACTURER = "Czech maker"
 
-IDF_TARGET = esp32s2
+CIRCUITPY_ESPCAMERA = 0
 
 CIRCUITPY_ESP_FLASH_MODE=dio
 CIRCUITPY_ESP_FLASH_FREQ=40m
 CIRCUITPY_ESP_FLASH_SIZE=4MB
+
+IDF_TARGET = esp32s2
 
 FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_ConnectionManager
 FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_Requests

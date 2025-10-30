@@ -366,7 +366,7 @@ c_file.write(
     """\
 terminalio_terminal_obj_t supervisor_terminal = {
     .base = { .type = &terminalio_terminal_type },
-    .font = MP_OBJ_FROM_PTR(&supervisor_terminal_font),
+    .font = &supervisor_terminal_font,
     .cursor_x = 0,
     .cursor_y = 0,
     .scroll_area = NULL,

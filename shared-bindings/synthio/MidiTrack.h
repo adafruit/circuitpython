@@ -15,6 +15,3 @@ void common_hal_synthio_miditrack_construct(synthio_miditrack_obj_t *self, const
 
 void common_hal_synthio_miditrack_deinit(synthio_miditrack_obj_t *self);
 mp_int_t common_hal_synthio_miditrack_get_error_location(synthio_miditrack_obj_t *self);
-
-mp_int_t common_hal_synthio_miditrack_get_tempo(synthio_miditrack_obj_t *self);
-void common_hal_synthio_miditrack_set_tempo(synthio_miditrack_obj_t *self, mp_int_t value);

@@ -69,7 +69,7 @@ void common_hal_audioio_wavefile_construct(audioio_wavefile_obj_t *self,
          (format.audio_format != 0xfffe ||
           format.extended_audio_format != 1 ||
           format.valid_bits_per_sample != format.bits_per_sample))) {
-        mp_raise_ValueError(MP_ERROR_TEXT("Format not supported"));
+        mp_raise_ValueError(MP_ERROR_TEXT("Unsupported format"));
     }
     // Get the sample_rate
     self->base.sample_rate = format.sample_rate;
@@ -119,13 +119,13 @@ void common_hal_audioio_wavefile_construct(audioio_wavefile_obj_t *self,
         self->second_buffer = buffer + self->len;
     } else {
         self->len = 256;
-        self->buffer = m_malloc_without_collect(self->len);
+        self->buffer = m_malloc(self->len);
         if (self->buffer == NULL) {
             common_hal_audioio_wavefile_deinit(self);
             m_malloc_fail(self->len);
         }
 
-        self->second_buffer = m_malloc_without_collect(self->len);
+        self->second_buffer = m_malloc(self->len);
         if (self->second_buffer == NULL) {
             common_hal_audioio_wavefile_deinit(self);
             m_malloc_fail(self->len);

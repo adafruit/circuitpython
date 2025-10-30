@@ -69,7 +69,7 @@ msgstr ""
 
 #: py/objstr.c
 #, c-format
-msgid "%%c needs int or char"
+msgid "%%c requires int or char"
 msgstr ""
 
 #: shared-bindings/rgbmatrix/RGBMatrix.c
@@ -102,10 +102,6 @@ msgstr ""
 msgid "%q failure: %d"
 msgstr ""
 
-#: shared-module/audiodelays/MultiTapDelay.c
-msgid "%q in %q must be of type %q or %q, not %q"
-msgstr ""
-
 #: py/argcheck.c shared-module/audiofilters/Filter.c
 msgid "%q in %q must be of type %q, not %q"
 msgstr ""
@@ -130,7 +126,6 @@ msgstr ""
 msgid "%q indices must be integers, not %s"
 msgstr ""
 
-#: ports/analog/common-hal/busio/SPI.c ports/analog/common-hal/busio/UART.c
 #: shared-module/bitbangio/SPI.c
 msgid "%q init failed"
 msgstr ""
@@ -159,7 +154,7 @@ msgstr ""
 msgid "%q length must be >= %d"
 msgstr ""
 
-#: py/runtime.c
+#: py/modsys.c py/objmodule.c py/runtime.c
 msgid "%q moved from %q to %q"
 msgstr ""
 
@@ -220,7 +215,7 @@ msgstr ""
 #: shared-bindings/bitmapfilter/__init__.c shared-bindings/canio/CAN.c
 #: shared-bindings/digitalio/Pull.c shared-bindings/supervisor/__init__.c
 #: shared-module/audiofilters/Filter.c shared-module/displayio/__init__.c
-#: shared-module/synthio/Synthesizer.c
+#: shared-module/synthio/Biquad.c shared-module/synthio/Synthesizer.c
 msgid "%q must be of type %q or %q, not %q"
 msgstr ""
 
@@ -229,7 +224,6 @@ msgid "%q must be of type %q, %q, or %q, not %q"
 msgstr ""
 
 #: py/argcheck.c py/runtime.c shared-bindings/bitmapfilter/__init__.c
-#: shared-module/audiodelays/MultiTapDelay.c shared-module/synthio/Note.c
 #: shared-module/synthio/__init__.c
 msgid "%q must be of type %q, not %q"
 msgstr ""
@@ -242,7 +236,6 @@ msgstr ""
 msgid "%q out of bounds"
 msgstr ""
 
-#: ports/analog/common-hal/busio/SPI.c
 #: ports/atmel-samd/common-hal/pulseio/PulseIn.c
 #: ports/cxd56/common-hal/pulseio/PulseIn.c
 #: ports/nordic/common-hal/pulseio/PulseIn.c
@@ -252,7 +245,7 @@ msgstr ""
 msgid "%q out of range"
 msgstr ""
 
-#: py/objmodule.c
+#: py/objmodule.c py/runtime.c
 msgid "%q renamed %q"
 msgstr ""
 
@@ -311,15 +304,15 @@ msgid "'%q' object does not support '%q'"
 msgstr ""
 
 #: py/runtime.c
-msgid "'%q' object isn't an iterator"
+msgid "'%q' object is not an iterator"
 msgstr ""
 
 #: py/objtype.c py/runtime.c shared-module/atexit/__init__.c
-msgid "'%q' object isn't callable"
+msgid "'%q' object is not callable"
 msgstr ""
 
 #: py/runtime.c
-msgid "'%q' object isn't iterable"
+msgid "'%q' object is not iterable"
 msgstr ""
 
 #: py/emitinlinethumb.c py/emitinlinextensa.c
@@ -461,6 +454,10 @@ msgstr ""
 msgid "0.0 to a complex power"
 msgstr ""
 
+#: ports/stm/common-hal/analogio/AnalogIn.c
+msgid "2"
+msgstr ""
+
 #: py/modbuiltins.c
 msgid "3-arg pow() not supported"
 msgstr ""
@@ -504,8 +501,7 @@ msgstr ""
 msgid "All SPI peripherals are in use"
 msgstr ""
 
-#: ports/analog/common-hal/busio/UART.c ports/espressif/common-hal/busio/UART.c
-#: ports/nordic/common-hal/busio/UART.c
+#: ports/espressif/common-hal/busio/UART.c ports/nordic/common-hal/busio/UART.c
 msgid "All UART peripherals are in use"
 msgstr ""
 
@@ -656,7 +652,6 @@ msgstr ""
 msgid "Boot device must be first (interface #0)."
 msgstr ""
 
-#: ports/analog/common-hal/busio/UART.c
 #: ports/mimxrt10xx/common-hal/busio/UART.c
 msgid "Both RX and TX required for flow control"
 msgstr ""
@@ -798,7 +793,7 @@ msgid "Cannot record to a file"
 msgstr ""
 
 #: shared-module/storage/__init__.c
-msgid "Cannot remount path when visible via USB."
+msgid "Cannot remount '/' when visible via USB."
 msgstr ""
 
 #: shared-bindings/digitalio/DigitalInOut.c
@@ -852,14 +847,6 @@ msgstr ""
 msgid "Coordinate arrays types have different sizes"
 msgstr ""
 
-#: shared-module/usb/core/Device.c
-msgid "Could not allocate DMA capable buffer"
-msgstr ""
-
-#: ports/espressif/common-hal/rclcpy/Publisher.c
-msgid "Could not publish to ROS topic"
-msgstr ""
-
 #: shared-bindings/_bleio/Adapter.c
 msgid "Could not set address"
 msgstr ""
@@ -870,11 +857,6 @@ msgstr ""
 
 #: shared-module/audiomp3/MP3Decoder.c
 msgid "Couldn't allocate decoder"
-msgstr ""
-
-#: ports/espressif/common-hal/rclcpy/__init__.c
-#, c-format
-msgid "Critical ROS failure during soft reboot, reset required: %d"
 msgstr ""
 
 #: ports/stm/common-hal/analogio/AnalogOut.c
@@ -999,7 +981,7 @@ msgid ""
 "Failed to add service TXT record; non-string or bytes found in txt_records"
 msgstr ""
 
-#: ports/analog/common-hal/busio/UART.c shared-module/rgbmatrix/RGBMatrix.c
+#: shared-module/rgbmatrix/RGBMatrix.c
 msgid "Failed to allocate %q buffer"
 msgstr ""
 
@@ -1057,10 +1039,6 @@ msgstr ""
 msgid "Failed to release mutex, err 0x%04x"
 msgstr ""
 
-#: ports/analog/common-hal/busio/SPI.c
-msgid "Failed to set SPI Clock Mode"
-msgstr ""
-
 #: ports/zephyr-cp/common-hal/wifi/Radio.c
 msgid "Failed to set hostname"
 msgstr ""
@@ -1077,7 +1055,6 @@ msgstr ""
 msgid "File exists"
 msgstr ""
 
-#: shared-bindings/supervisor/__init__.c shared-module/lvfontio/OnDiskFont.c
 #: shared-module/os/getenv.c
 msgid "File not found"
 msgstr ""
@@ -1109,7 +1086,7 @@ msgstr ""
 msgid "For RGB colorspaces, input bitmap must have 16 bits per pixel"
 msgstr ""
 
-#: ports/cxd56/common-hal/camera/Camera.c shared-module/audiocore/WaveFile.c
+#: ports/cxd56/common-hal/camera/Camera.c
 msgid "Format not supported"
 msgstr ""
 
@@ -1263,10 +1240,6 @@ msgstr ""
 msgid "Interrupted by output function"
 msgstr ""
 
-#: ports/analog/common-hal/busio/UART.c
-#: ports/analog/peripherals/max32690/max32_i2c.c
-#: ports/analog/peripherals/max32690/max32_spi.c
-#: ports/analog/peripherals/max32690/max32_uart.c
 #: ports/espressif/common-hal/_bleio/Service.c
 #: ports/espressif/common-hal/espulp/ULP.c
 #: ports/espressif/common-hal/microcontroller/Processor.c
@@ -1277,9 +1250,7 @@ msgstr ""
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c py/argcheck.c
 #: shared-bindings/digitalio/DigitalInOut.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c shared-bindings/pwmio/PWMOut.c
-#: shared-bindings/supervisor/__init__.c
 #: shared-module/aurora_epaper/aurora_framebuffer.c
-#: shared-module/lvfontio/OnDiskFont.c
 msgid "Invalid %q"
 msgstr ""
 
@@ -1310,10 +1281,6 @@ msgstr ""
 
 #: shared-bindings/wifi/Radio.c
 msgid "Invalid MAC address"
-msgstr ""
-
-#: ports/espressif/common-hal/rclcpy/__init__.c
-msgid "Invalid ROS domain ID"
 msgstr ""
 
 #: ports/espressif/common-hal/espidf/__init__.c py/moderrno.c
@@ -1359,7 +1326,6 @@ msgstr ""
 msgid "Invalid socket for TLS"
 msgstr ""
 
-#: ports/analog/common-hal/busio/SPI.c
 #: ports/espressif/common-hal/espidf/__init__.c
 #: ports/nordic/common-hal/_bleio/__init__.c
 msgid "Invalid state"
@@ -1406,17 +1372,8 @@ msgstr ""
 msgid "MITM security not supported"
 msgstr ""
 
-#: ports/stm/common-hal/sdioio/SDCard.c
-#, c-format
-msgid "MMC/SDIO Clock Error %x"
-msgstr ""
-
 #: shared-bindings/is31fl3741/IS31FL3741.c
 msgid "Mapping must be a tuple"
-msgstr ""
-
-#: py/persistentcode.c
-msgid "MicroPython .mpy file; use CircuitPython mpy-cross"
 msgstr ""
 
 #: ports/raspberrypi/bindings/rp2pio/StateMachine.c
@@ -1599,10 +1556,6 @@ msgstr ""
 
 #: shared-module/touchio/TouchIn.c
 msgid "No pulldown on pin; 1Mohm recommended"
-msgstr ""
-
-#: shared-module/touchio/TouchIn.c
-msgid "No pullup on pin; 1Mohm recommended"
 msgstr ""
 
 #: py/moderrno.c
@@ -1875,10 +1828,6 @@ msgstr ""
 msgid "Program too long"
 msgstr ""
 
-#: shared-bindings/rclcpy/Publisher.c
-msgid "Publishers can only be created from a parent node"
-msgstr ""
-
 #: shared-bindings/digitalio/DigitalInOut.c
 msgid "Pull not used when direction is output."
 msgstr ""
@@ -1899,27 +1848,6 @@ msgstr ""
 msgid "RNG Init Error"
 msgstr ""
 
-#: ports/espressif/common-hal/rclcpy/__init__.c
-msgid "ROS failed to initialize. Is agent connected?"
-msgstr ""
-
-#: ports/espressif/common-hal/rclcpy/__init__.c
-msgid "ROS internal setup failure"
-msgstr ""
-
-#: ports/espressif/common-hal/rclcpy/__init__.c
-msgid "ROS memory allocator failure"
-msgstr ""
-
-#: ports/espressif/common-hal/rclcpy/Node.c
-msgid "ROS node failed to initialize"
-msgstr ""
-
-#: ports/espressif/common-hal/rclcpy/Publisher.c
-msgid "ROS topic failed to initialize"
-msgstr ""
-
-#: ports/analog/common-hal/busio/UART.c
 #: ports/atmel-samd/common-hal/busio/UART.c ports/cxd56/common-hal/busio/UART.c
 #: ports/nordic/common-hal/busio/UART.c ports/stm/common-hal/busio/UART.c
 msgid "RS485"
@@ -2010,10 +1938,6 @@ msgstr ""
 
 #: ports/stm/common-hal/busio/SPI.c
 msgid "SPI init error"
-msgstr ""
-
-#: ports/analog/common-hal/busio/SPI.c
-msgid "SPI needs MOSI, MISO, and SCK"
 msgstr ""
 
 #: ports/raspberrypi/common-hal/busio/SPI.c
@@ -2133,10 +2057,6 @@ msgstr ""
 msgid "Tile width must exactly divide bitmap width"
 msgstr ""
 
-#: shared-module/tilepalettemapper/TilePaletteMapper.c
-msgid "TilePaletteMapper may only be bound to a TileGrid once"
-msgstr ""
-
 #: shared-bindings/alarm/time/TimeAlarm.c
 msgid "Time is in the past."
 msgstr ""
@@ -2145,10 +2065,6 @@ msgstr ""
 #: ports/nordic/common-hal/_bleio/Adapter.c
 #, c-format
 msgid "Timeout is too long: Maximum timeout length is %d seconds"
-msgstr ""
-
-#: ports/analog/common-hal/busio/UART.c
-msgid "Timeout must be < 100 seconds"
 msgstr ""
 
 #: ports/atmel-samd/common-hal/audiobusio/I2SOut.c
@@ -2194,24 +2110,12 @@ msgstr ""
 msgid "UART init"
 msgstr ""
 
-#: ports/analog/common-hal/busio/UART.c
-msgid "UART needs TX & RX"
-msgstr ""
-
 #: ports/raspberrypi/common-hal/busio/UART.c
 msgid "UART peripheral in use"
 msgstr ""
 
 #: ports/stm/common-hal/busio/UART.c
 msgid "UART re-init"
-msgstr ""
-
-#: ports/analog/common-hal/busio/UART.c
-msgid "UART read error"
-msgstr ""
-
-#: ports/analog/common-hal/busio/UART.c
-msgid "UART transaction timeout"
 msgstr ""
 
 #: ports/stm/common-hal/busio/UART.c
@@ -2379,6 +2283,10 @@ msgstr ""
 msgid "Unsupported display bus type"
 msgstr ""
 
+#: shared-module/audiocore/WaveFile.c
+msgid "Unsupported format"
+msgstr ""
+
 #: shared-bindings/hashlib/__init__.c
 msgid "Unsupported hash algorithm"
 msgstr ""
@@ -2435,10 +2343,8 @@ msgstr ""
 msgid "Wi-Fi: "
 msgstr ""
 
-#: ports/espressif/common-hal/wifi/Radio.c
 #: ports/raspberrypi/common-hal/wifi/Radio.c
-#: ports/zephyr-cp/common-hal/wifi/Radio.c
-msgid "WiFi is not enabled"
+msgid "Wifi is not enabled"
 msgstr ""
 
 #: main.c
@@ -2674,16 +2580,9 @@ msgstr ""
 msgid "bits must be 32 or less"
 msgstr ""
 
-#: shared-bindings/audiofreeverb/Freeverb.c
-msgid "bits_per_sample must be 16"
-msgstr ""
-
-#: shared-bindings/audiodelays/Chorus.c shared-bindings/audiodelays/Echo.c
-#: shared-bindings/audiodelays/MultiTapDelay.c
-#: shared-bindings/audiodelays/PitchShift.c
+#: shared-bindings/audiodelays/Echo.c shared-bindings/audiodelays/PitchShift.c
 #: shared-bindings/audiofilters/Distortion.c
-#: shared-bindings/audiofilters/Filter.c shared-bindings/audiofilters/Phaser.c
-#: shared-bindings/audiomixer/Mixer.c
+#: shared-bindings/audiofilters/Filter.c shared-bindings/audiomixer/Mixer.c
 msgid "bits_per_sample must be 8 or 16"
 msgstr ""
 
@@ -2738,10 +2637,6 @@ msgstr ""
 #: shared-module/vectorio/Circle.c shared-module/vectorio/Polygon.c
 #: shared-module/vectorio/Rectangle.c
 msgid "can only have one parent"
-msgstr ""
-
-#: py/emitinlinerv32.c
-msgid "can only have up to 4 parameters for RV32 assembly"
 msgstr ""
 
 #: py/emitinlinethumb.c
@@ -2809,10 +2704,6 @@ msgstr ""
 
 #: py/objstr.c
 msgid "can't convert to str implicitly"
-msgstr ""
-
-#: py/objtype.c
-msgid "can't create '%q' instances"
 msgstr ""
 
 #: py/compile.c
@@ -2911,6 +2802,10 @@ msgstr ""
 
 #: extmod/ulab/code/ndarray.c
 msgid "cannot convert complex type"
+msgstr ""
+
+#: py/objtype.c
+msgid "cannot create '%q' instances"
 msgstr ""
 
 #: py/objtype.c
@@ -3227,15 +3122,7 @@ msgid "format"
 msgstr ""
 
 #: py/objstr.c
-msgid "format needs a dict"
-msgstr ""
-
-#: py/objstr.c
-msgid "format string didn't convert all arguments"
-msgstr ""
-
-#: py/objstr.c
-msgid "format string needs more arguments"
+msgid "format requires a dict"
 msgstr ""
 
 #: py/objdeque.c
@@ -3694,7 +3581,7 @@ msgid "must use keyword argument for key function"
 msgstr ""
 
 #: py/runtime.c
-msgid "name '%q' isn't defined"
+msgid "name '%q' is not defined"
 msgstr ""
 
 #: py/runtime.c
@@ -3784,7 +3671,7 @@ msgid "non-default argument follows default argument"
 msgstr ""
 
 #: py/objstr.c
-msgid "non-hex digit"
+msgid "non-hex digit found"
 msgstr ""
 
 #: ports/nordic/common-hal/_bleio/Adapter.c
@@ -3801,6 +3688,14 @@ msgstr ""
 
 #: py/parse.c
 msgid "not a constant"
+msgstr ""
+
+#: py/objstr.c
+msgid "not all arguments converted during string formatting"
+msgstr ""
+
+#: py/objstr.c
+msgid "not enough arguments for format string"
 msgstr ""
 
 #: extmod/ulab/code/numpy/carray/carray_tools.c
@@ -3865,6 +3760,10 @@ msgstr ""
 msgid "object with buffer protocol required"
 msgstr ""
 
+#: py/objstr.c
+msgid "odd-length string"
+msgstr ""
+
 #: supervisor/shared/web_workflow/web_workflow.c
 msgid "off"
 msgstr ""
@@ -3911,30 +3810,6 @@ msgstr ""
 
 #: py/vm.c
 msgid "opcode"
-msgstr ""
-
-#: py/emitinlinerv32.c
-msgid "opcode '%q' argument %d: expecting %q"
-msgstr ""
-
-#: py/emitinlinerv32.c
-msgid "opcode '%q' argument %d: must not be zero"
-msgstr ""
-
-#: py/emitinlinerv32.c
-msgid "opcode '%q' argument %d: out of range"
-msgstr ""
-
-#: py/emitinlinerv32.c
-msgid "opcode '%q' argument %d: undefined label '%q'"
-msgstr ""
-
-#: py/emitinlinerv32.c
-msgid "opcode '%q' argument %d: unknown register"
-msgstr ""
-
-#: py/emitinlinerv32.c
-msgid "opcode '%q': expecting %d arguments"
 msgstr ""
 
 #: extmod/ulab/code/ndarray.c extmod/ulab/code/numpy/bitwise.c
@@ -4028,10 +3903,6 @@ msgstr ""
 msgid "palette must be 32 bytes long"
 msgstr ""
 
-#: py/emitinlinerv32.c
-msgid "parameters must be registers in sequence a0 to a3"
-msgstr ""
-
 #: py/emitinlinextensa.c
 msgid "parameters must be registers in sequence a2 to a5"
 msgstr ""
@@ -4081,6 +3952,10 @@ msgstr ""
 msgid "pull masks conflict with direction masks"
 msgstr ""
 
+#: py/parse.c
+msgid "raw f-strings are not supported"
+msgstr ""
+
 #: extmod/ulab/code/numpy/fft/fft_tools.c
 msgid "real and imaginary parts must be of equal length"
 msgstr ""
@@ -4122,10 +3997,6 @@ msgstr ""
 
 #: py/objstr.c
 msgid "rsplit(None,n)"
-msgstr ""
-
-#: shared-bindings/audiofreeverb/Freeverb.c
-msgid "samples_signed must be true"
 msgstr ""
 
 #: ports/atmel-samd/common-hal/audiobusio/PDMIn.c
@@ -4219,6 +4090,10 @@ msgstr ""
 
 #: extmod/modre.c
 msgid "splitting with sub-captures"
+msgstr ""
+
+#: py/objstr.c
+msgid "start/end indices"
 msgstr ""
 
 #: shared-bindings/random/__init__.c
@@ -4343,11 +4218,11 @@ msgid "tx and rx cannot both be None"
 msgstr ""
 
 #: py/objtype.c
-msgid "type '%q' isn't an acceptable base type"
+msgid "type '%q' is not an acceptable base type"
 msgstr ""
 
 #: py/objtype.c
-msgid "type isn't an acceptable base type"
+msgid "type is not an acceptable base type"
 msgstr ""
 
 #: py/runtime.c
@@ -4383,10 +4258,6 @@ msgstr ""
 msgid "unindent doesn't match any outer indent level"
 msgstr ""
 
-#: py/emitinlinerv32.c
-msgid "unknown RV32 instruction '%q'"
-msgstr ""
-
 #: py/objstr.c
 #, c-format
 msgid "unknown conversion specifier %c"
@@ -4413,7 +4284,7 @@ msgstr ""
 msgid "unreadable attribute"
 msgstr ""
 
-#: shared-bindings/displayio/TileGrid.c shared-bindings/terminalio/Terminal.c
+#: shared-bindings/displayio/TileGrid.c
 #: shared-bindings/tilepalettemapper/TilePaletteMapper.c
 #: shared-bindings/vectorio/VectorShape.c
 msgid "unsupported %q type"
@@ -4491,6 +4362,12 @@ msgstr ""
 
 #: shared-bindings/is31fl3741/FrameBuffer.c
 msgid "width must be greater than zero"
+msgstr ""
+
+#: ports/espressif/common-hal/wifi/Radio.c
+#: ports/raspberrypi/common-hal/wifi/Radio.c
+#: ports/zephyr-cp/common-hal/wifi/Radio.c
+msgid "wifi is not enabled"
 msgstr ""
 
 #: ports/raspberrypi/common-hal/wifi/Monitor.c

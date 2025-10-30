@@ -21,16 +21,9 @@
 void port_heap_init(void);
 
 void *port_malloc(size_t size, bool dma_capable);
-void *port_malloc_zero(size_t size, bool dma_capable);
 
 void port_free(void *ptr);
 
-void *port_realloc(void *ptr, size_t size, bool dma_capable);
-
-#if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
-// Check if a buffer pointer is in DMA-capable memory. DMA-capable memory is also accessible during
-// flash operations.
-bool port_buffer_is_dma_capable(const void *ptr);
-#endif
+void *port_realloc(void *ptr, size_t size);
 
 size_t port_heap_get_largest_free_size(void);

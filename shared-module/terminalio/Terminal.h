@@ -15,7 +15,7 @@
 
 typedef struct  {
     mp_obj_base_t base;
-    mp_obj_t font;  // Can be fontio_builtinfont_t or lvfontio_ondiskfont_t
+    const fontio_builtinfont_t *font;
     uint16_t cursor_x;
     uint16_t cursor_y;
     displayio_tilegrid_t *scroll_area;
@@ -30,4 +30,3 @@ typedef struct  {
 } terminalio_terminal_obj_t;
 
 extern void terminalio_terminal_clear_status_bar(terminalio_terminal_obj_t *self);
-uint16_t terminalio_terminal_get_glyph_index(mp_obj_t font, mp_uint_t codepoint, bool *is_full_width);

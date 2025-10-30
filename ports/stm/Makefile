@@ -51,7 +51,7 @@ CFLAGS += -ftree-vrp
 # STM32 MCU series must be defined. See supervisor/linker.h
 C_DEFS = -D$(MCU_PACKAGE) -DUSE_HAL_DRIVER -DUSE_FULL_LL_DRIVER -D$(MCU_VARIANT) -DSTM32$(MCU_SERIES)
 
-CFLAGS += $(INC) -Werror -Wall -std=gnu11 -fshort-enums $(BASE_CFLAGS) $(C_DEFS) $(CFLAGS_MOD) $(COPT) -nostdlib -nostartfiles -Werror=old-style-definition
+CFLAGS += $(INC) -Werror -Wall -std=gnu11 -fshort-enums $(BASE_CFLAGS) $(C_DEFS) $(CFLAGS_MOD) $(COPT) -nostdlib -nostartfiles
 
 # Undo some warnings.
 # STM32 HAL uses undefined preprocessor variables, shadowed variables, casts that change alignment reqs
@@ -165,15 +165,8 @@ endif
 
 # Need this to avoid UART linker problems. TODO: rewrite to use registered callbacks.
 # Does not exist for F4 and lower
-ifeq ($(MCU_VARIANT),$(filter $(MCU_VARIANT),STM32F765xx STM32F767xx STM32F769xx STM32H743xx STM32H750xx STM32L4R5xx STM32L433xx))
+ifeq ($(MCU_VARIANT),$(filter $(MCU_VARIANT),STM32F765xx STM32F767xx STM32F769xx STM32H743xx STM32H750xx STM32L4R5xx))
 	SRC_STM32 += $(HAL_DIR)/Src/stm32$(MCU_SERIES_LOWER)xx_hal_uart_ex.c
-endif
-
-ifeq ($(MCU_VARIANT),$(filter $(MCU_VARIANT),STM32H750xx))
-	C_DEFS += -DHAL_SDRAM_MODULE_ENABLED
-	SRC_STM32 += st_driver/stm32$(MCU_SERIES_LOWER)xx_hal_driver/Src/stm32h7xx_hal_sdram.c
-	SRC_STM32 += st_driver/stm32$(MCU_SERIES_LOWER)xx_hal_driver/Src/stm32h7xx_ll_fmc.c
-	SRC_C += peripherals/sdram.c
 endif
 
 SRC_STM32 += boards/system_stm32$(MCU_SERIES_LOWER)xx.c
@@ -204,17 +197,23 @@ ifneq ($(CIRCUITPY_AUDIOBUSIO_PDMIN),0)
 endif
 
 ifneq ($(CIRCUITPY_USB),0)
-	ifeq ($(MCU_VARIANT),$(filter $(MCU_VARIANT),STM32L433xx))
-		SRC_C += lib/tinyusb/src/portable/st/stm32_fsdev/dcd_stm32_fsdev.c
-	else
-		SRC_C += lib/tinyusb/src/portable/synopsys/dwc2/dcd_dwc2.c
-		SRC_C += lib/tinyusb/src/portable/synopsys/dwc2/dwc2_common.c
-	endif
+SRC_C += \
+	lib/tinyusb/src/portable/synopsys/dwc2/dcd_dwc2.c \
+	lib/tinyusb/src/portable/synopsys/dwc2/dwc2_common.c
 endif
 
-SRC_S_UPPER = supervisor/shared/cpu_regs.S
 SRC_S = \
+	supervisor/cpu.s \
 	st_driver/cmsis_device_$(MCU_SERIES_LOWER)/Source/Templates/gcc/startup_$(MCU_VARIANT_LOWER).s
+
+SRC_COMMON_HAL_EXPANDED = $(addprefix shared-bindings/, $(SRC_COMMON_HAL)) \
+						  $(addprefix shared-bindings/, $(SRC_BINDINGS_ENUMS)) \
+						  $(addprefix common-hal/, $(SRC_COMMON_HAL))
+
+SRC_SHARED_MODULE_EXPANDED = $(addprefix shared-bindings/, $(SRC_SHARED_MODULE)) \
+							 $(addprefix shared-module/, $(SRC_SHARED_MODULE)) \
+							 $(addprefix shared-module/, $(SRC_SHARED_MODULE_INTERNAL))
+
 
 ifneq ($(FROZEN_MPY_DIR),)
 FROZEN_MPY_PY_FILES := $(shell find -L $(FROZEN_MPY_DIR) -type f -name '*.py')
@@ -223,20 +222,20 @@ endif
 
 OBJ += $(PY_O) $(SUPERVISOR_O) $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_STM32:.c=.o))
-OBJ += $(addprefix $(BUILD)/, $(SRC_COMMON_HAL_SHARED_MODULE_EXPANDED:.c=.o))
+OBJ += $(addprefix $(BUILD)/, $(SRC_COMMON_HAL_EXPANDED:.c=.o))
+OBJ += $(addprefix $(BUILD)/, $(SRC_SHARED_MODULE_EXPANDED:.c=.o))
 ifeq ($(INTERNAL_LIBM),1)
 OBJ += $(addprefix $(BUILD)/, $(SRC_LIBM:.c=.o))
 endif
 OBJ += $(addprefix $(BUILD)/, $(SRC_CIRCUITPY_COMMON:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_S:.s=.o))
-OBJ += $(addprefix $(BUILD)/, $(SRC_S_UPPER:.S=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_MOD:.c=.o))
 
 $(BUILD)/$(FATFS_DIR)/ff.o: COPT += -Os
 $(filter $(PY_BUILD)/../extmod/vfs_fat_%.o, $(PY_O)): COPT += -Os
 
 # List of sources for qstr extraction
-SRC_QSTR += $(SRC_C) $(SRC_SUPERVISOR) $(SRC_MOD) $(SRC_COMMON_HAL_SHARED_MODULE_EXPANDED) $(SRC_CIRCUITPY_COMMON)
+SRC_QSTR += $(SRC_C) $(SRC_SUPERVISOR) $(SRC_MOD) $(SRC_COMMON_HAL_EXPANDED) $(SRC_SHARED_MODULE_EXPANDED) $(SRC_CIRCUITPY_COMMON)
 # Sources that only hold QSTRs after pre-processing.
 SRC_QSTR_PREPROCESSOR +=
 

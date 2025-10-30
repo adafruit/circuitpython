@@ -74,11 +74,11 @@ static bool picodvi_autoconstruct_enabled(mp_int_t *default_width, mp_int_t *def
                     if ((established_timings & 0x80) != 0 &&
                         preferred_width % 1920 == 0 &&
                         preferred_height % 1080 == 0) {
-                        *default_width = 720;
-                        *default_height = 400;
+                        *default_width = 720 / 2;
+                        *default_height = 400 / 2;
                     } else {
-                        *default_width = 640;
-                        *default_height = 480;
+                        *default_width = 640 / 2;
+                        *default_height = 480 / 2;
                     }
                 }
             }
@@ -95,15 +95,15 @@ void picodvi_autoconstruct(void) {
         return;
     }
 
-    mp_int_t default_width = 640;
-    mp_int_t default_height = 480;
+    mp_int_t default_width = 320;
+    mp_int_t default_height = 240;
     if (!picodvi_autoconstruct_enabled(&default_width, &default_height)) {
         return;
     }
 
     mp_int_t width = default_width;
     mp_int_t height = 0;
-    mp_int_t color_depth = 8;
+    mp_int_t color_depth = 16;
     mp_int_t rotation = 0;
 
     (void)common_hal_os_getenv_int("CIRCUITPY_DISPLAY_WIDTH", &width);
@@ -113,9 +113,6 @@ void picodvi_autoconstruct(void) {
 
     if (height == 0) {
         switch (width) {
-            case 720:
-                height = 400;
-                break;
             case 640:
                 height = 480;
                 break;
@@ -137,7 +134,7 @@ void picodvi_autoconstruct(void) {
         // invalid configuration, set back to default
         width = default_width;
         height = default_height;
-        color_depth = 8;
+        color_depth = 16;
     }
 
     // construct framebuffer and display

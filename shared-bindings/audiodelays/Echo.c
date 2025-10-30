@@ -17,6 +17,9 @@
 #include "shared-bindings/util.h"
 #include "shared-module/synthio/block.h"
 
+#define DECAY_DEFAULT 0.7f
+#define MIX_DEFAULT 0.5f
+
 //| class Echo:
 //|     """An Echo effect"""
 //|
@@ -25,7 +28,7 @@
 //|         max_delay_ms: int = 500,
 //|         delay_ms: synthio.BlockInput = 250.0,
 //|         decay: synthio.BlockInput = 0.7,
-//|         mix: synthio.BlockInput = 0.25,
+//|         mix: synthio.BlockInput = 0.5,
 //|         buffer_size: int = 512,
 //|         sample_rate: int = 8000,
 //|         bits_per_sample: int = 16,
@@ -160,7 +163,7 @@ MP_PROPERTY_GETSET(audiodelays_echo_delay_ms_obj,
     (mp_obj_t)&audiodelays_echo_set_delay_ms_obj);
 
 //|     decay: synthio.BlockInput
-//|     """The rate the echo fades between 0 and 1 where 0 is instant and 1 is never."""
+//|     """The rate the echo decays between 0 and 1 where 1 is forever and 0 is no echo."""
 static mp_obj_t audiodelays_echo_obj_get_decay(mp_obj_t self_in) {
     return common_hal_audiodelays_echo_get_decay(self_in);
 }
@@ -178,7 +181,7 @@ MP_PROPERTY_GETSET(audiodelays_echo_decay_obj,
     (mp_obj_t)&audiodelays_echo_set_decay_obj);
 
 //|     mix: synthio.BlockInput
-//|     """The rate the echo mix between 0 and 1 where 0 is only sample, 0.5 is an equal mix of the sample and the effect and 1 is all effect."""
+//|     """The rate the echo mix between 0 and 1 where 0 is only sample and 1 is all effect."""
 static mp_obj_t audiodelays_echo_obj_get_mix(mp_obj_t self_in) {
     return common_hal_audiodelays_echo_get_mix(self_in);
 }
@@ -230,15 +233,11 @@ MP_DEFINE_CONST_FUN_OBJ_1(audiodelays_echo_get_playing_obj, audiodelays_echo_obj
 MP_PROPERTY_GETTER(audiodelays_echo_playing_obj,
     (mp_obj_t)&audiodelays_echo_get_playing_obj);
 
-//|     def play(self, sample: circuitpython_typing.AudioSample, *, loop: bool = False) -> Echo:
+//|     def play(self, sample: circuitpython_typing.AudioSample, *, loop: bool = False) -> None:
 //|         """Plays the sample once when loop=False and continuously when loop=True.
 //|         Does not block. Use `playing` to block.
 //|
-//|         The sample must match the encoding settings given in the constructor.
-//|
-//|         :return: The effect object itself. Can be used for chaining, ie:
-//|           ``audio.play(effect.play(sample))``.
-//|         :rtype: Echo"""
+//|         The sample must match the encoding settings given in the constructor."""
 //|         ...
 //|
 static mp_obj_t audiodelays_echo_obj_play(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
@@ -256,7 +255,7 @@ static mp_obj_t audiodelays_echo_obj_play(size_t n_args, const mp_obj_t *pos_arg
     mp_obj_t sample = args[ARG_sample].u_obj;
     common_hal_audiodelays_echo_play(self, sample, args[ARG_loop].u_bool);
 
-    return MP_OBJ_FROM_PTR(self);
+    return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(audiodelays_echo_play_obj, 1, audiodelays_echo_obj_play);
 

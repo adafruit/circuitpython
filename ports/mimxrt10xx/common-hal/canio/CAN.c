@@ -228,7 +228,7 @@ void common_hal_canio_can_construct(canio_can_obj_t *self, const mcu_pin_obj_t *
     self->silent = silent;
     self->baudrate = baudrate;
 
-    self->data = m_malloc_without_collect(sizeof(mimxrt10xx_flexcan_data_t));
+    self->data = m_new_obj(mimxrt10xx_flexcan_data_t);
     self->data->base = flexcan_bases[instance]; // 'flexcan_bases' start indexing from 1. (The first element is NULL)
     self->data->tx_state = 0;
 

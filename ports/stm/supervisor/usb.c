@@ -29,7 +29,7 @@ static void init_usb_vbus_sense(void) {
     // B-peripheral session valid override enable
     USB_OTG_FS->GOTGCTL |= USB_OTG_GOTGCTL_BVALOEN;
     USB_OTG_FS->GOTGCTL |= USB_OTG_GOTGCTL_BVALOVAL;
-    #elif !defined(STM32L433xx) && !defined(STM32L4R5xx)
+    #else
     USB_OTG_FS->GCCFG |= USB_OTG_GCCFG_NOVBUSSENS;
     USB_OTG_FS->GCCFG &= ~USB_OTG_GCCFG_VBUSBSEN;
     USB_OTG_FS->GCCFG &= ~USB_OTG_GCCFG_VBUSASEN;
@@ -56,7 +56,7 @@ void init_usb_hardware(void) {
 
     GPIO_InitTypeDef GPIO_InitStruct = {0};
     /**USB_OTG_FS GPIO Configuration
-    PA10     ------> USB_OTG_FS_ID (not present on STM32L433)
+    PA10     ------> USB_OTG_FS_ID
     PA11     ------> USB_OTG_FS_DM
     PA12     ------> USB_OTG_FS_DP
     */
@@ -69,15 +69,10 @@ void init_usb_hardware(void) {
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     #if CPY_STM32H7
     GPIO_InitStruct.Alternate = GPIO_AF10_OTG1_FS;
-    #elif CPY_STM32F4 || CPY_STM32F7 || defined(STM32L4R5xx)
+    #elif CPY_STM32F4 || CPY_STM32F7 || CPY_STM32L4
     GPIO_InitStruct.Alternate = GPIO_AF10_OTG_FS;
-    #elif defined(STM32L433xx)
-    GPIO_InitStruct.Alternate = GPIO_AF10_USB_FS;
-    #else
-    #error Unknown MCU
     #endif
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
     never_reset_pin_number(0, 11);
     never_reset_pin_number(0, 12);
     claim_pin(0, 11);
@@ -122,21 +117,15 @@ void init_usb_hardware(void) {
     #if CPY_STM32H7
     HAL_PWREx_EnableUSBVoltageDetector();
     __HAL_RCC_USB2_OTG_FS_CLK_ENABLE();
-    #elif CPY_STM32F4 || CPY_STM32F7 || defined(STM32L4R5xx)
+    #else
     /* Peripheral clock enable */
     __HAL_RCC_USB_OTG_FS_CLK_ENABLE();
-    #else
-    __HAL_RCC_USB_CLK_ENABLE();
     #endif
+
 
     init_usb_vbus_sense();
 }
 
-#if defined(STM32L433xx)
-void USB_IRQHandler(void)
-#else
-void OTG_FS_IRQHandler(void)
-#endif
-{
+void OTG_FS_IRQHandler(void) {
     usb_irq_handler(0);
 }

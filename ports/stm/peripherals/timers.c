@@ -5,16 +5,14 @@
 // SPDX-License-Identifier: MIT
 #include "timers.h"
 
+#include "py/mpconfig.h"
 #include "py/obj.h"
 #include "py/runtime.h"
-#include "ports/stm/peripherals/periph.h"
 
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/microcontroller/Pin.h"
-#ifdef STM32H7
-#include "stm32h7xx_hal_rcc.h"
-#endif
 
+#if !(CPY_STM32H7)
 
 #define ALL_CLOCKS 0xFFFF
 #define NULL_IRQ 0xFF
@@ -163,29 +161,17 @@ uint32_t stm_peripherals_timer_get_source_freq(TIM_TypeDef *timer) {
         // TIM{1,8,9,10,11} are on APB2
         source = HAL_RCC_GetPCLK2Freq();
         // 0b0xx means not divided; 0b100 is divide by 2; 0b101 by 4; 0b110 by 8; 0b111 by 16.
-        #ifdef STM32H7
-        clk_div = (RCC->D2CFGR & RCC_D2CFGR_D2PPRE2) >> RCC_D2CFGR_D2PPRE2_Pos;
-        #else
         clk_div = (RCC->CFGR & RCC_CFGR_PPRE2) >> RCC_CFGR_PPRE2_Pos;
-        #endif
     } else {
         // TIM{2,3,4,5,6,7,12,13,14} are on APB1
         source = HAL_RCC_GetPCLK1Freq();
         // 0b0xx means not divided; 0b100 is divide by 2; 0b101 by 4; 0b110 by 8; 0b111 by 16.
-        #ifdef STM32H7
-        clk_div = (RCC->D1CFGR & RCC_D1CFGR_D1PPRE) >> RCC_D1CFGR_D1PPRE_Pos;
-        #else
         clk_div = (RCC->CFGR & RCC_CFGR_PPRE1) >> RCC_CFGR_PPRE1_Pos;
-        #endif
     }
 
     // Only some STM32's have TIMPRE.
     #if defined(RCC_CFGR_TIMPRE)
-    #ifdef STM32H7
-    uint32_t timpre = RCC->CFGR & RCC_CFGR_TIMPRE;
-    #else
     uint32_t timpre = RCC->DCKCFGR & RCC_CFGR_TIMPRE;
-    #endif
     if (timpre == 0) {
         if (clk_div >= 0b100) {
             source *= 2;
@@ -301,7 +287,7 @@ size_t stm_peripherals_timer_get_index(TIM_TypeDef *instance) {
     return ~(size_t)0;
 }
 
-void tim_clock_enable(uint32_t mask) {
+void tim_clock_enable(uint16_t mask) {
     #ifdef TIM1
     if (mask & (1 << 0)) {
         __HAL_RCC_TIM1_CLK_ENABLE();
@@ -363,28 +349,9 @@ void tim_clock_enable(uint32_t mask) {
         __HAL_RCC_TIM14_CLK_ENABLE();
     }
     #endif
-
-    #ifdef STM32H750xx
-    // only enabled on the H750 board for now
-    #ifdef TIM15
-    if (mask & (1 << 14)) {
-        __HAL_RCC_TIM15_CLK_ENABLE();
-    }
-    #endif
-    #ifdef TIM16
-    if (mask & (1 << 15)) {
-        __HAL_RCC_TIM16_CLK_ENABLE();
-    }
-    #endif
-    #ifdef TIM17
-    if (mask & (1 << 16)) {
-        __HAL_RCC_TIM17_CLK_ENABLE();
-    }
-    #endif
-    #endif
 }
 
-void tim_clock_disable(uint32_t mask) {
+void tim_clock_disable(uint16_t mask) {
     #ifdef TIM1
     if (mask & (1 << 0)) {
         __HAL_RCC_TIM1_CLK_DISABLE();
@@ -446,26 +413,6 @@ void tim_clock_disable(uint32_t mask) {
         __HAL_RCC_TIM14_CLK_DISABLE();
     }
     #endif
-
-    #ifdef STM32H750xx
-    // only enabled on the H750 board for now
-    #ifdef TIM15
-    if (mask & (1 << 14)) {
-        __HAL_RCC_TIM15_CLK_DISABLE();
-    }
-    #endif
-    #ifdef TIM16
-    if (mask & (1 << 15)) {
-        __HAL_RCC_TIM16_CLK_DISABLE();
-    }
-    #endif
-    #ifdef TIM17
-    if (mask & (1 << 16)) {
-        __HAL_RCC_TIM17_CLK_DISABLE();
-    }
-    #endif
-    #endif
-
 }
 
 static void callback_router(size_t index) {
@@ -474,108 +421,75 @@ static void callback_router(size_t index) {
     }
 }
 
-#ifdef TIM1
 void TIM1_CC_IRQHandler(void) { // Advanced timer
     callback_router(1);
 }
-#endif
 
-#ifdef TIM2
 void TIM2_IRQHandler(void) {
     callback_router(2);
 }
-#endif
 
-#ifdef TIM3
 void TIM3_IRQHandler(void) {
     callback_router(3);
 }
-#endif
 
-#ifdef TIM4
 void TIM4_IRQHandler(void) {
     callback_router(4);
 }
-#endif
 
-#ifdef TIM5
 void TIM5_IRQHandler(void) {
     callback_router(5);
 }
-#endif
 
-#ifdef TIM6
 void TIM6_DAC_IRQHandler(void) { // Basic timer (DAC)
     callback_router(6);
 }
-#endif
 
-#ifdef TIM7
 void TIM7_IRQHandler(void) {    // Basic timer
     callback_router(7);
 }
-#endif
 
-#ifdef TIM8
 void TIM8_CC_IRQHandler(void) { // Advanced timer
     callback_router(8);
 }
-#endif
 
 // Advanced timer interrupts are currently unused.
-#ifdef TIM9
 void TIM1_BRK_TIM9_IRQHandler(void) {
     callback_router(9);
 }
-#endif
 
-#ifdef TIM10
 void TIM1_UP_TIM10_IRQHandler(void) {
     callback_router(10);
 }
-#endif
 
-#ifdef TIM11
 void TIM1_TRG_COM_TIM11_IRQHandler(void) {
     callback_router(11);
 }
-#endif
 
-#ifdef TIM12
 void TIM8_BRK_TIM12_IRQHandler(void) {
     callback_router(12);
 }
-#endif
 
-#ifdef TIM13
 void TIM8_UP_TIM13_IRQHandler(void) {
     callback_router(13);
 }
-#endif
 
-#ifdef TIM14
 void TIM8_TRG_COM_TIM14_IRQHandler(void) {
     callback_router(14);
 }
-#endif
 
-#ifdef STM32H750xx
-// only enabled on the H750 board for now
-#ifdef TIM15
+#if (CPY_STM32H7)
 void TIM15_IRQHandler(void) {
     callback_router(15);
 }
-#endif
 
-#ifdef TIM16
 void TIM16_IRQHandler(void) {
     callback_router(16);
 }
-#endif
 
-#ifdef TIM17
 void TIM17_IRQHandler(void) {
     callback_router(17);
 }
 #endif
+
 #endif

@@ -7,7 +7,6 @@
 #pragma once
 
 #include "common-hal/microcontroller/Pin.h"
-#include "shared-bindings/digitalio/Pull.h"
 
 #if CIRCUITPY_TOUCHIO_USE_NATIVE
 #include "common-hal/touchio/TouchIn.h"
@@ -17,7 +16,7 @@
 
 extern const mp_obj_type_t touchio_touchin_type;
 
-void common_hal_touchio_touchin_construct(touchio_touchin_obj_t *self, const mcu_pin_obj_t *pin, digitalio_pull_t pull);
+void common_hal_touchio_touchin_construct(touchio_touchin_obj_t *self, const mcu_pin_obj_t *pin);
 void common_hal_touchio_touchin_deinit(touchio_touchin_obj_t *self);
 bool common_hal_touchio_touchin_deinited(touchio_touchin_obj_t *self);
 bool common_hal_touchio_touchin_get_value(touchio_touchin_obj_t *self);

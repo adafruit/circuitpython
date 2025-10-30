@@ -172,10 +172,8 @@ extern "C" {
 #endif
 
 // Size of buffer to hold descriptors and other data used for enumeration
-// CircuitPython itself is 284 bytes of configuration descriptor when both CDC endpoints are
-// enabled, plus 4 bytes for alignment.
 #ifndef CFG_TUH_ENUMERATION_BUFSIZE
-#define CFG_TUH_ENUMERATION_BUFSIZE (284 + 4)
+#define CFG_TUH_ENUMERATION_BUFSIZE 256
 #endif
 
 #if CIRCUITPY_USB_KEYBOARD_WORKFLOW

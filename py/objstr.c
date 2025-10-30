@@ -32,7 +32,7 @@
 #include "py/objstr.h"
 #include "py/objlist.h"
 #include "py/runtime.h"
-#include "py/cstack.h"
+#include "py/stackctrl.h"
 
 // CIRCUITPY-CHANGE
 const char nibble_to_hex_upper[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
@@ -72,26 +72,6 @@ static void str_check_arg_type(const mp_obj_type_t *self_type, const mp_obj_t ar
 
 static void check_is_str_or_bytes(mp_obj_t self_in) {
     mp_check_self(mp_obj_is_str_or_bytes(self_in));
-}
-
-static const byte *get_substring_data(const mp_obj_t obj, size_t n_args, const mp_obj_t *args, size_t *len) {
-    // Get substring data from obj, using args[0,1] to specify start and end indices.
-    GET_STR_DATA_LEN(obj, str, str_len);
-    if (n_args > 0) {
-        const mp_obj_type_t *self_type = mp_obj_get_type(obj);
-        const byte *end = str + str_len;
-        if (n_args > 1 && args[1] != mp_const_none) {
-            end = str_index_to_ptr(self_type, str, str_len, args[1], true);
-        }
-        if (args[0] != mp_const_none) {
-            str = str_index_to_ptr(self_type, str, str_len, args[0], true);
-        }
-        str_len = MAX(end - str, 0);
-    }
-    if (len) {
-        *len = str_len;
-    }
-    return str;
 }
 
 /******************************************************************************/
@@ -839,34 +819,37 @@ static mp_obj_t str_rindex(size_t n_args, const mp_obj_t *args) {
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(str_rindex_obj, 2, 4, str_rindex);
 
-static mp_obj_t str_startendswith(size_t n_args, const mp_obj_t *args, bool ends_with) {
-    size_t str_len;
-    const byte *str = get_substring_data(args[0], n_args - 2, args + 2, &str_len);
-    mp_obj_t *prefixes = (mp_obj_t *)&args[1];
-    size_t n_prefixes = 1;
-    if (mp_obj_is_type(args[1], &mp_type_tuple)) {
-        mp_obj_tuple_get(args[1], &n_prefixes, &prefixes);
-    }
-    size_t prefix_len;
-    for (size_t i = 0; i < n_prefixes; i++) {
-        const char *prefix = mp_obj_str_get_data(prefixes[i], &prefix_len);
-        const byte *s = str + (ends_with ? str_len - prefix_len : 0);
-        if (prefix_len <= str_len && memcmp(s, prefix, prefix_len) == 0) {
-            return mp_const_true;
-        }
-    }
-    return mp_const_false;
-}
-
+// TODO: (Much) more variety in args
 static mp_obj_t str_startswith(size_t n_args, const mp_obj_t *args) {
-    return str_startendswith(n_args, args, false);
+    const mp_obj_type_t *self_type = mp_obj_get_type(args[0]);
+    GET_STR_DATA_LEN(args[0], str, str_len);
+    size_t prefix_len;
+    const char *prefix = mp_obj_str_get_data(args[1], &prefix_len);
+    const byte *start = str;
+    if (n_args > 2) {
+        start = str_index_to_ptr(self_type, str, str_len, args[2], true);
+    }
+    if (prefix_len + (start - str) > str_len) {
+        return mp_const_false;
+    }
+    return mp_obj_new_bool(memcmp(start, prefix, prefix_len) == 0);
 }
-MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(str_startswith_obj, 2, 4, str_startswith);
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(str_startswith_obj, 2, 3, str_startswith);
 
 static mp_obj_t str_endswith(size_t n_args, const mp_obj_t *args) {
-    return str_startendswith(n_args, args, true);
+    GET_STR_DATA_LEN(args[0], str, str_len);
+    size_t suffix_len;
+    const char *suffix = mp_obj_str_get_data(args[1], &suffix_len);
+    if (n_args > 2) {
+        mp_raise_NotImplementedError(MP_ERROR_TEXT("start/end indices"));
+    }
+
+    if (suffix_len > str_len) {
+        return mp_const_false;
+    }
+    return mp_obj_new_bool(memcmp(str + (str_len - suffix_len), suffix, suffix_len) == 0);
 }
-MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(str_endswith_obj, 2, 4, str_endswith);
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(str_endswith_obj, 2, 3, str_endswith);
 
 enum { LSTRIP, RSTRIP, STRIP };
 
@@ -1219,7 +1202,7 @@ static vstr_t mp_obj_str_format_helper(const char *str, const char *top, int *ar
             // type        ::=  "b" | "c" | "d" | "e" | "E" | "f" | "F" | "g" | "G" | "n" | "o" | "s" | "x" | "X" | "%"
 
             // recursively call the formatter to format any nested specifiers
-            mp_cstack_check();
+            MP_STACK_CHECK();
             vstr_t format_spec_vstr = mp_obj_str_format_helper(format_spec, str, arg_i, n_args, args, kwargs);
             const char *s = vstr_null_terminated_str(&format_spec_vstr);
             const char *stop = s + format_spec_vstr.len;
@@ -1520,7 +1503,8 @@ static mp_obj_t str_modulo_format(mp_obj_t pattern, size_t n_args, const mp_obj_
         // Dictionary value lookup
         if (*str == '(') {
             if (dict == MP_OBJ_NULL) {
-                mp_raise_TypeError(MP_ERROR_TEXT("format needs a dict"));
+                // CIRCUITPY-CHANGE: clearer message
+                mp_raise_TypeError(MP_ERROR_TEXT("format requires a dict"));
             }
             arg_i = 1; // we used up the single dict argument
             const byte *key = ++str;
@@ -1601,7 +1585,8 @@ static mp_obj_t str_modulo_format(mp_obj_t pattern, size_t n_args, const mp_obj_
         if (arg == MP_OBJ_NULL) {
             if (arg_i >= n_args) {
             not_enough_args:
-                mp_raise_TypeError(MP_ERROR_TEXT("format string needs more arguments"));
+                // CIRCUITPY-CHANGE: clearer message
+                mp_raise_TypeError(MP_ERROR_TEXT("not enough arguments for format string"));
             }
             arg = args[arg_i++];
         }
@@ -1611,14 +1596,16 @@ static mp_obj_t str_modulo_format(mp_obj_t pattern, size_t n_args, const mp_obj_
                     size_t slen;
                     const char *s = mp_obj_str_get_data(arg, &slen);
                     if (slen != 1) {
-                        mp_raise_TypeError(MP_ERROR_TEXT("%%c needs int or char"));
+                        // CIRCUITPY-CHANGE: clearer message
+                        mp_raise_TypeError(MP_ERROR_TEXT("%%c requires int or char"));
                     }
                     mp_print_strn(&print, s, 1, flags, ' ', width);
                 } else if (arg_looks_integer(arg)) {
                     char ch = mp_obj_get_int(arg);
                     mp_print_strn(&print, &ch, 1, flags, ' ', width);
                 } else {
-                    mp_raise_TypeError(MP_ERROR_TEXT("%%c needs int or char"));
+                    // CIRCUITPY-CHANGE: clearer message
+                    mp_raise_TypeError(MP_ERROR_TEXT("%%c requires int or char"));
                 }
                 break;
 
@@ -1690,7 +1677,8 @@ static mp_obj_t str_modulo_format(mp_obj_t pattern, size_t n_args, const mp_obj_
     if (dict == MP_OBJ_NULL && arg_i != n_args) {
         // NOTE: if `dict` exists, then `n_args` is 1 and the dict is always consumed; either
         // positionally, or as a map of named args, even if none were actually referenced.
-        mp_raise_TypeError(MP_ERROR_TEXT("format string didn't convert all arguments"));
+        // CIRCUITPY-CHANGE: clearer message
+        mp_raise_TypeError(MP_ERROR_TEXT("not all arguments converted during string formatting"));
     }
 
     return mp_obj_new_str_type_from_vstr(is_bytes ? &mp_type_bytes : &mp_type_str, &vstr);
@@ -2056,21 +2044,27 @@ mp_obj_t mp_obj_bytes_fromhex(mp_obj_t type_in, mp_obj_t data) {
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(data, &bufinfo, MP_BUFFER_READ);
 
+    if ((bufinfo.len & 1) != 0) {
+        mp_raise_ValueError(MP_ERROR_TEXT("odd-length string"));
+    }
     vstr_t vstr;
     vstr_init_len(&vstr, bufinfo.len / 2);
     byte *in = bufinfo.buf, *out = (byte *)vstr.buf;
-    byte *in_end = in + bufinfo.len;
-    mp_uint_t ch1, ch2;
-    while (in < in_end) {
-        if (unichar_isspace(ch1 = *in++)) {
-            continue;  // Skip whitespace between hex digit pairs
+    byte hex_byte = 0;
+    for (mp_uint_t i = bufinfo.len; i--;) {
+        byte hex_ch = *in++;
+        if (unichar_isxdigit(hex_ch)) {
+            hex_byte += unichar_xdigit_value(hex_ch);
+        } else {
+            mp_raise_ValueError(MP_ERROR_TEXT("non-hex digit found"));
         }
-        if (in == in_end || !unichar_isxdigit(ch1) || !unichar_isxdigit(ch2 = *in++)) {
-            mp_raise_ValueError(MP_ERROR_TEXT("non-hex digit"));
+        if (i & 1) {
+            hex_byte <<= 4;
+        } else {
+            *out++ = hex_byte;
+            hex_byte = 0;
         }
-        *out++ = (byte)((unichar_xdigit_value(ch1) << 4) | unichar_xdigit_value(ch2));
     }
-    vstr.len = out - (byte *)vstr.buf;  // Length may be shorter due to whitespace in input
     return mp_obj_new_str_type_from_vstr(MP_OBJ_TO_PTR(type_in), &vstr);
 }
 
@@ -2346,10 +2340,6 @@ mp_obj_t mp_obj_new_str(const char *data, size_t len) {
         // no existing qstr, don't make one
         return mp_obj_new_str_copy(&mp_type_str, (const byte *)data, len);
     }
-}
-
-mp_obj_t mp_obj_new_str_from_cstr(const char *str) {
-    return mp_obj_new_str(str, strlen(str));
 }
 
 mp_obj_t mp_obj_str_intern(mp_obj_t str) {

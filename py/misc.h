@@ -54,14 +54,7 @@ typedef unsigned int uint;
 #define MP_STRINGIFY(x) MP_STRINGIFY_HELPER(x)
 
 // Static assertion macro
-#if defined(__cplusplus)
-#define MP_STATIC_ASSERT(cond) static_assert((cond), #cond)
-#elif __GNUC__ >= 5 || __STDC_VERSION__ >= 201112L
-#define MP_STATIC_ASSERT(cond) _Static_assert((cond), #cond)
-#else
 #define MP_STATIC_ASSERT(cond) ((void)sizeof(char[1 - 2 * !(cond)]))
-#endif
-
 // In C++ things like comparing extern const pointers are not constant-expressions so cannot be used
 // in MP_STATIC_ASSERT. Note that not all possible compiler versions will reject this. Some gcc versions
 // do, others only with -Werror=vla, msvc always does.
@@ -70,10 +63,7 @@ typedef unsigned int uint;
 #if defined(_MSC_VER) || defined(__cplusplus)
 #define MP_STATIC_ASSERT_NONCONSTEXPR(cond) ((void)1)
 #else
-#if defined(__clang__)
-#pragma GCC diagnostic ignored "-Wgnu-folding-constant"
-#endif
-#define MP_STATIC_ASSERT_NONCONSTEXPR(cond) ((void)sizeof(char[1 - 2 * !(cond)]))
+#define MP_STATIC_ASSERT_NONCONSTEXPR(cond) MP_STATIC_ASSERT(cond)
 #endif
 
 // Round-up integer division
@@ -84,23 +74,14 @@ typedef unsigned int uint;
 
 // TODO make a lazy m_renew that can increase by a smaller amount than requested (but by at least 1 more element)
 
-// CIRCUITPY-CHANGE: new wrappers for selective collect, and use of m_malloc_helper()
-// The following are convenience wrappers for m_malloc_helper and can save space at the call sites.
-// m_malloc and m_new allocate space that is collected and does not have a finaliser. Use
-// m_malloc_without_collect() if the space will not contain pointers to other heap allocations. It
-// will still be marked and swept but not scanned for other pointers.
-// Use m_malloc_items() to allocate space for mp_obj_ts that will be collected.
-// Use mp_obj_malloc*() to allocate space for objects (aka structs with a type pointer) that will be
-// collected.
-
 #define m_new(type, num) ((type *)(m_malloc(sizeof(type) * (num))))
 #define m_new_maybe(type, num) ((type *)(m_malloc_maybe(sizeof(type) * (num))))
 #define m_new0(type, num) ((type *)(m_malloc0(sizeof(type) * (num))))
 #define m_new_obj(type) (m_new(type, 1))
 #define m_new_obj_maybe(type) (m_new_maybe(type, 1))
-#define m_new_obj_var(obj_type, var_field, var_type, var_num) ((obj_type *)m_malloc_helper(offsetof(obj_type, var_field) + sizeof(var_type) * (var_num), M_MALLOC_RAISE_ERROR | M_MALLOC_COLLECT))
-#define m_new_obj_var0(obj_type, var_field, var_type, var_num) ((obj_type *)m_malloc_helper(offsetof(obj_type, var_field) + sizeof(var_type) * (var_num), M_MALLOC_ENSURE_ZEROED | M_MALLOC_RAISE_ERROR | M_MALLOC_COLLECT))
-#define m_new_obj_var_maybe(obj_type, var_field, var_type, var_num) ((obj_type *)m_malloc_helper(offsetof(obj_type, var_field) + sizeof(var_type) * (var_num), M_MALLOC_COLLECT))
+#define m_new_obj_var(obj_type, var_field, var_type, var_num) ((obj_type *)m_malloc(offsetof(obj_type, var_field) + sizeof(var_type) * (var_num)))
+#define m_new_obj_var0(obj_type, var_field, var_type, var_num) ((obj_type *)m_malloc0(offsetof(obj_type, var_field) + sizeof(var_type) * (var_num)))
+#define m_new_obj_var_maybe(obj_type, var_field, var_type, var_num) ((obj_type *)m_malloc_maybe(offsetof(obj_type, var_field) + sizeof(var_type) * (var_num)))
 #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
 #define m_renew(type, ptr, old_num, new_num) ((type *)(m_realloc((ptr), sizeof(type) * (old_num), sizeof(type) * (new_num))))
 #define m_renew_maybe(type, ptr, old_num, new_num, allow_move) ((type *)(m_realloc_maybe((ptr), sizeof(type) * (old_num), sizeof(type) * (new_num), (allow_move))))
@@ -114,21 +95,10 @@ typedef unsigned int uint;
 #endif
 #define m_del_obj(type, ptr) (m_del(type, ptr, 1))
 
-#define m_malloc_items(num) m_malloc(sizeof(mp_obj_t) * (num))
-#define m_malloc_items0(num) m_malloc0(sizeof(mp_obj_t) * (num))
-
-// Flags for m_malloc_helper
-#define M_MALLOC_ENSURE_ZEROED (1 << 0)
-#define M_MALLOC_RAISE_ERROR   (1 << 1)
-#define M_MALLOC_COLLECT       (1 << 2)
-#define M_MALLOC_WITH_FINALISER (1 << 3)
-
-void *m_malloc_helper(size_t num_bytes, uint8_t flags);
 void *m_malloc(size_t num_bytes);
 void *m_malloc_maybe(size_t num_bytes);
+void *m_malloc_with_finaliser(size_t num_bytes);
 void *m_malloc0(size_t num_bytes);
-void *m_malloc_without_collect(size_t num_bytes);
-void *m_malloc_maybe_without_collect(size_t num_bytes);
 #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
 void *m_realloc(void *ptr, size_t old_num_bytes, size_t new_num_bytes);
 void *m_realloc_maybe(void *ptr, size_t old_num_bytes, size_t new_num_bytes, bool allow_move);
@@ -372,92 +342,5 @@ typedef const char *mp_rom_error_text_t;
 // Might add more types of compressed text in the future.
 // For now, forward directly to MP_COMPRESSED_ROM_TEXT.
 #define MP_ERROR_TEXT(x) (mp_rom_error_text_t)MP_COMPRESSED_ROM_TEXT(x)
-
-// Portable implementations of CLZ and CTZ intrinsics
-#ifdef _MSC_VER
-#include <intrin.h>
-
-static inline uint32_t mp_clz(uint32_t x) {
-    unsigned long lz = 0;
-    return _BitScanReverse(&lz, x) ? (sizeof(x) * 8 - 1) - lz : 0;
-}
-
-static inline uint32_t mp_clzl(unsigned long x) {
-    unsigned long lz = 0;
-    return _BitScanReverse(&lz, x) ? (sizeof(x) * 8 - 1) - lz : 0;
-}
-
-#ifdef _WIN64
-static inline uint32_t mp_clzll(unsigned long long x) {
-    unsigned long lz = 0;
-    return _BitScanReverse64(&lz, x) ? (sizeof(x) * 8 - 1) - lz : 0;
-}
-#else
-// Microsoft don't ship _BitScanReverse64 on Win32, so emulate it
-static inline uint32_t mp_clzll(unsigned long long x) {
-    unsigned long h = x >> 32;
-    return h ? mp_clzl(h) : (mp_clzl((unsigned long)x) + 32);
-}
-#endif
-
-static inline uint32_t mp_ctz(uint32_t x) {
-    unsigned long tz = 0;
-    return _BitScanForward(&tz, x) ? tz : 0;
-}
-
-// Workaround for 'warning C4127: conditional expression is constant'.
-static inline bool mp_check(bool value) {
-    return value;
-}
-
-static inline uint32_t mp_popcount(uint32_t x) {
-    return __popcnt(x);
-}
-#else
-#define mp_clz(x) __builtin_clz(x)
-#define mp_clzl(x) __builtin_clzl(x)
-#define mp_clzll(x) __builtin_clzll(x)
-#define mp_ctz(x) __builtin_ctz(x)
-#define mp_check(x) (x)
-#if defined __has_builtin
-#if __has_builtin(__builtin_popcount)
-#define mp_popcount(x) __builtin_popcount(x)
-#endif
-#endif
-#if !defined(mp_popcount)
-static inline uint32_t mp_popcount(uint32_t x) {
-    x = x - ((x >> 1) & 0x55555555);
-    x = (x & 0x33333333) + ((x >> 2) & 0x33333333);
-    x = (x + (x >> 4)) & 0x0F0F0F0F;
-    return x * 0x01010101;
-}
-#endif
-#endif
-
-// mp_int_t can be larger than long, i.e. Windows 64-bit, nan-box variants
-static inline uint32_t mp_clz_mpi(mp_int_t x) {
-    #ifdef __XC16__
-    mp_uint_t mask = MP_OBJ_WORD_MSBIT_HIGH;
-    mp_uint_t zeroes = 0;
-    while (mask != 0) {
-        if (mask & (mp_uint_t)x) {
-            break;
-        }
-        zeroes++;
-        mask >>= 1;
-    }
-    return zeroes;
-    #else
-    MP_STATIC_ASSERT(sizeof(mp_int_t) == sizeof(long long)
-        || sizeof(mp_int_t) == sizeof(long));
-
-    // ugly, but should compile to single intrinsic unless O0 is set
-    if (mp_check(sizeof(mp_int_t) == sizeof(long))) {
-        return mp_clzl((unsigned long)x);
-    } else {
-        return mp_clzll((unsigned long long)x);
-    }
-    #endif
-}
 
 #endif // MICROPY_INCLUDED_PY_MISC_H

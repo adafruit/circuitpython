@@ -53,7 +53,6 @@ DEFAULT_CLUSTERLIST = {
     "0x303A:0x7003": [
         "espressif_esp32s3_devkitc_1_n8",
         "espressif_esp32s3_devkitc_1_n8r2",
-        "espressif_esp32s3_devkitc_1_n8r2_ros",
         "espressif_esp32s3_devkitc_1_n8r8",
         "espressif_esp32s3_devkitc_1_n8r8_hacktablet",
         "espressif_esp32s3_devkitc_1_n16",
@@ -63,10 +62,6 @@ DEFAULT_CLUSTERLIST = {
         "espressif_esp32s2_devkitc_1_n4",
         "espressif_esp32s2_devkitc_1_n4r2",
         "espressif_esp32s2_devkitc_1_n8r2",
-    ],
-    "0x303A:0x81DA": [
-        "m5stack_cardputer",
-        "m5stack_cardputer_ros",
     ],
     "0x239A:0x102E": ["weact_studio_pico", "weact_studio_pico_16mb"],
     "0x303A:0x8166": ["yd_esp32_s3_n8r8", "yd_esp32_s3_n16r8"],
