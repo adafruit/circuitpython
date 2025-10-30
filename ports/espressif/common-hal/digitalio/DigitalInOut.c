@@ -11,8 +11,11 @@
 #include "hal/gpio_hal.h"
 
 static bool _pin_is_input(uint8_t pin_number) {
-    const uint32_t iomux = READ_PERI_REG(GPIO_PIN_MUX_REG[pin_number]);
-    return (iomux & FUN_IE) != 0;
+    gpio_io_config_t config;
+    if (gpio_get_io_config((gpio_num_t)pin_number, &config) != ESP_OK) {
+        return false;
+    }
+    return config.ie;
 }
 
 void digitalio_digitalinout_preserve_for_deep_sleep(size_t n_dios, digitalio_digitalinout_obj_t *preserve_dios[]) {
@@ -113,10 +116,12 @@ digitalinout_result_t common_hal_digitalio_digitalinout_set_drive_mode(
 
 digitalio_drive_mode_t common_hal_digitalio_digitalinout_get_drive_mode(
     digitalio_digitalinout_obj_t *self) {
-    if (GPIO_HAL_GET_HW(GPIO_PORT_0)->pin[self->pin->number].pad_driver == 1) {
+    gpio_io_config_t config;
+    if (gpio_get_io_config((gpio_num_t)self->pin->number, &config) != ESP_OK) {
+        // Should it fail closed or open?
         return DRIVE_MODE_OPEN_DRAIN;
     }
-    return DRIVE_MODE_PUSH_PULL;
+    return config.od ? DRIVE_MODE_OPEN_DRAIN : DRIVE_MODE_PUSH_PULL;
 }
 
 digitalinout_result_t common_hal_digitalio_digitalinout_set_pull(
@@ -134,11 +139,10 @@ digitalinout_result_t common_hal_digitalio_digitalinout_set_pull(
 
 digitalio_pull_t common_hal_digitalio_digitalinout_get_pull(
     digitalio_digitalinout_obj_t *self) {
-    gpio_num_t gpio_num = self->pin->number;
-    if (REG_GET_BIT(GPIO_PIN_MUX_REG[gpio_num], FUN_PU)) {
-        return PULL_UP;
-    } else if (REG_GET_BIT(GPIO_PIN_MUX_REG[gpio_num], FUN_PD)) {
-        return PULL_DOWN;
+    gpio_io_config_t config;
+    if (gpio_get_io_config((gpio_num_t)self->pin->number, &config) != ESP_OK) {
+        // Should it fail closed or open?
+        return PULL_NONE;
     }
-    return PULL_NONE;
+    return config.pd ? PULL_DOWN : PULL_UP;
 }

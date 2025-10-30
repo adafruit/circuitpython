@@ -146,6 +146,29 @@ static const uint64_t pin_mask_reset_forbidden =
     #endif
     #endif // ESP32C6
 
+    #if defined(CONFIG_IDF_TARGET_ESP32C61)
+    // Never ever reset pins used to communicate with SPI flash.
+    GPIO_SEL_15 |        // SPICS0  (flash CS#)
+    GPIO_SEL_16 |        // SPIQ    (MISO/SIO1)
+    GPIO_SEL_17 |        // SPIWP   (WP#/SIO2)
+    GPIO_SEL_19 |        // SPIHD   (HOLD#/SIO3)
+    GPIO_SEL_20 |        // SPICLK  (CLK)
+    GPIO_SEL_21 |        // SPID    (MOSI/SIO0)
+    #if CIRCUITPY_ESP_USB_SERIAL_JTAG
+    // Never ever reset serial/JTAG communication pins.
+    GPIO_SEL_12 |         // USB D-
+    GPIO_SEL_13 |         // USB D+
+    #endif
+    #if defined(CONFIG_SPIRAM)
+    GPIO_SEL_14 |        // SPICS1 (PSRAM CS#); keep if PSRAM in use
+    #endif
+    #if defined(CONFIG_ESP_CONSOLE_UART_DEFAULT) && CONFIG_ESP_CONSOLE_UART_DEFAULT && CONFIG_ESP_CONSOLE_UART_NUM == 0
+    // Never reset debug UART/console pins.
+    GPIO_SEL_10 |
+    GPIO_SEL_11 |
+    #endif
+    #endif // ESP32C6
+
     #if defined(CONFIG_IDF_TARGET_ESP32H2)
     // Never ever reset pins used to communicate with the in-package SPI flash.
     GPIO_SEL_15 |
@@ -370,9 +393,8 @@ void reset_all_pins(void) {
     gpio_deep_sleep_hold_dis();
     #endif
 
-    for (uint8_t i = 0; i < GPIO_PIN_COUNT; i++) {
-        uint32_t iomux_address = GPIO_PIN_MUX_REG[i];
-        if (iomux_address == 0 ||
+    for (gpio_num_t i = 0; i < SOC_GPIO_PIN_COUNT; i++) {
+        if (!GPIO_IS_VALID_GPIO(i) ||
             _never_reset(i) ||
             _skip_reset_once(i) ||
             _preserved_pin(i)) {

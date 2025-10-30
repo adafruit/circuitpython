@@ -62,31 +62,6 @@ static void usb_device_task(void *param) {
         vTaskDelay(1);
     }
 }
-
-/**
- * Callback invoked when received an "wanted" char.
- * @param itf           Interface index (for multiple cdc interfaces)
- * @param wanted_char   The wanted char (set previously)
- */
-void tud_cdc_rx_wanted_cb(uint8_t itf, char wanted_char) {
-    (void)itf;  // not used
-    // CircuitPython's VM is run in a separate FreeRTOS task from TinyUSB.
-    // So, we must notify the other task when a CTRL-C is received.
-    port_wake_main_task();
-    // Workaround for using shared/runtime/interrupt_char.c
-    // Compare mp_interrupt_char with wanted_char and ignore if not matched
-    if (mp_interrupt_char == wanted_char) {
-        tud_cdc_read_flush();    // flush read fifo
-        mp_sched_keyboard_interrupt();
-    }
-}
-
-void tud_cdc_rx_cb(uint8_t itf) {
-    (void)itf;
-    // Workaround for "press any key to enter REPL" response being delayed on espressif.
-    // Wake main task when any key is pressed.
-    port_wake_main_task();
-}
 #endif // CIRCUITPY_USB_DEVICE
 
 void init_usb_hardware(void) {
