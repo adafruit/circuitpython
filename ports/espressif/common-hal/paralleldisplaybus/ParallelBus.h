@@ -8,7 +8,7 @@
 
 #include "common-hal/digitalio/DigitalInOut.h"
 
-#include "esp-idf/components/esp_lcd/include/esp_lcd_panel_io.h"
+#include <esp-idf/components/esp_lcd/include/esp_lcd_panel_io.h>
 
 typedef struct {
     mp_obj_base_t base;

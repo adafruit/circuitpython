@@ -930,7 +930,6 @@ endif
 
 # Sources used in all ports except unix.
 SRC_CIRCUITPY_COMMON = \
-	shared/libc/string0.c \
 	shared/readline/readline.c \
 	lib/oofatfs/ff.c \
 	lib/oofatfs/ffunicode.c \
@@ -941,6 +940,10 @@ SRC_CIRCUITPY_COMMON = \
 	shared/runtime/pyexec.c \
 	shared/runtime/stdout_helpers.c \
 	shared/runtime/sys_stdio_mphal.c
+
+ifeq ($(CIRCUITPY_LIBC_STRING0),1)
+SRC_CIRCUITPY_COMMON += shared/libc/string0.c
+endif
 
 ifeq ($(CIRCUITPY_QRIO),1)
 SRC_CIRCUITPY_COMMON += lib/quirc/lib/decode.c lib/quirc/lib/identify.c lib/quirc/lib/quirc.c lib/quirc/lib/version_db.c

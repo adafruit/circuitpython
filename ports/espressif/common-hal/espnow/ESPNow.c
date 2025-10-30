@@ -56,7 +56,7 @@ typedef struct {
 // Callback triggered when a sent packet is acknowledged by the peer (or not).
 // Just count the number of responses and number of failures.
 // These are used in the send() logic.
-static void send_cb(const uint8_t *mac, esp_now_send_status_t status) {
+static void send_cb(const esp_now_send_info_t *tx_info, esp_now_send_status_t status) {
     espnow_obj_t *self = MP_STATE_PORT(espnow_singleton);
     if (status == ESP_NOW_SEND_SUCCESS) {
         self->send_success++;

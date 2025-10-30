@@ -1,6 +1,5 @@
 SRC_SUPERVISOR = \
 	main.c \
-	lib/tlsf/tlsf.c \
 	supervisor/port.c \
 	supervisor/shared/background_callback.c \
 	supervisor/shared/board.c \
@@ -20,6 +19,10 @@ SRC_SUPERVISOR = \
 	supervisor/shared/translate/translate.c \
 	supervisor/shared/workflow.c \
 	supervisor/stub/misc.c \
+
+ifeq ($(CIRCUITPY_LIB_TLSF),1)
+SRC_SUPERVISOR += lib/tlsf/tlsf.c
+endif
 
 # For tlsf
 CFLAGS += -D_DEBUG=0

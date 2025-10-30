@@ -10,6 +10,9 @@ CROSS_COMPILE = riscv32-esp-elf-
 else ifeq ($(IDF_TARGET),esp32c6)
 IDF_TARGET_ARCH = riscv
 CROSS_COMPILE = riscv32-esp-elf-
+else ifeq ($(IDF_TARGET),esp32c61)
+IDF_TARGET_ARCH = riscv
+CROSS_COMPILE = riscv32-esp-elf-
 else ifeq ($(IDF_TARGET),esp32h2)
 IDF_TARGET_ARCH = riscv
 CROSS_COMPILE = riscv32-esp-elf-
@@ -47,6 +50,10 @@ CIRCUITPY_WIFI_RADIO_SETTABLE_LISTEN_INTERVAL = 1
 CIRCUITPY_HASHLIB_MBEDTLS_ONLY = 0
 
 CIRCUITPY_PORT_SERIAL = 1
+
+CIRCUITPY_LIB_TLSF = 0
+
+CIRCUITPY_LIBC_STRING0 = 0
 
 # These modules are implemented in ports/<port>/common-hal:
 CIRCUITPY_ALARM ?= 1
