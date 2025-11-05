@@ -80,6 +80,7 @@ void board_init(void) {
     args.ram_height = 300;
     args.write_black_ram_command = 0x24;
     args.write_color_ram_command = 0x26;
+    args.black_bits_inverted = true;
     args.refresh_sequence = refresh_sequence;
     args.refresh_sequence_len = sizeof(refresh_sequence);
     args.refresh_time = 1.0;
