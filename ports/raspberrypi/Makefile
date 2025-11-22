@@ -549,6 +549,7 @@ SRC_C += \
 ifeq ($(CIRCUITPY_USB_HOST), 1)
 SRC_C += \
 	lib/tinyusb/src/portable/raspberrypi/pio_usb/hcd_pio_usb.c \
+	lib/tinyusb/src/portable/raspberrypi/rp2040/hcd_rp2040.c \
 	lib/Pico-PIO-USB/src/pio_usb.c \
 	lib/Pico-PIO-USB/src/pio_usb_host.c \
 	lib/Pico-PIO-USB/src/usb_crc.c \
