@@ -1,17 +1,19 @@
 // This file is part of the CircuitPython project: https://circuitpython.org
 //
-// SPDX-FileCopyrightText: Copyright (c) 2016 Scott Shawcroft
+// SPDX-FileCopyrightText: Copyright (c) 2025 Scott Shawcroft for Adafruit Industries
 //
 // SPDX-License-Identifier: MIT
 
 #pragma once
 
 #include "py/obj.h"
+#include <zephyr/kernel.h>
 
 typedef struct {
     mp_obj_base_t base;
-    // twim_peripheral_t *twim_peripheral;
+    const struct device *i2c_device;
+    struct k_mutex mutex;
     bool has_lock;
-    uint8_t scl_pin_number;
-    uint8_t sda_pin_number;
-} busio_i2c_obj_t;
+} zephyr_i2c_i2c_obj_t;
+
+mp_obj_t zephyr_i2c_i2c_zephyr_init(zephyr_i2c_i2c_obj_t *self, const struct device *i2c_device);

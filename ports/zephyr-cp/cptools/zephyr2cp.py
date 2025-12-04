@@ -7,12 +7,18 @@ from compat2driver import COMPAT_TO_DRIVER
 from devicetree import dtlib
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 # GPIO flags defined here: include/zephyr/dt-bindings/gpio/gpio.h
 GPIO_ACTIVE_LOW = 1 << 0
 
+MINIMUM_RAM_SIZE = 1024
+
 MANUAL_COMPAT_TO_DRIVER = {
     "renesas_ra_nv_flash": "flash",
+    "nordic_nrf_uarte": "serial",
+    "nordic_nrf_uart": "serial",
+    "nordic_nrf_twim": "i2c",
 }
 
 # These are controllers, not the flash devices themselves.
@@ -21,6 +27,8 @@ BLOCKED_FLASH_COMPAT = (
     "renesas,ra-ospi-b",
     "nordic,nrf-spim",
 )
+
+DRIVER_CLASSES = {"serial": "UART", "i2c": "I2C", "spi": "SPI"}
 
 CONNECTORS = {
     "mikro-bus": [
@@ -104,6 +112,22 @@ CONNECTORS = {
         "GPIO0",
         "GPIO1",
     ],
+    "raspberrypi,csi-connector": [
+        "CSI_D0_N",
+        "CSI_D0_P",
+        "CSI_D1_N",
+        "CSI_D1_P",
+        "CSI_CK_N",
+        "CSI_CK_P",
+        "CSI_D2_N",
+        "CSI_D2_P",
+        "CSI_D3_N",
+        "CSI_D3_P",
+        "IO0",
+        "IO1",
+        "I2C_SCL",
+        "I2C_SDA",
+    ],
     "renesas,ra-gpio-mipi-header": [
         "IIC_SDA",
         "DISP_BLEN",
@@ -167,9 +191,11 @@ CONNECTORS = {
     ],
 }
 
+EXCEPTIONAL_DRIVERS = ["entropy", "gpio", "led"]
+
 
 @cpbuild.run_in_thread
-def zephyr_dts_to_cp_board(builddir, zephyrbuilddir):  # noqa: C901
+def zephyr_dts_to_cp_board(portdir, builddir, zephyrbuilddir):  # noqa: C901
     board_dir = builddir / "board"
     # Auto generate board files from device tree.
 
@@ -218,6 +244,9 @@ def zephyr_dts_to_cp_board(builddir, zephyrbuilddir):  # noqa: C901
     status_led_inverted = False
     path2chosen = {}
     chosen2path = {}
+
+    # Store active Zephyr device labels per-driver so that we can make them available via board.
+    active_zephyr_devices = {}
     usb_num_endpoint_pairs = 0
     for k in edt_pickle.root.nodes["chosen"].props:
         value = edt_pickle.root.nodes["chosen"].props[k]
@@ -238,16 +267,20 @@ def zephyr_dts_to_cp_board(builddir, zephyrbuilddir):  # noqa: C901
         compatible = []
         if "compatible" in node.props:
             compatible = node.props["compatible"].to_strings()
-        logger.debug(node.name, status)
+        logger.debug(f"{node.name}: {status}")
+        logger.debug(f"compatible: {compatible}")
         chosen = None
         if node in path2chosen:
             chosen = path2chosen[node]
-            logger.debug(" chosen:", chosen)
+            logger.debug(f" chosen: {chosen}")
+            if not compatible and chosen == "zephyr,sram":
+                # The designated sram region may not have any compatible properties,
+                # so we assume it is compatible with mmio
+                compatible.append("mmio")
         for c in compatible:
             underscored = c.replace(",", "_").replace("-", "_")
             driver = COMPAT_TO_DRIVER.get(underscored, None)
             if "mmio" in c:
-                logger.debug(" ", c, node.labels, node.props)
                 address, size = node.props["reg"].to_nums()
                 end = address + size
                 if chosen == "zephyr,sram":
@@ -270,20 +303,21 @@ def zephyr_dts_to_cp_board(builddir, zephyrbuilddir):  # noqa: C901
                 info = (node.labels[0], start, end, size, node.path)
                 if chosen == "zephyr,sram":
                     rams.insert(0, info)
-                else:
+                elif status == "okay" and size > MINIMUM_RAM_SIZE:
+                    logger.debug(f"Adding RAM info: {info}")
                     rams.append(info)
             if not driver:
                 driver = MANUAL_COMPAT_TO_DRIVER.get(underscored, None)
-            logger.debug(" ", underscored, driver)
-            if not driver:
+            logger.debug(f" {c} -> {underscored} -> {driver}")
+            if not driver or status != "okay":
                 continue
-            if driver == "flash" and status == "okay":
+            if driver == "flash":
                 if not chosen and compatible[0] not in BLOCKED_FLASH_COMPAT:
                     # Skip chosen nodes because they are used by Zephyr.
                     flashes.append(f"DEVICE_DT_GET(DT_NODELABEL({node.labels[0]}))")
                 else:
                     logger.debug("  skipping due to blocked compat")
-            if driver == "usb/udc" and status == "okay":
+            elif driver == "usb/udc":
                 board_info["usb_device"] = True
                 props = node.props
                 if "num-bidir-endpoints" not in props:
@@ -297,8 +331,18 @@ def zephyr_dts_to_cp_board(builddir, zephyrbuilddir):  # noqa: C901
                     single_direction_endpoints.append(props[eps].to_num() if eps in props else 0)
                 # Count separate in/out pairs as bidirectional.
                 usb_num_endpoint_pairs += min(single_direction_endpoints)
-            if driver.startswith("wifi") and status == "okay":
+            elif driver.startswith("wifi"):
                 board_info["wifi"] = True
+            elif driver in EXCEPTIONAL_DRIVERS:
+                pass
+            elif (portdir / f"bindings/zephyr_{driver}").exists():
+                board_info[f"zephyr_{driver}"] = True
+                logger.info(f"Supported driver: {driver}")
+                if driver not in active_zephyr_devices:
+                    active_zephyr_devices[driver] = []
+                active_zephyr_devices[driver].append(node.labels)
+            else:
+                logger.warning(f"Unsupported driver: {driver}")
 
         if gpio:
             if "ngpios" in node.props:
@@ -391,6 +435,58 @@ def zephyr_dts_to_cp_board(builddir, zephyrbuilddir):  # noqa: C901
     board_pin_mapping = "\n    ".join(board_pin_mapping)
     mcu_pin_mapping = "\n    ".join(mcu_pin_mapping)
 
+    zephyr_binding_headers = []
+    zephyr_binding_objects = []
+    zephyr_binding_labels = []
+    for driver, instances in active_zephyr_devices.items():
+        driverclass = DRIVER_CLASSES[driver]
+        zephyr_binding_headers.append(f'#include "bindings/zephyr_{driver}/{driverclass}.h"')
+
+        # Designate a main bus such as board.I2C.
+        if len(instances) == 1:
+            instances[0].append(driverclass)
+        else:
+            # Check to see if a main bus has already been designated
+            found_main = False
+            for labels in instances:
+                for label in labels:
+                    if label == driverclass:
+                        found_main = True
+            if not found_main:
+                for priority_label in ("zephyr_i2c", "arduino_i2c"):
+                    for labels in instances:
+                        if priority_label in labels:
+                            labels.append(driverclass)
+                            found_main = True
+                            break
+                    if found_main:
+                        break
+        for labels in instances:
+            instance_name = f"{driver}_{labels[0]}"
+            c_function_name = f"_{instance_name}"
+            singleton_ptr = f"{c_function_name}_singleton"
+            function_object = f"{c_function_name}_obj"
+            binding_prefix = f"zephyr_{driver}_{driverclass.lower()}"
+            zephyr_binding_objects.append(
+                f"""static {binding_prefix}_obj_t {instance_name}_obj;
+static mp_obj_t {singleton_ptr} = mp_const_none;
+static mp_obj_t {c_function_name}(void) {{
+    if ({singleton_ptr} != mp_const_none) {{
+        return {singleton_ptr};
+    }}
+    {singleton_ptr} = {binding_prefix}_zephyr_init(&{instance_name}_obj, DEVICE_DT_GET(DT_NODELABEL({labels[0]})));
+    return {singleton_ptr};
+}}
+static MP_DEFINE_CONST_FUN_OBJ_0({function_object}, {c_function_name});"""
+            )
+            for label in labels:
+                zephyr_binding_labels.append(
+                    f"{{ MP_ROM_QSTR(MP_QSTR_{label.upper()}), MP_ROM_PTR(&{function_object}) }},"
+                )
+    zephyr_binding_headers = "\n".join(zephyr_binding_headers)
+    zephyr_binding_objects = "\n".join(zephyr_binding_objects)
+    zephyr_binding_labels = "\n".join(zephyr_binding_labels)
+
     board_dir.mkdir(exist_ok=True, parents=True)
     header = board_dir / "mpconfigboard.h"
     if status_led:
@@ -442,6 +538,8 @@ def zephyr_dts_to_cp_board(builddir, zephyrbuilddir):  # noqa: C901
 #include "py/obj.h"
 #include "py/mphal.h"
 
+{zephyr_binding_headers}
+
 const struct device* const flashes[] = {{ {", ".join(flashes)} }};
 const int circuitpy_flash_device_count = {len(flashes)};
 
@@ -453,6 +551,8 @@ const size_t circuitpy_max_ram_size = {max_size};
 
 {pin_defs}
 
+{zephyr_binding_objects}
+
 static const mp_rom_map_elem_t mcu_pin_globals_table[] = {{
 {mcu_pin_mapping}
 }};
@@ -463,7 +563,8 @@ CIRCUITPYTHON_BOARD_DICT_STANDARD_ITEMS
 
 {board_pin_mapping}
 
-// {{ MP_ROM_QSTR(MP_QSTR_UART), MP_ROM_PTR(&board_uart_obj) }},
+{zephyr_binding_labels}
+
 }};
 
 MP_DEFINE_CONST_DICT(board_module_globals, board_module_globals_table);

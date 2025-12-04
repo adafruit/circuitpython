@@ -74,6 +74,12 @@ void zephyr_serial_uart_construct(zephyr_serial_uart_obj_t *self, const struct d
     uart_irq_rx_enable(uart_device);
 }
 
+mp_obj_t zephyr_serial_uart_zephyr_init(zephyr_serial_uart_obj_t *self, const struct device *uart_device) {
+    self->base.type = &zephyr_serial_uart_type;
+    zephyr_serial_uart_construct(self, uart_device, 128, NULL);
+    return MP_OBJ_FROM_PTR(self);
+}
+
 bool zephyr_serial_uart_deinited(zephyr_serial_uart_obj_t *self) {
     return !device_is_ready(self->uart_device);
 }

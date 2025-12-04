@@ -1,92 +1,134 @@
 // This file is part of the CircuitPython project: https://circuitpython.org
 //
-// SPDX-FileCopyrightText: Copyright (c) 2019 Dan Halbert for Adafruit Industries
-// SPDX-FileCopyrightText: Copyright (c) 2018 Artur Pacholec
-// SPDX-FileCopyrightText: Copyright (c) 2017 hathach
-// SPDX-FileCopyrightText: Copyright (c) 2016 Sandeep Mistry All right reserved.
+// SPDX-FileCopyrightText: Copyright (c) 2025 Scott Shawcroft for Adafruit Industries
 //
 // SPDX-License-Identifier: MIT
 
-#include "shared-bindings/busio/I2C.h"
-#include "shared-bindings/microcontroller/__init__.h"
-#include "shared-bindings/microcontroller/Pin.h"
-#include "supervisor/shared/tick.h"
+#include "bindings/zephyr_i2c/I2C.h"
 #include "py/mperrno.h"
 #include "py/runtime.h"
 
+#include <zephyr/drivers/i2c.h>
+#include <zephyr/device.h>
+#include <zephyr/kernel.h>
 
-void common_hal_busio_i2c_never_reset(busio_i2c_obj_t *self) {
-    // never_reset_pin_number(self->scl_pin_number);
-    // never_reset_pin_number(self->sda_pin_number);
+mp_obj_t zephyr_i2c_i2c_zephyr_init(zephyr_i2c_i2c_obj_t *self, const struct device *i2c_device) {
+    self->base.type = &zephyr_i2c_i2c_type;
+    self->i2c_device = i2c_device;
+    k_mutex_init(&self->mutex);
+    return MP_OBJ_FROM_PTR(self);
 }
 
-void common_hal_busio_i2c_construct(busio_i2c_obj_t *self, const mcu_pin_obj_t *scl, const mcu_pin_obj_t *sda, uint32_t frequency, uint32_t timeout) {
-
+bool common_hal_zephyr_i2c_i2c_deinited(zephyr_i2c_i2c_obj_t *self) {
+    // Always leave it active
+    return false;
 }
 
-bool common_hal_busio_i2c_deinited(busio_i2c_obj_t *self) {
-    // return self->sda_pin_number == NO_PIN;
-    return true;
-}
-
-void common_hal_busio_i2c_deinit(busio_i2c_obj_t *self) {
-    if (common_hal_busio_i2c_deinited(self)) {
+void common_hal_zephyr_i2c_i2c_deinit(zephyr_i2c_i2c_obj_t *self) {
+    if (common_hal_zephyr_i2c_i2c_deinited(self)) {
         return;
     }
-
-    // nrfx_twim_uninit(&self->twim_peripheral->twim);
-
-    // reset_pin_number(self->sda_pin_number);
-    // reset_pin_number(self->scl_pin_number);
-
-    // self->twim_peripheral->in_use = false;
-    // common_hal_busio_i2c_mark_deinit(self);
+    // Always leave it active
 }
 
-void common_hal_busio_i2c_mark_deinit(busio_i2c_obj_t *self) {
-    // self->sda_pin_number = NO_PIN;
-}
-
-// nrfx_twim_tx doesn't support 0-length data so we fall back to the hal API
-bool common_hal_busio_i2c_probe(busio_i2c_obj_t *self, uint8_t addr) {
-    bool found = true;
-
-    return found;
-}
-
-bool common_hal_busio_i2c_try_lock(busio_i2c_obj_t *self) {
-    if (common_hal_busio_i2c_deinited(self)) {
+bool common_hal_zephyr_i2c_i2c_probe(zephyr_i2c_i2c_obj_t *self, uint8_t addr) {
+    if (common_hal_zephyr_i2c_i2c_deinited(self)) {
         return false;
     }
-    bool grabbed_lock = false;
-    return grabbed_lock;
+
+    // Try a zero-length write to probe for device
+    uint8_t dummy;
+    int ret = i2c_write(self->i2c_device, &dummy, 0, addr);
+    return ret == 0;
 }
 
-bool common_hal_busio_i2c_has_lock(busio_i2c_obj_t *self) {
+bool common_hal_zephyr_i2c_i2c_try_lock(zephyr_i2c_i2c_obj_t *self) {
+    if (common_hal_zephyr_i2c_i2c_deinited(self)) {
+        return false;
+    }
+
+    self->has_lock = k_mutex_lock(&self->mutex, K_NO_WAIT) == 0;
     return self->has_lock;
 }
 
-void common_hal_busio_i2c_unlock(busio_i2c_obj_t *self) {
-    self->has_lock = false;
+bool common_hal_zephyr_i2c_i2c_has_lock(zephyr_i2c_i2c_obj_t *self) {
+    return self->has_lock;
 }
 
-uint8_t common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr, const uint8_t *data, size_t len) {
+void common_hal_zephyr_i2c_i2c_unlock(zephyr_i2c_i2c_obj_t *self) {
+    k_mutex_unlock(&self->mutex);
+}
+
+uint8_t common_hal_zephyr_i2c_i2c_write(zephyr_i2c_i2c_obj_t *self, uint16_t addr,
+    const uint8_t *data, size_t len) {
+
+    if (common_hal_zephyr_i2c_i2c_deinited(self)) {
+        return MP_EIO;
+    }
+
+    int ret = i2c_write(self->i2c_device, data, len, addr);
+    if (ret != 0) {
+        // Map Zephyr error codes to errno
+        if (ret == -ENOTSUP) {
+            return MP_EOPNOTSUPP;
+        } else if (ret == -EIO || ret == -ENXIO) {
+            return MP_EIO;
+        } else if (ret == -EBUSY) {
+            return MP_EBUSY;
+        }
+        return MP_EIO;
+    }
+
     return 0;
 }
 
-uint8_t common_hal_busio_i2c_read(busio_i2c_obj_t *self, uint16_t addr, uint8_t *data, size_t len) {
+uint8_t common_hal_zephyr_i2c_i2c_read(zephyr_i2c_i2c_obj_t *self, uint16_t addr,
+    uint8_t *data, size_t len) {
+
+    if (common_hal_zephyr_i2c_i2c_deinited(self)) {
+        return MP_EIO;
+    }
+
     if (len == 0) {
         return 0;
     }
 
-}
-
-uint8_t common_hal_busio_i2c_write_read(busio_i2c_obj_t *self, uint16_t addr,
-    uint8_t *out_data, size_t out_len, uint8_t *in_data, size_t in_len) {
-    uint8_t result = _common_hal_busio_i2c_write(self, addr, out_data, out_len, false);
-    if (result != 0) {
-        return result;
+    int ret = i2c_read(self->i2c_device, data, len, addr);
+    if (ret != 0) {
+        // Map Zephyr error codes to errno
+        if (ret == -ENOTSUP) {
+            return MP_EOPNOTSUPP;
+        } else if (ret == -EIO || ret == -ENXIO) {
+            return MP_EIO;
+        } else if (ret == -EBUSY) {
+            return MP_EBUSY;
+        }
+        return MP_EIO;
     }
 
-    return common_hal_busio_i2c_read(self, addr, in_data, in_len);
+    return 0;
+}
+
+uint8_t common_hal_zephyr_i2c_i2c_write_read(zephyr_i2c_i2c_obj_t *self, uint16_t addr,
+    uint8_t *out_data, size_t out_len, uint8_t *in_data, size_t in_len) {
+
+    if (common_hal_zephyr_i2c_i2c_deinited(self)) {
+        return MP_EIO;
+    }
+
+    // Use i2c_write_read for combined transaction with repeated start
+    int ret = i2c_write_read(self->i2c_device, addr, out_data, out_len, in_data, in_len);
+    if (ret != 0) {
+        // Map Zephyr error codes to errno
+        if (ret == -ENOTSUP) {
+            return MP_EOPNOTSUPP;
+        } else if (ret == -EIO || ret == -ENXIO) {
+            return MP_EIO;
+        } else if (ret == -EBUSY) {
+            return MP_EBUSY;
+        }
+        return MP_EIO;
+    }
+
+    return 0;
 }

@@ -20,3 +20,5 @@ typedef struct {
 
     bool rx_paused;     // set by irq if no space in rbuf
 } zephyr_serial_uart_obj_t;
+
+mp_obj_t zephyr_serial_uart_zephyr_init(zephyr_serial_uart_obj_t *self, const struct device *uart_device);

@@ -51,7 +51,6 @@ DEFAULT_MODULES = [
     "json",
     "random",
     "digitalio",
-    "zephyr_serial",
 ]
 MPCONFIG_FLAGS = ["ulab", "nvm", "displayio", "warnings", "alarm", "array", "json"]
 
@@ -254,7 +253,9 @@ async def build_circuitpython():
             )
         )
 
-        board_autogen_task = tg.create_task(zephyr_dts_to_cp_board(builddir, zephyrbuilddir))
+        board_autogen_task = tg.create_task(
+            zephyr_dts_to_cp_board(portdir, builddir, zephyrbuilddir)
+        )
     board_info = board_autogen_task.result()
     mpconfigboard_fn = board_tools.find_mpconfigboard(portdir, board)
     mpconfigboard = {
@@ -290,6 +291,12 @@ async def build_circuitpython():
         module_reasons["socketpool"] = "Zephyr networking enabled"
         module_reasons["ssl"] = "Zephyr networking enabled"
 
+    for port_module in (portdir / "bindings").iterdir():
+        if not board_info.get(port_module.name, False):
+            continue
+        enabled_modules.add(port_module.name)
+        module_reasons[port_module.name] = f"Zephyr board has {port_module.name}"
+
     circuitpython_flags.extend(board_info["cflags"])
     supervisor_source = [
         "main.c",
@@ -301,6 +308,7 @@ async def build_circuitpython():
         portdir / "common-hal/microcontroller/Processor.c",
         portdir / "common-hal/os/__init__.c",
         "shared/readline/readline.c",
+        "shared/runtime/buffer_helper.c",
         "shared/runtime/context_manager_helpers.c",
         "shared/runtime/pyexec.c",
         "shared/runtime/interrupt_char.c",
