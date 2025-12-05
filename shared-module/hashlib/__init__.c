@@ -17,5 +17,13 @@ bool common_hal_hashlib_new(hashlib_hash_obj_t *self, const char *algorithm) {
         mbedtls_sha1_starts_ret(&self->sha1);
         return true;
     }
+    #if CIRCUITPY_HASHLIB_SHA256
+    else if (strcmp(algorithm, "sha256") == 0) {
+        self->hash_type = MBEDTLS_SSL_HASH_SHA256;
+        mbedtls_sha256_init(&self->sha256);
+        mbedtls_sha256_starts_ret(&self->sha256, 0);
+        return true;
+    }
+    #endif
     return false;
 }

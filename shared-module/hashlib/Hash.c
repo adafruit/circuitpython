@@ -14,6 +14,12 @@ void common_hal_hashlib_hash_update(hashlib_hash_obj_t *self, const uint8_t *dat
         mbedtls_sha1_update_ret(&self->sha1, data, datalen);
         return;
     }
+    #if CIRCUITPY_HASHLIB_SHA256
+    else if (self->hash_type == MBEDTLS_SSL_HASH_SHA256) {
+        mbedtls_sha256_update_ret(&self->sha256, data, datalen);
+        return;
+    }
+    #endif
 }
 
 void common_hal_hashlib_hash_digest(hashlib_hash_obj_t *self, uint8_t *data, size_t datalen) {
@@ -28,11 +34,25 @@ void common_hal_hashlib_hash_digest(hashlib_hash_obj_t *self, uint8_t *data, siz
         mbedtls_sha1_finish_ret(&self->sha1, data);
         mbedtls_sha1_clone(&self->sha1, &copy);
     }
+    #if CIRCUITPY_HASHLIB_SHA256
+    else if (self->hash_type == MBEDTLS_SSL_HASH_SHA256) {
+        mbedtls_sha256_context copy;
+        mbedtls_sha256_clone(&copy, &self->sha256);
+        mbedtls_sha256_finish_ret(&self->sha256, data);
+        mbedtls_sha256_clone(&self->sha256, &copy);
+    }
+    #endif
 }
 
 size_t common_hal_hashlib_hash_get_digest_size(hashlib_hash_obj_t *self) {
     if (self->hash_type == MBEDTLS_SSL_HASH_SHA1) {
         return 20;
     }
+    #if CIRCUITPY_HASHLIB_SHA256
+    else if (self->hash_type == MBEDTLS_SSL_HASH_SHA256) {
+        return 32;
+    }
+    #endif
+
     return 0;
 }
