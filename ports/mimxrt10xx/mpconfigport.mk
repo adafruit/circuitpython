@@ -2,8 +2,6 @@ LD_FILE = $(FLASH).ld $(CHIP_FAMILY).ld imxrt10xx.ld
 
 INTERNAL_LIBM = 1
 
-USB_HIGHSPEED = 1
-
 # Number of USB endpoint pairs.
 USB_NUM_ENDPOINT_PAIRS = 8
 # Align buffers on the cache boundary so we don't inadvertently load them early.

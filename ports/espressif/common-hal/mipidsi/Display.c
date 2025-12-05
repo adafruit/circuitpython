@@ -222,6 +222,40 @@ void common_hal_mipidsi_display_refresh(mipidsi_display_obj_t *self) {
     // sends data from the framebuffer to the display
 }
 
+mp_float_t common_hal_mipidsi_display_get_brightness(mipidsi_display_obj_t *self) {
+    return self->current_brightness;
+}
+
+bool common_hal_mipidsi_display_set_brightness(mipidsi_display_obj_t *self, mp_float_t brightness) {
+    if (!self->backlight_on_high) {
+        brightness = 1.0 - brightness;
+    }
+    bool ok = false;
+
+    // Avoid PWM types and functions when the module isn't enabled
+    #if (CIRCUITPY_PWMIO)
+    bool ispwm = (self->backlight_pwm.base.type == &pwmio_pwmout_type) ? true : false;
+    #else
+    bool ispwm = false;
+    #endif
+
+    if (ispwm) {
+        #if (CIRCUITPY_PWMIO)
+        common_hal_pwmio_pwmout_set_duty_cycle(&self->backlight_pwm, (uint16_t)(0xffff * brightness));
+        ok = true;
+        #else
+        ok = false;
+        #endif
+    } else if (self->backlight_inout.base.type == &digitalio_digitalinout_type) {
+        common_hal_digitalio_digitalinout_set_value(&self->backlight_inout, brightness > 0.99);
+        ok = true;
+    }
+    if (ok) {
+        self->current_brightness = brightness;
+    }
+    return ok;
+}
+
 int common_hal_mipidsi_display_get_width(mipidsi_display_obj_t *self) {
     return self->width;
 }

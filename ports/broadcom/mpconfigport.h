@@ -26,6 +26,8 @@
 #define MICROPY_FATFS_EXFAT    (1)
 #define MICROPY_FATFS_MKFS_FAT32  (1)
 
+#define CIRCUITPY_USB_DEVICE_HIGH_SPEED (1)
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // This also includes mpconfigboard.h.

@@ -220,6 +220,15 @@ static void mipidsi_display_get_bufinfo(mp_obj_t self_in, mp_buffer_info_t *bufi
     common_hal_mipidsi_display_get_buffer(self_in, bufinfo, 0);
 }
 
+static float mipidsi_display_get_brightness_proto(mp_obj_t self_in) {
+    return common_hal_mipidsi_display_get_brightness(self_in);
+}
+
+static bool mipidsi_display_set_brightness_proto(mp_obj_t self_in, mp_float_t value) {
+    common_hal_mipidsi_display_set_brightness(self_in, value);
+    return true;
+}
+
 // These versions exist so that the prototype matches the protocol,
 // avoiding a type cast that can hide errors
 static void mipidsi_display_swapbuffers(mp_obj_t self_in, uint8_t *dirty_row_bitmap) {
@@ -266,6 +275,8 @@ static int mipidsi_display_get_row_stride_proto(mp_obj_t self_in) {
 static const framebuffer_p_t mipidsi_display_proto = {
     MP_PROTO_IMPLEMENT(MP_QSTR_protocol_framebuffer)
     .get_bufinfo = mipidsi_display_get_bufinfo,
+    .set_brightness = mipidsi_display_set_brightness_proto,
+    .get_brightness = mipidsi_display_get_brightness_proto,
     .get_width = mipidsi_display_get_width_proto,
     .get_height = mipidsi_display_get_height_proto,
     .get_color_depth = mipidsi_display_get_color_depth_proto,

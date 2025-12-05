@@ -259,9 +259,6 @@ ifeq ($(CIRCUITPY_USB_CDC),1)
 CFLAGS += -DCFG_TUD_CDC=2
 endif
 
-USB_HIGHSPEED ?= 0
-CFLAGS += -DUSB_HIGHSPEED=$(USB_HIGHSPEED)
-
 $(BUILD)/supervisor/shared/translate/translate.o: $(HEADER_BUILD)/qstrdefs.generated.h $(HEADER_BUILD)/compressed_translations.generated.h
 
 CIRCUITPY_DISPLAY_FONT ?= "../../tools/fonts/ter-u12n.bdf"

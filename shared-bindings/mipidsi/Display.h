@@ -35,6 +35,8 @@ void common_hal_mipidsi_display_construct(mipidsi_display_obj_t *self,
 void common_hal_mipidsi_display_deinit(mipidsi_display_obj_t *self);
 bool common_hal_mipidsi_display_deinited(mipidsi_display_obj_t *self);
 void common_hal_mipidsi_display_refresh(mipidsi_display_obj_t *self);
+mp_float_t common_hal_mipidsi_display_get_brightness(mipidsi_display_obj_t *self);
+bool common_hal_mipidsi_display_set_brightness(mipidsi_display_obj_t *self, mp_float_t brightness);
 int common_hal_mipidsi_display_get_width(mipidsi_display_obj_t *self);
 int common_hal_mipidsi_display_get_height(mipidsi_display_obj_t *self);
 int common_hal_mipidsi_display_get_row_stride(mipidsi_display_obj_t *self);

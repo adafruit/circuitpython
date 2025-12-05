@@ -539,8 +539,16 @@ void background_callback_run_all(void);
 #define CIRCUITPY_USB_DEVICE_INSTANCE 0
 #endif
 
+#ifndef CIRCUITPY_USB_DEVICE_HIGH_SPEED
+#define CIRCUITPY_USB_DEVICE_HIGH_SPEED 0
+#endif
+
 #ifndef CIRCUITPY_USB_HOST_INSTANCE
 #define CIRCUITPY_USB_HOST_INSTANCE -1
+#endif
+
+#ifndef CIRCUITPY_USB_HOST_HIGH_SPEED
+#define CIRCUITPY_USB_HOST_HIGH_SPEED 0
 #endif
 
 // If the port requires certain USB endpoint numbers, define these in mpconfigport.h.

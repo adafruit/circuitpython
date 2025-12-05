@@ -204,17 +204,27 @@ static const uint64_t pin_mask_reset_forbidden =
     #endif // ESP32H2
 
     #if defined(CONFIG_IDF_TARGET_ESP32P4)
-    // Never ever reset pins used to communicate with the SPI flash.
-    GPIO_SEL_28 |
-    GPIO_SEL_29 |
-    GPIO_SEL_30 |
-    GPIO_SEL_32 |
-    GPIO_SEL_33 |
-    GPIO_SEL_34 |
-    #if CIRCUITPY_ESP_USB_SERIAL_JTAG || (defined(CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG) && CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG)
-    // Never ever reset serial/JTAG communication pins.
+    // SPI flash is on dedicated pins.
+
+    // USB is on the FS OTG
+    #if CIRCUITPY_USB_DEVICE_INSTANCE == 0
+    #if CIRCUITPY_ESP32P4_SWAP_LSFS == 1
+    // We leave 24 and 25 alone in addition to 26 and 27 when swapped. It doesn't work otherwise. (Not sure why.)
     GPIO_SEL_24 |         // USB D-
     GPIO_SEL_25 |         // USB D+
+    #endif
+    GPIO_SEL_26 |         // USB D-
+    GPIO_SEL_27 |         // USB D+
+    #endif
+    #if CIRCUITPY_ESP_USB_SERIAL_JTAG || (defined(CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG) && CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG)
+    // Never ever reset serial/JTAG communication pins.
+    #if CIRCUITPY_ESP32P4_SWAP_LSFS == 1
+    GPIO_SEL_26 |         // USB D-
+    GPIO_SEL_27 |         // USB D+
+    #else
+    GPIO_SEL_24 |         // USB D-
+    GPIO_SEL_25 |         // USB D+
+    #endif
     #endif
     #if defined(CONFIG_ESP_CONSOLE_UART_DEFAULT) && CONFIG_ESP_CONSOLE_UART_DEFAULT && CONFIG_ESP_CONSOLE_UART_NUM == 0
     // Never reset debug UART/console pins.
