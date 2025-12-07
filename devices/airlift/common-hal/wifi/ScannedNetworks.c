@@ -1,8 +1,6 @@
 // This file is part of the CircuitPython project: https://circuitpython.org
 //
-// SPDX-FileCopyrightText: Copyright (c) 2019 Dan Halbert for Adafruit Industries
-// SPDX-FileCopyrightText: Copyright (c) 2018 Artur Pacholec
-// SPDX-FileCopyrightText: Copyright (c) 2017 Glenn Ruben Bakke
+// SPDX-FileCopyrightText: Copyright (c) 2025 Dan Halbert for Adafruit Industries
 //
 // SPDX-License-Identifier: MIT
 
@@ -13,147 +11,119 @@
 #include "py/objstr.h"
 #include "py/runtime.h"
 #include "shared-bindings/wifi/__init__.h"
+#include "shared-bindings/wifi/AuthMode.h"
 #include "shared-bindings/wifi/Network.h"
 #include "shared-bindings/wifi/Radio.h"
 #include "shared-bindings/wifi/ScannedNetworks.h"
 
-// static void wifi_scannednetworks_done(wifi_scannednetworks_obj_t *self) {
-//     self->done = true;
-//     if (self->results != NULL) {
-//         // Check to see if the heap is still active. If not, it'll be freed automatically.
-//         if (gc_alloc_possible()) {
-//             m_free(self->results);
-//         }
-//         self->results = NULL;
-//     }
-// }
+mp_obj_t wifi_scannednetworks_do_scan(wifi_radio_obj_t *self) {
+    uint8_t ssids[AIRLIFT_MAX_NETWORKS][MAX_SSID_LENGTH];
+    uint8_t *network_responses[AIRLIFT_MAX_NETWORKS];
+    size_t network_response_lengths[AIRLIFT_MAX_NETWORKS];
+    // Set the maximum size for each SSID response. They may be shorter.
+    for (size_t i = 0; i < AIRLIFT_MAX_NETWORKS; i++) {
+        network_responses[i] = ssids[i];
+        network_response_lengths[i] = MAX_SSID_LENGTH;
+    }
 
-// static bool wifi_scannednetworks_wait_for_scan(wifi_scannednetworks_obj_t *self) {
-//     EventBits_t bits = xEventGroupWaitBits(self->radio_event_group,
-//         WIFI_SCAN_DONE_BIT,
-//         pdTRUE,
-//         pdTRUE,
-//         0);
-//     while ((bits & WIFI_SCAN_DONE_BIT) == 0 && !mp_hal_is_interrupted()) {
-//         RUN_BACKGROUND_TASKS;
-//         bits = xEventGroupWaitBits(self->radio_event_group,
-//             WIFI_SCAN_DONE_BIT,
-//             pdTRUE,
-//             pdTRUE,
-//             0);
-//     }
-//     return !mp_hal_is_interrupted();
-// }
+    size_t num_networks = wifi_radio_send_command_get_response(self, SCAN_NETWORKS,
+        NULL, NULL, LENGTHS_8, 0,
+        network_responses, network_response_lengths, LENGTHS_8, AIRLIFT_MAX_NETWORKS,
+//        AIRLIFT_DEFAULT_TIMEOUT_MS);
+        10000);
 
-mp_obj_t common_hal_wifi_scannednetworks_next(wifi_scannednetworks_obj_t *self) {
-    // if (self->done) {
-    //     return mp_const_none;
-    // }
-    // // If we are scanning, wait and then load them.
-    // if (self->channel_scan_in_progress) {
-    //     // We may have to scan more than one channel to get a result.
-    //     while (!self->done) {
-    //         if (!wifi_scannednetworks_wait_for_scan(self)) {
-    //             wifi_scannednetworks_done(self);
-    //             return mp_const_none;
-    //         }
+    // Now fetch each network's details and store them in Network objects.
+    uint8_t network_idx;
+    size_t param_lengths[1] = { 1 };
+    const uint8_t *params[1] = { &network_idx };
 
-    //         esp_wifi_scan_get_ap_num(&self->total_results);
-    //         self->channel_scan_in_progress = false;
-    //         if (self->total_results > 0) {
-    //             break;
-    //         }
-    //         // If total_results is zero then we need to start a scan and wait again.
-    //         wifi_scannednetworks_scan_next_channel(self);
-    //     }
-    //     // We not have found any more results so we're done.
-    //     if (self->done) {
-    //         return mp_const_none;
-    //     }
-    //     // If we need more space than we have, realloc.
-    //     if (self->total_results > self->max_results) {
-    //         wifi_ap_record_t *results = m_renew_maybe(wifi_ap_record_t,
-    //             self->results,
-    //             self->max_results,
-    //             self->total_results,
-    //             true /* allow move */);
-    //         if (results != NULL) {
-    //             self->results = results;
-    //             self->max_results = self->total_results;
-    //         } else {
-    //             if (self->max_results == 0) {
-    //                 // No room for any results should error.
-    //                 mp_raise_msg(&mp_type_MemoryError, MP_ERROR_TEXT("Failed to allocate wifi scan memory"));
-    //             }
-    //             // Unable to allocate more results, so load what we can.
-    //             self->total_results = self->max_results;
-    //         }
-    //     }
-    //     esp_wifi_scan_get_ap_records(&self->total_results, self->results);
-    //     self->channel_scan_in_progress = false;
-    // }
+    mp_obj_t networks[AIRLIFT_MAX_NETWORKS];
 
-    // wifi_network_obj_t *entry = mp_obj_malloc(wifi_network_obj_t, &wifi_network_type);
-    // memcpy(&entry->record, &self->results[self->current_result], sizeof(wifi_ap_record_t));
-    // self->current_result++;
+    for (network_idx = 0; network_idx < num_networks; network_idx++) {
+        wifi_network_obj_t *network = mp_obj_malloc(wifi_network_obj_t, &wifi_network_type);
+        networks[network_idx] = network;
 
-    // // If we're returning our last network then start the next channel scan or
-    // // be done.
-    // if (self->current_result >= self->total_results) {
-    //     wifi_scannednetworks_scan_next_channel(self);
-    //     self->total_results = 0;
-    //     self->current_result = 0;
-    // }
+        network->ssid = mp_obj_new_str(
+            (const char *)network_responses[network_idx],
+            network_response_lengths[network_idx]);
 
-    // return MP_OBJ_FROM_PTR(entry);
-    return mp_const_none;
+
+        {
+            uint8_t bssid[MAC_ADDRESS_LENGTH] = { 0 };
+            uint8_t *responses[1] = { bssid };
+            size_t response_lengths[1] = { sizeof(bssid) };
+
+            network->bssid = mp_const_none;
+            if (wifi_radio_send_command_get_response(self, GET_IDX_BSSID_CMD,
+                params, param_lengths, LENGTHS_8, MP_ARRAY_SIZE(params),
+                responses, response_lengths, LENGTHS_8, MP_ARRAY_SIZE(responses),
+                AIRLIFT_DEFAULT_TIMEOUT_MS) > 0) {
+                network->bssid = mp_obj_new_bytes(bssid, MAC_ADDRESS_LENGTH);
+            }
+        }
+
+        {
+            int32_t rssi = 0;
+            uint8_t *responses[1] = { (uint8_t *)&rssi };
+            size_t response_lengths[1] = { sizeof(rssi) };
+
+            network->rssi = mp_const_none;
+            if (wifi_radio_send_command_get_response(self, GET_IDX_RSSI_CMD,
+                params, param_lengths, LENGTHS_8, MP_ARRAY_SIZE(params),
+                responses, response_lengths, LENGTHS_8, MP_ARRAY_SIZE(responses),
+                AIRLIFT_DEFAULT_TIMEOUT_MS) > 0) {
+                network->rssi = mp_obj_new_int(rssi);
+            }
+        }
+
+        {
+            uint8_t channel = 0;
+            uint8_t *responses[1] = { &channel };
+            size_t response_lengths[1] = { sizeof(channel) };
+
+            network->channel = mp_const_none;
+            if (wifi_radio_send_command_get_response(self, GET_IDX_CHAN_CMD,
+                params, param_lengths, LENGTHS_8, MP_ARRAY_SIZE(params),
+                responses, response_lengths, LENGTHS_8, MP_ARRAY_SIZE(responses),
+                AIRLIFT_DEFAULT_TIMEOUT_MS) > 0) {
+                network->channel = mp_obj_new_int(channel);
+            }
+        }
+
+        {
+            uint8_t esp_authmode = 0;
+            uint8_t *responses[1] = { &esp_authmode };
+            size_t response_lengths[1] = { sizeof(esp_authmode) };
+
+            if (wifi_radio_send_command_get_response(self, GET_IDX_ENCT_CMD,
+                params, param_lengths, LENGTHS_8, MP_ARRAY_SIZE(params),
+                responses, response_lengths, LENGTHS_8, MP_ARRAY_SIZE(responses),
+                AIRLIFT_DEFAULT_TIMEOUT_MS) > 0) {
+
+                // Convert AirLift authmode to tuple of wifi.AuthMode objects.
+                network->authmode = esp_authmode_to_wifi_authmode_tuple(esp_authmode);
+            }
+
+            // country code not supported on AirLift.
+            network->country = MP_OBJ_NEW_QSTR(MP_QSTR_);
+        }
+    }
+
+    // Create a ScannedNetworks obj and populate it with the results of the scan.
+    wifi_scannednetworks_obj_t *scanned_networks =
+        mp_obj_malloc(wifi_scannednetworks_obj_t, &wifi_scannednetworks_type);
+    scanned_networks->networks = mp_obj_new_tuple(num_networks, networks);
+
+    return MP_OBJ_FROM_PTR(scanned_networks);
 }
 
-// We don't do a linear scan so that we look at a variety of spectrum up front.
-// static uint8_t scan_pattern[] = {6, 1, 11, 3, 9, 13, 2, 4, 8, 12, 5, 7, 10, 14, 0};
+mp_obj_t common_hal_wifi_scannednetworks_next(wifi_scannednetworks_obj_t *self) {
+    if (self->next_network_index >= self->networks->len) {
+        return mp_const_none;
+    }
 
-void wifi_scannednetworks_scan_next_channel(wifi_scannednetworks_obj_t *self) {
-    // // There is no channel 0, so use that as a flag to indicate we've run out of channels to scan.
-    // uint8_t next_channel = 0;
-    // while (self->current_channel_index < sizeof(scan_pattern)) {
-    //     next_channel = scan_pattern[self->current_channel_index];
-    //     self->current_channel_index++;
-    //     // Scan only channels that are in the specified range.
-    //     if (self->start_channel <= next_channel && next_channel <= self->end_channel) {
-    //         break;
-    //     }
-    // }
-    // wifi_scan_config_t config = { 0 };
-    // config.channel = next_channel;
-    // if (next_channel == 0) {
-    //     wifi_scannednetworks_done(self);
-    // } else {
-    //     esp_err_t result = esp_wifi_scan_start(&config, false);
-    //     if (result != ESP_OK) {
-    //         wifi_scannednetworks_done(self);
-    //     } else {
-    //         self->channel_scan_in_progress = true;
-    //     }
-    // }
+    return self->networks->items[self->next_network_index++];
 }
 
 void wifi_scannednetworks_deinit(wifi_scannednetworks_obj_t *self) {
-    // // if a scan is active, make sure and clean up the idf's buffer of results.
-    // if (self->channel_scan_in_progress) {
-    //     esp_wifi_scan_stop();
-    //     if (wifi_scannednetworks_wait_for_scan(self)) {
-    //         // Discard the scanned records, one at a time, to avoid memory leaks.
-    //         uint16_t number;
-    //         do {
-    //             number = 1;
-    //             wifi_ap_record_t record;
-    //             esp_wifi_scan_get_ap_records(&number, &record);
-    //         } while (number > 0);
-    //         // TODO: available in ESP-IDF v5.0; do instead of the above.
-    //         // Discard scan results.
-    //         // esp_wifi_clear_ap_list();
-    //         self->channel_scan_in_progress = false;
-    //     }
-    // }
-    // wifi_scannednetworks_done(self);
 }

@@ -152,6 +152,7 @@ static MP_DEFINE_CONST_FUN_OBJ_2(socketpool_socket_listen_obj, socketpool_socket
 //|         """Reads some bytes from a remote address.
 //|
 //|         Returns a tuple containing
+//|
 //|         * the number of bytes received into the given buffer
 //|         * a remote_address, which is a tuple of ip address and port number
 //|
@@ -376,7 +377,7 @@ static mp_obj_t socketpool_socket_settimeout(mp_obj_t self_in, mp_obj_t timeout_
     socketpool_socket_obj_t *self = MP_OBJ_TO_PTR(self_in);
     mp_uint_t timeout_ms;
     if (timeout_in == mp_const_none) {
-        timeout_ms = -1;
+        timeout_ms = SOCKET_BLOCK_FOREVER;
     } else {
         #if MICROPY_PY_BUILTINS_FLOAT
         timeout_ms = 1000 * mp_obj_get_float(timeout_in);
@@ -452,10 +453,10 @@ static mp_uint_t socket_ioctl(mp_obj_t self_in, mp_uint_t request, mp_uint_t arg
     if (request == MP_STREAM_POLL) {
         mp_uint_t flags = arg;
         ret = 0;
-        if ((flags & MP_STREAM_POLL_RD) && common_hal_socketpool_readable(self) > 0) {
+        if ((flags & MP_STREAM_POLL_RD) && common_hal_socketpool_socket_readable(self) > 0) {
             ret |= MP_STREAM_POLL_RD;
         }
-        if ((flags & MP_STREAM_POLL_WR) && common_hal_socketpool_writable(self)) {
+        if ((flags & MP_STREAM_POLL_WR) && common_hal_socketpool_socket_writable(self)) {
             ret |= MP_STREAM_POLL_WR;
         }
     } else {

@@ -14,6 +14,7 @@
 #include "py/objstr.h"
 #include "py/runtime.h"
 #include "shared-bindings/ipaddress/__init__.h"
+#include "shared-bindings/ipaddress/IPv4Address.h"
 
 //| class IPv4Address:
 //|     """Encapsulates an IPv4 address."""

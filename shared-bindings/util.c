@@ -15,6 +15,21 @@ void raise_deinited_error(void) {
     mp_raise_ValueError(MP_ERROR_TEXT("Object has been deinitialized and can no longer be used. Create a new object."));
 }
 
+// Use an mp_rom_map_elem_t table (usually a locals_dict_table) to help print an object.
+void elem_print_helper(const mp_print_t *print, mp_obj_t self_in, const mp_rom_map_elem_t *elems, size_t n_elems) {
+    const mp_obj_type_t *type = mp_obj_get_type(self_in);
+    mp_printf(print, "%q(", type->name);
+    for (size_t i = 0; i < n_elems; i++) {
+        if (i > 0) {
+            mp_print_str(print, ", ");
+        }
+        mp_printf(print, "%q=", MP_OBJ_QSTR_VALUE(elems[i].key));
+        mp_obj_print_helper(print, mp_load_attr(self_in, MP_OBJ_QSTR_VALUE(elems[i].key)), PRINT_REPR);
+    }
+    mp_print_str(print, ")");
+}
+
+// Use an mp_arg_t table (usually used in a constructor) to help print an object.
 void properties_print_helper(const mp_print_t *print, mp_obj_t self_in, const mp_arg_t *properties, size_t n_properties) {
     const mp_obj_type_t *type = mp_obj_get_type(self_in);
     mp_printf(print, "%q(", type->name);

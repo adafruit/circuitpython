@@ -8,117 +8,86 @@
 #include "common-hal/socketpool/Socket.h"
 
 #include "py/runtime.h"
+#include "shared-bindings/ipaddress/IPv4Address.h"
 #include "shared-bindings/wifi/__init__.h"
 #include "common-hal/socketpool/__init__.h"
 
 void common_hal_socketpool_socketpool_construct(socketpool_socketpool_obj_t *self, mp_obj_t radio) {
-    // if (radio != MP_OBJ_FROM_PTR(&common_hal_wifi_radio_obj)) {
-    //     mp_raise_ValueError(MP_ERROR_TEXT("SocketPool can only be used with wifi.radio"));
-    // }
+    if (radio != MP_OBJ_FROM_PTR(&common_hal_wifi_radio_obj)) {
+        mp_raise_ValueError(MP_ERROR_TEXT("SocketPool can only be used with wifi.radio"));
+    }
+    // Not really needed, but more convenient.
+    self->radio = radio;
 }
 
 // common_hal_socketpool_socket is in socketpool/Socket.c to centralize open socket tracking.
 
-// int socketpool_getaddrinfo_common(const char *host, int service, const struct addrinfo *hints, struct addrinfo **res) {
-//     // As of 2022, the version of lwip in esp-idf does not handle the
-//     // trailing-dot syntax of domain names, so emulate it.
-//     // Remove this once https://github.com/espressif/esp-idf/issues/10013 has
-//     // been implemented
-//     if (host) {
-//         size_t strlen_host = strlen(host);
-//         if (strlen_host && host[strlen_host - 1] == '.') {
-//             mp_obj_t nodot = mp_obj_new_str(host, strlen_host - 1);
-//             host = mp_obj_str_get_str(nodot);
-//         }
-//     }
+bool socketpool_gethostbyname_ipv4(socketpool_socketpool_obj_t *self, const char *host, uint8_t ipv4[4]) {
+    const uint8_t *req_host_params[1] = { (uint8_t *)host };
+    size_t req_host_param_lengths[1] = { strlen(host) };
 
-//     char service_buf[6];
-//     snprintf(service_buf, sizeof(service_buf), "%d", service);
+    uint8_t result = 0;
+    uint8_t *req_host_responses[1] = { &result };
+    size_t req_host_response_lengths[1] = { 1 };
 
-//     return lwip_getaddrinfo(host, service_buf, hints, res);
-// }
+    // If host is a numeric IP address, AirLift will just parse and return the address.
 
-// static mp_obj_t format_address(const struct sockaddr *addr, int family) {
-//     char ip_str[IPADDR_STRLEN_MAX]; // big enough for any supported address type
-//     const struct sockaddr_in *a = (void *)addr;
+    size_t num_responses = wifi_radio_send_command_get_response(self->radio, REQ_HOST_BY_NAME_CMD,
+        req_host_params, req_host_param_lengths, LENGTHS_8, MP_ARRAY_SIZE(req_host_params),
+        req_host_responses, req_host_response_lengths, LENGTHS_8, MP_ARRAY_SIZE(req_host_responses),
+        AIRLIFT_DEFAULT_TIMEOUT_MS);
 
-//     switch (family) {
-//         #if CIRCUITPY_SOCKETPOOL_IPV6
-//         case AF_INET6:
-//             inet_ntop(family, &((const struct sockaddr_in6 *)a)->sin6_addr, ip_str, sizeof(ip_str));
-//             break;
-//         #endif
-//         default:
-//         case AF_INET:
-//             inet_ntop(family, &((const struct sockaddr_in *)a)->sin_addr, ip_str, sizeof(ip_str));
-//             break;
-//     }
-//     return mp_obj_new_str(ip_str, strlen(ip_str));
-//     return mp_const_none;
-// }
+    if (num_responses >= 1) {
+        if (result == 0) {
+            return false;
+        }
 
-// static mp_obj_t convert_sockaddr(const struct addrinfo *ai, int port) {
-//     // #if CIRCUITPY_SOCKETPOOL_IPV6
-//     // mp_int_t n_tuple = ai->ai_family == AF_INET6 ? 4 : 2;
-//     // #else
-//     // mp_int_t n_tuple = 2;
-//     // #endif
-//     // mp_obj_tuple_t *result = MP_OBJ_TO_PTR(mp_obj_new_tuple(n_tuple, NULL));
-//     // result->items[0] = format_address(ai->ai_addr, ai->ai_family);
-//     // result->items[1] = MP_OBJ_NEW_SMALL_INT(port);
-//     // #if CIRCUITPY_SOCKETPOOL_IPV6
-//     // if (ai->ai_family == AF_INET6) {
-//     //     const struct sockaddr_in6 *ai6 = (void *)ai->ai_addr;
-//     //     result->items[2] = MP_OBJ_NEW_SMALL_INT(ai6->sin6_flowinfo);
-//     //     result->items[3] = MP_OBJ_NEW_SMALL_INT(ai6->sin6_scope_id);
-//     // }
-//     // #endif
-//     // return result;
-//     return mp_const_none;
-// }
+        uint8_t *get_host_responses[1] = { ipv4 };
+        size_t get_host_response_lengths[1] = { IPV4_LENGTH };
 
-// static mp_obj_t convert_addrinfo(const struct addrinfo *ai, int port) {
-//     // MP_STATIC_ASSERT(AF_INET == SOCKETPOOL_AF_INET);
-//     // #if CIRCUITPY_SOCKETPOOL_IPV6
-//     // MP_STATIC_ASSERT(AF_INET6 == SOCKETPOOL_AF_INET6);
-//     // #endif
-//     // // MP_STATIC_ASSERT(AF_UNSPEC == SOCKETPOOL_AF_UNSPEC);
-//     // mp_obj_tuple_t *result = MP_OBJ_TO_PTR(mp_obj_new_tuple(5, NULL));
-//     // result->items[0] = MP_OBJ_NEW_SMALL_INT(ai->ai_family);
-//     // result->items[1] = MP_OBJ_NEW_SMALL_INT(ai->ai_socktype);
-//     // result->items[2] = MP_OBJ_NEW_SMALL_INT(ai->ai_protocol);
-//     // result->items[3] = ai->ai_canonname ? mp_obj_new_str(ai->ai_canonname, strlen(ai->ai_canonname)) : MP_OBJ_NEW_QSTR(MP_QSTR_);
-//     // result->items[4] = convert_sockaddr(ai, port);
-//     // return result;
-//     return mp_const_none;
-// }
+        // Now actually get the name.
+        num_responses = wifi_radio_send_command_get_response(self->radio, GET_HOST_BY_NAME_CMD,
+            NULL, NULL, LENGTHS_8, 0,
+            get_host_responses, get_host_response_lengths, LENGTHS_8, MP_ARRAY_SIZE(get_host_responses),
+            AIRLIFT_DEFAULT_TIMEOUT_MS);
+        if (num_responses == 1) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static mp_obj_t socketpool_socketpool_gethostbyname_str(socketpool_socketpool_obj_t *self, const char *host) {
+    uint8_t ipv4[4] = { 0 };
+
+    if (!socketpool_gethostbyname_ipv4(self, host, ipv4)) {
+        // Could not resolve or parse hostname.
+        return mp_const_none;
+    }
+
+    vstr_t vstr;
+    mp_print_t print;
+    vstr_init_print(&vstr, 16, &print);
+    mp_printf(&print, "%d.%d.%d.%d", ipv4[0], ipv4[1], ipv4[2], ipv4[3]);
+    return mp_obj_new_str_from_vstr(&vstr);
+}
 
 mp_obj_t common_hal_socketpool_getaddrinfo_raise(socketpool_socketpool_obj_t *self, const char *host, int port, int family, int type, int proto, int flags) {
-    // const struct addrinfo hints = {
-    //     .ai_flags = flags,
-    //     .ai_family = family,
-    //     .ai_protocol = proto,
-    //     .ai_socktype = type,
-    // };
-    //
-    // struct addrinfo *res = NULL;
-    // int err = socketpool_getaddrinfo_common(host, port, &hints, &res);
-    // if (err != 0 || res == NULL) {
-    //     common_hal_socketpool_socketpool_raise_gaierror_noname();
-    // }
-    //
-    // nlr_buf_t nlr;
-    // if (nlr_push(&nlr) == 0) {
-    //     mp_obj_t result = mp_obj_new_list(0, NULL);
-    //     for (struct addrinfo *ai = res; ai; ai = ai->ai_next) {
-    //         mp_obj_list_append(result, convert_addrinfo(ai, port));
-    //     }
-    //     nlr_pop();
-    //     lwip_freeaddrinfo(res);
-    //     return result;
-    // } else {
-    //     lwip_freeaddrinfo(res);
-    //     nlr_raise(MP_OBJ_FROM_PTR(nlr.ret_val));
-    // }
-    return mp_const_none;
+    mp_obj_t ip_str = socketpool_socketpool_gethostbyname_str(self, host);
+    if (ip_str == mp_const_none) {
+        // Could not resolve hostname.
+        common_hal_socketpool_socketpool_raise_gaierror_noname();
+    }
+
+    mp_obj_tuple_t *tuple = MP_OBJ_TO_PTR(mp_obj_new_tuple(5, NULL));
+    tuple->items[0] = MP_OBJ_NEW_SMALL_INT(SOCKETPOOL_AF_INET);
+    tuple->items[1] = MP_OBJ_NEW_SMALL_INT(SOCKETPOOL_SOCK_STREAM);
+    tuple->items[2] = MP_OBJ_NEW_SMALL_INT(0);
+    tuple->items[3] = MP_OBJ_NEW_QSTR(MP_QSTR_);
+    mp_obj_tuple_t *sockaddr = MP_OBJ_TO_PTR(mp_obj_new_tuple(2, NULL));
+    sockaddr->items[0] = ip_str;
+    sockaddr->items[1] = MP_OBJ_NEW_SMALL_INT(port);
+    tuple->items[4] = MP_OBJ_FROM_PTR(sockaddr);
+    return mp_obj_new_list(1, (mp_obj_t *)&tuple);
 }

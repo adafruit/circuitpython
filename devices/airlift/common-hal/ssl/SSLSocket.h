@@ -8,27 +8,12 @@
 #pragma once
 
 #include "py/obj.h"
+#include "shared-bindings/socketpool/Socket.h"
 
 typedef struct ssl_sslsocket_obj {
     mp_obj_base_t base;
-    mp_obj_t sock_obj;
-    // ssl_sslcontext_obj_t *ssl_context;
-    // mbedtls_entropy_context entropy;
-    // mbedtls_ctr_drbg_context ctr_drbg;
-    // mbedtls_ssl_context ssl;
-    // mbedtls_ssl_config conf;
-    // mbedtls_x509_crt cacert;
-    // mbedtls_x509_crt cert;
-    // mbedtls_pk_context pkey;
-    uintptr_t poll_mask;
+    socketpool_socket_obj_t *socket;
+    char hostname[MAX_HOSTNAME_LENGTH + 1];
     bool closed;
-    mp_obj_t accept_args[2];
-    mp_obj_t bind_args[3];
-    mp_obj_t close_args[2];
-    mp_obj_t connect_args[3];
-    mp_obj_t listen_args[3];
-    mp_obj_t recv_into_args[3];
-    mp_obj_t send_args[3];
-    mp_obj_t setsockopt_args[5];
-    mp_obj_t settimeout_args[3];
+    bool server_side;
 } ssl_sslsocket_obj_t;

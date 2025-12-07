@@ -32,8 +32,6 @@
 
 #include "shared/netutils/dhcpserver.h"
 
-#define MAC_ADDRESS_LENGTH 6
-
 #define NETIF_STA (&cyw43_state.netif[CYW43_ITF_STA])
 #define NETIF_AP (&cyw43_state.netif[CYW43_ITF_AP])
 
@@ -483,7 +481,7 @@ void common_hal_wifi_radio_set_ipv4_address(wifi_radio_obj_t *self, mp_obj_t ipv
     ipaddress_ipaddress_to_lwip(netmask, &netmask_addr);
     ipaddress_ipaddress_to_lwip(gateway, &gateway_addr);
     netif_set_addr(NETIF_STA, &ipv4_addr, &netmask_addr, &gateway_addr);
-    if (ipv4_dns != MP_OBJ_NULL) {
+    if (ipv4_dns != mp_const_none) {
         common_hal_wifi_radio_set_ipv4_dns(self, ipv4_dns);
     }
 }

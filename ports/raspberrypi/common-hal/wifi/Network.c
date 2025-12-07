@@ -6,15 +6,14 @@
 
 #include <string.h>
 
-#include "shared-bindings/wifi/Network.h"
 #include "shared-bindings/wifi/AuthMode.h"
+#include "shared-bindings/wifi/Network.h"
+#include "shared-bindings/wifi/Radio.h"
 
 mp_obj_t common_hal_wifi_network_get_ssid(wifi_network_obj_t *self) {
     const char *cstr = (const char *)self->record.ssid;
     return mp_obj_new_str(cstr, self->record.ssid_len);
 }
-
-#define MAC_ADDRESS_LENGTH 6
 
 mp_obj_t common_hal_wifi_network_get_bssid(wifi_network_obj_t *self) {
     return mp_obj_new_bytes(self->record.bssid, MAC_ADDRESS_LENGTH);

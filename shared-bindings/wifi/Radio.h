@@ -17,6 +17,8 @@
 #include "py/objstr.h"
 #include "py/objnamedtuple.h"
 
+#define MAC_ADDRESS_LENGTH (6)
+
 extern const mp_obj_type_t wifi_radio_type;
 extern const mp_obj_namedtuple_type_t wifi_radio_station_type;
 
@@ -61,9 +63,15 @@ typedef enum {
     WIFI_RADIO_NO_AP_FOUND_W_COMPATIBLE_SECURITY = 210,  // collapsed to AUTH_FAIL
     WIFI_RADIO_NO_AP_FOUND_IN_AUTHMODE_THRESHOLD = 211,  // collapsed to AUTH_FAIL
     WIFI_RADIO_NO_AP_FOUND_IN_RSSI_THRESHOLD     = 212,
+    WIFI_RADIO_ERROR_NO_RADIO                    = 500,
 } wifi_radio_error_t;
 
+#if CIRCUITPY_WIFI_AIRLIFT
+extern bool common_hal_wifi_radio_deinited(wifi_radio_obj_t *self);
+extern void common_hal_wifi_radio_mark_deinit(wifi_radio_obj_t *self);
+extern void common_hal_wifi_radio_deinit(wifi_radio_obj_t *self);
 extern void common_hal_wifi_radio_init_airlift(wifi_radio_obj_t *self, busio_spi_obj_t *spi, digitalio_digitalinout_obj_t *cs, digitalio_digitalinout_obj_t *ready, digitalio_digitalinout_obj_t *reset, digitalio_digitalinout_obj_t *gpio0);
+#endif
 
 extern mp_obj_t common_hal_wifi_radio_get_version(wifi_radio_obj_t *self);
 

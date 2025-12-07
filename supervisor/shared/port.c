@@ -43,6 +43,14 @@ MP_WEAK void *port_malloc(size_t size, bool dma_capable) {
     return block;
 }
 
+void *port_malloc_check(size_t size, bool dma_capable) {
+    void *p = port_malloc(size, dma_capable);
+    if (!p) {
+        m_malloc_fail(size);
+    }
+    return p;
+}
+
 // Ensure allocated memory is zero.
 MP_WEAK void *port_malloc_zero(size_t size, bool dma_capable) {
     void *ptr = port_malloc(size, dma_capable);
@@ -58,6 +66,14 @@ MP_WEAK void port_free(void *ptr) {
 
 MP_WEAK void *port_realloc(void *ptr, size_t size, bool dma_capable) {
     return tlsf_realloc(heap, ptr, size);
+}
+
+void *port_realloc_check(void *ptr, size_t size, bool dma_capable) {
+    void *p = port_realloc(ptr, size, dma_capable);
+    if (!p) {
+        m_malloc_fail(size);
+    }
+    return p;
 }
 
 static bool max_size_walker(void *ptr, size_t size, int used, void *user) {

@@ -9,6 +9,7 @@
 #include "py/objproperty.h"
 #include "py/runtime.h"
 #include "shared-bindings/wifi/Network.h"
+#include "shared-bindings/util.h"
 
 //| class Network:
 //|     """A wifi network provided by a nearby access point."""
@@ -101,9 +102,16 @@ static const mp_rom_map_elem_t wifi_network_locals_dict_table[] = {
 
 static MP_DEFINE_CONST_DICT(wifi_network_locals_dict, wifi_network_locals_dict_table);
 
+static void network_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
+    (void)kind;
+    elem_print_helper(print, self_in,
+        wifi_network_locals_dict_table, MP_ARRAY_SIZE(wifi_network_locals_dict_table));
+}
+
 MP_DEFINE_CONST_OBJ_TYPE(
     wifi_network_type,
     MP_QSTR_Network,
     MP_TYPE_FLAG_HAS_SPECIAL_ACCESSORS,
-    locals_dict, &wifi_network_locals_dict
+    locals_dict, &wifi_network_locals_dict,
+    print, network_print
     );

@@ -10,6 +10,7 @@
 #include "py/runtime.h"
 
 NORETURN void raise_deinited_error(void);
+void elem_print_helper(const mp_print_t *print, mp_obj_t self_in, const mp_rom_map_elem_t *elems, size_t n_elems);
 void properties_print_helper(const mp_print_t *print, mp_obj_t self_in, const mp_arg_t *properties, size_t n_properties);
 void properties_construct_helper(mp_obj_t self_in, const mp_arg_t *args, const mp_arg_val_t *vals, size_t n_properties);
 bool path_exists(const char *path);

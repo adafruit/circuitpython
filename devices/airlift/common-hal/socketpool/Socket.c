@@ -8,703 +8,562 @@
 
 #include "shared/runtime/interrupt_char.h"
 #include "py/mperrno.h"
+///TEMP
+#include "py/mphal.h"
 #include "py/runtime.h"
+#include "shared-bindings/ipaddress/IPv4Address.h"
 #include "shared-bindings/socketpool/SocketPool.h"
+#include "shared-bindings/wifi/Radio.h"
 #include "common-hal/socketpool/__init__.h"
 #include "common-hal/wifi/__init__.h"
-#if CIRCUITPY_SSL_NATIVE
-#include "shared-bindings/ssl/SSLSocket.h"
-#include "shared-module/ssl/SSLSocket.h"
-#endif
+// #if CIRCUITPY_SSL
+// #include "shared-bindings/ssl/SSLSocket.h"
+// #include "shared-module/ssl/SSLSocket.h"
+// #endif
 #include "supervisor/port.h"
 #include "supervisor/shared/tick.h"
 #include "supervisor/workflow.h"
 
-// void socketpool_resolve_host_or_throw(int family, int type, const char *hostname, struct sockaddr_storage *addr, int port) {
-//     // struct addrinfo *result_i;
-//     // const struct addrinfo hints = {
-//     //     .ai_family = family,
-//     //     .ai_socktype = type,
-//     // };
-//     // int error = socketpool_getaddrinfo_common(hostname, port, &hints, &result_i);
-//     // if (error != 0 || result_i == NULL) {
-//     //     common_hal_socketpool_socketpool_raise_gaierror_noname();
-//     // }
-//     // memcpy(addr, result_i->ai_addr, sizeof(struct sockaddr_storage));
-//     // lwip_freeaddrinfo(result_i);
-// }
-
-// static void resolve_host_or_throw(socketpool_socket_obj_t *self, const char *hostname, struct sockaddr_storage *addr, int port) {
-//     // socketpool_resolve_host_or_throw(self->family, self->type, hostname, addr, port);
-// }
-
-// StackType_t socket_select_stack[2 * configMINIMAL_STACK_SIZE];
-
-/* Socket state table:
- * 0 := Closed (unused)
- * 1 := Open
- * 2 := Closing (remove from rfds)
- * Index into socket_fd_state is calculated from actual lwip fd. idx := fd - LWIP_SOCKET_OFFSET
-*/
-#define FDSTATE_CLOSED  0
-#define FDSTATE_OPEN    1
-#define FDSTATE_CLOSING 2
-// static uint8_t socket_fd_state[CONFIG_LWIP_MAX_SOCKETS];
-
-// How long to wait between checks for a socket to connect.
-#define SOCKET_CONNECT_POLL_INTERVAL_MS 100
-
-// static socketpool_socket_obj_t *user_socket[CONFIG_LWIP_MAX_SOCKETS];
-// StaticTask_t socket_select_task_buffer;
-// TaskHandle_t socket_select_task_handle;
-// static int socket_change_fd = -1;
-
-// static void socket_select_task(void *arg) {
-//     uint64_t signal;
-//     fd_set readfds;
-//     fd_set excptfds;
-
-//     while (true) {
-//         FD_ZERO(&readfds);
-//         FD_ZERO(&excptfds);
-//         FD_SET(socket_change_fd, &readfds);
-//         int max_fd = socket_change_fd;
-//         for (size_t i = 0; i < MP_ARRAY_SIZE(socket_fd_state); i++) {
-//             if ((socket_fd_state[i] == FDSTATE_OPEN) && (user_socket[i] == NULL)) {
-//                 int sockfd = i + LWIP_SOCKET_OFFSET;
-//                 max_fd = MAX(max_fd, sockfd);
-//                 FD_SET(sockfd, &readfds);
-//                 FD_SET(sockfd, &excptfds);
-//             }
-//         }
-
-//         int num_triggered = select(max_fd + 1, &readfds, NULL, &excptfds, NULL);
-//         // Hard error (or someone closed a socket on another thread)
-//         if (num_triggered == -1) {
-//             assert(errno == EBADF);
-//             continue;
-//         }
-
-//         assert(num_triggered > 0);
-
-//         // Notice event trigger
-//         if (FD_ISSET(socket_change_fd, &readfds)) {
-//             read(socket_change_fd, &signal, sizeof(signal));
-//             num_triggered--;
-//         }
-
-//         // Handle active FDs, close the dead ones
-//         for (size_t i = 0; i < MP_ARRAY_SIZE(socket_fd_state); i++) {
-//             int sockfd = i + LWIP_SOCKET_OFFSET;
-//             if (socket_fd_state[i] != FDSTATE_CLOSED) {
-//                 if (FD_ISSET(sockfd, &readfds) || FD_ISSET(sockfd, &excptfds)) {
-//                     if (socket_fd_state[i] == FDSTATE_CLOSING) {
-//                         socket_fd_state[i] = FDSTATE_CLOSED;
-//                         num_triggered--;
-//                     }
-//                 }
-//             }
-//         }
-
-//         if (num_triggered > 0) {
-//             // Wake up CircuitPython by queuing request
-//             supervisor_workflow_request_background();
-//             ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-//         }
-//     }
-
-//     close(socket_change_fd);
-//     socket_change_fd = -1;
-//     vTaskDelete(NULL);
-// }
-
 void socket_user_reset(void) {
-    // if (socket_change_fd < 0) {
-    //     esp_vfs_eventfd_config_t config = ESP_VFS_EVENTD_CONFIG_DEFAULT();
-    //     ESP_ERROR_CHECK(esp_vfs_eventfd_register(&config));
-    //
-    //     // Clear initial socket states
-    //     for (size_t i = 0; i < MP_ARRAY_SIZE(socket_fd_state); i++) {
-    //         socket_fd_state[i] = FDSTATE_CLOSED;
-    //         user_socket[i] = NULL;
-    //     }
-    //     socket_change_fd = eventfd(0, 0);
-    //     // Run this at the same priority as CP so that the web workflow background task can be
-    //     // queued while CP is running. Both tasks can still sleep and, therefore, sleep overall.
-    //     socket_select_task_handle = xTaskCreateStaticPinnedToCore(socket_select_task,
-    //         "socket_select",
-    //         2 * configMINIMAL_STACK_SIZE,
-    //         NULL,
-    //         uxTaskPriorityGet(NULL),
-    //         socket_select_stack,
-    //         &socket_select_task_buffer,
-    //         xPortGetCoreID());
-    // } else {
-    //     // Not init - close open user sockets
-    //     for (size_t i = 0; i < MP_ARRAY_SIZE(socket_fd_state); i++) {
-    //         if ((socket_fd_state[i] == FDSTATE_OPEN) && user_socket[i]) {
-    //             common_hal_socketpool_socket_close(user_socket[i]);
-    //         }
-    //     }
-    // }
+}
+
+NORETURN static void raise_failed(void) {
+    mp_raise_RuntimeError(MP_ERROR_TEXT("Failed"));
 }
 
 // Unblock select task (ok if not blocked yet)
 void socketpool_socket_poll_resume(void) {
-    // if (socket_select_task_handle) {
-    //     xTaskNotifyGive(socket_select_task_handle);
-    // }
 }
 
-// The writes below send an event to the socket select task so that it redoes the
-// select with the new open socket set.
+// The SOCKETPOOL_ constants are actually the same as the LWIP constants, but it's
+// possible they might not be, so map them, just in case.
+static int socketpool_type_to_airlift_type(socketpool_socketpool_sock_t type) {
+    switch (type) {
+        case SOCKETPOOL_SOCK_STREAM:
+            return SOCK_STREAM;
+        case SOCKETPOOL_SOCK_DGRAM:
+            return SOCK_DGRAM;
+        case SOCKETPOOL_SOCK_RAW:
+            return SOCK_RAW;
+        default:
+            mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q"), MP_QSTR_type);
+    }
+}
 
-// static bool register_open_socket(int fd) {
-//     // if (fd < FD_SETSIZE) {
-//     //     socket_fd_state[fd - LWIP_SOCKET_OFFSET] = FDSTATE_OPEN;
-//     //     user_socket[fd - LWIP_SOCKET_OFFSET] = NULL;
-//     //
-//     //     uint64_t signal = 1;
-//     //     write(socket_change_fd, &signal, sizeof(signal));
-//     //     socketpool_socket_poll_resume();
-//     //     return true;
-//     // }
-//     // return false;
-//     return 0;
+// // The SOCKETPOOL_ constants are actually the same as the LWIP constants, but it's
+// // possible they might not be, so map them, just in case.
+// static socketpool_socketpool_sock_t airlift_type_to_socketpool_type(int type) {
+//     switch (type) {
+//         case SOCK_STREAM:
+//             return SOCKETPOOL_SOCK_STREAM;
+//         case SOCK_DGRAM:
+//             return SOCKETPOOL_SOCK_DGRAM;
+//         case SOCK_RAW:
+//             return SOCKETPOOL_SOCK_RAW;
+//         default:
+//             mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q"), MP_QSTR_type);
+//     }
 // }
 
-// static void mark_user_socket(int fd, socketpool_socket_obj_t *obj) {
-//     // socket_fd_state[fd - LWIP_SOCKET_OFFSET] = FDSTATE_OPEN;
-//     // user_socket[fd - LWIP_SOCKET_OFFSET] = obj;
-//     // // No need to wakeup select task
-// }
 
-// static bool _socketpool_socket(socketpool_socketpool_obj_t *self,
-//     socketpool_socketpool_addressfamily_t family, socketpool_socketpool_sock_t type,
-//     int proto,
-//     socketpool_socket_obj_t *sock) {
-//     int addr_family;
-//     int ipproto;
+static bool _socketpool_socket(socketpool_socketpool_obj_t *self,
+    socketpool_socketpool_addressfamily_t family, socketpool_socketpool_sock_t type,
+    int proto,
+    socketpool_socket_obj_t *sock) {
 
-//     if (family == SOCKETPOOL_AF_INET) {
-//         addr_family = AF_INET;
-//         ipproto = IPPROTO_IP;
-//     #if CIRCUITPY_SOCKETPOOL_IPV6
-//     } else { // INET6
-//         addr_family = AF_INET6;
-//         ipproto = IPPROTO_IPV6;
-//     #endif
-//     }
+    sock->proto = IPPROTO_IP;
 
-//     int socket_type;
-//     if (type == SOCKETPOOL_SOCK_STREAM) {
-//         socket_type = SOCK_STREAM;
-//     } else if (type == SOCKETPOOL_SOCK_DGRAM) {
-//         socket_type = SOCK_DGRAM;
-//     } else { // SOCKETPOOL_SOCK_RAW
-//         socket_type = SOCK_RAW;
-//         ipproto = proto;
-//     }
-//     sock->type = socket_type;
-//     sock->family = addr_family;
-//     sock->ipproto = ipproto;
-//     sock->pool = self;
-//     sock->timeout_ms = (uint)-1;
+    // The SOCKETPOOL_ constants are actually the same as the LWIP constants, but it's
+    // possible they might not be, so map them, just in case.
+    switch (family) {
+        case SOCKETPOOL_AF_INET:
+            sock->family = AF_INET;
+            break;
+        default:
+            mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q"), MP_QSTR_family);
+    }
 
-//     // Create LWIP socket
-//     int socknum = -1;
-//     socknum = lwip_socket(sock->family, sock->type, sock->ipproto);
-//     if (socknum < 0) {
-//         return false;
-//     }
+    sock->type = socketpool_type_to_airlift_type(type);
 
-//     sock->num = socknum;
-//     // Sockets should be nonblocking in most cases
-//     lwip_fcntl(socknum, F_SETFL, O_NONBLOCK);
+    sock->socketpool = self;
+    sock->timeout_ms = SOCKET_BLOCK_FOREVER;
 
-//     return true;
-// }
+    uint8_t socket_num;
+    uint8_t *responses[1] = { &socket_num };
+    size_t response_lengths[1] = { 1 };
+
+    size_t num_responses = wifi_radio_send_command_get_response(self->radio, GET_SOCKET_CMD,
+        NULL, NULL, LENGTHS_8, 0,
+        responses, response_lengths, LENGTHS_8, MP_ARRAY_SIZE(responses),
+        AIRLIFT_DEFAULT_TIMEOUT_MS);
+
+    if (num_responses == 0) {
+        raise_failed();
+    }
+
+    sock->num = socket_num;
+    sock->bound = false;
+    sock->connected = false;
+    sock->client_started = false;
+    sock->server_started = false;
+
+    return sock->num != NO_SOCKET;
+
+}
 
 // special entry for workflow listener (register system socket)
 bool socketpool_socket(socketpool_socketpool_obj_t *self,
     socketpool_socketpool_addressfamily_t family, socketpool_socketpool_sock_t type,
     int proto, socketpool_socket_obj_t *sock) {
-    //
-    // if (!_socketpool_socket(self, family, type, proto, sock)) {
-    //     return false;
-    // }
-    //
-    // // This shouldn't happen since we have room for the same number of sockets as LWIP.
-    // if (!register_open_socket(sock->num)) {
-    //     lwip_close(sock->num);
-    //     return false;
-    // }
-    // return true;
-    return 0;
+
+    return _socketpool_socket(self, family, type, proto, sock);
 }
 
 socketpool_socket_obj_t *common_hal_socketpool_socket(socketpool_socketpool_obj_t *self,
     socketpool_socketpool_addressfamily_t family, socketpool_socketpool_sock_t type, int proto) {
-    // switch (family) {
-    //     #if CIRCUITPY_SOCKETPOOL_IPV6
-    //     case SOCKETPOOL_AF_INET6:
-    //     #endif
-    //     case SOCKETPOOL_AF_INET:
-    //         break;
-    //     default:
-    //         mp_raise_NotImplementedError(MP_ERROR_TEXT("Unsupported socket type"));
-    // }
-    //
-    // socketpool_socket_obj_t *sock = mp_obj_malloc_with_finaliser(socketpool_socket_obj_t, &socketpool_socket_type);
-    //
-    // if (!_socketpool_socket(self, family, type, proto, sock)) {
-    //     mp_raise_RuntimeError(MP_ERROR_TEXT("Out of sockets"));
-    // }
-    // mark_user_socket(sock->num, sock);
-    // return sock;
-    return NULL;
+    socketpool_socket_obj_t *sock = mp_obj_malloc_with_finaliser(socketpool_socket_obj_t, &socketpool_socket_type);
+
+    if (!_socketpool_socket(self, family, type, proto, sock)) {
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Out of sockets"));
+    }
+    return sock;
+}
+
+// Polling values, specific to NINA-FW.
+#define SOCKET_POLL_RD       (0x01)
+#define SOCKET_POLL_WR       (0x02)
+#define SOCKET_POLL_ERR      (0x04)
+#define SOCKET_POLL_FAIL     (0x80)
+
+static uint8_t socketpool_socket_poll(socketpool_socket_obj_t *self) {
+    // TODO: not gonna work on the mapped socket number.
+    mp_raise_NotImplementedError(NULL);
+}
+
+// Return, via parameters, the IP address and port of the connection.
+// Return false if not connected.
+static bool socketpool_socket_get_connection_info(socketpool_socket_obj_t *self, uint8_t ipv4[IPV4_LENGTH], uint16_t *port) {
+    const uint8_t *params[1] = { &self->num };
+    size_t param_lengths[1] = { 1 };
+
+    *port = 0;
+    memset(ipv4, 0, IPV4_LENGTH);
+    uint8_t *responses[3] = { ipv4, (uint8_t *)&port };
+    size_t response_lengths[3] = { IPV4_LENGTH, sizeof(port) };
+
+    size_t num_responses = wifi_radio_send_command_get_response(self->socketpool->radio, GET_REMOTE_DATA_CMD,
+        params, param_lengths, LENGTHS_8, MP_ARRAY_SIZE(params),
+        responses, response_lengths, LENGTHS_8, MP_ARRAY_SIZE(responses),
+        AIRLIFT_DEFAULT_TIMEOUT_MS);
+
+    if (num_responses == 0) {
+        raise_failed();
+    }
+
+    return port != 0;
+}
+
+
+
+static airlift_socket_status_t socketpool_socket_status(socketpool_socket_obj_t *self) {
+    const uint8_t *params[1] = { &self->num };
+    size_t param_lengths[1] = { 1 };
+
+    uint8_t result;
+    uint8_t *responses[1] = { &result };
+    size_t response_lengths[1] = { 1 };
+
+    size_t num_responses = wifi_radio_send_command_get_response(self->socketpool->radio, GET_CLIENT_STATE_TCP_CMD,
+        params, param_lengths, LENGTHS_8, MP_ARRAY_SIZE(params),
+        responses, response_lengths, LENGTHS_8, MP_ARRAY_SIZE(responses),
+        AIRLIFT_DEFAULT_TIMEOUT_MS);
+
+    if (num_responses == 0) {
+        raise_failed();
+    }
+
+    return result;
 }
 
 int socketpool_socket_accept(socketpool_socket_obj_t *self, mp_obj_t *peer_out, socketpool_socket_obj_t *accepted) {
-    // struct sockaddr_storage peer_addr;
-    // socklen_t socklen = sizeof(peer_addr);
-    // int newsoc = -1;
-    // bool timed_out = false;
-    // uint64_t start_ticks = supervisor_ticks_ms64();
-    //
-    // // Allow timeouts and interrupts
-    // while (newsoc == -1 && !timed_out) {
-    //     if (self->timeout_ms != (uint)-1 && self->timeout_ms != 0) {
-    //         timed_out = supervisor_ticks_ms64() - start_ticks >= self->timeout_ms;
-    //     }
-    //     RUN_BACKGROUND_TASKS;
-    //     newsoc = lwip_accept(self->num, (struct sockaddr *)&peer_addr, &socklen);
-    //     // In non-blocking mode, fail instead of timing out
-    //     if (newsoc == -1 && (self->timeout_ms == 0 || mp_hal_is_interrupted())) {
-    //         return -MP_EAGAIN;
-    //     }
-    // }
-    //
-    // if (timed_out) {
-    //     return -ETIMEDOUT;
-    // }
-    //
-    // if (newsoc < 0) {
-    //     return -MP_EBADF;
-    // }
-    //
-    // // We got a socket. New client socket will not be non-blocking by default, so make it non-blocking.
-    // lwip_fcntl(newsoc, F_SETFL, O_NONBLOCK);
-    //
-    // if (accepted != NULL) {
-    //     // Error if called with open socket object.
-    //     assert(common_hal_socketpool_socket_get_closed(accepted));
-    //
-    //     // Register if system socket
-    //     if (!register_open_socket(newsoc)) {
-    //         lwip_close(newsoc);
-    //         return -MP_EBADF;
-    //     }
-    //
-    //     // Replace the old accepted socket with the new one.
-    //     accepted->num = newsoc;
-    //     accepted->pool = self->pool;
-    //     accepted->connected = true;
-    //     accepted->type = self->type;
-    // }
-    //
-    // if (peer_out) {
-    //     *peer_out = sockaddr_to_tuple(&peer_addr);
-    // }
-    //
-    // return newsoc;
-    return 0;
+    if (self->type != SOCK_STREAM) {
+        return -MP_EOPNOTSUPP;
+    }
+
+    if (common_hal_socketpool_socket_get_closed(self)) {
+        return -MP_EBADF;
+    }
+
+    const uint8_t *params[1] = { &self->num };
+    size_t param_lengths[1] = { 1 };
+
+    uint8_t accept_socket_num;
+    uint8_t *responses[1] = { &accept_socket_num };
+    size_t response_lengths[1] = { 1 };
+
+    size_t num_responses = wifi_radio_send_command_get_response(self->socketpool->radio, AVAIL_DATA_TCP_CMD,
+        params, param_lengths, LENGTHS_8, MP_ARRAY_SIZE(params),
+        responses, response_lengths, LENGTHS_8, MP_ARRAY_SIZE(responses),
+        AIRLIFT_DEFAULT_TIMEOUT_MS);
+
+    if (num_responses == 0) {
+        raise_failed();
+    }
+    if (accept_socket_num == NO_SOCKET) {
+        return -EBADF;
+    }
+
+    return accept_socket_num;
 }
 
 socketpool_socket_obj_t *common_hal_socketpool_socket_accept(socketpool_socket_obj_t *self, mp_obj_t *peer_out) {
-    // // Set the socket type only after the socketpool_socket_accept succeeds, so that the
-    // // finaliser is not called on a bad socket.
-    // socketpool_socket_obj_t *sock = mp_obj_malloc_with_finaliser(socketpool_socket_obj_t, NULL);
-    // int newsoc = socketpool_socket_accept(self, peer_out, NULL);
-    //
-    // if (newsoc > 0) {
-    //     // Create the socket
-    //     mark_user_socket(newsoc, sock);
-    //     sock->base.type = &socketpool_socket_type;
-    //     sock->num = newsoc;
-    //     sock->pool = self->pool;
-    //     sock->connected = true;
-    //     sock->type = self->type;
-    //
-    //     return sock;
-    // } else {
-    //     mp_raise_OSError(-newsoc);
-    //     return NULL;
-    // }
-    return NULL;
+    socketpool_socket_obj_t *accepted = mp_obj_malloc_with_finaliser(socketpool_socket_obj_t, NULL);
+    socketpool_socket_reset(accepted);
+
+    int ret = socketpool_socket_accept(self, peer_out, accepted);
+    if (ret < 0) {
+        mp_raise_OSError(-ret);
+    }
+
+    return accepted;
 }
 
-size_t common_hal_socketpool_socket_bind(socketpool_socket_obj_t *self,
+int common_hal_socketpool_socket_bind(socketpool_socket_obj_t *self,
     const char *host, size_t hostlen, uint32_t port) {
-    // struct sockaddr_storage bind_addr;
-    // const char *broadcast = "<broadcast>";
-    //
-    // bind_addr.ss_family = self->family;
-    //
-    // #if CIRCUITPY_SOCKETPOOL_IPV6
-    // if (self->family == AF_INET6) {
-    //     struct sockaddr_in6 *addr6 = (void *)&bind_addr;
-    //     addr6->sin6_port = htons(port);
-    //     // no ipv6 broadcast
-    //     if (hostlen == 0) {
-    //         memset(&addr6->sin6_addr, 0, sizeof(addr6->sin6_addr));
-    //     } else {
-    //         socketpool_resolve_host_or_throw(self->family, self->type, host, &bind_addr, port);
-    //     }
-    // } else
-    // #endif
-    // {
-    //     struct sockaddr_in *addr4 = (void *)&bind_addr;
-    //     addr4->sin_port = htons(port);
-    //     if (hostlen == 0) {
-    //         addr4->sin_addr.s_addr = IPADDR_ANY;
-    //     } else if (hostlen == strlen(broadcast) &&
-    //                memcmp(host, broadcast, strlen(broadcast)) == 0) {
-    //         addr4->sin_addr.s_addr = IPADDR_BROADCAST;
-    //     } else {
-    //         socketpool_resolve_host_or_throw(self->family, self->type, host, &bind_addr, port);
-    //     }
-    // }
-    //
-    // int result = lwip_bind(self->num, (struct sockaddr *)&bind_addr, sizeof(bind_addr));
-    // if (result == 0) {
-    //     return 0;
-    // }
-    // return errno;
+    if (self->server_started) {
+        mp_raise_RuntimeError_varg(MP_ERROR_TEXT("%q in use"), MP_QSTR_socket);
+    }
+    if (self->bound) {
+        // Same as CPython.
+        mp_raise_OSError(MP_EINVAL);
+    }
+
+    // Validate the host name (which might a numeric IP string) to an IPv4 address first.
+    uint8_t ipv4[IPV4_LENGTH];
+    if (!socketpool_gethostbyname_ipv4(self->socketpool, host, ipv4)) {
+        // Could not resolve hostname.
+        common_hal_socketpool_socketpool_raise_gaierror_noname();
+    }
+
+    self->bound = true;
+    memcpy(self->hostname, host, hostlen);
+    self->hostname_len = hostlen;
     return 0;
 }
 
 void socketpool_socket_close(socketpool_socket_obj_t *self) {
-    // #if CIRCUITPY_SSL
-    // if (self->ssl_socket) {
-    //     ssl_sslsocket_obj_t *ssl_socket = self->ssl_socket;
-    //     self->ssl_socket = NULL;
-    //     common_hal_ssl_sslsocket_close(ssl_socket);
-    //     return;
-    // }
-    // #endif
-    // self->connected = false;
-    // int fd = self->num;
-    // // Ignore bogus/closed sockets
-    // if (fd >= LWIP_SOCKET_OFFSET) {
-    //     if (user_socket[fd - LWIP_SOCKET_OFFSET] == NULL) {
-    //         socket_fd_state[fd - LWIP_SOCKET_OFFSET] = FDSTATE_CLOSING;
-    //         lwip_shutdown(fd, SHUT_RDWR);
-    //         lwip_close(fd);
-    //     } else {
-    //         lwip_shutdown(fd, SHUT_RDWR);
-    //         lwip_close(fd);
-    //         socket_fd_state[fd - LWIP_SOCKET_OFFSET] = FDSTATE_CLOSED;
-    //         user_socket[fd - LWIP_SOCKET_OFFSET] = NULL;
-    //     }
-    // }
-    // self->num = -1;
+    if (self->client_started) {
+        socketpool_socket_stop_client(self);
+    }
+
+    if (self->server_started) {
+        // TODO: how to shut down server?
+    }
 }
 
 void common_hal_socketpool_socket_close(socketpool_socket_obj_t *self) {
-    // socketpool_socket_close(self);
+    socketpool_socket_close(self);
+}
+
+void socketpool_socket_start_client_mode(socketpool_socket_obj_t *self,
+    const char *host, size_t hostlen, uint32_t port, airlift_conn_mode_t mode) {
+
+    mp_arg_validate_length_max(hostlen, MAX_HOSTNAME_LENGTH, MP_QSTR_hostname);
+
+    // if (self->client_started) {
+    //     // Is this client already started on the given host and port? If so, nothing need be done.
+    //     if (self->hostname_len == hostlen &&
+    //         strncasecmp((char *)self->hostname, host, hostlen) == 0 &&
+    //         self->port == port) {
+    //         return;
+    //     } else {
+    //         // Otherwise, stop the current client, so we can restart it with a different address.
+    //         socketpool_socket_stop_client(self);
+    //     }
+    // }
+
+    uint8_t unused_ipv4[IPV4_LENGTH] = { 0 };
+    uint8_t port_bytes[2];
+    be_uint16_to_uint8_bytes((uint16_t)port, port_bytes);
+    uint8_t conn_mode = mode;
+
+    const uint8_t *params[5] = { (uint8_t *)host, unused_ipv4, port_bytes, &self->num, &conn_mode };
+    size_t param_lengths[5] = { hostlen, 4, 2, 1, 1 };
+
+    uint8_t result;
+    uint8_t *responses[1] = { &result };
+    size_t response_lengths[1] = { 1 };
+
+    size_t num_responses = wifi_radio_send_command_get_response(self->socketpool->radio, START_CLIENT_TCP_CMD,
+        params, param_lengths, LENGTHS_8, MP_ARRAY_SIZE(params),
+        responses, response_lengths, LENGTHS_8, MP_ARRAY_SIZE(responses), self->timeout_ms);
+
+    if (num_responses == 0 || result != 1) {
+        mp_raise_ConnectionError(MP_ERROR_TEXT("Failed"));
+    }
+
+    // Update any previous IP and port with the requested ones.
+    // The memcpy won't overflow because hostlen has been validated above.
+    memcpy(self->hostname, host, hostlen);
+    self->hostname_len = hostlen;
+    self->port = port;
+    self->client_started = true;
+}
+
+void socketpool_socket_stop_client(socketpool_socket_obj_t *self) {
+    const uint8_t *params[1] = { &self->num };
+
+    if (!self->client_started) {
+        return;
+    }
+
+    size_t param_lengths[1] = { 1 };
+
+    uint8_t result;
+    uint8_t *responses[1] = { &result };
+    size_t response_lengths[1] = { 1 };
+
+    size_t num_responses = wifi_radio_send_command_get_response(self->socketpool->radio, STOP_CLIENT_TCP_CMD,
+        params, param_lengths, LENGTHS_8, MP_ARRAY_SIZE(params),
+        responses, response_lengths, LENGTHS_8, MP_ARRAY_SIZE(responses),
+        AIRLIFT_DEFAULT_TIMEOUT_MS);
+
+    // Don't raise an error if VM isn't running, because socket close is the socket finaliser.
+    if ((num_responses == 0 || result != 1) && vm_is_running()) {
+        raise_failed();
+    }
+
+    self->client_started = false;
+}
+
+void socketpool_socket_start_server_mode(socketpool_socket_obj_t *self, airlift_conn_mode_t mode) {
+    // Once bind() is called, the ipv4 and port won't change, so a restart will not change anything.
+    if (self->server_started) {
+        return;
+    }
+
+    uint8_t port_bytes[2];
+    be_uint16_to_uint8_bytes((uint16_t)self->port, port_bytes);
+    uint8_t conn_mode = mode;
+
+    const uint8_t *params[5] = { self->hostname, port_bytes, &self->num, &conn_mode };
+    size_t param_lengths[5] = { self->hostname_len, 4, 2, 1, 1 };
+
+    uint8_t result;
+    uint8_t *responses[1] = { &result };
+    size_t response_lengths[1] = { 1 };
+
+    size_t num_responses = wifi_radio_send_command_get_response(self->socketpool->radio, START_SERVER_TCP_CMD,
+        params, param_lengths, LENGTHS_8, MP_ARRAY_SIZE(params),
+        responses, response_lengths, LENGTHS_8, MP_ARRAY_SIZE(responses), self->timeout_ms);
+
+    if (num_responses == 0 || result != 1) {
+        mp_raise_ConnectionError(MP_ERROR_TEXT("Failed"));
+    }
+
+    self->server_started = true;
 }
 
 void common_hal_socketpool_socket_connect(socketpool_socket_obj_t *self,
     const char *host, size_t hostlen, uint32_t port) {
-    // struct sockaddr_storage addr;
-    // resolve_host_or_throw(self, host, &addr, port);
-    //
-    // // Replace above with function call -----
-    //
-    // // Emulate SO_CONTIMEO, which is not implemented by lwip.
-    // // All our sockets are non-blocking, so we check the timeout ourselves.
-    //
-    // int result = -1;
-    // result = lwip_connect(self->num, (struct sockaddr *)&addr, addr.s2_len);
-    //
-    // if (result == 0) {
-    //     // Connected immediately.
-    //     self->connected = true;
-    //     return;
-    // }
-    //
-    // if (result < 0 && errno != EINPROGRESS) {
-    //     // Some error happened; error is in errno.
-    //     mp_raise_OSError(errno);
-    //     return;
-    // }
-    //
-    // struct timeval timeout = {
-    //     .tv_sec = 0,
-    //     .tv_usec = SOCKET_CONNECT_POLL_INTERVAL_MS * 1000,
-    // };
-    //
-    // // Keep checking, using select(), until timeout expires, at short intervals.
-    // // This allows ctrl-C interrupts to be detected and background tasks to run.
-    // mp_uint_t timeout_left = self->timeout_ms;
-    //
-    // while (timeout_left > 0) {
-    //     RUN_BACKGROUND_TASKS;
-    //     // Allow ctrl-C interrupt
-    //     if (mp_hal_is_interrupted()) {
-    //         return;
-    //     }
-    //
-    //     fd_set fds;
-    //     FD_ZERO(&fds);
-    //     FD_SET(self->num, &fds);
-    //
-    //     result = select(self->num + 1, NULL, &fds, NULL, &timeout);
-    //     if (result == 0) {
-    //         // No change to fd's after waiting for timeout, so try again if some time is still left.
-    //         // Don't wrap below 0, because we're using a uint.
-    //         if (timeout_left < SOCKET_CONNECT_POLL_INTERVAL_MS) {
-    //             timeout_left = 0;
-    //         } else {
-    //             timeout_left -= SOCKET_CONNECT_POLL_INTERVAL_MS;
-    //         }
-    //         continue;
-    //     }
-    //
-    //     if (result < 0) {
-    //         // Some error happened when doing select(); error is in errno.
-    //         mp_raise_OSError(errno);
-    //     }
-    //
-    //     // select() indicated the socket is writable. Check if any connection error occurred.
-    //     int error_code = 0;
-    //     socklen_t socklen = sizeof(error_code);
-    //     result = getsockopt(self->num, SOL_SOCKET, SO_ERROR, &error_code, &socklen);
-    //     if (result < 0 || error_code != 0) {
-    //         mp_raise_OSError(error_code);
-    //     }
-    //     self->connected = true;
-    //     return;
-    // }
-    //
-    // // No connection after timeout. The connection attempt is not stopped.
-    // // This imitates what happens in Python.
-    // mp_raise_OSError(ETIMEDOUT);
+    socketpool_socket_start_client_mode(self, host, hostlen, port,
+        self->type == SOCK_STREAM ? AIRLIFT_TCP_MODE : AIRLIFT_UDP_MODE);
 }
 
 bool common_hal_socketpool_socket_get_closed(socketpool_socket_obj_t *self) {
-    // return self->num < 0;
-    return 0;
+    return socketpool_socket_status(self) == SOCKET_CLOSED;
 }
 
 bool common_hal_socketpool_socket_get_connected(socketpool_socket_obj_t *self) {
-    // return self->connected;
-    return 0;
+    return socketpool_socket_status(self) == SOCKET_ESTABLISHED;
 }
 
 bool common_hal_socketpool_socket_listen(socketpool_socket_obj_t *self, int backlog) {
-    // return lwip_listen(self->num, backlog) == 0;
-    return 0;
+    if (self->type != SOCK_STREAM) {
+        // Same as CPython.
+        mp_raise_OSError(MP_EOPNOTSUPP);
+    }
+    if (!self->bound) {
+        // Other impls will assign an address and port, but AirLift can't do that.
+        mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("%q() without %q()"), MP_QSTR_listen, MP_QSTR_bind);
+    }
+    socketpool_socket_start_server_mode(self, AIRLIFT_TCP_MODE);
+    return true;
 }
 
 mp_uint_t common_hal_socketpool_socket_recvfrom_into(socketpool_socket_obj_t *self,
     uint8_t *buf, uint32_t len, mp_obj_t *source_out) {
-    //
-    // struct sockaddr_storage source_addr;
-    // socklen_t socklen = sizeof(source_addr);
-    //
-    // // LWIP Socket
-    // uint64_t start_ticks = supervisor_ticks_ms64();
-    // int received = -1;
-    // bool timed_out = false;
-    // while (received == -1 &&
-    //        !timed_out &&
-    //        !mp_hal_is_interrupted()) {
-    //     if (self->timeout_ms != (uint)-1 && self->timeout_ms != 0) {
-    //         timed_out = supervisor_ticks_ms64() - start_ticks >= self->timeout_ms;
-    //     }
-    //     RUN_BACKGROUND_TASKS;
-    //     received = lwip_recvfrom(self->num, buf, len, 0, (struct sockaddr *)&source_addr, &socklen);
-    //
-    //     // In non-blocking mode, fail instead of looping
-    //     if (received == -1 && self->timeout_ms == 0) {
-    //         mp_raise_OSError(MP_EAGAIN);
-    //     }
-    // }
-    //
-    // if (timed_out) {
-    //     mp_raise_OSError(ETIMEDOUT);
-    // }
-    //
-    // if (received < 0) {
-    //     mp_raise_BrokenPipeError();
-    //     return 0;
-    // }
-    //
-    // if (source_out) {
-    //     *source_out = sockaddr_to_tuple(&source_addr);
-    // }
-    //
-    // return received;
-    return 0;
+    uint8_t ipv4[IPV4_LENGTH];
+    uint16_t port;
+
+    if (self->type != SOCK_DGRAM) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Unsupported socket type"));
+    }
+
+    const mp_uint_t bytes_received = common_hal_socketpool_socket_recv_into(self, buf, len);
+
+    if (!socketpool_socket_get_connection_info(self, ipv4, &port)) {
+        raise_failed();
+    }
+
+    // Pass back a tuple of stringified IP address and port.
+    mp_obj_t items[2] = {
+        ipv4_bytes_to_str(ipv4),
+        MP_OBJ_NEW_SMALL_INT(port),
+    };
+    *source_out = mp_obj_new_tuple(MP_ARRAY_SIZE(items), items);
+
+    return bytes_received;
 }
 
-int socketpool_socket_recv_into(socketpool_socket_obj_t *self,
-    const uint8_t *buf, uint32_t len) {
-    // int received = 0;
-    // bool timed_out = false;
-    //
-    // if (self->num != -1) {
-    //     // LWIP Socket
-    //     uint64_t start_ticks = supervisor_ticks_ms64();
-    //     received = -1;
-    //     while (received == -1 &&
-    //            !timed_out) {
-    //         if (self->timeout_ms != (uint)-1 && self->timeout_ms != 0) {
-    //             timed_out = supervisor_ticks_ms64() - start_ticks >= self->timeout_ms;
-    //         }
-    //         RUN_BACKGROUND_TASKS;
-    //         received = lwip_recv(self->num, (void *)buf, len, 0);
-    //         // In non-blocking mode, fail instead of looping
-    //         if (received < 1 && self->timeout_ms == 0) {
-    //             if ((received == 0) || (errno == ENOTCONN)) {
-    //                 self->connected = false;
-    //                 return -MP_ENOTCONN;
-    //             }
-    //             return -MP_EAGAIN;
-    //         }
-    //         // Check this after going through the loop once so it can make
-    //         // progress while interrupted.
-    //         if (mp_hal_is_interrupted()) {
-    //             if (received == -1) {
-    //                 return -MP_EAGAIN;
-    //             }
-    //             break;
-    //         }
-    //     }
-    // } else {
-    //     return -MP_EBADF;
-    // }
-    //
-    // if (timed_out) {
-    //     return -ETIMEDOUT;
-    // }
-    // return received;
-    return 0;
+int socketpool_socket_recv_into(socketpool_socket_obj_t *self, uint8_t *buf, uint32_t len) {
+    const uint8_t *params[2] = { &self->num, (uint8_t *)&len };
+    size_t param_lengths[2] = { 1, 2 };
+
+    const uint64_t start_time = supervisor_ticks_ms64();
+
+    uint8_t *responses[1] = { buf };
+    while (true) {
+        // This will be the max length read. We need to re-initialize each time we read, because its
+        // value is changed by wifi_radio_send_command_get_response().
+        size_t response_lengths[1] = { len };
+
+        size_t num_responses = wifi_radio_send_command_get_response(self->socketpool->radio, GET_DATABUF_TCP_CMD,
+            params, param_lengths, LENGTHS_16, MP_ARRAY_SIZE(params),
+            responses, response_lengths, LENGTHS_16, MP_ARRAY_SIZE(responses), self->timeout_ms);
+
+        if (num_responses == 0) {
+            return -1;
+        }
+
+        const size_t num_read = response_lengths[0];
+        if (num_read > 0) {
+            return num_read;
+        }
+
+        // Give up if timeout was exceeded, or ctrl-C was typed.
+        if ((self->timeout_ms != SOCKET_BLOCK_FOREVER &&
+             supervisor_ticks_ms64() - start_time >= self->timeout_ms) ||
+            mp_hal_is_interrupted()) {
+            return 0;
+        }
+        RUN_BACKGROUND_TASKS;
+        mp_hal_delay_ms(500);
+    }
 }
 
-mp_uint_t common_hal_socketpool_socket_recv_into(socketpool_socket_obj_t *self, const uint8_t *buf, uint32_t len) {
-    // int received = socketpool_socket_recv_into(self, buf, len);
-    // if (received < 0) {
-    //     mp_raise_OSError(-received);
-    // }
-    // return received;
-    return 0;
+mp_uint_t common_hal_socketpool_socket_recv_into(socketpool_socket_obj_t *self, uint8_t *buf, uint32_t len) {
+    int received = socketpool_socket_recv_into(self, buf, len);
+    if (received < 0) {
+        raise_failed();
+    }
+    return received;
 }
 
 int socketpool_socket_send(socketpool_socket_obj_t *self, const uint8_t *buf, uint32_t len) {
-    // int sent = -1;
-    // if (self->num != -1) {
-    //     // LWIP Socket
-    //     // TODO: deal with potential failure/add timeout?
-    //     sent = lwip_send(self->num, buf, len, 0);
-    // } else {
-    //     sent = -MP_EBADF;
-    // }
-    //
-    // if (sent < 0) {
-    //     if (errno == ECONNRESET || errno == ENOTCONN) {
-    //         self->connected = false;
-    //     }
-    //     return -errno;
-    // }
-    //
-    // return sent;
-    return 0;
+    const uint8_t *params[2] = { &self->num, buf };
+    size_t param_lengths[2] = { 1, len };
+
+    size_t num_responses;
+
+    // Will only be SOCK_STREAM or SOCK_DGRAM.
+    switch (self->type) {
+        case SOCK_STREAM: {
+            uint8_t bytes_sent[2];
+            uint8_t *responses[1] = { bytes_sent };
+            size_t response_lengths[1] = { sizeof(bytes_sent) };
+
+            num_responses = wifi_radio_send_command_get_response(self->socketpool->radio, SEND_DATA_TCP_CMD,
+                params, param_lengths, LENGTHS_16, MP_ARRAY_SIZE(params),
+                responses, response_lengths, LENGTHS_8, MP_ARRAY_SIZE(responses), self->timeout_ms);
+            if (num_responses == 0) {
+                return -1;
+            }
+            return le_uint8_bytes_to_uint16(bytes_sent);
+        }
+
+        case SOCK_DGRAM: {
+            uint8_t result;
+            uint8_t *responses[1] = { &result };
+            size_t response_lengths[1] = { 1 };
+
+            num_responses = wifi_radio_send_command_get_response(self->socketpool->radio, INSERT_DATABUF_TCP_CMD,
+                params, param_lengths, LENGTHS_16, MP_ARRAY_SIZE(params),
+                responses, response_lengths, LENGTHS_8, MP_ARRAY_SIZE(responses), self->timeout_ms);
+            if (num_responses == 0 || result != 1) {
+                return -1;
+            }
+
+            const uint8_t *send_udp_data_params[1] = { &self->num };
+            size_t send_udp_data_param_lengths[1] = { 1 };
+            num_responses = wifi_radio_send_command_get_response(self->socketpool->radio, SEND_UDP_DATA_CMD,
+                send_udp_data_params, send_udp_data_param_lengths, LENGTHS_8, MP_ARRAY_SIZE(send_udp_data_params),
+                responses, response_lengths, LENGTHS_8, MP_ARRAY_SIZE(responses), self->timeout_ms);
+            if (num_responses == 0 || result != 1) {
+                return -1;
+            }
+
+            // Using DATA_SENT_TCP_CMD is not necessary. It's a no-op on the AirLift side.
+            return len;
+        }
+
+        default:
+            // This shouldn't happen.
+            mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q"), self->type);
+    }
 }
 
 mp_uint_t common_hal_socketpool_socket_send(socketpool_socket_obj_t *self, const uint8_t *buf, uint32_t len) {
-    // int sent = socketpool_socket_send(self, buf, len);
-    //
-    // if (sent < 0) {
-    //     mp_raise_OSError(-sent);
-    // }
-    // return sent;
-    return 0;
+    int sent = socketpool_socket_send(self, buf, len);
+
+    if (sent < 0) {
+        raise_failed();
+    }
+    return sent;
 }
 
 mp_uint_t common_hal_socketpool_socket_sendto(socketpool_socket_obj_t *self,
     const char *host, size_t hostlen, uint32_t port, const uint8_t *buf, uint32_t len) {
-    //
-    // struct sockaddr_storage addr;
-    // resolve_host_or_throw(self, host, &addr, port);
-    //
-    // int bytes_sent = lwip_sendto(self->num, buf, len, 0, (struct sockaddr *)&addr, addr.s2_len);
-    // if (bytes_sent < 0) {
-    //     mp_raise_BrokenPipeError();
-    //     return 0;
-    // }
-    // return bytes_sent;
-    return 0;
+    if (self->type != SOCK_DGRAM) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Unsupported socket type"));
+    }
+    socketpool_socket_start_client_mode(self, host, hostlen, port, AIRLIFT_UDP_MODE);
+    return common_hal_socketpool_socket_send(self, buf, len);
 }
 
 void common_hal_socketpool_socket_settimeout(socketpool_socket_obj_t *self, uint32_t timeout_ms) {
-    // self->timeout_ms = timeout_ms;
+    // 0 means non-blocking. (uint32_t) -1 means block forever.
+    self->timeout_ms = timeout_ms;
 }
 
 mp_int_t common_hal_socketpool_socket_get_type(socketpool_socket_obj_t *self) {
-    // return self->type;
-    return 0;
+    return self->type;
 }
 
 
 int common_hal_socketpool_socket_setsockopt(socketpool_socket_obj_t *self, int level, int optname, const void *value, size_t optlen) {
-    // int err = lwip_setsockopt(self->num, level, optname, value, optlen);
-    // if (err != 0) {
-    //     return -errno;
-    // }
-    // return 0;
-    return 0;
+    mp_raise_NotImplementedError(NULL); // TODO
 }
 
-bool common_hal_socketpool_readable(socketpool_socket_obj_t *self) {
-    // struct timeval immediate = {0, 0};
-    //
-    // fd_set fds;
-    // FD_ZERO(&fds);
-    // FD_SET(self->num, &fds);
-    // int num_triggered = select(self->num + 1, &fds, NULL, &fds, &immediate);
-    //
-    // // including returning true in the error case
-    // return num_triggered != 0;
-    return 0;
+bool common_hal_socketpool_socket_readable(socketpool_socket_obj_t *self) {
+    return socketpool_socket_poll(self) & SOCKET_POLL_RD;
 }
 
-bool common_hal_socketpool_writable(socketpool_socket_obj_t *self) {
-    // struct timeval immediate = {0, 0};
-    //
-    // fd_set fds;
-    // FD_ZERO(&fds);
-    // FD_SET(self->num, &fds);
-    // int num_triggered = select(self->num + 1, NULL, &fds, &fds, &immediate);
-    //
-    // // including returning true in the error case
-    // return num_triggered != 0;
-    return 0;
+bool common_hal_socketpool_socket_writable(socketpool_socket_obj_t *self) {
+    return socketpool_socket_poll(self) & SOCKET_POLL_WR;
 }
 
 void socketpool_socket_move(socketpool_socket_obj_t *self, socketpool_socket_obj_t *sock) {
-    // *sock = *self;
-    // self->connected = false;
-    // self->num = -1;
+    *sock = *self;
+    self->connected = false;
+    self->num = NO_SOCKET;
 }
 
 void socketpool_socket_reset(socketpool_socket_obj_t *self) {
-    // if (self->base.type == &socketpool_socket_type) {
-    //     return;
-    // }
-    // self->base.type = &socketpool_socket_type;
-    // self->connected = false;
-    // self->num = -1;
+    self->num = NO_SOCKET;
+    self->bound = false;
+    self->connected = false;
+    self->client_started = false;
+    self->server_started = false;
+    self->connected = false;
 }

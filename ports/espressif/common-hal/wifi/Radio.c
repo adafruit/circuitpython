@@ -35,8 +35,6 @@
 #include "common-hal/mdns/Server.h"
 #endif
 
-#define MAC_ADDRESS_LENGTH 6
-
 static void set_mode_station(wifi_radio_obj_t *self, bool state) {
     wifi_mode_t next_mode;
     if (state) {
@@ -75,8 +73,8 @@ static void set_mode_ap(wifi_radio_obj_t *self, bool state) {
     self->ap_mode = state;
 }
 
-const char *common_hal_wifi_radio_get_version(wifi_radio_obj_t *self) {
-    return esp_idf_get_version();
+mp_obj_t common_hal_wifi_radio_get_version(wifi_radio_obj_t *self) {
+    return mp_obj_new_str_from_cstr(esp_get_idf_version());
 }
 
 bool common_hal_wifi_radio_get_enabled(wifi_radio_obj_t *self) {
@@ -627,7 +625,7 @@ void common_hal_wifi_radio_set_ipv4_address(wifi_radio_obj_t *self, mp_obj_t ipv
 
     esp_netif_set_ip_info(self->netif, &ip_info);
 
-    if (ipv4_dns != MP_OBJ_NULL) {
+    if (ipv4_dns != mp_const_none) {
         common_hal_wifi_radio_set_ipv4_dns(self, ipv4_dns);
     }
 }

@@ -11,34 +11,28 @@
 #include "py/stream.h"
 
 void common_hal_ssl_sslcontext_construct(ssl_sslcontext_obj_t *self) {
-    // common_hal_ssl_sslcontext_set_default_verify_paths(self);
+    common_hal_ssl_sslcontext_set_default_verify_paths(self);
 }
 
 void common_hal_ssl_sslcontext_load_verify_locations(ssl_sslcontext_obj_t *self,
     const char *cadata) {
-    // self->crt_bundle_attach = NULL;
-    // self->use_global_ca_store = false;
-    // self->cacert_buf = (const unsigned char *)cadata;
-    // self->cacert_bytes = *cadata ? strlen(cadata) + 1 : 0;
+    mp_raise_NotImplementedError(NULL);
 }
 
 void common_hal_ssl_sslcontext_set_default_verify_paths(ssl_sslcontext_obj_t *self) {
-    // self->crt_bundle_attach = crt_bundle_attach;
-    // self->use_global_ca_store = true;
-    // self->cacert_buf = NULL;
-    // self->cacert_bytes = 0;
+    // The default paths are what's built in to NINA-FW, so nothing need be done.
 }
 
 bool common_hal_ssl_sslcontext_get_check_hostname(ssl_sslcontext_obj_t *self) {
-    // return self->check_name;
-    return false;
+    return true;
 }
 
 void common_hal_ssl_sslcontext_set_check_hostname(ssl_sslcontext_obj_t *self, bool value) {
-    // self->check_name = value;
+    if (!value) {
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("%q must be %q"), MP_QSTR_check_hostname, MP_QSTR_true);
+    }
 }
 
 void common_hal_ssl_sslcontext_load_cert_chain(ssl_sslcontext_obj_t *self, mp_buffer_info_t *cert_buf, mp_buffer_info_t *key_buf) {
-    // self->cert_buf = *cert_buf;
-    // self->key_buf = *key_buf;
+    mp_raise_NotImplementedError(NULL);
 }

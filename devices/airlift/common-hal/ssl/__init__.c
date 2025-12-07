@@ -10,9 +10,8 @@
 #include "shared-bindings/ssl/SSLContext.h"
 
 void common_hal_ssl_create_default_context(ssl_sslcontext_obj_t *self) {
-    // common_hal_ssl_sslcontext_construct(self);
+    common_hal_ssl_sslcontext_construct(self);
 }
 
 void ssl_reset(void) {
-    // crt_bundle_detach(NULL);
 }

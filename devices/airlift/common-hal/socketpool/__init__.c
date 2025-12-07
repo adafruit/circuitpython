@@ -9,5 +9,5 @@
 #include "common-hal/socketpool/Socket.h"
 
 void socketpool_user_reset(void) {
-    // socket_user_reset();
+    socket_user_reset();
 }

@@ -111,6 +111,7 @@ msgid "%q in %q must be of type %q, not %q"
 msgstr ""
 
 #: ports/espressif/common-hal/espulp/ULP.c
+#: ports/espressif/common-hal/mipidsi/Bus.c
 #: ports/mimxrt10xx/common-hal/audiobusio/__init__.c
 #: ports/mimxrt10xx/common-hal/usb_host/Port.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
@@ -169,6 +170,10 @@ msgstr ""
 #: shared-bindings/is31fl3741/FrameBuffer.c
 #: shared-bindings/rgbmatrix/RGBMatrix.c
 msgid "%q must be %d-%d"
+msgstr ""
+
+#: shared-bindings/audiofreeverb/Freeverb.c
+msgid "%q must be %q"
 msgstr ""
 
 #: shared-bindings/busdisplay/BusDisplay.c
@@ -834,10 +839,6 @@ msgstr ""
 msgid "Clock unit in use"
 msgstr ""
 
-#: ports/espressif/common-hal/mipidsi/Display.c
-msgid "Color depth must be 16 or 24"
-msgstr ""
-
 #: shared-bindings/_bleio/Connection.c
 msgid ""
 "Connection has been disconnected and can no longer be used. Create a new "
@@ -980,6 +981,10 @@ msgstr ""
 
 #: extmod/ulab/code/numpy/fft/fft_tools.c
 msgid "FFT is implemented for linear arrays only"
+msgstr ""
+
+#: shared-bindings/wifi/Radio.c
+msgid "Failed"
 msgstr ""
 
 #: shared-bindings/ps2io/Ps2.c
@@ -1218,7 +1223,7 @@ msgid "Insufficient stream input buffer"
 msgstr ""
 
 #: ports/espressif/common-hal/wifi/Radio.c
-#: ports/zephyr-cp/common-hal/wifi/Radio.c
+#: ports/zephyr-cp/common-hal/wifi/Radio.c shared-bindings/wifi/Radio.c
 msgid "Interface must be started"
 msgstr ""
 
@@ -1271,6 +1276,7 @@ msgstr ""
 #: ports/espressif/common-hal/_bleio/Service.c
 #: ports/espressif/common-hal/espulp/ULP.c
 #: ports/espressif/common-hal/microcontroller/Processor.c
+#: ports/espressif/common-hal/mipidsi/Display.c
 #: ports/mimxrt10xx/common-hal/audiobusio/__init__.c
 #: ports/mimxrt10xx/common-hal/pwmio/PWMOut.c
 #: ports/raspberrypi/bindings/picodvi/Framebuffer.c
@@ -2675,10 +2681,6 @@ msgstr ""
 
 #: extmod/modrandom.c
 msgid "bits must be 32 or less"
-msgstr ""
-
-#: shared-bindings/audiofreeverb/Freeverb.c
-msgid "bits_per_sample must be 16"
 msgstr ""
 
 #: shared-bindings/audiodelays/Chorus.c shared-bindings/audiodelays/Echo.c
@@ -4121,10 +4123,6 @@ msgstr ""
 
 #: py/objstr.c
 msgid "rsplit(None,n)"
-msgstr ""
-
-#: shared-bindings/audiofreeverb/Freeverb.c
-msgid "samples_signed must be true"
 msgstr ""
 
 #: ports/atmel-samd/common-hal/audiobusio/PDMIn.c

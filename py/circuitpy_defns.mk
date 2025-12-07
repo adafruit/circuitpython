@@ -74,7 +74,7 @@ endif
 CIRCUITPY_LTO ?= 0
 CIRCUITPY_LTO_PARTITION ?= balanced
 ifeq ($(CIRCUITPY_LTO),1)
-CFLAGS += -flto=jobserver -flto-partition=$(CIRCUITPY_LTO_PARTITION) -DCIRCUITPY_LTO=1
+CFLAGS += -flto=auto -flto-partition=$(CIRCUITPY_LTO_PARTITION) -DCIRCUITPY_LTO=1
 else
 CFLAGS += -DCIRCUITPY_LTO=0
 endif
@@ -683,7 +683,10 @@ SRC_BINDINGS_ENUMS += \
 	wifi/Network.c \
 	wifi/Radio.c \
 	wifi/ScannedNetworks.c \
-	wifi/__init__.c
+	wifi/__init__.c \
+	wifi/AuthMode.c \
+	wifi/Packet.c \
+	wifi/PowerManagement.c
 endif
 
 ifeq ($(CIRCUITPY_SAFEMODE_PY),1)

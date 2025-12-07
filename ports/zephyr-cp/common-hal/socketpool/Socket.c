@@ -543,8 +543,7 @@ mp_uint_t common_hal_socketpool_socket_recvfrom_into(socketpool_socket_obj_t *se
     return received;
 }
 
-int socketpool_socket_recv_into(socketpool_socket_obj_t *self,
-    const uint8_t *buf, uint32_t len) {
+int socketpool_socket_recv_into(socketpool_socket_obj_t *self, uint8_t *buf, uint32_t len) {
     int received = 0;
     bool timed_out = false;
 
@@ -558,7 +557,7 @@ int socketpool_socket_recv_into(socketpool_socket_obj_t *self,
                 timed_out = supervisor_ticks_ms64() - start_ticks >= self->timeout_ms;
             }
             RUN_BACKGROUND_TASKS;
-            // received = lwip_recv(self->num, (void *)buf, len, 0);
+            // received = lwip_recv(self->num, buf, len, 0);
             // In non-blocking mode, fail instead of looping
             if (received < 1 && self->timeout_ms == 0) {
                 if ((received == 0) || (errno == ENOTCONN)) {
@@ -586,7 +585,7 @@ int socketpool_socket_recv_into(socketpool_socket_obj_t *self,
     return received;
 }
 
-mp_uint_t common_hal_socketpool_socket_recv_into(socketpool_socket_obj_t *self, const uint8_t *buf, uint32_t len) {
+mp_uint_t common_hal_socketpool_socket_recv_into(socketpool_socket_obj_t *self, uint8_t *buf, uint32_t len) {
     int received = socketpool_socket_recv_into(self, buf, len);
     if (received < 0) {
         mp_raise_OSError(-received);

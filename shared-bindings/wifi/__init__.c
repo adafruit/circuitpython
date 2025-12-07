@@ -11,9 +11,10 @@
 #include "shared-bindings/wifi/Packet.h"
 #include "shared-bindings/wifi/Radio.h"
 
-//| """
-//| The `wifi` module provides necessary low-level functionality for managing
-//| wifi connections. Use `socketpool` for communicating over the network.
+//| """Network communications over WiFi
+//|
+//| The `wifi` module and its classes manage WiFi connection to a network and the WiFi hardware.
+//| Use `socketpool` and `ssl` for network communication.
 //| """
 //|
 

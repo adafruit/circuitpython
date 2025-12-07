@@ -10,8 +10,8 @@
 
 typedef struct {
     mp_obj_base_t base;
-    bool check_name, use_global_ca_store;
-    const unsigned char *cacert_buf;
+    // bool check_name, use_global_ca_store;
+    // const unsigned char *cacert_buf;
     // size_t cacert_bytes;
     // int (*crt_bundle_attach)(mbedtls_ssl_config *conf);
     // mp_buffer_info_t cert_buf, key_buf;

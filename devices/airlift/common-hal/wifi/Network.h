@@ -10,5 +10,12 @@
 
 typedef struct {
     mp_obj_base_t base;
-//    wifi_ap_record_t record;
+    mp_obj_t ssid;
+    mp_obj_t bssid;
+    mp_obj_t rssi;
+    mp_obj_t channel;
+    mp_obj_t country;
+    mp_obj_t authmode;
 } wifi_network_obj_t;
+
+mp_obj_t esp_authmode_to_wifi_authmode_tuple(uint8_t esp_authmode);

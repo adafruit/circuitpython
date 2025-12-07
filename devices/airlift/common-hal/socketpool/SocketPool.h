@@ -7,7 +7,11 @@
 #pragma once
 
 #include "py/obj.h"
+#include "shared-bindings/wifi/Radio.h"
 
 typedef struct {
     mp_obj_base_t base;
+    wifi_radio_obj_t *radio;
 } socketpool_socketpool_obj_t;
+
+bool socketpool_gethostbyname_ipv4(socketpool_socketpool_obj_t *self, const char *host, uint8_t ipv4[IPV4_LENGTH]);
