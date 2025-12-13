@@ -14,6 +14,7 @@ typedef struct {
     const struct device *i2c_device;
     struct k_mutex mutex;
     bool has_lock;
-} zephyr_i2c_i2c_obj_t;
+} busio_i2c_obj_t;
 
-mp_obj_t zephyr_i2c_i2c_zephyr_init(zephyr_i2c_i2c_obj_t *self, const struct device *i2c_device);
+// Helper function to construct from Zephyr device tree device
+mp_obj_t common_hal_busio_i2c_construct_from_device(busio_i2c_obj_t *self, const struct device *i2c_device);

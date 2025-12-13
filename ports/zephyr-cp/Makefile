@@ -8,7 +8,7 @@ BUILD ?= build-$(BOARD)
 
 TRANSLATION ?= en_US
 
-.PHONY: $(BUILD)/zephyr-cp/zephyr/zephyr.elf flash debug clean menuconfig
+.PHONY: $(BUILD)/zephyr-cp/zephyr/zephyr.elf flash debug clean menuconfig all clean-all test
 
 $(BUILD)/zephyr-cp/zephyr/zephyr.elf:
 	python cptools/pre_zephyr_build_prep.py $(BOARD)
@@ -31,3 +31,14 @@ menuconfig:
 
 clean:
 	rm -rf $(BUILD)
+
+# Build all boards. The + prefix allows jobserver file descriptors to be passed through.
+# This enables parallel builds across all boards when invoked with `make -jN all`.
+all:
+	+python cptools/build_all_boards.py --continue-on-error
+
+clean-all:
+	rm -rf build build-*
+
+test:
+	pytest cptools/tests

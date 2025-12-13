@@ -19,6 +19,10 @@ typedef struct {
     k_timeout_t timeout;
 
     bool rx_paused;     // set by irq if no space in rbuf
-} zephyr_serial_uart_obj_t;
+} busio_uart_obj_t;
 
-mp_obj_t zephyr_serial_uart_zephyr_init(zephyr_serial_uart_obj_t *self, const struct device *uart_device);
+// Helper function for Zephyr-specific initialization from device tree
+mp_obj_t common_hal_busio_uart_construct_from_device(busio_uart_obj_t *self, const struct device *uart_device, uint16_t receiver_buffer_size, byte *receiver_buffer);
+
+// Internal helper for clearing buffer
+void common_hal_busio_uart_clear_rx_buffer(busio_uart_obj_t *self);

@@ -19,6 +19,7 @@ MANUAL_COMPAT_TO_DRIVER = {
     "nordic_nrf_uarte": "serial",
     "nordic_nrf_uart": "serial",
     "nordic_nrf_twim": "i2c",
+    "nordic_nrf_spim": "spi",
 }
 
 # These are controllers, not the flash devices themselves.
@@ -28,7 +29,7 @@ BLOCKED_FLASH_COMPAT = (
     "nordic,nrf-spim",
 )
 
-DRIVER_CLASSES = {"serial": "UART", "i2c": "I2C", "spi": "SPI"}
+BUSIO_CLASSES = {"serial": "UART", "i2c": "I2C", "spi": "SPI"}
 
 CONNECTORS = {
     "mikro-bus": [
@@ -194,6 +195,151 @@ CONNECTORS = {
 EXCEPTIONAL_DRIVERS = ["entropy", "gpio", "led"]
 
 
+def find_flash_devices(device_tree):
+    """
+    Find all flash devices from a device tree.
+
+    Args:
+        device_tree: Parsed device tree (dtlib.DT object)
+
+    Returns:
+        List of device tree flash device reference strings
+    """
+    # Build path2chosen mapping
+    path2chosen = {}
+    for k in device_tree.root.nodes["chosen"].props:
+        value = device_tree.root.nodes["chosen"].props[k]
+        path2chosen[value.to_path()] = k
+
+    flashes = []
+    logger.debug("Flash devices:")
+
+    # Traverse all nodes in the device tree
+    remaining_nodes = set([device_tree.root])
+    while remaining_nodes:
+        node = remaining_nodes.pop()
+        remaining_nodes.update(node.nodes.values())
+
+        # Get compatible strings
+        compatible = []
+        if "compatible" in node.props:
+            compatible = node.props["compatible"].to_strings()
+
+        # Get status
+        status = node.props.get("status", None)
+        if status is None:
+            status = "okay"
+        else:
+            status = status.to_string()
+
+        # Check if this is a flash device
+        if not compatible or status != "okay":
+            continue
+
+        # Check for flash driver via compat2driver
+        drivers = []
+        for c in compatible:
+            underscored = c.replace(",", "_").replace("-", "_")
+            driver = COMPAT_TO_DRIVER.get(underscored, None)
+            if not driver:
+                driver = MANUAL_COMPAT_TO_DRIVER.get(underscored, None)
+            if driver:
+                drivers.append(driver)
+        logger.debug(f"  {node.labels[0] if node.labels else node.name} drivers: {drivers}")
+
+        if "flash" not in drivers:
+            continue
+
+        # Skip chosen nodes because they are used by Zephyr
+        if node in path2chosen:
+            logger.debug(
+                f"  skipping flash {node.labels[0] if node.labels else node.name} (chosen)"
+            )
+            continue
+
+        # Skip blocked flash compatibles (controllers, not actual flash devices)
+        if compatible[0] in BLOCKED_FLASH_COMPAT:
+            logger.debug(
+                f"  skipping flash {node.labels[0] if node.labels else node.name} (blocked compat)"
+            )
+            continue
+
+        if node.labels:
+            flashes.append(node.labels[0])
+
+    logger.debug("Flash devices:")
+    for flash in flashes:
+        logger.debug(f"  {flash}")
+
+    return flashes
+
+
+def _label_to_end(label):
+    return f"(uint32_t*) (DT_REG_ADDR(DT_NODELABEL({label})) + DT_REG_SIZE(DT_NODELABEL({label})))"
+
+
+def find_ram_regions(device_tree):
+    """
+    Find all RAM regions from a device tree. Includes the zephyr,sram node and
+    any zephyr,memory-region nodes.
+
+    Returns:
+        List of RAM region info tuples: (label, start, end, size, path)
+    """
+    rams = []
+    chosen = None
+    # Get the chosen SRAM node directly
+    if "zephyr,sram" in device_tree.root.nodes["chosen"].props:
+        chosen = device_tree.root.nodes["chosen"].props["zephyr,sram"].to_path()
+        label = chosen.labels[0]
+        size = chosen.props["reg"].to_nums()[1]
+        logger.debug(f"Found chosen SRAM node: {label} with size {size}")
+        rams.append((label, "z_mapped_end", _label_to_end(label), size, chosen.path))
+
+    # Traverse all nodes in the device tree to find memory-region nodes
+    remaining_nodes = set([device_tree.root])
+    while remaining_nodes:
+        node = remaining_nodes.pop()
+
+        # Check status first so we don't add child nodes that aren't active.
+        status = node.props.get("status", None)
+        if status is None:
+            status = "okay"
+        else:
+            status = status.to_string()
+
+        if status != "okay":
+            continue
+
+        if node == chosen:
+            continue
+
+        remaining_nodes.update(node.nodes.values())
+
+        if "compatible" not in node.props or not node.labels:
+            continue
+
+        compatible = node.props["compatible"].to_strings()
+
+        if "zephyr,memory-region" not in compatible or "zephyr,memory-region" not in node.props:
+            continue
+
+        size = node.props["reg"].to_nums()[1]
+
+        start = "__" + node.props["zephyr,memory-region"].to_string() + "_end"
+        end = _label_to_end(node.labels[0])
+
+        # Filter by minimum size
+        if size >= MINIMUM_RAM_SIZE:
+            logger.debug(
+                f"Adding extra RAM info: ({node.labels[0]}, {start}, {end}, {size}, {node.path})"
+            )
+            info = (node.labels[0], start, end, size, node.path)
+            rams.append(info)
+
+    return rams
+
+
 @cpbuild.run_in_thread
 def zephyr_dts_to_cp_board(portdir, builddir, zephyrbuilddir):  # noqa: C901
     board_dir = builddir / "board"
@@ -228,31 +374,33 @@ def zephyr_dts_to_cp_board(portdir, builddir, zephyrbuilddir):  # noqa: C901
     # board_name = board_id_yaml["name"]
 
     dts = zephyrbuilddir / "zephyr.dts"
-    edt_pickle = dtlib.DT(dts)
+    device_tree = dtlib.DT(dts)
     node2alias = {}
-    for alias in edt_pickle.alias2node:
-        node = edt_pickle.alias2node[alias]
+    for alias in device_tree.alias2node:
+        node = device_tree.alias2node[alias]
         if node not in node2alias:
             node2alias[node] = []
         node2alias[node].append(alias)
     ioports = {}
     all_ioports = []
     board_names = {}
-    flashes = []
-    rams = []
     status_led = None
     status_led_inverted = False
     path2chosen = {}
     chosen2path = {}
 
+    # Find flash and RAM regions using extracted functions
+    flashes = find_flash_devices(device_tree)
+    rams = find_ram_regions(device_tree)  # Returns filtered and sorted list
+
     # Store active Zephyr device labels per-driver so that we can make them available via board.
     active_zephyr_devices = {}
     usb_num_endpoint_pairs = 0
-    for k in edt_pickle.root.nodes["chosen"].props:
-        value = edt_pickle.root.nodes["chosen"].props[k]
+    for k in device_tree.root.nodes["chosen"].props:
+        value = device_tree.root.nodes["chosen"].props[k]
         path2chosen[value.to_path()] = k
         chosen2path[k] = value.to_path()
-    remaining_nodes = set([edt_pickle.root])
+    remaining_nodes = set([device_tree.root])
     while remaining_nodes:
         node = remaining_nodes.pop()
         remaining_nodes.update(node.nodes.values())
@@ -273,50 +421,16 @@ def zephyr_dts_to_cp_board(portdir, builddir, zephyrbuilddir):  # noqa: C901
         if node in path2chosen:
             chosen = path2chosen[node]
             logger.debug(f" chosen: {chosen}")
-            if not compatible and chosen == "zephyr,sram":
-                # The designated sram region may not have any compatible properties,
-                # so we assume it is compatible with mmio
-                compatible.append("mmio")
         for c in compatible:
             underscored = c.replace(",", "_").replace("-", "_")
             driver = COMPAT_TO_DRIVER.get(underscored, None)
-            if "mmio" in c:
-                address, size = node.props["reg"].to_nums()
-                end = address + size
-                if chosen == "zephyr,sram":
-                    start = "z_mapped_end"
-                elif "zephyr,memory-region" in node.props:
-                    start = "__" + node.props["zephyr,memory-region"].to_string() + "_end"
-                else:
-                    # Check to see if the chosen sram is a subset of this region. If it is,
-                    # then do as above for a smaller region and assume the rest is reserved.
-                    chosen_sram = chosen2path["zephyr,sram"]
-                    chosen_address, chosen_size = chosen_sram.props["reg"].to_nums()
-                    chosen_end = chosen_address + chosen_size
-                    if address <= chosen_address <= end and address <= chosen_end <= end:
-                        start = "z_mapped_end"
-                        address = chosen_address
-                        size = chosen_size
-                        end = chosen_end
-                    else:
-                        start = address
-                info = (node.labels[0], start, end, size, node.path)
-                if chosen == "zephyr,sram":
-                    rams.insert(0, info)
-                elif status == "okay" and size > MINIMUM_RAM_SIZE:
-                    logger.debug(f"Adding RAM info: {info}")
-                    rams.append(info)
             if not driver:
                 driver = MANUAL_COMPAT_TO_DRIVER.get(underscored, None)
             logger.debug(f" {c} -> {underscored} -> {driver}")
             if not driver or status != "okay":
                 continue
             if driver == "flash":
-                if not chosen and compatible[0] not in BLOCKED_FLASH_COMPAT:
-                    # Skip chosen nodes because they are used by Zephyr.
-                    flashes.append(f"DEVICE_DT_GET(DT_NODELABEL({node.labels[0]}))")
-                else:
-                    logger.debug("  skipping due to blocked compat")
+                pass  # Handled by find_flash_devices()
             elif driver == "usb/udc":
                 board_info["usb_device"] = True
                 props = node.props
@@ -335,9 +449,10 @@ def zephyr_dts_to_cp_board(portdir, builddir, zephyrbuilddir):  # noqa: C901
                 board_info["wifi"] = True
             elif driver in EXCEPTIONAL_DRIVERS:
                 pass
-            elif (portdir / f"bindings/zephyr_{driver}").exists():
-                board_info[f"zephyr_{driver}"] = True
-                logger.info(f"Supported driver: {driver}")
+            elif driver in BUSIO_CLASSES:
+                # busio driver (i2c, spi, uart)
+                board_info["busio"] = True
+                logger.info(f"Supported busio driver: {driver}")
                 if driver not in active_zephyr_devices:
                     active_zephyr_devices[driver] = []
                 active_zephyr_devices[driver].append(node.labels)
@@ -439,8 +554,8 @@ def zephyr_dts_to_cp_board(portdir, builddir, zephyrbuilddir):  # noqa: C901
     zephyr_binding_objects = []
     zephyr_binding_labels = []
     for driver, instances in active_zephyr_devices.items():
-        driverclass = DRIVER_CLASSES[driver]
-        zephyr_binding_headers.append(f'#include "bindings/zephyr_{driver}/{driverclass}.h"')
+        driverclass = BUSIO_CLASSES[driver]
+        zephyr_binding_headers.append(f'#include "shared-bindings/busio/{driverclass}.h"')
 
         # Designate a main bus such as board.I2C.
         if len(instances) == 1:
@@ -453,7 +568,7 @@ def zephyr_dts_to_cp_board(portdir, builddir, zephyrbuilddir):  # noqa: C901
                     if label == driverclass:
                         found_main = True
             if not found_main:
-                for priority_label in ("zephyr_i2c", "arduino_i2c"):
+                for priority_label in (f"zephyr_{driver}", f"arduino_{driver}"):
                     for labels in instances:
                         if priority_label in labels:
                             labels.append(driverclass)
@@ -466,18 +581,28 @@ def zephyr_dts_to_cp_board(portdir, builddir, zephyrbuilddir):  # noqa: C901
             c_function_name = f"_{instance_name}"
             singleton_ptr = f"{c_function_name}_singleton"
             function_object = f"{c_function_name}_obj"
-            binding_prefix = f"zephyr_{driver}_{driverclass.lower()}"
+            busio_type = f"busio_{driverclass.lower()}"
+
+            # UART needs a receiver buffer
+            if driver == "serial":
+                buffer_decl = f"static byte {instance_name}_buffer[128];"
+                construct_call = f"common_hal_busio_uart_construct_from_device(&{instance_name}_obj, DEVICE_DT_GET(DT_NODELABEL({labels[0]})), 128, {instance_name}_buffer)"
+            else:
+                buffer_decl = ""
+                construct_call = f"common_hal_busio_{driverclass.lower()}_construct_from_device(&{instance_name}_obj, DEVICE_DT_GET(DT_NODELABEL({labels[0]})))"
+
             zephyr_binding_objects.append(
-                f"""static {binding_prefix}_obj_t {instance_name}_obj;
+                f"""{buffer_decl}
+static {busio_type}_obj_t {instance_name}_obj;
 static mp_obj_t {singleton_ptr} = mp_const_none;
 static mp_obj_t {c_function_name}(void) {{
     if ({singleton_ptr} != mp_const_none) {{
         return {singleton_ptr};
     }}
-    {singleton_ptr} = {binding_prefix}_zephyr_init(&{instance_name}_obj, DEVICE_DT_GET(DT_NODELABEL({labels[0]})));
+    {singleton_ptr} = {construct_call};
     return {singleton_ptr};
 }}
-static MP_DEFINE_CONST_FUN_OBJ_0({function_object}, {c_function_name});"""
+static MP_DEFINE_CONST_FUN_OBJ_0({function_object}, {c_function_name});""".lstrip()
             )
             for label in labels:
                 zephyr_binding_labels.append(
@@ -503,14 +628,14 @@ static MP_DEFINE_CONST_FUN_OBJ_0({function_object}, {c_function_name});"""
     for ram in rams:
         device, start, end, size, path = ram
         max_size = max(max_size, size)
-        if isinstance(start, str):
-            ram_externs.append(f"extern uint32_t {start};")
-            start = "&" + start
-        else:
-            start = f"(uint32_t*) 0x{start:08x}"
-        ram_list.append(f"    {start}, (uint32_t*) 0x{end:08x}, // {path}")
+        # We always start at the end of a Zephyr linker section so we need the externs and &.
+        ram_externs.append(f"extern uint32_t {start};")
+        start = "&" + start
+        ram_list.append(f"    {start}, {end}, // {path}")
     ram_list = "\n".join(ram_list)
     ram_externs = "\n".join(ram_externs)
+
+    flashes = [f"DEVICE_DT_GET(DT_NODELABEL({flash}))" for flash in flashes]
 
     new_header_content = f"""#pragma once
 

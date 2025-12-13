@@ -125,7 +125,7 @@ static uint8_t *tilegrid_tiles = NULL;
 static size_t tilegrid_tiles_size = 0;
 #endif
 
-#if CIRCUITPY_LVFONTIO
+#if CIRCUITPY_LVFONTIO && CIRCUITPY_TERMINALIO
 static lvfontio_ondiskfont_t *lvfont = NULL;
 #endif
 

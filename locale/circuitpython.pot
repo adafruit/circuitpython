@@ -1117,9 +1117,8 @@ msgid ""
 "Frequency must be 24, 150, 396, 450, 528, 600, 720, 816, 912, 960 or 1008 Mhz"
 msgstr ""
 
-#: ports/zephyr-cp/bindings/zephyr_i2c/I2C.c shared-bindings/bitbangio/I2C.c
-#: shared-bindings/bitbangio/SPI.c shared-bindings/busio/I2C.c
-#: shared-bindings/busio/SPI.c
+#: shared-bindings/bitbangio/I2C.c shared-bindings/bitbangio/SPI.c
+#: shared-bindings/busio/I2C.c shared-bindings/busio/SPI.c
 msgid "Function requires lock"
 msgstr ""
 
@@ -1462,8 +1461,7 @@ msgstr ""
 msgid "Mount point directory missing"
 msgstr ""
 
-#: ports/zephyr-cp/bindings/zephyr_serial/UART.c shared-bindings/busio/UART.c
-#: shared-bindings/displayio/Group.c
+#: shared-bindings/busio/UART.c shared-bindings/displayio/Group.c
 msgid "Must be a %q subclass."
 msgstr ""
 
@@ -2394,6 +2392,12 @@ msgstr ""
 #: ports/espressif/common-hal/_bleio/Adapter.c
 #: ports/espressif/common-hal/dualbank/__init__.c
 msgid "Update failed"
+msgstr ""
+
+#: ports/zephyr-cp/common-hal/busio/I2C.c
+#: ports/zephyr-cp/common-hal/busio/SPI.c
+#: ports/zephyr-cp/common-hal/busio/UART.c
+msgid "Use device tree to define %q devices"
 msgstr ""
 
 #: ports/espressif/common-hal/_bleio/Characteristic.c

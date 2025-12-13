@@ -8,8 +8,8 @@ import os
 import struct
 import sys
 
-sys.path.insert(0, "bitmap_font")
-sys.path.insert(0, "../../tools/bitmap_font")
+sys.path.insert(0, "tools/bitmap_font")  # For running from root
+sys.path.insert(0, "../../tools/bitmap_font")  # For running from a port directory
 
 from adafruit_bitmap_font import bitmap_font
 

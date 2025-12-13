@@ -51,8 +51,34 @@ DEFAULT_MODULES = [
     "json",
     "random",
     "digitalio",
+    "rainbowio",
+    "traceback",
+    "warnings",
+    "supervisor",
 ]
-MPCONFIG_FLAGS = ["ulab", "nvm", "displayio", "warnings", "alarm", "array", "json"]
+# Flags that don't match with with a *bindings module.
+MPCONFIG_FLAGS = ["array", "json"]
+
+# List of other modules (the value) that can be enabled when another one (the key) is.
+REVERSE_DEPENDENCIES = {
+    "busio": ["fourwire", "i2cdisplaybus", "sdcardio", "sharpdisplay"],
+    "fourwire": ["displayio", "busdisplay", "epaperdisplay"],
+    "i2cdisplaybus": ["displayio", "busdisplay", "epaperdisplay"],
+    "displayio": [
+        "vectorio",
+        "bitmapfilter",
+        "bitmaptools",
+        "terminalio",
+        "lvfontio",
+        "tilepalettemapper",
+        "fontio",
+    ],
+    "sharpdisplay": ["framebufferio"],
+    "framebufferio": ["displayio"],
+}
+
+# Other flags to set when a module is enabled
+EXTRA_FLAGS = {"busio": ["BUSIO_SPI", "BUSIO_I2C"]}
 
 
 async def preprocess_and_split_defs(compiler, source_file, build_path, flags):
@@ -83,10 +109,17 @@ async def preprocess_and_split_defs(compiler, source_file, build_path, flags):
 async def collect_defs(mode, build_path):
     output_file = build_path / f"{mode}defs.collected"
     splitdir = build_path / "genhdr" / mode
+    to_collect = list(splitdir.glob(f"**/*.{mode}"))
+    batch_size = 50
     await cpbuild.run_command(
-        ["cat", "-s", *splitdir.glob(f"**/*.{mode}"), ">", output_file],
+        ["cat", "-s", *to_collect[:batch_size], ">", output_file],
         splitdir,
     )
+    for i in range(0, len(to_collect), batch_size):
+        await cpbuild.run_command(
+            ["cat", "-s", *to_collect[i : i + batch_size], ">>", output_file],
+            splitdir,
+        )
     return output_file
 
 
@@ -159,6 +192,79 @@ async def generate_root_pointer_header(build_path):
         ],
         srcdir,
     )
+
+
+async def generate_display_resources(output_path, translation, font, extra_characters):
+    await cpbuild.run_command(
+        [
+            "python",
+            srcdir / "tools" / "gen_display_resources.py",
+            "--font",
+            srcdir / font,
+            "--sample_file",
+            srcdir / "locale" / f"{translation}.po",
+            "--extra_characters",
+            repr(extra_characters),
+            "--output_c_file",
+            output_path,
+        ],
+        srcdir,
+        check_hash=[output_path],
+    )
+
+
+def determine_enabled_modules(board_info, portdir, srcdir):
+    """Determine which CircuitPython modules should be enabled based on board capabilities.
+
+    Args:
+        board_info: Dictionary containing board hardware capabilities
+        portdir: Path to the port directory (ports/zephyr-cp)
+        srcdir: Path to the CircuitPython source root
+
+    Returns:
+        tuple: (enabled_modules set, module_reasons dict)
+    """
+    enabled_modules = set(DEFAULT_MODULES)
+    module_reasons = {}
+
+    if board_info["wifi"]:
+        enabled_modules.add("wifi")
+        module_reasons["wifi"] = "Zephyr board has wifi"
+
+    if board_info["flash_count"] > 0:
+        enabled_modules.add("storage")
+        module_reasons["storage"] = "Zephyr board has flash"
+
+    if "wifi" in enabled_modules:
+        enabled_modules.add("socketpool")
+        enabled_modules.add("ssl")
+        module_reasons["socketpool"] = "Zephyr networking enabled"
+        module_reasons["ssl"] = "Zephyr networking enabled"
+
+    for port_module in (portdir / "bindings").iterdir():
+        if not board_info.get(port_module.name, False):
+            continue
+        enabled_modules.add(port_module.name)
+        module_reasons[port_module.name] = f"Zephyr board has {port_module.name}"
+
+    for shared_module in (srcdir / "shared-bindings").iterdir():
+        if not board_info.get(shared_module.name, False) or not shared_module.glob("*.c"):
+            continue
+        enabled_modules.add(shared_module.name)
+        module_reasons[shared_module.name] = f"Zephyr board has {shared_module.name}"
+
+        more_modules = []
+        more_modules.extend(REVERSE_DEPENDENCIES.get(shared_module.name, []))
+        while more_modules:
+            reverse_dependency = more_modules.pop(0)
+            if reverse_dependency in enabled_modules:
+                continue
+            logger.debug(f"Enabling {reverse_dependency} because {shared_module.name} is enabled")
+            enabled_modules.add(reverse_dependency)
+            more_modules.extend(REVERSE_DEPENDENCIES.get(reverse_dependency, []))
+            module_reasons[reverse_dependency] = f"Zephyr board has {shared_module.name}"
+
+    return enabled_modules, module_reasons
 
 
 TINYUSB_SETTINGS = {
@@ -275,27 +381,7 @@ async def build_circuitpython():
 
     autogen_board_info_fn = mpconfigboard_fn.parent / "autogen_board_info.toml"
 
-    enabled_modules = set(DEFAULT_MODULES)
-    module_reasons = {}
-    if board_info["wifi"]:
-        enabled_modules.add("wifi")
-        module_reasons["wifi"] = "Zephyr board has wifi"
-
-    if board_info["flash_count"] > 0:
-        enabled_modules.add("storage")
-        module_reasons["storage"] = "Zephyr board has flash"
-
-    if "wifi" in enabled_modules:
-        enabled_modules.add("socketpool")
-        enabled_modules.add("ssl")
-        module_reasons["socketpool"] = "Zephyr networking enabled"
-        module_reasons["ssl"] = "Zephyr networking enabled"
-
-    for port_module in (portdir / "bindings").iterdir():
-        if not board_info.get(port_module.name, False):
-            continue
-        enabled_modules.add(port_module.name)
-        module_reasons[port_module.name] = f"Zephyr board has {port_module.name}"
+    enabled_modules, module_reasons = determine_enabled_modules(board_info, portdir, srcdir)
 
     circuitpython_flags.extend(board_info["cflags"])
     supervisor_source = [
@@ -484,7 +570,8 @@ async def build_circuitpython():
         list(top.glob("shared-bindings/*")) + list(portdir.glob("bindings/*")),
         key=lambda x: x.name,
     ):
-        if not module.is_dir():
+        # Skip files and directories without C source files (like artifacts from a docs build)
+        if not module.is_dir() or len(list(module.glob("*.c"))) == 0:
             continue
         enabled = module.name in enabled_modules
         # print(f"Module {module.name} enabled: {enabled}")
@@ -493,6 +580,11 @@ async def build_circuitpython():
             v.comment(module_reasons[module.name])
         autogen_modules.add(module.name, v)
         circuitpython_flags.append(f"-DCIRCUITPY_{module.name.upper()}={1 if enabled else 0}")
+
+        if enabled:
+            if module.name in EXTRA_FLAGS:
+                for flag in EXTRA_FLAGS[module.name]:
+                    circuitpython_flags.append(f"-DCIRCUITPY_{flag}=1")
 
         if enabled:
             hal_source.extend(portdir.glob(f"bindings/{module.name}/*.c"))
@@ -562,6 +654,17 @@ async def build_circuitpython():
         )
         tg.create_task(generate_module_header(board_build))
         tg.create_task(generate_root_pointer_header(board_build))
+
+        if "terminalio" in enabled_modules:
+            output_path = board_build / f"autogen_display_resources-{translation}.c"
+            font_path = srcdir / mpconfigboard.get(
+                "CIRCUITPY_DISPLAY_FONT", "tools/fonts/ter-u12n.bdf"
+            )
+            extra_characters = mpconfigboard.get("CIRCUITPY_FONT_EXTRA_CHARACTERS", "")
+            tg.create_task(
+                generate_display_resources(output_path, translation, font_path, extra_characters)
+            )
+            source_files.append(output_path)
 
     # This file is generated by the QSTR/translation process.
     source_files.append(builddir / f"translations-{translation}.c")

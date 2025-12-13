@@ -43,15 +43,6 @@ static const board_i2c_pin_t i2c_pin[CIRCUITPY_BOARD_I2C] = CIRCUITPY_BOARD_I2C_
 static busio_i2c_obj_t i2c_obj[CIRCUITPY_BOARD_I2C];
 static bool i2c_obj_created[CIRCUITPY_BOARD_I2C];
 
-bool common_hal_board_is_i2c(mp_obj_t obj) {
-    for (uint8_t instance = 0; instance < CIRCUITPY_BOARD_I2C; instance++) {
-        if (obj == &i2c_obj[instance]) {
-            return true;
-        }
-    }
-    return false;
-}
-
 mp_obj_t common_hal_board_get_i2c(const mp_int_t instance) {
     return i2c_obj_created[instance] ? &i2c_obj[instance] : NULL;
 }
@@ -88,15 +79,6 @@ typedef struct {
 static const board_spi_pin_t spi_pin[CIRCUITPY_BOARD_SPI] = CIRCUITPY_BOARD_SPI_PIN;
 static busio_spi_obj_t spi_obj[CIRCUITPY_BOARD_SPI];
 static bool spi_obj_created[CIRCUITPY_BOARD_SPI];
-
-bool common_hal_board_is_spi(mp_obj_t obj) {
-    for (uint8_t instance = 0; instance < CIRCUITPY_BOARD_SPI; instance++) {
-        if (obj == &spi_obj[instance]) {
-            return true;
-        }
-    }
-    return false;
-}
 
 mp_obj_t common_hal_board_get_spi(const mp_int_t instance) {
     return spi_obj_created[instance] ? &spi_obj[instance] : NULL;
@@ -135,15 +117,6 @@ typedef struct {
 static const board_uart_pin_t uart_pin[CIRCUITPY_BOARD_UART] = CIRCUITPY_BOARD_UART_PIN;
 static busio_uart_obj_t uart_obj[CIRCUITPY_BOARD_UART];
 static bool uart_obj_created[CIRCUITPY_BOARD_UART];
-
-bool common_hal_board_is_uart(mp_obj_t obj) {
-    for (uint8_t instance = 0; instance < CIRCUITPY_BOARD_UART; instance++) {
-        if (obj == &uart_obj[instance]) {
-            return true;
-        }
-    }
-    return false;
-}
 
 mp_obj_t common_hal_board_get_uart(const mp_int_t instance) {
     return uart_obj_created[instance] ? &uart_obj[instance] : NULL;

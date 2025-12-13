@@ -23,36 +23,36 @@ jobs:
       TEST_native: --emit native
       TEST_native_mpy: --via-mpy --emit native -d basics float micropython
     steps:
-    - name: Set up repository
-      uses: actions/checkout@v4
-      with:
-        submodules: false
-        show-progress: false
-        fetch-depth: 1
-    - name: Set up python
-      uses: actions/setup-python@v5
-      with:
-        python-version: 3.12
-    - name: Set up submodules
-      uses: ./.github/actions/deps/submodules
-      with:
-        target: tests
-    - name: Set up external
-      if: matrix.test == 'all'
-      uses: ./.github/actions/deps/external
-    - name: Set up mpy-cross
-      uses: ./.github/actions/mpy_cross
-      with:
-        cp-version: ${{ inputs.cp-version }}
-    - name: Build unix port
-      run: make -C ports/unix VARIANT=coverage -j4
-    - name: Run tests
-      run: ./run-tests.py -j4 ${{ env[format('TEST_{0}', matrix.test)] }}
-      working-directory: tests
-    - name: Print failure info
-      run: ./run-tests.py -j4 --print-failures
-      if: failure()
-      working-directory: tests
+      - name: Set up repository
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+          show-progress: false
+          fetch-depth: 1
+      - name: Set up python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+      - name: Set up submodules
+        uses: ./.github/actions/deps/submodules
+        with:
+          target: tests
+      - name: Set up external
+        if: matrix.test == 'all'
+        uses: ./.github/actions/deps/external
+      - name: Set up mpy-cross
+        uses: ./.github/actions/mpy_cross
+        with:
+          cp-version: ${{ inputs.cp-version }}
+      - name: Build unix port
+        run: make -C ports/unix VARIANT=coverage -j4
+      - name: Run tests
+        run: ./run-tests.py -j4 ${{ env[format('TEST_{0}', matrix.test)] }}
+        working-directory: tests
+      - name: Print failure info
+        run: ./run-tests.py -j4 --print-failures
+        if: failure()
+        working-directory: tests
     # Not working after MicroPython v1.23 merge.
     # - name: Build native modules
     #   if: matrix.test == 'all'
@@ -66,3 +66,27 @@ jobs:
     #   if: matrix.test == 'all'
     #   run: ./run-natmodtests.py extmod/{heapq*,random*,re*}.py
     #   working-directory: tests
+
+  zephyr:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+    env:
+      CP_VERSION: ${{ inputs.cp-version }}
+    steps:
+      - name: Set up repository
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+          show-progress: false
+          fetch-depth: 1
+      - name: Set up python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.13
+      - name: Set up Zephyr
+        uses: ./.github/actions/deps/ports/zephyr-cp
+      - name: Set up external
+        uses: ./.github/actions/deps/external
+      - name: Run Zephyr build tests
+        run: make -C ports/zephyr-cp test
