@@ -159,7 +159,13 @@ static int packet_buffer_on_ble_client_evt(struct ble_gap_event *event, void *pa
     return false;
 }
 
+#if CIRCUITPY_SERIAL_BLE || CIRCUITPY_BLE_FILE_SERVICE
+// Exposed via shared-bindings header when enabled
 void _common_hal_bleio_packet_buffer_construct(
+#else
+// Internal static helper when disabled (avoids "missing prototype" error)
+static void _common_hal_bleio_packet_buffer_construct(
+#endif
     bleio_packet_buffer_obj_t *self, bleio_characteristic_obj_t *characteristic,
     uint32_t *incoming_buffer, size_t incoming_buffer_size,
     uint32_t *outgoing_buffer1, uint32_t *outgoing_buffer2, size_t max_packet_size,
