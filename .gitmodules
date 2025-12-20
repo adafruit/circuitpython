@@ -395,6 +395,4 @@
 [submodule "frozen/Adafruit_CircuitPython_LED_Animation"]
 	path = frozen/Adafruit_CircuitPython_LED_Animation
 	url = https://github.com/adafruit/Adafruit_CircuitPython_LED_Animation
-[submodule "Adafruit_CircuitPython_IRRemote"]
-	path = Adafruit_CircuitPython_IRRemote
-	url = https://github.com/adafruit/Adafruit_CircuitPython_IRRemote
+	

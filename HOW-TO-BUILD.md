@@ -7,16 +7,20 @@ Repl on for flashing from the web interface and repl off for flashing from the m
 
 1. Read the [CircuitPython BUILDING.md](BUILDING.md) guide and follow the instructions to build CircuitPython.
 
-2. before the "make BOARD" step of the build process, go to "ports/espressif/esp-idf/" and run :
+2. before the "make BOARD" step of the build process, go to "ports/espressif/" and run :
 
 ```bash
-./install.sh
+cd ports/espressif
+```
+
+```bash
+./esp-idf/install.sh
 ```
 
 after the installation, run :
 
 ```bash
-. ./export.sh
+. ./esp-idf/export.sh
 ```
 
 (this step is needed every time you open a new terminal session)
@@ -24,7 +28,7 @@ after the installation, run :
 3. go back to "ports/espressif/" and run :
 
 ```bash
-make BOARD=elio_eliobot
+make BOARD=elio_eliobot_s3
 ```
 
 if the build fails, you may need to run :
@@ -78,7 +82,7 @@ It will push the last commit you made to the repository with the tag name you sp
 go to supervisor/filesystem.c and change the line 137 that create the code.py file to :
 
 ```c
-        //MAKE_FILE_WITH_OPTIONAL_CONTENTS(&vfs_fat->fatfs, "/code.py", "print(\"Hello World!\")\n");
+        MAKE_FILE_WITH_OPTIONAL_CONTENTS(&vfs_fat->fatfs, "/main.py", "print(\"Hello World!\")\n");
 
         MAKE_FILE_WITH_OPTIONAL_CONTENTS(&vfs_fat->fatfs, "/boot.py", "import board\nimport storage\n\n# Attribution de l'ecriture : True = Mass Storage, False = REPL\nstorage.remount(\"/\", False)\n");
 ```
