@@ -25,5 +25,3 @@ typedef struct {
     uint8_t phase;
     uint8_t bits;
 } busio_spi_obj_t;
-
-void reset_spi(void);

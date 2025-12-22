@@ -59,7 +59,6 @@ extern uint32_t _heap_start;
 extern uint32_t _estack;
 
 void reset_port(void) {
-    // reset_all_pins();
     // i2c_reset();
     // spi_reset();
     // uart_reset();

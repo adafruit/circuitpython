@@ -16,24 +16,10 @@
 #define SPI_MAX_DMA_BITS (SPI_MAX_DMA_LEN * 8)
 #define MAX_SPI_TRANSACTIONS 10
 
-static bool spi_never_reset[SOC_SPI_PERIPH_NUM];
 static spi_device_handle_t spi_handle[SOC_SPI_PERIPH_NUM];
-static StaticSemaphore_t spi_mutex[SOC_SPI_PERIPH_NUM];
 
 static bool spi_bus_is_free(spi_host_device_t host_id) {
     return spi_bus_get_attr(host_id) == NULL;
-}
-
-void spi_reset(void) {
-    for (spi_host_device_t host_id = SPI2_HOST; host_id < SOC_SPI_PERIPH_NUM; host_id++) {
-        if (spi_never_reset[host_id]) {
-            continue;
-        }
-        if (!spi_bus_is_free(host_id)) {
-            spi_bus_remove_device(spi_handle[host_id]);
-            spi_bus_free(host_id);
-        }
-    }
 }
 
 static void set_spi_config(busio_spi_obj_t *self,
@@ -61,6 +47,9 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
     const mcu_pin_obj_t *clock, const mcu_pin_obj_t *mosi,
     const mcu_pin_obj_t *miso, bool half_duplex) {
 
+    // Ensure the object starts in its deinit state.
+    common_hal_busio_spi_mark_deinit(self);
+
     const spi_bus_config_t bus_config = {
         .mosi_io_num = mosi != NULL ? mosi->number : -1,
         .miso_io_num = miso != NULL ? miso->number : -1,
@@ -83,11 +72,22 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
         mp_raise_ValueError(MP_ERROR_TEXT("All SPI peripherals are in use"));
     }
 
+    self->mutex = xSemaphoreCreateMutex();
+    if (self->mutex == NULL) {
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Unable to create lock"));
+    }
+
     esp_err_t result = spi_bus_initialize(self->host_id, &bus_config, SPI_DMA_CH_AUTO);
     if (result == ESP_ERR_NO_MEM) {
         mp_raise_msg(&mp_type_MemoryError, MP_ERROR_TEXT("ESP-IDF memory allocation failed"));
     } else if (result == ESP_ERR_INVALID_ARG) {
         raise_ValueError_invalid_pins();
+    }
+
+    self->mutex = xSemaphoreCreateMutex();
+    if (self->mutex == NULL) {
+        spi_bus_free(self->host_id);
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Unable to create lock"));
     }
 
     set_spi_config(self, 250000, 0, 0, 8);
@@ -103,12 +103,9 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
         claim_pin(miso);
     }
     claim_pin(clock);
-
-    self->mutex = xSemaphoreCreateMutexStatic(&spi_mutex[self->host_id]);
 }
 
 void common_hal_busio_spi_never_reset(busio_spi_obj_t *self) {
-    spi_never_reset[self->host_id] = true;
     common_hal_never_reset_pin(self->clock);
     if (self->MOSI != NULL) {
         common_hal_never_reset_pin(self->MOSI);
@@ -122,6 +119,10 @@ bool common_hal_busio_spi_deinited(busio_spi_obj_t *self) {
     return self->clock == NULL;
 }
 
+void common_hal_busio_spi_mark_deinit(busio_spi_obj_t *self) {
+    self->clock = NULL;
+}
+
 void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
     if (common_hal_busio_spi_deinited(self)) {
         return;
@@ -132,11 +133,10 @@ void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
         RUN_BACKGROUND_TASKS;
     }
 
-    // Mark us as deinit early in case we are used in an interrupt.
+    // Mark as deinit early in case we are used in an interrupt.
     common_hal_reset_pin(self->clock);
-    self->clock = NULL;
+    common_hal_busio_spi_mark_deinit(self);
 
-    spi_never_reset[self->host_id] = false;
     spi_bus_remove_device(spi_handle[self->host_id]);
     spi_bus_free(self->host_id);
 
@@ -170,11 +170,13 @@ bool common_hal_busio_spi_try_lock(busio_spi_obj_t *self) {
 }
 
 bool common_hal_busio_spi_has_lock(busio_spi_obj_t *self) {
-    return self->mutex != NULL && xSemaphoreGetMutexHolder(self->mutex) == xTaskGetCurrentTaskHandle();
+    return (self->mutex != NULL) && (xSemaphoreGetMutexHolder(self->mutex) == xTaskGetCurrentTaskHandle());
 }
 
 void common_hal_busio_spi_unlock(busio_spi_obj_t *self) {
-    xSemaphoreGive(self->mutex);
+    if (self->mutex != NULL) {
+        xSemaphoreGive(self->mutex);
+    }
 }
 
 bool common_hal_busio_spi_write(busio_spi_obj_t *self,

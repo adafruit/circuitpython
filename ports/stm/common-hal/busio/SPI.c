@@ -19,7 +19,6 @@
 #define MAX_SPI 6
 
 static bool reserved_spi[MAX_SPI];
-static bool never_reset_spi[MAX_SPI];
 
 #define ALL_CLOCKS 0xFF
 static void spi_clock_enable(uint8_t mask);
@@ -74,18 +73,6 @@ static uint32_t stm32_baud_to_spi_div(uint32_t baudrate, uint16_t *prescaler, ui
     // only gets here if requested baud is lower than minimum
     *prescaler = 256;
     return SPI_BAUDRATEPRESCALER_256;
-}
-
-void spi_reset(void) {
-    uint16_t never_reset_mask = 0x00;
-    for (int i = 0; i < MAX_SPI; i++) {
-        if (!never_reset_spi[i]) {
-            reserved_spi[i] = false;
-        } else {
-            never_reset_mask |= 1 << i;
-        }
-    }
-    spi_clock_disable(ALL_CLOCKS & ~(never_reset_mask));
 }
 
 static const mcu_periph_obj_t *find_pin_function(const mcu_periph_obj_t *table, size_t sz, const mcu_pin_obj_t *pin, int periph_index) {
@@ -151,6 +138,9 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
 
     int periph_index = check_pins(self, sck, mosi, miso);
     SPI_TypeDef *SPIx = mcu_spi_banks[periph_index - 1];
+
+    // Ensure the object starts in its deinit state.
+    common_hal_busio_spi_mark_deinit(self);
 
     // Start GPIO for each pin
     GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -224,7 +214,6 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
 
 void common_hal_busio_spi_never_reset(busio_spi_obj_t *self) {
 
-    never_reset_spi[self->sck->periph_index - 1] = true;
     never_reset_pin_number(self->sck->pin->port, self->sck->pin->number);
     if (self->mosi != NULL) {
         never_reset_pin_number(self->mosi->pin->port, self->mosi->pin->number);
@@ -238,13 +227,16 @@ bool common_hal_busio_spi_deinited(busio_spi_obj_t *self) {
     return self->sck == NULL;
 }
 
+void common_hal_busio_spi_mark_deinit(busio_spi_obj_t *self) {
+    self->sck = NULL;
+}
+
 void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
     if (common_hal_busio_spi_deinited(self)) {
         return;
     }
     spi_clock_disable(1 << (self->sck->periph_index - 1));
     reserved_spi[self->sck->periph_index - 1] = false;
-    never_reset_spi[self->sck->periph_index - 1] = false;
 
     reset_pin_number(self->sck->pin->port, self->sck->pin->number);
     if (self->mosi != NULL) {

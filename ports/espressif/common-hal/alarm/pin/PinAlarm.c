@@ -14,10 +14,12 @@
 
 #include "esp_sleep.h"
 #include "hal/gpio_ll.h"
+#include "driver/gpio.h"
 #include "esp_debug_helpers.h"
 
 #ifdef SOC_PM_SUPPORT_EXT0_WAKEUP
 #include "soc/rtc_cntl_reg.h"
+#include "soc/rtc_io_reg.h"
 #endif
 
 #include "driver/rtc_io.h"
@@ -358,38 +360,40 @@ void alarm_pin_pinalarm_set_alarms(bool deep_sleep, size_t n_alarms, const mp_ob
     if (gpio_isr_register(gpio_interrupt, NULL, 0, &gpio_interrupt_handle) != ESP_OK) {
         mp_raise_ValueError(MP_ERROR_TEXT("Can only alarm on RTC IO from deep sleep."));
     }
-    for (size_t i = 0; i < 64; i++) {
-        uint64_t mask = 1ull << i;
+    for (gpio_num_t pin = 0; pin < SOC_GPIO_PIN_COUNT; pin++) {
+        uint64_t mask = 1ULL << pin;
         bool high = (high_alarms & mask) != 0;
         bool low = (low_alarms & mask) != 0;
         bool pull = (pull_pins & mask) != 0;
         if (!(high || low)) {
             continue;
         }
-        if (rtc_gpio_is_valid_gpio(i)) {
+        if (rtc_gpio_is_valid_gpio(pin)) {
             #ifdef SOC_PM_SUPPORT_RTC_PERIPH_PD
-            rtc_gpio_deinit(i);
+            rtc_gpio_deinit(pin);
             #endif
         }
-        gpio_int_type_t interrupt_mode = GPIO_INTR_DISABLE;
-        gpio_pull_mode_t pull_mode = GPIO_FLOATING;
+        gpio_set_direction(pin, GPIO_MODE_INPUT);
+        if (pull) {
+            if (high) {
+                ESP_ERROR_CHECK(gpio_set_pull_mode(pin, GPIO_PULLDOWN_ONLY));
+            } else {
+                ESP_ERROR_CHECK(gpio_set_pull_mode(pin, GPIO_PULLUP_ONLY));
+            }
+        } else {
+            ESP_ERROR_CHECK(gpio_set_pull_mode(pin, GPIO_FLOATING));
+        }
+        gpio_int_type_t intr = GPIO_INTR_DISABLE;
         if (high) {
-            interrupt_mode = GPIO_INTR_HIGH_LEVEL;
-            pull_mode = GPIO_PULLDOWN_ONLY;
+            intr = GPIO_INTR_HIGH_LEVEL;
         }
         if (low) {
-            interrupt_mode = GPIO_INTR_LOW_LEVEL;
-            pull_mode = GPIO_PULLUP_ONLY;
+            intr = GPIO_INTR_LOW_LEVEL;
         }
-        gpio_set_direction(i, GPIO_MODE_DEF_INPUT);
-        PIN_FUNC_SELECT(GPIO_PIN_MUX_REG[i], PIN_FUNC_GPIO);
-        if (pull) {
-            gpio_set_pull_mode(i, pull_mode);
-        }
-        never_reset_pin_number(i);
-        // Sets interrupt type and wakeup bits.
-        gpio_wakeup_enable(i, interrupt_mode);
-        gpio_intr_enable(i);
+        never_reset_pin_number(pin);
+        gpio_wakeup_enable(pin, intr);
+        gpio_set_intr_type(pin, intr);
+        gpio_intr_enable(pin);
     }
     // Wait for any pulls to settle.
     mp_hal_delay_ms(50);

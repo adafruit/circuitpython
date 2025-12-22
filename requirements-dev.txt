@@ -25,7 +25,8 @@ intelhex
 # for building & testing natmods
 pyelftools
 
-cryptography
+# newer versions break ESP-IDF now
+cryptography<45
 
 # for web workflow minify
 minify_html
@@ -40,3 +41,4 @@ setuptools
 
 # For zephyr port
 tomlkit
+pytest

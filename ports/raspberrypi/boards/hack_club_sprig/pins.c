@@ -60,7 +60,6 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_A3), MP_ROM_PTR(&pin_GPIO29) },
     { MP_ROM_QSTR(MP_QSTR_VOLTAGE_MONITOR), MP_ROM_PTR(&pin_GPIO29) },
 
-
     // Start Sprig-specific definitions
 
     { MP_ROM_QSTR(MP_QSTR_BLUE_LED), MP_ROM_PTR(&pin_GPIO4) },
@@ -79,18 +78,23 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_BUTTON_K), MP_ROM_PTR(&pin_GPIO14) },
     { MP_ROM_QSTR(MP_QSTR_BUTTON_L), MP_ROM_PTR(&pin_GPIO15) },
 
-    { MP_ROM_QSTR(MP_QSTR_MISO), MP_ROM_PTR(&pin_GPIO16) },
-    { MP_ROM_QSTR(MP_QSTR_TFT_LITE), MP_ROM_PTR(&pin_GPIO17) },
     { MP_ROM_QSTR(MP_QSTR_SCK), MP_ROM_PTR(&pin_GPIO18) },
     { MP_ROM_QSTR(MP_QSTR_MOSI), MP_ROM_PTR(&pin_GPIO19) },
-    { MP_ROM_QSTR(MP_QSTR_TFT_CS), MP_ROM_PTR(&pin_GPIO20) },
+    { MP_ROM_QSTR(MP_QSTR_MISO), MP_ROM_PTR(&pin_GPIO16) },
+
     { MP_ROM_QSTR(MP_QSTR_CARD_CS), MP_ROM_PTR(&pin_GPIO21) },
-    { MP_ROM_QSTR(MP_QSTR_TFT_DC), MP_ROM_PTR(&pin_GPIO22) },
-    { MP_ROM_QSTR(MP_QSTR_TFT_RESET), MP_ROM_PTR(&pin_GPIO23) },
+
+    { MP_OBJ_NEW_QSTR(MP_QSTR_TFT_DC), MP_ROM_PTR(CIRCUITPY_BOARD_TFT_DC) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_TFT_CS), MP_ROM_PTR(CIRCUITPY_BOARD_TFT_CS) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_TFT_RESET), MP_ROM_PTR(CIRCUITPY_BOARD_TFT_RESET) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR_TFT_BACKLIGHT), MP_ROM_PTR(CIRCUITPY_BOARD_TFT_BACKLIGHT) },
+    { MP_ROM_QSTR(MP_QSTR_TFT_LITE), MP_ROM_PTR(CIRCUITPY_BOARD_TFT_BACKLIGHT) },
+
 
     { MP_ROM_QSTR(MP_QSTR_WHITE_LED), MP_ROM_PTR(&pin_GPIO28) },
 
     { MP_ROM_QSTR(MP_QSTR_DISPLAY), MP_ROM_PTR(&displays[0].display)},
 
+    { MP_ROM_QSTR(MP_QSTR_SPI), MP_ROM_PTR(&board_spi_obj) },
 };
 MP_DEFINE_CONST_DICT(board_module_globals, board_module_globals_table);

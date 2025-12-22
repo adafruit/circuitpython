@@ -411,8 +411,6 @@ void reset_port(void) {
         reset_ticks();
     }
 
-    reset_all_pins();
-
     // Output clocks for debugging.
     // not supported by SAMD51G; uncomment for SAMD51J or update for 51G
     // #ifdef SAM_D5X_E5X

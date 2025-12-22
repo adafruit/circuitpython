@@ -1,6 +1,5 @@
 SRC_SUPERVISOR = \
 	main.c \
-	lib/tlsf/tlsf.c \
 	supervisor/port.c \
 	supervisor/shared/background_callback.c \
 	supervisor/shared/board.c \
@@ -19,6 +18,10 @@ SRC_SUPERVISOR = \
 	supervisor/shared/traceback.c \
 	supervisor/shared/translate/translate.c \
 	supervisor/shared/workflow.c \
+
+ifeq ($(CIRCUITPY_LIB_TLSF),1)
+SRC_SUPERVISOR += lib/tlsf/tlsf.c
+endif
 
 # For tlsf
 CFLAGS += -D_DEBUG=0
@@ -113,6 +116,7 @@ ifeq ($(CIRCUITPY_TINYUSB),1)
     lib/tinyusb/src/common/tusb_fifo.c \
     lib/tinyusb/src/tusb.c \
     supervisor/usb.c \
+    supervisor/shared/usb.c \
     supervisor/shared/usb/usb.c \
 
   ifeq ($(CIRCUITPY_USB_DEVICE),1)
@@ -255,9 +259,6 @@ ifeq ($(CIRCUITPY_USB_CDC),1)
 # Inform TinyUSB there will be up to two CDC devices.
 CFLAGS += -DCFG_TUD_CDC=2
 endif
-
-USB_HIGHSPEED ?= 0
-CFLAGS += -DUSB_HIGHSPEED=$(USB_HIGHSPEED)
 
 $(BUILD)/supervisor/shared/translate/translate.o: $(HEADER_BUILD)/qstrdefs.generated.h $(HEADER_BUILD)/compressed_translations.generated.h
 

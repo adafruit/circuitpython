@@ -20,6 +20,12 @@ CONFIG_GPTIMER_CTRL_FUNC_IN_IRAM=y
 CONFIG_GPTIMER_ISR_IRAM_SAFE=y
 # end of GPTimer Configuration
 
+#
+# Touch Configuration
+#
+CONFIG_TOUCH_SUPPRESS_DEPRECATE_WARN=y
+# end of Touch Configuration
+
 # end of Driver Configurations
 
 #
@@ -58,6 +64,13 @@ CONFIG_ESP_MAIN_TASK_STACK_SIZE=16384
 #
 CONFIG_FREERTOS_HZ=1000
 # end of Kernel
+
+#
+# LibC
+#
+# end of LWIP
+CONFIG_LIBC_OPTIMIZED_MISALIGNED_ACCESS=y
+# end of LibC
 
 #
 # LWIP

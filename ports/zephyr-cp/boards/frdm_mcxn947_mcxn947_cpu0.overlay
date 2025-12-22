@@ -1,0 +1,5 @@
+&w25q64jvssiq {
+    /delete-node/ partitions;
+};
+
+#include "../app.overlay"

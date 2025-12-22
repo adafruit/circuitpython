@@ -21,7 +21,10 @@
 #endif
 
 //| class Terminal:
-//|     """Display a character stream with a TileGrid
+//|     """Terminal manages tile indices and cursor position based on VT100 commands. The ``font`` should be
+//|     a `fontio.BuiltinFont` and the ``scroll_area`` TileGrid's bitmap should match the font's bitmap.
+//|
+//|     Display a character stream with a TileGrid
 //|
 //|     ASCII control:
 //|
@@ -75,6 +78,52 @@
 //|     +--------+------------+------------+
 //|     | White  | 37         | 47         |
 //|     +--------+------------+------------+
+//|
+//|     Example Usage:
+//|
+//|     .. code-block:: python
+//|
+//|         import time
+//|         import displayio
+//|         import supervisor
+//|         from displayio import Group, TileGrid
+//|         from terminalio import FONT, Terminal
+//|
+//|         main_group = Group()
+//|         display = supervisor.runtime.display
+//|         font_bb = FONT.get_bounding_box()
+//|         screen_size = (display.width // font_bb[0], display.height // font_bb[1])
+//|         char_size = FONT.get_bounding_box()
+//|
+//|         palette = displayio.Palette(2)
+//|         palette[0] = 0x000000
+//|         palette[1] = 0xffffff
+//|
+//|         tilegrid = TileGrid(
+//|             bitmap=FONT.bitmap, width=screen_size[0], height=screen_size[1],
+//|             tile_width=char_size[0], tile_height=char_size[1], pixel_shader=palette)
+//|
+//|         terminal = Terminal(tilegrid, FONT)
+//|
+//|         main_group.append(tilegrid)
+//|         display.root_group = main_group
+//|
+//|         message = "Hello World\\n"
+//|         terminal.write(message)
+//|
+//|         print(terminal.cursor_x, terminal.cursor_y)
+//|         move_cursor = chr(27) + "[10;10H"
+//|         terminal.write(f"Moving the cursor\\n{move_cursor} To here")
+//|
+//|         cursor_home = chr(27) + f"[{screen_size[1]};0H"
+//|         terminal.write(cursor_home)
+//|         i = 1
+//|         while True:
+//|             terminal.write(f"Writing again {i}\\n")
+//|             i = i + 1
+//|             time.sleep(1)
+//|
+//|
 //|     """
 //|
 //|     def __init__(
@@ -84,8 +133,6 @@
 //|         *,
 //|         status_bar: Optional[displayio.TileGrid] = None,
 //|     ) -> None:
-//|         """Terminal manages tile indices and cursor position based on VT100 commands. The font should be
-//|         a `fontio.BuiltinFont` and the TileGrid's bitmap should match the font's bitmap."""
 //|         ...
 //|
 

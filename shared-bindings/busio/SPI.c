@@ -88,7 +88,7 @@
 // TODO(tannewt): Support LSB SPI.
 static mp_obj_t busio_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     #if CIRCUITPY_BUSIO_SPI
-    busio_spi_obj_t *self = mp_obj_malloc(busio_spi_obj_t, &busio_spi_type);
+    busio_spi_obj_t *self = mp_obj_malloc_with_finaliser(busio_spi_obj_t, &busio_spi_type);
     enum { ARG_clock, ARG_MOSI, ARG_MISO, ARG_half_duplex };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_clock, MP_ARG_REQUIRED | MP_ARG_OBJ },
@@ -140,7 +140,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(busio_spi_deinit_obj, busio_spi_obj_deinit);
 //  Provided by context manager helper.
 
 static void check_lock(busio_spi_obj_t *self) {
-    asm ("");
+    __asm__ ("");
     if (!common_hal_busio_spi_has_lock(self)) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Function requires lock"));
     }
@@ -466,6 +466,7 @@ MP_PROPERTY_GETTER(busio_spi_frequency_obj,
 static const mp_rom_map_elem_t busio_spi_locals_dict_table[] = {
     #if CIRCUITPY_BUSIO_SPI
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&busio_spi_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&busio_spi_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
 

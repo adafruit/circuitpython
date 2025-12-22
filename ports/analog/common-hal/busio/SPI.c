@@ -42,7 +42,6 @@
 typedef enum {
     SPI_FREE = 0,
     SPI_BUSY,
-    SPI_NEVER_RESET,
 } spi_status_t;
 
 // Set each bit to indicate an active SPI
@@ -60,6 +59,9 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
 
     // Check for NULL Pointer
     assert(self);
+
+    // Ensure the object starts in its deinit state.
+    common_hal_busio_spi_mark_deinit(self);
 
     // Assign SPI ID based on pins
     int spi_id = pinsToSpi(mosi, miso, sck);
@@ -118,13 +120,15 @@ void common_hal_busio_spi_never_reset(busio_spi_obj_t *self) {
     common_hal_never_reset_pin(self->miso);
     common_hal_never_reset_pin(self->sck);
     common_hal_never_reset_pin(self->nss);
-
-    spi_status[self->spi_id] = SPI_NEVER_RESET;
 }
 
 // Check SPI status, deinited or not
 bool common_hal_busio_spi_deinited(busio_spi_obj_t *self) {
     return self->sck == NULL;
+}
+
+void common_hal_busio_spi_mark_deinit(busio_spi_obj_t *self) {
+    self->sck = NULL;
 }
 
 // Deinit SPI obj
@@ -138,8 +142,9 @@ void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
 
     self->mosi = NULL;
     self->miso = NULL;
-    self->sck = NULL;
     self->nss = NULL;
+
+    common_hal_busio_spi_mark_deinit(self);
 }
 
 // Configures the SPI bus. The SPI object must be locked.

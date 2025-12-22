@@ -20,7 +20,7 @@
 //|
 //| def new(name: str, data: bytes = b"") -> hashlib.Hash:
 //|     """Returns a Hash object setup for the named algorithm. Raises ValueError when the named
-//|        algorithm is unsupported.
+//|     algorithm is unsupported. Supported algorithms for ``name`` are ``'sha1`` and ``'sha256'``.
 //|
 //|     :return: a hash object for the given algorithm
 //|     :rtype: hashlib.Hash"""

@@ -15,11 +15,11 @@ pip install west
 west init -l zephyr-config
 west update
 west zephyr-export
-pip install -r lib/zephyr/scripts/requirements.txt
+pip install -r zephyr/scripts/requirements.txt
 west sdk install
 ```
 
-Now to build from the top level:
+Now to build from `ports/zephyr-cp`:
 
 ```sh
 make BOARD=nordic_nrf7002dk

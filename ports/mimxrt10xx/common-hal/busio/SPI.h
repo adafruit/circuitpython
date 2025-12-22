@@ -21,5 +21,3 @@ typedef struct {
     const mcu_periph_obj_t *mosi;
     const mcu_periph_obj_t *miso;
 } busio_spi_obj_t;
-
-void spi_reset(void);

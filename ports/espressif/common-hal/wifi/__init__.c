@@ -146,8 +146,8 @@ void common_hal_wifi_init(bool user_initiated) {
     common_hal_wifi_radio_obj.base.type = &wifi_radio_type;
 
     if (!wifi_ever_inited) {
-        ESP_ERROR_CHECK(esp_netif_init());
         ESP_ERROR_CHECK(esp_event_loop_create_default());
+        ESP_ERROR_CHECK(esp_netif_init());
         wifi_ever_inited = true;
     }
 
@@ -175,6 +175,7 @@ void common_hal_wifi_init(bool user_initiated) {
         &self->handler_instance_got_ip));
 
     wifi_init_config_t config = WIFI_INIT_CONFIG_DEFAULT();
+    esp_err_t result = esp_wifi_init(&config);
     #ifdef CONFIG_ESP32_WIFI_NVS_ENABLED
     // Generally we don't use this because we store ssid and passwords ourselves in the filesystem.
     esp_err_t err = nvs_flash_init();
@@ -185,8 +186,10 @@ void common_hal_wifi_init(bool user_initiated) {
         err = nvs_flash_init();
     }
     ESP_ERROR_CHECK(err);
+    ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_FLASH));
+    #else
+    ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
     #endif
-    esp_err_t result = esp_wifi_init(&config);
     if (result == ESP_ERR_NO_MEM) {
         if (gc_alloc_possible()) {
             mp_raise_msg(&mp_type_MemoryError, MP_ERROR_TEXT("Failed to allocate Wifi memory"));

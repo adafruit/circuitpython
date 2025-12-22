@@ -19,23 +19,13 @@
 
 #define NO_INSTANCE 0xff
 
-static bool never_reset_spi[2];
-static spi_inst_t *spi[2] = {spi0, spi1};
-
-void reset_spi(void) {
-    for (size_t i = 0; i < 2; i++) {
-        if (never_reset_spi[i]) {
-            continue;
-        }
-
-        spi_deinit(spi[i]);
-    }
-}
-
 void common_hal_busio_spi_construct(busio_spi_obj_t *self,
     const mcu_pin_obj_t *clock, const mcu_pin_obj_t *mosi,
     const mcu_pin_obj_t *miso, bool half_duplex) {
     size_t instance_index = NO_INSTANCE;
+
+    // Ensure the object starts in its deinit state.
+    common_hal_busio_spi_mark_deinit(self);
 
     if (half_duplex) {
         mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("%q"), MP_QSTR_half_duplex);
@@ -96,8 +86,6 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
 }
 
 void common_hal_busio_spi_never_reset(busio_spi_obj_t *self) {
-    never_reset_spi[spi_get_index(self->peripheral)] = true;
-
     common_hal_never_reset_pin(self->clock);
     common_hal_never_reset_pin(self->MOSI);
     common_hal_never_reset_pin(self->MISO);
@@ -107,17 +95,21 @@ bool common_hal_busio_spi_deinited(busio_spi_obj_t *self) {
     return self->clock == NULL;
 }
 
+void common_hal_busio_spi_mark_deinit(busio_spi_obj_t *self) {
+    self->clock = NULL;
+}
+
 void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
     if (common_hal_busio_spi_deinited(self)) {
         return;
     }
-    never_reset_spi[spi_get_index(self->peripheral)] = false;
     spi_deinit(self->peripheral);
 
     common_hal_reset_pin(self->clock);
     common_hal_reset_pin(self->MOSI);
     common_hal_reset_pin(self->MISO);
-    self->clock = NULL;
+
+    common_hal_busio_spi_mark_deinit(self);
 }
 
 bool common_hal_busio_spi_configure(busio_spi_obj_t *self,

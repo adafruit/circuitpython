@@ -7,6 +7,21 @@
 CONFIG_COMPILER_OPTIMIZATION_SIZE=y
 # end of Compiler options
 
+# Bootloader config
+#
+#
+# Log
+#
+#
+# Format
+#
+CONFIG_BOOTLOADER_LOG_COLORS=y
+# end of Format
+
+# end of Log
+
+# end of Bootloader config
+
 #
 # Component config
 #
@@ -18,6 +33,17 @@ CONFIG_ESP_PANIC_HANDLER_IRAM=y
 CONFIG_ESP_CONSOLE_SECONDARY_NONE=y
 # CONFIG_ESP_CONSOLE_SECONDARY_USB_SERIAL_JTAG is not set
 # end of ESP System Settings
+
+#
+# Log
+#
+#
+# Format
+#
+CONFIG_LOG_COLORS=y
+# end of Format
+
+# end of Log
 
 # end of Component config
 

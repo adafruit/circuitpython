@@ -26,7 +26,14 @@ static pool_t pools[CIRCUITPY_RAM_DEVICE_COUNT];
 
 static K_EVENT_DEFINE(main_needed);
 
+static struct k_timer tick_timer;
+
+static void _tick_function(struct k_timer *timer_id) {
+    supervisor_tick();
+}
+
 safe_mode_t port_init(void) {
+    k_timer_init(&tick_timer, _tick_function, NULL);
     return SAFE_MODE_NONE;
 }
 
@@ -94,12 +101,12 @@ uint64_t port_get_raw_ticks(uint8_t *subticks) {
 
 // Enable 1/1024 second tick.
 void port_enable_tick(void) {
-
+    k_timer_start(&tick_timer, K_USEC(1000000 / 1024), K_USEC(1000000 / 1024));
 }
 
 // Disable 1/1024 second tick.
 void port_disable_tick(void) {
-
+    k_timer_stop(&tick_timer);
 }
 
 static k_timeout_t next_timeout;
@@ -170,4 +177,12 @@ size_t port_heap_get_largest_free_size(void) {
     }
     // IDF does this. Not sure why.
     return tlsf_fit_size(heap, max_size);
+}
+
+void assert_post_action(const char *file, unsigned int line) {
+    printk("Assertion failed at %s:%u\n", file, line);
+    __asm__ ("bkpt");
+    while (1) {
+        ;
+    }
 }

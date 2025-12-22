@@ -294,6 +294,9 @@ endif
 ifeq ($(CIRCUITPY_MICROCONTROLLER),1)
 SRC_PATTERNS += microcontroller/%
 endif
+ifeq ($(CIRCUITPY_MIPIDSI),1)
+SRC_PATTERNS += mipidsi/%
+endif
 ifeq ($(CIRCUITPY_MSGPACK),1)
 SRC_PATTERNS += msgpack/%
 endif
@@ -531,6 +534,9 @@ SRC_COMMON_HAL_ALL = \
 	mdns/__init__.c \
 	mdns/Server.c \
 	mdns/RemoteService.c \
+	mipidsi/Bus.c \
+	mipidsi/Display.c \
+	mipidsi/__init__.c \
 	neopixel_write/__init__.c \
 	nvm/ByteArray.c \
 	nvm/__init__.c \
@@ -992,7 +998,6 @@ endif
 
 # Sources used in all ports except unix.
 SRC_CIRCUITPY_COMMON = \
-	shared/libc/string0.c \
 	shared/readline/readline.c \
 	lib/oofatfs/ff.c \
 	lib/oofatfs/ffunicode.c \
@@ -1003,6 +1008,10 @@ SRC_CIRCUITPY_COMMON = \
 	shared/runtime/pyexec.c \
 	shared/runtime/stdout_helpers.c \
 	shared/runtime/sys_stdio_mphal.c
+
+ifeq ($(CIRCUITPY_LIBC_STRING0),1)
+SRC_CIRCUITPY_COMMON += shared/libc/string0.c
+endif
 
 ifeq ($(CIRCUITPY_QRIO),1)
 SRC_CIRCUITPY_COMMON += lib/quirc/lib/decode.c lib/quirc/lib/identify.c lib/quirc/lib/quirc.c lib/quirc/lib/version_db.c

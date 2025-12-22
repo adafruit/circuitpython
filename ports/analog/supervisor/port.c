@@ -166,7 +166,6 @@ void reset_cpu(void) {
 
 // Reset MCU state
 void reset_port(void) {
-    reset_all_pins();
 }
 
 // Reset to the bootloader

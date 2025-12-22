@@ -62,6 +62,15 @@ CFLAGS += -DCIRCUITPY_FULL_BUILD=$(CIRCUITPY_FULL_BUILD)
 # increased build time
 CIRCUITPY_MESSAGE_COMPRESSION_LEVEL ?= 9
 
+# By default, use our copy of TLSF. Some vendor SDKs may provide their own
+# implementation of TLSF, which can be used instead by setting CIRCUITPY_LIB_TLSF=0.
+CIRCUITPY_LIB_TLSF ?= 1
+
+# By default, use our copy of string0 (memcpy and friends) because it is optimized. Some vendor SDKs
+# or ROMs may provide their own implementation of string0, which can be used instead by setting
+# CIRCUITPY_LIBC_STRING0=0.
+CIRCUITPY_LIBC_STRING0 ?= 1
+
 # Reduce the size of in-flash properties. Requires support in the .ld linker
 # file, so not enabled by default.
 CIRCUITPY_OPTIMIZE_PROPERTY_FLASH_SIZE ?= 0
@@ -395,6 +404,9 @@ CFLAGS += -DCIRCUITPY_MEMORYMONITOR=$(CIRCUITPY_MEMORYMONITOR)
 
 CIRCUITPY_MICROCONTROLLER ?= 1
 CFLAGS += -DCIRCUITPY_MICROCONTROLLER=$(CIRCUITPY_MICROCONTROLLER)
+
+CIRCUITPY_MIPIDSI ?= 0
+CFLAGS += -DCIRCUITPY_MIPIDSI=$(CIRCUITPY_MIPIDSI)
 
 CIRCUITPY_MSGPACK ?= $(CIRCUITPY_FULL_BUILD)
 CFLAGS += -DCIRCUITPY_MSGPACK=$(CIRCUITPY_MSGPACK)

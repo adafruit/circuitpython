@@ -9,7 +9,8 @@
 #include "py/objarray.h"
 
 #include "shared-bindings/sdcardio/SDCard.h"
-#include "shared-module/sdcardio/SDCard.h"
+#include "shared-bindings/util.h"
+
 #include "common-hal/busio/SPI.h"
 #include "shared-bindings/busio/SPI.h"
 #include "shared-bindings/microcontroller/Pin.h"
@@ -52,11 +53,19 @@
 //|             import sdcardio
 //|             import storage
 //|
+//|              # Make sure to make an "sd" folder on CIRCUITPY
+//|
 //|             sd = sdcardio.SDCard(board.SPI(), board.SD_CS)
 //|             vfs = storage.VfsFat(sd)
 //|             storage.mount(vfs, '/sd')
-//|             os.listdir('/sd')"""
+//|             print(os.listdir('/sd'))"""
 //|
+
+static void check_for_deinit(sdcardio_sdcard_obj_t *self) {
+    if (common_hal_sdcardio_sdcard_deinited(self)) {
+        raise_deinited_error();
+    }
+}
 
 static mp_obj_t sdcardio_sdcard_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_spi, ARG_cs, ARG_baudrate, NUM_ARGS };
@@ -72,7 +81,7 @@ static mp_obj_t sdcardio_sdcard_make_new(const mp_obj_type_t *type, size_t n_arg
     busio_spi_obj_t *spi = validate_obj_is_spi_bus(args[ARG_spi].u_obj, MP_QSTR_spi);
     const mcu_pin_obj_t *cs = validate_obj_is_free_pin(args[ARG_cs].u_obj, MP_QSTR_cs);
 
-    sdcardio_sdcard_obj_t *self = mp_obj_malloc(sdcardio_sdcard_obj_t, &sdcardio_SDCard_type);
+    sdcardio_sdcard_obj_t *self = mp_obj_malloc_with_finaliser(sdcardio_sdcard_obj_t, &sdcardio_SDCard_type);
 
     common_hal_sdcardio_sdcard_construct(self, spi, cs, args[ARG_baudrate].u_int);
 
@@ -89,6 +98,7 @@ static mp_obj_t sdcardio_sdcard_make_new(const mp_obj_type_t *type, size_t n_arg
 //|
 static mp_obj_t sdcardio_sdcard_count(mp_obj_t self_in) {
     sdcardio_sdcard_obj_t *self = (sdcardio_sdcard_obj_t *)self_in;
+    check_for_deinit(self);
     return mp_obj_new_int_from_ull(common_hal_sdcardio_sdcard_get_blockcount(self));
 }
 MP_DEFINE_CONST_FUN_OBJ_1(sdcardio_sdcard_count_obj, sdcardio_sdcard_count);
@@ -116,10 +126,12 @@ MP_DEFINE_CONST_FUN_OBJ_1(sdcardio_sdcard_deinit_obj, sdcardio_sdcard_deinit);
 //|
 
 static mp_obj_t _sdcardio_sdcard_readblocks(mp_obj_t self_in, mp_obj_t start_block_in, mp_obj_t buf_in) {
+    sdcardio_sdcard_obj_t *self = (sdcardio_sdcard_obj_t *)self_in;
+    check_for_deinit(self);
+
     uint32_t start_block = mp_obj_get_int(start_block_in);
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(buf_in, &bufinfo, MP_BUFFER_WRITE);
-    sdcardio_sdcard_obj_t *self = (sdcardio_sdcard_obj_t *)self_in;
     int result = common_hal_sdcardio_sdcard_readblocks(self, start_block, &bufinfo);
     if (result < 0) {
         mp_raise_OSError(-result);
@@ -137,6 +149,7 @@ MP_DEFINE_CONST_FUN_OBJ_3(sdcardio_sdcard_readblocks_obj, _sdcardio_sdcard_readb
 //|
 static mp_obj_t sdcardio_sdcard_sync(mp_obj_t self_in) {
     sdcardio_sdcard_obj_t *self = (sdcardio_sdcard_obj_t *)self_in;
+    check_for_deinit(self);
     int result = common_hal_sdcardio_sdcard_sync(self);
     if (result < 0) {
         mp_raise_OSError(-result);
@@ -158,10 +171,12 @@ MP_DEFINE_CONST_FUN_OBJ_1(sdcardio_sdcard_sync_obj, sdcardio_sdcard_sync);
 //|
 
 static mp_obj_t _sdcardio_sdcard_writeblocks(mp_obj_t self_in, mp_obj_t start_block_in, mp_obj_t buf_in) {
+    sdcardio_sdcard_obj_t *self = (sdcardio_sdcard_obj_t *)self_in;
+    check_for_deinit(self);
+
     uint32_t start_block = mp_obj_get_int(start_block_in);
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(buf_in, &bufinfo, MP_BUFFER_READ);
-    sdcardio_sdcard_obj_t *self = (sdcardio_sdcard_obj_t *)self_in;
     int result = common_hal_sdcardio_sdcard_writeblocks(self, start_block, &bufinfo);
     if (result < 0) {
         mp_raise_OSError(-result);
@@ -173,6 +188,7 @@ MP_DEFINE_CONST_FUN_OBJ_3(sdcardio_sdcard_writeblocks_obj, _sdcardio_sdcard_writ
 static const mp_rom_map_elem_t sdcardio_sdcard_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_count), MP_ROM_PTR(&sdcardio_sdcard_count_obj) },
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&sdcardio_sdcard_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&sdcardio_sdcard_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR_readblocks), MP_ROM_PTR(&sdcardio_sdcard_readblocks_obj) },
     { MP_ROM_QSTR(MP_QSTR_sync), MP_ROM_PTR(&sdcardio_sdcard_sync_obj) },
     { MP_ROM_QSTR(MP_QSTR_writeblocks), MP_ROM_PTR(&sdcardio_sdcard_writeblocks_obj) },

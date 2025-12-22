@@ -17,6 +17,9 @@ CROSS_COMPILE = riscv32-esp-elf-
 else ifeq ($(IDF_TARGET),esp32c6)
 IDF_TARGET_ARCH = riscv
 CROSS_COMPILE = riscv32-esp-elf-
+else ifeq ($(IDF_TARGET),esp32c61)
+IDF_TARGET_ARCH = riscv
+CROSS_COMPILE = riscv32-esp-elf-
 else ifeq ($(IDF_TARGET),esp32h2)
 IDF_TARGET_ARCH = riscv
 CROSS_COMPILE = riscv32-esp-elf-
@@ -53,6 +56,10 @@ CIRCUITPY_SSL_MBEDTLS = 1
 CIRCUITPY_HASHLIB_MBEDTLS_ONLY = 0
 
 CIRCUITPY_PORT_SERIAL = 1
+
+CIRCUITPY_LIB_TLSF = 0
+
+CIRCUITPY_LIBC_STRING0 = 0
 
 # These modules are implemented in ports/<port>/common-hal:
 CIRCUITPY__EVE ?= 1
@@ -199,6 +206,45 @@ CIRCUITPY_TOUCHIO_USE_NATIVE = 0
 CIRCUITPY_USB_DEVICE = 0
 CIRCUITPY_ESP_USB_SERIAL_JTAG ?= 1
 
+#### esp32c6 ##########################################################
+else ifeq ($(IDF_TARGET),esp32c61)
+# Modules
+CIRCUITPY_ESPCAMERA = 0
+CIRCUITPY_ESPULP = 0
+CIRCUITPY_MEMORYMAP = 0
+CIRCUITPY_RGBMATRIX = 0
+
+# No DAC
+CIRCUITPY_AUDIOIO = 0
+
+# No space for this
+CIRCUITPY_AUDIOBUSIO = 0
+
+# No I80 support from the IDF
+CIRCUITPY_PARALLELDISPLAYBUS = 0
+
+# No SDMMC
+CIRCUITPY_SDIOIO = 0
+
+CIRCUITPY_TOUCHIO ?= 1
+CIRCUITPY_TOUCHIO_USE_NATIVE = 0
+# Features
+CIRCUITPY_USB_DEVICE = 0
+CIRCUITPY_ESP_USB_SERIAL_JTAG ?= 1
+
+# No TWAI on chip
+CIRCUITPY_CANIO = 0
+
+# No RMT on chip
+CIRCUITPY_NEOPIXEL_WRITE = 0
+CIRCUITPY_PULSEIO = 0
+CIRCUITPY_RGBMATRIX = 0
+
+# No PCNT on chip
+CIRCUITPY_COUNTIO = 0
+CIRCUITPY_ROTARYIO = 0
+CIRCUITPY_FREQUENCYIO = 0
+
 #### esp32h2 ##########################################################
 else ifeq ($(IDF_TARGET),esp32h2)
 # Modules
@@ -244,7 +290,6 @@ CIRCUITPY_TOUCHIO_USE_NATIVE = 0
 # Second stage bootloader doesn't work when the factory partition is empty due to
 # UF2 missing.
 UF2_BOOTLOADER = 0
-USB_HIGHSPEED = 1
 CIRCUITPY_USB_HID = 0
 CIRCUITPY_USB_MIDI = 0
 CIRCUITPY_TUSB_MEM_ALIGN = 64
@@ -265,6 +310,9 @@ CIRCUITPY_PARALLELDISPLAYBUS = 0
 
 # Library doesn't support P4 yet it seems
 CIRCUITPY_ESPCAMERA = 0
+
+# P4 has MIPI-DSI
+CIRCUITPY_MIPIDSI = 1
 
 #### esp32s2 ##########################################################
 else ifeq ($(IDF_TARGET),esp32s2)

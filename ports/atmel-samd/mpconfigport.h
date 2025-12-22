@@ -11,9 +11,6 @@
 
 // Definitions that control circuitpy_mpconfig.h:
 
-// On SAMD, presenting the SD card as a second LUN causes USB disconnect. This needs to be fixed eventually.
-#define CIRCUITPY_SDCARD_USB (0)
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef SAMD21

@@ -18,7 +18,7 @@ typedef struct {
     uint8_t *mosi_packet;
     const uint8_t *miso_packet;
 
-    dma_descr_t running_dma;
+    dma_transfer_t running_dma;
 } spitarget_spi_target_obj_t;
 
 #endif // MICROPY_INCLUDED_ATMEL_SAMD_COMMON_HAL_BUSIO_SPI_TARGET_H

@@ -66,8 +66,6 @@ void reset_port(void) {
     #if CIRCUITPY_RTC
     rtc_reset();
     #endif
-
-    reset_all_pins();
 }
 
 void reset_to_bootloader(void) {

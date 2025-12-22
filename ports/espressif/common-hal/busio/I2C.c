@@ -128,6 +128,11 @@ void common_hal_busio_i2c_deinit(busio_i2c_obj_t *self) {
     i2c_del_master_bus(self->handle);
     self->handle = NULL;
 
+    // Release the mutex before we delete it. Otherwise FreeRTOS gets unhappy.
+    xSemaphoreGive(self->xSemaphore);
+    vSemaphoreDelete(self->xSemaphore);
+    self->xSemaphore = NULL;
+
     common_hal_reset_pin(self->sda_pin);
     common_hal_reset_pin(self->scl_pin);
     common_hal_busio_i2c_mark_deinit(self);

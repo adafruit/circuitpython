@@ -43,6 +43,7 @@
 #include "supervisor/shared/external_flash/external_flash.h"
 
 #include "shared-bindings/microcontroller/__init__.h"
+#include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/microcontroller/Processor.h"
 #include "shared-bindings/supervisor/__init__.h"
 #include "shared-bindings/supervisor/Runtime.h"
@@ -124,6 +125,7 @@ static void reset_devices(void) {
 
 static uint8_t *_heap;
 static uint8_t *_pystack;
+static volatile bool _vm_is_running = false;
 
 static const char line_clear[] = "\x1b[2K\x1b[0G";
 
@@ -207,28 +209,33 @@ static void start_mp(safe_mode_t safe_mode) {
 
     // Always return to root
     common_hal_os_chdir("/");
+
+    _vm_is_running = true;
 }
 
 static void stop_mp(void) {
+    _vm_is_running = false;
     #if MICROPY_VFS
 
     // Unmount all heap allocated vfs mounts.
     mp_vfs_mount_t *vfs = MP_STATE_VM(vfs_mount_table);
-    do {
-        if (gc_ptr_on_heap(vfs)) {
-            // mp_vfs_umount will splice out an unmounted vfs from the vfs_mount_table linked list.
-            mp_vfs_umount(vfs->obj);
-            // Start over at the beginning of the list since the first entry may have been removed.
-            vfs = MP_STATE_VM(vfs_mount_table);
-            continue;
-        }
-        vfs = vfs->next;
-    } while (vfs != NULL);
+    if (vfs != NULL) {
+        do {
+            if (gc_ptr_on_heap(vfs)) {
+                // mp_vfs_umount will splice out an unmounted vfs from the vfs_mount_table linked list.
+                mp_vfs_umount(vfs->obj);
+                // Start over at the beginning of the list since the first entry may have been removed.
+                vfs = MP_STATE_VM(vfs_mount_table);
+                continue;
+            }
+            vfs = vfs->next;
+        } while (vfs != NULL);
 
-    // The last vfs is CIRCUITPY and the root directory.
-    vfs = MP_STATE_VM(vfs_mount_table);
-    while (vfs->next != NULL) {
-        vfs = vfs->next;
+        // The last vfs is CIRCUITPY and the root directory.
+        vfs = MP_STATE_VM(vfs_mount_table);
+        while (vfs->next != NULL) {
+            vfs = vfs->next;
+        }
     }
     MP_STATE_VM(vfs_cur) = vfs;
     #endif
@@ -409,7 +416,12 @@ static void cleanup_after_vm(mp_obj_t exception) {
 
     // Free the heap last because other modules may reference heap memory and need to shut down.
     filesystem_flush();
+
+    // Runs finalisers while shutting down the heap.
     stop_mp();
+
+    // Don't reset pins until finalisers have run.
+    reset_all_pins();
 
     // Let the workflows know we've reset in case they want to restart.
     supervisor_workflow_reset();
@@ -513,6 +525,7 @@ static bool __attribute__((noinline)) run_code_py(safe_mode_t safe_mode, bool *s
 
 
         // Finished executing python code. Cleanup includes filesystem flush and a board reset.
+        _vm_is_running = false;
         cleanup_after_vm(_exec_result.exception);
         _exec_result.exception = NULL;
 
@@ -1199,6 +1212,10 @@ void NORETURN nlr_jump_fail(void *val) {
     reset_into_safe_mode(SAFE_MODE_NLR_JUMP_FAIL);
     while (true) {
     }
+}
+
+bool vm_is_running(void) {
+    return _vm_is_running;
 }
 
 #ifndef NDEBUG

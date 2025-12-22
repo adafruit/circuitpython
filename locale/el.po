@@ -126,6 +126,7 @@ msgid "%q in %q must be of type %q, not %q"
 msgstr "%q στο %q πρέπει να είναι τύπου %q, όχι %q"
 
 #: ports/espressif/common-hal/espulp/ULP.c
+#: ports/espressif/common-hal/mipidsi/Bus.c
 #: ports/mimxrt10xx/common-hal/audiobusio/__init__.c
 #: ports/mimxrt10xx/common-hal/usb_host/Port.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
@@ -173,10 +174,6 @@ msgstr "%q μήκος πρέπει να είναι <= %d"
 #: py/argcheck.c
 msgid "%q length must be >= %d"
 msgstr "%q μήκος πρέπει να είναι >= %d"
-
-#: py/runtime.c
-msgid "%q moved from %q to %q"
-msgstr "%q μετακινήθηκε από το %q στο %q"
 
 #: py/argcheck.c
 msgid "%q must be %d"
@@ -263,7 +260,8 @@ msgstr "%q εκτός ορίων"
 #: ports/nordic/common-hal/pulseio/PulseIn.c
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 #: ports/stm/common-hal/pulseio/PulseIn.c py/argcheck.c
-#: shared-bindings/canio/Match.c shared-bindings/time/__init__.c
+#: shared-bindings/bitmaptools/__init__.c shared-bindings/canio/Match.c
+#: shared-bindings/time/__init__.c
 msgid "%q out of range"
 msgstr "%q εκτός εμβέλειας"
 
@@ -957,6 +955,7 @@ msgstr "Η οθόνη πρέπει να έχει 16 bit χρωματική ευ�
 #: shared-bindings/busdisplay/BusDisplay.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
+#: shared-bindings/mipidsi/Display.c
 msgid "Display rotation must be in 90 degree increments"
 msgstr "Η περιστροφή της οθόνη πρέπει να γίνεται σε βήματα 90 μοιρών"
 
@@ -1296,13 +1295,15 @@ msgstr ""
 #: ports/espressif/common-hal/_bleio/Service.c
 #: ports/espressif/common-hal/espulp/ULP.c
 #: ports/espressif/common-hal/microcontroller/Processor.c
+#: ports/espressif/common-hal/mipidsi/Display.c
 #: ports/mimxrt10xx/common-hal/audiobusio/__init__.c
 #: ports/mimxrt10xx/common-hal/pwmio/PWMOut.c
 #: ports/raspberrypi/bindings/picodvi/Framebuffer.c
 #: ports/raspberrypi/bindings/rp2pio/StateMachine.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c py/argcheck.c
 #: shared-bindings/digitalio/DigitalInOut.c
-#: shared-bindings/epaperdisplay/EPaperDisplay.c shared-bindings/pwmio/PWMOut.c
+#: shared-bindings/epaperdisplay/EPaperDisplay.c
+#: shared-bindings/mipidsi/Display.c shared-bindings/pwmio/PWMOut.c
 #: shared-bindings/supervisor/__init__.c
 #: shared-module/aurora_epaper/aurora_framebuffer.c
 #: shared-module/lvfontio/OnDiskFont.c
@@ -1486,8 +1487,7 @@ msgstr ""
 msgid "Mount point directory missing"
 msgstr ""
 
-#: ports/zephyr-cp/bindings/zephyr_serial/UART.c shared-bindings/busio/UART.c
-#: shared-bindings/displayio/Group.c
+#: shared-bindings/busio/UART.c shared-bindings/displayio/Group.c
 msgid "Must be a %q subclass."
 msgstr ""
 
@@ -2294,6 +2294,7 @@ msgid "Unable to allocate to the heap."
 msgstr ""
 
 #: ports/espressif/common-hal/busio/I2C.c
+#: ports/espressif/common-hal/busio/SPI.c
 msgid "Unable to create lock"
 msgstr ""
 
@@ -2419,6 +2420,12 @@ msgstr ""
 #: ports/espressif/common-hal/_bleio/Adapter.c
 #: ports/espressif/common-hal/dualbank/__init__.c
 msgid "Update failed"
+msgstr ""
+
+#: ports/zephyr-cp/common-hal/busio/I2C.c
+#: ports/zephyr-cp/common-hal/busio/SPI.c
+#: ports/zephyr-cp/common-hal/busio/UART.c
+msgid "Use device tree to define %q devices"
 msgstr ""
 
 #: ports/espressif/common-hal/_bleio/Characteristic.c
@@ -3200,10 +3207,6 @@ msgstr ""
 
 #: shared-bindings/traceback/__init__.c
 msgid "file write is not available"
-msgstr ""
-
-#: shared-bindings/storage/__init__.c
-msgid "filesystem must provide mount method"
 msgstr ""
 
 #: extmod/ulab/code/numpy/vector.c
@@ -4582,6 +4585,9 @@ msgstr ""
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr ""
+
+#~ msgid "%q moved from %q to %q"
+#~ msgstr "%q μετακινήθηκε από το %q στο %q"
 
 #, c-format
 #~ msgid "%%c requires int or char"

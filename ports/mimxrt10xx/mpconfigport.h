@@ -25,6 +25,8 @@ extern uint8_t _ld_default_stack_size;
 // are aligned to cache lines.
 #define MICROPY_BYTES_PER_GC_BLOCK              (32)
 
+#define CIRCUITPY_USB_DEVICE_HIGH_SPEED (1)
+
 #include "py/circuitpy_mpconfig.h"
 
 // TODO:

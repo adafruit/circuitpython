@@ -11,6 +11,10 @@
 
 static uint8_t claimed_pins[1];
 
+void reset_all_pins(void) {
+    // TODO
+}
+
 // Mark pin as free and return it to a quiescent state.
 void reset_pin_number(uint8_t pin_port, uint8_t pin_number) {
     if (pin_port == 0x0F) {

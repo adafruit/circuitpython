@@ -1,0 +1,10 @@
+&zephyr_udc0 {
+	cdc_acm_console: cdc_acm_console {
+		compatible = "zephyr,cdc-acm-uart";
+		label = "CircuitPython Console";
+	};
+	cdc_acm_data: cdc_acm_data {
+		compatible = "zephyr,cdc-acm-uart";
+		label = "CircuitPython Data";
+	};
+};

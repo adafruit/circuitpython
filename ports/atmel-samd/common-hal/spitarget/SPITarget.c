@@ -192,7 +192,7 @@ void common_hal_spitarget_spi_target_transfer_start(spitarget_spi_target_obj_t *
     self->miso_packet = miso_packet;
 
     Sercom *sercom = self->spi_desc.dev.prvt;
-    self->running_dma = shared_dma_transfer_start(sercom, miso_packet, &sercom->SPI.DATA.reg, &sercom->SPI.DATA.reg, mosi_packet, len, 0);
+    shared_dma_transfer_start(&self->running_dma, sercom, miso_packet, &sercom->SPI.DATA.reg, &sercom->SPI.DATA.reg, mosi_packet, len, 0);
 
     // There is an issue where if an unexpected SPI transfer is received before the user calls "end" for the in-progress, expected
     // transfer, the SERCOM has an error and gets confused. This can be detected from INTFLAG.ERROR. I think the code in
@@ -200,7 +200,7 @@ void common_hal_spitarget_spi_target_transfer_start(spitarget_spi_target_obj_t *
     // s->SPI.DATA.reg) is supposed to fix this, but experimentation seems to show that it does not in fact fix anything. Anyways, if
     // the ERROR bit is set, let's just reset the peripheral and then setup the transfer again -- that seems to work.
     if (hri_sercomspi_get_INTFLAG_ERROR_bit(sercom)) {
-        shared_dma_transfer_close(self->running_dma);
+        shared_dma_transfer_close(&self->running_dma);
 
         // disable the sercom
         spi_m_sync_disable(&self->spi_desc);
@@ -223,19 +223,19 @@ void common_hal_spitarget_spi_target_transfer_start(spitarget_spi_target_obj_t *
         spi_m_sync_enable(&self->spi_desc);
         hri_sercomspi_wait_for_sync(sercom, SERCOM_SPI_SYNCBUSY_MASK);
 
-        self->running_dma = shared_dma_transfer_start(sercom, miso_packet, &sercom->SPI.DATA.reg, &sercom->SPI.DATA.reg, mosi_packet, len, 0);
+        shared_dma_transfer_start(&self->running_dma, sercom, miso_packet, &sercom->SPI.DATA.reg, &sercom->SPI.DATA.reg, mosi_packet, len, 0);
     }
 }
 
 bool common_hal_spitarget_spi_target_transfer_is_finished(spitarget_spi_target_obj_t *self) {
-    return self->running_dma.failure == 1 || shared_dma_transfer_finished(self->running_dma);
+    return self->running_dma.failure == 1 || shared_dma_transfer_finished(&self->running_dma);
 }
 
 int common_hal_spitarget_spi_target_transfer_close(spitarget_spi_target_obj_t *self) {
     if (self->running_dma.failure == 1) {
         return 0;
     }
-    int res = shared_dma_transfer_close(self->running_dma);
+    int res = shared_dma_transfer_close(&self->running_dma);
     self->running_dma.failure = 1;
 
     self->mosi_packet = NULL;

@@ -5,15 +5,13 @@
 # Component config
 #
 #
-# LWIP
 #
-# end of LWIP
 # Camera configuration
 #
-CONFIG_OV2640_SUPPORT=y
 # CONFIG_OV7725_SUPPORT is not set
-# CONFIG_OV3660_SUPPORT is not set
+CONFIG_OV2640_SUPPORT=y
 # end of Camera configuration
+
 # end of Component config
 
 # end of Espressif IoT Development Framework Configuration
