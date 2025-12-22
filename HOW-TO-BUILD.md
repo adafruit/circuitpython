@@ -70,8 +70,8 @@ example :
 git tag -d 9.1.2
 git push origin :refs/tags/9.1.2
 
-git tag -a 9.1.2
-git push origin 9.1.2 -m "Circuitpython 9.1.2"
+git tag -a 9.1.2 -m "Circuitpython 9.1.2"
+git push origin 9.1.2 
 ```
 
 It will push the last commit you made to the repository with the tag name you specified.
