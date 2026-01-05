@@ -22,29 +22,12 @@ SECTIONS {
         KEEP(*(.rom_handlers*))
     } > ROM
 
-
-    /** FIXME:   can't place this in its own section for some reason
-    *           system doesn't exit ROM code unless *(.isr_vector)
-    *           is placed in the beginning of .text,
-    *           even if .text is moved upward and *(.isr_vector) is
-    *           placed at 0x10000000.
-    **/
-
-    /* Place ISR vector in a separate flash section */
-    /* .isr_vector : */
-    /* { */
-        /* ISR Vector beginning of .text */
-        /* KEEP(*(.isr_vector)) */
-        /* KEEP(*(.isr_vector*)) */
-    /* } > FLASH_ISR */
-
     .text :
     {
         . = ALIGN(4);
         _text = .;
 
         /* ISR Vector beginning of .text */
-        /** fixme:  may want to move this to FLASH_ISR long-term */
         KEEP(*(.isr_vector))
         KEEP(*(.isr_vector*))
 
