@@ -57,7 +57,7 @@ typedef struct {
     const uint32_t num_sectors;
 } flash_layout_t;
 
-#ifdef MAX32690
+#if defined(MAX32690)
 // struct layout is the actual layout of flash
 // FS Code will use INTERNAL_FLASH_FILESYSTEM_START_ADDR
 // and won't conflict with ISR vector in first 16 KiB of flash
@@ -67,7 +67,21 @@ static const flash_layout_t flash_layout[] = {
 };
 // must be able to hold a full page (for re-writing upon erase)
 static uint32_t page_buffer[FLASH_PAGE_SIZE / 4] = {0x0};
-
+#elif defined(MAX32650)
+static const flash_layout_t flash_layout[] = {
+    { 0x10000000, FLASH_PAGE_SIZE, 192},
+};
+// must be able to hold a full page (for re-writing upon erase)
+static uint32_t page_buffer[FLASH_PAGE_SIZE / 4] = {0x0};
+#elif defined(MAX32666)
+// MAX32666 has two flash banks, but we do not actually need to 
+// treat them separately
+static const flash_layout_t flash_layout[] = {
+    { 0x10000000, FLASH_PAGE_SIZE, 64},
+    { 0x10080000, FLASH_PAGE_SIZE, 64},
+};
+// must be able to hold a full page (for re-writing upon erase)
+static uint32_t page_buffer[FLASH_PAGE_SIZE / 4] = {0x0};
 #else
 #error "Invalid BOARD. Please set BOARD equal to any board under 'boards/'."
 #endif
@@ -82,44 +96,28 @@ static inline int32_t block2addr(uint32_t block) {
 
 // Get index, start addr, & size of the flash sector where addr lies
 int flash_get_sector_info(uint32_t addr, uint32_t *start_addr, uint32_t *size) {
-    // This function should return -1 in the event of errors.
-    if (addr >= flash_layout[0].base_addr) {
-        uint32_t sector_index = 0;
-        if (MP_ARRAY_SIZE(flash_layout) == 1) {
-            sector_index = (addr - flash_layout[0].base_addr) / flash_layout[0].sector_size;
-            if (sector_index >= flash_layout[0].num_sectors) {
-                return -1; // addr is not in flash
-            }
-            if (start_addr) {
-                *start_addr = flash_layout[0].base_addr + (sector_index * flash_layout[0].sector_size);
-            } else {
-                return -1; // start_addr is NULL
-            }
-            if (size) {
-                *size = flash_layout[0].sector_size;
-            } else {
-                return -1; // size is NULL
-            }
-            return sector_index;
-        }
+    if (start_addr == NULL) {
+        return -1;
+    }
 
-        // algorithm for multiple flash sections
-        for (uint8_t i = 0; i < MP_ARRAY_SIZE(flash_layout); ++i) {
-            for (uint8_t j = 0; j < flash_layout[i].num_sectors; ++j) {
-                uint32_t sector_start_next = flash_layout[i].base_addr
-                    + (j + 1) * flash_layout[i].sector_size;
-                if (addr < sector_start_next) {
-                    if (start_addr) {
-                        *start_addr = flash_layout[i].base_addr
-                            + j * flash_layout[i].sector_size;
-                    }
-                    if (size) {
-                        *size = flash_layout[i].sector_size;
-                    }
-                    return sector_index;
-                }
-                ++sector_index;
-            }
+    if (size == NULL) {
+        return -1;
+    }
+
+    // Search flash layout for a hit
+    uint32_t sector_index = 0;
+    for (int i = 0; i < MP_ARRAY_SIZE(flash_layout); ++i) {
+        flash_layout_t bank = flash_layout[i];
+
+        // Determine if the flash bank is a hit for this address
+        if  ((addr >= bank.base_addr) &&
+            (addr < bank.base_addr + bank.sector_size * bank.num_sectors)
+        ) {
+            // Assign the sector index assuming uniform sector sizes
+            sector_index = i * bank.num_sectors + ((addr - bank.base_addr) / bank.sector_size);
+            *start_addr = flash_layout[0].base_addr + (sector_index * bank.sector_size);
+            *size = flash_layout[i].sector_size;
+            return sector_index;
         }
     }
     return -1;
@@ -141,7 +139,7 @@ uint32_t supervisor_flash_get_block_count(void) {
 void port_internal_flash_flush(void) {
 
     // Flush all instruction cache
-    // ME18 has bug where top-level sysctrl flush bit only works one.
+    // ME18 has bug where top-level sysctrl flush bit only works once.
     // Have to use low-level flush bits for each ICC instance.
     MXC_ICC_Flush(MXC_ICC0);
     MXC_ICC_Flush(MXC_ICC1);
@@ -213,6 +211,9 @@ mp_uint_t supervisor_flash_write_blocks(const uint8_t *src, uint32_t block_num, 
         if (error != E_NO_ERROR) {
             // lock flash & reset
             MXC_FLC0->ctrl = (MXC_FLC0->ctrl & ~MXC_F_FLC_REVA_CTRL_UNLOCK) | MXC_S_FLC_REVA_CTRL_UNLOCK_LOCKED;
+            #if defined(MAX32666)
+            MXC_FLC1->ctrl = (MXC_FLC1->ctrl & ~MXC_F_FLC_REVA_CTRL_UNLOCK) | MXC_S_FLC_REVA_CTRL_UNLOCK_LOCKED;
+            #endif
             reset_into_safe_mode(SAFE_MODE_FLASH_WRITE_FAIL);
         }
 
@@ -228,6 +229,9 @@ mp_uint_t supervisor_flash_write_blocks(const uint8_t *src, uint32_t block_num, 
         if (error != E_NO_ERROR) {
             // lock flash & reset
             MXC_FLC0->ctrl = (MXC_FLC0->ctrl & ~MXC_F_FLC_REVA_CTRL_UNLOCK) | MXC_S_FLC_REVA_CTRL_UNLOCK_LOCKED;
+            #if defined(MAX32666)
+            MXC_FLC1->ctrl = (MXC_FLC1->ctrl & ~MXC_F_FLC_REVA_CTRL_UNLOCK) | MXC_S_FLC_REVA_CTRL_UNLOCK_LOCKED;
+            #endif
             reset_into_safe_mode(SAFE_MODE_FLASH_WRITE_FAIL);
         }
 
