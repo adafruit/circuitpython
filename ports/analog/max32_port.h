@@ -14,11 +14,11 @@
 #include "mxc_device.h"
 #include "mxc_pins.h"
 #include "mxc_sys.h"
-#include "mcr_regs.h"
 
 #include "gpio.h"
 
 #ifdef MAX32690
+#include "mcr_regs.h"
 #include "system_max32690.h"
 #include "max32690.h"
 
@@ -54,6 +54,26 @@
     ((mask & (1 << 1)) >> (MXC_F_MCR_OUTEN_SQWOUT_EN_POS + 1)))
 /** END: GPIO4 Handling specific to MAX32690 */
 
+#endif
+
+#ifdef MAX32650
+#include "system_max32650.h"
+#include "max32650.h"
+
+// UART Ports & pins
+#include "peripherals/max32650/max32_uart.h"
+#include "peripherals/max32650/max32_i2c.h"
+#include "peripherals/max32650/max32_spi.h"
+#endif
+
+#ifdef MAX32665
+#include "system_max32665.h"
+#include "max32665.h"
+
+// UART Ports & pins
+#include "peripherals/max32665/max32_uart.h"
+#include "peripherals/max32665/max32_i2c.h"
+#include "peripherals/max32665/max32_spi.h"
 #endif
 
 /** Linker variables defined....

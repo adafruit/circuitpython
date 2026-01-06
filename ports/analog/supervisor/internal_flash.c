@@ -73,7 +73,7 @@ static const flash_layout_t flash_layout[] = {
 };
 // must be able to hold a full page (for re-writing upon erase)
 static uint32_t page_buffer[FLASH_PAGE_SIZE / 4] = {0x0};
-#elif defined(MAX32666)
+#elif defined(MAX32665)
 // MAX32666 has two flash banks, but we do not actually need to 
 // treat them separately
 static const flash_layout_t flash_layout[] = {
