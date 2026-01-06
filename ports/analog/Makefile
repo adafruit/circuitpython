@@ -21,7 +21,6 @@ MCU_SERIES_UPPER := $(shell echo $(MCU_SERIES) | tr '[:lower:]' '[:upper:]')
 MCU_VARIANT_LOWER := $(shell echo $(MCU_VARIANT) | tr '[:upper:]' '[:lower:]')
 MCU_VARIANT_UPPER := $(shell echo $(MCU_VARIANT) | tr '[:lower:]' '[:upper:]')
 
-
 # *******************************************************************************
 #### MSDK INCLUDES ####
 # Necessary for msdk makefiles
@@ -36,6 +35,17 @@ ADI_PERIPH = $(MSDK_ROOT)/Libraries/PeriphDrivers
 ADI_MISC_DRIVERS_DIR ?= $(MSDK_LIBS)/MiscDrivers
 ADI_BOARD_DIR = $(MSDK_LIBS)/Boards/$(MCU_VARIANT_UPPER)/$(BOARD)
 
+# Set die type
+ifeq ($(MCU_VARIANT_LOWER),max32690)
+DIE_TYPE=me18
+else ifeq ($(MCU_VARIANT_LOWER),max32650)
+DIE_TYPE=me10
+else ifeq ($(MCU_VARIANT_LOWER),max32665)
+DIE_TYPE=me14
+else 
+DIE_TYPE=me18
+endif
+
 # For debugging the build
 ifneq ($(BUILD_VERBOSE),"")
 $(info MSDK_ROOT is $(MSDK_ROOT))
@@ -45,6 +55,8 @@ $(info ADI_PERIPH is $(ADI_PERIPH))
 $(info ADI_MISC_DRIVERS_DIR is $(ADI_MISC_DRIVERS_DIR))
 $(info ADI_BOARD_DIR is $(ADI_BOARD_DIR))
 $(info MAXIM_PATH is $(MAXIM_PATH))
+$(info MCU_VARIANT_LOWER is $(MCU_VARIANT_LOWER))
+$(info DIE_TYPE is $(DIE_TYPE))
 endif
 
 # -----------------
@@ -54,11 +66,6 @@ endif
 # default to me18 for max32690
 # more info:
 # https://analogdevicesinc.github.io/msdk//USERGUIDE/#die-types-to-part-numbers
-ifeq ($(MCU_VARIANT_LOWER), "max32690")
-DIE_TYPE=me18
-else
-DIE_TYPE=me18
-endif
 
 PERIPH_SRC = $(ADI_PERIPH)/Source
 PERIPH_INC = $(ADI_PERIPH)/Include/$(MCU_VARIANT_UPPER)
@@ -130,6 +137,23 @@ SRC_MAX32 += \
 	$(PERIPH_SRC)/I2C/i2c_reva.c \
 	$(PERIPH_SRC)/SPI/spi_$(DIE_TYPE).c \
 	$(PERIPH_SRC)/SPI/spi_reva1.c
+
+# Small source correction for ME10 (MAX32650)
+ifeq ($(DIE_TYPE),me10)
+SRC_MAX32 := $(filter-out \
+	$(PERIPH_SRC)/CTB/ctb_reva.c \
+	$(PERIPH_SRC)/CTB/ctb_common.c \
+	$(PERIPH_SRC)/CTB/ctb_me10.c, \
+	$(SRC_MAX32))
+endif
+
+ifeq ($(DIE_TYPE),me14)
+SRC_MAX32 := $(filter-out \
+	$(PERIPH_SRC)/CTB/ctb_reva.c \
+	$(PERIPH_SRC)/CTB/ctb_common.c \
+	$(PERIPH_SRC)/CTB/ctb_me14.c, \
+	$(SRC_MAX32))
+endif
 
 SRC_C += $(SRC_MAX32) \
 			boards/$(BOARD)/board.c \
