@@ -13,9 +13,7 @@
 #include "lib/tinyusb/src/device/usbd.h"
 
 // max32 includes
-#include "mxc_sys.h"
-#include "gcr_regs.h"
-#include "mcr_regs.h"
+#include "max32_port.h"
 
 void init_usb_hardware(void) {
     // USB GPIOs are non-configurable on MAX32 devices
