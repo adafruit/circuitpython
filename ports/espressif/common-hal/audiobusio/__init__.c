@@ -42,6 +42,7 @@ static void i2s_fill_buffer(i2s_t *self) {
     while (!self->stopping && output_buffer_size > 0) {
         if (self->sample_data == self->sample_end) {
             uint32_t sample_buffer_length;
+            uint8_t *old_sample_data = self->sample_data;
             audioio_get_buffer_result_t get_buffer_result =
                 audiosample_get_buffer(self->sample, false, 0,
                     &self->sample_data, &sample_buffer_length);
@@ -49,7 +50,7 @@ static void i2s_fill_buffer(i2s_t *self) {
             if (get_buffer_result == GET_BUFFER_DONE) {
                 if (self->loop) {
                     audiosample_reset_buffer(self->sample, false, 0);
-                } else {
+                } else if (old_sample_data) {
                     self->stopping = true;
                     break;
                 }
