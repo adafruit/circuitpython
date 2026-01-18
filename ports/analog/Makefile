@@ -13,6 +13,15 @@ CROSS_COMPILE = arm-none-eabi-
 # along with numerous other shared environment makefiles.
 include ../../py/circuitpy_mkenv.mk
 
+################################################################################
+# DEFINITIONS
+################################################################################
+
+COMPILER ?= GCC
+ifneq ($(COMPILER), GCC)
+$(error ERR: Only the GCC compiler is supported.)
+endif
+
 # MCU_SERIES e.g. 	"max32"
 # MCU_VARIANT e.g. 	"max32690"
 # defined in mpconfigboard.mk
@@ -21,13 +30,26 @@ MCU_SERIES_UPPER := $(shell echo $(MCU_SERIES) | tr '[:lower:]' '[:upper:]')
 MCU_VARIANT_LOWER := $(shell echo $(MCU_VARIANT) | tr '[:upper:]' '[:lower:]')
 MCU_VARIANT_UPPER := $(shell echo $(MCU_VARIANT) | tr '[:lower:]' '[:upper:]')
 
-# *******************************************************************************
-#### MSDK INCLUDES ####
 # Necessary for msdk makefiles
 TARGET := $(MCU_VARIANT_UPPER)
 TARGET_UC := $(MCU_VARIANT_UPPER)
 TARGET_LC := $(MCU_VARIANT_LOWER)
 
+# Define max32 die type for PeriphDriver Includes
+# default to me18 for max32690
+# more info:
+# https://analogdevicesinc.github.io/msdk//USERGUIDE/#die-types-to-part-numbers
+ifeq ($(MCU_VARIANT_LOWER),max32690)
+DIE_TYPE=me18
+else ifeq ($(MCU_VARIANT_LOWER),max32650)
+DIE_TYPE=me10
+else ifeq ($(MCU_VARIANT_LOWER),max32665)
+DIE_TYPE=me14
+else
+DIE_TYPE=me18
+endif
+
+# Helpful directory paths
 MSDK_ROOT = ./msdk
 MSDK_LIBS = $(MSDK_ROOT)/Libraries
 CMSIS_ROOT = $(MSDK_LIBS)/CMSIS
@@ -35,18 +57,7 @@ ADI_PERIPH = $(MSDK_ROOT)/Libraries/PeriphDrivers
 ADI_MISC_DRIVERS_DIR ?= $(MSDK_LIBS)/MiscDrivers
 ADI_BOARD_DIR = $(MSDK_LIBS)/Boards/$(MCU_VARIANT_UPPER)/$(BOARD)
 
-# Set die type
-ifeq ($(MCU_VARIANT_LOWER),max32690)
-DIE_TYPE=me18
-else ifeq ($(MCU_VARIANT_LOWER),max32650)
-DIE_TYPE=me10
-else ifeq ($(MCU_VARIANT_LOWER),max32665)
-DIE_TYPE=me14
-else 
-DIE_TYPE=me18
-endif
-
-# For debugging the build
+# Print resolved paths for debugging the build
 ifneq ($(BUILD_VERBOSE),"")
 $(info MSDK_ROOT is $(MSDK_ROOT))
 $(info MSDK_LIBS is $(MSDK_LIBS))
@@ -55,107 +66,49 @@ $(info ADI_PERIPH is $(ADI_PERIPH))
 $(info ADI_MISC_DRIVERS_DIR is $(ADI_MISC_DRIVERS_DIR))
 $(info ADI_BOARD_DIR is $(ADI_BOARD_DIR))
 $(info MAXIM_PATH is $(MAXIM_PATH))
-$(info MCU_VARIANT_LOWER is $(MCU_VARIANT_LOWER))
+$(info MCU_VARIANT is $(MCU_VARIANT))
 $(info DIE_TYPE is $(DIE_TYPE))
 endif
 
-# -----------------
-# Sources & Include
-# -----------------
-# Define max32 die type for PeriphDriver Includes
-# default to me18 for max32690
-# more info:
-# https://analogdevicesinc.github.io/msdk//USERGUIDE/#die-types-to-part-numbers
+################################################################################
+# INCLUDES & SOURCES
+################################################################################
 
-PERIPH_SRC = $(ADI_PERIPH)/Source
-PERIPH_INC = $(ADI_PERIPH)/Include/$(MCU_VARIANT_UPPER)
+# MSDK Specific Includes / Sources
+MXC_SPI_VERSION := v1
+include ./msdk/Libraries/PeriphDrivers/${MCU_VARIANT_LOWER}_files.mk
 
-INC += -I.
-INC += -I../..
-INC += -I$(BUILD)
-INC += -I$(BUILD)/genhdr
-INC += -I./../../lib/cmsis/inc
-INC += -I./boards/
-INC += -I./boards/$(BOARD)
-INC += -I./peripherals/
-INC += -I../../lib/mp-readline
+# Add MAX32 files to Include / Source paths
+INC += $(addprefix -I,${PERIPH_DRIVER_INCLUDE_DIR})
+SRC_MAX32 += ${PERIPH_DRIVER_C_FILES}
+SRC_MAX32 += $(CMSIS_ROOT)/Device/Maxim/$(MCU_VARIANT_UPPER)/Source/system_$(MCU_VARIANT_LOWER).c
 
+# Include paths:
+# - TOP: CircuitPython root includes
+# - ./: Port & Board specific headers
+# - CMSIS: ARM CMSIS Device headers
+# - BUILD: Generated headers (genhdr)
 INC += \
-	-I$(TOP)/$(BOARD_PATH) \
+	-I$(TOP) \
 	-I$(TOP)/lib/cmsis/inc \
+	-I$(TOP)lib/mp-readline \
+	-I. \
+	-I./boards \
+	-I./boards/$(BOARD) \
+	-I./peripherals/ \
 	-I$(CMSIS_ROOT)/Include \
 	-I$(CMSIS_ROOT)/Device/Maxim/$(MCU_VARIANT_UPPER)/Include \
-	-I$(PERIPH_INC) \
-	-I$(PERIPH_SRC)/SYS \
-	-I$(PERIPH_SRC)/CTB \
-	-I$(PERIPH_SRC)/DMA \
-	-I$(PERIPH_SRC)/FLC \
-	-I$(PERIPH_SRC)/GPIO \
-	-I$(PERIPH_SRC)/ICC \
-	-I$(PERIPH_SRC)/TMR \
-	-I$(PERIPH_SRC)/RTC \
-	-I$(PERIPH_SRC)/UART \
-	-I$(PERIPH_SRC)/TRNG \
-	-I$(PERIPH_SRC)/I2C \
-	-I$(PERIPH_SRC)/SPI
+	-I$(CMSIS_ROOT)/Device/Maxim/$(MCU_VARIANT_UPPER)/Source/GCC \
+	-I${BUILD} \
+	-I${BUILD}/genhdr
 
-INC += -I$(CMSIS_ROOT)/Device/Maxim/$(MCU_VARIANT_UPPER)/Source/GCC
-
-SRC_MAX32 += \
-	$(CMSIS_ROOT)/Device/Maxim/$(MCU_VARIANT_UPPER)/Source/heap.c \
-	$(CMSIS_ROOT)/Device/Maxim/$(MCU_VARIANT_UPPER)/Source/system_$(MCU_VARIANT_LOWER).c \
-	$(PERIPH_SRC)/SYS/mxc_assert.c \
-	$(PERIPH_SRC)/SYS/mxc_delay.c \
-	$(PERIPH_SRC)/SYS/mxc_lock.c \
-	$(PERIPH_SRC)/SYS/nvic_table.c \
-	$(PERIPH_SRC)/SYS/pins_$(DIE_TYPE).c \
-	$(PERIPH_SRC)/SYS/sys_$(DIE_TYPE).c \
-	$(PERIPH_SRC)/CTB/ctb_$(DIE_TYPE).c \
-	$(PERIPH_SRC)/CTB/ctb_reva.c \
-	$(PERIPH_SRC)/CTB/ctb_common.c \
-	$(PERIPH_SRC)/DMA/dma_reva.c \
-	$(PERIPH_SRC)/DMA/dma_$(DIE_TYPE).c \
-	$(PERIPH_SRC)/FLC/flc_common.c \
-	$(PERIPH_SRC)/FLC/flc_$(DIE_TYPE).c \
-	$(PERIPH_SRC)/FLC/flc_reva.c \
-	$(PERIPH_SRC)/GPIO/gpio_common.c \
-	$(PERIPH_SRC)/GPIO/gpio_$(DIE_TYPE).c \
-	$(PERIPH_SRC)/GPIO/gpio_reva.c \
-	$(PERIPH_SRC)/ICC/icc_$(DIE_TYPE).c \
-	$(PERIPH_SRC)/ICC/icc_reva.c \
-	$(PERIPH_SRC)/RTC/rtc_$(DIE_TYPE).c \
-	$(PERIPH_SRC)/RTC/rtc_reva.c \
-	$(PERIPH_SRC)/TMR/tmr_common.c \
-	$(PERIPH_SRC)/TMR/tmr_revb.c \
-	$(PERIPH_SRC)/TMR/tmr_$(DIE_TYPE).c \
-	$(PERIPH_SRC)/UART/uart_common.c \
-	$(PERIPH_SRC)/UART/uart_$(DIE_TYPE).c \
-	$(PERIPH_SRC)/UART/uart_revb.c \
-	$(PERIPH_SRC)/TRNG/trng_revb.c \
-	$(PERIPH_SRC)/TRNG/trng_$(DIE_TYPE).c \
-	$(PERIPH_SRC)/I2C/i2c_$(DIE_TYPE).c \
-	$(PERIPH_SRC)/I2C/i2c_reva.c \
-	$(PERIPH_SRC)/SPI/spi_$(DIE_TYPE).c \
-	$(PERIPH_SRC)/SPI/spi_reva1.c
-
-# Small source correction for ME10 (MAX32650)
-ifeq ($(DIE_TYPE),me10)
-SRC_MAX32 := $(filter-out \
-	$(PERIPH_SRC)/CTB/ctb_reva.c \
-	$(PERIPH_SRC)/CTB/ctb_common.c \
-	$(PERIPH_SRC)/CTB/ctb_me10.c, \
-	$(SRC_MAX32))
-endif
-
-ifeq ($(DIE_TYPE),me14)
-SRC_MAX32 := $(filter-out \
-	$(PERIPH_SRC)/CTB/ctb_reva.c \
-	$(PERIPH_SRC)/CTB/ctb_common.c \
-	$(PERIPH_SRC)/CTB/ctb_me14.c, \
-	$(SRC_MAX32))
-endif
-
+# Source Files:
+# - background / mphalport: Circuitpython main port files
+# - boards/...: board-specific pin objects and source code
+# - peripherals/...: MCU-specific pins, peripherals, and helper code
 SRC_C += $(SRC_MAX32) \
+			background.c \
+			mphalport.c \
 			boards/$(BOARD)/board.c \
 			boards/$(BOARD)/pins.c \
 			peripherals/$(MCU_VARIANT_LOWER)/pins.c \
@@ -164,24 +117,41 @@ SRC_C += $(SRC_MAX32) \
 			peripherals/$(MCU_VARIANT_LOWER)/max32_i2c.c \
 			peripherals/$(MCU_VARIANT_LOWER)/max32_spi.c
 
-# *******************************************************************************
-### Compiler & Linker Flags ###
-COMPILER ?= GCC
+# Add TinyUSB sources
+INC += -I../../lib/tinyusb/src \
+       -I../../supervisor/shared/usb
+SRC_C += lib/tinyusb/src/portable/mentor/musb/dcd_musb.c
 
+# Assembly files for startup & supervisor
 ifeq ($(COMPILER), GCC)
-
 STARTUPFILE = $(CMSIS_ROOT)/Device/Maxim/$(MCU_VARIANT_UPPER)/Source/GCC/startup_$(MCU_VARIANT_LOWER).s
-# STARTUPFILE = $(ADI_BOARD_DIR)/Source/startup_$(MCU_VARIANT_LOWER).s
+endif
+SRC_S_UPPER = supervisor/shared/cpu_regs.S
+SRC_S += $(STARTUPFILE)
 
 # CircuitPython custom linkerfile (necessary for build steps & filesystems)
 LINKERFILE = linking/$(MCU_VARIANT_LOWER)_cktpy.ld
-LDFLAGS += -nostartfiles -specs=nano.specs
+
+################################################################################
+# COMPILER & LINKER FLAGS
+################################################################################
+
+# Debugging flags
+# NOTE: DEBUG=1 is temporarily the default
+DEBUG ?= 1
+ifeq ($(DEBUG),1)
+COPT = -ggdb3 -Og -Os
+else
+COPT += -Os
 endif
 
 SRC_S += $(STARTUPFILE)
 SRC_S += shared/runtime/gchelper_thumb2.s
 
 SRC_C += shared/runtime/gchelper_native.c
+CPU_CORE=cortex-m4
+CFLAGS += $(BASE_CFLAGS) $(INC) $(COPT) -mthumb -mcpu=$(CPU_CORE) -mfloat-abi=softfp \
+          -mfpu=fpv4-sp-d16 -Werror -Wall -std=gnu11 -nostartfiles
 
 # Needed to compile some MAX32 headers
 CFLAGS += 	-D$(MCU_VARIANT_UPPER) \
@@ -197,20 +167,6 @@ CFLAGS += 	-D$(MCU_VARIANT_UPPER) \
 # -DSRAM_ORIGIN \
 # -DSRAM_SIZE
 
-CPU_CORE=cortex-m4
-CFLAGS += -mthumb -mcpu=$(CPU_CORE) -mfloat-abi=softfp -mfpu=fpv4-sp-d16
-
-# NOTE: Start with DEBUG=1 defaults for now
-ifeq ($(DEBUG),)
-DEBUG ?= 1
-endif
-
-ifeq ($(DEBUG),1)
-COPT = -ggdb3 -Og -Os
-else
-COPT += -Os
-endif
-
 # TinyUSB CFLAGS
 CFLAGS += \
 	-DCFG_TUSB_MCU=OPT_MCU_$(MCU_VARIANT_UPPER) \
@@ -223,19 +179,6 @@ CFLAGS += \
 	-DCFG_TUD_MIDI_TX_BUFSIZE=128 \
 	-DCFG_TUD_VENDOR_RX_BUFSIZE=1024 \
 	-DCFG_TUD_VENDOR_TX_BUFSIZE=1024
-
-# Add TinyUSB sources
-INC += -I../../lib/tinyusb/src
-INC += -I../../supervisor/shared/usb
-SRC_C += lib/tinyusb/src/portable/mentor/musb/dcd_musb.c
-
-# Add port sources incl. any board functions
-SRC_C += \
-	boards/$(BOARD)/board.c \
-	background.c \
-	mphalport.c \
-
-CFLAGS += $(INC) -Werror -Wall -std=gnu11 -nostartfiles $(BASE_CFLAGS) $(COPT)
 
 # Suppress some errors for MSDK
 # 	cast-align warning will be suppressed;
@@ -251,18 +194,29 @@ CFLAGS += -Wno-error=unused-parameter \
 			-Wno-error=nested-externs \
 			-Wno-error=sign-compare \
 			-Wno-cast-align \
-			-Wno-sign-compare \
+			-Wno-sign-compare
 
+# Entry point
 ENTRY = Reset_Handler
-LDFLAGS += $(CFLAGS) --entry $(ENTRY) -Wl,-nostdlib -Wl,-T,$(LINKERFILE) -Wl,-Map=$@.map -Wl,-cref -Wl,-gc-sections
-LIBS := -lgcc -lc
 
+# Libraries
+LIBS := -lgcc -lc
 # If not using CKTPY mathlib, use toolchain mathlib
 ifndef INTERNAL_LIBM
 LIBS += -lm
 endif
 
-# *******************************************************************************
+# Linker flags
+ifeq ($(COMPILER), GCC)
+LDFLAGS += -nostartfiles -specs=nano.specs
+endif
+LDFLAGS += $(CFLAGS) --entry $(ENTRY) -Wl,-nostdlib -Wl,-T,$(LINKERFILE) \
+           -Wl,-Map=$@.map -Wl,-cref -Wl,-gc-sections
+
+################################################################################
+# MAX32 BUILD RULES
+################################################################################
+
 ### PORT-DEFINED BUILD RULES ###
 # This section attempts to build the Python core, the supervisor, and any
 # port-provided source code.
@@ -289,8 +243,30 @@ SRC_QSTR_PREPROCESSOR +=
 # Default build target
 all: $(BUILD)/firmware.elf $(BUILD)/firmware.hex $(BUILD)/firmware.bin
 
+pristine:
+	$(MAKE) -s clean
+	$(MAKE) --no-print-directory all
+
 clean-all:
 	rm -rf build-*
+
+$(BUILD)/firmware.elf: $(OBJ)
+	$(STEPECHO) "LINK $@"
+	$(Q)echo $^ > $(BUILD)/firmware.objs
+	$(Q)$(CC) -o $@ $(LDFLAGS) @$(BUILD)/firmware.objs -Wl,--print-memory-usage -Wl,--start-group $(LIBS) -Wl,--end-group
+	$(Q)$(SIZE) $@ | $(PYTHON) $(TOP)/tools/build_memory_info.py $@.map $(BUILD)
+
+$(BUILD)/firmware.hex: $(BUILD)/firmware.elf
+	$(STEPECHO) "Create $@"
+	$(Q)$(OBJCOPY) -O ihex $^ $@
+
+$(BUILD)/firmware.bin: $(BUILD)/firmware.elf
+	$(STEPECHO) "Create $@"
+	$(Q)$(OBJCOPY) -O binary $^ $@
+
+################################################################################
+# MAX32 FLASHING RULES
+################################################################################
 
 # Optional flash option when running within an installed MSDK to use OpenOCD
 # Mainline OpenOCD does not yet have the MAX32's flash algorithm integrated.
@@ -319,20 +295,7 @@ COMMAND_FILE 	:= tools/flash_max32.jlink
 flash-jlink: $(BUILD)/firmware.bin
 	@$(JLINKEXE) -device $(MCU_VARIANT_UPPER) -NoGui 1 -CommandFile ${COMMAND_FILE}
 
-$(BUILD)/firmware.elf: $(OBJ)
-	$(STEPECHO) "LINK $@"
-	$(Q)echo $^ > $(BUILD)/firmware.objs
-	$(Q)$(CC) -o $@ $(LDFLAGS) @$(BUILD)/firmware.objs -Wl,--print-memory-usage -Wl,--start-group $(LIBS) -Wl,--end-group
-	$(Q)$(SIZE) $@ | $(PYTHON) $(TOP)/tools/build_memory_info.py $@.map $(BUILD)
-
-$(BUILD)/firmware.hex: $(BUILD)/firmware.elf
-	$(STEPECHO) "Create $@"
-	$(Q)$(OBJCOPY) -O ihex $^ $@
-
-$(BUILD)/firmware.bin: $(BUILD)/firmware.elf
-	$(STEPECHO) "Create $@"
-	$(Q)$(OBJCOPY) -O binary $^ $@
-
-# *******************************************************************************
-### CKTPY BUILD RULES ###
+################################################################################
+# CKTPY MAIN BUILD RULES
+################################################################################
 include $(TOP)/py/mkrules.mk
