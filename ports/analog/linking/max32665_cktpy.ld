@@ -5,10 +5,10 @@
 * SPDX-License-Identifier: MIT
 */
 
-/* 
+/*
  * FLASH_FIRMWARE: 1024 KiB - 128 KiB =  896 KiB
- * 
- * Start & Size for FLASH_FIRMWARE and RAM MUST be raw numbers 
+ *
+ * Start & Size for FLASH_FIRMWARE and RAM MUST be raw numbers
  * b/c FLASH_FIMRWARE is parsed with Python build_memory_info.py
  */
 MEMORY {
