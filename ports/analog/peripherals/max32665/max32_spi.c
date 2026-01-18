@@ -13,17 +13,17 @@
 #include "py/runtime.h"
 #include "py/mperrno.h"
 
-// Assuming the use of MAP_A in MSDK, since all documentation 
+// Assuming the use of MAP_A in MSDK, since all documentation
 // states the GPIO maps are the same
 
 const mxc_gpio_cfg_t spi_maps[NUM_SPI] = {
     // SPI0A
     { MXC_GPIO1,
-      (MXC_GPIO_PIN_9 | MXC_GPIO_PIN_10 | MXC_GPIO_PIN_11, MXC_GPIO_PIN_12, MXC_GPIO_PIN_13),
+      (MXC_GPIO_PIN_9 | MXC_GPIO_PIN_10 | MXC_GPIO_PIN_11 | MXC_GPIO_PIN_12 | MXC_GPIO_PIN_13),
       MXC_GPIO_FUNC_ALT1, MXC_GPIO_PAD_NONE, MXC_GPIO_VSSEL_VDDIO, MXC_GPIO_DRVSTR_0 },
     // SPI1
     { MXC_GPIO0,
-      (MXC_GPIO_PIN_17 | MXC_GPIO_PIN_18 | MXC_GPIO_PIN_19, MXC_GPIO_PIN_20, MXC_GPIO_PIN_21),
+      (MXC_GPIO_PIN_17 | MXC_GPIO_PIN_18 | MXC_GPIO_PIN_19 | MXC_GPIO_PIN_20 | MXC_GPIO_PIN_21),
       MXC_GPIO_FUNC_ALT2, MXC_GPIO_PAD_NONE, MXC_GPIO_VSSEL_VDDIO, MXC_GPIO_DRVSTR_0 },
     // SPI2
     { MXC_GPIO0,
