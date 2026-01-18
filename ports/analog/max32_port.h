@@ -27,6 +27,9 @@
 #include "peripherals/max32690/max32_i2c.h"
 #include "peripherals/max32690/max32_spi.h"
 
+// 12-bit ssec register, ticks @ 4096 Hz
+#define SUBSEC_PER_TICK 4
+
 /** START: GPIO4 Handling specific to MAX32690 */
     #define GPIO4_PIN_MASK 0x00000003
     #define GPIO4_RESET_MASK 0xFFFFFF77
@@ -60,6 +63,9 @@
 #include "system_max32650.h"
 #include "max32650.h"
 
+// 12-bit ssec register, ticks @ 4096 Hz
+#define SUBSEC_PER_TICK 4
+
 // UART Ports & pins
 #include "peripherals/max32650/max32_uart.h"
 #include "peripherals/max32650/max32_i2c.h"
@@ -69,6 +75,9 @@
 #ifdef MAX32665
 #include "system_max32665.h"
 #include "max32665.h"
+
+// 12-bit ssec register, ticks @ 4096 Hz
+#define SUBSEC_PER_TICK 4
 
 // UART Ports & pins
 #include "peripherals/max32665/max32_uart.h"
@@ -90,10 +99,5 @@ extern uint32_t SystemCoreClock;
 
 // Tick timer should be 1/1024 s. RTC Oscillator is usually 32.768 kHz ERTCO.
 #define TICKS_PER_SEC   1024
-
-#ifdef MAX32690
-// 12-bit ssec register, ticks @ 4096 Hz
-#define SUBSEC_PER_TICK 4
-#endif
 
 #endif // MAX32_PORT_H
