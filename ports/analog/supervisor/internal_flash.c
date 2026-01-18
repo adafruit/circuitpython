@@ -67,14 +67,48 @@ static const flash_layout_t flash_layout[] = {
 };
 // must be able to hold a full page (for re-writing upon erase)
 static uint32_t page_buffer[FLASH_PAGE_SIZE / 4] = {0x0};
+
+static void icc_flush(void) {
+    // Flush all instruction cache
+    // ME18 has bug where top-level sysctrl flush bit only works once.
+    // Have to use low-level flush bits for each ICC instance.
+    MXC_ICC_Flush(MXC_ICC0);
+}
+static void icc_enable(void) {
+    MXC_ICC_Enable(MXC_ICC0);
+}
+static void icc_disable(void) {
+    MXC_ICC_Disable(MXC_ICC0);
+}
+
+static void flash_lock(void) {
+    MXC_FLC0->ctrl |= MXC_S_FLC_REVA_CTRL_UNLOCK_LOCKED;
+    MXC_FLC1->ctrl |= MXC_S_FLC_REVA_CTRL_UNLOCK_LOCKED;
+}
+
 #elif defined(MAX32650)
 static const flash_layout_t flash_layout[] = {
     { 0x10000000, FLASH_PAGE_SIZE, 192},
 };
 // must be able to hold a full page (for re-writing upon erase)
 static uint32_t page_buffer[FLASH_PAGE_SIZE / 4] = {0x0};
+
+static void icc_flush(void) {
+    // Flush all instruction cache
+    MXC_ICC_Flush();
+}
+static void icc_enable(void) {
+    MXC_ICC_Enable();
+}
+static void icc_disable(void) {
+    MXC_ICC_Disable();
+}
+
+static void flash_lock(void) {
+    MXC_FLC->ctrl |= MXC_S_FLC_REVA_CTRL_UNLOCK_LOCKED;
+}
 #elif defined(MAX32665)
-// MAX32666 has two flash banks, but we do not actually need to 
+// MAX32666 has two flash banks, but we do not actually need to
 // treat them separately
 static const flash_layout_t flash_layout[] = {
     { 0x10000000, FLASH_PAGE_SIZE, 64},
@@ -82,9 +116,27 @@ static const flash_layout_t flash_layout[] = {
 };
 // must be able to hold a full page (for re-writing upon erase)
 static uint32_t page_buffer[FLASH_PAGE_SIZE / 4] = {0x0};
+
+static void icc_flush(void) {
+    // Flush all instruction cache
+    MXC_ICC_Flush();
+}
+static void icc_enable(void) {
+    MXC_ICC_Enable();
+}
+static void icc_disable(void) {
+    MXC_ICC_Disable();
+}
+
+static void flash_lock(void) {
+    MXC_FLC0->cn |= MXC_S_FLC_REVA_CTRL_UNLOCK_LOCKED;
+    MXC_FLC1->cn |= MXC_S_FLC_REVA_CTRL_UNLOCK_LOCKED;
+}
 #else
 #error "Invalid BOARD. Please set BOARD equal to any board under 'boards/'."
 #endif
+
+
 
 static inline int32_t block2addr(uint32_t block) {
     if (block >= 0 && block < INTERNAL_FLASH_FILESYSTEM_NUM_BLOCKS) {
@@ -110,9 +162,9 @@ int flash_get_sector_info(uint32_t addr, uint32_t *start_addr, uint32_t *size) {
         flash_layout_t bank = flash_layout[i];
 
         // Determine if the flash bank is a hit for this address
-        if  ((addr >= bank.base_addr) &&
+        if ((addr >= bank.base_addr) &&
             (addr < bank.base_addr + bank.sector_size * bank.num_sectors)
-        ) {
+            ) {
             // Assign the sector index assuming uniform sector sizes
             sector_index = i * bank.num_sectors + ((addr - bank.base_addr) / bank.sector_size);
             *start_addr = flash_layout[0].base_addr + (sector_index * bank.sector_size);
@@ -137,12 +189,7 @@ uint32_t supervisor_flash_get_block_count(void) {
 }
 
 void port_internal_flash_flush(void) {
-
-    // Flush all instruction cache
-    // ME18 has bug where top-level sysctrl flush bit only works once.
-    // Have to use low-level flush bits for each ICC instance.
-    MXC_ICC_Flush(MXC_ICC0);
-    MXC_ICC_Flush(MXC_ICC1);
+    icc_flush();
 
     // Clear the line fill buffer by reading 2 pages from flash
     volatile uint32_t *line_addr;
@@ -199,7 +246,7 @@ mp_uint_t supervisor_flash_write_blocks(const uint8_t *src, uint32_t block_num, 
         blocks_left = (page_size - (dest_addr - page_start)) / FILESYSTEM_BLOCK_SIZE;
         count = MIN(num_blocks, blocks_left);
 
-        MXC_ICC_Disable(MXC_ICC0);
+        icc_disable();
 
         // Buffer the page of flash to erase
         MXC_FLC_Read(page_start, page_buffer, page_size);
@@ -209,11 +256,7 @@ mp_uint_t supervisor_flash_write_blocks(const uint8_t *src, uint32_t block_num, 
             error = MXC_FLC_PageErase(dest_addr);
             );
         if (error != E_NO_ERROR) {
-            // lock flash & reset
-            MXC_FLC0->ctrl = (MXC_FLC0->ctrl & ~MXC_F_FLC_REVA_CTRL_UNLOCK) | MXC_S_FLC_REVA_CTRL_UNLOCK_LOCKED;
-            #if defined(MAX32666)
-            MXC_FLC1->ctrl = (MXC_FLC1->ctrl & ~MXC_F_FLC_REVA_CTRL_UNLOCK) | MXC_S_FLC_REVA_CTRL_UNLOCK_LOCKED;
-            #endif
+            flash_lock();
             reset_into_safe_mode(SAFE_MODE_FLASH_WRITE_FAIL);
         }
 
@@ -228,14 +271,11 @@ mp_uint_t supervisor_flash_write_blocks(const uint8_t *src, uint32_t block_num, 
             );
         if (error != E_NO_ERROR) {
             // lock flash & reset
-            MXC_FLC0->ctrl = (MXC_FLC0->ctrl & ~MXC_F_FLC_REVA_CTRL_UNLOCK) | MXC_S_FLC_REVA_CTRL_UNLOCK_LOCKED;
-            #if defined(MAX32666)
-            MXC_FLC1->ctrl = (MXC_FLC1->ctrl & ~MXC_F_FLC_REVA_CTRL_UNLOCK) | MXC_S_FLC_REVA_CTRL_UNLOCK_LOCKED;
-            #endif
+            flash_lock();
             reset_into_safe_mode(SAFE_MODE_FLASH_WRITE_FAIL);
         }
 
-        MXC_ICC_Enable(MXC_ICC0);
+        icc_enable();
 
         block_num += count;
         src += count * FILESYSTEM_BLOCK_SIZE;

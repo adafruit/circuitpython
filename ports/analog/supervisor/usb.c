@@ -15,6 +15,31 @@
 // max32 includes
 #include "max32_port.h"
 
+#if defined(MAX32690)
+static void init_usb(void) {
+    // Enable 120 MHz IPO, then 0.9V LDO supplying USB
+    MXC_SYS_ClockSourceEnable(MXC_SYS_CLOCK_IPO);
+    MXC_MCR->ldoctrl |= MXC_F_MCR_LDOCTRL_0P9EN;
+
+    MXC_SYS_ClockEnable(MXC_SYS_PERIPH_CLOCK_USB);
+    MXC_SYS_Reset_Periph(MXC_SYS_RESET0_USB);
+}
+#elif defined(MAX32650)
+static void init_usb(void) {
+    // Enable the 96MHz clock, then enable USB
+    MXC_GCR->clk_ctrl |= MXC_F_GCR_CLK_CTRL_HIRC96_EN;
+    MXC_SYS_ClockEnable(MXC_SYS_PERIPH_CLOCK_USB);
+    MXC_SYS_Reset_Periph(MXC_SYS_RESET_USB);
+}
+#elif defined(MAX32665)
+static void init_usb(void) {
+    // Enable the 96MHz clock, then enable USB
+    MXC_GCR->clkcn |= MXC_F_GCR_CLKCN_HIRC96M_EN;
+    MXC_SYS_ClockEnable(MXC_SYS_PERIPH_CLOCK_USB);
+    MXC_SYS_Reset_Periph(MXC_SYS_RESET_USB);
+}
+#endif
+
 void init_usb_hardware(void) {
     // USB GPIOs are non-configurable on MAX32 devices
     // No need to add them to the never_reset list for mcu/Pin API.
@@ -22,10 +47,7 @@ void init_usb_hardware(void) {
     // 1 ms SysTick initialized in board.c
 
     // Enable requisite clocks & power for USB
-    MXC_SYS_ClockSourceEnable(MXC_SYS_CLOCK_IPO);
-    MXC_MCR->ldoctrl |= MXC_F_MCR_LDOCTRL_0P9EN;
-    MXC_SYS_ClockEnable(MXC_SYS_PERIPH_CLOCK_USB);
-    MXC_SYS_Reset_Periph(MXC_SYS_RESET0_USB);
+    init_usb();
 
     // Supervisor calls TinyUSB's dcd_init,
     // which initializes the USB PHY.
