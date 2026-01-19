@@ -9,6 +9,7 @@
 #include "common-hal/busio/SPI.h"
 #include "max32_spi.h"
 #include "max32665.h"
+#include "mxc_pins.h"
 
 #include "py/runtime.h"
 #include "py/mperrno.h"
@@ -42,4 +43,9 @@ int pinsToSpi(const mcu_pin_obj_t *mosi, const mcu_pin_obj_t *miso,
     }
     mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q"), MP_QSTR_pins);
     return -1;
+}
+
+int spi_init(mxc_spi_regs_t *spi, unsigned int freq) {
+    // masterMode=1, quadModeUsed=0, numSlaves=1, ssPolarity=0x01, map=MAP_A
+    return MXC_SPI_Init(spi, 1, 0, 1, 0x01, freq, MAP_A);
 }

@@ -16,3 +16,6 @@
 
 int pinsToSpi(const mcu_pin_obj_t *mosi, const mcu_pin_obj_t *miso,
     const mcu_pin_obj_t *sck);
+
+// SPI Init wrapper
+int spi_init(mxc_spi_regs_t *spi, unsigned int freq);

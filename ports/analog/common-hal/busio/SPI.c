@@ -32,7 +32,6 @@
 #include "shared-bindings/microcontroller/Pin.h"
 
 #include "max32_port.h"
-#include "spi_reva1.h"
 
 // Note that any bugs introduced in this file can cause crashes
 // at startupfor chips using external SPI flash.
@@ -72,25 +71,11 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
         self->spi_regs = MXC_SPI_GET_SPI(spi_id);
     }
 
-    // Other pins default to true
-    mxc_spi_pins_t spi_pins = {
-        .clock = TRUE,
-        .mosi = TRUE,
-        .miso = TRUE,
-        .ss0 = FALSE,
-        .ss1 = FALSE,
-        .ss2 = FALSE,
-        .vddioh = true,
-        .drvstr = MXC_GPIO_DRVSTR_0
-    };
-
     assert((self->spi_id >= 0) && (self->spi_id < NUM_SPI));
 
     // Init SPI controller
     if ((mosi != NULL) && (miso != NULL) && (sck != NULL)) {
-        // spi, mastermode, quadModeUsed, numSubs, ssPolarity, frequency
-        err = MXC_SPI_Init(self->spi_regs, MXC_SPI_TYPE_CONTROLLER, MXC_SPI_INTERFACE_STANDARD,
-            1, 0x01, 1000000, spi_pins);
+        err = spi_init(self->spi_regs, 1000000);
         MXC_GPIO_SetVSSEL(MXC_GPIO_GET_GPIO(sck->port), MXC_GPIO_VSSEL_VDDIOH, (sck->mask | miso->mask | mosi->mask | MXC_GPIO_PIN_0));
         if (err) {
             // NOTE: Reuse existing messages from locales/circuitpython.pot to save space
@@ -154,7 +139,7 @@ bool common_hal_busio_spi_configure(busio_spi_obj_t *self,
     uint8_t phase,
     uint8_t bits) {
 
-    mxc_spi_clkmode_t clk_mode;
+    mxc_spi_mode_t spi_mode;
     int ret;
 
     self->polarity = polarity;
@@ -163,16 +148,16 @@ bool common_hal_busio_spi_configure(busio_spi_obj_t *self,
 
     switch ((polarity << 1) | (phase)) {
         case 0b00:
-            clk_mode = MXC_SPI_CLKMODE_0;
+            spi_mode = SPI_MODE_0;
             break;
         case 0b01:
-            clk_mode = MXC_SPI_CLKMODE_1;
+            spi_mode = SPI_MODE_1;
             break;
         case 0b10:
-            clk_mode = MXC_SPI_CLKMODE_2;
+            spi_mode = SPI_MODE_2;
             break;
         case 0b11:
-            clk_mode = MXC_SPI_CLKMODE_3;
+            spi_mode = SPI_MODE_3;
             break;
         default:
             // should not be reachable; validated in shared-bindings/busio/SPI.c
@@ -214,7 +199,7 @@ bool common_hal_busio_spi_configure(busio_spi_obj_t *self,
     } else if (ret == E_BAD_STATE) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Invalid state"));
     }
-    ret = MXC_SPI_SetMode(self->spi_regs, clk_mode);
+    ret = MXC_SPI_SetMode(self->spi_regs, spi_mode);
     if (ret) {
         mp_raise_ValueError(MP_ERROR_TEXT("Failed to set SPI Clock Mode"));
         return false;
@@ -248,6 +233,8 @@ bool common_hal_busio_spi_write(busio_spi_obj_t *self,
     size_t len) {
     int ret = 0;
 
+    MXC_SPI_SetDefaultTXData(self->spi_regs, 0xFF);
+
     mxc_spi_req_t wr_req = {
         .spi = self->spi_regs,
         .ssIdx = 0,
@@ -259,7 +246,6 @@ bool common_hal_busio_spi_write(busio_spi_obj_t *self,
         .rxLen = 0,
         .ssDeassert = 1,
         .completeCB = NULL,
-        .txDummyValue = 0xFF,
     };
     ret = MXC_SPI_MasterTransaction(&wr_req);
     if (ret) {
@@ -276,6 +262,8 @@ bool common_hal_busio_spi_read(busio_spi_obj_t *self,
 
     int ret = 0;
 
+    MXC_SPI_SetDefaultTXData(self->spi_regs, write_value);
+
     mxc_spi_req_t rd_req = {
         .spi = self->spi_regs,
         .ssIdx = 0,
@@ -287,7 +275,6 @@ bool common_hal_busio_spi_read(busio_spi_obj_t *self,
         .rxLen = len,
         .ssDeassert = 1,
         .completeCB = NULL,
-        .txDummyValue = write_value,
     };
     ret = MXC_SPI_MasterTransaction(&rd_req);
     if (ret) {
@@ -306,7 +293,9 @@ bool common_hal_busio_spi_transfer(busio_spi_obj_t *self,
 
     int ret = 0;
 
-    mxc_spi_req_t rd_req = {
+    MXC_SPI_SetDefaultTXData(self->spi_regs, 0xFF);
+
+    mxc_spi_req_t transfer_req = {
         .spi = self->spi_regs,
         .ssIdx = 0,
         .txCnt = 0,
@@ -317,9 +306,8 @@ bool common_hal_busio_spi_transfer(busio_spi_obj_t *self,
         .rxLen = len,
         .ssDeassert = 1,
         .completeCB = NULL,
-        .txDummyValue = 0xFF,
     };
-    ret = MXC_SPI_MasterTransaction(&rd_req);
+    ret = MXC_SPI_MasterTransaction(&transfer_req);
     if (ret) {
         return false;
     } else {
