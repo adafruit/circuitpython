@@ -13,7 +13,7 @@
 #include "py/runtime.h"
 #include "py/mperrno.h"
 
-// Assuming the use of MAP_A in MSDK, since all documentation 
+// Assuming the use of MAP_A in MSDK, since all documentation
 // states the GPIO maps are the same
 
 const mxc_gpio_cfg_t uart_maps[NUM_UARTS] = {
@@ -37,4 +37,13 @@ int pinsToUart(const mcu_pin_obj_t *rx, const mcu_pin_obj_t *tx) {
     }
     mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q"), MP_QSTR_pins);
     return -1;
+}
+
+int uart_init(mxc_uart_regs_t *uart, unsigned int baud) {
+    return MXC_UART_Init(uart, baud, MAP_A);
+}
+
+int uart_set_flow_ctrl(mxc_uart_regs_t *uart, bool enable, int rtsThreshold) {
+    mxc_uart_flow_t flow = enable ? MXC_UART_FLOW_EN_LOW : MXC_UART_FLOW_DIS;
+    return MXC_UART_SetFlowCtrl(uart, flow, rtsThreshold, MAP_A);
 }
