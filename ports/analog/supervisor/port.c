@@ -124,7 +124,7 @@ safe_mode_t port_init(void) {
 
     // Enable GPIO (enables clocks + common init for ports)
     for (int i = 0; i < MXC_CFG_GPIO_INSTANCES; i++) {
-        err = MXC_GPIO_Init(0x1 << i);
+        err = gpio_init(i);
         if (err) {
             return SAFE_MODE_PROGRAMMATIC;
         }
@@ -282,7 +282,7 @@ void port_disable_tick(void) {
 void port_interrupt_after_ticks(uint32_t ticks) {
     uint32_t ticks_msec = 0;
 
-    ticks_msec = (ticks / TICKS_PER_SEC) * 1000;
+    ticks_msec = ((ticks * 1000) / TICKS_PER_SEC);
 
     // Disable RTC interrupts
     MXC_RTC_DisableInt(SSEC_ENABLE | TOD_ENABLE | RDY_ENABLE);

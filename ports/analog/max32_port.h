@@ -22,6 +22,9 @@
 #include "system_max32690.h"
 #include "max32690.h"
 
+// GPIO ports & initialization
+#include "peripherals/max32690/gpios.h"
+
 // UART Ports & pins
 #include "peripherals/max32690/max32_uart.h"
 #include "peripherals/max32690/max32_i2c.h"
@@ -66,7 +69,10 @@
 // 12-bit ssec register, ticks @ 4096 Hz
 #define SUBSEC_PER_TICK 4
 
-// UART Ports & pins
+// GPIO ports & initialization
+#include "peripherals/max32650/gpios.h"
+
+// BUSIO Ports & pins
 #include "peripherals/max32650/max32_uart.h"
 #include "peripherals/max32650/max32_i2c.h"
 #include "peripherals/max32650/max32_spi.h"
@@ -79,7 +85,10 @@
 // 12-bit ssec register, ticks @ 4096 Hz
 #define SUBSEC_PER_TICK 4
 
-// UART Ports & pins
+// GPIO ports & initialization
+#include "peripherals/max32665/gpios.h"
+
+// BUSIO Ports & pins
 #include "peripherals/max32665/max32_uart.h"
 #include "peripherals/max32665/max32_i2c.h"
 #include "peripherals/max32665/max32_spi.h"

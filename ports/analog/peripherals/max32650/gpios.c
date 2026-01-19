@@ -8,3 +8,7 @@
 
 volatile mxc_gpio_regs_t *gpio_ports[NUM_GPIO_PORTS] =
 {MXC_GPIO0, MXC_GPIO1, MXC_GPIO2, MXC_GPIO3};
+
+int32_t gpio_init(uint32_t port) {
+    return MXC_GPIO_Init(port);
+}
