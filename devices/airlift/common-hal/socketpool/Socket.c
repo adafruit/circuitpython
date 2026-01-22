@@ -542,7 +542,8 @@ mp_int_t common_hal_socketpool_socket_get_type(socketpool_socket_obj_t *self) {
 
 
 int common_hal_socketpool_socket_setsockopt(socketpool_socket_obj_t *self, int level, int optname, const void *value, size_t optlen) {
-    mp_raise_NotImplementedError(NULL); // TODO
+    //// mp_raise_NotImplementedError(NULL); // TODO
+    return 0;
 }
 
 bool common_hal_socketpool_socket_readable(socketpool_socket_obj_t *self) {
