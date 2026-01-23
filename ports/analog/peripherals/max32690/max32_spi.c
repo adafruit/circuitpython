@@ -31,11 +31,11 @@ const mxc_gpio_cfg_t spi_maps[NUM_SPI] = {
       MXC_GPIO_FUNC_ALT1, MXC_GPIO_PAD_NONE, MXC_GPIO_VSSEL_VDDIO, MXC_GPIO_DRVSTR_0 },
 };
 
-int pinsToSpi(const mcu_pin_obj_t *mosi, const mcu_pin_obj_t *miso,
-    const mcu_pin_obj_t *sck) {
+int pinsToSpi(const mcu_pin_obj_t *sck, const mcu_pin_obj_t *mosi,
+    const mcu_pin_obj_t *miso) {
     for (int i = 0; i < NUM_SPI; i++) {
         if ((spi_maps[i].port == (MXC_GPIO_GET_GPIO(mosi->port)))
-            && (spi_maps[i].mask == ((mosi->mask) | (miso->mask) | (sck->mask)))) {
+            && (spi_maps[i].mask & ((mosi->mask) | (miso->mask) | (sck->mask)))) {
             return i;
         }
     }
