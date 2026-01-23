@@ -76,6 +76,10 @@ endif
 
 # MSDK Specific Includes / Sources
 MXC_SPI_VERSION := v1
+PERIPH_DRIVER_C_FILES += $(SOURCE_DIR)/SYS/mxc_assert.c
+PERIPH_DRIVER_C_FILES += $(SOURCE_DIR)/SYS/mxc_delay.c
+PERIPH_DRIVER_C_FILES += $(SOURCE_DIR)/SYS/nvic_table.c
+PERIPH_DRIVER_C_FILES += $(SOURCE_DIR)/SYS/mxc_lock.c
 include ./msdk/Libraries/PeriphDrivers/${MCU_VARIANT_LOWER}_files.mk
 
 # Add MAX32 files to Include / Source paths
@@ -189,6 +193,7 @@ CFLAGS += -Wno-error=unused-parameter \
 			-Wno-error=strict-prototypes \
 			-Wno-error=cast-qual \
 			-Wno-error=unused-variable \
+			-Wno-error=unused-but-set-variable \
 			-Wno-error=lto-type-mismatch \
 			-Wno-error=cast-align \
 			-Wno-error=nested-externs \
