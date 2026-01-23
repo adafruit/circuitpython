@@ -63,7 +63,7 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
     common_hal_busio_spi_mark_deinit(self);
 
     // Assign SPI ID based on pins
-    int spi_id = pinsToSpi(mosi, miso, sck);
+    int spi_id = pinsToSpi(sck, mosi, miso);
     if (spi_id == -1) {
         return;
     } else {
