@@ -165,7 +165,7 @@ static bool socketpool_socket_get_connection_info(socketpool_socket_obj_t *self,
 
 
 
-static airlift_socket_status_t socketpool_socket_status(socketpool_socket_obj_t *self) {
+static airlift_client_socket_status_t client_socket_status(socketpool_socket_obj_t *self) {
     const uint8_t *params[1] = { &self->num };
     size_t param_lengths[1] = { 1 };
 
@@ -185,23 +185,16 @@ static airlift_socket_status_t socketpool_socket_status(socketpool_socket_obj_t 
     return result;
 }
 
-int socketpool_socket_accept(socketpool_socket_obj_t *self, mp_obj_t *peer_out, socketpool_socket_obj_t *accepted) {
-    if (self->type != SOCK_STREAM) {
-        return -MP_EOPNOTSUPP;
-    }
-
-    if (common_hal_socketpool_socket_get_closed(self)) {
-        return -MP_EBADF;
-    }
-
+static bool server_socket_status(socketpool_socket_obj_t *self) {
     const uint8_t *params[1] = { &self->num };
     size_t param_lengths[1] = { 1 };
 
-    uint8_t accept_socket_num;
-    uint8_t *responses[1] = { &accept_socket_num };
+    uint8_t result;
+    uint8_t *responses[1] = { &result };
     size_t response_lengths[1] = { 1 };
 
-    size_t num_responses = wifi_radio_send_command_get_response(self->socketpool->radio, AVAIL_DATA_TCP_CMD,
+    // GET_STATE_TCP_CMD is a misnomer. It only checks whether there's a tcpserver for the socket.
+    size_t num_responses = wifi_radio_send_command_get_response(self->socketpool->radio, GET_STATE_TCP_CMD,
         params, param_lengths, LENGTHS_8, MP_ARRAY_SIZE(params),
         responses, response_lengths, LENGTHS_8, MP_ARRAY_SIZE(responses),
         AIRLIFT_DEFAULT_TIMEOUT_MS);
@@ -209,12 +202,59 @@ int socketpool_socket_accept(socketpool_socket_obj_t *self, mp_obj_t *peer_out, 
     if (num_responses == 0) {
         raise_failed();
     }
-    if (accept_socket_num == NO_SOCKET) {
-        return -EBADF;
+
+    return result == 1;
+}
+
+int socketpool_socket_accept(socketpool_socket_obj_t *self, mp_obj_t *peer_out, socketpool_socket_obj_t *accepted) {
+    if (self->type != SOCK_STREAM) {
+        return -MP_EOPNOTSUPP;
     }
 
-    return accept_socket_num;
+    if (!server_socket_status(self)) {
+        return -MP_ENOTCONN;
+    }
+
+    const uint8_t *params[1] = { &self->num };
+    size_t param_lengths[1] = { 1 };
+
+    uint16_t accept_socket_num;
+    uint8_t *responses[1] = { (uint8_t *)&accept_socket_num };
+    size_t response_lengths[1] = { sizeof(accept_socket_num) };
+
+    const uint64_t start_time = supervisor_ticks_ms64();
+    while (true) {
+        // When passed a server socket, AVAIL_DATA_TCP_CMD returns the socket number on which to read data.
+        // For client and UDP sockets, it returns the number of bytes available. (Quite a difference!)
+        size_t num_responses = wifi_radio_send_command_get_response(self->socketpool->radio, AVAIL_DATA_TCP_CMD,
+            params, param_lengths, LENGTHS_8, MP_ARRAY_SIZE(params),
+            responses, response_lengths, LENGTHS_8, MP_ARRAY_SIZE(responses),
+            AIRLIFT_DEFAULT_TIMEOUT_MS);
+
+        if (num_responses == 0) {
+            raise_failed();
+        }
+
+        if (accept_socket_num != NO_SOCKET) {
+            return accept_socket_num;
+        }
+
+        if (self->timeout_ms == 0) {
+            // Non-blocking raises a different exception than a timeout.
+            return -MP_EAGAIN;
+        }
+        if ((self->timeout_ms != SOCKET_BLOCK_FOREVER &&
+             supervisor_ticks_ms64() - start_time >= self->timeout_ms) ||
+            mp_hal_is_interrupted()) {
+            return -MP_ETIMEDOUT;
+        }
+
+        RUN_BACKGROUND_TASKS;
+        // Give the AirLift some time to do work instead of asking again immediately.
+        mp_hal_delay_ms(50);
+    }
 }
+
 
 socketpool_socket_obj_t *common_hal_socketpool_socket_accept(socketpool_socket_obj_t *self, mp_obj_t *peer_out) {
     socketpool_socket_obj_t *accepted = mp_obj_malloc_with_finaliser(socketpool_socket_obj_t, NULL);
@@ -222,6 +262,11 @@ socketpool_socket_obj_t *common_hal_socketpool_socket_accept(socketpool_socket_o
 
     int ret = socketpool_socket_accept(self, peer_out, accepted);
     if (ret < 0) {
+        if (ret == -MP_ETIMEDOUT) {
+            // There is a specific subclass for timeouts.
+            mp_raise_msg(&mp_type_TimeoutError, NULL);
+        }
+        // Otherwise, raise a general OSError. Includes EAGAIN.
         mp_raise_OSError(-ret);
     }
 
@@ -238,16 +283,27 @@ int common_hal_socketpool_socket_bind(socketpool_socket_obj_t *self,
         mp_raise_OSError(MP_EINVAL);
     }
 
-    // Validate the host name (which might a numeric IP string) to an IPv4 address first.
+    // Validate the host name (which might be a numeric IP string) to an IPv4 address first.
     uint8_t ipv4[IPV4_LENGTH];
     if (!socketpool_gethostbyname_ipv4(self->socketpool, host, ipv4)) {
         // Could not resolve hostname.
         common_hal_socketpool_socketpool_raise_gaierror_noname();
     }
 
+    const uint8_t zero_ipv4[IPV4_LENGTH] = { 0 };
+    uint8_t self_ipv4[IPV4_LENGTH];
+    ipv4_uint32_to_bytes(wifi_radio_get_ipv4_address(self->socketpool->radio), self_ipv4);
+
+    // The bound host's IP must be this host: 0.0.0.0 or wifi.radio.ipv4_address.
+    if (memcmp(ipv4, zero_ipv4, IPV4_LENGTH) != 0 &&
+        memcmp(ipv4, self_ipv4, IPV4_LENGTH) != 0) {
+        // Same as CPython.
+        mp_raise_OSError(99);  // EADDRNOTAVAIL (sometimes 125!)
+    }
     self->bound = true;
     memcpy(self->hostname, host, hostlen);
     self->hostname_len = hostlen;
+    self->port = port;
     return 0;
 }
 
@@ -256,9 +312,7 @@ void socketpool_socket_close(socketpool_socket_obj_t *self) {
         socketpool_socket_stop_client(self);
     }
 
-    if (self->server_started) {
-        // TODO: how to shut down server?
-    }
+    // Re server_started: there is no way to shut down a server.
 }
 
 void common_hal_socketpool_socket_close(socketpool_socket_obj_t *self) {
@@ -342,12 +396,13 @@ void socketpool_socket_start_server_mode(socketpool_socket_obj_t *self, airlift_
         return;
     }
 
+    uint8_t zero_ipv4[IPV4_LENGTH] = { 0 };
     uint8_t port_bytes[2];
     be_uint16_to_uint8_bytes((uint16_t)self->port, port_bytes);
     uint8_t conn_mode = mode;
 
-    const uint8_t *params[5] = { self->hostname, port_bytes, &self->num, &conn_mode };
-    size_t param_lengths[5] = { self->hostname_len, 4, 2, 1, 1 };
+    const uint8_t *params[4] = { zero_ipv4, port_bytes, &self->num, &conn_mode };
+    size_t param_lengths[4] = { 4, 2, 1, 1 };
 
     uint8_t result;
     uint8_t *responses[1] = { &result };
@@ -371,11 +426,23 @@ void common_hal_socketpool_socket_connect(socketpool_socket_obj_t *self,
 }
 
 bool common_hal_socketpool_socket_get_closed(socketpool_socket_obj_t *self) {
-    return socketpool_socket_status(self) == SOCKET_CLOSED;
+    if (self->client_started) {
+        return client_socket_status(self) == SOCKET_CLOSED;
+    } else if (self->server_started) {
+        return !server_socket_status(self);
+    } else {
+        return false;
+    }
 }
 
 bool common_hal_socketpool_socket_get_connected(socketpool_socket_obj_t *self) {
-    return socketpool_socket_status(self) == SOCKET_ESTABLISHED;
+    if (self->client_started) {
+        return client_socket_status(self) == SOCKET_ESTABLISHED;
+    } else if (self->server_started) {
+        return server_socket_status(self);
+    } else {
+        return false;
+    }
 }
 
 bool common_hal_socketpool_socket_listen(socketpool_socket_obj_t *self, int backlog) {
@@ -447,8 +514,10 @@ int socketpool_socket_recv_into(socketpool_socket_obj_t *self, uint8_t *buf, uin
             mp_hal_is_interrupted()) {
             return 0;
         }
+
         RUN_BACKGROUND_TASKS;
-        mp_hal_delay_ms(500);
+        // Give the AirLift some time to do work instead of asking again immediately.
+        mp_hal_delay_ms(50);
     }
 }
 
@@ -542,7 +611,7 @@ mp_int_t common_hal_socketpool_socket_get_type(socketpool_socket_obj_t *self) {
 
 
 int common_hal_socketpool_socket_setsockopt(socketpool_socket_obj_t *self, int level, int optname, const void *value, size_t optlen) {
-    //// mp_raise_NotImplementedError(NULL); // TODO
+    // TODO: not sure any of this can be implemented.
     return 0;
 }
 

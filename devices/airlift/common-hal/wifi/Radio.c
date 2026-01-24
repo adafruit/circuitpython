@@ -29,7 +29,7 @@
 
 
 // Print out SPI traffic with AirLift.
-#define DEBUG_AIRLIFT 1
+#define DEBUG_AIRLIFT 0
 
 #if DEBUG_AIRLIFT
 static const char *command_name(uint8_t command) {
@@ -420,7 +420,6 @@ size_t wifi_radio_wait_response_cmd(wifi_radio_obj_t *self, uint8_t cmd,
         response_lengths[i] = read_length;
 
         // Read and discard bytes that didn't fit in buffer.
-        // TODO report error?
         if (read_length > response_lengths[i]) {
             #if DEBUG_AIRLIFT
             PLAT_PRINTF("<!! response %d too long. expected %d, got %d\n", i, response_lengths[i], response_length);

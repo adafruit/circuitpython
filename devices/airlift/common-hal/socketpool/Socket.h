@@ -23,7 +23,7 @@ typedef enum {
     SOCKET_CLOSING = 8,
     SOCKET_LAST_ACK = 9,
     SOCKET_TIME_WAIT = 10,
-} airlift_socket_status_t;
+} airlift_client_socket_status_t;
 
 typedef struct ssl_sslsocket_obj ssl_sslsocket_obj_t;
 

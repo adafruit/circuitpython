@@ -55,7 +55,6 @@ void common_hal_ssl_sslsocket_bind(ssl_sslsocket_obj_t *self, mp_obj_t addr_in) 
 }
 
 void common_hal_ssl_sslsocket_close(ssl_sslsocket_obj_t *self) {
-    // TODO: MORE??
     common_hal_socketpool_socket_close(self->socket);
 }
 

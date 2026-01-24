@@ -57,7 +57,9 @@ static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(socketpool_socket___exit___obj, 4, 4,
 //|     def accept(self) -> Tuple[Socket, Tuple[str, int]]:
 //|         """Accept a connection on a listening socket of type SOCK_STREAM,
 //|         creating a new socket of type SOCK_STREAM.
-//|         Returns a tuple of (new_socket, remote_address)"""
+//|         Returns a tuple of ``(new_socket, remote_address)``,
+//|         where remote address is a tuple of ``(host, port)``.
+//|         """
 //|
 static mp_obj_t _socketpool_socket_accept(mp_obj_t self_in) {
     socketpool_socket_obj_t *self = MP_OBJ_TO_PTR(self_in);
@@ -72,7 +74,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(socketpool_socket_accept_obj, _socketpool_socke
 //|     def bind(self, address: Tuple[str, int]) -> None:
 //|         """Bind a socket to an address
 //|
-//|         :param ~tuple address: tuple of (remote_address, remote_port)"""
+//|         :param ~tuple address: tuple of ``(host, port)``"""
 //|         ...
 //|
 static mp_obj_t socketpool_socket_bind(mp_obj_t self_in, mp_obj_t addr_in) {
@@ -110,7 +112,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(socketpool_socket_close_obj, _socketpool_socket
 //|     def connect(self, address: Tuple[str, int]) -> None:
 //|         """Connect a socket to a remote address
 //|
-//|         :param ~tuple address: tuple of (remote_address, remote_port)"""
+//|         :param ~tuple address: tuple of ``(host, port)``"""
 //|         ...
 //|
 static mp_obj_t socketpool_socket_connect(mp_obj_t self_in, mp_obj_t addr_in) {
@@ -154,7 +156,7 @@ static MP_DEFINE_CONST_FUN_OBJ_2(socketpool_socket_listen_obj, socketpool_socket
 //|         Returns a tuple containing
 //|
 //|         * the number of bytes received into the given buffer
-//|         * a remote_address, which is a tuple of ip address and port number
+//|         * a remote_address, which is a tuple of ``("ip_address", port)``.
 //|
 //|         :param object buffer: buffer to read into"""
 //|         ...
@@ -289,7 +291,7 @@ static MP_DEFINE_CONST_FUN_OBJ_2(socketpool_socket_sendall_obj, _socketpool_sock
 //|         Suits sockets of type SOCK_DGRAM
 //|
 //|         :param ~bytes bytes: some bytes to send
-//|         :param ~tuple address: tuple of (remote_address, remote_port)"""
+//|         :param ~tuple address: tuple of ``(host, port)``"""
 //|         ...
 //|
 static mp_obj_t socketpool_socket_sendto(mp_obj_t self_in, mp_obj_t data_in, mp_obj_t addr_in) {
