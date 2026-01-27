@@ -51,9 +51,38 @@ DEFAULT_MODULES = [
     "json",
     "random",
     "digitalio",
-    "zephyr_serial",
+    "rainbowio",
+    "traceback",
+    "warnings",
+    "supervisor",
+    "errno",
+    "io",
 ]
-MPCONFIG_FLAGS = ["ulab", "nvm", "displayio", "warnings", "alarm", "array", "json"]
+# Flags that don't match with with a *bindings module. Some used by adafruit_requests
+MPCONFIG_FLAGS = ["array", "errno", "io", "json"]
+
+# List of other modules (the value) that can be enabled when another one (the key) is.
+REVERSE_DEPENDENCIES = {
+    "busio": ["fourwire", "i2cdisplaybus", "sdcardio", "sharpdisplay"],
+    "fourwire": ["displayio", "busdisplay", "epaperdisplay"],
+    "i2cdisplaybus": ["displayio", "busdisplay", "epaperdisplay"],
+    "displayio": [
+        "vectorio",
+        "bitmapfilter",
+        "bitmaptools",
+        "terminalio",
+        "lvfontio",
+        "tilepalettemapper",
+        "fontio",
+    ],
+    "sharpdisplay": ["framebufferio"],
+    "framebufferio": ["displayio"],
+}
+
+# Other flags to set when a module is enabled
+EXTRA_FLAGS = {"busio": ["BUSIO_SPI", "BUSIO_I2C"]}
+
+SHARED_MODULE_AND_COMMON_HAL = ["os"]
 
 
 async def preprocess_and_split_defs(compiler, source_file, build_path, flags):
@@ -84,10 +113,17 @@ async def preprocess_and_split_defs(compiler, source_file, build_path, flags):
 async def collect_defs(mode, build_path):
     output_file = build_path / f"{mode}defs.collected"
     splitdir = build_path / "genhdr" / mode
+    to_collect = list(splitdir.glob(f"**/*.{mode}"))
+    batch_size = 50
     await cpbuild.run_command(
-        ["cat", "-s", *splitdir.glob(f"**/*.{mode}"), ">", output_file],
+        ["cat", "-s", *to_collect[:batch_size], ">", output_file],
         splitdir,
     )
+    for i in range(0, len(to_collect), batch_size):
+        await cpbuild.run_command(
+            ["cat", "-s", *to_collect[i : i + batch_size], ">>", output_file],
+            splitdir,
+        )
     return output_file
 
 
@@ -162,51 +198,85 @@ async def generate_root_pointer_header(build_path):
     )
 
 
-TINYUSB_SETTINGS = {
-    "": {
-        "CFG_TUSB_MCU": "OPT_MCU_MIMXRT10XX",
-        "CFG_TUD_CDC_RX_BUFSIZE": 640,
-        "CFG_TUD_CDC_TX_BUFSIZE": 512,
-    },
-    "stm32u575xx": {"CFG_TUSB_MCU": "OPT_MCU_STM32U5"},
-    "nrf52840": {"CFG_TUSB_MCU": "OPT_MCU_NRF5X"},
-    "nrf5340": {"CFG_TUSB_MCU": "OPT_MCU_NRF5X"},
-    # "r7fa8d1bhecbd": {"CFG_TUSB_MCU": "OPT_MCU_RAXXX", "USB_HIGHSPEED": "1", "USBHS_USB_INT_RESUME_IRQn": "54", "USBFS_INT_IRQn": "54", "CIRCUITPY_USB_DEVICE_INSTANCE": "1"},
-    # ifeq ($(CHIP_FAMILY),$(filter $(CHIP_FAMILY),MIMXRT1011 MIMXRT1015))
-    # CFLAGS += -DCFG_TUD_MIDI_RX_BUFSIZE=512 -DCFG_TUD_MIDI_TX_BUFSIZE=64 -DCFG_TUD_MSC_BUFSIZE=512
-    # else
-    # CFLAGS += -DCFG_TUD_MIDI_RX_BUFSIZE=512 -DCFG_TUD_MIDI_TX_BUFSIZE=512 -DCFG_TUD_MSC_BUFSIZE=1024
-    # endif
-}
+async def generate_display_resources(output_path, translation, font, extra_characters):
+    await cpbuild.run_command(
+        [
+            "python",
+            srcdir / "tools" / "gen_display_resources.py",
+            "--font",
+            srcdir / font,
+            "--sample_file",
+            srcdir / "locale" / f"{translation}.po",
+            "--extra_characters",
+            repr(extra_characters),
+            "--output_c_file",
+            output_path,
+        ],
+        srcdir,
+        check_hash=[output_path],
+    )
 
-TINYUSB_SOURCE = {
-    "stm32u575xx": [
-        "src/portable/st/stm32_fsdev/dcd_stm32_fsdev.c",
-        "src/portable/synopsys/dwc2/dcd_dwc2.c",
-        "src/portable/synopsys/dwc2/hcd_dwc2.c",
-        "src/portable/synopsys/dwc2/dwc2_common.c",
-    ],
-    "nrf52840": [
-        "src/portable/nordic/nrf5x/dcd_nrf5x.c",
-    ],
-    "nrf5340": [
-        "src/portable/nordic/nrf5x/dcd_nrf5x.c",
-    ],
-    # "r7fa8d1bhecbd": [
-    #     "src/portable/renesas/rusb2/dcd_rusb2.c",
-    #     "src/portable/renesas/rusb2/hcd_rusb2.c",
-    #     "src/portable/renesas/rusb2/rusb2_common.c",
-    # ],
-}
+
+def determine_enabled_modules(board_info, portdir, srcdir):
+    """Determine which CircuitPython modules should be enabled based on board capabilities.
+
+    Args:
+        board_info: Dictionary containing board hardware capabilities
+        portdir: Path to the port directory (ports/zephyr-cp)
+        srcdir: Path to the CircuitPython source root
+
+    Returns:
+        tuple: (enabled_modules set, module_reasons dict)
+    """
+    enabled_modules = set(DEFAULT_MODULES)
+    module_reasons = {}
+
+    if board_info["wifi"]:
+        enabled_modules.add("wifi")
+        module_reasons["wifi"] = "Zephyr board has wifi"
+
+    if board_info["flash_count"] > 0:
+        enabled_modules.add("storage")
+        module_reasons["storage"] = "Zephyr board has flash"
+
+    if "wifi" in enabled_modules:
+        enabled_modules.add("socketpool")
+        enabled_modules.add("ssl")
+        module_reasons["socketpool"] = "Zephyr networking enabled"
+        module_reasons["ssl"] = "Zephyr networking enabled"
+
+    for port_module in (portdir / "bindings").iterdir():
+        if not board_info.get(port_module.name, False):
+            continue
+        enabled_modules.add(port_module.name)
+        module_reasons[port_module.name] = f"Zephyr board has {port_module.name}"
+
+    for shared_module in (srcdir / "shared-bindings").iterdir():
+        if not board_info.get(shared_module.name, False) or not shared_module.glob("*.c"):
+            continue
+        enabled_modules.add(shared_module.name)
+        module_reasons[shared_module.name] = f"Zephyr board has {shared_module.name}"
+
+        more_modules = []
+        more_modules.extend(REVERSE_DEPENDENCIES.get(shared_module.name, []))
+        while more_modules:
+            reverse_dependency = more_modules.pop(0)
+            if reverse_dependency in enabled_modules:
+                continue
+            logger.debug(f"Enabling {reverse_dependency} because {shared_module.name} is enabled")
+            enabled_modules.add(reverse_dependency)
+            more_modules.extend(REVERSE_DEPENDENCIES.get(reverse_dependency, []))
+            module_reasons[reverse_dependency] = f"Zephyr board has {shared_module.name}"
+
+    return enabled_modules, module_reasons
 
 
 async def build_circuitpython():
     circuitpython_flags = ["-DCIRCUITPY"]
     port_flags = []
     enable_mpy_native = False
-    full_build = False
+    full_build = True
     usb_host = False
-    tusb_mem_align = 4
     board = cmake_args["BOARD_ALIAS"]
     if not board:
         board = cmake_args["BOARD"]
@@ -220,20 +290,14 @@ async def build_circuitpython():
     circuitpython_flags.append(f"-DCIRCUITPY_FULL_BUILD={1 if full_build else 0}")
     circuitpython_flags.append(f"-DCIRCUITPY_USB_HOST={1 if usb_host else 0}")
     circuitpython_flags.append(f"-DCIRCUITPY_BOARD_ID='\"{board}\"'")
-    circuitpython_flags.append(f"-DCIRCUITPY_TUSB_MEM_ALIGN={tusb_mem_align}")
     circuitpython_flags.append(f"-DCIRCUITPY_TRANSLATE_OBJECT={1 if lto else 0}")
     circuitpython_flags.append("-DINTERNAL_FLASH_FILESYSTEM")
     circuitpython_flags.append("-DLONGINT_IMPL_MPZ")
     circuitpython_flags.append("-DCIRCUITPY_SSL_MBEDTLS")
     circuitpython_flags.append("-DFFCONF_H='\"lib/oofatfs/ffconf.h\"'")
     circuitpython_flags.extend(("-I", srcdir))
-    circuitpython_flags.extend(("-I", srcdir / "lib/tinyusb/src"))
-    circuitpython_flags.extend(("-I", srcdir / "supervisor/shared/usb"))
     circuitpython_flags.extend(("-I", builddir))
     circuitpython_flags.extend(("-I", portdir))
-    # circuitpython_flags.extend(("-I", srcdir / "ports" / port / "peripherals"))
-
-    # circuitpython_flags.extend(("-I", build_path / board_id))
 
     genhdr = builddir / "genhdr"
     genhdr.mkdir(exist_ok=True, parents=True)
@@ -254,13 +318,12 @@ async def build_circuitpython():
             )
         )
 
-        board_autogen_task = tg.create_task(zephyr_dts_to_cp_board(builddir, zephyrbuilddir))
+        board_autogen_task = tg.create_task(
+            zephyr_dts_to_cp_board(portdir, builddir, zephyrbuilddir)
+        )
     board_info = board_autogen_task.result()
     mpconfigboard_fn = board_tools.find_mpconfigboard(portdir, board)
-    mpconfigboard = {
-        "USB_VID": 0x1209,
-        "USB_PID": 0x000C,
-    }
+    mpconfigboard = {"USB_VID": 0x1209, "USB_PID": 0x000C, "USB_INTERFACE_NAME": "CircuitPython"}
     if mpconfigboard_fn is None:
         mpconfigboard_fn = (
             portdir / "boards" / board_info["vendor_id"] / board / "circuitpython.toml"
@@ -270,29 +333,16 @@ async def build_circuitpython():
         )
     elif mpconfigboard_fn.exists():
         with mpconfigboard_fn.open("rb") as f:
-            mpconfigboard = tomllib.load(f)
+            mpconfigboard.update(tomllib.load(f))
 
     autogen_board_info_fn = mpconfigboard_fn.parent / "autogen_board_info.toml"
 
-    enabled_modules = set(DEFAULT_MODULES)
-    module_reasons = {}
-    if board_info["wifi"]:
-        enabled_modules.add("wifi")
-        module_reasons["wifi"] = "Zephyr board has wifi"
-
-    if board_info["flash_count"] > 0:
-        enabled_modules.add("storage")
-        module_reasons["storage"] = "Zephyr board has flash"
-
-    if "wifi" in enabled_modules:
-        enabled_modules.add("socketpool")
-        enabled_modules.add("ssl")
-        module_reasons["socketpool"] = "Zephyr networking enabled"
-        module_reasons["ssl"] = "Zephyr networking enabled"
+    enabled_modules, module_reasons = determine_enabled_modules(board_info, portdir, srcdir)
 
     circuitpython_flags.extend(board_info["cflags"])
     supervisor_source = [
         "main.c",
+        "extmod/modjson.c",
         "extmod/vfs_fat.c",
         "lib/tlsf/tlsf.c",
         portdir / "background.c",
@@ -301,6 +351,7 @@ async def build_circuitpython():
         portdir / "common-hal/microcontroller/Processor.c",
         portdir / "common-hal/os/__init__.c",
         "shared/readline/readline.c",
+        "shared/runtime/buffer_helper.c",
         "shared/runtime/context_manager_helpers.c",
         "shared/runtime/pyexec.c",
         "shared/runtime/interrupt_char.c",
@@ -323,20 +374,18 @@ async def build_circuitpython():
     # if web_workflow:
     #     supervisor_source.extend(top.glob("supervisor/shared/web_workflow/*.c"))
 
-    usb_num_endpoint_pairs = board_info.get("usb_num_endpoint_pairs", 0)
-    soc = board_info["soc"]
-    usb_ok = usb_num_endpoint_pairs > 0 and soc in TINYUSB_SETTINGS
-    circuitpython_flags.append(f"-DCIRCUITPY_TINYUSB={1 if usb_ok else 0}")
+    usb_ok = board_info.get("usb_device", False)
     circuitpython_flags.append(f"-DCIRCUITPY_USB_DEVICE={1 if usb_ok else 0}")
 
-    tinyusb_files = []
     if usb_ok:
         enabled_modules.add("usb_cdc")
-        for setting in TINYUSB_SETTINGS[soc]:
-            circuitpython_flags.append(f"-D{setting}={TINYUSB_SETTINGS[soc][setting]}")
-        tinyusb_files.extend((top / "lib" / "tinyusb" / path for path in TINYUSB_SOURCE[soc]))
+
         for macro in ("USB_PID", "USB_VID"):
+            print(f"Setting {macro} to {mpconfigboard.get(macro)}")
             circuitpython_flags.append(f"-D{macro}=0x{mpconfigboard.get(macro):04x}")
+        circuitpython_flags.append(
+            f"-DUSB_INTERFACE_NAME='\"{mpconfigboard['USB_INTERFACE_NAME']}\"'"
+        )
         for macro, limit, value in (
             ("USB_PRODUCT", 16, board_info["name"]),
             ("USB_MANUFACTURER", 8, board_info["vendor"]),
@@ -344,107 +393,15 @@ async def build_circuitpython():
             circuitpython_flags.append(f"-D{macro}='\"{value}\"'")
             circuitpython_flags.append(f"-D{macro}_{limit}='\"{value[:limit]}\"'")
 
-        usb_interface_name = "CircuitPython"
+        circuitpython_flags.append("-DCIRCUITPY_USB_CDC_CONSOLE_ENABLED_DEFAULT=1")
+        circuitpython_flags.append("-DCIRCUITPY_USB_CDC_DATA_ENABLED_DEFAULT=0")
 
-        circuitpython_flags.append("-DCFG_TUSB_OS=OPT_OS_ZEPHYR")
-        circuitpython_flags.append(f"-DUSB_INTERFACE_NAME='\"{usb_interface_name}\"'")
-        circuitpython_flags.append(f"-DUSB_NUM_ENDPOINT_PAIRS={usb_num_endpoint_pairs}")
-        for direction in ("IN", "OUT"):
-            circuitpython_flags.append(f"-DUSB_NUM_{direction}_ENDPOINTS={usb_num_endpoint_pairs}")
-        # USB is special because it doesn't have a matching module.
-        msc_enabled = board_info["flash_count"] > 0
-        if msc_enabled:
-            circuitpython_flags.append("-DCFG_TUD_MSC_BUFSIZE=1024")
-            circuitpython_flags.append("-DCIRCUITPY_USB_MSC_ENABLED_DEFAULT=1")
-            tinyusb_files.append(top / "lib/tinyusb/src/class/msc/msc_device.c")
-            supervisor_source.append(top / "supervisor/shared/usb/usb_msc_flash.c")
-        circuitpython_flags.append(f"-DCIRCUITPY_USB_MSC={1 if msc_enabled else 0}")
-        if "usb_cdc" in enabled_modules:
-            tinyusb_files.extend(top.glob("lib/tinyusb/*.c"))
-            tinyusb_files.append(top / "lib/tinyusb/src/class/cdc/cdc_device.c")
-            circuitpython_flags.append("-DCFG_TUD_CDC_RX_BUFSIZE=640")
-            circuitpython_flags.append("-DCFG_TUD_CDC_TX_BUFSIZE=512")
-            circuitpython_flags.append("-DCFG_TUD_CDC=2")
-            circuitpython_flags.append("-DCIRCUITPY_USB_CDC_CONSOLE_ENABLED_DEFAULT=1")
-            circuitpython_flags.append("-DCIRCUITPY_USB_CDC_DATA_ENABLED_DEFAULT=0")
-
-        if "usb_hid_enabled_default" not in mpconfigboard:
-            mpconfigboard["usb_hid_enabled_default"] = usb_num_endpoint_pairs >= 5
-        if "usb_midi_enabled_default" not in mpconfigboard:
-            mpconfigboard["usb_midi_enabled_default"] = usb_num_endpoint_pairs >= 8
-
-        tinyusb_files.extend(
-            (top / "lib/tinyusb/src/common/tusb_fifo.c", top / "lib/tinyusb/src/tusb.c")
-        )
         supervisor_source.extend(
-            (portdir / "supervisor/usb.c", top / "supervisor/shared/usb/usb.c")
+            (portdir / "supervisor/usb.c", srcdir / "supervisor/shared/usb.c")
         )
 
-        tinyusb_files.extend(
-            (
-                top / "lib/tinyusb/src/device/usbd.c",
-                top / "lib/tinyusb/src/device/usbd_control.c",
-            )
-        )
-        supervisor_source.extend(
-            (top / "supervisor/shared/usb/usb_desc.c", top / "supervisor/shared/usb/usb_device.c")
-        )
-    elif usb_num_endpoint_pairs > 0:
-        module_reasons["usb_cdc"] = f"No TinyUSB settings for {soc}"
-
-    circuitpython_flags.append(f"-DCIRCUITPY_PORT_SERIAL={0 if usb_ok else 1}")
-    # ifeq ($(CIRCUITPY_USB_HID), 1)
-    #   SRC_SUPERVISOR += \
-    #     lib/tinyusb/src/class/hid/hid_device.c \
-    #     shared-bindings/usb_hid/__init__.c \
-    #     shared-bindings/usb_hid/Device.c \
-    #     shared-module/usb_hid/__init__.c \
-    #     shared-module/usb_hid/Device.c \
-
-    # endif
-
-    # ifeq ($(CIRCUITPY_USB_MIDI), 1)
-    #   SRC_SUPERVISOR += \
-    #     lib/tinyusb/src/class/midi/midi_device.c \
-    #     shared-bindings/usb_midi/__init__.c \
-    #     shared-bindings/usb_midi/PortIn.c \
-    #     shared-bindings/usb_midi/PortOut.c \
-    #     shared-module/usb_midi/__init__.c \
-    #     shared-module/usb_midi/PortIn.c \
-    #     shared-module/usb_midi/PortOut.c \
-
-    # endif
-
-    # ifeq ($(CIRCUITPY_USB_VIDEO), 1)
-    #   SRC_SUPERVISOR += \
-    #     shared-bindings/usb_video/__init__.c \
-    #     shared-module/usb_video/__init__.c \
-    #     shared-bindings/usb_video/USBFramebuffer.c \
-    #     shared-module/usb_video/USBFramebuffer.c \
-    #     lib/tinyusb/src/class/video/video_device.c \
-
-    #   CFLAGS += -DCFG_TUD_VIDEO=1 -DCFG_TUD_VIDEO_STREAMING=1 -DCFG_TUD_VIDEO_STREAMING_EP_BUFSIZE=256 -DCFG_TUD_VIDEO_STREAMING_BULK=1
-    # endif
-
-    # ifeq ($(CIRCUITPY_USB_VENDOR), 1)
-    #   SRC_SUPERVISOR += \
-    #     lib/tinyusb/src/class/vendor/vendor_device.c \
-
-    # endif
-
-    # ifeq ($(CIRCUITPY_TINYUSB_HOST), 1)
-    #   SRC_SUPERVISOR += \
-    #     lib/tinyusb/src/host/hub.c \
-    #     lib/tinyusb/src/host/usbh.c \
-
-    # endif
-
-    # ifeq ($(CIRCUITPY_USB_KEYBOARD_WORKFLOW), 1)
-    #   SRC_SUPERVISOR += \
-    #     lib/tinyusb/src/class/hid/hid_host.c \
-    #     supervisor/shared/usb/host_keyboard.c \
-
-    # endif
+    # Always use port serial. It'll switch between USB and UART automatically.
+    circuitpython_flags.append("-DCIRCUITPY_PORT_SERIAL=1")
 
     if "ssl" in enabled_modules:
         # TODO: Figure out how to get these paths from zephyr
@@ -476,7 +433,8 @@ async def build_circuitpython():
         list(top.glob("shared-bindings/*")) + list(portdir.glob("bindings/*")),
         key=lambda x: x.name,
     ):
-        if not module.is_dir():
+        # Skip files and directories without C source files (like artifacts from a docs build)
+        if not module.is_dir() or len(list(module.glob("*.c"))) == 0:
             continue
         enabled = module.name in enabled_modules
         # print(f"Module {module.name} enabled: {enabled}")
@@ -487,10 +445,18 @@ async def build_circuitpython():
         circuitpython_flags.append(f"-DCIRCUITPY_{module.name.upper()}={1 if enabled else 0}")
 
         if enabled:
+            if module.name in EXTRA_FLAGS:
+                for flag in EXTRA_FLAGS[module.name]:
+                    circuitpython_flags.append(f"-DCIRCUITPY_{flag}=1")
+
+        if enabled:
             hal_source.extend(portdir.glob(f"bindings/{module.name}/*.c"))
+            len_before = len(hal_source)
             hal_source.extend(top.glob(f"ports/zephyr-cp/common-hal/{module.name}/*.c"))
+            # Only include shared-module/*.c if no common-hal/*.c files were found
+            if len(hal_source) == len_before or module.name in SHARED_MODULE_AND_COMMON_HAL:
+                hal_source.extend(top.glob(f"shared-module/{module.name}/*.c"))
             hal_source.extend(top.glob(f"shared-bindings/{module.name}/*.c"))
-            hal_source.extend(top.glob(f"shared-module/{module.name}/*.c"))
 
     if os.environ.get("CI", "false") == "true":
         # Fail the build if it isn't up to date.
@@ -555,6 +521,17 @@ async def build_circuitpython():
         tg.create_task(generate_module_header(board_build))
         tg.create_task(generate_root_pointer_header(board_build))
 
+        if "terminalio" in enabled_modules:
+            output_path = board_build / f"autogen_display_resources-{translation}.c"
+            font_path = srcdir / mpconfigboard.get(
+                "CIRCUITPY_DISPLAY_FONT", "tools/fonts/ter-u12n.bdf"
+            )
+            extra_characters = mpconfigboard.get("CIRCUITPY_FONT_EXTRA_CHARACTERS", "")
+            tg.create_task(
+                generate_display_resources(output_path, translation, font_path, extra_characters)
+            )
+            source_files.append(output_path)
+
     # This file is generated by the QSTR/translation process.
     source_files.append(builddir / f"translations-{translation}.c")
     # These files don't include unique QSTRs. They just need to be compiled.
@@ -575,8 +552,6 @@ async def build_circuitpython():
     assembly_files.append(srcdir / "supervisor/shared/cpu_regs.S")
 
     source_files.extend(assembly_files)
-
-    source_files.extend(tinyusb_files)
 
     objects = []
     async with asyncio.TaskGroup() as tg:

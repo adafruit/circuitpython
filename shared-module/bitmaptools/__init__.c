@@ -204,6 +204,21 @@ void common_hal_bitmaptools_rotozoom(displayio_bitmap_t *self, int16_t ox, int16
     }
 }
 
+void common_hal_bitmaptools_replace_color(displayio_bitmap_t *destination,
+    uint32_t old_color,
+    uint32_t new_color) {
+
+    int16_t x, y;
+    for (x = 0; x < destination->width; x++) {
+        for (y = 0; y < destination->height; y++) {
+            uint32_t pixel_val = common_hal_displayio_bitmap_get_pixel(destination, x, y);
+            if (pixel_val == old_color) {
+                displayio_bitmap_write_pixel(destination, x, y, new_color);
+            }
+        }
+    }
+}
+
 void common_hal_bitmaptools_fill_region(displayio_bitmap_t *destination,
     int16_t x1, int16_t y1,
     int16_t x2, int16_t y2,

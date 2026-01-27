@@ -290,7 +290,6 @@ CIRCUITPY_TOUCHIO_USE_NATIVE = 0
 # Second stage bootloader doesn't work when the factory partition is empty due to
 # UF2 missing.
 UF2_BOOTLOADER = 0
-USB_HIGHSPEED = 1
 CIRCUITPY_USB_HID = 0
 CIRCUITPY_USB_MIDI = 0
 CIRCUITPY_TUSB_MEM_ALIGN = 64

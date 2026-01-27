@@ -34,4 +34,5 @@ typedef struct {
         #endif
     };
     bool backlight_on_high;
+    mp_float_t current_brightness;
 } mipidsi_display_obj_t;

@@ -111,6 +111,10 @@ void supervisor_flash_init(void) {
         const struct device *d = flashes[i];
 
         printk("flash %p %s\n", d, d->name);
+        if (!device_is_ready(d)) {
+            printk("  not ready\n");
+            continue;
+        }
         if (covered_by_areas[i]) {
             printk("  covered by flash area\n");
             continue;

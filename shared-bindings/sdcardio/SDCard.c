@@ -53,10 +53,12 @@
 //|             import sdcardio
 //|             import storage
 //|
+//|              # Make sure to make an "sd" folder on CIRCUITPY
+//|
 //|             sd = sdcardio.SDCard(board.SPI(), board.SD_CS)
 //|             vfs = storage.VfsFat(sd)
 //|             storage.mount(vfs, '/sd')
-//|             os.listdir('/sd')"""
+//|             print(os.listdir('/sd'))"""
 //|
 
 static void check_for_deinit(sdcardio_sdcard_obj_t *self) {

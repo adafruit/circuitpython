@@ -23,6 +23,8 @@
 #define USB_MSC_EP_NUM_OUT (5)
 #define USB_MSC_EP_NUM_IN (4)
 
+#define CIRCUITPY_USB_DEVICE_HIGH_SPEED (1)
+
 #include "py/circuitpy_mpconfig.h"
 
 #define MICROPY_BYTES_PER_GC_BLOCK              (32)

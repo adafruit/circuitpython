@@ -10,7 +10,7 @@
 #include "shared-bindings/fourwire/FourWire.h"
 #include "shared-module/displayio/__init__.h"
 #include "shared-module/displayio/mipi_constants.h"
-#include "supervisor/shared/board.h"
+#include "shared-bindings/board/__init__.h"
 
 
 // display init sequence from CircuitPython library https://github.com/adafruit/Adafruit_CircuitPython_ST7735R/blob/dfae353330cf051d1f31db9e4b681c8d70900cc5/adafruit_st7735r.py
@@ -57,17 +57,14 @@ uint8_t display_init_sequence[] = {
 
 
 void board_init(void) {
+    busio_spi_obj_t *spi = common_hal_board_create_spi(0);
     fourwire_fourwire_obj_t *bus = &allocate_display_bus()->fourwire_bus;
-    busio_spi_obj_t *spi = &bus->inline_bus;
-    common_hal_busio_spi_construct(spi, &pin_GPIO18, &pin_GPIO19, &pin_GPIO16, false);
-    common_hal_busio_spi_never_reset(spi);
-
     bus->base.type = &fourwire_fourwire_type;
     common_hal_fourwire_fourwire_construct(bus,
         spi,
-        &pin_GPIO22, // DC
-        &pin_GPIO20, // CS
-        &pin_GPIO26, // RST
+        CIRCUITPY_BOARD_TFT_DC,
+        CIRCUITPY_BOARD_TFT_CS,
+        CIRCUITPY_BOARD_TFT_RESET,
         30000000,
         0,
         0);
@@ -92,7 +89,7 @@ void board_init(void) {
         MIPI_COMMAND_WRITE_MEMORY_START, // Write memory command
         display_init_sequence,
         sizeof(display_init_sequence),
-        &pin_GPIO17,  // backlight pin
+        CIRCUITPY_BOARD_TFT_BACKLIGHT,
         NO_BRIGHTNESS_COMMAND,
         1.0f, // brightness
         false, // single_byte_bounds
@@ -102,6 +99,10 @@ void board_init(void) {
         true, // backlight_on_high
         false, // SH1107_addressing
         50000); // backlight pwm frequency
+}
+
+void board_deinit(void) {
+    common_hal_displayio_release_displays();
 }
 
 // Use the MP_WEAK supervisor/shared/board.c versions of routines not defined here.

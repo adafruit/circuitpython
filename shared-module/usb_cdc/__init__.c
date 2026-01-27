@@ -105,7 +105,7 @@ static const uint8_t usb_cdc_descriptor_template[] = {
     0xFF,        // 54 bEndpointAddress (OUT/H2D) [SET AT RUNTIME]
 #define CDC_DATA_OUT_ENDPOINT_INDEX 54
     0x02,        // 55 bmAttributes (Bulk)
-    #if USB_HIGHSPEED
+    #if CIRCUITPY_USB_DEVICE_HIGH_SPEED == 1
     0x00, 0x02,  // 56,57  wMaxPacketSize 512
     #else
     0x40, 0x00,  // 56,57  wMaxPacketSize 64
@@ -118,7 +118,7 @@ static const uint8_t usb_cdc_descriptor_template[] = {
     0xFF,        // 61 bEndpointAddress (IN/D2H) [SET AT RUNTIME: 0x80 | number]
 #define CDC_DATA_IN_ENDPOINT_INDEX 61
     0x02,        // 62 bmAttributes (Bulk)
-    #if USB_HIGHSPEED
+    #if CIRCUITPY_USB_DEVICE_HIGH_SPEED == 1
     0x00, 0x02,  // 63,64 wMaxPacketSize 512
     #else
     0x40, 0x00,  // 63,64 wMaxPacketSize 64
@@ -326,7 +326,7 @@ static const uint8_t usb_vendor_descriptor_template[] = {
     0xFF,        // 11 bEndpointAddress (IN/D2H) [SET AT RUNTIME: number]
 #define VENDOR_OUT_ENDPOINT_INDEX 11
     0x02,        // 12 bmAttributes (Bulk)
-    #if USB_HIGHSPEED
+    #if CIRCUITPY_USB_DEVICE_HIGH_SPEED == 1
     0x00, 0x02,  // 13,14  wMaxPacketSize 512
     #else
     0x40, 0x00,  // 13,14  wMaxPacketSize 64

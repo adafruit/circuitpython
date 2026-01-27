@@ -21,5 +21,6 @@
 
 // Use the second USB device (numbered 0 and 1)
 #define CIRCUITPY_USB_DEVICE_INSTANCE 1
+#define CIRCUITPY_USB_DEVICE_HIGH_SPEED (1)
 
 #define CIRCUITPY_USB_HOST_INSTANCE 0

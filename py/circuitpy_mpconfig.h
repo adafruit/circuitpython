@@ -539,8 +539,16 @@ void background_callback_run_all(void);
 #define CIRCUITPY_USB_DEVICE_INSTANCE 0
 #endif
 
+#ifndef CIRCUITPY_USB_DEVICE_HIGH_SPEED
+#define CIRCUITPY_USB_DEVICE_HIGH_SPEED 0
+#endif
+
 #ifndef CIRCUITPY_USB_HOST_INSTANCE
 #define CIRCUITPY_USB_HOST_INSTANCE -1
+#endif
+
+#ifndef CIRCUITPY_USB_HOST_HIGH_SPEED
+#define CIRCUITPY_USB_HOST_HIGH_SPEED 0
 #endif
 
 // If the port requires certain USB endpoint numbers, define these in mpconfigport.h.
@@ -642,7 +650,7 @@ void background_callback_run_all(void);
 // Align the internal sector buffer. Useful when it is passed into TinyUSB for
 // loads.
 #ifndef MICROPY_FATFS_WINDOW_ALIGNMENT
-#define MICROPY_FATFS_WINDOW_ALIGNMENT CIRCUITPY_TUSB_MEM_ALIGN
+#define MICROPY_FATFS_WINDOW_ALIGNMENT 64 // Espressif is strictest
 #endif
 
 #define FF_FS_CASE_INSENSITIVE_COMPARISON_ASCII_ONLY (1)

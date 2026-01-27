@@ -116,6 +116,7 @@ ifeq ($(CIRCUITPY_TINYUSB),1)
     lib/tinyusb/src/common/tusb_fifo.c \
     lib/tinyusb/src/tusb.c \
     supervisor/usb.c \
+    supervisor/shared/usb.c \
     supervisor/shared/usb/usb.c \
 
   ifeq ($(CIRCUITPY_USB_DEVICE),1)
@@ -258,9 +259,6 @@ ifeq ($(CIRCUITPY_USB_CDC),1)
 # Inform TinyUSB there will be up to two CDC devices.
 CFLAGS += -DCFG_TUD_CDC=2
 endif
-
-USB_HIGHSPEED ?= 0
-CFLAGS += -DUSB_HIGHSPEED=$(USB_HIGHSPEED)
 
 $(BUILD)/supervisor/shared/translate/translate.o: $(HEADER_BUILD)/qstrdefs.generated.h $(HEADER_BUILD)/compressed_translations.generated.h
 

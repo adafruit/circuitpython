@@ -68,3 +68,7 @@ extern portMUX_TYPE background_task_mutex;
 #ifndef CIRCUITPY_WIFI_DEFAULT_TX_POWER
 #define CIRCUITPY_WIFI_DEFAULT_TX_POWER (20)
 #endif
+
+#ifndef CIRCUITPY_ESP32P4_SWAP_LSFS
+#define CIRCUITPY_ESP32P4_SWAP_LSFS (0)
+#endif

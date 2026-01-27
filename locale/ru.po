@@ -126,6 +126,7 @@ msgid "%q in %q must be of type %q, not %q"
 msgstr "%q в %q должно быть типа %q, а не %q"
 
 #: ports/espressif/common-hal/espulp/ULP.c
+#: ports/espressif/common-hal/mipidsi/Bus.c
 #: ports/mimxrt10xx/common-hal/audiobusio/__init__.c
 #: ports/mimxrt10xx/common-hal/usb_host/Port.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
@@ -259,7 +260,8 @@ msgstr "%q за пределом"
 #: ports/nordic/common-hal/pulseio/PulseIn.c
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 #: ports/stm/common-hal/pulseio/PulseIn.c py/argcheck.c
-#: shared-bindings/canio/Match.c shared-bindings/time/__init__.c
+#: shared-bindings/bitmaptools/__init__.c shared-bindings/canio/Match.c
+#: shared-bindings/time/__init__.c
 msgid "%q out of range"
 msgstr "%q вне диапазона"
 
@@ -858,10 +860,6 @@ msgstr "Основной код CircuitPython сильно разбился. У�
 msgid "Clock unit in use"
 msgstr "Источник тактирования уже используется"
 
-#: ports/espressif/common-hal/mipidsi/Display.c
-msgid "Color depth must be 16 or 24"
-msgstr ""
-
 #: shared-bindings/_bleio/Connection.c
 msgid ""
 "Connection has been disconnected and can no longer be used. Create a new "
@@ -1312,6 +1310,7 @@ msgstr "Прерывается функцией выхода"
 #: ports/espressif/common-hal/_bleio/Service.c
 #: ports/espressif/common-hal/espulp/ULP.c
 #: ports/espressif/common-hal/microcontroller/Processor.c
+#: ports/espressif/common-hal/mipidsi/Display.c
 #: ports/mimxrt10xx/common-hal/audiobusio/__init__.c
 #: ports/mimxrt10xx/common-hal/pwmio/PWMOut.c
 #: ports/raspberrypi/bindings/picodvi/Framebuffer.c
@@ -1503,8 +1502,7 @@ msgstr "Не хватает jmp_pin.%q [%u] прыгает на пин"
 msgid "Mount point directory missing"
 msgstr "Отсутствует каталог точки монтирования"
 
-#: ports/zephyr-cp/bindings/zephyr_serial/UART.c shared-bindings/busio/UART.c
-#: shared-bindings/displayio/Group.c
+#: shared-bindings/busio/UART.c shared-bindings/displayio/Group.c
 msgid "Must be a %q subclass."
 msgstr "Должен быть субклассом %q."
 
@@ -2456,6 +2454,12 @@ msgstr "Неподдерживаемый тип сокета"
 #: ports/espressif/common-hal/dualbank/__init__.c
 msgid "Update failed"
 msgstr "Обновление не удалось"
+
+#: ports/zephyr-cp/common-hal/busio/I2C.c
+#: ports/zephyr-cp/common-hal/busio/SPI.c
+#: ports/zephyr-cp/common-hal/busio/UART.c
+msgid "Use device tree to define %q devices"
+msgstr ""
 
 #: ports/espressif/common-hal/_bleio/Characteristic.c
 #: ports/nordic/common-hal/_bleio/Characteristic.c

@@ -415,3 +415,9 @@
 [submodule "ports/espressif/microros-lib"]
 	path = ports/espressif/microros-lib
 	url = https://github.com/hierophect/microros-lib.git
+[submodule "frozen/Adafruit_CircuitPython_OPT4048"]
+	path = frozen/Adafruit_CircuitPython_OPT4048
+	url = https://github.com/adafruit/Adafruit_CircuitPython_OPT4048.git
+[submodule "frozen/CircuitPython_edupico2_paj7620"]
+	path = frozen/CircuitPython_edupico2_paj7620
+	url = https://github.com/CytronTechnologies/CircuitPython_edupico2_paj7620.git
