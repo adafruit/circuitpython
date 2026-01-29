@@ -68,7 +68,6 @@ static void validate_hex_password(const uint8_t *buf, size_t len) {
 //|
 //|     This class manages the station and access point functionality of the native
 //|     Wifi radio.
-//|
 //|     """
 //|
 
@@ -79,7 +78,7 @@ static void validate_hex_password(const uint8_t *buf, size_t len) {
 //|
 
 
-//|     def init_airlift(
+//|     def init_airlift(self,
 //|         spi: busio.SPI,
 //|         cs: digitalio.DigitalInOut,
 //|         ready: digitalio.DigitalInOut,
@@ -95,6 +94,8 @@ static void validate_hex_password(const uint8_t *buf, size_t len) {
 //|         :param digitalio.DigitalInOut reset: Reset pin
 //|         :param digitalio.DigitalInOut gpio0: Optional GPIO0 pin for boot mode control
 //|         """
+//|         ...
+//|
 static mp_obj_t wifi_radio_init_airlift(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     #if CIRCUITPY_WIFI_AIRLIFT
     enum { ARG_spi, ARG_cs, ARG_ready, ARG_reset, ARG_gpio0, };
@@ -156,7 +157,7 @@ static void check_for_deinit(wifi_radio_obj_t *self) {
     #endif // CIRCUITPY_WIFI_AIRLIFT
 }
 
-//|     def __enter__(self) -> UART:
+//|     def __enter__(self) -> Radio:
 //|         """No-op used by Context Managers. Only useful on boards that support AirLift `wifi`."""
 //|         ...
 //|
@@ -165,7 +166,7 @@ static void check_for_deinit(wifi_radio_obj_t *self) {
 //|     def __exit__(self) -> None:
 //|         """Automatically deinitializes the hardware when exiting a context. See
 //|         :ref:`lifetime-and-contextmanagers` for more info.
-//|         Only useful on boards that support AirLift `wifi`."""
+//|         Only useful on boards that support AirLift `wifi`.
 //|         """
 //|         ...
 //|
@@ -605,7 +606,6 @@ MP_PROPERTY_GETTER(wifi_radio_ap_active_obj,
 //|         **Limitations**: On AirLift, ``channel`` is ignored.
 //|         On AirLift and on raspberrypi CYW43, ``bssid` is not implemented.
 //|         On AirLift and on raspberrypi CYW43, ``timeout`` is 8 seconds if set to ``None`` or 0.
-//|
 //|         """
 //|         ...
 //|
