@@ -50,11 +50,12 @@ NORETURN static void ro_attribute(qstr attr) {
     mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("%q is read-only for this board"), attr);
 }
 
-const char *common_hal_wifi_radio_get_version(wifi_radio_obj_t *self) {
-    return "cyw43-driver "
-           MP_STRINGIFY(CYW43_VERSION_MAJOR) "."
-           MP_STRINGIFY(CYW43_VERSION_MINOR) "."
-           MP_STRINGIFY(CYW43_VERSION_MICRO);
+mp_obj_t common_hal_wifi_radio_get_version(wifi_radio_obj_t *self) {
+    return mp_obj_new_str_from_cstr(
+        "cyw43-driver "
+        MP_STRINGIFY(CYW43_VERSION_MAJOR) "."
+        MP_STRINGIFY(CYW43_VERSION_MINOR) "."
+        MP_STRINGIFY(CYW43_VERSION_MICRO));
 }
 
 bool common_hal_wifi_radio_get_enabled(wifi_radio_obj_t *self) {
@@ -85,8 +86,9 @@ void common_hal_wifi_radio_set_hostname(wifi_radio_obj_t *self, const char *host
     netif_set_hostname(NETIF_AP, self->hostname);
 }
 
-void wifi_radio_get_mac_address(wifi_radio_obj_t *self, uint8_t *mac) {
+bool wifi_radio_get_mac_address(wifi_radio_obj_t *self, uint8_t *mac) {
     memcpy(mac, cyw43_state.mac, MAC_ADDRESS_LENGTH);
+    return true;
 }
 
 mp_obj_t common_hal_wifi_radio_get_mac_address(wifi_radio_obj_t *self) {

@@ -115,9 +115,14 @@ void common_hal_wifi_radio_set_hostname(wifi_radio_obj_t *self, const char *host
     esp_netif_set_hostname(self->ap_netif, hostname);
 }
 
+bool wifi_radio_get_mac_address(wifi_radio_obj_t *self, uint8_t *mac) {
+    esp_wifi_get_mac(ESP_IF_WIFI_STA, mac);
+    return true;
+}
+
 mp_obj_t common_hal_wifi_radio_get_mac_address(wifi_radio_obj_t *self) {
     uint8_t mac[MAC_ADDRESS_LENGTH];
-    esp_wifi_get_mac(ESP_IF_WIFI_STA, mac);
+    wifi_radio_get_mac_address(self, mac);
     return mp_obj_new_bytes(mac, MAC_ADDRESS_LENGTH);
 }
 

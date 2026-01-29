@@ -467,7 +467,7 @@ size_t wifi_radio_send_command_get_response(wifi_radio_obj_t *self, uint8_t cmd,
 }
 
 
-static bool wifi_radio_get_mac_address(wifi_radio_obj_t *self, uint8_t mac[MAC_ADDRESS_LENGTH]) {
+bool wifi_radio_get_mac_address(wifi_radio_obj_t *self, uint8_t *mac) {
     const uint8_t ignored = 0xFF;
     const uint8_t *params[1] = { &ignored };
     size_t param_lengths[1] = { 1 };
