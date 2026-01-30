@@ -503,11 +503,28 @@ SRC_ESPNOW := \
 SRC_C += $(SRC_ESPNOW)
 endif
 
+ifneq ($(CIRCUITPY_ESPSDCARD),0)
+SRC_ESPSDCARD := \
+	$(wildcard common-hal/espsdcard/*.c) \
+	$(wildcard bindings/espsdcard/*.c)
+SRC_C += $(SRC_ESPSDCARD)
+INC += -isystem esp-idf/components/sdmmc/include
+INC += -isystem esp-idf/components/esp_driver_sdmmc/include
+INC += -isystem esp-idf/components/esp_driver_sdspi/include
+INC += -isystem esp-idf/components/driver/spi/include
+endif
+
 ifneq ($(CIRCUITPY_ESPULP),0)
 SRC_ULP := \
 	$(wildcard common-hal/espulp/*.c) \
 	$(wildcard bindings/espulp/*.c)
 SRC_C += $(SRC_ULP)
+endif
+
+ifneq ($(CIRCUITPY_RM690B0),0)
+SRC_RM690B0 := \
+	$(wildcard common-hal/rm690b0/*.c)
+SRC_C += $(SRC_RM690B0)
 endif
 
 ifneq ($(CIRCUITPY_NEOPIXEL_WRITE),0)
@@ -728,6 +745,9 @@ endif
 ifneq ($(CIRCUITPY_SDIOIO),0)
 	ESP_IDF_COMPONENTS_LINK += sdmmc esp_driver_sdmmc
 endif
+
+# Add any board-specific extra components
+ESP_IDF_COMPONENTS_LINK += $(ESP_IDF_EXTRA_COMPONENTS)
 
 ESP_IDF_COMPONENTS_EXPANDED = $(foreach component, $(ESP_IDF_COMPONENTS_LINK), $(BUILD)/esp-idf/esp-idf/$(component)/lib$(component).a)
 
