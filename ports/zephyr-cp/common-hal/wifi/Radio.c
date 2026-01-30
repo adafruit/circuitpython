@@ -71,6 +71,11 @@
 // self->ap_mode = state;
 // }
 
+mp_obj_t common_hal_wifi_radio_get_version(wifi_radio_obj_t *self) {
+    // TODO: Could use APPVERSION, but it seems to not be set to something.
+    return mp_obj_new_str_from_cstr("Zephyr");
+}
+
 bool common_hal_wifi_radio_get_enabled(wifi_radio_obj_t *self) {
     return self->started;
 }

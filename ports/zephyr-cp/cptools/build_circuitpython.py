@@ -239,6 +239,7 @@ def determine_enabled_modules(board_info, portdir, srcdir):
 
     if board_info["wifi"]:
         enabled_modules.add("wifi")
+        enabled_modules.add("ipaddress")
         module_reasons["wifi"] = "Zephyr board has wifi"
 
     if board_info["flash_count"] > 0:

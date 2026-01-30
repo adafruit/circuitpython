@@ -654,7 +654,7 @@ int common_hal_socketpool_socket_setsockopt(socketpool_socket_obj_t *self, int l
     return 0;
 }
 
-bool common_hal_socketpool_readable(socketpool_socket_obj_t *self) {
+bool common_hal_socketpool_socket_readable(socketpool_socket_obj_t *self) {
     // struct timeval immediate = {0, 0};
 
     // fd_set fds;
@@ -667,7 +667,7 @@ bool common_hal_socketpool_readable(socketpool_socket_obj_t *self) {
     return false;
 }
 
-bool common_hal_socketpool_writable(socketpool_socket_obj_t *self) {
+bool common_hal_socketpool_socket_writable(socketpool_socket_obj_t *self) {
     // struct timeval immediate = {0, 0};
 
     // fd_set fds;
