@@ -341,7 +341,7 @@ socketpool_socket_obj_t *common_hal_socketpool_socket_accept(socketpool_socket_o
     }
 }
 
-size_t common_hal_socketpool_socket_bind(socketpool_socket_obj_t *self,
+int common_hal_socketpool_socket_bind(socketpool_socket_obj_t *self,
     const char *host, size_t hostlen, uint32_t port) {
     // struct sockaddr_storage bind_addr;
     const char *broadcast = "<broadcast>";
@@ -381,7 +381,7 @@ size_t common_hal_socketpool_socket_bind(socketpool_socket_obj_t *self,
 }
 
 void socketpool_socket_close(socketpool_socket_obj_t *self) {
-    #if CIRCUITPY_SSL
+    #if CIRCUITPY_SSL_NATIVE
     if (self->ssl_socket) {
         ssl_sslsocket_obj_t *ssl_socket = self->ssl_socket;
         self->ssl_socket = NULL;

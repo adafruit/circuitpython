@@ -50,22 +50,6 @@ static int socketpool_type_to_airlift_type(socketpool_socketpool_sock_t type) {
     }
 }
 
-// // The SOCKETPOOL_ constants are actually the same as the LWIP constants, but it's
-// // possible they might not be, so map them, just in case.
-// static socketpool_socketpool_sock_t airlift_type_to_socketpool_type(int type) {
-//     switch (type) {
-//         case SOCK_STREAM:
-//             return SOCKETPOOL_SOCK_STREAM;
-//         case SOCK_DGRAM:
-//             return SOCKETPOOL_SOCK_DGRAM;
-//         case SOCK_RAW:
-//             return SOCKETPOOL_SOCK_RAW;
-//         default:
-//             mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q"), MP_QSTR_type);
-//     }
-// }
-
-
 static bool _socketpool_socket(socketpool_socketpool_obj_t *self,
     socketpool_socketpool_addressfamily_t family, socketpool_socketpool_sock_t type,
     int proto,
@@ -279,8 +263,7 @@ int common_hal_socketpool_socket_bind(socketpool_socket_obj_t *self,
         mp_raise_RuntimeError_varg(MP_ERROR_TEXT("%q in use"), MP_QSTR_socket);
     }
     if (self->bound) {
-        // Same as CPython.
-        mp_raise_OSError(MP_EINVAL);
+        return MP_EINVAL;
     }
 
     // Validate the host name (which might be a numeric IP string) to an IPv4 address first.
@@ -298,7 +281,7 @@ int common_hal_socketpool_socket_bind(socketpool_socket_obj_t *self,
     if (memcmp(ipv4, zero_ipv4, IPV4_LENGTH) != 0 &&
         memcmp(ipv4, self_ipv4, IPV4_LENGTH) != 0) {
         // Same as CPython.
-        mp_raise_OSError(99);  // EADDRNOTAVAIL (sometimes 125!)
+        return 99;  // EADDRNOTAVAIL (sometimes 125!)
     }
     self->bound = true;
     memcpy(self->hostname, host, hostlen);
