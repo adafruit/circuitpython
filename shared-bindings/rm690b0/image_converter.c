@@ -95,11 +95,11 @@ const char *img_error_string(img_error_t error) {
         case IMG_ERR_BUFFER_TOO_SMALL:
             return "Buffer too small";
         case IMG_ERR_INVALID_FORMAT:
-            return \"Malformed data\";
+            return "Malformed data";
         case IMG_ERR_CORRUPTED_DATA:
-            return \"Corrupted data\";
+            return "Corrupted data";
         case IMG_ERR_UNSUPPORTED:
-            return \"Unsupported format\";
+            return "Unsupported format";
         case IMG_ERR_OUT_OF_MEMORY:
             return "Out of memory";
         case IMG_ERR_IO_ERROR:
