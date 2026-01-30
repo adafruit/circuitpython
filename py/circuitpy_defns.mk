@@ -228,6 +228,9 @@ endif
 ifeq ($(CIRCUITPY_FOURWIRE),1)
 SRC_PATTERNS += fourwire/%
 endif
+ifeq ($(CIRCUITPY_QSPIBUS),1)
+SRC_PATTERNS += qspibus/%
+endif
 ifeq ($(CIRCUITPY_FRAMEBUFFERIO),1)
 SRC_PATTERNS += framebufferio/%
 endif
@@ -371,9 +374,6 @@ SRC_PATTERNS += sdioio/%
 endif
 ifeq ($(CIRCUITPY_SHARPDISPLAY),1)
 SRC_PATTERNS += sharpdisplay/%
-endif
-ifeq ($(CIRCUITPY_RM690B0),1)
-SRC_PATTERNS += rm690b0/%
 endif
 ifeq ($(CIRCUITPY_SOCKETPOOL),1)
 SRC_PATTERNS += socketpool/%
@@ -546,6 +546,8 @@ SRC_COMMON_HAL_ALL = \
 	pulseio/__init__.c \
 	pwmio/PWMOut.c \
 	pwmio/__init__.c \
+	qspibus/QSPIBus.c \
+	qspibus/__init__.c \
 	rclcpy/__init__.c \
 	rclcpy/Node.c \
 	rclcpy/Publisher.c \
@@ -572,7 +574,6 @@ SRC_COMMON_HAL_ALL = \
 	wifi/Radio.c \
 	wifi/ScannedNetworks.c \
 	wifi/__init__.c \
-	rm690b0/RM690B0.c \
 
 SRC_COMMON_HAL = $(filter $(SRC_PATTERNS), $(SRC_COMMON_HAL_ALL))
 
@@ -631,8 +632,6 @@ $(filter $(SRC_PATTERNS), \
 	wifi/AuthMode.c \
 	wifi/Packet.c \
 	wifi/PowerManagement.c \
-	rm690b0/__init__.c \
-	rm690b0/image_converter.c \
 )
 
 ifeq ($(CIRCUITPY_BLEIO_HCI),1)
@@ -904,11 +903,6 @@ endif
 ifeq ($(CIRCUITPY_JPEGIO),1)
 SRC_MOD += lib/tjpgd/src/tjpgd.c
 $(BUILD)/lib/tjpgd/src/tjpgd.o: CFLAGS += -Wno-shadow -Wno-cast-align
-endif
-
-ifneq ($(filter 1,$(CIRCUITPY_JPEGIO) $(CIRCUITPY_RM690B0)),)
-SRC_MOD += lib/esp_jpeg/src/esp_jpeg.c
-CFLAGS_MOD += -I$(TOP)/lib/tjpgd/src -I$(TOP)/lib/esp_jpeg/include
 endif
 
 ifeq ($(CIRCUITPY_HASHLIB_MBEDTLS_ONLY),1)

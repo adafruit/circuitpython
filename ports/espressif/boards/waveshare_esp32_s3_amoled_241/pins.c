@@ -1,17 +1,11 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 Przemyslaw Patrick Socha
+// SPDX-FileCopyrightText: Copyright (c) 2026 Przemyslaw Patrick Socha
 //
 // SPDX-License-Identifier: MIT
 
 #include "py/obj.h"
 #include "py/mphal.h"
 #include "shared-bindings/board/__init__.h"
-#include "shared-bindings/fourwire/FourWire.h"
-#include "shared-bindings/rm690b0/RM690B0.h"
 #include "shared-bindings/microcontroller/Pin.h"
-
-const rm690b0_rm690b0_obj_t rm690b0_rm690b0_init_sequence = {
-    .base = {&rm690b0_rm690b0_type},
-};
 
 static const mp_rom_map_elem_t board_module_globals_table[] = {
     CIRCUITPYTHON_BOARD_DICT_STANDARD_ITEMS
@@ -20,10 +14,13 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     // ONBOARD PERIPHERALS - Functional Names
     // =================================================================
 
-    // Boot/Control/Battery
+    // Boot/Control/Battery/Display Power
+    // NOTE: GPIO16 is shared between battery control circuitry and LCD power
+    // (see CIRCUITPY_QSPIBUS_PANEL_POWER_PIN in mpconfigboard.h).
     { MP_ROM_QSTR(MP_QSTR_BOOT),        MP_ROM_PTR(&pin_GPIO0) },
     { MP_ROM_QSTR(MP_QSTR_KEY_BAT),     MP_ROM_PTR(&pin_GPIO15) },
     { MP_ROM_QSTR(MP_QSTR_BAT_CONTROL), MP_ROM_PTR(&pin_GPIO16) },
+    { MP_ROM_QSTR(MP_QSTR_LCD_POWER),   MP_ROM_PTR(&pin_GPIO16) },
     { MP_ROM_QSTR(MP_QSTR_BAT_ADC),     MP_ROM_PTR(&pin_GPIO17) },
 
     // I2C Bus (shared by Touch, RTC, IMU, IO Expander)
@@ -58,14 +55,14 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_TX),  MP_ROM_PTR(&pin_GPIO43) },
     { MP_ROM_QSTR(MP_QSTR_RX),  MP_ROM_PTR(&pin_GPIO44) },
 
-    // QSPI Display (RM690B0)
-    { MP_ROM_QSTR(MP_QSTR_QSPI_CS),      MP_ROM_PTR(&pin_GPIO9) },
-    { MP_ROM_QSTR(MP_QSTR_QSPI_CLK),     MP_ROM_PTR(&pin_GPIO10) },
-    { MP_ROM_QSTR(MP_QSTR_QSPI_D0),      MP_ROM_PTR(&pin_GPIO11) },
-    { MP_ROM_QSTR(MP_QSTR_QSPI_D1),      MP_ROM_PTR(&pin_GPIO12) },
-    { MP_ROM_QSTR(MP_QSTR_QSPI_D2),      MP_ROM_PTR(&pin_GPIO13) },
-    { MP_ROM_QSTR(MP_QSTR_QSPI_D3),      MP_ROM_PTR(&pin_GPIO14) },
-    { MP_ROM_QSTR(MP_QSTR_AMOLED_RESET), MP_ROM_PTR(&pin_GPIO21) },
+    // QSPI Display (RM690B0) - canonical generic LCD aliases.
+    { MP_ROM_QSTR(MP_QSTR_LCD_CS),    MP_ROM_PTR(&pin_GPIO9) },
+    { MP_ROM_QSTR(MP_QSTR_LCD_CLK),   MP_ROM_PTR(&pin_GPIO10) },
+    { MP_ROM_QSTR(MP_QSTR_LCD_D0),    MP_ROM_PTR(&pin_GPIO11) },
+    { MP_ROM_QSTR(MP_QSTR_LCD_D1),    MP_ROM_PTR(&pin_GPIO12) },
+    { MP_ROM_QSTR(MP_QSTR_LCD_D2),    MP_ROM_PTR(&pin_GPIO13) },
+    { MP_ROM_QSTR(MP_QSTR_LCD_D3),    MP_ROM_PTR(&pin_GPIO14) },
+    { MP_ROM_QSTR(MP_QSTR_LCD_RESET), MP_ROM_PTR(&pin_GPIO21) },
 
     // Display Aliases
     { MP_ROM_QSTR(MP_QSTR_DISPLAY_CS),  MP_ROM_PTR(&pin_GPIO9) },
@@ -76,12 +73,11 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_DISPLAY_D3),  MP_ROM_PTR(&pin_GPIO14) },
     { MP_ROM_QSTR(MP_QSTR_DISPLAY_RST), MP_ROM_PTR(&pin_GPIO21) },
 
-    // SD Card (SPI)
-    { MP_ROM_QSTR(MP_QSTR_SD_MISO), MP_ROM_PTR(&pin_GPIO6) },
-    { MP_ROM_QSTR(MP_QSTR_SD_MOSI), MP_ROM_PTR(&pin_GPIO5) },
-    { MP_ROM_QSTR(MP_QSTR_SD_CLK),  MP_ROM_PTR(&pin_GPIO4) },
-    { MP_ROM_QSTR(MP_QSTR_SD_CS),   MP_ROM_PTR(&pin_GPIO2) },
-    { MP_ROM_QSTR(MP_QSTR_SD_SPI),  MP_ROM_PTR(&board_spi_obj) },
+    // SD Card (SDIO / SDMMC)
+    { MP_ROM_QSTR(MP_QSTR_SDIO_CLK), MP_ROM_PTR(&pin_GPIO4) },
+    { MP_ROM_QSTR(MP_QSTR_SDIO_CMD), MP_ROM_PTR(&pin_GPIO5) },
+    { MP_ROM_QSTR(MP_QSTR_SDIO_D0),  MP_ROM_PTR(&pin_GPIO6) },
+    { MP_ROM_QSTR(MP_QSTR_SDIO_D3),  MP_ROM_PTR(&pin_GPIO2) },
 
     // =================================================================
     // GENERAL PURPOSE I/O (IOxx - Espressif Convention)
@@ -95,8 +91,6 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_IO7),   MP_ROM_PTR(&pin_GPIO7) },   // Available
     { MP_ROM_QSTR(MP_QSTR_IO8),   MP_ROM_PTR(&pin_GPIO8) },   // Available
     { MP_ROM_QSTR(MP_QSTR_IO18),  MP_ROM_PTR(&pin_GPIO18) },  // Available
-    { MP_ROM_QSTR(MP_QSTR_IO38),  MP_ROM_PTR(&pin_GPIO38) },  // Available
-    { MP_ROM_QSTR(MP_QSTR_IO39),  MP_ROM_PTR(&pin_GPIO39) },  // Available
     { MP_ROM_QSTR(MP_QSTR_IO40),  MP_ROM_PTR(&pin_GPIO40) },  // Available
     { MP_ROM_QSTR(MP_QSTR_IO41),  MP_ROM_PTR(&pin_GPIO41) },  // Available
     { MP_ROM_QSTR(MP_QSTR_IO42),  MP_ROM_PTR(&pin_GPIO42) },  // Available

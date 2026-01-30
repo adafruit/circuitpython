@@ -38,6 +38,9 @@
 #if CIRCUITPY_DOTCLOCKFRAMEBUFFER
 #include "common-hal/dotclockframebuffer/DotClockFramebuffer.h"
 #endif
+#if CIRCUITPY_QSPIBUS
+#include "shared-bindings/qspibus/QSPIBus.h"
+#endif
 // Port unique frame buffers.
 #if CIRCUITPY_VIDEOCORE
 #include "bindings/videocore/Framebuffer.h"
@@ -80,6 +83,9 @@ typedef struct {
         #endif
         #if CIRCUITPY_AURORA_EPAPER
         aurora_epaper_framebuffer_obj_t aurora_epaper;
+        #endif
+        #if CIRCUITPY_QSPIBUS
+        qspibus_qspibus_obj_t qspi_bus;
         #endif
     };
 } primary_display_bus_t;

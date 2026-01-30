@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "supervisor/board.h"
+#pragma once
 
-void board_init(void) {
-}
+#include "py/obj.h"
+#include "shared-bindings/qspibus/QSPIBus.h"
