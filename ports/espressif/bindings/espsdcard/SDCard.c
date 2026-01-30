@@ -26,9 +26,15 @@
 //|         import busio
 //|         import espsdcard as sdcardio
 //|         spi = busio.SPI(board.SD_CLK, MOSI=board.SD_MOSI, MISO=board.SD_MISO)
-//|         sd = sdcardio.SDCard(spi, board.SD_CS)
+//|         sd = sdcardio.SDCard(spi, cs=board.SD_CS)
 //|
-//|     Pattern 2 (espsdcard native)::
+//|     Pattern 2 (espsdcard native with positional CS)::
+//|
+//|         import espsdcard
+//|         sd = espsdcard.SDCard(board.SD_CS, miso=board.SD_MISO,
+//|                               mosi=board.SD_MOSI, clk=board.SD_CLK)
+//|
+//|     Pattern 2b (espsdcard native with keyword-only pins)::
 //|
 //|         import espsdcard
 //|         sd = espsdcard.SDCard(cs=board.SD_CS, miso=board.SD_MISO,
@@ -113,12 +119,16 @@ static mp_obj_t espsdcard_sdcard_make_new(const mp_obj_type_t *type, size_t n_ar
         }
         cs_pin = validate_obj_is_free_pin(args[ARG_cs].u_obj, MP_QSTR_cs);
 
-        // Extract pins from SPI object
+        // IMPORTANT: Extract pin references BEFORE deinitializing the SPI object.
+        // The pin pointers reference static mcu_pin_obj_t objects that remain valid
+        // after SPI deinit, but we extract them first for clarity and safety.
+        // After deinit, the spi object's pin fields may be set to NULL.
         clk_pin = spi->clock;
         mosi_pin = spi->MOSI;
         miso_pin = spi->MISO;
 
-        // Deinit the user's SPI (we're taking over the bus)
+        // Deinit the user's SPI - we're taking over the bus with ESP-IDF drivers.
+        // This releases CircuitPython's claim on the pins so we can reconfigure them.
         common_hal_busio_spi_deinit(spi);
 
     } else if (args[ARG_spi_or_cs].u_obj != mp_const_none) {

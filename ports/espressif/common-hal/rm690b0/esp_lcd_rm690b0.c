@@ -42,7 +42,7 @@ typedef struct {
     int y_gap;
     uint8_t fb_bits_per_pixel;
     uint8_t madctl_val; // save current value of LCD_CMD_MADCTL register
-    uint8_t colmod_val; // save surrent value of LCD_CMD_COLMOD register
+    uint8_t colmod_val; // save current value of LCD_CMD_COLMOD register
     const rm690b0_lcd_init_cmd_t *init_cmds;
     uint16_t init_cmds_size;
     struct {
@@ -297,21 +297,22 @@ static esp_err_t panel_rm690b0_invert_color(esp_lcd_panel_t *panel, bool invert_
 static esp_err_t panel_rm690b0_mirror(esp_lcd_panel_t *panel, bool mirror_x, bool mirror_y) {
     rm690b0_panel_t *rm690b0 = __containerof(panel, rm690b0_panel_t, base);
     esp_lcd_panel_io_handle_t io = rm690b0->io;
-    esp_err_t ret = ESP_OK;
+
+    if (mirror_y) {
+        ESP_LOGE(TAG, "mirror_y is not supported by this panel");
+        return ESP_ERR_NOT_SUPPORTED;
+    }
 
     if (mirror_x) {
         rm690b0->madctl_val |= BIT(6);
     } else {
         rm690b0->madctl_val &= ~BIT(6);
     }
-    if (mirror_y) {
-        ESP_LOGE(TAG, "mirror_y is not supported by this panel");
-        ret = ESP_ERR_NOT_SUPPORTED;
-    }
+
     ESP_RETURN_ON_ERROR(tx_param(rm690b0, io, LCD_CMD_MADCTL, (uint8_t[]) {
         rm690b0->madctl_val
     }, 1), TAG, "send command failed");
-    return ret;
+    return ESP_OK;
 }
 
 static esp_err_t panel_rm690b0_swap_xy(esp_lcd_panel_t *panel, bool swap_axes) {

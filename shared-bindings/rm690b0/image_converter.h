@@ -18,9 +18,9 @@ typedef enum {
     IMG_ERR_NULL_POINTER = -1,      // NULL pointer passed
     IMG_ERR_INVALID_SIZE = -2,      // Invalid image dimensions
     IMG_ERR_BUFFER_TOO_SMALL = -3,  // Output buffer too small
-    IMG_ERR_INVALID_FORMAT = -4,    // Invalid or unsupported format
-    IMG_ERR_CORRUPTED_DATA = -5,    // Corrupted image data
-    IMG_ERR_UNSUPPORTED = -6,       // Unsupported feature
+    IMG_ERR_INVALID_FORMAT = -4,    // Malformed data (bad signature, corrupted headers)
+    IMG_ERR_CORRUPTED_DATA = -5,    // Corrupted image data (truncated, checksum mismatch)
+    IMG_ERR_UNSUPPORTED = -6,       // Valid format but unsupported feature (bit depth, compression)
     IMG_ERR_OUT_OF_MEMORY = -7,     // Memory allocation failed
     IMG_ERR_IO_ERROR = -8           // File I/O error
 } img_error_t;
@@ -42,12 +42,20 @@ typedef struct {
 // RGB Conversion Macros
 // =============================================================================
 
-// Convert 24-bit RGB to 16-bit RGB565
+// Convert 24-bit RGB888 to 16-bit RGB565
 // Format: RRRR RGGG GGGB BBBB (5 bits R, 6 bits G, 5 bits B)
+//
+// This is an intentional lossy conversion:
+//   - Red:   8 bits → 5 bits (loses 3 LSBs, 0xF8 mask keeps bits 7:3)
+//   - Green: 8 bits → 6 bits (loses 2 LSBs, 0xFC mask keeps bits 7:2)
+//   - Blue:  8 bits → 5 bits (loses 3 LSBs, right-shift discards bits 2:0)
+//
+// Color precision is reduced from 16.7M colors (24-bit) to 65K colors (16-bit).
 #define RGB888_TO_RGB565(r, g, b) \
     ((((r) & 0xF8) << 8) | (((g) & 0xFC) << 3) | ((b) >> 3))
 
-// Extract components from RGB565
+// Extract components from RGB565 back to 8-bit (with zero-filled LSBs)
+// Note: Extracted values have lower bits set to 0, not interpolated
 #define RGB565_TO_R(rgb565) (((rgb565) >> 8) & 0xF8)
 #define RGB565_TO_G(rgb565) (((rgb565) >> 3) & 0xFC)
 #define RGB565_TO_B(rgb565) (((rgb565) << 3) & 0xF8)
@@ -147,10 +155,25 @@ img_error_t img_jpg_parse_header(
  *
  * @param width  Image width in pixels
  * @param height Image height in pixels
- * @return       Required buffer size in bytes
+ * @return       Required buffer size in bytes, or SIZE_MAX on overflow
+ *
+ * @note Caller should check if return value == SIZE_MAX to detect overflow.
+ *       RGB565 uses 2 bytes per pixel, so buffer size = width * height * 2.
  */
 static inline size_t img_rgb565_buffer_size(uint32_t width, uint32_t height) {
-    return (size_t)width * height * 2;
+    // Check for overflow: width * height must not exceed SIZE_MAX / 2
+    // First check width * height overflow
+    if (width != 0 && height > SIZE_MAX / width) {
+        return SIZE_MAX;  // Overflow in width * height
+    }
+    size_t pixel_count = (size_t)width * height;
+
+    // Check for overflow when multiplying by 2 (bytes per pixel)
+    if (pixel_count > SIZE_MAX / 2) {
+        return SIZE_MAX;  // Overflow in pixel_count * 2
+    }
+
+    return pixel_count * 2;
 }
 
 /**

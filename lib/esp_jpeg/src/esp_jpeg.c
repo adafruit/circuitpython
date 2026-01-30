@@ -15,7 +15,13 @@
 #include "esp_heap_caps.h"
 #endif
 
+// TJpgDec work buffer size (heap allocated)
 #define ESP_JPEG_TJPGD_WORK_BUFFER_SIZE 4096
+
+// Maximum pixels per decoded block for on_block callback mode.
+// This determines the stack usage of esp_jpeg_output():
+//   Stack usage = ESP_JPEG_MAX_BLOCK_PIXELS * sizeof(uint16_t) = 512 bytes
+// Ensure sufficient stack space when using on_block callback in deeply nested contexts.
 #define ESP_JPEG_MAX_BLOCK_PIXELS      256
 
 typedef struct {
@@ -51,6 +57,30 @@ static void esp_jpeg_free(void *ptr) {
 #else
     free(ptr);
 #endif
+}
+
+/**
+ * @brief Calculate RGB565 buffer size with overflow protection.
+ *
+ * @param width  Image width in pixels
+ * @param height Image height in pixels
+ * @param out_size Output: buffer size in bytes (only valid if function returns true)
+ * @return true if calculation succeeded, false if overflow detected
+ */
+static bool esp_jpeg_calc_rgb565_size(uint32_t width, uint32_t height, size_t *out_size) {
+    // Check for overflow: width * height must fit in size_t
+    if (width != 0 && height > SIZE_MAX / width) {
+        return false;
+    }
+    size_t pixel_count = (size_t)width * height;
+
+    // Check for overflow when multiplying by 2 (bytes per pixel)
+    if (pixel_count > SIZE_MAX / 2) {
+        return false;
+    }
+
+    *out_size = pixel_count * 2;
+    return true;
 }
 
 static size_t esp_jpeg_input(JDEC *jd, uint8_t *buff, size_t ndata) {
@@ -103,12 +133,24 @@ static int esp_jpeg_output(JDEC *jd, void *bitmap, JRECT *rect) {
     } else if (ctx->on_block != NULL) {
         uint32_t width = (uint32_t)rect->right - (uint32_t)rect->left + 1;
         uint32_t height = (uint32_t)rect->bottom - (uint32_t)rect->top + 1;
-        uint32_t total = width * height;
-        if (total == 0 || total > ESP_JPEG_MAX_BLOCK_PIXELS) {
+
+        // Validate dimensions individually to prevent overflow in multiplication.
+        // Since ESP_JPEG_MAX_BLOCK_PIXELS is 256, if either dimension exceeds it,
+        // the total would exceed the limit anyway.
+        if (width == 0 || height == 0 ||
+            width > ESP_JPEG_MAX_BLOCK_PIXELS || height > ESP_JPEG_MAX_BLOCK_PIXELS) {
             ctx->last_error = ESP_ERR_INVALID_SIZE;
             return 0;
         }
 
+        uint32_t total = width * height;  // Safe: max is 256 * 256 = 65536
+        if (total > ESP_JPEG_MAX_BLOCK_PIXELS) {
+            ctx->last_error = ESP_ERR_INVALID_SIZE;
+            return 0;
+        }
+
+        // Stack-allocated buffer for pixel conversion (512 bytes).
+        // See ESP_JPEG_MAX_BLOCK_PIXELS definition for stack usage notes.
         uint16_t block_pixels[ESP_JPEG_MAX_BLOCK_PIXELS];
         const uint8_t *block_src = (const uint8_t *)bitmap;
         for (uint32_t i = 0; i < total; i++) {
@@ -193,7 +235,12 @@ esp_err_t esp_jpeg_get_image_info(const esp_jpeg_image_cfg_t *cfg, esp_jpeg_imag
     out->width = jdec.width;
     out->height = jdec.height;
     out->outbuf = NULL;
-    out->outbuf_size = (size_t)jdec.width * jdec.height * 2;
+
+    // Calculate buffer size with overflow protection
+    if (!esp_jpeg_calc_rgb565_size(jdec.width, jdec.height, &out->outbuf_size)) {
+        esp_jpeg_free(work);
+        return ESP_ERR_INVALID_SIZE;
+    }
 
     esp_jpeg_free(work);
     return ESP_OK;
@@ -216,7 +263,12 @@ esp_err_t esp_jpeg_decode(const esp_jpeg_image_cfg_t *cfg, esp_jpeg_image_output
         return err;
     }
 
-    size_t required_size = (size_t)jdec.width * jdec.height * 2;
+    // Calculate required buffer size with overflow protection
+    size_t required_size;
+    if (!esp_jpeg_calc_rgb565_size(jdec.width, jdec.height, &required_size)) {
+        esp_jpeg_free(work);
+        return ESP_ERR_INVALID_SIZE;
+    }
     if (cfg->outbuf != NULL && cfg->outbuf_size < required_size) {
         esp_jpeg_free(work);
         return ESP_ERR_NO_MEM;

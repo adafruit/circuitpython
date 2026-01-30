@@ -76,7 +76,10 @@ void common_hal_espsdcard_sdcard_construct(
     // Allocate card structure
     self->card = (sdmmc_card_t *)malloc(sizeof(sdmmc_card_t));
     if (self->card == NULL) {
-        spi_bus_free((spi_host_device_t)spi_host);
+        if (self->spi_bus_initialized) {
+            spi_bus_free((spi_host_device_t)spi_host);
+            self->spi_bus_initialized = false;
+        }
         mp_raise_msg(&mp_type_MemoryError, MP_ERROR_TEXT("No memory for SD card structure"));
         return;
     }
@@ -155,15 +158,10 @@ void common_hal_espsdcard_sdcard_deinit(espsdcard_sdcard_obj_t *self) {
 
     // Free SPI bus only if we initialized it
     if (self->spi_bus_initialized) {
-        esp_err_t ret = spi_bus_free((spi_host_device_t)self->spi_host);
-        if (ret == ESP_OK) {
-            self->spi_bus_initialized = false;
-        }
-        // If it fails, it might be in use - just mark as not initialized
-        // to prevent double-free attempts
-        else {
-            self->spi_bus_initialized = false;
-        }
+        // If spi_bus_free fails, it might be in use by another component.
+        // Mark as not initialized regardless to prevent double-free attempts.
+        (void)spi_bus_free((spi_host_device_t)self->spi_host);
+        self->spi_bus_initialized = false;
     }
 
     // Release pins

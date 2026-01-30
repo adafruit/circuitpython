@@ -901,12 +901,10 @@ SRC_MOD += $(addprefix lib/AnimatedGIF/, \
 $(BUILD)/lib/AnimatedGIF/gif.o: CFLAGS += -DCIRCUITPY
 endif
 
-ifeq ($(CIRCUITPY_JPEGIO),1)
+# tjpgd library is needed for both JPEGIO and RM690B0 JPEG support
+ifneq ($(filter 1,$(CIRCUITPY_JPEGIO) $(CIRCUITPY_RM690B0)),)
 SRC_MOD += lib/tjpgd/src/tjpgd.c
 $(BUILD)/lib/tjpgd/src/tjpgd.o: CFLAGS += -Wno-shadow -Wno-cast-align
-endif
-
-ifneq ($(filter 1,$(CIRCUITPY_JPEGIO) $(CIRCUITPY_RM690B0)),)
 SRC_MOD += lib/esp_jpeg/src/esp_jpeg.c
 CFLAGS_MOD += -I$(TOP)/lib/tjpgd/src -I$(TOP)/lib/esp_jpeg/include
 endif

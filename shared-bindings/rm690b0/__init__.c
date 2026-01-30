@@ -99,13 +99,14 @@ static mp_obj_t rm690b0_bmp_to_rgb565(mp_obj_t bmp_data_obj) {
     vstr_t vstr;
     vstr_init_len(&vstr, buffer_size);
 
-    // Convert
+    // Convert - store error string before cleanup to preserve error context
     err = img_bmp_to_rgb565(bufinfo.buf, bufinfo.len,
         (uint8_t *)vstr.buf, buffer_size, &info);
     if (err != IMG_OK) {
+        const char *error_text = img_error_string(err);
         vstr_clear(&vstr);
         mp_raise_msg_varg(&mp_type_ValueError,
-            MP_ERROR_TEXT("BMP conversion failed (%s)"), img_error_string(err));
+            MP_ERROR_TEXT("BMP conversion failed (%s)"), error_text);
     }
 
     // Create info dict
@@ -145,17 +146,22 @@ static mp_obj_t rm690b0_jpg_to_rgb565(mp_obj_t jpg_data_obj) {
     err = img_jpg_to_rgb565(bufinfo.buf, bufinfo.len,
         (uint8_t *)vstr.buf, buffer_size, &info);
 
-    // If function returns unsupported, JPEG support was not compiled in
-    if (err == IMG_ERR_UNSUPPORTED) {
-        vstr_clear(&vstr);
-        mp_raise_NotImplementedError(MP_ERROR_TEXT("JPEG support not compiled in"));
-    }
-
+    // Handle errors with centralized cleanup
     if (err != IMG_OK) {
+        // Capture error info before cleanup
         const char *error_text = img_error_string(err);
+        bool is_unsupported = (err == IMG_ERR_UNSUPPORTED);
+
+        // Cleanup
         vstr_clear(&vstr);
-        mp_raise_msg_varg(&mp_type_ValueError,
-            MP_ERROR_TEXT("JPEG conversion failed (%s)"), error_text);
+
+        // Raise appropriate exception
+        if (is_unsupported) {
+            mp_raise_NotImplementedError(MP_ERROR_TEXT("JPEG support not compiled in"));
+        } else {
+            mp_raise_msg_varg(&mp_type_ValueError,
+                MP_ERROR_TEXT("JPEG conversion failed (%s)"), error_text);
+        }
     }
 
     // Create info dict

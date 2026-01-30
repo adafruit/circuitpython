@@ -5,6 +5,7 @@
 #include "image_converter.h"
 #include <string.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 #ifdef CIRCUITPY
 #include "py/misc.h"
@@ -24,9 +25,34 @@
 #define USE_ESP_JPEG 0
 #endif
 
+// =============================================================================
+// Platform-Specific Memory Allocation
+// =============================================================================
+//
+// IMAGE_MALLOC/IMAGE_FREE provide platform-appropriate memory allocation for
+// temporary buffers used during image decoding. Behavior varies by platform:
+//
+// ESP_PLATFORM (ESP32, ESP32-S3, etc.):
+//   - Priority: SPIRAM (PSRAM) first, then internal RAM
+//   - Rationale: Image buffers can be large; SPIRAM preserves precious internal RAM
+//   - Failure: Returns NULL if both allocations fail
+//
+// CIRCUITPY (CircuitPython runtime):
+//   - Uses m_malloc_maybe() which is GC-aware and returns NULL on failure
+//   - Memory is tracked by the garbage collector
+//   - Failure: Returns NULL (does not raise exception)
+//
+// Other platforms (desktop, testing):
+//   - Uses standard malloc()/free()
+//   - Failure: Returns NULL per C standard
+//
+// All platforms: Caller MUST check for NULL return and handle gracefully.
+// =============================================================================
+
 #if !USE_ESP_JPEG
 #if defined(ESP_PLATFORM)
 static void *image_malloc(size_t size) {
+    // Try SPIRAM first (larger, slower), fall back to internal RAM (faster, limited)
     void *ptr = heap_caps_malloc(size, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     if (!ptr) {
         ptr = heap_caps_malloc(size, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
@@ -69,11 +95,11 @@ const char *img_error_string(img_error_t error) {
         case IMG_ERR_BUFFER_TOO_SMALL:
             return "Buffer too small";
         case IMG_ERR_INVALID_FORMAT:
-            return "Invalid format";
+            return \"Malformed data\";
         case IMG_ERR_CORRUPTED_DATA:
-            return "Corrupted data";
+            return \"Corrupted data\";
         case IMG_ERR_UNSUPPORTED:
-            return "Unsupported feature";
+            return \"Unsupported format\";
         case IMG_ERR_OUT_OF_MEMORY:
             return "Out of memory";
         case IMG_ERR_IO_ERROR:
@@ -163,6 +189,9 @@ img_error_t img_bmp_parse_header(
     info->width = (uint32_t)width;
     info->height = (uint32_t)(height > 0 ? height : -height);
     info->data_size = img_rgb565_buffer_size(info->width, info->height);
+    if (info->data_size == SIZE_MAX) {
+        return IMG_ERR_INVALID_SIZE;  // Overflow in buffer size calculation
+    }
     info->bit_depth = bit_count;
     info->channels = (bit_count == 32) ? 4 : 3;
     info->has_alpha = (bit_count == 32);
@@ -208,12 +237,29 @@ img_error_t img_bmp_to_rgb565(
     // Determine if image is bottom-up (positive height) or top-down (negative height)
     bool bottom_up = (height_signed > 0);
 
-    // Calculate bytes per pixel and row stride
+    // Calculate bytes per pixel and row stride with overflow checking
     uint32_t bytes_per_pixel = bit_count / 8;
+
+    // Check for overflow in width * bytes_per_pixel
+    if (bytes_per_pixel != 0 && width > (UINT32_MAX - 3) / bytes_per_pixel) {
+        return IMG_ERR_INVALID_SIZE;
+    }
+
     uint32_t row_stride = ((width * bytes_per_pixel + 3) & ~3);  // Rows padded to 4-byte boundary
 
+    // Check for overflow in row_stride * height
+    if (height != 0 && row_stride > UINT32_MAX / height) {
+        return IMG_ERR_INVALID_SIZE;
+    }
+    uint32_t total_data_size = row_stride * height;
+
+    // Check for overflow in data_offset + total_data_size
+    if (data_offset > UINT32_MAX - total_data_size) {
+        return IMG_ERR_INVALID_SIZE;
+    }
+
     // Verify we have enough data
-    if (data_offset + (row_stride * height) > bmp_size) {
+    if (data_offset + total_data_size > bmp_size) {
         return IMG_ERR_CORRUPTED_DATA;
     }
 
@@ -307,6 +353,9 @@ img_error_t img_jpg_parse_header(
     info->width = out.width;
     info->height = out.height;
     info->data_size = img_rgb565_buffer_size(out.width, out.height);
+    if (info->data_size == SIZE_MAX) {
+        return IMG_ERR_INVALID_SIZE;  // Overflow in buffer size calculation
+    }
     info->bit_depth = 8;
     info->channels = 3;
     info->has_alpha = false;
@@ -453,6 +502,10 @@ img_error_t img_jpg_to_rgb565(
     }
 
     size_t required_size = img_rgb565_buffer_size(jdec.width, jdec.height);
+    if (required_size == SIZE_MAX) {
+        IMAGE_FREE(work_buffer);
+        return IMG_ERR_INVALID_SIZE;  // Overflow in buffer size calculation
+    }
     if (buffer_size < required_size) {
         IMAGE_FREE(work_buffer);
         return IMG_ERR_BUFFER_TOO_SMALL;
@@ -518,6 +571,10 @@ img_error_t img_jpg_parse_header(
     info->width = jdec.width;
     info->height = jdec.height;
     info->data_size = img_rgb565_buffer_size(jdec.width, jdec.height);
+    if (info->data_size == SIZE_MAX) {
+        IMAGE_FREE(work_buffer);
+        return IMG_ERR_INVALID_SIZE;  // Overflow in buffer size calculation
+    }
     info->bit_depth = 8;
     info->channels = 3;
     info->has_alpha = false;
