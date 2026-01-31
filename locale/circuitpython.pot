@@ -710,8 +710,8 @@ msgstr ""
 msgid "Buffer must be a multiple of %d bytes"
 msgstr ""
 
-#: ports/espressif/common-hal/espsdcard/SDCard.c
-msgid "Buffer must be multiple of 512 bytes"
+#: ports/espressif/common-hal/sdcardio/SDCard.c
+msgid "Buffer must be a multiple of 512 bytes"
 msgstr ""
 
 #: shared-bindings/_bleio/PacketBuffer.c
@@ -1744,7 +1744,7 @@ msgstr ""
 msgid "No long integer support"
 msgstr ""
 
-#: ports/espressif/common-hal/espsdcard/SDCard.c
+#: ports/espressif/common-hal/sdcardio/SDCard.c
 msgid "No memory for SD card structure"
 msgstr ""
 
@@ -2104,11 +2104,6 @@ msgstr ""
 msgid "Random number generation error"
 msgstr ""
 
-#: ports/espressif/common-hal/espsdcard/SDCard.c
-#, c-format
-msgid "Read failed: %d"
-msgstr ""
-
 #: shared-bindings/_bleio/__init__.c
 #: shared-bindings/memorymonitor/AllocationSize.c
 #: shared-bindings/pulseio/PulseIn.c shared-module/bitmaptools/__init__.c
@@ -2164,24 +2159,12 @@ msgstr ""
 msgid "SD card CSD format not supported"
 msgstr ""
 
-#: ports/espressif/common-hal/espsdcard/SDCard.c
+#: ports/espressif/common-hal/sdcardio/SDCard.c
 #, c-format
 msgid "SD card init failed: %d"
 msgstr ""
 
-#: ports/espressif/common-hal/espsdcard/SDCard.c
-msgid "SD card not found"
-msgstr ""
-
-#: ports/espressif/common-hal/espsdcard/SDCard.c
-msgid "SD card not mounted"
-msgstr ""
-
-#: ports/espressif/common-hal/espsdcard/SDCard.c
-msgid "SD card not responding"
-msgstr ""
-
-#: ports/espressif/common-hal/espsdcard/SDCard.c
+#: ports/espressif/common-hal/sdcardio/SDCard.c
 #, c-format
 msgid "SD host init failed: %d"
 msgstr ""
@@ -2201,9 +2184,17 @@ msgstr ""
 msgid "SDIO Init Error %x"
 msgstr ""
 
-#: ports/espressif/common-hal/espsdcard/SDCard.c
+#: ports/espressif/common-hal/sdcardio/SDCard.c
+msgid "SPI bus already deinitialized"
+msgstr ""
+
+#: ports/espressif/common-hal/sdcardio/SDCard.c
 #, c-format
 msgid "SPI bus init failed: %d"
+msgstr ""
+
+#: ports/espressif/common-hal/sdcardio/SDCard.c
+msgid "SPI bus must have MOSI, MISO, and CLK pins"
 msgstr ""
 
 #: ports/espressif/common-hal/busio/SPI.c
@@ -2653,11 +2644,6 @@ msgstr ""
 
 #: main.c
 msgid "Woken up by alarm.\n"
-msgstr ""
-
-#: ports/espressif/common-hal/espsdcard/SDCard.c
-#, c-format
-msgid "Write failed: %d"
 msgstr ""
 
 #: ports/espressif/common-hal/_bleio/PacketBuffer.c
@@ -3232,18 +3218,6 @@ msgstr ""
 msgid "cross is defined for 1D arrays of length 3"
 msgstr ""
 
-#: ports/espressif/bindings/espsdcard/SDCard.c
-msgid "cs pin required"
-msgstr ""
-
-#: ports/espressif/bindings/espsdcard/SDCard.c
-msgid "cs pin required when using busio.SPI"
-msgstr ""
-
-#: ports/espressif/bindings/espsdcard/SDCard.c
-msgid "cs, miso, mosi, and clk pins required"
-msgstr ""
-
 #: extmod/ulab/code/scipy/optimize/optimize.c
 msgid "data must be iterable"
 msgstr ""
@@ -3408,10 +3382,6 @@ msgstr ""
 
 #: ports/espressif/common-hal/rm690b0/RM690B0.c
 msgid "fill_color: unable to allocate DMA buffer"
-msgstr ""
-
-#: shared-bindings/storage/__init__.c
-msgid "filesystem must provide mount method"
 msgstr ""
 
 #: extmod/ulab/code/numpy/vector.c
@@ -3889,10 +3859,6 @@ msgstr ""
 msgid "memoryview: length is not a multiple of itemsize"
 msgstr ""
 
-#: ports/espressif/bindings/espsdcard/SDCard.c
-msgid "miso, mosi, and clk pins required"
-msgstr ""
-
 #: extmod/modtime.c
 msgid "mktime needs a tuple of length 8 or 9"
 msgstr ""
@@ -3982,7 +3948,7 @@ msgstr ""
 msgid "nested index must be int"
 msgstr ""
 
-#: shared-module/sdcardio/SDCard.c
+#: ports/espressif/common-hal/sdcardio/SDCard.c shared-module/sdcardio/SDCard.c
 msgid "no SD card"
 msgstr ""
 

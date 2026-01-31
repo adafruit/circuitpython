@@ -83,10 +83,10 @@ void automount_sd_card(void) {
     #endif
 
     sdcard.base.type = &sdcardio_SDCard_type;
-    
+
     // For native ESP sdcardio, use the common_hal constructor which takes over the SPI bus
     common_hal_sdcardio_sdcard_construct(&sdcard, spi_obj, DEFAULT_SD_CS, 25000000);
-    
+
     // Check if initialization succeeded
     if (!sdcard.mounted) {
         _mounted = false;
