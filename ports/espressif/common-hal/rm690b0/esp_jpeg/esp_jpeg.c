@@ -4,7 +4,7 @@
 //
 // Minimal esp_jpeg implementation backed by TJpgDec.
 
-#include "esp_jpeg/esp_jpeg.h"
+#include "esp_jpeg.h"
 
 #include <string.h>
 #include <stdlib.h>

@@ -518,8 +518,12 @@ endif
 
 ifneq ($(CIRCUITPY_RM690B0),0)
 SRC_RM690B0 := \
-	$(wildcard common-hal/rm690b0/*.c)
+	$(wildcard common-hal/rm690b0/*.c) \
+	$(wildcard common-hal/rm690b0/esp_jpeg/*.c)
 SRC_C += $(SRC_RM690B0)
+INC += -Icommon-hal/rm690b0/esp_jpeg
+# TJpgDec is needed for the esp_jpeg shim
+INC += -I../../lib/tjpgd
 endif
 
 ifneq ($(CIRCUITPY_NEOPIXEL_WRITE),0)

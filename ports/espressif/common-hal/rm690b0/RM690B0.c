@@ -29,7 +29,7 @@ static const char *TAG = "rm690b0";
 #include <stdint.h>
 #include <limits.h>
 #include "esp_attr.h"
-#include "esp_jpeg/esp_jpeg.h"
+#include "esp_jpeg.h"
 #include "fonts/rm690b0_font_8x8.h"
 #include "fonts/rm690b0_font_16x16.h"
 #include "fonts/rm690b0_font_16x24.h"
