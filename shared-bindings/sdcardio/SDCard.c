@@ -9,7 +9,6 @@
 #include "py/objarray.h"
 
 #include "shared-bindings/sdcardio/SDCard.h"
-#include "shared-module/sdcardio/SDCard.h"
 #include "common-hal/busio/SPI.h"
 #include "shared-bindings/busio/SPI.h"
 #include "shared-bindings/microcontroller/Pin.h"

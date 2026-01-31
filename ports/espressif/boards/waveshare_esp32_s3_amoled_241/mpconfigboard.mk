@@ -40,9 +40,6 @@ CIRCUITPY_JPEGIO = 1
 CIRCUITPY_FRAMEBUFFERIO = 1
 CIRCUITPY_RM690B0 = 1
 
-# Enable SD card support with native ESP-IDF drivers
-CIRCUITPY_ESPSDCARD = 1
-
 # Enable ESP-NOW for peer-to-peer wireless communication
 CIRCUITPY_ESPNOW = 1
 
@@ -75,6 +72,7 @@ CIRCUITPY_USB_MIDI = 1
 # Storage configuration
 CIRCUITPY_STORAGE = 1
 CIRCUITPY_NVM = 1
+CIRCUITPY_SDCARDIO = 1
 
 # Enable touch support
 CIRCUITPY_TOUCHIO = 0

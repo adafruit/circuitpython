@@ -503,15 +503,10 @@ SRC_ESPNOW := \
 SRC_C += $(SRC_ESPNOW)
 endif
 
-ifneq ($(CIRCUITPY_ESPSDCARD),0)
-SRC_ESPSDCARD := \
-	$(wildcard common-hal/espsdcard/*.c) \
-	$(wildcard bindings/espsdcard/*.c)
-SRC_C += $(SRC_ESPSDCARD)
+ifneq ($(CIRCUITPY_SDCARDIO),0)
 INC += -isystem esp-idf/components/sdmmc/include
 INC += -isystem esp-idf/components/esp_driver_sdmmc/include
 INC += -isystem esp-idf/components/esp_driver_sdspi/include
-INC += -isystem esp-idf/components/driver/spi/include
 endif
 
 ifneq ($(CIRCUITPY_ESPULP),0)

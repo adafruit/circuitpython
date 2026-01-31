@@ -7,7 +7,16 @@
 
 #pragma once
 
+#include "common-hal/busio/SPI.h"
+#include "common-hal/microcontroller/Pin.h"
+
+// Include port-specific common-hal or shared-module implementation based on build config.
+// When CIRCUITPY_SDCARDIO_USE_NATIVE is set, the port provides a common-hal implementation.
+#ifdef CIRCUITPY_SDCARDIO_USE_NATIVE
+#include "common-hal/sdcardio/SDCard.h"
+#else
 #include "shared-module/sdcardio/SDCard.h"
+#endif
 
 extern const mp_obj_type_t sdcardio_SDCard_type;
 
