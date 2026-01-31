@@ -840,7 +840,7 @@ endif
 
 # Use the native sdcardio if requested. This provides ESP-IDF sdspi_host-based
 # SD card access with significantly better performance than the shared-module.
-ifeq ($(CIRCUITPY_SDCARDIO_USE_NATIVE),1)
+ifeq ($(CIRCUITPY_SDCARDIO_ESPRESSIF),1)
 SRC_COMMON_HAL_ALL += \
 	sdcardio/SDCard.c \
 	sdcardio/__init__.c

@@ -503,7 +503,7 @@ SRC_ESPNOW := \
 SRC_C += $(SRC_ESPNOW)
 endif
 
-ifneq ($(CIRCUITPY_SDCARDIO),0)
+ifneq ($(CIRCUITPY_SDCARDIO_ESPRESSIF),0)
 INC += -isystem esp-idf/components/sdmmc/include
 INC += -isystem esp-idf/components/esp_driver_sdmmc/include
 INC += -isystem esp-idf/components/esp_driver_sdspi/include
