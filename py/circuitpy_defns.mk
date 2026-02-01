@@ -632,7 +632,6 @@ $(filter $(SRC_PATTERNS), \
 	wifi/Packet.c \
 	wifi/PowerManagement.c \
 	rm690b0/__init__.c \
-	rm690b0/image_converter.c \
 )
 
 ifeq ($(CIRCUITPY_BLEIO_HCI),1)
@@ -915,8 +914,7 @@ endif
 ifneq ($(filter 1,$(CIRCUITPY_JPEGIO) $(CIRCUITPY_RM690B0)),)
 SRC_MOD += lib/tjpgd/src/tjpgd.c
 $(BUILD)/lib/tjpgd/src/tjpgd.o: CFLAGS += -Wno-shadow -Wno-cast-align
-SRC_MOD += lib/esp_jpeg/src/esp_jpeg.c
-CFLAGS_MOD += -I$(TOP)/lib/tjpgd/src -I$(TOP)/lib/esp_jpeg/include
+CFLAGS_MOD += -I$(TOP)/lib/tjpgd/src
 endif
 
 ifeq ($(CIRCUITPY_HASHLIB_MBEDTLS_ONLY),1)

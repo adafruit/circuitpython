@@ -332,17 +332,48 @@ static mp_obj_t rm690b0_rm690b0_blit_jpeg(size_t n_args, const mp_obj_t *args) {
 }
 MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(rm690b0_rm690b0_blit_jpeg_obj, 4, 4, rm690b0_rm690b0_blit_jpeg);
 
-static mp_obj_t rm690b0_rm690b0_blit_buffer(size_t n_args, const mp_obj_t *args) {
+//|     def convert_bmp(self, src_data: readablebuffer, dest_bitmap: displayio.Bitmap) -> None:
+//|         """Convert a BMP file (internal buffer) to a displayio.Bitmap in RGB565 format (RGB/BGR swapped for display).
+//|
+//|         :param readablebuffer src_data: The full BMP file data
+//|         :param displayio.Bitmap dest_bitmap: The destination bitmap (must be correct size)"""
+//|         ...
+static mp_obj_t rm690b0_rm690b0_convert_bmp(size_t n_args, const mp_obj_t *args) {
     rm690b0_rm690b0_obj_t *self = MP_OBJ_TO_PTR(args[0]);
-    mp_int_t x = mp_obj_get_int(args[1]);
-    mp_int_t y = mp_obj_get_int(args[2]);
-    mp_int_t width = mp_obj_get_int(args[3]);
-    mp_int_t height = mp_obj_get_int(args[4]);
-    mp_obj_t bitmap_data = args[5];
-    common_hal_rm690b0_rm690b0_blit_buffer(self, x, y, width, height, bitmap_data);
+    mp_obj_t src_data = args[1];
+    mp_obj_t dest_bitmap = args[2];
+    common_hal_rm690b0_rm690b0_convert_bmp(self, src_data, dest_bitmap);
     return mp_const_none;
 }
-MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(rm690b0_rm690b0_blit_buffer_obj, 6, 6, rm690b0_rm690b0_blit_buffer);
+MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(rm690b0_rm690b0_convert_bmp_obj, 3, 3, rm690b0_rm690b0_convert_bmp);
+
+
+static mp_obj_t rm690b0_rm690b0_blit_buffer(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    enum { ARG_x, ARG_y, ARG_width, ARG_height, ARG_bitmap_data, ARG_dest_is_swapped };
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_x, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
+        { MP_QSTR_y, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
+        { MP_QSTR_width, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
+        { MP_QSTR_height, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
+        { MP_QSTR_bitmap_data, MP_ARG_REQUIRED | MP_ARG_OBJ, {.u_obj = MP_OBJ_NULL} },
+        { MP_QSTR_dest_is_swapped, MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = false} },
+    };
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    rm690b0_rm690b0_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
+    mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args,
+        MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    common_hal_rm690b0_rm690b0_blit_buffer(self,
+        args[ARG_x].u_int,
+        args[ARG_y].u_int,
+        args[ARG_width].u_int,
+        args[ARG_height].u_int,
+        args[ARG_bitmap_data].u_obj,
+        args[ARG_dest_is_swapped].u_bool
+    );
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_KW(rm690b0_rm690b0_blit_buffer_obj, 1, rm690b0_rm690b0_blit_buffer);
 
 //|     def swap_buffers(self, copy: bool = True) -> None:
 //|         """Swap the front and back framebuffers and display the result
@@ -465,6 +496,7 @@ static const mp_rom_map_elem_t rm690b0_rm690b0_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_blit_buffer), MP_ROM_PTR(&rm690b0_rm690b0_blit_buffer_obj) },
     { MP_ROM_QSTR(MP_QSTR_blit_bmp), MP_ROM_PTR(&rm690b0_rm690b0_blit_bmp_obj) },
     { MP_ROM_QSTR(MP_QSTR_blit_jpeg), MP_ROM_PTR(&rm690b0_rm690b0_blit_jpeg_obj) },
+    { MP_ROM_QSTR(MP_QSTR_convert_bmp), MP_ROM_PTR(&rm690b0_rm690b0_convert_bmp_obj) },
     { MP_ROM_QSTR(MP_QSTR_swap_buffers), MP_ROM_PTR(&rm690b0_rm690b0_swap_buffers_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_width), MP_ROM_PTR(&rm690b0_rm690b0_width_obj) },

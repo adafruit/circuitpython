@@ -2894,6 +2894,21 @@ void common_hal_rm690b0_rm690b0_vline(rm690b0_rm690b0_obj_t *self, mp_int_t x, m
     common_hal_rm690b0_rm690b0_fill_rect(self, x, y, 1, height, color);
 }
 
+//|     def blit_buffer(self, x: int, y: int, width: int, height: int, bitmap_data: bytearray, *, dest_is_swapped: bool = False) -> None:
+//|         """Draw a bitmap
+//|
+//|         :param int x: X coordinate of the top-left corner
+//|         :param int y: Y coordinate of the top-left corner
+//|         :param int width: Width of the bitmap
+//|         :param int height: Height of the bitmap
+//|         :param bytearray bitmap_data: Bitmap data (buffer protocol)
+//|         :param bool dest_is_swapped: If True, data is assumed to be in destination byte order (Big Endian) and will not be swapped.
+//|                                      Useful for JpegDecoder output which is already swapped. Default is False (Little Endian input).
+//|         """
+//|         ...
+//|
+
+
 void common_hal_rm690b0_rm690b0_rect(rm690b0_rm690b0_obj_t *self, mp_int_t x, mp_int_t y, mp_int_t width, mp_int_t height, mp_int_t color) {
     common_hal_rm690b0_rm690b0_hline(self, x, y, width, color);
     common_hal_rm690b0_rm690b0_hline(self, x, y + height - 1, width, color);
@@ -3434,7 +3449,7 @@ mp_float_t common_hal_rm690b0_rm690b0_get_brightness(const rm690b0_rm690b0_obj_t
     return (mp_float_t)raw / 255.0f;
 }
 
-void common_hal_rm690b0_rm690b0_blit_buffer(rm690b0_rm690b0_obj_t *self, mp_int_t x, mp_int_t y, mp_int_t width, mp_int_t height, mp_obj_t bitmap_data) {
+void common_hal_rm690b0_rm690b0_blit_buffer(rm690b0_rm690b0_obj_t *self, mp_int_t x, mp_int_t y, mp_int_t width, mp_int_t height, mp_obj_t bitmap_data, bool dest_is_swapped) {
     CHECK_INITIALIZED();
 
     if (width <= 0 || height <= 0) {
@@ -3503,13 +3518,22 @@ void common_hal_rm690b0_rm690b0_blit_buffer(rm690b0_rm690b0_obj_t *self, mp_int_
     uint16_t *framebuffer = impl->framebuffer;
     size_t fb_stride = RM690B0_PANEL_WIDTH;
 
+    // If source is already swapped (BE) and we need BE for display, we skip the swap.
+    // If source is normal (LE) and we need BE (display), we swap.
+    // Standard blit_buffer assumes LE input and swaps to BE.
+    // IF dest_is_swapped is TRUE, it means the SOURCE is already in destination format (BE).
+    
     switch (self->rotation) {
         case 0:
             for (mp_int_t row = 0; row < logical_h; row++) {
                 const uint16_t *src_row = src_pixels + (size_t)row * src_stride;
                 uint16_t *dst_row = framebuffer + (size_t)(phys_y + row) * fb_stride + phys_x;
-                for (mp_int_t col = 0; col < logical_w; col++) {
-                    dst_row[col] = RGB565_SWAP_GB(src_row[col]);
+                if (dest_is_swapped) {
+                    memcpy(dst_row, src_row, logical_w * sizeof(uint16_t));
+                } else {
+                    for (mp_int_t col = 0; col < logical_w; col++) {
+                        dst_row[col] = RGB565_SWAP_GB(src_row[col]);
+                    }
                 }
             }
             break;
@@ -3518,7 +3542,8 @@ void common_hal_rm690b0_rm690b0_blit_buffer(rm690b0_rm690b0_obj_t *self, mp_int_
                 const uint16_t *src_row = src_pixels + (size_t)(logical_h - 1 - row) * src_stride;
                 uint16_t *dst_row = framebuffer + (size_t)(phys_y + row) * fb_stride + phys_x;
                 for (mp_int_t col = 0; col < logical_w; col++) {
-                    dst_row[col] = RGB565_SWAP_GB(src_row[logical_w - 1 - col]);
+                    uint16_t val = src_row[logical_w - 1 - col];
+                    dst_row[col] = dest_is_swapped ? val : RGB565_SWAP_GB(val);
                 }
             }
             break;
@@ -3531,7 +3556,8 @@ void common_hal_rm690b0_rm690b0_blit_buffer(rm690b0_rm690b0_obj_t *self, mp_int_
                     mp_int_t src_row_idx = logical_h - 1 - col;
                     mp_int_t src_col_idx = row;
                     const uint16_t *src_row = src_pixels + (size_t)src_row_idx * src_stride;
-                    dst_row[col] = RGB565_SWAP_GB(src_row[src_col_idx]);
+                    uint16_t val = src_row[src_col_idx];
+                    dst_row[col] = dest_is_swapped ? val : RGB565_SWAP_GB(val);
                 }
             }
             break;
@@ -3545,7 +3571,8 @@ void common_hal_rm690b0_rm690b0_blit_buffer(rm690b0_rm690b0_obj_t *self, mp_int_
                     mp_int_t src_row_idx = col;
                     mp_int_t src_col_idx = logical_w - 1 - row;
                     const uint16_t *src_row = src_pixels + (size_t)src_row_idx * src_stride;
-                    dst_row[col] = RGB565_SWAP_GB(src_row[src_col_idx]);
+                    uint16_t val = src_row[src_col_idx];
+                    dst_row[col] = dest_is_swapped ? val : RGB565_SWAP_GB(val);
                 }
             }
             break;
@@ -3655,5 +3682,81 @@ void common_hal_rm690b0_rm690b0_swap_buffers(rm690b0_rm690b0_obj_t *self, bool c
         mp_raise_msg_varg(&mp_type_RuntimeError,
             MP_ERROR_TEXT("Failed to refresh display: %s (0x%x)"),
             esp_err_to_name(ret), ret);
+    }
+}
+
+void common_hal_rm690b0_rm690b0_convert_bmp(rm690b0_rm690b0_obj_t *self, mp_obj_t src_data, mp_obj_t dest_bitmap) {
+    mp_buffer_info_t src_info;
+    mp_get_buffer_raise(src_data, &src_info, MP_BUFFER_READ);
+
+    mp_buffer_info_t dest_info;
+    mp_get_buffer_raise(dest_bitmap, &dest_info, MP_BUFFER_WRITE);
+
+    if (src_info.len < sizeof(bmp_header_t)) {
+        mp_raise_ValueError(MP_ERROR_TEXT("BMP data too small"));
+        return;
+    }
+
+    const bmp_header_t *header = (const bmp_header_t *)src_info.buf;
+
+    if (header->type != 0x4D42) { // 'BM'
+        mp_raise_ValueError(MP_ERROR_TEXT("Invalid BMP header"));
+        return;
+    }
+
+    if (header->bpp != 24 && header->bpp != 16) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Only 16-bit and 24-bit BMP supported"));
+        return;
+    }
+
+    if (header->compression != 0 && header->compression != 3) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Compressed BMP not supported"));
+        return;
+    }
+
+    mp_int_t width = header->width;
+    mp_int_t height = abs(header->height);
+    bool top_down = (header->height < 0);
+    size_t data_offset = header->offset;
+
+    if (data_offset >= src_info.len) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Invalid BMP data offset"));
+        return;
+    }
+    
+    // Check destination size implicitly by buffer length
+    // We assume the user created the bitmap correctly. We will not overflow the buffer.
+    size_t max_dest_pixels = dest_info.len / sizeof(uint16_t);
+    if ((size_t)(width * height) > max_dest_pixels) {
+         mp_raise_ValueError(MP_ERROR_TEXT("Destination bitmap too small"));
+         return;
+    }
+    
+    // Pointers
+    uint16_t *dest_buf = (uint16_t *)dest_info.buf;
+    const uint8_t *src_pixels = (const uint8_t *)src_info.buf + data_offset;
+    
+    int row_padding = (4 - ((width * (header->bpp / 8)) % 4)) % 4;
+    int src_stride = width * (header->bpp / 8) + row_padding;
+    
+    for (int row = 0; row < height; row++) {
+         int src_row_idx = top_down ? row : (height - 1 - row);
+         const uint8_t *row_ptr = src_pixels + (size_t)src_row_idx * src_stride;
+         uint16_t *dst_row_ptr = dest_buf + (size_t)row * width; // Dense packing in Bitmap
+         
+         if (header->bpp == 24) {
+             for (int col = 0; col < width; col++) {
+                 uint8_t b = row_ptr[col * 3];
+                 uint8_t g = row_ptr[col * 3 + 1];
+                 uint8_t r = row_ptr[col * 3 + 2];
+                 uint16_t rgb = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
+                 dst_row_ptr[col] = RGB565_SWAP_GB(rgb); 
+             }
+         } else {
+             for (int col = 0; col < width; col++) {
+                 uint16_t val = row_ptr[col * 2] | (row_ptr[col * 2 + 1] << 8);
+                 dst_row_ptr[col] = RGB565_SWAP_GB(val);
+             }
+         }
     }
 }
