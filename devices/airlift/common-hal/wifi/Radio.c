@@ -524,6 +524,7 @@ static void wifi_radio_get_dns_config(wifi_radio_obj_t *self, mp_obj_t dns_ipv4_
         responses, response_lengths, LENGTHS_8, MP_ARRAY_SIZE(responses),
         AIRLIFT_DEFAULT_TIMEOUT_MS);
 
+    *num_dns = 0;
     if (num_responses == 2) {
         for (size_t dns_i = 0; dns_i < 2; dns_i++) {
             // Only count the non-zero IP addresses.
