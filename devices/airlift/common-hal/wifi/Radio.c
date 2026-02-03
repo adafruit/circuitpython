@@ -1072,7 +1072,8 @@ void common_hal_wifi_radio_set_ipv4_dns(wifi_radio_obj_t *self, mp_obj_t ipv4_dn
 
     const uint8_t *params[3] = { &valid_params_arg, dns_bytes, zero_dns_bytes };
     size_t param_lengths[3] = { 1, IPV4_LENGTH, IPV4_LENGTH };
-    uint8_t *responses[1];
+    uint8_t result = 0;
+    uint8_t *responses[1] = { &result };
     size_t response_lengths[1];
 
     size_t num_responses = wifi_radio_send_command_get_response(self, SET_DNS_CONFIG,
@@ -1080,7 +1081,7 @@ void common_hal_wifi_radio_set_ipv4_dns(wifi_radio_obj_t *self, mp_obj_t ipv4_dn
         responses, response_lengths, LENGTHS_8, MP_ARRAY_SIZE(responses),
         AIRLIFT_DEFAULT_TIMEOUT_MS);
 
-    if (num_responses == 0 || responses[0][0] != 1) {
+    if (num_responses == 0 || result != 1) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Failed"));
     }
 }
