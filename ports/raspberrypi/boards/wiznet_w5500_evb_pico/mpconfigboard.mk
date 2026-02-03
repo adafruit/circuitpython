@@ -12,6 +12,8 @@ CIRCUITPY__EVE = 1
 CIRCUITPY_FLOPPYIO = 0
 CIRCUITPY_SSL_NATIVE = 1
 CIRCUITPY_USB_HOST = 0
+# cannot have both AirLift and Ethernet support simultaneously, due to SSL conflicts.
+CIRCUITPY_WIFI_AIRLIFT = 0
 
 # The default is -O3. Change to -O2 because the build was overflowing.
 OPTIMIZATION_FLAGS = -O2
