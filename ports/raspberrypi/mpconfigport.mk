@@ -25,9 +25,8 @@ CIRCUITPY_SYNTHIO_MAX_CHANNELS = 24
 CIRCUITPY_USB_HOST ?= 1
 CIRCUITPY_USB_VIDEO ?= 1
 
-ifeq ($(CIRCUITPY_CYW43),0)
-CIRCUITPY_WIFI_AIRLIFT ?= 1
-endif
+# Turn on AirLift support if there is no CYW43 support.
+CIRCUITPY_WIFI_AIRLIFT ?= $(if $(filter $(CIRCUITPY_CYW43),0),1,0)
 
 # Things that need to be implemented.
 CIRCUITPY_FREQUENCYIO = 0
