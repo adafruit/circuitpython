@@ -29,7 +29,7 @@
 
 
 // Print out SPI traffic with AirLift.
-#define DEBUG_AIRLIFT 0
+#define DEBUG_AIRLIFT 1
 
 #if DEBUG_AIRLIFT
 static const char *command_name(uint8_t command) {
@@ -346,7 +346,7 @@ bool wifi_radio_send_command(wifi_radio_obj_t *self, uint8_t cmd,
 
     #if DEBUG_AIRLIFT
     PLAT_PRINTF(">cmd %s (%02x)\n", command_name(cmd), cmd);
-    #endif // DEBUG_AIRLIFT
+    #endif
 
     for (size_t i = 0; i < num_params; i++) {
         switch (param_lengths_size) {
@@ -399,34 +399,48 @@ size_t wifi_radio_wait_response_cmd(wifi_radio_obj_t *self, uint8_t cmd,
     wifi_radio_read_and_check_byte(self, cmd | REPLY_FLAG);
     uint8_t num_responses = wifi_radio_read_byte(self);
 
-    if (num_responses > max_responses) {
-        num_responses = max_responses;
-    }
-
+    #if DEBUG_AIRLIFT
     if (num_responses == 0) {
         PLAT_PRINTF("<zero responses\n\n");
     }
+    #endif
+
     for (size_t i = 0; i < num_responses; i++) {
         size_t response_length = wifi_radio_read_byte(self);
         // Two-byte response lengths are big-endian.
         if (response_lengths_size == LENGTHS_16) {
             response_length = (response_length << 8) | wifi_radio_read_byte(self);
         }
-        // Don't overflow the supplied buffer.
-        size_t read_length = MIN(response_length, response_lengths[i]);
-        wifi_radio_read(self, responses[i], read_length);
-        // Update the passed-in length with what was actually read, so the caller knows how many bytes
-        // were read for each response.
-        response_lengths[i] = read_length;
 
-        // Read and discard bytes that didn't fit in buffer.
-        if (read_length > response_lengths[i]) {
+        size_t discard_count = 0;
+        if (i >= max_responses) {
+            // Discard all responses past max_responses.
+            discard_count = response_length;
+
             #if DEBUG_AIRLIFT
-            PLAT_PRINTF("<!! response %d too long. expected %d, got %d\n", i, response_lengths[i], response_length);
+            PLAT_PRINTF("<!! discarding response %d past max_responses: %d\n", i, max_responses);
             #endif
-            while (read_length-- > 0) {
-                wifi_radio_read_byte(self);
+        } else {
+            // Don't overflow the supplied buffer.
+            size_t length_to_read = MIN(response_length, response_lengths[i]);
+
+            wifi_radio_read(self, responses[i], length_to_read);
+            // Update the passed-in length with what was actually read, so the caller knows how many bytes
+            // were read for each response.
+            response_lengths[i] = length_to_read;
+
+            if (response_length > response_lengths[i]) {
+                discard_count = response_length - response_lengths[i];
+
+                #if DEBUG_AIRLIFT
+                PLAT_PRINTF("<!! response %d too long. max %d, got %d\n", i, response_lengths[i], response_length);
+                #endif
             }
+        }
+
+        // Discard any extra bytes, or discard whole response if it's past max responses.
+        while (discard_count-- > 0) {
+            wifi_radio_read_byte(self);
         }
 
         #if DEBUG_AIRLIFT
@@ -450,7 +464,7 @@ size_t wifi_radio_wait_response_cmd(wifi_radio_obj_t *self, uint8_t cmd,
 
     spi_end_transaction(self);
 
-    return num_responses;
+    return MIN(num_responses, max_responses);
 }
 
 size_t wifi_radio_send_command_get_response(wifi_radio_obj_t *self, uint8_t cmd,

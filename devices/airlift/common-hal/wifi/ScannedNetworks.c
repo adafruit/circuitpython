@@ -29,7 +29,6 @@ mp_obj_t wifi_scannednetworks_do_scan(wifi_radio_obj_t *self) {
     size_t num_networks = wifi_radio_send_command_get_response(self, SCAN_NETWORKS,
         NULL, NULL, LENGTHS_8, 0,
         network_responses, network_response_lengths, LENGTHS_8, AIRLIFT_MAX_NETWORKS,
-//        AIRLIFT_DEFAULT_TIMEOUT_MS);
         10000);
 
     // Now fetch each network's details and store them in Network objects.

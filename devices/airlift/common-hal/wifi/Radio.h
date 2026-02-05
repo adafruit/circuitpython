@@ -162,8 +162,8 @@ typedef enum {
 
 #define AIRLIFT_DEFAULT_TIMEOUT_MS (1000)
 
-// Maximum is 10 in NINA-FW.
-#define AIRLIFT_MAX_NETWORKS (10)
+// More networks may be found, but we return a max of 20.
+#define AIRLIFT_MAX_NETWORKS (20)
 // SSID does not include a terminating null byte, because the length is passed.
 #define MAX_SSID_LENGTH (32)
 // NINA-FW allows this length internally. Does not include trailing null.
