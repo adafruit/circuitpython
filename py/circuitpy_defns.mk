@@ -375,9 +375,6 @@ endif
 ifeq ($(CIRCUITPY_SHARPDISPLAY),1)
 SRC_PATTERNS += sharpdisplay/%
 endif
-ifeq ($(CIRCUITPY_RM690B0),1)
-SRC_PATTERNS += rm690b0/%
-endif
 ifeq ($(CIRCUITPY_SOCKETPOOL),1)
 SRC_PATTERNS += socketpool/%
 endif
@@ -577,7 +574,6 @@ SRC_COMMON_HAL_ALL = \
 	wifi/Radio.c \
 	wifi/ScannedNetworks.c \
 	wifi/__init__.c \
-	rm690b0/RM690B0.c \
 
 SRC_COMMON_HAL = $(filter $(SRC_PATTERNS), $(SRC_COMMON_HAL_ALL))
 
@@ -636,7 +632,6 @@ $(filter $(SRC_PATTERNS), \
 	wifi/AuthMode.c \
 	wifi/Packet.c \
 	wifi/PowerManagement.c \
-	rm690b0/__init__.c \
 )
 
 ifeq ($(CIRCUITPY_BLEIO_HCI),1)
@@ -915,8 +910,8 @@ SRC_MOD += $(addprefix lib/AnimatedGIF/, \
 $(BUILD)/lib/AnimatedGIF/gif.o: CFLAGS += -DCIRCUITPY
 endif
 
-# tjpgd library is needed for both JPEGIO and RM690B0 JPEG support
-ifneq ($(filter 1,$(CIRCUITPY_JPEGIO) $(CIRCUITPY_RM690B0)),)
+# tjpgd library is needed for JPEGIO support.
+ifneq ($(filter 1,$(CIRCUITPY_JPEGIO)),)
 SRC_MOD += lib/tjpgd/src/tjpgd.c
 $(BUILD)/lib/tjpgd/src/tjpgd.o: CFLAGS += -Wno-shadow -Wno-cast-align
 CFLAGS_MOD += -I$(TOP)/lib/tjpgd/src

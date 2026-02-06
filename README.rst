@@ -10,6 +10,44 @@ CircuitPython
 `Branding <#branding>`__ \| `Differences from Micropython <#differences-from-micropython>`__ \|
 `Project Structure <#project-structure>`__
 
+Breaking Changes (v2.0)
+-----------------------
+
+The standalone ``rm690b0`` module was removed in favor of ``displayio + qspibus`` integration.
+
+Migration is required for all code that used ``import rm690b0``.
+
+Old API (no longer available)::
+
+    import rm690b0
+    rm690b0.init_display()
+    rm690b0.fill_color(rm690b0.RED)
+    rm690b0.swap_buffers()
+
+New API (v2.0+)::
+
+    import board
+    import displayio
+    import qspibus
+    from adafruit_rm690b0 import RM690B0
+
+    displayio.release_displays()
+    bus = qspibus.QSPIBus(
+        clock=board.LCD_CLK,
+        data0=board.LCD_D0,
+        data1=board.LCD_D1,
+        data2=board.LCD_D2,
+        data3=board.LCD_D3,
+        cs=board.LCD_CS,
+        reset=board.LCD_RESET,
+        frequency=40_000_000,
+    )
+    panel = RM690B0(bus, width=600, height=450)
+    display = displayio.Display(panel, width=600, height=450)
+
+For migration details, see:
+``/home/pps/Downloads/__ai__/repos/ws-esp32-s3-amoled-241/docs/MIGRATION_GUIDE.md``.
+
 **CircuitPython** is a *beginner friendly*, open source version of Python for tiny, inexpensive
 computers called microcontrollers. Microcontrollers are the brains of many electronics including a
 wide variety of development boards used to build hobby projects and prototypes. CircuitPython in

@@ -5,13 +5,7 @@
 #include "py/obj.h"
 #include "py/mphal.h"
 #include "shared-bindings/board/__init__.h"
-#include "shared-bindings/fourwire/FourWire.h"
-#include "shared-bindings/rm690b0/RM690B0.h"
 #include "shared-bindings/microcontroller/Pin.h"
-
-const rm690b0_rm690b0_obj_t rm690b0_rm690b0_init_sequence = {
-    .base = {&rm690b0_rm690b0_type},
-};
 
 static const mp_rom_map_elem_t board_module_globals_table[] = {
     CIRCUITPYTHON_BOARD_DICT_STANDARD_ITEMS
@@ -58,7 +52,16 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_TX),  MP_ROM_PTR(&pin_GPIO43) },
     { MP_ROM_QSTR(MP_QSTR_RX),  MP_ROM_PTR(&pin_GPIO44) },
 
-    // QSPI Display (RM690B0)
+    // QSPI Display (RM690B0) - canonical generic LCD aliases.
+    { MP_ROM_QSTR(MP_QSTR_LCD_CS),    MP_ROM_PTR(&pin_GPIO9) },
+    { MP_ROM_QSTR(MP_QSTR_LCD_CLK),   MP_ROM_PTR(&pin_GPIO10) },
+    { MP_ROM_QSTR(MP_QSTR_LCD_D0),    MP_ROM_PTR(&pin_GPIO11) },
+    { MP_ROM_QSTR(MP_QSTR_LCD_D1),    MP_ROM_PTR(&pin_GPIO12) },
+    { MP_ROM_QSTR(MP_QSTR_LCD_D2),    MP_ROM_PTR(&pin_GPIO13) },
+    { MP_ROM_QSTR(MP_QSTR_LCD_D3),    MP_ROM_PTR(&pin_GPIO14) },
+    { MP_ROM_QSTR(MP_QSTR_LCD_RESET), MP_ROM_PTR(&pin_GPIO21) },
+
+    // Backward-compatible aliases used by existing tests/scripts.
     { MP_ROM_QSTR(MP_QSTR_QSPI_CS),      MP_ROM_PTR(&pin_GPIO9) },
     { MP_ROM_QSTR(MP_QSTR_QSPI_CLK),     MP_ROM_PTR(&pin_GPIO10) },
     { MP_ROM_QSTR(MP_QSTR_QSPI_D0),      MP_ROM_PTR(&pin_GPIO11) },

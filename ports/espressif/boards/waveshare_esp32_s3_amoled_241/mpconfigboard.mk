@@ -25,7 +25,7 @@ CIRCUITPY_ESP_PSRAM_SIZE = 8MB
 CIRCUITPY_ESP_PSRAM_MODE = opi
 CIRCUITPY_ESP_PSRAM_FREQ = 80m
 
-# Add extra ESP-IDF components needed for board_init.c and rm690b0 module
+# Add extra ESP-IDF components needed for board bring-up and display stack
 ESP_IDF_EXTRA_COMPONENTS += driver freertos esp_lcd sdmmc esp_driver_sdmmc esp_driver_sdspi
 
 # Build optimization
@@ -40,7 +40,8 @@ CIRCUITPY_RGBMATRIX = 0
 CIRCUITPY_BITMAPTOOLS = 1
 CIRCUITPY_JPEGIO = 1
 CIRCUITPY_FRAMEBUFFERIO = 1
-CIRCUITPY_RM690B0 = 1
+# RM690B0 standalone module removed in Phase 4.
+# Display path is now: qspibus + displayio + user-space panel driver.
 
 # Enable ESP-NOW for peer-to-peer wireless communication
 CIRCUITPY_ESPNOW = 1

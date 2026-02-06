@@ -19,8 +19,18 @@
 #define LCD_CMD_RAMWRC (0x3CU)
 #define LCD_CMD_DISPOFF (0x28U)
 #define LCD_CMD_SLPIN (0x10U)
-#ifndef CIRCUITPY_RM690B0_POWER_ON_LEVEL
-#define CIRCUITPY_RM690B0_POWER_ON_LEVEL (1)
+#if defined(CIRCUITPY_LCD_POWER)
+#define CIRCUITPY_QSPIBUS_PANEL_POWER_PIN CIRCUITPY_LCD_POWER
+#elif defined(CIRCUITPY_RM690B0_POWER)
+#define CIRCUITPY_QSPIBUS_PANEL_POWER_PIN CIRCUITPY_RM690B0_POWER
+#endif
+
+#ifndef CIRCUITPY_LCD_POWER_ON_LEVEL
+    #if defined(CIRCUITPY_RM690B0_POWER_ON_LEVEL)
+        #define CIRCUITPY_LCD_POWER_ON_LEVEL CIRCUITPY_RM690B0_POWER_ON_LEVEL
+    #else
+        #define CIRCUITPY_LCD_POWER_ON_LEVEL (1)
+    #endif
 #endif
 
 static void qspibus_send_command_bytes(
@@ -184,13 +194,13 @@ void common_hal_qspibus_qspibus_construct(
     claim_pin(data3);
     claim_pin(cs);
 
-    #ifdef CIRCUITPY_RM690B0_POWER
-    const mcu_pin_obj_t *power = CIRCUITPY_RM690B0_POWER;
+    #ifdef CIRCUITPY_QSPIBUS_PANEL_POWER_PIN
+    const mcu_pin_obj_t *power = CIRCUITPY_QSPIBUS_PANEL_POWER_PIN;
     if (power != NULL) {
         self->power_pin = power->number;
         claim_pin(power);
         gpio_set_direction((gpio_num_t)self->power_pin, GPIO_MODE_OUTPUT);
-        gpio_set_level((gpio_num_t)self->power_pin, CIRCUITPY_RM690B0_POWER_ON_LEVEL ? 1 : 0);
+        gpio_set_level((gpio_num_t)self->power_pin, CIRCUITPY_LCD_POWER_ON_LEVEL ? 1 : 0);
         // Panel power rail needs extra settle time before reset/init commands.
         vTaskDelay(pdMS_TO_TICKS(200));
     }
