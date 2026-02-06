@@ -48,6 +48,12 @@ New API (v2.0+)::
 For migration details, see:
 ``/home/pps/Downloads/__ai__/repos/ws-esp32-s3-amoled-241/docs/MIGRATION_GUIDE.md``.
 
+For v2.0 release notes, see:
+``CHANGES.md``.
+
+For hardware test procedure (Phase 1-4), see:
+``/home/pps/Downloads/__ai__/repos/ws-esp32-s3-amoled-241/docs/TESTING_GUIDE.md``.
+
 **CircuitPython** is a *beginner friendly*, open source version of Python for tiny, inexpensive
 computers called microcontrollers. Microcontrollers are the brains of many electronics including a
 wide variety of development boards used to build hobby projects and prototypes. CircuitPython in
