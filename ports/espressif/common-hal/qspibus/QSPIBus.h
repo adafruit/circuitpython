@@ -31,9 +31,13 @@ typedef struct {
     int8_t data3_pin;
     int8_t cs_pin;
     int8_t reset_pin; // -1 when reset line is not provided.
+    int8_t power_pin; // -1 when board has no explicit display power pin.
 
     uint32_t frequency;
     bool bus_initialized;
+    bool in_transaction;
+    bool has_pending_command;
+    uint8_t pending_command;
 
     // Signaled from ISR when panel IO transfer completes.
     SemaphoreHandle_t transfer_done_sem;

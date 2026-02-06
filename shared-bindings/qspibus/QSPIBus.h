@@ -9,6 +9,8 @@
 
 #include "py/obj.h"
 
+#include "shared-bindings/displayio/__init__.h"
+
 #include "common-hal/microcontroller/Pin.h"
 #include "common-hal/qspibus/QSPIBus.h"
 
@@ -28,10 +30,20 @@ void common_hal_qspibus_qspibus_construct(
 void common_hal_qspibus_qspibus_deinit(qspibus_qspibus_obj_t *self);
 bool common_hal_qspibus_qspibus_deinited(qspibus_qspibus_obj_t *self);
 
-void common_hal_qspibus_qspibus_send(
+void common_hal_qspibus_qspibus_send_command(
     qspibus_qspibus_obj_t *self,
     uint8_t command,
     const uint8_t *data,
     size_t len);
 
-bool common_hal_qspibus_qspibus_bus_free(qspibus_qspibus_obj_t *self);
+bool common_hal_qspibus_qspibus_reset(mp_obj_t obj);
+bool common_hal_qspibus_qspibus_bus_free(mp_obj_t obj);
+bool common_hal_qspibus_qspibus_begin_transaction(mp_obj_t obj);
+void common_hal_qspibus_qspibus_send(
+    mp_obj_t obj,
+    display_byte_type_t data_type,
+    display_chip_select_behavior_t chip_select,
+    const uint8_t *data,
+    uint32_t data_length);
+void common_hal_qspibus_qspibus_end_transaction(mp_obj_t obj);
+void common_hal_qspibus_qspibus_collect_ptrs(mp_obj_t obj);
