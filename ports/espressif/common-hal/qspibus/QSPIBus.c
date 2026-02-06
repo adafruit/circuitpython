@@ -11,7 +11,9 @@
 #include "py/runtime.h"
 
 #include "driver/gpio.h"
+#include "esp_heap_caps.h"
 #include "soc/soc_caps.h"
+#include <string.h>
 
 #define QSPI_OPCODE_WRITE_CMD (0x02U)
 #define QSPI_OPCODE_WRITE_COLOR (0x32U)
@@ -19,6 +21,9 @@
 #define LCD_CMD_RAMWRC (0x3CU)
 #define LCD_CMD_DISPOFF (0x28U)
 #define LCD_CMD_SLPIN (0x10U)
+#define QSPI_DMA_BUFFER_COUNT (2U)
+#define QSPI_DMA_BUFFER_SIZE (16U * 1024U)
+#define QSPI_COLOR_TIMEOUT_MS (1000U)
 #if defined(CIRCUITPY_LCD_POWER)
 #define CIRCUITPY_QSPIBUS_PANEL_POWER_PIN CIRCUITPY_LCD_POWER
 #elif defined(CIRCUITPY_RM690B0_POWER)
@@ -33,6 +38,71 @@
     #endif
 #endif
 
+static void qspibus_release_dma_buffers(qspibus_qspibus_obj_t *self) {
+    for (size_t i = 0; i < QSPI_DMA_BUFFER_COUNT; i++) {
+        if (self->dma_buffer[i] != NULL) {
+            heap_caps_free(self->dma_buffer[i]);
+            self->dma_buffer[i] = NULL;
+        }
+    }
+    self->dma_buffer_size = 0;
+    self->active_buffer = 0;
+    self->inflight_transfers = 0;
+    self->transfer_in_progress = false;
+}
+
+static bool qspibus_allocate_dma_buffers(qspibus_qspibus_obj_t *self) {
+    const size_t candidates[] = {
+        QSPI_DMA_BUFFER_SIZE,
+        QSPI_DMA_BUFFER_SIZE / 2,
+        QSPI_DMA_BUFFER_SIZE / 4,
+    };
+
+    for (size_t c = 0; c < MP_ARRAY_SIZE(candidates); c++) {
+        size_t size = candidates[c];
+        bool ok = true;
+        for (size_t i = 0; i < QSPI_DMA_BUFFER_COUNT; i++) {
+            self->dma_buffer[i] = heap_caps_malloc(size, MALLOC_CAP_DMA | MALLOC_CAP_8BIT);
+            if (self->dma_buffer[i] == NULL) {
+                ok = false;
+                break;
+            }
+        }
+        if (ok) {
+            self->dma_buffer_size = size;
+            self->active_buffer = 0;
+            self->inflight_transfers = 0;
+            self->transfer_in_progress = false;
+            return true;
+        }
+        qspibus_release_dma_buffers(self);
+    }
+    return false;
+}
+
+static bool qspibus_wait_one_transfer_done(qspibus_qspibus_obj_t *self, TickType_t timeout) {
+    if (self->inflight_transfers == 0) {
+        self->transfer_in_progress = false;
+        return true;
+    }
+
+    if (xSemaphoreTake(self->transfer_done_sem, timeout) != pdTRUE) {
+        return false;
+    }
+    self->inflight_transfers--;
+    self->transfer_in_progress = (self->inflight_transfers > 0);
+    return true;
+}
+
+static bool qspibus_wait_all_transfers_done(qspibus_qspibus_obj_t *self, TickType_t timeout) {
+    while (self->inflight_transfers > 0) {
+        if (!qspibus_wait_one_transfer_done(self, timeout)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 static void qspibus_send_command_bytes(
     qspibus_qspibus_obj_t *self,
     uint8_t command,
@@ -41,6 +111,11 @@ static void qspibus_send_command_bytes(
 
     if (!self->bus_initialized) {
         mp_raise_ValueError(MP_ERROR_TEXT("QSPI bus deinitialized"));
+    }
+    if (self->inflight_transfers >= QSPI_DMA_BUFFER_COUNT) {
+        if (!qspibus_wait_one_transfer_done(self, pdMS_TO_TICKS(QSPI_COLOR_TIMEOUT_MS))) {
+            mp_raise_OSError_msg(MP_ERROR_TEXT("QSPI command timeout"));
+        }
     }
 
     uint32_t packed_cmd = ((uint32_t)QSPI_OPCODE_WRITE_CMD << 24) | ((uint32_t)command << 8);
@@ -60,17 +135,44 @@ static void qspibus_send_color_bytes(
         mp_raise_ValueError(MP_ERROR_TEXT("QSPI bus deinitialized"));
     }
 
-    uint32_t packed_cmd = ((uint32_t)QSPI_OPCODE_WRITE_COLOR << 24) | ((uint32_t)command << 8);
-    // Drop stale completion events if any.
-    while (xSemaphoreTake(self->transfer_done_sem, 0) == pdTRUE) {
+    if (len == 0) {
+        qspibus_send_command_bytes(self, command, NULL, 0);
+        return;
+    }
+    if (data == NULL || self->dma_buffer_size == 0) {
+        mp_raise_OSError_msg(MP_ERROR_TEXT("QSPI DMA buffers unavailable"));
     }
 
-    esp_err_t err = esp_lcd_panel_io_tx_color(self->io_handle, packed_cmd, data, len);
-    if (err != ESP_OK) {
-        mp_raise_OSError_msg_varg(MP_ERROR_TEXT("QSPI send color failed: %d"), err);
-    }
-    if (xSemaphoreTake(self->transfer_done_sem, pdMS_TO_TICKS(1000)) != pdTRUE) {
-        mp_raise_OSError_msg(MP_ERROR_TEXT("QSPI color timeout"));
+    const uint32_t packed_cmd = ((uint32_t)QSPI_OPCODE_WRITE_COLOR << 24) | ((uint32_t)command << 8);
+    const uint8_t *cursor = data;
+    size_t remaining = len;
+
+    while (remaining > 0) {
+        if (self->inflight_transfers >= QSPI_DMA_BUFFER_COUNT) {
+            if (!qspibus_wait_one_transfer_done(self, pdMS_TO_TICKS(QSPI_COLOR_TIMEOUT_MS))) {
+                mp_raise_OSError_msg(MP_ERROR_TEXT("QSPI color timeout"));
+            }
+        }
+
+        size_t chunk = remaining;
+        if (chunk > self->dma_buffer_size) {
+            chunk = self->dma_buffer_size;
+        }
+
+        uint8_t *buffer = self->dma_buffer[self->active_buffer];
+        memcpy(buffer, cursor, chunk);
+
+        esp_err_t err = esp_lcd_panel_io_tx_color(self->io_handle, packed_cmd, buffer, chunk);
+        if (err != ESP_OK) {
+            mp_raise_OSError_msg_varg(MP_ERROR_TEXT("QSPI send color failed: %d"), err);
+        }
+
+        self->inflight_transfers++;
+        self->transfer_in_progress = true;
+        self->active_buffer = (self->active_buffer + 1) % QSPI_DMA_BUFFER_COUNT;
+
+        cursor += chunk;
+        remaining -= chunk;
     }
 }
 
@@ -81,6 +183,11 @@ static bool qspibus_is_color_payload_command(uint8_t command) {
 static void qspibus_panel_sleep_best_effort(qspibus_qspibus_obj_t *self) {
     if (!self->bus_initialized || self->io_handle == NULL) {
         return;
+    }
+
+    if (!qspibus_wait_all_transfers_done(self, pdMS_TO_TICKS(QSPI_COLOR_TIMEOUT_MS))) {
+        self->inflight_transfers = 0;
+        self->transfer_in_progress = false;
     }
 
     // If a command is buffered, flush it first so the panel state machine
@@ -140,11 +247,23 @@ void common_hal_qspibus_qspibus_construct(
     self->in_transaction = false;
     self->has_pending_command = false;
     self->pending_command = 0;
+    self->transfer_in_progress = false;
+    self->active_buffer = 0;
+    self->inflight_transfers = 0;
+    self->dma_buffer_size = 0;
+    self->dma_buffer[0] = NULL;
+    self->dma_buffer[1] = NULL;
     self->transfer_done_sem = NULL;
 
-    self->transfer_done_sem = xSemaphoreCreateBinary();
+    self->transfer_done_sem = xSemaphoreCreateCounting(QSPI_DMA_BUFFER_COUNT, 0);
     if (self->transfer_done_sem == NULL) {
         mp_raise_msg(&mp_type_MemoryError, MP_ERROR_TEXT("Failed to create semaphore"));
+    }
+
+    if (!qspibus_allocate_dma_buffers(self)) {
+        vSemaphoreDelete(self->transfer_done_sem);
+        self->transfer_done_sem = NULL;
+        mp_raise_msg(&mp_type_MemoryError, MP_ERROR_TEXT("Failed to allocate DMA buffers"));
     }
 
     const spi_bus_config_t bus_config = {
@@ -159,6 +278,7 @@ void common_hal_qspibus_qspibus_construct(
 
     esp_err_t err = spi_bus_initialize(self->host_id, &bus_config, SPI_DMA_CH_AUTO);
     if (err != ESP_OK) {
+        qspibus_release_dma_buffers(self);
         vSemaphoreDelete(self->transfer_done_sem);
         self->transfer_done_sem = NULL;
         mp_raise_OSError_msg_varg(MP_ERROR_TEXT("SPI bus init failed: %d"), err);
@@ -169,7 +289,7 @@ void common_hal_qspibus_qspibus_construct(
         .dc_gpio_num = -1,
         .spi_mode = 0,
         .pclk_hz = self->frequency,
-        .trans_queue_depth = 1,
+        .trans_queue_depth = QSPI_DMA_BUFFER_COUNT,
         .on_color_trans_done = qspibus_on_color_trans_done,
         .user_ctx = self,
         .lcd_cmd_bits = 32,
@@ -182,6 +302,7 @@ void common_hal_qspibus_qspibus_construct(
     err = esp_lcd_new_panel_io_spi((esp_lcd_spi_bus_handle_t)self->host_id, &io_config, &self->io_handle);
     if (err != ESP_OK) {
         spi_bus_free(self->host_id);
+        qspibus_release_dma_buffers(self);
         vSemaphoreDelete(self->transfer_done_sem);
         self->transfer_done_sem = NULL;
         mp_raise_OSError_msg_varg(MP_ERROR_TEXT("Panel IO init failed: %d"), err);
@@ -221,6 +342,7 @@ void common_hal_qspibus_qspibus_construct(
 
 void common_hal_qspibus_qspibus_deinit(qspibus_qspibus_obj_t *self) {
     if (!self->bus_initialized) {
+        qspibus_release_dma_buffers(self);
         return;
     }
 
@@ -239,6 +361,8 @@ void common_hal_qspibus_qspibus_deinit(qspibus_qspibus_obj_t *self) {
         self->transfer_done_sem = NULL;
     }
 
+    qspibus_release_dma_buffers(self);
+
     reset_pin_number(self->clock_pin);
     reset_pin_number(self->data0_pin);
     reset_pin_number(self->data1_pin);
@@ -256,6 +380,8 @@ void common_hal_qspibus_qspibus_deinit(qspibus_qspibus_obj_t *self) {
     self->in_transaction = false;
     self->has_pending_command = false;
     self->pending_command = 0;
+    self->transfer_in_progress = false;
+    self->inflight_transfers = 0;
 }
 
 bool common_hal_qspibus_qspibus_deinited(qspibus_qspibus_obj_t *self) {
