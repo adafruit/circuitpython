@@ -16,6 +16,9 @@
 #if CIRCUITPY_PARALLELDISPLAYBUS
 #include "shared-bindings/paralleldisplaybus/ParallelBus.h"
 #endif
+#if CIRCUITPY_QSPIBUS
+#include "shared-bindings/qspibus/QSPIBus.h"
+#endif
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/time/__init__.h"
 #include "shared-module/displayio/__init__.h"
@@ -253,6 +256,27 @@ static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_are
             buffer_size += 1;
         }
     }
+
+    #if CIRCUITPY_QSPIBUS
+    // RM690B0 over qspibus is unstable with single-row bursts. Keep chunks at
+    // two rows minimum when possible.
+    if (mp_obj_is_type(self->bus.bus, &qspibus_qspibus_type) &&
+        self->core.colorspace.depth == 16 &&
+        !self->bus.data_as_commands &&
+        displayio_area_height(&clipped) > 1 &&
+        rows_per_buffer < 2) {
+        rows_per_buffer = 2;
+        subrectangles = displayio_area_height(&clipped) / rows_per_buffer;
+        if (displayio_area_height(&clipped) % rows_per_buffer != 0) {
+            subrectangles++;
+        }
+        pixels_per_buffer = rows_per_buffer * displayio_area_width(&clipped);
+        buffer_size = pixels_per_buffer / pixels_per_word;
+        if (pixels_per_buffer % pixels_per_word) {
+            buffer_size += 1;
+        }
+    }
+    #endif
 
     // Allocated and shared as a uint32_t array so the compiler knows the
     // alignment everywhere.
