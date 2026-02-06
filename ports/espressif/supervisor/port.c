@@ -91,7 +91,7 @@
 #include "esp32/rom/efuse.h"
 #endif
 
-#if CIRCUITPY_SSL
+#if CIRCUITPY_SSL_NATIVE
 #include "shared-module/ssl/__init__.h"
 #endif
 
@@ -392,7 +392,7 @@ void reset_port(void) {
     rtc_reset();
     #endif
 
-    #if CIRCUITPY_SOCKETPOOL
+    #if CIRCUITPY_SOCKETPOOL_NATIVE
     socketpool_user_reset();
     #endif
 
@@ -507,7 +507,7 @@ void port_idle_until_interrupt(void) {
     }
 }
 
-#if CIRCUITPY_WIFI
+#if CIRCUITPY_WIFI_NATIVE
 void port_boot_info(void) {
     uint8_t mac[6];
     esp_wifi_get_mac(ESP_IF_WIFI_STA, mac);

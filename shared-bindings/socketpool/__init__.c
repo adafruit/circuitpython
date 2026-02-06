@@ -12,7 +12,8 @@
 #include "shared-bindings/socketpool/Socket.h"
 #include "shared-bindings/socketpool/SocketPool.h"
 
-//| """
+//| """Network sockets managed in a pool
+//|
 //| The `socketpool` module provides sockets through a pool. The pools themselves
 //| act like CPython's `socket` module.
 //|

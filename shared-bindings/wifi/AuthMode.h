@@ -19,4 +19,11 @@ typedef enum {
 } wifi_authmode_t;
 
 extern const mp_obj_type_t wifi_authmode_type;
+
 extern const cp_enum_obj_t authmode_OPEN_obj;
+extern const cp_enum_obj_t authmode_WEP_obj;
+extern const cp_enum_obj_t authmode_PSK_obj;
+extern const cp_enum_obj_t authmode_WPA_obj;
+extern const cp_enum_obj_t authmode_WPA2_obj;
+extern const cp_enum_obj_t authmode_WPA3_obj;
+extern const cp_enum_obj_t authmode_ENTERPRISE_obj;

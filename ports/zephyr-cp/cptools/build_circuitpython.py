@@ -80,7 +80,13 @@ REVERSE_DEPENDENCIES = {
 }
 
 # Other flags to set when a module is enabled
-EXTRA_FLAGS = {"busio": ["BUSIO_SPI", "BUSIO_I2C"]}
+# "CIRCUITPY_" is prepended onto each.
+EXTRA_FLAGS = {
+    "busio": ["BUSIO_SPI", "BUSIO_I2C"],
+    "socketpool": ["SOCKETPOOL_NATIVE"],
+    "ssl": ["SSL_NATIVE", "SSL_MBEDTLS"],
+    "wifi": ["WIFI_NATIVE"],
+}
 
 SHARED_MODULE_AND_COMMON_HAL = ["os"]
 
@@ -233,6 +239,7 @@ def determine_enabled_modules(board_info, portdir, srcdir):
 
     if board_info["wifi"]:
         enabled_modules.add("wifi")
+        enabled_modules.add("ipaddress")
         module_reasons["wifi"] = "Zephyr board has wifi"
 
     if board_info["flash_count"] > 0:
@@ -292,9 +299,8 @@ async def build_circuitpython():
     circuitpython_flags.append(f"-DCIRCUITPY_USB_HOST={1 if usb_host else 0}")
     circuitpython_flags.append(f"-DCIRCUITPY_BOARD_ID='\"{board}\"'")
     circuitpython_flags.append(f"-DCIRCUITPY_TRANSLATE_OBJECT={1 if lto else 0}")
-    circuitpython_flags.append("-DINTERNAL_FLASH_FILESYSTEM")
-    circuitpython_flags.append("-DLONGINT_IMPL_MPZ")
-    circuitpython_flags.append("-DCIRCUITPY_SSL_MBEDTLS")
+    circuitpython_flags.append("-DINTERNAL_FLASH_FILESYSTEM=1")
+    circuitpython_flags.append("-DLONGINT_IMPL_MPZ=1")
     circuitpython_flags.append("-DFFCONF_H='\"lib/oofatfs/ffconf.h\"'")
     circuitpython_flags.extend(("-I", srcdir))
     circuitpython_flags.extend(("-I", builddir))

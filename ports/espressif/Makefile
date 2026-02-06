@@ -441,7 +441,7 @@ SRC_C += \
 	shared/netutils/netutils.c \
 	peripherals/$(IDF_TARGET)/pins.c
 
-ifeq ($(CIRCUITPY_SSL),1)
+ifeq ($(CIRCUITPY_SSL_NATIVE),1)
 SRC_C += common-hal/ssl/crt_bundle.c
 endif
 

@@ -72,7 +72,7 @@ ADDITIONAL_MODULES = {
     "adafruit_bus_device": "CIRCUITPY_BUSDEVICE",
     "adafruit_pixelbuf": "CIRCUITPY_PIXELBUF",
     "array": "CIRCUITPY_ARRAY",
-    # always available, so depend on something that's always 1.
+    # builtins are always available, so depend on something that's always 1.
     "builtins": "CIRCUITPY",
     "builtins.pow3": "CIRCUITPY_BUILTINS_POW3",
     "busio.SPI": "CIRCUITPY_BUSIO_SPI",
@@ -90,6 +90,8 @@ ADDITIONAL_MODULES = {
     "terminalio": "CIRCUITPY_DISPLAYIO",
     "usb": "CIRCUITPY_PYUSB",
     "socketpool.socketpool.AF_INET6": "CIRCUITPY_SOCKETPOOL_IPV6",
+    "wifi (native)": "CIRCUITPY_WIFI_NATIVE",
+    "wifi (AirLift co-processor)": "CIRCUITPY_WIFI_AIRLIFT",
 }
 
 MODULES_NOT_IN_BINDINGS = ["binascii", "errno", "json", "re", "ulab"]

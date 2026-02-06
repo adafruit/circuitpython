@@ -173,6 +173,10 @@ msgstr ""
 msgid "%q must be %d-%d"
 msgstr ""
 
+#: shared-bindings/audiofreeverb/Freeverb.c
+msgid "%q must be %q"
+msgstr ""
+
 #: shared-bindings/busdisplay/BusDisplay.c
 msgid "%q must be 1 when %q is True"
 msgstr ""
@@ -995,6 +999,10 @@ msgstr ""
 msgid "FFT is implemented for linear arrays only"
 msgstr ""
 
+#: shared-bindings/wifi/Radio.c
+msgid "Failed"
+msgstr ""
+
 #: shared-bindings/ps2io/Ps2.c
 msgid "Failed sending command."
 msgstr ""
@@ -1231,7 +1239,7 @@ msgid "Insufficient stream input buffer"
 msgstr ""
 
 #: ports/espressif/common-hal/wifi/Radio.c
-#: ports/zephyr-cp/common-hal/wifi/Radio.c
+#: ports/zephyr-cp/common-hal/wifi/Radio.c shared-bindings/wifi/Radio.c
 msgid "Interface must be started"
 msgstr ""
 
@@ -2701,10 +2709,6 @@ msgstr ""
 msgid "bits must be 32 or less"
 msgstr ""
 
-#: shared-bindings/audiofreeverb/Freeverb.c
-msgid "bits_per_sample must be 16"
-msgstr ""
-
 #: shared-bindings/audiodelays/Chorus.c shared-bindings/audiodelays/Echo.c
 #: shared-bindings/audiodelays/MultiTapDelay.c
 #: shared-bindings/audiodelays/PitchShift.c
@@ -4153,10 +4157,6 @@ msgstr ""
 
 #: py/objstr.c
 msgid "rsplit(None,n)"
-msgstr ""
-
-#: shared-bindings/audiofreeverb/Freeverb.c
-msgid "samples_signed must be true"
 msgstr ""
 
 #: ports/atmel-samd/common-hal/audiobusio/PDMIn.c

@@ -10,7 +10,7 @@
 #include "shared/runtime/interrupt_char.h"
 #include "py/runtime.h"
 #include "shared-bindings/wifi/__init__.h"
-#include "shared-bindings/ipaddress/__init__.h"
+#include "shared-bindings/ipaddress/IPv4Address.h"
 
 #include "lwip/dns.h"
 #include "lwip/inet.h"
