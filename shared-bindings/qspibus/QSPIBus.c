@@ -1,0 +1,123 @@
+// SPDX-FileCopyrightText: Copyright (c) 2026 Przemyslaw Patrick Socha
+//
+// SPDX-License-Identifier: MIT
+
+#include <stdint.h>
+
+#include "shared-bindings/qspibus/QSPIBus.h"
+
+#include "shared-bindings/microcontroller/Pin.h"
+#include "shared-bindings/util.h"
+
+#include "py/obj.h"
+#include "py/runtime.h"
+
+//| class QSPIBus:
+//|     """QSPI bus for quad-SPI displays."""
+//|
+//|     def __init__(
+//|         self,
+//|         *,
+//|         clock: microcontroller.Pin,
+//|         data0: microcontroller.Pin,
+//|         data1: microcontroller.Pin,
+//|         data2: microcontroller.Pin,
+//|         data3: microcontroller.Pin,
+//|         cs: microcontroller.Pin,
+//|         reset: Optional[microcontroller.Pin] = None,
+//|         frequency: int = 80_000_000,
+//|     ) -> None:
+//|         """Create a QSPIBus object for quad-SPI display communication.
+//|
+//|         :param ~microcontroller.Pin clock: QSPI clock pin
+//|         :param ~microcontroller.Pin data0: QSPI data line 0
+//|         :param ~microcontroller.Pin data1: QSPI data line 1
+//|         :param ~microcontroller.Pin data2: QSPI data line 2
+//|         :param ~microcontroller.Pin data3: QSPI data line 3
+//|         :param ~microcontroller.Pin cs: Chip select pin
+//|         :param ~microcontroller.Pin reset: Optional reset pin
+//|         :param int frequency: Bus frequency in Hz (1-80MHz)
+//|         """
+//|         ...
+//|
+static mp_obj_t qspibus_qspibus_make_new(const mp_obj_type_t *type, size_t n_args,
+    size_t n_kw, const mp_obj_t *all_args) {
+
+    enum { ARG_clock, ARG_data0, ARG_data1, ARG_data2, ARG_data3, ARG_cs, ARG_reset, ARG_frequency };
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_clock, MP_ARG_KW_ONLY | MP_ARG_OBJ | MP_ARG_REQUIRED },
+        { MP_QSTR_data0, MP_ARG_KW_ONLY | MP_ARG_OBJ | MP_ARG_REQUIRED },
+        { MP_QSTR_data1, MP_ARG_KW_ONLY | MP_ARG_OBJ | MP_ARG_REQUIRED },
+        { MP_QSTR_data2, MP_ARG_KW_ONLY | MP_ARG_OBJ | MP_ARG_REQUIRED },
+        { MP_QSTR_data3, MP_ARG_KW_ONLY | MP_ARG_OBJ | MP_ARG_REQUIRED },
+        { MP_QSTR_cs, MP_ARG_KW_ONLY | MP_ARG_OBJ | MP_ARG_REQUIRED },
+        { MP_QSTR_reset, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
+        { MP_QSTR_frequency, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 80000000} },
+    };
+
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    const mcu_pin_obj_t *clock = validate_obj_is_free_pin(args[ARG_clock].u_obj, MP_QSTR_clock);
+    const mcu_pin_obj_t *data0 = validate_obj_is_free_pin(args[ARG_data0].u_obj, MP_QSTR_data0);
+    const mcu_pin_obj_t *data1 = validate_obj_is_free_pin(args[ARG_data1].u_obj, MP_QSTR_data1);
+    const mcu_pin_obj_t *data2 = validate_obj_is_free_pin(args[ARG_data2].u_obj, MP_QSTR_data2);
+    const mcu_pin_obj_t *data3 = validate_obj_is_free_pin(args[ARG_data3].u_obj, MP_QSTR_data3);
+    const mcu_pin_obj_t *cs = validate_obj_is_free_pin(args[ARG_cs].u_obj, MP_QSTR_cs);
+    const mcu_pin_obj_t *reset = validate_obj_is_free_pin_or_none(args[ARG_reset].u_obj, MP_QSTR_reset);
+
+    uint32_t frequency = (uint32_t)mp_arg_validate_int_range(args[ARG_frequency].u_int, 1, 80000000, MP_QSTR_frequency);
+
+    qspibus_qspibus_obj_t *self = mp_obj_malloc(qspibus_qspibus_obj_t, &qspibus_qspibus_type);
+    common_hal_qspibus_qspibus_construct(self, clock, data0, data1, data2, data3, cs, reset, frequency);
+
+    return MP_OBJ_FROM_PTR(self);
+}
+
+//|     def deinit(self) -> None:
+//|         """Release QSPI bus resources and claimed pins."""
+//|         ...
+//|
+static mp_obj_t qspibus_qspibus_deinit(mp_obj_t self_in) {
+    qspibus_qspibus_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    common_hal_qspibus_qspibus_deinit(self);
+    return mp_const_none;
+}
+static MP_DEFINE_CONST_FUN_OBJ_1(qspibus_qspibus_deinit_obj, qspibus_qspibus_deinit);
+
+//|     def __enter__(self) -> QSPIBus:
+//|         """No-op context manager entry."""
+//|         ...
+//|
+static mp_obj_t qspibus_qspibus___enter__(mp_obj_t self_in) {
+    return self_in;
+}
+static MP_DEFINE_CONST_FUN_OBJ_1(qspibus_qspibus___enter___obj, qspibus_qspibus___enter__);
+
+//|     def __exit__(self) -> None:
+//|         """Deinitialize on context manager exit."""
+//|         ...
+//|
+static mp_obj_t qspibus_qspibus___exit__(size_t n_args, const mp_obj_t *args) {
+    (void)n_args;
+    common_hal_qspibus_qspibus_deinit(MP_OBJ_TO_PTR(args[0]));
+    return mp_const_none;
+}
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(qspibus_qspibus___exit___obj, 4, 4, qspibus_qspibus___exit__);
+
+// send() intentionally remains C-only for display drivers.
+
+static const mp_rom_map_elem_t qspibus_qspibus_locals_dict_table[] = {
+    { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&qspibus_qspibus_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&qspibus_qspibus___enter___obj) },
+    { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&qspibus_qspibus___exit___obj) },
+};
+static MP_DEFINE_CONST_DICT(qspibus_qspibus_locals_dict, qspibus_qspibus_locals_dict_table);
+
+MP_DEFINE_CONST_OBJ_TYPE(
+    qspibus_qspibus_type,
+    MP_QSTR_QSPIBus,
+    MP_TYPE_FLAG_NONE,
+    make_new, qspibus_qspibus_make_new,
+    locals_dict, &qspibus_qspibus_locals_dict
+    );
