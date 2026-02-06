@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <stddef.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -38,6 +39,11 @@ typedef struct {
     bool in_transaction;
     bool has_pending_command;
     uint8_t pending_command;
+    bool transfer_in_progress;
+    uint8_t active_buffer;
+    uint8_t inflight_transfers;
+    size_t dma_buffer_size;
+    uint8_t *dma_buffer[2];
 
     // Signaled from ISR when panel IO transfer completes.
     SemaphoreHandle_t transfer_done_sem;

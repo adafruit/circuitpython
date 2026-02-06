@@ -258,6 +258,30 @@ static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_are
     }
 
     #if CIRCUITPY_QSPIBUS
+    // QSPI panels benefit from larger sub-rectangle buffers because each chunk
+    // has non-trivial command/window overhead. Keep this path qspibus-specific
+    // to avoid increasing stack usage on other display buses.
+    if (mp_obj_is_type(self->bus.bus, &qspibus_qspibus_type) &&
+        self->core.colorspace.depth == 16 &&
+        !self->bus.data_as_commands &&
+        !self->bus.SH1107_addressing &&
+        buffer_size < 2048) {
+        buffer_size = 2048; // 8KB uint32_t buffer
+        rows_per_buffer = buffer_size * pixels_per_word / displayio_area_width(&clipped);
+        if (rows_per_buffer == 0) {
+            rows_per_buffer = 1;
+        }
+        subrectangles = displayio_area_height(&clipped) / rows_per_buffer;
+        if (displayio_area_height(&clipped) % rows_per_buffer != 0) {
+            subrectangles++;
+        }
+        pixels_per_buffer = rows_per_buffer * displayio_area_width(&clipped);
+        buffer_size = pixels_per_buffer / pixels_per_word;
+        if (pixels_per_buffer % pixels_per_word) {
+            buffer_size += 1;
+        }
+    }
+
     // RM690B0 over qspibus is unstable with single-row bursts. Keep chunks at
     // two rows minimum when possible.
     if (mp_obj_is_type(self->bus.bus, &qspibus_qspibus_type) &&
