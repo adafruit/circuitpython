@@ -3082,6 +3082,10 @@ msgstr ""
 msgid "destination buffer must be an array of type 'H' for bit_depth = 16"
 msgstr ""
 
+#: shared-bindings/usb/cdc_host/__init__.c
+msgid "device must be a usb.core.Device object"
+msgstr ""
+
 #: py/objdict.c
 msgid "dict update sequence has wrong length"
 msgstr ""

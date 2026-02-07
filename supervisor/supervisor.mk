@@ -189,6 +189,7 @@ ifeq ($(CIRCUITPY_TINYUSB),1)
     SRC_SUPERVISOR += \
       lib/tinyusb/src/host/hub.c \
       lib/tinyusb/src/host/usbh.c \
+      lib/tinyusb/src/class/cdc/cdc_host.c \
 
   endif
 

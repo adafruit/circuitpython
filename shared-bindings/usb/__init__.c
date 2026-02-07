@@ -11,6 +11,7 @@
 #include "shared-bindings/usb/__init__.h"
 #include "shared-bindings/usb/core/__init__.h"
 #include "shared-bindings/usb/util/__init__.h"
+#include "shared-bindings/usb/cdc_host/__init__.h"
 #include "supervisor/usb.h"
 
 //| """PyUSB-compatible USB host API
@@ -23,6 +24,7 @@ static mp_rom_map_elem_t usb_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__),        MP_OBJ_NEW_QSTR(MP_QSTR_usb) },
     { MP_ROM_QSTR(MP_QSTR_core),          MP_OBJ_FROM_PTR(&usb_core_module) },
     { MP_ROM_QSTR(MP_QSTR_util),          MP_OBJ_FROM_PTR(&usb_util_module) },
+    { MP_ROM_QSTR(MP_QSTR_cdc_host),      MP_OBJ_FROM_PTR(&usb_cdc_host_module) },
 };
 
 static MP_DEFINE_CONST_DICT(usb_module_globals, usb_module_globals_table);
