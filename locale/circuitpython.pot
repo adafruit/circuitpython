@@ -1905,10 +1905,6 @@ msgid "QSPI DMA buffers unavailable"
 msgstr ""
 
 #: ports/espressif/common-hal/qspibus/QSPIBus.c
-msgid "QSPI bus deinitialized"
-msgstr ""
-
-#: ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "QSPI color timeout"
 msgstr ""
 
