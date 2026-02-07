@@ -503,12 +503,6 @@ SRC_ESPNOW := \
 SRC_C += $(SRC_ESPNOW)
 endif
 
-ifneq ($(CIRCUITPY_SDCARDIO_ESPRESSIF),0)
-INC += -isystem esp-idf/components/sdmmc/include
-INC += -isystem esp-idf/components/esp_driver_sdmmc/include
-INC += -isystem esp-idf/components/esp_driver_sdspi/include
-endif
-
 ifneq ($(CIRCUITPY_ESPULP),0)
 SRC_ULP := \
 	$(wildcard common-hal/espulp/*.c) \

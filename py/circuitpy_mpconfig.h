@@ -393,11 +393,6 @@ typedef long mp_off_t;
 #define CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE (0)
 #endif
 
-// RM690B0 AMOLED display driver
-#ifndef CIRCUITPY_RM690B0
-#define CIRCUITPY_RM690B0 (0)
-#endif
-
 // This is not a top-level module; it's microcontroller.nvm.
 #if CIRCUITPY_NVM
 extern const struct _mp_obj_module_t nvm_module;

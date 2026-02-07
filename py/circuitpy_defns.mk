@@ -837,18 +837,6 @@ SRC_SHARED_MODULE_ALL += \
 	touchio/__init__.c
 endif
 
-# Use the native sdcardio if requested. This provides ESP-IDF sdspi_host-based
-# SD card access with significantly better performance than the shared-module.
-ifeq ($(CIRCUITPY_SDCARDIO_ESPRESSIF),1)
-SRC_COMMON_HAL_ALL += \
-	sdcardio/SDCard.c \
-	sdcardio/__init__.c
-else
-SRC_SHARED_MODULE_ALL += \
-	sdcardio/SDCard.c \
-	sdcardio/__init__.c
-endif
-
 ifeq ($(CIRCUITPY_SSL_MBEDTLS),0)
 SRC_COMMON_HAL_ALL += \
 	ssl/__init__.c \

@@ -26,16 +26,10 @@
 #define QSPI_COLOR_TIMEOUT_MS (1000U)
 #if defined(CIRCUITPY_LCD_POWER)
 #define CIRCUITPY_QSPIBUS_PANEL_POWER_PIN CIRCUITPY_LCD_POWER
-#elif defined(CIRCUITPY_RM690B0_POWER)
-#define CIRCUITPY_QSPIBUS_PANEL_POWER_PIN CIRCUITPY_RM690B0_POWER
 #endif
 
 #ifndef CIRCUITPY_LCD_POWER_ON_LEVEL
-    #if defined(CIRCUITPY_RM690B0_POWER_ON_LEVEL)
-        #define CIRCUITPY_LCD_POWER_ON_LEVEL CIRCUITPY_RM690B0_POWER_ON_LEVEL
-    #else
-        #define CIRCUITPY_LCD_POWER_ON_LEVEL (1)
-    #endif
+#define CIRCUITPY_LCD_POWER_ON_LEVEL (1)
 #endif
 
 static void qspibus_release_dma_buffers(qspibus_qspibus_obj_t *self) {

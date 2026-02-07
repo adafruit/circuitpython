@@ -40,8 +40,6 @@ CIRCUITPY_RGBMATRIX = 0
 CIRCUITPY_BITMAPTOOLS = 1
 CIRCUITPY_JPEGIO = 1
 CIRCUITPY_FRAMEBUFFERIO = 1
-# RM690B0 standalone module removed in Phase 4.
-# Display path is now: qspibus + displayio + user-space panel driver.
 
 # Enable ESP-NOW for peer-to-peer wireless communication
 CIRCUITPY_ESPNOW = 1
@@ -75,11 +73,6 @@ CIRCUITPY_USB_MIDI = 1
 # Storage configuration
 CIRCUITPY_STORAGE = 1
 CIRCUITPY_NVM = 1
-# Use existing sdioio instead of custom sdcardio
-# CIRCUITPY_SDCARDIO = 1  # REMOVED - using sdioio
-# CIRCUITPY_SDCARDIO_ESPRESSIF = 1  # REMOVED
-CIRCUITPY_SDCARDIO = 0
-CIRCUITPY_SDCARDIO_ESPRESSIF = 0
 CIRCUITPY_SDIOIO = 1
 
 # Enable touch support

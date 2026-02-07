@@ -631,17 +631,12 @@ msgid ""
 "disable.\n"
 msgstr ""
 
-#: shared-bindings/rm690b0/__init__.c
-#, c-format
-msgid "BMP conversion failed (%s)"
-msgstr ""
-
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-msgid "BMP data too small"
-msgstr ""
-
 #: ports/espressif/common-hal/canio/CAN.c
 msgid "Baudrate not supported by peripheral"
+msgstr ""
+
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
+msgid "Begin transaction first"
 msgstr ""
 
 #: shared-module/busdisplay/BusDisplay.c
@@ -651,14 +646,6 @@ msgstr ""
 
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 msgid "Bit clock and word select must be sequential GPIO pins"
-msgstr ""
-
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-msgid "Bitmap data too small for width * height"
-msgstr ""
-
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-msgid "Bitmap dimensions too large (max ~32767x32767 on 32-bit systems)"
 msgstr ""
 
 #: shared-bindings/bitmaptools/__init__.c
@@ -672,10 +659,6 @@ msgstr ""
 #: ports/analog/common-hal/busio/UART.c
 #: ports/mimxrt10xx/common-hal/busio/UART.c
 msgid "Both RX and TX required for flow control"
-msgstr ""
-
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-msgid "Brightness must be between 0.0 and 1.0"
 msgstr ""
 
 #: shared-bindings/busdisplay/BusDisplay.c
@@ -705,13 +688,8 @@ msgstr ""
 #: ports/cxd56/common-hal/sdioio/SDCard.c
 #: ports/espressif/common-hal/sdioio/SDCard.c
 #: ports/stm/common-hal/sdioio/SDCard.c shared-bindings/floppyio/__init__.c
-#: shared-module/sdcardio/SDCard.c
 #, c-format
 msgid "Buffer must be a multiple of %d bytes"
-msgstr ""
-
-#: ports/espressif/common-hal/sdcardio/SDCard.c
-msgid "Buffer must be a multiple of 512 bytes"
 msgstr ""
 
 #: shared-bindings/_bleio/PacketBuffer.c
@@ -724,6 +702,10 @@ msgstr ""
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 #: shared-bindings/struct/__init__.c shared-module/struct/__init__.c
 msgid "Buffer too small"
+msgstr ""
+
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
+msgid "Bus in display transaction"
 msgstr ""
 
 #: ports/atmel-samd/common-hal/paralleldisplaybus/ParallelBus.c
@@ -859,10 +841,6 @@ msgstr ""
 msgid "Clock unit in use"
 msgstr ""
 
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-msgid "Compressed BMP not supported"
-msgstr ""
-
 #: shared-bindings/_bleio/Connection.c
 msgid ""
 "Connection has been disconnected and can no longer be used. Create a new "
@@ -914,10 +892,6 @@ msgstr ""
 msgid "DAC already in use"
 msgstr ""
 
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-msgid "DMA transfer timed out - hardware requires reset"
-msgstr ""
-
 #: ports/atmel-samd/common-hal/paralleldisplaybus/ParallelBus.c
 #: ports/nordic/common-hal/paralleldisplaybus/ParallelBus.c
 msgid "Data 0 pin must be byte aligned"
@@ -953,22 +927,9 @@ msgstr ""
 msgid "Device in use"
 msgstr ""
 
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-#, c-format
-msgid "Display initialization failed: %s"
-msgstr ""
-
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-msgid "Display initialization failed: Out of memory"
-msgstr ""
-
 #: shared-bindings/busdisplay/BusDisplay.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 msgid "Display must have a 16 bit colorspace."
-msgstr ""
-
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-msgid "Display not initialized. Call init_display() first"
 msgstr ""
 
 #: shared-bindings/busdisplay/BusDisplay.c
@@ -1045,12 +1006,12 @@ msgstr ""
 msgid "Failed to allocate %q buffer"
 msgstr ""
 
-#: ports/espressif/common-hal/wifi/__init__.c
-msgid "Failed to allocate Wifi memory"
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
+msgid "Failed to allocate DMA buffers"
 msgstr ""
 
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-msgid "Failed to allocate memory for circle"
+#: ports/espressif/common-hal/wifi/__init__.c
+msgid "Failed to allocate Wifi memory"
 msgstr ""
 
 #: ports/espressif/common-hal/wifi/ScannedNetworks.c
@@ -1061,11 +1022,6 @@ msgstr ""
 msgid "Failed to buffer the sample"
 msgstr ""
 
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-#, c-format
-msgid "Failed to clear display: %s"
-msgstr ""
-
 #: ports/espressif/common-hal/_bleio/Adapter.c
 #: ports/nordic/common-hal/_bleio/Adapter.c
 msgid "Failed to connect: internal error"
@@ -1073,14 +1029,6 @@ msgstr ""
 
 #: ports/nordic/common-hal/_bleio/Adapter.c
 msgid "Failed to connect: timeout"
-msgstr ""
-
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-msgid "Failed to create DMA semaphore"
-msgstr ""
-
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-msgid "Failed to create RM690B0 panel"
 msgstr ""
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
@@ -1099,66 +1047,16 @@ msgstr ""
 msgid "Failed to create continuous channels: not found"
 msgstr ""
 
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-msgid "Failed to create panel I/O"
-msgstr ""
-
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-#, c-format
-msgid "Failed to draw BMP: %s"
-msgstr ""
-
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-#, c-format
-msgid "Failed to draw JPEG: %s"
-msgstr ""
-
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-#, c-format
-msgid "Failed to draw bitmap: %s"
-msgstr ""
-
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-#, c-format
-msgid "Failed to draw circle: %s"
-msgstr ""
-
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-#, c-format
-msgid "Failed to draw fill_circle: %s"
-msgstr ""
-
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-#, c-format
-msgid "Failed to draw fill_rect: %s"
-msgstr ""
-
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-#, c-format
-msgid "Failed to draw pixel: %s"
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
+msgid "Failed to create semaphore"
 msgstr ""
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "Failed to enable continuous"
 msgstr ""
 
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-#, c-format
-msgid "Failed to initialize SPI bus: %s"
-msgstr ""
-
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-#, c-format
-msgid "Failed to latch brightness: %s"
-msgstr ""
-
 #: shared-module/audiomp3/MP3Decoder.c
 msgid "Failed to parse MP3 file"
-msgstr ""
-
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-#, c-format
-msgid "Failed to refresh display: %s (0x%x)"
 msgstr ""
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
@@ -1168,11 +1066,6 @@ msgstr ""
 #: ports/nordic/sd_mutex.c
 #, c-format
 msgid "Failed to release mutex, err 0x%04x"
-msgstr ""
-
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-#, c-format
-msgid "Failed to select brightness page: %s"
 msgstr ""
 
 #: ports/analog/common-hal/busio/SPI.c
@@ -1185,11 +1078,6 @@ msgstr ""
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
 msgid "Failed to start async audio"
-msgstr ""
-
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-#, c-format
-msgid "Failed to write brightness: %s"
 msgstr ""
 
 #: supervisor/shared/safe_mode.c
@@ -1427,30 +1315,8 @@ msgstr ""
 msgid "Invalid BLE parameter"
 msgstr ""
 
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-msgid "Invalid BMP data offset"
-msgstr ""
-
-#: shared-bindings/rm690b0/__init__.c
-#, c-format
-msgid "Invalid BMP format (%s)"
-msgstr ""
-
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-msgid "Invalid BMP header"
-msgstr ""
-
 #: shared-bindings/wifi/Radio.c
 msgid "Invalid BSSID"
-msgstr ""
-
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-msgid "Invalid JPEG data"
-msgstr ""
-
-#: shared-bindings/rm690b0/__init__.c
-#, c-format
-msgid "Invalid JPEG format (%s)"
 msgstr ""
 
 #: shared-bindings/wifi/Radio.c
@@ -1477,10 +1343,6 @@ msgstr ""
 #: ports/atmel-samd/common-hal/imagecapture/ParallelImageCapture.c
 #, c-format
 msgid "Invalid data_pins[%d]"
-msgstr ""
-
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-msgid "Invalid display handle"
 msgstr ""
 
 #: shared-module/msgpack/__init__.c
@@ -1516,19 +1378,6 @@ msgstr ""
 
 #: shared-module/os/getenv.c
 msgid "Invalid unicode escape"
-msgstr ""
-
-#: shared-bindings/rm690b0/__init__.c
-#, c-format
-msgid "JPEG conversion failed (%s)"
-msgstr ""
-
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-msgid "JPEG decode failed"
-msgstr ""
-
-#: shared-bindings/rm690b0/__init__.c
-msgid "JPEG support not compiled in"
 msgstr ""
 
 #: shared-bindings/aesio/aes.c
@@ -1744,16 +1593,16 @@ msgstr ""
 msgid "No long integer support"
 msgstr ""
 
-#: ports/espressif/common-hal/sdcardio/SDCard.c
-msgid "No memory for SD card structure"
-msgstr ""
-
 #: shared-bindings/wifi/Radio.c
 msgid "No network with that ssid"
 msgstr ""
 
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 msgid "No out in program"
+msgstr ""
+
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
+msgid "No pending command"
 msgstr ""
 
 #: ports/atmel-samd/common-hal/busio/I2C.c
@@ -1831,10 +1680,6 @@ msgstr ""
 
 #: supervisor/shared/bluetooth/bluetooth.c
 msgid "Ok"
-msgstr ""
-
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-msgid "Only 16-bit and 24-bit BMP supported"
 msgstr ""
 
 #: ports/atmel-samd/common-hal/audiobusio/PDMIn.c
@@ -1944,6 +1789,11 @@ msgstr ""
 msgid "Packet buffers for an SPI transfer must have the same length."
 msgstr ""
 
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
+#, c-format
+msgid "Panel IO init failed: %d"
+msgstr ""
+
 #: shared-module/jpegio/JpegDecoder.c
 msgid "Parameter error"
 msgstr ""
@@ -2049,6 +1899,32 @@ msgstr ""
 msgid "Pull not used when direction is output."
 msgstr ""
 
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
+msgid "QSPI DMA buffers unavailable"
+msgstr ""
+
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
+msgid "QSPI bus deinitialized"
+msgstr ""
+
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
+msgid "QSPI color timeout"
+msgstr ""
+
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
+msgid "QSPI command timeout"
+msgstr ""
+
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
+#, c-format
+msgid "QSPI send color failed: %d"
+msgstr ""
+
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
+#, c-format
+msgid "QSPI send failed: %d"
+msgstr ""
+
 #: ports/raspberrypi/common-hal/countio/Counter.c
 msgid "RISE_AND_FALL not available on this chip"
 msgstr ""
@@ -2147,26 +2023,8 @@ msgstr ""
 msgid "Right format but not supported"
 msgstr ""
 
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-msgid "Rotation must be 0, 90, 180, or 270"
-msgstr ""
-
 #: main.c
 msgid "Running in safe mode! Not running saved code.\n"
-msgstr ""
-
-#: shared-module/sdcardio/SDCard.c
-msgid "SD card CSD format not supported"
-msgstr ""
-
-#: ports/espressif/common-hal/sdcardio/SDCard.c
-#, c-format
-msgid "SD card init failed: %d"
-msgstr ""
-
-#: ports/espressif/common-hal/sdcardio/SDCard.c
-#, c-format
-msgid "SD host init failed: %d"
 msgstr ""
 
 #: ports/cxd56/common-hal/sdioio/SDCard.c
@@ -2184,17 +2042,9 @@ msgstr ""
 msgid "SDIO Init Error %x"
 msgstr ""
 
-#: ports/espressif/common-hal/sdcardio/SDCard.c
-msgid "SPI bus already deinitialized"
-msgstr ""
-
-#: ports/espressif/common-hal/sdcardio/SDCard.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 #, c-format
 msgid "SPI bus init failed: %d"
-msgstr ""
-
-#: ports/espressif/common-hal/sdcardio/SDCard.c
-msgid "SPI bus must have MOSI, MISO, and CLK pins"
 msgstr ""
 
 #: ports/espressif/common-hal/busio/SPI.c
@@ -2578,10 +2428,6 @@ msgstr ""
 
 #: shared-bindings/hashlib/__init__.c
 msgid "Unsupported hash algorithm"
-msgstr ""
-
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-msgid "Unsupported rotation"
 msgstr ""
 
 #: ports/espressif/common-hal/socketpool/Socket.c
@@ -3056,10 +2902,6 @@ msgstr ""
 msgid "can't send non-None value to a just-started generator"
 msgstr ""
 
-#: shared-module/sdcardio/SDCard.c
-msgid "can't set 512 block size"
-msgstr ""
-
 #: py/objexcept.c py/objnamedtuple.c
 msgid "can't set attribute"
 msgstr ""
@@ -3210,12 +3052,12 @@ msgstr ""
 msgid "could not invert Vandermonde matrix"
 msgstr ""
 
-#: shared-module/sdcardio/SDCard.c
-msgid "couldn't determine SD card version"
-msgstr ""
-
 #: extmod/ulab/code/numpy/numerical.c
 msgid "cross is defined for 1D arrays of length 3"
+msgstr ""
+
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
+msgid "data buffer is null"
 msgstr ""
 
 #: extmod/ulab/code/scipy/optimize/optimize.c
@@ -3373,15 +3215,6 @@ msgstr ""
 
 #: shared-bindings/traceback/__init__.c
 msgid "file write is not available"
-msgstr ""
-
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-#, c-format
-msgid "fill_color failed: %s"
-msgstr ""
-
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-msgid "fill_color: unable to allocate DMA buffer"
 msgstr ""
 
 #: extmod/ulab/code/numpy/vector.c
@@ -3948,10 +3781,6 @@ msgstr ""
 msgid "nested index must be int"
 msgstr ""
 
-#: ports/espressif/common-hal/sdcardio/SDCard.c shared-module/sdcardio/SDCard.c
-msgid "no SD card"
-msgstr ""
-
 #: py/vm.c
 msgid "no active exception to reraise"
 msgstr ""
@@ -3970,10 +3799,6 @@ msgstr ""
 
 #: py/builtinimport.c
 msgid "no module named '%q'"
-msgstr ""
-
-#: shared-module/sdcardio/SDCard.c
-msgid "no response from SD card"
 msgstr ""
 
 #: ports/espressif/common-hal/espcamera/Camera.c py/objobject.c py/runtime.c
@@ -4287,10 +4112,6 @@ msgstr ""
 msgid "pull masks conflict with direction masks"
 msgstr ""
 
-#: ports/espressif/common-hal/rm690b0/RM690B0.c
-msgid "radius must be non-negative"
-msgstr ""
-
 #: extmod/ulab/code/numpy/fft/fft_tools.c
 msgid "real and imaginary parts must be of equal length"
 msgstr ""
@@ -4483,14 +4304,6 @@ msgstr ""
 #: ports/raspberrypi/common-hal/floppyio/__init__.c
 #: shared-module/floppyio/__init__.c
 msgid "timeout waiting for index pulse"
-msgstr ""
-
-#: shared-module/sdcardio/SDCard.c
-msgid "timeout waiting for v1 card"
-msgstr ""
-
-#: shared-module/sdcardio/SDCard.c
-msgid "timeout waiting for v2 card"
 msgstr ""
 
 #: ports/stm/common-hal/pwmio/PWMOut.c
