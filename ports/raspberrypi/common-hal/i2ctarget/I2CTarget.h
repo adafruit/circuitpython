@@ -21,3 +21,5 @@ typedef struct {
     uint8_t scl_pin;
     uint8_t sda_pin;
 } i2ctarget_i2c_target_obj_t;
+
+int common_hal_i2ctarget_i2c_target_is_stop(i2ctarget_i2c_target_obj_t *self);
