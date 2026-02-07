@@ -145,6 +145,8 @@ static void qspibus_send_color_bytes(
     while (remaining > 0) {
         if (self->inflight_transfers >= QSPI_DMA_BUFFER_COUNT) {
             if (!qspibus_wait_one_transfer_done(self, pdMS_TO_TICKS(QSPI_COLOR_TIMEOUT_MS))) {
+                self->inflight_transfers = 0;
+                self->transfer_in_progress = false;
                 mp_raise_OSError_msg(MP_ERROR_TEXT("QSPI color timeout"));
             }
         }
@@ -160,6 +162,8 @@ static void qspibus_send_color_bytes(
         uint32_t packed_cmd = ((uint32_t)QSPI_OPCODE_WRITE_COLOR << 24) | ((uint32_t)chunk_command << 8);
         esp_err_t err = esp_lcd_panel_io_tx_color(self->io_handle, packed_cmd, buffer, chunk);
         if (err != ESP_OK) {
+            self->inflight_transfers = 0;
+            self->transfer_in_progress = false;
             mp_raise_OSError_msg_varg(MP_ERROR_TEXT("QSPI send color failed: %d"), err);
         }
 
@@ -178,6 +182,8 @@ static void qspibus_send_color_bytes(
     // Keep Python/API semantics predictable: color transfer call returns only
     // after queued DMA chunks have completed.
     if (!qspibus_wait_all_transfers_done(self, pdMS_TO_TICKS(QSPI_COLOR_TIMEOUT_MS))) {
+        self->inflight_transfers = 0;
+        self->transfer_in_progress = false;
         mp_raise_OSError_msg(MP_ERROR_TEXT("QSPI color timeout"));
     }
 }
@@ -504,7 +510,7 @@ bool common_hal_qspibus_qspibus_reset(mp_obj_t obj) {
 
 bool common_hal_qspibus_qspibus_bus_free(mp_obj_t obj) {
     qspibus_qspibus_obj_t *self = MP_OBJ_TO_PTR(obj);
-    return self->bus_initialized && !self->in_transaction;
+    return self->bus_initialized && !self->in_transaction && !self->transfer_in_progress;
 }
 
 bool common_hal_qspibus_qspibus_begin_transaction(mp_obj_t obj) {

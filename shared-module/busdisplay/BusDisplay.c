@@ -286,7 +286,8 @@ static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_are
         self->core.colorspace.depth == 16 &&
         !self->bus.data_as_commands &&
         displayio_area_height(&clipped) > 1 &&
-        rows_per_buffer < 2) {
+        rows_per_buffer < 2 &&
+        (2 * displayio_area_width(&clipped) + pixels_per_word - 1) / pixels_per_word <= CIRCUITPY_QSPI_DISPLAY_AREA_BUFFER_SIZE) {
         rows_per_buffer = 2;
         subrectangles = displayio_area_height(&clipped) / rows_per_buffer;
         if (displayio_area_height(&clipped) % rows_per_buffer != 0) {
