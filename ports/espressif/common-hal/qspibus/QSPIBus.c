@@ -75,6 +75,17 @@ static bool qspibus_allocate_dma_buffers(qspibus_qspibus_obj_t *self) {
     return false;
 }
 
+// Reset transfer bookkeeping after timeout/error. Drains any stale semaphore
+// tokens that late ISR completions may have posted after the timeout expired.
+static void qspibus_reset_transfer_state(qspibus_qspibus_obj_t *self) {
+    self->inflight_transfers = 0;
+    self->transfer_in_progress = false;
+    if (self->transfer_done_sem != NULL) {
+        while (xSemaphoreTake(self->transfer_done_sem, 0) == pdTRUE) {
+        }
+    }
+}
+
 static bool qspibus_wait_one_transfer_done(qspibus_qspibus_obj_t *self, TickType_t timeout) {
     if (self->inflight_transfers == 0) {
         self->transfer_in_progress = false;
@@ -109,8 +120,7 @@ static void qspibus_send_command_bytes(
     }
     if (self->inflight_transfers >= QSPI_DMA_BUFFER_COUNT) {
         if (!qspibus_wait_one_transfer_done(self, pdMS_TO_TICKS(QSPI_COLOR_TIMEOUT_MS))) {
-            self->inflight_transfers = 0;
-            self->transfer_in_progress = false;
+            qspibus_reset_transfer_state(self);
             mp_raise_OSError_msg(MP_ERROR_TEXT("QSPI command timeout"));
         }
     }
@@ -118,8 +128,7 @@ static void qspibus_send_command_bytes(
     uint32_t packed_cmd = ((uint32_t)QSPI_OPCODE_WRITE_CMD << 24) | ((uint32_t)command << 8);
     esp_err_t err = esp_lcd_panel_io_tx_param(self->io_handle, packed_cmd, data, len);
     if (err != ESP_OK) {
-        self->inflight_transfers = 0;
-        self->transfer_in_progress = false;
+        qspibus_reset_transfer_state(self);
         mp_raise_OSError_msg_varg(MP_ERROR_TEXT("QSPI send failed: %d"), err);
     }
 }
@@ -150,8 +159,7 @@ static void qspibus_send_color_bytes(
     while (remaining > 0) {
         if (self->inflight_transfers >= QSPI_DMA_BUFFER_COUNT) {
             if (!qspibus_wait_one_transfer_done(self, pdMS_TO_TICKS(QSPI_COLOR_TIMEOUT_MS))) {
-                self->inflight_transfers = 0;
-                self->transfer_in_progress = false;
+                qspibus_reset_transfer_state(self);
                 mp_raise_OSError_msg(MP_ERROR_TEXT("QSPI color timeout"));
             }
         }
@@ -167,8 +175,7 @@ static void qspibus_send_color_bytes(
         uint32_t packed_cmd = ((uint32_t)QSPI_OPCODE_WRITE_COLOR << 24) | ((uint32_t)chunk_command << 8);
         esp_err_t err = esp_lcd_panel_io_tx_color(self->io_handle, packed_cmd, buffer, chunk);
         if (err != ESP_OK) {
-            self->inflight_transfers = 0;
-            self->transfer_in_progress = false;
+            qspibus_reset_transfer_state(self);
             mp_raise_OSError_msg_varg(MP_ERROR_TEXT("QSPI send color failed: %d"), err);
         }
 
@@ -187,8 +194,7 @@ static void qspibus_send_color_bytes(
     // Keep Python/API semantics predictable: color transfer call returns only
     // after queued DMA chunks have completed.
     if (!qspibus_wait_all_transfers_done(self, pdMS_TO_TICKS(QSPI_COLOR_TIMEOUT_MS))) {
-        self->inflight_transfers = 0;
-        self->transfer_in_progress = false;
+        qspibus_reset_transfer_state(self);
         mp_raise_OSError_msg(MP_ERROR_TEXT("QSPI color timeout"));
     }
 }
@@ -203,8 +209,7 @@ static void qspibus_panel_sleep_best_effort(qspibus_qspibus_obj_t *self) {
     }
 
     if (!qspibus_wait_all_transfers_done(self, pdMS_TO_TICKS(QSPI_COLOR_TIMEOUT_MS))) {
-        self->inflight_transfers = 0;
-        self->transfer_in_progress = false;
+        qspibus_reset_transfer_state(self);
     }
 
     // If a command is buffered, flush it first so the panel state machine
