@@ -276,10 +276,10 @@ void common_hal_qspibus_qspibus_construct(
 
     const spi_bus_config_t bus_config = {
         .sclk_io_num = self->clock_pin,
-        .data0_io_num = self->data0_pin,
-        .data1_io_num = self->data1_pin,
-        .data2_io_num = self->data2_pin,
-        .data3_io_num = self->data3_pin,
+        .mosi_io_num = self->data0_pin,
+        .miso_io_num = self->data1_pin,
+        .quadwp_io_num = self->data2_pin,
+        .quadhd_io_num = self->data3_pin,
         .max_transfer_sz = SOC_SPI_MAXIMUM_BUFFER_SIZE,
         .flags = SPICOMMON_BUSFLAG_MASTER | SPICOMMON_BUSFLAG_GPIO_PINS,
     };
