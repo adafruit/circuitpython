@@ -178,7 +178,12 @@ static mp_obj_t qspibus_qspibus___enter__(mp_obj_t self_in) {
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(qspibus_qspibus___enter___obj, qspibus_qspibus___enter__);
 
-//|     def __exit__(self) -> None:
+//|     def __exit__(
+//|         self,
+//|         exc_type: type[BaseException] | None,
+//|         exc_value: BaseException | None,
+//|         traceback: TracebackType | None,
+//|     ) -> None:
 //|         """Deinitialize on context manager exit."""
 //|         ...
 //|
