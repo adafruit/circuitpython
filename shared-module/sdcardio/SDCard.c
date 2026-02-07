@@ -520,4 +520,3 @@ bool sdcardio_sdcard_ioctl(mp_obj_t self_in, size_t cmd, size_t arg, mp_int_t *o
     }
     return true;
 }
-

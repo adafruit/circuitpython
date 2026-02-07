@@ -186,4 +186,3 @@ MP_DEFINE_CONST_OBJ_TYPE(
     make_new, sdcardio_sdcard_make_new,
     locals_dict, &sdcardio_sdcard_locals_dict
     );
-
