@@ -296,7 +296,7 @@ void common_hal_qspibus_qspibus_construct(
         .miso_io_num = self->data1_pin,
         .quadwp_io_num = self->data2_pin,
         .quadhd_io_num = self->data3_pin,
-        .max_transfer_sz = SOC_SPI_MAXIMUM_BUFFER_SIZE,
+        .max_transfer_sz = self->dma_buffer_size,
         .flags = SPICOMMON_BUSFLAG_MASTER | SPICOMMON_BUSFLAG_GPIO_PINS,
     };
 
