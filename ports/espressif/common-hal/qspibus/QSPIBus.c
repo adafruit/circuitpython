@@ -108,6 +108,8 @@ static void qspibus_send_command_bytes(
     }
     if (self->inflight_transfers >= QSPI_DMA_BUFFER_COUNT) {
         if (!qspibus_wait_one_transfer_done(self, pdMS_TO_TICKS(QSPI_COLOR_TIMEOUT_MS))) {
+            self->inflight_transfers = 0;
+            self->transfer_in_progress = false;
             mp_raise_OSError_msg(MP_ERROR_TEXT("QSPI command timeout"));
         }
     }
@@ -115,6 +117,8 @@ static void qspibus_send_command_bytes(
     uint32_t packed_cmd = ((uint32_t)QSPI_OPCODE_WRITE_CMD << 24) | ((uint32_t)command << 8);
     esp_err_t err = esp_lcd_panel_io_tx_param(self->io_handle, packed_cmd, data, len);
     if (err != ESP_OK) {
+        self->inflight_transfers = 0;
+        self->transfer_in_progress = false;
         mp_raise_OSError_msg_varg(MP_ERROR_TEXT("QSPI send failed: %d"), err);
     }
 }
@@ -510,7 +514,7 @@ bool common_hal_qspibus_qspibus_reset(mp_obj_t obj) {
 
 bool common_hal_qspibus_qspibus_bus_free(mp_obj_t obj) {
     qspibus_qspibus_obj_t *self = MP_OBJ_TO_PTR(obj);
-    return self->bus_initialized && !self->in_transaction && !self->transfer_in_progress;
+    return self->bus_initialized && !self->in_transaction && !self->transfer_in_progress && !self->has_pending_command;
 }
 
 bool common_hal_qspibus_qspibus_begin_transaction(mp_obj_t obj) {
