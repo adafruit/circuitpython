@@ -14,10 +14,13 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     // ONBOARD PERIPHERALS - Functional Names
     // =================================================================
 
-    // Boot/Control/Battery
+    // Boot/Control/Battery/Display Power
+    // NOTE: GPIO16 is shared between battery control circuitry and LCD power
+    // (see CIRCUITPY_QSPIBUS_PANEL_POWER_PIN in mpconfigboard.h).
     { MP_ROM_QSTR(MP_QSTR_BOOT),        MP_ROM_PTR(&pin_GPIO0) },
     { MP_ROM_QSTR(MP_QSTR_KEY_BAT),     MP_ROM_PTR(&pin_GPIO15) },
     { MP_ROM_QSTR(MP_QSTR_BAT_CONTROL), MP_ROM_PTR(&pin_GPIO16) },
+    { MP_ROM_QSTR(MP_QSTR_LCD_POWER),   MP_ROM_PTR(&pin_GPIO16) },
     { MP_ROM_QSTR(MP_QSTR_BAT_ADC),     MP_ROM_PTR(&pin_GPIO17) },
 
     // I2C Bus (shared by Touch, RTC, IMU, IO Expander)
