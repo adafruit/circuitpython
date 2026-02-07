@@ -84,6 +84,32 @@ SRC_CYW43 :=
 SRC_LWIP :=
 endif
 
+ifeq ($(CIRCUITPY_WIZNET), 1)
+INC_WIZNET := \
+	-isystem common-hal/wiznet \
+
+SRC_WIZNET := \
+	common-hal/wiznet/wizchip_pio_spi.c \
+
+WIZNET_PIOASM = $(BUILD)/pioasm/pioasm/pioasm
+.PHONY: pioasmBuild
+pioasmBuild: $(WIZNET_PIOASM)
+
+$(WIZNET_PIOASM):
+	$(Q)cmake -S pioasm -B $(BUILD)/pioasm
+	$(MAKE) -C $(BUILD)/pioasm pioasmBuild
+
+$(BUILD)/wizchip_pio_spi.pio.h: common-hal/wiznet/wizchip_pio_spi.pio $(WIZNET_PIOASM)
+	$(Q)$(WIZNET_PIOASM) -o c-sdk $< $@
+$(BUILD)/common-hal/wiznet/wizchip_pio_spi.o: $(BUILD)/wizchip_pio_spi.pio.h
+
+$(BUILD)/genhdr/qstr.i.last: $(BUILD)/wizchip_pio_spi.pio.h
+
+else
+INC_WIZNET :=
+SRC_WIZNET :=
+endif
+
 CHIP_VARIANT_LOWER = $(shell echo $(CHIP_VARIANT) | tr '[:upper:]' '[:lower:]')
 
 INC += \
@@ -538,6 +564,10 @@ SRC_C += \
 	bindings/rp2pio/__init__.c \
 	common-hal/rp2pio/StateMachine.c \
 	common-hal/rp2pio/__init__.c \
+	bindings/wiznet/PIO_SPI.c \
+	bindings/wiznet/__init__.c \
+	common-hal/wiznet/PIO_SPI.c \
+	common-hal/wiznet/__init__.c \
 	audio_dma.c \
 	background.c \
 	peripherals/pins.c \
@@ -547,6 +577,7 @@ SRC_C += \
 	mphalport.c \
 	$(SRC_CYW43) \
 	$(SRC_LWIP) \
+	$(SRC_WIZNET) \
 
 
 ifeq ($(CIRCUITPY_USB_HOST), 1)
