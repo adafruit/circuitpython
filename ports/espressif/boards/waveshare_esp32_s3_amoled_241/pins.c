@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 Przemyslaw Patrick Socha
+// SPDX-FileCopyrightText: Copyright (c) 2026 Przemyslaw Patrick Socha
 //
 // SPDX-License-Identifier: MIT
 
@@ -60,15 +60,6 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_LCD_D2),    MP_ROM_PTR(&pin_GPIO13) },
     { MP_ROM_QSTR(MP_QSTR_LCD_D3),    MP_ROM_PTR(&pin_GPIO14) },
     { MP_ROM_QSTR(MP_QSTR_LCD_RESET), MP_ROM_PTR(&pin_GPIO21) },
-
-    // Backward-compatible aliases used by existing tests/scripts.
-    { MP_ROM_QSTR(MP_QSTR_QSPI_CS),      MP_ROM_PTR(&pin_GPIO9) },
-    { MP_ROM_QSTR(MP_QSTR_QSPI_CLK),     MP_ROM_PTR(&pin_GPIO10) },
-    { MP_ROM_QSTR(MP_QSTR_QSPI_D0),      MP_ROM_PTR(&pin_GPIO11) },
-    { MP_ROM_QSTR(MP_QSTR_QSPI_D1),      MP_ROM_PTR(&pin_GPIO12) },
-    { MP_ROM_QSTR(MP_QSTR_QSPI_D2),      MP_ROM_PTR(&pin_GPIO13) },
-    { MP_ROM_QSTR(MP_QSTR_QSPI_D3),      MP_ROM_PTR(&pin_GPIO14) },
-    { MP_ROM_QSTR(MP_QSTR_AMOLED_RESET), MP_ROM_PTR(&pin_GPIO21) },
 
     // Display Aliases
     { MP_ROM_QSTR(MP_QSTR_DISPLAY_CS),  MP_ROM_PTR(&pin_GPIO9) },

@@ -282,8 +282,6 @@ static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_are
         }
     }
 
-    // RM690B0 over qspibus is unstable with single-row bursts. Keep chunks at
-    // two rows minimum when possible.
     if (mp_obj_is_type(self->bus.bus, &qspibus_qspibus_type) &&
         self->core.colorspace.depth == 16 &&
         !self->bus.data_as_commands &&

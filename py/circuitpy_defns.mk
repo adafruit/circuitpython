@@ -771,6 +771,8 @@ SRC_SHARED_MODULE_ALL = \
 	rgbmatrix/RGBMatrix.c \
 	rgbmatrix/__init__.c \
 	rotaryio/IncrementalEncoder.c \
+	sdcardio/SDCard.c \
+	sdcardio/__init__.c \
 	sharpdisplay/SharpMemoryFramebuffer.c \
 	sharpdisplay/__init__.c \
 	socket/__init__.c \
@@ -898,11 +900,9 @@ SRC_MOD += $(addprefix lib/AnimatedGIF/, \
 $(BUILD)/lib/AnimatedGIF/gif.o: CFLAGS += -DCIRCUITPY
 endif
 
-# tjpgd library is needed for JPEGIO support.
-ifneq ($(filter 1,$(CIRCUITPY_JPEGIO)),)
+ifeq ($(CIRCUITPY_JPEGIO),1)
 SRC_MOD += lib/tjpgd/src/tjpgd.c
 $(BUILD)/lib/tjpgd/src/tjpgd.o: CFLAGS += -Wno-shadow -Wno-cast-align
-CFLAGS_MOD += -I$(TOP)/lib/tjpgd/src
 endif
 
 ifeq ($(CIRCUITPY_HASHLIB_MBEDTLS_ONLY),1)

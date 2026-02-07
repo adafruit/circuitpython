@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright (c) 2025 Przemyslaw Patrick Socha
+// SPDX-FileCopyrightText: Copyright (c) 2026 Przemyslaw Patrick Socha
 //
 // SPDX-License-Identifier: MIT
 
