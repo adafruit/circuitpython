@@ -143,7 +143,8 @@ static void qspibus_send_color_bytes(
         mp_raise_OSError_msg(MP_ERROR_TEXT("QSPI DMA buffers unavailable"));
     }
 
-    const uint32_t packed_cmd = ((uint32_t)QSPI_OPCODE_WRITE_COLOR << 24) | ((uint32_t)command << 8);
+    // RAMWR must transition to RAMWRC for continued payload chunks.
+    uint8_t chunk_command = command;
     const uint8_t *cursor = data;
     size_t remaining = len;
 
@@ -162,6 +163,7 @@ static void qspibus_send_color_bytes(
         uint8_t *buffer = self->dma_buffer[self->active_buffer];
         memcpy(buffer, cursor, chunk);
 
+        uint32_t packed_cmd = ((uint32_t)QSPI_OPCODE_WRITE_COLOR << 24) | ((uint32_t)chunk_command << 8);
         esp_err_t err = esp_lcd_panel_io_tx_color(self->io_handle, packed_cmd, buffer, chunk);
         if (err != ESP_OK) {
             mp_raise_OSError_msg_varg(MP_ERROR_TEXT("QSPI send color failed: %d"), err);
@@ -171,8 +173,18 @@ static void qspibus_send_color_bytes(
         self->transfer_in_progress = true;
         self->active_buffer = (self->active_buffer + 1) % QSPI_DMA_BUFFER_COUNT;
 
+        if (chunk_command == LCD_CMD_RAMWR) {
+            chunk_command = LCD_CMD_RAMWRC;
+        }
+
         cursor += chunk;
         remaining -= chunk;
+    }
+
+    // Keep Python/API semantics predictable: color transfer call returns only
+    // after queued DMA chunks have completed.
+    if (!qspibus_wait_all_transfers_done(self, pdMS_TO_TICKS(QSPI_COLOR_TIMEOUT_MS))) {
+        mp_raise_OSError_msg(MP_ERROR_TEXT("QSPI color timeout"));
     }
 }
 
@@ -229,6 +241,7 @@ void common_hal_qspibus_qspibus_construct(
     const mcu_pin_obj_t *data2,
     const mcu_pin_obj_t *data3,
     const mcu_pin_obj_t *cs,
+    const mcu_pin_obj_t *dcx,
     const mcu_pin_obj_t *reset,
     uint32_t frequency) {
 
@@ -240,6 +253,7 @@ void common_hal_qspibus_qspibus_construct(
     self->data2_pin = data2->number;
     self->data3_pin = data3->number;
     self->cs_pin = cs->number;
+    self->dcx_pin = (dcx != NULL) ? dcx->number : -1;
     self->reset_pin = (reset != NULL) ? reset->number : -1;
     self->power_pin = -1;
     self->frequency = frequency;
@@ -314,6 +328,11 @@ void common_hal_qspibus_qspibus_construct(
     claim_pin(data2);
     claim_pin(data3);
     claim_pin(cs);
+    if (dcx != NULL) {
+        claim_pin(dcx);
+        gpio_set_direction((gpio_num_t)self->dcx_pin, GPIO_MODE_OUTPUT);
+        gpio_set_level((gpio_num_t)self->dcx_pin, 1);
+    }
 
     #ifdef CIRCUITPY_QSPIBUS_PANEL_POWER_PIN
     const mcu_pin_obj_t *power = CIRCUITPY_QSPIBUS_PANEL_POWER_PIN;
@@ -369,6 +388,9 @@ void common_hal_qspibus_qspibus_deinit(qspibus_qspibus_obj_t *self) {
     reset_pin_number(self->data2_pin);
     reset_pin_number(self->data3_pin);
     reset_pin_number(self->cs_pin);
+    if (self->dcx_pin >= 0) {
+        reset_pin_number(self->dcx_pin);
+    }
     if (self->power_pin >= 0) {
         reset_pin_number(self->power_pin);
     }
@@ -394,6 +416,83 @@ void common_hal_qspibus_qspibus_send_command(
     const uint8_t *data,
     size_t len) {
     qspibus_send_command_bytes(self, command, data, len);
+}
+
+void common_hal_qspibus_qspibus_send_command_data(
+    qspibus_qspibus_obj_t *self,
+    uint8_t command,
+    const uint8_t *data,
+    size_t len) {
+    if (!self->bus_initialized) {
+        mp_raise_ValueError(MP_ERROR_TEXT("QSPI bus deinitialized"));
+    }
+    if (self->in_transaction) {
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Bus in display transaction"));
+    }
+
+    if (self->has_pending_command) {
+        qspibus_send_command_bytes(self, self->pending_command, NULL, 0);
+        self->has_pending_command = false;
+    }
+
+    if (data == NULL || len == 0) {
+        qspibus_send_command_bytes(self, command, NULL, 0);
+        return;
+    }
+
+    if (qspibus_is_color_payload_command(command)) {
+        qspibus_send_color_bytes(self, command, data, len);
+    } else {
+        qspibus_send_command_bytes(self, command, data, len);
+    }
+}
+
+void common_hal_qspibus_qspibus_write_command(
+    qspibus_qspibus_obj_t *self,
+    uint8_t command) {
+    if (!self->bus_initialized) {
+        mp_raise_ValueError(MP_ERROR_TEXT("QSPI bus deinitialized"));
+    }
+    if (self->in_transaction) {
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Bus in display transaction"));
+    }
+
+    // If caller stages command-only operations repeatedly, flush the previous
+    // pending command as no-data before replacing it.
+    if (self->has_pending_command) {
+        qspibus_send_command_bytes(self, self->pending_command, NULL, 0);
+    }
+
+    self->pending_command = command;
+    self->has_pending_command = true;
+}
+
+void common_hal_qspibus_qspibus_write_data(
+    qspibus_qspibus_obj_t *self,
+    const uint8_t *data,
+    size_t len) {
+    if (!self->bus_initialized) {
+        mp_raise_ValueError(MP_ERROR_TEXT("QSPI bus deinitialized"));
+    }
+    if (self->in_transaction) {
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Bus in display transaction"));
+    }
+    if (len == 0) {
+        return;
+    }
+    if (data == NULL) {
+        mp_raise_ValueError(MP_ERROR_TEXT("data buffer is null"));
+    }
+    if (!self->has_pending_command) {
+        mp_raise_ValueError(MP_ERROR_TEXT("No pending command"));
+    }
+
+    if (qspibus_is_color_payload_command(self->pending_command)) {
+        qspibus_send_color_bytes(self, self->pending_command, data, len);
+    } else {
+        qspibus_send_command_bytes(self, self->pending_command, data, len);
+    }
+    self->has_pending_command = false;
 }
 
 bool common_hal_qspibus_qspibus_reset(mp_obj_t obj) {

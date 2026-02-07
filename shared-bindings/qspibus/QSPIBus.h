@@ -24,6 +24,7 @@ void common_hal_qspibus_qspibus_construct(
     const mcu_pin_obj_t *data2,
     const mcu_pin_obj_t *data3,
     const mcu_pin_obj_t *cs,
+    const mcu_pin_obj_t *dcx,
     const mcu_pin_obj_t *reset,
     uint32_t frequency);
 
@@ -33,6 +34,18 @@ bool common_hal_qspibus_qspibus_deinited(qspibus_qspibus_obj_t *self);
 void common_hal_qspibus_qspibus_send_command(
     qspibus_qspibus_obj_t *self,
     uint8_t command,
+    const uint8_t *data,
+    size_t len);
+void common_hal_qspibus_qspibus_send_command_data(
+    qspibus_qspibus_obj_t *self,
+    uint8_t command,
+    const uint8_t *data,
+    size_t len);
+void common_hal_qspibus_qspibus_write_command(
+    qspibus_qspibus_obj_t *self,
+    uint8_t command);
+void common_hal_qspibus_qspibus_write_data(
+    qspibus_qspibus_obj_t *self,
     const uint8_t *data,
     size_t len);
 
