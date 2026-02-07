@@ -187,6 +187,11 @@ void epaperdisplay_epaperdisplay_change_refresh_mode_parameters(epaperdisplay_ep
 }
 
 static void epaperdisplay_epaperdisplay_start_refresh(epaperdisplay_epaperdisplay_obj_t *self) {
+    if (!displayio_display_core_start_refresh(&self->core)) {
+        // Refresh on this display already in progress.
+        return;
+    }
+
     if (!displayio_display_bus_is_free(&self->bus)) {
         // Can't acquire display bus; skip updating this display. Try next display.
         return;
@@ -201,7 +206,6 @@ static void epaperdisplay_epaperdisplay_start_refresh(epaperdisplay_epaperdispla
     if (mp_hal_is_interrupted()) {
         return;
     }
-    displayio_display_core_start_refresh(&self->core);
 }
 
 uint32_t common_hal_epaperdisplay_epaperdisplay_get_time_to_refresh(epaperdisplay_epaperdisplay_obj_t *self) {
