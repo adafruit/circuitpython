@@ -6,6 +6,7 @@
 
 #include "common-hal/microcontroller/Pin.h"
 #include "shared-bindings/microcontroller/Pin.h"
+#include "shared-bindings/util.h"
 
 #include "py/gc.h"
 #include "py/runtime.h"
@@ -104,7 +105,7 @@ static void qspibus_send_command_bytes(
     size_t len) {
 
     if (!self->bus_initialized) {
-        mp_raise_ValueError(MP_ERROR_TEXT("QSPI bus deinitialized"));
+        raise_deinited_error();
     }
     if (self->inflight_transfers >= QSPI_DMA_BUFFER_COUNT) {
         if (!qspibus_wait_one_transfer_done(self, pdMS_TO_TICKS(QSPI_COLOR_TIMEOUT_MS))) {
@@ -130,7 +131,7 @@ static void qspibus_send_color_bytes(
     size_t len) {
 
     if (!self->bus_initialized) {
-        mp_raise_ValueError(MP_ERROR_TEXT("QSPI bus deinitialized"));
+        raise_deinited_error();
     }
 
     if (len == 0) {
@@ -428,7 +429,7 @@ void common_hal_qspibus_qspibus_send_command_data(
     const uint8_t *data,
     size_t len) {
     if (!self->bus_initialized) {
-        mp_raise_ValueError(MP_ERROR_TEXT("QSPI bus deinitialized"));
+        raise_deinited_error();
     }
     if (self->in_transaction) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Bus in display transaction"));
@@ -455,7 +456,7 @@ void common_hal_qspibus_qspibus_write_command(
     qspibus_qspibus_obj_t *self,
     uint8_t command) {
     if (!self->bus_initialized) {
-        mp_raise_ValueError(MP_ERROR_TEXT("QSPI bus deinitialized"));
+        raise_deinited_error();
     }
     if (self->in_transaction) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Bus in display transaction"));
@@ -476,7 +477,7 @@ void common_hal_qspibus_qspibus_write_data(
     const uint8_t *data,
     size_t len) {
     if (!self->bus_initialized) {
-        mp_raise_ValueError(MP_ERROR_TEXT("QSPI bus deinitialized"));
+        raise_deinited_error();
     }
     if (self->in_transaction) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Bus in display transaction"));
@@ -537,7 +538,7 @@ void common_hal_qspibus_qspibus_send(
     qspibus_qspibus_obj_t *self = MP_OBJ_TO_PTR(obj);
     (void)chip_select;
     if (!self->bus_initialized) {
-        mp_raise_ValueError(MP_ERROR_TEXT("QSPI bus deinitialized"));
+        raise_deinited_error();
     }
     if (!self->in_transaction) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Begin transaction first"));

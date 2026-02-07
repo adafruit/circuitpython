@@ -133,6 +133,10 @@ static mp_obj_t qspibus_qspibus_send(size_t n_args, const mp_obj_t *pos_args, mp
         len = data_bufinfo.len;
     }
 
+    // Wait for display bus to be available (mirrors FourWire.send() behavior).
+    while (!common_hal_qspibus_qspibus_bus_free(MP_OBJ_FROM_PTR(self))) {
+        RUN_BACKGROUND_TASKS;
+    }
     common_hal_qspibus_qspibus_send_command_data(self, command, data, len);
     return mp_const_none;
 }
