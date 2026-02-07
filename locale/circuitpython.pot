@@ -210,6 +210,7 @@ msgstr ""
 msgid "%q must be array of type 'h'"
 msgstr ""
 
+#: shared-bindings/audiobusio/I2S.c shared-bindings/audiobusio/I2SIn.c
 #: shared-bindings/audiobusio/PDMIn.c
 msgid "%q must be multiple of 8."
 msgstr ""
@@ -651,12 +652,18 @@ msgstr ""
 msgid "Below minimum frame rate"
 msgstr ""
 
+#: ports/raspberrypi/common-hal/audiobusio/I2S.c
+#: ports/raspberrypi/common-hal/audiobusio/I2SIn.c
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 msgid "Bit clock and word select must be sequential GPIO pins"
 msgstr ""
 
 #: shared-bindings/bitmaptools/__init__.c
 msgid "Bitmap size and bits per value must match"
+msgstr ""
+
+#: ports/raspberrypi/common-hal/audiobusio/I2S.c
+msgid "Bits per sample cannot be greater than input."
 msgstr ""
 
 #: supervisor/shared/safe_mode.c
@@ -804,7 +811,7 @@ msgstr ""
 msgid "Cannot pull on input-only pin."
 msgstr ""
 
-#: shared-bindings/audiobusio/PDMIn.c
+#: shared-bindings/audiobusio/I2S.c shared-bindings/audiobusio/PDMIn.c
 msgid "Cannot record to a file"
 msgstr ""
 
@@ -924,7 +931,7 @@ msgstr ""
 msgid "Deep sleep pins must use a rising edge with pulldown"
 msgstr ""
 
-#: shared-bindings/audiobusio/PDMIn.c
+#: shared-bindings/audiobusio/I2S.c shared-bindings/audiobusio/PDMIn.c
 msgid "Destination capacity is smaller than destination_length."
 msgstr ""
 
@@ -1539,6 +1546,8 @@ msgstr ""
 
 #: ports/atmel-samd/common-hal/audiobusio/I2SOut.c
 #: ports/atmel-samd/common-hal/audioio/AudioOut.c
+#: ports/raspberrypi/common-hal/audiobusio/I2S.c
+#: ports/raspberrypi/common-hal/audiobusio/I2SIn.c
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 #: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
 msgid "No DMA channel found"
@@ -1569,6 +1578,14 @@ msgstr ""
 
 #: shared-bindings/_bleio/PacketBuffer.c
 msgid "No connection: length cannot be determined"
+msgstr ""
+
+#: ports/raspberrypi/common-hal/audiobusio/I2S.c
+msgid "No data in"
+msgstr ""
+
+#: ports/raspberrypi/common-hal/audiobusio/I2S.c
+msgid "No data out"
 msgstr ""
 
 #: shared-bindings/board/__init__.c
@@ -1654,8 +1671,8 @@ msgstr ""
 msgid "Not connected"
 msgstr ""
 
-#: shared-bindings/audiobusio/I2SOut.c shared-bindings/audioio/AudioOut.c
-#: shared-bindings/audiopwmio/PWMAudioOut.c
+#: shared-bindings/audiobusio/I2S.c shared-bindings/audiobusio/I2SOut.c
+#: shared-bindings/audioio/AudioOut.c shared-bindings/audiopwmio/PWMAudioOut.c
 msgid "Not playing"
 msgstr ""
 
@@ -2040,6 +2057,10 @@ msgstr ""
 msgid "SPI re-init"
 msgstr ""
 
+#: ports/raspberrypi/common-hal/audiobusio/I2S.c
+msgid "Sample rate must match."
+msgstr ""
+
 #: shared-bindings/is31fl3741/FrameBuffer.c
 msgid "Scale dimensions must divide by 3"
 msgstr ""
@@ -2056,6 +2077,10 @@ msgstr ""
 
 #: shared-bindings/ssl/SSLContext.c
 msgid "Server side context cannot have hostname"
+msgstr ""
+
+#: ports/raspberrypi/common-hal/audiobusio/I2S.c
+msgid "Single channel output not supported."
 msgstr ""
 
 #: ports/cxd56/common-hal/camera/Camera.c
@@ -2171,6 +2196,7 @@ msgstr ""
 msgid "Too many channels in sample"
 msgstr ""
 
+#: ports/raspberrypi/common-hal/audiobusio/I2S.c
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 msgid "Too many channels in sample."
 msgstr ""
@@ -2272,6 +2298,8 @@ msgstr ""
 
 #: ports/atmel-samd/common-hal/audiobusio/I2SOut.c
 #: ports/atmel-samd/common-hal/audioio/AudioOut.c
+#: ports/raspberrypi/common-hal/audiobusio/I2S.c
+#: ports/raspberrypi/common-hal/audiobusio/I2SIn.c
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 #: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
 msgid "Unable to allocate buffers for signed conversion"
@@ -3073,13 +3101,17 @@ msgstr ""
 msgid "default is not a function"
 msgstr ""
 
-#: shared-bindings/audiobusio/PDMIn.c
+#: shared-bindings/audiobusio/I2S.c shared-bindings/audiobusio/PDMIn.c
 msgid ""
 "destination buffer must be a bytearray or array of type 'B' for bit_depth = 8"
 msgstr ""
 
 #: shared-bindings/audiobusio/PDMIn.c
 msgid "destination buffer must be an array of type 'H' for bit_depth = 16"
+msgstr ""
+
+#: shared-bindings/audiobusio/I2S.c
+msgid "destination buffer must be an array of type 'h' for bit_depth = 16"
 msgstr ""
 
 #: py/objdict.c

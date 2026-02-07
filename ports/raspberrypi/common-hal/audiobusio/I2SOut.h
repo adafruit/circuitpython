@@ -12,6 +12,8 @@
 #include "audio_dma.h"
 #include "py/obj.h"
 
+#if CIRCUITPY_AUDIOBUSIO_I2SOUT && !CIRCUITPY_AUDIOBUSIO_I2SIN
+
 // We don't bit pack because we'll only have two at most. Its better to save code size instead.
 typedef struct {
     mp_obj_base_t base;
@@ -22,3 +24,5 @@ typedef struct {
 } audiobusio_i2sout_obj_t;
 
 void i2sout_reset(void);
+
+#endif // CIRCUITPY_AUDIOBUSIO_I2SOUT && !CIRCUITPY_AUDIOBUSIO_I2SIN
