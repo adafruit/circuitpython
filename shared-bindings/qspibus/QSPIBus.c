@@ -111,7 +111,7 @@ static mp_obj_t qspibus_qspibus_send(size_t n_args, const mp_obj_t *pos_args, mp
     enum { ARG_command, ARG_data };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_command, MP_ARG_INT | MP_ARG_REQUIRED },
-        { MP_QSTR_data, MP_ARG_OBJ, {.u_obj = mp_const_none} },
+        { MP_QSTR_data, MP_ARG_OBJ, {.u_obj = mp_const_empty_bytes} },
     };
 
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
