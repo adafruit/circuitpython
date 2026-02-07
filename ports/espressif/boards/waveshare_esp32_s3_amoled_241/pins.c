@@ -70,12 +70,11 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_DISPLAY_D3),  MP_ROM_PTR(&pin_GPIO14) },
     { MP_ROM_QSTR(MP_QSTR_DISPLAY_RST), MP_ROM_PTR(&pin_GPIO21) },
 
-    // SD Card (SPI)
-    { MP_ROM_QSTR(MP_QSTR_SD_MISO), MP_ROM_PTR(&pin_GPIO6) },
-    { MP_ROM_QSTR(MP_QSTR_SD_MOSI), MP_ROM_PTR(&pin_GPIO5) },
-    { MP_ROM_QSTR(MP_QSTR_SD_CLK),  MP_ROM_PTR(&pin_GPIO4) },
-    { MP_ROM_QSTR(MP_QSTR_SD_CS),   MP_ROM_PTR(&pin_GPIO2) },
-    { MP_ROM_QSTR(MP_QSTR_SD_SPI),  MP_ROM_PTR(&board_spi_obj) },
+    // SD Card (SDIO / SDMMC)
+    { MP_ROM_QSTR(MP_QSTR_SDIO_CLK), MP_ROM_PTR(&pin_GPIO4) },
+    { MP_ROM_QSTR(MP_QSTR_SDIO_CMD), MP_ROM_PTR(&pin_GPIO5) },
+    { MP_ROM_QSTR(MP_QSTR_SDIO_D0),  MP_ROM_PTR(&pin_GPIO6) },
+    { MP_ROM_QSTR(MP_QSTR_SDIO_D3),  MP_ROM_PTR(&pin_GPIO2) },
 
     // =================================================================
     // GENERAL PURPOSE I/O (IOxx - Espressif Convention)

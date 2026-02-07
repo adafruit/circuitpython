@@ -8,6 +8,7 @@
 
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/util.h"
+#include "shared-module/displayio/__init__.h"
 
 #include "py/binary.h"
 #include "py/obj.h"
@@ -81,7 +82,8 @@ static mp_obj_t qspibus_qspibus_make_new(const mp_obj_type_t *type, size_t n_arg
 
     uint32_t frequency = (uint32_t)mp_arg_validate_int_range(args[ARG_frequency].u_int, 1, 80000000, MP_QSTR_frequency);
 
-    qspibus_qspibus_obj_t *self = mp_obj_malloc(qspibus_qspibus_obj_t, &qspibus_qspibus_type);
+    qspibus_qspibus_obj_t *self = &allocate_display_bus_or_raise()->qspi_bus;
+    self->base.type = &qspibus_qspibus_type;
     common_hal_qspibus_qspibus_construct(self, clock, data0, data1, data2, data3, cs, dcx, reset, frequency);
 
     return MP_OBJ_FROM_PTR(self);

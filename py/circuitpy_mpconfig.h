@@ -388,6 +388,13 @@ typedef long mp_off_t;
 #define CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE (128)
 #endif
 
+// QSPI display buffer size in uint32_t words for _refresh_area() VLA.
+// Allocated on stack; boards should verify sufficient stack headroom.
+// Default 512 words = 2KB. Override per-board for larger buffers.
+#ifndef CIRCUITPY_QSPI_DISPLAY_AREA_BUFFER_SIZE
+#define CIRCUITPY_QSPI_DISPLAY_AREA_BUFFER_SIZE (512)
+#endif
+
 #else
 #define CIRCUITPY_DISPLAY_LIMIT (0)
 #define CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE (0)

@@ -17,6 +17,10 @@
 #define CIRCUITPY_BOARD_I2C         (0)
 #define CIRCUITPY_BOARD_I2C_PIN     {{.scl = &pin_GPIO48, .sda = &pin_GPIO47}}
 
+// QSPI display refresh buffer: 2048 uint32_t words = 8KB on stack.
+// ESP32-S3 main task stack is 24KB; verified safe with this board.
+#define CIRCUITPY_QSPI_DISPLAY_AREA_BUFFER_SIZE (2048)
+
 // AMOLED Display (displayio + qspibus path)
 #define CIRCUITPY_BOARD_DISPLAY      (0)
 #define CIRCUITPY_LCD_CS             (&pin_GPIO9)
@@ -29,13 +33,9 @@
 #define CIRCUITPY_LCD_POWER          (&pin_GPIO16)
 #define CIRCUITPY_LCD_POWER_ON_LEVEL (1)  // GPIO level: 1=high, 0=low
 
-// SPI bus for SD Card
-#define CIRCUITPY_BOARD_SPI         (1)
-#define CIRCUITPY_BOARD_SPI_PIN     {{.clock = &pin_GPIO4, .mosi = &pin_GPIO5, .miso = &pin_GPIO6}}
+// No default SPI bus — SD card uses SDIO, display uses QSPI.
+#define CIRCUITPY_BOARD_SPI         (0)
 
 // Default UART bus
 #define DEFAULT_UART_BUS_RX (&pin_GPIO44)
 #define DEFAULT_UART_BUS_TX (&pin_GPIO43)
-
-// Disable unnecessary modules to save space
-#define CIRCUITPY_CAMERA (0)

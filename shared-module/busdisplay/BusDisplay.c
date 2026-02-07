@@ -265,8 +265,8 @@ static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_are
         self->core.colorspace.depth == 16 &&
         !self->bus.data_as_commands &&
         !self->bus.SH1107_addressing &&
-        buffer_size < 2048) {
-        buffer_size = 2048; // 8KB uint32_t buffer
+        buffer_size < CIRCUITPY_QSPI_DISPLAY_AREA_BUFFER_SIZE) {
+        buffer_size = CIRCUITPY_QSPI_DISPLAY_AREA_BUFFER_SIZE;
         rows_per_buffer = buffer_size * pixels_per_word / displayio_area_width(&clipped);
         if (rows_per_buffer == 0) {
             rows_per_buffer = 1;
