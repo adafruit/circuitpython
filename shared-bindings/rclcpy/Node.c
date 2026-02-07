@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include "shared-bindings/rclcpy/Node.h"
 #include "shared-bindings/rclcpy/Publisher.h"
+#include "shared-bindings/rclcpy/registry.h"
 #include "shared-bindings/util.h"
 #include "py/objproperty.h"
 #include "py/objtype.h"
@@ -83,16 +84,23 @@ static void check_for_deinit(rclcpy_node_obj_t *self) {
 //|         """
 //|         ...
 //|
-static mp_obj_t rclcpy_node_create_publisher(mp_obj_t self_in, mp_obj_t topic) {
+static mp_obj_t rclcpy_node_create_publisher(mp_obj_t self_in, mp_obj_t msg_type, mp_obj_t topic) {
     rclcpy_node_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
+
     const char *topic_name = mp_obj_str_get_str(topic);
 
+    // Validate msg type
+    const mp_obj_type_t *message_type = MP_OBJ_TO_PTR(msg_type);
+    if (!common_hal_rclcpy_registry_get_msg_ros_typesupport(message_type)) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Invalid ROS message type"));
+    }
+
     rclcpy_publisher_obj_t *publisher = mp_obj_malloc_with_finaliser(rclcpy_publisher_obj_t, &rclcpy_publisher_type);
-    common_hal_rclcpy_publisher_construct(publisher, self, topic_name);
+    common_hal_rclcpy_publisher_construct(publisher, self, message_type, topic_name);
     return (mp_obj_t)publisher;
 }
-static MP_DEFINE_CONST_FUN_OBJ_2(rclcpy_node_create_publisher_obj, rclcpy_node_create_publisher);
+static MP_DEFINE_CONST_FUN_OBJ_3(rclcpy_node_create_publisher_obj, rclcpy_node_create_publisher);
 
 //|     def get_name(self) -> str:
 //|         """Get the name of the node.

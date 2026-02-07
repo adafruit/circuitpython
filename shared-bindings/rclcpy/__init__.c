@@ -122,6 +122,7 @@ static const mp_rom_map_elem_t rclcpy_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_Publisher),   MP_ROM_PTR(&rclcpy_publisher_type) },
     { MP_ROM_QSTR(MP_QSTR_init),   MP_ROM_PTR(&rclcpy_init_obj) },
     { MP_ROM_QSTR(MP_QSTR_create_node),   MP_ROM_PTR(&rclcpy_create_node_obj) },
+    { MP_ROM_QSTR(MP_QSTR_std_msgs), MP_ROM_PTR(&rclcpy_std_msgs_module) },
 };
 
 static MP_DEFINE_CONST_DICT(rclcpy_module_globals, rclcpy_module_globals_table);

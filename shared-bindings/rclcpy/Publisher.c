@@ -47,22 +47,25 @@ static void check_for_deinit(rclcpy_publisher_obj_t *self) {
     }
 }
 
-//|     def publish_int32(self, message: int) -> None:
-//|         """Publish a 32-bit signed integer message to the topic.
+//|     def publish(self, message: MsgObj) -> None:
+//|         """Publish a message to the topic
 //|
-//|         :param int message: The integer value to publish. Must be within the range
-//|             of a 32-bit signed integer (-2,147,483,648 to 2,147,483,647)
+//|         :param MsgObj message: ROS message instance with same type as the topic
 //|         """
 //|         ...
 //|
-static mp_obj_t rclcpy_publisher_publish_int32(mp_obj_t self_in, mp_obj_t in_msg) {
+static mp_obj_t rclcpy_publisher_publish(mp_obj_t self_in, mp_obj_t msg_obj) {
     rclcpy_publisher_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
-    int32_t msg = mp_obj_get_int(in_msg);
-    common_hal_rclcpy_publisher_publish_int32(self, msg);
+
+    // Verify the message type matches what this publisher expects
+    if (mp_obj_get_type(msg_obj) != self->message_type) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Publish message does not match topic"));
+    }
+    common_hal_rclcpy_publisher_publish(self, msg_obj);
     return mp_const_none;
 }
-static MP_DEFINE_CONST_FUN_OBJ_2(rclcpy_publisher_publish_int32_obj, rclcpy_publisher_publish_int32);
+static MP_DEFINE_CONST_FUN_OBJ_2(rclcpy_publisher_publish_obj, rclcpy_publisher_publish);
 
 //|     def get_topic_name(self) -> str:
 //|         """Get the name of the topic this publisher publishes to.
@@ -84,7 +87,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(rclcpy_publisher_get_topic_name_obj, rclcpy_pub
 static const mp_rom_map_elem_t rclcpy_publisher_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&rclcpy_publisher_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&rclcpy_publisher_deinit_obj) },
-    { MP_ROM_QSTR(MP_QSTR_publish_int32), MP_ROM_PTR(&rclcpy_publisher_publish_int32_obj) },
+    { MP_ROM_QSTR(MP_QSTR_publish), MP_ROM_PTR(&rclcpy_publisher_publish_obj) },
     { MP_ROM_QSTR(MP_QSTR_get_topic_name), MP_ROM_PTR(&rclcpy_publisher_get_topic_name_obj) },
 };
 static MP_DEFINE_CONST_DICT(rclcpy_publisher_locals_dict, rclcpy_publisher_locals_dict_table);
