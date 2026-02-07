@@ -688,6 +688,7 @@ msgstr ""
 #: ports/cxd56/common-hal/sdioio/SDCard.c
 #: ports/espressif/common-hal/sdioio/SDCard.c
 #: ports/stm/common-hal/sdioio/SDCard.c shared-bindings/floppyio/__init__.c
+#: shared-module/sdcardio/SDCard.c
 #, c-format
 msgid "Buffer must be a multiple of %d bytes"
 msgstr ""
@@ -2027,6 +2028,10 @@ msgstr ""
 msgid "Running in safe mode! Not running saved code.\n"
 msgstr ""
 
+#: shared-module/sdcardio/SDCard.c
+msgid "SD card CSD format not supported"
+msgstr ""
+
 #: ports/cxd56/common-hal/sdioio/SDCard.c
 msgid "SDCard init"
 msgstr ""
@@ -2902,6 +2907,10 @@ msgstr ""
 msgid "can't send non-None value to a just-started generator"
 msgstr ""
 
+#: shared-module/sdcardio/SDCard.c
+msgid "can't set 512 block size"
+msgstr ""
+
 #: py/objexcept.c py/objnamedtuple.c
 msgid "can't set attribute"
 msgstr ""
@@ -3050,6 +3059,10 @@ msgstr ""
 
 #: extmod/ulab/code/numpy/poly.c
 msgid "could not invert Vandermonde matrix"
+msgstr ""
+
+#: shared-module/sdcardio/SDCard.c
+msgid "couldn't determine SD card version"
 msgstr ""
 
 #: extmod/ulab/code/numpy/numerical.c
@@ -3781,6 +3794,10 @@ msgstr ""
 msgid "nested index must be int"
 msgstr ""
 
+#: shared-module/sdcardio/SDCard.c
+msgid "no SD card"
+msgstr ""
+
 #: py/vm.c
 msgid "no active exception to reraise"
 msgstr ""
@@ -3799,6 +3816,10 @@ msgstr ""
 
 #: py/builtinimport.c
 msgid "no module named '%q'"
+msgstr ""
+
+#: shared-module/sdcardio/SDCard.c
+msgid "no response from SD card"
 msgstr ""
 
 #: ports/espressif/common-hal/espcamera/Camera.c py/objobject.c py/runtime.c
@@ -4304,6 +4325,14 @@ msgstr ""
 #: ports/raspberrypi/common-hal/floppyio/__init__.c
 #: shared-module/floppyio/__init__.c
 msgid "timeout waiting for index pulse"
+msgstr ""
+
+#: shared-module/sdcardio/SDCard.c
+msgid "timeout waiting for v1 card"
+msgstr ""
+
+#: shared-module/sdcardio/SDCard.c
+msgid "timeout waiting for v2 card"
 msgstr ""
 
 #: ports/stm/common-hal/pwmio/PWMOut.c
