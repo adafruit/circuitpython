@@ -38,4 +38,4 @@
 #define DEFAULT_UART_BUS_TX (&pin_GPIO43)
 
 // Disable unnecessary modules to save space
-#define CIRCUITPY_ESP32_CAMERA (0)
+#define CIRCUITPY_CAMERA (0)
