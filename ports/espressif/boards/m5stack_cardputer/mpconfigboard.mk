@@ -13,4 +13,5 @@ CIRCUITPY_ESP_FLASH_SIZE = 8MB
 CIRCUITPY_ESPCAMERA = 0
 CIRCUITPY_MAX3421E = 0
 
-SRC_C += module/cardputer_keyboard.c
+# Disabling keyboard support for Cardputer ADV
+#SRC_C += module/cardputer_keyboard.c
