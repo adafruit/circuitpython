@@ -465,6 +465,10 @@ void common_hal_qspibus_qspibus_write_data(
         mp_raise_RuntimeError(MP_ERROR_TEXT("Bus in display transaction"));
     }
     if (len == 0) {
+        if (self->has_pending_command) {
+            qspibus_send_command_bytes(self, self->pending_command, NULL, 0);
+            self->has_pending_command = false;
+        }
         return;
     }
     if (data == NULL) {
