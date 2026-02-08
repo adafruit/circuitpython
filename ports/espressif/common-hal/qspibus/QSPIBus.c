@@ -468,7 +468,7 @@ void common_hal_qspibus_qspibus_write_data(
         return;
     }
     if (data == NULL) {
-        mp_raise_ValueError(MP_ERROR_TEXT("data buffer is null"));
+        mp_raise_ValueError(MP_ERROR_TEXT("Data buffer is null"));
     }
     if (!self->has_pending_command) {
         mp_raise_ValueError(MP_ERROR_TEXT("No pending command"));
