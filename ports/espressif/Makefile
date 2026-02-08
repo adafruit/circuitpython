@@ -722,6 +722,9 @@ endif
 ifneq ($(CIRCUITPY_PARALLELDISPLAYBUS),0)
 	ESP_IDF_COMPONENTS_LINK += esp_lcd
 endif
+ifneq ($(CIRCUITPY_QSPIBUS),0)
+	ESP_IDF_COMPONENTS_LINK += esp_lcd
+endif
 ifneq ($(CIRCUITPY_USB_DEVICE),0)
 	ESP_IDF_COMPONENTS_LINK += usb
 endif
