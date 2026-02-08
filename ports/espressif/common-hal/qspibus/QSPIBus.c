@@ -389,8 +389,10 @@ void common_hal_qspibus_qspibus_deinit(qspibus_qspibus_obj_t *self) {
     spi_bus_free(self->host_id);
 
     if (self->transfer_done_sem != NULL) {
-        vSemaphoreDelete(self->transfer_done_sem);
+        // Set NULL before delete so late ISR callbacks (if any) see NULL and skip.
+        SemaphoreHandle_t sem = self->transfer_done_sem;
         self->transfer_done_sem = NULL;
+        vSemaphoreDelete(sem);
     }
 
     qspibus_release_dma_buffers(self);
@@ -431,34 +433,6 @@ void common_hal_qspibus_qspibus_send_command(
     qspibus_send_command_bytes(self, command, data, len);
 }
 
-void common_hal_qspibus_qspibus_send_command_data(
-    qspibus_qspibus_obj_t *self,
-    uint8_t command,
-    const uint8_t *data,
-    size_t len) {
-    if (!self->bus_initialized) {
-        raise_deinited_error();
-    }
-    if (self->in_transaction) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("Bus in display transaction"));
-    }
-
-    if (self->has_pending_command) {
-        qspibus_send_command_bytes(self, self->pending_command, NULL, 0);
-        self->has_pending_command = false;
-    }
-
-    if (data == NULL || len == 0) {
-        qspibus_send_command_bytes(self, command, NULL, 0);
-        return;
-    }
-
-    if (qspibus_is_color_payload_command(command)) {
-        qspibus_send_color_bytes(self, command, data, len);
-    } else {
-        qspibus_send_command_bytes(self, command, data, len);
-    }
-}
 
 void common_hal_qspibus_qspibus_write_command(
     qspibus_qspibus_obj_t *self,
