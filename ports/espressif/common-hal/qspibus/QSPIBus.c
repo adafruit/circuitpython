@@ -237,6 +237,9 @@ static bool IRAM_ATTR qspibus_on_color_trans_done(
     (void)event_data;
 
     qspibus_qspibus_obj_t *self = (qspibus_qspibus_obj_t *)user_ctx;
+    if (self->transfer_done_sem == NULL) {
+        return false;
+    }
     BaseType_t x_higher_priority_task_woken = pdFALSE;
 
     xSemaphoreGiveFromISR(self->transfer_done_sem, &x_higher_priority_task_woken);

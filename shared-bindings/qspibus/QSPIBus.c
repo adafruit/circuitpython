@@ -133,11 +133,14 @@ static mp_obj_t qspibus_qspibus_send(size_t n_args, const mp_obj_t *pos_args, mp
         len = data_bufinfo.len;
     }
 
-    // Wait for display bus to be available (mirrors FourWire.send() behavior).
-    while (!common_hal_qspibus_qspibus_bus_free(MP_OBJ_FROM_PTR(self))) {
+    // Wait for display bus to be available, then acquire transaction.
+    // Mirrors FourWire.send() pattern: begin_transaction → send → end_transaction.
+    while (!common_hal_qspibus_qspibus_begin_transaction(MP_OBJ_FROM_PTR(self))) {
         RUN_BACKGROUND_TASKS;
     }
-    common_hal_qspibus_qspibus_send_command_data(self, command, data, len);
+    common_hal_qspibus_qspibus_send(MP_OBJ_FROM_PTR(self), DISPLAY_COMMAND, CHIP_SELECT_UNTOUCHED, &command, 1);
+    common_hal_qspibus_qspibus_send(MP_OBJ_FROM_PTR(self), DISPLAY_DATA, CHIP_SELECT_UNTOUCHED, data, len);
+    common_hal_qspibus_qspibus_end_transaction(MP_OBJ_FROM_PTR(self));
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(qspibus_qspibus_send_obj, 1, qspibus_qspibus_send);
