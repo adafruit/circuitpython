@@ -3066,7 +3066,7 @@ msgid "cross is defined for 1D arrays of length 3"
 msgstr ""
 
 #: ports/espressif/common-hal/qspibus/QSPIBus.c
-msgid "data buffer is null"
+msgid "Data buffer is null"
 msgstr ""
 
 #: extmod/ulab/code/scipy/optimize/optimize.c
