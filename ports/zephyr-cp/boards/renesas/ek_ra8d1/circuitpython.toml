@@ -1,1 +1,2 @@
 CIRCUITPY_BUILD_EXTENSIONS = ["elf"]
+SHIELDS = ["rtkmipilcdb00000be"]

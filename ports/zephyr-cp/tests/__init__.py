@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import serial
 import subprocess
 import threading
@@ -143,6 +145,14 @@ class NativeSimProcess:
 
         self.serial.close()
         self.debug_serial.close()
+
+    def display_capture_paths(self) -> list[Path]:
+        """Return paths to numbered PNG capture files produced by trace-driven capture."""
+        pattern = getattr(self, "_capture_png_pattern", None)
+        count = getattr(self, "_capture_count", 0)
+        if not pattern or count == 0:
+            return []
+        return [Path(pattern % i) for i in range(count)]
 
     def wait_until_done(self):
         start_time = time.monotonic()

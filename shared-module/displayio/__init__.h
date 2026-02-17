@@ -41,6 +41,9 @@
 #if CIRCUITPY_MIPIDSI
 #include "shared-bindings/mipidsi/Display.h"
 #endif
+#if CIRCUITPY_ZEPHYR_DISPLAY
+#include "bindings/zephyr_display/Display.h"
+#endif
 // Port unique frame buffers.
 #if CIRCUITPY_VIDEOCORE
 #include "bindings/videocore/Framebuffer.h"
@@ -101,6 +104,9 @@ typedef struct {
         #endif
         #if CIRCUITPY_FRAMEBUFFERIO
         framebufferio_framebufferdisplay_obj_t framebuffer_display;
+        #endif
+        #if CIRCUITPY_ZEPHYR_DISPLAY
+        zephyr_display_display_obj_t zephyr_display;
         #endif
     };
 } primary_display_t;
