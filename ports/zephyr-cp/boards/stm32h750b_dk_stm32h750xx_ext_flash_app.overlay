@@ -1,0 +1,14 @@
+&ext_flash {
+    partitions {
+        /delete-node/ partition@7800000;
+
+        circuitpy_partition: partition@7800000 {
+            label = "circuitpy";
+            reg = <0x7800000 DT_SIZE_M(8)>;
+        };
+    };
+};
+
+&rng {
+    status = "okay";
+};

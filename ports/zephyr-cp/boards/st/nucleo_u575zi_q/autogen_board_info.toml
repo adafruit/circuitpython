@@ -113,5 +113,6 @@ vectorio = true # Zephyr board has busio
 warnings = true
 watchdog = false
 wifi = false
+zephyr_display = false
 zephyr_kernel = false
 zlib = false
