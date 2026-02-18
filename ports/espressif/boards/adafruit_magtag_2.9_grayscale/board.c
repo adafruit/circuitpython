@@ -11,6 +11,8 @@
 #include "shared-bindings/fourwire/FourWire.h"
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-module/displayio/__init__.h"
+#include "shared-module/os/__init__.h"
+
 #include "supervisor/shared/board.h"
 
 #include "esp_log.h"
@@ -218,6 +220,13 @@ void board_init(void) {
 
     if (is_ssd1680) {
         epaperdisplay_construct_args_t args = EPAPERDISPLAY_CONSTRUCT_ARGS_DEFAULTS;
+
+        // Newer SSD1680 MagTags need a colstart of 8. Older ones need 0.
+        mp_int_t colstart = 8;
+        // If the value is in settings.toml, it will be set.
+        (void)common_hal_os_getenv_int("CIRCUITPY_MAGTAG_SSD1680_COLSTART", &colstart);
+        args.colstart = (int16_t)colstart;
+
         args.bus = bus;
         args.start_sequence = ssd1680_display_start_sequence;
         args.start_sequence_len = sizeof(ssd1680_display_start_sequence);
