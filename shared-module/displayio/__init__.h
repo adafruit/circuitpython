@@ -87,13 +87,11 @@ typedef struct {
         #if CIRCUITPY_AURORA_EPAPER
         aurora_epaper_framebuffer_obj_t aurora_epaper;
         #endif
-<<<<<<< HEAD
-        #if CIRCUITPY_QSPIBUS
-        qspibus_qspibus_obj_t qspi_bus;
-=======
         #if CIRCUITPY_MIPIDSI
         mipidsi_display_obj_t mipidsi;
->>>>>>> 10.1.3
+        #endif
+        #if CIRCUITPY_QSPIBUS
+        qspibus_qspibus_obj_t qspi_bus;
         #endif
     };
 } primary_display_bus_t;
