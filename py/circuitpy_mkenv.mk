@@ -43,6 +43,10 @@ ifneq ($(VALID_BOARD),)
 include boards/$(BOARD)/mpconfigboard.mk
 endif
 
+# user-specific settings that mpconfigport does not override
+# (i.e. mpconfigport.mk uses "foo ?= bar")
+-include user_pre_mpconfigport.mk
+
 # Port-specific
 include mpconfigport.mk
 
@@ -51,6 +55,10 @@ ifneq ($(VALID_BOARD),)
 # CircuitPython-specific
 include $(TOP)/py/circuitpy_mpconfig.mk
 endif
+
+# user-specific overrides of hard-coded settings
+# (i.e. xxx.mk uses "foo = bar")
+-include user_post_mpconfigport.mk
 
 # qstr definitions (must come before including py.mk)
 QSTR_DEFS = qstrdefsport.h
@@ -62,3 +70,6 @@ include $(TOP)/supervisor/supervisor.mk
 
 # Include make rules and variables common across CircuitPython builds.
 include $(TOP)/py/circuitpy_defns.mk
+
+# user specific
+-include user_post_circuitpy_defns.mk

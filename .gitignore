@@ -55,6 +55,9 @@ __pycache__/
 ######################
 GNUmakefile
 user.props
+user_pre_mpconfigport.mk
+user_post_mpconfigport.mk
+user_post_circuitpy_defns.mk
 
 # Sphinx output
 ###############

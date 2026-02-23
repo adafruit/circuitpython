@@ -596,7 +596,7 @@ msgstr "Halihazırda çalışıyor"
 msgid "Already scanning for wifi networks"
 msgstr "Halihazırda wifi ağları için tarama yapılıyor"
 
-#: shared-module/os/getenv.c
+#: supervisor/shared/settings.c
 #, c-format
 msgid "An error occurred while retrieving '%s':\n"
 msgstr ""
@@ -1108,7 +1108,6 @@ msgid "File exists"
 msgstr "Dosya var"
 
 #: shared-bindings/supervisor/__init__.c shared-module/lvfontio/OnDiskFont.c
-#: shared-module/os/getenv.c
 msgid "File not found"
 msgstr ""
 
@@ -1263,7 +1262,7 @@ msgstr "Dahili ses arabelleği çok küçük"
 msgid "Internal define error"
 msgstr "Dahili tanımlama hatası"
 
-#: shared-bindings/pwmio/PWMOut.c shared-module/os/getenv.c
+#: shared-bindings/pwmio/PWMOut.c supervisor/shared/settings.c
 msgid "Internal error"
 msgstr "Dahili hata"
 
@@ -1361,17 +1360,12 @@ msgstr "Geçersiz argüman"
 msgid "Invalid bits per value"
 msgstr "Geçersiz bit başına değer"
 
-#: shared-module/os/getenv.c
-#, c-format
-msgid "Invalid byte %.*s"
-msgstr ""
-
 #: ports/atmel-samd/common-hal/imagecapture/ParallelImageCapture.c
 #, c-format
 msgid "Invalid data_pins[%d]"
 msgstr "Geçersiz veri_pini [%d]"
 
-#: shared-module/msgpack/__init__.c
+#: shared-module/msgpack/__init__.c supervisor/shared/settings.c
 msgid "Invalid format"
 msgstr ""
 
@@ -1402,17 +1396,13 @@ msgstr "TLS için geçersiz soket"
 msgid "Invalid state"
 msgstr "Geçersiz durum"
 
-#: shared-module/os/getenv.c
+#: supervisor/shared/settings.c
 msgid "Invalid unicode escape"
 msgstr ""
 
 #: shared-bindings/aesio/aes.c
 msgid "Key must be 16, 24, or 32 bytes long"
 msgstr "Anahtar 16, 24 veya 32 bayt uzunluğunda olmalıdır"
-
-#: shared-module/os/getenv.c
-msgid "Key not found"
-msgstr ""
 
 #: shared-module/is31fl3741/FrameBuffer.c
 msgid "LED mappings must match display size"

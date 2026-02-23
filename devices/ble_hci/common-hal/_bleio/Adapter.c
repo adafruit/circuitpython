@@ -29,7 +29,7 @@
 #include "shared-bindings/_bleio/ScanEntry.h"
 #include "shared-bindings/time/__init__.h"
 
-#if CIRCUITPY_OS_GETENV
+#if CIRCUITPY_SETTINGS_TOML
 #include "shared-bindings/os/__init__.h"
 #endif
 
@@ -261,7 +261,7 @@ static void _adapter_set_name(bleio_adapter_obj_t *self, mp_obj_str_t *name_obj)
 static void bleio_adapter_hci_init(bleio_adapter_obj_t *self) {
     mp_int_t name_len = 0;
 
-    #if CIRCUITPY_OS_GETENV
+    #if CIRCUITPY_SETTINGS_TOML
     mp_obj_t name = common_hal_os_getenv("CIRCUITPY_BLE_NAME", mp_const_none);
     if (name != mp_const_none) {
         mp_arg_validate_type_string(name, MP_QSTR_CIRCUITPY_BLE_NAME);

@@ -6,13 +6,14 @@
 
 #include "supervisor/board.h"
 #include "mpconfigboard.h"
+
 #include "shared-bindings/board/__init__.h"
 #include "shared-bindings/dotclockframebuffer/DotClockFramebuffer.h"
 #include "shared-bindings/dotclockframebuffer/__init__.h"
 #include "shared-bindings/framebufferio/FramebufferDisplay.h"
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-module/displayio/__init__.h"
-#include "shared-module/os/__init__.h"
+#include "supervisor/shared/settings.h"
 
 static const mcu_pin_obj_t *blue_pins[] = {
     &pin_GPIO8,
@@ -40,14 +41,14 @@ static const mcu_pin_obj_t *red_pins[] = {
 static void display_init(void) {
 
     mp_int_t height = 0, width = 0, frequency = 0;
-    os_getenv_err_t result;
+    settings_err_t result;
 
-    result = common_hal_os_getenv_int("CIRCUITPY_DISPLAY_WIDTH", &width);
-    if (result == GETENV_OK && width == 800) {
+    result = settings_get_int("CIRCUITPY_DISPLAY_WIDTH", &width);
+    if (result == SETTINGS_OK && width == 800) {
         width = 800;
         height = 480;
         frequency = 6500000;
-    } else if (result == GETENV_OK && width == 1024) {
+    } else if (result == SETTINGS_OK && width == 1024) {
         width = 1024;
         height = 600;
         frequency = 10000000;

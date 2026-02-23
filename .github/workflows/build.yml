@@ -246,7 +246,7 @@ jobs:
         python3 -c "import sys, locale; print(sys.getdefaultencoding(), locale.getpreferredencoding(False))"
     - name: Install dependencies
       run: |
-        wget --no-verbose -O gcc-arm.zip https://developer.arm.com/-/media/Files/downloads/gnu/14.2.rel1/binrel/arm-gnu-toolchain-14.2.rel1-mingw-w64-i686-arm-none-eabi.zip
+        wget --no-verbose -O gcc-arm.zip https://developer.arm.com/-/media/Files/downloads/gnu/15.2.rel1/binrel/arm-gnu-toolchain-15.2.rel1-mingw-w64-i686-arm-none-eabi.zip
         unzip -q -d /tmp/arm-gnu-toolchain gcc-arm.zip
         tar -C /tmp/arm-gnu-toolchain -cf - . | tar -C /usr/local -xf -
         # We could use a venv instead, but that requires entering the venv on each run step

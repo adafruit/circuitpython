@@ -61,10 +61,6 @@ static int background_prevention_count;
 void PLACE_IN_ITCM(background_callback_run_all)(void) {
     port_background_task();
     if (!background_callback_pending()) {
-        // TEMPORARY to fix #10822
-        #ifdef __ZEPHYR__
-        port_yield();
-        #endif
         return;
     }
     CALLBACK_CRITICAL_BEGIN;
@@ -91,10 +87,6 @@ void PLACE_IN_ITCM(background_callback_run_all)(void) {
     }
     --background_prevention_count;
     CALLBACK_CRITICAL_END;
-    // TEMPORARY to fix #10822
-    #ifdef __ZEPHYR__
-    port_yield();
-    #endif
 }
 
 void background_callback_prevent(void) {

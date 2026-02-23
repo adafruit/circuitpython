@@ -598,7 +598,7 @@ msgstr "Τρέχει ήδη"
 msgid "Already scanning for wifi networks"
 msgstr "Ήδη γίνεται σάρωση για δίκτυα wifi"
 
-#: shared-module/os/getenv.c
+#: supervisor/shared/settings.c
 #, c-format
 msgid "An error occurred while retrieving '%s':\n"
 msgstr "Παρουσιάστηκε σφάλμα κατά την ανάκτηση '%s':\n"
@@ -1118,7 +1118,6 @@ msgid "File exists"
 msgstr ""
 
 #: shared-bindings/supervisor/__init__.c shared-module/lvfontio/OnDiskFont.c
-#: shared-module/os/getenv.c
 msgid "File not found"
 msgstr ""
 
@@ -1269,7 +1268,7 @@ msgstr ""
 msgid "Internal define error"
 msgstr ""
 
-#: shared-bindings/pwmio/PWMOut.c shared-module/os/getenv.c
+#: shared-bindings/pwmio/PWMOut.c supervisor/shared/settings.c
 msgid "Internal error"
 msgstr ""
 
@@ -1366,17 +1365,12 @@ msgstr ""
 msgid "Invalid bits per value"
 msgstr ""
 
-#: shared-module/os/getenv.c
-#, c-format
-msgid "Invalid byte %.*s"
-msgstr ""
-
 #: ports/atmel-samd/common-hal/imagecapture/ParallelImageCapture.c
 #, c-format
 msgid "Invalid data_pins[%d]"
 msgstr ""
 
-#: shared-module/msgpack/__init__.c
+#: shared-module/msgpack/__init__.c supervisor/shared/settings.c
 msgid "Invalid format"
 msgstr ""
 
@@ -1407,16 +1401,12 @@ msgstr ""
 msgid "Invalid state"
 msgstr ""
 
-#: shared-module/os/getenv.c
+#: supervisor/shared/settings.c
 msgid "Invalid unicode escape"
 msgstr ""
 
 #: shared-bindings/aesio/aes.c
 msgid "Key must be 16, 24, or 32 bytes long"
-msgstr ""
-
-#: shared-module/os/getenv.c
-msgid "Key not found"
 msgstr ""
 
 #: shared-module/is31fl3741/FrameBuffer.c

@@ -74,7 +74,7 @@ CFLAGS += \
 	-fdata-sections \
 	-Wall \
 
-OPTIMIZATION_FLAGS ?= -O2 -fno-inline-functions
+OPTIMIZATION_FLAGS ?= -O2
 
 # option to override compiler optimization level, set in boards/$(BOARD)/mpconfigboard.mk
 CFLAGS += $(OPTIMIZATION_FLAGS)

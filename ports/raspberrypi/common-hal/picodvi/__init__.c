@@ -10,8 +10,8 @@
 #include "shared-bindings/busio/I2C.h"
 #include "shared-bindings/board/__init__.h"
 #include "shared-module/displayio/__init__.h"
-#include "shared-module/os/__init__.h"
 #include "supervisor/shared/safe_mode.h"
+#include "supervisor/shared/settings.h"
 #include "py/gc.h"
 #include "py/runtime.h"
 #include "supervisor/port_heap.h"
@@ -22,7 +22,7 @@ static bool picodvi_autoconstruct_enabled(mp_int_t *default_width, mp_int_t *def
     buf[0] = 0;
 
     // (any failure leaves the content of buf untouched: an empty nul-terminated string
-    (void)common_hal_os_getenv_str("CIRCUITPY_PICODVI_ENABLE", buf, sizeof(buf));
+    (void)settings_get_str("CIRCUITPY_PICODVI_ENABLE", buf, sizeof(buf));
 
     if (!strcasecmp(buf, "never")) {
         return false;
@@ -106,10 +106,10 @@ void picodvi_autoconstruct(void) {
     mp_int_t color_depth = 8;
     mp_int_t rotation = 0;
 
-    (void)common_hal_os_getenv_int("CIRCUITPY_DISPLAY_WIDTH", &width);
-    (void)common_hal_os_getenv_int("CIRCUITPY_DISPLAY_HEIGHT", &height);
-    (void)common_hal_os_getenv_int("CIRCUITPY_DISPLAY_COLOR_DEPTH", &color_depth);
-    (void)common_hal_os_getenv_int("CIRCUITPY_DISPLAY_ROTATION", &rotation);
+    (void)settings_get_int("CIRCUITPY_DISPLAY_WIDTH", &width);
+    (void)settings_get_int("CIRCUITPY_DISPLAY_HEIGHT", &height);
+    (void)settings_get_int("CIRCUITPY_DISPLAY_COLOR_DEPTH", &color_depth);
+    (void)settings_get_int("CIRCUITPY_DISPLAY_ROTATION", &rotation);
 
     if (height == 0) {
         switch (width) {

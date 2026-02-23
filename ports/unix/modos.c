@@ -32,13 +32,12 @@
 #include "py/runtime.h"
 #include "py/mphal.h"
 
-// CIRCUITPY-CHANGE: enhanced getenv
+// CIRCUITPY-CHANGE: use shared-module os getenv
 #if defined(MICROPY_UNIX_COVERAGE)
 #include "py/objstr.h"
-typedef int os_getenv_err_t;
+#include "shared-module/os/__init__.h"
+#include "supervisor/shared/settings.h"
 mp_obj_t common_hal_os_getenv(const char *key, mp_obj_t default_);
-os_getenv_err_t common_hal_os_getenv_str(const char *key, char *value, size_t value_len);
-os_getenv_err_t common_hal_os_getenv_int(const char *key, mp_int_t *value);
 #endif
 
 static mp_obj_t mp_os_getenv(size_t n_args, const mp_obj_t *args) {
@@ -58,30 +57,7 @@ static mp_obj_t mp_os_getenv(size_t n_args, const mp_obj_t *args) {
     }
     return mp_obj_new_str_from_cstr(s);
 }
-MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_os_getenv_obj, 1, 2, mp_os_getenv);
-
-// CIRCUITPY-CHANGE: getenv differences
-#if defined(MICROPY_UNIX_COVERAGE)
-static mp_obj_t mp_os_getenv_int(mp_obj_t var_in) {
-    mp_int_t value;
-    os_getenv_err_t result = common_hal_os_getenv_int(mp_obj_str_get_str(var_in), &value);
-    if (result == 0) {
-        return mp_obj_new_int(value);
-    }
-    return mp_const_none;
-}
-MP_DEFINE_CONST_FUN_OBJ_1(mp_os_getenv_int_obj, mp_os_getenv_int);
-
-static mp_obj_t mp_os_getenv_str(mp_obj_t var_in) {
-    char buf[4096];
-    os_getenv_err_t result = common_hal_os_getenv_str(mp_obj_str_get_str(var_in), buf, sizeof(buf));
-    if (result == 0) {
-        return mp_obj_new_str_copy(&mp_type_str, (byte *)buf, strlen(buf));
-    }
-    return mp_const_none;
-}
-MP_DEFINE_CONST_FUN_OBJ_1(mp_os_getenv_str_obj, mp_os_getenv_str);
-#endif
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_os_getenv_obj, 1, 2, mp_os_getenv);
 
 static mp_obj_t mp_os_putenv(mp_obj_t key_in, mp_obj_t value_in) {
     const char *key = mp_obj_str_get_str(key_in);

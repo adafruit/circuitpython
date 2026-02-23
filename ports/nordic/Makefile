@@ -36,8 +36,8 @@ ifeq ($(DEBUG), 1)
   CFLAGS += -ggdb3
   OPTIMIZATION_FLAGS = -Og
 else
-  OPTIMIZATION_FLAGS ?= -O2 -fno-inline-functions
-  CFLAGS += -DNDEBUG -ggdb3
+  OPTIMIZATION_FLAGS ?= -O2
+  CFLAGS += -DNDEBUG
 endif
 
 ifeq ($(NRF_DEBUG_PRINT), 1)

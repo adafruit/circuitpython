@@ -622,7 +622,7 @@ msgstr "이미 실행 중입니다"
 msgid "Already scanning for wifi networks"
 msgstr "이미 wifi 네트워크를 찾고 있습니다"
 
-#: shared-module/os/getenv.c
+#: supervisor/shared/settings.c
 #, c-format
 msgid "An error occurred while retrieving '%s':\n"
 msgstr "%s'을(를) 검색하는 동안 오류가 발생했습니다:\n"
@@ -1143,7 +1143,6 @@ msgid "File exists"
 msgstr "파일이 있습니다"
 
 #: shared-bindings/supervisor/__init__.c shared-module/lvfontio/OnDiskFont.c
-#: shared-module/os/getenv.c
 msgid "File not found"
 msgstr "파일을 찾을 수 없습니다"
 
@@ -1296,7 +1295,7 @@ msgstr "내부 오디오 버퍼가 너무 작습니다"
 msgid "Internal define error"
 msgstr "내부 정의 오류"
 
-#: shared-bindings/pwmio/PWMOut.c shared-module/os/getenv.c
+#: shared-bindings/pwmio/PWMOut.c supervisor/shared/settings.c
 msgid "Internal error"
 msgstr "내부 오류"
 
@@ -1393,17 +1392,12 @@ msgstr "잘못된 인수"
 msgid "Invalid bits per value"
 msgstr "값 당 잘못된 비트"
 
-#: shared-module/os/getenv.c
-#, c-format
-msgid "Invalid byte %.*s"
-msgstr "잘못된 바이트 %.*s"
-
 #: ports/atmel-samd/common-hal/imagecapture/ParallelImageCapture.c
 #, c-format
 msgid "Invalid data_pins[%d]"
 msgstr "잘못된 data_pins[%d]"
 
-#: shared-module/msgpack/__init__.c
+#: shared-module/msgpack/__init__.c supervisor/shared/settings.c
 msgid "Invalid format"
 msgstr "잘못된 형식"
 
@@ -1434,17 +1428,13 @@ msgstr "TLS에 대한 잘못된 소켓"
 msgid "Invalid state"
 msgstr "잘못된 상태"
 
-#: shared-module/os/getenv.c
+#: supervisor/shared/settings.c
 msgid "Invalid unicode escape"
 msgstr "잘못된 유니코드 이스케이프"
 
 #: shared-bindings/aesio/aes.c
 msgid "Key must be 16, 24, or 32 bytes long"
 msgstr "키는 16, 24, 또는 32 바이트 길이여야 합니다"
-
-#: shared-module/os/getenv.c
-msgid "Key not found"
-msgstr "키를 찾을 수 없습니다"
 
 #: shared-module/is31fl3741/FrameBuffer.c
 msgid "LED mappings must match display size"
@@ -4661,6 +4651,13 @@ msgstr ""
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr ""
+
+#, c-format
+#~ msgid "Invalid byte %.*s"
+#~ msgstr "잘못된 바이트 %.*s"
+
+#~ msgid "Key not found"
+#~ msgstr "키를 찾을 수 없습니다"
 
 #, fuzzy
 #~ msgid "Not supported JPEG standard"

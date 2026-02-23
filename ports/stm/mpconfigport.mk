@@ -10,6 +10,10 @@ ifeq ($(MCU_VARIANT),$(filter $(MCU_VARIANT),STM32F405xx STM32F407xx))
         USB_NUM_ENDPOINT_PAIRS = 4
 endif
 
+ifeq ($(INTERNAL_FLASH_FILESYSTEM),1)
+  OPTIMIZATION_FLAGS ?= -Os
+endif
+
 ifeq ($(MCU_VARIANT),STM32F407xx)
         UF2_FAMILY_ID ?= 0x6d0922fa
 endif

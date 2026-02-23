@@ -13,7 +13,12 @@
 #include "py/mpconfig.h"
 #include "supervisor/shared/tick.h"
 
+#include <zephyr/kernel.h>
+
 #define mp_hal_ticks_ms()       ((mp_uint_t)supervisor_ticks_ms32())
-#define mp_hal_delay_us(us)     NRFX_DELAY_US((uint32_t)(us))
+
+static inline void mp_hal_delay_us(mp_uint_t us) {
+    k_busy_wait((uint32_t)us);
+}
 
 bool mp_hal_stdin_any(void);

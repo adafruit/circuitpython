@@ -17,6 +17,10 @@
 #include "py/runtime.h"
 #include "shared-bindings/os/__init__.h"
 
+#if CIRCUITPY_SETTINGS_TOML
+#include "supervisor/shared/settings.h"
+#endif
+
 // This provides all VFS related OS functions so that ports can share the code
 // as needed.
 
@@ -280,5 +284,18 @@ void common_hal_os_utime(const char *path, mp_obj_t times) {
     args[1] = times;
     mp_vfs_proxy_call(vfs, MP_QSTR_utime, 2, args);
 }
+
+#if CIRCUITPY_SETTINGS_TOML
+mp_obj_t common_hal_os_getenv(const char *key, mp_obj_t default_) {
+    vstr_t vstr;
+    vstr_init(&vstr, 64);
+
+    settings_err_t result = settings_get_raw_vstr(key, &vstr);
+    if (result == SETTINGS_OK) {
+        return mp_obj_new_str_from_vstr(&vstr);
+    }
+    return default_;
+}
+#endif
 
 MP_REGISTER_ROOT_POINTER(const char *cwd_path);

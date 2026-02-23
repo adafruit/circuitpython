@@ -21,6 +21,10 @@
 #include "supervisor/usb.h"
 #endif
 
+#if CIRCUITPY_SETTINGS_TOML
+#include "supervisor/shared/settings.h"
+#endif
+
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/supervisor/__init__.h"
 #include "shared-bindings/time/__init__.h"
@@ -360,6 +364,68 @@ static mp_obj_t supervisor_set_usb_identification(size_t n_args, const mp_obj_t 
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(supervisor_set_usb_identification_obj, 0, supervisor_set_usb_identification);
 
+//| def get_setting(key: str, default: object=None) -> int | str | bool:
+//|     """
+//|     Get and parse the value for the given ``key`` from the ``/settings.toml`` file.
+//|     If ``key`` is not found or ``settings.toml`` is not present, return the ``default`` value.
+//|
+//|     :param str key: The setting key to retrieve
+//|     :return: The setting value as an ``int``, ``str``, or ``bool`` depending on the value in the file
+//|
+//|     :raises ValueError: If the value cannot be parsed as a valid TOML value.
+//|
+//|     The value must be parseable as one of these types:
+//|
+//|     - ``str``: Double-quoted string.
+//|       The string may include Unicode characters, and ``\\u`` Unicode escapes. Backslash-escaped characters
+//|       ``\\b``, ``\\r``, ``\\n``, ``\\t``, ``\\v``, ``\\v`` are also allowed.
+//|     - ``int``: signed or unsigned integer
+//|     - lower-case boolean words ``true`` and ``false``.
+//|       The values are returned as Python ``True`` or ``False`` values.
+//|
+//|     Example::
+//|
+//|         # settings.toml:
+//|         WIDTH = 42
+//|         color = "red"
+//|         DEBUG = true
+//|
+//|         import supervisor
+//|         print(supervisor.get_setting("WIDTH")) # prints 42
+//|         print(supervisor.get_setting("color")) # prints 'red'
+//|         print(supervisor.get_setting("DEBUG")) # prints True
+//|     """
+//|     ...
+//|
+static mp_obj_t supervisor_get_setting(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    #if CIRCUITPY_SETTINGS_TOML
+    enum { ARG_key, ARG_default };
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_key, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_default, MP_ARG_OBJ, {.u_rom_obj = mp_const_none} },
+    };
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, (mp_arg_val_t *)&args);
+
+    const char *key = mp_obj_str_get_str(args[ARG_key].u_obj);
+    mp_obj_t value;
+    settings_err_t result = settings_get_obj(key, &value);
+
+    switch (result) {
+        case SETTINGS_OK:
+            return value;
+        case SETTINGS_ERR_NOT_FOUND:
+        case SETTINGS_ERR_OPEN:
+            return args[ARG_default].u_obj;
+        default:
+            mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q"), MP_QSTR_value);
+    }
+    #else
+    mp_raise_NotImplementedError(NULL);
+    #endif
+}
+MP_DEFINE_CONST_FUN_OBJ_KW(supervisor_get_setting_obj, 1, supervisor_get_setting);
+
 static const mp_rom_map_elem_t supervisor_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_supervisor) },
     { MP_ROM_QSTR(MP_QSTR_runtime),  MP_ROM_PTR(&common_hal_supervisor_runtime_obj) },
@@ -373,6 +439,7 @@ static const mp_rom_map_elem_t supervisor_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_set_next_code_file),  MP_ROM_PTR(&supervisor_set_next_code_file_obj) },
     { MP_ROM_QSTR(MP_QSTR_ticks_ms),  MP_ROM_PTR(&supervisor_ticks_ms_obj) },
     { MP_ROM_QSTR(MP_QSTR_get_previous_traceback),  MP_ROM_PTR(&supervisor_get_previous_traceback_obj) },
+    { MP_ROM_QSTR(MP_QSTR_get_setting),  MP_ROM_PTR(&supervisor_get_setting_obj) },
     { MP_ROM_QSTR(MP_QSTR_reset_terminal),  MP_ROM_PTR(&supervisor_reset_terminal_obj) },
     { MP_ROM_QSTR(MP_QSTR_set_usb_identification),  MP_ROM_PTR(&supervisor_set_usb_identification_obj) },
     { MP_ROM_QSTR(MP_QSTR_status_bar),  MP_ROM_PTR(&shared_module_supervisor_status_bar_obj) },

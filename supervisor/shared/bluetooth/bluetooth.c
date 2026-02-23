@@ -36,8 +36,8 @@
 #include "supervisor/shared/status_bar.h"
 #endif
 
-#if CIRCUITPY_WEB_WORKFLOW && CIRCUITPY_WIFI && CIRCUITPY_OS_GETENV
-#include "shared-module/os/__init__.h"
+#if CIRCUITPY_WEB_WORKFLOW && CIRCUITPY_WIFI && CIRCUITPY_SETTINGS_TOML
+#include "supervisor/shared/settings.h"
 #endif
 
 
@@ -216,11 +216,11 @@ void supervisor_bluetooth_init(void) {
     // Checking here allows us to have the status LED solidly on even if no button was
     // pressed.
     bool wifi_workflow_active = false;
-    #if CIRCUITPY_WEB_WORKFLOW && CIRCUITPY_WIFI && CIRCUITPY_OS_GETENV
+    #if CIRCUITPY_WEB_WORKFLOW && CIRCUITPY_WIFI && CIRCUITPY_SETTINGS_TOML
     char _api_password[64];
     const size_t api_password_len = sizeof(_api_password) - 1;
-    os_getenv_err_t result = common_hal_os_getenv_str("CIRCUITPY_WEB_API_PASSWORD", _api_password + 1, api_password_len);
-    wifi_workflow_active = result == GETENV_OK;
+    settings_err_t result = settings_get_str("CIRCUITPY_WEB_API_PASSWORD", _api_password + 1, api_password_len);
+    wifi_workflow_active = result == SETTINGS_OK;
     #endif
     if (!bonded && !wifi_workflow_active) {
         boot_in_discovery_mode = true;

@@ -67,10 +67,6 @@ void port_wake_main_task_from_isr(void) {
 
 void port_yield(void) {
     k_yield();
-    // Make sure time advances in the simulator.
-    #if defined(CONFIG_ARCH_POSIX)
-    k_busy_wait(100);
-    #endif
 }
 
 void port_boot_info(void) {
@@ -97,6 +93,10 @@ uint32_t port_get_saved_word(void) {
 }
 
 uint64_t port_get_raw_ticks(uint8_t *subticks) {
+    // Make sure time advances in the simulator.
+    #if defined(CONFIG_ARCH_POSIX)
+    k_busy_wait(100);
+    #endif
     int64_t uptime = k_uptime_ticks() * 32768 / CONFIG_SYS_CLOCK_TICKS_PER_SEC;
     if (subticks != NULL) {
         *subticks = uptime % 32;

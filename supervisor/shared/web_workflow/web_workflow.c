@@ -46,8 +46,8 @@
 #include "shared-bindings/wifi/__init__.h"
 #endif
 
-#if CIRCUITPY_OS_GETENV
-#include "shared-module/os/__init__.h"
+#if CIRCUITPY_SETTINGS_TOML
+#include "supervisor/shared/settings.h"
 #endif
 
 enum request_state {
@@ -237,21 +237,21 @@ void supervisor_web_workflow_status(void) {
 #endif
 
 bool supervisor_start_web_workflow(void) {
-    #if CIRCUITPY_WEB_WORKFLOW && CIRCUITPY_WIFI && CIRCUITPY_OS_GETENV
+    #if CIRCUITPY_WEB_WORKFLOW && CIRCUITPY_WIFI && CIRCUITPY_SETTINGS_TOML
 
     char ssid[33];
     char password[64];
 
-    os_getenv_err_t result = common_hal_os_getenv_str("CIRCUITPY_WIFI_SSID", ssid, sizeof(ssid));
-    if (result != GETENV_OK || strlen(ssid) < 1) {
+    settings_err_t result = settings_get_str("CIRCUITPY_WIFI_SSID", ssid, sizeof(ssid));
+    if (result != SETTINGS_OK || strlen(ssid) < 1) {
         return false;
     }
 
-    result = common_hal_os_getenv_str("CIRCUITPY_WIFI_PASSWORD", password, sizeof(password));
-    if (result == GETENV_ERR_NOT_FOUND) {
+    result = settings_get_str("CIRCUITPY_WIFI_PASSWORD", password, sizeof(password));
+    if (result == SETTINGS_ERR_NOT_FOUND) {
         // if password is unspecified, assume an open network
         password[0] = '\0';
-    } else if (result != GETENV_OK) {
+    } else if (result != SETTINGS_OK) {
         return false;
     }
 
@@ -289,17 +289,17 @@ bool supervisor_start_web_workflow(void) {
     bool initialized = pool.base.type == &socketpool_socketpool_type;
 
     if (!initialized) {
-        result = common_hal_os_getenv_str("CIRCUITPY_WEB_INSTANCE_NAME", web_instance_name, sizeof(web_instance_name));
-        if (result != GETENV_OK || web_instance_name[0] == '\0') {
+        result = settings_get_str("CIRCUITPY_WEB_INSTANCE_NAME", web_instance_name, sizeof(web_instance_name));
+        if (result != SETTINGS_OK || web_instance_name[0] == '\0') {
             strcpy(web_instance_name, MICROPY_HW_BOARD_NAME);
         }
 
         // (leaves new_port unchanged on any failure)
-        (void)common_hal_os_getenv_int("CIRCUITPY_WEB_API_PORT", &web_api_port);
+        (void)settings_get_int("CIRCUITPY_WEB_API_PORT", &web_api_port);
 
         const size_t api_password_len = sizeof(_api_password) - 1;
-        result = common_hal_os_getenv_str("CIRCUITPY_WEB_API_PASSWORD", _api_password + 1, api_password_len);
-        if (result == GETENV_OK) {
+        result = settings_get_str("CIRCUITPY_WEB_API_PASSWORD", _api_password + 1, api_password_len);
+        if (result == SETTINGS_OK) {
             _api_password[0] = ':';
             _base64_in_place(_api_password, strlen(_api_password), sizeof(_api_password) - 1);
         } else { // Skip starting web-workflow when no password is passed.

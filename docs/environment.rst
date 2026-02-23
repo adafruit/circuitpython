@@ -187,7 +187,7 @@ Allows the entry of a display scaling factor used during the terminalio console 
 The entered scaling factor only affects the terminalio console and has no impact on
 the UART, Web Workflow, BLE Workflow, etc consoles.
 
-This feature is not enabled on boards that the CIRCUITPY_OS_GETENV (os CIRCUIPTY_FULL_BUILD)
+This feature is not enabled on boards that the CIRCUITPY_SETTINGS_TOML (or CIRCUITPY_FULL_BUILD)
 flag has been set to 0. Currently this is primarily boards with limited flash including some
 of the Atmel_samd boards based on the SAMD21/M0 microprocessor.
 
@@ -197,7 +197,7 @@ Specifies a custom font file path to use for the terminalio console instead of t
 ``/fonts/terminal.lvfontbin``. This allows users to create and use custom fonts for the
 CircuitPython console.
 
-This feature requires both CIRCUITPY_OS_GETENV and CIRCUITPY_LVFONTIO to be enabled.
+This feature requires both CIRCUITPY_SETTINGS_TOML and CIRCUITPY_LVFONTIO to be enabled.
 
 Example:
 

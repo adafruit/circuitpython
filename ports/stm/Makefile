@@ -38,8 +38,7 @@ ifeq ($(DEBUG), 1)
 	CFLAGS += -fno-inline -fno-ipa-sra
 else
 	CFLAGS += -DNDEBUG
-	OPTIMIZATION_FLAGS ?= -O2 -fno-inline-functions
-	CFLAGS += -ggdb3
+	OPTIMIZATION_FLAGS ?= -O2
 endif
 
 # to override compiler optimization level, set in boards/$(BOARD)/mpconfigboard.mk

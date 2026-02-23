@@ -61,6 +61,8 @@ void common_hal_mcu_on_next_reset(mcu_runmode_t runmode) {
 void common_hal_mcu_reset(void) {
     filesystem_flush();
     boardctl(BOARDIOC_RESET, 0);
+    // boardctl is noreturn in this case.
+    __builtin_unreachable();
 }
 
 static const mp_rom_map_elem_t mcu_pin_globals_table[] = {

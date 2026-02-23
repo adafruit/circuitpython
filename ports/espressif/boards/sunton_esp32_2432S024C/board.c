@@ -6,13 +6,14 @@
 
 #include "supervisor/board.h"
 #include "mpconfigboard.h"
+
+#include "common-hal/microcontroller/Pin.h"
+#include "driver/gpio.h"
 #include "shared-bindings/board/__init__.h"
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-module/displayio/__init__.h"
 #include "shared-module/displayio/mipi_constants.h"
-#include "driver/gpio.h"
-#include "common-hal/microcontroller/Pin.h"
-#include "shared-module/os/__init__.h"
+#include "supervisor/shared/settings.h"
 
 uint8_t display_init_sequence[] = {
     0x01, 0x80, 0x80, //   # Software reset then delay 0x80 (128ms)
@@ -59,8 +60,8 @@ static void display_init(void) {
 
     busdisplay_busdisplay_obj_t *display = &allocate_display()->display;
     display->base.type = &busdisplay_busdisplay_type;
-    os_getenv_err_t result = common_hal_os_getenv_int("CIRCUITPY_DISPLAY_ROTATION", &rotation);
-    if (result != GETENV_OK) {
+    settings_err_t result = settings_get_int("CIRCUITPY_DISPLAY_ROTATION", &rotation);
+    if (result != SETTINGS_OK) {
         rotation = 0;
     }
 

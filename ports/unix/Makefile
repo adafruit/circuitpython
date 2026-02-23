@@ -208,6 +208,8 @@ SRC_C += \
 	input.c \
 	alloc.c \
 	fatfs_port.c \
+	shared-module/os/__init__.c \
+	supervisor/shared/settings.c \
 	supervisor/stub/filesystem.c \
 	supervisor/stub/safe_mode.c \
 	supervisor/stub/stack.c \

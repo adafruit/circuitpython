@@ -38,9 +38,11 @@
 
 #if CIRCUITPY_TERMINALIO
 #include "supervisor/port.h"
-#if CIRCUITPY_OS_GETENV
-#include "shared-module/os/__init__.h"
+
+#if CIRCUITPY_SETTINGS_TOML
+#include "supervisor/shared/settings.h"
 #endif
+
 #if CIRCUITPY_LVFONTIO
 #include "shared-bindings/lvfontio/OnDiskFont.h"
 #include "supervisor/filesystem.h"
@@ -66,10 +68,10 @@ static bool check_for_custom_font(const char **font_path_out) {
     const char *default_font_path = "/fonts/terminal.lvfontbin";
     const char *font_path = default_font_path;
 
-    #if CIRCUITPY_OS_GETENV
+    #if CIRCUITPY_SETTINGS_TOML
     // Buffer for storing custom font path
     static char custom_font_path[128];
-    if (common_hal_os_getenv_str("CIRCUITPY_TERMINAL_FONT", custom_font_path, sizeof(custom_font_path)) == GETENV_OK) {
+    if (settings_get_str("CIRCUITPY_TERMINAL_FONT", custom_font_path, sizeof(custom_font_path)) == SETTINGS_OK) {
         // Use custom font path from environment variable
         font_path = custom_font_path;
     }
@@ -179,8 +181,8 @@ void supervisor_start_terminal(uint16_t width_px, uint16_t height_px) {
     if (width_in_tiles <= 120) {
         scale = 1;
     }
-    #if CIRCUITPY_OS_GETENV
-    (void)common_hal_os_getenv_int("CIRCUITPY_TERMINAL_SCALE", &scale);
+    #if CIRCUITPY_SETTINGS_TOML
+    (void)settings_get_int("CIRCUITPY_TERMINAL_SCALE", &scale);
     #endif
 
     width_in_tiles = MAX(1, width_px / (glyph_width * scale));

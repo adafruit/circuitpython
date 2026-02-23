@@ -19,6 +19,10 @@ SRC_SUPERVISOR = \
 	supervisor/shared/translate/translate.c \
 	supervisor/shared/workflow.c \
 
+ifeq ($(CIRCUITPY_SETTINGS_TOML),1)
+SRC_SUPERVISOR += supervisor/shared/settings.c
+endif
+
 ifeq ($(CIRCUITPY_LIB_TLSF),1)
 SRC_SUPERVISOR += lib/tlsf/tlsf.c
 endif

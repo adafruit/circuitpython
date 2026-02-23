@@ -58,7 +58,7 @@ content_bad = [
     b'key = """\n',
     b"key =\n",
     b'key="',
-    b"key = strings must be quoted\n",
+    b"key = this is an unquoted string\n",
 ]
 
 
@@ -75,6 +75,7 @@ def run_test(key, content):
 
 run_test("key", b"")
 
+# key12 does not exist
 for i in range(13):
     run_test(f"key{i}", content_good)
 
@@ -82,11 +83,9 @@ content_good = content_good.replace(b"\n", b"\r\n")
 for i in range(13):
     run_test(f"key{i}", content_good)
 
-run_test(f"K", b"K = 7\r\n")
-print(getenv_int("K"))
-
 # Test value without trailing newline
 run_test(f"noeol", b"noeol=3")
 
+# These return None now
 for content in content_bad:
     run_test("key", content)

@@ -964,7 +964,6 @@ SRC_SHARED_MODULE_INTERNAL = \
 $(filter $(SRC_PATTERNS), \
 	displayio/bus_core.c \
 	displayio/display_core.c \
-	os/getenv.c \
 	usb/utf16le.c \
 )
 

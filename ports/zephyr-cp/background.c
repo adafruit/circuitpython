@@ -36,10 +36,9 @@ void port_background_tick(void) {
     #endif
 }
 
-// Allow boards to override this.
-MP_WEAK void board_background_task(void) {
-}
-
 void port_background_task(void) {
-    board_background_task();
+    // Make sure time advances in the simulator.
+    #if defined(CONFIG_ARCH_POSIX)
+    k_busy_wait(100);
+    #endif
 }

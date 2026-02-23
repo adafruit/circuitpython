@@ -44,8 +44,8 @@
 #include "esp_nimble_hci.h"
 #include "nvs_flash.h"
 
-#if CIRCUITPY_OS_GETENV
-#include "shared-module/os/__init__.h"
+#if CIRCUITPY_SETTINGS_TOML
+#include "supervisor/shared/settings.h"
 #endif
 
 // Status variables used while busy-waiting for events.
@@ -105,10 +105,10 @@ void common_hal_bleio_adapter_set_enabled(bleio_adapter_obj_t *self, bool enable
         ble_svc_gatt_init();
         ble_svc_ans_init();
 
-        #if CIRCUITPY_OS_GETENV
+        #if CIRCUITPY_SETTINGS_TOML
         char ble_name[1 + MYNEWT_VAL_BLE_SVC_GAP_DEVICE_NAME_MAX_LENGTH];
-        os_getenv_err_t result = common_hal_os_getenv_str("CIRCUITPY_BLE_NAME", ble_name, sizeof(ble_name));
-        if (result == GETENV_OK) {
+        settings_err_t result = settings_get_str("CIRCUITPY_BLE_NAME", ble_name, sizeof(ble_name));
+        if (result == SETTINGS_OK) {
             ble_svc_gap_device_name_set(ble_name);
         } else
         #endif

@@ -6,13 +6,14 @@
 
 #include "supervisor/board.h"
 #include "mpconfigboard.h"
+
 #include "shared-bindings/board/__init__.h"
 #include "shared-bindings/dotclockframebuffer/DotClockFramebuffer.h"
 #include "shared-bindings/dotclockframebuffer/__init__.h"
 #include "shared-bindings/framebufferio/FramebufferDisplay.h"
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-module/displayio/__init__.h"
-#include "shared-module/os/__init__.h"
+#include "supervisor/shared/settings.h"
 
 static const mcu_pin_obj_t *blue_pins[] = {
     &pin_GPIO8,
@@ -47,8 +48,8 @@ static void display_init(void) {
 
     dotclockframebuffer_framebuffer_obj_t *framebuffer = &allocate_display_bus_or_raise()->dotclock;
     framebuffer->base.type = &dotclockframebuffer_framebuffer_type;
-    os_getenv_err_t result = common_hal_os_getenv_int("CIRCUITPY_DISPLAY_FREQUENCY", &frequency);
-    if (result != GETENV_OK) {
+    settings_err_t result = settings_get_int("CIRCUITPY_DISPLAY_FREQUENCY", &frequency);
+    if (result != SETTINGS_OK) {
         frequency = 12500000;
     }
 

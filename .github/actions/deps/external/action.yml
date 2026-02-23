@@ -27,7 +27,7 @@ runs:
       uses: carlosperate/arm-none-eabi-gcc-action@v1
       with:
         # When changing this update what Windows grabs too!
-        release: '14.2.Rel1'
+        release: '15.2.Rel1'
 
     # espressif
     - name: Get espressif toolchain

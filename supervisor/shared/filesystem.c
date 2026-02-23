@@ -172,7 +172,7 @@ bool filesystem_init(bool create_allowed, bool force_create) {
         #endif
         #endif
 
-        #if CIRCUITPY_OS_GETENV
+        #if CIRCUITPY_SETTINGS_TOML
         make_empty_file(&circuitpy->fatfs, "/settings.toml");
         #endif
         // make a sample code.py file

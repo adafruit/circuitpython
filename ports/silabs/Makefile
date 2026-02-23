@@ -71,7 +71,7 @@ ifeq ($(DEBUG), 1)
 	CFLAGS += -fno-inline -fno-ipa-sra -Og
 else
 	CFLAGS += -DNDEBUG
-	OPTIMIZATION_FLAGS ?= -Os -fno-inline-functions
+	OPTIMIZATION_FLAGS ?= -Os
 	CFLAGS += -g
 endif
 

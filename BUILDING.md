@@ -64,6 +64,52 @@ If you aren't sure what boards exist, have a peek in the boards subdirectory of 
 If you have a fast computer with many cores, consider adding `-j` to your build flags, such as `-j17` on
 a 6-core 12-thread machine.
 
+## Configuration
+
+Ports and boards are preconfigured, thus make knows how to build a specific
+board. Power users can change the configuration of a specific board or port,
+either by passing compile-time options to make, or by creating appropriate
+make include files.
+
+The configuration system is hierarchical. A higher level will typically only
+set an option that a lower level hasn't configured:
+
+* board configuration: `mpconfigport.mk`
+* pre-port user configuration: `user_pre_mpconfigport.mk`
+* port configuration: `mpconfigport.mk`
+* post-port user configuration: `user_post_mpconfigport.mk`
+* global configuration: `py/circuitpython_mpconfig.mk`
+
+The board configuration is within the board-directory, e.g.
+`ports/raspberrypi/boards/raspberry_pi_pico/`, the port configuration is
+in the port-directory, e.g. `ports/raspberrypi/`.
+
+Editing these configuration files is the way to go if you want to change
+the default behavior and ultimately create a pull-request. Otherwise,
+changes should go into one of the user configuration files.
+
+User specific configurations are optional and should be maintained out of
+tree. Passing `-I directory` tells make where to search for the additional
+configuration files. E.g. to speed up boots by removing the wait-time for
+the save-mode button press, you would:
+
+* create a directory: `mkdir -p ~/my_cp_config`
+* create the config file: `echo 'CIRCUITPY_SKIP_SAFE_MODE_WAIT=0' > ~/my_cp_config/user_pre_mpconfigport.mk`
+* run make with: `make -I ~/my_cp_config BOARD=raspberry_pi_pico`
+
+Besides the `user*mpconfigport.mk` files, there is another optional file
+named `user_post_circuitpy_defns.mk`. This file is included at the end
+and can be used to tweak compiler-definitions that are not covered by
+one of the compile time options `CIRCUITPY_*`.
+
+Example: to create a build for the Pico2-W with an integrated saves-partition,
+you would create a `user_post_circuitpy_defns.mk` with the following content:
+
+    $(info ===> processing user_post_circuitpy_defns.mk)
+    ifeq (${BOARD},raspberry_pi_pico2_w)
+    CFLAGS += -DCIRCUITPY_SAVES_PARTITION_SIZE=1048576
+    endif
+
 ## Testing
 
 If you are working on changes to the core language, you might find it useful to run the test suite.

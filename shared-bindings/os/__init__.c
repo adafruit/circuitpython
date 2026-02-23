@@ -94,11 +94,20 @@ static mp_obj_t os_getcwd(void) {
 MP_DEFINE_CONST_FUN_OBJ_0(os_getcwd_obj, os_getcwd);
 
 //| def getenv(key: str, default: Optional[str] = None) -> Optional[str]:
-//|     """Get the environment variable value for the given key or return ``default``.
+//|     """Get the environment variable value for the given ``key`` from the
+//|     ``/settings.toml`` file.
+//|     If ``key`` is not present or the value is ill-formed, return the ``default`` value.
+//|     The value is returned as a string even if it can be parsed as an integer or boolean.
+//|     No errors are raised if the value is not a valid TOML value; instead the original
+//|     string is returned, or ``default`` if no value can be retrieved at all.
 //|
-//|     This may load values from disk so cache the result instead of calling this often.
+//|     If you want to retrieve the value as a ``str``, ``bool``, or ``int``, use `supervisor.get_setting()`.
 //|
-//|     On boards that do not support ``settings.toml`` reading in the core, this function will raise NotImplementedError.
+//|     The ``settings.toml`` file is re-scanned on every call,
+//|     so cache the result instead of calling `getenv()` frequently.
+//|
+//|     On boards that do not support ``settings.toml`` reading in the core,
+//|     this function will raise NotImplementedError.
 //|
 //|     .. raw:: html
 //|
@@ -118,7 +127,7 @@ MP_DEFINE_CONST_FUN_OBJ_0(os_getcwd_obj, os_getcwd);
 //|
 //|
 static mp_obj_t os_getenv(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    #if CIRCUITPY_OS_GETENV
+    #if CIRCUITPY_SETTINGS_TOML
     enum { ARG_key, ARG_default };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_key, MP_ARG_REQUIRED | MP_ARG_OBJ },

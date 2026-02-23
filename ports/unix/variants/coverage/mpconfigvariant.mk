@@ -106,7 +106,6 @@ SRC_BITMAP := \
 	shared-module/floppyio/__init__.c \
 	shared-module/jpegio/__init__.c \
 	shared-module/jpegio/JpegDecoder.c \
-	shared-module/os/getenv.c \
 	shared-module/rainbowio/__init__.c \
 	shared-module/struct/__init__.c \
 	shared-module/synthio/__init__.c \
@@ -164,8 +163,8 @@ CFLAGS += \
 	-DCIRCUITPY_GIFIO=1 \
 	-DCIRCUITPY_JPEGIO=1 \
 	-DCIRCUITPY_LOCALE=1 \
-	-DCIRCUITPY_OS_GETENV=1 \
 	-DCIRCUITPY_RAINBOWIO=1 \
+	-DCIRCUITPY_SETTINGS_TOML=1 \
 	-DCIRCUITPY_STRUCT=1 \
 	-DCIRCUITPY_SYNTHIO=1 \
 	-DCIRCUITPY_SYNTHIO_MAX_CHANNELS=14 \
