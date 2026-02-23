@@ -7,6 +7,7 @@
 #include "supervisor/port.h"
 
 #include "mpconfigboard.h"
+#include "supervisor/shared/tick.h"
 
 #include <zephyr/autoconf.h>
 #include <zephyr/kernel.h>
@@ -26,7 +27,14 @@ static pool_t pools[CIRCUITPY_RAM_DEVICE_COUNT];
 
 static K_EVENT_DEFINE(main_needed);
 
+static struct k_timer tick_timer;
+
+static void _tick_function(struct k_timer *timer_id) {
+    supervisor_tick();
+}
+
 safe_mode_t port_init(void) {
+    k_timer_init(&tick_timer, _tick_function, NULL);
     return SAFE_MODE_NONE;
 }
 
@@ -59,6 +67,10 @@ void port_wake_main_task_from_isr(void) {
 
 void port_yield(void) {
     k_yield();
+    // Make sure time advances in the simulator.
+    #if defined(CONFIG_ARCH_POSIX)
+    k_busy_wait(100);
+    #endif
 }
 
 void port_boot_info(void) {
@@ -66,14 +78,14 @@ void port_boot_info(void) {
 
 // Get stack limit address
 uint32_t *port_stack_get_limit(void) {
-    return k_current_get()->stack_info.start;
+    return (uint32_t *)k_current_get()->stack_info.start;
 }
 
 // Get stack top address
 uint32_t *port_stack_get_top(void) {
     _thread_stack_info_t stack_info = k_current_get()->stack_info;
 
-    return stack_info.start + stack_info.size - stack_info.delta;
+    return (uint32_t *)(stack_info.start + stack_info.size - stack_info.delta);
 }
 
 // Save and retrieve a word from memory that is preserved over reset. Used for safe mode.
@@ -94,12 +106,12 @@ uint64_t port_get_raw_ticks(uint8_t *subticks) {
 
 // Enable 1/1024 second tick.
 void port_enable_tick(void) {
-
+    k_timer_start(&tick_timer, K_USEC(1000000 / 1024), K_USEC(1000000 / 1024));
 }
 
 // Disable 1/1024 second tick.
 void port_disable_tick(void) {
-
+    k_timer_stop(&tick_timer);
 }
 
 static k_timeout_t next_timeout;
@@ -170,4 +182,15 @@ size_t port_heap_get_largest_free_size(void) {
     }
     // IDF does this. Not sure why.
     return tlsf_fit_size(heap, max_size);
+}
+
+void assert_post_action(const char *file, unsigned int line) {
+    printk("Assertion failed at %s:%u\n", file, line);
+    // Check that this is arm
+    #if defined(__arm__)
+    __asm__ ("bkpt");
+    #endif
+    while (1) {
+        ;
+    }
 }

@@ -12,9 +12,11 @@
 
 typedef struct {
     mp_obj_base_t base;
-    digitalio_digitalinout_obj_t scl;
-    digitalio_digitalinout_obj_t sda;
+    mp_obj_t scl;
+    mp_obj_t sda;
     uint32_t us_delay;
     uint32_t us_timeout;
     volatile bool locked;
+    bool own_scl;
+    bool own_sda;
 } bitbangio_i2c_obj_t;

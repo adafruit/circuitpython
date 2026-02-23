@@ -217,7 +217,10 @@ static void _refresh_display(framebufferio_framebufferdisplay_obj_t *self) {
     if (!self->bufinfo.buf) {
         return;
     }
-    displayio_display_core_start_refresh(&self->core);
+    if (!displayio_display_core_start_refresh(&self->core)) {
+        // Refresh on this display already in progress.
+        return;
+    }
     const displayio_area_t *current_area = _get_refresh_areas(self);
     if (current_area) {
         bool transposed = (self->core.rotation == 90 || self->core.rotation == 270);

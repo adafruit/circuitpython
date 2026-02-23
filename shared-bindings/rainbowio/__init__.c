@@ -16,7 +16,8 @@
 //|
 //| def colorwheel(n: float) -> int:
 //|     """C implementation of the common colorwheel() function found in many examples.
-//|     Returns the colorwheel RGB value as an integer value for n (usable in neopixel and dotstar).
+//|     Takes a hue, a value between 0-255, and returns an RGB tuple encoded as an
+//|     integer value (usable in neopixel and dotstar).
 //|     """
 //|     ...
 //|

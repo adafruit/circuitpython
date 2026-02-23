@@ -1085,6 +1085,10 @@ static void _reply_static(socketpool_socket_obj_t *socket, _request *request, co
         "Content-Encoding: gzip\r\n",
         "Content-Length: ", encoded_len, "\r\n",
         "Content-Type: ", content_type, "\r\n",
+        #if CIRCUITPY_DEBUG == 0
+        "Cache-Control: max-age=31536000\r\n", // Cache for a year.
+        "Vary: Accept\r\n",
+        #endif
         "\r\n", NULL);
     web_workflow_send_raw(socket, true, response, response_len);
 }

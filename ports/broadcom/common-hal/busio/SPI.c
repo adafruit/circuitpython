@@ -30,30 +30,7 @@ static SPI0_Type *spi[NUM_SPI] = {SPI0, NULL, NULL};
 static SPI1_Type *aux_spi[NUM_SPI] = {NULL, SPI1, SPI2};
 #endif
 
-static bool never_reset_spi[NUM_SPI];
 static bool spi_in_use[NUM_SPI];
-
-void reset_spi(void) {
-    for (size_t i = 0; i < NUM_SPI; i++) {
-        if (never_reset_spi[i]) {
-            continue;
-        }
-
-        if (i == 1 || i == 2) {
-            if (i == 1) {
-                AUX->ENABLES_b.SPI_1 = false;
-            } else {
-                AUX->ENABLES_b.SPI_2 = false;
-            }
-            aux_spi[i]->CNTL0 = 0;
-        } else {
-            // Set CS back to default. All 0 except read enable.
-            spi[i]->CS = SPI0_CS_REN_Msk;
-        }
-
-        spi_in_use[i] = false;
-    }
-}
 
 void common_hal_busio_spi_construct(busio_spi_obj_t *self,
     const mcu_pin_obj_t *clock, const mcu_pin_obj_t *mosi,
@@ -66,6 +43,9 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
     if (half_duplex) {
         mp_raise_NotImplementedError(MP_ERROR_TEXT("Half duplex SPI is not implemented"));
     }
+
+    // Ensure the object starts in its deinit state.
+    common_hal_busio_spi_mark_deinit(self);
 
     // BCM_VERSION != 2711 have 3 SPI but as listed in peripherals/gen/pins.c two are on
     // index 0, once one index 0 SPI is found the other will throw an invalid_pins error.
@@ -118,8 +98,6 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
 }
 
 void common_hal_busio_spi_never_reset(busio_spi_obj_t *self) {
-    never_reset_spi[self->index] = true;
-
     common_hal_never_reset_pin(self->clock);
     common_hal_never_reset_pin(self->MOSI);
     common_hal_never_reset_pin(self->MISO);
@@ -129,16 +107,19 @@ bool common_hal_busio_spi_deinited(busio_spi_obj_t *self) {
     return self->clock == NULL;
 }
 
+void common_hal_busio_spi_mark_deinit(busio_spi_obj_t *self) {
+    self->clock = NULL;
+}
+
 void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
     if (common_hal_busio_spi_deinited(self)) {
         return;
     }
-    never_reset_spi[self->index] = false;
 
     common_hal_reset_pin(self->clock);
     common_hal_reset_pin(self->MOSI);
     common_hal_reset_pin(self->MISO);
-    self->clock = NULL;
+
     spi_in_use[self->index] = false;
 
     if (self->index == 1 ||
@@ -149,7 +130,12 @@ void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
         } else if (self->index == 2) {
             AUX->ENABLES_b.SPI_2 = false;
         }
+    } else {
+        // Set CS back to default. All 0 except read enable.
+        spi[self->index]->CS = SPI0_CS_REN_Msk;
     }
+
+    common_hal_busio_spi_mark_deinit(self);
 }
 
 bool common_hal_busio_spi_configure(busio_spi_obj_t *self,

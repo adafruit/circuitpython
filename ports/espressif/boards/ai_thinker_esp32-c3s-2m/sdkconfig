@@ -9,6 +9,18 @@
 #
 # end of LWIP
 
+#
+# Wireless Coexistence
+#
+# CONFIG_ESP_COEX_SW_COEXIST_ENABLE is not set
+# end of Wireless Coexistence
+
+#
+# LibC
+#
+# CONFIG_LIBC_OPTIMIZED_MISALIGNED_ACCESS is not set
+# end of LibC
+
 # end of Component config
 
 # end of Espressif IoT Development Framework Configuration

@@ -55,9 +55,9 @@ void board_init(void) {
     busio_spi_obj_t *internal_spi = &supervisor_flash_spi_bus;
     common_hal_fourwire_fourwire_construct(bus,
         internal_spi,
-        &pin_PA08, // Command or data
-        &pin_PB12, // Chip select
-        &pin_PB10, // Reset
+        MP_OBJ_FROM_PTR(&pin_PA08), // Command or data
+        MP_OBJ_FROM_PTR(&pin_PB12), // Chip select
+        MP_OBJ_FROM_PTR(&pin_PB10), // Reset
         24000000, // Baudrate
         0, // Polarity
         0); // Phase

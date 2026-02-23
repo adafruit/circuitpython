@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: MIT
 
 #include "tusb.h"
-// // #include "supervisor/flash.h"
 
 // For updating fatfs's cache
 #include "extmod/vfs.h"
@@ -14,6 +13,7 @@
 #include "lib/oofatfs/ff.h"
 #include "py/gc.h"
 #include "py/mpstate.h"
+#include "py/runtime.h"
 
 #include "shared-module/storage/__init__.h"
 #include "supervisor/filesystem.h"
@@ -28,7 +28,7 @@
 #define SAVES_COUNT 0
 #endif
 
-#if CIRCUITPY_SDCARDIO
+#if CIRCUITPY_SDCARD_USB
 #include "shared-module/sdcardio/__init__.h"
 
 #define SDCARD_COUNT 1
@@ -72,7 +72,7 @@ static const uint8_t usb_msc_descriptor_template[] = {
     0xFF,        // 11 bEndpointAddress (IN/D2H) [SET AT RUNTIME: 0x80 | number]
 #define MSC_IN_ENDPOINT_INDEX (11)
     0x02,        // 12 bmAttributes (Bulk)
-    #if USB_HIGHSPEED
+    #if CIRCUITPY_USB_DEVICE_HIGH_SPEED == 1
     0x00, 0x02,  // 13,14 wMaxPacketSize 512
     #else
     0x40, 0x00,  // 13,14 wMaxPacketSize 64
@@ -85,7 +85,7 @@ static const uint8_t usb_msc_descriptor_template[] = {
     0xFF,        // 18 bEndpointAddress (OUT/H2D) [SET AT RUNTIME]
 #define MSC_OUT_ENDPOINT_INDEX (18)
     0x02,        // 19 bmAttributes (Bulk)
-    #if USB_HIGHSPEED
+    #if CIRCUITPY_USB_DEVICE_HIGH_SPEED == 1
     0x00, 0x02,  // 20,21 wMaxPacketSize 512
     #else
     0x40, 0x00,  // 20,21 wMaxPacketSize 64
@@ -137,7 +137,8 @@ static fs_user_mount_t *get_vfs(int lun) {
     if (lun == SAVES_LUN) {
         const char *path_under_mount;
         fs_user_mount_t *saves = filesystem_for_path("/saves", &path_under_mount);
-        if (saves != root && (saves->blockdev.flags & MP_BLOCKDEV_FLAG_NATIVE) != 0 && !gc_ptr_on_heap(saves)) {
+        if (saves != root &&
+            (saves->blockdev.flags & MP_BLOCKDEV_FLAG_NATIVE) != 0 && !gc_ptr_on_heap(saves)) {
             return saves;
         }
     }
@@ -146,8 +147,15 @@ static fs_user_mount_t *get_vfs(int lun) {
     if (lun == SDCARD_LUN) {
         const char *path_under_mount;
         fs_user_mount_t *sdcard = filesystem_for_path("/sd", &path_under_mount);
-        // If "/sd" is on the root filesystem, nothing has been mounted there.
-        if (sdcard != root && (sdcard->blockdev.flags & MP_BLOCKDEV_FLAG_NATIVE) != 0) {
+        // If sdcard ("/sd") is on the root filesystem, nothing has been mounted there, so don't
+        // return it as a separate filesystem.
+        // If the SD card was automounted at startup, then it persists across VMs and its fs_user_mount_t is
+        // not on the heap.
+        // If the SD card filesystem was mounted by the user using heap objects,
+        // it should not be used when the VM has stopped running.
+        if ((sdcard != root) &&
+            ((sdcard->blockdev.flags & MP_BLOCKDEV_FLAG_NATIVE) != 0) &&
+            (vm_is_running() || !gc_ptr_on_heap(sdcard))) {
             return sdcard;
         } else {
             // Clear any ejected state so that a re-insert causes it to reappear.
@@ -359,7 +367,7 @@ bool tud_msc_test_unit_ready_cb(uint8_t lun) {
         return false;
     }
 
-    #if CIRCUITPY_SDCARD_USB
+    #ifdef SDCARD_LUN
     if (lun == SDCARD_LUN) {
         automount_sd_card();
     }

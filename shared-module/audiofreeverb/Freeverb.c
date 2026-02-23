@@ -8,6 +8,7 @@
 // Fixed point ideas from - Paul Stoffregen in the Teensy audio library https://github.com/PaulStoffregen/Audio/blob/master/effect_freeverb.cpp
 //
 #include "shared-bindings/audiofreeverb/Freeverb.h"
+#include "shared-bindings/audiocore/__init__.h"
 #include "shared-module/synthio/__init__.h"
 
 #include <stdint.h>
@@ -124,9 +125,7 @@ bool common_hal_audiofreeverb_freeverb_deinited(audiofreeverb_freeverb_obj_t *se
 }
 
 void common_hal_audiofreeverb_freeverb_deinit(audiofreeverb_freeverb_obj_t *self) {
-    if (common_hal_audiofreeverb_freeverb_deinited(self)) {
-        return;
-    }
+    audiosample_mark_deinit(&self->base);
     self->buffer[0] = NULL;
     self->buffer[1] = NULL;
 }

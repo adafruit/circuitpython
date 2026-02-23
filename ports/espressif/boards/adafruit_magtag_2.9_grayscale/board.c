@@ -135,10 +135,23 @@ const uint8_t ssd1680_display_refresh_sequence[] = {
     0x20, 0x00, 0x00
 };
 
-static bool detect_ssd1680(void) {
-    // Bitbang 4-wire SPI with a bidirectional data line to read register 0x71.
-    // On the IL0373 it will return 0x13 or similar. On the SSD1680 it is
-    // unsupported and will be 0xff.
+
+typedef enum {
+    DISPLAY_IL0373,
+    DISPLAY_SSD1680_COLSTART_0,
+    DISPLAY_SSD1680_COLSTART_8,
+} display_type_t;
+
+static display_type_t detect_display_type(void) {
+    // Bitbang 4-wire SPI with a bidirectional data line to read the first word of register 0x2e,
+    // which is the 10-byte USER ID.
+    // On the IL0373 it will return 0xff because it's not a valid register.
+    // With SSD1680, we have seen two types:
+    // 1. The first batch of displays, labeled "FPC-A005 20.06.15 TRX", which needs colstart=0.
+    //    These have 10 byes of zeros in the User ID
+    // 2. Second batch, labeled "FPC-7619rev.b", which needs colstart=8.
+    //    The USER ID for these boards is [0x44, 0x0, 0x4, 0x0, 0x25, 0x0, 0x1, 0x78, 0x2b, 0xe]
+    // So let's distinguish just by the first byte.
     digitalio_digitalinout_obj_t data;
     digitalio_digitalinout_obj_t clock;
     digitalio_digitalinout_obj_t chip_select;
@@ -163,7 +176,7 @@ static bool detect_ssd1680(void) {
     common_hal_digitalio_digitalinout_switch_to_output(&reset, true, DRIVE_MODE_PUSH_PULL);
     common_hal_digitalio_digitalinout_switch_to_output(&clock, false, DRIVE_MODE_PUSH_PULL);
 
-    uint8_t status_read = 0x71;
+    uint8_t status_read = 0x2e;  // SSD1680 User ID register. Not a valid register on IL0373.
     for (int i = 0; i < 8; i++) {
         common_hal_digitalio_digitalinout_set_value(&data, (status_read & (1 << (7 - i))) != 0);
         common_hal_digitalio_digitalinout_set_value(&clock, true);
@@ -192,11 +205,20 @@ static bool detect_ssd1680(void) {
     common_hal_digitalio_digitalinout_deinit(&chip_select);
     common_hal_digitalio_digitalinout_deinit(&data_command);
     common_hal_digitalio_digitalinout_deinit(&reset);
-    return status == 0xff;
+
+    switch (status) {
+        case 0xff:
+            return DISPLAY_IL0373;
+        default:    // who knows? Just guess.
+        case 0x00:
+            return DISPLAY_SSD1680_COLSTART_0;
+        case 0x44:
+            return DISPLAY_SSD1680_COLSTART_8;
+    }
 }
 
 void board_init(void) {
-    bool is_ssd1680 = detect_ssd1680();
+    display_type_t display_type = detect_display_type();
 
     fourwire_fourwire_obj_t *bus = &allocate_display_bus()->fourwire_bus;
     busio_spi_obj_t *spi = &bus->inline_bus;
@@ -206,9 +228,9 @@ void board_init(void) {
     bus->base.type = &fourwire_fourwire_type;
     common_hal_fourwire_fourwire_construct(bus,
         spi,
-        &pin_GPIO7, // EPD_DC Command or data
-        &pin_GPIO8, // EPD_CS Chip select
-        &pin_GPIO6, // EPD_RST Reset
+        MP_OBJ_FROM_PTR(&pin_GPIO7), // EPD_DC Command or data
+        MP_OBJ_FROM_PTR(&pin_GPIO8), // EPD_CS Chip select
+        MP_OBJ_FROM_PTR(&pin_GPIO6), // EPD_RST Reset
         4000000, // Baudrate
         0, // Polarity
         0); // Phase
@@ -216,8 +238,33 @@ void board_init(void) {
     epaperdisplay_epaperdisplay_obj_t *display = &allocate_display()->epaper_display;
     display->base.type = &epaperdisplay_epaperdisplay_type;
 
-    if (is_ssd1680) {
+    if (display_type == DISPLAY_IL0373) {
         epaperdisplay_construct_args_t args = EPAPERDISPLAY_CONSTRUCT_ARGS_DEFAULTS;
+        args.bus = bus;
+        args.start_sequence = il0373_display_start_sequence;
+        args.start_sequence_len = sizeof(il0373_display_start_sequence);
+        args.stop_sequence = il0373_display_stop_sequence;
+        args.stop_sequence_len = sizeof(il0373_display_stop_sequence);
+        args.width = 296;
+        args.height = 128;
+        args.ram_width = 160;
+        args.ram_height = 296;
+        args.rotation = 270;
+        args.write_black_ram_command = 0x10;
+        args.write_color_ram_command = 0x13;
+        args.refresh_sequence = il0373_display_refresh_sequence;
+        args.refresh_sequence_len = sizeof(il0373_display_refresh_sequence);
+        args.refresh_time = 1.0;
+        args.busy_pin = &pin_GPIO5;
+        args.seconds_per_frame = 5.0;
+        args.grayscale = true;
+        common_hal_epaperdisplay_epaperdisplay_construct(display, &args);
+    } else {
+        epaperdisplay_construct_args_t args = EPAPERDISPLAY_CONSTRUCT_ARGS_DEFAULTS;
+        // Default colstart is 0.
+        if (display_type == DISPLAY_SSD1680_COLSTART_8) {
+            args.colstart = 8;
+        }
         args.bus = bus;
         args.start_sequence = ssd1680_display_start_sequence;
         args.start_sequence_len = sizeof(ssd1680_display_start_sequence);
@@ -243,27 +290,6 @@ void board_init(void) {
         args.grayscale = true;
         args.two_byte_sequence_length = true;
         args.address_little_endian = true;
-        common_hal_epaperdisplay_epaperdisplay_construct(display, &args);
-    } else {
-        epaperdisplay_construct_args_t args = EPAPERDISPLAY_CONSTRUCT_ARGS_DEFAULTS;
-        args.bus = bus;
-        args.start_sequence = il0373_display_start_sequence;
-        args.start_sequence_len = sizeof(il0373_display_start_sequence);
-        args.stop_sequence = il0373_display_stop_sequence;
-        args.stop_sequence_len = sizeof(il0373_display_stop_sequence);
-        args.width = 296;
-        args.height = 128;
-        args.ram_width = 160;
-        args.ram_height = 296;
-        args.rotation = 270;
-        args.write_black_ram_command = 0x10;
-        args.write_color_ram_command = 0x13;
-        args.refresh_sequence = il0373_display_refresh_sequence;
-        args.refresh_sequence_len = sizeof(il0373_display_refresh_sequence);
-        args.refresh_time = 1.0;
-        args.busy_pin = &pin_GPIO5;
-        args.seconds_per_frame = 5.0;
-        args.grayscale = true;
         common_hal_epaperdisplay_epaperdisplay_construct(display, &args);
     }
 }

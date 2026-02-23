@@ -143,6 +143,9 @@
 
 #endif
 
+// Type for return values where 0 indicates success and negative values are negated MP_E* error codes.
+typedef int mp_negative_errno_t;
+
 #if MICROPY_PY_ERRNO
 
 #include "py/obj.h"

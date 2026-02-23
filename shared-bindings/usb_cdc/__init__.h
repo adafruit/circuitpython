@@ -6,7 +6,11 @@
 
 #pragma once
 
+#if defined(__ZEPHYR__) && __ZEPHYR__ == 1
+#include "common-hal/usb_cdc/__init__.h"
+#else
 #include "shared-module/usb_cdc/__init__.h"
+#endif
 
 //  Set the module dict entries.
 void usb_cdc_set_console(mp_obj_t serial_obj);

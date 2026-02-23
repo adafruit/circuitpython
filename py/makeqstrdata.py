@@ -51,7 +51,7 @@ codepoint2name = {
     954: "kappa", 8656: "lArr", 955: "lambda", 9001: "lang", 171: "laquo", 8592: "larr", 8968: "lceil",
     8220: "ldquo", 8804: "le", 8970: "lfloor", 8727: "lowast", 9674: "loz", 8206: "lrm", 8249: "lsaquo",
     8216: "lsquo", 60: "lt", 175: "macr", 8212: "mdash", 181: "micro", 183: "middot", 8722: "minus",
-    956: "mu", 8711: "nabla", 160: "nbsp", 8211: "ndash", 8800: "ne", 8715: "ni", 172: "not", 8713: "notin",
+    956: "mu", 8711: "nabla", 160: "nbsp", 8211: "ndash", 8800: "ne", 8715: "ni", 172: "not", 8713: "notin",  # codespell:ignore notin
     8836: "nsub", 241: "ntilde", 957: "nu", 243: "oacute", 244: "ocirc", 339: "oelig", 242: "ograve",
     8254: "oline", 969: "omega", 959: "omicron", 8853: "oplus", 8744: "or", 170: "ordf", 186: "ordm",
     248: "oslash", 245: "otilde", 8855: "otimes", 246: "ouml", 182: "para", 8706: "part", 8240: "permil",

@@ -11,13 +11,15 @@
 #include "py/gc.h"
 #include "shared-bindings/busio/SPI.h"
 #include "shared-bindings/digitalio/DigitalInOut.h"
+#include "shared-bindings/digitalio/DigitalInOutProtocol.h"
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/time/__init__.h"
+#include "supervisor/port.h"
 
 void common_hal_fourwire_fourwire_construct(fourwire_fourwire_obj_t *self,
-    busio_spi_obj_t *spi, const mcu_pin_obj_t *command,
-    const mcu_pin_obj_t *chip_select, const mcu_pin_obj_t *reset, uint32_t baudrate,
+    busio_spi_obj_t *spi, mp_obj_t command,
+    mp_obj_t chip_select, mp_obj_t reset, uint32_t baudrate,
     uint8_t polarity, uint8_t phase) {
 
     self->bus = spi;
@@ -27,31 +29,27 @@ void common_hal_fourwire_fourwire_construct(fourwire_fourwire_obj_t *self,
     self->polarity = polarity;
     self->phase = phase;
 
+    // Allocate the pins in the same place as self.
+    bool use_port_allocation = !gc_alloc_possible() || !gc_ptr_on_heap(self);
 
-    self->command.base.type = &mp_type_NoneType;
-    if (command != NULL) {
-        self->command.base.type = &digitalio_digitalinout_type;
-        common_hal_digitalio_digitalinout_construct(&self->command, command);
-        common_hal_digitalio_digitalinout_switch_to_output(&self->command, true, DRIVE_MODE_PUSH_PULL);
+    self->command = digitalinout_protocol_from_pin(command, MP_QSTR_command, true, use_port_allocation, &self->own_command);
+    if (self->command != mp_const_none) {
+        digitalinout_protocol_switch_to_output(self->command, true, DRIVE_MODE_PUSH_PULL);
         common_hal_never_reset_pin(command);
     }
-    self->reset.base.type = &mp_type_NoneType;
-    if (reset != NULL) {
-        self->reset.base.type = &digitalio_digitalinout_type;
-        common_hal_digitalio_digitalinout_construct(&self->reset, reset);
-        common_hal_digitalio_digitalinout_switch_to_output(&self->reset, true, DRIVE_MODE_PUSH_PULL);
+
+    self->reset = digitalinout_protocol_from_pin(reset, MP_QSTR_reset, true, use_port_allocation, &self->own_reset);
+    if (self->reset != mp_const_none) {
+        digitalinout_protocol_switch_to_output(self->reset, true, DRIVE_MODE_PUSH_PULL);
         common_hal_never_reset_pin(reset);
         common_hal_fourwire_fourwire_reset(self);
     }
 
-    self->chip_select.base.type = &mp_type_NoneType;
-    if (chip_select != NULL) {
-        self->chip_select.base.type = &digitalio_digitalinout_type;
-        common_hal_digitalio_digitalinout_construct(&self->chip_select, chip_select);
-        common_hal_digitalio_digitalinout_switch_to_output(&self->chip_select, true, DRIVE_MODE_PUSH_PULL);
+    self->chip_select = digitalinout_protocol_from_pin(chip_select, MP_QSTR_chip_select, true, use_port_allocation, &self->own_chip_select);
+    if (self->chip_select != mp_const_none) {
+        digitalinout_protocol_switch_to_output(self->chip_select, true, DRIVE_MODE_PUSH_PULL);
         common_hal_never_reset_pin(chip_select);
     }
-
 }
 
 void common_hal_fourwire_fourwire_deinit(fourwire_fourwire_obj_t *self) {
@@ -59,19 +57,33 @@ void common_hal_fourwire_fourwire_deinit(fourwire_fourwire_obj_t *self) {
         common_hal_busio_spi_deinit(self->bus);
     }
 
-    common_hal_reset_pin(self->command.pin);
-    common_hal_reset_pin(self->chip_select.pin);
-    common_hal_reset_pin(self->reset.pin);
+    // Only deinit and free the pins if we own them
+    if (self->command != mp_const_none && self->own_command) {
+        digitalinout_protocol_deinit(self->command);
+        circuitpy_free_obj(self->command);
+    }
+    if (self->chip_select != mp_const_none && self->own_chip_select) {
+        digitalinout_protocol_deinit(self->chip_select);
+        circuitpy_free_obj(self->chip_select);
+    }
+    if (self->reset != mp_const_none && self->own_reset) {
+        digitalinout_protocol_deinit(self->reset);
+        circuitpy_free_obj(self->reset);
+    }
 }
 
 bool common_hal_fourwire_fourwire_reset(mp_obj_t obj) {
     fourwire_fourwire_obj_t *self = MP_OBJ_TO_PTR(obj);
-    if (self->reset.base.type == &mp_type_NoneType) {
+    if (self->reset == mp_const_none) {
         return false;
     }
-    common_hal_digitalio_digitalinout_set_value(&self->reset, false);
+    if (digitalinout_protocol_set_value(self->reset, false) != 0) {
+        return false;
+    }
     common_hal_mcu_delay_us(1000);
-    common_hal_digitalio_digitalinout_set_value(&self->reset, true);
+    if (digitalinout_protocol_set_value(self->reset, true) != 0) {
+        return false;
+    }
     common_hal_mcu_delay_us(1000);
     return true;
 }
@@ -92,16 +104,23 @@ bool common_hal_fourwire_fourwire_begin_transaction(mp_obj_t obj) {
     }
     common_hal_busio_spi_configure(self->bus, self->frequency, self->polarity,
         self->phase, 8);
-    if (self->chip_select.base.type != &mp_type_NoneType) {
-        common_hal_digitalio_digitalinout_set_value(&self->chip_select, false);
+    if (self->chip_select != mp_const_none) {
+        // IO Expander CS can fail due to an I2C lock.
+        if (digitalinout_protocol_set_value(self->chip_select, false) != 0) {
+            common_hal_busio_spi_unlock(self->bus);
+            return false;
+        }
     }
     return true;
 }
 
 void common_hal_fourwire_fourwire_send(mp_obj_t obj, display_byte_type_t data_type,
     display_chip_select_behavior_t chip_select, const uint8_t *data, uint32_t data_length) {
+    if (data_length == 0) {
+        return;
+    }
     fourwire_fourwire_obj_t *self = MP_OBJ_TO_PTR(obj);
-    if (self->command.base.type == &mp_type_NoneType) {
+    if (self->command == mp_const_none) {
         // When the data/command pin is not specified, we simulate a 9-bit SPI mode, by
         // adding a data/command bit to every byte, and then splitting the resulting data back
         // into 8-bit chunks for transmission. If the length of the data being transmitted
@@ -133,24 +152,24 @@ void common_hal_fourwire_fourwire_send(mp_obj_t obj, display_byte_type_t data_ty
         if (bits > 0) {
             buffer = buffer << (8 - bits);
             common_hal_busio_spi_write(self->bus, &buffer, 1);
-            if (self->chip_select.base.type != &mp_type_NoneType) {
+            if (self->chip_select != mp_const_none) {
                 // toggle CS to discard superfluous bits
-                common_hal_digitalio_digitalinout_set_value(&self->chip_select, true);
+                digitalinout_protocol_set_value(self->chip_select, true);
                 common_hal_mcu_delay_us(1);
-                common_hal_digitalio_digitalinout_set_value(&self->chip_select, false);
+                digitalinout_protocol_set_value(self->chip_select, false);
             }
         }
     } else {
-        common_hal_digitalio_digitalinout_set_value(&self->command, data_type == DISPLAY_DATA);
+        digitalinout_protocol_set_value(self->command, data_type == DISPLAY_DATA);
         if (chip_select == CHIP_SELECT_TOGGLE_EVERY_BYTE) {
             // Toggle chip select after each command byte in case the display driver
             // IC latches commands based on it.
             for (size_t i = 0; i < data_length; i++) {
                 common_hal_busio_spi_write(self->bus, &data[i], 1);
-                if (self->chip_select.base.type != &mp_type_NoneType) {
-                    common_hal_digitalio_digitalinout_set_value(&self->chip_select, true);
+                if (self->chip_select != mp_const_none) {
+                    digitalinout_protocol_set_value(self->chip_select, true);
                     common_hal_mcu_delay_us(1);
-                    common_hal_digitalio_digitalinout_set_value(&self->chip_select, false);
+                    digitalinout_protocol_set_value(self->chip_select, false);
                 }
             }
         } else {
@@ -161,8 +180,8 @@ void common_hal_fourwire_fourwire_send(mp_obj_t obj, display_byte_type_t data_ty
 
 void common_hal_fourwire_fourwire_end_transaction(mp_obj_t obj) {
     fourwire_fourwire_obj_t *self = MP_OBJ_TO_PTR(obj);
-    if (self->chip_select.base.type != &mp_type_NoneType) {
-        common_hal_digitalio_digitalinout_set_value(&self->chip_select, true);
+    if (self->chip_select != mp_const_none) {
+        digitalinout_protocol_set_value(self->chip_select, true);
     }
     common_hal_busio_spi_unlock(self->bus);
 }

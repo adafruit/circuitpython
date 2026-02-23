@@ -44,9 +44,9 @@ void board_init(void) {
     bus->base.type = &fourwire_fourwire_type;
     common_hal_fourwire_fourwire_construct(bus,
         spi,
-        &pin_PB05, // EPD_DC Command or data
-        &pin_PB07, // EPD_CS Chip select
-        &pin_PA00, // EPD_RST Reset
+        MP_OBJ_FROM_PTR(&pin_PB05), // EPD_DC Command or data
+        MP_OBJ_FROM_PTR(&pin_PB07), // EPD_CS Chip select
+        MP_OBJ_FROM_PTR(&pin_PA00), // EPD_RST Reset
         1000000, // Baudrate
         0, // Polarity
         0); // Phase

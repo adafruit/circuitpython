@@ -4,7 +4,7 @@ jinja2
 typer
 
 sh
-click
+click<8.2.0
 cpp-coveralls
 
 requests
@@ -41,3 +41,5 @@ setuptools
 
 # For zephyr port
 tomlkit
+pytest
+perfetto

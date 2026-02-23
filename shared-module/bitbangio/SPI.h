@@ -12,13 +12,16 @@
 
 typedef struct {
     mp_obj_base_t base;
-    digitalio_digitalinout_obj_t clock;
-    digitalio_digitalinout_obj_t mosi;
-    digitalio_digitalinout_obj_t miso;
+    mp_obj_t clock;
+    mp_obj_t mosi;
+    mp_obj_t miso;
     uint32_t delay_half;
     bool has_miso : 1;
     bool has_mosi : 1;
     uint8_t polarity : 1;
     uint8_t phase : 1;
     volatile bool locked : 1;
+    bool own_clock;
+    bool own_mosi;
+    bool own_miso;
 } bitbangio_spi_obj_t;

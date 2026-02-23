@@ -20,12 +20,12 @@
 #include "supervisor/shared/status_leds.h"
 #include "supervisor/shared/bluetooth/bluetooth.h"
 
-#if CIRCUITPY_DISPLAYIO
-#include "shared-bindings/displayio/__init__.h"
+#if CIRCUITPY_USB_DEVICE
+#include "supervisor/usb.h"
 #endif
 
-#if CIRCUITPY_TINYUSB
-#include "tusb.h"
+#if CIRCUITPY_DISPLAYIO
+#include "shared-bindings/displayio/__init__.h"
 #endif
 
 static supervisor_run_reason_t _run_reason;
@@ -52,7 +52,7 @@ static supervisor_run_reason_t _run_reason;
 //|     """Returns the USB enumeration status (read-only)."""
 static mp_obj_t supervisor_runtime_get_usb_connected(mp_obj_t self) {
     #if CIRCUITPY_USB_DEVICE
-    return mp_obj_new_bool(tud_ready());
+    return mp_obj_new_bool(usb_connected());
     #else
     return mp_const_false;
     #endif

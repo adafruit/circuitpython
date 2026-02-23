@@ -8,6 +8,8 @@ include ../../py/circuitpy_mkenv.mk
 
 ifeq ($(IDF_TARGET),esp32s3)
 BT_IDF_TARGET = esp32c3
+else ifeq ($(IDF_TARGET),esp32c61)
+BT_IDF_TARGET = esp32c6
 else
 BT_IDF_TARGET = $(IDF_TARGET)
 endif
@@ -64,6 +66,7 @@ INC += \
 	-isystem esp-idf/components/esp_driver_i2s/include \
 	-isystem esp-idf/components/esp_driver_$(IDF_TARGET)/include \
 	-isystem esp-idf/components/esp_driver_ledc/include \
+	-isystem esp-idf/components/esp_driver_parlio/include \
 	-isystem esp-idf/components/esp_driver_pcnt/include \
 	-isystem esp-idf/components/esp_driver_rmt/include \
 	-isystem esp-idf/components/esp_driver_sdio/include \
@@ -73,6 +76,7 @@ INC += \
 	-isystem esp-idf/components/esp_driver_uart/include \
 	-isystem esp-idf/components/esp_event/include \
 	-isystem esp-idf/components/esp_hw_support/dma/include \
+	-isystem esp-idf/components/esp_hw_support/ldo/include \
 	-isystem esp-idf/components/esp_hw_support/include \
 	-isystem esp-idf/components/esp_hw_support/include/soc \
 	-isystem esp-idf/components/esp_hw_support/port/$(IDF_TARGET)/private_include \
@@ -149,6 +153,8 @@ CFLAGS += -DSTACK_CANARY_VALUE=0xa5a5a5a5
 REGISTRATION_FUNCTIONS = \
 	-u ld_include_highint_hdl \
 	-u __cxx_fatal_exception \
+	-u __cxx_init_dummy \
+	-u __cxa_guard_dummy \
 	-u esp_app_desc \
 	-u esp_timer_init_include_func \
 	-u uart_vfs_include_dev_init \
@@ -156,13 +162,18 @@ REGISTRATION_FUNCTIONS = \
 	-u __ubsan_include \
 	-u esp_system_include_startup_funcs \
 	-u esp_efuse_startup_include_func \
-	-u newlib_include_heap_impl \
-	-u newlib_include_syscalls_impl \
-	-u newlib_include_pthread_impl \
-	-u newlib_include_assert_impl \
-	-u newlib_include_init_funcs \
+	-u esp_libc_include_heap_impl \
+	-u esp_libc_include_reent_syscalls_impl \
+	-u esp_libc_include_syscalls_impl \
+	-u esp_libc_include_pthread_impl \
+	-u esp_libc_include_assert_impl \
+	-u esp_libc_include_getentropy_impl \
+	-u esp_libc_include_init_funcs \
+	-u esp_libc_init_funcs \
 	-u include_esp_phy_override \
-	-u vfs_include_syscalls_impl
+	-u vfs_include_syscalls_impl \
+	-u esp_vfs_include_nullfs_register \
+	-u usb_serial_jtag_vfs_include_dev_init
 
 
 #Debugging/Optimization
@@ -196,7 +207,6 @@ CFLAGS += $(INC) -Werror -Wall -std=gnu11 -Wl,--gc-sections $(BASE_CFLAGS) $(C_D
 # Most current ESPs have nano versions of newlib in ROM so we use them.
 ifneq ($(IDF_TARGET),esp32c6)
 	CFLAGS += --specs=nano.specs
-	LDFLAGS += -T$(IDF_TARGET).rom.newlib-nano.ld
 else
 	LDFLAGS += -T$(IDF_TARGET).rom.newlib-normal.ld
 endif
@@ -206,9 +216,12 @@ ifeq ($(IDF_TARGET_ARCH),xtensa)
 # `#include "xtensa/xtensa_api.h"`.
 
 	CFLAGS += -mlongcalls -isystem esp-idf/components/xtensa/deprecated_include/ -Wno-error=cpp
+	CFLAGS += -DMICROPY_GCREGS_SETJMP=1
 
 # Wrap longjmp with a patched version that protects register window update with a critical section
 	LDFLAGS += -Wl,--wrap=longjmp
+
+	SRC_C += shared/runtime/gchelper_generic.c
 else ifeq ($(IDF_TARGET_ARCH),riscv)
 
 	ifeq ($(IDF_TARGET),esp32p4)
@@ -220,9 +233,11 @@ else ifeq ($(IDF_TARGET_ARCH),riscv)
 	LDFLAGS += \
 		-Lesp-idf/components/riscv/ld \
 		-Trom.api.ld
+
+	SRC_C += shared/runtime/gchelper_native.c
+	SRC_S = shared/runtime/gchelper_rv32i.s
 endif
 
-$(BUILD)/lib/tlsf/tlsf.o: CFLAGS += -Wno-cast-align
 
 LDFLAGS += $(CFLAGS) -Wl,-nostdlib -Wl,-Map=$@.map -Wl,-cref -Wl,--undefined=uxTopUsedPriority
 
@@ -244,7 +259,9 @@ LDFLAGS += \
 ifeq ($(IDF_TARGET),esp32)
 LDFLAGS += \
 	-Tesp32.rom.newlib-data.ld \
-	-Tesp32.rom.newlib-funcs.ld \
+	-Tesp32.rom.syscalls.ld \
+	-Tesp32.rom.libc-funcs.ld \
+	-Tesp32.rom.newlib-reent-funcs.ld \
 	-Tesp32.rom.spiflash_legacy.ld
 
 CHIP_COMPONENTS = \
@@ -254,7 +271,9 @@ else ifeq ($(IDF_TARGET),esp32c2)
 LDFLAGS += \
 	-Tesp32c2.rom.ble.ld \
 	-Tesp32c2.rom.heap.ld \
+	-Tesp32c2.rom.libc.ld \
 	-Tesp32c2.rom.newlib.ld \
+	-Tesp32c2.rom.newlib-nano.ld \
 	-Tesp32c2.rom.version.ld \
 	-Tesp32c2.rom.systimer.ld \
 	-Tesp32c2.rom.wdt.ld
@@ -267,6 +286,7 @@ CHIP_COMPONENTS = \
 else ifeq ($(IDF_TARGET),esp32c3)
 LDFLAGS += \
 	-Tesp32c3.rom.newlib.ld \
+	-Tesp32c3.rom.libc.ld \
 	-Tesp32c3.rom.version.ld \
 	-Tesp32c3.rom.eco3_bt_funcs.ld \
 	-Tesp32c3.rom.eco3.ld \
@@ -280,6 +300,7 @@ LDFLAGS += \
 	-Tesp32c6.rom.phy.ld \
 	-Tesp32c6.rom.pp.ld \
 	-Tesp32c6.rom.net80211.ld \
+	-Tesp32c6.rom.libc.ld \
 	-Tesp32c6.rom.newlib.ld \
 	-Tesp32c6.rom.coexist.ld \
 	-Tesp32c6.rom.heap.ld \
@@ -290,19 +311,39 @@ LDFLAGS += \
 CHIP_COMPONENTS = \
 	esp_driver_tsens
 
+else ifeq ($(IDF_TARGET),esp32c61)
+LDFLAGS += \
+	-Tesp32c61.rom.phy.ld \
+	-Tesp32c61.rom.pp.ld \
+	-Tesp32c61.rom.net80211.ld \
+	-Tesp32c61.rom.libc.ld \
+	-Tesp32c61.rom.newlib.ld \
+	-Tesp32c61.rom.version.ld \
+	-Tesp32c61.rom.coexist.ld \
+	-Tesp32c61.rom.heap.ld \
+	-Tesp32c61.rom.systimer.ld \
+	-Tesp32c61.rom.wdt.ld
+
+
+CHIP_COMPONENTS = \
+	esp_driver_tsens
+
 else ifeq ($(IDF_TARGET),esp32p4)
 LDFLAGS += \
+	-Tesp32p4.rom.libc.ld \
 	-Tesp32p4.rom.newlib.ld \
 	-Tesp32p4.rom.systimer.ld \
 	-Tesp32p4.rom.wdt.ld
 
 
 CHIP_COMPONENTS = \
-	esp_driver_tsens
+	esp_driver_tsens \
+	esp_driver_usb_serial_jtag
 
 else ifeq ($(IDF_TARGET),esp32h2)
 LDFLAGS += \
 	-Tesp32h2.rom.heap.ld \
+	-Tesp32h2.rom.libc.ld \
 	-Tesp32h2.rom.newlib.ld \
 	-Tesp32h2.rom.systimer.ld \
 	-Tesp32h2.rom.wdt.ld
@@ -312,8 +353,9 @@ CHIP_COMPONENTS = \
 
 else ifeq ($(IDF_TARGET),esp32s2)
 LDFLAGS += \
+	-Tesp32s2.rom.libc-funcs.ld \
 	-Tesp32s2.rom.newlib-data.ld \
-	-Tesp32s2.rom.newlib-funcs.ld \
+	-Tesp32s2.rom.newlib-reent-funcs.ld \
 	-Tesp32s2.rom.spiflash_legacy.ld
 
 CHIP_COMPONENTS = \
@@ -322,6 +364,7 @@ CHIP_COMPONENTS = \
 
 else ifeq ($(IDF_TARGET),esp32s3)
 LDFLAGS += \
+	-Tesp32s3.rom.libc.ld \
 	-Tesp32s3.rom.newlib.ld \
 	-Tesp32s3.rom.version.ld \
 	-Tesp32s3.rom.systimer.ld \
@@ -350,6 +393,8 @@ else ifeq ($(IDF_TARGET),esp32c3)
 CFLAGS += -DCFG_TUSB_MCU=OPT_MCU_ESP32C3
 else ifeq ($(IDF_TARGET),esp32c6)
 CFLAGS += -DCFG_TUSB_MCU=OPT_MCU_ESP32C6
+else ifeq ($(IDF_TARGET),esp32c61)
+CFLAGS += -DCFG_TUSB_MCU=OPT_MCU_ESP32C61
 else ifeq ($(IDF_TARGET),esp32p4)
 CFLAGS += -DCFG_TUSB_MCU=OPT_MCU_ESP32P4
 else ifeq ($(IDF_TARGET),esp32h2)
@@ -429,6 +474,13 @@ CFLAGS += \
 	-isystem esp-idf/components/esp_lcd/include \
 	-isystem esp-idf/components/esp_lcd/interface \
 	-isystem esp-idf/components/esp_lcd/rgb/include
+endif
+
+ifneq ($(CIRCUITPY_MIPIDSI),0)
+CFLAGS += \
+	-isystem esp-idf/components/esp_lcd/include \
+	-isystem esp-idf/components/esp_lcd/interface \
+	-isystem esp-idf/components/esp_lcd/dsi/include
 endif
 
 ifneq ($(CIRCUITPY_ESPCAMERA),0)
@@ -539,8 +591,6 @@ FROZEN_MPY_PY_FILES := $(shell find -L $(FROZEN_MPY_DIR) -type f -name '*.py')
 FROZEN_MPY_MPY_FILES := $(addprefix $(BUILD)/,$(FROZEN_MPY_PY_FILES:.py=.mpy))
 endif
 
-SRC_S_UPPER = supervisor/shared/cpu_regs.S
-
 OBJ += $(PY_O) $(SUPERVISOR_O) $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_COMMON_HAL_SHARED_MODULE_EXPANDED:.c=.o))
 ifeq ($(INTERNAL_LIBM),1)
@@ -548,7 +598,7 @@ OBJ += $(addprefix $(BUILD)/, $(SRC_LIBM:.c=.o))
 endif
 OBJ += $(addprefix $(BUILD)/, $(SRC_CIRCUITPY_COMMON:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_MOD:.c=.o))
-OBJ += $(addprefix $(BUILD)/, $(SRC_S_UPPER:.S=.o))
+OBJ += $(addprefix $(BUILD)/, $(SRC_S:.s=.o))
 
 $(BUILD)/$(FATFS_DIR)/ff.o: COPT += -Os
 $(filter $(PY_BUILD)/../extmod/vfs_fat_%.o, $(PY_O)): COPT += -Os
@@ -662,7 +712,8 @@ ifneq ($(IDF_TARGET),esp32p4)
 	BINARY_BLOBS = esp-idf/components/esp_phy/lib/$(IDF_TARGET)/libphy.a
 endif
 ifneq ($(CIRCUITPY_WIFI),0)
-	BINARY_BLOBS += esp-idf/components/esp_coex/lib/$(IDF_TARGET)/libcoexist.a $(addprefix esp-idf/components/esp_wifi/lib/$(IDF_TARGET)/, $(BINARY_WIFI_BLOBS))
+	BINARY_BLOBS += $(addprefix esp-idf/components/esp_wifi/lib/$(IDF_TARGET)/, $(BINARY_WIFI_BLOBS))
+	BINARY_BLOBS += esp-idf/components/esp_coex/lib/$(IDF_TARGET)/libcoexist.a
 	ifneq ($(IDF_TARGET),esp32c2)
 	BINARY_BLOBS += $(addprefix esp-idf/components/esp_wifi/lib/$(IDF_TARGET)/, libmesh.a libwapi.a)
 	endif
@@ -682,6 +733,7 @@ ifneq ($(CIRCUITPY_BLEIO_NATIVE),0)
 	BLE_IMPL_esp32c2 := libble
 	BLE_IMPL_esp32c3 := esp32c3
 	BLE_IMPL_esp32c6 := libble
+	BLE_IMPL_esp32c61 := libble
 	BLE_IMPL_esp32h2 := libble
 	BLE_IMPL = $(BLE_IMPL_$(IDF_TARGET))
 
@@ -700,8 +752,8 @@ ifneq ($(CIRCUITPY_BLEIO_NATIVE),0)
 
 	ifeq ($(BLE_IMPL),libble)
 	BINARY_BLOBS += esp-idf/components/esp_phy/lib/$(IDF_TARGET)/libbtbb.a
-	ifeq ($(IDF_TARGET),esp32c6)
-		BINARY_BLOBS += esp-idf/components/bt/controller/lib_$(IDF_TARGET)/$(IDF_TARGET)-bt-lib/$(IDF_TARGET)/libble_app.a
+	ifeq ($(BT_IDF_TARGET),esp32c6)
+		BINARY_BLOBS += esp-idf/components/bt/controller/lib_$(BT_IDF_TARGET)/$(BT_IDF_TARGET)-bt-lib/$(IDF_TARGET)/libble_app.a
 	else
 		BINARY_BLOBS += esp-idf/components/bt/controller/lib_$(IDF_TARGET)/$(IDF_TARGET)-bt-lib/libble_app.a
 	endif
@@ -717,6 +769,9 @@ ifneq ($(CIRCUITPY_ESP_PSRAM_SIZE),0)
 	ESP_IDF_COMPONENTS_LINK += esp_psram
 endif
 ifneq ($(CIRCUITPY_DOTCLOCKFRAMEBUFFER),0)
+	ESP_IDF_COMPONENTS_LINK += esp_lcd
+endif
+ifneq ($(CIRCUITPY_MIPIDSI),0)
 	ESP_IDF_COMPONENTS_LINK += esp_lcd
 endif
 ifneq ($(CIRCUITPY_PARALLELDISPLAYBUS),0)
@@ -772,6 +827,8 @@ else ifeq ($(IDF_TARGET),esp32c3)
 BOOTLOADER_OFFSET = 0x0
 else ifeq ($(IDF_TARGET),esp32c6)
 BOOTLOADER_OFFSET = 0x0
+else ifeq ($(IDF_TARGET),esp32c61)
+BOOTLOADER_OFFSET = 0x0
 else ifeq ($(IDF_TARGET),esp32p4)
 BOOTLOADER_OFFSET = 0x2000
 else ifeq ($(IDF_TARGET),esp32s3)
@@ -785,7 +842,7 @@ endif
 
 IDF_CMAKE_TARGETS = \
 		bootloader/bootloader.bin \
-		esp-idf/esp_system/__ldgen_output_sections.ld \
+		__ldgen_output_sections.ld \
 		$(foreach component, $(ESP_IDF_COMPONENTS_LINK), esp-idf/$(component)/lib$(component).a)
 
 PARTITION_TABLE_OFFSET = 0x8000

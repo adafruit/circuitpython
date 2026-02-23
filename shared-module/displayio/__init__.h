@@ -38,6 +38,9 @@
 #if CIRCUITPY_DOTCLOCKFRAMEBUFFER
 #include "common-hal/dotclockframebuffer/DotClockFramebuffer.h"
 #endif
+#if CIRCUITPY_MIPIDSI
+#include "shared-bindings/mipidsi/Display.h"
+#endif
 #if CIRCUITPY_QSPIBUS
 #include "shared-bindings/qspibus/QSPIBus.h"
 #endif
@@ -84,8 +87,13 @@ typedef struct {
         #if CIRCUITPY_AURORA_EPAPER
         aurora_epaper_framebuffer_obj_t aurora_epaper;
         #endif
+<<<<<<< HEAD
         #if CIRCUITPY_QSPIBUS
         qspibus_qspibus_obj_t qspi_bus;
+=======
+        #if CIRCUITPY_MIPIDSI
+        mipidsi_display_obj_t mipidsi;
+>>>>>>> 10.1.3
         #endif
     };
 } primary_display_bus_t;

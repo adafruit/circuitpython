@@ -37,9 +37,9 @@ void board_init(void) {
     bus->base.type = &fourwire_fourwire_type;
     common_hal_fourwire_fourwire_construct(bus,
         spi,
-        &pin_GPIO39, // TFT_DC Command or data
-        &pin_GPIO40, // TFT_CS Chip select
-        &pin_GPIO41, // TFT_RESET Reset
+        MP_OBJ_FROM_PTR(&pin_GPIO39), // TFT_DC Command or data
+        MP_OBJ_FROM_PTR(&pin_GPIO40), // TFT_CS Chip select
+        MP_OBJ_FROM_PTR(&pin_GPIO41), // TFT_RESET Reset
         5000000, // Baudrate
         0, // Polarity
         0); // Phase

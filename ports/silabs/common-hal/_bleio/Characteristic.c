@@ -249,7 +249,7 @@ size_t common_hal_bleio_characteristic_get_value(
     return 0;
 }
 
-// Get max length of charateristic
+// Get max length of characteristic
 size_t common_hal_bleio_characteristic_get_max_length(
     bleio_characteristic_obj_t *self) {
     return self->max_length;
@@ -373,7 +373,7 @@ void common_hal_bleio_characteristic_add_descriptor(
     // This indicates the new added descriptor shall be started.
     sc = sl_bt_gattdb_start_characteristic(gattdb_session, self->handle);
     if (SL_STATUS_OK != sc) {
-        mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Start charateristic fail."));
+        mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Start characteristic fail."));
         return;
     }
 

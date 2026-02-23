@@ -115,3 +115,8 @@ bool port_boot_button_pressed(void);
 
 void *mp_obj_port_malloc_helper(size_t num_bytes, const mp_obj_type_t *type);
 mp_obj_t mp_obj_new_port_tuple(size_t n, const mp_obj_t *items);
+
+// Safely free an object that may have been allocated from either the GC heap or port heap.
+// If the pointer is on the GC heap, it will be freed by the GC automatically.
+// If the pointer is not on the GC heap, it will be freed with port_free.
+void circuitpy_free_obj(mp_obj_t obj);

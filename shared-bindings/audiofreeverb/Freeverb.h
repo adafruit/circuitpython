@@ -18,10 +18,6 @@ void common_hal_audiofreeverb_freeverb_construct(audiofreeverb_freeverb_obj_t *s
 void common_hal_audiofreeverb_freeverb_deinit(audiofreeverb_freeverb_obj_t *self);
 bool common_hal_audiofreeverb_freeverb_deinited(audiofreeverb_freeverb_obj_t *self);
 
-uint32_t common_hal_audiofreeverb_freeverb_get_sample_rate(audiofreeverb_freeverb_obj_t *self);
-uint8_t common_hal_audiofreeverb_freeverb_get_channel_count(audiofreeverb_freeverb_obj_t *self);
-uint8_t common_hal_audiofreeverb_freeverb_get_bits_per_sample(audiofreeverb_freeverb_obj_t *self);
-
 mp_obj_t common_hal_audiofreeverb_freeverb_get_roomsize(audiofreeverb_freeverb_obj_t *self);
 void common_hal_audiofreeverb_freeverb_set_roomsize(audiofreeverb_freeverb_obj_t *self, mp_obj_t feedback);
 

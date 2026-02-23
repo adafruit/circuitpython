@@ -22,8 +22,8 @@
 //|
 //|     def __init__(
 //|         self,
-//|         scl: microcontroller.Pin,
-//|         sda: microcontroller.Pin,
+//|         scl: Union[microcontroller.Pin, digitalio.DigitalInOutProtocol],
+//|         sda: Union[microcontroller.Pin, digitalio.DigitalInOutProtocol],
 //|         *,
 //|         frequency: int = 400000,
 //|         timeout: int = 255,
@@ -40,8 +40,8 @@
 //|             bit unpacking. Instead, use an existing driver or make one with
 //|             :ref:`Register <register-module-reference>` data descriptors.
 //|
-//|         :param ~microcontroller.Pin scl: The clock pin
-//|         :param ~microcontroller.Pin sda: The data pin
+//|         :param ~microcontroller.Pin scl: The clock pin or DigitalInOut object
+//|         :param ~microcontroller.Pin sda: The data pin or DigitalInOut object
 //|         :param int frequency: The clock frequency of the bus
 //|         :param int timeout: The maximum clock stretching timeout in microseconds"""
 //|         ...
@@ -57,11 +57,8 @@ static mp_obj_t bitbangio_i2c_make_new(const mp_obj_type_t *type, size_t n_args,
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    const mcu_pin_obj_t *scl = validate_obj_is_free_pin(args[ARG_scl].u_obj, MP_QSTR_scl);
-    const mcu_pin_obj_t *sda = validate_obj_is_free_pin(args[ARG_sda].u_obj, MP_QSTR_sda);
-
     bitbangio_i2c_obj_t *self = mp_obj_malloc_with_finaliser(bitbangio_i2c_obj_t, &bitbangio_i2c_type);
-    shared_module_bitbangio_i2c_construct(self, scl, sda, args[ARG_frequency].u_int, args[ARG_timeout].u_int);
+    shared_module_bitbangio_i2c_construct(self, args[ARG_scl].u_obj, args[ARG_sda].u_obj, args[ARG_frequency].u_int, args[ARG_timeout].u_int);
     return (mp_obj_t)self;
 }
 

@@ -9,6 +9,7 @@
 #include "py/runtime.h"
 
 #include "common-hal/microcontroller/Pin.h"
+#include "extmod/vfs.h"
 #include "shared-bindings/sdioio/SDCard.h"
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/microcontroller/__init__.h"
@@ -170,41 +171,83 @@ static void debug_print_state(sdioio_sdcard_obj_t *self, const char *what, sd_mm
     #endif
 }
 
-int common_hal_sdioio_sdcard_writeblocks(sdioio_sdcard_obj_t *self, uint32_t start_block, mp_buffer_info_t *bufinfo) {
-    check_for_deinit(self);
-    check_whole_block(bufinfo);
+mp_negative_errno_t sdioio_sdcard_writeblocks(mp_obj_t self_in, uint8_t *buf,
+    uint32_t start_block, uint32_t num_blocks) {
+    sdioio_sdcard_obj_t *self = MP_OBJ_TO_PTR(self_in);
     wait_write_complete(self);
     self->state_programming = true;
-    sd_mmc_err_t r = sd_mmc_init_write_blocks(0, start_block, bufinfo->len / 512);
+    sd_mmc_err_t r = sd_mmc_init_write_blocks(0, start_block, num_blocks);
     if (r != SD_MMC_OK) {
         debug_print_state(self, "sd_mmc_init_write_blocks", r);
-        return -EIO;
+        return -MP_EIO;
     }
-    r = sd_mmc_start_write_blocks(bufinfo->buf, bufinfo->len / 512);
+    r = sd_mmc_start_write_blocks(buf, num_blocks);
     if (r != SD_MMC_OK) {
         debug_print_state(self, "sd_mmc_start_write_blocks", r);
-        return -EIO;
+        return -MP_EIO;
     }
-    // debug_print_state(self, "after writeblocks OK");
     return 0;
 }
 
-int common_hal_sdioio_sdcard_readblocks(sdioio_sdcard_obj_t *self, uint32_t start_block, mp_buffer_info_t *bufinfo) {
+mp_negative_errno_t common_hal_sdioio_sdcard_writeblocks(sdioio_sdcard_obj_t *self, uint32_t start_block, mp_buffer_info_t *bufinfo) {
     check_for_deinit(self);
     check_whole_block(bufinfo);
+
+    uint32_t num_blocks = bufinfo->len / 512;
+    return sdioio_sdcard_writeblocks(MP_OBJ_FROM_PTR(self), bufinfo->buf,
+        start_block, num_blocks);
+}
+
+mp_negative_errno_t sdioio_sdcard_readblocks(mp_obj_t self_in, uint8_t *buf,
+    uint32_t start_block, uint32_t num_blocks) {
+    sdioio_sdcard_obj_t *self = MP_OBJ_TO_PTR(self_in);
     wait_write_complete(self);
-    sd_mmc_err_t r = sd_mmc_init_read_blocks(0, start_block, bufinfo->len / 512);
+    sd_mmc_err_t r = sd_mmc_init_read_blocks(0, start_block, num_blocks);
     if (r != SD_MMC_OK) {
         debug_print_state(self, "sd_mmc_init_read_blocks", r);
-        return -EIO;
+        return -MP_EIO;
     }
-    r = sd_mmc_start_read_blocks(bufinfo->buf, bufinfo->len / 512);
+    r = sd_mmc_start_read_blocks(buf, num_blocks);
     if (r != SD_MMC_OK) {
         debug_print_state(self, "sd_mmc_start_read_blocks", r);
-        return -EIO;
+        return -MP_EIO;
     }
     sd_mmc_wait_end_of_write_blocks(0);
     return 0;
+}
+
+mp_negative_errno_t common_hal_sdioio_sdcard_readblocks(sdioio_sdcard_obj_t *self, uint32_t start_block, mp_buffer_info_t *bufinfo) {
+    check_for_deinit(self);
+    check_whole_block(bufinfo);
+
+    uint32_t num_blocks = bufinfo->len / 512;
+    return sdioio_sdcard_readblocks(MP_OBJ_FROM_PTR(self), bufinfo->buf,
+        start_block, num_blocks);
+}
+
+// Native function for VFS blockdev layer
+bool sdioio_sdcard_ioctl(mp_obj_t self_in, size_t cmd, size_t arg,
+    mp_int_t *out_value) {
+    sdioio_sdcard_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    *out_value = 0;
+
+    switch (cmd) {
+        case MP_BLOCKDEV_IOCTL_DEINIT:
+        case MP_BLOCKDEV_IOCTL_SYNC:
+            // SDIO operations are synchronous, no action needed
+            return true;
+
+        case MP_BLOCKDEV_IOCTL_BLOCK_COUNT:
+            *out_value = common_hal_sdioio_sdcard_get_count(self);
+            return true;
+
+        case MP_BLOCKDEV_IOCTL_BLOCK_SIZE:
+            *out_value = 512;  // SD cards use 512-byte sectors
+            return true;
+
+        default:
+            return false;  // Unsupported command
+    }
 }
 
 bool common_hal_sdioio_sdcard_configure(sdioio_sdcard_obj_t *self, uint32_t frequency, uint8_t bits) {

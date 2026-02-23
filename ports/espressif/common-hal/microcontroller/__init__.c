@@ -36,6 +36,9 @@
 #elif defined(CONFIG_IDF_TARGET_ESP32C6)
 #include "soc/lp_aon_reg.h"
 #include "esp32c6/rom/rtc.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32C61)
+#include "soc/lp_aon_reg.h"
+#include "esp32c61/rom/rtc.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32P4)
 #include "esp32p4/rom/rtc.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32S2)
@@ -83,7 +86,7 @@ void common_hal_mcu_enable_interrupts(void) {
 void common_hal_mcu_on_next_reset(mcu_runmode_t runmode) {
     switch (runmode) {
         case RUNMODE_UF2:
-            #if defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32C6)
+            #if defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32C6) || defined(CONFIG_IDF_TARGET_ESP32C61)
             mp_arg_error_invalid(MP_QSTR_run_mode);
             #else
             // 0x11F2 is APP_REQUEST_UF2_RESET_HINT & is defined by TinyUF2

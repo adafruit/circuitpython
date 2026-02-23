@@ -44,19 +44,19 @@ bool common_hal_busio_i2c_has_lock(busio_i2c_obj_t *self) {
 void common_hal_busio_i2c_unlock(busio_i2c_obj_t *self) {
 }
 
-uint8_t common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr,
+mp_negative_errno_t common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr,
     const uint8_t *data, size_t len) {
     return 0;
 }
 
-uint8_t common_hal_busio_i2c_read(busio_i2c_obj_t *self, uint16_t addr,
+mp_negative_errno_t common_hal_busio_i2c_read(busio_i2c_obj_t *self, uint16_t addr,
     uint8_t *data, size_t len) {
-    return MP_EIO;
+    return -MP_EIO;
 }
 
-uint8_t common_hal_busio_i2c_write_read(busio_i2c_obj_t *self, uint16_t addr,
+mp_negative_errno_t common_hal_busio_i2c_write_read(busio_i2c_obj_t *self, uint16_t addr,
     uint8_t *out_data, size_t out_len, uint8_t *in_data, size_t in_len) {
-    return MP_EIO;
+    return -MP_EIO;
 }
 
 void common_hal_busio_i2c_never_reset(busio_i2c_obj_t *self) {

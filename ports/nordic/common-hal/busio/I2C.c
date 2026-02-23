@@ -47,18 +47,18 @@ void common_hal_busio_i2c_never_reset(busio_i2c_obj_t *self) {
     never_reset_pin_number(self->sda_pin_number);
 }
 
-static uint8_t twi_error_to_mp(const nrfx_err_t err) {
+static mp_negative_errno_t twi_error_to_mp(const nrfx_err_t err) {
     switch (err) {
         case NRFX_ERROR_DRV_TWI_ERR_ANACK:
-            return MP_ENODEV;
+            return -MP_ENODEV;
         case NRFX_ERROR_BUSY:
-            return MP_EBUSY;
+            return -MP_EBUSY;
         case NRFX_ERROR_INVALID_ADDR:
         case NRFX_ERROR_DRV_TWI_ERR_DNACK:
         case NRFX_ERROR_DRV_TWI_ERR_OVERRUN:
-            return MP_EIO;
+            return -MP_EIO;
         case NRFX_ERROR_TIMEOUT:
-            return MP_ETIMEDOUT;
+            return -MP_ETIMEDOUT;
         default:
             break;
     }
@@ -258,9 +258,9 @@ static nrfx_err_t _twim_xfer_with_timeout(busio_i2c_obj_t *self, nrfx_twim_xfer_
     }
 }
 
-static uint8_t _common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr, const uint8_t *data, size_t len, bool stopBit) {
+static mp_negative_errno_t _common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr, const uint8_t *data, size_t len, bool stopBit) {
     if (len == 0) {
-        return common_hal_busio_i2c_probe(self, addr) ? 0 : MP_ENODEV;
+        return common_hal_busio_i2c_probe(self, addr) ? 0 : -MP_ENODEV;
     }
 
     nrfx_err_t err = NRFX_SUCCESS;
@@ -286,11 +286,11 @@ static uint8_t _common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr,
     return twi_error_to_mp(err);
 }
 
-uint8_t common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr, const uint8_t *data, size_t len) {
+mp_negative_errno_t common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr, const uint8_t *data, size_t len) {
     return _common_hal_busio_i2c_write(self, addr, data, len, true);
 }
 
-uint8_t common_hal_busio_i2c_read(busio_i2c_obj_t *self, uint16_t addr, uint8_t *data, size_t len) {
+mp_negative_errno_t common_hal_busio_i2c_read(busio_i2c_obj_t *self, uint16_t addr, uint8_t *data, size_t len) {
     if (len == 0) {
         return 0;
     }
@@ -317,9 +317,9 @@ uint8_t common_hal_busio_i2c_read(busio_i2c_obj_t *self, uint16_t addr, uint8_t 
     return twi_error_to_mp(err);
 }
 
-uint8_t common_hal_busio_i2c_write_read(busio_i2c_obj_t *self, uint16_t addr,
+mp_negative_errno_t common_hal_busio_i2c_write_read(busio_i2c_obj_t *self, uint16_t addr,
     uint8_t *out_data, size_t out_len, uint8_t *in_data, size_t in_len) {
-    uint8_t result = _common_hal_busio_i2c_write(self, addr, out_data, out_len, false);
+    mp_negative_errno_t result = _common_hal_busio_i2c_write(self, addr, out_data, out_len, false);
     if (result != 0) {
         return result;
     }

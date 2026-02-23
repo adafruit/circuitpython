@@ -1,0 +1,51 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Device tree overlay for CircuitPython on native_sim.
+ * Adds simulated SRAM region required by CircuitPython build system.
+ */
+
+#include <zephyr/dt-bindings/memory-attr/memory-attr-arm.h>
+
+/ {
+	sram0: memory@20000000 {
+		device_type = "memory";
+		compatible = "zephyr,memory-region", "mmio-sram";
+		reg = <0x20000000 DT_SIZE_M(1)>;
+		zephyr,memory-region = "SRAM";
+	};
+
+	chosen {
+		zephyr,sram = &sram0;
+		/delete-property/ zephyr,flash;
+		/delete-property/ zephyr,code-partition;
+	};
+};
+
+&flash0 {
+    /delete-node/ partitions;
+    partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+        circuitpy_partition: partition@0 {
+            label = "circuitpy";
+			reg = <0x00000000 DT_SIZE_K(2048)>;
+		};
+	};
+};
+
+/* Add emulated I2C devices for testing */
+&i2c0 {
+	at24_eeprom: eeprom@50 {
+		compatible = "atmel,at24";
+		reg = <0x50>;
+		size = <256>;
+		pagesize = <8>;
+		address-width = <8>;
+		timeout = <5>;
+	};
+};
+
+#include "../app.overlay"

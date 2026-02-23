@@ -89,7 +89,7 @@ bool supervisor_workflow_active(void) {
 
 void supervisor_workflow_start(void) {
     // Start USB after giving boot.py a chance to tweak behavior.
-    #if CIRCUITPY_TINYUSB
+    #if CIRCUITPY_USB_DEVICE
     // Setup USB connection after heap is available.
     // It needs the heap to build descriptors.
     usb_init();

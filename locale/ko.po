@@ -124,6 +124,7 @@ msgid "%q in %q must be of type %q, not %q"
 msgstr "%q의 %q는 %q가 아니라 %q 유형이어야 합니다"
 
 #: ports/espressif/common-hal/espulp/ULP.c
+#: ports/espressif/common-hal/mipidsi/Bus.c
 #: ports/mimxrt10xx/common-hal/audiobusio/__init__.c
 #: ports/mimxrt10xx/common-hal/usb_host/Port.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
@@ -131,7 +132,8 @@ msgstr "%q의 %q는 %q가 아니라 %q 유형이어야 합니다"
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 #: ports/raspberrypi/common-hal/usb_host/Port.c
 #: shared-bindings/digitalio/DigitalInOut.c
-#: shared-bindings/microcontroller/Pin.c shared-module/max3421e/Max3421E.c
+#: shared-bindings/i2cioexpander/IOPin.c shared-bindings/microcontroller/Pin.c
+#: shared-module/max3421e/Max3421E.c
 msgid "%q in use"
 msgstr "%q 사용 중입니다"
 
@@ -144,7 +146,7 @@ msgid "%q indices must be integers, not %s"
 msgstr "%q 인덱스는 %s 가 아닌 정수 여야합니다"
 
 #: ports/analog/common-hal/busio/SPI.c ports/analog/common-hal/busio/UART.c
-#: shared-module/bitbangio/SPI.c
+#: shared-bindings/digitalio/DigitalInOutProtocol.c
 msgid "%q init failed"
 msgstr "%q 초기화 실패"
 
@@ -171,11 +173,6 @@ msgstr "%q 길이는 <= %d>여야 합니다"
 #: py/argcheck.c
 msgid "%q length must be >= %d"
 msgstr "%q 길이는 >= %d이어야 합니다"
-
-#: py/runtime.c
-#, fuzzy
-msgid "%q moved from %q to %q"
-msgstr "%q가 %q에서 %q로 이동했습니다"
 
 #: py/argcheck.c
 msgid "%q must be %d"
@@ -257,6 +254,14 @@ msgstr "%q는 %q가 아니라 %q 유형이어야 합니다"
 msgid "%q must be power of 2"
 msgstr "%q는 2의 거듭제곱이어야 합니다"
 
+#: shared-bindings/digitalio/DigitalInOutProtocol.c
+msgid "%q object missing '%q' attribute"
+msgstr ""
+
+#: shared-bindings/digitalio/DigitalInOutProtocol.c
+msgid "%q object missing '%q' method"
+msgstr ""
+
 #: shared-bindings/wifi/Monitor.c
 #, fuzzy
 msgid "%q out of bounds"
@@ -268,7 +273,8 @@ msgstr "%q가 경계를 벗어남"
 #: ports/nordic/common-hal/pulseio/PulseIn.c
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 #: ports/stm/common-hal/pulseio/PulseIn.c py/argcheck.c
-#: shared-bindings/canio/Match.c shared-bindings/time/__init__.c
+#: shared-bindings/bitmaptools/__init__.c shared-bindings/canio/Match.c
+#: shared-bindings/time/__init__.c
 #, fuzzy
 msgid "%q out of range"
 msgstr "%q가 범위를 벗어남"
@@ -331,7 +337,7 @@ msgstr "%s 오류 0x%x"
 msgid "'%q' argument required"
 msgstr "'%q' 인수가 필요합니다"
 
-#: py/proto.c
+#: py/proto.c shared-bindings/digitalio/DigitalInOutProtocol.c
 msgid "'%q' object does not support '%q'"
 msgstr "'%q' 개체가 '%q'를 지원하지 않습니다"
 
@@ -813,6 +819,10 @@ msgstr "현재 USB 디바이스를 변경할 수 없습니다"
 msgid "Cannot create a new Adapter; use _bleio.adapter;"
 msgstr "_bleio.adapter를 사용해서; 새로운 Adapter를 만들 수 없습니다;"
 
+#: shared-module/i2cioexpander/IOExpander.c
+msgid "Cannot deinitialize board IOExpander"
+msgstr ""
+
 #: shared-bindings/displayio/Bitmap.c
 #: shared-bindings/memorymonitor/AllocationSize.c
 #: shared-bindings/pulseio/PulseIn.c
@@ -847,6 +857,7 @@ msgid "Cannot remount path when visible via USB."
 msgstr ""
 
 #: shared-bindings/digitalio/DigitalInOut.c
+#: shared-bindings/i2cioexpander/IOPin.c
 msgid "Cannot set value when direction is input."
 msgstr "방향이 입력되면 값을 설정할 수 없습니다."
 
@@ -980,6 +991,7 @@ msgstr "디스플레이는 16 비트 색 공간을 가져야 합니다."
 #: shared-bindings/busdisplay/BusDisplay.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
+#: shared-bindings/mipidsi/Display.c
 msgid "Display rotation must be in 90 degree increments"
 msgstr "디스플레이 회전은 90도씩 증가해야 합니다"
 
@@ -988,6 +1000,7 @@ msgid "Done"
 msgstr "완료"
 
 #: shared-bindings/digitalio/DigitalInOut.c
+#: shared-bindings/i2cioexpander/IOPin.c
 msgid "Drive mode not used when direction is input."
 msgstr "방향을 입력할 때 드라이브 모드는 사용되지 않습니다."
 
@@ -1324,14 +1337,16 @@ msgstr "출력 함수로 인해 종료되었다"
 #: ports/espressif/common-hal/_bleio/Service.c
 #: ports/espressif/common-hal/espulp/ULP.c
 #: ports/espressif/common-hal/microcontroller/Processor.c
+#: ports/espressif/common-hal/mipidsi/Display.c
 #: ports/mimxrt10xx/common-hal/audiobusio/__init__.c
 #: ports/mimxrt10xx/common-hal/pwmio/PWMOut.c
 #: ports/raspberrypi/bindings/picodvi/Framebuffer.c
 #: ports/raspberrypi/bindings/rp2pio/StateMachine.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c py/argcheck.c
 #: shared-bindings/digitalio/DigitalInOut.c
-#: shared-bindings/epaperdisplay/EPaperDisplay.c shared-bindings/pwmio/PWMOut.c
-#: shared-bindings/supervisor/__init__.c
+#: shared-bindings/epaperdisplay/EPaperDisplay.c
+#: shared-bindings/i2cioexpander/IOPin.c shared-bindings/mipidsi/Display.c
+#: shared-bindings/pwmio/PWMOut.c shared-bindings/supervisor/__init__.c
 #: shared-module/aurora_epaper/aurora_framebuffer.c
 #: shared-module/lvfontio/OnDiskFont.c
 msgid "Invalid %q"
@@ -1517,8 +1532,7 @@ msgstr "jmp_pin이 누락되었습니다. %q[%u] 핀으로 점프합니다"
 msgid "Mount point directory missing"
 msgstr ""
 
-#: ports/zephyr-cp/bindings/zephyr_serial/UART.c shared-bindings/busio/UART.c
-#: shared-bindings/displayio/Group.c
+#: shared-bindings/busio/UART.c shared-bindings/displayio/Group.c
 msgid "Must be a %q subclass."
 msgstr "%q의 하위클래스여야 합니다."
 
@@ -1704,11 +1718,6 @@ msgstr "연결되지 않았습니다"
 #: shared-bindings/audiopwmio/PWMAudioOut.c
 msgid "Not playing"
 msgstr "재생되지 않았습니다"
-
-#: shared-module/jpegio/JpegDecoder.c
-#, fuzzy
-msgid "Not supported JPEG standard"
-msgstr "지원되지 않는 JPEG 표준"
 
 #: ports/espressif/common-hal/paralleldisplaybus/ParallelBus.c
 #: ports/espressif/common-hal/sdioio/SDCard.c
@@ -1956,6 +1965,7 @@ msgid "Publishers can only be created from a parent node"
 msgstr ""
 
 #: shared-bindings/digitalio/DigitalInOut.c
+#: shared-bindings/i2cioexpander/IOPin.c
 #, fuzzy
 msgid "Pull not used when direction is output."
 msgstr "방향이 출력 될 때 풀은 사용되지 않습니다"
@@ -2344,6 +2354,7 @@ msgid "Unable to allocate to the heap."
 msgstr ""
 
 #: ports/espressif/common-hal/busio/I2C.c
+#: ports/espressif/common-hal/busio/SPI.c
 msgid "Unable to create lock"
 msgstr ""
 
@@ -2449,6 +2460,10 @@ msgid ""
 "declined or ignored."
 msgstr ""
 
+#: shared-module/jpegio/JpegDecoder.c
+msgid "Unsupported JPEG (may be progressive)"
+msgstr ""
+
 #: shared-bindings/bitmaptools/__init__.c
 msgid "Unsupported colorspace"
 msgstr ""
@@ -2469,6 +2484,12 @@ msgstr ""
 #: ports/espressif/common-hal/_bleio/Adapter.c
 #: ports/espressif/common-hal/dualbank/__init__.c
 msgid "Update failed"
+msgstr ""
+
+#: ports/zephyr-cp/common-hal/busio/I2C.c
+#: ports/zephyr-cp/common-hal/busio/SPI.c
+#: ports/zephyr-cp/common-hal/busio/UART.c
+msgid "Use device tree to define %q devices"
 msgstr ""
 
 #: ports/espressif/common-hal/_bleio/Characteristic.c
@@ -2608,6 +2629,10 @@ msgstr ""
 
 #: extmod/modbinascii.c extmod/modhashlib.c py/objarray.c
 msgid "a bytes-like object is required"
+msgstr ""
+
+#: shared-bindings/i2cioexpander/IOExpander.c
+msgid "address out of range"
 msgstr ""
 
 #: shared-bindings/i2ctarget/I2CTarget.c
@@ -3252,10 +3277,6 @@ msgstr ""
 msgid "file write is not available"
 msgstr ""
 
-#: shared-bindings/storage/__init__.c
-msgid "filesystem must provide mount method"
-msgstr ""
-
 #: extmod/ulab/code/numpy/vector.c
 msgid "first argument must be a callable"
 msgstr ""
@@ -3889,6 +3910,10 @@ msgstr ""
 msgid "not supported for input types"
 msgstr ""
 
+#: shared-bindings/i2cioexpander/IOExpander.c
+msgid "num_pins must be 8 or 16"
+msgstr ""
+
 #: extmod/ulab/code/numpy/create.c
 msgid "number of points must be at least 2"
 msgstr ""
@@ -3900,6 +3925,10 @@ msgstr ""
 #: py/obj.c
 #, c-format
 msgid "object '%s' isn't a tuple or list"
+msgstr ""
+
+#: shared-bindings/digitalio/DigitalInOutProtocol.c
+msgid "object does not support DigitalInOut protocol"
 msgstr ""
 
 #: py/obj.c
@@ -4632,6 +4661,14 @@ msgstr ""
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr ""
+
+#, fuzzy
+#~ msgid "Not supported JPEG standard"
+#~ msgstr "지원되지 않는 JPEG 표준"
+
+#, fuzzy
+#~ msgid "%q moved from %q to %q"
+#~ msgstr "%q가 %q에서 %q로 이동했습니다"
 
 #, c-format
 #~ msgid "%%c requires int or char"

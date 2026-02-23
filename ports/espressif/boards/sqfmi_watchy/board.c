@@ -150,9 +150,9 @@ void board_init(void) {
     common_hal_fourwire_fourwire_construct(
         bus,
         spi,
-        &pin_GPIO10, // EPD_DC Command or data
-        &pin_GPIO5, // EPD_CS Chip select
-        &pin_GPIO9, // EPD_RST Reset
+        MP_OBJ_FROM_PTR(&pin_GPIO10), // EPD_DC Command or data
+        MP_OBJ_FROM_PTR(&pin_GPIO5), // EPD_CS Chip select
+        MP_OBJ_FROM_PTR(&pin_GPIO9), // EPD_RST Reset
         2000000, // Baudrate
         0, // Polarity
         0 // Phase

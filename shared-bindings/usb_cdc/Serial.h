@@ -6,7 +6,11 @@
 
 #pragma once
 
+#if defined(__ZEPHYR__) && __ZEPHYR__ == 1
+#include "common-hal/usb_cdc/Serial.h"
+#else
 #include "shared-module/usb_cdc/Serial.h"
+#endif
 
 extern const mp_obj_type_t usb_cdc_serial_type;
 

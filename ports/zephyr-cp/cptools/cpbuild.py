@@ -1,15 +1,14 @@
 import asyncio
-import inspect
+import atexit
+import hashlib
+import json
 import logging
 import os
 import pathlib
-import shlex
-import time
-import hashlib
-import atexit
-import json
 import re
-import sys
+import tempfile
+import time
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -111,7 +110,14 @@ tracks = []
 max_track = 0
 
 
-async def run_command(command, working_directory, description=None, check_hash=[], extradeps=[]):
+async def run_command(
+    command,
+    working_directory,
+    description=None,
+    check_hash=[],
+    extradeps=[],
+    responsefile: Optional[pathlib.Path] = None,
+):
     """
     Runs a command asynchronously. The command should ideally be a list of strings
     and pathlib.Path objects. If all of the paths haven't been modified since the last
@@ -124,26 +130,39 @@ async def run_command(command, working_directory, description=None, check_hash=[
 
     Paths in check_hash are hashed before and after the command. If the hash is
     the same, then the old mtimes are reset. This is helpful if a command may produce
-    the same result and you don't want the rest of the build impacted.
+    the same result and you don't want the rest of the build impacted
+
+    responsefile is used to store the command line arguments if they are too long for the OS.
+    The arguments will be replaced with @<responsefile> and tried again.
+    If None, commands that are too long will fail.
     """
     paths = []
+    responsefile_contents = None
     if isinstance(command, list):
         for i, part in enumerate(command):
             if isinstance(part, pathlib.Path):
                 paths.append(part)
                 part = part.relative_to(working_directory, walk_up=True)
-            # if isinstance(part, list):
 
             command[i] = str(part)
-        command = " ".join(command)
+        command_string = " ".join(command)
 
-    command_hash = hashlib.sha3_256(command.encode("utf-8"))
+        # When on windows, use a responsefile if the command string is >= 8192
+        if responsefile is not None and os.name == "nt" and len(command_string) >= 8192:
+            # Escape backslashes
+            responsefile_contents = "\n".join(part.replace("\\", "\\\\") for part in command[1:])
+            responsefile.write_text(responsefile_contents)
+            command_string = f"{command[0]} -v @{responsefile}"
+    else:
+        command_string = command
+
+    command_hash = hashlib.sha3_256(command_string.encode("utf-8"))
     command_hash.update(str(working_directory).encode("utf-8"))
     command_hash = command_hash.hexdigest()
 
     # If a command is run multiple times, then wait for the first one to continue. Don't run it again.
     if command_hash in ALREADY_RUN:
-        logger.debug(f"Already running {command_hash} {command}")
+        logger.debug(f"Already running {command_hash} {command_string}")
         await ALREADY_RUN[command_hash].wait()
         return
     ALREADY_RUN[command_hash] = asyncio.Event()
@@ -169,7 +188,7 @@ async def run_command(command, working_directory, description=None, check_hash=[
                     run_reason = f"{p.relative_to(working_directory, walk_up=True)} is newer"
                     break
         if nothing_newer:
-            logger.debug(f"Nothing newer {command[-32:]}")
+            logger.debug(f"Nothing newer {command_string[-32:]}")
             ALREADY_RUN[command_hash].set()
             return
     else:
@@ -196,7 +215,7 @@ async def run_command(command, working_directory, description=None, check_hash=[
         track = tracks.pop()
         start_time = time.perf_counter_ns() // 1000
         process = await asyncio.create_subprocess_shell(
-            command,
+            command_string,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
             cwd=working_directory,
@@ -242,22 +261,25 @@ async def run_command(command, working_directory, description=None, check_hash=[
             raise cancellation
         if description:
             logger.info(f"{description} ({run_reason})")
-            logger.debug(command)
+            logger.debug(command_string)
         else:
-            logger.info(f"{command} ({run_reason})")
+            logger.info(f"{command_string} ({run_reason})")
         if old_newest_file == newest_file:
             logger.error("No files were modified by the command.")
             raise RuntimeError()
     else:
         if command_hash in LAST_BUILD_TIMES:
             del LAST_BUILD_TIMES[command_hash]
+        logger.error(command_string)
+        if responsefile_contents:
+            logger.error(f"Response file contents:\n{responsefile_contents}")
+        logger.error(f"Return code: {process.returncode}")
         if stdout:
             logger.info(stdout.decode("utf-8").strip())
         if stderr:
             logger.warning(stderr.decode("utf-8").strip())
         if not stdout and not stderr:
             logger.warning("No output")
-        logger.error(command)
         if cancellation:
             raise cancellation
         raise RuntimeError()
@@ -335,8 +357,8 @@ class Compiler:
     ):
         output_file.parent.mkdir(parents=True, exist_ok=True)
         depfile = output_file.parent / (output_file.name + ".d")
-        if depfile.exists():
-            pass
+        responsefile = output_file.parent / (output_file.name + ".rsp")
+
         await run_command(
             [
                 self.c_compiler,
@@ -354,6 +376,7 @@ class Compiler:
             description=f"Preprocess {source_file.relative_to(self.srcdir)} -> {output_file.relative_to(self.builddir)}",
             working_directory=self.srcdir,
             check_hash=[output_file],
+            responsefile=responsefile,
         )
 
     async def compile(
@@ -365,6 +388,7 @@ class Compiler:
             output_file = self.builddir / output_file
         output_file.parent.mkdir(parents=True, exist_ok=True)
         depfile = output_file.with_suffix(".d")
+        responsefile = output_file.with_suffix(".rsp")
         extradeps = []
         if depfile.exists():
             depfile_contents = depfile.read_text().split()
@@ -375,25 +399,30 @@ class Compiler:
                     extradeps.append(pathlib.Path(dep))
                 else:
                     extradeps.append(self.srcdir / dep)
+
         await run_command(
-            [self.c_compiler, self.cflags, "-MMD", "-c", source_file, *flags, "-o", output_file],
+            [
+                self.c_compiler,
+                self.cflags,
+                "-MMD",
+                "-c",
+                source_file,
+                *flags,
+                "-o",
+                output_file,
+            ],
             description=f"Compile {source_file.relative_to(self.srcdir)} -> {output_file.relative_to(self.builddir)}",
             working_directory=self.srcdir,
             extradeps=extradeps,
+            responsefile=responsefile,
         )
 
     async def archive(self, objects: list[pathlib.Path], output_file: pathlib.Path):
         output_file.parent.mkdir(parents=True, exist_ok=True)
-        # Do one file at a time so that we don't have a long command line. run_command
-        # should skip unchanged files ok.
-        input_files = output_file.with_suffix(output_file.suffix + ".input_files")
-        input_file_content = "\n".join(str(p) for p in objects)
-        # Windows paths have \ as separator but ar wants them as / (like UNIX)
-        input_file_content = input_file_content.replace("\\", "/")
-        input_files.write_text(input_file_content)
+        responsefile = output_file.with_suffix(".rsp")
         await run_command(
-            [self.ar, "rvs", output_file, f"@{input_files}"],
+            [self.ar, "rvs", output_file, *objects],
             description=f"Create archive {output_file.relative_to(self.srcdir)}",
             working_directory=self.srcdir,
-            extradeps=objects,
+            responsefile=responsefile,
         )

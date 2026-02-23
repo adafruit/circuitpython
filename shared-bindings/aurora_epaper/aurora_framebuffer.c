@@ -64,7 +64,7 @@
 //|     ) -> None:
 //|         """Create a framebuffer for the Aurora CoG display.
 //|
-//|         .. note:: Displays of size 1.9" and 2.6" are not tested, and may exibit unexpected behavior.
+//|         .. note:: Displays of size 1.9" and 2.6" are not tested, and may exhibit unexpected behavior.
 //|
 //|         :param busio.SPI spi_bus: The SPI bus that the display is connected to
 //|         :param microcontroller.Pin chip_select: The pin connected to the displays chip select input

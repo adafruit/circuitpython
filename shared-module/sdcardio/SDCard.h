@@ -23,6 +23,9 @@ typedef struct {
     uint32_t sectors;
     uint32_t next_block;
     bool in_cmd25;
+    // Automounted SD cards are usually persistent across VM's. Note this as needed to allow access
+    // when the VM is not running.
+    bool persistent_mount;
 } sdcardio_sdcard_obj_t;
 
-mp_rom_error_text_t sdcardio_sdcard_construct(sdcardio_sdcard_obj_t *self, busio_spi_obj_t *bus, const mcu_pin_obj_t *cs, int baudrate);
+mp_rom_error_text_t sdcardio_sdcard_construct(sdcardio_sdcard_obj_t *self, busio_spi_obj_t *bus, const mcu_pin_obj_t *cs, int baudrate, bool persistent_mount);

@@ -23,5 +23,3 @@ typedef struct {
     uint8_t MOSI_pin_number;
     uint8_t MISO_pin_number;
 } busio_spi_obj_t;
-
-void spi_reset(void);

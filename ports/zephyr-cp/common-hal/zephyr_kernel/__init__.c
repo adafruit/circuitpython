@@ -6,6 +6,7 @@
 
 #include "bindings/zephyr_kernel/__init__.h"
 #include "py/runtime.h"
+#include <zephyr/kernel.h>
 
 #include <errno.h>
 

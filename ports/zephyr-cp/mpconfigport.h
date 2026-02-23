@@ -17,6 +17,9 @@
 
 #define CIRCUITPY_DEBUG_TINYUSB 0
 
+// Disable native _Float16 handling for host builds.
+#define MICROPY_FLOAT_USE_NATIVE_FLT16 (0)
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // This also includes mpconfigboard.h.

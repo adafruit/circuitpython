@@ -28,7 +28,7 @@ repos:
             lib/mbedtls_errors/generate_errors.diff
           )
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.4
+    rev: v2.4.1
     hooks:
       - id: codespell
         args: [-w]

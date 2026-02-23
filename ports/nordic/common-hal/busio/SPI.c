@@ -59,26 +59,13 @@ static const spim_peripheral_t spim_peripherals[] = {
     #endif
 };
 
-static bool never_reset[MP_ARRAY_SIZE(spim_peripherals)];
-
 // Separate RAM area for SPIM3 transmit buffer to avoid SPIM3 hardware errata.
 // https://infocenter.nordicsemi.com/index.jsp?topic=%2Ferrata_nRF52840_Rev2%2FERR%2FnRF52840%2FRev2%2Flatest%2Fanomaly_840_198.html
 static uint8_t *spim3_transmit_buffer = (uint8_t *)SPIM3_BUFFER_RAM_START_ADDR;
 
-void spi_reset(void) {
-    for (size_t i = 0; i < MP_ARRAY_SIZE(spim_peripherals); i++) {
-        if (never_reset[i]) {
-            continue;
-        }
-        nrfx_spim_uninit(&spim_peripherals[i].spim);
-    }
-}
-
 void common_hal_busio_spi_never_reset(busio_spi_obj_t *self) {
     for (size_t i = 0; i < MP_ARRAY_SIZE(spim_peripherals); i++) {
         if (self->spim_peripheral == &spim_peripherals[i]) {
-            never_reset[i] = true;
-
             never_reset_pin_number(self->clock_pin_number);
             never_reset_pin_number(self->MOSI_pin_number);
             never_reset_pin_number(self->MISO_pin_number);
@@ -124,6 +111,9 @@ static nrf_spim_frequency_t baudrate_to_spim_frequency(const uint32_t baudrate) 
 }
 
 void common_hal_busio_spi_construct(busio_spi_obj_t *self, const mcu_pin_obj_t *clock, const mcu_pin_obj_t *mosi, const mcu_pin_obj_t *miso, bool half_duplex) {
+
+    // Ensure the object starts in its deinit state.
+    common_hal_busio_spi_mark_deinit(self);
 
     if (half_duplex) {
         mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("%q"), MP_QSTR_half_duplex);
@@ -178,6 +168,10 @@ bool common_hal_busio_spi_deinited(busio_spi_obj_t *self) {
     return self->clock_pin_number == NO_PIN;
 }
 
+void common_hal_busio_spi_mark_deinit(busio_spi_obj_t *self) {
+    self->clock_pin_number = NO_PIN;
+}
+
 void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
     if (common_hal_busio_spi_deinited(self)) {
         return;
@@ -188,6 +182,8 @@ void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
     reset_pin_number(self->clock_pin_number);
     reset_pin_number(self->MOSI_pin_number);
     reset_pin_number(self->MISO_pin_number);
+
+    common_hal_busio_spi_mark_deinit(self);
 }
 
 bool common_hal_busio_spi_configure(busio_spi_obj_t *self, uint32_t baudrate, uint8_t polarity, uint8_t phase, uint8_t bits) {

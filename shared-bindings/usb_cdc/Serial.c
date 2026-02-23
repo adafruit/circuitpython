@@ -194,7 +194,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(usb_cdc_serial_reset_output_buffer_obj, usb_cdc_serial
 static mp_obj_t usb_cdc_serial_get_timeout(mp_obj_t self_in) {
     usb_cdc_serial_obj_t *self = MP_OBJ_TO_PTR(self_in);
     mp_float_t timeout = common_hal_usb_cdc_serial_get_timeout(self);
-    return (timeout < 0.0f) ? mp_const_none : mp_obj_new_float(self->timeout);
+    return (timeout < 0.0f) ? mp_const_none : mp_obj_new_float(timeout);
 }
 MP_DEFINE_CONST_FUN_OBJ_1(usb_cdc_serial_get_timeout_obj, usb_cdc_serial_get_timeout);
 
@@ -219,7 +219,7 @@ MP_PROPERTY_GETSET(usb_cdc_serial_timeout_obj,
 static mp_obj_t usb_cdc_serial_get_write_timeout(mp_obj_t self_in) {
     usb_cdc_serial_obj_t *self = MP_OBJ_TO_PTR(self_in);
     mp_float_t write_timeout = common_hal_usb_cdc_serial_get_write_timeout(self);
-    return (write_timeout < 0.0f) ? mp_const_none : mp_obj_new_float(self->write_timeout);
+    return (write_timeout < 0.0f) ? mp_const_none : mp_obj_new_float(write_timeout);
 }
 MP_DEFINE_CONST_FUN_OBJ_1(usb_cdc_serial_get_write_timeout_obj, usb_cdc_serial_get_write_timeout);
 

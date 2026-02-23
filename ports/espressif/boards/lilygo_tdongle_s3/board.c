@@ -60,9 +60,9 @@ static void display_init(void) {
     common_hal_fourwire_fourwire_construct(
         bus,
         spi,
-        &pin_GPIO2,     // DC
-        &pin_GPIO4,     // CS
-        &pin_GPIO1,     // RST
+        MP_OBJ_FROM_PTR(&pin_GPIO2),     // DC
+        MP_OBJ_FROM_PTR(&pin_GPIO4),     // CS
+        MP_OBJ_FROM_PTR(&pin_GPIO1),     // RST
         10000000,       // baudrate
         0,              // polarity
         0               // phase

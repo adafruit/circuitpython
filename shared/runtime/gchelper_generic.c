@@ -43,12 +43,12 @@
 #if defined(__x86_64__)
 
 static void gc_helper_get_regs(gc_helper_regs_t arr) {
-    register long rbx asm ("rbx");
-    register long rbp asm ("rbp");
-    register long r12 asm ("r12");
-    register long r13 asm ("r13");
-    register long r14 asm ("r14");
-    register long r15 asm ("r15");
+    register long rbx __asm__ ("rbx");
+    register long rbp __asm__ ("rbp");
+    register long r12 __asm__ ("r12");
+    register long r13 __asm__ ("r13");
+    register long r14 __asm__ ("r14");
+    register long r15 __asm__ ("r15");
     #ifdef __clang__
     // TODO:
     // This is dirty workaround for Clang. It tries to get around
@@ -56,12 +56,12 @@ static void gc_helper_get_regs(gc_helper_regs_t arr) {
     // Application of this patch here is random, and done only to unbreak
     // MacOS build. Better, cross-arch ways to deal with Clang issues should
     // be found.
-    asm ("" : "=r" (rbx));
-    asm ("" : "=r" (rbp));
-    asm ("" : "=r" (r12));
-    asm ("" : "=r" (r13));
-    asm ("" : "=r" (r14));
-    asm ("" : "=r" (r15));
+    __asm__ ("" : "=r" (rbx));
+    __asm__ ("" : "=r" (rbp));
+    __asm__ ("" : "=r" (r12));
+    __asm__ ("" : "=r" (r13));
+    __asm__ ("" : "=r" (r14));
+    __asm__ ("" : "=r" (r15));
     #endif
     arr[0] = rbx;
     arr[1] = rbp;
@@ -74,10 +74,10 @@ static void gc_helper_get_regs(gc_helper_regs_t arr) {
 #elif defined(__i386__)
 
 static void gc_helper_get_regs(gc_helper_regs_t arr) {
-    register long ebx asm ("ebx");
-    register long esi asm ("esi");
-    register long edi asm ("edi");
-    register long ebp asm ("ebp");
+    register long ebx __asm__ ("ebx");
+    register long esi __asm__ ("esi");
+    register long edi __asm__ ("edi");
+    register long ebp __asm__ ("ebp");
     #ifdef __clang__
     // TODO:
     // This is dirty workaround for Clang. It tries to get around
@@ -85,10 +85,10 @@ static void gc_helper_get_regs(gc_helper_regs_t arr) {
     // Application of this patch here is random, and done only to unbreak
     // MacOS build. Better, cross-arch ways to deal with Clang issues should
     // be found.
-    asm ("" : "=r" (ebx));
-    asm ("" : "=r" (esi));
-    asm ("" : "=r" (edi));
-    asm ("" : "=r" (ebp));
+    __asm__ ("" : "=r" (ebx));
+    __asm__ ("" : "=r" (esi));
+    __asm__ ("" : "=r" (edi));
+    __asm__ ("" : "=r" (ebp));
     #endif
     arr[0] = ebx;
     arr[1] = esi;
@@ -105,16 +105,16 @@ static void gc_helper_get_regs(gc_helper_regs_t arr) {
     #pragma clang diagnostic push
     #pragma clang diagnostic ignored "-Wuninitialized"
     #endif
-    register long r4 asm ("r4");
-    register long r5 asm ("r5");
-    register long r6 asm ("r6");
-    register long r7 asm ("r7");
-    register long r8 asm ("r8");
-    register long r9 asm ("r9");
-    register long r10 asm ("r10");
-    register long r11 asm ("r11");
-    register long r12 asm ("r12");
-    register long r13 asm ("r13");
+    register long r4 __asm__ ("r4");
+    register long r5 __asm__ ("r5");
+    register long r6 __asm__ ("r6");
+    register long r7 __asm__ ("r7");
+    register long r8 __asm__ ("r8");
+    register long r9 __asm__ ("r9");
+    register long r10 __asm__ ("r10");
+    register long r11 __asm__ ("r11");
+    register long r12 __asm__ ("r12");
+    register long r13 __asm__ ("r13");
     arr[0] = r4;
     arr[1] = r5;
     arr[2] = r6;
@@ -133,17 +133,17 @@ static void gc_helper_get_regs(gc_helper_regs_t arr) {
 #elif defined(__aarch64__)
 
 static void gc_helper_get_regs(gc_helper_regs_t arr) {
-    const register long x19 asm ("x19");
-    const register long x20 asm ("x20");
-    const register long x21 asm ("x21");
-    const register long x22 asm ("x22");
-    const register long x23 asm ("x23");
-    const register long x24 asm ("x24");
-    const register long x25 asm ("x25");
-    const register long x26 asm ("x26");
-    const register long x27 asm ("x27");
-    const register long x28 asm ("x28");
-    const register long x29 asm ("x29");
+    const register long x19 __asm__ ("x19");
+    const register long x20 __asm__ ("x20");
+    const register long x21 __asm__ ("x21");
+    const register long x22 __asm__ ("x22");
+    const register long x23 __asm__ ("x23");
+    const register long x24 __asm__ ("x24");
+    const register long x25 __asm__ ("x25");
+    const register long x26 __asm__ ("x26");
+    const register long x27 __asm__ ("x27");
+    const register long x28 __asm__ ("x28");
+    const register long x29 __asm__ ("x29");
     arr[0] = x19;
     arr[1] = x20;
     arr[2] = x21;
@@ -163,18 +163,18 @@ static void gc_helper_get_regs(gc_helper_regs_t arr) {
 // for RV32I targets or gchelper_rv64i.s for RV64I targets.
 
 static void gc_helper_get_regs(gc_helper_regs_t arr) {
-    register uintptr_t s0 asm ("x8");
-    register uintptr_t s1 asm ("x9");
-    register uintptr_t s2 asm ("x18");
-    register uintptr_t s3 asm ("x19");
-    register uintptr_t s4 asm ("x20");
-    register uintptr_t s5 asm ("x21");
-    register uintptr_t s6 asm ("x22");
-    register uintptr_t s7 asm ("x23");
-    register uintptr_t s8 asm ("x24");
-    register uintptr_t s9 asm ("x25");
-    register uintptr_t s10 asm ("x26");
-    register uintptr_t s11 asm ("x27");
+    register uintptr_t s0 __asm__ ("x8");
+    register uintptr_t s1 __asm__ ("x9");
+    register uintptr_t s2 __asm__ ("x18");
+    register uintptr_t s3 __asm__ ("x19");
+    register uintptr_t s4 __asm__ ("x20");
+    register uintptr_t s5 __asm__ ("x21");
+    register uintptr_t s6 __asm__ ("x22");
+    register uintptr_t s7 __asm__ ("x23");
+    register uintptr_t s8 __asm__ ("x24");
+    register uintptr_t s9 __asm__ ("x25");
+    register uintptr_t s10 __asm__ ("x26");
+    register uintptr_t s11 __asm__ ("x27");
     arr[0] = s0;
     arr[1] = s1;
     arr[2] = s2;

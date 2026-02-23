@@ -33,9 +33,9 @@
 //|
 //|     def __init__(
 //|         self,
-//|         clock: microcontroller.Pin,
-//|         MOSI: Optional[microcontroller.Pin] = None,
-//|         MISO: Optional[microcontroller.Pin] = None,
+//|         clock: Union[microcontroller.Pin, digitalio.DigitalInOutProtocol],
+//|         MOSI: Optional[Union[microcontroller.Pin, digitalio.DigitalInOutProtocol]] = None,
+//|         MISO: Optional[Union[microcontroller.Pin, digitalio.DigitalInOutProtocol]] = None,
 //|     ) -> None:
 //|         """Construct an SPI object on the given pins.
 //|
@@ -48,9 +48,9 @@
 //|             :ref:`Register <register-module-reference>` data descriptors.
 //|
 //|
-//|         :param ~microcontroller.Pin clock: the pin to use for the clock.
-//|         :param ~microcontroller.Pin MOSI: the Main Out Selected In pin.
-//|         :param ~microcontroller.Pin MISO: the Main In Selected Out pin."""
+//|         :param ~microcontroller.Pin clock: the pin to use for the clock or DigitalInOut object
+//|         :param ~microcontroller.Pin MOSI: the Main Out Selected In pin or DigitalInOut object
+//|         :param ~microcontroller.Pin MISO: the Main In Selected Out pin or DigitalInOut object"""
 //|         ...
 //|
 
@@ -65,12 +65,8 @@ static mp_obj_t bitbangio_spi_make_new(const mp_obj_type_t *type, size_t n_args,
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    const mcu_pin_obj_t *clock = validate_obj_is_free_pin(args[ARG_clock].u_obj, MP_QSTR_clock);
-    const mcu_pin_obj_t *mosi = validate_obj_is_free_pin_or_none(args[ARG_MOSI].u_obj, MP_QSTR_mosi);
-    const mcu_pin_obj_t *miso = validate_obj_is_free_pin_or_none(args[ARG_MISO].u_obj, MP_QSTR_miso);
-
     bitbangio_spi_obj_t *self = mp_obj_malloc(bitbangio_spi_obj_t, &bitbangio_spi_type);
-    shared_module_bitbangio_spi_construct(self, clock, mosi, miso);
+    shared_module_bitbangio_spi_construct(self, args[ARG_clock].u_obj, args[ARG_MOSI].u_obj, args[ARG_MISO].u_obj);
     return (mp_obj_t)self;
 }
 

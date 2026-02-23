@@ -57,9 +57,9 @@ void board_init(void) {
     common_hal_fourwire_fourwire_construct(
         bus,
         spi,
-        &pin_GPIO40,    // DC
-        &pin_GPIO42,    // CS
-        &pin_GPIO41,    // RST
+        MP_OBJ_FROM_PTR(&pin_GPIO40),    // DC
+        MP_OBJ_FROM_PTR(&pin_GPIO42),    // CS
+        MP_OBJ_FROM_PTR(&pin_GPIO41),    // RST
         40000000,       // baudrate
         0,              // polarity
         0               // phase

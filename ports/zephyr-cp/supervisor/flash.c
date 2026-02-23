@@ -21,7 +21,7 @@
 #include <zephyr/storage/flash_map.h>
 
 #define CIRCUITPY_PARTITION circuitpy_partition
-static struct flash_area *filesystem_area = NULL;
+static const struct flash_area *filesystem_area = NULL;
 
 #if !FIXED_PARTITION_EXISTS(CIRCUITPY_PARTITION)
 static struct flash_area _dynamic_area;
@@ -111,6 +111,10 @@ void supervisor_flash_init(void) {
         const struct device *d = flashes[i];
 
         printk("flash %p %s\n", d, d->name);
+        if (!device_is_ready(d)) {
+            printk("  not ready\n");
+            continue;
+        }
         if (covered_by_areas[i]) {
             printk("  covered by flash area\n");
             continue;

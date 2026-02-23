@@ -36,8 +36,7 @@
 // For reference, arm/thumb callee save regs are:
 //      r4-r11, r13=sp
 
-// CIRCUITPY-CHANGE: added returns_twice
-__attribute__((naked, returns_twice)) unsigned int nlr_push(nlr_buf_t *nlr) {
+__attribute__((naked)) unsigned int nlr_push(nlr_buf_t *nlr) {
 
     // If you get a linker error here, indicating that a relocation doesn't
     // fit, try the following (in that order):
@@ -92,6 +91,10 @@ __attribute__((naked, returns_twice)) unsigned int nlr_push(nlr_buf_t *nlr) {
         "b      nlr_push_tail       \n" // do the rest in C
         #endif
         #endif
+        // CIRCUITPY-CHANGE: add input and clobbers to prevent smashing registers.
+        :                               // output operands
+        : "r" (nlr)                     // input operands
+        : "r1", "r2", "r3"              // clobbers
         );
 
     #if !defined(__clang__) && defined(__GNUC__) && (__GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 8))
@@ -141,7 +144,8 @@ NORETURN void nlr_jump(void *val) {
         "bx     lr                  \n" // return
         :                           // output operands
         : "r" (top)                 // input operands
-        : "memory"                  // clobbered registers
+        // CIRCUITPY-CHANGE: better comment
+        : "memory"                  // clobbers
         );
 
     MP_UNREACHABLE

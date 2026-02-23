@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <arch/chip/pin.h>
 
+#include "extmod/vfs.h"
 #include "py/mperrno.h"
 #include "py/runtime.h"
 
@@ -95,22 +96,73 @@ static void check_whole_block(mp_buffer_info_t *bufinfo) {
     }
 }
 
-int common_hal_sdioio_sdcard_readblocks(sdioio_sdcard_obj_t *self, uint32_t start_block, mp_buffer_info_t *bufinfo) {
-    if (common_hal_sdioio_sdcard_deinited(self)) {
-        raise_deinited_error();
+// Native function for VFS blockdev layer
+mp_negative_errno_t sdioio_sdcard_readblocks(mp_obj_t self_in, uint8_t *buf,
+    uint32_t start_block, uint32_t num_blocks) {
+    sdioio_sdcard_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    int result = self->inode->u.i_bops->read(self->inode, buf, start_block, num_blocks);
+    if (result < 0) {
+        return -MP_EIO;
     }
-    check_whole_block(bufinfo);
-
-    return self->inode->u.i_bops->read(self->inode, bufinfo->buf, start_block, bufinfo->len / 512);
+    return 0;
 }
 
-int common_hal_sdioio_sdcard_writeblocks(sdioio_sdcard_obj_t *self, uint32_t start_block, mp_buffer_info_t *bufinfo) {
+mp_negative_errno_t common_hal_sdioio_sdcard_readblocks(sdioio_sdcard_obj_t *self, uint32_t start_block, mp_buffer_info_t *bufinfo) {
     if (common_hal_sdioio_sdcard_deinited(self)) {
         raise_deinited_error();
     }
     check_whole_block(bufinfo);
 
-    return self->inode->u.i_bops->write(self->inode, bufinfo->buf, start_block, bufinfo->len / 512);
+    uint32_t num_blocks = bufinfo->len / 512;
+    return sdioio_sdcard_readblocks(MP_OBJ_FROM_PTR(self), bufinfo->buf,
+        start_block, num_blocks);
+}
+
+// Native function for VFS blockdev layer
+mp_negative_errno_t sdioio_sdcard_writeblocks(mp_obj_t self_in, uint8_t *buf,
+    uint32_t start_block, uint32_t num_blocks) {
+    sdioio_sdcard_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    int result = self->inode->u.i_bops->write(self->inode, buf, start_block, num_blocks);
+    if (result < 0) {
+        return -MP_EIO;
+    }
+    return 0;
+}
+
+mp_negative_errno_t common_hal_sdioio_sdcard_writeblocks(sdioio_sdcard_obj_t *self, uint32_t start_block, mp_buffer_info_t *bufinfo) {
+    if (common_hal_sdioio_sdcard_deinited(self)) {
+        raise_deinited_error();
+    }
+    check_whole_block(bufinfo);
+
+    uint32_t num_blocks = bufinfo->len / 512;
+    return sdioio_sdcard_writeblocks(MP_OBJ_FROM_PTR(self), bufinfo->buf,
+        start_block, num_blocks);
+}
+
+// Native function for VFS blockdev layer
+bool sdioio_sdcard_ioctl(mp_obj_t self_in, size_t cmd, size_t arg,
+    mp_int_t *out_value) {
+    sdioio_sdcard_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    *out_value = 0;
+
+    switch (cmd) {
+        case MP_BLOCKDEV_IOCTL_DEINIT:
+        case MP_BLOCKDEV_IOCTL_SYNC:
+            // SDIO operations are synchronous, no action needed
+            return true;
+
+        case MP_BLOCKDEV_IOCTL_BLOCK_COUNT:
+            *out_value = common_hal_sdioio_sdcard_get_count(self);
+            return true;
+
+        case MP_BLOCKDEV_IOCTL_BLOCK_SIZE:
+            *out_value = 512;  // SD cards use 512-byte sectors
+            return true;
+
+        default:
+            return false;  // Unsupported command
+    }
 }
 
 void common_hal_sdioio_sdcard_never_reset(sdioio_sdcard_obj_t *self) {

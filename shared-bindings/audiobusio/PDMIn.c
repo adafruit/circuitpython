@@ -155,11 +155,11 @@ static void check_for_deinit(audiobusio_pdmin_obj_t *self) {
 //  Provided by context manager helper.
 
 
-//|     def record(self, destination: WriteableBuffer, destination_length: int) -> None:
+//|     def record(self, destination: WriteableBuffer, destination_length: int) -> int:
 //|         """Records destination_length bytes of samples to destination. This is
 //|         blocking.
 //|
-//|         An IOError may be raised when the destination is too slow to record the
+//|         An OSError may be raised when the destination is too slow to record the
 //|         audio at the given rate. For internal flash, writing all 1s to the file
 //|         before recording is recommended to speed up writes.
 //|
@@ -176,22 +176,22 @@ static mp_obj_t audiobusio_pdmin_obj_record(mp_obj_t self_obj, mp_obj_t destinat
     mp_buffer_info_t bufinfo;
     if (mp_obj_is_type(destination, &mp_type_fileio)) {
         mp_raise_NotImplementedError(MP_ERROR_TEXT("Cannot record to a file"));
-    } else if (mp_get_buffer(destination, &bufinfo, MP_BUFFER_WRITE)) {
-        if (bufinfo.len / mp_binary_get_size('@', bufinfo.typecode, NULL) < length) {
-            mp_raise_ValueError(MP_ERROR_TEXT("Destination capacity is smaller than destination_length."));
-        }
-        uint8_t bit_depth = common_hal_audiobusio_pdmin_get_bit_depth(self);
-        if (bufinfo.typecode != 'H' && bit_depth == 16) {
-            mp_raise_ValueError(MP_ERROR_TEXT("destination buffer must be an array of type 'H' for bit_depth = 16"));
-        } else if (bufinfo.typecode != 'B' && bufinfo.typecode != BYTEARRAY_TYPECODE && bit_depth == 8) {
-            mp_raise_ValueError(MP_ERROR_TEXT("destination buffer must be a bytearray or array of type 'B' for bit_depth = 8"));
-        }
-        // length is the buffer length in slots, not bytes.
-        uint32_t length_written =
-            common_hal_audiobusio_pdmin_record_to_buffer(self, bufinfo.buf, length);
-        return MP_OBJ_NEW_SMALL_INT(length_written);
     }
-    return mp_const_none;
+
+    mp_get_buffer_raise(destination, &bufinfo, MP_BUFFER_WRITE);
+    if (bufinfo.len / mp_binary_get_size('@', bufinfo.typecode, NULL) < length) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Destination capacity is smaller than destination_length."));
+    }
+    uint8_t bit_depth = common_hal_audiobusio_pdmin_get_bit_depth(self);
+    if (bufinfo.typecode != 'H' && bit_depth == 16) {
+        mp_raise_ValueError(MP_ERROR_TEXT("destination buffer must be an array of type 'H' for bit_depth = 16"));
+    } else if (bufinfo.typecode != 'B' && bufinfo.typecode != BYTEARRAY_TYPECODE && bit_depth == 8) {
+        mp_raise_ValueError(MP_ERROR_TEXT("destination buffer must be a bytearray or array of type 'B' for bit_depth = 8"));
+    }
+    // length is the buffer length in slots, not bytes.
+    uint32_t length_written =
+        common_hal_audiobusio_pdmin_record_to_buffer(self, bufinfo.buf, length);
+    return MP_OBJ_NEW_SMALL_INT(length_written);
 }
 MP_DEFINE_CONST_FUN_OBJ_3(audiobusio_pdmin_record_obj, audiobusio_pdmin_obj_record);
 

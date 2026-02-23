@@ -216,6 +216,11 @@ static void _never_reset_spi_ram_flash(void) {
         never_reset_pin_number(bootloader_flash_get_wp_pin());
     }
     #endif // CONFIG_IDF_TARGET_ESP32
+    #if defined(CONFIG_IDF_TARGET_ESP32C61)
+    #if defined(CONFIG_SPIRAM)
+    common_hal_never_reset_pin(&pin_GPIO14);
+    #endif
+    #endif
 }
 
 safe_mode_t port_init(void) {
@@ -239,7 +244,7 @@ safe_mode_t port_init(void) {
     #endif
 
     // Send the ROM output out of the UART. This includes early logs.
-    #if DEBUG
+    #if DEBUG && (defined(CONFIG_ESP_CONSOLE_UART_DEFAULT) && CONFIG_ESP_CONSOLE_UART_DEFAULT)
     esp_rom_install_uart_printf();
     #endif
 
@@ -271,7 +276,7 @@ safe_mode_t port_init(void) {
     common_hal_never_reset_pin(&pin_GPIO40);
     common_hal_never_reset_pin(&pin_GPIO41);
     common_hal_never_reset_pin(&pin_GPIO42);
-    #elif defined(CONFIG_IDF_TARGET_ESP32P4)
+    #elif defined(CONFIG_IDF_TARGET_ESP32P4) || defined(CONFIG_IDF_TARGET_ESP32C61)
     common_hal_never_reset_pin(&pin_GPIO3);
     common_hal_never_reset_pin(&pin_GPIO4);
     common_hal_never_reset_pin(&pin_GPIO5);
@@ -351,14 +356,11 @@ void reset_port(void) {
     ssl_reset();
     #endif
 
-    reset_all_pins();
-
     #if CIRCUITPY_ANALOGIO
     analogout_reset();
     #endif
 
     #if CIRCUITPY_BUSIO
-    spi_reset();
     uart_reset();
     #endif
 

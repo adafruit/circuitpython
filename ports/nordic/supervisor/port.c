@@ -189,7 +189,6 @@ safe_mode_t port_init(void) {
 
 void reset_port(void) {
     #if CIRCUITPY_BUSIO
-    spi_reset();
     uart_reset();
     #endif
 
@@ -216,8 +215,6 @@ void reset_port(void) {
         nrfx_gpiote_uninit();
     }
     nrfx_gpiote_init(NRFX_GPIOTE_CONFIG_IRQ_PRIORITY);
-
-    reset_all_pins();
 }
 
 void reset_to_bootloader(void) {

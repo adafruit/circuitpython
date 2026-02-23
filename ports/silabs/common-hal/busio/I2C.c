@@ -145,7 +145,7 @@ void common_hal_busio_i2c_unlock(busio_i2c_obj_t *self) {
 }
 
 // Write data to the device selected by address
-uint8_t common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr,
+mp_negative_errno_t common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr,
     const uint8_t *data, size_t len) {
 
     I2C_TransferSeq_TypeDef seq;
@@ -159,13 +159,13 @@ uint8_t common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr,
 
     ret = I2CSPM_Transfer(self->i2cspm, &seq);
     if (ret != i2cTransferDone) {
-        return MP_EIO;
+        return -MP_EIO;
     }
     return 0;
 }
 
 // Read into buffer from the device selected by address
-uint8_t common_hal_busio_i2c_read(busio_i2c_obj_t *self,
+mp_negative_errno_t common_hal_busio_i2c_read(busio_i2c_obj_t *self,
     uint16_t addr,
     uint8_t *data, size_t len) {
 
@@ -180,13 +180,13 @@ uint8_t common_hal_busio_i2c_read(busio_i2c_obj_t *self,
 
     ret = I2CSPM_Transfer(self->i2cspm, &seq);
     if (ret != i2cTransferDone) {
-        return MP_EIO;
+        return -MP_EIO;
     }
     return 0;
 }
 
 // Write the bytes from out_data to the device selected by address,
-uint8_t common_hal_busio_i2c_write_read(busio_i2c_obj_t *self, uint16_t addr,
+mp_negative_errno_t common_hal_busio_i2c_write_read(busio_i2c_obj_t *self, uint16_t addr,
     uint8_t *out_data, size_t out_len,
     uint8_t *in_data, size_t in_len) {
 
@@ -204,7 +204,7 @@ uint8_t common_hal_busio_i2c_write_read(busio_i2c_obj_t *self, uint16_t addr,
 
     ret = I2CSPM_Transfer(self->i2cspm, &seq);
     if (ret != i2cTransferDone) {
-        return MP_EIO;
+        return -MP_EIO;
     }
     return 0;
 }

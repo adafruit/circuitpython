@@ -59,6 +59,8 @@ SRC_C += bindings/videocore/__init__.c \
 
 SRC_S = peripherals/broadcom/boot$(SUFFIX).s
 
+SRC_C += shared/runtime/gchelper_generic.c
+
 OBJ = $(PY_O) $(SUPERVISOR_O) $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_COMMON_HAL_SHARED_MODULE_EXPANDED:.c=.o))
 	ifeq ($(INTERNAL_LIBM),1)

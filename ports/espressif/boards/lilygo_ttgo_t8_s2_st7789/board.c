@@ -62,9 +62,9 @@ static void display_init(void) {
     common_hal_fourwire_fourwire_construct(
         bus,
         spi,
-        &pin_GPIO37,    // DC
-        &pin_GPIO34,    // CS
-        &pin_GPIO38,    // RST
+        MP_OBJ_FROM_PTR(&pin_GPIO37),    // DC
+        MP_OBJ_FROM_PTR(&pin_GPIO34),    // CS
+        MP_OBJ_FROM_PTR(&pin_GPIO38),    // RST
         40000000,       // baudrate
         0,              // polarity
         0               // phase

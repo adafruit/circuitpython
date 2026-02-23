@@ -133,9 +133,9 @@ void status_led_init(void) {
     memset(status_apa102_color + 4, 0xff, APA102_BUFFER_LENGTH - 4);
     #if CIRCUITPY_BITBANG_APA102
     shared_module_bitbangio_spi_construct(&status_apa102,
-        MICROPY_HW_APA102_SCK,
-        MICROPY_HW_APA102_MOSI,
-        NULL);
+        MP_OBJ_FROM_PTR(MICROPY_HW_APA102_SCK),
+        MP_OBJ_FROM_PTR(MICROPY_HW_APA102_MOSI),
+        mp_const_none);
     #else
     if (!common_hal_busio_spi_deinited(&status_apa102)) {
         common_hal_busio_spi_deinit(&status_apa102);

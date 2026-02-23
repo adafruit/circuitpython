@@ -42,6 +42,9 @@ void common_hal_bitmaptools_fill_region(displayio_bitmap_t *destination,
     int16_t x2, int16_t y2,
     uint32_t value);
 
+void common_hal_bitmaptools_replace_color(displayio_bitmap_t *destination,
+    uint32_t old_color, uint32_t new_color);
+
 void common_hal_bitmaptools_boundary_fill(displayio_bitmap_t *destination,
     int16_t x, int16_t y,
     uint32_t fill_color_value, uint32_t replaced_color_value);

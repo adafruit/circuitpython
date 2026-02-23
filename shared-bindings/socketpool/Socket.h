@@ -6,6 +6,7 @@
 
 #pragma once
 
+#include "py/mperrno.h"
 #include "common-hal/socketpool/Socket.h"
 
 extern const mp_obj_type_t socketpool_socket_type;

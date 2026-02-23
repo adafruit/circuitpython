@@ -28,4 +28,7 @@ typedef struct {
     bool packet_queued;
 } bleio_packet_buffer_obj_t;
 
+// Unused, but needed for _common_hal_bleio_packet_buffer_construct()
+typedef void *ble_event_handler_t;
+
 void bleio_packet_buffer_update(bleio_packet_buffer_obj_t *self, mp_buffer_info_t *bufinfo);

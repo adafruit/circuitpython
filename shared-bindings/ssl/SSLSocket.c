@@ -106,7 +106,7 @@ static MP_DEFINE_CONST_FUN_OBJ_2(ssl_sslsocket_connect_obj, ssl_sslsocket_connec
 //|     def listen(self, backlog: int) -> None:
 //|         """Set socket to listen for incoming connections
 //|
-//|         :param ~int backlog: length of backlog queue for waiting connetions"""
+//|         :param ~int backlog: length of backlog queue for waiting connections"""
 //|         ...
 //|
 static mp_obj_t ssl_sslsocket_listen(mp_obj_t self_in, mp_obj_t backlog_in) {

@@ -18,10 +18,6 @@ void common_hal_audiodelays_chorus_construct(audiodelays_chorus_obj_t *self, uin
 void common_hal_audiodelays_chorus_deinit(audiodelays_chorus_obj_t *self);
 bool common_hal_audiodelays_chorus_deinited(audiodelays_chorus_obj_t *self);
 
-uint32_t common_hal_audiodelays_chorus_get_sample_rate(audiodelays_chorus_obj_t *self);
-uint8_t common_hal_audiodelays_chorus_get_channel_count(audiodelays_chorus_obj_t *self);
-uint8_t common_hal_audiodelays_chorus_get_bits_per_sample(audiodelays_chorus_obj_t *self);
-
 mp_obj_t common_hal_audiodelays_chorus_get_delay_ms(audiodelays_chorus_obj_t *self);
 void common_hal_audiodelays_chorus_set_delay_ms(audiodelays_chorus_obj_t *self, mp_obj_t delay_ms);
 

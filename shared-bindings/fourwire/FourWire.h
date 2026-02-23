@@ -16,8 +16,8 @@
 extern const mp_obj_type_t fourwire_fourwire_type;
 
 void common_hal_fourwire_fourwire_construct(fourwire_fourwire_obj_t *self,
-    busio_spi_obj_t *spi, const mcu_pin_obj_t *command,
-    const mcu_pin_obj_t *chip_select, const mcu_pin_obj_t *reset, uint32_t baudrate,
+    busio_spi_obj_t *spi, mp_obj_t command,
+    mp_obj_t chip_select, mp_obj_t reset, uint32_t baudrate,
     uint8_t polarity, uint8_t phase);
 
 void common_hal_fourwire_fourwire_deinit(fourwire_fourwire_obj_t *self);

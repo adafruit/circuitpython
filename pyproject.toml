@@ -5,7 +5,7 @@
 [tool.setuptools_scm]
 # can be empty if no extra settings are needed, presence enables setuptools-scm
 
-# Ruff settings copied from MicroPython
+# Codespell settings copied from MicroPython
 
 [tool.ruff]
 target-version = "py37"
@@ -59,3 +59,27 @@ lint.per-file-ignores."ports/**/boards/**/manifest_*.py" = [ "F821" ]
 # Exclude all tests from linting (does not apply to formatting).
 lint.per-file-ignores."tests/**/*.py" = [ "ALL" ]
 lint.mccabe.max-complexity = 40
+
+[tool.codespell]
+count = ""
+ignore-regex = '\b[A-Z]{3}\b'
+ignore-words-list = "ans,asend,aranges,deques,dout,emac,extint,hsi,iput,mis,notin,numer,ser,shft,synopsys,technic,ure,curren"
+quiet-level = 3
+skip = """
+*/build*,\
+./.git,\
+./drivers/cc3100,\
+./lib,\
+./ports/cc3200/FreeRTOS,\
+./ports/cc3200/bootmgr/sl,\
+./ports/cc3200/hal,\
+./ports/cc3200/simplelink,\
+./ports/cc3200/telnet,\
+./ports/esp32/managed_components,\
+./ports/nrf/drivers/bluetooth/s1*,\
+./ports/stm32/usbhost,\
+./tests,\
+ACKNOWLEDGEMENTS,\
+"""
+
+# Ruff settings copied from MicroPython

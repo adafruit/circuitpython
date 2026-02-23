@@ -106,7 +106,7 @@ static void check_for_deinit(busio_i2c_obj_t *self) {
 //  Provided by context manager helper.
 
 static void check_lock(busio_i2c_obj_t *self) {
-    asm ("");
+    __asm__ ("");
     if (!common_hal_busio_i2c_has_lock(self)) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Function requires lock"));
     }
@@ -228,10 +228,10 @@ static mp_obj_t busio_i2c_readfrom_into(size_t n_args, const mp_obj_t *pos_args,
     start *= stride_in_bytes;
     length *= stride_in_bytes;
 
-    uint8_t status =
+    mp_negative_errno_t status =
         common_hal_busio_i2c_read(self, args[ARG_address].u_int, ((uint8_t *)bufinfo.buf) + start, length);
     if (status != 0) {
-        mp_raise_OSError(status);
+        mp_raise_OSError(-status);
     }
 
     return mp_const_none;
@@ -290,11 +290,11 @@ static mp_obj_t busio_i2c_writeto(size_t n_args, const mp_obj_t *pos_args, mp_ma
     length *= stride_in_bytes;
 
     // do the transfer
-    uint8_t status =
+    mp_negative_errno_t status =
         common_hal_busio_i2c_write(self, args[ARG_address].u_int, ((uint8_t *)bufinfo.buf) + start, length);
 
     if (status != 0) {
-        mp_raise_OSError(status);
+        mp_raise_OSError(-status);
     }
 
     return mp_const_none;
@@ -377,10 +377,10 @@ static mp_obj_t busio_i2c_writeto_then_readfrom(size_t n_args, const mp_obj_t *p
     in_start *= in_stride_in_bytes;
     in_length *= in_stride_in_bytes;
 
-    uint8_t status = common_hal_busio_i2c_write_read(self, args[ARG_address].u_int,
+    mp_negative_errno_t status = common_hal_busio_i2c_write_read(self, args[ARG_address].u_int,
         ((uint8_t *)out_bufinfo.buf) + out_start, out_length, ((uint8_t *)in_bufinfo.buf) + in_start, in_length);
     if (status != 0) {
-        mp_raise_OSError(status);
+        mp_raise_OSError(-status);
     }
 
     return mp_const_none;

@@ -21,6 +21,9 @@ bool common_hal_busio_spi_deinited(busio_spi_obj_t *self) {
     return true;
 }
 
+void common_hal_busio_spi_mark_deinit(busio_spi_obj_t *self) {
+}
+
 void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
     if (common_hal_busio_spi_deinited(self)) {
         return;

@@ -32,18 +32,41 @@
 #define TOKEN_STOP_TRAN (0xFD)
 #define TOKEN_DATA (0xFE)
 
+bool common_hal_sdcardio_sdcard_deinited(sdcardio_sdcard_obj_t *self) {
+    // Also check SPI bus was deinited out from under us.
+    if (!self->bus || common_hal_busio_spi_deinited(self->bus)) {
+        return true;
+    }
+    return false;
+}
+
+void common_hal_sdcardio_sdcard_mark_deinit(sdcardio_sdcard_obj_t *self) {
+    self->bus = NULL;
+}
+
 static void common_hal_sdcardio_check_for_deinit(sdcardio_sdcard_obj_t *self) {
-    if (!self->bus) {
+    if (common_hal_sdcardio_sdcard_deinited(self)) {
         raise_deinited_error();
     }
 }
 
 static bool lock_and_configure_bus(sdcardio_sdcard_obj_t *self) {
+    if (common_hal_sdcardio_sdcard_deinited(self)) {
+        return false;
+    }
     common_hal_sdcardio_check_for_deinit(self);
 
     if (!common_hal_busio_spi_try_lock(self->bus)) {
         return false;
     }
+
+    // Make sure we can still use the SPI bus after grabbing the lock.
+    // The VM might be in the process of shutting down, and there could be a race.
+    if (!vm_is_running() && !self->persistent_mount) {
+        common_hal_busio_spi_unlock(self->bus);
+        return false;
+    }
+
     common_hal_busio_spi_configure(self->bus, self->baudrate, 0, 0, 8);
     common_hal_digitalio_digitalinout_set_value(&self->cs, false);
     return true;
@@ -97,7 +120,7 @@ static int wait_for_ready(sdcardio_sdcard_obj_t *self) {
 }
 
 // Note: this is never called while "in cmd25" (in fact, it's only used by `exit_cmd25`)
-static bool cmd_nodata(sdcardio_sdcard_obj_t *self, int cmd, int response) {
+static int cmd_nodata(sdcardio_sdcard_obj_t *self, int cmd, int response) {
     uint8_t cmdbuf[2] = {cmd, 0xff};
 
     assert(!self->in_cmd25);
@@ -111,7 +134,7 @@ static bool cmd_nodata(sdcardio_sdcard_obj_t *self, int cmd, int response) {
             return 0;
         }
     }
-    return -EIO;
+    return -MP_EIO;
 }
 
 
@@ -160,7 +183,7 @@ static int cmd(sdcardio_sdcard_obj_t *self, int cmd, int arg, void *response_buf
     }
 
     if (!response_received) {
-        return -EIO;
+        return -MP_EIO;
     }
 
     if (response_buf) {
@@ -294,13 +317,16 @@ static mp_rom_error_text_t init_card(sdcardio_sdcard_obj_t *self) {
     return NULL;
 }
 
-mp_rom_error_text_t sdcardio_sdcard_construct(sdcardio_sdcard_obj_t *self, busio_spi_obj_t *bus, const mcu_pin_obj_t *cs, int baudrate) {
+mp_rom_error_text_t sdcardio_sdcard_construct(sdcardio_sdcard_obj_t *self, busio_spi_obj_t *bus, const mcu_pin_obj_t *cs, int baudrate, bool persistent_mount) {
     self->bus = bus;
+    self->persistent_mount = persistent_mount;
     common_hal_digitalio_digitalinout_construct(&self->cs, cs);
     common_hal_digitalio_digitalinout_switch_to_output(&self->cs, true, DRIVE_MODE_PUSH_PULL);
 
     self->cdv = 512;
     self->sectors = 0;
+
+    // During initialization, talk to the SPI card between 100 khZ and 400 kHz. After that, can use full speed.
     self->baudrate = 250000;
 
     lock_bus_or_throw(self);
@@ -318,18 +344,19 @@ mp_rom_error_text_t sdcardio_sdcard_construct(sdcardio_sdcard_obj_t *self, busio
 
 
 void common_hal_sdcardio_sdcard_construct(sdcardio_sdcard_obj_t *self, busio_spi_obj_t *bus, const mcu_pin_obj_t *cs, int baudrate) {
-    mp_rom_error_text_t result = sdcardio_sdcard_construct(self, bus, cs, baudrate);
+    // User mounted, so persistent_mount=false.
+    mp_rom_error_text_t result = sdcardio_sdcard_construct(self, bus, cs, baudrate, false);
     if (result != NULL) {
         mp_raise_OSError_msg(result);
     }
 }
 
 void common_hal_sdcardio_sdcard_deinit(sdcardio_sdcard_obj_t *self) {
-    if (!self->bus) {
+    if (common_hal_sdcardio_sdcard_deinited(self)) {
         return;
     }
     common_hal_sdcardio_sdcard_sync(self);
-    self->bus = 0;
+    common_hal_sdcardio_sdcard_mark_deinit(self);
     common_hal_digitalio_digitalinout_deinit(&self->cs);
 }
 
@@ -428,7 +455,7 @@ static int _write(sdcardio_sdcard_obj_t *self, uint8_t token, void *buf, size_t 
         DEBUG_PRINT("i=%02d cmd[0] = 0x%02x\n", i, cmd[0]);
         if ((cmd[0] & 0b00010001) == 0b00000001) {
             if ((cmd[0] & 0x1f) != 0x5) {
-                return -EIO;
+                return -MP_EIO;
             } else {
                 break;
             }
@@ -489,14 +516,10 @@ int common_hal_sdcardio_sdcard_sync(sdcardio_sdcard_obj_t *self) {
 }
 
 int common_hal_sdcardio_sdcard_writeblocks(sdcardio_sdcard_obj_t *self, uint32_t start_block, mp_buffer_info_t *buf) {
-    // deinit check is in lock_and_configure_bus()
     if (buf->len % 512 != 0) {
         mp_raise_ValueError_varg(MP_ERROR_TEXT("Buffer must be a multiple of %d bytes"), 512);
     }
-    lock_and_configure_bus(self);
-    int r = sdcardio_sdcard_writeblocks(MP_OBJ_FROM_PTR(self), buf->buf, start_block, buf->len / 512);
-    extraclock_and_unlock_bus(self);
-    return r;
+    return sdcardio_sdcard_writeblocks(MP_OBJ_FROM_PTR(self), buf->buf, start_block, buf->len / 512);
 }
 
 bool sdcardio_sdcard_ioctl(mp_obj_t self_in, size_t cmd, size_t arg, mp_int_t *out_value) {
@@ -504,11 +527,8 @@ bool sdcardio_sdcard_ioctl(mp_obj_t self_in, size_t cmd, size_t arg, mp_int_t *o
     *out_value = 0;
     switch (cmd) {
         case MP_BLOCKDEV_IOCTL_DEINIT:
-            common_hal_sdcardio_sdcard_sync(self);
-            break; // TODO properly
         case MP_BLOCKDEV_IOCTL_SYNC:
-            common_hal_sdcardio_sdcard_sync(self);
-            break;
+            return common_hal_sdcardio_sdcard_sync(self) == 0;
         case MP_BLOCKDEV_IOCTL_BLOCK_COUNT:
             *out_value = common_hal_sdcardio_sdcard_get_blockcount(self);
             break;

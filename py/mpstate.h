@@ -369,4 +369,7 @@ extern mp_state_thread_t *mp_thread_get_state(void);
 #define mp_thread_is_main_thread() (true)
 #endif
 
+// CIRCUITPY-CHANGE: defined in main.c
+bool vm_is_running(void);
+
 #endif // MICROPY_INCLUDED_PY_MPSTATE_H

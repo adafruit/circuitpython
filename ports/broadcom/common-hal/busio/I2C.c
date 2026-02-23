@@ -137,7 +137,7 @@ void common_hal_busio_i2c_unlock(busio_i2c_obj_t *self) {
 
 // Discussion of I2C implementation is here: https://github.com/raspberrypi/linux/issues/254
 
-static uint8_t _common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr,
+static mp_negative_errno_t _common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr,
     const uint8_t *data, size_t len, bool transmit_stop_bit) {
     COMPLETE_MEMORY_READS;
     self->peripheral->S_b.DONE = true;
@@ -182,7 +182,7 @@ static uint8_t _common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr,
         while (self->peripheral->S_b.ERR == 1) {
             RUN_BACKGROUND_TASKS;
         }
-        return MP_ENODEV;
+        return -MP_ENODEV;
     }
 
     if (loop_len < len) {
@@ -192,19 +192,19 @@ static uint8_t _common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr,
     return 0;
 }
 
-uint8_t common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr,
+mp_negative_errno_t common_hal_busio_i2c_write(busio_i2c_obj_t *self, uint16_t addr,
     const uint8_t *data, size_t len) {
     return _common_hal_busio_i2c_write(self, addr, data, len, true);
 }
 
-uint8_t common_hal_busio_i2c_read(busio_i2c_obj_t *self, uint16_t addr,
+mp_negative_errno_t common_hal_busio_i2c_read(busio_i2c_obj_t *self, uint16_t addr,
     uint8_t *data, size_t len) {
     COMPLETE_MEMORY_READS;
     self->peripheral->A_b.ADDR = addr;
     if (self->finish_write) {
         self->finish_write = false;
         if (self->peripheral->S_b.ERR == 1) {
-            return MP_ENODEV;
+            return -MP_ENODEV;
         }
         self->peripheral->FIFO_b.DATA = self->last_write_data;
     } else {
@@ -236,15 +236,15 @@ uint8_t common_hal_busio_i2c_read(busio_i2c_obj_t *self, uint16_t addr,
         while (self->peripheral->S_b.ERR == 1) {
             RUN_BACKGROUND_TASKS;
         }
-        return MP_ENODEV;
+        return -MP_ENODEV;
     }
 
     return 0;
 }
 
-uint8_t common_hal_busio_i2c_write_read(busio_i2c_obj_t *self, uint16_t addr,
+mp_negative_errno_t common_hal_busio_i2c_write_read(busio_i2c_obj_t *self, uint16_t addr,
     uint8_t *out_data, size_t out_len, uint8_t *in_data, size_t in_len) {
-    uint8_t result = _common_hal_busio_i2c_write(self, addr, out_data, out_len, false);
+    mp_negative_errno_t result = _common_hal_busio_i2c_write(self, addr, out_data, out_len, false);
     if (result != 0) {
         return result;
     }

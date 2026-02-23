@@ -53,7 +53,7 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
     }
 
     // Ensure the object starts in its deinit state.
-    self->clock_pin = NO_PIN;
+    common_hal_busio_spi_mark_deinit(self);
 
     // Special case for SAMR21 boards. (feather_radiofruit_zigbee)
     #if defined(PIN_PC19F_SERCOM4_PAD0)
@@ -184,18 +184,24 @@ bool common_hal_busio_spi_deinited(busio_spi_obj_t *self) {
     return self->clock_pin == NO_PIN;
 }
 
+void common_hal_busio_spi_mark_deinit(busio_spi_obj_t *self) {
+    self->clock_pin = NO_PIN;
+}
+
 void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
     if (common_hal_busio_spi_deinited(self)) {
         return;
     }
     allow_reset_sercom(self->spi_desc.dev.prvt);
 
+    // Mark as deinit early in case we are used in an interrupt.
+    common_hal_busio_spi_mark_deinit(self);
+
     spi_m_sync_disable(&self->spi_desc);
     spi_m_sync_deinit(&self->spi_desc);
     reset_pin_number(self->clock_pin);
     reset_pin_number(self->MOSI_pin);
     reset_pin_number(self->MISO_pin);
-    self->clock_pin = NO_PIN;
 }
 
 bool common_hal_busio_spi_configure(busio_spi_obj_t *self,

@@ -128,7 +128,7 @@ bleio_uuid_obj_t *common_hal_bleio_service_get_uuid(bleio_service_obj_t *self) {
     return self->uuid;
 }
 
-// Get tuple charateristic of service
+// Get tuple characteristic of service
 mp_obj_tuple_t *common_hal_bleio_service_get_characteristics(
     bleio_service_obj_t *self) {
     return mp_obj_new_tuple(self->characteristic_list->len,
@@ -210,19 +210,19 @@ void common_hal_bleio_service_add_characteristic(bleio_service_obj_t *self,
     }
 
     if (SL_STATUS_OK != sc) {
-        mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Add charateristic fail."));
+        mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Add characteristic fail."));
     }
 
     sc = sl_bt_gattdb_start_characteristic(gattdb_session,
         characteristic->handle);
     if (SL_STATUS_OK != sc) {
-        mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Start charateristic fail."));
+        mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Start characteristic fail."));
         return;
     }
 
     sc = sl_bt_gattdb_commit(gattdb_session);
     if (SL_STATUS_OK != sc) {
-        mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Commit charateristic fail."));
+        mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Commit characteristic fail."));
         return;
     }
     mp_obj_list_append(self->characteristic_list,

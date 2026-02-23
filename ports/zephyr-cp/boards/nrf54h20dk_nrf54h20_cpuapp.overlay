@@ -1,0 +1,47 @@
+&gpio6 {
+	status = "okay";
+	zephyr,pm-device-runtime-auto;
+};
+
+&exmif {
+	status = "okay";
+	zephyr,pm-device-runtime-auto;
+};
+
+&mx25uw63 {
+	status = "okay";
+};
+
+/*
+ * SDA = P2.11
+ * SCL = P2.10
+ */
+
+&pinctrl {
+	i2c130_default: i2c130_default {
+		group1 {
+			psels = <NRF_PSEL(TWIM_SDA, 2, 11)>,
+				<NRF_PSEL(TWIM_SCL, 2, 10)>;
+		};
+	};
+
+	i2c130_sleep: i2c130_sleep {
+		group1 {
+			psels = <NRF_PSEL(TWIM_SDA, 2, 11)>,
+				<NRF_PSEL(TWIM_SCL, 2, 10)>;
+			low-power-enable;
+		};
+	};
+};
+
+&i2c130 {
+	clock-frequency = <I2C_BITRATE_STANDARD>;
+	pinctrl-0 = <&i2c130_default>;
+	pinctrl-1 = <&i2c130_sleep>;
+	pinctrl-names = "default", "sleep";
+	zephyr,concat-buf-size = <256>;
+	memory-regions = <&cpuapp_dma_region>;
+	status = "okay";
+};
+
+#include "../app.overlay"

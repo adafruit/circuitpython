@@ -13,4 +13,9 @@
 #define mbedtls_sha1_starts_ret mbedtls_sha1_starts
 #define mbedtls_sha1_update_ret mbedtls_sha1_update
 #define mbedtls_sha1_finish_ret mbedtls_sha1_finish
+
+#define mbedtls_sha256_starts_ret mbedtls_sha256_starts
+#define mbedtls_sha256_update_ret mbedtls_sha256_update
+#define mbedtls_sha256_finish_ret mbedtls_sha256_finish
+
 #endif

@@ -4,6 +4,7 @@
 //
 // SPDX-License-Identifier: MIT
 #include "shared-bindings/audiodelays/Chorus.h"
+#include "shared-bindings/audiocore/__init__.h"
 
 #include <stdint.h>
 #include <math.h>
@@ -104,9 +105,7 @@ bool common_hal_audiodelays_chorus_deinited(audiodelays_chorus_obj_t *self) {
 }
 
 void common_hal_audiodelays_chorus_deinit(audiodelays_chorus_obj_t *self) {
-    if (common_hal_audiodelays_chorus_deinited(self)) {
-        return;
-    }
+    audiosample_mark_deinit(&self->base);
     self->chorus_buffer = NULL;
     self->buffer[0] = NULL;
     self->buffer[1] = NULL;

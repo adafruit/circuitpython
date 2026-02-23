@@ -83,7 +83,7 @@ void common_hal_max3421e_max3421e_deinit(max3421e_max3421e_obj_t *self) {
 // anyway. Don't run background tasks because this function is used by
 // tuh_task() which is run as a background task.
 #if CFG_TUSB_OS == OPT_OS_NONE
-void osal_task_delay(uint32_t msec) {
+void tusb_time_delay_ms_api(uint32_t msec) {
     uint32_t end_time = common_hal_time_monotonic_ms() + msec;
     while (common_hal_time_monotonic_ms() < end_time) {
         if (tuh_callback.prev != NULL) {

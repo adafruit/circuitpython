@@ -422,7 +422,6 @@ safe_mode_t port_init(void) {
 
 void reset_port(void) {
     #if CIRCUITPY_BUSIO
-    reset_spi();
     reset_uart();
     #endif
 
@@ -453,8 +452,6 @@ void reset_port(void) {
     #if CIRCUITPY_WIFI
     wifi_reset();
     #endif
-
-    reset_all_pins();
 }
 
 void reset_to_bootloader(void) {

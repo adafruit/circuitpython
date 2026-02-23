@@ -21,7 +21,11 @@ float common_hal_mcu_processor_get_temperature(void) {
 
 extern uint32_t SystemCoreClock;
 uint32_t common_hal_mcu_processor_get_frequency(void) {
+    #ifdef __ARM__
     return SystemCoreClock;
+    #else
+    return CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC;
+    #endif
 }
 
 float common_hal_mcu_processor_get_voltage(void) {

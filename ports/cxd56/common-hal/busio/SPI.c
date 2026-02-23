@@ -54,7 +54,7 @@ void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
         return;
     }
 
-    self->spi_dev = NULL;
+    common_hal_busio_spi_mark_deinit(self);
 
     reset_pin_number(self->clock_pin->number);
     reset_pin_number(self->mosi_pin->number);
@@ -63,6 +63,10 @@ void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
 
 bool common_hal_busio_spi_deinited(busio_spi_obj_t *self) {
     return self->spi_dev == NULL;
+}
+
+void common_hal_busio_spi_mark_deinit(busio_spi_obj_t *self) {
+    self->spi_dev = NULL;
 }
 
 bool common_hal_busio_spi_configure(busio_spi_obj_t *self, uint32_t baudrate, uint8_t polarity, uint8_t phase, uint8_t bits) {

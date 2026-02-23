@@ -54,9 +54,9 @@ void board_init(void) {
     common_hal_busio_spi_never_reset(spi);
     common_hal_fourwire_fourwire_construct(bus,
         spi,
-        &pin_PA28, // Command or data
-        &pin_PA01, // Chip select
-        &pin_PA27, // Reset
+        MP_OBJ_FROM_PTR(&pin_PA28), // Command or data
+        MP_OBJ_FROM_PTR(&pin_PA01), // Chip select
+        MP_OBJ_FROM_PTR(&pin_PA27), // Reset
         12000000, // Baudrate
         0, // Polarity
         0); // Phase

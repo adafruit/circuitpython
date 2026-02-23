@@ -18,7 +18,7 @@
 #include "common-hal/microcontroller/Pin.h"
 #include "py/runtime.h"
 
-#include "driver/gpio.h"
+#include <driver/gpio.h>
 
 /*
  *  Current pin limitations for ESP32-S2 ParallelBus:

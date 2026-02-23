@@ -12,4 +12,4 @@ The Espruino Wifi is normally updated via a bootloader activated by the Espruino
  - Restart the board.
 
 
-To reinstall Espruino, follow the same steps with the latest Espruino Wifi binary from espruino.com/binaries. This will reinstall the usual Espruino bootloader. You must un-short the BOOT0/BTN jumper to re-use the original Espruino Bootloader again. If you used a Pencil mark then you may need to use cleaning fluid and a small brush to totally clear out the graphite.
+To reinstall Espruino, follow the same steps with the latest Espruino Wifi binary from espruino.com/binaries. This will reinstall the usual Espruino bootloader. You must un-short the BOOT0/BTN jumper to reuse the original Espruino Bootloader again. If you used a Pencil mark then you may need to use cleaning fluid and a small brush to totally clear out the graphite.

@@ -48,6 +48,7 @@ typedef struct {
 bool usb_enabled(void);
 void usb_add_interface_string(uint8_t interface_string_index, const char str[]);
 bool usb_build_descriptors(const usb_identification_t *identification);
+bool usb_connected(void);
 void usb_disconnect(void);
 void usb_init(void);
 void usb_set_defaults(void);

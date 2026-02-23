@@ -5,6 +5,11 @@ project(circuitpython)
 
 target_sources(app PRIVATE zephyr_main.c)
 
+# Add I2C emulator control for native_sim testing
+if(CONFIG_BOARD_NATIVE_SIM)
+    target_sources(app PRIVATE native_sim_i2c_emul_control.c)
+endif()
+
 # From: https://github.com/zephyrproject-rtos/zephyr/blob/main/samples/application_development/external_lib/CMakeLists.txt
 # The external static library that we are linking with does not know
 # how to build for this platform so we export all the flags used in

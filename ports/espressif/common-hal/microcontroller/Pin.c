@@ -77,6 +77,15 @@ static uint64_t _in_use_pin_mask;
 #define GPIO_SEL_47             ((uint64_t)PIN_BIT(47))     /*!< Pin 47 selected */
 #define GPIO_SEL_48             ((uint64_t)PIN_BIT(48))     /*!< Pin 48 selected */
 #endif
+#if SOC_GPIO_PIN_COUNT > 49
+#define GPIO_SEL_49             ((uint64_t)PIN_BIT(49))     /*!< Pin 49 selected */
+#define GPIO_SEL_50             ((uint64_t)PIN_BIT(50))     /*!< Pin 50 selected */
+#define GPIO_SEL_51             ((uint64_t)PIN_BIT(51))     /*!< Pin 51 selected */
+#define GPIO_SEL_52             ((uint64_t)PIN_BIT(52))     /*!< Pin 52 selected */
+#define GPIO_SEL_53             ((uint64_t)PIN_BIT(53))     /*!< Pin 53 selected */
+#define GPIO_SEL_54             ((uint64_t)PIN_BIT(54))     /*!< Pin 54 selected */
+#define GPIO_SEL_55             ((uint64_t)PIN_BIT(55))     /*!< Pin 55 selected */
+#endif
 
 // Bit mask of all pins that should never EVER be reset.
 // Typically these are SPI flash and PSRAM control pins, and communication pins.
@@ -146,6 +155,29 @@ static const uint64_t pin_mask_reset_forbidden =
     #endif
     #endif // ESP32C6
 
+    #if defined(CONFIG_IDF_TARGET_ESP32C61)
+    // Never ever reset pins used to communicate with SPI flash.
+    GPIO_SEL_15 |        // SPICS0  (flash CS#)
+    GPIO_SEL_16 |        // SPIQ    (MISO/SIO1)
+    GPIO_SEL_17 |        // SPIWP   (WP#/SIO2)
+    GPIO_SEL_19 |        // SPIHD   (HOLD#/SIO3)
+    GPIO_SEL_20 |        // SPICLK  (CLK)
+    GPIO_SEL_21 |        // SPID    (MOSI/SIO0)
+    #if CIRCUITPY_ESP_USB_SERIAL_JTAG
+    // Never ever reset serial/JTAG communication pins.
+    GPIO_SEL_12 |         // USB D-
+    GPIO_SEL_13 |         // USB D+
+    #endif
+    #if defined(CONFIG_SPIRAM)
+    GPIO_SEL_14 |        // SPICS1 (PSRAM CS#); keep if PSRAM in use
+    #endif
+    #if defined(CONFIG_ESP_CONSOLE_UART_DEFAULT) && CONFIG_ESP_CONSOLE_UART_DEFAULT && CONFIG_ESP_CONSOLE_UART_NUM == 0
+    // Never reset debug UART/console pins.
+    GPIO_SEL_10 |
+    GPIO_SEL_11 |
+    #endif
+    #endif // ESP32C6
+
     #if defined(CONFIG_IDF_TARGET_ESP32H2)
     // Never ever reset pins used to communicate with the in-package SPI flash.
     GPIO_SEL_15 |
@@ -172,17 +204,27 @@ static const uint64_t pin_mask_reset_forbidden =
     #endif // ESP32H2
 
     #if defined(CONFIG_IDF_TARGET_ESP32P4)
-    // Never ever reset pins used to communicate with the SPI flash.
-    GPIO_SEL_28 |
-    GPIO_SEL_29 |
-    GPIO_SEL_30 |
-    GPIO_SEL_32 |
-    GPIO_SEL_33 |
-    GPIO_SEL_34 |
-    #if CIRCUITPY_ESP_USB_SERIAL_JTAG
+    // SPI flash is on dedicated pins.
+
+    // USB is on the FS OTG
+    #if CIRCUITPY_USB_DEVICE_INSTANCE == 0
+    #if CIRCUITPY_ESP32P4_SWAP_LSFS == 1
+    // We leave 24 and 25 alone in addition to 26 and 27 when swapped. It doesn't work otherwise. (Not sure why.)
+    GPIO_SEL_24 |         // USB D-
+    GPIO_SEL_25 |         // USB D+
+    #endif
+    GPIO_SEL_26 |         // USB D-
+    GPIO_SEL_27 |         // USB D+
+    #endif
+    #if CIRCUITPY_ESP_USB_SERIAL_JTAG || (defined(CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG) && CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG)
     // Never ever reset serial/JTAG communication pins.
-    GPIO_SEL_50 |         // USB D-
-    GPIO_SEL_51 |         // USB D+
+    #if CIRCUITPY_ESP32P4_SWAP_LSFS == 1
+    GPIO_SEL_26 |         // USB D-
+    GPIO_SEL_27 |         // USB D+
+    #else
+    GPIO_SEL_24 |         // USB D-
+    GPIO_SEL_25 |         // USB D+
+    #endif
     #endif
     #if defined(CONFIG_ESP_CONSOLE_UART_DEFAULT) && CONFIG_ESP_CONSOLE_UART_DEFAULT && CONFIG_ESP_CONSOLE_UART_NUM == 0
     // Never reset debug UART/console pins.
@@ -370,9 +412,8 @@ void reset_all_pins(void) {
     gpio_deep_sleep_hold_dis();
     #endif
 
-    for (uint8_t i = 0; i < GPIO_PIN_COUNT; i++) {
-        uint32_t iomux_address = GPIO_PIN_MUX_REG[i];
-        if (iomux_address == 0 ||
+    for (gpio_num_t i = 0; i < SOC_GPIO_PIN_COUNT; i++) {
+        if (!GPIO_IS_VALID_GPIO(i) ||
             _never_reset(i) ||
             _skip_reset_once(i) ||
             _preserved_pin(i)) {

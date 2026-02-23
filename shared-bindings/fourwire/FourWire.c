@@ -30,9 +30,9 @@
 //|         self,
 //|         spi_bus: busio.SPI,
 //|         *,
-//|         command: Optional[microcontroller.Pin],
-//|         chip_select: Optional[microcontroller.Pin],
-//|         reset: Optional[microcontroller.Pin] = None,
+//|         command: Optional[Union[microcontroller.Pin, digitalio.DigitalInOutProtocol]] = None,
+//|         chip_select: Optional[Union[microcontroller.Pin, digitalio.DigitalInOutProtocol]] = None,
+//|         reset: Optional[Union[microcontroller.Pin, digitalio.DigitalInOutProtocol]] = None,
 //|         baudrate: int = 24000000,
 //|         polarity: int = 0,
 //|         phase: int = 0,
@@ -73,10 +73,6 @@ static mp_obj_t fourwire_fourwire_make_new(const mp_obj_type_t *type, size_t n_a
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    const mcu_pin_obj_t *command = validate_obj_is_free_pin_or_none(args[ARG_command].u_obj, MP_QSTR_command);
-    const mcu_pin_obj_t *chip_select = validate_obj_is_free_pin_or_none(args[ARG_chip_select].u_obj, MP_QSTR_chip_select);
-    const mcu_pin_obj_t *reset = validate_obj_is_free_pin_or_none(args[ARG_reset].u_obj, MP_QSTR_reset);
-
     mp_obj_t spi = mp_arg_validate_type(args[ARG_spi_bus].u_obj, &busio_spi_type, MP_QSTR_spi_bus);
 
     fourwire_fourwire_obj_t *self = &allocate_display_bus_or_raise()->fourwire_bus;
@@ -86,7 +82,7 @@ static mp_obj_t fourwire_fourwire_make_new(const mp_obj_type_t *type, size_t n_a
     uint8_t phase = (uint8_t)mp_arg_validate_int_range(args[ARG_phase].u_int, 0, 1, MP_QSTR_phase);
 
     common_hal_fourwire_fourwire_construct(self,
-        MP_OBJ_TO_PTR(spi), command, chip_select, reset, args[ARG_baudrate].u_int, polarity, phase);
+        MP_OBJ_TO_PTR(spi), args[ARG_command].u_obj, args[ARG_chip_select].u_obj, args[ARG_reset].u_obj, args[ARG_baudrate].u_int, polarity, phase);
     return self;
 }
 

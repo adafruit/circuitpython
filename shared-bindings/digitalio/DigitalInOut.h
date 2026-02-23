@@ -28,6 +28,9 @@ typedef enum {
     #endif
 } digitalinout_result_t;
 
+// Include protocol after types are defined
+#include "shared-bindings/digitalio/DigitalInOutProtocol.h"
+
 typedef enum {
     DIGITALINOUT_REG_READ,
     DIGITALINOUT_REG_WRITE,
@@ -54,3 +57,16 @@ digitalio_digitalinout_obj_t *assert_digitalinout(mp_obj_t obj);
 
 volatile uint32_t *common_hal_digitalio_digitalinout_get_reg(digitalio_digitalinout_obj_t *self, digitalinout_reg_op_t op, uint32_t *mask);
 bool common_hal_digitalio_has_reg_op(digitalinout_reg_op_t op);
+
+// Protocol wrapper functions - always available for direct calls
+void digitalinout_deinit(mp_obj_t self_in);
+bool digitalinout_deinited(mp_obj_t self_in);
+digitalinout_result_t digitalinout_switch_to_input(mp_obj_t self_in, digitalio_pull_t pull);
+digitalinout_result_t digitalinout_switch_to_output(mp_obj_t self_in, bool value, digitalio_drive_mode_t drive_mode);
+digitalio_direction_t digitalinout_get_direction(mp_obj_t self_in);
+mp_negative_errno_t digitalinout_set_value(mp_obj_t self_in, bool value);
+mp_negative_errno_t digitalinout_get_value(mp_obj_t self_in, bool *value);
+digitalinout_result_t digitalinout_set_drive_mode(mp_obj_t self_in, digitalio_drive_mode_t drive_mode);
+digitalio_drive_mode_t digitalinout_get_drive_mode(mp_obj_t self_in);
+digitalinout_result_t digitalinout_set_pull(mp_obj_t self_in, digitalio_pull_t pull);
+digitalio_pull_t digitalinout_get_pull(mp_obj_t self_in);

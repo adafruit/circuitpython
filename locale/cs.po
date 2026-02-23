@@ -122,6 +122,7 @@ msgid "%q in %q must be of type %q, not %q"
 msgstr "%q v %q musí být typu %q, ne %q"
 
 #: ports/espressif/common-hal/espulp/ULP.c
+#: ports/espressif/common-hal/mipidsi/Bus.c
 #: ports/mimxrt10xx/common-hal/audiobusio/__init__.c
 #: ports/mimxrt10xx/common-hal/usb_host/Port.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
@@ -129,7 +130,8 @@ msgstr "%q v %q musí být typu %q, ne %q"
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 #: ports/raspberrypi/common-hal/usb_host/Port.c
 #: shared-bindings/digitalio/DigitalInOut.c
-#: shared-bindings/microcontroller/Pin.c shared-module/max3421e/Max3421E.c
+#: shared-bindings/i2cioexpander/IOPin.c shared-bindings/microcontroller/Pin.c
+#: shared-module/max3421e/Max3421E.c
 msgid "%q in use"
 msgstr "%q se právě používá"
 
@@ -142,7 +144,7 @@ msgid "%q indices must be integers, not %s"
 msgstr "Indexy %q musí být celá čísla, nikoli %s"
 
 #: ports/analog/common-hal/busio/SPI.c ports/analog/common-hal/busio/UART.c
-#: shared-module/bitbangio/SPI.c
+#: shared-bindings/digitalio/DigitalInOutProtocol.c
 msgid "%q init failed"
 msgstr "Inicializace %q selhala"
 
@@ -169,10 +171,6 @@ msgstr "Délka %q musí být <= %d"
 #: py/argcheck.c
 msgid "%q length must be >= %d"
 msgstr "Délka %q musí být >= %d"
-
-#: py/runtime.c
-msgid "%q moved from %q to %q"
-msgstr ""
 
 #: py/argcheck.c
 msgid "%q must be %d"
@@ -249,6 +247,14 @@ msgstr "%q musí být typu %q, ne %q"
 msgid "%q must be power of 2"
 msgstr "%q musí být mocnina 2"
 
+#: shared-bindings/digitalio/DigitalInOutProtocol.c
+msgid "%q object missing '%q' attribute"
+msgstr ""
+
+#: shared-bindings/digitalio/DigitalInOutProtocol.c
+msgid "%q object missing '%q' method"
+msgstr ""
+
 #: shared-bindings/wifi/Monitor.c
 msgid "%q out of bounds"
 msgstr "%q je mimo hranice"
@@ -259,7 +265,8 @@ msgstr "%q je mimo hranice"
 #: ports/nordic/common-hal/pulseio/PulseIn.c
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 #: ports/stm/common-hal/pulseio/PulseIn.c py/argcheck.c
-#: shared-bindings/canio/Match.c shared-bindings/time/__init__.c
+#: shared-bindings/bitmaptools/__init__.c shared-bindings/canio/Match.c
+#: shared-bindings/time/__init__.c
 msgid "%q out of range"
 msgstr "%q je mimo rozsah"
 
@@ -317,7 +324,7 @@ msgstr "%s chyba 0x%x"
 msgid "'%q' argument required"
 msgstr "Je vyžadován argument '%q'"
 
-#: py/proto.c
+#: py/proto.c shared-bindings/digitalio/DigitalInOutProtocol.c
 msgid "'%q' object does not support '%q'"
 msgstr "Objekt '%q' nepodporuje '%q'"
 
@@ -784,6 +791,10 @@ msgstr "Nelze změnit USB zařízení"
 msgid "Cannot create a new Adapter; use _bleio.adapter;"
 msgstr "Není možné vytvořit nový adaptér; použití _bleio.adapter;"
 
+#: shared-module/i2cioexpander/IOExpander.c
+msgid "Cannot deinitialize board IOExpander"
+msgstr ""
+
 #: shared-bindings/displayio/Bitmap.c
 #: shared-bindings/memorymonitor/AllocationSize.c
 #: shared-bindings/pulseio/PulseIn.c
@@ -818,6 +829,7 @@ msgid "Cannot remount path when visible via USB."
 msgstr ""
 
 #: shared-bindings/digitalio/DigitalInOut.c
+#: shared-bindings/i2cioexpander/IOPin.c
 msgid "Cannot set value when direction is input."
 msgstr "Nelze nastavit hodnotu, když směr je vstup."
 
@@ -950,6 +962,7 @@ msgstr "Displej musí mít 16bitový barevný prostor."
 #: shared-bindings/busdisplay/BusDisplay.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
+#: shared-bindings/mipidsi/Display.c
 msgid "Display rotation must be in 90 degree increments"
 msgstr "Otočení displeje musí být po 90 stupních"
 
@@ -958,6 +971,7 @@ msgid "Done"
 msgstr "Hotovo"
 
 #: shared-bindings/digitalio/DigitalInOut.c
+#: shared-bindings/i2cioexpander/IOPin.c
 msgid "Drive mode not used when direction is input."
 msgstr ""
 
@@ -1290,14 +1304,16 @@ msgstr ""
 #: ports/espressif/common-hal/_bleio/Service.c
 #: ports/espressif/common-hal/espulp/ULP.c
 #: ports/espressif/common-hal/microcontroller/Processor.c
+#: ports/espressif/common-hal/mipidsi/Display.c
 #: ports/mimxrt10xx/common-hal/audiobusio/__init__.c
 #: ports/mimxrt10xx/common-hal/pwmio/PWMOut.c
 #: ports/raspberrypi/bindings/picodvi/Framebuffer.c
 #: ports/raspberrypi/bindings/rp2pio/StateMachine.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c py/argcheck.c
 #: shared-bindings/digitalio/DigitalInOut.c
-#: shared-bindings/epaperdisplay/EPaperDisplay.c shared-bindings/pwmio/PWMOut.c
-#: shared-bindings/supervisor/__init__.c
+#: shared-bindings/epaperdisplay/EPaperDisplay.c
+#: shared-bindings/i2cioexpander/IOPin.c shared-bindings/mipidsi/Display.c
+#: shared-bindings/pwmio/PWMOut.c shared-bindings/supervisor/__init__.c
 #: shared-module/aurora_epaper/aurora_framebuffer.c
 #: shared-module/lvfontio/OnDiskFont.c
 msgid "Invalid %q"
@@ -1480,8 +1496,7 @@ msgstr "Chybí jmp_pin. %q[%u] skáče na pin"
 msgid "Mount point directory missing"
 msgstr ""
 
-#: ports/zephyr-cp/bindings/zephyr_serial/UART.c shared-bindings/busio/UART.c
-#: shared-bindings/displayio/Group.c
+#: shared-bindings/busio/UART.c shared-bindings/displayio/Group.c
 msgid "Must be a %q subclass."
 msgstr "Musí být podtřída %q."
 
@@ -1663,10 +1678,6 @@ msgstr "Nepřipojený"
 #: shared-bindings/audiopwmio/PWMAudioOut.c
 msgid "Not playing"
 msgstr "Nehraje"
-
-#: shared-module/jpegio/JpegDecoder.c
-msgid "Not supported JPEG standard"
-msgstr ""
 
 #: ports/espressif/common-hal/paralleldisplaybus/ParallelBus.c
 #: ports/espressif/common-hal/sdioio/SDCard.c
@@ -1903,6 +1914,7 @@ msgid "Publishers can only be created from a parent node"
 msgstr ""
 
 #: shared-bindings/digitalio/DigitalInOut.c
+#: shared-bindings/i2cioexpander/IOPin.c
 msgid "Pull not used when direction is output."
 msgstr ""
 
@@ -2290,6 +2302,7 @@ msgid "Unable to allocate to the heap."
 msgstr ""
 
 #: ports/espressif/common-hal/busio/I2C.c
+#: ports/espressif/common-hal/busio/SPI.c
 msgid "Unable to create lock"
 msgstr "Není možné vytvořit zámek"
 
@@ -2395,6 +2408,10 @@ msgid ""
 "declined or ignored."
 msgstr ""
 
+#: shared-module/jpegio/JpegDecoder.c
+msgid "Unsupported JPEG (may be progressive)"
+msgstr ""
+
 #: shared-bindings/bitmaptools/__init__.c
 msgid "Unsupported colorspace"
 msgstr "Nepodporovaný barevný prostor"
@@ -2415,6 +2432,12 @@ msgstr ""
 #: ports/espressif/common-hal/_bleio/Adapter.c
 #: ports/espressif/common-hal/dualbank/__init__.c
 msgid "Update failed"
+msgstr ""
+
+#: ports/zephyr-cp/common-hal/busio/I2C.c
+#: ports/zephyr-cp/common-hal/busio/SPI.c
+#: ports/zephyr-cp/common-hal/busio/UART.c
+msgid "Use device tree to define %q devices"
 msgstr ""
 
 #: ports/espressif/common-hal/_bleio/Characteristic.c
@@ -2559,6 +2582,10 @@ msgstr ""
 
 #: extmod/modbinascii.c extmod/modhashlib.c py/objarray.c
 msgid "a bytes-like object is required"
+msgstr ""
+
+#: shared-bindings/i2cioexpander/IOExpander.c
+msgid "address out of range"
 msgstr ""
 
 #: shared-bindings/i2ctarget/I2CTarget.c
@@ -3203,10 +3230,6 @@ msgstr ""
 msgid "file write is not available"
 msgstr "zápis do souboru není dostupný"
 
-#: shared-bindings/storage/__init__.c
-msgid "filesystem must provide mount method"
-msgstr ""
-
 #: extmod/ulab/code/numpy/vector.c
 msgid "first argument must be a callable"
 msgstr "První argument musí být zavolatelný"
@@ -3840,6 +3863,10 @@ msgstr "není implementováno pro komplexní dtype"
 msgid "not supported for input types"
 msgstr "není podporováno pro vstupní typy"
 
+#: shared-bindings/i2cioexpander/IOExpander.c
+msgid "num_pins must be 8 or 16"
+msgstr ""
+
 #: extmod/ulab/code/numpy/create.c
 msgid "number of points must be at least 2"
 msgstr ""
@@ -3852,6 +3879,10 @@ msgstr "objekt "
 #, c-format
 msgid "object '%s' isn't a tuple or list"
 msgstr "objekt '%s' není tuple or nebo list"
+
+#: shared-bindings/digitalio/DigitalInOutProtocol.c
+msgid "object does not support DigitalInOut protocol"
+msgstr ""
 
 #: py/obj.c
 msgid "object doesn't support item assignment"
@@ -4876,8 +4907,8 @@ msgstr ""
 #~ msgstr "IV musí být dlouhé %d bajtů"
 
 #~ msgid ""
-#~ "Incompatible .mpy file. Please update all .mpy files. See http://adafru."
-#~ "it/mpy-update for more info."
+#~ "Incompatible .mpy file. Please update all .mpy files. See http://"
+#~ "adafru.it/mpy-update for more info."
 #~ msgstr ""
 #~ "Nekompatibilní soubor .mpy. Aktualizujte prosím všechny soubory .mpy. "
 #~ "Další informace naleznete na adrese http://adafru.it/mpy-update."

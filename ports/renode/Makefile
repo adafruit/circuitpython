@@ -45,7 +45,9 @@ SRC_C += \
 	background.c \
 	mphalport.c \
 
-SRC_S_UPPER = supervisor/shared/cpu_regs.S
+SRC_S = shared/runtime/gchelper_thumb1.s
+
+SRC_C += shared/runtime/gchelper_native.c
 
 OBJ = $(PY_O) $(SUPERVISOR_O) $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_COMMON_HAL_SHARED_MODULE_EXPANDED:.c=.o))
@@ -54,7 +56,6 @@ OBJ += $(addprefix $(BUILD)/, $(SRC_LIBM:.c=.o))
 endif
 OBJ += $(addprefix $(BUILD)/, $(SRC_CIRCUITPY_COMMON:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_S:.s=.o))
-OBJ += $(addprefix $(BUILD)/, $(SRC_S_UPPER:.S=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_MOD:.c=.o))
 
 $(BUILD)/%.o: $(BUILD)/%.S

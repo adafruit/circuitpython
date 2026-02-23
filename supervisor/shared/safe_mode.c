@@ -18,6 +18,10 @@
 #include "supervisor/shared/translate/translate.h"
 #include "supervisor/shared/tick.h"
 
+#ifdef __ZEPHYR__
+#include <zephyr/kernel.h>
+#endif
+
 #define SAFE_MODE_DATA_GUARD 0xad0000af
 #define SAFE_MODE_DATA_GUARD_MASK 0xff0000ff
 
@@ -78,6 +82,10 @@ safe_mode_t wait_for_safe_mode_reset(void) {
             boot_in_safe_mode = true;
             break;
         }
+        // TEMPORARY to fix #10822
+        #ifdef __ZEPHYR__
+        port_yield();
+        #endif
         diff = supervisor_ticks_ms64() - start_ticks;
     }
     #if CIRCUITPY_STATUS_LED
@@ -99,10 +107,19 @@ void PLACE_IN_ITCM(safe_mode_on_next_reset)(safe_mode_t reason) {
 // Don't inline this so it's easy to break on it from GDB.
 void __attribute__((noinline, )) PLACE_IN_ITCM(reset_into_safe_mode)(safe_mode_t reason) {
     if (_safe_mode > SAFE_MODE_BROWNOUT && reason > SAFE_MODE_BROWNOUT) {
+        #ifdef __ZEPHYR__
+        printk("Already in safe mode\n");
+        printk("Reason: %d\n", reason);
+        printk("Current safe mode: %d\n", _safe_mode);
+        while (true) {
+            k_cpu_idle();
+        }
+        #else
         while (true) {
             // This very bad because it means running in safe mode didn't save us. Only ignore brownout
             // because it may be due to a switch bouncing.
         }
+        #endif
     }
 
     safe_mode_on_next_reset(reason);

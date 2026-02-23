@@ -43,9 +43,9 @@ static void display_init(void) {
     common_hal_fourwire_fourwire_construct(
         bus,
         spi,
-        &pin_GPIO2,  // TFT_DC
-        &pin_GPIO15,  // TFT_CS
-        NULL,  // TFT_RST
+        MP_OBJ_FROM_PTR(&pin_GPIO2),  // TFT_DC
+        MP_OBJ_FROM_PTR(&pin_GPIO15),  // TFT_CS
+        MP_OBJ_NULL,  // TFT_RST
         26600000, // Baudrate
         0, // Polarity
         0 // Phase

@@ -8,7 +8,7 @@ BUILD ?= build-$(BOARD)
 
 TRANSLATION ?= en_US
 
-.PHONY: $(BUILD)/zephyr-cp/zephyr/zephyr.elf flash debug clean menuconfig
+.PHONY: $(BUILD)/zephyr-cp/zephyr/zephyr.elf flash debug run clean menuconfig all clean-all test fetch-port-submodules
 
 $(BUILD)/zephyr-cp/zephyr/zephyr.elf:
 	python cptools/pre_zephyr_build_prep.py $(BOARD)
@@ -20,14 +20,35 @@ $(BUILD)/firmware.elf: $(BUILD)/zephyr-cp/zephyr/zephyr.elf
 $(BUILD)/firmware.hex: $(BUILD)/zephyr-cp/zephyr/zephyr.elf
 	cp $(BUILD)/zephyr-cp/zephyr/zephyr.hex $@
 
+$(BUILD)/firmware.exe: $(BUILD)/zephyr-cp/zephyr/zephyr.elf
+	cp $(BUILD)/zephyr-cp/zephyr/zephyr.exe $@
+
 flash: $(BUILD)/zephyr-cp/zephyr/zephyr.elf
 	west flash -d $(BUILD)
 
 debug: $(BUILD)/zephyr-cp/zephyr/zephyr.elf
 	west debug -d $(BUILD)
 
+run: $(BUILD)/firmware.exe
+	$^
+
 menuconfig:
 	west build --sysbuild -d $(BUILD) -t menuconfig
 
 clean:
 	rm -rf $(BUILD)
+
+fetch-port-submodules:
+		python ../../tools/ci_fetch_deps.py zephyr-cp
+
+# Build all boards. The + prefix allows jobserver file descriptors to be passed through.
+# This enables parallel builds across all boards when invoked with `make -jN all`.
+all:
+	+python cptools/build_all_boards.py --continue-on-error
+
+clean-all:
+	rm -rf build build-*
+
+test: build-native_native_sim/zephyr-cp/zephyr/zephyr.exe
+	pytest cptools/tests
+	pytest tests/ -v

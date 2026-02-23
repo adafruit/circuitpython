@@ -43,7 +43,7 @@ void common_hal_audiobusio_pdmin_construct(audiobusio_pdmin_obj_t *self,
     // Use the state machine to manage pins.
     common_hal_rp2pio_statemachine_construct(&self->state_machine,
         pdmin, MP_ARRAY_SIZE(pdmin),
-        sample_rate * 32 * 2, // Frequency based on sample rate
+        sample_rate * OVERSAMPLING * 2, // Frequency based on sample rate
         NULL, 0,
         NULL, 0, // may_exec
         NULL, 1, PIO_PINMASK32_NONE, PIO_PINMASK32_ALL, // out pin
@@ -64,7 +64,8 @@ void common_hal_audiobusio_pdmin_construct(audiobusio_pdmin_obj_t *self,
         PIO_FIFO_TYPE_DEFAULT,
         PIO_MOV_STATUS_DEFAULT, PIO_MOV_N_DEFAULT);
     uint32_t actual_frequency = common_hal_rp2pio_statemachine_get_frequency(&self->state_machine);
-    if (actual_frequency < MIN_MIC_CLOCK) {
+    if (actual_frequency < 2 * MIN_MIC_CLOCK) { // 2 PIO samples per audio clock
+        common_hal_audiobusio_pdmin_deinit(self);
         mp_raise_ValueError(MP_ERROR_TEXT("sampling rate out of range"));
     }
 

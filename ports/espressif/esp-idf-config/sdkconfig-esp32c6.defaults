@@ -49,6 +49,12 @@ CONFIG_ESP_PHY_ENABLE_USB=y
 CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM=4
 # end of Wi-Fi
 
+#
+# mbedTLS
+#
+# CONFIG_MBEDTLS_HARDWARE_SHA is not set
+# end of mbedTLS
+
 # end of Component config
 
 # end of Espressif IoT Development Framework Configuration

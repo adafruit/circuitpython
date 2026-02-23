@@ -22,7 +22,7 @@ static mp_vfs_mount_t _sdcard_vfs;
 fs_user_mount_t _sdcard_usermount;
 
 static bool _init_error = false;
-static bool _mounted = false;
+static bool _automounted = false;
 
 #ifdef DEFAULT_SD_MOSI
 static busio_spi_obj_t busio_spi_obj;
@@ -45,7 +45,7 @@ void automount_sd_card(void) {
     if (common_hal_digitalio_digitalinout_get_value(&sd_card_detect_pin) != DEFAULT_SD_CARD_INSERTED) {
         // No card.
         _init_error = false;
-        if (_mounted) {
+        if (_automounted) {
             // Unmount the card.
             mp_vfs_mount_t *cur = MP_STATE_VM(vfs_mount_table);
             if (cur == &_sdcard_vfs) {
@@ -63,11 +63,11 @@ void automount_sd_card(void) {
             #ifdef DEFAULT_SD_MOSI
             common_hal_busio_spi_deinit(&busio_spi_obj);
             #endif
-            _mounted = false;
+            _automounted = false;
         }
         return;
-    } else if (_init_error || _mounted) {
-        // We've already tried and failed to init the card. Don't try again.
+    } else if (_init_error || _automounted) {
+        // We've already tried and failed to init the card, or it's still mounted. Don't try again.
         return;
     }
 
@@ -81,10 +81,10 @@ void automount_sd_card(void) {
     common_hal_busio_spi_never_reset(spi_obj);
     #endif
     sdcard.base.type = &sdcardio_SDCard_type;
-    mp_rom_error_text_t error = sdcardio_sdcard_construct(&sdcard, spi_obj, DEFAULT_SD_CS, 25000000);
+    mp_rom_error_text_t error = sdcardio_sdcard_construct(&sdcard, spi_obj, DEFAULT_SD_CS, 25000000, true);
     if (error != NULL) {
         // Failed to communicate with the card.
-        _mounted = false;
+        _automounted = false;
         _init_error = true;
         #ifdef DEFAULT_SD_MOSI
         common_hal_busio_spi_deinit(spi_obj);
@@ -104,7 +104,7 @@ void automount_sd_card(void) {
     // mount the block device so the VFS methods can be used
     FRESULT res = f_mount(&vfs->fatfs);
     if (res != FR_OK) {
-        _mounted = false;
+        _automounted = false;
         _init_error = true;
         common_hal_sdcardio_sdcard_deinit(&sdcard);
         #ifdef DEFAULT_SD_MOSI
@@ -122,6 +122,6 @@ void automount_sd_card(void) {
     sdcard_vfs->obj = MP_OBJ_FROM_PTR(&_sdcard_usermount);
     sdcard_vfs->next = MP_STATE_VM(vfs_mount_table);
     MP_STATE_VM(vfs_mount_table) = sdcard_vfs;
-    _mounted = true;
+    _automounted = true;
     #endif // DEFAULT_SD_CARD_DETECT
 }

@@ -36,7 +36,7 @@
 //|
 //| Other implementations of the CAN device may exist (for instance, attached
 //| via an SPI bus).  If so their constructor arguments may differ, but
-//| otherwise we encourage implementors to follow the API that the core uses.
+//| otherwise we encourage implementers to follow the API that the core uses.
 //|
 //| For more information on working with this module, refer to
 //| `this Learn Guide on using it <https://learn.adafruit.com/using-canio-circuitpython>`_.

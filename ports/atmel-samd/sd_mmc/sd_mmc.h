@@ -113,7 +113,7 @@ typedef struct sd_mmc_detect {
     uint16_t val;     /**< Detection value */
 } sd_mmc_detect_t;
 
-/** This SD MMC stack uses the maximum block size autorized (512 bytes) */
+/** This SD MMC stack uses the maximum block size authorized (512 bytes) */
 #define SD_MMC_BLOCK_SIZE 512
 
 /**

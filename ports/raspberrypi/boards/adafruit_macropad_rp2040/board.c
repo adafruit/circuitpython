@@ -29,7 +29,7 @@ uint8_t display_init_sequence[] = {
     0xda, 1, 0x12, // com pins
     0x81, 1, 0xff, // contrast 255
     0xd9, 1, 0x1f, // pre/dis-charge 2DCLKs/2CLKs
-    0xdb, 1, 0x20, // VCOM deslect 0.770
+    0xdb, 1, 0x20, // VCOM select 0.770
     0x20, 1, 0x20,
     0x33, 0, // VPP 9V
     0xa6, 0, // not inverted
@@ -46,9 +46,9 @@ void board_init(void) {
     bus->base.type = &fourwire_fourwire_type;
     common_hal_fourwire_fourwire_construct(bus,
         spi,
-        &pin_GPIO24, // Command or data
-        &pin_GPIO22, // Chip select
-        &pin_GPIO23, // Reset
+        MP_OBJ_FROM_PTR(&pin_GPIO24), // Command or data
+        MP_OBJ_FROM_PTR(&pin_GPIO22), // Chip select
+        MP_OBJ_FROM_PTR(&pin_GPIO23), // Reset
         10000000, // Baudrate
         0, // Polarity
         0); // Phase

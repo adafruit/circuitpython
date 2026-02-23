@@ -60,6 +60,9 @@ void common_hal_mcu_on_next_reset(mcu_runmode_t runmode) {
     }
 }
 
+// CHIP_Reset does not return, but is not declared as such in the SDK.
+void __attribute__ ((noreturn)) CHIP_Reset(void);
+
 void common_hal_mcu_reset(void) {
     filesystem_flush(); // TODO: implement as part of flash improvements
     CHIP_Reset();

@@ -25,5 +25,3 @@ typedef struct {
 
     SemaphoreHandle_t mutex;
 } busio_spi_obj_t;
-
-void spi_reset(void);

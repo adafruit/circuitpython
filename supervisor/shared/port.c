@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "py/runtime.h"
+#include "py/gc.h"
 
 #include "lib/tlsf/tlsf.h"
 
@@ -54,6 +55,22 @@ MP_WEAK void *port_malloc_zero(size_t size, bool dma_capable) {
 
 MP_WEAK void port_free(void *ptr) {
     tlsf_free(heap, ptr);
+}
+
+// Safely free an object that may have been allocated from either the GC heap or port heap.
+// If the pointer is on the GC heap, it will be freed by the GC automatically, so we do nothing.
+// If the pointer is not on the GC heap (i.e., allocated with port_malloc), we free it with port_free.
+// This is safe to call during shutdown when GC may not be available.
+void circuitpy_free_obj(mp_obj_t obj) {
+    if (obj == mp_const_none) {
+        return;
+    }
+    void *ptr = MP_OBJ_TO_PTR(obj);
+    if (gc_alloc_possible() && gc_ptr_on_heap(ptr)) {
+        gc_free(ptr);
+    } else {
+        port_free(ptr);
+    }
 }
 
 MP_WEAK void *port_realloc(void *ptr, size_t size, bool dma_capable) {

@@ -7,64 +7,66 @@
 #include "py/mpconfig.h"
 #include "py/obj.h"
 #include "py/runtime.h"
+#include "py/gc.h"
 
 #include "common-hal/microcontroller/Pin.h"
 #include "shared-bindings/bitbangio/SPI.h"
 #include "shared-bindings/digitalio/DigitalInOut.h"
+#include "shared-bindings/digitalio/DigitalInOutProtocol.h"
 #include "shared-bindings/microcontroller/__init__.h"
+#include "shared-bindings/microcontroller/Pin.h"
+#include "shared-bindings/util.h"
+#include "supervisor/port.h"
 
 #define MAX_BAUDRATE (common_hal_mcu_get_clock_frequency() / 48)
 
 void shared_module_bitbangio_spi_construct(bitbangio_spi_obj_t *self,
-    const mcu_pin_obj_t *clock, const mcu_pin_obj_t *mosi,
-    const mcu_pin_obj_t *miso) {
-    digitalinout_result_t result = common_hal_digitalio_digitalinout_construct(&self->clock, clock);
-    if (result != DIGITALINOUT_OK) {
-        mp_raise_ValueError_varg(MP_ERROR_TEXT("%q init failed"), MP_QSTR_clock);
-    }
-    common_hal_digitalio_digitalinout_switch_to_output(&self->clock, self->polarity == 1, DRIVE_MODE_PUSH_PULL);
+    mp_obj_t clock, mp_obj_t mosi, mp_obj_t miso) {
 
-    if (mosi != NULL) {
-        result = common_hal_digitalio_digitalinout_construct(&self->mosi, mosi);
-        if (result != DIGITALINOUT_OK) {
-            common_hal_digitalio_digitalinout_deinit(&self->clock);
-            mp_raise_ValueError_varg(MP_ERROR_TEXT("%q init failed"), MP_QSTR_mosi);
-        }
-        self->has_mosi = true;
-        common_hal_digitalio_digitalinout_switch_to_output(&self->mosi, false, DRIVE_MODE_PUSH_PULL);
+    // Allocate the pins in the same place as self.
+    bool use_port_allocation = !gc_alloc_possible() || !gc_ptr_on_heap(self);
+
+    // Convert clock from Pin to DigitalInOutProtocol
+    self->clock = digitalinout_protocol_from_pin(clock, MP_QSTR_clock, false, use_port_allocation, &self->own_clock);
+    digitalinout_protocol_switch_to_output(self->clock, self->polarity == 1, DRIVE_MODE_PUSH_PULL);
+
+    // Convert mosi from Pin to DigitalInOutProtocol (optional)
+    self->mosi = digitalinout_protocol_from_pin(mosi, MP_QSTR_mosi, true, use_port_allocation, &self->own_mosi);
+    self->has_mosi = (self->mosi != mp_const_none);
+    if (self->has_mosi) {
+        digitalinout_protocol_switch_to_output(self->mosi, false, DRIVE_MODE_PUSH_PULL);
     }
 
-    if (miso != NULL) {
-        // Starts out as input by default, no need to change.
-        result = common_hal_digitalio_digitalinout_construct(&self->miso, miso);
-        if (result != DIGITALINOUT_OK) {
-            common_hal_digitalio_digitalinout_deinit(&self->clock);
-            if (mosi != NULL) {
-                common_hal_digitalio_digitalinout_deinit(&self->mosi);
-            }
-            mp_raise_ValueError_varg(MP_ERROR_TEXT("%q init failed"), MP_QSTR_miso);
-        }
-        self->has_miso = true;
-    }
+    // Convert miso from Pin to DigitalInOutProtocol (optional)
+    self->miso = digitalinout_protocol_from_pin(miso, MP_QSTR_miso, true, use_port_allocation, &self->own_miso);
+    self->has_miso = (self->miso != mp_const_none);
+    // MISO starts out as input by default, no need to change
+
     self->delay_half = 5;
     self->polarity = 0;
     self->phase = 0;
 }
 
 bool shared_module_bitbangio_spi_deinited(bitbangio_spi_obj_t *self) {
-    return common_hal_digitalio_digitalinout_deinited(&self->clock);
+    return digitalinout_protocol_deinited(self->clock);
 }
 
 void shared_module_bitbangio_spi_deinit(bitbangio_spi_obj_t *self) {
     if (shared_module_bitbangio_spi_deinited(self)) {
         return;
     }
-    common_hal_digitalio_digitalinout_deinit(&self->clock);
-    if (self->has_mosi) {
-        common_hal_digitalio_digitalinout_deinit(&self->mosi);
+    // Only deinit and free the pins if we own them
+    if (self->own_clock) {
+        digitalinout_protocol_deinit(self->clock);
+        circuitpy_free_obj(self->clock);
     }
-    if (self->has_miso) {
-        common_hal_digitalio_digitalinout_deinit(&self->miso);
+    if (self->has_mosi && self->own_mosi) {
+        digitalinout_protocol_deinit(self->mosi);
+        circuitpy_free_obj(self->mosi);
+    }
+    if (self->has_miso && self->own_miso) {
+        digitalinout_protocol_deinit(self->miso);
+        circuitpy_free_obj(self->miso);
     }
 }
 
@@ -80,7 +82,7 @@ void shared_module_bitbangio_spi_configure(bitbangio_spi_obj_t *self,
         // If the polarity has changed, make sure we re-initialize the idle state
         // of the clock as well.
         self->polarity = polarity;
-        common_hal_digitalio_digitalinout_switch_to_output(&self->clock, polarity == 1, DRIVE_MODE_PUSH_PULL);
+        digitalinout_protocol_switch_to_output(self->clock, polarity == 1, DRIVE_MODE_PUSH_PULL);
     }
     self->phase = phase;
 }
@@ -121,9 +123,15 @@ bool shared_module_bitbangio_spi_write(bitbangio_spi_obj_t *self, const uint8_t 
         for (size_t i = 0; i < len; ++i) {
             uint8_t data_out = data[i];
             for (int j = 0; j < 8; ++j, data_out <<= 1) {
-                common_hal_digitalio_digitalinout_set_value(&self->mosi, (data_out >> 7) & 1);
-                common_hal_digitalio_digitalinout_set_value(&self->clock, 1 - self->polarity);
-                common_hal_digitalio_digitalinout_set_value(&self->clock, self->polarity);
+                if (i == 0 && j == 0) {
+                    if (digitalinout_protocol_set_value(self->mosi, (data_out >> 7) & 1) != 0) {
+                        return false;
+                    }
+                } else {
+                    digitalinout_protocol_set_value(self->mosi, (data_out >> 7) & 1);
+                }
+                digitalinout_protocol_set_value(self->clock, 1 - self->polarity);
+                digitalinout_protocol_set_value(self->clock, self->polarity);
             }
             if (dest != NULL) {
                 dest[i] = data_in;
@@ -136,16 +144,22 @@ bool shared_module_bitbangio_spi_write(bitbangio_spi_obj_t *self, const uint8_t 
     for (size_t i = 0; i < len; ++i) {
         uint8_t data_out = data[i];
         for (int j = 0; j < 8; ++j, data_out <<= 1) {
-            common_hal_digitalio_digitalinout_set_value(&self->mosi, (data_out >> 7) & 1);
+            if (i == 0 && j == 0) {
+                if (!digitalinout_protocol_set_value(self->mosi, (data_out >> 7) & 1)) {
+                    return false;
+                }
+            } else {
+                digitalinout_protocol_set_value(self->mosi, (data_out >> 7) & 1);
+            }
             if (self->phase == 0) {
                 common_hal_mcu_delay_us(delay_half);
-                common_hal_digitalio_digitalinout_set_value(&self->clock, 1 - self->polarity);
+                digitalinout_protocol_set_value(self->clock, 1 - self->polarity);
                 common_hal_mcu_delay_us(delay_half);
-                common_hal_digitalio_digitalinout_set_value(&self->clock, self->polarity);
+                digitalinout_protocol_set_value(self->clock, self->polarity);
             } else {
-                common_hal_digitalio_digitalinout_set_value(&self->clock, 1 - self->polarity);
+                digitalinout_protocol_set_value(self->clock, 1 - self->polarity);
                 common_hal_mcu_delay_us(delay_half);
-                common_hal_digitalio_digitalinout_set_value(&self->clock, self->polarity);
+                digitalinout_protocol_set_value(self->clock, self->polarity);
                 common_hal_mcu_delay_us(delay_half);
             }
         }
@@ -176,14 +190,18 @@ bool shared_module_bitbangio_spi_read(bitbangio_spi_obj_t *self, uint8_t *data, 
     if (delay_half <= MICROPY_PY_MACHINE_SPI_MIN_DELAY) {
         // Clock out zeroes while we read.
         if (self->has_mosi) {
-            common_hal_digitalio_digitalinout_set_value(&self->mosi, false);
+            if (digitalinout_protocol_set_value(self->mosi, false) != 0) {
+                return false;
+            }
         }
         for (size_t i = 0; i < len; ++i) {
             uint8_t data_in = 0;
             for (int j = 0; j < 8; ++j, data_out <<= 1) {
-                common_hal_digitalio_digitalinout_set_value(&self->clock, 1 - self->polarity);
-                data_in = (data_in << 1) | common_hal_digitalio_digitalinout_get_value(&self->miso);
-                common_hal_digitalio_digitalinout_set_value(&self->clock, self->polarity);
+                digitalinout_protocol_set_value(self->clock, 1 - self->polarity);
+                bool bit;
+                digitalinout_protocol_get_value(self->miso, &bit);
+                data_in = (data_in << 1) | bit;
+                digitalinout_protocol_set_value(self->clock, self->polarity);
             }
             data[i] = data_in;
         }
@@ -191,28 +209,32 @@ bool shared_module_bitbangio_spi_read(bitbangio_spi_obj_t *self, uint8_t *data, 
     }
     #endif
     if (self->has_mosi) {
-        common_hal_digitalio_digitalinout_set_value(&self->mosi, false);
+        if (!digitalinout_protocol_set_value(self->mosi, false)) {
+            return false;
+        }
     }
     for (size_t i = 0; i < len; ++i) {
         uint8_t data_out = write_data;
         uint8_t data_in = 0;
         for (int j = 0; j < 8; ++j, data_out <<= 1) {
             if (self->has_mosi) {
-                common_hal_digitalio_digitalinout_set_value(&self->mosi, (data_out >> 7) & 1);
+                digitalinout_protocol_set_value(self->mosi, (data_out >> 7) & 1);
             }
             if (self->phase == 0) {
                 common_hal_mcu_delay_us(delay_half);
-                common_hal_digitalio_digitalinout_set_value(&self->clock, 1 - self->polarity);
+                digitalinout_protocol_set_value(self->clock, 1 - self->polarity);
             } else {
-                common_hal_digitalio_digitalinout_set_value(&self->clock, 1 - self->polarity);
+                digitalinout_protocol_set_value(self->clock, 1 - self->polarity);
                 common_hal_mcu_delay_us(delay_half);
             }
-            data_in = (data_in << 1) | common_hal_digitalio_digitalinout_get_value(&self->miso);
+            bool bit;
+            digitalinout_protocol_get_value(self->miso, &bit);
+            data_in = (data_in << 1) | bit;
             if (self->phase == 0) {
                 common_hal_mcu_delay_us(delay_half);
-                common_hal_digitalio_digitalinout_set_value(&self->clock, self->polarity);
+                digitalinout_protocol_set_value(self->clock, self->polarity);
             } else {
-                common_hal_digitalio_digitalinout_set_value(&self->clock, self->polarity);
+                digitalinout_protocol_set_value(self->clock, self->polarity);
                 common_hal_mcu_delay_us(delay_half);
             }
         }
@@ -248,10 +270,18 @@ bool shared_module_bitbangio_spi_transfer(bitbangio_spi_obj_t *self, const uint8
             uint8_t data_out = dout[i];
             uint8_t data_in = 0;
             for (int j = 0; j < 8; ++j, data_out <<= 1) {
-                common_hal_digitalio_digitalinout_set_value(&self->mosi, (data_out >> 7) & 1);
-                common_hal_digitalio_digitalinout_set_value(&self->clock, 1 - self->polarity);
-                data_in = (data_in << 1) | common_hal_digitalio_digitalinout_get_value(&self->miso);
-                common_hal_digitalio_digitalinout_set_value(&self->clock, self->polarity);
+                if (i == 0 && j == 0) {
+                    if (digitalinout_protocol_set_value(self->mosi, (data_out >> 7) & 1) != 0) {
+                        return false;
+                    }
+                } else {
+                    digitalinout_protocol_set_value(self->mosi, (data_out >> 7) & 1);
+                }
+                digitalinout_protocol_set_value(self->clock, 1 - self->polarity);
+                bool bit;
+                digitalinout_protocol_get_value(self->miso, &bit);
+                data_in = (data_in << 1) | bit;
+                digitalinout_protocol_set_value(self->clock, self->polarity);
             }
             din[i] = data_in;
 
@@ -267,20 +297,28 @@ bool shared_module_bitbangio_spi_transfer(bitbangio_spi_obj_t *self, const uint8
         uint8_t data_out = dout[i];
         uint8_t data_in = 0;
         for (int j = 0; j < 8; ++j, data_out <<= 1) {
-            common_hal_digitalio_digitalinout_set_value(&self->mosi, (data_out >> 7) & 1);
+            if (i == 0 && j == 0) {
+                if (!digitalinout_protocol_set_value(self->mosi, (data_out >> 7) & 1)) {
+                    return false;
+                }
+            } else {
+                digitalinout_protocol_set_value(self->mosi, (data_out >> 7) & 1);
+            }
             if (self->phase == 0) {
                 common_hal_mcu_delay_us(delay_half);
-                common_hal_digitalio_digitalinout_set_value(&self->clock, 1 - self->polarity);
+                digitalinout_protocol_set_value(self->clock, 1 - self->polarity);
             } else {
-                common_hal_digitalio_digitalinout_set_value(&self->clock, 1 - self->polarity);
+                digitalinout_protocol_set_value(self->clock, 1 - self->polarity);
                 common_hal_mcu_delay_us(delay_half);
             }
-            data_in = (data_in << 1) | common_hal_digitalio_digitalinout_get_value(&self->miso);
+            bool bit;
+            digitalinout_protocol_get_value(self->miso, &bit);
+            data_in = (data_in << 1) | bit;
             if (self->phase == 0) {
                 common_hal_mcu_delay_us(delay_half);
-                common_hal_digitalio_digitalinout_set_value(&self->clock, self->polarity);
+                digitalinout_protocol_set_value(self->clock, self->polarity);
             } else {
-                common_hal_digitalio_digitalinout_set_value(&self->clock, self->polarity);
+                digitalinout_protocol_set_value(self->clock, self->polarity);
                 common_hal_mcu_delay_us(delay_half);
             }
         }

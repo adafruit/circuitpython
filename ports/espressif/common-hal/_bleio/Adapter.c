@@ -384,7 +384,7 @@ static int _connect_event(struct ble_gap_event *event, void *self_in) {
                 // connection and need a new tuple.
                 self->connection_objs = NULL;
             } else {
-                // The loop waiting for the connection to be comnpleted will stop when _connection_status changes.
+                // The loop waiting for the connection to be completed will stop when _connection_status changes.
                 _connection_status = -event->connect.status;
             }
             break;
