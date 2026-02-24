@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: MIT
 
 #include "shared-bindings/rclcpy/__init__.h"
+#include "common-hal/rclcpy/registry.h"
 
 #include "esp_log.h"
 
@@ -59,6 +60,7 @@ void rclcpy_reset(void) {
         memset(&rclcpy_default_context, 0, sizeof(rclcpy_default_context));
         rclcpy_default_context.initialized = false;
     }
+    deinitialize_registry();
 }
 
 void common_hal_rclcpy_init(const char *agent_ip, const char *agent_port, int16_t domain_id) {
