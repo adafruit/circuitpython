@@ -7,6 +7,7 @@
 #include <stdint.h>
 
 #include "shared-bindings/busio/UART.h"
+#include "shared-bindings/busio/dma.h"
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/util.h"
 
@@ -174,6 +175,53 @@ static busio_uart_obj_t *native_uart(mp_obj_t uart_obj) {
     mp_obj_assert_native_inited(native_uart);
     return MP_OBJ_TO_PTR(native_uart);
 }
+
+static void check_for_deinit(busio_uart_obj_t *self);
+
+#if CIRCUITPY_BUSIO_DMA
+//|     def dma_readinto(self, buffer: WriteableBuffer) -> int:
+//|         """Start a DMA UART read into ``buffer`` and return the DMA channel."""
+//|
+static mp_obj_t busio_uart_dma_readinto(mp_obj_t self_in, mp_obj_t buffer_obj) {
+    busio_uart_obj_t *self = native_uart(self_in);
+    check_for_deinit(self);
+
+    mp_buffer_info_t bufinfo;
+    mp_get_buffer_raise(buffer_obj, &bufinfo, MP_BUFFER_WRITE);
+
+    uint dma_channel = common_hal_busio_dma_uart_read(self, bufinfo.buf, bufinfo.len);
+    return mp_obj_new_int_from_uint(dma_channel);
+}
+MP_DEFINE_CONST_FUN_OBJ_2(busio_uart_dma_readinto_obj, busio_uart_dma_readinto);
+
+//|     def dma_write(self, buffer: ReadableBuffer) -> int:
+//|         """Start a DMA UART write from ``buffer`` and return the DMA channel."""
+//|
+static mp_obj_t busio_uart_dma_write(mp_obj_t self_in, mp_obj_t buffer_obj) {
+    busio_uart_obj_t *self = native_uart(self_in);
+    check_for_deinit(self);
+
+    mp_buffer_info_t bufinfo;
+    mp_get_buffer_raise(buffer_obj, &bufinfo, MP_BUFFER_READ);
+
+    uint dma_channel = common_hal_busio_dma_uart_write(self, bufinfo.buf, bufinfo.len);
+    return mp_obj_new_int_from_uint(dma_channel);
+}
+MP_DEFINE_CONST_FUN_OBJ_2(busio_uart_dma_write_obj, busio_uart_dma_write);
+
+//|     def dma_is_busy(self, dma_channel: int) -> bool:
+//|         """Return ``True`` while the UART DMA channel is active.
+//|
+//|         :param int dma_channel: DMA channel returned by `dma_readinto` or `dma_write`
+//|         """
+//|
+static mp_obj_t busio_uart_dma_is_busy(mp_obj_t self_in, mp_obj_t dma_channel_obj) {
+    busio_uart_obj_t *self = native_uart(self_in);
+    check_for_deinit(self);
+    return mp_obj_new_bool(common_hal_busio_dma_uart_is_busy(mp_obj_get_int(dma_channel_obj)));
+}
+MP_DEFINE_CONST_FUN_OBJ_2(busio_uart_dma_is_busy_obj, busio_uart_dma_is_busy);
+#endif
 
 
 //|     def deinit(self) -> None:
@@ -424,6 +472,11 @@ static const mp_rom_map_elem_t busio_uart_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_readline), MP_ROM_PTR(&mp_stream_unbuffered_readline_obj)},
     { MP_ROM_QSTR(MP_QSTR_readinto), MP_ROM_PTR(&mp_stream_readinto_obj) },
     { MP_ROM_QSTR(MP_QSTR_write),    MP_ROM_PTR(&mp_stream_write_obj) },
+    #if CIRCUITPY_BUSIO_DMA
+    { MP_ROM_QSTR(MP_QSTR_dma_readinto), MP_ROM_PTR(&busio_uart_dma_readinto_obj) },
+    { MP_ROM_QSTR(MP_QSTR_dma_write), MP_ROM_PTR(&busio_uart_dma_write_obj) },
+    { MP_ROM_QSTR(MP_QSTR_dma_is_busy), MP_ROM_PTR(&busio_uart_dma_is_busy_obj) },
+    #endif
 
     { MP_ROM_QSTR(MP_QSTR_reset_input_buffer), MP_ROM_PTR(&busio_uart_reset_input_buffer_obj) },
 
