@@ -32,8 +32,6 @@
 
 #include "shared/netutils/dhcpserver.h"
 
-#define MAC_ADDRESS_LENGTH 6
-
 #define NETIF_STA (&cyw43_state.netif[CYW43_ITF_STA])
 #define NETIF_AP (&cyw43_state.netif[CYW43_ITF_AP])
 
@@ -50,6 +48,14 @@ static inline void nw_put_le32(uint8_t *buf, uint32_t x) {
 
 NORETURN static void ro_attribute(qstr attr) {
     mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("%q is read-only for this board"), attr);
+}
+
+mp_obj_t common_hal_wifi_radio_get_version(wifi_radio_obj_t *self) {
+    return mp_obj_new_str_from_cstr(
+        "cyw43-driver "
+        MP_STRINGIFY(CYW43_VERSION_MAJOR) "."
+        MP_STRINGIFY(CYW43_VERSION_MINOR) "."
+        MP_STRINGIFY(CYW43_VERSION_MICRO));
 }
 
 bool common_hal_wifi_radio_get_enabled(wifi_radio_obj_t *self) {
@@ -80,8 +86,9 @@ void common_hal_wifi_radio_set_hostname(wifi_radio_obj_t *self, const char *host
     netif_set_hostname(NETIF_AP, self->hostname);
 }
 
-void wifi_radio_get_mac_address(wifi_radio_obj_t *self, uint8_t *mac) {
+bool wifi_radio_get_mac_address(wifi_radio_obj_t *self, uint8_t *mac) {
     memcpy(mac, cyw43_state.mac, MAC_ADDRESS_LENGTH);
+    return true;
 }
 
 mp_obj_t common_hal_wifi_radio_get_mac_address(wifi_radio_obj_t *self) {
@@ -476,7 +483,7 @@ void common_hal_wifi_radio_set_ipv4_address(wifi_radio_obj_t *self, mp_obj_t ipv
     ipaddress_ipaddress_to_lwip(netmask, &netmask_addr);
     ipaddress_ipaddress_to_lwip(gateway, &gateway_addr);
     netif_set_addr(NETIF_STA, &ipv4_addr, &netmask_addr, &gateway_addr);
-    if (ipv4_dns != MP_OBJ_NULL) {
+    if (ipv4_dns != mp_const_none) {
         common_hal_wifi_radio_set_ipv4_dns(self, ipv4_dns);
     }
 }

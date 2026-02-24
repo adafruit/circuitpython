@@ -5,9 +5,3 @@
 // SPDX-License-Identifier: MIT
 
 #pragma once
-
-#include "shared-module/ipaddress/__init__.h"
-
-bool ipaddress_parse_ipv4address(const char *ip_str, size_t len, uint32_t *ip_out);
-
-mp_obj_t common_hal_ipaddress_new_ipv4address(uint32_t value);

@@ -30,6 +30,7 @@ from collections import defaultdict
 from sphinx.transforms import SphinxTransform
 from docutils import nodes
 from sphinx import addnodes
+from sphinx.errors import ConfigError
 from sphinx.ext import intersphinx
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -46,7 +47,12 @@ master_doc = "docs/index"
 # in 'shared-bindings/index.rst'
 
 # The stubs must be built before we calculate the shared bindings matrix
-subprocess.check_output(["make", "stubs"])
+make_stubs = subprocess.run(["make", "stubs"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+if make_stubs.returncode != 0:
+    print("'ERROR: make stubs' failed with output:", file=sys.stderr)
+    print(make_stubs.stdout.decode("utf-8"))
+    raise ConfigError("'make stubs' failed in conf.py")
+
 
 # modules_support_matrix = shared_bindings_matrix.support_matrix_excluded_boards()
 modules_support_matrix = shared_bindings_matrix.support_matrix_by_board()
@@ -164,7 +170,7 @@ if git_describe.returncode == 0:
     if git_version:
         final_version = git_version[0]
 else:
-    print("Failed to retrieve git version:", git_describe.stdout)
+    print("Failed to retrieve git version:", git_describe.stdout, file=sys.stderr)
 
 version = release = final_version
 

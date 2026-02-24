@@ -191,10 +191,10 @@ static mp_obj_t ssl_sslsocket_send(mp_obj_t self_in, mp_obj_t buf_in) {
 }
 static MP_DEFINE_CONST_FUN_OBJ_2(ssl_sslsocket_send_obj, ssl_sslsocket_send);
 
-// //|     def setsockopt(self, level: int, optname: int, value: int | ReadableBuffer) -> None:
-// //|         """Sets socket options"""
-// //|         ...
-// //|
+//|     def setsockopt(self, level: int, optname: int, value: int | ReadableBuffer) -> None:
+//|         """Sets socket options"""
+//|         ...
+//|
 static mp_obj_t ssl_sslsocket_setsockopt(size_t n_args, const mp_obj_t *args) {
     ssl_sslsocket_obj_t *self = MP_OBJ_TO_PTR(args[0]);
     mp_obj_t level = args[1];

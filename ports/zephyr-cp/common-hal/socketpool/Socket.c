@@ -12,7 +12,7 @@
 #include "shared-bindings/socketpool/SocketPool.h"
 #include "common-hal/socketpool/__init__.h"
 #include "common-hal/wifi/__init__.h"
-#if CIRCUITPY_SSL
+#if CIRCUITPY_SSL_NATIVE
 #include "shared-bindings/ssl/SSLSocket.h"
 #include "shared-module/ssl/SSLSocket.h"
 #endif
@@ -341,7 +341,7 @@ socketpool_socket_obj_t *common_hal_socketpool_socket_accept(socketpool_socket_o
     }
 }
 
-size_t common_hal_socketpool_socket_bind(socketpool_socket_obj_t *self,
+int common_hal_socketpool_socket_bind(socketpool_socket_obj_t *self,
     const char *host, size_t hostlen, uint32_t port) {
     // struct sockaddr_storage bind_addr;
     const char *broadcast = "<broadcast>";
@@ -381,7 +381,7 @@ size_t common_hal_socketpool_socket_bind(socketpool_socket_obj_t *self,
 }
 
 void socketpool_socket_close(socketpool_socket_obj_t *self) {
-    #if CIRCUITPY_SSL
+    #if CIRCUITPY_SSL_NATIVE
     if (self->ssl_socket) {
         ssl_sslsocket_obj_t *ssl_socket = self->ssl_socket;
         self->ssl_socket = NULL;
@@ -543,8 +543,7 @@ mp_uint_t common_hal_socketpool_socket_recvfrom_into(socketpool_socket_obj_t *se
     return received;
 }
 
-int socketpool_socket_recv_into(socketpool_socket_obj_t *self,
-    const uint8_t *buf, uint32_t len) {
+int socketpool_socket_recv_into(socketpool_socket_obj_t *self, uint8_t *buf, uint32_t len) {
     int received = 0;
     bool timed_out = false;
 
@@ -558,7 +557,7 @@ int socketpool_socket_recv_into(socketpool_socket_obj_t *self,
                 timed_out = supervisor_ticks_ms64() - start_ticks >= self->timeout_ms;
             }
             RUN_BACKGROUND_TASKS;
-            // received = lwip_recv(self->num, (void *)buf, len, 0);
+            // received = lwip_recv(self->num, buf, len, 0);
             // In non-blocking mode, fail instead of looping
             if (received < 1 && self->timeout_ms == 0) {
                 if ((received == 0) || (errno == ENOTCONN)) {
@@ -586,7 +585,7 @@ int socketpool_socket_recv_into(socketpool_socket_obj_t *self,
     return received;
 }
 
-mp_uint_t common_hal_socketpool_socket_recv_into(socketpool_socket_obj_t *self, const uint8_t *buf, uint32_t len) {
+mp_uint_t common_hal_socketpool_socket_recv_into(socketpool_socket_obj_t *self, uint8_t *buf, uint32_t len) {
     int received = socketpool_socket_recv_into(self, buf, len);
     if (received < 0) {
         mp_raise_OSError(-received);
@@ -655,7 +654,7 @@ int common_hal_socketpool_socket_setsockopt(socketpool_socket_obj_t *self, int l
     return 0;
 }
 
-bool common_hal_socketpool_readable(socketpool_socket_obj_t *self) {
+bool common_hal_socketpool_socket_readable(socketpool_socket_obj_t *self) {
     // struct timeval immediate = {0, 0};
 
     // fd_set fds;
@@ -668,7 +667,7 @@ bool common_hal_socketpool_readable(socketpool_socket_obj_t *self) {
     return false;
 }
 
-bool common_hal_socketpool_writable(socketpool_socket_obj_t *self) {
+bool common_hal_socketpool_socket_writable(socketpool_socket_obj_t *self) {
     // struct timeval immediate = {0, 0};
 
     // fd_set fds;

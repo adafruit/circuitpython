@@ -27,7 +27,7 @@
 #include "shared-module/ssl/__init__.h"
 #endif
 
-#if CIRCUITPY_WIFI
+#if CIRCUITPY_WIFI_NATIVE
 #include "common-hal/wifi/__init__.h"
 #endif
 
@@ -449,7 +449,7 @@ void reset_port(void) {
     watchdog_reset();
     #endif
 
-    #if CIRCUITPY_WIFI
+    #if CIRCUITPY_WIFI_NATIVE
     wifi_reset();
     #endif
 }

@@ -11,7 +11,8 @@
 #include "shared-bindings/ssl/__init__.h"
 #include "shared-bindings/ssl/SSLContext.h"
 
-//| """
+//| """SSL/TLS contexts for wrapped sockets
+//|
 //| The `ssl` module provides SSL contexts to wrap sockets in.
 //|
 //| |see_cpython_module| :mod:`cpython:ssl`.

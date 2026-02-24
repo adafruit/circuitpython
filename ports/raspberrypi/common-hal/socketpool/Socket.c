@@ -889,7 +889,7 @@ socketpool_socket_obj_t *common_hal_socketpool_socket_accept(socketpool_socket_o
     return MP_OBJ_FROM_PTR(accepted);
 }
 
-size_t common_hal_socketpool_socket_bind(socketpool_socket_obj_t *socket,
+int common_hal_socketpool_socket_bind(socketpool_socket_obj_t *socket,
     const char *host, size_t hostlen, uint32_t port) {
 
     // get address
@@ -1127,20 +1127,19 @@ mp_uint_t common_hal_socketpool_socket_recvfrom_into(socketpool_socket_obj_t *so
     return ret;
 }
 
-int socketpool_socket_recv_into(socketpool_socket_obj_t *socket,
-    const uint8_t *buf, uint32_t len) {
+int socketpool_socket_recv_into(socketpool_socket_obj_t *socket, uint8_t *buf, uint32_t len) {
     mp_uint_t ret = 0;
     int _errno = 0;
     switch (socket->type) {
         case SOCKETPOOL_SOCK_STREAM: {
-            ret = lwip_tcp_receive(socket, (byte *)buf, len, &_errno);
+            ret = lwip_tcp_receive(socket, buf, len, &_errno);
             break;
         }
         case SOCKETPOOL_SOCK_DGRAM:
         #if MICROPY_PY_LWIP_SOCK_RAW
         case SOCKETPOOL_SOCK_RAW:
         #endif
-            ret = lwip_raw_udp_receive(socket, (byte *)buf, len, NULL, &_errno);
+            ret = lwip_raw_udp_receive(socket, buf, len, NULL, &_errno);
             break;
     }
     if (ret == (unsigned)-1) {
@@ -1149,7 +1148,7 @@ int socketpool_socket_recv_into(socketpool_socket_obj_t *socket,
     return ret;
 }
 
-mp_uint_t common_hal_socketpool_socket_recv_into(socketpool_socket_obj_t *self, const uint8_t *buf, uint32_t len) {
+mp_uint_t common_hal_socketpool_socket_recv_into(socketpool_socket_obj_t *self, uint8_t *buf, uint32_t len) {
     int received = socketpool_socket_recv_into(self, buf, len);
     if (received < 0) {
         mp_raise_OSError(-received);
@@ -1255,7 +1254,7 @@ int common_hal_socketpool_socket_setsockopt(socketpool_socket_obj_t *self, int l
     return -MP_EOPNOTSUPP;
 }
 
-bool common_hal_socketpool_readable(socketpool_socket_obj_t *self) {
+bool common_hal_socketpool_socket_readable(socketpool_socket_obj_t *self) {
 
     MICROPY_PY_LWIP_ENTER;
 
@@ -1275,7 +1274,7 @@ bool common_hal_socketpool_readable(socketpool_socket_obj_t *self) {
     return result;
 }
 
-bool common_hal_socketpool_writable(socketpool_socket_obj_t *self) {
+bool common_hal_socketpool_socket_writable(socketpool_socket_obj_t *self) {
     bool result = false;
 
     MICROPY_PY_LWIP_ENTER;

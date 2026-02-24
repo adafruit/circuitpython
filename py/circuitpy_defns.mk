@@ -74,7 +74,7 @@ endif
 CIRCUITPY_LTO ?= 0
 CIRCUITPY_LTO_PARTITION ?= balanced
 ifeq ($(CIRCUITPY_LTO),1)
-CFLAGS += -flto=jobserver -flto-partition=$(CIRCUITPY_LTO_PARTITION) -DCIRCUITPY_LTO=1
+CFLAGS += -flto=auto -flto-partition=$(CIRCUITPY_LTO_PARTITION) -DCIRCUITPY_LTO=1
 else
 CFLAGS += -DCIRCUITPY_LTO=0
 endif
@@ -200,6 +200,9 @@ SRC_PATTERNS += digitalio/%
 endif
 ifeq ($(CIRCUITPY_DISPLAYIO),1)
 SRC_PATTERNS += displayio/%
+endif
+ifeq ($(CIRCUITPY_DOTCLOCKFRAMEBUFFER),1)
+SRC_PATTERNS += dotclockframebuffer/%
 endif
 ifeq ($(CIRCUITPY_DUALBANK),1)
 SRC_PATTERNS += dualbank/%
@@ -354,9 +357,6 @@ endif
 ifeq ($(CIRCUITPY_RGBMATRIX),1)
 SRC_PATTERNS += rgbmatrix/%
 endif
-ifeq ($(CIRCUITPY_DOTCLOCKFRAMEBUFFER),1)
-SRC_PATTERNS += dotclockframebuffer/%
-endif
 ifeq ($(CIRCUITPY_RP2PIO),1)
 SRC_PATTERNS += rp2pio/%
 endif
@@ -378,13 +378,13 @@ endif
 ifeq ($(CIRCUITPY_SHARPDISPLAY),1)
 SRC_PATTERNS += sharpdisplay/%
 endif
-ifeq ($(CIRCUITPY_SOCKETPOOL),1)
+ifeq ($(CIRCUITPY_SOCKETPOOL_NATIVE),1)
 SRC_PATTERNS += socketpool/%
 endif
 ifeq ($(CIRCUITPY_SPITARGET),1)
 SRC_PATTERNS += spitarget/%
 endif
-ifeq ($(CIRCUITPY_SSL),1)
+ifeq ($(CIRCUITPY_SSL_NATIVE),1)
 SRC_PATTERNS += ssl/%
 endif
 ifeq ($(CIRCUITPY_STAGE),1)
@@ -462,14 +462,14 @@ endif
 ifeq ($(CIRCUITPY_WATCHDOG),1)
 SRC_PATTERNS += watchdog/%
 endif
-ifeq ($(CIRCUITPY_WIFI),1)
+ifeq ($(CIRCUITPY_WIFI_NATIVE),1)
 SRC_PATTERNS += wifi/%
 endif
 ifeq ($(CIRCUITPY_ZLIB),1)
 SRC_PATTERNS += zlib/%
 endif
 
-# All possible sources are listed here, and are filtered by SRC_PATTERNS in SRC_COMMON_HAL
+# All possible sources in ports/*/common-hal are listed here, and are filtered by SRC_PATTERNS in SRC_COMMON_HAL.
 SRC_COMMON_HAL_ALL = \
 	_bleio/Adapter.c \
 	_bleio/Attribute.c \
@@ -583,10 +583,10 @@ SRC_COMMON_HAL = $(filter $(SRC_PATTERNS), $(SRC_COMMON_HAL_ALL))
 
 ifeq ($(CIRCUITPY_BLEIO_HCI),1)
 # HCI device-specific HAL and helper sources.
-SRC_DEVICES_HAL += \
+SRC_DEVICES_HAL_BLEIO_HCI += \
 	_bleio/att.c \
 	_bleio/hci.c \
-    _bleio/Adapter.c \
+	_bleio/Adapter.c \
 	_bleio/Attribute.c \
 	_bleio/Characteristic.c \
 	_bleio/CharacteristicBuffer.c \
@@ -597,8 +597,26 @@ SRC_DEVICES_HAL += \
 	_bleio/UUID.c \
 	_bleio/__init__.c
 # HCI device-specific bindings.
-SRC_DEVICES_BINDINGS += \
+SRC_DEVICES_BINDINGS_BLEIO_HCI += \
 	supervisor/bluetooth.c
+endif
+
+ifeq ($(CIRCUITPY_WIFI_AIRLIFT),1)
+# Add device-specific includes to search path.
+INC += -I$(TOP)/devices/airlift
+# Airlift-specific HAL and helper sources
+SRC_DEVICES_HAL_WIFI_AIRLIFT += \
+	socketpool/Socket.c \
+	socketpool/SocketPool.c \
+	socketpool/__init__.c \
+	ssl/__init__.c \
+	ssl/SSLContext.c \
+	ssl/SSLSocket.c \
+	wifi/Monitor.c \
+	wifi/Network.c \
+	wifi/Radio.c \
+	wifi/ScannedNetworks.c \
+	wifi/__init__.c
 endif
 
 # These don't have corresponding files in each port but are still located in
@@ -654,6 +672,25 @@ SRC_BINDINGS_ENUMS += \
 	_bleio/Service.c \
 	_bleio/UUID.c \
 	_bleio/__init__.c
+endif
+
+ifeq ($(CIRCUITPY_WIFI_AIRLIFT),1)
+# Common wifi-related bindings used by AirLift.
+SRC_BINDINGS_ENUMS += \
+	socketpool/Socket.c \
+	socketpool/SocketPool.c \
+	socketpool/__init__.c \
+	ssl/SSLContext.c \
+	ssl/SSLSocket.c \
+	ssl/__init__.c \
+	wifi/Monitor.c \
+	wifi/Network.c \
+	wifi/Radio.c \
+	wifi/ScannedNetworks.c \
+	wifi/__init__.c \
+	wifi/AuthMode.c \
+	wifi/Packet.c \
+	wifi/PowerManagement.c
 endif
 
 ifeq ($(CIRCUITPY_SAFEMODE_PY),1)
@@ -816,18 +853,20 @@ SRC_SHARED_MODULE_ALL = \
 	watchdog/__init__.c \
 	zlib/__init__.c \
 
-# All possible sources are listed here, and are filtered by SRC_PATTERNS.
+# All possible sources in shared-module/ are listed here, and are filtered by SRC_PATTERNS.
 SRC_SHARED_MODULE = $(filter $(SRC_PATTERNS), $(SRC_SHARED_MODULE_ALL))
 
 SRC_COMMON_HAL_EXPANDED = $(addprefix shared-bindings/, $(SRC_COMMON_HAL)) \
                           $(addprefix shared-bindings/, $(SRC_BINDINGS_ENUMS)) \
                           $(addprefix common-hal/, $(SRC_COMMON_HAL)) \
-						  $(addprefix devices/ble_hci/common-hal/, $(SRC_DEVICES_HAL)) \
-						  $(addprefix devices/ble_hci/, $(SRC_DEVICES_BINDINGS))
+                          $(addprefix devices/airlift/common-hal/, $(SRC_DEVICES_HAL_WIFI_AIRLIFT)) \
+                          $(addprefix devices/airlift/, $(SRC_DEVICES_BINDINGS_WIFI_AIRLIFT)) \
+                          $(addprefix devices/ble_hci/common-hal/, $(SRC_DEVICES_HAL_BLEIO_HCI)) \
+                          $(addprefix devices/ble_hci/, $(SRC_DEVICES_BINDINGS_BLEIO_HCI)) \
 
 SRC_SHARED_MODULE_EXPANDED = $(addprefix shared-bindings/, $(SRC_SHARED_MODULE)) \
                              $(addprefix shared-module/, $(SRC_SHARED_MODULE)) \
-                             $(addprefix shared-module/, $(SRC_SHARED_MODULE_INTERNAL))
+                             $(addprefix shared-module/, $(SRC_SHARED_MODULE_INTERNAL)) \
 
 # There may be duplicates between SRC_COMMON_HAL_EXPANDED and SRC_SHARED_MODULE_EXPANDED,
 # because a few modules have files both in common-hal/ and shared-module/.

@@ -88,12 +88,9 @@ static mp_obj_t audiofreeverb_freeverb_make_new(const mp_obj_type_t *type, size_
     mp_int_t channel_count = mp_arg_validate_int_range(args[ARG_channel_count].u_int, 1, 2, MP_QSTR_channel_count);
     mp_int_t sample_rate = mp_arg_validate_int_min(args[ARG_sample_rate].u_int, 1, MP_QSTR_sample_rate);
     if (args[ARG_samples_signed].u_bool != true) {
-        mp_raise_ValueError(MP_ERROR_TEXT("samples_signed must be true"));
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("%q must be %q"), MP_QSTR_samples_signed, MP_QSTR_true);
     }
-    mp_int_t bits_per_sample = args[ARG_bits_per_sample].u_int;
-    if (bits_per_sample != 16) {
-        mp_raise_ValueError(MP_ERROR_TEXT("bits_per_sample must be 16"));
-    }
+    mp_int_t bits_per_sample = mp_arg_validate_int(args[ARG_bits_per_sample].u_int, 16, MP_QSTR_bits_per_sample);
 
     audiofreeverb_freeverb_obj_t *self = mp_obj_malloc(audiofreeverb_freeverb_obj_t, &audiofreeverb_freeverb_type);
     common_hal_audiofreeverb_freeverb_construct(self, args[ARG_roomsize].u_obj, args[ARG_damp].u_obj, args[ARG_mix].u_obj, args[ARG_buffer_size].u_int, bits_per_sample, args[ARG_samples_signed].u_bool, channel_count, sample_rate);

@@ -40,8 +40,6 @@ wifi_radio_obj_t common_hal_wifi_radio_obj;
 #include "nvs_flash.h"
 #endif
 
-#define MAC_ADDRESS_LENGTH 6
-
 static const char *TAG = "CP wifi";
 
 static void schedule_background_on_cp_core(void *arg) {

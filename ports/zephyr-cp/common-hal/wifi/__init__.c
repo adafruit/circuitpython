@@ -29,8 +29,6 @@ wifi_radio_obj_t common_hal_wifi_radio_obj;
 #include <zephyr/kernel.h>
 #include <zephyr/net/wifi_mgmt.h>
 
-#define MAC_ADDRESS_LENGTH 6
-
 static void schedule_background_on_cp_core(void *arg) {
     #if CIRCUITPY_STATUS_BAR
     supervisor_status_bar_request_update(false);
