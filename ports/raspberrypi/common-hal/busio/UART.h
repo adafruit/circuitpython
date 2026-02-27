@@ -27,5 +27,10 @@ typedef struct {
     ringbuf_t ringbuf;
 } busio_uart_obj_t;
 
+typedef struct uart_transfer_state uart_transfer_state;
+
+uart_transfer_state *common_hal_busio_uart_start_write(busio_uart_obj_t *uart, const uint8_t *data, size_t len);
+bool common_hal_busio_uart_write_isbusy(uart_transfer_state *state);
+
 extern void reset_uart(void);
 extern void never_reset_uart(uint8_t num);

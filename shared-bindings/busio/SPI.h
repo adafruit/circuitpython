@@ -54,3 +54,8 @@ uint8_t common_hal_busio_spi_get_polarity(busio_spi_obj_t *self);
 extern void common_hal_busio_spi_never_reset(busio_spi_obj_t *self);
 
 extern busio_spi_obj_t *validate_obj_is_spi_bus(mp_obj_t obj_in, qstr arg_name);
+
+#if CIRCUITPY_BUSIO_NOBLOCK
+spi_transfer_state *common_hal_busio_spi_start_transfer(busio_spi_obj_t *spi, const uint8_t *out_data, uint8_t *in_data, size_t len);
+bool common_hal_busio_spi_transfer_isbusy(spi_transfer_state *state);
+#endif

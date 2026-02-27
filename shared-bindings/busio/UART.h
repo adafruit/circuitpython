@@ -48,3 +48,8 @@ extern void common_hal_busio_uart_clear_rx_buffer(busio_uart_obj_t *self);
 extern bool common_hal_busio_uart_ready_to_tx(busio_uart_obj_t *self);
 
 extern void common_hal_busio_uart_never_reset(busio_uart_obj_t *self);
+
+#if CIRCUITPY_BUSIO_NOBLOCK
+uart_transfer_state *common_hal_busio_uart_start_write(busio_uart_obj_t *uart, const uint8_t *data, size_t len);
+bool common_hal_busio_uart_write_isbusy(uart_transfer_state *state);
+#endif

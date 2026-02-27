@@ -51,3 +51,10 @@ mp_negative_errno_t common_hal_busio_i2c_write_read(busio_i2c_obj_t *self, uint1
 
 // This is used by the supervisor to claim I2C devices indefinitely.
 extern void common_hal_busio_i2c_never_reset(busio_i2c_obj_t *self);
+
+#if CIRCUITPY_BUSIO_NOBLOCK
+i2c_transfer_state *common_hal_busio_i2c_start_read(busio_i2c_obj_t *i2c, uint8_t address, uint8_t *data, size_t len, bool nostop);
+i2c_transfer_state *common_hal_busio_i2c_start_write(busio_i2c_obj_t *i2c, uint8_t address, const uint8_t *data, size_t len, bool nostop);
+bool common_hal_busio_i2c_read_isbusy(i2c_transfer_state *state);
+bool common_hal_busio_i2c_write_isbusy(i2c_transfer_state *state);
+#endif

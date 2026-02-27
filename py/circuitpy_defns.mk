@@ -501,7 +501,6 @@ SRC_COMMON_HAL_ALL = \
 	audiopwmio/PWMAudioOut.c \
 	audiopwmio/__init__.c \
 	board/__init__.c \
-	busio/dma.c \
 	busio/I2C.c \
 	busio/SPI.c \
 	busio/UART.c \
