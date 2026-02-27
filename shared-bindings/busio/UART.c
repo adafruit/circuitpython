@@ -178,10 +178,10 @@ static busio_uart_obj_t *native_uart(mp_obj_t uart_obj) {
 static void check_for_deinit(busio_uart_obj_t *self);
 
 #if CIRCUITPY_BUSIO_NOBLOCK
-//|     def nonblocking_write(self, buffer: ReadableBuffer) -> int:
-//|         """Start a non-blocking UART write from ``buffer`` and return the channel."""
+//|     def start_write(self, buffer: ReadableBuffer) -> int:
+//|         """Start a non-blocking UART write from ``buffer`` and return the transfer_state."""
 //|
-static mp_obj_t busio_uart_nonblocking_write(mp_obj_t self_in, mp_obj_t buffer_obj) {
+static mp_obj_t busio_uart_start_write(mp_obj_t self_in, mp_obj_t buffer_obj) {
     busio_uart_obj_t *self = native_uart(self_in);
     check_for_deinit(self);
 
@@ -191,21 +191,21 @@ static mp_obj_t busio_uart_nonblocking_write(mp_obj_t self_in, mp_obj_t buffer_o
     uart_transfer_state *state = common_hal_busio_uart_start_write(self, bufinfo.buf, bufinfo.len);
     return mp_obj_new_int_from_ull((uintptr_t)state);
 }
-MP_DEFINE_CONST_FUN_OBJ_2(busio_uart_nonblocking_write_obj, busio_uart_nonblocking_write);
+MP_DEFINE_CONST_FUN_OBJ_2(busio_uart_start_write_obj, busio_uart_start_write);
 
-//|     def nonblocking_is_busy(self, channel: int) -> bool:
-//|         """Return ``True`` while the UART non-blocking channel is active.
+//|     def write_is_busy(self, transfer_state: int) -> bool:
+//|         """Return ``True`` while the UART non-blocking transfer_state is active.
 //|
-//|         :param int channel: channel returned by `nonblocking_readinto` or `nonblocking_write`
+//|         :param int transfer_state: transfer_state returned by `start_write`
 //|         """
 //|
-static mp_obj_t busio_uart_nonblocking_is_busy(mp_obj_t self_in, mp_obj_t channel_obj) {
+static mp_obj_t busio_uart_write_is_busy(mp_obj_t self_in, mp_obj_t channel_obj) {
     busio_uart_obj_t *self = native_uart(self_in);
     check_for_deinit(self);
     uart_transfer_state *state = (uart_transfer_state *)(uintptr_t)mp_obj_get_int(channel_obj);
     return mp_obj_new_bool(common_hal_busio_uart_write_isbusy(state));
 }
-MP_DEFINE_CONST_FUN_OBJ_2(busio_uart_nonblocking_is_busy_obj, busio_uart_nonblocking_is_busy);
+MP_DEFINE_CONST_FUN_OBJ_2(busio_uart_write_is_busy_obj, busio_uart_write_is_busy);
 #endif
 
 
@@ -458,8 +458,8 @@ static const mp_rom_map_elem_t busio_uart_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_readinto), MP_ROM_PTR(&mp_stream_readinto_obj) },
     { MP_ROM_QSTR(MP_QSTR_write),    MP_ROM_PTR(&mp_stream_write_obj) },
     #if CIRCUITPY_BUSIO_NOBLOCK
-    { MP_ROM_QSTR(MP_QSTR_nonblocking_write), MP_ROM_PTR(&busio_uart_nonblocking_write_obj) },
-    { MP_ROM_QSTR(MP_QSTR_nonblocking_is_busy), MP_ROM_PTR(&busio_uart_nonblocking_is_busy_obj) },
+    { MP_ROM_QSTR(MP_QSTR_start_write), MP_ROM_PTR(&busio_uart_start_write_obj) },
+    { MP_ROM_QSTR(MP_QSTR_write_is_busy), MP_ROM_PTR(&busio_uart_write_is_busy_obj) },
     #endif
 
     { MP_ROM_QSTR(MP_QSTR_reset_input_buffer), MP_ROM_PTR(&busio_uart_reset_input_buffer_obj) },

@@ -123,19 +123,19 @@ static void check_lock(busio_i2c_obj_t *self) {
 }
 
 #if CIRCUITPY_BUSIO_NOBLOCK
-//|     def nonblocking_readinto(self, address: int, buffer: WriteableBuffer, *, end: bool = False) -> int:
-//|         """Start a non-blocking I2C read into ``buffer`` and return the channel.
+//|     def start_read(self, address: int, buffer: WriteableBuffer, *, end: bool = False) -> int:
+//|         """Start a non-blocking I2C read into ``buffer`` and return the transfer_state.
 //|
 //|         The I2C object must be locked before calling.
 //|
 //|         :param int address: 7-bit I2C target address
 //|         :param ~circuitpython_typing.WriteableBuffer buffer: destination buffer
 //|         :param bool end: If ``True``, send a STOP condition at the end of the transfer
-//|         :return: channel used by this transfer
+//|         :return: transfer_state used by this transfer
 //|         :rtype: int
 //|         """
 //|
-static mp_obj_t busio_i2c_nonblocking_readinto(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+static mp_obj_t busio_i2c_start_read(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_address, ARG_buffer, ARG_end };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_address, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
@@ -159,21 +159,21 @@ static mp_obj_t busio_i2c_nonblocking_readinto(size_t n_args, const mp_obj_t *po
     i2c_transfer_state *state = common_hal_busio_i2c_start_read(self, address, bufinfo.buf, bufinfo.len, args[ARG_end].u_bool);
     return mp_obj_new_int_from_ull((uintptr_t)state);
 }
-MP_DEFINE_CONST_FUN_OBJ_KW(busio_i2c_nonblocking_readinto_obj, 1, busio_i2c_nonblocking_readinto);
+MP_DEFINE_CONST_FUN_OBJ_KW(busio_i2c_start_read_obj, 1, busio_i2c_start_read);
 
-//|     def nonblocking_write(self, address: int, buffer: ReadableBuffer, *, end: bool = False) -> int:
-//|         """Start a non-blocking I2C write from ``buffer`` and return the channel.
+//|     def start_write(self, address: int, buffer: ReadableBuffer, *, end: bool = False) -> int:
+//|         """Start a non-blocking I2C write from ``buffer`` and return the transfer_state.
 //|
 //|         The I2C object must be locked before calling.
 //|
 //|         :param int address: 7-bit I2C target address
 //|         :param ~circuitpython_typing.ReadableBuffer buffer: source buffer
 //|         :param bool end: If ``True``, send a STOP condition at the end of the transfer
-//|         :return: channel used by this transfer
+//|         :return: transfer_state used by this transfer
 //|         :rtype: int
 //|         """
 //|
-static mp_obj_t busio_i2c_nonblocking_write(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+static mp_obj_t busio_i2c_start_write(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_address, ARG_buffer, ARG_end };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_address, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0} },
@@ -197,35 +197,35 @@ static mp_obj_t busio_i2c_nonblocking_write(size_t n_args, const mp_obj_t *pos_a
     i2c_transfer_state *state = common_hal_busio_i2c_start_write(self, address, bufinfo.buf, bufinfo.len, args[ARG_end].u_bool);
     return mp_obj_new_int_from_ull((uintptr_t)state);
 }
-MP_DEFINE_CONST_FUN_OBJ_KW(busio_i2c_nonblocking_write_obj, 1, busio_i2c_nonblocking_write);
+MP_DEFINE_CONST_FUN_OBJ_KW(busio_i2c_start_write_obj, 1, busio_i2c_start_write);
 
-//|     def nonblocking_write_is_busy(self, channel: int) -> bool:
-//|         """Return ``True`` while the I2C non-blocking write channel is active.
+//|     def write_is_busy(self, transfer_state: int) -> bool:
+//|         """Return ``True`` while the I2C non-blocking write transfer_state is active.
 //|
-//|         :param int channel: channel returned by `nonblocking_readinto` or `nonblocking_write`
+//|         :param int transfer_state: transfer_state returned by `start_read` or `start_write`
 //|         """
 //|
-static mp_obj_t busio_i2c_nonblocking_write_isbusy(mp_obj_t self_in, mp_obj_t channel_obj) {
+static mp_obj_t busio_i2c_write_is_busy(mp_obj_t self_in, mp_obj_t channel_obj) {
     busio_i2c_obj_t *self = native_i2c(self_in);
     check_for_deinit(self);
     i2c_transfer_state *state = (i2c_transfer_state *)(uintptr_t)mp_obj_get_int(channel_obj);
     return mp_obj_new_bool(common_hal_busio_i2c_write_isbusy(state));
 }
-MP_DEFINE_CONST_FUN_OBJ_2(busio_i2c_nonblocking_write_isbusy_obj, busio_i2c_nonblocking_write_isbusy);
+MP_DEFINE_CONST_FUN_OBJ_2(busio_i2c_write_is_busy_obj, busio_i2c_write_is_busy);
 
-//|     def nonblocking_read_is_busy(self, channel: int) -> bool:
-//|         """Return ``True`` while the I2C non-blocking read channel is active.
+//|     def read_is_busy(self, transfer_state: int) -> bool:
+//|         """Return ``True`` while the I2C non-blocking read transfer_state is active.
 //|
-//|         :param int channel: channel returned by `nonblocking_readinto` or `nonblocking_write`
+//|         :param int transfer_state: transfer_state returned by `start_read` or `start_write`
 //|         """
 //|
-static mp_obj_t busio_i2c_nonblocking_read_isbusy(mp_obj_t self_in, mp_obj_t channel_obj) {
+static mp_obj_t busio_i2c_read_is_busy(mp_obj_t self_in, mp_obj_t channel_obj) {
     busio_i2c_obj_t *self = native_i2c(self_in);
     check_for_deinit(self);
     i2c_transfer_state *state = (i2c_transfer_state *)(uintptr_t)mp_obj_get_int(channel_obj);
     return mp_obj_new_bool(common_hal_busio_i2c_read_isbusy(state));
 }
-MP_DEFINE_CONST_FUN_OBJ_2(busio_i2c_nonblocking_read_isbusy_obj, busio_i2c_nonblocking_read_isbusy);
+MP_DEFINE_CONST_FUN_OBJ_2(busio_i2c_read_is_busy_obj, busio_i2c_read_is_busy);
 #endif
 
 //|     def probe(self, address: int) -> List[int]:
@@ -520,10 +520,10 @@ static const mp_rom_map_elem_t busio_i2c_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_writeto), MP_ROM_PTR(&busio_i2c_writeto_obj) },
     { MP_ROM_QSTR(MP_QSTR_writeto_then_readfrom), MP_ROM_PTR(&busio_i2c_writeto_then_readfrom_obj) },
     #if CIRCUITPY_BUSIO_NOBLOCK
-    { MP_ROM_QSTR(MP_QSTR_nonblocking_readinto), MP_ROM_PTR(&busio_i2c_nonblocking_readinto_obj) },
-    { MP_ROM_QSTR(MP_QSTR_nonblocking_write), MP_ROM_PTR(&busio_i2c_nonblocking_write_obj) },
-    { MP_ROM_QSTR(MP_QSTR_nonblocking_read_is_busy), MP_ROM_PTR(&busio_i2c_nonblocking_read_isbusy_obj) },
-    { MP_ROM_QSTR(MP_QSTR_nonblocking_write_is_busy), MP_ROM_PTR(&busio_i2c_nonblocking_write_isbusy_obj) },
+    { MP_ROM_QSTR(MP_QSTR_start_read), MP_ROM_PTR(&busio_i2c_start_read_obj) },
+    { MP_ROM_QSTR(MP_QSTR_start_write), MP_ROM_PTR(&busio_i2c_start_write_obj) },
+    { MP_ROM_QSTR(MP_QSTR_read_is_busy), MP_ROM_PTR(&busio_i2c_read_is_busy_obj) },
+    { MP_ROM_QSTR(MP_QSTR_write_is_busy), MP_ROM_PTR(&busio_i2c_write_is_busy_obj) },
     #endif
     #endif // CIRCUITPY_BUSIO_I2C
 };
