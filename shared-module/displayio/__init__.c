@@ -45,6 +45,9 @@
 #if CIRCUITPY_MIPIDSI
 #include "shared-bindings/mipidsi/Display.h"
 #endif
+#if CIRCUITPY_ZEPHYR_DISPLAY
+#include "bindings/zephyr_display/Display.h"
+#endif
 
 #ifdef BOARD_USE_INTERNAL_SPI
 #include "supervisor/spi_flash_api.h"
@@ -112,6 +115,10 @@ void displayio_background(void) {
         } else if (display_type == &epaperdisplay_epaperdisplay_type) {
             epaperdisplay_epaperdisplay_background(&displays[i].epaper_display);
         #endif
+        #if CIRCUITPY_ZEPHYR_DISPLAY
+        } else if (display_type == &zephyr_display_display_type) {
+            zephyr_display_display_background(&displays[i].zephyr_display);
+        #endif
         }
     }
 
@@ -141,6 +148,10 @@ static void common_hal_displayio_release_displays_impl(bool keep_primary) {
         #if CIRCUITPY_FRAMEBUFFERIO
         } else if (display_type == &framebufferio_framebufferdisplay_type) {
             release_framebufferdisplay(&displays[i].framebuffer_display);
+        #endif
+        #if CIRCUITPY_ZEPHYR_DISPLAY
+        } else if (display_type == &zephyr_display_display_type) {
+            release_zephyr_display(&displays[i].zephyr_display);
         #endif
         }
         displays[i].display_base.type = &mp_type_NoneType;
@@ -352,6 +363,10 @@ void reset_displays(void) {
         } else if (display_type == &framebufferio_framebufferdisplay_type) {
             framebufferio_framebufferdisplay_reset(&displays[i].framebuffer_display);
         #endif
+        #if CIRCUITPY_ZEPHYR_DISPLAY
+        } else if (display_type == &zephyr_display_display_type) {
+            zephyr_display_display_reset(&displays[i].zephyr_display);
+        #endif
         }
     }
 }
@@ -402,6 +417,10 @@ void displayio_gc_collect(void) {
         #if CIRCUITPY_EPAPERDISPLAY
         } else if (display_type == &epaperdisplay_epaperdisplay_type) {
             epaperdisplay_epaperdisplay_collect_ptrs(&displays[i].epaper_display);
+        #endif
+        #if CIRCUITPY_ZEPHYR_DISPLAY
+        } else if (display_type == &zephyr_display_display_type) {
+            zephyr_display_display_collect_ptrs(&displays[i].zephyr_display);
         #endif
         }
     }

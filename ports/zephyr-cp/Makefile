@@ -8,13 +8,24 @@ BUILD ?= build-$(BOARD)
 
 TRANSLATION ?= en_US
 
-.DEFAULT_GOAL := $(BUILD)/zephyr-cp/zephyr/zephyr.elf
+# Compute shield args once. Command-line SHIELD/SHIELDS values override board defaults from circuitpython.toml.
+ifneq ($(strip $(BOARD)),)
+WEST_SHIELD_ARGS := $(shell SHIELD_ORIGIN="$(origin SHIELD)" SHIELDS_ORIGIN="$(origin SHIELDS)" SHIELD="$(SHIELD)" SHIELDS="$(SHIELDS)" python cptools/get_west_shield_args.py $(BOARD))
+endif
 
-.PHONY: $(BUILD)/zephyr-cp/zephyr/zephyr.elf flash recover debug run run-sim clean menuconfig all clean-all test fetch-port-submodules
+WEST_CMAKE_ARGS := -DZEPHYR_BOARD_ALIASES=$(CURDIR)/boards/board_aliases.cmake -Dzephyr-cp_TRANSLATION=$(TRANSLATION)
+
+# When DEBUG=1, apply additional Kconfig fragments for debug-friendly settings.
+DEBUG_CONF_FILE ?= $(CURDIR)/debug.conf
+ifeq ($(DEBUG),1)
+WEST_CMAKE_ARGS += -Dzephyr-cp_EXTRA_CONF_FILE=$(DEBUG_CONF_FILE)
+endif
+
+.PHONY: $(BUILD)/zephyr-cp/zephyr/zephyr.elf flash recover debug debug-jlink debugserver attach run run-sim clean menuconfig all clean-all test fetch-port-submodules
 
 $(BUILD)/zephyr-cp/zephyr/zephyr.elf:
 	python cptools/pre_zephyr_build_prep.py $(BOARD)
-	west build -b $(BOARD) -d $(BUILD) --sysbuild -- -DZEPHYR_BOARD_ALIASES=$(CURDIR)/boards/board_aliases.cmake -Dzephyr-cp_TRANSLATION=$(TRANSLATION)
+	west build -b $(BOARD) -d $(BUILD) $(WEST_SHIELD_ARGS) --sysbuild -- $(WEST_CMAKE_ARGS)
 
 $(BUILD)/firmware.elf: $(BUILD)/zephyr-cp/zephyr/zephyr.elf
 	cp $^ $@
@@ -37,6 +48,15 @@ recover: $(BUILD)/zephyr-cp/zephyr/zephyr.elf
 debug: $(BUILD)/zephyr-cp/zephyr/zephyr.elf
 	west debug -d $(BUILD)
 
+debug-jlink: $(BUILD)/zephyr-cp/zephyr/zephyr.elf
+	west debug --runner jlink -d $(BUILD)
+
+debugserver: $(BUILD)/zephyr-cp/zephyr/zephyr.elf
+	west debugserver -d $(BUILD)
+
+attach: $(BUILD)/zephyr-cp/zephyr/zephyr.elf
+	west attach -d $(BUILD)
+
 run: $(BUILD)/firmware.exe
 	$^
 
@@ -51,7 +71,7 @@ run-sim:
 	build-native_native_sim/firmware.exe --flash=build-native_native_sim/flash.bin --flash_rm -wait_uart -rt
 
 menuconfig:
-	west build --sysbuild -d $(BUILD) -t menuconfig
+	west build $(WEST_SHIELD_ARGS) --sysbuild -d $(BUILD) -t menuconfig -- $(WEST_CMAKE_ARGS)
 
 clean:
 	rm -rf $(BUILD)

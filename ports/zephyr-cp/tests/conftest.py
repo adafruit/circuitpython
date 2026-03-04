@@ -4,21 +4,29 @@
 """Pytest fixtures for CircuitPython native_sim testing."""
 
 import logging
-import re
-import select
+import os
 import subprocess
-import time
-from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
 import serial
-from . import NativeSimProcess
+
 from .perfetto_input_trace import write_input_trace
 
 from perfetto.trace_processor import TraceProcessor
 
+from . import NativeSimProcess
+
 logger = logging.getLogger(__name__)
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--update-goldens",
+        action="store_true",
+        default=False,
+        help="Overwrite golden images with captured output instead of comparing.",
+    )
 
 
 def pytest_configure(config):
@@ -50,6 +58,20 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers",
         "native_sim_rt: run native_sim in realtime mode (-rt instead of -no-rt)",
+    )
+    config.addinivalue_line(
+        "markers",
+        "display(capture_times_ns=None): run test with SDL display; "
+        "capture_times_ns is a list of nanosecond timestamps for trace-triggered captures",
+    )
+    config.addinivalue_line(
+        "markers",
+        "display_pixel_format(format): override the display pixel format "
+        "(e.g. 'RGB_565', 'ARGB_8888')",
+    )
+    config.addinivalue_line(
+        "markers",
+        "display_mono_vtiled(value): override the mono vtiled screen_info flag (True or False)",
     )
 
 
@@ -136,7 +158,6 @@ def board(request):
 @pytest.fixture
 def native_sim_binary(request, board):
     """Return path to native_sim binary, skip if not built."""
-    ZEPHYR_CP = Path(__file__).parent.parent
     build_dir = ZEPHYR_CP / f"build-{board}"
     binary = build_dir / "zephyr-cp/zephyr/zephyr.exe"
 
@@ -148,6 +169,26 @@ def native_sim_binary(request, board):
 @pytest.fixture
 def native_sim_env() -> dict[str, str]:
     return {}
+
+
+PIXEL_FORMAT_BITMASK = {
+    "RGB_888": 1 << 0,
+    "MONO01": 1 << 1,
+    "MONO10": 1 << 2,
+    "ARGB_8888": 1 << 3,
+    "RGB_565": 1 << 4,
+    "BGR_565": 1 << 5,
+    "L_8": 1 << 6,
+    "AL_88": 1 << 7,
+}
+
+
+@pytest.fixture
+def pixel_format(request) -> str:
+    """Indirect-parametrize fixture: adds display_pixel_format marker."""
+    fmt = request.param
+    request.node.add_marker(pytest.mark.display_pixel_format(fmt))
+    return fmt
 
 
 @pytest.fixture
@@ -175,6 +216,54 @@ def circuitpython(request, board, sim_id, native_sim_binary, native_sim_env, tmp
     if input_trace_markers and len(input_trace_markers[0][1].args) == 1:
         input_trace = input_trace_markers[0][1].args[0]
 
+    input_trace_file = None
+    if input_trace is not None:
+        input_trace_file = tmp_path / "input.perfetto"
+        write_input_trace(input_trace_file, input_trace)
+
+    marker = request.node.get_closest_marker("duration")
+    if marker is None:
+        timeout = 10
+    else:
+        timeout = marker.args[0]
+
+    runs_marker = request.node.get_closest_marker("code_py_runs")
+    if runs_marker is None:
+        code_py_runs = 1
+    else:
+        code_py_runs = int(runs_marker.args[0])
+
+    display_marker = request.node.get_closest_marker("display")
+    if display_marker is None:
+        display_marker = request.node.get_closest_marker("display_capture")
+
+    capture_times_ns = None
+    if display_marker is not None:
+        capture_times_ns = display_marker.kwargs.get("capture_times_ns", None)
+
+    pixel_format_marker = request.node.get_closest_marker("display_pixel_format")
+    pixel_format = None
+    if pixel_format_marker is not None and pixel_format_marker.args:
+        pixel_format = pixel_format_marker.args[0]
+
+    mono_vtiled_marker = request.node.get_closest_marker("display_mono_vtiled")
+    mono_vtiled = None
+    if mono_vtiled_marker is not None and mono_vtiled_marker.args:
+        mono_vtiled = mono_vtiled_marker.args[0]
+
+    # If capture_times_ns is set, merge display_capture track into input trace.
+    if capture_times_ns is not None:
+        if input_trace is None:
+            input_trace = {}
+        else:
+            input_trace = dict(input_trace)
+        input_trace["display_capture"] = list(capture_times_ns)
+        if input_trace_file is None:
+            input_trace_file = tmp_path / "input.perfetto"
+        write_input_trace(input_trace_file, input_trace)
+
+    use_realtime = request.node.get_closest_marker("native_sim_rt") is not None
+
     procs = []
     for i in range(instance_count):
         flash = tmp_path / f"flash-{i}.bin"
@@ -189,29 +278,13 @@ def circuitpython(request, board, sim_id, native_sim_binary, native_sim_env, tmp
 
             for name, content in files.items():
                 src = tmp_drive / name
-                src.write_text(content)
+                if isinstance(content, bytes):
+                    src.write_bytes(content)
+                else:
+                    src.write_text(content)
                 subprocess.run(["mcopy", "-i", str(flash), str(src), f"::{name}"], check=True)
 
         trace_file = tmp_path / f"trace-{i}.perfetto"
-
-        input_trace_file = None
-        if input_trace is not None:
-            input_trace_file = tmp_path / f"input-{i}.perfetto"
-            write_input_trace(input_trace_file, input_trace)
-
-        marker = request.node.get_closest_marker("duration")
-        if marker is None:
-            timeout = 10
-        else:
-            timeout = marker.args[0]
-
-        runs_marker = request.node.get_closest_marker("code_py_runs")
-        if runs_marker is None:
-            code_py_runs = 1
-        else:
-            code_py_runs = int(runs_marker.args[0])
-
-        use_realtime = request.node.get_closest_marker("native_sim_rt") is not None
 
         if "bsim" in board:
             cmd = [str(native_sim_binary), f"--flash_app={flash}"]
@@ -231,7 +304,9 @@ def circuitpython(request, board, sim_id, native_sim_binary, native_sim_env, tmp
             cmd = [str(native_sim_binary), f"--flash={flash}"]
             # native_sim vm-runs includes the boot VM setup run.
             realtime_flag = "-rt" if use_realtime else "-no-rt"
-            cmd.extend((realtime_flag, "-wait_uart", f"--vm-runs={code_py_runs + 1}"))
+            cmd.extend(
+                (realtime_flag, "-display_headless", "-wait_uart", f"--vm-runs={code_py_runs + 1}")
+            )
 
         if input_trace_file is not None:
             cmd.append(f"--input-trace={input_trace_file}")
@@ -240,9 +315,31 @@ def circuitpython(request, board, sim_id, native_sim_binary, native_sim_env, tmp
         if marker and len(marker.args) > 0:
             for device in marker.args:
                 cmd.append(f"--disable-i2c={device}")
-        logger.info("Running: %s", " ".join(cmd))
 
-        procs.append(NativeSimProcess(cmd, timeout, trace_file, native_sim_env))
+        if pixel_format is not None:
+            cmd.append(f"--display_pixel_format={PIXEL_FORMAT_BITMASK[pixel_format]}")
+
+        if mono_vtiled is not None:
+            cmd.append(f"--display_mono_vtiled={'true' if mono_vtiled else 'false'}")
+
+        env = os.environ.copy()
+        env.update(native_sim_env)
+
+        capture_png_pattern = None
+        if capture_times_ns is not None:
+            if instance_count == 1:
+                capture_png_pattern = str(tmp_path / "frame_%d.png")
+            else:
+                capture_png_pattern = str(tmp_path / f"frame-{i}_%d.png")
+            cmd.append(f"--display_capture_png={capture_png_pattern}")
+
+        logger.info("Running: %s", " ".join(cmd))
+        proc = NativeSimProcess(cmd, timeout, trace_file, env)
+        proc.display_dump = None
+        proc._capture_png_pattern = capture_png_pattern
+        proc._capture_count = len(capture_times_ns) if capture_times_ns is not None else 0
+        procs.append(proc)
+
     if instance_count == 1:
         yield procs[0]
     else:

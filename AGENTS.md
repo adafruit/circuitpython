@@ -1,3 +1,4 @@
 - Capture CircuitPython output by finding the matching device in `/dev/serial/by-id`
 - You can mount the CIRCUITPY drive by doing `udisksctl mount -b /dev/disk/by-label/CIRCUITPY` and access it via `/run/media/<user>/CIRCUITPY`.
 - `circup` is a command line tool to install libraries and examples to CIRCUITPY.
+- When connecting to serial devices on Linux use /dev/serial/by-id. These will be more stable than /dev/ttyACM*.

@@ -488,6 +488,14 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir):  # noqa
         value = device_tree.root.nodes["chosen"].props[k]
         path2chosen[value.to_path()] = k
         chosen2path[k] = value.to_path()
+
+    chosen_display = chosen2path.get("zephyr,display")
+    if chosen_display is not None:
+        status = chosen_display.props.get("status", None)
+        if status is None or status.to_string() == "okay":
+            board_info["zephyr_display"] = True
+            board_info["displayio"] = True
+
     remaining_nodes = set([device_tree.root])
     while remaining_nodes:
         node = remaining_nodes.pop()
@@ -724,6 +732,43 @@ static MP_DEFINE_CONST_FUN_OBJ_0({function_object}, {c_function_name});""".lstri
     zephyr_binding_objects = "\n".join(zephyr_binding_objects)
     zephyr_binding_labels = "\n".join(zephyr_binding_labels)
 
+    zephyr_display_header = ""
+    zephyr_display_object = ""
+    zephyr_display_board_entry = ""
+    if board_info.get("zephyr_display", False):
+        zephyr_display_header = """
+#include <zephyr/device.h>
+#include <zephyr/devicetree.h>
+#include "shared-module/displayio/__init__.h"
+#include "bindings/zephyr_display/Display.h"
+        """.strip()
+        zephyr_display_object = """
+void board_init(void) {
+#if CIRCUITPY_ZEPHYR_DISPLAY && DT_HAS_CHOSEN(zephyr_display)
+    // Always allocate a display slot so board.DISPLAY is at least a valid
+    // NoneType object even if the underlying Zephyr display is unavailable.
+    primary_display_t *display_obj = allocate_display();
+    if (display_obj == NULL) {
+        return;
+    }
+
+    zephyr_display_display_obj_t *display = &display_obj->zephyr_display;
+    display->base.type = &mp_type_NoneType;
+
+    const struct device *display_dev = device_get_binding(DEVICE_DT_NAME(DT_CHOSEN(zephyr_display)));
+    if (display_dev == NULL || !device_is_ready(display_dev)) {
+        return;
+    }
+
+    display->base.type = &zephyr_display_display_type;
+    common_hal_zephyr_display_display_construct_from_device(display, display_dev, 0, true);
+#endif
+}
+        """.strip()
+        zephyr_display_board_entry = (
+            "{ MP_ROM_QSTR(MP_QSTR_DISPLAY), MP_ROM_PTR(&displays[0].zephyr_display) },"
+        )
+
     board_dir.mkdir(exist_ok=True, parents=True)
     header = board_dir / "mpconfigboard.h"
     if status_led:
@@ -797,6 +842,7 @@ static MP_DEFINE_CONST_FUN_OBJ_0({function_object}, {c_function_name});""".lstri
 #include "py/mphal.h"
 
 {zephyr_binding_headers}
+{zephyr_display_header}
 
 const struct device* const flashes[] = {{ {", ".join(flashes)} }};
 const int circuitpy_flash_device_count = {len(flashes)};
@@ -810,6 +856,7 @@ const size_t circuitpy_max_ram_size = {max_size};
 {pin_defs}
 
 {zephyr_binding_objects}
+{zephyr_display_object}
 
 static const mp_rom_map_elem_t mcu_pin_globals_table[] = {{
 {mcu_pin_mapping}
@@ -820,6 +867,7 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {{
 CIRCUITPYTHON_BOARD_DICT_STANDARD_ITEMS
 
 {hostnetwork_entry}
+{zephyr_display_board_entry}
 {board_pin_mapping}
 
 {zephyr_binding_labels}
