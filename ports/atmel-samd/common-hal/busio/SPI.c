@@ -194,14 +194,14 @@ void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
     }
     allow_reset_sercom(self->spi_desc.dev.prvt);
 
-    // Mark as deinit early in case we are used in an interrupt.
-    common_hal_busio_spi_mark_deinit(self);
-
     spi_m_sync_disable(&self->spi_desc);
     spi_m_sync_deinit(&self->spi_desc);
     reset_pin_number(self->clock_pin);
     reset_pin_number(self->MOSI_pin);
     reset_pin_number(self->MISO_pin);
+
+    // This smashes self->clock_pin, so don't do it before resetting the pin above.
+    common_hal_busio_spi_mark_deinit(self);
 }
 
 bool common_hal_busio_spi_configure(busio_spi_obj_t *self,
