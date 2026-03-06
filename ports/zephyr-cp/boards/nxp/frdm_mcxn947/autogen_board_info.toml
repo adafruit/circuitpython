@@ -79,6 +79,7 @@ ps2io = false
 pulseio = false
 pwmio = false
 qrio = false
+qspibus = false
 rainbowio = true
 random = true
 rclcpy = false

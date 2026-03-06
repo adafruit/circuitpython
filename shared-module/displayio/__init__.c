@@ -189,6 +189,10 @@ static void common_hal_displayio_release_displays_impl(bool keep_primary) {
         } else if (bus_type == &mipidsi_display_type) {
             common_hal_mipidsi_display_deinit(&display_buses[i].mipidsi);
         #endif
+        #if CIRCUITPY_QSPIBUS
+        } else if (bus_type == &qspibus_qspibus_type) {
+            common_hal_qspibus_qspibus_deinit(&display_buses[i].qspi_bus);
+        #endif
         }
         display_buses[i].bus_base.type = &mp_type_NoneType;
     }

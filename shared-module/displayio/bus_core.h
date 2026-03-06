@@ -21,6 +21,7 @@ typedef struct {
     display_bus_begin_transaction begin_transaction;
     display_bus_send send;
     display_bus_end_transaction end_transaction;
+    display_bus_flush flush;
     display_bus_collect_ptrs collect_ptrs;
     uint16_t ram_width;
     uint16_t ram_height;
@@ -48,6 +49,10 @@ bool displayio_display_bus_begin_transaction(displayio_display_bus_t *self);
 void displayio_display_bus_end_transaction(displayio_display_bus_t *self);
 
 void displayio_display_bus_set_region_to_update(displayio_display_bus_t *self, displayio_display_core_t *display, displayio_area_t *area);
+
+// Drain any pending asynchronous transfers on the bus.
+// No-op for synchronous buses (FourWire, I2C, ParallelBus).
+void displayio_display_bus_flush(displayio_display_bus_t *self);
 
 void release_display_bus(displayio_display_bus_t *self);
 

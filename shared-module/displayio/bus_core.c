@@ -17,6 +17,9 @@
 #if CIRCUITPY_PARALLELDISPLAYBUS
 #include "shared-bindings/paralleldisplaybus/ParallelBus.h"
 #endif
+#if CIRCUITPY_QSPIBUS
+#include "shared-bindings/qspibus/QSPIBus.h"
+#endif
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/time/__init__.h"
 #include "shared-module/displayio/__init__.h"
@@ -49,6 +52,8 @@ void displayio_display_bus_construct(displayio_display_bus_t *self,
     self->SH1107_addressing = SH1107_addressing;
     self->address_little_endian = address_little_endian;
 
+    self->flush = NULL;
+
     #if CIRCUITPY_PARALLELDISPLAYBUS
     if (mp_obj_is_type(bus, &paralleldisplaybus_parallelbus_type)) {
         self->bus_reset = common_hal_paralleldisplaybus_parallelbus_reset;
@@ -79,6 +84,17 @@ void displayio_display_bus_construct(displayio_display_bus_t *self,
         self->collect_ptrs = common_hal_i2cdisplaybus_i2cdisplaybus_collect_ptrs;
     } else
     #endif
+    #if CIRCUITPY_QSPIBUS
+    if (mp_obj_is_type(bus, &qspibus_qspibus_type)) {
+        self->bus_reset = common_hal_qspibus_qspibus_reset;
+        self->bus_free = common_hal_qspibus_qspibus_bus_free;
+        self->begin_transaction = common_hal_qspibus_qspibus_begin_transaction;
+        self->send = common_hal_qspibus_qspibus_send;
+        self->end_transaction = common_hal_qspibus_qspibus_end_transaction;
+        self->flush = common_hal_qspibus_qspibus_flush;
+        self->collect_ptrs = common_hal_qspibus_qspibus_collect_ptrs;
+    } else
+    #endif
     {
         mp_raise_ValueError(MP_ERROR_TEXT("Unsupported display bus type"));
     }
@@ -101,7 +117,7 @@ void displayio_display_bus_end_transaction(displayio_display_bus_t *self) {
     self->end_transaction(self->bus);
 }
 
-void displayio_display_bus_set_region_to_update(displayio_display_bus_t *self, displayio_display_core_t *display, displayio_area_t *area) {
+static void _displayio_display_bus_send_region_commands(displayio_display_bus_t *self, displayio_display_core_t *display, displayio_area_t *area) {
     uint16_t x1 = area->x1 + self->colstart;
     uint16_t x2 = area->x2 + self->colstart;
     uint16_t y1 = area->y1 + self->rowstart;
@@ -216,6 +232,16 @@ void displayio_display_bus_set_region_to_update(displayio_display_bus_t *self, d
         // Only send the first half of data because it is the first coordinate.
         self->send(self->bus, DISPLAY_DATA, chip_select, data, data_length / 2);
         displayio_display_bus_end_transaction(self);
+    }
+}
+
+void displayio_display_bus_set_region_to_update(displayio_display_bus_t *self, displayio_display_core_t *display, displayio_area_t *area) {
+    _displayio_display_bus_send_region_commands(self, display, area);
+}
+
+void displayio_display_bus_flush(displayio_display_bus_t *self) {
+    if (self->flush != NULL) {
+        self->flush(self->bus);
     }
 }
 
