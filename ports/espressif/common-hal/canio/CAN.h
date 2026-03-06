@@ -26,4 +26,6 @@ typedef struct canio_can_obj {
     bool silent : 1;
     bool auto_restart : 1;
     bool fifo_in_use : 1;
+    twai_handle_t *twai_driver_handle;
+    int instance; /* instance number to ease deinit ... could be taken from twai_driver_handle */
 } canio_can_obj_t;
