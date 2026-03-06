@@ -493,6 +493,8 @@ SRC_COMMON_HAL_ALL = \
 	analogio/AnalogIn.c \
 	analogio/AnalogOut.c \
 	analogio/__init__.c \
+	audiobusio/I2S.c \
+	audiobusio/I2SIn.c \
 	audiobusio/I2SOut.c \
 	audiobusio/PDMIn.c \
 	audiobusio/__init__.c \

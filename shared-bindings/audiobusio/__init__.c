@@ -11,6 +11,8 @@
 
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/audiobusio/__init__.h"
+#include "shared-bindings/audiobusio/I2S.h"
+#include "shared-bindings/audiobusio/I2SIn.h"
 #include "shared-bindings/audiobusio/I2SOut.h"
 #include "shared-bindings/audiobusio/PDMIn.h"
 
@@ -27,6 +29,8 @@
 
 static const mp_rom_map_elem_t audiobusio_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_audiobusio) },
+    { MP_ROM_QSTR(MP_QSTR_I2S), MP_ROM_PTR(&audiobusio_i2s_type) },
+    { MP_ROM_QSTR(MP_QSTR_I2SIn), MP_ROM_PTR(&audiobusio_i2sin_type) },
     { MP_ROM_QSTR(MP_QSTR_I2SOut), MP_ROM_PTR(&audiobusio_i2sout_type) },
     { MP_ROM_QSTR(MP_QSTR_PDMIn), MP_ROM_PTR(&audiobusio_pdmin_type) },
 };
