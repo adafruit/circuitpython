@@ -10,6 +10,11 @@ runs:
         apt-get --version
         echo "--- runner image info ---"
         cat /etc/os-release
+        echo "--- cpu model ---"
+        grep "model name" /proc/cpuinfo | head -1
+        echo "--- boot type and grub ---"
+        [ -d /sys/firmware/efi ] && echo "EFI boot" || echo "BIOS boot"
+        dpkg -l grub-pc grub-efi-amd64-signed 2>/dev/null | grep '^ii' || true
         echo "--- installed python3 packages ---"
         dpkg -l 'python3*' 2>/dev/null | grep '^ii' || true
         echo "--- python3 and python3-packaging status ---"
