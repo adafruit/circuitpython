@@ -21,6 +21,10 @@ runs:
         echo "--- package repository versions ---"
         apt-cache policy
         sudo apt-get install -y libusb-1.0-0-dev libudev-dev pkg-config mtools
+        # Pre-install libglib2.0-dev-bin as amd64 to prevent apt from trying
+        # to pull in python3:i386 (which conflicts with python3:amd64) when
+        # resolving libsdl2-dev:i386 -> libibus-1.0-dev:i386 -> libglib2.0-dev:i386.
+        sudo apt-get install -y libglib2.0-dev-bin
         echo "--- apt-cache policy for key packages ---"
         apt-cache policy libsdl2-dev:i386 libsdl2-image-dev:i386 libglib2.0-dev:i386 libglib2.0-dev-bin python3:amd64 python3:i386 python3-packaging
         echo "--- dpkg architecture list ---"
