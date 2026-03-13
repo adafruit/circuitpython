@@ -1471,6 +1471,7 @@ msgstr ""
 msgid "Mount point directory missing"
 msgstr ""
 
+#: shared-bindings/busio/I2C.c shared-bindings/busio/SPI.c
 #: shared-bindings/busio/UART.c shared-bindings/displayio/Group.c
 msgid "Must be a %q subclass."
 msgstr ""
@@ -2736,6 +2737,10 @@ msgstr ""
 
 #: shared-bindings/socketpool/Socket.c shared-bindings/ssl/SSLSocket.c
 msgid "buffer too small for requested bytes"
+msgstr ""
+
+#: shared-bindings/busio/SPI.c
+msgid "buffers must be same length"
 msgstr ""
 
 #: py/emitbc.c

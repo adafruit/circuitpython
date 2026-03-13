@@ -17,7 +17,132 @@
 #include "hardware/dma.h"
 #include "hardware/gpio.h"
 
+struct spi_transfer_state {
+    uint dma_channel;
+    uint paired_rx_channel;
+    uint8_t repeated_tx_data;
+    uint8_t discard_rx_data;
+};
+
+typedef struct spi_transfer_state spi_transfer_state;
+
+static spi_transfer_state spi_dma_channel_state[NUM_DMA_CHANNELS];
+
 #define NO_INSTANCE 0xff
+
+static spi_transfer_state *common_hal_spi_write_dma(spi_inst_t *spi, const uint8_t *src, size_t len) {
+    invalid_params_if(HARDWARE_SPI, 0 > (int)len);
+    invalid_params_if(HARDWARE_SPI, len == 0);
+
+    uint tx_dma_channel = dma_claim_unused_channel(true);
+    uint rx_dma_channel = dma_claim_unused_channel(true);
+    spi_transfer_state *state = &spi_dma_channel_state[tx_dma_channel];
+    state->dma_channel = tx_dma_channel;
+
+    state->paired_rx_channel = rx_dma_channel;
+    state->discard_rx_data = 0;
+
+    dma_channel_config tx_config = dma_channel_get_default_config(tx_dma_channel);
+    channel_config_set_transfer_data_size(&tx_config, DMA_SIZE_8);
+    channel_config_set_read_increment(&tx_config, true);
+    channel_config_set_write_increment(&tx_config, false);
+    channel_config_set_dreq(&tx_config, SPI_DREQ_NUM(spi, true));
+    dma_channel_configure(tx_dma_channel, &tx_config, &spi_get_hw(spi)->dr, src, len, false);
+
+    dma_channel_config rx_config = dma_channel_get_default_config(rx_dma_channel);
+    channel_config_set_transfer_data_size(&rx_config, DMA_SIZE_8);
+    channel_config_set_read_increment(&rx_config, false);
+    channel_config_set_write_increment(&rx_config, false);
+    channel_config_set_dreq(&rx_config, SPI_DREQ_NUM(spi, false));
+    dma_channel_configure(rx_dma_channel, &rx_config, &state->discard_rx_data,
+        &spi_get_hw(spi)->dr, len, false);
+
+    dma_start_channel_mask((1u << tx_dma_channel) | (1u << rx_dma_channel));
+    return state;
+}
+
+static spi_transfer_state *common_hal_spi_read_dma(spi_inst_t *spi, uint8_t repeated_tx_data, uint8_t *dst, size_t len) {
+    invalid_params_if(HARDWARE_SPI, 0 > (int)len);
+    invalid_params_if(HARDWARE_SPI, len == 0);
+
+    uint tx_dma_channel = dma_claim_unused_channel(true);
+    uint rx_dma_channel = dma_claim_unused_channel(true);
+    spi_transfer_state *state = &spi_dma_channel_state[tx_dma_channel];
+    state->dma_channel = tx_dma_channel;
+
+    state->paired_rx_channel = rx_dma_channel;
+    state->repeated_tx_data = repeated_tx_data;
+
+    dma_channel_config tx_config = dma_channel_get_default_config(tx_dma_channel);
+    channel_config_set_transfer_data_size(&tx_config, DMA_SIZE_8);
+    channel_config_set_read_increment(&tx_config, false);
+    channel_config_set_write_increment(&tx_config, false);
+    channel_config_set_dreq(&tx_config, SPI_DREQ_NUM(spi, true));
+    dma_channel_configure(tx_dma_channel, &tx_config, &spi_get_hw(spi)->dr,
+        &state->repeated_tx_data, len, false);
+
+    dma_channel_config rx_config = dma_channel_get_default_config(rx_dma_channel);
+    channel_config_set_transfer_data_size(&rx_config, DMA_SIZE_8);
+    channel_config_set_read_increment(&rx_config, false);
+    channel_config_set_write_increment(&rx_config, true);
+    channel_config_set_dreq(&rx_config, SPI_DREQ_NUM(spi, false));
+    dma_channel_configure(rx_dma_channel, &rx_config, dst, &spi_get_hw(spi)->dr, len, false);
+
+    dma_start_channel_mask((1u << tx_dma_channel) | (1u << rx_dma_channel));
+    return state;
+}
+
+static spi_transfer_state *common_hal_spi_write_read_dma(spi_inst_t *spi, const uint8_t *src, uint8_t *dst, size_t len) {
+    invalid_params_if(HARDWARE_SPI, 0 > (int)len);
+    invalid_params_if(HARDWARE_SPI, len == 0);
+
+    uint tx_dma_channel = dma_claim_unused_channel(true);
+    uint rx_dma_channel = dma_claim_unused_channel(true);
+    spi_transfer_state *state = &spi_dma_channel_state[tx_dma_channel];
+    state->dma_channel = tx_dma_channel;
+
+    state->paired_rx_channel = rx_dma_channel;
+
+    dma_channel_config tx_config = dma_channel_get_default_config(tx_dma_channel);
+    channel_config_set_transfer_data_size(&tx_config, DMA_SIZE_8);
+    channel_config_set_read_increment(&tx_config, true);
+    channel_config_set_write_increment(&tx_config, false);
+    channel_config_set_dreq(&tx_config, SPI_DREQ_NUM(spi, true));
+    dma_channel_configure(tx_dma_channel, &tx_config, &spi_get_hw(spi)->dr, src, len, false);
+
+    dma_channel_config rx_config = dma_channel_get_default_config(rx_dma_channel);
+    channel_config_set_transfer_data_size(&rx_config, DMA_SIZE_8);
+    channel_config_set_read_increment(&rx_config, false);
+    channel_config_set_write_increment(&rx_config, true);
+    channel_config_set_dreq(&rx_config, SPI_DREQ_NUM(spi, false));
+    dma_channel_configure(rx_dma_channel, &rx_config, dst, &spi_get_hw(spi)->dr, len, false);
+
+    dma_start_channel_mask((1u << tx_dma_channel) | (1u << rx_dma_channel));
+    return state;
+}
+
+static bool common_hal_spi_dma_is_busy(spi_transfer_state *state) {
+    if (state == NULL) {
+        return false;
+    }
+    uint dma_channel = state->dma_channel;
+    if (dma_channel_is_busy(dma_channel)) {
+        return true;
+    }
+
+    uint rx_dma_channel = state->paired_rx_channel;
+    if (rx_dma_channel < NUM_DMA_CHANNELS && dma_channel_is_busy(rx_dma_channel)) {
+        return true;
+    }
+
+    if (rx_dma_channel < NUM_DMA_CHANNELS) {
+        dma_channel_unclaim(rx_dma_channel);
+    }
+    dma_channel_unclaim(dma_channel);
+
+    state->paired_rx_channel = NUM_DMA_CHANNELS;
+    return false;
+}
 
 void common_hal_busio_spi_construct(busio_spi_obj_t *self,
     const mcu_pin_obj_t *clock, const mcu_pin_obj_t *mosi,
@@ -274,4 +399,21 @@ uint8_t common_hal_busio_spi_get_phase(busio_spi_obj_t *self) {
 
 uint8_t common_hal_busio_spi_get_polarity(busio_spi_obj_t *self) {
     return self->polarity;
+}
+
+spi_transfer_state *common_hal_busio_spi_start_transfer(busio_spi_obj_t *spi, const uint8_t *out_data, uint8_t *in_data, size_t len) {
+    if (out_data == NULL && in_data == NULL) {
+        return NULL;
+    }
+    if (out_data == NULL) {
+        return common_hal_spi_read_dma(spi->peripheral, 0, in_data, len);
+    }
+    if (in_data == NULL) {
+        return common_hal_spi_write_dma(spi->peripheral, out_data, len);
+    }
+    return common_hal_spi_write_read_dma(spi->peripheral, out_data, in_data, len);
+}
+
+bool common_hal_busio_spi_transfer_isbusy(spi_transfer_state *state) {
+    return common_hal_spi_dma_is_busy(state);
 }

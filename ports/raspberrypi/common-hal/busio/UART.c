@@ -15,6 +15,7 @@
 #include "shared-bindings/microcontroller/Pin.h"
 
 #include "hardware/irq.h"
+#include "hardware/dma.h"
 #include "hardware/gpio.h"
 
 #define NO_PIN 0xff
@@ -28,6 +29,44 @@ typedef enum {
 } uart_status_t;
 
 static uart_status_t uart_status[NUM_UARTS];
+
+struct uart_transfer_state {
+    uint dma_channel;
+};
+
+typedef struct uart_transfer_state uart_transfer_state;
+
+static uart_transfer_state uart_transfer_state_by_channel[NUM_DMA_CHANNELS];
+
+static uart_transfer_state *common_hal_uart_write_dma(uart_inst_t *uart, const uint8_t *src, size_t len) {
+    invalid_params_if(HARDWARE_UART, 0 > (int)len);
+    invalid_params_if(HARDWARE_UART, len == 0);
+
+    uint dma_channel = dma_claim_unused_channel(true);
+    uart_transfer_state *state = &uart_transfer_state_by_channel[dma_channel];
+    state->dma_channel = dma_channel;
+
+    dma_channel_config config = dma_channel_get_default_config(dma_channel);
+    channel_config_set_transfer_data_size(&config, DMA_SIZE_8);
+    channel_config_set_read_increment(&config, true);
+    channel_config_set_write_increment(&config, false);
+    channel_config_set_dreq(&config, UART_DREQ_NUM(uart, true));
+
+    dma_channel_configure(dma_channel, &config, &uart_get_hw(uart)->dr, src, len, true);
+    return state;
+}
+
+static bool common_hal_uart_dma_is_busy(uart_transfer_state *state) {
+    if (state == NULL) {
+        return false;
+    }
+    uint dma_channel = state->dma_channel;
+    if (dma_channel_is_busy(dma_channel)) {
+        return true;
+    }
+    dma_channel_unclaim(dma_channel);
+    return false;
+}
 
 void reset_uart(void) {
     for (uint8_t num = 0; num < NUM_UARTS; num++) {
@@ -356,4 +395,12 @@ void common_hal_busio_uart_never_reset(busio_uart_obj_t *self) {
     pin_never_reset(self->cts_pin);
     pin_never_reset(self->rs485_dir_pin);
     pin_never_reset(self->rts_pin);
+}
+
+uart_transfer_state *common_hal_busio_uart_start_write(busio_uart_obj_t *uart, const uint8_t *data, size_t len) {
+    return common_hal_uart_write_dma(uart->uart, data, len);
+}
+
+bool common_hal_busio_uart_write_isbusy(uart_transfer_state *state) {
+    return common_hal_uart_dma_is_busy(state);
 }
