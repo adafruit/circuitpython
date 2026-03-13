@@ -6,18 +6,29 @@ runs:
     - name: Get Linux build dependencies
       if: runner.os == 'Linux'
       run: |
+        echo "--- apt-get version ---"
+        apt-get --version
+        echo "--- runner image info ---"
+        cat /etc/os-release
+        echo "--- installed python3 packages ---"
+        dpkg -l 'python3*' 2>/dev/null | grep '^ii' || true
+        echo "--- python3 and python3-packaging status ---"
+        dpkg -s python3 python3-minimal python3-packaging 2>&1 || true
         sudo dpkg --add-architecture i386
         sudo apt-get update
+        echo "--- source list ---"
+        grep -r ^ /etc/apt/sources.list /etc/apt/sources.list.d/ 2>/dev/null || true
+        echo "--- package repository versions ---"
+        apt-cache policy
         sudo apt-get install -y libusb-1.0-0-dev libudev-dev pkg-config mtools
+        echo "--- apt-cache policy for key packages ---"
+        apt-cache policy libsdl2-dev:i386 libsdl2-image-dev:i386 libglib2.0-dev:i386 libglib2.0-dev-bin python3:amd64 python3:i386 python3-packaging
+        echo "--- dpkg architecture list ---"
+        dpkg --print-foreign-architectures
+        echo "--- dry-run install to see what would change ---"
+        sudo apt-get install -y --dry-run libsdl2-dev:i386 libsdl2-image-dev:i386 2>&1 || true
         echo "::group::Install SDL2 i386 packages"
-        sudo apt-get install -y -o Debug::pkgProblemResolver=yes -o Debug::pkgDepCache::AutoInstall=yes libsdl2-dev:i386 libsdl2-image-dev:i386 || {
-          echo "::error::Failed to install SDL2 i386 packages"
-          echo "--- apt-cache policy ---"
-          apt-cache policy libsdl2-dev:i386 libsdl2-image-dev:i386
-          echo "--- dpkg architecture list ---"
-          dpkg --print-foreign-architectures
-          exit 1
-        }
+        sudo apt-get install -y -o Debug::pkgProblemResolver=yes -o Debug::pkgDepCache::AutoInstall=yes libsdl2-dev:i386 libsdl2-image-dev:i386
         echo "::endgroup::"
         echo "PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}" >> $GITHUB_ENV
       shell: bash
