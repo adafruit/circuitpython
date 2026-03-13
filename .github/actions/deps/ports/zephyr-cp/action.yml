@@ -26,19 +26,11 @@ runs:
         echo "--- package repository versions ---"
         apt-cache policy
         sudo apt-get install -y libusb-1.0-0-dev libudev-dev pkg-config mtools
-        # Pre-install libglib2.0-dev-bin as amd64 to prevent apt from trying
-        # to pull in python3:i386 (which conflicts with python3:amd64) when
-        # resolving libsdl2-dev:i386 -> libibus-1.0-dev:i386 -> libglib2.0-dev:i386.
-        sudo apt-get install -y libglib2.0-dev-bin
-        echo "--- apt-cache policy for key packages ---"
-        apt-cache policy libsdl2-dev:i386 libsdl2-image-dev:i386 libglib2.0-dev:i386 libglib2.0-dev-bin python3:amd64 python3:i386 python3-packaging
-        echo "--- dpkg architecture list ---"
-        dpkg --print-foreign-architectures
-        echo "--- dry-run install to see what would change ---"
-        sudo apt-get install -y --dry-run libsdl2-dev:i386 libsdl2-image-dev:i386 2>&1 || true
-        echo "::group::Install SDL2 i386 packages"
-        sudo apt-get install -y -o Debug::pkgProblemResolver=yes -o Debug::pkgDepCache::AutoInstall=yes libsdl2-dev:i386 libsdl2-image-dev:i386
-        echo "::endgroup::"
+        # Remove system python3 to avoid conflict with python3:i386 which is
+        # pulled in by libsdl2-dev:i386 -> libibus-1.0-dev:i386 -> libglib2.0-dev:i386.
+        # We use the actions/setup-python version from /opt/hostedtoolcache instead.
+        sudo apt-get remove -y python3 python3-minimal || true
+        sudo apt-get install -y libsdl2-dev:i386 libsdl2-image-dev:i386
         echo "PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}" >> $GITHUB_ENV
       shell: bash
     - name: Setup Zephyr project

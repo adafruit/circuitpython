@@ -243,6 +243,9 @@ def set_boards(build_all: bool):
 
     print("Building boards:", bool(boards_to_build))
 
+    # Filter to only zephyr-cp boards for debugging
+    boards_to_build = {b for b in boards_to_build if board_to_port.get(b) == "zephyr-cp"}
+
     # Split boards by port
     port_to_boards_to_build = {}
 
