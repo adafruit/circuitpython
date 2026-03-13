@@ -8,7 +8,17 @@ runs:
       run: |
         sudo dpkg --add-architecture i386
         sudo apt-get update
-        sudo apt-get install -y libusb-1.0-0-dev libudev-dev pkg-config libsdl2-dev:i386 libsdl2-image-dev:i386 mtools
+        sudo apt-get install -y libusb-1.0-0-dev libudev-dev pkg-config mtools
+        echo "::group::Install SDL2 i386 packages"
+        sudo apt-get install -y -o Debug::pkgProblemResolver=yes -o Debug::pkgDepCache::AutoInstall=yes libsdl2-dev:i386 libsdl2-image-dev:i386 || {
+          echo "::error::Failed to install SDL2 i386 packages"
+          echo "--- apt-cache policy ---"
+          apt-cache policy libsdl2-dev:i386 libsdl2-image-dev:i386
+          echo "--- dpkg architecture list ---"
+          dpkg --print-foreign-architectures
+          exit 1
+        }
+        echo "::endgroup::"
         echo "PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}" >> $GITHUB_ENV
       shell: bash
     - name: Setup Zephyr project
