@@ -2,7 +2,6 @@
 import pathlib
 import subprocess
 import sys
-import tomllib
 
 import board_tools
 
@@ -10,13 +9,10 @@ portdir = pathlib.Path(__file__).resolve().parent.parent
 
 board = sys.argv[-1]
 
-mpconfigboard = board_tools.find_mpconfigboard(portdir, board)
-if mpconfigboard is None:
+_, mpconfigboard = board_tools.load_mpconfigboard(portdir, board)
+if not mpconfigboard:
     # Assume it doesn't need any prep.
     sys.exit(0)
-
-with mpconfigboard.open("rb") as f:
-    mpconfigboard = tomllib.load(f)
 
 blobs = mpconfigboard.get("BLOBS", [])
 blob_fetch_args = mpconfigboard.get("blob_fetch_args", {})

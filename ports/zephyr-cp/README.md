@@ -42,6 +42,36 @@ If a local `./CIRCUITPY/` folder exists, its files are used as the simulator's C
 
 Edit files in `./CIRCUITPY` (for example `code.py`) and rerun `make run-sim` to test changes.
 
+## Shields
+
+Board defaults can be set in `boards/<vendor>/<board>/circuitpython.toml`:
+
+```toml
+SHIELDS = ["shield1", "shield2"]
+```
+
+For example, `boards/renesas/ek_ra8d1/circuitpython.toml` enables:
+
+```toml
+SHIELDS = ["rtkmipilcdb00000be"]
+```
+
+You can override shield selection from the command line:
+
+```sh
+# Single shield
+make BOARD=renesas_ek_ra8d1 SHIELD=rtkmipilcdb00000be
+
+# Multiple shields (comma, semicolon, or space separated)
+make BOARD=my_vendor_my_board SHIELDS="shield1,shield2"
+```
+
+Behavior and precedence:
+
+- If `SHIELD` or `SHIELDS` is explicitly provided, it overrides board defaults.
+- If neither is provided, defaults from `circuitpython.toml` are used.
+- Use `SHIELD=` (empty) to disable a board default shield for one build.
+
 ## Testing other boards
 
 [Any Zephyr board](https://docs.zephyrproject.org/latest/boards/index.html#) can

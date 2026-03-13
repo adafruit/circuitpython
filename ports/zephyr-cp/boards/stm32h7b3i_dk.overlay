@@ -2,6 +2,28 @@
     /delete-node/ partitions;
 };
 
+&sram5 {
+    status = "disabled";
+};
+
 &rng {
     status = "okay";
 };
+
+&fdcan1 {
+    status = "disabled";
+};
+
+/ {
+    chosen {
+        /delete-property/ zephyr,canbus;
+    };
+};
+
+zephyr_udc0: &usbotg_hs {
+    pinctrl-0 = <&usb_otg_hs_dm_pa11 &usb_otg_hs_dp_pa12>;
+    pinctrl-names = "default";
+    status = "okay";
+};
+
+#include "../app.overlay"

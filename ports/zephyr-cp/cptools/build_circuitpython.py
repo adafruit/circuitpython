@@ -68,6 +68,9 @@ REVERSE_DEPENDENCIES = {
     "busio": ["fourwire", "i2cdisplaybus", "sdcardio", "sharpdisplay"],
     "fourwire": ["displayio", "busdisplay", "epaperdisplay"],
     "i2cdisplaybus": ["displayio", "busdisplay", "epaperdisplay"],
+    # Zephyr display backends need displayio and, by extension, terminalio so
+    # the REPL console appears on the display by default.
+    "zephyr_display": ["displayio"],
     "displayio": [
         "vectorio",
         "bitmapfilter",
