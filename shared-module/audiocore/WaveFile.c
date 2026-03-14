@@ -111,6 +111,10 @@ void common_hal_audioio_wavefile_construct(audioio_wavefile_obj_t *self,
     self->file_length = chunk_length;
     self->data_start = self->file->fp.fptr;
 
+    // Default rate = 1.0 (unity)
+    self->phase_inc = WAVEFILE_PHASE_UNITY;
+    self->phase_accum = 0;
+
     // Try to allocate two buffers, one will be loaded from file and the other
     // DMAed to DAC.
     if (buffer_size) {
@@ -139,6 +143,14 @@ void common_hal_audioio_wavefile_deinit(audioio_wavefile_obj_t *self) {
     audiosample_mark_deinit(&self->base);
 }
 
+void common_hal_audioio_wavefile_set_rate(audioio_wavefile_obj_t *self, mp_float_t rate) {
+    self->phase_inc = (uint32_t)(rate * WAVEFILE_PHASE_UNITY);
+}
+
+mp_float_t common_hal_audioio_wavefile_get_rate(audioio_wavefile_obj_t *self) {
+    return (mp_float_t)self->phase_inc / WAVEFILE_PHASE_UNITY;
+}
+
 void audioio_wavefile_reset_buffer(audioio_wavefile_obj_t *self,
     bool single_channel_output,
     uint8_t channel) {
@@ -152,6 +164,8 @@ void audioio_wavefile_reset_buffer(audioio_wavefile_obj_t *self,
     self->read_count = 0;
     self->left_read_count = 0;
     self->right_read_count = 0;
+    self->phase_accum = 0;
+    self->buffer_length = 0; // Force reload on first get_buffer when resampling
 }
 
 audioio_get_buffer_result_t audioio_wavefile_get_buffer(audioio_wavefile_obj_t *self,
@@ -163,68 +177,161 @@ audioio_get_buffer_result_t audioio_wavefile_get_buffer(audioio_wavefile_obj_t *
         channel = 0;
     }
 
-    uint32_t channel_read_count = self->left_read_count;
-    if (channel == 1) {
-        channel_read_count = self->right_read_count;
-    }
-
-    bool need_more_data = self->read_count == channel_read_count;
-
-    if (self->bytes_remaining == 0 && need_more_data) {
-        *buffer = NULL;
-        *buffer_length = 0;
-        return GET_BUFFER_DONE;
-    }
-
-    if (need_more_data) {
-        uint32_t num_bytes_to_load = self->len;
-        if (num_bytes_to_load > self->bytes_remaining) {
-            num_bytes_to_load = self->bytes_remaining;
+    // Early out: rate == 1.0, use original fixed-speed implementation
+    if (self->phase_inc == WAVEFILE_PHASE_UNITY) {
+        uint32_t channel_read_count = self->left_read_count;
+        if (channel == 1) {
+            channel_read_count = self->right_read_count;
         }
-        UINT length_read;
-        if (self->buffer_index % 2 == 1) {
+
+        bool need_more_data = self->read_count == channel_read_count;
+
+        if (self->bytes_remaining == 0 && need_more_data) {
+            *buffer = NULL;
+            *buffer_length = 0;
+            return GET_BUFFER_DONE;
+        }
+
+        if (need_more_data) {
+            uint32_t num_bytes_to_load = self->len;
+            if (num_bytes_to_load > self->bytes_remaining) {
+                num_bytes_to_load = self->bytes_remaining;
+            }
+            UINT length_read;
+            if (self->buffer_index % 2 == 1) {
+                *buffer = self->second_buffer;
+            } else {
+                *buffer = self->buffer;
+            }
+            if (f_read(&self->file->fp, *buffer, num_bytes_to_load, &length_read) != FR_OK || length_read != num_bytes_to_load) {
+                return GET_BUFFER_ERROR;
+            }
+            self->bytes_remaining -= length_read;
+            // Pad the last buffer to word align it.
+            if (self->bytes_remaining == 0 && length_read % sizeof(uint32_t) != 0) {
+                uint32_t pad = length_read % sizeof(uint32_t);
+                length_read += pad;
+                if (self->base.bits_per_sample == 8) {
+                    for (uint32_t i = 0; i < pad; i++) {
+                        ((uint8_t *)(*buffer))[length_read / sizeof(uint8_t) - i - 1] = 0x80;
+                    }
+                } else if (self->base.bits_per_sample == 16) {
+                    #pragma GCC diagnostic push
+                    #pragma GCC diagnostic ignored "-Wcast-align"
+                    ((int16_t *)(*buffer))[length_read / sizeof(int16_t) - 1] = 0;
+                    #pragma GCC diagnostic pop
+                }
+            }
+            *buffer_length = length_read;
+            if (self->buffer_index % 2 == 1) {
+                self->second_buffer_length = length_read;
+            } else {
+                self->buffer_length = length_read;
+            }
+            self->buffer_index += 1;
+            self->read_count += 1;
+        }
+
+        uint32_t buffers_back = self->read_count - 1 - channel_read_count;
+        if ((self->buffer_index - buffers_back) % 2 == 0) {
             *buffer = self->second_buffer;
+            *buffer_length = self->second_buffer_length;
         } else {
             *buffer = self->buffer;
+            *buffer_length = self->buffer_length;
         }
-        if (f_read(&self->file->fp, *buffer, num_bytes_to_load, &length_read) != FR_OK || length_read != num_bytes_to_load) {
-            return GET_BUFFER_ERROR;
+
+        if (channel == 0) {
+            self->left_read_count += 1;
+        } else if (channel == 1) {
+            self->right_read_count += 1;
+            *buffer = *buffer + self->base.bits_per_sample / 8;
         }
-        self->bytes_remaining -= length_read;
-        // Pad the last buffer to word align it.
-        if (self->bytes_remaining == 0 && length_read % sizeof(uint32_t) != 0) {
-            uint32_t pad = length_read % sizeof(uint32_t);
-            length_read += pad;
-            if (self->base.bits_per_sample == 8) {
-                for (uint32_t i = 0; i < pad; i++) {
-                    ((uint8_t *)(*buffer))[length_read / sizeof(uint8_t) - i - 1] = 0x80;
+
+        return self->bytes_remaining == 0 ? GET_BUFFER_DONE : GET_BUFFER_MORE_DATA;
+    }
+
+    // Resampled path: rate != 1.0
+    // Uses self->buffer as persistent source data from file,
+    // and self->second_buffer as resampled output.
+
+    uint32_t channel_read_count = (channel == 1) ? self->right_read_count : self->left_read_count;
+    bool need_more_data = (self->read_count == channel_read_count);
+
+    uint32_t bytes_per_frame = (self->base.bits_per_sample / 8) * self->base.channel_count;
+
+    if (need_more_data) {
+        uint32_t src_frames_avail = self->buffer_length / bytes_per_frame;
+
+        // Check if completely done (no file data left AND source buffer exhausted)
+        if (self->bytes_remaining == 0 && (self->phase_accum >> 16) >= src_frames_avail) {
+            *buffer = NULL;
+            *buffer_length = 0;
+            return GET_BUFFER_DONE;
+        }
+
+        uint8_t *src_buf = self->buffer;
+        uint8_t *out_buf = self->second_buffer;
+        uint32_t out_buf_frames = self->len / bytes_per_frame;
+        uint32_t out_pos = 0;
+
+        while (out_pos < out_buf_frames) {
+            uint32_t src_frame = self->phase_accum >> 16;
+
+            // Need to load more source data?
+            if (src_frame >= src_frames_avail) {
+                if (self->bytes_remaining == 0) {
+                    break;
                 }
-            } else if (self->base.bits_per_sample == 16) {
-                // We know the buffer is aligned because we allocated it onto the heap ourselves.
-                #pragma GCC diagnostic push
-                #pragma GCC diagnostic ignored "-Wcast-align"
-                ((int16_t *)(*buffer))[length_read / sizeof(int16_t) - 1] = 0;
-                #pragma GCC diagnostic pop
+                // Shift phase accumulator back by consumed frames
+                self->phase_accum -= src_frames_avail << 16;
+                src_frame = self->phase_accum >> 16;
+
+                // Load new source data
+                uint32_t to_load = self->len;
+                if (to_load > self->bytes_remaining) {
+                    to_load = self->bytes_remaining;
+                }
+                UINT length_read;
+                if (f_read(&self->file->fp, src_buf, to_load, &length_read) != FR_OK || length_read == 0) {
+                    return GET_BUFFER_ERROR;
+                }
+                self->bytes_remaining -= length_read;
+                self->buffer_length = length_read;
+                src_frames_avail = length_read / bytes_per_frame;
+
+                if (src_frame >= src_frames_avail) {
+                    break;
+                }
             }
+
+            // Nearest-neighbor: copy one frame from source to output
+            memcpy(out_buf + out_pos * bytes_per_frame,
+                src_buf + src_frame * bytes_per_frame,
+                bytes_per_frame);
+            out_pos++;
+            self->phase_accum += self->phase_inc;
         }
-        *buffer_length = length_read;
-        if (self->buffer_index % 2 == 1) {
-            self->second_buffer_length = length_read;
-        } else {
-            self->buffer_length = length_read;
+
+        uint32_t out_bytes = out_pos * bytes_per_frame;
+
+        // Pad the last buffer to word-align it
+        if (out_pos < out_buf_frames && out_bytes % sizeof(uint32_t) != 0) {
+            uint32_t pad = sizeof(uint32_t) - (out_bytes % sizeof(uint32_t));
+            if (self->base.bits_per_sample == 8) {
+                memset(out_buf + out_bytes, 0x80, pad);
+            } else {
+                memset(out_buf + out_bytes, 0, pad);
+            }
+            out_bytes += pad;
         }
-        self->buffer_index += 1;
+
+        self->second_buffer_length = out_bytes;
         self->read_count += 1;
     }
 
-    uint32_t buffers_back = self->read_count - 1 - channel_read_count;
-    if ((self->buffer_index - buffers_back) % 2 == 0) {
-        *buffer = self->second_buffer;
-        *buffer_length = self->second_buffer_length;
-    } else {
-        *buffer = self->buffer;
-        *buffer_length = self->buffer_length;
-    }
+    *buffer = self->second_buffer;
+    *buffer_length = self->second_buffer_length;
 
     if (channel == 0) {
         self->left_read_count += 1;
@@ -233,5 +340,8 @@ audioio_get_buffer_result_t audioio_wavefile_get_buffer(audioio_wavefile_obj_t *
         *buffer = *buffer + self->base.bits_per_sample / 8;
     }
 
-    return self->bytes_remaining == 0 ? GET_BUFFER_DONE : GET_BUFFER_MORE_DATA;
+    // Done when file is exhausted AND source buffer is exhausted
+    uint32_t src_frames_avail = self->buffer_length / bytes_per_frame;
+    bool all_done = (self->bytes_remaining == 0) && ((self->phase_accum >> 16) >= src_frames_avail);
+    return all_done ? GET_BUFFER_DONE : GET_BUFFER_MORE_DATA;
 }

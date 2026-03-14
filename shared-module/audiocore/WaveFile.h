@@ -28,7 +28,12 @@ typedef struct {
     uint32_t read_count;
     uint32_t left_read_count;
     uint32_t right_read_count;
+
+    uint32_t phase_accum;  // 16.16 fixed-point position in source samples
+    uint32_t phase_inc;    // 16.16 fixed-point rate (0x10000 = 1.0)
 } audioio_wavefile_obj_t;
+
+#define WAVEFILE_PHASE_UNITY 0x10000
 
 // These are not available from Python because it may be called in an interrupt.
 void audioio_wavefile_reset_buffer(audioio_wavefile_obj_t *self,

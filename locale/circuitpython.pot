@@ -4104,6 +4104,10 @@ msgstr ""
 msgid "pull masks conflict with direction masks"
 msgstr ""
 
+#: shared-bindings/audiocore/WaveFile.c
+msgid "rate must be positive"
+msgstr ""
+
 #: extmod/ulab/code/numpy/fft/fft_tools.c
 msgid "real and imaginary parts must be of equal length"
 msgstr ""

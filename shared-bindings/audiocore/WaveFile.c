@@ -114,7 +114,32 @@ static MP_DEFINE_CONST_FUN_OBJ_1(audioio_wavefile_deinit_obj, audioio_wavefile_d
 //|     channel_count: int
 //|     """Number of audio channels. (read only)"""
 //|
+
+//|     rate: float
+//|     """Playback speed as a floating-point multiplier. 1.0 is normal speed,
+//|     2.0 is double speed, 0.5 is half speed. Uses phase accumulation with
+//|     nearest-neighbor resampling. Default is 1.0."""
 //|
+static mp_obj_t audioio_wavefile_obj_get_rate(mp_obj_t self_in) {
+    audioio_wavefile_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    return mp_obj_new_float(common_hal_audioio_wavefile_get_rate(self));
+}
+MP_DEFINE_CONST_FUN_OBJ_1(audioio_wavefile_get_rate_obj, audioio_wavefile_obj_get_rate);
+
+static mp_obj_t audioio_wavefile_obj_set_rate(mp_obj_t self_in, mp_obj_t rate_in) {
+    audioio_wavefile_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    mp_float_t rate = mp_obj_get_float(rate_in);
+    if (rate <= (mp_float_t)0.0) {
+        mp_raise_ValueError(MP_ERROR_TEXT("rate must be positive"));
+    }
+    common_hal_audioio_wavefile_set_rate(self, rate);
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_2(audioio_wavefile_set_rate_obj, audioio_wavefile_obj_set_rate);
+
+MP_PROPERTY_GETSET(audioio_wavefile_rate_obj,
+    (mp_obj_t)&audioio_wavefile_get_rate_obj,
+    (mp_obj_t)&audioio_wavefile_set_rate_obj);
 
 static const mp_rom_map_elem_t audioio_wavefile_locals_dict_table[] = {
     // Methods
@@ -124,6 +149,7 @@ static const mp_rom_map_elem_t audioio_wavefile_locals_dict_table[] = {
 
     // Properties
     AUDIOSAMPLE_FIELDS,
+    { MP_ROM_QSTR(MP_QSTR_rate), MP_ROM_PTR(&audioio_wavefile_rate_obj) },
 };
 static MP_DEFINE_CONST_DICT(audioio_wavefile_locals_dict, audioio_wavefile_locals_dict_table);
 
