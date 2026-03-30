@@ -165,16 +165,6 @@ static inline uint32_t copy16msb(uint32_t val) {
     return val | (val >> 16);
 }
 
-static inline uint32_t copy8lsb(uint32_t val) {
-    val &= 0x00ff;
-    return val | (val << 8);
-}
-
-static inline uint32_t copy8msb(uint32_t val) {
-    val &= 0xff00;
-    return val | (val >> 8);
-}
-
 #define ALMOST_ONE (MICROPY_FLOAT_CONST(32767.) / 32768)
 
 static void mix_down_one_voice(audiomixer_mixer_obj_t *self,
