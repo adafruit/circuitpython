@@ -161,7 +161,7 @@ static inline uint32_t copy16lsb(uint32_t val) {
     #else
     val &= 0x0000ffff;
     return val | (val << 16);
-    #endif;
+    #endif
 }
 
 static inline uint32_t copy16msb(uint32_t val) {
@@ -170,7 +170,7 @@ static inline uint32_t copy16msb(uint32_t val) {
     #else
     val &= 0xffff0000;
     return val | (val >> 16);
-    #endif;
+    #endif
 }
 
 #define ALMOST_ONE (MICROPY_FLOAT_CONST(32767.) / 32768)
