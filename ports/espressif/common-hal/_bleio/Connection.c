@@ -65,7 +65,7 @@ int bleio_connection_event_cb(struct ble_gap_event *event, void *connection_in) 
 
         case BLE_GAP_EVENT_CONN_UPDATE: {
             struct ble_gap_conn_desc desc;
-            int rc = ble_gap_conn_find(event->conn_update.conn_handle, &desc);
+            int rc __attribute__((unused)) = ble_gap_conn_find(event->conn_update.conn_handle, &desc);
             assert(rc == 0);
             connection->conn_params_updating = false;
             break;

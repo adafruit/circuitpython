@@ -17,7 +17,7 @@ static uint16_t touch_channel_mask;
 static volatile bool woke_up = false;
 
 void common_hal_alarm_touch_touchalarm_construct(alarm_touch_touchalarm_obj_t *self, const mcu_pin_obj_t *pin) {
-    if (pin->touch_channel == TOUCH_PAD_MAX) {
+    if (pin->touch_channel == NO_TOUCH_CHANNEL) {
         raise_ValueError_invalid_pin();
     }
     claim_pin(pin);
@@ -40,35 +40,28 @@ mp_obj_t alarm_touch_touchalarm_record_wake_alarm(void) {
     alarm->base.type = &alarm_touch_touchalarm_type;
     alarm->pin = NULL;
 
-    #if defined(CONFIG_IDF_TARGET_ESP32)
-    touch_pad_t wake_channel;
-    if (touch_pad_get_wakeup_status(&wake_channel) != ESP_OK) {
-        return alarm;
-    }
-    #else
-    touch_pad_t wake_channel = touch_pad_get_current_meas_channel();
-    if (wake_channel == TOUCH_PAD_MAX) {
-        return alarm;
-    }
-    #endif
-
     // Map the pin number back to a pin object.
     for (size_t i = 0; i < mcu_pin_globals.map.used; i++) {
         const mcu_pin_obj_t *pin_obj = MP_OBJ_TO_PTR(mcu_pin_globals.map.table[i].value);
-        if (pin_obj->touch_channel == wake_channel) {
-            alarm->pin = mcu_pin_globals.map.table[i].value;
-            break;
+        if (pin_obj->touch_channel != NO_TOUCH_CHANNEL) {
+            if ((touch_channel_mask & (1 << pin_obj->touch_channel)) != 0) {
+                alarm->pin = mcu_pin_globals.map.table[i].value;
+                break;
+            }
         }
     }
 
     return alarm;
 }
 
-// This is used to wake the main CircuitPython task.
-static void touch_interrupt(void *arg) {
-    (void)arg;
+// This callback is used to wake the main CircuitPython task during light sleep.
+static bool touch_active_callback(touch_sensor_handle_t sens_handle, const touch_active_event_data_t *event, void *user_ctx) {
+    (void)sens_handle;
+    (void)event;
+    (void)user_ctx;
     woke_up = true;
     port_wake_main_task_from_isr();
+    return false;
 }
 
 void alarm_touch_touchalarm_set_alarm(const bool deep_sleep, const size_t n_alarms, const mp_obj_t *alarms) {
@@ -81,7 +74,7 @@ void alarm_touch_touchalarm_set_alarm(const bool deep_sleep, const size_t n_alar
                 mp_raise_ValueError_varg(MP_ERROR_TEXT("Only one %q can be set in deep sleep."), MP_QSTR_TouchAlarm);
             }
             touch_alarm = MP_OBJ_TO_PTR(alarms[i]);
-            touch_channel_mask |= 1 << touch_alarm->pin->number;
+            touch_channel_mask |= 1 << touch_alarm->pin->touch_channel;
             // Resetting the pin will set a pull-up, which we don't want.
             skip_reset_once_pin_number(touch_alarm->pin->number);
             touch_alarm_set = true;
@@ -92,47 +85,69 @@ void alarm_touch_touchalarm_set_alarm(const bool deep_sleep, const size_t n_alar
         return;
     }
 
-    // configure interrupt for pretend to deep sleep
-    // this will be disabled if we actually deep sleep
-
-    // reset touch peripheral
+    // Reset touch peripheral and keep it from being reset again
     peripherals_touch_reset();
     peripherals_touch_never_reset(true);
 
-    for (uint8_t i = 1; i <= 14; i++) {
-        if ((touch_channel_mask & 1 << i) != 0) {
-            touch_pad_t touch_channel = (touch_pad_t)i;
-            // initialize touchpad
-            peripherals_touch_init(touch_channel);
-
-            // wait for touch data to reset
-            mp_hal_delay_ms(10);
-
-            // configure trigger threshold
-            #if defined(CONFIG_IDF_TARGET_ESP32)
-            uint16_t touch_value;
-            // ESP32 touch_pad_read() returns a lower value when a pin is touched, not a higher value
-            // Typical values on a Feather ESP32 V2 are 600 with a short jumper untouched,
-            // 70 touched.
-            touch_pad_read(touch_channel, &touch_value);
-            touch_pad_set_thresh(touch_channel, touch_value / 2);
-            #else
-            uint32_t touch_value;
-            touch_pad_read_benchmark(touch_channel, &touch_value);
-            touch_pad_set_thresh(touch_channel, touch_value / 10); // 10%
-            #endif
+    // Initialize all touch channels used for alarms
+    for (uint8_t i = TOUCH_MIN_CHAN_ID; i <= TOUCH_MAX_CHAN_ID; i++) {
+        if ((touch_channel_mask & (1 << i)) != 0) {
+            peripherals_touch_init(i);
         }
     }
 
-    // configure touch interrupt
-    #if defined(CONFIG_IDF_TARGET_ESP32)
-    touch_pad_isr_register(touch_interrupt, NULL);
-    touch_pad_intr_enable();
-    #else
-    touch_pad_timeout_set(true, TOUCH_PAD_THRESHOLD_MAX);
-    touch_pad_isr_register(touch_interrupt, NULL, TOUCH_PAD_INTR_MASK_ALL);
-    touch_pad_intr_enable(TOUCH_PAD_INTR_MASK_ACTIVE | TOUCH_PAD_INTR_MASK_INACTIVE);
-    #endif
+    // Wait for touch data to stabilize
+    mp_hal_delay_ms(10);
+
+    // Now stop scanning and disable so we can reconfigure thresholds
+    touch_sensor_handle_t controller = peripherals_touch_get_controller();
+    touch_sensor_stop_continuous_scanning(controller);
+    touch_sensor_disable(controller);
+
+    // Configure thresholds based on initial readings
+    for (uint8_t i = TOUCH_MIN_CHAN_ID; i <= TOUCH_MAX_CHAN_ID; i++) {
+        if ((touch_channel_mask & (1 << i)) == 0) {
+            continue;
+        }
+        touch_channel_handle_t chan = peripherals_touch_get_handle(i);
+
+        uint32_t benchmark = 0;
+        #if defined(SOC_TOUCH_SUPPORT_BENCHMARK) && SOC_TOUCH_SUPPORT_BENCHMARK
+        touch_channel_read_data(chan, TOUCH_CHAN_DATA_TYPE_BENCHMARK, &benchmark);
+        #else
+        touch_channel_read_data(chan, TOUCH_CHAN_DATA_TYPE_SMOOTH, &benchmark);
+        #endif
+
+        #if SOC_TOUCH_SENSOR_VERSION == 1
+        touch_channel_config_t chan_cfg = {
+            .abs_active_thresh = {(uint32_t)(benchmark / 2)},
+            .charge_speed = TOUCH_CHARGE_SPEED_7,
+            .init_charge_volt = TOUCH_INIT_CHARGE_VOLT_DEFAULT,
+            .group = TOUCH_CHAN_TRIG_GROUP_BOTH,
+        };
+        #else
+        touch_channel_config_t chan_cfg = {
+            .active_thresh = {(uint32_t)(benchmark / 10)},
+            .charge_speed = TOUCH_CHARGE_SPEED_7,
+            .init_charge_volt = TOUCH_INIT_CHARGE_VOLT_DEFAULT,
+        };
+        #endif
+        touch_sensor_reconfig_channel(chan, &chan_cfg);
+    }
+
+    // Set up filter for proper active/inactive detection
+    touch_sensor_filter_config_t filter_cfg = TOUCH_SENSOR_DEFAULT_FILTER_CONFIG();
+    touch_sensor_config_filter(controller, &filter_cfg);
+
+    // Register callback for light sleep wakeup
+    touch_event_callbacks_t callbacks = {
+        .on_active = touch_active_callback,
+    };
+    touch_sensor_register_callbacks(controller, &callbacks, NULL);
+
+    // Re-enable and start scanning
+    touch_sensor_enable(controller);
+    touch_sensor_start_continuous_scanning(controller);
 }
 
 void alarm_touch_touchalarm_prepare_for_deep_sleep(void) {
@@ -140,45 +155,43 @@ void alarm_touch_touchalarm_prepare_for_deep_sleep(void) {
         return;
     }
 
-    touch_pad_t touch_channel = TOUCH_PAD_MAX;
-    for (uint8_t i = 1; i <= 14; i++) {
-        if ((touch_channel_mask & 1 << i) != 0) {
-            touch_channel = (touch_pad_t)i;
+    touch_sensor_handle_t controller = peripherals_touch_get_controller();
+
+    // Find the first alarm channel for deep sleep
+    int deep_slp_chan_id = -1;
+    for (uint8_t i = TOUCH_MIN_CHAN_ID; i <= TOUCH_MAX_CHAN_ID; i++) {
+        if ((touch_channel_mask & (1 << i)) != 0) {
+            deep_slp_chan_id = i;
             break;
         }
     }
 
-    // reset touch peripheral
-    peripherals_touch_never_reset(false);
-    peripherals_touch_reset();
+    if (deep_slp_chan_id < 0) {
+        return;
+    }
 
-    // initialize touchpad
-    peripherals_touch_init(touch_channel);
+    // Stop scanning and disable to reconfigure for deep sleep
+    touch_sensor_stop_continuous_scanning(controller);
+    touch_sensor_disable(controller);
 
-    #if !defined(CONFIG_IDF_TARGET_ESP32)
-    // configure touchpad for sleep
-    touch_pad_sleep_channel_enable(touch_channel, true);
-    touch_pad_sleep_channel_enable_proximity(touch_channel, false);
+    #if SOC_TOUCH_SUPPORT_SLEEP_WAKEUP
+    touch_sleep_config_t sleep_cfg = {
+        .slp_wakeup_lvl = TOUCH_DEEP_SLEEP_WAKEUP,
+        #if SOC_TOUCH_SENSOR_VERSION == 1
+        .deep_slp_sens_cfg = NULL,
+        #else
+        .deep_slp_allow_pd = false,
+        .deep_slp_chan = peripherals_touch_get_handle(deep_slp_chan_id),
+        .deep_slp_sens_cfg = NULL,
+        #endif
+    };
+    touch_sensor_config_sleep_wakeup(controller, &sleep_cfg);
     #endif
 
-    // wait for touch data to reset
-    mp_hal_delay_ms(10);
+    // Re-enable for sleep
+    touch_sensor_enable(controller);
+    touch_sensor_start_continuous_scanning(controller);
 
-    // configure trigger threshold
-    #if defined(CONFIG_IDF_TARGET_ESP32)
-    uint16_t touch_value;
-    touch_pad_read(touch_channel, &touch_value);
-    // ESP32 touch_pad_read() returns a lower value when a pin is touched, not a higher value
-    // Typical values on a Feather ESP32 V2 are 600 with a short jumper untouched,
-    // 70 touched.
-    touch_pad_set_thresh(touch_channel, touch_value / 2);
-    #else
-    uint32_t touch_value;
-    touch_pad_sleep_channel_read_smooth(touch_channel, &touch_value);
-    touch_pad_sleep_set_threshold(touch_channel, touch_value / 10); // 10%
-    #endif
-
-    // enable touchpad wakeup
     esp_sleep_enable_touchpad_wakeup();
     esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
 }

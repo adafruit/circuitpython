@@ -88,7 +88,192 @@ static void event_handler(void *arg, esp_event_base_t event_base,
                 ESP_LOGW(TAG, "disconnected");
                 wifi_event_sta_disconnected_t *d = (wifi_event_sta_disconnected_t *)event_data;
                 uint8_t reason = d->reason;
-                ESP_LOGW(TAG, "reason %d 0x%02x", reason, reason);
+                const char *reason_str = "unknown";
+                switch (reason) {
+                    case WIFI_REASON_UNSPECIFIED:
+                        reason_str = "unspecified";
+                        break;
+                    case WIFI_REASON_AUTH_EXPIRE:
+                        reason_str = "auth expire";
+                        break;
+                    case WIFI_REASON_AUTH_LEAVE:
+                        reason_str = "auth leave";
+                        break;
+                    case WIFI_REASON_DISASSOC_DUE_TO_INACTIVITY:
+                        reason_str = "disassoc inactivity";
+                        break;
+                    case WIFI_REASON_ASSOC_TOOMANY:
+                        reason_str = "assoc toomany";
+                        break;
+                    case WIFI_REASON_CLASS2_FRAME_FROM_NONAUTH_STA:
+                        reason_str = "class2 from nonauth";
+                        break;
+                    case WIFI_REASON_CLASS3_FRAME_FROM_NONASSOC_STA:
+                        reason_str = "class3 from nonassoc";
+                        break;
+                    case WIFI_REASON_ASSOC_LEAVE:
+                        reason_str = "assoc leave";
+                        break;
+                    case WIFI_REASON_ASSOC_NOT_AUTHED:
+                        reason_str = "assoc not authed";
+                        break;
+                    case WIFI_REASON_DISASSOC_PWRCAP_BAD:
+                        reason_str = "disassoc pwrcap bad";
+                        break;
+                    case WIFI_REASON_DISASSOC_SUPCHAN_BAD:
+                        reason_str = "disassoc supchan bad";
+                        break;
+                    case WIFI_REASON_BSS_TRANSITION_DISASSOC:
+                        reason_str = "bss transition disassoc";
+                        break;
+                    case WIFI_REASON_IE_INVALID:
+                        reason_str = "ie invalid";
+                        break;
+                    case WIFI_REASON_MIC_FAILURE:
+                        reason_str = "mic failure";
+                        break;
+                    case WIFI_REASON_4WAY_HANDSHAKE_TIMEOUT:
+                        reason_str = "4way handshake timeout";
+                        break;
+                    case WIFI_REASON_GROUP_KEY_UPDATE_TIMEOUT:
+                        reason_str = "group key update timeout";
+                        break;
+                    case WIFI_REASON_IE_IN_4WAY_DIFFERS:
+                        reason_str = "ie in 4way differs";
+                        break;
+                    case WIFI_REASON_GROUP_CIPHER_INVALID:
+                        reason_str = "group cipher invalid";
+                        break;
+                    case WIFI_REASON_PAIRWISE_CIPHER_INVALID:
+                        reason_str = "pairwise cipher invalid";
+                        break;
+                    case WIFI_REASON_AKMP_INVALID:
+                        reason_str = "akmp invalid";
+                        break;
+                    case WIFI_REASON_UNSUPP_RSN_IE_VERSION:
+                        reason_str = "unsupp rsn ie version";
+                        break;
+                    case WIFI_REASON_INVALID_RSN_IE_CAP:
+                        reason_str = "invalid rsn ie cap";
+                        break;
+                    case WIFI_REASON_802_1X_AUTH_FAILED:
+                        reason_str = "802.1x auth failed";
+                        break;
+                    case WIFI_REASON_CIPHER_SUITE_REJECTED:
+                        reason_str = "cipher suite rejected";
+                        break;
+                    case WIFI_REASON_TDLS_PEER_UNREACHABLE:
+                        reason_str = "tdls peer unreachable";
+                        break;
+                    case WIFI_REASON_TDLS_UNSPECIFIED:
+                        reason_str = "tdls unspecified";
+                        break;
+                    case WIFI_REASON_SSP_REQUESTED_DISASSOC:
+                        reason_str = "ssp requested disassoc";
+                        break;
+                    case WIFI_REASON_NO_SSP_ROAMING_AGREEMENT:
+                        reason_str = "no ssp roaming agreement";
+                        break;
+                    case WIFI_REASON_BAD_CIPHER_OR_AKM:
+                        reason_str = "bad cipher or akm";
+                        break;
+                    case WIFI_REASON_NOT_AUTHORIZED_THIS_LOCATION:
+                        reason_str = "not authorized this location";
+                        break;
+                    case WIFI_REASON_SERVICE_CHANGE_PERCLUDES_TS:
+                        reason_str = "service change precludes ts";
+                        break;
+                    case WIFI_REASON_UNSPECIFIED_QOS:
+                        reason_str = "unspecified qos";
+                        break;
+                    case WIFI_REASON_NOT_ENOUGH_BANDWIDTH:
+                        reason_str = "not enough bandwidth";
+                        break;
+                    case WIFI_REASON_MISSING_ACKS:
+                        reason_str = "missing acks";
+                        break;
+                    case WIFI_REASON_EXCEEDED_TXOP:
+                        reason_str = "exceeded txop";
+                        break;
+                    case WIFI_REASON_STA_LEAVING:
+                        reason_str = "sta leaving";
+                        break;
+                    case WIFI_REASON_END_BA:
+                        reason_str = "end ba";
+                        break;
+                    case WIFI_REASON_UNKNOWN_BA:
+                        reason_str = "unknown ba";
+                        break;
+                    case WIFI_REASON_TIMEOUT:
+                        reason_str = "timeout";
+                        break;
+                    case WIFI_REASON_PEER_INITIATED:
+                        reason_str = "peer initiated";
+                        break;
+                    case WIFI_REASON_AP_INITIATED:
+                        reason_str = "ap initiated";
+                        break;
+                    case WIFI_REASON_INVALID_FT_ACTION_FRAME_COUNT:
+                        reason_str = "invalid ft action frame count";
+                        break;
+                    case WIFI_REASON_INVALID_PMKID:
+                        reason_str = "invalid pmkid";
+                        break;
+                    case WIFI_REASON_INVALID_MDE:
+                        reason_str = "invalid mde";
+                        break;
+                    case WIFI_REASON_INVALID_FTE:
+                        reason_str = "invalid fte";
+                        break;
+                    case WIFI_REASON_TRANSMISSION_LINK_ESTABLISH_FAILED:
+                        reason_str = "transmission link establish failed";
+                        break;
+                    case WIFI_REASON_ALTERATIVE_CHANNEL_OCCUPIED:
+                        reason_str = "alternative channel occupied";
+                        break;
+                    case WIFI_REASON_BEACON_TIMEOUT:
+                        reason_str = "beacon timeout";
+                        break;
+                    case WIFI_REASON_NO_AP_FOUND:
+                        reason_str = "no ap found";
+                        break;
+                    case WIFI_REASON_AUTH_FAIL:
+                        reason_str = "auth fail";
+                        break;
+                    case WIFI_REASON_ASSOC_FAIL:
+                        reason_str = "assoc fail";
+                        break;
+                    case WIFI_REASON_HANDSHAKE_TIMEOUT:
+                        reason_str = "handshake timeout";
+                        break;
+                    case WIFI_REASON_CONNECTION_FAIL:
+                        reason_str = "connection fail";
+                        break;
+                    case WIFI_REASON_AP_TSF_RESET:
+                        reason_str = "ap tsf reset";
+                        break;
+                    case WIFI_REASON_ROAMING:
+                        reason_str = "roaming";
+                        break;
+                    case WIFI_REASON_ASSOC_COMEBACK_TIME_TOO_LONG:
+                        reason_str = "assoc comeback time too long";
+                        break;
+                    case WIFI_REASON_SA_QUERY_TIMEOUT:
+                        reason_str = "sa query timeout";
+                        break;
+                    case WIFI_REASON_NO_AP_FOUND_W_COMPATIBLE_SECURITY:
+                        reason_str = "no ap found w compatible security";
+                        break;
+                    case WIFI_REASON_NO_AP_FOUND_IN_AUTHMODE_THRESHOLD:
+                        reason_str = "no ap found in authmode threshold";
+                        break;
+                    case WIFI_REASON_NO_AP_FOUND_IN_RSSI_THRESHOLD:
+                        reason_str = "no ap found in rssi threshold";
+                        break;
+                    default:
+                        break;
+                }
+                ESP_LOGW(TAG, "reason %d 0x%02x %s", reason, reason, reason_str);
                 if (radio->retries_left > 0 &&
                     reason != WIFI_REASON_AUTH_FAIL &&
                     reason != WIFI_REASON_NO_AP_FOUND &&
@@ -104,12 +289,132 @@ static void event_handler(void *arg, esp_event_base_t event_base,
                 break;
             }
 
-            // Cases to handle later.
-            // case WIFI_EVENT_STA_AUTHMODE_CHANGE:
-            default: {
-                ESP_LOGW(TAG, "event %ld 0x%02ld", event_id, event_id);
+            case WIFI_EVENT_WIFI_READY:
+                ESP_LOGW(TAG, "wifi ready");
                 break;
-            }
+            case WIFI_EVENT_STA_AUTHMODE_CHANGE:
+                ESP_LOGW(TAG, "sta authmode change");
+                break;
+            case WIFI_EVENT_STA_WPS_ER_SUCCESS:
+                ESP_LOGW(TAG, "sta wps er success");
+                break;
+            case WIFI_EVENT_STA_WPS_ER_FAILED:
+                ESP_LOGW(TAG, "sta wps er failed");
+                break;
+            case WIFI_EVENT_STA_WPS_ER_TIMEOUT:
+                ESP_LOGW(TAG, "sta wps er timeout");
+                break;
+            case WIFI_EVENT_STA_WPS_ER_PIN:
+                ESP_LOGW(TAG, "sta wps er pin");
+                break;
+            case WIFI_EVENT_STA_WPS_ER_PBC_OVERLAP:
+                ESP_LOGW(TAG, "sta wps er pbc overlap");
+                break;
+            case WIFI_EVENT_AP_PROBEREQRECVED:
+                ESP_LOGW(TAG, "ap probereqrecved");
+                break;
+            case WIFI_EVENT_FTM_REPORT:
+                ESP_LOGW(TAG, "ftm report");
+                break;
+            case WIFI_EVENT_STA_BSS_RSSI_LOW:
+                ESP_LOGW(TAG, "sta bss rssi low");
+                break;
+            case WIFI_EVENT_ACTION_TX_STATUS:
+                ESP_LOGW(TAG, "action tx status");
+                break;
+            case WIFI_EVENT_ROC_DONE:
+                ESP_LOGW(TAG, "roc done");
+                break;
+            case WIFI_EVENT_STA_BEACON_TIMEOUT:
+                ESP_LOGW(TAG, "sta beacon timeout");
+                break;
+            case WIFI_EVENT_CONNECTIONLESS_MODULE_WAKE_INTERVAL_START:
+                ESP_LOGW(TAG, "connectionless module wake interval start");
+                break;
+            case WIFI_EVENT_AP_WPS_RG_SUCCESS:
+                ESP_LOGW(TAG, "ap wps rg success");
+                break;
+            case WIFI_EVENT_AP_WPS_RG_FAILED:
+                ESP_LOGW(TAG, "ap wps rg failed");
+                break;
+            case WIFI_EVENT_AP_WPS_RG_TIMEOUT:
+                ESP_LOGW(TAG, "ap wps rg timeout");
+                break;
+            case WIFI_EVENT_AP_WPS_RG_PIN:
+                ESP_LOGW(TAG, "ap wps rg pin");
+                break;
+            case WIFI_EVENT_AP_WPS_RG_PBC_OVERLAP:
+                ESP_LOGW(TAG, "ap wps rg pbc overlap");
+                break;
+            case WIFI_EVENT_ITWT_SETUP:
+                ESP_LOGW(TAG, "itwt setup");
+                break;
+            case WIFI_EVENT_ITWT_TEARDOWN:
+                ESP_LOGW(TAG, "itwt teardown");
+                break;
+            case WIFI_EVENT_ITWT_PROBE:
+                ESP_LOGW(TAG, "itwt probe");
+                break;
+            case WIFI_EVENT_ITWT_SUSPEND:
+                ESP_LOGW(TAG, "itwt suspend");
+                break;
+            case WIFI_EVENT_TWT_WAKEUP:
+                ESP_LOGW(TAG, "twt wakeup");
+                break;
+            case WIFI_EVENT_BTWT_SETUP:
+                ESP_LOGW(TAG, "btwt setup");
+                break;
+            case WIFI_EVENT_BTWT_TEARDOWN:
+                ESP_LOGW(TAG, "btwt teardown");
+                break;
+            case WIFI_EVENT_NAN_SYNC_STARTED:
+                ESP_LOGW(TAG, "nan sync started");
+                break;
+            case WIFI_EVENT_NAN_SYNC_STOPPED:
+                ESP_LOGW(TAG, "nan sync stopped");
+                break;
+            case WIFI_EVENT_NAN_SVC_MATCH:
+                ESP_LOGW(TAG, "nan svc match");
+                break;
+            case WIFI_EVENT_NAN_REPLIED:
+                ESP_LOGW(TAG, "nan replied");
+                break;
+            case WIFI_EVENT_NAN_RECEIVE:
+                ESP_LOGW(TAG, "nan receive");
+                break;
+            case WIFI_EVENT_NDP_INDICATION:
+                ESP_LOGW(TAG, "ndp indication");
+                break;
+            case WIFI_EVENT_NDP_CONFIRM:
+                ESP_LOGW(TAG, "ndp confirm");
+                break;
+            case WIFI_EVENT_NDP_TERMINATED:
+                ESP_LOGW(TAG, "ndp terminated");
+                break;
+            case WIFI_EVENT_HOME_CHANNEL_CHANGE:
+                ESP_LOGW(TAG, "home channel change");
+                break;
+            case WIFI_EVENT_STA_NEIGHBOR_REP:
+                ESP_LOGW(TAG, "sta neighbor rep");
+                break;
+            case WIFI_EVENT_AP_WRONG_PASSWORD:
+                ESP_LOGW(TAG, "ap wrong password");
+                break;
+            case WIFI_EVENT_STA_BEACON_OFFSET_UNSTABLE:
+                ESP_LOGW(TAG, "sta beacon offset unstable");
+                break;
+            case WIFI_EVENT_DPP_URI_READY:
+                ESP_LOGW(TAG, "dpp uri ready");
+                break;
+            case WIFI_EVENT_DPP_CFG_RECVD:
+                ESP_LOGW(TAG, "dpp cfg recvd");
+                break;
+            case WIFI_EVENT_DPP_FAILED:
+                ESP_LOGW(TAG, "dpp failed");
+                break;
+            default:
+                ESP_LOGW(TAG, "unknown event %ld", event_id);
+                break;
         }
     }
 
@@ -214,7 +519,7 @@ void common_hal_wifi_init(bool user_initiated) {
 
     char cpy_default_hostname[board_len + (MAC_ADDRESS_LENGTH * 2) + 6];
     uint8_t mac[MAC_ADDRESS_LENGTH];
-    esp_wifi_get_mac(ESP_IF_WIFI_STA, mac);
+    esp_wifi_get_mac(WIFI_IF_STA, mac);
     snprintf(cpy_default_hostname, sizeof(cpy_default_hostname), "cpy-%s-%02x%02x%02x%02x%02x%02x", CIRCUITPY_BOARD_ID + board_trim, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
     const char *default_lwip_local_hostname = cpy_default_hostname;

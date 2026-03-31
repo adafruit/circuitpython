@@ -14,7 +14,7 @@
 #include "hal/dma_types.h"
 #include "hal/lcd_hal.h"
 #include "hal/lcd_ll.h"
-#include "soc/lcd_periph.h"
+#include "hal/lcd_periph.h"
 
 #include "esp_log.h"
 #define TAG "LCD"
@@ -109,8 +109,7 @@ void common_hal_dotclockframebuffer_framebuffer_construct(dotclockframebuffer_fr
     cfg->timings.flags.pclk_idle_high = pclk_idle_high;
 
     cfg->data_width = 16;
-    cfg->sram_trans_align = 8;
-    cfg->psram_trans_align = 64;
+    cfg->dma_burst_size = 64;
     cfg->hsync_gpio_num = valid_pin(hsync, MP_QSTR_hsync);
     cfg->vsync_gpio_num = valid_pin(vsync, MP_QSTR_vsync);
     cfg->de_gpio_num = valid_pin(de, MP_QSTR_de);

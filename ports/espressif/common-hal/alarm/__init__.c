@@ -57,68 +57,61 @@ void alarm_reset(void) {
     esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL);
 }
 
-static esp_sleep_wakeup_cause_t _get_wakeup_cause(bool deep_sleep) {
+static uint32_t _get_wakeup_causes(bool deep_sleep) {
     // First check if the modules remember what last woke up
     if (alarm_pin_pinalarm_woke_this_cycle()) {
-        return ESP_SLEEP_WAKEUP_GPIO;
+        return 1 << ESP_SLEEP_WAKEUP_GPIO;
     }
     if (alarm_time_timealarm_woke_this_cycle()) {
-        return ESP_SLEEP_WAKEUP_TIMER;
+        return 1 << ESP_SLEEP_WAKEUP_TIMER;
     }
     #if CIRCUITPY_ALARM_TOUCH
     if (alarm_touch_touchalarm_woke_this_cycle()) {
-        return ESP_SLEEP_WAKEUP_TOUCHPAD;
+        return 1 << ESP_SLEEP_WAKEUP_TOUCHPAD;
     }
     #endif
     #if CIRCUITPY_ESPULP
     if (espulp_ulpalarm_woke_this_cycle()) {
-        return ESP_SLEEP_WAKEUP_ULP;
+        return 1 << ESP_SLEEP_WAKEUP_ULP;
     }
     #endif
     // If waking from true deep sleep, modules will have lost their state,
     // so check the deep wakeup cause manually
     if (deep_sleep) {
-        return esp_sleep_get_wakeup_cause();
+        return esp_sleep_get_wakeup_causes();
     }
-    return ESP_SLEEP_WAKEUP_UNDEFINED;
+    return 0;
 }
 
 bool common_hal_alarm_woken_from_sleep(void) {
-    return _get_wakeup_cause(false) != ESP_SLEEP_WAKEUP_UNDEFINED;
+    return _get_wakeup_causes(false) != 0;
 }
 
 mp_obj_t common_hal_alarm_record_wake_alarm(void) {
     // If woken from deep sleep, create a copy alarm similar to what would have
     // been passed in originally. Otherwise, just return none
-    esp_sleep_wakeup_cause_t cause = _get_wakeup_cause(true);
-    switch (cause) {
-        case ESP_SLEEP_WAKEUP_TIMER: {
-            return alarm_time_timealarm_record_wake_alarm();
-        }
+    uint32_t causes = _get_wakeup_causes(true);
 
-        case ESP_SLEEP_WAKEUP_GPIO:
-        case ESP_SLEEP_WAKEUP_EXT0:
-        case ESP_SLEEP_WAKEUP_EXT1: {
-            return alarm_pin_pinalarm_record_wake_alarm();
-        }
-
-        #if CIRCUITPY_ALARM_TOUCH
-        case ESP_SLEEP_WAKEUP_TOUCHPAD: {
-            return alarm_touch_touchalarm_record_wake_alarm();
-        }
-        #endif
-
-        #if CIRCUITPY_ESPULP
-        case ESP_SLEEP_WAKEUP_ULP: {
-            return espulp_ulpalarm_record_wake_alarm();
-        }
-        #endif
-
-        case ESP_SLEEP_WAKEUP_UNDEFINED:
-        default:
-            // Not a deep sleep reset.
-            break;
+    if (causes & (1 << ESP_SLEEP_WAKEUP_TIMER)) {
+        return alarm_time_timealarm_record_wake_alarm();
     }
+
+    if (causes & ((1 << ESP_SLEEP_WAKEUP_GPIO) | (1 << ESP_SLEEP_WAKEUP_EXT0) | (1 << ESP_SLEEP_WAKEUP_EXT1))) {
+        return alarm_pin_pinalarm_record_wake_alarm();
+    }
+
+    #if CIRCUITPY_ALARM_TOUCH
+    if (causes & (1 << ESP_SLEEP_WAKEUP_TOUCHPAD)) {
+        return alarm_touch_touchalarm_record_wake_alarm();
+    }
+    #endif
+
+    #if CIRCUITPY_ESPULP
+    if (causes & (1 << ESP_SLEEP_WAKEUP_ULP)) {
+        return espulp_ulpalarm_record_wake_alarm();
+    }
+    #endif
+
     return mp_const_none;
 }
 
@@ -144,32 +137,22 @@ mp_obj_t common_hal_alarm_light_sleep_until_alarms(size_t n_alarms, const mp_obj
         RUN_BACKGROUND_TASKS;
         // Detect if interrupt was alarm or ctrl-C interrupt.
         if (common_hal_alarm_woken_from_sleep()) {
-            esp_sleep_wakeup_cause_t cause = _get_wakeup_cause(false);
-            switch (cause) {
-                case ESP_SLEEP_WAKEUP_TIMER: {
-                    wake_alarm = alarm_time_timealarm_find_triggered_alarm(n_alarms, alarms);
-                    break;
-                }
-                case ESP_SLEEP_WAKEUP_GPIO: {
-                    wake_alarm = alarm_pin_pinalarm_find_triggered_alarm(n_alarms, alarms);
-                    break;
-                }
-                #if CIRCUITPY_ALARM_TOUCH
-                case ESP_SLEEP_WAKEUP_TOUCHPAD: {
-                    wake_alarm = alarm_touch_touchalarm_find_triggered_alarm(n_alarms, alarms);
-                    break;
-                }
-                #endif
-                #if CIRCUITPY_ESPULP
-                case ESP_SLEEP_WAKEUP_ULP: {
-                    wake_alarm = espulp_ulpalarm_find_triggered_alarm(n_alarms, alarms);
-                    break;
-                }
-                #endif
-                default:
-                    // Should not reach this, if all light sleep types are covered correctly
-                    break;
+            uint32_t causes = _get_wakeup_causes(false);
+            if (causes & (1 << ESP_SLEEP_WAKEUP_TIMER)) {
+                wake_alarm = alarm_time_timealarm_find_triggered_alarm(n_alarms, alarms);
+            } else if (causes & (1 << ESP_SLEEP_WAKEUP_GPIO)) {
+                wake_alarm = alarm_pin_pinalarm_find_triggered_alarm(n_alarms, alarms);
             }
+            #if CIRCUITPY_ALARM_TOUCH
+            else if (causes & (1 << ESP_SLEEP_WAKEUP_TOUCHPAD)) {
+                wake_alarm = alarm_touch_touchalarm_find_triggered_alarm(n_alarms, alarms);
+            }
+            #endif
+            #if CIRCUITPY_ESPULP
+            else if (causes & (1 << ESP_SLEEP_WAKEUP_ULP)) {
+                wake_alarm = espulp_ulpalarm_find_triggered_alarm(n_alarms, alarms);
+            }
+            #endif
             shared_alarm_save_wake_alarm(wake_alarm);
             break;
         }

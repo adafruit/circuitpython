@@ -102,14 +102,14 @@ mp_obj_t alarm_pin_pinalarm_find_triggered_alarm(size_t n_alarms, const mp_obj_t
 }
 
 mp_obj_t alarm_pin_pinalarm_record_wake_alarm(void) {
-    esp_sleep_wakeup_cause_t cause = esp_sleep_get_wakeup_cause();
+    uint32_t causes = esp_sleep_get_wakeup_causes();
 
     // Pin status will persist into a fake deep sleep
     uint64_t pin_status = ((uint64_t)pin_63_32_status) << 32 | pin_31_0_status;
     size_t pin_number = 64;
 
     #ifdef SOC_PM_SUPPORT_EXT0_WAKEUP
-    if (cause == ESP_SLEEP_WAKEUP_EXT0) {
+    if (causes & (1 << ESP_SLEEP_WAKEUP_EXT0)) {
         int rtc_io_pin_number = REG_GET_FIELD(RTC_IO_EXT_WAKEUP0_REG, RTC_IO_EXT_WAKEUP0_SEL);
         // Look up the GPIO equivalent pin for this RTC GPIO pin. On ESP32, the numbering
         // is different for RTC_GPIO and regular GPIO, and there's no mapping table.
@@ -124,12 +124,12 @@ mp_obj_t alarm_pin_pinalarm_record_wake_alarm(void) {
     } else {
     #endif
     #ifdef SOC_PM_SUPPORT_EXT1_WAKEUP
-    if (cause == ESP_SLEEP_WAKEUP_EXT1) {
+    if (causes & (1 << ESP_SLEEP_WAKEUP_EXT1)) {
         pin_status = esp_sleep_get_ext1_wakeup_status();
     }
     #endif
     #ifdef SOC_GPIO_SUPPORT_DEEPSLEEP_WAKEUP
-    if (cause == ESP_SLEEP_WAKEUP_GPIO) {
+    if (causes & (1 << ESP_SLEEP_WAKEUP_GPIO)) {
         pin_status = esp_sleep_get_gpio_wakeup_status();
     }
     #endif
@@ -307,11 +307,11 @@ static esp_err_t _setup_deep_sleep(size_t low_count, size_t high_count) {
         return _setup_ext1(low_count, high_count);
     }
     #endif
-    esp_err_t result = esp_deep_sleep_enable_gpio_wakeup(low_alarms, ESP_GPIO_WAKEUP_GPIO_LOW);
+    esp_err_t result = esp_sleep_enable_gpio_wakeup_on_hp_periph_powerdown(low_alarms, ESP_GPIO_WAKEUP_GPIO_LOW);
     if (result != ESP_OK) {
         return result;
     }
-    result = esp_deep_sleep_enable_gpio_wakeup(high_alarms, ESP_GPIO_WAKEUP_GPIO_HIGH);
+    result = esp_sleep_enable_gpio_wakeup_on_hp_periph_powerdown(high_alarms, ESP_GPIO_WAKEUP_GPIO_HIGH);
     return result;
 }
 #else

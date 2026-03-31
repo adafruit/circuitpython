@@ -115,7 +115,7 @@ void common_hal_wifi_radio_set_hostname(wifi_radio_obj_t *self, const char *host
 
 mp_obj_t common_hal_wifi_radio_get_mac_address(wifi_radio_obj_t *self) {
     uint8_t mac[MAC_ADDRESS_LENGTH];
-    esp_wifi_get_mac(ESP_IF_WIFI_STA, mac);
+    esp_wifi_get_mac(WIFI_IF_STA, mac);
     return mp_obj_new_bytes(mac, MAC_ADDRESS_LENGTH);
 }
 
@@ -126,7 +126,7 @@ void common_hal_wifi_radio_set_mac_address(wifi_radio_obj_t *self, const uint8_t
     if ((mac[0] & 0b1) == 0b1) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Invalid multicast MAC address"));
     }
-    esp_wifi_set_mac(ESP_IF_WIFI_STA, mac);
+    esp_wifi_set_mac(WIFI_IF_STA, mac);
 }
 
 mp_float_t common_hal_wifi_radio_get_tx_power(wifi_radio_obj_t *self) {
@@ -167,7 +167,7 @@ void common_hal_wifi_radio_set_power_management(wifi_radio_obj_t *self, wifi_pow
             // This is a typical value seen in various examples.
             config->sta.listen_interval = 3;
             esp_wifi_set_ps(WIFI_PS_MAX_MODEM);
-            esp_wifi_set_config(ESP_IF_WIFI_STA, config);
+            esp_wifi_set_config(WIFI_IF_STA, config);
         }
         break;
         case POWER_MANAGEMENT_NONE:
@@ -181,7 +181,7 @@ void common_hal_wifi_radio_set_power_management(wifi_radio_obj_t *self, wifi_pow
 
 mp_obj_t common_hal_wifi_radio_get_mac_address_ap(wifi_radio_obj_t *self) {
     uint8_t mac[MAC_ADDRESS_LENGTH];
-    esp_wifi_get_mac(ESP_IF_WIFI_AP, mac);
+    esp_wifi_get_mac(WIFI_IF_AP, mac);
     return mp_obj_new_bytes(mac, MAC_ADDRESS_LENGTH);
 }
 
@@ -192,7 +192,7 @@ void common_hal_wifi_radio_set_mac_address_ap(wifi_radio_obj_t *self, const uint
     if ((mac[0] & 0b1) == 0b1) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Invalid multicast MAC address"));
     }
-    esp_wifi_set_mac(ESP_IF_WIFI_AP, mac);
+    esp_wifi_set_mac(WIFI_IF_AP, mac);
 }
 
 mp_obj_t common_hal_wifi_radio_start_scanning_networks(wifi_radio_obj_t *self, uint8_t start_channel, uint8_t stop_channel) {
@@ -386,7 +386,7 @@ wifi_radio_error_t common_hal_wifi_radio_connect(wifi_radio_obj_t *self, uint8_t
     } else {
         config->sta.scan_method = WIFI_FAST_SCAN;
     }
-    esp_wifi_set_config(ESP_IF_WIFI_STA, config);
+    esp_wifi_set_config(WIFI_IF_STA, config);
     self->starting_retries = 5;
     self->retries_left = 5;
     esp_wifi_connect();

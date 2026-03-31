@@ -6,9 +6,11 @@
 
 #pragma once
 
-#include "driver/touch_pad.h"
+#include "driver/touch_sens.h"
 
-extern uint16_t peripherals_touch_read(touch_pad_t touchpad);
+extern void peripherals_touch_init(const int channel_id);
+extern uint16_t peripherals_touch_read(int channel_id);
 extern void peripherals_touch_reset(void);
 extern void peripherals_touch_never_reset(const bool enable);
-extern void peripherals_touch_init(const touch_pad_t touchpad);
+extern touch_sensor_handle_t peripherals_touch_get_controller(void);
+extern touch_channel_handle_t peripherals_touch_get_handle(int channel_id);

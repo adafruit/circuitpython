@@ -183,19 +183,18 @@ mcu_reset_reason_t common_hal_mcu_processor_get_reset_reason(void) {
         case ESP_RST_EXT:
             return RESET_REASON_RESET_PIN;
 
-        case ESP_RST_DEEPSLEEP:
-            switch (esp_sleep_get_wakeup_cause()) {
-                case ESP_SLEEP_WAKEUP_TIMER:
-                case ESP_SLEEP_WAKEUP_EXT0:
-                case ESP_SLEEP_WAKEUP_EXT1:
-                case ESP_SLEEP_WAKEUP_TOUCHPAD:
-                case ESP_SLEEP_WAKEUP_ULP:
-                    return RESET_REASON_DEEP_SLEEP_ALARM;
-
-                case ESP_SLEEP_WAKEUP_UNDEFINED:
-                default:
-                    return RESET_REASON_UNKNOWN;
+        case ESP_RST_DEEPSLEEP: {
+            uint32_t wakeup_causes = esp_sleep_get_wakeup_causes();
+            uint32_t alarm_causes = (1 << ESP_SLEEP_WAKEUP_TIMER) |
+                (1 << ESP_SLEEP_WAKEUP_EXT0) |
+                (1 << ESP_SLEEP_WAKEUP_EXT1) |
+                (1 << ESP_SLEEP_WAKEUP_TOUCHPAD) |
+                (1 << ESP_SLEEP_WAKEUP_ULP);
+            if (wakeup_causes & alarm_causes) {
+                return RESET_REASON_DEEP_SLEEP_ALARM;
             }
+            return RESET_REASON_UNKNOWN;
+        }
 
         case ESP_RST_UNKNOWN:
         default:

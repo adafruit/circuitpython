@@ -88,7 +88,6 @@ void common_hal_mipidsi_display_construct(mipidsi_display_obj_t *self,
             .vsync_front_porch = vsync_front_porch,
         },
         .flags = {
-            .use_dma2d = false,
             .disable_lp = false,
         },
     };

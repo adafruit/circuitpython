@@ -17,6 +17,7 @@
 
 #include "common-hal/espnow/ESPNow.h"
 
+#include "esp_now.h"
 #include "mphalport.h"
 
 #include "esp_now.h"
@@ -119,8 +120,13 @@ void common_hal_espnow_init(espnow_obj_t *self) {
         common_hal_wifi_radio_set_enabled(&common_hal_wifi_radio_obj, true);
     }
 
-    CHECK_ESP_RESULT(esp_wifi_config_espnow_rate(ESP_IF_WIFI_STA, self->phy_rate));
-    CHECK_ESP_RESULT(esp_wifi_config_espnow_rate(ESP_IF_WIFI_AP, self->phy_rate));
+    esp_now_rate_config_t rate_config = {
+        .phymode = WIFI_PHY_MODE_LR,
+        .rate = self->phy_rate,
+        .ersu = false,
+        .dcm = false,
+    };
+    CHECK_ESP_RESULT(esp_now_set_peer_rate_config(NULL, &rate_config));
 
     CHECK_ESP_RESULT(esp_now_init());
     CHECK_ESP_RESULT(esp_now_register_send_cb(send_cb));

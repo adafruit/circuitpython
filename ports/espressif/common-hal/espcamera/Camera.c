@@ -86,7 +86,8 @@ void common_hal_espcamera_camera_construct(
     self->camera_config.pin_reset = reset_pin ? common_hal_mcu_pin_number(reset_pin) : NO_PIN;
     self->camera_config.pin_xclk = external_clock_pin ? common_hal_mcu_pin_number(external_clock_pin) : NO_PIN;
 
-    self->camera_config.sccb_i2c_master_bus_handle = self->i2c->handle;
+    self->camera_config.pin_sccb_sda = common_hal_mcu_pin_number(i2c->sda_pin);
+    self->camera_config.pin_sccb_scl = common_hal_mcu_pin_number(i2c->scl_pin);
 
     self->camera_config.pin_d7 = data_pins[7];
     self->camera_config.pin_d6 = data_pins[6];

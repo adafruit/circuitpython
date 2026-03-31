@@ -200,7 +200,7 @@ static int _mbedtls_ssl_recv(void *ctx, byte *buf, size_t len) {
 }
 
 
-#if MBEDTLS_VERSION_MAJOR >= 3
+#if MBEDTLS_VERSION_MAJOR == 3
 static int urandom_adapter(void *unused, unsigned char *buf, size_t n) {
     int result = common_hal_os_urandom(buf, n);
     if (result) {
@@ -238,18 +238,24 @@ ssl_sslsocket_obj_t *common_hal_ssl_sslcontext_wrap_socket(ssl_sslcontext_obj_t 
     mbedtls_x509_crt_init(&o->cacert);
     mbedtls_x509_crt_init(&o->cert);
     mbedtls_pk_init(&o->pkey);
+    #if MBEDTLS_VERSION_MAJOR < 4
     mbedtls_ctr_drbg_init(&o->ctr_drbg);
+    #endif
     #ifdef MBEDTLS_DEBUG_C
     // Debug level (0-4) 1=warning, 2=info, 3=debug, 4=verbose
     mbedtls_debug_set_threshold(4);
     #endif
 
+    #if MBEDTLS_VERSION_MAJOR < 4
     mbedtls_entropy_init(&o->entropy);
     const byte seed[] = "upy";
     int ret = mbedtls_ctr_drbg_seed(&o->ctr_drbg, mbedtls_entropy_func, &o->entropy, seed, sizeof(seed));
     if (ret != 0) {
         goto cleanup;
     }
+    #else
+    int ret;
+    #endif
 
     ret = mbedtls_ssl_config_defaults(&o->conf,
         server_side ? MBEDTLS_SSL_IS_SERVER : MBEDTLS_SSL_IS_CLIENT,
@@ -273,7 +279,9 @@ ssl_sslsocket_obj_t *common_hal_ssl_sslcontext_wrap_socket(ssl_sslcontext_obj_t 
     } else {
         mbedtls_ssl_conf_authmode(&o->conf, MBEDTLS_SSL_VERIFY_NONE);
     }
+    #if MBEDTLS_VERSION_MAJOR < 4
     mbedtls_ssl_conf_rng(&o->conf, mbedtls_ctr_drbg_random, &o->ctr_drbg);
+    #endif
     #ifdef MBEDTLS_DEBUG_C
     mbedtls_ssl_conf_dbg(&o->conf, mbedtls_debug, NULL);
     #endif
@@ -293,7 +301,9 @@ ssl_sslsocket_obj_t *common_hal_ssl_sslcontext_wrap_socket(ssl_sslcontext_obj_t 
     mbedtls_ssl_set_bio(&o->ssl, o, _mbedtls_ssl_send, _mbedtls_ssl_recv, NULL);
 
     if (self->cert_buf.buf != NULL) {
-        #if MBEDTLS_VERSION_MAJOR >= 3
+        #if MBEDTLS_VERSION_MAJOR >= 4
+        ret = mbedtls_pk_parse_key(&o->pkey, self->key_buf.buf, self->key_buf.len + 1, NULL, 0);
+        #elif MBEDTLS_VERSION_MAJOR >= 3
         ret = mbedtls_pk_parse_key(&o->pkey, self->key_buf.buf, self->key_buf.len + 1, NULL, 0, urandom_adapter, NULL);
         #else
         ret = mbedtls_pk_parse_key(&o->pkey, self->key_buf.buf, self->key_buf.len + 1, NULL, 0);
@@ -318,8 +328,10 @@ cleanup:
     mbedtls_x509_crt_free(&o->cacert);
     mbedtls_ssl_free(&o->ssl);
     mbedtls_ssl_config_free(&o->conf);
+    #if MBEDTLS_VERSION_MAJOR < 4
     mbedtls_ctr_drbg_free(&o->ctr_drbg);
     mbedtls_entropy_free(&o->entropy);
+    #endif
 
     if (ret == MBEDTLS_ERR_SSL_ALLOC_FAILED) {
         mp_raise_type(&mp_type_MemoryError);
@@ -382,8 +394,10 @@ void common_hal_ssl_sslsocket_close(ssl_sslsocket_obj_t *self) {
     mbedtls_x509_crt_free(&self->cacert);
     mbedtls_ssl_free(&self->ssl);
     mbedtls_ssl_config_free(&self->conf);
+    #if MBEDTLS_VERSION_MAJOR < 4
     mbedtls_ctr_drbg_free(&self->ctr_drbg);
     mbedtls_entropy_free(&self->entropy);
+    #endif
 }
 
 static void do_handshake(ssl_sslsocket_obj_t *self) {
@@ -408,8 +422,10 @@ cleanup:
     mbedtls_x509_crt_free(&self->cacert);
     mbedtls_ssl_free(&self->ssl);
     mbedtls_ssl_config_free(&self->conf);
+    #if MBEDTLS_VERSION_MAJOR < 4
     mbedtls_ctr_drbg_free(&self->ctr_drbg);
     mbedtls_entropy_free(&self->entropy);
+    #endif
 
     if (ret == MBEDTLS_ERR_SSL_ALLOC_FAILED) {
         mp_raise_type(&mp_type_MemoryError);

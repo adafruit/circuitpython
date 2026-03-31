@@ -12,16 +12,15 @@
 
 #include "py/obj.h"
 
-#include "components/hal/include/hal/gpio_types.h"
-#include "components/hal/include/hal/adc_types.h"
-#include "components/hal/include/hal/touch_sensor_legacy_types.h"
+#include "hal/gpio_types.h"
+#include "hal/adc_types.h"
 
 typedef struct {
     mp_obj_base_t base;
     gpio_num_t number;
     uint8_t adc_index : 2;
     uint8_t adc_channel : 6;
-    touch_pad_t touch_channel;
+    int8_t touch_channel;
 } mcu_pin_obj_t;
 
 extern const mp_obj_type_t mcu_pin_type;
@@ -31,7 +30,7 @@ extern const mp_obj_type_t mcu_pin_type;
 #define NO_ADC SOC_ADC_PERIPH_NUM
 #define NO_ADC_CHANNEL SOC_ADC_MAX_CHANNEL_NUM
 
-#define NO_TOUCH_CHANNEL TOUCH_PAD_MAX
+#define NO_TOUCH_CHANNEL (-1)
 
 // This macro is used to simplify pin definition in peripherals/<chip>/pins.c
 #define PIN(p_number, p_adc_index, p_adc_channel, p_touch_channel) \
