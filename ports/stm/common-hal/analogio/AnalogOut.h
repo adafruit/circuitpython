@@ -28,3 +28,9 @@ typedef struct {
 } analogio_analogout_obj_t;
 
 void analogout_reset(void);
+
+// Shared DAC peripheral handle (defined in AnalogOut.c).
+// AudioOut reuses this handle for DMA-triggered DAC operation on channel 1.
+#if HAS_DAC
+extern DAC_HandleTypeDef handle;
+#endif

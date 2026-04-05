@@ -3,6 +3,7 @@ INTERNAL_LIBM ?= 1
 
 ifeq ($(MCU_VARIANT),$(filter $(MCU_VARIANT),STM32F405xx STM32F407xx))
         CIRCUITPY_ALARM = 1
+        CIRCUITPY_AUDIOIO = 1
         CIRCUITPY_CANIO = 1
         CIRCUITPY_FRAMEBUFFERIO ?= 1
         CIRCUITPY_SDIOIO ?= 1
@@ -19,8 +20,8 @@ ifeq ($(MCU_VARIANT),STM32F407xx)
 endif
 
 ifeq ($(MCU_SERIES),F4)
-        # Audio via PWM
-        CIRCUITPY_AUDIOIO = 0
+        # Audio via PWM (F405/F407 also supports DAC-based audioio; set above)
+        CIRCUITPY_AUDIOIO ?= 0
         CIRCUITPY_AUDIOCORE ?= 1
         CIRCUITPY_AUDIOPWMIO ?= 1
 

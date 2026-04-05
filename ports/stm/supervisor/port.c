@@ -32,6 +32,9 @@
 #if CIRCUITPY_RTC
 #include "shared-bindings/rtc/__init__.h"
 #endif
+#if CIRCUITPY_AUDIOIO
+#include "common-hal/audioio/AudioOut.h"
+#endif
 
 #include "peripherals/clocks.h"
 #include "peripherals/gpio.h"
@@ -314,6 +317,9 @@ void reset_port(void) {
     #endif
     #if CIRCUITPY_ALARM
     exti_reset();
+    #endif
+    #if CIRCUITPY_AUDIOIO
+    audioout_reset();
     #endif
 }
 
