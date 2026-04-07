@@ -99,6 +99,7 @@ msgid "%q contains duplicate pins"
 msgstr ""
 
 #: ports/atmel-samd/common-hal/sdioio/SDCard.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "%q failure: %d"
 msgstr ""
 
@@ -112,6 +113,7 @@ msgstr ""
 
 #: ports/espressif/common-hal/espulp/ULP.c
 #: ports/espressif/common-hal/mipidsi/Bus.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 #: ports/mimxrt10xx/common-hal/audiobusio/__init__.c
 #: ports/mimxrt10xx/common-hal/usb_host/Port.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
@@ -134,6 +136,7 @@ msgstr ""
 
 #: ports/analog/common-hal/busio/SPI.c ports/analog/common-hal/busio/UART.c
 #: shared-bindings/digitalio/DigitalInOutProtocol.c
+#: shared-module/busdisplay/BusDisplay.c
 msgid "%q init failed"
 msgstr ""
 
@@ -476,7 +479,7 @@ msgstr ""
 msgid "AP could not be started"
 msgstr ""
 
-#: shared-bindings/_bleio/Address.c shared-bindings/ipaddress/IPv4Address.c
+#: shared-bindings/ipaddress/IPv4Address.c
 #, c-format
 msgid "Address must be %d bytes long"
 msgstr ""
@@ -583,7 +586,7 @@ msgstr ""
 msgid "Already scanning for wifi networks"
 msgstr ""
 
-#: shared-module/os/getenv.c
+#: supervisor/shared/settings.c
 #, c-format
 msgid "An error occurred while retrieving '%s':\n"
 msgstr ""
@@ -673,11 +676,6 @@ msgstr ""
 msgid "Brightness not adjustable"
 msgstr ""
 
-#: shared-bindings/_bleio/UUID.c
-#, c-format
-msgid "Buffer + offset too small %d %d %d"
-msgstr ""
-
 #: ports/raspberrypi/bindings/rp2pio/StateMachine.c
 msgid "Buffer elements must be 4 bytes long or less"
 msgstr ""
@@ -718,10 +716,6 @@ msgstr ""
 #: ports/raspberrypi/common-hal/paralleldisplaybus/ParallelBus.c
 #, c-format
 msgid "Bus pin %d is already in use"
-msgstr ""
-
-#: shared-bindings/_bleio/UUID.c
-msgid "Byte buffer must be 16 bytes."
 msgstr ""
 
 #: shared-bindings/aesio/aes.c
@@ -864,7 +858,7 @@ msgstr ""
 msgid "Coordinate arrays types have different sizes"
 msgstr ""
 
-#: shared-module/usb/core/Device.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c shared-module/usb/core/Device.c
 msgid "Could not allocate DMA capable buffer"
 msgstr ""
 
@@ -967,6 +961,7 @@ msgstr ""
 
 #: ports/espressif/common-hal/busio/SPI.c
 #: ports/espressif/common-hal/canio/CAN.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "ESP-IDF memory allocation failed"
 msgstr ""
 
@@ -1031,10 +1026,12 @@ msgstr ""
 
 #: ports/espressif/common-hal/_bleio/Adapter.c
 #: ports/nordic/common-hal/_bleio/Adapter.c
+#: ports/zephyr-cp/common-hal/_bleio/Adapter.c
 msgid "Failed to connect: internal error"
 msgstr ""
 
 #: ports/nordic/common-hal/_bleio/Adapter.c
+#: ports/zephyr-cp/common-hal/_bleio/Adapter.c
 msgid "Failed to connect: timeout"
 msgstr ""
 
@@ -1092,7 +1089,6 @@ msgid "File exists"
 msgstr ""
 
 #: shared-bindings/supervisor/__init__.c shared-module/lvfontio/OnDiskFont.c
-#: shared-module/os/getenv.c
 msgid "File not found"
 msgstr ""
 
@@ -1243,7 +1239,8 @@ msgstr ""
 msgid "Internal define error"
 msgstr ""
 
-#: shared-bindings/pwmio/PWMOut.c shared-module/os/getenv.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c shared-bindings/pwmio/PWMOut.c
+#: supervisor/shared/settings.c
 msgid "Internal error"
 msgstr ""
 
@@ -1332,6 +1329,10 @@ msgstr ""
 msgid "Invalid ROS domain ID"
 msgstr ""
 
+#: ports/zephyr-cp/common-hal/_bleio/Adapter.c
+msgid "Invalid advertising data"
+msgstr ""
+
 #: ports/espressif/common-hal/espidf/__init__.c py/moderrno.c
 msgid "Invalid argument"
 msgstr ""
@@ -1340,17 +1341,12 @@ msgstr ""
 msgid "Invalid bits per value"
 msgstr ""
 
-#: shared-module/os/getenv.c
-#, c-format
-msgid "Invalid byte %.*s"
-msgstr ""
-
 #: ports/atmel-samd/common-hal/imagecapture/ParallelImageCapture.c
 #, c-format
 msgid "Invalid data_pins[%d]"
 msgstr ""
 
-#: shared-module/msgpack/__init__.c
+#: shared-module/msgpack/__init__.c supervisor/shared/settings.c
 msgid "Invalid format"
 msgstr ""
 
@@ -1381,16 +1377,12 @@ msgstr ""
 msgid "Invalid state"
 msgstr ""
 
-#: shared-module/os/getenv.c
+#: supervisor/shared/settings.c
 msgid "Invalid unicode escape"
 msgstr ""
 
 #: shared-bindings/aesio/aes.c
 msgid "Key must be 16, 24, or 32 bytes long"
-msgstr ""
-
-#: shared-module/os/getenv.c
-msgid "Key not found"
 msgstr ""
 
 #: shared-module/is31fl3741/FrameBuffer.c
@@ -1523,7 +1515,7 @@ msgstr ""
 #: ports/stm/common-hal/busio/UART.c shared-bindings/fourwire/FourWire.c
 #: shared-bindings/i2cdisplaybus/I2CDisplayBus.c
 #: shared-bindings/paralleldisplaybus/ParallelBus.c
-#: shared-module/bitbangio/SPI.c
+#: shared-bindings/qspibus/QSPIBus.c shared-module/bitbangio/SPI.c
 msgid "No %q pin"
 msgstr ""
 
@@ -1752,6 +1744,7 @@ msgid "Operation or feature not supported"
 msgstr ""
 
 #: ports/espressif/common-hal/espidf/__init__.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "Operation timed out"
 msgstr ""
 
@@ -2073,8 +2066,11 @@ msgstr ""
 
 #: ports/espressif/common-hal/socketpool/SocketPool.c
 #: ports/raspberrypi/common-hal/socketpool/SocketPool.c
-#: ports/zephyr-cp/common-hal/socketpool/SocketPool.c
 msgid "SocketPool can only be used with wifi.radio"
+msgstr ""
+
+#: ports/zephyr-cp/common-hal/socketpool/SocketPool.c
+msgid "SocketPool can only be used with wifi.radio or hostnetwork.HostNetwork"
 msgstr ""
 
 #: shared-bindings/aesio/aes.c
@@ -2248,10 +2244,6 @@ msgstr ""
 
 #: shared-module/usb_hid/Device.c
 msgid "USB error"
-msgstr ""
-
-#: shared-bindings/_bleio/UUID.c
-msgid "UUID integer value must be 0-0xffff"
 msgstr ""
 
 #: shared-bindings/_bleio/UUID.c
@@ -3241,10 +3233,6 @@ msgstr ""
 msgid "float unsupported"
 msgstr ""
 
-#: shared-bindings/_stage/Text.c
-msgid "font must be 2048 bytes long"
-msgstr ""
-
 #: extmod/moddeflate.c
 msgid "format"
 msgstr ""
@@ -3326,10 +3314,6 @@ msgstr ""
 msgid "generator raised StopIteration"
 msgstr ""
 
-#: shared-bindings/_stage/Layer.c
-msgid "graphic must be 2048 bytes long"
-msgstr ""
-
 #: extmod/modhashlib.c
 msgid "hash is final"
 msgstr ""
@@ -3394,10 +3378,6 @@ msgstr ""
 
 #: extmod/ulab/code/scipy/optimize/optimize.c
 msgid "initial values must be iterable"
-msgstr ""
-
-#: shared-bindings/_bleio/Characteristic.c shared-bindings/_bleio/Descriptor.c
-msgid "initial_value length is wrong"
 msgstr ""
 
 #: py/compile.c
@@ -4053,10 +4033,6 @@ msgstr ""
 #: py/modstruct.c
 #, c-format
 msgid "pack expected %d items for packing (got %d)"
-msgstr ""
-
-#: shared-bindings/_stage/Layer.c shared-bindings/_stage/Text.c
-msgid "palette must be 32 bytes long"
 msgstr ""
 
 #: py/emitinlinerv32.c
