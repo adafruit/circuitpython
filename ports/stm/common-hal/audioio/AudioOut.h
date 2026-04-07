@@ -22,15 +22,19 @@ typedef struct {
 
     // Left channel pin (PA04 = DAC_CH1). NULL when deinited.
     const mcu_pin_obj_t *left_channel;
-    // right_channel (PA05 = DAC_CH2) deferred to a future implementation.
+    // Right channel pin (PA05 = DAC_CH2). NULL when mono.
+    const mcu_pin_obj_t *right_channel;
 
-    // DMA handle for DMA1 Stream5 Channel7 (DAC CH1).
+    // DMA handle for DMA1 Stream5 Channel7 (DAC CH1, left).
+    // DMA handle for DMA1 Stream6 Channel7 (DAC CH2, right).
     // The DAC handle is the shared file-scope handle from AnalogOut.c.
     DMA_HandleTypeDef dma_handle;
+    DMA_HandleTypeDef dma_handle_r;
 
-    // Circular DMA buffer: AUDIOOUT_DMA_BUFFER_SAMPLES uint16_t elements,
+    // Circular DMA buffers: AUDIOOUT_DMA_BUFFER_SAMPLES uint16_t elements each,
     // allocated on play() and freed on stop().
-    uint16_t *dma_buffer;
+    uint16_t *dma_buffer;    // left (CH1)
+    uint16_t *dma_buffer_r;  // right (CH2), NULL when mono
 
     // Current audio sample object being played.
     mp_obj_t sample;
@@ -43,7 +47,7 @@ typedef struct {
     // Sample format metadata, populated at play() time.
     uint8_t bytes_per_sample;   // 1 (8-bit) or 2 (16-bit)
     bool samples_signed;
-    uint8_t channel_count;      // 1 = mono, 2 = stereo (only L channel output)
+    uint8_t channel_count;      // 1 = mono, 2 = stereo
     uint16_t quiescent_value;   // 16-bit resting value (default 0x8000)
 
     // Background callback queued from DMA ISR, processed in main loop.
