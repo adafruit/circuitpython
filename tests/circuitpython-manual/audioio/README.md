@@ -10,12 +10,13 @@ These tests exercise the DAC-based `audioio.AudioOut` implementation added for S
 | 2 — Pause / Resume | Yes | Yes (audio check) |
 | 3 — Looping Sine Wave | Yes | Yes (audio check) |
 | 4 — deinit and Re-init | Yes | No |
-| 5 — Soft Reset Cleanup | No (manual Ctrl-C/D) | No |
+| 5 — Stereo Playback | Yes | Yes (audio check) |
+| 6 — Soft Reset Cleanup | No (manual Ctrl-C/D) | No |
 
-`run_serial_tests.py` automates Tests 1, 2, 3, and 4: it copies the necessary
-files to the board and runs each script over the serial REPL, comparing the
-printed output to the expected patterns.  You still need to listen to the audio
-(and optionally use an oscilloscope) for the audio-quality checks.
+`run_serial_tests.py` automates Tests 1–5: it copies the necessary files to the
+board and runs each script over the serial REPL, comparing the printed output to
+the expected patterns.  You still need to listen to the audio (and optionally
+use an oscilloscope) for the audio-quality checks.
 
 ### Quick start
 
@@ -29,13 +30,19 @@ python3 tests/circuitpython-manual/audioio/run_serial_tests.py
 # Skip file copy if files are already on the board
 python3 tests/circuitpython-manual/audioio/run_serial_tests.py --no-copy
 
-# Override the serial port or CIRCUITPY path
+# Override the serial port or CIRCUITPY path (auto-detected on macOS/Linux/Windows)
 python3 tests/circuitpython-manual/audioio/run_serial_tests.py \
     --port /dev/cu.usbmodem1234 \
-    --circuitpy /Volumes/CIRCUITPY
+    --circuitpy /Volumes/CIRCUITPY          # macOS (auto-detected)
+python3 tests/circuitpython-manual/audioio/run_serial_tests.py \
+    --port /dev/ttyACM0 \
+    --circuitpy /media/user/CIRCUITPY       # Linux (auto-detected)
+python3 tests/circuitpython-manual/audioio/run_serial_tests.py \
+    --port COM5 \
+    --circuitpy D:\                         # Windows (auto-detected)
 
 # Run only specific tests
-python3 tests/circuitpython-manual/audioio/run_serial_tests.py --tests 3,4
+python3 tests/circuitpython-manual/audioio/run_serial_tests.py --tests 3,4,5
 ```
 
 The script exits 0 if all selected tests pass, 1 otherwise — suitable for CI.
@@ -79,22 +86,27 @@ cp \
   tests/circuitpython-manual/audiocore/jeplayer-splash-8000-8bit-mono-unsigned.wav \
   tests/circuitpython-manual/audiocore/jeplayer-splash-8000-16bit-mono-signed.wav \
   tests/circuitpython-manual/audiocore/jeplayer-splash-44100-16bit-mono-signed.wav \
+  tests/circuitpython-manual/audiocore/jeplayer-splash-8000-16bit-stereo-signed.wav \
+  tests/circuitpython-manual/audiocore/jeplayer-splash-44100-16bit-stereo-signed.wav \
   /Volumes/CIRCUITPY/
 ```
 
-These three files (~447 KB total) cover every exercised code path:
+These five files cover every exercised code path:
 - `8000-8bit-mono-unsigned` — 8-bit unsigned decode path, audibly lo-fi
 - `8000-16bit-mono-signed` — 16-bit signed decode path at lowest sample rate
 - `44100-16bit-mono-signed` — 16-bit at highest sample rate (DMA reconfiguration, audible quality difference)
+- `8000-16bit-stereo-signed` — stereo decode path, left→A0, right→A1
+- `44100-16bit-stereo-signed` — stereo at 44.1 kHz
 
 Stereo, 24-bit, and the 16 kHz files are omitted: stereo and 24-bit will `OSError`; 16 kHz adds no new code paths over 8 kHz and 44.1 kHz.
 
-Copy the three test scripts to the board as well (or paste them into the REPL):
+Copy the test scripts to the board as well (or paste them into the REPL):
 
 ```
 cp tests/circuitpython-manual/audioio/wavefile_playback.py      /Volumes/CIRCUITPY/
 cp tests/circuitpython-manual/audioio/wavefile_pause_resume.py  /Volumes/CIRCUITPY/
 cp tests/circuitpython-manual/audioio/single_buffer_loop.py     /Volumes/CIRCUITPY/
+cp tests/circuitpython-manual/audioio/stereo_playback.py        /Volumes/CIRCUITPY/
 ```
 
 ## Test 1 — WAV File Playback (`wavefile_playback.py`) *(automated)*
@@ -219,7 +231,39 @@ print("pass")
 
 **Expected output:** `pass` with no exceptions.
 
-## Test 5 — Soft Reset Cleanup *(manual)*
+## Test 5 — Stereo Playback (`stereo_playback.py`) *(automated)*
+
+Verifies that `AudioOut(board.A0, right_channel=board.A1)` correctly splits a
+stereo WAV file across both DAC channels: left audio on **A0 (PA04, DAC_CH1)**
+and right audio on **A1 (PA05, DAC_CH2)**, both clocked by TIM6.
+
+**Hardware required:** connect a speaker or amp to both A0 and A1 (two separate
+channels), or use an oscilloscope to probe each pin independently.
+
+**Run from the REPL:**
+
+```python
+import os
+os.chdir("/")
+exec(open("stereo_playback.py").read())
+```
+
+**Expected output:**
+
+```
+playing stereo: jeplayer-splash-44100-16bit-stereo-signed.wav
+playing stereo: jeplayer-splash-8000-16bit-stereo-signed.wav
+done
+```
+
+**What to listen / look for:**
+
+- Left and right channels play the correct sides of the stereo jingle.
+- No cross-contamination between channels.
+- On a scope: probe A0 and A1 simultaneously — waveforms should differ
+  (the splash sample is not phase-identical left/right).
+
+## Test 6 — Soft Reset Cleanup *(manual)*
 
 Verifies that `audioout_reset()` properly cleans up when the REPL soft-resets during active playback.
 
@@ -249,7 +293,7 @@ Each test script drives `board.D4` (pin D4) low at the start of each playback an
 
 ## Known Limitations
 
-- **Right channel / stereo output** is not implemented. Passing `right_channel` to `AudioOut()` raises `ValueError: Stereo not supported on this board`.
-- **Only pin A0 (PA04)** is supported as the left channel. Any other pin raises `ValueError: AudioOut requires pin A0 (PA04)`.
+- **Left channel must be A0 (PA04)**. Any other pin raises `ValueError: AudioOut requires pin A0 (PA04)`.
+- **Right channel must be A1 (PA05)** when used. Any other pin raises `ValueError: AudioOut right channel requires pin A1 (PA05)`.
 - **24-bit WAV files** are not supported by `audiocore.WaveFile` and will raise `OSError` when opened.
-- Only one `AudioOut` instance can be active at a time (single DAC channel).
+- Only one `AudioOut` instance can be active at a time.
