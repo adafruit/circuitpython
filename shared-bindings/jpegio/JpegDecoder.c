@@ -23,13 +23,18 @@
 //|     Example::
 //|
 //|         from jpegio import JpegDecoder
-//|         from displayio import Bitmap
+//|         from displayio import Bitmap, TileGrid, ColorConverter, Colorspace
+//|         import supervisor
 //|
 //|         decoder = JpegDecoder()
 //|         width, height = decoder.open("/sd/example.jpg")
 //|         bitmap = Bitmap(width, height, 65535)
 //|         decoder.decode(bitmap)
-//|         # .. do something with bitmap
+//|         tg = TileGrid(bitmap, pixel_shader=ColorConverter(input_colorspace=Colorspace.RGB565_SWAPPED))
+//|         supervisor.runtime.display.root_group = tg
+//|         while True:
+//|             pass
+//|
 //|     """
 //|
 //|     def __init__(self) -> None:
