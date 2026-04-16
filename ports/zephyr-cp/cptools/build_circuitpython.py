@@ -119,9 +119,7 @@ LIBRARY_SOURCE = {
         "lib/uzlib/adler32.c",
         "lib/uzlib/crc32.c",
     ],
-    "jpegio": [
-        "lib/tjpgd/src/tjpgd.c"
-    ]
+    "jpegio": ["lib/tjpgd/src/tjpgd.c"],
 }
 
 SHARED_MODULE_AND_COMMON_HAL = ["_bleio", "os", "rotaryio"]
