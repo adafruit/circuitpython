@@ -342,6 +342,7 @@ bool supervisor_start_web_workflow(void) {
     if (reset_reason != RESET_REASON_POWER_ON &&
         reset_reason != RESET_REASON_RESET_PIN &&
         reset_reason != RESET_REASON_DEEP_SLEEP_ALARM &&
+        reset_reason != RESET_REASON_WATCHDOG &&
         reset_reason != RESET_REASON_UNKNOWN &&
         reset_reason != RESET_REASON_SOFTWARE) {
         return false;
