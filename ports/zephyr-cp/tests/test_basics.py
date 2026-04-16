@@ -92,6 +92,28 @@ def test_ctrl_c_interrupt(circuitpython):
     assert "completed" not in output
 
 
+IMPORT_PRECEDENCE_CODE = """\
+import fake_lib
+print("done")
+"""
+
+
+@pytest.mark.circuitpy_drive(
+    {
+        "code.py": IMPORT_PRECEDENCE_CODE,
+        "fake_lib/a_spritesheet.bmp": b"",
+        "fake_lib.py": 'print("hello fake_lib.py")\n',
+    }
+)
+def test_py_file_wins_over_namespace_dir(circuitpython):
+    """#10614: a .py module beats a sibling directory lacking __init__.py."""
+    circuitpython.wait_until_done()
+
+    output = circuitpython.serial.all_output
+    assert "hello fake_lib.py" in output
+    assert "done" in output
+
+
 RELOAD_CODE = """\
 print("first run")
 import time
