@@ -65,6 +65,7 @@ DEFAULT_MODULES = [
     "hashlib",
     "zlib",
     "adafruit_bus_device",
+    "getpass",
     "jpegio",
 ]
 # Flags that don't match with with a *bindings module. Some used by adafruit_requests
