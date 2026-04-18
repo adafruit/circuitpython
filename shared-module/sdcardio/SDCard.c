@@ -28,7 +28,9 @@
 
 // https://www.taterli.com/wp-content/uploads/2017/05/Physical-Layer-Simplified-SpecificationV6.0.pdf
 // specifies timeouts for read (100 ms), write (250 ms), erase (depends on size), and other operations.
-#define CMD_TIMEOUT_MS (250)
+// cmd timeout was 250, but did not work on some cards.
+// See https://github.com/adafruit/circuitpython/issues/10954
+#define CMD_TIMEOUT_MS (500)
 #define SPI_TIMEOUT_MS (250)
 // Init ready timeout.
 #define READY_TIMEOUT_MS (300)
