@@ -14,11 +14,15 @@
 
 // Camera SCCB/I2C
 // used SIOD = CAM_SDA and SIOC for CAM_SCL
+/*
+    In the python script I couldn't get board.I2C() to work.
+    But using i2c = busio.I2C(scl=board.CAMERA_SIOC, sda=board.CAMERA_SIOD) works.
+*/
 #define CAM_PIN_SIOD_SDA  (&pin_GPIO4)  // replace with actual GPIO
 #define CAM_PIN_SIOC_SCL  (&pin_GPIO5)  // replace with actual GPIO
 
 #define CIRCUITPY_BOARD_I2C         (1)
-#define CIRCUITPY_BOARD_I2C_PIN     {{.scl = CAM_PIN_SIOC_SCL, .sda = CAM_PIN_SIOD_SDA}}
+#define CIRCUITPY_BOARD_I2C_PIN     {{.scl = &pin_GPIO5, .sda = &pin_GPIO4}}
 
 #define DEFAULT_I2C_BUS_SDA (&pin_GPIO4)  // your CAM_SDA pin
 #define DEFAULT_I2C_BUS_SCL (&pin_GPIO5)  // your CAM_SCL pin
@@ -26,7 +30,7 @@
 // WS2812
 #define MICROPY_HW_NEOPIXEL         (&pin_GPIO48)
 
-// also the pins for the RX and TX LED
+// RX and TX LED
 #define DEFAULT_UART_BUS_RX         (&pin_GPIO44)
 #define DEFAULT_UART_BUS_TX         (&pin_GPIO43)
 

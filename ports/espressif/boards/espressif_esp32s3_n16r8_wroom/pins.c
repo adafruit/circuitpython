@@ -68,10 +68,15 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_IO48), MP_ROM_PTR(&pin_GPIO48) },
     { MP_ROM_QSTR(MP_QSTR_NEOPIXEL), MP_ROM_PTR(&pin_GPIO48) },
 
+    // TX / RX
     { MP_ROM_QSTR(MP_QSTR_TX), MP_ROM_PTR(&pin_GPIO43) },
     { MP_ROM_QSTR(MP_QSTR_RX), MP_ROM_PTR(&pin_GPIO44) },
 
+    // UART
     { MP_ROM_QSTR(MP_QSTR_UART), MP_ROM_PTR(&board_uart_obj) },
+
+    // LED
+    { MP_ROM_QSTR(MP_QSTR_LED), MP_ROM_PTR(&pin_GPIO2) },
 
     // Camera data
     { MP_ROM_QSTR(MP_QSTR_CAM_DATA),  MP_ROM_PTR(&camera_data_tuple)},
@@ -82,6 +87,9 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_CAM_XCLK),  MP_ROM_PTR(&pin_GPIO15)},
 
     { MP_ROM_QSTR(MP_QSTR_CAMERA_SIOD),  MP_ROM_PTR(&pin_GPIO4) }, // SDA
+    { MP_ROM_QSTR(MP_QSTR_CAM_SDA),  MP_ROM_PTR(&pin_GPIO4) }, // SDA
+
     { MP_ROM_QSTR(MP_QSTR_CAMERA_SIOC),  MP_ROM_PTR(&pin_GPIO5) }, // SCL
+    { MP_ROM_QSTR(MP_QSTR_CAM_SCL),  MP_ROM_PTR(&pin_GPIO5) }, // SCL
 };
 MP_DEFINE_CONST_DICT(board_module_globals, board_module_globals_table);
