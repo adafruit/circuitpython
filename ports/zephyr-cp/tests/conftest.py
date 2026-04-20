@@ -289,22 +289,12 @@ def circuitpython(request, board, sim_id, native_sim_binary, native_sim_env, tmp
             tmp_drive = tmp_path / f"drive{i}"
             tmp_drive.mkdir(exist_ok=True)
 
-            created_dirs: set[str] = set()
             for name, content in files.items():
                 src = tmp_drive / name
-                src.parent.mkdir(parents=True, exist_ok=True)
                 if isinstance(content, bytes):
                     src.write_bytes(content)
                 else:
                     src.write_text(content)
-                parent = Path(name).parent
-                if parent != Path("."):
-                    parts = parent.parts
-                    for depth in range(1, len(parts) + 1):
-                        sub = "/".join(parts[:depth])
-                        if sub not in created_dirs:
-                            subprocess.run(["mmd", "-i", str(flash), f"::{sub}"], check=True)
-                            created_dirs.add(sub)
                 subprocess.run(["mcopy", "-i", str(flash), str(src), f"::{name}"], check=True)
 
         trace_file = tmp_path / f"trace-{i}.perfetto"
