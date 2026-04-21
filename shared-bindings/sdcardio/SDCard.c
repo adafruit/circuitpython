@@ -48,7 +48,7 @@
 //|            to float low, the SPI bus can be corrupted during SD card init
 //|            and the card may not be recognized until it is powered off or
 //|            re-inserted. The order in which peripherals are constructed is
-//|            secondary; what matters is that all CS lines are deselected
+//|            secondary; what matters is that all CS lines are HIGH (deselected)
 //|            before any SPI transaction.
 //|
 //|         Example usage:
