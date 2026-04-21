@@ -43,13 +43,6 @@
 //|            Failure to do so can prevent the SD card from being recognized until it is
 //|            powered off or re-inserted.
 //|
-//|            Exception: on boards where another SPI peripheral has a floating CS
-//|            pin with no hardware pull-up (such as the Feather RP2040 RFM), that
-//|            peripheral's CS must be driven HIGH before SD card initialization.
-//|            Failure to do so will corrupt the SPI bus during SD card init. In
-//|            these cases, initialize and drive the other peripheral's CS high
-//|            first, then initialize the SD card.
-//|
 //|         Example usage:
 //|
 //|         .. code-block:: python
