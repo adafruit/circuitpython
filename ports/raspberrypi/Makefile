@@ -200,9 +200,21 @@ CFLAGS += \
 	-DCFG_TUD_CDC_RX_BUFSIZE=256 \
 	-DCFG_TUD_MIDI_TX_BUFSIZE=128 \
 	-DCFG_TUD_CDC_TX_BUFSIZE=256 \
-	-DCFG_TUD_MSC_BUFSIZE=1024 \
 	-DPICO_RP2040_USB_DEVICE_UFRAME_FIX=1 \
 	-DPICO_RP2040_USB_DEVICE_ENUMERATION_FIX=1 \
+
+# CFG_TUD_MSC_BUFSIZE: 1024 bytes is enough for internal flash MSC but
+# causes macOS bulk-IN endpoint stalls on RP2040 during multi-sector SD
+# card READ(10) probes. Boards that expose an SD card over USB MSC can
+# opt into a larger buffer by setting CIRCUITPY_USB_MSC_LARGE_BUFFER = 1
+# in their mpconfigboard.mk. Costs ~15 KB RAM; only worth enabling when
+# the board actually has SD hardware exposed over USB MSC.
+# Root cause tracked at hathach/tinyusb.
+ifeq ($(CIRCUITPY_USB_MSC_LARGE_BUFFER),1)
+CFLAGS += -DCFG_TUD_MSC_BUFSIZE=16384
+else
+CFLAGS += -DCFG_TUD_MSC_BUFSIZE=1024
+endif
 
 # option to override default optimization level, set in boards/$(BOARD)/mpconfigboard.mk
 CFLAGS += $(OPTIMIZATION_FLAGS)
