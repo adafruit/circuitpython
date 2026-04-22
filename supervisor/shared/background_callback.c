@@ -14,9 +14,7 @@
 #include "supervisor/shared/tick.h"
 #include "shared-bindings/microcontroller/__init__.h"
 
-static volatile background_callback_t *volatile callback_head = NULL;
-static volatile background_callback_t *volatile callback_tail = NULL;
-;
+static volatile background_callback_t *volatile callback_head, *volatile callback_tail;
 
 #ifndef CALLBACK_CRITICAL_BEGIN
 #define CALLBACK_CRITICAL_BEGIN (common_hal_mcu_disable_interrupts())
@@ -30,26 +28,15 @@ MP_WEAK void PLACE_IN_ITCM(port_wake_main_task)(void) {
 
 void PLACE_IN_ITCM(background_callback_add_core)(background_callback_t * cb) {
     CALLBACK_CRITICAL_BEGIN;
-    // next_callback_on_list is volatile only to match callback_head declaration.
-    volatile background_callback_t *next_callback_on_list = callback_head;
-    // Add cb only if it is not already on the callback list.
-    while (next_callback_on_list) {
-        if (cb == next_callback_on_list) {
-            // Already on the list. Don't add.
-            CALLBACK_CRITICAL_END;
-            return;
-        }
-        next_callback_on_list = next_callback_on_list->next;
+    if (cb->prev || callback_head == cb) {
+        CALLBACK_CRITICAL_END;
+        return;
     }
-
-    // Add the cb to the end of the list.
     cb->next = 0;
     cb->prev = (background_callback_t *)callback_tail;
     if (callback_tail) {
         callback_tail->next = cb;
     }
-
-    // If the callback list was empty, record that cb is the first item.
     if (!callback_head) {
         callback_head = cb;
     }
