@@ -45,6 +45,7 @@ void supervisor_workflow_reset(void) {
     bool result = supervisor_start_web_workflow();
     if (result) {
         if (!workflow_background_cb.fun) {
+            // Enable background callbacks if web_workflow startup successful.
             workflow_background_cb.fun = supervisor_web_workflow_background;
         }
         supervisor_workflow_request_background();
