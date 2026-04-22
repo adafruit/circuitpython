@@ -66,6 +66,7 @@ DEFAULT_MODULES = [
     "zlib",
     "adafruit_bus_device",
     "getpass",
+    "jpegio",
     "storage",
     "gifio",
 ]
@@ -121,6 +122,7 @@ LIBRARY_SOURCE = {
         "lib/uzlib/adler32.c",
         "lib/uzlib/crc32.c",
     ],
+    "jpegio": ["lib/tjpgd/src/tjpgd.c"],
     "gifio": [
         "lib/AnimatedGIF/gif.c"
     ]

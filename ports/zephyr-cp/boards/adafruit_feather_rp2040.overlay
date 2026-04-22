@@ -26,7 +26,7 @@
 
 		circuitpy_partition: partition@181000 {
 			label = "circuitpy";
-			reg = <0x181000 (DT_SIZE_M(2) - 0x181000)>;
+			reg = <0x181000 (DT_SIZE_M(8) - 0x181000)>;
 		};
 	};
 };

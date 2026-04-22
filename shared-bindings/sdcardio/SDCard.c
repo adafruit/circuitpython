@@ -38,17 +38,18 @@
 //|         the microcontroller)
 //|
 //|         .. important::
-//|            If the same SPI bus is shared with other peripherals, it is important that
-//|            the SD card be initialized before accessing any other peripheral on the bus.
-//|            Failure to do so can prevent the SD card from being recognized until it is
-//|            powered off or re-inserted.
-//|
-//|            Exception: on boards where another SPI peripheral has a floating CS
-//|            pin with no hardware pull-up (such as the Feather RP2040 RFM), that
-//|            peripheral's CS must be driven HIGH before SD card initialization.
-//|            Failure to do so will corrupt the SPI bus during SD card init. In
-//|            these cases, initialize and drive the other peripheral's CS high
-//|            first, then initialize the SD card.
+//|            When the SPI bus is shared with other peripherals, every CS pin on
+//|            the bus must be in a known HIGH (deselected) state before any SPI
+//|            transaction occurs. This is normally guaranteed by a hardware
+//|            pull-up on each CS line, but on boards where a co-resident
+//|            peripheral's CS floats (for example the Feather RP2040 RFM, whose
+//|            ``RFM_CS`` has no pull-up), that CS must be driven HIGH in
+//|            software before the SD card is initialized. If any CS is allowed
+//|            to float low, the SPI bus can be corrupted during SD card init
+//|            and the card may not be recognized until it is powered off or
+//|            re-inserted. The order in which peripherals are constructed is
+//|            secondary; what matters is that all CS lines are HIGH (deselected)
+//|            before any SPI transaction.
 //|
 //|         Example usage:
 //|
