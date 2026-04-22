@@ -20,3 +20,11 @@
 
 #define DEFAULT_UART_BUS_RX (&pin_GPIO1)
 #define DEFAULT_UART_BUS_TX (&pin_GPIO0)
+
+// Onboard microSD slot.
+#define DEFAULT_SD_SCK (&pin_GPIO18)
+#define DEFAULT_SD_MOSI (&pin_GPIO19)
+#define DEFAULT_SD_MISO (&pin_GPIO20)
+#define DEFAULT_SD_CS (&pin_GPIO23)
+#define DEFAULT_SD_CARD_DETECT (&pin_GPIO15)
+#define DEFAULT_SD_CARD_INSERTED true
