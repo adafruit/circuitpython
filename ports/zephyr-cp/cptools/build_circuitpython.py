@@ -66,9 +66,7 @@ DEFAULT_MODULES = [
     "zlib",
     "adafruit_bus_device",
     "getpass",
-    "jpegio",
     "storage",
-    "gifio",
 ]
 # Flags that don't match with with a *bindings module. Some used by adafruit_requests
 MPCONFIG_FLAGS = ["array", "errno", "io", "json", "math"]
@@ -98,6 +96,8 @@ REVERSE_DEPENDENCIES = {
         "lvfontio",
         "tilepalettemapper",
         "fontio",
+        "gifio",
+        "jpegio",
     ],
     "sharpdisplay": ["framebufferio"],
     "framebufferio": ["displayio"],
@@ -123,9 +123,7 @@ LIBRARY_SOURCE = {
         "lib/uzlib/crc32.c",
     ],
     "jpegio": ["lib/tjpgd/src/tjpgd.c"],
-    "gifio": [
-        "lib/AnimatedGIF/gif.c"
-    ]
+    "gifio": ["lib/AnimatedGIF/gif.c"],
 }
 
 SHARED_MODULE_AND_COMMON_HAL = ["_bleio", "os", "rotaryio"]
