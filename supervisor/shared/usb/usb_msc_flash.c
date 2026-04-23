@@ -214,22 +214,13 @@ int32_t tud_msc_scsi_cb(uint8_t lun, const uint8_t scsi_cmd[16], void *buffer, u
 
     switch (scsi_cmd[0]) {
         case SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL:
-            #ifdef SDCARD_LUN
-            if (lun == SDCARD_LUN) {
-                // Removable media (SD card). Respond "unsupported" so macOS
-                // keeps sending TEST_UNIT_READY periodically to detect card
-                // insertion/removal. Responding OK here causes macOS to skip
-                // TUR polling and miss media-present events on the SD LUN.
-                // See the discussion in adafruit/circuitpython#6555.
-                tud_msc_set_sense(lun, SCSI_SENSE_ILLEGAL_REQUEST, 0x20, 0x00);
-                resplen = -1;
-            } else
-            #endif
-            {
-                // Non-removable media (internal flash, SAVES). OK is fine;
-                // host assumes medium always present and skips TUR polling.
-                resplen = 0;
-            }
+            // All LUNs advertise is_removable=1 in INQUIRY (tinyusb default).
+            // Reply "unsupported" so the host keeps polling TUR and can
+            // re-mount after an eject. Responding OK tells the host to skip
+            // TUR polling, which breaks re-mount and can miss SD insertion
+            // events at boot. See adafruit/circuitpython#6555.
+            tud_msc_set_sense(lun, SCSI_SENSE_ILLEGAL_REQUEST, 0x20, 0x00);
+            resplen = -1;
             break;
 
         default:
