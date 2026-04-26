@@ -156,23 +156,21 @@ static inline uint32_t pack8(uint32_t val) {
 }
 
 static inline uint32_t copy16lsb(uint32_t val) {
+    #if (defined(__ARM_ARCH_7EM__) && (__ARM_ARCH_7EM__ == 1))
+    return __PKHBT(val, val, 16);
+    #else
     val &= 0x0000ffff;
     return val | (val << 16);
+    #endif
 }
 
 static inline uint32_t copy16msb(uint32_t val) {
+    #if (defined(__ARM_ARCH_7EM__) && (__ARM_ARCH_7EM__ == 1))
+    return __PKHTB(val, val, 16);
+    #else
     val &= 0xffff0000;
     return val | (val >> 16);
-}
-
-static inline uint32_t copy8lsb(uint32_t val) {
-    val &= 0x00ff;
-    return val | (val << 8);
-}
-
-static inline uint32_t copy8msb(uint32_t val) {
-    val &= 0xff00;
-    return val | (val >> 8);
+    #endif
 }
 
 #define ALMOST_ONE (MICROPY_FLOAT_CONST(32767.) / 32768)
