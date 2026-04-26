@@ -219,6 +219,13 @@ bool filesystem_init(bool create_allowed, bool force_create) {
 
     #if CIRCUITPY_SDCARDIO
     sdcardio_init();
+    #if defined(DEFAULT_SD_CARD_DETECT) && CIRCUITPY_SDCARD_USB
+    // Mount the SD card now so it's ready when USB enumerates.
+    // Lazy mount from tud_msc_test_unit_ready_cb can lose races with
+    // macOS's probe timing. Gated on CIRCUITPY_SDCARD_USB to match the
+    // existing call site in usb_msc_flash.c (guarded by SDCARD_LUN).
+    automount_sd_card();
+    #endif
     #endif
 
     return true;
