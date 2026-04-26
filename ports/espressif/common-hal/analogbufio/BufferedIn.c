@@ -23,7 +23,7 @@
 #define NUM_SAMPLES_PER_INTERRUPT   256
 #define NUM_ADC_CHANNELS            1
 #define DMA_BUFFER_SIZE             1024
-#define ATTENUATION                 ADC_ATTEN_DB_11
+#define ATTENUATION                 ADC_ATTEN_DB_12
 #define ADC_READ_TIMEOUT_MS         2000
 #define ADC_PIN_MAX_VALUE           0xfff
 

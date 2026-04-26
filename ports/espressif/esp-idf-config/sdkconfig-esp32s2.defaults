@@ -43,10 +43,10 @@ CONFIG_ESP_WIFI_RX_BA_WIN=4
 # end of Wi-Fi
 
 #
-# Newlib
+# LibC
 #
-CONFIG_NEWLIB_NANO_FORMAT=y
-# end of Newlib
+CONFIG_LIBC_NEWLIB_NANO_FORMAT=y
+# end of LibC
 
 #
 # Ultra Low Power (ULP) Co-processor
@@ -57,12 +57,6 @@ CONFIG_ULP_COPROC_TYPE_RISCV=y  # Note: enabling both ULPs simultaneously only w
                                 # (see adafruit/esp-idf/pull/16) until espressif/esp-idf/issues/12999 is fixed.
 CONFIG_ULP_COPROC_RESERVE_MEM=8144
 # end of Ultra Low Power (ULP) Co-processor
-
-#
-# FreeRTOS
-#
-CONFIG_FREERTOS_PLACE_FUNCTIONS_INTO_FLASH=y
-# end of FreeRTOS
 
 # end of Component config
 

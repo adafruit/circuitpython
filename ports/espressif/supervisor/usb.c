@@ -21,8 +21,6 @@
 #include "driver/gpio.h"
 #include "esp_private/periph_ctrl.h"
 
-#include "rom/gpio.h"
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 

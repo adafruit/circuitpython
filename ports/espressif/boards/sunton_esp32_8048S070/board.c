@@ -6,6 +6,7 @@
 
 #include "supervisor/board.h"
 #include "mpconfigboard.h"
+#include "driver/gpio.h"
 #include "shared-bindings/board/__init__.h"
 #include "shared-bindings/dotclockframebuffer/DotClockFramebuffer.h"
 #include "shared-bindings/dotclockframebuffer/__init__.h"

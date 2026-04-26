@@ -9,7 +9,7 @@
 #include "py/mphal.h"
 #include "py/runtime.h"
 
-#include "components/driver/i2c/include/driver/i2c.h"
+#include "driver/gpio.h"
 
 #include "bindings/espidf/__init__.h"
 #include "shared-bindings/microcontroller/__init__.h"

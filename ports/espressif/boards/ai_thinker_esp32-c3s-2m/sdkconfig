@@ -21,6 +21,18 @@
 # CONFIG_LIBC_OPTIMIZED_MISALIGNED_ACCESS is not set
 # end of LibC
 
+#
+# mbedTLS
+#
+#
+# Certificate Bundle
+#
+# CONFIG_MBEDTLS_CERTIFICATE_BUNDLE_DEFAULT_FULL is not set
+CONFIG_MBEDTLS_CERTIFICATE_BUNDLE_DEFAULT_CMN=y
+# end of Certificate Bundle
+#
+# end of mbedTLS
+
 # end of Component config
 
 # end of Espressif IoT Development Framework Configuration

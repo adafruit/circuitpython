@@ -8,7 +8,7 @@
 
 #include "common-hal/microcontroller/Pin.h"
 
-#include "components/hal/include/hal/adc_types.h"
+#include "hal/adc_types.h"
 #include "FreeRTOS.h"
 #include "freertos/semphr.h"
 #include "py/obj.h"
