@@ -13,9 +13,11 @@
 
 // Total DMA circular buffer size in 16-bit samples.
 // Split into two halves; one half plays while the other is refilled.
-// 512 samples at 44100 Hz = ~5.8 ms per half-buffer interrupt.
-#define AUDIOOUT_DMA_BUFFER_SAMPLES 512
-#define AUDIOOUT_DMA_HALF_SAMPLES   256
+// 2048 samples at 48000 Hz = ~21 ms per half-buffer interrupt, which
+// gives the main loop plenty of headroom against USB / VFS stalls
+// before an underrun occurs.
+#define AUDIOOUT_DMA_BUFFER_SAMPLES 2048
+#define AUDIOOUT_DMA_HALF_SAMPLES   1024
 
 typedef struct {
     mp_obj_base_t base;
