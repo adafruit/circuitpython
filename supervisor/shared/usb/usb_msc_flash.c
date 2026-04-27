@@ -204,25 +204,25 @@ uint8_t tud_msc_get_maxlun_cb(void) {
     return LUN_COUNT;
 }
 
+// PREVENT ALLOW MEDIUM REMOVAL: TinyUSB routes this to its own dedicated callback,
+// NOT tud_msc_scsi_cb. Reply unsupported on all LUNs so the host keeps TUR polling
+// on every LUN — eject/storage.remount() works uniformly across CIRCUITPY, SAVES, SD.
+bool tud_msc_prevent_allow_medium_removal_cb(uint8_t lun, uint8_t prohibit_removal, uint8_t control) {
+    (void)prohibit_removal;
+    (void)control;
+    tud_msc_set_sense(lun, SCSI_SENSE_ILLEGAL_REQUEST, 0x20, 0x00);
+    return false;
+}
+
 // Callback invoked when received an SCSI command not in built-in list below
 // - READ_CAPACITY10, READ_FORMAT_CAPACITY, INQUIRY, TEST_UNIT_READY, START_STOP_UNIT, MODE_SENSE6, REQUEST_SENSE
-// - READ10 and WRITE10 have their own callbacks
+// - PREVENT_ALLOW_MEDIUM_REMOVAL, READ10, WRITE10 have their own callbacks
 int32_t tud_msc_scsi_cb(uint8_t lun, const uint8_t scsi_cmd[16], void *buffer, uint16_t bufsize) {
     // Note that no command uses a response right now.
     const void *response = NULL;
     int32_t resplen = 0;
 
     switch (scsi_cmd[0]) {
-        case SCSI_CMD_PREVENT_ALLOW_MEDIUM_REMOVAL:
-            // All LUNs advertise is_removable=1 in INQUIRY (tinyusb default).
-            // Reply "unsupported" so the host keeps polling TUR and can
-            // re-mount after an eject. Responding OK tells the host to skip
-            // TUR polling, which breaks re-mount and can miss SD insertion
-            // events at boot. See adafruit/circuitpython#6555.
-            tud_msc_set_sense(lun, SCSI_SENSE_ILLEGAL_REQUEST, 0x20, 0x00);
-            resplen = -1;
-            break;
-
         default:
             // Set Sense = Invalid Command Operation
             tud_msc_set_sense(lun, SCSI_SENSE_ILLEGAL_REQUEST, 0x20, 0x00);
