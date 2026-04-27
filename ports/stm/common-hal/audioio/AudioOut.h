@@ -55,6 +55,12 @@ typedef struct {
 
     // Which half of dma_buffer to refill next: 0 = lower, 1 = upper.
     volatile uint8_t buffer_half_to_fill;
+
+    // Source buffer position tracking. Allows consuming large source buffers
+    // (e.g. RawSample > 256 samples) across multiple DMA half-fills.
+    const uint8_t *src_ptr;         // current read position in source buffer
+    uint32_t src_remaining_len;     // bytes remaining in current source buffer
+    bool src_done;                  // GET_BUFFER_DONE received for current buffer
 } audioio_audioout_obj_t;
 
 // Called from reset_port() to stop any active playback on soft-reset.

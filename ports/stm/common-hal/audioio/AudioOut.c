@@ -155,59 +155,44 @@ static uint32_t convert_to_dac12(
 // Load one half of the DMA circular buffer from the audio sample source.
 // half: 0 = lower half (indices 0..HALF-1), 1 = upper half (HALF..END-1).
 //
-// Loops get_buffer calls until the full AUDIOOUT_DMA_HALF_SAMPLES-sample slot
-// is filled. This is necessary because the audio sample source (e.g. WaveFile)
-// delivers data in fixed-byte chunks (256 bytes) that may be smaller than the
-// half-buffer in samples (e.g. 128 samples for 16-bit audio vs 256 slots).
+// Tracks position within the source buffer (src_ptr / src_remaining_len)
+// across calls so that large source buffers (e.g. a 1024-sample RawSample)
+// are consumed incrementally rather than re-reading from the start each time.
 static void load_dma_buffer_half(audioio_audioout_obj_t *self, uint8_t half) {
     uint16_t *dest_l = self->dma_buffer + ((uint32_t)half * AUDIOOUT_DMA_HALF_SAMPLES);
     uint16_t *dest_r = self->dma_buffer_r
         ? self->dma_buffer_r + ((uint32_t)half * AUDIOOUT_DMA_HALF_SAMPLES)
         : NULL;
     uint16_t quiescent_12 = self->quiescent_value >> 4;
+    uint32_t src_stride = (uint32_t)self->bytes_per_sample * self->channel_count;
     uint32_t filled = 0;
 
     while (filled < AUDIOOUT_DMA_HALF_SAMPLES) {
-        uint8_t *src_buf;
-        uint32_t src_len;
-        audioio_get_buffer_result_t result =
-            audiosample_get_buffer(self->sample, false, 0, &src_buf, &src_len);
-
-        if (result == GET_BUFFER_ERROR) {
-            for (uint32_t i = filled; i < AUDIOOUT_DMA_HALF_SAMPLES; i++) {
-                dest_l[i] = quiescent_12;
-                if (dest_r) {
-                    dest_r[i] = quiescent_12;
+        // Fetch new source data when the previous buffer is exhausted.
+        if (self->src_remaining_len == 0) {
+            // Handle end-of-stream from previous get_buffer call.
+            if (self->src_done) {
+                if (self->loop) {
+                    audiosample_reset_buffer(self->sample, false, 0);
+                    self->src_done = false;
+                } else {
+                    for (uint32_t i = filled; i < AUDIOOUT_DMA_HALF_SAMPLES; i++) {
+                        dest_l[i] = quiescent_12;
+                        if (dest_r) {
+                            dest_r[i] = quiescent_12;
+                        }
+                    }
+                    self->stopping = true;
+                    return;
                 }
             }
-            self->stopping = true;
-            return;
-        }
 
-        uint32_t written = convert_to_dac12(
-            src_buf, src_len,
-            dest_l + filled, AUDIOOUT_DMA_HALF_SAMPLES - filled,
-            self->bytes_per_sample, self->samples_signed,
-            self->channel_count, 0, quiescent_12);
+            uint8_t *buf;
+            uint32_t len;
+            audioio_get_buffer_result_t result =
+                audiosample_get_buffer(self->sample, false, 0, &buf, &len);
 
-        if (dest_r) {
-            // Right channel: use channel_offset=1 for stereo, or 0 if the
-            // source is unexpectedly mono (duplicate left into right).
-            uint8_t r_offset = (self->channel_count >= 2) ? 1 : 0;
-            convert_to_dac12(
-                src_buf, src_len,
-                dest_r + filled, AUDIOOUT_DMA_HALF_SAMPLES - filled,
-                self->bytes_per_sample, self->samples_signed,
-                self->channel_count, r_offset, quiescent_12);
-        }
-
-        filled += written;
-
-        if (result == GET_BUFFER_DONE) {
-            if (self->loop) {
-                audiosample_reset_buffer(self->sample, false, 0);
-                // Continue filling the remainder of this half from the reset buffer.
-            } else {
+            if (result == GET_BUFFER_ERROR) {
                 for (uint32_t i = filled; i < AUDIOOUT_DMA_HALF_SAMPLES; i++) {
                     dest_l[i] = quiescent_12;
                     if (dest_r) {
@@ -217,7 +202,32 @@ static void load_dma_buffer_half(audioio_audioout_obj_t *self, uint8_t half) {
                 self->stopping = true;
                 return;
             }
+
+            self->src_ptr = buf;
+            self->src_remaining_len = len;
+            self->src_done = (result == GET_BUFFER_DONE);
         }
+
+        uint32_t written = convert_to_dac12(
+            self->src_ptr, self->src_remaining_len,
+            dest_l + filled, AUDIOOUT_DMA_HALF_SAMPLES - filled,
+            self->bytes_per_sample, self->samples_signed,
+            self->channel_count, 0, quiescent_12);
+
+        if (dest_r) {
+            uint8_t r_offset = (self->channel_count >= 2) ? 1 : 0;
+            convert_to_dac12(
+                self->src_ptr, self->src_remaining_len,
+                dest_r + filled, AUDIOOUT_DMA_HALF_SAMPLES - filled,
+                self->bytes_per_sample, self->samples_signed,
+                self->channel_count, r_offset, quiescent_12);
+        }
+
+        // Advance source position by the amount consumed.
+        uint32_t bytes_consumed = written * src_stride;
+        self->src_ptr += bytes_consumed;
+        self->src_remaining_len -= bytes_consumed;
+        filled += written;
     }
 }
 
@@ -399,6 +409,9 @@ void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
     self->loop = loop;
     self->stopping = false;
     self->paused = false;
+    self->src_ptr = NULL;
+    self->src_remaining_len = 0;
+    self->src_done = false;
 
     // Allocate DMA circular buffer(s).
     self->dma_buffer = (uint16_t *)m_malloc(
