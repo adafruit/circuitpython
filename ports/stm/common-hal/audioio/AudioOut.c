@@ -66,9 +66,9 @@ static uint32_t get_tim6_freq(void) {
     #endif
 }
 
-// Gently ramp the DAC CH1 output from from_12 to to_12 (both 12-bit, 0-4095)
-// to avoid audible clicks. 64 steps, ~100 µs per step = ~6.4 ms total.
-static void dac_ramp(uint32_t from_12, uint32_t to_12) {
+// Gently ramp the given DAC channel output from from_12 to to_12 (both 12-bit,
+// 0-4095) to avoid audible clicks. 64 steps, ~100 µs per step = ~6.4 ms total.
+static void dac_ramp_channel(uint32_t channel, uint32_t from_12, uint32_t to_12) {
     if (from_12 == to_12) {
         return;
     }
@@ -85,13 +85,17 @@ static void dac_ramp(uint32_t from_12, uint32_t to_12) {
         } else if (step < 0 && v <= (int32_t)to_12) {
             v = (int32_t)to_12;
         }
-        HAL_DAC_SetValue(&handle, DAC_CHANNEL_1, DAC_ALIGN_12B_R, (uint16_t)v);
-        HAL_DAC_Start(&handle, DAC_CHANNEL_1);
+        HAL_DAC_SetValue(&handle, channel, DAC_ALIGN_12B_R, (uint16_t)v);
+        HAL_DAC_Start(&handle, channel);
         mp_hal_delay_us(100);
         if (v == (int32_t)to_12) {
             break;
         }
     }
+}
+
+static inline void dac_ramp(uint32_t from_12, uint32_t to_12) {
+    dac_ramp_channel(DAC_CHANNEL_1, from_12, to_12);
 }
 
 // Convert a buffer of audio samples into 12-bit unsigned DAC values and write
@@ -435,6 +439,20 @@ void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
     audiosample_reset_buffer(sample, false, 0);
     load_dma_buffer_half(self, 0);
     load_dma_buffer_half(self, 1);
+
+    // Ramp from quiescent to the first sample so the transition into
+    // DMA-driven output is glitch-free. The DAC is still in single-mode
+    // (DAC_TRIGGER_NONE) at this point, set up by construct() / stop(),
+    // so HAL_DAC_SetValue takes effect immediately. After the ramp the
+    // pin is sitting at exactly dma_buffer[0], which is also the first
+    // value the timer-triggered DMA will latch.
+    uint16_t quiescent_12 = self->quiescent_value >> 4;
+    dac_ramp_channel(DAC_CHANNEL_1, quiescent_12, self->dma_buffer[0]);
+    if (self->right_channel != NULL) {
+        // CH2 was not started in construct(), so it has been outputting
+        // its reset value (0). Ramp from there.
+        dac_ramp_channel(DAC_CHANNEL_2, 0, self->dma_buffer_r[0]);
+    }
 
     // --- TIM6 setup ---
     // TIM6 is a basic timer on APB1. It is not managed by the common timer
