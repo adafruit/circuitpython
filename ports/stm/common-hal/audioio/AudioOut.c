@@ -443,7 +443,9 @@ void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
     __HAL_RCC_TIM6_CLK_ENABLE();
 
     uint32_t tim6_clk = get_tim6_freq();
-    uint32_t period = (tim6_clk / sample_rate);
+    // Round to nearest, not truncate, so the realised sample rate is the
+    // closest TIM6 division to the requested rate.
+    uint32_t period = (tim6_clk + sample_rate / 2) / sample_rate;
     if (period < 2) {
         period = 2;
     }
