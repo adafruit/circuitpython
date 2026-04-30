@@ -105,7 +105,26 @@ static mp_import_stat_t stat_module(vstr_t *path) {
     mp_import_stat_t stat = stat_path(path);
     DEBUG_printf("stat %s: %d\n", vstr_str(path), stat);
     if (stat == MP_IMPORT_STAT_DIR) {
-        return stat;
+        // CIRCUITPY-CHANGE: match CPython import precedence. A regular
+        // package (directory with __init__.py/.mpy) takes precedence, then a
+        // sibling .py/.mpy module, and only then a namespace package
+        // (directory without __init__). See
+        // https://docs.python.org/3/reference/import.html#regular-packages
+        size_t orig_len = path->len;
+        vstr_add_str(path, PATH_SEP_CHAR "__init__.py");
+        mp_import_stat_t init_stat = stat_file_py_or_mpy(path);
+        path->len = orig_len;
+        if (init_stat == MP_IMPORT_STAT_FILE) {
+            return MP_IMPORT_STAT_DIR;
+        }
+
+        vstr_add_str(path, ".py");
+        mp_import_stat_t file_stat = stat_file_py_or_mpy(path);
+        if (file_stat == MP_IMPORT_STAT_FILE) {
+            return file_stat;
+        }
+        path->len = orig_len;
+        return MP_IMPORT_STAT_DIR;
     }
 
     // Not a directory, add .py and try as a file.
