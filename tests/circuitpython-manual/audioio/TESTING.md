@@ -9,19 +9,20 @@ These tests exercise the DAC-based `audioio.AudioOut` implementation added for S
 | 1 — WAV File Playback | Yes | Yes (audio check) |
 | 2 — Pause / Resume | Yes | Yes (audio check) |
 | 3 — Looping Sine Wave | Yes | Yes (audio check) |
-| 4 — Soft Reset Cleanup | No (manual Ctrl-C/D) | No |
-| 5 — deinit and Re-init | Yes | No |
+| 4 — deinit and Re-init | Yes | No |
+| 5 — Stereo Playback | Yes | Yes (audio check) |
+| 6 — Soft Reset Cleanup | No (manual Ctrl-C/D) | No |
 
-`run_serial_tests.py` automates Tests 1, 2, 3, and 5: it copies the necessary
-files to the board and runs each script over the serial REPL, comparing the
-printed output to the expected patterns.  You still need to listen to the audio
-(and optionally use an oscilloscope) for the audio-quality checks.
+`run_serial_tests.py` automates Tests 1–5: it copies the necessary files to the
+board and runs each script over the serial REPL, comparing the printed output to
+the expected patterns.  You still need to listen to the audio (and optionally
+use an oscilloscope) for the audio-quality checks.
 
 ### Quick start
 
 ```bash
 # Install the one dependency (if not already present)
-pip install pyserial
+pip install mpremote
 
 # Run all automated tests (board must be connected and CIRCUITPY mounted)
 python3 tests/circuitpython-manual/audioio/run_serial_tests.py
@@ -29,13 +30,19 @@ python3 tests/circuitpython-manual/audioio/run_serial_tests.py
 # Skip file copy if files are already on the board
 python3 tests/circuitpython-manual/audioio/run_serial_tests.py --no-copy
 
-# Override the serial port or CIRCUITPY path
+# Override the serial port or CIRCUITPY path (auto-detected on macOS/Linux/Windows)
 python3 tests/circuitpython-manual/audioio/run_serial_tests.py \
     --port /dev/cu.usbmodem1234 \
-    --circuitpy /Volumes/CIRCUITPY
+    --circuitpy /Volumes/CIRCUITPY          # macOS (auto-detected)
+python3 tests/circuitpython-manual/audioio/run_serial_tests.py \
+    --port /dev/ttyACM0 \
+    --circuitpy /media/user/CIRCUITPY       # Linux (auto-detected)
+python3 tests/circuitpython-manual/audioio/run_serial_tests.py \
+    --port COM5 \
+    --circuitpy D:\                         # Windows (auto-detected)
 
 # Run only specific tests
-python3 tests/circuitpython-manual/audioio/run_serial_tests.py --tests 3,5
+python3 tests/circuitpython-manual/audioio/run_serial_tests.py --tests 3,4,5
 ```
 
 The script exits 0 if all selected tests pass, 1 otherwise — suitable for CI.
@@ -56,7 +63,7 @@ The script exits 0 if all selected tests pass, 1 otherwise — suitable for CI.
 Enable the feature by building for an F405 or F407 target:
 
 ```
-make -C ports/stm BOARD=feather_stm32f405_express -j CROSS_COMPILE=~/arm-toolchain/arm-gnu-toolchain-14.3.rel1-darwin-arm64-arm-none-eabi/bin/arm-none-eabi-
+make -C ports/stm BOARD=feather_stm32f405_express -j CROSS_COMPILE=~/arm-toolchain/arm-gnu-toolchain-14.3.rel1-darwin-arm64-arm-none-eabi/bin/arm-none-eabi- PYTHON=/opt/homebrew/bin/python3
 ```
 
 `CIRCUITPY_AUDIOIO` is now set to `1` automatically for those variants. Verify it is present in the build:
@@ -67,7 +74,9 @@ grep CIRCUITPY_AUDIOIO ports/stm/build-feather_stm32f405_express/mpconfigport.mk
 ```
 
 Flash the resulting `.bin` to the board using your preferred method (e.g. `dfu-util`).
-
+```
+dfu-util -a 0 --dfuse-address 0x08000000:force:mass-erase -D PATH/TO/circuitpython/ports/stm/build-feather_stm32f405_express/firmware.bin
+```
 ## File Setup
 
 > **If using `run_serial_tests.py`** this step is done automatically — skip ahead.
@@ -79,22 +88,27 @@ cp \
   tests/circuitpython-manual/audiocore/jeplayer-splash-8000-8bit-mono-unsigned.wav \
   tests/circuitpython-manual/audiocore/jeplayer-splash-8000-16bit-mono-signed.wav \
   tests/circuitpython-manual/audiocore/jeplayer-splash-44100-16bit-mono-signed.wav \
+  tests/circuitpython-manual/audiocore/jeplayer-splash-8000-16bit-stereo-signed.wav \
+  tests/circuitpython-manual/audiocore/jeplayer-splash-44100-16bit-stereo-signed.wav \
   /Volumes/CIRCUITPY/
 ```
 
-These three files (~447 KB total) cover every exercised code path:
+These five files cover every exercised code path:
 - `8000-8bit-mono-unsigned` — 8-bit unsigned decode path, audibly lo-fi
 - `8000-16bit-mono-signed` — 16-bit signed decode path at lowest sample rate
 - `44100-16bit-mono-signed` — 16-bit at highest sample rate (DMA reconfiguration, audible quality difference)
+- `8000-16bit-stereo-signed` — stereo decode path, left→A0, right→A1
+- `44100-16bit-stereo-signed` — stereo at 44.1 kHz
 
 Stereo, 24-bit, and the 16 kHz files are omitted: stereo and 24-bit will `OSError`; 16 kHz adds no new code paths over 8 kHz and 44.1 kHz.
 
-Copy the three test scripts to the board as well (or paste them into the REPL):
+Copy the test scripts to the board as well (or paste them into the REPL):
 
 ```
 cp tests/circuitpython-manual/audioio/wavefile_playback.py      /Volumes/CIRCUITPY/
 cp tests/circuitpython-manual/audioio/wavefile_pause_resume.py  /Volumes/CIRCUITPY/
 cp tests/circuitpython-manual/audioio/single_buffer_loop.py     /Volumes/CIRCUITPY/
+cp tests/circuitpython-manual/audioio/stereo_playback.py        /Volumes/CIRCUITPY/
 ```
 
 ## Test 1 — WAV File Playback (`wavefile_playback.py`) *(automated)*
@@ -195,28 +209,7 @@ done
 - No pops or glitches during the loop.
 - Clean silence between tones (quiescent DAC value holds between `stop()` calls).
 
-## Test 4 — Soft Reset Cleanup *(manual)*
-
-Verifies that `audioout_reset()` properly cleans up when the REPL soft-resets during active playback.
-
-1. Start a looping tone in the REPL:
-
-```python
-import audiocore, audioio, board, array, math, time
-length = 8000 // 440
-s16 = array.array("h", [int(math.sin(math.pi * 2 * i / length) * 32767) for i in range(length)])
-dac = audioio.AudioOut(board.A0)
-dac.play(audiocore.RawSample(s16, sample_rate=8000), loop=True)
-```
-
-2. While the tone is playing, press **Ctrl-C** then **Ctrl-D** (soft reset).
-
-**Expected:**
-- **Ctrl-C** interrupts the Python code but the tone *keeps playing* — this is normal. The DMA and TIM6 run in hardware independently of Python; a `KeyboardInterrupt` does not stop them.
-- **Ctrl-D** triggers a soft reset which calls `audioout_reset()`. The tone stops immediately and the board returns to the `>>>` prompt with no crash or fault.
-- Running any of the above tests again afterwards should work normally.
-
-## Test 5 — `deinit` and Re-init *(automated)*
+## Test 4 — `deinit` and Re-init *(automated)*
 
 Verifies that `AudioOut` can be deconstructed and reconstructed without rebooting, and that pin A0 is properly released.
 
@@ -240,16 +233,84 @@ print("pass")
 
 **Expected output:** `pass` with no exceptions.
 
+## Test 5 — Stereo Playback (`stereo_playback.py`) *(automated)*
+
+Verifies that `AudioOut(board.A0, right_channel=board.A1)` drives both DAC
+channels independently: left on **A0 (PA04, DAC_CH1)**, right on
+**A1 (PA05, DAC_CH2)**, both clocked by TIM6.
+
+The script runs four phases in order:
+
+1. **Left-only 440 Hz tone** (~1 s) — only A0 should produce audio.
+2. **Right-only 440 Hz tone** (~1 s) — only A1 should produce audio.
+3. **Both-channel 440 Hz tone** (~1 s) — equal amplitude on both pins.
+4. **Pan sweep L → R** (~2 s) — 8 stepped amplitude stages from A0 to A1 (small looped buffers; full continuous sweep would not fit in heap).
+5. Then plays each stereo WAV (`44100` and `8000` Hz) in full.
+
+**Hardware required:** connect a stereo headphone/amp to A0 (left) and A1
+(right) with common ground, or scope-probe each pin separately.
+
+**Run from the REPL:**
+
+```python
+import os
+os.chdir("/")
+exec(open("stereo_playback.py").read())
+```
+
+**Expected output:**
+
+```
+channel test: left only
+channel test: right only
+channel test: both channels
+pan sweep: left to right
+playing stereo: jeplayer-splash-44100-16bit-stereo-signed.wav
+playing stereo: jeplayer-splash-8000-16bit-stereo-signed.wav
+done
+```
+
+**What to listen / look for:**
+
+- "left only" → tone in left ear, silence in right.
+- "right only" → tone in right ear, silence in left.
+- "both channels" → centered tone in both ears.
+- "pan sweep" → tone steps left → right across 8 amplitude stages over 2 s.
+- Stereo WAVs play with proper L/R separation; no cross-contamination.
+- On a scope: probing A0 and A1 simultaneously during phases 1 and 2 should
+  show one channel idle (mid-scale DC) while the other carries the sine.
+
+## Test 6 — Soft Reset Cleanup *(manual)*
+
+Verifies that `audioout_reset()` properly cleans up when the REPL soft-resets during active playback.
+
+1. Start a looping tone in the REPL:
+
+```python
+import audiocore, audioio, board, array, math, time
+length = 8000 // 440
+s16 = array.array("h", [int(math.sin(math.pi * 2 * i / length) * 32767) for i in range(length)])
+dac = audioio.AudioOut(board.A0)
+dac.play(audiocore.RawSample(s16, sample_rate=8000), loop=True)
+```
+
+2. While the tone is playing, press **Ctrl-C** then **Ctrl-D** (soft reset).
+
+**Expected:**
+- **Ctrl-C** interrupts the Python code but the tone *keeps playing* — this is normal. The DMA and TIM6 run in hardware independently of Python; a `KeyboardInterrupt` does not stop them.
+- **Ctrl-D** triggers a soft reset which calls `audioout_reset()`. The tone stops immediately and the board returns to the `>>>` prompt with no crash or fault.
+- Running any of the above tests again afterwards should work normally.
+
 ## Oscilloscope Checks (Optional)
 
 Each test script drives `board.D4` (pin D4) low at the start of each playback and high when it ends. This provides a clean trigger edge for a scope.
 
 - **Test 1:** Probe A0 — should show a sampled waveform at the correct sample rate. Probe D4 for a gate signal that spans the file duration.
-- **Test 3:** Probe A0 — should show a 440 Hz staircase-sine at the DAC output (12-bit steps visible at 44.1 kHz; fewer at 8 kHz).
+- **Test 3:** Probe A0 — should show a 440 Hz staircase-sine at the DAC output (12-bit steps visible at 44.1 kHz; fewer at 8 kHz). A simple RC low-pass filter (1 kΩ + 100 nF) on the A0 output will smooth the staircase significantly.
 
 ## Known Limitations
 
-- **Right channel / stereo output** is not implemented. Passing `right_channel` to `AudioOut()` raises `ValueError: Stereo not supported on this board`.
-- **Only pin A0 (PA04)** is supported as the left channel. Any other pin raises `ValueError: AudioOut requires pin A0 (PA04)`.
+- **Left channel must be A0 (PA04)**. Any other pin raises `ValueError: AudioOut requires pin A0 (PA04)`.
+- **Right channel must be A1 (PA05)** when used. Any other pin raises `ValueError: AudioOut right channel requires pin A1 (PA05)`.
 - **24-bit WAV files** are not supported by `audiocore.WaveFile` and will raise `OSError` when opened.
-- Only one `AudioOut` instance can be active at a time (single DAC channel).
+- Only one `AudioOut` instance can be active at a time.

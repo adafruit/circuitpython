@@ -74,7 +74,9 @@ grep CIRCUITPY_AUDIOIO ports/stm/build-feather_stm32f405_express/mpconfigport.mk
 ```
 
 Flash the resulting `.bin` to the board using your preferred method (e.g. `dfu-util`).
-
+```
+dfu-util -a 0 --dfuse-address 0x08000000:force:mass-erase -D PATH/TO/circuitpython/ports/stm/build-feather_stm32f405_express/firmware.bin
+```
 ## File Setup
 
 > **If using `run_serial_tests.py`** this step is done automatically — skip ahead.
@@ -233,12 +235,20 @@ print("pass")
 
 ## Test 5 — Stereo Playback (`stereo_playback.py`) *(automated)*
 
-Verifies that `AudioOut(board.A0, right_channel=board.A1)` correctly splits a
-stereo WAV file across both DAC channels: left audio on **A0 (PA04, DAC_CH1)**
-and right audio on **A1 (PA05, DAC_CH2)**, both clocked by TIM6.
+Verifies that `AudioOut(board.A0, right_channel=board.A1)` drives both DAC
+channels independently: left on **A0 (PA04, DAC_CH1)**, right on
+**A1 (PA05, DAC_CH2)**, both clocked by TIM6.
 
-**Hardware required:** connect a speaker or amp to both A0 and A1 (two separate
-channels), or use an oscilloscope to probe each pin independently.
+The script runs four phases in order:
+
+1. **Left-only 440 Hz tone** (~1 s) — only A0 should produce audio.
+2. **Right-only 440 Hz tone** (~1 s) — only A1 should produce audio.
+3. **Both-channel 440 Hz tone** (~1 s) — equal amplitude on both pins.
+4. **Pan sweep L → R** (~2 s) — 8 stepped amplitude stages from A0 to A1 (small looped buffers; full continuous sweep would not fit in heap).
+5. Then plays each stereo WAV (`44100` and `8000` Hz) in full.
+
+**Hardware required:** connect a stereo headphone/amp to A0 (left) and A1
+(right) with common ground, or scope-probe each pin separately.
 
 **Run from the REPL:**
 
@@ -251,6 +261,10 @@ exec(open("stereo_playback.py").read())
 **Expected output:**
 
 ```
+channel test: left only
+channel test: right only
+channel test: both channels
+pan sweep: left to right
 playing stereo: jeplayer-splash-44100-16bit-stereo-signed.wav
 playing stereo: jeplayer-splash-8000-16bit-stereo-signed.wav
 done
@@ -258,10 +272,13 @@ done
 
 **What to listen / look for:**
 
-- Left and right channels play the correct sides of the stereo jingle.
-- No cross-contamination between channels.
-- On a scope: probe A0 and A1 simultaneously — waveforms should differ
-  (the splash sample is not phase-identical left/right).
+- "left only" → tone in left ear, silence in right.
+- "right only" → tone in right ear, silence in left.
+- "both channels" → centered tone in both ears.
+- "pan sweep" → tone steps left → right across 8 amplitude stages over 2 s.
+- Stereo WAVs play with proper L/R separation; no cross-contamination.
+- On a scope: probing A0 and A1 simultaneously during phases 1 and 2 should
+  show one channel idle (mid-scale DC) while the other carries the sine.
 
 ## Test 6 — Soft Reset Cleanup *(manual)*
 

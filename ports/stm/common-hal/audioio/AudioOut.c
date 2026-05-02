@@ -127,25 +127,19 @@ static uint32_t convert_to_dac12(
     if (bytes_per_sample == 1) {
         for (uint32_t i = 0; i < frames; i++) {
             uint8_t u8 = src[i * src_stride + src_offset];
-            if (samples_signed) {
-                // signed 8-bit: -128..127 → 0..4080
-                dest[i] = (uint16_t)((int16_t)(int8_t)u8 + 128) << 4;
-            } else {
-                // unsigned 8-bit: 0..255 → 0..4080
-                dest[i] = (uint16_t)u8 << 4;
-            }
+            int32_t s = samples_signed
+                ? (int32_t)(int8_t)u8
+                : (int32_t)u8 - 128;
+            dest[i] = (uint16_t)((s + 128) & 0xFF) << 4;
         }
     } else {
         for (uint32_t i = 0; i < frames; i++) {
             uint16_t u16;
             memcpy(&u16, src + i * src_stride + src_offset, 2);
-            if (samples_signed) {
-                // signed 16-bit: -32768..32767 → 0..4095
-                dest[i] = (uint16_t)((int32_t)(int16_t)u16 + 0x8000) >> 4;
-            } else {
-                // unsigned 16-bit: 0..65535 → 0..4095
-                dest[i] = u16 >> 4;
-            }
+            int32_t s = samples_signed
+                ? (int32_t)(int16_t)u16
+                : (int32_t)u16 - 0x8000;
+            dest[i] = (uint16_t)((s + 0x8000) & 0xFFFF) >> 4;
         }
     }
 
@@ -245,7 +239,17 @@ static void audioout_fill_callback(void *arg) {
         common_hal_audioio_audioout_stop(self);
         return;
     }
-    load_dma_buffer_half(self, self->buffer_half_to_fill);
+    uint8_t mask;
+    __disable_irq();
+    mask = self->halves_to_fill;
+    self->halves_to_fill = 0;
+    __enable_irq();
+    if (mask & 0x1) {
+        load_dma_buffer_half(self, 0);
+    }
+    if (mask & 0x2) {
+        load_dma_buffer_half(self, 1);
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -268,7 +272,7 @@ void DMA1_Stream6_IRQHandler(void) {
 
 void HAL_DAC_ConvHalfCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
     if (active_audioout && !active_audioout->paused) {
-        active_audioout->buffer_half_to_fill = 0;
+        active_audioout->halves_to_fill |= 0x1;
         background_callback_add(&active_audioout->callback,
             audioout_fill_callback, active_audioout);
     }
@@ -276,7 +280,7 @@ void HAL_DAC_ConvHalfCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
 
 void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
     if (active_audioout && !active_audioout->paused) {
-        active_audioout->buffer_half_to_fill = 1;
+        active_audioout->halves_to_fill |= 0x2;
         background_callback_add(&active_audioout->callback,
             audioout_fill_callback, active_audioout);
     }
@@ -413,6 +417,7 @@ void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
     self->loop = loop;
     self->stopping = false;
     self->paused = false;
+    self->halves_to_fill = 0;
     self->src_ptr = NULL;
     self->src_remaining_len = 0;
     self->src_done = false;
@@ -484,10 +489,9 @@ void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
     HAL_TIMEx_MasterConfigSynchronization(&tim6_handle, &master_cfg);
 
     // --- DAC channel reconfiguration for DMA-triggered mode ---
-    // Stop single-mode DAC (started by stop() for quiescent output) before
-    // reconfiguring for DMA-triggered operation; otherwise the HAL state
-    // machine is left in BUSY and HAL_DAC_Start_DMA may reject the request.
-    HAL_DAC_Stop(&handle, DAC_CHANNEL_1);
+    // Switch the trigger source to TIM6 *without* disabling the DAC channel.
+    // HAL_DAC_Stop would disable the channel and momentarily drop the output
+    // pin to 0 V — audible as a pop between samples.
     DAC_ChannelConfTypeDef ch_cfg = {0};
     ch_cfg.DAC_Trigger = DAC_TRIGGER_T6_TRGO;
     ch_cfg.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
@@ -495,6 +499,9 @@ void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
     if (self->right_channel != NULL) {
         HAL_DAC_ConfigChannel(&handle, &ch_cfg, DAC_CHANNEL_2);
     }
+    // Reset HAL state from BUSY (set by Start) back to READY so
+    // HAL_DAC_Start_DMA below doesn't reject the request.
+    handle.State = HAL_DAC_STATE_READY;
 
     // --- DMA1 Stream5 Channel7 setup (DAC CH1, left) ---
     __HAL_RCC_DMA1_CLK_ENABLE();
@@ -587,12 +594,30 @@ void common_hal_audioio_audioout_stop(audioio_audioout_obj_t *self) {
     // Stop the sample clock first so no more DMA requests are generated.
     TIM6->CR1 &= ~TIM_CR1_CEN;
 
-    // Stop DMA and DAC channels.
-    HAL_DAC_Stop_DMA(&handle, DAC_CHANNEL_1);
+    // Switch the DAC channels to no-trigger mode while leaving them enabled.
+    // This is the key to a click-free stop: HAL_DAC_Stop_DMA / HAL_DAC_Stop
+    // disable the channel, which briefly pulls the output pin to 0 V before
+    // the ramp can run. Reconfiguring the trigger only keeps the channel
+    // enabled; the DAC keeps holding its last DHR value while DMA is aborted.
+    DAC_ChannelConfTypeDef ch_cfg = {0};
+    ch_cfg.DAC_Trigger = DAC_TRIGGER_NONE;
+    ch_cfg.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
+    HAL_DAC_ConfigChannel(&handle, &ch_cfg, DAC_CHANNEL_1);
+    if (self->dma_buffer_r) {
+        HAL_DAC_ConfigChannel(&handle, &ch_cfg, DAC_CHANNEL_2);
+    }
+
+    // Capture the last DAC output now that no further DMA writes can land.
+    uint16_t last_l = (uint16_t)(DAC->DOR1 & 0xFFF);
+    uint16_t last_r = self->dma_buffer_r ? (uint16_t)(DAC->DOR2 & 0xFFF) : 0;
+    uint16_t quiescent_12 = self->quiescent_value >> 4;
+
+    // Abort DMA without disabling the DAC channels (HAL_DAC_Stop_DMA would).
+    HAL_DMA_Abort(&self->dma_handle);
     HAL_NVIC_DisableIRQ(DMA1_Stream5_IRQn);
     NVIC_ClearPendingIRQ(DMA1_Stream5_IRQn);
     if (self->dma_buffer_r) {
-        HAL_DAC_Stop_DMA(&handle, DAC_CHANNEL_2);
+        HAL_DMA_Abort(&self->dma_handle_r);
         HAL_NVIC_DisableIRQ(DMA1_Stream6_IRQn);
         NVIC_ClearPendingIRQ(DMA1_Stream6_IRQn);
         m_free(self->dma_buffer_r);
@@ -605,14 +630,15 @@ void common_hal_audioio_audioout_stop(audioio_audioout_obj_t *self) {
         self->dma_buffer = NULL;
     }
 
-    // Restore quiescent output (channel is still active from construct()).
-    DAC_ChannelConfTypeDef ch_cfg = {0};
-    ch_cfg.DAC_Trigger = DAC_TRIGGER_NONE;
-    ch_cfg.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
-    HAL_DAC_ConfigChannel(&handle, &ch_cfg, DAC_CHANNEL_1);
-    HAL_DAC_SetValue(&handle, DAC_CHANNEL_1, DAC_ALIGN_12B_R,
-        self->quiescent_value >> 4);
-    HAL_DAC_Start(&handle, DAC_CHANNEL_1);
+    // Ramp left channel from last sample back to quiescent.
+    dac_ramp_channel(DAC_CHANNEL_1, last_l, quiescent_12);
+
+    // Ramp right channel back to 0 (its reset value) before disabling it,
+    // so the next play() can ramp cleanly from 0 again.
+    if (self->right_channel != NULL) {
+        dac_ramp_channel(DAC_CHANNEL_2, last_r, 0);
+        HAL_DAC_Stop(&handle, DAC_CHANNEL_2);
+    }
 
     self->sample = MP_OBJ_NULL;
     self->stopping = false;

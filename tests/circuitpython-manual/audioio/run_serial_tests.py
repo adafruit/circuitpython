@@ -28,6 +28,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -81,6 +82,40 @@ def _mpremote(args: list, timeout: float = 30.0):
         raise TimeoutError(f"mpremote timed out after {timeout}s")
     except FileNotFoundError:
         sys.exit("mpremote not found. Run: pip install mpremote")
+
+
+def _interrupt_running_code(port: str, soft_reset: bool = False) -> None:
+    """Halt any code running on the device so mpremote can enter raw REPL.
+
+    Strategy:
+      1. Ctrl-C burst — usually breaks a busy print loop.
+      2. Optional Ctrl-D soft reset, followed by a Ctrl-C flood through the
+         reboot window so code.py is interrupted *before* it gets busy again.
+    """
+    try:
+        import serial  # type: ignore[import-not-found]
+    except ImportError:
+        return
+    try:
+        with serial.Serial(port, 115200, timeout=0.1) as ser:
+            for _ in range(5):
+                ser.write(b"\x03")
+                ser.flush()
+                time.sleep(0.05)
+            if soft_reset:
+                ser.write(b"\x04")  # Ctrl-D → soft reboot
+                ser.flush()
+                # Flood Ctrl-C while CircuitPython reboots so code.py can't
+                # get past its first iteration before we break in.
+                deadline = time.time() + 3.0
+                while time.time() < deadline:
+                    ser.write(b"\x03")
+                    ser.flush()
+                    time.sleep(0.05)
+            time.sleep(0.3)
+            ser.reset_input_buffer()
+    except (serial.SerialException, OSError):
+        pass
 
 
 def find_port() -> str:
@@ -190,16 +225,34 @@ def _check(condition: bool, message: str) -> bool:
     return condition
 
 
-def _run_exec(port: str, code: str, label: str, timeout: float):
-    """Execute *code* on the device via mpremote exec and print the output."""
+def _run_exec(port: str, code: str, label: str, timeout: float, retries: int = 2):
+    """Execute *code* on the device via mpremote exec and print the output.
+
+    Retries on `could not enter raw repl` after sending a Ctrl-C burst — this
+    handles the case where a busy code.py blocks mpremote's first handshake.
+    """
     print(f"\n{'=' * 60}")
     print(f"  {label}")
     print("=" * 60)
-    try:
-        stdout, stderr = _mpremote(["connect", port, "exec", code], timeout=timeout)
-    except TimeoutError as exc:
-        print(f"  [FAIL] {exc}")
-        return False, "", ""
+    stdout = ""
+    stderr = ""
+    for attempt in range(retries + 1):
+        try:
+            stdout, stderr = _mpremote(
+                ["connect", port, "exec", code], timeout=timeout
+            )
+        except TimeoutError as exc:
+            print(f"  [FAIL] {exc}")
+            return False, "", ""
+        if "could not enter raw repl" not in stderr:
+            break
+        if attempt < retries:
+            # Escalate: first attempt = Ctrl-C burst; second = Ctrl-D reboot.
+            escalate = attempt >= 1
+            tactic = "soft-reset + Ctrl-C flood" if escalate else "Ctrl-C burst"
+            print(f"  [retry {attempt + 1}/{retries}] raw REPL busy — {tactic}")
+            _interrupt_running_code(port, soft_reset=escalate)
+            time.sleep(0.5)
     print("Output:")
     for line in stdout.splitlines():
         print(f"    {line}")
@@ -270,6 +323,10 @@ def test5_stereo_playback(port: str) -> bool:
     if not ok:
         return False
     passed = True
+    passed &= _check("channel test: left only" in stdout, "Left-only channel tone played")
+    passed &= _check("channel test: right only" in stdout, "Right-only channel tone played")
+    passed &= _check("channel test: both channels" in stdout, "Both-channel tone played")
+    passed &= _check("pan sweep: left to right" in stdout, "Pan sweep played")
     passed &= _check("playing stereo: jeplayer-splash-44100-16bit-stereo-signed.wav" in stdout, "44100 Hz 16-bit stereo WAV played")
     passed &= _check("playing stereo: jeplayer-splash-8000-16bit-stereo-signed.wav" in stdout, "8000 Hz 16-bit stereo WAV played")
     passed &= _check("done" in stdout, "Script completed with 'done'")
@@ -323,6 +380,9 @@ def main():
 
     if not args.no_copy:
         copy_files(port, circuitpy=args.circuitpy)
+
+    # Halt any running code.py so the first test gets a clean raw-REPL entry.
+    _interrupt_running_code(port)
 
     results: dict[str, bool] = {}
     if "1" in selected:

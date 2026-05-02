@@ -13,11 +13,11 @@
 
 // Total DMA circular buffer size in 16-bit samples.
 // Split into two halves; one half plays while the other is refilled.
-// 2048 samples at 48000 Hz = ~21 ms per half-buffer interrupt, which
-// gives the main loop plenty of headroom against USB / VFS stalls
-// before an underrun occurs.
-#define AUDIOOUT_DMA_BUFFER_SAMPLES 2048
-#define AUDIOOUT_DMA_HALF_SAMPLES   1024
+// 4096-sample halves at 22050 Hz = ~186 ms per half-buffer interrupt,
+// giving the background callback enough headroom to absorb SDIO cluster
+// reads, NeoPixel updates, and other main-loop stalls without underrun.
+#define AUDIOOUT_DMA_BUFFER_SAMPLES 8192
+#define AUDIOOUT_DMA_HALF_SAMPLES   4096
 
 typedef struct {
     mp_obj_base_t base;
@@ -55,8 +55,11 @@ typedef struct {
     // Background callback queued from DMA ISR, processed in main loop.
     background_callback_t callback;
 
-    // Which half of dma_buffer to refill next: 0 = lower, 1 = upper.
-    volatile uint8_t buffer_half_to_fill;
+    // Bitmask of DMA halves pending refill: bit0 = lower, bit1 = upper.
+    // Set from half/full IRQ, drained by the background callback. A bitmask
+    // (not a scalar) so a back-to-back half+full pair queues both fills even
+    // if the callback hasn't run yet.
+    volatile uint8_t halves_to_fill;
 
     // Source buffer position tracking. Allows consuming large source buffers
     // (e.g. RawSample > 256 samples) across multiple DMA half-fills.
