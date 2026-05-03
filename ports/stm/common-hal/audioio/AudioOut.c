@@ -519,6 +519,10 @@ void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
     uint32_t tim6_clk = get_tim6_freq();
     // Round to nearest, not truncate, so the realised sample rate is the
     // closest TIM6 division to the requested rate.
+    // NOTE: a sweep audit on atmel-samd (Circuit Playground Express) shows a
+    // constant -3.4 cent frequency bias across all tones, consistent with a
+    // truncating period calculation there. The same round-to-nearest fix
+    // would likely tighten frequency accuracy on that port too.
     uint32_t period = (tim6_clk + sample_rate / 2) / sample_rate;
     if (period < 2) {
         period = 2;
