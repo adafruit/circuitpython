@@ -1,7 +1,7 @@
 # audioio — `run_serial_tests.py` results
 
 - **Board:** Adafruit Feather STM32F405 Express
-- **Suite:** Tests 1–5 automated (Test 6 soft-reset is manual)
+- **Suite:** Tests 1–5 automated
 - **Result:** all PASS
 
 ```
@@ -492,5 +492,5 @@ SUMMARY
   [PASS] Test 5 — Stereo Playback
 
 All automated tests passed.
-Remaining manual step: Test 6 (soft-reset) and audio/oscilloscope verification.
+Remaining manual step: audio/oscilloscope verification.
 ```

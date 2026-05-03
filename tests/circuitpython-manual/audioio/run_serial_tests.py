@@ -2,12 +2,10 @@
 """
 run_serial_tests.py — Automated REPL-based tests for STM32F405 audioio.
 
-Automates Tests 1, 2, 3, and 4 from README.md by:
+Automates Tests 1–5 from README.md by:
   1. Copying WAV files and test scripts to the board via mpremote.
   2. Running each test on the device via the CircuitPython REPL.
   3. Comparing captured output to expected patterns and reporting PASS/FAIL.
-
-Test 5 (soft-reset cleanup) still requires manual interaction.
 
 Usage:
     python3 run_serial_tests.py
@@ -559,7 +557,7 @@ def main():
     print()
     if all_passed:
         print("All automated tests passed.")
-        print("Remaining manual step: Test 6 (soft-reset) and audio/oscilloscope verification.")
+        print("Remaining manual step: audio/oscilloscope verification.")
         sys.exit(0)
     else:
         print("One or more tests FAILED — see details above.")

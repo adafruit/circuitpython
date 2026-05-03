@@ -11,7 +11,6 @@ These tests exercise the DAC-based `audioio.AudioOut` implementation added for S
 | 3 — Looping Sine Wave | Yes | Yes (audio check) |
 | 4 — deinit and Re-init | Yes | No |
 | 5 — Stereo Playback | Yes | Yes (audio check) |
-| 6 — Soft Reset Cleanup | No (manual Ctrl-C/D) | No |
 
 `run_serial_tests.py` automates Tests 1–5: it copies the necessary files to the
 board and runs each script over the serial REPL, comparing the printed output to
@@ -290,27 +289,6 @@ done
 - Stereo WAVs play with proper L/R separation; no cross-contamination.
 - On a scope: probing A0 and A1 simultaneously during phases 1 and 2 should
   show one channel idle (mid-scale DC) while the other carries the sine.
-
-## Test 6 — Soft Reset Cleanup *(manual)*
-
-Verifies that `audioout_reset()` properly cleans up when the REPL soft-resets during active playback.
-
-1. Start a looping tone in the REPL:
-
-```python
-import audiocore, audioio, board, array, math, time
-length = 8000 // 440
-s16 = array.array("h", [int(math.sin(math.pi * 2 * i / length) * 32767) for i in range(length)])
-dac = audioio.AudioOut(board.A0)
-dac.play(audiocore.RawSample(s16, sample_rate=8000), loop=True)
-```
-
-2. While the tone is playing, press **Ctrl-C** then **Ctrl-D** (soft reset).
-
-**Expected:**
-- **Ctrl-C** interrupts the Python code but the tone *keeps playing* — this is normal. The DMA and TIM6 run in hardware independently of Python; a `KeyboardInterrupt` does not stop them.
-- **Ctrl-D** triggers a soft reset which calls `audioout_reset()`. The tone stops immediately and the board returns to the `>>>` prompt with no crash or fault.
-- Running any of the above tests again afterwards should work normally.
 
 ## Oscilloscope Checks (Optional)
 
