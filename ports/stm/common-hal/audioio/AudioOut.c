@@ -1,6 +1,6 @@
 // This file is part of the CircuitPython project: https://circuitpython.org
 //
-// SPDX-FileCopyrightText: Copyright (c) 2026 Adafruit Industries LLC
+// SPDX-FileCopyrightText: Copyright (c) 2024 Adafruit Industries LLC
 //
 // SPDX-License-Identifier: MIT
 
@@ -11,12 +11,15 @@
 //   DAC_CHANNEL_1 (PA04) is configured with DAC_TRIGGER_T6_TRGO so each
 //   TIM6 update latches the next sample from the DMA FIFO.
 //   DMA1 Stream5 Channel7 operates in circular mode, feeding 16-bit samples
-//   from a double-buffer (512 samples = two 256-sample halves).
+//   from a double-buffer. Stereo additionally drives DAC_CHANNEL_2 (PA05)
+//   via DMA1 Stream6 Channel7, sharing the same TIM6 trigger.
 //   The DMA half-complete and complete callbacks queue a background_callback
 //   to refill the idle half from the audio sample source.
 //
 // The shared DAC handle (declared in AnalogOut.c) is reused here so both
-// modules share state consistently and avoid double-init conflicts.
+// modules share state consistently and avoid double-init conflicts. Pin
+// claims (common_hal_mcu_pin_claim) act as the inter-module mutex: a second
+// AudioOut, or an AnalogOut on the same pin, fails at the claim step.
 
 #include <string.h>
 
@@ -33,14 +36,23 @@
 #include STM32_HAL_H
 
 // Shared DAC handle declared in common-hal/analogio/AnalogOut.h.
-// AudioOut reconfigures channel 1 for DMA-triggered operation and restores
-// it on deinit.
+// AudioOut reconfigures channel 1 (and 2 for stereo) for DMA-triggered
+// operation and restores the no-trigger config on deinit so AnalogOut can
+// resume use of the channel afterwards.
 #include "common-hal/analogio/AnalogOut.h"
+
+// Highest sample rate accepted by play(). 1 MHz mirrors atmel-samd's SAMD51
+// limit and is comfortably above any reasonable audio rate; the real hardware
+// ceiling is TIM6_CLK / 2 (~42 MHz on F405) but rates that high would just
+// underrun the DMA refill path.
+#define AUDIOOUT_MAX_SAMPLE_RATE 1000000u
 
 // TIM6 handle: only one instance ever active, so file-scope is fine.
 static TIM_HandleTypeDef tim6_handle;
 
 // Pointer to the currently active AudioOut object, used by IRQ handlers.
+// Pin claims prevent two instances from existing simultaneously, but this
+// pointer is also used to early-out IRQs after stop().
 static audioio_audioout_obj_t *active_audioout = NULL;
 
 // ---------------------------------------------------------------------------
@@ -67,7 +79,8 @@ static uint32_t get_tim6_freq(void) {
 }
 
 // Gently ramp the given DAC channel output from from_12 to to_12 (both 12-bit,
-// 0-4095) to avoid audible clicks. 64 steps, ~100 µs per step = ~6.4 ms total.
+// 0-4095) to avoid audible clicks. 64 steps × 100 µs/step = ~6.4 ms total;
+// shrink the step count and clicks reappear on the F405 output stage.
 static void dac_ramp_channel(uint32_t channel, uint32_t from_12, uint32_t to_12) {
     if (from_12 == to_12) {
         return;
@@ -99,7 +112,14 @@ static inline void dac_ramp(uint32_t from_12, uint32_t to_12) {
 }
 
 // Convert a buffer of audio samples into 12-bit unsigned DAC values and write
-// them into dest[]. Returns the number of DAC samples written.
+// them into dest[]. Returns the number of DAC samples written; the caller is
+// responsible for padding any remaining dest entries with the quiescent value.
+//
+// NOTE: ports/espressif/common-hal/audioio/AudioOut.c implements the same
+// idea with a CONV_MATCH lookup table dispatching to per-format helpers in
+// shared-module/audiocore — a more general-purpose pattern. If a future
+// refactor lifts a 12-bit DAC variant into shared-module/audiocore, both
+// this driver and any other ARM-DAC port could share it.
 //
 // src              - raw sample bytes from audiosample_get_buffer
 // src_len          - byte length of src
@@ -109,13 +129,11 @@ static inline void dac_ramp(uint32_t from_12, uint32_t to_12) {
 // samples_signed   - true if source samples are signed
 // channel_count    - 1 (mono) or 2 (stereo)
 // channel_offset   - 0 for left/mono, 1 for right channel of a stereo stream
-// quiescent_12     - value to pad with if src runs short
 static uint32_t convert_to_dac12(
     const uint8_t *src, uint32_t src_len,
     uint16_t *dest, uint32_t dest_count,
     uint8_t bytes_per_sample, bool samples_signed,
-    uint8_t channel_count, uint8_t channel_offset,
-    uint16_t quiescent_12) {
+    uint8_t channel_count, uint8_t channel_offset) {
 
     // src_stride: bytes between consecutive samples of the same channel
     uint32_t src_stride = (uint32_t)bytes_per_sample * channel_count;
@@ -142,12 +160,20 @@ static uint32_t convert_to_dac12(
             dest[i] = (uint16_t)((s + 0x8000) & 0xFFFF) >> 4;
         }
     }
-
-    // Pad remainder with quiescent value.
-    for (uint32_t i = frames; i < dest_count; i++) {
-        dest[i] = quiescent_12;
-    }
     return frames;
+}
+
+// Pad [filled, AUDIOOUT_DMA_HALF_SAMPLES) of dest_l (and dest_r if non-NULL)
+// with the quiescent value. Used at end-of-stream and on errors so the DAC
+// returns smoothly to its resting voltage.
+static void pad_quiescent(uint16_t *dest_l, uint16_t *dest_r,
+    uint32_t filled, uint16_t quiescent_12) {
+    for (uint32_t i = filled; i < AUDIOOUT_DMA_HALF_SAMPLES; i++) {
+        dest_l[i] = quiescent_12;
+        if (dest_r) {
+            dest_r[i] = quiescent_12;
+        }
+    }
 }
 
 // Load one half of the DMA circular buffer from the audio sample source.
@@ -171,15 +197,11 @@ static void load_dma_buffer_half(audioio_audioout_obj_t *self, uint8_t half) {
             // Handle end-of-stream from previous get_buffer call.
             if (self->src_done) {
                 if (self->loop) {
-                    audiosample_reset_buffer(self->sample, false, 0);
+                    audiosample_reset_buffer(self->sample,
+                        self->channel_count == 1, 0);
                     self->src_done = false;
                 } else {
-                    for (uint32_t i = filled; i < AUDIOOUT_DMA_HALF_SAMPLES; i++) {
-                        dest_l[i] = quiescent_12;
-                        if (dest_r) {
-                            dest_r[i] = quiescent_12;
-                        }
-                    }
+                    pad_quiescent(dest_l, dest_r, filled, quiescent_12);
                     self->stopping = true;
                     return;
                 }
@@ -188,15 +210,11 @@ static void load_dma_buffer_half(audioio_audioout_obj_t *self, uint8_t half) {
             uint8_t *buf;
             uint32_t len;
             audioio_get_buffer_result_t result =
-                audiosample_get_buffer(self->sample, false, 0, &buf, &len);
+                audiosample_get_buffer(self->sample,
+                    self->channel_count == 1, 0, &buf, &len);
 
             if (result == GET_BUFFER_ERROR) {
-                for (uint32_t i = filled; i < AUDIOOUT_DMA_HALF_SAMPLES; i++) {
-                    dest_l[i] = quiescent_12;
-                    if (dest_r) {
-                        dest_r[i] = quiescent_12;
-                    }
-                }
+                pad_quiescent(dest_l, dest_r, filled, quiescent_12);
                 self->stopping = true;
                 return;
             }
@@ -210,7 +228,7 @@ static void load_dma_buffer_half(audioio_audioout_obj_t *self, uint8_t half) {
             self->src_ptr, self->src_remaining_len,
             dest_l + filled, AUDIOOUT_DMA_HALF_SAMPLES - filled,
             self->bytes_per_sample, self->samples_signed,
-            self->channel_count, 0, quiescent_12);
+            self->channel_count, 0);
 
         if (dest_r) {
             uint8_t r_offset = (self->channel_count >= 2) ? 1 : 0;
@@ -218,7 +236,17 @@ static void load_dma_buffer_half(audioio_audioout_obj_t *self, uint8_t half) {
                 self->src_ptr, self->src_remaining_len,
                 dest_r + filled, AUDIOOUT_DMA_HALF_SAMPLES - filled,
                 self->bytes_per_sample, self->samples_signed,
-                self->channel_count, r_offset, quiescent_12);
+                self->channel_count, r_offset);
+        }
+
+        if (written == 0) {
+            // src had fewer than src_stride bytes left (e.g. a corrupt WAV
+            // returned an odd byte count for 16-bit data). Drop the partial
+            // frame so the next loop iteration calls get_buffer for fresh,
+            // aligned data — without this the loop spins forever because
+            // neither filled nor src_remaining_len would advance.
+            self->src_remaining_len = 0;
+            continue;
         }
 
         // Advance source position by the amount consumed.
@@ -253,12 +281,16 @@ static void audioout_fill_callback(void *arg) {
 }
 
 // ---------------------------------------------------------------------------
-// IRQ handlers (must be defined at file scope, not inside functions)
+// IRQ handlers
+//
+// DMA1 Stream5/6 are claimed exclusively for DAC use here. If a future port
+// change wires another peripheral onto either stream the weak-symbol override
+// below will collide silently — add a build-time assertion in that file.
 // ---------------------------------------------------------------------------
 
 void DMA1_Stream5_IRQHandler(void) {
     if (active_audioout) {
-        HAL_DMA_IRQHandler(&active_audioout->dma_handle);
+        HAL_DMA_IRQHandler(&active_audioout->dma_handle_l);
     }
 }
 
@@ -269,6 +301,13 @@ void DMA1_Stream6_IRQHandler(void) {
 }
 
 // HAL weak-symbol overrides: called from HAL_DMA_IRQHandler context.
+//
+// Only the Ch1 (left) callbacks are overridden. The Stream6 IRQ for the
+// right channel still calls HAL_DACEx_ConvHalfCpltCallbackCh2 /
+// HAL_DACEx_ConvCpltCallbackCh2 (the default empty weak implementations) —
+// that is intentional. Both DMA streams are clocked by the same TIM6 trigger
+// and started together, so their NDTR counters stay in lock-step. Refilling
+// from the left-channel IRQ alone is sufficient and avoids redundant work.
 
 void HAL_DAC_ConvHalfCpltCallbackCh1(DAC_HandleTypeDef *hdac) {
     if (active_audioout && !active_audioout->paused) {
@@ -308,17 +347,31 @@ void common_hal_audioio_audioout_construct(audioio_audioout_obj_t *self,
         mp_raise_ValueError(MP_ERROR_TEXT("AudioOut right channel requires pin A1 (PA05)"));
     }
 
+    // Claim pins first. The pin-claim system is what serialises this driver
+    // against another AudioOut instance and against AnalogOut on the same
+    // pins — if either is already using PA04/PA05 the claim raises here, and
+    // because nothing else is configured yet, no cleanup is needed.
+    //
+    // NOTE: ports/atmel-samd/common-hal/audioio/AudioOut.c also claims pins
+    // first but L242 raises *after* claiming a timer and event channel
+    // without releasing them on the error path; worth a follow-up there.
+    common_hal_mcu_pin_claim(left_channel);
+    if (right_channel != NULL) {
+        common_hal_mcu_pin_claim(right_channel);
+    }
+
     self->left_channel = left_channel;
     self->right_channel = right_channel;
     self->quiescent_value = quiescent_value;
     self->sample = MP_OBJ_NULL;
     self->dma_buffer = NULL;
     self->dma_buffer_r = NULL;
-    memset(&self->dma_handle, 0, sizeof(self->dma_handle));
+    memset(&self->dma_handle_l, 0, sizeof(self->dma_handle_l));
     memset(&self->dma_handle_r, 0, sizeof(self->dma_handle_r));
     memset(&self->callback, 0, sizeof(self->callback));
     self->stopping = false;
     self->paused = false;
+    self->playing = false;
 
     // Configure PA04 (and PA05 if stereo) for analog (DAC) mode.
     GPIO_InitTypeDef gpio_init = {0};
@@ -333,7 +386,9 @@ void common_hal_audioio_audioout_construct(audioio_audioout_obj_t *self,
     }
 
     // Initialise the shared DAC handle if it hasn't been set up yet
-    // (i.e. AnalogOut hasn't been used since last reset).
+    // (i.e. AnalogOut hasn't been used since last reset). __HAL_RCC_DAC_CLK_ENABLE
+    // is idempotent so calling it unconditionally would be safe too, but
+    // matching AnalogOut's check keeps the two modules in sync.
     if (handle.Instance == NULL || handle.State == HAL_DAC_STATE_RESET) {
         __HAL_RCC_DAC_CLK_ENABLE();
         handle.Instance = DAC;
@@ -342,8 +397,8 @@ void common_hal_audioio_audioout_construct(audioio_audioout_obj_t *self,
         }
     }
 
-    // Configure DAC channel 1 with TIM6_TRGO trigger (set at play() time;
-    // for now configure with no trigger so the ramp works correctly).
+    // Configure DAC channel 1 with no trigger so the ramp below works
+    // immediately. play() switches the trigger to TIM6_TRGO.
     DAC_ChannelConfTypeDef ch_cfg = {0};
     ch_cfg.DAC_Trigger = DAC_TRIGGER_NONE;
     ch_cfg.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
@@ -355,12 +410,6 @@ void common_hal_audioio_audioout_construct(audioio_audioout_obj_t *self,
     HAL_DAC_SetValue(&handle, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0);
     HAL_DAC_Start(&handle, DAC_CHANNEL_1);
     dac_ramp(0, quiescent_value >> 4);
-
-    // Claim pins last so any error above doesn't leave them claimed.
-    common_hal_mcu_pin_claim(left_channel);
-    if (right_channel != NULL) {
-        common_hal_mcu_pin_claim(right_channel);
-    }
     #endif
 }
 
@@ -403,45 +452,47 @@ void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
     }
     common_hal_audioio_audioout_stop(self);
 
-    // Extract sample format metadata.
+    // Extract sample format metadata via the canonical accessors so the
+    // shared sample-protocol contract is honoured.
     audiosample_base_t *base = audiosample_check(sample);
-    self->bytes_per_sample = base->bits_per_sample / 8;
+    self->bytes_per_sample = audiosample_get_bits_per_sample(base) / 8;
     self->samples_signed = base->samples_signed;
-    self->channel_count = base->channel_count;
-    uint32_t sample_rate = base->sample_rate;
+    self->channel_count = audiosample_get_channel_count(base);
+    uint32_t sample_rate = audiosample_get_sample_rate(base);
     if (sample_rate == 0) {
         mp_raise_ValueError(MP_ERROR_TEXT("sample_rate must be > 0"));
     }
+    mp_arg_validate_int_max(sample_rate, AUDIOOUT_MAX_SAMPLE_RATE, MP_QSTR_sample_rate);
 
     self->sample = sample;
     self->loop = loop;
     self->stopping = false;
     self->paused = false;
+    self->playing = false;
     self->halves_to_fill = 0;
     self->src_ptr = NULL;
     self->src_remaining_len = 0;
     self->src_done = false;
 
-    // Allocate DMA circular buffer(s).
-    self->dma_buffer = (uint16_t *)m_malloc(
+    // Allocate DMA circular buffer(s). m_malloc_without_collect avoids
+    // triggering a GC cycle while the DAC is mid-configure; m_malloc itself
+    // raises on failure so no null check is needed.
+    //
+    // NOTE: ports/atmel-samd uses plain m_malloc for its audio_dma scratch
+    // buffers — the same GC-during-fill risk applies and should be migrated
+    // to m_malloc_without_collect for symmetry with espressif and stm.
+    self->dma_buffer = (uint16_t *)m_malloc_without_collect(
         AUDIOOUT_DMA_BUFFER_SAMPLES * sizeof(uint16_t));
-    if (!self->dma_buffer) {
-        mp_raise_msg(&mp_type_MemoryError,
-            MP_ERROR_TEXT("insufficient memory for audio buffer"));
-    }
     if (self->right_channel != NULL) {
-        self->dma_buffer_r = (uint16_t *)m_malloc(
+        self->dma_buffer_r = (uint16_t *)m_malloc_without_collect(
             AUDIOOUT_DMA_BUFFER_SAMPLES * sizeof(uint16_t));
-        if (!self->dma_buffer_r) {
-            m_free(self->dma_buffer);
-            self->dma_buffer = NULL;
-            mp_raise_msg(&mp_type_MemoryError,
-                MP_ERROR_TEXT("insufficient memory for audio buffer"));
-        }
     }
 
-    // Pre-fill both halves before starting DMA.
-    audiosample_reset_buffer(sample, false, 0);
+    // Pre-fill both halves before starting DMA. single_channel_output is
+    // true when this AudioOut renders only one DAC channel; for stereo
+    // output we want the audiocore to deliver interleaved frames.
+    bool single_channel_output = (self->right_channel == NULL);
+    audiosample_reset_buffer(sample, single_channel_output, 0);
     load_dma_buffer_half(self, 0);
     load_dma_buffer_half(self, 1);
 
@@ -480,13 +531,21 @@ void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
     tim6_handle.Init.Period = period;
     tim6_handle.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     tim6_handle.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-    HAL_TIM_Base_Init(&tim6_handle);
+    if (HAL_TIM_Base_Init(&tim6_handle) != HAL_OK) {
+        mp_raise_RuntimeError(MP_ERROR_TEXT("TIM6 init failed"));
+    }
 
     // TRGO = Update event → triggers DAC conversion each period.
     TIM_MasterConfigTypeDef master_cfg = {0};
     master_cfg.MasterOutputTrigger = TIM_TRGO_UPDATE;
     master_cfg.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
-    HAL_TIMEx_MasterConfigSynchronization(&tim6_handle, &master_cfg);
+    if (HAL_TIMEx_MasterConfigSynchronization(&tim6_handle, &master_cfg) != HAL_OK) {
+        mp_raise_RuntimeError(MP_ERROR_TEXT("TIM6 master cfg failed"));
+    }
+    // NOTE: ports/atmel-samd's audio_dma_setup_playback handles AUDIO_DMA_OK
+    // and two specific error codes but lets any other non-OK return fall
+    // through silently — worth tightening there to mirror this raise-on-fail
+    // pattern.
 
     // --- DAC channel reconfiguration for DMA-triggered mode ---
     // Switch the trigger source to TIM6 *without* disabling the DAC channel.
@@ -506,7 +565,7 @@ void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
     // --- DMA1 Stream5 Channel7 setup (DAC CH1, left) ---
     __HAL_RCC_DMA1_CLK_ENABLE();
 
-    DMA_HandleTypeDef *hdma = &self->dma_handle;
+    DMA_HandleTypeDef *hdma = &self->dma_handle_l;
     memset(hdma, 0, sizeof(*hdma));
     hdma->Instance = DMA1_Stream5;
     hdma->Init.Channel = DMA_CHANNEL_7;
@@ -516,9 +575,11 @@ void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
     hdma->Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
     hdma->Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
     hdma->Init.Mode = DMA_CIRCULAR;
-    hdma->Init.Priority = DMA_PRIORITY_HIGH;
+    hdma->Init.Priority = DMA_PRIORITY_VERY_HIGH;
     hdma->Init.FIFOMode = DMA_FIFOMODE_DISABLE;
-    HAL_DMA_Init(hdma);
+    if (HAL_DMA_Init(hdma) != HAL_OK) {
+        mp_raise_RuntimeError(MP_ERROR_TEXT("DMA init failed"));
+    }
     __HAL_LINKDMA(&handle, DMA_Handle1, *hdma);
 
     HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 6, 0);
@@ -537,9 +598,11 @@ void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
         hdma_r->Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
         hdma_r->Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
         hdma_r->Init.Mode = DMA_CIRCULAR;
-        hdma_r->Init.Priority = DMA_PRIORITY_HIGH;
+        hdma_r->Init.Priority = DMA_PRIORITY_VERY_HIGH;
         hdma_r->Init.FIFOMode = DMA_FIFOMODE_DISABLE;
-        HAL_DMA_Init(hdma_r);
+        if (HAL_DMA_Init(hdma_r) != HAL_OK) {
+            mp_raise_RuntimeError(MP_ERROR_TEXT("DMA init failed (right)"));
+        }
         __HAL_LINKDMA(&handle, DMA_Handle2, *hdma_r);
 
         HAL_NVIC_SetPriority(DMA1_Stream6_IRQn, 6, 0);
@@ -584,6 +647,7 @@ void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
     }
 
     HAL_TIM_Base_Start(&tim6_handle);
+    self->playing = true;
 }
 
 void common_hal_audioio_audioout_stop(audioio_audioout_obj_t *self) {
@@ -613,7 +677,7 @@ void common_hal_audioio_audioout_stop(audioio_audioout_obj_t *self) {
     uint16_t quiescent_12 = self->quiescent_value >> 4;
 
     // Abort DMA without disabling the DAC channels (HAL_DAC_Stop_DMA would).
-    HAL_DMA_Abort(&self->dma_handle);
+    HAL_DMA_Abort(&self->dma_handle_l);
     HAL_NVIC_DisableIRQ(DMA1_Stream5_IRQn);
     NVIC_ClearPendingIRQ(DMA1_Stream5_IRQn);
     if (self->dma_buffer_r) {
@@ -643,13 +707,14 @@ void common_hal_audioio_audioout_stop(audioio_audioout_obj_t *self) {
     self->sample = MP_OBJ_NULL;
     self->stopping = false;
     self->paused = false;
+    self->playing = false;
     active_audioout = NULL;
 
     __HAL_RCC_TIM6_CLK_DISABLE();
 }
 
 bool common_hal_audioio_audioout_get_playing(audioio_audioout_obj_t *self) {
-    return active_audioout == self;
+    return active_audioout == self && self->playing;
 }
 
 void common_hal_audioio_audioout_pause(audioio_audioout_obj_t *self) {
@@ -671,7 +736,14 @@ void common_hal_audioio_audioout_resume(audioio_audioout_obj_t *self) {
 }
 
 bool common_hal_audioio_audioout_get_paused(audioio_audioout_obj_t *self) {
-    return self->paused;
+    // Match espressif's convention: paused only reports true while a play()
+    // session is active, so a stale flag from a previous session can never
+    // leak through.
+    //
+    // NOTE: ports/atmel-samd delegates to audio_dma_get_paused() and does
+    // not gate on a "playing" state — it relies on the DMA hardware staying
+    // quiescent after stop. Worth aligning to the espressif/stm convention.
+    return self->playing && self->paused;
 }
 
 // ---------------------------------------------------------------------------
@@ -697,7 +769,12 @@ void audioout_reset(void) {
         active_audioout->sample = MP_OBJ_NULL;
         active_audioout->stopping = false;
         active_audioout->paused = false;
-        active_audioout->left_channel = NULL; // mark deinited
+        active_audioout->playing = false;
+        // Mark the object deinited and drop both pin references so the next
+        // construct() starts from a fully clean state. reset_all_pins (run
+        // elsewhere in reset_port) releases the actual pin claims.
+        active_audioout->left_channel = NULL;
+        active_audioout->right_channel = NULL;
         active_audioout = NULL;
     }
     __HAL_RCC_TIM6_CLK_DISABLE();

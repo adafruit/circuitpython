@@ -3,7 +3,8 @@ INTERNAL_LIBM ?= 1
 
 ifeq ($(MCU_VARIANT),$(filter $(MCU_VARIANT),STM32F405xx STM32F407xx))
         CIRCUITPY_ALARM = 1
-        CIRCUITPY_AUDIOIO = 1
+        # ?= so a board reusing TIM6 / PA04 for something else can opt out.
+        CIRCUITPY_AUDIOIO ?= 1
         CIRCUITPY_CANIO = 1
         CIRCUITPY_FRAMEBUFFERIO ?= 1
         CIRCUITPY_SDIOIO ?= 1

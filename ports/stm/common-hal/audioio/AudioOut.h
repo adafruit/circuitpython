@@ -1,6 +1,6 @@
 // This file is part of the CircuitPython project: https://circuitpython.org
 //
-// SPDX-FileCopyrightText: Copyright (c) 2026 Adafruit Industries LLC
+// SPDX-FileCopyrightText: Copyright (c) 2024 Adafruit Industries LLC
 //
 // SPDX-License-Identifier: MIT
 
@@ -17,7 +17,7 @@
 // giving the background callback enough headroom to absorb SDIO cluster
 // reads, NeoPixel updates, and other main-loop stalls without underrun.
 #define AUDIOOUT_DMA_BUFFER_SAMPLES 8192
-#define AUDIOOUT_DMA_HALF_SAMPLES   4096
+#define AUDIOOUT_DMA_HALF_SAMPLES   (AUDIOOUT_DMA_BUFFER_SAMPLES / 2)
 
 typedef struct {
     mp_obj_base_t base;
@@ -27,11 +27,10 @@ typedef struct {
     // Right channel pin (PA05 = DAC_CH2). NULL when mono.
     const mcu_pin_obj_t *right_channel;
 
-    // DMA handle for DMA1 Stream5 Channel7 (DAC CH1, left).
-    // DMA handle for DMA1 Stream6 Channel7 (DAC CH2, right).
-    // The DAC handle is the shared file-scope handle from AnalogOut.c.
-    DMA_HandleTypeDef dma_handle;
-    DMA_HandleTypeDef dma_handle_r;
+    // DMA handles. The DAC handle itself is the shared file-scope handle
+    // from AnalogOut.c; we link these to it via __HAL_LINKDMA.
+    DMA_HandleTypeDef dma_handle_l;     // DMA1 Stream5 Channel7 (DAC CH1, left)
+    DMA_HandleTypeDef dma_handle_r;     // DMA1 Stream6 Channel7 (DAC CH2, right)
 
     // Circular DMA buffers: AUDIOOUT_DMA_BUFFER_SAMPLES uint16_t elements each,
     // allocated on play() and freed on stop().
@@ -41,6 +40,7 @@ typedef struct {
     // Current audio sample object being played.
     mp_obj_t sample;
     bool loop;
+    bool playing;
 
     // Set from ISR context to request a clean stop via background callback.
     volatile bool stopping;
