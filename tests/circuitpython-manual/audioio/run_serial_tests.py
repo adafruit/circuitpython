@@ -273,6 +273,31 @@ def copy_files(port: str, circuitpy: str | None = None):
         [(os.path.join(AUDIOCORE_DIR, w), w) for w in WAV_FILES]
         + [(os.path.join(SCRIPT_DIR, s), s) for s in TEST_SCRIPTS]
     )
+    # STM32F4 CIRCUITPY is only ~2 MiB. Leftover files from prior runs
+    # (a sweep generator code.py, stale WAVs) routinely fill it; macOS
+    # then reports ENOSPC as a misleading "Operation not permitted",
+    # which sent the first contributor chasing a permission red herring.
+    # Sum what we're about to write and bail loudly if it won't fit,
+    # discounting space the dst already occupies.
+    if mount:
+        needed = 0
+        for src, dst in files:
+            if not os.path.exists(src):
+                continue
+            needed += os.path.getsize(src)
+            dest_path = os.path.join(mount, dst)
+            if os.path.exists(dest_path):
+                needed -= os.path.getsize(dest_path)
+        free = shutil.disk_usage(mount).free
+        if needed > free:
+            short = needed - free
+            print(f"ERROR: not enough space on {mount}.")
+            print(f"  need:  {needed/1024:.1f} KiB")
+            print(f"  free:  {free/1024:.1f} KiB")
+            print(f"  short: {short/1024:.1f} KiB")
+            print(f"  Delete unrelated files (e.g. an old code.py or "
+                  f"stale WAVs) and re-run.")
+            sys.exit(1)
     missing = []
     for src, dst in files:
         if not os.path.exists(src):
