@@ -29,8 +29,7 @@ silence = [0] * length
 
 
 def stereo_buffer(left, right):
-    # Init from bytes to avoid the temporary [0]*N int list (heavy on F405 RAM).
-    buf = array.array("h", b"\x00\x00" * (len(left) * 2))
+    buf = array.array("h", [0] * (len(left) * 2))
     for i in range(len(left)):
         buf[2 * i] = left[i]
         buf[2 * i + 1] = right[i]

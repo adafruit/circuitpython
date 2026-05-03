@@ -84,6 +84,90 @@ def _mpremote(args: list, timeout: float = 30.0):
         sys.exit("mpremote not found. Run: pip install mpremote")
 
 
+# stderr substrings that indicate a transient host/USB issue worth retrying.
+# Matched case-insensitively. CircuitPython USB-CDC briefly disappears during
+# soft-reset and after some heavy DMA activity; mpremote's next invocation then
+# either can't open the port or sees the kernel still holding the previous
+# descriptor.
+_RETRYABLE_STDERR = (
+    "could not enter raw repl",
+    "failed to access",
+    "device not configured",
+    "errno 6",
+    "errno 16",
+    "resource busy",
+    "could not open",
+    "no such file or directory",
+    "serialexception",
+    "device disconnected",
+    "could not exclusively lock",
+)
+
+
+def _is_retryable(stderr: str) -> bool:
+    s = stderr.lower()
+    return any(needle in s for needle in _RETRYABLE_STDERR)
+
+
+def _port_holders(port: str) -> list[str]:
+    """Return a human-readable list of processes holding *port* (Unix only).
+
+    macOS / Linux only — uses `lsof`. Returns lines like "Code Helper (51298)".
+    Empty list when nothing holds the port or `lsof` is unavailable.
+    """
+    if not port.startswith("/"):
+        return []
+    holders: list[str] = []
+    # Both /dev/cu.* (callout) and /dev/tty.* (dial-in) refer to the same UART
+    # on macOS — VS Code typically opens /dev/tty.* while we ask for /dev/cu.*,
+    # so check both.
+    candidates = {port}
+    if "/cu." in port:
+        candidates.add(port.replace("/cu.", "/tty.", 1))
+    elif "/tty." in port:
+        candidates.add(port.replace("/tty.", "/cu.", 1))
+    for path in candidates:
+        if not os.path.exists(path):
+            continue
+        try:
+            result = subprocess.run(
+                ["lsof", "-Fcp", path],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            return []
+        pid = command = None
+        for line in result.stdout.splitlines():
+            if line.startswith("p"):
+                pid = line[1:]
+            elif line.startswith("c"):
+                command = line[1:]
+                if pid:
+                    holders.append(f"{command} (PID {pid}) on {path}")
+                    pid = command = None
+    return holders
+
+
+def _wait_for_port(port: str, timeout: float = 10.0) -> bool:
+    """Block until *port* exists in the filesystem, or *timeout* elapses.
+
+    macOS / Linux expose serial ports as /dev nodes; Windows uses COMx which is
+    not a filesystem path, so on Windows we just sleep briefly and trust the
+    next mpremote call to surface the real error.
+    """
+    if not port.startswith("/"):
+        time.sleep(0.5)
+        return True
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if os.path.exists(port):
+            return True
+        time.sleep(0.1)
+    return False
+
+
 def _interrupt_running_code(port: str, soft_reset: bool = False) -> None:
     """Halt any code running on the device so mpremote can enter raw REPL.
 
@@ -146,7 +230,9 @@ def find_circuitpy() -> str | None:
     system = platform.system()
 
     if system == "Darwin":
-        candidates = ["/Volumes/CIRCUITPY"]
+        # Glob so a second CIRCUITPY volume (mounted as "CIRCUITPY 1") is found.
+        import glob
+        candidates = sorted(glob.glob("/Volumes/CIRCUITPY*"))
     elif system == "Windows":
         # Scan all drive letters for a CIRCUITPY volume label.
         import string
@@ -225,11 +311,15 @@ def _check(condition: bool, message: str) -> bool:
     return condition
 
 
-def _run_exec(port: str, code: str, label: str, timeout: float, retries: int = 2):
+def _run_exec(port: str, code: str, label: str, timeout: float, retries: int = 3):
     """Execute *code* on the device via mpremote exec and print the output.
 
-    Retries on `could not enter raw repl` after sending a Ctrl-C burst — this
-    handles the case where a busy code.py blocks mpremote's first handshake.
+    Retries cover three failure modes:
+      * raw-REPL handshake blocked by a running code.py → Ctrl-C burst.
+      * Persistent handshake failure → soft-reset + Ctrl-C flood.
+      * Host-side serial drop ("device in use", "Errno 6", etc.) → wait for the
+        port node to re-appear, then retry. CircuitPython's USB-CDC can briefly
+        vanish after heavy DMA traffic or soft-reset.
     """
     print(f"\n{'=' * 60}")
     print(f"  {label}")
@@ -237,6 +327,9 @@ def _run_exec(port: str, code: str, label: str, timeout: float, retries: int = 2
     stdout = ""
     stderr = ""
     for attempt in range(retries + 1):
+        if not _wait_for_port(port, timeout=10.0):
+            print(f"  [retry {attempt}/{retries}] port {port} not present — waited 10s")
+            continue
         try:
             stdout, stderr = _mpremote(
                 ["connect", port, "exec", code], timeout=timeout
@@ -244,13 +337,19 @@ def _run_exec(port: str, code: str, label: str, timeout: float, retries: int = 2
         except TimeoutError as exc:
             print(f"  [FAIL] {exc}")
             return False, "", ""
-        if "could not enter raw repl" not in stderr:
+        if not _is_retryable(stderr):
             break
         if attempt < retries:
-            # Escalate: first attempt = Ctrl-C burst; second = Ctrl-D reboot.
-            escalate = attempt >= 1
-            tactic = "soft-reset + Ctrl-C flood" if escalate else "Ctrl-C burst"
-            print(f"  [retry {attempt + 1}/{retries}] raw REPL busy — {tactic}")
+            handshake = "could not enter raw repl" in stderr.lower()
+            # Soft-reset only on persistent raw-REPL failures, not on host drops
+            # (a soft-reset there just makes the disconnect window longer).
+            escalate = handshake and attempt >= 1
+            if handshake:
+                tactic = "soft-reset + Ctrl-C flood" if escalate else "Ctrl-C burst"
+            else:
+                tactic = f"port-drop recovery ({stderr.strip().splitlines()[-1] if stderr.strip() else '?'})"
+            print(f"  [retry {attempt + 1}/{retries}] {tactic}")
+            _wait_for_port(port, timeout=10.0)
             _interrupt_running_code(port, soft_reset=escalate)
             time.sleep(0.5)
     print("Output:")
@@ -261,6 +360,19 @@ def _run_exec(port: str, code: str, label: str, timeout: float, retries: int = 2
         for line in stderr.splitlines():
             print(f"    {line}")
     return True, stdout, stderr
+
+
+def _settle_between_tests(port: str) -> None:
+    """Drain any lingering REPL output and wait for the port to be ready.
+
+    CircuitPython occasionally re-enumerates its USB-CDC after a heavy test;
+    next mpremote call then races the kernel re-binding the tty. Polling for
+    the port node and then sending a Ctrl-C burst gives the host a clean
+    starting state before the next exec.
+    """
+    _wait_for_port(port, timeout=10.0)
+    _interrupt_running_code(port, soft_reset=False)
+    time.sleep(0.3)
 
 
 # ---------------------------------------------------------------------------
@@ -275,9 +387,9 @@ def test1_wavefile_playback(port: str) -> bool:
     if not ok:
         return False
     passed = True
-    passed &= _check("playing jeplayer-splash-44100-16bit-mono-signed.wav" in stdout, "44100 Hz 16-bit mono WAV played")
-    passed &= _check("playing jeplayer-splash-8000-16bit-mono-signed.wav" in stdout, "8000 Hz 16-bit mono WAV played")
-    passed &= _check("playing jeplayer-splash-8000-8bit-mono-unsigned.wav" in stdout, "8000 Hz 8-bit unsigned WAV played")
+    for wav in sorted(WAV_FILES):
+        passed &= _check(f"playing {wav}" in stdout, f"played {wav}")
+    passed &= _check("OSError" not in stdout, "No OSError reported during playback")
     passed &= _check("done" in stdout, "Script completed with 'done'")
     passed &= _check(not stderr, f"No exceptions (stderr={stderr!r})")
     return passed
@@ -295,6 +407,8 @@ def test2_pause_resume(port: str) -> bool:
         passed &= _check(f"playing with pause/resume: {wav}" in stdout, f"pause/resume header for {wav}")
     passed &= _check("paused" in stdout, "At least one 'paused' line printed")
     passed &= _check("resumed" in stdout, "At least one 'resumed' line printed")
+    passed &= _check("TIMEOUT" not in stdout, "No pause/resume hang timeout")
+    passed &= _check("OSError" not in stdout, "No OSError reported during playback")
     passed &= _check("done" in stdout, "Script completed with 'done'")
     passed &= _check(not stderr, f"No exceptions (stderr={stderr!r})")
     return passed
@@ -378,23 +492,41 @@ def main():
     port = args.port or find_port()
     print(f"Using port: {port}\n")
 
+    # Surface the common "VS Code has the serial monitor open" pitfall up front
+    # — otherwise every test fails with the opaque "in use by another program".
+    holders = _port_holders(port)
+    if holders:
+        print("ERROR: port is held by another process:")
+        for h in holders:
+            print(f"  {h}")
+        print(
+            "Close the offending app (e.g. VS Code Serial Monitor, screen, tio)\n"
+            "and re-run. mpremote needs exclusive access."
+        )
+        sys.exit(2)
+
     if not args.no_copy:
         copy_files(port, circuitpy=args.circuitpy)
 
     # Halt any running code.py so the first test gets a clean raw-REPL entry.
     _interrupt_running_code(port)
 
+    test_runners = [
+        ("1", "Test 1 — WAV Playback", test1_wavefile_playback),
+        ("2", "Test 2 — Pause/Resume", test2_pause_resume),
+        ("3", "Test 3 — Looping Sine", test3_single_buffer_loop),
+        ("4", "Test 4 — deinit/Re-init", test4_deinit),
+        ("5", "Test 5 — Stereo Playback", test5_stereo_playback),
+    ]
     results: dict[str, bool] = {}
-    if "1" in selected:
-        results["Test 1 — WAV Playback"] = test1_wavefile_playback(port)
-    if "2" in selected:
-        results["Test 2 — Pause/Resume"] = test2_pause_resume(port)
-    if "3" in selected:
-        results["Test 3 — Looping Sine"] = test3_single_buffer_loop(port)
-    if "4" in selected:
-        results["Test 4 — deinit/Re-init"] = test4_deinit(port)
-    if "5" in selected:
-        results["Test 5 — Stereo Playback"] = test5_stereo_playback(port)
+    first = True
+    for key, name, runner in test_runners:
+        if key not in selected:
+            continue
+        if not first:
+            _settle_between_tests(port)
+        first = False
+        results[name] = runner(port)
 
     print(f"\n{'=' * 60}")
     print("SUMMARY")

@@ -60,22 +60,24 @@ The script exits 0 if all selected tests pass, 1 otherwise — suitable for CI.
 
 ## Build
 
-Enable the feature by building for an F405 or F407 target:
+Enable the feature by building for an F405 or F407 target. `CIRCUITPY_AUDIOIO`
+is set to `1` automatically for those variants.
 
 ```
-make -C ports/stm BOARD=feather_stm32f405_express -j CROSS_COMPILE=~/arm-toolchain/arm-gnu-toolchain-14.3.rel1-darwin-arm64-arm-none-eabi/bin/arm-none-eabi- PYTHON=/opt/homebrew/bin/python3
+make -C ports/stm BOARD=feather_stm32f405_express -j
 ```
 
-`CIRCUITPY_AUDIOIO` is now set to `1` automatically for those variants. Verify it is present in the build:
+Verify the option is enabled in the generated build config:
 
 ```
 grep CIRCUITPY_AUDIOIO ports/stm/build-feather_stm32f405_express/mpconfigport.mk
 # Expected output: CIRCUITPY_AUDIOIO = 1
 ```
 
-Flash the resulting `.bin` to the board using your preferred method (e.g. `dfu-util`).
+Flash the resulting `.bin` to the board using your preferred method (e.g. `dfu-util`):
+
 ```
-dfu-util -a 0 --dfuse-address 0x08000000:force:mass-erase -D PATH/TO/circuitpython/ports/stm/build-feather_stm32f405_express/firmware.bin
+dfu-util -a 0 --dfuse-address 0x08000000:force:mass-erase -D ports/stm/build-feather_stm32f405_express/firmware.bin
 ```
 ## File Setup
 
@@ -100,7 +102,10 @@ These five files cover every exercised code path:
 - `8000-16bit-stereo-signed` — stereo decode path, left→A0, right→A1
 - `44100-16bit-stereo-signed` — stereo at 44.1 kHz
 
-Stereo, 24-bit, and the 16 kHz files are omitted: stereo and 24-bit will `OSError`; 16 kHz adds no new code paths over 8 kHz and 44.1 kHz.
+The 16 kHz files in the audiocore test set are skipped because they exercise
+no code paths beyond 8 kHz and 44.1 kHz. 24-bit WAVs are not supported by
+`audiocore.WaveFile` and will raise `OSError` if loaded — they are omitted on
+purpose.
 
 Copy the test scripts to the board as well (or paste them into the REPL):
 
@@ -113,9 +118,13 @@ cp tests/circuitpython-manual/audioio/stereo_playback.py        /Volumes/CIRCUIT
 
 ## Test 1 — WAV File Playback (`wavefile_playback.py`) *(automated)*
 
-Verifies that `AudioOut` can play WAV files at 8 kHz, 16 kHz, and 44.1 kHz in mono and stereo (only left channel output), with 8-bit unsigned and 16-bit signed encodings.
+Verifies that `AudioOut(board.A0)` can play WAV files at 8 kHz and 44.1 kHz
+with 8-bit unsigned and 16-bit signed encodings. Stereo WAVs are played here
+through the mono `AudioOut` (only the left channel is mixed to A0); the
+stereo path is exercised separately in Test 5.
 
-**Note:** 24-bit WAV files and the stereo MP3 are intentionally excluded — `audiocore.WaveFile` does not support 24-bit, and those files will print an `OSError`. That is expected.
+**Note:** 24-bit WAV files are not supported by `audiocore.WaveFile` and will
+print an `OSError` if any are present on the filesystem. That is expected.
 
 **Run from the REPL:**
 
@@ -205,7 +214,9 @@ done
 **What to listen for:**
 
 - A 440 Hz tone (concert A) for approximately 1 second for each format.
-- All four formats should sound essentially identical in pitch and volume.
+- All four formats use the same 8 kHz sample rate and should sound
+  essentially identical in pitch and volume — the test is comparing
+  format-conversion paths, not playback rates.
 - No pops or glitches during the loop.
 - Clean silence between tones (quiescent DAC value holds between `stop()` calls).
 
@@ -244,7 +255,7 @@ The script runs four phases in order:
 1. **Left-only 440 Hz tone** (~1 s) — only A0 should produce audio.
 2. **Right-only 440 Hz tone** (~1 s) — only A1 should produce audio.
 3. **Both-channel 440 Hz tone** (~1 s) — equal amplitude on both pins.
-4. **Pan sweep L → R** (~2 s) — 8 stepped amplitude stages from A0 to A1 (small looped buffers; full continuous sweep would not fit in heap).
+4. **Pan sweep L → R** (~3 s) — continuous equal-power (cos/sin) crossfade from A0 to A1 in a single non-looped buffer.
 5. Then plays each stereo WAV (`44100` and `8000` Hz) in full.
 
 **Hardware required:** connect a stereo headphone/amp to A0 (left) and A1
@@ -275,7 +286,7 @@ done
 - "left only" → tone in left ear, silence in right.
 - "right only" → tone in right ear, silence in left.
 - "both channels" → centered tone in both ears.
-- "pan sweep" → tone steps left → right across 8 amplitude stages over 2 s.
+- "pan sweep" → tone smoothly travels left → right over ~3 s.
 - Stereo WAVs play with proper L/R separation; no cross-contamination.
 - On a scope: probing A0 and A1 simultaneously during phases 1 and 2 should
   show one channel idle (mid-scale DC) while the other carries the sine.

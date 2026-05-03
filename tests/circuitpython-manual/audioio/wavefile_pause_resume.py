@@ -35,7 +35,16 @@ for filename in sorted(samples):
         dac.play(sample)
         # Deliberately toggle pause/resume every 100 ms to stress-test the
         # pause/resume cycle. Audio will sound choppy — that is expected.
+        # The wall-clock guard makes the test fail loudly instead of hanging
+        # if pause() ever leaves the driver in a state where playing never
+        # clears. 30 s is enough for the longest 44.1 kHz mono WAV in the
+        # set even with pause-doubling.
+        deadline = time.monotonic() + 30.0
         while dac.playing:
+            if time.monotonic() > deadline:
+                print("  TIMEOUT waiting for playback to finish")
+                dac.stop()
+                break
             time.sleep(0.1)
             if not dac.playing:  # may have finished during sleep
                 break
