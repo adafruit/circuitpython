@@ -379,8 +379,8 @@ MP_DEFINE_CONST_FUN_OBJ_KW(supervisor_set_usb_identification_obj, 0, supervisor_
 //|     - ``str``: Double-quoted string.
 //|       The string may include Unicode characters, and ``\\u`` Unicode escapes. Backslash-escaped characters
 //|       ``\\b``, ``\\r``, ``\\n``, ``\\t``, ``\\v``, ``\\v`` are also allowed.
-//|     - ``int``: signed or unsigned integer
-//|     - ``bool``: lower-case `true`` or ``false``.
+//|     - ``int``: signed or unsigned integer.
+//|     - ``bool``: lower-case ``true`` or ``false``.
 //|       The values are returned as Python ``True`` or ``False`` values.
 //|     - ``float``: signed or unsigned decimal number with a ``.`` or exponent, or ``inf``, ``inf``, ``nan``.
 //|
