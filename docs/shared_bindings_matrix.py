@@ -200,6 +200,8 @@ def get_settings_from_makefile(port_dir, board_name):
     contents = subprocess.run(
         [
             "make",
+            # Don't let make run in parallel; it can mix up the output from the various "print-" targets.
+            "-j1",
             "-C",
             port_dir,
             "-f",

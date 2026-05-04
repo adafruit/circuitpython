@@ -364,13 +364,13 @@ static mp_obj_t supervisor_set_usb_identification(size_t n_args, const mp_obj_t 
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(supervisor_set_usb_identification_obj, 0, supervisor_set_usb_identification);
 
-//| def get_setting(key: str, default: object=None) -> int | str | bool:
+//| def get_setting(key: str, default: object=None) -> int | float | str | bool:
 //|     """
 //|     Get and parse the value for the given ``key`` from the ``/settings.toml`` file.
 //|     If ``key`` is not found or ``settings.toml`` is not present, return the ``default`` value.
 //|
 //|     :param str key: The setting key to retrieve
-//|     :return: The setting value as an ``int``, ``str``, or ``bool`` depending on the value in the file
+//|     :return: The setting value as an ``int``, ``float``, ``str``, or ``bool`` depending on the value in the file
 //|
 //|     :raises ValueError: If the value cannot be parsed as a valid TOML value.
 //|
@@ -379,9 +379,10 @@ MP_DEFINE_CONST_FUN_OBJ_KW(supervisor_set_usb_identification_obj, 0, supervisor_
 //|     - ``str``: Double-quoted string.
 //|       The string may include Unicode characters, and ``\\u`` Unicode escapes. Backslash-escaped characters
 //|       ``\\b``, ``\\r``, ``\\n``, ``\\t``, ``\\v``, ``\\v`` are also allowed.
-//|     - ``int``: signed or unsigned integer
-//|     - lower-case boolean words ``true`` and ``false``.
+//|     - ``int``: signed or unsigned integer.
+//|     - ``bool``: lower-case ``true`` or ``false``.
 //|       The values are returned as Python ``True`` or ``False`` values.
+//|     - ``float``: signed or unsigned decimal number with a ``.`` or exponent, or ``inf``, ``inf``, ``nan``.
 //|
 //|     Example::
 //|
@@ -389,11 +390,13 @@ MP_DEFINE_CONST_FUN_OBJ_KW(supervisor_set_usb_identification_obj, 0, supervisor_
 //|         WIDTH = 42
 //|         color = "red"
 //|         DEBUG = true
+//|         RATIO = 1.5
 //|
 //|         import supervisor
 //|         print(supervisor.get_setting("WIDTH")) # prints 42
 //|         print(supervisor.get_setting("color")) # prints 'red'
 //|         print(supervisor.get_setting("DEBUG")) # prints True
+//|         print(supervisor.get_setting("RATIO")) # prints 1.5
 //|     """
 //|     ...
 //|
