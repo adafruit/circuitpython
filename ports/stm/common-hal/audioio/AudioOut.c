@@ -339,12 +339,12 @@ void common_hal_audioio_audioout_construct(audioio_audioout_obj_t *self,
 
     // Only PA04 (DAC_CH1) is supported as left channel.
     if (left_channel != &pin_PA04) {
-        mp_raise_ValueError(MP_ERROR_TEXT("AudioOut requires pin A0 (PA04)"));
+        raise_ValueError_invalid_pin_name(MP_QSTR_left_channel);
     }
 
     // Right channel must be PA05 (DAC_CH2 / A1) if provided.
     if (right_channel != NULL && right_channel != &pin_PA05) {
-        mp_raise_ValueError(MP_ERROR_TEXT("AudioOut right channel requires pin A1 (PA05)"));
+        raise_ValueError_invalid_pin_name(MP_QSTR_right_channel);
     }
 
     // Claim pins first. The pin-claim system is what serialises this driver
@@ -393,7 +393,7 @@ void common_hal_audioio_audioout_construct(audioio_audioout_obj_t *self,
         __HAL_RCC_DAC_CLK_ENABLE();
         handle.Instance = DAC;
         if (HAL_DAC_Init(&handle) != HAL_OK) {
-            mp_raise_ValueError(MP_ERROR_TEXT("DAC init error"));
+            mp_raise_ValueError(MP_ERROR_TEXT("DAC Device Init Error"));
         }
     }
 
@@ -403,7 +403,7 @@ void common_hal_audioio_audioout_construct(audioio_audioout_obj_t *self,
     ch_cfg.DAC_Trigger = DAC_TRIGGER_NONE;
     ch_cfg.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
     if (HAL_DAC_ConfigChannel(&handle, &ch_cfg, DAC_CHANNEL_1) != HAL_OK) {
-        mp_raise_ValueError(MP_ERROR_TEXT("DAC channel config error"));
+        mp_raise_ValueError(MP_ERROR_TEXT("DAC Channel Init Error"));
     }
 
     // Ramp DAC output up to quiescent value to prevent an audible pop.
@@ -447,9 +447,8 @@ void common_hal_audioio_audioout_deinit(audioio_audioout_obj_t *self) {
 
 void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
     mp_obj_t sample, bool loop) {
-    if (common_hal_audioio_audioout_deinited(self)) {
-        mp_raise_ValueError(MP_ERROR_TEXT("AudioOut is deinited"));
-    }
+    // The shared-bindings layer guards every entry point with
+    // check_for_deinit, so a deinited self can't reach this function.
     common_hal_audioio_audioout_stop(self);
 
     // Extract sample format metadata via the canonical accessors so the
@@ -536,7 +535,7 @@ void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
     tim6_handle.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
     tim6_handle.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
     if (HAL_TIM_Base_Init(&tim6_handle) != HAL_OK) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("TIM6 init failed"));
+        mp_raise_RuntimeError_varg(MP_ERROR_TEXT("%q init failed"), MP_QSTR_TIM6);
     }
 
     // TRGO = Update event → triggers DAC conversion each period.
@@ -544,7 +543,7 @@ void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
     master_cfg.MasterOutputTrigger = TIM_TRGO_UPDATE;
     master_cfg.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
     if (HAL_TIMEx_MasterConfigSynchronization(&tim6_handle, &master_cfg) != HAL_OK) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("TIM6 master cfg failed"));
+        mp_raise_RuntimeError_varg(MP_ERROR_TEXT("%q init failed"), MP_QSTR_TIM6);
     }
     // NOTE: ports/atmel-samd's audio_dma_setup_playback handles AUDIO_DMA_OK
     // and two specific error codes but lets any other non-OK return fall
@@ -582,7 +581,7 @@ void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
     hdma->Init.Priority = DMA_PRIORITY_VERY_HIGH;
     hdma->Init.FIFOMode = DMA_FIFOMODE_DISABLE;
     if (HAL_DMA_Init(hdma) != HAL_OK) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("DMA init failed"));
+        mp_raise_RuntimeError_varg(MP_ERROR_TEXT("%q init failed"), MP_QSTR_DMA);
     }
     __HAL_LINKDMA(&handle, DMA_Handle1, *hdma);
 
@@ -605,7 +604,7 @@ void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
         hdma_r->Init.Priority = DMA_PRIORITY_VERY_HIGH;
         hdma_r->Init.FIFOMode = DMA_FIFOMODE_DISABLE;
         if (HAL_DMA_Init(hdma_r) != HAL_OK) {
-            mp_raise_RuntimeError(MP_ERROR_TEXT("DMA init failed (right)"));
+            mp_raise_RuntimeError_varg(MP_ERROR_TEXT("%q init failed"), MP_QSTR_DMA);
         }
         __HAL_LINKDMA(&handle, DMA_Handle2, *hdma_r);
 
@@ -630,7 +629,7 @@ void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
         }
         m_free(self->dma_buffer);
         self->dma_buffer = NULL;
-        mp_raise_RuntimeError(MP_ERROR_TEXT("DAC DMA start failed"));
+        mp_raise_RuntimeError_varg(MP_ERROR_TEXT("%q init failed"), MP_QSTR_DAC);
     }
 
     if (self->right_channel != NULL) {
@@ -646,7 +645,7 @@ void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
             self->dma_buffer = NULL;
             m_free(self->dma_buffer_r);
             self->dma_buffer_r = NULL;
-            mp_raise_RuntimeError(MP_ERROR_TEXT("DAC DMA start failed (right channel)"));
+            mp_raise_RuntimeError_varg(MP_ERROR_TEXT("%q init failed"), MP_QSTR_DAC);
         }
     }
 
