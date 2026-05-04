@@ -630,6 +630,18 @@ msgstr ""
 msgid "Audio source error"
 msgstr ""
 
+#: ports/stm/common-hal/audioio/AudioOut.c
+msgid "AudioOut is deinited"
+msgstr ""
+
+#: ports/stm/common-hal/audioio/AudioOut.c
+msgid "AudioOut requires pin A0 (PA04)"
+msgstr ""
+
+#: ports/stm/common-hal/audioio/AudioOut.c
+msgid "AudioOut right channel requires pin A1 (PA05)"
+msgstr ""
+
 #: shared-bindings/wifi/Radio.c
 msgid "AuthMode.OPEN is not used with password"
 msgstr ""
@@ -892,12 +904,36 @@ msgstr ""
 msgid "DAC Channel Init Error"
 msgstr ""
 
+#: ports/stm/common-hal/audioio/AudioOut.c
+msgid "DAC DMA start failed"
+msgstr ""
+
+#: ports/stm/common-hal/audioio/AudioOut.c
+msgid "DAC DMA start failed (right channel)"
+msgstr ""
+
 #: ports/stm/common-hal/analogio/AnalogOut.c
 msgid "DAC Device Init Error"
 msgstr ""
 
 #: ports/atmel-samd/common-hal/audioio/AudioOut.c
 msgid "DAC already in use"
+msgstr ""
+
+#: ports/stm/common-hal/audioio/AudioOut.c
+msgid "DAC channel config error"
+msgstr ""
+
+#: ports/stm/common-hal/audioio/AudioOut.c
+msgid "DAC init error"
+msgstr ""
+
+#: ports/stm/common-hal/audioio/AudioOut.c
+msgid "DMA init failed"
+msgstr ""
+
+#: ports/stm/common-hal/audioio/AudioOut.c
+msgid "DMA init failed (right)"
 msgstr ""
 
 #: ports/atmel-samd/common-hal/paralleldisplaybus/ParallelBus.c
@@ -1541,6 +1577,7 @@ msgstr ""
 
 #: ports/atmel-samd/common-hal/analogio/AnalogOut.c
 #: ports/stm/common-hal/analogio/AnalogOut.c
+#: ports/stm/common-hal/audioio/AudioOut.c
 msgid "No DAC on chip"
 msgstr ""
 
@@ -2107,6 +2144,14 @@ msgstr ""
 
 #: shared-bindings/gnss/GNSS.c
 msgid "System entry must be gnss.SatelliteSystem"
+msgstr ""
+
+#: ports/stm/common-hal/audioio/AudioOut.c
+msgid "TIM6 init failed"
+msgstr ""
+
+#: ports/stm/common-hal/audioio/AudioOut.c
+msgid "TIM6 master cfg failed"
 msgstr ""
 
 #: ports/stm/common-hal/microcontroller/Processor.c
@@ -4049,7 +4094,7 @@ msgstr ""
 msgid "output array must be contiguous"
 msgstr ""
 
-#: py/objint_mpz.c
+#: py/objint_longlong.c py/objint_mpz.c
 msgid "overflow converting long int to machine word"
 msgstr ""
 
@@ -4160,6 +4205,10 @@ msgstr ""
 
 #: py/objstr.c
 msgid "rsplit(None,n)"
+msgstr ""
+
+#: ports/stm/common-hal/audioio/AudioOut.c
+msgid "sample_rate must be > 0"
 msgstr ""
 
 #: shared-bindings/audiofreeverb/Freeverb.c

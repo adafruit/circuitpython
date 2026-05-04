@@ -48,12 +48,14 @@ samples.append(audiocore.RawSample(s16, sample_rate=sample_rate))
 dac = audioio.AudioOut(board.A0)
 for sample, name in zip(samples, sample_names):
     print(name)
-    if trigger: trigger.value = False
+    if trigger:
+        trigger.value = False
     dac.play(sample, loop=True)
     time.sleep(1)
     dac.stop()
     time.sleep(0.1)
-    if trigger: trigger.value = True
+    if trigger:
+        trigger.value = True
     print()
 
 dac.deinit()

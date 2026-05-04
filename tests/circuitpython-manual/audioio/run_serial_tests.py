@@ -66,6 +66,7 @@ DEINIT_TEST_CODE = (
 # mpremote helpers
 # ---------------------------------------------------------------------------
 
+
 def _mpremote(args: list, timeout: float = 30.0):
     """Run an mpremote command, return (stdout, stderr). Raises on timeout."""
     try:
@@ -214,7 +215,12 @@ def find_port() -> str:
     # Fall back to any USB serial port that isn't Bluetooth/wlan
     for line in stdout.splitlines():
         parts = line.split()
-        if parts and parts[0].startswith("/dev/") and "Bluetooth" not in line and "wlan" not in line:
+        if (
+            parts
+            and parts[0].startswith("/dev/")
+            and "Bluetooth" not in line
+            and "wlan" not in line
+        ):
             return parts[0]
     raise RuntimeError(
         "No board detected. Connect the board and/or pass --port.\n"
@@ -225,16 +231,19 @@ def find_port() -> str:
 def find_circuitpy() -> str | None:
     """Return the path to the mounted CIRCUITPY volume, or None if not found."""
     import platform
+
     system = platform.system()
 
     if system == "Darwin":
         # Glob so a second CIRCUITPY volume (mounted as "CIRCUITPY 1") is found.
         import glob
+
         candidates = sorted(glob.glob("/Volumes/CIRCUITPY*"))
     elif system == "Windows":
         # Scan all drive letters for a CIRCUITPY volume label.
         import string
         import ctypes
+
         candidates = []
         kernel32 = ctypes.windll.kernel32  # type: ignore[attr-defined]
         buf = ctypes.create_unicode_buffer(256)
@@ -248,6 +257,7 @@ def find_circuitpy() -> str | None:
         candidates = ["/media/CIRCUITPY", "/run/media/CIRCUITPY"]
         try:
             import pwd
+
             user = pwd.getpwuid(os.getuid()).pw_name
             candidates.insert(0, f"/run/media/{user}/CIRCUITPY")
             candidates.insert(0, f"/media/{user}/CIRCUITPY")
@@ -267,10 +277,9 @@ def copy_files(port: str, circuitpy: str | None = None):
         print(f"Copying files to board via {mount} ...")
     else:
         print("Copying files to board via mpremote ...")
-    files = (
-        [(os.path.join(AUDIOCORE_DIR, w), w) for w in WAV_FILES]
-        + [(os.path.join(SCRIPT_DIR, s), s) for s in TEST_SCRIPTS]
-    )
+    files = [(os.path.join(AUDIOCORE_DIR, w), w) for w in WAV_FILES] + [
+        (os.path.join(SCRIPT_DIR, s), s) for s in TEST_SCRIPTS
+    ]
     # Check if device has enough space for test files
     if mount:
         needed = 0
@@ -285,11 +294,10 @@ def copy_files(port: str, circuitpy: str | None = None):
         if needed > free:
             short = needed - free
             print(f"ERROR: not enough space on {mount}.")
-            print(f"  need:  {needed/1024:.1f} KiB")
-            print(f"  free:  {free/1024:.1f} KiB")
-            print(f"  short: {short/1024:.1f} KiB")
-            print(f"  Delete unrelated files (e.g. an old code.py or "
-                  f"stale WAVs) and re-run.")
+            print(f"  need:  {needed / 1024:.1f} KiB")
+            print(f"  free:  {free / 1024:.1f} KiB")
+            print(f"  short: {short / 1024:.1f} KiB")
+            print(f"  Delete unrelated files (e.g. an old code.py or stale WAVs) and re-run.")
             sys.exit(1)
     missing = []
     for src, dst in files:
@@ -301,9 +309,7 @@ def copy_files(port: str, circuitpy: str | None = None):
             shutil.copy2(src, dest_path)
             print(f"  {dst} (copied)")
         else:
-            stdout, stderr = _mpremote(
-                ["connect", port, "fs", "cp", src, f":/{dst}"], timeout=30
-            )
+            stdout, stderr = _mpremote(["connect", port, "fs", "cp", src, f":/{dst}"], timeout=30)
             if stderr and "Error" in stderr:
                 print(f"  {dst} (FAILED: {stderr.strip()})")
             else:
@@ -349,9 +355,7 @@ def _run_exec(port: str, code: str, label: str, timeout: float, retries: int = 3
             print(f"  [retry {attempt}/{retries}] port {port} not present — waited 10s")
             continue
         try:
-            stdout, stderr = _mpremote(
-                ["connect", port, "exec", code], timeout=timeout
-            )
+            stdout, stderr = _mpremote(["connect", port, "exec", code], timeout=timeout)
         except TimeoutError as exc:
             print(f"  [FAIL] {exc}")
             return False, "", ""
@@ -397,6 +401,7 @@ def _settle_between_tests(port: str) -> None:
 # Individual tests
 # ---------------------------------------------------------------------------
 
+
 def test1_wavefile_playback(port: str) -> bool:
     code = 'exec(open("/wavefile_playback.py").read())'
     ok, stdout, stderr = _run_exec(
@@ -422,7 +427,9 @@ def test2_pause_resume(port: str) -> bool:
         return False
     passed = True
     for wav in sorted(WAV_FILES):
-        passed &= _check(f"playing with pause/resume: {wav}" in stdout, f"pause/resume header for {wav}")
+        passed &= _check(
+            f"playing with pause/resume: {wav}" in stdout, f"pause/resume header for {wav}"
+        )
     passed &= _check("paused" in stdout, "At least one 'paused' line printed")
     passed &= _check("resumed" in stdout, "At least one 'resumed' line printed")
     passed &= _check("TIMEOUT" not in stdout, "No pause/resume hang timeout")
@@ -459,8 +466,14 @@ def test5_stereo_playback(port: str) -> bool:
     passed &= _check("channel test: right only" in stdout, "Right-only channel tone played")
     passed &= _check("channel test: both channels" in stdout, "Both-channel tone played")
     passed &= _check("pan sweep: left to right" in stdout, "Pan sweep played")
-    passed &= _check("playing stereo: jeplayer-splash-44100-16bit-stereo-signed.wav" in stdout, "44100 Hz 16-bit stereo WAV played")
-    passed &= _check("playing stereo: jeplayer-splash-8000-16bit-stereo-signed.wav" in stdout, "8000 Hz 16-bit stereo WAV played")
+    passed &= _check(
+        "playing stereo: jeplayer-splash-44100-16bit-stereo-signed.wav" in stdout,
+        "44100 Hz 16-bit stereo WAV played",
+    )
+    passed &= _check(
+        "playing stereo: jeplayer-splash-8000-16bit-stereo-signed.wav" in stdout,
+        "8000 Hz 16-bit stereo WAV played",
+    )
     passed &= _check("done" in stdout, "Script completed with 'done'")
     passed &= _check(not stderr, f"No exceptions (stderr={stderr!r})")
     return passed
@@ -481,6 +494,7 @@ def test4_deinit(port: str) -> bool:
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
 
 def main():
     parser = argparse.ArgumentParser(

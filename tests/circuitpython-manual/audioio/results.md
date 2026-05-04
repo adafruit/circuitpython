@@ -24,15 +24,15 @@ Copying files to board via /Volumes/CIRCUITPY ...
 ============================================================
 Output:
     playing jeplayer-splash-44100-16bit-mono-signed.wav
-    
+
     playing jeplayer-splash-44100-16bit-stereo-signed.wav
-    
+
     playing jeplayer-splash-8000-16bit-mono-signed.wav
-    
+
     playing jeplayer-splash-8000-16bit-stereo-signed.wav
-    
+
     playing jeplayer-splash-8000-8bit-mono-unsigned.wav
-    
+
     done
   [PASS] played jeplayer-splash-44100-16bit-mono-signed.wav
   [PASS] played jeplayer-splash-44100-16bit-stereo-signed.wav
@@ -124,7 +124,7 @@ Output:
       resumed
       paused
       resumed
-    
+
     playing with pause/resume: jeplayer-splash-44100-16bit-stereo-signed.wav
       paused
       resumed
@@ -198,7 +198,7 @@ Output:
       resumed
       paused
       resumed
-    
+
     playing with pause/resume: jeplayer-splash-8000-16bit-mono-signed.wav
       paused
       resumed
@@ -270,7 +270,7 @@ Output:
       resumed
       paused
       resumed
-    
+
     playing with pause/resume: jeplayer-splash-8000-16bit-stereo-signed.wav
       paused
       resumed
@@ -342,7 +342,7 @@ Output:
       resumed
       paused
       resumed
-    
+
     playing with pause/resume: jeplayer-splash-8000-8bit-mono-unsigned.wav
       paused
       resumed
@@ -414,7 +414,7 @@ Output:
       resumed
       paused
       resumed
-    
+
     done
   [PASS] pause/resume header for jeplayer-splash-44100-16bit-mono-signed.wav
   [PASS] pause/resume header for jeplayer-splash-44100-16bit-stereo-signed.wav
@@ -433,13 +433,13 @@ Output:
 ============================================================
 Output:
     unsigned 8 bit
-    
+
     signed 8 bit
-    
+
     unsigned 16 bit
-    
+
     signed 16 bit
-    
+
     done
   [PASS] 'unsigned 8 bit' label printed
   [PASS] 'signed 8 bit' label printed
@@ -461,17 +461,17 @@ Output:
 ============================================================
 Output:
     channel test: left only
-    
+
     channel test: right only
-    
+
     channel test: both channels
-    
+
     pan sweep: left to right
-    
+
     playing stereo: jeplayer-splash-44100-16bit-stereo-signed.wav
-    
+
     playing stereo: jeplayer-splash-8000-16bit-stereo-signed.wav
-    
+
     done
   [PASS] Left-only channel tone played
   [PASS] Right-only channel tone played

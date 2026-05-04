@@ -22,7 +22,9 @@ for fn in os.listdir("/"):
         samples.append(fn)
 
 if not samples:
-    print("No sample files found. Copy *.wav files from tests/circuitpython-manual/audiocore/ to the board.")
+    print(
+        "No sample files found. Copy *.wav files from tests/circuitpython-manual/audiocore/ to the board."
+    )
 
 dac = audioio.AudioOut(board.A0)
 for filename in sorted(samples):
@@ -33,11 +35,13 @@ for filename in sorted(samples):
         except OSError as e:
             print(e)
             continue
-        if trigger: trigger.value = False
+        if trigger:
+            trigger.value = False
         dac.play(sample)
         while dac.playing:
             time.sleep(0.1)
-        if trigger: trigger.value = True
+        if trigger:
+            trigger.value = True
     time.sleep(0.1)
     print()
 
