@@ -47,6 +47,9 @@ INC += \
 	-isystem esp-idf/components/bt/host/nimble/nimble/porting/nimble/include \
 	-isystem esp-idf/components/bt/host/nimble/nimble/porting/npl/freertos/include \
 	-isystem esp-idf/components/bt/host/nimble/port/include \
+	-isystem esp-idf/components/bt/porting/include \
+	-isystem esp-idf/components/bt/porting/npl/freertos/include \
+	-isystem esp-idf/components/bt/porting/transport/include \
 	-isystem esp-idf/components/esp_driver_touch_sens/include \
 	-isystem esp-idf/components/driver/twai/include \
 	-isystem esp-idf/components/driver/i2c/include \
@@ -127,6 +130,8 @@ INC += \
 	-isystem esp-idf/components/esp_hal_dma/$(IDF_TARGET)/include \
 	-isystem esp-idf/components/esp_hal_lcd/include \
 	-isystem esp-idf/components/esp_hal_lcd/$(IDF_TARGET)/include \
+	-isystem esp-idf/components/esp_hal_sd/include \
+	-isystem esp-idf/components/esp_hal_sd/$(IDF_TARGET)/include \
 	-isystem esp-idf/components/esp_hal_usb/include \
 	-isystem esp-idf/components/esp_hal_usb/$(IDF_TARGET)/include \
 	-isystem esp-idf/components/esp_hal_parlio/include \
@@ -309,6 +314,7 @@ CHIP_COMPONENTS = \
 	esp_hal_i2s \
 	esp_hal_lcd \
 	esp_hal_pcnt \
+	esp_hal_pmu \
 	esp_hal_rmt \
 	esp_hal_touch_sens \
 	esp_hal_twai
@@ -456,6 +462,7 @@ CHIP_COMPONENTS = \
 	esp_hal_i2s \
 	esp_hal_lcd \
 	esp_hal_pcnt \
+	esp_hal_pmu \
 	esp_hal_rmt \
 	esp_hal_touch_sens \
 	esp_hal_twai \
@@ -892,7 +899,7 @@ ifneq ($(CIRCUITPY_QSPIBUS),0)
 	ESP_IDF_COMPONENTS_LINK += esp_lcd
 endif
 ifneq ($(CIRCUITPY_SDIOIO),0)
-	ESP_IDF_COMPONENTS_LINK += sdmmc esp_driver_sdmmc esp_driver_sd_intf
+	ESP_IDF_COMPONENTS_LINK += sdmmc esp_driver_sdmmc esp_driver_sd_intf esp_hal_sd
 endif
 
 ESP_IDF_COMPONENTS_EXPANDED = $(foreach component, $(ESP_IDF_COMPONENTS_LINK), $(BUILD)/esp-idf/esp-idf/$(component)/lib$(component).a)
