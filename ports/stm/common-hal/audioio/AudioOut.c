@@ -458,9 +458,7 @@ void common_hal_audioio_audioout_play(audioio_audioout_obj_t *self,
     self->samples_signed = base->samples_signed;
     self->channel_count = audiosample_get_channel_count(base);
     uint32_t sample_rate = audiosample_get_sample_rate(base);
-    if (sample_rate == 0) {
-        mp_raise_ValueError(MP_ERROR_TEXT("sample_rate must be > 0"));
-    }
+    mp_arg_validate_int_min(sample_rate, 1, MP_QSTR_sample_rate);
     mp_arg_validate_int_max(sample_rate, AUDIOOUT_MAX_SAMPLE_RATE, MP_QSTR_sample_rate);
 
     self->sample = sample;
