@@ -146,6 +146,9 @@ endif
 ifeq ($(CIRCUITPY_AUDIOMP3),1)
 SRC_PATTERNS += audiomp3/%
 endif
+ifeq ($(CIRCUITPY_AUDIOSPEED),1)
+SRC_PATTERNS += audiospeed/%
+endif
 ifeq ($(CIRCUITPY_AURORA_EPAPER),1)
 SRC_PATTERNS += aurora_epaper/%
 endif
@@ -287,6 +290,9 @@ SRC_PATTERNS += math/%
 endif
 ifeq ($(CIRCUITPY_MAX3421E),1)
 SRC_PATTERNS += max3421e/%
+endif
+ifeq ($(CIRCUITPY_MCP4822),1)
+SRC_PATTERNS += mcp4822/%
 endif
 ifeq ($(CIRCUITPY_MDNS),1)
 SRC_PATTERNS += mdns/%
@@ -532,6 +538,8 @@ SRC_COMMON_HAL_ALL = \
 	i2ctarget/I2CTarget.c \
 	i2ctarget/__init__.c \
 	max3421e/Max3421E.c \
+	mcp4822/__init__.c \
+	mcp4822/MCP4822.c \
 	memorymap/__init__.c \
 	memorymap/AddressRange.c \
 	microcontroller/__init__.c \
@@ -688,6 +696,8 @@ SRC_SHARED_MODULE_ALL = \
 	audiocore/RawSample.c \
 	audiocore/WaveFile.c \
 	audiocore/__init__.c \
+	audiospeed/SpeedChanger.c \
+	audiospeed/__init__.c \
 	audiodelays/Echo.c \
 	audiodelays/Chorus.c \
 	audiodelays/PitchShift.c \

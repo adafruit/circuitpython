@@ -426,6 +426,12 @@ Examples:
         action="store_true",
         help="Continue building remaining boards even if one fails",
     )
+    parser.add_argument(
+        "--vendor",
+        type=str,
+        default=None,
+        help="Only build boards from this vendor (e.g. 'native' for sim boards)",
+    )
 
     args = parser.parse_args()
 
@@ -438,6 +444,9 @@ Examples:
 
     # Discover all boards
     boards = discover_boards(port_dir)
+
+    if args.vendor:
+        boards = [(v, b) for v, b in boards if v == args.vendor]
 
     if not boards:
         print("ERROR: No boards found!")

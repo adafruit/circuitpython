@@ -1,5 +1,5 @@
-CircuitPython \.\+ version
-Use \.\+
+
+Adafruit CircuitPython \.\+ version
 >>> # REPL tests of GNU-ish readline navigation
 >>> # history buffer navigation
 >>> 1
@@ -16,4 +16,4 @@ Use \.\+
 >>> t = 121
 >>> \.\+
 'foobar'
->>> 
+>>> \$

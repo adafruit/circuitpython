@@ -89,6 +89,11 @@ msgid ""
 "%d address pins, %d rgb pins and %d tiles indicate a height of %d, not %d"
 msgstr "%d adresní pin, %d rgb pin a %d dlaždice indikuje výšku %d, ne %d"
 
+#: py/emitinlinextensa.c
+#, c-format
+msgid "%d is not a multiple of %d"
+msgstr ""
+
 #: shared-bindings/microcontroller/Pin.c
 msgid "%q and %q contain duplicate pins"
 msgstr "%q a %q obsahují duplicitní piny"
@@ -272,10 +277,6 @@ msgstr "%q je mimo hranice"
 #: shared-bindings/time/__init__.c
 msgid "%q out of range"
 msgstr "%q je mimo rozsah"
-
-#: py/objmodule.c
-msgid "%q renamed %q"
-msgstr ""
 
 #: py/objrange.c py/objslice.c shared-bindings/random/__init__.c
 msgid "%q step cannot be zero"
@@ -636,6 +637,7 @@ msgstr "Konverze audia není implementována"
 
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 #: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
+#: ports/raspberrypi/common-hal/mcp4822/MCP4822.c
 msgid "Audio source error"
 msgstr ""
 
@@ -980,6 +982,14 @@ msgstr "Při zpracování uvedené výjimky nastala další výjimka:"
 msgid "ECB only operates on 16 bytes at a time"
 msgstr "ECB operuje najednou pouze 16 bajtů"
 
+#: py/asmxtensa.c
+msgid "ERROR: %q %q not word-aligned"
+msgstr ""
+
+#: py/asmxtensa.c
+msgid "ERROR: xtensa %q out of range"
+msgstr ""
+
 #: ports/espressif/common-hal/busio/SPI.c
 #: ports/espressif/common-hal/canio/CAN.c
 #: ports/espressif/common-hal/qspibus/QSPIBus.c
@@ -1320,6 +1330,7 @@ msgstr ""
 msgid "Invalid %q"
 msgstr "Špatný %s"
 
+#: ports/raspberrypi/common-hal/mcp4822/MCP4822.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2350.c
 #: shared-module/aurora_epaper/aurora_framebuffer.c
 msgid "Invalid %q and %q"
@@ -1557,6 +1568,7 @@ msgstr "Žádný DAC na čipu"
 #: ports/atmel-samd/common-hal/audioio/AudioOut.c
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 #: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
+#: ports/raspberrypi/common-hal/mcp4822/MCP4822.c
 msgid "No DMA channel found"
 msgstr "Nebyl nalezen žádný kanál DMA"
 
@@ -1671,7 +1683,7 @@ msgid "Not connected"
 msgstr "Nepřipojený"
 
 #: shared-bindings/audiobusio/I2SOut.c shared-bindings/audioio/AudioOut.c
-#: shared-bindings/audiopwmio/PWMAudioOut.c
+#: shared-bindings/audiopwmio/PWMAudioOut.c shared-bindings/mcp4822/MCP4822.c
 msgid "Not playing"
 msgstr "Nehraje"
 
@@ -2191,6 +2203,7 @@ msgid "Too many channels in sample"
 msgstr "V samplu je příliš mnoho kanálů"
 
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
+#: ports/raspberrypi/common-hal/mcp4822/MCP4822.c
 msgid "Too many channels in sample."
 msgstr ""
 
@@ -2290,6 +2303,7 @@ msgstr "Nelze přistupovat k nezarovnanému IO registru"
 #: ports/atmel-samd/common-hal/audioio/AudioOut.c
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 #: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
+#: ports/raspberrypi/common-hal/mcp4822/MCP4822.c
 msgid "Unable to allocate buffers for signed conversion"
 msgstr ""
 
@@ -2430,6 +2444,7 @@ msgstr ""
 msgid "Update failed"
 msgstr ""
 
+#: ports/zephyr-cp/common-hal/audiobusio/I2SOut.c
 #: ports/zephyr-cp/common-hal/busio/I2C.c
 #: ports/zephyr-cp/common-hal/busio/SPI.c
 #: ports/zephyr-cp/common-hal/busio/UART.c
@@ -2650,10 +2665,6 @@ msgstr "pole je příliš velké"
 msgid "array/bytes required on right side"
 msgstr ""
 
-#: py/asmxtensa.c
-msgid "asm overflow"
-msgstr "přetečení v asm"
-
 #: py/compile.c
 msgid "async for/with outside async function"
 msgstr ""
@@ -2867,6 +2878,10 @@ msgstr ""
 msgid "can't create '%q' instances"
 msgstr ""
 
+#: py/objtype.c
+msgid "can't create instance"
+msgstr ""
+
 #: py/compile.c
 msgid "can't declare nonlocal in outer code"
 msgstr ""
@@ -2965,13 +2980,13 @@ msgstr "nelze převést complex na dtype"
 msgid "cannot convert complex type"
 msgstr "nelze převést typ complex"
 
-#: py/objtype.c
-msgid "cannot create instance"
-msgstr ""
-
 #: extmod/ulab/code/ndarray.c
 msgid "cannot delete array elements"
 msgstr "nelze smazat prvky pole"
+
+#: py/compile.c
+msgid "cannot emit native code for this architecture"
+msgstr ""
 
 #: extmod/ulab/code/ndarray.c
 msgid "cannot reshape array"
@@ -3127,7 +3142,7 @@ msgstr "dimenze nesouhlasí"
 msgid "div/mod not implemented for uint"
 msgstr "div/mod nejsou implementované pro uint"
 
-#: extmod/ulab/code/numpy/create.c
+#: extmod/ulab/code/numpy/create.c py/objint_longlong.c py/objint_mpz.c
 msgid "divide by zero"
 msgstr "dělení nulou"
 
@@ -3503,6 +3518,10 @@ msgstr ""
 msgid "interval must be in range %s-%s"
 msgstr ""
 
+#: py/emitinlinerv32.c
+msgid "invalid RV32 instruction '%q'"
+msgstr ""
+
 #: py/compile.c
 msgid "invalid arch"
 msgstr ""
@@ -3697,6 +3716,10 @@ msgstr ""
 msgid "mode must be complete, or reduced"
 msgstr ""
 
+#: py/runtime.c
+msgid "module '%q' has no attribute '%q'"
+msgstr ""
+
 #: py/builtinimport.c
 msgid "module not found"
 msgstr ""
@@ -3745,10 +3768,6 @@ msgstr ""
 msgid "native code in .mpy unsupported"
 msgstr ""
 
-#: py/asmthumb.c
-msgid "native method too big"
-msgstr ""
-
 #: py/emitnative.c
 msgid "native yield"
 msgstr ""
@@ -3770,7 +3789,7 @@ msgstr "záporný faktoriál"
 msgid "negative power with no float support"
 msgstr ""
 
-#: py/objint_mpz.c py/runtime.c
+#: py/objint_longlong.c py/objint_mpz.c py/runtime.c
 msgid "negative shift count"
 msgstr ""
 
@@ -4125,6 +4144,10 @@ msgstr ""
 msgid "real and imaginary parts must be of equal length"
 msgstr ""
 
+#: extmod/modre.c
+msgid "regex too complex"
+msgstr ""
+
 #: py/builtinimport.c
 msgid "relative import"
 msgstr ""
@@ -4132,6 +4155,10 @@ msgstr ""
 #: py/obj.c
 #, c-format
 msgid "requested length %d but object has length %d"
+msgstr ""
+
+#: py/objint_longlong.c py/parsenum.c
+msgid "result overflows long long storage"
 msgstr ""
 
 #: extmod/ulab/code/ndarray_operators.c
@@ -4398,10 +4425,6 @@ msgstr ""
 msgid "type takes 1 or 3 arguments"
 msgstr ""
 
-#: py/objint_longlong.c
-msgid "ulonglong too large"
-msgstr ""
-
 #: py/parse.c
 msgid "unexpected indent"
 msgstr "neočekávané odsazení"
@@ -4421,10 +4444,6 @@ msgstr ""
 
 #: py/parse.c
 msgid "unindent doesn't match any outer indent level"
-msgstr ""
-
-#: py/emitinlinerv32.c
-msgid "unknown RV32 instruction '%q'"
 msgstr ""
 
 #: py/objstr.c
@@ -4594,6 +4613,9 @@ msgstr ""
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr ""
+
+#~ msgid "asm overflow"
+#~ msgstr "přetečení v asm"
 
 #, c-format
 #~ msgid "Buffer + offset too small %d %d %d"

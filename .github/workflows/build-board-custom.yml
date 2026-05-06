@@ -70,7 +70,7 @@ jobs:
       run: |
         > custom-build && git add custom-build
     - name: Set up python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: 3.x
     - name: Board to port
@@ -124,7 +124,7 @@ jobs:
       run: make -j4 $FLAGS BOARD="$BOARD" DEBUG=$DEBUG TRANSLATION="$TRANSLATION"
       working-directory: ports/${{ steps.board-to-port.outputs.port }}
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ inputs.board }}-${{ inputs.language }}-${{ inputs.version }}${{ inputs.flags != '' && '-custom' || '' }}${{ inputs.debug && '-debug' || '' }}
         path: ports/${{ steps.board-to-port.outputs.port }}/build-${{ inputs.board }}/firmware.*

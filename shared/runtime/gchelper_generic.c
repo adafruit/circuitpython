@@ -42,6 +42,7 @@
 // stack already by the caller.
 #if defined(__x86_64__)
 
+// CIRCUITPY-CHANGE: use __asm__ instead of asm
 static void gc_helper_get_regs(gc_helper_regs_t arr) {
     register long rbx __asm__ ("rbx");
     register long rbp __asm__ ("rbp");

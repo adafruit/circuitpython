@@ -15,9 +15,9 @@
 extern const mp_obj_type_t mp_type_espidf_IDFError;
 extern const mp_obj_type_t mp_type_espidf_MemoryError;
 
-NORETURN void mp_raise_espidf_MemoryError(void);
+MP_NORETURN void mp_raise_espidf_MemoryError(void);
 
-void raise_esp_error(esp_err_t err) NORETURN;
+void raise_esp_error(esp_err_t err) MP_NORETURN;
 #define CHECK_ESP_RESULT(x) do { int res = (x); if (res != ESP_OK) raise_esp_error(res); } while (0)
 
 size_t common_hal_espidf_get_total_psram(void);

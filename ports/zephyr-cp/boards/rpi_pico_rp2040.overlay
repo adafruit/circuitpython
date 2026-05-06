@@ -1,0 +1,34 @@
+&flash0 {
+	/delete-node/ partitions;
+
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		/* Reserved memory for the second stage bootloader */
+		second_stage_bootloader: partition@0 {
+			label = "second_stage_bootloader";
+			reg = <0x00000000 0x100>;
+			read-only;
+		};
+
+		code_partition: partition@100 {
+			label = "code-partition";
+			reg = <0x100 (0x180000 - 0x100)>;
+			read-only;
+		};
+
+		nvm_partition: partition@180000 {
+			label = "nvm";
+			reg = <0x180000 0x1000>;
+		};
+
+		circuitpy_partition: partition@181000 {
+			label = "circuitpy";
+			reg = <0x181000 (DT_SIZE_M(2) - 0x181000)>;
+		};
+	};
+};
+
+#include "../app.overlay"

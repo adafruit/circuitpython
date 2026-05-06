@@ -25,6 +25,7 @@
  */
 
 #include <assert.h>
+#include <math.h>
 
 #include "py/emit.h"
 #include "py/nativeglue.h"
@@ -72,7 +73,25 @@ static bool strictly_equal(mp_obj_t a, mp_obj_t b) {
         }
         return true;
     } else {
-        return mp_obj_equal(a, b);
+        if (!mp_obj_equal(a, b)) {
+            return false;
+        }
+        #if MICROPY_PY_BUILTINS_FLOAT && MICROPY_COMP_CONST_FLOAT
+        if (a_type == &mp_type_float) {
+            mp_float_t a_val = mp_obj_float_get(a);
+            // CIRCUITPY-CHANGE: ignore float equal warning
+            #pragma GCC diagnostic push
+            #pragma GCC diagnostic ignored "-Wfloat-equal"
+            if (a_val == (mp_float_t)0.0) {
+                // Although 0.0 == -0.0, they are not strictly_equal and
+                // must be stored as two different constants in .mpy files
+                mp_float_t b_val = mp_obj_float_get(b);
+                return signbit(a_val) == signbit(b_val);
+            }
+            #pragma GCC diagnostic pop
+        }
+        #endif
+        return true;
     }
 }
 

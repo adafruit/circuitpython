@@ -24,13 +24,13 @@ jobs:
       TEST_native_mpy: --via-mpy --emit native -d basics float micropython
     steps:
       - name: Set up repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: false
           show-progress: false
           fetch-depth: 1
       - name: Set up python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.12
       - name: Set up submodules
@@ -75,13 +75,13 @@ jobs:
       CP_VERSION: ${{ inputs.cp-version }}
     steps:
       - name: Set up repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: false
           show-progress: false
           fetch-depth: 1
       - name: Set up python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.13
       - name: Set up Zephyr

@@ -191,6 +191,7 @@ PY_CORE_O_BASENAME = $(addprefix py/,\
 	objnamedtuple.o \
 	objrange.o \
 	objreversed.o \
+	objringio.o \
 	objset.o \
 	objsingleton.o \
 	objslice.o \
@@ -289,7 +290,7 @@ $(HEADER_BUILD)/compressed_translations.generated.h: $(PY_SRC)/maketranslationda
 PY_CORE_O += $(PY_BUILD)/translations-$(TRANSLATION).o
 
 # build a list of registered modules for py/objmodule.c.
-$(HEADER_BUILD)/moduledefs.h: $(HEADER_BUILD)/moduledefs.collected
+$(HEADER_BUILD)/moduledefs.h: $(HEADER_BUILD)/moduledefs.collected $(PY_SRC)/makemoduledefs.py
 	@$(ECHO) "GEN $@"
 	$(Q)$(PYTHON) $(PY_SRC)/makemoduledefs.py $< > $@
 

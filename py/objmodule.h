@@ -32,10 +32,16 @@
 // Only include module definitions when not doing qstr extraction, because the
 // qstr extraction stage also generates this module definition header file.
 #include "genhdr/moduledefs.h"
+// CIRCUITPY-CHANGE: avoid undef warning
+#else
+#define MICROPY_HAVE_REGISTERED_EXTENSIBLE_MODULES (0)
 #endif
 
 extern const mp_map_t mp_builtin_module_map;
+
+#if MICROPY_HAVE_REGISTERED_EXTENSIBLE_MODULES
 extern const mp_map_t mp_builtin_extensible_module_map;
+#endif
 
 mp_obj_t mp_module_get_builtin(qstr module_name, bool extensible);
 

@@ -8,4 +8,8 @@
     };
 };
 
+&sai1 {
+	mclk-output;
+};
+
 #include "../app.overlay"

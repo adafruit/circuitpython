@@ -27,6 +27,9 @@ FROZEN_MANIFEST ?= variants/manifest.py
 # This should be configured by the mpconfigvariant.mk
 PROG ?= micropython
 
+# For use in test rules below
+ABS_PROG = $(abspath $(BUILD)/$(PROG))
+
 # qstr definitions (must come before including py.mk)
 QSTR_DEFS += qstrdefsport.h
 QSTR_GLOBAL_DEPENDENCIES += $(VARIANT_DIR)/mpconfigvariant.h
@@ -46,12 +49,17 @@ INC += -I$(BUILD)
 
 # compiler settings
 CWARN = -Wall -Werror
+// CIRCUITPY-CHANGE: add  -Wno-missing-field-initializers
 CWARN += -Wextra -Wno-unused-parameter -Wpointer-arith -Wdouble-promotion -Wfloat-conversion -Wno-missing-field-initializers
 CFLAGS += $(INC) $(CWARN) -std=gnu99 -DUNIX $(COPT) -I$(VARIANT_DIR) $(CFLAGS_EXTRA)
 
 # Force the use of 64-bits for file sizes in C library functions on 32-bit platforms.
 # This option has no effect on 64-bit builds.
 CFLAGS += -D_FILE_OFFSET_BITS=64
+
+# Force the use of 64-bits for time_t in C library functions on 32-bit platforms.
+# This option has no effect on 64-bit builds.
+CFLAGS += -D_TIME_BITS=64
 
 # Debugging/Optimization
 ifdef DEBUG
@@ -139,7 +147,11 @@ ifeq ($(MICROPY_PY_SOCKET),1)
 CFLAGS += -DMICROPY_PY_SOCKET=1
 endif
 ifeq ($(MICROPY_PY_THREAD),1)
+ifeq ($(MICROPY_PY_THREAD_GIL),1)
+CFLAGS += -DMICROPY_PY_THREAD=1 -DMICROPY_PY_THREAD_GIL=1
+else
 CFLAGS += -DMICROPY_PY_THREAD=1 -DMICROPY_PY_THREAD_GIL=0
+endif
 LDFLAGS += $(LIBPTHREAD)
 endif
 
@@ -225,6 +237,7 @@ $(BUILD)/supervisor/shared/translate/translate.o: $(HEADER_BUILD)/qstrdefs.gener
 
 SHARED_SRC_C += $(addprefix shared/,\
 	runtime/gchelper_generic.c \
+	runtime/pyexec.c \
 	timeutils/timeutils.c \
 	$(SHARED_SRC_C_EXTRA) \
 	)
@@ -280,7 +293,7 @@ print-failures clean-failures:
 TEST_ARGS ?=
 test: $(BUILD)/$(PROG) $(TOP)/tests/run-tests.py
 	$(eval DIRNAME=ports/$(notdir $(CURDIR)))
-	cd $(TOP)/tests && MICROPY_MICROPYTHON=../$(DIRNAME)/$(BUILD)/$(PROG) ./run-tests.py $(TEST_ARGS)
+	cd $(TOP)/tests && MICROPY_MICROPYTHON=../$(DIRNAME)/$(BUILD)/$(PROG) ./run-tests.py
 
 test_full: $(BUILD)/$(PROG) $(TOP)/tests/run-tests.py
 	$(eval DIRNAME=ports/$(notdir $(CURDIR)))

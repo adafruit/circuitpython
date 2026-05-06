@@ -48,7 +48,7 @@ static inline void nw_put_le32(uint8_t *buf, uint32_t x) {
     buf[3] = x >> 24;
 }
 
-NORETURN static void ro_attribute(qstr attr) {
+MP_NORETURN static void ro_attribute(qstr attr) {
     mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("%q is read-only for this board"), attr);
 }
 

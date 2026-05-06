@@ -14,6 +14,7 @@ MICROPY_PY_BTREE = 0
 
 # _thread module using pthreads
 MICROPY_PY_THREAD = 1
+MICROPY_PY_THREAD_GIL = 0
 
 # Subset of CPython termios module
 MICROPY_PY_TERMIOS = 1

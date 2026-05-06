@@ -103,7 +103,7 @@ static esp_timer_handle_t _sleep_timer;
 
 TaskHandle_t circuitpython_task = NULL;
 
-extern void esp_restart(void) NORETURN;
+extern void esp_restart(void) MP_NORETURN;
 
 static void tick_on_cp_core(void *arg) {
     supervisor_tick();

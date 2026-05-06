@@ -10,6 +10,7 @@
 
 typedef enum {
     SETTINGS_OK = 0,
+    // The settings file could not be opened.
     SETTINGS_ERR_OPEN,
     SETTINGS_ERR_UNICODE,
     SETTINGS_ERR_LENGTH,
@@ -20,7 +21,7 @@ typedef enum {
 // Read a string value from the settings file.
 // If it fits, the return value is 0-terminated. The passed-in buffer
 // may be modified even if an error is returned. Allocation free.
-// An error that is not 'open' or 'not found' is printed on the repl.
+// An error that is not SETTINGS_ERR_OPEN or SETTINGS_ERR_NOT_FOUND is printed on the repl.
 // Returns an error if the value is not a quoted string.
 settings_err_t settings_get_str(const char *key, char *value, size_t value_len);
 
@@ -38,13 +39,23 @@ settings_err_t settings_get_int(const char *key, mp_int_t *value);
 // An error that is not 'open' or 'not found' is printed on the repl.
 settings_err_t settings_get_bool(const char *key, bool *value);
 
+#if MICROPY_PY_BUILTINS_FLOAT
+// Read a float value from the settings file.
+// Returns SETTINGS_OK and sets value to the read value. Returns
+// SETTINGS_ERR_... if the value was not a float. allocation-free.
+// If any error code is returned, value is guaranteed not modified.
+// An error that is not SETTINGS_ERR_OPEN or SETTINGS_ERR_NOT_FOUND is printed on the repl.
+settings_err_t settings_get_float(const char *key, mp_float_t *value);
+#endif
+
 // Read a value from the settings file and return as parsed Python object.
 // Returns SETTINGS_OK and sets value to a parsed Python object from the RHS value:
 // - Quoted strings return as str
 // - Bare "true" or "false" return as bool
 // - Valid integers return as int
+// - Valid floats (containing '.' or 'e'/'E') return as float
 // Returns SETTINGS_ERR_... if the value is not parseable as one of these types.
-// An error that is not 'open' or 'not found' is printed on the repl.
+// An error that is not SETTINGS_ERR_OPEN or SETTINGS_ERR_NOT_FOUND is printed on the repl.
 settings_err_t settings_get_obj(const char *key, mp_obj_t *value);
 
 // Read the raw value as a string, whether quoted or bare.

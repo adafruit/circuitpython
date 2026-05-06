@@ -375,5 +375,6 @@ coverage-fresh:
 	make -j -C ports/unix VARIANT=coverage
 
 .PHONY: run-tests
+# If TESTS="abc.py def.py" is specified as an arg, run only those tests. Otherwise, run all tests.
 run-tests:
-	cd tests; MICROPY_MICROPYTHON=../ports/unix/build-coverage/micropython ./run-tests.py
+	cd tests; MICROPY_MICROPYTHON=../ports/unix/build-coverage/micropython ./run-tests.py $(TESTS)

@@ -30,7 +30,7 @@
 //|
 //|
 MP_DEFINE_USB_CORE_EXCEPTION(USBError, OSError)
-NORETURN void mp_raise_usb_core_USBError(mp_rom_error_text_t fmt, ...) {
+MP_NORETURN void mp_raise_usb_core_USBError(mp_rom_error_text_t fmt, ...) {
     mp_obj_t exception;
     if (fmt == NULL) {
         exception = mp_obj_new_exception(&mp_type_usb_core_USBError);
@@ -50,7 +50,7 @@ NORETURN void mp_raise_usb_core_USBError(mp_rom_error_text_t fmt, ...) {
 //|
 //|
 MP_DEFINE_USB_CORE_EXCEPTION(USBTimeoutError, usb_core_USBError)
-NORETURN void mp_raise_usb_core_USBTimeoutError(void) {
+MP_NORETURN void mp_raise_usb_core_USBTimeoutError(void) {
     mp_raise_type(&mp_type_usb_core_USBTimeoutError);
 }
 

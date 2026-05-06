@@ -86,13 +86,19 @@ void common_hal_wifi_radio_set_enabled(wifi_radio_obj_t *self, bool enabled) {
         //     mdns_server_deinit_singleton();
         //     #endif
         printk("net_if_down\n");
-        CHECK_ZEPHYR_RESULT(net_if_down(self->sta_netif));
+        int res = net_if_down(self->sta_netif);
+        if (res < 0 && res != -EALREADY) {
+            raise_zephyr_error(res);
+        }
         self->started = false;
         return;
     }
     if (!self->started && enabled) {
         printk("net_if_up\n");
-        CHECK_ZEPHYR_RESULT(net_if_up(self->sta_netif));
+        int res = net_if_up(self->sta_netif);
+        if (res < 0 && res != -EALREADY) {
+            raise_zephyr_error(res);
+        }
         self->started = true;
         self->current_scan = NULL;
         // common_hal_wifi_radio_set_tx_power(self, CIRCUITPY_WIFI_DEFAULT_TX_POWER);

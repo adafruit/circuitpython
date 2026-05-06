@@ -196,10 +196,11 @@ static void re_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t 
 
 // Note: this function can't be named re_exec because it may clash with system headers, eg on FreeBSD
 static mp_obj_t re_exec_helper(bool is_anchored, uint n_args, const mp_obj_t *args) {
-    (void)n_args;
     mp_obj_re_t *self;
+    bool was_compiled = false;
     if (mp_obj_is_type(args[0], (mp_obj_type_t *)&re_type)) {
         self = MP_OBJ_TO_PTR(args[0]);
+        was_compiled = true;
     } else {
         self = MP_OBJ_TO_PTR(mod_re_compile(1, args));
     }
@@ -207,37 +208,28 @@ static mp_obj_t re_exec_helper(bool is_anchored, uint n_args, const mp_obj_t *ar
     size_t len;
     subj.begin_line = subj.begin = mp_obj_str_get_data(args[1], &len);
     subj.end = subj.begin + len;
-    // CIRCUITPY-CHANGE
-    #if MICROPY_PY_RE_MATCH_SPAN_START_END && !(defined(MICROPY_ENABLE_DYNRUNTIME) && MICROPY_ENABLE_DYNRUNTIME)
 
-    if (n_args > 2) {
-        const mp_obj_type_t *self_type = mp_obj_get_type(args[1]);
-        mp_int_t str_len = MP_OBJ_SMALL_INT_VALUE(mp_obj_len(args[1]));
-        const byte *begin = (const byte *)subj.begin;
-
-        int pos = mp_obj_get_int(args[2]);
-        if (pos >= str_len) {
-            return mp_const_none;
+    if (was_compiled && n_args > 2) {
+        // Arg #2 is starting-pos
+        mp_int_t startpos = mp_obj_get_int(args[2]);
+        if (startpos > (mp_int_t)len) {
+            startpos = len;
+        } else if (startpos < 0) {
+            startpos = 0;
         }
-        if (pos < 0) {
-            pos = 0;
-        }
-        const byte *pos_ptr = str_index_to_ptr(self_type, begin, len, MP_OBJ_NEW_SMALL_INT(pos), true);
-
-        const byte *endpos_ptr = (const byte *)subj.end;
+        subj.begin += startpos;
         if (n_args > 3) {
-            int endpos = mp_obj_get_int(args[3]);
-            if (endpos <= pos) {
-                return mp_const_none;
+            // Arg #3 is ending-pos
+            mp_int_t endpos = mp_obj_get_int(args[3]);
+            if (endpos > (mp_int_t)len) {
+                endpos = len;
+            } else if (endpos < startpos) {
+                endpos = startpos;
             }
-            // Will cap to length
-            endpos_ptr = str_index_to_ptr(self_type, begin, len, args[3], true);
+            subj.end = subj.begin_line + endpos;
         }
-
-        subj.begin = (const char *)pos_ptr;
-        subj.end = (const char *)endpos_ptr;
     }
-    #endif
+
     int caps_num = (self->re.sub + 1) * 2;
     mp_obj_match_t *match = m_new_obj_var(mp_obj_match_t, caps, char *, caps_num);
     // cast is a workaround for a bug in msvc: it treats const char** as a const pointer instead of a pointer to pointer to const char
@@ -458,6 +450,9 @@ static mp_obj_t mod_re_compile(size_t n_args, const mp_obj_t *args) {
     const char *re_str = mp_obj_str_get_str(args[0]);
     int size = re1_5_sizecode(re_str);
     if (size == -1) {
+        #if MICROPY_ERROR_REPORTING >= MICROPY_ERROR_REPORTING_NORMAL
+        mp_raise_ValueError(MP_ERROR_TEXT("regex too complex"));
+        #endif
         goto error;
     }
     mp_obj_re_t *o = mp_obj_malloc_var(mp_obj_re_t, re.insts, char, size, (mp_obj_type_t *)&re_type);
@@ -470,6 +465,7 @@ static mp_obj_t mod_re_compile(size_t n_args, const mp_obj_t *args) {
     int error = re1_5_compilecode(&o->re, re_str);
     if (error != 0) {
     error:
+        // CIRCUITPY-CHANGE: capitalized
         mp_raise_ValueError(MP_ERROR_TEXT("Error in regex"));
     }
     #if MICROPY_PY_RE_DEBUG

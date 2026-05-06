@@ -85,6 +85,13 @@ void common_hal_i2ctarget_i2c_target_deinit(i2ctarget_i2c_target_obj_t *self) {
 }
 
 int common_hal_i2ctarget_i2c_target_is_addressed(i2ctarget_i2c_target_obj_t *self, uint8_t *address, bool *is_read, bool *is_restart) {
+    // Interrupt bits must be cleared by software. Clear the STOP and
+    // RESTART interrupt bits after an I2C transaction finishes.
+    if (self->peripheral->hw->raw_intr_stat & I2C_IC_INTR_STAT_R_STOP_DET_BITS) {
+        self->peripheral->hw->clr_stop_det;
+        self->peripheral->hw->clr_restart_det;
+    }
+
     if (!((self->peripheral->hw->raw_intr_stat & I2C_IC_INTR_STAT_R_RX_FULL_BITS) || (self->peripheral->hw->raw_intr_stat & I2C_IC_INTR_STAT_R_RD_REQ_BITS))) {
         return 0;
     }
@@ -98,12 +105,20 @@ int common_hal_i2ctarget_i2c_target_is_addressed(i2ctarget_i2c_target_obj_t *sel
 }
 
 int common_hal_i2ctarget_i2c_target_read_byte(i2ctarget_i2c_target_obj_t *self, uint8_t *data) {
-    if (self->peripheral->hw->status & I2C_IC_STATUS_RFNE_BITS) {
-        *data = (uint8_t)self->peripheral->hw->data_cmd;
-        return 1;
-    } else {
-        return 0;
+    // Wait for data to arrive or a STOP condition indicating the transfer is over.
+    // Without this wait, the CPU can drain the FIFO faster than bytes arrive on the
+    // I2C bus, causing transfers to be split into multiple partial reads.
+    for (int t = 0; t < 100; t++) {
+        if (self->peripheral->hw->status & I2C_IC_STATUS_RFNE_BITS) {
+            *data = (uint8_t)self->peripheral->hw->data_cmd;
+            return 1;
+        }
+        if (self->peripheral->hw->raw_intr_stat & I2C_IC_INTR_STAT_R_STOP_DET_BITS) {
+            break;
+        }
+        mp_hal_delay_us(10);
     }
+    return 0;
 }
 
 int common_hal_i2ctarget_i2c_target_write_byte(i2ctarget_i2c_target_obj_t *self, uint8_t data) {

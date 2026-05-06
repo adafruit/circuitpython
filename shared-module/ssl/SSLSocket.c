@@ -44,7 +44,7 @@ static void mbedtls_debug(void *ctx, int level, const char *file, int line, cons
 #define DEBUG_PRINT(...) do {} while (0)
 #endif
 
-static NORETURN void mbedtls_raise_error(int err) {
+static MP_NORETURN void mbedtls_raise_error(int err) {
     // _mbedtls_ssl_send and _mbedtls_ssl_recv (below) turn positive error codes from the
     // underlying socket into negative codes to pass them through mbedtls. Here we turn them
     // positive again so they get interpreted as the OSError they really are. The

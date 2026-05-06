@@ -93,6 +93,11 @@ msgid ""
 msgstr ""
 "%d pin διεύθυνσης, %d rgb ping και %d πλακίδια αναδεικνύουν ύψος %d, όχι %d"
 
+#: py/emitinlinextensa.c
+#, c-format
+msgid "%d is not a multiple of %d"
+msgstr ""
+
 #: shared-bindings/microcontroller/Pin.c
 msgid "%q and %q contain duplicate pins"
 msgstr "%q και %q περιέχουν διπλότυπα pins"
@@ -276,10 +281,6 @@ msgstr "%q εκτός ορίων"
 #: shared-bindings/time/__init__.c
 msgid "%q out of range"
 msgstr "%q εκτός εμβέλειας"
-
-#: py/objmodule.c
-msgid "%q renamed %q"
-msgstr "%q μεταονομάστηκε σε %q"
 
 #: py/objrange.c py/objslice.c shared-bindings/random/__init__.c
 msgid "%q step cannot be zero"
@@ -640,6 +641,7 @@ msgstr "Η μετατροπή ήχου δεν υποστηρίζεται"
 
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 #: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
+#: ports/raspberrypi/common-hal/mcp4822/MCP4822.c
 msgid "Audio source error"
 msgstr ""
 
@@ -988,6 +990,14 @@ msgstr ""
 msgid "ECB only operates on 16 bytes at a time"
 msgstr "ECB δουλεύει μόνο σε 16 bytes κάθε φορά"
 
+#: py/asmxtensa.c
+msgid "ERROR: %q %q not word-aligned"
+msgstr ""
+
+#: py/asmxtensa.c
+msgid "ERROR: xtensa %q out of range"
+msgstr ""
+
 #: ports/espressif/common-hal/busio/SPI.c
 #: ports/espressif/common-hal/canio/CAN.c
 #: ports/espressif/common-hal/qspibus/QSPIBus.c
@@ -1326,6 +1336,7 @@ msgstr ""
 msgid "Invalid %q"
 msgstr ""
 
+#: ports/raspberrypi/common-hal/mcp4822/MCP4822.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2350.c
 #: shared-module/aurora_epaper/aurora_framebuffer.c
 msgid "Invalid %q and %q"
@@ -1563,6 +1574,7 @@ msgstr ""
 #: ports/atmel-samd/common-hal/audioio/AudioOut.c
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 #: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
+#: ports/raspberrypi/common-hal/mcp4822/MCP4822.c
 msgid "No DMA channel found"
 msgstr ""
 
@@ -1677,7 +1689,7 @@ msgid "Not connected"
 msgstr ""
 
 #: shared-bindings/audiobusio/I2SOut.c shared-bindings/audioio/AudioOut.c
-#: shared-bindings/audiopwmio/PWMAudioOut.c
+#: shared-bindings/audiopwmio/PWMAudioOut.c shared-bindings/mcp4822/MCP4822.c
 msgid "Not playing"
 msgstr ""
 
@@ -2196,6 +2208,7 @@ msgid "Too many channels in sample"
 msgstr ""
 
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
+#: ports/raspberrypi/common-hal/mcp4822/MCP4822.c
 msgid "Too many channels in sample."
 msgstr ""
 
@@ -2294,6 +2307,7 @@ msgstr ""
 #: ports/atmel-samd/common-hal/audioio/AudioOut.c
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 #: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
+#: ports/raspberrypi/common-hal/mcp4822/MCP4822.c
 msgid "Unable to allocate buffers for signed conversion"
 msgstr ""
 
@@ -2434,6 +2448,7 @@ msgstr ""
 msgid "Update failed"
 msgstr ""
 
+#: ports/zephyr-cp/common-hal/audiobusio/I2SOut.c
 #: ports/zephyr-cp/common-hal/busio/I2C.c
 #: ports/zephyr-cp/common-hal/busio/SPI.c
 #: ports/zephyr-cp/common-hal/busio/UART.c
@@ -2649,10 +2664,6 @@ msgstr ""
 msgid "array/bytes required on right side"
 msgstr ""
 
-#: py/asmxtensa.c
-msgid "asm overflow"
-msgstr ""
-
 #: py/compile.c
 msgid "async for/with outside async function"
 msgstr ""
@@ -2866,6 +2877,10 @@ msgstr ""
 msgid "can't create '%q' instances"
 msgstr ""
 
+#: py/objtype.c
+msgid "can't create instance"
+msgstr ""
+
 #: py/compile.c
 msgid "can't declare nonlocal in outer code"
 msgstr ""
@@ -2964,12 +2979,12 @@ msgstr ""
 msgid "cannot convert complex type"
 msgstr ""
 
-#: py/objtype.c
-msgid "cannot create instance"
-msgstr ""
-
 #: extmod/ulab/code/ndarray.c
 msgid "cannot delete array elements"
+msgstr ""
+
+#: py/compile.c
+msgid "cannot emit native code for this architecture"
 msgstr ""
 
 #: extmod/ulab/code/ndarray.c
@@ -3126,7 +3141,7 @@ msgstr ""
 msgid "div/mod not implemented for uint"
 msgstr ""
 
-#: extmod/ulab/code/numpy/create.c
+#: extmod/ulab/code/numpy/create.c py/objint_longlong.c py/objint_mpz.c
 msgid "divide by zero"
 msgstr ""
 
@@ -3502,6 +3517,10 @@ msgstr ""
 msgid "interval must be in range %s-%s"
 msgstr ""
 
+#: py/emitinlinerv32.c
+msgid "invalid RV32 instruction '%q'"
+msgstr ""
+
 #: py/compile.c
 msgid "invalid arch"
 msgstr ""
@@ -3696,6 +3715,10 @@ msgstr ""
 msgid "mode must be complete, or reduced"
 msgstr ""
 
+#: py/runtime.c
+msgid "module '%q' has no attribute '%q'"
+msgstr ""
+
 #: py/builtinimport.c
 msgid "module not found"
 msgstr ""
@@ -3744,10 +3767,6 @@ msgstr ""
 msgid "native code in .mpy unsupported"
 msgstr ""
 
-#: py/asmthumb.c
-msgid "native method too big"
-msgstr ""
-
 #: py/emitnative.c
 msgid "native yield"
 msgstr ""
@@ -3769,7 +3788,7 @@ msgstr ""
 msgid "negative power with no float support"
 msgstr ""
 
-#: py/objint_mpz.c py/runtime.c
+#: py/objint_longlong.c py/objint_mpz.c py/runtime.c
 msgid "negative shift count"
 msgstr ""
 
@@ -4124,6 +4143,10 @@ msgstr ""
 msgid "real and imaginary parts must be of equal length"
 msgstr ""
 
+#: extmod/modre.c
+msgid "regex too complex"
+msgstr ""
+
 #: py/builtinimport.c
 msgid "relative import"
 msgstr ""
@@ -4131,6 +4154,10 @@ msgstr ""
 #: py/obj.c
 #, c-format
 msgid "requested length %d but object has length %d"
+msgstr ""
+
+#: py/objint_longlong.c py/parsenum.c
+msgid "result overflows long long storage"
 msgstr ""
 
 #: extmod/ulab/code/ndarray_operators.c
@@ -4397,10 +4424,6 @@ msgstr ""
 msgid "type takes 1 or 3 arguments"
 msgstr ""
 
-#: py/objint_longlong.c
-msgid "ulonglong too large"
-msgstr ""
-
 #: py/parse.c
 msgid "unexpected indent"
 msgstr ""
@@ -4420,10 +4443,6 @@ msgstr ""
 
 #: py/parse.c
 msgid "unindent doesn't match any outer indent level"
-msgstr ""
-
-#: py/emitinlinerv32.c
-msgid "unknown RV32 instruction '%q'"
 msgstr ""
 
 #: py/objstr.c
@@ -4593,6 +4612,9 @@ msgstr ""
 #: extmod/ulab/code/scipy/signal/signal.c
 msgid "zi must be of shape (n_section, 2)"
 msgstr ""
+
+#~ msgid "%q renamed %q"
+#~ msgstr "%q μεταονομάστηκε σε %q"
 
 #, c-format
 #~ msgid "Buffer + offset too small %d %d %d"

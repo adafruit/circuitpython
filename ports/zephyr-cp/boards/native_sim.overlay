@@ -31,7 +31,12 @@
 
         circuitpy_partition: partition@0 {
             label = "circuitpy";
-			reg = <0x00000000 DT_SIZE_K(2048)>;
+			reg = <0x00000000 DT_SIZE_K(2040)>;
+		};
+
+		nvm_partition: partition@1fe000 {
+			label = "nvm";
+			reg = <0x001fe000 0x00002000>;
 		};
 	};
 };

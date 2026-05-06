@@ -39,11 +39,22 @@
 
 // Enable additional features.
 #define MICROPY_DEBUG_PARSE_RULE_NAME  (1)
+// CIRCUITPY-CHANGE: off
+#define MICROPY_PY_SYS_SETTRACE        (0)
 #define MICROPY_TRACKED_ALLOC          (1)
 #define MICROPY_WARNINGS_CATEGORY      (1)
 #undef MICROPY_VFS_ROM_IOCTL
 #define MICROPY_VFS_ROM_IOCTL          (1)
 #define MICROPY_PY_CRYPTOLIB_CTR       (1)
+// CIRCUITPY-CHANGE: off
+#define MICROPY_SCHEDULER_STATIC_NODES (0)
+
+// Enable os.uname for attrtuple coverage test
+#define MICROPY_PY_OS_UNAME            (1)
+#define MICROPY_HW_BOARD_NAME          "a machine"
+#define MICROPY_HW_MCU_NAME            MICROPY_PY_SYS_PLATFORM
+// Keep the standard banner message
+#define MICROPY_BANNER_MACHINE MICROPY_PY_SYS_PLATFORM " [" MICROPY_PLATFORM_COMPILER "] version"
 
 // CIRCUITPY-CHANGE: Disable things never used in circuitpython
 #define MICROPY_PY_CRYPTOLIB           (0)

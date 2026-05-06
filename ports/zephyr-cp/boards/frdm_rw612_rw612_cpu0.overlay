@@ -1,0 +1,12 @@
+&w25q512jvfiq {
+    partitions {
+        /delete-node/ storage_partition;
+        circuitpy_partition: partition@620000 {
+				label = "circuitpy";
+				reg = <0x00620000 (DT_SIZE_M(58) - DT_SIZE_K(128))>;
+			};
+    }
+
+};
+
+#include "../app.overlay"

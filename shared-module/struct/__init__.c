@@ -14,7 +14,8 @@
 #include "shared-bindings/struct/__init__.h"
 
 static void struct_validate_format(char fmt) {
-    #if MICROPY_NONSTANDARD_TYPECODES
+    #if MICROPY_PY_STRUCT_UNSAFE_TYPECODES
+
     if (fmt == 'S' || fmt == 'O') {
         mp_raise_RuntimeError(MP_ERROR_TEXT("'S' and 'O' are not supported format types"));
     }

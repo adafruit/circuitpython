@@ -38,13 +38,13 @@ jobs:
       BIGQUERY_CLIENT_EMAIL: ${{ secrets.BIGQUERY_CLIENT_EMAIL }}
     steps:
       - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.11
       - name: Versions
         run: |
           python3 --version
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           repository: 'adafruit/adabot'
           submodules: true

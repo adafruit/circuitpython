@@ -1,5 +1,12 @@
 # CIRCUITPY-CHANGE: exception chaining is supported
 
+import sys
+
+# The unix minimal build doesn't enable MICROPY_WARNINGS (required for this test).
+if getattr(sys.implementation, "_build", None) == "minimal":
+    print("SKIP")
+    raise SystemExit
+
 try:
     Exception().__cause__
 except AttributeError:

@@ -5,6 +5,7 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include <math.h>
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
@@ -419,6 +420,57 @@ settings_err_t settings_get_bool(const char *key, bool *value) {
     return result;
 }
 
+#if MICROPY_PY_BUILTINS_FLOAT
+static settings_err_t get_float(const char *key, mp_float_t *value) {
+    char buf[48];
+    bool quoted;
+    settings_err_t result = settings_get_buf_terminated(key, buf, sizeof(buf), &quoted);
+    if (result != SETTINGS_OK) {
+        return result;
+    }
+    if (quoted) {
+        return SETTINGS_ERR_BAD_VALUE;
+    }
+
+    const char *str = buf;
+    const char *end = buf + strlen(buf);
+    bool neg = false;
+
+    if (str < end && (*str == '+' || *str == '-')) {
+        neg = (*str == '-');
+        str++;
+    }
+
+    mp_float_t val;
+    if (end - str >= 3 && str[0] == 'i' && str[1] == 'n' && str[2] == 'f') {
+        str += 3;
+        val = (mp_float_t)INFINITY;
+    } else if (end - str >= 3 && str[0] == 'n' && str[1] == 'a' && str[2] == 'n') {
+        str += 3;
+        val = MICROPY_FLOAT_C_FUN(nan)("");
+    } else {
+        const char *num_start = str;
+        str = mp_parse_float_internal(str, end - str, &val);
+        if (str == NULL || str == num_start) {
+            return SETTINGS_ERR_BAD_VALUE;
+        }
+    }
+
+    if (str != end) {
+        return SETTINGS_ERR_BAD_VALUE;
+    }
+
+    *value = neg ? -val : val;
+    return SETTINGS_OK;
+}
+
+settings_err_t settings_get_float(const char *key, mp_float_t *value) {
+    settings_err_t result = get_float(key, value);
+    print_error(key, result);
+    return result;
+}
+#endif
+
 // Get the raw value as a vstr, whether quoted or bare. Value may be an invalid TOML value.
 settings_err_t settings_get_raw_vstr(const char *key, vstr_t *vstr) {
     bool quoted;
@@ -456,6 +508,16 @@ settings_err_t settings_get_obj(const char *key, mp_obj_t *value) {
         *value = mp_obj_new_int(int_val);
         return SETTINGS_OK;
     }
+
+    // Not an integer, try float
+    #if MICROPY_PY_BUILTINS_FLOAT
+    mp_float_t float_val;
+    result = get_float(key, &float_val);
+    if (result == SETTINGS_OK) {
+        *value = mp_obj_new_float(float_val);
+        return SETTINGS_OK;
+    }
+    #endif
 
     return SETTINGS_ERR_BAD_VALUE;
 }

@@ -52,16 +52,17 @@ static void _event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_eve
 
     switch (mgmt_event) {
         case NET_EVENT_WIFI_SCAN_RESULT: {
-            #if defined(CONFIG_NET_MGMT_EVENT_INFO)
+            printk("NET_EVENT_WIFI_SCAN_RESULT\n");
             const struct wifi_scan_result *result = cb->info;
             if (result != NULL && self->current_scan != NULL) {
                 wifi_scannednetworks_scan_result(self->current_scan, result);
             }
-            #endif
             break;
         }
         case NET_EVENT_WIFI_SCAN_DONE:
-            printk("NET_EVENT_WIFI_SCAN_DONE\n");
+            printk("NET_EVENT_WIFI_SCAN_DONE (thread: %s prio=%d)\n",
+                k_thread_name_get(k_current_get()),
+                k_thread_priority_get(k_current_get()));
             if (self->current_scan != NULL) {
                 k_poll_signal_raise(&self->current_scan->channel_done, 0);
             }
@@ -104,6 +105,9 @@ static void _event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_eve
             break;
         case NET_EVENT_WIFI_AP_STA_DISCONNECTED:
             printk("NET_EVENT_WIFI_AP_STA_DISCONNECTED\n");
+            break;
+        default:
+            printk("unhandled net event %x\n", mgmt_event);
             break;
     }
 }

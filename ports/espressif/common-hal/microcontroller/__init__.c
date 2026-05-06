@@ -142,7 +142,7 @@ void common_hal_mcu_on_next_reset(mcu_runmode_t runmode) {
     }
 }
 
-void NORETURN common_hal_mcu_reset(void) {
+void MP_NORETURN common_hal_mcu_reset(void) {
     filesystem_flush(); // TODO: implement as part of flash improvements
     esp_restart();
 }

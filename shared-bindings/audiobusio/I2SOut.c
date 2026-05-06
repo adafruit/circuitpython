@@ -144,6 +144,8 @@ static void check_for_deinit(audiobusio_i2sout_obj_t *self) {
 //|
 //|         Sample must be an `audiocore.WaveFile`, `audiocore.RawSample`, `audiomixer.Mixer` or `audiomp3.MP3Decoder`.
 //|
+//|         Mono samples will be converted to stereo by copying value to both the left channel and the right channel.
+//|
 //|         The sample itself should consist of 8 bit or 16 bit samples."""
 //|         ...
 //|

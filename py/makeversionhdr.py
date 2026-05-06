@@ -5,8 +5,6 @@ Generate header file with macros defining MicroPython version info.
 This script works with Python 3.7 and newer
 """
 
-from __future__ import print_function
-
 import argparse
 import sys
 import os

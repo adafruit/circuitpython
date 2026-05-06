@@ -184,7 +184,8 @@ static mp_obj_t fun_bc_make_new(const mp_obj_type_t *type, size_t n_args, size_t
 static void fun_bc_print(const mp_print_t *print, mp_obj_t o_in, mp_print_kind_t kind) {
     (void)kind;
     mp_obj_fun_bc_t *o = MP_OBJ_TO_PTR(o_in);
-    mp_printf(print, "<function %q at 0x%p>", mp_obj_fun_get_name(o_in), o);
+    // CIRCUITPY-CHANGE: %p already prints "0x", so don't include it explicitly.
+    mp_printf(print, "<function %q at %p>", mp_obj_fun_get_name(o_in), o);
 }
 #endif
 

@@ -25,7 +25,6 @@
  */
 #include <errno.h>
 #include <unistd.h>
-// CIRCUITPY-CHANGE: extra include
 #include <stdbool.h>
 
 #ifndef CHAR_CTRL_C
@@ -37,6 +36,20 @@
 #define MICROPY_BEGIN_ATOMIC_SECTION() (mp_thread_unix_begin_atomic_section(), 0xffffffff)
 #define MICROPY_END_ATOMIC_SECTION(x) (void)x; mp_thread_unix_end_atomic_section()
 #endif
+
+// In lieu of a WFI(), slow down polling from being a tight loop.
+//
+// Note that we don't delay for the full TIMEOUT_MS, as execution
+// can't be woken from the delay.
+#define MICROPY_INTERNAL_WFE(TIMEOUT_MS) \
+    do { \
+        MP_THREAD_GIL_EXIT(); \
+        mp_hal_delay_us(500); \
+        MP_THREAD_GIL_ENTER(); \
+    } while (0)
+
+// The port provides `mp_hal_stdio_mode_raw()` and `mp_hal_stdio_mode_orig()`.
+#define MICROPY_HAL_HAS_STDIO_MODE_SWITCH (1)
 
 // CIRCUITPY-CHANGE: mp_hal_set_interrupt_char(int) instead of char
 void mp_hal_set_interrupt_char(int c);
@@ -110,3 +123,6 @@ enum {
 
 void mp_hal_get_mac(int idx, uint8_t buf[6]);
 #endif
+
+// Global variable to control compile-only mode.
+extern bool mp_compile_only;

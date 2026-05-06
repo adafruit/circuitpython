@@ -29,6 +29,3 @@ const mp_obj_module_t paralleldisplaybus_module = {
 };
 
 MP_REGISTER_MODULE(MP_QSTR_paralleldisplaybus, paralleldisplaybus_module);
-
-// Remove in CircuitPython 10
-MP_REGISTER_MODULE(MP_QSTR_paralleldisplay, paralleldisplaybus_module);

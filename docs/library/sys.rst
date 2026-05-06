@@ -12,16 +12,8 @@ Functions
 .. function:: exit(retval=0, /)
 
    Terminate current program with a given exit code. Underlyingly, this
-   function raise as `SystemExit` exception. If an argument is given, its
+   function raises a `SystemExit` exception. If an argument is given, its
    value given as an argument to `SystemExit`.
-
-.. function:: print_exception(exc, file=sys.stdout, /)
-
-   This function is deprecated and will be removed starting in
-   CircuitPython 10.x, `traceback.print_exception()` should be used instead.
-
-   Print exception with a traceback to a file-like object *file* (or
-   `sys.stdout` by default).
 
    .. admonition:: Difference to CPython
       :class: attention
@@ -52,6 +44,8 @@ Constants
    * *version* - tuple (major, minor, micro), e.g. (1, 7, 0)
    * *_machine* - string describing the underlying machine
    * *_mpy* - supported mpy file-format version (optional attribute)
+   * *_build* - string that can help identify the configuration that
+     MicroPython was built with
 
    This object is the recommended way to distinguish CircuitPython from other
    Python implementations (note that it still may not exist in the very
@@ -116,15 +110,15 @@ Constants
 
 .. data:: stderr
 
-   Standard error ``stream``.
+   Standard error `stream`.
 
 .. data:: stdin
 
-   Standard input ``stream``.
+   Standard input `stream`.
 
 .. data:: stdout
 
-   Standard output ``stream``.
+   Standard output `stream`.
 
 .. data:: version
 

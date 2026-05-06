@@ -34,18 +34,13 @@
 #define SWAP(type, var1, var2) { type t = var2; var2 = var1; var1 = t; }
 
 // CIRCUITPY-CHANGE: detect sequence overflow
-#if __GNUC__ < 5
-// n.b. does not actually detect overflow!
-#define __builtin_mul_overflow(a, b, x) (*(x) = (a) * (b), false)
-#endif
-
 // Detect when a multiply causes an overflow.
 size_t mp_seq_multiply_len(size_t item_sz, size_t len) {
-    size_t new_len;
-    if (__builtin_mul_overflow(item_sz, len, &new_len)) {
+    mp_int_t new_len;
+    if (mp_mul_mp_int_t_overflow(item_sz, len, &new_len)) {
         mp_raise_msg(&mp_type_OverflowError, MP_ERROR_TEXT("small int overflow"));
     }
-    return new_len;
+    return (size_t)new_len;
 }
 
 // Implements backend of sequence * integer operation. Assumes elements are

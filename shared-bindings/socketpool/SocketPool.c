@@ -189,7 +189,7 @@ MP_DEFINE_CONST_OBJ_TYPE(
     locals_dict, &socketpool_socketpool_locals_dict
     );
 
-MP_WEAK NORETURN
+MP_WEAK MP_NORETURN
 void common_hal_socketpool_socketpool_raise_gaierror_noname(void) {
     vstr_t vstr;
     mp_print_t print;

@@ -24,13 +24,13 @@ extern uint32_t _ebss;
 safe_mode_t port_init(void);
 
 // Reset the microcontroller completely.
-void reset_cpu(void) NORETURN;
+void reset_cpu(void) MP_NORETURN;
 
 // Reset the microcontroller state.
 void reset_port(void);
 
 // Reset to the bootloader
-void reset_to_bootloader(void) NORETURN;
+void reset_to_bootloader(void) MP_NORETURN;
 
 // Get stack limit address
 uint32_t *port_stack_get_limit(void);

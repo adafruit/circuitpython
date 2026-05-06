@@ -1,0 +1,16 @@
+str_val = "hello"
+bad_word = hello
+bad_float_junk = 1.2abc
+bad_inf_junk = infoo
+bad_lone_sign = +
+int_val = 42
+neg_int_val = -7
+hex_int_val = 0x1F
+bool_true = true
+bool_false = false
+float_val = 3.14
+neg_float_val = -1.5
+sci_float_val = 6.626e-34
+pos_inf = inf
+neg_inf = -inf
+pos_nan = nan

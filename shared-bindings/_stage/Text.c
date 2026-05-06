@@ -47,7 +47,7 @@ static mp_obj_t text_make_new(const mp_obj_type_t *type, size_t n_args,
 
     mp_buffer_info_t palette_bufinfo;
     mp_get_buffer_raise(args[3], &palette_bufinfo, MP_BUFFER_READ);
-    mp_arg_validate_length(font_bufinfo.len, 32, MP_QSTR_palette);
+    mp_arg_validate_length(palette_bufinfo.len, 32, MP_QSTR_palette);
 
     mp_buffer_info_t chars_bufinfo;
     mp_get_buffer_raise(args[4], &chars_bufinfo, MP_BUFFER_READ);

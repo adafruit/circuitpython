@@ -9,6 +9,10 @@
 #include "mpconfigboard.h"
 #include "supervisor/shared/tick.h"
 
+#if CIRCUITPY_AUDIOBUSIO_I2SOUT
+#include "common-hal/audiobusio/I2SOut.h"
+#endif
+
 #include <zephyr/autoconf.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sys/reboot.h>
@@ -25,6 +29,7 @@
 
 #include "lib/tlsf/tlsf.h"
 #include <zephyr/device.h>
+#include <zephyr/kernel.h>
 
 #if defined(CONFIG_TRACING_PERFETTO) && defined(CONFIG_BOARD_NATIVE_SIM)
 #include "perfetto_encoder.h"
@@ -130,6 +135,9 @@ static void _tick_function(struct k_timer *timer_id) {
 }
 
 safe_mode_t port_init(void) {
+    // We run CircuitPython at the lowest priority (just higher than idle.)
+    // This allows networking and USB to preempt us.
+    k_thread_priority_set(k_current_get(), CONFIG_NUM_PREEMPT_PRIORITIES - 1);
     k_timer_init(&tick_timer, _tick_function, NULL);
     perfetto_emit_circuitpython_tracks();
     return SAFE_MODE_NONE;
@@ -147,6 +155,10 @@ void reset_cpu(void) {
 }
 
 void reset_port(void) {
+    #if CIRCUITPY_AUDIOBUSIO_I2SOUT
+    i2sout_reset();
+    #endif
+
     #if defined(CONFIG_ARCH_POSIX)
     native_sim_reset_port_count++;
     if (native_sim_vm_runs != INT32_MAX &&

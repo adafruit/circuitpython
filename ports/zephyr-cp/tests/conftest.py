@@ -73,6 +73,10 @@ def pytest_configure(config):
         "markers",
         "display_mono_vtiled(value): override the mono vtiled screen_info flag (True or False)",
     )
+    config.addinivalue_line(
+        "markers",
+        "flash_config(erase_block_size=N, total_size=N): override flash simulator parameters",
+    )
 
 
 ZEPHYR_CP = Path(__file__).parent.parent
@@ -264,10 +268,19 @@ def circuitpython(request, board, sim_id, native_sim_binary, native_sim_env, tmp
 
     use_realtime = request.node.get_closest_marker("native_sim_rt") is not None
 
+    flash_config_marker = request.node.get_closest_marker("flash_config")
+    flash_total_size = 2 * 1024 * 1024  # default 2MB
+    flash_erase_block_size = None
+    flash_write_block_size = None
+    if flash_config_marker:
+        flash_total_size = flash_config_marker.kwargs.get("total_size", flash_total_size)
+        flash_erase_block_size = flash_config_marker.kwargs.get("erase_block_size", None)
+        flash_write_block_size = flash_config_marker.kwargs.get("write_block_size", None)
+
     procs = []
     for i in range(instance_count):
         flash = tmp_path / f"flash-{i}.bin"
-        flash.write_bytes(b"\xff" * (2 * 1024 * 1024))
+        flash.write_bytes(b"\xff" * flash_total_size)
         files = None
         if len(drives[i][1].args) == 1:
             files = drives[i][1].args[0]
@@ -305,8 +318,21 @@ def circuitpython(request, board, sim_id, native_sim_binary, native_sim_env, tmp
             # native_sim vm-runs includes the boot VM setup run.
             realtime_flag = "-rt" if use_realtime else "-no-rt"
             cmd.extend(
-                (realtime_flag, "-display_headless", "-wait_uart", f"--vm-runs={code_py_runs + 1}")
+                (
+                    realtime_flag,
+                    "-display_headless",
+                    "-i2s_earless",
+                    "-wait_uart",
+                    f"--vm-runs={code_py_runs + 1}",
+                )
             )
+
+        if flash_erase_block_size is not None:
+            cmd.append(f"--flash_erase_block_size={flash_erase_block_size}")
+        if flash_write_block_size is not None:
+            cmd.append(f"--flash_write_block_size={flash_write_block_size}")
+        if flash_config_marker and "total_size" in flash_config_marker.kwargs:
+            cmd.append(f"--flash_total_size={flash_total_size}")
 
         if input_trace_file is not None:
             cmd.append(f"--input-trace={input_trace_file}")
@@ -334,12 +360,11 @@ def circuitpython(request, board, sim_id, native_sim_binary, native_sim_env, tmp
             cmd.append(f"--display_capture_png={capture_png_pattern}")
 
         logger.info("Running: %s", " ".join(cmd))
-        proc = NativeSimProcess(cmd, timeout, trace_file, env)
+        proc = NativeSimProcess(cmd, timeout, trace_file, env, flash_file=flash)
         proc.display_dump = None
         proc._capture_png_pattern = capture_png_pattern
         proc._capture_count = len(capture_times_ns) if capture_times_ns is not None else 0
         procs.append(proc)
-
     if instance_count == 1:
         yield procs[0]
     else:

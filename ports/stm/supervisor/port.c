@@ -39,7 +39,7 @@
 
 #include STM32_HAL_H
 
-void NVIC_SystemReset(void) NORETURN;
+void NVIC_SystemReset(void) MP_NORETURN;
 
 #if (CPY_STM32H7) || (CPY_STM32F7)
 #if defined(CIRCUITPY_HW_SDRAM_SIZE)

@@ -70,7 +70,7 @@
 #define m_realloc(ptr, new_num_bytes)   (m_realloc_dyn((ptr), (new_num_bytes)))
 #define m_realloc_maybe(ptr, new_num_bytes, allow_move) (m_realloc_maybe_dyn((ptr), (new_num_bytes), (allow_move)))
 
-static NORETURN inline void m_malloc_fail_dyn(size_t num_bytes) {
+static MP_NORETURN inline void m_malloc_fail_dyn(size_t num_bytes) {
     mp_fun_table.raise_msg(
         mp_fun_table.load_global(MP_QSTR_MemoryError),
         "memory allocation failed");
@@ -289,7 +289,7 @@ static inline void *mp_obj_malloc_helper_dyn(size_t num_bytes, const mp_obj_type
 
 #define nlr_raise(o)                            (mp_raise_dyn(o))
 #define mp_raise_type_arg(type, arg)            (mp_raise_dyn(mp_obj_new_exception_arg1_dyn((type), (arg))))
-// CIRCUITPY-CHANGE: use str
+// CIRCUITPY-CHANGE: use mp_raise_msg_str
 #define mp_raise_msg(type, msg)                 (mp_fun_table.raise_msg_str((type), (msg)))
 #define mp_raise_OSError(er)                    (mp_raise_OSError_dyn(er))
 #define mp_raise_NotImplementedError(msg)       (mp_raise_msg(&mp_type_NotImplementedError, (msg)))
@@ -301,14 +301,14 @@ static inline mp_obj_t mp_obj_new_exception_arg1_dyn(const mp_obj_type_t *exc_ty
     return mp_call_function_n_kw(MP_OBJ_FROM_PTR(exc_type), 1, 0, &args[0]);
 }
 
-static NORETURN inline void mp_raise_dyn(mp_obj_t o) {
+static MP_NORETURN inline void mp_raise_dyn(mp_obj_t o) {
     mp_fun_table.raise(o);
     for (;;) {
     }
 }
 
 // CIRCUITPY-CHANGE: new routine
-static NORETURN inline void mp_raise_arg1(const mp_obj_type_t *exc_type, mp_obj_t arg) {
+static MP_NORETURN inline void mp_raise_arg1(const mp_obj_type_t *exc_type, mp_obj_t arg) {
     mp_fun_table.raise(mp_obj_new_exception_arg1_dyn(exc_type, arg));
     for (;;) {
     }

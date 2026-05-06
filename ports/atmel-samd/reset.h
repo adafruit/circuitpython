@@ -16,6 +16,6 @@
 
 extern uint32_t _bootloader_dbl_tap;
 
-void reset_to_bootloader(void) NORETURN;
-void reset(void) NORETURN;
+void reset_to_bootloader(void) MP_NORETURN;
+void reset(void) MP_NORETURN;
 bool bootloader_available(void);

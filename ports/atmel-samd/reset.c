@@ -9,7 +9,7 @@
 #include "reset.h"
 #include "supervisor/filesystem.h"
 
-void NVIC_SystemReset(void) NORETURN;
+void NVIC_SystemReset(void) MP_NORETURN;
 
 void reset(void) {
     filesystem_flush();

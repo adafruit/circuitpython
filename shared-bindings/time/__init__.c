@@ -206,7 +206,7 @@ MP_DEFINE_CONST_FUN_OBJ_0(time_time_obj, time_time);
 //| def monotonic_ns() -> int:
 //|     """Return the time of the monotonic clock, which cannot go backward, in nanoseconds.
 //|     Not available on boards without long integer support.
-//|     Only use it to compare against other values from `time.monotonic()`
+//|     Only use it to compare against other values from `time.monotonic_ns()`
 //|     during a single code run.
 //|
 //|     :return: the current time

@@ -1,0 +1,2 @@
+CIRCUITPY_BUILD_EXTENSIONS = ["elf", "uf2"]
+BLOBS=["hal_infineon"]

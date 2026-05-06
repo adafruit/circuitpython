@@ -1,0 +1,25 @@
+&flash0 {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		code_partition: partition@0 {
+			label = "code-partition";
+			reg = <0x0 0x180000>;
+			read-only;
+		};
+
+		nvm_partition: partition@180000 {
+			label = "nvm";
+			reg = <0x180000 0x1000>;
+		};
+
+		circuitpy_partition: partition@181000 {
+			label = "circuitpy";
+			reg = <0x181000 (DT_SIZE_M(4) - 0x181000)>;
+		};
+	};
+};
+
+#include "../app.overlay"

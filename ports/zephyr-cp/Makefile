@@ -21,7 +21,7 @@ ifeq ($(DEBUG),1)
 WEST_CMAKE_ARGS += -Dzephyr-cp_EXTRA_CONF_FILE=$(DEBUG_CONF_FILE)
 endif
 
-.PHONY: $(BUILD)/zephyr-cp/zephyr/zephyr.elf flash recover debug debug-jlink debugserver attach run run-sim clean menuconfig all clean-all test fetch-port-submodules
+.PHONY: $(BUILD)/zephyr-cp/zephyr/zephyr.elf flash recover debug debug-jlink debugserver attach run run-sim clean menuconfig all clean-all sim clean-sim test fetch-port-submodules
 
 $(BUILD)/zephyr-cp/zephyr/zephyr.elf:
 	python cptools/pre_zephyr_build_prep.py $(BOARD)
@@ -68,7 +68,7 @@ run-sim:
 		echo "Populating build-native_native_sim/flash.bin from ./CIRCUITPY"; \
 		mcopy -s -i build-native_native_sim/flash.bin CIRCUITPY/* ::; \
 	fi
-	build-native_native_sim/firmware.exe --flash=build-native_native_sim/flash.bin --flash_rm -wait_uart -rt
+	build-native_native_sim/firmware.exe --flash=build-native_native_sim/flash.bin --flash_rm -wait_uart -rt --i2s_capture=build-native_native_sim/i2s_capture.wav
 
 menuconfig:
 	west build $(WEST_SHIELD_ARGS) --sysbuild -d $(BUILD) -t menuconfig -- $(WEST_CMAKE_ARGS)
@@ -86,6 +86,13 @@ all:
 
 clean-all:
 	rm -rf build build-*
+
+# Build all sim boards concurrently using the same jobserver as `make all`.
+sim:
+	+python cptools/build_all_boards.py --vendor native --continue-on-error
+
+clean-sim:
+	rm -rf $(wildcard build-native_*)
 
 test: build-native_native_sim/zephyr-cp/zephyr/zephyr.exe
 	pytest cptools/tests

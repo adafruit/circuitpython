@@ -126,6 +126,19 @@ static mp_obj_array_t *array_new(char typecode, size_t n) {
 #endif
 
 #if MICROPY_PY_BUILTINS_BYTEARRAY || MICROPY_PY_ARRAY
+static void array_extend_impl(mp_obj_array_t *array, mp_obj_t arg, char typecode, size_t len) {
+    mp_obj_t iterable = mp_getiter(arg, NULL);
+    mp_obj_t item;
+    size_t i = 0;
+    while ((item = mp_iternext(iterable)) != MP_OBJ_STOP_ITERATION) {
+        if (len == 0) {
+            array_append(MP_OBJ_FROM_PTR(array), item);
+        } else {
+            mp_binary_set_val_array(typecode, array->items, i++, item);
+        }
+    }
+}
+
 static mp_obj_t array_construct(char typecode, mp_obj_t initializer) {
     // bytearrays can be raw-initialised from anything with the buffer protocol
     // other arrays can only be raw-initialised from bytes and bytearray objects
@@ -158,18 +171,7 @@ static mp_obj_t array_construct(char typecode, mp_obj_t initializer) {
     }
 
     mp_obj_array_t *array = array_new(typecode, len);
-
-    mp_obj_t iterable = mp_getiter(initializer, NULL);
-    mp_obj_t item;
-    size_t i = 0;
-    while ((item = mp_iternext(iterable)) != MP_OBJ_STOP_ITERATION) {
-        if (len == 0) {
-            array_append(MP_OBJ_FROM_PTR(array), item);
-        } else {
-            mp_binary_set_val_array(typecode, array->items, i++, item);
-        }
-    }
-
+    array_extend_impl(array, initializer, typecode, len);
     return MP_OBJ_FROM_PTR(array);
 }
 #endif
@@ -298,7 +300,7 @@ static void memoryview_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
         mp_obj_array_t *self = MP_OBJ_TO_PTR(self_in);
         dest[0] = MP_OBJ_NEW_SMALL_INT(mp_binary_get_size('@', self->typecode & TYPECODE_MASK, NULL));
     }
-    // CIRCUITPY-CHANGE: prevent warning
+    // CIRCUITPY-CHANGE: add MICROPY_CPYTHON_COMPAT
     #if MICROPY_PY_BUILTINS_BYTES_HEX || MICROPY_CPYTHON_COMPAT
     else {
         // Need to forward to locals dict.
@@ -493,39 +495,42 @@ static mp_obj_t array_extend(mp_obj_t self_in, mp_obj_t arg_in) {
 
     // allow to extend by anything that has the buffer protocol (extension to CPython)
     mp_buffer_info_t arg_bufinfo;
-    // CIRCUITPY-CHANGE: allow appending an iterable
-    if (mp_get_buffer(arg_in, &arg_bufinfo, MP_BUFFER_READ)) {
-        size_t sz = mp_binary_get_size('@', self->typecode, NULL);
-
-        // convert byte count to element count
-        size_t len = arg_bufinfo.len / sz;
-
-        // make sure we have enough room to extend
-        // TODO: alloc policy; at the moment we go conservative
-        if (self->free < len) {
-            self->items = m_renew(byte, self->items, (self->len + self->free) * sz, (self->len + len) * sz);
-            self->free = 0;
-        } else {
-            self->free -= len;
-        }
-
-        // extend
-        mp_seq_copy((byte *)self->items + self->len * sz, arg_bufinfo.buf, len * sz, byte);
-        self->len += len;
-    } else {
-        // Otherwise argument must be an iterable of items to append
-        mp_obj_t iterable = mp_getiter(arg_in, NULL);
-        mp_obj_t item;
-        while ((item = mp_iternext(iterable)) != MP_OBJ_STOP_ITERATION) {
-            array_append(self_in, item);
-        }
+    if (!mp_get_buffer(arg_in, &arg_bufinfo, MP_BUFFER_READ)) {
+        array_extend_impl(self, arg_in, 0, 0);
+        return mp_const_none;
     }
+
+    size_t sz = mp_binary_get_size('@', self->typecode, NULL);
+
+    // convert byte count to element count
+    size_t len = arg_bufinfo.len / sz;
+
+    // make sure we have enough room to extend
+    // TODO: alloc policy; at the moment we go conservative
+    if (self->free < len) {
+        self->items = m_renew(byte, self->items, (self->len + self->free) * sz, (self->len + len) * sz);
+        self->free = 0;
+
+        if (self_in == arg_in) {
+            // Get arg_bufinfo again in case self->items has moved
+            //
+            // (Note not possible to handle case that arg_in is a memoryview into self)
+            mp_get_buffer_raise(arg_in, &arg_bufinfo, MP_BUFFER_READ);
+        }
+    } else {
+        self->free -= len;
+    }
+
+    // extend
+    mp_seq_copy((byte *)self->items + self->len * sz, arg_bufinfo.buf, len * sz, byte);
+    self->len += len;
+
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(mp_obj_array_extend_obj, array_extend);
 #endif
 
-// CIRCUITPY-CHANGE: buffer_finder used belo
+// CIRCUITPY-CHANGE: buffer_finder used below
 #if MICROPY_PY_BUILTINS_BYTEARRAY && MICROPY_CPYTHON_COMPAT
 static mp_obj_t buffer_finder(size_t n_args, const mp_obj_t *args, int direction, bool is_index) {
     mp_check_self(mp_obj_is_type(args[0], &mp_type_bytearray));
@@ -564,7 +569,6 @@ static mp_obj_t buffer_finder(size_t n_args, const mp_obj_t *args, int direction
     }
     return MP_OBJ_NEW_SMALL_INT(p - (const byte *)haystack_bufinfo.buf);
 }
-
 // CIRCUITPY-CHANGE: provides find, rfind, index
 static mp_obj_t buffer_find(size_t n_args, const mp_obj_t *args) {
     return buffer_finder(n_args, args, 1, false);
@@ -667,7 +671,7 @@ static mp_obj_t array_subscr(mp_obj_t self_in, mp_obj_t index_in, mp_obj_t value
                     mp_seq_replace_slice_no_grow(dest_items, o->len,
                         slice.start, slice.stop, src_items + src_offs, src_len, item_sz);
                     // CIRCUITPY-CHANGE
-                    #if MICROPY_NONSTANDARD_TYPECODES
+                    #if MICROPY_PY_STRUCT_UNSAFE_TYPECODES
                     // Clear "freed" elements at the end of list
                     // TODO: This is actually only needed for typecode=='O'
                     mp_seq_clear(dest_items, o->len + len_adj, o->len, item_sz);
@@ -803,7 +807,7 @@ MP_DEFINE_CONST_OBJ_TYPE(
 MP_DEFINE_CONST_OBJ_TYPE(
     mp_type_bytearray,
     MP_QSTR_bytearray,
-    MP_TYPE_FLAG_EQ_CHECKS_OTHER_TYPE | MP_TYPE_FLAG_ITER_IS_GETITER,
+    MP_TYPE_FLAG_EQ_CHECKS_OTHER_TYPE | MP_TYPE_FLAG_ITER_IS_GETITER | MP_TYPE_FLAG_SUBSCR_ALLOWS_STACK_SLICE,
     make_new, bytearray_make_new,
     print, array_print,
     iter, array_iterator_new,
@@ -842,7 +846,7 @@ MP_DEFINE_CONST_DICT(memoryview_locals_dict, memoryview_locals_dict_table);
 MP_DEFINE_CONST_OBJ_TYPE(
     mp_type_memoryview,
     MP_QSTR_memoryview,
-    MP_TYPE_FLAG_EQ_CHECKS_OTHER_TYPE | MP_TYPE_FLAG_ITER_IS_GETITER,
+    MP_TYPE_FLAG_EQ_CHECKS_OTHER_TYPE | MP_TYPE_FLAG_ITER_IS_GETITER | MP_TYPE_FLAG_SUBSCR_ALLOWS_STACK_SLICE,
     make_new, memoryview_make_new,
     iter, array_iterator_new,
     unary_op, array_unary_op,

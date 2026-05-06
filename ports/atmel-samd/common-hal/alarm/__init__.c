@@ -133,7 +133,7 @@ void common_hal_alarm_set_deep_sleep_alarms(size_t n_alarms, const mp_obj_t *ala
     _setup_sleep_alarms(true, n_alarms, alarms);
 }
 
-void NORETURN common_hal_alarm_enter_deep_sleep(void) {
+void MP_NORETURN common_hal_alarm_enter_deep_sleep(void) {
     alarm_pin_pinalarm_prepare_for_deep_sleep();
     alarm_time_timealarm_prepare_for_deep_sleep();
     // port_disable_tick(); // TODO: Required for SAMD?

@@ -15,13 +15,15 @@ COMPAT_TO_DRIVER = {
     "atmel_sam0_adc": "adc",
     "atmel_sam_adc": "adc",
     "atmel_sam_afec": "adc",
+    "bflb_adc": "adc",
     "ene_kb106x_adc": "adc",
     "ene_kb1200_adc": "adc",
     "espressif_esp32_adc": "adc",
     "gd_gd32_adc": "adc",
+    "infineon_adc": "adc",
     "infineon_autanalog_sar_adc": "adc",
-    "infineon_cat1_adc": "adc",
     "infineon_hppass_sar_adc": "adc",
+    "infineon_sar_adc": "adc",
     "infineon_xmc4xxx_adc": "adc",
     "ite_it51xxx_adc": "adc",
     "ite_it8xxx2_adc": "adc",
@@ -37,6 +39,7 @@ COMPAT_TO_DRIVER = {
     "maxim_max11117": "adc",
     "maxim_max11253": "adc",
     "maxim_max11254": "adc",
+    "microchip_adc_g1": "adc",
     "microchip_mcp356xr": "adc",
     "microchip_xec_adc": "adc",
     "nordic_nrf_adc": "adc",
@@ -53,12 +56,16 @@ COMPAT_TO_DRIVER = {
     "nxp_vf610_adc": "adc",
     "raspberrypi_pico_adc": "adc",
     "realtek_rts5912_adc": "adc",
-    "renesas_ra_adc": "adc",
+    "renesas_ra_adc12": "adc",
+    "renesas_ra_adc16": "adc",
     "renesas_rx_adc": "adc",
     "renesas_rz_adc": "adc",
     "renesas_rz_adc_c": "adc",
+    "renesas_rz_adc_e": "adc",
+    "renesas_rza2m_adc": "adc",
     "renesas_smartbond_adc": "adc",
     "renesas_smartbond_sdadc": "adc",
+    "sifli_sf32lb_gpadc": "adc",
     "silabs_gecko_adc": "adc",
     "silabs_iadc": "adc",
     "silabs_siwx91x_adc": "adc",
@@ -79,6 +86,18 @@ COMPAT_TO_DRIVER = {
     "ti_ads124s08": "adc",
     "ti_ads131m02": "adc",
     "ti_ads7052": "adc",
+    "ti_ads7950": "adc",
+    "ti_ads7951": "adc",
+    "ti_ads7952": "adc",
+    "ti_ads7953": "adc",
+    "ti_ads7954": "adc",
+    "ti_ads7955": "adc",
+    "ti_ads7956": "adc",
+    "ti_ads7957": "adc",
+    "ti_ads7958": "adc",
+    "ti_ads7959": "adc",
+    "ti_ads7960": "adc",
+    "ti_ads7961": "adc",
     "ti_am335x_adc": "adc",
     "ti_cc13xx_cc26xx_adc": "adc",
     "ti_cc23x0_adc": "adc",
@@ -103,8 +122,10 @@ COMPAT_TO_DRIVER = {
     "cirrus_cs43l22": "audio",
     "dlg_da7212": "audio",
     "maxim_max98091": "audio",
+    "nordic_nrf_pdm": "audio",
     "nxp_dmic": "audio",
     "nxp_micfil": "audio",
+    "sifli_sf32lb_audcodec": "audio",
     "st_mpxxdtyy": "audio",
     "ti_pcm1681": "audio",
     "ti_tas6422dac": "audio",
@@ -134,16 +155,22 @@ COMPAT_TO_DRIVER = {
     "st_stm32_bbram": "bbram",
     "zephyr_bbram_emul": "bbram",
     #
+    # biometrics
+    "adh_tech_gt5x": "biometrics",
+    "zephyr_biometrics_emul": "biometrics",
+    "zhiantec_zfm_x0": "biometrics",
+    #
     # bluetooth/hci
     "ambiq_bt_hci_spi": "bluetooth/hci",
     "espressif_esp32_bt_hci": "bluetooth/hci",
-    "infineon_cat1_bless_hci": "bluetooth/hci",
+    "infineon_bless_hci": "bluetooth/hci",
+    "infineon_bt_hci_uart": "bluetooth/hci",
     "infineon_cyw208xx_hci": "bluetooth/hci",
-    "infineon_cyw43xxx_bt_hci": "bluetooth/hci",
     "nxp_bt_hci_uart": "bluetooth/hci",
     "nxp_hci_ble": "bluetooth/hci",
     "renesas_bt_hci_da1453x": "bluetooth/hci",
     "renesas_bt_hci_da1469x": "bluetooth/hci",
+    "sifli_sf32lb_mailbox": "bluetooth/hci",
     "silabs_bt_hci_efr32": "bluetooth/hci",
     "silabs_siwx91x_bt_hci": "bluetooth/hci",
     "st_hci_spi_v1": "bluetooth/hci",
@@ -195,11 +222,15 @@ COMPAT_TO_DRIVER = {
     "sbs_sbs_charger": "charger",
     "ti_bq24190": "charger",
     "ti_bq25180": "charger",
+    "ti_bq25186": "charger",
+    "ti_bq25188": "charger",
     "ti_bq25713": "charger",
     "x_powers_axp2101_charger": "charger",
+    "zephyr_charger_gpio": "charger",
     #
     # clock_control
     "adi_max32_gcr": "clock_control",
+    "alif_clockctrl": "clock_control",
     "ambiq_clkctrl": "clock_control",
     "arm_beetle_syscon": "clock_control",
     "arm_scmi_clock": "clock_control",
@@ -210,12 +241,16 @@ COMPAT_TO_DRIVER = {
     "bflb_bl70x_clock_controller": "clock_control",
     "espressif_esp32_clock": "clock_control",
     "fixed_clock": "clock_control",
+    "focaltech_ft9001_cpm": "clock_control",
     "gd_gd32_cctl": "clock_control",
     "infineon_fixed_clock": "clock_control",
     "infineon_fixed_factor_clock": "clock_control",
     "infineon_peri_div": "clock_control",
     "intel_agilex5_clock": "clock_control",
     "ite_it51xxx_ecpm": "clock_control",
+    "microchip_pic32cm_jh_clock": "clock_control",
+    "microchip_pic32cm_pl_clock": "clock_control",
+    "microchip_pic32cz_ca_clock": "clock_control",
     "microchip_sam_d5x_e5x_clock": "clock_control",
     "microchip_sam_pmc": "clock_control",
     "microchip_sama7g5_sckc": "clock_control",
@@ -246,6 +281,8 @@ COMPAT_TO_DRIVER = {
     "openisa_rv32m1_pcc": "clock_control",
     "pwm_clock": "clock_control",
     "raspberrypi_pico_clock_controller": "clock_control",
+    "realtek_bee_cctl": "clock_control",
+    "realtek_rts5817_clock": "clock_control",
     "realtek_rts5912_sccon": "clock_control",
     "renesas_r8a7795_cpg_mssr": "clock_control",
     "renesas_r8a779f0_cpg_mssr": "clock_control",
@@ -267,13 +304,17 @@ COMPAT_TO_DRIVER = {
     "st_stm32_clock_mco": "clock_control",
     "st_stm32_clock_mux": "clock_control",
     "st_stm32f1_clock_mco": "clock_control",
+    "ti_k2g_sci_clk": "clock_control",
     "wch_rcc": "clock_control",
     #
     # comparator
     "ite_it51xxx_vcmp": "comparator",
+    "microchip_ac_g1_comparator": "comparator",
     "nordic_nrf_comp": "comparator",
     "nordic_nrf_lpcomp": "comparator",
+    "nxp_acomp": "comparator",
     "nxp_cmp": "comparator",
+    "nxp_hscmp": "comparator",
     "renesas_ra_acmphs": "comparator",
     "renesas_ra_lvd": "comparator",
     "renesas_rx_lvd": "comparator",
@@ -297,16 +338,23 @@ COMPAT_TO_DRIVER = {
     "espressif_esp32_counter": "counter",
     "espressif_esp32_rtc_timer": "counter",
     "gd_gd32_timer": "counter",
-    "infineon_cat1_counter": "counter",
+    "infineon_counter": "counter",
     "infineon_tcpwm_counter": "counter",
     "ite_it51xxx_counter": "counter",
     "ite_it8xxx2_counter": "counter",
     "maxim_ds3231": "counter",
     "microchip_mcp7940n": "counter",
+    "microchip_sam_pit64b_counter": "counter",
+    "microchip_tc_g1_counter": "counter",
+    "microchip_tcc_g1_counter": "counter",
     "microchip_xec_timer": "counter",
+    "microcrystal_rv3032_counter": "counter",
     "neorv32_gptmr": "counter",
     "nordic_nrf_rtc": "counter",
     "nordic_nrf_timer": "counter",
+    "nuvoton_npck_lct": "counter",
+    "nuvoton_npcx_lct_v1": "counter",
+    "nuvoton_npcx_lct_v2": "counter",
     "nxp_ftm": "counter",
     "nxp_imx_epit": "counter",
     "nxp_imx_gpt": "counter",
@@ -320,9 +368,12 @@ COMPAT_TO_DRIVER = {
     "nxp_mrt": "counter",
     "nxp_pit": "counter",
     "nxp_rtc": "counter",
+    "nxp_rtc_jdp": "counter",
     "nxp_s32_sys_timer": "counter",
     "nxp_stm": "counter",
     "nxp_tpm_timer": "counter",
+    "raspberrypi_pico_pit": "counter",
+    "raspberrypi_pico_pit_channel": "counter",
     "raspberrypi_pico_timer": "counter",
     "realtek_rts5912_slwtimer": "counter",
     "realtek_rts5912_timer": "counter",
@@ -330,18 +381,22 @@ COMPAT_TO_DRIVER = {
     "renesas_rz_cmtw_counter": "counter",
     "renesas_rz_gtm_counter": "counter",
     "renesas_smartbond_timer": "counter",
+    "silabs_burtc_counter": "counter",
     "silabs_gecko_rtcc": "counter",
+    "silabs_timer_counter": "counter",
     "snps_dw_timers": "counter",
     "st_stm32_counter": "counter",
     "ti_cc23x0_lgpt": "counter",
     "ti_cc23x0_rtc": "counter",
     "ti_mspm0_timer_counter": "counter",
     "xlnx_xps_timer_1_00_a": "counter",
-    "zephyr_native_posix_counter": "counter",
     "zephyr_native_sim_counter": "counter",
     #
     # crc
+    "nxp_crc": "crc",
+    "nxp_lpc_crc": "crc",
     "renesas_ra_crc": "crc",
+    "sifli_sf32lb_crc": "crc",
     #
     # crypto
     "atmel_ataes132a": "crypto",
@@ -351,10 +406,13 @@ COMPAT_TO_DRIVER = {
     "ite_it51xxx_sha": "crypto",
     "ite_it8xxx2_sha": "crypto",
     "ite_it8xxx2_sha_v2": "crypto",
+    "microchip_sha_g1_crypto": "crypto",
     "microchip_xec_symcr": "crypto",
     "nordic_nrf_ecb": "crypto",
     "nuvoton_npcx_sha": "crypto",
     "nxp_mcux_dcp": "crypto",
+    "nxp_s32_crypto_hse_mu": "crypto",
+    "raspberrypi_pico_sha256": "crypto",
     "realtek_rts5912_sha": "crypto",
     "renesas_smartbond_crypto": "crypto",
     "silabs_si32_aes": "crypto",
@@ -388,6 +446,7 @@ COMPAT_TO_DRIVER = {
     "atmel_samd5x_dac": "dac",
     "espressif_esp32_dac": "dac",
     "gd_gd32_dac": "dac",
+    "microchip_dac_g1": "dac",
     "microchip_mcp4725": "dac",
     "microchip_mcp4728": "dac",
     "nxp_dac12": "dac",
@@ -413,6 +472,9 @@ COMPAT_TO_DRIVER = {
     #
     # dai/intel/ssp
     "intel_ssp_dai": "dai/intel/ssp",
+    #
+    # dai/nxp/esai
+    "nxp_dai_esai": "dai/nxp/esai",
     #
     # dai/nxp/micfil
     "nxp_dai_micfil": "dai/nxp/micfil",
@@ -462,7 +524,7 @@ COMPAT_TO_DRIVER = {
     "sitronix_st7796s": "display",
     "solomon_ssd1322": "display",
     "st_stm32_ltdc": "display",
-    "waveshare_7inch_dsi_lcd_c": "display",
+    "waveshare_dsi2dpi": "display",
     "zephyr_dummy_dc": "display",
     "zephyr_hub12": "display",
     "zephyr_sdl_dc": "display",
@@ -471,6 +533,7 @@ COMPAT_TO_DRIVER = {
     "adi_max32_dma": "dma",
     "altr_msgdma": "dma",
     "andestech_atcdmacx00": "dma",
+    "arm_dma_pl330": "dma",
     "atmel_sam0_dmac": "dma",
     "atmel_sam_xdmac": "dma",
     "bflb_dma": "dma",
@@ -479,7 +542,7 @@ COMPAT_TO_DRIVER = {
     "espressif_esp32_gdma": "dma",
     "gd_gd32_dma": "dma",
     "gd_gd32_dma_v1": "dma",
-    "infineon_cat1_dma": "dma",
+    "infineon_dma": "dma",
     "infineon_xmc4xxx_dma": "dma",
     "intel_adsp_gpdma": "dma",
     "intel_adsp_hda_host_in": "dma",
@@ -488,8 +551,11 @@ COMPAT_TO_DRIVER = {
     "intel_adsp_hda_link_out": "dma",
     "intel_lpss": "dma",
     "intel_sedi_dma": "dma",
+    "microchip_dmac_g1_dma": "dma",
     "microchip_xec_dmac": "dma",
     "nuvoton_npcx_gdma": "dma",
+    "nxp_4ch_dma": "dma",
+    "nxp_edma": "dma",
     "nxp_lpc_dma": "dma",
     "nxp_mcux_edma": "dma",
     "nxp_pxp": "dma",
@@ -525,6 +591,7 @@ COMPAT_TO_DRIVER = {
     #
     # edac
     "intel_ibecc": "edac",
+    "nxp_erm": "edac",
     "xlnx_zynqmp_ddrc_2_40a": "edac",
     #
     # eeprom
@@ -547,7 +614,9 @@ COMPAT_TO_DRIVER = {
     "atmel_sam_trng": "entropy",
     "brcm_iproc_rng200": "entropy",
     "espressif_esp32_trng": "entropy",
+    "gd_gd32_trng": "entropy",
     "litex_prbs": "entropy",
+    "microchip_trng_g1_entropy": "entropy",
     "neorv32_trng": "entropy",
     "nordic_nrf_cracen_ctrdrbg": "entropy",
     "nordic_nrf_rng": "entropy",
@@ -558,16 +627,20 @@ COMPAT_TO_DRIVER = {
     "nxp_kinetis_trng": "entropy",
     "nxp_lpc_rng": "entropy",
     "openisa_rv32m1_trng": "entropy",
+    "raspberrypi_pico_rng": "entropy",
     "renesas_smartbond_trng": "entropy",
     "sensry_sy1xx_trng": "entropy",
+    "sifli_sf32lb_trng": "entropy",
     "silabs_gecko_semailbox": "entropy",
     "silabs_gecko_trng": "entropy",
     "silabs_siwx91x_rng": "entropy",
+    "st_stm32_rng": "entropy",
+    "st_stm32_rng_noirq": "entropy",
     "telink_b91_trng": "entropy",
     "ti_cc13xx_cc26xx_trng": "entropy",
+    "ti_mspm0_trng": "entropy",
     "virtio_device4": "entropy",
     "zephyr_bt_hci_entropy": "entropy",
-    "zephyr_native_posix_rng": "entropy",
     "zephyr_native_sim_rng": "entropy",
     "zephyr_psa_crypto_rng": "entropy",
     #
@@ -618,7 +691,11 @@ COMPAT_TO_DRIVER = {
     "virtio_net": "ethernet",
     "vnd_ethernet": "ethernet",
     "wiznet_w5500": "ethernet",
+    "wiznet_w6100": "ethernet",
     "xlnx_axi_ethernet_1_00_a": "ethernet",
+    "xlnx_gem": "ethernet",
+    "xlnx_xps_ethernetlite_1_00_a_mac": "ethernet",
+    "xlnx_xps_ethernetlite_3_00_a_mac": "ethernet",
     #
     # ethernet/dsa
     "microchip_ksz8463": "ethernet/dsa",
@@ -637,6 +714,28 @@ COMPAT_TO_DRIVER = {
     "intel_eth_plat": "ethernet/intel",
     "intel_igc_mac": "ethernet/intel",
     #
+    # ethernet/mdio
+    "adi_adin2111_mdio": "ethernet/mdio",
+    "atmel_sam_mdio": "ethernet/mdio",
+    "espressif_esp32_mdio": "ethernet/mdio",
+    "infineon_xmc4xxx_mdio": "ethernet/mdio",
+    "intel_igc_mdio": "ethernet/mdio",
+    "litex_liteeth_mdio": "ethernet/mdio",
+    "microchip_lan865x_mdio": "ethernet/mdio",
+    "nxp_enet_mdio": "ethernet/mdio",
+    "nxp_enet_qos_mdio": "ethernet/mdio",
+    "nxp_imx_netc_emdio": "ethernet/mdio",
+    "nxp_s32_gmac_mdio": "ethernet/mdio",
+    "nxp_s32_netc_emdio": "ethernet/mdio",
+    "renesas_ra_mdio": "ethernet/mdio",
+    "sensry_sy1xx_mdio": "ethernet/mdio",
+    "snps_dwcxgmac_mdio": "ethernet/mdio",
+    "st_stm32_mdio": "ethernet/mdio",
+    "xlnx_axi_ethernet_1_00_a_mdio": "ethernet/mdio",
+    "xlnx_xps_ethernetlite_1_00_a_mdio": "ethernet/mdio",
+    "xlnx_xps_ethernetlite_3_00_a_mdio": "ethernet/mdio",
+    "zephyr_mdio_gpio": "ethernet/mdio",
+    #
     # ethernet/nxp_imx_netc
     "nxp_imx_netc_blk_ctrl": "ethernet/nxp_imx_netc",
     "nxp_imx_netc_psi": "ethernet/nxp_imx_netc",
@@ -646,10 +745,13 @@ COMPAT_TO_DRIVER = {
     "adi_adin2111_phy": "ethernet/phy",
     "davicom_dm8806_phy": "ethernet/phy",
     "ethernet_phy": "ethernet/phy",
+    "ethernet_phy_fixed_link": "ethernet/phy",
     "microchip_ksz8081": "ethernet/phy",
     "microchip_ksz9131": "ethernet/phy",
+    "microchip_lan8742": "ethernet/phy",
     "microchip_t1s_phy": "ethernet/phy",
     "microchip_vsc8541": "ethernet/phy",
+    "motorcomm_yt8521": "ethernet/phy",
     "nxp_tja1103": "ethernet/phy",
     "nxp_tja11xx": "ethernet/phy",
     "qca_ar8031": "ethernet/phy",
@@ -658,6 +760,7 @@ COMPAT_TO_DRIVER = {
     "ti_dp83867": "ethernet/phy",
     #
     # firmware/scmi
+    "arm_scmi": "firmware/scmi",
     "arm_scmi_shmem": "firmware/scmi",
     #
     # firmware/tisci
@@ -673,20 +776,23 @@ COMPAT_TO_DRIVER = {
     "atmel_at45": "flash",
     "atmel_sam0_nvmctrl": "flash",
     "atmel_sam_flash_controller": "flash",
+    "bflb_flash_controller": "flash",
     "cdns_nand": "flash",
     "cdns_qspi_nor": "flash",
     "espressif_esp32_flash_controller": "flash",
     "gd_gd32_flash_controller": "flash",
-    "infineon_cat1_flash_controller": "flash",
-    "infineon_cat1_qspi_flash": "flash",
+    "infineon_flash_controller": "flash",
+    "infineon_qspi_flash": "flash",
     "infineon_xmc4xxx_flash_controller": "flash",
     "ite_it51xxx_manual_flash_1k": "flash",
     "ite_it8xxx2_flash_controller": "flash",
     "jedec_mspi_nor": "flash",
+    "jedec_spi_nand": "flash",
     "jedec_spi_nor": "flash",
     "microchip_nvmctrl_g1_flash": "flash",
     "mspi_atxp032": "flash",
     "mspi_is25xx0xx": "flash",
+    "netsol_s3axx04": "flash",
     "nordic_mram": "flash",
     "nordic_nrf51_flash_controller": "flash",
     "nordic_nrf52_flash_controller": "flash",
@@ -699,6 +805,7 @@ COMPAT_TO_DRIVER = {
     "nuvoton_npcx_fiu_qspi": "flash",
     "nuvoton_numaker_fmc": "flash",
     "nuvoton_numaker_rmc": "flash",
+    "nxp_c40_flash_controller": "flash",
     "nxp_iap_fmc11": "flash",
     "nxp_iap_fmc54": "flash",
     "nxp_iap_fmc55": "flash",
@@ -707,16 +814,19 @@ COMPAT_TO_DRIVER = {
     "nxp_imx_flexspi_mx25um51345g": "flash",
     "nxp_imx_flexspi_nor": "flash",
     "nxp_kinetis_ftfa": "flash",
+    "nxp_kinetis_ftfc": "flash",
     "nxp_kinetis_ftfe": "flash",
     "nxp_kinetis_ftfl": "flash",
     "nxp_msf1": "flash",
     "nxp_s32_qspi_hyperflash": "flash",
     "nxp_s32_qspi_nor": "flash",
+    "nxp_s32_xspi_hyperram": "flash",
     "nxp_xspi_nor": "flash",
     "openisa_rv32m1_ftfe": "flash",
     "raspberrypi_pico_flash_controller": "flash",
     "realtek_rts5912_flash_controller": "flash",
     "renesas_ra_flash_hp_controller": "flash",
+    "renesas_ra_flash_lp_controller": "flash",
     "renesas_ra_mram_controller": "flash",
     "renesas_ra_ospi_b_nor": "flash",
     "renesas_ra_qspi_nor": "flash",
@@ -763,6 +873,9 @@ COMPAT_TO_DRIVER = {
     # fuel_gauge/composite
     "zephyr_fuel_gauge_composite": "fuel_gauge/composite",
     #
+    # fuel_gauge/hy4245
+    "hycon_hy4245": "fuel_gauge/hy4245",
+    #
     # fuel_gauge/lc709203f
     "onnn_lc709203f": "fuel_gauge/lc709203f",
     #
@@ -785,9 +898,11 @@ COMPAT_TO_DRIVER = {
     "quectel_lc26g": "gnss",
     "quectel_lc76g": "gnss",
     "quectel_lc86g": "gnss",
-    "u_blox_f9p": "gnss",
-    "u_blox_m8": "gnss",
     "zephyr_gnss_emul": "gnss",
+    #
+    # gnss/u_blox
+    "u_blox_f9p": "gnss/u_blox",
+    "u_blox_m8": "gnss/u_blox",
     #
     # gpio
     "adi_ad559x_gpio": "gpio",
@@ -825,7 +940,7 @@ COMPAT_TO_DRIVER = {
     "fcs_fxl6408": "gpio",
     "gaisler_grgpio": "gpio",
     "gd_gd32_gpio": "gpio",
-    "infineon_cat1_gpio": "gpio",
+    "infineon_gpio": "gpio",
     "infineon_tle9104_gpio": "gpio",
     "infineon_xmc4xxx_gpio": "gpio",
     "intel_gpio": "gpio",
@@ -845,12 +960,10 @@ COMPAT_TO_DRIVER = {
     "microchip_mcp23s09": "gpio",
     "microchip_mcp23s17": "gpio",
     "microchip_mcp23s18": "gpio",
-    "microchip_mec5_gpio": "gpio",
     "microchip_mpfs_gpio": "gpio",
     "microchip_port_g1_gpio": "gpio",
     "microchip_sam_pio4": "gpio",
     "microchip_xec_gpio": "gpio",
-    "microchip_xec_gpio_v2": "gpio",
     "neorv32_gpio": "gpio",
     "nordic_npm1300_gpio": "gpio",
     "nordic_npm1304_gpio": "gpio",
@@ -886,11 +999,14 @@ COMPAT_TO_DRIVER = {
     "nxp_pcal9722": "gpio",
     "nxp_pcf857x": "gpio",
     "nxp_sc18im704_gpio": "gpio",
+    "nxp_sc18is606_gpio": "gpio",
     "nxp_siul2_gpio": "gpio",
     "openisa_rv32m1_gpio": "gpio",
     "quicklogic_eos_s3_gpio": "gpio",
     "raspberrypi_pico_gpio_port": "gpio",
     "raspberrypi_rp1_gpio": "gpio",
+    "realtek_ameba_gpio": "gpio",
+    "realtek_bee_gpio": "gpio",
     "realtek_rts5912_gpio": "gpio",
     "renesas_ra_gpio_ioport": "gpio",
     "renesas_rcar_gpio": "gpio",
@@ -937,8 +1053,11 @@ COMPAT_TO_DRIVER = {
     "zephyr_gpio_emul": "gpio",
     "zephyr_gpio_emul_sdl": "gpio",
     #
-    # haptics
-    "ti_drv2605": "haptics",
+    # haptics/cirrus
+    "cirrus_cs40l5x": "haptics/cirrus",
+    #
+    # haptics/ti
+    "ti_drv2605": "haptics/ti",
     #
     # hdlc_rcp_if
     "nxp_hdlc_rcp_if": "hdlc_rcp_if",
@@ -956,7 +1075,9 @@ COMPAT_TO_DRIVER = {
     "nxp_lpc_uid": "hwinfo",
     #
     # hwspinlock
+    "nxp_sema42": "hwspinlock",
     "sqn_hwspinlock": "hwspinlock",
+    "vnd_hwspinlock": "hwspinlock",
     #
     # i2c
     "adi_max32_i2c": "i2c",
@@ -968,6 +1089,7 @@ COMPAT_TO_DRIVER = {
     "atmel_sam_i2c_twi": "i2c",
     "atmel_sam_i2c_twihs": "i2c",
     "atmel_sam_i2c_twim": "i2c",
+    "bflb_i2c": "i2c",
     "brcm_iproc_i2c": "i2c",
     "cdns_i2c": "i2c",
     "ene_kb1200_i2c": "i2c",
@@ -976,8 +1098,7 @@ COMPAT_TO_DRIVER = {
     "gd_gd32_i2c": "i2c",
     "gpio_i2c": "i2c",
     "gpio_i2c_switch": "i2c",
-    "infineon_cat1_i2c": "i2c",
-    "infineon_cat1_i2c_pdl": "i2c",
+    "infineon_i2c": "i2c",
     "infineon_xmc4xxx_i2c": "i2c",
     "intel_sedi_i2c": "i2c",
     "ite_enhance_i2c": "i2c",
@@ -986,8 +1107,11 @@ COMPAT_TO_DRIVER = {
     "litex_i2c": "i2c",
     "litex_litei2c": "i2c",
     "microchip_mpfs_i2c": "i2c",
+    "microchip_sercom_g1_i2c": "i2c",
     "microchip_xec_i2c": "i2c",
     "microchip_xec_i2c_v2": "i2c",
+    "nordic_nrf_twi": "i2c",
+    "nordic_nrf_twim": "i2c",
     "nordic_nrf_twis": "i2c",
     "nuvoton_npcx_i2c_ctrl": "i2c",
     "nuvoton_npcx_i2c_port": "i2c",
@@ -1007,11 +1131,14 @@ COMPAT_TO_DRIVER = {
     "renesas_rx_i2c": "i2c",
     "renesas_rz_iic": "i2c",
     "renesas_rz_riic": "i2c",
+    "renesas_rza2m_riic": "i2c",
     "renesas_smartbond_i2c": "i2c",
     "sensry_sy1xx_i2c": "i2c",
     "sifive_i2c0": "i2c",
+    "sifli_sf32lb_i2c": "i2c",
     "silabs_gecko_i2c": "i2c",
     "silabs_i2c": "i2c",
+    "snps_designware_i2c": "i2c",
     "st_stm32_i2c_v1": "i2c",
     "st_stm32_i2c_v2": "i2c",
     "telink_b91_i2c": "i2c",
@@ -1032,9 +1159,12 @@ COMPAT_TO_DRIVER = {
     "zephyr_i2c_target_eeprom": "i2c/target",
     #
     # i2s
+    "adi_max32_i2s": "i2s",
     "ambiq_i2s": "i2s",
     "atmel_sam_ssc": "i2s",
     "espressif_esp32_i2s": "i2s",
+    "infineon_i2s": "i2s",
+    "nordic_nrf_i2s": "i2s",
     "nxp_lpc_i2s": "i2s",
     "nxp_mcux_i2s": "i2s",
     "renesas_ra_i2s_ssie": "i2s",
@@ -1042,6 +1172,7 @@ COMPAT_TO_DRIVER = {
     "st_stm32_i2s": "i2s",
     "st_stm32_sai": "i2s",
     "vnd_i2s": "i2s",
+    "zephyr_i2s_sdl": "i2s",
     #
     # i3c
     "adi_max32_i3c": "i3c",
@@ -1075,12 +1206,14 @@ COMPAT_TO_DRIVER = {
     "adc_keys": "input",
     "analog_axis": "input",
     "arduino_modulino_buttons": "input",
+    "bflb_irx": "input",
     "chipsemi_chsc5x": "input",
     "chipsemi_chsc6x": "input",
     "cirque_pinnacle": "input",
     "cypress_cy8cmbr3xxx": "input",
     "espressif_esp32_touch": "input",
     "focaltech_ft5336": "input",
+    "focaltech_ft6146": "input",
     "futaba_sbus": "input",
     "goodix_gt911": "input",
     "gpio_kbd_matrix": "input",
@@ -1096,6 +1229,7 @@ COMPAT_TO_DRIVER = {
     "nintendo_nunchuk": "input",
     "nuvoton_npcx_kbd": "input",
     "nxp_mcux_kpp": "input",
+    "parade_tma525b": "input",
     "pixart_pat912x": "input",
     "pixart_paw32xx": "input",
     "pixart_pmw3610": "input",
@@ -1109,11 +1243,13 @@ COMPAT_TO_DRIVER = {
     "st_stm32_tsc": "input",
     "st_stmpe811": "input",
     "vishay_vs1838b": "input",
+    "wch_ch9350l": "input",
     "xptek_xpt2046": "input",
     "zephyr_input_sdl_touch": "input",
     "zephyr_native_linux_evdev": "input",
     #
     # interrupt_controller
+    "adi_max32_rv32_intc": "interrupt_controller",
     "arm_gic_v1": "interrupt_controller",
     "arm_gic_v2": "interrupt_controller",
     "arm_gic_v3": "interrupt_controller",
@@ -1132,17 +1268,22 @@ COMPAT_TO_DRIVER = {
     "ite_it8xxx2_wuc": "interrupt_controller",
     "litex_vexriscv_intc0": "interrupt_controller",
     "mediatek_adsp_intc": "interrupt_controller",
+    "microchip_eic_g1_intc": "interrupt_controller",
     "microchip_xec_ecia": "interrupt_controller",
     "nuclei_eclic": "interrupt_controller",
     "nuvoton_npcx_miwu": "interrupt_controller",
+    "nxp_gint": "interrupt_controller",
     "nxp_irqsteer_intc": "interrupt_controller",
     "nxp_pint": "interrupt_controller",
     "nxp_s32_wkpu": "interrupt_controller",
     "nxp_siul2_eirq": "interrupt_controller",
     "openisa_rv32m1_intmux": "interrupt_controller",
+    "renesas_rx_grp_intc": "interrupt_controller",
     "renesas_rx_icu": "interrupt_controller",
     "renesas_rz_ext_irq": "interrupt_controller",
+    "renesas_rz_tint": "interrupt_controller",
     "riscv_clic": "interrupt_controller",
+    "riscv_imsic": "interrupt_controller",
     "shared_irq": "interrupt_controller",
     "sifive_plic_1_0_0": "interrupt_controller",
     "snps_arcv2_intc": "interrupt_controller",
@@ -1182,6 +1323,7 @@ COMPAT_TO_DRIVER = {
     "nxp_pca9633": "led",
     "onnn_ncp5623": "led",
     "pwm_leds": "led",
+    "sct_sct2024": "led",
     "ti_lp3943": "led",
     "ti_lp5009": "led",
     "ti_lp5012": "led",
@@ -1209,9 +1351,14 @@ COMPAT_TO_DRIVER = {
     # lora
     "reyax_rylrxxx": "lora",
     #
-    # lora/loramac_node
-    "semtech_sx1272": "lora/loramac_node",
-    "semtech_sx1276": "lora/loramac_node",
+    # lora/loramac-node
+    "semtech_sx1272": "lora/loramac-node",
+    "semtech_sx1276": "lora/loramac-node",
+    #
+    # lora/native/sx126x
+    "semtech_sx1261": "lora/native/sx126x",
+    "semtech_sx1262": "lora/native/sx126x",
+    "st_stm32wl_subghz_radio": "lora/native/sx126x",
     #
     # mbox
     "andestech_mbox_plic_sw": "mbox",
@@ -1228,31 +1375,13 @@ COMPAT_TO_DRIVER = {
     "nxp_mbox_imx_mu": "mbox",
     "nxp_mbox_mailbox": "mbox",
     "nxp_s32_mru": "mbox",
+    "raspberrypi_pico_mbox": "mbox",
     "renesas_ra_ipc_mbox": "mbox",
     "renesas_rz_mhu_mbox": "mbox",
     "st_mbox_stm32_hsem": "mbox",
     "ti_omap_mailbox": "mbox",
     "ti_secure_proxy": "mbox",
-    #
-    # mdio
-    "adi_adin2111_mdio": "mdio",
-    "atmel_sam_mdio": "mdio",
-    "espressif_esp32_mdio": "mdio",
-    "infineon_xmc4xxx_mdio": "mdio",
-    "intel_igc_mdio": "mdio",
-    "litex_liteeth_mdio": "mdio",
-    "microchip_lan865x_mdio": "mdio",
-    "nxp_enet_mdio": "mdio",
-    "nxp_enet_qos_mdio": "mdio",
-    "nxp_imx_netc_emdio": "mdio",
-    "nxp_s32_gmac_mdio": "mdio",
-    "nxp_s32_netc_emdio": "mdio",
-    "renesas_ra_mdio": "mdio",
-    "sensry_sy1xx_mdio": "mdio",
-    "snps_dwcxgmac_mdio": "mdio",
-    "st_stm32_mdio": "mdio",
-    "xlnx_axi_ethernet_1_00_a_mdio": "mdio",
-    "zephyr_mdio_gpio": "mdio",
+    "xlnx_mbox_versal_ipi_mailbox": "mbox",
     #
     # memc
     "adi_max32_hpb": "memc",
@@ -1261,9 +1390,11 @@ COMPAT_TO_DRIVER = {
     "mspi_aps6404l": "memc",
     "mspi_aps_z8": "memc",
     "nxp_imx_flexspi": "memc",
+    "nxp_imx_flexspi_is66wvs8m8": "memc",
     "nxp_imx_flexspi_s27ks0641": "memc",
     "nxp_imx_flexspi_w956a8mbya": "memc",
     "nxp_s32_qspi": "memc",
+    "nxp_s32_xspi": "memc",
     "nxp_xspi": "memc",
     "nxp_xspi_psram": "memc",
     "renesas_ra_sdram": "memc",
@@ -1290,6 +1421,7 @@ COMPAT_TO_DRIVER = {
     "maxim_max20335": "mfd",
     "maxim_max31790": "mfd",
     "microchip_sam_flexcom": "mfd",
+    "microcrystal_rv3032_mfd": "mfd",
     "motorola_mc146818_mfd": "mfd",
     "nordic_npm1300": "mfd",
     "nordic_npm1304": "mfd",
@@ -1299,13 +1431,18 @@ COMPAT_TO_DRIVER = {
     "nxp_lp_flexcomm": "mfd",
     "nxp_pca9422": "mfd",
     "nxp_pf1550": "mfd",
+    "nxp_sc18is606": "mfd",
     "rohm_bd8lb600fs": "mfd",
     #
     # mipi_dbi
+    "bflb_dbi": "mipi_dbi",
+    "espressif_esp32_lcd_cam_mipi_dbi": "mipi_dbi",
     "nxp_lcdic": "mipi_dbi",
     "nxp_mipi_dbi_dcnano_lcdif": "mipi_dbi",
     "nxp_mipi_dbi_flexio_lcdif": "mipi_dbi",
+    "raspberrypi_pico_mipi_dbi_pio": "mipi_dbi",
     "renesas_smartbond_mipi_dbi": "mipi_dbi",
+    "sifli_sf32lb_lcdc_mipi_dbi": "mipi_dbi",
     "st_stm32_fmc_mipi_dbi": "mipi_dbi",
     "zephyr_mipi_dbi_bitbang": "mipi_dbi",
     "zephyr_mipi_dbi_spi": "mipi_dbi",
@@ -1370,6 +1507,7 @@ COMPAT_TO_DRIVER = {
     "intel_timeaware_gpio": "misc/timeaware_gpio",
     #
     # mm
+    "intel_adsp_mtl_tlb": "mm",
     "intel_adsp_tlb": "mm",
     #
     # modem
@@ -1381,6 +1519,7 @@ COMPAT_TO_DRIVER = {
     "quectel_eg800q": "modem",
     "simcom_a76xx": "modem",
     "sqn_gm02s": "modem",
+    "st_st87mxx": "modem",
     "telit_me310g1": "modem",
     "telit_me910g1": "modem",
     "u_blox_lara_r6": "modem",
@@ -1390,8 +1529,10 @@ COMPAT_TO_DRIVER = {
     #
     # modem/hl78xx
     "swir_hl7800": "modem/hl78xx",
+    "swir_hl7800_gnss": "modem/hl78xx",
     "swir_hl7800_offload": "modem/hl78xx",
     "swir_hl7812": "modem/hl78xx",
+    "swir_hl7812_gnss": "modem/hl78xx",
     "swir_hl7812_offload": "modem/hl78xx",
     #
     # modem/simcom/sim7080
@@ -1400,11 +1541,21 @@ COMPAT_TO_DRIVER = {
     # mspi
     "ambiq_mspi_controller": "mspi",
     "snps_designware_ssi": "mspi",
+    "st_stm32_ospi_controller": "mspi",
+    "st_stm32_qspi_controller": "mspi",
+    "st_stm32_xspi_controller": "mspi",
     "zephyr_mspi_emul_controller": "mspi",
     #
     # opamp
     "nxp_opamp": "opamp",
     "nxp_opamp_fast": "opamp",
+    "st_stm32_opamp": "opamp",
+    #
+    # otp
+    "nxp_ocotp": "otp",
+    "sifli_sf32lb_efuse": "otp",
+    "st_stm32_bsec": "otp",
+    "zephyr_otp_emul": "otp",
     #
     # pcie/controller
     "brcm_brcmstb_pcie": "pcie/controller",
@@ -1423,11 +1574,12 @@ COMPAT_TO_DRIVER = {
     "nuvoton_npcx_peci": "peci",
     #
     # pinctrl
+    "alif_pinctrl": "pinctrl",
+    "brcm_bcm2711_pinctrl": "pinctrl",
     "ene_kb106x_pinctrl": "pinctrl",
     "ene_kb1200_pinctrl": "pinctrl",
     "infineon_xmc4xxx_pinctrl": "pinctrl",
     "ite_it8xxx2_pinctrl_func": "pinctrl",
-    "microchip_mec5_pinctrl": "pinctrl",
     "microchip_xec_pinctrl": "pinctrl",
     "nuvoton_numaker_pinctrl": "pinctrl",
     "nuvoton_numicro_pinctrl": "pinctrl",
@@ -1461,10 +1613,12 @@ COMPAT_TO_DRIVER = {
     "renesas_rzt2m_pinctrl": "pinctrl/renesas/rz",
     #
     # pm_cpu_ops
+    "arm_fvp_pwrc": "pm_cpu_ops",
     "arm_psci_0_2": "pm_cpu_ops",
     "arm_psci_1_1": "pm_cpu_ops",
     #
     # power_domain
+    "arm_scmi_power_domain": "power_domain",
     "intel_adsp_power_domain": "power_domain",
     "nordic_nrfs_gdpwr": "power_domain",
     "nordic_nrfs_swext": "power_domain",
@@ -1476,6 +1630,7 @@ COMPAT_TO_DRIVER = {
     "ti_sci_pm_domain": "power_domain",
     #
     # ps2
+    "ite_it51xxx_ps2": "ps2",
     "microchip_xec_ps2": "ps2",
     "nuvoton_npcx_ps2_channel": "ps2",
     "nuvoton_npcx_ps2_ctrl": "ps2",
@@ -1494,6 +1649,8 @@ COMPAT_TO_DRIVER = {
     "atmel_sam0_tc_pwm": "pwm",
     "atmel_sam0_tcc_pwm": "pwm",
     "atmel_sam_pwm": "pwm",
+    "bflb_pwm_1": "pwm",
+    "bflb_pwm_2": "pwm",
     "ene_kb106x_pwm": "pwm",
     "ene_kb1200_pwm": "pwm",
     "espressif_esp32_ledc": "pwm",
@@ -1509,10 +1666,12 @@ COMPAT_TO_DRIVER = {
     "ite_it8xxx2_pwm": "pwm",
     "litex_pwm": "pwm",
     "maxim_max31790_pwm": "pwm",
+    "microchip_tc_g1_pwm": "pwm",
     "microchip_tcc_g1_pwm": "pwm",
     "microchip_xec_pwm": "pwm",
     "microchip_xec_pwmbbled": "pwm",
     "neorv32_pwm": "pwm",
+    "nordic_nrf_pwm": "pwm",
     "nordic_nrf_sw_pwm": "pwm",
     "nuvoton_npcx_pwm": "pwm",
     "nuvoton_numaker_pwm": "pwm",
@@ -1534,7 +1693,10 @@ COMPAT_TO_DRIVER = {
     "renesas_rx_mtu_pwm": "pwm",
     "renesas_rz_gpt_pwm": "pwm",
     "renesas_rz_mtu_pwm": "pwm",
+    "renesas_rza2m_gpt_pwm": "pwm",
     "sifive_pwm0": "pwm",
+    "sifli_sf32lb_atim_pwm": "pwm",
+    "sifli_sf32lb_gpt_pwm": "pwm",
     "silabs_gecko_pwm": "pwm",
     "silabs_letimer_pwm": "pwm",
     "silabs_siwx91x_pwm": "pwm",
@@ -1568,10 +1730,13 @@ COMPAT_TO_DRIVER = {
     "regulator_fixed": "regulator",
     "regulator_gpio": "regulator",
     "renesas_smartbond_regulator": "regulator",
+    "st_stm32_vrefbuf": "regulator",
+    "ti_tps55287": "regulator",
     "zephyr_fake_regulator": "regulator",
     #
     # reset
     "aspeed_ast10x0_reset": "reset",
+    "focaltech_ft9001_cpm_rctl": "reset",
     "gd_gd32_rctl": "reset",
     "intel_socfpga_reset": "reset",
     "microchip_mpfs_reset": "reset",
@@ -1582,6 +1747,7 @@ COMPAT_TO_DRIVER = {
     "nxp_mrcc_reset": "reset",
     "nxp_rstctl": "reset",
     "raspberrypi_pico_reset": "reset",
+    "realtek_rts5817_reset": "reset",
     "reset_mmio": "reset",
     "sifli_sf32lb_rcc_rctl": "reset",
     "st_stm32_rcc_rctl": "reset",
@@ -1593,15 +1759,19 @@ COMPAT_TO_DRIVER = {
     "zephyr_retained_reg": "retained_mem",
     #
     # rtc
+    "adi_max31331": "rtc",
     "ambiq_am1805": "rtc",
     "ambiq_rtc": "rtc",
     "atmel_sam_rtc": "rtc",
     "epson_rx8130ce_rtc": "rtc",
-    "infineon_cat1_rtc": "rtc",
+    "infineon_rtc": "rtc",
     "infineon_xmc4xxx_rtc": "rtc",
+    "maxim_ds1302": "rtc",
     "maxim_ds1307": "rtc",
     "maxim_ds1337": "rtc",
     "maxim_ds3231_rtc": "rtc",
+    "microchip_rtc_g1": "rtc",
+    "microchip_rtc_g2": "rtc",
     "microcrystal_rv3028": "rtc",
     "microcrystal_rv3032": "rtc",
     "microcrystal_rv8803": "rtc",
@@ -1617,6 +1787,7 @@ COMPAT_TO_DRIVER = {
     "realtek_rts5912_rtc": "rtc",
     "renesas_ra_rtc": "rtc",
     "renesas_smartbond_rtc": "rtc",
+    "sifli_sf32lb_rtc": "rtc",
     "silabs_siwx91x_rtc": "rtc",
     "st_stm32_rtc": "rtc",
     "ti_bq32002": "rtc",
@@ -1631,7 +1802,7 @@ COMPAT_TO_DRIVER = {
     "atmel_sam_hsmci": "sdhc",
     "cdns_sdhc": "sdhc",
     "espressif_esp32_sdhc_slot": "sdhc",
-    "infineon_cat1_sdhc_sdio": "sdhc",
+    "infineon_sdhc_sdio": "sdhc",
     "intel_emmc_host": "sdhc",
     "microchip_sama7g5_sdmmc": "sdhc",
     "nxp_imx_usdhc": "sdhc",
@@ -1647,6 +1818,9 @@ COMPAT_TO_DRIVER = {
     #
     # sensor/adi/ad2s1210
     "adi_ad2s1210": "sensor/adi/ad2s1210",
+    #
+    # sensor/adi/ade7978
+    "adi_ade7978": "sensor/adi/ade7978",
     #
     # sensor/adi/adltc2990
     "adi_adltc2990": "sensor/adi/adltc2990",
@@ -1670,6 +1844,9 @@ COMPAT_TO_DRIVER = {
     # sensor/adi/adxl372
     "adi_adxl372": "sensor/adi/adxl372",
     #
+    # sensor/adi/max30210
+    "adi_max30210": "sensor/adi/max30210",
+    #
     # sensor/adi/max32664c
     "maxim_max32664c": "sensor/adi/max32664c",
     #
@@ -1681,6 +1858,9 @@ COMPAT_TO_DRIVER = {
     #
     # sensor/amg88xx
     "panasonic_amg88xx": "sensor/amg88xx",
+    #
+    # sensor/ams/ams_as5048
+    "ams_as5048": "sensor/ams/ams_as5048",
     #
     # sensor/ams/ams_as5600
     "ams_as5600": "sensor/ams/ams_as5600",
@@ -1744,6 +1924,12 @@ COMPAT_TO_DRIVER = {
     # sensor/bosch/bmc150_magn
     "bosch_bmc150_magn": "sensor/bosch/bmc150_magn",
     #
+    # sensor/bosch/bme280
+    "bosch_bme280": "sensor/bosch/bme280",
+    #
+    # sensor/bosch/bme680
+    "bosch_bme680": "sensor/bosch/bme680",
+    #
     # sensor/bosch/bmg160
     "bosch_bmg160": "sensor/bosch/bmg160",
     #
@@ -1760,12 +1946,21 @@ COMPAT_TO_DRIVER = {
     # sensor/bosch/bmi323
     "bosch_bmi323": "sensor/bosch/bmi323",
     #
+    # sensor/bosch/bmm150
+    "bosch_bmm150": "sensor/bosch/bmm150",
+    #
+    # sensor/bosch/bmm350
+    "bosch_bmm350": "sensor/bosch/bmm350",
+    #
     # sensor/bosch/bmp180
     "bosch_bmp180": "sensor/bosch/bmp180",
     #
     # sensor/bosch/bmp388
     "bosch_bmp388": "sensor/bosch/bmp388",
     "bosch_bmp390": "sensor/bosch/bmp388",
+    #
+    # sensor/bosch/bmp581
+    "bosch_bmp581": "sensor/bosch/bmp581",
     #
     # sensor/broadcom/afbr_s50
     "brcm_afbr_s50": "sensor/broadcom/afbr_s50",
@@ -1825,6 +2020,9 @@ COMPAT_TO_DRIVER = {
     # sensor/infineon/xmc4xxx_temp
     "infineon_xmc4xxx_temp": "sensor/infineon/xmc4xxx_temp",
     #
+    # sensor/ist8310
+    "isentek_ist8310": "sensor/ist8310",
+    #
     # sensor/ite/ite_tach_it51xxx
     "ite_it51xxx_tach": "sensor/ite/ite_tach_it51xxx",
     #
@@ -1836,9 +2034,6 @@ COMPAT_TO_DRIVER = {
     #
     # sensor/jedec/jc42
     "jedec_jc_42_4_temp": "sensor/jedec/jc42",
-    #
-    # sensor/liteon/ltr329
-    "liteon_ltr329": "sensor/liteon/ltr329",
     #
     # sensor/liteon/ltrf216a
     "liteon_ltrf216a": "sensor/liteon/ltrf216a",
@@ -1875,6 +2070,9 @@ COMPAT_TO_DRIVER = {
     # sensor/maxim/max31855
     "maxim_max31855": "sensor/maxim/max31855",
     #
+    # sensor/maxim/max31865
+    "maxim_max31865": "sensor/maxim/max31865",
+    #
     # sensor/maxim/max31875
     "maxim_max31875": "sensor/maxim/max31875",
     #
@@ -1899,6 +2097,9 @@ COMPAT_TO_DRIVER = {
     #
     # sensor/memsic/mc3419
     "memsic_mc3419": "sensor/memsic/mc3419",
+    #
+    # sensor/memsic/mmc56x3
+    "memsic_mmc56x3": "sensor/memsic/mmc56x3",
     #
     # sensor/mhz19b
     "winsen_mhz19b": "sensor/mhz19b",
@@ -1945,6 +2146,9 @@ COMPAT_TO_DRIVER = {
     # sensor/nuvoton/nuvoton_adc_cmp_npcx
     "nuvoton_adc_cmp": "sensor/nuvoton/nuvoton_adc_cmp_npcx",
     #
+    # sensor/nuvoton/nuvoton_adc_v2t_npcx
+    "nuvoton_npcx_adc_v2t": "sensor/nuvoton/nuvoton_adc_v2t_npcx",
+    #
     # sensor/nuvoton/nuvoton_tach_npcx
     "nuvoton_npcx_tach": "sensor/nuvoton/nuvoton_tach_npcx",
     #
@@ -1974,6 +2178,9 @@ COMPAT_TO_DRIVER = {
     #
     # sensor/nxp/nxp_tempmon
     "nxp_tempmon": "sensor/nxp/nxp_tempmon",
+    #
+    # sensor/nxp/nxp_tempsense
+    "nxp_tempsense": "sensor/nxp/nxp_tempsense",
     #
     # sensor/nxp/nxp_tmpsns
     "nxp_tmpsns": "sensor/nxp/nxp_tmpsns",
@@ -2045,6 +2252,9 @@ COMPAT_TO_DRIVER = {
     # sensor/rpi_pico_temp
     "raspberrypi_pico_temp": "sensor/rpi_pico_temp",
     #
+    # sensor/rv3032_temp
+    "microcrystal_rv3032_temp": "sensor/rv3032_temp",
+    #
     # sensor/s11059
     "hamamatsu_s11059": "sensor/s11059",
     #
@@ -2073,6 +2283,9 @@ COMPAT_TO_DRIVER = {
     #
     # sensor/sensirion/sts4x
     "sensirion_sts4x": "sensor/sensirion/sts4x",
+    #
+    # sensor/sifli/sf32lb_tsen
+    "sifli_sf32lb_tsen": "sensor/sifli/sf32lb_tsen",
     #
     # sensor/silabs/si7006
     "sensirion_sht21": "sensor/silabs/si7006",
@@ -2175,6 +2388,14 @@ COMPAT_TO_DRIVER = {
     # sensor/st/lsm6dsv16x
     "DT_DRV_COMPAT_LSM6DSV16X": "sensor/st/lsm6dsv16x",
     "DT_DRV_COMPAT_LSM6DSV32X": "sensor/st/lsm6dsv16x",
+    "st_lsm6dsv16x": "sensor/st/lsm6dsv16x",
+    "st_lsm6dsv32x": "sensor/st/lsm6dsv16x",
+    #
+    # sensor/st/lsm6dsvxxx
+    "st_ism6hg256x": "sensor/st/lsm6dsvxxx",
+    "st_lsm6dsv320x": "sensor/st/lsm6dsvxxx",
+    "st_lsm6dsv80x": "sensor/st/lsm6dsvxxx",
+    "st_lsm6dsvxxx": "sensor/st/lsm6dsvxxx",
     #
     # sensor/st/lsm9ds0_gyro
     "st_lsm9ds0_gyro": "sensor/st/lsm9ds0_gyro",
@@ -2239,7 +2460,11 @@ COMPAT_TO_DRIVER = {
     "invensense_icm42670s": "sensor/tdk/icm42x70",
     #
     # sensor/tdk/icm45686
+    "invensense_icm45605": "sensor/tdk/icm45686",
+    "invensense_icm45605s": "sensor/tdk/icm45686",
     "invensense_icm45686": "sensor/tdk/icm45686",
+    "invensense_icm45686s": "sensor/tdk/icm45686",
+    "invensense_icm45688p": "sensor/tdk/icm45686",
     #
     # sensor/tdk/icp101xx
     "invensense_icp101xx": "sensor/tdk/icp101xx",
@@ -2269,6 +2494,7 @@ COMPAT_TO_DRIVER = {
     "ti_ina226": "sensor/ti/ina2xx",
     "ti_ina228": "sensor/ti/ina2xx",
     "ti_ina230": "sensor/ti/ina2xx",
+    "ti_ina232": "sensor/ti/ina2xx",
     "ti_ina236": "sensor/ti/ina2xx",
     "ti_ina237": "sensor/ti/ina2xx",
     #
@@ -2281,8 +2507,10 @@ COMPAT_TO_DRIVER = {
     # sensor/ti/lm95234
     "national_lm95234": "sensor/ti/lm95234",
     #
-    # sensor/ti/opt3001
-    "ti_opt3001": "sensor/ti/opt3001",
+    # sensor/ti/opt300x
+    "ti_opt3001": "sensor/ti/opt300x",
+    "ti_opt3004": "sensor/ti/opt300x",
+    "ti_opt300x": "sensor/ti/opt300x",
     #
     # sensor/ti/ti_hdc
     "ti_hdc": "sensor/ti/ti_hdc",
@@ -2301,6 +2529,7 @@ COMPAT_TO_DRIVER = {
     #
     # sensor/ti/tmp108
     "ams_as6212": "sensor/ti/tmp108",
+    "ams_as6221": "sensor/ti/tmp108",
     "ti_tmp108": "sensor/ti/tmp108",
     #
     # sensor/ti/tmp112
@@ -2388,10 +2617,10 @@ COMPAT_TO_DRIVER = {
     "espressif_esp32_lpuart": "serial",
     "espressif_esp32_uart": "serial",
     "espressif_esp32_usb_serial": "serial",
+    "focaltech_ft9001_usart": "serial",
     "gaisler_apbuart": "serial",
     "gd_gd32_usart": "serial",
-    "infineon_cat1_uart": "serial",
-    "infineon_cat1_uart_pdl": "serial",
+    "infineon_uart": "serial",
     "infineon_xmc4xxx_uart": "serial",
     "intel_lw_uart": "serial",
     "intel_sedi_uart": "serial",
@@ -2400,7 +2629,6 @@ COMPAT_TO_DRIVER = {
     "litex_uart": "serial",
     "lowrisc_opentitan_uart": "serial",
     "microchip_coreuart": "serial",
-    "microchip_mec5_uart": "serial",
     "microchip_sercom_g1_uart": "serial",
     "microchip_xec_uart": "serial",
     "neorv32_uart": "serial",
@@ -2420,6 +2648,8 @@ COMPAT_TO_DRIVER = {
     "openisa_rv32m1_lpuart": "serial",
     "quicklogic_usbserialport_s3b": "serial",
     "raspberrypi_pico_uart_pio": "serial",
+    "realtek_ameba_loguart": "serial",
+    "realtek_bee_uart": "serial",
     "realtek_rts5912_uart": "serial",
     "renesas_ra8_uart_sci_b": "serial",
     "renesas_ra_sci_uart": "serial",
@@ -2458,7 +2688,6 @@ COMPAT_TO_DRIVER = {
     "xen_hvc_consoleio": "serial",
     "xlnx_xps_uartlite_1_00_a": "serial",
     "xlnx_xuartps": "serial",
-    "zephyr_native_posix_uart": "serial",
     "zephyr_native_pty_uart": "serial",
     "zephyr_native_tty_uart": "serial",
     "zephyr_nus_uart": "serial",
@@ -2482,14 +2711,14 @@ COMPAT_TO_DRIVER = {
     "arm_pl022": "spi",
     "atmel_sam0_spi": "spi",
     "atmel_sam_spi": "spi",
+    "bflb_spi": "spi",
     "cdns_spi": "spi",
     "cypress_psoc6_spi": "spi",
     "egis_et171_spi": "spi",
     "espressif_esp32_spi": "spi",
     "gaisler_spimctrl": "spi",
     "gd_gd32_spi": "spi",
-    "infineon_cat1_spi": "spi",
-    "infineon_cat1_spi_pdl": "spi",
+    "infineon_spi": "spi",
     "infineon_xmc4xxx_spi": "spi",
     "intel_penwell_spi": "spi",
     "intel_sedi_spi": "spi",
@@ -2498,11 +2727,13 @@ COMPAT_TO_DRIVER = {
     "litex_spi": "spi",
     "litex_spi_litespi": "spi",
     "lowrisc_opentitan_spi": "spi",
-    "microchip_mec5_qspi": "spi",
     "microchip_mpfs_qspi": "spi",
     "microchip_mpfs_spi": "spi",
+    "microchip_sercom_g1_spi": "spi",
     "microchip_xec_qmspi": "spi",
     "microchip_xec_qmspi_ldma": "spi",
+    "nordic_nrf_spi": "spi",
+    "nordic_nrf_spim": "spi",
     "nuvoton_npcx_spip": "spi",
     "nuvoton_numaker_spi": "spi",
     "nxp_dspi": "spi",
@@ -2514,13 +2745,18 @@ COMPAT_TO_DRIVER = {
     "opencores_spi_simple": "spi",
     "openisa_rv32m1_lpspi": "spi",
     "raspberrypi_pico_spi_pio": "spi",
+    "realtek_rts5912_spi": "spi",
     "renesas_ra8_spi_b": "spi",
     "renesas_ra_spi": "spi",
+    "renesas_ra_spi_sci": "spi",
+    "renesas_ra_spi_sci_b": "spi",
     "renesas_rx_rspi": "spi",
     "renesas_rz_rspi": "spi",
     "renesas_rz_spi": "spi",
     "renesas_smartbond_spi": "spi",
+    "sensry_sy1xx_spi": "spi",
     "sifive_spi0": "spi",
+    "sifli_sf32lb_spi": "spi",
     "silabs_eusart_spi": "spi",
     "silabs_gspi": "spi",
     "silabs_usart_spi": "spi",
@@ -2540,15 +2776,28 @@ COMPAT_TO_DRIVER = {
     "nxp_lpspi": "spi/spi_nxp_lpspi",
     #
     # stepper
-    "zephyr_fake_stepper": "stepper",
-    "zephyr_h_bridge_stepper": "stepper",
+    "zephyr_fake_stepper_ctrl": "stepper",
+    "zephyr_fake_stepper_driver": "stepper",
     #
-    # stepper/adi_tmc
-    "adi_tmc2209": "stepper/adi_tmc",
-    "adi_tmc50xx": "stepper/adi_tmc",
+    # stepper/adi_tmc/tmc22xx
+    "adi_tmc2209": "stepper/adi_tmc/tmc22xx",
+    #
+    # stepper/adi_tmc/tmc50xx
+    "adi_tmc50xx": "stepper/adi_tmc/tmc50xx",
+    "adi_tmc50xx_stepper_ctrl": "stepper/adi_tmc/tmc50xx",
+    "adi_tmc50xx_stepper_driver": "stepper/adi_tmc/tmc50xx",
+    #
+    # stepper/adi_tmc/tmc51xx
+    "adi_tmc51xx": "stepper/adi_tmc/tmc51xx",
+    "adi_tmc51xx_stepper_ctrl": "stepper/adi_tmc/tmc51xx",
+    "adi_tmc51xx_stepper_driver": "stepper/adi_tmc/tmc51xx",
     #
     # stepper/allegro
     "allegro_a4979": "stepper/allegro",
+    #
+    # stepper/gpio_stepper
+    "zephyr_gpio_step_dir_stepper_ctrl": "stepper/gpio_stepper",
+    "zephyr_h_bridge_stepper_ctrl": "stepper/gpio_stepper",
     #
     # stepper/ti
     "ti_drv84xx": "stepper/ti",
@@ -2561,10 +2810,11 @@ COMPAT_TO_DRIVER = {
     "linaro_optee_tz": "tee/optee",
     #
     # timer
+    "adi_max32_rv32_sys_timer": "timer",
     "ambiq_stimer": "timer",
     "atmel_sam0_rtc": "timer",
     "gaisler_gptimer": "timer",
-    "infineon_cat1_lp_timer": "timer",
+    "infineon_lp_timer": "timer",
     "intel_adsp_timer": "timer",
     "intel_hpet": "timer",
     "ite_it51xxx_timer": "timer",
@@ -2597,6 +2847,10 @@ COMPAT_TO_DRIVER = {
     # usb/bc12
     "diodes_pi3usb9201": "usb/bc12",
     #
+    # usb/common/stm32
+    "*/": "usb/common/stm32",
+    "st_stm32u5_otghs_phy": "usb/common/stm32",
+    #
     # usb/device
     "atmel_sam_usbc": "usb/device",
     "atmel_sam_usbhs": "usb/device",
@@ -2607,6 +2861,7 @@ COMPAT_TO_DRIVER = {
     "atmel_sam0_usb": "usb/udc",
     "ite_it82xx2_usb": "usb/udc",
     "nordic_nrf_usbd": "usb/udc",
+    "nuvoton_numaker_hsusbd": "usb/udc",
     "nuvoton_numaker_usbd": "usb/udc",
     "nxp_ehci": "usb/udc",
     "nxp_kinetis_usbd": "usb/udc",
@@ -2647,15 +2902,18 @@ COMPAT_TO_DRIVER = {
     #
     # video
     "aptina_mt9m114": "video",
-    "espressif_esp32_lcd_cam": "video",
+    "espressif_esp32_lcd_cam_dvp": "video",
     "galaxycore_gc2145": "video",
     "himax_hm01b0": "video",
+    "himax_hm0360": "video",
     "nxp_imx_csi": "video",
     "nxp_mipi_csi2rx": "video",
     "nxp_video_smartdma": "video",
     "ovti_ov2640": "video",
     "ovti_ov5640": "video",
+    "ovti_ov5642": "video",
     "ovti_ov7670": "video",
+    "ovti_ov7675": "video",
     "ovti_ov7725": "video",
     "ovti_ov9655": "video",
     "renesas_ra_ceu": "video",
@@ -2688,19 +2946,21 @@ COMPAT_TO_DRIVER = {
     #
     # watchdog
     "adi_max32_watchdog": "watchdog",
+    "adi_max42500_watchdog": "watchdog",
     "ambiq_watchdog": "watchdog",
     "andestech_atcwdt200": "watchdog",
     "arm_cmsdk_watchdog": "watchdog",
     "atmel_sam0_watchdog": "watchdog",
     "atmel_sam4l_watchdog": "watchdog",
     "atmel_sam_watchdog": "watchdog",
+    "bflb_wdt": "watchdog",
     "ene_kb106x_watchdog": "watchdog",
     "ene_kb1200_watchdog": "watchdog",
     "espressif_esp32_watchdog": "watchdog",
     "espressif_esp32_xt_wdt": "watchdog",
     "gd_gd32_fwdgt": "watchdog",
     "gd_gd32_wwdgt": "watchdog",
-    "infineon_cat1_watchdog": "watchdog",
+    "infineon_watchdog": "watchdog",
     "infineon_xmc4xxx_watchdog": "watchdog",
     "intel_adsp_watchdog": "watchdog",
     "intel_tco_wdt": "watchdog",
@@ -2708,11 +2968,13 @@ COMPAT_TO_DRIVER = {
     "ite_it8xxx2_watchdog": "watchdog",
     "litex_watchdog": "watchdog",
     "lowrisc_opentitan_aontimer": "watchdog",
+    "microchip_wdt_g1": "watchdog",
     "microchip_xec_watchdog": "watchdog",
     "nordic_npm1300_wdt": "watchdog",
     "nordic_npm1304_wdt": "watchdog",
     "nordic_npm2100_wdt": "watchdog",
     "nordic_npm6001_wdt": "watchdog",
+    "nordic_nrf_wdt": "watchdog",
     "nuvoton_npcx_watchdog": "watchdog",
     "nuvoton_numaker_wwdt": "watchdog",
     "nxp_cop": "watchdog",
@@ -2725,6 +2987,7 @@ COMPAT_TO_DRIVER = {
     "nxp_s32_swt": "watchdog",
     "nxp_wdog32": "watchdog",
     "raspberrypi_pico_watchdog": "watchdog",
+    "realtek_rts5817_watchdog": "watchdog",
     "realtek_rts5912_watchdog": "watchdog",
     "renesas_rx_iwdt": "watchdog",
     "renesas_rz_wdt": "watchdog",
@@ -2751,9 +3014,15 @@ COMPAT_TO_DRIVER = {
     # wifi/esp_at
     "espressif_esp_at": "wifi/esp_at",
     #
+    # wifi/esp_hosted
+    "espressif_esp_hosted": "wifi/esp_hosted",
+    #
     # wifi/eswifi
     "inventek_eswifi": "wifi/eswifi",
     "inventek_eswifi_uart": "wifi/eswifi",
+    #
+    # wifi/infineon
+    "infineon_airoc_wifi": "wifi/infineon",
     #
     # wifi/nrf_wifi/off_raw_tx/src
     "nordic_wlan": "wifi/nrf_wifi/off_raw_tx/src",

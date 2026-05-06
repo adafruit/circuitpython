@@ -27,4 +27,5 @@
 # These should also not be modified by git.
 tests/basics/string_cr_conversion.py -text
 tests/basics/string_crlf_conversion.py -text
+tests/micropython/test_normalize_newlines.py.exp -text
 # CIRCUITPY-CHANGE: remove non-CircuitPython tests

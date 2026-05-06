@@ -157,7 +157,7 @@ def sym_default(sym):
     default=False,
     help="Updates the sdkconfigs outside of the board directory.",
 )
-def update(debug, board, update_all):  # noqa: C901: too complex
+def update(debug, board, update_all):  # noqa: C901 too complex
     """Updates related sdkconfig files based on the build directory version that
     was likely modified by menuconfig."""
 

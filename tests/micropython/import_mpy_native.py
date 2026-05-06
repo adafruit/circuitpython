@@ -54,12 +54,13 @@ class UserFS:
 
 # these are the test .mpy files
 # CIRCUITPY-CHANGE
-valid_header = bytes([ord("C"), 6, mpy_arch, 31])
+small_int_bits = 31
+valid_header = bytes([77, 6, (mpy_arch & 0x3F), small_int_bits])
 # fmt: off
 user_files = {
     # bad architecture (mpy_arch needed for sub-version)
     # CIRCUITPY-CHANGE
-    '/mod0.mpy': bytes([ord('C'), 6, 0xfc | mpy_arch, 31]),
+    '/mod0.mpy': bytes([ord('C'), 6, 0xfc | (mpy_arch & 3), small_int_bits]),
 
     # test loading of viper and asm
     '/mod1.mpy': valid_header + (

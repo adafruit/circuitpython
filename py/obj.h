@@ -184,13 +184,15 @@ static inline bool mp_obj_is_small_int(mp_const_obj_t o) {
 #define MP_OBJ_NEW_SMALL_INT(small_int) ((mp_obj_t)((((mp_uint_t)(small_int)) << 1) | 1))
 
 #if MICROPY_PY_BUILTINS_FLOAT
-#define MP_OBJ_NEW_CONST_FLOAT(f) MP_ROM_PTR((mp_obj_t)((((((uint64_t)f) & ~3) | 2) + 0x80800000) & 0xffffffff))
+#include <math.h>
+// note: MP_OBJ_NEW_CONST_FLOAT should be a MP_ROM_PTR but that macro isn't available yet
+#define MP_OBJ_NEW_CONST_FLOAT(f) ((mp_obj_t)((((((uint64_t)f) & ~3) | 2) + 0x80800000) & 0xffffffff))
 #define mp_const_float_e  MP_OBJ_NEW_CONST_FLOAT(0x402df854)
 #define mp_const_float_pi MP_OBJ_NEW_CONST_FLOAT(0x40490fdb)
+#define mp_const_float_nan MP_OBJ_NEW_CONST_FLOAT(0x7fc00000)
 #if MICROPY_PY_MATH_CONSTANTS
 #define mp_const_float_tau MP_OBJ_NEW_CONST_FLOAT(0x40c90fdb)
 #define mp_const_float_inf MP_OBJ_NEW_CONST_FLOAT(0x7f800000)
-#define mp_const_float_nan MP_OBJ_NEW_CONST_FLOAT(0xffc00000)
 #endif
 
 static inline bool mp_obj_is_float(mp_const_obj_t o) {
@@ -204,9 +206,17 @@ static inline mp_float_t mp_obj_float_get(mp_const_obj_t o) {
         mp_float_t f;
         mp_uint_t u;
     } num = {.u = ((mp_uint_t)o - 0x80800000u) & ~3u};
+    // Rather than always truncating toward zero, which creates a strong
+    // bias, copy the two previous bits to fill in the two missing bits.
+    // This appears to be a pretty good heuristic.
+    num.u |= (num.u >> 2) & 3u;
     return num.f;
 }
 static inline mp_obj_t mp_obj_new_float(mp_float_t f) {
+    if (isnan(f)) {
+        // prevent creation of bad nanboxed pointers via array.array or struct
+        return mp_const_float_nan;
+    }
     union {
         mp_float_t f;
         mp_uint_t u;
@@ -257,8 +267,10 @@ static inline bool mp_obj_is_immediate_obj(mp_const_obj_t o) {
 #error MICROPY_OBJ_REPR_D requires MICROPY_FLOAT_IMPL_DOUBLE
 #endif
 
+#include <math.h>
 #define mp_const_float_e {((mp_obj_t)((uint64_t)0x4005bf0a8b145769 + 0x8004000000000000))}
 #define mp_const_float_pi {((mp_obj_t)((uint64_t)0x400921fb54442d18 + 0x8004000000000000))}
+#define mp_const_float_nan {((mp_obj_t)((uint64_t)0x7ff8000000000000 + 0x8004000000000000))}
 #if MICROPY_PY_MATH_CONSTANTS
 #define mp_const_float_tau {((mp_obj_t)((uint64_t)0x401921fb54442d18 + 0x8004000000000000))}
 #define mp_const_float_inf {((mp_obj_t)((uint64_t)0x7ff0000000000000 + 0x8004000000000000))}
@@ -276,6 +288,13 @@ static inline mp_float_t mp_obj_float_get(mp_const_obj_t o) {
     return num.f;
 }
 static inline mp_obj_t mp_obj_new_float(mp_float_t f) {
+    if (isnan(f)) {
+        // prevent creation of bad nanboxed pointers via array.array or struct
+        struct {
+            uint64_t r;
+        } num = mp_const_float_nan;
+        return num.r;
+    }
     union {
         mp_float_t f;
         uint64_t r;
@@ -371,25 +390,25 @@ typedef struct _mp_rom_obj_t { mp_const_obj_t o; } mp_rom_obj_t;
 
 #define MP_DEFINE_CONST_FUN_OBJ_0(obj_name, fun_name) \
     const mp_obj_fun_builtin_fixed_t obj_name = \
-    {{&mp_type_fun_builtin_0}, .fun._0 = fun_name}
+    {.base = {.type = &mp_type_fun_builtin_0}, .fun = {._0 = fun_name}}
 #define MP_DEFINE_CONST_FUN_OBJ_1(obj_name, fun_name) \
     const mp_obj_fun_builtin_fixed_t obj_name = \
-    {{&mp_type_fun_builtin_1}, .fun._1 = fun_name}
+    {.base = {.type = &mp_type_fun_builtin_1}, .fun = {._1 = fun_name}}
 #define MP_DEFINE_CONST_FUN_OBJ_2(obj_name, fun_name) \
     const mp_obj_fun_builtin_fixed_t obj_name = \
-    {{&mp_type_fun_builtin_2}, .fun._2 = fun_name}
+    {.base = {.type = &mp_type_fun_builtin_2}, .fun = {._2 = fun_name}}
 #define MP_DEFINE_CONST_FUN_OBJ_3(obj_name, fun_name) \
     const mp_obj_fun_builtin_fixed_t obj_name = \
-    {{&mp_type_fun_builtin_3}, .fun._3 = fun_name}
+    {.base = {.type = &mp_type_fun_builtin_3}, .fun = {._3 = fun_name}}
 #define MP_DEFINE_CONST_FUN_OBJ_VAR(obj_name, n_args_min, fun_name) \
     const mp_obj_fun_builtin_var_t obj_name = \
-    {{&mp_type_fun_builtin_var}, MP_OBJ_FUN_MAKE_SIG(n_args_min, MP_OBJ_FUN_ARGS_MAX, false), .fun.var = fun_name}
+    {.base = {.type = &mp_type_fun_builtin_var}, .sig = MP_OBJ_FUN_MAKE_SIG(n_args_min, MP_OBJ_FUN_ARGS_MAX, false), .fun = {.var = fun_name}}
 #define MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(obj_name, n_args_min, n_args_max, fun_name) \
     const mp_obj_fun_builtin_var_t obj_name = \
-    {{&mp_type_fun_builtin_var}, MP_OBJ_FUN_MAKE_SIG(n_args_min, n_args_max, false), .fun.var = fun_name}
+    {.base = {.type = &mp_type_fun_builtin_var}, .sig = MP_OBJ_FUN_MAKE_SIG(n_args_min, n_args_max, false), .fun = {.var = fun_name}}
 #define MP_DEFINE_CONST_FUN_OBJ_KW(obj_name, n_args_min, fun_name) \
     const mp_obj_fun_builtin_var_t obj_name = \
-    {{&mp_type_fun_builtin_var}, MP_OBJ_FUN_MAKE_SIG(n_args_min, MP_OBJ_FUN_ARGS_MAX, true), .fun.kw = fun_name}
+    {.base = {.type = &mp_type_fun_builtin_var}, .sig = MP_OBJ_FUN_MAKE_SIG(n_args_min, MP_OBJ_FUN_ARGS_MAX, true), .fun = {.kw = fun_name}}
 
 // CIRCUITPY-CHANGE
 #define MP_DEFINE_CONST_PROP_GET(obj_name, fun_name) \
@@ -516,9 +535,7 @@ static inline bool mp_map_slot_is_filled(const mp_map_t *map, size_t pos) {
 
 void mp_map_init(mp_map_t *map, size_t n);
 void mp_map_init_fixed_table(mp_map_t *map, size_t n, const mp_obj_t *table);
-mp_map_t *mp_map_new(size_t n);
 void mp_map_deinit(mp_map_t *map);
-void mp_map_free(mp_map_t *map);
 mp_map_elem_t *mp_map_lookup(mp_map_t *map, mp_obj_t index, mp_map_lookup_kind_t lookup_kind);
 void mp_map_clear(mp_map_t *map);
 void mp_map_dump(mp_map_t *map);
@@ -555,6 +572,10 @@ typedef mp_obj_t (*mp_fun_var_t)(size_t n, const mp_obj_t *);
 typedef mp_obj_t (*mp_fun_kw_t)(size_t n, const mp_obj_t *, mp_map_t *);
 
 // Flags for type behaviour (mp_obj_type_t.flags)
+// If MP_TYPE_FLAG_IS_SUBCLASSED is set, then subclasses of this class have been created.
+//   Mutations to this class that would require updating all subclasses must be rejected.
+// If MP_TYPE_FLAG_HAS_SPECIAL_ACCESSORS is set, then attribute lookups involving this
+//   class need to additionally check for special accessor methods, such as from descriptors.
 // If MP_TYPE_FLAG_EQ_NOT_REFLEXIVE is clear then __eq__ is reflexive (A==A returns True).
 // If MP_TYPE_FLAG_EQ_CHECKS_OTHER_TYPE is clear then the type can't be equal to an
 //   instance of any different class that also clears this flag.  If this flag is set
@@ -572,6 +593,8 @@ typedef mp_obj_t (*mp_fun_kw_t)(size_t n, const mp_obj_t *, mp_map_t *);
 // If MP_TYPE_FLAG_ITER_IS_STREAM is set then the type implicitly gets a "return self"
 //   getiter, and mp_stream_unbuffered_iter for iternext.
 // If MP_TYPE_FLAG_INSTANCE_TYPE is set then this is an instance type (i.e. defined in Python).
+// If MP_TYPE_FLAG_SUBSCR_ALLOWS_STACK_SLICE is set then the "subscr" slot allows a stack
+//   allocated slice to be passed in (no references to it will be retained after the call).
 #define MP_TYPE_FLAG_NONE (0x0000)
 #define MP_TYPE_FLAG_IS_SUBCLASSED (0x0001)
 #define MP_TYPE_FLAG_HAS_SPECIAL_ACCESSORS (0x0002)
@@ -585,8 +608,9 @@ typedef mp_obj_t (*mp_fun_kw_t)(size_t n, const mp_obj_t *, mp_map_t *);
 #define MP_TYPE_FLAG_ITER_IS_CUSTOM (0x0100)
 #define MP_TYPE_FLAG_ITER_IS_STREAM (MP_TYPE_FLAG_ITER_IS_ITERNEXT | MP_TYPE_FLAG_ITER_IS_CUSTOM)
 #define MP_TYPE_FLAG_INSTANCE_TYPE (0x0200)
+#define MP_TYPE_FLAG_SUBSCR_ALLOWS_STACK_SLICE (0x0400)
 // CIRCUITPY-CHANGE: check for valid types in json dumps
-#define MP_TYPE_FLAG_PRINT_JSON (0x0400)
+#define MP_TYPE_FLAG_PRINT_JSON (0x0800)
 
 typedef enum {
     PRINT_STR = 0,
@@ -827,7 +851,7 @@ typedef struct _mp_obj_full_type_t {
 #define MP_DEFINE_CONST_OBJ_TYPE_NARGS(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, N, ...) MP_DEFINE_CONST_OBJ_TYPE_NARGS_##N
 
 // This macros is used to define a object type in ROM.
-// Invoke as MP_DEFINE_CONST_OBJ_TYPE(_typename, _name, _flags, _make_new [, slot, func]*)
+// Invoke as MP_DEFINE_CONST_OBJ_TYPE(_typename, _name, _flags, [, slot, func]*)
 // It uses the number of arguments to select which MP_DEFINE_CONST_OBJ_TYPE_*
 // macro to use based on the number of arguments. It works by shifting the
 // numeric values 12, 11, ... 0 by the number of arguments, such that the
@@ -847,7 +871,7 @@ extern const mp_obj_type_t mp_type_bytearray;
 extern const mp_obj_type_t mp_type_memoryview;
 extern const mp_obj_type_t mp_type_float;
 extern const mp_obj_type_t mp_type_complex;
-// CIRCUITPY-CHANGE
+// CIRCUITPY-CHANGE: add traceback support
 extern const mp_obj_type_t mp_type_traceback;
 extern const mp_obj_type_t mp_type_tuple;
 extern const mp_obj_type_t mp_type_list;
@@ -909,7 +933,7 @@ extern const mp_obj_type_t mp_type_ImportError;
 extern const mp_obj_type_t mp_type_IndentationError;
 extern const mp_obj_type_t mp_type_IndexError;
 extern const mp_obj_type_t mp_type_KeyboardInterrupt;
-// CIRCUITPY-CHANGE
+// CIRCUITPY-CHANGE: add ReloadException
 extern const mp_obj_type_t mp_type_ReloadException;
 extern const mp_obj_type_t mp_type_KeyError;
 extern const mp_obj_type_t mp_type_LookupError;
@@ -917,9 +941,9 @@ extern const mp_obj_type_t mp_type_MemoryError;
 extern const mp_obj_type_t mp_type_NameError;
 extern const mp_obj_type_t mp_type_NotImplementedError;
 extern const mp_obj_type_t mp_type_OSError;
-// CIRCUITPY-CHANGE
+// CIRCUITPY-CHANGE: add ConnectionError
 extern const mp_obj_type_t mp_type_ConnectionError;
-// CIRCUITPY-CHANGE
+// CIRCUITPY-CHANGE: add BrokenPipeError
 extern const mp_obj_type_t mp_type_BrokenPipeError;
 extern const mp_obj_type_t mp_type_OverflowError;
 extern const mp_obj_type_t mp_type_RuntimeError;
@@ -927,6 +951,7 @@ extern const mp_obj_type_t mp_type_StopAsyncIteration;
 extern const mp_obj_type_t mp_type_StopIteration;
 extern const mp_obj_type_t mp_type_SyntaxError;
 extern const mp_obj_type_t mp_type_SystemExit;
+// CIRCUITPY-CHANGE: add TimeoutError
 extern const mp_obj_type_t mp_type_TimeoutError;
 extern const mp_obj_type_t mp_type_TypeError;
 extern const mp_obj_type_t mp_type_UnicodeError;
@@ -991,11 +1016,11 @@ void *mp_obj_malloc_helper(size_t num_bytes, const mp_obj_type_t *type);
 // Object allocation macros for allocating objects that have a finaliser.
 #if MICROPY_ENABLE_FINALISER
 #define mp_obj_malloc_with_finaliser(struct_type, obj_type) ((struct_type *)mp_obj_malloc_with_finaliser_helper(sizeof(struct_type), obj_type))
-#define mp_obj_malloc_var_with_finaliser(struct_type, var_type, var_num, obj_type) ((struct_type *)mp_obj_malloc_with_finaliser_helper(sizeof(struct_type) + sizeof(var_type) * (var_num), obj_type))
+#define mp_obj_malloc_var_with_finaliser(struct_type, var_field, var_type, var_num, obj_type) ((struct_type *)mp_obj_malloc_with_finaliser_helper(offsetof(struct_type, var_field) + sizeof(var_type) * (var_num), obj_type))
 void *mp_obj_malloc_with_finaliser_helper(size_t num_bytes, const mp_obj_type_t *type);
 #else
 #define mp_obj_malloc_with_finaliser(struct_type, obj_type) mp_obj_malloc(struct_type, obj_type)
-#define mp_obj_malloc_var_with_finaliser(struct_type, var_type, var_num, obj_type) mp_obj_malloc_var(struct_type, var_type, var_num, obj_type)
+#define mp_obj_malloc_var_with_finaliser(struct_type, var_field, var_type, var_num, obj_type) mp_obj_malloc_var(struct_type, var_field, var_type, var_num, obj_type)
 #endif
 
 // These macros are derived from more primitive ones and are used to
@@ -1032,7 +1057,6 @@ bool mp_obj_is_dict_or_ordereddict(mp_obj_t o);
 // type check is done on iter method to allow tuple, namedtuple, attrtuple
 #define mp_obj_is_tuple_compatible(o) (MP_OBJ_TYPE_GET_SLOT_OR_NULL(mp_obj_get_type(o), iter) == mp_obj_tuple_getiter)
 
-mp_obj_t mp_obj_new_type(qstr name, mp_obj_t bases_tuple, mp_obj_t locals_dict);
 static inline mp_obj_t mp_obj_new_bool(mp_int_t x) {
     return x ? mp_const_true : mp_const_false;
 }
@@ -1053,10 +1077,10 @@ mp_obj_t mp_obj_new_str_from_utf8_vstr(vstr_t *vstr); // input data must be vali
 #endif
 mp_obj_t mp_obj_new_bytes_from_vstr(vstr_t *vstr);
 mp_obj_t mp_obj_new_bytes(const byte *data, size_t len);
-// CIRCUITPY-CHANGE
+// CIRCUITPY-CHANGE: new routine
 mp_obj_t mp_obj_new_bytes_of_zeros(size_t len);
 mp_obj_t mp_obj_new_bytearray(size_t n, const void *items);
-// CIRCUITPY-CHANGE
+// CIRCUITPY-CHANGE: new routine
 mp_obj_t mp_obj_new_bytearray_of_zeros(size_t n);
 mp_obj_t mp_obj_new_bytearray_by_ref(size_t n, void *items);
 #if MICROPY_PY_BUILTINS_FLOAT
@@ -1092,7 +1116,7 @@ mp_obj_t mp_obj_new_memoryview(byte typecode, size_t nitems, void *items);
 
 const mp_obj_type_t *mp_obj_get_type(mp_const_obj_t o_in);
 const char *mp_obj_get_type_str(mp_const_obj_t o_in);
-// CIRCUITPY-CHANGE
+// CIRCUITPY-CHANGE: new routine
 #define mp_obj_get_type_qstr(o_in) (mp_obj_get_type((o_in))->name)
 bool mp_obj_is_subclass_fast(mp_const_obj_t object, mp_const_obj_t classinfo); // arguments should be type objects
 mp_obj_t mp_obj_cast_to_native_base(mp_obj_t self_in, mp_const_obj_t native_type);
@@ -1100,7 +1124,7 @@ mp_obj_t mp_obj_cast_to_native_base(mp_obj_t self_in, mp_const_obj_t native_type
 void mp_obj_print_helper(const mp_print_t *print, mp_obj_t o_in, mp_print_kind_t kind);
 void mp_obj_print(mp_obj_t o, mp_print_kind_t kind);
 void mp_obj_print_exception(const mp_print_t *print, mp_obj_t exc);
-// CIRCUITPY-CHANGE
+// CIRCUITPY-CHANGE: new routine
 void mp_obj_print_exception_with_limit(const mp_print_t *print, mp_obj_t exc, mp_int_t limit);
 
 bool mp_obj_is_true(mp_obj_t arg);
@@ -1114,6 +1138,8 @@ static inline bool mp_obj_is_integer(mp_const_obj_t o) {
 }
 
 mp_int_t mp_obj_get_int(mp_const_obj_t arg);
+mp_uint_t mp_obj_get_uint(mp_const_obj_t arg);
+long long mp_obj_get_ll(mp_const_obj_t arg);
 mp_int_t mp_obj_get_int_truncated(mp_const_obj_t arg);
 bool mp_obj_get_int_maybe(mp_const_obj_t arg, mp_int_t *value);
 #if MICROPY_PY_BUILTINS_FLOAT
@@ -1163,7 +1189,7 @@ bool mp_obj_exception_match(mp_obj_t exc, mp_const_obj_t exc_type);
 void mp_obj_exception_clear_traceback(mp_obj_t self_in);
 void mp_obj_exception_add_traceback(mp_obj_t self_in, qstr file, size_t line, qstr block);
 void mp_obj_exception_get_traceback(mp_obj_t self_in, size_t *n, size_t **values);
-// CIRCUITPY-CHANGE
+// CIRCUITPY-CHANGE: new routine
 mp_obj_t mp_obj_exception_get_traceback_obj(mp_obj_t self_in);
 mp_obj_t mp_obj_exception_get_value(mp_obj_t self_in);
 mp_obj_t mp_obj_exception_make_new(const mp_obj_type_t *type_in, size_t n_args, size_t n_kw, const mp_obj_t *args);
@@ -1240,7 +1266,7 @@ void mp_obj_tuple_del(mp_obj_t self_in);
 mp_int_t mp_obj_tuple_hash(mp_obj_t self_in);
 
 // list
-// CIRCUITPY-CHANGE
+// CIRCUITPY-CHANGE: public routine
 mp_obj_t mp_obj_list_clear(mp_obj_t self_in);
 mp_obj_t mp_obj_list_append(mp_obj_t self_in, mp_obj_t arg);
 mp_obj_t mp_obj_list_remove(mp_obj_t self_in, mp_obj_t value);
@@ -1336,7 +1362,7 @@ typedef struct _mp_rom_obj_static_class_method_t {
 } mp_rom_obj_static_class_method_t;
 
 // property
-// CIRCUITPY-CHANGE
+// CIRCUITPY-CHANGE: extra args
 const mp_obj_t *mp_obj_property_get(mp_obj_t self_in, size_t *n_proxy);
 
 // sequence helpers

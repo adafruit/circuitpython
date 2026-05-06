@@ -56,7 +56,7 @@
 //|
 //|
 MP_DEFINE_BLEIO_EXCEPTION(BluetoothError, Exception)
-NORETURN void mp_raise_bleio_BluetoothError(mp_rom_error_text_t fmt, ...) {
+MP_NORETURN void mp_raise_bleio_BluetoothError(mp_rom_error_text_t fmt, ...) {
     va_list argptr;
     va_start(argptr, fmt);
     mp_obj_t exception = mp_obj_new_exception_msg_vlist(&mp_type_bleio_BluetoothError, fmt, argptr);
@@ -72,7 +72,7 @@ NORETURN void mp_raise_bleio_BluetoothError(mp_rom_error_text_t fmt, ...) {
 //|
 //|
 MP_DEFINE_BLEIO_EXCEPTION(RoleError, bleio_BluetoothError)
-NORETURN void mp_raise_bleio_RoleError(mp_rom_error_text_t msg) {
+MP_NORETURN void mp_raise_bleio_RoleError(mp_rom_error_text_t msg) {
     mp_raise_msg(&mp_type_bleio_RoleError, msg);
 }
 
@@ -83,7 +83,7 @@ NORETURN void mp_raise_bleio_RoleError(mp_rom_error_text_t msg) {
 //|
 //|
 MP_DEFINE_BLEIO_EXCEPTION(SecurityError, bleio_BluetoothError)
-NORETURN void mp_raise_bleio_SecurityError(mp_rom_error_text_t fmt, ...) {
+MP_NORETURN void mp_raise_bleio_SecurityError(mp_rom_error_text_t fmt, ...) {
     va_list argptr;
     va_start(argptr, fmt);
     mp_obj_t exception = mp_obj_new_exception_msg_vlist(&mp_type_bleio_SecurityError, fmt, argptr);

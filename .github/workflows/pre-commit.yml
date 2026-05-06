@@ -17,14 +17,14 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
     - name: Set up repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         submodules: false
         show-progress: false
         fetch-depth: 1
         persist-credentials: false
     - name: Set up python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: 3.x
     - name: Set up submodules
@@ -42,7 +42,7 @@ jobs:
       run: git diff > ~/pre-commit.patch
     - name: Upload patch
       if: failure()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: patch
         path: ~/pre-commit.patch

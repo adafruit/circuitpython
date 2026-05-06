@@ -71,6 +71,11 @@ bool gc_alloc_possible(void);
 // Use this function to sweep the whole heap and run all finalisers
 void gc_sweep_all(void);
 
+// These functions are used to manage weakrefs.
+void gc_weakref_mark(void *ptr);
+void gc_weakref_about_to_be_freed(void *ptr);
+void gc_weakref_sweep(void);
+
 enum {
     GC_ALLOC_FLAG_HAS_FINALISER = 1,
     // CIRCUITPY-CHANGE

@@ -197,7 +197,7 @@ void common_hal_alarm_set_deep_sleep_alarms(size_t n_alarms, const mp_obj_t *ala
     _setup_sleep_alarms(true, n_alarms, alarms);
 }
 
-void NORETURN common_hal_alarm_enter_deep_sleep(void) {
+void MP_NORETURN common_hal_alarm_enter_deep_sleep(void) {
     bool timealarm_set = alarm_time_timealarm_is_set();
 
     #if CIRCUITPY_CYW43

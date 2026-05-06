@@ -11,6 +11,7 @@ ifeq ($(MICROPY_PREVIEW_VERSION_2),1)
 CFLAGS += -DMICROPY_PREVIEW_VERSION_2=1
 endif
 
+# CIRCUITPY-CHANGE: point to CircuitPython documentation
 HELP_BUILD_ERROR ?= "See \033[1;31mhttps://learn.adafruit.com/building-circuitpython; Adafruit Discord \#circuitpython-dev\033[0m"
 HELP_MPY_LIB_SUBMODULE ?= "\033[1;31mError: micropython-lib submodule is not initialized.\033[0m Run 'make submodules'"
 
@@ -112,6 +113,14 @@ $(BUILD)/%.pp: %.c
 	$(STEPECHO) "PreProcess $<"
 	$(Q)$(CPP) $(CFLAGS) -Wp,-C,-dD,-dI -o $@ $<
 
+.PHONY: $(BUILD)/%.sz
+$(BUILD)/%.sz: $(BUILD)/%.o
+	$(Q)$(SIZE) $<
+
+# Special case for compiling auto-generated source files.
+$(BUILD)/%.o: $(BUILD)/%.c
+	$(call compile_c)
+
 # The following rule uses | to create an order only prerequisite. Order only
 # prerequisites only get built if they don't exist. They don't cause timestamp
 # checking to be performed.
@@ -179,7 +188,7 @@ $(HEADER_BUILD)/compressed.collected: $(HEADER_BUILD)/compressed.split
 # will be created if they don't exist.
 OBJ_DIRS = $(sort $(dir $(OBJ)))
 $(OBJ): | $(OBJ_DIRS)
-// CIRCUITPY-CHANGE: use $(Q)
+# CIRCUITPY-CHANGE: use $(Q)
 $(OBJ_DIRS):
 	$(Q)$(MKDIR) -p $@
 
@@ -260,7 +269,7 @@ submodules:
 	$(ECHO) "Updating submodules: $(GIT_SUBMODULES)"
 ifneq ($(GIT_SUBMODULES),)
 	$(Q)cd $(TOP) && git submodule sync $(GIT_SUBMODULES)
-	$(Q)cd $(TOP) && git submodule update --init --filter=blob:none $(GIT_SUBMODULES) || \
+	$(Q)cd $(TOP) && git submodule update --init --filter=blob:none $(GIT_SUBMODULES) 2>/dev/null || \
 	  git submodule update --init $(GIT_SUBMODULES)
 endif
 .PHONY: submodules

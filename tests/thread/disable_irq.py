@@ -1,8 +1,14 @@
 # Ensure that disabling IRQs creates mutual exclusion between threads
 # (also tests nesting of disable_irq across threads)
-import machine
-import time
-import _thread
+
+# CIRCUITPY-CHANGE: no machine
+try:
+    import machine
+    import time
+    import _thread
+except ImportError:
+    print("SKIP")
+    raise SystemExit
 
 if not hasattr(machine, "disable_irq"):
     print("SKIP")

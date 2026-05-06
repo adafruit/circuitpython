@@ -67,7 +67,7 @@ static uint32_t subsec, sec = 0;
 static uint32_t tick_flag = 0;
 
 // defined by cmsis core files
-extern void NVIC_SystemReset(void) NORETURN;
+extern void NVIC_SystemReset(void) MP_NORETURN;
 
 volatile uint32_t system_ticks = 0;
 

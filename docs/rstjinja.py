@@ -5,7 +5,7 @@ import re
 
 
 def render_with_jinja(docname, source):
-    if re.search("^\s*.. jinja$", source[0], re.M):
+    if re.search(r"^\s*.. jinja$", source[0], re.M):
         return True
     return False
 
@@ -38,3 +38,7 @@ def rstjinja(app, docname, source):
 
 def setup(app):
     app.connect("source-read", rstjinja)
+    return {
+        "parallel_read_safe": True,
+        "parallel_write_safe": True,
+    }

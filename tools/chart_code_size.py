@@ -24,7 +24,7 @@ SPECIAL_NODE_COLORS = {"main": "pink", "exception_table": "green"}
 
 @click.command()
 @click.argument("elf_filename")
-def do_all_the_things(elf_filename):  # noqa: C901: too complex
+def do_all_the_things(elf_filename):  # noqa: C901 too complex
     symbol = None
     last_address = 0
     all_symbols = {}

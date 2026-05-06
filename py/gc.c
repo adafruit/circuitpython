@@ -1447,7 +1447,7 @@ void gc_dump_alloc_table(const mp_print_t *print) {
                     }
                     if (bl2 - bl >= 2 * DUMP_BYTES_PER_LINE) {
                         // there are at least 2 lines containing only free blocks, so abbreviate their printing
-                        mp_printf(print, "\n       (%u lines all free)", (uint)(bl2 - bl) / DUMP_BYTES_PER_LINE);
+                        mp_printf(print, "\n       (%u lines all free)", (uint)((bl2 - bl) / DUMP_BYTES_PER_LINE));
                         bl = bl2 & (~(DUMP_BYTES_PER_LINE - 1));
                         if (bl >= area->gc_alloc_table_byte_len * BLOCKS_PER_ATB) {
                             // got to end of heap
@@ -1490,7 +1490,7 @@ void gc_dump_alloc_table(const mp_print_t *print) {
                     break;
                 }
                 */
-                /* this prints the uPy object type of the head block */
+                /* this prints the MicroPython object type of the head block */
                 case AT_HEAD: {
                     // CIRCUITPY-CHANGE: compiler warning avoidance
                     #pragma GCC diagnostic push

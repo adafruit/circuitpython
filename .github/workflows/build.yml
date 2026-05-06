@@ -28,14 +28,14 @@ jobs:
       env:
         GITHUB_CONTEXT: ${{ toJson(github) }}
     - name: Set up repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         submodules: false
         show-progress: false
         fetch-depth: 1
         persist-credentials: false
     - name: Set up python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: 3.x
     - name: Duplicate USB VID/PID check
@@ -114,14 +114,14 @@ jobs:
       CP_VERSION: ${{ needs.scheduler.outputs.cp-version }}
     steps:
     - name: Set up repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         submodules: false
         show-progress: false
         fetch-depth: 1
         persist-credentials: false
     - name: Set up python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: 3.x
     - name: Set up submodules
@@ -133,7 +133,7 @@ jobs:
         msgfmt --version
     - name: Build mpy-cross (arm64)
       run: make -C mpy-cross -j4 -f Makefile.m1 V=2
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: mpy-cross-macos-arm64
         path: mpy-cross/build-arm64/mpy-cross-arm64
@@ -156,14 +156,14 @@ jobs:
       CP_VERSION: ${{ needs.scheduler.outputs.cp-version }}
     steps:
     - name: Set up repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         submodules: false
         show-progress: false
         fetch-depth: 1
         persist-credentials: false
     - name: Set up python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: 3.x
     - name: Set up submodules
@@ -177,20 +177,20 @@ jobs:
         pip install -r requirements-doc.txt
     - name: Build and Validate Stubs
       run: make check-stubs -j4
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: stubs
         path: circuitpython-stubs/dist/*
     - name: Test Documentation Build (HTML)
       run: sphinx-build -E -W -b html -D version="$CP_VERSION" -D release="$CP_VERSION" . _build/html
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: docs-html
         path: _build/html
     - name: Test Documentation Build (LaTeX/PDF)
       run: |
         make latexpdf
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v7
       with:
         name: docs-latexpdf
         path: _build/latex
@@ -260,7 +260,7 @@ jobs:
         which python; python --version; python -c "import cascadetoml"
         which python3; python3 --version; python3 -c "import cascadetoml"
     - name: Set up repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         submodules: false
         show-progress: false
@@ -295,13 +295,13 @@ jobs:
       CP_VERSION: ${{ needs.scheduler.outputs.cp-version }}
     steps:
     - name: Set up repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         submodules: false
         show-progress: false
         fetch-depth: 1
         persist-credentials: false
-    - uses: actions/setup-python@v5
+    - uses: actions/setup-python@v6
       with:
         python-version: '3.13'
     - name: Set up Zephyr

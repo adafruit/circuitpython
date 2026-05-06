@@ -394,7 +394,9 @@ static mp_obj_t unpack(msgpack_stream_t *s, mp_obj_t ext_hook, bool use_list) {
         size_t len = code & 0b1111;
         mp_obj_dict_t *d = MP_OBJ_TO_PTR(mp_obj_new_dict(len));
         for (size_t i = 0; i < len; i++) {
-            mp_obj_dict_store(d, unpack(s, ext_hook, use_list), unpack(s, ext_hook, use_list));
+            mp_obj_t key = unpack(s, ext_hook, use_list);
+            mp_obj_t value = unpack(s, ext_hook, use_list);
+            mp_obj_dict_store(d, key, value);
         }
         return MP_OBJ_FROM_PTR(d);
     }
@@ -462,7 +464,9 @@ static mp_obj_t unpack(msgpack_stream_t *s, mp_obj_t ext_hook, bool use_list) {
             size_t len = read_size(s, code - 0xde + 1);
             mp_obj_dict_t *d = MP_OBJ_TO_PTR(mp_obj_new_dict(len));
             for (size_t i = 0; i < len; i++) {
-                mp_obj_dict_store(d, unpack(s, ext_hook, use_list), unpack(s, ext_hook, use_list));
+                mp_obj_t key = unpack(s, ext_hook, use_list);
+                mp_obj_t value = unpack(s, ext_hook, use_list);
+                mp_obj_dict_store(d, key, value);
             }
             return MP_OBJ_FROM_PTR(d);
         }

@@ -9,7 +9,7 @@
 #include <zephyr/kernel.h>
 
 #include <errno.h>
-
+#include <zephyr/kernel.h>
 
 void raise_zephyr_error(int err) {
     if (err == 0) {
@@ -45,6 +45,12 @@ void raise_zephyr_error(int err) {
             break;
         case EADDRINUSE:
             printk("EADDRINUSE\n");
+            break;
+        case EIO:
+            printk("EIO\n");
+            break;
+        case ENOSYS:
+            printk("ENOSYS\n");
             break;
         case EINVAL:
             printk("EINVAL\n");

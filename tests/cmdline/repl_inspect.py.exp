@@ -1,6 +1,6 @@
 test
-CircuitPython \.\+ version
-Use \.\+
+
+Adafruit CircuitPython \.\+ version
 >>> # cmdline: -i -c print("test")
 >>> # -c option combined with -i option results in REPL
->>> 
+>>> \$

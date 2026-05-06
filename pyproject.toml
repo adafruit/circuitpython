@@ -1,35 +1,26 @@
-# SPDX-FileCopyrightText: 2024 Scott Shawcroft for Adafruit Industries
-#
-# SPDX-License-Identifier: MIT
-
-[tool.setuptools_scm]
 # can be empty if no extra settings are needed, presence enables setuptools-scm
-
-# Codespell settings copied from MicroPython
-
 [tool.ruff]
-target-version = "py37"
-
+target-version = "py312"
 line-length = 99
-# Exclude third-party code from linting and formatting. Ruff doesn't know how to ignore submodules.
-# Exclude the following tests:
-#   repl_: not real python files
-#   viper_args: uses f(*)
+# Include Python source files that don't end with .py
+extend-include = [ "tools/cc1" ]
+# Exclude third-party code from linting and formatting
 extend-exclude = [
+  # CIRCUITPY-CHANGES
   "extmod/ulab",
   "frozen",
   "lib",
   "ports/analog/msdk",
   "ports/atmel-samd/asf4",
   "ports/broadcom/peripherals",
+  "ports/espress/tools",
   "ports/espressif/esp-idf",
   "ports/espressif/esp-protocols",
   "ports/raspberrypi/sdk",
   "ports/silabs/gecko_sdk",
   "ports/silabs/tools/slc_cli_linux",
   "ports/stm/st_driver",
-  "tests/*/repl_*.py",
-  "tests/micropython/viper_args.py",
+  "tests/cpydiff/syntax_assign_expr.py", # intentionally incorrect CPython code
   "tools/adabot",
   "tools/bitmap_font",
   "tools/cc1",
@@ -40,9 +31,32 @@ extend-exclude = [
 ]
 # Exclude third-party code, and exclude the following tests:
 #   basics: needs careful attention before applying automatic formatting
-format.exclude = [ "tests/basics/*.py" ]
+#   repl_: not real python files
+#   viper_args: uses f(*)
+format.exclude = [
+  "tests/*/repl_*.py",
+  "tests/basics/*.py",
+  "tests/cmdline/cmd_compile_only_error.py",
+  "tests/micropython/test_normalize_newlines.py",
+  "tests/micropython/viper_args.py",
+]
 lint.extend-select = [ "C9", "PLC" ]
-lint.ignore = [
+lint.exclude = [
+  # Ruff finds Python SyntaxError in these files
+  "tests/cmdline/cmd_compile_only_error.py",
+  "tests/cmdline/repl_autocomplete.py",
+  "tests/cmdline/repl_autocomplete_underscore.py",
+  "tests/cmdline/repl_autoindent.py",
+  "tests/cmdline/repl_basic.py",
+  "tests/cmdline/repl_cont.py",
+  "tests/cmdline/repl_emacs_keys.py",
+  "tests/cmdline/repl_paste.py",
+  "tests/cmdline/repl_words_move.py",
+  "tests/feature_check/repl_emacs_check.py",
+  "tests/feature_check/repl_words_move_check.py",
+  "tests/micropython/viper_args.py",
+]
+lint.extend-ignore = [
   "E401",
   "E402",
   "E722",
@@ -51,35 +65,27 @@ lint.ignore = [
   "F401",
   "F403",
   "F405",
-  "PLC1901",
+  "PLC0206",
+  "PLC0415", # conditional imports are common in MicroPython
 ]
 # manifest.py files are evaluated with some global names pre-defined
 lint.per-file-ignores."**/manifest.py" = [ "F821" ]
 lint.per-file-ignores."ports/**/boards/**/manifest_*.py" = [ "F821" ]
-# Exclude all tests from linting (does not apply to formatting).
+lint.per-file-ignores."ports/cc3200/tools/uniflash.py" = [ "E711" ]
+# Exclude all tests from linting.
 lint.per-file-ignores."tests/**/*.py" = [ "ALL" ]
+# Uses assignment expressions.
+lint.per-file-ignores."tests/cpydiff/syntax_assign_expr.py" = [ "F821" ]
 lint.mccabe.max-complexity = 40
 
 [tool.codespell]
 count = ""
-ignore-regex = '\b[A-Z]{3}\b'
-ignore-words-list = "ans,asend,aranges,deques,dout,emac,extint,hsi,iput,mis,notin,numer,ser,shft,synopsys,technic,ure,curren"
+ignore-regex = "\\b[A-Z]{3}\\b"
+# CIRCUITPY-CHANGE: aranges
+ignore-words-list = "ans,aranges,asend,deques,dout,emac,extint,hsi,iput,mis,notin,numer,ser,shft,synopsys,technic,ure,curren"
 quiet-level = 3
-skip = """
-*/build*,\
-./.git,\
-./drivers/cc3100,\
-./lib,\
-./ports/cc3200/FreeRTOS,\
-./ports/cc3200/bootmgr/sl,\
-./ports/cc3200/hal,\
-./ports/cc3200/simplelink,\
-./ports/cc3200/telnet,\
-./ports/esp32/managed_components,\
-./ports/nrf/drivers/bluetooth/s1*,\
-./ports/stm32/usbhost,\
-./tests,\
-ACKNOWLEDGEMENTS,\
-"""
-
-# Ruff settings copied from MicroPython
+skip = """\
+  */build*,./.git,./drivers/cc3100,./lib,./ports/cc3200/FreeRTOS,./ports/cc3200/bootmgr/sl,./ports/cc3200/hal,./ports/c\
+  c3200/simplelink,./ports/cc3200/telnet,./ports/esp32/managed_components,./ports/nrf/drivers/bluetooth/s1*,./ports/stm\
+  32/usbhost,./tests,ACKNOWLEDGEMENTS,\
+  """

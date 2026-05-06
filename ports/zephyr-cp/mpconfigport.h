@@ -17,8 +17,13 @@
 
 #define CIRCUITPY_DEBUG_TINYUSB 0
 
+// NVM size is determined at runtime from the Zephyr partition table.
+#define CIRCUITPY_INTERNAL_NVM_SIZE 1
+
 // Disable native _Float16 handling for host builds.
 #define MICROPY_FLOAT_USE_NATIVE_FLT16 (0)
+
+#define MICROPY_NLR_THUMB_USE_LONG_JUMP (1)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

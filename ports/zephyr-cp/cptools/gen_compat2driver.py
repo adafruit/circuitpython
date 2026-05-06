@@ -3,7 +3,7 @@ import pathlib
 mapping = {}
 
 drivers = pathlib.Path("zephyr/drivers")
-for p in drivers.glob("**/*.c"):
+for p in drivers.glob("**/*.[ch]"):
     for line in p.open():
         if line.startswith("#define DT_DRV_COMPAT"):
             compat = line.rsplit(None, 1)[-1].strip()

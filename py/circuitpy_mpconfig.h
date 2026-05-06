@@ -17,6 +17,10 @@
 // Always 1: defined in circuitpy_mpconfig.mk
 // #define CIRCUITPY (1)
 
+#ifndef MP_SSIZE_MAX
+#define MP_SSIZE_MAX (0x7fffffff)
+#endif
+
 // REPR_C encodes qstrs, 31-bit ints, and 30-bit floats in a single 32-bit word.
 #ifndef MICROPY_OBJ_REPR
 #define MICROPY_OBJ_REPR            (MICROPY_OBJ_REPR_C)
@@ -42,9 +46,13 @@ extern void common_hal_mcu_enable_interrupts(void);
 #define MICROPY_PY_BLUETOOTH             (0)
 #define MICROPY_PY_LWIP_SLIP             (0)
 #define MICROPY_PY_OS_DUPTERM            (0)
+#define MICROPY_PYEXEC_COMPILE_ONLY      (0)
 #define MICROPY_ROM_TEXT_COMPRESSION     (0)
 #define MICROPY_VFS_LFS1                 (0)
 #define MICROPY_VFS_LFS2                 (0)
+
+// Always turn on exit code handling
+#define MICROPY_PYEXEC_ENABLE_EXIT_CODE_HANDLING (1)
 
 #ifndef MICROPY_GCREGS_SETJMP
 #define MICROPY_GCREGS_SETJMP            (0)
@@ -88,7 +96,6 @@ extern void common_hal_mcu_enable_interrupts(void);
 #define MICROPY_MEM_STATS                (0)
 #define MICROPY_MODULE_BUILTIN_INIT      (1)
 #define MICROPY_MODULE_BUILTIN_SUBPACKAGES (1)
-#define MICROPY_NONSTANDARD_TYPECODES    (0)
 #define MICROPY_OPT_COMPUTED_GOTO        (1)
 #define MICROPY_OPT_COMPUTED_GOTO_SAVE_SPACE (CIRCUITPY_COMPUTED_GOTO_SAVE_SPACE)
 #define MICROPY_OPT_LOAD_ATTR_FAST_PATH  (CIRCUITPY_OPT_LOAD_ATTR_FAST_PATH)
@@ -141,6 +148,7 @@ extern void common_hal_mcu_enable_interrupts(void);
 #define MICROPY_PY_RE                   (CIRCUITPY_RE)
 // Supplanted by shared-bindings/struct
 #define MICROPY_PY_STRUCT                (0)
+#define MICROPY_PY_STRUCT_UNSAFE_TYPECODES (0)
 #define MICROPY_PY_SYS                   (CIRCUITPY_SYS)
 #define MICROPY_PY_SYS_MAXSIZE           (1)
 #define MICROPY_PY_SYS_STDFILES          (1)
@@ -193,21 +201,6 @@ extern void common_hal_mcu_enable_interrupts(void);
 // Track stack usage. Expose results via ustack module.
 #define MICROPY_MAX_STACK_USAGE       (0)
 
-#define UINT_FMT "%u"
-#define INT_FMT "%d"
-#ifdef __LP64__
-typedef long mp_int_t; // must be pointer size
-typedef unsigned long mp_uint_t; // must be pointer size
-#else
-// These are definitions for machines where sizeof(int) == sizeof(void*),
-// regardless of actual size.
-typedef int mp_int_t; // must be pointer size
-typedef unsigned int mp_uint_t; // must be pointer size
-#endif
-#if __GNUC__ >= 10 // on recent gcc versions we can check that this is so
-_Static_assert(sizeof(mp_int_t) == sizeof(void *));
-_Static_assert(sizeof(mp_uint_t) == sizeof(void *));
-#endif
 typedef long mp_off_t;
 
 #define MP_PLAT_PRINT_STRN(str, len) mp_hal_stdout_tx_strn_cooked(str, len)
@@ -303,12 +296,10 @@ typedef long mp_off_t;
 
 #ifdef LONGINT_IMPL_MPZ
 #define MICROPY_LONGINT_IMPL (MICROPY_LONGINT_IMPL_MPZ)
-#define MP_SSIZE_MAX (0x7fffffff)
 #endif
 
 #ifdef LONGINT_IMPL_LONGLONG
 #define MICROPY_LONGINT_IMPL (MICROPY_LONGINT_IMPL_LONGLONG)
-#define MP_SSIZE_MAX (0x7fffffff)
 #endif
 
 #ifndef MICROPY_PY_REVERSE_SPECIAL_METHODS

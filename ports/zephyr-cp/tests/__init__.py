@@ -108,12 +108,13 @@ class SerialSaver:
 
 
 class NativeSimProcess:
-    def __init__(self, cmd, timeout=5, trace_file=None, env=None):
+    def __init__(self, cmd, timeout=5, trace_file=None, env=None, flash_file=None):
         if trace_file:
             cmd.append(f"--trace-file={trace_file}")
 
         self._timeout = timeout
         self.trace_file = trace_file
+        self.flash_file = flash_file
         print("Running", " ".join(cmd))
         self._proc = subprocess.Popen(
             cmd,

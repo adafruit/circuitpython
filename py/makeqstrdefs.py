@@ -2,10 +2,8 @@
 This script processes the output from the C preprocessor and extracts all
 qstr. Each qstr is transformed into a qstr definition of the form 'Q(...)'.
 
-This script works with Python 3.x (CIRCUITPY-CHANGE: not 2.x)
+This script works with Python 3.3+.
 """
-
-from __future__ import print_function
 
 import io
 import os
@@ -139,6 +137,7 @@ def qstr_unescape(qstr):
     return qstr
 
 
+# CIRCUITPY-CHANGE: output_filename as an arg
 def process_file(f, output_filename=None):
     # match gcc-like output (# n "file") and msvc-like output (#line n "file")
     re_line = re.compile(r"^#(?:line)?\s+\d+\s\"([^\"]+)\"")
@@ -292,6 +291,7 @@ if __name__ == "__main__":
     args.input_filename = sys.argv[3]  # Unused for command=cat
     args.output_dir = sys.argv[4]
     args.output_file = None if len(sys.argv) == 5 else sys.argv[5]  # Unused for command=split
+    # CIRCUITPY-CHANGE
     if args.output_file == "_":
         args.output_file = None
 
@@ -306,6 +306,7 @@ if __name__ == "__main__":
 
     if args.command == "split":
         with io.open(args.input_filename, encoding="utf-8") as infile:
+            # CIRCUITPY-CHANGE: pass output_file
             process_file(infile, args.output_file)
 
     if args.command == "cat":

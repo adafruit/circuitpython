@@ -28,6 +28,33 @@ make BOARD=nordic_nrf7002dk
 This uses Zephyr's cmake to generate Makefiles that then delegate to
 `tools/cpbuild/build_circuitpython.py` to build the CircuitPython bits in parallel.
 
+## Native simulator build container
+
+Building the native sim requires `libsdl2-dev:i386` and other 32bit dependencies that
+can cause conflicts on 64bit systems resulting in the removal of 64bit versions of critical
+software such as the display manager and network manager. A Containerfile and a few scripts
+are provided to set up a container to make the native sim build inside without affecting the
+host system.
+
+The container automatically mounts this instance of the circuitpython repo inside at
+`/home/dev/circuitpython`. Changes made in the repo inside the container and on the host PC
+will sync automatically between host and container.
+
+To use the container file:
+
+1. Build the container with `podman build -t zephyr-cp-dev -f native_sim_build_Containerfile .`
+2. Run/Start the container by running `./native_sim_build_run_container.sh` on the host PC.
+   The script will automatically run or start based on whether the container has been run before.
+3. Init requirements inside the container with `./native_sim_build_init_container.sh`
+
+To delete the container and cleanup associated files:
+```sh
+podman ps -a --filter ancestor=zephyr-cp-dev -q | xargs -r podman rm -f
+podman rmi zephyr-cp-dev
+podman image prune -f
+podman rm -f zcp
+```
+
 ## Running the native simulator
 
 From `ports/zephyr-cp`, run:

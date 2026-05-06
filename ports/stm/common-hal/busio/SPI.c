@@ -136,11 +136,12 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
     const mcu_pin_obj_t *sck, const mcu_pin_obj_t *mosi,
     const mcu_pin_obj_t *miso, bool half_duplex) {
 
+    // Ensure the object starts in its deinit state before check_pins sets
+    // self->sck, self->mosi, and self->miso.
+    common_hal_busio_spi_mark_deinit(self);
+
     int periph_index = check_pins(self, sck, mosi, miso);
     SPI_TypeDef *SPIx = mcu_spi_banks[periph_index - 1];
-
-    // Ensure the object starts in its deinit state.
-    common_hal_busio_spi_mark_deinit(self);
 
     // Start GPIO for each pin
     GPIO_InitTypeDef GPIO_InitStruct = {0};

@@ -231,7 +231,7 @@ def main():
             command = ["python3", "tools/ruff_bindings.py"]
             batch(command, bindings_files(), check=True)
 
-    # Format Python files with black.
+    # Format Python files with "ruff format" (using config in pyproject.toml).
     if format_py:
         command = ["ruff", "format"]
         if args.v:
