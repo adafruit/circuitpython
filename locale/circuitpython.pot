@@ -4166,10 +4166,6 @@ msgstr ""
 msgid "rsplit(None,n)"
 msgstr ""
 
-#: ports/stm/common-hal/audioio/AudioOut.c
-msgid "sample_rate must be > 0"
-msgstr ""
-
 #: shared-bindings/audiofreeverb/Freeverb.c
 msgid "samples_signed must be true"
 msgstr ""
