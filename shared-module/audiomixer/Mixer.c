@@ -226,9 +226,9 @@ static void mix_down_one_voice(audiomixer_mixer_obj_t *self,
         uint16_t left_panning_scaled = 32768, right_panning_scaled = 32768;
         if (MP_LIKELY(self->base.channel_count == 2)) {
             if (panning >= 0) {
-                right_panning_scaled = 32767 - panning;
+                left_panning_scaled = 32767 - panning;
             } else {
-                left_panning_scaled = 32767 + panning;
+                right_panning_scaled = 32767 + panning;
             }
         }
 
