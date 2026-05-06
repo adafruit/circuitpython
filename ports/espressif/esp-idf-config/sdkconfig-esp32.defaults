@@ -62,10 +62,10 @@ CONFIG_ESP_IPC_TASK_STACK_SIZE=1536
 # end of Wi-Fi
 
 #
-# Newlib
+# LibC
 #
-CONFIG_NEWLIB_NANO_FORMAT=y
-# end of Newlib
+CONFIG_LIBC_NEWLIB_NANO_FORMAT=y
+# end of LibC
 
 #
 # SPI Flash driver

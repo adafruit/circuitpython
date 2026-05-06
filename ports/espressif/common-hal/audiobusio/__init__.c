@@ -108,7 +108,7 @@ static void i2s_callback_fun(void *self_in) {
 static bool i2s_event_interrupt(i2s_chan_handle_t handle, i2s_event_data_t *event, void *self_in) {
     i2s_t *self = self_in;
     self->underrun = self->underrun || self->next_buffer != NULL;
-    self->next_buffer = *(int16_t **)event->data;
+    self->next_buffer = *(int16_t **)event->dma_buf;
     self->next_buffer_size = event->size;
     background_callback_add(&self->callback, i2s_callback_fun, self_in);
     return false;

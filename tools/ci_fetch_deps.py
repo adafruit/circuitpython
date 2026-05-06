@@ -59,6 +59,7 @@ PORT_DEPS = {
     "espressif": [
         "extmod/ulab/",
         "lib/certificates/",
+        "lib/mp3/",
         "lib/protomatter/",
         "lib/quirc/",
         "lib/tlsf",

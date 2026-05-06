@@ -61,7 +61,7 @@ static void nimble_host_task(void *param) {
 
 
 static void _on_sync(void) {
-    int rc = ble_hs_util_ensure_addr(false);
+    int rc __attribute__((unused)) = ble_hs_util_ensure_addr(false);
     assert(rc == 0);
 
     _nimble_sync = true;

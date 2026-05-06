@@ -22,6 +22,7 @@ static const char *TAG = "SDCard.c";
 
 static bool slot_in_use[2];
 static bool never_reset_sdio[2] = { false, false };
+static bool host_initialized = false;
 
 static void common_hal_sdioio_sdcard_check_for_deinit(sdioio_sdcard_obj_t *self) {
     if (common_hal_sdioio_sdcard_deinited(self)) {
@@ -112,6 +113,7 @@ void common_hal_sdioio_sdcard_construct(sdioio_sdcard_obj_t *self,
         if (err != ESP_OK) {
             mp_raise_OSError_msg_varg(MP_ERROR_TEXT("SDIO Init Error %x"), err);
         }
+        host_initialized = true;
     }
 
     err = sdmmc_host_init_slot(sd_slot, &slot_config);
@@ -252,8 +254,9 @@ void common_hal_sdioio_sdcard_deinit(sdioio_sdcard_obj_t *self) {
     never_reset_sdio[get_slot_index(self)] = false;
     slot_in_use[get_slot_index(self)] = false;
 
-    if (!slot_in_use[0] && !slot_in_use[1]) {
+    if (!slot_in_use[0] && !slot_in_use[1] && host_initialized) {
         sdmmc_host_deinit();
+        host_initialized = false;
     }
 
     reset_pin_number(self->command);
@@ -293,8 +296,9 @@ void sdioio_reset(void) {
             slot_in_use[i] = false;
         }
     }
-    if (!slot_in_use[0] && !slot_in_use[1]) {
+    if (!slot_in_use[0] && !slot_in_use[1] && host_initialized) {
         sdmmc_host_deinit();
+        host_initialized = false;
     }
 
     return;

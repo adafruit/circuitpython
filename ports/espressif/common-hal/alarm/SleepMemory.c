@@ -15,7 +15,12 @@
 
 // Data storage for singleton instance of SleepMemory.
 // Might be RTC_SLOW_MEM or RTC_FAST_MEM, depending on setting of CONFIG_ESP32S2_RTCDATA_IN_FAST_MEM.
+#if defined(CONFIG_SOC_RTC_FAST_MEM_SUPPORTED) || defined(CONFIG_SOC_RTC_SLOW_MEM_SUPPORTED)
 static RTC_DATA_ATTR uint8_t _sleep_mem[SLEEP_MEMORY_LENGTH];
+#else
+// Chips without RTC memory can't persist SleepMemory across deep sleep.
+static uint8_t _sleep_mem[SLEEP_MEMORY_LENGTH];
+#endif
 
 void alarm_sleep_memory_reset(void) {
     // ESP-IDF build system takes care of doing esp_sleep_pd_config() or the equivalent with
