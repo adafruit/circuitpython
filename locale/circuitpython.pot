@@ -159,10 +159,6 @@ msgstr ""
 msgid "%q length must be >= %d"
 msgstr ""
 
-#: py/runtime.c
-msgid "%q moved from %q to %q"
-msgstr ""
-
 #: py/argcheck.c
 msgid "%q must be %d"
 msgstr ""
@@ -2109,6 +2105,10 @@ msgstr ""
 msgid "Third-party firmware fatal error."
 msgstr ""
 
+#: ports/espressif/common-hal/canio/CAN.c
+msgid "This cpu only supports 1 CAN peropheral"
+msgstr ""
+
 #: shared-module/imagecapture/ParallelImageCapture.c
 msgid "This microcontroller does not support continuous capture."
 msgstr ""
@@ -2476,6 +2476,7 @@ msgstr ""
 #: ports/espressif/boards/adafruit_feather_esp32c6_4mbflash_nopsram/mpconfigboard.h
 #: ports/espressif/boards/adafruit_itsybitsy_esp32/mpconfigboard.h
 #: ports/espressif/boards/waveshare_esp32_c6_lcd_1_47/mpconfigboard.h
+#: ports/espressif/boards/waveshare_esp32_c6_touch_lcd_1_47/mpconfigboard.h
 msgid "You pressed the BOOT button at start up."
 msgstr ""
 
@@ -3172,10 +3173,6 @@ msgstr ""
 
 #: shared-bindings/traceback/__init__.c
 msgid "file write is not available"
-msgstr ""
-
-#: shared-bindings/storage/__init__.c
-msgid "filesystem must provide mount method"
 msgstr ""
 
 #: extmod/ulab/code/numpy/vector.c
