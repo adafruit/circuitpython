@@ -2133,6 +2133,10 @@ msgstr ""
 msgid "Third-party firmware fatal error."
 msgstr ""
 
+#: ports/espressif/common-hal/canio/CAN.c
+msgid "This cpu only supports 1 CAN peropheral"
+msgstr ""
+
 #: shared-module/imagecapture/ParallelImageCapture.c
 msgid "This microcontroller does not support continuous capture."
 msgstr ""
@@ -2510,6 +2514,7 @@ msgstr ""
 #: ports/espressif/boards/adafruit_feather_esp32c6_4mbflash_nopsram/mpconfigboard.h
 #: ports/espressif/boards/adafruit_itsybitsy_esp32/mpconfigboard.h
 #: ports/espressif/boards/waveshare_esp32_c6_lcd_1_47/mpconfigboard.h
+#: ports/espressif/boards/waveshare_esp32_c6_touch_lcd_1_47/mpconfigboard.h
 msgid "You pressed the BOOT button at start up."
 msgstr ""
 
