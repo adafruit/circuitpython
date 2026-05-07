@@ -32,6 +32,13 @@
 
 #include "host/ble_att.h"
 
+// Defined in Adapter.c - we need these to trigger MTU exchange after
+// encryption completes and to unblock the connect() wait loop.
+extern volatile int _connection_status;
+extern int _mtu_reply(uint16_t conn_handle,
+    const struct ble_gatt_error *error,
+    uint16_t mtu, void *arg);
+
 // Uncomment to turn on debug logging just in this file.
 // #undef CIRCUITPY_VERBOSE_BLE
 // #define CIRCUITPY_VERBOSE_BLE (1)
@@ -75,6 +82,13 @@ int bleio_connection_event_cb(struct ble_gap_event *event, void *connection_in) 
             ble_gap_conn_find(event->enc_change.conn_handle, &desc);
             if (desc.sec_state.encrypted) {
                 connection->pair_status = PAIR_PAIRED;
+            }
+            // For central-role connections the MTU exchange was deferred
+            // from _new_connection() so no unencrypted GATT traffic is sent
+            // before pairing. Do it once encryption is settled.
+            if (connection->is_central) {
+                ble_gattc_exchange_mtu(event->enc_change.conn_handle,
+                    _mtu_reply, connection);
             }
             break;
         }
