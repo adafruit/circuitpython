@@ -51,7 +51,7 @@ void common_hal_audiomixer_mixervoice_set_panning(audiomixer_mixervoice_obj_t *s
     #if CIRCUITPY_SYNTHIO
     synthio_block_assign_slot(arg, &self->panning, MP_QSTR_panning);
     #else
-    self->panning = (uint16_t)(mp_arg_validate_obj_float_range(arg, -1, 1, MP_QSTR_panning) * ((1 << 15) - 1));
+    self->panning = (int16_t)(mp_arg_validate_obj_float_range(arg, -1, 1, MP_QSTR_panning) * ((1 << 15) - 1));
     #endif
 }
 
