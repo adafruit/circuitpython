@@ -7,6 +7,7 @@
 #include "supervisor/board.h"
 
 #include "mpconfigboard.h"
+#include "driver/gpio.h"
 #include "shared-bindings/busio/SPI.h"
 #include "shared-bindings/fourwire/FourWire.h"
 #include "shared-bindings/microcontroller/Pin.h"
@@ -127,6 +128,40 @@ const uint8_t ssd1680_display_start_sequence[] = {
     0x22, 0x00, 0x01, 0xc7 // display update mode
 };
 
+// FPC-7519rev.b (User ID byte 0xca) requires VCOM=0x20 (-1.5V) for correct contrast.
+// The 0x44 panel works correctly with the default VCOM=0x28, so keep them separate.
+const uint8_t ssd1680_vcom20_display_start_sequence[] = {
+    0x12, DELAY, 0x00, 0x14, // soft reset and wait 20ms
+    0x11, 0x00, 0x01, 0x03, // Ram data entry mode
+    0x3c, 0x00, 0x01, 0x03, // border color
+    0x2c, 0x00, 0x01, 0x20, // Set vcom voltage (0x20 = -1.5V, tuned for FPC-7519rev.b)
+    0x03, 0x00, 0x01, 0x17, // Set gate voltage
+    0x04, 0x00, 0x03, 0x41, 0xae, 0x32, // Set source voltage
+    0x4e, 0x00, 0x01, 0x01, // ram x count
+    0x4f, 0x00, 0x02, 0x00, 0x00, // ram y count
+    0x01, 0x00, 0x03, 0x27, 0x01, 0x00, // set display size
+    0x32, 0x00, 0x99, // Update waveforms
+    0x2a, 0x60, 0x15, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // VS L0
+    0x20, 0x60, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // VS L1
+    0x28, 0x60, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // VS L2
+    0x00, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // VS L3
+    0x00, 0x90, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // VS L4
+    0x00, 0x02, 0x00, 0x05, 0x14, 0x00, 0x00,     // TP, SR, RP of Group0
+    0x1E, 0x1E, 0x00, 0x00, 0x00, 0x00, 0x01,     // TP, SR, RP of Group1
+    0x00, 0x02, 0x00, 0x05, 0x14, 0x00, 0x00,     // TP, SR, RP of Group2
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // TP, SR, RP of Group3
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // TP, SR, RP of Group4
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // TP, SR, RP of Group5
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // TP, SR, RP of Group6
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // TP, SR, RP of Group7
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // TP, SR, RP of Group8
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // TP, SR, RP of Group9
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // TP, SR, RP of Group10
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // TP, SR, RP of Group11
+    0x24, 0x22, 0x22, 0x22, 0x23, 0x32, 0x00, 0x00, 0x00,     // FR, XON
+    0x22, 0x00, 0x01, 0xc7 // display update mode
+};
+
 const uint8_t ssd1680_display_stop_sequence[] = {
     0x10, DELAY, 0x01, 0x01, 0x64
 };
@@ -140,17 +175,22 @@ typedef enum {
     DISPLAY_IL0373,
     DISPLAY_SSD1680_COLSTART_0,
     DISPLAY_SSD1680_COLSTART_8,
+    DISPLAY_SSD1680_COLSTART_8_VCOM20, // FPC-7519rev.b (User ID 0xca)
 } display_type_t;
 
 static display_type_t detect_display_type(void) {
-    // Bitbang 4-wire SPI with a bidirectional data line to read the first word of register 0x2e,
+    // Bitbang 4-wire SPI with a bidirectional data line to read the first byte of register 0x2e,
     // which is the 10-byte USER ID.
+    // NOTE: the SSD1680 drives its response back on the MOSI/DATA line (GPIO35) in half-duplex
+    // mode, NOT on the separate MISO line (GPIO37). Read with GPIO35 switched to input.
     // On the IL0373 it will return 0xff because it's not a valid register.
-    // With SSD1680, we have seen two types:
+    // With SSD1680, we have seen three types:
     // 1. The first batch of displays, labeled "FPC-A005 20.06.15 TRX", which needs colstart=0.
-    //    These have 10 byes of zeros in the User ID
+    //    These have 10 bytes of zeros in the User ID.
     // 2. Second batch, labeled "FPC-7619rev.b", which needs colstart=8.
     //    The USER ID for these boards is [0x44, 0x0, 0x4, 0x0, 0x25, 0x0, 0x1, 0x78, 0x2b, 0xe]
+    // 3. Third batch, labeled "FPC-7519rev.b", which needs colstart=8.
+    //    The USER ID for these boards is [0xca, 0xfe, 0x0, 0x16, 0x80, 0x0, 0x75, 0x1, 0x0, 0x98]
     // So let's distinguish just by the first byte.
     digitalio_digitalinout_obj_t data;
     digitalio_digitalinout_obj_t clock;
@@ -214,6 +254,8 @@ static display_type_t detect_display_type(void) {
             return DISPLAY_SSD1680_COLSTART_0;
         case 0x44:
             return DISPLAY_SSD1680_COLSTART_8;
+        case 0xca:
+            return DISPLAY_SSD1680_COLSTART_8_VCOM20;
     }
 }
 
@@ -262,12 +304,17 @@ void board_init(void) {
     } else {
         epaperdisplay_construct_args_t args = EPAPERDISPLAY_CONSTRUCT_ARGS_DEFAULTS;
         // Default colstart is 0.
-        if (display_type == DISPLAY_SSD1680_COLSTART_8) {
+        if (display_type == DISPLAY_SSD1680_COLSTART_8 || display_type == DISPLAY_SSD1680_COLSTART_8_VCOM20) {
             args.colstart = 8;
         }
         args.bus = bus;
-        args.start_sequence = ssd1680_display_start_sequence;
-        args.start_sequence_len = sizeof(ssd1680_display_start_sequence);
+        if (display_type == DISPLAY_SSD1680_COLSTART_8_VCOM20) {
+            args.start_sequence = ssd1680_vcom20_display_start_sequence;
+            args.start_sequence_len = sizeof(ssd1680_vcom20_display_start_sequence);
+        } else {
+            args.start_sequence = ssd1680_display_start_sequence;
+            args.start_sequence_len = sizeof(ssd1680_display_start_sequence);
+        }
         args.stop_sequence = ssd1680_display_stop_sequence;
         args.stop_sequence_len = sizeof(ssd1680_display_stop_sequence);
         args.width = 296;
