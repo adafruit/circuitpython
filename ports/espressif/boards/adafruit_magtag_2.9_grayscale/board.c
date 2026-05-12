@@ -268,9 +268,9 @@ static display_type_t detect_display_type(void) {
     switch (status) {
         case 0xff:
             return DISPLAY_IL0373;
-        default:    // who knows? Just guess.
         case 0x00:
             return DISPLAY_SSD1680_COLSTART_0;
+        default:    // unknown SSD1680 variant — assume newer panel needs colstart=8
         case 0x44:
         case 0xca:
             return DISPLAY_SSD1680_COLSTART_8;
