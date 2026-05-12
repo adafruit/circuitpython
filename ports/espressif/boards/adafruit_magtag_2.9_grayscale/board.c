@@ -7,9 +7,11 @@
 #include "supervisor/board.h"
 
 #include "mpconfigboard.h"
+#include "driver/gpio.h"
 #include "shared-bindings/busio/SPI.h"
 #include "shared-bindings/fourwire/FourWire.h"
 #include "shared-bindings/microcontroller/Pin.h"
+#include "shared-bindings/microcontroller/__init__.h"
 #include "shared-module/displayio/__init__.h"
 #include "supervisor/shared/board.h"
 
@@ -127,38 +129,49 @@ const uint8_t ssd1680_display_start_sequence[] = {
     0x22, 0x00, 0x01, 0xc7 // display update mode
 };
 
-// FPC-7519rev.b (User ID byte 0xca) requires lower VCOM for correct contrast.
-// VCOM=0x14 (-1.0V) confirmed by reading the panel's OTP register (cmd 0x2D, byte 1 = 0x14).
-// The 0x44 panel works correctly with the default VCOM=0x28, so keep them separate.
-const uint8_t ssd1680_vcom14_display_start_sequence[] = {
+// FPC-7519rev.b panels (User ID byte 0x44 or 0xca) need colstart=8 and tuned VCOM + LUT.
+// LUT: Good Display reference (GxEPD2_4G / GDEM029T94) with VS rows reversed (L0↔L3, L1↔L2).
+// Reason: CircuitPython maps luma 0→L0 and luma 255→L3. On this panel VSH1(0x40) drives WHITE and
+// VSL(0x20) drives BLACK, so L0 must carry the black-driving waveform and L3 the white-driving
+// waveform — opposite from GxEPD2_4G's Arduino convention (where index 0 = white constant).
+// VS=0x48 = VSH1/GND/VSL/GND alternating for DC balance.
+// VCOM=0x24 empirically tuned for FPC-7519rev.b contrast. Both 0x44 and 0xca share this sequence.
+const uint8_t ssd1680_fpc7519_display_start_sequence[] = {
     0x12, DELAY, 0x00, 0x14, // soft reset and wait 20ms
     0x11, 0x00, 0x01, 0x03, // Ram data entry mode
     0x3c, 0x00, 0x01, 0x03, // border color
-    0x2c, 0x00, 0x01, 0x14, // Set vcom voltage (0x14 = -1.0V, tuned for FPC-7519rev.b)
+    0x2c, 0x00, 0x01, 0x24, // Set vcom voltage (0x24 tuned for FPC-7519rev.b contrast)
     0x03, 0x00, 0x01, 0x17, // Set gate voltage
     0x04, 0x00, 0x03, 0x41, 0xae, 0x32, // Set source voltage
     0x4e, 0x00, 0x01, 0x01, // ram x count
     0x4f, 0x00, 0x02, 0x00, 0x00, // ram y count
     0x01, 0x00, 0x03, 0x27, 0x01, 0x00, // set display size
-    0x32, 0x00, 0x99, // Update waveforms
-    0x2a, 0x60, 0x15, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // VS L0
-    0x20, 0x60, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // VS L1
-    0x28, 0x60, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // VS L2
-    0x00, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // VS L3
-    0x00, 0x90, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // VS L4
-    0x00, 0x02, 0x00, 0x05, 0x14, 0x00, 0x00,     // TP, SR, RP of Group0
-    0x1E, 0x1E, 0x00, 0x00, 0x00, 0x00, 0x01,     // TP, SR, RP of Group1
-    0x00, 0x02, 0x00, 0x05, 0x14, 0x00, 0x00,     // TP, SR, RP of Group2
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // TP, SR, RP of Group3
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // TP, SR, RP of Group4
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // TP, SR, RP of Group5
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // TP, SR, RP of Group6
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // TP, SR, RP of Group7
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // TP, SR, RP of Group8
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // TP, SR, RP of Group9
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // TP, SR, RP of Group10
-    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // TP, SR, RP of Group11
-    0x24, 0x22, 0x22, 0x22, 0x23, 0x32, 0x00, 0x00, 0x00,     // FR, XON
+    0x32, 0x00, 0x99, // Update waveforms (153 bytes follow)
+    // VS rows: only L0↔L3 are swapped relative to GxEPD2_4G; L1 and L2 stay in place.
+    // Reason: CircuitPython luma maps 0→L0, 64-127→L2, 128-191→L1, 255→L3.
+    //   GxEPD2 uses L0=white-driver, L3=black-driver (opposite of CircuitPython for extremes).
+    //   GxEPD2 L1=lighter-gray, L2=darker-gray; CircuitPython L1=mid-bright, L2=mid-dark — same ordering.
+    // So: swap only L0↔L3 (polarity); L1 and L2 keep their GxEPD2 positions (gradient preserved).
+    // 0x48 = VSH1/GND/VSL/GND alternating — better DC balance than 0x60 (VSH1/VSL/GND/GND)
+    0x20, 0x48, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // VS L0 (darkest/black) ← GxEPD2 L3
+    0x08, 0x48, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // VS L1 (mid-light)     ← GxEPD2 L1 (luma 128-191 → lighter)
+    0x02, 0x48, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // VS L2 (mid-dark)      ← GxEPD2 L2 (luma 64-127 → darker)
+    0x40, 0x48, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // VS L3 (lightest/white) ← GxEPD2 L0
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // VS L4 VCOM
+    // Timing groups — Good Display reference timing
+    0x0A, 0x19, 0x00, 0x03, 0x08, 0x00, 0x00,     // Group0: 10+25 / 3+8 frames activation
+    0x14, 0x01, 0x00, 0x14, 0x01, 0x00, 0x03,     // Group1: 20+1 / 20+1 frames, RP=3 repeats
+    0x0A, 0x03, 0x00, 0x08, 0x19, 0x00, 0x00,     // Group2: 10+3 / 8+25 frames (mirror of G0)
+    0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,     // Group3: 1 frame settle
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // Group4
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // Group5
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // Group6
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // Group7
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // Group8
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // Group9
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // Group10
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,     // Group11
+    0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x00, 0x00, 0x00,     // XON
     0x22, 0x00, 0x01, 0xc7 // display update mode
 };
 
@@ -174,19 +187,23 @@ const uint8_t ssd1680_display_refresh_sequence[] = {
 typedef enum {
     DISPLAY_IL0373,
     DISPLAY_SSD1680_COLSTART_0,
-    DISPLAY_SSD1680_COLSTART_8,
-    DISPLAY_SSD1680_COLSTART_8_VCOM14, // FPC-7519rev.b (User ID 0xca)
+    DISPLAY_SSD1680_COLSTART_8, // FPC-7519rev.b (User ID 0x44 or 0xca)
 } display_type_t;
 
 static display_type_t detect_display_type(void) {
-    // Bitbang 4-wire SPI with a bidirectional data line to read the first word of register 0x2e,
+    // Bitbang 4-wire SPI with a bidirectional data line to read the first byte of register 0x2e,
     // which is the 10-byte USER ID.
+    // NOTE: the SSD1680 drives its response back on the MOSI/DATA line (GPIO35) in half-duplex
+    // mode, NOT on the separate MISO line (GPIO37). Read with GPIO35 switched to input.
     // On the IL0373 it will return 0xff because it's not a valid register.
     // With SSD1680, we have seen two types:
     // 1. The first batch of displays, labeled "FPC-A005 20.06.15 TRX", which needs colstart=0.
-    //    These have 10 byes of zeros in the User ID
-    // 2. Second batch, labeled "FPC-7619rev.b", which needs colstart=8.
-    //    The USER ID for these boards is [0x44, 0x0, 0x4, 0x0, 0x25, 0x0, 0x1, 0x78, 0x2b, 0xe]
+    //    These have 10 bytes of zeros in the User ID.
+    // 2. Later panels, labeled "FPC-7519rev.b", which need colstart=8 and a tuned LUT/VCOM.
+    //    Two controller variants exist within this panel generation:
+    //      User ID [0x44, 0x0, 0x4, 0x0, 0x25, 0x0, 0x1, 0x78, 0x2b, 0xe]
+    //      User ID [0xca, 0xfe, 0x0, 0x16, 0x80, 0x0, 0x75, 0x1, 0x0, 0x98]
+    //    Both carry the same ribbon label and show the same display characteristics.
     // So let's distinguish just by the first byte.
     digitalio_digitalinout_obj_t data;
     digitalio_digitalinout_obj_t clock;
@@ -209,8 +226,14 @@ static display_type_t detect_display_type(void) {
     common_hal_digitalio_digitalinout_switch_to_output(&chip_select, false, DRIVE_MODE_PUSH_PULL);
     common_hal_digitalio_digitalinout_switch_to_output(&data_command, false, DRIVE_MODE_PUSH_PULL);
     common_hal_digitalio_digitalinout_switch_to_output(&data, false, DRIVE_MODE_PUSH_PULL);
-    common_hal_digitalio_digitalinout_switch_to_output(&reset, true, DRIVE_MODE_PUSH_PULL);
     common_hal_digitalio_digitalinout_switch_to_output(&clock, false, DRIVE_MODE_PUSH_PULL);
+
+    // Pulse RESET low to wake SSD1680 from deep sleep (entered via stop_sequence on prior run).
+    // SSD1680 ignores all SPI commands while in deep sleep; only a hardware reset exits it.
+    common_hal_digitalio_digitalinout_switch_to_output(&reset, false, DRIVE_MODE_PUSH_PULL);
+    common_hal_mcu_delay_us(200);
+    common_hal_digitalio_digitalinout_set_value(&reset, true);
+    common_hal_mcu_delay_us(10000); // 10ms for controller to come out of reset
 
     uint8_t status_read = 0x2e;  // SSD1680 User ID register. Not a valid register on IL0373.
     for (int i = 0; i < 8; i++) {
@@ -245,13 +268,12 @@ static display_type_t detect_display_type(void) {
     switch (status) {
         case 0xff:
             return DISPLAY_IL0373;
-        default:    // who knows? Just guess.
         case 0x00:
             return DISPLAY_SSD1680_COLSTART_0;
+        default:    // unknown SSD1680 variant — assume newer panel needs colstart=8
         case 0x44:
-            return DISPLAY_SSD1680_COLSTART_8;
         case 0xca:
-            return DISPLAY_SSD1680_COLSTART_8_VCOM14;
+            return DISPLAY_SSD1680_COLSTART_8;
     }
 }
 
@@ -299,14 +321,11 @@ void board_init(void) {
         common_hal_epaperdisplay_epaperdisplay_construct(display, &args);
     } else {
         epaperdisplay_construct_args_t args = EPAPERDISPLAY_CONSTRUCT_ARGS_DEFAULTS;
-        // Default colstart is 0.
-        if (display_type == DISPLAY_SSD1680_COLSTART_8 || display_type == DISPLAY_SSD1680_COLSTART_8_VCOM14) {
-            args.colstart = 8;
-        }
         args.bus = bus;
-        if (display_type == DISPLAY_SSD1680_COLSTART_8_VCOM14) {
-            args.start_sequence = ssd1680_vcom14_display_start_sequence;
-            args.start_sequence_len = sizeof(ssd1680_vcom14_display_start_sequence);
+        if (display_type == DISPLAY_SSD1680_COLSTART_8) {
+            args.colstart = 8;
+            args.start_sequence = ssd1680_fpc7519_display_start_sequence;
+            args.start_sequence_len = sizeof(ssd1680_fpc7519_display_start_sequence);
         } else {
             args.start_sequence = ssd1680_display_start_sequence;
             args.start_sequence_len = sizeof(ssd1680_display_start_sequence);
