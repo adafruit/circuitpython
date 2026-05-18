@@ -316,7 +316,7 @@ static mp_rom_error_text_t init_card(sdcardio_sdcard_obj_t *self) {
         }
 
         if (csd_version == 1) {
-            self->sectors = ((csd[8] << 8 | csd[9]) + 1) * 1024;
+            self->sectors = (((uint32_t)(csd[7] & 0x3F) << 16 | (uint32_t)csd[8] << 8 | csd[9]) + 1) * 1024;
         } else {
             uint32_t block_length = 1 << (csd[5] & 0xF);
             uint32_t c_size = ((csd[6] & 0x3) << 10) | (csd[7] << 2) | ((csd[8] & 0xC) >> 6);
