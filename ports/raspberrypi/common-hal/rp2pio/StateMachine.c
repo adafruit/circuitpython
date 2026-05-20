@@ -1482,6 +1482,36 @@ bool common_hal_rp2pio_statemachine_stop_background_read(rp2pio_statemachine_obj
     return true;
 }
 
+void common_hal_rp2pio_statemachine_set_read_buffers_raw(rp2pio_statemachine_obj_t *self,
+    void *once, size_t once_len,
+    void *loop, size_t loop_len,
+    void *loop2, size_t loop2_len) {
+    memset(&self->once_read_buf_info, 0, sizeof(self->once_read_buf_info));
+    memset(&self->loop_read_buf_info, 0, sizeof(self->loop_read_buf_info));
+    memset(&self->loop2_read_buf_info, 0, sizeof(self->loop2_read_buf_info));
+    if (once && once_len) {
+        self->once_read_buf_info.info.buf = once;
+        self->once_read_buf_info.info.len = once_len;
+    }
+    if (loop && loop_len) {
+        self->loop_read_buf_info.info.buf = loop;
+        self->loop_read_buf_info.info.len = loop_len;
+    }
+    if (loop2 && loop2_len) {
+        self->loop2_read_buf_info.info.buf = loop2;
+        self->loop2_read_buf_info.info.len = loop2_len;
+    }
+}
+
+int common_hal_rp2pio_statemachine_get_read_dma_channel(rp2pio_statemachine_obj_t *self) {
+    uint8_t pio_index = pio_get_index(self->pio);
+    uint8_t sm = self->state_machine;
+    if (!SM_DMA_ALLOCATED_READ(pio_index, sm)) {
+        return -1;
+    }
+    return SM_DMA_GET_CHANNEL_READ(pio_index, sm);
+}
+
 bool common_hal_rp2pio_statemachine_get_reading(rp2pio_statemachine_obj_t *self) {
     return !self->dma_completed_read;
 }

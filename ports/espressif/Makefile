@@ -639,6 +639,10 @@ ifneq ($(CIRCUITPY_AUDIOBUSIO),0)
 CHIP_COMPONENTS += esp_driver_i2s
 endif
 
+ifneq ($(CIRCUITPY_AUDIOI2SIN),0)
+CHIP_COMPONENTS += esp_driver_i2s
+endif
+
 ifneq ($(CIRCUITPY_BLEIO_NATIVE),0)
 SRC_C += common-hal/_bleio/ble_events.c
 endif

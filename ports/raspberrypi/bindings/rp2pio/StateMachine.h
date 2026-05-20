@@ -62,6 +62,18 @@ bool common_hal_rp2pio_statemachine_background_read(rp2pio_statemachine_obj_t *s
 bool common_hal_rp2pio_statemachine_stop_background_write(rp2pio_statemachine_obj_t *self);
 bool common_hal_rp2pio_statemachine_stop_background_read(rp2pio_statemachine_obj_t *self);
 
+// Set the once / loop / loop2 read buffers from raw pointers without going
+// through an mp_obj_t wrapper. Pass NULL/0 for unused slots. The caller owns
+// the memory; it must remain valid until stop_background_read.
+void common_hal_rp2pio_statemachine_set_read_buffers_raw(rp2pio_statemachine_obj_t *self,
+    void *once, size_t once_len,
+    void *loop, size_t loop_len,
+    void *loop2, size_t loop2_len);
+
+// Returns the DMA channel index used by the current background read, or -1
+// if no background read is active.
+int common_hal_rp2pio_statemachine_get_read_dma_channel(rp2pio_statemachine_obj_t *self);
+
 mp_int_t common_hal_rp2pio_statemachine_get_pending_write(rp2pio_statemachine_obj_t *self);
 mp_int_t common_hal_rp2pio_statemachine_get_pending_read(rp2pio_statemachine_obj_t *self);
 

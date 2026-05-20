@@ -1,0 +1,14 @@
+.pio files right now are compiled by hand with pico-sdk/tools/pioasm and inserted into I2SIn.c
+
+i2sin.pio              I2S RX, 16 bits/channel, regular pin order, not left_justified
+i2sin_left.pio         I2S RX, 16 bits/channel, regular pin order, left_justified
+i2sin_swap.pio         I2S RX, 16 bits/channel, swapped pin order, not left_justified
+i2sin_swap_left.pio    I2S RX, 16 bits/channel, swapped pin order, left_justified
+i2sin_32.pio           I2S RX, 32 bits/channel, regular pin order, not left_justified
+i2sin_left_32.pio      I2S RX, 32 bits/channel, regular pin order, left_justified
+i2sin_swap_32.pio      I2S RX, 32 bits/channel, swapped pin order, not left_justified
+i2sin_swap_left_32.pio I2S RX, 32 bits/channel, swapped pin order, left_justified
+
+The 32-bit programs are also used for bit_depth=24 because most 24-bit I2S
+mics (SPH0645LM4H, INMP441, ICS-43434) place their 24 valid data bits
+left-justified inside a 32-bit slot.

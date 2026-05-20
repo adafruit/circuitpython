@@ -40,7 +40,7 @@ void common_hal_audiobusio_pdmin_construct(audiobusio_pdmin_obj_t *self,
         && bit_depth != I2S_DATA_BIT_WIDTH_16BIT
         && bit_depth != I2S_DATA_BIT_WIDTH_24BIT
         && bit_depth != I2S_DATA_BIT_WIDTH_32BIT) {
-        mp_raise_ValueError(MP_ERROR_TEXT("bit_depth must be 8, 16, 24, or 32."));
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("%q must be 8, 16, 24, or 32"), MP_QSTR_bit_depth);
     }
 
     i2s_chan_config_t chanConfig = I2S_CHANNEL_DEFAULT_CONFIG(I2S_NUM_0, I2S_ROLE_MASTER);
