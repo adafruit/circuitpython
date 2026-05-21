@@ -31,6 +31,7 @@
 #include "nimble/nimble_port.h"
 #include "nimble/nimble_port_freertos.h"
 #include "host/ble_gap.h"
+#include "host/ble_store.h"
 #include "host/util/util.h"
 #include "services/ans/ble_svc_ans.h"
 #include "services/gap/ble_svc_gap.h"
@@ -50,7 +51,14 @@
 
 // Status variables used while busy-waiting for events.
 static volatile bool _nimble_sync;
-static volatile int _connection_status;
+// Non-static: Connection.c needs to set this when MTU exchange
+// is deferred until after encryption completes.
+volatile int _connection_status;
+
+// Forward declaration - called from Connection.c after encryption completes.
+int _mtu_reply(uint16_t conn_handle,
+    const struct ble_gatt_error *error,
+    uint16_t mtu, void *arg);
 
 bleio_connection_internal_t bleio_connections[BLEIO_TOTAL_CONNECTION_COUNT];
 
@@ -323,7 +331,8 @@ static void _convert_address(const bleio_address_obj_t *address, ble_addr_t *nim
     memcpy(nimble_address->val, (uint8_t *)address_buf_info.buf, NUM_BLEIO_ADDRESS_BYTES);
 }
 
-static int _mtu_reply(uint16_t conn_handle,
+// Non-static: called from Connection.c after encryption completes.
+int _mtu_reply(uint16_t conn_handle,
     const struct ble_gatt_error *error,
     uint16_t mtu, void *arg) {
     bleio_connection_internal_t *connection = (bleio_connection_internal_t *)arg;
@@ -339,7 +348,7 @@ static int _mtu_reply(uint16_t conn_handle,
     return 0;
 }
 
-static void _new_connection(uint16_t conn_handle) {
+static void _new_connection(uint16_t conn_handle, bool is_central) {
     // Set the tx_power for the connection higher than the advertisement.
     esp_ble_tx_power_set(conn_handle, ESP_PWR_LVL_N0);
 
@@ -360,13 +369,32 @@ static void _new_connection(uint16_t conn_handle) {
 
     connection->conn_handle = conn_handle;
     connection->connection_obj = mp_const_none;
-    connection->pair_status = PAIR_NOT_PAIRED;
+    connection->is_central = is_central;
+    connection->pair_status = is_central ? PAIR_WAITING : PAIR_NOT_PAIRED;
     connection->mtu = 0;
 
-    ble_gattc_exchange_mtu(conn_handle, _mtu_reply, connection);
-
-    // Change the callback for the connection.
+    // Change the callback FIRST so BLE_GAP_EVENT_ENC_CHANGE is handled.
     ble_gap_set_event_cb(conn_handle, bleio_connection_event_cb, connection);
+
+    if (is_central) {
+        // Initiate SMP security BEFORE any GATT traffic.
+        struct ble_gap_conn_desc _desc;
+        if (ble_gap_conn_find(conn_handle, &_desc) == 0) {
+            ble_store_util_delete_peer(&_desc.peer_id_addr);
+        }
+
+        int rc = ble_gap_security_initiate(conn_handle);
+        if (rc != 0) {
+            // Fallback for peers that do not support immediate security.
+            ble_gattc_exchange_mtu(conn_handle, _mtu_reply, connection);
+        }
+
+        // Unblock the connect() wait loop now.
+        _connection_status = conn_handle;
+    } else {
+        // Peripheral role keeps stock MTU-first behavior.
+        ble_gattc_exchange_mtu(conn_handle, _mtu_reply, connection);
+    }
 }
 
 static int _connect_event(struct ble_gap_event *event, void *self_in) {
@@ -378,8 +406,8 @@ static int _connect_event(struct ble_gap_event *event, void *self_in) {
     switch (event->type) {
         case BLE_GAP_EVENT_CONNECT:
             if (event->connect.status == 0) {
-                // This triggers an MTU exchange. Its reply will exit the loop waiting for a connection.
-                _new_connection(event->connect.conn_handle);
+                // Central-role connection: initiate security before MTU.
+                _new_connection(event->connect.conn_handle, true);
                 // Set connections objs back to NULL since we have a new
                 // connection and need a new tuple.
                 self->connection_objs = NULL;
@@ -458,7 +486,7 @@ mp_obj_t common_hal_bleio_adapter_connect(bleio_adapter_obj_t *self, bleio_addre
     for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
         bleio_connection_internal_t *connection = &bleio_connections[i];
         if (connection->conn_handle == conn_handle) {
-            connection->is_central = true;
+            // is_central was already set in _new_connection().
             return bleio_connection_new_from_internal(connection);
         }
     }
@@ -498,7 +526,8 @@ static int _advertising_event(struct ble_gap_event *event, void *self_in) {
 
             #if !MYNEWT_VAL(BLE_EXT_ADV)
             if (event->connect.status == NIMBLE_OK) {
-                _new_connection(event->connect.conn_handle);
+                // Peripheral-role: no auto-pair, normal MTU exchange.
+                _new_connection(event->connect.conn_handle, false);
                 // Set connections objs back to NULL since we have a new
                 // connection and need a new tuple.
                 self->connection_objs = NULL;
@@ -511,7 +540,8 @@ static int _advertising_event(struct ble_gap_event *event, void *self_in) {
         case BLE_GAP_EVENT_ADV_COMPLETE:
             #if MYNEWT_VAL(BLE_EXT_ADV)
             if (event->adv_complete.reason == NIMBLE_OK) {
-                _new_connection(event->adv_complete.conn_handle);
+                // Peripheral-role: no auto-pair, normal MTU exchange.
+                _new_connection(event->adv_complete.conn_handle, false);
                 // Set connections objs back to NULL since we have a new
                 // connection and need a new tuple.
                 self->connection_objs = NULL;
