@@ -12,24 +12,58 @@
 
 //| """Asynchronous bus I/O using native awaitables.
 //|
-//| Provides ``abusio.SPI``, an async-native SPI bus using DMA-IRQ completion
-//| and ``circuitpy_awaitable_obj_t``.
+//| Provides ``abusio.SPI``, an async-native SPI bus
 //|
-//| Example::
+//|     Example::
 //|
-//|     import asyncio
-//|     import abusio
-//|     import board
+//|         import array
+//|         import asyncio
+//|         import time
 //|
-//|     async def main():
-//|         spi = abusio.SPI(board.SCK, board.MOSI, board.MISO)
-//|         spi.configure(baudrate=1_000_000)
-//|         spi.try_lock()
-//|         await spi.write(b'\\x9f\\x00\\x00')
-//|         spi.unlock()
+//|         import board
+//|         import digitalio
+//|         import abusio
 //|
-//|     asyncio.run(main())
-//| """
+//|         spi = abusio.SPI(clock=board.GP2, MOSI=board.GP3, MISO=board.GP4)
+//|         spi.configure(baudrate=100_000, polarity=0, phase=0)
+//|         cs = digitalio.DigitalInOut(board.GP1)
+//|         cs.direction = digitalio.Direction.OUTPUT
+//|         cs.value = True
+//|
+//|
+//|         async def spi_task():
+//|             while True:
+//|                 await spi.lock()
+//|                 # RX and TX must have separate buffers to avoid DMA race condition
+//|                 # Array.array supports several data widths - see :py:array: for details.
+//|                 tx_buf = array.array("h", list(range(1000)))
+//|                 rx_buf = array.array("h", [0] * 1000)
+//|                 tick = time.monotonic()
+//|                 for i in range(10):
+//|                     cs.value = False
+//|                     await spi.write_readinto(tx_buf, rx_buf)
+//|                     cs.value = True
+//|                 tock = time.monotonic()
+//|                 spi.unlock()
+//|                 print(f"SPI transfer completed in {tock - tick} seconds")
+//|
+//|
+//|         async def another_task():
+//|             msg = "Hi there SPI!"
+//|             while True:
+//|                 for s in msg.split():
+//|                     print(s, end=" ")
+//|                     await asyncio.sleep(0)
+//|                 print("")
+//|                 await asyncio.sleep(1)
+//|
+//|
+//|         async def main():
+//|             await asyncio.gather(spi_task(), another_task())
+//|
+//|
+//|         asyncio.run(main())
+//|     """
 
 static const mp_rom_map_elem_t abusio_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_abusio) },

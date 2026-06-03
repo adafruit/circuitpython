@@ -16,6 +16,7 @@
 
 #include "ports/raspberrypi/common-hal/abusio/SPI.h"
 #include "shared-bindings/abusio/SPI.h"
+#include "shared-module/abusio/SPI.h"
 
 #include "py/runtime.h"
 #include "py/objtuple.h"
@@ -207,55 +208,6 @@ static void cancel_dma(abusio_spi_transfer_ctx_t *ctx) {
 }
 
 // ---------------------------------------------------------------------------
-// Arg unpacking helpers
-// ---------------------------------------------------------------------------
-
-// Unpack a 2-tuple (self_mp_obj, buf_mp_obj) with a READ buffer.
-static void unpack2_read(mp_obj_t data,
-    abusio_spi_obj_t **self_out,
-    const uint8_t **buf_out, size_t *len_out) {
-    mp_obj_t *items;
-    size_t len;
-    mp_obj_tuple_get(data, &len, &items);
-    *self_out = MP_OBJ_TO_PTR(items[0]);
-    mp_buffer_info_t bi;
-    mp_get_buffer_raise(items[1], &bi, MP_BUFFER_READ);
-    *buf_out = bi.buf;
-    *len_out = bi.len;
-}
-
-// Unpack a 3-tuple (self, buf, write_value) with a WRITE buffer.
-static void unpack3_write(mp_obj_t data,
-    abusio_spi_obj_t **self_out,
-    uint8_t **buf_out, size_t *len_out, uint8_t *write_value_out) {
-    mp_obj_t *items;
-    size_t len;
-    mp_obj_tuple_get(data, &len, &items);
-    *self_out = MP_OBJ_TO_PTR(items[0]);
-    mp_buffer_info_t bi;
-    mp_get_buffer_raise(items[1], &bi, MP_BUFFER_WRITE);
-    *buf_out = bi.buf;
-    *len_out = bi.len;
-    *write_value_out = (uint8_t)mp_obj_get_int(items[2]);
-}
-
-// Unpack a 3-tuple (self, out_buf, in_buf).
-static void unpack3_readwrite(mp_obj_t data,
-    abusio_spi_obj_t **self_out,
-    const uint8_t **out_out, uint8_t **in_out, size_t *len_out) {
-    mp_obj_t *items;
-    size_t len;
-    mp_obj_tuple_get(data, &len, &items);
-    *self_out = MP_OBJ_TO_PTR(items[0]);
-    mp_buffer_info_t obi, ibi;
-    mp_get_buffer_raise(items[1], &obi, MP_BUFFER_READ);
-    mp_get_buffer_raise(items[2], &ibi, MP_BUFFER_WRITE);
-    *out_out = obi.buf;
-    *in_out = ibi.buf;
-    *len_out = obi.len;
-}
-
-// ---------------------------------------------------------------------------
 // write start / end / cancel
 // ---------------------------------------------------------------------------
 
@@ -263,7 +215,7 @@ void *common_hal_abusio_spi_write_start(circuitpy_async_flag_t *flag, mp_obj_t d
     abusio_spi_obj_t *self;
     const uint8_t *buf;
     size_t len;
-    unpack2_read(data, &self, &buf, &len);
+    abusio_spi_unpack_write(data, &self, &buf, &len);
     ensure_irq_installed();
     return setup_dma_write(flag, &self->spi, buf, len);
 }
@@ -287,7 +239,7 @@ void *common_hal_abusio_spi_readinto_start(circuitpy_async_flag_t *flag, mp_obj_
     uint8_t *buf;
     size_t len;
     uint8_t write_value;
-    unpack3_write(data, &self, &buf, &len, &write_value);
+    abusio_spi_unpack_readinto(data, &self, &buf, &len, &write_value);
     ensure_irq_installed();
     return setup_dma_read(flag, &self->spi, buf, len, write_value);
 }
@@ -311,7 +263,7 @@ void *common_hal_abusio_spi_write_readinto_start(circuitpy_async_flag_t *flag, m
     const uint8_t *out;
     uint8_t *in;
     size_t len;
-    unpack3_readwrite(data, &self, &out, &in, &len);
+    abusio_spi_unpack_write_readinto(data, &self, &out, &in, &len);
     ensure_irq_installed();
     return setup_dma_write_read(flag, &self->spi, out, in, len);
 }

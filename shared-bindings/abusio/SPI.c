@@ -53,20 +53,9 @@ static void check_lock(abusio_spi_obj_t *self) {
 //|
 //|     All transfer methods (``write``, ``readinto``, ``write_readinto``) return
 //|     awaitables and must be used with ``await`` inside an ``async def``.
+//|     Use ``await spi.lock()`` to acquire the bus lock without blocking other
+//|     tasks."""
 //|
-//|     Example::
-//|
-//|         import asyncio, board, abusio
-//|
-//|         async def main():
-//|             spi = abusio.SPI(board.SCK, board.MOSI, board.MISO)
-//|             spi.configure(baudrate=4_000_000)
-//|             spi.try_lock()
-//|             await spi.write(b'\\x9f\\x00\\x00')
-//|             spi.unlock()
-//|
-//|         asyncio.run(main())
-//|     """
 //|
 //|     def __init__(
 //|         self,
@@ -143,16 +132,76 @@ static mp_obj_t abusio_spi_configure(size_t n_args, const mp_obj_t *pos_args, mp
 }
 static MP_DEFINE_CONST_FUN_OBJ_KW(abusio_spi_configure_obj, 1, abusio_spi_configure);
 
-//|     def try_lock(self) -> bool:
-//|         """Attempt to grab the lock. Returns True on success."""
+// ---- async lock -------------------------------------------------------------
+
+//|     async def lock(self) -> None:
+//|         """Acquire the SPI lock asynchronously.
+//|
+//|         Suspends the current task until the lock is acquired, yielding to
+//|         other tasks on each failed attempt.
+//|         """
 //|         ...
 //|
-static mp_obj_t abusio_spi_try_lock(mp_obj_t self_in) {
+
+typedef struct {
+    mp_obj_base_t base;
+    abusio_spi_obj_t *spi;
+} abusio_spi_lock_aw_obj_t;
+
+#if MICROPY_PY_ASYNCIO
+extern mp_obj_t mp_asyncio_context;
+#endif
+
+static mp_obj_t abusio_spi_lock_aw_iternext(mp_obj_t self_in) {
+    abusio_spi_lock_aw_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    if (common_hal_busio_spi_try_lock(&self->spi->spi)) {
+        MP_STATE_THREAD(stop_iteration_arg) = mp_const_none;
+        return MP_OBJ_STOP_ITERATION;
+    }
+    // Re-schedule the current task so it is retried on the next event-loop
+    // iteration (same pattern as circuitpy_objawaitable.c).
+    #if MICROPY_PY_ASYNCIO
+    if (mp_asyncio_context != MP_OBJ_NULL) {
+        mp_obj_t _task_queue = mp_obj_dict_get(mp_asyncio_context, MP_OBJ_NEW_QSTR(MP_QSTR__task_queue));
+        mp_obj_t cur_task = mp_obj_dict_get(mp_asyncio_context, MP_OBJ_NEW_QSTR(MP_QSTR_cur_task));
+        if (_task_queue != MP_OBJ_NULL && cur_task != MP_OBJ_NULL && cur_task != mp_const_none) {
+            mp_obj_t dest[3];
+            mp_load_method(_task_queue, MP_QSTR_push, dest);
+            dest[2] = cur_task;
+            mp_call_method_n_kw(1, 0, dest);
+        }
+    }
+    #endif
+    return mp_const_none; // yield — lock not yet available
+}
+
+static mp_obj_t abusio_spi_lock_aw_await(mp_obj_t self_in) {
+    return self_in;
+}
+static MP_DEFINE_CONST_FUN_OBJ_1(abusio_spi_lock_aw_await_obj, abusio_spi_lock_aw_await);
+
+static const mp_rom_map_elem_t abusio_spi_lock_aw_locals_dict_table[] = {
+    { MP_ROM_QSTR(MP_QSTR___await__), MP_ROM_PTR(&abusio_spi_lock_aw_await_obj) },
+};
+static MP_DEFINE_CONST_DICT(abusio_spi_lock_aw_locals_dict, abusio_spi_lock_aw_locals_dict_table);
+
+MP_DEFINE_CONST_OBJ_TYPE(
+    abusio_spi_lock_aw_type,
+    MP_QSTR_SPI_lock_awaitable,
+    MP_TYPE_FLAG_ITER_IS_ITERNEXT,
+    iter, abusio_spi_lock_aw_iternext,
+    locals_dict, &abusio_spi_lock_aw_locals_dict
+    );
+
+static mp_obj_t abusio_spi_lock(mp_obj_t self_in) {
     abusio_spi_obj_t *self = native_abusio_spi(self_in);
     check_for_deinit(self);
-    return mp_obj_new_bool(common_hal_busio_spi_try_lock(&self->spi));
+    abusio_spi_lock_aw_obj_t *aw =
+        mp_obj_malloc(abusio_spi_lock_aw_obj_t, &abusio_spi_lock_aw_type);
+    aw->spi = self;
+    return MP_OBJ_FROM_PTR(aw);
 }
-static MP_DEFINE_CONST_FUN_OBJ_1(abusio_spi_try_lock_obj, abusio_spi_try_lock);
+static MP_DEFINE_CONST_FUN_OBJ_1(abusio_spi_lock_obj, abusio_spi_lock);
 
 //|     def unlock(self) -> None:
 //|         """Release the lock."""
@@ -272,7 +321,7 @@ static MP_DEFINE_CONST_FUN_OBJ_KW(abusio_spi_readinto_obj, 1, abusio_spi_readint
 //|         """Full-duplex SPI transfer asynchronously.
 //|
 //|         ``out_buffer[out_start:out_end]`` and ``in_buffer[in_start:in_end]``
-//|         must be the same length. The bus must be locked before calling.
+//|         must be the same length. The bus must be locked before calling. Sharing the same buffer for in and out is not supported.
 //|         """
 //|         ...
 //|
@@ -345,7 +394,7 @@ static const mp_rom_map_elem_t abusio_spi_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR___exit__),      MP_ROM_PTR(&default___exit___obj) },
 
     { MP_ROM_QSTR(MP_QSTR_configure),     MP_ROM_PTR(&abusio_spi_configure_obj) },
-    { MP_ROM_QSTR(MP_QSTR_try_lock),      MP_ROM_PTR(&abusio_spi_try_lock_obj) },
+    { MP_ROM_QSTR(MP_QSTR_lock),          MP_ROM_PTR(&abusio_spi_lock_obj) },
     { MP_ROM_QSTR(MP_QSTR_unlock),        MP_ROM_PTR(&abusio_spi_unlock_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_write),         MP_ROM_PTR(&abusio_spi_write_obj) },
