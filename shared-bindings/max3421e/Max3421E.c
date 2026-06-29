@@ -19,7 +19,7 @@
 //|         *,
 //|         chip_select: microcontroller.Pin,
 //|         irq: microcontroller.Pin,
-//|         baudrate: int = 26000000,
+//|         baudrate: int = 20000000,
 //|     ) -> None:
 //|         """Create a Max3421E object associated with the given pins.
 //|
@@ -29,7 +29,13 @@
 //|         :param busio.SPI spi_bus: The SPI bus that make up the clock and data lines
 //|         :param microcontroller.Pin chip_select: Chip select pin
 //|         :param microcontroller.Pin irq: Interrupt pin
-//|         :param int baudrate: Maximum baudrate to talk to the Max chip in Hz"""
+//|         :param int baudrate: Maximum baudrate to talk to the Max chip in Hz
+//|
+//|         Note: The specified maximum frequency for the MAX3421E is 26 MHz.
+//|         Due to SPI frequency granularity on various chips, this frequency
+//|         may be exceeded when the specified frequency is > 20 MHz.
+//|         So 20 MHz is the default.
+//|         """
 //|         ...
 //|
 static mp_obj_t max3421e_max3421e_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
@@ -38,7 +44,7 @@ static mp_obj_t max3421e_max3421e_make_new(const mp_obj_type_t *type, size_t n_a
         { MP_QSTR_spi_bus, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_chip_select, MP_ARG_OBJ | MP_ARG_KW_ONLY | MP_ARG_REQUIRED },
         { MP_QSTR_irq, MP_ARG_OBJ | MP_ARG_KW_ONLY | MP_ARG_REQUIRED },
-        { MP_QSTR_baudrate, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 24000000} },
+        { MP_QSTR_baudrate, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 20000000} },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
