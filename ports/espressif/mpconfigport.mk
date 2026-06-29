@@ -219,7 +219,7 @@ CIRCUITPY_SDIOIO = 0
 CIRCUITPY_USB_DEVICE = 0
 CIRCUITPY_ESP_USB_SERIAL_JTAG ?= 1
 
-#### esp32c6 ##########################################################
+#### esp32c61 ##########################################################
 else ifeq ($(IDF_TARGET),esp32c61)
 # Modules
 CIRCUITPY_ESPCAMERA = 0
