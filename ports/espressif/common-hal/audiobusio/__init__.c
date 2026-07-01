@@ -39,24 +39,31 @@ static void i2s_fill_buffer(i2s_t *self) {
         self->next_buffer_size = 0;
         return;
     }
-    while (!self->stopping && output_buffer_size > 0) {
+    while (output_buffer_size > 0) {
         if (self->sample_data == self->sample_end) {
+            if (self->last_buffer) {
+                // The final buffer has been fully output; stop now instead of
+                // fetching another (which for a single-buffer sample would just
+                // replay it).
+                self->stopping = true;
+                break;
+            }
             uint32_t sample_buffer_length;
             audioio_get_buffer_result_t get_buffer_result =
                 audiosample_get_buffer(self->sample, false, 0,
                     &self->sample_data, &sample_buffer_length);
             self->sample_end = self->sample_data + sample_buffer_length;
+            if (get_buffer_result == GET_BUFFER_ERROR || sample_buffer_length == 0) {
+                self->stopping = true;
+                break;
+            }
             if (get_buffer_result == GET_BUFFER_DONE) {
                 if (self->loop) {
                     audiosample_reset_buffer(self->sample, false, 0);
                 } else {
-                    self->stopping = true;
-                    break;
+                    // Output this final buffer before stopping; don't fetch again.
+                    self->last_buffer = true;
                 }
-            }
-            if (get_buffer_result == GET_BUFFER_ERROR || sample_buffer_length == 0) {
-                self->stopping = true;
-                break;
             }
         }
         size_t sample_bytecount = self->sample_end - self->sample_data;
@@ -95,6 +102,11 @@ static void i2s_fill_buffer(i2s_t *self) {
         self->sample_data += framecount * bytes_per_input_frame;
         output_buffer += framecount * CIRCUITPY_OUTPUT_SLOTS;
         output_buffer_size -= framecount * bytes_per_output_frame;
+    }
+    // Sample ended mid-buffer (or was empty/errored): silence the rest so the
+    // DMA doesn't play stale data.
+    if (output_buffer_size > 0) {
+        memset(output_buffer, 0, output_buffer_size);
     }
     self->next_buffer = NULL;
     self->next_buffer_size = 0;
@@ -172,6 +184,7 @@ void port_i2s_play(i2s_t *self, mp_obj_t sample, bool loop) {
     self->playing = true;
     self->paused = false;
     self->stopping = false;
+    self->last_buffer = false;
     // This will be slow but we can't rewind the underlying sample. So, we will
     // preload one frame at a time and drop the last sample that can't fit.
     // We cap ourselves at the max DMA set to prevent a sample drop if starting
@@ -179,7 +192,7 @@ void port_i2s_play(i2s_t *self, mp_obj_t sample, bool loop) {
     uint32_t starting_frame;
     size_t bytes_loaded = 4;
     size_t preloaded = 0;
-    while (bytes_loaded > 0 && preloaded < CIRCUITPY_BUFFER_SIZE * CIRCUITPY_BUFFER_COUNT) {
+    while (bytes_loaded > 0 && preloaded < I2S_DMA_BUFFER_MAX_SIZE * CIRCUITPY_BUFFER_COUNT) {
         self->next_buffer = &starting_frame;
         self->next_buffer_size = sizeof(starting_frame);
         i2s_fill_buffer(self);
@@ -209,6 +222,7 @@ void port_i2s_stop(i2s_t *self) {
     self->sample = NULL;
     self->playing = false;
     self->stopping = false;
+    self->last_buffer = false;
 }
 
 void port_i2s_pause(i2s_t *self) {

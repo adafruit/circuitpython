@@ -107,22 +107,29 @@ static void i2s_buffer_fill(audiobusio_i2sout_obj_t *self) {
 
     while (!self->paused && !self->stopping && bytesleft) {
         if (self->sample_data == self->sample_end) {
+            if (self->last_buffer) {
+                // The final buffer has been fully output; stop now instead of
+                // fetching another (which for a single-buffer sample would just
+                // replay it).
+                self->stopping = true;
+                break;
+            }
             uint32_t sample_buffer_length;
             audioio_get_buffer_result_t get_buffer_result =
                 audiosample_get_buffer(self->sample, false, 0,
                     &self->sample_data, &sample_buffer_length);
             self->sample_end = self->sample_data + sample_buffer_length;
+            if (get_buffer_result == GET_BUFFER_ERROR || sample_buffer_length == 0) {
+                self->stopping = true;
+                break;
+            }
             if (get_buffer_result == GET_BUFFER_DONE) {
                 if (self->loop) {
                     audiosample_reset_buffer(self->sample, false, 0);
                 } else {
-                    self->stopping = true;
-                    break;
+                    // Output this final buffer before stopping; don't fetch again.
+                    self->last_buffer = true;
                 }
-            }
-            if (get_buffer_result == GET_BUFFER_ERROR || sample_buffer_length == 0) {
-                self->stopping = true;
-                break;
             }
         }
         uint16_t bytecount = MIN(bytesleft, (size_t)(self->sample_end - self->sample_data));
@@ -280,6 +287,7 @@ void common_hal_audiobusio_i2sout_play(audiobusio_i2sout_obj_t *self,
     self->playing = true;
     self->paused = false;
     self->stopping = false;
+    self->last_buffer = false;
     i2s_buffer_fill(self);
 
     NRF_I2S->RXTXD.MAXCNT = self->buffer_length / 4;

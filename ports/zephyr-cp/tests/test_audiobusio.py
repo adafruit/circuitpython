@@ -214,3 +214,77 @@ def test_i2s_pause_resume(circuitpython):
     assert "paused" in output
     assert "resumed" in output
     assert "done" in output
+
+
+I2S_PLAY_LOOP_FALSE_CODE = """\
+import array
+import math
+import audiocore
+import board
+import time
+
+# 440 Hz sine, 16-bit signed stereo at 16000 Hz, several periods.
+sample_rate = 16000
+length = sample_rate // 440
+periods = 10
+values = []
+for _ in range(periods):
+    for i in range(length):
+        v = int(math.sin(math.pi * 2 * i / length) * 30000)
+        values.append(v)  # left
+        values.append(v)  # right
+
+# Default single_buffer=True: get_buffer returns the whole buffer together with
+# GET_BUFFER_DONE on the very first call. With loop=False that buffer used to be
+# discarded before being copied, producing silence (issue #10539).
+sample = audiocore.RawSample(
+    array.array("h", values),
+    sample_rate=sample_rate,
+    channel_count=2,
+)
+
+dac = board.I2S0()
+print("playing")
+dac.play(sample, loop=False)
+time.sleep(0.5)
+# Stop explicitly so this test does not depend on `playing` clearing on its own.
+dac.stop()
+print("done")
+"""
+
+
+@pytest.mark.duration(10)
+@pytest.mark.circuitpy_drive({"code.py": I2S_PLAY_LOOP_FALSE_CODE})
+def test_i2s_play_non_looping_single_buffer(circuitpython):
+    """A single-buffer RawSample played with loop=False must be heard, not dropped.
+
+    Regression test for #10539: the final buffer, returned together with
+    GET_BUFFER_DONE, was discarded before being copied, so a single-buffer
+    sample (whole buffer + DONE on the first get_buffer call) produced silence.
+    """
+    circuitpython.wait_until_done()
+
+    output = circuitpython.serial.all_output
+    assert "playing" in output
+    assert "done" in output
+
+    left_trace = parse_i2s_trace(circuitpython.trace_file, "Left")
+    right_trace = parse_i2s_trace(circuitpython.trace_file, "Right")
+
+    # The sine wave must actually reach the I2S output. On the bug every value is
+    # zero (silence) because the sole buffer was dropped.
+    left_values = [v for _, v in left_trace if v != 0]
+    right_values = [v for _, v in right_trace if v != 0]
+    assert len(left_values) > 5, "Left channel is silent; non-looping sample was dropped"
+    assert len(right_values) > 5, "Right channel is silent; non-looping sample was dropped"
+
+    # A sine wave has both positive and negative excursions at the expected amplitude.
+    assert max(left_values) > 20000, f"Left max {max(left_values)} too low"
+    assert min(left_values) < -20000, f"Left min {min(left_values)} too high"
+
+    # We wrote the same value to both channels.
+    left_by_ts = dict(left_trace)
+    right_by_ts = dict(right_trace)
+    common_ts = sorted(set(left_by_ts) & set(right_by_ts))
+    mismatches = sum(1 for ts in common_ts[:100] if left_by_ts[ts] != right_by_ts[ts])
+    assert mismatches == 0, f"{mismatches} L/R mismatches in first common timestamps"

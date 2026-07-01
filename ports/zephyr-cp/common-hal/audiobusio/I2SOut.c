@@ -87,20 +87,10 @@ static void fill_buffer(audiobusio_i2sout_obj_t *self, uint8_t *buffer, size_t b
             return;
         }
 
-        if (result == GET_BUFFER_DONE) {
-            if (self->loop) {
-                // Reset to beginning
-                audiosample_reset_buffer(self->sample, false, 0);
-            } else {
-                // Done playing, fill rest with silence
-                self->stopping = true;
-                i2s_trigger(self->i2s_dev, I2S_DIR_TX, I2S_TRIGGER_DRAIN);
-                memset(buffer + bytes_filled, 0, buffer_size - bytes_filled);
-                return;
-            }
-        }
-
-        // Copy data to buffer
+        // Copy the returned data first, even when this is the final buffer
+        // (GET_BUFFER_DONE). A single-buffer sample returns its entire buffer
+        // together with GET_BUFFER_DONE on the first call, so handling DONE
+        // before the copy would drop the audio and produce silence.
         uint32_t bytes_to_copy = sample_buffer_length;
         if (bytes_filled + bytes_to_copy > buffer_size) {
             bytes_to_copy = buffer_size - bytes_filled;
@@ -108,6 +98,19 @@ static void fill_buffer(audiobusio_i2sout_obj_t *self, uint8_t *buffer, size_t b
 
         memcpy(buffer + bytes_filled, sample_buffer, bytes_to_copy);
         bytes_filled += bytes_to_copy;
+
+        if (result == GET_BUFFER_DONE) {
+            if (self->loop) {
+                // Reset to beginning
+                audiosample_reset_buffer(self->sample, false, 0);
+            } else {
+                // Final buffer copied; stop once this block drains.
+                self->stopping = true;
+                i2s_trigger(self->i2s_dev, I2S_DIR_TX, I2S_TRIGGER_DRAIN);
+                memset(buffer + bytes_filled, 0, buffer_size - bytes_filled);
+                return;
+            }
+        }
     }
 }
 

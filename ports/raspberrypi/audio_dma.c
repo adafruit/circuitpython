@@ -227,6 +227,7 @@ audio_dma_result audio_dma_setup_playback(
     uint32_t max_buffer_length;
     audiosample_get_buffer_structure(sample, single_channel_output, &single_buffer, &samples_signed,
         &max_buffer_length, &dma->sample_spacing);
+    dma->single_buffer = single_buffer;
 
     // Check to see if we have to scale the resolution up.
     if (dma->sample_resolution <= 8 && dma->output_resolution > 8) {
@@ -485,6 +486,15 @@ void audio_dma_deinit(audio_dma_t *dma) {
 
 bool audio_dma_get_playing(audio_dma_t *dma) {
     if (dma->channel[0] == NUM_DMA_CHANNELS) {
+        return false;
+    }
+    // A single-buffer, non-looping sample plays entirely in hardware via DMA
+    // chaining, with no completion interrupt to stop it. Detect when its DMA
+    // channel has drained and finish so that playing_in_progress is cleared.
+    if (dma->single_buffer && !dma->loop &&
+        dma->playing_in_progress && !dma->paused &&
+        !dma_channel_is_busy(dma->channel[0])) {
+        audio_dma_stop(dma);
         return false;
     }
     return dma->playing_in_progress;

@@ -19,6 +19,7 @@ typedef struct {
     bool paused; // True when the I2S channel is configured but disabled.
     bool playing; // True when the I2S channel is configured.
     bool stopping;
+    bool last_buffer; // True once the sample's final buffer has been fetched but not yet fully output.
     bool samples_signed;
     int8_t bytes_per_sample;
     int8_t channel_count;

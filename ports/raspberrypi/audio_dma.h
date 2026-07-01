@@ -33,6 +33,7 @@ typedef struct {
     uint8_t sample_resolution; // in bits
     audio_dma_result dma_result;
     bool loop;
+    bool single_buffer;
     bool single_channel_output;
     bool signed_to_unsigned;
     bool unsigned_to_signed;
