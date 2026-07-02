@@ -101,6 +101,9 @@ endif
 # Select which builtin modules to compile and include.
 # Keep alphabetical.
 
+ifeq ($(CIRCUITPY_ABUSIO),1)
+SRC_PATTERNS += abusio/%
+endif
 ifeq ($(CIRCUITPY_AESIO),1)
 SRC_PATTERNS += aesio/%
 endif
@@ -486,6 +489,8 @@ endif
 
 # All possible sources are listed here, and are filtered by SRC_PATTERNS in SRC_COMMON_HAL
 SRC_COMMON_HAL_ALL = \
+	abusio/__init__.c \
+	abusio/SPI.c \
 	_bleio/Adapter.c \
 	_bleio/Attribute.c \
 	_bleio/Characteristic.c \
@@ -1046,6 +1051,10 @@ endif
 ifeq ($(CIRCUITPY_QRIO),1)
 SRC_CIRCUITPY_COMMON += lib/quirc/lib/decode.c lib/quirc/lib/identify.c lib/quirc/lib/quirc.c lib/quirc/lib/version_db.c
 $(BUILD)/lib/quirc/lib/%.o: CFLAGS += -Wno-type-limits -Wno-shadow -Wno-sign-compare -include shared-module/qrio/quirc_alloc.h
+endif
+
+ifeq ($(MICROPY_PY_ASYNC_AWAIT),1)
+SRC_CIRCUITPY_COMMON += py/circuitpy_objawaitable.c
 endif
 
 ifdef LD_TEMPLATE_FILE
