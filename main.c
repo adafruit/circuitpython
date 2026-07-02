@@ -789,6 +789,12 @@ static bool __attribute__((noinline)) run_code_py(safe_mode_t safe_mode, bool *s
         #if CIRCUITPY_DISPLAYIO
         common_hal_displayio_auto_primary_display();
         #endif
+        // Undo any preserve_dios.
+        #if CIRCUITPY_ALARM_PRESERVE_DIOS
+        common_hal_alarm_clear_pin_preservations();
+        #endif
+        // Reset pins, as if there was a hard reset.
+        reset_all_pins();
         // Pretend that the next run is the first run, as if we were reset.
         *simulate_reset = true;
     }

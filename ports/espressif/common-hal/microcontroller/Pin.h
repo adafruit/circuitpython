@@ -29,7 +29,6 @@ extern bool pin_number_is_free(gpio_num_t pin_number);
 extern void never_reset_pin_number(gpio_num_t pin_number);
 
 extern void preserve_pin_number(gpio_num_t pin_number);
-extern void clear_pin_preservations(void);
 
 // Allow the board to reset a pin in a board-specific way. This can be used
 // for LEDs or enable pins to put them in a state beside the default pull-up.

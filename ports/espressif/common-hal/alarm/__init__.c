@@ -182,7 +182,7 @@ void MP_NORETURN common_hal_alarm_enter_deep_sleep(void) {
     #endif
 
     // We no longer need to remember the pin preservations, since any pin resets are all done.
-    clear_pin_preservations();
+    common_hal_alarm_clear_pin_preservations();
 
     // The ESP-IDF caches the deep sleep settings and applies them before sleep.
     // We don't need to worry about resetting them in the interim.

@@ -26,6 +26,13 @@ extern void common_hal_alarm_set_deep_sleep_alarms(size_t n_alarms, const mp_obj
 
 extern MP_NORETURN void common_hal_alarm_enter_deep_sleep(void);
 
+#if CIRCUITPY_ALARM_PRESERVE_DIOS
+// Clear any pin preservations set up for deep sleep (real or fake), releasing
+// held pins so they can be reset. Only declared on ports that implement
+// `preserve_dios`.
+extern void common_hal_alarm_clear_pin_preservations(void);
+#endif
+
 // May be used to re-initialize peripherals like GPIO, if the VM reset returned
 // them to a default state
 extern void common_hal_alarm_pretending_deep_sleep(void);

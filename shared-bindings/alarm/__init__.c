@@ -137,6 +137,8 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(alarm_light_sleep_until_alarms_obj, 1, MP_OB
 //|
 //|     Preserving `DigitalInOut` states during deep sleep can be used to ensure that
 //|     external or on-board devices are powered or unpowered during sleep, among other purposes.
+//|     Once the board wakes up from deep sleep, the `DigitalInOut` states are no longer preserved
+//|     and must be restored by your code.
 //|
 //|     On some microcontrollers, some pins cannot remain in their original state for hardware reasons.
 //|
@@ -193,6 +195,11 @@ static mp_obj_t alarm_exit_and_deep_sleep_until_alarms(size_t n_args, const mp_o
 
     mp_obj_t preserve_dios = args[ARG_preserve_dios].u_obj;
     const size_t num_dios = (size_t)MP_OBJ_SMALL_INT_VALUE(mp_obj_len(preserve_dios));
+    #if !CIRCUITPY_ALARM_PRESERVE_DIOS
+    if (num_dios > 0) {
+        mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("%q"), MP_QSTR_preserve_dios);
+    }
+    #endif
     digitalio_digitalinout_obj_t *dios_array[num_dios];
 
     for (mp_uint_t i = 0; i < num_dios; i++) {

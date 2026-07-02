@@ -7,6 +7,7 @@
 
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/digitalio/DigitalInOut.h"
+#include "shared-bindings/alarm/__init__.h"
 
 #include "py/mphal.h"
 
@@ -368,7 +369,7 @@ void preserve_pin_number(gpio_num_t pin_number) {
     }
 }
 
-void clear_pin_preservations(void) {
+void common_hal_alarm_clear_pin_preservations(void) {
     _preserved_pin_mask = 0;
 }
 
