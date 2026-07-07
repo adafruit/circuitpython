@@ -124,6 +124,10 @@ static mp_obj_t usb_audio_enable(size_t n_args, const mp_obj_t *pos_args, mp_map
         mp_raise_ValueError(MP_ERROR_TEXT("At least one of microphone and speaker must be enabled"));
     }
 
+    if (microphone && speaker && channel_count == 2) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Only mono operation is supported when microphone and speaker are both enabled"));
+    }
+
     if (!shared_module_usb_audio_enable(sample_rate, channel_count, bits_per_sample, microphone, speaker)) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Cannot change USB devices now"));
     }
