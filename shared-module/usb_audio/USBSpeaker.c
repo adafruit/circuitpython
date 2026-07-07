@@ -15,11 +15,6 @@
 
 #include "tusb.h"
 
-// The ring is sized independently of the TinyUSB headers (see USBSpeaker.h);
-// check it still matches the OUT endpoint's software FIFO so the push side can be
-// reasoned about against the USB plumbing.
-MP_STATIC_ASSERT(USB_AUDIO_SPEAKER_RING_SIZE == CFG_TUD_AUDIO_FUNC_1_EP_OUT_SW_BUF_SZ);
-
 // Only one speaker can be fed by the single USB OUT endpoint at a time. This
 // points at the most recently constructed USBSpeaker, or NULL when none exists,
 // mirroring active_microphone in USBMicrophone.c. The USB background task pushes
@@ -36,7 +31,30 @@ void common_hal_usb_audio_usbspeaker_construct(usb_audio_usbspeaker_obj_t *self)
     self->base.channel_count = usb_audio_channel_count;
     self->base.samples_signed = true;
     self->base.single_buffer = false;
-    self->base.max_buffer_length = USB_AUDIO_SPEAKER_OUTPUT_BUFFER_SIZE;
+    
+    // Full owned double-buffer: two halves of FRAMES_PER_BUFFER frames each. Matches
+    // audiocore.RawSample's convention where base.max_buffer_length is the whole
+    // buffer and get_buffer() returns half of it.
+    self->base.max_buffer_length = (2 * USB_AUDIO_SPEAKER_FRAMES_PER_BUFFER * USB_AUDIO_N_BYTES_PER_SAMPLE * usb_audio_channel_count);
+    self->output_buffer = m_malloc_without_collect(self->base.max_buffer_length);
+    if (self->output_buffer == NULL) {
+        common_hal_usb_audio_usbspeaker_deinit(self);
+        m_malloc_fail(self->base.max_buffer_length);
+    }
+    memset(self->output_buffer, 0, self->base.max_buffer_length);
+
+    // The ring is sized independently of the TinyUSB headers; check it still
+    // matches the OUT endpoint's software FIFO so the push side can be reasoned
+    // about against the USB plumbing.
+    self->ring_len = 16 * ((usb_audio_sample_rate / 1000 + 1) * (USB_AUDIO_N_BYTES_PER_SAMPLE * usb_audio_channel_count));
+    assert(self->ring_len == CFG_TUD_AUDIO_FUNC_1_EP_OUT_SW_BUF_SZ);
+
+    self->ring = m_malloc_without_collect(self->ring_len);
+    if (self->ring == NULL) {
+        common_hal_usb_audio_usbspeaker_deinit(self);
+        m_malloc_fail(self->ring_len);
+    }
+    memset(self->ring, 0, self->ring_len);
 
     self->ring_head = 0;
     self->ring_tail = 0;
@@ -104,32 +122,32 @@ void usb_audio_usbspeaker_background_drain(const uint8_t *in, size_t n) {
     if (self == NULL || n == 0) {
         return;
     }
-    if (n >= USB_AUDIO_SPEAKER_RING_SIZE) {
+    if (n >= self->ring_len) {
         // A single chunk larger than the whole ring can only contribute its
         // newest tail. (Cannot happen with USB packets << ring size, but keep
         // the copies provably in-bounds.)
-        in += n - USB_AUDIO_SPEAKER_RING_SIZE;
-        n = USB_AUDIO_SPEAKER_RING_SIZE;
+        in += n - self->ring_len;
+        n = self->ring_len;
     }
 
     common_hal_mcu_disable_interrupts();
 
-    size_t free_space = USB_AUDIO_SPEAKER_RING_SIZE - self->ring_count;
+    size_t free_space = self->ring_len - self->ring_count;
     if (n > free_space) {
         // Overrun: advance the read cursor past the oldest bytes we're about to
         // overwrite, keeping latency bounded and following the newest host audio.
         size_t drop = n - free_space;
-        self->ring_tail = (self->ring_tail + drop) % USB_AUDIO_SPEAKER_RING_SIZE;
+        self->ring_tail = (self->ring_tail + drop) % self->ring_len;
         self->ring_count -= drop;
     }
 
     // Copy in one or two segments, wrapping at the end of the ring.
-    size_t first = MIN(n, USB_AUDIO_SPEAKER_RING_SIZE - self->ring_head);
+    size_t first = MIN(n, self->ring_len - self->ring_head);
     memcpy(&self->ring[self->ring_head], in, first);
     if (n > first) {
         memcpy(&self->ring[0], in + first, n - first);
     }
-    self->ring_head = (self->ring_head + n) % USB_AUDIO_SPEAKER_RING_SIZE;
+    self->ring_head = (self->ring_head + n) % self->ring_len;
     self->ring_count += n;
 
     common_hal_mcu_enable_interrupts();
@@ -157,12 +175,12 @@ uint32_t common_hal_usb_audio_usbspeaker_read(usb_audio_usbspeaker_obj_t *self,
     // but stay defensive so the returned count is always a whole number).
     to_copy -= to_copy % bytes_per_frame;
 
-    size_t first = MIN(to_copy, USB_AUDIO_SPEAKER_RING_SIZE - self->ring_tail);
+    size_t first = MIN(to_copy, self->ring_len - self->ring_tail);
     memcpy(buffer, &self->ring[self->ring_tail], first);
     if (to_copy > first) {
         memcpy((uint8_t *)buffer + first, &self->ring[0], to_copy - first);
     }
-    self->ring_tail = (self->ring_tail + to_copy) % USB_AUDIO_SPEAKER_RING_SIZE;
+    self->ring_tail = (self->ring_tail + to_copy) % self->ring_len;
     self->ring_count -= to_copy;
     common_hal_mcu_enable_interrupts();
 
@@ -199,12 +217,12 @@ audioio_get_buffer_result_t usb_audio_usbspeaker_get_buffer(usb_audio_usbspeaker
     // It is never preempted by the producer, so no interrupt guard is required.
     size_t to_copy = MIN(self->ring_count, (size_t)half);
 
-    size_t first = MIN(to_copy, USB_AUDIO_SPEAKER_RING_SIZE - self->ring_tail);
+    size_t first = MIN(to_copy, self->ring_len - self->ring_tail);
     memcpy(out, &self->ring[self->ring_tail], first);
     if (to_copy > first) {
         memcpy(out + first, &self->ring[0], to_copy - first);
     }
-    self->ring_tail = (self->ring_tail + to_copy) % USB_AUDIO_SPEAKER_RING_SIZE;
+    self->ring_tail = (self->ring_tail + to_copy) % self->ring_len;
     self->ring_count -= to_copy;
 
     if (to_copy < half) {

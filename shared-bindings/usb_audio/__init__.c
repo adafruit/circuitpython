@@ -19,9 +19,9 @@
 //| Audio Class (UAC2) microphone: the board is the audio *source* and streams
 //| samples to the host over a USB isochronous IN endpoint.
 //|
-//| This mode requires 1 IN endpoint and 2 interfaces. Generally, microcontrollers
-//| have a limit on the number of endpoints. If you exceed the number of endpoints,
-//| CircuitPython will automatically enter Safe Mode. Even in this case, you may be
+//| This mode requires 1 (mono) or 2 (stereo / bidirectional) IN endpoint and 2 interfaces.
+//| Generally, microcontrollers have a limit on the number of endpoints. If you exceed the number
+//| of endpoints, CircuitPython will automatically enter Safe Mode. Even in this case, you may be
 //| able to enable USB audio by also disabling other USB functions, such as
 //| `usb_hid` or `usb_midi`.
 //|
@@ -61,9 +61,11 @@
 //|         pass
 //|     mic.stop()
 //|
-//| The ``sample_rate`` and ``channel_count`` of the sample played must match the
-//| values passed to `enable`, and the sample must be 16-bit signed; otherwise
-//| ``play`` raises a ``ValueError``.
+//| The ``sample_rate`` and ``channel_count`` of the sample played must match the values passed to `enable`,
+//| and the sample must be 16-bit signed; otherwise ``play`` raises a ``ValueError``.
+//|
+//| If both speaker and headphone features are enabled (bidirectional), only mono operation is
+//| permitted.
 //|
 //| This interface is experimental and may change without notice even in stable
 //| versions of CircuitPython."""
@@ -115,7 +117,7 @@ static mp_obj_t usb_audio_enable(size_t n_args, const mp_obj_t *pos_args, mp_map
     mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
     mp_int_t sample_rate = mp_arg_validate_int_range(args[ARG_sample_rate].u_int, 1, USB_AUDIO_MAX_SAMPLE_RATE, MP_QSTR_sample_rate);
-    mp_int_t channel_count = mp_arg_validate_int_range(args[ARG_channel_count].u_int, 1, USB_AUDIO_N_CHANNELS, MP_QSTR_channel_count);
+    mp_int_t channel_count = mp_arg_validate_int_range(args[ARG_channel_count].u_int, 1, USB_AUDIO_MAX_CHANNELS, MP_QSTR_channel_count);
     mp_int_t bits_per_sample = mp_arg_validate_int(args[ARG_bits_per_sample].u_int, USB_AUDIO_BITS_PER_SAMPLE, MP_QSTR_bits_per_sample);
     bool microphone = args[ARG_microphone].u_bool;
     bool speaker = args[ARG_speaker].u_bool;

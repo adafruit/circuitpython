@@ -107,9 +107,9 @@ size_t usb_audio_usbmicrophone_background_fill(uint8_t *out, size_t max_bytes) {
         return 0;
     }
 
-    // The negotiated USB format is 16-bit signed mono PCM. For this step the
+    // The negotiated USB format is 16-bit signed PCM. For this step the
     // bound sample is assumed to already be in that format (e.g. a 16-bit signed
-    // mono audiocore.RawSample), so its bytes are copied straight through.
+    // audiocore.RawSample), so its bytes are copied straight through.
     size_t filled = 0;
     while (filled < max_bytes) {
         if (self->buffer_length == 0) {
