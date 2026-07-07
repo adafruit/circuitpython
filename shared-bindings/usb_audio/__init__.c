@@ -93,7 +93,7 @@
 //|     This function may only be used from ``boot.py``.
 //|
 //|     :param int sample_rate: Samples per second of the streamed audio.
-//|     :param int channel_count: Number of channels. Only mono (1) is supported initially.
+//|     :param int channel_count: Number of channels. Either mono (1) or stereo (2) is supported.
 //|     :param int bits_per_sample: Bits per signed PCM sample. Only 16 is supported initially.
 //|     :param bool microphone: Present a microphone (audio flows board -> host). Enabled by default.
 //|     :param bool speaker: Present a speaker (audio flows host -> board).

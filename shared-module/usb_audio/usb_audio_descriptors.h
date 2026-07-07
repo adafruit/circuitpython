@@ -30,7 +30,7 @@ size_t usb_audio_descriptor_length(void);
 
 // 16-bit signed LE PCM, mono.
 #define USB_AUDIO_N_BYTES_PER_SAMPLE (2)
-#define USB_AUDIO_N_CHANNELS (1)
+#define USB_AUDIO_N_CHANNELS (2)
 #define USB_AUDIO_BITS_PER_SAMPLE (USB_AUDIO_N_BYTES_PER_SAMPLE * 8)
 
 // Endpoint number for the single isochronous audio data endpoint. Most device
