@@ -15,6 +15,11 @@
 
 #include "tusb.h"
 
+// The ring is sized independently of the TinyUSB headers (see USBSpeaker.h);
+// check it still matches the OUT endpoint's software FIFO so the push side can be
+// reasoned about against the USB plumbing.
+MP_STATIC_ASSERT(USB_AUDIO_SPEAKER_RING_SIZE == CFG_TUD_AUDIO_FUNC_1_EP_OUT_SW_BUF_SZ);
+
 // Only one speaker can be fed by the single USB OUT endpoint at a time. This
 // points at the most recently constructed USBSpeaker, or NULL when none exists,
 // mirroring active_microphone in USBMicrophone.c. The USB background task pushes
@@ -42,19 +47,6 @@ void common_hal_usb_audio_usbspeaker_construct(usb_audio_usbspeaker_obj_t *self)
         m_malloc_fail(self->base.max_buffer_length);
     }
     memset(self->output_buffer, 0, self->base.max_buffer_length);
-
-    // The ring is sized independently of the TinyUSB headers; check it still
-    // matches the OUT endpoint's software FIFO so the push side can be reasoned
-    // about against the USB plumbing.
-    self->ring_len = 16 * ((usb_audio_sample_rate / 1000 + 1) * (USB_AUDIO_N_BYTES_PER_SAMPLE * usb_audio_channel_count));
-    assert(self->ring_len == CFG_TUD_AUDIO_FUNC_1_EP_OUT_SW_BUF_SZ);
-
-    self->ring = m_malloc_without_collect(self->ring_len);
-    if (self->ring == NULL) {
-        common_hal_usb_audio_usbspeaker_deinit(self);
-        m_malloc_fail(self->ring_len);
-    }
-    memset(self->ring, 0, self->ring_len);
 
     self->ring_head = 0;
     self->ring_tail = 0;

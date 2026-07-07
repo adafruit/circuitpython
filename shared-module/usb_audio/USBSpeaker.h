@@ -22,6 +22,16 @@
 // comfortably inside the ring.
 #define USB_AUDIO_SPEAKER_FRAMES_PER_BUFFER (128)
 
+// Bytes per audio frame in the negotiated UAC2 format (mono 16-bit for v1).
+#define USB_AUDIO_SPEAKER_BYTES_PER_FRAME (USB_AUDIO_N_BYTES_PER_SAMPLE * USB_AUDIO_N_CHANNELS)
+
+// Host -> board receive ring size. Mirrors CFG_TUD_AUDIO_FUNC_1_EP_OUT_SW_BUF_SZ
+// (16 * the full-speed OUT wMaxPacketSize) but is spelled out from the format
+// constants so this struct definition stays free of the TinyUSB headers. A
+// MP_STATIC_ASSERT in USBSpeaker.c checks the two stay equal.
+#define USB_AUDIO_SPEAKER_OUT_PACKET_SIZE ((USB_AUDIO_MAX_SAMPLE_RATE / 1000 + 1) * USB_AUDIO_SPEAKER_BYTES_PER_FRAME)
+#define USB_AUDIO_SPEAKER_RING_SIZE (16 * USB_AUDIO_SPEAKER_OUT_PACKET_SIZE)
+
 typedef struct usb_audio_usbspeaker_obj {
     // First member so the object can be used directly as an audiosample source.
     audiosample_base_t base;
@@ -30,8 +40,7 @@ typedef struct usb_audio_usbspeaker_obj {
     // background task via usb_audio_usbspeaker_background_drain() and drained by
     // get_buffer(). Single producer (task), single consumer (output DMA ISR);
     // see the concurrency notes in USBSpeaker.c.
-    uint8_t *ring;
-    size_t ring_len;
+    uint8_t ring[USB_AUDIO_SPEAKER_RING_SIZE];
     size_t ring_head;   // next write offset
     size_t ring_tail;   // next read offset
     size_t ring_count;  // valid bytes currently in the ring
