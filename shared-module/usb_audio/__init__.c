@@ -382,7 +382,6 @@ size_t usb_audio_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *de
         const uint8_t ep_in = descriptor_counts->current_endpoint + 1;
 
         usb_add_interface_string(*current_interface_string, "CircuitPython Headset");
-        (*current_interface_string)++;
         
         const uint8_t usb_audio_descriptor[] = {
             USB_AUDIO_HEADSET_DESCRIPTOR(
@@ -399,6 +398,7 @@ size_t usb_audio_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *de
         usb_audio_spk_as_itf = descriptor_counts->current_interface + 1;
         usb_audio_mic_as_itf = descriptor_counts->current_interface + 2;
 
+        (*current_interface_string)++;
         // One IAD wrapping an AudioControl + two AudioStreaming interfaces, plus
         // one OUT and one IN endpoint.
         descriptor_counts->current_interface += 3;
@@ -413,7 +413,6 @@ size_t usb_audio_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *de
 
     if (usb_audio_direction_is_output()) {
         usb_add_interface_string(*current_interface_string, "CircuitPython Speaker");
-        (*current_interface_string)++;
 
         // The AudioStreaming interface follows the AudioControl interface.
         usb_audio_spk_as_itf = descriptor_counts->current_interface + 1;
@@ -429,6 +428,7 @@ size_t usb_audio_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *de
                     /*_epsize*/ CFG_TUD_AUDIO_FUNC_1_EP_OUT_SZ_MAX)
             };
 
+            (*current_interface_string)++;
             // One IAD wrapping an AudioControl + an AudioStreaming interface, plus one OUT endpoint.
             descriptor_counts->current_interface += 2;
             if (!forced_iso_ep) {
@@ -450,8 +450,9 @@ size_t usb_audio_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *de
                     /*_epsize*/ CFG_TUD_AUDIO_FUNC_1_EP_OUT_SZ_MAX)
             };
 
-            // One IAD wrapping an AudioControl + an AudioStreaming interface, plus one OUT endpoint.
-            descriptor_counts->current_interface += 3;
+            (*current_interface_string)++;
+            // One IAD wrapping an AudioControl + an AudioStreaming interface, plus two OUT endpoints.
+            descriptor_counts->current_interface += 2;
             if (!forced_iso_ep) {
                 descriptor_counts->num_out_endpoints += 2;
                 descriptor_counts->current_endpoint += 2;
@@ -464,12 +465,11 @@ size_t usb_audio_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *de
     }
 
     usb_add_interface_string(*current_interface_string, "CircuitPython Microphone");
-    (*current_interface_string)++;
 
     // The AudioStreaming interface follows the AudioControl interface.
     usb_audio_mic_as_itf = descriptor_counts->current_interface + 1;
 
-    if (usb_audio_channel_count == 2) {
+    if (usb_audio_channel_count == 1) {
         const uint8_t usb_audio_descriptor[] = {
             USB_AUDIO_MIC_ONE_CH_DESCRIPTOR(
                 /*_itfnum*/ descriptor_counts->current_interface,
@@ -480,6 +480,7 @@ size_t usb_audio_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *de
                 /*_epsize*/ CFG_TUD_AUDIO_FUNC_1_EP_IN_SZ_MAX)
         };
 
+        (*current_interface_string)++;
         // One IAD wrapping an AudioControl + an AudioStreaming interface, plus one IN endpoint.
         descriptor_counts->current_interface += 2;
         if (!forced_iso_ep) {
@@ -501,8 +502,9 @@ size_t usb_audio_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *de
                 /*_epsize*/ CFG_TUD_AUDIO_FUNC_1_EP_IN_SZ_MAX)
         };
 
-        // One IAD wrapping an AudioControl + an AudioStreaming interface, plus one IN endpoint.
-        descriptor_counts->current_interface += 3;
+        (*current_interface_string)++;
+        // One IAD wrapping an AudioControl + an AudioStreaming interface, plus two IN endpoints.
+        descriptor_counts->current_interface += 2;
         if (!forced_iso_ep) {
             descriptor_counts->num_in_endpoints += 2;
             descriptor_counts->current_endpoint += 2;
