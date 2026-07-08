@@ -12,6 +12,7 @@
 #include "shared-bindings/usb_audio/USBMicrophone.h"
 #include "shared-bindings/util.h"
 #include "shared-module/usb_audio/__init__.h"
+#include "shared-module/usb_audio/usb_audio_descriptors.h"
 
 //| class USBMicrophone:
 //|     """Streams an audio sample to the host computer as a USB Audio Class microphone.

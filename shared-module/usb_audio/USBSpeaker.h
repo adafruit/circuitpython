@@ -25,6 +25,11 @@
 // Bytes per audio frame in the negotiated UAC2 format (mono 16-bit for v1).
 #define USB_AUDIO_SPEAKER_BYTES_PER_FRAME (USB_AUDIO_N_BYTES_PER_SAMPLE * USB_AUDIO_N_CHANNELS)
 
+// Full owned double-buffer: two halves of FRAMES_PER_BUFFER frames each. Matches
+// audiocore.RawSample's convention where base.max_buffer_length is the whole
+// buffer and get_buffer() returns half of it.
+#define USB_AUDIO_SPEAKER_OUTPUT_BUFFER_SIZE (2 * USB_AUDIO_SPEAKER_FRAMES_PER_BUFFER * USB_AUDIO_SPEAKER_BYTES_PER_FRAME)
+
 // Host -> board receive ring size. Mirrors CFG_TUD_AUDIO_FUNC_1_EP_OUT_SW_BUF_SZ
 // (16 * the full-speed OUT wMaxPacketSize) but is spelled out from the format
 // constants so this struct definition stays free of the TinyUSB headers. A
@@ -46,7 +51,7 @@ typedef struct usb_audio_usbspeaker_obj {
     size_t ring_count;  // valid bytes currently in the ring
 
     // Owned double-buffer returned to the output backend by get_buffer().
-    uint8_t *output_buffer;
+    uint8_t output_buffer[USB_AUDIO_SPEAKER_OUTPUT_BUFFER_SIZE];
     uint8_t output_index;  // 0 or 1: which half get_buffer() fills next
 } usb_audio_usbspeaker_obj_t;
 

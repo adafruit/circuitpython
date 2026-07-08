@@ -27,10 +27,10 @@ size_t usb_audio_descriptor_length(void);
 // The isochronous IN endpoint's wMaxPacketSize in the USB descriptor is computed
 // for this rate, so it is the highest rate usb_audio.enable() will accept.
 #define USB_AUDIO_MAX_SAMPLE_RATE (48000)
-#define USB_AUDIO_MAX_CHANNELS (2)
 
-// 16-bit signed LE PCM.
+// 16-bit signed LE stereo PCM.
 #define USB_AUDIO_N_BYTES_PER_SAMPLE (2)
+#define USB_AUDIO_N_CHANNELS (2)
 #define USB_AUDIO_BITS_PER_SAMPLE (USB_AUDIO_N_BYTES_PER_SAMPLE * 8)
 
 // Endpoint number for the single isochronous audio data endpoint. Most device
@@ -76,23 +76,7 @@ size_t usb_audio_descriptor_length(void);
 // These TUD_AUDIO_DESC_*_LEN macros come from TinyUSB's usbd.h; this expression
 // is only expanded where that header is already included (never at the point
 // tusb_config.h includes us), so the header stays dependency-free.
-#define USB_AUDIO_SPEAKER_ONE_CH_DESC_LEN (TUD_AUDIO_DESC_IAD_LEN \
-    + TUD_AUDIO_DESC_STD_AC_LEN \
-    + TUD_AUDIO_DESC_CS_AC_LEN \
-    + TUD_AUDIO_DESC_CLK_SRC_LEN \
-    /* speaker chain: USB-streaming input terminal -> feature unit -> speaker */ \
-    + TUD_AUDIO_DESC_INPUT_TERM_LEN \
-    + TUD_AUDIO_DESC_OUTPUT_TERM_LEN \
-    + TUD_AUDIO_DESC_FEATURE_UNIT_ONE_CHANNEL_LEN \
-    /* speaker AudioStreaming interface (alt 0 + alt 1 with OUT endpoint) */ \
-    + TUD_AUDIO_DESC_STD_AS_INT_LEN \
-    + TUD_AUDIO_DESC_STD_AS_INT_LEN \
-    + TUD_AUDIO_DESC_CS_AS_INT_LEN \
-    + TUD_AUDIO_DESC_TYPE_I_FORMAT_LEN \
-    + TUD_AUDIO_DESC_STD_AS_ISO_EP_LEN \
-    + TUD_AUDIO_DESC_CS_AS_ISO_EP_LEN)
-
-#define USB_AUDIO_SPEAKER_TWO_CH_DESC_LEN (TUD_AUDIO_DESC_IAD_LEN \
+#define USB_AUDIO_SPEAKER_DESC_LEN (TUD_AUDIO_DESC_IAD_LEN \
     + TUD_AUDIO_DESC_STD_AC_LEN \
     + TUD_AUDIO_DESC_CS_AC_LEN \
     + TUD_AUDIO_DESC_CLK_SRC_LEN \
@@ -108,23 +92,7 @@ size_t usb_audio_descriptor_length(void);
     + TUD_AUDIO_DESC_STD_AS_ISO_EP_LEN \
     + TUD_AUDIO_DESC_CS_AS_ISO_EP_LEN)
 
-#define USB_AUDIO_MIC_ONE_CH_DESC_LEN (TUD_AUDIO_DESC_IAD_LEN \
-    + TUD_AUDIO_DESC_STD_AC_LEN \
-    + TUD_AUDIO_DESC_CS_AC_LEN \
-    + TUD_AUDIO_DESC_CLK_SRC_LEN \
-    /* mic chain: microphone input terminal -> feature unit -> USB-streaming out */ \
-    + TUD_AUDIO_DESC_INPUT_TERM_LEN \
-    + TUD_AUDIO_DESC_OUTPUT_TERM_LEN \
-    + TUD_AUDIO_DESC_FEATURE_UNIT_ONE_CHANNEL_LEN \
-    /* mic AudioStreaming interface (alt 0 + alt 1 with IN endpoint) */ \
-    + TUD_AUDIO_DESC_STD_AS_INT_LEN \
-    + TUD_AUDIO_DESC_STD_AS_INT_LEN \
-    + TUD_AUDIO_DESC_CS_AS_INT_LEN \
-    + TUD_AUDIO_DESC_TYPE_I_FORMAT_LEN \
-    + TUD_AUDIO_DESC_STD_AS_ISO_EP_LEN \
-    + TUD_AUDIO_DESC_CS_AS_ISO_EP_LEN)
-
-#define USB_AUDIO_MIC_TWO_CH_DESC_LEN (TUD_AUDIO_DESC_IAD_LEN \
+#define USB_AUDIO_MIC_DESC_LEN (TUD_AUDIO_DESC_IAD_LEN \
     + TUD_AUDIO_DESC_STD_AC_LEN \
     + TUD_AUDIO_DESC_CS_AC_LEN \
     + TUD_AUDIO_DESC_CLK_SRC_LEN \
@@ -155,11 +123,11 @@ size_t usb_audio_descriptor_length(void);
     + TUD_AUDIO_DESC_CLK_SRC_LEN \
     /* speaker chain: USB-streaming input terminal -> feature unit -> speaker */ \
     + TUD_AUDIO_DESC_INPUT_TERM_LEN \
-    + TUD_AUDIO_DESC_FEATURE_UNIT_ONE_CHANNEL_LEN \
+    + TUD_AUDIO_DESC_FEATURE_UNIT_TWO_CHANNEL_LEN \
     + TUD_AUDIO_DESC_OUTPUT_TERM_LEN \
     /* mic chain: microphone input terminal -> feature unit -> USB-streaming out */ \
     + TUD_AUDIO_DESC_INPUT_TERM_LEN \
-    + TUD_AUDIO_DESC_FEATURE_UNIT_ONE_CHANNEL_LEN \
+    + TUD_AUDIO_DESC_FEATURE_UNIT_TWO_CHANNEL_LEN \
     + TUD_AUDIO_DESC_OUTPUT_TERM_LEN \
     /* speaker AudioStreaming interface (alt 0 + alt 1 with OUT endpoint) */ \
     + TUD_AUDIO_DESC_STD_AS_INT_LEN \
