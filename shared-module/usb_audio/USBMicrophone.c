@@ -140,14 +140,14 @@ size_t usb_audio_usbmicrophone_background_fill(uint8_t *out, size_t max_bytes) {
         }
 
         size_t n;
-        if (MP_LIKELY(usb_audio_channel_count == USB_AUDIO_N_CHANNELS)) {
+        if (MP_LIKELY(usb_audio_channel_count == USB_AUDIO_MAX_CHANNELS)) {
             n = MIN(self->buffer_length, max_bytes - filled);
             memcpy(out + filled, self->buffer, n);
         } else {
             n = MIN(self->buffer_length << 1, max_bytes - filled);
             int16_t *word_buffer = (int16_t *)self->buffer;
             int16_t *word_out = (int16_t *)(out + filled);
-            for (size_t i = 0; i < n / USB_AUDIO_N_BYTES_PER_SAMPLE; i++) {
+            for (size_t i = 0; i < n / USB_AUDIO_BYTES_PER_SAMPLE; i++) {
                 word_out[i] = word_buffer[i >> 1];
             }
         }

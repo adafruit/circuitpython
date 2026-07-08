@@ -22,8 +22,8 @@
 // comfortably inside the ring.
 #define USB_AUDIO_SPEAKER_FRAMES_PER_BUFFER (128)
 
-// Bytes per audio frame in the negotiated UAC2 format (mono 16-bit for v1).
-#define USB_AUDIO_SPEAKER_BYTES_PER_FRAME (USB_AUDIO_N_BYTES_PER_SAMPLE * USB_AUDIO_N_CHANNELS)
+// Bytes per audio frame in the negotiated UAC2 format (stereo 16-bit).
+#define USB_AUDIO_SPEAKER_BYTES_PER_FRAME (USB_AUDIO_BYTES_PER_SAMPLE * USB_AUDIO_MAX_CHANNELS)
 
 // Full owned double-buffer: two halves of FRAMES_PER_BUFFER frames each. Matches
 // audiocore.RawSample's convention where base.max_buffer_length is the whole

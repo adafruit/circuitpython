@@ -112,7 +112,7 @@ static mp_obj_t usb_audio_enable(size_t n_args, const mp_obj_t *pos_args, mp_map
     mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
     mp_int_t sample_rate = mp_arg_validate_int_range(args[ARG_sample_rate].u_int, 1, USB_AUDIO_MAX_SAMPLE_RATE, MP_QSTR_sample_rate);
-    mp_int_t channel_count = mp_arg_validate_int_range(args[ARG_channel_count].u_int, 1, USB_AUDIO_N_CHANNELS, MP_QSTR_channel_count);
+    mp_int_t channel_count = mp_arg_validate_int_range(args[ARG_channel_count].u_int, 1, USB_AUDIO_MAX_CHANNELS, MP_QSTR_channel_count);
     bool microphone = args[ARG_microphone].u_bool;
     bool speaker = args[ARG_speaker].u_bool;
 
