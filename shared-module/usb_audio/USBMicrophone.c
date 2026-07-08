@@ -102,6 +102,24 @@ bool common_hal_usb_audio_usbmicrophone_get_paused(usb_audio_usbmicrophone_obj_t
     return self->playing && self->paused;
 }
 
+static inline uint32_t copy16lsb(uint32_t val) {
+    #if (defined(__ARM_ARCH_7EM__) && (__ARM_ARCH_7EM__ == 1))
+    return __PKHBT(val, val, 16);
+    #else
+    val &= 0x0000ffff;
+    return val | (val << 16);
+    #endif
+}
+
+static inline uint32_t copy16msb(uint32_t val) {
+    #if (defined(__ARM_ARCH_7EM__) && (__ARM_ARCH_7EM__ == 1))
+    return __PKHTB(val, val, 16);
+    #else
+    val &= 0xffff0000;
+    return val | (val >> 16);
+    #endif
+}
+
 size_t usb_audio_usbmicrophone_background_fill(uint8_t *out, size_t max_bytes) {
     usb_audio_usbmicrophone_obj_t *self = active_microphone;
     if (self == NULL || !self->playing || self->paused || self->sample == MP_OBJ_NULL) {
@@ -145,10 +163,12 @@ size_t usb_audio_usbmicrophone_background_fill(uint8_t *out, size_t max_bytes) {
             memcpy(out + filled, self->buffer, n);
         } else {
             n = MIN(self->buffer_length << 1, max_bytes - filled);
-            int16_t *word_buffer = (int16_t *)self->buffer;
-            int16_t *word_out = (int16_t *)(out + filled);
-            for (size_t i = 0; i < n / USB_AUDIO_BYTES_PER_SAMPLE; i++) {
-                word_out[i] = word_buffer[i >> 1];
+            uint32_t *word_buffer = (uint32_t *)self->buffer;
+            uint32_t *word_out = (uint32_t *)(out + filled);
+            for (size_t i = 0; i < n / sizeof(uint32_t); i += 2) {
+                uint32_t v = word_buffer[i >> 1];
+                word_out[i] = copy16lsb(v);
+                word_out[i + 1] = copy16msb(v);
             }
         }
         self->buffer += n;
