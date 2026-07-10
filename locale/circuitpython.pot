@@ -1547,12 +1547,6 @@ msgstr ""
 msgid "Unable to start mDNS query"
 msgstr ""
 
-#: ports/espressif/common-hal/memorymap/AddressRange.c
-#: ports/nordic/common-hal/memorymap/AddressRange.c
-#: ports/raspberrypi/common-hal/memorymap/AddressRange.c
-msgid "Address range not allowed"
-msgstr ""
-
 #: ports/espressif/common-hal/nvm/ByteArray.c
 msgid "NVS Error"
 msgstr ""
@@ -1931,14 +1925,6 @@ msgstr ""
 
 #: ports/raspberrypi/common-hal/mdns/Server.c
 msgid "Out of MDNS service slots"
-msgstr ""
-
-#: ports/raspberrypi/common-hal/memorymap/AddressRange.c
-msgid "Unable to access unaligned IO register"
-msgstr ""
-
-#: ports/raspberrypi/common-hal/memorymap/AddressRange.c
-msgid "Unable to write to read-only memory"
 msgstr ""
 
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
@@ -3013,8 +2999,7 @@ msgid "substring not found"
 msgstr ""
 
 #: py/objarray.c py/objstr.c py/objstrunicode.c py/objtuple.c
-#: shared-bindings/alarm/SleepMemory.c shared-bindings/memorymap/AddressRange.c
-#: shared-bindings/nvm/ByteArray.c
+#: shared-bindings/alarm/SleepMemory.c shared-bindings/nvm/ByteArray.c
 msgid "only slices with step=1 (aka None) are supported"
 msgstr ""
 
@@ -3023,7 +3008,7 @@ msgid "lhs and rhs should be compatible"
 msgstr ""
 
 #: py/objarray.c shared-bindings/alarm/SleepMemory.c
-#: shared-bindings/memorymap/AddressRange.c shared-bindings/nvm/ByteArray.c
+#: shared-bindings/nvm/ByteArray.c
 msgid "array/bytes required on right side"
 msgstr ""
 
@@ -3643,13 +3628,11 @@ msgstr ""
 msgid "CBC blocks must be multiples of 16 bytes"
 msgstr ""
 
-#: shared-bindings/alarm/SleepMemory.c shared-bindings/memorymap/AddressRange.c
-#: shared-bindings/nvm/ByteArray.c
+#: shared-bindings/alarm/SleepMemory.c shared-bindings/nvm/ByteArray.c
 msgid "Slice and value different lengths."
 msgstr ""
 
-#: shared-bindings/alarm/SleepMemory.c shared-bindings/memorymap/AddressRange.c
-#: shared-bindings/nvm/ByteArray.c
+#: shared-bindings/alarm/SleepMemory.c shared-bindings/nvm/ByteArray.c
 msgid "Array values should be single bytes."
 msgstr ""
 
@@ -4038,7 +4021,7 @@ msgid ""
 "Failed to add service TXT record; non-string or bytes found in txt_records"
 msgstr ""
 
-#: shared-bindings/memorymap/AddressRange.c
+#: shared-bindings/memorymap/__init__.c
 msgid "Address range wraps around"
 msgstr ""
 
@@ -4370,6 +4353,10 @@ msgstr ""
 
 #: shared-module/jpegio/JpegDecoder.c
 msgid "%q() without %q()"
+msgstr ""
+
+#: shared-module/memorymap/AddressRange.c shared-module/memorymap/__init__.c
+msgid "Address range not allowed"
 msgstr ""
 
 #: shared-module/memorymonitor/AllocationAlarm.c

@@ -1,15 +1,15 @@
 // This file is part of the CircuitPython project: https://circuitpython.org
 //
-// SPDX-FileCopyrightText: Copyright (c) 2020 microDev
+// SPDX-FileCopyrightText: Copyright (c) 2025 Jeff Epler
 //
 // SPDX-License-Identifier: MIT
 
 #pragma once
 
-#include "py/obj.h"
+#include <stdint.h>
 
 typedef struct {
-    mp_obj_base_t base;
     uint8_t *start_address;
-    size_t len;
-} memorymap_addressrange_obj_t;
+    uint32_t len : 31;
+    uint32_t readonly : 1;
+} memorymap_range_t;

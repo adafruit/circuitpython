@@ -1053,7 +1053,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(rp2pio_statemachine_get_pc_obj, rp2pio_statemachine_ob
 MP_PROPERTY_GETTER(rp2pio_statemachine_pc_obj,
     (mp_obj_t)&rp2pio_statemachine_get_pc_obj);
 
-//|     rxfifo: memorymap.AddressRange
+//|     rxfifo: memoryview
 //|     """Access the state machine's rxfifo directly
 //|
 //|     If the state machine's fifo mode is ``txput`` then accessing this object

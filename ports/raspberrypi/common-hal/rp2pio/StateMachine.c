@@ -10,9 +10,9 @@
 
 #include "common-hal/microcontroller/__init__.h"
 #include "shared-bindings/digitalio/Pull.h"
+#include "shared-bindings/memorymap/__init__.h"
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/microcontroller/Pin.h"
-#include "shared-bindings/memorymap/AddressRange.h"
 
 #include "hardware/platform_defs.h"
 #include "hardware/structs/iobank0.h"
@@ -491,10 +491,9 @@ bool rp2pio_statemachine_construct(rp2pio_statemachine_obj_t *self,
 
     #if PICO_PIO_VERSION > 0
     if (fifo_type == PIO_FIFO_JOIN_TXPUT || fifo_type == PIO_FIFO_JOIN_TXGET) {
-        self->rxfifo_obj.base.type = &memorymap_addressrange_type;
-        common_hal_memorymap_addressrange_construct(&self->rxfifo_obj, (uint8_t *)self->pio->rxf_putget[self->state_machine], 4 * sizeof(uint32_t));
+        self->rxfifo_obj = common_hal_memorymap_addressrange_make_new((uint8_t *)self->pio->rxf_putget[self->state_machine], 4 * sizeof(uint32_t));
     } else {
-        self->rxfifo_obj.base.type = NULL;
+        self->rxfifo_obj = mp_const_none;
     }
     #endif
 
@@ -1612,9 +1611,7 @@ int common_hal_rp2pio_statemachine_get_pc(rp2pio_statemachine_obj_t *self) {
 
 mp_obj_t common_hal_rp2pio_statemachine_get_rxfifo(rp2pio_statemachine_obj_t *self) {
     #if PICO_PIO_VERSION > 0
-    if (self->rxfifo_obj.base.type) {
-        return MP_OBJ_FROM_PTR(&self->rxfifo_obj);
-    }
+    return self->rxfifo_obj;
     #endif
     return mp_const_none;
 }

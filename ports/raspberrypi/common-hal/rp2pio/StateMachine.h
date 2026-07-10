@@ -9,7 +9,6 @@
 #include "py/obj.h"
 
 #include "common-hal/microcontroller/Pin.h"
-#include "common-hal/memorymap/AddressRange.h"
 #include "hardware/pio.h"
 
 // Shared PIO allocator declarations (rp2pio_statemachine_find_pio,
@@ -143,7 +142,7 @@ typedef struct {
     bool dma_completed_write, byteswap;
     bool dma_completed_read;
     #if PICO_PIO_VERSION > 0
-    memorymap_addressrange_obj_t rxfifo_obj;
+    mp_obj_t rxfifo_obj;
     #endif
 } rp2pio_statemachine_obj_t;
 
