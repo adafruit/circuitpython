@@ -127,7 +127,7 @@ extern "C" {
 
 #define CFG_TUD_AUDIO_ENABLE_EP_IN                  1
 // wMaxPacketSize, sized for the highest supported sample rate.
-#define CFG_TUD_AUDIO_FUNC_1_EP_IN_SZ_MAX           TUD_AUDIO_EP_SIZE(TUD_OPT_HIGH_SPEED, USB_AUDIO_MAX_SAMPLE_RATE, USB_AUDIO_BYTES_PER_SAMPLE, USB_AUDIO_MAX_CHANNELS)
+#define CFG_TUD_AUDIO_FUNC_1_EP_IN_SZ_MAX           TUD_AUDIO_EP_SIZE(TUD_OPT_HIGH_SPEED, USB_AUDIO_MAX_SAMPLE_RATE, USB_AUDIO_N_BYTES_PER_SAMPLE, USB_AUDIO_N_CHANNELS)
 // Deep software FIFO so the 1 ms refill keeps clear of the underrun floor.
 #define CFG_TUD_AUDIO_FUNC_1_EP_IN_SW_BUF_SZ        (16 * CFG_TUD_AUDIO_FUNC_1_EP_IN_SZ_MAX)
 
@@ -137,7 +137,7 @@ extern "C" {
 // IN sizing above.
 #define CFG_TUD_AUDIO_ENABLE_EP_OUT                 1
 // wMaxPacketSize, sized for the highest supported sample rate.
-#define CFG_TUD_AUDIO_FUNC_1_EP_OUT_SZ_MAX          TUD_AUDIO_EP_SIZE(TUD_OPT_HIGH_SPEED, USB_AUDIO_MAX_SAMPLE_RATE, USB_AUDIO_BYTES_PER_SAMPLE, USB_AUDIO_MAX_CHANNELS)
+#define CFG_TUD_AUDIO_FUNC_1_EP_OUT_SZ_MAX          TUD_AUDIO_EP_SIZE(TUD_OPT_HIGH_SPEED, USB_AUDIO_MAX_SAMPLE_RATE, USB_AUDIO_N_BYTES_PER_SAMPLE, USB_AUDIO_N_CHANNELS)
 // Deep software FIFO so the 1 ms drain keeps clear of the overrun ceiling.
 #define CFG_TUD_AUDIO_FUNC_1_EP_OUT_SW_BUF_SZ       (16 * CFG_TUD_AUDIO_FUNC_1_EP_OUT_SZ_MAX)
 #endif

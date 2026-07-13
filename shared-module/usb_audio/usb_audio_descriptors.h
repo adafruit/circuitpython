@@ -26,11 +26,11 @@ size_t usb_audio_descriptor_length(void);
 // The isochronous IN endpoint's wMaxPacketSize in the USB descriptor is computed
 // for this rate, so it is the highest rate usb_audio.enable() will accept.
 #define USB_AUDIO_MAX_SAMPLE_RATE (48000)
-#define USB_AUDIO_MAX_CHANNELS (2)
+#define USB_AUDIO_N_CHANNELS (2)
 
 // 16-bit signed LE PCM.
-#define USB_AUDIO_BYTES_PER_SAMPLE (2)
-#define USB_AUDIO_BITS_PER_SAMPLE (USB_AUDIO_BYTES_PER_SAMPLE * 8)
+#define USB_AUDIO_N_BYTES_PER_SAMPLE (2)
+#define USB_AUDIO_BITS_PER_SAMPLE (USB_AUDIO_N_BYTES_PER_SAMPLE * 8)
 
 // Endpoint number for the single isochronous audio data endpoint. Most device
 // controllers accept an ISO endpoint on any number, so the descriptor builder

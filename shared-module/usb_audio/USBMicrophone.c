@@ -158,7 +158,7 @@ size_t usb_audio_usbmicrophone_background_fill(uint8_t *out, size_t max_bytes) {
         }
 
         size_t n;
-        if (MP_LIKELY(usb_audio_channel_count == USB_AUDIO_MAX_CHANNELS)) {
+        if (MP_LIKELY(usb_audio_channel_count == USB_AUDIO_N_CHANNELS)) {
             n = MIN(self->buffer_length, max_bytes - filled);
             memcpy(out + filled, self->buffer, n);
         } else {

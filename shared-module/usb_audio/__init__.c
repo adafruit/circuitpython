@@ -43,8 +43,8 @@ bool usb_audio_microphone_enabled;
 bool usb_audio_speaker_enabled;
 
 // Audio control state surfaced to the host. One extra entry for the master channel 0.
-static int8_t usb_audio_mute[USB_AUDIO_MAX_CHANNELS + 1];
-static int16_t usb_audio_volume[USB_AUDIO_MAX_CHANNELS + 1];
+static int8_t usb_audio_mute[USB_AUDIO_N_CHANNELS + 1];
+static int16_t usb_audio_volume[USB_AUDIO_N_CHANNELS + 1];
 
 bool shared_module_usb_audio_enable(mp_int_t sample_rate, mp_int_t channel_count, bool microphone, bool speaker) {
     if (tud_connected()) {
@@ -53,7 +53,7 @@ bool shared_module_usb_audio_enable(mp_int_t sample_rate, mp_int_t channel_count
 
     // One scratch chunk (1 ms at the sample rate); we loop until the FIFO reaches
     // the setpoint.
-    usb_audio_mic_samples_len = sample_rate / 1000 * channel_count * USB_AUDIO_BYTES_PER_SAMPLE;
+    usb_audio_mic_samples_len = sample_rate / 1000 * channel_count * USB_AUDIO_N_BYTES_PER_SAMPLE;
     usb_audio_mic_samples = (int16_t *)m_malloc_without_collect(usb_audio_mic_samples_len);
     if (usb_audio_mic_samples == NULL) {
         m_malloc_fail(usb_audio_mic_samples_len);
@@ -155,7 +155,7 @@ void usb_audio_setup_singletons(void) {
     /* Clock Source Descriptor(4.7.2.1) */ \
     TUD_AUDIO20_DESC_CLK_SRC(/*_clkid*/ USB_AUDIO_ENTITY_CLOCK_SOURCE, /*_attr*/ AUDIO20_CLOCK_SOURCE_ATT_INT_FIX_CLK, /*_ctrl*/ (AUDIO20_CTRL_R << AUDIO20_CLOCK_SOURCE_CTRL_CLK_FRQ_POS), /*_assocTerm*/ USB_AUDIO_ENTITY_INPUT_TERMINAL, /*_stridx*/ 0x00), \
     /* Input Terminal Descriptor(4.7.2.4) -- USB streaming in from the host */ \
-    TUD_AUDIO20_DESC_INPUT_TERM(/*_termid*/ USB_AUDIO_ENTITY_INPUT_TERMINAL, /*_termtype*/ AUDIO_TERM_TYPE_USB_STREAMING, /*_assocTerm*/ 0x00, /*_clkid*/ USB_AUDIO_ENTITY_CLOCK_SOURCE, /*_nchannelslogical*/ USB_AUDIO_MAX_CHANNELS, /*_channelcfg*/ AUDIO20_CHANNEL_CONFIG_NON_PREDEFINED, /*_idxchannelnames*/ 0x00, /*_ctrl*/ 0 * (AUDIO20_CTRL_R << AUDIO20_IN_TERM_CTRL_CONNECTOR_POS), /*_stridx*/ 0x00), \
+    TUD_AUDIO20_DESC_INPUT_TERM(/*_termid*/ USB_AUDIO_ENTITY_INPUT_TERMINAL, /*_termtype*/ AUDIO_TERM_TYPE_USB_STREAMING, /*_assocTerm*/ 0x00, /*_clkid*/ USB_AUDIO_ENTITY_CLOCK_SOURCE, /*_nchannelslogical*/ USB_AUDIO_N_CHANNELS, /*_channelcfg*/ AUDIO20_CHANNEL_CONFIG_NON_PREDEFINED, /*_idxchannelnames*/ 0x00, /*_ctrl*/ 0 * (AUDIO20_CTRL_R << AUDIO20_IN_TERM_CTRL_CONNECTOR_POS), /*_stridx*/ 0x00), \
     /* Output Terminal Descriptor(4.7.2.5) -- desktop speaker */ \
     TUD_AUDIO20_DESC_OUTPUT_TERM(/*_termid*/ USB_AUDIO_ENTITY_OUTPUT_TERMINAL, /*_termtype*/ AUDIO_TERM_TYPE_OUT_DESKTOP_SPEAKER, /*_assocTerm*/ USB_AUDIO_ENTITY_INPUT_TERMINAL, /*_srcid*/ USB_AUDIO_ENTITY_FEATURE_UNIT, /*_clkid*/ USB_AUDIO_ENTITY_CLOCK_SOURCE, /*_ctrl*/ 0x0000, /*_stridx*/ 0x00), \
     /* Feature Unit Descriptor(4.7.2.8) */ \
@@ -165,7 +165,7 @@ void usb_audio_setup_singletons(void) {
     /* Standard AS Interface Descriptor(4.9.1) -- alt 1, one OUT endpoint */ \
     TUD_AUDIO20_DESC_STD_AS_INT(/*_itfnum*/ (uint8_t)((_itfnum) + 1), /*_altset*/ 0x01, /*_nEPs*/ 0x01, /*_stridx*/ 0x00), \
     /* Class-Specific AS Interface Descriptor(4.9.2) -- linked to the input terminal */ \
-    TUD_AUDIO20_DESC_CS_AS_INT(/*_termid*/ USB_AUDIO_ENTITY_INPUT_TERMINAL, /*_ctrl*/ AUDIO20_CTRL_NONE, /*_formattype*/ AUDIO20_FORMAT_TYPE_I, /*_formats*/ AUDIO20_DATA_FORMAT_TYPE_I_PCM, /*_nchannelsphysical*/ USB_AUDIO_MAX_CHANNELS, /*_channelcfg*/ AUDIO20_CHANNEL_CONFIG_NON_PREDEFINED, /*_stridx*/ 0x00), \
+    TUD_AUDIO20_DESC_CS_AS_INT(/*_termid*/ USB_AUDIO_ENTITY_INPUT_TERMINAL, /*_ctrl*/ AUDIO20_CTRL_NONE, /*_formattype*/ AUDIO20_FORMAT_TYPE_I, /*_formats*/ AUDIO20_DATA_FORMAT_TYPE_I_PCM, /*_nchannelsphysical*/ USB_AUDIO_N_CHANNELS, /*_channelcfg*/ AUDIO20_CHANNEL_CONFIG_NON_PREDEFINED, /*_stridx*/ 0x00), \
     /* Type I Format Type Descriptor(2.3.1.6 - Audio Formats) */ \
     TUD_AUDIO20_DESC_TYPE_I_FORMAT(_nBytesPerSample, _nBitsUsedPerSample), \
     /* Standard AS Isochronous Audio Data Endpoint Descriptor(4.10.1.1) */ \
@@ -188,7 +188,7 @@ void usb_audio_setup_singletons(void) {
   /* Clock Source Descriptor(4.7.2.1) */ \
   TUD_AUDIO_DESC_CLK_SRC(/*_clkid*/ USB_AUDIO_ENTITY_CLOCK_SOURCE, /*_attr*/ AUDIO_CLOCK_SOURCE_ATT_INT_FIX_CLK, /*_ctrl*/ (AUDIO_CTRL_R << AUDIO_CLOCK_SOURCE_CTRL_CLK_FRQ_POS), /*_assocTerm*/ USB_AUDIO_ENTITY_INPUT_TERMINAL,  /*_stridx*/ 0x00), \
   /* Input Terminal Descriptor(4.7.2.4) -- microphone */ \
-  TUD_AUDIO_DESC_INPUT_TERM(/*_termid*/ USB_AUDIO_ENTITY_INPUT_TERMINAL, /*_termtype*/ AUDIO_TERM_TYPE_IN_GENERIC_MIC, /*_assocTerm*/ USB_AUDIO_ENTITY_OUTPUT_TERMINAL, /*_clkid*/ USB_AUDIO_ENTITY_CLOCK_SOURCE, /*_nchannelslogical*/ USB_AUDIO_MAX_CHANNELS, /*_channelcfg*/ AUDIO_CHANNEL_CONFIG_NON_PREDEFINED, /*_idxchannelnames*/ 0x00, /*_ctrl*/ AUDIO_CTRL_R << AUDIO_IN_TERM_CTRL_CONNECTOR_POS, /*_stridx*/ 0x00), \
+  TUD_AUDIO_DESC_INPUT_TERM(/*_termid*/ USB_AUDIO_ENTITY_INPUT_TERMINAL, /*_termtype*/ AUDIO_TERM_TYPE_IN_GENERIC_MIC, /*_assocTerm*/ USB_AUDIO_ENTITY_OUTPUT_TERMINAL, /*_clkid*/ USB_AUDIO_ENTITY_CLOCK_SOURCE, /*_nchannelslogical*/ USB_AUDIO_N_CHANNELS, /*_channelcfg*/ AUDIO_CHANNEL_CONFIG_NON_PREDEFINED, /*_idxchannelnames*/ 0x00, /*_ctrl*/ AUDIO_CTRL_R << AUDIO_IN_TERM_CTRL_CONNECTOR_POS, /*_stridx*/ 0x00), \
   /* Output Terminal Descriptor(4.7.2.5) -- USB streaming */ \
   TUD_AUDIO_DESC_OUTPUT_TERM(/*_termid*/ USB_AUDIO_ENTITY_OUTPUT_TERMINAL, /*_termtype*/ AUDIO_TERM_TYPE_USB_STREAMING, /*_assocTerm*/ USB_AUDIO_ENTITY_INPUT_TERMINAL, /*_srcid*/ USB_AUDIO_ENTITY_FEATURE_UNIT, /*_clkid*/ USB_AUDIO_ENTITY_CLOCK_SOURCE, /*_ctrl*/ 0x0000, /*_stridx*/ 0x00), \
   /* Feature Unit Descriptor(4.7.2.8) */ \
@@ -200,7 +200,7 @@ void usb_audio_setup_singletons(void) {
   /* Interface 1, Alternate 1 - alternate interface for data streaming */ \
   TUD_AUDIO_DESC_STD_AS_INT(/*_itfnum*/ (uint8_t)((_itfnum) + 1), /*_altset*/ 0x01, /*_nEPs*/ 0x01, /*_stridx*/ 0x00),\
   /* Class-Specific AS Interface Descriptor(4.9.2) */ \
-  TUD_AUDIO_DESC_CS_AS_INT(/*_termid*/ USB_AUDIO_ENTITY_OUTPUT_TERMINAL, /*_ctrl*/ AUDIO_CTRL_NONE, /*_formattype*/ AUDIO_FORMAT_TYPE_I, /*_formats*/ AUDIO_DATA_FORMAT_TYPE_I_PCM, /*_nchannelsphysical*/ USB_AUDIO_MAX_CHANNELS, /*_channelcfg*/ AUDIO_CHANNEL_CONFIG_NON_PREDEFINED, /*_stridx*/ 0x00),\
+  TUD_AUDIO_DESC_CS_AS_INT(/*_termid*/ USB_AUDIO_ENTITY_OUTPUT_TERMINAL, /*_ctrl*/ AUDIO_CTRL_NONE, /*_formattype*/ AUDIO_FORMAT_TYPE_I, /*_formats*/ AUDIO_DATA_FORMAT_TYPE_I_PCM, /*_nchannelsphysical*/ USB_AUDIO_N_CHANNELS, /*_channelcfg*/ AUDIO_CHANNEL_CONFIG_NON_PREDEFINED, /*_stridx*/ 0x00),\
   /* Type I Format Type Descriptor(2.3.1.6 - Audio Formats) */ \
   TUD_AUDIO_DESC_TYPE_I_FORMAT(_nBytesPerSample, _nBitsUsedPerSample), \
   /* Standard AS Isochronous Audio Data Endpoint Descriptor(4.10.1.1) */ \
@@ -229,14 +229,14 @@ void usb_audio_setup_singletons(void) {
     TUD_AUDIO20_DESC_CLK_SRC(/*_clkid*/ USB_AUDIO_HS_ENTITY_CLOCK_SOURCE, /*_attr*/ AUDIO20_CLOCK_SOURCE_ATT_INT_FIX_CLK, /*_ctrl*/ (AUDIO20_CTRL_R << AUDIO20_CLOCK_SOURCE_CTRL_CLK_FRQ_POS), /*_assocTerm*/ 0x00, /*_stridx*/ 0x00), \
     /* --- Speaker chain (host -> board) --- */ \
     /* Input Terminal Descriptor(4.7.2.4) -- USB streaming in from the host */ \
-    TUD_AUDIO20_DESC_INPUT_TERM(/*_termid*/ USB_AUDIO_HS_ENTITY_SPK_INPUT_TERMINAL, /*_termtype*/ AUDIO_TERM_TYPE_USB_STREAMING, /*_assocTerm*/ 0x00, /*_clkid*/ USB_AUDIO_HS_ENTITY_CLOCK_SOURCE, /*_nchannelslogical*/ USB_AUDIO_MAX_CHANNELS, /*_channelcfg*/ AUDIO20_CHANNEL_CONFIG_NON_PREDEFINED, /*_idxchannelnames*/ 0x00, /*_ctrl*/ 0 * (AUDIO20_CTRL_R << AUDIO20_IN_TERM_CTRL_CONNECTOR_POS), /*_stridx*/ 0x00), \
+    TUD_AUDIO20_DESC_INPUT_TERM(/*_termid*/ USB_AUDIO_HS_ENTITY_SPK_INPUT_TERMINAL, /*_termtype*/ AUDIO_TERM_TYPE_USB_STREAMING, /*_assocTerm*/ 0x00, /*_clkid*/ USB_AUDIO_HS_ENTITY_CLOCK_SOURCE, /*_nchannelslogical*/ USB_AUDIO_N_CHANNELS, /*_channelcfg*/ AUDIO20_CHANNEL_CONFIG_NON_PREDEFINED, /*_idxchannelnames*/ 0x00, /*_ctrl*/ 0 * (AUDIO20_CTRL_R << AUDIO20_IN_TERM_CTRL_CONNECTOR_POS), /*_stridx*/ 0x00), \
     /* Feature Unit Descriptor(4.7.2.8) */ \
     TUD_AUDIO20_DESC_FEATURE_UNIT(/*_unitid*/ USB_AUDIO_HS_ENTITY_SPK_FEATURE_UNIT, /*_srcid*/ USB_AUDIO_HS_ENTITY_SPK_INPUT_TERMINAL, /*_stridx*/ 0x00, /*_ctrlch0master*/ AUDIO20_CTRL_RW << AUDIO20_FEATURE_UNIT_CTRL_MUTE_POS | AUDIO20_CTRL_RW << AUDIO20_FEATURE_UNIT_CTRL_VOLUME_POS, /*_ctrlch1*/ AUDIO20_CTRL_RW << AUDIO20_FEATURE_UNIT_CTRL_MUTE_POS | AUDIO20_CTRL_RW << AUDIO20_FEATURE_UNIT_CTRL_VOLUME_POS, /*_ctrlch2*/ AUDIO20_CTRL_RW << AUDIO20_FEATURE_UNIT_CTRL_MUTE_POS | AUDIO20_CTRL_RW << AUDIO20_FEATURE_UNIT_CTRL_VOLUME_POS), \
     /* Output Terminal Descriptor(4.7.2.5) -- desktop speaker */ \
     TUD_AUDIO20_DESC_OUTPUT_TERM(/*_termid*/ USB_AUDIO_HS_ENTITY_SPK_OUTPUT_TERMINAL, /*_termtype*/ AUDIO_TERM_TYPE_OUT_DESKTOP_SPEAKER, /*_assocTerm*/ 0x00, /*_srcid*/ USB_AUDIO_HS_ENTITY_SPK_FEATURE_UNIT, /*_clkid*/ USB_AUDIO_HS_ENTITY_CLOCK_SOURCE, /*_ctrl*/ 0x0000, /*_stridx*/ 0x00), \
     /* --- Mic chain (board -> host) --- */ \
     /* Input Terminal Descriptor(4.7.2.4) -- generic microphone */ \
-    TUD_AUDIO20_DESC_INPUT_TERM(/*_termid*/ USB_AUDIO_HS_ENTITY_MIC_INPUT_TERMINAL, /*_termtype*/ AUDIO_TERM_TYPE_IN_GENERIC_MIC, /*_assocTerm*/ 0x00, /*_clkid*/ USB_AUDIO_HS_ENTITY_CLOCK_SOURCE, /*_nchannelslogical*/ USB_AUDIO_MAX_CHANNELS, /*_channelcfg*/ AUDIO20_CHANNEL_CONFIG_NON_PREDEFINED, /*_idxchannelnames*/ 0x00, /*_ctrl*/ AUDIO20_CTRL_R << AUDIO20_IN_TERM_CTRL_CONNECTOR_POS, /*_stridx*/ 0x00), \
+    TUD_AUDIO20_DESC_INPUT_TERM(/*_termid*/ USB_AUDIO_HS_ENTITY_MIC_INPUT_TERMINAL, /*_termtype*/ AUDIO_TERM_TYPE_IN_GENERIC_MIC, /*_assocTerm*/ 0x00, /*_clkid*/ USB_AUDIO_HS_ENTITY_CLOCK_SOURCE, /*_nchannelslogical*/ USB_AUDIO_N_CHANNELS, /*_channelcfg*/ AUDIO20_CHANNEL_CONFIG_NON_PREDEFINED, /*_idxchannelnames*/ 0x00, /*_ctrl*/ AUDIO20_CTRL_R << AUDIO20_IN_TERM_CTRL_CONNECTOR_POS, /*_stridx*/ 0x00), \
     /* Feature Unit Descriptor(4.7.2.8) */ \
     TUD_AUDIO20_DESC_FEATURE_UNIT(/*_unitid*/ USB_AUDIO_HS_ENTITY_MIC_FEATURE_UNIT, /*_srcid*/ USB_AUDIO_HS_ENTITY_MIC_INPUT_TERMINAL, /*_stridx*/ 0x00, /*_ctrlch0master*/ AUDIO20_CTRL_RW << AUDIO20_FEATURE_UNIT_CTRL_MUTE_POS | AUDIO20_CTRL_RW << AUDIO20_FEATURE_UNIT_CTRL_VOLUME_POS, /*_ctrlch1*/ AUDIO20_CTRL_RW << AUDIO20_FEATURE_UNIT_CTRL_MUTE_POS | AUDIO20_CTRL_RW << AUDIO20_FEATURE_UNIT_CTRL_VOLUME_POS, /*_ctrlch2*/ AUDIO20_CTRL_RW << AUDIO20_FEATURE_UNIT_CTRL_MUTE_POS | AUDIO20_CTRL_RW << AUDIO20_FEATURE_UNIT_CTRL_VOLUME_POS), \
     /* Output Terminal Descriptor(4.7.2.5) -- USB streaming out to the host */ \
@@ -247,7 +247,7 @@ void usb_audio_setup_singletons(void) {
     /* Standard AS Interface Descriptor(4.9.1) -- alt 1, one OUT endpoint */ \
     TUD_AUDIO20_DESC_STD_AS_INT(/*_itfnum*/ (uint8_t)((_itfnum) + 1), /*_altset*/ 0x01, /*_nEPs*/ 0x01, /*_stridx*/ 0x00), \
     /* Class-Specific AS Interface Descriptor(4.9.2) -- linked to the speaker input terminal */ \
-    TUD_AUDIO20_DESC_CS_AS_INT(/*_termid*/ USB_AUDIO_HS_ENTITY_SPK_INPUT_TERMINAL, /*_ctrl*/ AUDIO20_CTRL_NONE, /*_formattype*/ AUDIO20_FORMAT_TYPE_I, /*_formats*/ AUDIO20_DATA_FORMAT_TYPE_I_PCM, /*_nchannelsphysical*/ USB_AUDIO_MAX_CHANNELS, /*_channelcfg*/ AUDIO20_CHANNEL_CONFIG_NON_PREDEFINED, /*_stridx*/ 0x00), \
+    TUD_AUDIO20_DESC_CS_AS_INT(/*_termid*/ USB_AUDIO_HS_ENTITY_SPK_INPUT_TERMINAL, /*_ctrl*/ AUDIO20_CTRL_NONE, /*_formattype*/ AUDIO20_FORMAT_TYPE_I, /*_formats*/ AUDIO20_DATA_FORMAT_TYPE_I_PCM, /*_nchannelsphysical*/ USB_AUDIO_N_CHANNELS, /*_channelcfg*/ AUDIO20_CHANNEL_CONFIG_NON_PREDEFINED, /*_stridx*/ 0x00), \
     /* Type I Format Type Descriptor(2.3.1.6 - Audio Formats) */ \
     TUD_AUDIO20_DESC_TYPE_I_FORMAT(_nBytesPerSample, _nBitsUsedPerSample), \
     /* Standard AS Isochronous Audio Data Endpoint Descriptor(4.10.1.1) */ \
@@ -260,7 +260,7 @@ void usb_audio_setup_singletons(void) {
     /* Standard AS Interface Descriptor(4.9.1) -- alt 1, one IN endpoint */ \
     TUD_AUDIO20_DESC_STD_AS_INT(/*_itfnum*/ (uint8_t)((_itfnum) + 2), /*_altset*/ 0x01, /*_nEPs*/ 0x01, /*_stridx*/ 0x00), \
     /* Class-Specific AS Interface Descriptor(4.9.2) -- linked to the mic output terminal */ \
-    TUD_AUDIO20_DESC_CS_AS_INT(/*_termid*/ USB_AUDIO_HS_ENTITY_MIC_OUTPUT_TERMINAL, /*_ctrl*/ AUDIO20_CTRL_NONE, /*_formattype*/ AUDIO20_FORMAT_TYPE_I, /*_formats*/ AUDIO20_DATA_FORMAT_TYPE_I_PCM, /*_nchannelsphysical*/ USB_AUDIO_MAX_CHANNELS, /*_channelcfg*/ AUDIO20_CHANNEL_CONFIG_NON_PREDEFINED, /*_stridx*/ 0x00), \
+    TUD_AUDIO20_DESC_CS_AS_INT(/*_termid*/ USB_AUDIO_HS_ENTITY_MIC_OUTPUT_TERMINAL, /*_ctrl*/ AUDIO20_CTRL_NONE, /*_formattype*/ AUDIO20_FORMAT_TYPE_I, /*_formats*/ AUDIO20_DATA_FORMAT_TYPE_I_PCM, /*_nchannelsphysical*/ USB_AUDIO_N_CHANNELS, /*_channelcfg*/ AUDIO20_CHANNEL_CONFIG_NON_PREDEFINED, /*_stridx*/ 0x00), \
     /* Type I Format Type Descriptor(2.3.1.6 - Audio Formats) */ \
     TUD_AUDIO20_DESC_TYPE_I_FORMAT(_nBytesPerSample, _nBitsUsedPerSample), \
     /* Standard AS Isochronous Audio Data Endpoint Descriptor(4.10.1.1) */ \
@@ -319,7 +319,7 @@ size_t usb_audio_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *de
             USB_AUDIO_HEADSET_DESCRIPTOR(
                 /*_itfnum*/ descriptor_counts->current_interface,
                 /*_stridx*/ *current_interface_string,
-                /*_nBytesPerSample*/ USB_AUDIO_BYTES_PER_SAMPLE,
+                /*_nBytesPerSample*/ USB_AUDIO_N_BYTES_PER_SAMPLE,
                 /*_nBitsUsedPerSample*/ USB_AUDIO_BITS_PER_SAMPLE,
                 /*_epout*/ ep_out,
                 /*_epin*/ ep_in | 0x80,
@@ -334,9 +334,9 @@ size_t usb_audio_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *de
         // One IAD wrapping an AudioControl + two AudioStreaming interfaces, plus
         // two OUT and two IN endpoints.
         descriptor_counts->current_interface += 3;
-        descriptor_counts->num_out_endpoints += USB_AUDIO_MAX_CHANNELS;
-        descriptor_counts->num_in_endpoints += USB_AUDIO_MAX_CHANNELS;
-        descriptor_counts->current_endpoint += USB_AUDIO_MAX_CHANNELS * 2;
+        descriptor_counts->num_out_endpoints += USB_AUDIO_N_CHANNELS;
+        descriptor_counts->num_in_endpoints += USB_AUDIO_N_CHANNELS;
+        descriptor_counts->current_endpoint += USB_AUDIO_N_CHANNELS * 2;
 
         memcpy(descriptor_buf, usb_audio_descriptor, sizeof(usb_audio_descriptor));
 
@@ -353,7 +353,7 @@ size_t usb_audio_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *de
             USB_AUDIO_SPEAKER_DESCRIPTOR(
                 /*_itfnum*/ descriptor_counts->current_interface,
                 /*_stridx*/ *current_interface_string,
-                /*_nBytesPerSample*/ USB_AUDIO_BYTES_PER_SAMPLE,
+                /*_nBytesPerSample*/ USB_AUDIO_N_BYTES_PER_SAMPLE,
                 /*_nBitsUsedPerSample*/ USB_AUDIO_BITS_PER_SAMPLE,
                 /*_epout*/ iso_ep_num,
                 /*_epsize*/ CFG_TUD_AUDIO_FUNC_1_EP_OUT_SZ_MAX)
@@ -363,8 +363,8 @@ size_t usb_audio_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *de
         // One IAD wrapping an AudioControl + an AudioStreaming interface, plus two OUT endpoints.
         descriptor_counts->current_interface += 2;
         if (!forced_iso_ep) {
-            descriptor_counts->num_out_endpoints += USB_AUDIO_MAX_CHANNELS;
-            descriptor_counts->current_endpoint += USB_AUDIO_MAX_CHANNELS;
+            descriptor_counts->num_out_endpoints += USB_AUDIO_N_CHANNELS;
+            descriptor_counts->current_endpoint += USB_AUDIO_N_CHANNELS;
         }
 
         memcpy(descriptor_buf, usb_audio_descriptor, sizeof(usb_audio_descriptor));
@@ -381,7 +381,7 @@ size_t usb_audio_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *de
         USB_AUDIO_MIC_DESCRIPTOR(
             /*_itfnum*/ descriptor_counts->current_interface,
             /*_stridx*/ *current_interface_string,
-            /*_nBytesPerSample*/ USB_AUDIO_BYTES_PER_SAMPLE,
+            /*_nBytesPerSample*/ USB_AUDIO_N_BYTES_PER_SAMPLE,
             /*_nBitsUsedPerSample*/ USB_AUDIO_BITS_PER_SAMPLE,
             /*_epin*/ iso_ep_num | 0x80,
             /*_epsize*/ CFG_TUD_AUDIO_FUNC_1_EP_IN_SZ_MAX)
@@ -391,8 +391,8 @@ size_t usb_audio_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *de
     // One IAD wrapping an AudioControl + an AudioStreaming interface, plus two IN endpoints.
     descriptor_counts->current_interface += 2;
     if (!forced_iso_ep) {
-        descriptor_counts->num_in_endpoints += USB_AUDIO_MAX_CHANNELS;
-        descriptor_counts->current_endpoint += USB_AUDIO_MAX_CHANNELS;
+        descriptor_counts->num_in_endpoints += USB_AUDIO_N_CHANNELS;
+        descriptor_counts->current_endpoint += USB_AUDIO_N_CHANNELS;
     }
 
     memcpy(descriptor_buf, usb_audio_descriptor, sizeof(usb_audio_descriptor));
@@ -544,7 +544,7 @@ bool tud_audio_set_req_entity_cb(uint8_t rhport, tusb_control_request_t const *p
     // Mute/volume state is shared across them.
     if (entityID == USB_AUDIO_ENTITY_FEATURE_UNIT ||
         entityID == USB_AUDIO_HS_ENTITY_MIC_FEATURE_UNIT) {
-        if (channelNum > USB_AUDIO_MAX_CHANNELS) {
+        if (channelNum > USB_AUDIO_N_CHANNELS) {
             return false;
         }
         switch (ctrlSel) {
@@ -582,7 +582,7 @@ bool tud_audio_get_req_entity_cb(uint8_t rhport, tusb_control_request_t const *p
         switch (ctrlSel) {
             case AUDIO20_TE_CTRL_CONNECTOR: {
                 audio20_desc_channel_cluster_t ret;
-                ret.bNrChannels = USB_AUDIO_MAX_CHANNELS;
+                ret.bNrChannels = USB_AUDIO_N_CHANNELS;
                 ret.bmChannelConfig = (audio20_channel_config_t)0;
                 ret.iChannelNames = 0;
                 return tud_audio_buffer_and_schedule_control_xfer(rhport, p_request, &ret, sizeof(ret));
@@ -595,7 +595,7 @@ bool tud_audio_get_req_entity_cb(uint8_t rhport, tusb_control_request_t const *p
     // Feature unit (mute/volume) for either the speaker or mic chain.
     if (entityID == USB_AUDIO_ENTITY_FEATURE_UNIT ||
         entityID == USB_AUDIO_HS_ENTITY_MIC_FEATURE_UNIT) {
-        if (channelNum > USB_AUDIO_MAX_CHANNELS) {
+        if (channelNum > USB_AUDIO_N_CHANNELS) {
             return false;
         }
         switch (ctrlSel) {

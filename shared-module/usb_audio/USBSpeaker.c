@@ -202,18 +202,18 @@ audioio_get_buffer_result_t usb_audio_usbspeaker_get_buffer(usb_audio_usbspeaker
     size_t to_copy = MIN(self->ring_count, (size_t)half);
 
     size_t first = MIN(to_copy, USB_AUDIO_SPEAKER_RING_SIZE - self->ring_tail);
-    if (MP_LIKELY(usb_audio_channel_count == USB_AUDIO_MAX_CHANNELS)) {
+    if (MP_LIKELY(usb_audio_channel_count == USB_AUDIO_N_CHANNELS)) {
         memcpy(out, &self->ring[self->ring_tail], first);
         if (to_copy > first) {
             memcpy(out + first, &self->ring[0], to_copy - first);
         }
     } else {
-        for (size_t i = self->ring_tail / USB_AUDIO_BYTES_PER_SAMPLE; i < first / USB_AUDIO_BYTES_PER_SAMPLE; i += 2) {
+        for (size_t i = self->ring_tail / USB_AUDIO_N_BYTES_PER_SAMPLE; i < first / USB_AUDIO_N_BYTES_PER_SAMPLE; i += 2) {
             word_out[i >> 1] = word_ring[i];
         }
         if (to_copy > first) {
-            for (size_t i = 0; i < (to_copy - first) / USB_AUDIO_BYTES_PER_SAMPLE; i += 2) {
-                word_out[(first / USB_AUDIO_BYTES_PER_SAMPLE) + (i >> 1)] = word_ring[i];
+            for (size_t i = 0; i < (to_copy - first) / USB_AUDIO_N_BYTES_PER_SAMPLE; i += 2) {
+                word_out[(first / USB_AUDIO_N_BYTES_PER_SAMPLE) + (i >> 1)] = word_ring[i];
             }
         }
     }
@@ -224,7 +224,7 @@ audioio_get_buffer_result_t usb_audio_usbspeaker_get_buffer(usb_audio_usbspeaker
         // Underrun: pad the remainder with silence. Samples are signed, so
         // silence is 0. This is the consume-side of the pacing failure mode
         // tracked in the usb-audio-artifact-pacing memory: we never spin.
-        if (MP_LIKELY(usb_audio_channel_count == USB_AUDIO_MAX_CHANNELS)) {
+        if (MP_LIKELY(usb_audio_channel_count == USB_AUDIO_N_CHANNELS)) {
             memset(out + to_copy, 0, half - to_copy);
         } else {
             memset(out + (to_copy >> 1), 0, (half - to_copy) >> 1);
@@ -238,7 +238,7 @@ audioio_get_buffer_result_t usb_audio_usbspeaker_get_buffer(usb_audio_usbspeaker
     }
 
     *buffer = out;
-    if (MP_LIKELY(usb_audio_channel_count == USB_AUDIO_MAX_CHANNELS)) {
+    if (MP_LIKELY(usb_audio_channel_count == USB_AUDIO_N_CHANNELS)) {
         *buffer_length = half;
     } else {
         *buffer_length = half >> 1;
