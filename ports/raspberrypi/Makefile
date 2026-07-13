@@ -580,6 +580,22 @@ endif
 
 endif
 
+ifeq ($(CIRCUITPY_SDIOIO),1)
+# Vendored Adafruit SdFat PIO SDIO card driver (C++). The common-hal C sources
+# (SDCard.c, __init__.c) are picked up automatically through SRC_COMMON_HAL.
+SRC_SDIOIO_CXX := \
+	common-hal/sdioio/sdfat_pio/SdCard/PioSdio/PioSdioCard.cpp \
+	common-hal/sdioio/sdfat_pio/shim.cpp \
+	common-hal/sdioio/sdfat_pio/cxx_runtime.cpp \
+
+INC += -Icommon-hal/sdioio/sdfat_pio
+
+# The upstream driver body is guarded by ARDUINO_ARCH_RP2040 and was written
+# against the Arduino RP2040 core, so define that macro for it. It is vendored
+# third-party code, so don't fail the build on its warnings.
+$(BUILD)/common-hal/sdioio/sdfat_pio/SdCard/PioSdio/PioSdioCard.o: CXXFLAGS += -DARDUINO_ARCH_RP2040 -Wno-error
+endif
+
 ifeq ($(CIRCUITPY_SSL),1)
 CFLAGS += -isystem $(TOP)/mbedtls/include
 SRC_MBEDTLS := $(addprefix lib/mbedtls/library/, \
@@ -683,6 +699,12 @@ endif
 
 $(patsubst %.S,$(BUILD)/%.o,$(SRC_S_UPPER)): CFLAGS += -Wno-undef
 
+# Derive the C++ flags from the C flags (mirroring the unix port) so the
+# vendored C++ translation unit picks up all the SDK include paths and defines.
+# Strip the C-only options that g++ rejects, and disable exceptions/RTTI to
+# match the firmware's constraints.
+CXXFLAGS += $(filter-out -std=gnu11 -Werror=missing-prototypes -Wold-style-definition -Wstrict-prototypes -Werror-implicit-function-declaration -Wnested-externs,$(CFLAGS)) -std=gnu++17 -fno-exceptions -fno-rtti
+
 OBJ = $(PY_O) $(SUPERVISOR_O) $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_SDK:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_COMMON_HAL_SHARED_MODULE_EXPANDED:.c=.o))
@@ -695,6 +717,9 @@ OBJ += $(addprefix $(BUILD)/, $(SRC_S_UPPER:.S=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_MOD:.c=.o))
 OBJ += $(BUILD)/boot2_padded_checksummed.o
 OBJ += $(OBJ_MBEDTLS)
+ifeq ($(CIRCUITPY_SDIOIO),1)
+OBJ += $(addprefix $(BUILD)/, $(SRC_SDIOIO_CXX:.cpp=.o))
+endif
 
 $(BUILD)/%.o: $(BUILD)/%.S
 	$(STEPECHO) "CC $<"

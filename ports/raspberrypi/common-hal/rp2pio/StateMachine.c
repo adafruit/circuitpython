@@ -862,6 +862,38 @@ void rp2pio_statemachine_never_reset(PIO pio, int sm) {
     _never_reset[pio_index][sm] = true;
 }
 
+// Pick a PIO that has room for a program of program_size instructions and at
+// least sm_count free state machines; returns its index, or NUM_PIOS if none
+// qualifies. This lets an out-of-tree PIO user (e.g. the sdioio SDIO driver,
+// which manages its own SDK-level pio_claim_unused_sm / pio_add_program) pick a
+// PIO cooperatively rather than blindly seizing pio0/pio1/pio2. Because it uses
+// the same SDK claim/instruction bookkeeping that rp2pio itself relies on, a hit
+// here means the caller's subsequent claims on the returned PIO will succeed and
+// will not collide with an existing rp2pio user.
+uint8_t rp2pio_statemachine_find_pio(int program_size, int sm_count) {
+    pio_program_t test_program = {
+        .instructions = NULL,
+        .length = program_size,
+        .origin = -1,
+    };
+    for (size_t i = 0; i < NUM_PIOS; i++) {
+        PIO pio = pio_get_instance(i);
+        if (!pio_can_add_program(pio, &test_program)) {
+            continue;
+        }
+        int free_sms = 0;
+        for (size_t j = 0; j < NUM_PIO_STATE_MACHINES; j++) {
+            if (!pio_sm_is_claimed(pio, j)) {
+                free_sms++;
+            }
+        }
+        if (free_sms >= sm_count) {
+            return i;
+        }
+    }
+    return NUM_PIOS;
+}
+
 void rp2pio_statemachine_deinit(rp2pio_statemachine_obj_t *self, bool leave_pins) {
     common_hal_rp2pio_statemachine_stop(self);
     (void)common_hal_rp2pio_statemachine_stop_background_write(self);

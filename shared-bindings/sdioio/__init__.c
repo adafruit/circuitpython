@@ -15,7 +15,7 @@
 //| """Interface to an SD card via the SDIO bus"""
 
 static const mp_rom_map_elem_t sdioio_module_globals_table[] = {
-    { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_sdio) },
+    { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_sdioio) },
     { MP_ROM_QSTR(MP_QSTR_SDCard), MP_ROM_PTR(&sdioio_SDCard_type) },
 };
 

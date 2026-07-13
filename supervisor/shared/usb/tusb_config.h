@@ -122,29 +122,12 @@ extern "C" {
 #if CIRCUITPY_USB_AUDIO
 #include "shared-module/usb_audio/usb_audio_descriptors.h"
 
-// Single audio function. The emitted descriptor is chosen at boot from the
-// stored direction: a mic (1 AS interface, IN endpoint), a speaker (1 AS
-// interface, OUT endpoint), or a combined headset (2 AS interfaces, one IN and
-// one OUT endpoint). The class driver returns this length to the device core as
-// the span of config descriptor the function owns, so it must equal the
-// descriptor we actually emitted -- the three directions differ in length, so a
-// compile-time maximum would over-report for the shorter ones and make the core
-// skip the interfaces that follow audio. usb_audio_descriptor_length() returns
-// the live length for the stored direction; it is only read at enumeration time
-// (audiod_open), by which point usb_audio.enable() has fixed the direction.
-#define CFG_TUD_AUDIO_FUNC_1_DESC_LEN               usb_audio_descriptor_length()
-// The headset presents two AudioStreaming interfaces; the single-direction
-// descriptors use only the first. The class driver sizes its per-interface alt
-// tracking from this, so it must cover the largest case.
-#define CFG_TUD_AUDIO_FUNC_1_N_AS_INT               2
 // EP0 buffer for class-specific control requests (sample-freq range, volume range, ...).
-#define CFG_TUD_AUDIO_FUNC_1_CTRL_BUF_SZ            64
+#define CFG_TUD_AUDIO_CTRL_BUF_SZ                   64
 
 #define CFG_TUD_AUDIO_ENABLE_EP_IN                  1
-#define CFG_TUD_AUDIO_FUNC_1_N_BYTES_PER_SAMPLE_TX  USB_AUDIO_BYTES_PER_SAMPLE
-#define CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_TX          USB_AUDIO_MAX_CHANNELS
 // wMaxPacketSize, sized for the highest supported sample rate.
-#define CFG_TUD_AUDIO_FUNC_1_EP_IN_SZ_MAX           TUD_AUDIO_EP_SIZE(USB_AUDIO_MAX_SAMPLE_RATE, USB_AUDIO_BYTES_PER_SAMPLE, USB_AUDIO_MAX_CHANNELS)
+#define CFG_TUD_AUDIO_FUNC_1_EP_IN_SZ_MAX           TUD_AUDIO_EP_SIZE(TUD_OPT_HIGH_SPEED, USB_AUDIO_MAX_SAMPLE_RATE, USB_AUDIO_BYTES_PER_SAMPLE, USB_AUDIO_MAX_CHANNELS)
 // Deep software FIFO so the 1 ms refill keeps clear of the underrun floor.
 #define CFG_TUD_AUDIO_FUNC_1_EP_IN_SW_BUF_SZ        (16 * CFG_TUD_AUDIO_FUNC_1_EP_IN_SZ_MAX)
 
@@ -153,10 +136,8 @@ extern "C" {
 // descriptor (still mic-only until the speaker descriptor lands). Mirrors the
 // IN sizing above.
 #define CFG_TUD_AUDIO_ENABLE_EP_OUT                 1
-#define CFG_TUD_AUDIO_FUNC_1_N_BYTES_PER_SAMPLE_RX  USB_AUDIO_BYTES_PER_SAMPLE
-#define CFG_TUD_AUDIO_FUNC_1_N_CHANNELS_RX          USB_AUDIO_MAX_CHANNELS
 // wMaxPacketSize, sized for the highest supported sample rate.
-#define CFG_TUD_AUDIO_FUNC_1_EP_OUT_SZ_MAX          TUD_AUDIO_EP_SIZE(USB_AUDIO_MAX_SAMPLE_RATE, USB_AUDIO_BYTES_PER_SAMPLE, USB_AUDIO_MAX_CHANNELS)
+#define CFG_TUD_AUDIO_FUNC_1_EP_OUT_SZ_MAX          TUD_AUDIO_EP_SIZE(TUD_OPT_HIGH_SPEED, USB_AUDIO_MAX_SAMPLE_RATE, USB_AUDIO_BYTES_PER_SAMPLE, USB_AUDIO_MAX_CHANNELS)
 // Deep software FIFO so the 1 ms drain keeps clear of the overrun ceiling.
 #define CFG_TUD_AUDIO_FUNC_1_EP_OUT_SW_BUF_SZ       (16 * CFG_TUD_AUDIO_FUNC_1_EP_OUT_SZ_MAX)
 #endif

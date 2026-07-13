@@ -21,6 +21,11 @@
 #error espcamera only works on boards configured with spiram, disable it in mpconfigboard.mk
 #endif
 
+// The underlying esp-camera driver only handles a singleton camera.
+// Track it here so it can be reset, releasing its
+// device on the shared I2C bus, before the I2C bus is deinited.
+static espcamera_camera_obj_t *live_camera = NULL;
+
 static void i2c_lock(espcamera_camera_obj_t *self) {
     if (common_hal_busio_i2c_deinited(self->i2c)) {
         raise_deinited_error();
@@ -120,11 +125,29 @@ void common_hal_espcamera_camera_construct(
     i2c_unlock(self);
 
     CHECK_ESP_RESULT(result);
+
+    // Only record the camera once esp_camera_init() has succeeded, so a failed
+    // second construction doesn't overwrite the live singleton.
+    live_camera = self;
+}
+
+void espcamera_reset(void) {
+    if (live_camera != NULL) {
+        common_hal_espcamera_camera_deinit(live_camera);
+    }
 }
 
 extern void common_hal_espcamera_camera_deinit(espcamera_camera_obj_t *self) {
     if (common_hal_espcamera_camera_deinited(self)) {
         return;
+    }
+
+    // Only tear down the shared esp-camera driver if this object owns it. A
+    // second, failed construction leaves live_camera pointing at the first
+    // camera; deiniting that failed object must not destroy the live one.
+    bool was_live = (live_camera == self);
+    if (was_live) {
+        live_camera = NULL;
     }
 
     common_hal_pwmio_pwmout_deinit(&self->pwm);
@@ -143,7 +166,9 @@ extern void common_hal_espcamera_camera_deinit(espcamera_camera_obj_t *self) {
     reset_pin_number(self->camera_config.pin_d1);
     reset_pin_number(self->camera_config.pin_d0);
 
-    esp_camera_deinit();
+    if (was_live) {
+        esp_camera_deinit();
+    }
 
     reset_pin_number(self->camera_config.pin_pclk);
     reset_pin_number(self->camera_config.pin_vsync);

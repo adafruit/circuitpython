@@ -237,7 +237,7 @@ pseudoxml:
 all-source:
 
 TRANSLATE_CHECK_SUBMODULES=if ! [ -f extmod/ulab/README.md ]; then $(PYTHON) tools/ci_fetch_deps.py translate; fi
-TRANSLATE_COMMAND=find $(TRANSLATE_SOURCES) -type d \( $(TRANSLATE_SOURCES_EXC) \) -prune -o -type f \( -iname "*.c" -o -iname "*.h" \) -print | (LC_ALL=C sort) | xgettext -x locale/synthetic.pot -f- -L C -s --add-location=file --keyword=MP_ERROR_TEXT -o - | sed -e '/"POT-Creation-Date: /d'
+TRANSLATE_COMMAND=find $(TRANSLATE_SOURCES) -type d \( $(TRANSLATE_SOURCES_EXC) \) -prune -o -type f \( -iname "*.c" -o -iname "*.h" \) -print | (LC_ALL=C sort) | xgettext -x locale/synthetic.pot -f- -L C --sort-by-file --add-location=file --keyword=MP_ERROR_TEXT -o - | sed -e '/"POT-Creation-Date: /d'
 locale/circuitpython.pot: all-source
 	$(TRANSLATE_CHECK_SUBMODULES)
 	$(TRANSLATE_COMMAND) > $@
@@ -255,7 +255,7 @@ translate: locale/circuitpython.pot
 # needed we preserve a rule to do it.
 .PHONY: msgmerge
 msgmerge:
-	for po in $(shell ls locale/*.po); do msgmerge -U $$po -s --no-fuzzy-matching --add-location=file locale/circuitpython.pot; done
+	for po in $(shell ls locale/*.po); do msgmerge -U $$po --sort-by-file --no-fuzzy-matching --add-location=file locale/circuitpython.pot; done
 
 merge-translate:
 	git merge HEAD 1>&2 2> /dev/null; test $$? -eq 128

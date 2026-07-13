@@ -74,12 +74,12 @@ pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
                 }
                 // If the frequencies are the same it's ok
                 if (tim_frequencies[tim_index] != frequency) {
-                    last_failure = PWMOUT_INVALID_FREQUENCY_ON_PIN;
+                    last_failure = PWMOUT_INTERNAL_RESOURCES_IN_USE;
                     continue; // keep looking
                 }
                 // you can't put a variable frequency on a partially reserved timer
                 if (variable_frequency) {
-                    last_failure = PWMOUT_VARIABLE_FREQUENCY_NOT_AVAILABLE;
+                    last_failure = PWMOUT_INTERNAL_RESOURCES_IN_USE;
                     continue; // keep looking
                 }
                 first_time_setup = false; // skip setting up the timer

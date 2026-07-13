@@ -144,7 +144,7 @@ pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
 
         // We want variable frequency but another class has already claim a fixed frequency.
         if (variable_frequency) {
-            return PWMOUT_VARIABLE_FREQUENCY_NOT_AVAILABLE;
+            return PWMOUT_INTERNAL_RESOURCES_IN_USE;
         }
 
         // Another pin is already using this output.
@@ -153,7 +153,7 @@ pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
         }
 
         if (frequency != _pwm_sm_frequencies[flexpwm_index][submodule]) {
-            return PWMOUT_INVALID_FREQUENCY_ON_PIN;
+            return PWMOUT_INTERNAL_RESOURCES_IN_USE;
         }
 
         // Submodule is already running at our target frequency and the output

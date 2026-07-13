@@ -84,6 +84,10 @@
 #include "shared-module/keypad/__init__.h"
 #endif
 
+#if CIRCUITPY_AUDIOFILEWRITER
+#include "shared-module/audiofilewriter/AudioFileWriter.h"
+#endif
+
 #if CIRCUITPY_MEMORYMONITOR
 #include "shared-module/memorymonitor/__init__.h"
 #endif
@@ -337,6 +341,9 @@ static void count_strn(void *data, const char *str, size_t len) {
 }
 
 static void cleanup_after_vm(mp_obj_t exception) {
+    // Do any port cleanup needed before anything else, including releasing board buses.
+    reset_port_early();
+
     // Get the traceback of any exception from this run off the heap.
     // MP_OBJ_SENTINEL means "this run does not contribute to traceback storage, don't touch it"
     // MP_OBJ_NULL (=0) means "this run completed successfully, clear any stored traceback"
@@ -394,6 +401,10 @@ static void cleanup_after_vm(mp_obj_t exception) {
 
     #if CIRCUITPY_KEYPAD
     keypad_reset();
+    #endif
+
+    #if CIRCUITPY_AUDIOFILEWRITER
+    audiofilewriter_reset();
     #endif
 
     // Close user-initiated sockets.

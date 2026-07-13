@@ -111,7 +111,7 @@ void common_hal_sdioio_sdcard_construct(sdioio_sdcard_obj_t *self,
     if (!slot_in_use[0] && !slot_in_use[1]) {
         err = sdmmc_host_init();
         if (err != ESP_OK) {
-            mp_raise_OSError_msg_varg(MP_ERROR_TEXT("SDIO Init Error %x"), err);
+            mp_raise_OSError_msg_varg(MP_ERROR_TEXT("SDIO Init Error 0x%02x"), err);
         }
         host_initialized = true;
     }
@@ -119,14 +119,14 @@ void common_hal_sdioio_sdcard_construct(sdioio_sdcard_obj_t *self,
     err = sdmmc_host_init_slot(sd_slot, &slot_config);
     if (err != ESP_OK) {
         ESP_LOGW(TAG, "Failed to initialize SDMMC slot: %x", err);
-        mp_raise_OSError_msg_varg(MP_ERROR_TEXT("SDIO Init Error %x"), err);
+        mp_raise_OSError_msg_varg(MP_ERROR_TEXT("SDIO Init Error 0x%02x"), err);
     }
     // sdmmc_card_t card;
     // self->card = malloc(sizeof(sdmmc_card_t));
     err = sdmmc_card_init(&host, &self->card);
     if (err != ESP_OK) {
         ESP_LOGW(TAG, "Failed to initialize SDMMC card: %x", err);
-        mp_raise_OSError_msg_varg(MP_ERROR_TEXT("SDIO Init Error %x"), err);
+        mp_raise_OSError_msg_varg(MP_ERROR_TEXT("SDIO Init Error 0x%02x"), err);
     }
 
     common_hal_sdioio_sdcard_check_for_deinit(self);

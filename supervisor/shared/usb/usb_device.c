@@ -156,7 +156,7 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_requ
 // size. Setting CFG_TUD_CDC_RX_BUFSIZE to the endpoint size and then sending
 // any character will prevent ctrl-c from working. Require at least a 64
 // character buffer.
-#if CFG_TUD_CDC_RX_BUFSIZE < CFG_TUD_CDC_EP_BUFSIZE + 64
+#if CFG_TUD_CDC_RX_BUFSIZE < CFG_TUD_CDC_RX_EPSIZE + 64
 #error "CFG_TUD_CDC_RX_BUFSIZE must be 64 bytes bigger than endpoint size."
 #endif
 

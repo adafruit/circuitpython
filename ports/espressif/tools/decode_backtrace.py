@@ -10,6 +10,8 @@ import subprocess
 import sys
 
 board = sys.argv[1]
+# Allow `board-name` or `build-board-name/ as the arg, to allow simple tab completion of boardname.
+board = board.replace("build-", "").replace("/", "")
 print(board)
 
 elfs = [

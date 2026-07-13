@@ -224,6 +224,8 @@ bool filesystem_init(bool create_allowed, bool force_create) {
     // Lazy mount from tud_msc_test_unit_ready_cb can lose races with
     // macOS's probe timing. Gated on CIRCUITPY_SDCARD_USB to match the
     // existing call site in usb_msc_flash.c (guarded by SDCARD_LUN).
+    // automount_sd_card() itself honors the runtime CIRCUITPY_SDCARD_USB
+    // setting and is a no-op when it is disabled.
     automount_sd_card();
     #endif
     #endif

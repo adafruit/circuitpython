@@ -18,3 +18,7 @@ typedef struct espcamera_camera_obj {
     pwmio_pwmout_obj_t pwm;
     busio_i2c_obj_t *i2c;
 } espcamera_obj_t;
+
+// Deinitialize the active camera, if any, so it releases its device on the
+// shared I2C bus. Called from reset_port_early().
+void espcamera_reset(void);

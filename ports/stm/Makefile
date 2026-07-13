@@ -205,6 +205,7 @@ endif
 ifneq ($(CIRCUITPY_USB),0)
 	ifeq ($(MCU_VARIANT),$(filter $(MCU_VARIANT),STM32L433xx))
 		SRC_C += lib/tinyusb/src/portable/st/stm32_fsdev/dcd_stm32_fsdev.c
+		SRC_C += lib/tinyusb/src/portable/st/stm32_fsdev/fsdev_common.c
 	else
 		SRC_C += lib/tinyusb/src/portable/synopsys/dwc2/dcd_dwc2.c
 		SRC_C += lib/tinyusb/src/portable/synopsys/dwc2/dwc2_common.c

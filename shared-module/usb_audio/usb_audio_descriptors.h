@@ -13,15 +13,14 @@
 // (to size the IN endpoint) as well as from the descriptor/binding code.
 
 // Actual length, in bytes, of the audio function descriptor emitted for the
-// current direction (mic, speaker, or headset). Declared here -- in the
-// dependency-free header tusb_config.h already includes -- because TinyUSB's
-// audio class driver reads CFG_TUD_AUDIO_FUNC_1_DESC_LEN at enumeration time and
-// returns it to the device core as the number of configuration-descriptor bytes
-// the function owns. That value MUST equal the descriptor we actually emitted:
-// the three directions differ in length, so a compile-time maximum would over-
-// report for the shorter ones and make the core swallow the interfaces that
-// follow audio (CDC/MSC), breaking their enumeration. The full definition lives
-// in __init__.c (also declared in __init__.h for the descriptor builder).
+// current direction (mic, speaker, or headset). usb_desc.c reads this while
+// assembling the configuration descriptor, adding it to total_descriptor_length
+// so wTotalLength covers the exact bytes the audio function emits. That value
+// MUST equal the descriptor we actually emitted: the three directions differ in
+// length, so a compile-time maximum would over-report for the shorter ones and
+// make the host swallow the interfaces that follow audio (CDC/MSC), breaking
+// their enumeration. The full definition lives in __init__.c (also declared in
+// __init__.h for the descriptor builder).
 size_t usb_audio_descriptor_length(void);
 
 // The isochronous IN endpoint's wMaxPacketSize in the USB descriptor is computed
@@ -73,40 +72,38 @@ size_t usb_audio_descriptor_length(void);
 // endpoint, no feedback endpoint), so this is identical to
 // USB_AUDIO_MIC_DESC_LEN -- but spell it out independently so the two
 // can diverge later (e.g. stereo) without silently mis-sizing the descriptor.
-// These TUD_AUDIO_DESC_*_LEN macros come from TinyUSB's usbd.h; this expression
+// These TUD_AUDIO20_DESC_*_LEN macros come from TinyUSB's usbd.h; this expression
 // is only expanded where that header is already included (never at the point
 // tusb_config.h includes us), so the header stays dependency-free.
-#define USB_AUDIO_SPEAKER_DESC_LEN (TUD_AUDIO_DESC_IAD_LEN \
-    + TUD_AUDIO_DESC_STD_AC_LEN \
-    + TUD_AUDIO_DESC_CS_AC_LEN \
-    + TUD_AUDIO_DESC_CLK_SRC_LEN \
-    /* speaker chain: USB-streaming input terminal -> feature unit -> speaker */ \
-    + TUD_AUDIO_DESC_INPUT_TERM_LEN \
-    + TUD_AUDIO_DESC_OUTPUT_TERM_LEN \
-    + TUD_AUDIO_DESC_FEATURE_UNIT_TWO_CHANNEL_LEN \
-    /* speaker AudioStreaming interface (alt 0 + alt 1 with OUT endpoint) */ \
-    + TUD_AUDIO_DESC_STD_AS_INT_LEN \
-    + TUD_AUDIO_DESC_STD_AS_INT_LEN \
-    + TUD_AUDIO_DESC_CS_AS_INT_LEN \
-    + TUD_AUDIO_DESC_TYPE_I_FORMAT_LEN \
-    + TUD_AUDIO_DESC_STD_AS_ISO_EP_LEN \
-    + TUD_AUDIO_DESC_CS_AS_ISO_EP_LEN)
+#define USB_AUDIO_SPEAKER_DESC_LEN (TUD_AUDIO20_DESC_IAD_LEN \
+    + TUD_AUDIO20_DESC_STD_AC_LEN \
+    + TUD_AUDIO20_DESC_CS_AC_LEN \
+    + TUD_AUDIO20_DESC_CLK_SRC_LEN \
+    + TUD_AUDIO20_DESC_INPUT_TERM_LEN \
+    + TUD_AUDIO20_DESC_OUTPUT_TERM_LEN \
+    + TUD_AUDIO20_DESC_FEATURE_UNIT_LEN(2) \
+    + TUD_AUDIO20_DESC_STD_AS_LEN \
+    + TUD_AUDIO20_DESC_STD_AS_LEN \
+    + TUD_AUDIO20_DESC_CS_AS_INT_LEN \
+    + TUD_AUDIO20_DESC_TYPE_I_FORMAT_LEN \
+    + TUD_AUDIO20_DESC_STD_AS_ISO_EP_LEN \
+    + TUD_AUDIO20_DESC_CS_AS_ISO_EP_LEN)
 
-#define USB_AUDIO_MIC_DESC_LEN (TUD_AUDIO_DESC_IAD_LEN \
-    + TUD_AUDIO_DESC_STD_AC_LEN \
-    + TUD_AUDIO_DESC_CS_AC_LEN \
-    + TUD_AUDIO_DESC_CLK_SRC_LEN \
+#define USB_AUDIO_MIC_DESC_LEN (TUD_AUDIO20_DESC_IAD_LEN \
+    + TUD_AUDIO20_DESC_STD_AC_LEN \
+    + TUD_AUDIO20_DESC_CS_AC_LEN \
+    + TUD_AUDIO20_DESC_CLK_SRC_LEN \
     /* mic chain: microphone input terminal -> feature unit -> USB-streaming out */ \
-    + TUD_AUDIO_DESC_INPUT_TERM_LEN \
-    + TUD_AUDIO_DESC_OUTPUT_TERM_LEN \
-    + TUD_AUDIO_DESC_FEATURE_UNIT_TWO_CHANNEL_LEN \
+    + TUD_AUDIO20_DESC_INPUT_TERM_LEN \
+    + TUD_AUDIO20_DESC_OUTPUT_TERM_LEN \
+    + TUD_AUDIO20_DESC_FEATURE_UNIT_LEN(2) \
     /* mic AudioStreaming interface (alt 0 + alt 1 with IN endpoint) */ \
-    + TUD_AUDIO_DESC_STD_AS_INT_LEN \
-    + TUD_AUDIO_DESC_STD_AS_INT_LEN \
-    + TUD_AUDIO_DESC_CS_AS_INT_LEN \
-    + TUD_AUDIO_DESC_TYPE_I_FORMAT_LEN \
-    + TUD_AUDIO_DESC_STD_AS_ISO_EP_LEN \
-    + TUD_AUDIO_DESC_CS_AS_ISO_EP_LEN)
+    + TUD_AUDIO20_DESC_STD_AS_LEN \
+    + TUD_AUDIO20_DESC_STD_AS_LEN \
+    + TUD_AUDIO20_DESC_CS_AS_INT_LEN \
+    + TUD_AUDIO20_DESC_TYPE_I_FORMAT_LEN \
+    + TUD_AUDIO20_DESC_STD_AS_ISO_EP_LEN \
+    + TUD_AUDIO20_DESC_CS_AS_ISO_EP_LEN)
 
 // Length of the combined headset descriptor (microphone + speaker both enabled): one IAD
 // wrapping a single AudioControl interface plus two AudioStreaming interfaces
@@ -117,29 +114,29 @@ size_t usb_audio_descriptor_length(void);
 // single-direction descriptors). See USB_AUDIO_HEADSET_DESCRIPTOR in __init__.c.
 // Expanded only where TinyUSB's usbd.h is already included (never at the point
 // tusb_config.h includes us), so this header stays dependency-free.
-#define USB_AUDIO_HEADSET_DESC_LEN (TUD_AUDIO_DESC_IAD_LEN \
-    + TUD_AUDIO_DESC_STD_AC_LEN \
-    + TUD_AUDIO_DESC_CS_AC_LEN \
-    + TUD_AUDIO_DESC_CLK_SRC_LEN \
+#define USB_AUDIO_HEADSET_DESC_LEN (TUD_AUDIO20_DESC_IAD_LEN \
+    + TUD_AUDIO20_DESC_STD_AC_LEN \
+    + TUD_AUDIO20_DESC_CS_AC_LEN \
+    + TUD_AUDIO20_DESC_CLK_SRC_LEN \
     /* speaker chain: USB-streaming input terminal -> feature unit -> speaker */ \
-    + TUD_AUDIO_DESC_INPUT_TERM_LEN \
-    + TUD_AUDIO_DESC_FEATURE_UNIT_TWO_CHANNEL_LEN \
-    + TUD_AUDIO_DESC_OUTPUT_TERM_LEN \
+    + TUD_AUDIO20_DESC_INPUT_TERM_LEN \
+    + TUD_AUDIO20_DESC_FEATURE_UNIT_LEN(2) \
+    + TUD_AUDIO20_DESC_OUTPUT_TERM_LEN \
     /* mic chain: microphone input terminal -> feature unit -> USB-streaming out */ \
-    + TUD_AUDIO_DESC_INPUT_TERM_LEN \
-    + TUD_AUDIO_DESC_FEATURE_UNIT_TWO_CHANNEL_LEN \
-    + TUD_AUDIO_DESC_OUTPUT_TERM_LEN \
+    + TUD_AUDIO20_DESC_INPUT_TERM_LEN \
+    + TUD_AUDIO20_DESC_FEATURE_UNIT_LEN(2) \
+    + TUD_AUDIO20_DESC_OUTPUT_TERM_LEN \
     /* speaker AudioStreaming interface (alt 0 + alt 1 with OUT endpoint) */ \
-    + TUD_AUDIO_DESC_STD_AS_INT_LEN \
-    + TUD_AUDIO_DESC_STD_AS_INT_LEN \
-    + TUD_AUDIO_DESC_CS_AS_INT_LEN \
-    + TUD_AUDIO_DESC_TYPE_I_FORMAT_LEN \
-    + TUD_AUDIO_DESC_STD_AS_ISO_EP_LEN \
-    + TUD_AUDIO_DESC_CS_AS_ISO_EP_LEN \
+    + TUD_AUDIO20_DESC_STD_AS_LEN \
+    + TUD_AUDIO20_DESC_STD_AS_LEN \
+    + TUD_AUDIO20_DESC_CS_AS_INT_LEN \
+    + TUD_AUDIO20_DESC_TYPE_I_FORMAT_LEN \
+    + TUD_AUDIO20_DESC_STD_AS_ISO_EP_LEN \
+    + TUD_AUDIO20_DESC_CS_AS_ISO_EP_LEN \
     /* mic AudioStreaming interface (alt 0 + alt 1 with IN endpoint) */ \
-    + TUD_AUDIO_DESC_STD_AS_INT_LEN \
-    + TUD_AUDIO_DESC_STD_AS_INT_LEN \
-    + TUD_AUDIO_DESC_CS_AS_INT_LEN \
-    + TUD_AUDIO_DESC_TYPE_I_FORMAT_LEN \
-    + TUD_AUDIO_DESC_STD_AS_ISO_EP_LEN \
-    + TUD_AUDIO_DESC_CS_AS_ISO_EP_LEN)
+    + TUD_AUDIO20_DESC_STD_AS_LEN \
+    + TUD_AUDIO20_DESC_STD_AS_LEN \
+    + TUD_AUDIO20_DESC_CS_AS_INT_LEN \
+    + TUD_AUDIO20_DESC_TYPE_I_FORMAT_LEN \
+    + TUD_AUDIO20_DESC_STD_AS_ISO_EP_LEN \
+    + TUD_AUDIO20_DESC_CS_AS_ISO_EP_LEN)

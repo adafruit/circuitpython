@@ -174,30 +174,21 @@ void common_hal_picodvi_framebuffer_construct(picodvi_framebuffer_obj_t *self,
     uint8_t slice = pwm_gpio_to_slice_num(self->pin_pair[0]);
 
 
-    pio_program_t program_struct = {
-        .instructions = NULL,
-        .length = 2,
-        .origin = -1
-    };
-    size_t pio_index = NUM_PIOS;
-    int free_state_machines[4]; // We may find all four free. We only use the first three.
-    for (size_t i = 0; i < NUM_PIOS; i++) {
-        PIO pio = pio_get_instance(i);
-        uint8_t free_count = 0;
-        for (size_t sm = 0; sm < NUM_PIO_STATE_MACHINES; sm++) {
-            if (!pio_sm_is_claimed(pio, sm)) {
-                free_state_machines[free_count] = sm;
-                free_count++;
-            }
-        }
-        if (free_count >= 3 && pio_can_add_program(pio, &program_struct)) {
-            pio_index = i;
-            break;
-        }
-    }
-
+    // We need a PIO with room for a 2-instruction program and 3 free state machines.
+    size_t pio_index = rp2pio_statemachine_find_pio(2, 3);
     if (pio_index == NUM_PIOS) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("All state machines in use"));
+    }
+
+    // Collect the free state machines on the chosen PIO. We only use the first three.
+    int free_state_machines[4]; // We may find all four free.
+    uint8_t free_count = 0;
+    PIO pio = pio_get_instance(pio_index);
+    for (size_t sm = 0; sm < NUM_PIO_STATE_MACHINES; sm++) {
+        if (!pio_sm_is_claimed(pio, sm)) {
+            free_state_machines[free_count] = sm;
+            free_count++;
+        }
     }
 
     self->width = width;

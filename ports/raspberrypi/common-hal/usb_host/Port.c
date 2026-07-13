@@ -73,41 +73,19 @@ static void __not_in_flash_func(core1_main)(void) {
     }
 }
 
-static uint8_t _sm_free_count(uint8_t pio_index) {
-    PIO pio = pio_get_instance(pio_index);
-    uint8_t free_count = 0;
-    for (size_t j = 0; j < NUM_PIO_STATE_MACHINES; j++) {
-        if (!pio_sm_is_claimed(pio, j)) {
-            free_count++;
-        }
-    }
-    return free_count;
-}
-
-static bool _has_program_room(uint8_t pio_index, uint8_t program_size) {
-    PIO pio = pio_get_instance(pio_index);
-    pio_program_t program_struct = {
-        .instructions = NULL,
-        .length = program_size,
-        .origin = -1
-    };
-    return pio_can_add_program(pio, &program_struct);
-}
-
 // As of 0.6.1, the PIO resource requirement is 1 PIO with 3 state machines &
 // 32 instructions. Since there are only 32 instructions in a state machine, it should
 // be impossible to have an allocated state machine but 32 instruction slots available;
 // go ahead and check for it anyway.
 //
-// Since we check that ALL state machines are available, it's not possible for the GPIO
+// Since we require ALL state machines to be available, it's not possible for the GPIO
 // ranges to mismatch on rp2350b
 static size_t get_usb_pio(void) {
-    for (size_t i = 0; i < NUM_PIOS; i++) {
-        if (_has_program_room(i, 32) && _sm_free_count(i) == NUM_PIO_STATE_MACHINES) {
-            return i;
-        }
+    size_t pio_index = rp2pio_statemachine_find_pio(32, NUM_PIO_STATE_MACHINES);
+    if (pio_index == NUM_PIOS) {
+        mp_raise_RuntimeError(MP_ERROR_TEXT("All state machines in use"));
     }
-    mp_raise_RuntimeError(MP_ERROR_TEXT("All state machines in use"));
+    return pio_index;
 }
 
 

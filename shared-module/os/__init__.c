@@ -122,8 +122,14 @@ const char *common_hal_os_path_abspath(const char *path) {
                 // Remove the dot
                 output_len = slashes[slash_count - 1];
             } else if (component_len == 2 && full_path[i - 1] == '.' && full_path[i - 2] == '.') {
-                // Remove the double dot and the previous component if it exists
-                slash_count--;
+                // Remove the double dot and the previous component if it exists.
+                // Never rewind past the root: if the root is the only recorded
+                // boundary (slash_count == 1), ".." at the root is a no-op instead of
+                // underflowing slash_count to SIZE_MAX and reading slashes[SIZE_MAX]
+                // out of bounds (matches POSIX "cd .. from / stays at /" semantics).
+                if (slash_count > 1) {
+                    slash_count--;
+                }
                 output_len = slashes[slash_count - 1];
             } else {
                 slashes[slash_count] = output_len;

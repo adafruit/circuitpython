@@ -34,6 +34,10 @@
 #include "common-hal/rtc/RTC.h"
 #include "common-hal/busio/UART.h"
 
+#if CIRCUITPY_SDIOIO
+#include "common-hal/sdioio/SDCard.h"
+#endif
+
 #include "supervisor/shared/safe_mode.h"
 #include "supervisor/shared/stack.h"
 #include "supervisor/shared/tick.h"
@@ -431,6 +435,10 @@ void reset_port(void) {
 
     #if CIRCUITPY_RP2PIO
     reset_rp2pio_statemachine();
+    #endif
+
+    #if CIRCUITPY_SDIOIO
+    sdioio_reset();
     #endif
 
     #if CIRCUITPY_RTC

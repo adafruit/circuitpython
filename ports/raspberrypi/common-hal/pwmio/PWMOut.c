@@ -78,7 +78,7 @@ pwmout_result_t pwmout_allocate(uint8_t slice, uint8_t ab_channel, bool variable
     if (target_slice_frequencies[slice] > 0) {
         // If we want to change frequency then we can't share.
         if (variable_frequency) {
-            return PWMOUT_VARIABLE_FREQUENCY_NOT_AVAILABLE;
+            return PWMOUT_INTERNAL_RESOURCES_IN_USE;
         }
         // If the other user wants a variable frequency then we can't share either.
         if ((slice_variable_frequency & (1 << slice)) != 0) {
@@ -86,7 +86,7 @@ pwmout_result_t pwmout_allocate(uint8_t slice, uint8_t ab_channel, bool variable
         }
         // If we're both fixed frequency but we don't match target frequencies then we can't share.
         if (target_slice_frequencies[slice] != frequency) {
-            return PWMOUT_INVALID_FREQUENCY_ON_PIN;
+            return PWMOUT_INTERNAL_RESOURCES_IN_USE;
         }
     }
 

@@ -21,6 +21,9 @@
 
 static tlsf_t heap;
 
+MP_WEAK void reset_port_early(void) {
+}
+
 MP_WEAK void port_wake_main_task(void) {
 }
 

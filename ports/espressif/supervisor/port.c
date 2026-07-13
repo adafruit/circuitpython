@@ -52,7 +52,7 @@
 #endif
 
 #if CIRCUITPY_ESPCAMERA
-#include "esp_camera.h"
+#include "common-hal/espcamera/Camera.h"
 #endif
 
 #if CIRCUITPY_RCLCPY
@@ -346,11 +346,17 @@ size_t port_heap_get_largest_free_size(void) {
     return free_size;
 }
 
-void reset_port(void) {
-    // TODO deinit for esp32-camera
+void reset_port_early(void) {
+    // esp-camera adds an I2C device on the ESP I2C bus, and keeps it there. This
+    // is unlike busio.I2C, which adds and removes the device on each operation.
+    // So have the esp-camera API shut down the camera now, before reset_board_buses() tries to delete the I2C bus.
+    // Unfortunately, there is no I2C driver API to enumerate or delete all the devices.
     #if CIRCUITPY_ESPCAMERA
-    esp_camera_deinit();
+    espcamera_reset();
     #endif
+}
+
+void reset_port(void) {
 
     #if CIRCUITPY_SSL
     ssl_reset();

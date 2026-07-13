@@ -26,6 +26,9 @@ safe_mode_t port_init(void);
 // Reset the microcontroller completely.
 void reset_cpu(void) MP_NORETURN;
 
+// Reset port state that must be torn down before anything else is reset.
+void reset_port_early(void);
+
 // Reset the microcontroller state.
 void reset_port(void);
 

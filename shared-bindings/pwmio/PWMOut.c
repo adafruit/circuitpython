@@ -25,14 +25,8 @@ void common_hal_pwmio_pwmout_raise_error(pwmout_result_t result) {
         case PWMOUT_INVALID_FREQUENCY:
             mp_arg_error_invalid(MP_QSTR_frequency);
             break;
-        case PWMOUT_INVALID_FREQUENCY_ON_PIN:
-            mp_arg_error_invalid(MP_QSTR_frequency);
-            break;
-        case PWMOUT_VARIABLE_FREQUENCY_NOT_AVAILABLE:
-            mp_arg_error_invalid(MP_QSTR_variable_frequency);
-            break;
         case PWMOUT_INTERNAL_RESOURCES_IN_USE:
-            mp_raise_RuntimeError(MP_ERROR_TEXT("Internal resource(s) in use"));
+            mp_raise_RuntimeError(MP_ERROR_TEXT("Conflicting settings for shared resource"));
             break;
         default:
         case PWMOUT_INITIALIZATION_ERROR:

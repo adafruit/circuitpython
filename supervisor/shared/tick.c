@@ -27,6 +27,10 @@
 #include "shared-module/keypad/__init__.h"
 #endif
 
+#if CIRCUITPY_AUDIOFILEWRITER
+#include "shared-module/audiofilewriter/AudioFileWriter.h"
+#endif
+
 #include "shared-bindings/microcontroller/__init__.h"
 
 #if CIRCUITPY_WATCHDOG
@@ -58,6 +62,10 @@ static void supervisor_background_tick(void *unused) {
     #endif
 
     filesystem_background();
+
+    #if CIRCUITPY_AUDIOFILEWRITER
+    audiofilewriter_background();
+    #endif
 
     port_background_tick();
 

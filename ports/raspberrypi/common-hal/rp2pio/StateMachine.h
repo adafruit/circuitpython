@@ -12,6 +12,11 @@
 #include "common-hal/memorymap/AddressRange.h"
 #include "hardware/pio.h"
 
+// Shared PIO allocator declarations (rp2pio_statemachine_find_pio,
+// rp2pio_statemachine_never_reset, rp2pio_statemachine_reset_ok). Kept in a
+// separate, mp-free header so external C++ drivers can include them too.
+#include "pio_alloc.h"
+
 // pio_pinmask_t can hold ANY pin masks, so it is used before selection of gpiobase
 #if NUM_BANK0_GPIOS > 32
 typedef struct { uint64_t value;
@@ -173,10 +178,5 @@ uint8_t rp2pio_statemachine_program_offset(rp2pio_statemachine_obj_t *self);
 void rp2pio_statemachine_deinit(rp2pio_statemachine_obj_t *self, bool leave_pins);
 void rp2pio_statemachine_dma_complete_write(rp2pio_statemachine_obj_t *self, int channel);
 void rp2pio_statemachine_dma_complete_read(rp2pio_statemachine_obj_t *self, int channel);
-
-void rp2pio_statemachine_reset_ok(PIO pio, int sm);
-void rp2pio_statemachine_never_reset(PIO pio, int sm);
-
-uint8_t rp2pio_statemachine_find_pio(int program_size, int sm_count);
 
 extern const mp_obj_type_t rp2pio_statemachine_type;

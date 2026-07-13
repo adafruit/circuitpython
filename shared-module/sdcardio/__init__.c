@@ -16,6 +16,7 @@
 #include "shared-bindings/sdcardio/SDCard.h"
 
 #include "supervisor/filesystem.h"
+#include "supervisor/shared/settings.h"
 
 #ifdef DEFAULT_SD_CARD_DETECT
 static digitalio_digitalinout_obj_t sd_card_detect_pin;
@@ -45,6 +46,21 @@ void sdcardio_init(void) {
 
 void automount_sd_card(void) {
     #ifdef DEFAULT_SD_CARD_DETECT
+    #if CIRCUITPY_SETTINGS_TOML
+    // Honor the runtime CIRCUITPY_SDCARD_USB setting. When disabled, never
+    // claim the shared SD pins (SCK/MOSI/MISO/CS) via SPI, so they remain free
+    // for other uses such as sdioio, which drives the same physical pins.
+    // Read once and cache, matching usb_msc_flash.c's handling.
+    static int8_t _sdcard_usb_enabled = -1;  // -1 unknown, 0 false, 1 true
+    if (_sdcard_usb_enabled < 0) {
+        bool setting = true;
+        (void)settings_get_bool("CIRCUITPY_SDCARD_USB", &setting);
+        _sdcard_usb_enabled = setting ? 1 : 0;
+    }
+    if (!_sdcard_usb_enabled) {
+        return;
+    }
+    #endif
     if (common_hal_digitalio_digitalinout_get_value(&sd_card_detect_pin) != DEFAULT_SD_CARD_INSERTED) {
         // No card.
         _init_error = false;

@@ -97,7 +97,7 @@ static void display_init(void) {
         false,          // data_as_commands
         true,           // auto_refresh
         60,             // native_frames_per_second
-        true,           // backlight_on_high
+        false,          // backlight_on_high
         false,          // SH1107_addressing
         50000           // backlight pwm frequency
         );

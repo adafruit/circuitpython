@@ -127,7 +127,6 @@ ifeq ($(CIRCUITPY_TINYUSB),1)
   SRC_SUPERVISOR += \
     lib/tinyusb/src/class/cdc/cdc_device.c \
     lib/tinyusb/src/device/usbd.c \
-    lib/tinyusb/src/device/usbd_control.c \
     supervisor/shared/usb/usb_desc.c \
     supervisor/shared/usb/usb_device.c \
 

@@ -135,6 +135,7 @@ static bool _wait_for_callback(void) {
     switch (result) {
         case XFER_RESULT_SUCCESS:
             return true;
+        case XFER_RESULT_ABORTED:
         case XFER_RESULT_FAILED:
             mp_raise_usb_core_USBError(NULL);
             break;
@@ -201,6 +202,7 @@ static size_t _handle_timed_transfer_callback(tuh_xfer_t *xfer, mp_int_t timeout
     switch (result) {
         case XFER_RESULT_SUCCESS:
             return _actual_len;
+        case XFER_RESULT_ABORTED:
         case XFER_RESULT_FAILED:
             mp_raise_usb_core_USBError(NULL);
             break;
