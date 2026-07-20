@@ -101,6 +101,10 @@ msgid "ndarray length overflows"
 msgstr ""
 
 #: extmod/ulab/code/ndarray.c
+msgid "maximum number of dimensions is "
+msgstr ""
+
+#: extmod/ulab/code/ndarray.c
 msgid "cannot convert complex type"
 msgstr ""
 
@@ -154,11 +158,23 @@ msgid "operation is not supported for given type"
 msgstr ""
 
 #: extmod/ulab/code/ndarray.c
-msgid "shape must be integer or tuple of integers"
+msgid "keyword argument must be tuple of integers"
 msgstr ""
 
-#: extmod/ulab/code/ndarray.c extmod/ulab/code/numpy/random/random.c
-msgid "maximum number of dimensions is "
+#: extmod/ulab/code/ndarray.c
+msgid "too many axes specified"
+msgstr ""
+
+#: extmod/ulab/code/ndarray.c
+msgid "axis index out of bounds"
+msgstr ""
+
+#: extmod/ulab/code/ndarray.c
+msgid "repeated indices"
+msgstr ""
+
+#: extmod/ulab/code/ndarray.c
+msgid "shape must be integer or tuple of integers"
 msgstr ""
 
 #: extmod/ulab/code/ndarray.c
@@ -225,6 +241,31 @@ msgstr ""
 msgid "not implemented for complex dtype"
 msgstr ""
 
+#: extmod/ulab/code/numpy/compare.c extmod/ulab/code/user/user.c
+#: shared-bindings/_eve/__init__.c
+msgid "input must be an ndarray"
+msgstr ""
+
+#: extmod/ulab/code/numpy/compare.c
+msgid "object too deep for desired array"
+msgstr ""
+
+#: extmod/ulab/code/numpy/compare.c
+msgid "cannot cast array data from dtype"
+msgstr ""
+
+#: extmod/ulab/code/numpy/compare.c
+msgid "minlength must not be negative"
+msgstr ""
+
+#: extmod/ulab/code/numpy/compare.c
+msgid "the weights and list don't have the same length"
+msgstr ""
+
+#: extmod/ulab/code/numpy/compare.c
+msgid "cannot cast weigths to float"
+msgstr ""
+
 #: extmod/ulab/code/numpy/compare.c extmod/ulab/code/numpy/create.c
 #: extmod/ulab/code/numpy/io/io.c extmod/ulab/code/numpy/transform.c
 #: extmod/ulab/code/numpy/vector.c
@@ -259,7 +300,7 @@ msgstr ""
 msgid "wrong axis specified"
 msgstr ""
 
-#: extmod/ulab/code/numpy/create.c
+#: extmod/ulab/code/numpy/create.c extmod/ulab/code/utils/utils.c
 msgid "input arrays are not compatible"
 msgstr ""
 
@@ -269,6 +310,45 @@ msgstr ""
 
 #: extmod/ulab/code/numpy/create.c
 msgid "number of points must be at least 2"
+msgstr ""
+
+#: extmod/ulab/code/numpy/create.c
+msgid "indexing should be 'xy' or 'ij'"
+msgstr ""
+
+#: extmod/ulab/code/numpy/create.c
+msgid "indexing must be 'xy' or 'ij'"
+msgstr ""
+
+#: extmod/ulab/code/numpy/create.c
+msgid "too many input arrays"
+msgstr ""
+
+#: extmod/ulab/code/numpy/create.c extmod/ulab/code/numpy/numerical.c
+#: extmod/ulab/code/numpy/transform.c
+msgid "arguments must be ndarrays"
+msgstr ""
+
+#: extmod/ulab/code/numpy/create.c
+msgid "arguments must be 1D arrays"
+msgstr ""
+
+#: extmod/ulab/code/numpy/create.c
+msgid "input is not an array"
+msgstr ""
+
+#: extmod/ulab/code/numpy/create.c extmod/ulab/code/numpy/numerical.c
+#: ports/espressif/common-hal/pulseio/PulseIn.c
+#: shared-bindings/bitmaptools/__init__.c
+msgid "index out of range"
+msgstr ""
+
+#: extmod/ulab/code/numpy/create.c
+msgid "mode should be raise, wrap or clip"
+msgstr ""
+
+#: extmod/ulab/code/numpy/create.c
+msgid "index must not be negative"
 msgstr ""
 
 #: extmod/ulab/code/numpy/create.c
@@ -291,7 +371,7 @@ msgstr ""
 msgid "FFT is implemented for linear arrays only"
 msgstr ""
 
-#: extmod/ulab/code/numpy/fft/fft_tools.c
+#: extmod/ulab/code/numpy/fft/fft_tools.c extmod/ulab/code/utils/utils.c
 msgid "input array length must be power of 2"
 msgstr ""
 
@@ -400,22 +480,12 @@ msgstr ""
 msgid "axis too long"
 msgstr ""
 
-#: extmod/ulab/code/numpy/numerical.c extmod/ulab/code/numpy/transform.c
-msgid "arguments must be ndarrays"
-msgstr ""
-
 #: extmod/ulab/code/numpy/numerical.c
 msgid "cross is defined for 1D arrays of length 3"
 msgstr ""
 
 #: extmod/ulab/code/numpy/numerical.c
 msgid "diff argument must be an ndarray"
-msgstr ""
-
-#: extmod/ulab/code/numpy/numerical.c extmod/ulab/code/ulab_tools.c
-#: ports/espressif/common-hal/pulseio/PulseIn.c
-#: shared-bindings/bitmaptools/__init__.c
-msgid "index out of range"
 msgstr ""
 
 #: extmod/ulab/code/numpy/numerical.c
@@ -463,10 +533,10 @@ msgid "argument must be None, an integer or a tuple of integers"
 msgstr ""
 
 #: extmod/ulab/code/numpy/random/random.c
-msgid "shape must be None, and integer or a tuple of integers"
+msgid "shape must be None, an integer or a tuple of integers"
 msgstr ""
 
-#: extmod/ulab/code/numpy/random/random.c
+#: extmod/ulab/code/numpy/random/random.c extmod/ulab/code/ulab_tools.c
 msgid "out has wrong type"
 msgstr ""
 
@@ -478,7 +548,7 @@ msgstr ""
 msgid "size must match out.shape when used together"
 msgstr ""
 
-#: extmod/ulab/code/numpy/random/random.c
+#: extmod/ulab/code/numpy/random/random.c extmod/ulab/code/ulab_tools.c
 msgid "output array must be contiguous"
 msgstr ""
 
@@ -502,7 +572,7 @@ msgstr ""
 msgid "dimensions do not match"
 msgstr ""
 
-#: extmod/ulab/code/numpy/vector.c
+#: extmod/ulab/code/numpy/vector.c extmod/ulab/code/utils/utils.c
 msgid "out must be an ndarray"
 msgstr ""
 
@@ -538,12 +608,34 @@ msgstr ""
 msgid "input dtype must be float or complex"
 msgstr ""
 
-#: extmod/ulab/code/numpy/vector.c
+#: extmod/ulab/code/numpy/vector.c extmod/ulab/code/scipy/integrate/integrate.c
 msgid "first argument must be a callable"
 msgstr ""
 
 #: extmod/ulab/code/numpy/vector.c
 msgid "wrong output type"
+msgstr ""
+
+#: extmod/ulab/code/scipy/integrate/integrate.c
+#, c-format
+msgid "can't convert arg %d from %s to float"
+msgstr ""
+
+#: extmod/ulab/code/scipy/integrate/integrate.c
+msgid "levels needs to be a positive integer"
+msgstr ""
+
+#: extmod/ulab/code/scipy/integrate/integrate.c
+msgid "steps needs to be a positive integer"
+msgstr ""
+
+#: extmod/ulab/code/scipy/integrate/integrate.c
+#: extmod/ulab/code/scipy/optimize/optimize.c
+msgid "first argument must be a function"
+msgstr ""
+
+#: extmod/ulab/code/scipy/integrate/integrate.c
+msgid "order needs to be a positive integer"
 msgstr ""
 
 #: extmod/ulab/code/scipy/linalg/linalg.c
@@ -552,10 +644,6 @@ msgstr ""
 
 #: extmod/ulab/code/scipy/linalg/linalg.c extmod/ulab/code/user/user.c
 msgid "input must be a dense ndarray"
-msgstr ""
-
-#: extmod/ulab/code/scipy/optimize/optimize.c
-msgid "first argument must be a function"
 msgstr ""
 
 #: extmod/ulab/code/scipy/optimize/optimize.c
@@ -622,8 +710,16 @@ msgstr ""
 msgid "input must be square matrix"
 msgstr ""
 
-#: extmod/ulab/code/user/user.c shared-bindings/_eve/__init__.c
-msgid "input must be an ndarray"
+#: extmod/ulab/code/ulab_tools.c
+msgid "out array has wrong dtype"
+msgstr ""
+
+#: extmod/ulab/code/ulab_tools.c
+msgid "out array has wrong dimension"
+msgstr ""
+
+#: extmod/ulab/code/ulab_tools.c
+msgid "out array has wrong shape"
 msgstr ""
 
 #: extmod/ulab/code/utils/utils.c
@@ -636,6 +732,34 @@ msgstr ""
 
 #: extmod/ulab/code/utils/utils.c
 msgid "out array is too small"
+msgstr ""
+
+#: extmod/ulab/code/utils/utils.c
+msgid "spectrogram is defined for ndarrays only"
+msgstr ""
+
+#: extmod/ulab/code/utils/utils.c
+msgid "spectrogram is implemented for 1D arrays only"
+msgstr ""
+
+#: extmod/ulab/code/utils/utils.c
+msgid "out array must be a 1D array of float type"
+msgstr ""
+
+#: extmod/ulab/code/utils/utils.c
+msgid "input and out arrays must have same length"
+msgstr ""
+
+#: extmod/ulab/code/utils/utils.c
+msgid "scratchpad must be an ndarray"
+msgstr ""
+
+#: extmod/ulab/code/utils/utils.c
+msgid "scratchpad must be a 1D dense float array"
+msgstr ""
+
+#: extmod/ulab/code/utils/utils.c
+msgid "scratchpad must be twice as long as input"
 msgstr ""
 
 #: extmod/vfs_fat.c py/moderrno.c
