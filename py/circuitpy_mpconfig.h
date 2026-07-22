@@ -425,9 +425,9 @@ extern const struct _mp_obj_module_t nvm_module;
 // #define NDARRAY_HAS_INPLACE_MODULO (0)
 // #endif
 
-// #ifndef ULAB_SCIPY_HAS_INTEGRATE_MODULE
-// #define ULAB_SCIPY_HAS_INTEGRATE_MODULE (0)
-// #endif
+#ifndef ULAB_SCIPY_HAS_INTEGRATE_MODULE
+#define ULAB_SCIPY_HAS_INTEGRATE_MODULE (0)
+#endif
 
 #if CIRCUITPY_ULAB
 // ulab requires reverse special methods
