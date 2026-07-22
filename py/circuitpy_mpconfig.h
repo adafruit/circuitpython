@@ -415,6 +415,19 @@ extern const struct _mp_obj_module_t nvm_module;
 #define ULAB_NUMPY_HAS_RANDOM_MODULE (0)
 #endif
 
+// The ndarray modulo operator is large; disable it to keep the build small.
+#ifndef NDARRAY_HAS_BINARY_OP_MODULO
+#define NDARRAY_HAS_BINARY_OP_MODULO (0)
+#endif
+#ifndef NDARRAY_HAS_INPLACE_MODULO
+#define NDARRAY_HAS_INPLACE_MODULO (0)
+#endif
+
+// The scipy.integrate module is large; disable it to keep the build small.
+#ifndef ULAB_SCIPY_HAS_INTEGRATE_MODULE
+#define ULAB_SCIPY_HAS_INTEGRATE_MODULE (0)
+#endif
+
 #if CIRCUITPY_ULAB
 // ulab requires reverse special methods
 #if defined(MICROPY_PY_REVERSE_SPECIAL_METHODS) && !MICROPY_PY_REVERSE_SPECIAL_METHODS
