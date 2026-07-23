@@ -226,23 +226,35 @@ MP_DEFINE_CONST_FUN_OBJ_KW(usb_core_device_write_obj, 2, usb_core_device_write);
 
 
 //|     def read(
-//|         self, endpoint: int, size_or_buffer: array.array, timeout: Optional[int] = None
+//|         self,
+//|         endpoint: int,
+//|         size_or_buffer: array.array,
+//|         timeout: Optional[int] = None,
+//|         *,
+//|         raise_on_timeout: bool = True,
 //|     ) -> int:
 //|         """Read data from the endpoint.
 //|
 //|         :param int endpoint: the bEndpointAddress you want to communicate with.
 //|         :param array.array size_or_buffer: the array to read data into. PyUSB also allows size but CircuitPython only support array to force deliberate memory use.
 //|         :param int timeout: Time to wait specified in milliseconds. (Different from most CircuitPython!)
+//|         :param bool raise_on_timeout: when False, an elapsed timeout returns ``0``
+//|             instead of raising `usb.core.USBTimeoutError`. Polling an interrupt
+//|             endpoint every frame (e.g. a HID gamepad in a game loop) treats "no
+//|             new report yet" as a normal outcome; the exception object each such
+//|             poll would otherwise allocate is measurable garbage-collector
+//|             pressure on small heaps.
 //|         :returns: the number of bytes read
 //|         """
 //|         ...
 //|
 static mp_obj_t usb_core_device_read(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    enum { ARG_endpoint, ARG_size_or_buffer, ARG_timeout };
+    enum { ARG_endpoint, ARG_size_or_buffer, ARG_timeout, ARG_raise_on_timeout };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_endpoint, MP_ARG_REQUIRED | MP_ARG_INT },
         { MP_QSTR_size_or_buffer, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_timeout, MP_ARG_INT, {.u_int = 0} },
+        { MP_QSTR_raise_on_timeout, MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = true} },
     };
     usb_core_device_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
     check_for_deinit(self);
@@ -252,7 +264,7 @@ static mp_obj_t usb_core_device_read(size_t n_args, const mp_obj_t *pos_args, mp
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(args[ARG_size_or_buffer].u_obj, &bufinfo, MP_BUFFER_WRITE);
 
-    return MP_OBJ_NEW_SMALL_INT(common_hal_usb_core_device_read(self, args[ARG_endpoint].u_int, bufinfo.buf, bufinfo.len, args[ARG_timeout].u_int));
+    return MP_OBJ_NEW_SMALL_INT(common_hal_usb_core_device_read(self, args[ARG_endpoint].u_int, bufinfo.buf, bufinfo.len, args[ARG_timeout].u_int, args[ARG_raise_on_timeout].u_bool));
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(usb_core_device_read_obj, 2, usb_core_device_read);
 
