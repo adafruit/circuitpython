@@ -32,12 +32,12 @@ void common_hal_usb_audio_usbspeaker_construct(usb_audio_usbspeaker_obj_t *self)
     // format we present is 16-bit signed LE PCM, which is exactly what the
     // CircuitPython audio pipeline carries, so no conversion is needed.
     self->base.sample_rate = usb_audio_sample_rate;
-    self->base.bits_per_sample = usb_audio_bits_per_sample;
+    self->base.bits_per_sample = USB_AUDIO_BITS_PER_SAMPLE;
     self->base.channel_count = usb_audio_channel_count;
     self->base.samples_signed = true;
     self->base.single_buffer = false;
     self->base.max_buffer_length = USB_AUDIO_SPEAKER_OUTPUT_BUFFER_SIZE;
-
+    
     self->ring_head = 0;
     self->ring_tail = 0;
     self->ring_count = 0;
@@ -193,6 +193,8 @@ audioio_get_buffer_result_t usb_audio_usbspeaker_get_buffer(usb_audio_usbspeaker
 
     uint32_t half = self->base.max_buffer_length / 2;
     uint8_t *out = self->output_buffer + half * self->output_index;
+    int16_t *word_out = (int16_t *)out;
+    int16_t *word_ring = (int16_t *)self->ring;
     self->output_index = 1 - self->output_index;
 
     // Consumer side of the SPSC ring (runs in the output backend's refill ISR).
@@ -200,9 +202,20 @@ audioio_get_buffer_result_t usb_audio_usbspeaker_get_buffer(usb_audio_usbspeaker
     size_t to_copy = MIN(self->ring_count, (size_t)half);
 
     size_t first = MIN(to_copy, USB_AUDIO_SPEAKER_RING_SIZE - self->ring_tail);
-    memcpy(out, &self->ring[self->ring_tail], first);
-    if (to_copy > first) {
-        memcpy(out + first, &self->ring[0], to_copy - first);
+    if (MP_LIKELY(usb_audio_channel_count == USB_AUDIO_N_CHANNELS)) {
+        memcpy(out, &self->ring[self->ring_tail], first);
+        if (to_copy > first) {
+            memcpy(out + first, &self->ring[0], to_copy - first);
+        }
+    } else {
+        for (size_t i = self->ring_tail / USB_AUDIO_N_BYTES_PER_SAMPLE; i < first / USB_AUDIO_N_BYTES_PER_SAMPLE; i += 2) {
+            word_out[i >> 1] = word_ring[i];
+        }
+        if (to_copy > first) {
+            for (size_t i = 0; i < (to_copy - first) / USB_AUDIO_N_BYTES_PER_SAMPLE; i += 2) {
+                word_out[(first / USB_AUDIO_N_BYTES_PER_SAMPLE) + (i >> 1)] = word_ring[i];
+            }
+        }
     }
     self->ring_tail = (self->ring_tail + to_copy) % USB_AUDIO_SPEAKER_RING_SIZE;
     self->ring_count -= to_copy;
@@ -211,17 +224,25 @@ audioio_get_buffer_result_t usb_audio_usbspeaker_get_buffer(usb_audio_usbspeaker
         // Underrun: pad the remainder with silence. Samples are signed, so
         // silence is 0. This is the consume-side of the pacing failure mode
         // tracked in the usb-audio-artifact-pacing memory: we never spin.
-        memset(out + to_copy, 0, half - to_copy);
+        if (MP_LIKELY(usb_audio_channel_count == USB_AUDIO_N_CHANNELS)) {
+            memset(out + to_copy, 0, half - to_copy);
+        } else {
+            memset(out + (to_copy >> 1), 0, (half - to_copy) >> 1);
+        }
     }
 
-    // Mono only for v1, so the single-channel offset is always 0; computed the
-    // same way as audiocore.RawSample so stereo (interleaved ring) can extend it.
+    // Computed the same way as audiocore.RawSample so stereo (interleaved ring)
+    // can extend it.
     if (single_channel_output) {
         out += (channel % self->base.channel_count) * (self->base.bits_per_sample / 8);
     }
 
     *buffer = out;
-    *buffer_length = half;
+    if (MP_LIKELY(usb_audio_channel_count == USB_AUDIO_N_CHANNELS)) {
+        *buffer_length = half;
+    } else {
+        *buffer_length = half >> 1;
+    }
     // A live USB stream is infinite; never report DONE or the backend would stop.
     return GET_BUFFER_MORE_DATA;
 }

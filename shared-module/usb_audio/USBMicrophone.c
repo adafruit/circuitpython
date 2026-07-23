@@ -11,6 +11,7 @@
 
 #include "shared-bindings/usb_audio/USBMicrophone.h"
 #include "shared-module/usb_audio/__init__.h"
+#include "shared-module/usb_audio/usb_audio_descriptors.h"
 #include "shared-module/audiocore/__init__.h"
 
 // Only one microphone may feed the single USB IN endpoint at a time. This points
@@ -53,7 +54,7 @@ void common_hal_usb_audio_usbmicrophone_play(usb_audio_usbmicrophone_obj_t *self
     if (audiosample_get_channel_count(sample_base) != usb_audio_channel_count) {
         mp_raise_ValueError_varg(MP_ERROR_TEXT("The sample's %q does not match"), MP_QSTR_channel_count);
     }
-    if (audiosample_get_bits_per_sample(sample_base) != usb_audio_bits_per_sample) {
+    if (audiosample_get_bits_per_sample(sample_base) != USB_AUDIO_BITS_PER_SAMPLE) {
         mp_raise_ValueError_varg(MP_ERROR_TEXT("The sample's %q does not match"), MP_QSTR_bits_per_sample);
     }
     if (!sample_base->samples_signed) {
@@ -101,15 +102,33 @@ bool common_hal_usb_audio_usbmicrophone_get_paused(usb_audio_usbmicrophone_obj_t
     return self->playing && self->paused;
 }
 
+static inline uint32_t copy16lsb(uint32_t val) {
+    #if (defined(__ARM_ARCH_7EM__) && (__ARM_ARCH_7EM__ == 1))
+    return __PKHBT(val, val, 16);
+    #else
+    val &= 0x0000ffff;
+    return val | (val << 16);
+    #endif
+}
+
+static inline uint32_t copy16msb(uint32_t val) {
+    #if (defined(__ARM_ARCH_7EM__) && (__ARM_ARCH_7EM__ == 1))
+    return __PKHTB(val, val, 16);
+    #else
+    val &= 0xffff0000;
+    return val | (val >> 16);
+    #endif
+}
+
 size_t usb_audio_usbmicrophone_background_fill(uint8_t *out, size_t max_bytes) {
     usb_audio_usbmicrophone_obj_t *self = active_microphone;
     if (self == NULL || !self->playing || self->paused || self->sample == MP_OBJ_NULL) {
         return 0;
     }
 
-    // The negotiated USB format is 16-bit signed mono PCM. For this step the
+    // The negotiated USB format is 16-bit signed PCM. For this step the
     // bound sample is assumed to already be in that format (e.g. a 16-bit signed
-    // mono audiocore.RawSample), so its bytes are copied straight through.
+    // audiocore.RawSample), so its bytes are copied straight through.
     size_t filled = 0;
     while (filled < max_bytes) {
         if (self->buffer_length == 0) {
@@ -138,8 +157,20 @@ size_t usb_audio_usbmicrophone_background_fill(uint8_t *out, size_t max_bytes) {
             }
         }
 
-        size_t n = MIN(self->buffer_length, max_bytes - filled);
-        memcpy(out + filled, self->buffer, n);
+        size_t n;
+        if (MP_LIKELY(usb_audio_channel_count == USB_AUDIO_N_CHANNELS)) {
+            n = MIN(self->buffer_length, max_bytes - filled);
+            memcpy(out + filled, self->buffer, n);
+        } else {
+            n = MIN(self->buffer_length << 1, max_bytes - filled);
+            uint32_t *word_buffer = (uint32_t *)self->buffer;
+            uint32_t *word_out = (uint32_t *)(out + filled);
+            for (size_t i = 0; i < n / sizeof(uint32_t); i += 2) {
+                uint32_t v = word_buffer[i >> 1];
+                word_out[i] = copy16lsb(v);
+                word_out[i + 1] = copy16msb(v);
+            }
+        }
         self->buffer += n;
         self->buffer_length -= n;
         filled += n;

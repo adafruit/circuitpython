@@ -19,9 +19,9 @@
 //| Audio Class (UAC2) microphone: the board is the audio *source* and streams
 //| samples to the host over a USB isochronous IN endpoint.
 //|
-//| This mode requires 1 IN endpoint and 2 interfaces. Generally, microcontrollers
-//| have a limit on the number of endpoints. If you exceed the number of endpoints,
-//| CircuitPython will automatically enter Safe Mode. Even in this case, you may be
+//| This mode requires 2 IN endpoints and 2 interfaces.
+//| Generally, microcontrollers have a limit on the number of endpoints. If you exceed the number
+//| of endpoints, CircuitPython will automatically enter Safe Mode. Even in this case, you may be
 //| able to enable USB audio by also disabling other USB functions, such as
 //| `usb_hid` or `usb_midi`.
 //|
@@ -32,7 +32,7 @@
 //|
 //|     # boot.py
 //|     import usb_audio
-//|     usb_audio.enable(sample_rate=16000, channel_count=1, bits_per_sample=16)
+//|     usb_audio.enable(sample_rate=16000, bits_per_sample=16)
 //|
 //| .. code-block:: py
 //|
@@ -61,9 +61,8 @@
 //|         pass
 //|     mic.stop()
 //|
-//| The ``sample_rate`` and ``channel_count`` of the sample played must match the
-//| values passed to `enable`, and the sample must be 16-bit signed; otherwise
-//| ``play`` raises a ``ValueError``.
+//| The ``sample_rate`` and ``channel_count`` of the sample played must match the values passed to `enable`,
+//| and the sample must be 16-bit signed; otherwise ``play`` raises a ``ValueError``.
 //|
 //| This interface is experimental and may change without notice even in stable
 //| versions of CircuitPython."""
@@ -84,7 +83,6 @@
 //| def enable(
 //|     sample_rate: int = 16000,
 //|     channel_count: int = 1,
-//|     bits_per_sample: int = 16,
 //|     microphone: bool = True,
 //|     speaker: bool = False,
 //| ) -> None:
@@ -93,7 +91,7 @@
 //|     This function may only be used from ``boot.py``.
 //|
 //|     :param int sample_rate: Samples per second of the streamed audio.
-//|     :param int channel_count: Number of channels. Only mono (1) is supported initially.
+//|     :param int channel_count: Number of channels. Either mono (1) or stereo (2) is supported.
 //|     :param int bits_per_sample: Bits per signed PCM sample. Only 16 is supported initially.
 //|     :param bool microphone: Present a microphone (audio flows board -> host). Enabled by default.
 //|     :param bool speaker: Present a speaker (audio flows host -> board).
@@ -103,11 +101,10 @@
 //|
 //|
 static mp_obj_t usb_audio_enable(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    enum { ARG_sample_rate, ARG_channel_count, ARG_bits_per_sample, ARG_microphone, ARG_speaker };
+    enum { ARG_sample_rate, ARG_channel_count, ARG_microphone, ARG_speaker };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_sample_rate, MP_ARG_INT, { .u_int = 16000 } },
         { MP_QSTR_channel_count, MP_ARG_INT, { .u_int = 1 } },
-        { MP_QSTR_bits_per_sample, MP_ARG_INT, { .u_int = 16 } },
         { MP_QSTR_microphone, MP_ARG_BOOL, { .u_bool = true } },
         { MP_QSTR_speaker, MP_ARG_BOOL, { .u_bool = false } },
     };
@@ -116,7 +113,6 @@ static mp_obj_t usb_audio_enable(size_t n_args, const mp_obj_t *pos_args, mp_map
 
     mp_int_t sample_rate = mp_arg_validate_int_range(args[ARG_sample_rate].u_int, 1, USB_AUDIO_MAX_SAMPLE_RATE, MP_QSTR_sample_rate);
     mp_int_t channel_count = mp_arg_validate_int_range(args[ARG_channel_count].u_int, 1, USB_AUDIO_N_CHANNELS, MP_QSTR_channel_count);
-    mp_int_t bits_per_sample = mp_arg_validate_int(args[ARG_bits_per_sample].u_int, USB_AUDIO_BITS_PER_SAMPLE, MP_QSTR_bits_per_sample);
     bool microphone = args[ARG_microphone].u_bool;
     bool speaker = args[ARG_speaker].u_bool;
 
@@ -124,7 +120,7 @@ static mp_obj_t usb_audio_enable(size_t n_args, const mp_obj_t *pos_args, mp_map
         mp_raise_ValueError(MP_ERROR_TEXT("At least one of microphone and speaker must be enabled"));
     }
 
-    if (!shared_module_usb_audio_enable(sample_rate, channel_count, bits_per_sample, microphone, speaker)) {
+    if (!shared_module_usb_audio_enable(sample_rate, channel_count, microphone, speaker)) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Cannot change USB devices now"));
     }
 
