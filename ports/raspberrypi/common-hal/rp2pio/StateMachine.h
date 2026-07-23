@@ -105,6 +105,7 @@ typedef struct {
     PIO pio;
     const uint16_t *init;
     size_t init_len;
+    pio_pinmask_t pins_we_own; // Subset of pins that no other state machine had already claimed.
     pio_pinmask_t initial_pin_state;
     pio_pinmask_t initial_pin_direction;
     pio_pinmask_t pull_pin_up;

@@ -31,14 +31,14 @@
 // MEMS mics (SPH0645LM4H, INMP441, ICS-43434) transmit their 24 valid bits
 // left-justified inside a 32-bit slot.
 //
-// `in pins 1` runs on a cycle where side-set drives BCLK high. The slave
-// updates the data line on the BCLK falling edge, so by the rising edge it
+// `in pins 1` runs on a cycle where side-set drives BCLK high. The follower
+// device updates the data line on the BCLK falling edge, so by the rising edge it
 // has settled and is safe to sample. Sampling at BCLK low (the previous,
 // incorrect arrangement) catches the data mid-transition and the result is
 // effectively noise.
 #define PIO_CLOCKS_PER_BIT (6)
 
-// Master-mode RX, regular pin order (BCLK = WS - 1), Philips alignment.
+// Clock-source RX, regular pin order (BCLK = WS - 1), Philips alignment.
 static const uint16_t i2sin_program[] = {
     0xb842, //  0: nop                    side 3
             //     .wrap_target
@@ -57,7 +57,7 @@ static const uint16_t i2sin_program[] = {
             //     .wrap
 };
 
-// Master-mode RX, regular pin order, left-justified.
+// Clock-source RX, regular pin order, left-justified.
 static const uint16_t i2sin_program_left_justified[] = {
     0xa842, //  0: nop                    side 1
             //     .wrap_target
@@ -76,7 +76,7 @@ static const uint16_t i2sin_program_left_justified[] = {
             //     .wrap
 };
 
-// Master-mode RX, swapped pin order (BCLK = WS + 1), Philips alignment.
+// Clock-source RX, swapped pin order (BCLK = WS + 1), Philips alignment.
 static const uint16_t i2sin_program_swap[] = {
     0xb842, //  0: nop                    side 3
             //     .wrap_target
@@ -95,7 +95,7 @@ static const uint16_t i2sin_program_swap[] = {
             //     .wrap
 };
 
-// Master-mode RX, swapped pin order, left-justified.
+// Clock-source RX, swapped pin order, left-justified.
 static const uint16_t i2sin_program_left_justified_swap[] = {
     0xb042, //  0: nop                    side 2
             //     .wrap_target
@@ -189,12 +189,80 @@ static const uint16_t i2sin_program_left_justified_swap_32[] = {
             //     .wrap
 };
 
+// Clock-follower RX. BCLK and WS are inputs driven by something
+// else -- another I2S object or the codec -- so the state machine side-sets
+// nothing and waits on the two clocks instead. `wait gpio` encodes an absolute
+// pin index, so unlike the clock-source programs above this one is assembled at
+// construct time with the pin numbers patched in.
+//
+//     0: wait 0 gpio W          ; resync: find a WS rising edge, i.e. the start
+//     1: wait 1 gpio W          ;   of the RIGHT channel (matches word order)
+//        .wrap_target
+//     2: set y, 31
+//     3: wait 0 gpio B          ; data changes here
+//     4: wait 1 gpio B          ; ...and is settled here
+//     5: in pins, 1
+//     6: jmp y--, 3
+//        .wrap
+//
+// `set y, 31` + `jmp y--` runs the loop exactly 32 times, so with auto-push at
+// 32 and shift-left this pushes one 32-bit word per 32 BCLK, MSB first --
+// identical to what the clock-source programs produce, so record_to_buffer and
+// fill_buffer need no changes. One template covers every bit_depth: at 16 bits
+// a 32-BCLK frame is one push (right<<16 | left), at 24/32 a 64-BCLK frame is
+// two pushes (right then left).
+//
+// The resync's own `wait 0/1 gpio B` already lands on the first data bit, so
+// against a CircuitPython clock source this program recovers the transmitted word
+// bit-exactly with no instruction for the Philips delay bit. The
+// `left_justified` variant is that program plus one more BCLK of skew,
+// the other of the two possible alignments;
+//
+// Free-running after the initial sync: the external frame must be exactly
+// 2 x bits_per_channel BCLKs, the same assumption clock-source mode already bakes
+// in. If sync is lost it stays lost.
+#define I2SIN_FOLLOWER_MAX_PROGRAM_LEN (8)
+// The bit loop is the last 5 instructions; everything before it is one-shot sync.
+#define I2SIN_FOLLOWER_WRAP_TARGET(len) ((int)(len) - 5)
+
+static size_t build_i2sin_follower_program(uint16_t *prog, uint8_t bclk, uint8_t ws,
+    bool left_justified, bool invert_bit_clock) {
+    // Sampling on the falling edge of BCLK is the same program with the
+    // polarity of every BCLK wait flipped.
+    const uint16_t invert = invert_bit_clock ? 0x0080 : 0x0000;
+    const uint16_t wait_0_bclk = (0x2000 | bclk) ^ invert;
+    const uint16_t wait_1_bclk = (0x2080 | bclk) ^ invert;
+    size_t len = 0;
+    prog[len++] = 0x2000 | ws;  // wait 0 gpio W
+    prog[len++] = 0x2080 | ws;  // wait 1 gpio W
+    if (left_justified) {
+        prog[len++] = wait_1_bclk;  // one more BCLK of skew
+    }
+    const size_t bitloop = len + 1;
+    prog[len++] = 0xe05f;       // set y, 31
+    prog[len++] = wait_0_bclk;
+    prog[len++] = wait_1_bclk;
+    prog[len++] = 0x4001;       // in pins, 1
+    prog[len++] = 0x0080 | bitloop; // jmp y--, bitloop
+    return len;
+}
+
+// `wait gpio` indices are relative to the PIO's GPIO base, which
+// rp2pio_statemachine_construct picks the same way.
+static uint8_t i2s_wait_gpio_index(const mcu_pin_obj_t *pin, uint8_t gpio_offset) {
+    if (pin->number < gpio_offset) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Cannot use GPIO0..15 together with GPIO32..47"));
+    }
+    return pin->number - gpio_offset;
+}
+
 // Caller validates that pins are free.
 void common_hal_audioi2sin_i2sin_construct(audioi2sin_i2sin_obj_t *self,
     const mcu_pin_obj_t *bit_clock, const mcu_pin_obj_t *word_select,
     const mcu_pin_obj_t *data, const mcu_pin_obj_t *main_clock,
     uint32_t sample_rate, uint8_t bit_depth, uint8_t output_bit_depth,
-    bool mono, bool left_justified, bool samples_signed) {
+    bool mono, bool left_justified, bool samples_signed,
+    bool clock_follower, bool invert_bit_clock) {
 
     if (main_clock != NULL) {
         mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("%q"), MP_QSTR_main_clock);
@@ -212,8 +280,26 @@ void common_hal_audioi2sin_i2sin_construct(audioi2sin_i2sin_obj_t *self,
     const mcu_pin_obj_t *sideset_pin = NULL;
     const uint16_t *program = NULL;
     size_t program_len = 0;
+    uint16_t follower_program[I2SIN_FOLLOWER_MAX_PROGRAM_LEN];
+    pio_pinmask_t wait_gpio_mask = PIO_PINMASK_NONE;
 
-    if (bit_clock->number == word_select->number - 1) {
+    if (clock_follower) {
+        // As a clock follower the clocks are `wait gpio` targets, so they
+        // need not be sequential GPIOs.
+        uint8_t gpio_offset = 0;
+        #if NUM_BANK0_GPIOS > 32
+        if (bit_clock->number >= 32 || word_select->number >= 32 || data->number >= 32) {
+            gpio_offset = 16;
+        }
+        #endif
+        program_len = build_i2sin_follower_program(follower_program,
+            i2s_wait_gpio_index(bit_clock, gpio_offset),
+            i2s_wait_gpio_index(word_select, gpio_offset),
+            left_justified, invert_bit_clock);
+        program = follower_program;
+        wait_gpio_mask = PIO_PINMASK_OR(PIO_PINMASK_FROM_PIN(bit_clock->number),
+            PIO_PINMASK_FROM_PIN(word_select->number));
+    } else if (bit_clock->number == word_select->number - 1) {
         sideset_pin = bit_clock;
         if (left_justified) {
             program = wide ? i2sin_program_left_justified_32 : i2sin_program_left_justified;
@@ -242,34 +328,45 @@ void common_hal_audioi2sin_i2sin_construct(audioi2sin_i2sin_obj_t *self,
     common_hal_rp2pio_statemachine_construct(
         &self->state_machine,
         program, program_len,
-        sample_rate * pio_clocks_per_frame,
+        // As a clock follower the SM is driven by the waits, not the clock
+        // divider, so run it at sysclk.
+        clock_follower ? 0 : sample_rate *pio_clocks_per_frame,
         NULL, 0, // init
         NULL, 0, // may_exec
         NULL, 0, PIO_PINMASK32_NONE, PIO_PINMASK32_NONE, // out pin
         data, 1, // in pins
         PIO_PINMASK32_NONE, PIO_PINMASK32_NONE, // in pulls
         NULL, 0, PIO_PINMASK32_NONE, PIO_PINMASK32_FROM_VALUE(0x1f), // set pins
-        sideset_pin, 2, false, PIO_PINMASK32_NONE, PIO_PINMASK32_FROM_VALUE(0x1f), // sideset pins
+        sideset_pin, sideset_pin == NULL ? 0 : 2, false, PIO_PINMASK32_NONE, PIO_PINMASK32_FROM_VALUE(0x1f), // sideset pins
         false, // No sideset enable
         NULL, PULL_NONE, // jump pin
-        PIO_PINMASK_NONE, // wait gpio pins
+        wait_gpio_mask, // wait gpio pins
+        // The clocks are shared through wait_gpio_mask, which _check_gpio_mask_free
+        // already allows to be shared; the data pin stays exclusively ours.
         true, // exclusive pin use
         false, 32, false, // out settings (unused)
         false, // Wait for txstall
         true, 32, false, // in settings: auto-push at 32 bits, shift left (MSB first)
         false, // Not user-interruptible.
-        1, -1, // wrap settings
+        clock_follower ? I2SIN_FOLLOWER_WRAP_TARGET(program_len) : 1,
+        clock_follower ? (int)program_len - 1 : -1, // wrap settings
         PIO_ANY_OFFSET,
         PIO_FIFO_TYPE_DEFAULT,
         PIO_MOV_STATUS_DEFAULT,
         PIO_MOV_N_DEFAULT);
 
-    uint32_t actual_frequency = common_hal_rp2pio_statemachine_get_frequency(&self->state_machine);
-    self->sample_rate = actual_frequency / pio_clocks_per_frame;
+    // As a clock follower the SM runs at sysclk and the real rate is
+    // whatever the outside world drives WS at, so `sample_rate` is a
+    // declaration rather than a measurement. A mismatch shows up as the same
+    // slow drift the underrun-pad / overflow-drop paths in fill_buffer absorb.
+    self->sample_rate = clock_follower
+        ? sample_rate
+        : common_hal_rp2pio_statemachine_get_frequency(&self->state_machine) / pio_clocks_per_frame;
     self->bit_depth = bit_depth;
     self->mono = mono;
     self->samples_signed = samples_signed;
     self->left_justified = left_justified;
+    self->clock_follower = clock_follower;
     self->settled = false;
     self->ring = NULL;
     self->ring_size = 0;
@@ -367,6 +464,15 @@ uint32_t common_hal_audioi2sin_i2sin_get_sample_rate(audioi2sin_i2sin_obj_t *sel
 
 bool common_hal_audioi2sin_i2sin_get_samples_signed(audioi2sin_i2sin_obj_t *self) {
     return self->samples_signed;
+}
+
+// The flag latches when record_to_buffer or fill_buffer finds the DMA more than
+// a half-buffer ahead of the read cursor and has to skip forward. Reading clears
+// it so a streaming consumer can attribute each report to a known interval.
+bool common_hal_audioi2sin_i2sin_get_overflow(audioi2sin_i2sin_obj_t *self) {
+    bool overflow = self->overflow;
+    self->overflow = false;
+    return overflow;
 }
 
 // In 16-bit mode, each PIO frame produces a single 32-bit FIFO word with bits
@@ -709,6 +815,17 @@ void common_hal_audioi2sin_i2sin_reset_buffer(audioi2sin_i2sin_obj_t *self,
         }
     }
     self->output_index = 0;
+    // A clock-follower SM free-runs a 32-BCLK counter from the WS edge it
+    // synced to at construct time, so anything that disturbs the frame leaves
+    // it locked to the wrong half-frame or the wrong bit for good. Re-exec the
+    // program here so playback always begins from a fresh WS sync. A clock source
+    // generates its own clocks and has nothing to sync to, so leave it alone.
+    if (self->clock_follower) {
+        common_hal_rp2pio_statemachine_restart(&self->state_machine);
+        // restart() clears the shift counters but not the RX FIFO, and the
+        // words still sitting in it were captured with the old alignment.
+        pio_sm_clear_fifos(self->state_machine.pio, self->state_machine.state_machine);
+    }
     // Resync to live audio: snap the read cursor just behind the DMA write head
     // (frame-aligned) and re-settle so playback begins on fresh samples.
     size_t write_pos = i2sin_write_pos(self);

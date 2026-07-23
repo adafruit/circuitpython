@@ -18,6 +18,7 @@ typedef struct {
     rp2pio_statemachine_obj_t state_machine;
     audio_dma_t dma;
     bool left_justified;
+    bool clock_follower;
     bool playing;
 } audiobusio_i2sout_obj_t;
 

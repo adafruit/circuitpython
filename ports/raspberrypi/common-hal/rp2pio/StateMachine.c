@@ -232,6 +232,24 @@ static pio_pinmask_t _check_pins_free(const mcu_pin_obj_t *first_pin, uint8_t pi
     return pins_we_use;
 }
 
+// Same as _check_pins_free but over an explicit GPIO mask, for pins a program
+// only waits on. Sharing with another state machine is always allowed for
+// these; the caller isn't driving them.
+static void _check_gpio_mask_free(pio_pinmask_t mask) {
+    for (size_t pin_number = 0; pin_number < NUM_BANK0_GPIOS; pin_number++) {
+        if (!PIO_PINMASK_IS_SET(mask, pin_number)) {
+            continue;
+        }
+        const mcu_pin_obj_t *pin = mcu_get_pin_by_number(pin_number);
+        if (!pin) {
+            mp_raise_ValueError_varg(MP_ERROR_TEXT("%q in use"), MP_QSTR_Pin);
+        }
+        if (_pin_reference_count[pin_number] == 0) {
+            assert_pin_free(pin);
+        }
+    }
+}
+
 static enum pio_fifo_join compute_fifo_type(int fifo_type_in, bool rx_fifo, bool tx_fifo) {
     if (fifo_type_in != PIO_FIFO_JOIN_AUTO) {
         return fifo_type_in;
@@ -273,18 +291,60 @@ static bool is_gpio_compatible(PIO pio, uint32_t used_gpio_ranges) {
     #endif
 }
 
-static bool use_existing_program(PIO *pio_out, int *sm_out, int *offset_inout, uint32_t program_id, size_t program_len, uint gpio_base, uint gpio_count) {
-    uint32_t required_gpio_ranges;
-    if (gpio_count) {
-        required_gpio_ranges = (1u << (gpio_base >> 4)) |
-            (1u << ((gpio_base + gpio_count - 1) >> 4));
-    } else {
-        required_gpio_ranges = 0;
+static uint32_t required_gpio_ranges(uint gpio_base, uint gpio_count) {
+    if (!gpio_count) {
+        return 0;
     }
+    return (1u << (gpio_base >> 4)) |
+           (1u << ((gpio_base + gpio_count - 1) >> 4));
+}
+
+// Look for a PIO that already uses some of the pins we need. The cross-PIO
+// overlap check in rp2pio_statemachine_construct fails a construct outright
+// when its pins live on another PIO, so a generic claim can hand us a PIO that
+// can't work while a usable one sits idle.
+static bool use_pio_owning_pins(PIO *pio_out, int *sm_out, int *offset_inout, pio_program_t *program_struct, pio_pinmask_t pins_we_use, uint gpio_base, uint gpio_count) {
+    if (PIO_PINMASK_VALUE(pins_we_use) == 0) {
+        return false;
+    }
+    uint32_t ranges = required_gpio_ranges(gpio_base, gpio_count);
+    for (size_t i = 0; i < NUM_PIOS; i++) {
+        PIO pio = pio_get_instance(i);
+        if (PIO_PINMASK_VALUE(PIO_PINMASK_AND(_current_pins[i], pins_we_use)) == 0) {
+            continue;
+        }
+        if (!is_gpio_compatible(pio, ranges) || !pio_can_add_program(pio, program_struct)) {
+            continue;
+        }
+        int sm = pio_claim_unused_sm(pio, false);
+        if (sm < 0) {
+            continue;
+        }
+        *pio_out = pio;
+        *sm_out = sm;
+        *offset_inout = pio_add_program(pio, program_struct);
+        return true;
+    }
+    return false;
+}
+
+// FNV-1a over the instruction words. Never returns 0, which _current_program_id
+// uses to mean "no program".
+static uint32_t program_hash(const uint16_t *program, size_t program_len) {
+    uint32_t hash = 0x811c9dc5;
+    for (size_t i = 0; i < program_len; i++) {
+        hash = (hash ^ (program[i] & 0xff)) * 0x01000193;
+        hash = (hash ^ (program[i] >> 8)) * 0x01000193;
+    }
+    return hash == 0 ? 1 : hash;
+}
+
+static bool use_existing_program(PIO *pio_out, int *sm_out, int *offset_inout, uint32_t program_id, size_t program_len, uint gpio_base, uint gpio_count) {
+    uint32_t ranges = required_gpio_ranges(gpio_base, gpio_count);
 
     for (size_t i = 0; i < NUM_PIOS; i++) {
         PIO pio = pio_get_instance(i);
-        if (!is_gpio_compatible(pio, required_gpio_ranges)) {
+        if (!is_gpio_compatible(pio, ranges)) {
             continue;
         }
         for (size_t j = 0; j < NUM_PIO_STATE_MACHINES; j++) {
@@ -326,8 +386,14 @@ bool rp2pio_statemachine_construct(rp2pio_statemachine_obj_t *self,
     int fifo_type,
     int mov_status_type, int mov_status_n
     ) {
-    // Create a program id that isn't the pointer so we can store it without storing the original object.
-    uint32_t program_id = ~((uint32_t)program);
+    // Create a program id we can store without storing the original object.
+    // This has to hash the instructions rather than the pointer: programs that
+    // encode absolute pin numbers (`wait gpio`) are assembled into a caller's
+    // stack buffer, so two different programs can share an address, and
+    // use_existing_program() would then hand the second one the first one's
+    // already-loaded instructions. Hashing the contents also lets identical
+    // programs from different arrays share a single copy in instruction memory.
+    uint32_t program_id = program_hash(program, program_len);
 
     uint gpio_base = 0, gpio_count = 0;
     #if NUM_BANK0_GPIOS > 32
@@ -361,7 +427,11 @@ bool rp2pio_statemachine_construct(rp2pio_statemachine_obj_t *self,
     int state_machine;
     bool added = false;
 
-    if (!use_existing_program(&pio, &state_machine, &offset, program_id, program_len, gpio_base, gpio_count)) {
+    if (use_existing_program(&pio, &state_machine, &offset, program_id, program_len, gpio_base, gpio_count)) {
+        // Program is already loaded and shareable; nothing to add.
+    } else if (use_pio_owning_pins(&pio, &state_machine, &offset, &program_struct, pins_we_use, gpio_base, gpio_count)) {
+        added = true;
+    } else {
         uint program_offset;
         bool r = pio_claim_free_sm_and_add_program_for_gpio_range(&program_struct, &pio, (uint *)&state_machine, &program_offset, gpio_base, gpio_count, true);
         if (!r) {
@@ -398,9 +468,20 @@ bool rp2pio_statemachine_construct(rp2pio_statemachine_obj_t *self,
     _current_sm_pins[pio_index][state_machine] = pins_we_use;
     PIO_PINMASK_MERGE(_current_pins[pio_index], pins_we_use);
 
-    pio_sm_set_pins_with_mask64(self->pio, state_machine, PIO_PINMASK_VALUE(initial_pin_state), PIO_PINMASK_VALUE(pins_we_use));
-    pio_sm_set_pindirs_with_mask64(self->pio, state_machine, PIO_PINMASK_VALUE(initial_pin_direction), PIO_PINMASK_VALUE(pins_we_use));
-    rp2pio_statemachine_set_pull(pull_pin_up, pull_pin_down, pins_we_use);
+    // Only configure the pins no other state machine has claimed yet. A shared
+    // pin that this state machine doesn't drive (a clock it only waits on, say)
+    // would otherwise be forced back to input, clobbering its owner's setup.
+    pio_pinmask_t pins_we_own = PIO_PINMASK_NONE;
+    for (size_t pin_number = 0; pin_number < NUM_BANK0_GPIOS; pin_number++) {
+        if (PIO_PINMASK_IS_SET(pins_we_use, pin_number) && _pin_reference_count[pin_number] == 0) {
+            PIO_PINMASK_SET(pins_we_own, pin_number);
+        }
+    }
+    self->pins_we_own = pins_we_own;
+
+    pio_sm_set_pins_with_mask64(self->pio, state_machine, PIO_PINMASK_VALUE(initial_pin_state), PIO_PINMASK_VALUE(pins_we_own));
+    pio_sm_set_pindirs_with_mask64(self->pio, state_machine, PIO_PINMASK_VALUE(initial_pin_direction), PIO_PINMASK_VALUE(pins_we_own));
+    rp2pio_statemachine_set_pull(pull_pin_up, pull_pin_down, pins_we_own);
     self->initial_pin_state = initial_pin_state;
     self->initial_pin_direction = initial_pin_direction;
     self->pull_pin_up = pull_pin_up;
@@ -683,6 +764,7 @@ void common_hal_rp2pio_statemachine_construct(rp2pio_statemachine_obj_t *self,
     common_hal_rp2pio_statemachine_mark_deinit(self);
 
     // First, check that all pins are free OR already in use by any PIO if exclusive_pin_use is false.
+    _check_gpio_mask_free(wait_gpio_mask);
     pio_pinmask_t pins_we_use = wait_gpio_mask;
     PIO_PINMASK_MERGE(pins_we_use, _check_pins_free(first_out_pin, out_pin_count, exclusive_pin_use));
     PIO_PINMASK_MERGE(pins_we_use, _check_pins_free(first_in_pin, in_pin_count, exclusive_pin_use));
@@ -809,11 +891,10 @@ void common_hal_rp2pio_statemachine_restart(rp2pio_statemachine_obj_t *self) {
     // the desired offset, so we can just use self->offset.
     pio_sm_exec(self->pio, self->state_machine, self->offset);
     pio_sm_restart(self->pio, self->state_machine);
-    uint8_t pio_index = pio_get_index(self->pio);
-    pio_pinmask_t pins_we_use = _current_sm_pins[pio_index][self->state_machine];
-    pio_sm_set_pins_with_mask64(self->pio, self->state_machine, PIO_PINMASK_VALUE(self->initial_pin_state), PIO_PINMASK_VALUE(pins_we_use));
-    pio_sm_set_pindirs_with_mask64(self->pio, self->state_machine, PIO_PINMASK_VALUE(self->initial_pin_direction), PIO_PINMASK_VALUE(pins_we_use));
-    rp2pio_statemachine_set_pull(self->pull_pin_up, self->pull_pin_down, pins_we_use);
+    pio_pinmask_t pins_we_own = self->pins_we_own;
+    pio_sm_set_pins_with_mask64(self->pio, self->state_machine, PIO_PINMASK_VALUE(self->initial_pin_state), PIO_PINMASK_VALUE(pins_we_own));
+    pio_sm_set_pindirs_with_mask64(self->pio, self->state_machine, PIO_PINMASK_VALUE(self->initial_pin_direction), PIO_PINMASK_VALUE(pins_we_own));
+    rp2pio_statemachine_set_pull(self->pull_pin_up, self->pull_pin_down, pins_we_own);
     common_hal_rp2pio_statemachine_run(self, self->init, self->init_len);
     pio_sm_set_enabled(self->pio, self->state_machine, true);
 }

@@ -24,7 +24,11 @@ void common_hal_audioi2sin_i2sin_construct(audioi2sin_i2sin_obj_t *self,
     const mcu_pin_obj_t *bit_clock, const mcu_pin_obj_t *word_select,
     const mcu_pin_obj_t *data, const mcu_pin_obj_t *main_clock,
     uint32_t sample_rate, uint8_t bit_depth, uint8_t output_bit_depth,
-    bool mono, bool left_justified, bool samples_signed) {
+    bool mono, bool left_justified, bool samples_signed,
+    bool clock_follower, bool invert_bit_clock) {
+    if (clock_follower) {
+        mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("%q"), MP_QSTR_clock_follower);
+    }
 
     i2s_data_bit_width_t bit_width = (i2s_data_bit_width_t)bit_depth;
 
@@ -318,6 +322,14 @@ uint32_t common_hal_audioi2sin_i2sin_get_sample_rate(audioi2sin_i2sin_obj_t *sel
 
 bool common_hal_audioi2sin_i2sin_get_samples_signed(audioi2sin_i2sin_obj_t *self) {
     return self->samples_signed;
+}
+
+// Always false here: this port hands the capture ring to the IDF driver, which
+// drops frames internally without telling us. Detecting it would require
+// registering an on_recv_q_ovf callback on the channel.
+bool common_hal_audioi2sin_i2sin_get_overflow(audioi2sin_i2sin_obj_t *self) {
+    (void)self;
+    return false;
 }
 
 // Write `count` silence samples at output depth starting at sample index `idx`.

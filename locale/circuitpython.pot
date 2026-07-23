@@ -1845,6 +1845,12 @@ msgstr ""
 
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 #: ports/raspberrypi/common-hal/audioi2sin/I2SIn.c
+#: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
+msgid "Cannot use GPIO0..15 together with GPIO32..47"
+msgstr ""
+
+#: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
+#: ports/raspberrypi/common-hal/audioi2sin/I2SIn.c
 msgid "Bit clock and word select must be sequential GPIO pins"
 msgstr ""
 
@@ -1996,10 +2002,6 @@ msgstr ""
 
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 msgid "Missing first_in_pin. %q[%u] reads pin(s)"
-msgstr ""
-
-#: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
-msgid "Cannot use GPIO0..15 together with GPIO32..47"
 msgstr ""
 
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
@@ -3739,6 +3741,10 @@ msgstr ""
 
 #: shared-bindings/audiofreeverb/Freeverb.c
 msgid "bits_per_sample must be 16"
+msgstr ""
+
+#: shared-bindings/audioi2sin/I2SIn.c
+msgid "%q requires %q"
 msgstr ""
 
 #: shared-bindings/audioi2sin/I2SIn.c

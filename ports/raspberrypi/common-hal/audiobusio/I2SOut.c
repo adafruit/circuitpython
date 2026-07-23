@@ -167,21 +167,100 @@ bitloop0:
     0x6201, //  9: out    pins, 1         side 0 [2]
 };
 
+// Clock-follower TX. BCLK and WS are inputs driven by something
+// else, so the state machine side-sets nothing and waits on the two clocks
+// instead. `wait gpio` encodes an absolute pin index, so unlike the clock-source
+// programs above this one cannot be a static table: it is assembled at
+// construct time with the pin numbers patched in.
+//
+//     0: wait 0 gpio W
+//     1: wait 1 gpio W          ; right channel starts (WS changes on a BCLK fall)
+//        .wrap_target
+//     2: pull noblock           ; refills OSR from X on underflow, as the clock-source program does
+//     3: mov x, osr
+//     4: set y, 31
+//     5: wait 1 gpio B
+//     6: wait 0 gpio B          ; drive on the falling edge; receiver latches on rising
+//     7: out pins, 1
+//     8: jmp y--, 5
+//        .wrap
+//
+// Left-justified moves the `out` ahead of the two waits, which drives the MSB
+// on the same falling edge WS changed on. The first loop iteration's `wait 1`
+// otherwise lands on the Philips delay bit, so no pre-roll is needed.
+//
+// One 32-bit FIFO word covers a whole 16-bit stereo frame; at 24/32 bits the
+// frame is two words (right then left). Same layout the clock-source programs use.
+#define I2S_FOLLOWER_PROGRAM_LEN (9)
+#define I2S_FOLLOWER_WRAP_TARGET (2)
+#define I2S_FOLLOWER_WRAP (8)
+
+static void build_i2sout_follower_program(uint16_t *prog, uint8_t bclk, uint8_t ws, bool left_justified) {
+    const uint16_t wait_0_bclk = 0x2000 | bclk;
+    const uint16_t wait_1_bclk = 0x2080 | bclk;
+    prog[0] = 0x2000 | ws;  // wait 0 gpio W
+    prog[1] = 0x2080 | ws;  // wait 1 gpio W
+    prog[2] = 0x8080;       // pull noblock
+    prog[3] = 0xa027;       // mov x, osr
+    prog[4] = 0xe05f;       // set y, 31
+    if (left_justified) {
+        prog[5] = 0x6001;   // out pins, 1
+        prog[6] = wait_1_bclk;
+        prog[7] = wait_0_bclk;
+    } else {
+        prog[5] = wait_1_bclk;
+        prog[6] = wait_0_bclk;
+        prog[7] = 0x6001;   // out pins, 1
+    }
+    prog[8] = 0x0080 | 5;   // jmp y--, 5
+}
+
+// `wait gpio` indices are relative to the PIO's GPIO base, which
+// rp2pio_statemachine_construct picks the same way.
+static uint8_t i2s_wait_gpio_index(const mcu_pin_obj_t *pin, uint8_t gpio_offset) {
+    if (pin->number < gpio_offset) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Cannot use GPIO0..15 together with GPIO32..47"));
+    }
+    return pin->number - gpio_offset;
+}
+
 void i2sout_reset(void) {
 }
 
 // Caller validates that pins are free.
 void common_hal_audiobusio_i2sout_construct(audiobusio_i2sout_obj_t *self,
     const mcu_pin_obj_t *bit_clock, const mcu_pin_obj_t *word_select,
-    const mcu_pin_obj_t *data, const mcu_pin_obj_t *main_clock, bool left_justified) {
+    const mcu_pin_obj_t *data, const mcu_pin_obj_t *main_clock, bool left_justified,
+    bool clock_follower) {
     if (main_clock != NULL) {
         mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("%q"), MP_QSTR_main_clock);
     }
     const mcu_pin_obj_t *sideset_pin = NULL;
     const uint16_t *program = NULL;
     size_t program_len = 0;
+    uint16_t follower_program[I2S_FOLLOWER_PROGRAM_LEN];
+    pio_pinmask_t wait_gpio_mask = PIO_PINMASK_NONE;
 
-    if (bit_clock->number == word_select->number - 1) {
+    self->clock_follower = clock_follower;
+
+    if (clock_follower) {
+        // As a clock follower the clocks are `wait gpio` targets, so they
+        // need not be sequential GPIOs.
+        uint8_t gpio_offset = 0;
+        #if NUM_BANK0_GPIOS > 32
+        if (bit_clock->number >= 32 || word_select->number >= 32 || data->number >= 32) {
+            gpio_offset = 16;
+        }
+        #endif
+        build_i2sout_follower_program(follower_program,
+            i2s_wait_gpio_index(bit_clock, gpio_offset),
+            i2s_wait_gpio_index(word_select, gpio_offset),
+            left_justified);
+        program = follower_program;
+        program_len = I2S_FOLLOWER_PROGRAM_LEN;
+        wait_gpio_mask = PIO_PINMASK_OR(PIO_PINMASK_FROM_PIN(bit_clock->number),
+            PIO_PINMASK_FROM_PIN(word_select->number));
+    } else if (bit_clock->number == word_select->number - 1) {
         sideset_pin = bit_clock;
 
         if (left_justified) {
@@ -211,23 +290,28 @@ void common_hal_audiobusio_i2sout_construct(audiobusio_i2sout_obj_t *self,
     common_hal_rp2pio_statemachine_construct(
         &self->state_machine,
         program, program_len,
-        44100 * 32 * 6, // Clock at 44.1 khz to warm the DAC up.
+        // Clock at 44.1 khz to warm the DAC up. As a clock follower the SM
+        // is driven by the waits, not the clock divider, so run it at sysclk.
+        clock_follower ? 0 : 44100 * 32 * 6,
         NULL, 0, // init
         NULL, 0, // may_exec
         data, 1, PIO_PINMASK32_NONE, PIO_PINMASK32_ALL, // out pin
         NULL, 0, // in pins
         PIO_PINMASK32_NONE, PIO_PINMASK32_NONE, // in pulls
         NULL, 0, PIO_PINMASK32_NONE, PIO_PINMASK32_FROM_VALUE(0x1f), // set pins
-        sideset_pin, 2, false, PIO_PINMASK32_NONE, PIO_PINMASK32_FROM_VALUE(0x1f), // sideset pins
+        sideset_pin, sideset_pin == NULL ? 0 : 2, false, PIO_PINMASK32_NONE, PIO_PINMASK32_FROM_VALUE(0x1f), // sideset pins
         false, // No sideset enable
         NULL, PULL_NONE, // jump pin
-        PIO_PINMASK_NONE, // wait gpio pins
+        wait_gpio_mask, // wait gpio pins
+        // The clocks are shared through wait_gpio_mask, which _check_gpio_mask_free
+        // already allows to be shared; the data pin stays exclusively ours.
         true, // exclusive pin use
         false, 32, false, // shift out left to start with MSB
         false, // Wait for txstall
         false, 32, false, // in settings
         false, // Not user-interruptible.
-        0, -1, // wrap settings
+        clock_follower ? I2S_FOLLOWER_WRAP_TARGET : 0,
+        clock_follower ? I2S_FOLLOWER_WRAP : -1, // wrap settings
         PIO_ANY_OFFSET,
         PIO_FIFO_TYPE_DEFAULT,
         PIO_MOV_STATUS_DEFAULT,
@@ -278,7 +362,13 @@ void common_hal_audiobusio_i2sout_play(audiobusio_i2sout_obj_t *self,
         mp_raise_ValueError(MP_ERROR_TEXT("Too many channels in sample."));
     }
 
-    common_hal_rp2pio_statemachine_set_frequency(&self->state_machine, clocks_per_bit * frequency);
+    // An external clock can't be retimed: the sample rate has to match whatever
+    // the outside world is running WS at, or the pitch is wrong. The restart
+    // still matters -- it re-execs the program at its offset, so every play()
+    // re-syncs to WS.
+    if (!self->clock_follower) {
+        common_hal_rp2pio_statemachine_set_frequency(&self->state_machine, clocks_per_bit * frequency);
+    }
     common_hal_rp2pio_statemachine_restart(&self->state_machine);
 
     // On the RP2040, output registers are always written with a 32-bit write.

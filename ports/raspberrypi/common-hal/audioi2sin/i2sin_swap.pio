@@ -7,7 +7,7 @@
 .program i2sin_swap
 .side_set 2
 
-; Master-mode I2S RX with the LRCLK and BCLK pin order swapped (BCLK is the
+; Clock-source I2S RX with the LRCLK and BCLK pin order swapped (BCLK is the
 ; higher-numbered GPIO).
                     ;        /--- BCLK
                     ;        |/-- LRCLK
