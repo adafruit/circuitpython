@@ -50,12 +50,12 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_BUTTON_BOTTOM), MP_ROM_PTR(&pin_GPIO1) },
 
     // Handle: a two-stage switch. HANDLE_IN reads False when the handle is
-    // fully seated; HANDLE_HELD reads True as soon as the handle is moved.
+    // fully seated; HANDLE_OUT reads True as soon as the handle is moved.
     { MP_ROM_QSTR(MP_QSTR_GP19), MP_ROM_PTR(&pin_GPIO19) },
     { MP_ROM_QSTR(MP_QSTR_HANDLE_IN), MP_ROM_PTR(&pin_GPIO19) },
 
     { MP_ROM_QSTR(MP_QSTR_GP20), MP_ROM_PTR(&pin_GPIO20) },
-    { MP_ROM_QSTR(MP_QSTR_HANDLE_HELD), MP_ROM_PTR(&pin_GPIO20) },
+    { MP_ROM_QSTR(MP_QSTR_HANDLE_OUT), MP_ROM_PTR(&pin_GPIO20) },
 
     // Power hold latch. Held high by the board so the unit stays powered once
     // the handle is released. Driving it low powers the unit off immediately.
