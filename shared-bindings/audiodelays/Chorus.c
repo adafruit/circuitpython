@@ -58,7 +58,7 @@
 //|
 //|           audio = audiobusio.I2SOut(bit_clock=board.GP20, word_select=board.GP21, data=board.GP22)
 //|           synth = synthio.Synthesizer(channel_count=1, sample_rate=44100)
-//|           chorus = audiodelays.Chorus(max_delay_ms=50, delay_ms=5, buffer_size=1024, channel_count=1, sample_rate=44100)
+//|           chorus = audiodelays.Chorus(max_delay_ms=50, voices=4, delay_ms=5, buffer_size=1024, channel_count=1, sample_rate=44100)
 //|           chorus.play(synth)
 //|           audio.play(chorus)
 //|

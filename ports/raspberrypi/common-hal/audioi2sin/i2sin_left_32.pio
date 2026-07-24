@@ -7,7 +7,7 @@
 .program i2sin_left_32
 .side_set 2
 
-; Master-mode I2S RX, 32 bits per channel, left-justified.
+; Clock-source I2S RX, 32 bits per channel, left-justified.
                     ;        /--- LRCLK
                     ;        |/-- BCLK
                     ;        ||

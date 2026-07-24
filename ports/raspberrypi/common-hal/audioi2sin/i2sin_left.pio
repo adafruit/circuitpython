@@ -7,7 +7,7 @@
 .program i2sin_left
 .side_set 2
 
-; Master-mode I2S RX, left-justified. Mirrors the timing of i2s_left.pio.
+; Clock-source I2S RX, left-justified. Mirrors the timing of i2s_left.pio.
                     ;        /--- LRCLK
                     ;        |/-- BCLK
                     ;        ||

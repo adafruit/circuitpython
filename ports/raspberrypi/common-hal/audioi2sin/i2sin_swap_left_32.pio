@@ -7,7 +7,7 @@
 .program i2sin_swap_left_32
 .side_set 2
 
-; Master-mode I2S RX, 32 bits per channel, left-justified, with the LRCLK and
+; Clock-source I2S RX, 32 bits per channel, left-justified, with the LRCLK and
 ; BCLK pin order swapped (BCLK is the higher-numbered GPIO).
                     ;        /--- BCLK
                     ;        |/-- LRCLK

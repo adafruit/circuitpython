@@ -7,11 +7,11 @@
 .program i2sin
 .side_set 2
 
-; Master-mode I2S RX. Generates BCLK and LRCLK via side-set and samples the
-; data pin. The slave updates `data` on BCLK falling edge, so the master
-; samples on the rising edge: every `in pins 1` runs on a side-set value
+; Clock-source I2S RX. Generates BCLK and LRCLK via side-set and samples the
+; data pin. The follower device updates `data` on BCLK falling edge, so this
+; program samples on the rising edge: every `in pins 1` runs on a side-set value
 ; with BCLK=1, and the loop/transition instructions hold BCLK=0 so the
-; slave has time to settle the next bit.
+; follower has time to settle the next bit.
                     ;        /--- LRCLK
                     ;        |/-- BCLK
                     ;        ||
