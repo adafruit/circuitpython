@@ -8,6 +8,7 @@
 
 #include "py/obj.h"
 #include "py/runtime.h"
+#include "shared-bindings/audiocore/__init__.h"
 #include "shared-bindings/audiocore/RawSample.h"
 #include "shared-bindings/audiocore/WaveFile.h"
 #include "shared-module/audiocore/RawSample.h"
@@ -20,8 +21,17 @@
 #include "shared-bindings/audiomixer/Mixer.h"
 #include "shared-module/audiomixer/Mixer.h"
 
+// Need to confirm that a sample is not deinited before using it, otherwise we
+// we read and write through NULL points and fault
+static bool audiosample_dispatch_ok(mp_obj_t sample_obj) {
+    return !audiosample_deinited((const audiosample_base_t *)MP_OBJ_TO_PTR(sample_obj));
+}
+
 void audiosample_reset_buffer(mp_obj_t sample_obj, bool single_channel_output, uint8_t audio_channel) {
     const audiosample_p_t *proto = mp_proto_get_or_throw(MP_QSTR_protocol_audiosample, sample_obj);
+    if (!audiosample_dispatch_ok(sample_obj)) {
+        return;
+    }
     proto->reset_buffer(MP_OBJ_TO_PTR(sample_obj), single_channel_output, audio_channel);
 }
 
@@ -30,6 +40,11 @@ audioio_get_buffer_result_t audiosample_get_buffer(mp_obj_t sample_obj,
     uint8_t channel,
     uint8_t **buffer, uint32_t *buffer_length) {
     const audiosample_p_t *proto = mp_proto_get_or_throw(MP_QSTR_protocol_audiosample, sample_obj);
+    if (!audiosample_dispatch_ok(sample_obj)) {
+        *buffer = NULL;
+        *buffer_length = 0;
+        return GET_BUFFER_ERROR;
+    }
     return proto->get_buffer(MP_OBJ_TO_PTR(sample_obj), single_channel_output, channel, buffer, buffer_length);
 }
 
@@ -202,6 +217,10 @@ void audiosample_convert_s16s_u8s(uint8_t *buffer_out, const int16_t *buffer_in,
 
 void audiosample_must_match(audiosample_base_t *self, mp_obj_t other_in, bool allow_mono_to_stereo) {
     const audiosample_base_t *other = audiosample_check(other_in);
+    // Attaching a sample that has already been deinited would leave the caller
+    // playing something that can never produce audio.
+    audiosample_check_for_deinit(other);
+
     #if !CIRCUITPY_AUDIOSPEED
     if (other->sample_rate != self->sample_rate) {
     #else

@@ -192,6 +192,14 @@ static void mix_down_one_voice(audiomixer_mixer_obj_t *self,
             if (voice->sample) {
                 // Load another buffer
                 audioio_get_buffer_result_t result = audiosample_get_buffer(voice->sample, false, 0, (uint8_t **)&voice->remaining_buffer, &voice->buffer_length);
+                if (result == GET_BUFFER_ERROR) {
+                    // The sample cannot be read from any more, it was
+                    // deinited while this voice was playing it. Stop the voice.
+                    voice->sample = NULL;
+                    voice->buffer_length = 0;
+                    voice->more_data = false;
+                    break;
+                }
                 // Track length in terms of words.
                 voice->buffer_length /= sizeof(uint32_t);
                 voice->more_data = result == GET_BUFFER_MORE_DATA;
