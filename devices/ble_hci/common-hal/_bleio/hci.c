@@ -489,7 +489,9 @@ hci_result_t hci_send_acl_pkt(uint16_t handle, uint8_t cid, uint16_t data_len, u
     acl_data_t *acl_data = (acl_data_t *)acl_pkt->data;
     acl_pkt->pkt_type = H4_ACL;
     acl_pkt->handle = handle;
-    acl_pkt->pb = ACL_DATA_PB_FIRST_FLUSH;
+    // On an LE link the first fragment of an L2CAP PDU is
+    // non-automatically-flushable. ACL_DATA_PB_FIRST_FLUSH is the BR/EDR value.
+    acl_pkt->pb = ACL_DATA_PB_FIRST_NON_FLUSH;
     acl_pkt->bc = 0;
     acl_pkt->data_len = (uint16_t)(sizeof(acl_data_t) + data_len);
     acl_data->acl_data_len = data_len;
