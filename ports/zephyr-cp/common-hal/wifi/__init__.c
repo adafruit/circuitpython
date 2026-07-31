@@ -74,12 +74,24 @@ static void _event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_eve
                 k_poll_signal_raise(&self->current_scan->channel_done, 0);
             }
             break;
-        case NET_EVENT_WIFI_CONNECT_RESULT:
-            LOG_DBG("NET_EVENT_WIFI_CONNECT_RESULT");
+        case NET_EVENT_WIFI_CONNECT_RESULT: {
+            const struct wifi_status *status = cb->info;
+            self->last_connect_status = status != NULL ? status->status : -1;
+            self->connected = self->last_connect_status == WIFI_STATUS_CONN_SUCCESS;
+            LOG_DBG("NET_EVENT_WIFI_CONNECT_RESULT status %d", self->last_connect_status);
+            k_sem_give(&self->connect_sem);
             break;
-        case NET_EVENT_WIFI_DISCONNECT_RESULT:
-            LOG_DBG("NET_EVENT_WIFI_DISCONNECT_RESULT");
+        }
+        case NET_EVENT_WIFI_DISCONNECT_RESULT: {
+            const struct wifi_status *status = cb->info;
+            self->last_disconnect_reason = status != NULL ? (uint8_t)status->status : 0;
+            self->connected = false;
+            LOG_DBG("NET_EVENT_WIFI_DISCONNECT_RESULT reason %d", self->last_disconnect_reason);
+            // A disconnect can also be the failure result of a connect attempt,
+            // so release any waiter rather than letting it sit until timeout.
+            k_sem_give(&self->connect_sem);
             break;
+        }
         case NET_EVENT_WIFI_IFACE_STATUS:
             LOG_DBG("NET_EVENT_WIFI_IFACE_STATUS");
             break;
@@ -219,6 +231,9 @@ void common_hal_wifi_init(bool user_initiated) {
     wifi_inited = true;
     wifi_user_initiated = user_initiated;
     self->base.type = &wifi_radio_type;
+    k_sem_init(&self->connect_sem, 0, 1);
+    self->connected = false;
+    self->last_connect_status = -1;
 
     // struct net_if *default_iface = net_if_get_default();
     // printk("default interface %p\n", default_iface);
