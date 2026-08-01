@@ -398,14 +398,33 @@ bool supervisor_start_web_workflow(void) {
 
         if (common_hal_socketpool_socket_get_closed(&listening)) {
             #if CIRCUITPY_SOCKETPOOL_IPV6
-            socketpool_socket(&pool, SOCKETPOOL_AF_INET6, SOCKETPOOL_SOCK_STREAM, 0, &listening);
+            bool opened = socketpool_socket(&pool, SOCKETPOOL_AF_INET6, SOCKETPOOL_SOCK_STREAM, 0, &listening);
             #else
-            socketpool_socket(&pool, SOCKETPOOL_AF_INET, SOCKETPOOL_SOCK_STREAM, 0, &listening);
+            bool opened = socketpool_socket(&pool, SOCKETPOOL_AF_INET, SOCKETPOOL_SOCK_STREAM, 0, &listening);
             #endif
+            // Ports with an offloaded network stack can refuse to create a
+            // socket until the interface has an address (this board returns
+            // ENOTCONN before DHCP completes). Binding and listening on the
+            // unset descriptor then fails with EBADF, and reporting success
+            // leaves the supervisor polling a socket that was never opened.
+            //
+            // Returning false avoids that but is not a retry: the background
+            // callback never re-enters this function, so the next attempt is
+            // the next supervisor_workflow_reset(), i.e. a VM restart. A board
+            // that only gets an address after boot will not bring the workflow
+            // up on its own until then.
+            if (!opened) {
+                return false;
+            }
             common_hal_socketpool_socket_settimeout(&listening, 0);
-            // Bind to any ip. (Not checking for failures)
-            common_hal_socketpool_socket_bind(&listening, "", 0, web_api_port);
-            common_hal_socketpool_socket_listen(&listening, 1);
+            if (common_hal_socketpool_socket_bind(&listening, "", 0, web_api_port) != 0) {
+                common_hal_socketpool_socket_close(&listening);
+                return false;
+            }
+            if (!common_hal_socketpool_socket_listen(&listening, 1)) {
+                common_hal_socketpool_socket_close(&listening);
+                return false;
+            }
         }
         // Wake polling thread (maybe)
         socketpool_socket_poll_resume();
