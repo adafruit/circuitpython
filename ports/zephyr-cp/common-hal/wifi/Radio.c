@@ -613,8 +613,41 @@ bool common_hal_wifi_radio_get_connected(wifi_radio_obj_t *self) {
 }
 
 mp_obj_t common_hal_wifi_radio_get_ap_info(wifi_radio_obj_t *self) {
-    // if (!esp_netif_is_netif_up(self->netif)) {
-    return mp_const_none;
+    if (self->sta_netif == NULL || !self->connected) {
+        return mp_const_none;
+    }
+
+    // NET_REQUEST_WIFI_IFACE_STATUS carries everything a wifi.Network needs, so
+    // this reports the live association without spending a scan on it.
+    struct wifi_iface_status status = { 0 };
+    if (net_mgmt(NET_REQUEST_WIFI_IFACE_STATUS, self->sta_netif,
+        &status, sizeof(status)) != 0) {
+        return mp_const_none;
+    }
+
+    // Associated is the weakest state that has a meaningful BSSID and RSSI.
+    if (status.state < WIFI_STATE_ASSOCIATED) {
+        return mp_const_none;
+    }
+
+    // wifi.Network wraps a scan result, so translate the status into one.
+    wifi_network_obj_t *ap_info = mp_obj_malloc(wifi_network_obj_t, &wifi_network_type);
+    size_t ssid_len = MIN(status.ssid_len, sizeof(ap_info->scan_result.ssid) - 1);
+    memcpy(ap_info->scan_result.ssid, status.ssid, ssid_len);
+    ap_info->scan_result.ssid[ssid_len] = '\0';
+    ap_info->scan_result.ssid_length = ssid_len;
+    memcpy(ap_info->scan_result.mac, status.bssid, WIFI_MAC_ADDR_LEN);
+    ap_info->scan_result.mac_length = WIFI_MAC_ADDR_LEN;
+    ap_info->scan_result.band = status.band;
+    ap_info->scan_result.channel = status.channel;
+    ap_info->scan_result.security = status.security;
+    ap_info->scan_result.wpa3_ent_type = status.wpa3_ent_type;
+    ap_info->scan_result.mfp = status.mfp;
+    // status.rssi is int, scan_result.rssi is int8_t. Clamp, since a truncated
+    // value would wrap to a positive dBm.
+    ap_info->scan_result.rssi = (int8_t)MIN(MAX(status.rssi, INT8_MIN), INT8_MAX);
+    return MP_OBJ_FROM_PTR(ap_info);
+
     // }
 
     // // Make sure the interface is in STA mode
