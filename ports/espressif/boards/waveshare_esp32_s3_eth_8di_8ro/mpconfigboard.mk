@@ -7,7 +7,6 @@ IDF_TARGET = esp32s3
 
 # Include these Python libraries in firmware.
 FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_NeoPixel
-FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_Pixelbuf
 FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_SD
 FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_BusDevice
 FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_Register
@@ -17,6 +16,7 @@ FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_Requests
 FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_FakeRequests
 FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_ConnectionManager
 FROZEN_MPY_DIRS += $(TOP)/frozen/circuitpython-pcf85063a
+FROZEN_MPY_DIRS += $(TOP)/frozen/circuitpython_ef_music
 
 CIRCUITPY_I2CIOEXPANDER = 1
 
