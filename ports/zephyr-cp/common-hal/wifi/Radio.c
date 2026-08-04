@@ -731,12 +731,16 @@ mp_obj_t common_hal_wifi_radio_get_addresses_ap(wifi_radio_obj_t *self) {
 }
 
 uint32_t wifi_radio_get_ipv4_address(wifi_radio_obj_t *self) {
-    // if (!esp_netif_is_netif_up(self->netif)) {
-    //     return 0;
-    // }
-    // esp_netif_get_ip_info(self->netif, &self->ip_info);
-    // return self->ip_info.ip.addr;
-    return 0;
+    // Raw uint32_t sibling of common_hal_wifi_radio_get_ipv4_address(),
+    // used internally by supervisor/shared/web_workflow/web_workflow.c.
+    if (self->sta_netif == NULL || !net_if_is_up(self->sta_netif)) {
+        return 0;
+    }
+    struct in_addr *addr = net_if_ipv4_get_global_addr(self->sta_netif, NET_ADDR_PREFERRED);
+    if (addr == NULL) {
+        return 0;
+    }
+    return addr->s_addr;
 }
 
 mp_obj_t common_hal_wifi_radio_get_ipv4_address(wifi_radio_obj_t *self) {
