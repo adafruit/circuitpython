@@ -4,6 +4,8 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include <string.h>
+
 #include "common-hal/wifi/__init__.h"
 #include "shared-bindings/wifi/__init__.h"
 
@@ -53,6 +55,36 @@ static void schedule_background_on_cp_core(void *arg) {
 static struct net_mgmt_event_callback wifi_cb;
 static struct net_mgmt_event_callback ipv4_cb;
 
+// Small cache of the most recent scan, used by common_hal_wifi_radio_connect()
+// to pick the right security type per AP.
+#define WIFI_SCAN_CACHE_LEN 24
+static struct wifi_scan_result scan_cache[WIFI_SCAN_CACHE_LEN];
+static size_t scan_cache_count;
+
+struct wifi_scan_result *wifi_cached_scan_lookup(const uint8_t *ssid, size_t ssid_len) {
+    for (size_t i = 0; i < scan_cache_count; i++) {
+        if (scan_cache[i].ssid_length == ssid_len &&
+            memcmp(scan_cache[i].ssid, ssid, ssid_len) == 0) {
+            return &scan_cache[i];
+        }
+    }
+    return NULL;
+}
+
+static void wifi_scan_cache_add(const struct wifi_scan_result *result) {
+    // Replace an existing entry for the same SSID so the cache tracks the
+    // latest reading rather than filling up with duplicate BSSIDs.
+    struct wifi_scan_result *existing =
+        wifi_cached_scan_lookup(result->ssid, result->ssid_length);
+    if (existing != NULL) {
+        *existing = *result;
+        return;
+    }
+    if (scan_cache_count < WIFI_SCAN_CACHE_LEN) {
+        scan_cache[scan_cache_count++] = *result;
+    }
+}
+
 static void _event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_event, struct net_if *iface) {
     wifi_radio_obj_t *self = &common_hal_wifi_radio_obj;
     (void)iface;
@@ -61,8 +93,13 @@ static void _event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_eve
         case NET_EVENT_WIFI_SCAN_RESULT: {
             LOG_DBG("NET_EVENT_WIFI_SCAN_RESULT");
             const struct wifi_scan_result *result = cb->info;
-            if (result != NULL && self->current_scan != NULL) {
-                wifi_scannednetworks_scan_result(self->current_scan, result);
+            if (result != NULL) {
+                // Remember the authmode so connect() can request the matching
+                // security type later.
+                wifi_scan_cache_add(result);
+                if (self->current_scan != NULL) {
+                    wifi_scannednetworks_scan_result(self->current_scan, result);
+                }
             }
             break;
         }
