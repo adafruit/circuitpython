@@ -276,7 +276,7 @@ uint32_t _common_hal_bleio_adapter_start_advertising(
     const uint8_t *scan_response_data,
     uint16_t scan_response_data_len,
     mp_int_t tx_power,
-    const bleio_address_obj_t *directed_to) {
+    const bleio_raw_address_t *directed_to) {
 
     sl_status_t sc = SL_STATUS_FAIL;
     int16_t power = tx_power * 10; // TX power in 0.1 dBm steps
@@ -425,6 +425,13 @@ void common_hal_bleio_adapter_start_advertising(
             MP_ERROR_TEXT("Maximum timeout length is %d seconds"), INT32_MAX / 1000);
     }
 
+    // Convert here, where raising is allowed. The internal call must stay raise-free
+    // because supervisor/shared uses it too.
+    bleio_raw_address_t raw_directed_to;
+    if (directed_to != NULL) {
+        bleio_address_to_raw(directed_to, &raw_directed_to);
+    }
+
     _common_hal_bleio_adapter_start_advertising(self, connectable, anonymous,
         timeout, interval,
         advertising_data_bufinfo->buf,
@@ -432,7 +439,7 @@ void common_hal_bleio_adapter_start_advertising(
         scan_response_data_bufinfo->buf,
         scan_response_data_bufinfo->len,
         tx_power,
-        directed_to);
+        directed_to != NULL ? &raw_directed_to : NULL);
 }
 
 // Stop advertising
@@ -640,11 +647,11 @@ void bleio_adapter_reset(bleio_adapter_obj_t *adapter) {
     // Wait up to 125 ms (128 ticks) for disconnect to complete. This should be
     // greater than most connection intervals.
     start_ticks = supervisor_ticks_ms64();
-    while (any_connected && supervisor_ticks_ms64() - start_ticks < 128) {
+    do {
         any_connected = false;
         for (conn_index = 0; conn_index < BLEIO_TOTAL_CONNECTION_COUNT; conn_index++) {
             connection = &bleio_connections[conn_index];
             any_connected |= connection->conn_handle != BLEIO_HANDLE_INVALID;
         }
-    }
+    } while (any_connected && supervisor_ticks_ms64() - start_ticks < 128);
 }

@@ -39,6 +39,16 @@ void bleio_user_reset(void);
 // Completely resets the BLE stack including BLE connections.
 void bleio_reset(void);
 
+// True if user code imported _bleio during the current VM run. If it did not,
+// the VM cannot have created any BLE state, so a port's bleio_reset() may skip
+// a full stack reset and leave an active BLE workflow session running.
+// Conservative: a bare `import _bleio` sets it, whether or not anything was created.
+bool bleio_user_imported(void);
+
+// Clears the flag reported by bleio_user_imported(). Call after a full reset,
+// so the next VM starts out clean.
+void bleio_clear_user_imported(void);
+
 // Init any state needed before calling any bleio functions including those
 // having to do with bonding. This doesn't enable the BLE adapter though.
 void common_hal_bleio_init(void);

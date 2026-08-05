@@ -95,13 +95,14 @@ to enable file system access.
 
 ### CircuitPython Service
 
-The base UUID for the CircuitPython service is `ADAFXXXX-4369-7263-7569-7450794686e`. The `XXXX` is
+The base UUID for the CircuitPython service is `ADAFXXXX-4369-7263-7569-74507974686e`. The `XXXX` is
 replaced by the four specific digits below. The service itself is `0001`.
 
-#### TX - `0002` / RX - `0003`
+#### RX - `0002` / TX - `0003`
 
 The TX and RX characteristics for the CircuitPython service work just like the Nordic Uart Service (NUS)
 but have different UUIDs to prevent conflicts with user-created NUS services.
+They are named from the NUS peripheral's point of view: a client writes to RX and subscribes to TX.
 
 #### Version - `0100`
 The Version characteristic is read-only and returns the UTF-8 encoded version string.

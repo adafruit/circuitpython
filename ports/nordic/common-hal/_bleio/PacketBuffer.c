@@ -481,8 +481,14 @@ bool common_hal_bleio_packet_buffer_deinited(bleio_packet_buffer_obj_t *self) {
 void common_hal_bleio_packet_buffer_deinit(bleio_packet_buffer_obj_t *self) {
 
     if (!common_hal_bleio_packet_buffer_deinited(self)) {
-        ble_drv_remove_event_handler(packet_buffer_on_ble_client_evt, self);
+        if (self->client) {
+            ble_drv_remove_event_handler(packet_buffer_on_ble_client_evt, self);
+        } else {
+            ble_drv_remove_event_handler(packet_buffer_on_ble_server_evt, self);
+        }
         ringbuf_deinit(&self->ringbuf);
+        // Mark as deinited, so common_hal_bleio_packet_buffer_deinited() reports it.
+        self->characteristic = NULL;
     }
 }
 

@@ -214,7 +214,50 @@ static void write_sys_attr_block(bleio_connection_internal_t *connection) {
     return;
 }
 
+// True if this identity carries an actual IRK. A peer that did not distribute one
+// leaves peer_id zeroed, because bonding_clear_keys() clears the whole keyset.
+static bool identity_has_irk(const ble_gap_id_key_t *identity) {
+    for (size_t i = 0; i < BLE_GAP_SEC_KEY_LEN; i++) {
+        if (identity->id_info.irk[i] != 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// True if any of the six address bytes is set. A peer that distributed no identity
+// address leaves them all zero, because bonding_clear_keys() clears the whole keyset.
+static bool address_is_set(const ble_gap_addr_t *address) {
+    for (size_t i = 0; i < BLE_GAP_ADDR_LEN; i++) {
+        if (address->addr[i] != 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static void write_keys_block(bleio_connection_internal_t *connection) {
+    // A peer that uses privacy distributes an identity address, and an IRK with it.
+    // One that does not — BlueZ with its default Privacy=off, and Windows — sends
+    // neither, leaving id_addr_info zeroed, and reconnecting to such a peer later
+    // still needs an address for it. Fall back to the address it connected from, but
+    // only when that is an identity type: a resolvable private address tells us
+    // nothing once the connection is over.
+    //
+    // This gives id_addr_info two meanings, distinguished by whether peer_id.id_info
+    // holds an IRK. With an IRK it is an identity address the peer distributed, and is
+    // resolvable. Without one it is merely the address the peer connected from, which
+    // we assume is stable because a peer not using privacy has no reason to change it.
+    // Readers must not treat the second kind as resolvable, which is why
+    // bonding_load_identities() skips entries that have no IRK.
+    ble_gap_addr_t *stored_peer = &connection->bonding_keys.peer_id.id_addr_info;
+    if (!address_is_set(stored_peer) &&
+        (connection->peer_addr.addr_type == BLE_GAP_ADDR_TYPE_PUBLIC ||
+         connection->peer_addr.addr_type == BLE_GAP_ADDR_TYPE_RANDOM_STATIC)) {
+        // Also updates the live connection, so its keys match what we are storing.
+        *stored_peer = connection->peer_addr;
+    }
+
     uint16_t const ediv = connection->is_central
         ? connection->bonding_keys.peer_enc.master_id.ediv
         : connection->bonding_keys.own_enc.master_id.ediv;
@@ -256,6 +299,24 @@ static void write_keys_block(bleio_connection_internal_t *connection) {
     bonding_block_t *new_block = find_unused_block(sizeof(bonding_keys_t));
     write_block_header(new_block, &block_header);
     write_block_data(new_block, (uint8_t *)&connection->bonding_keys, sizeof(bonding_keys_t));
+}
+
+bool bonding_load_directed_reconnect_address(ble_gap_addr_t *address) {
+    bonding_block_t *block = next_block(NULL);
+    while (block != NULL) {
+        // Peripheral-role bonds only: this is about a central reconnecting to us.
+        if (block->type == BLOCK_KEYS && !block->is_central &&
+            block->data_length == sizeof(bonding_keys_t)) {
+            const bonding_keys_t *key_set = (const bonding_keys_t *)block->data;
+            if (!identity_has_irk(&key_set->peer_id) &&
+                address_is_set(&key_set->peer_id.id_addr_info)) {
+                *address = key_set->peer_id.id_addr_info;
+                return true;
+            }
+        }
+        block = next_block(block);
+    }
+    return false;
 }
 
 void bonding_clear_keys(bonding_keys_t *bonding_keys) {
@@ -334,6 +395,12 @@ size_t bonding_load_identities(bool is_central, const ble_gap_id_key_t **keys, s
                 return len;
             }
             const bonding_keys_t *key_set = (const bonding_keys_t *)block->data;
+            // Skip peers that distributed no IRK. An entry with a zero IRK resolves
+            // nothing, and handing it to sd_ble_gap_device_identities_set() only risks
+            // crowding out or invalidating the identities that are real.
+            if (!identity_has_irk(&key_set->peer_id)) {
+                continue;
+            }
             keys[len] = &key_set->peer_id;
             len++;
         }

@@ -11,6 +11,13 @@
 #include "shared-bindings/_bleio/Address.h"
 #include "shared-module/_bleio/Address.h"
 
+void bleio_address_to_raw(const bleio_address_obj_t *address, bleio_raw_address_t *raw) {
+    mp_buffer_info_t buf_info;
+    mp_get_buffer_raise(address->bytes, &buf_info, MP_BUFFER_READ);
+    memcpy(raw->bytes, buf_info.buf, NUM_BLEIO_ADDRESS_BYTES);
+    raw->type = address->type;
+}
+
 void common_hal_bleio_address_construct(bleio_address_obj_t *self, uint8_t *bytes, uint8_t address_type) {
     self->bytes = mp_obj_new_bytes(bytes, NUM_BLEIO_ADDRESS_BYTES);
     self->type = address_type;

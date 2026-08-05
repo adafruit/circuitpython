@@ -323,6 +323,13 @@ static void _convert_address(const bleio_address_obj_t *address, ble_addr_t *nim
     memcpy(nimble_address->val, (uint8_t *)address_buf_info.buf, NUM_BLEIO_ADDRESS_BYTES);
 }
 
+// Same, from a raw address. Unlike _convert_address() this cannot raise, so it is safe
+// on the path used by supervisor/shared.
+static void _convert_raw_address(const bleio_raw_address_t *address, ble_addr_t *nimble_address) {
+    nimble_address->type = address->type;
+    memcpy(nimble_address->val, address->bytes, NUM_BLEIO_ADDRESS_BYTES);
+}
+
 static int _mtu_reply(uint16_t conn_handle,
     const struct ble_gatt_error *error,
     uint16_t mtu, void *arg) {
@@ -535,7 +542,7 @@ uint32_t _common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
     bool connectable, bool anonymous, uint32_t timeout, float interval,
     const uint8_t *advertising_data, uint16_t advertising_data_len,
     const uint8_t *scan_response_data, uint16_t scan_response_data_len,
-    mp_int_t tx_power, const bleio_address_obj_t *directed_to) {
+    mp_int_t tx_power, const bleio_raw_address_t *directed_to) {
 
     if (ble_gap_adv_active() && !self->user_advertising) {
         return BLE_HS_EBUSY;
@@ -547,7 +554,7 @@ uint32_t _common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
 
     ble_addr_t peer;
     if (directed_to != NULL) {
-        _convert_address(directed_to, &peer);
+        _convert_raw_address(directed_to, &peer);
     }
 
     uint8_t own_addr_type;
@@ -558,7 +565,11 @@ uint32_t _common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
         return rc;
     }
 
-    bool high_duty_directed = directed_to != NULL && interval <= 3.5 && timeout <= 1; // Really 1.3, but it's an int
+    // High duty cycle directed advertising is capped at 1.28 seconds by the spec, so it
+    // only suits a short, finite window. An unlimited timeout is encoded as zero, which
+    // would otherwise satisfy "timeout <= 1" and pick a type that stops almost at once.
+    bool high_duty_directed = directed_to != NULL && interval <= 3.5 &&
+        timeout != 0 && timeout <= 1; // Really 1.3, but it's an int
 
     uint32_t timeout_ms = timeout * 1000;
 
@@ -706,13 +717,20 @@ void common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self, bool 
             BLE_HS_FOREVER / 1000 - 1);
     }
 
+    // Convert here, where raising is allowed. The internal call must stay raise-free
+    // because supervisor/shared uses it too.
+    bleio_raw_address_t raw_directed_to;
+    if (directed_to != NULL) {
+        bleio_address_to_raw(directed_to, &raw_directed_to);
+    }
+
     CHECK_NIMBLE_ERROR(_common_hal_bleio_adapter_start_advertising(self, connectable, anonymous, timeout, interval,
         advertising_data_bufinfo->buf,
         advertising_data_bufinfo->len,
         scan_response_data_bufinfo->buf,
         scan_response_data_bufinfo->len,
         tx_power,
-        directed_to));
+        directed_to != NULL ? &raw_directed_to : NULL));
     self->user_advertising = true;
 }
 
@@ -837,13 +855,13 @@ void bleio_adapter_reset(bleio_adapter_obj_t *adapter) {
 
     // Wait up to 125 ms (128 ticks) for disconnect to complete. This should be
     // greater than most connection intervals.
-    bool any_connected = false;
+    bool any_connected;
     uint64_t start_ticks = supervisor_ticks_ms64();
-    while (any_connected && supervisor_ticks_ms64() - start_ticks < 128) {
+    do {
         any_connected = false;
         for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
             bleio_connection_internal_t *connection = &bleio_connections[i];
             any_connected |= connection->conn_handle != BLEIO_HANDLE_INVALID;
         }
-    }
+    } while (any_connected && supervisor_ticks_ms64() - start_ticks < 128);
 }
