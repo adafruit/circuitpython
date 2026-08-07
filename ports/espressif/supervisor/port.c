@@ -229,6 +229,7 @@ safe_mode_t port_init(void) {
     args.arg = NULL;
     args.dispatch_method = ESP_TIMER_TASK;
     args.name = "CircuitPython Tick";
+    args.skip_unhandled_events = true;
     esp_timer_create(&args, &_tick_timer);
 
     args.callback = &sleep_timer_cb;
