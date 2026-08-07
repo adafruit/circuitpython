@@ -314,6 +314,7 @@ void bleio_connection_clear(bleio_connection_internal_t *self) {
     self->conn_handle = BLE_CONN_HANDLE_INVALID;
     self->pair_status = PAIR_NOT_PAIRED;
     self->is_central = false;
+    memset(&self->peer_addr, 0, sizeof(self->peer_addr));
     bonding_clear_keys(&self->bonding_keys);
 }
 

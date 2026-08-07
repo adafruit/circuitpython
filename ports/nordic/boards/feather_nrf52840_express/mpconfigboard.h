@@ -46,3 +46,7 @@
 
 #define DEFAULT_UART_BUS_RX         (&pin_P0_24)
 #define DEFAULT_UART_BUS_TX         (&pin_P0_25)
+
+// Uncomment to get a serial console on the TX and RX pins, in addition to USB.
+// #define CIRCUITPY_CONSOLE_UART_TX (DEFAULT_UART_BUS_TX)
+// #define CIRCUITPY_CONSOLE_UART_RX (DEFAULT_UART_BUS_RX)

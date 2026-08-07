@@ -91,8 +91,22 @@ MP_NORETURN void mp_raise_bleio_SecurityError(mp_rom_error_text_t fmt, ...) {
     nlr_raise(exception);
 }
 
+// Set when user code imports _bleio, cleared once a full bleio_reset() has run.
+// The supervisor's own BLE workflow setup calls common_hal_bleio_init() directly
+// rather than going through here, so it deliberately does not set this.
+static bool _user_imported;
+
+bool bleio_user_imported(void) {
+    return _user_imported;
+}
+
+void bleio_clear_user_imported(void) {
+    _user_imported = false;
+}
+
 // Called when _bleio is imported.
 static mp_obj_t bleio___init__(void) {
+    _user_imported = true;
 // HCI cannot be enabled on import, because we need to setup the HCI adapter first.
     common_hal_bleio_init();
     #if !CIRCUITPY_BLEIO_HCI

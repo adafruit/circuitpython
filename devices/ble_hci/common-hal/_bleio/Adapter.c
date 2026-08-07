@@ -643,7 +643,7 @@ uint32_t _common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
     bool connectable, bool anonymous, uint32_t timeout, float interval,
     const uint8_t *advertising_data, uint16_t advertising_data_len,
     const uint8_t *scan_response_data, uint16_t scan_response_data_len,
-    mp_int_t tx_power, const bleio_address_obj_t *directed_to) {
+    mp_int_t tx_power, const bleio_raw_address_t *directed_to) {
     check_enabled(self);
 
     if (self->now_advertising) {
@@ -662,11 +662,8 @@ uint32_t _common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
 
     // Copy peer address, if supplied.
     if (directed_to) {
-        mp_buffer_info_t bufinfo;
-        if (mp_get_buffer(directed_to->bytes, &bufinfo, MP_BUFFER_READ)) {
-            peer_addr.type = directed_to->type;
-            memcpy(&peer_addr.a.val, bufinfo.buf, sizeof(peer_addr.a.val));
-        }
+        peer_addr.type = directed_to->type;
+        memcpy(&peer_addr.a.val, directed_to->bytes, sizeof(peer_addr.a.val));
     }
 
     bool extended =
@@ -808,13 +805,20 @@ void common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
         mp_raise_NotImplementedError(MP_ERROR_TEXT("Only tx_power=0 supported"));
     }
 
+    // Convert here, where raising is allowed. The internal call must stay raise-free
+    // because supervisor/shared uses it too.
+    bleio_raw_address_t raw_directed_to;
+    if (directed_to != NULL) {
+        bleio_address_to_raw(directed_to, &raw_directed_to);
+    }
+
     const uint32_t result = _common_hal_bleio_adapter_start_advertising(
         self, connectable, anonymous, timeout, interval,
         advertising_data_bufinfo->buf,
         advertising_data_bufinfo->len,
         scan_response_data_bufinfo->buf,
         scan_response_data_bufinfo->len,
-        tx_power, directed_to);
+        tx_power, directed_to != NULL ? &raw_directed_to : NULL);
 
     if (result) {
         mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Already advertising"));

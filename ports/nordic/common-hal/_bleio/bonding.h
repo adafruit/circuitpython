@@ -62,6 +62,14 @@ bool bonding_load_cccd_info(bool is_central, uint16_t conn_handle, uint16_t ediv
 bool bonding_load_keys(bool is_central, uint16_t ediv, bonding_keys_t *bonding_keys);
 const ble_gap_enc_key_t *bonding_load_peer_encryption_key(bool is_central, const ble_gap_addr_t *peer);
 size_t bonding_load_identities(bool is_central, const ble_gap_id_key_t **keys, size_t max_length);
+
+// Finds the address of a bonded central to aim directed advertisements at, in order to
+// reconnect to it. Only peers that distributed no IRK qualify: a peer that distributed
+// one uses privacy, so it connects from a resolvable private address that is useless to
+// us later, and it can resolve our private address, so undirected advertising reaches it.
+// Returns true and fills in *address on success. Returns false and leaves *address
+// untouched when there is no such peer. Does not allocate and cannot raise.
+bool bonding_load_directed_reconnect_address(ble_gap_addr_t *address);
 size_t bonding_peripheral_bond_count(void);
 
 #if BONDING_DEBUG

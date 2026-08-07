@@ -31,6 +31,10 @@ typedef enum {
 typedef struct {
     uint16_t conn_handle;
     bool is_central;
+    // Address the peer used to establish this connection. Not necessarily an identity
+    // address: a peer using privacy connects from a resolvable private address, which
+    // is of no use once the connection is gone. Check the type before relying on it.
+    ble_gap_addr_t peer_addr;
     // Remote services discovered when this peripheral is acting as a client.
     mp_obj_list_t *remote_service_list;
     // The advertising data and scan response buffers are held by us, not by the SD, so we must

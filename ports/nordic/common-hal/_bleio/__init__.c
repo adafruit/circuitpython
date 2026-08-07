@@ -101,11 +101,25 @@ void bleio_reset(void) {
         return;
     }
 
+    // If user code never imported _bleio, then it cannot have added anything to the
+    // GATT attribute table or created any connections, so there is nothing to tear
+    // down. Skipping matters: the disable/enable cycle below drops any BLE workflow
+    // session that is in progress. The cycle exists only because the SoftDevice has
+    // no way to remove a GATT service once it has been added.
+    if (!bleio_user_imported()) {
+        return;
+    }
+
+    // A BLE workflow connection will be dropped by the cycle below. That is accepted:
+    // bonds survive, so the peripheral re-advertises immediately and a client that
+    // kept its bond can reconnect. Deferring the cycle instead would let the attribute
+    // table fill up as re-run user code re-adds its services.
     supervisor_stop_bluetooth();
     bleio_adapter_reset(&common_hal_bleio_adapter_obj);
     common_hal_bleio_adapter_set_enabled(&common_hal_bleio_adapter_obj, false);
     bonding_reset();
     supervisor_start_bluetooth();
+    bleio_clear_user_imported();
 }
 
 // The singleton _bleio.Adapter object, bound to _bleio.adapter

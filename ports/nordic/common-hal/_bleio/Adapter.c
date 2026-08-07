@@ -248,6 +248,14 @@ static bool adapter_on_ble_evt(ble_evt_t *ble_evt, void *self_in) {
             connection->connection_obj = mp_const_none;
             connection->pair_status = PAIR_NOT_PAIRED;
             connection->mtu = 0;
+            // Remember where the peer connected from. A central that does not
+            // distribute an identity address during bonding still has to reach us
+            // somehow, and this is the only address we will ever learn for it.
+            connection->peer_addr = connected->peer_addr;
+            // Start from a clean keyset. The SoftDevice only fills in the keys the
+            // peer actually distributes, so a recycled connection slot would other-
+            // wise carry the previous peer's keys into this peer's stored bond.
+            bonding_clear_keys(&connection->bonding_keys);
 
             ble_drv_add_event_handler_entry(&connection->handler_entry, connection_on_ble_evt, connection);
             self->connection_objs = NULL;
@@ -615,6 +623,13 @@ static void _convert_address(const bleio_address_obj_t *address, ble_gap_addr_t 
     memcpy(sd_address->addr, (uint8_t *)address_buf_info.buf, NUM_BLEIO_ADDRESS_BYTES);
 }
 
+// Same, from a raw address. Unlike _convert_address() this cannot raise, so it is safe
+// on the path used by supervisor/shared.
+static void _convert_raw_address(const bleio_raw_address_t *address, ble_gap_addr_t *sd_address) {
+    sd_address->addr_type = address->type;
+    memcpy(sd_address->addr, address->bytes, NUM_BLEIO_ADDRESS_BYTES);
+}
+
 mp_obj_t common_hal_bleio_adapter_connect(bleio_adapter_obj_t *self, bleio_address_obj_t *address, mp_float_t timeout) {
     ble_gap_addr_t addr;
     _convert_address(address, &addr);
@@ -735,7 +750,7 @@ uint32_t _common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
     bool connectable, bool anonymous, uint32_t timeout, float interval,
     const uint8_t *advertising_data, uint16_t advertising_data_len,
     const uint8_t *scan_response_data, uint16_t scan_response_data_len,
-    mp_int_t tx_power, const bleio_address_obj_t *directed_to) {
+    mp_int_t tx_power, const bleio_raw_address_t *directed_to) {
     if (self->current_advertising_data != NULL && self->current_advertising_data == self->advertising_data) {
         return NRF_ERROR_BUSY;
     }
@@ -753,6 +768,26 @@ uint32_t _common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
     if (timeout == 0) {
         timeout = BLE_GAP_ADV_TIMEOUT_GENERAL_UNLIMITED;
     }
+    // Anonymous advertising means the BLE workflow is trying to reconnect to a bond
+    // without being trackable by anyone else. That works for a central that uses privacy,
+    // because it holds our IRK and can resolve the private address we advertise under.
+    //
+    // A central that distributed no IRK does not use privacy. It cannot resolve us, so it
+    // will never recognize an undirected private advertisement as us -- but it does
+    // connect from a stable address, which we stored with the bond and can aim a directed
+    // advertisement at. That is the only thing such a host will act on, and it is much
+    // faster besides. Centrals that do use privacy keep the undirected path, which is
+    // also what Apple's accessory guidelines require of us.
+    ble_gap_addr_t reconnect_peer;
+    bool directed_reconnect = anonymous && directed_to == NULL &&
+        bonding_load_directed_reconnect_address(&reconnect_peer);
+    if (directed_reconnect) {
+        anonymous = false;
+        // ADV_DIRECT_IND carries no advertising data, so drop whatever we were given.
+        advertising_data_len = 0;
+        scan_response_data_len = 0;
+    }
+
     uint32_t err_code;
     bool extended = advertising_data_len > BLE_GAP_ADV_SET_DATA_SIZE_MAX ||
         scan_response_data_len > BLE_GAP_ADV_SET_DATA_SIZE_MAX;
@@ -771,19 +806,30 @@ uint32_t _common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
     } else if (connectable) {
         if (directed_to == NULL) {
             adv_type = BLE_GAP_ADV_TYPE_CONNECTABLE_SCANNABLE_UNDIRECTED;
-        } else if (interval <= 3.5 && timeout <= 1.3) {
+            // High duty cycle directed advertising is capped at 1.28 seconds by the
+            // spec, so it only suits a short, finite window. An unlimited timeout is
+            // encoded as zero, which would otherwise satisfy "timeout <= 1.3" and pick
+            // a type that stops almost immediately.
+        } else if (interval <= 3.5 &&
+                   timeout != BLE_GAP_ADV_TIMEOUT_GENERAL_UNLIMITED && timeout <= 1.3) {
             adv_type = BLE_GAP_ADV_TYPE_CONNECTABLE_NONSCANNABLE_DIRECTED_HIGH_DUTY_CYCLE;
-            _convert_address(directed_to, &peer_address);
+            _convert_raw_address(directed_to, &peer_address);
             peer = &peer_address;
         } else {
             adv_type = BLE_GAP_ADV_TYPE_CONNECTABLE_NONSCANNABLE_DIRECTED;
-            _convert_address(directed_to, &peer_address);
+            _convert_raw_address(directed_to, &peer_address);
             peer = &peer_address;
         }
     } else if (scan_response_data_len > 0) {
         adv_type = BLE_GAP_ADV_TYPE_NONCONNECTABLE_SCANNABLE_UNDIRECTED;
     } else {
         adv_type = BLE_GAP_ADV_TYPE_NONCONNECTABLE_NONSCANNABLE_UNDIRECTED;
+    }
+
+    // Low duty cycle, so it can run for as long as the workflow keeps advertising.
+    if (directed_reconnect) {
+        adv_type = BLE_GAP_ADV_TYPE_CONNECTABLE_NONSCANNABLE_DIRECTED;
+        peer = &reconnect_peer;
     }
 
     if (anonymous) {
@@ -794,7 +840,13 @@ uint32_t _common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
             // advertising. This prevents a potential race condition where we
             // fire off a beacon with the same advertising data but a new MAC
             // address just as we tear down the connection.
-            .private_addr_cycle_s = timeout + 1,
+            //
+            // Unlimited advertising has no such moment, and timeout + 1 would then
+            // rotate every second, too fast for a central to resolve an address and
+            // still connect to it before it changes. Zero asks the SoftDevice for its
+            // default of BLE_GAP_DEFAULT_PRIVATE_ADDR_CYCLE_INTERVAL_S (15 minutes).
+            .private_addr_cycle_s =
+                timeout == BLE_GAP_ADV_TIMEOUT_GENERAL_UNLIMITED ? 0 : timeout + 1,
             .p_device_irk = NULL,
         };
         err_code = sd_ble_gap_privacy_set(&privacy);
@@ -905,13 +957,20 @@ void common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self, bool 
     memcpy(self->advertising_data, advertising_data_bufinfo->buf, advertising_data_bufinfo->len);
     memcpy(self->scan_response_data, scan_response_data_bufinfo->buf, scan_response_data_bufinfo->len);
 
+    // Convert here, where raising is allowed. The internal call must stay raise-free
+    // because supervisor/shared uses it too.
+    bleio_raw_address_t raw_directed_to;
+    if (directed_to != NULL) {
+        bleio_address_to_raw(directed_to, &raw_directed_to);
+    }
+
     check_nrf_error(_common_hal_bleio_adapter_start_advertising(self, connectable, anonymous, timeout, interval,
         self->advertising_data,
         advertising_data_bufinfo->len,
         self->scan_response_data,
         scan_response_data_bufinfo->len,
         tx_power,
-        directed_to));
+        directed_to != NULL ? &raw_directed_to : NULL));
     self->user_advertising = true;
 }
 
@@ -998,13 +1057,13 @@ void bleio_adapter_reset(bleio_adapter_obj_t *adapter) {
 
     // Wait up to 125 ms (128 ticks) for disconnect to complete. This should be
     // greater than most connection intervals.
-    bool any_connected = false;
+    bool any_connected;
     uint64_t start_ticks = supervisor_ticks_ms64();
-    while (any_connected && supervisor_ticks_ms64() - start_ticks < 128) {
+    do {
         any_connected = false;
         for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
             bleio_connection_internal_t *connection = &bleio_connections[i];
             any_connected |= connection->conn_handle != BLE_CONN_HANDLE_INVALID;
         }
-    }
+    } while (any_connected && supervisor_ticks_ms64() - start_ticks < 128);
 }
