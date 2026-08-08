@@ -17,7 +17,7 @@
 // called before USB is connected (i.e. from boot.py); they return false
 // otherwise. At least one of microphone/speaker must be true; enabling both
 // presents a combined headset.
-bool shared_module_usb_audio_enable(mp_int_t sample_rate, mp_int_t channel_count, mp_int_t bits_per_sample, bool microphone, bool speaker);
+bool shared_module_usb_audio_enable(mp_int_t sample_rate, mp_int_t channel_count, bool microphone, bool speaker);
 bool shared_module_usb_audio_disable(void);
 
 // True once enable() has been called successfully.
@@ -36,7 +36,6 @@ bool usb_audio_speaker_streaming(void);
 // Negotiated audio format, valid when usb_audio_enabled() is true.
 extern uint32_t usb_audio_sample_rate;
 extern uint8_t usb_audio_channel_count;
-extern uint8_t usb_audio_bits_per_sample;
 
 // Which streams were requested in enable(), valid when usb_audio_enabled() is
 // true. Both true presents a combined headset.
