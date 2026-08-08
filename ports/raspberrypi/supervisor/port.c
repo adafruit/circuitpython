@@ -307,17 +307,17 @@ void port_heap_init(void) {
 }
 
 void *port_malloc(size_t size, bool dma_capable) {
-    if (!dma_capable && _psram_size > 0) {
-        common_hal_mcu_disable_interrupts();
-        void *block = tlsf_malloc(_psram_heap, size);
-        common_hal_mcu_enable_interrupts();
-        if (block) {
-            return block;
-        }
-    }
+    // Prefer internal RAM for everything: it is much faster than PSRAM
+    // (data there skips the external bus and the shared XIP cache). PSRAM, when
+    // present, serves as spillover capacity for allocations that don't need DMA.
     common_hal_mcu_disable_interrupts();
     void *block = tlsf_malloc(_heap, size);
     common_hal_mcu_enable_interrupts();
+    if (block == NULL && !dma_capable && _psram_size > 0) {
+        common_hal_mcu_disable_interrupts();
+        block = tlsf_malloc(_psram_heap, size);
+        common_hal_mcu_enable_interrupts();
+    }
     return block;
 }
 
@@ -332,7 +332,11 @@ void port_free(void *ptr) {
 }
 
 void *port_realloc(void *ptr, size_t size, bool dma_capable) {
-    if (_psram_size > 0 && ((ptr != NULL && ((size_t)ptr) < SRAM_BASE) || (ptr == NULL && !dma_capable))) {
+    if (ptr == NULL) {
+        // Fresh allocation: same internal-first policy as port_malloc.
+        return port_malloc(size, dma_capable);
+    }
+    if (_psram_size > 0 && ((size_t)ptr) < SRAM_BASE) {
         common_hal_mcu_disable_interrupts();
         void *block = tlsf_realloc(_psram_heap, ptr, size);
         common_hal_mcu_enable_interrupts();
