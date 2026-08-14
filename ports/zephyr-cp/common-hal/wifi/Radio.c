@@ -30,8 +30,11 @@
 // dns_resolve_get_default() for radio.ipv4_dns.
 #include <zephyr/net/dns_resolve.h>
 #include <zephyr/net/hostname.h>
+// net_icmp_* for radio.ping().
+#include <zephyr/net/icmp.h>
 #include <zephyr/net/wifi.h>
 #include <zephyr/net/wifi_mgmt.h>
+#include <zephyr/random/random.h>
 
 #if CIRCUITPY_MDNS
 #include "common-hal/mdns/Server.h"
@@ -914,57 +917,179 @@ void common_hal_wifi_radio_set_ipv4_address_ap(wifi_radio_obj_t *self, mp_obj_t 
     // common_hal_wifi_radio_start_dhcp_server(self); // restart access point DHCP
 }
 
-// static void ping_success_cb(esp_ping_handle_t hdl, void *args) {
-//     wifi_radio_obj_t *self = (wifi_radio_obj_t *)args;
-//     esp_ping_get_profile(hdl, ESP_PING_PROF_TIMEGAP, &self->ping_elapsed_time, sizeof(self->ping_elapsed_time));
-// }
+// Zephyr delivers the echo reply on the network RX thread, not the caller's, so
+// the two halves share this state through the ICMP context's user_data. It lives
+// on the calling thread's stack, hence the cleanup discipline in ping() below.
+typedef struct {
+    struct k_sem reply_sem;
+    int64_t sent_ms;
+    int64_t elapsed_ms;
+    uint16_t identifier;
+    uint16_t sequence;
+} ping_session_t;
+
+// Zephyr keeps struct net_icmpv4_echo_req in subsys/net/ip/icmpv4.h, a private
+// header that code outside the net stack cannot include, so mirror the four
+// bytes that follow the ICMP header here.
+struct ping_echo_hdr {
+    uint16_t identifier;
+    uint16_t sequence;
+} __packed;
+
+// An echo carries no port number, so the sequence is the only thing telling two
+// back-to-back requests apart; without it a late reply would be reported as the
+// next call's round trip. The identifier is randomized once per boot.
+static uint16_t ping_identifier;
+static uint16_t ping_sequence;
+
+static enum net_verdict ping_reply_handler(struct net_icmp_ctx *ctx,
+    struct net_pkt *pkt,
+    struct net_icmp_ip_hdr *ip_hdr,
+    struct net_icmp_hdr *icmp_hdr,
+    void *user_data) {
+    NET_PKT_DATA_ACCESS_CONTIGUOUS_DEFINE(echo_access, struct ping_echo_hdr);
+    ping_session_t *session = user_data;
+    struct ping_echo_hdr *echo;
+
+    (void)ctx;
+    (void)ip_hdr;
+    (void)icmp_hdr;
+
+    if (session == NULL) {
+        return NET_CONTINUE;
+    }
+
+    // net_pkt_get_data() leaves the cursor where it found it, which the
+    // NET_CONTINUE below relies on: the next handler starts at the echo header.
+    echo = (struct ping_echo_hdr *)net_pkt_get_data(pkt, &echo_access);
+    if (echo == NULL) {
+        return NET_CONTINUE;
+    }
+
+    if (net_ntohs(echo->identifier) != session->identifier ||
+        net_ntohs(echo->sequence) != session->sequence) {
+        // A reply to an earlier ping of ours, or to somebody else's. Leave it
+        // alone rather than waking the caller with a round trip time that
+        // belongs to a different request.
+        return NET_CONTINUE;
+    }
+
+    // Stamp arrival here rather than after k_sem_take() returns, so the
+    // measurement does not absorb the woken thread's scheduling delay.
+    session->elapsed_ms = k_uptime_get() - session->sent_ms;
+    k_sem_give(&session->reply_sem);
+
+    return NET_OK;
+}
 
 mp_int_t common_hal_wifi_radio_ping(wifi_radio_obj_t *self, mp_obj_t ip_address, mp_float_t timeout) {
-    // esp_ping_config_t ping_config = ESP_PING_DEFAULT_CONFIG();
-    // ipaddress_ipaddress_to_esp_idf(ip_address, &ping_config.target_addr);
-    // ping_config.count = 1;
+    // radio.ping() is documented to take an ipaddress.IPv4Address.
+    if (!mp_obj_is_type(ip_address, &ipaddress_ipv4address_type)) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Only IPv4 addresses supported"));
+    }
 
-    // // We must fetch ping information using the callback mechanism, because the session storage is freed when
-    // // the ping session is done, even before esp_ping_delete_session().
-    // esp_ping_callbacks_t ping_callbacks = {
-    //     .on_ping_success = ping_success_cb,
-    //     .cb_args = (void *)self,
-    // };
+    // get_packed() takes a concrete ipaddress_ipv4address_obj_t *, so the
+    // MP_OBJ_TO_PTR is needed under object representations C and D.
+    ipaddress_ipv4address_obj_t *addr_obj = MP_OBJ_TO_PTR(ip_address);
+    size_t packed_len;
+    const char *packed = mp_obj_str_get_data(
+        common_hal_ipaddress_ipv4address_get_packed(addr_obj), &packed_len);
+    if (packed_len != sizeof(struct net_in_addr)) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Only IPv4 addresses supported"));
+    }
 
-    // size_t timeout_ms = timeout * 1000;
+    // This Zephyr renamed the socket address types, so the destination is a
+    // struct net_sockaddr_in carrying NET_AF_INET, not a sockaddr_in/AF_INET.
+    struct net_sockaddr_in dst = {
+        .sin_family = NET_AF_INET,
+    };
+    memcpy(&dst.sin_addr, packed, sizeof(dst.sin_addr));
 
-    // // ESP-IDF creates a task to do the ping session. It shuts down when done, but only after a one second delay.
-    // // Calling common_hal_wifi_radio_ping() too fast will cause resource exhaustion.
-    // esp_ping_handle_t ping;
-    // if (esp_ping_new_session(&ping_config, &ping_callbacks, &ping) != ESP_OK) {
-    //     // Wait for old task to go away and then try again.
-    //     // Empirical testing shows we have to wait at least two seconds, despite the task
-    //     // having a one-second timeout.
-    //     common_hal_time_delay_ms(2000);
-    //     // Return if interrupted now, to show the interruption as KeyboardInterrupt instead of the
-    //     // IDF error.
-    //     if (mp_hal_is_interrupted()) {
-    //         return (uint32_t)(-1);
-    //     }
-    //     CHECK_ESP_RESULT(esp_ping_new_session(&ping_config, &ping_callbacks, &ping));
-    // }
+    if (ping_identifier == 0) {
+        // Seeded lazily. sys_rand16_get() may legitimately return 0, in which
+        // case we simply reseed on the next call.
+        ping_identifier = sys_rand16_get();
+    }
 
-    // // Use all ones as a flag that the elapsed time was not set (ping failed or timed out).
-    // self->ping_elapsed_time = (uint32_t)(-1);
+    ping_session_t session = {
+        .identifier = ping_identifier,
+        .sequence = ++ping_sequence,
+        .elapsed_ms = -1,
+    };
+    k_sem_init(&session.reply_sem, 0, 1);
 
-    // esp_ping_start(ping);
+    struct net_icmp_ctx icmp_ctx;
+    int res = net_icmp_init_ctx(&icmp_ctx, NET_AF_INET, NET_ICMPV4_ECHO_REPLY, 0,
+        ping_reply_handler);
+    if (res < 0) {
+        LOG_DBG("ping: net_icmp_init_ctx failed (%d)", res);
+        return -1;
+    }
 
-    // uint32_t start_time = common_hal_time_monotonic_ms();
-    // while ((self->ping_elapsed_time == (uint32_t)(-1)) &&
-    //        (common_hal_time_monotonic_ms() - start_time < timeout_ms) &&
-    //        !mp_hal_is_interrupted()) {
-    //     RUN_BACKGROUND_TASKS;
-    // }
-    // esp_ping_stop(ping);
-    // esp_ping_delete_session(ping);
+    struct net_icmp_ping_params params = {
+        .identifier = session.identifier,
+        .sequence = session.sequence,
+        .tc_tos = 0,
+        // A negative priority leaves the packet at the stack default and lets
+        // tc_tos drive the DSCP/ECN bits instead.
+        .priority = -1,
+        .data = NULL,
+        .data_size = 0,
+    };
 
-    // return (mp_int_t)self->ping_elapsed_time;
-    return 0;
+    session.sent_ms = k_uptime_get();
+
+    // A NULL sta_netif is fine; the stack picks an interface from the
+    // destination. This is the blocking send, as Zephyr's net shell uses: it
+    // waits up to a second for a buffer, so a ping can take timeout + 1s.
+    res = net_icmp_send_echo_request(&icmp_ctx, self->sta_netif,
+        (struct net_sockaddr *)&dst, &params, &session);
+    if (res < 0) {
+        LOG_DBG("ping: send failed (%d)", res);
+        (void)net_icmp_cleanup_ctx(&icmp_ctx);
+        return -1;
+    }
+
+    // Wait for ping_reply_handler() to signal, staying responsive to ctrl-C at
+    // the same 50 ms granularity as the association wait in
+    // common_hal_wifi_radio_connect().
+    mp_float_t timeout_s = timeout <= 0 ? (mp_float_t)0.5 : timeout;
+    int64_t deadline = k_uptime_get() + (int64_t)(timeout_s * 1000);
+    bool replied = false;
+    while (true) {
+        int64_t remaining_ms = deadline - k_uptime_get();
+        if (remaining_ms <= 0) {
+            break;
+        }
+
+        // Poll in 50 ms slices so ctrl-C stays responsive, clamped to the
+        // caller's deadline so a reply arriving after the timeout is not
+        // reported as a success. MIN() is avoided here because py/misc.h and
+        // zephyr/sys/util.h both define it and this file includes both.
+        int64_t wait_ms = remaining_ms < 50 ? remaining_ms : 50;
+
+        if (k_sem_take(&session.reply_sem, K_MSEC(wait_ms)) == 0) {
+            replied = true;
+            break;
+        }
+        if (mp_hal_is_interrupted()) {
+            break;
+        }
+    }
+
+    // Unregister before returning. net_icmp_cleanup_ctx() takes the same mutex
+    // the stack holds while dispatching handlers, so once it returns no handler
+    // can still be looking at session, which lives on this stack frame. This
+    // has to happen on every exit path, including the error paths above.
+    (void)net_icmp_cleanup_ctx(&icmp_ctx);
+
+    if (!replied || session.elapsed_ms < 0) {
+        return -1;
+    }
+
+    // shared-bindings turns exactly -1 into None and divides anything else by
+    // 1000, so every failure path must return -1, not 0.
+    return (mp_int_t)session.elapsed_ms;
 }
 
 void common_hal_wifi_radio_gc_collect(wifi_radio_obj_t *self) {
