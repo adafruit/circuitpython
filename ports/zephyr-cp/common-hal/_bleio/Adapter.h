@@ -27,3 +27,7 @@ typedef struct {
 
 void bleio_adapter_gc_collect(bleio_adapter_obj_t *adapter);
 void bleio_adapter_reset(bleio_adapter_obj_t *adapter);
+
+// Queue a background run of supervisor_bluetooth_background() so the VM drains
+// incoming BLE PacketBuffer data. Safe to call from Zephyr BT/workqueue context.
+void bleio_request_bluetooth_background(void);

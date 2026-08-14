@@ -9,6 +9,8 @@
 
 #include <stdbool.h>
 
+#include <zephyr/kernel.h>
+#include <zephyr/sys/atomic.h>
 #include <zephyr/sys/ring_buffer.h>
 
 #include "py/obj.h"
@@ -26,12 +28,40 @@ typedef struct {
     uint8_t *ringbuf_data;
     size_t ringbuf_size;
     size_t max_packet_size;
-    // Outgoing pending buffer
+
+    // Outgoing path. No manual mutex: the structures below all carry their own
+    // locking (k_pipe) or synchronization (k_work), and the remaining state is
+    // confined to a single execution context.
+    //
+    // Client-side (remote characteristic): outgoing_buffer is a VM-local
+    // scratch used to assemble header+data before a direct, synchronous GATT
+    // write. It is only ever touched by the VM thread.
+    //
+    // Server-side (local NOTIFY/INDICATE characteristic): the VM is the sole
+    // producer writing bytes into outgoing_pipe (a k_pipe, whose built-in
+    // spinlock serializes producer vs. consumer). send_work drains that pipe on
+    // the system workqueue — the same context bt_gatt_notify_cb runs its
+    // completion callback on — so send_size/notify_in_flight are touched only
+    // there. k_work's built-in submit deduplication replaces the old
+    // packet_queued flag. outgoing_pending counts bytes not yet accepted by the
+    // controller so flush() can poll for "all handed off".
     uint8_t *outgoing_buffer;
-    uint16_t pending_size;
-    bool packet_queued;
+    struct k_pipe outgoing_pipe;
+    uint8_t *pipe_buffer;
+    size_t pipe_size;
+    struct k_work send_work;
+    size_t send_size;
+    bool notify_in_flight;
+    atomic_t outgoing_pending;
     struct bt_conn *conn;
     bool client;
+
+    // Ownership: true if the buffer was port_malloc'd and should be freed in
+    // deinit; false if it is a caller-supplied static buffer (the BLE workflow
+    // path, which runs before gc_init()).
+    bool owns_ringbuf_data;
+    bool owns_outgoing_buffer;
+    bool owns_pipe_buffer;
 } bleio_packet_buffer_obj_t;
 
 // Called from GATT callbacks (system workqueue context) to push

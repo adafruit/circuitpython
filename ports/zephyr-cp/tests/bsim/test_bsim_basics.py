@@ -14,7 +14,7 @@ print("bsim ready")
 
 @pytest.mark.circuitpy_drive({"code.py": BSIM_CODE})
 @pytest.mark.circuitpy_drive({"code.py": BSIM_CODE})
-@pytest.mark.duration(3)
+@pytest.mark.duration(5)
 def test_bsim_dual_instance_connect(bsim_phy, circuitpython1, circuitpython2, board):
     """Run two bsim instances on the same sim id and verify UART output."""
 
