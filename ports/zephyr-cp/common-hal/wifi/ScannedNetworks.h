@@ -16,6 +16,14 @@
 
 #define MAX_BUFFERED_SCAN_RESULTS 10
 
+// Poll slice while waiting for a result, so background tasks run often enough to
+// keep the web workflow served during a scan.
+#define SCAN_POLL_SLICE_MS 50
+
+// Give up on a scan that stops producing. Well above a real channel scan, so this
+// only trips when the driver has stopped reporting.
+#define SCAN_RESULT_TIMEOUT_MS 10000
+
 typedef struct {
     mp_obj_base_t base;
     uint8_t current_channel_index;

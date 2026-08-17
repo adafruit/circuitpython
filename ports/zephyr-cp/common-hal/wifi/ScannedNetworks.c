@@ -16,6 +16,7 @@
 #include "shared-bindings/wifi/Network.h"
 #include "shared-bindings/wifi/Radio.h"
 #include "shared-bindings/wifi/ScannedNetworks.h"
+#include "supervisor/shared/tick.h"
 #include "bindings/zephyr_kernel/__init__.h"
 
 #include <zephyr/kernel.h>
@@ -41,11 +42,28 @@ mp_obj_t common_hal_wifi_scannednetworks_next(wifi_scannednetworks_obj_t *self) 
     if (self->done) {
         return mp_const_none;
     }
-    // If we don't have any results queued, then wait until we do.
+    // If we don't have any results queued, then wait until we do. Poll in short
+    // slices and run background tasks between them, like the espressif and
+    // raspberrypi ports do, so the supervisor keeps serving the web workflow and
+    // USB while a scan is running.
+    //
+    // Bounded rather than K_FOREVER: nothing guarantees the driver delivers
+    // another result or signals channel_done. If a scan is abandoned the radio
+    // can stop reporting entirely, and an unbounded wait parks the VM thread for
+    // good, taking the supervisor's background callbacks down with it.
+    uint32_t scan_start = k_uptime_get_32();
     while (k_fifo_is_empty(&self->fifo) && k_msgq_num_used_get(&self->msgq) == 0) {
-        k_poll(self->events, ARRAY_SIZE(self->events), K_FOREVER);
+        RUN_BACKGROUND_TASKS;
+        k_poll(self->events, ARRAY_SIZE(self->events), K_MSEC(SCAN_POLL_SLICE_MS));
         if (mp_hal_is_interrupted()) {
             wifi_scannednetworks_done(self);
+        }
+        // The driver has gone quiet. End the scan rather than block forever.
+        // Unsigned subtraction so this stays correct across the 32-bit
+        // millisecond rollover.
+        if (k_uptime_get_32() - scan_start > SCAN_RESULT_TIMEOUT_MS) {
+            wifi_scannednetworks_done(self);
+            return mp_const_none;
         }
         if (k_msgq_num_used_get(&self->msgq) > 0) {
             // We found something.
@@ -56,6 +74,9 @@ mp_obj_t common_hal_wifi_scannednetworks_next(wifi_scannednetworks_obj_t *self) 
         k_poll_signal_check(&self->channel_done, &signaled, &result);
         if (signaled) {
             wifi_scannednetworks_scan_next_channel(self);
+            // Progress. Restart the window so a multi-channel sweep is not
+            // cut short by the total time it takes.
+            scan_start = k_uptime_get_32();
         }
         if (self->done) {
             return mp_const_none;
