@@ -1,8 +1,5 @@
-# Placeholder USB IDs: pid.codes 0x1209/0x0001 is the "test" PID, valid for
-# development only. A real allocation is needed before any release. Do NOT
-# ship Teenage Engineering's 0x2367 -- this is not their firmware.
-USB_VID = 0x1209
-USB_PID = 0x0001
+USB_VID = 0x239A
+USB_PID = 0x817A
 USB_PRODUCT = "SP-1 (CircuitPython)"
 USB_MANUFACTURER = "Teenage Engineering"
 
