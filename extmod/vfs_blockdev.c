@@ -39,7 +39,7 @@
 #endif
 
 #if defined(CIRCUITPY_SP1_EMMC) && CIRCUITPY_SP1_EMMC
-#include "sp1_emmc/blockdev.h"
+#include "bindings/sp1emmc/EMMC.h"
 #endif
 
 

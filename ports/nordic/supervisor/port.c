@@ -25,7 +25,7 @@
 #include "nrf/wdt.h"
 
 #if CIRCUITPY_SP1_EMMC
-#include "sp1_emmc/sp1_emmc.h"
+#include "bindings/sp1emmc/EMMC.h"
 #endif
 
 // The SoftDevice headers (nrf_sdm.h / nrf_soc.h) come in via mpconfigport.h.

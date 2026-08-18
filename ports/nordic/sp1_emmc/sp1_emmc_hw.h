@@ -6,10 +6,7 @@
 
 // Every hardware touch sp1_emmc.c makes goes through this header: the five
 // pins, the clock/tick sources, the WDT feed and the SPIM3 data engine. The
-// protocol file itself has no nRF or CircuitPython includes, which is what
-// lets tools/test_sp1_emmc.py compile the *same* .c on the host against a fake
-// bus (SP1_EMMC_HOST_TEST=1) instead of a reimplementation that could drift
-// away from the thing that ships.
+// protocol file itself has no nRF or CircuitPython includes of its own.
 
 
 #pragma once
@@ -17,7 +14,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-// Pins (SP-1 wiring; identical to the looper's stemplayer_pins.h values).
+// Pins (SP-1 wiring).
 #define SP1_EMMC_PIN_CLK   6u    // P0.06
 #define SP1_EMMC_PIN_DAT0  7u    // P0.07
 #define SP1_EMMC_PIN_CMD   8u    // P0.08
@@ -32,22 +29,10 @@
 #define SPIM_CONFIG_MODE0 0u                  // MSB first, CPOL0/CPHA0
 #define SPIM_CONFIG_MODE1 (1u << 1)           // MSB first, CPOL0/CPHA1
 
-// 1 only in the host harness build (tools/test_sp1_emmc.py).
-#ifndef SP1_EMMC_HOST_TEST
-#define SP1_EMMC_HOST_TEST (0)
-#endif
-
 // The write path's TX frame: FF gap | FE start token | 512 data | CRC16 = 516
 // bytes, rounded up. It must live in the port's reserved 8 KiB low-RAM SPIM3
 // buffer.
 #define SP1_EMMC_TX_FRAME_SIZE 520u
-
-#if SP1_EMMC_HOST_TEST
-
-// Host build: the fake bus supplies all of the below (tools/emmc_host/).
-#include "sp1_emmc_hostshim.h"
-
-#else
 
 #include "nrf_gpio.h"
 #include "nrf.h"
@@ -59,8 +44,8 @@
 
 // ---- pin control ---------------------------------------------------------
 // The command/init path uses the HAL macros; the data path uses the direct
-// port-0 register accesses below (~3 cycles vs ~130 for the HAL, which is what
-// pinned the looper's bit-bang at ~58 KB/s).
+// port-0 register accesses below (~3 cycles vs ~130 for the HAL, which is the
+// difference between a usable bit-bang clock and a useless one).
 #define CLK_HIGH()   nrf_gpio_pin_set(SP1_EMMC_PIN_CLK)
 #define CLK_LOW()    nrf_gpio_pin_clear(SP1_EMMC_PIN_CLK)
 #define CMD_HIGH()   nrf_gpio_pin_set(SP1_EMMC_PIN_CMD)
@@ -99,8 +84,8 @@ static inline void sp1_emmc_pins_init(void) {
     nrf_gpio_cfg_output(SP1_EMMC_PIN_CMD);
     DAT0_OUT();                                                          // high-drive DAT0
     nrf_gpio_cfg_output(SP1_EMMC_PIN_RST);
-    // VCCQ: standard drive, exactly as the looper (and stock firmware) run it.
-    // E7 in the plan -- do NOT "improve" this to H0H1 without evidence.
+    // VCCQ: standard drive. Do NOT "improve" this to H0H1 without evidence --
+    // the rail gate does not need the extra drive and the card came up on it.
     nrf_gpio_cfg_output(SP1_EMMC_PIN_VCCQ);
 }
 
@@ -118,16 +103,14 @@ static inline void sp1_emmc_pins_release(void) {
 // already reserves 8 KiB of low RAM for exactly this (mpconfigport.h:36,
 // SPIM3_BUFFER_RAM_START_ADDR), and busio's SPI uses it for the same reason --
 // which is safe to share because an sp1emmc.EMMC object owns SPIM3 outright
-// while it lives (D4: the allocator asks sp1emmc_spim3_in_use() and falls back
-// to SPIM0/1/2), so the two can never have a transfer in flight at once.
+// while it lives: busio's allocator asks sp1emmc_spim3_in_use() and falls back
+// to SPIM0/1/2, so the two can never have a transfer in flight at once.
 //
-// This is a better fix than the looper's CRC-status-retry, and it is the one
-// the write path uses; the status token is still enforced as the backstop.
-#if SP1_EMMC_WRITE
+// The write path relies on this buffer rather than on retrying a bad CRC
+// status; the status token is still enforced as the backstop.
 static inline uint8_t *sp1_emmc_tx_frame(void) {
     return (uint8_t *)SPIM3_BUFFER_RAM_START_ADDR;
 }
-#endif
 
 // ---- time ----------------------------------------------------------------
 #define EMMC_DELAY_US(us)  common_hal_mcu_delay_us(us)
@@ -142,8 +125,8 @@ static inline uint32_t emmc_ticks(void) {
 }
 
 // Long-wait service: feed the bootloader's dog and run background tasks (USB,
-// the power-off gesture). Never sleeps -- see the looper's retry-without-sleep
-// lesson; this is a few microseconds, not a nap.
+// the power-off gesture). Never sleeps -- the waits this serves are a few
+// microseconds, not a nap.
 static inline void emmc_yield(void) {
     RUN_BACKGROUND_TASKS;
     bootloader_wdt_feed();
@@ -152,32 +135,12 @@ static inline void emmc_feed(void) {
     bootloader_wdt_feed();
 }
 
-// ---- cycle counter (7.2.f profiling) -------------------------------------
-// The 32768 Hz RTC above resolves ~30 us, which is useless against a ~465 us
-// block split three ways. The Cortex-M4's DWT cycle counter resolves 15.6 ns
-// and costs two cycles to read, so the per-block breakdown is free. It needs
-// TRCENA in DEMCR and CYCCNTENA in DWT->CTRL; on some parts/debug states the
-// counter refuses to run, so emmc_prof_init() reports whether it actually
-// ticked instead of assuming (a stuck counter would report every phase as
-// taking zero time, which is worse than reporting nothing).
-#define EMMC_CYCLES_HZ 64000000u
-static inline uint32_t emmc_cycles(void) {
-    return DWT->CYCCNT;
-}
-static inline bool emmc_prof_init(void) {
-    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
-    uint32_t a = DWT->CYCCNT;
-    __asm__ volatile ("nop\nnop\nnop\nnop\nnop\nnop\nnop\nnop");
-    return DWT->CYCCNT != a;
-}
-
 // ---- SPIM3 data engine ---------------------------------------------------
 // SPIM3 is the only instance that runs above 8 MHz. M16 = 16 MHz, the fastest
 // in-spec step for this card at power-on timing (TRAN_SPEED 0x32 -> 26 MHz cap
-// in backwards-compatible mode). D2 fixes the bus there; the ONE way it moves
+// in backwards-compatible mode). The bus is fixed there; the ONE way it moves
 // is emmc_set_high_speed(), which first gets the card's own EXT_CSD to read
-// back HS_TIMING = 1 (52 MHz limit) and only then steps to M32 (plan D11).
+// back HS_TIMING = 1 (52 MHz limit) and only then steps to M32.
 // There is still no free-floating "speed knob": the two codes at the top of
 // this file are the only values ever written.
 //
@@ -227,9 +190,9 @@ static inline void sp1_emmc_spim_deinit(void) {
 // the surrounding bit-bang phases continue seamlessly. That handoff is the
 // whole trick and it is proven on this hardware.
 //
-// With SP1_EMMC_WRITE 0 this is rx-only, so SPIM3 anomaly 198 (TX corruption)
-// cannot bite at all (plan 7.2 E5). The write path makes TX real again, which
-// is why its frame is built in sp1_emmc_tx_frame() above (7.2.w W-R5).
+// A read is rx-only (MOSI unselected), so SPIM3 anomaly 198 (TX corruption)
+// cannot bite there at all. Writes make TX real, which is why their frame is
+// built in sp1_emmc_tx_frame() above.
 static inline void sp1_emmc_spim_xfer(const uint8_t *tx, uint32_t txlen, uint8_t *rx, uint32_t rxlen) {
     NRF_SPIM3->PSEL.MOSI = tx ? SP1_EMMC_PIN_DAT0 : 0xFFFFFFFFu;
     NRF_SPIM3->PSEL.MISO = rx ? SP1_EMMC_PIN_DAT0 : 0xFFFFFFFFu;
@@ -247,5 +210,3 @@ static inline void sp1_emmc_spim_xfer(const uint8_t *tx, uint32_t txlen, uint8_t
     }
     NRF_SPIM3->ENABLE = 0;
 }
-
-#endif // SP1_EMMC_HOST_TEST

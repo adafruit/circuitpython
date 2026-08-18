@@ -153,19 +153,14 @@ SRC_C += \
 
 CIRCUITPY_SP1_EMMC ?= 0
 CFLAGS += -DCIRCUITPY_SP1_EMMC=$(CIRCUITPY_SP1_EMMC)
-# HS_TIMING switch
-CIRCUITPY_SP1_EMMC_HS ?= 0
-CFLAGS += -DSP1_EMMC_HS_TIMING=$(CIRCUITPY_SP1_EMMC_HS)
-# write switch
-CIRCUITPY_SP1_EMMC_WRITE ?= 0
-CFLAGS += -DSP1_EMMC_WRITE=$(CIRCUITPY_SP1_EMMC_WRITE)
 # USB mass storage automount switch
 CIRCUITPY_SP1_EMMC_USB ?= 0
 CFLAGS += -DSP1_EMMC_AUTOMOUNT=$(CIRCUITPY_SP1_EMMC_USB)
 ifeq ($(CIRCUITPY_SP1_EMMC),1)
 SRC_C += \
+	bindings/sp1emmc/__init__.c \
+	bindings/sp1emmc/EMMC.c \
 	sp1_emmc/sp1_emmc.c \
-	sp1_emmc/bindings.c \
 
 ifeq ($(CIRCUITPY_SP1_EMMC_USB),1)
 SRC_C += sp1_emmc/automount.c

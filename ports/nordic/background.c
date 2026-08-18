@@ -12,10 +12,6 @@
 #include "nrf/wdt.h"
 #include "power_off.h"
 
-#ifdef PROVING_GROUND_WEDGE
-#include "supervisor/shared/safe_mode.h"
-#endif
-
 #if CIRCUITPY_DISPLAYIO
 #include "shared-module/displayio/__init__.h"
 #endif

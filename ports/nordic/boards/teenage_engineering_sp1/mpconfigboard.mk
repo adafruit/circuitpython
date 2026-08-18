@@ -8,13 +8,12 @@ USB_MANUFACTURER = "Teenage Engineering"
 
 MCU_CHIP = nrf52840
 
-# No UICR write may survive into this board's image (plan §4.5.a). UICR is
-# undoable only by ERASEALL, which needs SWD; the SP-1's SWD pads are not
-# reachable, and an ERASEALL would take TE's bootloader with it — the only copy
-# in existence, since the USB protocol has no read command. So each of the
-# three conditional UICR writes on the boot path is turned off here, and the
-# acceptance test is the disassembly: every reference to 0x10001000 in
-# firmware.elf must be a read.
+# No UICR write may survive into this board's image. UICR is undoable only by
+# ERASEALL, which needs SWD; the SP-1's SWD pads are not reachable, and an
+# ERASEALL would take TE's bootloader with it — the only copy in existence,
+# since the USB protocol has no read command. So each of the three conditional
+# UICR writes on the boot path is turned off here, and the acceptance test is
+# the disassembly: every reference to 0x10001000 in firmware.elf must be a read.
 #
 # 1. PSELRESET. The SP-1 has no reset pin and P0.18's wiring is unknown. With
 #    CONFIG_GPIO_AS_PINRESET on, SystemInit would burn PSELRESET[0..1] = 18
@@ -24,19 +23,19 @@ MCU_CHIP = nrf52840
 NRF_GPIO_AS_PINRESET = 0
 
 # 2. REGOUT0. Fires only in high-voltage mode (VDDH supplied) with REGOUT0
-#    unprogrammed. The proving ground never reached it — a USB-powered board
-#    reads MAINREGSTATUS = 0 — but the SP-1 runs from a LiPo and may well be
-#    VDDH-supplied, which is exactly the case that writes UICR. Safe to remove
-#    either way: the stock firmware drives 3.3 V logic (eMMC, codecs, LEDs) on
-#    this hardware today, so REGOUT0 is already whatever it needs to be.
+#    unprogrammed. A USB-powered board never reaches it — MAINREGSTATUS reads
+#    0 — but the SP-1 runs from a LiPo and may well be VDDH-supplied, which is
+#    exactly the case that writes UICR. Safe to remove either way: this board
+#    runs 3.3 V logic (eMMC, codecs, LEDs) as shipped, so REGOUT0 is already
+#    whatever it needs to be.
 NRF_REGOUT0_3V3 = 0
 
 # 3. NFCPINS. P0.09/P0.10 are the NFC pins and are TAS_RESET and BT_RESET here.
-#    Stock firmware drives both as GPIO, so NFCPINS.PROTECT must already be
-#    cleared on this device and the write cannot fire — but "must already be"
+#    Both are driven as GPIO on this device as shipped, so NFCPINS.PROTECT
+#    must already be cleared and the write cannot fire — but "must already be"
 #    is not the bar for a one-way change, and if the assumption is wrong the
 #    right outcome is two dead reset lines to diagnose, not a UICR burn. The
-#    actual value is read from the REPL at first light (plan §5.2).
+#    actual value can be read back from the REPL.
 NRF_NFCT_PINS_AS_GPIOS = 0
 
 # No SoftDevice. It would have to live at 0x1000, which is inside the TE
@@ -70,18 +69,12 @@ CIRCUITPY_AUDIOPWMIO = 0
 CIRCUITPY_SYNTHIO = 1
 CIRCUITPY_AUDIOEFFECTS = 1
 # audiomp3 would otherwise come along for free with audiocore on a full build.
-# It is 7.1's §6 A8 item -- decode CPU headroom on this chip is unassessed and
-# it costs ~26 KB of flash -- so it stays off until it is deliberately assessed.
+# Decode CPU headroom on this chip is unassessed and it costs ~26 KB of flash,
+# so it stays off until it is deliberately assessed.
 CIRCUITPY_AUDIOMP3 = 0
 
 # eMMC
 CIRCUITPY_SP1_EMMC = 1
-
-# HS_TIMING for EMMC
-CIRCUITPY_SP1_EMMC_HS = 1
-
-# EMMC writing
-CIRCUITPY_SP1_EMMC_WRITE = 1
 
 # auto mount EMMC as /sd
 CIRCUITPY_SP1_EMMC_USB = 1
