@@ -9,6 +9,13 @@
 #include "py/runtime.h"
 #include "supervisor/port.h"
 
+#include "nrf/wdt.h"
+#include "power_off.h"
+
+#ifdef PROVING_GROUND_WEDGE
+#include "supervisor/shared/safe_mode.h"
+#endif
+
 #if CIRCUITPY_DISPLAYIO
 #include "shared-module/displayio/__init__.h"
 #endif
@@ -41,5 +48,11 @@ MP_WEAK void board_background_task(void) {
 }
 
 void port_background_task(void) {
+    bootloader_wdt_feed();
+
+    #ifdef BOARD_POWER_OFF_BUTTON_PIN
+    power_off_tick();
+    #endif
+
     board_background_task();
 }

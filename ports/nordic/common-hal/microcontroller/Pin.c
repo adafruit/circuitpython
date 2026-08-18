@@ -6,6 +6,7 @@
 
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/digitalio/DigitalInOut.h"
+#include "supervisor/board.h"
 
 #include "nrf_gpio.h"
 #include "py/mphal.h"
@@ -47,6 +48,11 @@ void reset_all_pins(void) {
 
     // After configuring SWD because it may be shared.
     reset_speaker_enable_pin();
+
+    // Last, so it wins: a board may need some pins held in a safe state rather
+    // than left floating between VM runs. Configuration only, these pins are
+    // not claimed. Python can still use them.
+    board_reset_pin_defaults();
 }
 
 // Mark pin as free and return it to a quiescent state.

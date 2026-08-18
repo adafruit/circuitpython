@@ -125,7 +125,9 @@ void common_hal_neopixel_write(const digitalio_digitalinout_obj_t *digitalinout,
             pixels_pattern = (uint16_t *)stack_pixels;
         } else {
             uint8_t sd_en = 0;
+            #ifdef BLUETOOTH_SD
             (void)sd_softdevice_is_enabled(&sd_en);
+            #endif
 
             if (pixels_pattern_heap_size < pattern_size) {
                 // Current heap buffer is too small.

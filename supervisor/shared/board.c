@@ -34,7 +34,15 @@ MP_WEAK bool board_requests_safe_mode(void) {
 }
 
 // Do-nothing so not all boards need to provide this function.
+MP_WEAK void board_early_init(void) {
+}
+
+// Do-nothing so not all boards need to provide this function.
 MP_WEAK void board_init(void) {
+}
+
+// Do-nothing so not all boards need to provide this function.
+MP_WEAK void board_reset_pin_defaults(void) {
 }
 
 // Do-nothing so not all boards need to provide this function.

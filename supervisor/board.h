@@ -15,8 +15,17 @@
 // way.
 bool board_requests_safe_mode(void);
 
+// Called from port_init() before any peripheral is initialized, for boards
+// whose bootloader hands over live peripherals and enabled interrupts. Nothing
+// is available yet: no heap, no filesystem, no serial. Keep it to register
+// writes.
+void board_early_init(void);
+
 // Initializes board related state once on start up.
 void board_init(void);
+
+// Re-apply the board's quiescent pin configuration.
+void board_reset_pin_defaults(void);
 
 // Reset the state of off MCU components such as neopixels.
 void reset_board(void);

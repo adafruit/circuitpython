@@ -6,8 +6,15 @@
 
 include ../../py/circuitpy_mkenv.mk
 
+# The SoftDevice paths are built from MCU_VARIANT and
+# SOFTDEV_VERSION, which only exist once boards/$(BOARD)/mpconfigboard.mk has
+# set MCU_CHIP. Skip when the rule requested is not board-specific (e.g.
+# fetch-port-submodules), or the stack-missing check looks for an
+# unexpanded path and fails on a tree where nothing is actually missing.
+ifneq ($(VALID_BOARD),)
 ifneq ($(SD), )
 	include bluetooth/bluetooth_common.mk
+endif
 endif
 
 CROSS_COMPILE = arm-none-eabi-
@@ -65,7 +72,32 @@ endif
 # nrfx does casts that increase alignment requirements.
 CFLAGS += -Wno-cast-align
 
+# Three places on the boot path write UICR, each conditionally, each with a
+# forced reset afterwards, and each permanent: UICR can only be cleared by an
+# ERASEALL, which needs a debugger and wipes the whole chip. On a board with a
+# vendor bootloader and no SWD access that is a one-way change with no undo, so
+# every one of them is a knob. See also NRF_NFCT_PINS_AS_GPIOS (mpconfigport.mk)
+# and NRF_REGOUT0_3V3 below; teenage_engineering_sp1 turns off all three.
+#
+# CONFIG_GPIO_AS_PINRESET makes SystemInit write UICR PSELRESET[0..1] = 18 on
+# any chip where it is unprogrammed. Boards where P0.18 is not a reset pad (or
+# whose UICR must never be touched) opt out with NRF_GPIO_AS_PINRESET = 0.
+NRF_GPIO_AS_PINRESET ?= 1
+ifeq ($(NRF_GPIO_AS_PINRESET),1)
 NRF_DEFINES += -DCONFIG_GPIO_AS_PINRESET
+endif
+
+# nrf_peripherals_power_init() writes UICR REGOUT0 = 3.3 V on any nRF52840 that
+# is running in high-voltage mode (VDDH supplied) with REGOUT0 unprogrammed,
+# because the reset default there is 1.8 V and most boards want 3.3 V. A board
+# that is externally regulated never reaches the write; a battery-powered,
+# VDDH-supplied board reaches it on its first boot. Opt out with
+# NRF_REGOUT0_3V3 = 0 -- but only if the board is known to work at whatever
+# REGOUT0 already says, since nothing else sets that voltage.
+NRF_REGOUT0_3V3 ?= 1
+ifeq ($(NRF_REGOUT0_3V3),1)
+CFLAGS += -DCONFIG_REGOUT0_3V3
+endif
 CFLAGS += $(NRF_DEFINES)
 
 CFLAGS += \
@@ -112,13 +144,41 @@ endif
 
 SRC_C += \
 	background.c \
+	power_off.c \
 	boards/$(BOARD)/board.c \
 	boards/$(BOARD)/pins.c \
 	device/$(MCU_VARIANT)/startup_$(MCU_SUB_VARIANT).c \
+	nrfx/mdk/system_$(MCU_SUB_VARIANT).c \
+
+
+CIRCUITPY_SP1_EMMC ?= 0
+CFLAGS += -DCIRCUITPY_SP1_EMMC=$(CIRCUITPY_SP1_EMMC)
+# HS_TIMING switch
+CIRCUITPY_SP1_EMMC_HS ?= 0
+CFLAGS += -DSP1_EMMC_HS_TIMING=$(CIRCUITPY_SP1_EMMC_HS)
+# write switch
+CIRCUITPY_SP1_EMMC_WRITE ?= 0
+CFLAGS += -DSP1_EMMC_WRITE=$(CIRCUITPY_SP1_EMMC_WRITE)
+# USB mass storage automount switch
+CIRCUITPY_SP1_EMMC_USB ?= 0
+CFLAGS += -DSP1_EMMC_AUTOMOUNT=$(CIRCUITPY_SP1_EMMC_USB)
+ifeq ($(CIRCUITPY_SP1_EMMC),1)
+SRC_C += \
+	sp1_emmc/sp1_emmc.c \
+	sp1_emmc/bindings.c \
+
+ifeq ($(CIRCUITPY_SP1_EMMC_USB),1)
+SRC_C += sp1_emmc/automount.c
+endif
+endif
+
+ifneq ($(SD), )
+SRC_C += \
 	bluetooth/ble_drv.c \
 	common-hal/_bleio/bonding.c \
-	nrfx/mdk/system_$(MCU_SUB_VARIANT).c \
 	sd_mutex.c \
+
+endif
 
 SRC_PERIPHERALS := \
 	peripherals/nrf/cache.c \
@@ -177,7 +237,11 @@ UF2_FAMILY_ID_nrf52840 = 0xADA52840
 UF2_FAMILY_ID_nrf52833 = 0x621E937A
 
 
+ifneq ($(SD), )
 all: $(BUILD)/firmware.bin $(BUILD)/firmware.uf2 $(BUILD)/firmware.combined.hex
+else
+all: $(BUILD)/firmware.bin $(BUILD)/firmware.uf2 $(BUILD)/firmware.hex
+endif
 
 ifeq ($(VALID_BOARD),)
 $(BUILD)/firmware.elf: invalid-board
