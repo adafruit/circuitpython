@@ -15,7 +15,7 @@
 #include "nrf_gpio.h"
 
 #if CIRCUITPY_SP1_EMMC
-#include "sp1_emmc/sp1_emmc.h"
+#include "bindings/sp1emmc/EMMC.h"
 #endif
 
 #ifndef NRFX_SPIM3_ENABLED
