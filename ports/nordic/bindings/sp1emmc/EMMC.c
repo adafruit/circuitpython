@@ -301,7 +301,7 @@ static int emmc_read_chunked(uint8_t *out, mp_uint_t start, mp_uint_t count, boo
     if (count == 0 || start >= total || count > total - start) {
         return -MP_EINVAL;
     }
-    for (mp_uint_t done = 0; done < count; ) {
+    for (mp_uint_t done = 0; done < count;) {
         mp_uint_t run = MIN(CHUNK_BLOCKS, count - done);
         bool ok = false;
         for (int attempt = 0; attempt < 3 && !ok; attempt++) {
@@ -360,7 +360,7 @@ static int emmc_write_chunked(const uint8_t *src, mp_uint_t start, mp_uint_t cou
     if (count == 0 || start >= total || count > total - start) {
         return -MP_EINVAL;
     }
-    for (mp_uint_t done = 0; done < count; ) {
+    for (mp_uint_t done = 0; done < count;) {
         mp_uint_t run = MIN(CHUNK_BLOCKS, count - done);
         bool ok = false;
         for (int attempt = 0; attempt < 3 && !ok; attempt++) {

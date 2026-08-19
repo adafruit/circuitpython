@@ -29,7 +29,7 @@ NRF_REGOUT0_3V3 = 0
 #    UICR burn is not.
 NRF_NFCT_PINS_AS_GPIOS = 0
 
-# No SoftDevice. It would have to live at 0x1000, which is inside the TE
+# No SoftDevice. It would have to live at 0x1000, which is inside the
 # bootloader, and the radio has no antenna. Empty SD also forces
 # CIRCUITPY_BLEIO_NATIVE and the BLE workflow services to 0 (mpconfigport.mk).
 SD =
@@ -48,7 +48,7 @@ CIRCUITPY_SHARPDISPLAY = 0
 CIRCUITPY_IS31FL3741 = 0
 CIRCUITPY_VECTORIO = 0
 
-# The watchdog is started by the TE bootloader before our first instruction and
+# The watchdog is started by the bootloader before our first instruction and
 # its config registers are locked.
 CIRCUITPY_WATCHDOG = 0
 

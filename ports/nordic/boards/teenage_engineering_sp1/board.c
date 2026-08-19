@@ -4,7 +4,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-// Early-boot hygiene for the TE SP-1.
+// Early-boot hygiene for the Teenage Engineering SP-1.
 //
 // Unlike a normal CircuitPython board, this one is entered from a bootloader
 // that has already brought hardware up: it starts HFCLK and LFCLK, and leaves

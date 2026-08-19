@@ -4,7 +4,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-// Pin map from Tim Knapen's reverse-engineering of the TE SP-1
+// Pin map from Tim Knapen's reverse-engineering of the Teenage Engineering SP-1
 // https://github.com/timknapen/SP-1-dev/wiki
 
 #include "shared-bindings/board/__init__.h"

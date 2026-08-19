@@ -1703,6 +1703,42 @@ msgid ""
 "Frequency must be 24, 150, 396, 450, 528, 600, 720, 816, 912, 960 or 1008 Mhz"
 msgstr ""
 
+#: ports/nordic/bindings/sp1emmc/EMMC.c
+msgid ""
+"eMMC owned by the USB drive; set CIRCUITPY_EMMC_USB = false in settings.toml"
+msgstr ""
+
+#: ports/nordic/bindings/sp1emmc/EMMC.c
+msgid "eMMC already in use"
+msgstr ""
+
+#: ports/nordic/bindings/sp1emmc/EMMC.c
+#: ports/raspberrypi/common-hal/busio/SPI.c
+msgid "SPI peripheral in use"
+msgstr ""
+
+#: ports/nordic/bindings/sp1emmc/EMMC.c
+#, c-format
+msgid "eMMC high-speed switch failed at %s"
+msgstr ""
+
+#: ports/nordic/bindings/sp1emmc/EMMC.c
+#, c-format
+msgid "eMMC init failed at %s"
+msgstr ""
+
+#: ports/nordic/bindings/sp1emmc/EMMC.c
+msgid "Buffer length must be a multiple of 512"
+msgstr ""
+
+#: ports/nordic/bindings/sp1emmc/EMMC.c
+msgid "Block address out of range"
+msgstr ""
+
+#: ports/nordic/bindings/sp1emmc/EMMC.c
+msgid "Read-only: construct EMMC(write_enabled=True) to write"
+msgstr ""
+
 #: ports/nordic/boards/aramcon2_badge/mpconfigboard.h
 msgid "You pressed the left button at start up."
 msgstr ""
@@ -1900,10 +1936,6 @@ msgstr ""
 #: ports/raspberrypi/common-hal/busio/I2C.c
 #: ports/raspberrypi/common-hal/i2ctarget/I2CTarget.c
 msgid "I2C peripheral in use"
-msgstr ""
-
-#: ports/raspberrypi/common-hal/busio/SPI.c
-msgid "SPI peripheral in use"
 msgstr ""
 
 #: ports/raspberrypi/common-hal/busio/UART.c
