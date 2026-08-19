@@ -23,7 +23,8 @@
 #include "bindings/sp1emmc/EMMC.h"
 #include "sp1_emmc/automount.h"
 #include "sp1_emmc/sp1_emmc.h"
-#include "sp1_emmc/sp1_emmc_hw.h"
+
+#include "nrf.h"
 
 static bool s_constructed;
 
@@ -427,16 +428,6 @@ static mp_obj_t sp1emmc_emmc_ioctl(mp_obj_t self_in, mp_obj_t op_in, mp_obj_t ar
     return mp_obj_new_int_from_uint(out);
 }
 static MP_DEFINE_CONST_FUN_OBJ_3(sp1emmc_emmc_ioctl_obj, sp1emmc_emmc_ioctl);
-
-// The op numbers are restated in sp1_emmc.h so the driver can also be compiled
-// away from MicroPython, where the extmod headers are not available. If they
-// are ever renumbered, fail here rather than on the card.
-MP_STATIC_ASSERT(EMMC_IOCTL_INIT == MP_BLOCKDEV_IOCTL_INIT);
-MP_STATIC_ASSERT(EMMC_IOCTL_DEINIT == MP_BLOCKDEV_IOCTL_DEINIT);
-MP_STATIC_ASSERT(EMMC_IOCTL_SYNC == MP_BLOCKDEV_IOCTL_SYNC);
-MP_STATIC_ASSERT(EMMC_IOCTL_BLOCK_COUNT == MP_BLOCKDEV_IOCTL_BLOCK_COUNT);
-MP_STATIC_ASSERT(EMMC_IOCTL_BLOCK_SIZE == MP_BLOCKDEV_IOCTL_BLOCK_SIZE);
-MP_STATIC_ASSERT(EMMC_IOCTL_BLOCK_ERASE == MP_BLOCKDEV_IOCTL_BLOCK_ERASE);
 
 mp_uint_t sp1emmc_emmc_readblocks_native(mp_obj_t self_in, uint8_t *buf,
     uint32_t start_block, uint32_t nblocks) {

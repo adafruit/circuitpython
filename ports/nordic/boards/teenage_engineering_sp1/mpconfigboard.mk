@@ -12,27 +12,21 @@ MCU_CHIP = nrf52840
 # UICR writes on the boot path is turned off here, and the acceptance test is
 # the disassembly: every reference to 0x10001000 in firmware.elf must be a read.
 #
-# 1. PSELRESET. The SP-1 has no reset pin and P0.18's wiring is unknown. With
-#    CONFIG_GPIO_AS_PINRESET on, SystemInit would burn PSELRESET[0..1] = 18
-#    on the first boot (PSELRESET is almost certainly erased on this device),
-#    turning P0.18 into nRESET forever — if anything ever pulls that net low,
-#    the chip is held in reset and unreachable even over SWD.
+# 1. PSELRESET reads erased here, so CONFIG_GPIO_AS_PINRESET would burn
+#    PSELRESET[0..1] = 18 on the first boot, making P0.18 nRESET forever. This
+#    board has no reset pin and P0.18's wiring is unknown; if anything pulls
+#    that net low the chip is held in reset and unreachable even over SWD.
 NRF_GPIO_AS_PINRESET = 0
 
-# 2. REGOUT0. Fires only in high-voltage mode (VDDH supplied) with REGOUT0
-#    unprogrammed. A USB-powered board never reaches it — MAINREGSTATUS reads
-#    0 — but the SP-1 runs from a LiPo and may well be VDDH-supplied, which is
-#    exactly the case that writes UICR. Safe to remove either way: this board
-#    runs 3.3 V logic (eMMC, codecs, LEDs) as shipped, so REGOUT0 is already
-#    whatever it needs to be.
+# 2. REGOUT0 is unprogrammed but MAINREGSTATUS reads 0 (normal-voltage mode),
+#    so the write cannot fire. Off anyway: VDD is externally regulated to
+#    3.3 V, which is what the eMMC, codecs and LEDs already run at.
 NRF_REGOUT0_3V3 = 0
 
-# 3. NFCPINS. P0.09/P0.10 are the NFC pins and are TAS_RESET and BT_RESET here.
-#    Both are driven as GPIO on this device as shipped, so NFCPINS.PROTECT
-#    must already be cleared and the write cannot fire — but "must already be"
-#    is not the bar for a one-way change, and if the assumption is wrong the
-#    right outcome is two dead reset lines to diagnose, not a UICR burn. The
-#    actual value can be read back from the REPL.
+# 3. NFCPINS reads 0xFFFFFFFE, i.e. PROTECT already cleared, so the write
+#    cannot fire and P0.09/P0.10 work as TAS_RESET and BT_RESET. Off anyway:
+#    if that ever fails to hold, two dead reset lines are diagnosable and a
+#    UICR burn is not.
 NRF_NFCT_PINS_AS_GPIOS = 0
 
 # No SoftDevice. It would have to live at 0x1000, which is inside the TE

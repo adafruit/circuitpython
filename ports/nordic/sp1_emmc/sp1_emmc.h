@@ -49,25 +49,13 @@ extern sp1_emmc_state_t g_emmc_state;
 extern volatile uint32_t g_emmc_clk_half_us;
 
 bool emmc_init(void);
-bool emmc_is_ready(void);
 uint32_t emmc_block_count(void);              // 0 until EXT_CSD has been read
 bool emmc_cmd13(uint8_t *r1_out);             // SEND_STATUS -- card status R1
 bool emmc_read_ext_csd(uint8_t *buf);         // CMD8 -> 512-byte EXT_CSD (read-only)
 bool emmc_read_blocks(uint32_t block_addr, uint8_t *buf, uint32_t count);
 void emmc_power_down(void);                   // reset asserted, pins released, VCCQ off
 
-// The block-protocol ioctl ops (extmod/vfs.h's MP_BLOCKDEV_IOCTL_*), restated
-// here so the protocol layer needs no MicroPython headers. EMMC.c
-// static-asserts the two sets agree, so a future upstream renumbering stops
-// the build rather than the card.
-#define EMMC_IOCTL_INIT        1u
-#define EMMC_IOCTL_DEINIT      2u
-#define EMMC_IOCTL_SYNC        3u
-#define EMMC_IOCTL_BLOCK_COUNT 4u
-#define EMMC_IOCTL_BLOCK_SIZE  5u
-#define EMMC_IOCTL_BLOCK_ERASE 6u
-
-
+// Block-device ioctl, taking extmod/vfs.h's MP_BLOCKDEV_IOCTL_* ops.
 bool emmc_blockdev_ioctl(uint32_t op, uint32_t arg, uint32_t *out_value);
 
 // CMD24 (count == 1) / CMD25 + CMD12 (count > 1), each block followed by the

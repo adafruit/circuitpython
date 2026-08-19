@@ -4,15 +4,17 @@
 //
 // SPDX-License-Identifier: MIT
 
-// Every hardware touch sp1_emmc.c makes goes through this header: the five
-// pins, the clock/tick sources, the WDT feed and the SPIM3 data engine. The
-// protocol file itself has no nRF or CircuitPython includes of its own.
+// The hardware sp1_emmc.c drives: the five pins, the RTC2 tick source and the
+// SPIM3 data engine.
 
 
 #pragma once
 
 #include <stdbool.h>
 #include <stdint.h>
+
+#include "nrf.h"
+#include "nrf_gpio.h"
 
 // Pins (SP-1 wiring).
 #define SP1_EMMC_PIN_CLK   6u    // P0.06
@@ -28,19 +30,6 @@
 // SPIM3 CONFIG codes
 #define SPIM_CONFIG_MODE0 0u                  // MSB first, CPOL0/CPHA0
 #define SPIM_CONFIG_MODE1 (1u << 1)           // MSB first, CPOL0/CPHA1
-
-// The write path's TX frame: FF gap | FE start token | 512 data | CRC16 = 516
-// bytes, rounded up. It must live in the port's reserved 8 KiB low-RAM SPIM3
-// buffer.
-#define SP1_EMMC_TX_FRAME_SIZE 520u
-
-#include "nrf_gpio.h"
-#include "nrf.h"
-
-#include "py/mphal.h"
-#include "py/runtime.h"          // RUN_BACKGROUND_TASKS
-#include "shared-bindings/microcontroller/__init__.h"
-#include "nrf/wdt.h"
 
 // ---- pin control ---------------------------------------------------------
 // The command/init path uses the HAL macros; the data path uses the direct
@@ -108,32 +97,14 @@ static inline void sp1_emmc_pins_release(void) {
 //
 // The write path relies on this buffer rather than on retrying a bad CRC
 // status; the status token is still enforced as the backstop.
-static inline uint8_t *sp1_emmc_tx_frame(void) {
-    return (uint8_t *)SPIM3_BUFFER_RAM_START_ADDR;
-}
+#define SP1_EMMC_TX_FRAME  ((uint8_t *)SPIM3_BUFFER_RAM_START_ADDR)
 
 // ---- time ----------------------------------------------------------------
-#define EMMC_DELAY_US(us)  common_hal_mcu_delay_us(us)
-#define EMMC_SLEEP_MS(ms)  mp_hal_delay_ms(ms)
-
 // Free-running 32768 Hz counter (RTC2, the supervisor's tick source). 24-bit,
 // so differences must be masked; it wraps every 512 s.
 #define EMMC_TICKS_HZ      32768u
 #define EMMC_TICK_MASK     0x00FFFFFFu
-static inline uint32_t emmc_ticks(void) {
-    return NRF_RTC2->COUNTER;
-}
-
-// Long-wait service: feed the bootloader's dog and run background tasks (USB,
-// the power-off gesture). Never sleeps -- the waits this serves are a few
-// microseconds, not a nap.
-static inline void emmc_yield(void) {
-    RUN_BACKGROUND_TASKS;
-    bootloader_wdt_feed();
-}
-static inline void emmc_feed(void) {
-    bootloader_wdt_feed();
-}
+#define EMMC_TICKS()       (NRF_RTC2->COUNTER)
 
 // ---- SPIM3 data engine ---------------------------------------------------
 // SPIM3 is the only instance that runs above 8 MHz. M16 = 16 MHz, the fastest
@@ -144,27 +115,11 @@ static inline void emmc_feed(void) {
 // There is still no free-floating "speed knob": the two codes at the top of
 // this file are the only values ever written.
 //
-// The peripheral register IS the state -- no shadow copy to drift, and it
-// survives ENABLE=0 between transfers. sp1_emmc_spim_init() puts it back to
-// M16 on every init, so a fresh object always starts at compat speed even if
-// the previous one ran high.
-static inline uint32_t sp1_emmc_spim_freq(void) {
-    return NRF_SPIM3->FREQUENCY;
-}
-
-static inline void sp1_emmc_spim_set_freq(uint32_t freq) {
-    NRF_SPIM3->FREQUENCY = freq;
-}
-
-// CONFIG: SPIM_CONFIG_MODE0/MODE1 at the top of this file, and the reason the
-// bit has to move at all.
-static inline uint32_t sp1_emmc_spim_config(void) {
-    return NRF_SPIM3->CONFIG;
-}
-
-static inline void sp1_emmc_spim_set_config(uint32_t config) {
-    NRF_SPIM3->CONFIG = config;
-}
+// NRF_SPIM3->FREQUENCY and ->CONFIG are read and written directly: the
+// peripheral register IS the state -- no shadow copy to drift, and it survives
+// ENABLE=0 between transfers. sp1_emmc_spim_init() puts both back to M16 /
+// mode 0 on every init, so a fresh object always starts at compat speed even
+// if the previous one ran high.
 
 static inline void sp1_emmc_spim_init(void) {
     NRF_SPIM3->ENABLE = 0;

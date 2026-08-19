@@ -31,6 +31,12 @@
 
 #include <string.h>
 
+#include "extmod/vfs.h"          // MP_BLOCKDEV_IOCTL_*
+#include "py/mphal.h"
+#include "py/runtime.h"          // RUN_BACKGROUND_TASKS
+#include "shared-bindings/microcontroller/__init__.h"
+#include "nrf/wdt.h"
+
 #define CMD_SAFE_HALF_US 1u   // slow clock for the IDENTIFICATION phase only
 
 // Command-phase half-period: starts safe (eMMC identification requires a slow
@@ -49,20 +55,24 @@ static uint8_t s_device_type;         // from EXT_CSD[196]; 0 = not read yet
 // One 512-byte block + its CRC16, byte-aligned, for the RX DMA.
 static uint8_t s_dma_rx[EMMC_BLOCK_SIZE + 2];
 
-#define HALF(hd)  do { if (hd) { EMMC_DELAY_US(hd); } } while (0)
-
 // ---- bounded-wait helpers --------------------------------------------------
 // The 32768 Hz counter is 24-bit, so every elapsed calculation masks.
 #define US_TO_TICKS(us) ((uint32_t)(((uint64_t)(us) * EMMC_TICKS_HZ + 999999u) / 1000000u))
 
 static inline uint32_t ticks_since(uint32_t t0) {
-    return (emmc_ticks() - t0) & EMMC_TICK_MASK;
+    return (EMMC_TICKS() - t0) & EMMC_TICK_MASK;
 }
 
 static inline void half_delay(uint32_t us) {
     if (us) {
-        EMMC_DELAY_US(us);
+        common_hal_mcu_delay_us(us);
     }
+}
+
+// Long-wait service: feed the bootloader's dog and run background tasks
+static inline void emmc_yield(void) {
+    RUN_BACKGROUND_TASKS;
+    bootloader_wdt_feed();
 }
 
 // Safe clock pulse for command/CRC phases.
@@ -130,6 +140,8 @@ static void crc16_tab_init(void) {
     }
 }
 
+// The port builds at -Os, so this is an opt-up. crc16 is pure computation,
+// the level can only change its speed, never its value.
 __attribute__((optimize("O2")))
 static uint16_t crc16(const uint8_t *data, uint32_t len) {
     uint16_t crc = 0;
@@ -211,21 +223,24 @@ static bool send_command_retry(uint8_t cmd, uint32_t arg, uint8_t *r1_out, int t
                 clk_pulse();
             }
         } else {
-            EMMC_SLEEP_MS(2);
+            mp_hal_delay_ms(2);
         }
     }
     return false;
 }
 
 // DATA read: per-bit CLK toggle uses the configurable (possibly 0) half-period.
-__attribute__((optimize("O2")))   // read path only: -O2 safe for reads, NOT writes
+// -O2 opts up from the port's -Os default and is load-bearing: at -Os the GPIO
+// and delay helpers stop being inlined and become calls inside the per-bit
+// loop, where the instruction count is the bit timing.
+__attribute__((optimize("O2")))
 static bool read_data_block(uint8_t *buf) {
     const uint32_t hd = g_emmc_clk_half_us;
 
     DAT0_IN();
     // START-BIT HUNT
     {
-        uint32_t t0 = emmc_ticks();
+        uint32_t t0 = EMMC_TICKS();
         const uint32_t lim = US_TO_TICKS(80000u);      // 80 ms bound
         const uint32_t yield_at = US_TO_TICKS(500u);
         bool got_start = false;
@@ -234,14 +249,14 @@ static bool read_data_block(uint8_t *buf) {
             // timing modes
             for (int burst = 0; burst < 64 && !got_start; burst++) {
                 RCLK_HIGH();
-                HALF(hd);
+                half_delay(hd);
                 EDGE_SETTLE();
                 if (!RDAT_GET()) {
                     got_start = true;    // leave with RCLK HIGH (as before)
                     break;
                 }
                 RCLK_LOW();
-                HALF(hd);
+                half_delay(hd);
             }
             uint32_t el = ticks_since(t0);
             if (got_start) {
@@ -256,7 +271,7 @@ static bool read_data_block(uint8_t *buf) {
         }
     }
     RCLK_LOW();
-    HALF(hd);
+    half_delay(hd);
 
     // The start bit was just consumed by the bit-bang hunt above, so the
     // remaining 512 data bytes + CRC16 are exactly byte-aligned.
@@ -265,9 +280,9 @@ static bool read_data_block(uint8_t *buf) {
     uint16_t card_crc = (uint16_t)(((uint16_t)s_dma_rx[EMMC_BLOCK_SIZE] << 8) |
         s_dma_rx[EMMC_BLOCK_SIZE + 1]);
     RCLK_HIGH();
-    HALF(hd);
+    half_delay(hd);
     RCLK_LOW();
-    HALF(hd);                                          // end bit
+    half_delay(hd);                                          // end bit
     bool crc_ok = crc16(buf, EMMC_BLOCK_SIZE) == card_crc;
     DAT0_OUT();
     DAT0_HIGH();
@@ -311,12 +326,12 @@ bool emmc_init(void) {
     DAT0_HIGH();
 
     VCCQ_ON();
-    EMMC_SLEEP_MS(10);
+    mp_hal_delay_ms(10);
 
     RST_ASSERT();
-    EMMC_SLEEP_MS(1);
+    mp_hal_delay_ms(1);
     RST_RELEASE();
-    EMMC_SLEEP_MS(2);
+    mp_hal_delay_ms(2);
 
     CMD_HIGH();
     for (int i = 0; i < 80; i++) {       // 74+ clocks before the first command
@@ -325,14 +340,14 @@ bool emmc_init(void) {
 
     send_command(0, 0x00000000, NULL);   // CMD0 GO_IDLE (no response expected)
     g_emmc_state.cmd0_sent = true;
-    EMMC_SLEEP_MS(1);
+    mp_hal_delay_ms(1);
 
     // CMD1 SEND_OP_COND, arg 0x40FF8000: HCS=1
     uint8_t r3[6] = {0};
     for (int retry = 0; retry < 1000; retry++) {
         bool ok = send_command(1, 0x40FF8000, r3);
-        emmc_feed();
-        EMMC_SLEEP_MS(1);
+        bootloader_wdt_feed();
+        mp_hal_delay_ms(1);
         if (ok && (r3[1] & 0x80)) {      // response seen AND busy bit set = ready
             g_emmc_state.cmd1_retries = retry;
             break;
@@ -348,20 +363,20 @@ bool emmc_init(void) {
             drain_r2_cid(g_emmc_state.cid);
             break;
         }
-        EMMC_SLEEP_MS(2);
+        mp_hal_delay_ms(2);
     }
-    EMMC_SLEEP_MS(1);
+    mp_hal_delay_ms(1);
 
     uint8_t r6[6] = {0};
     s_rca = 0x0001u << 16;
     g_emmc_state.cmd3_resp = send_command_retry(3, s_rca, r6, 8);   // SET_RELATIVE_ADDR
-    EMMC_SLEEP_MS(1);
+    mp_hal_delay_ms(1);
 
     uint8_t r1[6] = {0};
     g_emmc_state.cmd7_resp = send_command_retry(7, s_rca, r1, 8);   // SELECT_CARD
-    EMMC_SLEEP_MS(1);
+    mp_hal_delay_ms(1);
     g_emmc_state.cmd16_resp = send_command_retry(16, EMMC_BLOCK_SIZE, r1, 8); // SET_BLOCKLEN
-    EMMC_SLEEP_MS(1);
+    mp_hal_delay_ms(1);
 
     // strict: ready only if the card actually selected AND accepted block length
     s_ready = g_emmc_state.cmd7_resp && g_emmc_state.cmd16_resp;
@@ -369,10 +384,6 @@ bool emmc_init(void) {
         s_cmd_half_us = 0u;              // identification done: full-speed commands
         g_emmc_clk_half_us = 0u;
     }
-    return s_ready;
-}
-
-bool emmc_is_ready(void) {
     return s_ready;
 }
 
@@ -385,7 +396,7 @@ bool emmc_blockdev_ioctl(uint32_t op, uint32_t arg, uint32_t *out_value) {
     (void)arg;
     *out_value = 0;
     switch (op) {
-        case EMMC_IOCTL_INIT:
+        case MP_BLOCKDEV_IOCTL_INIT:
             // The constructor already did the whole CMD0..CMD16 + EXT_CSD
             // walk, or raised. 0 means "initialised"; a card that has since
             // been deinited answers with the error the callers check for
@@ -393,14 +404,14 @@ bool emmc_blockdev_ioctl(uint32_t op, uint32_t arg, uint32_t *out_value) {
             // than at the first read.
             *out_value = s_ready ? 0u : 1u;
             break;
-        case EMMC_IOCTL_DEINIT:
-        case EMMC_IOCTL_SYNC:
-        case EMMC_IOCTL_BLOCK_ERASE:
+        case MP_BLOCKDEV_IOCTL_DEINIT:
+        case MP_BLOCKDEV_IOCTL_SYNC:
+        case MP_BLOCKDEV_IOCTL_BLOCK_ERASE:
             break;
-        case EMMC_IOCTL_BLOCK_COUNT:
+        case MP_BLOCKDEV_IOCTL_BLOCK_COUNT:
             *out_value = s_block_count;
             break;
-        case EMMC_IOCTL_BLOCK_SIZE:
+        case MP_BLOCKDEV_IOCTL_BLOCK_SIZE:
             *out_value = EMMC_BLOCK_SIZE;
             break;
         default:
@@ -409,10 +420,8 @@ bool emmc_blockdev_ioctl(uint32_t op, uint32_t arg, uint32_t *out_value) {
     return true;
 }
 
-// Power-off: release the bus pins and cut the VCCQ I/O rail. With no write path
-// and the card's volatile cache never enabled there is nothing to flush first,
-// so board_power_off_prepare() needs no eMMC step of its own. The card is gone
-// until the next emmc_init().
+// Power-off: release the bus pins and cut the VCCQ I/O rail.
+// The card is gone until the next emmc_init().
 void emmc_power_down(void) {
     s_ready = false;
     s_block_count = 0;
@@ -457,7 +466,7 @@ bool emmc_read_ext_csd(uint8_t *buf) {
 // run_bg picks the service call for a long stall
 //   true  -- emmc_yield(): feed the dog AND run background tasks. That is
 //            where the power-off gesture lives.
-//   false -- emmc_feed(): feed the dog ONLY. Used by every wait inside a
+//   false -- bootloader_wdt_feed(): feed the dog ONLY. Used by every wait inside a
 //            write, so a gesture can never drop the rail around a card that
 //            is mid-program. Detection is deferred by at most one bounded
 //            wait (<=500 ms) against a 3 s hold; between blocks and between
@@ -467,7 +476,7 @@ static bool dat0_busy_wait(uint32_t timeout_us, bool run_bg) {
     for (int i = 0; i < EMMC_BUSY_LEADIN_CLOCKS; i++) {
         clk_pulse();
     }
-    uint32_t t0 = emmc_ticks();
+    uint32_t t0 = EMMC_TICKS();
     const uint32_t lim = US_TO_TICKS(timeout_us);
     for (;;) {
         bool released = false;
@@ -491,7 +500,7 @@ static bool dat0_busy_wait(uint32_t timeout_us, bool run_bg) {
         if (run_bg) {
             emmc_yield();
         } else {
-            emmc_feed();
+            bootloader_wdt_feed();
         }
     }
 }
@@ -510,7 +519,7 @@ static bool dat0_busy_wait(uint32_t timeout_us, bool run_bg) {
 // authoritative "the switch finished" test, and it is also where SWITCH_ERROR
 // (status bit 7) shows up if the card rejected the write.
 static bool wait_tran_after_switch(uint32_t timeout_us) {
-    uint32_t t0 = emmc_ticks();
+    uint32_t t0 = EMMC_TICKS();
     const uint32_t lim = US_TO_TICKS(timeout_us);
     for (;;) {
         uint8_t r1[6];
@@ -529,7 +538,7 @@ static bool wait_tran_after_switch(uint32_t timeout_us) {
             return false;
         }
         emmc_yield();
-        EMMC_SLEEP_MS(1);
+        mp_hal_delay_ms(1);
     }
 }
 
@@ -569,7 +578,7 @@ bool emmc_set_high_speed(void) {
     //
     // This happens BEFORE the readback, because the readback is itself a block
     // read off a card that has already switched.
-    sp1_emmc_spim_set_config(SPIM_CONFIG_MODE1);
+    NRF_SPIM3->CONFIG = SPIM_CONFIG_MODE1;
 
     // Read the byte back AT THE OLD CLOCK. A card that ACKed the switch but did
     // not take it would otherwise be met with a 32 MHz bus it never agreed to,
@@ -577,7 +586,7 @@ bool emmc_set_high_speed(void) {
     uint8_t ext_csd[EMMC_BLOCK_SIZE];
     if (!emmc_read_ext_csd(ext_csd) ||
         ext_csd[EMMC_EXT_CSD_HS_TIMING] != 1u) {
-        sp1_emmc_spim_set_config(SPIM_CONFIG_MODE0);
+        NRF_SPIM3->CONFIG = SPIM_CONFIG_MODE0;
         return false;                            // still at M16, card still readable
     }
     g_emmc_state.hs_stage = 5;
@@ -586,13 +595,13 @@ bool emmc_set_high_speed(void) {
     // faster bus with the integrity layer watching: if the first fast transfer
     // cannot even fetch a block the card just served correctly, fall straight
     // back.
-    sp1_emmc_spim_set_freq(SPIM_FREQ_M32);
+    NRF_SPIM3->FREQUENCY = SPIM_FREQ_M32;
     if (!emmc_read_ext_csd(ext_csd) || ext_csd[EMMC_EXT_CSD_HS_TIMING] != 1u) {
         // Back to the old CLOCK but NOT to the old phase: the card is in
         // high-speed timing and stays there until the rail drops, and
         // high-speed timing is specified from 0 Hz up. Mode 1 is how we talk
         // to it at M16 now.
-        sp1_emmc_spim_set_freq(SPIM_FREQ_M16);
+        NRF_SPIM3->FREQUENCY = SPIM_FREQ_M16;
         return false;
     }
     g_emmc_state.hs_active = true;
@@ -622,7 +631,7 @@ bool emmc_read_blocks(uint32_t block_addr, uint8_t *buf, uint32_t count) {
         return false;
     }
 
-    uint32_t bt0 = emmc_ticks();
+    uint32_t bt0 = EMMC_TICKS();
     const uint32_t blim = US_TO_TICKS(150000u);
     for (uint32_t i = 0; i < count; i++) {
         if (i && ticks_since(bt0) >= blim) {
@@ -643,6 +652,8 @@ bool emmc_read_blocks(uint32_t block_addr, uint8_t *buf, uint32_t count) {
 // Same shape as the read side
 #define EMMC_WR_BURST_US   250000u
 
+// -Os states the intent for this bit-bang, but matches the port default and so
+// changes nothing today.
 __attribute__((optimize("Os")))
 static bool write_data_block(const uint8_t *buf) {
     const uint32_t hd = g_emmc_clk_half_us;
@@ -657,7 +668,7 @@ static bool write_data_block(const uint8_t *buf) {
     DAT0_OUT();
     RDAT_HIGH();
 
-    uint8_t *tx = sp1_emmc_tx_frame();   // the reserved low-RAM SPIM3 buffer
+    uint8_t *tx = SP1_EMMC_TX_FRAME;   // the reserved low-RAM SPIM3 buffer
     uint16_t crc = crc16(buf, EMMC_BLOCK_SIZE);
     tx[0] = 0xFF;                                  // Nwr idle gap
     tx[1] = 0xFE;                                  // 7 idle bits + START 0
@@ -682,22 +693,22 @@ static bool write_data_block(const uint8_t *buf) {
     // register IS the state" true for the read path (sp1_emmc_hw.h): this
     // function borrows the phase for one DMA and gives it back. Two register
     // writes against a ~130 us transfer.
-    const uint32_t saved_cfg = sp1_emmc_spim_config();
+    const uint32_t saved_cfg = NRF_SPIM3->CONFIG;
     if (saved_cfg != SPIM_CONFIG_MODE0) {
-        sp1_emmc_spim_set_config(SPIM_CONFIG_MODE0);
+        NRF_SPIM3->CONFIG = SPIM_CONFIG_MODE0;
     }
     // The TX frame ends exactly at the crc's last bit, no trailing idle
     // byte. The card emits its CRC-status token a couple of clocks after the
     // end bit.
     sp1_emmc_spim_xfer(tx, 2u + EMMC_BLOCK_SIZE + 2u, NULL, 0);
     if (saved_cfg != SPIM_CONFIG_MODE0) {
-        sp1_emmc_spim_set_config(saved_cfg);
+        NRF_SPIM3->CONFIG = saved_cfg;
     }
     // END bit: DAT0 is back at its GPIO latch (output HIGH) -- clock it.
-    HALF(hd);
+    half_delay(hd);
     EDGE_SETTLE();
     RCLK_HIGH();
-    HALF(hd);
+    half_delay(hd);
     RCLK_LOW();
 
     // CRC-status token: the card drives DAT0 low (start bit), then 3 status
@@ -706,20 +717,20 @@ static bool write_data_block(const uint8_t *buf) {
     int wr_status = -1;
     for (int i = 0; i < 16; i++) {
         RCLK_HIGH();
-        HALF(hd);
+        half_delay(hd);
         EDGE_SETTLE();
         int start = (int)RDAT_GET();
         RCLK_LOW();
-        HALF(hd);
+        half_delay(hd);
         if (!start) {
             int st = 0;
             for (int k = 0; k < 3; k++) {
                 RCLK_HIGH();
-                HALF(hd);
+                half_delay(hd);
                 EDGE_SETTLE();
                 st = (st << 1) | (int)RDAT_GET();
                 RCLK_LOW();
-                HALF(hd);
+                half_delay(hd);
             }
             wr_status = st;
             break;
@@ -760,7 +771,7 @@ bool emmc_write_blocks(uint32_t block_addr, const uint8_t *buf, uint32_t count) 
     if (!send_command_retry(25, block_addr, r1, 4)) {
         return false;
     }
-    uint32_t bt0 = emmc_ticks();
+    uint32_t bt0 = EMMC_TICKS();
     const uint32_t blim = US_TO_TICKS(EMMC_WR_BURST_US);
     for (uint32_t i = 0; i < count; i++) {
         if (i && ticks_since(bt0) >= blim) {
@@ -782,7 +793,7 @@ uint32_t emmc_bus_hz(void) {
     // SPIM3's M16/M32 codes are special values, NOT points on the linear scale
     // the K125..M8 codes sit on (0x0A000000 would decode to 156 MHz there), so
     // this is a lookup and not arithmetic. Only two values are ever written.
-    return sp1_emmc_spim_freq() == SPIM_FREQ_M32 ? 32000000u : 16000000u;
+    return NRF_SPIM3->FREQUENCY == SPIM_FREQ_M32 ? 32000000u : 16000000u;
 }
 
 // ============================================================================

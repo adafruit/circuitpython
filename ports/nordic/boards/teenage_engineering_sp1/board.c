@@ -181,8 +181,9 @@ void board_reset_pin_defaults(void) {
     nrf_gpio_cfg_input(PIN_FUNCTION_BUTTON, NRF_GPIO_PIN_PULLUP);
 
     // BQ24232 charge enable, active low: drive it low so a plugged-in device
-    // actually charges. The current-set pin P1.00 is deliberately left alone,
-    // since the resistor configuration it selects has not been established.
+    // charges. P1.00 (CHARGE_ISET) is deliberately left untouched.
+    // It is the charge-current programming node (ICHG = 870 AΩ / RISET) and
+    // doubles as the current monitor.
     nrf_gpio_cfg_output(PIN_CHARGE_ENABLE);
     nrf_gpio_pin_clear(PIN_CHARGE_ENABLE);
 }
