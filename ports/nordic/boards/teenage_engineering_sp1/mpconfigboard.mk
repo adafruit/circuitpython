@@ -6,11 +6,9 @@ USB_MANUFACTURER = "Teenage Engineering"
 MCU_CHIP = nrf52840
 
 # No UICR write may survive into this board's image. UICR is undoable only by
-# ERASEALL, which needs SWD; the SP-1's SWD pads are not reachable, and an
-# ERASEALL would take TE's bootloader with it — the only copy in existence,
-# since the USB protocol has no read command. So each of the three conditional
-# UICR writes on the boot path is turned off here, and the acceptance test is
-# the disassembly: every reference to 0x10001000 in firmware.elf must be a read.
+# ERASEALL, which needs SWD; the SP-1's SWD pads are not easily reachable, and an
+# ERASEALL would take the bootloader with it. So each of the three conditional
+# UICR writes on the boot path is turned off here.
 #
 # 1. PSELRESET reads erased here, so CONFIG_GPIO_AS_PINRESET would burn
 #    PSELRESET[0..1] = 18 on the first boot, making P0.18 nRESET forever. This

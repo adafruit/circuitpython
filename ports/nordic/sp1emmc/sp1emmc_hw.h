@@ -123,7 +123,7 @@ static inline uint32_t ticks_since_raw(uint32_t t0) {
 // this file are the only values ever written.
 //
 // NRF_SPIM3->FREQUENCY and ->CONFIG are read and written directly: the
-// peripheral register IS the state -- no shadow copy to drift, and it survives
+// peripheral register is the state, and it survives
 // ENABLE=0 between transfers. sp1emmc_spim_init() puts both back to M16 /
 // mode 0 on every init, so a fresh object always starts at compat speed even
 // if the previous one ran high.
@@ -149,8 +149,7 @@ static inline void sp1emmc_spim_deinit(void) {
 // One blocking DMA transfer with the wires temporarily owned by SPIM. While
 // ENABLED the peripheral drives SCK (+MOSI for TX) / samples MISO; on disable
 // the pins fall back to their GPIO latches (CLK low, DAT0 as configured), so
-// the surrounding bit-bang phases continue seamlessly. That handoff is the
-// whole trick and it is proven on this hardware.
+// the surrounding bit-bang phases continue seamlessly.
 //
 // A read is rx-only (MOSI unselected), so SPIM3 anomaly 198 (TX corruption)
 // cannot bite there at all. Writes make TX real, which is why their frame is

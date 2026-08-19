@@ -22,17 +22,9 @@
 // that was a moment too short.
 //
 // The board does not have to configure that pin. If its input buffer is found
-// disconnected -- the reset default, and where a digitalio deinit leaves it --
-// the poll reconnects it with a pull-up. A board is still free to configure it
-// itself, and anything already configured is left alone. This is deliberate
-// belt-and-braces: an unconfigured pin reads as permanently held, which would
-// disable the gesture silently and for good.
-//
-// This lives in the supervisor rather than in Python on purpose. On a device
-// with no reset pin and no removable battery it is half of the safety design:
-// wherever the watchdog is being fed, the way out has to be live too --
-// including at the REPL, in safe mode, and while a program that has stopped
-// listening is running.
+// disconnected the poll reconnects it with a pull-up. A board is still free to
+// configure it, and anything already configured is left alone.
+
 
 #include "py/mpconfig.h"
 
@@ -45,8 +37,7 @@ void power_off_tick(void);
 
 // Put the board's own hardware into its off state: rails down, resets
 // asserted, anything that would drain a battery through SYSTEM_OFF switched
-// off. Called with the button still held, before the wake-up is armed, so it
-// may take as long as it needs. Weak; the default does nothing.
+// off.
 void board_power_off_prepare(void);
 
 #endif

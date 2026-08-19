@@ -140,8 +140,7 @@ void power_off_tick(void) {
     ensure_input_buffer_connected();
 
     // Reading IN never disturbs the pin, so the gesture still works if user
-    // code has claimed the button -- which is the point. The way out of a
-    // running program must not depend on that program's cooperation.
+    // code has claimed the button.
     bool pressed = nrf_gpio_pin_read(BOARD_POWER_OFF_BUTTON_PIN) == 0;
 
     // Waking from SYSTEM_OFF happens with the button still held, and the

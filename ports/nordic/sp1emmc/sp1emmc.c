@@ -835,25 +835,3 @@ uint32_t emmc_bus_hz(void) {
     // this is a lookup and not arithmetic. Only two values are ever written.
     return NRF_SPIM3->FREQUENCY == SPIM_FREQ_M32 ? 32000000u : 16000000u;
 }
-
-// ============================================================================
-//  Deliberately not implemented
-// ============================================================================
-//  CMD6's dangerous clients (CACHE_CTRL, FLUSH_CACHE, HPI_MGMT, BKOPS AUTO_EN,
-//  POWER_OFF_NOTIFICATION), CMD35/36/38 TRIM and the abortable HPI machinery
-//  are absent rather than merely unexposed. Nothing in the read or write path
-//  needs them, and each one can put the card into a state a block device has no
-//  way to recover from.
-//
-//  CMD6 itself is compiled in for exactly one volatile byte -- see the
-//  HS_TIMING block above. That is a hard-coded argument with no caller input,
-//  not a general SWITCH, so none of the clients listed above become reachable.
-//
-//  Three invariants here look like cleanup targets and are not: the TX frame
-//  must end at the CRC's last bit, DAT0 must stay an input after a busy
-//  timeout, and write_data_block() must keep its -Os attribute (only a build
-//  flag can undo that one, which is why it is stated per-function).
-//
-//  Open question: HPI_FEATURES bit 1 = 0 on this part means JEDEC wants HPI
-//  signalled via CMD13 rather than CMD12. Nothing here uses HPI.
-// ============================================================================
