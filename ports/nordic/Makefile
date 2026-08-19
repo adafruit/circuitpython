@@ -151,19 +151,19 @@ SRC_C += \
 	nrfx/mdk/system_$(MCU_SUB_VARIANT).c \
 
 
-CIRCUITPY_SP1_EMMC ?= 0
-CFLAGS += -DCIRCUITPY_SP1_EMMC=$(CIRCUITPY_SP1_EMMC)
+CIRCUITPY_SP1EMMC ?= 0
+CFLAGS += -DCIRCUITPY_SP1EMMC=$(CIRCUITPY_SP1EMMC)
 # USB mass storage automount switch
-CIRCUITPY_SP1_EMMC_USB ?= 0
-CFLAGS += -DSP1_EMMC_AUTOMOUNT=$(CIRCUITPY_SP1_EMMC_USB)
-ifeq ($(CIRCUITPY_SP1_EMMC),1)
+CIRCUITPY_SP1EMMC_USB ?= 0
+CFLAGS += -DSP1EMMC_AUTOMOUNT=$(CIRCUITPY_SP1EMMC_USB)
+ifeq ($(CIRCUITPY_SP1EMMC),1)
 SRC_C += \
 	bindings/sp1emmc/__init__.c \
 	bindings/sp1emmc/EMMC.c \
-	sp1_emmc/sp1_emmc.c \
+	sp1emmc/sp1emmc.c \
 
-ifeq ($(CIRCUITPY_SP1_EMMC_USB),1)
-SRC_C += sp1_emmc/automount.c
+ifeq ($(CIRCUITPY_SP1EMMC_USB),1)
+SRC_C += sp1emmc/automount.c
 endif
 endif
 

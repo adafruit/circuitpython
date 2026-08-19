@@ -23,8 +23,8 @@
 // the card's reset and rail alone while it is up. The header stubs
 // sp1emmc_is_automounted() to false when the automount is not built, so the
 // call site needs no #if of its own.
-#if CIRCUITPY_SP1_EMMC
-#include "sp1_emmc/automount.h"
+#if CIRCUITPY_SP1EMMC
+#include "sp1emmc/automount.h"
 #else
 static inline bool sp1emmc_is_automounted(void) {
     return false;

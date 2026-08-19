@@ -21,8 +21,8 @@
 #include "peripherals/nrf/nrf52840/pins.h"
 
 #include "bindings/sp1emmc/EMMC.h"
-#include "sp1_emmc/automount.h"
-#include "sp1_emmc/sp1_emmc.h"
+#include "sp1emmc/automount.h"
+#include "sp1emmc/sp1emmc.h"
 
 #include "nrf.h"
 
@@ -34,7 +34,7 @@ typedef struct {
     bool write_enabled;
 } sp1emmc_emmc_obj_t;
 
-#if SP1_EMMC_AUTOMOUNT
+#if SP1EMMC_AUTOMOUNT
 static sp1emmc_emmc_obj_t s_automount_obj;
 static bool s_automounted;
 #endif
@@ -60,7 +60,7 @@ static void release_hardware(void) {
 }
 
 void sp1emmc_reset(void) {
-    #if SP1_EMMC_AUTOMOUNT
+    #if SP1EMMC_AUTOMOUNT
     if (s_automounted) {
         return;
     }
@@ -146,7 +146,7 @@ static const char *emmc_power_up(bool high_speed, bool *hs_failed) {
     return NULL;
 }
 
-#if SP1_EMMC_AUTOMOUNT
+#if SP1EMMC_AUTOMOUNT
 // Construct the supervisor's EMMC object. Returns MP_OBJ_NULL if the
 // card cannot be brought up, and raises nothing on any path.
 //
@@ -233,7 +233,7 @@ static mp_obj_t sp1emmc_emmc_make_new(const mp_obj_type_t *type, size_t n_args, 
     bool high_speed = args[ARG_high_speed].u_bool;
     bool write_enabled = args[ARG_write_enabled].u_bool;
 
-    #if SP1_EMMC_AUTOMOUNT
+    #if SP1EMMC_AUTOMOUNT
     if (s_automounted) {
         mp_raise_ValueError(MP_ERROR_TEXT("eMMC owned by the USB drive; set CIRCUITPY_EMMC_USB = false in settings.toml"));
     }

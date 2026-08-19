@@ -8,10 +8,10 @@
 
 #include "py/obj.h"
 
-#if defined(SP1_EMMC_AUTOMOUNT) && SP1_EMMC_AUTOMOUNT
+#if defined(SP1EMMC_AUTOMOUNT) && SP1EMMC_AUTOMOUNT
 
-#ifndef SP1_EMMC_AUTOMOUNT_PATH
-#define SP1_EMMC_AUTOMOUNT_PATH "/sd"
+#ifndef SP1EMMC_AUTOMOUNT_PATH
+#define SP1EMMC_AUTOMOUNT_PATH "/sd"
 #endif
 
 // Why /sd is or is not there, so a boot that skipped the card can say so

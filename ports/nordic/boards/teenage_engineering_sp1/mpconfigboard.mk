@@ -60,12 +60,11 @@ CIRCUITPY_AUDIOPWMIO = 0
 CIRCUITPY_SYNTHIO = 1
 CIRCUITPY_AUDIOEFFECTS = 1
 # audiomp3 would otherwise come along for free with audiocore on a full build.
-# Decode CPU headroom on this chip is unassessed and it costs ~26 KB of flash,
-# so it stays off until it is deliberately assessed.
+# but doesn't reliably decode mp3s off of emmc
 CIRCUITPY_AUDIOMP3 = 0
 
 # eMMC
-CIRCUITPY_SP1_EMMC = 1
+CIRCUITPY_SP1EMMC = 1
 
 # auto mount EMMC as /sd
-CIRCUITPY_SP1_EMMC_USB = 1
+CIRCUITPY_SP1EMMC_USB = 1

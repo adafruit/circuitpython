@@ -19,8 +19,8 @@
 #include "shared-module/sdcardio/__init__.h"
 #endif
 
-#if defined(SP1_EMMC_AUTOMOUNT) && SP1_EMMC_AUTOMOUNT
-#include "sp1_emmc/automount.h"
+#if defined(SP1EMMC_AUTOMOUNT) && SP1EMMC_AUTOMOUNT
+#include "sp1emmc/automount.h"
 #endif
 
 static mp_vfs_mount_t _circuitpy_vfs;
@@ -238,7 +238,7 @@ bool filesystem_init(bool create_allowed, bool force_create) {
     // lazily from tud_msc_test_unit_ready_cb() -- and the same requirement,
     // that settings.toml (just mounted, a few lines up) is readable, because
     // this is where CIRCUITPY_EMMC_USB is honoured.
-    #if defined(SP1_EMMC_AUTOMOUNT) && SP1_EMMC_AUTOMOUNT
+    #if defined(SP1EMMC_AUTOMOUNT) && SP1EMMC_AUTOMOUNT
     sp1emmc_automount();
     #endif
 

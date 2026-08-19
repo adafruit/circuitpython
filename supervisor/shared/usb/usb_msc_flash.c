@@ -38,8 +38,8 @@
 #define SDCARD_COUNT 0
 #endif
 
-#if defined(SP1_EMMC_AUTOMOUNT) && SP1_EMMC_AUTOMOUNT
-#include "sp1_emmc/automount.h"
+#if defined(SP1EMMC_AUTOMOUNT) && SP1EMMC_AUTOMOUNT
+#include "sp1emmc/automount.h"
 
 #define EMMC_COUNT 1
 #define EMMC_LUN (1 + SAVES_COUNT + SDCARD_COUNT)
@@ -178,7 +178,7 @@ static fs_user_mount_t *get_vfs(int lun) {
     if (lun == EMMC_LUN) {
         const char *path_under_mount;
 
-        fs_user_mount_t *emmc = filesystem_for_path(SP1_EMMC_AUTOMOUNT_PATH, &path_under_mount);
+        fs_user_mount_t *emmc = filesystem_for_path(SP1EMMC_AUTOMOUNT_PATH, &path_under_mount);
         // Unlike the SD card there is no heap-mount case to allow: the eMMC's
         // drive exists only when the supervisor mounted it (automount.c), and
         // that mount is static. A user mount made by code.py stays a Python

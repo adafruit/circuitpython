@@ -39,9 +39,9 @@ typedef struct {
     // 0 not attempted, 1 DEVICE_TYPE ok, 2 CMD6 answered, 3 DAT0 released,
     // 4 back in tran, 5 EXT_CSD[185] verified, 6 running at M32.
     uint8_t hs_stage;
-} sp1_emmc_state_t;
+} sp1emmc_state_t;
 
-extern sp1_emmc_state_t g_emmc_state;
+extern sp1emmc_state_t g_emmc_state;
 
 // DATA-transfer clk half-period in microseconds. 0 = fastest (no busy-wait,
 // just GPIO register toggles); set to 0 by emmc_init() on success. Commands

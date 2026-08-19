@@ -10,7 +10,7 @@
 #include "py/runtime.h"
 
 #include "bindings/sp1emmc/EMMC.h"
-#include "sp1_emmc/automount.h"
+#include "sp1emmc/automount.h"
 
 //| """Block device access to the on-board eMMC
 //|
@@ -51,7 +51,7 @@ static MP_DEFINE_CONST_FUN_OBJ_0(sp1emmc_automounted_obj, sp1emmc_automounted);
 //|
 static mp_obj_t sp1emmc_automount_status(void) {
     const char *s = "disabled";
-    #if defined(SP1_EMMC_AUTOMOUNT) && SP1_EMMC_AUTOMOUNT
+    #if defined(SP1EMMC_AUTOMOUNT) && SP1EMMC_AUTOMOUNT
     switch (sp1emmc_automount_get_status()) {
         case SP1EMMC_AUTOMOUNT_OK:
             s = "ok";

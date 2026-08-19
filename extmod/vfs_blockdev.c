@@ -38,7 +38,7 @@
 #include "shared-bindings/sdioio/SDCard.h"
 #endif
 
-#if defined(CIRCUITPY_SP1_EMMC) && CIRCUITPY_SP1_EMMC
+#if defined(CIRCUITPY_SP1EMMC) && CIRCUITPY_SP1EMMC
 #include "bindings/sp1emmc/EMMC.h"
 #endif
 
@@ -80,7 +80,7 @@ void mp_vfs_blockdev_init(mp_vfs_blockdev_t *self, mp_obj_t bdev) {
     }
     #endif
 
-    #if defined(CIRCUITPY_SP1_EMMC) && CIRCUITPY_SP1_EMMC
+    #if defined(CIRCUITPY_SP1EMMC) && CIRCUITPY_SP1EMMC
     if (mp_obj_get_type(bdev) == &sp1emmc_emmc_type) {
         self->flags |= MP_BLOCKDEV_FLAG_NATIVE | MP_BLOCKDEV_FLAG_HAVE_IOCTL;
         self->readblocks[0] = mp_const_none;

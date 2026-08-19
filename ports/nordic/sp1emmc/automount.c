@@ -4,9 +4,9 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include "sp1_emmc/automount.h"
+#include "sp1emmc/automount.h"
 
-#if defined(SP1_EMMC_AUTOMOUNT) && SP1_EMMC_AUTOMOUNT
+#if defined(SP1EMMC_AUTOMOUNT) && SP1EMMC_AUTOMOUNT
 
 #include "py/mpstate.h"
 
@@ -18,7 +18,7 @@
 #include "supervisor/shared/safe_mode.h"
 #include "supervisor/shared/settings.h"
 
-#include "sp1_emmc/sp1_emmc.h"
+#include "sp1emmc/sp1emmc.h"
 
 
 static mp_vfs_mount_t _emmc_vfs;
@@ -98,8 +98,8 @@ void sp1emmc_automount(void) {
     filesystem_set_writable_by_usb(vfs, true);
 
     mp_vfs_mount_t *emmc_vfs = &_emmc_vfs;
-    emmc_vfs->str = SP1_EMMC_AUTOMOUNT_PATH;
-    emmc_vfs->len = sizeof(SP1_EMMC_AUTOMOUNT_PATH) - 1;
+    emmc_vfs->str = SP1EMMC_AUTOMOUNT_PATH;
+    emmc_vfs->len = sizeof(SP1EMMC_AUTOMOUNT_PATH) - 1;
     emmc_vfs->obj = MP_OBJ_FROM_PTR(&_emmc_usermount);
     emmc_vfs->next = MP_STATE_VM(vfs_mount_table);
     MP_STATE_VM(vfs_mount_table) = emmc_vfs;
@@ -114,4 +114,4 @@ sp1emmc_automount_status_t sp1emmc_automount_get_status(void) {
     return _status;
 }
 
-#endif // SP1_EMMC_AUTOMOUNT
+#endif // SP1EMMC_AUTOMOUNT

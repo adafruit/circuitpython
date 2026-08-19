@@ -26,8 +26,8 @@
 //
 // ============================================================================
 
-#include "sp1_emmc.h"
-#include "sp1_emmc_hw.h"
+#include "sp1emmc.h"
+#include "sp1emmc_hw.h"
 
 #include <string.h>
 
@@ -45,7 +45,7 @@ static uint32_t s_cmd_half_us = CMD_SAFE_HALF_US;
 
 volatile uint32_t g_emmc_clk_half_us = CMD_SAFE_HALF_US;
 
-sp1_emmc_state_t g_emmc_state;
+sp1emmc_state_t g_emmc_state;
 
 static bool s_ready;
 static uint32_t s_rca;
@@ -296,7 +296,7 @@ static bool read_data_block(uint8_t *buf) {
 
     // The start bit was just consumed by the bit-bang hunt above, so the
     // remaining 512 data bytes + CRC16 are exactly byte-aligned.
-    sp1_emmc_spim_xfer(NULL, 0, s_dma_rx, sizeof(s_dma_rx));
+    sp1emmc_spim_xfer(NULL, 0, s_dma_rx, sizeof(s_dma_rx));
     memcpy(buf, s_dma_rx, EMMC_BLOCK_SIZE);
     uint16_t card_crc = (uint16_t)(((uint16_t)s_dma_rx[EMMC_BLOCK_SIZE] << 8) |
         s_dma_rx[EMMC_BLOCK_SIZE + 1]);
@@ -332,8 +332,8 @@ static void drain_r2_cid(uint8_t *cid_out) {
 #define EMMC_POWER_OFF_MS 50u
 
 void emmc_power_cycle(void) {
-    sp1_emmc_spim_deinit();              // SPIM3 must not drive DAT0 either
-    sp1_emmc_pins_init();
+    sp1emmc_spim_deinit();              // SPIM3 must not drive DAT0 either
+    sp1emmc_pins_init();
 
     RST_ASSERT();
     CLK_LOW();
@@ -355,7 +355,7 @@ bool emmc_init(void) {
 
     emmc_power_cycle();
 
-    sp1_emmc_spim_init();                // hardware-clocked data path, at M16
+    sp1emmc_spim_init();                // hardware-clocked data path, at M16
     crc16_tab_init();
 
     CLK_LOW();
@@ -465,9 +465,9 @@ bool emmc_blockdev_ioctl(uint32_t op, uint32_t arg, uint32_t *out_value) {
 void emmc_power_down(void) {
     s_ready = false;
     s_block_count = 0;
-    sp1_emmc_spim_deinit();
+    sp1emmc_spim_deinit();
     RST_ASSERT();
-    sp1_emmc_pins_release();
+    sp1emmc_pins_release();
     VCCQ_OFF();                          // rail off (pin stays an output)
 }
 
@@ -708,7 +708,7 @@ static bool write_data_block(const uint8_t *buf) {
     DAT0_OUT();
     RDAT_HIGH();
 
-    uint8_t *tx = SP1_EMMC_TX_FRAME;   // the reserved low-RAM SPIM3 buffer
+    uint8_t *tx = SP1EMMC_TX_FRAME;   // the reserved low-RAM SPIM3 buffer
     uint16_t crc = crc16(buf, EMMC_BLOCK_SIZE);
     tx[0] = 0xFF;                                  // Nwr idle gap
     tx[1] = 0xFE;                                  // 7 idle bits + START 0
@@ -730,7 +730,7 @@ static bool write_data_block(const uint8_t *buf) {
     // 15.6 ns at M32, both an order of magnitude over tISU.
     //
     // Saving and restoring rather than assuming keeps "the peripheral
-    // register IS the state" true for the read path (sp1_emmc_hw.h): this
+    // register is the state" true for the read path (sp1emmc_hw.h): this
     // function borrows the phase for one DMA and gives it back. Two register
     // writes against a ~130 us transfer.
     const uint32_t saved_cfg = NRF_SPIM3->CONFIG;
@@ -740,7 +740,7 @@ static bool write_data_block(const uint8_t *buf) {
     // The TX frame ends exactly at the crc's last bit, no trailing idle
     // byte. The card emits its CRC-status token a couple of clocks after the
     // end bit.
-    sp1_emmc_spim_xfer(tx, 2u + EMMC_BLOCK_SIZE + 2u, NULL, 0);
+    sp1emmc_spim_xfer(tx, 2u + EMMC_BLOCK_SIZE + 2u, NULL, 0);
     if (saved_cfg != SPIM_CONFIG_MODE0) {
         NRF_SPIM3->CONFIG = saved_cfg;
     }

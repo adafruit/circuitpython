@@ -24,7 +24,7 @@
 #include "nrf/timers.h"
 #include "nrf/wdt.h"
 
-#if CIRCUITPY_SP1_EMMC
+#if CIRCUITPY_SP1EMMC
 #include "bindings/sp1emmc/EMMC.h"
 #endif
 
@@ -244,7 +244,7 @@ void reset_port(void) {
     rtc_reset();
     #endif
 
-    #if CIRCUITPY_SP1_EMMC
+    #if CIRCUITPY_SP1EMMC
     // board_reset_pin_defaults() will already have asserted the card's reset
     // and dropped its VCCQ rail.
     sp1emmc_reset();
