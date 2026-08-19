@@ -183,6 +183,15 @@ mp_obj_t sp1emmc_automount_construct(bool high_speed, bool write_enabled) {
 bool sp1emmc_is_automounted(void) {
     return s_automounted;
 }
+
+// The automount's undo. Safe to call from any of its failure paths
+void sp1emmc_automount_abandon(void) {
+    s_automounted = false;
+    s_automount_obj.deinited = true;
+    if (s_constructed) {
+        release_hardware();
+    }
+}
 #endif
 
 //| class EMMC:

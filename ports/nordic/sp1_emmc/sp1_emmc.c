@@ -60,13 +60,31 @@ static uint8_t s_dma_rx[EMMC_BLOCK_SIZE + 2];
 #define US_TO_TICKS(us) ((uint32_t)(((uint64_t)(us) * EMMC_TICKS_HZ + 999999u) / 1000000u))
 
 static inline uint32_t ticks_since(uint32_t t0) {
-    return (EMMC_TICKS() - t0) & EMMC_TICK_MASK;
+    return ticks_since_raw(t0);
 }
 
 static inline void half_delay(uint32_t us) {
     if (us) {
         common_hal_mcu_delay_us(us);
     }
+}
+
+static bool s_deadline_armed;
+static uint32_t s_deadline_t0;
+static uint32_t s_deadline_lim;
+
+void emmc_deadline_set(uint32_t timeout_us) {
+    s_deadline_t0 = EMMC_TICKS();
+    s_deadline_lim = US_TO_TICKS(timeout_us);
+    s_deadline_armed = true;
+}
+
+void emmc_deadline_clear(void) {
+    s_deadline_armed = false;
+}
+
+bool emmc_deadline_expired(void) {
+    return s_deadline_armed && ticks_since(s_deadline_t0) >= s_deadline_lim;
 }
 
 // Long-wait service: feed the bootloader's dog and run background tasks
@@ -213,6 +231,9 @@ static bool send_command(uint8_t cmd_index, uint32_t arg, uint8_t *r1_out) {
 // (settling after the previous command); retry until the card answers.
 static bool send_command_retry(uint8_t cmd, uint32_t arg, uint8_t *r1_out, int tries) {
     for (int t = 0; t < tries; t++) {
+        if (emmc_deadline_expired()) {
+            return false;
+        }
         if (send_command(cmd, arg, r1_out)) {
             return true;
         }
@@ -262,7 +283,7 @@ static bool read_data_block(uint8_t *buf) {
             if (got_start) {
                 break;
             }
-            if (el >= lim) {
+            if (el >= lim || emmc_deadline_expired()) {
                 return false;
             }
             if (el >= yield_at) {
@@ -308,6 +329,21 @@ static void drain_r2_cid(uint8_t *cid_out) {
     }
 }
 
+#define EMMC_POWER_OFF_MS 50u
+
+void emmc_power_cycle(void) {
+    sp1_emmc_spim_deinit();              // SPIM3 must not drive DAT0 either
+    sp1_emmc_pins_init();
+
+    RST_ASSERT();
+    CLK_LOW();
+    CMD_LOW();
+    DAT0_OUT();
+    DAT0_LOW();
+    VCCQ_OFF();
+    mp_hal_delay_ms(EMMC_POWER_OFF_MS);
+}
+
 bool emmc_init(void) {
     s_ready = false;
     s_block_count = 0;
@@ -317,7 +353,8 @@ bool emmc_init(void) {
     memset(&g_emmc_state, 0, sizeof(g_emmc_state));
     g_emmc_state.cmd1_retries = -1;
 
-    sp1_emmc_pins_init();
+    emmc_power_cycle();
+
     sp1_emmc_spim_init();                // hardware-clocked data path, at M16
     crc16_tab_init();
 
@@ -350,6 +387,9 @@ bool emmc_init(void) {
         mp_hal_delay_ms(1);
         if (ok && (r3[1] & 0x80)) {      // response seen AND busy bit set = ready
             g_emmc_state.cmd1_retries = retry;
+            break;
+        }
+        if (emmc_deadline_expired()) {
             break;
         }
     }
@@ -493,7 +533,7 @@ static bool dat0_busy_wait(uint32_t timeout_us, bool run_bg) {
             DAT0_HIGH();
             return true;
         }
-        if (el >= lim) {
+        if (el >= lim || emmc_deadline_expired()) {
             // DAT0 STAYS AN INPUT on a timeout
             return false;
         }
@@ -534,7 +574,7 @@ static bool wait_tran_after_switch(uint32_t timeout_us) {
                 return true;                     // tran + ready_for_data
             }
         }
-        if (ticks_since(t0) >= lim) {
+        if (ticks_since(t0) >= lim || emmc_deadline_expired()) {
             return false;
         }
         emmc_yield();
@@ -634,7 +674,7 @@ bool emmc_read_blocks(uint32_t block_addr, uint8_t *buf, uint32_t count) {
     uint32_t bt0 = EMMC_TICKS();
     const uint32_t blim = US_TO_TICKS(150000u);
     for (uint32_t i = 0; i < count; i++) {
-        if (i && ticks_since(bt0) >= blim) {
+        if (i && (ticks_since(bt0) >= blim || emmc_deadline_expired())) {
             (void)send_command_retry(12, 0, r1, 3);
             return false;
         }
@@ -774,7 +814,7 @@ bool emmc_write_blocks(uint32_t block_addr, const uint8_t *buf, uint32_t count) 
     uint32_t bt0 = EMMC_TICKS();
     const uint32_t blim = US_TO_TICKS(EMMC_WR_BURST_US);
     for (uint32_t i = 0; i < count; i++) {
-        if (i && ticks_since(bt0) >= blim) {
+        if (i && (ticks_since(bt0) >= blim || emmc_deadline_expired())) {
             (void)send_command_retry(12, 0, r1, 3);
             return false;
         }

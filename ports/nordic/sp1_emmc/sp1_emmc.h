@@ -48,6 +48,15 @@ extern sp1_emmc_state_t g_emmc_state;
 // use a fixed safe clock during identification and 0 afterwards.
 extern volatile uint32_t g_emmc_clk_half_us;
 
+// Drop VCCQ, hold RST_n asserted and park the signal pins low for long enough
+// that the card comes back from a true power-on.
+void emmc_power_cycle(void);
+
+// A wall-clock budget spanning a whole sequence of driver calls.
+void emmc_deadline_set(uint32_t timeout_us);
+void emmc_deadline_clear(void);
+bool emmc_deadline_expired(void);
+
 bool emmc_init(void);
 uint32_t emmc_block_count(void);              // 0 until EXT_CSD has been read
 bool emmc_cmd13(uint8_t *r1_out);             // SEND_STATUS -- card status R1

@@ -106,6 +106,13 @@ static inline void sp1_emmc_pins_release(void) {
 #define EMMC_TICK_MASK     0x00FFFFFFu
 #define EMMC_TICKS()       (NRF_RTC2->COUNTER)
 
+static inline uint32_t ticks_since_raw(uint32_t t0) {
+    return (EMMC_TICKS() - t0) & EMMC_TICK_MASK;
+}
+
+// 20 ms, ~75x the 260 us a full block takes at M16.
+#define SP1_EMMC_SPIM_TIMEOUT_TICKS  ((EMMC_TICKS_HZ * 20u) / 1000u)
+
 // ---- SPIM3 data engine ---------------------------------------------------
 // SPIM3 is the only instance that runs above 8 MHz. M16 = 16 MHz, the fastest
 // in-spec step for this card at power-on timing (TRAN_SPEED 0x32 -> 26 MHz cap
@@ -158,10 +165,18 @@ static inline void sp1_emmc_spim_xfer(const uint8_t *tx, uint32_t txlen, uint8_t
     NRF_SPIM3->RXD.MAXCNT = rx ? rxlen : 0;
     NRF_SPIM3->EVENTS_END = 0;
     NRF_SPIM3->TASKS_START = 1;
-    while (!NRF_SPIM3->EVENTS_END) {
-        // ~260 us for a full block at 16 MHz -- far too short to be worth a
-        // background-task round trip, and any yield here would risk the
-        // caller's framing.
+    {
+        uint32_t t0 = EMMC_TICKS();
+        while (!NRF_SPIM3->EVENTS_END) {
+            if (ticks_since_raw(t0) >= SP1_EMMC_SPIM_TIMEOUT_TICKS) {
+                NRF_SPIM3->EVENTS_STOPPED = 0;
+                NRF_SPIM3->TASKS_STOP = 1;
+                // Let EasyDMA stop writing before the buffer is handed back.
+                for (uint32_t i = 0; i < 10000u && !NRF_SPIM3->EVENTS_STOPPED; i++) {
+                }
+                break;
+            }
+        }
     }
     NRF_SPIM3->ENABLE = 0;
 }
