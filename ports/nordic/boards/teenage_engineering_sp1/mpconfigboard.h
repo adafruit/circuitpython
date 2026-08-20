@@ -54,7 +54,7 @@
 #define BOOTLOADER_UF2_MAGIC2       (0x7E)
 
 // The bootloader starts a watchdog before our first instruction and locks
-// its configuration, so the app can only reload it. See peripherals/nrf/wdt.h.
+// its configuration, so the app can only reload it. See wdt.h.
 // This is the device's escape hatch. With no reset pin and no
 // way to remove the battery, a wedge that stops the main loop has to become a
 // reset, because a reset is what runs the bootloader and re-opens the

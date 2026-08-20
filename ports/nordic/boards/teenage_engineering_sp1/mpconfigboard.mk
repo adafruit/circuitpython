@@ -57,12 +57,32 @@ CIRCUITPY_ALARM = 0
 CIRCUITPY_AUDIOPWMIO = 0
 CIRCUITPY_SYNTHIO = 1
 CIRCUITPY_AUDIOEFFECTS = 1
-# audiomp3 would otherwise come along for free with audiocore on a full build.
-# but doesn't reliably decode mp3s off of emmc
-CIRCUITPY_AUDIOMP3 = 0
+CIRCUITPY_AUDIOMP3 = 1
+
+# The eMMC driver, its `sp1emmc` module, and the hold-to-power-off gesture are
+# all SP-1 hardware, boards/$(BOARD) is already on the include path, so their
+# "sp1emmc/..." and "bindings/sp1emmc/..." includes resolve as written.
+
+# Hold-to-power-off, opted into by BOARD_POWER_OFF_BUTTON_PIN in
+# mpconfigboard.h.
+SRC_C += boards/$(BOARD)/power_off.c
 
 # eMMC
 CIRCUITPY_SP1EMMC = 1
 
 # auto mount EMMC as /sd
 CIRCUITPY_SP1EMMC_USB = 1
+
+ifeq ($(CIRCUITPY_SP1EMMC),1)
+CFLAGS += -DCIRCUITPY_SP1EMMC=1
+SRC_C += \
+	boards/$(BOARD)/sp1emmc/sp1emmc.c \
+	boards/$(BOARD)/bindings/sp1emmc/__init__.c \
+	boards/$(BOARD)/bindings/sp1emmc/EMMC.c \
+
+# USB mass storage automount switch
+ifeq ($(CIRCUITPY_SP1EMMC_USB),1)
+CFLAGS += -DSP1EMMC_AUTOMOUNT=1
+SRC_C += boards/$(BOARD)/sp1emmc/automount.c
+endif
+endif

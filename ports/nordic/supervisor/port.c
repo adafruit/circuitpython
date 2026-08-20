@@ -22,9 +22,11 @@
 #include "nrf/nvm.h"
 #include "nrf/power.h"
 #include "nrf/timers.h"
-#include "nrf/wdt.h"
+#if CIRCUITPY_BOOTLOADER_ARMED_WDT
+#include "wdt.h"
+#endif
 
-#if CIRCUITPY_SP1EMMC
+#if defined(CIRCUITPY_SP1EMMC) && CIRCUITPY_SP1EMMC
 #include "bindings/sp1emmc/EMMC.h"
 #endif
 
@@ -154,8 +156,10 @@ void tick_set_prescaler(uint32_t prescaler_val) {
 }
 
 safe_mode_t port_init(void) {
+    #if CIRCUITPY_BOOTLOADER_ARMED_WDT
     // Feed bootloader wdt before anything else
     bootloader_wdt_feed();
+    #endif
 
     // Next, before any code that could go wrong has run: lock the flash regions
     // we do not own out of reach of NVMC for the rest of this boot.
@@ -244,7 +248,7 @@ void reset_port(void) {
     rtc_reset();
     #endif
 
-    #if CIRCUITPY_SP1EMMC
+    #if defined(CIRCUITPY_SP1EMMC) && CIRCUITPY_SP1EMMC
     // board_reset_pin_defaults() will already have asserted the card's reset
     // and dropped its VCCQ rail.
     sp1emmc_reset();

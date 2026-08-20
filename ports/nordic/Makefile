@@ -144,28 +144,11 @@ endif
 
 SRC_C += \
 	background.c \
-	power_off.c \
 	boards/$(BOARD)/board.c \
 	boards/$(BOARD)/pins.c \
 	device/$(MCU_VARIANT)/startup_$(MCU_SUB_VARIANT).c \
 	nrfx/mdk/system_$(MCU_SUB_VARIANT).c \
 
-
-CIRCUITPY_SP1EMMC ?= 0
-CFLAGS += -DCIRCUITPY_SP1EMMC=$(CIRCUITPY_SP1EMMC)
-# USB mass storage automount switch
-CIRCUITPY_SP1EMMC_USB ?= 0
-CFLAGS += -DSP1EMMC_AUTOMOUNT=$(CIRCUITPY_SP1EMMC_USB)
-ifeq ($(CIRCUITPY_SP1EMMC),1)
-SRC_C += \
-	bindings/sp1emmc/__init__.c \
-	bindings/sp1emmc/EMMC.c \
-	sp1emmc/sp1emmc.c \
-
-ifeq ($(CIRCUITPY_SP1EMMC_USB),1)
-SRC_C += sp1emmc/automount.c
-endif
-endif
 
 ifneq ($(SD), )
 SRC_C += \

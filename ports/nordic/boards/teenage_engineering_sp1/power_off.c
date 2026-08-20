@@ -12,7 +12,7 @@
 
 #include "supervisor/flash.h"
 
-#include "nrf/wdt.h"
+#include "wdt.h"
 #include "nrfx/hal/nrf_gpio.h"
 #include "nrfx/hal/nrf_power.h"
 

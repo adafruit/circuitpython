@@ -179,6 +179,23 @@
 #define CIRCUITPY_NRF_FLASH_PROTECT (0)
 #endif
 
+// Whether this board's bootloader starts a watchdog before CircuitPython's
+// first instruction and leaves it running with its configuration registers
+// locked, so that the application can only reload it. A board that sets this
+// supplies its own wdt.h, defining bootloader_wdt_feed(). Such a board should
+// normally also set CIRCUITPY_WATCHDOG = 0, so user code cannot interfere.
+#ifndef CIRCUITPY_BOOTLOADER_ARMED_WDT
+#define CIRCUITPY_BOOTLOADER_ARMED_WDT (0)
+#endif
+
+// Whether entering safe mode after a watchdog reset requires USB to be
+// connected (port_init(), supervisor/port.c). When the bootloader owns the
+// watchdog it can only have bitten because the main loop stopped, which is
+// worth reporting whether or not a host is attached.
+#ifndef CIRCUITPY_SAFE_MODE_ON_WATCHDOG_REQUIRES_USB
+#define CIRCUITPY_SAFE_MODE_ON_WATCHDOG_REQUIRES_USB (!CIRCUITPY_BOOTLOADER_ARMED_WDT)
+#endif
+
 #if BOOTLOADER_START_ADDR % FLASH_ERASE_SIZE != 0
 #error BOOTLOADER_START_ADDR must be on a flash erase boundary.
 #endif

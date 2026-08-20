@@ -31,7 +31,7 @@
 #ifdef BOARD_POWER_OFF_BUTTON_PIN
 
 // Poll the button and, if it has been held long enough, power off (never
-// returns). Called from port_background_task(), i.e. from every
+// returns). Called from the board's board_background_task(), i.e. from every
 // RUN_BACKGROUND_TASKS.
 void power_off_tick(void);
 

@@ -12,7 +12,9 @@
 
 #include "nrfx_nvmc.h"
 
-#include "nrf/wdt.h"
+#if CIRCUITPY_BOOTLOADER_ARMED_WDT
+#include "wdt.h"
+#endif
 #include "supervisor/shared/safe_mode.h"
 
 #define FLASH_PAGE_SIZE (4096)
@@ -163,8 +165,10 @@ bool nrf_nvm_safe_flash_page_write(uint32_t page_addr, uint8_t *data) {
     }
     #endif
 
+    #if CIRCUITPY_BOOTLOADER_ARMED_WDT
     // feed bootloader watchdog per page write
     bootloader_wdt_feed();
+    #endif
 
     nrfx_nvmc_page_erase(page_addr);
     nrfx_nvmc_bytes_write(page_addr, data, FLASH_PAGE_SIZE);

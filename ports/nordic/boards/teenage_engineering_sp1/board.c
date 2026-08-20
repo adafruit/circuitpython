@@ -14,9 +14,10 @@
 
 #include "supervisor/board.h"
 
+#include "background.h"
 #include "power_off.h"
 #include "py/misc.h"
-#include "nrf/wdt.h"
+#include "wdt.h"
 #include "nrfx/hal/nrf_gpio.h"
 
 // For the eMMC's supervisor mount: board_reset_pin_defaults() leaves
@@ -193,6 +194,15 @@ void board_reset_pin_defaults(void) {
 void board_init(void) {
     heartbeat_lit = false;
     nrf_gpio_pin_clear(PIN_LED_HEARTBEAT);
+}
+
+void board_background_task(void) {
+    bootloader_wdt_feed();
+
+    #ifdef BOARD_POWER_OFF_BUTTON_PIN
+    // Never returns if the hold completes.
+    power_off_tick();
+    #endif
 }
 
 // -- muting the codecs on the way out --------------------------------------
