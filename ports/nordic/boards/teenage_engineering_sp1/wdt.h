@@ -15,10 +15,7 @@
 // can do is reload it.
 //
 // The board opts in with CIRCUITPY_BOOTLOADER_ARMED_WDT in its
-// mpconfigboard.h. That flag, and the safe-mode policy derived from it,
-// default to off for every other board in the port's mpconfigport.h, which is
-// what keeps the generic feed sites (supervisor/port.c,
-// peripherals/nrf/nvm.c) compiling without this header.
+// mpconfigboard.h.
 
 // mpconfigboard.h arrives via mpconfigport.h. Included here rather than left to
 // the caller so that the feed can never be silently compiled out by an include

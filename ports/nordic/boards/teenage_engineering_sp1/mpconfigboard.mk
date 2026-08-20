@@ -59,10 +59,6 @@ CIRCUITPY_SYNTHIO = 1
 CIRCUITPY_AUDIOEFFECTS = 1
 CIRCUITPY_AUDIOMP3 = 1
 
-# The eMMC driver, its `sp1emmc` module, and the hold-to-power-off gesture are
-# all SP-1 hardware, boards/$(BOARD) is already on the include path, so their
-# "sp1emmc/..." and "bindings/sp1emmc/..." includes resolve as written.
-
 # Hold-to-power-off, opted into by BOARD_POWER_OFF_BUTTON_PIN in
 # mpconfigboard.h.
 SRC_C += boards/$(BOARD)/power_off.c
