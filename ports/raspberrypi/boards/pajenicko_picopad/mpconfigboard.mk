@@ -13,10 +13,17 @@ CIRCUITPY_USB_HOST = 0
 
 CIRCUITPY_KEYPAD = 1
 CIRCUITPY_STAGE = 1
+CIRCUITPY_PICOGAME = 1
+CIRCUITPY_PICOGAME_FAST_DISPLAY = 1
+CIRCUITPY_PICOGAME_RGB444 = 1
 CIRCUITPY_AUDIOIO = 1
 CIRCUITPY_AUDIOEFFECTS = 0
 
-CIRCUITPY__EVE = 1
+# Peripherals this board physically lacks: no FT8xx EVE display, no camera for the
+# qrio QR *decoder* (QR generation = pure-Python adafruit_miniqr, unaffected), and no
+# DVI/HDMI connector. Dropping them frees flash for the picogame engine.
+CIRCUITPY__EVE = 0
+CIRCUITPY_QRIO = 0
 
 CIRCUITPY_CYW43 = 1
 CIRCUITPY_SSL = 1
@@ -26,7 +33,6 @@ CIRCUITPY_MDNS = 1
 CIRCUITPY_SOCKETPOOL = 1
 CIRCUITPY_WIFI = 1
 
-CIRCUITPY_PICODVI = 1
 
 # Pimoroni PicoSystem peripherals are compatible, we can use of existing ugame.py
 FROZEN_MPY_DIRS += $(TOP)/frozen/circuitpython-stage/picosystem
@@ -44,3 +50,8 @@ CFLAGS += \
 
 # Must be accompanied by a linker script change
 CFLAGS += -DCIRCUITPY_FIRMWARE_SIZE='(1536 * 1024)'
+
+# The rp2 port default is -O3; on this Cortex-M0+ (no SIMD/FPU, 16 KB XIP cache) -O2 plus
+# these five loop passes measures within +-1% of -O3 across the picogame render kernels
+# while using ~150 KB less flash (gc.o/vm.o stay -O3 via SUPEROPT regardless).
+OPTIMIZATION_FLAGS = -O2 -funswitch-loops -fpredictive-commoning -fgcse-after-reload -ftree-partial-pre -fsplit-paths

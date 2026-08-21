@@ -583,6 +583,28 @@ CFLAGS += -DCIRCUITPY_SSL_MBEDTLS=$(CIRCUITPY_SSL_MBEDTLS)
 CIRCUITPY_STAGE ?= 0
 CFLAGS += -DCIRCUITPY_STAGE=$(CIRCUITPY_STAGE)
 
+# PicoPad 2D game engine (off by default).
+CIRCUITPY_PICOGAME ?= 0
+CFLAGS += -DCIRCUITPY_PICOGAME=$(CIRCUITPY_PICOGAME)
+# Fast async-DMA Display backend: needs a port-specific common-hal (the raspberrypi and
+# espressif ports provide one). Boards without it use the portable bus.send renderer.
+CIRCUITPY_PICOGAME_FAST_DISPLAY ?= 0
+CFLAGS += -DCIRCUITPY_PICOGAME_FAST_DISPLAY=$(CIRCUITPY_PICOGAME_FAST_DISPLAY)
+# Does this board's panel controller support 12-bit RGB444 (COLMOD)? A capability flag the
+# board declares (ST7789/ST7735 = 1, ILI9341 = 0); exposed as picogame.RGB444_SUPPORTED so
+# a game can enable Display(rgb444=...) only where it works. Default 0 (safe RGB565).
+CIRCUITPY_PICOGAME_RGB444 ?= 0
+CFLAGS += -DCIRCUITPY_PICOGAME_RGB444=$(CIRCUITPY_PICOGAME_RGB444)
+# Full-frame RAM-framebuffer render backend for scanout-buffer platforms (RP2350 DVI/HSTX
+# boards like the Fruit Jam). Off by default so flash-tight SPI-only boards don't carry it.
+CIRCUITPY_PICOGAME_FRAMEBUFFER ?= 0
+CFLAGS += -DCIRCUITPY_PICOGAME_FRAMEBUFFER=$(CIRCUITPY_PICOGAME_FRAMEBUFFER)
+# Float vs 16.16 fixed path for the 3D helpers: the default follows the architecture
+# (see shared-module/picogame/__init__.h); set 0/1 here only to override for a board.
+ifneq ($(CIRCUITPY_PICOGAME_FPU),)
+CFLAGS += -DCIRCUITPY_PICOGAME_FPU=$(CIRCUITPY_PICOGAME_FPU)
+endif
+
 CIRCUITPY_STATUS_BAR ?= 1
 CFLAGS += -DCIRCUITPY_STATUS_BAR=$(CIRCUITPY_STATUS_BAR)
 

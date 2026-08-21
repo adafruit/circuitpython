@@ -405,6 +405,9 @@ endif
 ifeq ($(CIRCUITPY_STAGE),1)
 SRC_PATTERNS += _stage/%
 endif
+ifeq ($(CIRCUITPY_PICOGAME),1)
+SRC_PATTERNS += picogame/%
+endif
 ifeq ($(CIRCUITPY_STORAGE),1)
 SRC_PATTERNS += storage/%
 endif
@@ -606,6 +609,12 @@ SRC_COMMON_HAL_ALL = \
 	wifi/ScannedNetworks.c \
 	wifi/__init__.c \
 
+# The fast Display backend is the only common-hal picogame source; include it
+# only on ports that provide it (others use the portable bus.send renderer).
+ifeq ($(CIRCUITPY_PICOGAME_FAST_DISPLAY),1)
+SRC_COMMON_HAL_ALL += picogame/Display.c
+endif
+
 SRC_COMMON_HAL = $(filter $(SRC_PATTERNS), $(SRC_COMMON_HAL_ALL))
 
 ifeq ($(CIRCUITPY_BLEIO_HCI),1)
@@ -633,6 +642,11 @@ endif
 # All possible sources are listed here, and are filtered by SRC_PATTERNS.
 SRC_BINDINGS_ENUMS = \
 $(filter $(SRC_PATTERNS), \
+	picogame/Bitmap.c \
+	picogame/Sprite.c \
+	picogame/StripDraw.c \
+	picogame/Triangles.c \
+	picogame/Framebuffer.c \
 	_bleio/Address.c \
 	_bleio/Attribute.c \
 	_bleio/ScanEntry.c \
@@ -704,6 +718,11 @@ SRC_SHARED_MODULE_ALL = \
 	_stage/Layer.c \
 	_stage/Text.c \
 	_stage/__init__.c \
+	picogame/__init__.c \
+	picogame/Scene.c \
+	picogame/Tilemap.c \
+	picogame/Particles.c \
+	picogame/Canvas.c \
 	aesio/__init__.c \
 	aesio/aes.c \
 	atexit/__init__.c \
