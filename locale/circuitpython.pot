@@ -1039,6 +1039,7 @@ msgstr ""
 #: ports/atmel-samd/common-hal/sdioio/SDCard.c
 #: ports/cxd56/common-hal/sdioio/SDCard.c
 #: ports/espressif/common-hal/sdioio/SDCard.c
+#: ports/nordic/boards/teenage_engineering_sp1/bindings/sp1emmc/EMMC.c
 #: ports/raspberrypi/common-hal/sdioio/SDCard.c
 #: ports/stm/common-hal/sdioio/SDCard.c shared-bindings/floppyio/__init__.c
 #: shared-module/sdcardio/SDCard.c
@@ -1703,44 +1704,45 @@ msgid ""
 "Frequency must be 24, 150, 396, 450, 528, 600, 720, 816, 912, 960 or 1008 Mhz"
 msgstr ""
 
-#: ports/nordic/bindings/sp1emmc/EMMC.c
+#: ports/nordic/boards/aramcon2_badge/mpconfigboard.h
+msgid "You pressed the left button at start up."
+msgstr ""
+
+#: ports/nordic/boards/teenage_engineering_sp1/bindings/sp1emmc/EMMC.c
 msgid ""
 "eMMC owned by the USB drive; set CIRCUITPY_EMMC_USB = false in settings.toml"
 msgstr ""
 
-#: ports/nordic/bindings/sp1emmc/EMMC.c
+#: ports/nordic/boards/teenage_engineering_sp1/bindings/sp1emmc/EMMC.c
 msgid "eMMC already in use"
 msgstr ""
 
-#: ports/nordic/bindings/sp1emmc/EMMC.c
+#: ports/nordic/boards/teenage_engineering_sp1/bindings/sp1emmc/EMMC.c
 #: ports/raspberrypi/common-hal/busio/SPI.c
 msgid "SPI peripheral in use"
 msgstr ""
 
-#: ports/nordic/bindings/sp1emmc/EMMC.c
+#: ports/nordic/boards/teenage_engineering_sp1/bindings/sp1emmc/EMMC.c
 #, c-format
 msgid "eMMC high-speed switch failed at %s"
 msgstr ""
 
-#: ports/nordic/bindings/sp1emmc/EMMC.c
+#: ports/nordic/boards/teenage_engineering_sp1/bindings/sp1emmc/EMMC.c
 #, c-format
 msgid "eMMC init failed at %s"
 msgstr ""
 
-#: ports/nordic/bindings/sp1emmc/EMMC.c
-msgid "Buffer length must be a multiple of 512"
+#: ports/nordic/boards/teenage_engineering_sp1/bindings/sp1emmc/EMMC.c
+#: shared-bindings/i2cioexpander/IOExpander.c
+msgid "address out of range"
 msgstr ""
 
-#: ports/nordic/bindings/sp1emmc/EMMC.c
-msgid "Block address out of range"
-msgstr ""
-
-#: ports/nordic/bindings/sp1emmc/EMMC.c
-msgid "Read-only: construct EMMC(write_enabled=True) to write"
-msgstr ""
-
-#: ports/nordic/boards/aramcon2_badge/mpconfigboard.h
-msgid "You pressed the left button at start up."
+#: ports/nordic/boards/teenage_engineering_sp1/bindings/sp1emmc/EMMC.c
+#: shared-bindings/_bleio/__init__.c
+#: shared-bindings/memorymonitor/AllocationSize.c
+#: shared-bindings/pulseio/PulseIn.c shared-module/bitmaptools/__init__.c
+#: shared-module/displayio/Bitmap.c shared-module/displayio/Group.c
+msgid "Read-only"
 msgstr ""
 
 #: ports/nordic/common-hal/_bleio/Adapter.c
@@ -3645,13 +3647,6 @@ msgstr ""
 msgid "not a 128-bit UUID"
 msgstr ""
 
-#: shared-bindings/_bleio/__init__.c
-#: shared-bindings/memorymonitor/AllocationSize.c
-#: shared-bindings/pulseio/PulseIn.c shared-module/bitmaptools/__init__.c
-#: shared-module/displayio/Bitmap.c shared-module/displayio/Group.c
-msgid "Read-only"
-msgstr ""
-
 #: shared-bindings/_pew/PewPew.c
 msgid "Incorrect buffer size"
 msgstr ""
@@ -4042,10 +4037,6 @@ msgstr ""
 
 #: shared-bindings/hashlib/__init__.c
 msgid "Unsupported hash algorithm"
-msgstr ""
-
-#: shared-bindings/i2cioexpander/IOExpander.c
-msgid "address out of range"
 msgstr ""
 
 #: shared-bindings/i2cioexpander/IOExpander.c

@@ -338,13 +338,13 @@ static mp_obj_t sp1emmc_emmc_readblocks(mp_obj_t self_in, mp_obj_t start_in, mp_
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(buf_in, &bufinfo, MP_BUFFER_WRITE);
     if (bufinfo.len == 0 || (bufinfo.len % EMMC_BLOCK_SIZE) != 0) {
-        mp_raise_ValueError(MP_ERROR_TEXT("Buffer length must be a multiple of 512"));
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("Buffer must be a multiple of %d bytes"), 512);
     }
     mp_uint_t start = mp_obj_get_int_truncated(start_in);
     mp_uint_t count = bufinfo.len / EMMC_BLOCK_SIZE;
     mp_uint_t total = emmc_block_count();
     if (start >= total || count > total - start) {
-        mp_raise_ValueError(MP_ERROR_TEXT("Block address out of range"));
+        mp_raise_ValueError(MP_ERROR_TEXT("address out of range"));
     }
 
     int err = emmc_read_chunked(bufinfo.buf, start, count, true);
@@ -397,19 +397,19 @@ static mp_obj_t sp1emmc_emmc_writeblocks(mp_obj_t self_in, mp_obj_t start_in, mp
     check_for_deinit(self);
     if (!self->write_enabled) {
         mp_raise_msg(&mp_type_RuntimeError,
-            MP_ERROR_TEXT("Read-only: construct EMMC(write_enabled=True) to write"));
+            MP_ERROR_TEXT("Read-only"));
     }
 
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(buf_in, &bufinfo, MP_BUFFER_READ);
     if (bufinfo.len == 0 || (bufinfo.len % EMMC_BLOCK_SIZE) != 0) {
-        mp_raise_ValueError(MP_ERROR_TEXT("Buffer length must be a multiple of 512"));
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("Buffer must be a multiple of %d bytes"), 512);
     }
     mp_uint_t start = mp_obj_get_int_truncated(start_in);
     mp_uint_t count = bufinfo.len / EMMC_BLOCK_SIZE;
     mp_uint_t total = emmc_block_count();
     if (start >= total || count > total - start) {
-        mp_raise_ValueError(MP_ERROR_TEXT("Block address out of range"));
+        mp_raise_ValueError(MP_ERROR_TEXT("address out of range"));
     }
 
     int err = emmc_write_chunked(bufinfo.buf, start, count, true);
