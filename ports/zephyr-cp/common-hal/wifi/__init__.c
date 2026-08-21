@@ -278,6 +278,7 @@ void common_hal_wifi_init(bool user_initiated) {
     // self->ap_mode = 0;
 
     net_mgmt_init_event_callback(&wifi_cb, _event_handler,
+        NET_EVENT_WIFI_SCAN_RESULT |
         NET_EVENT_WIFI_SCAN_DONE |
         NET_EVENT_WIFI_CONNECT_RESULT |
         NET_EVENT_WIFI_DISCONNECT_RESULT |
