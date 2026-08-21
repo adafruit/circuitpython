@@ -59,9 +59,11 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_CS42_RESET), MP_ROM_PTR(&pin_P0_15) },
 
     // I2S
-    { MP_ROM_QSTR(MP_QSTR_I2S_DATA), MP_ROM_PTR(&pin_P1_09) },
+    { MP_ROM_QSTR(MP_QSTR_I2S_DOUT), MP_ROM_PTR(&pin_P1_09) },
     { MP_ROM_QSTR(MP_QSTR_I2S_LRCLK), MP_ROM_PTR(&pin_P0_11) },
+    { MP_ROM_QSTR(MP_QSTR_I2S_WORD_SELECT), MP_OBJ_FROM_PTR(&pin_P0_11) },
     { MP_ROM_QSTR(MP_QSTR_I2S_BCLK), MP_ROM_PTR(&pin_P0_12) },
+    { MP_ROM_QSTR(MP_QSTR_I2S_BIT_CLOCK), MP_OBJ_FROM_PTR(&pin_P0_12) },
     { MP_ROM_QSTR(MP_QSTR_OSC_EN), MP_ROM_PTR(&pin_P0_13) },
 
     // 4 GB eMMC
