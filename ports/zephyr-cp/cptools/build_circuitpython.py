@@ -479,8 +479,16 @@ async def build_circuitpython():  # noqa: C901
     supervisor_source = [pathlib.Path(p) for p in supervisor_source]
     supervisor_source.extend(board_info["source_files"])
     supervisor_source.extend(top.glob("supervisor/shared/*.c"))
-    if "_bleio" in enabled_modules:
+    ble_workflow_enabled = "_bleio" in enabled_modules
+    if ble_workflow_enabled:
         supervisor_source.append(top / "supervisor/shared/bluetooth/bluetooth.c")
+        # BLE workflow = file transfer + serial services, matching other ports.
+        supervisor_source.append(top / "supervisor/shared/bluetooth/file_transfer.c")
+        supervisor_source.append(top / "supervisor/shared/bluetooth/serial.c")
+    circuitpython_flags.append(f"-DCIRCUITPY_BLE_FILE_SERVICE={1 if ble_workflow_enabled else 0}")
+    circuitpython_flags.append(
+        f"-DCIRCUITPY_BLE_SERIAL_SERVICE={1 if ble_workflow_enabled else 0}"
+    )
     supervisor_source.append(top / "supervisor/shared/translate/translate.c")
     if web_workflow_enabled:
         supervisor_source.extend(top.glob("supervisor/shared/web_workflow/*.c"))

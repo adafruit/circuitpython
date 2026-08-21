@@ -25,6 +25,7 @@
 
 #include "py/gc.h"
 #include "py/runtime.h"
+#include "supervisor/port_heap.h"
 #include "bindings/zephyr_kernel/__init__.h"
 #include "shared-bindings/_bleio/Characteristic.h"
 #include "shared-bindings/_bleio/Service.h"
@@ -52,8 +53,8 @@ static void service_ensure_capacity(bleio_service_obj_t *self, size_t needed) {
     while (new_capacity < self->attr_count + needed) {
         new_capacity *= 2;
     }
-    struct bt_gatt_attr *new_attrs = m_realloc(self->attrs,
-        new_capacity * sizeof(struct bt_gatt_attr));
+    struct bt_gatt_attr *new_attrs = port_realloc(self->attrs,
+        new_capacity * sizeof(struct bt_gatt_attr), false);
     self->attrs = new_attrs;
     self->attr_capacity = new_capacity;
 }
@@ -75,7 +76,7 @@ uint32_t _common_hal_bleio_service_construct(bleio_service_obj_t *self,
 
     // Allocate attrs array
     self->attr_capacity = INITIAL_ATTR_CAPACITY;
-    self->attrs = m_malloc(self->attr_capacity * sizeof(struct bt_gatt_attr));
+    self->attrs = port_malloc(self->attr_capacity * sizeof(struct bt_gatt_attr), false);
     memset(self->attrs, 0, self->attr_capacity * sizeof(struct bt_gatt_attr));
     self->attr_count = 0;
 
@@ -104,6 +105,12 @@ void common_hal_bleio_service_deinit(bleio_service_obj_t *self) {
     if (self->registered) {
         bt_gatt_service_unregister(&self->zephyr_service);
         self->registered = false;
+    }
+    if (self->attrs != NULL) {
+        port_free(self->attrs);
+        self->attrs = NULL;
+        self->attr_capacity = 0;
+        self->attr_count = 0;
     }
 }
 

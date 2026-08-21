@@ -77,6 +77,18 @@ static discovery_context_t *active_discovery_ctx;
 static sys_slist_t discovered_list;
 static struct bt_gatt_discover_params discovery_params;
 
+// Called from the disconnect callback (BT workqueue context) to abort any
+// in-flight GATT discovery. Without this the main thread's spin loop would
+// hang waiting for a callback that will never come, and the caller would then
+// NULL-dereference the now-cleared connection in bt_gatt_discover().
+void bleio_connection_discovery_abort(void) {
+    discovery_context_t *ctx = active_discovery_ctx;
+    if (ctx != NULL) {
+        ctx->err = -ENOTCONN;
+        ctx->done = true;
+    }
+}
+
 static uint8_t on_service_discovered(struct bt_conn *conn,
     const struct bt_gatt_attr *attr,
     struct bt_gatt_discover_params *params) {
@@ -152,6 +164,8 @@ typedef struct {
 
 // Forward declaration for use by descriptor discovery.
 static void free_discovered_list(void);
+static void bleio_discovery_check_connected(struct bt_conn *conn,
+    discovery_context_t *ctx);
 
 // Callback for descriptor discovery.
 static uint8_t on_descriptor_discovered(struct bt_conn *conn,
@@ -237,6 +251,8 @@ static void create_descriptors_from_discovered(bleio_characteristic_obj_t *chara
 static void discover_descriptors_for_characteristic(struct bt_conn *conn,
     discovery_context_t *ctx, bleio_characteristic_obj_t *characteristic,
     uint16_t end_handle) {
+    // Bail cleanly if the link dropped before this phase began.
+    bleio_discovery_check_connected(conn, ctx);
     uint16_t start = characteristic->handle + 1;
     if (start > end_handle) {
         return;
@@ -265,6 +281,9 @@ static void discover_descriptors_for_characteristic(struct bt_conn *conn,
     while (!ctx->done) {
         RUN_BACKGROUND_TASKS;
     }
+
+    // The link may have dropped while we were waiting.
+    bleio_discovery_check_connected(conn, ctx);
 
     create_descriptors_from_discovered(characteristic);
 }
@@ -332,9 +351,25 @@ static void free_discovered_list(void) {
     }
 }
 
+// The link dropped during discovery: the disconnect callback cleared
+// connection->conn (so a subsequent bt_gatt_discover() would NULL-deref, since
+// CONFIG_ASSERT is off) and/or aborted the active discovery (ctx->err set).
+// Stop discovery cleanly with a "Not connected" exception instead of
+// crashing or hanging on the spin loop.
+static void bleio_discovery_check_connected(struct bt_conn *conn,
+    discovery_context_t *ctx) {
+    if (conn == NULL || ctx->err != 0) {
+        free_discovered_list();
+        active_discovery_ctx = NULL;
+        mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Not connected"));
+    }
+}
+
 // Discover characteristics for a single remote service.
 static void discover_characteristics_for_service(struct bt_conn *conn,
     discovery_context_t *ctx, bleio_service_obj_t *service) {
+    // Bail cleanly if the link dropped before this phase began.
+    bleio_discovery_check_connected(conn, ctx);
     // Need at least 2 handles: one for the service declaration, one for a characteristic
     if (service->end_handle <= service->start_handle) {
         return;
@@ -364,6 +399,9 @@ static void discover_characteristics_for_service(struct bt_conn *conn,
     while (!ctx->done) {
         RUN_BACKGROUND_TASKS;
     }
+
+    // The link may have dropped while we were waiting.
+    bleio_discovery_check_connected(conn, ctx);
 
     // Create CP objects outside of callback context where MP allocations are safe.
     // This drains and frees the list nodes.
@@ -576,6 +614,9 @@ mp_obj_tuple_t *common_hal_bleio_connection_discover_remote_services(bleio_conne
         while (!ctx.done) {
             RUN_BACKGROUND_TASKS;
         }
+
+        // The link may have dropped during primary discovery.
+        bleio_discovery_check_connected(connection->conn, &ctx);
     } else {
         mp_obj_iter_buf_t iter_buf;
         mp_obj_t iterable = mp_getiter(service_uuids_whitelist, &iter_buf);
@@ -618,6 +659,10 @@ mp_obj_tuple_t *common_hal_bleio_connection_discover_remote_services(bleio_conne
             while (!ctx.done) {
                 RUN_BACKGROUND_TASKS;
             }
+
+            // The link may have dropped during this UUID's discovery; stop
+            // before the next iteration clears ctx.err and crashes on a NULL conn.
+            bleio_discovery_check_connected(connection->conn, &ctx);
         }
     }
 
@@ -640,6 +685,9 @@ mp_obj_tuple_t *common_hal_bleio_connection_discover_remote_services(bleio_conne
     for (size_t i = 0; i < result_list->len; i++) {
         bleio_service_obj_t *svc = MP_OBJ_TO_PTR(result_list->items[i]);
         if (svc->start_handle < svc->end_handle) {
+            // discover_characteristics_for_service re-checks, but guard here
+            // too so we don't enter the phase after a mid-loop disconnect.
+            bleio_discovery_check_connected(connection->conn, &ctx);
             discover_characteristics_for_service(connection->conn, &ctx, svc);
         }
     }
