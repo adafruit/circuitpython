@@ -7,10 +7,18 @@
 
 #pragma once
 
+#ifdef BLUETOOTH_SD
 #include "ble_drv.h"
 
 #include "nrf_mbr.h"  // for MBR_SIZE
 #include "nrf_sdm.h"  // for SD_FLASH_SIZE
+#else
+// No SoftDevice: its headers are not on the include path at all, and neither the
+// MBR nor the SoftDevice occupy any flash.
+#define MBR_SIZE      (0)
+#define SD_FLASH_SIZE (0)
+#endif
+
 #include "peripherals/nrf/nvm.h" // for FLASH_PAGE_SIZE
 
 #define MICROPY_PY_SYS_STDIO_BUFFER              (1)
@@ -81,8 +89,14 @@
 #define SD_FLASH_START_ADDR   (MBR_START_ADDR + MBR_SIZE)
 
 // SD_FLASH_SIZE is from nrf_sdm.h
+// A board whose bootloader lives in low flash and jumps to a fixed address
+// overrides this in mpconfigboard.h.
+#ifndef ISR_START_ADDR
 #define ISR_START_ADDR  (SD_FLASH_START_ADDR + SD_FLASH_SIZE)
+#endif
+#ifndef ISR_SIZE
 #define ISR_SIZE        (4 * 1024)   // 4kiB
+#endif
 
 // Smallest unit of flash that can be erased.
 #define FLASH_ERASE_SIZE FLASH_PAGE_SIZE
@@ -92,30 +106,95 @@
 // Define these regions starting down from the bootloader:
 
 // Bootloader values from https://github.com/adafruit/Adafruit_nRF52_Bootloader/blob/master/src/linker/s140_v6.ld
+// A board with no bootloader in high flash sets BOOTLOADER_SIZE and
+// BOOTLOADER_MBR_SIZE to 0; BOOTLOADER_START_ADDR then collapses onto the
+// settings page, which stays the top anchor everything else grows down from.
 #define BOOTLOADER_START_ADDR          (FLASH_SIZE - BOOTLOADER_SIZE - BOOTLOADER_SETTINGS_SIZE - BOOTLOADER_MBR_SIZE)
+#ifndef BOOTLOADER_MBR_SIZE
 #define BOOTLOADER_MBR_SIZE            (4 * 1024)     // 4kib
+#endif
 #ifndef BOOTLOADER_SIZE
 #define BOOTLOADER_SIZE                (40 * 1024)     // 40kiB
 #endif
 #define BOOTLOADER_SETTINGS_START_ADDR (FLASH_SIZE - BOOTLOADER_SETTINGS_SIZE)
+#ifndef BOOTLOADER_SETTINGS_SIZE
 #define BOOTLOADER_SETTINGS_SIZE       (4 * 1024)     // 4kiB
+#endif
 
+// Value left in GPREGRET to ask the bootloader to stay in DFU mode after the
+// reset that reset_to_bootloader() performs. The default is the Adafruit nRF52
+// bootloader's serial-DFU magic; a board with a different bootloader overrides
+// it in mpconfigboard.h.
+#ifndef BOOTLOADER_DFU_MAGIC
+#define BOOTLOADER_DFU_MAGIC           (0x4e)
+#endif
+
+// Value left in GPREGRET by common_hal_mcu_on_next_reset() for RunMode.UF2 and
+// RunMode.BOOTLOADER. The default is the Adafruit nRF52 bootloader's UF2/OTA
+// magic. A board whose bootloader gates on something else overrides it in
+// mpconfigboard.h; if that bootloader has no separate UF2 and serial-DFU
+// requests, it sets this to the same value as BOOTLOADER_DFU_MAGIC.
+#ifndef BOOTLOADER_UF2_MAGIC
+#define BOOTLOADER_UF2_MAGIC           (0x57)
+#endif
+
+#ifndef CIRCUITPY_INTERNAL_FLASH_FILESYSTEM_START_ADDR
 #define CIRCUITPY_INTERNAL_FLASH_FILESYSTEM_START_ADDR (BOOTLOADER_START_ADDR - CIRCUITPY_INTERNAL_FLASH_FILESYSTEM_SIZE)
+#endif
 
+// The filesystem is meant to be adjacent to the bootloader so that its location
+// does not change when other regions do. A board that overrides the start
+// address above and breaks that adjacency gets told about it.
 #if CIRCUITPY_INTERNAL_FLASH_FILESYSTEM_SIZE > 0 && CIRCUITPY_INTERNAL_FLASH_FILESYSTEM_START_ADDR != (BOOTLOADER_START_ADDR - CIRCUITPY_INTERNAL_FLASH_FILESYSTEM_SIZE)
 #warning Internal flash filesystem location has moved!
 #endif
 
+#ifndef CIRCUITPY_INTERNAL_NVM_START_ADDR
 #define CIRCUITPY_INTERNAL_NVM_START_ADDR (CIRCUITPY_INTERNAL_FLASH_FILESYSTEM_START_ADDR - CIRCUITPY_INTERNAL_NVM_SIZE)
+#endif
 
-// 32kiB for bonding, etc.
+// 32kiB for bonding, etc. Nothing to store without a SoftDevice.
 #ifndef CIRCUITPY_BLE_CONFIG_SIZE
+#ifdef BLUETOOTH_SD
 #define CIRCUITPY_BLE_CONFIG_SIZE       (32 * 1024)
+#else
+#define CIRCUITPY_BLE_CONFIG_SIZE       (0)
+#endif
 #endif
 #define CIRCUITPY_BLE_CONFIG_START_ADDR (CIRCUITPY_INTERNAL_NVM_START_ADDR - CIRCUITPY_BLE_CONFIG_SIZE)
 
 // The firmware space is the space left over between the fixed lower and upper regions.
 #define CIRCUITPY_FIRMWARE_SIZE (CIRCUITPY_BLE_CONFIG_START_ADDR - CIRCUITPY_FIRMWARE_START_ADDR)
+
+// Use the nRF52's access control lists to hardware-write-protect every part of
+// internal flash that CircuitPython does not own: everything below the BLE
+// config / nvm regions (a bootloader, a SoftDevice, our own firmware) and
+// everything from BOOTLOADER_START_ADDR up (a bootloader in high flash and its
+// settings page).
+//
+// Off by default. Worth turning on where a bad erase is
+// unrecoverable, a board whose bootloader cannot be reflashed, or has no
+// backup.
+#ifndef CIRCUITPY_NRF_FLASH_PROTECT
+#define CIRCUITPY_NRF_FLASH_PROTECT (0)
+#endif
+
+// Whether this board's bootloader starts a watchdog before CircuitPython's
+// first instruction and leaves it running with its configuration registers
+// locked, so that the application can only reload it. A board that sets this
+// supplies its own wdt.h, defining bootloader_wdt_feed(). Such a board should
+// normally also set CIRCUITPY_WATCHDOG = 0, so user code cannot interfere.
+#ifndef CIRCUITPY_BOOTLOADER_ARMED_WDT
+#define CIRCUITPY_BOOTLOADER_ARMED_WDT (0)
+#endif
+
+// Whether entering safe mode after a watchdog reset requires USB to be
+// connected (port_init(), supervisor/port.c). When the bootloader owns the
+// watchdog it can only have bitten because the main loop stopped, which is
+// worth reporting whether or not a host is attached.
+#ifndef CIRCUITPY_SAFE_MODE_ON_WATCHDOG_REQUIRES_USB
+#define CIRCUITPY_SAFE_MODE_ON_WATCHDOG_REQUIRES_USB (!CIRCUITPY_BOOTLOADER_ARMED_WDT)
+#endif
 
 #if BOOTLOADER_START_ADDR % FLASH_ERASE_SIZE != 0
 #error BOOTLOADER_START_ADDR must be on a flash erase boundary.
@@ -159,7 +238,14 @@
 // high enough to work and then check the mutation of the value done by sd_ble_enable().
 // See common.template.ld.
 #ifndef SOFTDEVICE_RAM_SIZE
+#ifdef BLUETOOTH_SD
 #define SOFTDEVICE_RAM_SIZE         (56 * 1024)
+#else
+// No SoftDevice, so none of the low RAM is reserved for it. The SPIM3 buffer
+// then sits at the very bottom of RAM, still inside the first 64kB as the
+// hardware workaround requires.
+#define SOFTDEVICE_RAM_SIZE         (0)
+#endif
 #endif
 
 

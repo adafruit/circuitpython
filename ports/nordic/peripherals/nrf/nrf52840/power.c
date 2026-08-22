@@ -9,6 +9,7 @@
 #include "peripherals/nrf/power.h"
 
 void nrf_peripherals_power_init(void) {
+    #if defined(CONFIG_REGOUT0_3V3)
     // Set GPIO reference voltage to 3.3V if it isn't already. REGOUT0 will get reset to 0xfffffff
     // if flash is erased, which sets the default to 1.8V
     // This matters only when "high voltage mode" is enabled, which is true on the PCA10059,
@@ -30,4 +31,5 @@ void nrf_peripherals_power_init(void) {
         // Must reset to enable change.
         NVIC_SystemReset();
     }
+    #endif
 }

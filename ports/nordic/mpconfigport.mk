@@ -86,7 +86,14 @@ NRF_DEFINES += -DNRF52840_XXAA -DNRF52840
 # CircuitPython doesn't yet support NFC so force the NFC antenna pins to be GPIO.
 # See https://github.com/adafruit/circuitpython/issues/1300
 # Defined here because system_nrf52840.c doesn't #include any of our own include files.
+#
+# One of the three UICR writes on the boot path.  if NFCPINS.PROTECT
+# still says NFC, SystemInit clears it and resets, permanently.
+# A board whose UICR must not be touched sets NRF_NFCT_PINS_AS_GPIOS = 0
+NRF_NFCT_PINS_AS_GPIOS ?= 1
+ifeq ($(NRF_NFCT_PINS_AS_GPIOS),1)
 CFLAGS += -DCONFIG_NFCT_PINS_AS_GPIOS
+endif
 
 ifeq ($(INTERNAL_FLASH_FILESYSTEM),1)
   OPTIMIZATION_FLAGS ?= -Os
@@ -123,4 +130,11 @@ ifeq ($(INTERNAL_FLASH_FILESYSTEM),1)
   CIRCUITPY_PULSEIO ?= 1
 endif
 endif
+endif
+
+# Cannot have BLEIO without SoftDevice
+ifeq ($(SD), )
+CIRCUITPY_BLEIO_NATIVE = 0
+CIRCUITPY_BLE_FILE_SERVICE = 0
+CIRCUITPY_BLE_SERIAL_SERVICE = 0
 endif

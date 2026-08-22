@@ -27,8 +27,23 @@ void Default_Handler(void) {
     }
 }
 
+extern const func __Vectors[];
+
+#ifndef BLUETOOTH_SD
+// SCB->VTOR, addressed directly so the startup file need not pull in CMSIS.
+#define SCB_VTOR (*(volatile uint32_t *)0xE000ED08UL)
+#endif
+
 extern void Reset_Handler(void);
 void Reset_Handler(void) {
+    #ifndef BLUETOOTH_SD
+    // With a SoftDevice, the MBR at 0x0 owns the vector table and forwards
+    // interrupts to us, so VTOR is already pointing at our table by the time we
+    // run. Without one, nothing has set it.
+    SCB_VTOR = (uint32_t)&__Vectors[0];
+    __asm volatile ("dsb 0xF" ::: "memory");
+    #endif
+
     uint32_t *p_src = &_sidata;
     uint32_t *p_dest = &_sdata;
 

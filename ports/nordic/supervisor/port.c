@@ -19,10 +19,21 @@
 
 #include "nrf/cache.h"
 #include "nrf/clocks.h"
+#include "nrf/nvm.h"
 #include "nrf/power.h"
 #include "nrf/timers.h"
+#if CIRCUITPY_BOOTLOADER_ARMED_WDT
+#include "wdt.h"
+#endif
 
+#if defined(CIRCUITPY_SP1EMMC) && CIRCUITPY_SP1EMMC
+#include "bindings/sp1emmc/EMMC.h"
+#endif
+
+// The SoftDevice headers (nrf_sdm.h / nrf_soc.h) come in via mpconfigport.h.
+#ifdef BLUETOOTH_SD
 #include "nrf_nvic.h"
+#endif
 
 #include "common-hal/microcontroller/Pin.h"
 #include "common-hal/alarm/time/TimeAlarm.h"
@@ -34,7 +45,6 @@
 #include "common-hal/watchdog/WatchDogTimer.h"
 #include "common-hal/alarm/__init__.h"
 
-#include "shared-bindings/_bleio/__init__.h"
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/rtc/__init__.h"
 
@@ -58,6 +68,15 @@ static void power_warning_handler(void) {
 
 uint32_t reset_reason_saved = 0;
 const nrfx_rtc_t rtc_instance = NRFX_RTC_INSTANCE(2);
+
+#if CIRCUITPY_BOOTLOADER_ARMED_WDT
+// Channels 0 and 1 of this RTC are taken (deadline waits and light sleep);
+// RTC2 has four.
+#define BOOTLOADER_WDT_WAKE_RTC_CHANNEL (3)
+// How long the CPU may stay in WFI before the main loop must get another look
+// in.
+#define BOOTLOADER_WDT_WAKE_TICKS (1024)
+#endif
 
 nrfx_rtc_config_t rtc_config = {
     .prescaler = RTC_FREQ_TO_PRESCALER(0x8000),
@@ -90,6 +109,12 @@ static void rtc_handler(nrfx_rtc_int_type_t int_type) {
         sleepmem_wakeup_event = SLEEPMEM_WAKEUP_BY_TIMER;
         #endif
         nrfx_rtc_cc_set(&rtc_instance, 1, 0, false);
+    #if CIRCUITPY_BOOTLOADER_ARMED_WDT
+    } else if (int_type == NRFX_RTC_INT_COMPARE3) {
+        // The watchdog wake timer armed in port_idle_until_interrupt(). Waking
+        // is the entire job; the main loop does the feeding.
+        nrfx_rtc_cc_set(&rtc_instance, BOOTLOADER_WDT_WAKE_RTC_CHANNEL, 0, false);
+    #endif
     }
 }
 
@@ -131,6 +156,19 @@ void tick_set_prescaler(uint32_t prescaler_val) {
 }
 
 safe_mode_t port_init(void) {
+    #if CIRCUITPY_BOOTLOADER_ARMED_WDT
+    // Feed bootloader wdt before anything else
+    bootloader_wdt_feed();
+    #endif
+
+    // Next, before any code that could go wrong has run: lock the flash regions
+    // we do not own out of reach of NVMC for the rest of this boot.
+    nrf_nvm_protect_init();
+
+    // Then, before any peripheral is touched: let a board quiesce
+    // whatever its bootloader left running.
+    board_early_init();
+
     nrf_peripherals_clocks_init();
 
     // If GPIO voltage is set wrong in UICR, this will fix it, and
@@ -175,13 +213,19 @@ safe_mode_t port_init(void) {
     // next time we reboot.
     if (reset_reason_saved & POWER_RESETREAS_DOG_Msk) {
         NRF_POWER->RESETREAS = POWER_RESETREAS_DOG_Msk;
-        uint32_t usb_reg = NRF_POWER->USBREGSTATUS;
 
+        #if CIRCUITPY_SAFE_MODE_ON_WATCHDOG_REQUIRES_USB
         // If USB is connected, then the user might be editing `code.py`,
         // in which case we should reboot into Safe Mode.
+        uint32_t usb_reg = NRF_POWER->USBREGSTATUS;
         if (usb_reg & POWER_USBREGSTATUS_VBUSDETECT_Msk) {
             return SAFE_MODE_WATCHDOG;
         }
+        #else
+        // The bootloader owns the watchdog, so it can only have bitten because
+        // the main loop stopped. Report it whether or not a host is attached.
+        return SAFE_MODE_WATCHDOG;
+        #endif
     }
 
     return SAFE_MODE_NONE;
@@ -204,6 +248,12 @@ void reset_port(void) {
     rtc_reset();
     #endif
 
+    #if defined(CIRCUITPY_SP1EMMC) && CIRCUITPY_SP1EMMC
+    // board_reset_pin_defaults() will already have asserted the card's reset
+    // and dropped its VCCQ rail.
+    sp1emmc_reset();
+    #endif
+
     timers_reset();
 
     #if CIRCUITPY_WATCHDOG
@@ -218,9 +268,12 @@ void reset_port(void) {
 }
 
 void reset_to_bootloader(void) {
-    enum { DFU_MAGIC_SERIAL = 0x4e };
-
-    NRF_POWER->GPREGRET = DFU_MAGIC_SERIAL;
+    NRF_POWER->GPREGRET = BOOTLOADER_DFU_MAGIC;
+    #ifdef BOOTLOADER_DFU_MAGIC2
+    // bootloader's magic is 16 bits wide, split across both retention
+    // registers.
+    NRF_POWER->GPREGRET2 = BOOTLOADER_DFU_MAGIC2;
+    #endif
     reset_cpu();
 }
 
@@ -317,12 +370,18 @@ void port_idle_until_interrupt(void) {
     qspi_disable();
     #endif
 
+    #if CIRCUITPY_BOOTLOADER_ARMED_WDT
+    bootloader_wdt_feed();
+    port_interrupt_after_ticks_ch(BOOTLOADER_WDT_WAKE_RTC_CHANNEL, BOOTLOADER_WDT_WAKE_TICKS);
+    #endif
+
     // Clear the FPU interrupt because it can prevent us from sleeping.
     if (NVIC_GetPendingIRQ(FPU_IRQn)) {
         __set_FPSCR(__get_FPSCR() & ~(0x9f));
         (void)__get_FPSCR();
         NVIC_ClearPendingIRQ(FPU_IRQn);
     }
+    #ifdef BLUETOOTH_SD
     uint8_t sd_enabled;
 
     sd_softdevice_is_enabled(&sd_enabled);
@@ -330,7 +389,10 @@ void port_idle_until_interrupt(void) {
         if (!background_callback_pending()) {
             sd_app_evt_wait();
         }
-    } else {
+        return;
+    }
+    #endif
+    {
         // Call wait for interrupt ourselves if the SD isn't enabled.
         // Note that `wfi` should be called with interrupts disabled,
         // to ensure that the queue is properly drained.  The `wfi`
