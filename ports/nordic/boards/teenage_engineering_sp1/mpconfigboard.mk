@@ -64,21 +64,7 @@ CIRCUITPY_AUDIOMP3 = 1
 SRC_C += boards/$(BOARD)/power_off.c
 
 # eMMC
-CIRCUITPY_SP1EMMC = 1
+CIRCUITPY_EMMCIO = 1
 
-# auto mount EMMC as /sd
-CIRCUITPY_SP1EMMC_USB = 1
-
-ifeq ($(CIRCUITPY_SP1EMMC),1)
-CFLAGS += -DCIRCUITPY_SP1EMMC=1
-SRC_C += \
-	boards/$(BOARD)/sp1emmc/sp1emmc.c \
-	boards/$(BOARD)/bindings/sp1emmc/__init__.c \
-	boards/$(BOARD)/bindings/sp1emmc/EMMC.c \
-
-# USB mass storage automount switch
-ifeq ($(CIRCUITPY_SP1EMMC_USB),1)
-CFLAGS += -DSP1EMMC_AUTOMOUNT=1
-SRC_C += boards/$(BOARD)/sp1emmc/automount.c
-endif
-endif
+# auto mount the eMMC as /sd
+CIRCUITPY_EMMC_USB = 1

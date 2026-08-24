@@ -36,8 +36,11 @@ void port_background_tick(void) {
     #endif
 }
 
-// Allow boards to override this.
+// Allow boards to override these.
 MP_WEAK void board_background_task(void) {
+}
+
+MP_WEAK void board_wdt_feed(void) {
 }
 
 void port_background_task(void) {

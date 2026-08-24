@@ -22,23 +22,18 @@
 
 // For the eMMC's supervisor mount: board_reset_pin_defaults() leaves
 // the card's reset and rail alone while it is up. The header stubs
-// sp1emmc_is_automounted() to false when the automount is not built, so the
+// emmcio_is_automounted() to false when the automount is not built, so the
 // call site needs no #if of its own.
-#if CIRCUITPY_SP1EMMC
-#include "sp1emmc/automount.h"
-#else
-static inline bool sp1emmc_is_automounted(void) {
-    return false;
-}
-#endif
+#include "shared-module/emmcio/__init__.h"
+#include "peripherals/nrf/pins.h"
+#define PIN_EMMC_RESET      (DEFAULT_EMMC_RESET->number)   // active low
+#define PIN_EMMC_VCCQ_EN    (DEFAULT_EMMC_VCCQ->number)    // eMMC I/O rail
 
 // Pins this file drives directly.
 #define PIN_OSC_EN          NRF_GPIO_PIN_MAP(0, 13)  // 3.072 MHz oscillator
 #define PIN_TAS_RESET       NRF_GPIO_PIN_MAP(0, 9)   // TAS2505, active low
 #define PIN_CS42_RESET      NRF_GPIO_PIN_MAP(0, 15)  // CS42L42, active low
 #define PIN_BT_RESET        NRF_GPIO_PIN_MAP(0, 10)  // CYBT-353027-02, active low
-#define PIN_EMMC_RESET      NRF_GPIO_PIN_MAP(1, 8)   // active low
-#define PIN_EMMC_VCCQ_EN    NRF_GPIO_PIN_MAP(0, 14)  // eMMC I/O rail
 #define PIN_CONTROL_RAIL    NRF_GPIO_PIN_MAP(1, 10)  // feeds faders + ladders
 #define PIN_FUNCTION_BUTTON NRF_GPIO_PIN_MAP(0, 27)  // active low, only GPIO button
 #define PIN_CHARGE_ENABLE   NRF_GPIO_PIN_MAP(0, 21)  // BQ24232, active low
@@ -153,7 +148,7 @@ void board_reset_pin_defaults(void) {
 
     // eMMC held in reset with its VCCQ rail off. The albums live on the chip
     // itself and are unaffected; this only keeps the rail from floating.
-    if (!sp1emmc_is_automounted()) {
+    if (!emmcio_is_automounted()) {
         nrf_gpio_cfg_output(PIN_EMMC_RESET);
         nrf_gpio_pin_clear(PIN_EMMC_RESET);
         nrf_gpio_cfg_output(PIN_EMMC_VCCQ_EN);
@@ -194,6 +189,10 @@ void board_reset_pin_defaults(void) {
 void board_init(void) {
     heartbeat_lit = false;
     nrf_gpio_pin_clear(PIN_LED_HEARTBEAT);
+}
+
+void board_wdt_feed(void) {
+    bootloader_wdt_feed();
 }
 
 void board_background_task(void) {

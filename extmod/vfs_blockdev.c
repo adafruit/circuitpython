@@ -38,8 +38,8 @@
 #include "shared-bindings/sdioio/SDCard.h"
 #endif
 
-#if defined(CIRCUITPY_SP1EMMC) && CIRCUITPY_SP1EMMC
-#include "bindings/sp1emmc/EMMC.h"
+#if CIRCUITPY_EMMCIO
+#include "shared-bindings/emmcio/EMMC.h"
 #endif
 
 
@@ -80,22 +80,22 @@ void mp_vfs_blockdev_init(mp_vfs_blockdev_t *self, mp_obj_t bdev) {
     }
     #endif
 
-    #if defined(CIRCUITPY_SP1EMMC) && CIRCUITPY_SP1EMMC
-    if (mp_obj_get_type(bdev) == &sp1emmc_emmc_type) {
+    #if CIRCUITPY_EMMCIO
+    if (mp_obj_get_type(bdev) == &emmcio_emmc_type) {
         self->flags |= MP_BLOCKDEV_FLAG_NATIVE | MP_BLOCKDEV_FLAG_HAVE_IOCTL;
         self->readblocks[0] = mp_const_none;
         self->readblocks[1] = bdev;
-        self->readblocks[2] = (mp_obj_t)sp1emmc_emmc_readblocks_native;
-        if (sp1emmc_emmc_is_write_enabled(bdev)) {
+        self->readblocks[2] = (mp_obj_t)emmcio_emmc_readblocks_native;
+        if (emmcio_emmc_is_write_enabled(bdev)) {
             self->writeblocks[0] = mp_const_none;
             self->writeblocks[1] = bdev;
-            self->writeblocks[2] = (mp_obj_t)sp1emmc_emmc_writeblocks_native;
+            self->writeblocks[2] = (mp_obj_t)emmcio_emmc_writeblocks_native;
         } else {
             self->writeblocks[0] = MP_OBJ_NULL;
         }
         self->u.ioctl[0] = mp_const_none;
         self->u.ioctl[1] = bdev;
-        self->u.ioctl[2] = (mp_obj_t)sp1emmc_emmc_ioctl_native;
+        self->u.ioctl[2] = (mp_obj_t)emmcio_emmc_ioctl_native;
     }
     #endif
     if (self->u.ioctl[0] != MP_OBJ_NULL) {

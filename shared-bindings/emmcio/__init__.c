@@ -9,12 +9,12 @@
 #include "py/obj.h"
 #include "py/runtime.h"
 
-#include "bindings/sp1emmc/EMMC.h"
-#include "sp1emmc/automount.h"
+#include "shared-bindings/emmcio/EMMC.h"
+#include "shared-module/emmcio/__init__.h"
 
 //| """Block device access to the on-board eMMC
 //|
-//| The `sp1emmc` module exposes the board's soldered-down eMMC chip as a block
+//| The `emmcio` module exposes the board's soldered-down eMMC chip as a block
 //| device. It provides no filesystem of its own: to read files, hand an `EMMC`
 //| object to `storage.VfsFat` and mount it.
 //|
@@ -30,10 +30,10 @@
 //|     While this is `True`, constructing `EMMC` raises a `ValueError`."""
 //|     ...
 //|
-static mp_obj_t sp1emmc_automounted(void) {
-    return mp_obj_new_bool(sp1emmc_is_automounted());
+static mp_obj_t emmcio_automounted(void) {
+    return mp_obj_new_bool(emmcio_is_automounted());
 }
-static MP_DEFINE_CONST_FUN_OBJ_0(sp1emmc_automounted_obj, sp1emmc_automounted);
+static MP_DEFINE_CONST_FUN_OBJ_0(emmcio_automounted_obj, emmcio_automounted);
 
 //| def automount_status() -> str:
 //|     """Why the eMMC is or is not mounted at ``/sd``, as one of:
@@ -49,23 +49,23 @@ static MP_DEFINE_CONST_FUN_OBJ_0(sp1emmc_automounted_obj, sp1emmc_automounted);
 //|       up. The next boot tries again."""
 //|     ...
 //|
-static mp_obj_t sp1emmc_automount_status(void) {
+static mp_obj_t emmcio_automount_status(void) {
     const char *s = "disabled";
-    #if defined(SP1EMMC_AUTOMOUNT) && SP1EMMC_AUTOMOUNT
-    switch (sp1emmc_automount_get_status()) {
-        case SP1EMMC_AUTOMOUNT_OK:
+    #if CIRCUITPY_EMMC_USB
+    switch (emmcio_automount_get_status()) {
+        case EMMCIO_AUTOMOUNT_OK:
             s = "ok";
             break;
-        case SP1EMMC_AUTOMOUNT_SAFE_MODE:
+        case EMMCIO_AUTOMOUNT_SAFE_MODE:
             s = "safe mode";
             break;
-        case SP1EMMC_AUTOMOUNT_NO_CARD:
+        case EMMCIO_AUTOMOUNT_NO_CARD:
             s = "no card";
             break;
-        case SP1EMMC_AUTOMOUNT_NO_FILESYSTEM:
+        case EMMCIO_AUTOMOUNT_NO_FILESYSTEM:
             s = "no filesystem";
             break;
-        case SP1EMMC_AUTOMOUNT_SKIPPED_AFTER_FAULT:
+        case EMMCIO_AUTOMOUNT_SKIPPED_AFTER_FAULT:
             s = "skipped after fault";
             break;
         default:
@@ -74,19 +74,19 @@ static mp_obj_t sp1emmc_automount_status(void) {
     #endif
     return mp_obj_new_str(s, strlen(s));
 }
-static MP_DEFINE_CONST_FUN_OBJ_0(sp1emmc_automount_status_obj, sp1emmc_automount_status);
+static MP_DEFINE_CONST_FUN_OBJ_0(emmcio_automount_status_obj, emmcio_automount_status);
 
-static const mp_rom_map_elem_t sp1emmc_module_globals_table[] = {
-    { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_sp1emmc) },
-    { MP_ROM_QSTR(MP_QSTR_EMMC), MP_ROM_PTR(&sp1emmc_emmc_type) },
-    { MP_ROM_QSTR(MP_QSTR_automounted), MP_ROM_PTR(&sp1emmc_automounted_obj) },
-    { MP_ROM_QSTR(MP_QSTR_automount_status), MP_ROM_PTR(&sp1emmc_automount_status_obj) },
+static const mp_rom_map_elem_t emmcio_module_globals_table[] = {
+    { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_emmcio) },
+    { MP_ROM_QSTR(MP_QSTR_EMMC), MP_ROM_PTR(&emmcio_emmc_type) },
+    { MP_ROM_QSTR(MP_QSTR_automounted), MP_ROM_PTR(&emmcio_automounted_obj) },
+    { MP_ROM_QSTR(MP_QSTR_automount_status), MP_ROM_PTR(&emmcio_automount_status_obj) },
 };
-static MP_DEFINE_CONST_DICT(sp1emmc_module_globals, sp1emmc_module_globals_table);
+static MP_DEFINE_CONST_DICT(emmcio_module_globals, emmcio_module_globals_table);
 
-const mp_obj_module_t sp1emmc_module = {
+const mp_obj_module_t emmcio_module = {
     .base = { &mp_type_module },
-    .globals = (mp_obj_dict_t *)&sp1emmc_module_globals,
+    .globals = (mp_obj_dict_t *)&emmcio_module_globals,
 };
 
-MP_REGISTER_MODULE(MP_QSTR_sp1emmc, sp1emmc_module);
+MP_REGISTER_MODULE(MP_QSTR_emmcio, emmcio_module);

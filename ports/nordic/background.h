@@ -7,3 +7,5 @@
 #pragma once
 
 void board_background_task(void);
+
+void board_wdt_feed(void);

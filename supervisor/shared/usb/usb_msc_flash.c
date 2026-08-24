@@ -38,11 +38,16 @@
 #define SDCARD_COUNT 0
 #endif
 
-#if defined(SP1EMMC_AUTOMOUNT) && SP1EMMC_AUTOMOUNT
-#include "sp1emmc/automount.h"
+#if CIRCUITPY_EMMC_USB
+#include "shared-module/emmcio/__init__.h"
 
 #define EMMC_COUNT 1
 #define EMMC_LUN (1 + SAVES_COUNT + SDCARD_COUNT)
+
+// SCSI INQUIRY product id for the eMMC LUN. At most 16 characters.
+#ifndef CIRCUITPY_EMMC_MSC_PRODUCT_ID
+#define CIRCUITPY_EMMC_MSC_PRODUCT_ID "eMMC"
+#endif
 #else
 #define EMMC_COUNT 0
 #endif
@@ -178,9 +183,9 @@ static fs_user_mount_t *get_vfs(int lun) {
     if (lun == EMMC_LUN) {
         const char *path_under_mount;
 
-        fs_user_mount_t *emmc = filesystem_for_path(SP1EMMC_AUTOMOUNT_PATH, &path_under_mount);
+        fs_user_mount_t *emmc = filesystem_for_path(CIRCUITPY_EMMC_MOUNT_PATH, &path_under_mount);
         // Unlike the SD card there is no heap-mount case to allow: the eMMC's
-        // drive exists only when the supervisor mounted it (automount.c), and
+        // drive exists only when the supervisor mounted it, and
         // that mount is static. A user mount made by code.py stays a Python
         // filesystem and never becomes a LUN.
         if (emmc != root &&
@@ -393,7 +398,7 @@ void tud_msc_inquiry_cb(uint8_t lun, uint8_t vendor_id[8], uint8_t product_id[16
     memcpy(vendor_id, CFG_TUD_MSC_VENDOR, strlen(CFG_TUD_MSC_VENDOR));
     #ifdef EMMC_LUN
     if (lun == EMMC_LUN) {
-        static const char emmc_product_id[] = "SP-1 eMMC";
+        static const char emmc_product_id[] = CIRCUITPY_EMMC_MSC_PRODUCT_ID;
         memcpy(product_id, emmc_product_id, strlen(emmc_product_id));
     } else
     #endif

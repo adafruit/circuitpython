@@ -26,8 +26,8 @@
 #include "wdt.h"
 #endif
 
-#if defined(CIRCUITPY_SP1EMMC) && CIRCUITPY_SP1EMMC
-#include "bindings/sp1emmc/EMMC.h"
+#if CIRCUITPY_EMMCIO
+#include "shared-bindings/emmcio/__init__.h"
 #endif
 
 // The SoftDevice headers (nrf_sdm.h / nrf_soc.h) come in via mpconfigport.h.
@@ -248,10 +248,10 @@ void reset_port(void) {
     rtc_reset();
     #endif
 
-    #if defined(CIRCUITPY_SP1EMMC) && CIRCUITPY_SP1EMMC
+    #if CIRCUITPY_EMMCIO
     // board_reset_pin_defaults() will already have asserted the card's reset
     // and dropped its VCCQ rail.
-    sp1emmc_reset();
+    emmcio_reset();
     #endif
 
     timers_reset();

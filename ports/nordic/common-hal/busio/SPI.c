@@ -14,8 +14,8 @@
 #include "nrfx_spim.h"
 #include "nrf_gpio.h"
 
-#if defined(CIRCUITPY_SP1EMMC) && CIRCUITPY_SP1EMMC
-#include "bindings/sp1emmc/EMMC.h"
+#if CIRCUITPY_EMMCIO
+#include "common-hal/emmcio/EMMC.h"
 #endif
 
 #ifndef NRFX_SPIM3_ENABLED
@@ -126,8 +126,8 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self, const mcu_pin_obj_t *
     // Find a free instance, with most desirable (highest freq and not shared) allocated first.
     self->spim_peripheral = NULL;
     for (size_t i = 0; i < MP_ARRAY_SIZE(spim_peripherals); i++) {
-        #if defined(CIRCUITPY_SP1EMMC) && CIRCUITPY_SP1EMMC
-        if (spim_peripherals[i].spim.p_reg == NRF_SPIM3 && sp1emmc_spim3_in_use()) {
+        #if CIRCUITPY_EMMCIO
+        if (spim_peripherals[i].spim.p_reg == NRF_SPIM3 && emmcio_spim3_in_use()) {
             continue;
         }
         #endif

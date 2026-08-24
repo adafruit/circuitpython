@@ -219,6 +219,9 @@ endif
 ifeq ($(CIRCUITPY__EVE),1)
 SRC_PATTERNS += _eve/%
 endif
+ifeq ($(CIRCUITPY_EMMCIO),1)
+SRC_PATTERNS += emmcio/%
+endif
 ifeq ($(CIRCUITPY_EPAPERDISPLAY),1)
 SRC_PATTERNS += epaperdisplay/%
 endif
@@ -540,6 +543,8 @@ SRC_COMMON_HAL_ALL = \
 	dotclockframebuffer/DotClockFramebuffer.c \
 	dotclockframebuffer/__init__.c \
 	dualbank/__init__.c \
+	emmcio/EMMC.c \
+	emmcio/__init__.c \
 	floppyio/__init__.c \
 	frequencyio/FrequencyIn.c \
 	frequencyio/__init__.c \
@@ -761,6 +766,7 @@ SRC_SHARED_MODULE_ALL = \
 	displayio/area.c \
 	displayio/__init__.c \
 	dotclockframebuffer/__init__.c \
+	emmcio/__init__.c \
 	epaperdisplay/__init__.c \
 	epaperdisplay/EPaperDisplay.c \
 	i2cioexpander/IOExpander.c \
