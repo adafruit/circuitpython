@@ -31,11 +31,14 @@ wifi_radio_obj_t common_hal_wifi_radio_obj;
 #endif
 
 #include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 #include <zephyr/net/wifi_mgmt.h>
 
 #include <inttypes.h>
 
 #define MAC_ADDRESS_LENGTH 6
+
+LOG_MODULE_REGISTER(cp_wifi, CONFIG_LOG_DEFAULT_LEVEL);
 
 static void schedule_background_on_cp_core(void *arg) {
     #if CIRCUITPY_STATUS_BAR
@@ -56,7 +59,7 @@ static void _event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_eve
 
     switch (mgmt_event) {
         case NET_EVENT_WIFI_SCAN_RESULT: {
-            printk("NET_EVENT_WIFI_SCAN_RESULT\n");
+            LOG_DBG("NET_EVENT_WIFI_SCAN_RESULT");
             const struct wifi_scan_result *result = cb->info;
             if (result != NULL && self->current_scan != NULL) {
                 wifi_scannednetworks_scan_result(self->current_scan, result);
@@ -64,7 +67,7 @@ static void _event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_eve
             break;
         }
         case NET_EVENT_WIFI_SCAN_DONE:
-            printk("NET_EVENT_WIFI_SCAN_DONE (thread: %s prio=%d)\n",
+            LOG_DBG("NET_EVENT_WIFI_SCAN_DONE (thread: %s prio=%d)",
                 k_thread_name_get(k_current_get()),
                 k_thread_priority_get(k_current_get()));
             if (self->current_scan != NULL) {
@@ -72,46 +75,55 @@ static void _event_handler(struct net_mgmt_event_callback *cb, uint64_t mgmt_eve
             }
             break;
         case NET_EVENT_WIFI_CONNECT_RESULT:
-            printk("NET_EVENT_WIFI_CONNECT_RESULT\n");
+            LOG_DBG("NET_EVENT_WIFI_CONNECT_RESULT");
             break;
         case NET_EVENT_WIFI_DISCONNECT_RESULT:
-            printk("NET_EVENT_WIFI_DISCONNECT_RESULT\n");
+            LOG_DBG("NET_EVENT_WIFI_DISCONNECT_RESULT");
             break;
         case NET_EVENT_WIFI_IFACE_STATUS:
-            printk("NET_EVENT_WIFI_IFACE_STATUS\n");
+            LOG_DBG("NET_EVENT_WIFI_IFACE_STATUS");
             break;
         case NET_EVENT_WIFI_TWT:
-            printk("NET_EVENT_WIFI_TWT\n");
+            LOG_DBG("NET_EVENT_WIFI_TWT");
             break;
         case NET_EVENT_WIFI_TWT_SLEEP_STATE:
-            printk("NET_EVENT_WIFI_TWT_SLEEP_STATE\n");
+            LOG_DBG("NET_EVENT_WIFI_TWT_SLEEP_STATE");
             break;
         case NET_EVENT_WIFI_RAW_SCAN_RESULT:
-            printk("NET_EVENT_WIFI_RAW_SCAN_RESULT\n");
+            LOG_DBG("NET_EVENT_WIFI_RAW_SCAN_RESULT");
             break;
         case NET_EVENT_WIFI_DISCONNECT_COMPLETE:
-            printk("NET_EVENT_WIFI_DISCONNECT_COMPLETE\n");
+            LOG_DBG("NET_EVENT_WIFI_DISCONNECT_COMPLETE");
             break;
         case NET_EVENT_WIFI_SIGNAL_CHANGE:
-            printk("NET_EVENT_WIFI_SIGNAL_CHANGE\n");
+            LOG_DBG("NET_EVENT_WIFI_SIGNAL_CHANGE");
             break;
         case NET_EVENT_WIFI_NEIGHBOR_REP_COMP:
-            printk("NET_EVENT_WIFI_NEIGHBOR_REP_COMP\n");
+            LOG_DBG("NET_EVENT_WIFI_NEIGHBOR_REP_COMP");
             break;
         case NET_EVENT_WIFI_AP_ENABLE_RESULT:
-            printk("NET_EVENT_WIFI_AP_ENABLE_RESULT\n");
+            LOG_DBG("NET_EVENT_WIFI_AP_ENABLE_RESULT");
             break;
         case NET_EVENT_WIFI_AP_DISABLE_RESULT:
-            printk("NET_EVENT_WIFI_AP_DISABLE_RESULT\n");
+            LOG_DBG("NET_EVENT_WIFI_AP_DISABLE_RESULT");
             break;
         case NET_EVENT_WIFI_AP_STA_CONNECTED:
-            printk("NET_EVENT_WIFI_AP_STA_CONNECTED\n");
+            LOG_DBG("NET_EVENT_WIFI_AP_STA_CONNECTED");
             break;
         case NET_EVENT_WIFI_AP_STA_DISCONNECTED:
-            printk("NET_EVENT_WIFI_AP_STA_DISCONNECTED\n");
+            LOG_DBG("NET_EVENT_WIFI_AP_STA_DISCONNECTED");
+            break;
+        case NET_EVENT_IPV4_ADDR_ADD:
+            // DHCP bound, or a static address was configured. The address is read
+            // live by the ipv4_address getter, so nothing is stored here; the
+            // status bar just needs a refresh or it keeps showing "No IP".
+            LOG_DBG("NET_EVENT_IPV4_ADDR_ADD");
+            schedule_background_on_cp_core(NULL);
             break;
         default:
-            printk("unhandled net event %x\n", mgmt_event);
+            // Print all 64 bits. The layer lives in the high bits, so a 32-bit
+            // print collapses every unhandled event in a layer to one value.
+            LOG_DBG("unhandled net event %llx", (unsigned long long)mgmt_event);
             break;
     }
 }
@@ -196,7 +208,7 @@ static bool wifi_user_initiated;
 
 void common_hal_wifi_init(bool user_initiated) {
     wifi_radio_obj_t *self = &common_hal_wifi_radio_obj;
-    printk("common_hal_wifi_init\n");
+    LOG_DBG("common_hal_wifi_init");
 
     if (wifi_inited) {
         if (user_initiated && !wifi_user_initiated) {
@@ -223,8 +235,8 @@ void common_hal_wifi_init(bool user_initiated) {
     // }
     self->sta_netif = net_if_get_wifi_sta();
     self->ap_netif = net_if_get_wifi_sap();
-    printk("sta_netif %p\n", self->sta_netif);
-    printk("ap_netif %p\n", self->ap_netif);
+    LOG_DBG("sta_netif %p", self->sta_netif);
+    LOG_DBG("ap_netif %p", self->ap_netif);
 
 
     struct wifi_iface_status status = { 0 };
@@ -232,39 +244,39 @@ void common_hal_wifi_init(bool user_initiated) {
         CHECK_ZEPHYR_RESULT(net_mgmt(NET_REQUEST_WIFI_IFACE_STATUS, self->sta_netif, &status,
             sizeof(struct wifi_iface_status)));
         if (net_if_is_up(self->sta_netif)) {
-            printk("STA is up\n");
+            LOG_DBG("STA is up");
         } else {
-            printk("STA is down\n");
+            LOG_DBG("STA is down");
         }
         if (net_if_is_carrier_ok(self->sta_netif)) {
-            printk("STA carrier is ok\n");
+            LOG_DBG("STA carrier is ok");
         } else {
-            printk("STA carrier is not ok\n");
+            LOG_DBG("STA carrier is not ok");
         }
         if (net_if_is_dormant(self->sta_netif)) {
-            printk("STA is dormant\n");
+            LOG_DBG("STA is dormant");
         } else {
-            printk("STA is not dormant\n");
+            LOG_DBG("STA is not dormant");
         }
     }
     if (self->ap_netif != NULL) {
         int res = net_mgmt(NET_REQUEST_WIFI_IFACE_STATUS, self->ap_netif, &status,
             sizeof(struct wifi_iface_status));
-        printk("AP status request response %d\n", res);
+        LOG_DBG("AP status request response %d", res);
         if (net_if_is_up(self->ap_netif)) {
-            printk("AP is up\n");
+            LOG_DBG("AP is up");
         } else {
-            printk("AP is down\n");
+            LOG_DBG("AP is down");
         }
         if (net_if_is_carrier_ok(self->ap_netif)) {
-            printk("AP carrier is ok\n");
+            LOG_DBG("AP carrier is ok");
         } else {
-            printk("AP carrier is not ok\n");
+            LOG_DBG("AP carrier is not ok");
         }
         if (net_if_is_dormant(self->ap_netif)) {
-            printk("AP is dormant\n");
+            LOG_DBG("AP is dormant");
         } else {
-            printk("AP is not dormant\n");
+            LOG_DBG("AP is not dormant");
         }
     }
 
@@ -278,6 +290,7 @@ void common_hal_wifi_init(bool user_initiated) {
     // self->ap_mode = 0;
 
     net_mgmt_init_event_callback(&wifi_cb, _event_handler,
+        NET_EVENT_WIFI_SCAN_RESULT |
         NET_EVENT_WIFI_SCAN_DONE |
         NET_EVENT_WIFI_CONNECT_RESULT |
         NET_EVENT_WIFI_DISCONNECT_RESULT |
@@ -317,21 +330,21 @@ void common_hal_wifi_init(bool user_initiated) {
         char cpy_default_hostname[board_len + (MAC_ADDRESS_LENGTH * 2) + 6];
         struct net_linkaddr *mac = net_if_get_link_addr(self->sta_netif);
         if (mac->len < MAC_ADDRESS_LENGTH) {
-            printk("MAC address too short");
+            LOG_ERR("MAC address too short");
         }
         snprintf(cpy_default_hostname, sizeof(cpy_default_hostname), "cpy-%s-%02x%02x%02x%02x%02x%02x", CIRCUITPY_BOARD_ID + board_trim, mac->addr[0], mac->addr[1], mac->addr[2], mac->addr[3], mac->addr[4], mac->addr[5]);
 
         CHECK_ZEPHYR_RESULT(net_hostname_set(cpy_default_hostname, strlen(cpy_default_hostname)));
     }
     #else
-    printk("Hostname support disabled in Zephyr config\n");
+    LOG_WRN("Hostname support disabled in Zephyr config");
     #endif
     // set station mode to avoid the default SoftAP
     common_hal_wifi_radio_start_station(self);
     // start wifi
     common_hal_wifi_radio_set_enabled(self, true);
 
-    printk("common_hal_wifi_init done\n");
+    LOG_DBG("common_hal_wifi_init done");
 }
 
 void wifi_user_reset(void) {
@@ -342,7 +355,7 @@ void wifi_user_reset(void) {
 }
 
 void wifi_reset(void) {
-    printk("wifi_reset\n");
+    LOG_DBG("wifi_reset");
     if (!wifi_inited) {
         return;
     }

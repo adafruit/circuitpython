@@ -1707,7 +1707,8 @@ msgstr "Wifi 메모리 할당에 실패했습니다"
 msgid "Only IPv4 addresses supported"
 msgstr "IPv4 주소만 지원됩니다"
 
-#: ports/mimxrt10xx/common-hal/busio/SPI.c shared-bindings/busio/SPI.c
+#: ports/mimxrt10xx/common-hal/busio/SPI.c
+#: ports/raspberrypi/bindings/wiznet/PIO_SPI.c shared-bindings/busio/SPI.c
 msgid "Must provide MISO or MOSI pin"
 msgstr "MISO 또는 MOSI 핀을 제공해야 합니다"
 
@@ -1765,12 +1766,14 @@ msgid "Unknown gatt error: 0x%04x"
 msgstr ""
 
 #: ports/nordic/common-hal/_bleio/__init__.c
+#: ports/zephyr-cp/common-hal/_bleio/Connection.c
 msgid ""
-"Unspecified issue. Can be that the pairing prompt on the other device was "
+"Unspecified issue. The pairing request on the other device may have been "
 "declined or ignored."
 msgstr ""
 
 #: ports/nordic/common-hal/_bleio/__init__.c
+#: ports/zephyr-cp/common-hal/_bleio/Connection.c
 #, c-format
 msgid "Unknown security error: 0x%04x"
 msgstr ""
@@ -1871,6 +1874,17 @@ msgstr "출력 버퍼 요소의 길이는 <= 4 바이트 여야 합니다"
 #: ports/raspberrypi/bindings/rp2pio/StateMachine.c
 msgid "In-buffer elements must be <= 4 bytes long"
 msgstr "버퍼 내 요소 길이는 <= 4여야 합니다"
+
+#: ports/raspberrypi/bindings/wiznet/PIO_SPI.c shared-bindings/bitbangio/I2C.c
+#: shared-bindings/bitbangio/SPI.c shared-bindings/busio/I2C.c
+#: shared-bindings/busio/SPI.c
+msgid "Function requires lock"
+msgstr "이 함수에는 잠금이 필요합니다"
+
+#: ports/raspberrypi/bindings/wiznet/PIO_SPI.c shared-bindings/bitbangio/SPI.c
+#: shared-bindings/busio/SPI.c
+msgid "buffer slices must be of equal length"
+msgstr ""
 
 #: ports/raspberrypi/common-hal/alarm/touch/TouchAlarm.c
 #: ports/stm/common-hal/alarm/touch/TouchAlarm.c
@@ -3794,6 +3808,7 @@ msgid "file must be a file opened in byte mode"
 msgstr ""
 
 #: shared-bindings/audiodelays/Chorus.c shared-bindings/audiodelays/Echo.c
+#: shared-bindings/audiodelays/Flanger.c
 #: shared-bindings/audiodelays/GranularPitchShift.c
 #: shared-bindings/audiodelays/MultiTapDelay.c
 #: shared-bindings/audiodelays/PitchShift.c
@@ -3819,15 +3834,6 @@ msgstr ""
 #: shared-bindings/audioio/AudioOut.c
 msgid "%q and %q must be different"
 msgstr "%q와 %q는 달라야 합니다"
-
-#: shared-bindings/bitbangio/I2C.c shared-bindings/bitbangio/SPI.c
-#: shared-bindings/busio/I2C.c shared-bindings/busio/SPI.c
-msgid "Function requires lock"
-msgstr "이 함수에는 잠금이 필요합니다"
-
-#: shared-bindings/bitbangio/SPI.c shared-bindings/busio/SPI.c
-msgid "buffer slices must be of equal length"
-msgstr ""
 
 #: shared-bindings/bitmapfilter/__init__.c
 msgid ""
@@ -4243,6 +4249,10 @@ msgstr "파일을 찾을 수 없습니다"
 
 #: shared-bindings/time/__init__.c
 msgid "timestamp out of range for platform time_t"
+msgstr ""
+
+#: shared-bindings/traceback/__init__.c
+msgid "Supply both or neither of %q and %q"
 msgstr ""
 
 #: shared-bindings/traceback/__init__.c

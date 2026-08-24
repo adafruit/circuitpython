@@ -27,3 +27,4 @@ typedef struct {
 void common_hal_synthio_biquad_tick(mp_obj_t self_in);
 void synthio_biquad_filter_reset(biquad_filter_state *st);
 void synthio_biquad_filter_samples(mp_obj_t self_in, biquad_filter_state *st, int32_t *buffer, size_t n_samples);
+int32_t synthio_biquad_filter_sample(mp_obj_t self_in, biquad_filter_state *st, int32_t input);

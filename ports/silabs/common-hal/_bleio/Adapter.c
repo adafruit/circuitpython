@@ -640,11 +640,11 @@ void bleio_adapter_reset(bleio_adapter_obj_t *adapter) {
     // Wait up to 125 ms (128 ticks) for disconnect to complete. This should be
     // greater than most connection intervals.
     start_ticks = supervisor_ticks_ms64();
-    while (any_connected && supervisor_ticks_ms64() - start_ticks < 128) {
+    do {
         any_connected = false;
         for (conn_index = 0; conn_index < BLEIO_TOTAL_CONNECTION_COUNT; conn_index++) {
             connection = &bleio_connections[conn_index];
             any_connected |= connection->conn_handle != BLEIO_HANDLE_INVALID;
         }
-    }
+    } while (any_connected && supervisor_ticks_ms64() - start_ticks < 128);
 }

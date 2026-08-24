@@ -15,6 +15,9 @@ EXTERNAL_FLASH_DEVICES = "GD25Q64C"
 
 CIRCUITPY__EVE = 1
 
+# The default is -O3.
+OPTIMIZATION_FLAGS = -Os
+
 FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_asyncio
 FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_Bitmap_Font
 FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_Display_Shapes

@@ -70,11 +70,17 @@ void common_hal_audiomixer_mixervoice_play(audiomixer_mixervoice_obj_t *self, mp
     self->sample = sample;
     self->loop = loop;
 
-    audiosample_reset_buffer(sample, false, 0);
-    audioio_get_buffer_result_t result = audiosample_get_buffer(sample, false, 0, (uint8_t **)&self->remaining_buffer, &self->buffer_length);
-    // Track length in terms of words.
-    self->buffer_length /= sizeof(uint32_t);
-    self->more_data = result == GET_BUFFER_MORE_DATA;
+    common_hal_audiomixer_mixervoice_reset_buffer(self);
+}
+
+void common_hal_audiomixer_mixervoice_reset_buffer(audiomixer_mixervoice_obj_t *self) {
+    if (self->sample != NULL) {
+        audiosample_reset_buffer(self->sample, false, 0);
+        audioio_get_buffer_result_t result = audiosample_get_buffer(self->sample, false, 0, (uint8_t **)&self->remaining_buffer, &self->buffer_length);
+        // Track length in terms of words.
+        self->buffer_length /= sizeof(uint32_t);
+        self->more_data = result == GET_BUFFER_MORE_DATA;
+    }
 }
 
 bool common_hal_audiomixer_mixervoice_get_playing(audiomixer_mixervoice_obj_t *self) {

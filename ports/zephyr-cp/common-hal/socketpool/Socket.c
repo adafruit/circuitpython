@@ -27,6 +27,7 @@
 #include <string.h>
 
 #include <zephyr/kernel.h>
+#include <zephyr/net/dns_resolve.h>
 #include <zephyr/net/socket.h>
 
 #define SOCKETPOOL_IP_STR_LEN 48
@@ -82,7 +83,12 @@ static void socketpool_resolve_host_or_throw(int family, int type, const char *h
 
     int error = zsock_getaddrinfo(hostname, service_buf, &hints, &result_i);
     if (error != 0 || result_i == NULL) {
-        common_hal_socketpool_socketpool_raise_gaierror_noname();
+        // Report what the resolver said. A null result with no error is the
+        // one case that really is "not found".
+        if (error == 0) {
+            error = DNS_EAI_NONAME;
+        }
+        common_hal_socketpool_socketpool_raise_gaierror(error);
     }
 
     memcpy(addr, result_i->ai_addr, sizeof(struct sockaddr_storage));

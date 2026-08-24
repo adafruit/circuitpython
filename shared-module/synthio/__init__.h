@@ -55,6 +55,7 @@ typedef struct synthio_synth {
     uint32_t accum[CIRCUITPY_SYNTHIO_MAX_CHANNELS];
     uint32_t ring_accum[CIRCUITPY_SYNTHIO_MAX_CHANNELS];
     synthio_envelope_state_t envelope_state[CIRCUITPY_SYNTHIO_MAX_CHANNELS];
+    int16_t active_loudness[CIRCUITPY_SYNTHIO_MAX_CHANNELS][2];
 } synthio_synth_t;
 
 typedef struct {

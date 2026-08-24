@@ -9,6 +9,7 @@
 
 #include "shared-bindings/synthio/Biquad.h"
 #include "shared-module/audiocore/__init__.h"
+#include "shared-module/audiofilters/__init__.h"
 #include "shared-module/synthio/__init__.h"
 #include "shared-module/synthio/block.h"
 #include "shared-module/synthio/Biquad.h"
@@ -17,12 +18,8 @@ extern const mp_obj_type_t audiofilters_filter_type;
 
 typedef struct {
     audiosample_base_t base;
-    mp_obj_t filter;
+    audiofilters_filter_chain_t filter;
     synthio_block_slot_t mix;
-
-    mp_obj_t *filter_objs;
-    size_t filter_objs_len;
-    biquad_filter_state *filter_states;
 
     int8_t *buffer[2];
     uint8_t last_buf_idx;

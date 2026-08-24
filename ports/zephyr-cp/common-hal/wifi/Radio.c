@@ -25,6 +25,7 @@
 #include "bindings/zephyr_kernel/__init__.h"
 
 #include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 #include <zephyr/net/hostname.h>
 #include <zephyr/net/wifi.h>
 #include <zephyr/net/wifi_mgmt.h>
@@ -32,6 +33,8 @@
 #if CIRCUITPY_MDNS
 #include "common-hal/mdns/Server.h"
 #endif
+
+LOG_MODULE_DECLARE(cp_wifi);
 
 #define MAC_ADDRESS_LENGTH 6
 
@@ -85,7 +88,7 @@ void common_hal_wifi_radio_set_enabled(wifi_radio_obj_t *self, bool enabled) {
         //     #if CIRCUITPY_MDNS
         //     mdns_server_deinit_singleton();
         //     #endif
-        printk("net_if_down\n");
+        LOG_DBG("net_if_down");
         int res = net_if_down(self->sta_netif);
         if (res < 0 && res != -EALREADY) {
             raise_zephyr_error(res);
@@ -94,7 +97,7 @@ void common_hal_wifi_radio_set_enabled(wifi_radio_obj_t *self, bool enabled) {
         return;
     }
     if (!self->started && enabled) {
-        printk("net_if_up\n");
+        LOG_DBG("net_if_up");
         int res = net_if_up(self->sta_netif);
         if (res < 0 && res != -EALREADY) {
             raise_zephyr_error(res);
@@ -214,13 +217,11 @@ void common_hal_wifi_radio_set_mac_address_ap(wifi_radio_obj_t *self, const uint
 }
 
 mp_obj_t common_hal_wifi_radio_start_scanning_networks(wifi_radio_obj_t *self, uint8_t start_channel, uint8_t stop_channel) {
-    printk("common_hal_wifi_radio_start_scanning_networks\n");
+    LOG_DBG("common_hal_wifi_radio_start_scanning_networks");
     if (self->current_scan != NULL) {
-        printk("Already scanning for wifi networks\n");
         mp_raise_RuntimeError(MP_ERROR_TEXT("Already scanning for wifi networks"));
     }
     if (!common_hal_wifi_radio_get_enabled(self)) {
-        printk("WiFi is not enabled\n");
         mp_raise_RuntimeError(MP_ERROR_TEXT("WiFi is not enabled"));
     }
 
@@ -246,12 +247,12 @@ mp_obj_t common_hal_wifi_radio_start_scanning_networks(wifi_radio_obj_t *self, u
         K_POLL_MODE_NOTIFY_ONLY,
         &scan->msgq);
     wifi_scannednetworks_scan_next_channel(scan);
-    printk("common_hal_wifi_radio_start_scanning_networks done %p\n", scan);
+    LOG_DBG("common_hal_wifi_radio_start_scanning_networks done %p", scan);
     return scan;
 }
 
 void common_hal_wifi_radio_stop_scanning_networks(wifi_radio_obj_t *self) {
-    printk("common_hal_wifi_radio_stop_scanning_networks\n");
+    LOG_DBG("common_hal_wifi_radio_stop_scanning_networks");
     // Return early if self->current_scan is NULL to avoid hang
     if (self->current_scan == NULL) {
         return;

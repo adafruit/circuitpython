@@ -26,5 +26,6 @@ bool socketpool_socket(socketpool_socketpool_obj_t *self,
     int proto, socketpool_socket_obj_t *sock);
 
 MP_NORETURN void common_hal_socketpool_socketpool_raise_gaierror_noname(void);
+MP_NORETURN void common_hal_socketpool_socketpool_raise_gaierror(int err);
 
 mp_obj_t common_hal_socketpool_getaddrinfo_raise(socketpool_socketpool_obj_t *self, const char *host, int port, int family, int type, int proto, int flags);

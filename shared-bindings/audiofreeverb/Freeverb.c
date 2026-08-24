@@ -24,6 +24,8 @@
 //|         self,
 //|         roomsize: synthio.BlockInput = 0.5,
 //|         damp: synthio.BlockInput = 0.5,
+//|         pre_filter: Optional[synthio.Biquad | Tuple[synthio.Biquad]] = None,
+//|         post_filter: Optional[synthio.Biquad | Tuple[synthio.Biquad]] = None,
 //|         mix: synthio.BlockInput = 0.5,
 //|         buffer_size: int = 512,
 //|         sample_rate: int = 8000,
@@ -40,6 +42,8 @@
 //|
 //|         :param synthio.BlockInput roomsize: The size of the room. 0.0 = smallest; 1.0 = largest.
 //|         :param synthio.BlockInput damp: How much the walls absorb. 0.0 = least; 1.0 = most.
+//|         :param Optional[synthio.Biquad|Tuple[synthio.Biquad]] pre_filter: A normalized biquad filter object or tuple of normalized biquad filter objects. The sample is processed sequentially by each "Pre-EQ" filter before being fed to the reverb effect.
+//|         :param Optional[synthio.Biquad|Tuple[synthio.Biquad]] post_filter: A normalized biquad filter object or tuple of normalized biquad filter objects. The output of the reverb effect is processed sequentially by each "Post-EQ" filter before being mixed with the original sample.
 //|         :param synthio.BlockInput mix: The mix as a ratio of the sample (0.0) to the effect (1.0).
 //|         :param int buffer_size: The total size in bytes of each of the two playback buffers to use
 //|         :param int sample_rate: The sample rate to be used
@@ -70,10 +74,12 @@
 //|         ...
 //|
 static mp_obj_t audiofreeverb_freeverb_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
-    enum { ARG_roomsize, ARG_damp, ARG_mix, ARG_buffer_size, ARG_sample_rate, ARG_bits_per_sample, ARG_samples_signed, ARG_channel_count, };
+    enum { ARG_roomsize, ARG_damp, ARG_pre_filter, ARG_post_filter, ARG_mix, ARG_buffer_size, ARG_sample_rate, ARG_bits_per_sample, ARG_samples_signed, ARG_channel_count, };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_roomsize, MP_ARG_OBJ | MP_ARG_KW_ONLY,  {.u_obj = MP_OBJ_NULL} },
         { MP_QSTR_damp, MP_ARG_OBJ | MP_ARG_KW_ONLY,  {.u_obj = MP_OBJ_NULL} },
+        { MP_QSTR_pre_filter, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = MP_ROM_NONE } },
+        { MP_QSTR_post_filter, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = MP_ROM_NONE } },
         { MP_QSTR_mix, MP_ARG_OBJ | MP_ARG_KW_ONLY,  {.u_obj = MP_OBJ_NULL} },
         { MP_QSTR_buffer_size, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 512} },
         { MP_QSTR_sample_rate, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 8000} },
@@ -96,7 +102,7 @@ static mp_obj_t audiofreeverb_freeverb_make_new(const mp_obj_type_t *type, size_
     }
 
     audiofreeverb_freeverb_obj_t *self = mp_obj_malloc(audiofreeverb_freeverb_obj_t, &audiofreeverb_freeverb_type);
-    common_hal_audiofreeverb_freeverb_construct(self, args[ARG_roomsize].u_obj, args[ARG_damp].u_obj, args[ARG_mix].u_obj, args[ARG_buffer_size].u_int, bits_per_sample, args[ARG_samples_signed].u_bool, channel_count, sample_rate);
+    common_hal_audiofreeverb_freeverb_construct(self, args[ARG_roomsize].u_obj, args[ARG_damp].u_obj, args[ARG_pre_filter].u_obj, args[ARG_post_filter].u_obj, args[ARG_mix].u_obj, args[ARG_buffer_size].u_int, bits_per_sample, args[ARG_samples_signed].u_bool, channel_count, sample_rate);
 
     return MP_OBJ_FROM_PTR(self);
 }
@@ -164,6 +170,51 @@ MP_DEFINE_CONST_FUN_OBJ_2(audiofreeverb_freeverb_set_damp_obj, audiofreeverb_fre
 MP_PROPERTY_GETSET(audiofreeverb_freeverb_damp_obj,
     (mp_obj_t)&audiofreeverb_freeverb_get_damp_obj,
     (mp_obj_t)&audiofreeverb_freeverb_set_damp_obj);
+
+
+//|     pre_filter: synthio.Biquad | Tuple[synthio.Biquad] | None
+//|     """A normalized biquad filter object or tuple of normalized biquad filter objects. The sample is processed sequentially by each "Pre-EQ" filter before being fed to the reverb effect."""
+//|
+static mp_obj_t audiofreeverb_freeverb_obj_get_pre_filter(mp_obj_t self_in) {
+    audiofreeverb_freeverb_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    check_for_deinit(self);
+    return common_hal_audiofreeverb_freeverb_get_pre_filter(self);
+}
+MP_DEFINE_CONST_FUN_OBJ_1(audiofreeverb_freeverb_get_pre_filter_obj, audiofreeverb_freeverb_obj_get_pre_filter);
+
+static mp_obj_t audiofreeverb_freeverb_obj_set_pre_filter(mp_obj_t self_in, mp_obj_t filter_in) {
+    audiofreeverb_freeverb_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    common_hal_audiofreeverb_freeverb_set_pre_filter(self, filter_in);
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_2(audiofreeverb_freeverb_set_pre_filter_obj, audiofreeverb_freeverb_obj_set_pre_filter);
+
+MP_PROPERTY_GETSET(audiofreeverb_freeverb_pre_filter_obj,
+    (mp_obj_t)&audiofreeverb_freeverb_get_pre_filter_obj,
+    (mp_obj_t)&audiofreeverb_freeverb_set_pre_filter_obj);
+
+
+//|     post_filter: synthio.Biquad | Tuple[synthio.Biquad] | None
+//|     """A normalized biquad filter object or tuple of normalized biquad filter objects. The output of the reverb effect is processed sequentially by each "Post-EQ" filter before being mixed with the original sample."""
+//|
+static mp_obj_t audiofreeverb_freeverb_obj_get_post_filter(mp_obj_t self_in) {
+    audiofreeverb_freeverb_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    check_for_deinit(self);
+    return common_hal_audiofreeverb_freeverb_get_post_filter(self);
+}
+MP_DEFINE_CONST_FUN_OBJ_1(audiofreeverb_freeverb_get_post_filter_obj, audiofreeverb_freeverb_obj_get_post_filter);
+
+static mp_obj_t audiofreeverb_freeverb_obj_set_post_filter(mp_obj_t self_in, mp_obj_t filter_in) {
+    audiofreeverb_freeverb_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    common_hal_audiofreeverb_freeverb_set_post_filter(self, filter_in);
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_2(audiofreeverb_freeverb_set_post_filter_obj, audiofreeverb_freeverb_obj_set_post_filter);
+
+MP_PROPERTY_GETSET(audiofreeverb_freeverb_post_filter_obj,
+    (mp_obj_t)&audiofreeverb_freeverb_get_post_filter_obj,
+    (mp_obj_t)&audiofreeverb_freeverb_set_post_filter_obj);
+
 
 //|     mix: synthio.BlockInput
 //|     """The rate the reverb mix between 0 and 1 where 0 is only sample and 1 is all effect."""
@@ -251,6 +302,8 @@ static const mp_rom_map_elem_t audiofreeverb_freeverb_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_playing), MP_ROM_PTR(&audiofreeverb_freeverb_playing_obj) },
     { MP_ROM_QSTR(MP_QSTR_roomsize), MP_ROM_PTR(&audiofreeverb_freeverb_roomsize_obj) },
     { MP_ROM_QSTR(MP_QSTR_damp), MP_ROM_PTR(&audiofreeverb_freeverb_damp_obj) },
+    { MP_ROM_QSTR(MP_QSTR_pre_filter), MP_ROM_PTR(&audiofreeverb_freeverb_pre_filter_obj) },
+    { MP_ROM_QSTR(MP_QSTR_post_filter), MP_ROM_PTR(&audiofreeverb_freeverb_post_filter_obj) },
     { MP_ROM_QSTR(MP_QSTR_mix), MP_ROM_PTR(&audiofreeverb_freeverb_mix_obj) },
     AUDIOSAMPLE_FIELDS,
 };

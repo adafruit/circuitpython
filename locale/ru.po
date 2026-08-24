@@ -1702,7 +1702,8 @@ msgstr "Не удалось выделить память Wifi"
 msgid "Only IPv4 addresses supported"
 msgstr "Поддерживаются только адреса IPv4"
 
-#: ports/mimxrt10xx/common-hal/busio/SPI.c shared-bindings/busio/SPI.c
+#: ports/mimxrt10xx/common-hal/busio/SPI.c
+#: ports/raspberrypi/bindings/wiznet/PIO_SPI.c shared-bindings/busio/SPI.c
 msgid "Must provide MISO or MOSI pin"
 msgstr "Пин MISO или MOSI должен быть предоставлен"
 
@@ -1760,14 +1761,14 @@ msgid "Unknown gatt error: 0x%04x"
 msgstr "Неизвестная ошибка gatt: 0x%04x"
 
 #: ports/nordic/common-hal/_bleio/__init__.c
+#: ports/zephyr-cp/common-hal/_bleio/Connection.c
 msgid ""
-"Unspecified issue. Can be that the pairing prompt on the other device was "
+"Unspecified issue. The pairing request on the other device may have been "
 "declined or ignored."
 msgstr ""
-"Неуказанная проблема. Возможно, запрос на сопряжение на другом устройстве "
-"был отклонен или проигнорирован."
 
 #: ports/nordic/common-hal/_bleio/__init__.c
+#: ports/zephyr-cp/common-hal/_bleio/Connection.c
 #, c-format
 msgid "Unknown security error: 0x%04x"
 msgstr "Неизвестная ошибка безопасности: 0x%04x"
@@ -1871,6 +1872,17 @@ msgstr "Элементы вне буфера должны иметь длину 
 #: ports/raspberrypi/bindings/rp2pio/StateMachine.c
 msgid "In-buffer elements must be <= 4 bytes long"
 msgstr "Элементы буфера должны быть длиной <= 4 байта"
+
+#: ports/raspberrypi/bindings/wiznet/PIO_SPI.c shared-bindings/bitbangio/I2C.c
+#: shared-bindings/bitbangio/SPI.c shared-bindings/busio/I2C.c
+#: shared-bindings/busio/SPI.c
+msgid "Function requires lock"
+msgstr "Функция требует блокировки"
+
+#: ports/raspberrypi/bindings/wiznet/PIO_SPI.c shared-bindings/bitbangio/SPI.c
+#: shared-bindings/busio/SPI.c
+msgid "buffer slices must be of equal length"
+msgstr "Буферные фрагменты должны быть одинаковой длины"
 
 #: ports/raspberrypi/common-hal/alarm/touch/TouchAlarm.c
 #: ports/stm/common-hal/alarm/touch/TouchAlarm.c
@@ -3797,6 +3809,7 @@ msgid "file must be a file opened in byte mode"
 msgstr "Файл должен быть файлом, открытым в байтовом режиме"
 
 #: shared-bindings/audiodelays/Chorus.c shared-bindings/audiodelays/Echo.c
+#: shared-bindings/audiodelays/Flanger.c
 #: shared-bindings/audiodelays/GranularPitchShift.c
 #: shared-bindings/audiodelays/MultiTapDelay.c
 #: shared-bindings/audiodelays/PitchShift.c
@@ -3822,15 +3835,6 @@ msgstr ""
 #: shared-bindings/audioio/AudioOut.c
 msgid "%q and %q must be different"
 msgstr "%q и %q должны быть разными"
-
-#: shared-bindings/bitbangio/I2C.c shared-bindings/bitbangio/SPI.c
-#: shared-bindings/busio/I2C.c shared-bindings/busio/SPI.c
-msgid "Function requires lock"
-msgstr "Функция требует блокировки"
-
-#: shared-bindings/bitbangio/SPI.c shared-bindings/busio/SPI.c
-msgid "buffer slices must be of equal length"
-msgstr "Буферные фрагменты должны быть одинаковой длины"
 
 #: shared-bindings/bitmapfilter/__init__.c
 msgid ""
@@ -4262,6 +4266,10 @@ msgstr "Файл не найден"
 msgid "timestamp out of range for platform time_t"
 msgstr ""
 "Временная метка выходит за пределы допустимого диапазона для платформы time_t"
+
+#: shared-bindings/traceback/__init__.c
+msgid "Supply both or neither of %q and %q"
+msgstr ""
 
 #: shared-bindings/traceback/__init__.c
 msgid "file write is not available"
@@ -4749,6 +4757,13 @@ msgstr "выключить"
 #: supervisor/shared/web_workflow/web_workflow.c
 msgid "No IP"
 msgstr "Нет IP"
+
+#~ msgid ""
+#~ "Unspecified issue. Can be that the pairing prompt on the other device was "
+#~ "declined or ignored."
+#~ msgstr ""
+#~ "Неуказанная проблема. Возможно, запрос на сопряжение на другом устройстве "
+#~ "был отклонен или проигнорирован."
 
 #, c-format
 #~ msgid "SDIO Init Error %x"

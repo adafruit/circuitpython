@@ -20,6 +20,9 @@
 #include <zephyr/kernel.h>
 #include <zephyr/usb/usbd.h>
 #include <zephyr/usb/class/usbd_msc.h>
+#if DT_HAS_COMPAT_STATUS_OKAY(nordic_nrf_usbd)
+#include <nrfx_power.h>
+#endif
 
 #include "shared-module/storage/__init__.h"
 #include "supervisor/filesystem.h"
@@ -396,19 +399,49 @@ void usb_init(void) {
     printk("usbd_init\n");
     err = usbd_init(&main_usbd);
     if (err) {
-        LOG_ERR("Failed to initialize device support");
+        LOG_ERR("Failed to initialize device support (%d)", err);
         return;
     }
 
     printk("USB initialized\n");
 
     if (!usbd_can_detect_vbus(&main_usbd)) {
+        /* No VBUS detection — just enable unconditionally. */
         err = usbd_enable(&main_usbd);
         if (err) {
-            LOG_ERR("Failed to enable device support");
+            LOG_ERR("Failed to enable device support (%d)", err);
             return;
         }
-        printk("usbd enabled\n");
+    } else {
+        #if DT_HAS_COMPAT_STATUS_OKAY(nordic_nrf_usbd)
+        /*
+         * On nRF52 USBD, the UDC driver enables VBUS detection interrupts
+         * inside usbd_init(). If USB is already plugged in, the VBUS_READY
+         * event arrives before usbd_init() sets status.initialized = true,
+         * causing a __ASSERT in usbd_thread (with CONFIG_ASSERT=y) that kills
+         * the event-processing thread. Our _msg_cb then never receives
+         * VBUS_READY, and USB never enumerates.
+         *
+         * Work around the race by checking the current VBUS state directly.
+         * udc_nrf_enable() does not require VBUS to be present, so it's safe
+         * to call usbd_enable() if VBUS is already up.
+         */
+        nrfx_power_usb_state_t vbus = nrfx_power_usbstatus_get();
+        if (vbus != NRFX_POWER_USB_STATE_DISCONNECTED) {
+            err = usbd_enable(&main_usbd);
+            if (err) {
+                LOG_ERR("Failed to enable device support (%d)", err);
+                return;
+            }
+        }
+        #else
+        /*
+         * On nRF54 USBHS, VBUS events arrive via NRFS IPC which has a natural
+         * startup delay, so the assert race doesn't occur. Additionally,
+         * udc_enable() blocks until VBUS is ready, so we must NOT call
+         * usbd_enable() here — let _msg_cb handle it on VBUS_READY.
+         */
+        #endif
     }
 }
 

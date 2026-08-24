@@ -248,6 +248,15 @@ static bool adapter_on_ble_evt(ble_evt_t *ble_evt, void *self_in) {
             connection->connection_obj = mp_const_none;
             connection->pair_status = PAIR_NOT_PAIRED;
             connection->mtu = 0;
+            // Clear leftover bond state; connection slots are recycled. The
+            // SoftDevice fills in only the keys the new peer distributes, so a
+            // stale keyset could mix the previous peer's keys into this peer's
+            // stored bond, and a stale ediv or pending-save flag could file
+            // this connection's bond data under the previous peer's key.
+            connection->ediv = EDIV_INVALID;
+            connection->do_bond_cccds = false;
+            connection->do_bond_keys = false;
+            bonding_clear_keys(&connection->bonding_keys);
 
             ble_drv_add_event_handler_entry(&connection->handler_entry, connection_on_ble_evt, connection);
             self->connection_objs = NULL;
@@ -794,7 +803,13 @@ uint32_t _common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
             // advertising. This prevents a potential race condition where we
             // fire off a beacon with the same advertising data but a new MAC
             // address just as we tear down the connection.
-            .private_addr_cycle_s = timeout + 1,
+            //
+            // For unlimited advertising, timeout + 1 would rotate the address
+            // every second, too fast for a central to resolve it and connect.
+            // Zero selects the SoftDevice default cycle of 15 minutes
+            // (BLE_GAP_DEFAULT_PRIVATE_ADDR_CYCLE_INTERVAL_S).
+            .private_addr_cycle_s =
+                timeout == BLE_GAP_ADV_TIMEOUT_GENERAL_UNLIMITED ? 0 : timeout + 1,
             .p_device_irk = NULL,
         };
         err_code = sd_ble_gap_privacy_set(&privacy);
@@ -998,13 +1013,13 @@ void bleio_adapter_reset(bleio_adapter_obj_t *adapter) {
 
     // Wait up to 125 ms (128 ticks) for disconnect to complete. This should be
     // greater than most connection intervals.
-    bool any_connected = false;
+    bool any_connected;
     uint64_t start_ticks = supervisor_ticks_ms64();
-    while (any_connected && supervisor_ticks_ms64() - start_ticks < 128) {
+    do {
         any_connected = false;
         for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
             bleio_connection_internal_t *connection = &bleio_connections[i];
             any_connected |= connection->conn_handle != BLE_CONN_HANDLE_INVALID;
         }
-    }
+    } while (any_connected && supervisor_ticks_ms64() - start_ticks < 128);
 }

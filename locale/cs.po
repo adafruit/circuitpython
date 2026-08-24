@@ -1693,7 +1693,8 @@ msgstr "Chyba alokace paměti WiFi"
 msgid "Only IPv4 addresses supported"
 msgstr "Pouze IPv4 adresy podporovány"
 
-#: ports/mimxrt10xx/common-hal/busio/SPI.c shared-bindings/busio/SPI.c
+#: ports/mimxrt10xx/common-hal/busio/SPI.c
+#: ports/raspberrypi/bindings/wiznet/PIO_SPI.c shared-bindings/busio/SPI.c
 msgid "Must provide MISO or MOSI pin"
 msgstr "Musí poskytnout pin MISO nebo MOSI"
 
@@ -1751,12 +1752,14 @@ msgid "Unknown gatt error: 0x%04x"
 msgstr ""
 
 #: ports/nordic/common-hal/_bleio/__init__.c
+#: ports/zephyr-cp/common-hal/_bleio/Connection.c
 msgid ""
-"Unspecified issue. Can be that the pairing prompt on the other device was "
+"Unspecified issue. The pairing request on the other device may have been "
 "declined or ignored."
 msgstr ""
 
 #: ports/nordic/common-hal/_bleio/__init__.c
+#: ports/zephyr-cp/common-hal/_bleio/Connection.c
 #, c-format
 msgid "Unknown security error: 0x%04x"
 msgstr "Neznámá bezpečnostní chyba: 0x%04x"
@@ -1856,6 +1859,17 @@ msgstr ""
 #: ports/raspberrypi/bindings/rp2pio/StateMachine.c
 msgid "In-buffer elements must be <= 4 bytes long"
 msgstr "Elementy v bufferu musí být <= 4 bajty"
+
+#: ports/raspberrypi/bindings/wiznet/PIO_SPI.c shared-bindings/bitbangio/I2C.c
+#: shared-bindings/bitbangio/SPI.c shared-bindings/busio/I2C.c
+#: shared-bindings/busio/SPI.c
+msgid "Function requires lock"
+msgstr "Funkce vyžaduje zámek"
+
+#: ports/raspberrypi/bindings/wiznet/PIO_SPI.c shared-bindings/bitbangio/SPI.c
+#: shared-bindings/busio/SPI.c
+msgid "buffer slices must be of equal length"
+msgstr ""
 
 #: ports/raspberrypi/common-hal/alarm/touch/TouchAlarm.c
 #: ports/stm/common-hal/alarm/touch/TouchAlarm.c
@@ -3756,6 +3770,7 @@ msgid "file must be a file opened in byte mode"
 msgstr ""
 
 #: shared-bindings/audiodelays/Chorus.c shared-bindings/audiodelays/Echo.c
+#: shared-bindings/audiodelays/Flanger.c
 #: shared-bindings/audiodelays/GranularPitchShift.c
 #: shared-bindings/audiodelays/MultiTapDelay.c
 #: shared-bindings/audiodelays/PitchShift.c
@@ -3781,15 +3796,6 @@ msgstr ""
 #: shared-bindings/audioio/AudioOut.c
 msgid "%q and %q must be different"
 msgstr "%q a %q musí být rozdílné"
-
-#: shared-bindings/bitbangio/I2C.c shared-bindings/bitbangio/SPI.c
-#: shared-bindings/busio/I2C.c shared-bindings/busio/SPI.c
-msgid "Function requires lock"
-msgstr "Funkce vyžaduje zámek"
-
-#: shared-bindings/bitbangio/SPI.c shared-bindings/busio/SPI.c
-msgid "buffer slices must be of equal length"
-msgstr ""
 
 #: shared-bindings/bitmapfilter/__init__.c
 msgid ""
@@ -4201,6 +4207,10 @@ msgstr "Soubor nenalezen"
 
 #: shared-bindings/time/__init__.c
 msgid "timestamp out of range for platform time_t"
+msgstr ""
+
+#: shared-bindings/traceback/__init__.c
+msgid "Supply both or neither of %q and %q"
 msgstr ""
 
 #: shared-bindings/traceback/__init__.c

@@ -28,4 +28,6 @@ typedef struct {
     uint16_t level;
     int16_t panning;
     #endif
+    int32_t active_lo_level;
+    int32_t active_hi_level;
 } audiomixer_mixervoice_obj_t;

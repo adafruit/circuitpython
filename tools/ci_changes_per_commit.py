@@ -155,6 +155,11 @@ def get_commit_depth_and_check_suite(query_commits):
                 check_suites = commit["checkSuites"]
                 if check_suites["totalCount"] > 0:
                     for check_suite in check_suites["nodes"]:
+                        # workflowRun is null for check suites not attached to
+                        # a workflow run, such as one that was deleted or one
+                        # belonging to an app integration.
+                        if check_suite["workflowRun"] is None:
+                            continue
                         if check_suite["workflowRun"]["workflow"]["name"] == "Build CI":
                             return [
                                 {"sha": commit_sha, "depth": commit_depth},

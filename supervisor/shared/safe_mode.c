@@ -70,11 +70,13 @@ safe_mode_t wait_for_safe_mode_reset(void) {
     status_led_init();
     #endif
 
-    uint32_t safe_mode_delay_msecs = 1000;
+    #define DEFAULT_SAFE_MODE_DELAY_MSECS (1000)
+    #define DEFAULT_SAFE_MODE_DELAY_SECS (((mp_float_t)DEFAULT_SAFE_MODE_DELAY_MSECS) / 1000.0f)
+    uint32_t safe_mode_delay_msecs = DEFAULT_SAFE_MODE_DELAY_MSECS;
 
     #if CIRCUITPY_SETTINGS_TOML
-    mp_float_t safe_mode_delay_secs = 1.0f;
-    // Will update delay_secs if setting is present.
+    mp_float_t safe_mode_delay_secs = DEFAULT_SAFE_MODE_DELAY_SECS;
+    // Will update safe_mode_delay_secs if setting is present.
     settings_get_float("CIRCUITPY_SAFE_MODE_DELAY", &safe_mode_delay_secs);
     if (safe_mode_delay_secs >= 0.0f && safe_mode_delay_secs <= (mp_float_t)UINT32_MAX) {
         safe_mode_delay_msecs = safe_mode_delay_secs * 1000;
@@ -86,17 +88,20 @@ safe_mode_t wait_for_safe_mode_reset(void) {
     bool boot_in_safe_mode = false;
     while (diff < safe_mode_delay_msecs) {
         #if CIRCUITPY_STATUS_LED
-        // Blink on for 100, off for 100
-        bool led_on = (diff % 250) < 125;
+        // Blink on for 125, off for 125
+        bool led_on = boot_in_safe_mode || (diff % 250) < 125;
         if (led_on) {
             new_status_color(SAFE_MODE);
         } else {
             new_status_color(BLACK);
         }
         #endif
-        if (port_boot_button_pressed()) {
+        if (!boot_in_safe_mode && port_boot_button_pressed()) {
             boot_in_safe_mode = true;
-            break;
+            // Show solid yellow as feedback that the press was accepted, for the
+            // default duration.
+            start_ticks = supervisor_ticks_ms64();
+            safe_mode_delay_msecs = DEFAULT_SAFE_MODE_DELAY_MSECS;
         }
         diff = supervisor_ticks_ms64() - start_ticks;
     }

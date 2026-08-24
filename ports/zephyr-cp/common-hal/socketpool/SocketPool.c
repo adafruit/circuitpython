@@ -20,6 +20,7 @@
 #include <string.h>
 
 #include <zephyr/net/socket.h>
+#include <zephyr/net/dns_resolve.h>
 
 void common_hal_socketpool_socketpool_construct(socketpool_socketpool_obj_t *self, mp_obj_t radio) {
     bool is_wifi = false;
@@ -104,7 +105,10 @@ mp_obj_t common_hal_socketpool_getaddrinfo_raise(socketpool_socketpool_obj_t *se
     struct zsock_addrinfo *res = NULL;
     int err = socketpool_getaddrinfo_common(host, port, &hints, &res);
     if (err != 0 || res == NULL) {
-        common_hal_socketpool_socketpool_raise_gaierror_noname();
+        if (err == 0) {
+            err = DNS_EAI_NONAME;
+        }
+        common_hal_socketpool_socketpool_raise_gaierror(err);
     }
 
     nlr_buf_t nlr;

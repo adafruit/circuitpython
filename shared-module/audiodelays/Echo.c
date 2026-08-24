@@ -11,7 +11,7 @@
 #include <math.h>
 
 void common_hal_audiodelays_echo_construct(audiodelays_echo_obj_t *self, uint32_t max_delay_ms,
-    mp_obj_t delay_ms, mp_obj_t decay, mp_obj_t mix,
+    mp_obj_t delay_ms, mp_obj_t decay, mp_obj_t filter, mp_obj_t mix,
     uint32_t buffer_size, uint8_t bits_per_sample,
     bool samples_signed, uint8_t channel_count, uint32_t sample_rate, bool freq_shift) {
 
@@ -58,6 +58,8 @@ void common_hal_audiodelays_echo_construct(audiodelays_echo_obj_t *self, uint32_
     self->more_data = false; // Is there still more data to read from the sample or did we finish
 
     // The below section sets up the echo effect's starting values. For a different effect this section will change
+
+    common_hal_audiodelays_echo_set_filter(self, filter);
 
     // If we did not receive a BlockInput we need to create a default float value
     if (decay == MP_OBJ_NULL) {
@@ -106,6 +108,7 @@ void common_hal_audiodelays_echo_construct(audiodelays_echo_obj_t *self, uint32_
 
 void common_hal_audiodelays_echo_deinit(audiodelays_echo_obj_t *self) {
     audiosample_mark_deinit(&self->base);
+    audiofilters_deinit_filter_chain(&self->filter);
     self->echo_buffer = NULL;
     self->buffer[0] = NULL;
     self->buffer[1] = NULL;
@@ -166,6 +169,14 @@ void common_hal_audiodelays_echo_set_decay(audiodelays_echo_obj_t *self, mp_obj_
     synthio_block_assign_slot(decay, &self->decay, MP_QSTR_decay);
 }
 
+mp_obj_t common_hal_audiodelays_echo_get_filter(audiodelays_echo_obj_t *self) {
+    return self->filter.obj;
+}
+
+void common_hal_audiodelays_echo_set_filter(audiodelays_echo_obj_t *self, mp_obj_t filter_in) {
+    audiofilters_assign_filter_chain(&self->filter, filter_in, self->base.channel_count);
+}
+
 mp_obj_t common_hal_audiodelays_echo_get_mix(audiodelays_echo_obj_t *self) {
     return self->mix.obj;
 }
@@ -197,6 +208,8 @@ void audiodelays_echo_reset_buffer(audiodelays_echo_obj_t *self,
     memset(self->buffer[0], 0, self->buffer_len);
     memset(self->buffer[1], 0, self->buffer_len);
     memset(self->echo_buffer, 0, self->max_echo_buffer_len);
+
+    audiofilters_reset_filter_chain(&self->filter, self->base.channel_count);
 }
 
 bool common_hal_audiodelays_echo_get_playing(audiodelays_echo_obj_t *self) {
@@ -289,6 +302,9 @@ audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *
             recalculate_delay(self, f_delay_ms);
         }
 
+        // Tick biquad filters
+        audiofilters_tick_filter_chain(&self->filter);
+
         uint32_t echo_buf_len = self->echo_buffer_len / sizeof(uint16_t);
         uint32_t max_echo_buf_len = (self->max_echo_buffer_len >> (self->base.channel_count - 1)) / sizeof(uint16_t);
 
@@ -324,12 +340,12 @@ audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *
 
                         for (uint32_t j = echo_buffer_pos >> 8; j < next_buffer_pos >> 8; j++) {
                             word = (int16_t)(echo_buffer[(j % echo_buf_len) + echo_buffer_offset] * decay);
-                            echo_buffer[(j % echo_buf_len) + echo_buffer_offset] = word;
+                            echo_buffer[(j % echo_buf_len) + echo_buffer_offset] = (int16_t)audiofilters_process_filter_chain(&self->filter, self->base.channel_count, !!echo_buffer_offset, word);
                         }
                     } else {
                         echo = echo_buffer[echo_buffer_pos + echo_buffer_offset];
                         word = (int16_t)(echo * decay);
-                        echo_buffer[echo_buffer_pos++ + echo_buffer_offset] = word;
+                        echo_buffer[echo_buffer_pos++ + echo_buffer_offset] = (int16_t)audiofilters_process_filter_chain(&self->filter, self->base.channel_count, !!echo_buffer_offset, word);
                     }
 
                     word = (int16_t)(echo * MIN(mix, MICROPY_FLOAT_CONST(1.0)));
@@ -409,11 +425,11 @@ audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *
                             for (uint32_t j = echo_buffer_pos >> 8; j < next_buffer_pos >> 8; j++) {
                                 word = (int32_t)(echo_buffer[(j % echo_buf_len) + echo_buffer_offset] * decay + sample_word);
                                 word = synthio_mix_down_sample(word, SYNTHIO_MIX_DOWN_SCALE(2));
-                                echo_buffer[(j % echo_buf_len) + echo_buffer_offset] = (int16_t)word;
+                                echo_buffer[(j % echo_buf_len) + echo_buffer_offset] = (int16_t)audiofilters_process_filter_chain(&self->filter, self->base.channel_count, !!echo_buffer_offset, word);
                             }
                         } else {
                             word = synthio_mix_down_sample(word, SYNTHIO_MIX_DOWN_SCALE(2));
-                            echo_buffer[echo_buffer_pos++ + echo_buffer_offset] = (int16_t)word;
+                            echo_buffer[echo_buffer_pos++ + echo_buffer_offset] = (int16_t)audiofilters_process_filter_chain(&self->filter, self->base.channel_count, !!echo_buffer_offset, word);
                         }
                     } else {
                         if (self->freq_shift) {
@@ -421,12 +437,12 @@ audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *
                                 word = (int32_t)(echo_buffer[(j % echo_buf_len) + echo_buffer_offset] * decay + sample_word);
                                 // Do not have mix_down for 8 bit so just hard cap samples into 1 byte
                                 word = MIN(MAX(word, -128), 127);
-                                echo_buffer[(j % echo_buf_len) + echo_buffer_offset] = (int8_t)word;
+                                echo_buffer[(j % echo_buf_len) + echo_buffer_offset] = (int8_t)audiofilters_process_filter_chain(&self->filter, self->base.channel_count, !!echo_buffer_offset, word);
                             }
                         } else {
                             // Do not have mix_down for 8 bit so just hard cap samples into 1 byte
                             word = MIN(MAX(word, -128), 127);
-                            echo_buffer[echo_buffer_pos++ + echo_buffer_offset] = (int8_t)word;
+                            echo_buffer[echo_buffer_pos++ + echo_buffer_offset] = (int8_t)audiofilters_process_filter_chain(&self->filter, self->base.channel_count, !!echo_buffer_offset, word);
                         }
                     }
 

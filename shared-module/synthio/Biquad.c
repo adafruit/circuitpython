@@ -197,6 +197,10 @@ void synthio_biquad_filter_reset(biquad_filter_state *st) {
     memset(&st->x, 0, 4 * sizeof(int16_t));
 }
 
+static inline int32_t biquad_filter_sample(int32_t input, int32_t a1, int32_t a2, int32_t b0, int32_t b1, int32_t b2, int32_t x0, int32_t x1, int32_t y0, int32_t y1) {
+    return synthio_sat16((b0 * input + b1 * x0 + b2 * x1 - a1 * y0 - a2 * y1 + (1 << (BIQUAD_SHIFT - 1))), BIQUAD_SHIFT);
+}
+
 void synthio_biquad_filter_samples(mp_obj_t self_in, biquad_filter_state *st, int32_t *buffer, size_t n_samples) {
     synthio_biquad_t *self = MP_OBJ_TO_PTR(self_in);
 
@@ -213,7 +217,7 @@ void synthio_biquad_filter_samples(mp_obj_t self_in, biquad_filter_state *st, in
 
     for (size_t n = n_samples; n; --n, ++buffer) {
         int32_t input = *buffer;
-        int32_t output = synthio_sat16((b0 * input + b1 * x0 + b2 * x1 - a1 * y0 - a2 * y1 + (1 << (BIQUAD_SHIFT - 1))), BIQUAD_SHIFT);
+        int32_t output = biquad_filter_sample(input, a1, a2, b0, b1, b2, x0, x1, y0, y1);
 
         x1 = x0;
         x0 = input;
@@ -225,4 +229,17 @@ void synthio_biquad_filter_samples(mp_obj_t self_in, biquad_filter_state *st, in
     st->x[1] = x1;
     st->y[0] = y0;
     st->y[1] = y1;
+}
+
+int32_t synthio_biquad_filter_sample(mp_obj_t self_in, biquad_filter_state *st, int32_t input) {
+    synthio_biquad_t *self = MP_OBJ_TO_PTR(self_in);
+
+    int32_t output = biquad_filter_sample(input, self->a1, self->a2, self->b0, self->b1, self->b2, st->x[0], st->x[1], st->y[0], st->y[1]);
+
+    st->x[1] = st->x[0];
+    st->x[0] = input;
+    st->y[1] = st->y[0];
+    st->y[0] = output;
+
+    return output;
 }

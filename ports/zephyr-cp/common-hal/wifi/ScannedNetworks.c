@@ -19,12 +19,15 @@
 #include "bindings/zephyr_kernel/__init__.h"
 
 #include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
 #include <zephyr/net/wifi_mgmt.h>
+
+LOG_MODULE_DECLARE(cp_wifi);
 
 
 void wifi_scannednetworks_scan_result(wifi_scannednetworks_obj_t *self, struct wifi_scan_result *result) {
     if (k_msgq_put(&self->msgq, result, K_NO_WAIT) != 0) {
-        printk("Dropping scan result!\n");
+        LOG_WRN("Dropping scan result");
     }
 }
 
@@ -104,7 +107,7 @@ void wifi_scannednetworks_scan_next_channel(wifi_scannednetworks_obj_t *self) {
     } else {
         int res = net_mgmt(NET_REQUEST_WIFI_SCAN, self->netif, &params, sizeof(params));
         if (res != 0) {
-            printk("Failed to start wifi scan %d\n", res);
+            LOG_ERR("Failed to start wifi scan %d", res);
             raise_zephyr_error(res);
             wifi_scannednetworks_done(self);
         } else {

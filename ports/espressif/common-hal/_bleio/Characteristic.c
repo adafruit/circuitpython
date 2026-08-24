@@ -62,11 +62,18 @@ void common_hal_bleio_characteristic_construct(bleio_characteristic_obj_t *self,
         read_perm == SECURITY_MODE_SIGNED_WITH_MITM || write_perm == SECURITY_MODE_SIGNED_WITH_MITM) {
         mp_raise_NotImplementedError(MP_ERROR_TEXT("MITM security not supported"));
     }
+    // The BLE_GATT_CHR_F_NOTIFY_INDICATE_* flags are set below to require encryption or
+    // authentication when writing the auto-generated CCCD, if reading the
+    // characteristic requires it. This matches the nordic port behavior.
+    // Without the flags, NimBLE registers the CCCD as writable on an unencrypted link,
+    // so an unpaired central can subscribe and nothing ever requires it to pair.
+    //
+    // TODO: This behavior was fixed in NimBLE 1.10.0. ESP-IDF 6.0.1 uses a fork of NimBLE.
     if (read_perm == SECURITY_MODE_ENC_NO_MITM) {
-        self->flags |= BLE_GATT_CHR_F_READ_ENC;
+        self->flags |= BLE_GATT_CHR_F_READ_ENC | BLE_GATT_CHR_F_NOTIFY_INDICATE_ENC;
     }
     if (read_perm == SECURITY_MODE_SIGNED_NO_MITM) {
-        self->flags |= BLE_GATT_CHR_F_READ_AUTHEN;
+        self->flags |= BLE_GATT_CHR_F_READ_AUTHEN | BLE_GATT_CHR_F_NOTIFY_INDICATE_AUTHEN;
     }
     if (write_perm == SECURITY_MODE_ENC_NO_MITM) {
         self->flags |= BLE_GATT_CHR_F_WRITE_ENC;

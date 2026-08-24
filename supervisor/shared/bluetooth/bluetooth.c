@@ -252,6 +252,11 @@ void supervisor_bluetooth_init(void) {
         }
         #endif // !CIRCUITPY_USB_DEVICE
 
+        // A press must begin inside this interval. The safe mode interval just before
+        // this one also uses the boot button, and a press meant for safe mode can
+        // still be held down when this interval starts; entering discovery mode from
+        // it would erase bonding unasked. Require a release first.
+        bool button_released = !port_boot_button_pressed();
         while (diff < 1000) {
             #if CIRCUITPY_STATUS_LED
             // Blink on for 50 and off for 100
@@ -262,9 +267,14 @@ void supervisor_bluetooth_init(void) {
                 new_status_color(BLACK);
             }
             #endif
-            if (port_boot_button_pressed()) {
+            if (!port_boot_button_pressed()) {
+                button_released = true;
+            } else if (button_released && !boot_in_discovery_mode) {
                 boot_in_discovery_mode = true;
-                break;
+                // Restart the interval so the LED shows solid blue for the full
+                // 1000 ms, as feedback that the press was accepted and bonding
+                // will be erased.
+                start_ticks = supervisor_ticks_ms64();
             }
             diff = supervisor_ticks_ms64() - start_ticks;
         }

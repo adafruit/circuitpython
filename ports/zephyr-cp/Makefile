@@ -42,6 +42,9 @@ $(BUILD)/firmware.exe: $(BUILD)/zephyr-cp/zephyr/zephyr.elf
 $(BUILD)/firmware.uf2: $(BUILD)/zephyr-cp/zephyr/zephyr.elf
 	cp $(BUILD)/zephyr-cp/zephyr/zephyr.uf2 $@
 
+$(BUILD)/firmware.rps: $(BUILD)/zephyr-cp/zephyr/zephyr.elf
+	cp $(BUILD)/zephyr-cp/zephyr/zephyr.rps $@
+
 flash: $(BUILD)/zephyr-cp/zephyr/zephyr.elf
 	west flash -d $(BUILD)
 

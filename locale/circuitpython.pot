@@ -4218,6 +4218,10 @@ msgid "timestamp out of range for platform time_t"
 msgstr ""
 
 #: shared-bindings/traceback/__init__.c
+msgid "Supply both or neither of %q and %q"
+msgstr ""
+
+#: shared-bindings/traceback/__init__.c
 msgid "file write is not available"
 msgstr ""
 

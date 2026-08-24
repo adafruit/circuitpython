@@ -15,7 +15,7 @@
 #include "py/runtime.h"
 #include <math.h>
 
-void common_hal_audiofreeverb_freeverb_construct(audiofreeverb_freeverb_obj_t *self, mp_obj_t roomsize, mp_obj_t damp, mp_obj_t mix,
+void common_hal_audiofreeverb_freeverb_construct(audiofreeverb_freeverb_obj_t *self, mp_obj_t roomsize, mp_obj_t damp, mp_obj_t pre_filter, mp_obj_t post_filter, mp_obj_t mix,
     uint32_t buffer_size, uint8_t bits_per_sample,
     bool samples_signed, uint8_t channel_count, uint32_t sample_rate) {
 
@@ -59,6 +59,9 @@ void common_hal_audiofreeverb_freeverb_construct(audiofreeverb_freeverb_obj_t *s
     self->more_data = false; // Is there still more data to read from the sample or did we finish
 
     // The below section sets up the reverb effect's starting values. For a different effect this section will change
+    common_hal_audiofreeverb_freeverb_set_pre_filter(self, pre_filter);
+    common_hal_audiofreeverb_freeverb_set_post_filter(self, post_filter);
+
     if (roomsize == MP_OBJ_NULL) {
         roomsize = mp_obj_new_float(MICROPY_FLOAT_CONST(0.5));
     }
@@ -126,6 +129,8 @@ bool common_hal_audiofreeverb_freeverb_deinited(audiofreeverb_freeverb_obj_t *se
 
 void common_hal_audiofreeverb_freeverb_deinit(audiofreeverb_freeverb_obj_t *self) {
     audiosample_mark_deinit(&self->base);
+    audiofilters_deinit_filter_chain(&self->pre_filter);
+    audiofilters_deinit_filter_chain(&self->post_filter);
     self->buffer[0] = NULL;
     self->buffer[1] = NULL;
 }
@@ -167,6 +172,22 @@ void audiofreeverb_freeverb_get_damp_fixedpoint(mp_float_t n, int16_t *damp1, in
     *damp2 = (int16_t)(32768 - *damp1); // inverse of x1 damp2 = 1.0 - damp1
 }
 
+mp_obj_t common_hal_audiofreeverb_freeverb_get_pre_filter(audiofreeverb_freeverb_obj_t *self) {
+    return self->pre_filter.obj;
+}
+
+void common_hal_audiofreeverb_freeverb_set_pre_filter(audiofreeverb_freeverb_obj_t *self, mp_obj_t filter_in) {
+    audiofilters_assign_filter_chain(&self->pre_filter, filter_in, self->base.channel_count);
+}
+
+mp_obj_t common_hal_audiofreeverb_freeverb_get_post_filter(audiofreeverb_freeverb_obj_t *self) {
+    return self->post_filter.obj;
+}
+
+void common_hal_audiofreeverb_freeverb_set_post_filter(audiofreeverb_freeverb_obj_t *self, mp_obj_t filter_in) {
+    audiofilters_assign_filter_chain(&self->post_filter, filter_in, self->base.channel_count);
+}
+
 mp_obj_t common_hal_audiofreeverb_freeverb_get_mix(audiofreeverb_freeverb_obj_t *self) {
     return self->mix.obj;
 }
@@ -187,6 +208,9 @@ void audiofreeverb_freeverb_reset_buffer(audiofreeverb_freeverb_obj_t *self,
 
     memset(self->buffer[0], 0, self->buffer_len);
     memset(self->buffer[1], 0, self->buffer_len);
+
+    audiofilters_reset_filter_chain(&self->pre_filter, self->base.channel_count);
+    audiofilters_reset_filter_chain(&self->post_filter, self->base.channel_count);
 }
 
 bool common_hal_audiofreeverb_freeverb_get_playing(audiofreeverb_freeverb_obj_t *self) {
@@ -274,6 +298,10 @@ audioio_get_buffer_result_t audiofreeverb_freeverb_get_buffer(audiofreeverb_free
         mp_float_t roomsize = synthio_block_slot_get_limited(&self->roomsize, MICROPY_FLOAT_CONST(0.0), MICROPY_FLOAT_CONST(1.0));
         int16_t feedback = audiofreeverb_freeverb_get_roomsize_fixedpoint(roomsize);
 
+        // Tick biquad filters
+        audiofilters_tick_filter_chain(&self->pre_filter);
+        audiofilters_tick_filter_chain(&self->post_filter);
+
         int16_t *sample_src = (int16_t *)self->sample_remaining_buffer;
 
         for (uint32_t i = 0; i < n; i++) {
@@ -286,7 +314,10 @@ audioio_get_buffer_result_t audiofreeverb_freeverb_get_buffer(audiofreeverb_free
             int16_t input, bufout, output;
             uint32_t channel_comb_offset = 0, channel_allpass_offset = 0;
 
-            input = synthio_sat16(sample_word * 8738, 17); // Initial input scaled down so we can add reverb
+            // Apply filters as Pre-EQ
+            input = (int16_t)audiofilters_process_filter_chain(&self->pre_filter, self->base.channel_count, n % self->base.channel_count, sample_word);
+
+            input = synthio_sat16((int32_t)input * 8738, 17); // Initial input scaled down so we can add reverb
             sum = 0;
 
             // Calculate each of the 8 comb buffers
@@ -311,6 +342,9 @@ audioio_get_buffer_result_t audiofreeverb_freeverb_get_buffer(audiofreeverb_free
                     self->allpassbufferindex[j] = 0;
                 }
             }
+
+            // Apply filters as Post-EQ
+            output = (int16_t)audiofilters_process_filter_chain(&self->post_filter, self->base.channel_count, n % self->base.channel_count, (int32_t)output);
 
             word = output * 30; // Add some volume back don't have to saturate as next step will
 

@@ -8,8 +8,10 @@
 #include "py/obj.h"
 
 #include "shared-module/audiocore/__init__.h"
+#include "shared-module/audiofilters/__init__.h"
 #include "shared-module/synthio/__init__.h"
 #include "shared-module/synthio/block.h"
+#include "shared-module/synthio/Biquad.h"
 
 extern const mp_obj_type_t audiodelays_echo_type;
 
@@ -20,6 +22,7 @@ typedef struct {
     mp_float_t current_delay_ms;
     mp_float_t sample_ms;
     synthio_block_slot_t decay;
+    audiofilters_filter_chain_t filter;
     synthio_block_slot_t mix;
 
     int8_t *buffer[2];

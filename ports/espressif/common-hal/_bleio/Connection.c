@@ -34,6 +34,7 @@
 #include "freertos/queue.h"
 
 #include "host/ble_att.h"
+#include "host/ble_store.h"
 
 // Uncomment to turn on debug logging just in this file.
 // #undef CIRCUITPY_VERBOSE_BLE
@@ -80,6 +81,22 @@ int bleio_connection_event_cb(struct ble_gap_event *event, void *connection_in) 
                 connection->pair_status = PAIR_PAIRED;
             }
             break;
+        }
+        case BLE_GAP_EVENT_REPEAT_PAIRING: {
+            // The peer is asking to pair even though we still have a bond with it.
+            // This means it no longer has its own copy of that bond. Discard our bond
+            // and tell the BLE stack to carry on pairing. Otherwise NimBLE silently
+            // ignores the request, and a central that has forgotten this device can
+            // never pair again without erasing the bonds on the board. The
+            // nordic port likewise replaces the stored keys when a peer re-pairs.
+            struct ble_gap_conn_desc desc;
+            if (ble_gap_conn_find(event->repeat_pairing.conn_handle, &desc) != 0) {
+                return BLE_GAP_REPEAT_PAIRING_IGNORE;
+            }
+            ble_store_util_delete_peer(&desc.peer_id_addr);
+            // The BLE stack checks that the bond is really gone before retrying, and
+            // reports this event again if it is not.
+            return BLE_GAP_REPEAT_PAIRING_RETRY;
         }
         case BLE_GAP_EVENT_MTU: {
             if (event->mtu.conn_handle != connection->conn_handle) {

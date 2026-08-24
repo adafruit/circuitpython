@@ -190,15 +190,27 @@ MP_DEFINE_CONST_OBJ_TYPE(
     );
 
 MP_WEAK MP_NORETURN
-void common_hal_socketpool_socketpool_raise_gaierror_noname(void) {
+void common_hal_socketpool_socketpool_raise_gaierror(int err) {
     vstr_t vstr;
     mp_print_t print;
     vstr_init_print(&vstr, 64, &print);
-    mp_printf(&print, "%S", MP_ERROR_TEXT("Name or service not known"));
+    // Only EAI_NONAME means the name was not found. Other codes cover
+    // unrelated failures, such as an unsupported family, so use the generic
+    // message for those rather than one that would be misleading.
+    if (err == SOCKETPOOL_EAI_NONAME) {
+        mp_printf(&print, "%S", MP_ERROR_TEXT("Name or service not known"));
+    } else {
+        mp_cprintf(&print, MP_ERROR_TEXT("%q failure: %d"), MP_QSTR_getaddrinfo, err);
+    }
 
     mp_obj_t exc_args[] = {
-        MP_OBJ_NEW_SMALL_INT(SOCKETPOOL_EAI_NONAME),
+        MP_OBJ_NEW_SMALL_INT(err),
         mp_obj_new_str_from_vstr(&vstr),
     };
     nlr_raise(mp_obj_new_exception_args(&mp_type_gaierror, MP_ARRAY_SIZE(exc_args), exc_args));
+}
+
+MP_WEAK MP_NORETURN
+void common_hal_socketpool_socketpool_raise_gaierror_noname(void) {
+    common_hal_socketpool_socketpool_raise_gaierror(SOCKETPOOL_EAI_NONAME);
 }

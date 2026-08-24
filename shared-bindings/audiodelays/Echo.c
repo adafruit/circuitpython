@@ -25,6 +25,7 @@
 //|         max_delay_ms: int = 500,
 //|         delay_ms: synthio.BlockInput = 250.0,
 //|         decay: synthio.BlockInput = 0.7,
+//|         filter: Optional[synthio.Biquad | Tuple[synthio.Biquad]] = None,
 //|         mix: synthio.BlockInput = 0.25,
 //|         buffer_size: int = 512,
 //|         sample_rate: int = 8000,
@@ -45,6 +46,7 @@
 //|         :param int max_delay_ms: The maximum time the echo can be in milliseconds
 //|         :param synthio.BlockInput delay_ms: The current time of the echo delay in milliseconds. Must be less the max_delay_ms
 //|         :param synthio.BlockInput decay: The rate the echo fades. 0.0 = instant; 1.0 = never.
+//|         :param Optional[synthio.Biquad|Tuple[synthio.Biquad]] filter: A normalized biquad filter object or tuple of normalized biquad filter objects. A copy of the samples are processed sequentially by each filter before writing into the echo buffer. The original samples are not affected by this argument.
 //|         :param synthio.BlockInput mix: The mix as a ratio of the sample (0.0) to the effect (1.0).
 //|         :param int buffer_size: The total size in bytes of each of the two playback buffers to use
 //|         :param int sample_rate: The sample rate to be used
@@ -76,11 +78,12 @@
 //|         ...
 //|
 static mp_obj_t audiodelays_echo_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
-    enum { ARG_max_delay_ms, ARG_delay_ms, ARG_decay, ARG_mix, ARG_buffer_size, ARG_sample_rate, ARG_bits_per_sample, ARG_samples_signed, ARG_channel_count, ARG_freq_shift, };
+    enum { ARG_max_delay_ms, ARG_delay_ms, ARG_decay, ARG_filter, ARG_mix, ARG_buffer_size, ARG_sample_rate, ARG_bits_per_sample, ARG_samples_signed, ARG_channel_count, ARG_freq_shift, };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_max_delay_ms, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 500 } },
         { MP_QSTR_delay_ms, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = MP_OBJ_NULL} },
         { MP_QSTR_decay, MP_ARG_OBJ | MP_ARG_KW_ONLY,  {.u_obj = MP_OBJ_NULL} },
+        { MP_QSTR_filter, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = MP_ROM_NONE } },
         { MP_QSTR_mix, MP_ARG_OBJ | MP_ARG_KW_ONLY,  {.u_obj = MP_OBJ_NULL} },
         { MP_QSTR_buffer_size, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 512} },
         { MP_QSTR_sample_rate, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 8000} },
@@ -103,7 +106,7 @@ static mp_obj_t audiodelays_echo_make_new(const mp_obj_type_t *type, size_t n_ar
     }
 
     audiodelays_echo_obj_t *self = mp_obj_malloc(audiodelays_echo_obj_t, &audiodelays_echo_type);
-    common_hal_audiodelays_echo_construct(self, max_delay_ms, args[ARG_delay_ms].u_obj, args[ARG_decay].u_obj, args[ARG_mix].u_obj, args[ARG_buffer_size].u_int, bits_per_sample, args[ARG_samples_signed].u_bool, channel_count, sample_rate, args[ARG_freq_shift].u_bool);
+    common_hal_audiodelays_echo_construct(self, max_delay_ms, args[ARG_delay_ms].u_obj, args[ARG_decay].u_obj, args[ARG_filter].u_obj, args[ARG_mix].u_obj, args[ARG_buffer_size].u_int, bits_per_sample, args[ARG_samples_signed].u_bool, channel_count, sample_rate, args[ARG_freq_shift].u_bool);
 
     return MP_OBJ_FROM_PTR(self);
 }
@@ -176,6 +179,29 @@ MP_DEFINE_CONST_FUN_OBJ_2(audiodelays_echo_set_decay_obj, audiodelays_echo_obj_s
 MP_PROPERTY_GETSET(audiodelays_echo_decay_obj,
     (mp_obj_t)&audiodelays_echo_get_decay_obj,
     (mp_obj_t)&audiodelays_echo_set_decay_obj);
+
+
+//|     filter: synthio.Biquad | Tuple[synthio.Biquad] | None
+//|     """A normalized biquad filter object or tuple of normalized biquad filter objects. A copy of the samples are processed sequentially by each filter before writing into the echo buffer. The original samples are not affected by this property."""
+//|
+static mp_obj_t audiodelays_echo_obj_get_filter(mp_obj_t self_in) {
+    audiodelays_echo_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    check_for_deinit(self);
+    return common_hal_audiodelays_echo_get_filter(self);
+}
+MP_DEFINE_CONST_FUN_OBJ_1(audiodelays_echo_get_filter_obj, audiodelays_echo_obj_get_filter);
+
+static mp_obj_t audiodelays_echo_obj_set_filter(mp_obj_t self_in, mp_obj_t filter_in) {
+    audiodelays_echo_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    common_hal_audiodelays_echo_set_filter(self, filter_in);
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_2(audiodelays_echo_set_filter_obj, audiodelays_echo_obj_set_filter);
+
+MP_PROPERTY_GETSET(audiodelays_echo_filter_obj,
+    (mp_obj_t)&audiodelays_echo_get_filter_obj,
+    (mp_obj_t)&audiodelays_echo_set_filter_obj);
+
 
 //|     mix: synthio.BlockInput
 //|     """The rate the echo mix between 0 and 1 where 0 is only sample, 0.5 is an equal mix of the sample and the effect and 1 is all effect."""
@@ -285,6 +311,7 @@ static const mp_rom_map_elem_t audiodelays_echo_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_playing), MP_ROM_PTR(&audiodelays_echo_playing_obj) },
     { MP_ROM_QSTR(MP_QSTR_delay_ms), MP_ROM_PTR(&audiodelays_echo_delay_ms_obj) },
     { MP_ROM_QSTR(MP_QSTR_decay), MP_ROM_PTR(&audiodelays_echo_decay_obj) },
+    { MP_ROM_QSTR(MP_QSTR_filter), MP_ROM_PTR(&audiodelays_echo_filter_obj) },
     { MP_ROM_QSTR(MP_QSTR_mix), MP_ROM_PTR(&audiodelays_echo_mix_obj) },
     { MP_ROM_QSTR(MP_QSTR_freq_shift), MP_ROM_PTR(&audiodelays_echo_freq_shift_obj) },
     AUDIOSAMPLE_FIELDS,

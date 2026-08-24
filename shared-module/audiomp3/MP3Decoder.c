@@ -120,8 +120,13 @@ static void stream_set_blocking(audiomp3_mp3file_obj_t *self, bool block_ok) {
  * Sets self->eof if any read of the file returns 0 bytes
  */
 static bool mp3file_update_inbuf_always(audiomp3_mp3file_obj_t *self, bool block_ok) {
+    // Every return from this function must be preceded by background_callback_allow();
+    background_callback_prevent();
+
     if (self->eof || INPUT_BUFFER_SPACE(self->inbuf) == 0) {
-        return INPUT_BUFFER_AVAILABLE(self->inbuf) > 0;
+        bool result = INPUT_BUFFER_AVAILABLE(self->inbuf) > 0;
+        background_callback_allow();
+        return result;
     }
 
     stream_set_blocking(self, block_ok);
@@ -135,7 +140,8 @@ static bool mp3file_update_inbuf_always(audiomp3_mp3file_obj_t *self, bool block
         self->inbuf.read_off = 0;
     }
 
-    for (size_t to_read; !self->eof && (to_read = INPUT_BUFFER_SPACE(self->inbuf)) > 0;) {
+    for (size_t to_read; !self->eof && INPUT_BUFFER_SPACE(self->inbuf) > 0 &&
+         (to_read = (size_t)INPUT_BUFFER_SPACE(self->inbuf)) > 0;) {
         uint8_t *write_ptr = self->inbuf.buf + self->inbuf.write_off;
         ssize_t n_read = stream_read(self->stream, write_ptr, to_read);
 
@@ -145,6 +151,7 @@ static bool mp3file_update_inbuf_always(audiomp3_mp3file_obj_t *self, bool block
                 break;
             }
             self->eof = true;
+            background_callback_allow();
             mp_raise_OSError(errcode);
         }
 
@@ -160,7 +167,10 @@ static bool mp3file_update_inbuf_always(audiomp3_mp3file_obj_t *self, bool block
     }
 
     // Return true iff there are at least some useful bytes in the buffer
-    return INPUT_BUFFER_AVAILABLE(self->inbuf) > 0;
+    bool result = INPUT_BUFFER_AVAILABLE(self->inbuf) > 0;
+
+    background_callback_allow();
+    return result;
 }
 
 /** Update the inbuf from a background callback.

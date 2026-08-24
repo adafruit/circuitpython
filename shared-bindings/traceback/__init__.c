@@ -36,10 +36,18 @@ static void traceback_exception_common(bool is_print_exception, mp_print_t *prin
     mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
     mp_obj_t value = args[ARG_value].u_obj;
+    mp_obj_t tb_obj = args[ARG_tb].u_obj;
+
+    // Both or neither of value and tb must be supplied.
+    if ((value != MP_OBJ_NULL && tb_obj == MP_OBJ_NULL) ||
+        (value == MP_OBJ_NULL && tb_obj != MP_OBJ_NULL)) {
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("Supply both or neither of %q and %q"), MP_QSTR_value, MP_QSTR_tb);
+    }
+
     if (value == MP_OBJ_NULL) {
         value = args[ARG_exc].u_obj;
     }
-    mp_obj_t tb_obj = args[ARG_tb].u_obj;
+
     mp_obj_t limit_obj = args[ARG_limit].u_obj;
     #if MICROPY_CPYTHON_EXCEPTION_CHAIN
     bool chain = args[ARG_chain].u_bool;
@@ -105,21 +113,21 @@ static void traceback_exception_common(bool is_print_exception, mp_print_t *prin
 //| def format_exception(
 //|     exc: BaseException | Type[BaseException],
 //|     /,
-//|     value: Optional[BaseException] = None,
+//|     value: BaseException,
 //|     tb: Optional[TracebackType] = None,
 //|     limit: Optional[int] = None,
 //|     chain: Optional[bool] = True,
 //| ) -> List[str]:
 //|     """Format a stack trace and the exception information.
 //|
-//|     If the exception value is passed in ``exc``, then this exception value and its
-//|     associated traceback are used. This is compatible with CPython 3.10 and newer.
+//|     If the exception value is passed in ``exc``, and ``value`` and ``tb`` are not supplied,
+//|     then this exception value and its associated traceback are used.
+//|     This is compatible with CPython 3.10 and newer.
 //|
-//|     If the exception value is passed in ``value``, then any value passed in for
-//|     ``exc`` is ignored.  ``value`` is used as the exception value and the
-//|     traceback in the ``tb`` argument is used.  In this case, if ``tb`` is None,
-//|     no traceback will be shown. This is compatible with CPython 3.5 and
-//|     newer.
+//|     If the exception value is passed in ``value``, then both ``value`` and ``tb`` must be supplied.
+//|     Any value passed in for ``exc`` is *ignored*.  ``value`` is used as the exception value and the
+//|     traceback in the ``tb`` argument is used.  In this case, if ``tb`` is `None`,
+//|     no traceback will be shown. This is compatible with CPython 3.5 and newer.
 //|
 //|     The arguments have the same meaning as the corresponding arguments
 //|     to print_exception().  The return value is a list of strings, each
@@ -128,8 +136,8 @@ static void traceback_exception_common(bool is_print_exception, mp_print_t *prin
 //|     printed as does print_exception().
 //|
 //|     :param exc: The exception. Must be an instance of `BaseException`. Unused if value is specified.
-//|     :param value: If specified, is used in place of ``exc``.
-//|     :param TracebackType tb: When value is alsp specified, ``tb`` is used in place of the exception's own traceback. If `None`, the traceback will not be printed.
+//|     :param value: If specified, is used in place of ``exc``, and ``tb`` must also be specified.
+//|     :param tb: When ``value`` is also specified, ``tb`` is used in place of the exception's own traceback. If `None`, the traceback will not be printed.
 //|     :param int limit: Print up to limit stack trace entries (starting from the caller’s frame) if limit is positive.
 //|                       Otherwise, print the last ``abs(limit)`` entries. If limit is omitted or None, all entries are printed.
 //|     :param bool chain: If `True` then chained exceptions will be printed.
@@ -150,7 +158,7 @@ static MP_DEFINE_CONST_FUN_OBJ_KW(traceback_format_exception_obj, 0, traceback_f
 //| def print_exception(
 //|     exc: BaseException | Type[BaseException],
 //|     /,
-//|     value: Optional[BaseException] = None,
+//|     value: BaseException,
 //|     tb: Optional[TracebackType] = None,
 //|     limit: Optional[int] = None,
 //|     file: Optional[io.FileIO] = None,
@@ -158,18 +166,18 @@ static MP_DEFINE_CONST_FUN_OBJ_KW(traceback_format_exception_obj, 0, traceback_f
 //| ) -> None:
 //|     """Prints exception information and stack trace entries.
 //|
-//|     If the exception value is passed in ``exc``, then this exception value and its
-//|     associated traceback are used. This is compatible with CPython 3.10 and newer.
+//|     If the exception value is passed in ``exc``, and ``value`` and ``tb`` are not supplied,
+//|     then this exception value and its associated traceback are used.
+//|     This is compatible with CPython 3.10 and newer.
 //|
-//|     If the exception value is passed in ``value``, then any value passed in for
-//|     ``exc`` is ignored.  ``value`` is used as the exception value and the
-//|     traceback in the ``tb`` argument is used.  In this case, if ``tb`` is None,
-//|     no traceback will be shown. This is compatible with CPython 3.5 and
-//|     newer.
+//|     If the exception value is passed in ``value``, then both ``value`` and ``tb`` must be supplied.
+//|     Any value passed in for ``exc`` is *ignored*.  ``value`` is used as the exception value and the
+//|     traceback in the ``tb`` argument is used.  In this case, if ``tb`` is `None`,
+//|     no traceback will be shown. This is compatible with CPython 3.5 and newer.
 //|
 //|     :param exc: The exception. Must be an instance of `BaseException`. Unused if value is specified.
-//|     :param value: If specified, is used in place of ``exc``.
-//|     :param tb: When value is alsp specified, ``tb`` is used in place of the exception's own traceback. If `None`, the traceback will not be printed.
+//|     :param value: If specified, is used in place of ``exc``, and ``tb`` must also be specified.
+//|     :param tb: When ``value`` is also specified, ``tb`` is used in place of the exception's own traceback. If `None`, the traceback will not be printed.
 //|     :param int limit: Print up to limit stack trace entries (starting from the caller’s frame) if limit is positive.
 //|                       Otherwise, print the last ``abs(limit)`` entries. If limit is omitted or None, all entries are printed.
 //|     :param io.FileIO file: If file is omitted or `None`, the output goes to `sys.stderr`; otherwise it should be an open
