@@ -17,6 +17,9 @@
 
 #include <zephyr/autoconf.h>
 #include <zephyr/kernel.h>
+#if defined(CONFIG_SOC_FAMILY_SILABS_SIWX91X)
+#include <zephyr/sys/barrier.h>
+#endif
 #include <zephyr/sys/reboot.h>
 #include <zephyr/sys/util.h>
 
@@ -255,8 +258,45 @@ void port_idle_until_interrupt(void) {
     next_timepoint = sys_timepoint_calc(next_timeout);
 }
 
+#if defined(CONFIG_SOC_FAMILY_SILABS_SIWX91X)
+// SiWx917 PSRAM data cache, family reference manual rev 1.2 section 5.4.5. It
+// sits on the QSPI2 path and has no devicetree node and no Zephyr driver, so
+// the register offsets are spelled out here rather than derived from either.
+#define SIWX91X_PSRAM_DCACHE_BASE 0x44040000u
+#define SIWX91X_PSRAM_DCACHE_CTRL (SIWX91X_PSRAM_DCACHE_BASE + 0x010u)
+#define SIWX91X_PSRAM_DCACHE_CTRL_ENABLE BIT(0)
+
+// The bootloader leaves this cache enabled and half-configured, and nothing in
+// a Zephyr build can maintain it:
+//
+//   - WiseConnect's own PSRAM init clears the HPROT allocate signal right after
+//     enabling the cache. That step never runs here: SL_SI91X_D_CACHE_ENABLE is
+//     never defined, and the macros it needs (DCACHE_CTRL_AND_STATUS,
+//     HPORT_ALLOCATE_SIGNAL) are absent from the vendored HAL entirely.
+//   - Zephyr cannot maintain it either. cache_siwx91x.c asserts the SoC has no
+//     data cache, CPU_HAS_DCACHE is never selected, and sys_cache_data_* return
+//     -ENOTSUP.
+//
+// That leaves an unmaintained write-allocate cache in front of memory the
+// network processor also writes. Disable it before any heap exists there.
+//
+// Only the enable bit clears; bit 1 is sticky on this silicon. Do not poll the
+// maintenance-status register for zero, which is what the vendor's disable path
+// does: it settles at 0x100 and the wait never returns.
+static void siwx91x_disable_psram_dcache(void) {
+    volatile uint32_t *ctrl = (volatile uint32_t *)SIWX91X_PSRAM_DCACHE_CTRL;
+    *ctrl &= ~SIWX91X_PSRAM_DCACHE_CTRL_ENABLE;
+    barrier_dsync_fence_full();
+    barrier_isync_fence_full();
+}
+#endif
+
 // Zephyr doesn't maintain one multi-heap. So, make our own using TLSF.
 void port_heap_init(void) {
+    #if defined(CONFIG_SOC_FAMILY_SILABS_SIWX91X)
+    siwx91x_disable_psram_dcache();
+    #endif
+
     // Do a test malloc to determine if Zephyr has an outer heap that may
     // overlap with a memory region we've identified in ram_bounds. We'll
     // corrupt each other if we both use it.
