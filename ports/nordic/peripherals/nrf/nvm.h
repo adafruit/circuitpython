@@ -15,3 +15,7 @@ bool sd_flash_write_sync(uint32_t *dest_words, uint32_t *src_words, uint32_t num
 #endif
 
 bool nrf_nvm_safe_flash_page_write(uint32_t page_addr, uint8_t *data);
+
+// Hardware write-protect the parts of internal flash CircuitPython does not
+// own, using the ACL peripheral.
+void nrf_nvm_protect_init(void);

@@ -19,6 +19,7 @@
 
 #include "nrf/cache.h"
 #include "nrf/clocks.h"
+#include "nrf/nvm.h"
 #include "nrf/power.h"
 #include "nrf/timers.h"
 
@@ -131,6 +132,10 @@ void tick_set_prescaler(uint32_t prescaler_val) {
 }
 
 safe_mode_t port_init(void) {
+    //lock the flash regions we do not own out of reach of
+    // NVMC for the rest of this boot.
+    nrf_nvm_protect_init();
+
     nrf_peripherals_clocks_init();
 
     // If GPIO voltage is set wrong in UICR, this will fix it, and

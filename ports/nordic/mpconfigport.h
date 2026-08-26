@@ -117,6 +117,12 @@
 // The firmware space is the space left over between the fixed lower and upper regions.
 #define CIRCUITPY_FIRMWARE_SIZE (CIRCUITPY_BLE_CONFIG_START_ADDR - CIRCUITPY_FIRMWARE_START_ADDR)
 
+// nRF52's access control hardware write-protect every part of
+// internal flash that CircuitPython does not own
+#ifndef CIRCUITPY_NRF_FLASH_PROTECT
+#define CIRCUITPY_NRF_FLASH_PROTECT (0)
+#endif
+
 #if BOOTLOADER_START_ADDR % FLASH_ERASE_SIZE != 0
 #error BOOTLOADER_START_ADDR must be on a flash erase boundary.
 #endif
