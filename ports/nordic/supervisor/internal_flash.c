@@ -36,6 +36,11 @@ static inline uint32_t lba2addr(uint32_t block) {
     return CIRCUITPY_INTERNAL_FLASH_FILESYSTEM_START_ADDR + block * FILESYSTEM_BLOCK_SIZE;
 }
 
+static bool blocks_in_range(uint32_t lba, uint32_t num_blocks) {
+    uint32_t block_count = supervisor_flash_get_block_count();
+    return lba <= block_count && num_blocks <= block_count - lba;
+}
+
 void supervisor_flash_init(void) {
 }
 
@@ -61,6 +66,10 @@ void port_internal_flash_flush(void) {
 }
 
 mp_uint_t supervisor_flash_read_blocks(uint8_t *dest, uint32_t block, uint32_t num_blocks) {
+    if (!blocks_in_range(block, num_blocks)) {
+        return 1; // failure
+    }
+
     // Must write out anything in cache before trying to read.
     supervisor_flash_flush();
 
@@ -70,6 +79,10 @@ mp_uint_t supervisor_flash_read_blocks(uint8_t *dest, uint32_t block, uint32_t n
 }
 
 mp_uint_t supervisor_flash_write_blocks(const uint8_t *src, uint32_t lba, uint32_t num_blocks) {
+    if (!blocks_in_range(lba, num_blocks)) {
+        return 1; // failure
+    }
+
     while (num_blocks) {
         uint32_t const addr = lba2addr(lba);
         uint32_t const page_addr = addr & ~(FLASH_PAGE_SIZE - 1);
