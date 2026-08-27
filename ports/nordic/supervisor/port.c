@@ -132,8 +132,7 @@ void tick_set_prescaler(uint32_t prescaler_val) {
 }
 
 safe_mode_t port_init(void) {
-    //lock the flash regions we do not own out of reach of
-    // NVMC for the rest of this boot.
+    // Lock the flash regions we do not own
     nrf_nvm_protect_init();
 
     nrf_peripherals_clocks_init();
@@ -363,6 +362,19 @@ void port_idle_until_interrupt(void) {
 
 extern void HardFault_Handler(void);
 void HardFault_Handler(void) {
+    #if CIRCUITPY_NRF_FLASH_PROTECT
+    // A write to an ACL-protected page raises a BusFault, which escalates to
+    // this HardFault.
+    if ((SCB->CFSR & SCB_CFSR_BUSFAULTSR_Msk) != 0) {
+        const bool bfar_in_flash =
+            (SCB->CFSR & SCB_CFSR_BFARVALID_Msk) != 0 && SCB->BFAR < FLASH_SIZE;
+        const bool nvmc_armed =
+            NRF_NVMC->CONFIG != (NVMC_CONFIG_WEN_Ren << NVMC_CONFIG_WEN_Pos);
+        if (bfar_in_flash || nvmc_armed) {
+            reset_into_safe_mode(SAFE_MODE_FLASH_WRITE_PROTECTED);
+        }
+    }
+    #endif
     reset_into_safe_mode(SAFE_MODE_HARD_FAULT);
     while (true) {
         asm ("nop;");

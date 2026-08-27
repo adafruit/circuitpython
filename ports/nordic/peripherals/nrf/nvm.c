@@ -12,8 +12,6 @@
 
 #include "nrfx_nvmc.h"
 
-#include "supervisor/shared/safe_mode.h"
-
 #define FLASH_PAGE_SIZE (4096)
 
 static bool flash_page_is_ours(uint32_t page_addr) {
@@ -89,24 +87,65 @@ bool sd_flash_write_sync(uint32_t *dest_words, uint32_t *src_words, uint32_t num
 
 #endif
 
-void nrf_nvm_protect_init(void) {
-    #if CIRCUITPY_NRF_FLASH_PROTECT
-    const struct {
-        uint32_t addr;
-        uint32_t size;
-    } regions[] = {
-        { 0, CIRCUITPY_BLE_CONFIG_START_ADDR },
-        { BOOTLOADER_START_ADDR, FLASH_SIZE - BOOTLOADER_START_ADDR },
-    };
+#if CIRCUITPY_NRF_FLASH_PROTECT
+static bool page_is_acl_protected(uint32_t page_addr) {
+    for (size_t slot = 0; slot < ACL_REGIONS_COUNT; slot++) {
+        uint32_t base = NRF_ACL->ACL[slot].ADDR;
+        uint32_t size = NRF_ACL->ACL[slot].SIZE;
+        if (size != 0 && page_addr >= base && page_addr < base + size) {
+            return true;
+        }
+    }
+    return false;
+}
 
-    for (size_t i = 0; i < MP_ARRAY_SIZE(regions); i++) {
-        if (regions[i].size == 0) {
+// Claim the next unused ACL region and write-protect addr..addr + size.
+static void acl_claim(uint32_t addr, uint32_t size) {
+    for (size_t slot = 0; slot < ACL_REGIONS_COUNT; slot++) {
+        if (NRF_ACL->ACL[slot].PERM != 0 || NRF_ACL->ACL[slot].SIZE != 0) {
+            // Already claimed by the MBR or the bootloader.
             continue;
         }
-        NRF_ACL->ACL[i].ADDR = regions[i].addr;
-        NRF_ACL->ACL[i].SIZE = regions[i].size;
-        NRF_ACL->ACL[i].PERM = ACL_ACL_PERM_WRITE_Disable << ACL_ACL_PERM_WRITE_Pos;
+        NRF_ACL->ACL[slot].ADDR = addr;
+        NRF_ACL->ACL[slot].SIZE = size;
+        NRF_ACL->ACL[slot].PERM = ACL_ACL_PERM_WRITE_Disable << ACL_ACL_PERM_WRITE_Pos;
+
+        if (NRF_ACL->ACL[slot].ADDR == addr && NRF_ACL->ACL[slot].SIZE == size) {
+            return;
+        }
     }
+}
+
+// Write-protect start..end, one ACL region per run of pages that is not
+// already protected.
+static void acl_write_protect(uint32_t start, uint32_t end) {
+    uint32_t run_start = 0;
+    bool in_run = false;
+
+    for (uint32_t page_addr = start; page_addr < end; page_addr += FLASH_PAGE_SIZE) {
+        if (!page_is_acl_protected(page_addr)) {
+            if (!in_run) {
+                run_start = page_addr;
+                in_run = true;
+            }
+        } else if (in_run) {
+            acl_claim(run_start, page_addr - run_start);
+            in_run = false;
+        }
+    }
+    if (in_run) {
+        acl_claim(run_start, end - run_start);
+    }
+}
+#endif
+
+void nrf_nvm_protect_init(void) {
+    #if CIRCUITPY_NRF_FLASH_PROTECT
+    // Everything below the regions CircuitPython owns: the MBR, the
+    // SoftDevice, the interrupt vectors and the firmware itself.
+    acl_write_protect(MBR_START_ADDR, CIRCUITPY_BLE_CONFIG_START_ADDR);
+    // The bootloader, its copy of the MBR, and its settings page.
+    acl_write_protect(BOOTLOADER_START_ADDR, FLASH_SIZE);
     #endif
 }
 
@@ -118,9 +157,7 @@ void nrf_nvm_protect_init(void) {
 
 bool nrf_nvm_safe_flash_page_write(uint32_t page_addr, uint8_t *data) {
     if (!flash_page_is_ours(page_addr)) {
-        // Out of bounds write that should never have been asked for,
-        // reset into safe mode
-        reset_into_safe_mode(SAFE_MODE_FLASH_WRITE_FAIL);
+        return false;
     }
 
     #ifdef BLUETOOTH_SD

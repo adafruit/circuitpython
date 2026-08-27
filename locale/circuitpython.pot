@@ -1033,6 +1033,7 @@ msgstr ""
 
 #: ports/atmel-samd/common-hal/sdioio/SDCard.c
 #: ports/espressif/common-hal/qspibus/QSPIBus.c
+#: shared-bindings/socketpool/SocketPool.c
 msgid "%q failure: %d"
 msgstr ""
 
@@ -1153,6 +1154,7 @@ msgstr ""
 
 #: ports/espressif/common-hal/_bleio/Adapter.c
 #: ports/nordic/common-hal/_bleio/Adapter.c
+#: ports/zephyr-cp/common-hal/_bleio/Adapter.c
 msgid "Data too large for advertisement packet"
 msgstr ""
 
@@ -1817,7 +1819,7 @@ msgstr ""
 #: ports/raspberrypi/bindings/cyw43/__init__.c py/argcheck.c py/objexcept.c
 #: shared-bindings/bitmapfilter/__init__.c shared-bindings/canio/CAN.c
 #: shared-bindings/digitalio/Pull.c shared-bindings/supervisor/__init__.c
-#: shared-module/audiofilters/Filter.c shared-module/displayio/__init__.c
+#: shared-module/audiofilters/__init__.c shared-module/displayio/__init__.c
 #: shared-module/synthio/Synthesizer.c
 msgid "%q must be of type %q or %q, not %q"
 msgstr ""
@@ -1965,6 +1967,7 @@ msgid "Unable to access unaligned IO register"
 msgstr ""
 
 #: ports/raspberrypi/common-hal/memorymap/AddressRange.c
+#: supervisor/shared/safe_mode.c
 msgid "Unable to write to read-only memory"
 msgstr ""
 
@@ -2353,7 +2356,7 @@ msgstr ""
 msgid "%q length must be %d"
 msgstr ""
 
-#: py/argcheck.c shared-module/audiofilters/Filter.c
+#: py/argcheck.c shared-module/audiofilters/__init__.c
 msgid "%q in %q must be of type %q, not %q"
 msgstr ""
 

@@ -169,6 +169,9 @@ void print_safe_mode_message(safe_mode_t reason) {
             message = MP_ERROR_TEXT("You pressed the reset button during boot.");
             #endif
             break;
+        case SAFE_MODE_FLASH_WRITE_PROTECTED:
+            message = MP_ERROR_TEXT("Unable to write to read-only memory");
+            break;
         case SAFE_MODE_NO_CIRCUITPY:
             message = MP_ERROR_TEXT("CIRCUITPY drive could not be found or created.");
             break;
