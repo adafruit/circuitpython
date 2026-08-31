@@ -34,6 +34,12 @@
 
 #include "py/asmxtensa.h"
 
+// N_XTENSAWIN is set by emitnxtensawin.c, but this file is its own translation
+// unit so it has to be derived from the configured emitter.
+#ifndef N_XTENSAWIN
+#define N_XTENSAWIN MICROPY_EMIT_XTENSAWIN
+#endif
+
 #if N_XTENSAWIN
 #define REG_TEMP ASM_XTENSA_REG_TEMPORARY_WIN
 #else
@@ -287,7 +293,7 @@ void asm_xtensa_mov_reg_pcrel(asm_xtensa_t *as, uint reg_dest, uint label) {
     asm_xtensa_op_add_n(as, reg_dest, reg_dest, ASM_XTENSA_REG_A0);
 }
 
-void asm_xtensa_l32i_optimised(asm_xtensa_t *as, uint reg_dest, uint reg_base, uint word_offset) {
+static void asm_xtensa_l32i_optimised(asm_xtensa_t *as, uint reg_dest, uint reg_base, uint word_offset) {
     if (word_offset < 16) {
         asm_xtensa_op_l32i_n(as, reg_dest, reg_base, word_offset);
     } else if (word_offset < 256) {

@@ -1079,6 +1079,9 @@ endif
 $(patsubst %.c,$(BUILD)/%.o,$(SRC_LIBM)): CFLAGS += -Wno-missing-prototypes
 endif
 
+# Xtensa requires strict alignment, so the emitter's byte-buffer casts warn.
+$(BUILD)/py/asmxtensa.o: CFLAGS += -Wno-cast-align
+
 # Sources used in all ports except unix.
 SRC_CIRCUITPY_COMMON = \
 	shared/readline/readline.c \

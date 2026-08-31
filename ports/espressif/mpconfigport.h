@@ -22,6 +22,13 @@
 #define MICROPY_NLR_SETJMP                  (1)
 #define CIRCUITPY_DEFAULT_STACK_SIZE        0x6000
 
+#if MICROPY_EMIT_XTENSAWIN
+// The GC heap is not instruction-fetchable, so native code has to be moved into
+// IRAM before it can be run.
+void *port_native_code_commit(void *buf, size_t len, void *reloc);
+#define MP_PLAT_COMMIT_EXEC(buf, len, reloc) port_native_code_commit((buf), (len), (reloc))
+#endif
+
 // PSRAM can require more stack space for GC.
 #define MICROPY_ALLOC_GC_STACK_SIZE         (128)
 

@@ -70,8 +70,14 @@ extern void common_hal_mcu_enable_interrupts(void);
 #define MICROPY_COMP_MODULE_CONST        (1)
 #define MICROPY_COMP_TRIPLE_TUPLE_ASSIGN (0)
 #define MICROPY_DEBUG_PRINTERS           (0)
+// Enable the native emitter matching the target architecture, so that native
+// .mpy modules built for it can be imported.
+#if defined(__XTENSA_WINDOWED_ABI__)
+#define MICROPY_EMIT_XTENSAWIN           (CIRCUITPY_ENABLE_MPY_NATIVE)
+#else
 #define MICROPY_EMIT_INLINE_THUMB        (CIRCUITPY_ENABLE_MPY_NATIVE)
 #define MICROPY_EMIT_THUMB               (CIRCUITPY_ENABLE_MPY_NATIVE)
+#endif
 #define MICROPY_EMIT_X64                 (0)
 #define MICROPY_ENABLE_DOC_STRING        (0)
 #define MICROPY_ENABLE_FINALISER         (1)
@@ -198,7 +204,13 @@ extern void common_hal_mcu_enable_interrupts(void);
 
 #define BYTES_PER_WORD (4)
 
+// Thumb code is entered with the low bit of the address set; other
+// architectures call the entry address as-is.
+#if defined(__thumb__)
 #define MICROPY_MAKE_POINTER_CALLABLE(p) ((void *)((mp_uint_t)(p) | 1))
+#else
+#define MICROPY_MAKE_POINTER_CALLABLE(p) (p)
+#endif
 
 // Track stack usage. Expose results via ustack module.
 #define MICROPY_MAX_STACK_USAGE       (0)
@@ -216,9 +228,9 @@ typedef long mp_off_t;
 // extra built in names to add to the global namespace
 // Not indented so as not to confused the editor.
 #define MICROPY_PORT_BUILTINS \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_help), (mp_obj_t)&mp_builtin_help_obj },      \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_input), (mp_obj_t)&mp_builtin_input_obj }, \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_open), (mp_obj_t)&mp_builtin_open_obj },   \
+        { MP_OBJ_NEW_QSTR(MP_QSTR_help), (mp_obj_t)&mp_builtin_help_obj },      \
+        { MP_OBJ_NEW_QSTR(MP_QSTR_input), (mp_obj_t)&mp_builtin_input_obj }, \
+        { MP_OBJ_NEW_QSTR(MP_QSTR_open), (mp_obj_t)&mp_builtin_open_obj },   \
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // board-specific definitions, which control and may override definitions below.
@@ -447,13 +459,13 @@ extern const struct _mp_obj_module_t nvm_module;
 // and also include the underscore alternate names.
 #if MICROPY_MODULE_WEAK_LINKS
 #define MICROPY_PORT_BUILTIN_MODULES \
-    MICROPY_PORT_BUILTIN_MODULES_STRONG_LINKS \
-    MICROPY_PORT_BUILTIN_MODULE_ALT_NAMES
+        MICROPY_PORT_BUILTIN_MODULES_STRONG_LINKS \
+            MICROPY_PORT_BUILTIN_MODULE_ALT_NAMES
 #else
 // If weak links are disabled, included both strong and potentially weak lines
 #define MICROPY_PORT_BUILTIN_MODULES \
-    MICROPY_PORT_BUILTIN_MODULES_STRONG_LINKS \
-    MICROPY_PORT_BUILTIN_MODULE_WEAK_LINKS
+        MICROPY_PORT_BUILTIN_MODULES_STRONG_LINKS \
+        MICROPY_PORT_BUILTIN_MODULE_WEAK_LINKS
 #endif
 
 // We need to provide a declaration/definition of alloca()

@@ -1,0 +1,18 @@
+#
+# Espressif IoT Development Framework Configuration
+#
+#
+# Component config
+#
+#
+# ESP System Settings
+#
+# Memory protection enforces W^X, which makes MALLOC_CAP_EXEC allocations
+# impossible. Native .mpy modules have to be copied into executable RAM at
+# import time, so it has to be off for CIRCUITPY_ENABLE_MPY_NATIVE builds.
+# CONFIG_ESP_SYSTEM_MEMPROT is not set
+# end of ESP System Settings
+
+# end of Component config
+
+# end of Espressif IoT Development Framework Configuration
