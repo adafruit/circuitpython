@@ -11,6 +11,9 @@ CROSS_COMPILE = riscv32-esp-elf-
 else ifeq ($(IDF_TARGET),esp32c3)
 IDF_TARGET_ARCH = riscv
 CROSS_COMPILE = riscv32-esp-elf-
+else ifeq ($(IDF_TARGET),esp32c5)
+IDF_TARGET_ARCH = riscv
+CROSS_COMPILE = riscv32-esp-elf-
 else ifeq ($(IDF_TARGET),esp32p4)
 IDF_TARGET_ARCH = riscv
 CROSS_COMPILE = riscv32-esp-elf-
@@ -180,6 +183,41 @@ CIRCUITPY_AUDIOI2SIN = 0
 CIRCUITPY_FREQUENCYIO = 0
 CIRCUITPY_COUNTIO = 0
 CIRCUITPY_ROTARYIO = 0
+
+# No SDMMC
+CIRCUITPY_SDIOIO = 0
+
+# Features
+CIRCUITPY_USB_DEVICE = 0
+CIRCUITPY_ESP_USB_SERIAL_JTAG ?= 1
+
+#### esp32c5 ##########################################################
+else ifeq ($(IDF_TARGET),esp32c5)
+# Modules
+CIRCUITPY_ESPCAMERA = 0
+CIRCUITPY_ESPULP = 0
+CIRCUITPY_MEMORYMAP = 0
+CIRCUITPY_RGBMATRIX = 0
+
+# TWAI-FD generation, needs a new canio backend
+CIRCUITPY_CANIO = 0
+
+# No capacitive touch peripheral
+CIRCUITPY_ALARM_TOUCH = 0
+CIRCUITPY_TOUCHIO_USE_NATIVE = 0
+
+# No DAC
+CIRCUITPY_AUDIOIO = 0
+
+# No I2S peripheral PDM-to-PCM hardware support
+CIRCUITPY_AUDIOBUSIO_PDMIN = 0
+
+# No space for this
+CIRCUITPY_AUDIOBUSIO = 0
+CIRCUITPY_AUDIOI2SIN = 0
+
+# No LCD_CAM peripheral, so no esp_lcd_new_i80_bus()
+CIRCUITPY_PARALLELDISPLAYBUS = 0
 
 # No SDMMC
 CIRCUITPY_SDIOIO = 0
