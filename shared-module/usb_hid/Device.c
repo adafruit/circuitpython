@@ -119,16 +119,6 @@ void common_hal_usb_hid_device_send_report(usb_hid_device_obj_t *self, uint8_t *
 
     mp_arg_validate_length(len, self->in_report_lengths[id_idx], MP_QSTR_report);
 
-    // The host can enter boot protocol mid-run, after the setup-time swap.
-    const uint8_t boot_device = usb_hid_boot_device();
-    if (report_id != 0 &&
-        self->usage_page == HID_USAGE_PAGE_DESKTOP &&
-        ((boot_device == 1 && self->usage == HID_USAGE_DESKTOP_KEYBOARD) ||
-         (boot_device == 2 && self->usage == HID_USAGE_DESKTOP_MOUSE)) &&
-        tud_hid_get_protocol() == HID_PROTOCOL_BOOT) {
-        report_id = 0;
-    }
-
     // Wait until interface is ready, timeout = 2 seconds
     uint64_t end_ticks = supervisor_ticks_ms64() + 2000;
     while ((supervisor_ticks_ms64() < end_ticks) && !tud_hid_ready()) {
@@ -138,6 +128,19 @@ void common_hal_usb_hid_device_send_report(usb_hid_device_obj_t *self, uint8_t *
     if (!tud_suspended()) {
         if (!tud_hid_ready()) {
             mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("USB busy"));
+        }
+
+        if (tud_hid_get_protocol() == HID_PROTOCOL_BOOT) {
+            // In boot protocol the host reads the fixed boot report, which carries no report ID,
+            // and ignores every device other than the boot device.
+            uint8_t boot_device = usb_hid_boot_device();
+            if (self->usage_page == HID_USAGE_PAGE_DESKTOP &&
+                ((boot_device == 1 && self->usage == HID_USAGE_DESKTOP_KEYBOARD) ||
+                 (boot_device == 2 && self->usage == HID_USAGE_DESKTOP_MOUSE))) {
+                report_id = 0;
+            } else {
+                return;
+            }
         }
 
         if (!tud_hid_report(report_id, report, len)) {
