@@ -130,10 +130,10 @@ void common_hal_usb_hid_device_send_report(usb_hid_device_obj_t *self, uint8_t *
             mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("USB busy"));
         }
 
-        if (tud_hid_get_protocol() == HID_PROTOCOL_BOOT) {
+        const uint8_t boot_device = usb_hid_boot_device();
+        if (boot_device != 0 && tud_hid_get_protocol() == HID_PROTOCOL_BOOT) {
             // In boot protocol the host reads the fixed boot report, which carries no report ID,
             // and ignores every device other than the boot device.
-            uint8_t boot_device = usb_hid_boot_device();
             if (self->usage_page == HID_USAGE_PAGE_DESKTOP &&
                 ((boot_device == 1 && self->usage == HID_USAGE_DESKTOP_KEYBOARD) ||
                  (boot_device == 2 && self->usage == HID_USAGE_DESKTOP_MOUSE))) {
