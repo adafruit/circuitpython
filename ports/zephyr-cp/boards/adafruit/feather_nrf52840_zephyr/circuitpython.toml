@@ -2,3 +2,6 @@ CIRCUITPY_BUILD_EXTENSIONS = ["elf", "uf2"]
 USB_VID=0x239A
 USB_PID=0x802A
 NAME="Feather nRF52840 Express"
+
+# Non-Zephyr build of the same board; nvm and CIRCUITPY must sit where it puts them.
+counterpart = "nordic/feather_nrf52840_express"
