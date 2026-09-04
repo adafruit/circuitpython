@@ -27,6 +27,8 @@ import sys
 import json
 import pathlib
 import subprocess
+import tomllib
+import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
 tools_dir = pathlib.Path(__file__).resolve().parent
@@ -67,6 +69,51 @@ PATTERN_DOCS = (
     r"^(?:(?:ports\/\w+\/bindings|shared-bindings)\S+\.c|tools\/extract_pyi\.py|\.readthedocs\.yml|conf\.py|requirements-doc\.txt)$|"
     r"(?:-stubs|\.(?:md|MD|mk|rst|RST)|/Makefile)$"
 )
+
+# Zephyr boards don't use make, so their module tables can't be computed here. Each push
+# build uploads the board's autogen_board_info.toml with the firmware
+# (tools/build_release_files.py); a board whose table is missing, unreadable or does not
+# know a module is built.
+ZEPHYR_MODULES_URL = os.environ.get(
+    "ZEPHYR_MODULES_URL",
+    "https://adafruit-circuit-python.s3.amazonaws.com/bin/zephyr-modules/{ref}/{board}.toml",
+)
+zephyr_modules = {}
+
+
+def fetch_zephyr_modules(boards):
+    ref = os.environ.get("GITHUB_BASE_REF") or os.environ.get("GITHUB_REF_NAME") or "main"
+
+    def fetch(board):
+        url = ZEPHYR_MODULES_URL.format(board=board, ref=ref)
+        try:
+            with urllib.request.urlopen(url, timeout=10) as response:
+                return board, tomllib.loads(response.read().decode("utf-8"))["modules"]
+        except Exception as e:  # noqa: BLE001 -- whatever went wrong, the board gets built
+            print(f"  {board}: no module table ({e})")
+            return board, None
+
+    need = [board for board in boards if board not in zephyr_modules]
+    with ThreadPoolExecutor(max_workers=os.cpu_count()) as ex:
+        zephyr_modules.update(ex.map(fetch, need))
+
+
+def zephyr_boards_for(file, module, boards):
+    """The Zephyr boards a change to `file` concerns, out of `boards`."""
+    if file.startswith("frozen"):
+        # The port has no frozen modules.
+        return []
+    if module is None:
+        return boards
+    fetch_zephyr_modules(boards)
+    selected = [
+        board
+        for board in boards
+        if zephyr_modules.get(board) is None or zephyr_modules[board].get(module, True)
+    ]
+    print(f"Zephyr boards with {module}: {len(selected)} of {len(boards)}")
+    return selected
+
 
 PATTERN_WINDOWS = {
     ".github/",
@@ -202,10 +249,10 @@ def set_boards(build_all: bool):
                 # the logic to build all boards breaks.
                 boards = set(port_to_board[port] if port else all_board_ids)
 
-                # Zephyr boards don't use make, so build them and don't compute their settings.
-                for board in port_to_board["zephyr-cp"]:
-                    if board in boards:
-                        boards_to_build.add(board)
+                zephyr_boards = sorted(boards & port_to_board["zephyr-cp"])
+                module = module_matches.group(2) if module_matches else None
+                boards_to_build.update(zephyr_boards_for(file, module, zephyr_boards))
+                boards -= port_to_board["zephyr-cp"]
 
                 for board in boards_to_build:
                     if board in boards:
