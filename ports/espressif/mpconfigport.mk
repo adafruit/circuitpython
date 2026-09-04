@@ -212,10 +212,6 @@ CIRCUITPY_AUDIOIO = 0
 # No I2S peripheral PDM-to-PCM hardware support
 CIRCUITPY_AUDIOBUSIO_PDMIN = 0
 
-# 2048K app partition, only 42 KB free with these on
-CIRCUITPY_AUDIOBUSIO = 0
-CIRCUITPY_AUDIOI2SIN = 0
-
 # No LCD_CAM peripheral, so no esp_lcd_new_i80_bus()
 CIRCUITPY_PARALLELDISPLAYBUS = 0
 
