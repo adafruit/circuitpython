@@ -212,7 +212,7 @@ CIRCUITPY_AUDIOIO = 0
 # No I2S peripheral PDM-to-PCM hardware support
 CIRCUITPY_AUDIOBUSIO_PDMIN = 0
 
-# No space for this
+# 2048K app partition, only 42 KB free with these on
 CIRCUITPY_AUDIOBUSIO = 0
 CIRCUITPY_AUDIOI2SIN = 0
 
