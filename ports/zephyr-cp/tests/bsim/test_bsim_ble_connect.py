@@ -92,7 +92,7 @@ def test_bsim_connect_zephyr_peripheral(bsim_phy, circuitpython, zephyr_sample):
 
 
 @pytest.mark.zephyr_sample("bluetooth/peripheral_sc_only")
-@pytest.mark.code_py_runs(2)
+@pytest.mark.port_resets(3)
 @pytest.mark.duration(26)
 @pytest.mark.circuitpy_drive({"code.py": BSIM_RECONNECT_CODE})
 def test_bsim_reconnect_zephyr_peripheral(bsim_phy, circuitpython, zephyr_sample):

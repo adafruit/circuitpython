@@ -91,7 +91,7 @@ print("done")
 """
 
 
-@pytest.mark.code_py_runs(2)
+@pytest.mark.port_resets(3)
 @pytest.mark.circuitpy_drive({"code.py": BSIM_ENABLE_RELOAD_CODE})
 def test_bsim_adapter_state_after_reload(bsim_phy, circuitpython):
     """Adapter state is clean after soft reload."""

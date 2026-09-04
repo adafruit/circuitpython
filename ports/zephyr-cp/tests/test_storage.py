@@ -108,7 +108,7 @@ print("done")
 
 
 @pytest.mark.circuitpy_drive({"code.py": REMOUNT_PERSISTS_CODE})
-@pytest.mark.code_py_runs(2)
+@pytest.mark.port_resets(3)
 def test_storage_remount_persists_across_reload(circuitpython):
     """Data written after remount(readonly=False) persists across soft reload."""
     circuitpython.serial.wait_for("wrote persist.txt")

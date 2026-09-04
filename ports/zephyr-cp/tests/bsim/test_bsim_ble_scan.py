@@ -110,7 +110,7 @@ def test_bsim_scan_zephyr_beacon(bsim_phy, circuitpython, zephyr_sample):
 
 
 @pytest.mark.zephyr_sample("bluetooth/beacon")
-@pytest.mark.code_py_runs(2)
+@pytest.mark.port_resets(3)
 @pytest.mark.duration(20)
 @pytest.mark.circuitpy_drive({"code.py": BSIM_SCAN_RELOAD_CODE})
 def test_bsim_scan_zephyr_beacon_reload(bsim_phy, circuitpython, zephyr_sample):

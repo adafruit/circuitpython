@@ -101,7 +101,7 @@ print("done")
 
 
 @pytest.mark.circuitpy_drive({"code.py": RELOAD_CODE})
-@pytest.mark.code_py_runs(2)
+@pytest.mark.port_resets(3)
 def test_ctrl_d_soft_reload(circuitpython):
     """Test sending Ctrl+D (0x04) to trigger soft reload."""
     circuitpython.serial.wait_for("first run")

@@ -81,6 +81,21 @@ void common_hal_mcu_processor_get_uid(uint8_t raw_id[]) {
 }
 
 mcu_reset_reason_t common_hal_mcu_processor_get_reset_reason(void) {
-    mcu_reset_reason_t r = MCU_RESET_REASON_UNKNOWN;
-    return r;
+    #if defined(CONFIG_HWINFO)
+    uint32_t cause = 0;
+    if (hwinfo_get_reset_cause(&cause) == 0) {
+        if (cause & RESET_POR) {
+            return MCU_RESET_REASON_POWER_ON;
+        } else if (cause & RESET_SOFTWARE) {
+            return MCU_RESET_REASON_SOFTWARE;
+        } else if (cause & RESET_WATCHDOG) {
+            return MCU_RESET_REASON_WATCHDOG;
+        } else if (cause & RESET_BROWNOUT) {
+            return MCU_RESET_REASON_BROWNOUT;
+        } else if (cause & RESET_PIN) {
+            return MCU_RESET_REASON_RESET_PIN;
+        }
+    }
+    #endif
+    return MCU_RESET_REASON_UNKNOWN;
 }

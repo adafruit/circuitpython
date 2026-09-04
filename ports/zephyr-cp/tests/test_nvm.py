@@ -58,7 +58,7 @@ print("done")
 
 
 @pytest.mark.circuitpy_drive({"code.py": NVM_PERSIST_CODE})
-@pytest.mark.code_py_runs(2)
+@pytest.mark.port_resets(3)
 def test_nvm_persists_across_reload(circuitpython):
     """Test that NVM data persists across soft reloads."""
     circuitpython.serial.wait_for("wrote marker")
