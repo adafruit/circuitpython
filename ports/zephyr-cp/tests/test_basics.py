@@ -7,12 +7,12 @@ import pytest
 
 
 @pytest.mark.circuitpy_drive(None)
-def test_blank_flash_hello_world(circuitpython):
+def test_blank_flash_hello_world(board, circuitpython):
     """Test that an erased flash shows code.py output header."""
     circuitpython.wait_until_done()
 
     output = circuitpython.serial.all_output
-    assert "Board ID:native_native_sim" in output
+    assert f"Board ID:{board}" in output
     assert "UID:" in output
     assert "code.py output:" in output
     assert "Hello World" in output

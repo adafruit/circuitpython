@@ -123,6 +123,21 @@ sim:
 clean-sim:
 	rm -rf $(wildcard build-native_*)
 
-test: build-native_native_sim/zephyr-cp/zephyr/zephyr.exe
+# Every board the test suite uses: native sim (non-asan + asan) and the bsim
+# boards (tests/bsim/conftest.py parametrizes over both). Zephyr samples for
+# bsim tests are built on demand by the zephyr_sample fixture.
+TEST_BOARDS := native_native_sim native_native_sim_asan native_nrf5340bsim native_nrf54lm20bsim
+
+# Delegate to a sub-make with BOARD set so the per-board build rule (and its
+# shield args + bsim prep) applies. The targets are phony: the west builds are
+# incremental, so this just keeps the test binaries fresh.
+define test_board_rule
+.PHONY: test-build-$(1)
+test-build-$(1):
+	+$$(MAKE) BOARD=$(1) BUILD=build-$(1) build-$(1)/zephyr-cp/zephyr/zephyr.elf
+endef
+$(foreach board,$(TEST_BOARDS),$(eval $(call test_board_rule,$(board))))
+
+test: $(TEST_BOARDS:%=test-build-%)
 	pytest cptools/tests
 	pytest tests/ -v
