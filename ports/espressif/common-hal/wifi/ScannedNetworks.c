@@ -18,6 +18,7 @@
 #include "shared-bindings/wifi/ScannedNetworks.h"
 
 #include "components/esp_wifi/include/esp_wifi.h"
+#include "soc/soc_caps.h"
 
 static void wifi_scannednetworks_done(wifi_scannednetworks_obj_t *self) {
     self->done = true;
@@ -111,29 +112,38 @@ mp_obj_t common_hal_wifi_scannednetworks_next(wifi_scannednetworks_obj_t *self) 
 }
 
 // We don't do a linear scan so that we look at a variety of spectrum up front.
+#if defined(SOC_WIFI_SUPPORT_5G) && SOC_WIFI_SUPPORT_5G
+// 2.4 GHz first, then the 5 GHz U-NII bands. DFS channels are omitted:
+// they require radar detection before transmitting.
+static uint8_t scan_pattern[] = {6, 1, 11, 3, 9, 13, 2, 4, 8, 12, 5, 7, 10, 14,
+                                 36, 40, 44, 48, 149, 153, 157, 161, 165, 0};
+#else
 static uint8_t scan_pattern[] = {6, 1, 11, 3, 9, 13, 2, 4, 8, 12, 5, 7, 10, 14, 0};
+#endif
 
 void wifi_scannednetworks_scan_next_channel(wifi_scannednetworks_obj_t *self) {
-    // There is no channel 0, so use that as a flag to indicate we've run out of channels to scan.
-    uint8_t next_channel = 0;
-    while (self->current_channel_index < sizeof(scan_pattern)) {
-        next_channel = scan_pattern[self->current_channel_index];
-        self->current_channel_index++;
-        // Scan only channels that are in the specified range.
-        if (self->start_channel <= next_channel && next_channel <= self->end_channel) {
-            break;
+    while (true) {
+        // There is no channel 0, so use that as a flag to indicate we've run out of channels to scan.
+        uint8_t next_channel = 0;
+        while (self->current_channel_index < sizeof(scan_pattern)) {
+            next_channel = scan_pattern[self->current_channel_index];
+            self->current_channel_index++;
+            // Scan only channels that are in the specified range.
+            if (self->start_channel <= next_channel && next_channel <= self->end_channel) {
+                break;
+            }
         }
-    }
-    wifi_scan_config_t config = { 0 };
-    config.channel = next_channel;
-    if (next_channel == 0) {
-        wifi_scannednetworks_done(self);
-    } else {
-        esp_err_t result = esp_wifi_scan_start(&config, false);
-        if (result != ESP_OK) {
+        if (next_channel == 0) {
             wifi_scannednetworks_done(self);
-        } else {
+            return;
+        }
+        wifi_scan_config_t config = { 0 };
+        config.channel = next_channel;
+        // The radio rejects channels outside the band it is set to. Skip those
+        // rather than ending the scan, so the rest of the pattern still runs.
+        if (esp_wifi_scan_start(&config, false) == ESP_OK) {
             self->channel_scan_in_progress = true;
+            return;
         }
     }
 }

@@ -25,6 +25,7 @@
 
 #include "components/esp_netif/include/esp_netif_net_stack.h"
 #include "components/esp_wifi/include/esp_wifi.h"
+#include "soc/soc_caps.h"
 #include "components/lwip/include/apps/ping/ping_sock.h"
 #include "lwip/sockets.h"
 
@@ -94,6 +95,11 @@ void common_hal_wifi_radio_set_enabled(wifi_radio_obj_t *self, bool enabled) {
     }
     if (!self->started && enabled) {
         ESP_ERROR_CHECK(esp_wifi_start());
+        #if defined(SOC_WIFI_SUPPORT_5G) && SOC_WIFI_SUPPORT_5G
+        // Dual-band radios default to 2.4 GHz only. Enable both bands so that
+        // 5 GHz networks are visible to scans and can be connected to.
+        ESP_ERROR_CHECK(esp_wifi_set_band_mode(WIFI_BAND_MODE_AUTO));
+        #endif
         self->started = true;
         common_hal_wifi_radio_set_tx_power(self, CIRCUITPY_WIFI_DEFAULT_TX_POWER);
         return;
