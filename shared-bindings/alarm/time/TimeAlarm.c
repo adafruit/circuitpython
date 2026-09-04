@@ -73,7 +73,7 @@ static mp_obj_t alarm_time_timealarm_make_new(const mp_obj_type_t *type,
         #if MICROPY_LONGINT_IMPL == MICROPY_LONGINT_IMPL_NONE
         mp_raise_ValueError(MP_ERROR_TEXT("epoch_time not supported on this board"));
         #else
-        mp_uint_t epoch_time_secs = mp_obj_int_get_checked(args[ARG_epoch_time].u_obj);
+        mp_uint_t epoch_time_secs = mp_arg_validate_type_int(args[ARG_epoch_time].u_obj, MP_QSTR_epoch_time);
 
         timeutils_struct_time_t tm;
         struct_time_to_tm(rtc_get_time_source_time(), &tm);
