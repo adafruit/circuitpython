@@ -44,8 +44,28 @@ static inline long rect_area(const picogame_rect_t *r) {
 // longer inflate the repaint to the whole screen.
 // Out-of-line rect append for compute_dirty_rects below: the old macro expanded ~30 B
 // four times; a real (noinline) call keeps each site at argument setup only.
+// The rect is CLIPPED to the screen first: a change wholly off-screen (the off-screen half of
+// a wrapping parallax pair, a sprite parked outside) takes no slot at all - a scrolling
+// background made of many wide strips would otherwise burn two slots per strip and push a
+// busy scene into the full-repaint overflow every frame - and a partly visible one is
+// stored at its visible size, so the merge pass works on what actually gets repainted.
 static __attribute__((noinline)) void add_rect(picogame_rect_t *raw, int *nr, bool *overflow,
-    int x1, int y1, int x2, int y2) {
+    int screen_w, int screen_h, int x1, int y1, int x2, int y2) {
+    if (x1 < 0) {
+        x1 = 0;
+    }
+    if (y1 < 0) {
+        y1 = 0;
+    }
+    if (x2 > screen_w) {
+        x2 = screen_w;
+    }
+    if (y2 > screen_h) {
+        y2 = screen_h;
+    }
+    if (x1 >= x2 || y1 >= y2) {
+        return;                                 // nothing visible changed
+    }
     if (*nr < PICOGAME_RAW_RECTS) {
         raw[*nr].x1 = x1;
         raw[*nr].y1 = y1;
@@ -69,13 +89,18 @@ int picogame_scene_compute_dirty_rects(
     // Rects are stored in SCREEN coords: non-fixed items get the view offset added
     // here (per item), fixed (HUD) items don't - so no uniform offset at the end.
     #define ADD_RECT(ax, ay, bx, by) \
-    add_rect(raw, &nr, &overflow, (ax) + iox, (ay) + ioy, (bx) + iox, (by) + ioy)
+    add_rect(raw, &nr, &overflow, screen_w, screen_h, (ax) + iox, (ay) + ioy, (bx) + iox, (by) + ioy)
 
     for (size_t i = 0; i < n; i++) {
         uint8_t rawk = kinds[i];
         uint8_t kind = rawk & PICOGAME_KIND_MASK;
-        int iox = (rawk & PICOGAME_KIND_FIXED) ? 0 : ox;
-        int ioy = (rawk & PICOGAME_KIND_FIXED) ? 0 : oy;
+        // StripDraw and Triangles always composite in screen coordinates (the draw
+        // path never applies the view offset to them), so their dirty rects must not
+        // shift with the view either - otherwise a scrolled scene repaints an
+        // unrelated region and leaves the layer's real change stale on screen.
+        bool screen_space = kind == PICOGAME_KIND_STRIPDRAW || kind == PICOGAME_KIND_TRIANGLES;
+        int iox = ((rawk & PICOGAME_KIND_FIXED) || screen_space) ? 0 : ox;
+        int ioy = ((rawk & PICOGAME_KIND_FIXED) || screen_space) ? 0 : oy;
         if (kind != PICOGAME_KIND_SPRITE) {
             int tx1, ty1, tx2, ty2;
             bool d = false;
