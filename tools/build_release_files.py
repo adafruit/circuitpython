@@ -32,6 +32,22 @@ sha, version = build_info.get_version_info()
 
 build_all = os.environ.get("GITHUB_EVENT_NAME") != "pull_request"
 
+
+def save_zephyr_board_info(board, board_dir):
+    """Keep the module table a Zephyr build generated, under bin/ so it is uploaded.
+
+    tools/ci_set_matrix.py reads it from S3 to decide which Zephyr boards a change
+    to a module concerns.
+    """
+    ref = os.environ.get("GITHUB_REF_NAME")
+    board_info = board_dir / "autogen_board_info.toml"
+    if not ref or not board_info.exists():
+        return
+    destination = pathlib.Path("../bin/zephyr-modules") / ref
+    destination.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(board_info, destination / f"{board}.toml")
+
+
 LANGUAGE_FIRST = "en_US"
 LANGUAGE_THRESHOLD = 10 * 1024
 
@@ -61,7 +77,9 @@ for board in build_boards:
         board_settings = {"CLEAN_REBUILD_LANGUAGES": []}
         with cp_toml.open("rb") as f:
             board_settings.update(tomllib.load(f))
+        zephyr_board_dir = cp_toml.parent
     else:
+        zephyr_board_dir = None
         board_settings = get_settings_from_makefile("../ports/" + board_info["port"], board)
         board_settings["CIRCUITPY_BUILD_EXTENSIONS"] = [
             extension.strip()
@@ -140,6 +158,9 @@ for board in build_boards:
                     other_output = "Cannot find file {}".format(temp_filename)
                     if exit_status == 0:
                         exit_status = 1
+
+        if zephyr_board_dir and language == LANGUAGE_FIRST and make_result.returncode == 0:
+            save_zephyr_board_info(board, zephyr_board_dir)
 
         print(
             "Build {board} for {language}{clean_build} took {build_duration:.2f}s and {success}".format(
