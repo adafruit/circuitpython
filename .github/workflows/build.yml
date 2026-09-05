@@ -140,7 +140,7 @@ jobs:
         python3 --version
         msgfmt --version
     - name: Build mpy-cross (arm64)
-      run: make -C mpy-cross -j4 -f Makefile.m1 V=2
+      run: make -C mpy-cross -j$(sysctl -n hw.ncpu) -f Makefile.m1 V=2
     - uses: actions/upload-artifact@v7
       with:
         name: mpy-cross-macos-arm64
@@ -184,7 +184,7 @@ jobs:
         sudo apt-get install -y latexmk librsvg2-bin texlive-fonts-recommended texlive-latex-recommended texlive-latex-extra
         pip install -r requirements-doc.txt
     - name: Build and Validate Stubs
-      run: make check-stubs -j4
+      run: make check-stubs -j$(nproc)
     - uses: actions/upload-artifact@v7
       with:
         name: stubs

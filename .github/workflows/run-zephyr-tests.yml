@@ -35,13 +35,13 @@ jobs:
       - name: Set up external
         uses: ./.github/actions/deps/external
       - name: Build native sim target
-        run: make -C ports/zephyr-cp -j2 BOARD=native_native_sim
+        run: make -C ports/zephyr-cp -j$(nproc) BOARD=native_native_sim
       - name: Build bsim
-        run: make -j 2 everything
+        run: make -j $(nproc) everything
         working-directory: ports/zephyr-cp/tools/bsim
       - name: Build native_nrf5340bsim
-        run: make -C ports/zephyr-cp -j2 BOARD=native_nrf5340bsim
+        run: make -C ports/zephyr-cp -j$(nproc) BOARD=native_nrf5340bsim
       - name: Build native_nrf54lm20bsim
-        run: make -C ports/zephyr-cp -j2 BOARD=native_nrf54lm20bsim
+        run: make -C ports/zephyr-cp -j$(nproc) BOARD=native_nrf54lm20bsim
       - name: Run Zephyr tests
         run: make -C ports/zephyr-cp test
