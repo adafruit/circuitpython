@@ -6,6 +6,7 @@
 
 #include "shared-bindings/wifi/__init__.h"
 #include "shared-bindings/wifi/AuthMode.h"
+#include "shared-bindings/wifi/Network.h"
 #include "shared-bindings/wifi/PowerManagement.h"
 
 #include <string.h>
@@ -443,7 +444,7 @@ MP_PROPERTY_GETTER(wifi_radio_ap_active_obj,
 
 //|     def connect(
 //|         self,
-//|         ssid: Union[str, ReadableBuffer],
+//|         ssid: Union[str, ReadableBuffer, Network],
 //|         password: Union[str, ReadableBuffer] = b"",
 //|         *,
 //|         channel: int = 0,
@@ -464,7 +465,10 @@ MP_PROPERTY_GETTER(wifi_radio_ap_active_obj,
 //|         significantly because a full scan doesn't occur.
 //|
 //|         If ``bssid`` is given and not None, the scan will start at the first channel or the one given and
-//|         connect to the AP with the given ``bssid`` and ``ssid``."""
+//|         connect to the AP with the given ``bssid`` and ``ssid``.
+//|
+//|         A `Network` from `start_scanning_networks` may be given in place of ``ssid``. Its
+//|         ``bssid`` and ``channel`` are used, which avoids the scan entirely."""
 //|         ...
 //|
 static mp_obj_t wifi_radio_connect(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
@@ -486,9 +490,20 @@ static mp_obj_t wifi_radio_connect(size_t n_args, const mp_obj_t *pos_args, mp_m
         timeout = mp_obj_get_float(args[ARG_timeout].u_obj);
     }
 
+    mp_obj_t ssid_obj = args[ARG_ssid].u_obj;
+    mp_obj_t bssid_obj = args[ARG_bssid].u_obj;
+    mp_int_t channel = args[ARG_channel].u_int;
+
+    if (mp_obj_is_type(ssid_obj, &wifi_network_type)) {
+        wifi_network_obj_t *network = MP_OBJ_TO_PTR(ssid_obj);
+        ssid_obj = common_hal_wifi_network_get_ssid(network);
+        bssid_obj = common_hal_wifi_network_get_bssid(network);
+        channel = mp_obj_get_int(common_hal_wifi_network_get_channel(network));
+    }
+
     mp_buffer_info_t ssid;
     ssid.len = 0;
-    mp_get_buffer_raise(args[ARG_ssid].u_obj, &ssid, MP_BUFFER_READ);
+    mp_get_buffer_raise(ssid_obj, &ssid, MP_BUFFER_READ);
     mp_arg_validate_length_range(ssid.len, 1, 32, MP_QSTR_ssid);
 
     mp_buffer_info_t password;
@@ -508,14 +523,14 @@ static mp_obj_t wifi_radio_connect(size_t n_args, const mp_obj_t *pos_args, mp_m
     mp_buffer_info_t bssid;
     bssid.len = 0;
     // Should probably make sure bssid is just bytes and not something else too
-    if (args[ARG_bssid].u_obj != mp_const_none) {
-        mp_get_buffer_raise(args[ARG_bssid].u_obj, &bssid, MP_BUFFER_READ);
+    if (bssid_obj != mp_const_none) {
+        mp_get_buffer_raise(bssid_obj, &bssid, MP_BUFFER_READ);
         if (bssid.len != MAC_ADDRESS_LENGTH) {
             mp_raise_ValueError(MP_ERROR_TEXT("Invalid BSSID"));
         }
     }
 
-    wifi_radio_error_t error = common_hal_wifi_radio_connect(self, ssid.buf, ssid.len, password.buf, password.len, args[ARG_channel].u_int, timeout, bssid.buf, bssid.len);
+    wifi_radio_error_t error = common_hal_wifi_radio_connect(self, ssid.buf, ssid.len, password.buf, password.len, channel, timeout, bssid.buf, bssid.len);
     if (error == WIFI_RADIO_ERROR_AUTH_FAIL) {
         mp_raise_ConnectionError(MP_ERROR_TEXT("Authentication failure"));
     } else if (error == WIFI_RADIO_ERROR_NO_AP_FOUND) {
