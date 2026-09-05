@@ -1459,15 +1459,15 @@ msgstr ""
 msgid "invalid setting"
 msgstr ""
 
-#: ports/espressif/common-hal/esphmac/HMACKey.c
-msgid "key_block must be 0-5"
+#: ports/espressif/common-hal/securekey/HardwareKey.c
+msgid "key_slot is not configured for HMAC use"
 msgstr ""
 
-#: ports/espressif/common-hal/esphmac/HMACKey.c
-msgid "key_block is not configured for HMAC use"
+#: ports/espressif/common-hal/securekey/HardwareKey.c
+msgid "crypto init failed"
 msgstr ""
 
-#: ports/espressif/common-hal/esphmac/HMACKey.c
+#: shared-module/securekey/HardwareKey.c
 msgid "HMAC calculation failed"
 msgstr ""
 

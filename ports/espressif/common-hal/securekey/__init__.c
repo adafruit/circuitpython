@@ -4,8 +4,5 @@
 //
 // SPDX-License-Identifier: MIT
 
-#pragma once
-
-#include "py/obj.h"
-
-extern const mp_obj_type_t esphmac_hmackey_type;
+// No securekey module-level functions. The port-specific code is the
+// HardwareKey constructor in HardwareKey.c.
