@@ -48,7 +48,7 @@ static mp_obj_t esphmac_hmackey_make_new(const mp_obj_type_t *type, size_t n_arg
 }
 
 //|     def hmac(self, data: ReadableBuffer) -> bytes:
-//|         """Compute the HMAC-SHA256 of `data` using this block's key and
+//|         """Compute the HMAC-SHA256 of ``data`` using this block's key and
 //|         return the 32-byte result. The key itself is never returned or
 //|         exposed by this or any other method.
 //|

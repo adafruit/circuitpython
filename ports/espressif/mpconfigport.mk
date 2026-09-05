@@ -122,6 +122,9 @@ CIRCUITPY_ESPCAMERA = 0
 CIRCUITPY_ESPULP = 0
 CIRCUITPY_MEMORYMAP = 0
 
+# No HMAC peripheral (SOC_HMAC_SUPPORTED is not defined for this target)
+CIRCUITPY_ESPHMAC = 0
+
 # No capacitive touch peripheral
 CIRCUITPY_ALARM_TOUCH = 0
 CIRCUITPY_TOUCHIO_USE_NATIVE = 0
@@ -224,13 +227,16 @@ CIRCUITPY_SDIOIO = 0
 CIRCUITPY_USB_DEVICE = 0
 CIRCUITPY_ESP_USB_SERIAL_JTAG ?= 1
 
-#### esp32c6 ##########################################################
+#### esp32c61 #########################################################
 else ifeq ($(IDF_TARGET),esp32c61)
 # Modules
 CIRCUITPY_ESPCAMERA = 0
 CIRCUITPY_ESPULP = 0
 CIRCUITPY_MEMORYMAP = 0
 CIRCUITPY_RGBMATRIX = 0
+
+# No HMAC peripheral (SOC_HMAC_SUPPORTED is not defined for this target)
+CIRCUITPY_ESPHMAC = 0
 
 # No capacitive touch peripheral
 CIRCUITPY_ALARM_TOUCH = 0
