@@ -228,6 +228,9 @@ endif
 ifeq ($(CIRCUITPY_ESPCAMERA),1)
 SRC_PATTERNS += espcamera/%
 endif
+ifeq ($(CIRCUITPY_ESPHMAC),1)
+SRC_PATTERNS += esphmac/%
+endif
 ifeq ($(CIRCUITPY_ESPIDF),1)
 SRC_PATTERNS += espidf/%
 endif

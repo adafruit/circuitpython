@@ -726,6 +726,13 @@ SRC_ESPIDF := \
 SRC_C += $(SRC_ESPIDF)
 endif
 
+ifneq ($(CIRCUITPY_ESPHMAC),0)
+SRC_ESPHMAC := \
+	$(wildcard common-hal/esphmac/*.c) \
+	$(wildcard bindings/esphmac/*.c)
+SRC_C += $(SRC_ESPHMAC)
+endif
+
 ifneq ($(CIRCUITPY_ESPNOW),0)
 SRC_ESPNOW := \
 	$(wildcard common-hal/espnow/*.c) \
