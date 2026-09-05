@@ -303,6 +303,11 @@ def determine_enabled_modules(board_info, portdir, srcdir):
     enabled_modules = set(DEFAULT_MODULES)
     module_reasons = {}
 
+    # The board module is always built: shared-bindings/board/__init__.c and the
+    # generated pin/board.c are compiled unconditionally in build_circuitpython().
+    enabled_modules.add("board")
+    module_reasons["board"] = "Always enabled"
+
     if board_info["wifi"]:
         enabled_modules.add("wifi")
         module_reasons["wifi"] = "Zephyr board has wifi"
