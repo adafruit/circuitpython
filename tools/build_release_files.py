@@ -6,6 +6,7 @@
 
 import os
 import multiprocessing
+import re
 import sys
 import subprocess
 import shutil
@@ -34,6 +35,29 @@ build_all = os.environ.get("GITHUB_EVENT_NAME") != "pull_request"
 
 LANGUAGE_FIRST = "en_US"
 LANGUAGE_THRESHOLD = 10 * 1024
+
+# Ports without tools/build_memory_info.py print the GNU ld memory usage table.
+LD_MEMORY_RE = re.compile(
+    r"^\s*(?:FLASH_FIRMWARE|FLASH):\s+(\d+) ([KM]?B)\s+(\d+) ([KM]?B)", re.MULTILINE
+)
+UNITS = {"B": 1, "KB": 1024, "MB": 1024 * 1024}
+
+
+def flash_usage(port, build_dir, make_output):
+    """Return (used, region) bytes of the firmware flash region, or None if unknown."""
+    try:
+        with open(f"../ports/{port}/{build_dir}/firmware.size.json", "r") as f:
+            firmware = json.load(f)
+            return firmware["used_flash"], firmware["firmware_region"]
+    except FileNotFoundError:
+        pass
+    match = LD_MEMORY_RE.search(make_output)
+    if match:
+        used = int(match.group(1)) * UNITS[match.group(2)]
+        region = int(match.group(3)) * UNITS[match.group(4)]
+        return used, region
+    return None
+
 
 languages = build_info.get_languages()
 
@@ -151,22 +175,19 @@ for board in build_boards:
             )
         )
 
-        print(make_result.stdout.decode("utf-8"))
+        make_output = make_result.stdout.decode("utf-8")
+        print(make_output)
         print(other_output)
 
         # Flush so we will see something before 10 minutes has passed.
         print(flush=True)
 
         if (not build_all) and (language == LANGUAGE_FIRST) and (exit_status == 0):
-            try:
-                with open(
-                    f"../ports/{board_info['port']}/{build_dir}/firmware.size.json", "r"
-                ) as f:
-                    firmware = json.load(f)
-                    if firmware["used_flash"] + LANGUAGE_THRESHOLD < firmware["firmware_region"]:
-                        print("Skipping languages")
-                        break
-            except FileNotFoundError:
-                pass
+            usage = flash_usage(board_info["port"], build_dir, make_output)
+            if usage is None:
+                print("Flash usage unknown, building all languages")
+            elif usage[0] + LANGUAGE_THRESHOLD < usage[1]:
+                print("Skipping languages")
+                break
 
 sys.exit(exit_status)
