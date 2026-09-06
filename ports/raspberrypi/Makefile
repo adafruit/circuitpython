@@ -834,6 +834,7 @@ $(BUILD)/firmware.elf: $(OBJ) $(BOARD_LD) link-$(CHIP_VARIANT_LOWER).ld
 	$(Q)echo $(OBJ) > $(BUILD)/firmware.objs
 	$(Q)echo $(PICO_LDFLAGS) > $(BUILD)/firmware.ldflags
 	$(Q)$(CC) -o $@ $(CFLAGS) @$(BUILD)/firmware.ldflags $(LINKER_SCRIPTS) -Wl,--print-memory-usage -Wl,-Map=$@.map -Wl,-cref -Wl,--gc-sections @$(BUILD)/firmware.objs -Wl,-lc
+	$(Q)$(SIZE) $@ | $(PYTHON) $(TOP)/tools/build_memory_info.py $@.map $(BUILD)
 ifneq ($(CORE1_CHECK_ROOTS),)
 	$(STEPECHO) "CHECK core1 flash calls"
 	$(Q)$(PYTHON) $(TOP)/tools/check_core1_flash_calls.py $@ $(CORE1_CHECK_ROOTS)

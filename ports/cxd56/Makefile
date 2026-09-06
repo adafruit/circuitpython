@@ -153,6 +153,7 @@ $(BUILD)/libmpy.a: $(SPRESENSE_SDK) $(OBJ)
 $(BUILD)/firmware.elf: $(BUILD)/libmpy.a
 	$(ECHO) "LD $@"
 	$(Q)$(LD) $(LDFLAGS)
+	$(Q)$(SIZE) $@ | $(PYTHON) $(TOP)/tools/build_memory_info.py $(BUILD)/output.map $(BUILD)
 
 $(MKSPK):
 	$(MAKE) -C mkspk
