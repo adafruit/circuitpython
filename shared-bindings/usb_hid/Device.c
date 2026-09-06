@@ -156,6 +156,10 @@ static mp_obj_t usb_hid_device_make_new(const mp_obj_type_t *type, size_t n_args
 //|         The ``report`` itself will be discarded, to prevent unwanted extraneous characters,
 //|         mouse clicks, etc.
 //|
+//|         If the host has put the interface in boot protocol, the boot device sends its report
+//|         without a report ID, and `send_report()` on any other device discards the report,
+//|         because the host reads only the boot device.
+//|
 //|         Note: Host operating systems allow enabling and disabling specific devices
 //|         and kinds of devices to do wakeup.
 //|         The defaults are different for different operating systems.
