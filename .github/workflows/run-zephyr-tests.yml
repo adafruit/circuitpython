@@ -27,6 +27,8 @@ jobs:
           python-version: 3.13
       - name: Set up Zephyr
         uses: ./.github/actions/deps/ports/zephyr-cp
+        with:
+          sdl: true
       - name: Set up submodules
         id: set-up-submodules
         uses: ./.github/actions/deps/submodules
