@@ -1213,8 +1213,9 @@ msgid "Value length > max_length"
 msgstr "Длина значения > максимальная_длина"
 
 #: ports/espressif/common-hal/_bleio/Characteristic.c
-msgid "Too many descriptors"
-msgstr "Слишком много дескрипторов"
+#: ports/espressif/common-hal/_bleio/Service.c
+msgid "Too many %q"
+msgstr ""
 
 #: ports/espressif/common-hal/_bleio/Characteristic.c
 #: ports/nordic/common-hal/_bleio/Characteristic.c
@@ -4768,6 +4769,9 @@ msgstr "выключить"
 #: supervisor/shared/web_workflow/web_workflow.c
 msgid "No IP"
 msgstr "Нет IP"
+
+#~ msgid "Too many descriptors"
+#~ msgstr "Слишком много дескрипторов"
 
 #~ msgid ""
 #~ "Unspecified issue. Can be that the pairing prompt on the other device was "

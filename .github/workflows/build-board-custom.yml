@@ -121,7 +121,7 @@ jobs:
         BOARD: ${{ inputs.board }}
         FLAGS: ${{ inputs.flags }}
         DEBUG: ${{ inputs.debug && '1' || '0' }}
-      run: make -j4 $FLAGS BOARD="$BOARD" DEBUG=$DEBUG TRANSLATION="$TRANSLATION"
+      run: make -j$(nproc) $FLAGS BOARD="$BOARD" DEBUG=$DEBUG TRANSLATION="$TRANSLATION"
       working-directory: ports/${{ steps.board-to-port.outputs.port }}
     - name: Upload artifact
       uses: actions/upload-artifact@v7

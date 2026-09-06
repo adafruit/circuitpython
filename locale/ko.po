@@ -1213,7 +1213,8 @@ msgid "Value length > max_length"
 msgstr ""
 
 #: ports/espressif/common-hal/_bleio/Characteristic.c
-msgid "Too many descriptors"
+#: ports/espressif/common-hal/_bleio/Service.c
+msgid "Too many %q"
 msgstr ""
 
 #: ports/espressif/common-hal/_bleio/Characteristic.c

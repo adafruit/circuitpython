@@ -1,2 +1,5 @@
 CIRCUITPY_BUILD_EXTENSIONS = ["elf", "uf2"]
 BLOBS=["hal_infineon"]
+
+# Non-Zephyr build of the same board; nvm and CIRCUITPY must sit where it puts them.
+counterpart = "raspberrypi/raspberry_pi_pico2_w"

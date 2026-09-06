@@ -18,7 +18,15 @@ from devicetree import edtlib  # noqa: E402
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 
-from check_partitions import check_layout, device_size, iter_partitions  # noqa: E402
+from check_partitions import (  # noqa: E402
+    check_layout,
+    check_parity,
+    device_size,
+    evaluate,
+    iter_partitions,
+    read_defines,
+    reference_layout,
+)
 
 BINDINGS = [str(portdir / "zephyr/dts/bindings")]
 
@@ -292,3 +300,99 @@ class TestEmptyLayout:
 
 if __name__ == "__main__":
     sys.exit(pytest.main([__file__]))
+
+
+class TestParity:
+    """Agreement with the non-Zephyr build of the same board.
+
+    The reference values are what ports/raspberrypi/mpconfigport.h and
+    ports/nordic/mpconfigport.h derive for these boards; the tests read the real
+    board files so a change there is caught here.
+    """
+
+    def test_evaluate_follows_references(self):
+        defines = {"A": "(2 * B)", "B": "(512 * 1024)", "C": "A + UNKNOWN"}
+        assert evaluate(defines, "A") == 1024 * 1024
+        assert evaluate(defines, "B") == 512 * 1024
+        assert evaluate(defines, "C") is None
+        assert evaluate(defines, "MISSING", 7) == 7
+
+    def test_read_defines_precedence(self, tmp_path):
+        mk = tmp_path / "mpconfigboard.mk"
+        mk.write_text(
+            "CFLAGS += -DCIRCUITPY_FIRMWARE_SIZE='(1536 * 1024)'\nQSPI_FLASH_FILESYSTEM = 1\n"
+        )
+        header = tmp_path / "mpconfigport.h"
+        header.write_text(
+            "#ifndef CIRCUITPY_FIRMWARE_SIZE\n#define CIRCUITPY_FIRMWARE_SIZE (1020 * 1024)\n#endif\n"
+        )
+        defines = read_defines([mk, header])
+        assert evaluate(defines, "CIRCUITPY_FIRMWARE_SIZE") == 1536 * 1024
+        assert defines["QSPI_FLASH_FILESYSTEM"] == "1"
+
+    def test_raspberrypi_default_firmware_size(self):
+        layout = reference_layout("raspberrypi/raspberry_pi_pico", 0x200000)
+        assert layout["nvm"] == (0xFF000, 0x1000)
+        assert layout["circuitpy"] == (0x100000, 0x100000)
+
+    def test_raspberrypi_board_firmware_size(self):
+        layout = reference_layout("raspberrypi/raspberry_pi_pico_w", 0x200000)
+        assert layout["nvm"] == (0x180000, 0x1000)
+        assert layout["circuitpy"] == (0x181000, 0x7F000)
+
+    def test_nordic_external_drive(self):
+        layout = reference_layout("nordic/feather_nrf52840_express", 0x100000)
+        assert layout["nvm"] == (0xF2000, 0x2000)
+        assert layout["circuitpy"] == "external"
+
+    def test_unknown_port_and_board_rejected(self):
+        with pytest.raises(ValueError):
+            reference_layout("espressif/adafruit_feather_esp32s3", 0x400000)
+        with pytest.raises(ValueError):
+            reference_layout("raspberrypi/no_such_board", 0x200000)
+
+    def rp2040_layout(self, nvm_offset):
+        return xip_flash(
+            f"""
+            code_partition: partition@100 {{
+                compatible = "zephyr,mapped-partition";
+                reg = <0x100 0xfdf00>;
+            }};
+            nvm_partition: partition@{nvm_offset:x} {{
+                compatible = "zephyr,mapped-partition";
+                label = "nvm";
+                reg = <0x{nvm_offset:x} 0x1000>;
+            }};
+            circuitpy_partition: partition@100000 {{
+                compatible = "zephyr,mapped-partition";
+                label = "circuitpy";
+                reg = <0x100000 0x100000>;
+            }};
+            """
+        )
+
+    def test_parity_matches(self):
+        edt = parse_dts_string(self.rp2040_layout(0xFF000))
+        assert check_parity(edt, "raspberrypi/raspberry_pi_pico") == []
+
+    def test_parity_reports_moved_nvm(self):
+        edt = parse_dts_string(self.rp2040_layout(0xFE000))
+        problems = check_parity(edt, "raspberrypi/raspberry_pi_pico")
+        assert len(problems) == 1
+        assert "nvm_partition" in problems[0]
+        assert "0xfe000" in problems[0] and "0xff000" in problems[0]
+
+    def test_parity_reports_missing_partition(self):
+        edt = parse_dts_string(
+            xip_flash(
+                """
+            code_partition: partition@100 {
+                compatible = "zephyr,mapped-partition";
+                reg = <0x100 0xfdf00>;
+            };
+            """
+            )
+        )
+        problems = check_parity(edt, "raspberrypi/raspberry_pi_pico")
+        assert any(p.startswith("nvm_partition: missing") for p in problems)
+        assert any(p.startswith("circuitpy_partition: missing") for p in problems)
