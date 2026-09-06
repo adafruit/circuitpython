@@ -114,8 +114,8 @@ void common_hal_audioio_wavefile_construct(audioio_wavefile_obj_t *self,
     // Try to allocate two buffers, one will be loaded from file and the other
     // DMAed to DAC.
     if (buffer_size) {
-        // Each half must be a multiple of 4 bytes so the last buffer can be padded in place.
-        self->len = buffer_size / 2 / sizeof(uint32_t) * sizeof(uint32_t);
+        // buffer_size is a multiple of 8 (checked by the binding) so each half can be padded in place.
+        self->len = buffer_size / 2;
         self->buffer = buffer;
         self->second_buffer = buffer + self->len;
     } else {

@@ -65,10 +65,14 @@ for length in range(4, 9):
         result, buf = audiocore.get_buffer(sample)
     print(length, result, len(buf), list(buf))
 
-# A caller-supplied buffer is split into halves that are a multiple of 4 bytes,
-# so padding the last buffer stays inside its half.
+# A caller-supplied buffer is split in half and each half must be a multiple of
+# 4 bytes for the pad to fit, so the whole buffer must be a multiple of 8 bytes.
 with fs.open("u8-5.wav", "rb") as f:
-    sample = audiocore.WaveFile(f, bytearray(10))
+    try:
+        audiocore.WaveFile(f, bytearray(12))
+    except ValueError as e:
+        print("ValueError:", e)
+    sample = audiocore.WaveFile(f, bytearray(8))
     audiocore.reset_buffer(sample)
     result = 1
     while result == 1:
