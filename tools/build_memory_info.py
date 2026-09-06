@@ -5,6 +5,7 @@
 #
 # SPDX-License-Identifier: MIT
 
+import os
 import re
 import sys
 import json
@@ -29,17 +30,26 @@ if "--region" in argv:
     flash_names = argv[i + 1].split(",")
     del argv[i : i + 2]
 
+# Ports whose toolchain this makefile cannot reach pass the image instead of piping
+# size(1) in; what it occupies in flash is its size on disk.
+image = None
+if "--image" in argv:
+    i = argv.index("--image")
+    image = argv[i + 1]
+    del argv[i : i + 2]
+
 text = 0
 data = 0
 bss = 0
 
-# stdin is the linker output.
-for line in sys.stdin:
-    # Uncomment to see linker output.
-    # print(line)
-    line = line.strip()
-    if not line.startswith("text"):
-        text, data, bss = map(int, line.split()[:3])
+if image is None:
+    # stdin is the linker output.
+    for line in sys.stdin:
+        # Uncomment to see linker output.
+        # print(line)
+        line = line.strip()
+        if not line.startswith("text"):
+            text, data, bss = map(int, line.split()[:3])
 
 
 def regions_from_map(contents):
@@ -89,6 +99,15 @@ for name in flash_names:
         firmware_region = regions[name]
         break
 
+if image is not None:
+    try:
+        text = os.stat(image).st_size
+    except FileNotFoundError:
+        print()
+        print(f"No {image} to measure.")
+        print()
+        sys.exit(0)
+
 used_flash = data + text
 used_ram = data + bss
 
@@ -116,7 +135,7 @@ print(
         used_flash, free_flash, firmware_region, firmware_region / 1024
     )
 )
-if "RAM" in regions:
+if image is None and "RAM" in regions:
     ram_region = regions["RAM"]
     print(
         "{} bytes used, {} bytes free in ram for stack and heap out of {} bytes ({}kB).".format(
