@@ -189,6 +189,7 @@ else
 $(BUILD)/firmware.elf: $(OBJ) $(LD_FILES)
 	$(STEPECHO) "LINK $@"
 	$(Q)$(CC) -o $@ $(LDFLAGS) $(filter-out %.ld, $^) -Wl,--print-memory-usage -Wl,--start-group $(LIBS) -Wl,--end-group
+	$(Q)$(SIZE) $@ | $(PYTHON) $(TOP)/tools/build_memory_info.py $@.map $(BUILD)
 endif
 
 # -R excludes sections from the output files.
