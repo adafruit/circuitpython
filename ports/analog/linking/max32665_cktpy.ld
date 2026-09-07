@@ -13,7 +13,6 @@
  */
 MEMORY {
     ROM             (rx) : ORIGIN = 0x00000000,    LENGTH = 128K
-    FLASH           (rx) : ORIGIN = 0x10000000,    LENGTH = 1M
     FLASH_FIRMWARE  (rx) : ORIGIN = 0x10000000,    LENGTH = 896K
     FLASH_FS        (rx) : ORIGIN = 0x100E0000,    LENGTH = 128K
     RAM            (rwx) : ORIGIN = 0x20000000,    LENGTH = 560K
