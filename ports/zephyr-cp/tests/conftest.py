@@ -356,6 +356,10 @@ def circuitpython(request, board, sim_id, native_sim_binary, native_sim_env, tmp
                     f"--port-resets={port_resets}",
                 )
             )
+            # Capture tests hold their last frame forever; stop the simulator at the
+            # test's duration in simulated time instead of waiting out the timeout.
+            if capture_times_ns and not use_realtime:
+                cmd.append(f"-stop_at={timeout}")
 
         # Always preserve retained memory (e.g. the safe-mode saved word) in
         # in case of reboot.
