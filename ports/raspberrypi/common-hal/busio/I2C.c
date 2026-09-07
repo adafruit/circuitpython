@@ -48,6 +48,7 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
     mp_arg_validate_int_max(frequency, 1000000, MP_QSTR_frequency);
 
 
+    #if CIRCUITPY_REQUIRE_I2C_PULLUPS && !CIRCUITPY_I2C_ALLOW_INTERNAL_PULL_UP
     // Don't bother to check for pull-ups when the internal pull-ups are used.
     // TODO: maybe check the pull-up efficacy with timing scaled by frequency
     // as is done in espressif, instead of using a fixed 3us.
