@@ -136,6 +136,32 @@ static const uint64_t pin_mask_reset_forbidden =
     #endif
     #endif // ESP32C3
 
+    #if defined(CONFIG_IDF_TARGET_ESP32C5)
+    // Never ever reset pins used to communicate with SPI flash.
+    // ports/espressif/esp-idf/components/esp_hal_gpspi/esp32c5/include/soc/spi_pins.h
+    GPIO_SEL_16 |         // MSPI_IOMUX_PIN_NUM_CS0 (flash)
+    GPIO_SEL_17 |         // MSPI_IOMUX_PIN_NUM_MISO
+    GPIO_SEL_18 |         // MSPI_IOMUX_PIN_NUM_WP
+    GPIO_SEL_19 |         // VDD_SPI (powers the in-module flash)
+    GPIO_SEL_20 |         // MSPI_IOMUX_PIN_NUM_HD
+    GPIO_SEL_21 |         // MSPI_IOMUX_PIN_NUM_CLK
+    GPIO_SEL_22 |         // MSPI_IOMUX_PIN_NUM_MOSI
+    #if CIRCUITPY_ESP_USB_SERIAL_JTAG
+    // Never ever reset serial/JTAG communication pins. On C5, gpio_ll_func_sel()
+    // on either clears USB_SERIAL_JTAG.conf0.usb_pad_enable, killing the USB pads.
+    GPIO_SEL_13 |         // USB D- (USB_INT_PHY0_DM_GPIO_NUM)
+    GPIO_SEL_14 |         // USB D+ (USB_INT_PHY0_DP_GPIO_NUM)
+    #endif
+    #if defined(CONFIG_SPIRAM)
+    GPIO_SEL_15 |         // MSPI_IOMUX_PIN_NUM_CS1 (PSRAM); keep if PSRAM in use
+    #endif
+    #if defined(CONFIG_ESP_CONSOLE_UART_DEFAULT) && CONFIG_ESP_CONSOLE_UART_DEFAULT && CONFIG_ESP_CONSOLE_UART_NUM == 0
+    // Never reset debug UART/console pins.
+    GPIO_SEL_11 |
+    GPIO_SEL_12 |
+    #endif
+    #endif // ESP32C5
+
     #if defined(CONFIG_IDF_TARGET_ESP32C6)
     // Never ever reset pins used to communicate with SPI flash.
     GPIO_SEL_24 |         // SPICS0
