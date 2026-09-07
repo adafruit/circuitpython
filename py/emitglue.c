@@ -113,7 +113,10 @@ void mp_emit_glue_assign_native(mp_raw_code_t *rc, mp_raw_code_kind_t kind, cons
     // Some architectures require flushing/invalidation of the I/D caches,
     // so that the generated native code which was created in data RAM will
     // be available for execution from instruction RAM.
-    #if MICROPY_EMIT_THUMB || MICROPY_EMIT_INLINE_THUMB || (MP_NATIVE_ARCH_ARMV6M <= MPY_FEATURE_ARCH && MPY_FEATURE_ARCH <= MP_NATIVE_ARCH_ARMV7EMDP)
+    // CIRCUITPY-CHANGE: MP_NATIVE_ARCH_* are enum values, always 0 to the
+    // preprocessor, and MPY_FEATURE_ARCH is not defined here; test the
+    // compiler target instead.
+    #if MICROPY_EMIT_THUMB || MICROPY_EMIT_INLINE_THUMB || (MICROPY_PERSISTENT_CODE_LOAD_NATIVE && (defined(__thumb__) || defined(__thumb2__)))
     // CIRCUITPY-CHANGE: prevent warning
     #if defined(__ICACHE_PRESENT) && __ICACHE_PRESENT == 1
     // Flush D-cache, so the code emitted is stored in RAM.
@@ -121,7 +124,7 @@ void mp_emit_glue_assign_native(mp_raw_code_t *rc, mp_raw_code_kind_t kind, cons
     // Invalidate I-cache, so the newly-created code is reloaded from RAM.
     SCB_InvalidateICache();
     #endif
-    #elif MICROPY_EMIT_ARM || (MPY_FEATURE_ARCH == MP_NATIVE_ARCH_ARMV6)
+    #elif MICROPY_EMIT_ARM || (MICROPY_PERSISTENT_CODE_LOAD_NATIVE && defined(__arm__) && !defined(__thumb__))
     #if (defined(__linux__) && defined(__GNUC__)) || __ARM_ARCH == 7
     __builtin___clear_cache((void *)fun_data, (char *)fun_data + fun_len);
     #elif defined(__arm__)
@@ -134,7 +137,7 @@ void mp_emit_glue_assign_native(mp_raw_code_t *rc, mp_raw_code_kind_t kind, cons
         "mcr p15, 0, r0, c7, c7, 0\n" // invalidate I-cache and D-cache
         : : : "r0", "cc");
     #endif
-    #elif (MICROPY_EMIT_RV32 || MICROPY_EMIT_INLINE_RV32 || (MPY_FEATURE_ARCH == MP_NATIVE_ARCH_RV32IMC)) && defined(MP_HAL_CLEAN_DCACHE)
+    #elif (MICROPY_EMIT_RV32 || MICROPY_EMIT_INLINE_RV32 || (MICROPY_PERSISTENT_CODE_LOAD_NATIVE && defined(__riscv))) && defined(MP_HAL_CLEAN_DCACHE)
     // Flush the D-cache.
     MP_HAL_CLEAN_DCACHE(fun_data, fun_len);
     #endif
