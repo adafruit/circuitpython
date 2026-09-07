@@ -52,7 +52,9 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
     // pull-ups ourselves: RP2xxx internal pull-ups are weak, and this test
     // waits a fixed 3us regardless of frequency, so it would pass even at
     // bus speeds the internal pull-ups cannot actually sustain.
-    #if CIRCUITPY_REQUIRE_I2C_PULLUPS && !CIRCUITPY_I2C_ALLOW_INTERNAL_PULL_UP
+    // Don't bother to check for pull-ups when the internal pull-ups are used.
+    // TODO: maybe check the pull-up efficacy with timing scaled by frequency
+    // as is done in espressif, instead of using a fixed 3us.
     // Test that the pins are in a high state. (Hopefully indicating they are pulled up.)
     gpio_set_function(sda->number, GPIO_FUNC_SIO);
     gpio_set_function(scl->number, GPIO_FUNC_SIO);
@@ -104,11 +106,7 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
     gpio_set_function(self->sda_pin, GPIO_FUNC_I2C);
 
     #if CIRCUITPY_I2C_ALLOW_INTERNAL_PULL_UP
-    // Enable the internal pull-ups only once the pins belong to the I2C
-    // peripheral: shared_module_bitbangio_i2c_construct() above leaves both
-    // pads as open-drain outputs with no pull (see scl_release()/sda_read()),
-    // so anything set earlier is already gone. gpio_set_function() does not
-    // touch the pad pull settings, so these survive.
+    // Enable the internal pull-ups only once the pins belong to the I2C peripheral.
     gpio_pull_up(self->scl_pin);
     gpio_pull_up(self->sda_pin);
     #endif
