@@ -11,13 +11,6 @@ import sys
 import json
 
 
-# Handle size constants with K or M suffixes (allowed in .ld but not in Python).
-K_PATTERN = re.compile(r"([0-9]+)[kK]")
-K_REPLACE = r"(\1*1024)"
-
-M_PATTERN = re.compile(r"([0-9]+)[mM]")
-M_REPLACE = r"(\1*1024*1024)"
-
 # A linker map lists every region with the lengths already resolved:
 #     Name             Origin             Length             Attributes
 #     FLASH_FIRMWARE   0x10000000         0x0017f000         xr
@@ -66,23 +59,7 @@ def regions_from_map(contents):
     return regions or None
 
 
-def regions_from_linker_script(contents):
-    """Region sizes from a linker script, for the ports that pass one."""
-    regions = {}
-    for line in contents.split("\n"):
-        line = line.strip()
-        if line.startswith(("FLASH_FIRMWARE", "RAM")):
-            regions[line.split()[0]] = line.split("=")[-1]
-    for region, space in regions.items():
-        if "/*" in space:
-            space = space.split("/*")[0]
-        space = K_PATTERN.sub(K_REPLACE, space)
-        space = M_PATTERN.sub(M_REPLACE, space)
-        regions[region] = int(eval(space))
-    return regions
-
-
-# This file is either a linker map or the linker script.
+# The linker map lists the regions with every size the script computed resolved.
 try:
     with open(argv[0], "r") as f:
         contents = f.read()
@@ -91,7 +68,7 @@ except FileNotFoundError:
     print(f"No {argv[0]} to read the flash region from.")
     print()
     sys.exit(0)
-regions = regions_from_map(contents) or regions_from_linker_script(contents)
+regions = regions_from_map(contents) or {}
 
 firmware_region = None
 for name in flash_names:
