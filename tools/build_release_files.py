@@ -61,13 +61,13 @@ TRANSLATION_RE = re.compile(r"\.data = \d+, \.tail = \{([^}]*)\}")
 
 
 def flash_usage(port, build_dir):
-    """Return (used, region) bytes of the firmware flash region, or None if unknown."""
+    """Return (used, region) bytes of the firmware flash region, or (None, None) if unknown."""
     try:
         with open(f"../ports/{port}/{build_dir}/firmware.size.json", "r") as f:
             firmware = json.load(f)
         return firmware["used_flash"], firmware["firmware_region"]
     except FileNotFoundError:
-        return None
+        return None, None
 
 
 def c_array_bytes(path):
@@ -157,10 +157,12 @@ for board in build_boards:
     languages.remove(LANGUAGE_FIRST)
     languages.insert(0, LANGUAGE_FIRST)
 
-    # Set after the first language when its flash usage is known and too tight to skip
-    # the other languages outright.
-    predict_flash = None
-    first_language_bytes = 0
+    # Set after the first language's build when its flash usage is known and too tight to
+    # skip the other languages outright: the flash that build used, the flash the region
+    # holds, and how many of the used bytes are translation data.
+    baseline_flash = None
+    flash_region = 0
+    baseline_translation_bytes = 0
 
     for language in languages:
         bin_directory = "../bin/{board}/{language}".format(board=board, language=language)
@@ -191,25 +193,25 @@ for board in build_boards:
 
         artifacts = [os.path.join(build_dir, "firmware." + extension) for extension in extensions]
 
-        prediction = None
-        if predict_flash is not None and language != LANGUAGE_FIRST and not clean_build:
+        predicted_flash = None
+        if baseline_flash is not None and language != LANGUAGE_FIRST and not clean_build:
             if generate_translation(board_info["port"], board, build_dir, language):
-                delta = (
+                translation_growth = (
                     translation_bytes(board_info["port"], build_dir, language)
-                    - first_language_bytes
+                    - baseline_translation_bytes
                 )
-                predicted = predict_flash[0] + delta
-                fits = predicted + LANGUAGE_MARGIN <= predict_flash[1]
+                predicted_flash = baseline_flash + translation_growth
+                fits = predicted_flash + LANGUAGE_MARGIN <= flash_region
                 skip = fits and LANGUAGE_PREDICT == "skip"
-                prediction = predicted
                 print(
-                    "Predict {board} for {language}: {predicted} of {region} bytes ({free} free, {delta:+d} vs {first}) -> {action}".format(
+                    "Predicted flash size for {board} {language}: {predicted} of {region} bytes"
+                    " ({free} free, {growth:+d} vs {first}) -> {action}".format(
                         board=board,
                         language=language,
-                        predicted=predicted,
-                        region=predict_flash[1],
-                        free=predict_flash[1] - predicted,
-                        delta=delta,
+                        predicted=predicted_flash,
+                        region=flash_region,
+                        free=flash_region - predicted_flash,
+                        growth=translation_growth,
                         first=LANGUAGE_FIRST,
                         action="skip" if skip else "build",
                     ),
@@ -273,16 +275,17 @@ for board in build_boards:
         print(make_result.stdout.decode("utf-8"))
         print(other_output)
 
-        if prediction is not None and make_result.returncode == 0:
-            usage = flash_usage(board_info["port"], build_dir)
-            if usage is not None:
+        if predicted_flash is not None and make_result.returncode == 0:
+            actual_flash, _ = flash_usage(board_info["port"], build_dir)
+            if actual_flash is not None:
                 print(
-                    "Predict check {board} for {language}: predicted {predicted}, actual {actual}, error {error:+d}".format(
+                    "Flash size check {board} {language}: predicted {predicted},"
+                    " actual {actual}, error {error:+d}".format(
                         board=board,
                         language=language,
-                        predicted=prediction,
-                        actual=usage[0],
-                        error=prediction - usage[0],
+                        predicted=predicted_flash,
+                        actual=actual_flash,
+                        error=predicted_flash - actual_flash,
                     )
                 )
 
@@ -290,15 +293,15 @@ for board in build_boards:
         print(flush=True)
 
         if (not build_all) and (language == LANGUAGE_FIRST) and (exit_status == 0):
-            usage = flash_usage(board_info["port"], build_dir)
-            if usage is None:
+            used_flash, flash_region = flash_usage(board_info["port"], build_dir)
+            if used_flash is None:
                 print("Flash usage unknown, building all languages")
-            elif usage[0] + LANGUAGE_THRESHOLD < usage[1]:
+            elif used_flash + LANGUAGE_THRESHOLD < flash_region:
                 print("Skipping languages")
                 break
             elif LANGUAGE_PREDICT != "off" and board_info["port"] != "zephyr-cp":
-                predict_flash = usage
-                first_language_bytes = translation_bytes(
+                baseline_flash = used_flash
+                baseline_translation_bytes = translation_bytes(
                     board_info["port"], build_dir, LANGUAGE_FIRST
                 )
 
