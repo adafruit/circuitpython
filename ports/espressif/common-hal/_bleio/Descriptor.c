@@ -15,6 +15,8 @@
 #include "shared-bindings/_bleio/Service.h"
 #include "shared-bindings/_bleio/UUID.h"
 
+#include "common-hal/_bleio/Adapter.h"
+
 #include "host/ble_att.h"
 
 void common_hal_bleio_descriptor_construct(bleio_descriptor_obj_t *self, bleio_characteristic_obj_t *characteristic, bleio_uuid_obj_t *uuid, bleio_attribute_security_mode_t read_perm, bleio_attribute_security_mode_t write_perm, mp_int_t max_length, bool fixed_length, mp_buffer_info_t *initial_value_bufinfo) {
@@ -33,21 +35,25 @@ void common_hal_bleio_descriptor_construct(bleio_descriptor_obj_t *self, bleio_c
     if (write_perm != SECURITY_MODE_NO_ACCESS) {
         self->flags |= BLE_ATT_F_WRITE;
     }
-    if (read_perm == SECURITY_MODE_ENC_WITH_MITM || write_perm == SECURITY_MODE_ENC_WITH_MITM ||
-        read_perm == SECURITY_MODE_SIGNED_WITH_MITM || write_perm == SECURITY_MODE_SIGNED_WITH_MITM) {
-        mp_raise_NotImplementedError(MP_ERROR_TEXT("MITM security not supported"));
-    }
+    // MITM / LESC-MITM / SIGNED all map to the _AUTHEN flags (require an authenticated
+    // link); see the matching block in Characteristic.c.
     if (read_perm == SECURITY_MODE_ENC_NO_MITM) {
         self->flags |= BLE_ATT_F_READ_ENC;
     }
-    if (read_perm == SECURITY_MODE_SIGNED_NO_MITM) {
+    if (read_perm == SECURITY_MODE_ENC_WITH_MITM || read_perm == SECURITY_MODE_LESC_ENC_WITH_MITM ||
+        read_perm == SECURITY_MODE_SIGNED_NO_MITM || read_perm == SECURITY_MODE_SIGNED_WITH_MITM) {
         self->flags |= BLE_ATT_F_READ_AUTHEN;
     }
     if (write_perm == SECURITY_MODE_ENC_NO_MITM) {
         self->flags |= BLE_ATT_F_WRITE_ENC;
     }
-    if (write_perm == SECURITY_MODE_SIGNED_NO_MITM) {
+    if (write_perm == SECURITY_MODE_ENC_WITH_MITM || write_perm == SECURITY_MODE_LESC_ENC_WITH_MITM ||
+        write_perm == SECURITY_MODE_SIGNED_NO_MITM || write_perm == SECURITY_MODE_SIGNED_WITH_MITM) {
         self->flags |= BLE_ATT_F_WRITE_AUTHEN;
+    }
+    if (bleio_attribute_security_mode_requires_mitm(read_perm) ||
+        bleio_attribute_security_mode_requires_mitm(write_perm)) {
+        bleio_adapter_enable_mitm_pairing();
     }
 
     const mp_int_t max_length_max = BLE_ATT_ATTR_MAX_LEN;

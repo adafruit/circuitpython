@@ -18,6 +18,9 @@ void common_hal_bleio_connection_disconnect(bleio_connection_internal_t *self);
 bool common_hal_bleio_connection_get_connected(bleio_connection_obj_t *self);
 mp_int_t common_hal_bleio_connection_get_max_packet_length(bleio_connection_internal_t *self);
 bool common_hal_bleio_connection_get_paired(bleio_connection_obj_t *self);
+bool common_hal_bleio_connection_get_authenticated(bleio_connection_obj_t *self);
+mp_obj_t common_hal_bleio_connection_get_pairing_numeric_comparison(bleio_connection_obj_t *self);
+void common_hal_bleio_connection_confirm_pairing(bleio_connection_obj_t *self, bool accept);
 mp_obj_tuple_t *common_hal_bleio_connection_discover_remote_services(bleio_connection_obj_t *self, mp_obj_t service_uuids_whitelist);
 
 mp_float_t common_hal_bleio_connection_get_connection_interval(bleio_connection_internal_t *self);

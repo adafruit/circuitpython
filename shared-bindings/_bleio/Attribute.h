@@ -14,3 +14,7 @@
 extern const mp_obj_type_t bleio_attribute_type;
 
 extern void common_hal_bleio_attribute_security_mode_check_valid(bleio_attribute_security_mode_t security_mode);
+
+// True for the security modes that demand a man-in-the-middle-protected (authenticated)
+// link: pairing must use numeric comparison or passkey entry, not "Just Works".
+extern bool bleio_attribute_security_mode_requires_mitm(bleio_attribute_security_mode_t security_mode);

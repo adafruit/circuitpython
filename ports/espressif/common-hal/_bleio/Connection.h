@@ -22,6 +22,11 @@
 typedef enum {
     PAIR_NOT_PAIRED,
     PAIR_WAITING,
+    // The peer is running LE Secure Connections numeric-comparison pairing and NimBLE is
+    // waiting for us to confirm the 6-digit value. Python reads it from
+    // Connection.pairing_numeric_comparison and answers with confirm_pairing(). This is a
+    // peer-driven, non-blocking path; the blocking pair() does not use it.
+    PAIR_WAITING_NUMCMP,
     PAIR_PAIRED,
 } pair_status_t;
 
@@ -50,6 +55,13 @@ typedef struct {
     uint16_t ediv;
     volatile pair_status_t pair_status;
     uint8_t sec_status; // Internal security status.
+    // The 6-digit LE Secure Connections numeric-comparison value stashed by
+    // BLE_GAP_EVENT_PASSKEY_ACTION. Only valid while pair_status == PAIR_WAITING_NUMCMP.
+    volatile uint32_t pairing_numcmp;
+    // True once the link is encrypted AND authenticated against MITM (numeric comparison
+    // or passkey entry completed). A plain encrypted "Just Works" link leaves this false.
+    // Surfaced to Python as Connection.authenticated.
+    volatile bool mitm_protected;
     mp_obj_t connection_obj;
     volatile bool conn_params_updating;
     uint16_t mtu;

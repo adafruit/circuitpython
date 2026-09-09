@@ -32,6 +32,7 @@
 #include "nimble/nimble_port_freertos.h"
 #include "host/ble_gap.h"
 #include "host/ble_gatt.h"
+#include "host/ble_sm.h"
 #include "host/util/util.h"
 #include "services/gap/ble_svc_gap.h"
 #include "services/gatt/ble_svc_gatt.h"
@@ -145,7 +146,13 @@ void common_hal_bleio_adapter_set_enabled(bleio_adapter_obj_t *self, bool enable
         ble_hs_cfg.sm_their_key_dist |= BLE_SM_PAIR_KEY_DIST_ENC;
 
         ble_hs_cfg.sm_mitm = 0;
-        ble_hs_cfg.sm_sc = 0;
+        // LE Secure Connections is always offered. It's negotiated per pairing (a peer
+        // that only does legacy pairing still works) and is strictly better crypto, so
+        // there's no downside for existing "Just Works" users. Numeric-comparison pairing
+        // needs it. IO capability and the MITM requirement stay at the legacy defaults
+        // above until an attribute is constructed with a *_WITH_MITM permission, which
+        // raises them - see bleio_adapter_enable_mitm_pairing().
+        ble_hs_cfg.sm_sc = 1;
         /* Stores the IRK */
         ble_hs_cfg.sm_our_key_dist |= BLE_SM_PAIR_KEY_DIST_ID;
         ble_hs_cfg.sm_their_key_dist |= BLE_SM_PAIR_KEY_DIST_ID;
@@ -195,6 +202,15 @@ void common_hal_bleio_adapter_set_enabled(bleio_adapter_obj_t *self, bool enable
 
 bool common_hal_bleio_adapter_get_enabled(bleio_adapter_obj_t *self) {
     return xTaskGetHandle("nimble_host") != NULL;
+}
+
+void bleio_adapter_enable_mitm_pairing(void) {
+    // ble_hs_cfg is a plain global read by the SM code at pairing time, so bumping it
+    // here (from Characteristic / Descriptor construction, after the adapter is up) takes
+    // effect for every subsequent pairing. Idempotent and one-way for the lifetime of
+    // the adapter - a characteristic that needs authentication doesn't stop needing it.
+    ble_hs_cfg.sm_io_cap = BLE_SM_IO_CAP_DISP_YES_NO;
+    ble_hs_cfg.sm_mitm = 1;
 }
 
 bleio_address_obj_t *common_hal_bleio_adapter_get_address(bleio_adapter_obj_t *self) {
