@@ -2,7 +2,14 @@
 
 extern int circuitpython_main(void);
 
-#if defined(__SANITIZE_ADDRESS__) || (defined(__has_feature) && __has_feature(address_sanitizer))
+// Note: __has_feature must only be evaluated in a nested #if guarded by
+// defined(__has_feature); older GCC versions fail to parse it otherwise.
+#if defined(__has_feature)
+#if __has_feature(address_sanitizer)
+#define CP_HAS_ASAN 1
+#endif
+#endif
+#if defined(__SANITIZE_ADDRESS__) || defined(CP_HAS_ASAN)
 // ASAN's stack-use-after-return detection (on by default in recent runtimes)
 // moves C locals into "fake stack" frames on the heap. The GC scans the real
 // machine stack for live object pointers, so with fake stacks enabled it misses
