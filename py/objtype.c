@@ -112,7 +112,8 @@ static mp_obj_t native_base_init_wrapper(size_t n_args, const mp_obj_t *pos_args
     return mp_const_none;
 }
 
-static MP_DEFINE_CONST_FUN_OBJ_KW(native_base_init_wrapper_obj, 1, native_base_init_wrapper);
+// CIRCUITPY-CHANGE: upstream v1.28 exposes this (renamed with mp_ prefix) so py/objexcept.c can reference it
+MP_DEFINE_CONST_FUN_OBJ_KW(mp_native_base_init_wrapper_obj, 1, native_base_init_wrapper);
 
 #if !MICROPY_CPYTHON_COMPAT
 static
@@ -126,7 +127,7 @@ mp_obj_instance_t *mp_obj_new_instance(const mp_obj_type_t *class, const mp_obj_
     // object.  It doesn't matter which object, so long as it can be uniquely
     // distinguished from a native class that is initialised.
     if (num_native_bases != 0) {
-        o->subobj[0] = MP_OBJ_FROM_PTR(&native_base_init_wrapper_obj);
+        o->subobj[0] = MP_OBJ_FROM_PTR(&mp_native_base_init_wrapper_obj);
     }
     return o;
 }
@@ -137,7 +138,7 @@ mp_obj_instance_t *mp_obj_new_instance(const mp_obj_type_t *class, const mp_obj_
 // code so it must call this method to ensure that the given object has been __init__'d and is
 // valid.
 void mp_obj_assert_native_inited(mp_obj_t native_object) {
-    if (native_object == MP_OBJ_FROM_PTR(&native_base_init_wrapper_obj)) {
+    if (native_object == MP_OBJ_FROM_PTR(&mp_native_base_init_wrapper_obj)) {
         mp_raise_NotImplementedError(MP_ERROR_TEXT("Call super().__init__() before accessing native object."));
     }
 }
@@ -395,7 +396,7 @@ static mp_obj_t mp_obj_instance_make_new(const mp_obj_type_t *self, size_t n_arg
 
     // If the type had a native base that was not explicitly initialised
     // (constructed) by the Python __init__() method then construct it now.
-    if (native_base != NULL && o->subobj[0] == MP_OBJ_FROM_PTR(&native_base_init_wrapper_obj)) {
+    if (native_base != NULL && o->subobj[0] == MP_OBJ_FROM_PTR(&mp_native_base_init_wrapper_obj)) {
         o->subobj[0] = MP_OBJ_TYPE_GET_SLOT(native_base, make_new)(native_base, n_args, n_kw, args);
     }
 
@@ -1447,7 +1448,7 @@ static void super_attr(mp_obj_t self_in, qstr attr, mp_obj_t *dest) {
     if (dest[0] != MP_OBJ_NULL) {
         if (dest[0] == MP_OBJ_SENTINEL) {
             // Looked up native __init__ so defer to it
-            dest[0] = MP_OBJ_FROM_PTR(&native_base_init_wrapper_obj);
+            dest[0] = MP_OBJ_FROM_PTR(&mp_native_base_init_wrapper_obj);
             dest[1] = self->obj;
             // CIRCUITPY-CHANGE: better support for properties
         } else {

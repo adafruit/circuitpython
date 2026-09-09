@@ -31,6 +31,7 @@
 #include "genhdr/mpversion.h"
 #include "py/builtin.h"
 #include "py/mpconfig.h"
+#include "py/objlist.h"
 #include "py/objmodule.h"
 
 #if MICROPY_PY_BUILTINS_HELP

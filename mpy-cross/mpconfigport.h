@@ -32,6 +32,7 @@
 
 #define MICROPY_ALLOC_PATH_MAX      (PATH_MAX)
 #define MICROPY_PERSISTENT_CODE_LOAD (0)
+#define MICROPY_PERSISTENT_CODE_LOAD_NATIVE (0)
 #define MICROPY_PERSISTENT_CODE_SAVE (1)
 
 #ifndef MICROPY_PERSISTENT_CODE_SAVE_FILE
@@ -84,6 +85,7 @@
 #define MICROPY_USE_INTERNAL_PRINTF (0)
 
 #define MICROPY_PY_FSTRINGS         (1)
+#define MICROPY_PY_TSTRINGS         (1)
 #define MICROPY_PY_BUILTINS_STR_UNICODE (1)
 
 #if !(defined(MICROPY_GCREGS_SETJMP) || defined(__x86_64__) || defined(__i386__) || defined(__thumb2__) || defined(__thumb__) || defined(__arm__))

@@ -529,26 +529,14 @@ mp_obj_t mp_obj_new_list(size_t n, mp_obj_t *items) {
     return MP_OBJ_FROM_PTR(o);
 }
 
-void mp_obj_list_get(mp_obj_t self_in, size_t *len, mp_obj_t **items) {
-    // CIRCUITPY-CHANGE
-    mp_obj_list_t *self = native_list(self_in);
-    *len = self->len;
-    *items = self->items;
-}
-
-void mp_obj_list_set_len(mp_obj_t self_in, size_t len) {
-    // trust that the caller knows what it's doing
-    // TODO realloc if len got much smaller than alloc
-    mp_obj_list_t *self = MP_OBJ_TO_PTR(self_in);
-    self->len = len;
-}
-
-void mp_obj_list_store(mp_obj_t self_in, mp_obj_t index, mp_obj_t value) {
-    // CIRCUITPY-CHANGE
-    mp_obj_list_t *self = native_list(self_in);
-    size_t i = mp_get_index(self->base.type, self->len, index, false);
-    self->items[i] = value;
-}
+// CIRCUITPY-CHANGE: upstream v1.28 makes these three functions static inline
+// in py/objlist.h. Kept out-of-line here instead, declared in py/obj.h as
+// before: ~25 files outside py/ call these while including only py/obj.h, and
+// an extern declaration in obj.h cannot coexist with a static inline
+// definition of the same symbol in objlist.h.
+// CIRCUITPY-CHANGE: mp_obj_list_get/set_len/store moved to objlist.h as static
+// inline (upstream MicroPython v1.28), keeping the native_list() subclassing
+// cast for get/store where CircuitPython deviates from upstream.
 
 /******************************************************************************/
 /* list iterator                                                              */
@@ -580,4 +568,23 @@ mp_obj_t mp_obj_new_list_iterator(mp_obj_t list, size_t cur, mp_obj_iter_buf_t *
     o->list = list;
     o->cur = cur;
     return MP_OBJ_FROM_PTR(o);
+}
+
+mp_obj_list_t *mp_obj_list_optional_arg(mp_obj_t arg_in, size_t min_len) {
+    if (arg_in == MP_OBJ_NULL || arg_in == mp_const_none) {
+        return MP_OBJ_TO_PTR(mp_obj_new_list(min_len, NULL));
+    } else {
+        return mp_obj_list_ensure(arg_in, min_len);
+    }
+}
+
+mp_obj_list_t *mp_obj_list_ensure(mp_obj_t in, size_t min_len) {
+    if (!mp_obj_is_type(in, &mp_type_list)) {
+        mp_raise_TypeError(NULL);
+    }
+    mp_obj_list_t *list = MP_OBJ_TO_PTR(in);
+    if (list->len < min_len) {
+        mp_raise_ValueError(NULL);
+    }
+    return list;
 }

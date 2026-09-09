@@ -34,7 +34,9 @@ These libraries are not currently enabled in any CircuitPython build, but may be
    platform.rst
    re.rst
    select.rst
+   string.templatelib.rst
    sys.rst
+   weakref.rst
 
 Omitted ``string`` functions
 ----------------------------
