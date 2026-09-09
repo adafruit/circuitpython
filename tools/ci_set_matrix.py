@@ -23,6 +23,7 @@ that only the single board raspberry_pi_pico_w would be built.
 
 import re
 import os
+import math
 import sys
 import json
 import pathlib
@@ -67,6 +68,13 @@ PATTERN_DOCS = (
     r"^(?:(?:ports\/\w+\/bindings|shared-bindings)\S+\.c|tools\/extract_pyi\.py|\.readthedocs\.yml|conf\.py|requirements-doc\.txt)$|"
     r"(?:-stubs|\.(?:md|MD|mk|rst|RST)|/Makefile)$"
 )
+
+GITHUB_MATRIX_LIMIT = 256
+
+# The Zephyr tests build native_sim and the two bsim boards out of the shared sources, so a
+# change confined to these cannot reach them: another port, a translation, a frozen library
+# (this port has none), documentation or the unix test suite.
+PATTERN_ZEPHYR_TESTS_IGNORE = re.compile(r"^(?:docs|frozen|locale|tests)/|^ports/(?!zephyr-cp/)")
 
 PATTERN_WINDOWS = {
     ".github/",
@@ -267,8 +275,24 @@ def set_boards(build_all: bool):
         port_to_boards_to_build.setdefault(port, []).append(board)
         print(" ", board)
 
+    # build-boards.yml runs one matrix per port and GitHub allows 256 jobs per matrix.
+    # Split a bigger port into alphabetical runs of equal size, listed like ports;
+    # "split_ports" maps a part back to the real port name, which build.yml passes on, so
+    # the toolchain setup in build-boards.yml stays unchanged.
+    split_ports = {}
+    for port, boards in list(port_to_boards_to_build.items()):
+        parts = math.ceil(len(boards) / GITHUB_MATRIX_LIMIT)
+        if parts > 1:
+            del port_to_boards_to_build[port]
+            size = math.ceil(len(boards) / parts)
+            for index, start in enumerate(range(0, len(boards), size), start=1):
+                name = f"{port}-{index}"
+                port_to_boards_to_build[name] = boards[start : start + size]
+                split_ports[name] = port
+
     if port_to_boards_to_build:
         port_to_boards_to_build["ports"] = sorted(list(port_to_boards_to_build.keys()))
+        port_to_boards_to_build["split_ports"] = split_ports
 
     # Set the step outputs
     set_output("ports", json.dumps(port_to_boards_to_build))
@@ -302,6 +326,21 @@ def set_docs(run: bool):
     set_output("docs", run)
 
 
+def set_zephyr_tests(run: bool):
+    if not run:
+        if any(job.startswith("zephyr-tests") for job in last_failed_jobs):
+            run = True
+        else:
+            for file in changed_files:
+                if not PATTERN_ZEPHYR_TESTS_IGNORE.match(file):
+                    run = True
+                    break
+
+    # Set the step outputs
+    print("Running Zephyr tests:", run)
+    set_output("zephyr-tests", run)
+
+
 def set_windows(run: bool):
     if not run:
         if last_failed_jobs.get("windows"):
@@ -328,6 +367,7 @@ def main():
     print("Running: " + ("all" if run_all else "conditionally"))
     # Set jobs
     set_docs(run_all)
+    set_zephyr_tests(run_all)
     set_windows(run_all)
     set_boards(run_all)
 

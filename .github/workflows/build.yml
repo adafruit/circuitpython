@@ -22,6 +22,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       docs: ${{ steps.set-matrix.outputs.docs }}
+      zephyr-tests: ${{ steps.set-matrix.outputs.zephyr-tests }}
       ports: ${{ steps.set-matrix.outputs.ports }}
       cp-version: ${{ steps.set-up-submodules.outputs.version }}
     steps:
@@ -102,6 +103,7 @@ jobs:
 
   zephyr-tests:
     needs: scheduler
+    if: needs.scheduler.outputs.zephyr-tests == 'True'
     uses: ./.github/workflows/run-zephyr-tests.yml
     with:
       cp-version: ${{ needs.scheduler.outputs.cp-version }}
@@ -231,4 +233,4 @@ jobs:
     with:
       boards: ${{ toJSON(fromJSON(needs.scheduler.outputs.ports)[matrix.port]) }}
       cp-version: ${{ needs.scheduler.outputs.cp-version }}
-      port: ${{ matrix.port }}
+      port: ${{ fromJSON(needs.scheduler.outputs.ports).split_ports[matrix.port] || matrix.port }}

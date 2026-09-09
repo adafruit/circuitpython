@@ -150,6 +150,10 @@ SRC_C += $(addprefix lib/mp3/src/, \
 
 $(BUILD)/lib/mp3/src/buffers.o: CFLAGS += -include "shared-module/audiomp3/__init__.h" -D'MPDEC_ALLOCATOR(x)=malloc(x)' -D'MPDEC_FREE(x)=free(x)' -fwrapv
 
+# mp3dec.h only recognizes a fixed list of platforms and errors out on anything
+# else, including aarch64. Ask for the portable C code path, like espressif does.
+CFLAGS += -DMP3DEC_GENERIC
+
 CFLAGS += \
 	-DCIRCUITPY_AESIO=1 \
 	-DCIRCUITPY_AUDIOCORE=1 \

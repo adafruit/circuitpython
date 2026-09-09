@@ -27,7 +27,8 @@
 static size_t psram_size_usable(void) {
     #ifdef CONFIG_SPIRAM
     /* PSRAM chip may be larger than the size we can map into address space */
-    #ifdef CONFIG_IDF_TARGET_ESP32P4
+    #if defined(CONFIG_IDF_TARGET_ESP32P4) || defined(CONFIG_IDF_TARGET_ESP32C5)
+    // These targets don't define SOC_EXTRAM_DATA_SIZE.
     size_t s = esp_psram_get_size();
     #else
     size_t s = MIN(esp_psram_get_size(), SOC_EXTRAM_DATA_SIZE);

@@ -517,14 +517,14 @@ audioio_get_buffer_result_t audiomp3_mp3file_get_buffer(audiomp3_mp3file_obj_t *
     return result;
 }
 
-float common_hal_audiomp3_mp3file_get_rms_level(audiomp3_mp3file_obj_t *self) {
-    float sumsq = 0.f;
+mp_float_t common_hal_audiomp3_mp3file_get_rms_level(audiomp3_mp3file_obj_t *self) {
+    mp_float_t sumsq = MICROPY_FLOAT_CONST(0.0);
     // Assumes no DC component to the audio.  Is that a safe assumption?
     int16_t *buffer = (int16_t *)(void *)self->pcm_buffer[self->buffer_index];
     for (size_t i = 0; i < self->base.max_buffer_length / sizeof(int16_t); i++) {
-        sumsq += (float)buffer[i] * buffer[i];
+        sumsq += (mp_float_t)buffer[i] * buffer[i];
     }
-    return sqrtf(sumsq) / (self->base.max_buffer_length / sizeof(int16_t));
+    return MICROPY_FLOAT_C_FUN(sqrt)(sumsq) / (self->base.max_buffer_length / sizeof(int16_t));
 }
 
 uint32_t common_hal_audiomp3_mp3file_get_samples_decoded(audiomp3_mp3file_obj_t *self) {
