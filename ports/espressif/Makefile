@@ -402,6 +402,29 @@ CHIP_COMPONENTS = \
 	esp_hal_twai \
 	esp_hal_usb
 
+else ifeq ($(IDF_TARGET),esp32c5)
+LDFLAGS += \
+	-Tesp32c5.rom.phy.ld \
+	-Tesp32c5.rom.pp.ld \
+	-Tesp32c5.rom.net80211.ld \
+	-Tesp32c5.rom.libc.ld \
+	-Tesp32c5.rom.version.ld \
+	-Tesp32c5.rom.coexist.ld \
+	-Tesp32c5.rom.heap.ld \
+	-Tesp32c5.rom.systimer.ld \
+	-Trom.wdt.ld
+
+CHIP_COMPONENTS = \
+	esp_driver_tsens \
+	esp_driver_usb_serial_jtag \
+	esp_hal_dma \
+	esp_hal_i2s \
+	esp_hal_pcnt \
+	esp_hal_pmu \
+	esp_hal_rmt \
+	esp_hal_twai \
+	esp_hal_usb
+
 else ifeq ($(IDF_TARGET),esp32c6)
 LDFLAGS += \
 	-Tesp32c6.rom.phy.ld \
@@ -565,6 +588,8 @@ else ifeq ($(IDF_TARGET),esp32c2)
 CFLAGS += -DCFG_TUSB_MCU=OPT_MCU_ESP32C2
 else ifeq ($(IDF_TARGET),esp32c3)
 CFLAGS += -DCFG_TUSB_MCU=OPT_MCU_ESP32C3
+else ifeq ($(IDF_TARGET),esp32c5)
+CFLAGS += -DCFG_TUSB_MCU=OPT_MCU_ESP32C5
 else ifeq ($(IDF_TARGET),esp32c6)
 CFLAGS += -DCFG_TUSB_MCU=OPT_MCU_ESP32C6
 else ifeq ($(IDF_TARGET),esp32c61)
@@ -912,6 +937,7 @@ ifneq ($(CIRCUITPY_BLEIO_NATIVE),0)
 	BLE_IMPL_esp32s3 := esp32c3
 	BLE_IMPL_esp32c2 := libble
 	BLE_IMPL_esp32c3 := esp32c3
+	BLE_IMPL_esp32c5 := libble
 	BLE_IMPL_esp32c6 := libble
 	BLE_IMPL_esp32c61 := libble
 	BLE_IMPL_esp32h2 := libble
@@ -1006,6 +1032,8 @@ else ifeq ($(IDF_TARGET),esp32c2)
 BOOTLOADER_OFFSET = 0x0
 else ifeq ($(IDF_TARGET),esp32c3)
 BOOTLOADER_OFFSET = 0x0
+else ifeq ($(IDF_TARGET),esp32c5)
+BOOTLOADER_OFFSET = 0x2000
 else ifeq ($(IDF_TARGET),esp32c6)
 BOOTLOADER_OFFSET = 0x0
 else ifeq ($(IDF_TARGET),esp32c61)

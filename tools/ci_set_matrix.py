@@ -23,6 +23,7 @@ that only the single board raspberry_pi_pico_w would be built.
 
 import re
 import os
+import math
 import sys
 import json
 import pathlib
@@ -67,6 +68,8 @@ PATTERN_DOCS = (
     r"^(?:(?:ports\/\w+\/bindings|shared-bindings)\S+\.c|tools\/extract_pyi\.py|\.readthedocs\.yml|conf\.py|requirements-doc\.txt)$|"
     r"(?:-stubs|\.(?:md|MD|mk|rst|RST)|/Makefile)$"
 )
+
+GITHUB_MATRIX_LIMIT = 256
 
 PATTERN_WINDOWS = {
     ".github/",
@@ -267,8 +270,24 @@ def set_boards(build_all: bool):
         port_to_boards_to_build.setdefault(port, []).append(board)
         print(" ", board)
 
+    # build-boards.yml runs one matrix per port and GitHub allows 256 jobs per matrix.
+    # Split a bigger port into alphabetical runs of equal size, listed like ports;
+    # "split_ports" maps a part back to the real port name, which build.yml passes on, so
+    # the toolchain setup in build-boards.yml stays unchanged.
+    split_ports = {}
+    for port, boards in list(port_to_boards_to_build.items()):
+        parts = math.ceil(len(boards) / GITHUB_MATRIX_LIMIT)
+        if parts > 1:
+            del port_to_boards_to_build[port]
+            size = math.ceil(len(boards) / parts)
+            for index, start in enumerate(range(0, len(boards), size), start=1):
+                name = f"{port}-{index}"
+                port_to_boards_to_build[name] = boards[start : start + size]
+                split_ports[name] = port
+
     if port_to_boards_to_build:
         port_to_boards_to_build["ports"] = sorted(list(port_to_boards_to_build.keys()))
+        port_to_boards_to_build["split_ports"] = split_ports
 
     # Set the step outputs
     set_output("ports", json.dumps(port_to_boards_to_build))

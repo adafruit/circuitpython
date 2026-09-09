@@ -52,6 +52,7 @@ export BSIM_OUT_PATH := $(CURDIR)/tools/bsim
 $(BUILD)/zephyr-cp/zephyr/zephyr.elf:
 	python cptools/pre_zephyr_build_prep.py $(BOARD)
 	west build -b $(BOARD) -d $(BUILD) $(WEST_SHIELD_ARGS) --sysbuild -- $(WEST_CMAKE_ARGS)
+	python ../../tools/build_memory_info.py $(BUILD)/zephyr-cp/zephyr/zephyr.map $(BUILD) --image $(BUILD)/zephyr-cp/zephyr/zephyr.bin
 
 $(BUILD)/firmware.elf: $(BUILD)/zephyr-cp/zephyr/zephyr.elf
 	cp $^ $@

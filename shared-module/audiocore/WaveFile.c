@@ -114,6 +114,7 @@ void common_hal_audioio_wavefile_construct(audioio_wavefile_obj_t *self,
     // Try to allocate two buffers, one will be loaded from file and the other
     // DMAed to DAC.
     if (buffer_size) {
+        // buffer_size is a multiple of 8 (checked by the binding) so each half can be padded in place.
         self->len = buffer_size / 2;
         self->buffer = buffer;
         self->second_buffer = buffer + self->len;
@@ -193,7 +194,7 @@ audioio_get_buffer_result_t audioio_wavefile_get_buffer(audioio_wavefile_obj_t *
         self->bytes_remaining -= length_read;
         // Pad the last buffer to word align it.
         if (self->bytes_remaining == 0 && length_read % sizeof(uint32_t) != 0) {
-            uint32_t pad = length_read % sizeof(uint32_t);
+            uint32_t pad = sizeof(uint32_t) - length_read % sizeof(uint32_t);
             length_read += pad;
             if (self->base.bits_per_sample == 8) {
                 for (uint32_t i = 0; i < pad; i++) {

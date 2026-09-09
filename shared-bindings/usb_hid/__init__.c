@@ -25,6 +25,10 @@
 //| the `devices` tuple is **replaced** when ``code.py`` starts with a single-element tuple
 //| containing a `Device` that describes the boot device chosen (keyboard or mouse).
 //| The request for a boot device overrides any other HID devices.
+//|
+//| If the host requests a boot device after ``code.py`` has started, `devices` is not replaced.
+//| The boot device then sends reports in the boot format, with no report ID, and
+//| `Device.send_report()` on any other device does nothing, because the host ignores it.
 //| """
 //|
 //|
