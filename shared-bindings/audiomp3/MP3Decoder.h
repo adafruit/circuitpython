@@ -19,5 +19,5 @@ void common_hal_audiomp3_mp3file_construct(audiomp3_mp3file_obj_t *self,
 
 void common_hal_audiomp3_mp3file_set_file(audiomp3_mp3file_obj_t *self, mp_obj_t stream);
 void common_hal_audiomp3_mp3file_deinit(audiomp3_mp3file_obj_t *self);
-float common_hal_audiomp3_mp3file_get_rms_level(audiomp3_mp3file_obj_t *self);
+mp_float_t common_hal_audiomp3_mp3file_get_rms_level(audiomp3_mp3file_obj_t *self);
 uint32_t common_hal_audiomp3_mp3file_get_samples_decoded(audiomp3_mp3file_obj_t *self);
