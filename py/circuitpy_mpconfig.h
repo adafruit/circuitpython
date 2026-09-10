@@ -190,6 +190,9 @@ extern void common_hal_mcu_enable_interrupts(void);
 
 #define FILESYSTEM_BLOCK_SIZE       (512)
 
+// CIRCUITPY-CHANGE: CircuitPython's flash/SD block devices are native
+// (supervisor/shared/flash.c sets MP_BLOCKDEV_FLAG_NATIVE).
+#define MICROPY_VFS_BLOCKDEV_NATIVE (1)
 #define MICROPY_VFS                 (1)
 #define MICROPY_VFS_FAT             (MICROPY_VFS)
 #define MICROPY_READER_VFS          (MICROPY_VFS)

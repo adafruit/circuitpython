@@ -246,6 +246,7 @@ typedef enum {
     VTYPE_BUILTIN_CAST = 0x70 | MP_NATIVE_TYPE_OBJ,
 } vtype_kind_t;
 
+#if MICROPY_ERROR_REPORTING != MICROPY_ERROR_REPORTING_NONE
 static qstr vtype_to_qstr(vtype_kind_t vtype) {
     switch (vtype) {
         case VTYPE_PYOBJ:
@@ -269,6 +270,7 @@ static qstr vtype_to_qstr(vtype_kind_t vtype) {
             return MP_QSTR_None;
     }
 }
+#endif
 
 typedef struct _stack_info_t {
     vtype_kind_t vtype;
@@ -2378,22 +2380,23 @@ static void emit_native_unary_op(emit_t *emit, mp_unary_op_t op) {
         if (op == MP_UNARY_OP_POSITIVE) {
             // No-operation, just leave the argument on the stack.
         } else if (op == MP_UNARY_OP_NEGATIVE) {
-            int reg = REG_RET;
-            emit_pre_pop_reg_flexible(emit, &vtype, &reg, reg, reg);
-            ASM_NEG_REG(emit->as, reg);
-            emit_post_push_reg(emit, vtype, reg);
+            emit_pre_pop_reg(emit, &vtype, REG_RET);
+            ASM_NEG_REG(emit->as, REG_RET);
+            emit_post_push_reg(emit, vtype, REG_RET);
         } else if (op == MP_UNARY_OP_INVERT) {
+            emit_pre_pop_reg(emit, &vtype, REG_RET);
             #ifdef ASM_NOT_REG
-            int reg = REG_RET;
-            emit_pre_pop_reg_flexible(emit, &vtype, &reg, reg, reg);
-            ASM_NOT_REG(emit->as, reg);
+            ASM_NOT_REG(emit->as, REG_RET);
             #else
-            int reg = REG_RET;
-            emit_pre_pop_reg_flexible(emit, &vtype, &reg, REG_ARG_1, reg);
-            ASM_MOV_REG_IMM(emit->as, REG_ARG_1, -1);
-            ASM_XOR_REG_REG(emit->as, reg, REG_ARG_1);
+            #if REG_RET != REG_ARG_1
+            int reg = REG_ARG_1;
+            #else
+            int reg = REG_ARG_2;
             #endif
-            emit_post_push_reg(emit, vtype, reg);
+            ASM_MOV_REG_IMM(emit->as, reg, -1);
+            ASM_XOR_REG_REG(emit->as, REG_RET, reg);
+            #endif
+            emit_post_push_reg(emit, vtype, REG_RET);
         } else {
             EMIT_NATIVE_VIPER_TYPE_ERROR(emit,
                 MP_ERROR_TEXT("'not' not implemented"), mp_binary_op_method_name[op]);
@@ -2976,8 +2979,9 @@ static void emit_native_return_value(emit_t *emit) {
 
 static void emit_native_raise_varargs(emit_t *emit, mp_uint_t n_args) {
     DEBUG_printf("raise_varargs(%d)\n", n_args);
-    (void)n_args;
-    assert(n_args == 1);
+    if (n_args != 1) {
+        mp_raise_NotImplementedError(MP_ERROR_TEXT("native raise"));
+    }
     vtype_kind_t vtype_exc;
     emit_pre_pop_reg(emit, &vtype_exc, REG_ARG_1); // arg1 = object to raise
     if (vtype_exc != VTYPE_PYOBJ) {

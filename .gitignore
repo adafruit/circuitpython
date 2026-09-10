@@ -40,6 +40,7 @@ circuitpython-stubs/
 test-stubs/
 build-*/
 docs/genrst/
+.mpy_ld_cache-*/
 
 # Test failure outputs and intermediate artifacts
 ######################

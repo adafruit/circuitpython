@@ -39,10 +39,23 @@ CFLAGS += -DMICROPY_BOARD_BUILD_NAME=\"$(BOARD)-$(BOARD_VARIANT)\"
 endif
 endif
 
+# Add default C++ compiler flags based on CFLAGS. For use with C++ user modules.
+# CIRCUITPY-CHANGE: CircuitPython compiles with -std=gnu11, so filter that out too.
+CXXFLAGS += $(filter-out -Wmissing-prototypes -Wold-style-definition -std=gnu99 -std=c99 -std=c11 -std=gnu11,$(CFLAGS) $(CXXFLAGS_MOD))
+
+# Add LDFLAGS to link libstdc++ on bare metal ports. Added only if a port has
+# -nostdlib in LDFLAGS and C++ source files are provided.
+ifneq ($(findstring nostdlib,"$(LDFLAGS)"),)
+ifneq ($(SRC_CXX)$(SRC_USERMOD_CXX)$(SRC_USERMOD_LIB_CXX),)
+LIBSTDCPP_FILE_NAME = "$(shell $(CXX) $(CXXFLAGS) -print-file-name=libstdc++.a)"
+LDFLAGS += -L"$(shell dirname $(LIBSTDCPP_FILE_NAME))"
+endif
+endif
+
 # QSTR generation uses the same CFLAGS, with these modifications.
 QSTR_GEN_FLAGS = -DNO_QSTR
 # Note: := to force evaluation immediately.
-QSTR_GEN_CFLAGS := $(CFLAGS)
+QSTR_GEN_CFLAGS := $(filter-out -g%,$(CFLAGS))
 QSTR_GEN_CFLAGS += $(QSTR_GEN_FLAGS)
 QSTR_GEN_CXXFLAGS := $(CXXFLAGS)
 QSTR_GEN_CXXFLAGS += $(QSTR_GEN_FLAGS)
@@ -63,13 +76,13 @@ QSTR_GEN_CXXFLAGS += $(QSTR_GEN_FLAGS)
 # can be located. By following this scheme, it allows a single build rule
 # to be used to compile all .c files.
 
+vpath %.S . $(TOP) $(USER_C_MODULES) $(USERMOD_DIR_PARENTS)
 # CIRCUITPY-CHANGE: use STEPECHO
-vpath %.S . $(TOP) $(USER_C_MODULES)
 $(BUILD)/%.o: %.S
 	$(STEPECHO) "CC $<"
 	$(Q)$(CC) $(CFLAGS) -c -o $@ $<
 
-vpath %.s . $(TOP) $(USER_C_MODULES)
+vpath %.s . $(TOP) $(USER_C_MODULES) $(USERMOD_DIR_PARENTS)
 $(BUILD)/%.o: %.s
 	$(STEPECHO) "AS $<"
 	$(Q)$(AS) $(AFLAGS) -o $@ $<
@@ -100,11 +113,11 @@ $(Q)$(CXX) $(CXXFLAGS) -c -MD -MF $(@:.o=.d) -o $@ $< || (echo -e $(HELP_BUILD_E
 endef
 
 # CIRCUITPY-CHANGE: add $(BUILD)
-vpath %.c . $(TOP) $(USER_C_MODULES) $(BUILD)
+vpath %.c . $(TOP) $(USER_C_MODULES) $(USERMOD_DIR_PARENTS) $(BUILD)
 $(BUILD)/%.o: %.c
 	$(call compile_c)
 
-vpath %.cpp . $(TOP) $(USER_C_MODULES)
+vpath %.cpp . $(TOP) $(USER_C_MODULES) $(USERMOD_DIR_PARENTS)
 $(BUILD)/%.o: %.cpp
 	$(call compile_cxx)
 
@@ -196,9 +209,12 @@ $(HEADER_BUILD):
 	$(Q)$(MKDIR) -p $@
 
 ifneq ($(MICROPY_MPYCROSS_DEPENDENCY),)
-# to automatically build mpy-cross, if needed
+# Build mpy-cross automatically if needed. Clear USER_C_MODULES and
+# FROZEN_MANIFEST so a port build with either set doesn't leak them into the
+# mpy-cross sub-make and cause manifest.mk there to parse the port's manifest
+# from the wrong cwd.
 $(MICROPY_MPYCROSS_DEPENDENCY):
-	$(MAKE) -C "$(abspath $(dir $@)..)" USER_C_MODULES=
+	$(MAKE) -C "$(abspath $(dir $@)..)" USER_C_MODULES= FROZEN_MANIFEST=
 endif
 
 ifneq ($(FROZEN_DIR),)
@@ -220,12 +236,6 @@ endif
 CFLAGS += -DMICROPY_QSTR_EXTRA_POOL=mp_qstr_frozen_const_pool
 CFLAGS += -DMICROPY_MODULE_FROZEN_MPY
 CFLAGS += -DMICROPY_MODULE_FROZEN_STR
-
-# CIRCUITPY-CHANGE: FROZEN_MANIFEST is constructed at build time
-# to build frozen_content.c from a manifest
-$(BUILD)/frozen_content.c: FORCE $(BUILD)/genhdr/qstrdefs.generated.h $(BUILD)/genhdr/root_pointers.h $(FROZEN_MANIFEST) | $(MICROPY_MPYCROSS_DEPENDENCY)
-	$(Q)test -e "$(MPY_LIB_DIR)/README.md" || (echo -e $(HELP_MPY_LIB_SUBMODULE); false)
-	$(Q)$(MAKE_MANIFEST) -o $@ -v "MPY_DIR=$(TOP)" -v "MPY_LIB_DIR=$(MPY_LIB_DIR)" -v "PORT_DIR=$(shell pwd)" -v "BOARD_DIR=$(BOARD_DIR)" -b "$(BUILD)" $(if $(MPY_CROSS_FLAGS),-f"$(MPY_CROSS_FLAGS)",) --mpy-tool-flags="$(MPY_TOOL_FLAGS)" $(FROZEN_MANIFEST)
 endif
 
 ifneq ($(PROG),)
@@ -244,7 +254,7 @@ $(BUILD)/$(PROG): $(OBJ)
 	$(ECHO) "LINK $@"
 # Do not pass COPT here - it's *C* compiler optimizations. For example,
 # we may want to compile using Thumb, but link with non-Thumb libc.
-	$(Q)$(CC) -o $@ $^ $(LIB) $(LDFLAGS)
+	$(Q)$(CC) -o $@ $^ $(LIBS) $(LDFLAGS)
 ifndef DEBUG
 ifdef STRIP
 	$(Q)$(STRIP) $(STRIPFLAGS_EXTRA) $@

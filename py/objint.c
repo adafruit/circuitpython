@@ -30,7 +30,7 @@
 
 #include "py/parsenum.h"
 #include "py/smallint.h"
-#include "py/objint.h"
+#include "py/objint_impl.h"
 #include "py/objstr.h"
 #include "py/runtime.h"
 #include "py/binary.h"
@@ -99,8 +99,8 @@ static mp_fp_as_int_class_t mp_classify_fp_as_int(mp_float_t val) {
     #elif MICROPY_FLOAT_IMPL == MICROPY_FLOAT_IMPL_DOUBLE
     e = u.i[MP_ENDIANNESS_LITTLE];
     #endif
-#define MP_FLOAT_SIGN_SHIFT_I32 ((MP_FLOAT_FRAC_BITS + MP_FLOAT_EXP_BITS) % 32)
-#define MP_FLOAT_EXP_SHIFT_I32 (MP_FLOAT_FRAC_BITS % 32)
+    #define MP_FLOAT_SIGN_SHIFT_I32 ((MP_FLOAT_FRAC_BITS + MP_FLOAT_EXP_BITS) % 32)
+    #define MP_FLOAT_EXP_SHIFT_I32 (MP_FLOAT_FRAC_BITS % 32)
 
     if (e & (1U << MP_FLOAT_SIGN_SHIFT_I32)) {
         #if MICROPY_FLOAT_IMPL == MICROPY_FLOAT_IMPL_DOUBLE
@@ -207,10 +207,10 @@ static const uint8_t log_base2_floor[] = {
     3, 3, 3, 3,
     3, 3, 3, 4,
     /* if needed, these are the values for higher bases
-    4, 4, 4, 4,
-    4, 4, 4, 4,
-    4, 4, 4, 4,
-    4, 4, 4, 5
+       4, 4, 4, 4,
+       4, 4, 4, 4,
+       4, 4, 4, 4,
+       4, 4, 4, 5
     */
 };
 
@@ -309,74 +309,11 @@ char *mp_obj_int_formatted(char **buf, size_t *buf_size, size_t *fmt_size, mp_co
     return b;
 }
 
-// CIRCUITPY-CHANGE: more thorough checking
-#if MICROPY_LONGINT_IMPL != MICROPY_LONGINT_IMPL_NONE
-
-void mp_obj_int_buffer_overflow_check(mp_obj_t self_in, size_t nbytes, bool is_signed) {
-    if (is_signed) {
-        // self must be < 2**(bits - 1)
-        mp_obj_t edge = mp_binary_op(MP_BINARY_OP_LSHIFT,
-            mp_obj_new_int(1),
-            mp_obj_new_int(nbytes * 8 - 1));
-
-        if (mp_binary_op(MP_BINARY_OP_LESS, self_in, edge) == mp_const_true) {
-            // and >= -2**(bits - 1)
-            edge = mp_unary_op(MP_UNARY_OP_NEGATIVE, edge);
-            if (mp_binary_op(MP_BINARY_OP_MORE_EQUAL, self_in, edge) == mp_const_true) {
-                return;
-            }
-        }
-    } else {
-        // self must be >= 0
-        if (mp_obj_int_sign(self_in) >= 0) {
-            // and < 2**(bits)
-            mp_obj_t edge = mp_binary_op(MP_BINARY_OP_LSHIFT,
-                mp_obj_new_int(1),
-                mp_obj_new_int(nbytes * 8));
-
-            if (mp_binary_op(MP_BINARY_OP_LESS, self_in, edge) == mp_const_true) {
-                return;
-            }
-        }
-    }
-
-    mp_raise_OverflowError_varg(MP_ERROR_TEXT("value must fit in %d byte(s)"), nbytes);
-}
-
-#endif // MICROPY_LONGINT_IMPL != MICROPY_LONGINT_IMPL_NONE
-
+// CIRCUITPY-CHANGE: upstream keeps this static in py/objint_impl.h, whose
+// header comment says such a helper belongs here once a second file needs it.
+// CircuitPython calls it from py/binary.c as well.
 void mp_small_int_buffer_overflow_check(mp_int_t val, size_t nbytes, bool is_signed) {
-    // Fast path for zero.
-    if (val == 0) {
-        return;
-    }
-
-    // Trying to store negative values in unsigned bytes falls through to failure.
-    if (is_signed || val >= 0) {
-
-        if (nbytes >= sizeof(val)) {
-            // All non-negative N bit signed integers fit in an unsigned N bit integer.
-            // This case prevents shifting too far below.
-            return;
-        }
-
-        if (is_signed) {
-            mp_int_t edge = ((mp_int_t)1 << (nbytes * 8 - 1));
-            if (-edge <= val && val < edge) {
-                return;
-            }
-            // Out of range, fall through to failure.
-        } else {
-            // Unsigned. We already know val >= 0.
-            mp_int_t edge = ((mp_int_t)1 << (nbytes * 8));
-            if (val < edge) {
-                return;
-            }
-        }
-        // Fall through to failure.
-    }
-
-    mp_raise_OverflowError_varg(MP_ERROR_TEXT("value must fit in %d byte(s)"), nbytes);
+    mp_obj_small_int_buffer_overflow_check(val, nbytes, is_signed);
 }
 
 #if MICROPY_LONGINT_IMPL == MICROPY_LONGINT_IMPL_NONE
@@ -447,6 +384,10 @@ mp_int_t mp_obj_int_get_checked(mp_const_obj_t self_in) {
     return MP_OBJ_SMALL_INT_VALUE(self_in);
 }
 
+void mp_obj_int_to_bytes(mp_obj_t self_in, size_t buf_len, byte *buf, bool big_endian, bool is_signed, bool overflow_check) {
+    mp_obj_small_int_to_bytes(MP_OBJ_SMALL_INT_VALUE(self_in), buf_len, buf, big_endian, is_signed, overflow_check);
+}
+
 #endif // MICROPY_LONGINT_IMPL == MICROPY_LONGINT_IMPL_NONE
 
 // This dispatcher function is expected to be independent of the implementation of long int
@@ -456,7 +397,7 @@ mp_obj_t mp_obj_int_binary_op_extra_cases(mp_binary_op_t op, mp_obj_t lhs_in, mp
         // false acts as 0
         return mp_binary_op(op, lhs_in, MP_OBJ_NEW_SMALL_INT(0));
     } else if (rhs_in == mp_const_true) {
-        // true acts as 0
+        // true acts as 1
         return mp_binary_op(op, lhs_in, MP_OBJ_NEW_SMALL_INT(1));
     } else if (op == MP_BINARY_OP_MULTIPLY) {
         if (mp_obj_is_str_or_bytes(rhs_in) || mp_obj_is_type(rhs_in, &mp_type_tuple) || mp_obj_is_type(rhs_in, &mp_type_list)) {
@@ -539,49 +480,31 @@ static mp_obj_t int_from_bytes(size_t n_args, const mp_obj_t *pos_args, mp_map_t
 static MP_DEFINE_CONST_FUN_OBJ_KW(int_from_bytes_fun_obj, 2, int_from_bytes);
 static MP_DEFINE_CONST_CLASSMETHOD_OBJ(int_from_bytes_obj, MP_ROM_PTR(&int_from_bytes_fun_obj));
 
-// CIRCUITPY-CHANGE: supports signed
 static mp_obj_t int_to_bytes(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_length, ARG_byteorder, ARG_signed };
     static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_length,    MP_ARG_INT, {.u_int = 1} },
-        // CIRCUITPY-CHANGE: not required and given a default value.
-        { MP_QSTR_byteorder, MP_ARG_OBJ, {.u_obj = MP_OBJ_NEW_QSTR(MP_QSTR_big)} },
+        { MP_QSTR_length,    MP_ARG_INT, { .u_int = 1 } },
+        { MP_QSTR_byteorder, MP_ARG_OBJ, { .u_rom_obj = MP_ROM_QSTR(MP_QSTR_big) } },
         { MP_QSTR_signed,    MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = false} },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    mp_int_t len = args[ARG_length].u_int;
-    if (len < 0) {
+    mp_obj_t self = pos_args[0];
+
+    mp_int_t dlen = args[ARG_length].u_int;
+    if (dlen < 0) {
         mp_raise_ValueError(NULL);
     }
 
-    mp_obj_t self = pos_args[0];
+    vstr_t vstr;
+    vstr_init_len(&vstr, dlen);
+    byte *data = (byte *)vstr.buf;
+
     bool big_endian = args[ARG_byteorder].u_obj != MP_OBJ_NEW_QSTR(MP_QSTR_little);
     bool signed_ = args[ARG_signed].u_bool;
 
-    vstr_t vstr;
-    vstr_init_len(&vstr, len);
-    byte *data = (byte *)vstr.buf;
-    memset(data, 0, len);
-
-    #if MICROPY_LONGINT_IMPL != MICROPY_LONGINT_IMPL_NONE
-    if (!mp_obj_is_small_int(self)) {
-        mp_obj_int_buffer_overflow_check(self, len, signed_);
-        mp_obj_int_to_bytes_impl(self, big_endian, len, data);
-    } else
-    #endif
-    {
-        mp_int_t val = MP_OBJ_SMALL_INT_VALUE(self);
-        // Small int checking is separate, to be fast.
-        mp_small_int_buffer_overflow_check(val, len, signed_);
-        size_t l = MIN((size_t)len, sizeof(val));
-        if (val < 0) {
-            // Sign extend negative numbers.
-            memset(data, -1, len);
-        }
-        mp_binary_set_int(l, big_endian, data + (big_endian ? (len - l) : 0), val);
-    }
+    mp_obj_int_to_bytes(self, dlen, data, big_endian, signed_, true);
 
     return mp_obj_new_bytes_from_vstr(&vstr);
 }

@@ -111,7 +111,11 @@ void mp_vfs_blockdev_init(mp_vfs_blockdev_t *self, mp_obj_t bdev) {
 // Helper function to minimise code size of read/write functions
 // note the n_args argument is moved to the end for further code size reduction (args keep same position in caller and callee).
 static int mp_vfs_blockdev_call_rw(mp_obj_t *args, size_t block_num, size_t block_off, size_t len, void *buf, size_t n_args) {
+    #if MICROPY_PY_BUILTINS_MEMORYVIEW
+    mp_obj_array_t ar = {{&mp_type_memoryview}, 'B' | MP_OBJ_ARRAY_TYPECODE_FLAG_RW, 0, len, buf};
+    #else
     mp_obj_array_t ar = {{&mp_type_bytearray}, BYTEARRAY_TYPECODE, 0, len, buf};
+    #endif
     args[2] = MP_OBJ_NEW_SMALL_INT(block_num);
     args[3] = MP_OBJ_FROM_PTR(&ar);
     args[4] = MP_OBJ_NEW_SMALL_INT(block_off); // ignored for n_args == 2
@@ -120,13 +124,6 @@ static int mp_vfs_blockdev_call_rw(mp_obj_t *args, size_t block_num, size_t bloc
     if (ret == mp_const_none) {
         return 0;
     } else {
-        // Some block devices return a bool indicating success, so
-        // convert those to an errno integer code.
-        if (ret == mp_const_true) {
-            return 0;
-        } else if (ret == mp_const_false) {
-            return -MP_EIO;
-        }
         // Block device functions are expected to return 0 on success
         // and negative integer on errors. Check for positive integer
         // results as some callers (i.e. littlefs) will produce corrupt
@@ -137,14 +134,16 @@ static int mp_vfs_blockdev_call_rw(mp_obj_t *args, size_t block_num, size_t bloc
 }
 
 int mp_vfs_blockdev_read(mp_vfs_blockdev_t *self, size_t block_num, size_t num_blocks, uint8_t *buf) {
+    #if MICROPY_VFS_BLOCKDEV_NATIVE
     if (self->flags & MP_BLOCKDEV_FLAG_NATIVE) {
         // CIRCUITPY-CHANGE: Pass the blockdev object into native readblocks so
         // it has the corresponding state.
         mp_uint_t (*f)(mp_obj_t self, uint8_t *, uint32_t, uint32_t) = (void *)(uintptr_t)self->readblocks[2];
         return f(self->readblocks[1], buf, block_num, num_blocks);
-    } else {
-        return mp_vfs_blockdev_call_rw(self->readblocks, block_num, 0, num_blocks * self->block_size, buf, 2);
     }
+    #endif
+
+    return mp_vfs_blockdev_call_rw(self->readblocks, block_num, 0, num_blocks * self->block_size, buf, 2);
 }
 
 int mp_vfs_blockdev_read_ext(mp_vfs_blockdev_t *self, size_t block_num, size_t block_off, size_t len, uint8_t *buf) {
@@ -157,14 +156,16 @@ int mp_vfs_blockdev_write(mp_vfs_blockdev_t *self, size_t block_num, size_t num_
         return -MP_EROFS;
     }
 
+    #if MICROPY_VFS_BLOCKDEV_NATIVE
     if (self->flags & MP_BLOCKDEV_FLAG_NATIVE) {
-        // CIRCUITPY-CHANGE: Pass the blockdev object into native readblocks so
+        // CIRCUITPY-CHANGE: Pass the blockdev object into native writeblocks so
         // it has the corresponding state.
         mp_uint_t (*f)(mp_obj_t self, const uint8_t *, uint32_t, uint32_t) = (void *)(uintptr_t)self->writeblocks[2];
         return f(self->writeblocks[1], buf, block_num, num_blocks);
-    } else {
-        return mp_vfs_blockdev_call_rw(self->writeblocks, block_num, 0, num_blocks * self->block_size, (void *)buf, 2);
     }
+    #endif
+
+    return mp_vfs_blockdev_call_rw(self->writeblocks, block_num, 0, num_blocks * self->block_size, (void *)buf, 2);
 }
 
 int mp_vfs_blockdev_write_ext(mp_vfs_blockdev_t *self, size_t block_num, size_t block_off, size_t len, const uint8_t *buf) {
@@ -178,6 +179,7 @@ int mp_vfs_blockdev_write_ext(mp_vfs_blockdev_t *self, size_t block_num, size_t 
 mp_obj_t mp_vfs_blockdev_ioctl(mp_vfs_blockdev_t *self, uintptr_t cmd, uintptr_t arg) {
     if (self->flags & MP_BLOCKDEV_FLAG_HAVE_IOCTL) {
         // CIRCUITPY-CHANGE: Support native IOCTL so it can run outside of the VM.
+        #if MICROPY_VFS_BLOCKDEV_NATIVE
         if (self->flags & MP_BLOCKDEV_FLAG_NATIVE) {
             size_t out_value;
             bool (*f)(mp_obj_t self, uint32_t, uint32_t, size_t *) = (void *)(uintptr_t)self->u.ioctl[2];
@@ -187,6 +189,7 @@ mp_obj_t mp_vfs_blockdev_ioctl(mp_vfs_blockdev_t *self, uintptr_t cmd, uintptr_t
             }
             return MP_OBJ_NEW_SMALL_INT(out_value);
         }
+        #endif
         // New protocol with ioctl
         self->u.ioctl[2] = MP_OBJ_NEW_SMALL_INT(cmd);
         self->u.ioctl[3] = MP_OBJ_NEW_SMALL_INT(arg);

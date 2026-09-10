@@ -2,6 +2,7 @@
 [tool.ruff]
 target-version = "py312"
 line-length = 99
+builtins = [ "const", "execfile", "micropython", "ptr", "ptr8", "ptr16", "ptr32", "uint" ]
 # Include Python source files that don't end with .py
 extend-include = [ "tools/cc1" ]
 # Exclude third-party code from linting and formatting
@@ -43,7 +44,19 @@ format.exclude = [
   "tests/micropython/test_normalize_newlines.py",
   "tests/micropython/viper_args.py",
 ]
-lint.extend-select = [ "C9", "PLC" ]
+lint.extend-select = [ "C9", "PLC", "W292" ]
+lint.ignore = [
+  "E401",
+  "E402",
+  "E722",
+  "E731",
+  "E741",
+  "F401",
+  "F403",
+  "F405",
+  "PLC0206",
+  "PLC0415", # conditional imports are common in MicroPython
+]
 lint.exclude = [
   # Ruff finds Python SyntaxError in these files
   "tests/basics/string_module_tstring.py",
@@ -61,6 +74,7 @@ lint.exclude = [
   "tests/cmdline/repl_autoindent.py",
   "tests/cmdline/repl_basic.py",
   "tests/cmdline/repl_cont.py",
+  "tests/cmdline/repl_ctrl_c_interrupt_execution.py",
   "tests/cmdline/repl_emacs_keys.py",
   "tests/cmdline/repl_paste.py",
   "tests/cmdline/repl_words_move.py",
@@ -69,18 +83,6 @@ lint.exclude = [
   "tests/feature_check/tstring.py",
   "tests/micropython/heapalloc_fail_tstring.py",
   "tests/micropython/viper_args.py",
-]
-lint.extend-ignore = [
-  "E401",
-  "E402",
-  "E722",
-  "E731",
-  "E741",
-  "F401",
-  "F403",
-  "F405",
-  "PLC0206",
-  "PLC0415", # conditional imports are common in MicroPython
 ]
 # manifest.py files are evaluated with some global names pre-defined
 lint.per-file-ignores."**/manifest.py" = [ "F821" ]
@@ -100,6 +102,6 @@ ignore-words-list = "ans,aranges,asend,deques,dout,emac,extint,hsi,iput,mis,noti
 quiet-level = 3
 skip = """\
   */build*,./.git,./drivers/cc3100,./lib,./ports/cc3200/FreeRTOS,./ports/cc3200/bootmgr/sl,./ports/cc3200/hal,./ports/c\
-  c3200/simplelink,./ports/cc3200/telnet,./ports/esp32/managed_components,./ports/nrf/drivers/bluetooth/s1*,./ports/stm\
-  32/usbhost,./tests,ACKNOWLEDGEMENTS,\
+  c3200/simplelink,./ports/cc3200/telnet,./ports/esp32/managed_components,./ports/nrf/drivers/bluetooth/s1*,./ports/pso\
+  c-edge/boards/*/bsp-cfg,./ports/stm32/usbhost,./tests,ACKNOWLEDGEMENTS,\
   """

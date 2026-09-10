@@ -1,8 +1,18 @@
 from machine import CAN
 import time
 from random import seed, randrange
+import sys
 
 import micropython
+
+# The Alif port has an opaque send queue. The Alif CAN controller
+# provides no information about the slot number where the message
+# is stored, and it does not allow to cancel specific messages.
+# This test needs the slot number, which is not available.
+
+if "alif" in sys.platform:
+    print("SKIP")
+    raise SystemExit
 
 micropython.alloc_emergency_exception_buf(256)
 seed(0)
@@ -103,7 +113,10 @@ def irq_send(can):
 def instance1():
     # note: this test can pass with hard=True, but in a debug build
     # the completion IRQ may race ahead of setting tx_queue[idx], below
-    can.irq(irq_send, trigger=can.IRQ_TX, hard=False)
+    if "mimxrt" in sys.platform:
+        can.irq(irq_send, trigger=can.IRQ_TX, hard=True)
+    else:
+        can.irq(irq_send, trigger=can.IRQ_TX, hard=False)
     data = bytearray(MSG_LEN)
 
     multitest.next()
