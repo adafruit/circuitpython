@@ -149,14 +149,21 @@ def log_uart_trace_output(trace_file: Path) -> None:
             )
 
 
-@pytest.fixture
+# Native_sim boards each test runs against: the non-asan default and the
+# asan-enabled build, so memory errors fail tests.
+NATIVE_BOARDS = ["native_native_sim", "native_native_sim_asan"]
+
+
+@pytest.fixture(params=NATIVE_BOARDS)
 def board(request):
+    """Parametrized over both native_sim builds (non-asan and asan).
+
+    The bsim conftest overrides this fixture with its own bsim boards.
+    """
     board = request.node.get_closest_marker("circuitpython_board")
     if board is not None:
-        board = board.args[0]
-    else:
-        board = "native_native_sim"
-    return board
+        return board.args[0]
+    return request.param
 
 
 @pytest.fixture
