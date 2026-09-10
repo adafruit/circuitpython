@@ -293,6 +293,11 @@ for board in build_boards:
         print(flush=True)
 
         if (not build_all) and (language == LANGUAGE_FIRST) and (exit_status == 0):
+            if extensions == ["exe"]:
+                # The board builds a host executable, so there is no flash for a
+                # translation to overflow and nothing for the other 16 to prove.
+                print("Skipping languages")
+                break
             used_flash, flash_region = flash_usage(board_info["port"], build_dir)
             if used_flash is None:
                 print("Flash usage unknown, building all languages")
