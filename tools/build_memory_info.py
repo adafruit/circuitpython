@@ -14,7 +14,7 @@ import json
 # A linker map lists every region with the lengths already resolved:
 #     Name             Origin             Length             Attributes
 #     FLASH_FIRMWARE   0x10000000         0x0017f000         xr
-MAP_REGION = re.compile(r"^(\w+)\s+0x[0-9a-f]+\s+0x([0-9a-f]+)\s+\S*$", re.MULTILINE)
+MAP_REGION = re.compile(r"^(\w+)\s+0x([0-9a-f]+)\s+0x([0-9a-f]+)\s+\S*$", re.MULTILINE)
 
 argv = sys.argv[1:]
 flash_names = ["FLASH_FIRMWARE", "FLASH"]
@@ -46,16 +46,16 @@ if image is None:
 
 
 def regions_from_map(contents):
-    """Region sizes from the Memory Configuration table of a linker map."""
+    """Region origins and sizes from the Memory Configuration table of a linker map."""
     start = contents.find("Memory Configuration")
     if start < 0:
         return None
     end = contents.find("Linker script and memory map", start)
     table = contents[start : end if end > 0 else len(contents)]
     regions = {}
-    for name, length in MAP_REGION.findall(table):
+    for name, origin, length in MAP_REGION.findall(table):
         if name not in ("Name", "Origin", "Length"):
-            regions[name] = int(length, 16)
+            regions[name] = (int(origin, 16), int(length, 16))
     return regions or None
 
 
@@ -71,10 +71,36 @@ except FileNotFoundError:
 regions = regions_from_map(contents) or {}
 
 firmware_region = None
+flash_origin = 0
 for name in flash_names:
     if name in regions:
-        firmware_region = regions[name]
+        flash_origin, firmware_region = regions[name]
         break
+
+
+def hex_bytes_in(path, start, length):
+    """Bytes an Intel HEX file puts inside a region, or None if it can't be read."""
+    total = 0
+    base = 0
+    try:
+        with open(path, "r") as f:
+            for line in f:
+                if not line.startswith(":"):
+                    continue
+                count = int(line[1:3], 16)
+                record = int(line[7:9], 16)
+                if record == 0:
+                    address = base + int(line[3:7], 16)
+                    if start <= address < start + length:
+                        total += count
+                elif record == 4:
+                    base = int(line[9:13], 16) << 16
+                elif record == 2:
+                    base = int(line[9:13], 16) << 4
+    except (OSError, ValueError):
+        return None
+    return total
+
 
 if image is not None:
     try:
@@ -84,6 +110,19 @@ if image is not None:
         print(f"No {image} to measure.")
         print()
         sys.exit(0)
+    if firmware_region is not None and text > firmware_region:
+        # objcopy spans the whole image, so a board with a region far above the
+        # firmware one (Renesas keeps its option bytes 16 MB up) gets a sparse file
+        # whose size is the span, not the usage. The hex has the addresses.
+        in_region = hex_bytes_in(
+            os.path.splitext(image)[0] + ".hex", flash_origin, firmware_region
+        )
+        if in_region is None:
+            print()
+            print(f"{image} is larger than the firmware region and there is no hex to measure.")
+            print()
+            sys.exit(0)
+        text = in_region
 
 used_flash = data + text
 used_ram = data + bss
