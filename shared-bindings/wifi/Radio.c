@@ -446,12 +446,13 @@ MP_PROPERTY_GETTER(wifi_radio_ap_active_obj,
 
 //|     def connect(
 //|         self,
-//|         ssid: Union[str, ReadableBuffer, Network],
+//|         ssid: Optional[Union[str, ReadableBuffer]] = None,
 //|         password: Union[str, ReadableBuffer] = b"",
 //|         *,
 //|         channel: int = 0,
 //|         bssid: Optional[Union[str, ReadableBuffer]] = None,
 //|         timeout: Optional[float] = None,
+//|         network: Optional[Network] = None,
 //|     ) -> None:
 //|         """Connects to the given ssid and waits for an ip address. Reconnections are handled
 //|         automatically once one connection succeeds.
@@ -469,18 +470,26 @@ MP_PROPERTY_GETTER(wifi_radio_ap_active_obj,
 //|         If ``bssid`` is given and not None, the scan will start at the first channel or the one given and
 //|         connect to the AP with the given ``bssid`` and ``ssid``.
 //|
-//|         A `Network` from `start_scanning_networks` may be given in place of ``ssid``. Its
-//|         ``bssid`` and ``channel`` are used, which avoids the scan entirely."""
+//|         If ``network`` is given, it must be a `Network` returned by
+//|         `start_scanning_networks`. Its ``ssid``, ``bssid`` and ``channel`` are used, so no
+//|         scan happens. Give either ``ssid`` or ``network``, not both."""
 //|         ...
 //|
 static mp_obj_t wifi_radio_connect(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    enum { ARG_ssid, ARG_password, ARG_channel, ARG_bssid, ARG_timeout };
+    enum { ARG_ssid, ARG_password, ARG_channel, ARG_bssid, ARG_timeout,
+           #if CIRCUITPY_WIFI_CONNECT_NETWORK
+           ARG_network,
+           #endif
+    };
     static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_ssid, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_ssid, MP_ARG_OBJ, {.u_obj = mp_const_none} },
         { MP_QSTR_password,  MP_ARG_OBJ, {.u_obj = mp_const_empty_bytes} },
         { MP_QSTR_channel, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
         { MP_QSTR_bssid, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
         { MP_QSTR_timeout, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
+        #if CIRCUITPY_WIFI_CONNECT_NETWORK
+        { MP_QSTR_network, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
+        #endif
     };
 
     wifi_radio_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
@@ -497,13 +506,20 @@ static mp_obj_t wifi_radio_connect(size_t n_args, const mp_obj_t *pos_args, mp_m
     mp_int_t channel = args[ARG_channel].u_int;
 
     #if CIRCUITPY_WIFI_CONNECT_NETWORK
-    if (mp_obj_is_type(ssid_obj, &wifi_network_type)) {
-        wifi_network_obj_t *network = MP_OBJ_TO_PTR(ssid_obj);
+    if (args[ARG_network].u_obj != mp_const_none) {
+        if (ssid_obj != mp_const_none) {
+            mp_raise_TypeError_varg(MP_ERROR_TEXT("Supply either %q or %q, not both"), MP_QSTR_ssid, MP_QSTR_network);
+        }
+        wifi_network_obj_t *network = MP_OBJ_TO_PTR(mp_arg_validate_type(args[ARG_network].u_obj, &wifi_network_type, MP_QSTR_network));
         ssid_obj = common_hal_wifi_network_get_ssid(network);
         bssid_obj = common_hal_wifi_network_get_bssid(network);
         channel = mp_obj_get_int(common_hal_wifi_network_get_channel(network));
     }
     #endif
+
+    if (ssid_obj == mp_const_none) {
+        mp_raise_TypeError_varg(MP_ERROR_TEXT("'%q' argument required"), MP_QSTR_ssid);
+    }
 
     mp_buffer_info_t ssid;
     ssid.len = 0;
