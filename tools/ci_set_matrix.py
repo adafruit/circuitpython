@@ -72,6 +72,11 @@ PATTERN_DOCS = (
 
 GITHUB_MATRIX_LIMIT = 256
 
+# The Zephyr tests build native_sim and the two bsim boards out of the shared sources, so a
+# change confined to these cannot reach them: another port, a translation, a frozen library
+# (this port has none), documentation or the unix test suite.
+PATTERN_ZEPHYR_TESTS_IGNORE = re.compile(r"^(?:docs|frozen|locale|tests)/|^ports/(?!zephyr-cp/)")
+
 # Zephyr boards don't use make, so their module tables can't be computed here. Each
 # board's build writes autogen_board_info.toml next to its circuitpython.toml and that
 # file is committed; a board whose table is missing, unreadable or doesn't name a
@@ -367,6 +372,21 @@ def set_docs(run: bool):
     set_output("docs", run)
 
 
+def set_zephyr_tests(run: bool):
+    if not run:
+        if any(job.startswith("zephyr-tests") for job in last_failed_jobs):
+            run = True
+        else:
+            for file in changed_files:
+                if not PATTERN_ZEPHYR_TESTS_IGNORE.match(file):
+                    run = True
+                    break
+
+    # Set the step outputs
+    print("Running Zephyr tests:", run)
+    set_output("zephyr-tests", run)
+
+
 def set_windows(run: bool):
     if not run:
         if last_failed_jobs.get("windows"):
@@ -393,6 +413,7 @@ def main():
     print("Running: " + ("all" if run_all else "conditionally"))
     # Set jobs
     set_docs(run_all)
+    set_zephyr_tests(run_all)
     set_windows(run_all)
     set_boards(run_all)
 
