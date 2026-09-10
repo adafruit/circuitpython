@@ -1265,11 +1265,6 @@ mp_obj_t mp_obj_complex_binary_op(mp_binary_op_t op, mp_float_t lhs_real, mp_flo
 #define mp_obj_is_float(o) (false)
 #endif
 
-// tuple and list
-// CIRCUITPY-CHANGE: upstream v1.28 moved these declarations into py/objtuple.h
-// and py/objlist.h. mp_obj_tuple_del and mp_obj_tuple_hash are gone: both were
-// dead declarations upstream with no definition or caller.
-
 // dict
 typedef struct _mp_obj_dict_t {
     mp_obj_base_t base;
@@ -1326,8 +1321,6 @@ typedef struct _mp_obj_fun_builtin_var_t {
     } fun;
 } mp_obj_fun_builtin_var_t;
 
-// CIRCUITPY-CHANGE: mp_obj_fun_get_name was renamed mp_obj_fun_bc_get_name
-// upstream in v1.28 and now lives in py/objfun.h. No caller outside py/.
 
 mp_obj_t mp_identity(mp_obj_t self);
 MP_DECLARE_CONST_FUN_OBJ_1(mp_identity_obj);
@@ -1342,7 +1335,6 @@ typedef struct _mp_obj_module_t {
     mp_obj_base_t base;
     mp_obj_dict_t *globals;
 } mp_obj_module_t;
-// mp_obj_module_get_globals moved to py/objmodule.h (upstream v1.28); already applied there.
 
 // staticmethod and classmethod types; defined here so we can make const versions
 // this structure is used for instances of both staticmethod and classmethod
@@ -1404,12 +1396,5 @@ mp_obj_t mp_seq_extract_slice(const mp_obj_t *seq, mp_bound_slice_t *indexes);
 #define MP_SET_SLOT_IS_FILLED mp_set_slot_is_filled
 
 #endif
-
-// CIRCUITPY-CHANGE: re-export the tuple and list helpers that upstream v1.28
-// moved out of this header. Included last so everything they need is declared
-// above. The include cycle is safe: both headers include py/obj.h, and this
-// file uses none of their symbols itself.
-#include "py/objlist.h"
-#include "py/objtuple.h"
 
 #endif // MICROPY_INCLUDED_PY_OBJ_H
