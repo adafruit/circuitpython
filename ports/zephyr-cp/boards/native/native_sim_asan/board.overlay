@@ -1,0 +1,8 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Device tree overlay for CircuitPython on native_sim with AddressSanitizer.
+ * Identical hardware description to the non-asan board, so just reuse it.
+ */
+
+#include "../native_sim/board.overlay"
