@@ -152,7 +152,7 @@ print(
     )
 )
 if image is None and "RAM" in regions:
-    ram_region = regions["RAM"]
+    _, ram_region = regions["RAM"]
     print(
         "{} bytes used, {} bytes free in ram for stack and heap out of {} bytes ({}kB).".format(
             used_ram, ram_region - used_ram, ram_region, ram_region / 1024
