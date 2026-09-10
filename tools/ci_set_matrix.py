@@ -243,19 +243,14 @@ def set_boards(build_all: bool):
                 # Zephyr boards don't use make, so decide them here from their committed
                 # module table and leave them out of the settings computation below.
                 module = module_matches.group(2) if module_matches else None
-                skipped = []
-                for board in sorted(boards):
-                    if board not in port_to_board["zephyr-cp"]:
+                for board in list(boards):  # a copy, boards shrinks below
+                    if board_to_port[board] != "zephyr-cp":
                         continue
                     boards.remove(board)
                     if file.startswith("frozen"):
                         continue  # the port has no frozen modules
                     if module is None or zephyr_board_has_module(board, module):
                         boards_to_build.add(board)
-                    else:
-                        skipped.append(board)
-                if skipped:
-                    print(f"Zephyr boards without {module}, not built: {', '.join(skipped)}")
 
                 for board in boards_to_build:
                     if board in boards:
