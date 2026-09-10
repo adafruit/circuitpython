@@ -436,6 +436,10 @@ void supervisor_stop_bluetooth(void) {
     supervisor_stop_bluetooth_serial();
     #endif
 
+    // Tear down the guard service too.
+    common_hal_bleio_characteristic_deinit(&guard_characteristic);
+    common_hal_bleio_service_deinit(&guard_service);
+
     #endif
 }
 
