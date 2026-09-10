@@ -264,6 +264,9 @@ endif
 ifeq ($(CIRCUITPY_HASHLIB),1)
 SRC_PATTERNS += hashlib/%
 endif
+ifeq ($(CIRCUITPY_HMAC),1)
+SRC_PATTERNS += hmac/%
+endif
 ifeq ($(CIRCUITPY_I2CDISPLAYBUS),1)
 SRC_PATTERNS += i2cdisplaybus/%
 endif
@@ -1036,6 +1039,12 @@ else
 SRC_COMMON_HAL_ALL += \
 	hashlib/Hash.c \
 	hashlib/__init__.c
+endif
+
+ifeq ($(CIRCUITPY_HMAC),1)
+SRC_SHARED_MODULE_ALL += \
+	hmac/HMAC.c \
+	hmac/__init__.c
 endif
 
 ifeq ($(CIRCUITPY_RGBMATRIX),1)
