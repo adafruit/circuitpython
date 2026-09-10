@@ -29,7 +29,6 @@ import json
 import pathlib
 import subprocess
 import tomllib
-import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
 tools_dir = pathlib.Path(__file__).resolve().parent
@@ -73,48 +72,48 @@ PATTERN_DOCS = (
 
 GITHUB_MATRIX_LIMIT = 256
 
-# Zephyr boards don't use make, so their module tables can't be computed here. Each push
-# build uploads the board's autogen_board_info.toml with the firmware
-# (tools/build_release_files.py); a board whose table is missing, unreadable or does not
-# know a module is built.
-ZEPHYR_MODULES_URL = os.environ.get(
-    "ZEPHYR_MODULES_URL",
-    "https://adafruit-circuit-python.s3.amazonaws.com/bin/zephyr-modules/{ref}/{board}.toml",
-)
-zephyr_modules = {}
+# Zephyr boards don't use make, so their module tables can't be computed here. Each
+# board's build writes autogen_board_info.toml next to its circuitpython.toml and that
+# file is committed; a board whose table is missing, unreadable or doesn't name a
+# module is built.
+ZEPHYR_BOARDS = tools_dir.parent / "ports" / "zephyr-cp" / "boards"
+zephyr_modules = None
 
 
-def fetch_zephyr_modules(boards):
-    ref = os.environ.get("GITHUB_BASE_REF") or os.environ.get("GITHUB_REF_NAME") or "main"
-
-    def fetch(board):
-        url = ZEPHYR_MODULES_URL.format(board=board, ref=ref)
+def load_zephyr_modules():
+    modules = {}
+    for board_info in ZEPHYR_BOARDS.glob("*/*/autogen_board_info.toml"):
+        board = f"{board_info.parent.parent.name}_{board_info.parent.name}"
         try:
-            with urllib.request.urlopen(url, timeout=10) as response:
-                return board, tomllib.loads(response.read().decode("utf-8"))["modules"]
+            with board_info.open("rb") as f:
+                modules[board] = tomllib.load(f)["modules"]
         except Exception as e:  # noqa: BLE001 -- whatever went wrong, the board gets built
-            print(f"  {board}: no module table ({e})")
-            return board, None
-
-    need = [board for board in boards if board not in zephyr_modules]
-    with ThreadPoolExecutor(max_workers=os.cpu_count()) as ex:
-        zephyr_modules.update(ex.map(fetch, need))
+            print(f"  {board}: unusable module table ({e})")
+    return modules
 
 
 def zephyr_boards_for(file, module, boards):
     """The Zephyr boards a change to `file` concerns, out of `boards`."""
+    global zephyr_modules
     if file.startswith("frozen"):
         # The port has no frozen modules.
         return []
     if module is None:
         return boards
-    fetch_zephyr_modules(boards)
+    if zephyr_modules is None:
+        zephyr_modules = load_zephyr_modules()
     selected = [
         board
         for board in boards
-        if zephyr_modules.get(board) is None or zephyr_modules[board].get(module, True)
+        if board not in zephyr_modules or zephyr_modules[board].get(module, True)
     ]
+    # Name the boards left out. Their tables say they don't have the module, and a table
+    # is only as fresh as the last build that committed it, so this is the record of what
+    # a stale one cost.
+    skipped = [board for board in boards if board not in selected]
     print(f"Zephyr boards with {module}: {len(selected)} of {len(boards)}")
+    if skipped:
+        print(f"  no {module} according to their table: {', '.join(skipped)}")
     return selected
 
 
