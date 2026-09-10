@@ -817,10 +817,7 @@ def run_tests(pyb, tests, args, result_dir, num_threads=1):
     if not args.unicode:
         skip_tests.add("extmod/json_loads.py")  # tests loading a utf-8 character
 
-    # CIRCUITPY-CHANGE: CircuitPython prints printable Unicode characters in
-    # repr() as-is, where upstream escapes them as \uXXXX. See the "print
-    # printable Unicode chars" change in py/objstrunicode.c. This upstream test
-    # asserts the escaped form, so it cannot pass here.
+    # CIRCUITPY-CHANGE: asserts upstream's escaped Unicode repr, see py/objstrunicode.c
     skip_tests.add("basics/string_tstring_basic1.py")
 
     if skip_slice:

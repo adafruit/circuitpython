@@ -866,7 +866,6 @@ extern const mp_obj_type_t mp_type_NoneType;
 extern const mp_obj_type_t mp_type_bool;
 extern const mp_obj_type_t mp_type_int;
 extern const mp_obj_type_t mp_type_str;
-// upstream v1.28: PEP 750 t-strings (MICROPY_PY_TSTRINGS); decl is unconditional like other optional types above
 extern const mp_obj_type_t mp_type_template;
 extern const mp_obj_type_t mp_type_interpolation;
 extern const mp_obj_type_t mp_type_bytes;
@@ -1268,10 +1267,8 @@ mp_obj_t mp_obj_complex_binary_op(mp_binary_op_t op, mp_float_t lhs_real, mp_flo
 
 // tuple and list
 // CIRCUITPY-CHANGE: upstream v1.28 moved these declarations into py/objtuple.h
-// and py/objlist.h and made several of them static inline. Those two headers
-// are included at the bottom of this file so the many consumers that include
-// only py/obj.h keep working unchanged. mp_obj_tuple_del and mp_obj_tuple_hash
-// are gone: both were dead declarations upstream with no definition or caller.
+// and py/objlist.h. mp_obj_tuple_del and mp_obj_tuple_hash are gone: both were
+// dead declarations upstream with no definition or caller.
 
 // dict
 typedef struct _mp_obj_dict_t {
