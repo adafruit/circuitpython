@@ -36,3 +36,6 @@ CFLAGS += -DCIRCUITPY_FIRMWARE_SIZE='(1536 * 1024)'
 
 FROZEN_MPY_DIRS += $(TOP)/frozen/circuitpython-pcf85063a
 FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_Register
+
+# Not enough flash for the native .mpy loader
+CIRCUITPY_LOAD_NATIVE = 0
