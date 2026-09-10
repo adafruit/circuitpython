@@ -6,9 +6,7 @@
 
 #include "shared-bindings/wifi/__init__.h"
 #include "shared-bindings/wifi/AuthMode.h"
-#if CIRCUITPY_WIFI_CONNECT_NETWORK
 #include "shared-bindings/wifi/Network.h"
-#endif
 #include "shared-bindings/wifi/PowerManagement.h"
 
 #include <string.h>
@@ -476,20 +474,14 @@ MP_PROPERTY_GETTER(wifi_radio_ap_active_obj,
 //|         ...
 //|
 static mp_obj_t wifi_radio_connect(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    enum { ARG_ssid, ARG_password, ARG_channel, ARG_bssid, ARG_timeout,
-           #if CIRCUITPY_WIFI_CONNECT_NETWORK
-           ARG_network,
-           #endif
-    };
+    enum { ARG_ssid, ARG_password, ARG_channel, ARG_bssid, ARG_timeout, ARG_network };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_ssid, MP_ARG_OBJ, {.u_obj = mp_const_none} },
         { MP_QSTR_password,  MP_ARG_OBJ, {.u_obj = mp_const_empty_bytes} },
         { MP_QSTR_channel, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
         { MP_QSTR_bssid, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
         { MP_QSTR_timeout, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
-        #if CIRCUITPY_WIFI_CONNECT_NETWORK
         { MP_QSTR_network, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
-        #endif
     };
 
     wifi_radio_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
@@ -505,7 +497,6 @@ static mp_obj_t wifi_radio_connect(size_t n_args, const mp_obj_t *pos_args, mp_m
     mp_obj_t bssid_obj = args[ARG_bssid].u_obj;
     mp_int_t channel = args[ARG_channel].u_int;
 
-    #if CIRCUITPY_WIFI_CONNECT_NETWORK
     if (args[ARG_network].u_obj != mp_const_none) {
         if (ssid_obj != mp_const_none) {
             mp_raise_TypeError_varg(MP_ERROR_TEXT("Supply either %q or %q, not both"), MP_QSTR_ssid, MP_QSTR_network);
@@ -515,7 +506,6 @@ static mp_obj_t wifi_radio_connect(size_t n_args, const mp_obj_t *pos_args, mp_m
         bssid_obj = common_hal_wifi_network_get_bssid(network);
         channel = mp_obj_get_int(common_hal_wifi_network_get_channel(network));
     }
-    #endif
 
     if (ssid_obj == mp_const_none) {
         mp_raise_TypeError_varg(MP_ERROR_TEXT("'%q' argument required"), MP_QSTR_ssid);

@@ -668,12 +668,6 @@ async def build_circuitpython():  # noqa: C901
     circuitpython_flags.append(
         f"-DCIRCUITPY_WIFI_PING={1 if mpconfigboard.get('CIRCUITPY_WIFI_PING', True) else 0}"
     )
-    # wifi.Radio.connect() accepts a Network from a scan. On by default; boards
-    # that cannot spare the flash set CIRCUITPY_WIFI_CONNECT_NETWORK = false in
-    # their circuitpython.toml and connect() then takes only an ssid.
-    circuitpython_flags.append(
-        f"-DCIRCUITPY_WIFI_CONNECT_NETWORK={1 if mpconfigboard.get('CIRCUITPY_WIFI_CONNECT_NETWORK', True) else 0}"
-    )
 
     source_files = supervisor_source + hal_source + ["extmod/vfs.c"]
     if ulab_enabled:

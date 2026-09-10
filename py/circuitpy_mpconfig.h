@@ -695,12 +695,6 @@ void background_callback_run_all(void);
 #error "CIRCUITPY_BOOT_BUTTON and CIRCUITPY_BOOT_BUTTON_NO_GPIO are mutually exclusive"
 #endif
 
-// wifi.Radio.connect() accepts a Network from a scan. Boards short of flash can
-// set this to 0; connect() then takes only an ssid.
-#ifndef CIRCUITPY_WIFI_CONNECT_NETWORK
-#define CIRCUITPY_WIFI_CONNECT_NETWORK (1)
-#endif
-
 #if defined(__GNUC__) && !defined(__ZEPHYR__)
 #if __GNUC__ < CIRCUITPY_MIN_GCC_VERSION
 // (the 3 level scheme here is required to get expansion & stringization

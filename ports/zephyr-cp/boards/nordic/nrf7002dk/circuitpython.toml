@@ -10,6 +10,3 @@ CIRCUITPY_ULAB = false
 
 # The same 3 KB is why radio.ping() is off here too.
 CIRCUITPY_WIFI_PING = false
-
-# And why connect() does not take a scan result here.
-CIRCUITPY_WIFI_CONNECT_NETWORK = false
