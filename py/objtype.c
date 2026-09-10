@@ -112,7 +112,6 @@ static mp_obj_t native_base_init_wrapper(size_t n_args, const mp_obj_t *pos_args
     return mp_const_none;
 }
 
-// CIRCUITPY-CHANGE: upstream v1.28 exposes this (renamed with mp_ prefix) so py/objexcept.c can reference it
 MP_DEFINE_CONST_FUN_OBJ_KW(mp_native_base_init_wrapper_obj, 1, native_base_init_wrapper);
 
 #if !MICROPY_CPYTHON_COMPAT
