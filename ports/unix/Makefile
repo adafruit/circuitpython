@@ -49,9 +49,10 @@ INC += -I$(BUILD)
 
 # compiler settings
 CWARN = -Wall -Werror
-// CIRCUITPY-CHANGE: add  -Wno-missing-field-initializers
+# CIRCUITPY-CHANGE: add  -Wno-missing-field-initializers
 CWARN += -Wextra -Wno-unused-parameter -Wpointer-arith -Wdouble-promotion -Wfloat-conversion -Wno-missing-field-initializers
-CFLAGS += $(INC) $(CWARN) -std=gnu99 -DUNIX $(COPT) -I$(VARIANT_DIR) $(CFLAGS_EXTRA)
+# CIRCUITPY-CHANGE: use gnu11 instead of gnu99
+CFLAGS += $(INC) $(CWARN) -std=gnu11 -DUNIX $(COPT) -I$(VARIANT_DIR) $(CFLAGS_EXTRA)
 
 # Force the use of 64-bits for file sizes in C library functions on 32-bit platforms.
 # This option has no effect on 64-bit builds.
@@ -262,7 +263,8 @@ CFLAGS += -DMPZ_DIG_SIZE=16 # force 16 bits to work on both 32 and 64 bit archs
 CFLAGS += -DMICROPY_MODULE_FROZEN_STR
 endif
 
-CXXFLAGS += $(filter-out -Wmissing-prototypes -Wold-style-definition -std=gnu99,$(CFLAGS) $(CXXFLAGS_MOD))
+# CIRCUITPY-CHANGE: use gnu11 instead of gnu99
+CXXFLAGS += $(filter-out -Wmissing-prototypes -Wold-style-definition -std=gnu11,$(CFLAGS) $(CXXFLAGS_MOD))
 
 ifeq ($(MICROPY_FORCE_32BIT),1)
 RUN_TESTS_MPY_CROSS_FLAGS = --mpy-cross-flags='-march=x86'
