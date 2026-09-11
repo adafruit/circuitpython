@@ -96,7 +96,7 @@ int bleio_connection_event_cb(struct ble_gap_event *event, void *connection_in) 
             // *_WITH_MITM permission, which made the adapter advertise DISPLAY_YESNO IO
             // capability (bleio_adapter_enable_mitm_pairing()), so NimBLE asks us to
             // confirm a 6-digit numeric-comparison value. Stash it and enter
-            // PAIR_WAITING_NUMCMP; Python reads it via Connection.pairing_numeric_comparison
+            // PAIR_WAITING_NUMCMP; Python reads it via Connection.numeric_comparison
             // and answers with confirm_pairing().
             if (event->passkey.params.action == BLE_SM_IOACT_NUMCMP) {
                 connection->pairing_numcmp = event->passkey.params.numcmp;
@@ -200,7 +200,7 @@ void common_hal_bleio_connection_pair(bleio_connection_internal_t *self, bool bo
 // LE Secure Connections numeric comparison. Unlike pair(), these don't block: the peer
 // (a central) drives the SM procedure; we just observe the pending value and inject the
 // yes/no. BLE_GAP_EVENT_PASSKEY_ACTION sets pair_status = PAIR_WAITING_NUMCMP.
-mp_obj_t common_hal_bleio_connection_get_pairing_numeric_comparison(bleio_connection_obj_t *self) {
+mp_obj_t common_hal_bleio_connection_get_numeric_comparison(bleio_connection_obj_t *self) {
     if (self->connection == NULL || self->connection->pair_status != PAIR_WAITING_NUMCMP) {
         return mp_const_none;
     }

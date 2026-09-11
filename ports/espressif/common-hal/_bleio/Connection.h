@@ -24,7 +24,7 @@ typedef enum {
     PAIR_WAITING,
     // The peer is running LE Secure Connections numeric-comparison pairing and NimBLE is
     // waiting for us to confirm the 6-digit value. Python reads it from
-    // Connection.pairing_numeric_comparison and answers with confirm_pairing(). This is a
+    // Connection.numeric_comparison and answers with confirm_pairing(). This is a
     // peer-driven, non-blocking path; the blocking pair() does not use it.
     PAIR_WAITING_NUMCMP,
     PAIR_PAIRED,

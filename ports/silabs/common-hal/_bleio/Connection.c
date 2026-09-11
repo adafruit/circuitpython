@@ -64,12 +64,12 @@ bool common_hal_bleio_connection_get_authenticated(bleio_connection_obj_t *self)
     return false;
 }
 
-mp_obj_t common_hal_bleio_connection_get_pairing_numeric_comparison(bleio_connection_obj_t *self) {
+mp_obj_t common_hal_bleio_connection_get_numeric_comparison(bleio_connection_obj_t *self) {
     return mp_const_none;
 }
 
 void common_hal_bleio_connection_confirm_pairing(bleio_connection_obj_t *self, bool accept) {
-    mp_raise_NotImplementedError(MP_ERROR_TEXT("Numeric comparison pairing"));
+    mp_raise_NotImplementedError(NULL);
 }
 
 // Get connected status
