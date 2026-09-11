@@ -6,6 +6,7 @@
 
 #include "shared-bindings/wifi/__init__.h"
 #include "shared-bindings/wifi/AuthMode.h"
+#include "shared-bindings/wifi/Network.h"
 #include "shared-bindings/wifi/PowerManagement.h"
 
 #include <string.h>
@@ -443,12 +444,13 @@ MP_PROPERTY_GETTER(wifi_radio_ap_active_obj,
 
 //|     def connect(
 //|         self,
-//|         ssid: Union[str, ReadableBuffer],
+//|         ssid: Optional[Union[str, ReadableBuffer]] = None,
 //|         password: Union[str, ReadableBuffer] = b"",
 //|         *,
 //|         channel: int = 0,
 //|         bssid: Optional[Union[str, ReadableBuffer]] = None,
 //|         timeout: Optional[float] = None,
+//|         network: Optional[Network] = None,
 //|     ) -> None:
 //|         """Connects to the given ssid and waits for an ip address. Reconnections are handled
 //|         automatically once one connection succeeds.
@@ -464,17 +466,22 @@ MP_PROPERTY_GETTER(wifi_radio_ap_active_obj,
 //|         significantly because a full scan doesn't occur.
 //|
 //|         If ``bssid`` is given and not None, the scan will start at the first channel or the one given and
-//|         connect to the AP with the given ``bssid`` and ``ssid``."""
+//|         connect to the AP with the given ``bssid`` and ``ssid``.
+//|
+//|         If ``network`` is given, it must be a `Network` returned by
+//|         `start_scanning_networks`. Its ``ssid``, ``bssid`` and ``channel`` are used, so no
+//|         scan happens. Give either ``ssid`` or ``network``, not both."""
 //|         ...
 //|
 static mp_obj_t wifi_radio_connect(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    enum { ARG_ssid, ARG_password, ARG_channel, ARG_bssid, ARG_timeout };
+    enum { ARG_ssid, ARG_password, ARG_channel, ARG_bssid, ARG_timeout, ARG_network };
     static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_ssid, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_ssid, MP_ARG_OBJ, {.u_obj = mp_const_none} },
         { MP_QSTR_password,  MP_ARG_OBJ, {.u_obj = mp_const_empty_bytes} },
         { MP_QSTR_channel, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
         { MP_QSTR_bssid, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
         { MP_QSTR_timeout, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
+        { MP_QSTR_network, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
     };
 
     wifi_radio_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
@@ -486,9 +493,27 @@ static mp_obj_t wifi_radio_connect(size_t n_args, const mp_obj_t *pos_args, mp_m
         timeout = mp_obj_get_float(args[ARG_timeout].u_obj);
     }
 
+    mp_obj_t ssid_obj = args[ARG_ssid].u_obj;
+    mp_obj_t bssid_obj = args[ARG_bssid].u_obj;
+    mp_int_t channel = args[ARG_channel].u_int;
+
+    if (args[ARG_network].u_obj != mp_const_none) {
+        if (ssid_obj != mp_const_none) {
+            mp_raise_TypeError_varg(MP_ERROR_TEXT("Supply either %q or %q, not both"), MP_QSTR_ssid, MP_QSTR_network);
+        }
+        wifi_network_obj_t *network = MP_OBJ_TO_PTR(mp_arg_validate_type(args[ARG_network].u_obj, &wifi_network_type, MP_QSTR_network));
+        ssid_obj = common_hal_wifi_network_get_ssid(network);
+        bssid_obj = common_hal_wifi_network_get_bssid(network);
+        channel = mp_obj_get_int(common_hal_wifi_network_get_channel(network));
+    }
+
+    if (ssid_obj == mp_const_none) {
+        mp_raise_TypeError_varg(MP_ERROR_TEXT("'%q' argument required"), MP_QSTR_ssid);
+    }
+
     mp_buffer_info_t ssid;
     ssid.len = 0;
-    mp_get_buffer_raise(args[ARG_ssid].u_obj, &ssid, MP_BUFFER_READ);
+    mp_get_buffer_raise(ssid_obj, &ssid, MP_BUFFER_READ);
     mp_arg_validate_length_range(ssid.len, 1, 32, MP_QSTR_ssid);
 
     mp_buffer_info_t password;
@@ -508,14 +533,14 @@ static mp_obj_t wifi_radio_connect(size_t n_args, const mp_obj_t *pos_args, mp_m
     mp_buffer_info_t bssid;
     bssid.len = 0;
     // Should probably make sure bssid is just bytes and not something else too
-    if (args[ARG_bssid].u_obj != mp_const_none) {
-        mp_get_buffer_raise(args[ARG_bssid].u_obj, &bssid, MP_BUFFER_READ);
+    if (bssid_obj != mp_const_none) {
+        mp_get_buffer_raise(bssid_obj, &bssid, MP_BUFFER_READ);
         if (bssid.len != MAC_ADDRESS_LENGTH) {
             mp_raise_ValueError(MP_ERROR_TEXT("Invalid BSSID"));
         }
     }
 
-    wifi_radio_error_t error = common_hal_wifi_radio_connect(self, ssid.buf, ssid.len, password.buf, password.len, args[ARG_channel].u_int, timeout, bssid.buf, bssid.len);
+    wifi_radio_error_t error = common_hal_wifi_radio_connect(self, ssid.buf, ssid.len, password.buf, password.len, channel, timeout, bssid.buf, bssid.len);
     if (error == WIFI_RADIO_ERROR_AUTH_FAIL) {
         mp_raise_ConnectionError(MP_ERROR_TEXT("Authentication failure"));
     } else if (error == WIFI_RADIO_ERROR_NO_AP_FOUND) {
