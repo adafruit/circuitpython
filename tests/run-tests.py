@@ -92,6 +92,9 @@ emitter_tests_to_skip = {
         "basics/try_finally_return2.py",
         "basics/try_reraise.py",
         "basics/try_reraise2.py",
+        # CIRCUITPY-CHANGE: our traceback deviation in this test uses a bare
+        # raise, which is raise_varargs with no argument.
+        "basics/gen_yield_from_close.py",
         # These require checking for unbound local.
         "basics/annotate_var.py",
         "basics/del_deref.py",
