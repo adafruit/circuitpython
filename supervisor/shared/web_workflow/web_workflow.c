@@ -340,7 +340,6 @@ bool supervisor_start_web_workflow(void) {
     // Skip starting the workflow if the reset reason reflects a problem.
     const mcu_reset_reason_t reset_reason = common_hal_mcu_processor_get_reset_reason();
     if (reset_reason == MCU_RESET_REASON_BROWNOUT ||
-        reset_reason == MCU_RESET_REASON_WATCHDOG ||
         reset_reason == MCU_RESET_REASON_RESCUE_DEBUG) {
         return false;
     }
