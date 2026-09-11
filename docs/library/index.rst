@@ -36,7 +36,6 @@ These libraries are not currently enabled in any CircuitPython build, but may be
    select.rst
    string.templatelib.rst
    sys.rst
-   weakref.rst
 
 Omitted ``string`` functions
 ----------------------------
