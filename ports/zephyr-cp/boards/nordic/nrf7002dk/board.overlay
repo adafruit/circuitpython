@@ -1,8 +1,9 @@
-/* Remove slot1 (OTA), expand slot0 to use the space.
- * CircuitPython doesn't use OTA updates. */
+/* Remove slot1 (OTA) and storage, expand slot0 to use the space.
+ * CircuitPython doesn't use OTA updates, and nothing here uses the settings
+ * NVS: CONFIG_BT=n, and CIRCUITPY lives on the external mx25r64. */
 &slot0_partition {
-	/* Shrink mcuboot to 48KB, absorb slot1 + gap before storage */
-	reg = <0x0000C000 0x000EC000>;
+	/* Shrink mcuboot to 48KB, absorb slot1 and storage, run to end of flash */
+	reg = <0x0000C000 0x000F4000>;
 };
 
 &boot_partition {
@@ -10,5 +11,6 @@
 };
 
 /delete-node/ &slot1_partition;
+/delete-node/ &storage_partition;
 
 #include "../../../app.overlay"

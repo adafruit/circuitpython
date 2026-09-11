@@ -15,6 +15,7 @@
 #include "shared-bindings/_bleio/Service.h"
 #include "shared-bindings/_bleio/UUID.h"
 #include "shared-module/storage/__init__.h"
+#include "supervisor/shared/bluetooth/bluetooth.h"
 #include "supervisor/shared/bluetooth/serial.h"
 
 #include "common-hal/_bleio/__init__.h"
@@ -29,9 +30,6 @@ static bleio_characteristic_obj_t supervisor_ble_circuitpython_tx_characteristic
 static bleio_uuid_obj_t supervisor_ble_circuitpython_tx_uuid;
 static bleio_characteristic_obj_t supervisor_ble_circuitpython_version_characteristic;
 static bleio_uuid_obj_t supervisor_ble_circuitpython_version_uuid;
-
-// This is the base UUID for the CircuitPython service.
-const uint8_t circuitpython_base_uuid[16] = {0x6e, 0x68, 0x74, 0x79, 0x50, 0x74, 0x69, 0x75, 0x63, 0x72, 0x69, 0x43, 0x00, 0x00, 0xaf, 0xad };
 
 static mp_obj_list_t characteristic_list;
 static mp_obj_t characteristic_list_items[3];
