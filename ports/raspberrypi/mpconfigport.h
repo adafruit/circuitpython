@@ -8,6 +8,11 @@
 
 #include "hardware/platform_defs.h"
 
+// CIRCUITPY-CHANGE: CircuitPython supports raw sockets through its own lwip
+// integration. Upstream v1.29 added this setting defaulting to MICROPY_PY_LWIP,
+// which is 0 here, so set it before py/mpconfig.h applies that default.
+#define MICROPY_PY_LWIP_SOCK_RAW (1)
+
 #if PICO_RP2040
 #define MICROPY_PY_SYS_PLATFORM             "RP2040"
 #endif
