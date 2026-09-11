@@ -1,6 +1,8 @@
 manifest:
   group-filter:
     - +babblesim
+    # TF-M and friends, no CircuitPython board builds with them.
+    - -tee
   projects:
     - name: nrf_hw_models
       url: https://github.com/tannewt/ext_nRF_hw_models
@@ -10,4 +12,49 @@ manifest:
       url: https://github.com/adafruit/zephyr
       revision: 52dc937c7cda06a1c18ff6adec281bbeb096b3d4
       clone-depth: 100
-      import: true
+      import:
+        # Skip what no CircuitPython board can use, so west update fetches 37
+        # projects instead of 80. Boards come from adafruit, nordic, nxp,
+        # raspberrypi, renesas, silabs and st; the Pico W's CYW43 is in hal_infineon.
+        name-blocklist:
+          # HALs of vendors without a board here
+          - hal_adi
+          - hal_afbr
+          - hal_ambiq
+          - hal_atmel
+          - hal_bouffalolab
+          - hal_espressif
+          - hal_ethos_u
+          - hal_gigadevice
+          - hal_intel
+          - hal_microchip
+          - hal_nuvoton
+          - hal_openisa
+          - hal_quicklogic
+          - hal_realtek
+          - hal_sifli
+          - hal_tdk
+          - hal_telink
+          - hal_ti
+          - hal_wch
+          - hal_wurthelektronik
+          - hal_xtensa
+          # libraries the port never enables
+          - acpica
+          - cmsis-dsp
+          - cmsis-nn
+          - dhara
+          - liblc3
+          - libmctp
+          - libsbc
+          - lora-basics-modem
+          - loramac-node
+          - lvgl
+          - mipi-sys-t
+          - mldsa-native
+          - net-tools
+          - openthread
+          - percepio
+          - uoscore-uedhoc
+          - zcbor
+          - zephyr-xenlib
