@@ -2309,7 +2309,7 @@ msgstr ""
 msgid "function expected at most %d arguments, got %d"
 msgstr ""
 
-#: py/argcheck.c
+#: py/argcheck.c shared-bindings/wifi/Radio.c
 msgid "'%q' argument required"
 msgstr ""
 
@@ -4270,6 +4270,10 @@ msgstr ""
 
 #: shared-bindings/wifi/Radio.c
 msgid "AuthMode.OPEN is not used with password"
+msgstr ""
+
+#: shared-bindings/wifi/Radio.c
+msgid "Supply either %q or %q, not both"
 msgstr ""
 
 #: shared-bindings/wifi/Radio.c

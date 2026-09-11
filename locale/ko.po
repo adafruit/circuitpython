@@ -2350,7 +2350,7 @@ msgstr ""
 msgid "function expected at most %d arguments, got %d"
 msgstr ""
 
-#: py/argcheck.c
+#: py/argcheck.c shared-bindings/wifi/Radio.c
 msgid "'%q' argument required"
 msgstr "'%q' 인수가 필요합니다"
 
@@ -4333,6 +4333,10 @@ msgstr "잘못된 MAC 주소"
 #: shared-bindings/wifi/Radio.c
 msgid "AuthMode.OPEN is not used with password"
 msgstr "AuthMode.OPEN은 암호와 함께 사용되지 않습니다"
+
+#: shared-bindings/wifi/Radio.c
+msgid "Supply either %q or %q, not both"
+msgstr ""
 
 #: shared-bindings/wifi/Radio.c
 msgid "Invalid BSSID"

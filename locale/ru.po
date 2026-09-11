@@ -2339,7 +2339,7 @@ msgstr "Функция отсутствует %d обязательные поз
 msgid "function expected at most %d arguments, got %d"
 msgstr "функция, ожидаемая в большинстве %d аргументов, получила %d"
 
-#: py/argcheck.c
+#: py/argcheck.c shared-bindings/wifi/Radio.c
 msgid "'%q' argument required"
 msgstr "Требуется аргумент '%q'"
 
@@ -4349,6 +4349,10 @@ msgstr "Неверный MAC-адрес"
 #: shared-bindings/wifi/Radio.c
 msgid "AuthMode.OPEN is not used with password"
 msgstr "Режим авторизации.OPEN не используется с паролем"
+
+#: shared-bindings/wifi/Radio.c
+msgid "Supply either %q or %q, not both"
+msgstr ""
 
 #: shared-bindings/wifi/Radio.c
 msgid "Invalid BSSID"
