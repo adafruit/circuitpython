@@ -2,7 +2,7 @@ CIRCUITPY_BUILD_EXTENSIONS = ["hex"]
 USB_VID=0x239A
 USB_PID=0x8168
 BLOBS=["nrf_wifi"]
-DISABLED_MODULES=["aesio", "adafruit_bus_device", "zlib", "jpegio", "tilepalettemapper", "gifio", "msgpack"]
+DISABLED_MODULES=["aesio", "adafruit_bus_device", "zlib", "jpegio", "tilepalettemapper", "gifio"]
 
 # ulab is on by default. This board has under 3 KB of flash headroom, and
 # ulab costs about 90 KB, so it opts out.
@@ -10,7 +10,3 @@ CIRCUITPY_ULAB = false
 
 # The same 3 KB is why radio.ping() is off here too.
 CIRCUITPY_WIFI_PING = false
-
-# msgpack is off to fit the v1.28.0 MicroPython update, which needs 176 more
-# bytes than the ja translation had left. Revert once #11335 gives slot0 the
-# unused 32 KB storage partition.
