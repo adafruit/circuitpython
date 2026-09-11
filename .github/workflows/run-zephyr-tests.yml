@@ -55,4 +55,4 @@ jobs:
         run: make -j $(nproc) everything
         working-directory: ports/zephyr-cp/tools/bsim
       - name: Run Zephyr tests
-        run: make -C ports/zephyr-cp test TEST_BOARDS="${{ matrix.boards }}" PYTEST_ARGS="${{ matrix.pytest_args }}"
+        run: make -C ports/zephyr-cp -j$(nproc) test TEST_BOARDS="${{ matrix.boards }}" PYTEST_ARGS="${{ matrix.pytest_args }}"
