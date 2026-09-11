@@ -168,7 +168,7 @@ static int parse_compile_execute(const void *source, mp_parse_input_kind_t input
             }
         }
         mp_hal_set_interrupt_char(-1); // disable interrupt
-        mp_handle_pending(true); // handle any pending exceptions (and any callbacks)
+        mp_handle_pending(MP_HANDLE_PENDING_CALLBACKS_AND_EXCEPTIONS); // handle any pending exceptions (and any callbacks)
         nlr_pop();
         ret = PYEXEC_NORMAL_EXIT;
         if (exec_flags & EXEC_FLAG_PRINT_EOF) {
@@ -177,7 +177,7 @@ static int parse_compile_execute(const void *source, mp_parse_input_kind_t input
     } else {
         // uncaught exception
         mp_hal_set_interrupt_char(-1); // disable interrupt
-        mp_handle_pending(false); // clear any pending exceptions (and run any callbacks)
+        mp_handle_pending(MP_HANDLE_PENDING_CALLBACKS_AND_CLEAR_EXCEPTIONS); // clear any pending exceptions (and run any callbacks)
 
         if (exec_flags & EXEC_FLAG_SOURCE_IS_READER) {
             const mp_reader_t *reader = source;
@@ -740,7 +740,7 @@ friendly_repl_reset:
             ret = readline(&line, mp_repl_get_ps1());
         } else {
             // Uncaught exception
-            mp_handle_pending(false); // clear any pending exceptions (and run any callbacks)
+            mp_handle_pending(MP_HANDLE_PENDING_CALLBACKS_AND_CLEAR_EXCEPTIONS); // clear any pending exceptions (and run any callbacks)
 
             // Print exceptions but stay in the REPL. There are very few delayed
             // exceptions. The WatchDogTimer can raise one though.

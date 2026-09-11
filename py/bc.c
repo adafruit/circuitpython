@@ -104,7 +104,7 @@ static MP_NORETURN void fun_pos_args_mismatch(mp_obj_fun_bc_t *f, size_t expecte
     // CIRCUITPY-CHANGE: more specific mp_raise routine
     mp_raise_TypeError_varg(
         MP_ERROR_TEXT("%q() takes %d positional arguments but %d were given"),
-        mp_obj_fun_get_name(MP_OBJ_FROM_PTR(f)), expected, given);
+        mp_obj_fun_bc_get_name(f), expected, given);
     #endif
 }
 

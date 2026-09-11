@@ -68,3 +68,7 @@ Q(utf-8)
 #if MICROPY_MODULE_FROZEN
 Q(.frozen)
 #endif
+
+#if MICROPY_PY_TSTRINGS
+Q(string.templatelib)
+#endif

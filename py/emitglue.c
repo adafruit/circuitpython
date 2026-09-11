@@ -113,10 +113,7 @@ void mp_emit_glue_assign_native(mp_raw_code_t *rc, mp_raw_code_kind_t kind, cons
     // Some architectures require flushing/invalidation of the I/D caches,
     // so that the generated native code which was created in data RAM will
     // be available for execution from instruction RAM.
-    // CIRCUITPY-CHANGE: MP_NATIVE_ARCH_* are enum values, always 0 to the
-    // preprocessor, and MPY_FEATURE_ARCH is not defined here; test the
-    // compiler target instead.
-    #if MICROPY_EMIT_THUMB || MICROPY_EMIT_INLINE_THUMB || (MICROPY_PERSISTENT_CODE_LOAD_NATIVE && (defined(__thumb__) || defined(__thumb2__)))
+    #if defined(__thumb__) || defined(__thumb2__)
     // CIRCUITPY-CHANGE: prevent warning
     #if defined(__ICACHE_PRESENT) && __ICACHE_PRESENT == 1
     // Flush D-cache, so the code emitted is stored in RAM.
@@ -124,10 +121,10 @@ void mp_emit_glue_assign_native(mp_raw_code_t *rc, mp_raw_code_kind_t kind, cons
     // Invalidate I-cache, so the newly-created code is reloaded from RAM.
     SCB_InvalidateICache();
     #endif
-    #elif MICROPY_EMIT_ARM || (MICROPY_PERSISTENT_CODE_LOAD_NATIVE && defined(__arm__) && !defined(__thumb__))
+    #elif defined(__arm__)
     #if (defined(__linux__) && defined(__GNUC__)) || __ARM_ARCH == 7
     __builtin___clear_cache((void *)fun_data, (char *)fun_data + fun_len);
-    #elif defined(__arm__)
+    #else
     // Flush I-cache and D-cache.
     asm volatile (
         "0:"
@@ -137,7 +134,7 @@ void mp_emit_glue_assign_native(mp_raw_code_t *rc, mp_raw_code_kind_t kind, cons
         "mcr p15, 0, r0, c7, c7, 0\n" // invalidate I-cache and D-cache
         : : : "r0", "cc");
     #endif
-    #elif (MICROPY_EMIT_RV32 || MICROPY_EMIT_INLINE_RV32 || (MICROPY_PERSISTENT_CODE_LOAD_NATIVE && defined(__riscv))) && defined(MP_HAL_CLEAN_DCACHE)
+    #elif defined(__riscv) && defined(MP_HAL_CLEAN_DCACHE)
     // Flush the D-cache.
     MP_HAL_CLEAN_DCACHE(fun_data, fun_len);
     #endif
@@ -196,7 +193,7 @@ mp_obj_t mp_make_function_from_proto_fun(mp_proto_fun_t proto_fun, const mp_modu
     // def_kw_args must be MP_OBJ_NULL or a dict
     assert(def_args == NULL || def_args[1] == MP_OBJ_NULL || mp_obj_is_type(def_args[1], &mp_type_dict));
 
-    #if MICROPY_MODULE_FROZEN_MPY
+    #if MICROPY_MODULE_FROZEN_MPY || MICROPY_PY_FUNCTION_ATTRS_CODE
     if (mp_proto_fun_is_bytecode(proto_fun)) {
         const uint8_t *bc = proto_fun;
         mp_obj_t fun = mp_obj_new_fun_bc(def_args, bc, context, NULL);

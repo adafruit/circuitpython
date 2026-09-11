@@ -192,7 +192,7 @@ MP_DEFINE_CONST_OBJ_TYPE(
 static void gen_instance_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     (void)kind;
     mp_obj_gen_instance_t *self = MP_OBJ_TO_PTR(self_in);
-    mp_printf(print, "<generator object '%q' at %p>", mp_obj_fun_get_name(MP_OBJ_FROM_PTR(self->code_state.fun_bc)), self);
+    mp_printf(print, "<generator object '%q' at %p>", mp_obj_fun_bc_get_name(self->code_state.fun_bc), self);
 }
 
 // CIRCUITPY-CHANGE
@@ -200,7 +200,7 @@ static void gen_instance_print(const mp_print_t *print, mp_obj_t self_in, mp_pri
 static void coro_instance_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     (void)kind;
     mp_obj_gen_instance_t *self = MP_OBJ_TO_PTR(self_in);
-    mp_printf(print, "<coroutine object '%q' at %p>", mp_obj_fun_get_name(MP_OBJ_FROM_PTR(self->code_state.fun_bc)), self);
+    mp_printf(print, "<coroutine object '%q' at %p>", mp_obj_fun_bc_get_name(self->code_state.fun_bc), self);
 }
 #endif
 
