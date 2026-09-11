@@ -197,6 +197,7 @@ exclude_patterns = [
     "docs/README.md",
     "AGENTS.md",
     "**/AGENTS.md",
+    "docs/library/weakref.rst",
 ]
 
 # The reST default role (used for this markup: `text`) to use for all

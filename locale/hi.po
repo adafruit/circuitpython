@@ -1043,9 +1043,9 @@ msgstr ""
 #: ports/cxd56/common-hal/sdioio/SDCard.c
 #: ports/espressif/common-hal/sdioio/SDCard.c
 #: ports/raspberrypi/common-hal/sdioio/SDCard.c
-#: ports/stm/common-hal/sdioio/SDCard.c shared-bindings/emmcio/EMMC.c
-#: shared-bindings/floppyio/__init__.c shared-bindings/picogame/Canvas.c
-#: shared-module/sdcardio/SDCard.c
+#: ports/stm/common-hal/sdioio/SDCard.c shared-bindings/audiocore/WaveFile.c
+#: shared-bindings/emmcio/EMMC.c shared-bindings/floppyio/__init__.c
+#: shared-bindings/picogame/Canvas.c shared-module/sdcardio/SDCard.c
 #, c-format
 msgid "Buffer must be a multiple of %d bytes"
 msgstr ""
@@ -1799,15 +1799,15 @@ msgid "Cannot get temperature"
 msgstr ""
 
 #: ports/nordic/common-hal/watchdog/WatchDogTimer.c
-msgid "WatchDogTimer cannot be deinitialized once mode is set to RESET"
-msgstr ""
-
-#: ports/nordic/common-hal/watchdog/WatchDogTimer.c
 msgid "timeout duration exceeded the maximum supported value"
 msgstr ""
 
 #: ports/nordic/common-hal/watchdog/WatchDogTimer.c
 msgid "%q cannot be changed once mode is set to %q"
+msgstr ""
+
+#: ports/nordic/common-hal/watchdog/WatchDogTimer.c
+msgid "WatchDogTimer cannot be deinitialized once mode is set to RESET"
 msgstr ""
 
 #: ports/nordic/sd_mutex.c
@@ -2309,7 +2309,7 @@ msgstr ""
 msgid "function expected at most %d arguments, got %d"
 msgstr ""
 
-#: py/argcheck.c
+#: py/argcheck.c shared-bindings/wifi/Radio.c
 msgid "'%q' argument required"
 msgstr ""
 
@@ -2912,6 +2912,10 @@ msgstr ""
 msgid "expecting a dict for keyword args"
 msgstr ""
 
+#: py/modweakref.c
+msgid "not a heap object"
+msgstr ""
+
 #: py/nativeglue.c
 msgid "set unsupported"
 msgstr ""
@@ -3317,6 +3321,10 @@ msgstr ""
 msgid "string index out of range"
 msgstr ""
 
+#: py/objtemplate.c
+msgid "expected str or Interpolation"
+msgstr ""
+
 #: py/objtype.c
 msgid "Call super().__init__() before accessing native object."
 msgstr ""
@@ -3437,6 +3445,10 @@ msgstr ""
 
 #: py/persistentcode.c
 msgid "incompatible .mpy arch"
+msgstr ""
+
+#: py/persistentcode.c
+msgid "function must be bytecode"
 msgstr ""
 
 #: py/proto.c shared-bindings/digitalio/DigitalInOutProtocol.c
@@ -4258,6 +4270,10 @@ msgstr ""
 
 #: shared-bindings/wifi/Radio.c
 msgid "AuthMode.OPEN is not used with password"
+msgstr ""
+
+#: shared-bindings/wifi/Radio.c
+msgid "Supply either %q or %q, not both"
 msgstr ""
 
 #: shared-bindings/wifi/Radio.c

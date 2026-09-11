@@ -9,11 +9,6 @@ This module provides support for template strings (t-strings) as defined in
 using the ``t`` prefix and provide access to both the literal string parts and
 interpolated values before they are combined.
 
-**Availability:** template strings require ``MICROPY_PY_TSTRINGS`` to be enabled
-at compile time. They are enabled by default at the full feature level, which
-includes the alif, mimxrt and samd (SAMD51 only) ports, the unix coverage variant
-and the webassembly pyscript variant.
-
 Classes
 -------
 
