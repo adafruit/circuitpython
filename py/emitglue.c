@@ -113,9 +113,6 @@ void mp_emit_glue_assign_native(mp_raw_code_t *rc, mp_raw_code_kind_t kind, cons
     // Some architectures require flushing/invalidation of the I/D caches,
     // so that the generated native code which was created in data RAM will
     // be available for execution from instruction RAM.
-    // CIRCUITPY-CHANGE: cache-flush selection uses compiler defines (upstream d41b8dc52e),
-    // not MICROPY_EMIT_* emitter-enabled macros, so native .mpy loading works even when
-    // the matching on-board emitter is not compiled in.
     #if defined(__thumb__) || defined(__thumb2__)
     // CIRCUITPY-CHANGE: prevent warning
     #if defined(__ICACHE_PRESENT) && __ICACHE_PRESENT == 1
