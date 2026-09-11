@@ -1056,9 +1056,9 @@ msgstr "%q сбой: %d"
 #: ports/cxd56/common-hal/sdioio/SDCard.c
 #: ports/espressif/common-hal/sdioio/SDCard.c
 #: ports/raspberrypi/common-hal/sdioio/SDCard.c
-#: ports/stm/common-hal/sdioio/SDCard.c shared-bindings/emmcio/EMMC.c
-#: shared-bindings/floppyio/__init__.c shared-bindings/picogame/Canvas.c
-#: shared-module/sdcardio/SDCard.c
+#: ports/stm/common-hal/sdioio/SDCard.c shared-bindings/audiocore/WaveFile.c
+#: shared-bindings/emmcio/EMMC.c shared-bindings/floppyio/__init__.c
+#: shared-bindings/picogame/Canvas.c shared-module/sdcardio/SDCard.c
 #, c-format
 msgid "Buffer must be a multiple of %d bytes"
 msgstr "Буфер должен быть кратен %d байт"
@@ -1820,12 +1820,6 @@ msgid "Cannot get temperature"
 msgstr "Невозможно получить температуру"
 
 #: ports/nordic/common-hal/watchdog/WatchDogTimer.c
-msgid "WatchDogTimer cannot be deinitialized once mode is set to RESET"
-msgstr ""
-"Сторожевой таймер не может быть деинициализирован, если установлен режим "
-"RESET"
-
-#: ports/nordic/common-hal/watchdog/WatchDogTimer.c
 msgid "timeout duration exceeded the maximum supported value"
 msgstr ""
 "Продолжительность таймаута превысила максимальное поддерживаемое значение"
@@ -1833,6 +1827,12 @@ msgstr ""
 #: ports/nordic/common-hal/watchdog/WatchDogTimer.c
 msgid "%q cannot be changed once mode is set to %q"
 msgstr "%q не может быть изменен после установки режима на %q"
+
+#: ports/nordic/common-hal/watchdog/WatchDogTimer.c
+msgid "WatchDogTimer cannot be deinitialized once mode is set to RESET"
+msgstr ""
+"Сторожевой таймер не может быть деинициализирован, если установлен режим "
+"RESET"
 
 #: ports/nordic/sd_mutex.c
 #, c-format
@@ -2951,6 +2951,10 @@ msgstr "Упаковка ожидаемых %d товаров для упако�
 msgid "expecting a dict for keyword args"
 msgstr "ожидание определения аргументов ключевых слов"
 
+#: py/modweakref.c
+msgid "not a heap object"
+msgstr ""
+
 #: py/nativeglue.c
 msgid "set unsupported"
 msgstr "Установить не поддерживается"
@@ -3365,6 +3369,10 @@ msgstr "Индексы строк должны быть целыми числа�
 msgid "string index out of range"
 msgstr "индекс строки выходит за пределы диапазона"
 
+#: py/objtemplate.c
+msgid "expected str or Interpolation"
+msgstr ""
+
 #: py/objtype.c
 msgid "Call super().__init__() before accessing native object."
 msgstr "Вызовите super().__init__() перед доступом к собственному объекту."
@@ -3487,6 +3495,10 @@ msgstr "Нативный код в .mpy не поддерживается"
 #: py/persistentcode.c
 msgid "incompatible .mpy arch"
 msgstr "несовместимые .mpy арка"
+
+#: py/persistentcode.c
+msgid "function must be bytecode"
+msgstr ""
 
 #: py/proto.c shared-bindings/digitalio/DigitalInOutProtocol.c
 msgid "'%q' object does not support '%q'"
