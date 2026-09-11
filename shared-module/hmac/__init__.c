@@ -6,6 +6,7 @@
 
 #include <string.h>
 
+#include "mbedtls/constant_time.h"
 #include "shared-module/hmac/__init__.h"
 
 bool hmac_hash_alg_from_name(const char *name, psa_algorithm_t *hash_alg) {
@@ -21,21 +22,21 @@ bool hmac_hash_alg_from_name(const char *name, psa_algorithm_t *hash_alg) {
 
 bool common_hal_hmac_compare_digest(const uint8_t *a, size_t a_len, const uint8_t *b, size_t b_len) {
     // Same shape as CPython's _tscmp: the running time depends only on len(a),
-    // never on where (or whether) the two inputs first differ.
-    const uint8_t *left = a;
+    // never on where (or whether) the two inputs first differ. The byte
+    // comparison itself is mbedtls_ct_memcmp(), which is hardened (volatile
+    // accesses, no early-exit branch) against being optimized into a
+    // variable-time comparison.
     const uint8_t *right = b;
-    uint8_t result = 0;
+    int mismatch = 0;
 
     if (a_len != b_len) {
-        // Compare a against itself so the loop still runs len(a) iterations, then
-        // force a mismatch.
+        // Compare a against itself so the call still does a_len bytes of work,
+        // then force a mismatch.
         right = a;
-        result = 1;
+        mismatch = 1;
     }
 
-    for (size_t i = 0; i < a_len; i++) {
-        result |= left[i] ^ right[i];
-    }
+    mismatch |= mbedtls_ct_memcmp(a, right, a_len);
 
-    return result == 0;
+    return mismatch == 0;
 }
