@@ -393,6 +393,9 @@ endif
 ifeq ($(CIRCUITPY_SDIOIO),1)
 SRC_PATTERNS += sdioio/%
 endif
+ifeq ($(CIRCUITPY_SECUREKEY),1)
+SRC_PATTERNS += securekey/%
+endif
 ifeq ($(CIRCUITPY_SHARPDISPLAY),1)
 SRC_PATTERNS += sharpdisplay/%
 endif
@@ -598,6 +601,8 @@ SRC_COMMON_HAL_ALL = \
 	rtc/__init__.c \
 	sdioio/SDCard.c \
 	sdioio/__init__.c \
+	securekey/HardwareKey.c \
+	securekey/__init__.c \
 	socketpool/__init__.c \
 	socketpool/SocketPool.c \
 	socketpool/Socket.c \
@@ -840,6 +845,7 @@ SRC_SHARED_MODULE_ALL = \
 	rotaryio/IncrementalEncoder.c \
 	sdcardio/SDCard.c \
 	sdcardio/__init__.c \
+	securekey/HardwareKey.c \
 	sharpdisplay/SharpMemoryFramebuffer.c \
 	sharpdisplay/__init__.c \
 	socket/__init__.c \
