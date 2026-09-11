@@ -22,6 +22,7 @@
 
 #if defined(CONFIG_ARCH_POSIX)
 #include <limits.h>
+#include <stdio.h>
 #include <fcntl.h>
 
 #include "cmdline.h"
@@ -280,7 +281,39 @@ uint32_t *port_stack_get_limit(void) {
 uint32_t *port_stack_get_top(void) {
     _thread_stack_info_t stack_info = k_current_get()->stack_info;
 
-    return (uint32_t *)(stack_info.start + stack_info.size - stack_info.delta);
+    uint32_t *top = (uint32_t *)(stack_info.start + stack_info.size - stack_info.delta);
+    #if defined(CONFIG_ARCH_POSIX)
+    // On hosted builds the thread stack is a pthread stack. pthread_getattr_np(),
+    // which the POSIX arch uses to fix up stack_info, can report a size larger
+    // than the real mapping (ASan intercepts it and inflates the size). The GC
+    // scans up to the returned top, so clamp it to the end of the mapping that
+    // contains the current stack pointer.
+    //
+    // Only ever clamp *downwards*: /proc/self/maps merges adjacent anonymous
+    // mappings with the same flags, so the line containing our stack pointer
+    // routinely covers several thread stacks at once (e.g. 0xf63c2000-0xf73c4000
+    // for two 8MB stacks). Taking its end as the top made the GC scan megabytes
+    // past this thread's stack, into the neighbouring thread's live stack -- and
+    // segfault whenever the range had an unmapped hole (a guard page, or a stack
+    // that has since been freed).
+    volatile uint32_t stack_probe;
+    uintptr_t sp = (uintptr_t)&stack_probe;
+    FILE *maps = fopen("/proc/self/maps", "r");
+    if (maps != NULL) {
+        char line[256];
+        unsigned long low, high;
+        while (fgets(line, sizeof(line), maps) != NULL) {
+            if (sscanf(line, "%lx-%lx", &low, &high) == 2 && low <= sp && sp < high) {
+                if (high < (uintptr_t)top) {
+                    top = (uint32_t *)high;
+                }
+                break;
+            }
+        }
+        fclose(maps);
+    }
+    #endif
+    return top;
 }
 
 uint64_t port_get_raw_ticks(uint8_t *subticks) {
