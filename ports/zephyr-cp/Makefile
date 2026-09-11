@@ -127,7 +127,7 @@ clean-sim:
 # Every board the test suite uses: native sim (non-asan + asan) and the bsim
 # boards (tests/bsim/conftest.py parametrizes over both). Zephyr samples for
 # bsim tests are built on demand by the zephyr_sample fixture.
-TEST_BOARDS := native_native_sim native_native_sim_asan native_nrf5340bsim native_nrf54lm20bsim
+TEST_BOARDS := native_native_sim native_native_sim_asan native_native_sim_lfs native_nrf5340bsim native_nrf54lm20bsim
 
 # Delegate to a sub-make with BOARD set so the per-board build rule (and its
 # shield args + bsim prep) applies. The targets are phony: the west builds are

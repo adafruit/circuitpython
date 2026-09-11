@@ -434,6 +434,16 @@ async def build_circuitpython():  # noqa: C901
 
     autogen_board_info_fn = mpconfigboard_fn.parent / "autogen_board_info.toml"
 
+    # Filesystem type is a compile-time choice made by the partition layout:
+    # zephyr2cp reports littlefs when the devicetree has a littlefs_partition
+    # node, otherwise the supervisor mounts FAT.
+    filesystem_littlefs = board_info.get("littlefs", False)
+    circuitpython_flags.append(
+        f"-DCIRCUITPY_FILESYSTEM_LITTLEFS={1 if filesystem_littlefs else 0}"
+    )
+    if filesystem_littlefs:
+        circuitpython_flags.append("-DMICROPY_VFS_LFS2=1")
+
     creator_id = mpconfigboard.get("CIRCUITPY_CREATOR_ID", mpconfigboard.get("USB_VID", 0x1209))
     creation_id = mpconfigboard.get("CIRCUITPY_CREATION_ID", mpconfigboard.get("USB_PID", 0x000C))
     circuitpython_flags.append(f"-DCIRCUITPY_CREATOR_ID=0x{creator_id:08x}")
@@ -501,6 +511,16 @@ async def build_circuitpython():  # noqa: C901
         supervisor_source.extend(top.glob("supervisor/shared/web_workflow/*.c"))
 
     usb_ok = board_info.get("usb_device", False)
+    if usb_ok and filesystem_littlefs:
+        # USB MSC can only expose a FAT block image; a littlefs CIRCUITPY has
+        # no MSC-compatible layout and USB MSC of it would corrupt the drive.
+        # Rename the filesystem partition to fatfs_partition in the board's
+        # Adaboot layout dtsi, or remove the USB device from the devicetree.
+        raise SystemExit(
+            f"{board}: littlefs CIRCUITPY filesystem is incompatible with USB. "
+            "Rename the littlefs_partition node to fatfs_partition in the board's "
+            "layout dtsi, or disable the USB device controller in the devicetree."
+        )
     circuitpython_flags.append(f"-DCIRCUITPY_USB_DEVICE={1 if usb_ok else 0}")
 
     if usb_ok:
@@ -670,6 +690,23 @@ async def build_circuitpython():  # noqa: C901
     )
 
     source_files = supervisor_source + hal_source + ["extmod/vfs.c"]
+    if filesystem_littlefs:
+        source_files.extend(
+            (
+                "extmod/vfs_lfs.c",
+                "lib/littlefs/lfs2.c",
+                "lib/littlefs/lfs2_util.c",
+            )
+        )
+        circuitpython_flags.extend(
+            (
+                "-DLFS2_NO_MALLOC",
+                "-DLFS2_NO_DEBUG",
+                "-DLFS2_NO_WARN",
+                "-DLFS2_NO_ERROR",
+                "-DLFS2_NO_ASSERT",
+            )
+        )
     if ulab_enabled:
         source_files.extend(sorted((top / "extmod" / "ulab" / "code").rglob("*.c")))
     assembly_files = []

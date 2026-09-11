@@ -102,8 +102,11 @@ int _zephyr_disk_init(struct disk_info *disk) {
     return 0;
 }
 
+// We don't check whether the filesystem is littlefs below because we know these
+// are APIs used by USB MSC and we enforce it to be FAT at build time.
 int _zephyr_disk_status(struct disk_info *disk) {
-    fs_user_mount_t *root = filesystem_circuitpy();
+    supervisor_vfs_t *root_vfs = filesystem_circuitpy();
+    fs_user_mount_t *root = root_vfs == NULL ? NULL : &root_vfs->fat;
     int lun = 0;
     if (root == NULL) {
         printk("Status: No media\n");
@@ -114,7 +117,7 @@ int _zephyr_disk_status(struct disk_info *disk) {
         return DISK_STATUS_WR_PROTECT;
     }
     // Lock the blockdev once we say we're writable.
-    if (!locked[lun] && !blockdev_lock(root)) {
+    if (!locked[lun] && !blockdev_lock((supervisor_vfs_t *)root)) {
         printk("Status: Locked\n");
         return DISK_STATUS_WR_PROTECT;
     }
@@ -123,7 +126,8 @@ int _zephyr_disk_status(struct disk_info *disk) {
 }
 
 int _zephyr_disk_read(struct disk_info *disk, uint8_t *data_buf, uint32_t start_sector, uint32_t num_sector) {
-    fs_user_mount_t *root = filesystem_circuitpy();
+    supervisor_vfs_t *root_vfs = filesystem_circuitpy();
+    fs_user_mount_t *root = root_vfs == NULL ? NULL : &root_vfs->fat;
 
     uint32_t disk_block_count;
     disk_ioctl(root, GET_SECTOR_COUNT, &disk_block_count);
@@ -136,7 +140,8 @@ int _zephyr_disk_read(struct disk_info *disk, uint8_t *data_buf, uint32_t start_
 }
 
 int _zephyr_disk_write(struct disk_info *disk, const uint8_t *data_buf, uint32_t start_sector, uint32_t num_sector) {
-    fs_user_mount_t *root = filesystem_circuitpy();
+    supervisor_vfs_t *root_vfs = filesystem_circuitpy();
+    fs_user_mount_t *root = root_vfs == NULL ? NULL : &root_vfs->fat;
     int lun = 0;
     autoreload_suspend(AUTORELOAD_SUSPEND_USB);
     disk_write(root, data_buf, start_sector, num_sector);
@@ -169,7 +174,8 @@ int _zephyr_disk_write(struct disk_info *disk, const uint8_t *data_buf, uint32_t
 
 int _zephyr_disk_ioctl(struct disk_info *disk, uint8_t cmd, void *buff) {
 
-    fs_user_mount_t *root = filesystem_circuitpy();
+    supervisor_vfs_t *root_vfs = filesystem_circuitpy();
+    fs_user_mount_t *root = root_vfs == NULL ? NULL : &root_vfs->fat;
     int lun = 0;
     switch (cmd) {
         case DISK_IOCTL_GET_SECTOR_COUNT:

@@ -47,3 +47,6 @@ tomlkit
 pytest
 pytest-rerunfailures
 perfetto
+
+# For littlefs flash image tests on the zephyr port native_simulators
+littlefs-python

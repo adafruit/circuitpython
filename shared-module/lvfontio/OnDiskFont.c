@@ -436,9 +436,11 @@ void common_hal_lvfontio_ondiskfont_construct(lvfontio_ondiskfont_t *self,
 
     // Determine which filesystem to use based on the path
     const char *path_under_mount;
-    fs_user_mount_t *vfs = filesystem_for_path(file_path, &path_under_mount);
+    supervisor_vfs_t *vfs = filesystem_for_path(file_path, &path_under_mount);
 
-    if (vfs == NULL) {
+    if (vfs == NULL || vfs->common.base.type != &mp_fat_vfs_type) {
+        // Not found, or a non-FAT filesystem (littlefs builds) that f_open
+        // can't access.
         if (self->use_gc_allocator) {
             mp_raise_ValueError(MP_ERROR_TEXT("File not found"));
         }
@@ -446,7 +448,7 @@ void common_hal_lvfontio_ondiskfont_construct(lvfontio_ondiskfont_t *self,
     }
 
     // Open the file and keep it open for the lifetime of the object
-    FRESULT res = f_open(&vfs->fatfs, &self->file, path_under_mount, FA_READ);
+    FRESULT res = f_open(&vfs->fat.fatfs, &self->file, path_under_mount, FA_READ);
 
     if (res != FR_OK) {
         if (self->use_gc_allocator) {
