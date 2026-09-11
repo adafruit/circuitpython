@@ -12,6 +12,9 @@ CIRCUITPY_USB_HOST = 0
 
 CIRCUITPY__EVE = 1
 
+CIRCUITPY_PICOGAME = 1
+CIRCUITPY_PICOGAME_FAST_DISPLAY = 1
+
 CIRCUITPY_CYW43 = 1
 CIRCUITPY_SSL = 1
 CIRCUITPY_HASHLIB = 1
@@ -34,3 +37,7 @@ CFLAGS += \
 
 # Must be accompanied by a linker script change
 CFLAGS += -DCIRCUITPY_FIRMWARE_SIZE='(1536 * 1024)'
+
+# The default is -O3. picogame does not fit at -O3; these loop passes keep the render
+# kernels within 1% of it.
+OPTIMIZATION_FLAGS = -O2 -funswitch-loops -fpredictive-commoning -fgcse-after-reload -ftree-partial-pre -fsplit-paths
