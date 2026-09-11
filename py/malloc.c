@@ -344,7 +344,8 @@ void *m_tracked_realloc(void *ptr_in, size_t n_bytes) {
     // This could be optimised if faster performance or lower worst-case memory usage is required.
 
     // Get old size
-    m_tracked_node_t *old_node = (m_tracked_node_t *)((uint8_t *)ptr_in - sizeof(m_tracked_node_t));
+    // CIRCUITPY-CHANGE: cast to avoid compiler warning
+    m_tracked_node_t *old_node = (m_tracked_node_t *)(void *)((uint8_t *)ptr_in - sizeof(m_tracked_node_t));
     size_t old_size = get_tracked_node_size(old_node);
 
     // Allocate new buffer
