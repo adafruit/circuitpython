@@ -22,10 +22,10 @@ jobs:
             pytest_args: tests/ --ignore=tests/bsim
           - shard: nrf5340bsim
             boards: native_nrf5340bsim
-            pytest_args: tests/bsim -k native_nrf5340bsim
+            pytest_args: tests/bsim -k native_nrf5340bsim -n 2 --dist loadfile
           - shard: nrf54lm20bsim
             boards: native_nrf54lm20bsim
-            pytest_args: tests/bsim -k native_nrf54lm20bsim
+            pytest_args: tests/bsim -k native_nrf54lm20bsim -n 2 --dist loadfile
     env:
       CP_VERSION: ${{ inputs.cp-version }}
     steps:
@@ -50,6 +50,9 @@ jobs:
           target: zephyr-cp
       - name: Set up external
         uses: ./.github/actions/deps/external
+      - name: Install pytest-xdist
+        if: contains(matrix.shard, 'bsim')
+        run: pip install pytest-xdist
       - name: Build bsim
         if: contains(matrix.shard, 'bsim')
         run: make -j $(nproc) everything
