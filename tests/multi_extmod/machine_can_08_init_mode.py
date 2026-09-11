@@ -72,7 +72,7 @@ def instance0():
         print("silent_rx_count True")
     else:
         print("silent_rx_count", silent_rx_count > 5)
-    # Cancel the sent message only if it was accpeted for sending.
+    # Cancel the sent message only if it was accepted for sending.
     if idx is not None:
         can.cancel_send(idx)
 

@@ -51,4 +51,8 @@ Full Table of Contents
    ../WEBUSB_README
 
 Indices and tables
-===========
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
