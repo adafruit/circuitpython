@@ -67,7 +67,6 @@ static mp_obj_t socketpool_ip_addr_and_port_to_tuple(const ip_addr_t *addr, int 
     return mp_obj_new_tuple(n, args);
 }
 
-
 #if 0 // print debugging info
 #define DEBUG_printf DEBUG_printf
 #else // don't print debugging info

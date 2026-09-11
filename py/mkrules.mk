@@ -40,11 +40,9 @@ endif
 endif
 
 # Add default C++ compiler flags based on CFLAGS. For use with C++ user modules.
-# CIRCUITPY-CHANGE: CircuitPython compiles with -std=gnu11 and enables several
-# C-only warnings that g++ rejects outright, some in py/circuitpy_defns.mk and
-# -Werror=missing-prototypes in each port's Makefile. With -Werror those are
-# fatal, so strip them here as well as upstream's set.
-CXXFLAGS += $(filter-out -Wmissing-prototypes -Wold-style-definition -std=gnu99 -std=c99 -std=c11 -std=gnu11 -Wstrict-prototypes -Werror-implicit-function-declaration -Wnested-externs -Werror=missing-prototypes,$(CFLAGS) $(CXXFLAGS_MOD))
+# CIRCUITPY-CHANGE: CircuitPython enables C-only warnings that g++ rejects, in
+# py/circuitpy_defns.mk and in the port Makefiles, so strip those too.
+CXXFLAGS += $(filter-out -std=c11 -std=c99 -std=gnu11 -std=gnu99 -Werror-implicit-function-declaration -Werror=missing-prototypes -Werror=old-style-definition -Wmissing-prototypes -Wnested-externs -Wold-style-definition -Wstrict-prototypes,$(CFLAGS) $(CXXFLAGS_MOD))
 
 # Add LDFLAGS to link libstdc++ on bare metal ports. Added only if a port has
 # -nostdlib in LDFLAGS and C++ source files are provided.

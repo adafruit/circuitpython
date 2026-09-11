@@ -309,9 +309,7 @@ char *mp_obj_int_formatted(char **buf, size_t *buf_size, size_t *fmt_size, mp_co
     return b;
 }
 
-// CIRCUITPY-CHANGE: upstream keeps this static in py/objint_impl.h, whose
-// header comment says such a helper belongs here once a second file needs it.
-// CircuitPython calls it from py/binary.c as well.
+// CIRCUITPY-CHANGE: also called from py/binary.c, so not static here.
 void mp_small_int_buffer_overflow_check(mp_int_t val, size_t nbytes, bool is_signed) {
     mp_obj_small_int_buffer_overflow_check(val, nbytes, is_signed);
 }
