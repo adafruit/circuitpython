@@ -21,6 +21,7 @@ ifeq ($(MCU_VARIANT),STM32F407xx)
 endif
 
 ifeq ($(MCU_SERIES),F4)
+        CIRCUITPY_LOAD_NATIVE ?= 1
         # Audio via PWM (F405/F407 also supports DAC-based audioio; set above)
         CIRCUITPY_AUDIOIO ?= 0
         CIRCUITPY_AUDIOCORE ?= 1
