@@ -28,6 +28,14 @@ class StdSerial:
             self.stdin.close()
         self.stdout.close()
 
+    def read_some(self, limit=65536):
+        # read1() hands back whatever is already buffered and does at most one
+        # read on the pipe, so it blocks only when nothing has arrived yet.
+        data = self.stdout.read1(limit)
+        if data == b"":
+            raise EOFError("stdout closed")
+        return data
+
     @property
     def in_waiting(self):
         if self.stdout is None:
@@ -47,13 +55,22 @@ class SerialSaver:
         self._stop = threading.Event()
         self._lock = threading.Lock()
         self._cv = threading.Condition(self._lock)
+        self._read_some = getattr(serial_obj, "read_some", None)
         self._reader = threading.Thread(target=self._reader_loop, daemon=True)
         self._reader.start()
 
     def _reader_loop(self):
         while not self._stop.is_set():
             try:
-                read = self.serial.read(1)
+                if self._read_some is not None:
+                    read = self._read_some()
+                else:
+                    read = self.serial.read(1)
+                    # in_waiting is a non-blocking check on a real serial port,
+                    # so draining it here is free.
+                    waiting = self.serial.in_waiting
+                    if waiting:
+                        read += self.serial.read(waiting)
             except Exception:
                 # Serial port closed or device disconnected.
                 break
