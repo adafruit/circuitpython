@@ -51,8 +51,12 @@ static void usb_device_task(void *param) {
     while (1) {
         // tinyusb device task
         if (tusb_inited()) {
-            tud_task();
+            // Time out so console input left in the fifo while the ringbuf was full is moved in.
+            tud_task_ext(10, false);
             tud_cdc_write_flush();
+            #if CIRCUITPY_USB_CDC
+            usb_cdc_rx_drain();
+            #endif
         }
         // Yield with zero delay to switch to any other tasks at same priority.
         port_task_yield();

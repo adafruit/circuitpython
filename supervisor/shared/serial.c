@@ -328,7 +328,14 @@ char serial_read(void) {
     }
     #endif
     #if CIRCUITPY_TINYUSB && CIRCUITPY_USB_DEVICE
+    #if CIRCUITPY_USB_CDC && CFG_TUSB_OS == OPT_OS_FREERTOS
+    uint8_t c;
+    if (usb_cdc_rx_read(&c, 1) == 1) {
+        return c;
+    }
+    #else
     return (char)tud_cdc_read_char();
+    #endif
     #endif
 
     return -1;
@@ -362,7 +369,11 @@ uint32_t serial_bytes_available(void) {
 
     #if CIRCUITPY_TINYUSB && CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_CDC
     if (usb_cdc_console_enabled()) {
+        #if CFG_TUSB_OS == OPT_OS_FREERTOS
+        count += usb_cdc_rx_available();
+        #else
         count += tud_cdc_available();
+        #endif
     }
     #endif
 
