@@ -200,6 +200,7 @@ static uint8_t _cdc_rx_buf[CDC_RX_RING_SIZE];
 static volatile uint16_t _cdc_rx_head;   // written by the producer only
 static volatile uint16_t _cdc_rx_tail;   // written by the consumer only
 static volatile bool _cdc_rx_pending;    // fifo still holds bytes the ring could not take
+static volatile bool _cdc_rx_flush;      // set on Ctrl-C by the producer, applied by the consumer
 
 static inline uint16_t _cdc_rx_count(void) {
     return (uint16_t)(_cdc_rx_head - _cdc_rx_tail);
@@ -227,7 +228,16 @@ void usb_cdc_rx_background(void) {
     }
 }
 
+// Called by the consumer only, so the tail keeps a single writer.
+static inline void _cdc_rx_apply_flush(void) {
+    if (_cdc_rx_flush) {
+        _cdc_rx_flush = false;
+        _cdc_rx_tail = _cdc_rx_head;
+    }
+}
+
 int usb_cdc_rx_get(void) {
+    _cdc_rx_apply_flush();
     if (_cdc_rx_count() == 0) {
         return -1;
     }
@@ -237,11 +247,12 @@ int usb_cdc_rx_get(void) {
 }
 
 size_t usb_cdc_rx_available(void) {
+    _cdc_rx_apply_flush();
     return _cdc_rx_count();
 }
 
 void usb_cdc_rx_clear(void) {
-    _cdc_rx_tail = _cdc_rx_head;
+    _cdc_rx_flush = true;
 }
 
 void tud_cdc_rx_cb(uint8_t itf) {
