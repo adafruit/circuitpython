@@ -1,0 +1,57 @@
+&trng {
+	status = "okay";
+};
+
+// MAX32690's internal flash has no partition table by default and no
+// external flash chip is wired up on this board
+// PARTITIONS
+// - Code
+// - Zephyr settings storage (needed by CONFIG_SETTINGS/CONFIG_BT_SETTINGS),
+// - CIRCUITPY filesystem (supervisor/flash.c looks for a partition labeled
+// `circuitpy_partition`)
+&flash0 {
+	partitions {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		code_partition: partition@0 {
+			compatible = "zephyr,mapped-partition";
+			label = "image";
+			reg = <0x0 (DT_SIZE_M(1) + DT_SIZE_K(512))>;
+		};
+
+		circuitpy_partition: partition@190000 {
+			compatible = "zephyr,mapped-partition";
+			label = "circuitpy";
+			reg = <0x190000 (DT_SIZE_M(3) - DT_SIZE_M(1) - DT_SIZE_K(512) - DT_SIZE_K(64))>;
+		};
+	};
+};
+
+/ {
+	soc {
+		// MAX32690's 1 MiB SRAM is split into 8 by default
+		// Use one combined node spanning the whole SRAM
+		m4_sram: memory@20000000 {
+			compatible = "mmio-sram";
+			reg = <0x20000000 DT_SIZE_M(1)>;
+		};
+	};
+
+	chosen {
+		zephyr,sram = &m4_sram;
+		zephyr,code-partition = &code_partition;
+	};
+
+	// RAM disk, enabled via CONFIG_DISK_DRIVER_RAM in board.conf
+	// For use if flash wear is not desired when testing
+	ramdisk0: ramdisk0 {
+		compatible = "zephyr,ram-disk";
+		disk-name = "RAM";
+		sector-size = <512>;
+		sector-count = <128>;
+	};
+};
+
+#include "../../../app.overlay"
