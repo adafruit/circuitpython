@@ -632,6 +632,17 @@ async def build_circuitpython():  # noqa: C901
             logger.warning(
                 f"autogen_board_info.toml is missing or out of date. Please run `make BOARD={board}` locally and commit {autogen_board_info_fn}."
             )
+            # Also as an annotation, so it shows on the run and next to the file in the
+            # pull request rather than in one board log out of 29. The board builds once
+            # per language, so only the first build of it says anything.
+            reported = builddir / "autogen_board_info.reported"
+            if not reported.exists():
+                reported.touch()
+                print(
+                    f"::warning file={autogen_board_info_fn.relative_to(srcdir)}::"
+                    f"out of date, run `make BOARD={board}` and commit it",
+                    flush=True,
+                )
     autogen_modules.add(tomlkit.comment("extmod modules shared with MicroPython"))
     for extmod_module in EXTMOD_MODULES:
         enabled = extmod_module in enabled_modules

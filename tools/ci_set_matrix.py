@@ -28,6 +28,7 @@ import sys
 import json
 import pathlib
 import subprocess
+import tomllib
 from concurrent.futures import ThreadPoolExecutor
 
 tools_dir = pathlib.Path(__file__).resolve().parent
@@ -75,6 +76,35 @@ GITHUB_MATRIX_LIMIT = 256
 # change confined to these cannot reach them: another port, a translation, a frozen library
 # (this port has none), documentation or the unix test suite.
 PATTERN_ZEPHYR_TESTS_IGNORE = re.compile(r"^(?:docs|frozen|locale|tests)/|^ports/(?!zephyr-cp/)")
+
+# Zephyr boards don't use make, so their module tables can't be computed here. Each
+# board's build writes autogen_board_info.toml next to its circuitpython.toml and that
+# file is committed; a board whose table is missing, unreadable or doesn't name a
+# module is built.
+ZEPHYR_BOARDS = tools_dir.parent / "ports" / "zephyr-cp" / "boards"
+zephyr_modules = None
+
+
+def load_zephyr_modules():
+    modules = {}
+    for board_info in ZEPHYR_BOARDS.glob("*/*/autogen_board_info.toml"):
+        board = f"{board_info.parent.parent.name}_{board_info.parent.name}"
+        try:
+            with board_info.open("rb") as f:
+                modules[board] = tomllib.load(f)["modules"]
+        except Exception as e:  # noqa: BLE001 -- whatever went wrong, the board gets built
+            print(f"  {board}: unusable module table ({e})")
+    return modules
+
+
+def zephyr_board_has_module(board, module):
+    """What the board's committed module table says. An unknown board or module counts
+    as yes, so the board gets built."""
+    global zephyr_modules
+    if zephyr_modules is None:
+        zephyr_modules = load_zephyr_modules()
+    return board not in zephyr_modules or zephyr_modules[board].get(module, True)
+
 
 PATTERN_WINDOWS = {
     ".github/",
@@ -210,9 +240,16 @@ def set_boards(build_all: bool):
                 # the logic to build all boards breaks.
                 boards = set(port_to_board[port] if port else all_board_ids)
 
-                # Zephyr boards don't use make, so build them and don't compute their settings.
-                for board in port_to_board["zephyr-cp"]:
-                    if board in boards:
+                # Zephyr boards don't use make, so decide them here from their committed
+                # module table and leave them out of the settings computation below.
+                module = module_matches.group(2) if module_matches else None
+                for board in list(boards):  # a copy, boards shrinks below
+                    if board_to_port[board] != "zephyr-cp":
+                        continue
+                    boards.remove(board)
+                    if file.startswith("frozen"):
+                        continue  # the port has no frozen modules
+                    if module is None or zephyr_board_has_module(board, module):
                         boards_to_build.add(board)
 
                 for board in boards_to_build:
