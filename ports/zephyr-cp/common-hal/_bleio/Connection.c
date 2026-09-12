@@ -577,6 +577,21 @@ bool common_hal_bleio_connection_get_paired(bleio_connection_obj_t *self) {
     return self->connection->pair_status == PAIR_PAIRED;
 }
 
+// Authenticated (MITM-protected) pairing - numeric comparison - is implemented on the
+// espressif port only. This port can't tell a "Just Works" bond from an authenticated
+// one, so report the conservative answer rather than a guarantee it can't make.
+bool common_hal_bleio_connection_get_authenticated(bleio_connection_obj_t *self) {
+    return false;
+}
+
+mp_obj_t common_hal_bleio_connection_get_numeric_comparison(bleio_connection_obj_t *self) {
+    return mp_const_none;
+}
+
+void common_hal_bleio_connection_confirm_pairing(bleio_connection_obj_t *self, bool accept) {
+    mp_raise_NotImplementedError(NULL);
+}
+
 mp_obj_tuple_t *common_hal_bleio_connection_discover_remote_services(bleio_connection_obj_t *self, mp_obj_t service_uuids_whitelist) {
     bleio_connection_internal_t *connection = self->connection;
     if (connection == NULL || connection->conn == NULL) {

@@ -323,6 +323,18 @@ bool common_hal_bleio_connection_get_connected(bleio_connection_obj_t *self) {
     return self->connection->conn_handle != BLE_CONN_HANDLE_INVALID;
 }
 
+bool common_hal_bleio_connection_get_authenticated(bleio_connection_obj_t *self) {
+    return false;
+}
+
+mp_obj_t common_hal_bleio_connection_get_numeric_comparison(bleio_connection_obj_t *self) {
+    return mp_const_none;
+}
+
+void common_hal_bleio_connection_confirm_pairing(bleio_connection_obj_t *self, bool accept) {
+    mp_raise_NotImplementedError(NULL);
+}
+
 void common_hal_bleio_connection_disconnect(bleio_connection_internal_t *self) {
     hci_disconnect(self->conn_handle);
 }

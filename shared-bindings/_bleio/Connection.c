@@ -165,6 +165,78 @@ MP_PROPERTY_GETTER(bleio_connection_paired_obj,
     (mp_obj_t)&bleio_connection_get_paired_obj);
 
 
+//|     authenticated: bool
+//|     """True if the link is encrypted *and* authenticated against
+//|     man-in-the-middle attacks - i.e. LE Secure Connections numeric comparison (or
+//|     passkey entry) completed. A plain encrypted-but-unauthenticated ("Just Works")
+//|     link reads ``False``.
+//|
+//|     Ports that don't implement authenticated pairing always report ``False``,
+//|     even for a bonded link."""
+static mp_obj_t bleio_connection_get_authenticated(mp_obj_t self_in) {
+    bleio_connection_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+    return mp_obj_new_bool(common_hal_bleio_connection_get_authenticated(self));
+}
+static MP_DEFINE_CONST_FUN_OBJ_1(bleio_connection_get_authenticated_obj, bleio_connection_get_authenticated);
+
+MP_PROPERTY_GETTER(bleio_connection_authenticated_obj,
+    (mp_obj_t)&bleio_connection_get_authenticated_obj);
+
+
+//|     numeric_comparison: Optional[int]
+//|     """When the peer has started LE Secure Connections pairing and is waiting for the
+//|     user to confirm a 6-digit numeric-comparison value, this is that value (an ``int``,
+//|     0-999999); otherwise ``None``. Poll it, show the value to the user, then answer
+//|     with `confirm_pairing`. This is the peripheral side of pairing: the peer drives
+//|     the procedure, so unlike `pair` this never blocks.
+//|
+//|     Numeric comparison happens automatically when a central pairs to reach a
+//|     characteristic whose ``read_perm`` / ``write_perm`` is
+//|     `Attribute.LESC_ENCRYPT_WITH_MITM`. A peripheral with a display and a button
+//|     services it roughly like this::
+//|
+//|        while connection.connected:
+//|            code = connection.numeric_comparison
+//|            if code is not None:
+//|                display.show(f"Pair? {code:06d}")
+//|                connection.confirm_pairing(accept=button_a.value)
+//|            if connection.authenticated:
+//|                break
+//|            time.sleep(0.1)
+//|
+//|     Only implemented on the espressif port."""
+static mp_obj_t bleio_connection_get_numeric_comparison(mp_obj_t self_in) {
+    bleio_connection_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+    return common_hal_bleio_connection_get_numeric_comparison(self);
+}
+static MP_DEFINE_CONST_FUN_OBJ_1(bleio_connection_get_numeric_comparison_obj, bleio_connection_get_numeric_comparison);
+
+MP_PROPERTY_GETTER(bleio_connection_numeric_comparison_obj,
+    (mp_obj_t)&bleio_connection_get_numeric_comparison_obj);
+
+
+//|     def confirm_pairing(self, accept: bool) -> None:
+//|         """Answer a pending numeric-comparison pairing request (see
+//|         `numeric_comparison`). Pass ``accept=True`` if the value shown on the
+//|         peer matches the one shown here, ``accept=False`` to reject and abort pairing.
+//|
+//|         :raises ConnectionError: if the connection has dropped.
+//|         :raises _bleio.BluetoothError: if no numeric-comparison request is pending -
+//|             nothing was offered on `numeric_comparison`, or it already expired
+//|             because the peer disconnected or the pairing procedure timed out."""
+//|         ...
+//|
+static mp_obj_t bleio_connection_confirm_pairing(mp_obj_t self_in, mp_obj_t accept_in) {
+    bleio_connection_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+    common_hal_bleio_connection_confirm_pairing(self, mp_obj_is_true(accept_in));
+    return mp_const_none;
+}
+static MP_DEFINE_CONST_FUN_OBJ_2(bleio_connection_confirm_pairing_obj, bleio_connection_confirm_pairing);
+
+
 //|     connection_interval: float
 //|     """Time between transmissions in milliseconds. Will be multiple of 1.25ms. Lower numbers
 //|     increase speed and decrease latency but increase power consumption.
@@ -223,12 +295,15 @@ MP_PROPERTY_GETTER(bleio_connection_max_packet_length_obj,
 static const mp_rom_map_elem_t bleio_connection_locals_dict_table[] = {
     // Methods
     { MP_ROM_QSTR(MP_QSTR_pair),                     MP_ROM_PTR(&bleio_connection_pair_obj) },
+    { MP_ROM_QSTR(MP_QSTR_confirm_pairing),          MP_ROM_PTR(&bleio_connection_confirm_pairing_obj) },
     { MP_ROM_QSTR(MP_QSTR_disconnect),               MP_ROM_PTR(&bleio_connection_disconnect_obj) },
     { MP_ROM_QSTR(MP_QSTR_discover_remote_services), MP_ROM_PTR(&bleio_connection_discover_remote_services_obj) },
 
     // Properties
     { MP_ROM_QSTR(MP_QSTR_connected),           MP_ROM_PTR(&bleio_connection_connected_obj) },
     { MP_ROM_QSTR(MP_QSTR_paired),              MP_ROM_PTR(&bleio_connection_paired_obj) },
+    { MP_ROM_QSTR(MP_QSTR_authenticated),       MP_ROM_PTR(&bleio_connection_authenticated_obj) },
+    { MP_ROM_QSTR(MP_QSTR_numeric_comparison), MP_ROM_PTR(&bleio_connection_numeric_comparison_obj) },
     { MP_ROM_QSTR(MP_QSTR_connection_interval), MP_ROM_PTR(&bleio_connection_connection_interval_obj) },
     { MP_ROM_QSTR(MP_QSTR_max_packet_length),   MP_ROM_PTR(&bleio_connection_max_packet_length_obj) },
 };

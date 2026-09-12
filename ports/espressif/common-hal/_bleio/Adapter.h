@@ -44,3 +44,10 @@ typedef struct {
 
 void bleio_adapter_gc_collect(bleio_adapter_obj_t *adapter);
 void bleio_adapter_reset(bleio_adapter_obj_t *adapter);
+
+// Raise the SM pairing configuration so an authenticated (MITM-protected) bond can be
+// formed: advertise DISPLAY_YESNO IO capability and require MITM. Called from
+// Characteristic / Descriptor construction when an attribute is given a *_WITH_MITM
+// permission. A no-op-safe idempotent bump; devices with no such attribute keep the
+// legacy "Just Works" defaults set in common_hal_bleio_adapter_set_enabled().
+void bleio_adapter_enable_mitm_pairing(void);

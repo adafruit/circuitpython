@@ -153,10 +153,6 @@ void common_hal_bleio_characteristic_construct(bleio_characteristic_obj_t *self,
     if ((props & CHAR_PROP_WRITE_NO_RESPONSE) != 0) {
         self->flags |= BLE_GATT_CHR_F_WRITE_NO_RSP;
     }
-    if (read_perm == SECURITY_MODE_ENC_WITH_MITM || write_perm == SECURITY_MODE_ENC_WITH_MITM ||
-        read_perm == SECURITY_MODE_SIGNED_WITH_MITM || write_perm == SECURITY_MODE_SIGNED_WITH_MITM) {
-        mp_raise_NotImplementedError(MP_ERROR_TEXT("MITM security not supported"));
-    }
     // The BLE_GATT_CHR_F_NOTIFY_INDICATE_* flags are set below to require encryption or
     // authentication when writing the auto-generated CCCD, if reading the
     // characteristic requires it. This matches the nordic port behavior.
@@ -164,17 +160,29 @@ void common_hal_bleio_characteristic_construct(bleio_characteristic_obj_t *self,
     // so an unpaired central can subscribe and nothing ever requires it to pair.
     //
     // TODO: This behavior was fixed in NimBLE 1.10.0. ESP-IDF 6.0.1 uses a fork of NimBLE.
+    //
+    // NimBLE's GATT layer has no dedicated "LESC" or "signed" characteristic flag:
+    // ENC_WITH_MITM, LESC_ENC_WITH_MITM and the SIGNED modes all map to the _AUTHEN
+    // flags, i.e. "require a man-in-the-middle-protected link". A *_WITH_MITM permission
+    // additionally makes the adapter offer numeric-comparison pairing (below) so such a
+    // link can actually be established.
     if (read_perm == SECURITY_MODE_ENC_NO_MITM) {
         self->flags |= BLE_GATT_CHR_F_READ_ENC | BLE_GATT_CHR_F_NOTIFY_INDICATE_ENC;
     }
-    if (read_perm == SECURITY_MODE_SIGNED_NO_MITM) {
+    if (read_perm == SECURITY_MODE_ENC_WITH_MITM || read_perm == SECURITY_MODE_LESC_ENC_WITH_MITM ||
+        read_perm == SECURITY_MODE_SIGNED_NO_MITM || read_perm == SECURITY_MODE_SIGNED_WITH_MITM) {
         self->flags |= BLE_GATT_CHR_F_READ_AUTHEN | BLE_GATT_CHR_F_NOTIFY_INDICATE_AUTHEN;
     }
     if (write_perm == SECURITY_MODE_ENC_NO_MITM) {
         self->flags |= BLE_GATT_CHR_F_WRITE_ENC;
     }
-    if (write_perm == SECURITY_MODE_SIGNED_NO_MITM) {
+    if (write_perm == SECURITY_MODE_ENC_WITH_MITM || write_perm == SECURITY_MODE_LESC_ENC_WITH_MITM ||
+        write_perm == SECURITY_MODE_SIGNED_NO_MITM || write_perm == SECURITY_MODE_SIGNED_WITH_MITM) {
         self->flags |= BLE_GATT_CHR_F_WRITE_AUTHEN;
+    }
+    if (bleio_attribute_security_mode_requires_mitm(read_perm) ||
+        bleio_attribute_security_mode_requires_mitm(write_perm)) {
+        bleio_adapter_enable_mitm_pairing();
     }
 
     // If max_length is 0, then no storage is allocated.

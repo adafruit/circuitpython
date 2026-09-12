@@ -34,6 +34,7 @@
 #include "freertos/queue.h"
 
 #include "host/ble_att.h"
+#include "host/ble_sm.h"
 #include "host/ble_store.h"
 
 // Uncomment to turn on debug logging just in this file.
@@ -47,6 +48,7 @@ int bleio_connection_event_cb(struct ble_gap_event *event, void *connection_in) 
         case BLE_GAP_EVENT_DISCONNECT: {
             connection->conn_handle = BLEIO_HANDLE_INVALID;
             connection->pair_status = PAIR_NOT_PAIRED;
+            connection->mitm_protected = false;
 
             #if CIRCUITPY_VERBOSE_BLE
             mp_printf(&mp_plat_print, "event->disconnect.reason: 0x%x\n", event->disconnect.reason);
@@ -79,6 +81,34 @@ int bleio_connection_event_cb(struct ble_gap_event *event, void *connection_in) 
             ble_gap_conn_find(event->enc_change.conn_handle, &desc);
             if (desc.sec_state.encrypted) {
                 connection->pair_status = PAIR_PAIRED;
+            } else if (connection->pair_status == PAIR_WAITING_NUMCMP) {
+                // Numeric comparison was rejected, or SM otherwise failed.
+                connection->pair_status = PAIR_NOT_PAIRED;
+            }
+            // .authenticated is set once the MITM leg (numeric comparison / passkey entry)
+            // completes; a plain "Just Works" bond leaves it clear. Surfaced as
+            // Connection.authenticated.
+            connection->mitm_protected = desc.sec_state.authenticated;
+            break;
+        }
+        case BLE_GAP_EVENT_PASSKEY_ACTION: {
+            // The peer started MITM pairing. An attribute was constructed with a
+            // *_WITH_MITM permission, which made the adapter advertise DISPLAY_YESNO IO
+            // capability (bleio_adapter_enable_mitm_pairing()), so NimBLE asks us to
+            // confirm a 6-digit numeric-comparison value. Stash it and enter
+            // PAIR_WAITING_NUMCMP; Python reads it via Connection.numeric_comparison
+            // and answers with confirm_pairing().
+            if (event->passkey.params.action == BLE_SM_IOACT_NUMCMP) {
+                connection->pairing_numcmp = event->passkey.params.numcmp;
+                connection->pair_status = PAIR_WAITING_NUMCMP;
+            } else {
+                // Passkey entry / OOB: a display + yes/no button can't service these.
+                // Fail fast instead of letting SM hang until its ~30 s timeout.
+                #if CIRCUITPY_VERBOSE_BLE
+                mp_printf(&mp_plat_print, "unsupported passkey action %d; terminating\n",
+                    event->passkey.params.action);
+                #endif
+                ble_gap_terminate(event->passkey.conn_handle, BLE_ERR_AUTH_FAIL);
             }
             break;
         }
@@ -165,6 +195,40 @@ void common_hal_bleio_connection_pair(bleio_connection_internal_t *self, bool bo
     if (mp_hal_is_interrupted()) {
         return;
     }
+}
+
+// LE Secure Connections numeric comparison. Unlike pair(), these don't block: the peer
+// (a central) drives the SM procedure; we just observe the pending value and inject the
+// yes/no. BLE_GAP_EVENT_PASSKEY_ACTION sets pair_status = PAIR_WAITING_NUMCMP.
+mp_obj_t common_hal_bleio_connection_get_numeric_comparison(bleio_connection_obj_t *self) {
+    if (self->connection == NULL || self->connection->pair_status != PAIR_WAITING_NUMCMP) {
+        return mp_const_none;
+    }
+    return mp_obj_new_int_from_uint(self->connection->pairing_numcmp);
+}
+
+void common_hal_bleio_connection_confirm_pairing(bleio_connection_obj_t *self, bool accept) {
+    if (self->connection == NULL) {
+        mp_raise_ConnectionError(MP_ERROR_TEXT("Not connected"));
+    }
+    if (self->connection->pair_status != PAIR_WAITING_NUMCMP) {
+        mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("No pairing in progress"));
+    }
+    struct ble_sm_io io = {
+        .action = BLE_SM_IOACT_NUMCMP,
+        .numcmp_accept = accept,
+    };
+    CHECK_NIMBLE_ERROR(ble_sm_inject_io(self->connection->conn_handle, &io));
+    // SM proceeds from here. On accept, ENC_CHANGE moves us to PAIR_PAIRED; on reject it
+    // won't, so drop straight back to PAIR_NOT_PAIRED rather than waiting for the peer.
+    self->connection->pair_status = accept ? PAIR_WAITING : PAIR_NOT_PAIRED;
+}
+
+bool common_hal_bleio_connection_get_authenticated(bleio_connection_obj_t *self) {
+    if (self->connection == NULL) {
+        return false;
+    }
+    return self->connection->mitm_protected;
 }
 
 mp_float_t common_hal_bleio_connection_get_connection_interval(bleio_connection_internal_t *self) {

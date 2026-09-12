@@ -24,3 +24,14 @@ void common_hal_bleio_attribute_security_mode_check_valid(bleio_attribute_securi
             break;
     }
 }
+
+bool bleio_attribute_security_mode_requires_mitm(bleio_attribute_security_mode_t security_mode) {
+    switch (security_mode) {
+        case SECURITY_MODE_ENC_WITH_MITM:
+        case SECURITY_MODE_LESC_ENC_WITH_MITM:
+        case SECURITY_MODE_SIGNED_WITH_MITM:
+            return true;
+        default:
+            return false;
+    }
+}
