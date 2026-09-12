@@ -14,8 +14,6 @@
 #endif
 
 #if CIRCUITPY_USB_CDC
-#include "py/ringbuf.h"
-#include "shared-bindings/microcontroller/__init__.h"
 #include "shared-module/usb_cdc/__init__.h"
 #include "lib/tinyusb/src/class/cdc/cdc_device.h"
 #endif
@@ -25,6 +23,11 @@
 #endif
 
 #include "tusb.h"
+
+#if CIRCUITPY_USB_CDC && CFG_TUSB_OS == OPT_OS_FREERTOS
+#include "py/ringbuf.h"
+#include "shared-bindings/microcontroller/__init__.h"
+#endif
 
 #if CIRCUITPY_USB_VENDOR
 #include "usb_vendor_descriptors.h"
@@ -151,6 +154,54 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_requ
 #endif // CIRCUITPY_USB_VENDOR
 
 
+#if CIRCUITPY_USB_CDC && CFG_TUSB_OS == OPT_OS_FREERTOS
+// Console input is moved from the TinyUSB fifo into this ringbuf on the task that
+// runs tud_task(), and read from the ringbuf on the VM task. Both tasks use the
+// ringbuf, so every access is made with interrupts disabled.
+static uint8_t _cdc_rx_buf[256];
+static ringbuf_t _cdc_rx_ringbuf = { .buf = _cdc_rx_buf, .size = sizeof(_cdc_rx_buf) };
+
+void usb_cdc_rx_drain(void) {
+    if (!usb_cdc_console_enabled()) {
+        return;
+    }
+    uint8_t chunk[64];
+    while (tud_cdc_available() > 0) {
+        common_hal_mcu_disable_interrupts();
+        size_t room = ringbuf_num_empty(&_cdc_rx_ringbuf);
+        common_hal_mcu_enable_interrupts();
+        if (room == 0) {
+            return;
+        }
+        // tud_cdc_read() can wait on the TinyUSB fifo mutex, so it runs with interrupts enabled.
+        uint32_t count = tud_cdc_read(chunk, MIN(room, sizeof(chunk)));
+        common_hal_mcu_disable_interrupts();
+        ringbuf_put_n(&_cdc_rx_ringbuf, chunk, count);
+        common_hal_mcu_enable_interrupts();
+    }
+}
+
+size_t usb_cdc_rx_read(uint8_t *data, size_t len) {
+    common_hal_mcu_disable_interrupts();
+    size_t count = ringbuf_get_n(&_cdc_rx_ringbuf, data, len);
+    common_hal_mcu_enable_interrupts();
+    return count;
+}
+
+size_t usb_cdc_rx_available(void) {
+    common_hal_mcu_disable_interrupts();
+    size_t count = ringbuf_num_filled(&_cdc_rx_ringbuf);
+    common_hal_mcu_enable_interrupts();
+    return count;
+}
+
+void usb_cdc_rx_clear(void) {
+    common_hal_mcu_disable_interrupts();
+    ringbuf_clear(&_cdc_rx_ringbuf);
+    common_hal_mcu_enable_interrupts();
+}
+#endif
+
 #if MICROPY_KBD_EXCEPTION && CIRCUITPY_USB_CDC
 
 // The CDC RX buffer impacts monitoring for ctrl-c. TinyUSB will only ask for
@@ -175,7 +226,9 @@ void tud_cdc_rx_wanted_cb(uint8_t itf, char wanted_char) {
     // Compare mp_interrupt_char with wanted_char and ignore if not matched
     if (mp_interrupt_char == wanted_char) {
         tud_cdc_n_read_flush(itf);    // flush read fifo
+        #if CFG_TUSB_OS == OPT_OS_FREERTOS
         usb_cdc_rx_clear();
+        #endif
         mp_sched_keyboard_interrupt();
     }
 }
@@ -187,70 +240,13 @@ void tud_cdc_send_break_cb(uint8_t itf, uint16_t duration_ms) {
     }
 }
 
-#endif // MICROPY_KBD_EXCEPTION && CIRCUITPY_USB_CDC
-
-#if CIRCUITPY_USB_CDC
-// Console input is copied out of TinyUSB's fifo on the task that runs tud_task().
-// On espressif that is its own FreeRTOS task, and a read from the VM task can
-// re-arm the OUT endpoint while the previous packet is still being copied.
-// The ringbuf is shared by the two tasks, so guard it with interrupts disabled.
-static uint8_t _cdc_rx_buf[256];
-static ringbuf_t _cdc_rx_ringbuf = { .buf = _cdc_rx_buf, .size = sizeof(_cdc_rx_buf) };
-static volatile bool _cdc_rx_pending;
-
-void usb_cdc_rx_drain(void) {
-    uint8_t chunk[CFG_TUD_CDC_RX_EPSIZE];
-    while (tud_cdc_available() > 0) {
-        common_hal_mcu_disable_interrupts();
-        size_t room = ringbuf_num_empty(&_cdc_rx_ringbuf);
-        common_hal_mcu_enable_interrupts();
-        if (room == 0) {
-            _cdc_rx_pending = true;
-            return;
-        }
-        // tud_cdc_read() takes TinyUSB's fifo mutex, so it runs outside the critical section.
-        uint32_t count = tud_cdc_read(chunk, MIN(room, sizeof(chunk)));
-        if (count == 0) {
-            break;
-        }
-        common_hal_mcu_disable_interrupts();
-        ringbuf_put_n(&_cdc_rx_ringbuf, chunk, count);
-        common_hal_mcu_enable_interrupts();
-    }
-    _cdc_rx_pending = false;
-}
-
-void usb_cdc_rx_background(void) {
-    if (_cdc_rx_pending) {
-        usb_cdc_rx_drain();
-    }
-}
-
-int usb_cdc_rx_get(void) {
-    common_hal_mcu_disable_interrupts();
-    int c = ringbuf_get(&_cdc_rx_ringbuf);
-    common_hal_mcu_enable_interrupts();
-    return c;
-}
-
-size_t usb_cdc_rx_available(void) {
-    common_hal_mcu_disable_interrupts();
-    size_t count = ringbuf_num_filled(&_cdc_rx_ringbuf);
-    common_hal_mcu_enable_interrupts();
-    return count;
-}
-
-void usb_cdc_rx_clear(void) {
-    common_hal_mcu_disable_interrupts();
-    ringbuf_clear(&_cdc_rx_ringbuf);
-    common_hal_mcu_enable_interrupts();
-}
-
 void tud_cdc_rx_cb(uint8_t itf) {
-    if (itf == 0) {
-        usb_cdc_rx_drain();
-    }
-    // Wake the main task so it sees the input right away.
+    (void)itf;
+    #if CFG_TUSB_OS == OPT_OS_FREERTOS
+    usb_cdc_rx_drain();
+    #endif
+    // Workaround for "press any key to enter REPL" response being delayed on espressif.
+    // Wake main task when any key is pressed.
     port_wake_main_task();
 }
-#endif // CIRCUITPY_USB_CDC
+#endif

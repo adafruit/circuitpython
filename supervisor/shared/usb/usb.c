@@ -161,9 +161,6 @@ void usb_background(void) {
     if (usb_enabled()) {
         #if CFG_TUSB_OS == OPT_OS_NONE || CFG_TUSB_OS == OPT_OS_PICO
         tud_task();
-        #if CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_CDC
-        usb_cdc_rx_background();
-        #endif
         #if CIRCUITPY_USB_HOST || CIRCUITPY_MAX3421E
         tuh_task();
         #endif

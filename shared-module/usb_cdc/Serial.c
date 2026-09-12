@@ -6,10 +6,28 @@
 
 #include "shared/runtime/interrupt_char.h"
 #include "shared-bindings/usb_cdc/Serial.h"
+#include "shared-module/usb_cdc/__init__.h"
 #include "shared-module/usb_cdc/Serial.h"
 #include "supervisor/shared/tick.h"
+#include "supervisor/usb.h"
 
 #include "tusb.h"
+
+#if CFG_TUSB_OS == OPT_OS_FREERTOS
+// On espressif, console input is read from the ringbuf in supervisor/shared/usb/usb_device.c.
+static bool _console_uses_ringbuf(usb_cdc_serial_obj_t *self) {
+    return self->idx == 0 && usb_cdc_console_enabled();
+}
+#endif
+
+static uint32_t _read(usb_cdc_serial_obj_t *self, uint8_t *data, size_t len) {
+    #if CFG_TUSB_OS == OPT_OS_FREERTOS
+    if (_console_uses_ringbuf(self)) {
+        return usb_cdc_rx_read(data, len);
+    }
+    #endif
+    return tud_cdc_n_read(self->idx, data, len);
+}
 
 size_t common_hal_usb_cdc_serial_read(usb_cdc_serial_obj_t *self, uint8_t *data, size_t len, int *errcode) {
 
@@ -19,7 +37,7 @@ size_t common_hal_usb_cdc_serial_read(usb_cdc_serial_obj_t *self, uint8_t *data,
     // Read up to len bytes immediately.
     // The number of bytes read will not be larger than what is already in the TinyUSB FIFO.
     uint32_t total_num_read = 0;
-    total_num_read = tud_cdc_n_read(self->idx, data, len);
+    total_num_read = _read(self, data, len);
 
     if (wait_forever || wait_for_timeout) {
         // Continue filling the buffer past what we already read.
@@ -46,7 +64,7 @@ size_t common_hal_usb_cdc_serial_read(usb_cdc_serial_obj_t *self, uint8_t *data,
             data += num_read;
 
             // Try to read another batch of bytes.
-            num_read = tud_cdc_n_read(self->idx, data, len);
+            num_read = _read(self, data, len);
             total_num_read += num_read;
         }
     }
@@ -98,6 +116,11 @@ size_t common_hal_usb_cdc_serial_write(usb_cdc_serial_obj_t *self, const uint8_t
 }
 
 uint32_t common_hal_usb_cdc_serial_get_in_waiting(usb_cdc_serial_obj_t *self) {
+    #if CFG_TUSB_OS == OPT_OS_FREERTOS
+    if (_console_uses_ringbuf(self)) {
+        return usb_cdc_rx_available();
+    }
+    #endif
     return tud_cdc_n_available(self->idx);
 }
 
@@ -108,6 +131,11 @@ uint32_t common_hal_usb_cdc_serial_get_out_waiting(usb_cdc_serial_obj_t *self) {
 
 void common_hal_usb_cdc_serial_reset_input_buffer(usb_cdc_serial_obj_t *self) {
     tud_cdc_n_read_flush(self->idx);
+    #if CFG_TUSB_OS == OPT_OS_FREERTOS
+    if (_console_uses_ringbuf(self)) {
+        usb_cdc_rx_clear();
+    }
+    #endif
 }
 
 uint32_t common_hal_usb_cdc_serial_reset_output_buffer(usb_cdc_serial_obj_t *self) {
