@@ -1081,4 +1081,9 @@ MP_DEFINE_CONST_DICT(board_module_globals, board_module_globals_table);
     nvm_node = device_tree.label2node.get("nvm_partition")
     board_info["nvm"] = nvm_node is not None
 
+    # The user filesystem type is a compile-time choice made by the partition
+    # layout: a littlefs_partition node (named for littlefs in the Adaboot
+    # fork's layout dtsi) mounts littlefs; everything else mounts FAT.
+    board_info["littlefs"] = device_tree.label2node.get("littlefs_partition") is not None
+
     return board_info

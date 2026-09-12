@@ -136,8 +136,8 @@ void board_init(void) {
     }
     common_hal_sdioio_sdcard_never_reset(&sdmmc);
 
-    filesystem_set_concurrent_write_protection(vfs, true);
-    filesystem_set_writable_by_usb(vfs, false);
+    filesystem_set_concurrent_write_protection((supervisor_vfs_t *)vfs, true);
+    filesystem_set_writable_by_usb((supervisor_vfs_t *)vfs, false);
 
     mp_vfs_mount_t *sdcard_vfs = &_sdcard_vfs;
     sdcard_vfs->str = "/sd";

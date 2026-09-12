@@ -87,8 +87,8 @@ void automount_emmc(void) {
     }
 
     // Same as CIRCUITPY: while a host has the drive, the host owns writing.
-    filesystem_set_concurrent_write_protection(vfs, true);
-    filesystem_set_writable_by_usb(vfs, true);
+    filesystem_set_concurrent_write_protection((supervisor_vfs_t *)vfs, true);
+    filesystem_set_writable_by_usb((supervisor_vfs_t *)vfs, true);
 
     mp_vfs_mount_t *emmc_vfs = &_emmc_vfs;
     emmc_vfs->str = CIRCUITPY_EMMC_MOUNT_PATH;

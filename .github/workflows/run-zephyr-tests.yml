@@ -18,7 +18,7 @@ jobs:
       matrix:
         include:
           - shard: native_sim
-            boards: native_native_sim native_native_sim_asan
+            boards: native_native_sim native_native_sim_asan native_native_sim_lfs
             pytest_args: tests/ --ignore=tests/bsim
           - shard: nrf5340bsim
             boards: native_nrf5340bsim
