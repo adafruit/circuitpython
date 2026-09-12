@@ -19,6 +19,16 @@ void usb_background(void);
 // Schedule usb background
 void usb_background_schedule(void);
 
+#if CIRCUITPY_USB_CDC
+// Console (CDC itf 0) input ring buffer, filled from tud_cdc_rx_cb on the task
+// that runs tud_task() and read by the VM. See usb_device.c.
+void usb_cdc_rx_drain(void);
+void usb_cdc_rx_background(void);
+int usb_cdc_rx_get(void);
+size_t usb_cdc_rx_available(void);
+void usb_cdc_rx_clear(void);
+#endif
+
 // Ports must call this from their particular USB IRQ handler
 void usb_irq_handler(int instance);
 

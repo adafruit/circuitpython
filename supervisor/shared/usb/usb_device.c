@@ -173,6 +173,7 @@ void tud_cdc_rx_wanted_cb(uint8_t itf, char wanted_char) {
     // Compare mp_interrupt_char with wanted_char and ignore if not matched
     if (mp_interrupt_char == wanted_char) {
         tud_cdc_n_read_flush(itf);    // flush read fifo
+        usb_cdc_rx_clear();
         mp_sched_keyboard_interrupt();
     }
 }
@@ -184,10 +185,71 @@ void tud_cdc_send_break_cb(uint8_t itf, uint16_t duration_ms) {
     }
 }
 
+#endif // MICROPY_KBD_EXCEPTION && CIRCUITPY_USB_CDC
+
+#if CIRCUITPY_USB_CDC
+// Console input is moved out of TinyUSB's fifo here, on the task that runs
+// tud_task(). Reading it from the VM task instead re-arms the OUT endpoint while
+// TinyUSB may still be copying the previous packet into its fifo
+// (hathach/tinyusb#1292): one packet is lost and the next one repeated. Only
+// espressif runs tud_task() in its own task, but the ring buffer is harmless
+// elsewhere. Single producer (tud_task) and single consumer (the VM), so the
+// two indices need no lock.
+#define CDC_RX_RING_SIZE (256)
+static uint8_t _cdc_rx_buf[CDC_RX_RING_SIZE];
+static volatile uint16_t _cdc_rx_head;   // written by the producer only
+static volatile uint16_t _cdc_rx_tail;   // written by the consumer only
+static volatile bool _cdc_rx_pending;    // fifo still holds bytes the ring could not take
+
+static inline uint16_t _cdc_rx_count(void) {
+    return (uint16_t)(_cdc_rx_head - _cdc_rx_tail);
+}
+
+void usb_cdc_rx_drain(void) {
+    while (tud_cdc_available() > 0) {
+        if (_cdc_rx_count() >= CDC_RX_RING_SIZE) {
+            _cdc_rx_pending = true;
+            return;
+        }
+        int c = tud_cdc_read_char();
+        if (c < 0) {
+            break;
+        }
+        _cdc_rx_buf[_cdc_rx_head % CDC_RX_RING_SIZE] = (uint8_t)c;
+        _cdc_rx_head++;
+    }
+    _cdc_rx_pending = false;
+}
+
+void usb_cdc_rx_background(void) {
+    if (_cdc_rx_pending) {
+        usb_cdc_rx_drain();
+    }
+}
+
+int usb_cdc_rx_get(void) {
+    if (_cdc_rx_count() == 0) {
+        return -1;
+    }
+    uint8_t c = _cdc_rx_buf[_cdc_rx_tail % CDC_RX_RING_SIZE];
+    _cdc_rx_tail++;
+    return c;
+}
+
+size_t usb_cdc_rx_available(void) {
+    return _cdc_rx_count();
+}
+
+void usb_cdc_rx_clear(void) {
+    _cdc_rx_tail = _cdc_rx_head;
+}
+
 void tud_cdc_rx_cb(uint8_t itf) {
-    (void)itf;
-    // Workaround for "press any key to enter REPL" response being delayed on espressif.
-    // Wake main task when any key is pressed.
+    if (itf == 0) {
+        usb_cdc_rx_drain();
+    }
+    // Wake the main task so it sees the input right away. On espressif it is a
+    // different FreeRTOS task from the one running TinyUSB.
     port_wake_main_task();
 }
-#endif
+#endif // CIRCUITPY_USB_CDC

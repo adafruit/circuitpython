@@ -327,8 +327,8 @@ char serial_read(void) {
         return -1;
     }
     #endif
-    #if CIRCUITPY_TINYUSB && CIRCUITPY_USB_DEVICE
-    return (char)tud_cdc_read_char();
+    #if CIRCUITPY_TINYUSB && CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_CDC
+    return (char)usb_cdc_rx_get();
     #endif
 
     return -1;
@@ -362,7 +362,7 @@ uint32_t serial_bytes_available(void) {
 
     #if CIRCUITPY_TINYUSB && CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_CDC
     if (usb_cdc_console_enabled()) {
-        count += tud_cdc_available();
+        count += usb_cdc_rx_available();
     }
     #endif
 
