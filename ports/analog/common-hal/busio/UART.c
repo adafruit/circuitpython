@@ -182,7 +182,7 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     }
 
     if ((rx != NULL) && (tx != NULL)) {
-        err = MXC_UART_Init(self->uart_regs, baudrate, MXC_UART_IBRO_CLK);
+        err = uart_init(self->uart_regs, baudrate);
         if (err != E_NO_ERROR) {
             mp_raise_RuntimeError_varg(MP_ERROR_TEXT("%q init failed"), MP_QSTR_UART);
         }
@@ -197,7 +197,7 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     }
 
     if ((cts) && (rts)) {
-        MXC_UART_SetFlowCtrl(self->uart_regs, MXC_UART_FLOW_EN, 8);
+        uart_set_flow_ctrl(self->uart_regs, true, 8);
         self->cts_pin = cts;
         self->rts_pin = rts;
         common_hal_mcu_pin_claim(self->cts_pin);
@@ -377,7 +377,7 @@ size_t common_hal_busio_uart_write(busio_uart_obj_t *self,
     uart_wr_req.rxCnt = 0;
     uart_wr_req.txCnt = 0;
     uart_wr_req.rxData = NULL;
-    uart_wr_req.txData = data;
+    uart_wr_req.txData = (uint8_t *)data;
     uart_wr_req.txLen = bytes_remaining;
     uart_wr_req.rxLen = 0;
     uart_wr_req.uart = self->uart_regs;
@@ -394,11 +394,7 @@ size_t common_hal_busio_uart_write(busio_uart_obj_t *self,
 
     // Wait for transaction completion
     while (uart_status[self->uart_id] != UART_FREE) {
-        // Call the handler and abort if errors
-        uart_err = MXC_UART_AsyncHandler(self->uart_regs);
-        if (uart_err != E_NO_ERROR) {
-            MXC_UART_AbortAsync(self->uart_regs);
-        }
+        MXC_UART_AsyncHandler(self->uart_regs);
     }
     // Check for errors from the callback
     if (uart_err != E_NO_ERROR) {
@@ -446,7 +442,7 @@ void common_hal_busio_uart_clear_rx_buffer(busio_uart_obj_t *self) {
 }
 
 bool common_hal_busio_uart_ready_to_tx(busio_uart_obj_t *self) {
-    return !(MXC_UART_GetStatus(self->uart_regs) & (MXC_F_UART_STATUS_TX_BUSY));
+    return !(MXC_UART_GetStatus(self->uart_regs) & (UART_F_STATUS_TX_BUSY));
 }
 
 void common_hal_busio_uart_never_reset(busio_uart_obj_t *self) {

@@ -11,7 +11,7 @@
 #include "spi.h"
 #include "peripherals/pins.h"
 
-#define NUM_SPI 5
+#define NUM_SPI 3
 
 int pinsToSpi(const mcu_pin_obj_t *mosi, const mcu_pin_obj_t *miso,
     const mcu_pin_obj_t *sck);

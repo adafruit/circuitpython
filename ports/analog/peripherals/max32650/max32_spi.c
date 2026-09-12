@@ -8,15 +8,16 @@
 
 #include "common-hal/busio/SPI.h"
 #include "max32_spi.h"
-#include "max32690.h"
+#include "max32650.h"
 
 #include "py/runtime.h"
 #include "py/mperrno.h"
 
 const mxc_gpio_cfg_t spi_maps[NUM_SPI] = {
     // SPI0
-    { MXC_GPIO2, (MXC_GPIO_PIN_27 | MXC_GPIO_PIN_28 | MXC_GPIO_PIN_29),
-      MXC_GPIO_FUNC_ALT2, MXC_GPIO_PAD_NONE, MXC_GPIO_VSSEL_VDDIO, MXC_GPIO_DRVSTR_0 },
+    // NOTE: SPI0 CS not enabled automatically
+    { MXC_GPIO3, (MXC_GPIO_PIN_1 | MXC_GPIO_PIN_2 | MXC_GPIO_PIN_3),
+      MXC_GPIO_FUNC_ALT1, MXC_GPIO_PAD_NONE, MXC_GPIO_VSSEL_VDDIO, MXC_GPIO_DRVSTR_0 },
     // SPI1
     { MXC_GPIO1, (MXC_GPIO_PIN_26 | MXC_GPIO_PIN_28 | MXC_GPIO_PIN_29),
       MXC_GPIO_FUNC_ALT1, MXC_GPIO_PAD_NONE, MXC_GPIO_VSSEL_VDDIO, MXC_GPIO_DRVSTR_0 },
@@ -25,9 +26,6 @@ const mxc_gpio_cfg_t spi_maps[NUM_SPI] = {
       MXC_GPIO_FUNC_ALT1, MXC_GPIO_PAD_NONE, MXC_GPIO_VSSEL_VDDIO, MXC_GPIO_DRVSTR_0 },
     // SPI3
     { MXC_GPIO0, (MXC_GPIO_PIN_16 | MXC_GPIO_PIN_20 | MXC_GPIO_PIN_21),
-      MXC_GPIO_FUNC_ALT1, MXC_GPIO_PAD_NONE, MXC_GPIO_VSSEL_VDDIO, MXC_GPIO_DRVSTR_0 },
-    // SPI4
-    { MXC_GPIO1, (MXC_GPIO_PIN_1 | MXC_GPIO_PIN_2 | MXC_GPIO_PIN_3),
       MXC_GPIO_FUNC_ALT1, MXC_GPIO_PAD_NONE, MXC_GPIO_VSSEL_VDDIO, MXC_GPIO_DRVSTR_0 },
 };
 
@@ -44,16 +42,6 @@ int pinsToSpi(const mcu_pin_obj_t *sck, const mcu_pin_obj_t *mosi,
 }
 
 int spi_init(mxc_spi_regs_t *spi, unsigned int freq) {
-    mxc_spi_pins_t spi_pins = {
-        .clock = true,
-        .mosi = true,
-        .miso = true,
-        .ss0 = false,
-        .ss1 = false,
-        .ss2 = false,
-        .vddioh = true,
-        .drvstr = MXC_GPIO_DRVSTR_0
-    };
-    return MXC_SPI_Init(spi, MXC_SPI_TYPE_CONTROLLER, MXC_SPI_INTERFACE_STANDARD,
-        1, 0x01, freq, spi_pins);
+    // masterMode=1, quadModeUsed=0, numSlaves=1, ssPolarity=0x01
+    return MXC_SPI_Init(spi, 1, 0, 1, 0x01, freq);
 }
