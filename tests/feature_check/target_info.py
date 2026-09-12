@@ -36,4 +36,12 @@ try:
 except NameError:
     float_prec = 0
 
-print(platform, arch, arch_flags, build, thread, float_prec, len("α") == 1)
+# Detect the error reporting level (based on the length of the raised exception message).
+try:
+    (lambda: 0)(0)
+except TypeError as er:
+    # CIRCUITPY-CHANGE: CircuitPython only exposes .value on StopIteration (py/objexcept.c).
+    message = er.args[0] if er.args else ""
+    error_reporting = {0: "none", 27: "terse", 54: "normal", 56: "detailed"}[len(message)]
+
+print(platform, arch, arch_flags, build, thread, float_prec, len("α") == 1, error_reporting)

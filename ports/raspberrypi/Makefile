@@ -748,11 +748,10 @@ endif
 
 $(patsubst %.S,$(BUILD)/%.o,$(SRC_S_UPPER)): CFLAGS += -Wno-undef
 
-# Derive the C++ flags from the C flags (mirroring the unix port) so the
-# vendored C++ translation unit picks up all the SDK include paths and defines.
-# Strip the C-only options that g++ rejects, and disable exceptions/RTTI to
-# match the firmware's constraints.
-CXXFLAGS += $(filter-out -std=gnu11 -Werror=missing-prototypes -Wold-style-definition -Wstrict-prototypes -Werror-implicit-function-declaration -Wnested-externs,$(CFLAGS)) -std=gnu++17 -fno-exceptions -fno-rtti
+# py/mkrules.mk derives CXXFLAGS from CFLAGS, which gives the vendored C++
+# translation unit the SDK include paths and defines. Only the C++-specific
+# options belong here.
+CXXFLAGS += -std=gnu++17 -fno-exceptions -fno-rtti
 
 OBJ = $(PY_O) $(SUPERVISOR_O) $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_SDK:.c=.o))

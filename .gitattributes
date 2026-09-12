@@ -13,12 +13,14 @@
 # CIRCUITPY-CHANGE: add some more binary types.
 # These are binary so should never be modified by git.
 *.a binary
+*.FLM binary
 *.ico binary
 *.png binary
 *.jpg binary
 *.dxf binary
 *.mpy binary
 *.der binary
+*.bin binary
 *.deb binary
 *.zip binary
 *.pdf binary

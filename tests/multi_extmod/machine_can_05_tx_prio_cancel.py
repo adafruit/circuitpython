@@ -1,5 +1,16 @@
 from machine import CAN
 import time
+import sys
+
+# The Alif port has an opaque send queue. The Alif CAN controller
+# provides no information about the slot number where the message
+# is stored, and it does not allow to cancel specific messages.
+# This test needs both the slot number, and uses cancel_send() for
+# dedicated messages, which both is not available.
+
+if "alif" in sys.platform:
+    print("SKIP")
+    raise SystemExit
 
 # Check that cancelling a low priority outgoing message and replacing it with a
 # high priority message causes it to be transmitted successfully onto a busy bus
@@ -26,6 +37,14 @@ def instance0():
 
     multitest.next()
 
+    # don't babble until we know instance1 is ready to receive, or this instance
+    # may go to Error Passive while instance1 is still initialising CAN (meaning
+    # the "babble" won't saturate the bus, due to the Suspend Transmission
+    # requirement)
+    multitest.wait("instance1 ready")
+
+    bcast_countdown = 5
+
     # "Babble" medium priority messages onto the bus to prevent
     # instance1() from sending anything lower priority than this
     while len(recv) < ITERS:
@@ -33,6 +52,12 @@ def instance0():
             can.send(id, b"BABBLE", CAN.FLAG_EXT_ID)
             if len(recv) >= ITERS:
                 break
+            if bcast_countdown > 0:
+                # queue some "babble" messages onto the bus before signalling to
+                # instance1 that it can start trying to send
+                bcast_countdown -= 1
+                if not bcast_countdown:
+                    multitest.broadcast("instance0 babbling")
 
     print("received", ITERS, "messages")
     for can_id in recv:
@@ -66,10 +91,16 @@ def irq_send(can):
 
 
 def instance1():
-    global last_idx
+    global last_idx, total_cancels
     can.irq(irq_send, trigger=can.IRQ_TX, hard=True)
 
     multitest.next()
+    multitest.broadcast("instance1 ready")
+
+    # make sure instance0 can queue outgoing medium-priority
+    # babble before we start trying to send, so we're trying to
+    # send onto an already busy bus
+    multitest.wait("instance0 babbling")
 
     for i in range(ITERS):
         # Fill the transmit queue with low priority messages (all extended IDs)
@@ -95,6 +126,8 @@ def instance1():
         # try and cancel the last message we queued
         res = can.cancel_send(last_idx)
         print(i, "cancel result", res)
+        if ("mimxrt" in sys.platform) and res:
+            total_cancels += 1
 
         # send a high priority message, that we expect to go out
         idx = can.send(0x500 + i, b"HIPRIO", CAN.FLAG_EXT_ID)

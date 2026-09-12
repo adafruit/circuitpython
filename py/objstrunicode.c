@@ -57,11 +57,11 @@ static void uni_print_quoted(const mp_print_t *print, const byte *str_data, uint
     mp_printf(print, "%c", quote_char);
     const byte *s = str_data, *top = str_data + str_len;
     while (s < top) {
+        const byte *seq_start = s;
         unichar ch;
         ch = utf8_get_char(s);
-        // CIRCUITPY-CHANGE: print printable Unicode chars
-        const byte *start = s;
         s = utf8_next_char(s);
+        size_t seq_len = s - seq_start;
         if (ch == quote_char) {
             mp_printf(print, "\\%c", quote_char);
         } else if (ch == '\\') {
@@ -79,12 +79,15 @@ static void uni_print_quoted(const mp_print_t *print, const byte *str_data, uint
             mp_printf(print, "\\x%02x", ch);
         } else if ((0x2000 <= ch && ch <= 0x200f) || ch == 0x2028 || ch == 0x2029 || ch == 0xffff) {
             mp_printf(print, "\\u%04x", ch);
-        } else if (ch == 0x1ffff) {
+        } else if (ch >= 0xd800 && ch < 0xe000) {
+            // Surrogate (0xD800-0xDFFF) - output as \uXXXX escape.
+            mp_printf(print, "\\u%04x", ch);
+        } else if (ch == 0x1ffff || ch >= 0x110000) {
+            // Invalid - output as \UXXXXXXXX escape.
             mp_printf(print, "\\U%08x", ch);
         } else {
-            // Print the full character out.
-            int width = s - start;
-            mp_print_strn(print, (const char *)start, width, 0, ' ', width);
+            // CIRCUITPY-CHANGE: print printable Unicode chars out in full.
+            mp_print_strn(print, (const char *)seq_start, seq_len, 0, ' ', seq_len);
         }
     }
     mp_printf(print, "%c", quote_char);

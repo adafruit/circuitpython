@@ -41,7 +41,9 @@
 #define MP_S_IFREG (0x8000)
 
 // these are the values for mp_vfs_blockdev_t.flags
+#if MICROPY_VFS_BLOCKDEV_NATIVE
 #define MP_BLOCKDEV_FLAG_NATIVE         (0x0001) // readblocks[2]/writeblocks[2] contain native func
+#endif
 #define MP_BLOCKDEV_FLAG_FREE_OBJ       (0x0002) // fs_user_mount_t obj should be freed on umount
 #define MP_BLOCKDEV_FLAG_HAVE_IOCTL     (0x0004) // new protocol with ioctl
 #define MP_BLOCKDEV_FLAG_NO_FILESYSTEM  (0x0008) // the block device has no filesystem on it
@@ -64,11 +66,20 @@
 #define MP_BLOCKDEV_IOCTL_BLOCK_ERASE   (6)
 
 // Constants for vfs.rom_ioctl() function.
+// The 4-arg form of WRITE_PREPARE is only available if GET_MIN_PREPARE returns >0.
 #define MP_VFS_ROM_IOCTL_GET_NUMBER_OF_SEGMENTS     (1) // rom_ioctl(1)
 #define MP_VFS_ROM_IOCTL_GET_SEGMENT                (2) // rom_ioctl(2, <id>)
-#define MP_VFS_ROM_IOCTL_WRITE_PREPARE              (3) // rom_ioctl(3, <id>, <len>)
+#define MP_VFS_ROM_IOCTL_WRITE_PREPARE              (3) // rom_ioctl(3, <id>, <len>) or rom_ioctl(3, <id>, <offset>, <len>)
 #define MP_VFS_ROM_IOCTL_WRITE                      (4) // rom_ioctl(4, <id>, <offset>, <buf>)
 #define MP_VFS_ROM_IOCTL_WRITE_COMPLETE             (5) // rom_ioctl(5, <id>)
+#define MP_VFS_ROM_IOCTL_GET_MIN_PREPARE            (6) // rom_ioctl(6, <id>)
+
+#if MICROPY_VFS_BLOCKDEV_NATIVE
+// Function signatures used when MP_BLOCKDEV_FLAG_NATIVE is set.
+// Should return 0 for success, or a negative errno code for failure.
+typedef int (*mp_vfs_blockdev_native_readblocks)(uint8_t *, uint32_t, uint32_t);
+typedef int (*mp_vfs_blockdev_native_writeblocks)(const uint8_t *, uint32_t, uint32_t);
+#endif
 
 // At the moment the VFS protocol just has import_stat, but could be extended to other methods
 typedef struct _mp_vfs_proto_t {
