@@ -604,7 +604,6 @@ print("done")
 """
 
 
-@pytest.mark.duration(5)
 @pytest.mark.circuitpy_drive({"code.py": BSIM_PB_LENGTHS_CODE})
 def test_bsim_packet_buffer_packet_lengths(bsim_phy, circuitpython):
     """incoming_packet_length and outgoing_packet_length properties."""
