@@ -29,6 +29,12 @@ function ci_gcc_riscv_setup {
     riscv64-unknown-elf-gcc --version
 }
 
+function ci_gcc_ppc64_setup {
+    sudo apt-get update
+    sudo apt-get install gcc-powerpc64le-linux-gnu libc6-dev-ppc64el-cross
+    powerpc64le-linux-gnu-gcc --version
+}
+
 function ci_picotool_setup {
     # Manually installing picotool ensures we use a release version, and speeds up the build.
     git clone https://github.com/raspberrypi/pico-sdk.git
@@ -42,8 +48,7 @@ function ci_picotool_setup {
 # c code formatting
 
 function ci_c_code_formatting_setup {
-    sudo apt-get update
-    sudo apt-get install uncrustify
+    pip install micropython-uncrustify==1.0.0.post1
     uncrustify --version
 }
 
@@ -91,7 +96,7 @@ function ci_code_size_build {
     # Override the list by setting PORTS_TO_CHECK in the environment before invoking ci.
     : ${PORTS_TO_CHECK:=bmus3xpdv}
 
-    SUBMODULES="lib/asf4 lib/berkeley-db-1.xx lib/btstack lib/cyw43-driver lib/lwip lib/mbedtls lib/micropython-lib lib/nxp_driver lib/pico-sdk lib/stm32lib lib/tinyusb"
+    SUBMODULES="lib/CMSIS_5 lib/CMSIS_6 lib/asf4 lib/berkeley-db-1.xx lib/btstack lib/cyw43-driver lib/lwip lib/mbedtls lib/micropython-lib lib/nxp_driver lib/pico-sdk lib/stm32lib lib/tinyusb"
 
     # Default GitHub pull request sets HEAD to a generated merge commit
     # between PR branch (HEAD^2) and base branch (i.e. master) (HEAD^1).
@@ -158,7 +163,7 @@ function ci_mpy_format_setup {
 
 function ci_mpy_format_test {
     # Test mpy-tool.py dump feature on bytecode
-    python3 ./tools/mpy-tool.py -xd tests/frozen/frozentest.mpy
+    python3 ./tools/mpy-tool.py -xd tests/assets/frozentest.mpy
 
     # Build MicroPython
     ci_unix_standard_build
@@ -167,7 +172,7 @@ function ci_mpy_format_test {
     export MICROPYPATH=.
 
     # Test mpy-tool.py running under MicroPython
-    $micropython ./tools/mpy-tool.py -x -d tests/frozen/frozentest.mpy
+    $micropython ./tools/mpy-tool.py -x -d tests/assets/frozentest.mpy
 
     # Test mpy-tool.py dump feature on native code
     make -C examples/natmod/features1
@@ -185,6 +190,21 @@ function ci_mpy_cross_debug_emitter {
 }
 
 ########################################################################################
+# ports/alif
+
+function ci_alif_setup {
+    ci_gcc_arm_setup
+}
+
+function ci_alif_ae3_build {
+    make ${MAKEOPTS} -C mpy-cross
+    make ${MAKEOPTS} -C ports/alif BOARD=OPENMV_AE3 MCU_CORE=M55_HP submodules
+    make ${MAKEOPTS} -C ports/alif BOARD=OPENMV_AE3 MCU_CORE=M55_HE submodules
+    make ${MAKEOPTS} -C ports/alif BOARD=OPENMV_AE3 MCU_CORE=M55_DUAL
+    make ${MAKEOPTS} -C ports/alif BOARD=ALIF_ENSEMBLE MCU_CORE=M55_DUAL USER_C_MODULES=../../examples/usercmodule
+}
+
+########################################################################################
 # ports/cc3200
 
 function ci_cc3200_setup {
@@ -197,18 +217,22 @@ function ci_cc3200_build {
 }
 
 ########################################################################################
+# ports/embed
+
+function ci_embedding_build {
+    make ${MAKEOPTS} -C examples/embedding -f micropython_embed.mk
+    make ${MAKEOPTS} -C examples/embedding
+    ./examples/embedding/embed | grep "hello world"
+}
+
+########################################################################################
 # ports/esp32
 
-# GitHub tag of ESP-IDF to use for CI, extracted from the esp32 dependency lockfile
-# This should end up as a tag name like vX.Y.Z
-# (note: This hacky parsing can be replaced with 'yq' once Ubuntu >=24.04 is in use)
-IDF_VER=v$(grep -A10 "idf:" ports/esp32/lockfiles/dependencies.lock.esp32 | grep "version:" | head -n1 | sed -E 's/ +version: //')
-PYTHON=$(command -v python3 2> /dev/null)
-PYTHON_VER=$(${PYTHON:-python} --version | cut -d' ' -f2)
-
-export IDF_CCACHE_ENABLE=1
-
 function ci_esp32_idf_setup {
+    if [ -z "$IDF_VER" ]; then
+        echo "IDF_VER environment variable must be set before running"
+        return 1
+    fi
     echo "Using ESP-IDF version $IDF_VER"
     git clone --depth 1 --branch $IDF_VER https://github.com/espressif/esp-idf.git
     # doing a treeless clone isn't quite as good as --shallow-submodules, but it
@@ -227,23 +251,29 @@ function ci_esp32_build_common {
     make ${MAKEOPTS} -C ports/esp32 submodules
 }
 
-function ci_esp32_build_cmod_spiram_s2 {
+function ci_esp32_build_cmod_spiram_d2wd {
     ci_esp32_build_common
 
+    # Combined USER_C_MODULES + freeze manifest test on ESP32_GENERIC.
     make ${MAKEOPTS} -C ports/esp32 \
         USER_C_MODULES=../../../examples/usercmodule/micropython.cmake \
-        FROZEN_MANIFEST=$(pwd)/ports/esp32/boards/manifest_test.py
+        FROZEN_MANIFEST="$(pwd)/ports/esp32/boards/manifest_test.py"
 
     # Test building native .mpy with xtensawin architecture.
     ci_native_mpy_modules_build xtensawin
 
-    make ${MAKEOPTS} -C ports/esp32 BOARD=ESP32_GENERIC BOARD_VARIANT=SPIRAM
-    make ${MAKEOPTS} -C ports/esp32 BOARD=ESP32_GENERIC_S2
+    # Test the c_module() codepath on the SPIRAM variant.
+    make ${MAKEOPTS} -C ports/esp32 BOARD=ESP32_GENERIC BOARD_VARIANT=SPIRAM \
+        FROZEN_MANIFEST="$(pwd)/tests/tools/manifest_c_module.py"
+
+    # D2WD is the variant with smallest application partition in flash
+    make ${MAKEOPTS} -C ports/esp32 BOARD=ESP32_GENERIC BOARD_VARIANT=D2WD
 }
 
-function ci_esp32_build_s3_c3 {
+function ci_esp32_build_s2_s3_c3 {
     ci_esp32_build_common
 
+    make ${MAKEOPTS} -C ports/esp32 BOARD=ESP32_GENERIC_S2
     make ${MAKEOPTS} -C ports/esp32 BOARD=ESP32_GENERIC_S3
     make ${MAKEOPTS} -C ports/esp32 BOARD=ESP32_GENERIC_C3
 }
@@ -256,9 +286,10 @@ function ci_esp32_build_c2_c5_c6 {
     make ${MAKEOPTS} -C ports/esp32 BOARD=ESP32_GENERIC_C6
 }
 
-function ci_esp32_build_p4 {
+function ci_esp32_build_h2_p4 {
     ci_esp32_build_common
 
+    make ${MAKEOPTS} -C ports/esp32 BOARD=ESP32_GENERIC_H2
     make ${MAKEOPTS} -C ports/esp32 BOARD=ESP32_GENERIC_P4
     make ${MAKEOPTS} -C ports/esp32 BOARD=ESP32_GENERIC_P4 BOARD_VARIANT=C6_WIFI
 }
@@ -283,29 +314,10 @@ function ci_esp8266_build {
     make ${MAKEOPTS} -C ports/esp8266 submodules
     make ${MAKEOPTS} -C ports/esp8266 BOARD=ESP8266_GENERIC
     make ${MAKEOPTS} -C ports/esp8266 BOARD=ESP8266_GENERIC BOARD_VARIANT=FLASH_512K
-    make ${MAKEOPTS} -C ports/esp8266 BOARD=ESP8266_GENERIC BOARD_VARIANT=FLASH_1M
+    make ${MAKEOPTS} -C ports/esp8266 BOARD=ESP8266_GENERIC BOARD_VARIANT=FLASH_1M USER_C_MODULES=../../examples/usercmodule
 
     # Test building native .mpy with xtensa architecture.
     ci_native_mpy_modules_build xtensa
-}
-
-########################################################################################
-# ports/webassembly
-
-function ci_webassembly_setup {
-    npm install terser
-    git clone https://github.com/emscripten-core/emsdk.git
-    (cd emsdk && ./emsdk install latest && ./emsdk activate latest)
-}
-
-function ci_webassembly_build {
-    source emsdk/emsdk_env.sh
-    make ${MAKEOPTS} -C ports/webassembly VARIANT=pyscript submodules
-    make ${MAKEOPTS} -C ports/webassembly VARIANT=pyscript
-}
-
-function ci_webassembly_run_tests {
-    make -C ports/webassembly VARIANT=pyscript test_min
 }
 
 ########################################################################################
@@ -320,7 +332,7 @@ function ci_mimxrt_build {
     make ${MAKEOPTS} -C ports/mimxrt BOARD=MIMXRT1020_EVK submodules
     make ${MAKEOPTS} -C ports/mimxrt BOARD=MIMXRT1020_EVK
     make ${MAKEOPTS} -C ports/mimxrt BOARD=TEENSY40 submodules
-    make ${MAKEOPTS} -C ports/mimxrt BOARD=TEENSY40
+    make ${MAKEOPTS} -C ports/mimxrt BOARD=TEENSY40 USER_C_MODULES=../../examples/usercmodule
     make ${MAKEOPTS} -C ports/mimxrt BOARD=MIMXRT1060_EVK submodules
     make ${MAKEOPTS} -C ports/mimxrt BOARD=MIMXRT1060_EVK CFLAGS_EXTRA=-DMICROPY_HW_USB_MSC=1
 }
@@ -337,22 +349,24 @@ function ci_nrf_build {
     make ${MAKEOPTS} -C mpy-cross
     make ${MAKEOPTS} -C ports/nrf submodules
     make ${MAKEOPTS} -C ports/nrf BOARD=PCA10040
-    make ${MAKEOPTS} -C ports/nrf BOARD=MICROBIT
+    make ${MAKEOPTS} -C ports/nrf BOARD=MICROBIT USER_C_MODULES=../../examples/usercmodule
     make ${MAKEOPTS} -C ports/nrf BOARD=PCA10056 SD=s140
     make ${MAKEOPTS} -C ports/nrf BOARD=PCA10090
 }
 
 ########################################################################################
-# ports/powerpc
+# ports/psoc-edge
 
-function ci_powerpc_setup {
-    sudo apt-get update
-    sudo apt-get install gcc-powerpc64le-linux-gnu libc6-dev-ppc64el-cross
+function ci_psoc_edge_setup {
+    ci_gcc_arm_setup
+    sudo apt remove python3-packaging python3-jsonschema python3-cryptography
+    sudo pip3 install edgeprotecttools
 }
 
-function ci_powerpc_build {
-    make ${MAKEOPTS} -C ports/powerpc UART=potato
-    make ${MAKEOPTS} -C ports/powerpc UART=lpc_serial
+function ci_psoc_edge_build {
+    make ${MAKEOPTS} -C mpy-cross
+    make ${MAKEOPTS} -C ports/psoc-edge submodules
+    make ${MAKEOPTS} -C ports/psoc-edge
 }
 
 ########################################################################################
@@ -385,6 +399,13 @@ function ci_qemu_setup_rv64 {
     qemu-system-riscv64 --version
 }
 
+function ci_qemu_setup_ppc64 {
+    ci_gcc_ppc64_setup
+    sudo apt-get update
+    sudo apt-get install qemu-system
+    qemu-system-ppc64 --version
+}
+
 function ci_qemu_build_arm_prepare {
     make ${MAKEOPTS} -C mpy-cross
     make ${MAKEOPTS} -C ports/qemu submodules
@@ -402,7 +423,7 @@ function ci_qemu_build_arm_sabrelite {
 
 function ci_qemu_build_arm_thumb_softfp {
     ci_qemu_build_arm_prepare
-    make BOARD=MPS2_AN385 ${MAKEOPTS} -C ports/qemu test_full
+    make BOARD=MPS2_AN385 ${MAKEOPTS} -C ports/qemu USER_C_MODULES=../../examples/usercmodule test_full
 
     # Test building native .mpy with ARM-M softfp architectures.
     ci_native_mpy_modules_build armv6m
@@ -446,6 +467,12 @@ function ci_qemu_build_rv64 {
     make ${MAKEOPTS} -C ports/qemu BOARD=VIRT_RV64 test_natmod
 }
 
+function ci_qemu_build_ppc64 {
+    make ${MAKEOPTS} -C mpy-cross
+    make ${MAKEOPTS} -C ports/qemu BOARD=POWERNV9 submodules
+    make ${MAKEOPTS} -C ports/qemu BOARD=POWERNV9 test
+}
+
 ########################################################################################
 # ports/renesas-ra
 
@@ -458,7 +485,7 @@ function ci_renesas_ra_board_build {
     make ${MAKEOPTS} -C mpy-cross
     make ${MAKEOPTS} -C ports/renesas-ra submodules
     make ${MAKEOPTS} -C ports/renesas-ra BOARD=RA4M1_CLICKER
-    make ${MAKEOPTS} -C ports/renesas-ra BOARD=EK_RA6M2
+    make ${MAKEOPTS} -C ports/renesas-ra BOARD=EK_RA6M2 USER_C_MODULES=../../examples/usercmodule
     make ${MAKEOPTS} -C ports/renesas-ra BOARD=EK_RA6M1
     make ${MAKEOPTS} -C ports/renesas-ra BOARD=EK_RA4M1
     make ${MAKEOPTS} -C ports/renesas-ra BOARD=EK_RA4W1
@@ -479,9 +506,11 @@ function ci_rp2_build {
     make ${MAKEOPTS} -C ports/rp2 submodules
     make ${MAKEOPTS} -C ports/rp2
     make ${MAKEOPTS} -C ports/rp2 BOARD=RPI_PICO_W submodules
+    # Legacy USER_C_MODULES coverage on RPI_PICO_W.
     make ${MAKEOPTS} -C ports/rp2 BOARD=RPI_PICO_W USER_C_MODULES=../../examples/usercmodule/micropython.cmake
     make ${MAKEOPTS} -C ports/rp2 BOARD=RPI_PICO2 submodules
-    make ${MAKEOPTS} -C ports/rp2 BOARD=RPI_PICO2
+    # Test c_module() on RPI_PICO2.
+    make ${MAKEOPTS} -C ports/rp2 BOARD=RPI_PICO2 FROZEN_MANIFEST="$(pwd)/tests/tools/manifest_c_module.py"
     make ${MAKEOPTS} -C ports/rp2 BOARD=W5100S_EVB_PICO submodules
     # This build doubles as a build test for disabling threads in the config
     make ${MAKEOPTS} -C ports/rp2 BOARD=W5100S_EVB_PICO CFLAGS_EXTRA=-DMICROPY_PY_THREAD=0
@@ -503,6 +532,7 @@ function ci_samd_build {
     make ${MAKEOPTS} -C ports/samd submodules
     make ${MAKEOPTS} -C ports/samd BOARD=ADAFRUIT_ITSYBITSY_M0_EXPRESS
     make ${MAKEOPTS} -C ports/samd BOARD=ADAFRUIT_ITSYBITSY_M4_EXPRESS
+    make ${MAKEOPTS} -C ports/samd BOARD=SPARKFUN_SAMD21_DEV_BREAKOUT
 }
 
 ########################################################################################
@@ -536,6 +566,12 @@ function ci_stm32_pyb_build {
     make ${MAKEOPTS} -C ports/stm32/mboot BOARD=PYBV10 CFLAGS_EXTRA='-DMBOOT_FSLOAD=1 -DMBOOT_VFS_LFS2=1'
     make ${MAKEOPTS} -C ports/stm32/mboot BOARD=PYBD_SF6
     make ${MAKEOPTS} -C ports/stm32/mboot BOARD=STM32F769DISC CFLAGS_EXTRA='-DMBOOT_ADDRESS_SPACE_64BIT=1 -DMBOOT_SDCARD_ADDR=0x100000000ULL -DMBOOT_SDCARD_BYTE_SIZE=0x400000000ULL -DMBOOT_FSLOAD=1 -DMBOOT_VFS_FAT=1'
+}
+
+function ci_stm32_build_cmod {
+    make ${MAKEOPTS} -C mpy-cross
+    make ${MAKEOPTS} -C ports/stm32 submodules
+    make ${MAKEOPTS} -C ports/stm32 BOARD=PYBV11 FROZEN_MANIFEST="$(pwd)/tests/tools/manifest_c_module.py"
 }
 
 function ci_stm32_nucleo_build {
@@ -608,6 +644,18 @@ CI_UNIX_OPTS_QEMU_RISCV64=(
     MICROPY_STANDALONE=1
 )
 
+CI_UNIX_OPTS_QEMU_LOONG64=(
+    CROSS_COMPILE=loongarch64-linux-gnu-
+    VARIANT=coverage
+    MICROPY_STANDALONE=1
+)
+
+CI_UNIX_OPTS_QEMU_X64=(
+    CROSS_COMPILE=x86_64-linux-gnu-
+    VARIANT=coverage
+    MICROPY_STANDALONE=1
+)
+
 CI_UNIX_OPTS_SANITIZE_ADDRESS=(
     # Macro MP_ASAN allows detecting ASan on gcc<=13
     CFLAGS_EXTRA="-fsanitize=address --param asan-use-after-return=0 -DMP_ASAN=1"
@@ -623,9 +671,12 @@ CI_UNIX_OPTS_SANITIZE_UNDEFINED=(
 CI_UNIX_OPTS_REPR_B=(
     VARIANT=standard
     CFLAGS_EXTRA="-DMICROPY_OBJ_REPR=MICROPY_OBJ_REPR_B -DMICROPY_PY_UCTYPES=0 -Dmp_int_t=int32_t -Dmp_uint_t=uint32_t"
-    MICROPY_FORCE_32BIT=1
     RUN_TESTS_MPY_CROSS_FLAGS="--mpy-cross-flags=\"-march=x86 -msmall-int-bits=30\""
+)
 
+CI_UNIX_OPTS_X86=(
+    CROSS_COMPILE=i686-linux-gnu-
+    RUN_TESTS_MPY_CROSS_FLAGS=${RUN_TESTS_MPY_CROSS_FLAGS:-"--mpy-cross-flags=\"-march=x86\""}
 )
 
 function ci_unix_build_helper {
@@ -665,6 +716,13 @@ function ci_unix_run_tests_full_helper {
     ci_unix_run_tests_full_extra $micropython
 }
 
+function ci_unix_run_native_mpy_tests_helper {
+    variant=$1
+    shift
+    MICROPYPATH=examples/natmod/features2 ./ports/unix/build-$variant/micropython -m features2
+    (cd tests && MICROPY_MICROPYTHON=../ports/unix/build-$variant/micropython ./run-natmodtests.py "$@" extmod/*.py)
+}
+
 function ci_native_mpy_modules_build {
     if [ "$1" = "" ]; then
         arch=x64
@@ -690,6 +748,14 @@ function ci_native_mpy_modules_32bit_build {
     ci_native_mpy_modules_build x86
 }
 
+function ci_native_mpy_modules_clang_build {
+    # This currently only supports the host architecture (assumed to be x64).
+    for natmod in btree deflate features1 features2 features3 features4 framebuf heapq random re
+    do
+        make -C examples/natmod/$natmod CC=clang
+    done
+}
+
 function ci_unix_minimal_build {
     make ${MAKEOPTS} -C ports/unix VARIANT=minimal
 }
@@ -707,6 +773,10 @@ function ci_unix_standard_run_tests {
     ci_unix_run_tests_full_helper standard
 }
 
+function ci_unix_standard_run_native_mpy_tests {
+    ci_unix_run_native_mpy_tests_helper standard "$@"
+}
+
 function ci_unix_standard_v2_build {
     ci_unix_build_helper VARIANT=standard MICROPY_PREVIEW_VERSION_2=1
     ci_unix_build_ffi_lib_helper gcc
@@ -714,6 +784,22 @@ function ci_unix_standard_v2_build {
 
 function ci_unix_standard_v2_run_tests {
     ci_unix_run_tests_full_helper standard
+}
+
+function ci_unix_standard_error_terse_build {
+    ci_unix_build_helper VARIANT=standard CFLAGS_EXTRA="-DMICROPY_ERROR_REPORTING=MICROPY_ERROR_REPORTING_TERSE"
+}
+
+function ci_unix_standard_error_terse_run_tests {
+    make -C ports/unix VARIANT=standard test
+}
+
+function ci_unix_standard_error_none_build {
+    ci_unix_build_helper VARIANT=standard CFLAGS_EXTRA="-DMICROPY_ERROR_REPORTING=MICROPY_ERROR_REPORTING_NONE" MICROPY_ROM_TEXT_COMPRESSION=0
+}
+
+function ci_unix_standard_error_none_run_tests {
+    make -C ports/unix VARIANT=standard test
 }
 
 function ci_unix_coverage_setup {
@@ -725,6 +811,7 @@ function ci_unix_coverage_setup {
 }
 
 function ci_unix_coverage_build {
+    # note: the coverage variant incorporates ../../examples/usercmodule, set in mpconfigvariant.mk
     ci_unix_build_helper VARIANT=coverage
     ci_unix_build_ffi_lib_helper gcc
 }
@@ -741,6 +828,12 @@ function ci_unix_coverage_run_mpy_merge_tests {
     # Compile a selection of tests to .mpy and execute them, collecting the output.
     # None of the tests should SKIP.
     for inpy in $mptop/tests/basics/[acdel]*.py; do
+        if grep -q "import unittest" $inpy; then
+            # Merging >1 unittest-enabled module leads to unexpected
+            # results, as each file runs all previously registered unittest cases
+            echo "SKIPPING $inpy"
+            continue
+        fi
         test=$(basename $inpy .py)
         echo $test
         outmpy=$outdir/$test.mpy
@@ -758,27 +851,26 @@ function ci_unix_coverage_run_mpy_merge_tests {
 }
 
 function ci_unix_coverage_run_native_mpy_tests {
-    MICROPYPATH=examples/natmod/features2 ./ports/unix/build-coverage/micropython -m features2
-    (cd tests && ./run-natmodtests.py "$@" extmod/*.py)
+    ci_unix_run_native_mpy_tests_helper coverage "$@"
 }
 
 function ci_unix_32bit_setup {
     sudo dpkg --add-architecture i386
     sudo apt-get update
-    sudo apt-get install gcc-multilib g++-multilib libffi-dev:i386
+    sudo apt-get install gcc-i686-linux-gnu g++-i686-linux-gnu patchelf libffi-dev:i386
     python -m pip install pyelftools
     python -m pip install ar
-    gcc --version
+    i686-linux-gnu-gcc --version
     python3 --version
 }
 
 function ci_unix_coverage_32bit_build {
-    ci_unix_build_helper VARIANT=coverage MICROPY_FORCE_32BIT=1
-    ci_unix_build_ffi_lib_helper gcc -m32
+    ci_unix_build_helper VARIANT=coverage "${CI_UNIX_OPTS_X86[@]}"
+    ci_unix_build_ffi_lib_helper i686-linux-gnu-gcc
 }
 
 function ci_unix_coverage_32bit_run_tests {
-    ci_unix_run_tests_full_helper coverage MICROPY_FORCE_32BIT=1
+    ci_unix_run_tests_full_helper coverage "${CI_UNIX_OPTS_X86[@]}"
 }
 
 function ci_unix_coverage_32bit_run_native_mpy_tests {
@@ -786,8 +878,8 @@ function ci_unix_coverage_32bit_run_native_mpy_tests {
 }
 
 function ci_unix_nanbox_build {
-    ci_unix_build_helper VARIANT=nanbox CFLAGS_EXTRA="-DMICROPY_PY_MATH_CONSTANTS=1"
-    ci_unix_build_ffi_lib_helper gcc -m32
+    ci_unix_build_helper VARIANT=nanbox CFLAGS_EXTRA="-DMICROPY_PY_MATH_CONSTANTS=1" "${CI_UNIX_OPTS_X86[@]}"
+    ci_unix_build_ffi_lib_helper i686-linux-gnu-gcc
 }
 
 function ci_unix_nanbox_run_tests {
@@ -795,7 +887,8 @@ function ci_unix_nanbox_run_tests {
 }
 
 function ci_unix_longlong_build {
-    ci_unix_build_helper VARIANT=longlong "${CI_UNIX_OPTS_SANITIZE_UNDEFINED[@]}"
+    ci_unix_build_helper VARIANT=longlong "${CI_UNIX_OPTS_SANITIZE_UNDEFINED[@]}" "${CI_UNIX_OPTS_X86[@]}"
+    patchelf --add-rpath "/usr/i686-linux-gnu/lib" ports/unix/build-longlong/micropython
 }
 
 function ci_unix_longlong_run_tests {
@@ -824,6 +917,7 @@ function ci_unix_gil_enabled_run_tests {
 function ci_unix_clang_setup {
     sudo apt-get update
     sudo apt-get install clang
+    pip3 install ar pyelftools
     clang --version
 }
 
@@ -967,15 +1061,92 @@ function ci_unix_qemu_riscv64_run_tests {
     popd
 }
 
+function ci_unix_qemu_loong64_setup {
+    sudo apt-get update
+    sudo apt-get install gcc-14-loongarch64-linux-gnu g++-14-loongarch64-linux-gnu libc6-loong64-cross libltdl-dev
+    sudo apt-get install qemu-user-static
+    qemu-loongarch64-static --version
+    sudo mkdir -p /usr/gnemul
+    sudo ln -s /usr/loongarch64-linux-gnu /usr/gnemul/qemu-loongarch64
+    sudo ln -s /usr/bin/loongarch64-linux-gnu-gcc-14 /usr/bin/loongarch64-linux-gnu-gcc
+    sudo ln -s /usr/bin/loongarch64-linux-gnu-g++-14 /usr/bin/loongarch64-linux-gnu-g++
+}
+
+function ci_unix_qemu_loong64_build {
+    ci_unix_build_helper "${CI_UNIX_OPTS_QEMU_LOONG64[@]}"
+    ci_unix_build_ffi_lib_helper loongarch64-linux-gnu-gcc
+}
+
+function ci_unix_qemu_loong64_run_tests {
+    # Issues with LOONG64 tests:
+    # - thread/stress_aes.py takes around 90 seconds
+    file ./ports/unix/build-coverage/micropython
+    # Loongarch64 isn't defined in the CI image's binfmt list.
+    cat << 'EOF' > ./ports/unix/build-coverage/micropython-runner
+#!/bin/sh
+MPY_PATH=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd -P)
+qemu-loongarch64-static "$MPY_PATH"/micropython $@
+EOF
+    chmod +x ./ports/unix/build-coverage/micropython-runner
+    (cd tests && MICROPY_MICROPYTHON=../ports/unix/build-coverage/micropython-runner MICROPY_TEST_TIMEOUT=180 ./run-tests.py)
+}
+
+function ci_unix_qemu_x64_setup {
+    sudo apt-get update
+    sudo apt-get install gcc-x86-64-linux-gnu g++-x86-64-linux-gnu libc6-amd64-cross libltdl-dev
+    sudo apt-get install qemu-user-static
+    python3 -m pip install pyelftools
+    python3 -m pip install ar
+    qemu-x86_64-static --version
+    sudo mkdir -p /usr/gnemul
+    sudo ln -s /usr/x86_64-linux-gnu /usr/gnemul/qemu-x86_64
+}
+
+function ci_unix_qemu_x64_build {
+    ci_unix_build_helper "${CI_UNIX_OPTS_QEMU_X64[@]}"
+    ci_unix_build_ffi_lib_helper x86_64-linux-gnu-gcc
+    ci_native_mpy_modules_build x64
+}
+
+function ci_unix_qemu_x64_run_tests {
+    # Issues with x64 tests on non-x64 hosts:
+    # - thread/stress_aes.py takes around 90 seconds
+    # - ports/unix/ffi_callback.py crashes QEMU (x86_64-binfmt-P: QEMU internal SIGSEGV {code=MAPERR, addr=0x20})
+    file ./ports/unix/build-coverage/micropython
+    pushd tests
+    MICROPY_MICROPYTHON=../ports/unix/build-coverage/micropython ./run-tests.py --exclude '(thread/stress_aes.py|ports/unix/ffi_callback.py)'
+    MICROPY_MICROPYTHON=../ports/unix/build-coverage/micropython ./run-natmodtests.py extmod/btree*.py extmod/deflate*.py extmod/framebuf*.py extmod/heapq*.py extmod/random_basic*.py extmod/re*.py
+    popd
+}
+
 function ci_unix_repr_b_build {
-    ci_unix_build_helper "${CI_UNIX_OPTS_REPR_B[@]}"
-    ci_unix_build_ffi_lib_helper gcc -m32
+    ci_unix_build_helper "${CI_UNIX_OPTS_REPR_B[@]}" "${CI_UNIX_OPTS_X86[@]}"
+    ci_unix_build_ffi_lib_helper i686-linux-gnu-gcc
 }
 
 function ci_unix_repr_b_run_tests {
     # ci_unix_run_tests_full_no_native_helper is not used due to
     # https://github.com/micropython/micropython/issues/18105
-    ci_unix_run_tests_helper "${CI_UNIX_OPTS_REPR_B[@]}"
+    ci_unix_run_tests_helper "${CI_UNIX_OPTS_REPR_B[@]}" "${CI_UNIX_OPTS_X86[@]}"
+}
+
+########################################################################################
+# ports/webassembly
+
+function ci_webassembly_setup {
+    npm install terser
+    git clone https://github.com/emscripten-core/emsdk.git
+    (cd emsdk && ./emsdk install latest && ./emsdk activate latest)
+}
+
+function ci_webassembly_build {
+    source emsdk/emsdk_env.sh
+    make ${MAKEOPTS} -C ports/webassembly VARIANT=pyscript submodules
+    make ${MAKEOPTS} -C ports/webassembly VARIANT=pyscript
+}
+
+function ci_webassembly_run_tests {
+    make -C ports/webassembly VARIANT=pyscript test_min
 }
 
 ########################################################################################
@@ -983,22 +1154,22 @@ function ci_unix_repr_b_run_tests {
 
 function ci_windows_setup {
     sudo apt-get update
-    sudo apt-get install gcc-mingw-w64
+    sudo apt-get install gcc-mingw-w64 g++-mingw-w64
 }
 
 function ci_windows_build {
     make ${MAKEOPTS} -C mpy-cross
     make ${MAKEOPTS} -C ports/windows submodules
-    make ${MAKEOPTS} -C ports/windows CROSS_COMPILE=i686-w64-mingw32-
+    make ${MAKEOPTS} -C ports/windows CROSS_COMPILE=i686-w64-mingw32- USER_C_MODULES=../../examples/usercmodule
     make ${MAKEOPTS} -C ports/windows CROSS_COMPILE=x86_64-w64-mingw32- BUILD=build-standard-w64
 }
 
 ########################################################################################
 # ports/zephyr
 
-ZEPHYR_DOCKER_VERSION=v0.28.1
-ZEPHYR_SDK_VERSION=0.17.2
-ZEPHYR_VERSION=v4.2.0
+ZEPHYR_DOCKER_VERSION=v0.29.2
+ZEPHYR_SDK_VERSION=1.0.1
+ZEPHYR_VERSION=v4.4.0
 
 function ci_zephyr_setup {
     IMAGE=ghcr.io/zephyrproject-rtos/ci:${ZEPHYR_DOCKER_VERSION}
@@ -1038,9 +1209,9 @@ function ci_zephyr_install {
 
 function ci_zephyr_build {
     git submodule update --init lib/micropython-lib
-    docker exec zephyr-ci west build -p auto -b qemu_x86 -- -DCONF_FILE=prj_minimal.conf
+    docker exec zephyr-ci west build -p auto -b qemu_x86 -- -DCONF_FILE='prj_minimal.conf;boards/qemu_x86.conf'
     docker exec zephyr-ci west build -p auto -b frdm_k64f
-    docker exec zephyr-ci west build -p auto -b mimxrt1050_evk
+    docker exec zephyr-ci west build -p auto -b mimxrt1050_evk/mimxrt1052/qspi
     docker exec zephyr-ci west build -p auto -b nucleo_wb55rg # for bluetooth
 }
 
@@ -1050,19 +1221,7 @@ function ci_zephyr_run_tests {
 }
 
 ########################################################################################
-# ports/alif
-
-function ci_alif_setup {
-    ci_gcc_arm_setup
-}
-
-function ci_alif_ae3_build {
-    make ${MAKEOPTS} -C mpy-cross
-    make ${MAKEOPTS} -C ports/alif BOARD=OPENMV_AE3 MCU_CORE=M55_HP submodules
-    make ${MAKEOPTS} -C ports/alif BOARD=OPENMV_AE3 MCU_CORE=M55_HE submodules
-    make ${MAKEOPTS} -C ports/alif BOARD=OPENMV_AE3 MCU_CORE=M55_DUAL
-    make ${MAKEOPTS} -C ports/alif BOARD=ALIF_ENSEMBLE MCU_CORE=M55_DUAL
-}
+# Helpers to run this script as a CLI tool.
 
 function _ci_help {
     # Note: these lines must be indented with tab characters (required by bash <<-EOF)

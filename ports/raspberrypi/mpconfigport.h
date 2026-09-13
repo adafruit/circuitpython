@@ -8,6 +8,10 @@
 
 #include "hardware/platform_defs.h"
 
+// CIRCUITPY-CHANGE: CircuitPython supports raw sockets through its own lwip
+// integration, independently of MICROPY_PY_LWIP.
+#define MICROPY_PY_LWIP_SOCK_RAW (1)
+
 #if PICO_RP2040
 #define MICROPY_PY_SYS_PLATFORM             "RP2040"
 #endif

@@ -17,6 +17,10 @@ endif
 # If the build directory is not given, make it reflect the variant name.
 BUILD ?= build-$(VARIANT)
 
+ifneq ($(MICROPY_FORCE_32BIT),)
+$(warning *** The MICROPY_FORCE_32BIT flag is no longer affecting builds, please update your environment ***)
+endif
+
 include ../../py/mkenv.mk
 -include mpconfigport.mk
 include $(VARIANT_DIR)/mpconfigvariant.mk
@@ -62,20 +66,24 @@ CFLAGS += -D_FILE_OFFSET_BITS=64
 # This option has no effect on 64-bit builds.
 CFLAGS += -D_TIME_BITS=64
 
+# Debug info flag is added if either DEBUG=1 or STRIP= is passed to make
+# (to produce a debug binary, or a release binary with all symbols, respectively.)
+DEBUG_INFO = -ggdb3
+
 # Debugging/Optimization
 ifdef DEBUG
 COPT ?= -Og
+CFLAGS += $(DEBUG_INFO)
 else
 COPT ?= -Os
 COPT += -DNDEBUG
+ifndef STRIP
+CFLAGS += $(DEBUG_INFO)
 endif
+endif  # ifdef DEBUG
 
 # Remove unused sections.
 COPT += -fdata-sections -ffunction-sections
-
-# Note: Symbols and debug information will still be stripped from the final binary
-# unless "DEBUG=1" or "STRIP=" is passed to make, see README.md for details.
-CFLAGS += -g
 
 ifndef DEBUG
 # _FORTIFY_SOURCE is a feature in gcc/glibc which is intended to provide extra
@@ -110,11 +118,7 @@ endif
 # while cross-compile ports require gcc, so we test here for OSX and
 # if necessary override the value of 'CC' set in py/mkenv.mk
 ifeq ($(UNAME_S),Darwin)
-ifeq ($(MICROPY_FORCE_32BIT),1)
-CC = clang -m32
-else
 CC = clang
-endif
 # Use clang syntax for map file
 LDFLAGS_ARCH = -Wl,-map,$@.map -Wl,-dead_strip
 else
@@ -125,16 +129,6 @@ LDFLAGS += $(LDFLAGS_MOD) $(LDFLAGS_ARCH) -lm $(LDFLAGS_EXTRA)
 
 # Flags to link with pthread library
 LIBPTHREAD = -lpthread
-
-ifeq ($(MICROPY_FORCE_32BIT),1)
-# Note: you may need to install i386 versions of dependency packages,
-# starting with linux-libc-dev:i386
-ifeq ($(MICROPY_PY_FFI),1)
-ifeq ($(UNAME_S),Linux)
-CFLAGS += -I/usr/include/i686-linux-gnu
-endif
-endif
-endif
 
 ifeq ($(MICROPY_USE_READLINE),1)
 INC += -I$(TOP)/shared/readline
@@ -187,11 +181,7 @@ ifeq ($(MICROPY_STANDALONE),1)
 GIT_SUBMODULES += lib/libffi
 DEPLIBS += libffi
 LIBFFI_CFLAGS := -I$(shell ls -1d $(BUILD)/lib/libffi/include)
- ifeq ($(MICROPY_FORCE_32BIT),1)
-  LIBFFI_LDFLAGS = $(BUILD)/lib/libffi/out/lib32/libffi.a
- else
-  LIBFFI_LDFLAGS = $(BUILD)/lib/libffi/out/lib/libffi.a
- endif
+LIBFFI_LDFLAGS = $(BUILD)/lib/libffi/out/lib/libffi.a
 else
 # Use system version of libffi.
 LIBFFI_CFLAGS := $(shell pkg-config --cflags libffi)
@@ -261,13 +251,6 @@ CFLAGS += -DMICROPY_QSTR_EXTRA_POOL=mp_qstr_frozen_const_pool
 CFLAGS += -DMICROPY_MODULE_FROZEN_MPY
 CFLAGS += -DMPZ_DIG_SIZE=16 # force 16 bits to work on both 32 and 64 bit archs
 CFLAGS += -DMICROPY_MODULE_FROZEN_STR
-endif
-
-# CIRCUITPY-CHANGE: use gnu11 instead of gnu99
-CXXFLAGS += $(filter-out -Wmissing-prototypes -Wold-style-definition -std=gnu11,$(CFLAGS) $(CXXFLAGS_MOD))
-
-ifeq ($(MICROPY_FORCE_32BIT),1)
-RUN_TESTS_MPY_CROSS_FLAGS = --mpy-cross-flags='-march=x86'
 endif
 
 ifeq ($(CROSS_COMPILE),arm-linux-gnueabi-)

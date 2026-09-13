@@ -2423,6 +2423,14 @@ static void compile_trailer_paren_helper(compiler_t *comp, mp_parse_node_t pn_ar
                     compile_syntax_error(comp, (mp_parse_node_t)pns_arg, MP_ERROR_TEXT("* arg after **"));
                     return;
                 }
+                if (n_keyword) {
+                    // Support for *arg after kwarg is a CPython feature omitted
+                    // from MicroPython in order to reduce code size. See
+                    // https://github.com/micropython/micropython/issues/11439 for
+                    // more info.
+                    compile_syntax_error(comp, (mp_parse_node_t)pns_arg, MP_ERROR_TEXT("* arg after kwarg"));
+                    return;
+                }
                 #if MICROPY_DYNAMIC_COMPILER
                 if (i >= (size_t)mp_dynamic_compiler.small_int_bits - 1)
                 #else
@@ -3664,7 +3672,7 @@ emit_finished:
 
         #if MICROPY_DEBUG_PRINTERS
         // now that the module context is valid, the raw codes can be printed
-        if (mp_verbose_flag >= 2) {
+        if (MP_STATE_VM(mp_verbose_flag) >= 2) {
             for (scope_t *s = comp->scope_head; s != NULL; s = s->next) {
                 mp_raw_code_t *rc = s->raw_code;
                 if (rc->kind == MP_CODE_BYTECODE) {

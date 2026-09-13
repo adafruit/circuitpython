@@ -53,6 +53,7 @@ except MemoryError:
 ERROR_EIO = (OSError, "[Errno 5] EIO")
 ERROR_EINVAL = (OSError, "[Errno 22] EINVAL")
 ERROR_TYPE = (TypeError, "can't convert str to int")
+ALL_ERROR_TYPES = (OSError, TypeError)
 
 
 def test(vfs_class, test_data):
@@ -71,7 +72,7 @@ def test(vfs_class, test_data):
         try:
             with fs.open("test", "r") as f:
                 assert error_open is None
-        except Exception as e:
+        except ALL_ERROR_TYPES as e:
             assert error_open is not None
             assert (type(e), str(e)) == error_open
 
@@ -84,9 +85,26 @@ def test(vfs_class, test_data):
                 assert f.read(1) == "a"
                 assert f.read() == "a" * 63
                 assert error_read is None
-        except Exception as e:
+        except ALL_ERROR_TYPES as e:
             assert error_read is not None
             assert (type(e), str(e)) == error_read
+
+        # Try mounting this block device
+        #
+        # Failing mount operation will return EIO rather than EINVAL, but otherwise
+        # the result should match error_open
+        error_mount = ERROR_EIO if error_open == ERROR_EINVAL else error_open
+        try:
+            vfs.mount(bdev, "/test_ram")
+            assert error_mount is None
+        except ALL_ERROR_TYPES as e:
+            assert error_mount is not None
+            assert (type(e), str(e)) == error_mount
+        finally:
+            try:
+                vfs.umount("/test_ram")
+            except OSError:
+                pass
 
 
 try:

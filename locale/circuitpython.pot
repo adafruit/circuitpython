@@ -2407,6 +2407,10 @@ msgstr ""
 msgid "bad typecode"
 msgstr ""
 
+#: py/binary.c
+msgid "integer out of range"
+msgstr ""
+
 #: py/builtinevex.c
 msgid "bad compile mode"
 msgstr ""
@@ -2523,6 +2527,10 @@ msgstr ""
 
 #: py/compile.c
 msgid "* arg after **"
+msgstr ""
+
+#: py/compile.c
+msgid "* arg after kwarg"
 msgstr ""
 
 #: py/compile.c
@@ -2651,6 +2659,22 @@ msgstr ""
 
 #: py/emitinlinerv32.c
 msgid "opcode '%q' argument %d: must not be zero"
+msgstr ""
+
+#: py/emitinlinerv32.c
+msgid "opcode '%q': registers must be different"
+msgstr ""
+
+#: py/emitinlinerv32.c
+msgid "opcode '%q': malformed register list"
+msgstr ""
+
+#: py/emitinlinerv32.c
+msgid "opcode '%q': invalid stack adjustment"
+msgstr ""
+
+#: py/emitinlinerv32.c
+msgid "opcode '%q' argument %d: wrong register(s)"
 msgstr ""
 
 #: py/emitinlinerv32.c
@@ -2815,6 +2839,10 @@ msgid "return expected '%q' but got '%q'"
 msgstr ""
 
 #: py/emitnative.c
+msgid "native raise"
+msgstr ""
+
+#: py/emitnative.c
 msgid "must raise an object"
 msgstr ""
 
@@ -2826,8 +2854,8 @@ msgstr ""
 msgid "unicode name escapes"
 msgstr ""
 
-#: py/modbuiltins.c
-msgid "chr() arg not in range(0x110000)"
+#: py/modbuiltins.c py/objstr.c
+msgid "char not in range(0x110000)"
 msgstr ""
 
 #: py/modbuiltins.c
@@ -3130,11 +3158,6 @@ msgstr ""
 msgid "float too big"
 msgstr ""
 
-#: py/objint.c
-#, c-format
-msgid "value must fit in %d byte(s)"
-msgstr ""
-
 #: py/objint.c shared-bindings/time/__init__.c
 msgid "No long integer support"
 msgstr ""
@@ -3146,6 +3169,15 @@ msgstr ""
 #: py/objint.c shared-bindings/_bleio/Connection.c
 #: shared-bindings/storage/__init__.c
 msgid "%q=%q"
+msgstr ""
+
+#: py/objint_impl.h
+#, c-format
+msgid "value would overflow a %d byte buffer"
+msgstr ""
+
+#: py/objint_impl.h
+msgid "can't convert negative int to unsigned"
 msgstr ""
 
 #: py/objint_longlong.c py/parsenum.c
@@ -3186,6 +3218,10 @@ msgstr ""
 
 #: py/objslice.c
 msgid "Cannot subclass slice"
+msgstr ""
+
+#: py/objstr.c
+msgid "unknown encoding: %q"
 msgstr ""
 
 #: py/objstr.c

@@ -46,6 +46,7 @@
 #define MICROPY_NLR_NUM_REGS_XTENSAWIN      (17)
 #define MICROPY_NLR_NUM_REGS_RV32I          (14)
 #define MICROPY_NLR_NUM_REGS_RV64I          (14)
+#define MICROPY_NLR_NUM_REGS_LOONG64        (13)
 
 // *FORMAT-OFF*
 
@@ -111,6 +112,13 @@
     #else
         #error Unsupported RISC-V variant.
     #endif
+#elif defined(__loongarch__)
+    #if defined(__loongarch64)
+        #define MICROPY_NLR_LOONG64 (1)
+        #define MICROPY_NLR_NUM_REGS (MICROPY_NLR_NUM_REGS_LOONG64)
+    #else
+        #error Unsupported Loongarch variant.
+    #endif
 #else
     #define MICROPY_NLR_SETJMP (1)
     //#warning "No native NLR support for this arch, using setjmp implementation"
@@ -120,6 +128,10 @@
 // CIRCUITPY-CHANGE: Avoid warnings by defining all these MICROPY_PY_NLR_* macros
 #ifndef MICROPY_NLR_AARCH64
 #define MICROPY_NLR_AARCH64 (0)
+#endif
+
+#ifndef MICROPY_NLR_LOONG64
+#define MICROPY_NLR_LOONG64 (0)
 #endif
 
 #ifndef MICROPY_NLR_MIPS

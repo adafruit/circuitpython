@@ -116,6 +116,9 @@ void mp_init(void) {
     #if MICROPY_EMIT_NATIVE
     MP_STATE_VM(default_emit_opt) = MP_EMIT_OPT_NONE;
     #endif
+    #if MICROPY_DEBUG_PRINTERS
+    MP_STATE_VM(mp_verbose_flag) = 0;
+    #endif
     #endif
 
     // init global module dict
@@ -1696,8 +1699,7 @@ void mp_import_all(mp_obj_t module) {
     mp_obj_t dest[2];
 
     #if MICROPY_MODULE___ALL__
-
-    mp_load_method_maybe(module, MP_QSTR___all__, dest);
+    mp_load_method_protected(module, MP_QSTR___all__, dest, false);
     if (dest[0] != MP_OBJ_NULL) {
         // When __all__ is defined, we must explicitly load all specified
         // symbols, possibly invoking the module __getattr__ function

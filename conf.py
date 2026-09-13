@@ -331,6 +331,7 @@ latex_elements = {
 \hbadness=99999
 \hfuzz=20pt
 \usepackage{pdflscape}
+\DeclareUnicodeCharacter{FFFD}{?}
 """,
 }
 

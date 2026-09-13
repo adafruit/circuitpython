@@ -54,13 +54,20 @@
 #ifndef MICROPY_PY_SYS_PLATFORM
 #if defined(__APPLE__) && defined(__MACH__)
     #define MICROPY_PY_SYS_PLATFORM  "darwin"
+#elif defined(__FreeBSD__)
+    #define MICROPY_PY_SYS_PLATFORM  "freebsd"
 #else
     #define MICROPY_PY_SYS_PLATFORM  "linux"
 #endif
 #endif
 
 #ifndef MICROPY_PY_SYS_PATH_DEFAULT
-#define MICROPY_PY_SYS_PATH_DEFAULT ".frozen:~/.micropython/lib:/usr/lib/micropython"
+#if defined(__FreeBSD__)
+#define SYSTEM_LIB_PATH "/usr/local/lib/micropython"
+#else
+#define SYSTEM_LIB_PATH "/usr/lib/micropython"
+#endif
+#define MICROPY_PY_SYS_PATH_DEFAULT ".frozen:~/.micropython/lib:" SYSTEM_LIB_PATH
 #endif
 
 #define MP_STATE_PORT MP_STATE_VM
@@ -104,9 +111,12 @@ typedef long mp_off_t;
 // CIRCUITPY-CHANGE
 #define MICROPY_ENABLE_SELECTIVE_COLLECT (1)
 
-#if !(defined(MICROPY_GCREGS_SETJMP) || defined(__x86_64__) || defined(__i386__) || defined(__thumb2__) || defined(__thumb__) || defined(__arm__) || (defined(__riscv) && (__riscv_xlen == 64)))
-// Fall back to setjmp() implementation for discovery of GC pointers in registers.
-#define MICROPY_GCREGS_SETJMP (1)
+// Fall back to setjmp() implementation for discovery of GC pointers in registers
+// if running on intel-based macOS, or on architectures for which there is no
+// specialised GC pointer discovery mechanism.
+#if (defined(__APPLE__) && defined(__MACH__) && (defined(__i386__) || defined(__x86_64__))) || \
+    (!(defined(MICROPY_GCREGS_SETJMP) || defined(__x86_64__) || defined(__i386__) || defined(__thumb2__) || defined(__thumb__) || defined(__arm__) || (defined(__riscv) && __riscv_xlen <= 64) || (defined(__loongarch__) && defined(__loongarch64))))
+#define MICROPY_GCREGS_SETJMP       (1)
 #endif
 
 // Enable the VFS, and enable the posix "filesystem".
