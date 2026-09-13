@@ -63,6 +63,21 @@ CIRCUITPY_TOUCHIO ?= 1
 
 # delay in ms before calling cyw43_arch_init_with_country
 CIRCUITPY_CYW43_INIT_DELAY ?= 1000
+
+# -O2 plus the five -O3 loop passes that help here, leaving out the eight that make loops
+# faster by duplicating them: function cloning, peeling, unroll-and-jam, splitting,
+# interchange and versioning for strides. The vectorizer stays on - it is already on at -O2 -
+# but without those passes it rarely finds a loop to work on, and on this core it was not
+# winning anything anyway. Measured on a full build: benchmarks within 1 % of -O3 and about
+# 150 KB less flash, which is what lets a board fit.
+#   -funswitch-loops        moves a test that cannot change inside the loop out of it
+#   -fpredictive-commoning  reuses what the previous iteration already loaded
+#   -fgcse-after-reload     drops loads still redundant once registers are assigned
+#   -ftree-partial-pre      computes a value once when only some paths need it
+#   -fsplit-paths           duplicates a small piece of a loop so the passes above see through it
+# RP2350 keeps plain -O3: there the duplicating passes are what lets the vectorizer pair
+# 16-bit writes, and fill loops run 24-41 % slower without them.
+OPTIMIZATION_FLAGS ?= -O2 -funswitch-loops -fpredictive-commoning -fgcse-after-reload -ftree-partial-pre -fsplit-paths
 endif
 
 ifeq ($(CHIP_VARIANT),RP2350)
