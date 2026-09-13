@@ -30,6 +30,61 @@
 #include "hal/usb_serial_jtag_ll.h"
 #endif
 
+#if CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_CDC
+#include "py/ringbuf.h"
+#include "shared-bindings/microcontroller/__init__.h"
+#include "shared-module/usb_cdc/__init__.h"
+
+// tud_task() runs in the usbd task below, not on the VM task. If the VM read the
+// TinyUSB fifo directly it could re-arm the CDC OUT endpoint while tud_task() is
+// still copying the previous packet out of the endpoint buffer (tinyusb#1292).
+// So console input is moved from the fifo into this ringbuf on the usbd task and
+// read from the ringbuf on the VM task. Both tasks use the ringbuf, so every
+// access is made with interrupts disabled.
+static uint8_t _cdc_rx_buf[256];
+static ringbuf_t _cdc_rx_ringbuf = { .buf = _cdc_rx_buf, .size = sizeof(_cdc_rx_buf) };
+
+void usb_cdc_rx_drain(void) {
+    if (!usb_cdc_console_enabled()) {
+        return;
+    }
+    uint8_t chunk[64];
+    while (tud_cdc_available() > 0) {
+        common_hal_mcu_disable_interrupts();
+        size_t room = ringbuf_num_empty(&_cdc_rx_ringbuf);
+        common_hal_mcu_enable_interrupts();
+        if (room == 0) {
+            return;
+        }
+        // tud_cdc_read() can wait on the TinyUSB fifo mutex, so it runs with interrupts enabled.
+        uint32_t count = tud_cdc_read(chunk, MIN(room, sizeof(chunk)));
+        common_hal_mcu_disable_interrupts();
+        ringbuf_put_n(&_cdc_rx_ringbuf, chunk, count);
+        common_hal_mcu_enable_interrupts();
+    }
+}
+
+size_t usb_cdc_rx_read(uint8_t *data, size_t len) {
+    common_hal_mcu_disable_interrupts();
+    size_t count = ringbuf_get_n(&_cdc_rx_ringbuf, data, len);
+    common_hal_mcu_enable_interrupts();
+    return count;
+}
+
+size_t usb_cdc_rx_available(void) {
+    common_hal_mcu_disable_interrupts();
+    size_t count = ringbuf_num_filled(&_cdc_rx_ringbuf);
+    common_hal_mcu_enable_interrupts();
+    return count;
+}
+
+void usb_cdc_rx_clear(void) {
+    common_hal_mcu_disable_interrupts();
+    ringbuf_clear(&_cdc_rx_ringbuf);
+    common_hal_mcu_enable_interrupts();
+}
+#endif // CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_CDC
+
 #if CIRCUITPY_USB_DEVICE
 #ifdef CFG_TUSB_DEBUG
   #define USBD_STACK_SIZE     (3 * configMINIMAL_STACK_SIZE)

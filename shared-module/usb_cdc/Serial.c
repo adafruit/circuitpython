@@ -13,19 +13,16 @@
 
 #include "tusb.h"
 
-#if CFG_TUSB_OS == OPT_OS_FREERTOS
-// On espressif, console input is read from the ringbuf in supervisor/shared/usb/usb_device.c.
-static bool _console_uses_ringbuf(usb_cdc_serial_obj_t *self) {
+// Console input goes through the supervisor's usb_cdc_rx_* path (see supervisor/usb.h),
+// which a port may stage in its own buffer.
+static bool _is_console(usb_cdc_serial_obj_t *self) {
     return self->idx == 0 && usb_cdc_console_enabled();
 }
-#endif
 
 static uint32_t _read(usb_cdc_serial_obj_t *self, uint8_t *data, size_t len) {
-    #if CFG_TUSB_OS == OPT_OS_FREERTOS
-    if (_console_uses_ringbuf(self)) {
+    if (_is_console(self)) {
         return usb_cdc_rx_read(data, len);
     }
-    #endif
     return tud_cdc_n_read(self->idx, data, len);
 }
 
@@ -116,11 +113,9 @@ size_t common_hal_usb_cdc_serial_write(usb_cdc_serial_obj_t *self, const uint8_t
 }
 
 uint32_t common_hal_usb_cdc_serial_get_in_waiting(usb_cdc_serial_obj_t *self) {
-    #if CFG_TUSB_OS == OPT_OS_FREERTOS
-    if (_console_uses_ringbuf(self)) {
+    if (_is_console(self)) {
         return usb_cdc_rx_available();
     }
-    #endif
     return tud_cdc_n_available(self->idx);
 }
 
@@ -131,11 +126,9 @@ uint32_t common_hal_usb_cdc_serial_get_out_waiting(usb_cdc_serial_obj_t *self) {
 
 void common_hal_usb_cdc_serial_reset_input_buffer(usb_cdc_serial_obj_t *self) {
     tud_cdc_n_read_flush(self->idx);
-    #if CFG_TUSB_OS == OPT_OS_FREERTOS
-    if (_console_uses_ringbuf(self)) {
+    if (_is_console(self)) {
         usb_cdc_rx_clear();
     }
-    #endif
 }
 
 uint32_t common_hal_usb_cdc_serial_reset_output_buffer(usb_cdc_serial_obj_t *self) {
