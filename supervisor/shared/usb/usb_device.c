@@ -150,8 +150,7 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_requ
 
 
 #if CIRCUITPY_USB_CDC
-// Default console input path: tud_task() runs on the VM's task on these ports, so
-// the TinyUSB fifo can be read directly. See supervisor/usb.h.
+// Defaults: tud_task() runs on the VM task here, so the fifo is read directly.
 MP_WEAK void usb_cdc_rx_drain(void) {
 }
 

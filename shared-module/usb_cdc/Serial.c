@@ -13,8 +13,7 @@
 
 #include "tusb.h"
 
-// Console input goes through the supervisor's usb_cdc_rx_* path (see supervisor/usb.h),
-// which a port may stage in its own buffer.
+// Console input goes through usb_cdc_rx_*, which a port may stage elsewhere.
 static bool _is_console(usb_cdc_serial_obj_t *self) {
     return self->idx == 0 && usb_cdc_console_enabled();
 }

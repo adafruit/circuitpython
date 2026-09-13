@@ -35,12 +35,10 @@
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-module/usb_cdc/__init__.h"
 
-// tud_task() runs in the usbd task below, not on the VM task. If the VM read the
-// TinyUSB fifo directly it could re-arm the CDC OUT endpoint while tud_task() is
-// still copying the previous packet out of the endpoint buffer (tinyusb#1292).
-// So console input is moved from the fifo into this ringbuf on the usbd task and
-// read from the ringbuf on the VM task. Both tasks use the ringbuf, so every
-// access is made with interrupts disabled.
+// tud_task() runs in the usbd task below. Reading the TinyUSB fifo from the VM
+// task could re-arm the CDC OUT endpoint while tud_task() is still copying the
+// previous packet out of it, so console input is staged in this ringbuf on the
+// usbd task. Both tasks use it, so every access runs with interrupts disabled.
 static uint8_t _cdc_rx_buf[256];
 static ringbuf_t _cdc_rx_ringbuf = { .buf = _cdc_rx_buf, .size = sizeof(_cdc_rx_buf) };
 

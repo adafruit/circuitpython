@@ -19,15 +19,11 @@ void usb_background(void);
 // Schedule usb background
 void usb_background_schedule(void);
 
-// Console (CDC interface 0) input. The default implementations read TinyUSB's
-// fifo directly. A port that runs tud_task() in its own task (espressif) overrides
-// them to stage input in a ringbuf, so the fifo is only touched on that task:
-// usb_cdc_rx_drain() runs there, the other three on the VM task.
-//
-// usb_cdc_rx_read() copies up to len bytes into *data and returns the count, 0 when
-// nothing is pending. usb_cdc_rx_available() returns the pending byte count.
-// usb_cdc_rx_clear() discards staged input; callers flush the TinyUSB fifo themselves.
-// usb_cdc_rx_drain() moves fifo bytes into the staging buffer; a no-op by default.
+// Console (CDC interface 0) input. Defaults read the TinyUSB fifo directly; a port
+// whose tud_task() runs on another task overrides them and stages input there.
+// usb_cdc_rx_drain() runs on that task, the other three on the VM task.
+// read() fills *data with up to len bytes and returns the count, available()
+// returns the pending count, both 0 when empty. clear() drops staged input only.
 void usb_cdc_rx_drain(void);
 size_t usb_cdc_rx_read(uint8_t *data, size_t len);
 size_t usb_cdc_rx_available(void);
