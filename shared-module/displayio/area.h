@@ -23,9 +23,9 @@ struct _displayio_area_t {
 typedef struct {
     uint16_t x;
     uint16_t y;
-    int8_t dx;
-    int8_t dy;
-    uint8_t scale;
+    int16_t dx;
+    int16_t dy;
+    uint16_t scale;
     uint16_t width;
     uint16_t height;
     bool mirror_x;
