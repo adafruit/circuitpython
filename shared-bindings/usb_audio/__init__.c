@@ -19,11 +19,18 @@
 //| Audio Class (UAC2) microphone: the board is the audio *source* and streams
 //| samples to the host over a USB isochronous IN endpoint.
 //|
-//| This mode requires 2 IN endpoints and 2 interfaces.
+//| A microphone takes one isochronous IN endpoint and two interfaces, a speaker
+//| one isochronous OUT endpoint and two interfaces, and a headset one of each
+//| and three interfaces.
 //| Generally, microcontrollers have a limit on the number of endpoints. If you exceed the number
 //| of endpoints, CircuitPython will automatically enter Safe Mode. Even in this case, you may be
 //| able to enable USB audio by also disabling other USB functions, such as
 //| `usb_hid` or `usb_midi`.
+//|
+//| The host's mute and volume controls for the device apply to the samples:
+//| what the microphone sends is scaled before it leaves the board, and what
+//| the speaker receives is scaled before it reaches the sample. At the default,
+//| 0 dB, they pass unchanged.
 //|
 //| To enable this mode, you must configure the audio format in ``boot.py`` and then
 //| use the `usb_microphone` singleton instance in ``code.py``.
@@ -110,7 +117,9 @@ static mp_obj_t usb_audio_enable(size_t n_args, const mp_obj_t *pos_args, mp_map
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    mp_int_t sample_rate = mp_arg_validate_int_range(args[ARG_sample_rate].u_int, 1, USB_AUDIO_MAX_SAMPLE_RATE, MP_QSTR_sample_rate);
+    // The microphone hands the host one millisecond of audio at a time, so a
+    // rate below 1 kHz would give it nothing to send.
+    mp_int_t sample_rate = mp_arg_validate_int_range(args[ARG_sample_rate].u_int, 1000, USB_AUDIO_MAX_SAMPLE_RATE, MP_QSTR_sample_rate);
     mp_int_t channel_count = mp_arg_validate_int_range(args[ARG_channel_count].u_int, 1, USB_AUDIO_N_CHANNELS, MP_QSTR_channel_count);
     bool microphone = args[ARG_microphone].u_bool;
     bool speaker = args[ARG_speaker].u_bool;
