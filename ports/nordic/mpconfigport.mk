@@ -1,5 +1,8 @@
 # All linking can be done with this common templated linker script, which has
 # parameters that vary based on chip and/or board.
+# Properties get a dedicated linker section here, so they can drop the unused slots.
+CIRCUITPY_OPTIMIZE_PROPERTY_FLASH_SIZE ?= 1
+
 LD_TEMPLATE_FILE = boards/common.template.ld
 
 INTERNAL_LIBM = 1
@@ -56,6 +59,7 @@ CIRCUITPY_BLE_FILE_SERVICE ?= 1
 CIRCUITPY_BLE_SERIAL_SERVICE ?= 1
 
 CIRCUITPY_COMPUTED_GOTO_SAVE_SPACE ?= 1
+CIRCUITPY_LOAD_NATIVE ?= 1
 
 
 # nRF52840-specific

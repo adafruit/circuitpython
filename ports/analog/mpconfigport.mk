@@ -6,6 +6,9 @@
 #
 # SPDX-License-Identifier: MIT
 
+# Properties get a dedicated linker section here, so they can drop the unused slots.
+CIRCUITPY_OPTIMIZE_PROPERTY_FLASH_SIZE ?= 1
+
 CHIP_FAMILY ?= max32
 
 # Necessary to build CircuitPython

@@ -342,6 +342,8 @@ MP_DEFINE_CONST_FUN_OBJ_1(wifi_radio_stop_station_obj, wifi_radio_stop_station);
 //|
 //|         If ``channel`` is given, the access point will use that channel unless
 //|         a station is already operating on a different channel.
+//|         On dual-band radios, 5 GHz channels (36 and above) may also be given.
+//|         A channel the radio does not support raises `ValueError`.
 //|
 //|         If ``authmode`` is not None, the access point will use the given authentication modes.
 //|         If a non-empty password is given, ``authmode`` must not include ``OPEN``.
@@ -363,7 +365,8 @@ MP_DEFINE_CONST_FUN_OBJ_1(wifi_radio_stop_station_obj, wifi_radio_stop_station);
 //|
 //|         .. note::
 //|
-//|             In the raspberrypi port (RP2040 CYW43), ``max_connections`` is ignored.
+//|             In the raspberrypi port (RP2040 CYW43), ``max_connections`` is ignored
+//|             and only 2.4 GHz channels (1-13) are accepted.
 //|         """
 //|         ...
 //|
@@ -403,7 +406,9 @@ static mp_obj_t wifi_radio_start_ap(size_t n_args, const mp_obj_t *pos_args, mp_
         }
     }
 
-    mp_int_t channel = mp_arg_validate_int_range(args[ARG_channel].u_int, 1, 13, MP_QSTR_channel);
+    // 165 is the highest channel in the scan pattern. Channels the radio
+    // doesn't support are rejected by the port rather than here.
+    mp_int_t channel = mp_arg_validate_int_range(args[ARG_channel].u_int, 1, 165, MP_QSTR_channel);
 
     if (authmode == AUTHMODE_OPEN && password.len > 0) {
         mp_raise_ValueError(MP_ERROR_TEXT("AuthMode.OPEN is not used with password"));

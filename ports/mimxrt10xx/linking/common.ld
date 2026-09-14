@@ -69,6 +69,12 @@ SECTIONS
     .text :
     {
         . = ALIGN(4);
+        __property_getter_start = .;
+        *(.property_getter)
+        __property_getter_end = .;
+        __property_getset_start = .;
+        *(.property_getset)
+        __property_getset_end = .;
     *(EXCLUDE_FILE(
         *fsl_flexspi.o
         *cd_ci_hs.o
@@ -210,4 +216,9 @@ SECTIONS
     __StackTop = ORIGIN(DTCM) + LENGTH(DTCM);
 
     .ARM.attributes 0 : { *(.ARM.attributes) }
+
+    ASSERT((__property_getter_end - __property_getter_start) % 8 == 0,
+        "the .property_getter section must hold whole 8-byte objects")
+    ASSERT((__property_getset_end - __property_getset_start) % 12 == 0,
+        "the .property_getset section must hold whole 12-byte objects")
 }

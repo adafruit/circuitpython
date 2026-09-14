@@ -4286,10 +4286,6 @@ msgstr ""
 msgid "%q must be a subclass of %q"
 msgstr ""
 
-#: shared-bindings/wifi/Monitor.c
-msgid "%q out of bounds"
-msgstr ""
-
 #: shared-bindings/wifi/Radio.c
 msgid "Invalid hex password"
 msgstr ""

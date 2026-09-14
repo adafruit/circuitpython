@@ -1,3 +1,6 @@
+# Properties get a dedicated linker section here, so they can drop the unused slots.
+CIRCUITPY_OPTIMIZE_PROPERTY_FLASH_SIZE ?= 1
+
 LD_FILE = $(FLASH).ld $(CHIP_FAMILY).ld imxrt10xx.ld
 
 INTERNAL_LIBM = 1
