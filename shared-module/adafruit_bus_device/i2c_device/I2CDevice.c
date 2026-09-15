@@ -24,9 +24,7 @@ void common_hal_adafruit_bus_device_i2cdevice_lock(adafruit_bus_device_i2cdevice
 
     while (!mp_obj_is_true(success)) {
         RUN_BACKGROUND_TASKS;
-        if (mp_hal_is_interrupted()) {
-            break;
-        }
+        mp_handle_pending(true);
 
         success = mp_call_method_n_kw(0, 0, dest);
     }
