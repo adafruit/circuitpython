@@ -14,6 +14,8 @@
 #include "supervisor/board.h"
 #include "supervisor/port.h"
 
+#include "py/persistentcode.h"
+
 #include "fsl_device_registers.h"
 
 #if CIRCUITPY_AUDIOBUSIO
@@ -48,6 +50,13 @@
 // Prevents instruction access.
 #define NO_EXECUTION 1
 #define EXECUTION 0
+
+#if MICROPY_EMIT_THUMB || MICROPY_EMIT_INLINE_THUMB
+// Native code from a .mpy is loaded into the GC heap, which lives in OCRAM, and then jumped to.
+#define OCRAM_EXECUTION EXECUTION
+#else
+#define OCRAM_EXECUTION NO_EXECUTION
+#endif
 
 // Shareable if the memory system manages coherency. This means shared between memory bus masters,
 // not just CPUs.
@@ -256,7 +265,7 @@ __attribute__((used, naked, no_instrument_function, optimize("no-tree-loop-distr
     // cost of 1/4 speed OCRAM accesses. It will leave more room for caching data from the flash
     // too which might be a net win.
     MPU->RBAR = ARM_MPU_RBAR(14, ((uint32_t)&_ld_ocram_start));
-    MPU->RASR = ARM_MPU_RASR(NO_EXECUTION, ARM_MPU_AP_FULL, NORMAL, NOT_SHAREABLE, CACHEABLE, BUFFERABLE, NO_SUBREGIONS, ARM_MPU_REGION_SIZE_512KB);
+    MPU->RASR = ARM_MPU_RASR(OCRAM_EXECUTION, ARM_MPU_AP_FULL, NORMAL, NOT_SHAREABLE, CACHEABLE, BUFFERABLE, NO_SUBREGIONS, ARM_MPU_REGION_SIZE_512KB);
 
     #if IMXRT10XX
     // We steal 64k from FlexRAM for ITCM and DTCM so disable those memory regions here.
@@ -474,6 +483,25 @@ uint32_t *port_heap_get_bottom(void) {
 uint32_t *port_heap_get_top(void) {
     return &_ld_heap_end;
 }
+
+#if MICROPY_EMIT_THUMB || MICROPY_EMIT_INLINE_THUMB
+// Native code from a .mpy is written into the heap as data, then jumped to. The
+// heap is in cacheable OCRAM, so without this the instruction side can fetch
+// stale bytes: a hard fault if they decode to nonsense, a wrong answer if they
+// do not. Imports are rare, so clean and invalidate the whole of both caches
+// rather than worry about the range's alignment.
+void *port_native_code_commit(void *buf, size_t len, void *reloc) {
+    if (reloc != NULL) {
+        mp_native_relocate(reloc, buf, (uintptr_t)buf);
+    }
+    (void)len;
+    SCB_CleanDCache();
+    SCB_InvalidateICache();
+    __DSB();
+    __ISB();
+    return buf;
+}
+#endif
 
 // Place the word into the low power section of the SNVS.
 void PLACE_IN_ITCM(port_set_saved_word)(uint32_t value) {

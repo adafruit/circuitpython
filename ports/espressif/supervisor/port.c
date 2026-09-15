@@ -16,6 +16,10 @@
 #include "py/mpprint.h"
 #include "py/runtime.h"
 
+#if MICROPY_EMIT_XTENSAWIN
+#include "py/persistentcode.h"
+#endif
+
 #include "esp_mac.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -347,6 +351,40 @@ size_t port_heap_get_largest_free_size(void) {
     return free_size;
 }
 
+#if MICROPY_EMIT_XTENSAWIN
+// Native code loaded from a .mpy is copied into IRAM so that it can be executed,
+// and is kept in a list so it can be released when the VM resets.
+typedef struct _native_code_node_t {
+    struct _native_code_node_t *next;
+    uint32_t data[];
+} native_code_node_t;
+
+static native_code_node_t *native_code_head;
+
+void *port_native_code_commit(void *buf, size_t len, void *reloc) {
+    len = (len + sizeof(uint32_t) - 1) & ~(sizeof(uint32_t) - 1);
+    native_code_node_t *node = heap_caps_malloc(sizeof(native_code_node_t) + len, MALLOC_CAP_EXEC);
+    if (node == NULL) {
+        m_malloc_fail(len);
+    }
+    node->next = native_code_head;
+    native_code_head = node;
+    if (reloc != NULL) {
+        mp_native_relocate(reloc, buf, (uintptr_t)node->data);
+    }
+    memcpy(node->data, buf, len);
+    return node->data;
+}
+
+static void native_code_free_all(void) {
+    while (native_code_head != NULL) {
+        native_code_node_t *next = native_code_head->next;
+        heap_caps_free(native_code_head);
+        native_code_head = next;
+    }
+}
+#endif
+
 void reset_port_early(void) {
     // esp-camera adds an I2C device on the ESP I2C bus, and keeps it there. This
     // is unlike busio.I2C, which adds and removes the device on each operation.
@@ -358,6 +396,10 @@ void reset_port_early(void) {
 }
 
 void reset_port(void) {
+
+    #if MICROPY_EMIT_XTENSAWIN
+    native_code_free_all();
+    #endif
 
     #if CIRCUITPY_SSL
     ssl_reset();

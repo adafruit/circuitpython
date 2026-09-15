@@ -70,8 +70,14 @@ extern void common_hal_mcu_enable_interrupts(void);
 #define MICROPY_COMP_MODULE_CONST        (1)
 #define MICROPY_COMP_TRIPLE_TUPLE_ASSIGN (0)
 #define MICROPY_DEBUG_PRINTERS           (0)
+// Enable the native emitter matching the target architecture, so that native
+// .mpy modules built for it can be imported.
+#if defined(__XTENSA_WINDOWED_ABI__)
+#define MICROPY_EMIT_XTENSAWIN           (CIRCUITPY_ENABLE_MPY_NATIVE)
+#else
 #define MICROPY_EMIT_INLINE_THUMB        (CIRCUITPY_ENABLE_MPY_NATIVE)
 #define MICROPY_EMIT_THUMB               (CIRCUITPY_ENABLE_MPY_NATIVE)
+#endif
 #define MICROPY_EMIT_X64                 (0)
 #define MICROPY_ENABLE_DOC_STRING        (0)
 #define MICROPY_ENABLE_FINALISER         (1)

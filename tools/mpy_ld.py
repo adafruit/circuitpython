@@ -61,6 +61,7 @@ MP_SMALL_INT_BITS = 31
 MP_FUN_TABLE_MP_TYPE_TYPE_OFFSET = 74
 
 # ELF constants
+R_XTENSA_NONE = 0
 R_386_32 = 1
 R_RISCV_32 = 1
 R_X86_64_64 = 1
@@ -569,6 +570,10 @@ def build_got_xtensa(env):
 
         # Look through literal relocations to find any global pointers that should be GOT entries
         for r in sec.reloc:
+            # LLVM emits no-op entries with a null symbol at the same offset as
+            # the real relocation; GAS does not. Nothing to resolve.
+            if r["r_info_type"] == R_XTENSA_NONE:
+                continue
             s = r.sym
             s_type = s.entry["st_info"]["type"]
             assert s_type in ("STT_NOTYPE", "STT_FUNC", "STT_OBJECT", "STT_SECTION"), s_type
@@ -584,7 +589,7 @@ def build_got_xtensa(env):
                 name = s.name
                 if r["r_addend"] != 0:
                     name = "{}+0x{:x}".format(name, r["r_addend"])
-            idx = "{}+0x{:x}".format(sec.filename, r["r_offset"])
+            idx = "{}+{}+0x{:x}".format(sec.filename, sec.name, r["r_offset"])
             env.xt_literals[idx] = name
             if name in env.got_entries:
                 # Deduplicate GOT entries
@@ -593,7 +598,7 @@ def build_got_xtensa(env):
 
         # Go through all literal entries finding those that aren't global pointers so must be actual literals
         for i in range(0, len(sec.data), env.arch.word_size):
-            idx = "{}+0x{:x}".format(sec.filename, i)
+            idx = "{}+{}+0x{:x}".format(sec.filename, sec.name, i)
             if idx not in env.xt_literals:
                 # This entry is an actual literal
                 value = struct.unpack_from("<I", sec.data, i)[0]
@@ -790,7 +795,7 @@ def do_relocation_text(env, text_addr, r):
             # it looks like R_XTENSA_SLOT0_OP into .text is already correctly relocated
             return
         assert sec.name.startswith(".literal"), sec.name
-        lit_idx = "{}+0x{:x}".format(sec.filename, r_addend)
+        lit_idx = "{}+{}+0x{:x}".format(sec.filename, sec.name, r_addend)
         lit_ptr = env.xt_literals[lit_idx]
         if isinstance(lit_ptr, str):
             addr = env.got_section.addr + env.got_entries[lit_ptr].offset
@@ -872,9 +877,11 @@ def do_relocation_text(env, text_addr, r):
     elif reloc_type == "xtensa_l32r":
         l32r = unpack_u24le(env.full_text, r_offset)
         assert l32r & 0xF == 1  # RI16 encoded l32r
-        l32r_imm16 = l32r >> 8
-        l32r_imm16 = (l32r_imm16 + reloc >> 2) & 0xFFFF
-        l32r = l32r & 0xFF | l32r_imm16 << 8
+        # l32r loads from ((PC + 3) & ~3) + ((0xFFFF0000 | imm16) << 2), so encode the
+        # final offset directly; the existing imm16 may be a non-zero assembler guess.
+        l32r_offset = addr - ((r_offset + 3) & ~3)
+        assert -0x40000 <= l32r_offset <= -4, l32r_offset
+        l32r = l32r & 0xFF | ((l32r_offset >> 2) & 0xFFFF) << 8
         pack_u24le(env.full_text, r_offset, l32r)
     else:
         assert 0, reloc_type
