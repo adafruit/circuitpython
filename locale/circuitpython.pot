@@ -4071,8 +4071,12 @@ msgstr ""
 msgid "System entry must be gnss.SatelliteSystem"
 msgstr ""
 
-#: shared-bindings/hashlib/__init__.c
+#: shared-bindings/hashlib/__init__.c shared-bindings/hmac/__init__.c
 msgid "Unsupported hash algorithm"
+msgstr ""
+
+#: shared-bindings/hmac/HMAC.c
+msgid "HMAC.copy() is not supported"
 msgstr ""
 
 #: shared-bindings/i2cioexpander/IOExpander.c
@@ -4412,6 +4416,14 @@ msgstr ""
 
 #: shared-module/gifio/GifWriter.c
 msgid "unsupported colorspace for GifWriter"
+msgstr ""
+
+#: shared-module/hmac/HMAC.c
+msgid "HMAC operation failed"
+msgstr ""
+
+#: shared-module/hmac/HMAC.c
+msgid "Cannot update() after digest()"
 msgstr ""
 
 #: shared-module/i2cdisplaybus/I2CDisplayBus.c
