@@ -149,6 +149,24 @@ static mp_uint_t flash_read_blocks(mp_obj_t self_in, uint8_t *dest, uint32_t blo
     return supervisor_flash_read_blocks(dest, block_num, num_blocks);
 }
 
+#if CIRCUITPY_STORAGE_MAP_FILE
+MP_WEAK const uint8_t *port_internal_flash_xip_address(uint32_t block, uint32_t *contiguous) {
+    (void)block;
+    (void)contiguous;
+    return NULL;                                // this port does not map its drive
+}
+
+// The sector -> block translation of flash_read_blocks(); FatFs has already validated the
+// cluster chain, so every sector it hands over lies inside the volume.
+const uint8_t *supervisor_flash_xip_address(uint32_t fatfs_sector, uint32_t *contiguous) {
+    uint32_t block = fatfs_sector - PART1_START_BLOCK;
+    #if CIRCUITPY_SAVES_PARTITION_SIZE > 0
+    block += CIRCUITPY_SAVES_PARTITION_SIZE / FILESYSTEM_BLOCK_SIZE;
+    #endif
+    return port_internal_flash_xip_address(block, contiguous);
+}
+#endif
+
 static volatile bool filesystem_dirty = false;
 
 static mp_uint_t flash_write_blocks(mp_obj_t self_in, const uint8_t *src, uint32_t block_num, uint32_t num_blocks) {
