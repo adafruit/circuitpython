@@ -20,6 +20,7 @@
 #include "py/persistentcode.h"
 #endif
 
+#include "esp_mac.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -563,7 +564,12 @@ void port_idle_until_interrupt(void) {
 #if CIRCUITPY_WIFI
 void port_boot_info(void) {
     uint8_t mac[6];
-    esp_wifi_get_mac(WIFI_IF_STA, mac);
+    // This runs before esp_wifi_init(), so esp_wifi_get_mac() fails with
+    // ESP_ERR_WIFI_NOT_INIT and leaves mac[] untouched. esp_read_mac() reads
+    // efuse directly and does not need the WiFi driver started.
+    if (esp_read_mac(mac, ESP_MAC_WIFI_STA) != ESP_OK) {
+        return;
+    }
     mp_printf(&mp_plat_print, "MAC");
     for (int i = 0; i < 6; i++) {
         mp_printf(&mp_plat_print, ":%02X", mac[i]);

@@ -36,6 +36,8 @@ void *port_native_code_commit(void *buf, size_t len, void *reloc);
 #ifndef CIRCUITPY_BOOT_BUTTON
   #if defined(CONFIG_IDF_TARGET_ESP32C2) || defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32C6) || defined(CONFIG_IDF_TARGET_ESP32H2) || defined(CONFIG_IDF_TARGET_ESP32C61)
     #define CIRCUITPY_BOOT_BUTTON (&pin_GPIO9)
+  #elif defined(CONFIG_IDF_TARGET_ESP32C5)
+    #define CIRCUITPY_BOOT_BUTTON (&pin_GPIO28)
   #elif !defined(CONFIG_IDF_TARGET_ESP32)
     #define CIRCUITPY_BOOT_BUTTON (&pin_GPIO0)
   #endif

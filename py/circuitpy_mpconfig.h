@@ -111,6 +111,7 @@ extern void common_hal_mcu_enable_interrupts(void);
 #define MICROPY_OPT_MPZ_BITWISE          (0)
 #define MICROPY_OPT_CACHE_MAP_LOOKUP_IN_BYTECODE (CIRCUITPY_OPT_CACHE_MAP_LOOKUP_IN_BYTECODE)
 #define MICROPY_PERSISTENT_CODE_LOAD     (1)
+#define MICROPY_PERSISTENT_CODE_LOAD_NATIVE (CIRCUITPY_LOAD_NATIVE || CIRCUITPY_ENABLE_MPY_NATIVE)
 
 #define MICROPY_PY_ARRAY                 (CIRCUITPY_ARRAY)
 #define MICROPY_PY_ARRAY_SLICE_ASSIGN    (1)
@@ -228,9 +229,9 @@ typedef long mp_off_t;
 // extra built in names to add to the global namespace
 // Not indented so as not to confused the editor.
 #define MICROPY_PORT_BUILTINS \
-        { MP_OBJ_NEW_QSTR(MP_QSTR_help), (mp_obj_t)&mp_builtin_help_obj },      \
-        { MP_OBJ_NEW_QSTR(MP_QSTR_input), (mp_obj_t)&mp_builtin_input_obj }, \
-        { MP_OBJ_NEW_QSTR(MP_QSTR_open), (mp_obj_t)&mp_builtin_open_obj },   \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_help), (mp_obj_t)&mp_builtin_help_obj },      \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_input), (mp_obj_t)&mp_builtin_input_obj }, \
+    { MP_OBJ_NEW_QSTR(MP_QSTR_open), (mp_obj_t)&mp_builtin_open_obj },   \
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // board-specific definitions, which control and may override definitions below.
@@ -459,13 +460,13 @@ extern const struct _mp_obj_module_t nvm_module;
 // and also include the underscore alternate names.
 #if MICROPY_MODULE_WEAK_LINKS
 #define MICROPY_PORT_BUILTIN_MODULES \
-        MICROPY_PORT_BUILTIN_MODULES_STRONG_LINKS \
-            MICROPY_PORT_BUILTIN_MODULE_ALT_NAMES
+    MICROPY_PORT_BUILTIN_MODULES_STRONG_LINKS \
+    MICROPY_PORT_BUILTIN_MODULE_ALT_NAMES
 #else
 // If weak links are disabled, included both strong and potentially weak lines
 #define MICROPY_PORT_BUILTIN_MODULES \
-        MICROPY_PORT_BUILTIN_MODULES_STRONG_LINKS \
-        MICROPY_PORT_BUILTIN_MODULE_WEAK_LINKS
+    MICROPY_PORT_BUILTIN_MODULES_STRONG_LINKS \
+    MICROPY_PORT_BUILTIN_MODULE_WEAK_LINKS
 #endif
 
 // We need to provide a declaration/definition of alloca()
@@ -542,6 +543,11 @@ void background_callback_run_all(void);
 #ifndef CIRCUITPY_SDCARD_USB
 #if CIRCUITPY_USB_DEVICE
 #define CIRCUITPY_SDCARD_USB (CIRCUITPY_SDCARDIO && CIRCUITPY_USB_MSC)
+// Default value of CIRCUITPY_SDCARD_USB in settings.toml.
+#ifndef CIRCUITPY_SDCARD_USB_DEFAULT
+// True for most boards.
+#define CIRCUITPY_SDCARD_USB_DEFAULT (true)
+#endif
 #else
 #define CIRCUITPY_SDCARD_USB (0)
 #endif

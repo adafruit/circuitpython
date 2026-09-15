@@ -59,6 +59,7 @@ MP_SMALL_INT_BITS = 31
 MP_FUN_TABLE_MP_TYPE_TYPE_OFFSET = 74
 
 # ELF constants
+R_XTENSA_NONE = 0
 R_386_32 = 1
 R_RISCV_32 = 1
 R_X86_64_64 = 1
@@ -451,6 +452,10 @@ def build_got_xtensa(env):
 
         # Look through literal relocations to find any global pointers that should be GOT entries
         for r in sec.reloc:
+            # LLVM emits no-op entries with a null symbol at the same offset as
+            # the real relocation; GAS does not. Nothing to resolve.
+            if r["r_info_type"] == R_XTENSA_NONE:
+                continue
             s = r.sym
             s_type = s.entry["st_info"]["type"]
             assert s_type in ("STT_NOTYPE", "STT_FUNC", "STT_OBJECT", "STT_SECTION"), s_type

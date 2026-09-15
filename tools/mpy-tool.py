@@ -1790,7 +1790,14 @@ def adjust_bytecode_qstr_obj_indices(bytecode_in, qstr_table_base, obj_table_bas
         opcodes.append(opcode)
         ip += sz
         if fmt == MP_BC_FORMAT_OFFSET:
-            opcode.arg += ip
+            # A jump is measured from the byte after its offset, which is the
+            # end of the instruction for every offset opcode but one.
+            # MP_BC_UNWIND_JUMP carries a trailing unwind count, and py/vm.c
+            # adds the offset before stepping over it. Counting that byte here
+            # puts the destination of every `break` or `continue` out of a
+            # `try` one past its label, and the lookup below raises KeyError.
+            # mp_opcode_encode is already right, so only the decode side moves.
+            opcode.arg += ip - 1 if extra_arg is not None else ip
 
     # Link jump opcodes to their destination.
     for opcode in opcodes:
