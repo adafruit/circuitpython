@@ -875,8 +875,8 @@ static void __attribute__ ((noinline)) run_boot_py(safe_mode_t safe_mode) {
         #endif
 
         // Get the base filesystem.
-        fs_user_mount_t *vfs = filesystem_circuitpy();
-        FATFS *fs = &vfs->fatfs;
+        supervisor_vfs_t *vfs_root = filesystem_circuitpy();
+        fs_user_mount_t *vfs = vfs_root == NULL ? NULL : &vfs_root->fat;
 
         // Allow boot.py access to CIRCUITPY, and allow writes to boot_out.txt.
         // We can't use the regular flags for this, because they might get modified inside boot.py.
@@ -905,15 +905,17 @@ static void __attribute__ ((noinline)) run_boot_py(safe_mode_t safe_mode) {
         supervisor_status_bar_resume();
         #endif
         bool write_boot_output = true;
-        FIL boot_output_file;
-        if (f_open(fs, &boot_output_file, CIRCUITPY_BOOT_OUTPUT_FILE, FA_READ) == FR_OK) {
+        supervisor_vfs_file_t boot_output_file;
+        if (supervisor_vfs_open_file(vfs_root, CIRCUITPY_BOOT_OUTPUT_FILE, SUPERVISOR_FS_OPEN_READ, 0,
+            &boot_output_file) == SUPERVISOR_FS_OK) {
             char *file_contents = m_new(char, boot_text.alloc);
-            UINT chars_read;
-            if (f_read(&boot_output_file, file_contents, 1 + boot_text.len, &chars_read) == FR_OK) {
+            size_t chars_read;
+            if (supervisor_vfs_read_file(&boot_output_file, file_contents, 1 + boot_text.len, &chars_read) ==
+                SUPERVISOR_FS_OK) {
                 write_boot_output =
                     (chars_read != boot_text.len) || (memcmp(boot_text.buf, file_contents, chars_read) != 0);
             }
-            // no need to f_close the file
+            supervisor_vfs_close_file(&boot_output_file);
         }
 
         if (write_boot_output) {
@@ -921,11 +923,14 @@ static void __attribute__ ((noinline)) run_boot_py(safe_mode_t safe_mode) {
             // in case power is momentary or will fail shortly due to, say a low, battery.
             mp_hal_delay_ms(1000);
 
-            f_open(fs, &boot_output_file, CIRCUITPY_BOOT_OUTPUT_FILE, FA_WRITE | FA_CREATE_ALWAYS);
-            UINT chars_written;
-            f_write(&boot_output_file, boot_text.buf, boot_text.len, &chars_written);
-            f_close(&boot_output_file);
-            filesystem_flush();
+            if (supervisor_vfs_open_file(vfs_root, CIRCUITPY_BOOT_OUTPUT_FILE,
+                SUPERVISOR_FS_OPEN_WRITE | SUPERVISOR_FS_OPEN_CREATE | SUPERVISOR_FS_OPEN_TRUNCATE, 0,
+                &boot_output_file) == SUPERVISOR_FS_OK) {
+                size_t chars_written;
+                supervisor_vfs_write_file(&boot_output_file, boot_text.buf, boot_text.len, &chars_written);
+                supervisor_vfs_close_file(&boot_output_file);
+                filesystem_flush();
+            }
         }
         #endif
 

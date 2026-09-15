@@ -46,8 +46,6 @@
 #if CIRCUITPY_LVFONTIO
 #include "shared-bindings/lvfontio/OnDiskFont.h"
 #include "supervisor/filesystem.h"
-#include "extmod/vfs_fat.h"
-#include "lib/oofatfs/ff.h"
 
 #include "supervisor/shared/serial.h"
 
@@ -58,13 +56,13 @@ static bool check_for_custom_font(const char **font_path_out) {
         return false;
     }
 
-    fs_user_mount_t *vfs = filesystem_circuitpy();
+    // CIRCUITPY-CHANGE: Check for the font through the supervisor filesystem
+    // API so it works on FAT and littlefs mounts.
+    supervisor_vfs_t *vfs = filesystem_circuitpy();
     if (vfs == NULL) {
         return false;
     }
 
-    // Use FATFS directly to check if file exists
-    FILINFO file_info;
     const char *default_font_path = "/fonts/terminal.lvfontbin";
     const char *font_path = default_font_path;
 
@@ -77,8 +75,7 @@ static bool check_for_custom_font(const char **font_path_out) {
     }
     #endif
 
-    FRESULT result = f_stat(&vfs->fatfs, font_path, &file_info);
-    if (result == FR_OK) {
+    if (supervisor_vfs_stat(vfs, font_path, NULL, NULL, NULL) == SUPERVISOR_FS_OK) {
         if (font_path_out != NULL) {
             *font_path_out = font_path;
         }
@@ -87,9 +84,8 @@ static bool check_for_custom_font(const char **font_path_out) {
 
     // If custom font path doesn't exist, use default font
     font_path = default_font_path;
-    result = f_stat(&vfs->fatfs, font_path, &file_info);
 
-    if (result == FR_OK) {
+    if (supervisor_vfs_stat(vfs, font_path, NULL, NULL, NULL) == SUPERVISOR_FS_OK) {
         if (font_path_out != NULL) {
             *font_path_out = font_path;
         }

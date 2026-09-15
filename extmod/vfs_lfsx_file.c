@@ -89,6 +89,12 @@ mp_obj_t MP_VFS_LFSx(file_open)(mp_obj_t self_in, mp_obj_t path_in, mp_obj_t mod
         flags = LFSx_MACRO(_O_RDONLY);
     }
 
+    // CIRCUITPY-CHANGE: Writes honor the supervisor's write protection flags,
+    // like the FAT VFS does, so storage.remount() readonly applies too.
+    if ((flags & LFSx_MACRO(_O_WRONLY)) != 0) {
+        MP_VFS_LFSx(verify_fs_writable)(self);
+    }
+
     #if LFS_BUILD_VERSION == 1
     MP_OBJ_VFS_LFSx_FILE *o = mp_obj_malloc_var_with_finaliser(MP_OBJ_VFS_LFSx_FILE, file_buffer, uint8_t, self->lfs.cfg->prog_size, type);
     #else

@@ -5,6 +5,7 @@
 
 import logging
 import os
+import posixpath
 import subprocess
 from pathlib import Path
 
@@ -77,11 +78,43 @@ def pytest_configure(config):
         "markers",
         "flash_config(erase_block_size=N, total_size=N): override flash simulator parameters",
     )
+    config.addinivalue_line(
+        "markers",
+        "fat_filesystem_only: skip the test on littlefs filesystem boards",
+    )
 
 
 ZEPHYR_CP = Path(__file__).parent.parent
 BUILD_DIR = ZEPHYR_CP / "build-native_native_sim"
 BINARY = BUILD_DIR / "zephyr-cp/zephyr/zephyr.exe"
+
+# Boards parameterized by the filesystem tests. native_native_sim mounts a
+# FAT filesystem; native_native_sim_lfs mounts littlefs.
+FILESYSTEM_SIMULATORS = ["native_native_sim", "native_native_sim_lfs"]
+
+# Boards whose flash image is a FAT drive that can be populated from the host
+# with mtools.
+FAT_FILESYSTEM_BOARDS = {
+    "native_native_sim",
+    "native_native_sim_asan",
+    "native_nrf5340bsim",
+    "native_nrf54lm20bsim",
+}
+
+# Boards whose flash image holds a littlefs filesystem. Their images are
+# populated from the host with littlefs-python, using geometry that matches
+# the board overlay and supervisor/shared/filesystem.c: FILESYSTEM_BLOCK_SIZE
+# (512) byte blocks over the filesystem partition, with the partition's last
+# erase page left out because the supervisor flash cache uses it as its
+# scratch page (see supervisor_flash_get_block_count()).
+DEFAULT_ERASE_PAGE_SIZE = 4096
+LITTLEFS_FILESYSTEM_BOARDS = {
+    "native_native_sim_lfs": {
+        "partition_size": 2032 * 1024,
+        "erase_page_size": DEFAULT_ERASE_PAGE_SIZE,
+        "block_size": 512,
+    },
+}
 
 
 def _iter_uart_tx_slices(trace_file: Path) -> list[tuple[int, int, str, str]]:
@@ -149,21 +182,87 @@ def log_uart_trace_output(trace_file: Path) -> None:
             )
 
 
-# Native_sim boards each test runs against: the non-asan default and the
-# asan-enabled build, so memory errors fail tests.
-NATIVE_BOARDS = ["native_native_sim", "native_native_sim_asan"]
+# Native_sim boards each test runs against: the FAT default, the littlefs
+# build, and the asan-enabled build, so filesystem and memory errors fail
+# tests.
+NATIVE_BOARDS = [
+    "native_native_sim",
+    "native_native_sim_lfs",
+    "native_native_sim_asan",
+]
 
 
 @pytest.fixture(params=NATIVE_BOARDS)
 def board(request):
-    """Parametrized over both native_sim builds (non-asan and asan).
+    board_marker = request.node.get_closest_marker("circuitpython_board")
+    if board_marker is not None:
+        return board_marker.args[0]
+    # Support indirect parametrization, e.g.
+    #   @pytest.mark.parametrize("board", FILESYSTEM_SIMULATORS, indirect=True)
+    if hasattr(request, "param"):
+        return request.param
+    return "native_native_sim"
 
-    The bsim conftest overrides this fixture with its own bsim boards.
-    """
-    board = request.node.get_closest_marker("circuitpython_board")
-    if board is not None:
-        return board.args[0]
-    return request.param
+
+def _lfs_geometry(board, erase_page_size):
+    """Return (block_size, block_count) matching what CircuitPython mounts."""
+    geometry = LITTLEFS_FILESYSTEM_BOARDS[board]
+    block_size = geometry["block_size"]
+    page_size = max(erase_page_size, block_size)
+    # The last erase page of the partition is the supervisor flash cache's
+    # scratch page, so littlefs only gets the blocks before it.
+    last_page_start = ((geometry["partition_size"] - block_size) // page_size) * page_size
+    return block_size, last_page_start // block_size
+
+
+def _populate_lfs_drive(flash, files, board, erase_page_size):
+    """Copy files onto a littlefs flash image with littlefs-python."""
+    from littlefs import LittleFS
+    from littlefs.context import UserContextFile
+
+    block_size, block_count = _lfs_geometry(board, erase_page_size)
+    # The fresh image is all erased bytes, so the initial mount fails and
+    # LittleFS formats it. This matches what CircuitPython does on a blank
+    # flash, minus the boot files, which are added below.
+    fs = LittleFS(
+        context=UserContextFile(str(flash)),
+        block_size=block_size,
+        block_count=block_count,
+    )
+    for name, content in files.items():
+        parent = posixpath.dirname(name)
+        if parent:
+            fs.makedirs(parent, exist_ok=True)
+        mode = "wb" if isinstance(content, bytes) else "wt"
+        with fs.open(f"/{name}", mode) as f:
+            f.write(content)
+    fs.context.close()
+
+
+def read_lfs_file_from_flash(flash_file, path, board, erase_page_size):
+    """Extract a file from the littlefs filesystem in the flash image."""
+    from littlefs import LittleFS
+    from littlefs.context import UserContextFile
+
+    block_size, block_count = _lfs_geometry(board, erase_page_size)
+    fs = LittleFS(
+        context=UserContextFile(str(flash_file)),
+        block_size=block_size,
+        block_count=block_count,
+    )
+    with fs.open(f"/{path}", "rb") as f:
+        content = f.read()
+    fs.context.close()
+    return content.decode()
+
+
+@pytest.fixture(autouse=True)
+def _skip_fat_filesystem_only_tests(request, board):
+    """Honor the ``fat_filesystem_only`` marker on littlefs boards."""
+    if request.node.get_closest_marker("fat_filesystem_only") is None:
+        return
+    if board in LITTLEFS_FILESYSTEM_BOARDS:
+        pytest.skip("test requires the FAT filesystem build")
 
 
 @pytest.fixture
@@ -210,6 +309,48 @@ def pixel_format(request) -> str:
 @pytest.fixture
 def sim_id(request) -> str:
     return request.node.nodeid.replace("/", "_")
+
+
+def _populate_drive(flash, files, board, tmp_path, index, erase_page_size):
+    """Copy files onto the flash image with the host tool matching the board's
+    filesystem, if any were requested."""
+    if files is None:
+        return
+    if board in LITTLEFS_FILESYSTEM_BOARDS:
+        _populate_lfs_drive(flash, files, board, erase_page_size)
+    else:
+        _populate_fat_drive(flash, files, board, tmp_path, index)
+
+
+def _populate_fat_drive(flash, files, board, tmp_path, index):
+    """Copy files onto a FAT flash image with mtools."""
+    if board not in FAT_FILESYSTEM_BOARDS:
+        pytest.skip(
+            f"cannot preload files onto {board}: only FAT filesystem images "
+            "can be built from the host"
+        )
+    subprocess.run(["mformat", "-i", str(flash), "::"], check=True)
+    tmp_drive = tmp_path / f"drive{index}"
+    tmp_drive.mkdir(exist_ok=True)
+
+    fat_dirs_created = set()
+    for name, content in files.items():
+        src = tmp_drive / name
+        src.parent.mkdir(parents=True, exist_ok=True)
+        if isinstance(content, bytes):
+            src.write_bytes(content)
+        else:
+            src.write_text(content)
+        # Create parent directories on the FAT image.
+        fat_dir = Path(name).parent
+        for fat_part in [*reversed(fat_dir.parents), fat_dir]:
+            if fat_part == Path("."):
+                continue
+            fat_path = "::" + str(fat_part)
+            if fat_path not in fat_dirs_created:
+                subprocess.run(["mmd", "-i", str(flash), fat_path], check=True)
+                fat_dirs_created.add(fat_path)
+        subprocess.run(["mcopy", "-i", str(flash), str(src), f"::{name}"], check=True)
 
 
 @pytest.fixture
@@ -290,6 +431,11 @@ def circuitpython(request, board, sim_id, native_sim_binary, native_sim_env, tmp
         flash_total_size = flash_config_marker.kwargs.get("total_size", flash_total_size)
         flash_erase_block_size = flash_config_marker.kwargs.get("erase_block_size", None)
         flash_write_block_size = flash_config_marker.kwargs.get("write_block_size", None)
+    # The littlefs image geometry must match the erase page size the
+    # simulator will run with, which the flash_config marker can override.
+    populate_erase_page_size = (
+        flash_erase_block_size if flash_erase_block_size is not None else DEFAULT_ERASE_PAGE_SIZE
+    )
 
     procs = []
     for i in range(instance_count):
@@ -298,29 +444,7 @@ def circuitpython(request, board, sim_id, native_sim_binary, native_sim_env, tmp
         files = None
         if len(drives[i][1].args) == 1:
             files = drives[i][1].args[0]
-        if files is not None:
-            subprocess.run(["mformat", "-i", str(flash), "::"], check=True)
-            tmp_drive = tmp_path / f"drive{i}"
-            tmp_drive.mkdir(exist_ok=True)
-
-            fat_dirs_created = set()
-            for name, content in files.items():
-                src = tmp_drive / name
-                src.parent.mkdir(parents=True, exist_ok=True)
-                if isinstance(content, bytes):
-                    src.write_bytes(content)
-                else:
-                    src.write_text(content)
-                # Create parent directories on the FAT image.
-                fat_dir = Path(name).parent
-                for fat_part in [*reversed(fat_dir.parents), fat_dir]:
-                    if fat_part == Path("."):
-                        continue
-                    fat_path = "::" + str(fat_part)
-                    if fat_path not in fat_dirs_created:
-                        subprocess.run(["mmd", "-i", str(flash), fat_path], check=True)
-                        fat_dirs_created.add(fat_path)
-                subprocess.run(["mcopy", "-i", str(flash), str(src), f"::{name}"], check=True)
+        _populate_drive(flash, files, board, tmp_path, i, populate_erase_page_size)
 
         trace_file = tmp_path / f"trace-{i}.perfetto"
 
