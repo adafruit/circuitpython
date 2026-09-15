@@ -1,23 +1,22 @@
 /** This file is part of the CircuitPython project: https://circuitpython.org
 *
-* SPDX-FileCopyrightText: Copyright (c) 2024 Brandon Hurst, Analog Devices Inc.
+* SPDX-FileCopyrightText: Copyright (c) 2025 Brandon Hurst, Analog Devices Inc.
 *
 * SPDX-License-Identifier: MIT
 */
 
 /*
- * FLASH_FIRMWARE: 3072 KiB - 128 KiB =  2944 KiB
+ * FLASH_FIRMWARE: 1024 KiB - 128 KiB =  896 KiB
  *
  * Start & Size for FLASH_FIRMWARE and RAM MUST be raw numbers
  * b/c FLASH_FIMRWARE is parsed with Python build_memory_info.py
  */
 MEMORY {
     ROM             (rx) : ORIGIN = 0x00000000,    LENGTH = 128K
-    FLASH_FIRMWARE  (rx) : ORIGIN = 0x10000000,    LENGTH = 2944K
-    FLASH_FS        (rx) : ORIGIN = 0x102E0000,    LENGTH = 128K
-    RAM            (rwx) : ORIGIN = 0x20000000,    LENGTH = 1M
+    FLASH_FIRMWARE  (rx) : ORIGIN = 0x10000000,    LENGTH = 896K
+    FLASH_FS        (rx) : ORIGIN = 0x100E0000,    LENGTH = 128K
+    RAM            (rwx) : ORIGIN = 0x20000000,    LENGTH = 560K
 }
-/* FLASH FIRMWARE: 3072K [3MB] - 128K = 2944K */
 
 SECTIONS {
     .rom :
@@ -29,12 +28,6 @@ SECTIONS {
     .text :
     {
         . = ALIGN(4);
-        __property_getter_start = .;
-        *(.property_getter)
-        __property_getter_end = .;
-        __property_getset_start = .;
-        *(.property_getset)
-        __property_getset_end = .;
         _text = .;
 
         /* ISR Vector beginning of .text */
@@ -176,9 +169,4 @@ SECTIONS {
 
     /* Check if data + heap + stack exceeds RAM limit */
     ASSERT(__StackLimit >= _ebss, "region RAM overflowed with stack")
-
-    ASSERT((__property_getter_end - __property_getter_start) % 8 == 0,
-        "the .property_getter section must hold whole 8-byte objects")
-    ASSERT((__property_getset_end - __property_getset_start) % 12 == 0,
-        "the .property_getset section must hold whole 12-byte objects")
 }

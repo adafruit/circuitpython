@@ -124,7 +124,7 @@ bool common_hal_busio_i2c_probe(busio_i2c_obj_t *self, uint8_t addr) {
     bool ret = 0;
 
     // If not in Master mode, error out (can happen in some error conditions)
-    if (!(self->i2c_regs->ctrl & MXC_F_I2C_CTRL_MST_MODE)) {
+    if (!(I2C_CTRL_REG(self->i2c_regs) & I2C_F_CTRL_MST_MODE)) {
         return false;
     }
 
@@ -135,29 +135,29 @@ bool common_hal_busio_i2c_probe(busio_i2c_obj_t *self, uint8_t addr) {
 
     // Pre-load target address into transmit FIFO
     addr = (addr << 1);
-    self->i2c_regs->fifo = addr;
+    I2C_FIFO_REG(self->i2c_regs) = addr;
 
     // Set start bit & wait for it to clear
     MXC_I2C_Start(self->i2c_regs);
 
     // wait for ACK/NACK
-    while (!(self->i2c_regs->intfl0 & MXC_F_I2C_INTFL0_ADDR_ACK) &&
-           !(self->i2c_regs->intfl0 & MXC_F_I2C_INTFL0_ADDR_NACK_ERR)) {
+    while (!(I2C_INTFL0_REG(self->i2c_regs) & I2C_F_INTFL0_ADDR_ACK) &&
+           !(I2C_INTFL0_REG(self->i2c_regs) & I2C_F_INTFL0_ADDR_NACK_ERR)) {
     }
 
     // Save interrupt flags for ACK/NACK checking
-    int_fl0 = self->i2c_regs->intfl0;
+    int_fl0 = I2C_INTFL0_REG(self->i2c_regs);
 
     // Set / Wait for stop
     MXC_I2C_Stop(self->i2c_regs);
 
     // Wait for controller not busy, then clear flags
-    while (self->i2c_regs->status & MXC_F_I2C_STATUS_BUSY) {
+    while (I2C_STATUS_REG(self->i2c_regs) & I2C_F_STATUS_BUSY) {
         ;
     }
     MXC_I2C_ClearFlags(self->i2c_regs, 0xFFFFFF, 0xFFFFFF);
 
-    if (int_fl0 & MXC_F_I2C_INTFL0_ADDR_ACK) {
+    if (int_fl0 & I2C_F_INTFL0_ADDR_ACK) {
         ret = true;
     } else {
         ret = false;
@@ -168,7 +168,7 @@ bool common_hal_busio_i2c_probe(busio_i2c_obj_t *self, uint8_t addr) {
 // Lock I2C bus
 bool common_hal_busio_i2c_try_lock(busio_i2c_obj_t *self) {
 
-    if (self->i2c_regs->status & MXC_F_I2C_STATUS_BUSY) {
+    if (I2C_STATUS_REG(self->i2c_regs) & I2C_F_STATUS_BUSY) {
         return false;
     } else {
         self->has_lock = true;
