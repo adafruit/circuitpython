@@ -63,6 +63,33 @@ CIRCUITPY_TOUCHIO ?= 1
 
 # delay in ms before calling cyw43_arch_init_with_country
 CIRCUITPY_CYW43_INIT_DELAY ?= 1000
+
+# -O2 plus the two flags that carry -O3 here, which is 130 KB less flash than -O3 for the same
+# speed on everything measured. That headroom is what lets a board fit.
+#
+#   -funswitch-loops           Hoists a test that cannot change inside a loop out of it and keeps
+#                              one copy of the body per value. Costs 16 KB, because it duplicates
+#                              loop bodies in 94 functions. Buys 24 % on a flipped sprite blit,
+#                              9 % on a textured floor, and 1-2 % on bitmaptools.alphablend and
+#                              the ulab reductions.
+#
+#   -fvect-cost-model=dynamic  -O2 sets very-cheap, which turns nearly every loop down. dynamic
+#                              accepts them, which here means memset, memcpy and a 16-bit row
+#                              fill get unrolled with an alignment prologue. Costs 4 KB. Buys
+#                              37 % on rectangle fills and bytearray copies and 16 % on aesio.
+#                              Runs shorter than the prologue lose: a four-pixel span fill is
+#                              7 % slower.
+#
+# The four other -O3 loop passes we measured (-fpredictive-commoning, -fgcse-after-reload,
+# -ftree-partial-pre, -fsplit-paths) emit the same code as -O2 for the loops that matter here,
+# so they are left out. So is the rest of -O3: its inline parameters alone are 92 KB, and they
+# also take the 60-factorial loop 56 % slower.
+#
+# Neither flag reaches the bytecode dispatch loop: py/py.mk builds gc.o and vm.o at -O3 whatever
+# this is set to, so pure interpreter work measures the same under all of them.
+#
+# RP2350 keeps plain -O3. There an -O2 set runs 24-41 % slower on fill loops.
+OPTIMIZATION_FLAGS ?= -O2 -funswitch-loops -fvect-cost-model=dynamic
 endif
 
 ifeq ($(CHIP_VARIANT),RP2350)
