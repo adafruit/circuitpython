@@ -9,6 +9,7 @@
 
 #include "py/obj.h"
 #include "py/binary.h"
+#include "py/cstack.h"
 #include "py/objarray.h"
 #include "py/objlist.h"
 #include "py/objstringio.h"
@@ -254,6 +255,7 @@ static void pack_dict(msgpack_stream_t *s, size_t len) {
 }
 
 static void pack(mp_obj_t obj, msgpack_stream_t *s, mp_obj_t default_handler) {
+    mp_cstack_check();
     if (mp_obj_is_small_int(obj)) {
         // int
         int32_t x = MP_OBJ_SMALL_INT_VALUE(obj);
@@ -293,11 +295,11 @@ static void pack(mp_obj_t obj, msgpack_stream_t *s, mp_obj_t default_handler) {
             pack(next->value, s, default_handler);
         }
     } else if (mp_obj_is_float(obj)) {
-        union Float { mp_float_t f;
+        union Float { float f;
                       uint32_t u;
         };
         union Float data;
-        data.f = mp_obj_float_get(obj);
+        data.f = (float)mp_obj_float_get(obj);
         write1(s, 0xca);
         write4(s, data.u);
     } else if (obj == mp_const_none) {
@@ -326,7 +328,14 @@ static void pack(mp_obj_t obj, msgpack_stream_t *s, mp_obj_t default_handler) {
 
 static mp_obj_t unpack(msgpack_stream_t *s, mp_obj_t ext_hook, bool use_list);
 
+static void check_container_size(size_t count, size_t elem_size, qstr name) {
+    if (count > SIZE_MAX / elem_size) {
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("%q too long"), name);
+    }
+}
+
 static mp_obj_t unpack_array_elements(msgpack_stream_t *s, size_t size, mp_obj_t ext_hook, bool use_list) {
+    check_container_size(size, sizeof(mp_obj_t), MP_QSTR_array);
     if (use_list) {
         mp_obj_list_t *t = MP_OBJ_TO_PTR(mp_obj_new_list(size, NULL));
         for (size_t i = 0; i < size; i++) {
@@ -372,6 +381,7 @@ static mp_obj_t unpack_ext(msgpack_stream_t *s, size_t size, mp_obj_t ext_hook) 
 }
 
 static mp_obj_t unpack(msgpack_stream_t *s, mp_obj_t ext_hook, bool use_list) {
+    mp_cstack_check();
     uint8_t code = read1(s);
     if (((code & 0b10000000) == 0) || ((code & 0b11100000) == 0b11100000)) {
         // int
@@ -431,12 +441,12 @@ static mp_obj_t unpack(msgpack_stream_t *s, mp_obj_t ext_hook, bool use_list) {
             return mp_obj_new_int_from_ll((int64_t)read8(s));
         case 0xca: { // float
             union Float {
-                mp_float_t f;
+                float f;
                 uint32_t u;
             };
             union Float data;
             data.u = read4(s);
-            return mp_obj_new_float(data.f);
+            return mp_obj_new_float((mp_float_t)data.f);
         }
         case 0xcb: { // double
             union Double {
@@ -462,6 +472,7 @@ static mp_obj_t unpack(msgpack_stream_t *s, mp_obj_t ext_hook, bool use_list) {
         case 0xdf: {
             // map 16 & 32
             size_t len = read_size(s, code - 0xde + 1);
+            check_container_size(len, sizeof(mp_map_elem_t), MP_QSTR_map);
             mp_obj_dict_t *d = MP_OBJ_TO_PTR(mp_obj_new_dict(len));
             for (size_t i = 0; i < len; i++) {
                 mp_obj_t key = unpack(s, ext_hook, use_list);

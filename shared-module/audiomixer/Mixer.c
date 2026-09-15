@@ -287,7 +287,7 @@ static void mix_down_one_voice(audiomixer_mixer_obj_t *self,
                             word_buffer[i] = mult16signed(word, active_lo_level, active_hi_level);
                         }
                     } else {
-                        for (uint32_t i = 0; i < n; i += 2) {
+                        for (uint32_t i = 0; i + 1 < n; i += 2) {
                             uint32_t word = src[i >> 1];
                             uint32_t word_lsb = copy16lsb(word);
                             assignmul(word_lsb, &last_word, &active_lo_level, &active_hi_level, pending_lo_level, pending_hi_level);

@@ -7,7 +7,10 @@
 #include "shared-bindings/rainbowio/__init__.h"
 
 int32_t colorwheel(mp_float_t pos) {
-    pos = pos - ((uint32_t)(pos / 256) * 256);
+    pos = pos - (mp_float_t)((int32_t)(pos / 256) * 256);
+    if (pos < 0) {
+        pos += 256;
+    }
     int shift1, shift2;
     if (pos < 85) {
         shift1 = 8;

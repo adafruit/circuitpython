@@ -8,10 +8,15 @@
 #include <string.h>
 
 #include "py/objproperty.h"
+#include "py/objstr.h"
 #include "py/runtime.h"
 #include "shared-bindings/_bleio/__init__.h"
 #include "shared-bindings/_bleio/Address.h"
 #include "shared-bindings/_bleio/Adapter.h"
+
+#if CIRCUITPY_SETTINGS_TOML
+#include "supervisor/shared/settings.h"
+#endif
 
 #define ADV_INTERVAL_MIN (0.02f)
 #define ADV_INTERVAL_MIN_STRING "0.02"
@@ -134,8 +139,11 @@ MP_PROPERTY_GETSET(bleio_adapter_address_obj,
 
 //|     name: str
 //|     """name of the BLE adapter used once connected.
-//|     The name is "CIRCUITPY" + the last four hex digits of ``adapter.address``,
-//|     to make it easy to distinguish multiple CircuitPython boards."""
+//|     The default name is "CIRCUITPY" plus the last four hex digits of
+//|     ``adapter.address``, to make it easy to distinguish multiple
+//|     CircuitPython boards. Set ``CIRCUITPY_BLE_NAME`` in settings.toml to
+//|     override it. The default is re-applied each time the adapter is
+//|     enabled."""
 //|
 static mp_obj_t _bleio_adapter_get_name(mp_obj_t self) {
     return MP_OBJ_FROM_PTR(common_hal_bleio_adapter_get_name(self));
@@ -152,6 +160,37 @@ MP_DEFINE_CONST_FUN_OBJ_2(bleio_adapter_set_name_obj, bleio_adapter_set_name);
 MP_PROPERTY_GETSET(bleio_adapter_name_obj,
     (mp_obj_t)&bleio_adapter_get_name_obj,
     (mp_obj_t)&bleio_adapter_set_name_obj);
+
+void bleio_adapter_reset_name(bleio_adapter_obj_t *self) {
+    #if CIRCUITPY_SETTINGS_TOML
+    // Let the user override the default name from settings.toml. Use the
+    // allocation-free settings_get_str (not os.getenv), because ports call
+    // this from common_hal_bleio_adapter_set_enabled() which can run before
+    // the VM/gc heap is initialized.
+    char ble_name[32];
+    settings_err_t result = settings_get_str("CIRCUITPY_BLE_NAME", ble_name, sizeof(ble_name));
+    if (result == SETTINGS_OK) {
+        common_hal_bleio_adapter_set_name(self, ble_name);
+        return;
+    }
+    #endif
+
+    // Default to "CIRCUITPY" plus the last four hex digits of the adapter
+    // address so multiple boards are distinguishable. The address bytes are
+    // little-endian, so address[0] is the least-significant byte. If the port
+    // cannot provide an address, fall back to the literal "CIRCUITPYxxxx".
+    char default_ble_name[] = "CIRCUITPYxxxx";
+    bleio_address_obj_t *address = common_hal_bleio_adapter_get_address(self);
+    if (address != NULL) {
+        uint8_t addr_bytes[NUM_BLEIO_ADDRESS_BYTES];
+        common_hal_bleio_address_get_bytes(address, addr_bytes);
+        default_ble_name[ 9] = nibble_to_hex_lower[addr_bytes[1] >> 4 & 0xf];
+        default_ble_name[10] = nibble_to_hex_lower[addr_bytes[1] & 0xf];
+        default_ble_name[11] = nibble_to_hex_lower[addr_bytes[0] >> 4 & 0xf];
+        default_ble_name[12] = nibble_to_hex_lower[addr_bytes[0] & 0xf];
+    }
+    common_hal_bleio_adapter_set_name(self, default_ble_name);
+}
 
 //|     def start_advertising(
 //|         self,

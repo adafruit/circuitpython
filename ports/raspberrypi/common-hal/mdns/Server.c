@@ -46,11 +46,19 @@ void mdns_server_construct(mdns_server_obj_t *self, bool workflow) {
     self->num_txt_records = 0;
     self->txt_storage = NULL;
 
-    uint8_t mac[6];
-    wifi_radio_get_mac_address(&common_hal_wifi_radio_obj, mac);
-    char default_hostname[sizeof("cpy-XXXXXX")];
-    snprintf(default_hostname, sizeof(default_hostname), "cpy-%02x%02x%02x", mac[3], mac[4], mac[5]);
-    common_hal_mdns_server_set_hostname(self, default_hostname);
+    // Seed the mDNS hostname from the netif hostname configured via
+    // CIRCUITPY_WIFI_HOSTNAME.  Fall back to the historical MAC-based
+    // cpy-XXXXXX name when the user hasn't set one, so existing default
+    // hostnames keep working.
+    if (common_hal_wifi_radio_obj.hostname[0] != '\0') {
+        common_hal_mdns_server_set_hostname(self, common_hal_wifi_radio_obj.hostname);
+    } else {
+        uint8_t mac[6];
+        wifi_radio_get_mac_address(&common_hal_wifi_radio_obj, mac);
+        char default_hostname[sizeof("cpy-XXXXXX")];
+        snprintf(default_hostname, sizeof(default_hostname), "cpy-%02x%02x%02x", mac[3], mac[4], mac[5]);
+        common_hal_mdns_server_set_hostname(self, default_hostname);
+    }
 
     if (workflow) {
         // Add a second host entry to respond to "circuitpython.local" queries as well.

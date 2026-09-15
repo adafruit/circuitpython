@@ -1,5 +1,0 @@
-&s28hl512t {
-    /delete-node/ partitions;
-};
-
-#include "../app.overlay"

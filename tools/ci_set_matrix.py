@@ -23,10 +23,12 @@ that only the single board raspberry_pi_pico_w would be built.
 
 import re
 import os
+import math
 import sys
 import json
 import pathlib
 import subprocess
+import tomllib
 from concurrent.futures import ThreadPoolExecutor
 
 tools_dir = pathlib.Path(__file__).resolve().parent
@@ -50,6 +52,16 @@ IGNORE_BOARD = {
     "tools/ci_changes_per_commit.py",
     "tools/ci_check_duplicate_usb_vid_pid.py",
     "tools/ci_set_matrix.py",
+    ".github/workflows/run-tests.yml",
+    ".github/workflows/run-zephyr-tests.yml",
+    ".github/workflows/build-board-custom.yml",
+    ".github/workflows/bundle_cron.yml",
+    ".github/workflows/create-website-pr.yml",
+    ".github/workflows/learn_cron.yml",
+    ".github/workflows/notify-on-issue-label.yml",
+    ".github/workflows/pre-commit.yml",
+    ".github/workflows/reports_cron.yml",
+    "ports/zephyr-cp/tests/",
 }
 
 PATTERN_DOCS = (
@@ -57,6 +69,42 @@ PATTERN_DOCS = (
     r"^(?:(?:ports\/\w+\/bindings|shared-bindings)\S+\.c|tools\/extract_pyi\.py|\.readthedocs\.yml|conf\.py|requirements-doc\.txt)$|"
     r"(?:-stubs|\.(?:md|MD|mk|rst|RST)|/Makefile)$"
 )
+
+GITHUB_MATRIX_LIMIT = 256
+
+# The Zephyr tests build native_sim and the two bsim boards out of the shared sources, so a
+# change confined to these cannot reach them: another port, a translation, a frozen library
+# (this port has none), documentation or the unix test suite.
+PATTERN_ZEPHYR_TESTS_IGNORE = re.compile(r"^(?:docs|frozen|locale|tests)/|^ports/(?!zephyr-cp/)")
+
+# Zephyr boards don't use make, so their module tables can't be computed here. Each
+# board's build writes autogen_board_info.toml next to its circuitpython.toml and that
+# file is committed; a board whose table is missing, unreadable or doesn't name a
+# module is built.
+ZEPHYR_BOARDS = tools_dir.parent / "ports" / "zephyr-cp" / "boards"
+zephyr_modules = None
+
+
+def load_zephyr_modules():
+    modules = {}
+    for board_info in ZEPHYR_BOARDS.glob("*/*/autogen_board_info.toml"):
+        board = f"{board_info.parent.parent.name}_{board_info.parent.name}"
+        try:
+            with board_info.open("rb") as f:
+                modules[board] = tomllib.load(f)["modules"]
+        except Exception as e:  # noqa: BLE001 -- whatever went wrong, the board gets built
+            print(f"  {board}: unusable module table ({e})")
+    return modules
+
+
+def zephyr_board_has_module(board, module):
+    """What the board's committed module table says. An unknown board or module counts
+    as yes, so the board gets built."""
+    global zephyr_modules
+    if zephyr_modules is None:
+        zephyr_modules = load_zephyr_modules()
+    return board not in zephyr_modules or zephyr_modules[board].get(module, True)
+
 
 PATTERN_WINDOWS = {
     ".github/",
@@ -192,9 +240,16 @@ def set_boards(build_all: bool):
                 # the logic to build all boards breaks.
                 boards = set(port_to_board[port] if port else all_board_ids)
 
-                # Zephyr boards don't use make, so build them and don't compute their settings.
-                for board in port_to_board["zephyr-cp"]:
-                    if board in boards:
+                # Zephyr boards don't use make, so decide them here from their committed
+                # module table and leave them out of the settings computation below.
+                module = module_matches.group(2) if module_matches else None
+                for board in list(boards):  # a copy, boards shrinks below
+                    if board_to_port[board] != "zephyr-cp":
+                        continue
+                    boards.remove(board)
+                    if file.startswith("frozen"):
+                        continue  # the port has no frozen modules
+                    if module is None or zephyr_board_has_module(board, module):
                         boards_to_build.add(board)
 
                 for board in boards_to_build:
@@ -257,8 +312,24 @@ def set_boards(build_all: bool):
         port_to_boards_to_build.setdefault(port, []).append(board)
         print(" ", board)
 
+    # build-boards.yml runs one matrix per port and GitHub allows 256 jobs per matrix.
+    # Split a bigger port into alphabetical runs of equal size, listed like ports;
+    # "split_ports" maps a part back to the real port name, which build.yml passes on, so
+    # the toolchain setup in build-boards.yml stays unchanged.
+    split_ports = {}
+    for port, boards in list(port_to_boards_to_build.items()):
+        parts = math.ceil(len(boards) / GITHUB_MATRIX_LIMIT)
+        if parts > 1:
+            del port_to_boards_to_build[port]
+            size = math.ceil(len(boards) / parts)
+            for index, start in enumerate(range(0, len(boards), size), start=1):
+                name = f"{port}-{index}"
+                port_to_boards_to_build[name] = boards[start : start + size]
+                split_ports[name] = port
+
     if port_to_boards_to_build:
         port_to_boards_to_build["ports"] = sorted(list(port_to_boards_to_build.keys()))
+        port_to_boards_to_build["split_ports"] = split_ports
 
     # Set the step outputs
     set_output("ports", json.dumps(port_to_boards_to_build))
@@ -292,6 +363,21 @@ def set_docs(run: bool):
     set_output("docs", run)
 
 
+def set_zephyr_tests(run: bool):
+    if not run:
+        if any(job.startswith("zephyr-tests") for job in last_failed_jobs):
+            run = True
+        else:
+            for file in changed_files:
+                if not PATTERN_ZEPHYR_TESTS_IGNORE.match(file):
+                    run = True
+                    break
+
+    # Set the step outputs
+    print("Running Zephyr tests:", run)
+    set_output("zephyr-tests", run)
+
+
 def set_windows(run: bool):
     if not run:
         if last_failed_jobs.get("windows"):
@@ -318,6 +404,7 @@ def main():
     print("Running: " + ("all" if run_all else "conditionally"))
     # Set jobs
     set_docs(run_all)
+    set_zephyr_tests(run_all)
     set_windows(run_all)
     set_boards(run_all)
 

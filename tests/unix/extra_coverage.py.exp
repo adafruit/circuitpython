@@ -33,6 +33,8 @@ abc
 # GC
 0
 0
+1
+1
 # GC part 2
 pass
 # tracked allocation
@@ -45,6 +47,7 @@ m_tracked_head = 0
 5 1
 6 1
 7 1
+1
 0 1
 1 1
 2 1
@@ -54,17 +57,24 @@ m_tracked_head = 0
 6 1
 7 1
 m_tracked_head = 0
+# tracked realloc
+grow preserves data: 1
+shrink preserves data: 1
+realloc gc stable: 1
+realloc(NULL) ok: 1
+realloc(ptr, 0) returns NULL: 1
+m_tracked_head after cleanup: 0
 # vstr
 tests
 sts
 
 test
 tes
-RuntimeError: 
-RuntimeError: 
+RuntimeError: \$
+RuntimeError: \$
 # repl
 ame__
-port 
+port \$
 
 builtins        micropython     __future__      _asyncio
 _thread         aesio           array           audiocore
@@ -117,6 +127,13 @@ deadbeef
 0deadbeef
 c0ffee
 000c0ffee
+# list argument helpers
+TypeError: \$
+ValueError: \$
+mp_obj_list_ensure same list? 1
+mp_obj_list_optional_arg same list? 1
+mp_obj_list_optional_arg new list len 3
+mp_obj_list_optional_arg new list from NULL len 3
 # runtime utils
 TypeError: unsupported type for __abs__: 'str'
 TypeError: unsupported types for __divmod__: 'str', 'str'
@@ -127,11 +144,8 @@ OverflowError: overflow converting long int to machine word
 OverflowError: overflow converting long int to machine word
 TypeError: can't convert NoneType to int
 TypeError: can't convert NoneType to int
-ValueError: 
+ValueError: \$
 Warning: test
-# binary
-123
-456
 # VM
 2 1
 # scheduler
@@ -145,8 +159,8 @@ unlocked
 1
 2
 3
-KeyboardInterrupt: 
-KeyboardInterrupt: 
+KeyboardInterrupt: \$
+KeyboardInterrupt: \$
 10
 loop
 scheduled function

@@ -4,6 +4,12 @@ set(MICROPY_PY_DIR "${MICROPY_DIR}/py")
 
 list(APPEND MICROPY_INC_CORE "${MICROPY_DIR}")
 
+# Set MICROPY_LIB_DIR default if not already set by the port.
+# This needs to happen before usermod.cmake is included (for c_module() in manifests).
+if(NOT MICROPY_LIB_DIR)
+    set(MICROPY_LIB_DIR ${MICROPY_DIR}/lib/micropython-lib)
+endif()
+
 # All py/ source files
 set(MICROPY_SOURCE_PY
     ${MICROPY_PY_DIR}/argcheck.c
@@ -49,16 +55,19 @@ set(MICROPY_SOURCE_PY
     ${MICROPY_PY_DIR}/modio.c
     ${MICROPY_PY_DIR}/modmath.c
     ${MICROPY_PY_DIR}/modmicropython.c
+    ${MICROPY_PY_DIR}/modstring.c
     ${MICROPY_PY_DIR}/modstruct.c
     ${MICROPY_PY_DIR}/modsys.c
     ${MICROPY_PY_DIR}/modthread.c
     ${MICROPY_PY_DIR}/moderrno.c
+    ${MICROPY_PY_DIR}/modweakref.c
     ${MICROPY_PY_DIR}/mpprint.c
     ${MICROPY_PY_DIR}/mpstate.c
     ${MICROPY_PY_DIR}/mpz.c
     ${MICROPY_PY_DIR}/nativeglue.c
     ${MICROPY_PY_DIR}/nlr.c
     ${MICROPY_PY_DIR}/nlraarch64.c
+    ${MICROPY_PY_DIR}/nlrloong64.c
     ${MICROPY_PY_DIR}/nlrmips.c
     ${MICROPY_PY_DIR}/nlrpowerpc.c
     ${MICROPY_PY_DIR}/nlrrv32.c
@@ -106,6 +115,7 @@ set(MICROPY_SOURCE_PY
     ${MICROPY_PY_DIR}/objstr.c
     ${MICROPY_PY_DIR}/objstringio.c
     ${MICROPY_PY_DIR}/objstrunicode.c
+    ${MICROPY_PY_DIR}/objtemplate.c
 # CIRCUITPY-CHANGE: add objtraceback.c
     ${MICROPY_PY_DIR}/objtraceback.c
     ${MICROPY_PY_DIR}/objtuple.c

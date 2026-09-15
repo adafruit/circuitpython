@@ -29,10 +29,6 @@
 #include "shared-bindings/_bleio/ScanEntry.h"
 #include "shared-bindings/time/__init__.h"
 
-#if CIRCUITPY_SETTINGS_TOML
-#include "shared-bindings/os/__init__.h"
-#endif
-
 #define MSEC_TO_UNITS(TIME, RESOLUTION) (((TIME) * 1000) / (RESOLUTION))
 #define SEC_TO_UNITS(TIME, RESOLUTION) (((TIME) * 1000000) / (RESOLUTION))
 #define UNITS_TO_SEC(TIME, RESOLUTION) (((TIME)*(RESOLUTION)) / 1000000)
@@ -247,9 +243,6 @@ static void check_enabled(bleio_adapter_obj_t *adapter) {
 //     return true;
 // }
 
-// Includes trailing null.
-char default_ble_name[] = { 'C', 'I', 'R', 'C', 'U', 'I', 'T', 'P', 'Y', 0, 0, 0, 0, 0};
-
 static void _adapter_set_name(bleio_adapter_obj_t *self, mp_obj_str_t *name_obj) {
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(name_obj, &bufinfo, MP_BUFFER_READ);
@@ -261,29 +254,7 @@ static void _adapter_set_name(bleio_adapter_obj_t *self, mp_obj_str_t *name_obj)
 static void bleio_adapter_hci_init(bleio_adapter_obj_t *self) {
     self->name = NULL;
 
-    mp_int_t name_len = 0;
-
-    #if CIRCUITPY_SETTINGS_TOML
-    mp_obj_t name = common_hal_os_getenv("CIRCUITPY_BLE_NAME", mp_const_none);
-    if (name != mp_const_none) {
-        mp_arg_validate_type_string(name, MP_QSTR_CIRCUITPY_BLE_NAME);
-        self->name = name;
-    }
-    #endif
-
-    if (!self->name) {
-        name_len = sizeof(default_ble_name) - 1;
-        bt_addr_t addr;
-        hci_check_error(hci_read_bd_addr(&addr));
-
-        default_ble_name[name_len - 4] = nibble_to_hex_lower[addr.val[1] >> 4 & 0xf];
-        default_ble_name[name_len - 3] = nibble_to_hex_lower[addr.val[1] & 0xf];
-        default_ble_name[name_len - 2] = nibble_to_hex_lower[addr.val[0] >> 4 & 0xf];
-        default_ble_name[name_len - 1] = nibble_to_hex_lower[addr.val[0] & 0xf];
-        // default_ble_name[name_len] will be zero.
-        self->name = mp_obj_new_str(default_ble_name, (uint8_t)name_len);
-    }
-    _adapter_set_name(self, self->name);
+    bleio_adapter_reset_name(self);
 
     // Get version information.
     if (hci_read_local_version(&self->hci_version, &self->hci_revision, &self->lmp_version,
@@ -396,18 +367,14 @@ bleio_address_obj_t *common_hal_bleio_adapter_get_address(bleio_adapter_obj_t *s
     bt_addr_t addr;
     hci_check_error(hci_read_bd_addr(&addr));
 
-    bleio_address_obj_t *address = mp_obj_malloc(bleio_address_obj_t, &bleio_address_type);
-
-    common_hal_bleio_address_construct(address, addr.val, BT_ADDR_LE_PUBLIC);
-    return address;
+    // The cached address is refreshed on every call.
+    common_hal_bleio_address_construct(&self->address, addr.val, BT_ADDR_LE_PUBLIC);
+    self->address.base.type = &bleio_address_type;
+    return &self->address;
 }
 
 bool common_hal_bleio_adapter_set_address(bleio_adapter_obj_t *self, bleio_address_obj_t *address) {
-    mp_buffer_info_t bufinfo;
-    if (!mp_get_buffer(address->bytes, &bufinfo, MP_BUFFER_READ)) {
-        return false;
-    }
-    return hci_le_set_random_address(bufinfo.buf) == HCI_OK;
+    return hci_le_set_random_address(address->bytes) == HCI_OK;
 }
 
 mp_obj_str_t *common_hal_bleio_adapter_get_name(bleio_adapter_obj_t *self) {
@@ -662,11 +629,8 @@ uint32_t _common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
 
     // Copy peer address, if supplied.
     if (directed_to) {
-        mp_buffer_info_t bufinfo;
-        if (mp_get_buffer(directed_to->bytes, &bufinfo, MP_BUFFER_READ)) {
-            peer_addr.type = directed_to->type;
-            memcpy(&peer_addr.a.val, bufinfo.buf, sizeof(peer_addr.a.val));
-        }
+        peer_addr.type = directed_to->type;
+        memcpy(&peer_addr.a.val, directed_to->bytes, sizeof(peer_addr.a.val));
     }
 
     bool extended =

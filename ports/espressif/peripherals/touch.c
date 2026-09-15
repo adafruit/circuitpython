@@ -128,19 +128,21 @@ uint16_t peripherals_touch_read(int channel_id) {
         return 0;
     }
     return UINT16_MAX - (uint16_t)touch_value;
-    touch_channel_read_data(touch_channels[idx], TOUCH_CHAN_DATA_TYPE_RAW, &touch_value);
-    return UINT16_MAX - (uint16_t)touch_value;
+
     #elif SOC_TOUCH_SENSOR_VERSION == 2
+    touch_channel_read_data(touch_channels[idx], TOUCH_CHAN_DATA_TYPE_RAW, &touch_value);
     if (touch_value > UINT16_MAX) {
         return UINT16_MAX;
     }
     return (uint16_t)touch_value;
+
     #elif SOC_TOUCH_SENSOR_VERSION == 3
     touch_channel_read_data(touch_channels[idx], TOUCH_CHAN_DATA_TYPE_SMOOTH, &touch_value);
     if (touch_value > UINT16_MAX) {
         return UINT16_MAX;
     }
     return (uint16_t)touch_value;
+
     #else
     #error bad SOC_TOUCH_SENSOR_VERSION
     #endif

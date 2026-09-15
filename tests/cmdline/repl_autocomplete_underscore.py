@@ -21,7 +21,6 @@ class TestClass:
     @property
     def _private_property(self):
         return 99
-
 {\x04}
 # Paste executed
 

@@ -48,21 +48,21 @@ void audiofilters_assign_filter_chain(audiofilters_filter_chain_t *self, mp_obj_
 
 void audiofilters_reset_filter_chain(audiofilters_filter_chain_t *self, uint8_t channel_count) {
     if (self->states) {
-        for (uint8_t i = 0; i < self->objs_len * channel_count; i++) {
+        for (size_t i = 0; i < self->objs_len * channel_count; i++) {
             synthio_biquad_filter_reset(&self->states[i]);
         }
     }
 }
 
 void audiofilters_tick_filter_chain(audiofilters_filter_chain_t *self) {
-    for (uint8_t j = 0; j < self->objs_len; j++) {
+    for (size_t j = 0; j < self->objs_len; j++) {
         common_hal_synthio_biquad_tick(self->objs[j]);
     }
 }
 
 int32_t audiofilters_process_filter_chain(audiofilters_filter_chain_t *self, uint8_t channel_count, uint8_t channel, int32_t word) {
     // Process biquad filters
-    for (uint8_t j = 0; j < self->objs_len; j++) {
+    for (size_t j = 0; j < self->objs_len; j++) {
         word = synthio_biquad_filter_sample(self->objs[j], &self->states[j * channel_count + channel], word);
     }
     return word;

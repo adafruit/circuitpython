@@ -33,6 +33,10 @@ static void reset_speaker_enable_pin(void) {
     #endif
 }
 
+MP_WEAK bool board_reset_pin_number(uint8_t pin_number) {
+    return false;
+}
+
 void reset_all_pins(void) {
     for (size_t i = 0; i < GPIO_COUNT; i++) {
         claimed_pins[i] = never_reset_pins[i];
@@ -40,6 +44,10 @@ void reset_all_pins(void) {
 
     for (uint32_t pin = 0; pin < NUMBER_OF_PINS; ++pin) {
         if ((never_reset_pins[nrf_pin_port(pin)] & (1 << nrf_relative_pin_number(pin))) != 0) {
+            continue;
+        }
+        // Allow the board to override the reset state of any pin.
+        if (board_reset_pin_number(pin)) {
             continue;
         }
         nrf_gpio_cfg_default(pin);
@@ -64,6 +72,9 @@ void reset_pin_number(uint8_t pin_number) {
         reset_speaker_enable_pin();
     }
     #endif
+
+    // Allow the board to override the reset state of any pin.
+    board_reset_pin_number(pin_number);
 }
 
 

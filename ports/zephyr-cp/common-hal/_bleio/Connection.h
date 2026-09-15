@@ -24,6 +24,10 @@ typedef struct {
     mp_obj_t connection_obj;
     volatile pair_status_t pair_status;
     uint8_t sec_err; // Security error code from pairing attempt
+    // True if user code initiated this connection or accepted it with its own
+    // advertising. bleio_user_reset() disconnects only these; the BLE workflow
+    // connection is not user-owned and survives VM restarts.
+    bool user_owned;
 } bleio_connection_internal_t;
 
 typedef struct {

@@ -186,6 +186,28 @@ MP_PROPERTY_GETSET(audiodelays_pitch_shift_mix_obj,
     (mp_obj_t)&audiodelays_pitch_shift_set_mix_obj);
 
 
+//|     freeze: bool
+//|     """If True, the window buffer won't accept new audio information and will be "frozen" in
+//|     it's current state, resulting in a sustaining tone. Normal operation is resumed when set to
+//|     False. If the audio buffer is reset, this value will also be reset to False."""
+static mp_obj_t audiodelays_pitch_shift_obj_get_freeze(mp_obj_t self_in) {
+    return mp_obj_new_bool(common_hal_audiodelays_pitch_shift_get_freeze(self_in));
+}
+MP_DEFINE_CONST_FUN_OBJ_1(audiodelays_pitch_shift_get_freeze_obj, audiodelays_pitch_shift_obj_get_freeze);
+
+static mp_obj_t audiodelays_pitch_shift_obj_set_freeze(mp_obj_t self_in, mp_obj_t freeze_in) {
+    audiodelays_pitch_shift_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    bool freeze = mp_obj_is_true(freeze_in);
+    common_hal_audiodelays_pitch_shift_set_freeze(self, freeze);
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_2(audiodelays_pitch_shift_set_freeze_obj, audiodelays_pitch_shift_obj_set_freeze);
+
+MP_PROPERTY_GETSET(audiodelays_pitch_shift_freeze_obj,
+    (mp_obj_t)&audiodelays_pitch_shift_get_freeze_obj,
+    (mp_obj_t)&audiodelays_pitch_shift_set_freeze_obj);
+
+
 //|     playing: bool
 //|     """True when the effect is playing a sample. (read-only)"""
 //|
@@ -255,6 +277,7 @@ static const mp_rom_map_elem_t audiodelays_pitch_shift_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_playing), MP_ROM_PTR(&audiodelays_pitch_shift_playing_obj) },
     { MP_ROM_QSTR(MP_QSTR_semitones), MP_ROM_PTR(&audiodelays_pitch_shift_semitones_obj) },
     { MP_ROM_QSTR(MP_QSTR_mix), MP_ROM_PTR(&audiodelays_pitch_shift_mix_obj) },
+    { MP_ROM_QSTR(MP_QSTR_freeze), MP_ROM_PTR(&audiodelays_pitch_shift_freeze_obj) },
     AUDIOSAMPLE_FIELDS,
 };
 static MP_DEFINE_CONST_DICT(audiodelays_pitch_shift_locals_dict, audiodelays_pitch_shift_locals_dict_table);

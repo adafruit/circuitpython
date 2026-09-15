@@ -23,6 +23,9 @@ void common_hal_audiodelays_pitch_shift_set_semitones(audiodelays_pitch_shift_ob
 mp_obj_t common_hal_audiodelays_pitch_shift_get_mix(audiodelays_pitch_shift_obj_t *self);
 void common_hal_audiodelays_pitch_shift_set_mix(audiodelays_pitch_shift_obj_t *self, mp_obj_t arg);
 
+bool common_hal_audiodelays_pitch_shift_get_freeze(audiodelays_pitch_shift_obj_t *self);
+void common_hal_audiodelays_pitch_shift_set_freeze(audiodelays_pitch_shift_obj_t *self, bool freeze);
+
 bool common_hal_audiodelays_pitch_shift_get_playing(audiodelays_pitch_shift_obj_t *self);
 void common_hal_audiodelays_pitch_shift_play(audiodelays_pitch_shift_obj_t *self, mp_obj_t sample, bool loop);
 void common_hal_audiodelays_pitch_shift_stop(audiodelays_pitch_shift_obj_t *self);

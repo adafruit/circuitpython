@@ -289,14 +289,22 @@ bool connection_on_ble_evt(ble_evt_t *ble_evt, void *self_in) {
                 // mode >=1 and/or level >=1 means encryption is set up
                 self->pair_status = PAIR_NOT_PAIRED;
             } else {
-                if (bonding_load_cccd_info(self->is_central, self->conn_handle, self->ediv)) {
-                    // Did an sd_ble_gatts_sys_attr_set() with the stored sys_attr values.
-                    // Indicate ATTR table change because we may have reloaded since the peer last
-                    // connected.
-                    sd_ble_gatts_service_changed(self->conn_handle, 0xC, 0xFFFF);
-                } else {
-                    // No matching bonding found, so use fresh system attributes.
+                if (!bonding_load_cccd_info(self->is_central, self->conn_handle, self->ediv)) {
+                    // No stored system attributes (CCCD values) found, so use fresh ones.
                     sd_ble_gatts_sys_attr_set(self->conn_handle, NULL, 0, 0);
+                }
+                if (self->ediv != EDIV_INVALID && bleio_gatts_min_handle <= bleio_gatts_max_handle) {
+                    // The peer reconnected using a stored bond, and the GATT table may
+                    // have changed since it last connected: a reload can add or remove
+                    // user services. Indicate Service Changed so the peer discards its
+                    // cached table. This must not be conditional on the sys-attr load
+                    // above succeeding: a peer that missed the indication would trust a
+                    // stale cache indefinitely, and saved system attributes are the
+                    // less reliable of the two records. The error is ignored if the
+                    // peer hasn't subscribed to indications yet. Both handles must be
+                    // within the application-populated range: the SoftDevice rejects
+                    // 0xFFFF, and also 0xC, which is inside its own GATT service.
+                    (void)sd_ble_gatts_service_changed(self->conn_handle, bleio_gatts_min_handle, bleio_gatts_max_handle);
                 }
                 self->pair_status = PAIR_PAIRED;
             }

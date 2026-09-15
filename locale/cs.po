@@ -998,7 +998,7 @@ msgstr "datový pin #%d je používán"
 #: ports/atmel-samd/common-hal/microcontroller/Pin.c
 #: ports/espressif/common-hal/dotclockframebuffer/DotClockFramebuffer.c
 #: ports/mimxrt10xx/common-hal/microcontroller/Pin.c
-#: shared-bindings/microcontroller/Pin.c
+#: shared-bindings/emmcio/EMMC.c shared-bindings/microcontroller/Pin.c
 msgid "Invalid %q pin"
 msgstr "Neplatný pin %q"
 
@@ -1040,7 +1040,8 @@ msgid "Another send is already active"
 msgstr "Další odesílání je již aktivní"
 
 #: ports/atmel-samd/common-hal/sdioio/SDCard.c
-#: ports/espressif/common-hal/qspibus/QSPIBus.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c shared-bindings/emmcio/EMMC.c
+#: shared-bindings/socketpool/SocketPool.c
 msgid "%q failure: %d"
 msgstr "%q: selhání %d"
 
@@ -1048,8 +1049,9 @@ msgstr "%q: selhání %d"
 #: ports/cxd56/common-hal/sdioio/SDCard.c
 #: ports/espressif/common-hal/sdioio/SDCard.c
 #: ports/raspberrypi/common-hal/sdioio/SDCard.c
-#: ports/stm/common-hal/sdioio/SDCard.c shared-bindings/floppyio/__init__.c
-#: shared-module/sdcardio/SDCard.c
+#: ports/stm/common-hal/sdioio/SDCard.c shared-bindings/audiocore/WaveFile.c
+#: shared-bindings/emmcio/EMMC.c shared-bindings/floppyio/__init__.c
+#: shared-bindings/picogame/Canvas.c shared-module/sdcardio/SDCard.c
 #, c-format
 msgid "Buffer must be a multiple of %d bytes"
 msgstr ""
@@ -1161,6 +1163,7 @@ msgstr "Připojení se nezdařilo: interní chyba"
 
 #: ports/espressif/common-hal/_bleio/Adapter.c
 #: ports/nordic/common-hal/_bleio/Adapter.c
+#: ports/zephyr-cp/common-hal/_bleio/Adapter.c
 msgid "Data too large for advertisement packet"
 msgstr "Data jsou příliš velká pro propagovaný paket"
 
@@ -1203,7 +1206,8 @@ msgid "Value length > max_length"
 msgstr ""
 
 #: ports/espressif/common-hal/_bleio/Characteristic.c
-msgid "Too many descriptors"
+#: ports/espressif/common-hal/_bleio/Service.c
+msgid "Too many %q"
 msgstr ""
 
 #: ports/espressif/common-hal/_bleio/Characteristic.c
@@ -1336,7 +1340,7 @@ msgid "%q must be 8, 16, 24, or 32"
 msgstr ""
 
 #: ports/espressif/common-hal/audiobusio/__init__.c
-#: ports/espressif/common-hal/audioi2sin/I2SIn.c
+#: ports/espressif/common-hal/audioi2sin/I2SIn.c shared-bindings/emmcio/EMMC.c
 msgid "Peripheral in use"
 msgstr "Periférie je používána"
 
@@ -1487,6 +1491,8 @@ msgid "Requested resource not found"
 msgstr "Požadovaný zdroj nebyl nalezen"
 
 #: ports/espressif/common-hal/espidf/__init__.c
+#: ports/raspberrypi/common-hal/picogame/Display.c
+#: shared-bindings/picogame/__init__.c
 msgid "Operation or feature not supported"
 msgstr "Operace nebo funkce není podporována"
 
@@ -1529,7 +1535,7 @@ msgstr "Program je příliš dlouhý"
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2350.c
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 #: ports/raspberrypi/common-hal/usb_host/Port.c
-#: shared-bindings/digitalio/DigitalInOut.c
+#: shared-bindings/digitalio/DigitalInOut.c shared-bindings/emmcio/EMMC.c
 #: shared-bindings/i2cioexpander/IOPin.c shared-bindings/microcontroller/Pin.c
 #: shared-module/max3421e/Max3421E.c
 msgid "%q in use"
@@ -1690,6 +1696,7 @@ msgstr "Chyba alokace paměti WiFi"
 
 #: ports/espressif/common-hal/wifi/__init__.c
 #: ports/raspberrypi/common-hal/wifi/__init__.c
+#: ports/zephyr-cp/common-hal/wifi/Radio.c
 msgid "Only IPv4 addresses supported"
 msgstr "Pouze IPv4 adresy podporovány"
 
@@ -1702,6 +1709,7 @@ msgstr "Musí poskytnout pin MISO nebo MOSI"
 #: ports/mimxrt10xx/common-hal/busio/UART.c ports/stm/common-hal/busio/I2C.c
 #: ports/stm/common-hal/busio/SPI.c ports/stm/common-hal/busio/UART.c
 #: ports/stm/common-hal/canio/CAN.c ports/stm/common-hal/sdioio/SDCard.c
+#: shared-bindings/emmcio/EMMC.c
 msgid "Hardware in use, try alternative pins"
 msgstr "Hardware je používán, zkuste alternativní piny"
 
@@ -1802,16 +1810,16 @@ msgid "Cannot get temperature"
 msgstr "Nelze získat teplotu (°C)"
 
 #: ports/nordic/common-hal/watchdog/WatchDogTimer.c
-msgid "WatchDogTimer cannot be deinitialized once mode is set to RESET"
-msgstr "WatchDogTimer nelze deaktivovat v režimu RESET"
-
-#: ports/nordic/common-hal/watchdog/WatchDogTimer.c
 msgid "timeout duration exceeded the maximum supported value"
 msgstr "timeout překročil maximální podporovanou hodnotu"
 
 #: ports/nordic/common-hal/watchdog/WatchDogTimer.c
 msgid "%q cannot be changed once mode is set to %q"
 msgstr ""
+
+#: ports/nordic/common-hal/watchdog/WatchDogTimer.c
+msgid "WatchDogTimer cannot be deinitialized once mode is set to RESET"
+msgstr "WatchDogTimer nelze deaktivovat v režimu RESET"
 
 #: ports/nordic/sd_mutex.c
 #, c-format
@@ -1829,9 +1837,9 @@ msgstr "Konverze audia není implementována"
 
 #: ports/raspberrypi/bindings/cyw43/__init__.c py/argcheck.c py/objexcept.c
 #: shared-bindings/bitmapfilter/__init__.c shared-bindings/canio/CAN.c
-#: shared-bindings/digitalio/Pull.c shared-bindings/supervisor/__init__.c
-#: shared-module/audiofilters/Filter.c shared-module/displayio/__init__.c
-#: shared-module/synthio/Synthesizer.c
+#: shared-bindings/digitalio/Pull.c shared-bindings/picogame/Sprite.c
+#: shared-bindings/supervisor/__init__.c shared-module/audiofilters/__init__.c
+#: shared-module/displayio/__init__.c shared-module/synthio/Synthesizer.c
 msgid "%q must be of type %q or %q, not %q"
 msgstr "%q musí být typu %q nebo %q, ne %q"
 
@@ -1915,7 +1923,7 @@ msgstr ""
 msgid "I2C peripheral in use"
 msgstr "Periférie I2C je používána"
 
-#: ports/raspberrypi/common-hal/busio/SPI.c
+#: ports/raspberrypi/common-hal/busio/SPI.c shared-bindings/emmcio/EMMC.c
 msgid "SPI peripheral in use"
 msgstr "SPI periferie je používána"
 
@@ -1984,6 +1992,13 @@ msgstr "Není možné zapisovat do paměti jen pro čtení"
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
 msgid "All timers for this pin are in use"
 msgstr "Všechny časovače pro tento pin jsou používány"
+
+#: ports/raspberrypi/common-hal/picogame/Display.c py/argcheck.c py/runtime.c
+#: shared-bindings/bitmapfilter/__init__.c
+#: shared-module/audiodelays/MultiTapDelay.c shared-module/synthio/Note.c
+#: shared-module/synthio/__init__.c
+msgid "%q must be of type %q, not %q"
+msgstr "%q musí být typu %q, ne %q"
 
 #: ports/raspberrypi/common-hal/rotaryio/IncrementalEncoder.c
 msgid "Pins must be sequential GPIO pins"
@@ -2306,7 +2321,7 @@ msgstr "funkci chybí %d povinné poziční argumenty"
 msgid "function expected at most %d arguments, got %d"
 msgstr ""
 
-#: py/argcheck.c
+#: py/argcheck.c shared-bindings/wifi/Radio.c
 msgid "'%q' argument required"
 msgstr "Je vyžadován argument '%q'"
 
@@ -2324,7 +2339,7 @@ msgid "extra keyword arguments given"
 msgstr ""
 
 #: py/argcheck.c shared-bindings/_stage/__init__.c
-#: shared-bindings/digitalio/DigitalInOut.c
+#: shared-bindings/digitalio/DigitalInOut.c shared-bindings/picogame/__init__.c
 msgid "argument num/types mismatch"
 msgstr ""
 
@@ -2345,12 +2360,6 @@ msgstr "%q musí být >= %d"
 msgid "%q must be <= %d"
 msgstr "%q musí být <= %d"
 
-#: py/argcheck.c py/runtime.c shared-bindings/bitmapfilter/__init__.c
-#: shared-module/audiodelays/MultiTapDelay.c shared-module/synthio/Note.c
-#: shared-module/synthio/__init__.c
-msgid "%q must be of type %q, not %q"
-msgstr "%q musí být typu %q, ne %q"
-
 #: py/argcheck.c
 msgid "%q length must be %d-%d"
 msgstr "%q délka musí být %d-%d"
@@ -2367,7 +2376,7 @@ msgstr "Délka %q musí být <= %d"
 msgid "%q length must be %d"
 msgstr "Délka %q musí být %d"
 
-#: py/argcheck.c shared-module/audiofilters/Filter.c
+#: py/argcheck.c shared-module/audiofilters/__init__.c
 msgid "%q in %q must be of type %q, not %q"
 msgstr "%q v %q musí být typu %q, ne %q"
 
@@ -2410,6 +2419,10 @@ msgstr "funkci chybí argument pouze pro klíčové slovo"
 
 #: py/binary.c py/objarray.c
 msgid "bad typecode"
+msgstr ""
+
+#: py/binary.c
+msgid "integer out of range"
 msgstr ""
 
 #: py/builtinevex.c
@@ -2534,6 +2547,10 @@ msgstr ""
 #: py/compile.c
 msgid "* arg after **"
 msgstr "* arg po **"
+
+#: py/compile.c
+msgid "* arg after kwarg"
+msgstr ""
 
 #: py/compile.c
 msgid "too many args"
@@ -2661,6 +2678,22 @@ msgstr ""
 
 #: py/emitinlinerv32.c
 msgid "opcode '%q' argument %d: must not be zero"
+msgstr ""
+
+#: py/emitinlinerv32.c
+msgid "opcode '%q': registers must be different"
+msgstr ""
+
+#: py/emitinlinerv32.c
+msgid "opcode '%q': malformed register list"
+msgstr ""
+
+#: py/emitinlinerv32.c
+msgid "opcode '%q': invalid stack adjustment"
+msgstr ""
+
+#: py/emitinlinerv32.c
+msgid "opcode '%q' argument %d: wrong register(s)"
 msgstr ""
 
 #: py/emitinlinerv32.c
@@ -2825,6 +2858,10 @@ msgid "return expected '%q' but got '%q'"
 msgstr ""
 
 #: py/emitnative.c
+msgid "native raise"
+msgstr ""
+
+#: py/emitnative.c
 msgid "must raise an object"
 msgstr ""
 
@@ -2836,8 +2873,8 @@ msgstr ""
 msgid "unicode name escapes"
 msgstr ""
 
-#: py/modbuiltins.c
-msgid "chr() arg not in range(0x110000)"
+#: py/modbuiltins.c py/objstr.c
+msgid "char not in range(0x110000)"
 msgstr ""
 
 #: py/modbuiltins.c
@@ -2905,7 +2942,9 @@ msgstr "záporný faktoriál"
 msgid "schedule queue full"
 msgstr ""
 
-#: py/modstruct.c shared-module/struct/__init__.c
+#: py/modstruct.c shared-bindings/picogame/Bitmap.c
+#: shared-bindings/picogame/Canvas.c shared-bindings/picogame/Framebuffer.c
+#: shared-module/picogame/__init__.c shared-module/struct/__init__.c
 msgid "buffer too small"
 msgstr ""
 
@@ -2916,6 +2955,10 @@ msgstr ""
 
 #: py/modthread.c
 msgid "expecting a dict for keyword args"
+msgstr ""
+
+#: py/modweakref.c
+msgid "not a heap object"
 msgstr ""
 
 #: py/nativeglue.c
@@ -3134,11 +3177,6 @@ msgstr ""
 msgid "float too big"
 msgstr ""
 
-#: py/objint.c
-#, c-format
-msgid "value must fit in %d byte(s)"
-msgstr ""
-
 #: py/objint.c shared-bindings/time/__init__.c
 msgid "No long integer support"
 msgstr "Není podpora long integer"
@@ -3151,6 +3189,15 @@ msgstr ""
 #: shared-bindings/storage/__init__.c
 msgid "%q=%q"
 msgstr "%q=%q"
+
+#: py/objint_impl.h
+#, c-format
+msgid "value would overflow a %d byte buffer"
+msgstr ""
+
+#: py/objint_impl.h
+msgid "can't convert negative int to unsigned"
+msgstr ""
 
 #: py/objint_longlong.c py/parsenum.c
 msgid "result overflows long long storage"
@@ -3191,6 +3238,10 @@ msgstr "%q krok nemůže být nula"
 #: py/objslice.c
 msgid "Cannot subclass slice"
 msgstr "Nelze použít řez podtřídy"
+
+#: py/objstr.c
+msgid "unknown encoding: %q"
+msgstr ""
 
 #: py/objstr.c
 msgid "bytes value out of range"
@@ -3323,6 +3374,10 @@ msgstr ""
 msgid "string index out of range"
 msgstr ""
 
+#: py/objtemplate.c
+msgid "expected str or Interpolation"
+msgstr ""
+
 #: py/objtype.c
 msgid "Call super().__init__() before accessing native object."
 msgstr "Volání super().__init__() před přístupem k nativnímu objektu."
@@ -3444,6 +3499,10 @@ msgstr ""
 #: py/persistentcode.c
 msgid "incompatible .mpy arch"
 msgstr "nekopmatibilní architektura .mpy"
+
+#: py/persistentcode.c
+msgid "function must be bytecode"
+msgstr ""
 
 #: py/proto.c shared-bindings/digitalio/DigitalInOutProtocol.c
 msgid "'%q' object does not support '%q'"
@@ -3633,7 +3692,7 @@ msgstr "Hodnota UUID není str, int ani byte buffer"
 msgid "not a 128-bit UUID"
 msgstr ""
 
-#: shared-bindings/_bleio/__init__.c
+#: shared-bindings/_bleio/__init__.c shared-bindings/emmcio/EMMC.c
 #: shared-bindings/memorymonitor/AllocationSize.c
 #: shared-bindings/pulseio/PulseIn.c shared-module/bitmaptools/__init__.c
 #: shared-module/displayio/Bitmap.c shared-module/displayio/Group.c
@@ -3793,7 +3852,7 @@ msgstr ""
 msgid "invalid destination buffer, must be an array of type: %c"
 msgstr ""
 
-#: shared-bindings/audioio/AudioOut.c
+#: shared-bindings/audioio/AudioOut.c shared-bindings/emmcio/EMMC.c
 msgid "%q and %q must be different"
 msgstr "%q a %q musí být rozdílné"
 
@@ -4016,6 +4075,10 @@ msgstr ""
 msgid "offset must be >= 0"
 msgstr "offset musí být >= 0"
 
+#: shared-bindings/emmcio/EMMC.c shared-bindings/i2cioexpander/IOExpander.c
+msgid "address out of range"
+msgstr ""
+
 #: shared-bindings/epaperdisplay/EPaperDisplay.c
 msgid "Refresh too soon"
 msgstr "Pokus o obnovení příliš brzo"
@@ -4031,10 +4094,6 @@ msgstr "Parametr \"system\" musí být gnss.SatelliteSystem"
 #: shared-bindings/hashlib/__init__.c
 msgid "Unsupported hash algorithm"
 msgstr "Nepodporovaný hash algoritmus"
-
-#: shared-bindings/i2cioexpander/IOExpander.c
-msgid "address out of range"
-msgstr ""
 
 #: shared-bindings/i2cioexpander/IOExpander.c
 msgid "num_pins must be 8 or 16"
@@ -4113,6 +4172,11 @@ msgstr ""
 #: shared-bindings/paralleldisplaybus/ParallelBus.c
 msgid "Specify exactly one of data0 or data_pins"
 msgstr "Specifikuj přesně jeden z data0 nebo data_pins"
+
+#: shared-bindings/picogame/Bitmap.c shared-module/msgpack/__init__.c
+#: supervisor/shared/settings.c
+msgid "Invalid format"
+msgstr "Špatný formát"
 
 #: shared-bindings/ps2io/Ps2.c
 msgid "Failed sending command."
@@ -4262,6 +4326,10 @@ msgstr "Chybná MAC adresa"
 #: shared-bindings/wifi/Radio.c
 msgid "AuthMode.OPEN is not used with password"
 msgstr "AuthMode.OPEN nepoužívá heslo"
+
+#: shared-bindings/wifi/Radio.c
+msgid "Supply either %q or %q, not both"
+msgstr ""
 
 #: shared-bindings/wifi/Radio.c
 msgid "Invalid BSSID"
@@ -4438,10 +4506,6 @@ msgstr ""
 #: shared-module/msgpack/__init__.c
 msgid "no default packer"
 msgstr ""
-
-#: shared-module/msgpack/__init__.c supervisor/shared/settings.c
-msgid "Invalid format"
-msgstr "Špatný formát"
 
 #: shared-module/paralleldisplaybus/ParallelBus.c
 msgid ""

@@ -224,21 +224,20 @@ static bool synth_note_into_buffer(synthio_synth_t *synth, int chan, int32_t *ou
     uint32_t lim = waveform_length << SYNTHIO_FREQUENCY_SHIFT;
     uint32_t accum = synth->accum[chan];
 
-    if (dds_rate > lim / 2) {
+    if (dds_rate > (lim - offset) / 2) {
         // beyond nyquist, can't play note
         return false;
     }
 
-    // can happen if note waveform gets set mid-note, but the expensive modulo is usually avoided
-    if (accum > lim) {
-        accum = accum % lim + offset;
+    if (accum >= lim) {
+        accum = accum < offset ? offset : offset + (accum - offset) % (lim - offset);
     }
 
     // first, fill with waveform
     for (uint16_t i = 0; i < dur; i++) {
         accum += dds_rate;
         // because dds_rate is low enough, the subtraction is guaranteed to go back into range, no expensive modulo needed
-        if (accum > lim) {
+        if (accum >= lim) {
             accum = accum - lim + offset;
         }
         int16_t idx = accum >> SYNTHIO_FREQUENCY_SHIFT;
@@ -247,31 +246,30 @@ static bool synth_note_into_buffer(synthio_synth_t *synth, int chan, int32_t *ou
     synth->accum[chan] = accum;
 
     if (ring_dds_rate) {
-        if (ring_dds_rate > lim / 2) {
+        accum = synth->ring_accum[chan];
+        offset = ring_waveform_start << SYNTHIO_FREQUENCY_SHIFT;
+        lim = ring_waveform_length << SYNTHIO_FREQUENCY_SHIFT;
+
+        if (ring_dds_rate > (lim - offset) / 2) {
             // beyond nyquist, can't play ring (but did synth main sound so
             // return true)
             return true;
         }
 
-        // now modulate by ring and accumulate
-        accum = synth->ring_accum[chan];
-        offset = ring_waveform_start << SYNTHIO_FREQUENCY_SHIFT;
-        lim = ring_waveform_length << SYNTHIO_FREQUENCY_SHIFT;
-
         // can happen if note waveform gets set mid-note, but the expensive modulo is usually avoided
-        if (accum > lim) {
-            accum = accum % lim + offset;
+        if (accum >= lim) {
+            accum = accum < offset ? offset : offset + (accum - offset) % (lim - offset);
         }
 
         for (uint16_t i = 0; i < dur; i++) {
             accum += ring_dds_rate;
             // because dds_rate is low enough, the subtraction is guaranteed to go back into range, no expensive modulo needed
-            if (accum > lim) {
+            if (accum >= lim) {
                 accum = accum - lim + offset;
             }
             int16_t idx = accum >> SYNTHIO_FREQUENCY_SHIFT;
-            int16_t wi = (ring_waveform[idx] * out_buffer32[i]) / 32768; // consider for synthio_sat16 but had a weird artificat
-            out_buffer32[i] = wi;
+            int32_t wi = (ring_waveform[idx] * out_buffer32[i]) / 32768;
+            out_buffer32[i] = wi > 32767 ? 32767 : wi;
         }
         synth->ring_accum[chan] = accum;
     }
@@ -497,8 +495,15 @@ static int find_channel_with_note(synthio_synth_t *synth, mp_obj_t note) {
 bool synthio_span_change_note(synthio_synth_t *synth, mp_obj_t old_note, mp_obj_t new_note) {
     int channel;
     if (new_note != SYNTHIO_SILENCE && (channel = find_channel_with_note(synth, new_note)) != -1) {
-        // note already playing, re-enter attack phase
-        synth->envelope_state[channel].state = SYNTHIO_ENVELOPE_STATE_ATTACK;
+        if (synth->envelope_state[channel].level == 0) {
+            // released and already decayed to silence, but not yet reaped:
+            // treat this like a fresh press, not a swell from 0
+            synthio_envelope_state_init(&synth->envelope_state[channel], synthio_synth_get_note_envelope(synth, new_note));
+            synth->accum[channel] = 0;
+        } else {
+            // note already playing, re-enter attack phase
+            synth->envelope_state[channel].state = SYNTHIO_ENVELOPE_STATE_ATTACK;
+        }
         return true;
     }
     channel = find_channel_with_note(synth, old_note);

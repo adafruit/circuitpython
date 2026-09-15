@@ -30,7 +30,7 @@ bool ipaddress_parse_ipv4address(const char *str_data, size_t str_len, uint32_t 
             period_count++;
         }
     }
-    if (period_count > 3) {
+    if (period_count != 3) {
         return false;
     }
 
@@ -50,7 +50,13 @@ bool ipaddress_parse_ipv4address(const char *str_data, size_t str_len, uint32_t 
         }
         last_period = period_index[i] + 1;
         if (ip_out != NULL) {
+            if (!mp_obj_is_small_int(octet)) {
+                return false;
+            }
             mp_int_t int_octet = MP_OBJ_SMALL_INT_VALUE(octet);
+            if (int_octet < 0 || int_octet > 255) {
+                return false;
+            }
             *ip_out |= int_octet << (i * 8);
         }
     }

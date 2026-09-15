@@ -258,12 +258,6 @@ static mp_obj_t synthio_from_file(size_t n_args, const mp_obj_t *pos_args, mp_ma
         args[ARG_envelope].u_obj
         );
 
-    #if MICROPY_MALLOC_USES_ALLOCATED_SIZE
-    m_free(buffer, track_size);
-    #else
-    m_free(buffer);
-    #endif
-
     return MP_OBJ_FROM_PTR(result);
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(synthio_from_file_obj, 1, synthio_from_file);

@@ -32,6 +32,7 @@
 
 #define MICROPY_ALLOC_PATH_MAX      (PATH_MAX)
 #define MICROPY_PERSISTENT_CODE_LOAD (0)
+#define MICROPY_PERSISTENT_CODE_LOAD_NATIVE (0)
 #define MICROPY_PERSISTENT_CODE_SAVE (1)
 
 #ifndef MICROPY_PERSISTENT_CODE_SAVE_FILE
@@ -84,11 +85,16 @@
 #define MICROPY_USE_INTERNAL_PRINTF (0)
 
 #define MICROPY_PY_FSTRINGS         (1)
+#define MICROPY_PY_TSTRINGS         (1)
 #define MICROPY_PY_BUILTINS_STR_UNICODE (1)
 
-#if !(defined(MICROPY_GCREGS_SETJMP) || defined(__x86_64__) || defined(__i386__) || defined(__thumb2__) || defined(__thumb__) || defined(__arm__))
-// Fall back to setjmp() implementation for discovery of GC pointers in registers.
-#define MICROPY_GCREGS_SETJMP (1)
+// Fall back to setjmp() implementation for discovery of GC pointers in registers
+// if running on intel-based macOS, or on architectures for which there is no
+// specialised GC pointer discovery mechanism.
+#if (defined(__APPLE__) && defined(__MACH__) && (defined(__i386__) || defined(__x86_64__))) || \
+    (!(defined(MICROPY_GCREGS_SETJMP) || defined(__x86_64__) || defined(__i386__) || \
+    defined(__thumb2__) || defined(__thumb__) || defined(__arm__)))
+#define MICROPY_GCREGS_SETJMP       (1)
 #endif
 
 #define MICROPY_MODULE___FILE__     (0)

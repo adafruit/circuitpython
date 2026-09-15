@@ -47,7 +47,7 @@ static mp_uint_t get_fmt_num(const char **p) {
     while (unichar_isdigit(*++num)) {
         len++;
     }
-    mp_uint_t val = (mp_uint_t)MP_OBJ_SMALL_INT_VALUE(mp_parse_num_integer(*p, len, 10, NULL));
+    mp_uint_t val = (mp_uint_t)mp_obj_get_int(mp_parse_num_integer(*p, len, 10, NULL));
     *p = num;
     return val;
 }

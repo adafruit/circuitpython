@@ -166,7 +166,7 @@ void mp_obj_exception_print(const mp_print_t *print, mp_obj_t o_in, mp_print_kin
     mp_print_kind_t k = kind & ~PRINT_EXC_SUBCLASS;
     bool is_subclass = kind & PRINT_EXC_SUBCLASS;
     if (!is_subclass && (k == PRINT_REPR || k == PRINT_EXC)) {
-        mp_print_str(print, qstr_str(o->base.type->name));
+        mp_print_str(print, mp_obj_get_type_str(o_in));
     }
 
     if (k == PRINT_EXC) {
@@ -610,7 +610,14 @@ bool mp_obj_is_exception_type(mp_obj_t self_in) {
 
 // return true if the given object is an instance of an exception type
 bool mp_obj_is_exception_instance(mp_obj_t self_in) {
-    return mp_obj_is_exception_type(MP_OBJ_FROM_PTR(mp_obj_get_type(self_in)));
+    if (mp_obj_is_native_exception_instance(self_in)) {
+        return true;
+    }
+    if (!mp_obj_is_exception_type(MP_OBJ_FROM_PTR(mp_obj_get_type(self_in)))) {
+        return false;
+    }
+    mp_obj_instance_t *self = MP_OBJ_TO_PTR(self_in);
+    return self->subobj[0] != MP_OBJ_FROM_PTR((void *)&mp_native_base_init_wrapper_obj);
 }
 
 // Return true if exception (type or instance) is a subclass of given

@@ -1,0 +1,17 @@
+&w25q512jvfiq {
+    partitions {
+        /delete-node/ partition@620000;
+        storage_partition: partition@620000 {
+			compatible = "zephyr,mapped-partition";
+            label = "storage";
+            reg = <0x00620000 DT_SIZE_K(32)>;
+        };
+        circuitpy_partition: partition@628000 {
+			compatible = "zephyr,mapped-partition";
+            label = "circuitpy";
+            reg = <0x00628000 (DT_SIZE_M(58) - DT_SIZE_K(128) - DT_SIZE_K(32))>;
+        };
+    };
+};
+
+#include "../../../app.overlay"

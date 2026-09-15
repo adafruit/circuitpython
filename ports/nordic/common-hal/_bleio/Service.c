@@ -46,6 +46,8 @@ uint32_t _common_hal_bleio_service_construct(bleio_service_obj_t *self, bleio_uu
     uint32_t result = sd_ble_gatts_service_add(service_type, &nordic_uuid, &self->handle);
     // Do a service changed indication to all connected peers.
     if (result == NRF_SUCCESS) {
+        bleio_gatts_min_handle = MIN(bleio_gatts_min_handle, self->handle);
+        bleio_gatts_max_handle = MAX(bleio_gatts_max_handle, self->handle);
         _indicate_service_change(self->handle, self->handle);
     }
 
@@ -169,6 +171,8 @@ void common_hal_bleio_service_add_characteristic(bleio_service_obj_t *self,
     _expand_range(char_handles.cccd_handle, &start, &end);
     _expand_range(char_handles.sccd_handle, &start, &end);
     _expand_range(char_handles.user_desc_handle, &start, &end);
+    bleio_gatts_min_handle = MIN(bleio_gatts_min_handle, start);
+    bleio_gatts_max_handle = MAX(bleio_gatts_max_handle, end);
     _indicate_service_change(start, end);
 
     #if CIRCUITPY_VERBOSE_BLE

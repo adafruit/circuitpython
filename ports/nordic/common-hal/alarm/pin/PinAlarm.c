@@ -17,7 +17,9 @@
 #include "nrfx.h"
 #include "nrf_gpio.h"
 #include "nrfx_gpiote.h"
+#ifdef BLUETOOTH_SD
 #include "nrf_soc.h"
+#endif
 #include <string.h>
 
 #define WPIN_UNUSED 0xFF

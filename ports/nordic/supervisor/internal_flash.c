@@ -16,6 +16,7 @@
 #include "lib/oofatfs/ff.h"
 #include "supervisor/shared/safe_mode.h"
 
+#include "background.h"
 #include "peripherals/nrf/nvm.h"
 
 #ifdef BLUETOOTH_SD
@@ -54,6 +55,7 @@ void port_internal_flash_flush(void) {
 
     // Skip if data is the same
     if (memcmp(_flash_cache, (void *)_flash_page_addr, FLASH_PAGE_SIZE) != 0) {
+        board_background_task();
         if (!nrf_nvm_safe_flash_page_write(_flash_page_addr, _flash_cache)) {
             reset_into_safe_mode(SAFE_MODE_FLASH_WRITE_FAIL);
         }

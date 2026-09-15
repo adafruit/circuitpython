@@ -10,6 +10,7 @@
 #include "py/mphal.h"
 #include "py/runtime.h"
 #include "common-hal/microcontroller/Processor.h"
+#include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/microcontroller/Processor.h"
 #include "shared-bindings/microcontroller/ResetReason.h"
 #include "shared-bindings/time/__init__.h"
@@ -19,6 +20,11 @@
 #include "hardware/clocks.h"
 #include "hardware/vreg.h"
 #include "hardware/watchdog.h"
+
+#ifdef CIRCUITPY_PSRAM_CHIP_SELECT
+#include "hardware/regs/qmi.h"
+#include "hardware/structs/qmi.h"
+#endif
 
 #if PICO_RP2040
 #include "hardware/regs/vreg_and_chip_reset.h"
@@ -50,6 +56,26 @@ uint32_t common_hal_mcu_processor_get_frequency(void) {
     return clock_get_hz(clk_sys);
 }
 
+#ifdef CIRCUITPY_PSRAM_CHIP_SELECT
+void __no_inline_not_in_flash_func(mcu_processor_update_psram_timing)(uint32_t sys_clk_khz) {
+    // MAX_SELECT is in units of 64 system clock cycles; PSRAM allows 8 us max CS
+    // assertion. Use 7.5 us so there is margin at any clk_sys.
+    uint32_t max_select = (75 * sys_clk_khz) / 640000;
+    // MIN_DESELECT is in system clock cycles; PSRAM needs 50 ns min CS
+    // deassertion. Round up so we are never under.
+    uint32_t min_deselect = (sys_clk_khz + 19999) / 20000;
+
+    qmi_hw->m[1].timing =
+        QMI_M0_TIMING_PAGEBREAK_VALUE_1024 << QMI_M0_TIMING_PAGEBREAK_LSB | // Break between pages.
+            3 << QMI_M0_TIMING_SELECT_HOLD_LSB | // Delay releasing CS for 3 extra system cycles.
+            1 << QMI_M0_TIMING_COOLDOWN_LSB |
+            1 << QMI_M0_TIMING_RXDELAY_LSB |
+            max_select << QMI_M0_TIMING_MAX_SELECT_LSB |
+            min_deselect << QMI_M0_TIMING_MIN_DESELECT_LSB |
+            2 << QMI_M0_TIMING_CLKDIV_LSB;
+}
+#endif
+
 void common_hal_mcu_processor_set_frequency(mcu_processor_obj_t *self, uint32_t frequency) {
     uint vco, postdiv1, postdiv2;
     uint32_t freq_khz = frequency / 1000;
@@ -68,7 +94,17 @@ void common_hal_mcu_processor_set_frequency(mcu_processor_obj_t *self, uint32_t 
     vreg_set_voltage(voltage);
     // Wait for a stable voltage
     common_hal_time_delay_ms(10);
+
+    #ifdef CIRCUITPY_PSRAM_CHIP_SELECT
+    // Prevent interrupt handlers from accessing PSRAM until its timing matches
+    // the new system clock.
+    common_hal_mcu_disable_interrupts();
+    #endif
     set_sys_clock_khz(freq_khz, false);
+    #ifdef CIRCUITPY_PSRAM_CHIP_SELECT
+    mcu_processor_update_psram_timing(freq_khz);
+    common_hal_mcu_enable_interrupts();
+    #endif
 }
 
 void common_hal_mcu_processor_get_uid(uint8_t raw_id[]) {

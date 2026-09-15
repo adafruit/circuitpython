@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "background.h"
 #include "peripherals/nrf/nvm.h"
 
 uint32_t common_hal_nvm_bytearray_get_length(const nvm_bytearray_obj_t *self) {
@@ -40,6 +41,7 @@ bool common_hal_nvm_bytearray_set_bytes(const nvm_bytearray_obj_t *self,
 
     while (len) {
         uint32_t write_len = MIN(len, FLASH_PAGE_SIZE - offset);
+        board_background_task();
         if (!write_page(page_addr, offset, write_len, values)) {
             return false;
         }

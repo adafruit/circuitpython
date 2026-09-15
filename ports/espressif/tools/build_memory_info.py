@@ -56,6 +56,11 @@ internal_memory = {
         ("Internal SRAM 0", (0x4037_C000,), 16 * 1024),
         ("Internal SRAM 1", (0x3FC8_0000, 0x4038_0000), 384 * 1024),
     ],
+    "esp32c5": [
+        # Name, Start, Length
+        ("LP SRAM", (0x5000_0000,), 16 * 1024),
+        ("HP SRAM", (0x4080_0000,), 384 * 1024),
+    ],
     "esp32c6": [
         # Name, Start, Length
         ("LP SRAM", (0x5000_0000,), 16 * 1024),

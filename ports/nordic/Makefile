@@ -6,8 +6,11 @@
 
 include ../../py/circuitpy_mkenv.mk
 
-ifneq ($(SD), )
+# Skip when the make command is not board-specific i.e. fetch-port-submodules.
+ifneq ($(VALID_BOARD),)
+ifeq ($(CIRCUITPY_BLEIO_NATIVE),1)
 	include bluetooth/bluetooth_common.mk
+endif
 endif
 
 CROSS_COMPILE = arm-none-eabi-
@@ -115,10 +118,15 @@ SRC_C += \
 	boards/$(BOARD)/board.c \
 	boards/$(BOARD)/pins.c \
 	device/$(MCU_VARIANT)/startup_$(MCU_SUB_VARIANT).c \
+	nrfx/mdk/system_$(MCU_SUB_VARIANT).c \
+
+ifeq ($(CIRCUITPY_BLEIO_NATIVE),1)
+SRC_C += \
 	bluetooth/ble_drv.c \
 	common-hal/_bleio/bonding.c \
-	nrfx/mdk/system_$(MCU_SUB_VARIANT).c \
 	sd_mutex.c \
+
+endif
 
 SRC_PERIPHERALS := \
 	peripherals/nrf/cache.c \
@@ -177,7 +185,13 @@ UF2_FAMILY_ID_nrf52840 = 0xADA52840
 UF2_FAMILY_ID_nrf52833 = 0x621E937A
 
 
+ifeq ($(CIRCUITPY_BLEIO_NATIVE),1)
 all: $(BUILD)/firmware.bin $(BUILD)/firmware.uf2 $(BUILD)/firmware.combined.hex
+else
+# firmware.combined.hex merges in the SoftDevice hex; without one there is
+# nothing to combine.
+all: $(BUILD)/firmware.bin $(BUILD)/firmware.uf2 $(BUILD)/firmware.hex
+endif
 
 ifeq ($(VALID_BOARD),)
 $(BUILD)/firmware.elf: invalid-board
@@ -186,7 +200,7 @@ $(BUILD)/firmware.elf: $(OBJ) $(GENERATED_LD_FILE)
 	$(STEPECHO) "LINK $@"
 	$(Q)echo $(OBJ) > $(BUILD)/firmware.objs
 	$(Q)$(CC) -o $@ $(LDFLAGS) @$(BUILD)/firmware.objs -Wl,--print-memory-usage -Wl,--start-group $(LIBS) -Wl,--end-group
-	$(Q)$(SIZE) $@ | $(PYTHON) $(TOP)/tools/build_memory_info.py $(GENERATED_LD_FILE) $(BUILD)
+	$(Q)$(SIZE) $@ | $(PYTHON) $(TOP)/tools/build_memory_info.py $@.map $(BUILD)
 endif
 
 $(BUILD)/firmware.bin: $(BUILD)/firmware.elf

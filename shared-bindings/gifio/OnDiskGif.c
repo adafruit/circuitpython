@@ -112,7 +112,7 @@ static mp_obj_t gifio_ondiskgif_make_new(const mp_obj_type_t *type, size_t n_arg
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    mp_obj_t filename = all_args[0];
+    mp_obj_t filename = args[ARG_filename].u_obj;
     if (mp_obj_is_str(filename)) {
         filename = mp_call_function_2(MP_OBJ_FROM_PTR(&mp_builtin_open_obj), filename, MP_ROM_QSTR(MP_QSTR_rb));
     }

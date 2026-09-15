@@ -11,6 +11,7 @@
 #include "py/obj.h"
 #include "py/objtuple.h"
 
+#include "shared-bindings/_bleio/Address.h"
 #include "shared-bindings/_bleio/Characteristic.h"
 #include "shared-bindings/_bleio/Connection.h"
 #include "shared-bindings/_bleio/ScanResults.h"
@@ -65,6 +66,10 @@ typedef struct _bleio_adapter_obj_t {
     // the service they belong to. This vets that.
     uint16_t last_added_service_handle;
     uint16_t last_added_characteristic_handle;
+    // Cached local address returned by common_hal_bleio_adapter_get_address().
+    // Stored inline so it never needs to allocate, even when read before the
+    // heap is available (e.g. from bleio_adapter_reset_name).
+    bleio_address_obj_t address;
 } bleio_adapter_obj_t;
 
 uint16_t bleio_adapter_add_attribute(bleio_adapter_obj_t *adapter, mp_obj_t *attribute);

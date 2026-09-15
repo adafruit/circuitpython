@@ -7,10 +7,13 @@
 
 #pragma once
 
+#ifdef BLUETOOTH_SD
 #include "ble_drv.h"
 
 #include "nrf_mbr.h"  // for MBR_SIZE
 #include "nrf_sdm.h"  // for SD_FLASH_SIZE
+#endif
+
 #include "peripherals/nrf/nvm.h" // for FLASH_PAGE_SIZE
 
 #define MICROPY_PY_SYS_STDIO_BUFFER              (1)
@@ -43,6 +46,17 @@
 #include "py/circuitpy_mpconfig.h"
 
 // Definitions that might be overridden by mpconfigboard.h
+
+#ifndef BLUETOOTH_SD
+
+#ifndef MBR_SIZE
+#define MBR_SIZE      (0x1000)
+#endif
+
+#ifndef SD_FLASH_SIZE
+#define SD_FLASH_SIZE (0)
+#endif
+#endif
 
 #ifndef CIRCUITPY_INTERNAL_NVM_SIZE
 #define CIRCUITPY_INTERNAL_NVM_SIZE (8 * 1024)
@@ -81,7 +95,11 @@
 #define SD_FLASH_START_ADDR   (MBR_START_ADDR + MBR_SIZE)
 
 // SD_FLASH_SIZE is from nrf_sdm.h
+// A board whose bootloader lives in low flash and jumps to a fixed address
+// overrides this in mpconfigboard.h.
+#ifndef ISR_START_ADDR
 #define ISR_START_ADDR  (SD_FLASH_START_ADDR + SD_FLASH_SIZE)
+#endif
 #define ISR_SIZE        (4 * 1024)   // 4kiB
 
 // Smallest unit of flash that can be erased.
@@ -92,13 +110,36 @@
 // Define these regions starting down from the bootloader:
 
 // Bootloader values from https://github.com/adafruit/Adafruit_nRF52_Bootloader/blob/master/src/linker/s140_v6.ld
+// A board with no bootloader in high flash sets BOOTLOADER_SIZE and
+// BOOTLOADER_MBR_SIZE to 0; BOOTLOADER_START_ADDR then collapses onto the
+// settings page, which stays the top anchor everything else grows down from.
 #define BOOTLOADER_START_ADDR          (FLASH_SIZE - BOOTLOADER_SIZE - BOOTLOADER_SETTINGS_SIZE - BOOTLOADER_MBR_SIZE)
+#ifndef BOOTLOADER_MBR_SIZE
 #define BOOTLOADER_MBR_SIZE            (4 * 1024)     // 4kib
+#endif
 #ifndef BOOTLOADER_SIZE
 #define BOOTLOADER_SIZE                (40 * 1024)     // 40kiB
 #endif
 #define BOOTLOADER_SETTINGS_START_ADDR (FLASH_SIZE - BOOTLOADER_SETTINGS_SIZE)
 #define BOOTLOADER_SETTINGS_SIZE       (4 * 1024)     // 4kiB
+
+// Value left in GPREGRET to ask the bootloader to stay in DFU mode after the
+// reset that reset_to_bootloader() performs. The default is the Adafruit nRF52
+// bootloader's serial-DFU magic; a board with a different bootloader overrides
+// it in mpconfigboard.h. A bootloader whose magic is wider than eight bits also
+// defines BOOTLOADER_DFU_MAGIC2, which is written to GPREGRET2.
+#ifndef BOOTLOADER_DFU_MAGIC
+#define BOOTLOADER_DFU_MAGIC           (0x4e)
+#endif
+
+// Value left in GPREGRET by common_hal_mcu_on_next_reset() for RunMode.UF2 and
+// RunMode.BOOTLOADER. The default is the Adafruit nRF52 bootloader's UF2/OTA
+// magic. A board whose bootloader gates on something else overrides it in
+// mpconfigboard.h; if that bootloader has no separate UF2 and serial-DFU
+// requests, it sets this to the same value as BOOTLOADER_DFU_MAGIC.
+#ifndef BOOTLOADER_UF2_MAGIC
+#define BOOTLOADER_UF2_MAGIC           (0x57)
+#endif
 
 #define CIRCUITPY_INTERNAL_FLASH_FILESYSTEM_START_ADDR (BOOTLOADER_START_ADDR - CIRCUITPY_INTERNAL_FLASH_FILESYSTEM_SIZE)
 
@@ -159,7 +200,12 @@
 // high enough to work and then check the mutation of the value done by sd_ble_enable().
 // See common.template.ld.
 #ifndef SOFTDEVICE_RAM_SIZE
+#ifdef BLUETOOTH_SD
 #define SOFTDEVICE_RAM_SIZE         (56 * 1024)
+#else
+
+#define SOFTDEVICE_RAM_SIZE         (0)
+#endif
 #endif
 
 

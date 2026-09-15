@@ -25,6 +25,7 @@
 
 #include "py/gc.h"
 #include "py/runtime.h"
+#include "supervisor/port_heap.h"
 #include "bindings/zephyr_kernel/__init__.h"
 #include "shared-bindings/_bleio/Characteristic.h"
 #include "shared-bindings/_bleio/Service.h"
@@ -44,6 +45,82 @@ static const struct bt_uuid_16 _uuid_chrc = BT_UUID_INIT_16(BT_UUID_GATT_CHRC_VA
 static const struct bt_uuid_16 _uuid_ccc = BT_UUID_INIT_16(BT_UUID_GATT_CCC_VAL);
 static const struct bt_uuid_16 _uuid_cud = BT_UUID_INIT_16(BT_UUID_GATT_CUD_VAL);
 
+// User-created services live on the GC heap, but once registered, Zephyr's GATT
+// database holds a pointer to the bt_gatt_service node inside the object. So a
+// registered heap service must stay reachable until it is unregistered, and it
+// must be unregistered before the heap it lives in goes away. The zephyr port never
+// restarts the Bluetooth stack (set_enabled(false) leaves it running), so the
+// database is never cleared for us: bleio_user_reset() unregisters the services at the
+// end of every VM run. Same pattern as ports/espressif/common-hal/_bleio/Service.c.
+static bleio_service_obj_t *_retained_services;
+
+static void service_retain(bleio_service_obj_t *self) {
+    if (!gc_ptr_on_heap((void *)self)) {
+        // Statically allocated workflow service; the supervisor owns its lifetime.
+        return;
+    }
+    for (bleio_service_obj_t *it = _retained_services; it != NULL; it = it->next_retained) {
+        if (it == self) {
+            return;
+        }
+    }
+    self->next_retained = _retained_services;
+    _retained_services = self;
+}
+
+static void service_release(bleio_service_obj_t *self) {
+    bleio_service_obj_t **prev = &_retained_services;
+    for (bleio_service_obj_t *it = *prev; it != NULL; it = it->next_retained) {
+        if (it == self) {
+            *prev = it->next_retained;
+            it->next_retained = NULL;
+            return;
+        }
+        prev = &it->next_retained;
+    }
+}
+
+// One pointer is enough: the GC traces next_retained through the rest of the chain.
+void bleio_service_gc_collect(void) {
+    gc_collect_ptr(_retained_services);
+}
+
+void bleio_service_unregister_retained(void) {
+    while (_retained_services != NULL) {
+        bleio_service_obj_t *service = _retained_services;
+        // The characteristics' value buffers are on the port heap and nothing
+        // else frees them once the VM heap is gone.
+        mp_obj_list_t *list = service->characteristic_list;
+        if (list != NULL) {
+            for (size_t i = 0; i < list->len; i++) {
+                common_hal_bleio_characteristic_deinit(MP_OBJ_TO_PTR(list->items[i]));
+            }
+        }
+        // Unregisters from Zephyr, frees attrs, and removes it from this list.
+        common_hal_bleio_service_deinit(service);
+    }
+}
+
+// Zephyr write permission for the CCC descriptor. If reading the characteristic
+// value requires encryption or authentication, so does subscribing to it;
+// otherwise a client could get the value from notifications without ever being
+// made to pair. An unencrypted write then gets Insufficient Encryption or
+// Authentication, which is what makes a host pair. Same as espressif (#11236).
+// NO_ACCESS on read is not a link-security level, so it leaves the CCC writable;
+// nordic differs and makes such a characteristic unsubscribable.
+static uint16_t ccc_write_perm(bleio_attribute_security_mode_t read_perm) {
+    switch (read_perm) {
+        case SECURITY_MODE_ENC_NO_MITM:
+            return BT_GATT_PERM_WRITE_ENCRYPT;
+        case SECURITY_MODE_ENC_WITH_MITM:
+            return BT_GATT_PERM_WRITE_AUTHEN;
+        case SECURITY_MODE_LESC_ENC_WITH_MITM:
+            return BT_GATT_PERM_WRITE_LESC;
+        default:
+            return BT_GATT_PERM_WRITE;
+    }
+}
+
 static void service_ensure_capacity(bleio_service_obj_t *self, size_t needed) {
     if (self->attr_count + needed <= self->attr_capacity) {
         return;
@@ -52,8 +129,8 @@ static void service_ensure_capacity(bleio_service_obj_t *self, size_t needed) {
     while (new_capacity < self->attr_count + needed) {
         new_capacity *= 2;
     }
-    struct bt_gatt_attr *new_attrs = m_realloc(self->attrs,
-        new_capacity * sizeof(struct bt_gatt_attr));
+    struct bt_gatt_attr *new_attrs = port_realloc(self->attrs,
+        new_capacity * sizeof(struct bt_gatt_attr), false);
     self->attrs = new_attrs;
     self->attr_capacity = new_capacity;
 }
@@ -69,13 +146,14 @@ uint32_t _common_hal_bleio_service_construct(bleio_service_obj_t *self,
     self->start_handle = 0;
     self->end_handle = 0;
     self->registered = false;
+    self->next_retained = NULL;
 
     // Convert UUID to Zephyr format
     bleio_uuid_to_zephyr(uuid, &self->zephyr_uuid);
 
     // Allocate attrs array
     self->attr_capacity = INITIAL_ATTR_CAPACITY;
-    self->attrs = m_malloc(self->attr_capacity * sizeof(struct bt_gatt_attr));
+    self->attrs = port_malloc(self->attr_capacity * sizeof(struct bt_gatt_attr), false);
     memset(self->attrs, 0, self->attr_capacity * sizeof(struct bt_gatt_attr));
     self->attr_count = 0;
 
@@ -105,6 +183,13 @@ void common_hal_bleio_service_deinit(bleio_service_obj_t *self) {
         bt_gatt_service_unregister(&self->zephyr_service);
         self->registered = false;
     }
+    service_release(self);
+    if (self->attrs != NULL) {
+        port_free(self->attrs);
+        self->attrs = NULL;
+        self->attr_capacity = 0;
+        self->attr_count = 0;
+    }
 }
 
 void common_hal_bleio_service_from_remote_service(bleio_service_obj_t *self,
@@ -117,6 +202,7 @@ void common_hal_bleio_service_from_remote_service(bleio_service_obj_t *self,
     self->start_handle = 0;
     self->end_handle = 0;
     self->registered = false;
+    self->next_retained = NULL;
     self->attrs = NULL;
     self->attr_count = 0;
     self->attr_capacity = 0;
@@ -222,7 +308,7 @@ void common_hal_bleio_service_add_characteristic(bleio_service_obj_t *self,
             BT_GATT_CCC_MANAGED_USER_DATA_INIT(bleio_ccc_changed_cb, bleio_ccc_write_cb, NULL);
         self->attrs[idx] = (struct bt_gatt_attr) {
             .uuid = (const struct bt_uuid *)&_uuid_ccc,
-            .perm = BT_GATT_PERM_READ | BT_GATT_PERM_WRITE,
+            .perm = BT_GATT_PERM_READ | ccc_write_perm(characteristic->read_perm),
             .read = bt_gatt_attr_read_ccc,
             .write = bt_gatt_attr_write_ccc,
             .user_data = &characteristic->zephyr_ccc,
@@ -255,4 +341,6 @@ void common_hal_bleio_service_add_characteristic(bleio_service_obj_t *self,
         raise_zephyr_error(err);
     }
     self->registered = true;
+    // Zephyr now points into this object; keep it alive until unregistered.
+    service_retain(self);
 }

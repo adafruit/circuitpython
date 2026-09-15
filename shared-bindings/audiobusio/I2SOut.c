@@ -98,7 +98,7 @@ static mp_obj_t audiobusio_i2sout_make_new(const mp_obj_type_t *type, size_t n_a
         { MP_QSTR_word_select, MP_ARG_OBJ | MP_ARG_REQUIRED },
         { MP_QSTR_data, MP_ARG_OBJ | MP_ARG_REQUIRED },
         { MP_QSTR_main_clock, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = mp_const_none} },
-        { MP_QSTR_left_justified, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_bool = false} },
+        { MP_QSTR_left_justified, MP_ARG_BOOL | MP_ARG_KW_ONLY, {.u_bool = false} },
         { MP_QSTR_external_clock, MP_ARG_BOOL | MP_ARG_KW_ONLY, {.u_bool = false} },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];

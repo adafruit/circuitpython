@@ -8,11 +8,17 @@ import os
 import subprocess
 import sys
 import argparse
+import re
 from glob import glob
 
-run_tests_module = __import__("run-tests")
-
-prepare_script_for_target = run_tests_module.prepare_script_for_target
+from test_utils import (
+    base_path,
+    pyboard,
+    set_injected_prologue,
+    get_test_instance,
+    prepare_script_for_target,
+    create_test_report,
+)
 
 # Paths for host executables
 if os.name == "nt":
@@ -49,7 +55,7 @@ def run_script_on_target(target, script):
         try:
             target.enter_raw_repl()
             output = target.exec_(script)
-        except run_tests_module.pyboard.PyboardError as er:
+        except pyboard.PyboardError as er:
             err = er
     else:
         # Run local executable
@@ -97,15 +103,14 @@ def run_benchmarks(args, target, param_n, param_m, n_average, test_list):
         print(test_file + ": ", end="")
 
         # Check if test should be skipped
-        skip = (
-            skip_complex
-            and test_file.find("bm_fft") != -1
-            or skip_native
-            and test_file.find("viper_") != -1
-        )
-        if skip:
-            test_results.append((test_file, "skip", ""))
-            print("SKIP")
+        skip_reason = None
+        if skip_complex and test_file.endswith(("bm_fft.py", "misc_mandel.py")):
+            skip_reason = "complex not supported"
+        elif skip_native and test_file.find("viper_") != -1:
+            skip_reason = "native not supported"
+        if skip_reason:
+            test_results.append((test_file, "skip", skip_reason))
+            print("SKIP:", skip_reason)
             continue
 
         # Create test script
@@ -116,6 +121,19 @@ def run_benchmarks(args, target, param_n, param_m, n_average, test_list):
             test_script += f.read()
         test_script += b"bm_run(%u, %u)\n" % (param_n, param_m)
 
+        # Search for the bm_params dict, to extract the minimum memory required.
+        m = re.search(rb"bm_params = {\s+\((\d+), (\d+)\):", test_script)
+        if not m:
+            print(f"Test file '{test_file}' doesn't contain valid 'bm_params'")
+            sys.exit(2)
+        min_m = int(m.group(2))
+
+        # Skip the test if the target doesn't have enough memory.
+        if param_m < min_m:
+            test_results.append((test_file, "skip", "too large"))
+            print("SKIP: too large")
+            continue
+
         # Write full test script if needed
         if 0:
             with open("%s.full" % test_file, "wb") as f:
@@ -123,7 +141,7 @@ def run_benchmarks(args, target, param_n, param_m, n_average, test_list):
 
         # Process script through mpy-cross if needed
         if hasattr(target, "enter_raw_repl") or args.via_mpy:
-            crash, test_script_target = prepare_script_for_target(args, script_text=test_script)
+            crash, test_script_target = prepare_script_for_target(args, test_script, test_file)
             if crash:
                 test_results.append((test_file, "fail", "preparation"))
                 print("CRASH:", test_script_target)
@@ -275,9 +293,15 @@ def main():
     cmd_parser.add_argument("--via-mpy", action="store_true", help="compile code to .mpy first")
     cmd_parser.add_argument("--mpy-cross-flags", default="", help="flags to pass to mpy-cross")
     cmd_parser.add_argument(
+        "--begin",
+        metavar="PROLOGUE",
+        default=None,
+        help="prologue python file to execute before module import",
+    )
+    cmd_parser.add_argument(
         "-r",
         "--result-dir",
-        default=run_tests_module.base_path("results"),
+        default=base_path("results"),
         help="directory for test results",
     )
     cmd_parser.add_argument(
@@ -291,6 +315,12 @@ def main():
         compute_diff(args.N[0], args.M[0], args.diff_score)
         sys.exit(0)
 
+    prologue = ""
+    if args.begin:
+        with open(args.begin, "rt") as source:
+            prologue = source.read()
+    set_injected_prologue(prologue)
+
     # N, M = 50, 25 # esp8266
     # N, M = 100, 100 # pyboard, esp32
     # N, M = 1000, 1000 # PC
@@ -298,9 +328,7 @@ def main():
     M = int(args.M[0])
     n_average = int(args.average)
 
-    target = run_tests_module.get_test_instance(
-        args.test_instance, args.baudrate, args.user, args.password
-    )
+    target = get_test_instance(args.test_instance, args.baudrate, args.user, args.password)
     if target is None:
         # Use the unix port of MicroPython.
         target = [MICROPYTHON, "-X", "emit=" + args.emit]
@@ -312,14 +340,10 @@ def main():
             args.mpy_cross_flags = "-march=armv7m"
 
     if len(args.files) == 0:
-        tests_skip = ("benchrun.py",)
-        if M <= 25:
-            # These scripts are too big to be compiled by the target
-            tests_skip += ("bm_chaos.py", "bm_hexiom.py", "misc_raytrace.py")
         tests = sorted(
             BENCH_SCRIPT_DIR + test_file
             for test_file in os.listdir(BENCH_SCRIPT_DIR)
-            if test_file.endswith(".py") and test_file not in tests_skip
+            if test_file.endswith(".py") and test_file != "benchrun.py"
         )
     else:
         tests = sorted(args.files)
@@ -328,7 +352,7 @@ def main():
 
     os.makedirs(args.result_dir, exist_ok=True)
     test_results = run_benchmarks(args, target, N, M, n_average, tests)
-    res = run_tests_module.create_test_report(args, test_results)
+    res = create_test_report(args, test_results)
 
     if hasattr(target, "exit_raw_repl"):
         target.exit_raw_repl()

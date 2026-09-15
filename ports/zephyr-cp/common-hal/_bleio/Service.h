@@ -29,4 +29,15 @@ typedef struct bleio_service_obj {
     size_t attr_capacity;
     struct bt_uuid_128 zephyr_uuid;
     bool registered;
+    // Link in the list of heap services retained while Zephyr's GATT database
+    // refers to them. See bleio_service_unregister_retained().
+    struct bleio_service_obj *next_retained;
 } bleio_service_obj_t;
+
+// Unregister every user-created service still in Zephyr's GATT database and
+// free their port-heap buffers. Call from bleio_user_reset(), while the GC heap
+// the service objects live in is still valid.
+void bleio_service_unregister_retained(void);
+
+// Mark the retained services as reachable during a GC pass.
+void bleio_service_gc_collect(void);

@@ -29,6 +29,7 @@
 
 #include "py/obj.h"
 #include "py/objtuple.h"
+#include "shared-bindings/_bleio/Address.h"
 #include "shared-bindings/_bleio/Connection.h"
 #include "shared-bindings/_bleio/ScanResults.h"
 #include "supervisor/background_callback.h"
@@ -54,6 +55,10 @@ typedef struct {
     bool user_advertising;
     bool is_enable;
     uint8_t advertising_handle;
+    // Cached local address returned by common_hal_bleio_adapter_get_address().
+    // Stored inline so it never needs to allocate, even when read before the
+    // heap is available (e.g. from bleio_adapter_reset_name).
+    bleio_address_obj_t address;
 } bleio_adapter_obj_t;
 
 typedef struct {

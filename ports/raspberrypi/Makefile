@@ -507,6 +507,13 @@ endif
 
 SRC_C += shared/runtime/gchelper_native.c
 
+ifeq ($(CIRCUITPY_PICOGAME),1)
+# SIO interpolator fast path for the picogame mode7 inner row (RP2040 + RP2350).
+# Portable C remains the fallback on other ports.
+SRC_C += common-hal/picogame/interp.c
+CFLAGS += -DPICOGAME_HAS_INTERP=1
+endif
+
 SRC_SDK := \
 	src/common/hardware_claim/claim.c \
 	src/common/pico_sync/critical_section.c \
@@ -564,6 +571,7 @@ $(patsubst %.c,$(BUILD)/%.o,$(SRC_SDK) $(SRC_CYW43)): CFLAGS += -Wno-missing-pro
 SRC_C += \
 	boards/$(BOARD)/board.c \
 	boards/$(BOARD)/pins.c \
+	common-hal/rtc/pico_time.c \
 	bindings/rp2pio/StateMachine.c \
 	bindings/rp2pio/__init__.c \
 	common-hal/rp2pio/StateMachine.c \
@@ -741,11 +749,10 @@ endif
 
 $(patsubst %.S,$(BUILD)/%.o,$(SRC_S_UPPER)): CFLAGS += -Wno-undef
 
-# Derive the C++ flags from the C flags (mirroring the unix port) so the
-# vendored C++ translation unit picks up all the SDK include paths and defines.
-# Strip the C-only options that g++ rejects, and disable exceptions/RTTI to
-# match the firmware's constraints.
-CXXFLAGS += $(filter-out -std=gnu11 -Werror=missing-prototypes -Wold-style-definition -Wstrict-prototypes -Werror-implicit-function-declaration -Wnested-externs,$(CFLAGS)) -std=gnu++17 -fno-exceptions -fno-rtti
+# py/mkrules.mk derives CXXFLAGS from CFLAGS, which gives the vendored C++
+# translation unit the SDK include paths and defines. Only the C++-specific
+# options belong here.
+CXXFLAGS += -std=gnu++17 -fno-exceptions -fno-rtti
 
 OBJ = $(PY_O) $(SUPERVISOR_O) $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_SDK:.c=.o))
@@ -827,6 +834,7 @@ $(BUILD)/firmware.elf: $(OBJ) $(BOARD_LD) link-$(CHIP_VARIANT_LOWER).ld
 	$(Q)echo $(OBJ) > $(BUILD)/firmware.objs
 	$(Q)echo $(PICO_LDFLAGS) > $(BUILD)/firmware.ldflags
 	$(Q)$(CC) -o $@ $(CFLAGS) @$(BUILD)/firmware.ldflags $(LINKER_SCRIPTS) -Wl,--print-memory-usage -Wl,-Map=$@.map -Wl,-cref -Wl,--gc-sections @$(BUILD)/firmware.objs -Wl,-lc
+	$(Q)$(SIZE) $@ | $(PYTHON) $(TOP)/tools/build_memory_info.py $@.map $(BUILD)
 ifneq ($(CORE1_CHECK_ROOTS),)
 	$(STEPECHO) "CHECK core1 flash calls"
 	$(Q)$(PYTHON) $(TOP)/tools/check_core1_flash_calls.py $@ $(CORE1_CHECK_ROOTS)

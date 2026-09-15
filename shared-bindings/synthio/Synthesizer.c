@@ -63,7 +63,7 @@ static mp_obj_t synthio_synthesizer_make_new(const mp_obj_type_t *type, size_t n
 
     synthio_synthesizer_obj_t *self = mp_obj_malloc(synthio_synthesizer_obj_t, &synthio_synthesizer_type);
     common_hal_synthio_synthesizer_construct(self,
-        args[ARG_sample_rate].u_int,
+        mp_arg_validate_int_min(args[ARG_sample_rate].u_int, 1, MP_QSTR_sample_rate),
         args[ARG_channel_count].u_int,
         args[ARG_waveform].u_obj,
         args[ARG_envelope].u_obj);

@@ -6,6 +6,8 @@
 
 #include <string.h>
 
+#include "py/objlist.h"
+
 #include "shared-bindings/wifi/Network.h"
 #include "shared-bindings/wifi/AuthMode.h"
 

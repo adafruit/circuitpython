@@ -12,6 +12,12 @@ inputs:
     default: '["extmod/ulab", "lib/", "tools/"]'
     type: string
 
+  port:
+    description: 'Also cache the submodules of this port, in their own entry'
+    required: false
+    default: ''
+    type: string
+
   action:
     description: 'The cache action to use'
     required: false
@@ -62,8 +68,27 @@ runs:
         key: submodules-common-${{ hashFiles('submodule_status') }}
         enableCrossOsArchive: true
 
+    - name: Port submodule status
+      id: port-submodule-status
+      # The ports whose board jobs clone the most over the network: 29 CMSIS and HAL
+      # repositories on stm, the sdk and lwip on raspberrypi and mimxrt10xx. espressif
+      # and zephyr-cp fetch theirs in their own way; the rest have little to gain.
+      if: ${{ contains(fromJSON('["stm", "raspberrypi", "mimxrt10xx"]'), inputs.port) }}
+      run: |
+        git submodule status ports/${{ inputs.port }} > port_submodule_status
+        echo $(cut -d ' ' -f 2 port_submodule_status) | echo "submodules=[\"$(sed "s/ /\", \"/g")\"]" >> $GITHUB_OUTPUT
+      shell: bash
+
+    - name: Cache port submodules
+      if: ${{ steps.port-submodule-status.outcome == 'success' }}
+      uses: actions/cache@v5
+      with:
+        path: ".git/modules/ports/${{ inputs.port }}\n${{ join(fromJSON(steps.port-submodule-status.outputs.submodules), '\n') }}"
+        key: submodules-${{ inputs.port }}-${{ hashFiles('port_submodule_status') }}
+        enableCrossOsArchive: true
+
     - name: Remove submodule status
-      run: rm submodule_status
+      run: rm -f submodule_status port_submodule_status
       shell: bash
 
     - name: CircuitPython dependencies

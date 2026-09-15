@@ -7,12 +7,12 @@ import pytest
 
 
 @pytest.mark.circuitpy_drive(None)
-def test_blank_flash_hello_world(circuitpython):
+def test_blank_flash_hello_world(board, circuitpython):
     """Test that an erased flash shows code.py output header."""
     circuitpython.wait_until_done()
 
     output = circuitpython.serial.all_output
-    assert "Board ID:native_native_sim" in output
+    assert f"Board ID:{board}" in output
     assert "UID:" in output
     assert "code.py output:" in output
     assert "Hello World" in output
@@ -101,7 +101,7 @@ print("done")
 
 
 @pytest.mark.circuitpy_drive({"code.py": RELOAD_CODE})
-@pytest.mark.code_py_runs(2)
+@pytest.mark.port_resets(3)
 def test_ctrl_d_soft_reload(circuitpython):
     """Test sending Ctrl+D (0x04) to trigger soft reload."""
     circuitpython.serial.wait_for("first run")

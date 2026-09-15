@@ -12,43 +12,70 @@
 #include "common-hal/_bleio/__init__.h"
 #include "bindings/zephyr_kernel/__init__.h"
 #include "common-hal/_bleio/Connection.h"
+#include "common-hal/_bleio/Service.h"
 #include "supervisor/shared/bluetooth/bluetooth.h"
 #include "supervisor/shared/tick.h"
 
 // The singleton _bleio.Adapter object
 bleio_adapter_obj_t common_hal_bleio_adapter_obj;
 
+// Called once by the BLE workflow at boot and again on every `import _bleio`,
+// so it must not disturb a running adapter: the workflow may be advertising or
+// connected by the time user code imports the module. Starting the BLE stack happens in
+// common_hal_bleio_adapter_set_enabled(), which the importer calls next.
 void common_hal_bleio_init(void) {
     common_hal_bleio_adapter_obj.base.type = &bleio_adapter_type;
-    bleio_adapter_reset(&common_hal_bleio_adapter_obj);
     bleio_connection_register_auth_callbacks();
 }
 
+// Tear down user BLE state at the end of a VM run, leaving the BLE workflow
+// connection up. Runs while the VM heap is still valid.
 void bleio_user_reset(void) {
     if (common_hal_bleio_adapter_get_enabled(&common_hal_bleio_adapter_obj)) {
         // Stop any user scanning or advertising.
         common_hal_bleio_adapter_stop_scan(&common_hal_bleio_adapter_obj);
         common_hal_bleio_adapter_stop_advertising(&common_hal_bleio_adapter_obj);
+
+        // Disconnect the connections that user code initiated or accepted with its
+        // own advertising. The BLE workflow connection is not user-owned and stays up.
+        //
+        // Clear each connection's pointer into the VM heap first: the heap is about
+        // to go away, and a disconnect completes asynchronously, possibly after the heap
+        // is gone.
+        for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
+            bleio_connection_internal_t *connection = &bleio_connections[i];
+            connection->connection_obj = mp_const_none;
+            if (connection->conn != NULL && connection->user_owned) {
+                common_hal_bleio_connection_disconnect(connection);
+            }
+        }
+
+        // Remove references to any VM heap objects.
+        common_hal_bleio_adapter_obj.connection_objs = NULL;
+        common_hal_bleio_adapter_obj.scan_results = NULL;
     }
+
+    // Remove user-created services from Zephyr's GATT database and free their
+    // buffers. Zephyr indicates Service Changed to connected peers itself, and
+    // records it for bonded peers to receive when they next connect.
+    bleio_service_unregister_retained();
 
     // Maybe start advertising the BLE workflow.
     supervisor_bluetooth_background();
 }
 
+// Called after the VM heap is gone. On nordic and espressif this restarts the
+// BLE stack when user code created GATT services, because their stacks can't
+// remove services one at a time. Zephyr can, and bleio_user_reset() already did,
+// so there is nothing left that requires dropping the workflow connection.
 void bleio_reset(void) {
     common_hal_bleio_adapter_obj.base.type = &bleio_adapter_type;
-    if (!common_hal_bleio_adapter_get_enabled(&common_hal_bleio_adapter_obj)) {
-        return;
-    }
-
-    supervisor_stop_bluetooth();
-    bleio_adapter_reset(&common_hal_bleio_adapter_obj);
-    common_hal_bleio_adapter_set_enabled(&common_hal_bleio_adapter_obj, false);
-    supervisor_start_bluetooth();
+    bleio_clear_user_services_created();
 }
 
 void common_hal_bleio_gc_collect(void) {
     bleio_adapter_gc_collect(&common_hal_bleio_adapter_obj);
+    bleio_service_gc_collect();
 }
 
 // =======================================================================

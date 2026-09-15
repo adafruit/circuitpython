@@ -196,6 +196,9 @@ void common_hal_wifi_radio_start_ap(wifi_radio_obj_t *self, uint8_t *ssid, size_
         mp_raise_RuntimeError(MP_ERROR_TEXT("WiFi is not enabled"));
     }
 
+    // The CYW43 is 2.4 GHz only.
+    mp_arg_validate_int_max(channel, 13, MP_QSTR_channel);
+
     /* TODO: If the AP is stopped once it cannot be restarted.
      * This means that if if the user does:
      *

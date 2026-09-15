@@ -53,7 +53,7 @@
 static mp_obj_t zlib_decompress(size_t n_args, const mp_obj_t *args) {
     mp_int_t wbits = 0;
     if (n_args > 1) {
-        wbits = MP_OBJ_SMALL_INT_VALUE(args[1]);
+        wbits = mp_obj_get_int_truncated(args[1]);
     }
 
     return common_hal_zlib_decompress(args[0], wbits);

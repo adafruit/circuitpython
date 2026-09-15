@@ -134,7 +134,8 @@ CIRCUITPY_SDCARD_USB (boolean)
 Present a mounted SD card as a USB MSC device. If the board has default pins for an SD card socket,
 the card is mounted automatically on startup.
 Only one card can be presented.
-Defaults to ``true``.
+Defaults to ``true``, except on the Adafruit Memento board, where it defaults to ``false``
+for now to avoid a bug.
 SD card presentation can slow down board startup,
 so set this to ``false`` if you don't need this feature.
 

@@ -29,7 +29,7 @@ Link .o files to .mpy
 """
 
 import sys, os, struct, re
-from elftools.elf import elffile
+from elftools.elf import elffile, relocation
 import ar_util
 
 sys.path.append(os.path.dirname(__file__) + "/../py")
@@ -38,6 +38,7 @@ import makeqstrdata as qstrutil
 # MicroPython constants
 MPY_VERSION = 6
 MPY_SUB_VERSION = 3
+MPY_ARCH_FLAGS = 0x40
 MP_CODE_BYTECODE = 2
 MP_CODE_NATIVE_VIPER = 4
 MP_NATIVE_ARCH_X86 = 1
@@ -49,6 +50,7 @@ MP_NATIVE_ARCH_ARMV7EMDP = 8
 MP_NATIVE_ARCH_XTENSA = 9
 MP_NATIVE_ARCH_XTENSAWIN = 10
 MP_NATIVE_ARCH_RV32IMC = 11
+MP_NATIVE_ARCH_RV64IMC = 12
 MP_PERSISTENT_OBJ_STR = 5
 ## CIRCUITPY-CHANGE: FLAG_ASYNC
 MP_SCOPE_FLAG_VIPERRELOC = 0x20
@@ -65,6 +67,7 @@ R_RISCV_32 = 1
 R_X86_64_64 = 1
 R_XTENSA_32 = 1
 R_386_PC32 = 2
+R_RISCV_64 = 2
 R_X86_64_PC32 = 2
 R_ARM_ABS32 = 2
 R_386_GOT32 = 3
@@ -121,84 +124,183 @@ R_RISCV_SET32 = 56
 R_RISCV_32_PCREL = 57
 R_RISCV_PLT32 = 59
 R_XTENSA_PDIFF32 = 59
+R_XTENSA_NDIFF32 = 62
 R_RISCV_SET_ULEB128 = 60
 R_RISCV_SUB_ULEB128 = 61
 R_RISCV_TLSDESC_HI20 = 62
-R_RISCC_TLSDESC_LOAD_LO12 = 63
+R_RISCV_TLSDESC_LOAD_LO12 = 63
 R_RISCV_TLSDESC_ADD_LO12 = 64
 R_RISCV_TLSDESC_CALL = 65
+R_ARM_GOT_PREL = 96
 
 ################################################################################
 # Architecture configuration
 
 
+def fit_signed(bits, value):
+    return (value >> bits) == 0 or (value >> bits) == -1
+
+
+# Note: all trampoline jump function arguments are raw offsets calculated from
+#       the start of the text segment with no relocation applied beforehand.
+
+
 def asm_jump_x86(entry):
-    return struct.pack("<BI", 0xE9, entry - 5)
+    if fit_signed(7, entry - 2):
+        return struct.pack("Bb", 0xEB, entry - 2)
+    elif fit_signed(31, entry - 5):
+        return struct.pack("<Bi", 0xE9, entry - 5)
+    else:
+        raise LinkError("jumps larger than 2GiB are not supported")
 
 
 def asm_jump_thumb(entry):
-    # This function must return the same number of bytes for the encoding of the jump
-    # regardless of the value of `entry`.
-    b_off = entry - 4
-    if b_off >> 11 == 0 or b_off >> 11 == -1:
+    entry -= 4
+    if fit_signed(11, entry):
         # Signed value fits in 12 bits.
-        b0 = 0xE000 | (b_off >> 1 & 0x07FF)
-        b1 = 0
-        b2 = 0
-        b3 = 0
+        b0 = 0xE000 | ((entry >> 1) & 0x07FF)
+        return struct.pack("<H", b0)
     else:
         # Use bl to do a large jump/call:
         #   push {r0, lr}
         #   bl <dest>
         #   pop {r0, pc}
-        b_off -= 2  # skip "push {r0, lr}"
+        entry -= 2  # skip "push {r0, lr}"
         b0 = 0xB400 | 0x0100 | 0x0001  # push, lr, r0
-        b1 = 0xF000 | (((b_off) >> 12) & 0x07FF)
-        b2 = 0xF800 | (((b_off) >> 1) & 0x07FF)
+        b1 = 0xF000 | ((entry >> 12) & 0x07FF)
+        b2 = 0xF800 | ((entry >> 1) & 0x07FF)
         b3 = 0xBC00 | 0x0100 | 0x0001  # pop, pc, r0
-    return struct.pack("<HHHH", b0, b1, b2, b3)
+        return struct.pack("<HHHH", b0, b1, b2, b3)
 
 
 def asm_jump_thumb2(entry):
-    b_off = entry - 4
-    if b_off >> 11 == 0 or b_off >> 11 == -1:
+    entry -= 4
+    if fit_signed(11, entry):
         # Signed value fits in 12 bits
-        b0 = 0xE000 | (b_off >> 1 & 0x07FF)
-        b1 = 0
+        b0 = 0xE000 | ((entry >> 1) & 0x07FF)
+        return struct.pack("<H", b0)
     else:
         # Use large jump
-        b0 = 0xF000 | (b_off >> 12 & 0x07FF)
-        b1 = 0xB800 | (b_off >> 1 & 0x7FF)
-    return struct.pack("<HH", b0, b1)
+        b0 = 0xF000 | ((entry >> 12) & 0x07FF)
+        b1 = 0xB800 | ((entry >> 1) & 0x07FF)
+        return struct.pack("<HH", b0, b1)
 
 
 def asm_jump_xtensa(entry):
-    jump_offset = entry - 4
-    jump_op = jump_offset << 6 | 6
-    return struct.pack("<BH", jump_op & 0xFF, jump_op >> 8)
+    if fit_signed(17, entry - 8):
+        jump_op = ((entry - 8) << 6) | 6
+        return struct.pack("<BH", jump_op & 0xFF, jump_op >> 8)
+    else:
+        raise LinkError("jumps larger than 128KiB are not supported")
 
 
-def asm_jump_rv32(entry):
-    # This could be 6 bytes shorter, but the code currently cannot
-    # support a trampoline with varying length depending on the offset.
+def asm_jump_riscv(entry):
+    if fit_signed(11, entry):
+        # c.j entry
+        return struct.pack(
+            "<H",
+            0xA001
+            | ((entry & 0x800) << 1)
+            | ((entry & 0x400) >> 2)
+            | ((entry & 0x300) << 1)
+            | ((entry & 0x80) >> 1)
+            | ((entry & 0x40) << 1)
+            | ((entry & 0x20) >> 3)
+            | ((entry & 0x10) << 7)
+            | ((entry & 0x0E) << 2),
+        )
+    elif fit_signed(31, entry - 8):
+        # auipc t6, HI(entry)
+        # jalr  zero, t6, LO(entry)
+        upper, lower = split_riscv_address(entry)
+        return struct.pack(
+            "<II", (upper | 0x00000F97) & 0xFFFFFFFF, ((lower << 20) | 0x000F8067) & 0xFFFFFFFF
+        )
+    else:
+        raise LinkError("jumps larger than 2GiB are not supported")
 
-    # auipc t6, HI(entry)
-    # jalr  zero, t6, LO(entry)
-    upper, lower = split_riscv_address(entry)
-    return struct.pack(
-        "<II", (upper | 0x00000F97) & 0xFFFFFFFF, ((lower << 20) | 0x000F8067) & 0xFFFFFFFF
-    )
+
+def asm_jump_abs_word_x86():
+    # Emits the following (must be 4-byte-aligned):
+    #   nop * 3
+    #   mov PTR, eax
+    #   jmp *eax
+    nop = 0x90
+    mov = 0xB8
+    jmp = 0xE0FF
+    return struct.pack("<3BBIH", nop, nop, nop, mov, 0, jmp), 4
+
+
+def asm_jump_abs_word_x64():
+    # Emits the following (must be 8-byte-aligned):
+    #   nop * 6
+    #   mov PTR, rax
+    #   jmp *rax
+    nop = 0x90
+    mov = 0xB848
+    jmp = 0xE0FF
+    return struct.pack("<6BHQH", nop, nop, nop, nop, nop, nop, mov, 0, jmp), 8
+
+
+def asm_jump_abs_word_thumb():
+    # Emits the following (must be 4-byte-aligned):
+    #   ldr r3, [pc, #0]
+    #   bx r3
+    #   PTR
+    r3 = 3
+    ldr = 0x4800 | r3 << 8
+    bx = 0x4700 | r3 << 3
+    return struct.pack("<HHI", ldr, bx, 0), 4
+
+
+def asm_jump_abs_word_riscv32():
+    # Emits the following (must be 4-byte-aligned):
+    #   auipc a3, 0
+    #   c.lw a3, 8(a3)
+    #   c.jr a3
+    #   PTR
+    rd = 13  # X13 = A3 (argument #4)
+    auipc = 0x00000017 | rd << 7
+    clw = 0x4000 | 8 << 7 | (rd - 8) << 7 | (rd - 8) << 2
+    cjr = 0x8002 | rd << 7
+    return struct.pack("<IHHI", auipc, clw, cjr, 0), 8
+
+
+def asm_jump_abs_word_riscv64():
+    # Emits the following (must be 8-byte-aligned):
+    #   auipc a3, 0
+    #   c.ld a3, 8(a3)
+    #   c.jr a3
+    #   PTR
+    rd = 13  # X13 = A3 (argument #4)
+    auipc = 0x0017 | rd << 7
+    cld = 0x6000 | 8 << 7 | (rd - 8) << 7 | (rd - 8) << 2
+    cjr = 0x8002 | rd << 7
+    return struct.pack("<IHHQ", auipc, cld, cjr, 0), 8
 
 
 class ArchData:
-    def __init__(self, name, mpy_feature, word_size, arch_got, asm_jump, *, separate_rodata=False):
+    def __init__(
+        self,
+        name,
+        mpy_feature,
+        word_size,
+        arch_got,
+        asm_jump,
+        asm_jump_abs_word=None,
+        *,
+        separate_rodata=False,
+        delayed_entry_offset=False,
+    ):
         self.name = name
         self.mpy_feature = mpy_feature
         self.qstr_entry_size = 2
         self.word_size = word_size
         self.arch_got = arch_got
         self.asm_jump = asm_jump
+        self.asm_jump_abs_word = asm_jump_abs_word
         self.separate_rodata = separate_rodata
+        self.delayed_entry_offset = delayed_entry_offset
 
 
 ARCH_DATA = {
@@ -208,6 +310,7 @@ ARCH_DATA = {
         4,
         (R_386_PC32, R_386_GOT32, R_386_GOT32X),
         asm_jump_x86,
+        asm_jump_abs_word_x86,
     ),
     "x64": ArchData(
         "EM_X86_64",
@@ -215,34 +318,39 @@ ARCH_DATA = {
         8,
         (R_X86_64_GOTPCREL, R_X86_64_REX_GOTPCRELX),
         asm_jump_x86,
+        asm_jump_abs_word_x64,
     ),
     "armv6m": ArchData(
         "EM_ARM",
         MP_NATIVE_ARCH_ARMV6M << 2,
         4,
-        (R_ARM_GOT_BREL,),
+        (R_ARM_GOT_BREL, R_ARM_GOT_PREL),
         asm_jump_thumb,
+        asm_jump_abs_word_thumb,
     ),
     "armv7m": ArchData(
         "EM_ARM",
         MP_NATIVE_ARCH_ARMV7M << 2,
         4,
-        (R_ARM_GOT_BREL,),
+        (R_ARM_GOT_BREL, R_ARM_GOT_PREL),
         asm_jump_thumb2,
+        asm_jump_abs_word_thumb,
     ),
     "armv7emsp": ArchData(
         "EM_ARM",
         MP_NATIVE_ARCH_ARMV7EMSP << 2,
         4,
-        (R_ARM_GOT_BREL,),
+        (R_ARM_GOT_BREL, R_ARM_GOT_PREL),
         asm_jump_thumb2,
+        asm_jump_abs_word_thumb,
     ),
     "armv7emdp": ArchData(
         "EM_ARM",
         MP_NATIVE_ARCH_ARMV7EMDP << 2,
         4,
-        (R_ARM_GOT_BREL,),
+        (R_ARM_GOT_BREL, R_ARM_GOT_PREL),
         asm_jump_thumb2,
+        asm_jump_abs_word_thumb,
     ),
     "xtensa": ArchData(
         "EM_XTENSA",
@@ -250,6 +358,7 @@ ARCH_DATA = {
         4,
         (R_XTENSA_32, R_XTENSA_PLT),
         asm_jump_xtensa,
+        delayed_entry_offset=True,
     ),
     "xtensawin": ArchData(
         "EM_XTENSA",
@@ -258,13 +367,23 @@ ARCH_DATA = {
         (R_XTENSA_32, R_XTENSA_PLT),
         asm_jump_xtensa,
         separate_rodata=True,
+        delayed_entry_offset=True,
     ),
     "rv32imc": ArchData(
         "EM_RISCV",
         MP_NATIVE_ARCH_RV32IMC << 2,
         4,
         (R_RISCV_32, R_RISCV_GOT_HI20, R_RISCV_GOT32_PCREL),
-        asm_jump_rv32,
+        asm_jump_riscv,
+        asm_jump_abs_word_riscv32,
+    ),
+    "rv64imc": ArchData(
+        "EM_RISCV",
+        MP_NATIVE_ARCH_RV64IMC << 2,
+        8,
+        (R_RISCV_64, R_RISCV_GOT_HI20, R_RISCV_GOT32_PCREL),
+        asm_jump_riscv,
+        asm_jump_abs_word_riscv64,
     ),
 }
 
@@ -416,10 +535,9 @@ class LinkEnv:
         for sec in self.sections:
             log(LOG_LEVEL_2, "  {:08x} {} size={}".format(sec.addr, sec.name, len(sec.data)))
 
-    def find_addr(self, name):
+    def find_sym(self, name):
         if name in self.known_syms:
-            s = self.known_syms[name]
-            return s.section.addr + s["st_value"]
+            return self.known_syms[name]
         raise LinkError("unknown symbol: {}".format(name))
 
 
@@ -502,6 +620,9 @@ def populate_got(env):
         if sym.name in env.externs:
             got_entry.sec_name = ".external.fixed_addr"
             got_entry.link_addr = env.externs[sym.name]
+        elif sym.name in ("memcpy", "memset", "memmove"):
+            got_entry.sec_name = f".external.{sym.name}"
+            got_entry.link_addr = 0
         else:
             sec = sym.section
             addr = sym["st_value"]
@@ -535,6 +656,12 @@ def populate_got(env):
         elif got_entry.sec_name == ".external.fixed_addr":
             # Fixed-address symbols should not be relocated.
             continue
+        elif got_entry.sec_name.startswith(".external.mem"):
+            # memset/memmove/memcpy
+            if "memset" in got_entry.sec_name:
+                dest = MP_FUN_TABLE_MEMSET
+            else:
+                dest = MP_FUN_TABLE_MEMMOVE
         elif got_entry.sec_name.startswith(".text"):
             dest = ".text"
         elif got_entry.sec_name.startswith(".rodata"):
@@ -643,10 +770,14 @@ def do_relocation_text(env, text_addr, r):
         # Relcation pointing to GOT
         reloc = addr = env.got_entries[s.name].offset
 
-    elif env.arch.name == "EM_X86_64" and r_info_type in (
-        R_X86_64_GOTPCREL,
-        R_X86_64_REX_GOTPCRELX,
-    ):
+    elif (
+        env.arch.name == "EM_X86_64"
+        and r_info_type
+        in (
+            R_X86_64_GOTPCREL,
+            R_X86_64_REX_GOTPCRELX,
+        )
+    ) or (env.arch.name == "EM_ARM" and r_info_type == R_ARM_GOT_PREL):
         # Relcation pointing to GOT
         got_entry = env.got_entries[s.name]
         addr = env.got_section.addr + got_entry.offset
@@ -678,17 +809,18 @@ def do_relocation_text(env, text_addr, r):
     elif env.arch.name == "EM_XTENSA" and r_info_type in (
         R_XTENSA_DIFF32,
         R_XTENSA_PDIFF32,
+        R_XTENSA_NDIFF32,
         R_XTENSA_ASM_EXPAND,
     ):
         if not hasattr(s, "section") or s.section.name.startswith(".text"):
-            # it looks like R_XTENSA_[P]DIFF32 into .text is already correctly relocated,
-            # and expand relaxations cannot occur in non-executable sections.
+            # Ignore relaxation relocations.
             return
         assert 0
 
     elif env.arch.name == "EM_RISCV" and r_info_type in (
         R_RISCV_TLS_GD_HI20,
         R_RISCV_TLSDESC_HI20,
+        R_RISCV_TLSDESC_LOAD_LO12,
         R_RISCV_TLSDESC_ADD_LO12,
         R_RISCV_TLSDESC_CALL,
     ):
@@ -787,7 +919,7 @@ def do_relocation_data(env, text_addr, r):
         or env.arch.name == "EM_XTENSA"
         and r_info_type == R_XTENSA_32
         or env.arch.name == "EM_RISCV"
-        and r_info_type == R_RISCV_32
+        and r_info_type in (R_RISCV_32, R_RISCV_64)
     ):
         # Relocation in data.rel.ro to internal/external symbol
         if env.arch.word_size == 4:
@@ -838,10 +970,10 @@ RISCV_RELOCATIONS_TYPE_MAP = {
     R_RISCV_SUB16: ("riscv_addsub", "<H", 16, -1),
     R_RISCV_SUB32: ("riscv_addsub", "<I", 32, -1),
     R_RISCV_SUB64: ("riscv_addsub", "<Q", 64, -1),
-    R_RISCV_SET6: ("riscv_set6", "B", 6),
-    R_RISCV_SET8: ("riscv_set8", "B", 8),
-    R_RISCV_SET16: ("riscv_set16", "<H", 16),
-    R_RISCV_SET32: ("riscv_set32", "<I", 32),
+    R_RISCV_SET6: ("riscv_set", "B", 6),
+    R_RISCV_SET8: ("riscv_set", "B", 8),
+    R_RISCV_SET16: ("riscv_set", "<H", 16),
+    R_RISCV_SET32: ("riscv_set", "<I", 32),
     R_RISCV_JAL: "riscv_j",
     R_RISCV_BRANCH: "riscv_b",
     R_RISCV_RVC_BRANCH: "riscv_cb",
@@ -885,7 +1017,7 @@ def process_riscv32_relocation(env, text_addr, r):
         got_entry = env.got_entries[s.name]
         addr = env.got_section.addr + got_entry.offset
         value = addr + r_addend - r_offset
-        reloc_type = "riscv_set32"
+        reloc_type, *reloc_args = RISCV_RELOCATIONS_TYPE_MAP[r_info_type]
 
     elif r_info_type == R_RISCV_PCREL_HI20:
         addr = s.section.addr + s["st_value"]
@@ -1153,6 +1285,39 @@ def load_object_file(env, f, felf):
         raise LinkError("\n".join(dup_errors))
 
 
+def generate_entry_point_jump(env):
+    entry_point = env.find_sym("mpy_init")
+    address = entry_point.section.addr + entry_point["st_value"]
+    alignment = entry_point.section.alignment
+
+    if address == 0:
+        log(
+            LOG_LEVEL_2,
+            "mpy_init is the first symbol in the .text segment, do not emit trampoline",
+        )
+        return b""
+
+    # The trampoline is meant to be placed before the text segment and its
+    # size is not known at this point.  Since the trampoline size does affect
+    # the final address of `mpy_init`, try to find a trampoline that fits in
+    # the smallest block that also follows the text section's alignment
+    # constraint.
+
+    trampoline = b""
+    gap_size = alignment
+    while True:
+        jump_target = address + gap_size
+        log(
+            LOG_LEVEL_2,
+            f"Generating trampoline jumping to mpy_init at address {jump_target:08x} to fit in {gap_size} byte(s)",
+        )
+        trampoline = env.arch.asm_jump(jump_target)
+        if len(trampoline) <= gap_size:
+            return trampoline.ljust(gap_size, b"\0")
+        gap_size += alignment
+    return trampoline
+
+
 def link_objects(env, native_qstr_vals_len):
     # Build GOT information
     if env.arch.name == "EM_XTENSA":
@@ -1232,6 +1397,26 @@ def link_objects(env, native_qstr_vals_len):
             if sym.name in fun_table:
                 sym.section = mp_fun_table_sec
                 sym.mp_fun_table_offset = fun_table[sym.name]
+            elif sym.name in ("memset", "memcpy", "memmove"):
+                n = sym.name
+                if n == "memcpy":
+                    n = "memmove"
+                sec_name = f".internal.{n}"
+                section = None
+                for sec in env.sections:
+                    if sec.name == sec_name:
+                        section = sec
+                        break
+                if section is None and env.arch.name != "EM_XTENSA":
+                    code, reloc = env.arch.asm_jump_abs_word()
+                    section = Section(sec_name, code, env.arch.word_size, "<internal>")
+                    env.sections.insert(1, section)
+                    r = relocation.Relocation({}, None)
+                    r.index = get_memx_function_index(n)
+                    r.offset = reloc
+                    section.reloc.append(r)
+                    section.reloc_name = "unknown"
+                sym.section = section
             else:
                 undef_errors.append("{}: undefined symbol: {}".format(sym.filename, sym.name))
 
@@ -1247,8 +1432,29 @@ def link_objects(env, native_qstr_vals_len):
     if undef_errors:
         raise LinkError("\n".join(undef_errors))
 
+    # Generate the entry trampoline assuming the offset is already known.
+
+    text_alignment = env.find_sym("mpy_init").section.alignment
+    if env.arch.name in ("EM_386", "EM_X86_64"):
+        show_warning = text_alignment not in (1, 4)
+    elif env.arch.name in ("EM_ARM", "EM_XTENSA"):
+        show_warning = text_alignment != 4
+    elif env.arch.name == "EM_RISCV":
+        show_warning = text_alignment != 2
+    else:
+        show_warning = True
+
+    if show_warning:
+        log(
+            LOG_LEVEL_1,
+            f"A .text section with an alignment of {text_alignment} bytes for {env.arch.name} is not tested and may not work",
+        )
+
+    jump = generate_entry_point_jump(env)
+    env.entry_trampoline_len = len(jump)
+
     # Align sections, assign their addresses, and create full_text
-    env.full_text = bytearray(env.arch.asm_jump(8))  # dummy, to be filled in later
+    env.full_text = bytearray(jump)
     env.full_rodata = bytearray(0)
     env.full_bss = bytearray(0)
     for sec in env.sections:
@@ -1281,12 +1487,23 @@ def link_objects(env, native_qstr_vals_len):
                 do_relocation_text(env, sec.addr, r)
             elif sec.name.startswith(".data.rel.ro"):
                 do_relocation_data(env, sec.addr, r)
+            elif sec.name.startswith(".internal"):
+                env.mpy_relocs.append((".text", sec.addr + r.offset, r.index))
             else:
                 assert 0, sec.name
 
 
 ################################################################################
 # .mpy output
+
+MP_FUN_TABLE_MEMSET = 50
+MP_FUN_TABLE_MEMMOVE = 51
+
+
+def get_memx_function_index(f):
+    if f == "memset":
+        return MP_FUN_TABLE_MEMSET
+    return MP_FUN_TABLE_MEMMOVE
 
 
 class MPYOutput:
@@ -1320,6 +1537,12 @@ class MPYOutput:
             self.write_bytes(b"\x00")
 
     def write_reloc(self, base, offset, dest, n):
+        if dest > 2 and n > 1:
+            # dest>2 cannot encode n, so do it manually.
+            for _ in range(n):
+                self.write_reloc(base, offset, dest, 1)
+                offset += 1
+            return
         need_offset = not (base == self.prev_base and offset == self.prev_offset + 1)
         self.prev_offset = offset + n - 1
         if dest <= 2:
@@ -1340,10 +1563,13 @@ class MPYOutput:
             self.write_uint(n)
 
 
-def build_mpy(env, entry_offset, fmpy, native_qstr_vals):
-    # Write jump instruction to start of text
-    jump = env.arch.asm_jump(entry_offset)
-    env.full_text[: len(jump)] = jump
+def build_mpy(env, fmpy, internal_name, native_qstr_vals, arch_flags):
+    # Rewrite the entry trampoline if the proper value isn't known earlier, and
+    # ensure the trampoline size remains the same.
+    if env.arch.delayed_entry_offset:
+        jump = generate_entry_point_jump(env)
+        env.full_text[: len(jump)] = jump
+        assert len(jump) == env.entry_trampoline_len
 
     log(LOG_LEVEL_1, "arch:         {}".format(env.arch.name))
     log(LOG_LEVEL_1, "text size:    {}".format(len(env.full_text)))
@@ -1357,13 +1583,17 @@ def build_mpy(env, entry_offset, fmpy, native_qstr_vals):
     out = MPYOutput()
     out.open(fmpy)
 
+    header_flags = env.arch.mpy_feature | MPY_SUB_VERSION
+    if arch_flags != 0:
+        header_flags |= MPY_ARCH_FLAGS
+
     # MPY: header
-    out.write_bytes(
-        bytearray(
-            # CIRCUITPY-CHANGE: CircuitPython uses "C"
-            [ord("C"), MPY_VERSION, env.arch.mpy_feature | MPY_SUB_VERSION, MP_SMALL_INT_BITS]
-        )
-    )
+    # CIRCUITPY-CHANGE: CircuitPython uses "C"
+    out.write_bytes(bytearray([ord("C"), MPY_VERSION, header_flags, MP_SMALL_INT_BITS]))
+
+    # MPY: arch flags
+    if arch_flags != 0:
+        out.write_uint(arch_flags)
 
     # MPY: n_qstr
     out.write_uint(1 + len(native_qstr_vals))
@@ -1372,7 +1602,7 @@ def build_mpy(env, entry_offset, fmpy, native_qstr_vals):
     out.write_uint(0)
 
     # MPY: qstr table
-    out.write_qstr(fmpy)  # filename
+    out.write_qstr(internal_name)  # filename
     for q in native_qstr_vals:
         out.write_qstr(q)
 
@@ -1458,19 +1688,13 @@ def do_preprocess(args):
         args.output = args.files[0][:-1] + "config.h"
     static_qstrs, qstr_vals = extract_qstrs(args.files)
     with open(args.output, "w") as f:
-        print(
-            "#include <stdint.h>\n"
-            "typedef uintptr_t mp_uint_t;\n"
-            "typedef intptr_t mp_int_t;\n"
-            "typedef uintptr_t mp_off_t;",
-            file=f,
-        )
+        print("#include <stdint.h>\ntypedef uintptr_t mp_off_t;", file=f)
         for i, q in enumerate(static_qstrs):
             print("#define %s (%u)" % (q, i + 1), file=f)
         for i, q in enumerate(sorted(qstr_vals)):
             print("#define %s (mp_native_qstr_table[%d])" % (q, i + 1), file=f)
         print("extern const uint16_t mp_native_qstr_table[];", file=f)
-        print("extern const mp_uint_t mp_native_obj_table[];", file=f)
+        print("extern const uintptr_t mp_native_obj_table[];", file=f)
 
 
 def do_link(args):
@@ -1496,6 +1720,9 @@ def do_link(args):
                 load_object_file(env, f, fn)
 
         if args.libs:
+            ar_util.init_cache(
+                f"{ar_util.DEFAULT_CACHE_BASE_PATH}-{args.arch}", ar_util.DEFAULT_CACHE_PREFIX
+            )
             # Load archive info
             archives = []
             for item in args.libs:
@@ -1512,7 +1739,14 @@ def do_link(args):
                     load_object_file(env, f, obj_name)
 
         link_objects(env, len(native_qstr_vals))
-        build_mpy(env, env.find_addr("mpy_init"), args.output, native_qstr_vals)
+        if args.source_name:
+            internal_name = args.source_name
+        else:
+            import pathlib
+
+            path = pathlib.Path(args.output)
+            internal_name = path.name
+        build_mpy(env, args.output, internal_name, native_qstr_vals, args.arch_flags)
     except LinkError as er:
         print("LinkError:", er.args[0])
         sys.exit(1)
@@ -1562,6 +1796,35 @@ def parse_linkerscript(source):
     return symbols
 
 
+RV32_EXTENSIONS = {
+    "zba": 1 << 0,
+    "zcmp": 1 << 1,
+}
+
+
+def validate_arch_flags(args):
+    if args.arch_flags is None:
+        args.arch_flags = 0
+        return
+    if args.arch != "rv32imc":
+        raise ValueError('Architecture "{}" does not support extra flags'.format(args.arch))
+    if (args.arch_flags.startswith("0") and len(args.arch_flags) > 2) or args.arch_flags.isdigit():
+        if args.arch_flags[1] in "bB":
+            base = 2
+        elif args.arch_flags[1] in "xX":
+            base = 16
+        else:
+            base = 10
+        args.arch_flags = int(args.arch_flags, base)
+    else:
+        flags_value = 0
+        for flag in args.arch_flags.lower().split(","):
+            if flag not in RV32_EXTENSIONS:
+                raise ValueError('Invalid architecture flags value "{}"'.format(flag))
+            flags_value |= RV32_EXTENSIONS[flag]
+        args.arch_flags = flags_value
+
+
 def main():
     import argparse
 
@@ -1570,6 +1833,10 @@ def main():
         "--verbose", "-v", action="count", default=1, help="increase verbosity"
     )
     cmd_parser.add_argument("--arch", default="x64", help="architecture")
+    cmd_parser.add_argument("--arch-flags", default=None, help="optional architecture flags")
+    cmd_parser.add_argument(
+        "--source-name", default=None, help="override the file name written to the .mpy file"
+    )
     cmd_parser.add_argument("--preprocess", action="store_true", help="preprocess source files")
     cmd_parser.add_argument("--qstrs", default=None, help="file defining additional qstrs")
     cmd_parser.add_argument(
@@ -1590,6 +1857,8 @@ def main():
 
     global log_level
     log_level = args.verbose
+
+    validate_arch_flags(args)
 
     if args.preprocess:
         do_preprocess(args)

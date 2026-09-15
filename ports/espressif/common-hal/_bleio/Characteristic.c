@@ -23,6 +23,98 @@
 
 static int characteristic_on_ble_gap_evt(struct ble_gap_event *event, void *param);
 
+// A local characteristic that can notify or indicate registers an event handler
+// whose storage is the characteristic object itself. NimBLE's GATT table
+// holds a pointer to the object as its access-callback arg. Both stay valid
+// because the characteristic's Service is retained while NimBLE knows about
+// it, and the Service holds its characteristics; see Service.c.
+
+// Remember or forget a peer's subscription. NimBLE reports cur_notify and
+// cur_indicate both clear when the peer writes zero to the CCCD and when the
+// connection ends, so this handles disconnects too.
+static void characteristic_set_subscription(bleio_characteristic_obj_t *self,
+    uint16_t conn_handle, bool notify, bool indicate) {
+    size_t free_slot = BLEIO_TOTAL_CONNECTION_COUNT;
+    for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
+        if (self->subscribers[i].conn_handle == conn_handle) {
+            if (notify || indicate) {
+                self->subscribers[i].notify = notify;
+                self->subscribers[i].indicate = indicate;
+            } else {
+                self->subscribers[i].conn_handle = BLEIO_HANDLE_INVALID;
+            }
+            return;
+        }
+        if (free_slot == BLEIO_TOTAL_CONNECTION_COUNT &&
+            self->subscribers[i].conn_handle == BLEIO_HANDLE_INVALID) {
+            free_slot = i;
+        }
+    }
+    if ((notify || indicate) && free_slot < BLEIO_TOTAL_CONNECTION_COUNT) {
+        self->subscribers[free_slot].conn_handle = conn_handle;
+        self->subscribers[free_slot].notify = notify;
+        self->subscribers[free_slot].indicate = indicate;
+    }
+}
+
+// Send one notification or indication. The send may return BLE_HS_ENOMEM, which
+// could mean an empty mbuf pool or exhausted controller buffers.
+// Both are transient and go away once the radio finishes sending other
+// data, so wait them out instead of losing the value.
+// NimBLE consumes the mbuf even when the send fails, so we need to build
+// a fresh one for each attempt.
+// The retry makes progress even from a background callback,
+// because the draining is done by the nimble_host task, not by background callbacks.
+static void characteristic_notify_indicate(bleio_characteristic_obj_t *self,
+    uint16_t conn_handle, mp_buffer_info_t *bufinfo, bool indicate) {
+    while (!mp_hal_is_interrupted()) {
+        struct os_mbuf *om = ble_hs_mbuf_from_flat(bufinfo->buf, bufinfo->len);
+        if (om != NULL) {
+            bleio_connection_internal_t *connection = NULL;
+            if (indicate) {
+                // NimBLE allows only one outstanding indication per connection and
+                // does not check in ble_gatts_indicate_custom(): a second one
+                // trips BLE_HS_DBG_ASSERT and corrupts the acknowledgment
+                // bookkeeping, so don't send a second one.
+                // Wait for the previous acknowledgment.
+                connection = bleio_conn_handle_to_connection(conn_handle);
+                if (connection == NULL) {
+                    os_mbuf_free_chain(om);
+                    return;
+                }
+                while (connection->indicate_outstanding &&
+                       connection->conn_handle == conn_handle &&
+                       !mp_hal_is_interrupted()) {
+                    RUN_BACKGROUND_TASKS;
+                }
+                if (connection->conn_handle != conn_handle || mp_hal_is_interrupted()) {
+                    os_mbuf_free_chain(om);
+                    return;
+                }
+                // Set before submitting: the acknowledgment can preempt this
+                // task the moment the indication is on the air.
+                connection->indicate_outstanding = true;
+            }
+            const int rc = indicate
+                ? ble_gatts_indicate_custom(conn_handle, self->handle, om)
+                : ble_gatts_notify_custom(conn_handle, self->handle, om);
+            if (indicate && rc != NIMBLE_OK) {
+                // Never submitted, so no acknowledgment will clear it.
+                connection->indicate_outstanding = false;
+            }
+            if (rc == NIMBLE_OK) {
+                return;
+            }
+            if (rc != BLE_HS_ENOMEM) {
+                // Not a transient memory shortage. The peer is gone, or refused.
+                // These failures are not reported back to Python.
+                return;
+            }
+        }
+        RUN_BACKGROUND_TASKS;
+    }
+}
+
 void common_hal_bleio_characteristic_construct(bleio_characteristic_obj_t *self, bleio_service_obj_t *service,
     uint16_t handle, bleio_uuid_obj_t *uuid, bleio_characteristic_properties_t props,
     bleio_attribute_security_mode_t read_perm, bleio_attribute_security_mode_t write_perm,
@@ -33,6 +125,9 @@ void common_hal_bleio_characteristic_construct(bleio_characteristic_obj_t *self,
     self->handle = BLEIO_HANDLE_INVALID;
     self->cccd_handle = BLEIO_HANDLE_INVALID;
     self->sccd_handle = BLEIO_HANDLE_INVALID;
+    for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
+        self->subscribers[i].conn_handle = BLEIO_HANDLE_INVALID;
+    }
     self->props = props;
     self->read_perm = read_perm;
     self->write_perm = write_perm;
@@ -62,11 +157,18 @@ void common_hal_bleio_characteristic_construct(bleio_characteristic_obj_t *self,
         read_perm == SECURITY_MODE_SIGNED_WITH_MITM || write_perm == SECURITY_MODE_SIGNED_WITH_MITM) {
         mp_raise_NotImplementedError(MP_ERROR_TEXT("MITM security not supported"));
     }
+    // The BLE_GATT_CHR_F_NOTIFY_INDICATE_* flags are set below to require encryption or
+    // authentication when writing the auto-generated CCCD, if reading the
+    // characteristic requires it. This matches the nordic port behavior.
+    // Without the flags, NimBLE registers the CCCD as writable on an unencrypted link,
+    // so an unpaired central can subscribe and nothing ever requires it to pair.
+    //
+    // TODO: This behavior was fixed in NimBLE 1.10.0. ESP-IDF 6.0.1 uses a fork of NimBLE.
     if (read_perm == SECURITY_MODE_ENC_NO_MITM) {
-        self->flags |= BLE_GATT_CHR_F_READ_ENC;
+        self->flags |= BLE_GATT_CHR_F_READ_ENC | BLE_GATT_CHR_F_NOTIFY_INDICATE_ENC;
     }
     if (read_perm == SECURITY_MODE_SIGNED_NO_MITM) {
-        self->flags |= BLE_GATT_CHR_F_READ_AUTHEN;
+        self->flags |= BLE_GATT_CHR_F_READ_AUTHEN | BLE_GATT_CHR_F_NOTIFY_INDICATE_AUTHEN;
     }
     if (write_perm == SECURITY_MODE_ENC_NO_MITM) {
         self->flags |= BLE_GATT_CHR_F_WRITE_ENC;
@@ -108,6 +210,11 @@ void common_hal_bleio_characteristic_construct(bleio_characteristic_obj_t *self,
         ble_event_add_handler_entry(&self->event_handler_entry, characteristic_on_ble_gap_evt, self);
     } else {
         common_hal_bleio_service_add_characteristic(self->service, self, initial_value_bufinfo, user_description);
+        if ((props & (CHAR_PROP_NOTIFY | CHAR_PROP_INDICATE)) != 0) {
+            // Remember who subscribes: BLE_GAP_EVENT_SUBSCRIBE is the only report
+            // of that, and set_value() notifies subscribers and no one else.
+            ble_event_add_handler_entry(&self->event_handler_entry, characteristic_on_ble_gap_evt, self);
+        }
     }
 }
 
@@ -119,6 +226,12 @@ void common_hal_bleio_characteristic_deinit(bleio_characteristic_obj_t *self) {
     if (common_hal_bleio_characteristic_deinited(self)) {
         return;
     }
+    // Take the characteristic off the event list before cleaning up the object.
+    ble_event_remove_handler(characteristic_on_ble_gap_evt, self);
+    for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
+        self->subscribers[i].conn_handle = BLEIO_HANDLE_INVALID;
+    }
+
     if (self->current_value != NULL) {
         if (gc_ptr_on_heap(self->current_value)) {
             m_free(self->current_value);
@@ -193,7 +306,25 @@ void common_hal_bleio_characteristic_set_value(bleio_characteristic_obj_t *self,
         self->current_value_len = bufinfo->len;
         memcpy(self->current_value, bufinfo->buf, self->current_value_len);
 
-        ble_gatts_chr_updated(self->handle);
+        // Notify and indicate subscribers here rather than by using
+        // ble_gatts_chr_updated(). That function cannot report a failed send,
+        // so we can't tell whether we succeeded or not.
+        //
+        // Unlike ble_gatts_chr_updated(), this does not persist a "changed"
+        // flag for bonded peers that are currently disconnected, so they are
+        // not notified on reconnect. This matches the nordic port.
+        for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
+            const uint16_t conn_handle = self->subscribers[i].conn_handle;
+            if (conn_handle == BLEIO_HANDLE_INVALID) {
+                continue;
+            }
+            if (self->subscribers[i].notify && (self->props & CHAR_PROP_NOTIFY) != 0) {
+                characteristic_notify_indicate(self, conn_handle, bufinfo, false);
+            }
+            if (self->subscribers[i].indicate && (self->props & CHAR_PROP_INDICATE) != 0) {
+                characteristic_notify_indicate(self, conn_handle, bufinfo, true);
+            }
+        }
     }
 }
 
@@ -225,7 +356,26 @@ static int characteristic_on_ble_gap_evt(struct ble_gap_event *event, void *para
             }
             break;
         }
+        case BLE_GAP_EVENT_NOTIFY_TX:
+            // For indications only: BLE_HS_EDONE is the peer's acknowledgment
+            // and BLE_HS_ETIMEOUT is the stack giving up on getting one. Either way,
+            // the connection's single indication slot is free again.
+            if (event->notify_tx.indication != 0 &&
+                event->notify_tx.attr_handle == self->handle &&
+                (event->notify_tx.status == BLE_HS_EDONE ||
+                 event->notify_tx.status == BLE_HS_ETIMEOUT)) {
+                bleio_connection_internal_t *connection =
+                    bleio_conn_handle_to_connection(event->notify_tx.conn_handle);
+                if (connection != NULL) {
+                    connection->indicate_outstanding = false;
+                }
+            }
+            break;
         case BLE_GAP_EVENT_SUBSCRIBE:
+            if (event->subscribe.attr_handle == self->handle) {
+                characteristic_set_subscription(self, event->subscribe.conn_handle,
+                    event->subscribe.cur_notify != 0, event->subscribe.cur_indicate != 0);
+            }
             break;
         default:
             return 0;
@@ -293,7 +443,7 @@ void common_hal_bleio_characteristic_add_descriptor(bleio_characteristic_obj_t *
     bleio_descriptor_obj_t *descriptor) {
     size_t i = self->descriptor_list->len;
     if (i >= MAX_DESCRIPTORS) {
-        mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Too many descriptors"));
+        mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Too many %q"), MP_QSTR_descriptors);
     }
 
     mp_obj_list_append(MP_OBJ_FROM_PTR(self->descriptor_list),

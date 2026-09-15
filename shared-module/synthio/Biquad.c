@@ -156,7 +156,7 @@ void common_hal_synthio_biquad_tick(mp_obj_t self_in) {
         case SYNTHIO_PEAKING_EQ:
             b0 = 1 + alpha * A;
             b1 = -2 * sc.c;
-            b2 = 1 + alpha * A;
+            b2 = 1 - alpha * A;
             a0 = 1 + alpha / A;
             a1 = -2 * sc.c;
             a2 = 1 - alpha / A;
@@ -194,7 +194,7 @@ void common_hal_synthio_biquad_tick(mp_obj_t self_in) {
 }
 
 void synthio_biquad_filter_reset(biquad_filter_state *st) {
-    memset(&st->x, 0, 4 * sizeof(int16_t));
+    memset(st, 0, sizeof(*st));
 }
 
 static inline int32_t biquad_filter_sample(int32_t input, int32_t a1, int32_t a2, int32_t b0, int32_t b1, int32_t b2, int32_t x0, int32_t x1, int32_t y0, int32_t y1) {

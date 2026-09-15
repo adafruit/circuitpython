@@ -6,6 +6,7 @@
 
 #include "shared-bindings/wifi/__init__.h"
 #include "shared-bindings/wifi/AuthMode.h"
+#include "shared-bindings/wifi/Network.h"
 #include "shared-bindings/wifi/PowerManagement.h"
 
 #include <string.h>
@@ -254,9 +255,12 @@ MP_PROPERTY_GETTER(wifi_radio_mac_address_ap_obj,
 #endif
 
 //|     def start_scanning_networks(
-//|         self, *, start_channel: int = 1, stop_channel: int = 11
+//|         self, *, start_channel: int = 1, stop_channel: int = 165
 //|     ) -> Iterable[Network]:
 //|         """Scans for available wifi networks over the given channel range. Make sure the channels are allowed in your country.
+//|
+//|         On dual-band radios, 5 GHz channels (36 and above) may also be given.
+//|         Channel numbers that the radio does not support are skipped.
 //|
 //|         .. note::
 //|
@@ -268,17 +272,19 @@ static mp_obj_t wifi_radio_start_scanning_networks(size_t n_args, const mp_obj_t
     enum { ARG_start_channel, ARG_stop_channel };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_start_channel, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 1} },
-        { MP_QSTR_stop_channel, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 11} },
+        { MP_QSTR_stop_channel, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 165} },
     };
 
     wifi_radio_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
+    // 165 is the highest channel in the scan pattern. Channels the radio
+    // doesn't support are skipped while scanning rather than rejected here.
     uint8_t start_channel =
-        (uint8_t)mp_arg_validate_int_range(args[ARG_start_channel].u_int, 1, 14, MP_QSTR_start_channel);
+        (uint8_t)mp_arg_validate_int_range(args[ARG_start_channel].u_int, 1, 165, MP_QSTR_start_channel);
     uint8_t stop_channel =
-        (uint8_t)mp_arg_validate_int_range(args[ARG_stop_channel].u_int, 1, 14, MP_QSTR_stop_channel);
+        (uint8_t)mp_arg_validate_int_range(args[ARG_stop_channel].u_int, 1, 165, MP_QSTR_stop_channel);
     // Swap if in reverse order, without complaining.
     if (start_channel > stop_channel) {
         uint8_t temp = stop_channel;
@@ -336,6 +342,8 @@ MP_DEFINE_CONST_FUN_OBJ_1(wifi_radio_stop_station_obj, wifi_radio_stop_station);
 //|
 //|         If ``channel`` is given, the access point will use that channel unless
 //|         a station is already operating on a different channel.
+//|         On dual-band radios, 5 GHz channels (36 and above) may also be given.
+//|         A channel the radio does not support raises `ValueError`.
 //|
 //|         If ``authmode`` is not None, the access point will use the given authentication modes.
 //|         If a non-empty password is given, ``authmode`` must not include ``OPEN``.
@@ -357,7 +365,8 @@ MP_DEFINE_CONST_FUN_OBJ_1(wifi_radio_stop_station_obj, wifi_radio_stop_station);
 //|
 //|         .. note::
 //|
-//|             In the raspberrypi port (RP2040 CYW43), ``max_connections`` is ignored.
+//|             In the raspberrypi port (RP2040 CYW43), ``max_connections`` is ignored
+//|             and only 2.4 GHz channels (1-13) are accepted.
 //|         """
 //|         ...
 //|
@@ -397,7 +406,9 @@ static mp_obj_t wifi_radio_start_ap(size_t n_args, const mp_obj_t *pos_args, mp_
         }
     }
 
-    mp_int_t channel = mp_arg_validate_int_range(args[ARG_channel].u_int, 1, 13, MP_QSTR_channel);
+    // 165 is the highest channel in the scan pattern. Channels the radio
+    // doesn't support are rejected by the port rather than here.
+    mp_int_t channel = mp_arg_validate_int_range(args[ARG_channel].u_int, 1, 165, MP_QSTR_channel);
 
     if (authmode == AUTHMODE_OPEN && password.len > 0) {
         mp_raise_ValueError(MP_ERROR_TEXT("AuthMode.OPEN is not used with password"));
@@ -438,12 +449,13 @@ MP_PROPERTY_GETTER(wifi_radio_ap_active_obj,
 
 //|     def connect(
 //|         self,
-//|         ssid: Union[str, ReadableBuffer],
+//|         ssid: Optional[Union[str, ReadableBuffer]] = None,
 //|         password: Union[str, ReadableBuffer] = b"",
 //|         *,
 //|         channel: int = 0,
 //|         bssid: Optional[Union[str, ReadableBuffer]] = None,
 //|         timeout: Optional[float] = None,
+//|         network: Optional[Network] = None,
 //|     ) -> None:
 //|         """Connects to the given ssid and waits for an ip address. Reconnections are handled
 //|         automatically once one connection succeeds.
@@ -459,17 +471,22 @@ MP_PROPERTY_GETTER(wifi_radio_ap_active_obj,
 //|         significantly because a full scan doesn't occur.
 //|
 //|         If ``bssid`` is given and not None, the scan will start at the first channel or the one given and
-//|         connect to the AP with the given ``bssid`` and ``ssid``."""
+//|         connect to the AP with the given ``bssid`` and ``ssid``.
+//|
+//|         If ``network`` is given, it must be a `Network` returned by
+//|         `start_scanning_networks`. Its ``ssid``, ``bssid`` and ``channel`` are used, so no
+//|         scan happens. Give either ``ssid`` or ``network``, not both."""
 //|         ...
 //|
 static mp_obj_t wifi_radio_connect(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    enum { ARG_ssid, ARG_password, ARG_channel, ARG_bssid, ARG_timeout };
+    enum { ARG_ssid, ARG_password, ARG_channel, ARG_bssid, ARG_timeout, ARG_network };
     static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_ssid, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_ssid, MP_ARG_OBJ, {.u_obj = mp_const_none} },
         { MP_QSTR_password,  MP_ARG_OBJ, {.u_obj = mp_const_empty_bytes} },
         { MP_QSTR_channel, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
         { MP_QSTR_bssid, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
         { MP_QSTR_timeout, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
+        { MP_QSTR_network, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
     };
 
     wifi_radio_obj_t *self = MP_OBJ_TO_PTR(pos_args[0]);
@@ -481,9 +498,27 @@ static mp_obj_t wifi_radio_connect(size_t n_args, const mp_obj_t *pos_args, mp_m
         timeout = mp_obj_get_float(args[ARG_timeout].u_obj);
     }
 
+    mp_obj_t ssid_obj = args[ARG_ssid].u_obj;
+    mp_obj_t bssid_obj = args[ARG_bssid].u_obj;
+    mp_int_t channel = args[ARG_channel].u_int;
+
+    if (args[ARG_network].u_obj != mp_const_none) {
+        if (ssid_obj != mp_const_none) {
+            mp_raise_TypeError_varg(MP_ERROR_TEXT("Supply either %q or %q, not both"), MP_QSTR_ssid, MP_QSTR_network);
+        }
+        wifi_network_obj_t *network = MP_OBJ_TO_PTR(mp_arg_validate_type(args[ARG_network].u_obj, &wifi_network_type, MP_QSTR_network));
+        ssid_obj = common_hal_wifi_network_get_ssid(network);
+        bssid_obj = common_hal_wifi_network_get_bssid(network);
+        channel = mp_obj_get_int(common_hal_wifi_network_get_channel(network));
+    }
+
+    if (ssid_obj == mp_const_none) {
+        mp_raise_TypeError_varg(MP_ERROR_TEXT("'%q' argument required"), MP_QSTR_ssid);
+    }
+
     mp_buffer_info_t ssid;
     ssid.len = 0;
-    mp_get_buffer_raise(args[ARG_ssid].u_obj, &ssid, MP_BUFFER_READ);
+    mp_get_buffer_raise(ssid_obj, &ssid, MP_BUFFER_READ);
     mp_arg_validate_length_range(ssid.len, 1, 32, MP_QSTR_ssid);
 
     mp_buffer_info_t password;
@@ -503,14 +538,14 @@ static mp_obj_t wifi_radio_connect(size_t n_args, const mp_obj_t *pos_args, mp_m
     mp_buffer_info_t bssid;
     bssid.len = 0;
     // Should probably make sure bssid is just bytes and not something else too
-    if (args[ARG_bssid].u_obj != mp_const_none) {
-        mp_get_buffer_raise(args[ARG_bssid].u_obj, &bssid, MP_BUFFER_READ);
+    if (bssid_obj != mp_const_none) {
+        mp_get_buffer_raise(bssid_obj, &bssid, MP_BUFFER_READ);
         if (bssid.len != MAC_ADDRESS_LENGTH) {
             mp_raise_ValueError(MP_ERROR_TEXT("Invalid BSSID"));
         }
     }
 
-    wifi_radio_error_t error = common_hal_wifi_radio_connect(self, ssid.buf, ssid.len, password.buf, password.len, args[ARG_channel].u_int, timeout, bssid.buf, bssid.len);
+    wifi_radio_error_t error = common_hal_wifi_radio_connect(self, ssid.buf, ssid.len, password.buf, password.len, channel, timeout, bssid.buf, bssid.len);
     if (error == WIFI_RADIO_ERROR_AUTH_FAIL) {
         mp_raise_ConnectionError(MP_ERROR_TEXT("Authentication failure"));
     } else if (error == WIFI_RADIO_ERROR_NO_AP_FOUND) {

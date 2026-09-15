@@ -116,3 +116,13 @@ west build -b nrf52840dk/nrf52840
 ```
 
 This is already supported in `ports/nordic` as `pca10056`.
+
+The manifest in `zephyr-config/west.yml` skips the HALs of vendors that no board
+here uses, so a board from one of them needs its entry removed from the
+`name-blocklist` and a `west update` to fetch it. For the
+`esp32s3_devkitc` board, that is `hal_espressif`:
+
+```sh
+west update
+west build -b esp32s3_devkitc/esp32s3/procpu
+```

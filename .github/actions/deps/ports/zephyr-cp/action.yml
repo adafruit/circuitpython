@@ -1,5 +1,11 @@
 name: Fetch Zephyr port deps
 
+inputs:
+  sdl:
+    description: 'Install the 32-bit SDL2 packages native_sim needs'
+    required: false
+    default: 'false'
+
 runs:
   using: composite
   steps:
@@ -8,9 +14,14 @@ runs:
       run: |
         echo "--- cpu model ---"
         grep "model name" /proc/cpuinfo | head -1
-        sudo dpkg --add-architecture i386
         sudo apt-get update
         sudo apt-get install -y libusb-1.0-0-dev libudev-dev pkg-config mtools
+      shell: bash
+    - name: Get SDL2 for native_sim
+      if: runner.os == 'Linux' && inputs.sdl == 'true'
+      run: |
+        sudo dpkg --add-architecture i386
+        sudo apt-get update
         # We have to hold python3 so the following install works. See https://github.com/actions/runner-images/issues/13803
         sudo apt-mark hold python3
         sudo apt-get install -y libsdl2-dev:i386 libsdl2-image-dev:i386

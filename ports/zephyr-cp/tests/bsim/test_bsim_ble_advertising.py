@@ -77,8 +77,58 @@ print("done")
 """
 
 
-@pytest.mark.zephyr_sample("bluetooth/observer")
+# Advertiser: primary advert carries a distinctive marker; the scan response
+# carries a different marker. If the adapter merges them they'd arrive as one
+# entry, but the adapter does not merge — they come as separate ScanEntry
+# objects distinguished by `scan_response`.
+BSIM_ADVERT_SCAN_RESPONSE_ADV_CODE = """\
+import _bleio
+import time
+
+adapter = _bleio.adapter
+
+name = b"ADVADV"
+advertisement = bytes((2, 0x01, 0x06, len(name) + 1, 0x09)) + name
+
+sname = b"SCANRSP"
+scan_response = bytes((len(sname) + 1, 0x09)) + sname
+
+print("adv start")
+adapter.start_advertising(advertisement, scan_response=scan_response, connectable=True)
+time.sleep(10)
+adapter.stop_advertising()
+print("adv done")
+"""
+
+BSIM_ADVERT_SCAN_RESPONSE_SCAN_CODE = """\
+import _bleio
+
+adapter = _bleio.adapter
+print("scan start")
+saw_primary = False
+saw_scan_response = False
+for entry in adapter.start_scan(active=True, timeout=12.0):
+    data = entry.advertisement_bytes
+    if b"ADVADV" in data and not entry.scan_response:
+        saw_primary = True
+        print("primary")
+    if b"SCANRSP" in data and entry.scan_response:
+        saw_scan_response = True
+        print("scan_response")
+    if saw_primary and saw_scan_response:
+        print("both")
+        break
+adapter.stop_scan()
+print("scan done", saw_primary, saw_scan_response)
+"""
+
+# Disable the workflow on the advertiser so only its custom advert is on air.
+BSIM_ADVERT_SCAN_RESPONSE_SETTINGS = "CIRCUITPY_BLE_WORKFLOW = false\n"
+
+
+@pytest.mark.zephyr_sample("tests/bsim/samples/observer")
 @pytest.mark.circuitpy_drive({"code.py": BSIM_ADV_CODE})
+@pytest.mark.duration(60)
 def test_bsim_advertise_and_scan(bsim_phy, circuitpython, zephyr_sample):
     """Advertise from CircuitPython and verify Zephyr observer sees traffic."""
     observer = zephyr_sample
@@ -94,9 +144,9 @@ def test_bsim_advertise_and_scan(bsim_phy, circuitpython, zephyr_sample):
     assert "AD data len 10" in observer_output
 
 
-@pytest.mark.zephyr_sample("bluetooth/observer")
-@pytest.mark.code_py_runs(2)
-@pytest.mark.duration(25)
+@pytest.mark.zephyr_sample("tests/bsim/samples/observer")
+@pytest.mark.port_resets(3)
+@pytest.mark.duration(60)
 @pytest.mark.circuitpy_drive({"code.py": BSIM_ADV_INTERRUPT_RELOAD_CODE})
 def test_bsim_advertise_ctrl_c_reload(bsim_phy, circuitpython, zephyr_sample):
     """Ensure advertising resumes after Ctrl-C and a reload."""
@@ -107,7 +157,9 @@ def test_bsim_advertise_ctrl_c_reload(bsim_phy, circuitpython, zephyr_sample):
     observer_count_before = observer.serial.all_output.count("Device found:")
 
     circuitpython.serial.write("\x03")
-    circuitpython.serial.wait_for("KeyboardInterrupt")
+    # Real AES for the link layer adds CPU overhead that can delay the
+    # interpreter noticing SIGINT beyond the default wait_for timeout.
+    circuitpython.serial.wait_for("KeyboardInterrupt", timeout=20)
 
     circuitpython.serial.write("\x04")
     circuitpython.wait_until_done()
@@ -125,7 +177,8 @@ def test_bsim_advertise_ctrl_c_reload(bsim_phy, circuitpython, zephyr_sample):
     assert "Already advertising" not in cp_output
 
 
-@pytest.mark.zephyr_sample("bluetooth/observer")
+@pytest.mark.zephyr_sample("tests/bsim/samples/observer")
+@pytest.mark.duration(40)
 @pytest.mark.circuitpy_drive({"code.py": BSIM_TX_POWER_DEFAULT_CODE})
 def test_bsim_tx_power_default_rssi(board, bsim_phy, circuitpython, zephyr_sample):
     """Verify default TX power produces expected RSSI."""
@@ -151,7 +204,8 @@ def test_bsim_tx_power_default_rssi(board, bsim_phy, circuitpython, zephyr_sampl
     assert all_rssi[0] == expected_rssi, f"Expected RSSI {expected_rssi}, got {all_rssi[0]}"
 
 
-@pytest.mark.zephyr_sample("bluetooth/observer")
+@pytest.mark.zephyr_sample("tests/bsim/samples/observer")
+@pytest.mark.duration(40)
 @pytest.mark.circuitpy_drive({"code.py": BSIM_TX_POWER_LOW_CODE})
 def test_bsim_tx_power_low_rssi(bsim_phy, circuitpython, zephyr_sample):
     """Verify low TX power reduces RSSI."""
@@ -172,3 +226,37 @@ def test_bsim_tx_power_low_rssi(bsim_phy, circuitpython, zephyr_sample):
 
     assert len(all_rssi) > 0, "Observer saw no advertisements"
     assert all_rssi[0] < -39, f"Expected lower RSSI with -20 dBm TX, got {all_rssi[0]}"
+
+
+@pytest.mark.duration(20)
+@pytest.mark.circuitpy_drive(
+    {
+        "code.py": BSIM_ADVERT_SCAN_RESPONSE_ADV_CODE,
+        "settings.toml": BSIM_ADVERT_SCAN_RESPONSE_SETTINGS,
+    }
+)
+@pytest.mark.circuitpy_drive({"code.py": BSIM_ADVERT_SCAN_RESPONSE_SCAN_CODE})
+def test_bsim_scan_response_not_merged(bsim_phy, circuitpython1, circuitpython2):
+    """The adapter does not merge advertisement and scan response.
+
+    The advertiser sends a primary advert (marker "ADVADV") and a scan
+    response (marker "SCANRSP") as separate packets. With duplicate filtering
+    disabled and no merging in the adapter, the scanner observes them as two
+    distinct ScanEntry objects: one with scan_response=False (the primary
+    advert) and one with scan_response=True (the scan response).
+    """
+    scanner = circuitpython2
+
+    scanner.wait_until_done()
+
+    scanner_output = scanner.serial.all_output
+    assert "primary" in scanner_output, (
+        f"primary advert entry not observed separately: {scanner_output}"
+    )
+    assert "scan_response" in scanner_output, (
+        f"scan response entry not observed separately: {scanner_output}"
+    )
+    assert "both" in scanner_output, (
+        f"did not observe both advert and scan response: {scanner_output}"
+    )
+    assert "scan done True True" in scanner_output, f"scan did not confirm both: {scanner_output}"

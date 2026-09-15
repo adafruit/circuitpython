@@ -198,6 +198,9 @@ extern void common_hal_mcu_enable_interrupts(void);
 #define FILESYSTEM_BLOCK_SIZE       (512)
 
 #define MICROPY_VFS                 (1)
+// CIRCUITPY-CHANGE: CircuitPython's flash/SD block devices are native
+// (supervisor/shared/flash.c sets MP_BLOCKDEV_FLAG_NATIVE).
+#define MICROPY_VFS_BLOCKDEV_NATIVE (1)
 #define MICROPY_VFS_FAT             (MICROPY_VFS)
 #define MICROPY_READER_VFS          (MICROPY_VFS)
 
@@ -205,12 +208,11 @@ extern void common_hal_mcu_enable_interrupts(void);
 
 #define BYTES_PER_WORD (4)
 
-// Thumb code is entered with the low bit of the address set; other
-// architectures call the entry address as-is.
+// Bit 0 of a code pointer selects the Thumb instruction set.
 #if defined(__thumb__)
 #define MICROPY_MAKE_POINTER_CALLABLE(p) ((void *)((mp_uint_t)(p) | 1))
 #else
-#define MICROPY_MAKE_POINTER_CALLABLE(p) (p)
+#define MICROPY_MAKE_POINTER_CALLABLE(p) ((void *)(p))
 #endif
 
 // Track stack usage. Expose results via ustack module.

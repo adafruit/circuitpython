@@ -11,6 +11,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#include "freertos/FreeRTOS.h"
+
 #include "py/gc.h"
 #include "py/misc.h"
 #include "py/mpstate.h"
@@ -20,28 +22,39 @@
 #include "supervisor/shared/bluetooth/serial.h"
 #endif
 
+// Do event list manipulation in a critical section.
+static portMUX_TYPE handler_list_mutex = portMUX_INITIALIZER_UNLOCKED;
+
 void ble_event_reset(void) {
     // Linked list items will be gc'd.
+    portENTER_CRITICAL(&handler_list_mutex);
     MP_STATE_VM(ble_event_handler_entries) = NULL;
+    portEXIT_CRITICAL(&handler_list_mutex);
 }
 
 void ble_event_remove_heap_handlers(void) {
     ble_event_handler_entry_t *it = MP_STATE_VM(ble_event_handler_entries);
     while (it != NULL) {
-        // If the param is on the heap, then delete the handler.
-        if (gc_ptr_on_heap(it->param)) {
+        // Save it->next before removing: the entry may be reused and relinked
+        // once it is off the list.
+        ble_event_handler_entry_t *next = it->next;
+        // Remove the handler if the entry or its param is on the heap, which is
+        // about to go away.
+        if (gc_ptr_on_heap(it) || gc_ptr_on_heap(it->param)) {
             ble_event_remove_handler(it->func, it->param);
         }
-        it = it->next;
+        it = next;
     }
 }
 
 void ble_event_add_handler_entry(ble_event_handler_entry_t *entry,
     ble_gap_event_fn *func, void *param) {
+    portENTER_CRITICAL(&handler_list_mutex);
     ble_event_handler_entry_t *it = MP_STATE_VM(ble_event_handler_entries);
     while (it != NULL) {
         // If event handler and its corresponding param are already on the list, don't add again.
         if ((it->func == func) && (it->param == param)) {
+            portEXIT_CRITICAL(&handler_list_mutex);
             return;
         }
         it = it->next;
@@ -51,12 +64,17 @@ void ble_event_add_handler_entry(ble_event_handler_entry_t *entry,
     entry->func = func;
 
     MP_STATE_VM(ble_event_handler_entries) = entry;
+    portEXIT_CRITICAL(&handler_list_mutex);
 }
 
 void ble_event_add_handler(ble_gap_event_fn *func, void *param) {
+    // Not in a critical section on purpose: this scan only avoids the
+    // allocation below when the handler is already registered.
+    // ble_event_add_handler_entry() repeats it in the critical section and is
+    // the one that decides. The allocation must stay outside, because it can
+    // collect or raise.
     ble_event_handler_entry_t *it = MP_STATE_VM(ble_event_handler_entries);
     while (it != NULL) {
-        // If event handler and its corresponding param are already on the list, don't add again.
         if ((it->func == func) && (it->param == param)) {
             return;
         }
@@ -69,19 +87,23 @@ void ble_event_add_handler(ble_gap_event_fn *func, void *param) {
 }
 
 void ble_event_remove_handler(ble_gap_event_fn *func, void *param) {
+    portENTER_CRITICAL(&handler_list_mutex);
     ble_event_handler_entry_t *it = MP_STATE_VM(ble_event_handler_entries);
     ble_event_handler_entry_t **prev = &MP_STATE_VM(ble_event_handler_entries);
     while (it != NULL) {
         if ((it->func == func) && (it->param == param)) {
-            // Splice out the matching handler.
+            // Splice out the matching handler. Leave its next pointer alone:
+            // another walk in progress may already be holding this node as its
+            // cursor. Clearing next would end that walk here, dropping the
+            // event for every handler after it.
             *prev = it->next;
-            // Clear next of the removed node so it's clearly not in a list.
-            it->next = NULL;
+            portEXIT_CRITICAL(&handler_list_mutex);
             return;
         }
         prev = &(it->next);
         it = it->next;
     }
+    portEXIT_CRITICAL(&handler_list_mutex);
 }
 
 int ble_event_run_handlers(struct ble_gap_event *event) {
@@ -93,12 +115,20 @@ int ble_event_run_handlers(struct ble_gap_event *event) {
     mp_printf(&mp_plat_print, "BLE GAP event: 0x%04x\n", event->type);
     #endif
 
+    portENTER_CRITICAL(&handler_list_mutex);
     ble_event_handler_entry_t *it = MP_STATE_VM(ble_event_handler_entries);
+    portEXIT_CRITICAL(&handler_list_mutex);
     bool done = false;
     while (it != NULL) {
-        // Capture next before calling the function in case it removes itself from the list.
+        // Take a consistent snapshot of the node, including next, before
+        // calling the function: the function may remove itself from the list,
+        // and so may the VM task while the call runs.
+        portENTER_CRITICAL(&handler_list_mutex);
         ble_event_handler_entry_t *next = it->next;
-        done = it->func(event, it->param) || done;
+        ble_gap_event_fn *func = it->func;
+        void *param = it->param;
+        portEXIT_CRITICAL(&handler_list_mutex);
+        done = func(event, param) || done;
         it = next;
     }
     #if CIRCUITPY_BLE_SERIAL_SERVICE && CIRCUITPY_VERBOSE_BLE

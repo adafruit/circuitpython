@@ -118,11 +118,12 @@ void common_hal_audiodelays_multi_tap_delay_set_delay_ms(audiodelays_multi_tap_d
     self->delay_buffer_len = (uint32_t)(self->base.sample_rate / MICROPY_FLOAT_CONST(1000.0) * self->delay_ms) * (self->base.channel_count * sizeof(uint16_t));
 
     // Limit to valid range
-    if (self->delay_buffer_len > self->max_delay_buffer_len) {
-        self->delay_buffer_len = self->max_delay_buffer_len;
-    } else if (self->delay_buffer_len < self->buffer_len) {
+    if (self->delay_buffer_len < self->buffer_len) {
         // If the delay buffer is smaller than our audio buffer, weird things happen
         self->delay_buffer_len = self->buffer_len;
+    }
+    if (self->delay_buffer_len > self->max_delay_buffer_len) {
+        self->delay_buffer_len = self->max_delay_buffer_len;
     }
 
     // Clear the now unused part of the buffer or some weird artifacts appear

@@ -16,3 +16,7 @@ typedef struct {
     mp_obj_base_t base;
     // Stores no state currently.
 } mcu_processor_obj_t;
+
+#ifdef CIRCUITPY_PSRAM_CHIP_SELECT
+void mcu_processor_update_psram_timing(uint32_t sys_clk_khz);
+#endif

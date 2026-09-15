@@ -39,7 +39,7 @@ jobs:
     - name: Set up python
       uses: actions/setup-python@v6
       with:
-        python-version: 3.x
+        python-version: ${{ inputs.port == 'zephyr-cp' && '3.13' || '3.x' }}
 
     - name: Set up port
       id: set-up-port
@@ -51,6 +51,8 @@ jobs:
     - name: Set up submodules
       id: set-up-submodules
       uses: ./.github/actions/deps/submodules
+      with:
+        port: ${{ inputs.port }}
 
     - name: Set up external
       uses: ./.github/actions/deps/external

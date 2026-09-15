@@ -31,8 +31,8 @@
 #include "nimble/nimble_port.h"
 #include "nimble/nimble_port_freertos.h"
 #include "host/ble_gap.h"
+#include "host/ble_gatt.h"
 #include "host/util/util.h"
-#include "services/ans/ble_svc_ans.h"
 #include "services/gap/ble_svc_gap.h"
 #include "services/gatt/ble_svc_gatt.h"
 
@@ -43,10 +43,6 @@
 #include "esp_mac.h"
 #include "esp_nimble_hci.h"
 #include "nvs_flash.h"
-
-#if CIRCUITPY_SETTINGS_TOML
-#include "supervisor/shared/settings.h"
-#endif
 
 // Status variables used while busy-waiting for events.
 static volatile bool _nimble_sync;
@@ -70,7 +66,60 @@ static void _on_sync(void) {
 // All examples have this. It'd make sense in a header.
 void ble_store_config_init(void);
 
-char default_ble_name[] = { 'C', 'I', 'R', 'C', 'U', 'I', 'T', 'P', 'Y', 0, 0, 0, 0, 0, 0, 0};
+// NimBLE sizes its client characteristic configuration (CCCD) pool once, in
+// ble_gatts_start(), from the services counted by ble_gatts_count_cfg().
+// But every CircuitPython service is registered afterwards, using
+// ble_gatts_add_dynamic_svcs(), which does not do its own counting,
+// and does not resize the CCCD pool.
+//
+// So services added at runtime get no CCCDs of their own added to the pool.
+// The CCCDs themselves can allocate on the NimBLE heap if needed,
+// but ble_gatts_conn_can_alloc() still tests the CCCD pool size, and NimBLE refuses
+// connectable advertising once the pool is empty. This is an oversight in the API.
+// NimBLE returns BLE_HS_ENOMEM, which is reported as a MemoryError from
+// start_advertising() as soon as the BLE workflow, a user service, and a
+// connection together need more CCCDs than the built-in services reserved.
+//
+// To get around this, we'll make the CCCD pool larger, by calling ble_gatts_count_cfg()
+// on a bulky dummy service that is never registered, just to force the pool to a
+// good size. Two of the reserved CCCDs cover the BLE workflow's own notifying
+// characteristics; the rest are for user services.
+#define RESERVED_CCCD_COUNT (18)
+
+// Never called: the definition below is counted, not registered. NimBLE only
+// requires that the callback not be NULL.
+static int _reserved_cccd_access_cb(uint16_t conn_handle, uint16_t attr_handle,
+    struct ble_gatt_access_ctxt *ctxt, void *arg) {
+    return BLE_ATT_ERR_UNLIKELY;
+}
+
+// Likewise unused, but must not be NULL.
+static const ble_uuid16_t _reserved_cccd_uuid = BLE_UUID16_INIT(0xffff);
+
+// Reserve CCCDs for the services registered at runtime. NimBLE needs one CCCD
+// per subscribable characteristic per connection, plus one for its cache;
+// ble_gatts_count_cfg() applies that multiplier itself.
+//
+// Call this before nimble_port_freertos_init(): ble_gatts_start() sizes the pool
+// on the nimble_host task, and counting afterwards is too late.
+static void _reserve_cccds(void) {
+    // ble_gatts_count_cfg() only reads these definitions and keeps no pointers
+    // into them, so they can live on the stack and then be discarded.
+    struct ble_gatt_chr_def chr_defs[RESERVED_CCCD_COUNT + 1] = { 0 };
+    for (size_t i = 0; i < RESERVED_CCCD_COUNT; i++) {
+        chr_defs[i].uuid = &_reserved_cccd_uuid.u;
+        chr_defs[i].access_cb = _reserved_cccd_access_cb;
+        // Only NOTIFY or INDICATE characteristics get a CCCD.
+        chr_defs[i].flags = BLE_GATT_CHR_F_NOTIFY;
+    }
+
+    struct ble_gatt_svc_def svc_defs[2] = { 0 };
+    svc_defs[0].type = BLE_GATT_SVC_TYPE_PRIMARY;
+    svc_defs[0].uuid = &_reserved_cccd_uuid.u;
+    svc_defs[0].characteristics = chr_defs;
+
+    CHECK_NIMBLE_ERROR(ble_gatts_count_cfg(svc_defs));
+}
 
 void common_hal_bleio_adapter_set_enabled(bleio_adapter_obj_t *self, bool enabled) {
     const bool is_enabled = common_hal_bleio_adapter_get_enabled(self);
@@ -103,28 +152,8 @@ void common_hal_bleio_adapter_set_enabled(bleio_adapter_obj_t *self, bool enable
 
         ble_svc_gap_init();
         ble_svc_gatt_init();
-        ble_svc_ans_init();
-
-        #if CIRCUITPY_SETTINGS_TOML
-        char ble_name[1 + MYNEWT_VAL_BLE_SVC_GAP_DEVICE_NAME_MAX_LENGTH];
-        settings_err_t result = settings_get_str("CIRCUITPY_BLE_NAME", ble_name, sizeof(ble_name));
-        if (result == SETTINGS_OK) {
-            ble_svc_gap_device_name_set(ble_name);
-        } else
-        #endif
-        {
-            uint8_t mac[6];
-            esp_read_mac(mac, ESP_MAC_BT);
-            mp_int_t len = sizeof(default_ble_name) - 1;
-            default_ble_name[len - 6] = nibble_to_hex_lower[mac[3] >> 4 & 0xf];
-            default_ble_name[len - 5] = nibble_to_hex_lower[mac[3] & 0xf];
-            default_ble_name[len - 4] = nibble_to_hex_lower[mac[4] >> 4 & 0xf];
-            default_ble_name[len - 3] = nibble_to_hex_lower[mac[4] & 0xf];
-            default_ble_name[len - 2] = nibble_to_hex_lower[mac[5] >> 4 & 0xf];
-            default_ble_name[len - 1] = nibble_to_hex_lower[mac[5] & 0xf];
-            default_ble_name[len] = '\0'; // for now we add null for compatibility with C ASCIIZ strings
-            ble_svc_gap_device_name_set(default_ble_name);
-        }
+        // Grow the CCCD pool so it's not too small.
+        _reserve_cccds();
 
         // Clear all of the internal connection objects.
         for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
@@ -150,6 +179,8 @@ void common_hal_bleio_adapter_set_enabled(bleio_adapter_obj_t *self, bool enable
         if (!_nimble_sync) {
             mp_raise_RuntimeError(MP_ERROR_TEXT("Update failed"));
         }
+
+        bleio_adapter_reset_name(self);
     } else {
         int ret = nimble_port_stop();
         while (xTaskGetHandle("nimble_host") != NULL && !mp_hal_is_interrupted()) {
@@ -175,20 +206,17 @@ bleio_address_obj_t *common_hal_bleio_adapter_get_address(bleio_adapter_obj_t *s
         return NULL;
     }
 
-    bleio_address_obj_t *address = mp_obj_malloc(bleio_address_obj_t, &bleio_address_type);
-    common_hal_bleio_address_construct(address, address_bytes, BLEIO_ADDRESS_TYPE_RANDOM_STATIC);
-    return address;
+    // The cached address is refreshed on every call.
+    common_hal_bleio_address_construct(&self->address, address_bytes, BLEIO_ADDRESS_TYPE_RANDOM_STATIC);
+    self->address.base.type = &bleio_address_type;
+    return &self->address;
 }
 
 bool common_hal_bleio_adapter_set_address(bleio_adapter_obj_t *self, bleio_address_obj_t *address) {
     if (address->type != BLEIO_ADDRESS_TYPE_RANDOM_STATIC) {
         return false;
     }
-    mp_buffer_info_t bufinfo;
-    if (!mp_get_buffer(address->bytes, &bufinfo, MP_BUFFER_READ)) {
-        return false;
-    }
-    int result = ble_hs_id_set_rnd(bufinfo.buf);
+    int result = ble_hs_id_set_rnd(address->bytes);
     return result == 0;
 }
 
@@ -318,9 +346,7 @@ void common_hal_bleio_adapter_stop_scan(bleio_adapter_obj_t *self) {
 
 static void _convert_address(const bleio_address_obj_t *address, ble_addr_t *nimble_address) {
     nimble_address->type = address->type;
-    mp_buffer_info_t address_buf_info;
-    mp_get_buffer_raise(address->bytes, &address_buf_info, MP_BUFFER_READ);
-    memcpy(nimble_address->val, (uint8_t *)address_buf_info.buf, NUM_BLEIO_ADDRESS_BYTES);
+    memcpy(nimble_address->val, address->bytes, NUM_BLEIO_ADDRESS_BYTES);
 }
 
 static int _mtu_reply(uint16_t conn_handle,
@@ -339,7 +365,7 @@ static int _mtu_reply(uint16_t conn_handle,
     return 0;
 }
 
-static void _new_connection(uint16_t conn_handle) {
+static void _new_connection(uint16_t conn_handle, bool user_owned) {
     // Set the tx_power for the connection higher than the advertisement.
     esp_ble_tx_power_set(conn_handle, ESP_PWR_LVL_N0);
 
@@ -361,7 +387,9 @@ static void _new_connection(uint16_t conn_handle) {
     connection->conn_handle = conn_handle;
     connection->connection_obj = mp_const_none;
     connection->pair_status = PAIR_NOT_PAIRED;
+    connection->indicate_outstanding = false;
     connection->mtu = 0;
+    connection->user_owned = user_owned;
 
     ble_gattc_exchange_mtu(conn_handle, _mtu_reply, connection);
 
@@ -379,7 +407,8 @@ static int _connect_event(struct ble_gap_event *event, void *self_in) {
         case BLE_GAP_EVENT_CONNECT:
             if (event->connect.status == 0) {
                 // This triggers an MTU exchange. Its reply will exit the loop waiting for a connection.
-                _new_connection(event->connect.conn_handle);
+                // Only user code connects in the central role.
+                _new_connection(event->connect.conn_handle, true);
                 // Set connections objs back to NULL since we have a new
                 // connection and need a new tuple.
                 self->connection_objs = NULL;
@@ -498,7 +527,8 @@ static int _advertising_event(struct ble_gap_event *event, void *self_in) {
 
             #if !MYNEWT_VAL(BLE_EXT_ADV)
             if (event->connect.status == NIMBLE_OK) {
-                _new_connection(event->connect.conn_handle);
+                // The connection belongs to whoever started the advertising it answered.
+                _new_connection(event->connect.conn_handle, self->user_advertising);
                 // Set connections objs back to NULL since we have a new
                 // connection and need a new tuple.
                 self->connection_objs = NULL;
@@ -511,7 +541,8 @@ static int _advertising_event(struct ble_gap_event *event, void *self_in) {
         case BLE_GAP_EVENT_ADV_COMPLETE:
             #if MYNEWT_VAL(BLE_EXT_ADV)
             if (event->adv_complete.reason == NIMBLE_OK) {
-                _new_connection(event->adv_complete.conn_handle);
+                // The connection belongs to whoever started the advertising it answered.
+                _new_connection(event->adv_complete.conn_handle, self->user_advertising);
                 // Set connections objs back to NULL since we have a new
                 // connection and need a new tuple.
                 self->connection_objs = NULL;
@@ -837,13 +868,13 @@ void bleio_adapter_reset(bleio_adapter_obj_t *adapter) {
 
     // Wait up to 125 ms (128 ticks) for disconnect to complete. This should be
     // greater than most connection intervals.
-    bool any_connected = false;
+    bool any_connected;
     uint64_t start_ticks = supervisor_ticks_ms64();
-    while (any_connected && supervisor_ticks_ms64() - start_ticks < 128) {
+    do {
         any_connected = false;
         for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
             bleio_connection_internal_t *connection = &bleio_connections[i];
             any_connected |= connection->conn_handle != BLEIO_HANDLE_INVALID;
         }
-    }
+    } while (any_connected && supervisor_ticks_ms64() - start_ticks < 128);
 }

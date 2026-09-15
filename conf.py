@@ -197,6 +197,7 @@ exclude_patterns = [
     "docs/README.md",
     "AGENTS.md",
     "**/AGENTS.md",
+    "docs/library/weakref.rst",
 ]
 
 # The reST default role (used for this markup: `text`) to use for all
@@ -330,6 +331,7 @@ latex_elements = {
 \hbadness=99999
 \hfuzz=20pt
 \usepackage{pdflscape}
+\DeclareUnicodeCharacter{FFFD}{?}
 """,
 }
 

@@ -147,7 +147,7 @@ static const emit_inline_asm_method_table_t *emit_asm_table[] = {
     &emit_inline_thumb_method_table,
     &emit_inline_thumb_method_table,
     &emit_inline_xtensa_method_table,
-    NULL,
+    &emit_inline_xtensa_method_table,
     &emit_inline_rv32_method_table,
 };
 
@@ -2423,6 +2423,14 @@ static void compile_trailer_paren_helper(compiler_t *comp, mp_parse_node_t pn_ar
                     compile_syntax_error(comp, (mp_parse_node_t)pns_arg, MP_ERROR_TEXT("* arg after **"));
                     return;
                 }
+                if (n_keyword) {
+                    // Support for *arg after kwarg is a CPython feature omitted
+                    // from MicroPython in order to reduce code size. See
+                    // https://github.com/micropython/micropython/issues/11439 for
+                    // more info.
+                    compile_syntax_error(comp, (mp_parse_node_t)pns_arg, MP_ERROR_TEXT("* arg after kwarg"));
+                    return;
+                }
                 #if MICROPY_DYNAMIC_COMPILER
                 if (i >= (size_t)mp_dynamic_compiler.small_int_bits - 1)
                 #else
@@ -3569,7 +3577,7 @@ void mp_compile_to_raw_code(mp_parse_tree_t *parse_tree, qstr source_file, bool 
             // TODO this can be improved by calculating it during SCOPE pass
             // but that requires some other structural changes to the asm emitters
             #if MICROPY_DYNAMIC_COMPILER
-            if (mp_dynamic_compiler.native_arch == MP_NATIVE_ARCH_XTENSA)
+            if (mp_dynamic_compiler.native_arch == MP_NATIVE_ARCH_XTENSA || mp_dynamic_compiler.native_arch == MP_NATIVE_ARCH_XTENSAWIN)
             #endif
             {
                 compile_scope_inline_asm(comp, s, MP_PASS_CODE_SIZE);
@@ -3664,7 +3672,7 @@ emit_finished:
 
         #if MICROPY_DEBUG_PRINTERS
         // now that the module context is valid, the raw codes can be printed
-        if (mp_verbose_flag >= 2) {
+        if (MP_STATE_VM(mp_verbose_flag) >= 2) {
             for (scope_t *s = comp->scope_head; s != NULL; s = s->next) {
                 mp_raw_code_t *rc = s->raw_code;
                 if (rc->kind == MP_CODE_BYTECODE) {

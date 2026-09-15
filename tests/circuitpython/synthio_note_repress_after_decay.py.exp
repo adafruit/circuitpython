@@ -1,0 +1,6 @@
+pressed after decay: 0
+pressed right after re-press: 1
+pressed after one more render: 1
+synthio.EnvelopeState.ATTACK 0.46
+synthio.EnvelopeState.ATTACK 0.70
+synthio.EnvelopeState.ATTACK 0.93

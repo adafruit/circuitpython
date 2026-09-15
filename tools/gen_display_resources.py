@@ -76,7 +76,7 @@ if missing > 0:
     print("Font missing", missing, "characters", file=sys.stderr)
 
 tile_x, tile_y, dx, dy = f.get_bounding_box()
-total_bits = tile_x * len(all_characters)
+total_bits = tile_x * len(filtered_characters)
 total_bits += 32 - total_bits % 32
 bytes_per_row = total_bits // 8
 b = bytearray(bytes_per_row * tile_y)
@@ -283,7 +283,7 @@ displayio_tilegrid_t supervisor_terminal_scroll_area_text_grid = {{
     .inline_tiles = false,
     .in_group = true
 }};
-""".format(len(all_characters), tile_x, tile_y)
+""".format(len(filtered_characters), tile_x, tile_y)
 )
 
 c_file.write(
@@ -311,7 +311,7 @@ displayio_tilegrid_t supervisor_terminal_status_bar_text_grid = {{
     .inline_tiles = false,
     .in_group = true
 }};
-""".format(len(all_characters), tile_x, tile_y)
+""".format(len(filtered_characters), tile_x, tile_y)
 )
 
 c_file.write(
@@ -345,7 +345,7 @@ displayio_bitmap_t supervisor_terminal_font_bitmap = {{
     .bitmask = 0x01,
     .read_only = true
 }};
-""".format(len(all_characters) * tile_x, tile_y, bytes_per_row / 4)
+""".format(len(filtered_characters) * tile_x, tile_y, bytes_per_row / 4)
 )
 
 

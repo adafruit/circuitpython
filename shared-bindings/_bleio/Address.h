@@ -20,6 +20,10 @@
 
 extern const mp_obj_type_t bleio_address_type;
 
-extern void common_hal_bleio_address_construct(bleio_address_obj_t *self, uint8_t *bytes, uint8_t address_type);
+extern void common_hal_bleio_address_construct(bleio_address_obj_t *self, const uint8_t *bytes, uint8_t address_type);
 extern mp_obj_t common_hal_bleio_address_get_address_bytes(bleio_address_obj_t *self);
 extern uint8_t common_hal_bleio_address_get_type(bleio_address_obj_t *self);
+// Copies the raw address bytes (little-endian BD_ADDR, NUM_BLEIO_ADDRESS_BYTES)
+// into the given buffer. Allocation-free, so it is safe to use before the heap
+// is initialized (e.g. when deriving the default adapter name).
+extern void common_hal_bleio_address_get_bytes(bleio_address_obj_t *self, uint8_t bytes[NUM_BLEIO_ADDRESS_BYTES]);

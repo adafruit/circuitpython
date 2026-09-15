@@ -8,6 +8,7 @@
 
 #include "py/objproperty.h"
 #include "py/runtime.h"
+#include "shared-bindings/_bleio/__init__.h"
 #include "shared-bindings/_bleio/Characteristic.h"
 #include "shared-bindings/_bleio/Service.h"
 #include "shared-bindings/_bleio/UUID.h"
@@ -45,6 +46,9 @@ static mp_obj_t bleio_service_make_new(const mp_obj_type_t *type, size_t n_args,
     bleio_service_obj_t *service = mp_obj_malloc_with_finaliser(bleio_service_obj_t, &bleio_service_type);
 
     common_hal_bleio_service_construct(service, uuid, is_secondary);
+    // Remember that there are services that were created by the user.
+    // bleio_reset() needs this to know what kind of reset to do.
+    bleio_set_user_services_created();
 
     return MP_OBJ_FROM_PTR(service);
 }

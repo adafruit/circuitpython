@@ -15,6 +15,7 @@
 #include "shared-bindings/_bleio/Service.h"
 #include "shared-bindings/_bleio/UUID.h"
 #include "shared-module/storage/__init__.h"
+#include "supervisor/shared/bluetooth/bluetooth.h"
 #include "supervisor/shared/bluetooth/serial.h"
 
 #include "common-hal/_bleio/__init__.h"
@@ -30,9 +31,6 @@ static bleio_uuid_obj_t supervisor_ble_circuitpython_tx_uuid;
 static bleio_characteristic_obj_t supervisor_ble_circuitpython_version_characteristic;
 static bleio_uuid_obj_t supervisor_ble_circuitpython_version_uuid;
 
-// This is the base UUID for the CircuitPython service.
-const uint8_t circuitpython_base_uuid[16] = {0x6e, 0x68, 0x74, 0x79, 0x50, 0x74, 0x69, 0x75, 0x63, 0x72, 0x69, 0x43, 0x00, 0x00, 0xaf, 0xad };
-
 static mp_obj_list_t characteristic_list;
 static mp_obj_t characteristic_list_items[3];
 
@@ -40,6 +38,10 @@ static mp_obj_t characteristic_list_items[3];
 #error "BLEIO_PACKET_BUFFER_MAX_PACKET_SIZE must be a multiple of 4"
 #endif
 static uint32_t _outgoing1[BLEIO_PACKET_BUFFER_MAX_PACKET_SIZE / 4];
+// TODO: _outgoing2 is unused on espressif, whose NimBLE send calls copy the data
+// rather than retaining the buffer as the nordic SoftDevice does. Letting a port
+// declare how many outgoing buffers it needs would drop this static allocation
+// there; nordic requires both.
 static uint32_t _outgoing2[BLEIO_PACKET_BUFFER_MAX_PACKET_SIZE / 4];
 static ble_event_handler_t rx_static_handler_entry;
 static ble_event_handler_t tx_static_handler_entry;
@@ -133,7 +135,7 @@ void supervisor_start_bluetooth_serial(void) {
     _common_hal_bleio_characteristic_buffer_construct(&_rx_buffer,
         &supervisor_ble_circuitpython_rx_characteristic,
         0.1f,
-        (uint8_t *)_incoming, sizeof(_incoming) * sizeof(uint32_t),
+        (uint8_t *)_incoming, sizeof(_incoming),
         &rx_static_handler_entry,
         true /* watch for interrupt character */);
 

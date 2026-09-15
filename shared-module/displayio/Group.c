@@ -435,7 +435,7 @@ void displayio_group_finish_refresh(displayio_group_t *self) {
     }
 }
 
-displayio_area_t *displayio_group_get_refresh_areas(displayio_group_t *self, displayio_area_t *tail) {
+static displayio_area_t *group_get_refresh_areas_impl(displayio_group_t *self, displayio_area_t *tail) {
     if (self->item_removed) {
         self->dirty_area.next = tail;
         tail = &self->dirty_area;
@@ -462,10 +462,76 @@ displayio_area_t *displayio_group_get_refresh_areas(displayio_group_t *self, dis
         layer = mp_obj_cast_to_native_base(
             self->members->items[i], &displayio_group_type);
         if (layer != MP_OBJ_NULL) {
-            tail = displayio_group_get_refresh_areas(layer, tail);
+            tail = group_get_refresh_areas_impl(layer, tail);
             continue;
         }
     }
 
     return tail;
+}
+
+// Filter the dirty-rect list by containment: unlink every area that is fully contained
+// in another area in the list (a changing text label is the common case - the group
+// dirties the whole label region via item_removed plus one area per glyph, and the
+// glyph areas all sit inside the label region). Dropping a covered area is lossless:
+// the same pixels are refreshed by the survivor, in fewer transfers.
+//
+// The nodes are OWNED BY THE ITEMS (TileGrid reuses dirty_area as its tile-space dirty
+// accumulator between frames, vectorio keeps its current_area, ...), so their
+// coordinates must never be modified here. The ONLY mutation is the .next relink,
+// which is safe because every provider unconditionally reassigns .next at link time on
+// every get_refresh_areas call and never reads it back.
+//
+// Nodes at and past `tail` belong to the caller, so the sweep uses `tail` as its end
+// sentinel and never looks past it (every in-tree caller passes tail == NULL).
+//
+// One pass suffices: coordinates never change and unlinking preserves the relative
+// order of the remaining nodes, so every pair of surviving nodes is examined. Equal
+// areas satisfy the containment test in both directions; testing b-inside-a FIRST
+// keeps the earlier node and drops the later one - the two tests must stay an else-if
+// chain or equal areas would drop BOTH nodes and lose the area entirely.
+static displayio_area_t *filter_out_redundant_areas(displayio_area_t *head,
+    const displayio_area_t *tail) {
+    displayio_area_t *a_prev = NULL;
+    displayio_area_t *a = head;
+    while (a != tail) {
+        // The casts from the const .next field are safe: every node before `tail` is a
+        // mutable item-owned struct; only the field's declared type is pointer-to-const.
+        displayio_area_t *b_prev = a;
+        displayio_area_t *b = (displayio_area_t *)a->next;
+        bool a_dropped = false;
+        while (b != tail) {
+            if (b->x1 >= a->x1 && b->y1 >= a->y1 && b->x2 <= a->x2 && b->y2 <= a->y2) {
+                // b is contained in a (equal areas land here): unlink b.
+                b_prev->next = b->next;
+                b = (displayio_area_t *)b_prev->next;
+            } else if (a->x1 >= b->x1 && a->y1 >= b->y1 && a->x2 <= b->x2 && a->y2 <= b->y2) {
+                // a is strictly contained in the later b: unlink a and move on.
+                if (a_prev == NULL) {
+                    head = (displayio_area_t *)a->next;
+                } else {
+                    a_prev->next = a->next;
+                }
+                a_dropped = true;
+                break;
+            } else {
+                b_prev = b;
+                b = (displayio_area_t *)b->next;
+            }
+        }
+        if (a_dropped) {
+            a = (a_prev == NULL) ? head : (displayio_area_t *)a_prev->next;
+        } else {
+            a_prev = a;
+            a = (displayio_area_t *)a->next;
+        }
+    }
+    return head;
+}
+
+// Public entry point: displays call this once on their root group, so the whole tree's
+// list is filtered in one place and no display type needs its own copy of the logic.
+displayio_area_t *displayio_group_get_refresh_areas(displayio_group_t *self, displayio_area_t *tail) {
+    displayio_area_t *areas = group_get_refresh_areas_impl(self, tail);
+    return filter_out_redundant_areas(areas, tail);
 }

@@ -89,7 +89,7 @@ static size_t file_input(JDEC *jd, uint8_t *dest, size_t len) {
             read = file_input(jd, buf, to_discard);
             total += read;
         } while (read != 0 && total != len);
-        return len;
+        return total;
     }
 
     int errcode = 0;
@@ -147,14 +147,14 @@ static int bitmap_output(JDEC *jd, void *data, JRECT *rect) {
     int y1 = self->lim.y1 - rect->top;
     int y2 = self->lim.y2 - rect->top;
 
-    if (y2 < y1) {
+    if (y2 <= 0) {
         // The last row in the source image to copy FROM is above of this, so
         // no more pixels on any rows
         return DECODER_INTERRUPT;
     }
 
     y2 = MIN(y2, src_height);
-    if (x2 < x1) {
+    if (x2 <= 0) {
         // The last column in the source image to copy FROM is left of this, so
         // no more pixels on this row but could be on subsequent rows
         return DECODER_CONTINUE;

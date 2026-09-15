@@ -8,6 +8,8 @@
 
 #include "py/obj.h"
 
+#include <zephyr/net/wifi_mgmt.h>
+
 struct sockaddr_storage;
 
 void wifi_reset(void);

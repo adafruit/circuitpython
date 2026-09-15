@@ -49,7 +49,7 @@
 // as well as a fallback to generate MICROPY_GIT_TAG if the git repo or tags
 // are unavailable.
 #define MICROPY_VERSION_MAJOR 1
-#define MICROPY_VERSION_MINOR 27
+#define MICROPY_VERSION_MINOR 29
 #define MICROPY_VERSION_MICRO 0
 #define MICROPY_VERSION_PRERELEASE 0
 
@@ -426,6 +426,11 @@ typedef uint64_t mp_uint_t;
 #define MICROPY_PERSISTENT_CODE_LOAD (0)
 #endif
 
+// Whether to support loading of persistent native code
+#ifndef MICROPY_PERSISTENT_CODE_LOAD_NATIVE
+#define MICROPY_PERSISTENT_CODE_LOAD_NATIVE (MICROPY_EMIT_MACHINE_CODE)
+#endif
+
 // Whether to support saving of persistent code, i.e. for mpy-cross to
 // generate .mpy files. Enabling this enables additional metadata on raw code
 // objects which is also required for sys.settrace.
@@ -446,7 +451,7 @@ typedef uint64_t mp_uint_t;
 // Whether generated code can persist independently of the VM/runtime instance
 // This is enabled automatically when needed by other features
 #ifndef MICROPY_PERSISTENT_CODE
-#define MICROPY_PERSISTENT_CODE (MICROPY_PERSISTENT_CODE_LOAD || MICROPY_PERSISTENT_CODE_SAVE || MICROPY_MODULE_FROZEN_MPY)
+#define MICROPY_PERSISTENT_CODE (MICROPY_PERSISTENT_CODE_LOAD || MICROPY_PERSISTENT_CODE_LOAD_NATIVE || MICROPY_PERSISTENT_CODE_SAVE || MICROPY_MODULE_FROZEN_MPY)
 #endif
 
 // Whether bytecode uses a qstr_table to map internal qstr indices in the bytecode
@@ -474,7 +479,11 @@ typedef uint64_t mp_uint_t;
 
 // Whether to emit ARMv7-M instruction support in thumb native code
 #ifndef MICROPY_EMIT_THUMB_ARMV7M
+#if defined(__ARM_ARCH_ISA_THUMB) && __ARM_ARCH_ISA_THUMB == 2
 #define MICROPY_EMIT_THUMB_ARMV7M (1)
+#else
+#define MICROPY_EMIT_THUMB_ARMV7M (0)
+#endif
 #endif
 
 // Whether to enable the thumb inline assembler
@@ -484,7 +493,11 @@ typedef uint64_t mp_uint_t;
 
 // Whether to enable float support in the Thumb2 inline assembler
 #ifndef MICROPY_EMIT_INLINE_THUMB_FLOAT
+#if defined(__ARM_ARCH_ISA_THUMB) && __ARM_ARCH_ISA_THUMB == 2 && defined(__ARM_FP)
 #define MICROPY_EMIT_INLINE_THUMB_FLOAT (1)
+#else
+#define MICROPY_EMIT_INLINE_THUMB_FLOAT (0)
+#endif
 #endif
 
 // Whether to emit ARM native code
@@ -522,6 +535,11 @@ typedef uint64_t mp_uint_t;
 #define MICROPY_EMIT_RV32_ZBA (0)
 #endif
 
+// Whether to emit RISC-V RV32 Zcmp opcodes in native code
+#ifndef MICROPY_EMIT_RV32_ZCMP
+#define MICROPY_EMIT_RV32_ZCMP (0)
+#endif
+
 // Whether to enable the RISC-V RV32 inline assembler
 #ifndef MICROPY_EMIT_INLINE_RV32
 #define MICROPY_EMIT_INLINE_RV32 (0)
@@ -545,6 +563,10 @@ typedef uint64_t mp_uint_t;
 
 // Convenience definition for whether any native or inline assembler emitter is enabled
 #define MICROPY_EMIT_MACHINE_CODE (MICROPY_EMIT_NATIVE || MICROPY_EMIT_INLINE_ASM)
+
+// Convenience definition for whether native code has to be dealt with (either
+// generated or loaded from a file).  This does not cover inline asm code.
+#define MICROPY_ENABLE_NATIVE_CODE (MICROPY_EMIT_NATIVE || MICROPY_PERSISTENT_CODE_LOAD_NATIVE)
 
 /*****************************************************************************/
 /* Compiler configuration                                                    */
@@ -1126,6 +1148,12 @@ typedef time_t mp_timestamp_t;
 #define MICROPY_STREAMS_POSIX_API (0)
 #endif
 
+// Whether to delegate error raising to stream implementations using the
+// MP_STREAM_RAISE_ERROR ioctl to support raising more detailed messages.
+#ifndef MICROPY_STREAMS_DELEGATE_ERROR
+#define MICROPY_STREAMS_DELEGATE_ERROR (MICROPY_CONFIG_ROM_LEVEL_AT_LEAST_EXTRA_FEATURES)
+#endif
+
 // Whether to process __all__ when importing all public symbols from a module.
 #ifndef MICROPY_MODULE___ALL__
 #define MICROPY_MODULE___ALL__ (MICROPY_CONFIG_ROM_LEVEL_AT_LEAST_BASIC_FEATURES)
@@ -1160,7 +1188,7 @@ typedef time_t mp_timestamp_t;
 // have __init__ methods. Instead, the top-level package's __init__ should
 // initialise all sub-packages.
 #ifndef MICROPY_MODULE_BUILTIN_SUBPACKAGES
-#define MICROPY_MODULE_BUILTIN_SUBPACKAGES (MICROPY_CONFIG_ROM_LEVEL_AT_LEAST_EVERYTHING)
+#define MICROPY_MODULE_BUILTIN_SUBPACKAGES (MICROPY_PY_TSTRINGS || MICROPY_CONFIG_ROM_LEVEL_AT_LEAST_EVERYTHING)
 #endif
 
 // Whether to support module-level __getattr__ (see PEP 562)
@@ -1253,6 +1281,11 @@ typedef time_t mp_timestamp_t;
 #define MICROPY_VFS (0)
 #endif
 
+// Whether to include support for fast native block devices.
+#ifndef MICROPY_VFS_BLOCKDEV_NATIVE
+#define MICROPY_VFS_BLOCKDEV_NATIVE (0)
+#endif
+
 // Whether to include support for writable filesystems.
 #ifndef MICROPY_VFS_WRITABLE
 #define MICROPY_VFS_WRITABLE (1)
@@ -1310,7 +1343,7 @@ typedef time_t mp_timestamp_t;
 
 // Whether to implement the __code__ attribute on functions, and function constructor
 #ifndef MICROPY_PY_FUNCTION_ATTRS_CODE
-#define MICROPY_PY_FUNCTION_ATTRS_CODE (MICROPY_CONFIG_ROM_LEVEL_AT_LEAST_FULL_FEATURES)
+#define MICROPY_PY_FUNCTION_ATTRS_CODE (MICROPY_PY_MARSHAL || MICROPY_CONFIG_ROM_LEVEL_AT_LEAST_FULL_FEATURES)
 #endif
 
 // Whether bound_method can just use == (feature disabled), or requires a call to
@@ -1345,6 +1378,12 @@ typedef time_t mp_timestamp_t;
 #define MICROPY_PY_FSTRINGS (MICROPY_CONFIG_ROM_LEVEL_AT_LEAST_EXTRA_FEATURES)
 #endif
 
+// Support for template strings, t-strings (see PEP 750, Python 3.14+)
+// Requires MICROPY_PY_FSTRINGS to be enabled.
+#ifndef MICROPY_PY_TSTRINGS
+#define MICROPY_PY_TSTRINGS (MICROPY_PY_FSTRINGS && MICROPY_CONFIG_ROM_LEVEL_AT_LEAST_FULL_FEATURES)
+#endif
+
 // Support for assignment expressions with := (see PEP 572, Python 3.8+)
 #ifndef MICROPY_PY_ASSIGN_EXPR
 #define MICROPY_PY_ASSIGN_EXPR (MICROPY_CONFIG_ROM_LEVEL_AT_LEAST_CORE_FEATURES)
@@ -1371,12 +1410,17 @@ typedef time_t mp_timestamp_t;
 
 // Whether str object is proper unicode
 #ifndef MICROPY_PY_BUILTINS_STR_UNICODE
-#define MICROPY_PY_BUILTINS_STR_UNICODE (MICROPY_CONFIG_ROM_LEVEL_AT_LEAST_EXTRA_FEATURES)
+#define MICROPY_PY_BUILTINS_STR_UNICODE (MICROPY_CONFIG_ROM_LEVEL_AT_LEAST_BASIC_FEATURES)
 #endif
 
 // Whether to check for valid UTF-8 when converting bytes to str
 #ifndef MICROPY_PY_BUILTINS_STR_UNICODE_CHECK
 #define MICROPY_PY_BUILTINS_STR_UNICODE_CHECK (MICROPY_PY_BUILTINS_STR_UNICODE)
+#endif
+
+// Whether bytes.decode() supports the 'ignore' and 'replace' error handlers
+#ifndef MICROPY_PY_BUILTINS_BYTES_DECODE_ERRORS
+#define MICROPY_PY_BUILTINS_BYTES_DECODE_ERRORS (MICROPY_CONFIG_ROM_LEVEL_AT_LEAST_EXTRA_FEATURES)
 #endif
 
 // Whether str.center() method provided
@@ -1430,7 +1474,7 @@ typedef time_t mp_timestamp_t;
 
 // Whether to support memoryview.itemsize attribute
 #ifndef MICROPY_PY_BUILTINS_MEMORYVIEW_ITEMSIZE
-#define MICROPY_PY_BUILTINS_MEMORYVIEW_ITEMSIZE (MICROPY_CONFIG_ROM_LEVEL_AT_LEAST_EVERYTHING)
+#define MICROPY_PY_BUILTINS_MEMORYVIEW_ITEMSIZE (MICROPY_PY_MACHINE_MEM_BACKUP || MICROPY_CONFIG_ROM_LEVEL_AT_LEAST_BASIC_FEATURES)
 #endif
 
 // Whether to support set object
@@ -1486,6 +1530,11 @@ typedef time_t mp_timestamp_t;
 // Whether to support rounding of integers (incl bignum); eg round(123,-1)=120
 #ifndef MICROPY_PY_BUILTINS_ROUND_INT
 #define MICROPY_PY_BUILTINS_ROUND_INT (MICROPY_CONFIG_ROM_LEVEL_AT_LEAST_EXTRA_FEATURES)
+#endif
+
+// Whether to implement dir() to enumerate object fields.
+#ifndef MICROPY_PY_BUILTINS_DIR
+#define MICROPY_PY_BUILTINS_DIR (MICROPY_CONFIG_ROM_LEVEL_AT_LEAST_CORE_FEATURES)
 #endif
 
 // Whether to support complete set of special methods for user
@@ -1576,6 +1625,16 @@ typedef time_t mp_timestamp_t;
 // Add the ability to list the available modules when executing help('modules')
 #ifndef MICROPY_PY_BUILTINS_HELP_MODULES
 #define MICROPY_PY_BUILTINS_HELP_MODULES (MICROPY_CONFIG_ROM_LEVEL_AT_LEAST_EXTRA_FEATURES)
+#endif
+
+// Use this to configure output of help('modules')
+#ifndef MICROPY_PY_BUILTINS_HELP_NUM_COLUMNS
+#define MICROPY_PY_BUILTINS_HELP_NUM_COLUMNS (4)
+#endif
+
+// Use this to configure output of help('modules')
+#ifndef MICROPY_PY_BUILTINS_HELP_COLUMN_WIDTH
+#define MICROPY_PY_BUILTINS_HELP_COLUMN_WIDTH (18)
 #endif
 
 // Whether to provide mem-info related functions in micropython module
@@ -1881,7 +1940,7 @@ typedef time_t mp_timestamp_t;
 // implementation). This is present for compatibility but can be disabled to
 // save space.
 #ifndef MICROPY_PY_SELECT_SELECT
-#define MICROPY_PY_SELECT_SELECT (1)
+#define MICROPY_PY_SELECT_SELECT (MICROPY_CONFIG_ROM_LEVEL_AT_LEAST_EXTRA_FEATURES)
 #endif
 
 // Whether to provide the "time" module
@@ -1929,6 +1988,11 @@ typedef time_t mp_timestamp_t;
 // Is a recursive mutex type in use?
 #ifndef MICROPY_PY_THREAD_RECURSIVE_MUTEX
 #define MICROPY_PY_THREAD_RECURSIVE_MUTEX (MICROPY_PY_THREAD && !MICROPY_PY_THREAD_GIL)
+#endif
+
+// Whether to provide the "weakref" module.
+#ifndef MICROPY_PY_WEAKREF
+#define MICROPY_PY_WEAKREF (MICROPY_CONFIG_ROM_LEVEL_AT_LEAST_EVERYTHING)
 #endif
 
 // Extended modules
@@ -2085,6 +2149,11 @@ typedef time_t mp_timestamp_t;
 #define MICROPY_PY_MACHINE_MEMX (MICROPY_PY_MACHINE)
 #endif
 
+// Whether to provide the "machine.mem_backup" function
+#ifndef MICROPY_PY_MACHINE_MEM_BACKUP
+#define MICROPY_PY_MACHINE_MEM_BACKUP (0)
+#endif
+
 // Whether to provide the "machine.Signal" class
 #ifndef MICROPY_PY_MACHINE_SIGNAL
 #define MICROPY_PY_MACHINE_SIGNAL (MICROPY_PY_MACHINE)
@@ -2127,6 +2196,16 @@ typedef time_t mp_timestamp_t;
 // The default backlog value for socket.listen(backlog)
 #ifndef MICROPY_PY_SOCKET_LISTEN_BACKLOG_DEFAULT
 #define MICROPY_PY_SOCKET_LISTEN_BACKLOG_DEFAULT (2)
+#endif
+
+// Whether to enable lwIP bindings to be used as the implementation of the `socket` module
+#ifndef MICROPY_PY_LWIP
+#define MICROPY_PY_LWIP (0)
+#endif
+
+// Whether to support raw sockets via the `socket.SOCK_RAW` constant
+#ifndef MICROPY_PY_LWIP_SOCK_RAW
+#define MICROPY_PY_LWIP_SOCK_RAW (MICROPY_PY_LWIP)
 #endif
 
 #ifndef MICROPY_PY_SSL
@@ -2327,7 +2406,7 @@ typedef time_t mp_timestamp_t;
 // can be overridden if needed by defining both MICROPY_PERSISTENT_CODE_TRACK_FUN_DATA
 // and MICROPY_PERSISTENT_CODE_TRACK_BSS_RODATA.
 #ifndef MICROPY_PERSISTENT_CODE_TRACK_FUN_DATA
-#if MICROPY_EMIT_MACHINE_CODE && MICROPY_PERSISTENT_CODE_LOAD
+#if (MICROPY_EMIT_INLINE_ASM || MICROPY_ENABLE_NATIVE_CODE) && MICROPY_PERSISTENT_CODE_LOAD
 // Pointer tracking is required when loading native code is enabled.
 #if defined(MP_PLAT_ALLOC_EXEC) || defined(MP_PLAT_COMMIT_EXEC)
 // If a port defined a custom allocator or commit function for native text, then the
@@ -2348,7 +2427,7 @@ typedef time_t mp_timestamp_t;
 #define MICROPY_PERSISTENT_CODE_TRACK_FUN_DATA (1)
 #define MICROPY_PERSISTENT_CODE_TRACK_BSS_RODATA (0)
 #endif
-#else // MICROPY_EMIT_MACHINE_CODE && MICROPY_PERSISTENT_CODE_LOAD
+#else // (MICROPY_EMIT_INLINE_ASM || MICROPY_ENABLE_NATIVE_CODE) && MICROPY_PERSISTENT_CODE_LOAD
 // Pointer tracking not needed when loading native code is disabled.
 #define MICROPY_PERSISTENT_CODE_TRACK_FUN_DATA (0)
 #define MICROPY_PERSISTENT_CODE_TRACK_BSS_RODATA (0)
@@ -2462,7 +2541,7 @@ typedef time_t mp_timestamp_t;
 
 #ifndef MP_HTOBE16
 #if MP_ENDIANNESS_LITTLE
-#define MP_HTOBE16(x) ((uint16_t)((((x) & 0xff) << 8) | (((x) >> 8) & 0xff)))
+#define MP_HTOBE16(x) MP_BSWAP16(x)
 #define MP_BE16TOH(x) MP_HTOBE16(x)
 #else
 #define MP_HTOBE16(x) (x)
@@ -2472,7 +2551,7 @@ typedef time_t mp_timestamp_t;
 
 #ifndef MP_HTOBE32
 #if MP_ENDIANNESS_LITTLE
-#define MP_HTOBE32(x) ((uint32_t)((((x) & 0xff) << 24) | (((x) & 0xff00) << 8) | (((x) >> 8) & 0xff00) | (((x) >> 24) & 0xff)))
+#define MP_HTOBE32(x) MP_BSWAP32(x)
 #define MP_BE32TOH(x) MP_HTOBE32(x)
 #else
 #define MP_HTOBE32(x) (x)

@@ -38,6 +38,13 @@ bool vm_used_ble;
 // }
 
 void common_hal_bleio_init(void) {
+    // Called on every import of _bleio. This is the only initialization HCI gets:
+    // unlike other ports, nothing runs at board startup, because HCI is unusable
+    // until user code supplies an adapter (UART, etc.) anyway.
+    // Create a UUID object for all CCCD's.
+    cccd_uuid.base.type = &bleio_uuid_type;
+    common_hal_bleio_uuid_construct(&cccd_uuid, BLE_UUID_CCCD, NULL);
+    bleio_hci_reset();
 }
 
 void bleio_user_reset(void) {
@@ -47,10 +54,6 @@ void bleio_user_reset(void) {
 
 // Turn off BLE on a reset or reload.
 void bleio_reset(void) {
-    // Create a UUID object for all CCCD's.
-    cccd_uuid.base.type = &bleio_uuid_type;
-    common_hal_bleio_uuid_construct(&cccd_uuid, BLE_UUID_CCCD, NULL);
-
     bleio_hci_reset();
 
     if (!common_hal_bleio_adapter_get_enabled(&common_hal_bleio_adapter_obj)) {

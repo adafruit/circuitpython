@@ -13,38 +13,41 @@
 // The format of the compressed data is:
 // - the size of the uncompressed string in UTF-8 bytes, encoded as a
 //   (compress_max_length_bits)-bit number.  compress_max_length_bits is
-//   computed during dictionary generation time, and happens to be 8
-//   for all current platforms.  However, it'll probably end up being
-//   9 in some translations sometime in the future.  This length excludes
+//   computed during dictionary generation time, and is 8 for all
+//   current translations except ru, which needs 9.  This length excludes
 //   the trailing NUL, though notably decompress_length includes it.
 //
-// - followed by the huffman encoding of the individual code
-//   points that make up the string.  The trailing "\0" is not
-//   represented by a huffman code, but is implied by the length.
-//   (building the huffman encoding on UTF-16 code points gave better
-//   compression than building it on UTF-8 bytes)
+// - followed by the huffman encoding of the symbols that make up the
+//   string.  The trailing "\0" is not represented by a huffman code, but
+//   is implied by the length.
 //
-// - If possible, the code points are represented as uint8_t values, with
-//   0..127 representing themselves and 160..255 representing another range
-//   of Unicode, controlled by translation_offset and translation_offstart.
-//   If this is not possible, uint16_t values are used. At present, no translation
-//   requires code points not in the BMP, so this is adequate.
+// - Each symbol is coded with one of TRANSLATION_CLASSES canonical Huffman
+//   tables, chosen by the class of the previously decoded byte: start of
+//   string or space, lowercase, uppercase, digit, '%', other, or >= 0x80.
+//   base_class() computes that seven-way class and class_map[] collapses it
+//   to a table index; the generator picks how many tables pay for themselves.
+//   The per-table code-length counts are rows of LENGTHS_ROW bytes in
+//   lengths[], and the symbols of table n are values[values_offset[n]..].
 //
-// - code points starting at 128 (word_start) and potentially extending
-//   to 255 (word_end) (but never interfering with the target
-//   language's used code points) stand for dictionary entries in a
-//   dictionary with size up to 256 code points.  The dictionary entries
-//   are computed with a heuristic based on frequent substrings of 2 to
-//   9 code points.  These are called "words" but are not, grammatically
-//   speaking, words.  They're just spans of code points that frequently
-//   occur together.  They are ordered shortest to longest.
+// - Symbol values 0..0x7F are ASCII (with 1, 2 and 3 reserved for the
+//   escapes below).  Values from 0x80 up to 0x80 + alphabet_size - 1 are the
+//   most frequent non-ASCII characters used by the translation, renumbered
+//   by decreasing frequency; alphabet[] maps them back to Unicode code
+//   points.  Most translations fit their whole non-ASCII repertoire in the
+//   alphabet.  Those that don't (ja, ko) keep the 32 to 80 most frequent
+//   characters there and escape the rest: value 2 is followed by a
+//   rare_index_bits-bit index into rare_chars[] (characters used more than
+//   once), value 3 by a raw 16-bit code point (characters used once, which
+//   are cheaper without a table entry).  All symbols are therefore 8 bits.
+//   At present, no translation requires code points outside the BMP, so
+//   this is adequate.
 //
-// - If the translation uses a lot of code points or widely spaced code points,
-//   then the huffman table entries are UTF-16 code points. But if the translation
-//   uses only ASCII 7-bit code points plus a SMALL range of higher code points that
-//   still fit in 8 bits, translation_offset and translation_offstart are used to
-//   renumber the code points so that they still fit within 8 bits. (it's very beneficial
-//   for mchar_t to be 8 bits instead of 16!)
+// - Symbol values from word_start to word_end stand for dictionary entries
+//   in a dictionary of up to 256 - word_start entries.  The dictionary
+//   entries are computed with a heuristic based on frequent substrings of 2
+//   to 11 symbols.  These are called "words" but are not, grammatically
+//   speaking, words.  They're just spans of symbols that frequently occur
+//   together.  They are ordered shortest to longest.
 //
 // - dictionary entries are non-overlapping, and the _ending_ index of each
 //   entry is stored in an array.  A count of words of each length, from
@@ -56,10 +59,11 @@
 // - Value 1 ('\1') is used to indicate that a QSTR number follows. the
 //   QSTR is encoded as a fixed number of bits (translation_qstr_bits), e.g.,
 //   10 bits if the highest core qstr is from 512 to 1023 inclusive.
-//   (maketranslationdata uses a simple heuristic where any qstr >= 3
-//   characters long is encoded in this way; this is simple but probably not
-//   optimal. In fact, the rule of >= 2 characters is better for SOME languages
-//   on SOME boards.)
+//   (maketranslationdata uses a simple heuristic where any qstr >= 4
+//   characters long may be encoded in this way; whether a given occurrence
+//   is coded as a qstr or as characters is decided per occurrence by the
+//   parser, which picks the tokenization of each string that takes the
+//   fewest bits.)
 //
 // The "data" / "tail" construct is so that the struct's last member is a
 // "flexible array".  However, the _only_ member is not permitted to be
@@ -75,6 +79,26 @@ typedef struct compressed_string {
     uint8_t data;
     const uint8_t tail[];
 } const *mp_rom_error_text_t;
+
+// Class of the previously decoded byte, which selects the Huffman table for
+// the next symbol. Must match base_class() in py/maketranslationdata.py.
+typedef enum {
+    CLASS_START_OR_SPACE = 0,
+    CLASS_LOWER = 1,
+    CLASS_UPPER = 2,
+    CLASS_DIGIT = 3,
+    CLASS_OTHER = 4,
+    CLASS_PERCENT = 5,
+    CLASS_NON_ASCII = 6,
+} translation_class_t;
+
+// Symbol values with a special meaning; every other value is a character or a
+// dictionary word. Must match py/maketranslationdata.py.
+typedef enum {
+    SYMBOL_QSTR = 1,        // followed by translation_qstr_bits bits of qstr index
+    SYMBOL_RARE_INDEX = 2,  // followed by rare_index_bits bits of rare_chars[] index
+    SYMBOL_RARE_RAW = 3,    // followed by a 16-bit code point
+} translation_symbol_t;
 
 // Return the compressed, translated version of a source string
 // Usually, due to LTO, this is optimized into a load of a constant

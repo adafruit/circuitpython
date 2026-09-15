@@ -91,6 +91,20 @@ MP_NORETURN void mp_raise_bleio_SecurityError(mp_rom_error_text_t fmt, ...) {
     nlr_raise(exception);
 }
 
+static bool _user_services_created;
+
+bool bleio_get_user_services_created(void) {
+    return _user_services_created;
+}
+
+void bleio_set_user_services_created(void) {
+    _user_services_created = true;
+}
+
+void bleio_clear_user_services_created(void) {
+    _user_services_created = false;
+}
+
 // Called when _bleio is imported.
 static mp_obj_t bleio___init__(void) {
 // HCI cannot be enabled on import, because we need to setup the HCI adapter first.

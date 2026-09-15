@@ -84,7 +84,12 @@ print("done")
 @pytest.mark.zephyr_sample("tests/bsim/samples/central_battery_client")
 @pytest.mark.duration(14)
 @pytest.mark.circuitpy_drive(
-    {"code.py": BSIM_SERVICE_CODE, "battery_service.py": BATTERY_LIB, **_ADAFRUIT_BLE}
+    {
+        "code.py": BSIM_SERVICE_CODE,
+        "settings.toml": "CIRCUITPY_BLE_WORKFLOW = false\n",
+        "battery_service.py": BATTERY_LIB,
+        **_ADAFRUIT_BLE,
+    }
 )
 def test_bsim_service_battery(bsim_phy, circuitpython, zephyr_sample):
     """CP hosts BatteryService; Zephyr central reads battery level."""
@@ -177,7 +182,7 @@ print("disconnected", not connection.connected)
 """
 
 
-@pytest.mark.duration(14)
+@pytest.mark.duration(30)
 @pytest.mark.circuitpy_drive(
     {"code.py": BSIM_SERVER_CODE, "battery_service.py": BATTERY_LIB, **_ADAFRUIT_BLE}
 )
@@ -294,7 +299,7 @@ print("done")
 """
 
 
-@pytest.mark.duration(14)
+@pytest.mark.duration(35)
 @pytest.mark.circuitpy_drive(
     {
         "code.py": BSIM_DISCOVER_ALL_SERVER_CODE,
@@ -440,7 +445,7 @@ print("done")
 """
 
 
-@pytest.mark.duration(14)
+@pytest.mark.duration(25)
 @pytest.mark.circuitpy_drive(
     {"code.py": BSIM_MULTI_CHAR_SERVER_CODE, "multi_service.py": MULTI_LIB, **_ADAFRUIT_BLE}
 )
@@ -510,7 +515,7 @@ print("done")
 """
 
 
-@pytest.mark.duration(14)
+@pytest.mark.duration(25)
 @pytest.mark.circuitpy_drive(
     {"code.py": BSIM_MULTI_CHAR_SERVER_CODE, "multi_service.py": MULTI_LIB, **_ADAFRUIT_BLE}
 )
@@ -625,7 +630,7 @@ print("done")
 """
 
 
-@pytest.mark.duration(14)
+@pytest.mark.duration(25)
 @pytest.mark.circuitpy_drive(
     {"code.py": BSIM_CUSTOM_UUID_SERVER_CODE, "custom_service.py": CUSTOM_LIB, **_ADAFRUIT_BLE}
 )
@@ -689,7 +694,7 @@ print("done")
 """
 
 
-@pytest.mark.duration(14)
+@pytest.mark.duration(30)
 @pytest.mark.circuitpy_drive(
     {"code.py": BSIM_CUSTOM_UUID_SERVER_CODE, "custom_service.py": CUSTOM_LIB, **_ADAFRUIT_BLE}
 )

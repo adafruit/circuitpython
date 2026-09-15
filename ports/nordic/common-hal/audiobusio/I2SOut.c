@@ -16,6 +16,8 @@
 #include "py/obj.h"
 #include "py/runtime.h"
 
+#include "nrf_gpio.h"
+
 static audiobusio_i2sout_obj_t *instance;
 
 struct { int16_t l, r;
@@ -191,9 +193,6 @@ void common_hal_audiobusio_i2sout_construct(audiobusio_i2sout_obj_t *self,
     const mcu_pin_obj_t *bit_clock, const mcu_pin_obj_t *word_select,
     const mcu_pin_obj_t *data, const mcu_pin_obj_t *main_clock, bool left_justified,
     bool external_clock) {
-    if (external_clock) {
-        mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("%q"), MP_QSTR_external_clock);
-    }
     if (main_clock != NULL) {
         mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("%q"), MP_QSTR_main_clock);
     }
@@ -206,14 +205,23 @@ void common_hal_audiobusio_i2sout_construct(audiobusio_i2sout_obj_t *self,
     claim_pin(word_select);
     claim_pin(data);
 
+    self->external_clock = external_clock;
+
     NRF_I2S->PSEL.SCK = self->bit_clock_pin_number = bit_clock->number;
     NRF_I2S->PSEL.LRCK = self->word_select_pin_number = word_select->number;
     NRF_I2S->PSEL.SDOUT = self->data_pin_number = data->number;
 
-    NRF_I2S->CONFIG.MODE = I2S_CONFIG_MODE_MODE_Master;
+    if (external_clock) {
+        nrf_gpio_cfg_input(bit_clock->number, NRF_GPIO_PIN_NOPULL);
+        nrf_gpio_cfg_input(word_select->number, NRF_GPIO_PIN_NOPULL);
+    }
+
+    NRF_I2S->CONFIG.MODE = external_clock ? I2S_CONFIG_MODE_MODE_Slave
+                                          : I2S_CONFIG_MODE_MODE_Master;
     NRF_I2S->CONFIG.RXEN = I2S_CONFIG_RXEN_RXEN_Disabled;
     NRF_I2S->CONFIG.TXEN = I2S_CONFIG_TXEN_TXEN_Enabled;
-    NRF_I2S->CONFIG.MCKEN = I2S_CONFIG_MCKEN_MCKEN_Enabled;
+    NRF_I2S->CONFIG.MCKEN = external_clock ? I2S_CONFIG_MCKEN_MCKEN_Disabled
+                                           : I2S_CONFIG_MCKEN_MCKEN_Enabled;
     NRF_I2S->CONFIG.SWIDTH = I2S_CONFIG_SWIDTH_SWIDTH_16Bit;
 
     NRF_I2S->CONFIG.ALIGN = I2S_CONFIG_ALIGN_ALIGN_Left;
@@ -233,6 +241,10 @@ void common_hal_audiobusio_i2sout_deinit(audiobusio_i2sout_obj_t *self) {
     }
     NRF_I2S->TASKS_STOP = 1;
     NRF_I2S->ENABLE = I2S_ENABLE_ENABLE_Disabled;
+    if (self->external_clock) {
+        nrf_gpio_cfg_default(self->bit_clock_pin_number);
+        nrf_gpio_cfg_default(self->word_select_pin_number);
+    }
     reset_pin_number(self->bit_clock_pin_number);
     self->bit_clock_pin_number = NO_PIN;
     reset_pin_number(self->word_select_pin_number);
@@ -272,7 +284,11 @@ void common_hal_audiobusio_i2sout_play(audiobusio_i2sout_obj_t *self,
         ? I2S_CONFIG_CHANNELS_CHANNELS_Left
         : I2S_CONFIG_CHANNELS_CHANNELS_Stereo;
 
-    choose_i2s_clocking(self, sample_rate);
+    if (self->external_clock) {
+        self->sample_rate = sample_rate;
+    } else {
+        choose_i2s_clocking(self, sample_rate);
+    }
     /* Allocate buffers based on a maximum duration
      * This duration was chosen empirically based on what would
      * cause os.listdir('') to cause stuttering.  It seems like a

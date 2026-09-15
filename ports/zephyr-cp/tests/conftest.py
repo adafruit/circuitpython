@@ -49,7 +49,7 @@ def pytest_configure(config):
     )
     config.addinivalue_line(
         "markers",
-        "code_py_runs(count): stop native_sim after count code.py runs (default: 1)",
+        "port_resets(count): stop native_sim after count port_reset()s (default: 2)",
     )
     config.addinivalue_line(
         "markers",
@@ -149,14 +149,21 @@ def log_uart_trace_output(trace_file: Path) -> None:
             )
 
 
-@pytest.fixture
+# Native_sim boards each test runs against: the non-asan default and the
+# asan-enabled build, so memory errors fail tests.
+NATIVE_BOARDS = ["native_native_sim", "native_native_sim_asan"]
+
+
+@pytest.fixture(params=NATIVE_BOARDS)
 def board(request):
+    """Parametrized over both native_sim builds (non-asan and asan).
+
+    The bsim conftest overrides this fixture with its own bsim boards.
+    """
     board = request.node.get_closest_marker("circuitpython_board")
     if board is not None:
-        board = board.args[0]
-    else:
-        board = "native_native_sim"
-    return board
+        return board.args[0]
+    return request.param
 
 
 @pytest.fixture
@@ -172,7 +179,12 @@ def native_sim_binary(request, board):
 
 @pytest.fixture
 def native_sim_env() -> dict[str, str]:
-    return {}
+    env = {}
+    # Always pick the video driver explicitly. Always using dummy works in a
+    # bubblewrap sandbox and avoids GL teardown issues on GitHub Actions.
+    if not os.environ.get("SDL_VIDEODRIVER"):
+        env["SDL_VIDEODRIVER"] = "dummy"
+    return env
 
 
 PIXEL_FORMAT_BITMASK = {
@@ -231,11 +243,13 @@ def circuitpython(request, board, sim_id, native_sim_binary, native_sim_env, tmp
     else:
         timeout = marker.args[0]
 
-    runs_marker = request.node.get_closest_marker("code_py_runs")
-    if runs_marker is None:
-        code_py_runs = 1
+    resets_marker = request.node.get_closest_marker("port_resets")
+    # Main does one reset on start up and then one on each VM clean up. It also
+    # does one after printing the safe mode message.
+    if resets_marker is None:
+        port_resets = 2
     else:
-        code_py_runs = int(runs_marker.args[0])
+        port_resets = int(resets_marker.args[0])
 
     display_marker = request.node.get_closest_marker("display")
     if display_marker is None:
@@ -325,12 +339,20 @@ def circuitpython(request, board, sim_id, native_sim_binary, native_sim_env, tmp
                     f"-uart{uart_n}_pty",
                     f"-uart{uart_n}_pty_wait_for_readers",
                     "-uart_pty_wait",
-                    f"--vm-runs={code_py_runs + 1}",
+                    # Use the real AES implementation (libCryptov1.so) for the
+                    # link layer instead of BabbleSim's plain-text stand-in.
+                    # The nRF54L HW models route AES through several different
+                    # stand-ins (ECB/CCM copy the data, CRACEN scrambles it),
+                    # which are not consistent with each other, so LE
+                    # encryption only works with real AES. Zephyr's own bsim
+                    # encryption tests pass -RealEncryption=1 for the same
+                    # reason.
+                    "-RealEncryption=1",
+                    f"--port-resets={port_resets}",
                 )
             )
         else:
             cmd = [str(native_sim_binary), f"--flash={flash}"]
-            # native_sim vm-runs includes the boot VM setup run.
             realtime_flag = "-rt" if use_realtime else "-no-rt"
             cmd.extend(
                 (
@@ -338,9 +360,17 @@ def circuitpython(request, board, sim_id, native_sim_binary, native_sim_env, tmp
                     "-display_headless",
                     "-i2s_earless",
                     "-wait_uart",
-                    f"--vm-runs={code_py_runs + 1}",
+                    f"--port-resets={port_resets}",
                 )
             )
+            # Capture tests hold their last frame forever; stop the simulator at the
+            # test's duration in simulated time instead of waiting out the timeout.
+            if capture_times_ns and not use_realtime:
+                cmd.append(f"-stop_at={timeout}")
+
+        # Always preserve retained memory (e.g. the safe-mode saved word) in
+        # in case of reboot.
+        cmd.append(f"--retained-memory={tmp_path / f'retained-{i}.bin'}")
 
         if flash_erase_block_size is not None:
             cmd.append(f"--flash_erase_block_size={flash_erase_block_size}")

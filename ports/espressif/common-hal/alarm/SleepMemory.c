@@ -24,6 +24,15 @@ void alarm_sleep_memory_reset(void) {
     // reset, watchdog, panic, deep sleep wake). Clear on everything else —
     // after power-on, SRAM contents are undefined; after brown-out, the RTC
     // domain was reset by hardware (System Reset scope per TRM Figure 6.1-1).
+    //
+    // esp_reset_reason() does not change across supervisor reloads,
+    // so do this check only once per chip reset.
+    static bool checked_reset_reason = false;
+    if (checked_reset_reason) {
+        return;
+    }
+    checked_reset_reason = true;
+
     esp_reset_reason_t reason = esp_reset_reason();
     switch (reason) {
         case ESP_RST_SW:        // microcontroller.reset() / esp_restart()

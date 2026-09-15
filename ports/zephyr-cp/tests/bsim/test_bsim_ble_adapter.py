@@ -80,6 +80,7 @@ def test_bsim_adapter_disable_stops_advertising(bsim_phy, circuitpython):
 # --- Adapter state across soft reload ---
 
 BSIM_ENABLE_RELOAD_CODE = """\
+import time
 import _bleio
 
 adapter = _bleio.adapter
@@ -88,13 +89,21 @@ print("enabled", adapter.enabled)
 print("advertising", adapter.advertising)
 print("connected", adapter.connected)
 print("done")
+# The sim exits right after the second run's VM cleanup (port_resets). Give the
+# UART time to deliver the lines above to the pty before that happens.
+time.sleep(0.5)
 """
 
 
-@pytest.mark.code_py_runs(2)
+@pytest.mark.port_resets(3)
+@pytest.mark.duration(30)
 @pytest.mark.circuitpy_drive({"code.py": BSIM_ENABLE_RELOAD_CODE})
 def test_bsim_adapter_state_after_reload(bsim_phy, circuitpython):
-    """Adapter state is clean after soft reload."""
+    """Adapter state is consistent across a soft reload.
+
+    The BLE workflow is advertising on this device, and `import _bleio` must not
+    disturb it, so adapter.advertising reads True on both runs (as on nordic).
+    """
     circuitpython.serial.wait_for("done")
     circuitpython.serial.wait_for("Press any key to enter the REPL")
     circuitpython.serial.write("\x04")
@@ -103,7 +112,7 @@ def test_bsim_adapter_state_after_reload(bsim_phy, circuitpython):
 
     output = circuitpython.serial.all_output
     assert output.count("enabled True") >= 2
-    assert output.count("advertising False") >= 2
+    assert output.count("advertising True") >= 2
     assert output.count("connected False") >= 2
 
 

@@ -96,7 +96,7 @@ print("done")
 """
 
 
-@pytest.mark.duration(14)
+@pytest.mark.duration(30)
 @pytest.mark.circuitpy_drive({"code.py": BSIM_DESC_SERVER_CODE})
 @pytest.mark.circuitpy_drive({"code.py": BSIM_DESC_CLIENT_CODE})
 def test_bsim_descriptor_user_description(bsim_phy, circuitpython1, circuitpython2):

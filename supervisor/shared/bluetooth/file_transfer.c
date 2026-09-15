@@ -38,6 +38,10 @@ static mp_obj_t characteristic_list_items[2];
 // uint32_t so its aligned
 static uint32_t _buffer[PACKET_BUFFER_SIZE / 4 + 1];
 static uint32_t _outgoing1[BLEIO_PACKET_BUFFER_MAX_PACKET_SIZE / 4];
+// TODO: _outgoing2 is unused on espressif, whose NimBLE send calls copy the data
+// rather than retaining the buffer as the nordic SoftDevice does. Letting a port
+// declare how many outgoing buffers it needs would drop this static allocation
+// there; nordic requires both.
 static uint32_t _outgoing2[BLEIO_PACKET_BUFFER_MAX_PACKET_SIZE / 4];
 static ble_event_handler_t static_handler_entry;
 static bleio_packet_buffer_obj_t _transfer_packet_buffer;

@@ -12,6 +12,7 @@
 #include <zephyr/sys/slist.h>
 
 #include "py/runtime.h"
+#include "py/gc.h"
 #include "bindings/zephyr_kernel/__init__.h"
 #include "shared-bindings/_bleio/__init__.h"
 #include "shared-bindings/_bleio/Characteristic.h"
@@ -95,6 +96,7 @@ uint16_t bleio_security_to_zephyr_perm(
 ssize_t bleio_char_read_cb(struct bt_conn *conn,
     const struct bt_gatt_attr *attr, void *buf, uint16_t len, uint16_t offset) {
     bleio_characteristic_obj_t *self = attr->user_data;
+    (void)conn;
     return bt_gatt_attr_read(conn, attr, buf, len, offset,
         self->current_value, self->current_value_len);
 }
@@ -103,6 +105,7 @@ ssize_t bleio_char_write_cb(struct bt_conn *conn,
     const struct bt_gatt_attr *attr, const void *buf, uint16_t len,
     uint16_t offset, uint8_t flags) {
     bleio_characteristic_obj_t *self = attr->user_data;
+    (void)flags;
     if (offset + len > self->max_length) {
         return BT_GATT_ERR(BT_ATT_ERR_INVALID_OFFSET);
     }
@@ -134,6 +137,9 @@ bleio_characteristic_properties_t common_hal_bleio_characteristic_get_properties
 }
 
 mp_obj_tuple_t *common_hal_bleio_characteristic_get_descriptors(bleio_characteristic_obj_t *self) {
+    if (self->descriptor_list == NULL) {
+        return mp_const_empty_tuple;
+    }
     return mp_obj_new_tuple(self->descriptor_list->len, self->descriptor_list->items);
 }
 
@@ -189,10 +195,18 @@ void common_hal_bleio_characteristic_construct(bleio_characteristic_obj_t *self,
     self->max_length = max_length;
     self->fixed_length = fixed_length;
     self->observer = mp_const_none;
-    self->descriptor_list = mp_obj_new_list(0, NULL);
+    // The descriptor list is an mp_obj (GC object). When constructed before
+    // gc_init() (e.g. the BLE workflow at boot), the GC heap isn't available,
+    // so leave it NULL and lazily create it on first use. Matches the nordic
+    // port's handling.
+    if (gc_alloc_possible()) {
+        self->descriptor_list = mp_obj_new_list(0, NULL);
+    } else {
+        self->descriptor_list = NULL;
+    }
 
     // Allocate value buffer
-    self->current_value = m_malloc(max_length);
+    self->current_value = port_malloc(max_length, false);
     memset(self->current_value, 0, max_length);
     self->current_value_alloc = max_length;
     self->current_value_len = 0;
@@ -247,6 +261,12 @@ bool common_hal_bleio_characteristic_deinited(bleio_characteristic_obj_t *self) 
 
 void common_hal_bleio_characteristic_deinit(bleio_characteristic_obj_t *self) {
     // Nothing to do - service handles unregistration
+    if (self->current_value != NULL) {
+        port_free(self->current_value);
+        self->current_value = NULL;
+        self->current_value_alloc = 0;
+        self->current_value_len = 0;
+    }
 }
 
 // Struct for tracking GATT notification subscriptions on remote characteristics.
@@ -374,6 +394,9 @@ void common_hal_bleio_characteristic_set_value(bleio_characteristic_obj_t *self,
 
 void common_hal_bleio_characteristic_add_descriptor(bleio_characteristic_obj_t *self,
     bleio_descriptor_obj_t *descriptor) {
+    if (self->descriptor_list == NULL) {
+        self->descriptor_list = mp_obj_new_list(0, NULL);
+    }
     mp_obj_list_append(MP_OBJ_FROM_PTR(self->descriptor_list),
         MP_OBJ_FROM_PTR(descriptor));
     // Descriptors added after characteristic construction would need

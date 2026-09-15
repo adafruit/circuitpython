@@ -141,11 +141,14 @@ void ble_drv_reset(void) {
 void ble_drv_remove_heap_handlers(void) {
     ble_drv_evt_handler_entry_t *it = MP_STATE_VM(ble_drv_evt_handler_entries);
     while (it != NULL) {
-        // If the param is on the heap, then delete the handler.
-        if (gc_ptr_on_heap(it->param)) {
+        // Save it->next before removing, because removing clears it.
+        ble_drv_evt_handler_entry_t *next = it->next;
+        // Remove the handler if the entry or its param is on the heap, which is
+        // about to go away.
+        if (gc_ptr_on_heap(it) || gc_ptr_on_heap(it->param)) {
             ble_drv_remove_event_handler(it->func, it->param);
         }
-        it = it->next;
+        it = next;
     }
 }
 

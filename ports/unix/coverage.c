@@ -279,6 +279,28 @@ static mp_obj_t extra_coverage(void) {
 
         // calling gc_nbytes with a non-heap pointer
         mp_printf(&mp_plat_print, "%d\n", (int)gc_nbytes(NULL));
+
+        // test gc_info_fast
+        void *p0 = gc_alloc(4, 0);
+        void *p1 = gc_alloc(4, 0);
+        void *p2 = gc_alloc(4, 0);
+
+        // Create a hole
+        gc_free(p1);
+
+        gc_info_t info_slow;
+        gc_info_t info_fast;
+
+        gc_info(&info_slow);
+        gc_info_fast(&info_fast);
+
+        // Free allocs
+        gc_free(p0);
+        gc_free(p2);
+
+        // Should be equal
+        mp_printf(&mp_plat_print, "%d\n", info_slow.used == info_fast.used);
+        mp_printf(&mp_plat_print, "%d\n", info_slow.free == info_fast.free);
     }
 
     // GC initialisation and allocation stress test, to check the logic behind ALLOC_TABLE_GAP_BYTE
@@ -346,6 +368,13 @@ static mp_obj_t extra_coverage(void) {
             gc_collect();
         }
 
+        // resize one of the blocks
+        void *before = ptrs[1];
+        ptrs[1] = FLIP_POINTER(m_tracked_realloc(FLIP_POINTER(ptrs[1]), 2 * NUM_BYTES));
+        void *after = ptrs[1];
+        bool location_changed = before != after;
+        mp_printf(&mp_plat_print, "%d\n", location_changed);
+
         // check the memory blocks have the correct content
         for (size_t i = 0; i < NUM_PTRS; ++i) {
             bool correct_contents = true;
@@ -364,6 +393,65 @@ static mp_obj_t extra_coverage(void) {
         }
 
         mp_printf(&mp_plat_print, "m_tracked_head = %p\n", MP_STATE_VM(m_tracked_head));
+
+        // Test realloc with black-box behavioral testing
+        mp_printf(&mp_plat_print, "# tracked realloc\n");
+
+        // Test 1: Basic realloc with data preservation
+        uint8_t *test_ptr = m_tracked_calloc(1, 32);
+        for (int i = 0; i < 32; i++) {
+            test_ptr[i] = i;
+        }
+
+        test_ptr = m_tracked_realloc(test_ptr, 64);  // Grow
+        bool data_preserved = (test_ptr[0] == 0 && test_ptr[31] == 31);
+        mp_printf(&mp_plat_print, "grow preserves data: %d\n", data_preserved);
+
+        test_ptr = m_tracked_realloc(test_ptr, 16);  // Shrink
+        bool shrink_ok = (test_ptr[0] == 0 && test_ptr[15] == 15);
+        mp_printf(&mp_plat_print, "shrink preserves data: %d\n", shrink_ok);
+
+        m_tracked_free(test_ptr);
+
+        // Test 2: Multiple allocations + reallocs + GC stability
+        uint8_t *realloc_ptrs[5];
+        for (int i = 0; i < 5; i++) {
+            realloc_ptrs[i] = m_tracked_calloc(1, 32);
+            realloc_ptrs[i][0] = 'A' + i;  // Mark each
+        }
+
+        // Realloc some in different positions
+        realloc_ptrs[0] = m_tracked_realloc(realloc_ptrs[0], 64);  // First allocated (tail of list)
+        realloc_ptrs[2] = m_tracked_realloc(realloc_ptrs[2], 64);  // Middle
+        realloc_ptrs[4] = m_tracked_realloc(realloc_ptrs[4], 64);  // Last allocated (head of list)
+
+        // Run GC - if list corrupted, this might crash/fail
+        gc_collect();
+
+        // Verify markers intact
+        bool markers_ok = true;
+        for (int i = 0; i < 5; i++) {
+            if (realloc_ptrs[i][0] != 'A' + i) {
+                markers_ok = false;
+                break;
+            }
+        }
+        mp_printf(&mp_plat_print, "realloc gc stable: %d\n", markers_ok);
+
+        // Cleanup
+        for (int i = 0; i < 5; i++) {
+            m_tracked_free(realloc_ptrs[i]);
+        }
+
+        // Test 3: Edge cases
+        uint8_t *null_alloc = m_tracked_realloc(NULL, 32);
+        null_alloc[0] = 'X';
+        mp_printf(&mp_plat_print, "realloc(NULL) ok: %d\n", null_alloc[0] == 'X');
+
+        void *free_result = m_tracked_realloc(null_alloc, 0);
+        mp_printf(&mp_plat_print, "realloc(ptr, 0) returns NULL: %d\n", free_result == NULL);
+
+        mp_printf(&mp_plat_print, "m_tracked_head after cleanup: %p\n", MP_STATE_VM(m_tracked_head));
     }
 
     // vstr
@@ -552,6 +640,45 @@ static mp_obj_t extra_coverage(void) {
         mp_printf(&mp_plat_print, "%x%08x\n", (uint32_t)(value_ll >> 32), (uint32_t)value_ll);
     }
 
+    // list argument helpers
+    {
+        mp_printf(&mp_plat_print, "# list argument helpers\n");
+
+        // Create a list to test with
+        mp_obj_t list_items[] = { mp_const_none, MP_OBJ_NEW_SMALL_INT(77), mp_obj_new_str_from_cstr("hello") };
+        size_t list_len = MP_ARRAY_SIZE(list_items);
+        mp_obj_t list = mp_obj_new_list(list_len, list_items);
+
+        // mp_obj_list_ensure
+        nlr_buf_t nlr;
+        if (nlr_push(&nlr) == 0) {
+            mp_obj_list_ensure(MP_OBJ_NEW_SMALL_INT(-1), 5); // Not a list
+            nlr_pop();
+        } else {
+            mp_obj_print_exception(&mp_plat_print, MP_OBJ_FROM_PTR(nlr.ret_val));
+        }
+
+        if (nlr_push(&nlr) == 0) {
+            mp_obj_list_ensure(list, list_len + 2); // List shorter than minimum length
+            nlr_pop();
+        } else {
+            mp_obj_print_exception(&mp_plat_print, MP_OBJ_FROM_PTR(nlr.ret_val));
+        }
+
+        mp_obj_list_t *as_ptr = mp_obj_list_ensure(list, list_len);  // Acceptable!
+        mp_printf(&mp_plat_print, "mp_obj_list_ensure same list? %d\n", MP_OBJ_TO_PTR(list) == as_ptr);
+
+        // mp_obj_list_optional_arg()
+        as_ptr = mp_obj_list_optional_arg(list, list_len);
+        mp_printf(&mp_plat_print, "mp_obj_list_optional_arg same list? %d\n", MP_OBJ_TO_PTR(list) == as_ptr);
+
+        as_ptr = mp_obj_list_optional_arg(mp_const_none, list_len);
+        mp_printf(&mp_plat_print, "mp_obj_list_optional_arg new list len " SIZE_FMT "\n", as_ptr->len);
+
+        as_ptr = mp_obj_list_optional_arg(MP_OBJ_NULL, list_len);
+        mp_printf(&mp_plat_print, "mp_obj_list_optional_arg new list from NULL len " SIZE_FMT "\n", as_ptr->len);
+    }
+
     // runtime utils
     {
         mp_printf(&mp_plat_print, "# runtime utils\n");
@@ -615,19 +742,6 @@ static mp_obj_t extra_coverage(void) {
     // warning
     {
         mp_emitter_warning(MP_PASS_CODE_SIZE, "test");
-    }
-
-    // binary
-    {
-        mp_printf(&mp_plat_print, "# binary\n");
-
-        // call function with float and double typecodes
-        float far[1];
-        double dar[1];
-        mp_binary_set_val_array_from_int('f', far, 0, 123);
-        mp_printf(&mp_plat_print, "%.0f\n", (double)far[0]);
-        mp_binary_set_val_array_from_int('d', dar, 0, 456);
-        mp_printf(&mp_plat_print, "%.0lf\n", dar[0]);
     }
 
     // VM

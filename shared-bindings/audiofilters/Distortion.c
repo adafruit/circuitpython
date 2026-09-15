@@ -152,7 +152,7 @@ static mp_obj_t audiofilters_distortion_make_new(const mp_obj_type_t *type, size
         args[ARG_pre_gain].u_obj,
         args[ARG_post_gain].u_obj,
         mode,
-        args[ARG_soft_clip].u_obj,
+        args[ARG_soft_clip].u_bool,
         args[ARG_mix].u_obj,
         args[ARG_buffer_size].u_int,
         bits_per_sample,

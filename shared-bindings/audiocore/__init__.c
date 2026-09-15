@@ -145,7 +145,8 @@ MP_DEFINE_CONST_FUN_OBJ_1(audiosample_get_sample_rate_obj, audiosample_obj_get_s
 static mp_obj_t audiosample_obj_set_sample_rate(mp_obj_t self_in, mp_obj_t sample_rate) {
     audiosample_base_t *self = MP_OBJ_TO_PTR(self_in);
     audiosample_check_for_deinit(self);
-    audiosample_set_sample_rate(audiosample_check(self_in), mp_obj_get_int(sample_rate));
+    audiosample_set_sample_rate(audiosample_check(self_in),
+        (uint32_t)mp_arg_validate_int_min(mp_obj_get_int(sample_rate), 1, MP_QSTR_sample_rate));
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(audiosample_set_sample_rate_obj, audiosample_obj_set_sample_rate);

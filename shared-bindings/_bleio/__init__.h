@@ -39,6 +39,21 @@ void bleio_user_reset(void);
 // Completely resets the BLE stack including BLE connections.
 void bleio_reset(void);
 
+// True if user code created a local GATT service during this VM run. Set by the
+// shared-bindings Service constructor; the supervisor constructs its BLE workflow
+// services through common-hal directly and does not set it. User-created services
+// can only be removed from the stack's GATT table by a full stack reset, so a
+// port's bleio_reset() uses this to decide whether that reset, which drops all
+// connections, is needed at all.
+bool bleio_get_user_services_created(void);
+
+// Record that user code created a local GATT service.
+void bleio_set_user_services_created(void);
+
+// Clear the flag reported by bleio_get_user_services_created(). Call after a full
+// stack reset, so the next VM run starts out clean.
+void bleio_clear_user_services_created(void);
+
 // Init any state needed before calling any bleio functions including those
 // having to do with bonding. This doesn't enable the BLE adapter though.
 void common_hal_bleio_init(void);

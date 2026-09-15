@@ -1,13 +1,9 @@
 # SPDX-FileCopyrightText: 2025 Scott Shawcroft for Adafruit Industries
 # SPDX-License-Identifier: MIT
 
-"""BLE pairing tests for nrf5340bsim."""
+"""BLE pairing tests for the bsim boards."""
 
 import pytest
-
-# nrf54lm20bsim LE encryption is not yet functional in bsim. Enable it when it
-# does. Real hardware works.
-pytestmark = pytest.mark.circuitpython_board("native_nrf5340bsim")
 
 BSIM_PERIPHERAL_CODE = """\
 import _bleio
@@ -93,9 +89,13 @@ print("central disconnected", connection.connected, adapter.connected, len(adapt
 
 
 @pytest.mark.duration(22)
-@pytest.mark.circuitpy_drive({"code.py": BSIM_PERIPHERAL_CODE})
-@pytest.mark.circuitpy_drive({"code.py": BSIM_CENTRAL_CODE})
-def test_bsim_pairing_cp_to_cp(bsim_phy, circuitpython1, circuitpython2):
+@pytest.mark.circuitpy_drive(
+    {"code.py": BSIM_PERIPHERAL_CODE, "settings.toml": "CIRCUITPY_BLE_WORKFLOW = false\n"}
+)
+@pytest.mark.circuitpy_drive(
+    {"code.py": BSIM_CENTRAL_CODE, "settings.toml": "CIRCUITPY_BLE_WORKFLOW = false\n"}
+)
+def test_bsim_pairing_cp_to_cp(bsim_phy, board, circuitpython1, circuitpython2):
     """Two CP instances: device 0 peripheral, device 1 central pairs to it."""
     peripheral = circuitpython1
     central = circuitpython2
@@ -160,9 +160,16 @@ print("central disconnected", connection.connected)
 
 
 @pytest.mark.duration(22)
-@pytest.mark.circuitpy_drive({"code.py": BSIM_PERIPHERAL_CODE})
-@pytest.mark.circuitpy_drive({"code.py": BSIM_CENTRAL_PAIRED_PROPERTY_CODE})
-def test_bsim_pairing_paired_property(bsim_phy, circuitpython1, circuitpython2):
+@pytest.mark.circuitpy_drive(
+    {"code.py": BSIM_PERIPHERAL_CODE, "settings.toml": "CIRCUITPY_BLE_WORKFLOW = false\n"}
+)
+@pytest.mark.circuitpy_drive(
+    {
+        "code.py": BSIM_CENTRAL_PAIRED_PROPERTY_CODE,
+        "settings.toml": "CIRCUITPY_BLE_WORKFLOW = false\n",
+    }
+)
+def test_bsim_pairing_paired_property(bsim_phy, board, circuitpython1, circuitpython2):
     """Verify connection.paired transitions from False to True after pairing."""
     peripheral = circuitpython1
     central = circuitpython2
@@ -309,9 +316,13 @@ print("central disconnected2", connection2.connected, adapter.connected)
 
 
 @pytest.mark.duration(35)
-@pytest.mark.circuitpy_drive({"code.py": BSIM_PERIPHERAL_BOND_CODE})
-@pytest.mark.circuitpy_drive({"code.py": BSIM_CENTRAL_BOND_CODE})
-def test_bsim_bonding_persistence(bsim_phy, circuitpython1, circuitpython2):
+@pytest.mark.circuitpy_drive(
+    {"code.py": BSIM_PERIPHERAL_BOND_CODE, "settings.toml": "CIRCUITPY_BLE_WORKFLOW = false\n"}
+)
+@pytest.mark.circuitpy_drive(
+    {"code.py": BSIM_CENTRAL_BOND_CODE, "settings.toml": "CIRCUITPY_BLE_WORKFLOW = false\n"}
+)
+def test_bsim_bonding_persistence(bsim_phy, board, circuitpython1, circuitpython2):
     """Verify bonds are saved to storage and survive disconnect/reconnect.
 
     Central pairs with peripheral, disconnects, then reconnects.

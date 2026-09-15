@@ -77,6 +77,9 @@ void check_sec_status(uint8_t sec_status) {
     }
 }
 
+uint16_t bleio_gatts_min_handle = 0xFFFF;
+uint16_t bleio_gatts_max_handle;
+
 void common_hal_bleio_init(void) {
 }
 
@@ -85,6 +88,30 @@ void bleio_user_reset(void) {
         // Stop any user scanning or advertising.
         common_hal_bleio_adapter_stop_scan(&common_hal_bleio_adapter_obj);
         common_hal_bleio_adapter_stop_advertising(&common_hal_bleio_adapter_obj);
+
+        // Disconnect the connections that user code initiated or accepted with its
+        // own advertising. The BLE workflow connection is not user-owned and stays up.
+        //
+        // Clear each connection's pointers into the VM heap first: the heap is about
+        // to go away, and a disconnect completes asynchronously, possibly after it
+        // has. The disconnect event handler dereferences connection_obj unless it is
+        // mp_const_none.
+        for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
+            bleio_connection_internal_t *connection = &bleio_connections[i];
+            connection->connection_obj = mp_const_none;
+            connection->remote_service_list = NULL;
+            if (connection->conn_handle != BLE_CONN_HANDLE_INVALID && connection->user_owned) {
+                common_hal_bleio_connection_disconnect(connection);
+            }
+        }
+
+        // Clear the adapter's remaining pointers into the VM heap. The full stack
+        // reset in bleio_reset() used to do this implicitly, but it no longer always
+        // runs. The adapter struct is a GC root, so a pointer left over from this
+        // heap would be scanned as a live object in the next VM's heap.
+        common_hal_bleio_adapter_obj.connection_objs = NULL;
+        common_hal_bleio_adapter_obj.advertising_data = NULL;
+        common_hal_bleio_adapter_obj.scan_response_data = NULL;
     }
 
     ble_drv_remove_heap_handlers();
@@ -100,6 +127,16 @@ void bleio_reset(void) {
     if (!common_hal_bleio_adapter_get_enabled(&common_hal_bleio_adapter_obj)) {
         return;
     }
+
+    // The SoftDevice cannot remove individual services from its GATT table: the
+    // disable/enable cycle below is the only way to clear them, and it drops every
+    // connection, the BLE workflow's included. So run it only when user code created
+    // services. All other user BLE state has already been torn down individually by
+    // bleio_user_reset().
+    if (!bleio_get_user_services_created()) {
+        return;
+    }
+    bleio_clear_user_services_created();
 
     supervisor_stop_bluetooth();
     bleio_adapter_reset(&common_hal_bleio_adapter_obj);

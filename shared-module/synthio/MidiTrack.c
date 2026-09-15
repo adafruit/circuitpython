@@ -19,6 +19,7 @@ static mp_obj_t parse_note(synthio_miditrack_obj_t *self) {
     size_t len = self->track.len;
     if (self->pos + 1 >= len) {
         record_midi_stream_error(self);
+        return MP_OBJ_NEW_SMALL_INT(0);
     }
     uint8_t note = buffer[(self->pos)++];
     if (note > 127 || buffer[(self->pos)++] > 127) {
@@ -51,6 +52,9 @@ static void decode_until_pause(synthio_miditrack_obj_t *self) {
     uint8_t *buffer = self->track.buf;
     size_t len = self->track.len;
     do {
+        if (self->pos >= len) {
+            break;
+        }
         switch (buffer[self->pos++] >> 4) {
             case 8: { // Note Off
                 mp_obj_t note = parse_note(self);

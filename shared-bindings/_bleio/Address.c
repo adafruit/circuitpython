@@ -108,10 +108,8 @@ static mp_obj_t bleio_address_binary_op(mp_binary_op_t op, mp_obj_t lhs_in, mp_o
                 bleio_address_obj_t *lhs = MP_OBJ_TO_PTR(lhs_in);
                 bleio_address_obj_t *rhs = MP_OBJ_TO_PTR(rhs_in);
                 return mp_obj_new_bool(
-                    mp_obj_equal(common_hal_bleio_address_get_address_bytes(lhs),
-                        common_hal_bleio_address_get_address_bytes(rhs)) &&
-                    common_hal_bleio_address_get_type(lhs) ==
-                    common_hal_bleio_address_get_type(rhs));
+                    lhs->type == rhs->type &&
+                    memcmp(lhs->bytes, rhs->bytes, NUM_BLEIO_ADDRESS_BYTES) == 0);
 
             } else {
                 return mp_const_false;
@@ -130,13 +128,9 @@ static mp_obj_t bleio_address_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
     switch (op) {
         // Two Addresses are equal if their address bytes and address_type are equal
         case MP_UNARY_OP_HASH: {
-            mp_obj_t bytes = common_hal_bleio_address_get_address_bytes(MP_OBJ_TO_PTR(self_in));
-            GET_STR_HASH(bytes, h);
-            if (h == 0) {
-                GET_STR_DATA_LEN(bytes, data, len);
-                h = qstr_compute_hash(data, len);
-            }
-            h ^= common_hal_bleio_address_get_type(MP_OBJ_TO_PTR(self_in));
+            bleio_address_obj_t *self = MP_OBJ_TO_PTR(self_in);
+            mp_int_t h = (mp_int_t)qstr_compute_hash(self->bytes, NUM_BLEIO_ADDRESS_BYTES);
+            h ^= self->type;
             return MP_OBJ_NEW_SMALL_INT(h);
         }
         default:
@@ -146,11 +140,7 @@ static mp_obj_t bleio_address_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
 
 static void bleio_address_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind) {
     bleio_address_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    mp_buffer_info_t buf_info;
-    mp_obj_t address_bytes = common_hal_bleio_address_get_address_bytes(self);
-    mp_get_buffer_raise(address_bytes, &buf_info, MP_BUFFER_READ);
-
-    const uint8_t *buf = (uint8_t *)buf_info.buf;
+    const uint8_t *buf = self->bytes;
     mp_printf(print, "<Address %02x:%02x:%02x:%02x:%02x:%02x>",
         buf[5], buf[4], buf[3], buf[2], buf[1], buf[0]);
 }

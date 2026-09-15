@@ -326,7 +326,9 @@ audioio_get_buffer_result_t audiodelays_granular_pitch_shift_get_buffer(audiodel
             } else {
                 // For unsigned samples set to the middle which is "quiet"
                 if (MP_LIKELY(self->base.bits_per_sample == 16)) {
-                    memset(word_buffer, 32768, length * (self->base.bits_per_sample / 8));
+                    for (uint32_t i = 0; i < length; i++) {
+                        word_buffer[i] = (int16_t)0x8000;
+                    }
                 } else {
                     memset(hword_buffer, 128, length * (self->base.bits_per_sample / 8));
                 }

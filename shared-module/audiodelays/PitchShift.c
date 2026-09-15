@@ -58,8 +58,10 @@ void common_hal_audiodelays_pitch_shift_construct(audiodelays_pitch_shift_obj_t 
 
     synthio_block_assign_slot(semitones, &self->semitones, MP_QSTR_semitones);
     synthio_block_assign_slot(mix, &self->mix, MP_QSTR_mix);
+    self->freeze = false;
 
     // Allocate the window buffer
+    mp_arg_validate_int_min(window, sizeof(uint16_t) * channel_count, MP_QSTR_window);
     self->window_len = window; // bytes
     self->window_buffer = m_malloc_without_collect(self->window_len);
     if (self->window_buffer == NULL) {
@@ -126,9 +128,18 @@ void common_hal_audiodelays_pitch_shift_set_mix(audiodelays_pitch_shift_obj_t *s
     synthio_block_assign_slot(arg, &self->mix, MP_QSTR_mix);
 }
 
+bool common_hal_audiodelays_pitch_shift_get_freeze(audiodelays_pitch_shift_obj_t *self) {
+    return self->freeze;
+}
+
+void common_hal_audiodelays_pitch_shift_set_freeze(audiodelays_pitch_shift_obj_t *self, bool freeze) {
+    self->freeze = freeze;
+}
+
 void audiodelays_pitch_shift_reset_buffer(audiodelays_pitch_shift_obj_t *self,
     bool single_channel_output,
     uint8_t channel) {
+    self->freeze = false;
 
     memset(self->buffer[0], 0, self->buffer_len);
     memset(self->buffer[1], 0, self->buffer_len);
@@ -223,7 +234,9 @@ audioio_get_buffer_result_t audiodelays_pitch_shift_get_buffer(audiodelays_pitch
             } else {
                 // For unsigned samples set to the middle which is "quiet"
                 if (MP_LIKELY(self->base.bits_per_sample == 16)) {
-                    memset(word_buffer, 32768, length * (self->base.bits_per_sample / 8));
+                    for (uint32_t si = 0; si < length; si++) {
+                        word_buffer[si] = (int16_t)0x8000;
+                    }
                 } else {
                     memset(hword_buffer, 128, length * (self->base.bits_per_sample / 8));
                 }
@@ -268,15 +281,17 @@ audioio_get_buffer_result_t audiodelays_pitch_shift_get_buffer(audiodelays_pitch
                     }
                 }
 
-                if (overlap_size) {
-                    // Copy last sample from overlap and store in buffer
-                    window_buffer[self->window_index + window_size * buf_offset] = overlap_buffer[self->overlap_index + overlap_size * buf_offset];
+                if (!self->freeze) {
+                    if (overlap_size) {
+                        // Copy last sample from overlap and store in buffer
+                        window_buffer[self->window_index + window_size * buf_offset] = overlap_buffer[self->overlap_index + overlap_size * buf_offset];
 
-                    // Save current sample in overlap
-                    overlap_buffer[self->overlap_index + overlap_size * buf_offset] = (int16_t)sample_word;
-                } else {
-                    // Write sample to buffer
-                    window_buffer[self->window_index + window_size * buf_offset] = (int16_t)sample_word;
+                        // Save current sample in overlap
+                        overlap_buffer[self->overlap_index + overlap_size * buf_offset] = (int16_t)sample_word;
+                    } else {
+                        // Write sample to buffer
+                        window_buffer[self->window_index + window_size * buf_offset] = (int16_t)sample_word;
+                    }
                 }
 
                 // Determine how far we are into the overlap
@@ -316,17 +331,19 @@ audioio_get_buffer_result_t audiodelays_pitch_shift_get_buffer(audiodelays_pitch
                 }
 
                 if (self->base.channel_count == 1 || buf_offset) {
-                    // Increment window buffer write pointer
-                    self->window_index++;
-                    if (self->window_index >= window_size) {
-                        self->window_index = 0;
-                    }
+                    if (!self->freeze) {
+                        // Increment window buffer write pointer
+                        self->window_index++;
+                        if (self->window_index >= window_size) {
+                            self->window_index = 0;
+                        }
 
-                    // Increment overlap buffer pointer
-                    if (overlap_size) {
-                        self->overlap_index++;
-                        if (self->overlap_index >= overlap_size) {
-                            self->overlap_index = 0;
+                        // Increment overlap buffer pointer
+                        if (overlap_size) {
+                            self->overlap_index++;
+                            if (self->overlap_index >= overlap_size) {
+                                self->overlap_index = 0;
+                            }
                         }
                     }
 

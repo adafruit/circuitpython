@@ -25,6 +25,7 @@
 
 #include "components/esp_netif/include/esp_netif_net_stack.h"
 #include "components/esp_wifi/include/esp_wifi.h"
+#include "soc/soc_caps.h"
 #include "components/lwip/include/apps/ping/ping_sock.h"
 #include "lwip/sockets.h"
 
@@ -94,6 +95,11 @@ void common_hal_wifi_radio_set_enabled(wifi_radio_obj_t *self, bool enabled) {
     }
     if (!self->started && enabled) {
         ESP_ERROR_CHECK(esp_wifi_start());
+        #if defined(SOC_WIFI_SUPPORT_5G) && SOC_WIFI_SUPPORT_5G
+        // Dual-band radios default to 2.4 GHz only. Enable both bands so that
+        // 5 GHz networks are visible to scans and can be connected to.
+        ESP_ERROR_CHECK(esp_wifi_set_band_mode(WIFI_BAND_MODE_AUTO));
+        #endif
         self->started = true;
         common_hal_wifi_radio_set_tx_power(self, CIRCUITPY_WIFI_DEFAULT_TX_POWER);
         return;
@@ -236,6 +242,7 @@ void common_hal_wifi_radio_stop_station(wifi_radio_obj_t *self) {
 }
 
 void common_hal_wifi_radio_start_ap(wifi_radio_obj_t *self, uint8_t *ssid, size_t ssid_len, uint8_t *password, size_t password_len, uint8_t channel, uint32_t authmode, uint8_t max_connections) {
+    bool was_ap = self->ap_mode;
     set_mode_ap(self, true);
 
     uint8_t esp_authmode = 0;
@@ -269,7 +276,18 @@ void common_hal_wifi_radio_start_ap(wifi_radio_obj_t *self, uint8_t *ssid, size_
 
     config->ap.max_connection = max_connections;
 
-    esp_wifi_set_config(WIFI_IF_AP, config);
+    esp_err_t result = esp_wifi_set_config(WIFI_IF_AP, config);
+    if (result != ESP_OK) {
+        if (!was_ap) {
+            set_mode_ap(self, false);
+        }
+        // The IDF returns ESP_ERR_INVALID_ARG for a channel this radio or its
+        // country setting cannot use (wifi_ap_config_t.channel).
+        if (result == ESP_ERR_INVALID_ARG) {
+            mp_arg_error_invalid(MP_QSTR_channel);
+        }
+        raise_esp_error(result);
+    }
     // Wait a few ms for the AP to start. Empirically, this takes < 3ms on ESP32, and < 1ms on other chips.
     for (size_t ms = 0; ms < 10; ms++) {
         if (common_hal_wifi_radio_get_ap_active(self)) {

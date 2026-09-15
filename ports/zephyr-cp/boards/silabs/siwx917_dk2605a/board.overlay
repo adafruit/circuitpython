@@ -1,0 +1,69 @@
+// Replaces the port's app.overlay, which does `&zephyr_udc0 { ... }` to add a
+// CDC-ACM console. The SiWG917 has no USB device controller, so the console
+// falls back to the Zephyr console on &ulpuart, reaching the host over the
+// on-board J-Link VCOM.
+
+// CIRCUITPY filesystem.
+//
+// supervisor/flash.c needs a partition labeled `circuitpy_partition`, and the
+// whole 8 MB is already partitioned by siwg917m111mgtba.dtsi with no
+// unallocated space to claim. The upper region is owned by the network
+// processor, which refuses M4 writes there, so CIRCUITPY is carved out of the
+// M4's own code_partition, shrunk from 2008K to 1M. Overflowing that fails at
+// link time rather than corrupting the filesystem.
+&flash0 {
+	partitions {
+		code_partition: partition@202000 {
+			compatible = "zephyr,mapped-partition";
+			label = "code_partition";
+			reg = <0x00202000 0x00100000>;
+		};
+
+		circuitpy_partition: partition@302000 {
+			compatible = "zephyr,mapped-partition";
+			label = "circuitpy";
+			reg = <0x00302000 0x000f6000>;
+		};
+	};
+};
+
+// GSPI on the breakout pads. The board .dts leaves spi0 disabled and wires
+// nothing, so the pin assignment here is taken from the mapping Silicon Labs
+// ships for this board in
+// zephyr/tests/drivers/spi/spi_loopback/boards/siwx917_dk2605a.overlay:
+// CLK on pad 3, MOSI on pad 5, MISO on pad 7, CS on gpiob 12.
+//
+// spi0 is the SoC's only SPI controller node and is compatible "silabs,gspi".
+// The on-board IMU is on a separate ULP SPI bus that has no controller node in
+// devicetree, so it is not reachable through this one.
+&pinctrl0 {
+	spi0_default: spi0_default {
+		out {
+			pinmux = <GSPI_CLK_HP25>, <GSPI_MOSI_HP27>;
+		};
+
+		in {
+			pinmux = <GSPI_MISO_HP26>;
+		};
+	};
+};
+
+&spi0 {
+	status = "okay";
+	cs-gpios = <&gpiob 12 GPIO_ACTIVE_LOW>;
+	pinctrl-0 = <&spi0_default>;
+	pinctrl-names = "default";
+
+	dmas = <&gpdma 0 11>, <&gpdma 1 10>;
+	dma-names = "tx", "rx";
+};
+
+&gpdma {
+	status = "okay";
+};
+
+// 8 MB of PSRAM on the QSPI2 path. Present in ram_bounds; the Python heap does
+// not use it yet.
+&psram {
+	status = "okay";
+};

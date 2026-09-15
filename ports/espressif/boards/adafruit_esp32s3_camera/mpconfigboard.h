@@ -20,3 +20,7 @@
 #define DEFAULT_SPI_BUS_MISO (&pin_GPIO37)
 
 #define DOUBLE_TAP_PIN (&pin_GPIO42)
+
+// Turn off presenting SD card to USB by default. Changes settings.toml default for this setting.
+// Workaround for https://github.com/adafruit/circuitpython/issues/11109.
+#define CIRCUITPY_SDCARD_USB (false)

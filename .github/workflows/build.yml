@@ -10,11 +10,13 @@ on:
       - main
       - '*.x'
   pull_request:
+  merge_group:
+    types: [checks_requested]
   release:
     types: [published]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:
@@ -22,6 +24,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       docs: ${{ steps.set-matrix.outputs.docs }}
+      zephyr-tests: ${{ steps.set-matrix.outputs.zephyr-tests }}
       ports: ${{ steps.set-matrix.outputs.ports }}
       cp-version: ${{ steps.set-up-submodules.outputs.version }}
     steps:
@@ -68,15 +71,15 @@ jobs:
         GITHUB_TOKEN: ${{ github.token }}
         EXCLUDE_COMMIT: ${{ github.event.pull_request.head.sha }}
     - name: Set head sha (pull)
-      if: github.event_name == 'pull_request'
+      if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
       env:
-        HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}
       run: echo "HEAD_SHA=$HEAD_SHA" >> $GITHUB_ENV
     - name: Set base sha (pull)
-      if: github.event_name == 'pull_request'
+      if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
       run: git cat-file -e $SHA && echo "BASE_SHA=$SHA" >> $GITHUB_ENV || true
       env:
-        SHA: ${{ steps.get-last-commit-with-checks.outputs.commit_sha || github.event.pull_request.base.sha }}
+        SHA: ${{ steps.get-last-commit-with-checks.outputs.commit_sha || github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
     - name: Set head sha (push)
       if: github.event_name == 'push'
       env:
@@ -97,6 +100,13 @@ jobs:
   tests:
     needs: scheduler
     uses: ./.github/workflows/run-tests.yml
+    with:
+      cp-version: ${{ needs.scheduler.outputs.cp-version }}
+
+  zephyr-tests:
+    needs: scheduler
+    if: needs.scheduler.outputs.zephyr-tests == 'True'
+    uses: ./.github/workflows/run-zephyr-tests.yml
     with:
       cp-version: ${{ needs.scheduler.outputs.cp-version }}
 
@@ -134,7 +144,7 @@ jobs:
         python3 --version
         msgfmt --version
     - name: Build mpy-cross (arm64)
-      run: make -C mpy-cross -j4 -f Makefile.m1 V=2
+      run: make -C mpy-cross -j$(sysctl -n hw.ncpu) -f Makefile.m1 V=2
     - uses: actions/upload-artifact@v7
       with:
         name: mpy-cross-macos-arm64
@@ -178,7 +188,7 @@ jobs:
         sudo apt-get install -y latexmk librsvg2-bin texlive-fonts-recommended texlive-latex-recommended texlive-latex-extra
         pip install -r requirements-doc.txt
     - name: Build and Validate Stubs
-      run: make check-stubs -j4
+      run: make check-stubs -j$(nproc)
     - uses: actions/upload-artifact@v7
       with:
         name: stubs
@@ -225,4 +235,20 @@ jobs:
     with:
       boards: ${{ toJSON(fromJSON(needs.scheduler.outputs.ports)[matrix.port]) }}
       cp-version: ${{ needs.scheduler.outputs.cp-version }}
-      port: ${{ matrix.port }}
+      port: ${{ fromJSON(needs.scheduler.outputs.ports).split_ports[matrix.port] || matrix.port }}
+
+  build-ci:
+    # Final gate for ruleset checks: always runs so the required check is
+    # reported, and fails if any job (or matrix leg) failed or was cancelled.
+    needs: [tests, zephyr-tests, mpy-cross, mpy-cross-mac, docs, ports]
+    if: ${{ always() }}
+    runs-on: ubuntu-24.04
+    steps:
+    - name: Check build results
+      run: |
+        echo "Job results: ${{ toJSON(needs.*.result) }}"
+        if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]] || [[ "${{ contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+          echo "One or more jobs failed or were cancelled"
+          exit 1
+        fi
+        echo "All build jobs succeeded"

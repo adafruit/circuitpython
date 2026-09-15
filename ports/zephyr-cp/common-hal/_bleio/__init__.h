@@ -40,3 +40,8 @@ size_t bleio_gattc_read_sync(struct bt_conn *conn, uint16_t handle,
     uint8_t *buf, size_t len);
 void bleio_gattc_write_sync(struct bt_conn *conn, uint16_t handle,
     const uint8_t *data, size_t len);
+
+// Abort any in-flight remote GATT discovery; called from the disconnect
+// callback so discover_remote_services() fails cleanly instead of hanging
+// or NULL-dereferencing the cleared connection.
+void bleio_connection_discovery_abort(void);

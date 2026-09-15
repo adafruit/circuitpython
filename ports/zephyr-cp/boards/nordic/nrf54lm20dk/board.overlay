@@ -1,0 +1,52 @@
+// nRF54LM20 DK has USB. Include the main app overlay for USB CDC ACM console and data.
+#include "../../../app.overlay"
+
+// Link application starting at 0x0 instead of slot0_partition (no mcuboot yet).
+/ {
+	chosen {
+		zephyr,code-partition = &cpuapp_rram;
+	};
+};
+
+// Enable the external MX25R6435F 8MB QSPI flash (connected via SPIM00).
+&mx25r64 {
+	status = "okay";
+
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		circuitpy_partition: partition@0 {
+			label = "circuitpy";
+			reg = <0x00000000 DT_SIZE_M(8)>;
+		};
+	};
+};
+
+// I2C bus on P1.13 (SDA) and P1.23 (SCL).
+&pinctrl {
+	i2c21_default: i2c21_default {
+		group1 {
+			psels = <NRF_PSEL(TWIM_SDA, 1, 13)>,
+				<NRF_PSEL(TWIM_SCL, 1, 23)>;
+			bias-pull-up;
+		};
+	};
+
+	i2c21_sleep: i2c21_sleep {
+		group1 {
+			psels = <NRF_PSEL(TWIM_SDA, 1, 13)>,
+				<NRF_PSEL(TWIM_SCL, 1, 23)>;
+			low-power-enable;
+		};
+	};
+};
+
+&i2c21 {
+	clock-frequency = <I2C_BITRATE_STANDARD>;
+	pinctrl-0 = <&i2c21_default>;
+	pinctrl-1 = <&i2c21_sleep>;
+	pinctrl-names = "default", "sleep";
+	status = "okay";
+};

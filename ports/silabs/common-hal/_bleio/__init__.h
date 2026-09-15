@@ -61,12 +61,6 @@
 // Maximum length for variable length Attribute Values.
 #define BLE_GATTS_VAR_ATTR_LEN_MAX (512)
 
-// Track if the user code modified the BLE state
-// to know if we need to undo it on reload.
-extern bool vm_used_ble;
-
-// UUID shared by all CCCD's.
-extern bleio_uuid_obj_t cccd_uuid;
 extern void bleio_reset();
 
 extern osMutexId_t bluetooth_connection_mutex_id;

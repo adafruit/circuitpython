@@ -10,6 +10,7 @@
 #include "shared-bindings/_bleio/Attribute.h"
 #include "common-hal/_bleio/Descriptor.h"
 #include "shared-module/_bleio/Characteristic.h"
+#include "common-hal/_bleio/Adapter.h"
 #include "common-hal/_bleio/ble_events.h"
 #include "common-hal/_bleio/Service.h"
 #include "common-hal/_bleio/UUID.h"
@@ -40,6 +41,18 @@ typedef struct _bleio_characteristic_obj {
     uint16_t user_desc_handle;
     uint16_t cccd_handle;
     uint16_t sccd_handle;
+    // Track currently subscribed peers. NimBLE in the current ESP-IDF offers
+    // no way to read a peer's CCCD, and notifying without checking would
+    // send to peers that never asked. NimBLE reports subscriptions with both
+    // flags clear on CCCD clears and on disconnect, so entries free themselves.
+    // One subscription per connection at most, hence BLEIO_TOTAL_CONNECTION_COUNT.
+    // TODO when NimBLE is updated to 1.9.0 or later: ble_gatts_read_cccd()
+    // reads the CCCD directly, and this table can go away.
+    struct {
+        uint16_t conn_handle;
+        bool notify;
+        bool indicate;
+    } subscribers[BLEIO_TOTAL_CONNECTION_COUNT];
     ble_event_handler_entry_t event_handler_entry;
     // The actual structure is managed by the service because it needs to have
     // an array.

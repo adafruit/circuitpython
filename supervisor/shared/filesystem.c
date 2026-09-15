@@ -19,6 +19,10 @@
 #include "shared-module/sdcardio/__init__.h"
 #endif
 
+#if CIRCUITPY_EMMC_USB
+#include "shared-module/emmcio/__init__.h"
+#endif
+
 static mp_vfs_mount_t _circuitpy_vfs;
 static fs_user_mount_t _circuitpy_usermount;
 
@@ -228,6 +232,13 @@ bool filesystem_init(bool create_allowed, bool force_create) {
     // setting and is a no-op when it is disabled.
     automount_sd_card();
     #endif
+    #endif
+
+    // Same reason as the SD card above, mount it before USB enumerates rather than
+    // lazily from tud_msc_test_unit_ready_cb(). Also the same requirement
+    // that settings.toml is readable.
+    #if CIRCUITPY_EMMC_USB
+    automount_emmc();
     #endif
 
     return true;

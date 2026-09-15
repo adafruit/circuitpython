@@ -14,6 +14,9 @@ void normalize_buffer_bounds(int32_t *start, int32_t end, size_t *length) {
     }
     if (*start < 0) {
         *start += *length;
+        if (*start < 0) {
+            *start = 0;
+        }
     }
     if (end < *start) {
         *length = 0;

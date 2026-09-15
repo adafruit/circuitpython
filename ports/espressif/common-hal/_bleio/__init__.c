@@ -24,6 +24,8 @@
 #include "common-hal/_bleio/__init__.h"
 #include "common-hal/_bleio/ble_events.h"
 
+#include "services/gatt/ble_svc_gatt.h"
+
 #include "nvs_flash.h"
 
 static volatile int _completion_status;
@@ -35,11 +37,33 @@ void bleio_user_reset(void) {
     if (!common_hal_bleio_adapter_get_enabled(&common_hal_bleio_adapter_obj)) {
         return;
     }
-    // Stop any user scanning or advertising, and stop all connections.
-    // TODO: Don't stop BLE workflow connection.
-    bleio_adapter_reset(&common_hal_bleio_adapter_obj);
+    // Stop any user scanning or advertising.
+    common_hal_bleio_adapter_stop_scan(&common_hal_bleio_adapter_obj);
+    common_hal_bleio_adapter_stop_advertising(&common_hal_bleio_adapter_obj);
 
+    // Disconnect the connections that user code initiated or accepted with its own
+    // advertising. Keep the BLE workflow connection if present.
+    //
+    // Remove each connection's pointers into the VM heap before disconnecting:
+    // the heap is about to go away, and a disconnect completes asynchronously.
+    for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
+        bleio_connection_internal_t *connection = &bleio_connections[i];
+        connection->connection_obj = mp_const_none;
+        connection->remote_service_list = NULL;
+        if (connection->conn_handle != BLEIO_HANDLE_INVALID && connection->user_owned) {
+            common_hal_bleio_connection_disconnect(connection);
+        }
+    }
+
+    // Now clear the adapter's remaining heap pointer, since it will be stale
+    // when the VM stops.
+    common_hal_bleio_adapter_obj.connection_objs = NULL;
+
+    // Also clean up event handlers that are on the heap.
     ble_event_remove_heap_handlers();
+    // And stop retaining heap services, whose characteristics' handler entries
+    // the call above just removed.
+    bleio_service_forget_retained();
 
     // Maybe start advertising the BLE workflow.
     supervisor_bluetooth_background();
@@ -52,11 +76,31 @@ void bleio_reset(void) {
         return;
     }
 
+    // The stop/start cycle below clears user-created services from the GATT
+    // table, and drops every connection, BLE workflow included. So run it
+    // only when user code created services. All other user BLE state has already
+    // been torn down individually by bleio_user_reset().
+    //
+    // TODO: ESP-IDF NimBLE can delete individual services (ble_gatts_delete_svc(),
+    // used in Service.c), so bleio_user_reset() could delete user services one by
+    // one and never restart the BLE stack at all. For now this port matches
+    // nordic, whose SoftDevice can only clear services with a full cycle.
+    if (!bleio_get_user_services_created()) {
+        return;
+    }
+    bleio_clear_user_services_created();
+
     supervisor_stop_bluetooth();
     ble_event_reset();
     bleio_adapter_reset(&common_hal_bleio_adapter_obj);
     common_hal_bleio_adapter_set_enabled(&common_hal_bleio_adapter_obj, false);
     supervisor_start_bluetooth();
+
+    // The stop/start above rebuilt the GATT table, so now any bonded peers' cached
+    // tables are stale. Signal Service Changed over the whole handle range.
+    // Without Service Changed, a bonded host trusts its cache indefinitely and can
+    // look up characteristics at stale handles.
+    ble_svc_gatt_changed(0x0001, 0xffff);
 }
 
 // The singleton _bleio.Adapter object, bound to _bleio.adapter
@@ -87,6 +131,7 @@ void common_hal_bleio_init(void) {
 
 void common_hal_bleio_gc_collect(void) {
     bleio_adapter_gc_collect(&common_hal_bleio_adapter_obj);
+    bleio_service_gc_collect();
 }
 
 void check_nimble_error(int rc, const char *file, size_t line) {

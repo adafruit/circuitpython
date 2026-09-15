@@ -38,7 +38,16 @@
 #define SDCARD_COUNT 0
 #endif
 
-#define LUN_COUNT (1 + SAVES_COUNT + SDCARD_COUNT)
+#if CIRCUITPY_EMMC_USB
+#include "shared-module/emmcio/__init__.h"
+
+#define EMMC_COUNT 1
+#define EMMC_LUN (1 + SAVES_COUNT + SDCARD_COUNT)
+#else
+#define EMMC_COUNT 0
+#endif
+
+#define LUN_COUNT (1 + SAVES_COUNT + SDCARD_COUNT + EMMC_COUNT)
 
 // The ellipsis range in the designated initializer of `ejected` is not standard C,
 // but it works in both gcc and clang.
@@ -162,6 +171,26 @@ static fs_user_mount_t *get_vfs(int lun) {
             // Clear any ejected state so that a re-insert causes it to reappear.
             ejected[SDCARD_LUN] = false;
             locked[SDCARD_LUN] = false;
+        }
+    }
+    #endif
+    #ifdef EMMC_LUN
+    if (lun == EMMC_LUN) {
+        const char *path_under_mount;
+
+        fs_user_mount_t *emmc = filesystem_for_path(CIRCUITPY_EMMC_MOUNT_PATH, &path_under_mount);
+        // Unlike the SD card there is no heap-mount case to allow: the eMMC's
+        // drive exists only when the supervisor mounted it, and
+        // that mount is static. A user mount made by code.py stays a Python
+        // filesystem and never becomes a LUN.
+        if (emmc != root &&
+            ((emmc->blockdev.flags & MP_BLOCKDEV_FLAG_NATIVE) != 0) &&
+            !gc_ptr_on_heap(emmc)) {
+            return emmc;
+        } else {
+            // Clear any ejected state so that a remount causes it to reappear.
+            ejected[EMMC_LUN] = false;
+            locked[EMMC_LUN] = false;
         }
     }
     #endif
@@ -379,7 +408,8 @@ static sdcard_usb_setting_state_t _sdcard_usb_setting_state = SDCARD_USB_SETTING
 // Read only once to save file access time.
 static bool sdcard_usb_enabled(void) {
     if (_sdcard_usb_setting_state == SDCARD_USB_SETTING_NOT_YET_READ) {
-        bool setting = true;
+        // Can be changed per board. Most boards would leave this as true (default in circuitpy_mpconfig.h).
+        bool setting = CIRCUITPY_SDCARD_USB_DEFAULT;
         (void)settings_get_bool("CIRCUITPY_SDCARD_USB", &setting);
         _sdcard_usb_setting_state = setting ? SDCARD_USB_SETTING_TRUE : SDCARD_USB_SETTING_FALSE;
     }

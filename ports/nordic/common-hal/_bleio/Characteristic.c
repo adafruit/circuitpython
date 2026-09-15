@@ -240,6 +240,8 @@ void common_hal_bleio_characteristic_add_descriptor(bleio_characteristic_obj_t *
     };
 
     check_nrf_error(sd_ble_gatts_descriptor_add(self->handle, &desc_attr, &descriptor->handle));
+    bleio_gatts_min_handle = MIN(bleio_gatts_min_handle, descriptor->handle);
+    bleio_gatts_max_handle = MAX(bleio_gatts_max_handle, descriptor->handle);
 
     mp_obj_list_append(MP_OBJ_FROM_PTR(self->descriptor_list),
         MP_OBJ_FROM_PTR(descriptor));

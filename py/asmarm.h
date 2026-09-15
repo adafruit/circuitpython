@@ -50,21 +50,21 @@
 #define ASM_ARM_REG_LR  (ASM_ARM_REG_R14)
 #define ASM_ARM_REG_PC  (ASM_ARM_REG_R15)
 
-#define ASM_ARM_CC_EQ (0x0 << 28)
-#define ASM_ARM_CC_NE (0x1 << 28)
-#define ASM_ARM_CC_CS (0x2 << 28)
-#define ASM_ARM_CC_CC (0x3 << 28)
-#define ASM_ARM_CC_MI (0x4 << 28)
-#define ASM_ARM_CC_PL (0x5 << 28)
-#define ASM_ARM_CC_VS (0x6 << 28)
-#define ASM_ARM_CC_VC (0x7 << 28)
-#define ASM_ARM_CC_HI (0x8 << 28)
-#define ASM_ARM_CC_LS (0x9 << 28)
-#define ASM_ARM_CC_GE (0xa << 28)
-#define ASM_ARM_CC_LT (0xb << 28)
-#define ASM_ARM_CC_GT (0xc << 28)
-#define ASM_ARM_CC_LE (0xd << 28)
-#define ASM_ARM_CC_AL (0xe << 28)
+#define ASM_ARM_CC_EQ (0x0u << 28)
+#define ASM_ARM_CC_NE (0x1u << 28)
+#define ASM_ARM_CC_CS (0x2u << 28)
+#define ASM_ARM_CC_CC (0x3u << 28)
+#define ASM_ARM_CC_MI (0x4u << 28)
+#define ASM_ARM_CC_PL (0x5u << 28)
+#define ASM_ARM_CC_VS (0x6u << 28)
+#define ASM_ARM_CC_VC (0x7u << 28)
+#define ASM_ARM_CC_HI (0x8u << 28)
+#define ASM_ARM_CC_LS (0x9u << 28)
+#define ASM_ARM_CC_GE (0xau << 28)
+#define ASM_ARM_CC_LT (0xbu << 28)
+#define ASM_ARM_CC_GT (0xcu << 28)
+#define ASM_ARM_CC_LE (0xdu << 28)
+#define ASM_ARM_CC_AL (0xeu << 28)
 
 typedef struct _asm_arm_t {
     mp_asm_base_t base;
@@ -230,6 +230,8 @@ void asm_arm_bx_reg(asm_arm_t *as, uint reg_src);
 #define ASM_STORE8_REG_REG_REG(as, reg_val, reg_base, reg_index) asm_arm_strb_reg_reg_reg((as), (reg_val), (reg_base), (reg_index))
 #define ASM_STORE16_REG_REG_REG(as, reg_val, reg_base, reg_index) asm_arm_strh_reg_reg_reg((as), (reg_val), (reg_base), (reg_index))
 #define ASM_STORE32_REG_REG_REG(as, reg_val, reg_base, reg_index) asm_arm_str_reg_reg_reg((as), (reg_val), (reg_base), (reg_index))
+
+#define ASM_CLR_REG(as, reg_dest) asm_arm_eor_reg_reg_reg((as), (reg_dest), (reg_dest), (reg_dest))
 
 #endif // GENERIC_ASM_API
 

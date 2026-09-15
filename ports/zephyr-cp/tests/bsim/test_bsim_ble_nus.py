@@ -52,7 +52,13 @@ print("done")
 
 @pytest.mark.zephyr_sample("tests/bsim/samples/central_nus_client")
 @pytest.mark.duration(14)
-@pytest.mark.circuitpy_drive({"code.py": BSIM_NUS_PERIPHERAL_CODE, **_ADAFRUIT_BLE})
+@pytest.mark.circuitpy_drive(
+    {
+        "code.py": BSIM_NUS_PERIPHERAL_CODE,
+        "settings.toml": "CIRCUITPY_BLE_WORKFLOW = false\n",
+        **_ADAFRUIT_BLE,
+    }
+)
 def test_bsim_nus_peripheral(bsim_phy, circuitpython, zephyr_sample):
     """CP hosts NUS peripheral; Zephyr central writes to RX, reads TX notifications."""
     circuitpython.wait_until_done()
@@ -148,7 +154,7 @@ print("done")
 """
 
 
-@pytest.mark.duration(14)
+@pytest.mark.duration(30)
 @pytest.mark.circuitpy_drive({"code.py": BSIM_NUS_SERVER_CODE, **_ADAFRUIT_BLE})
 @pytest.mark.circuitpy_drive({"code.py": BSIM_NUS_CLIENT_CODE, **_ADAFRUIT_BLE})
 def test_bsim_nus_cp_to_cp(bsim_phy, circuitpython1, circuitpython2):

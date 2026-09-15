@@ -65,6 +65,10 @@ static uint32_t get_valid_cpu_frequency(uint32_t requested_freq_mhz) {
     uint32_t valid_cpu_frequencies[] = {20, 40, 80, 120};
     #elif defined(CONFIG_IDF_TARGET_ESP32H2)
     uint32_t valid_cpu_frequencies[] = {32, 48, 64, 96};
+    #elif defined(CONFIG_IDF_TARGET_ESP32C5)
+    // C5's 48 MHz crystal does not divide evenly to 20 or 24 MHz, both of
+    // which esp_pm_configure() rejects.
+    uint32_t valid_cpu_frequencies[] = {40, 80, 160, 240};
     #else
     uint32_t valid_cpu_frequencies[] = {20, 40, 80, 160, 240};
     #endif
@@ -126,7 +130,7 @@ void common_hal_mcu_processor_get_uid(uint8_t raw_id[]) {
     uint32_t mac_address_part = REG_READ(EFUSE_RD_MAC_SYS_0_REG);
     #elif defined(CONFIG_IDF_TARGET_ESP32C2)
     uint32_t mac_address_part = REG_READ(EFUSE_RD_BLK2_DATA0_REG);
-    #elif defined(CONFIG_IDF_TARGET_ESP32C61)
+    #elif defined(CONFIG_IDF_TARGET_ESP32C61) || defined(CONFIG_IDF_TARGET_ESP32C5)
     uint32_t mac_address_part = REG_READ(EFUSE_RD_MAC_SYS0_REG);
     #else
     uint32_t mac_address_part = REG_READ(EFUSE_RD_MAC_SPI_SYS_0_REG);
@@ -147,7 +151,7 @@ void common_hal_mcu_processor_get_uid(uint8_t raw_id[]) {
     mac_address_part = REG_READ(EFUSE_RD_MAC_SYS_1_REG);
     #elif defined(CONFIG_IDF_TARGET_ESP32C2)
     mac_address_part = REG_READ(EFUSE_RD_BLK2_DATA1_REG);
-    #elif defined(CONFIG_IDF_TARGET_ESP32C61)
+    #elif defined(CONFIG_IDF_TARGET_ESP32C61) || defined(CONFIG_IDF_TARGET_ESP32C5)
     mac_address_part = REG_READ(EFUSE_RD_MAC_SYS1_REG);
     #else
     mac_address_part = REG_READ(EFUSE_RD_MAC_SPI_SYS_1_REG);

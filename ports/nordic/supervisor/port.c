@@ -11,6 +11,8 @@
 #include "supervisor/background_callback.h"
 #include "supervisor/board.h"
 
+#include "board.h"
+
 #include "nrfx/hal/nrf_clock.h"
 #include "nrfx/hal/nrf_power.h"
 #include "nrfx/drivers/include/nrfx_gpiote.h"
@@ -22,7 +24,13 @@
 #include "nrf/power.h"
 #include "nrf/timers.h"
 
+#ifdef BLUETOOTH_SD
 #include "nrf_nvic.h"
+#endif
+
+#if CIRCUITPY_EMMCIO
+#include "shared-bindings/emmcio/__init__.h"
+#endif
 
 #include "common-hal/microcontroller/Pin.h"
 #include "common-hal/alarm/time/TimeAlarm.h"
@@ -34,7 +42,6 @@
 #include "common-hal/watchdog/WatchDogTimer.h"
 #include "common-hal/alarm/__init__.h"
 
-#include "shared-bindings/_bleio/__init__.h"
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/rtc/__init__.h"
 
@@ -51,6 +58,10 @@
 #if defined(MICROPY_QSPI_CS)
 extern void qspi_disable(void);
 #endif
+
+// Do-nothing, not every board needs to provide this function.
+MP_WEAK void board_early_init(void) {
+}
 
 static void power_warning_handler(void) {
     reset_into_safe_mode(SAFE_MODE_BROWNOUT);
@@ -131,6 +142,9 @@ void tick_set_prescaler(uint32_t prescaler_val) {
 }
 
 safe_mode_t port_init(void) {
+    // Before any peripheral is touched
+    board_early_init();
+
     nrf_peripherals_clocks_init();
 
     // If GPIO voltage is set wrong in UICR, this will fix it, and
@@ -175,10 +189,10 @@ safe_mode_t port_init(void) {
     // next time we reboot.
     if (reset_reason_saved & POWER_RESETREAS_DOG_Msk) {
         NRF_POWER->RESETREAS = POWER_RESETREAS_DOG_Msk;
-        uint32_t usb_reg = NRF_POWER->USBREGSTATUS;
 
         // If USB is connected, then the user might be editing `code.py`,
         // in which case we should reboot into Safe Mode.
+        uint32_t usb_reg = NRF_POWER->USBREGSTATUS;
         if (usb_reg & POWER_USBREGSTATUS_VBUSDETECT_Msk) {
             return SAFE_MODE_WATCHDOG;
         }
@@ -204,6 +218,10 @@ void reset_port(void) {
     rtc_reset();
     #endif
 
+    #if CIRCUITPY_EMMCIO
+    emmcio_reset();
+    #endif
+
     timers_reset();
 
     #if CIRCUITPY_WATCHDOG
@@ -218,9 +236,12 @@ void reset_port(void) {
 }
 
 void reset_to_bootloader(void) {
-    enum { DFU_MAGIC_SERIAL = 0x4e };
-
-    NRF_POWER->GPREGRET = DFU_MAGIC_SERIAL;
+    NRF_POWER->GPREGRET = BOOTLOADER_DFU_MAGIC;
+    #ifdef BOOTLOADER_DFU_MAGIC2
+    // This bootloader's magic is 16 bits wide, split across both retention
+    // registers.
+    NRF_POWER->GPREGRET2 = BOOTLOADER_DFU_MAGIC2;
+    #endif
     reset_cpu();
 }
 
@@ -323,6 +344,7 @@ void port_idle_until_interrupt(void) {
         (void)__get_FPSCR();
         NVIC_ClearPendingIRQ(FPU_IRQn);
     }
+    #ifdef BLUETOOTH_SD
     uint8_t sd_enabled;
 
     sd_softdevice_is_enabled(&sd_enabled);
@@ -330,7 +352,10 @@ void port_idle_until_interrupt(void) {
         if (!background_callback_pending()) {
             sd_app_evt_wait();
         }
-    } else {
+        return;
+    }
+    #endif
+    {
         // Call wait for interrupt ourselves if the SD isn't enabled.
         // Note that `wfi` should be called with interrupts disabled,
         // to ensure that the queue is properly drained.  The `wfi`

@@ -15,10 +15,33 @@ endif
 
 WEST_CMAKE_ARGS := -DZEPHYR_BOARD_ALIASES=$(CURDIR)/boards/board_aliases.cmake -Dzephyr-cp_TRANSLATION=$(TRANSLATION)
 
+# Board files live in the board's own folder as board.overlay / board.conf. Zephyr only auto-applies
+# boards/<name>.overlay and boards/<name>.conf named after the RESOLVED Zephyr board, so it finds
+# neither those (wrong directory) nor files named after a board declared through cp_board_alias()
+# (wrong name) - the build silently produces a different firmware instead of warning. Pass them
+# explicitly when they exist.
+CP_BOARD_DIR := $(CURDIR)/boards/$(firstword $(subst _, ,$(BOARD)))/$(patsubst $(firstword $(subst _, ,$(BOARD)))_%,%,$(BOARD))
+# DTC_OVERLAY_FILE, not EXTRA_: a board overlay REPLACES app.overlay (Zephyr only falls back to
+# app.overlay when no board overlay is found), which is why the board overlays here include it
+# themselves - and why one board that has no USB deliberately does not. Adding the overlay instead
+# would force app.overlay on every board. socs/ ships .conf only, so nothing else is displaced.
+CP_BOARD_OVERLAY := $(wildcard $(CP_BOARD_DIR)/board.overlay)
+ifneq ($(CP_BOARD_OVERLAY),)
+WEST_CMAKE_ARGS += -Dzephyr-cp_DTC_OVERLAY_FILE=$(CP_BOARD_OVERLAY)
+endif
+CP_BOARD_CONF := $(wildcard $(CP_BOARD_DIR)/board.conf)
+
 # When DEBUG=1, apply additional Kconfig fragments for debug-friendly settings.
 DEBUG_CONF_FILE ?= $(CURDIR)/debug.conf
 ifeq ($(DEBUG),1)
-WEST_CMAKE_ARGS += -Dzephyr-cp_EXTRA_CONF_FILE=$(DEBUG_CONF_FILE)
+ifneq ($(CP_BOARD_CONF),)
+CP_BOARD_CONF := $(CP_BOARD_CONF);$(DEBUG_CONF_FILE)
+else
+CP_BOARD_CONF := $(DEBUG_CONF_FILE)
+endif
+endif
+ifneq ($(CP_BOARD_CONF),)
+WEST_CMAKE_ARGS += -Dzephyr-cp_EXTRA_CONF_FILE=$(CP_BOARD_CONF)
 endif
 
 .PHONY: $(BUILD)/zephyr-cp/zephyr/zephyr.elf flash recover debug debug-jlink debugserver attach run run-sim clean menuconfig all clean-all sim clean-sim test fetch-port-submodules
@@ -29,6 +52,7 @@ export BSIM_OUT_PATH := $(CURDIR)/tools/bsim
 $(BUILD)/zephyr-cp/zephyr/zephyr.elf:
 	python cptools/pre_zephyr_build_prep.py $(BOARD)
 	west build -b $(BOARD) -d $(BUILD) $(WEST_SHIELD_ARGS) --sysbuild -- $(WEST_CMAKE_ARGS)
+	python ../../tools/build_memory_info.py $(BUILD)/zephyr-cp/zephyr/zephyr.map $(BUILD) --image $(BUILD)/zephyr-cp/zephyr/zephyr.bin
 
 $(BUILD)/firmware.elf: $(BUILD)/zephyr-cp/zephyr/zephyr.elf
 	cp $^ $@
@@ -41,6 +65,9 @@ $(BUILD)/firmware.exe: $(BUILD)/zephyr-cp/zephyr/zephyr.elf
 
 $(BUILD)/firmware.uf2: $(BUILD)/zephyr-cp/zephyr/zephyr.elf
 	cp $(BUILD)/zephyr-cp/zephyr/zephyr.uf2 $@
+
+$(BUILD)/firmware.rps: $(BUILD)/zephyr-cp/zephyr/zephyr.elf
+	cp $(BUILD)/zephyr-cp/zephyr/zephyr.rps $@
 
 flash: $(BUILD)/zephyr-cp/zephyr/zephyr.elf
 	west flash -d $(BUILD)
@@ -97,6 +124,25 @@ sim:
 clean-sim:
 	rm -rf $(wildcard build-native_*)
 
-test: build-native_native_sim/zephyr-cp/zephyr/zephyr.exe
+# Every board the test suite uses: native sim (non-asan + asan) and the bsim
+# boards (tests/bsim/conftest.py parametrizes over both). Zephyr samples for
+# bsim tests are built on demand by the zephyr_sample fixture.
+TEST_BOARDS := native_native_sim native_native_sim_asan native_nrf5340bsim native_nrf54lm20bsim
+
+# Delegate to a sub-make with BOARD set so the per-board build rule (and its
+# shield args + bsim prep) applies. The targets are phony: the west builds are
+# incremental, so this just keeps the test binaries fresh.
+define test_board_rule
+.PHONY: test-build-$(1)
+test-build-$(1):
+	+$$(MAKE) BOARD=$(1) BUILD=build-$(1) build-$(1)/zephyr-cp/zephyr/zephyr.elf
+endef
+$(foreach board,$(TEST_BOARDS),$(eval $(call test_board_rule,$(board))))
+
+# CI runs this as three jobs, one per board family, narrowing TEST_BOARDS and
+# PYTEST_ARGS; see .github/workflows/run-zephyr-tests.yml.
+PYTEST_ARGS ?= tests/
+
+test: $(TEST_BOARDS:%=test-build-%)
 	pytest cptools/tests
-	pytest tests/ -v
+	pytest -v $(PYTEST_ARGS)

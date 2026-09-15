@@ -25,8 +25,9 @@
 #include "host/ble_att.h"
 
 // The ringbuf and the pending outgoing buffers are shared with the nimble_host
-// task, which preempts the VM task at arbitrary points, and ringbuf operations
-// are not atomic, so guard the shared accesses with interrupts disabled.
+// task, which preempts the CircuitPython task at arbitrary points, and ringbuf
+// operations are not atomic, so guard the shared accesses with interrupts
+// disabled.
 
 // Runs on the nimble_host task.
 void bleio_packet_buffer_extend(bleio_packet_buffer_obj_t *self, uint16_t conn_handle, const uint8_t *data, size_t len) {
@@ -59,6 +60,12 @@ void bleio_packet_buffer_extend(bleio_packet_buffer_obj_t *self, uint16_t conn_h
 
 static int packet_buffer_on_ble_client_evt(struct ble_gap_event *event, void *param);
 static int queue_next_write(bleio_packet_buffer_obj_t *self);
+static void packet_buffer_retry_send(void *data);
+
+// Interval to wait between send attempts when the outgoing mbuf pool is
+// exhausted. The pool drains as fast as the radio sends: a handful of packets
+// per connection interval, which is typically tens of milliseconds.
+#define RETRY_INTERVAL_MS (10)
 
 static int _write_cb(uint16_t conn_handle,
     const struct ble_gatt_error *error,
@@ -71,80 +78,166 @@ static int _write_cb(uint16_t conn_handle,
         #endif
     }
     bleio_packet_buffer_obj_t *self = (bleio_packet_buffer_obj_t *)arg;
+    // Whether or not the write succeeded, it is no longer awaiting a response. On
+    // failure NimBLE already consumed the data, so there is nothing to retry.
+    self->packet_queued = false;
     queue_next_write(self);
 
     return 0;
 }
 
+// Try to send the data waiting in the pending buffer, if any. May be called
+// from the CircuitPython task or from the nimble_host task,
+// which preempts the CircuitPython task.
+// BLE_HS_ENOMEM means we are out of mbufs because the radio hasn't drained
+// the outgoing queue yet. That is expected, not an error: keep
+// the data: the background callback scheduled below and the wait loops in
+// write() and flush() will retry sending.
+// On other errors drop the data.
 static int queue_next_write(bleio_packet_buffer_obj_t *self) {
-    // Queue up the next outgoing buffer. We use two, one that has been passed to the SD for
-    // transmission (when packet_queued is true) and the other is `pending` and can still be
-    // modified. By primarily appending to the `pending` buffer we can reduce the protocol overhead
-    // of the lower level link and ATT layers.
-    self->packet_queued = false;
-    if (self->pending_size > 0) {
-        uint16_t conn_handle = self->conn_handle;
-        int err_code = NIMBLE_OK;
-        if (self->client) {
-            if (self->write_type == CHAR_PROP_WRITE_NO_RESPONSE) {
-                err_code = ble_gattc_write_no_rsp_flat(conn_handle,
-                    self->characteristic->handle,
-                    self->outgoing[self->pending_index],
-                    self->pending_size);
-                // We don't set packet_queued because NimBLE will buffer our
-                // outgoing packets.
-            } else {
-                err_code = ble_gattc_write_flat(conn_handle,
-                    self->characteristic->handle,
-                    self->outgoing[self->pending_index],
-                    self->pending_size,
-                    _write_cb, self);
-                self->pending_index = (self->pending_index + 1) % 2;
-                self->packet_queued = true;
-            }
+    // Remember the current time if a previous send failed.
+    uint64_t now_ms = 0;
+    if (self->last_failed_ms != 0) {
+        now_ms = supervisor_ticks_ms64();
+    }
+    common_hal_mcu_disable_interrupts();
+    if (self->send_in_progress || self->packet_queued ||
+        self->pending_size == 0 ||
+        self->conn_handle == BLEIO_HANDLE_INVALID) {
+        // Succeed if:
+        // - there is nothing to send
+        // - a packet is already awaiting its completion event
+        // - another send call is already in progress (including the
+        //   synchronous BLE_GAP_EVENT_NOTIFY_TX that our own notify and
+        //   indicate calls below raise on this very stack).
+        common_hal_mcu_enable_interrupts();
+        return NIMBLE_OK;
+    }
+    if (self->last_failed_ms != 0 &&
+        (now_ms == 0 || now_ms - self->last_failed_ms < RETRY_INTERVAL_MS)) {
+        // Don't try before retry interval expires: the radio can only go so fast.
+        // Schedule a retry for later.
+        common_hal_mcu_enable_interrupts();
+        background_callback_add(&self->retry_send_callback, packet_buffer_retry_send, self);
+        return BLE_HS_ENOMEM;
+    }
+    // Claim the pending buffer. While send_in_progress is set, writers wait
+    // instead of appending to the buffer. Other callers of this function return above,
+    // so the buffer contents stay stable during the send call even though
+    // interrupts are enabled again while it runs.
+    self->send_in_progress = true;
+    // A client Write with Response or an Indicate gets a completion event (a
+    // write response or an indicate acknowledgment) that calls back here to
+    // send whatever accumulates in the meantime. Mark such a packet as in
+    // flight *before* submitting it: if this task is preempted for long enough,
+    // the completion can arrive before the code after the send call runs,
+    // and it must find the flag already set so it can clear it.
+    bool is_completion_type = self->write_type == CHAR_PROP_WRITE ||
+        self->write_type == CHAR_PROP_INDICATE;
+    self->packet_queued = is_completion_type;
+    uint16_t conn_handle = self->conn_handle;
+    uint16_t attr_handle = self->characteristic->handle;
+    const uint8_t *data = (const uint8_t *)self->outgoing[0];
+    uint16_t data_len = self->pending_size;
+    common_hal_mcu_enable_interrupts();
+
+    int err_code;
+    if (self->client) {
+        if (self->write_type == CHAR_PROP_WRITE_NO_RESPONSE) {
+            // Copies the data into an mbuf before returning. No completion
+            // callback follows; NimBLE buffers the outgoing packet itself.
+            err_code = ble_gattc_write_no_rsp_flat(conn_handle, attr_handle,
+                data, data_len);
         } else {
-            // Allocate an mbuf because the functions below consume it.
-            struct os_mbuf *om = ble_hs_mbuf_from_flat(self->outgoing[self->pending_index], self->pending_size);
-            if (om == NULL) {
-                // We may not have any more mbufs if BLE busy. It isn't a problem (yet) so we'll
-                // just skip queueing for now.
-                return BLE_HS_ENOMEM;
-            }
-            size_t pending_size = self->pending_size;
-            self->pending_size = 0;
-            if (self->write_type == CHAR_PROP_NOTIFY) {
-                err_code = ble_gatts_notify_custom(conn_handle, self->characteristic->handle, om);
-            } else if (self->write_type == CHAR_PROP_INDICATE) {
-                err_code = ble_gatts_indicate_custom(conn_handle, self->characteristic->handle, om);
-                self->pending_index = (self->pending_index + 1) % 2;
-                self->packet_queued = true;
-            } else {
-                // Placeholder error.
-                err_code = BLE_HS_EUNKNOWN;
-            }
-            // Undo our queueing if it fails. We need to do it early because we may recurse back
-            // to here from the above ble_gatts functions.
-            if (err_code != NIMBLE_OK) {
-                self->pending_index = (self->pending_index + 1) % 2;
-                self->packet_queued = false;
-                self->pending_size = pending_size;
-            }
+            // _write_cb will be called only if the write was actually queued.
+            err_code = ble_gattc_write_flat(conn_handle, attr_handle,
+                data, data_len, _write_cb, self);
         }
-        self->pending_size = 0;
-        if (err_code != NIMBLE_OK) {
-            // On error, simply skip updating the pending buffers so that the next HVC or WRITE
-            // complete event triggers another attempt.
-            return err_code;
+    } else {
+        // Allocate an mbuf because the functions below consume it, on
+        // success and on failure.
+        struct os_mbuf *om = ble_hs_mbuf_from_flat(data, data_len);
+        if (om == NULL) {
+            err_code = BLE_HS_ENOMEM;
+        } else if (self->write_type == CHAR_PROP_NOTIFY) {
+            // Raises BLE_GAP_EVENT_NOTIFY_TX on this stack before returning,
+            // on success and on failure. There is no later completion event
+            // for a notification.
+            err_code = ble_gatts_notify_custom(conn_handle, attr_handle, om);
+        } else if (self->write_type == CHAR_PROP_INDICATE) {
+            // The acknowledgment (or a timeout) will raise
+            // BLE_GAP_EVENT_NOTIFY_TX later, from the nimble_host task.
+            err_code = ble_gatts_indicate_custom(conn_handle, attr_handle, om);
+        } else {
+            // Placeholder error.
+            err_code = BLE_HS_EUNKNOWN;
         }
     }
-    return NIMBLE_OK;
+
+    uint64_t fail_ms = 0;
+    if (err_code == BLE_HS_ENOMEM) {
+        fail_ms = supervisor_ticks_ms64();
+    }
+    common_hal_mcu_disable_interrupts();
+    self->send_in_progress = false;
+    if (self->conn_handle != conn_handle) {
+        // Disconnected or unsubscribed during the send. The event handler
+        // already discarded the pending data; make sure nothing looks like a
+        // send in progress to the new connection, if any.
+        self->packet_queued = false;
+        common_hal_mcu_enable_interrupts();
+        return err_code;
+    }
+    if (err_code == NIMBLE_OK) {
+        // NimBLE copied the data, so the buffer is immediately reusable,
+        // even while a write with response or an indicate is still in
+        // flight: new writes coalesce in it until the completion event.
+        // Don't touch packet_queued: it was set before the send, and the
+        // completion event may already have cleared it.
+        self->pending_size = 0;
+        self->last_failed_ms = 0;
+    } else {
+        // Nothing was queued, so no completion event will come.
+        self->packet_queued = false;
+        if (err_code == BLE_HS_ENOMEM) {
+            // Out of mbufs: normal while the radio works through the outgoing
+            // queue. Keep the data and retry from the background,
+            // because a failed send gets no completion event to prompt
+            // another attempt. Re-adding a queued callback does nothing.
+            self->last_failed_ms = fail_ms;
+            background_callback_add(&self->retry_send_callback, packet_buffer_retry_send, self);
+        } else {
+            // A real error, such as a dropped connection or an ATT failure.
+            // Drop the data, as before.
+            self->pending_size = 0;
+            self->last_failed_ms = 0;
+        }
+    }
+    common_hal_mcu_enable_interrupts();
+    return err_code;
 }
 
-// This is called from the nimble task. *Not* CircuitPython's.
+// Runs as a background callback after a send failed for lack of mbufs.
+static void packet_buffer_retry_send(void *data) {
+    bleio_packet_buffer_obj_t *self = (bleio_packet_buffer_obj_t *)data;
+    if (common_hal_bleio_packet_buffer_deinited(self)) {
+        return;
+    }
+    // Reschedules this callback (in queue_next_write()) if still out of mbufs.
+    queue_next_write(self);
+}
+
+// This is usually called from the nimble task, *not* CircuitPython's.
+// BLE_GAP_EVENT_NOTIFY_TX is also raised synchronously, on the task that
+// called into NimBLE, by our own sends in queue_next_write().
 static int packet_buffer_on_ble_client_evt(struct ble_gap_event *event, void *param) {
     bleio_packet_buffer_obj_t *self = (bleio_packet_buffer_obj_t *)param;
     if (event->type == BLE_GAP_EVENT_DISCONNECT && self->conn_handle == event->disconnect.conn.conn_handle) {
         self->conn_handle = BLEIO_HANDLE_INVALID;
+        // Discard the pending state so stale data can't be sent into a
+        // later connection or subscription.
+        self->pending_size = 0;
+        self->packet_queued = false;
         return false;
     }
     if (event->type == BLE_GAP_EVENT_SUBSCRIBE) {
@@ -152,16 +245,49 @@ static int packet_buffer_on_ble_client_evt(struct ble_gap_event *event, void *pa
             self->conn_handle = event->subscribe.conn_handle;
         } else if (self->conn_handle == event->subscribe.conn_handle && event->subscribe.cur_notify == 0 && event->subscribe.cur_indicate == 0) {
             self->conn_handle = BLEIO_HANDLE_INVALID;
+            // Discard the pending state so stale data can't be sent into a
+            // later subscription.
+            self->pending_size = 0;
+            self->packet_queued = false;
         }
         return false;
     }
     if (event->type == BLE_GAP_EVENT_NOTIFY_TX) {
         if (self->conn_handle == event->notify_tx.conn_handle && self->characteristic->handle == event->notify_tx.attr_handle) {
-            if (event->notify_tx.indication == 1 && event->notify_tx.status == 0) {
-                // The indicate has been queued.
+            if (event->notify_tx.indication == 1) {
+                if (event->notify_tx.status == 0) {
+                    // The indicate has been queued. This event is raised
+                    // synchronously inside our own indicate call.
+                    return false;
+                }
+                if (event->notify_tx.status == BLE_HS_EDONE ||
+                    event->notify_tx.status == BLE_HS_ETIMEOUT) {
+                    // Acknowledged or timed out: the indicate is no longer
+                    // awaiting a response. These statuses come only from the nimble_host
+                    // task later on, never from inside our own send call, so
+                    // clear packet_queued even if a new claim is in progress.
+                    self->packet_queued = false;
+                    if (!self->send_in_progress) {
+                        // Send any data that accumulated in the meantime.
+                        queue_next_write(self);
+                    }
+                    return false;
+                }
+                // Any other status is either our own synchronous submission
+                // failure, handled by the return code in queue_next_write(),
+                // or a failure that comes with a disconnect, which discards
+                // the pending state.
                 return false;
             }
-            queue_next_write(self);
+            // A notification transmission was attempted (status 0 on
+            // success). It was raised synchronously inside a notify call:
+            // ours, in queue_next_write(), which acts on the result code
+            // itself (send_in_progress is set), or someone else's on this
+            // characteristic, which we can use as a prompt to send anything
+            // that is waiting.
+            if (!self->send_in_progress) {
+                queue_next_write(self);
+            }
             return false;
         }
     }
@@ -195,10 +321,13 @@ void _common_hal_bleio_packet_buffer_construct(
     }
 
     self->packet_queued = false;
-    self->pending_index = 0;
+    self->send_in_progress = false;
     self->pending_size = 0;
+    self->last_failed_ms = 0;
     self->outgoing[0] = outgoing_buffer1;
     self->outgoing[1] = outgoing_buffer2;
+    // Don't touch retry_send_callback: for a statically allocated buffer that
+    // is being reconstructed, it may still be on the background callback list.
 
     if (static_handler_entry != NULL) {
         ble_event_add_handler_entry((ble_event_handler_entry_t *)static_handler_entry, packet_buffer_on_ble_client_evt, self);
@@ -259,6 +388,11 @@ void common_hal_bleio_packet_buffer_construct(
         outgoing1 = m_malloc_without_collect(max_packet_size);
         // Only allocate the second buffer if we are doing writes with responses.
         // Without responses, we just write as quickly as we can.
+        //
+        // TODO: this port never reads outgoing[1]. NimBLE copies the data at send
+        // time, so one buffer can be refilled immediately, unlike the nordic
+        // SoftDevice which keeps the caller's buffer until TX completes. Kept
+        // allocated so that reintroducing two-buffer use here is not a bug.
         if (outgoing == CHAR_PROP_WRITE || outgoing == CHAR_PROP_INDICATE) {
             outgoing2 = m_malloc_without_collect(max_packet_size);
         }
@@ -322,44 +456,54 @@ mp_int_t common_hal_bleio_packet_buffer_write(bleio_packet_buffer_obj_t *self, c
     }
     outgoing_packet_length = MIN(outgoing_packet_length, self->max_packet_size);
 
-    if (len + self->pending_size > (size_t)outgoing_packet_length) {
-        // No room to append len bytes to packet. Wait until we get a free buffer,
-        // and keep checking that we haven't been disconnected.
-        while (self->pending_size != 0 &&
-               self->conn_handle != BLEIO_HANDLE_INVALID &&
-               !mp_hal_is_interrupted()) {
-            RUN_BACKGROUND_TASKS;
-        }
-    }
-    if (self->conn_handle == BLEIO_HANDLE_INVALID ||
-        mp_hal_is_interrupted()) {
-        return -1;
-    }
-
     size_t num_bytes_written = 0;
 
-    // The nimble_host task may modify pending_size, pending_index, and
-    // packet_queued via queue_next_write(), so guard the append.
-    common_hal_mcu_disable_interrupts();
+    // Append the data to the pending packet, waiting for room if it is full.
+    // The append must happen with interrupts disabled, with the connection
+    // still up and with no send call in progress (the nimble_host task can
+    // start one at any point), so check those conditions inside the critical
+    // section and retry until they all hold at once.
+    while (true) {
+        if (mp_hal_is_interrupted()) {
+            return -1;
+        }
+        common_hal_mcu_disable_interrupts();
+        if (self->conn_handle == BLEIO_HANDLE_INVALID) {
+            common_hal_mcu_enable_interrupts();
+            return -1;
+        }
+        if (!self->send_in_progress &&
+            len + self->pending_size <= (size_t)outgoing_packet_length) {
+            // Append below, still inside the critical section.
+            break;
+        }
+        common_hal_mcu_enable_interrupts();
+        // No room for data yet. Retry the pending packet ourselves: a send that
+        // failed for lack of mbufs gets no completion event to prompt
+        // another attempt, and if we were called from a background callback
+        // (as the BLE workflow does), RUN_BACKGROUND_TASKS below cannot
+        // re-enter background callbacks to do it for us.
+        queue_next_write(self);
+        RUN_BACKGROUND_TASKS;
+    }
 
-    uint32_t *pending = self->outgoing[self->pending_index];
+    uint8_t *pending = (uint8_t *)self->outgoing[0];
 
     if (self->pending_size == 0) {
         memcpy(pending, header, header_len);
         self->pending_size += header_len;
         num_bytes_written += header_len;
     }
-    memcpy(((uint8_t *)pending) + self->pending_size, data, len);
+    memcpy(pending + self->pending_size, data, len);
     self->pending_size += len;
     num_bytes_written += len;
 
     common_hal_mcu_enable_interrupts();
 
-    // If no writes are queued then sneak in this data.
-    if (!self->packet_queued) {
-        // This will queue up the packet even if it can't send immediately.
-        queue_next_write(self);
-    }
+    // Send now. This is a no-op if a packet is already awaiting its completion
+    // event; the completion will send the data instead.
+    queue_next_write(self);
+
     return num_bytes_written;
 }
 
@@ -443,6 +587,10 @@ void common_hal_bleio_packet_buffer_flush(bleio_packet_buffer_obj_t *self) {
             self->packet_queued) &&
            self->conn_handle != BLEIO_HANDLE_INVALID &&
            !mp_hal_is_interrupted()) {
+        // Retry sends that failed for lack of mbufs ourselves: they get no
+        // completion event, and background callbacks can't run if we were
+        // called from one (as the BLE workflow does).
+        queue_next_write(self);
         RUN_BACKGROUND_TASKS;
     }
 }
@@ -455,9 +603,15 @@ void common_hal_bleio_packet_buffer_deinit(bleio_packet_buffer_obj_t *self) {
     if (common_hal_bleio_packet_buffer_deinited(self)) {
         return;
     }
+    // Take the packet buffer off the event list before changing anything
+    // inside the object.
+    ble_event_remove_handler(packet_buffer_on_ble_client_evt, self);
     bleio_characteristic_clear_observer(self->characteristic);
     self->characteristic = NULL;
-    ble_event_remove_handler(packet_buffer_on_ble_client_evt, self);
+    // A still-queued retry_send_callback checks deinited(), so it sees the
+    // NULL characteristic and does nothing.
+    self->pending_size = 0;
+    self->packet_queued = false;
     ringbuf_deinit(&self->ringbuf);
 }
 

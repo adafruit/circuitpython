@@ -38,8 +38,10 @@ static mp_obj_t ipaddress_ipv4address_make_new(const mp_obj_type_t *type, size_t
 
     uint32_t value;
     uint8_t *buf = NULL;
-    if (mp_obj_get_int_maybe(address, (mp_int_t *)&value)) {
+    mp_int_t int_value;
+    if (mp_obj_get_int_maybe(address, &int_value)) {
         // We're done.
+        value = (uint32_t)int_value;
         buf = (uint8_t *)&value;
     } else if (mp_obj_is_str(address)) {
         GET_STR_DATA_LEN(address, str_data, str_len);
@@ -49,12 +51,13 @@ static mp_obj_t ipaddress_ipv4address_make_new(const mp_obj_type_t *type, size_t
         buf = (uint8_t *)&value;
     } else {
         mp_buffer_info_t buf_info;
-        if (mp_get_buffer(address, &buf_info, MP_BUFFER_READ)) {
-            if (buf_info.len != 4) {
-                mp_raise_ValueError_varg(MP_ERROR_TEXT("Address must be %d bytes long"), 4);
-            }
-            buf = buf_info.buf;
+        if (!mp_get_buffer(address, &buf_info, MP_BUFFER_READ)) {
+            mp_arg_error_invalid(MP_QSTR_address);
         }
+        if (buf_info.len != 4) {
+            mp_raise_ValueError_varg(MP_ERROR_TEXT("Address must be %d bytes long"), 4);
+        }
+        buf = buf_info.buf;
     }
 
 

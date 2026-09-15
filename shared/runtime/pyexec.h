@@ -47,7 +47,6 @@ extern pyexec_mode_kind_t pyexec_mode_kind;
 
 #define PYEXEC_FORCED_EXIT (0x100)
 // CIRCUITPY-CHANGE: additional flags
-#define PYEXEC_EXCEPTION   (0x200)
 #define PYEXEC_DEEP_SLEEP  (0x400)
 #define PYEXEC_RELOAD      (0x800)
 

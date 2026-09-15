@@ -20,9 +20,11 @@
 
 static uint32_t yasmarang_pad = 0xeda4baba, yasmarang_n = 69, yasmarang_d = 233;
 static uint8_t yasmarang_dat = 0;
+static bool yasmarang_seeded = false;
 
 static uint32_t yasmarang(void) {
-    if (yasmarang_pad == 0xeda4baba) {
+    if (!yasmarang_seeded) {
+        yasmarang_seeded = true;
         if (!common_hal_os_urandom((uint8_t *)&yasmarang_pad, sizeof(uint32_t))) {
             yasmarang_pad = common_hal_time_monotonic_ms() & 0xffffffff;
         }
@@ -57,6 +59,7 @@ void shared_modules_random_seed(mp_uint_t seed) {
     yasmarang_n = 69;
     yasmarang_d = 233;
     yasmarang_dat = 0;
+    yasmarang_seeded = true;
 }
 
 mp_uint_t shared_modules_random_getrandbits(uint8_t n) {

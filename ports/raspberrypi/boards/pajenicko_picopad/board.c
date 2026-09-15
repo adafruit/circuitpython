@@ -54,7 +54,8 @@ void board_init(void) {
         MP_OBJ_FROM_PTR(&pin_GPIO17), // TFT_DC Command or data
         MP_OBJ_FROM_PTR(&pin_GPIO21), // TFT_CS Chip select
         MP_OBJ_FROM_PTR(&pin_GPIO20), // TFT_RST Reset
-        60000000, // Baudrate
+        62500000, // Baudrate: exactly clk_peri/2 (125MHz/2). Requesting 60MHz makes the
+                  // PL022 divider round DOWN to 31.25MHz - half the display bandwidth.
         0, // Polarity
         0); // Phase
 

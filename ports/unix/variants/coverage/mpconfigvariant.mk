@@ -12,8 +12,6 @@ CFLAGS += \
 LDFLAGS += -fprofile-arcs -ftest-coverage
 
 FROZEN_MANIFEST ?= $(VARIANT_DIR)/manifest.py
-# CIRCUITPY-CHANGE: don't include user C modules
-# USER_C_MODULES = $(TOP)/examples/usercmodule
 
 # CIRCUITPY-CHANGE: use CircuitPython bindings and implementations
 SRC_QRIO := $(patsubst ../../%,%,$(wildcard ../../shared-bindings/qrio/*.c ../../shared-module/qrio/*.c ../../lib/quirc/lib/*.c))
@@ -149,6 +147,10 @@ SRC_C += $(addprefix lib/mp3/src/, \
 )
 
 $(BUILD)/lib/mp3/src/buffers.o: CFLAGS += -include "shared-module/audiomp3/__init__.h" -D'MPDEC_ALLOCATOR(x)=malloc(x)' -D'MPDEC_FREE(x)=free(x)' -fwrapv
+
+# mp3dec.h only recognizes a fixed list of platforms and errors out on anything
+# else, including aarch64. Ask for the portable C code path, like espressif does.
+CFLAGS += -DMP3DEC_GENERIC
 
 CFLAGS += \
 	-DCIRCUITPY_AESIO=1 \

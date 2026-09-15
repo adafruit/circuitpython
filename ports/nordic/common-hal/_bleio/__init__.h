@@ -8,6 +8,12 @@
 
 void bleio_background(void);
 
+// Remember the range of attribute handles the application has populated in the
+// SoftDevice's GATT table. Required to call sd_ble_gatts_service_changed()
+// with valid arguments: it fails if the args are outside that range.
+extern uint16_t bleio_gatts_min_handle;
+extern uint16_t bleio_gatts_max_handle;
+
 typedef struct {
     ble_gap_enc_key_t own_enc;
     ble_gap_enc_key_t peer_enc;

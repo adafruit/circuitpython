@@ -7,6 +7,9 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdint.h>
+
+extern const uint8_t circuitpython_base_uuid[16];
 
 void supervisor_bluetooth_background(void);
 void supervisor_bluetooth_init(void);

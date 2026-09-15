@@ -31,6 +31,15 @@ typedef enum {
 typedef struct {
     uint16_t conn_handle;
     bool is_central;
+    // True if user code initiated or accepted this connection: it connected in the
+    // central role, or a central answered user code's advertising. User-owned
+    // connections are disconnected when the VM resets; the BLE workflow connection
+    // is not user-owned and stays up.
+    bool user_owned;
+    // An indication we sent from characteristic_notify_indicate() awaits its
+    // acknowledgment or timeout. NimBLE allows one outstanding indication per
+    // connection, shared across all characteristics.
+    volatile bool indicate_outstanding;
     // Remote services discovered when this peripheral is acting as a client.
     mp_obj_list_t *remote_service_list;
     // The advertising data and scan response buffers are held by us, not by the SD, so we must

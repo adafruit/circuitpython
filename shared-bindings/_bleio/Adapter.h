@@ -35,6 +35,13 @@ uint16_t bleio_adapter_get_name(char *buf, uint16_t len);
 extern mp_obj_str_t *common_hal_bleio_adapter_get_name(bleio_adapter_obj_t *self);
 extern void common_hal_bleio_adapter_set_name(bleio_adapter_obj_t *self, const char *name);
 
+// Resets the adapter's device name to the default: the CIRCUITPY_BLE_NAME setting value if
+// set, otherwise "CIRCUITPY" plus the last four hex digits of the adapter's address (read via
+// common_hal_bleio_adapter_get_address). Every port calls this from its
+// common_hal_bleio_adapter_set_enabled once the controller is ready, so the default name is
+// derived the same way everywhere.
+void bleio_adapter_reset_name(bleio_adapter_obj_t *self);
+
 // Returns 0 if ok, otherwise a BLE stack specific error code.
 extern uint32_t _common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
     bool connectable, bool anonymous, uint32_t timeout, float interval,

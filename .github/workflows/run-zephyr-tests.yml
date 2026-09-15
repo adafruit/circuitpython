@@ -1,0 +1,58 @@
+name: Run Zephyr tests
+
+on:
+  workflow_call:
+    inputs:
+      cp-version:
+        required: true
+        type: string
+
+jobs:
+  zephyr:
+    runs-on: ubuntu-24.04
+    name: ${{ matrix.shard }}
+    strategy:
+      fail-fast: false
+      # One job per board family, so the bsim suites, which take the longest, run
+      # side by side instead of after each other.
+      matrix:
+        include:
+          - shard: native_sim
+            boards: native_native_sim native_native_sim_asan
+            pytest_args: tests/ --ignore=tests/bsim
+          - shard: nrf5340bsim
+            boards: native_nrf5340bsim
+            pytest_args: tests/bsim -k native_nrf5340bsim
+          - shard: nrf54lm20bsim
+            boards: native_nrf54lm20bsim
+            pytest_args: tests/bsim -k native_nrf54lm20bsim
+    env:
+      CP_VERSION: ${{ inputs.cp-version }}
+    steps:
+      - name: Set up repository
+        uses: actions/checkout@v6
+        with:
+          submodules: false
+          show-progress: false
+          fetch-depth: 1
+      - name: Set up python
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.13
+      - name: Set up Zephyr
+        uses: ./.github/actions/deps/ports/zephyr-cp
+        with:
+          sdl: true
+      - name: Set up submodules
+        id: set-up-submodules
+        uses: ./.github/actions/deps/submodules
+        with:
+          target: zephyr-cp
+      - name: Set up external
+        uses: ./.github/actions/deps/external
+      - name: Build bsim
+        if: contains(matrix.shard, 'bsim')
+        run: make -j $(nproc) everything
+        working-directory: ports/zephyr-cp/tools/bsim
+      - name: Run Zephyr tests
+        run: make -C ports/zephyr-cp test TEST_BOARDS="${{ matrix.boards }}" PYTEST_ARGS="${{ matrix.pytest_args }}"

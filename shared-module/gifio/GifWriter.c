@@ -18,6 +18,12 @@
 
 #define BLOCK_SIZE (126) // (2^7) - 2 // (DO NOT CHANGE!)
 
+#define GIF_HEADER_SIZE (13 + 128 * 3 + 19)
+// Each frame writes a 19 byte header ahead of the block data (8 for the
+// graphic control extension, 11 for the image descriptor) and a 3 byte end
+// code after it.
+#define GIF_FRAME_OVERHEAD (19 + 3)
+
 static void handle_error(gifio_gifwriter_t *self) {
     if (self->error != 0) {
         mp_raise_OSError(self->error);
@@ -68,8 +74,8 @@ void shared_module_gifio_gifwriter_construct(gifio_gifwriter_t *self, mp_obj_t *
     self->dither = dither;
     self->own_file = own_file;
 
-    size_t nblocks = (width * height + 125) / 126;
-    self->size = nblocks * 128 + 4;
+    size_t nblocks = (width * height + BLOCK_SIZE - 1) / BLOCK_SIZE;
+    self->size = MAX(GIF_HEADER_SIZE, nblocks * 128 + GIF_FRAME_OVERHEAD);
     self->data = m_malloc_without_collect(self->size);
     self->cur = 0;
     self->error = 0;
@@ -155,6 +161,15 @@ static const uint8_t g_bayer[4][4] = {
 };
 
 void shared_module_gifio_gifwriter_add_frame(gifio_gifwriter_t *self, const mp_buffer_info_t *bufinfo, int16_t delay) {
+    int pixel_count = self->width * self->height;
+    int blocks = (pixel_count + BLOCK_SIZE - 1) / BLOCK_SIZE;
+
+    size_t needed_bytes = (self->colorspace == DISPLAYIO_COLORSPACE_L8)
+        ? (size_t)pixel_count
+        : 2u * (size_t)pixel_count;
+    mp_get_index(&mp_type_memoryview, bufinfo->len,
+        MP_OBJ_NEW_SMALL_INT(needed_bytes - 1), false);
+
     if (delay) {
         write_data(self, (uint8_t []) {'!', 0xF9, 0x04, 0x04}, 4);
         write_word(self, delay);
@@ -167,13 +182,9 @@ void shared_module_gifio_gifwriter_add_frame(gifio_gifwriter_t *self, const mp_b
     write_word(self, self->height);
     write_data(self, (uint8_t []) {0x00, 0x07}, 2); // 7-bits
 
-    int pixel_count = self->width * self->height;
-    int blocks = (pixel_count + BLOCK_SIZE - 1) / BLOCK_SIZE;
-
     uint8_t *data = self->data + self->cur;
 
     if (self->colorspace == DISPLAYIO_COLORSPACE_L8) {
-        mp_get_index(&mp_type_memoryview, bufinfo->len, MP_OBJ_NEW_SMALL_INT(pixel_count - 1), false);
 
         uint8_t *pixels = bufinfo->buf;
         for (int i = 0; i < blocks; i++) {
@@ -187,7 +198,6 @@ void shared_module_gifio_gifwriter_add_frame(gifio_gifwriter_t *self, const mp_b
             }
         }
     } else if (!self->dither) {
-        mp_get_index(&mp_type_memoryview, bufinfo->len, MP_OBJ_NEW_SMALL_INT(2 * pixel_count - 1), false);
 
         uint16_t *pixels = bufinfo->buf;
         for (int i = 0; i < blocks; i++) {
@@ -208,7 +218,6 @@ void shared_module_gifio_gifwriter_add_frame(gifio_gifwriter_t *self, const mp_b
             }
         }
     } else {
-        mp_get_index(&mp_type_memoryview, bufinfo->len, MP_OBJ_NEW_SMALL_INT(2 * pixel_count - 1), false);
 
         uint16_t *pixels = bufinfo->buf;
         int x = 0, y = 0;

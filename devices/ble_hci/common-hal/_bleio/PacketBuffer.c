@@ -245,6 +245,8 @@ void common_hal_bleio_packet_buffer_deinit(bleio_packet_buffer_obj_t *self) {
     if (!common_hal_bleio_packet_buffer_deinited(self)) {
         bleio_characteristic_clear_observer(self->characteristic);
         ringbuf_deinit(&self->ringbuf);
+        // Mark as deinited, so common_hal_bleio_packet_buffer_deinited() reports it.
+        self->characteristic = NULL;
     }
 }
 

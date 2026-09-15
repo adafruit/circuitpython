@@ -9,6 +9,7 @@
 #include "py/mpstate.h"
 #include "py/runtime.h"
 
+#include "bindings/espidf/__init__.h"
 #include "shared-bindings/wifi/Monitor.h"
 #include "shared-bindings/wifi/Packet.h"
 
@@ -57,8 +58,25 @@ static void wifi_monitor_cb(void *recv_buf, wifi_promiscuous_pkt_type_t type) {
     }
 }
 
+// Tune the radio and return the channel it is on afterwards. Raises
+// ValueError for a channel this radio cannot use. Any other failure, for
+// example while the station is associated, leaves the radio where it was.
+static uint8_t set_channel(uint8_t channel) {
+    esp_err_t result = esp_wifi_set_channel(channel, WIFI_SECOND_CHAN_NONE);
+    if (result == ESP_ERR_INVALID_ARG) {
+        mp_arg_error_invalid(MP_QSTR_channel);
+    } else if (result != ESP_OK) {
+        wifi_second_chan_t second;
+        CHECK_ESP_RESULT(esp_wifi_get_channel(&channel, &second));
+    }
+    return channel;
+}
+
 void common_hal_wifi_monitor_construct(wifi_monitor_obj_t *self, uint8_t channel, size_t queue) {
     mp_rom_error_text_t monitor_mode_init_error = MP_ERROR_TEXT("monitor init failed");
+
+    // Before anything needs undoing on failure.
+    channel = set_channel(channel);
 
     self->queue = xQueueCreate(queue, sizeof(monitor_packet_t));
     if (!self->queue) {
@@ -74,7 +92,6 @@ void common_hal_wifi_monitor_construct(wifi_monitor_obj_t *self, uint8_t channel
     if (esp_wifi_set_promiscuous(true) != ESP_OK) {
         mp_raise_RuntimeError(monitor_mode_init_error);
     }
-    esp_wifi_set_channel(channel, WIFI_SECOND_CHAN_NONE);
 
     self->channel = channel;
     self->queue_length = queue;
@@ -105,8 +122,7 @@ void common_hal_wifi_monitor_deinit(wifi_monitor_obj_t *self) {
 }
 
 void common_hal_wifi_monitor_set_channel(wifi_monitor_obj_t *self, uint8_t channel) {
-    self->channel = channel;
-    esp_wifi_set_channel(channel, WIFI_SECOND_CHAN_NONE);
+    self->channel = set_channel(channel);
 }
 
 mp_obj_t common_hal_wifi_monitor_get_channel(wifi_monitor_obj_t *self) {

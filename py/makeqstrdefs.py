@@ -94,10 +94,36 @@ def preprocess():
     except OSError:
         pass
 
+    # These regex's are used to filter the preprocessed data, keeping only those lines
+    # that are subsequently needed by the `process_file` step.  The regexs are kept
+    # short so they are as efficient as possible. (The stm32 port needs symbols of the
+    # form `micropy_hw_xxx` so they are also kept.)
+    re_line_file = re.compile(rb"^#(?:line)?\s+\d+\s\"")
+    re_mp_info = re.compile(rb"MP_COMP|MP_QSTR|MP_REGI|micropy_hw")
+
     def pp(flags):
         def run(files):
             try:
-                return subprocess.check_output(args.pp + flags + files)
+                filtered_lines = []
+                cmd = args.pp + flags + files
+                with subprocess.Popen(cmd, stdout=subprocess.PIPE) as proc:
+                    for line in proc.stdout:
+                        if line.isspace():
+                            pass
+                        elif re_line_file.match(line):
+                            # CIRCUITPY-CHANGE: keep every file marker, not just
+                            # the one preceding an MP symbol. CircuitPython
+                            # attributes MP_COMPRESSED_ROM_TEXT found in headers
+                            # to the enclosing C source, so process_file needs
+                            # the C source markers even when the symbol itself
+                            # comes from a header.
+                            filtered_lines.append(line)
+                        elif re_mp_info.search(line):
+                            filtered_lines.append(line)
+                    proc.wait()
+                    if proc.returncode:
+                        raise PreprocessorError("command failed: " + " ".join(cmd))
+                return b"".join(filtered_lines)
             except subprocess.CalledProcessError as er:
                 raise PreprocessorError(str(er))
 

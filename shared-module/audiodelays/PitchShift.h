@@ -20,6 +20,7 @@ typedef struct {
     synthio_block_slot_t semitones;
     mp_float_t current_semitones;
     synthio_block_slot_t mix;
+    bool freeze;
     uint32_t window_len;
     uint32_t overlap_len;
 

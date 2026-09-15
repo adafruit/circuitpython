@@ -1,0 +1,21 @@
+&is25wp128 {
+    partitions {
+        /delete-node/ partition@e20000;
+        storage_partition: partition@e20000 {
+			compatible = "zephyr,mapped-partition";
+            label = "storage";
+            reg = <0x00e20000 DT_SIZE_K(32)>;
+        };
+        circuitpy_partition: partition@e28000 {
+			compatible = "zephyr,mapped-partition";
+            label = "circuitpy";
+            reg = <0x00e28000 (DT_SIZE_M(2) - DT_SIZE_K(128) - DT_SIZE_K(32))>;
+        };
+    };
+};
+
+&sai1 {
+	mclk-output;
+};
+
+#include "../../../app.overlay"

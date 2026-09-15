@@ -225,7 +225,7 @@ audioio_get_buffer_result_t audiofilters_filter_get_buffer(audiofilters_filter_o
                     }
 
                     // Process biquad filters
-                    for (uint8_t j = 0; j < self->filter.objs_len; j++) {
+                    for (size_t j = 0; j < self->filter.objs_len; j++) {
                         mp_obj_t filter_obj = self->filter.objs[j];
                         common_hal_synthio_biquad_tick(filter_obj);
                         for (uint8_t k = 0; k < self->base.channel_count; k++) {

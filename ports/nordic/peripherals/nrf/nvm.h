@@ -7,9 +7,12 @@
 
 #pragma once
 
+#include <stdbool.h>
+#include <stdint.h>
+
 #define FLASH_PAGE_SIZE (4096)
 
-#if BLUETOOTH_SD
+#ifdef BLUETOOTH_SD
 bool sd_flash_page_erase_sync(uint32_t page_number);
 bool sd_flash_write_sync(uint32_t *dest_words, uint32_t *src_words, uint32_t num_words);
 #endif

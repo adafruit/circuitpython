@@ -32,10 +32,6 @@
 #include "supervisor/usb.h"
 #endif
 
-#if CIRCUITPY_SETTINGS_TOML
-#include "supervisor/shared/settings.h"
-#endif
-
 #define BLE_MIN_CONN_INTERVAL        MSEC_TO_UNITS(15, UNIT_0_625_MS)
 #define BLE_MAX_CONN_INTERVAL        MSEC_TO_UNITS(15, UNIT_0_625_MS)
 #define BLE_SLAVE_LATENCY            0
@@ -248,6 +244,19 @@ static bool adapter_on_ble_evt(ble_evt_t *ble_evt, void *self_in) {
             connection->connection_obj = mp_const_none;
             connection->pair_status = PAIR_NOT_PAIRED;
             connection->mtu = 0;
+            // Only user code connects in the central role, and a peripheral
+            // connection belongs to whoever started the advertising it answered.
+            connection->user_owned = connected->role == BLE_GAP_ROLE_CENTRAL ||
+                self->advertising_started_by_user;
+            // Clear leftover bond state; connection slots are recycled. The
+            // SoftDevice fills in only the keys the new peer distributes, so a
+            // stale keyset could mix the previous peer's keys into this peer's
+            // stored bond, and a stale ediv or pending-save flag could file
+            // this connection's bond data under the previous peer's key.
+            connection->ediv = EDIV_INVALID;
+            connection->do_bond_cccds = false;
+            connection->do_bond_keys = false;
+            bonding_clear_keys(&connection->bonding_keys);
 
             ble_drv_add_event_handler_entry(&connection->handler_entry, connection_on_ble_evt, connection);
             self->connection_objs = NULL;
@@ -310,31 +319,6 @@ static void get_address(bleio_adapter_obj_t *self, ble_gap_addr_t *address) {
     check_nrf_error(sd_ble_gap_addr_get(address));
 }
 
-char default_ble_name[] = { 'C', 'I', 'R', 'C', 'U', 'I', 'T', 'P', 'Y', 0, 0, 0, 0, 0};
-
-static void bleio_adapter_reset_name(bleio_adapter_obj_t *self) {
-    // setup the default name
-    ble_gap_addr_t addr; // local_address
-    get_address(self, &addr);
-    mp_int_t len = sizeof(default_ble_name) - 1;
-    default_ble_name[len - 4] = nibble_to_hex_lower[addr.addr[1] >> 4 & 0xf];
-    default_ble_name[len - 3] = nibble_to_hex_lower[addr.addr[1] & 0xf];
-    default_ble_name[len - 2] = nibble_to_hex_lower[addr.addr[0] >> 4 & 0xf];
-    default_ble_name[len - 1] = nibble_to_hex_lower[addr.addr[0] & 0xf];
-    default_ble_name[len] = '\0'; // for now we add null for compatibility with C ASCIIZ strings
-
-    #if CIRCUITPY_SETTINGS_TOML
-    char ble_name[32];
-
-    settings_err_t result = settings_get_str("CIRCUITPY_BLE_NAME", ble_name, sizeof(ble_name));
-    if (result == SETTINGS_OK) {
-        common_hal_bleio_adapter_set_name(self, ble_name);
-        return;
-    }
-    #endif
-
-    common_hal_bleio_adapter_set_name(self, (char *)default_ble_name);
-}
 
 static void bluetooth_adapter_background(void *data) {
     supervisor_bluetooth_background();
@@ -376,6 +360,9 @@ void common_hal_bleio_adapter_set_enabled(bleio_adapter_obj_t *self, bool enable
             ble_drv_remove_event_handler(connection_on_ble_evt, connection);
             connection->conn_handle = BLE_CONN_HANDLE_INVALID;
         }
+        // The SoftDevice's GATT table is empty after an enable.
+        bleio_gatts_min_handle = 0xFFFF;
+        bleio_gatts_max_handle = 0;
         self->background_callback.fun = bluetooth_adapter_background;
         self->background_callback.data = self;
         bleio_adapter_reset_name(self);
@@ -408,20 +395,19 @@ bleio_address_obj_t *common_hal_bleio_adapter_get_address(bleio_adapter_obj_t *s
     ble_gap_addr_t local_address;
     get_address(self, &local_address);
 
-    bleio_address_obj_t *address = mp_obj_malloc(bleio_address_obj_t, &bleio_address_type);
-
-    common_hal_bleio_address_construct(address, local_address.addr, local_address.addr_type);
-    return address;
+    // Return the address cached on the adapter so this can be called before
+    // the heap is available (e.g. from bleio_adapter_reset_name). The shared
+    // common_hal_bleio_address_construct() converts the raw address bytes
+    // into the Address object. The cached address is refreshed on every call.
+    common_hal_bleio_address_construct(&self->address, local_address.addr, local_address.addr_type);
+    self->address.base.type = &bleio_address_type;
+    return &self->address;
 }
 
 bool common_hal_bleio_adapter_set_address(bleio_adapter_obj_t *self, bleio_address_obj_t *address) {
     ble_gap_addr_t local_address;
-    mp_buffer_info_t bufinfo;
-    if (!mp_get_buffer(address->bytes, &bufinfo, MP_BUFFER_READ)) {
-        return false;
-    }
     local_address.addr_type = address->type;
-    memcpy(local_address.addr, bufinfo.buf, NUM_BLEIO_ADDRESS_BYTES);
+    memcpy(local_address.addr, address->bytes, NUM_BLEIO_ADDRESS_BYTES);
     return sd_ble_gap_addr_set(&local_address) == NRF_SUCCESS;
 }
 
@@ -610,9 +596,7 @@ static bool connect_on_ble_evt(ble_evt_t *ble_evt, void *info_in) {
 
 static void _convert_address(const bleio_address_obj_t *address, ble_gap_addr_t *sd_address) {
     sd_address->addr_type = address->type;
-    mp_buffer_info_t address_buf_info;
-    mp_get_buffer_raise(address->bytes, &address_buf_info, MP_BUFFER_READ);
-    memcpy(sd_address->addr, (uint8_t *)address_buf_info.buf, NUM_BLEIO_ADDRESS_BYTES);
+    memcpy(sd_address->addr, address->bytes, NUM_BLEIO_ADDRESS_BYTES);
 }
 
 mp_obj_t common_hal_bleio_adapter_connect(bleio_adapter_obj_t *self, bleio_address_obj_t *address, mp_float_t timeout) {
@@ -739,6 +723,9 @@ uint32_t _common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
     if (self->current_advertising_data != NULL && self->current_advertising_data == self->advertising_data) {
         return NRF_ERROR_BUSY;
     }
+    // The supervisor calls this internal function directly; user code arrives via
+    // common_hal_bleio_adapter_start_advertising(), which overrides this to true.
+    self->advertising_started_by_user = false;
 
     // If the current advertising data isn't owned by the adapter then it must be an internal
     // advertisement that we should stop.
@@ -794,7 +781,13 @@ uint32_t _common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
             // advertising. This prevents a potential race condition where we
             // fire off a beacon with the same advertising data but a new MAC
             // address just as we tear down the connection.
-            .private_addr_cycle_s = timeout + 1,
+            //
+            // For unlimited advertising, timeout + 1 would rotate the address
+            // every second, too fast for a central to resolve it and connect.
+            // Zero selects the SoftDevice default cycle of 15 minutes
+            // (BLE_GAP_DEFAULT_PRIVATE_ADDR_CYCLE_INTERVAL_S).
+            .private_addr_cycle_s =
+                timeout == BLE_GAP_ADV_TIMEOUT_GENERAL_UNLIMITED ? 0 : timeout + 1,
             .p_device_irk = NULL,
         };
         err_code = sd_ble_gap_privacy_set(&privacy);
@@ -913,6 +906,7 @@ void common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self, bool 
         tx_power,
         directed_to));
     self->user_advertising = true;
+    self->advertising_started_by_user = true;
 }
 
 void common_hal_bleio_adapter_stop_advertising(bleio_adapter_obj_t *self) {
@@ -998,13 +992,13 @@ void bleio_adapter_reset(bleio_adapter_obj_t *adapter) {
 
     // Wait up to 125 ms (128 ticks) for disconnect to complete. This should be
     // greater than most connection intervals.
-    bool any_connected = false;
+    bool any_connected;
     uint64_t start_ticks = supervisor_ticks_ms64();
-    while (any_connected && supervisor_ticks_ms64() - start_ticks < 128) {
+    do {
         any_connected = false;
         for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
             bleio_connection_internal_t *connection = &bleio_connections[i];
             any_connected |= connection->conn_handle != BLE_CONN_HANDLE_INVALID;
         }
-    }
+    } while (any_connected && supervisor_ticks_ms64() - start_ticks < 128);
 }
