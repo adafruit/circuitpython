@@ -16,6 +16,7 @@ CIRCUITPY_FULL_BUILD = 0
 # A number of modules are removed for RFM9x to make room for frozen libraries.
 # Many I/O functions are not available.
 CIRCUITPY_ANALOGIO = 1
+CIRCUITPY_LOAD_NATIVE = 0
 CIRCUITPY_ROTARYIO = 0
 CIRCUITPY_RTC = 0
 CIRCUITPY_USB_MIDI = 0

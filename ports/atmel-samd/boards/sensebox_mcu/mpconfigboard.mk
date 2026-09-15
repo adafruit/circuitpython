@@ -9,6 +9,7 @@ CHIP_FAMILY = samd21
 INTERNAL_FLASH_FILESYSTEM = 1
 LONGINT_IMPL = NONE
 CIRCUITPY_FULL_BUILD = 0
+CIRCUITPY_LOAD_NATIVE = 0
 
 # There are many pin definitions on this board; it doesn't quite fit on very large translations.
 CIRCUITPY_USB_MIDI = 0
