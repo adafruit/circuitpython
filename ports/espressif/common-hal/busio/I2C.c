@@ -247,7 +247,3 @@ mp_negative_errno_t common_hal_busio_i2c_write_read(busio_i2c_obj_t *self, uint1
     return convert_esp_err(result);
 }
 
-void common_hal_busio_i2c_never_reset(busio_i2c_obj_t *self) {
-    common_hal_never_reset_pin(self->scl_pin);
-    common_hal_never_reset_pin(self->sda_pin);
-}

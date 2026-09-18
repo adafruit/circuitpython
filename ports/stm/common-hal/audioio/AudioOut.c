@@ -772,8 +772,7 @@ void audioout_reset(void) {
         active_audioout->paused = false;
         active_audioout->playing = false;
         // Mark the object deinited and drop both pin references so the next
-        // construct() starts from a fully clean state. reset_all_pins (run
-        // elsewhere in reset_port) releases the actual pin claims.
+        // construct() starts from a fully clean state.
         active_audioout->left_channel = NULL;
         active_audioout->right_channel = NULL;
         active_audioout = NULL;

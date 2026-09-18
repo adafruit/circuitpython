@@ -161,18 +161,12 @@ usb_host_port_obj_t *common_hal_usb_host_port_construct(const mcu_pin_obj_t *dp,
     claim_pin(dp);
     claim_pin(dm);
 
-    PIO pio = pio_get_instance(pio_cfg.pio_tx_num);
 
     // Unclaim everything so that the library can.
     dma_channel_unclaim(pio_cfg.tx_ch);
 
     // Set all of the state machines to never reset.
-    rp2pio_statemachine_never_reset(pio, pio_cfg.sm_tx);
-    rp2pio_statemachine_never_reset(pio, pio_cfg.sm_rx);
-    rp2pio_statemachine_never_reset(pio, pio_cfg.sm_eop);
 
-    common_hal_never_reset_pin(dp);
-    common_hal_never_reset_pin(dm);
 
     // Core 1 will run the SOF interrupt directly.
     _core1_ready = false;

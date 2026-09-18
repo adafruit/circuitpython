@@ -122,7 +122,7 @@ static mp_obj_t keypad_keymatrix_make_new(const mp_obj_type_t *type, size_t n_ar
         column_pins_array[column] = pin;
     }
 
-    keypad_keymatrix_obj_t *self = mp_obj_malloc(keypad_keymatrix_obj_t, &keypad_keymatrix_type);
+    keypad_keymatrix_obj_t *self = mp_obj_malloc_with_finaliser(keypad_keymatrix_obj_t, &keypad_keymatrix_type);
     common_hal_keypad_keymatrix_construct(self, num_row_pins, row_pins_array, num_column_pins, column_pins_array, args[ARG_columns_to_anodes].u_bool, interval, max_events, debounce_threshold);
 
     return MP_OBJ_FROM_PTR(self);
@@ -239,6 +239,7 @@ MP_DEFINE_CONST_FUN_OBJ_3(keypad_keymatrix_row_column_to_key_number_obj, keypad_
 
 static const mp_rom_map_elem_t keypad_keymatrix_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit),                   MP_ROM_PTR(&keypad_keymatrix_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__),                  MP_ROM_PTR(&keypad_keymatrix_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__),                MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__),                 MP_ROM_PTR(&default___exit___obj) },
 

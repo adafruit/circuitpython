@@ -185,16 +185,6 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
     }
 }
 
-void common_hal_busio_spi_never_reset(busio_spi_obj_t *self) {
-    common_hal_never_reset_pin(self->clock->pin);
-    if (self->mosi != NULL) {
-        common_hal_never_reset_pin(self->mosi->pin);
-    }
-    if (self->miso != NULL) {
-        common_hal_never_reset_pin(self->miso->pin);
-    }
-}
-
 bool common_hal_busio_spi_deinited(busio_spi_obj_t *self) {
     return self->clock == NULL;
 }

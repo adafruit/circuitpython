@@ -96,7 +96,6 @@ void board_init(void) {
     board_buzz_obj.base.type = &audiopwmio_pwmaudioout_type;
     common_hal_audiopwmio_pwmaudioout_construct(&board_buzz_obj,
         &pin_PB08, NULL, 0x8000);
-    never_reset_pin_number(pin_PB08.port, pin_PB08.number);
 }
 
 // Use the MP_WEAK supervisor/shared/board.c versions of routines not defined here.

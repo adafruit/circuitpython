@@ -24,4 +24,3 @@ typedef struct {
     uint32_t capacity;
 } sdioio_sdcard_obj_t;
 
-void sdioio_reset(void);

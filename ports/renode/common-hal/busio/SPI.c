@@ -14,9 +14,6 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
     mp_raise_NotImplementedError(NULL);
 }
 
-void common_hal_busio_spi_never_reset(busio_spi_obj_t *self) {
-}
-
 bool common_hal_busio_spi_deinited(busio_spi_obj_t *self) {
     return true;
 }

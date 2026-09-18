@@ -32,15 +32,13 @@ static ARM_UART_PL011_Type *uart[NUM_UART] = {UART0, NULL};
 
 typedef enum {
     STATUS_FREE = 0,
-    STATUS_BUSY,
-    STATUS_NEVER_RESET
+    STATUS_BUSY
 } uart_status_t;
 
 static uart_status_t uart_status[NUM_UART];
 static busio_uart_obj_t *active_uart[NUM_UART];
 
 void reset_uart(void) {
-    bool any_pl011_active = false;
     for (uint8_t num = 0; num < NUM_UART; num++) {
         if (uart_status[num] == STATUS_BUSY) {
             if (num == 1) {
@@ -54,12 +52,7 @@ void reset_uart(void) {
             }
             active_uart[num] = NULL;
             uart_status[num] = STATUS_FREE;
-        } else {
-            any_pl011_active = any_pl011_active || (num != 1 && uart_status[num] == STATUS_NEVER_RESET);
         }
-    }
-    if (!any_pl011_active) {
-        BP_DisableIRQ(UART_IRQn);
     }
     COMPLETE_MEMORY_READS;
     if (AUX->ENABLES == 0) {
@@ -125,14 +118,6 @@ void UART5_IRQHandler(void) {
     pl011_IRQHandler(5);
 }
 #endif
-
-void common_hal_busio_uart_never_reset(busio_uart_obj_t *self) {
-    uart_status[self->uart_id] = STATUS_NEVER_RESET;
-    common_hal_never_reset_pin(self->tx_pin);
-    common_hal_never_reset_pin(self->rx_pin);
-    common_hal_never_reset_pin(self->cts_pin);
-    common_hal_never_reset_pin(self->rts_pin);
-}
 
 void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     const mcu_pin_obj_t *tx, const mcu_pin_obj_t *rx,

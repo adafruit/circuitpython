@@ -33,7 +33,6 @@
 
 // arrays use 0 based numbering: UART1 is stored at index 0
 static bool reserved_uart[MP_ARRAY_SIZE(mcu_uart_banks)];
-static bool never_reset_uart[MP_ARRAY_SIZE(mcu_uart_banks)];
 
 #if IMXRT11XX
 #define UART_CLOCK_FREQ (24000000)
@@ -61,15 +60,6 @@ static void config_periph_pin(const mcu_periph_obj_t *periph) {
         | IOMUXC_SW_PAD_CTL_PAD_ODE(0)
         | IOMUXC_SW_PAD_CTL_PAD_DSE(6)
         | IOMUXC_SW_PAD_CTL_PAD_SRE(0));
-}
-
-void common_hal_busio_uart_never_reset(busio_uart_obj_t *self) {
-    never_reset_uart[self->index] = true;
-    common_hal_never_reset_pin(self->tx);
-    common_hal_never_reset_pin(self->rx);
-    common_hal_never_reset_pin(self->rts);
-    common_hal_never_reset_pin(self->cts);
-    common_hal_never_reset_pin(self->rs485_dir);
 }
 
 void common_hal_busio_uart_construct(busio_uart_obj_t *self,
@@ -348,7 +338,6 @@ void common_hal_busio_uart_deinit(busio_uart_obj_t *self) {
     gc_free(self->ringbuf);
 
     reserved_uart[self->index] = false;
-    never_reset_uart[self->index] = false;
 
     common_hal_reset_pin(self->rx);
     common_hal_reset_pin(self->tx);

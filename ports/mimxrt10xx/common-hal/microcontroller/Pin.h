@@ -10,7 +10,6 @@
 #include "periph.h"
 #include "pins.h"
 
-void reset_all_pins(void);
 void claim_pin(const mcu_pin_obj_t *pin);
 
 // List of pins that should never be reset.

@@ -176,61 +176,6 @@ void sleep_timer_cb(void *arg);
 #define PICO_V3_02_PSRAM_CS_IO     9
 #endif // CONFIG_SPIRAM
 
-static void _never_reset_spi_ram_flash(void) {
-    #if defined(CONFIG_IDF_TARGET_ESP32)
-    #if defined(CONFIG_SPIRAM)
-    uint32_t pkg_ver = esp_efuse_get_pkg_ver();
-    if (pkg_ver == EFUSE_RD_CHIP_VER_PKG_ESP32D2WDQ5) {
-        never_reset_pin_number(D2WD_PSRAM_CLK_IO);
-        never_reset_pin_number(D2WD_PSRAM_CS_IO);
-    } else if (pkg_ver == EFUSE_RD_CHIP_VER_PKG_ESP32PICOD4 && efuse_hal_get_major_chip_version() >= 3) {
-        // This chip is ESP32-PICO-V3 and doesn't have PSRAM.
-    } else if ((pkg_ver == EFUSE_RD_CHIP_VER_PKG_ESP32PICOD2) || (pkg_ver == EFUSE_RD_CHIP_VER_PKG_ESP32PICOD4)) {
-        never_reset_pin_number(PICO_PSRAM_CLK_IO);
-        never_reset_pin_number(PICO_PSRAM_CS_IO);
-    } else if (pkg_ver == EFUSE_RD_CHIP_VER_PKG_ESP32PICOV302) {
-        never_reset_pin_number(PICO_V3_02_PSRAM_CLK_IO);
-        never_reset_pin_number(PICO_V3_02_PSRAM_CS_IO);
-    } else if ((pkg_ver == EFUSE_RD_CHIP_VER_PKG_ESP32D0WDQ6) || (pkg_ver == EFUSE_RD_CHIP_VER_PKG_ESP32D0WDQ5)) {
-        never_reset_pin_number(D0WD_PSRAM_CLK_IO);
-        never_reset_pin_number(D0WD_PSRAM_CS_IO);
-    } else if (pkg_ver == EFUSE_RD_CHIP_VER_PKG_ESP32D0WDR2V3) {
-        never_reset_pin_number(D0WDR2_V3_PSRAM_CLK_IO);
-        never_reset_pin_number(D0WDR2_V3_PSRAM_CS_IO);
-    }
-    #endif // CONFIG_SPIRAM
-
-    const uint32_t spiconfig = esp_rom_efuse_get_flash_gpio_info();
-    if (spiconfig == ESP_ROM_EFUSE_FLASH_DEFAULT_SPI) {
-        never_reset_pin_number(MSPI_IOMUX_PIN_NUM_CLK);
-        never_reset_pin_number(MSPI_IOMUX_PIN_NUM_CS0);
-        never_reset_pin_number(PSRAM_SPIQ_SD0_IO);
-        never_reset_pin_number(PSRAM_SPID_SD1_IO);
-        never_reset_pin_number(PSRAM_SPIWP_SD3_IO);
-        never_reset_pin_number(PSRAM_SPIHD_SD2_IO);
-    } else if (spiconfig == ESP_ROM_EFUSE_FLASH_DEFAULT_HSPI) {
-        never_reset_pin_number(FLASH_HSPI_CLK_IO);
-        never_reset_pin_number(FLASH_HSPI_CS_IO);
-        never_reset_pin_number(PSRAM_HSPI_SPIQ_SD0_IO);
-        never_reset_pin_number(PSRAM_HSPI_SPID_SD1_IO);
-        never_reset_pin_number(PSRAM_HSPI_SPIWP_SD3_IO);
-        never_reset_pin_number(PSRAM_HSPI_SPIHD_SD2_IO);
-    } else {
-        never_reset_pin_number(EFUSE_SPICONFIG_RET_SPICLK(spiconfig));
-        never_reset_pin_number(EFUSE_SPICONFIG_RET_SPICS0(spiconfig));
-        never_reset_pin_number(EFUSE_SPICONFIG_RET_SPIQ(spiconfig));
-        never_reset_pin_number(EFUSE_SPICONFIG_RET_SPID(spiconfig));
-        never_reset_pin_number(EFUSE_SPICONFIG_RET_SPIHD(spiconfig));
-        never_reset_pin_number(bootloader_flash_get_wp_pin());
-    }
-    #endif // CONFIG_IDF_TARGET_ESP32
-    #if defined(CONFIG_IDF_TARGET_ESP32C61)
-    #if defined(CONFIG_SPIRAM)
-    common_hal_never_reset_pin(&pin_GPIO14);
-    #endif
-    #endif
-}
-
 safe_mode_t port_init(void) {
     esp_timer_create_args_t args;
     args.callback = &tick_timer_cb;
@@ -258,41 +203,6 @@ safe_mode_t port_init(void) {
 
     #define pin_GPIOn(n) pin_GPIO##n
     #define pin_GPIOn_EXPAND(x) pin_GPIOn(x)
-
-    #ifdef CONFIG_ESP_CONSOLE_UART_TX_GPIO
-    common_hal_never_reset_pin(&pin_GPIOn_EXPAND(CONFIG_ESP_CONSOLE_UART_TX_GPIO));
-    #endif
-
-    #ifdef CONFIG_ESP_CONSOLE_UART_RX_GPIO
-    common_hal_never_reset_pin(&pin_GPIOn_EXPAND(CONFIG_ESP_CONSOLE_UART_RX_GPIO));
-    #endif
-
-    #ifndef ENABLE_JTAG
-    #define ENABLE_JTAG (0)
-    #endif
-
-    #if ENABLE_JTAG
-    ESP_LOGI(TAG, "Marking JTAG pins never_reset");
-    // JTAG
-    #if defined(CONFIG_IDF_TARGET_ESP32C3) || defined(CONFIG_IDF_TARGET_ESP32C6)
-    common_hal_never_reset_pin(&pin_GPIO4);
-    common_hal_never_reset_pin(&pin_GPIO5);
-    common_hal_never_reset_pin(&pin_GPIO6);
-    common_hal_never_reset_pin(&pin_GPIO7);
-    #elif defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3)
-    common_hal_never_reset_pin(&pin_GPIO39);
-    common_hal_never_reset_pin(&pin_GPIO40);
-    common_hal_never_reset_pin(&pin_GPIO41);
-    common_hal_never_reset_pin(&pin_GPIO42);
-    #elif defined(CONFIG_IDF_TARGET_ESP32P4) || defined(CONFIG_IDF_TARGET_ESP32C61)
-    common_hal_never_reset_pin(&pin_GPIO3);
-    common_hal_never_reset_pin(&pin_GPIO4);
-    common_hal_never_reset_pin(&pin_GPIO5);
-    common_hal_never_reset_pin(&pin_GPIO6);
-    #endif
-    #endif
-
-    _never_reset_spi_ram_flash();
 
     esp_reset_reason_t reason = esp_reset_reason();
     switch (reason) {
@@ -415,6 +325,9 @@ void reset_port_early(void) {
 }
 
 void reset_port(void) {
+    // Undo deep sleep holds and re-mark never-reset pins as in use, as the
+    // old reset_all_pins() did.
+    reset_pin_state();
 
     #if CIRCUITPY_SSL
     ssl_reset();
@@ -424,13 +337,7 @@ void reset_port(void) {
     analogout_reset();
     #endif
 
-    #if CIRCUITPY_BUSIO
-    uart_reset();
-    #endif
 
-    #if CIRCUITPY_SDIOIO
-    sdioio_reset();
-    #endif
 
     #if CIRCUITPY_DUALBANK
     dualbank_reset();

@@ -31,6 +31,5 @@
 
 #include "peripherals/pins.h"
 
-void reset_all_pins(void);
 
 #endif  // MICROPY_INCLUDED_EFR32_COMMON_HAL_MICROCONTROLLER_PIN_H

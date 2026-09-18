@@ -397,11 +397,7 @@ void reset_port(void) {
     rtc_reset();
     #endif
 
-    #if CIRCUITPY_BUSIO
-    uart_reset();
-    #endif
     #if CIRCUITPY_SDIOIO
-    sdioio_reset();
     #endif
     #if CIRCUITPY_ALARM
     exti_reset();

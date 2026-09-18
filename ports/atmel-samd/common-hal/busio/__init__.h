@@ -5,7 +5,3 @@
 // SPDX-License-Identifier: MIT
 
 #pragma once
-
-void reset_sercoms(void);
-void allow_reset_sercom(Sercom *sercom);
-void never_reset_sercom(Sercom *sercom);

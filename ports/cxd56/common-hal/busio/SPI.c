@@ -168,9 +168,3 @@ uint8_t common_hal_busio_spi_get_phase(busio_spi_obj_t *self) {
 uint8_t common_hal_busio_spi_get_polarity(busio_spi_obj_t *self) {
     return self->polarity;
 }
-
-void common_hal_busio_spi_never_reset(busio_spi_obj_t *self) {
-    never_reset_pin_number(self->clock_pin->number);
-    never_reset_pin_number(self->mosi_pin->number);
-    never_reset_pin_number(self->miso_pin->number);
-}

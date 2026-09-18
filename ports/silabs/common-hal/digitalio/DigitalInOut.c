@@ -28,12 +28,6 @@
 #include "shared-bindings/microcontroller/Pin.h"
 #include "py/runtime.h"
 
-// Never reset pin when reload
-void common_hal_digitalio_digitalinout_never_reset(
-    digitalio_digitalinout_obj_t *self) {
-    common_hal_never_reset_pin(self->pin);
-}
-
 // Construct Digitalio obj
 digitalinout_result_t common_hal_digitalio_digitalinout_construct(
     digitalio_digitalinout_obj_t *self, const mcu_pin_obj_t *pin) {

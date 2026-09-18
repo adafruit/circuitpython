@@ -15,7 +15,6 @@
 
 typedef struct {
     const mcu_pin_obj_t *pin;
-    bool reset;
     bool free;
 } pin_status_t;
 
@@ -66,39 +65,39 @@ const mcu_pin_obj_t pin_HPADC0 = PIN(4, true);
 const mcu_pin_obj_t pin_HPADC1 = PIN(5, true);
 
 static pin_status_t pins[] = {
-    { &pin_UART2_RXD, true, true },
-    { &pin_UART2_TXD, true, true },
-    { &pin_HIF_IRQ_OUT, true, true },
-    { &pin_PWM3, true, true },
-    { &pin_SPI2_MOSI, true, true },
-    { &pin_PWM1, true, true },
-    { &pin_PWM0, true, true },
-    { &pin_SPI3_CS1_X, true, true },
-    { &pin_SPI2_MISO, true, true },
-    { &pin_PWM2, true, true },
-    { &pin_SPI4_CS_X, true, true },
-    { &pin_SPI4_MOSI, true, true },
-    { &pin_SPI4_MISO, true, true },
-    { &pin_SPI4_SCK, true, true },
-    { &pin_I2C0_BDT, true, true },
-    { &pin_I2C0_BCK, true, true },
-    { &pin_EMMC_DATA0, true, true },
-    { &pin_EMMC_DATA1, true, true },
-    { &pin_I2S0_DATA_OUT, true, true },
-    { &pin_I2S0_DATA_IN, true, true },
-    { &pin_EMMC_DATA2, true, true },
-    { &pin_EMMC_DATA3, true, true },
-    { &pin_SEN_IRQ_IN, true, true },
-    { &pin_EMMC_CLK, true, true },
-    { &pin_EMMC_CMD, true, true },
-    { &pin_I2S0_LRCK, true, true },
-    { &pin_I2S0_BCK, true, true },
-    { &pin_UART2_CTS, true, true },
-    { &pin_UART2_RTS, true, true },
-    { &pin_I2S1_BCK, true, true },
-    { &pin_I2S1_LRCK, true, true },
-    { &pin_I2S1_DATA_IN, true, true },
-    { &pin_I2S1_DATA_OUT, true, true },
+    { &pin_UART2_RXD, true },
+    { &pin_UART2_TXD, true },
+    { &pin_HIF_IRQ_OUT, true },
+    { &pin_PWM3, true },
+    { &pin_SPI2_MOSI, true },
+    { &pin_PWM1, true },
+    { &pin_PWM0, true },
+    { &pin_SPI3_CS1_X, true },
+    { &pin_SPI2_MISO, true },
+    { &pin_PWM2, true },
+    { &pin_SPI4_CS_X, true },
+    { &pin_SPI4_MOSI, true },
+    { &pin_SPI4_MISO, true },
+    { &pin_SPI4_SCK, true },
+    { &pin_I2C0_BDT, true },
+    { &pin_I2C0_BCK, true },
+    { &pin_EMMC_DATA0, true },
+    { &pin_EMMC_DATA1, true },
+    { &pin_I2S0_DATA_OUT, true },
+    { &pin_I2S0_DATA_IN, true },
+    { &pin_EMMC_DATA2, true },
+    { &pin_EMMC_DATA3, true },
+    { &pin_SEN_IRQ_IN, true },
+    { &pin_EMMC_CLK, true },
+    { &pin_EMMC_CMD, true },
+    { &pin_I2S0_LRCK, true },
+    { &pin_I2S0_BCK, true },
+    { &pin_UART2_CTS, true },
+    { &pin_UART2_RTS, true },
+    { &pin_I2S1_BCK, true },
+    { &pin_I2S1_LRCK, true },
+    { &pin_I2S1_DATA_IN, true },
+    { &pin_I2S1_DATA_OUT, true },
 };
 
 bool common_hal_mcu_pin_is_free(const mcu_pin_obj_t *pin) {
@@ -111,14 +110,6 @@ bool common_hal_mcu_pin_is_free(const mcu_pin_obj_t *pin) {
     return true;
 }
 
-void never_reset_pin_number(uint8_t pin_number) {
-    for (int i = 0; i < MP_ARRAY_SIZE(pins); i++) {
-        if (pins[i].pin->number == pin_number) {
-            pins[i].reset = false;
-        }
-    }
-}
-
 void reset_pin_number(uint8_t pin_number) {
     for (int i = 0; i < MP_ARRAY_SIZE(pins); i++) {
         if (pins[i].pin->number == pin_number) {
@@ -127,17 +118,6 @@ void reset_pin_number(uint8_t pin_number) {
     }
 }
 
-void reset_all_pins(void) {
-    for (int i = 0; i < MP_ARRAY_SIZE(pins); i++) {
-        if (!pins[i].free && pins[i].reset) {
-            board_gpio_write(pins[i].pin->number, -1);
-            board_gpio_config(pins[i].pin->number, 0, false, true, PIN_FLOAT);
-            board_gpio_int(pins[i].pin->number, false);
-            board_gpio_intconfig(pins[i].pin->number, 0, false, NULL);
-            pins[i].free = true;
-        }
-    }
-}
 
 void claim_pin(const mcu_pin_obj_t *pin) {
     for (int i = 0; i < MP_ARRAY_SIZE(pins); i++) {

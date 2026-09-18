@@ -422,11 +422,3 @@ void common_hal_sdioio_sdcard_deinit(sdioio_sdcard_obj_t *self) {
     self->init = false;
 }
 
-void common_hal_sdioio_sdcard_never_reset(sdioio_sdcard_obj_t *self) {
-    never_reset_pin_number(self->command_pin);
-    never_reset_pin_number(self->clock_pin);
-    never_reset_pin_number(self->data_pins[0]);
-    never_reset_pin_number(self->data_pins[1]);
-    never_reset_pin_number(self->data_pins[2]);
-    never_reset_pin_number(self->data_pins[3]);
-}

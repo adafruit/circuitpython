@@ -275,5 +275,3 @@ void common_hal_sdioio_sdcard_deinit(sdioio_sdcard_obj_t *self) {
     self->data_pins[3] = COMMON_HAL_MCU_NO_PIN;
 }
 
-void common_hal_sdioio_sdcard_never_reset(sdioio_sdcard_obj_t *self) {
-}

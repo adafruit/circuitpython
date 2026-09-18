@@ -69,7 +69,5 @@ extern const mcu_pin_obj_t pin_LPADC3;
 extern const mcu_pin_obj_t pin_HPADC0;
 extern const mcu_pin_obj_t pin_HPADC1;
 
-void never_reset_pin_number(uint8_t pin_number);
 void reset_pin_number(uint8_t pin_number);
-void reset_all_pins(void);
 void claim_pin(const mcu_pin_obj_t *pin);

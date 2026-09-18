@@ -410,22 +410,20 @@ static void cleanup_after_vm(mp_obj_t exception) {
     wifi_user_reset();
     #endif
 
-    // reset_board_buses() first because it may release pins from the never_reset state, so that
-    // reset_port() can reset them.
+    // reset_board_buses() first to preserve display buses and deinit others.
     #if CIRCUITPY_BOARD
     reset_board_buses();
     #endif
-    reset_port();
-    reset_board();
 
-    // Free the heap last because other modules may reference heap memory and need to shut down.
+    // Flush before GC might free file objects.
     filesystem_flush();
 
-    // Runs finalisers while shutting down the heap.
+    // Runs finalisers while shutting down the heap. Finalizers call deinit on all user objects.
     stop_mp();
 
-    // Don't reset pins until finalisers have run.
-    reset_all_pins();
+    // Port-wide cleanup after finalizers have run.
+    reset_port();
+    reset_board();
 
     // Let the workflows know we've reset in case they want to restart.
     supervisor_workflow_reset();
@@ -804,8 +802,6 @@ static bool __attribute__((noinline)) run_code_py(safe_mode_t safe_mode, bool *s
         #if CIRCUITPY_ALARM_PRESERVE_DIOS
         common_hal_alarm_clear_pin_preservations();
         #endif
-        // Reset pins, as if there was a hard reset.
-        reset_all_pins();
         // Pretend that the next run is the first run, as if we were reset.
         *simulate_reset = true;
     }
@@ -1019,9 +1015,6 @@ int __attribute__((used)) main(void) {
 
     // initialise the cpu and peripherals
     set_safe_mode(port_init());
-
-    // All ports need pins reset, after never-reset pins are marked in port_init();
-    reset_all_pins();
 
     port_heap_init();
 

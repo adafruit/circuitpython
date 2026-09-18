@@ -202,10 +202,6 @@ safe_mode_t port_init(void) {
 }
 
 void reset_port(void) {
-    #if CIRCUITPY_BUSIO
-    uart_reset();
-    #endif
-
     #if CIRCUITPY_NEOPIXEL_WRITE
     neopixel_write_reset();
     #endif

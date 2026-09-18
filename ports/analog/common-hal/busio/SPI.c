@@ -114,14 +114,6 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
     return;
 }
 
-// Never reset SPI when reload
-void common_hal_busio_spi_never_reset(busio_spi_obj_t *self) {
-    common_hal_never_reset_pin(self->mosi);
-    common_hal_never_reset_pin(self->miso);
-    common_hal_never_reset_pin(self->sck);
-    common_hal_never_reset_pin(self->nss);
-}
-
 // Check SPI status, deinited or not
 bool common_hal_busio_spi_deinited(busio_spi_obj_t *self) {
     return self->sck == NULL;

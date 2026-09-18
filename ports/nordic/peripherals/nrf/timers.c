@@ -35,26 +35,12 @@ static nrfx_timer_t nrfx_timers[] = {
 };
 
 static bool nrfx_timer_allocated[ARRAY_SIZE(nrfx_timers)];
-static bool nrfx_timer_never_reset[ARRAY_SIZE(nrfx_timers)];
 
 void timers_reset(void) {
     for (size_t i = 0; i < ARRAY_SIZE(nrfx_timers); i++) {
-        if (nrfx_timer_never_reset[i]) {
-            continue;
-        }
         nrfx_timer_uninit(&nrfx_timers[i]);
         nrfx_timer_allocated[i] = false;
     }
-}
-
-void nrf_peripherals_timer_never_reset(nrfx_timer_t *timer) {
-    int idx = nrf_peripherals_timer_idx_from_timer(timer);
-    nrfx_timer_never_reset[idx] = true;
-}
-
-void nrf_peripherals_timer_reset_ok(nrfx_timer_t *timer) {
-    int idx = nrf_peripherals_timer_idx_from_timer(timer);
-    nrfx_timer_never_reset[idx] = false;
 }
 
 nrfx_timer_t *nrf_peripherals_timer_from_reg(NRF_TIMER_Type *ptr) {
@@ -102,7 +88,6 @@ void nrf_peripherals_free_timer(nrfx_timer_t *timer) {
     size_t idx = nrf_peripherals_timer_idx_from_timer(timer);
     if (idx != ~(size_t)0) {
         nrfx_timer_allocated[idx] = false;
-        nrfx_timer_never_reset[idx] = false;
         // Safe to call even if not initialized.
         nrfx_timer_uninit(timer);
     }

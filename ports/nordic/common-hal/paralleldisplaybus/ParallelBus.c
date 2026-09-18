@@ -73,16 +73,7 @@ void common_hal_paralleldisplaybus_parallelbus_construct(paralleldisplaybus_para
         self->reset.base.type = &digitalio_digitalinout_type;
         common_hal_digitalio_digitalinout_construct(&self->reset, reset);
         common_hal_digitalio_digitalinout_switch_to_output(&self->reset, true, DRIVE_MODE_PUSH_PULL);
-        never_reset_pin_number(reset->number);
         common_hal_paralleldisplaybus_parallelbus_reset(self);
-    }
-
-    never_reset_pin_number(command->number);
-    never_reset_pin_number(chip_select->number);
-    never_reset_pin_number(write->number);
-    never_reset_pin_number(read->number);
-    for (uint8_t i = 0; i < 8; i++) {
-        never_reset_pin_number(data_pin + i);
     }
 }
 

@@ -10,7 +10,6 @@
 
 #include "peripherals/pins.h"
 
-void reset_all_pins(void);
 // reset_pin_number takes the pin number instead of the pointer so that objects don't
 // need to store a full pointer.
 void reset_pin_number(uint8_t pin_port, uint8_t pin_pad);

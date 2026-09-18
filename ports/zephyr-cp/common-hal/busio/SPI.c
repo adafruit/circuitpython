@@ -275,7 +275,3 @@ uint8_t common_hal_busio_spi_get_phase(busio_spi_obj_t *self) {
 uint8_t common_hal_busio_spi_get_polarity(busio_spi_obj_t *self) {
     return (self->config[self->active_config].operation & SPI_MODE_CPOL) ? 1 : 0;
 }
-
-void common_hal_busio_spi_never_reset(busio_spi_obj_t *self) {
-    // Not needed for Zephyr port (devices are managed by Zephyr)
-}

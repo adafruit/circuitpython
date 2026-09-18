@@ -8,7 +8,6 @@
 
 static touch_sensor_handle_t touch_controller = NULL;
 static touch_channel_handle_t touch_channels[TOUCH_TOTAL_CHAN_NUM] = {NULL};
-static bool touch_never_reset_flag = false;
 static bool touch_enabled = false;
 static bool touch_scanning = false;
 
@@ -25,7 +24,7 @@ touch_channel_handle_t peripherals_touch_get_handle(int channel_id) {
 }
 
 void peripherals_touch_reset(void) {
-    if (touch_controller != NULL && !touch_never_reset_flag) {
+    if (touch_controller != NULL) {
         if (touch_scanning) {
             touch_sensor_stop_continuous_scanning(touch_controller);
             touch_scanning = false;
@@ -43,10 +42,6 @@ void peripherals_touch_reset(void) {
         touch_sensor_del_controller(touch_controller);
         touch_controller = NULL;
     }
-}
-
-void peripherals_touch_never_reset(const bool enable) {
-    touch_never_reset_flag = enable;
 }
 
 void peripherals_touch_init(const int channel_id) {

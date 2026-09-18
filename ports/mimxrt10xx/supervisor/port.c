@@ -415,7 +415,7 @@ safe_mode_t port_init(void) {
     #endif
 
     // Note that `reset_port` CANNOT GO HERE, unlike other ports, because `board_init` hasn't been
-    // run yet, which uses `never_reset` to protect critical pins from being reset by  `reset_port`.
+    // run yet, which may claim critical pins that should not be reset by `reset_port`.
 
     if (board_requests_safe_mode()) {
         return SAFE_MODE_USER;

@@ -96,12 +96,6 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
     return;
 }
 
-// Never reset I2C obj when reload
-void common_hal_busio_i2c_never_reset(busio_i2c_obj_t *self) {
-    common_hal_never_reset_pin(self->sda);
-    common_hal_never_reset_pin(self->scl);
-}
-
 // Check I2C status, deinited or not
 bool common_hal_busio_i2c_deinited(busio_i2c_obj_t *self) {
     return self->sda == NULL;

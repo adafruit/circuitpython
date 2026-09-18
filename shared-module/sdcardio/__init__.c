@@ -40,7 +40,6 @@ void sdcardio_init(void) {
     sd_card_detect_pin.base.type = &digitalio_digitalinout_type;
     common_hal_digitalio_digitalinout_construct(&sd_card_detect_pin, DEFAULT_SD_CARD_DETECT);
     common_hal_digitalio_digitalinout_switch_to_input(&sd_card_detect_pin, PULL_UP);
-    common_hal_digitalio_digitalinout_never_reset(&sd_card_detect_pin);
     #endif
 }
 
@@ -97,7 +96,6 @@ void automount_sd_card(void) {
     spi_obj = &busio_spi_obj;
     spi_obj->base.type = &busio_spi_type;
     common_hal_busio_spi_construct(spi_obj, DEFAULT_SD_SCK, DEFAULT_SD_MOSI, DEFAULT_SD_MISO, false);
-    common_hal_busio_spi_never_reset(spi_obj);
     #endif
     sdcard.base.type = &sdcardio_SDCard_type;
     mp_obj_t cs_obj = MP_OBJ_FROM_PTR(DEFAULT_SD_CS);
@@ -110,9 +108,6 @@ void automount_sd_card(void) {
         common_hal_busio_spi_deinit(spi_obj);
         #endif
         return;
-    }
-    if (mp_obj_is_type(cs_obj, &mcu_pin_type)) {
-        common_hal_digitalio_digitalinout_never_reset(MP_OBJ_TO_PTR(sdcard.cs));
     }
     fs_user_mount_t *vfs = &_sdcard_usermount;
     vfs->base.type = &mp_fat_vfs_type;

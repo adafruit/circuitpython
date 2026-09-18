@@ -213,16 +213,6 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
     }
 }
 
-void common_hal_busio_spi_never_reset(busio_spi_obj_t *self) {
-
-    never_reset_pin_number(self->sck->pin->port, self->sck->pin->number);
-    if (self->mosi != NULL) {
-        never_reset_pin_number(self->mosi->pin->port, self->mosi->pin->number);
-    }
-    if (self->miso != NULL) {
-        never_reset_pin_number(self->miso->pin->port, self->miso->pin->number);
-    }
-}
 
 bool common_hal_busio_spi_deinited(busio_spi_obj_t *self) {
     return self->sck == NULL;

@@ -58,6 +58,3 @@ mp_negative_errno_t common_hal_busio_i2c_write_read(busio_i2c_obj_t *self, uint1
     uint8_t *out_data, size_t out_len, uint8_t *in_data, size_t in_len) {
     return -MP_EIO;
 }
-
-void common_hal_busio_i2c_never_reset(busio_i2c_obj_t *self) {
-}

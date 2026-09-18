@@ -100,7 +100,6 @@ void board_init(void) {
     common_hal_digitalio_digitalinout_switch_to_output(&enable_pin_obj, true, DRIVE_MODE_PUSH_PULL);
 
     // Never reset
-    common_hal_digitalio_digitalinout_never_reset(&enable_pin_obj);
 
     common_hal_digitalio_digitalinout_construct(&sr_clock, &pin_GPIO8);
     common_hal_digitalio_digitalinout_switch_to_output(&sr_clock, false, DRIVE_MODE_PUSH_PULL);

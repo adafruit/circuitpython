@@ -9,24 +9,10 @@
 #include "peripherals/broadcom/gpio.h"
 
 static bool pin_in_use[BCM_PIN_COUNT];
-static bool never_reset_pin[BCM_PIN_COUNT];
 
-void reset_all_pins(void) {
-    for (size_t i = 0; i < BCM_PIN_COUNT; i++) {
-        if (never_reset_pin[i]) {
-            continue;
-        }
-        reset_pin_number(i);
-    }
-}
-
-void never_reset_pin_number(uint8_t pin_number) {
-    never_reset_pin[pin_number] = true;
-}
 
 void reset_pin_number(uint8_t pin_number) {
     pin_in_use[pin_number] = false;
-    never_reset_pin[pin_number] = false;
     // Reset JTAG pins back to JTAG.
     BP_PULL_Enum pull = BP_PULL_NONE;
     if (22 <= pin_number && pin_number <= 27) {
@@ -48,13 +34,6 @@ void reset_pin_number(uint8_t pin_number) {
         pull = BP_PULL_DOWN;
     }
     gpio_set_pull(pin_number, pull);
-}
-
-void common_hal_never_reset_pin(const mcu_pin_obj_t *pin) {
-    if (pin == NULL) {
-        return;
-    }
-    never_reset_pin_number(pin->number);
 }
 
 void common_hal_reset_pin(const mcu_pin_obj_t *pin) {

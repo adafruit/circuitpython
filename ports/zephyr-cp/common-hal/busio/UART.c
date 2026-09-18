@@ -49,10 +49,6 @@ static void serial_cb(const struct device *dev, void *user_data) {
     }
 }
 
-void common_hal_busio_uart_never_reset(busio_uart_obj_t *self) {
-    // Not needed for Zephyr port (devices are managed by Zephyr)
-}
-
 // Helper function for Zephyr-specific initialization from device tree
 mp_obj_t common_hal_busio_uart_construct_from_device(busio_uart_obj_t *self, const struct device *uart_device, uint16_t receiver_buffer_size, byte *receiver_buffer) {
     self->base.type = &busio_uart_type;

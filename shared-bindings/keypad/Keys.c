@@ -111,7 +111,7 @@ static mp_obj_t keypad_keys_make_new(const mp_obj_type_t *type, size_t n_args, s
             validate_obj_is_free_pin(mp_obj_subscr(pins, MP_OBJ_NEW_SMALL_INT(i), MP_OBJ_SENTINEL), MP_QSTR_pin);
     }
 
-    keypad_keys_obj_t *self = mp_obj_malloc(keypad_keys_obj_t, &keypad_keys_type);
+    keypad_keys_obj_t *self = mp_obj_malloc_with_finaliser(keypad_keys_obj_t, &keypad_keys_type);
     common_hal_keypad_keys_construct(self, num_pins, pins_array, value_when_pressed, args[ARG_pull].u_bool, interval, max_events, debounce_threshold);
 
     return MP_OBJ_FROM_PTR(self);
@@ -170,6 +170,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(keypad_keys_deinit_obj, keypad_keys_deinit);
 //|
 static const mp_rom_map_elem_t keypad_keys_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit),       MP_ROM_PTR(&keypad_keys_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__),      MP_ROM_PTR(&keypad_keys_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__),    MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__),     MP_ROM_PTR(&default___exit___obj) },
 

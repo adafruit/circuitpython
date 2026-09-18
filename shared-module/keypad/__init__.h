@@ -25,8 +25,7 @@ typedef struct _keypad_scanner_funcs_t {
     int8_t *debounce_counter; \
     struct _keypad_eventqueue_obj_t *events; \
     mp_uint_t interval_ticks; \
-    uint8_t debounce_threshold; \
-    bool never_reset
+    uint8_t debounce_threshold
 
 typedef struct _keypad_scanner_obj_t {
     KEYPAD_SCANNER_COMMON_FIELDS;
@@ -41,7 +40,6 @@ void keypad_register_scanner(keypad_scanner_obj_t *scanner);
 void keypad_deregister_scanner(keypad_scanner_obj_t *scanner);
 void keypad_construct_common(keypad_scanner_obj_t *scanner, mp_float_t interval, size_t max_events, uint8_t debounce_cycles, bool use_gc_allocator);
 bool keypad_debounce(keypad_scanner_obj_t *self, mp_uint_t key_number, bool current);
-void keypad_never_reset(keypad_scanner_obj_t *self);
 
 size_t common_hal_keypad_generic_get_key_count(void *scanner);
 void common_hal_keypad_deinit_core(void *scanner);

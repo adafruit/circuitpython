@@ -64,7 +64,6 @@ typedef enum {
 typedef enum {
     UART_FREE = 0,
     UART_BUSY,
-    UART_NEVER_RESET,
 } uart_status_t;
 
 static uint32_t timeout_ms = 0;
@@ -74,7 +73,6 @@ static uint32_t timeout_ms = 0;
 static uint8_t uarts_active = 0;
 static uart_status_t uart_status[NUM_UARTS];
 static volatile int uart_err;
-static uint8_t uart_never_reset_mask = 0;
 static busio_uart_obj_t *context;
 
 static bool isValidBaudrate(uint32_t baudrate) {
@@ -447,14 +445,6 @@ void common_hal_busio_uart_clear_rx_buffer(busio_uart_obj_t *self) {
 
 bool common_hal_busio_uart_ready_to_tx(busio_uart_obj_t *self) {
     return !(MXC_UART_GetStatus(self->uart_regs) & (MXC_F_UART_STATUS_TX_BUSY));
-}
-
-void common_hal_busio_uart_never_reset(busio_uart_obj_t *self) {
-    common_hal_never_reset_pin(self->tx_pin);
-    common_hal_never_reset_pin(self->rx_pin);
-    common_hal_never_reset_pin(self->cts_pin);
-    common_hal_never_reset_pin(self->rts_pin);
-    uart_never_reset_mask |= (1 << (self->uart_id));
 }
 
 #endif // CIRCUITPY_BUSIO_UART

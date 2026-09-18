@@ -48,11 +48,9 @@ void common_hal_canio_can_construct(canio_can_obj_t *self, const mcu_pin_obj_t *
 
     gpio_set_pin_direction(tx_function->pin, GPIO_DIRECTION_OUT);
     gpio_set_pin_function(tx_function->pin, tx_function->function);
-    common_hal_never_reset_pin(tx_function->obj);
 
     gpio_set_pin_direction(rx_function->pin, GPIO_DIRECTION_IN);
     gpio_set_pin_function(rx_function->pin, rx_function->function);
-    common_hal_never_reset_pin(rx_function->obj);
 
     self->tx_pin_number = tx ? common_hal_mcu_pin_number(tx) : COMMON_HAL_MCU_NO_PIN;
     self->rx_pin_number = rx ? common_hal_mcu_pin_number(rx) : COMMON_HAL_MCU_NO_PIN;

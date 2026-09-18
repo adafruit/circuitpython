@@ -19,6 +19,5 @@ typedef struct {
 
 #include "autogen-pins.h"
 
-void reset_all_pins(void);
 void reset_pin(const mcu_pin_obj_t *pin);
 void claim_pin(const mcu_pin_obj_t *pin);

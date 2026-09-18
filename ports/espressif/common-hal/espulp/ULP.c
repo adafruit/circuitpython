@@ -69,7 +69,6 @@ void common_hal_espulp_ulp_run(espulp_ulp_obj_t *self, uint32_t *program, size_t
     for (uint8_t i = 0; i < 32; i++) {
         if ((pin_mask & (1 << i)) != 0) {
             claim_pin_number(i);
-            never_reset_pin_number(i);
         }
     }
     pins_used = pin_mask;

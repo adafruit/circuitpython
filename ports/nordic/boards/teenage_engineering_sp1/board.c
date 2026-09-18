@@ -110,6 +110,8 @@ static void stop_pwm(NRF_PWM_Type *pwm) {
     pwm->ENABLE = 0;
 }
 
+static void apply_all_pin_defaults(void);
+
 void board_early_init(void) {
     // Feed the bootloader's watchdog before anything else. This is the first
     // CircuitPython code to run on the board: port_init() calls it before it
@@ -193,13 +195,19 @@ void board_early_init(void) {
     nrfx_rtc_init(&wake_rtc, &wake_rtc_config, wake_rtc_handler);
     arm_wake_rtc();
     nrfx_rtc_enable(&wake_rtc);
+
+    // The old reset_all_pins() used to sweep every pin right after port_init();
+    // apply the board's resting state here instead, so nothing floats while we
+    // wait for code.py. The heartbeat LED is excluded by the guard in
+    // board_reset_pin_number() because the blink is still lit.
+    apply_all_pin_defaults();
 }
 
-// Pins that must not float. reset_all_pins() and reset_pin_number() ask the
-// board for each pin, so this configuration is re-applied after every reset
-// rather than the pin being left in its default (disconnected) state.
+// Pins that must not float. reset_pin_number() asks the board for each pin,
+// so this configuration is re-applied after every reset rather than the pin
+// being left in its default (disconnected) state.
 //
-// None of these are marked never-reset, so Python can still claim them. This
+// None of these are claimed, so Python can still claim them. This
 // only makes the resting state between runs a defined, safe one.
 static const uint8_t default_low_pins[] = {
     // 3.072 MHz oscillator enable. Held low: it draws current straight through
@@ -268,22 +276,23 @@ static bool apply_pin_default(uint8_t pin_number) {
 }
 
 // Put every pin this board has an opinion about into its resting state at once.
+// Goes through board_reset_pin_number(), not apply_pin_default() directly, so
+// the boot heartbeat LED is left alone while it is lit.
 static void apply_all_pin_defaults(void) {
-    apply_pin_default(PIN_FUNCTION_BUTTON);
-    apply_pin_default(PIN_EMMC_RESET);
-    apply_pin_default(PIN_EMMC_VCCQ_EN);
+    board_reset_pin_number(PIN_FUNCTION_BUTTON);
+    board_reset_pin_number(PIN_EMMC_RESET);
+    board_reset_pin_number(PIN_EMMC_VCCQ_EN);
     for (size_t i = 0; i < MP_ARRAY_SIZE(led_pins); i++) {
-        apply_pin_default(led_pins[i]);
+        board_reset_pin_number(led_pins[i]);
     }
     for (size_t i = 0; i < MP_ARRAY_SIZE(default_low_pins); i++) {
-        apply_pin_default(default_low_pins[i]);
+        board_reset_pin_number(default_low_pins[i]);
     }
 }
 
 bool board_reset_pin_number(uint8_t pin_number) {
-    // main() calls reset_all_pins() immediately after port_init(), so without
-    // this the boot up heartbeat blink would last microseconds and show
-    // nothing. board_init() hands the pin back.
+    // A reset of this pin while the heartbeat is lit must not disturb it;
+    // board_init() hands the pin back.
     if (heartbeat_lit && pin_number == PIN_LED_HEARTBEAT) {
         return true;
     }

@@ -159,7 +159,7 @@ static mp_obj_t keypad_shiftregisterkeys_make_new(const mp_obj_type_t *type, siz
     const uint8_t debounce_threshold = (uint8_t)mp_arg_validate_int_range(args[ARG_debounce_threshold].u_int, 1, 127, MP_QSTR_debounce_threshold);
 
     keypad_shiftregisterkeys_obj_t *self =
-        mp_obj_malloc(keypad_shiftregisterkeys_obj_t, &keypad_shiftregisterkeys_type);
+        mp_obj_malloc_with_finaliser(keypad_shiftregisterkeys_obj_t, &keypad_shiftregisterkeys_type);
     common_hal_keypad_shiftregisterkeys_construct(
         self, clock, num_data_pins, data_pins_array, latch, value_to_latch, num_key_counts, key_count_array, value_when_pressed, interval, max_events, debounce_threshold);
 
@@ -219,6 +219,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(keypad_shiftregisterkeys_deinit_obj, keypad_shiftregis
 
 static const mp_rom_map_elem_t keypad_shiftregisterkeys_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit),       MP_ROM_PTR(&keypad_shiftregisterkeys_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__),      MP_ROM_PTR(&keypad_shiftregisterkeys_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__),    MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__),     MP_ROM_PTR(&default___exit___obj) },
 

@@ -69,34 +69,28 @@ void common_hal_aurora_epaper_framebuffer_construct(
     // CS
     common_hal_digitalio_digitalinout_construct(&self->chip_select, chip_select);
     common_hal_digitalio_digitalinout_switch_to_output(&self->chip_select, true, DRIVE_MODE_PUSH_PULL);
-    common_hal_never_reset_pin(chip_select);
 
     // RST
     common_hal_digitalio_digitalinout_construct(&self->reset, reset);
     common_hal_digitalio_digitalinout_switch_to_output(&self->reset, true, DRIVE_MODE_PUSH_PULL);
-    common_hal_never_reset_pin(reset);
 
     // BUSY
     common_hal_digitalio_digitalinout_construct(&self->busy, busy);
     common_hal_digitalio_digitalinout_switch_to_input(&self->busy, PULL_NONE);
-    common_hal_never_reset_pin(busy);
 
     // DC
     common_hal_digitalio_digitalinout_construct(&self->discharge, discharge);
     common_hal_digitalio_digitalinout_switch_to_output(&self->discharge, true, DRIVE_MODE_PUSH_PULL);
-    common_hal_never_reset_pin(discharge);
 
     // Power pin (if set)
     if (power != NULL) {
         common_hal_digitalio_digitalinout_construct(&self->power, power);
         common_hal_digitalio_digitalinout_switch_to_output(&self->power, true, DRIVE_MODE_PUSH_PULL);
-        common_hal_never_reset_pin(power);
     } else {
         self->power.pin = NULL;
     }
 
     self->bus = spi;
-    common_hal_busio_spi_never_reset(self->bus);
 
     self->width = width;
     self->height = height;

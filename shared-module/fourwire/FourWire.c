@@ -23,7 +23,6 @@ void common_hal_fourwire_fourwire_construct(fourwire_fourwire_obj_t *self,
     uint8_t polarity, uint8_t phase) {
 
     self->bus = spi;
-    common_hal_busio_spi_never_reset(self->bus);
 
     self->frequency = baudrate;
     self->polarity = polarity;
@@ -35,20 +34,17 @@ void common_hal_fourwire_fourwire_construct(fourwire_fourwire_obj_t *self,
     self->command = digitalinout_protocol_from_pin(command, MP_QSTR_command, true, use_port_allocation, &self->own_command);
     if (self->command != mp_const_none) {
         digitalinout_protocol_switch_to_output(self->command, true, DRIVE_MODE_PUSH_PULL);
-        common_hal_never_reset_pin(command);
     }
 
     self->reset = digitalinout_protocol_from_pin(reset, MP_QSTR_reset, true, use_port_allocation, &self->own_reset);
     if (self->reset != mp_const_none) {
         digitalinout_protocol_switch_to_output(self->reset, true, DRIVE_MODE_PUSH_PULL);
-        common_hal_never_reset_pin(reset);
         common_hal_fourwire_fourwire_reset(self);
     }
 
     self->chip_select = digitalinout_protocol_from_pin(chip_select, MP_QSTR_chip_select, true, use_port_allocation, &self->own_chip_select);
     if (self->chip_select != mp_const_none) {
         digitalinout_protocol_switch_to_output(self->chip_select, true, DRIVE_MODE_PUSH_PULL);
-        common_hal_never_reset_pin(chip_select);
     }
 }
 

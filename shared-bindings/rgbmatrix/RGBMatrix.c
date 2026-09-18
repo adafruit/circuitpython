@@ -29,15 +29,10 @@ static uint8_t validate_pin(mp_obj_t obj, qstr arg_name) {
     return common_hal_mcu_pin_number(result);
 }
 
-static void claim_and_never_reset_pin(mp_obj_t pin) {
-    common_hal_mcu_pin_claim(pin);
-    common_hal_never_reset_pin(pin);
-}
-
-static void claim_and_never_reset_pins(mp_obj_t seq) {
+static void claim_pins(mp_obj_t seq) {
     mp_int_t len = MP_OBJ_SMALL_INT_VALUE(mp_obj_len(seq));
     for (mp_int_t i = 0; i < len; i++) {
-        claim_and_never_reset_pin(mp_obj_subscr(seq, MP_OBJ_NEW_SMALL_INT(i), MP_OBJ_SENTINEL));
+        common_hal_mcu_pin_claim(mp_obj_subscr(seq, MP_OBJ_NEW_SMALL_INT(i), MP_OBJ_SENTINEL));
     }
 }
 
@@ -256,11 +251,11 @@ static mp_obj_t rgbmatrix_rgbmatrix_make_new(const mp_obj_type_t *type, size_t n
         args[ARG_doublebuffer].u_bool,
         args[ARG_framebuffer].u_obj, tile, args[ARG_serpentine].u_bool, NULL);
 
-    claim_and_never_reset_pins(args[ARG_rgb_list].u_obj);
-    claim_and_never_reset_pins(args[ARG_addr_list].u_obj);
-    claim_and_never_reset_pin(args[ARG_clock_pin].u_obj);
-    claim_and_never_reset_pin(args[ARG_output_enable_pin].u_obj);
-    claim_and_never_reset_pin(args[ARG_latch_pin].u_obj);
+    claim_pins(args[ARG_rgb_list].u_obj);
+    claim_pins(args[ARG_addr_list].u_obj);
+    common_hal_mcu_pin_claim(args[ARG_clock_pin].u_obj);
+    common_hal_mcu_pin_claim(args[ARG_output_enable_pin].u_obj);
+    common_hal_mcu_pin_claim(args[ARG_latch_pin].u_obj);
 
     return MP_OBJ_FROM_PTR(self);
 }

@@ -41,12 +41,6 @@ static twim_peripheral_t twim_peripherals[] = {
     #endif
 };
 
-
-void common_hal_busio_i2c_never_reset(busio_i2c_obj_t *self) {
-    never_reset_pin_number(self->scl_pin_number);
-    never_reset_pin_number(self->sda_pin_number);
-}
-
 static mp_negative_errno_t twi_error_to_mp(const nrfx_err_t err) {
     switch (err) {
         case NRFX_ERROR_DRV_TWI_ERR_ANACK:
