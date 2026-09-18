@@ -88,6 +88,12 @@ jobs:
         PULL: ${{ github.event.number }}
         HEAD_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
 
+    - name: ccache statistics
+      # action-zephyr-setup zeroes the statistics before the build, so this shows how
+      # much of the Zephyr build the restored cache served.
+      if: ${{ always() && inputs.port == 'zephyr-cp' }}
+      run: ccache -s -v
+
     - name: Upload artifact
       uses: actions/upload-artifact@v7
       with:
