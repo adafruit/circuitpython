@@ -248,6 +248,7 @@ audioio_get_buffer_result_t audiodelays_chorus_get_buffer(audiodelays_chorus_obj
         int32_t voices = (int32_t)MAX(synthio_block_slot_get(&self->voices), 1.0);
         int32_t mix_down_scale = SYNTHIO_MIX_DOWN_SCALE(voices);
         mp_float_t mix = synthio_block_slot_get_limited(&self->mix, MICROPY_FLOAT_CONST(0.0), MICROPY_FLOAT_CONST(1.0));
+        int32_t mix_scaled = (int32_t)(mix * MICROPY_FLOAT_CONST(32768.0));
 
         mp_float_t f_delay_ms = synthio_block_slot_get(&self->delay_ms);
         if (MICROPY_FLOAT_C_FUN(fabs)(self->current_delay_ms - f_delay_ms) >= self->sample_ms) {
@@ -311,7 +312,7 @@ audioio_get_buffer_result_t audiodelays_chorus_get_buffer(audiodelays_chorus_obj
                 }
 
                 // Add original sample + effect
-                word = sample_word + (int32_t)(word * mix);
+                word = sample_word + ((word * mix_scaled) >> 15);
                 word = synthio_mix_down_sample(word, 2);
 
                 if (MP_LIKELY(self->base.bits_per_sample == 16)) {
