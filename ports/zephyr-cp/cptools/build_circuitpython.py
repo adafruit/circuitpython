@@ -114,7 +114,7 @@ REVERSE_DEPENDENCIES = {
 # Other flags to set when a module is enabled
 EXTRA_FLAGS = {
     "audiobusio": {"AUDIOBUSIO_I2SOUT": 1, "AUDIOBUSIO_PDMIN": 0},
-    "busio": {"BUSIO_SPI": 1, "BUSIO_I2C": 1},
+    "busio": {"BUSIO_SPI": 1, "BUSIO_I2C": 1, "BUSIO_UART": 1},
     "rotaryio": {"ROTARYIO_SOFTENCODER": 1},
     "synthio": {"SYNTHIO_MAX_CHANNELS": 12},
 }

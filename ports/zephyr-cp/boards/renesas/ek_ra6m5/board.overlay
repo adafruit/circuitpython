@@ -1,0 +1,31 @@
+&flash0 {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		/* The app links at offset 0 (no zephyr,code-partition is set,
+		 * so FLASH_LOAD_OFFSET stays 0) and CIRCUITPY gets the second
+		 * half of the 2 MB internal code flash.
+		 */
+		circuitpy_partition: partition@100000 {
+			label = "circuitpy";
+			reg = <0x100000 DT_SIZE_M(1)>;
+		};
+	};
+};
+
+/* Disable OFS (Option Function Select) nodes so their high-address
+ * sections don't end up in the app HEX.
+ */
+&option_setting_ofs0        { status = "disabled"; };
+&option_setting_dualsel     { status = "disabled"; };
+&option_setting_ofs1_sec    { status = "disabled"; };
+&option_setting_banksel_sec { status = "disabled"; };
+&option_setting_bps_sec     { status = "disabled"; };
+&option_setting_pbps_sec    { status = "disabled"; };
+&option_setting_ofs1_sel    { status = "disabled"; };
+&option_setting_banksel_sel { status = "disabled"; };
+&option_setting_bps_sel     { status = "disabled"; };
+
+#include "../../../app.overlay"

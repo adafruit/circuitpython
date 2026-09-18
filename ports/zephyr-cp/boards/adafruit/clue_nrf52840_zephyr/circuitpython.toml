@@ -5,3 +5,86 @@ NAME="CLUE nRF52840 Express"
 
 # Non-Zephyr build of the same board; nvm and CIRCUITPY must sit where it puts them.
 counterpart = "nordic/clue_nrf52840_express"
+
+
+# Pin names copied from the ports/ counterpart board's pins.c and resolved
+# through the package pin map selected in board.conf.
+
+[pins]
+# Pin names copied from the ports/ counterpart board's pins.c and resolved
+# to MDBT50Q-1MV2 module pin numbers through the package pin map selected
+# in board.conf.
+P0 = 20
+D0 = 20
+A2 = 20
+RX = 20
+P1 = 21
+D1 = 21
+A3 = 21
+TX = 21
+P2 = 9
+D2 = 9
+A4 = 9
+P3 = 13
+D3 = 13
+A5 = 13
+P4 = 11
+D4 = 11
+A6 = 11
+P5 = 50
+D5 = 50
+BUTTON_A = 50
+P6 = 26
+D6 = 26
+P7 = 23
+D7 = 23
+P8 = 58
+D8 = 58
+P9 = 16
+D9 = 16
+P10 = 14
+D10 = 14
+A7 = 14
+P11 = 3
+D11 = 3
+BUTTON_B = 3
+P12 = 12
+D12 = 12
+A0 = 12
+P13 = 24
+D13 = 24
+SCK = 24
+P14 = 22
+D14 = 22
+MISO = 22
+P15 = 19
+D15 = 19
+MOSI = 19
+P16 = 10
+D16 = 10
+A1 = 10
+P17 = 61
+D17 = 61
+L = 61
+LED = 61
+P18 = 38
+D18 = 38
+NEOPIXEL = 38
+P19 = 49
+D19 = 49
+SCL = 49
+P20 = 48
+D20 = 48
+SDA = 48
+MICROPHONE_CLOCK = 18
+MICROPHONE_DATA = 17
+SPEAKER = 47
+PROXIMITY_LIGHT_INTERRUPT = 52
+ACCELEROMETER_GYRO_INTERRUPT = 57
+WHITE_LEDS = 54
+TFT_RESET = 60
+TFT_BACKLIGHT = 59
+TFT_CS = 29
+TFT_DC = 37
+TFT_SCK = 36
+TFT_MOSI = 39

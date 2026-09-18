@@ -25,6 +25,17 @@ config UART_LINE_CTRL
 config ENTROPY_GENERATOR
 	default y
 
+# ===== Dynamic pin routing (nRF) =====
+# CircuitPython routes peripherals to pins at runtime on nRF SoCs. That needs
+# pinctrl states to be swappable (PINCTRL_DYNAMIC) and devices to be
+# de-initializable/re-initializable (DEVICE_DEINIT_SUPPORT). Both cost a little
+# RAM (pinctrl configs move out of flash) and one function pointer per device.
+config PINCTRL_DYNAMIC
+	default y if SOC_FAMILY_NORDIC_NRF
+
+config DEVICE_DEINIT_SUPPORT
+	default y if SOC_FAMILY_NORDIC_NRF
+
 # ===== Bluetooth defaults =====
 
 # Use a variable for the chosen name so the comma isn't parsed as an argument separator

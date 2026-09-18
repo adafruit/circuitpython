@@ -1,1 +1,115 @@
 CIRCUITPY_BUILD_EXTENSIONS = ["hex"]
+
+# Headers silkscreened PORT0 (P0.00-P0.09), PORT1:00-15 (P1.00-P1.15),
+# PORT1:16-31 (P1.16-P1.31), PORT2 (P2.00-P2.10) and PORT3 (P3.00-P3.12),
+# resolved to CSP98 ball names through the package map selected in board.conf.
+
+[pins]
+PORT0_00 = "K3"
+PORT0_01 = "K2"
+PORT0_02 = "J3"
+PORT0_03 = "J2"
+PORT0_04 = "J1"
+PORT0_05 = "H3"
+PORT0_06 = "H2"
+PORT0_07 = "G3"
+PORT0_08 = "F3"
+PORT0_09 = "E3"
+
+# P1.01 (NFC1) and P1.02 (NFC2) are routed to the NFC antenna by default;
+# move R33/R34 to R3/R4 and disable the NFCT peripheral to use them as GPIO.
+PORT1_00 = "K8"
+PORT1_01 = "J6"
+PORT1_02 = "J7"
+PORT1_03 = "H9"
+PORT1_04 = "J9"
+PORT1_05 = "H8"
+PORT1_06 = "J8"
+PORT1_07 = "G8"
+PORT1_08 = "F8"
+PORT1_09 = "E8"
+PORT1_10 = "D5"
+PORT1_11 = "C5"
+PORT1_12 = "C4"
+PORT1_13 = "C3"
+PORT1_14 = "C2"
+PORT1_15 = "B2"
+PORT1_16 = "B3"
+PORT1_17 = "B4"
+PORT1_18 = "B5"
+PORT1_19 = "B6"
+# P1.20/P1.21 feed the 32.768 kHz crystal by default; short SB3/SB4 (and cut
+# SB1/SB2) to use them as GPIO.
+PORT1_22 = "D6"
+PORT1_23 = "B7"
+PORT1_24 = "D7"
+PORT1_25 = "E7"
+PORT1_26 = "B8"
+PORT1_27 = "C8"
+PORT1_28 = "D8"
+PORT1_29 = "H10"
+PORT1_30 = "J10"
+PORT1_31 = "K9"
+
+# P2.00-P2.05 are shared with the MX25R64 external flash.
+PORT2_00 = "B10"
+PORT2_01 = "C10"
+PORT2_02 = "D10"
+PORT2_03 = "E10"
+PORT2_04 = "F10"
+PORT2_05 = "G9"
+PORT2_06 = "B9"
+PORT2_07 = "C9"
+PORT2_08 = "D9"
+PORT2_09 = "E9"
+PORT2_10 = "F9"
+
+PORT3_00 = "H7"
+PORT3_01 = "H6"
+PORT3_02 = "H5"
+PORT3_03 = "H4"
+PORT3_04 = "J4"
+PORT3_05 = "G7"
+PORT3_06 = "G6"
+PORT3_07 = "G5"
+PORT3_08 = "G4"
+PORT3_09 = "F7"
+PORT3_10 = "F4"
+PORT3_11 = "E4"
+PORT3_12 = "D4"
+
+# Silkscreen button names. LED0-LED3, SW0-SW3 and PUSH_BUTTON_0-3 already come
+# from the devicetree.
+BUTTON0 = "B8"
+BUTTON1 = "E8"
+BUTTON2 = "F8"
+BUTTON3 = "H3"
+
+# Nordic expansion board header (P17), named per the board silkscreen.
+# Positions key the gpio-map order (header GPIO 00-21, odd/even columns from
+# the A0/B0 end); I0 sits opposite the header's mid GND and has no gpio-map
+# entry. Function groups check out: B0 = PWM (P3.04), D0-D3 = SPI
+# (P3.00-P3.03), H0-H5 = QSPI (P2.00-P2.05).
+[connectors.nordic_expansion_header]
+0 = "A0"
+1 = "B0"
+2 = "C0"
+3 = "C1"
+4 = "C2"
+5 = "C3"
+6 = "D0"
+7 = "D1"
+8 = "E2"
+9 = "E1"
+10 = "D2"
+11 = "D3"
+12 = "F0"
+13 = "F1"
+14 = "C4"
+15 = "G0"
+16 = "H0"
+17 = "H1"
+18 = "H2"
+19 = "H3"
+20 = "H4"
+21 = "H5"

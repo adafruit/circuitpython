@@ -29,4 +29,63 @@ i2s_rxtx: &i2s0 {
 
 /delete-node/ &slot1_partition;
 
+// Enable free serial peripheral instances so CircuitPython can mux them to
+// arbitrary pins at runtime. Each instance is enabled in one mode because the
+// i2c/spi/uart nodes of an instance are the same peripheral (enforced by
+// zephyr/soc/nordic/validate_enabled_instances.c). All signals are
+// disconnected and the devices are marked zephyr,deferred-init so nothing is
+// claimed at boot; iobroker initializes and routes a device when a busio
+// object is constructed and de-initializes it on release.
+//
+// Instance 0 is left alone: uart0 is the console and i2c0/spi0 share that
+// same peripheral, so they must not be enabled. Instance 1 stays with the
+// fixed arduino header i2c1, and spi4 stays the fixed arduino header SPI.
+
+&pinctrl {
+	i2c2_dyn_default: i2c2_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(TWIM_SDA)>,
+				<NRF_PSEL_DISCONNECTED(TWIM_SCL)>;
+		};
+	};
+
+	i2c2_dyn_sleep: i2c2_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(TWIM_SDA)>,
+				<NRF_PSEL_DISCONNECTED(TWIM_SCL)>;
+		};
+	};
+
+	uart3_dyn_default: uart3_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(UART_TX)>,
+				<NRF_PSEL_DISCONNECTED(UART_RX)>;
+		};
+	};
+
+	uart3_dyn_sleep: uart3_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(UART_TX)>,
+				<NRF_PSEL_DISCONNECTED(UART_RX)>;
+		};
+	};
+};
+
+&i2c2 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&i2c2_dyn_default>;
+	pinctrl-1 = <&i2c2_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&uart3 {
+	status = "okay";
+	zephyr,deferred-init;
+	current-speed = <115200>;
+	pinctrl-0 = <&uart3_dyn_default>;
+	pinctrl-1 = <&uart3_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
 #include "../../../app.overlay"

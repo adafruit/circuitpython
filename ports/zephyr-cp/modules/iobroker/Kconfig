@@ -1,0 +1,36 @@
+# iobroker: dynamic peripheral allocation and runtime pin routing.
+#
+# The module's core is always compiled (see CMakeLists.txt); callers call it
+# directly. Runtime routing needs SoC support: today it is implemented for
+# nRF SoCs, whose pin control encoding can be computed at runtime and whose
+# peripherals can be routed to (almost) any pin via PSEL. On other SoCs the
+# allocate functions always report -ENOSYS.
+
+config IOBROKER_GPIO_MAX_PINS
+	int "Maximum number of pins allocatable for GPIO use"
+	default 32
+	help
+	  Size of the registry of pins claimed for plain GPIO use via
+	  iobroker_gpio_allocate().
+
+choice IOBROKER_PACKAGE
+	prompt "SoC package pin map"
+	help
+	  The module resolves requested package pins to SoC pads through the
+	  package pin map selected here. Reference maps shipped with the module
+	  live in packages/; when none applies to the SoC, the NONE option keeps
+	  the map empty and every package pin lookup fails with -EINVAL.
+
+config IOBROKER_PACKAGE_NONE
+	bool "None (package pin lookups fail)"
+	help
+	  No package pin map is available for this SoC yet. Package pin
+	  lookups (and therefore pin claims and bus pin routing) fail with
+	  -EINVAL until a reference map is added for the SoC.
+
+# Reference maps (one option per package transcribed from a SoC datasheet)
+# live in Kconfig.packages; each depends on the SOC_* symbols of the SoCs the
+# map applies to, so only the options valid for the selected SoC are visible.
+rsource "Kconfig.packages"
+
+endchoice

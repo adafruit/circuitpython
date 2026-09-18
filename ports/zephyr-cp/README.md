@@ -99,6 +99,49 @@ Behavior and precedence:
 - If neither is provided, defaults from `circuitpython.toml` are used.
 - Use `SHIELD=` (empty) to disable a board default shield for one build.
 
+## Pin names
+
+Human readable pin names (the `board` module) come from the devicetree by
+default: `gpio-leds` and `gpio-keys` labels, node aliases, and connector
+`gpio-map`s. Boards can add names without any devicetree involvement by
+listing them in `boards/<vendor>/<board>/circuitpython.toml` under `[pins]`.
+Each entry maps a board module name to the pin number exposed by the board's
+hardware: the SoC package pin (or, for ball grid array packages, the
+datasheet's ball id, e.g. `"B2"`), or the castellated module pin when the
+board uses a module like the Raytac MDBT50Q:
+
+```toml
+[pins]
+LED = 17      # QFN package pin number
+SDA = "B2"   # ball id for BGA/CSP packages
+D13 = 8      # MDBT50Q-1MV2 module pin number
+```
+
+The build resolves each package pin to a SoC pad using the iobroker package
+pin map selected by `CONFIG_IOBROKER_PACKAGE_<PACKAGE>`
+(`modules/iobroker/packages/<package>.toml`) and exposes the name on the
+matching pad in the `board` module. A name that already maps to the same pin
+(from the devicetree or an earlier entry) is deduplicated; a name that maps
+to two different pins is a build error. The package map must not be `CUSTOM`
+or missing, and the pad must be on an enabled GPIO controller; otherwise the
+build fails with an error naming the offending entry.
+
+## Connector names
+
+Devicetree connector nodes (`gpio-map`) get their names from a generic
+per-compatible list in `cptools/zephyr2cp.py`. A board whose silkscreen
+differs can override them per position in `circuitpython.toml` under
+`[connectors.<node label>]`, keying the gpio-map position (the header pin
+number, as a string) to a name:
+
+```toml
+[connectors.nordic_expansion_header]
+0 = "EXP_00"   # header GPIO 00
+21 = "EXP_21"  # header GPIO 21 (QSPI CS)
+```
+
+Positions left out of the table get no name.
+
 ## Testing other boards
 
 [Any Zephyr board](https://docs.zephyrproject.org/latest/boards/index.html#) can

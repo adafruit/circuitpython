@@ -15,7 +15,15 @@ sys.path.insert(0, str(pathlib.Path(__file__).parent.parent))
 sys.modules["cpbuild"] = type(sys)("cpbuild")
 sys.modules["cpbuild"].run_in_thread = lambda x: x
 
-from zephyr2cp import find_flash_devices, find_ram_regions, BLOCKED_FLASH_COMPAT, MINIMUM_RAM_SIZE
+import pytest
+
+from zephyr2cp import (
+    find_flash_devices,
+    find_ram_regions,
+    BLOCKED_FLASH_COMPAT,
+    MINIMUM_RAM_SIZE,
+    add_toml_pin_names,
+)
 
 
 def parse_dts_string(dts_content):
@@ -587,3 +595,109 @@ class TestIntegration:
         assert len(rams) == 2
         assert rams[0][0] == "axisram2"
         assert rams[1][0] == "axisram1"
+
+
+class TestAddTomlPinNames:
+    """Test suite for add_toml_pin_names."""
+
+    def _add(self, toml_pins, package_pins, port_indexes, ioports):
+        board_names = {}
+        add_toml_pin_names(
+            board_names, {"pins": toml_pins}, package_pins, "nrf54l15_qfn48", port_indexes, ioports
+        )
+        return board_names
+
+    def test_package_pin_number(self):
+        package_pins = [
+            {"pin": 1, "pad": 32, "pad_name": "P1.00"},
+            {"pin": 5, "pad": 7, "pad_name": "P0.07"},
+        ]
+        board_names = self._add({"LED": 5}, package_pins, {"gpio0": 0, "gpio1": 1}, {"gpio0": {7}})
+        assert board_names == {("gpio0", 7): ["LED"]}
+
+    def test_ball_id(self):
+        package_pins = [{"pin": 12, "pad": 47, "pad_name": "P1.15", "ball": "B2"}]
+        board_names = self._add(
+            {"LED": "b2"}, package_pins, {"gpio0": 0, "gpio1": 1}, {"gpio1": {15}}
+        )
+        assert board_names == {("gpio1", 15): ["LED"]}
+
+    def test_name_sanitized(self):
+        package_pins = [{"pin": 3, "pad": 0, "pad_name": "P0.00"}]
+        board_names = self._add({"boot button": 3}, package_pins, {"gpio0": 0}, {"gpio0": {0}})
+        assert board_names == {("gpio0", 0): ["BOOT_BUTTON"]}
+
+    def test_missing_package_map_raises(self):
+        with pytest.raises(RuntimeError, match="package pin map"):
+            add_toml_pin_names(
+                {}, {"pins": {"LED": 1}}, None, "custom", {"gpio0": 0}, {"gpio0": {0}}
+            )
+
+    def test_unknown_package_pin_raises(self):
+        package_pins = [{"pin": 1, "pad": 32, "pad_name": "P1.00"}]
+        with pytest.raises(RuntimeError, match="package pin 9 is not in"):
+            self._add({"LED": 9}, package_pins, {"gpio0": 0, "gpio1": 1}, {"gpio0": {0}})
+
+    def test_unknown_ball_raises(self):
+        package_pins = [{"pin": 1, "pad": 32, "pad_name": "P1.00"}]
+        with pytest.raises(RuntimeError, match="ball Z9"):
+            self._add({"LED": "Z9"}, package_pins, {"gpio0": 0, "gpio1": 1}, {"gpio0": {0}})
+
+    def test_bad_value_type_raises(self):
+        package_pins = [{"pin": 1, "pad": 32, "pad_name": "P1.00"}]
+        with pytest.raises(RuntimeError, match="package pin number"):
+            self._add({"LED": True}, package_pins, {"gpio0": 0, "gpio1": 1}, {"gpio0": {0}})
+
+    def test_bad_name_raises(self):
+        package_pins = [{"pin": 1, "pad": 32, "pad_name": "P1.00"}]
+        with pytest.raises(RuntimeError, match="not usable"):
+            self._add({"1 LED": 1}, package_pins, {"gpio0": 0, "gpio1": 1}, {"gpio0": {0}})
+
+    def test_pad_not_on_gpio_controller_raises(self):
+        package_pins = [{"pin": 1, "pad": 32, "pad_name": "P1.00"}]
+        with pytest.raises(RuntimeError, match="not on an enabled GPIO controller"):
+            self._add({"LED": 1}, package_pins, {"gpio0": 0, "gpio1": 1}, {"gpio0": {0}})
+
+    def test_no_pins_is_noop(self):
+        board_names = {}
+        add_toml_pin_names(board_names, {}, None, None, {"gpio0": 0}, {"gpio0": {0}})
+        assert board_names == {}
+
+
+class TestAddTomlPinNamesDuplicates:
+    """Deduplication and conflict behavior of add_toml_pin_names."""
+
+    PACKAGE_PINS = [
+        {"pin": 5, "pad": 36, "pad_name": "P1.04"},
+        {"pin": 27, "pad": 2, "pad_name": "P0.02"},
+    ]
+    PORT_INDEXES = {"gpio0": 0, "gpio1": 1}
+    IOPORTS = {"gpio0": {2}, "gpio1": {4}}
+
+    def _add(self, toml_pins, board_names=None):
+        board_names = dict(board_names or {})
+        add_toml_pin_names(
+            board_names,
+            {"pins": toml_pins},
+            self.PACKAGE_PINS,
+            "nrf54l15_qfn48",
+            self.PORT_INDEXES,
+            self.IOPORTS,
+        )
+        return board_names
+
+    def test_dedupes_two_keys_same_name_same_pin(self):
+        board_names = self._add({"MY PIN": 5, "my-pin": 5})
+        assert board_names == {("gpio1", 4): ["MY_PIN"]}
+
+    def test_conflict_two_keys_same_name_different_pins(self):
+        with pytest.raises(RuntimeError, match="already maps to gpio1 pin 4"):
+            self._add({"MY PIN": 5, "my-pin": 27})
+
+    def test_dedupes_existing_devicetree_name_same_pin(self):
+        board_names = self._add({"green led": 5}, {("gpio1", 4): ["Green LED"]})
+        assert board_names == {("gpio1", 4): ["Green LED"]}
+
+    def test_conflict_existing_devicetree_name_different_pin(self):
+        with pytest.raises(RuntimeError, match="already maps to gpio0 pin 2"):
+            self._add({"STATUS": 5}, {("gpio0", 2): ["STATUS"]})

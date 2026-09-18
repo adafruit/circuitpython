@@ -7,6 +7,8 @@
 #pragma once
 
 #include "py/obj.h"
+
+#include "common-hal/microcontroller/Pin.h"
 #include <zephyr/kernel.h>
 #include <zephyr/drivers/spi.h>
 
@@ -18,6 +20,12 @@ typedef struct {
     struct spi_config config[2];  // Two configs for pointer comparison by driver
     uint8_t active_config;         // Index of currently active config (0 or 1)
     struct k_poll_signal signal;
+    // True when the underlying Zephyr device was dynamically routed to the
+    // pins below at construction time.
+    bool dynamic;
+    const mcu_pin_obj_t *clock;
+    const mcu_pin_obj_t *mosi;
+    const mcu_pin_obj_t *miso;
 } busio_spi_obj_t;
 
 // Helper function for Zephyr-specific initialization from device tree

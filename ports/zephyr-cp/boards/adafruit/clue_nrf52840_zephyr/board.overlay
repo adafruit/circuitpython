@@ -1,10 +1,14 @@
+// The UF2 board definition points the Zephyr console/shell/mcumgr/BT chosen
+// nodes at board_cdc_acm_uart, which is deleted above: CircuitPython talks USB
+// CDC ACM through its own usb_cdc bindings instead, and no serial pins are
+// claimed at boot.
 / {
 	chosen {
-		zephyr,console = &uart0;
-		zephyr,shell-uart = &uart0;
-		zephyr,uart-mcumgr = &uart0;
-		zephyr,bt-mon-uart = &uart0;
-		zephyr,bt-c2h-uart = &uart0;
+		/delete-property/ zephyr,console;
+		/delete-property/ zephyr,shell-uart;
+		/delete-property/ zephyr,uart-mcumgr;
+		/delete-property/ zephyr,bt-mon-uart;
+		/delete-property/ zephyr,bt-c2h-uart;
 	};
 };
 
@@ -42,8 +46,86 @@
 	};
 };
 
+// UART0, I2C1 and SPI3 are enabled with all pins disconnected and marked
+// zephyr,deferred-init so nothing is claimed at boot: the iobroker
+// initializes and routes a device to arbitrary pins when a busio object is
+// constructed, and de-initializes it on release. (I2C0 is the fixed sensor
+// bus, SPI2 the fixed display bus, and QSPI the fixed external flash.)
+//
+// I2C1 and SPI1 are the same peripheral instance (0x40004000), so only one
+// mode can be enabled: I2C is the more useful dynamic bus on the CLUE.
+// SPI1 is left disabled; UART1 is enabled by neither overlay because UART0
+// already provides a dynamic serial instance.
+
+&pinctrl {
+	uart0_dyn_default: uart0_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(UART_TX)>,
+				<NRF_PSEL_DISCONNECTED(UART_RX)>;
+		};
+	};
+
+	uart0_dyn_sleep: uart0_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(UART_TX)>,
+				<NRF_PSEL_DISCONNECTED(UART_RX)>;
+		};
+	};
+
+	i2c1_dyn_default: i2c1_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(TWIM_SDA)>,
+				<NRF_PSEL_DISCONNECTED(TWIM_SCL)>;
+		};
+	};
+
+	i2c1_dyn_sleep: i2c1_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(TWIM_SDA)>,
+				<NRF_PSEL_DISCONNECTED(TWIM_SCL)>;
+		};
+	};
+
+	spi3_dyn_default: spi3_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(SPIM_SCK)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MOSI)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MISO)>;
+		};
+	};
+
+	spi3_dyn_sleep: spi3_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(SPIM_SCK)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MOSI)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MISO)>;
+		};
+	};
+};
+
 &uart0 {
-    status = "okay";
+	status = "okay";
+	zephyr,deferred-init;
+	current-speed = <115200>;
+	pinctrl-0 = <&uart0_dyn_default>;
+	pinctrl-1 = <&uart0_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&i2c1 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&i2c1_dyn_default>;
+	pinctrl-1 = <&i2c1_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&spi3 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&spi3_dyn_default>;
+	pinctrl-1 = <&spi3_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
 };
 
 #include "../../../app.overlay"

@@ -9,16 +9,21 @@
 #include "py/mphal.h"
 #include "py/obj.h"
 
+#include <iobroker/iobroker.h>
 #include <zephyr/drivers/gpio.h>
 
 typedef struct {
     mp_obj_base_t base;
-    const struct device *port;
-    gpio_pin_t number;
+    // Global pin number: gpio port index * 32 + pin within the port. The
+    // GPIO controller device and pin number within it are resolved from it
+    // when needed (iobroker_gpio_split()).
+    uint16_t number;
+    // Package pin of the SoC package the pad is bonded to, resolved at
+    // build time from the board's package pin map. IOBROKER_NO_PIN when the
+    // pad has no entry in the map (or the SoC has no package pin map).
+    package_pin_t package_pin;
 } mcu_pin_obj_t;
 
 #include "autogen-pins.h"
 
 void reset_all_pins(void);
-void reset_pin(const mcu_pin_obj_t *pin);
-void claim_pin(const mcu_pin_obj_t *pin);

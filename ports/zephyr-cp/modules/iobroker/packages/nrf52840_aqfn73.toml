@@ -1,0 +1,301 @@
+# Package pin map for nrf52840_aqfn73, transcribed from nRF52840_PS_v1.1.pdf,
+# section 7.1.1 (aQFN73 ball assignments),
+# by tools/gen_package.py. Review against the datasheet figure before
+# editing by hand; regenerate instead when the datasheet changes.
+
+# Ball packages: 'pin' numbers the balls sequentially in row-major
+# order (the datasheet only labels them, e.g. B2).
+
+name = "nrf52840_aqfn73"
+socs = ["SOC_NRF52840_QIAA"]
+
+[[pins]]
+pin = 1
+ball = "A8"
+pad = 31
+pad_name = "P0.31"
+
+[[pins]]
+pin = 2
+ball = "A10"
+pad = 29
+pad_name = "P0.29"
+
+[[pins]]
+pin = 3
+ball = "A12"
+pad = 2
+pad_name = "P0.02"
+
+[[pins]]
+pin = 4
+ball = "A14"
+pad = 47
+pad_name = "P1.15"
+
+[[pins]]
+pin = 5
+ball = "A16"
+pad = 45
+pad_name = "P1.13"
+
+[[pins]]
+pin = 7
+ball = "A20"
+pad = 42
+pad_name = "P1.10"
+
+[[pins]]
+pin = 14
+ball = "B9"
+pad = 30
+pad_name = "P0.30"
+
+[[pins]]
+pin = 15
+ball = "B11"
+pad = 28
+pad_name = "P0.28"
+
+[[pins]]
+pin = 16
+ball = "B13"
+pad = 3
+pad_name = "P0.03"
+
+[[pins]]
+pin = 17
+ball = "B15"
+pad = 46
+pad_name = "P1.14"
+
+[[pins]]
+pin = 18
+ball = "B17"
+pad = 44
+pad_name = "P1.12"
+
+[[pins]]
+pin = 19
+ball = "B19"
+pad = 43
+pad_name = "P1.11"
+
+[[pins]]
+pin = 22
+ball = "D2"
+pad = 0
+pad_name = "P0.00"
+
+[[pins]]
+pin = 25
+ball = "F2"
+pad = 1
+pad_name = "P0.01"
+
+[[pins]]
+pin = 27
+ball = "G1"
+pad = 26
+pad_name = "P0.26"
+
+[[pins]]
+pin = 28
+ball = "H2"
+pad = 27
+pad_name = "P0.27"
+
+[[pins]]
+pin = 30
+ball = "J1"
+pad = 4
+pad_name = "P0.04"
+
+[[pins]]
+pin = 31
+ball = "J24"
+pad = 10
+pad_name = "P0.10"
+
+[[pins]]
+pin = 32
+ball = "K2"
+pad = 5
+pad_name = "P0.05"
+
+[[pins]]
+pin = 33
+ball = "L1"
+pad = 6
+pad_name = "P0.06"
+
+[[pins]]
+pin = 34
+ball = "L24"
+pad = 9
+pad_name = "P0.09"
+
+[[pins]]
+pin = 35
+ball = "M2"
+pad = 7
+pad_name = "P0.07"
+
+[[pins]]
+pin = 36
+ball = "N1"
+pad = 8
+pad_name = "P0.08"
+
+[[pins]]
+pin = 38
+ball = "P2"
+pad = 40
+pad_name = "P1.08"
+
+[[pins]]
+pin = 39
+ball = "P23"
+pad = 39
+pad_name = "P1.07"
+
+[[pins]]
+pin = 40
+ball = "R1"
+pad = 41
+pad_name = "P1.09"
+
+[[pins]]
+pin = 41
+ball = "R24"
+pad = 38
+pad_name = "P1.06"
+
+[[pins]]
+pin = 42
+ball = "T2"
+pad = 11
+pad_name = "P0.11"
+
+[[pins]]
+pin = 43
+ball = "T23"
+pad = 37
+pad_name = "P1.05"
+
+[[pins]]
+pin = 44
+ball = "U1"
+pad = 12
+pad_name = "P0.12"
+
+[[pins]]
+pin = 45
+ball = "U24"
+pad = 36
+pad_name = "P1.04"
+
+[[pins]]
+pin = 46
+ball = "V23"
+pad = 35
+pad_name = "P1.03"
+
+[[pins]]
+pin = 48
+ball = "W24"
+pad = 34
+pad_name = "P1.02"
+
+[[pins]]
+pin = 50
+ball = "Y23"
+pad = 33
+pad_name = "P1.01"
+
+[[pins]]
+pin = 54
+ball = "AC9"
+pad = 14
+pad_name = "P0.14"
+
+[[pins]]
+pin = 55
+ball = "AC11"
+pad = 16
+pad_name = "P0.16"
+
+[[pins]]
+pin = 56
+ball = "AC13"
+pad = 18
+pad_name = "P0.18"
+
+[[pins]]
+pin = 57
+ball = "AC15"
+pad = 19
+pad_name = "P0.19"
+
+[[pins]]
+pin = 58
+ball = "AC17"
+pad = 21
+pad_name = "P0.21"
+
+[[pins]]
+pin = 59
+ball = "AC19"
+pad = 23
+pad_name = "P0.23"
+
+[[pins]]
+pin = 60
+ball = "AC21"
+pad = 25
+pad_name = "P0.25"
+
+[[pins]]
+pin = 65
+ball = "AD8"
+pad = 13
+pad_name = "P0.13"
+
+[[pins]]
+pin = 66
+ball = "AD10"
+pad = 15
+pad_name = "P0.15"
+
+[[pins]]
+pin = 67
+ball = "AD12"
+pad = 17
+pad_name = "P0.17"
+
+[[pins]]
+pin = 69
+ball = "AD16"
+pad = 20
+pad_name = "P0.20"
+
+[[pins]]
+pin = 70
+ball = "AD18"
+pad = 22
+pad_name = "P0.22"
+
+[[pins]]
+pin = 71
+ball = "AD20"
+pad = 24
+pad_name = "P0.24"
+
+[[pins]]
+pin = 72
+ball = "AD22"
+pad = 32
+pad_name = "P1.00"
+
+# Package pins without a GPIO pad (not routable):
+# A18, A22, A23, B1, B3, B5, B7, B24, C1, D23, E24, F23, H23, N24, W1, Y2, AA24, AB2, AC5, AC24, AD2, AD4, AD6, AD14, AD23

@@ -1,0 +1,302 @@
+# Package pin map for the Raytac MDBT50Q-1MV2 module (nRF52840 aQFN73
+# inside), transcribed from "[nRF52840] MDBT50Q-1MV2 & MDBT50Q-P1MV2_Ver.L
+# spec.pdf", section 2.5 Pin Assignment, with a one-off pdftotext -layout
+# parse. Review against the datasheet figure before editing by hand.
+#
+# 'pin' numbers the module's castellated pins as the datasheet numbers them
+# (1..61); non-GPIO pins carry no pad.
+
+name = "mdbt50q_1mv2"
+socs = ["SOC_NRF52840_QIAA"]
+
+[[pins]]
+pin = 1
+name = "GND"  # non-GPIO
+
+[[pins]]
+pin = 2
+name = "GND"  # non-GPIO
+
+[[pins]]
+pin = 3
+pad = 42
+pad_name = "P1.10"
+
+[[pins]]
+pin = 4
+pad = 43
+pad_name = "P1.11"
+
+[[pins]]
+pin = 5
+pad = 44
+pad_name = "P1.12"
+
+[[pins]]
+pin = 6
+pad = 45
+pad_name = "P1.13"
+
+[[pins]]
+pin = 7
+pad = 46
+pad_name = "P1.14"
+
+[[pins]]
+pin = 8
+pad = 47
+pad_name = "P1.15"
+
+[[pins]]
+pin = 9
+pad = 3
+pad_name = "P0.03"
+
+[[pins]]
+pin = 10
+pad = 29
+pad_name = "P0.29"
+
+[[pins]]
+pin = 11
+pad = 2
+pad_name = "P0.02"
+
+[[pins]]
+pin = 12
+pad = 31
+pad_name = "P0.31"
+
+[[pins]]
+pin = 13
+pad = 28
+pad_name = "P0.28"
+
+[[pins]]
+pin = 14
+pad = 30
+pad_name = "P0.30"
+
+[[pins]]
+pin = 15
+name = "GND"  # non-GPIO
+
+[[pins]]
+pin = 16
+pad = 27
+pad_name = "P0.27"
+
+[[pins]]
+pin = 17
+pad = 0
+pad_name = "P0.00"
+
+[[pins]]
+pin = 18
+pad = 1
+pad_name = "P0.01"
+
+[[pins]]
+pin = 19
+pad = 26
+pad_name = "P0.26"
+
+[[pins]]
+pin = 20
+pad = 4
+pad_name = "P0.04"
+
+[[pins]]
+pin = 21
+pad = 5
+pad_name = "P0.05"
+
+[[pins]]
+pin = 22
+pad = 6
+pad_name = "P0.06"
+
+[[pins]]
+pin = 23
+pad = 7
+pad_name = "P0.07"
+
+[[pins]]
+pin = 24
+pad = 8
+pad_name = "P0.08"
+
+[[pins]]
+pin = 25
+pad = 40
+pad_name = "P1.08"
+
+[[pins]]
+pin = 26
+pad = 41
+pad_name = "P1.09"
+
+[[pins]]
+pin = 27
+pad = 11
+pad_name = "P0.11"
+
+[[pins]]
+pin = 28
+name = "VDD"  # non-GPIO
+
+[[pins]]
+pin = 29
+pad = 12
+pad_name = "P0.12"
+
+[[pins]]
+pin = 30
+name = "VDD"  # non-GPIO
+
+[[pins]]
+pin = 31
+name = "DCCH"  # non-GPIO
+
+[[pins]]
+pin = 32
+name = "VBUS"  # non-GPIO
+
+[[pins]]
+pin = 33
+name = "GND"  # non-GPIO
+
+[[pins]]
+pin = 34
+name = "D-"  # non-GPIO
+
+[[pins]]
+pin = 35
+name = "D+"  # non-GPIO
+
+[[pins]]
+pin = 36
+pad = 14
+pad_name = "P0.14"
+
+[[pins]]
+pin = 37
+pad = 13
+pad_name = "P0.13"
+
+[[pins]]
+pin = 38
+pad = 16
+pad_name = "P0.16"
+
+[[pins]]
+pin = 39
+pad = 15
+pad_name = "P0.15"
+
+[[pins]]
+pin = 40
+pad = 18
+pad_name = "P0.18"
+
+[[pins]]
+pin = 41
+pad = 17
+pad_name = "P0.17"
+
+[[pins]]
+pin = 42
+pad = 19
+pad_name = "P0.19"
+
+[[pins]]
+pin = 43
+pad = 21
+pad_name = "P0.21"
+
+[[pins]]
+pin = 44
+pad = 20
+pad_name = "P0.20"
+
+[[pins]]
+pin = 45
+pad = 23
+pad_name = "P0.23"
+
+[[pins]]
+pin = 46
+pad = 22
+pad_name = "P0.22"
+
+[[pins]]
+pin = 47
+pad = 32
+pad_name = "P1.00"
+
+[[pins]]
+pin = 48
+pad = 24
+pad_name = "P0.24"
+
+[[pins]]
+pin = 49
+pad = 25
+pad_name = "P0.25"
+
+[[pins]]
+pin = 50
+pad = 34
+pad_name = "P1.02"
+
+[[pins]]
+pin = 51
+name = "SWDIO"  # non-GPIO
+
+[[pins]]
+pin = 52
+pad = 9
+pad_name = "P0.09"
+
+[[pins]]
+pin = 53
+name = "SWDCLK"  # non-GPIO
+
+[[pins]]
+pin = 54
+pad = 10
+pad_name = "P0.10"
+
+[[pins]]
+pin = 55
+name = "GND"  # non-GPIO
+
+[[pins]]
+pin = 56
+pad = 36
+pad_name = "P1.04"
+
+[[pins]]
+pin = 57
+pad = 38
+pad_name = "P1.06"
+
+[[pins]]
+pin = 58
+pad = 39
+pad_name = "P1.07"
+
+[[pins]]
+pin = 59
+pad = 37
+pad_name = "P1.05"
+
+[[pins]]
+pin = 60
+pad = 35
+pad_name = "P1.03"
+
+[[pins]]
+pin = 61
+pad = 33
+pad_name = "P1.01"

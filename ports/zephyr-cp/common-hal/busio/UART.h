@@ -8,6 +8,8 @@
 
 #include "py/obj.h"
 
+#include "common-hal/microcontroller/Pin.h"
+
 #include <zephyr/kernel.h>
 
 typedef struct {
@@ -20,6 +22,16 @@ typedef struct {
     k_timeout_t write_timeout;
 
     bool rx_paused;     // set by irq if no space in rbuf
+
+    // True when the underlying Zephyr device was dynamically routed to the
+    // pins below at construction time. Such objects own their receiver
+    // buffer and deinitialize the device and release their pins.
+    bool dynamic;
+    byte *receiver_buffer;
+    const mcu_pin_obj_t *tx;
+    const mcu_pin_obj_t *rx;
+    const mcu_pin_obj_t *rts;
+    const mcu_pin_obj_t *cts;
 } busio_uart_obj_t;
 
 // Helper function for Zephyr-specific initialization from device tree
