@@ -1,0 +1,2 @@
+NAME = "Native simulator - littlefs filesystem"
+CIRCUITPY_BUILD_EXTENSIONS = ["exe"]

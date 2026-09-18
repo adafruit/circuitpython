@@ -11,6 +11,7 @@
 #include "py/mphal.h"
 #include "py/objproperty.h"
 #include "py/runtime.h"
+#include "extmod/vfs.h"
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/audiobusio/PDMIn.h"
 #include "shared-bindings/util.h"
@@ -174,7 +175,7 @@ static mp_obj_t audiobusio_pdmin_obj_record(mp_obj_t self_obj, mp_obj_t destinat
     mp_arg_validate_length_min(length, 0, MP_QSTR_length);
 
     mp_buffer_info_t bufinfo;
-    if (mp_obj_is_type(destination, &mp_type_fileio)) {
+    if (mp_obj_is_fileio(destination)) {
         mp_raise_NotImplementedError(MP_ERROR_TEXT("Cannot record to a file"));
     }
 

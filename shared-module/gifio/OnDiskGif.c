@@ -12,12 +12,11 @@
 
 #include "py/mperrno.h"
 #include "py/runtime.h"
+#include "py/stream.h"
 
 
 static int32_t GIFReadFile(GIFFILE *pFile, uint8_t *pBuf, int32_t iLen) {
-    uint32_t iBytesRead;
-    iBytesRead = iLen;
-    pyb_file_obj_t *f = pFile->fHandle;
+    uint32_t iBytesRead = iLen;
     // Note: If you read a file all the way to the last byte, seek() stops working
     if ((pFile->iSize - pFile->iPos) < iLen) {
         iBytesRead = pFile->iSize - pFile->iPos - 1; // <-- ugly work-around
@@ -25,21 +24,25 @@ static int32_t GIFReadFile(GIFFILE *pFile, uint8_t *pBuf, int32_t iLen) {
     if (iBytesRead <= 0) {
         return 0;
     }
-    UINT bytes_read;
-    if (f_read(&f->fp, pBuf, iBytesRead, &bytes_read) != FR_OK) {
-        mp_raise_OSError(MP_EIO);
+    int errcode = 0;
+    mp_uint_t bytes_read = mp_stream_rw(MP_OBJ_FROM_PTR(pFile->fHandle), pBuf,
+        iBytesRead, &errcode, MP_STREAM_RW_ONCE);
+    if (errcode != 0) {
+        mp_raise_OSError(errcode);
     }
-    pFile->iPos = f->fp.fptr;
+    pFile->iPos += bytes_read;
 
     return bytes_read;
 } /* GIFReadFile() */
 
 static int32_t GIFSeekFile(GIFFILE *pFile, int32_t iPosition) {
-    pyb_file_obj_t *f = pFile->fHandle;
-
-    f_lseek(&f->fp, iPosition);
-    pFile->iPos = f->fp.fptr;
-    return pFile->iPos;
+    int errcode = 0;
+    mp_off_t pos = mp_stream_seek(MP_OBJ_FROM_PTR(pFile->fHandle), iPosition, MP_SEEK_SET, &errcode);
+    if (pos < 0) {
+        mp_raise_OSError(errcode);
+    }
+    pFile->iPos = pos;
+    return pos;
 } /* GIFSeekFile() */
 
 static void GIFDraw(GIFDRAW *pDraw) {
@@ -127,7 +130,7 @@ static void GIFDraw(GIFDRAW *pDraw) {
     }
 }
 
-void common_hal_gifio_ondiskgif_construct(gifio_ondiskgif_t *self, pyb_file_obj_t *file, bool use_palette) {
+void common_hal_gifio_ondiskgif_construct(gifio_ondiskgif_t *self, mp_obj_t file, bool use_palette) {
     self->file = file;
 
     if (use_palette == true) {
@@ -142,10 +145,22 @@ void common_hal_gifio_ondiskgif_construct(gifio_ondiskgif_t *self, pyb_file_obj_
     self->gif.pfnDraw = GIFDraw;
     self->gif.pfnClose = NULL;
     self->gif.pfnOpen = NULL;
-    self->gif.GIFFile.fHandle = self->file;
+    self->gif.GIFFile.fHandle = MP_OBJ_TO_PTR(self->file);
 
-    f_rewind(&self->file->fp);
-    self->gif.GIFFile.iSize = (int32_t)f_size(&self->file->fp);
+    int errcode = 0;
+    mp_stream_seek(self->file, 0, MP_SEEK_SET, &errcode);
+    if (errcode != 0) {
+        mp_raise_OSError(errcode);
+    }
+    mp_off_t size = mp_stream_seek(self->file, 0, MP_SEEK_END, &errcode);
+    if (size < 0) {
+        mp_raise_OSError(errcode);
+    }
+    mp_stream_seek(self->file, 0, MP_SEEK_SET, &errcode);
+    if (errcode != 0) {
+        mp_raise_OSError(errcode);
+    }
+    self->gif.GIFFile.iSize = (int32_t)size;
 
     int result = GIF_init(&self->gif);
     if (result != 1) {

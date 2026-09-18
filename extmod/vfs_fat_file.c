@@ -246,7 +246,7 @@ static mp_obj_t fat_vfs_open(mp_obj_t self_in, mp_obj_t path_in, mp_obj_t mode_i
     }
 
     assert(self != NULL);
-    if ((mode & FA_WRITE) != 0 && !filesystem_is_writable_by_python(self)) {
+    if ((mode & FA_WRITE) != 0 && !filesystem_is_writable_by_python((supervisor_vfs_t *)self)) {
         mp_raise_OSError(MP_EROFS);
     }
 

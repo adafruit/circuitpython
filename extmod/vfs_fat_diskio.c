@@ -157,7 +157,7 @@ DRESULT disk_ioctl(
                 // error initialising
                 stat = STA_NOINIT;
                 // CIRCUITPY-CHANGE: writability from Python check
-            } else if (!filesystem_is_writable_by_python(vfs)) {
+            } else if (!filesystem_is_writable_by_python((supervisor_vfs_t *)vfs)) {
                 stat = STA_PROTECT;
             } else {
                 stat = 0;

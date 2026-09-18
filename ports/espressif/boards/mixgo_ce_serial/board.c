@@ -16,8 +16,8 @@
 void board_init(void) {
     mp_import_stat_t stat_b = mp_import_stat("boot.py");
     if (stat_b != MP_IMPORT_STAT_FILE) {
-        fs_user_mount_t *fs_mount = filesystem_circuitpy();
-        FATFS *fatfs = &fs_mount->fatfs;
+        supervisor_vfs_t *fs_mount = filesystem_circuitpy();
+        FATFS *fatfs = &fs_mount->fat.fatfs;
         FIL fs;
         UINT char_written = 0;
         const byte buffer[] = "#Serial port upload mode\nimport storage\nstorage.remount(\"/\", False)\nstorage.disable_usb_drive()\n";

@@ -7,6 +7,7 @@
 #include <stdint.h>
 
 #include "extmod/vfs_fat.h"
+#include "extmod/vfs.h"
 #include "shared/runtime/context_manager_helpers.h"
 #include "py/binary.h"
 #include "py/mphal.h"
@@ -222,7 +223,7 @@ static mp_obj_t audioi2sin_i2sin_obj_record(mp_obj_t self_obj, mp_obj_t destinat
     mp_arg_validate_length_min(length, 0, MP_QSTR_length);
 
     mp_buffer_info_t bufinfo;
-    if (mp_obj_is_type(destination, &mp_type_fileio)) {
+    if (mp_obj_is_fileio(destination)) {
         mp_raise_NotImplementedError(MP_ERROR_TEXT("Cannot record to a file"));
     }
     mp_get_buffer_raise(destination, &bufinfo, MP_BUFFER_WRITE);

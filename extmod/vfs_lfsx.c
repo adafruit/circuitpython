@@ -37,6 +37,7 @@
 #include "py/objstr.h"
 #include "py/mperrno.h"
 #include "extmod/vfs.h"
+#include "supervisor/filesystem.h"
 #include "shared/timeutils/timeutils.h"
 
 #if !MICROPY_ENABLE_FINALISER
@@ -244,8 +245,18 @@ static mp_obj_t MP_VFS_LFSx(ilistdir_func)(size_t n_args, const mp_obj_t *args) 
 }
 static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(MP_VFS_LFSx(ilistdir_obj), 1, 2, MP_VFS_LFSx(ilistdir_func));
 
+static void MP_VFS_LFSx(verify_fs_writable)(MP_OBJ_VFS_LFSx * self) {
+    // CIRCUITPY-CHANGE: Honor the supervisor's write protection flags so that
+    // storage.remount(mount, readonly=True) also applies to littlefs mounts,
+    // matching what the FAT VFS does.
+    if (!filesystem_is_writable_by_python((supervisor_vfs_t *)self)) {
+        mp_raise_OSError(MP_EROFS);
+    }
+}
+
 static mp_obj_t MP_VFS_LFSx(remove)(mp_obj_t self_in, mp_obj_t path_in) {
     MP_OBJ_VFS_LFSx *self = MP_OBJ_TO_PTR(self_in);
+    MP_VFS_LFSx(verify_fs_writable)(self);
     const char *path = MP_VFS_LFSx(make_path)(self, path_in);
     int ret = LFSx_API(remove)(&self->lfs, path);
     if (ret < 0) {
@@ -257,6 +268,7 @@ static MP_DEFINE_CONST_FUN_OBJ_2(MP_VFS_LFSx(remove_obj), MP_VFS_LFSx(remove));
 
 static mp_obj_t MP_VFS_LFSx(rmdir)(mp_obj_t self_in, mp_obj_t path_in) {
     MP_OBJ_VFS_LFSx *self = MP_OBJ_TO_PTR(self_in);
+    MP_VFS_LFSx(verify_fs_writable)(self);
     const char *path = MP_VFS_LFSx(make_path)(self, path_in);
     int ret = LFSx_API(remove)(&self->lfs, path);
     if (ret < 0) {
@@ -268,6 +280,7 @@ static MP_DEFINE_CONST_FUN_OBJ_2(MP_VFS_LFSx(rmdir_obj), MP_VFS_LFSx(rmdir));
 
 static mp_obj_t MP_VFS_LFSx(rename)(mp_obj_t self_in, mp_obj_t path_old_in, mp_obj_t path_new_in) {
     MP_OBJ_VFS_LFSx *self = MP_OBJ_TO_PTR(self_in);
+    MP_VFS_LFSx(verify_fs_writable)(self);
     const char *path_old = MP_VFS_LFSx(make_path)(self, path_old_in);
     const char *path = mp_obj_str_get_str(path_new_in);
     vstr_t path_new;
@@ -287,6 +300,7 @@ static MP_DEFINE_CONST_FUN_OBJ_3(MP_VFS_LFSx(rename_obj), MP_VFS_LFSx(rename));
 
 static mp_obj_t MP_VFS_LFSx(mkdir)(mp_obj_t self_in, mp_obj_t path_o) {
     MP_OBJ_VFS_LFSx *self = MP_OBJ_TO_PTR(self_in);
+    MP_VFS_LFSx(verify_fs_writable)(self);
     const char *path = MP_VFS_LFSx(make_path)(self, path_o);
     int ret = LFSx_API(mkdir)(&self->lfs, path);
     if (ret < 0) {

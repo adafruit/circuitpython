@@ -967,7 +967,7 @@ ifeq ($(CIRCUITPY_GIFIO),1)
 SRC_MOD += $(addprefix lib/AnimatedGIF/, \
 	gif.c \
 )
-$(BUILD)/lib/AnimatedGIF/gif.o: CFLAGS += -DCIRCUITPY
+$(BUILD)/lib/AnimatedGIF/gif.o: CFLAGS += -DCIRCUITPY -Wno-unused-but-set-variable
 endif
 
 ifeq ($(CIRCUITPY_JPEGIO),1)

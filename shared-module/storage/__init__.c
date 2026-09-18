@@ -145,8 +145,11 @@ void common_hal_storage_mount(mp_obj_t vfs_obj, const char *mount_path, bool rea
 
     fs_user_mount_t *vfs_fat = MP_OBJ_TO_PTR(vfs_obj);
     // Filesystem is read-only to USB if writable by CircuitPython, and vice versa.
-    filesystem_set_writable_by_usb(vfs_fat, readonly);
-    filesystem_set_concurrent_write_protection(vfs_fat, true);
+    // The flag helpers take a supervisor_vfs_t; a mounted VfsFat is always a
+    // fs_user_mount_t, whose base + blockdev prefix matches both vfs
+    // kinds.
+    filesystem_set_writable_by_usb((supervisor_vfs_t *)vfs_fat, readonly);
+    filesystem_set_concurrent_write_protection((supervisor_vfs_t *)vfs_fat, true);
 
     // Insert the vfs into the mount table by pushing it onto the front of the
     // mount table.
@@ -197,27 +200,35 @@ mp_obj_t common_hal_storage_getmount(const char *mount_path) {
     return storage_object_from_path(mount_path);
 }
 
-void common_hal_storage_remount(const char *mount_path, bool readonly, bool disable_concurrent_write_protection) {
-    const char *path_under_mount;
-    const char *abs_mount_path = common_hal_os_path_abspath(mount_path);
-    fs_user_mount_t *fs_usermount = filesystem_for_path(abs_mount_path, &path_under_mount);
-    if (path_under_mount[0] != 0 && strcmp(abs_mount_path, "/") != 0) {
-        mp_raise_OSError(MP_EINVAL);
-    }
-
+static void remount_vfs(supervisor_vfs_t *fs_mount, bool readonly, bool disable_concurrent_write_protection) {
     #if CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_MSC
-    if (!blockdev_lock(fs_usermount)) {
+    if (!blockdev_lock(fs_mount)) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Cannot remount path when visible via USB."));
     }
     #endif
 
-    filesystem_set_writable_by_usb(fs_usermount, readonly);
-    filesystem_set_concurrent_write_protection(fs_usermount, !disable_concurrent_write_protection);
-    blockdev_unlock(fs_usermount);
+    filesystem_set_writable_by_usb(fs_mount, readonly);
+    filesystem_set_concurrent_write_protection(fs_mount, !disable_concurrent_write_protection);
+    blockdev_unlock(fs_mount);
 
     #if CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_MSC
-    usb_msc_remount(fs_usermount);
+    usb_msc_remount(&fs_mount->fat);
     #endif
+}
+
+void common_hal_storage_remount(const char *mount_path, bool readonly, bool disable_concurrent_write_protection) {
+    const char *path_under_mount;
+    const char *abs_mount_path = common_hal_os_path_abspath(mount_path);
+    supervisor_vfs_t *fs_mount = filesystem_for_path(abs_mount_path, &path_under_mount);
+    if (path_under_mount[0] != 0 && strcmp(abs_mount_path, "/") != 0) {
+        mp_raise_OSError(MP_EINVAL);
+    }
+    if (fs_mount == NULL) {
+        // Nothing is mounted there (or there is no filesystem at all).
+        mp_raise_OSError(MP_EINVAL);
+    }
+
+    remount_vfs(fs_mount, readonly, disable_concurrent_write_protection);
 }
 
 void common_hal_storage_erase_filesystem(bool extended) {

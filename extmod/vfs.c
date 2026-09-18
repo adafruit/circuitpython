@@ -46,6 +46,37 @@
 #include "extmod/vfs_posix.h"
 #endif
 
+// CIRCUITPY-CHANGE: Shared bindings that take an already-opened file check
+// mp_type_fileio for a binary file. That is aliased to the FAT fileio type,
+// but files opened on a mounted littlefs (or posix) filesystem are a
+// different type, so provide this check that accepts any filesystem's binary
+// file type.
+bool mp_obj_is_fileio(mp_obj_t file) {
+    #if MICROPY_VFS_FAT
+    // CIRCUITPY-CHANGE: mp_type_fileio is only aliased to the FAT fileio type
+    // by CircuitPython port configs; unix tests reference the FAT type directly.
+    if (mp_obj_is_type(file, &mp_type_vfs_fat_fileio)) {
+        return true;
+    }
+    #endif
+    #if MICROPY_VFS_LFS1
+    if (mp_obj_is_type(file, &mp_type_vfs_lfs1_fileio)) {
+        return true;
+    }
+    #endif
+    #if MICROPY_VFS_LFS2
+    if (mp_obj_is_type(file, &mp_type_vfs_lfs2_fileio)) {
+        return true;
+    }
+    #endif
+    #if MICROPY_VFS_POSIX
+    if (mp_obj_is_type(file, &mp_type_vfs_posix_fileio)) {
+        return true;
+    }
+    #endif
+    return false;
+}
+
 
 #if CIRCUITPY_SDCARDIO
 #include "shared-module/sdcardio/__init__.h"
