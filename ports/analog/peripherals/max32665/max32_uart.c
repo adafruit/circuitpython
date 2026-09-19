@@ -8,20 +8,24 @@
 
 #include "common-hal/busio/UART.h"
 #include "max32_uart.h"
-#include "max32690.h"
+#include "max32665.h"
 
 #include "py/runtime.h"
 #include "py/mperrno.h"
 
+// Assuming the use of MAP_A in MSDK, since all documentation
+// states the GPIO maps are the same
+
 const mxc_gpio_cfg_t uart_maps[NUM_UARTS] = {
-    { MXC_GPIO2, (MXC_GPIO_PIN_11 | MXC_GPIO_PIN_12), MXC_GPIO_FUNC_ALT1,
+    // UART 0A
+    { MXC_GPIO0, (MXC_GPIO_PIN_9 | MXC_GPIO_PIN_10), MXC_GPIO_FUNC_ALT3,
       MXC_GPIO_PAD_WEAK_PULL_UP, MXC_GPIO_VSSEL_VDDIO, MXC_GPIO_DRVSTR_0 },
-    { MXC_GPIO2, (MXC_GPIO_PIN_14 | MXC_GPIO_PIN_16), MXC_GPIO_FUNC_ALT1,
+    // UART 1A
+    { MXC_GPIO0, (MXC_GPIO_PIN_20 | MXC_GPIO_PIN_21), MXC_GPIO_FUNC_ALT3,
       MXC_GPIO_PAD_WEAK_PULL_UP, MXC_GPIO_VSSEL_VDDIO, MXC_GPIO_DRVSTR_0 },
-    { MXC_GPIO1, (MXC_GPIO_PIN_9 | MXC_GPIO_PIN_10), MXC_GPIO_FUNC_ALT1,
+    // UART 2A
+    { MXC_GPIO0, (MXC_GPIO_PIN_1 | MXC_GPIO_PIN_2), MXC_GPIO_FUNC_ALT3,
       MXC_GPIO_PAD_WEAK_PULL_UP, MXC_GPIO_VSSEL_VDDIO, MXC_GPIO_DRVSTR_0 },
-    { MXC_GPIO3, (MXC_GPIO_PIN_0 | MXC_GPIO_PIN_1), MXC_GPIO_FUNC_ALT2,
-      MXC_GPIO_PAD_WEAK_PULL_UP, MXC_GPIO_VSSEL_VDDIO, MXC_GPIO_DRVSTR_0 }
 };
 
 int pinsToUart(const mcu_pin_obj_t *rx, const mcu_pin_obj_t *tx) {
@@ -36,10 +40,10 @@ int pinsToUart(const mcu_pin_obj_t *rx, const mcu_pin_obj_t *tx) {
 }
 
 int uart_init(mxc_uart_regs_t *uart, unsigned int baud) {
-    return MXC_UART_Init(uart, baud, MXC_UART_IBRO_CLK);
+    return MXC_UART_Init(uart, baud, MAP_A);
 }
 
 int uart_set_flow_ctrl(mxc_uart_regs_t *uart, bool enable, int rtsThreshold) {
-    mxc_uart_flow_t flow = enable ? MXC_UART_FLOW_EN : MXC_UART_FLOW_DIS;
-    return MXC_UART_SetFlowCtrl(uart, flow, rtsThreshold);
+    mxc_uart_flow_t flow = enable ? MXC_UART_FLOW_EN_LOW : MXC_UART_FLOW_DIS;
+    return MXC_UART_SetFlowCtrl(uart, flow, rtsThreshold, MAP_A);
 }
