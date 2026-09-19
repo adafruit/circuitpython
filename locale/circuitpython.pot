@@ -1481,6 +1481,7 @@ msgstr ""
 
 #: ports/espressif/common-hal/espidf/__init__.c
 #: ports/raspberrypi/common-hal/picogame/Display.c
+#: shared-bindings/hardwarekey/HardwareKey.c
 #: shared-bindings/picogame/__init__.c
 msgid "Operation or feature not supported"
 msgstr ""
@@ -1532,6 +1533,28 @@ msgstr ""
 
 #: ports/espressif/common-hal/espulp/ULPAlarm.c
 msgid "Only one %q can be set."
+msgstr ""
+
+#: ports/espressif/common-hal/hardwarekey/HardwareKey.c
+msgid "ds_params has the wrong length"
+msgstr ""
+
+#: ports/espressif/common-hal/hardwarekey/HardwareKey.c
+msgid ""
+"This key already committed to a different algorithm; call load_ds_params() "
+"again to use a different one"
+msgstr ""
+
+#: ports/espressif/common-hal/hardwarekey/HardwareKey.c
+msgid "load_ds_params() has not been called on this key"
+msgstr ""
+
+#: ports/espressif/common-hal/hardwarekey/HardwareKey.c
+msgid "ds_params is invalid for this key slot"
+msgstr ""
+
+#: ports/espressif/common-hal/hardwarekey/HardwareKey.c
+msgid "Digital Signature peripheral not available on this chip"
 msgstr ""
 
 #: ports/espressif/common-hal/i2ctarget/I2CTarget.c
@@ -3970,6 +3993,14 @@ msgstr ""
 msgid "RemoteTransmissionRequests limited to 8 bytes"
 msgstr ""
 
+#: shared-bindings/crypto_primitives/__init__.c
+msgid "Only SHA256 is supported"
+msgstr ""
+
+#: shared-bindings/crypto_primitives/__init__.c
+msgid "label is not supported"
+msgstr ""
+
 #: shared-bindings/digitalio/DigitalInOut.c
 #: shared-bindings/i2cioexpander/IOPin.c
 msgid "Cannot set value when direction is input."
@@ -4071,12 +4102,20 @@ msgstr ""
 msgid "System entry must be gnss.SatelliteSystem"
 msgstr ""
 
+#: shared-bindings/hardwarekey/HardwareKey.c
+msgid "Only PKCS1v15 and SHA256 are supported"
+msgstr ""
+
+#: shared-bindings/hardwarekey/HardwareKey.c
+msgid "Only PKCS1v15 and OAEP are supported"
+msgstr ""
+
 #: shared-bindings/hashlib/__init__.c shared-bindings/hmac/__init__.c
 msgid "Unsupported hash algorithm"
 msgstr ""
 
 #: shared-bindings/hmac/__init__.c
-msgid "hardware key slot is unused"
+msgid "hardware key is not an HMAC key"
 msgstr ""
 
 #: shared-bindings/i2cioexpander/IOExpander.c
@@ -4237,6 +4276,10 @@ msgstr ""
 
 #: shared-bindings/spitarget/SPITarget.c
 msgid "Packet buffers for an SPI transfer must have the same length."
+msgstr ""
+
+#: shared-bindings/ssl/SSLContext.c
+msgid "keyfile is not a Digital Signature key"
 msgstr ""
 
 #: shared-bindings/ssl/SSLContext.c
@@ -4416,6 +4459,10 @@ msgstr ""
 
 #: shared-module/gifio/GifWriter.c
 msgid "unsupported colorspace for GifWriter"
+msgstr ""
+
+#: shared-module/hardwarekey/HardwareKey.c
+msgid "OAEP requires this build to enable TLS 1.3 support"
 msgstr ""
 
 #: shared-module/hmac/HMAC.c
