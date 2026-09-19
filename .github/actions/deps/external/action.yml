@@ -26,7 +26,7 @@ runs:
         inputs.port != 'zephyr-cp'
       uses: carlosperate/arm-none-eabi-gcc-action@v1
       with:
-        release: '15.2.Rel1'
+        release: '15.3.Rel1'
 
     # espressif
     - name: Install IDF tools
