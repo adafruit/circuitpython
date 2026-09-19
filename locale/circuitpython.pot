@@ -4279,6 +4279,10 @@ msgid "Packet buffers for an SPI transfer must have the same length."
 msgstr ""
 
 #: shared-bindings/ssl/SSLContext.c
+msgid "keyfile is not a Digital Signature key"
+msgstr ""
+
+#: shared-bindings/ssl/SSLContext.c
 msgid "Server side context cannot have hostname"
 msgstr ""
 
