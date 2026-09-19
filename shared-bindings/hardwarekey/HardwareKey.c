@@ -140,8 +140,8 @@ static MP_DEFINE_CONST_FUN_OBJ_2(hardwarekey_hardwarekey_load_ds_params_obj, har
 //|     def sign(
 //|         self,
 //|         data: ReadableBuffer,
-//|         padding: crypto_primitives.PKCS1v15,
-//|         algorithm: crypto_primitives.SHA256,
+//|         padding: object,
+//|         algorithm: object,
 //|     ) -> bytes:
 //|         """Sign ``data`` with this Digital Signature key and return the
 //|         signature (``rsa_key_bits // 8`` bytes). The private key is never
@@ -204,7 +204,7 @@ static MP_DEFINE_CONST_FUN_OBJ_KW(hardwarekey_hardwarekey_sign_obj, 1, hardwarek
 //|     def decrypt(
 //|         self,
 //|         ciphertext: ReadableBuffer,
-//|         padding: crypto_primitives.PKCS1v15 | crypto_primitives.OAEP,
+//|         padding: object,
 //|     ) -> bytes:
 //|         """Decrypt ``ciphertext`` (``rsa_key_bits // 8`` bytes) with this Digital
 //|         Signature key and return the recovered plaintext. The private key is

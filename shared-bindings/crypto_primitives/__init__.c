@@ -13,7 +13,8 @@
 //|
 //| ``crypto_primitives`` holds padding and hash-algorithm markers used to
 //| parameterize an operation elsewhere, for example
-//| `hardwarekey.HardwareKey.sign()` / `.decrypt()`. It does no cryptography itself
+//| `hardwarekey.HardwareKey.sign()` / `hardwarekey.HardwareKey.decrypt()`. It does
+//| no cryptography itself
 //| and holds no key material; it exists only so those operations can take explicit
 //| ``padding``/``algorithm`` arguments instead of baking one fixed combination into
 //| a method name. Named and organized after
