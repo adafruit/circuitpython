@@ -13,7 +13,7 @@ ifneq ($(strip $(BOARD)),)
 WEST_SHIELD_ARGS := $(shell SHIELD_ORIGIN="$(origin SHIELD)" SHIELDS_ORIGIN="$(origin SHIELDS)" SHIELD="$(SHIELD)" SHIELDS="$(SHIELDS)" python cptools/get_west_shield_args.py $(BOARD))
 endif
 
-WEST_CMAKE_ARGS := -DZEPHYR_BOARD_ALIASES=$(CURDIR)/boards/board_aliases.cmake -Dzephyr-cp_TRANSLATION=$(TRANSLATION)
+WEST_CMAKE_ARGS := -DZEPHYR_BOARD_ALIASES=$(CURDIR)/boards/board_aliases.cmake
 
 # Board files live in the board's own folder as board.overlay / board.conf. Zephyr only auto-applies
 # boards/<name>.overlay and boards/<name>.conf named after the RESOLVED Zephyr board, so it finds
@@ -49,9 +49,30 @@ endif
 export BSIM_COMPONENTS_PATH := $(CURDIR)/tools/bsim/components
 export BSIM_OUT_PATH := $(CURDIR)/tools/bsim
 
+# The translation reaches build_circuitpython.py through the environment rather than as a
+# cmake argument, so that building another language does not reconfigure.
+export TRANSLATION
+
+# Giving west any cmake argument makes it rerun the whole sysbuild configure, which takes
+# longer than an incremental build. So configure only when the build directory is new or
+# the arguments differ from the ones recorded at the last configure; otherwise let ninja
+# decide. ninja still reconfigures by itself when a Kconfig, overlay or CMake file changes.
+# The record is written before west runs and removed if west fails, so a failed configure
+# cannot leave the directory configured with arguments the record does not show.
+WEST_CONFIGURE_ARGS := -b $(BOARD) $(WEST_SHIELD_ARGS) --sysbuild -- $(WEST_CMAKE_ARGS)
+WEST_ARGS_STAMP := $(BUILD)/west_configure_args.txt
+
 $(BUILD)/zephyr-cp/zephyr/zephyr.elf:
 	python cptools/pre_zephyr_build_prep.py $(BOARD)
-	west build -b $(BOARD) -d $(BUILD) $(WEST_SHIELD_ARGS) --sysbuild -- $(WEST_CMAKE_ARGS)
+	@mkdir -p $(BUILD)
+	@if [ ! -f $(BUILD)/build.ninja ] || [ "$$(cat $(WEST_ARGS_STAMP) 2>/dev/null)" != '$(WEST_CONFIGURE_ARGS)' ]; then \
+		echo west build -d $(BUILD) $(WEST_CONFIGURE_ARGS); \
+		echo '$(WEST_CONFIGURE_ARGS)' > $(WEST_ARGS_STAMP); \
+		west build -d $(BUILD) $(WEST_CONFIGURE_ARGS) || { rm -f $(WEST_ARGS_STAMP); exit 1; }; \
+	else \
+		echo west build -d $(BUILD); \
+		west build -d $(BUILD); \
+	fi
 	python ../../tools/build_memory_info.py $(BUILD)/zephyr-cp/zephyr/zephyr.map $(BUILD) --image $(BUILD)/zephyr-cp/zephyr/zephyr.bin
 
 $(BUILD)/firmware.elf: $(BUILD)/zephyr-cp/zephyr/zephyr.elf
