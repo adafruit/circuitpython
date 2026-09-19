@@ -33,6 +33,12 @@ runs:
         app-path: zephyr-config
         base-path: ports/zephyr-cp
         toolchains: arm-zephyr-eabi
+        # The action's ccache stores a new ~150 MB entry per board job under one key
+        # shared by every board, and each job restores whichever entry was saved last.
+        # Measured across all 30 boards: hits on 5 boards by luck, none on the other 25,
+        # and no build-time difference either way. The entries were filling the
+        # repository's 10 GB Actions cache and evicting the SDK and other caches.
+        enable-ccache: false
     - name: Export cmake info
       run: west zephyr-export
       shell: bash
