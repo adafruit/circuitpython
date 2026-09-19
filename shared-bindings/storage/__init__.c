@@ -300,6 +300,29 @@ static mp_obj_t storage_enable_usb_drive(void) {
 }
 MP_DEFINE_CONST_FUN_OBJ_0(storage_enable_usb_drive_obj, storage_enable_usb_drive);
 
+
+//| def map_file(file: typing.BinaryIO) -> Tuple[memoryview, ...]:
+//|     """Map an open file on the internal CIRCUITPY drive straight from flash, without copying it
+//|     into RAM. Returns one read-only `memoryview` per contiguous run of the file's clusters, in
+//|     file order: a contiguous file gives a 1-tuple, an empty file an empty tuple. Run boundaries
+//|     fall on cluster boundaries. The views stay valid after the file is closed, and anything that
+//|     takes a buffer can use them: a `synthio.MidiTrack`, an `audiocore.RawSample`, a wavetable.
+//|
+//|     Treat the file as read-only while a view is in use: rewriting it shows the new bytes, and
+//|     mid-write it shows a torn file.
+//|
+//|     :param typing.BinaryIO file: A file on the CIRCUITPY drive open for binary reading (``"rb"``)
+//|     :raises OSError: ``EINVAL`` if the file is closed or not open for reading only,
+//|       ``EOPNOTSUPP`` if it is on another mount or this build cannot map the drive,
+//|       ``EIO`` if its cluster chain is corrupt
+//|     :raises ~builtins.MemoryError: if ``open()`` could not allocate the file's cluster map
+//|     :raises NotImplementedError: on a port whose drive is not memory-mapped"""
+//|     ...
+static mp_obj_t storage_map_file(mp_obj_t file_in) {
+    return common_hal_storage_map_file(file_in);
+}
+MP_DEFINE_CONST_FUN_OBJ_1(storage_map_file_obj, storage_map_file);
+
 static const mp_rom_map_elem_t storage_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_storage) },
 
@@ -307,6 +330,7 @@ static const mp_rom_map_elem_t storage_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_umount),                   MP_ROM_PTR(&storage_umount_obj) },
     { MP_ROM_QSTR(MP_QSTR_remount),                  MP_ROM_PTR(&storage_remount_obj) },
     { MP_ROM_QSTR(MP_QSTR_getmount),                 MP_ROM_PTR(&storage_getmount_obj) },
+    { MP_ROM_QSTR(MP_QSTR_map_file),                 MP_ROM_PTR(&storage_map_file_obj) },
     { MP_ROM_QSTR(MP_QSTR_erase_filesystem),         MP_ROM_PTR(&storage_erase_filesystem_obj) },
     { MP_ROM_QSTR(MP_QSTR_disable_usb_drive),        MP_ROM_PTR(&storage_disable_usb_drive_obj) },
     { MP_ROM_QSTR(MP_QSTR_enable_usb_drive),         MP_ROM_PTR(&storage_enable_usb_drive_obj) },

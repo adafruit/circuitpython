@@ -479,3 +479,6 @@ endif
 
 # Usually lots of flash space available
 CIRCUITPY_MESSAGE_COMPRESSION_LEVEL ?= 1
+
+# The CIRCUITPY partition is mapped into the data address space on first use
+CIRCUITPY_STORAGE_MAP_FILE ?= 1

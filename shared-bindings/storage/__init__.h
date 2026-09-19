@@ -21,3 +21,5 @@ MP_NORETURN void common_hal_storage_erase_filesystem(bool extended);
 bool common_hal_storage_disable_usb_drive(void);
 bool common_hal_storage_unsafe_disable_usb_drive(void);
 bool common_hal_storage_enable_usb_drive(void);
+
+mp_obj_t common_hal_storage_map_file(mp_obj_t file);
