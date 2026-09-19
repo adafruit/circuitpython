@@ -23,6 +23,7 @@
 #include "lib/oofatfs/ff.h"
 #include "py/objarray.h"
 #include "py/objlist.h"
+#include "py/stream.h"
 #endif
 
 #if CIRCUITPY_USB_DEVICE
@@ -240,9 +241,56 @@ void common_hal_storage_erase_filesystem(bool extended) {
     // We won't actually get here, since we're resetting.
 }
 
+#if CIRCUITPY_STORAGE_MAP_FILE
+// Start clusters of the files mapped this run; a write to one of them is refused until reload.
+MP_REGISTER_ROOT_POINTER(mp_obj_t storage_mapped_files);
+
+void storage_map_file_reset(void) {
+    MP_STATE_VM(storage_mapped_files) = MP_OBJ_NULL;
+}
+
+static bool mapped_files_contain(DWORD sclust) {
+    mp_obj_list_t *mapped = MP_OBJ_TO_PTR(MP_STATE_VM(storage_mapped_files));
+    for (size_t i = 0; i < mapped->len; i++) {
+        if (MP_OBJ_SMALL_INT_VALUE(mapped->items[i]) == (mp_int_t)sclust) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void mapped_files_add(DWORD sclust) {
+    if (MP_STATE_VM(storage_mapped_files) == MP_OBJ_NULL) {
+        MP_STATE_VM(storage_mapped_files) = mp_obj_new_list(0, NULL);
+    }
+    if (!mapped_files_contain(sclust)) {
+        mp_obj_list_append(MP_STATE_VM(storage_mapped_files), MP_OBJ_NEW_SMALL_INT(sclust));
+    }
+}
+
+void storage_map_file_check_writable(fs_user_mount_t *vfs, const char *path) {
+    if (MP_STATE_VM(storage_mapped_files) == MP_OBJ_NULL || vfs != filesystem_circuitpy()) {
+        return;
+    }
+    FIL fp;
+    if (f_open(&vfs->fatfs, &fp, path, FA_READ) != FR_OK) {
+        return;                                 // no such file yet
+    }
+    DWORD sclust = fp.obj.sclust;
+    f_close(&fp);
+    if (mapped_files_contain(sclust)) {
+        mp_raise_OSError(MP_EACCES);            // mapped: its flash bytes are in use
+    }
+}
+#endif
+
 mp_obj_t common_hal_storage_map_file(mp_obj_t file_in) {
     #if CIRCUITPY_STORAGE_MAP_FILE
-    pyb_file_obj_t *file = MP_OBJ_TO_PTR(mp_arg_validate_type(file_in, &mp_type_vfs_fat_fileio, MP_QSTR_file));
+    mp_get_stream_raise(file_in, MP_STREAM_OP_READ);
+    if (!mp_obj_is_type(file_in, &mp_type_vfs_fat_fileio)) {
+        mp_raise_OSError(MP_EOPNOTSUPP);        // only a FAT volume stores a file as flash bytes
+    }
+    pyb_file_obj_t *file = MP_OBJ_TO_PTR(file_in);
     FATFS *fatfs = file->fp.obj.fs;
     if (fatfs == NULL || (file->fp.flag & FA_WRITE)) {
         mp_raise_OSError(MP_EINVAL);            // closed, or not open for reading only
@@ -294,6 +342,7 @@ mp_obj_t common_hal_storage_map_file(mp_obj_t file_in) {
     if (left != 0) {
         mp_raise_OSError(MP_EIO);               // chain shorter than the dir-entry size: corrupt
     }
+    mapped_files_add(file->fp.obj.sclust);
     mp_obj_list_t *list = MP_OBJ_TO_PTR(views);
     return mp_obj_new_tuple(list->len, list->items);
     #else

@@ -47,6 +47,9 @@
 #include "extmod/vfs_fat.h"
 #include "shared/timeutils/timeutils.h"
 #include "supervisor/filesystem.h"
+#if CIRCUITPY_STORAGE_MAP_FILE
+#include "shared-bindings/storage/__init__.h"
+#endif
 
 #if FF_MAX_SS == FF_MIN_SS
 #define SECSIZE(fs) (FF_MIN_SS)
@@ -243,6 +246,11 @@ static mp_obj_t fat_vfs_remove_internal(mp_obj_t vfs_in, mp_obj_t path_in, mp_in
 
     // check if path is a file or directory
     if ((fno.fattrib & AM_DIR) == attr) {
+        #if CIRCUITPY_STORAGE_MAP_FILE
+        if (attr == 0) {
+            storage_map_file_check_writable(self, path);
+        }
+        #endif
         res = f_unlink(&self->fatfs, path);
 
         if (res != FR_OK) {
