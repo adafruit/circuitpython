@@ -3994,7 +3994,8 @@ msgid "RemoteTransmissionRequests limited to 8 bytes"
 msgstr ""
 
 #: shared-bindings/crypto_primitives/__init__.c
-msgid "Only SHA256 is supported"
+#: shared-bindings/hardwarekey/HardwareKey.c
+msgid "Only %q supported"
 msgstr ""
 
 #: shared-bindings/crypto_primitives/__init__.c
@@ -4102,20 +4103,12 @@ msgstr ""
 msgid "System entry must be gnss.SatelliteSystem"
 msgstr ""
 
-#: shared-bindings/hardwarekey/HardwareKey.c
-msgid "Only PKCS1v15 and SHA256 are supported"
-msgstr ""
-
-#: shared-bindings/hardwarekey/HardwareKey.c
-msgid "Only PKCS1v15 and OAEP are supported"
-msgstr ""
-
 #: shared-bindings/hashlib/__init__.c shared-bindings/hmac/__init__.c
 msgid "Unsupported hash algorithm"
 msgstr ""
 
-#: shared-bindings/hmac/__init__.c
-msgid "hardware key is not an HMAC key"
+#: shared-bindings/hmac/__init__.c shared-bindings/ssl/SSLContext.c
+msgid "key does not have the expected %q purpose"
 msgstr ""
 
 #: shared-bindings/i2cioexpander/IOExpander.c
@@ -4276,10 +4269,6 @@ msgstr ""
 
 #: shared-bindings/spitarget/SPITarget.c
 msgid "Packet buffers for an SPI transfer must have the same length."
-msgstr ""
-
-#: shared-bindings/ssl/SSLContext.c
-msgid "keyfile is not a Digital Signature key"
 msgstr ""
 
 #: shared-bindings/ssl/SSLContext.c

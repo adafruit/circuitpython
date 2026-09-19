@@ -185,7 +185,7 @@ static mp_obj_t hardwarekey_hardwarekey_sign(size_t n_args, const mp_obj_t *pos_
 
     if (!mp_obj_is_type(args[ARG_padding].u_obj, &crypto_primitives_pkcs1v15_type) ||
         !mp_obj_is_type(args[ARG_algorithm].u_obj, &crypto_primitives_sha256_type)) {
-        mp_raise_NotImplementedError(MP_ERROR_TEXT("Only PKCS1v15 and SHA256 are supported"));
+        mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("Only %q supported"), MP_QSTR_PKCS1v15_space_and_space_SHA256);
     }
 
     mp_buffer_info_t bufinfo;
@@ -243,7 +243,7 @@ static mp_obj_t hardwarekey_hardwarekey_decrypt(size_t n_args, const mp_obj_t *p
     } else if (mp_obj_is_type(args[ARG_padding].u_obj, &crypto_primitives_oaep_type)) {
         alg = PSA_ALG_RSA_OAEP(PSA_ALG_SHA_256);
     } else {
-        mp_raise_NotImplementedError(MP_ERROR_TEXT("Only PKCS1v15 and OAEP are supported"));
+        mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("Only %q supported"), MP_QSTR_PKCS1v15_space_or_space_OAEP);
     }
 
     mp_buffer_info_t bufinfo;

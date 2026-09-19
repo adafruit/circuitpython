@@ -80,7 +80,7 @@ static mp_obj_t ssl_sslcontext_load_cert_chain(size_t n_args, const mp_obj_t *po
     if (mp_obj_is_type(keyfile, &hardwarekey_hardwarekey_type)) {
         hardwarekey_hardwarekey_obj_t *key = MP_OBJ_TO_PTR(keyfile);
         if (common_hal_hardwarekey_hardwarekey_get_purpose(key) != HARDWAREKEY_PURPOSE_DS) {
-            mp_raise_ValueError(MP_ERROR_TEXT("keyfile is not a Digital Signature key"));
+            mp_raise_ValueError_varg(MP_ERROR_TEXT("key does not have the expected %q purpose"), MP_QSTR_HMAC_DOWN_DIGITAL_SIGNATURE);
         }
         // TLS client-cert auth signs the handshake, so this commits the key to
         // signing (see HardwareKey.sign()'s docstring on the one-algorithm-per-

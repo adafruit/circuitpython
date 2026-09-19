@@ -78,7 +78,7 @@ static mp_obj_t crypto_primitives_oaep_make_new(const mp_obj_type_t *type, size_
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
     if (!mp_obj_is_type(args[ARG_algorithm].u_obj, &crypto_primitives_sha256_type)) {
-        mp_raise_NotImplementedError(MP_ERROR_TEXT("Only SHA256 is supported"));
+        mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("Only %q supported"), MP_QSTR_SHA256);
     }
     if (args[ARG_label].u_obj != mp_const_none) {
         mp_raise_NotImplementedError(MP_ERROR_TEXT("label is not supported"));
