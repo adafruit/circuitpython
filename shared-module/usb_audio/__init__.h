@@ -33,6 +33,35 @@ bool usb_audio_streaming(void);
 // it shares a headset function with a microphone.
 bool usb_audio_speaker_streaming(void);
 
+// The two directions a feature unit can control. A headset has one unit per
+// direction; a single-direction function has one, and both names resolve to it.
+typedef enum {
+    USB_AUDIO_DIR_SPEAKER,
+    USB_AUDIO_DIR_MICROPHONE,
+} usb_audio_direction_t;
+
+// What the host has asked for on a direction's feature unit. These are what the
+// host set, not what the board did with it: by default nothing is applied to the
+// samples and the application decides (see usb_audio_set_apply_host_volume).
+//
+// All three report the effective setting for the first channel, with the master
+// and per-channel controls in series: Windows drives the per-channel volume and
+// leaves the master at 0 dB, so reporting the master alone would always read
+// unchanged. usb_audio_host_gain() is that as a linear factor with mute folded in
+// as zero, so it can be assigned straight to an audiomixer.MixerVoice level.
+// Before the host sets anything they read False, 0.0 dB and 1.0.
+bool usb_audio_host_mute(usb_audio_direction_t dir);
+mp_float_t usb_audio_host_volume(usb_audio_direction_t dir);
+mp_float_t usb_audio_host_gain(usb_audio_direction_t dir);
+
+// Whether the board scales the samples of this direction by the host's gain
+// itself. False by default: a UAC2 device that declares the control is expected
+// to honour it, but doing it silently in the background surprises applications
+// that manage their own levels, so the default leaves it to the application and
+// this turns on the classic sound-card behaviour.
+bool usb_audio_apply_host_volume(usb_audio_direction_t dir);
+void usb_audio_set_apply_host_volume(usb_audio_direction_t dir, bool apply);
+
 // Negotiated audio format, valid when usb_audio_enabled() is true.
 extern uint32_t usb_audio_sample_rate;
 extern uint8_t usb_audio_channel_count;
