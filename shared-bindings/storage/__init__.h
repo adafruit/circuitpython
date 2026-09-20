@@ -24,6 +24,7 @@ bool common_hal_storage_enable_usb_drive(void);
 
 mp_obj_t common_hal_storage_map_file(mp_obj_t file);
 #if CIRCUITPY_STORAGE_MAP_FILE
+struct _fs_user_mount_t;
 // Raises OSError if path on vfs is a file mapped this run: a write would change bytes in use.
 void storage_map_file_check_writable(struct _fs_user_mount_t *vfs, const char *path);
 void storage_map_file_reset(void);
