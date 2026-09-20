@@ -302,31 +302,18 @@ MP_DEFINE_CONST_FUN_OBJ_0(storage_enable_usb_drive_obj, storage_enable_usb_drive
 
 
 //| def map_file(file: typing.BinaryIO) -> Tuple[memoryview, ...]:
-//|     """Map an open file on the internal CIRCUITPY drive straight from flash, without copying it
-//|     into RAM. Returns one read-only `memoryview` per contiguous run of the file's clusters, in
-//|     file order: a contiguous file gives a 1-tuple, an empty file an empty tuple. Run boundaries
-//|     fall on cluster boundaries. The views stay valid after the file is closed, and anything that
-//|     takes a buffer can use them: a `synthio.MidiTrack`, an `audiocore.RawSample`, a wavetable.
+//|     """Map a file on the CIRCUITPY drive straight from flash, without copying it into RAM.
+//|     Returns one read-only `memoryview` per contiguous run of the file's clusters, in file
+//|     order. The views stay valid after the file is closed.
 //|
-//|     A mapped file is read-only to Python until the next reload: opening it for writing or
-//|     removing it raises ``OSError`` ``EACCES``, so the flash bytes a view (or a `synthio.MidiTrack`
-//|     built from one) is using cannot change under it. Renaming it is fine. A USB host can still
-//|     rewrite the file; with auto-reload on, that restarts the code.
+//|     Until the next reload, opening the file for writing or removing it raises ``OSError``
+//|     ``EACCES``. A USB host can still rewrite it.
 //|
-//|     Only a FAT drive can be mapped: littlefs keeps its own pointers inside the data blocks. To
-//|     run on any board, fall back to reading the file::
-//|
-//|         try:
-//|             views = storage.map_file(f)
-//|         except (OSError, NotImplementedError):
-//|             views = ()
-//|         data = views[0] if len(views) == 1 else f.read()
-//|
-//|     :param typing.BinaryIO file: A file on the CIRCUITPY drive open for binary reading (``"rb"``)
+//|     :param typing.BinaryIO file: A file on the CIRCUITPY drive open with ``"rb"``
 //|     :raises OSError: ``EINVAL`` if the file is closed or not open for reading only,
-//|       ``EOPNOTSUPP`` if it is not on a FAT CIRCUITPY drive or this build cannot map the drive,
+//|       ``EOPNOTSUPP`` if it is not on a FAT CIRCUITPY drive or the drive is not memory-mapped,
 //|       ``EIO`` if its cluster chain is corrupt
-//|     :raises ~builtins.MemoryError: if ``open()`` could not allocate the file's cluster map
+//|     :raises ~builtins.MemoryError: if the file's cluster map could not be allocated
 //|     :raises NotImplementedError: on a port whose drive is not memory-mapped"""
 //|     ...
 static mp_obj_t storage_map_file(mp_obj_t file_in) {
