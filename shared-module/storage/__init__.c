@@ -23,7 +23,6 @@
 #include "lib/oofatfs/ff.h"
 #include "py/objarray.h"
 #include "py/objlist.h"
-#include "py/stream.h"
 #endif
 
 #if CIRCUITPY_USB_DEVICE
@@ -286,7 +285,6 @@ void storage_map_file_check_writable(fs_user_mount_t *vfs, const char *path) {
 
 mp_obj_t common_hal_storage_map_file(mp_obj_t file_in) {
     #if CIRCUITPY_STORAGE_MAP_FILE
-    mp_get_stream_raise(file_in, MP_STREAM_OP_READ);
     if (!mp_obj_is_type(file_in, &mp_type_vfs_fat_fileio)) {
         mp_raise_OSError(MP_EOPNOTSUPP);        // only a FAT volume stores a file as flash bytes
     }
@@ -298,9 +296,6 @@ mp_obj_t common_hal_storage_map_file(mp_obj_t file_in) {
     fs_user_mount_t *drive = filesystem_circuitpy();
     if (drive == NULL || fatfs != &drive->fatfs) {
         mp_raise_OSError(MP_EOPNOTSUPP);        // another mount (an SD card): not memory-mapped
-    }
-    if (file->fp.err) {
-        mp_raise_OSError(fresult_to_errno_table[file->fp.err]);   // open() hit a bad cluster chain
     }
     DWORD *tbl = file->fp.cltbl;
     if (tbl == NULL) {
