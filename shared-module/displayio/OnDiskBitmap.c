@@ -15,6 +15,7 @@
 
 #include "py/mperrno.h"
 #include "py/runtime.h"
+#include "py/stream.h"
 
 
 #define DISPLAYIO_ODBMP_DEBUG(...) (void)0
@@ -25,19 +26,22 @@ static uint32_t read_word(uint16_t *bmp_header, uint16_t index) {
     return bmp_header[index] | bmp_header[index + 1] << 16;
 }
 
-void common_hal_displayio_ondiskbitmap_construct(displayio_ondiskbitmap_t *self, pyb_file_obj_t *file) {
-    // Load the wave
+void common_hal_displayio_ondiskbitmap_construct(displayio_ondiskbitmap_t *self, mp_obj_t file) {
     self->file = file;
     uint16_t bmp_header[69];
-    f_rewind(&self->file->fp);
-    UINT bytes_read;
+    int errcode = 0;
+
+    mp_stream_seek(file, 0, MP_SEEK_SET, &errcode);
+    if (errcode != 0) {
+        mp_raise_OSError(errcode);
+    }
 
     // Read the minimum amount of bytes required to parse a BITMAPCOREHEADER.
     // If needed, we will read more bytes down below.
-    if (f_read(&self->file->fp, bmp_header, 26, &bytes_read) != FR_OK) {
-        mp_raise_OSError(MP_EIO);
+    mp_uint_t bytes_read = mp_stream_rw(file, bmp_header, 26, &errcode, MP_STREAM_RW_ONCE);
+    if (errcode != 0) {
+        mp_raise_OSError(errcode);
     }
-    DISPLAYIO_ODBMP_DEBUG("bytes_read: %d\n", bytes_read);
     if (bytes_read != 26 || memcmp(bmp_header, "BM", 2) != 0) {
         mp_arg_error_invalid(MP_QSTR_file);
     }
@@ -48,8 +52,9 @@ void common_hal_displayio_ondiskbitmap_construct(displayio_ondiskbitmap_t *self,
 
     if (header_size == 40 || header_size == 108 || header_size == 124) {
         // Read the remaining header bytes
-        if (f_read(&self->file->fp, bmp_header + 13, header_size - 12, &bytes_read) != FR_OK) {
-            mp_raise_OSError(MP_EIO);
+        bytes_read = mp_stream_rw(file, bmp_header + 13, header_size - 12, &errcode, MP_STREAM_RW_ONCE);
+        if (errcode != 0) {
+            mp_raise_OSError(errcode);
         }
         DISPLAYIO_ODBMP_DEBUG("bytes_read: %d\n", bytes_read);
         if (bytes_read != (header_size - 12)) {
@@ -116,12 +121,14 @@ void common_hal_displayio_ondiskbitmap_construct(displayio_ondiskbitmap_t *self,
 
             uint32_t *palette_data = m_malloc_without_collect(palette_size);
 
-            f_rewind(&self->file->fp);
-            f_lseek(&self->file->fp, palette_offset);
+            mp_stream_seek(file, palette_offset, MP_SEEK_SET, &errcode);
+            if (errcode != 0) {
+                mp_raise_OSError(errcode);
+            }
 
-            UINT palette_bytes_read;
-            if (f_read(&self->file->fp, palette_data, palette_size, &palette_bytes_read) != FR_OK) {
-                mp_raise_OSError(MP_EIO);
+            mp_uint_t palette_bytes_read = mp_stream_rw(file, palette_data, palette_size, &errcode, MP_STREAM_RW_ONCE);
+            if (errcode != 0) {
+                mp_raise_OSError(errcode);
             }
             if (palette_bytes_read != palette_size) {
                 mp_raise_ValueError(MP_ERROR_TEXT("Unable to read color palette data"));
@@ -176,11 +183,14 @@ uint32_t common_hal_displayio_ondiskbitmap_get_pixel(displayio_ondiskbitmap_t *s
         location = self->data_offset + (self->height - y - 1) * self->stride + x / pixels_per_byte;
     }
     // We don't cache here because the underlying FS caches sectors.
-    f_lseek(&self->file->fp, location);
-    UINT bytes_read;
+    int errcode = 0;
+    mp_stream_seek(self->file, location, MP_SEEK_SET, &errcode);
+    if (errcode != 0) {
+        return 0;
+    }
     uint32_t pixel_data = 0;
-    uint32_t result = f_read(&self->file->fp, &pixel_data, bytes_per_pixel, &bytes_read);
-    if (result == FR_OK) {
+    mp_stream_rw(self->file, &pixel_data, bytes_per_pixel, &errcode, MP_STREAM_RW_ONCE);
+    if (errcode == 0) {
         uint32_t tmp = 0;
         uint8_t red;
         uint8_t green;

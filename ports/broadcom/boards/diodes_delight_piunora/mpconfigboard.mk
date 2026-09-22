@@ -1,6 +1,0 @@
-USB_VID = 0x1209
-USB_PID = 0xD10D
-USB_PRODUCT = "Piunora"
-USB_MANUFACTURER = "Diodes Delight"
-
-CHIP_VARIANT = "bcm2711"

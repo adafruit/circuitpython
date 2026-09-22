@@ -787,12 +787,6 @@ CFLAGS += -DCIRCUITPY_ULAB=$(CIRCUITPY_ULAB)
 # element-wise array arithmetic roughly 1.5x slower.
 CIRCUITPY_ULAB_OPTIMIZE_SIZE ?= 0
 
-# CIRCUITPY_VIDEOCORE is handled in the broadcom tree.
-# Only for Broadcom chips.
-# Assume not a Broadcom build.
-CIRCUITPY_VIDEOCORE ?= 0
-CFLAGS += -DCIRCUITPY_VIDEOCORE=$(CIRCUITPY_VIDEOCORE)
-
 CIRCUITPY_WARNINGS ?= $(CIRCUITPY_FULL_BUILD)
 CFLAGS += -DCIRCUITPY_WARNINGS=$(CIRCUITPY_WARNINGS)
 

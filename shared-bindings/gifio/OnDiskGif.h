@@ -7,11 +7,11 @@
 #pragma once
 
 #include "shared-module/gifio/OnDiskGif.h"
-#include "extmod/vfs_fat.h"
+#include "extmod/vfs.h"
 
 extern const mp_obj_type_t gifio_ondiskgif_type;
 
-void common_hal_gifio_ondiskgif_construct(gifio_ondiskgif_t *self, pyb_file_obj_t *file, bool use_palette);
+void common_hal_gifio_ondiskgif_construct(gifio_ondiskgif_t *self, mp_obj_t file, bool use_palette);
 
 uint32_t common_hal_gifio_ondiskgif_get_pixel(gifio_ondiskgif_t *bitmap,
     int16_t x, int16_t y);

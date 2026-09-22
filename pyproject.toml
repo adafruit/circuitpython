@@ -13,7 +13,6 @@ extend-exclude = [
   "lib",
   "ports/analog/msdk",
   "ports/atmel-samd/asf4",
-  "ports/broadcom/peripherals",
   "ports/espress/tools",
   "ports/espressif/esp-idf",
   "ports/espressif/esp-protocols",

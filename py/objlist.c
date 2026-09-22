@@ -39,8 +39,7 @@ static mp_obj_t list_pop(size_t n_args, const mp_obj_t *args);
 // TODO: Move to mpconfig.h
 #define LIST_MIN_ALLOC 4
 
-// CIRCUITPY-CHANGE: native_list() and other changes here for broadcom port
-// https://github.com/adafruit/circuitpython/pull/5610
+// CIRCUITPY-CHANGE: native_list() supports list methods on subclasses of list.
 
 /******************************************************************************/
 /* list                                                                       */

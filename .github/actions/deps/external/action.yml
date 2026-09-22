@@ -21,7 +21,6 @@ runs:
     - name: Get arm toolchain
       if: >-
         inputs.port != 'none' &&
-        inputs.port != 'litex' &&
         inputs.port != 'espressif' &&
         inputs.port != 'zephyr-cp'
       uses: carlosperate/arm-none-eabi-gcc-action@v1

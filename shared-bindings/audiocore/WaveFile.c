@@ -12,7 +12,7 @@
 #include "shared-bindings/audiocore/WaveFile.h"
 #include "shared-bindings/audiocore/__init__.h"
 #include "shared-bindings/util.h"
-#include "extmod/vfs_posix.h"
+#include "extmod/vfs.h"
 
 //| class WaveFile:
 //|     """Load a wave file for audio playback
@@ -61,9 +61,6 @@ static mp_obj_t audioio_wavefile_make_new(const mp_obj_type_t *type, size_t n_ar
         arg = mp_call_function_2(MP_OBJ_FROM_PTR(&mp_builtin_open_obj), arg, MP_ROM_QSTR(MP_QSTR_rb));
     }
 
-    if (!mp_obj_is_type(arg, &mp_type_vfs_fat_fileio)) {
-        mp_raise_TypeError(MP_ERROR_TEXT("file must be a file opened in byte mode"));
-    }
     uint8_t *buffer = NULL;
     size_t buffer_size = 0;
     if (n_args >= 2) {
@@ -77,7 +74,7 @@ static mp_obj_t audioio_wavefile_make_new(const mp_obj_type_t *type, size_t n_ar
     }
 
     audioio_wavefile_obj_t *self = mp_obj_malloc(audioio_wavefile_obj_t, &audioio_wavefile_type);
-    common_hal_audioio_wavefile_construct(self, MP_OBJ_TO_PTR(arg),
+    common_hal_audioio_wavefile_construct(self, arg,
         buffer, buffer_size);
 
     return MP_OBJ_FROM_PTR(self);

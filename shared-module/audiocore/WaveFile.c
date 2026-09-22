@@ -11,6 +11,7 @@
 
 #include "py/mperrno.h"
 #include "py/runtime.h"
+#include "py/stream.h"
 
 #include "shared-module/audiocore/WaveFile.h"
 #include "shared-bindings/audiocore/__init__.h"
@@ -29,37 +30,51 @@ struct wave_format_chunk {
     uint8_t extended_guid[14];
 };
 
+// Read exactly size bytes from the stream or raise OSError on error or EOF.
+static void wavefile_read_exactly(mp_obj_t stream, void *buf, size_t size) {
+    int errcode = 0;
+    mp_uint_t bytes_read = mp_stream_rw(stream, buf, size, &errcode, MP_STREAM_RW_READ);
+    if (errcode != 0) {
+        mp_raise_OSError(errcode);
+    }
+    if (bytes_read != size) {
+        mp_raise_OSError(MP_EIO);
+    }
+}
+
+// Seek the stream and raise OSError on failure. Returns the new position.
+static mp_off_t wavefile_seek(mp_obj_t stream, mp_off_t offset, int whence) {
+    int errcode;
+    mp_off_t position = mp_stream_seek(stream, offset, whence, &errcode);
+    if (position == (mp_off_t)-1) {
+        mp_raise_OSError(errcode);
+    }
+    return position;
+}
+
 void common_hal_audioio_wavefile_construct(audioio_wavefile_obj_t *self,
-    pyb_file_obj_t *file,
+    mp_obj_t file,
     uint8_t *buffer,
     size_t buffer_size) {
+    // Make sure the file supports reading and seeking.
+    mp_get_stream_raise(file, MP_STREAM_OP_READ | MP_STREAM_OP_IOCTL);
+
     // Load the wave
     self->file = file;
     uint8_t chunk_header[16];
-    f_rewind(&self->file->fp);
-    UINT bytes_read;
-    if (f_read(&self->file->fp, chunk_header, 16, &bytes_read) != FR_OK) {
-        mp_raise_OSError(MP_EIO);
-    }
-    if (bytes_read != 16 ||
-        memcmp(chunk_header, "RIFF", 4) != 0 ||
+    wavefile_seek(file, 0, MP_SEEK_SET);
+    wavefile_read_exactly(file, chunk_header, 16);
+    if (memcmp(chunk_header, "RIFF", 4) != 0 ||
         memcmp(chunk_header + 8, "WAVEfmt ", 8) != 0) {
         mp_arg_error_invalid(MP_QSTR_file);
     }
     uint32_t format_size;
-    if (f_read(&self->file->fp, &format_size, 4, &bytes_read) != FR_OK) {
-        mp_raise_OSError(MP_EIO);
-    }
-    if (bytes_read != 4 ||
-        format_size > sizeof(struct wave_format_chunk)) {
+    wavefile_read_exactly(file, &format_size, 4);
+    if (format_size > sizeof(struct wave_format_chunk)) {
         mp_raise_ValueError(MP_ERROR_TEXT("Invalid format chunk size"));
     }
     struct wave_format_chunk format;
-    if (f_read(&self->file->fp, &format, format_size, &bytes_read) != FR_OK) {
-        mp_raise_OSError(MP_EIO);
-    }
-    if (bytes_read != format_size) {
-    }
+    wavefile_read_exactly(file, &format, format_size);
 
     if ((format_size != 40 && format.audio_format != 1) ||
         format.num_channels > 2 ||
@@ -84,32 +99,21 @@ void common_hal_audioio_wavefile_construct(audioio_wavefile_obj_t *self,
     bool found_data_chunk = false;
 
     while (!found_data_chunk) {
-        if (f_read(&self->file->fp, &chunk_tag, 4, &bytes_read) != FR_OK) {
-            mp_raise_OSError(MP_EIO);
-        }
-        if (bytes_read != 4) {
-            mp_raise_OSError(MP_EIO);
-        }
+        wavefile_read_exactly(file, chunk_tag, 4);
         if (memcmp((uint8_t *)chunk_tag, "data", 4) == 0) {
             found_data_chunk = true;
         }
 
-        if (f_read(&self->file->fp, &chunk_length, 4, &bytes_read) != FR_OK) {
-            mp_raise_OSError(MP_EIO);
-        }
-        if (bytes_read != 4) {
-            mp_raise_OSError(MP_EIO);
-        }
+        wavefile_read_exactly(file, &chunk_length, 4);
 
         if (!found_data_chunk) {
-            if (f_lseek(&self->file->fp, f_tell(&self->file->fp) + chunk_length) != FR_OK) {
-                mp_raise_OSError(MP_EIO);
-            }
+            mp_off_t current_position = wavefile_seek(file, 0, MP_SEEK_CUR);
+            wavefile_seek(file, current_position + chunk_length, MP_SEEK_SET);
         }
     }
 
     self->file_length = chunk_length;
-    self->data_start = self->file->fp.fptr;
+    self->data_start = wavefile_seek(file, 0, MP_SEEK_CUR);
 
     // Try to allocate two buffers, one will be loaded from file and the other
     // DMAed to DAC.
@@ -149,7 +153,7 @@ void audioio_wavefile_reset_buffer(audioio_wavefile_obj_t *self,
     // We don't reset the buffer index in case we're looping and we have an odd number of buffer
     // loads
     self->bytes_remaining = self->file_length;
-    f_lseek(&self->file->fp, self->data_start);
+    wavefile_seek(self->file, self->data_start, MP_SEEK_SET);
     self->read_count = 0;
     self->left_read_count = 0;
     self->right_read_count = 0;
@@ -182,13 +186,15 @@ audioio_get_buffer_result_t audioio_wavefile_get_buffer(audioio_wavefile_obj_t *
         if (num_bytes_to_load > self->bytes_remaining) {
             num_bytes_to_load = self->bytes_remaining;
         }
-        UINT length_read;
+        mp_uint_t length_read;
         if (self->buffer_index % 2 == 1) {
             *buffer = self->second_buffer;
         } else {
             *buffer = self->buffer;
         }
-        if (f_read(&self->file->fp, *buffer, num_bytes_to_load, &length_read) != FR_OK || length_read != num_bytes_to_load) {
+        int errcode = 0;
+        length_read = mp_stream_rw(self->file, *buffer, num_bytes_to_load, &errcode, MP_STREAM_RW_ONCE);
+        if (errcode != 0 || length_read != num_bytes_to_load) {
             return GET_BUFFER_ERROR;
         }
         self->bytes_remaining -= length_read;

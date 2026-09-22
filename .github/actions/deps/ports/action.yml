@@ -11,17 +11,9 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Set up broadcom
-      if: inputs.port == 'broadcom'
-      uses: ./.github/actions/deps/ports/broadcom
-
     - name: Set up espressif
       if: inputs.port == 'espressif'
       uses: ./.github/actions/deps/ports/espressif
-
-    - name: Set up litex
-      if: inputs.port == 'litex'
-      uses: ./.github/actions/deps/ports/litex
 
     - name: Set up nordic
       if: inputs.port == 'nordic'

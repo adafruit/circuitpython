@@ -9,6 +9,7 @@
 #include <stdint.h>
 
 #include "py/runtime.h"
+#include "extmod/vfs.h"
 #include "py/objproperty.h"
 
 #include "shared-bindings/displayio/OnDiskBitmap.h"
@@ -66,12 +67,12 @@ static mp_obj_t displayio_ondiskbitmap_make_new(const mp_obj_type_t *type, size_
     if (mp_obj_is_str(arg)) {
         arg = mp_call_function_2(MP_OBJ_FROM_PTR(&mp_builtin_open_obj), arg, MP_ROM_QSTR(MP_QSTR_rb));
     }
-    if (!mp_obj_is_type(arg, &mp_type_fileio)) {
+    if (!mp_obj_is_fileio(arg)) {
         mp_raise_TypeError(MP_ERROR_TEXT("file must be a file opened in byte mode"));
     }
 
     displayio_ondiskbitmap_t *self = mp_obj_malloc(displayio_ondiskbitmap_t, &displayio_ondiskbitmap_type);
-    common_hal_displayio_ondiskbitmap_construct(self, MP_OBJ_TO_PTR(arg));
+    common_hal_displayio_ondiskbitmap_construct(self, arg);
 
     return MP_OBJ_FROM_PTR(self);
 }
