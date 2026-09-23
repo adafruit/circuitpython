@@ -29,8 +29,19 @@ void tuh_mount_cb(uint8_t dev_addr) {
     _mounted_devices |= 1 << dev_addr;
 }
 
+// Bulk IN buffering needs the completion callback to run from CircuitPython's
+// background tasks, where it can't interrupt read() partway through.
+#define IN_BUFFER_ENABLED (CFG_TUSB_OS == OPT_OS_NONE || CFG_TUSB_OS == OPT_OS_PICO)
+
+#if IN_BUFFER_ENABLED
+static void _in_buffer_release_device(uint8_t daddr);
+#endif
+
 void tuh_umount_cb(uint8_t dev_addr) {
     _mounted_devices &= ~(1 << dev_addr);
+    #if IN_BUFFER_ENABLED
+    _in_buffer_release_device(dev_addr);
+    #endif
 }
 
 static xfer_result_t _xfer_result;
@@ -57,6 +68,122 @@ static uint8_t *_ensure_dma_buffer(usb_core_device_obj_t *self, const uint8_t *b
 }
 
 #endif
+
+#if IN_BUFFER_ENABLED
+// Once Python reads a bulk IN endpoint, keep a transfer queued on it so the device
+// is polled while Python is busy. Completed transfers wait here for read(). When
+// the queue is full no transfer is queued, and the device holds its data.
+#define IN_BUFFER_SLOTS 4
+#define IN_BUFFER_DEPTH 8
+// How long a released buffer is kept for an aborted transfer to finish writing.
+#define IN_BUFFER_STALE_MS 10
+
+typedef struct {
+    usb_core_device_obj_t *owner; // NULL when the slot is not in use
+    uint8_t *data; // IN_BUFFER_DEPTH transfers of mps bytes each
+    uint8_t *stale_data; // released while a transfer was queued, freed by _in_buffer_reap()
+    uint32_t stale_time;
+    uint16_t len[IN_BUFFER_DEPTH];
+    uint16_t mps;
+    uint16_t offset; // bytes of the head transfer already read
+    uint8_t daddr;
+    uint8_t ep_addr;
+    uint8_t head;
+    uint8_t count;
+    uint8_t gen; // changed on release so an old completion is ignored
+    bool busy;
+    xfer_result_t error;
+} in_buffer_t;
+
+static in_buffer_t _in_buffers[IN_BUFFER_SLOTS];
+
+static void _in_buffer_queue(in_buffer_t *buf);
+
+static void _in_buffer_cb(tuh_xfer_t *xfer) {
+    in_buffer_t *buf = &_in_buffers[xfer->user_data & 0xff];
+    if (buf->owner == NULL || !buf->busy || buf->gen != (uint8_t)(xfer->user_data >> 8)) {
+        return;
+    }
+    buf->busy = false;
+    if (xfer->result != XFER_RESULT_SUCCESS) {
+        buf->error = xfer->result;
+        return;
+    }
+    buf->len[(buf->head + buf->count) % IN_BUFFER_DEPTH] = xfer->actual_len;
+    buf->count++;
+    _in_buffer_queue(buf);
+}
+
+static void _in_buffer_queue(in_buffer_t *buf) {
+    if (buf->busy || buf->error != XFER_RESULT_SUCCESS || buf->count == IN_BUFFER_DEPTH) {
+        return;
+    }
+    tuh_xfer_t xfer = {
+        .daddr = buf->daddr,
+        .ep_addr = buf->ep_addr,
+        .buflen = buf->mps,
+        .buffer = buf->data + ((buf->head + buf->count) % IN_BUFFER_DEPTH) * buf->mps,
+        .complete_cb = _in_buffer_cb,
+        .user_data = (buf - _in_buffers) | (buf->gen << 8),
+    };
+    buf->busy = tuh_edpt_xfer(&xfer);
+}
+
+static void _in_buffer_release(in_buffer_t *buf) {
+    if (buf->busy) {
+        // Some host controllers can still write into the buffer after an abort, and
+        // TinyUSB may have its completion queued, so free it later.
+        tuh_edpt_abort_xfer(buf->daddr, buf->ep_addr);
+        buf->stale_data = buf->data;
+        buf->stale_time = supervisor_ticks_ms32();
+    } else {
+        port_free(buf->data);
+    }
+    buf->data = NULL;
+    buf->owner = NULL;
+    buf->busy = false;
+    buf->head = 0;
+    buf->count = 0;
+    buf->offset = 0;
+    buf->gen++;
+}
+
+static bool _in_buffer_in_use(uint8_t daddr, uint8_t ep_addr) {
+    for (size_t i = 0; i < IN_BUFFER_SLOTS; i++) {
+        in_buffer_t *buf = &_in_buffers[i];
+        if (buf->owner != NULL && buf->daddr == daddr && buf->ep_addr == ep_addr) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void _in_buffer_release_device(uint8_t daddr) {
+    for (size_t i = 0; i < IN_BUFFER_SLOTS; i++) {
+        in_buffer_t *buf = &_in_buffers[i];
+        if (buf->owner != NULL && buf->daddr == daddr) {
+            _in_buffer_release(buf);
+        }
+    }
+}
+
+// Runs TinyUSB until released buffers can't be written to or completed into, then
+// frees them. Called from Python context, never from a finaliser or callback.
+static void _in_buffer_reap(void) {
+    for (size_t i = 0; i < IN_BUFFER_SLOTS; i++) {
+        in_buffer_t *buf = &_in_buffers[i];
+        if (buf->stale_data == NULL) {
+            continue;
+        }
+        while (supervisor_ticks_ms32() - buf->stale_time < IN_BUFFER_STALE_MS) {
+            RUN_BACKGROUND_TASKS;
+        }
+        port_free(buf->stale_data);
+        buf->stale_data = NULL;
+    }
+}
+#endif
+
 bool common_hal_usb_core_device_construct(usb_core_device_obj_t *self, uint8_t device_address) {
     if (!tuh_inited()) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("No usb host port initialized"));
@@ -82,9 +209,23 @@ void common_hal_usb_core_device_deinit(usb_core_device_obj_t *self) {
     if (common_hal_usb_core_device_deinited(self)) {
         return;
     }
+    #if IN_BUFFER_ENABLED
+    for (size_t i = 0; i < IN_BUFFER_SLOTS; i++) {
+        if (_in_buffers[i].owner == self) {
+            _in_buffer_release(&_in_buffers[i]);
+        }
+    }
+    #endif
     size_t open_size = sizeof(self->open_endpoints);
     for (size_t i = 0; i < open_size; i++) {
         if (self->open_endpoints[i] != 0) {
+            #if IN_BUFFER_ENABLED
+            // Another Device object for the same device is still buffering it.
+            if (_in_buffer_in_use(self->device_address, self->open_endpoints[i])) {
+                self->open_endpoints[i] = 0;
+                continue;
+            }
+            #endif
             tuh_edpt_close(self->device_address, self->open_endpoints[i]);
             self->open_endpoints[i] = 0;
         }
@@ -411,6 +552,27 @@ static size_t _xfer(tuh_xfer_t *xfer, mp_int_t timeout, bool our_buffer, bool ra
     return _handle_timed_transfer_callback(xfer, timeout, our_buffer, raise_on_timeout);
 }
 
+static tusb_desc_endpoint_t const *_find_endpoint_descriptor(usb_core_device_obj_t *self, mp_int_t endpoint) {
+    tusb_desc_configuration_t *desc_cfg = (tusb_desc_configuration_t *)self->configuration_descriptor;
+
+    uint32_t total_length = tu_le16toh(desc_cfg->wTotalLength);
+    uint8_t const *desc_end = ((uint8_t const *)desc_cfg) + total_length;
+    uint8_t const *p_desc = tu_desc_next(desc_cfg);
+
+    // parse each interfaces
+    while (p_desc < desc_end) {
+        if (TUSB_DESC_ENDPOINT == tu_desc_type(p_desc)) {
+            tusb_desc_endpoint_t const *desc_ep = (tusb_desc_endpoint_t const *)p_desc;
+            if (desc_ep->bEndpointAddress == endpoint) {
+                return desc_ep;
+            }
+        }
+
+        p_desc = tu_desc_next(p_desc);
+    }
+    return NULL;
+}
+
 static bool _open_endpoint(usb_core_device_obj_t *self, mp_int_t endpoint) {
     bool endpoint_open = false;
     size_t open_size = sizeof(self->open_endpoints);
@@ -431,27 +593,10 @@ static bool _open_endpoint(usb_core_device_obj_t *self, mp_int_t endpoint) {
         return false;
     }
 
-    tusb_desc_configuration_t *desc_cfg = (tusb_desc_configuration_t *)self->configuration_descriptor;
-
-    uint32_t total_length = tu_le16toh(desc_cfg->wTotalLength);
-    uint8_t const *desc_end = ((uint8_t const *)desc_cfg) + total_length;
-    uint8_t const *p_desc = tu_desc_next(desc_cfg);
-
-    // parse each interfaces
-    while (p_desc < desc_end) {
-        if (TUSB_DESC_ENDPOINT == tu_desc_type(p_desc)) {
-            tusb_desc_endpoint_t const *desc_ep = (tusb_desc_endpoint_t const *)p_desc;
-            if (desc_ep->bEndpointAddress == endpoint) {
-                break;
-            }
-        }
-
-        p_desc = tu_desc_next(p_desc);
-    }
-    if (p_desc >= desc_end) {
+    tusb_desc_endpoint_t const *desc_ep = _find_endpoint_descriptor(self, endpoint);
+    if (desc_ep == NULL) {
         return false;
     }
-    tusb_desc_endpoint_t const *desc_ep = (tusb_desc_endpoint_t const *)p_desc;
 
     bool open = tuh_edpt_open(self->device_address, desc_ep);
     if (open) {
@@ -459,6 +604,95 @@ static bool _open_endpoint(usb_core_device_obj_t *self, mp_int_t endpoint) {
     }
     return open;
 }
+
+#if IN_BUFFER_ENABLED
+// Returns the buffer for a bulk IN endpoint, claiming a slot on first use. Returns
+// NULL for other endpoints, or when no slot or memory is free, and read() then
+// reads directly as before.
+static in_buffer_t *_in_buffer_get(usb_core_device_obj_t *self, mp_int_t endpoint) {
+    in_buffer_t *free_buf = NULL;
+    for (size_t i = 0; i < IN_BUFFER_SLOTS; i++) {
+        in_buffer_t *buf = &_in_buffers[i];
+        if (buf->owner != NULL && buf->daddr == self->device_address && buf->ep_addr == endpoint) {
+            return buf;
+        }
+        if (free_buf == NULL && buf->owner == NULL && buf->stale_data == NULL) {
+            free_buf = buf;
+        }
+    }
+    if (free_buf == NULL || tu_edpt_dir(endpoint) != TUSB_DIR_IN ||
+        (_mounted_devices & (1 << self->device_address)) == 0) {
+        return NULL;
+    }
+    tusb_desc_endpoint_t const *desc_ep = _find_endpoint_descriptor(self, endpoint);
+    if (desc_ep == NULL || desc_ep->bmAttributes.xfer != TUSB_XFER_BULK) {
+        return NULL;
+    }
+    uint16_t mps = tu_edpt_packet_size(desc_ep);
+    if (mps == 0) {
+        return NULL;
+    }
+    free_buf->data = port_malloc(IN_BUFFER_DEPTH * mps, true);
+    if (free_buf->data == NULL) {
+        return NULL;
+    }
+    free_buf->owner = self;
+    free_buf->mps = mps;
+    free_buf->daddr = self->device_address;
+    free_buf->ep_addr = endpoint;
+    free_buf->error = XFER_RESULT_SUCCESS;
+    return free_buf;
+}
+
+// Copies queued packets into buffer until it is full or a short packet ends the
+// transfer, like a direct read.
+static size_t _in_buffer_read(in_buffer_t *buf, uint8_t *buffer, size_t len, mp_int_t timeout, bool raise_on_timeout) {
+    _in_buffer_queue(buf);
+    uint32_t start_time = supervisor_ticks_ms32();
+    while ((timeout == 0 || supervisor_ticks_ms32() - start_time < (uint32_t)timeout) &&
+           !mp_hal_is_interrupted() &&
+           buf->count == 0 && buf->busy) {
+        RUN_BACKGROUND_TASKS;
+    }
+    if (mp_hal_is_interrupted()) {
+        return 0;
+    }
+    if (buf->count == 0) {
+        xfer_result_t error = buf->error;
+        buf->error = XFER_RESULT_SUCCESS;
+        if (error == XFER_RESULT_STALLED) {
+            mp_raise_usb_core_USBError(MP_ERROR_TEXT("Pipe error"));
+        }
+        if ((error == XFER_RESULT_SUCCESS && !buf->busy) ||
+            (error != XFER_RESULT_SUCCESS && error != XFER_RESULT_TIMEOUT)) {
+            mp_raise_usb_core_USBError(NULL);
+        }
+        if (raise_on_timeout) {
+            mp_raise_usb_core_USBTimeoutError();
+        }
+        return 0;
+    }
+    size_t total = 0;
+    while (buf->count > 0 && total < len) {
+        uint16_t packet_len = buf->len[buf->head];
+        size_t n = MIN(len - total, (size_t)(packet_len - buf->offset));
+        memcpy(buffer + total, buf->data + buf->head * buf->mps + buf->offset, n);
+        total += n;
+        buf->offset += n;
+        if (buf->offset < packet_len) {
+            break;
+        }
+        buf->offset = 0;
+        buf->head = (buf->head + 1) % IN_BUFFER_DEPTH;
+        buf->count--;
+        if (packet_len < buf->mps) {
+            break;
+        }
+    }
+    _in_buffer_queue(buf);
+    return total;
+}
+#endif
 
 mp_int_t common_hal_usb_core_device_write(usb_core_device_obj_t *self, mp_int_t endpoint, const uint8_t *buffer, mp_int_t len, mp_int_t timeout) {
     if (!_open_endpoint(self, endpoint)) {
@@ -496,6 +730,14 @@ mp_int_t common_hal_usb_core_device_read(usb_core_device_obj_t *self, mp_int_t e
         mp_raise_usb_core_USBError(NULL);
         return 0;
     }
+
+    #if IN_BUFFER_ENABLED
+    _in_buffer_reap();
+    in_buffer_t *in_buf = _in_buffer_get(self, endpoint);
+    if (in_buf != NULL) {
+        return _in_buffer_read(in_buf, buffer, len, timeout, raise_on_timeout);
+    }
+    #endif
 
     #if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
     // Ensure buffer is in DMA-capable memory
