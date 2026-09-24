@@ -198,6 +198,9 @@ endif
 ifeq ($(CIRCUITPY_CODEOP),1)
 SRC_PATTERNS += codeop/%
 endif
+ifeq ($(CIRCUITPY_CRYPTO_PRIMITIVES),1)
+SRC_PATTERNS += crypto_primitives/%
+endif
 ifeq ($(CIRCUITPY_COUNTIO),1)
 SRC_PATTERNS += countio/%
 endif
@@ -666,6 +669,7 @@ $(filter $(SRC_PATTERNS), \
 	canio/Match.c \
 	codeop/__init__.c \
 	countio/Edge.c \
+	crypto_primitives/__init__.c \
 	digitalio/DigitalInOutProtocol.c \
 	digitalio/Direction.c \
 	digitalio/DriveMode.c \

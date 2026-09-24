@@ -1481,6 +1481,7 @@ msgstr ""
 
 #: ports/espressif/common-hal/espidf/__init__.c
 #: ports/raspberrypi/common-hal/picogame/Display.c
+#: shared-bindings/hardwarekey/HardwareKey.c
 #: shared-bindings/picogame/__init__.c
 msgid "Operation or feature not supported"
 msgstr ""
@@ -1532,6 +1533,28 @@ msgstr ""
 
 #: ports/espressif/common-hal/espulp/ULPAlarm.c
 msgid "Only one %q can be set."
+msgstr ""
+
+#: ports/espressif/common-hal/hardwarekey/HardwareKey.c
+msgid "ds_params has the wrong length"
+msgstr ""
+
+#: ports/espressif/common-hal/hardwarekey/HardwareKey.c
+msgid ""
+"This key already committed to a different algorithm; call load_ds_params() "
+"again to use a different one"
+msgstr ""
+
+#: ports/espressif/common-hal/hardwarekey/HardwareKey.c
+msgid "load_ds_params() has not been called on this key"
+msgstr ""
+
+#: ports/espressif/common-hal/hardwarekey/HardwareKey.c
+msgid "ds_params is invalid for this key slot"
+msgstr ""
+
+#: ports/espressif/common-hal/hardwarekey/HardwareKey.c
+msgid "Digital Signature peripheral not available on this chip"
 msgstr ""
 
 #: ports/espressif/common-hal/i2ctarget/I2CTarget.c
@@ -3970,6 +3993,15 @@ msgstr ""
 msgid "RemoteTransmissionRequests limited to 8 bytes"
 msgstr ""
 
+#: shared-bindings/crypto_primitives/__init__.c
+#: shared-bindings/hardwarekey/HardwareKey.c
+msgid "Only %q supported"
+msgstr ""
+
+#: shared-bindings/crypto_primitives/__init__.c
+msgid "label is not supported"
+msgstr ""
+
 #: shared-bindings/digitalio/DigitalInOut.c
 #: shared-bindings/i2cioexpander/IOPin.c
 msgid "Cannot set value when direction is input."
@@ -4075,8 +4107,8 @@ msgstr ""
 msgid "Unsupported hash algorithm"
 msgstr ""
 
-#: shared-bindings/hmac/__init__.c
-msgid "hardware key slot is unused"
+#: shared-bindings/hmac/__init__.c shared-bindings/ssl/SSLContext.c
+msgid "key does not have the expected %q purpose"
 msgstr ""
 
 #: shared-bindings/i2cioexpander/IOExpander.c
@@ -4416,6 +4448,10 @@ msgstr ""
 
 #: shared-module/gifio/GifWriter.c
 msgid "unsupported colorspace for GifWriter"
+msgstr ""
+
+#: shared-module/hardwarekey/HardwareKey.c
+msgid "OAEP requires this build to enable TLS 1.3 support"
 msgstr ""
 
 #: shared-module/hmac/HMAC.c
