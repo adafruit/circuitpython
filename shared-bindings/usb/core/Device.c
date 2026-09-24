@@ -237,7 +237,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(usb_core_device_write_obj, 2, usb_core_device_write);
 //|
 //|         After the first read of a bulk IN endpoint, packets from it are buffered in
 //|         the background, so data isn't lost while your code is busy. A read returns
-//|         packets that have already arrived. Buffered data is discarded by `deinit`.
+//|         packets that have already arrived. Buffered data is discarded by ``deinit()``.
 //|
 //|         :param int endpoint: the bEndpointAddress you want to communicate with.
 //|         :param array.array size_or_buffer: the array to read data into. PyUSB also allows size but CircuitPython only support array to force deliberate memory use.
