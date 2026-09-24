@@ -25,13 +25,20 @@ Please ensure you set up your build environment appropriately, as per the guide.
 
 This project has a bunch of git submodules.  You will need to update them regularly.
 
-In the root folder of the CircuitPython repository, execute the following:
+Fetch only what the board you are building needs. From the root folder of the CircuitPython
+repository:
+
+    make -C ports/raspberrypi fetch-board-submodules BOARD=raspberry_pi_pico
+
+Or everything one port needs, which is what you want if you build several boards from it:
+
+    make -C ports/raspberrypi fetch-port-submodules
+
+There is also a target that fetches the submodules of every port at once. That is a few gigabytes
+against a few hundred megabytes for one board, so use it only if you really are building for
+more than one port:
 
     make fetch-all-submodules
-
-Or, in the ports directory for the particular port you are building, do:
-
-    make fetch-port-submodules
 
 ### Required Python Packages
 

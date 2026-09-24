@@ -747,6 +747,7 @@ msgstr ""
 #: ports/analog/common-hal/busio/UART.c
 #: ports/atmel-samd/common-hal/busio/UART.c ports/cxd56/common-hal/busio/UART.c
 #: ports/nordic/common-hal/busio/UART.c ports/stm/common-hal/busio/UART.c
+#: ports/zephyr-cp/common-hal/busio/UART.c
 msgid "RS485"
 msgstr ""
 
@@ -759,7 +760,9 @@ msgstr ""
 msgid "Both RX and TX required for flow control"
 msgstr ""
 
-#: ports/analog/common-hal/busio/UART.c shared-module/rgbmatrix/RGBMatrix.c
+#: ports/analog/common-hal/busio/UART.c
+#: ports/raspberrypi/common-hal/usb_host/Port.c
+#: shared-module/rgbmatrix/RGBMatrix.c
 msgid "Failed to allocate %q buffer"
 msgstr ""
 
@@ -772,7 +775,7 @@ msgid "UART transaction timeout"
 msgstr ""
 
 #: ports/analog/common-hal/busio/UART.c ports/espressif/common-hal/busio/UART.c
-#: ports/nordic/common-hal/busio/UART.c
+#: ports/nordic/common-hal/busio/UART.c ports/zephyr-cp/common-hal/busio/UART.c
 msgid "All UART peripherals are in use"
 msgstr ""
 
@@ -846,6 +849,9 @@ msgstr ""
 #: ports/atmel-samd/common-hal/rotaryio/IncrementalEncoder.c
 #: ports/cxd56/common-hal/pulseio/PulseIn.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2350.c
+#: ports/zephyr-cp/common-hal/busio/I2C.c
+#: ports/zephyr-cp/common-hal/busio/SPI.c
+#: ports/zephyr-cp/common-hal/busio/UART.c
 msgid "Internal resource(s) in use"
 msgstr ""
 
@@ -1011,6 +1017,21 @@ msgstr ""
 #: ports/raspberrypi/common-hal/paralleldisplaybus/ParallelBus.c
 #, c-format
 msgid "Bus pin %d is already in use"
+msgstr ""
+
+#: ports/atmel-samd/common-hal/picogame/Display.c
+#: ports/espressif/common-hal/espidf/__init__.c
+#: ports/raspberrypi/common-hal/picogame/Display.c
+#: shared-bindings/picogame/Canvas.c shared-bindings/picogame/__init__.c
+msgid "Operation or feature not supported"
+msgstr ""
+
+#: ports/atmel-samd/common-hal/picogame/Display.c
+#: ports/raspberrypi/common-hal/picogame/Display.c py/argcheck.c py/runtime.c
+#: shared-bindings/bitmapfilter/__init__.c
+#: shared-module/audiodelays/MultiTapDelay.c shared-module/synthio/Note.c
+#: shared-module/synthio/__init__.c
+msgid "%q must be of type %q, not %q"
 msgstr ""
 
 #: ports/atmel-samd/common-hal/pulseio/PulseIn.c
@@ -1194,6 +1215,7 @@ msgstr ""
 
 #: ports/espressif/common-hal/_bleio/Characteristic.c
 #: ports/espressif/common-hal/_bleio/Service.c
+#: ports/raspberrypi/common-hal/alarm/pin/PinAlarm.c
 msgid "Too many %q"
 msgstr ""
 
@@ -1380,7 +1402,7 @@ msgstr ""
 
 #: ports/espressif/common-hal/busio/I2C.c
 #: ports/espressif/common-hal/i2ctarget/I2CTarget.c
-#: ports/nordic/common-hal/busio/I2C.c
+#: ports/nordic/common-hal/busio/I2C.c ports/zephyr-cp/common-hal/busio/I2C.c
 msgid "All I2C peripherals are in use"
 msgstr ""
 
@@ -1394,6 +1416,7 @@ msgid "SPI configuration failed"
 msgstr ""
 
 #: ports/espressif/common-hal/busio/SPI.c ports/nordic/common-hal/busio/SPI.c
+#: ports/zephyr-cp/common-hal/busio/SPI.c
 msgid "All SPI peripherals are in use"
 msgstr ""
 
@@ -1477,12 +1500,6 @@ msgstr ""
 
 #: ports/espressif/common-hal/espidf/__init__.c
 msgid "Requested resource not found"
-msgstr ""
-
-#: ports/espressif/common-hal/espidf/__init__.c
-#: ports/raspberrypi/common-hal/picogame/Display.c
-#: shared-bindings/picogame/__init__.c
-msgid "Operation or feature not supported"
 msgstr ""
 
 #: ports/espressif/common-hal/espidf/__init__.c
@@ -1978,13 +1995,6 @@ msgstr ""
 
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
 msgid "All timers for this pin are in use"
-msgstr ""
-
-#: ports/raspberrypi/common-hal/picogame/Display.c py/argcheck.c py/runtime.c
-#: shared-bindings/bitmapfilter/__init__.c
-#: shared-module/audiodelays/MultiTapDelay.c shared-module/synthio/Note.c
-#: shared-module/synthio/__init__.c
-msgid "%q must be of type %q, not %q"
 msgstr ""
 
 #: ports/raspberrypi/common-hal/rotaryio/IncrementalEncoder.c
@@ -3802,12 +3812,6 @@ msgstr ""
 msgid "Length of %q must be an even multiple of channel_count * type_size"
 msgstr ""
 
-#: shared-bindings/audiocore/WaveFile.c shared-bindings/audiomp3/MP3Decoder.c
-#: shared-bindings/displayio/OnDiskBitmap.c shared-bindings/gifio/OnDiskGif.c
-#: shared-bindings/synthio/__init__.c shared-module/gifio/GifWriter.c
-msgid "file must be a file opened in byte mode"
-msgstr ""
-
 #: shared-bindings/audiodelays/Chorus.c shared-bindings/audiodelays/Echo.c
 #: shared-bindings/audiodelays/Flanger.c
 #: shared-bindings/audiodelays/GranularPitchShift.c
@@ -3834,6 +3838,12 @@ msgstr ""
 
 #: shared-bindings/audioio/AudioOut.c shared-bindings/emmcio/EMMC.c
 msgid "%q and %q must be different"
+msgstr ""
+
+#: shared-bindings/audiomp3/MP3Decoder.c
+#: shared-bindings/displayio/OnDiskBitmap.c shared-bindings/gifio/OnDiskGif.c
+#: shared-bindings/synthio/__init__.c shared-module/gifio/GifWriter.c
+msgid "file must be a file opened in byte mode"
 msgstr ""
 
 #: shared-bindings/bitmapfilter/__init__.c
@@ -4191,28 +4201,6 @@ msgid "Publishers can only be created from a parent node"
 msgstr ""
 
 #: shared-bindings/rgbmatrix/RGBMatrix.c
-msgid "The length of rgb_pins must be 6, 12, 18, 24, or 30"
-msgstr ""
-
-#: shared-bindings/rgbmatrix/RGBMatrix.c
-#, c-format
-msgid "rgb_pins[%d] is not on the same port as clock"
-msgstr ""
-
-#: shared-bindings/rgbmatrix/RGBMatrix.c
-#, c-format
-msgid "rgb_pins[%d] duplicates another pin assignment"
-msgstr ""
-
-#: shared-bindings/rgbmatrix/RGBMatrix.c
-#, c-format
-msgid ""
-"Pinout uses %d bytes per element, which consumes more than the ideal %d "
-"bytes.  If this cannot be avoided, pass allow_inefficient=True to the "
-"constructor"
-msgstr ""
-
-#: shared-bindings/rgbmatrix/RGBMatrix.c
 #, c-format
 msgid "Must use a multiple of 6 rgb pins, not %d"
 msgstr ""
@@ -4497,6 +4485,28 @@ msgstr ""
 msgid ""
 "This microcontroller only supports data0=, not data_pins=, because it "
 "requires contiguous pins."
+msgstr ""
+
+#: shared-module/rgbmatrix/RGBMatrix.c
+msgid "The length of rgb_pins must be 6, 12, 18, 24, or 30"
+msgstr ""
+
+#: shared-module/rgbmatrix/RGBMatrix.c
+#, c-format
+msgid "rgb_pins[%d] is not on the same port as clock"
+msgstr ""
+
+#: shared-module/rgbmatrix/RGBMatrix.c
+#, c-format
+msgid "rgb_pins[%d] duplicates another pin assignment"
+msgstr ""
+
+#: shared-module/rgbmatrix/RGBMatrix.c
+#, c-format
+msgid ""
+"Pinout uses %d bytes per element, which consumes more than the ideal %d "
+"bytes.  If this cannot be avoided, pass allow_inefficient=True to the "
+"constructor"
 msgstr ""
 
 #: shared-module/rgbmatrix/RGBMatrix.c

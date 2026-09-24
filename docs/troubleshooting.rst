@@ -56,3 +56,10 @@ all available in the
 `Adafruit bundle <https://github.com/adafruit/Adafruit_CircuitPython_Bundle/releases/latest>`_
 and the `Community bundle <https://github.com/adafruit/CircuitPython_Community_Bundle/releases/latest>`_.
 Make sure to download a version with 7.0.0 or higher in the filename.
+
+The error can also come from a ``.mpy`` file that contains native code for a different
+kind of chip. On boards that can run native code, ``import foo`` looks for ``foo.py``,
+then ``foo.<arch>.mpy``, then ``foo.mpy``, where ``<arch>`` is
+``microcontroller.cpu.architecture``, for example ``foo.armv7emsp.mpy``. A
+``foo.<arch>.mpy`` built for another architecture or CircuitPython version raises this
+error instead of falling back to ``foo.mpy``.
