@@ -89,6 +89,10 @@
 #include "shared-module/keypad/__init__.h"
 #endif
 
+#if CIRCUITPY_STORAGE_MAP_FILE
+#include "shared-bindings/storage/__init__.h"
+#endif
+
 #if CIRCUITPY_AUDIOFILEWRITER
 #include "shared-module/audiofilewriter/AudioFileWriter.h"
 #endif
@@ -404,6 +408,10 @@ static void cleanup_after_vm(mp_obj_t exception) {
 
     #if CIRCUITPY_KEYPAD
     keypad_reset();
+    #endif
+
+    #if CIRCUITPY_STORAGE_MAP_FILE
+    storage_map_file_reset();
     #endif
 
     #if CIRCUITPY_AUDIOFILEWRITER

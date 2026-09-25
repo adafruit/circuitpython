@@ -647,6 +647,12 @@ CFLAGS += -DCIRCUITPY_STORAGE=$(CIRCUITPY_STORAGE)
 CIRCUITPY_STORAGE_EXTEND ?= $(CIRCUITPY_DUALBANK)
 CFLAGS += -DCIRCUITPY_STORAGE_EXTEND=$(CIRCUITPY_STORAGE_EXTEND)
 
+# storage.map_file(): read a file straight out of memory-mapped flash. A port whose CIRCUITPY drive
+# is memory-mapped implements port_internal_flash_xip_address() and turns this on; turning it on
+# without that function is a link error, not a silent no-op.
+CIRCUITPY_STORAGE_MAP_FILE ?= 0
+CFLAGS += -DCIRCUITPY_STORAGE_MAP_FILE=$(CIRCUITPY_STORAGE_MAP_FILE)
+
 CIRCUITPY_STRUCT ?= 1
 CFLAGS += -DCIRCUITPY_STRUCT=$(CIRCUITPY_STRUCT)
 
