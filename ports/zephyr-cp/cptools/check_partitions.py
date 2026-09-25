@@ -341,23 +341,54 @@ def check_parity(edt, counterpart):
     if expected["circuitpy"] == "external":
         # supervisor/flash.c uses the first flash device no partition covers as the
         # drive, which is the whole chip only while the chip carries no partitions.
-        if "circuitpy_partition" in partitions:
-            problems.append(
-                f"circuitpy_partition: declared, but {counterpart} uses the whole "
-                f"external flash as the drive"
-            )
+        # An explicit single partition covering the whole chip is equivalent --
+        # it pins the drive to the same area the dynamic-area fallback would
+        # claim -- so allow exactly that: one external partition starting at
+        # offset 0. Anything else on external flash (extra partitions, or a
+        # partition that doesn't start at 0) would not be claimed by the
+        # fallback and breaks the drive.
         external = [node for node in edt.nodes if is_external_flash(node)]
         if not external:
             problems.append(f"no external flash, but {counterpart} keeps the drive on one")
-        for dev, offset, size in partitions.values():
-            if is_external_flash(dev):
-                problems.append(
-                    f"{dev.labels[0] if dev.labels else dev.name}: carries partitions, "
-                    f"but {counterpart} uses the whole chip as the drive"
-                )
-                break
+        external_partitions = [
+            (dev, offset, size)
+            for dev, offset, size in partitions.values()
+            if is_external_flash(dev)
+        ]
+        whole_chip_ok = len(external_partitions) == 1 and external_partitions[0][1] == 0
+        if external_partitions and not whole_chip_ok:
+            dev = external_partitions[0][0]
+            problems.append(
+                f"{dev.labels[0] if dev.labels else dev.name}: carries partitions, "
+                f"but {counterpart} uses the whole chip as the drive"
+            )
     else:
-        compare("circuitpy_partition", expected["circuitpy"])
+        # The partition is on internal flash. The fork names it
+        # fatfs_partition (boards with native USB) or littlefs_partition (no
+        # USB); the older CircuitPython port layout named it circuitpy_partition.
+        # supervisor/flash.c accepts all three via FIXED_PARTITION_EXISTS.
+        want = expected["circuitpy"]
+        fs_labels = ("circuitpy_partition", "fatfs_partition", "littlefs_partition")
+        found = next(
+            (partitions[label] for label in fs_labels if label in partitions),
+            None,
+        )
+        if found is None:
+            problems.append(
+                f"circuitpy_partition: missing, {counterpart} has it at "
+                f"0x{want[0]:x}+0x{want[1]:x}"
+            )
+        else:
+            dev, offset, size = found
+            if not is_internal_flash(dev):
+                problems.append(
+                    f"circuitpy_partition: not on the internal flash, unlike {counterpart}"
+                )
+            if (offset, size) != want:
+                problems.append(
+                    f"circuitpy_partition: 0x{offset:x}+0x{size:x}, {counterpart} has it at "
+                    f"0x{want[0]:x}+0x{want[1]:x}"
+                )
     return problems
 
 

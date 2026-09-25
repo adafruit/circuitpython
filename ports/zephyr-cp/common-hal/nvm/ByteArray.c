@@ -38,6 +38,10 @@ static bool ensure_nvm_open(void) {
 }
 
 uint32_t common_hal_nvm_bytearray_get_length(const nvm_bytearray_obj_t *self) {
+    // The nvm partition size comes from the devicetree, so it's only known at
+    // runtime. The singleton object's len field is never initialized; look it
+    // up from the opened flash area instead.
+    (void)self;
     if (!ensure_nvm_open()) {
         return 0;
     }

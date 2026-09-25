@@ -21,6 +21,8 @@
 
 #include "supervisor/shared/tick.h"
 
+#include "common-hal/_bleio/Adapter.h"
+
 #include "common-hal/_bleio/CharacteristicBuffer.h"
 #include "common-hal/_bleio/Characteristic.h"
 
@@ -43,6 +45,10 @@ void bleio_characteristic_buffer_extend(bleio_characteristic_buffer_obj_t *self,
     } else {
         ring_buf_put(&self->ringbuf, data, len);
     }
+    // Wake the main task so it can service the new RX data instead of
+    // sleeping out its full timeout. This is what makes the "Press any key"
+    // wait end early when REPL input arrives over the BLE serial service.
+    bleio_request_bluetooth_background();
 }
 
 void _common_hal_bleio_characteristic_buffer_construct(bleio_characteristic_buffer_obj_t *self,

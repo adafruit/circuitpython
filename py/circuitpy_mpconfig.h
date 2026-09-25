@@ -713,6 +713,13 @@ void background_callback_run_all(void);
 #error "CIRCUITPY_BOOT_BUTTON and CIRCUITPY_BOOT_BUTTON_NO_GPIO are mutually exclusive"
 #endif
 
+// Boards that define CIRCUITPY_BOOT_BUTTON can set
+// CIRCUITPY_BOOT_BUTTON_ACTIVE_HIGH to 1 when the button pin reads high while
+// pressed. The default is active-low (the pin reads low while pressed).
+#ifndef CIRCUITPY_BOOT_BUTTON_ACTIVE_HIGH
+#define CIRCUITPY_BOOT_BUTTON_ACTIVE_HIGH (0)
+#endif
+
 #if defined(__GNUC__) && !defined(__ZEPHYR__)
 #if __GNUC__ < CIRCUITPY_MIN_GCC_VERSION
 // (the 3 level scheme here is required to get expansion & stringization

@@ -142,6 +142,67 @@ number, as a string) to a name:
 
 Positions left out of the table get no name.
 
+## OTA firmware updates over BLE
+
+Boards with Bluetooth and a `slot1_partition` can update CircuitPython
+itself over the air. A board opts in by shipping a `sysbuild.conf` in its
+board folder:
+
+```
+boards/<vendor>/<board>/sysbuild.conf:
+
+SB_CONFIG_BOOTLOADER_MCUBOOT=y
+```
+
+That makes sysbuild build the MCUboot bootloader into the board's
+`boot_partition` and link the application into `slot0_partition` (it must
+link into slot0 — see `nrf54lm20dk` for an example of a board that does
+not). The app image is wrapped with an MCUboot header using imgtool —
+signed, or hash-only when the board sets `SB_CONFIG_BOOT_SIGNATURE_TYPE_NONE`
+(like `nordic_nrf54l15dk` does). The port Kconfig then enables Zephyr's
+MCUmgr/SMP server over the Bluetooth SMP service:
+
+- `img upload` writes the uploaded image into slot 1
+- `img test`/`img confirm` plus `os reset` reboot into the new image
+- the app confirms the running image once it has booted, so an update that
+  fails to start is automatically reverted (the `TEST_AND_CONFIRM` flow in
+  the reference clients)
+
+The service requires an encrypted connection. CircuitPython has no
+display or keyboard IO capability, so authenticated (MITM) pairing can
+never complete; the OTA boards pair with Just Works instead
+(`CONFIG_BT_SMP_ENFORCE_MITM=n` and the SMP service's GATT permissions set
+to encryption-only, in the OTA boards' `board.conf`). Once paired and
+bonded, the client can upload.
+
+To update a device, flash it with `make BOARD=<board> flash` (which flashes
+both MCUboot and the app) and then use an SMP client such as Nordic's open
+source [nRF Connect Device Manager](https://github.com/nordicsemi/Android-nRF-Connect-Device-Manager)
+apps (the sample app is what's published on the app stores) or the `mcumgr`
+CLI, uploading the signed app image (`zephyr.signed.bin` from the build
+directory).
+
+### Resetting into the bootloader
+
+Code (and update tools) can enter the bootloader's update mode
+programmatically, the way a double-tap of the reset button does:
+`supervisor/port.c`'s `reset_to_bootloader()` (invoked by the 1200-bps CDC
+touch) and `microcontroller.OnNextReset(RunMode.UF2 / RunMode.BOOTLOADER)`
+set a request before resetting, via the adaboot fork's
+`adaboot/update_mode.h` helpers.
+
+The mechanism depends on which bootloader the board boots: fork adaboot
+(MCUboot) boards read the boot-mode retention flag, so the app needs
+`RETENTION_BOOT_MODE` (defaulted in the port Kconfig for boards whose layout
+provides a `zephyr,boot-mode` region) and the board's bootloader conf
+(`bootloader/mcuboot/conf/<vendor>/<board>.conf`) needs the matching entrance
+option (`MCUBOOT_UF2_ENTRANCE_BOOT_MODE`, or `BOOT_SERIAL_BOOT_MODE` on USB-less
+boards like `nrf54l15dk`). Boards that boot the stock Adafruit nRF52
+bootloader (the Adafruit boards) read the request from the raw GPREGRET
+register instead and need no bootloader-side changes.
+
+`nordic_nrf54l15dk` is the first board with this enabled.
+
 ## Testing other boards
 
 [Any Zephyr board](https://docs.zephyrproject.org/latest/boards/index.html#) can

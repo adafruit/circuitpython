@@ -1,5 +1,8 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
+/* Partition layout is owned by the mcuboot fork (dts/native/nrf54lm20bsim.dtsi)
+ * and applied to this image by sysbuild. This overlay only adds board/app config. */
+
 / {
 	sram0: memory@20000000 {
 		device_type = "memory";
@@ -10,27 +13,6 @@
 
 	chosen {
 		zephyr,sram = &sram0;
-	};
-};
-
-&cpuapp_rram {
-	/delete-node/ partitions;
-	partitions {
-		compatible = "fixed-partitions";
-		#address-cells = <1>;
-		#size-cells = <1>;
-
-		circuitpy_partition: partition@0 {
-			compatible = "zephyr,mapped-partition";
-			label = "circuitpy";
-			reg = <0x00000000 (DT_SIZE_K(2036) - DT_SIZE_K(32))>;
-		};
-
-		storage_partition: partition@1f5000 {
-			compatible = "zephyr,mapped-partition";
-			label = "storage";
-			reg = <0x001f5000 DT_SIZE_K(32)>;
-		};
 	};
 };
 

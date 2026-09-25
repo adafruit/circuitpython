@@ -1,2 +1,2 @@
-CIRCUITPY_BUILD_EXTENSIONS = ["hex"]
+CIRCUITPY_BUILD_EXTENSIONS = ["hex", "uf2"]
 BLOBS=["hal_stm32"]

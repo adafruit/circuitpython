@@ -1,5 +1,8 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 
+/* Partition layout is owned by the mcuboot fork (dts/native/nrf5340bsim.dtsi)
+ * and applied to this image by sysbuild. This overlay only adds board/app config. */
+
 / {
 	chosen {
 		zephyr,sram = &sram0;
@@ -9,26 +12,6 @@
 &sram0 {
 	compatible = "zephyr,memory-region", "mmio-sram";
 	zephyr,memory-region = "SRAM";
-};
-
-&flash0 {
-	/delete-node/ partitions;
-	partitions {
-		#address-cells = <1>;
-		#size-cells = <1>;
-
-		circuitpy_partition: partition@0 {
-			compatible = "zephyr,mapped-partition";
-			label = "circuitpy";
-			reg = <0x00000000 DT_SIZE_K(1008)>;
-		};
-
-		storage_partition: partition@fc000 {
-			compatible = "zephyr,mapped-partition";
-			label = "storage";
-			reg = <0x000fc000 DT_SIZE_K(16)>;
-		};
-	};
 };
 
 /* Note: bsim doesn't have USB, so we don't include app.overlay */

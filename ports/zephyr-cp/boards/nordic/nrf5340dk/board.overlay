@@ -21,14 +21,6 @@ i2s_rxtx: &i2s0 {
 	clock-source = "ACLK";
 };
 
-/* Remove slot1 (OTA), expand slot0 to use the space.
- * CircuitPython doesn't use OTA updates. */
-&slot0_partition {
-	reg = <0x00010000 0x000E0000>;
-};
-
-/delete-node/ &slot1_partition;
-
 // Enable free serial peripheral instances so CircuitPython can mux them to
 // arbitrary pins at runtime. Each instance is enabled in one mode because the
 // i2c/spi/uart nodes of an instance are the same peripheral (enforced by

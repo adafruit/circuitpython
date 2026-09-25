@@ -1,22 +1,13 @@
-&flash0 {
-	partitions {
-		compatible = "fixed-partitions";
-		#address-cells = <1>;
-		#size-cells = <1>;
-
-		/* The app links at offset 0 (no zephyr,code-partition is set,
-		 * so FLASH_LOAD_OFFSET stays 0) and CIRCUITPY gets the second
-		 * half of the 2 MB internal code flash.
-		 */
-		circuitpy_partition: partition@100000 {
-			label = "circuitpy";
-			reg = <0x100000 DT_SIZE_M(1)>;
-		};
-	};
-};
-
-/* Disable OFS (Option Function Select) nodes so their high-address
- * sections don't end up in the app HEX.
+/* This board boots via the Adaboot MCUboot fork. Its
+ * bootloader/mcuboot/dts/renesas/ek_ra6m5.dtsi owns the partition layout
+ * (boot, slot0 and storage on the internal code flash, nvm on the data
+ * flash) and is applied to both the bootloader and the application image
+ * by sysbuild, so no partition definitions belong here. CIRCUITPY gets the
+ * fatfs_partition the layout carves from the 32 MB QSPI NOR (mx25l25645g).
+ *
+ * Disable OFS (Option Function Select) nodes so their high-address
+ * sections don't end up in the app HEX. MCUboot's own build still has
+ * them, so the merged HEX programs OFS correctly.
  */
 &option_setting_ofs0        { status = "disabled"; };
 &option_setting_dualsel     { status = "disabled"; };

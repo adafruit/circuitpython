@@ -8,6 +8,10 @@ manifest:
       url: https://github.com/tannewt/ext_nRF_hw_models
       revision: 41cb69cd08848cc31e91ed62d01d397511981919
       path: modules/bsim_hw_models/nrf_hw_models
+    - name: mcuboot
+      url: https://github.com/adafruit/adaboot
+      revision: ca9afb914aea80c1fb039ae84b2197717f76c578
+      path: bootloader/mcuboot
     - name: zephyr
       url: https://github.com/adafruit/zephyr
       revision: db2dd2aa0914b9b427baa6a3df3e6460699e4c80
@@ -56,5 +60,4 @@ manifest:
           - openthread
           - percepio
           - uoscore-uedhoc
-          - zcbor
           - zephyr-xenlib

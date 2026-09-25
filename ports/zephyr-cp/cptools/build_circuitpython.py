@@ -317,6 +317,10 @@ def determine_enabled_modules(board_info, portdir, srcdir):
         enabled_modules.add("storage")
         module_reasons["storage"] = "Zephyr board has flash"
 
+    if board_info.get("nvm_size", 0) > 0:
+        enabled_modules.add("nvm")
+        module_reasons["nvm"] = "Board has NVM partition"
+
     network_enabled = board_info.get("wifi", False) or board_info.get("hostnetwork", False)
 
     if network_enabled:
@@ -479,6 +483,7 @@ async def build_circuitpython():  # noqa: C901
         "extmod/vfs_fat.c",
         "lib/tlsf/tlsf.c",
         portdir / "background.c",
+        portdir / "supervisor/adaboot_info.c",
         portdir / "common-hal/microcontroller/__init__.c",
         portdir / "common-hal/microcontroller/Pin.c",
         portdir / "common-hal/microcontroller/Processor.c",
@@ -685,6 +690,12 @@ async def build_circuitpython():  # noqa: C901
 
     if autogen_board_info_fn.parent.exists():
         autogen_board_info_fn.write_text(tomlkit.dumps(autogen_board_info))
+
+    # Set NVM size from the board's NVM partition.
+    nvm_size = board_info.get("nvm_size", 0)
+    circuitpython_flags.append(f"-DCIRCUITPY_INTERNAL_NVM_SIZE={nvm_size}")
+    if nvm_size > 0:
+        circuitpython_flags.append("-DCIRCUITPY_INTERNAL_NVM_START_ADDR=0")
 
     for mpflag in MPCONFIG_FLAGS:
         enabled = mpflag in DEFAULT_MODULES

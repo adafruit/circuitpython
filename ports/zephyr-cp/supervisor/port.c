@@ -7,6 +7,7 @@
 #include "supervisor/port.h"
 
 #include "mpconfigboard.h"
+#include "adaboot/update_mode.h"
 #include "supervisor/shared/tick.h"
 
 #if CIRCUITPY_AUDIOBUSIO_I2SOUT
@@ -34,6 +35,10 @@
 #include "lib/tlsf/tlsf.h"
 #include <zephyr/device.h>
 #include <zephyr/kernel.h>
+
+#if defined(CONFIG_IMG_MANAGER)
+#include <zephyr/dfu/mcuboot.h>
+#endif
 
 #if defined(CONFIG_TRACING_PERFETTO) && defined(CONFIG_BOARD_NATIVE_SIM)
 #include "perfetto_encoder.h"
@@ -213,6 +218,24 @@ safe_mode_t port_init(void) {
     // We run CircuitPython at the lowest priority (just higher than idle.)
     // This allows networking and USB to preempt us.
     k_thread_priority_set(k_current_get(), CONFIG_NUM_PREEMPT_PRIORITIES - 1);
+
+    #if defined(CONFIG_MCUMGR_GRP_OS_BOOTLOADER_INFO_HOOK)
+    // Called from here, not SYS_INIT: this file is an archive member that
+    // nothing references, so the linker never pulls it in unless another
+    // always-linked translation unit calls into it.
+    adaboot_info_init();
+    #endif
+
+    #if defined(CONFIG_IMG_MANAGER)
+    // Confirm the running image so MCUboot treats it as permanent instead of
+    // reverting to the other slot on the next boot. Reaching here means the
+    // image booted far enough to run the port, which is the usual recovery
+    // criterion for a test (TEST_AND_CONFIRM) OTA upgrade.
+    if (!boot_is_img_confirmed()) {
+        (void)boot_write_img_confirmed();
+    }
+    #endif
+
     k_timer_init(&tick_timer, _tick_function, NULL);
     perfetto_emit_circuitpython_tracks();
     return SAFE_MODE_NONE;
@@ -250,6 +273,11 @@ void reset_port(void) {
 }
 
 void reset_to_bootloader(void) {
+    // The 1200-bps CDC disconnect (and the supervisor's bootloader reset
+    // cause) asks for the update mode. On bootloaders that distinguish the
+    // flavors this is the serial DFU one; on the fork's MCUboot adaboot both
+    // flavors end up in the same update mode.
+    adaboot_request_update_mode(false);
     reset_cpu();
 }
 

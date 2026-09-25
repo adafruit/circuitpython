@@ -1,17 +1,3 @@
-&gpio6 {
-	status = "okay";
-	zephyr,pm-device-runtime-auto;
-};
-
-&exmif {
-	status = "okay";
-	zephyr,pm-device-runtime-auto;
-};
-
-&mx25uw63 {
-	status = "okay";
-};
-
 /*
  * SDA = P2.11
  * SCL = P2.10
@@ -44,17 +30,11 @@
 	status = "okay";
 };
 
-/* Remove slot1 (OTA), expand slot0 to use the space.
- * CircuitPython doesn't use OTA updates. The expansion absorbs the
- * cpurad slot0 as well: no cpurad image is built (CONFIG_BT=n), so its
- * slot would otherwise be dead space between cpuapp slot0 and the
- * cpuppr code partition at 0xe4000. */
-&slot0_partition {
-	reg = <0x40000 DT_SIZE_K(656)>;
-};
-
-/delete-node/ &slot1_partition;
-/delete-node/ &cpurad_slot0_partition;
+/* The flash layout comes from the mcuboot fork's generated
+ * nrf54h20dk-partitions.dtsi: slot0 is expanded to 1.3 MB, the OTA slot1
+ * lives on external flash and the cpurad slots are absorbed, so no
+ * partition fix-ups are needed here.
+ */
 
 // Enable free serial peripheral instances so CircuitPython can mux them to
 // arbitrary pins at runtime. On this SoC the i2c/spi/uart nodes with the same

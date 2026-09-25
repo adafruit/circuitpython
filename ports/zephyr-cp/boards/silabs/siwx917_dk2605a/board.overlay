@@ -3,30 +3,6 @@
 // falls back to the Zephyr console on &ulpuart, reaching the host over the
 // on-board J-Link VCOM.
 
-// CIRCUITPY filesystem.
-//
-// supervisor/flash.c needs a partition labeled `circuitpy_partition`, and the
-// whole 8 MB is already partitioned by siwg917m111mgtba.dtsi with no
-// unallocated space to claim. The upper region is owned by the network
-// processor, which refuses M4 writes there, so CIRCUITPY is carved out of the
-// M4's own code_partition, shrunk from 2008K to 1M. Overflowing that fails at
-// link time rather than corrupting the filesystem.
-&flash0 {
-	partitions {
-		code_partition: partition@202000 {
-			compatible = "zephyr,mapped-partition";
-			label = "code_partition";
-			reg = <0x00202000 0x00100000>;
-		};
-
-		circuitpy_partition: partition@302000 {
-			compatible = "zephyr,mapped-partition";
-			label = "circuitpy";
-			reg = <0x00302000 0x000f6000>;
-		};
-	};
-};
-
 // GSPI on the breakout pads. The board .dts leaves spi0 disabled and wires
 // nothing, so the pin assignment here is taken from the mapping Silicon Labs
 // ships for this board in

@@ -1,21 +1,10 @@
-&ext_flash {
-    partitions {
-        /delete-node/ partition@7800000;
-
-        storage_partition: partition@7800000 {
-			compatible = "zephyr,mapped-partition";
-            label = "storage";
-            reg = <0x7800000 DT_SIZE_K(32)>;
-        };
-
-        circuitpy_partition: partition@7808000 {
-			compatible = "zephyr,mapped-partition";
-            label = "circuitpy";
-            reg = <0x7808000 (DT_SIZE_M(8) - DT_SIZE_K(32))>;
-        };
-    };
-};
-
 &rng {
     status = "okay";
 };
+
+/* The USB device controller (zephyr_udc0) and the QSPI flash partition map
+ * are defined in the mcuboot fork's dts/st/stm32h750b_dk.dtsi, which
+ * sysbuild prepends to this image's overlays. app.overlay only adds the
+ * CDC ACM console/data endpoints.
+ */
+#include "../../../app.overlay"

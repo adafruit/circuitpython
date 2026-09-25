@@ -23,7 +23,11 @@ def get_version_info_from_git(repo_path, extra_args=[]):
                     *extra_args,
                 ],
                 cwd=repo_path,
-                stderr=subprocess.STDOUT,
+                # CIRCUITPY-CHANGE: Keep stderr out of the tag: e.g. with
+                # core.fsmonitor=true the daemon can emit a transient IPC
+                # error to stderr while the command still succeeds, and it
+                # must not end up inside MICROPY_GIT_TAG.
+                stderr=subprocess.DEVNULL,
                 universal_newlines=True,
             ).strip()
         # CIRCUITPY-CHANGE
@@ -39,7 +43,8 @@ def get_version_info_from_git(repo_path, extra_args=[]):
         git_hash = subprocess.check_output(
             ["git", "rev-parse", "--short", "HEAD"],
             cwd=repo_path,
-            stderr=subprocess.STDOUT,
+            # CIRCUITPY-CHANGE: same as above; stderr must not become the hash.
+            stderr=subprocess.DEVNULL,
             universal_newlines=True,
         ).strip()
     except subprocess.CalledProcessError:

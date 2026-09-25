@@ -1,4 +1,4 @@
-CIRCUITPY_BUILD_EXTENSIONS = ["hex"]
+CIRCUITPY_BUILD_EXTENSIONS = ["hex", "uf2", "signed.bin"]
 
 # Headers silkscreened PORT0 (P0.00-P0.09), PORT1:00-15 (P1.00-P1.15),
 # PORT1:16-31 (P1.16-P1.31), PORT2 (P2.00-P2.10) and PORT3 (P3.00-P3.12),

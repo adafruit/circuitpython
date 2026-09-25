@@ -1,28 +1,8 @@
-/ {
-	chosen {
-		zephyr,flash-controller = &xspi2;
-		zephyr,flash = &mx25um51245g;
-		zephyr,code-partition = &slot0_partition;
-	};
-};
-
-/* Code and CIRCUITPY live on the 64 MB external XSPI NOR flash. The board
- * dts only declares a storage partition (last sector, shrunk for an errata
- * workaround); add the code slot and the filesystem here. The image runs
- * from RAM, so slot0 is only a load address.
+/* The USB device controller (zephyr_udc0), the XIP code flash (xip_flash)
+ * with its partition map, and the flash chosen properties are defined in the
+ * mcuboot fork's dts/st/nucleo_n657x0_q.dtsi, which sysbuild prepends to this
+ * image's overlays. app-partition.overlay then points
+ * zephyr,code-partition at slot0_partition. app.overlay only adds the CDC
+ * ACM console/data endpoints and the HID device.
  */
-&mx25um51245g {
-	partitions {
-		slot0_partition: partition@0 {
-			label = "image-0";
-			reg = <0x0 DT_SIZE_M(2)>;
-		};
-
-		circuitpy_partition: partition@200000 {
-			label = "circuitpy";
-			reg = <0x200000 (DT_SIZE_M(64) - DT_SIZE_M(2) - DT_SIZE_K(64))>;
-		};
-	};
-};
-
 #include "../../../app.overlay"

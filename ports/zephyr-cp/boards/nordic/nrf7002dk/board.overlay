@@ -1,22 +1,3 @@
-/* Remove slot1 (OTA) and storage, expand slot0 to use the space.
- * CircuitPython doesn't use OTA updates, and nothing here uses the settings
- * NVS: CONFIG_BT=n, and CIRCUITPY lives on the external mx25r64. */
-&slot0_partition {
-	/* Shrink mcuboot to 48KB, absorb slot1 and storage, run to end of flash */
-	reg = <0x0000C000 0x000F4000>;
-};
-
-&boot_partition {
-	reg = <0x00000000 0x0000C000>;
-};
-
-&storage_partition {
-	reg = <0x000FC000 0x00004000>;
-};
-
-/delete-node/ &slot1_partition;
-/delete-node/ &storage_partition;
-
 // Enable free serial peripheral instances so CircuitPython can mux them to
 // arbitrary pins at runtime. Each instance is enabled in one mode because the
 // i2c/spi/uart nodes of an instance are the same peripheral (enforced by

@@ -1,2 +1,2 @@
-CIRCUITPY_BUILD_EXTENSIONS = ["elf"]
+CIRCUITPY_BUILD_EXTENSIONS = ["hex", "uf2", "signed.bin"]
 BLOBS=["hal_renesas"]

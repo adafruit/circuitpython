@@ -1,0 +1,277 @@
+# CircuitPython defaults that must merge before Zephyr's subsystem Kconfig
+# files.
+#
+# Zephyr merges this file via its module mechanism (Kconfig.zephyr sources
+# "modules/Kconfig", which pulls in every module's Kconfig) right after the
+# SoC/board defconfigs and BEFORE kernel/, drivers/, lib/ and subsys/. Kconfig
+# takes the first `default` it sees for a symbol, so defaults defined here win
+# over the ones Zephyr's own subsystem Kconfigs define later.
+#
+# These same defaults must NOT live in the application Kconfig
+# (ports/zephyr-cp/Kconfig): it is sourced after all of Zephyr, so any symbol
+# Zephyr gives a (conditional) default of its own would silently shadow the
+# port's value there. Examples that were shadowed here before this module
+# existed: BT_BUF_* (Zephyr defaults them for BT_CLASSIC/BT_MESH/... boards),
+# BT_DEVICE_NAME_MAX, BT_L2CAP_TX_MTU, MCUMGR_TRANSPORT_NETBUF_SIZE.
+#
+# Boards can override any of these in their boards/<vendor>/<board>/board.conf.
+
+# ===== Peripheral defaults — enabled by default, boards can disable =====
+
+config I2C
+	default y
+
+config SPI
+	default y
+
+config SPI_ASYNC
+	default y
+
+config I2S
+	default y
+
+config UART_LINE_CTRL
+	default y
+
+config ENTROPY_GENERATOR
+	default y
+
+# ===== Dynamic pin routing (nRF) =====
+# CircuitPython routes peripherals to pins at runtime on nRF SoCs. That needs
+# pinctrl states to be swappable (PINCTRL_DYNAMIC) and devices to be
+# de-initializable/re-initializable (DEVICE_DEINIT_SUPPORT). Both cost a little
+# RAM (pinctrl configs move out of flash) and one function pointer per device.
+config PINCTRL_DYNAMIC
+	default y if SOC_FAMILY_NORDIC_NRF
+
+config DEVICE_DEINIT_SUPPORT
+	default y if SOC_FAMILY_NORDIC_NRF
+
+# ===== Bluetooth defaults =====
+
+# Use a variable for the chosen name so the comma isn't parsed as an argument separator
+DT_BT_HCI_CHOSEN := zephyr,bt-hci
+
+config BT
+	default $(dt_chosen_enabled,$(DT_BT_HCI_CHOSEN))
+
+config BT_PERIPHERAL
+	default y
+
+config BT_CENTRAL
+	default y
+
+config BT_BROADCASTER
+	default y
+
+config BT_OBSERVER
+	default y
+
+config BT_EXT_ADV
+	default y
+
+config BT_DEVICE_APPEARANCE_DYNAMIC
+	default y
+
+config BT_DEVICE_NAME_DYNAMIC
+	default y
+
+config BT_DEVICE_NAME_MAX
+	default 28
+
+config BT_L2CAP_TX_MTU
+	default 253
+
+# BT Buffers
+config BT_BUF_CMD_TX_SIZE
+	default 255
+
+config BT_BUF_EVT_RX_COUNT
+	default 16
+
+config BT_BUF_EVT_RX_SIZE
+	default 255
+
+config BT_BUF_ACL_TX_COUNT
+	default 3
+
+config BT_BUF_ACL_TX_SIZE
+	default 251
+
+config BT_BUF_ACL_RX_COUNT_EXTRA
+	default 1
+
+config BT_BUF_ACL_RX_SIZE
+	default 255
+
+config BT_GATT_DYNAMIC_DB
+	default y
+
+config BT_GATT_CLIENT
+	default y
+
+config BT_SMP
+	default y
+
+config BT_BONDABLE
+	default y
+
+config SETTINGS
+	default y
+
+config BT_SETTINGS
+	default y
+
+config BT_KEYS_OVERWRITE_OLDEST
+	default y
+
+# ===== OTA firmware updates over BLE (SMP/MCUmgr) =====
+#
+# Boards that boot under MCUboot opt in via boards/<vendor>/<board>/sysbuild.conf
+# setting CONFIG_BOOTLOADER_MCUBOOT, which sysbuild turns into an app-side
+# CONFIG_BOOTLOADER_MCUBOOT. OTA is enabled when the app boots from slot0 under
+# MCUboot and has Bluetooth; the app boots with the image upload in slot1.
+#
+# A slot1_partition must also exist in the final app devicetree: the mcuboot
+# fork's partition layout overlays are applied there, so boards.toml-driven
+# layouts count. Boards with a single-app layout (e.g. stm32wba65i_dk1,
+# siwx917_dk2605a) have no slot1 to stage an upload in, and zephyr_img_mgmt
+# fails to build without one, so MCUmgr defaults off for them automatically
+# instead of needing a CONFIG_MCUMGR=n override in board.conf.
+#
+# Gating on BOOTLOADER_MCUBOOT (not just on a slot1_partition existing) keeps
+# boards that link the app over the whole flash (e.g. nrf54lm20dk) from letting
+# an upload erase the running image that happens to overlap slot1.
+
+DT_HAS_SLOT1 := $(dt_nodelabel_enabled,slot1_partition)
+
+config ZCBOR
+	default y if BT && BOOTLOADER_MCUBOOT && $(DT_HAS_SLOT1)
+
+config MCUMGR
+	default y if BT && BOOTLOADER_MCUBOOT && $(DT_HAS_SLOT1)
+
+config MCUMGR_TRANSPORT_BT
+	default y if BT && BOOTLOADER_MCUBOOT
+
+config MCUMGR_TRANSPORT_BT_REASSEMBLY
+	default y if MCUMGR_TRANSPORT_BT
+
+# Just Works pairing for the SMP service. The port registers no interactive
+# pairing callbacks (no display/keyboard IO capability; numeric comparison
+# raises NotImplementedError here), so MITM-authenticated pairing can never
+# complete. Zephyr's defaults are the opposite (BT_SMP_ENFORCE_MITM=y and the
+# PERM choice defaulting to MCUMGR_TRANSPORT_BT_PERM_RW_AUTHEN), which puts
+# WRITE_AUTHEN on the SMP characteristics and makes every SMP write fail with
+# insufficient authentication. Pair Just Works and require encryption only,
+# per the OTA policy documented in the port README.
+config BT_SMP_ENFORCE_MITM
+	default n if BT && BOOTLOADER_MCUBOOT
+
+# The default for the SMP service's GATT-permission choice. Zephyr's own
+# default (subsys/mgmt/mcumgr/transport/Kconfig.bluetooth) is
+# MCUMGR_TRANSPORT_BT_PERM_RW_AUTHEN, which puts WRITE_AUTHEN on the SMP
+# characteristics and makes every SMP write fail with insufficient
+# authentication. This module Kconfig is merged before Zephyr's subsystem
+# Kconfigs, so this `default` (on the choice, not the symbol) wins. The
+# choice itself is Zephyr's; only the default is added here.
+choice MCUMGR_TRANSPORT_BT_PERM
+	default MCUMGR_TRANSPORT_BT_PERM_RW_ENCRYPT if MCUMGR_TRANSPORT_BT
+endchoice
+
+# Request a fast connection interval while an upload is in progress.
+config MCUMGR_TRANSPORT_BT_CONN_PARAM_CONTROL
+	default y if MCUMGR_TRANSPORT_BT
+
+config IMG_MANAGER
+	default y if MCUMGR_TRANSPORT_BT
+
+# IMG_MANAGER ("DFU image manager") depends on STREAM_FLASH, which has no
+# default of its own, so enable it with the same gate as IMG_MANAGER.
+config STREAM_FLASH
+	default y if MCUMGR_TRANSPORT_BT
+
+config MCUMGR_GRP_IMG
+	default y if IMG_MANAGER
+
+config MCUMGR_GRP_OS
+	default y if MCUMGR_TRANSPORT_BT
+
+# Let clients discover the SMP buffer count/size so they can use optimal
+# upload chunking and window sizes (the nRF Connect Device Manager apps do
+# this automatically).
+config MCUMGR_GRP_OS_MCUMGR_PARAMS
+	default y if MCUMGR_GRP_OS
+
+# Fit a full ATT write (the port raises BT_L2CAP_TX_MTU to 515) plus the
+# 8-byte MCUmgr BT overhead in each buffer, so one upload packet fills one
+# buffer instead of needing reassembly.
+config MCUMGR_TRANSPORT_NETBUF_SIZE
+	default 528 if MCUMGR_TRANSPORT_BT
+
+# Debug logging for the whole MCUmgr stack (OTA/SMP) cannot be defaulted
+# from Kconfig source: the per-module log levels (CONFIG_..._LOG_LEVEL_DBG)
+# are members of anonymous Kconfig choices, so neither `default` on the int
+# nor `select` on a choice member overrides the built-in "Default" member.
+# Instead, the OTA boards (the ones whose .config has CONFIG_MCUMGR=y,
+# i.e. BT + MCUboot + slot1) set the assignments in their board.conf:
+#
+#   CONFIG_MCUMGR_LOG_LEVEL_DBG=y
+#   CONFIG_MCUMGR_TRANSPORT_LOG_LEVEL_DBG=y
+#   CONFIG_MCUMGR_GRP_IMG_LOG_LEVEL_DBG=y
+#   CONFIG_MCUMGR_GRP_OS_LOG_LEVEL_DBG=y
+#
+# (In a board.conf the assignments are only valid while MCUmgr is enabled,
+# which is exactly what the OTA gate guarantees there.) With
+# CONFIG_LOG_MODE_IMMEDIATE the logs go straight out of the console backend
+# (the board's console UART), interleaved with the CircuitPython output.
+
+# ===== Resetting into the bootloader =====
+#
+# The app asks the installed bootloader for its update mode (the state a
+# double-tap of the reset button produces) on reset_to_bootloader() and
+# microcontroller.OnNextReset(RunMode.UF2 / RunMode.BOOTLOADER), via the
+# adaboot fork's adaboot/update_mode.h helpers. Two bootloaders are in play:
+#
+# - The fork's adaboot (MCUboot) reads the boot-mode retention flag (io.c's
+#   io_detect_boot_mode()), so the app needs the retained-memory chain
+#   enabled; the flag region (zephyr,boot-mode, e.g. gpregret1) is provided
+#   by the fork's dtsi, which sysbuild applies to the application image too.
+#   Every board that boots via adaboot has a boot-mode region in its layout
+#   (a GPREGRET register on the Nordic SoCs, a retained SRAM byte elsewhere).
+# - The stock Adafruit nRF52 bootloader (the Adafruit boards, which boot UF2
+#   with no MCUboot domain) reads the raw GPREGRET register instead, so no
+#   retention subsystem is needed for them.
+
+DT_BOOT_MODE_CHOSEN := zephyr,boot-mode
+DT_BOOT_INFO_CHOSEN := zephyr,bootloader-info
+
+config RETAINED_MEM
+	default y if BOOTLOADER_MCUBOOT && ($(dt_chosen_enabled,$(DT_BOOT_MODE_CHOSEN)) || $(dt_chosen_enabled,$(DT_BOOT_INFO_CHOSEN)))
+
+config RETENTION
+	default y if RETAINED_MEM
+
+config RETENTION_BOOT_MODE
+	default y if RETENTION && $(dt_chosen_enabled,$(DT_BOOT_MODE_CHOSEN))
+
+# Read the boot state (mode/running slot/version) the bootloader leaves in
+# the zephyr,bootloader-info shared-data region, and teach Zephyr's SMP
+# bootloader-info command the fork's identity: without a hook, the
+# application-side handler reports the hardcoded "MCUboot" and derives the
+# mode from the app's own Kconfig. The hook answers in
+# supervisor/adaboot_info.c.
+config RETENTION_BOOTLOADER_INFO
+	default y if BOOTLOADER_MCUBOOT && $(dt_chosen_enabled,$(DT_BOOT_INFO_CHOSEN))
+
+config RETENTION_BOOTLOADER_INFO_TYPE_MCUBOOT
+	default y if RETENTION_BOOTLOADER_INFO
+
+config MCUMGR_MGMT_NOTIFICATION_HOOKS
+	default y if MCUMGR && RETENTION_BOOTLOADER_INFO_TYPE_MCUBOOT
+
+config MCUMGR_GRP_OS_BOOTLOADER_INFO
+	default y if MCUMGR
+
+config MCUMGR_GRP_OS_BOOTLOADER_INFO_HOOK
+	default y if MCUMGR_MGMT_NOTIFICATION_HOOKS

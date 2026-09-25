@@ -1,22 +1,3 @@
-&mx25lm51245 {
-    /delete-node/ partitions;
-
-    partitions {
-        compatible = "fixed-partitions";
-        #address-cells = <1>;
-        #size-cells = <1>;
-
-        storage_partition: partition@0 {
-            label = "storage";
-            reg = <0x00000000 DT_SIZE_K(32)>;
-        };
-
-        circuitpy_partition: partition@8000 {
-            label = "circuitpy";
-            reg = <0x00008000 (DT_SIZE_M(64) - DT_SIZE_K(32))>;
-        };
-    };
-};
 
 &sram5 {
     status = "disabled";

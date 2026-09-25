@@ -7,6 +7,9 @@
 
 #include <zephyr/dt-bindings/memory-attr/memory-attr-arm.h>
 
+/* Partition layout is owned by the mcuboot fork (dts/native/native_sim.dtsi)
+ * and applied to this image by sysbuild. This overlay only adds board/app config. */
+
 / {
 	sram0: memory@20000000 {
 		device_type = "memory";
@@ -18,33 +21,6 @@
 	chosen {
 		zephyr,sram = &sram0;
 		/delete-property/ zephyr,flash;
-		/delete-property/ zephyr,code-partition;
-	};
-};
-
-&flash0 {
-    /delete-node/ partitions;
-    partitions {
-		#address-cells = <1>;
-		#size-cells = <1>;
-
-        circuitpy_partition: partition@0 {
-			compatible = "zephyr,mapped-partition";
-            label = "circuitpy";
-			reg = <0x00000000 DT_SIZE_K(2032)>;
-		};
-
-		storage_partition: partition@1fc000 {
-			compatible = "zephyr,mapped-partition";
-			label = "storage";
-			reg = <0x001fc000 DT_SIZE_K(8)>;
-		};
-
-		nvm_partition: partition@1fe000 {
-			compatible = "zephyr,mapped-partition";
-			label = "nvm";
-			reg = <0x001fe000 0x00002000>;
-		};
 	};
 };
 

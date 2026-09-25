@@ -1,6 +1,9 @@
 # Copyright 2023-2024 Nordic Semiconductor ASA
 # SPDX-License-Identifier: Apache-2.0
 
+# Whether a board boots via Adaboot is declared by the mcuboot fork itself, in
+# bootloader/mcuboot/dts/Kconfig.sysbuild (SB_CONFIG_ADABOOT_BOARD).
+
 source "share/sysbuild/Kconfig"
 
 config NET_CORE_BOARD

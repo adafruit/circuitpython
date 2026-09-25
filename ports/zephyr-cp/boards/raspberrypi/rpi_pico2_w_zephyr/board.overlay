@@ -1,33 +1,3 @@
-&flash0 {
-	partitions {
-		#address-cells = <1>;
-		#size-cells = <1>;
-
-		code_partition: partition@0 {
-			compatible = "zephyr,mapped-partition";
-			label = "code-partition";
-			reg = <0x0 0x17f000>;
-			read-only;
-		};
-
-		storage_partition: partition@17f000 {
-			compatible = "zephyr,mapped-partition";
-			label = "storage";
-			reg = <0x17f000 0x1000>;
-		};
-
-		nvm_partition: partition@180000 {
-			compatible = "zephyr,mapped-partition";
-			label = "nvm";
-			reg = <0x180000 0x1000>;
-		};
-
-		circuitpy_partition: partition@181000 {
-			compatible = "zephyr,mapped-partition";
-			label = "circuitpy";
-			reg = <0x181000 (DT_SIZE_M(4) - 0x181000)>;
-		};
-	};
-};
-
+/* Partition layout is owned by the mcuboot fork (dts/raspberrypi/rpi_pico2.dtsi)
+ * and applied to this image by sysbuild. This overlay only adds board/app config. */
 #include "../../../app.overlay"

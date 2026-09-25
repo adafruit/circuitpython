@@ -10,4 +10,6 @@
 
 typedef struct {
     mp_obj_base_t base;
+    uint8_t *start_address;
+    uint32_t len;
 } nvm_bytearray_obj_t;

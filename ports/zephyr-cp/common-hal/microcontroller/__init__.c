@@ -17,6 +17,7 @@
 #include "shared-bindings/microcontroller/Processor.h"
 
 #include "supervisor/filesystem.h"
+#include "adaboot/update_mode.h"
 #include "supervisor/port.h"
 #include "supervisor/shared/safe_mode.h"
 
@@ -65,16 +66,15 @@ void common_hal_mcu_enable_interrupts() {
 }
 
 void common_hal_mcu_on_next_reset(mcu_runmode_t runmode) {
-    enum { DFU_MAGIC_UF2_RESET = 0x57 };
-    uint8_t new_value = 0;
     if (runmode == RUNMODE_BOOTLOADER || runmode == RUNMODE_UF2) {
-        new_value = DFU_MAGIC_UF2_RESET;
+        // Both modes ask for the bootloader's update mode, the state a
+        // double-tap of the reset button produces.
+        adaboot_request_update_mode(true);
+    } else {
+        // Any other mode boots normally: drop a request left over from an
+        // earlier on_next_reset() call.
+        adaboot_clear_update_request();
     }
-    // int err_code = sd_power_gpregret_set(0, DFU_MAGIC_UF2_RESET);
-    // if (err_code != NRF_SUCCESS) {
-    //     // Set it without the soft device if the SD failed. (It may be off.)
-    //     nrf_power_gpregret_set(NRF_POWER, new_value);
-    // }
     if (runmode == RUNMODE_SAFE_MODE) {
         safe_mode_on_next_reset(SAFE_MODE_PROGRAMMATIC);
     }

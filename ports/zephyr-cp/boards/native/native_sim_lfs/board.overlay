@@ -52,7 +52,6 @@
 	chosen {
 		zephyr,sram = &sram0;
 		/delete-property/ zephyr,flash;
-		/delete-property/ zephyr,code-partition;
 	};
 };
 

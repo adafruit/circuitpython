@@ -1,115 +1,13 @@
 # CircuitPython Zephyr port — application Kconfig
 #
-# Sources Zephyr's main Kconfig, then adds CircuitPython-specific defaults.
-# Boards can override any of these in their boards/<board>.conf file.
+# Sources Zephyr's main Kconfig. CircuitPython-specific symbol defaults live
+# in modules/circuitpython-kconfig/Kconfig, a Kconfig-only Zephyr module: Zephyr
+# merges a
+# module's Kconfig right after the SoC/board defconfigs and BEFORE its kernel/,
+# drivers/, lib/ and subsys/ Kconfigs, so the defaults there take precedence
+# over any default Zephyr's subsystem Kconfigs define. This file is merged
+# after all of Zephyr, where a Zephyr-side default would silently shadow the
+# port's value (first `default` wins). Boards can override any of the defaults
+# in their boards/<vendor>/<board>/board.conf file.
 
 osource "$(ZEPHYR_BASE)/Kconfig.zephyr"
-
-# ===== Peripheral defaults — enabled by default, boards can disable =====
-
-config I2C
-	default y
-
-config SPI
-	default y
-
-config SPI_ASYNC
-	default y
-
-config I2S
-	default y
-
-config UART_LINE_CTRL
-	default y
-
-config ENTROPY_GENERATOR
-	default y
-
-# ===== Dynamic pin routing (nRF) =====
-# CircuitPython routes peripherals to pins at runtime on nRF SoCs. That needs
-# pinctrl states to be swappable (PINCTRL_DYNAMIC) and devices to be
-# de-initializable/re-initializable (DEVICE_DEINIT_SUPPORT). Both cost a little
-# RAM (pinctrl configs move out of flash) and one function pointer per device.
-config PINCTRL_DYNAMIC
-	default y if SOC_FAMILY_NORDIC_NRF
-
-config DEVICE_DEINIT_SUPPORT
-	default y if SOC_FAMILY_NORDIC_NRF
-
-# ===== Bluetooth defaults =====
-
-# Use a variable for the chosen name so the comma isn't parsed as an argument separator
-DT_BT_HCI_CHOSEN := zephyr,bt-hci
-
-config BT
-	default $(dt_chosen_enabled,$(DT_BT_HCI_CHOSEN))
-
-config BT_PERIPHERAL
-	default y
-
-config BT_CENTRAL
-	default y
-
-config BT_BROADCASTER
-	default y
-
-config BT_OBSERVER
-	default y
-
-config BT_EXT_ADV
-	default y
-
-config BT_DEVICE_APPEARANCE_DYNAMIC
-	default y
-
-config BT_DEVICE_NAME_DYNAMIC
-	default y
-
-config BT_DEVICE_NAME_MAX
-	default 28
-
-config BT_L2CAP_TX_MTU
-	default 253
-
-# BT Buffers
-config BT_BUF_CMD_TX_SIZE
-	default 255
-
-config BT_BUF_EVT_RX_COUNT
-	default 16
-
-config BT_BUF_EVT_RX_SIZE
-	default 255
-
-config BT_BUF_ACL_TX_COUNT
-	default 3
-
-config BT_BUF_ACL_TX_SIZE
-	default 251
-
-config BT_BUF_ACL_RX_COUNT_EXTRA
-	default 1
-
-config BT_BUF_ACL_RX_SIZE
-	default 255
-
-config BT_GATT_DYNAMIC_DB
-	default y
-
-config BT_GATT_CLIENT
-	default y
-
-config BT_SMP
-	default y
-
-config BT_BONDABLE
-	default y
-
-config SETTINGS
-	default y
-
-config BT_SETTINGS
-	default y
-
-config BT_KEYS_OVERWRITE_OLDEST
-	default y

@@ -329,6 +329,12 @@ def find_flash_devices(device_tree):
         value = device_tree.root.nodes["chosen"].props[k]
         path2chosen[value.to_path()] = k
 
+    # Paths of zephyr,sim-flash controllers (the flash simulator used by
+    # native_sim). The simulator driver defines its device on the controller
+    # node, not on its soc-nv-flash child, so the controller must be used and
+    # the child skipped.
+    sim_flash_controller_paths = set()
+
     flashes = []
     logger.debug("Flash devices:")
 
@@ -369,6 +375,22 @@ def find_flash_devices(device_tree):
         if "flash" not in drivers:
             continue
 
+        if compatible[0] == "zephyr,sim-flash":
+            # Always use the controller for the flash simulator, even when it
+            # is chosen as zephyr,flash-controller.
+            sim_flash_controller_paths.add(node.path)
+            if node.labels:
+                flashes.append(node.labels[0])
+            continue
+
+        # The soc-nv-flash child of a flash simulator has no device defined on
+        # it; the controller (handled above) is the flash device.
+        if node.parent is not None and node.parent.path in sim_flash_controller_paths:
+            logger.debug(
+                f"  skipping flash {node.labels[0] if node.labels else node.name} (sim-flash child)"
+            )
+            continue
+
         # Skip chosen nodes because they are used by Zephyr
         if node in path2chosen:
             logger.debug(
@@ -382,25 +404,6 @@ def find_flash_devices(device_tree):
                 f"  skipping flash {node.labels[0] if node.labels else node.name} (blocked compat)"
             )
             continue
-
-        # Skip soc-nv-flash nodes whose parent is itself a flash device — the
-        # parent is the real Zephyr device (e.g. nxp,imx-flexspi-nor) and the
-        # child has no driver-instantiated symbol.
-        if "soc-nv-flash" in compatible and node.parent is not None:
-            parent_compat = []
-            if "compatible" in node.parent.props:
-                parent_compat = node.parent.props["compatible"].to_strings()
-            parent_drivers = []
-            for c in parent_compat:
-                underscored = c.replace(",", "_").replace("-", "_")
-                d = COMPAT_TO_DRIVER.get(underscored) or MANUAL_COMPAT_TO_DRIVER.get(underscored)
-                if d:
-                    parent_drivers.append(d)
-            if "flash" in parent_drivers:
-                logger.debug(
-                    f"  skipping flash {node.labels[0] if node.labels else node.name} (parent is flash device)"
-                )
-                continue
 
         if node.labels:
             flashes.append(node.labels[0])
@@ -728,6 +731,7 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir, mpconfig
     status_led = None
     status_led_inverted = False
     boot_button = None
+    boot_button_active_high = False
     path2chosen = {}
     chosen2path = {}
 
@@ -901,6 +905,8 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir, mpconfig
                 props = key_node.props
                 ioport = props["gpios"]._markers[1][2]
                 num = int.from_bytes(props["gpios"].value[4:8], "big")
+                flags = int.from_bytes(props["gpios"].value[8:12], "big")
+                active_high = not (flags & GPIO_ACTIVE_LOW)
 
                 if (ioport, num) not in board_names:
                     board_names[(ioport, num)] = []
@@ -920,11 +926,13 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir, mpconfig
                         # The sw0 alias designates the conventional first user
                         # button, so prefer it as the boot button.
                         boot_button = (ioport, num)
+                        boot_button_active_high = active_high
                     board_names[(ioport, num)].extend(aliases)
                 # Default to the first button in device tree order when no sw0
                 # alias has designated one yet.
                 if boot_button is None:
                     boot_button = (ioport, num)
+                    boot_button_active_high = active_high
 
     if len(all_ioports) > 1:
         a, b = all_ioports[:2]
@@ -980,7 +988,7 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir, mpconfig
         elif package_choice not in (None, "none"):
             package_toml = (
                 pathlib.Path(__file__).resolve().parent.parent
-                / "modules"
+                / "internal-modules"
                 / "iobroker"
                 / "packages"
                 / f"{package_choice}.toml"
@@ -1340,8 +1348,13 @@ void board_init(void) {
         status_led_inverted = ""
     if boot_button:
         boot_button = f"#define CIRCUITPY_BOOT_BUTTON (&pin_{boot_button})\n"
+        boot_button_active_high = (
+            f"#define CIRCUITPY_BOOT_BUTTON_ACTIVE_HIGH "
+            f"({'1' if boot_button_active_high else '0'})\n"
+        )
     else:
         boot_button = ""
+        boot_button_active_high = ""
     ram_list = []
     ram_externs = []
     max_size = 0
@@ -1372,6 +1385,7 @@ void board_init(void) {
 {status_led}
 {status_led_inverted}
 {boot_button}
+{boot_button_active_high}
         """
     if not header.exists() or header.read_text() != new_header_content:
         header.write_text(new_header_content)
@@ -1466,9 +1480,12 @@ MP_DEFINE_CONST_DICT(board_module_globals, board_module_globals_table);
     board_info["rotaryio"] = bool(ioports)
     board_info["usb_num_endpoint_pairs"] = usb_num_endpoint_pairs
 
-    # Detect NVM partition from the device tree.
+    # Detect NVM partition size from the device tree.
+    nvm_size = 0
     nvm_node = device_tree.label2node.get("nvm_partition")
-    board_info["nvm"] = nvm_node is not None
+    if nvm_node and "reg" in nvm_node.props:
+        nvm_size = nvm_node.props["reg"].to_nums()[1]
+    board_info["nvm_size"] = nvm_size
 
     # The user filesystem type is a compile-time choice made by the partition
     # layout: a littlefs_partition node (named for littlefs in the Adaboot

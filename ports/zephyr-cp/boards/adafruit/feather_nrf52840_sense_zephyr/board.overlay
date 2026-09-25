@@ -1,3 +1,6 @@
+/* Partition layout is owned by the mcuboot fork
+ * (dts/adafruit/adafruit_feather_nrf52840.dtsi) and applied to this image by
+ * sysbuild. This overlay only adds board/app config. */
 / {
 	chosen {
 		zephyr,console = &uart0;
@@ -10,36 +13,6 @@
 
 &zephyr_udc0 {
 	/delete-node/ board_cdc_acm_uart;
-};
-
-
-&gd25q16 {
-	/delete-node/ partitions;
-};
-
-/delete-node/ &storage_partition;
-/delete-node/ &code_partition;
-
-&flash0 {
-	partitions {
-		code_partition: partition@26000 {
-			compatible = "zephyr,mapped-partition";
-			label = "Application";
-			reg = <0x00026000 0x000c4000>;
-		};
-
-		storage_partition: partition@ea000 {
-			compatible = "zephyr,mapped-partition";
-			label = "storage";
-			reg = <0x000ea000 0x00008000>;
-		};
-
-		nvm_partition: partition@f2000 {
-			compatible = "zephyr,mapped-partition";
-			label = "nvm";
-			reg = <0x000f2000 0x00002000>;
-		};
-	};
 };
 
 // Bus instances enabled with all pins disconnected and marked

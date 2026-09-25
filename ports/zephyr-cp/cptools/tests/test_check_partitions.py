@@ -396,3 +396,175 @@ class TestParity:
         problems = check_parity(edt, "raspberrypi/raspberry_pi_pico")
         assert any(p.startswith("nvm_partition: missing") for p in problems)
         assert any(p.startswith("circuitpy_partition: missing") for p in problems)
+
+    # The Adaboot fork's dtsi names the filesystem partition by its backing
+    # store (fatfs_partition for native-USB drives, littlefs_partition for
+    # boards without USB); the older CircuitPython port layout named it
+    # circuitpy_partition. supervisor/flash.c accepts all three via
+    # FIXED_PARTITION_EXISTS, so check_parity must too.
+
+    def test_parity_accepts_fatfs_partition_in_place_of_circuitpy(self):
+        edt = parse_dts_string(self.rp2040_layout_with_fs_label(0xFF000, "fatfs_partition"))
+        assert check_parity(edt, "raspberrypi/raspberry_pi_pico") == []
+
+    def test_parity_accepts_littlefs_partition_in_place_of_circuitpy(self):
+        edt = parse_dts_string(self.rp2040_layout_with_fs_label(0xFF000, "littlefs_partition"))
+        assert check_parity(edt, "raspberrypi/raspberry_pi_pico") == []
+
+    def rp2040_layout_with_fs_label(self, nvm_offset, fs_label):
+        return xip_flash(
+            f"""
+            code_partition: partition@100 {{
+                compatible = "zephyr,mapped-partition";
+                reg = <0x100 0xfdf00>;
+            }};
+            nvm_partition: partition@{nvm_offset:x} {{
+                compatible = "zephyr,mapped-partition";
+                label = "nvm";
+                reg = <0x{nvm_offset:x} 0x1000>;
+            }};
+            {fs_label}: partition@100000 {{
+                compatible = "zephyr,mapped-partition";
+                label = "filesystem";
+                reg = <0x100000 0x100000>;
+            }};
+            """
+        )
+
+    def nordic_with_external_drive(self, gd25_partitions):
+        """Internal flash + an SPI NOR gd25q16 partition layout for the nRF52
+        boards. Counterpart is nordic/feather_nrf52840_express, which uses
+        QSPI_FLASH_FILESYSTEM=1 (the whole chip is the drive)."""
+        return f"""/dts-v1/;
+
+/ {{
+    #address-cells = <1>;
+    #size-cells = <1>;
+
+    soc {{
+        #address-cells = <1>;
+        #size-cells = <1>;
+        ranges;
+
+        flash0: flash@0 {{
+            compatible = "soc-nv-flash";
+            erase-block-size = <4096>;
+            reg = <0x0 0x100000>;
+            ranges = <0x0 0x0 0x100000>;
+            #address-cells = <1>;
+            #size-cells = <1>;
+
+            partitions {{
+                ranges;
+                #address-cells = <1>;
+                #size-cells = <1>;
+
+                code_partition: partition@26000 {{
+                    compatible = "zephyr,mapped-partition";
+                    label = "code-partition";
+                    reg = <0x26000 0xc4000>;
+                }};
+                storage_partition: partition@ea000 {{
+                    compatible = "zephyr,mapped-partition";
+                    label = "storage";
+                    reg = <0xea000 0x8000>;
+                }};
+                nvm_partition: partition@f2000 {{
+                    compatible = "zephyr,mapped-partition";
+                    label = "nvm";
+                    reg = <0xf2000 0x2000>;
+                }};
+            }};
+        }};
+
+        qspi {{
+            compatible = "vnd,spi";
+            reg = <0x0 0x100>;
+            #address-cells = <1>;
+            #size-cells = <0>;
+            status = "okay";
+
+            gd25q16: gd25q16@0 {{
+                compatible = "jedec,spi-nor";
+                reg = <0>;
+                size = <2097152>;
+                spi-max-frequency = <8000000>;
+                jedec-id = [c8 40 15];
+
+                partitions {{
+                    compatible = "fixed-partitions";
+                    #address-cells = <1>;
+                    #size-cells = <1>;
+{gd25_partitions}
+                }};
+            }};
+        }};
+    }};
+}};
+"""
+
+    def test_parity_accepts_explicit_whole_chip_fatfs_partition(self):
+        """A single fatfs_partition covering the entire external flash chip is
+        equivalent to the nordic-port QSPI_FLASH_FILESYSTEM=1 dynamic-area
+        fallback -- both pin the drive to the whole 2 MB chip -- so the parity
+        check must accept it."""
+        edt = parse_dts_string(
+            self.nordic_with_external_drive(
+                """
+                    fatfs_partition: partition@0 {
+                        label = "filesystem";
+                        reg = <0x0 0x200000>;
+                    };
+                """
+            )
+        )
+        assert check_parity(edt, "nordic/feather_nrf52840_express") == []
+
+    def test_parity_accepts_explicit_whole_chip_littlefs_partition(self):
+        edt = parse_dts_string(
+            self.nordic_with_external_drive(
+                """
+                    littlefs_partition: partition@0 {
+                        label = "filesystem";
+                        reg = <0x0 0x200000>;
+                    };
+                """
+            )
+        )
+        assert check_parity(edt, "nordic/feather_nrf52840_express") == []
+
+    def test_parity_rejects_offset_external_partition(self):
+        """A partition starting above offset 0 on the external chip breaks the
+        dynamic-area fallback, so it must be reported even though it is the
+        only partition on the chip."""
+        edt = parse_dts_string(
+            self.nordic_with_external_drive(
+                """
+                    fatfs_partition: partition@1000 {
+                        label = "filesystem";
+                        reg = <0x1000 0x1ff000>;
+                    };
+                """
+            )
+        )
+        problems = check_parity(edt, "nordic/feather_nrf52840_express")
+        assert any("gd25q16" in p for p in problems)
+
+    def test_parity_rejects_extra_external_partitions(self):
+        """More than one partition on the external chip would also leave the
+        dynamic-area fallback unable to claim it; report it."""
+        edt = parse_dts_string(
+            self.nordic_with_external_drive(
+                """
+                    fatfs_partition: partition@0 {
+                        label = "filesystem";
+                        reg = <0x0 0x100000>;
+                    };
+                    other_partition: partition@100000 {
+                        reg = <0x100000 0x100000>;
+                    };
+                """
+            )
+        )
+        problems = check_parity(edt, "nordic/feather_nrf52840_express")
+        assert any("gd25q16" in p for p in problems)
