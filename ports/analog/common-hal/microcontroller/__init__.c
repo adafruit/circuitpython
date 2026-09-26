@@ -22,7 +22,7 @@
 #include "supervisor/shared/safe_mode.h"
 
 
-#include "max32690.h"
+#include "max32_port.h"
 #include "mxc_delay.h"
 
 /** NOTE: It is not advised to directly include the below!

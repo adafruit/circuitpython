@@ -13,6 +13,7 @@
 #include "max32_port.h"
 
 #include "common-hal/microcontroller/Pin.h"
+#include "gpio_reva_regs.h"
 
 static uint32_t claimed_pins[NUM_GPIO_PORTS];
 
@@ -41,29 +42,32 @@ void reset_pin_number(uint8_t pin_port, uint8_t pin_pad) {
         return;
     }
 
+    // Cast to REVA Regs for portability
+    mxc_gpio_reva_regs_t *gpio_regs = (mxc_gpio_reva_regs_t *)gpio_ports[pin_port];
+
     uint32_t mask = 1 << (pin_pad);
 
     /** START: RESET LOGIC for GPIOs */
     // Switch to I/O mode first
-    gpio_ports[pin_port]->en0_set = mask;
+    gpio_regs->en0_set = mask;
 
     // set GPIO configuration enable bits to I/O
-    gpio_ports[pin_port]->en0_clr = mask;
-    gpio_ports[pin_port]->en1_clr = mask;
-    gpio_ports[pin_port]->en2_clr = mask;
+    gpio_regs->en0_clr = mask;
+    gpio_regs->en1_clr = mask;
+    gpio_regs->en2_clr = mask;
 
     // enable input mode GPIOn_INEN.pin = 1
-    gpio_ports[pin_port]->inen |= mask;
+    gpio_regs->inen |= mask;
 
     // High Impedance mode enable (GPIOn_PADCTRL1 = 0, _PADCTRL0 = 0), pu/pd disable
-    gpio_ports[pin_port]->padctrl0 &= ~mask;
-    gpio_ports[pin_port]->padctrl1 &= ~mask;
+    gpio_regs->padctrl0 &= ~mask;
+    gpio_regs->padctrl1 &= ~mask;
 
     // Output mode disable GPIOn_OUTEN = 0
-    gpio_ports[pin_port]->outen |= mask;
+    gpio_regs->outen |= mask;
 
     // Interrupt disable GPIOn_INTEN = 0
-    gpio_ports[pin_port]->inten &= ~mask;
+    gpio_regs->inten &= ~mask;
     /** END: RESET LOGIC for GPIOs */
 }
 
