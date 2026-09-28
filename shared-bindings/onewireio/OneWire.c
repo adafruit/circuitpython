@@ -42,7 +42,7 @@ static mp_obj_t onewireio_onewire_make_new(const mp_obj_type_t *type, size_t n_a
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
     const mcu_pin_obj_t *pin = validate_obj_is_free_pin(args[ARG_pin].u_obj, MP_QSTR_pin);
 
-    onewireio_onewire_obj_t *self = mp_obj_malloc(onewireio_onewire_obj_t, &onewireio_onewire_type);
+    onewireio_onewire_obj_t *self = mp_obj_malloc_with_finaliser(onewireio_onewire_obj_t, &onewireio_onewire_type);
     common_hal_onewireio_onewire_construct(self, pin);
 
     return MP_OBJ_FROM_PTR(self);
@@ -125,6 +125,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(onewireio_onewire_write_bit_obj, onewireio_onewire_obj
 static const mp_rom_map_elem_t onewireio_onewire_locals_dict_table[] = {
     // Methods
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&onewireio_onewire_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&onewireio_onewire_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
     { MP_ROM_QSTR(MP_QSTR_reset), MP_ROM_PTR(&onewireio_onewire_reset_obj) },

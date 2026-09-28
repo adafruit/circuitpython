@@ -52,6 +52,9 @@ CIRCUITPY_4MB_FLASH_LARGE_USER_FS_LAYOUT ?= 0
 # Enable more features
 CIRCUITPY_FULL_BUILD ?= 1
 
+# The 24 KB stack has room for a larger display refresh buffer.
+CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE ?= 2048
+
 # If SSL is enabled, it's mbedtls
 CIRCUITPY_SSL_MBEDTLS = 1
 

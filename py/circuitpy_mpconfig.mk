@@ -219,6 +219,13 @@ CFLAGS += -DCIRCUITPY_BUSDEVICE=$(CIRCUITPY_BUSDEVICE)
 CIRCUITPY_BUILTINS_POW3 ?= $(CIRCUITPY_FULL_BUILD)
 CFLAGS += -DCIRCUITPY_BUILTINS_POW3=$(CIRCUITPY_BUILTINS_POW3)
 
+# Bulk reset: when enabled, pins and buses registered with never_reset survive a
+# soft reset (the port resets all remaining pins in bulk). When disabled, ports
+# rely solely on GC finalizers to release hardware, so never_reset is compiled
+# out. Ports that do not perform a bulk pin reset should set this to 0.
+CIRCUITPY_BULK_RESET ?= 1
+CFLAGS += -DCIRCUITPY_BULK_RESET=$(CIRCUITPY_BULK_RESET)
+
 CIRCUITPY_BUSIO ?= 1
 CFLAGS += -DCIRCUITPY_BUSIO=$(CIRCUITPY_BUSIO)
 
@@ -272,6 +279,10 @@ CFLAGS += -DCIRCUITPY_COUNTIO=$(CIRCUITPY_COUNTIO)
 
 CIRCUITPY_DISPLAYIO ?= $(CIRCUITPY_FULL_BUILD)
 CFLAGS += -DCIRCUITPY_DISPLAYIO=$(CIRCUITPY_DISPLAYIO)
+
+# Stack bytes a display refresh composes at once. Bigger means fewer, larger pieces per refresh.
+CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE ?= 512
+CFLAGS += -DCIRCUITPY_DISPLAY_AREA_BUFFER_SIZE=$(CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE)
 
 CIRCUITPY_BUSDISPLAY ?= $(CIRCUITPY_DISPLAYIO)
 CFLAGS += -DCIRCUITPY_BUSDISPLAY=$(CIRCUITPY_BUSDISPLAY)
@@ -789,12 +800,6 @@ CFLAGS += -DCIRCUITPY_ULAB=$(CIRCUITPY_ULAB)
 # ndarray binary operators. This saves about 4 kB of flash but makes
 # element-wise array arithmetic roughly 1.5x slower.
 CIRCUITPY_ULAB_OPTIMIZE_SIZE ?= 0
-
-# CIRCUITPY_VIDEOCORE is handled in the broadcom tree.
-# Only for Broadcom chips.
-# Assume not a Broadcom build.
-CIRCUITPY_VIDEOCORE ?= 0
-CFLAGS += -DCIRCUITPY_VIDEOCORE=$(CIRCUITPY_VIDEOCORE)
 
 CIRCUITPY_WARNINGS ?= $(CIRCUITPY_FULL_BUILD)
 CFLAGS += -DCIRCUITPY_WARNINGS=$(CIRCUITPY_WARNINGS)

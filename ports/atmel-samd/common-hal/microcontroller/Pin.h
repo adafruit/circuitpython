@@ -18,6 +18,8 @@ void never_reset_pin_number(uint8_t pin_number);
 void claim_pin(const mcu_pin_obj_t *pin);
 bool pin_number_is_free(uint8_t pin_number);
 
+uint8_t common_hal_mcu_pin_number(const mcu_pin_obj_t *pin);
+
 typedef struct {
     const mcu_pin_obj_t *obj;
     uint8_t instance;

@@ -43,8 +43,8 @@ static uint32_t _cache_lba = 0xffffffff;
 #define SECSIZE(fs) ((fs)->ssize)
 #endif // FF_MAX_SS == FF_MIN_SS
 static DWORD fatfs_bytes(void) {
-    fs_user_mount_t *fs_mount = filesystem_circuitpy();
-    FATFS *fatfs = &fs_mount->fatfs;
+    supervisor_vfs_t *fs_mount = filesystem_circuitpy();
+    FATFS *fatfs = &fs_mount->fat.fatfs;
     return (fatfs->csize * SECSIZE(fatfs)) * (fatfs->n_fatent - 2);
 }
 static bool storage_extended = true;

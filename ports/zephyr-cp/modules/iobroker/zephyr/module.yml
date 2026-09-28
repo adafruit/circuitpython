@@ -1,0 +1,10 @@
+# Zephyr module descriptor for the iobroker module.
+#
+# The module is loaded from the CircuitPython tree via ZEPHYR_EXTRA_MODULES in
+# ports/zephyr-cp/CMakeLists.txt. To externalize it, move this directory into
+# its own repository and either point ZEPHYR_EXTRA_MODULES at the new checkout
+# or add it to the west manifest instead.
+name: iobroker
+build:
+  cmake: .
+  kconfig: Kconfig

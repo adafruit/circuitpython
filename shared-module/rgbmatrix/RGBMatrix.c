@@ -15,6 +15,7 @@
 #include "common-hal/rgbmatrix/RGBMatrix.h"
 #include "shared-module/rgbmatrix/allocator.h"
 #include "shared-bindings/rgbmatrix/RGBMatrix.h"
+#include "shared-bindings/digitalio/DigitalInOut.h"
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/util.h"
@@ -24,16 +25,120 @@ extern Protomatter_core *_PM_protoPtr;
 
 static void common_hal_rgbmatrix_rgbmatrix_construct1(rgbmatrix_rgbmatrix_obj_t *self, mp_obj_t framebuffer);
 
-void common_hal_rgbmatrix_rgbmatrix_construct(rgbmatrix_rgbmatrix_obj_t *self, int width, int bit_depth, uint8_t rgb_count, uint8_t *rgb_pins, uint8_t addr_count, uint8_t *addr_pins, uint8_t clock_pin, uint8_t latch_pin, uint8_t oe_pin, bool doublebuffer, mp_obj_t framebuffer, int8_t tile, bool serpentine, void *timer) {
+static void preflight_pins_or_throw(const mcu_pin_obj_t *clock_pin_obj, const mcu_pin_obj_t **rgb_pin_objs, uint8_t rgb_pin_count, bool allow_inefficient) {
+    if (rgb_pin_count <= 0 || rgb_pin_count % 6 != 0 || rgb_pin_count > 30) {
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("The length of rgb_pins must be 6, 12, 18, 24, or 30"));
+    }
+
+// Most ports have a strict requirement for how the rgbmatrix pins are laid
+// out; these two micros don't. Special-case it here.
+    #if !defined(CONFIG_IDF_TARGET_ESP32S3) && !defined(CONFIG_IDF_TARGET_ESP32S2)
+    uint8_t clock_pin = common_hal_mcu_pin_number(clock_pin_obj);
+    uint32_t port = clock_pin / 32;
+    uint32_t bit_mask = 1 << (clock_pin % 32);
+
+    for (uint8_t i = 0; i < rgb_pin_count; i++) {
+        uint8_t pin_number = common_hal_mcu_pin_number(rgb_pin_objs[i]);
+        uint32_t pin_port = pin_number / 32;
+
+        if (pin_port != port) {
+            mp_raise_ValueError_varg(
+                MP_ERROR_TEXT("rgb_pins[%d] is not on the same port as clock"), i);
+        }
+
+        uint32_t pin_mask = 1 << (pin_number % 32);
+        if (pin_mask & bit_mask) {
+            mp_raise_ValueError_varg(
+                MP_ERROR_TEXT("rgb_pins[%d] duplicates another pin assignment"), i);
+        }
+
+        bit_mask |= pin_mask;
+    }
+
+    if (allow_inefficient) {
+        return;
+    }
+
+    uint8_t byte_mask = 0;
+    if (bit_mask & 0x000000FF) {
+        byte_mask |= 0b0001;
+    }
+    if (bit_mask & 0x0000FF00) {
+        byte_mask |= 0b0010;
+    }
+    if (bit_mask & 0x00FF0000) {
+        byte_mask |= 0b0100;
+    }
+    if (bit_mask & 0xFF000000) {
+        byte_mask |= 0b1000;
+    }
+
+    uint8_t bytes_per_element = 0xff;
+    uint8_t ideal_bytes_per_element = (rgb_pin_count + 7) / 8;
+
+    switch (byte_mask) {
+        case 0b0001:
+        case 0b0010:
+        case 0b0100:
+        case 0b1000:
+            bytes_per_element = 1;
+            break;
+
+        case 0b0011:
+        case 0b1100:
+            bytes_per_element = 2;
+            break;
+
+        default:
+            bytes_per_element = 4;
+            break;
+    }
+
+    if (bytes_per_element != ideal_bytes_per_element) {
+        mp_raise_ValueError_varg(
+            MP_ERROR_TEXT("Pinout uses %d bytes per element, which consumes more than the ideal %d bytes.  If this cannot be avoided, pass allow_inefficient=True to the constructor"),
+            bytes_per_element, ideal_bytes_per_element);
+    }
+    #endif
+}
+
+// Claim each pin by wrapping it in a DigitalInOut object owned by the matrix.
+// The DigitalInOut lives on the port heap (not the VM heap) because the matrix
+// itself lives in the static display bus storage and survives VM resets.
+static void store_pin_digitalinout(rgbmatrix_rgbmatrix_obj_t *self, const mcu_pin_obj_t *pin) {
+    digitalio_digitalinout_obj_t *digitalinout = mp_obj_port_malloc(digitalio_digitalinout_obj_t, &digitalio_digitalinout_type);
+    if (digitalinout == NULL) {
+        m_malloc_fail(sizeof(digitalio_digitalinout_obj_t));
+    }
+    common_hal_digitalio_digitalinout_construct(digitalinout, pin);
+    #if CIRCUITPY_BULK_RESET
+    common_hal_digitalio_digitalinout_never_reset(digitalinout);
+    #endif
+    self->pin_digitalinouts[self->pin_digitalinout_count++] = digitalinout;
+}
+
+void common_hal_rgbmatrix_rgbmatrix_construct(rgbmatrix_rgbmatrix_obj_t *self, int width, int bit_depth, uint8_t rgb_count, const mcu_pin_obj_t **rgb_pins, uint8_t addr_count, const mcu_pin_obj_t **addr_pins, const mcu_pin_obj_t *clock_pin, const mcu_pin_obj_t *latch_pin, const mcu_pin_obj_t *oe_pin, bool doublebuffer, mp_obj_t framebuffer, int8_t tile, bool serpentine, void *timer) {
     self->width = width;
     self->bit_depth = bit_depth;
     self->rgb_count = rgb_count;
-    memcpy(self->rgb_pins, rgb_pins, rgb_count);
+    preflight_pins_or_throw(clock_pin, rgb_pins, rgb_count, true);
+    // Claim and configure each pin by wrapping it in a DigitalInOut owned by the
+    // matrix. This runs before Protomatter configures the pins so its setup wins.
+    for (uint8_t i = 0; i < rgb_count; i++) {
+        store_pin_digitalinout(self, rgb_pins[i]);
+        self->rgb_pins[i] = common_hal_mcu_pin_number(rgb_pins[i]);
+    }
     self->addr_count = addr_count;
-    memcpy(self->addr_pins, addr_pins, addr_count);
-    self->clock_pin = clock_pin;
-    self->oe_pin = oe_pin;
-    self->latch_pin = latch_pin;
+    for (uint8_t i = 0; i < addr_count; i++) {
+        store_pin_digitalinout(self, addr_pins[i]);
+        self->addr_pins[i] = common_hal_mcu_pin_number(addr_pins[i]);
+    }
+    store_pin_digitalinout(self, clock_pin);
+    self->clock_pin = common_hal_mcu_pin_number(clock_pin);
+    store_pin_digitalinout(self, oe_pin);
+    self->oe_pin = common_hal_mcu_pin_number(oe_pin);
+    store_pin_digitalinout(self, latch_pin);
+    self->latch_pin = common_hal_mcu_pin_number(latch_pin);
     self->doublebuffer = doublebuffer;
     self->tile = tile;
     self->serpentine = serpentine;
@@ -114,17 +219,13 @@ static void common_hal_rgbmatrix_rgbmatrix_construct1(rgbmatrix_rgbmatrix_obj_t 
     self->paused = 0;
 }
 
-static void free_pin(uint8_t *pin) {
-    if (*pin != COMMON_HAL_MCU_NO_PIN) {
-        common_hal_mcu_pin_reset_number(*pin);
+static void deinit_pin_digitalinouts(rgbmatrix_rgbmatrix_obj_t *self) {
+    for (uint8_t i = 0; i < self->pin_digitalinout_count; i++) {
+        common_hal_digitalio_digitalinout_deinit(self->pin_digitalinouts[i]);
+        port_free(self->pin_digitalinouts[i]);
+        self->pin_digitalinouts[i] = NULL;
     }
-    *pin = COMMON_HAL_MCU_NO_PIN;
-}
-
-static void free_pin_seq(uint8_t *seq, int count) {
-    for (int i = 0; i < count; i++) {
-        free_pin(&seq[i]);
-    }
+    self->pin_digitalinout_count = 0;
 }
 
 extern int pm_row_count;
@@ -160,11 +261,7 @@ void common_hal_rgbmatrix_rgbmatrix_deinit(rgbmatrix_rgbmatrix_obj_t *self) {
         self->timer = 0;
     }
 
-    free_pin_seq(self->rgb_pins, self->rgb_count);
-    free_pin_seq(self->addr_pins, self->addr_count);
-    free_pin(&self->clock_pin);
-    free_pin(&self->latch_pin);
-    free_pin(&self->oe_pin);
+    deinit_pin_digitalinouts(self);
 
     self->base.type = &mp_type_NoneType;
 }

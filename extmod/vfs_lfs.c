@@ -26,6 +26,7 @@
 
 #include "py/runtime.h"
 #include "py/mphal.h"
+#include "supervisor/fatfs.h"
 
 #if MICROPY_VFS && (MICROPY_VFS_LFS1 || MICROPY_VFS_LFS2)
 
@@ -105,15 +106,6 @@ mp_obj_t mp_vfs_lfs1_file_open(mp_obj_t self_in, mp_obj_t path_in, mp_obj_t mode
 // Attribute ids for lfs2_attr.type.
 #define LFS_ATTR_MTIME (1) // 64-bit little endian, nanoseconds since 1970/1/1
 
-typedef struct _mp_obj_vfs_lfs2_t {
-    mp_obj_base_t base;
-    mp_vfs_blockdev_t blockdev;
-    bool enable_mtime;
-    vstr_t cur_dir;
-    struct lfs2_config config;
-    lfs2_t lfs;
-} mp_obj_vfs_lfs2_t;
-
 typedef struct _mp_obj_vfs_lfs2_file_t {
     mp_obj_base_t base;
     mp_obj_vfs_lfs2_t *vfs;
@@ -128,8 +120,10 @@ const char *mp_vfs_lfs2_make_path(mp_obj_vfs_lfs2_t *self, mp_obj_t path_in);
 mp_obj_t mp_vfs_lfs2_file_open(mp_obj_t self_in, mp_obj_t path_in, mp_obj_t mode_in);
 
 static void lfs_get_mtime(uint8_t buf[8]) {
-    // On-disk storage of timestamps uses 1970 as the Epoch, so convert from host's Epoch.
-    uint64_t ns = timeutils_nanoseconds_since_epoch_to_nanoseconds_since_1970(mp_hal_time_ns());
+    // CIRCUITPY-CHANGE: Use the same RTC-based time that get_fattime() gives
+    // the FAT filesystems, so every filesystem kind stamps files alike.
+    // On-disk storage of timestamps is 64-bit little endian, ns since 1970/1/1.
+    uint64_t ns = get_fattime_ns();
     // Store "ns" to "buf" in little-endian format (essentially htole64).
     for (size_t i = 0; i < 8; ++i) {
         buf[i] = ns;
@@ -139,6 +133,50 @@ static void lfs_get_mtime(uint8_t buf[8]) {
 
 #include "extmod/vfs_lfsx.c"
 #include "extmod/vfs_lfsx_file.c"
+
+// CIRCUITPY-CHANGE: Supervisor-facing littlefs mount. The caller prepares the
+// mp_obj_vfs_lfs2_t (zeroed, with blockdev callbacks and lfs2_config geometry
+// already filled in) and the port allocator for the littlefs caches. This runs
+// without the VM or its GC, so no MicroPython allocations may happen here.
+mp_obj_t mp_vfs_lfs2_mount_supervisor(mp_obj_vfs_lfs2_t *self, void *(*alloc)(size_t), bool format_allowed, bool *formatted_out, int *mount_err) {
+    struct lfs2_config *config = &self->config;
+
+    config->block_cycles = 100;
+    config->cache_size = MIN(config->block_size, (4 * MAX(config->read_size, config->prog_size)));
+    config->lookahead_size = 32;
+    config->read_buffer = alloc(config->cache_size);
+    config->prog_buffer = alloc(config->cache_size);
+    config->lookahead_buffer = alloc(config->lookahead_size);
+    if (config->read_buffer == NULL || config->prog_buffer == NULL || config->lookahead_buffer == NULL) {
+        if (mount_err != NULL) {
+            *mount_err = LFS2_ERR_NOMEM;
+        }
+        return MP_OBJ_NULL;
+    }
+
+    bool formatted = false;
+    int ret = lfs2_mount(&self->lfs, config);
+    if (ret < 0 && format_allowed) {
+        // Empty or corrupted. Format a fresh filesystem and try again.
+        ret = lfs2_format(&self->lfs, config);
+        if (ret >= 0) {
+            formatted = true;
+            ret = lfs2_mount(&self->lfs, config);
+        }
+    }
+    if (formatted_out != NULL && formatted) {
+        // Only ever set true: the caller may have formatted the filesystem
+        // itself (force reformat) and needs that to survive the mount.
+        *formatted_out = true;
+    }
+    if (mount_err != NULL) {
+        *mount_err = ret;
+    }
+    if (ret < 0) {
+        return MP_OBJ_NULL;
+    }
+    return MP_OBJ_FROM_PTR(self);
+}
 
 #endif // MICROPY_VFS_LFS2
 

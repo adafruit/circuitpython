@@ -15,12 +15,10 @@
 #include "shared-module/displayio/Bitmap.h"
 #include "shared-module/displayio/Palette.h"
 
-#include "extmod/vfs_fat.h"
-
 typedef struct {
     mp_obj_base_t base;
     GIFIMAGE gif;
-    pyb_file_obj_t *file;
+    mp_obj_t file;
     displayio_bitmap_t *bitmap;
     displayio_palette_t *palette;
     int32_t duration;

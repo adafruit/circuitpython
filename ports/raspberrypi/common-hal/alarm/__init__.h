@@ -16,6 +16,18 @@
 #define RP_SLEEP_WAKEUP_GPIO    1
 #define RP_SLEEP_WAKEUP_RTC     2
 
+// Bits in powman_hw->last_swcore_pwrup. Bit 0 is a chip reset, bits 1 to 4 are
+// the four GPIO wakeups and bit 6 is the timer alarm.
+#define RP_POWMAN_PWRUP_GPIO_LSB  1
+#define RP_POWMAN_PWRUP_GPIO_BITS 0x1e
+#define RP_POWMAN_PWRUP_ALARM_BITS 0x40
+
+#if PICO_RP2350
+// Returns true when this boot is powman powering the core back up for a deep
+// sleep alarm. Returns false after any other kind of reset.
+bool alarm_woke_from_powman(void);
+#endif
+
 typedef union {
     alarm_pin_pinalarm_obj_t pin_alarm;
     alarm_time_timealarm_obj_t time_alarm;

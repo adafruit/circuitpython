@@ -1,0 +1,409 @@
+# Package pin map for nrf54lm20_csp98, transcribed from nRF54LM20A_nRF54LM20B_Datasheet_v1.0.pdf,
+# section 10.1.4 (CSP98, PAAA package pin assignments),
+# by tools/gen_package.py. Review against the datasheet figure before
+# editing by hand; regenerate instead when the datasheet changes.
+
+# Ball packages: 'pin' numbers the balls sequentially in row-major
+# order (the datasheet only labels them, e.g. B2).
+
+name = "nrf54lm20_csp98"
+socs = ["SOC_NRF54LM20A", "SOC_NRF54LM20B"]
+
+[[pins]]
+pin = 12
+ball = "B2"
+pad = 47
+pad_name = "P1.15"
+
+[[pins]]
+pin = 13
+ball = "B3"
+pad = 48
+pad_name = "P1.16"
+
+[[pins]]
+pin = 14
+ball = "B4"
+pad = 49
+pad_name = "P1.17"
+
+[[pins]]
+pin = 15
+ball = "B5"
+pad = 50
+pad_name = "P1.18"
+
+[[pins]]
+pin = 16
+ball = "B6"
+pad = 51
+pad_name = "P1.19"
+
+[[pins]]
+pin = 17
+ball = "B7"
+pad = 55
+pad_name = "P1.23"
+
+[[pins]]
+pin = 18
+ball = "B8"
+pad = 58
+pad_name = "P1.26"
+
+[[pins]]
+pin = 19
+ball = "B9"
+pad = 70
+pad_name = "P2.06"
+
+[[pins]]
+pin = 20
+ball = "B10"
+pad = 64
+pad_name = "P2.00"
+
+[[pins]]
+pin = 22
+ball = "C2"
+pad = 46
+pad_name = "P1.14"
+
+[[pins]]
+pin = 23
+ball = "C3"
+pad = 45
+pad_name = "P1.13"
+
+[[pins]]
+pin = 24
+ball = "C4"
+pad = 44
+pad_name = "P1.12"
+
+[[pins]]
+pin = 25
+ball = "C5"
+pad = 43
+pad_name = "P1.11"
+
+[[pins]]
+pin = 26
+ball = "C6"
+pad = 52
+pad_name = "P1.20"
+
+[[pins]]
+pin = 27
+ball = "C7"
+pad = 53
+pad_name = "P1.21"
+
+[[pins]]
+pin = 28
+ball = "C8"
+pad = 59
+pad_name = "P1.27"
+
+[[pins]]
+pin = 29
+ball = "C9"
+pad = 71
+pad_name = "P2.07"
+
+[[pins]]
+pin = 30
+ball = "C10"
+pad = 65
+pad_name = "P2.01"
+
+[[pins]]
+pin = 33
+ball = "D4"
+pad = 108
+pad_name = "P3.12"
+
+[[pins]]
+pin = 34
+ball = "D5"
+pad = 42
+pad_name = "P1.10"
+
+[[pins]]
+pin = 35
+ball = "D6"
+pad = 54
+pad_name = "P1.22"
+
+[[pins]]
+pin = 36
+ball = "D7"
+pad = 56
+pad_name = "P1.24"
+
+[[pins]]
+pin = 37
+ball = "D8"
+pad = 60
+pad_name = "P1.28"
+
+[[pins]]
+pin = 38
+ball = "D9"
+pad = 72
+pad_name = "P2.08"
+
+[[pins]]
+pin = 39
+ball = "D10"
+pad = 66
+pad_name = "P2.02"
+
+[[pins]]
+pin = 41
+ball = "E3"
+pad = 9
+pad_name = "P0.09"
+
+[[pins]]
+pin = 42
+ball = "E4"
+pad = 107
+pad_name = "P3.11"
+
+[[pins]]
+pin = 45
+ball = "E7"
+pad = 57
+pad_name = "P1.25"
+
+[[pins]]
+pin = 46
+ball = "E8"
+pad = 41
+pad_name = "P1.09"
+
+[[pins]]
+pin = 47
+ball = "E9"
+pad = 73
+pad_name = "P2.09"
+
+[[pins]]
+pin = 48
+ball = "E10"
+pad = 67
+pad_name = "P2.03"
+
+[[pins]]
+pin = 51
+ball = "F3"
+pad = 8
+pad_name = "P0.08"
+
+[[pins]]
+pin = 52
+ball = "F4"
+pad = 106
+pad_name = "P3.10"
+
+[[pins]]
+pin = 55
+ball = "F7"
+pad = 105
+pad_name = "P3.09"
+
+[[pins]]
+pin = 56
+ball = "F8"
+pad = 40
+pad_name = "P1.08"
+
+[[pins]]
+pin = 57
+ball = "F9"
+pad = 74
+pad_name = "P2.10"
+
+[[pins]]
+pin = 58
+ball = "F10"
+pad = 68
+pad_name = "P2.04"
+
+[[pins]]
+pin = 61
+ball = "G3"
+pad = 7
+pad_name = "P0.07"
+
+[[pins]]
+pin = 62
+ball = "G4"
+pad = 104
+pad_name = "P3.08"
+
+[[pins]]
+pin = 63
+ball = "G5"
+pad = 103
+pad_name = "P3.07"
+
+[[pins]]
+pin = 64
+ball = "G6"
+pad = 102
+pad_name = "P3.06"
+
+[[pins]]
+pin = 65
+ball = "G7"
+pad = 101
+pad_name = "P3.05"
+
+[[pins]]
+pin = 66
+ball = "G8"
+pad = 39
+pad_name = "P1.07"
+
+[[pins]]
+pin = 67
+ball = "G9"
+pad = 69
+pad_name = "P2.05"
+
+[[pins]]
+pin = 70
+ball = "H2"
+pad = 6
+pad_name = "P0.06"
+
+[[pins]]
+pin = 71
+ball = "H3"
+pad = 5
+pad_name = "P0.05"
+
+[[pins]]
+pin = 72
+ball = "H4"
+pad = 99
+pad_name = "P3.03"
+
+[[pins]]
+pin = 73
+ball = "H5"
+pad = 98
+pad_name = "P3.02"
+
+[[pins]]
+pin = 74
+ball = "H6"
+pad = 97
+pad_name = "P3.01"
+
+[[pins]]
+pin = 75
+ball = "H7"
+pad = 96
+pad_name = "P3.00"
+
+[[pins]]
+pin = 76
+ball = "H8"
+pad = 37
+pad_name = "P1.05"
+
+[[pins]]
+pin = 77
+ball = "H9"
+pad = 35
+pad_name = "P1.03"
+
+[[pins]]
+pin = 78
+ball = "H10"
+pad = 61
+pad_name = "P1.29"
+
+[[pins]]
+pin = 79
+ball = "J1"
+pad = 4
+pad_name = "P0.04"
+
+[[pins]]
+pin = 80
+ball = "J2"
+pad = 3
+pad_name = "P0.03"
+
+[[pins]]
+pin = 81
+ball = "J3"
+pad = 2
+pad_name = "P0.02"
+
+[[pins]]
+pin = 82
+ball = "J4"
+pad = 100
+pad_name = "P3.04"
+
+[[pins]]
+pin = 84
+ball = "J6"
+pad = 33
+pad_name = "P1.01"
+
+[[pins]]
+pin = 85
+ball = "J7"
+pad = 34
+pad_name = "P1.02"
+
+[[pins]]
+pin = 86
+ball = "J8"
+pad = 38
+pad_name = "P1.06"
+
+[[pins]]
+pin = 87
+ball = "J9"
+pad = 36
+pad_name = "P1.04"
+
+[[pins]]
+pin = 88
+ball = "J10"
+pad = 62
+pad_name = "P1.30"
+
+[[pins]]
+pin = 90
+ball = "K2"
+pad = 1
+pad_name = "P0.01"
+
+[[pins]]
+pin = 91
+ball = "K3"
+pad = 0
+pad_name = "P0.00"
+
+[[pins]]
+pin = 96
+ball = "K8"
+pad = 32
+pad_name = "P1.00"
+
+[[pins]]
+pin = 97
+ball = "K9"
+pad = 63
+pad_name = "P1.31"
+
+# Package pins without a GPIO pad (not routable):
+# A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, B1, C1, D1, D2, E1, E5, E6, F1, F2, F5, F6, G1, G2, G10, H1, J5, K1, K4, K5, K6, K7, K10

@@ -47,7 +47,7 @@ static void maybe_claim_pin(const mcu_pin_obj_t *pin) {
 
 void common_hal_espcamera_camera_construct(
     espcamera_camera_obj_t *self,
-    uint8_t data_pins[8],
+    const mcu_pin_obj_t **data_pins,
     const mcu_pin_obj_t *external_clock_pin,
     const mcu_pin_obj_t *pixel_clock_pin,
     const mcu_pin_obj_t *vsync_pin,
@@ -63,7 +63,7 @@ void common_hal_espcamera_camera_construct(
     camera_grab_mode_t grab_mode) {
 
     for (int i = 0; i < 8; i++) {
-        claim_pin_number(data_pins[i]);
+        claim_pin(data_pins[i]);
     }
     maybe_claim_pin(external_clock_pin);
     claim_pin(pixel_clock_pin);
@@ -97,14 +97,14 @@ void common_hal_espcamera_camera_construct(
     self->camera_config.pin_sccb_scl = -1;
     self->camera_config.sccb_i2c_port = i2c->port;
 
-    self->camera_config.pin_d7 = data_pins[7];
-    self->camera_config.pin_d6 = data_pins[6];
-    self->camera_config.pin_d5 = data_pins[5];
-    self->camera_config.pin_d4 = data_pins[4];
-    self->camera_config.pin_d3 = data_pins[3];
-    self->camera_config.pin_d2 = data_pins[2];
-    self->camera_config.pin_d1 = data_pins[1];
-    self->camera_config.pin_d0 = data_pins[0];
+    self->camera_config.pin_d7 = common_hal_mcu_pin_number(data_pins[7]);
+    self->camera_config.pin_d6 = common_hal_mcu_pin_number(data_pins[6]);
+    self->camera_config.pin_d5 = common_hal_mcu_pin_number(data_pins[5]);
+    self->camera_config.pin_d4 = common_hal_mcu_pin_number(data_pins[4]);
+    self->camera_config.pin_d3 = common_hal_mcu_pin_number(data_pins[3]);
+    self->camera_config.pin_d2 = common_hal_mcu_pin_number(data_pins[2]);
+    self->camera_config.pin_d1 = common_hal_mcu_pin_number(data_pins[1]);
+    self->camera_config.pin_d0 = common_hal_mcu_pin_number(data_pins[0]);
 
     self->camera_config.pin_vsync = common_hal_mcu_pin_number(vsync_pin);
     self->camera_config.pin_href = common_hal_mcu_pin_number(href_pin);

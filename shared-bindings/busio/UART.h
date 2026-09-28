@@ -47,4 +47,6 @@ extern uint32_t common_hal_busio_uart_rx_characters_available(busio_uart_obj_t *
 extern void common_hal_busio_uart_clear_rx_buffer(busio_uart_obj_t *self);
 extern bool common_hal_busio_uart_ready_to_tx(busio_uart_obj_t *self);
 
+#if CIRCUITPY_BULK_RESET
 extern void common_hal_busio_uart_never_reset(busio_uart_obj_t *self);
+#endif

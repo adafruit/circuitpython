@@ -13,7 +13,7 @@ ifneq ($(strip $(BOARD)),)
 WEST_SHIELD_ARGS := $(shell SHIELD_ORIGIN="$(origin SHIELD)" SHIELDS_ORIGIN="$(origin SHIELDS)" SHIELD="$(SHIELD)" SHIELDS="$(SHIELDS)" python cptools/get_west_shield_args.py $(BOARD))
 endif
 
-WEST_CMAKE_ARGS := -DZEPHYR_BOARD_ALIASES=$(CURDIR)/boards/board_aliases.cmake -Dzephyr-cp_TRANSLATION=$(TRANSLATION)
+WEST_CMAKE_ARGS := -DZEPHYR_BOARD_ALIASES=$(CURDIR)/boards/board_aliases.cmake
 
 # Board files live in the board's own folder as board.overlay / board.conf. Zephyr only auto-applies
 # boards/<name>.overlay and boards/<name>.conf named after the RESOLVED Zephyr board, so it finds
@@ -40,18 +40,35 @@ else
 CP_BOARD_CONF := $(DEBUG_CONF_FILE)
 endif
 endif
-ifneq ($(CP_BOARD_CONF),)
-WEST_CMAKE_ARGS += -Dzephyr-cp_EXTRA_CONF_FILE=$(CP_BOARD_CONF)
-endif
+# Always pass the conf file, even if empty. This undoes DEBUG=1 when it's omitted on a later run.
+# Quoted because with DEBUG=1 the value is a semicolon-separated list, and an unquoted semicolon
+# would end the shell command.
+WEST_CMAKE_ARGS += -Dzephyr-cp_EXTRA_CONF_FILE="$(CP_BOARD_CONF)"
 
 .PHONY: $(BUILD)/zephyr-cp/zephyr/zephyr.elf flash recover debug debug-jlink debugserver attach run run-sim clean menuconfig all clean-all sim clean-sim test fetch-port-submodules
 
 export BSIM_COMPONENTS_PATH := $(CURDIR)/tools/bsim/components
 export BSIM_OUT_PATH := $(CURDIR)/tools/bsim
 
+# In the environment, not a cmake argument, so a new language does not reconfigure.
+export TRANSLATION
+
+# west reruns the whole sysbuild configure whenever it gets a cmake argument, so pass
+# them only when the build directory is new or they changed since the last configure.
+WEST_CONFIGURE_ARGS := -b $(BOARD) $(WEST_SHIELD_ARGS) --sysbuild -- $(WEST_CMAKE_ARGS)
+WEST_ARGS_STAMP := $(BUILD)/west_configure_args.txt
+
 $(BUILD)/zephyr-cp/zephyr/zephyr.elf:
 	python cptools/pre_zephyr_build_prep.py $(BOARD)
-	west build -b $(BOARD) -d $(BUILD) $(WEST_SHIELD_ARGS) --sysbuild -- $(WEST_CMAKE_ARGS)
+	@mkdir -p $(BUILD)
+	@if [ ! -f $(BUILD)/build.ninja ] || [ "$$(cat $(WEST_ARGS_STAMP) 2>/dev/null)" != '$(WEST_CONFIGURE_ARGS)' ]; then \
+		echo west build -d $(BUILD) $(WEST_CONFIGURE_ARGS); \
+		echo '$(WEST_CONFIGURE_ARGS)' > $(WEST_ARGS_STAMP); \
+		west build -d $(BUILD) $(WEST_CONFIGURE_ARGS) || { rm -f $(WEST_ARGS_STAMP); exit 1; }; \
+	else \
+		echo west build -d $(BUILD); \
+		west build -d $(BUILD); \
+	fi
 	python ../../tools/build_memory_info.py $(BUILD)/zephyr-cp/zephyr/zephyr.map $(BUILD) --image $(BUILD)/zephyr-cp/zephyr/zephyr.bin
 
 $(BUILD)/firmware.elf: $(BUILD)/zephyr-cp/zephyr/zephyr.elf
@@ -127,7 +144,7 @@ clean-sim:
 # Every board the test suite uses: native sim (non-asan + asan) and the bsim
 # boards (tests/bsim/conftest.py parametrizes over both). Zephyr samples for
 # bsim tests are built on demand by the zephyr_sample fixture.
-TEST_BOARDS := native_native_sim native_native_sim_asan native_nrf5340bsim native_nrf54lm20bsim
+TEST_BOARDS := native_native_sim native_native_sim_asan native_native_sim_lfs native_nrf5340bsim native_nrf54lm20bsim
 
 # Delegate to a sub-make with BOARD set so the per-board build rule (and its
 # shield args + bsim prep) applies. The targets are phony: the west builds are

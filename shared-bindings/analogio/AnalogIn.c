@@ -54,7 +54,7 @@ static mp_obj_t analogio_analogin_make_new(const mp_obj_type_t *type,
 
     // 1st argument is the pin
     const mcu_pin_obj_t *pin = common_hal_analogio_analogin_validate_pin(args[0]);
-    analogio_analogin_obj_t *self = mp_obj_malloc(analogio_analogin_obj_t, &analogio_analogin_type);
+    analogio_analogin_obj_t *self = mp_obj_malloc_with_finaliser(analogio_analogin_obj_t, &analogio_analogin_type);
     common_hal_analogio_analogin_construct(self, pin);
 
     return MP_OBJ_FROM_PTR(self);
@@ -129,6 +129,7 @@ MP_PROPERTY_GETTER(analogio_analogin_reference_voltage_obj,
 
 static const mp_rom_map_elem_t analogio_analogin_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit),             MP_ROM_PTR(&analogio_analogin_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&analogio_analogin_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__),          MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__),           MP_ROM_PTR(&default___exit___obj) },
     { MP_ROM_QSTR(MP_QSTR_value),              MP_ROM_PTR(&analogio_analogin_value_obj)},

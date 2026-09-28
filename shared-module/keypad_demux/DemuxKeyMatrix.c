@@ -162,6 +162,7 @@ static void demuxkeymatrix_scan_now(void *self_in, mp_obj_t timestamp) {
     }
 }
 
+#if CIRCUITPY_BULK_RESET
 void demuxkeymatrix_never_reset(keypad_demux_demuxkeymatrix_obj_t *self) {
     keypad_never_reset((keypad_scanner_obj_t *)self);
     for (size_t row_addr = 0; row_addr < self->row_addr_digitalinouts->len; row_addr++) {
@@ -171,3 +172,4 @@ void demuxkeymatrix_never_reset(keypad_demux_demuxkeymatrix_obj_t *self) {
         common_hal_digitalio_digitalinout_never_reset(self->column_digitalinouts->items[column]);
     }
 }
+#endif

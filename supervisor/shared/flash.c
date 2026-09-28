@@ -150,6 +150,13 @@ static mp_uint_t flash_read_blocks(mp_obj_t self_in, uint8_t *dest, uint32_t blo
 }
 
 static volatile bool filesystem_dirty = false;
+void supervisor_flash_mark_dirty(void) {
+    if (!filesystem_dirty) {
+        // Turn on ticks so that we can flush after a period of time elapses.
+        supervisor_enable_tick();
+        filesystem_dirty = true;
+    }
+}
 
 static mp_uint_t flash_write_blocks(mp_obj_t self_in, const uint8_t *src, uint32_t block_num, uint32_t num_blocks) {
     if (block_num == 0) {
@@ -159,11 +166,7 @@ static mp_uint_t flash_write_blocks(mp_obj_t self_in, const uint8_t *src, uint32
         // can't write MBR, but pretend we did
         return 0;
     } else {
-        if (!filesystem_dirty) {
-            // Turn on ticks so that we can flush after a period of time elapses.
-            supervisor_enable_tick();
-            filesystem_dirty = true;
-        }
+        supervisor_flash_mark_dirty();
         block_num -= PART1_START_BLOCK;
         #if CIRCUITPY_SAVES_PARTITION_SIZE > 0
         mp_vfs_blockdev_t *self = (mp_vfs_blockdev_t *)self_in;

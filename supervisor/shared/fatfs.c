@@ -15,6 +15,21 @@
 #include "shared/timeutils/timeutils.h"
 
 DWORD _time_override = 0;
+
+// 2016-09-01 16:43:35 UTC, the fallback timestamp used when there is no RTC.
+#define FATTIME_FALLBACK_NS (1472748215000000000ULL)
+
+uint64_t get_fattime_ns(void) {
+    #if CIRCUITPY_RTC
+    timeutils_struct_time_t tm;
+    common_hal_rtc_get_time(&tm);
+    return (uint64_t)timeutils_mktime_1970(tm.tm_year, tm.tm_mon, tm.tm_mday,
+        tm.tm_hour, tm.tm_min, tm.tm_sec) * 1000000000ULL;
+    #else
+    return FATTIME_FALLBACK_NS;
+    #endif
+}
+
 DWORD get_fattime(void) {
     if (_time_override > 0) {
         return _time_override;
@@ -25,6 +40,7 @@ DWORD get_fattime(void) {
     return ((tm.tm_year - 1980) << 25) | (tm.tm_mon << 21) | (tm.tm_mday << 16) |
            (tm.tm_hour << 11) | (tm.tm_min << 5) | (tm.tm_sec >> 1);
     #else
+    // Same instant as FATTIME_FALLBACK_NS: 2016-09-01 16:43:35 UTC.
     return ((2016 - 1980) << 25) | ((9) << 21) | ((1) << 16) | ((16) << 11) | ((43) << 5) | (35 / 2);
     #endif
 }

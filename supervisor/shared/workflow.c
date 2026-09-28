@@ -4,12 +4,10 @@
 //
 // SPDX-License-Identifier: MIT
 
-#include <stdbool.h>
 #include "py/mpconfig.h"
 #include "py/mpstate.h"
 #include "py/stackctrl.h"
 #include "supervisor/background_callback.h"
-#include "supervisor/fatfs.h"
 #include "supervisor/filesystem.h"
 #include "supervisor/workflow.h"
 #include "supervisor/shared/serial.h"
@@ -121,138 +119,139 @@ void supervisor_workflow_start(void) {
     #endif
 }
 
-FRESULT supervisor_workflow_move(const char *old_path, const char *new_path) {
+supervisor_fs_err_t supervisor_workflow_move(const char *old_path, const char *new_path) {
     const char *old_mount_path;
     const char *new_mount_path;
-    fs_user_mount_t *active_mount = filesystem_for_path(old_path, &old_mount_path);
-    fs_user_mount_t *new_mount = filesystem_for_path(new_path, &new_mount_path);
-    if (active_mount == NULL || new_mount == NULL || active_mount != new_mount || !filesystem_native_fatfs(active_mount)) {
-        return FR_NO_PATH;
+    supervisor_vfs_t *active_mount = filesystem_for_path(old_path, &old_mount_path);
+    supervisor_vfs_t *new_mount = filesystem_for_path(new_path, &new_mount_path);
+    if (active_mount == NULL || new_mount == NULL || active_mount != new_mount || !supervisor_vfs_supported(active_mount)) {
+        return SUPERVISOR_FS_NO_PATH;
     }
     if (!filesystem_lock(active_mount)) {
-        return FR_WRITE_PROTECTED;
+        return SUPERVISOR_FS_WRITE_PROTECTED;
     }
-    FATFS *fs = &active_mount->fatfs;
 
-    FRESULT result = f_rename(fs, old_mount_path, new_mount_path);
+    supervisor_fs_err_t result = supervisor_vfs_rename(active_mount, old_mount_path, new_mount_path);
     filesystem_unlock(active_mount);
     return result;
 }
 
-FRESULT supervisor_workflow_mkdir(DWORD fattime, const char *full_path) {
+supervisor_fs_err_t supervisor_workflow_mkdir(uint64_t mtime_ns, const char *full_path) {
     const char *mount_path;
-    fs_user_mount_t *active_mount = filesystem_for_path(full_path, &mount_path);
-    if (active_mount == NULL || !filesystem_native_fatfs(active_mount)) {
-        return FR_NO_PATH;
+    supervisor_vfs_t *active_mount = filesystem_for_path(full_path, &mount_path);
+    if (active_mount == NULL || !supervisor_vfs_supported(active_mount)) {
+        return SUPERVISOR_FS_NO_PATH;
     }
 
     // If there is a mount on the directory, then the mount_path will be empty.
     if (strlen(mount_path) == 0) {
-        return FR_EXIST;
+        return SUPERVISOR_FS_EXIST;
     }
 
     // Check to see if the directory exists already. We don't care about writing
     // it if it already exists.
-    FATFS *fs = &active_mount->fatfs;
-    FILINFO file;
-    FRESULT result = f_stat(fs, mount_path, &file);
-    if (result == FR_OK) {
-        return FR_EXIST;
+    supervisor_fs_err_t result = supervisor_vfs_stat(active_mount, mount_path, NULL, NULL, NULL);
+    if (result == SUPERVISOR_FS_OK) {
+        return SUPERVISOR_FS_EXIST;
     }
 
     if (!filesystem_lock(active_mount)) {
-        return FR_WRITE_PROTECTED;
+        return SUPERVISOR_FS_WRITE_PROTECTED;
     }
 
-    override_fattime(fattime);
-    result = f_mkdir(fs, mount_path);
-    override_fattime(0);
+    result = supervisor_vfs_mkdir(active_mount, mount_path, mtime_ns);
     filesystem_unlock(active_mount);
     return result;
 }
 
-FRESULT supervisor_workflow_mkdir_parents(DWORD fattime, char *path) {
-    override_fattime(fattime);
-    FRESULT result = FR_OK;
+supervisor_fs_err_t supervisor_workflow_mkdir_parents(uint64_t mtime_ns, char *path) {
+    supervisor_fs_err_t result = SUPERVISOR_FS_OK;
     // Make parent directories.
     for (size_t j = 1; j < strlen(path); j++) {
         if (path[j] == '/') {
             path[j] = '\0';
-            result = supervisor_workflow_mkdir(fattime, path);
+            result = supervisor_workflow_mkdir(mtime_ns, path);
             path[j] = '/';
-            if (result != FR_OK && result != FR_EXIST) {
+            if (result != SUPERVISOR_FS_OK && result != SUPERVISOR_FS_EXIST) {
                 break;
             }
         }
     }
     // Make the target directory.
-    if (result == FR_OK || result == FR_EXIST) {
-        result = supervisor_workflow_mkdir(fattime, path);
-        // This may return FR_EXIST when a file with the same name already exists.
+    if (result == SUPERVISOR_FS_OK || result == SUPERVISOR_FS_EXIST) {
+        result = supervisor_workflow_mkdir(mtime_ns, path);
+        // This may return SUPERVISOR_FS_EXIST when a file with the same name already exists.
         // FATFS does the same thing.
     }
-    override_fattime(0);
     return result;
 }
 
-static FRESULT supervisor_workflow_delete_directory_contents(FATFS *fs, const TCHAR *path) {
-    FF_DIR dir;
-    FILINFO file_info;
+static supervisor_fs_err_t supervisor_workflow_delete_directory_contents(supervisor_vfs_t *active_mount, const char *path) {
     // Check the stack since we're putting paths on it.
     if (mp_stack_usage() >= MP_STATE_THREAD(stack_limit)) {
-        return FR_INT_ERR;
+        return SUPERVISOR_FS_IO;
     }
-    FRESULT res = FR_OK;
-    while (res == FR_OK) {
-        res = f_opendir(fs, &dir, path);
-        if (res != FR_OK) {
+    supervisor_vfs_dir_t dir;
+    memset(&dir, 0, sizeof(dir));
+    char name[FF_MAX_LFN + 1];
+    supervisor_fs_err_t res = SUPERVISOR_FS_OK;
+    while (res == SUPERVISOR_FS_OK) {
+        res = supervisor_vfs_opendir(active_mount, path, &dir);
+        if (res != SUPERVISOR_FS_OK) {
             break;
         }
-        res = f_readdir(&dir, &file_info);
+        res = supervisor_vfs_readdir(&dir, name, sizeof(name), NULL, NULL, NULL);
         // We close and reopen the directory every time since we're deleting
         // entries and it may invalidate the directory handle.
-        f_closedir(&dir);
-        if (res != FR_OK || file_info.fname[0] == '\0') {
+        supervisor_vfs_closedir(&dir);
+        if (res != SUPERVISOR_FS_OK || name[0] == '\0') {
             break;
         }
         size_t pathlen = strlen(path);
-        size_t fnlen = strlen(file_info.fname);
-        TCHAR full_path[pathlen + 1 + fnlen];
+        size_t fnlen = strlen(name);
+        char full_path[pathlen + 1 + fnlen + 1];
         memcpy(full_path, path, pathlen);
         full_path[pathlen] = '/';
-        size_t full_pathlen = pathlen + 1 + fnlen;
-        memcpy(full_path + pathlen + 1, file_info.fname, fnlen);
-        full_path[full_pathlen] = '\0';
-        if ((file_info.fattrib & AM_DIR) != 0) {
-            res = supervisor_workflow_delete_directory_contents(fs, full_path);
+        memcpy(full_path + pathlen + 1, name, fnlen + 1);
+        if (path[pathlen - 1] == '/') {
+            // Trim the extra slash we put in. This happens when path is "/".
+            memmove(full_path + pathlen, name, fnlen + 1);
         }
-        if (res != FR_OK) {
+        bool is_dir = false;
+        res = supervisor_vfs_stat(active_mount, full_path, &is_dir, NULL, NULL);
+        if (res != SUPERVISOR_FS_OK) {
             break;
         }
-        res = f_unlink(fs, full_path);
+        if (is_dir) {
+            res = supervisor_workflow_delete_directory_contents(active_mount, full_path);
+            if (res != SUPERVISOR_FS_OK) {
+                break;
+            }
+        }
+        res = supervisor_vfs_unlink(active_mount, full_path);
     }
-    f_closedir(&dir);
+    supervisor_vfs_closedir(&dir);
     return res;
 }
 
-FRESULT supervisor_workflow_delete_recursive(const char *full_path) {
+supervisor_fs_err_t supervisor_workflow_delete_recursive(const char *full_path) {
     const char *mount_path;
-    fs_user_mount_t *active_mount = filesystem_for_path(full_path, &mount_path);
-    if (active_mount == NULL || !filesystem_native_fatfs(active_mount)) {
-        return FR_NO_PATH;
+    supervisor_vfs_t *active_mount = filesystem_for_path(full_path, &mount_path);
+    if (active_mount == NULL || !supervisor_vfs_supported(active_mount)) {
+        return SUPERVISOR_FS_NO_PATH;
     }
     if (!filesystem_lock(active_mount)) {
-        return FR_WRITE_PROTECTED;
+        return SUPERVISOR_FS_WRITE_PROTECTED;
     }
-    FATFS *fs = &active_mount->fatfs;
-    FILINFO file;
-    FRESULT result = f_stat(fs, mount_path, &file);
-    if (result == FR_OK) {
-        if ((file.fattrib & AM_DIR) != 0) {
-            result = supervisor_workflow_delete_directory_contents(fs, mount_path);
+    supervisor_fs_err_t result = SUPERVISOR_FS_OK;
+    bool is_dir = false;
+    result = supervisor_vfs_stat(active_mount, mount_path, &is_dir, NULL, NULL);
+    if (result == SUPERVISOR_FS_OK) {
+        if (is_dir) {
+            result = supervisor_workflow_delete_directory_contents(active_mount, mount_path);
         }
-        if (result == FR_OK) {
-            result = f_unlink(fs, mount_path);
+        if (result == SUPERVISOR_FS_OK) {
+            result = supervisor_vfs_unlink(active_mount, mount_path);
         }
     }
     filesystem_unlock(active_mount);

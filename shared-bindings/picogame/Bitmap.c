@@ -150,7 +150,9 @@ static mp_obj_t picogame_bitmap_make_new(const mp_obj_type_t *type, size_t n_arg
     // palette length in entries (informational; blitter assumes indices < this - see blit contract).
     self->pal_entries = (uint16_t)((pal_len / 2) > 65535 ? 65535 : (pal_len / 2));
     if (args[ARG_transparent].u_obj != mp_const_none) {
-        self->transparent = mp_obj_get_int(args[ARG_transparent].u_obj);
+        mp_int_t t = mp_obj_get_int(args[ARG_transparent].u_obj);
+        // PAL8 keys are indexes: narrow to 8 bits so every blit path agrees.
+        self->transparent = (format == PICOGAME_FMT_PAL8) ? (uint8_t)t : (uint16_t)t;
         self->has_transparent = true;
     } else {
         self->transparent = 0;

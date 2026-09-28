@@ -14,7 +14,6 @@
 #include "shared-bindings/_bleio/Service.h"
 #include "shared-bindings/_bleio/UUID.h"
 
-#include "supervisor/fatfs.h"
 #include "supervisor/filesystem.h"
 #include "supervisor/shared/reload.h"
 #include "supervisor/shared/bluetooth/file_transfer.h"
@@ -118,22 +117,15 @@ void supervisor_stop_bluetooth_file_transfer(void) {
 #define THIS_COMMAND 0x01
 
 // FATFS has a two second timestamp resolution but the BLE API allows for nanosecond resolution.
-// This function truncates the time the time to a resolution storable by FATFS and fills in the
-// FATFS encoded version into fattime.
-static uint64_t truncate_time(uint64_t input_time, DWORD *fattime) {
-    timeutils_struct_time_t tm;
+// This function truncates the time to a resolution storable by FATFS and returns it.
+static uint64_t truncate_time(uint64_t input_time) {
     uint64_t seconds_since_epoch = timeutils_seconds_since_epoch_from_nanoseconds_since_1970(input_time);
-    timeutils_seconds_since_epoch_to_struct_time(seconds_since_epoch, &tm);
-    uint64_t truncated_time = timeutils_nanoseconds_since_epoch_to_nanoseconds_since_1970((seconds_since_epoch / 2) * 2 * 1000000000);
-
-    *fattime = ((tm.tm_year - 1980) << 25) | (tm.tm_mon << 21) | (tm.tm_mday << 16) |
-        (tm.tm_hour << 11) | (tm.tm_min << 5) | (tm.tm_sec >> 1);
-    return truncated_time;
+    return timeutils_nanoseconds_since_epoch_to_nanoseconds_since_1970((seconds_since_epoch / 2) * 2 * 1000000000);
 }
 
 // Used by read and write.
-static FIL active_file;
-static fs_user_mount_t *active_mount;
+static supervisor_vfs_file_t active_file;
+static supervisor_vfs_t *active_mount;
 static uint8_t _process_read(const uint8_t *raw_buf, size_t command_len) {
     struct read_command *command = (struct read_command *)raw_buf;
     size_t header_size = sizeof(struct read_command);
@@ -158,20 +150,18 @@ static uint8_t _process_read(const uint8_t *raw_buf, size_t command_len) {
 
     const char *mount_path;
     active_mount = filesystem_for_path(full_path, &mount_path);
-    if (active_mount == NULL || !filesystem_native_fatfs(active_mount)) {
+    if (active_mount == NULL || !supervisor_vfs_supported(active_mount)) {
         response.status = STATUS_ERROR;
         common_hal_bleio_packet_buffer_write(&_transfer_packet_buffer, (const uint8_t *)&response, response_size, NULL, 0);
         return ANY_COMMAND;
     }
 
-    FATFS *fs = &active_mount->fatfs;
-    FRESULT result = f_open(fs, &active_file, mount_path, FA_READ);
-    if (result != FR_OK) {
+    if (supervisor_vfs_open_file(active_mount, mount_path, SUPERVISOR_FS_OPEN_READ, 0, &active_file) != SUPERVISOR_FS_OK) {
         response.status = STATUS_ERROR;
         common_hal_bleio_packet_buffer_write(&_transfer_packet_buffer, (const uint8_t *)&response, response_size, NULL, 0);
         return ANY_COMMAND;
     }
-    uint32_t total_length = f_size(&active_file);
+    uint32_t total_length = supervisor_vfs_file_size(&active_file);
     // Write out the response header.
     uint32_t offset = command->chunk_offset;
     uint32_t chunk_size = command->chunk_size;
@@ -180,20 +170,20 @@ static uint8_t _process_read(const uint8_t *raw_buf, size_t command_len) {
     response.total_length = total_length;
     response.data_size = chunk_size;
     common_hal_bleio_packet_buffer_write(&_transfer_packet_buffer, (const uint8_t *)&response, response_size, NULL, 0);
-    f_lseek(&active_file, offset);
+    supervisor_vfs_seek_file(&active_file, offset);
     // Write out the chunk contents. We can do this in small pieces because PacketBuffer
     // will assemble them into larger packets of its own.
     size_t chunk_end = offset + chunk_size;
     while (offset < chunk_end) {
         size_t quantity_read;
         size_t read_amount = MIN(response_size, chunk_end - offset);
-        f_read(&active_file, data_buffer, read_amount, &quantity_read);
+        supervisor_vfs_read_file(&active_file, data_buffer, read_amount, &quantity_read);
         offset += quantity_read;
         // TODO: Do something if the read fails
         common_hal_bleio_packet_buffer_write(&_transfer_packet_buffer, data_buffer, quantity_read, NULL, 0);
     }
     if (offset >= total_length) {
-        f_close(&active_file);
+        supervisor_vfs_close_file(&active_file);
         return ANY_COMMAND;
     }
     return READ_PACING;
@@ -206,14 +196,14 @@ static uint8_t _process_read_pacing(const uint8_t *raw_buf, size_t command_len) 
     response.status = STATUS_OK;
     size_t response_size = sizeof(struct read_data);
 
-    uint32_t total_length = f_size(&active_file);
+    uint32_t total_length = supervisor_vfs_file_size(&active_file);
     // Write out the response header.
     uint32_t chunk_size = MIN(command->chunk_size, total_length - command->chunk_offset);
     response.chunk_offset = command->chunk_offset;
     response.total_length = total_length;
     response.data_size = chunk_size;
     common_hal_bleio_packet_buffer_write(&_transfer_packet_buffer, (const uint8_t *)&response, response_size, NULL, 0);
-    f_lseek(&active_file, command->chunk_offset);
+    supervisor_vfs_seek_file(&active_file, command->chunk_offset);
     // Write out the chunk contents. We can do this in small pieces because PacketBuffer
     // will assemble them into larger packets of its own.
     size_t chunk_offset = 0;
@@ -221,8 +211,8 @@ static uint8_t _process_read_pacing(const uint8_t *raw_buf, size_t command_len) 
     while (chunk_offset < chunk_size) {
         size_t quantity_read;
         size_t read_size = MIN(chunk_size - chunk_offset, sizeof(data));
-        FRESULT result = f_read(&active_file, &data, read_size, &quantity_read);
-        if (quantity_read == 0 || result != FR_OK) {
+        supervisor_fs_err_t result = supervisor_vfs_read_file(&active_file, &data, read_size, &quantity_read);
+        if (quantity_read == 0 || result != SUPERVISOR_FS_OK) {
             // TODO: If we can't read everything, then the file must have been shortened. Maybe we
             // should return 0s to pad it out.
             break;
@@ -231,7 +221,7 @@ static uint8_t _process_read_pacing(const uint8_t *raw_buf, size_t command_len) 
         chunk_offset += quantity_read;
     }
     if ((chunk_offset + chunk_size) >= total_length) {
-        f_close(&active_file);
+        supervisor_vfs_close_file(&active_file);
         return ANY_COMMAND;
     }
     return READ_PACING;
@@ -264,7 +254,7 @@ static uint8_t _process_write(const uint8_t *raw_buf, size_t command_len) {
 
     const char *mount_path;
     active_mount = filesystem_for_path(full_path, &mount_path);
-    if (active_mount == NULL || !filesystem_native_fatfs(active_mount)) {
+    if (active_mount == NULL || !supervisor_vfs_supported(active_mount)) {
         response.status = STATUS_ERROR;
         common_hal_bleio_packet_buffer_write(&_transfer_packet_buffer, (const uint8_t *)&response, sizeof(struct write_pacing), NULL, 0);
         return ANY_COMMAND;
@@ -275,16 +265,13 @@ static uint8_t _process_write(const uint8_t *raw_buf, size_t command_len) {
         return ANY_COMMAND;
     }
 
-    FATFS *fs = &active_mount->fatfs;
-    DWORD fattime;
-    _truncated_time = truncate_time(command->modification_time, &fattime);
-    override_fattime(fattime);
-    FRESULT result = f_open(fs, &active_file, mount_path, FA_WRITE | FA_OPEN_ALWAYS);
-    if (result != FR_OK) {
+    _truncated_time = truncate_time(command->modification_time);
+    supervisor_fs_err_t result = supervisor_vfs_open_file(active_mount, mount_path,
+        SUPERVISOR_FS_OPEN_WRITE | SUPERVISOR_FS_OPEN_CREATE, command->modification_time, &active_file);
+    if (result != SUPERVISOR_FS_OK) {
         response.status = STATUS_ERROR;
         common_hal_bleio_packet_buffer_write(&_transfer_packet_buffer, (const uint8_t *)&response, sizeof(struct write_pacing), NULL, 0);
         filesystem_unlock(active_mount);
-        override_fattime(0);
         return ANY_COMMAND;
     }
     // Write out the pacing response.
@@ -294,10 +281,9 @@ static uint8_t _process_write(const uint8_t *raw_buf, size_t command_len) {
     size_t chunk_size = MIN(total_write_length - offset, 512 - (offset % 512));
     // Special case when truncating the file. (Deleting stuff off the end.)
     if (chunk_size == 0) {
-        f_lseek(&active_file, offset);
-        f_truncate(&active_file);
-        f_close(&active_file);
-        override_fattime(0);
+        supervisor_vfs_seek_file(&active_file, offset);
+        supervisor_vfs_truncate_file(&active_file);
+        supervisor_vfs_close_file(&active_file);
         filesystem_unlock(active_mount);
     }
     response.offset = offset;
@@ -324,7 +310,6 @@ static uint8_t _process_write_data(const uint8_t *raw_buf, size_t command_len) {
         response.status = STATUS_ERROR;
         common_hal_bleio_packet_buffer_write(&_transfer_packet_buffer, (const uint8_t *)&response, sizeof(struct write_pacing), NULL, 0);
         filesystem_unlock(active_mount);
-        override_fattime(0);
         return ANY_COMMAND;
     }
     // We need to receive another packet to have the full path.
@@ -332,15 +317,14 @@ static uint8_t _process_write_data(const uint8_t *raw_buf, size_t command_len) {
         return THIS_COMMAND;
     }
     uint32_t offset = command->offset;
-    f_lseek(&active_file, offset);
-    UINT actual;
-    f_write(&active_file, command->data, command->data_size, &actual);
-    if (actual < command->data_size) { // -1 for the null we'll write
+    supervisor_vfs_seek_file(&active_file, offset);
+    size_t actual;
+    supervisor_fs_err_t result = supervisor_vfs_write_file(&active_file, command->data, command->data_size, &actual);
+    if (actual < command->data_size || result != SUPERVISOR_FS_OK) { // -1 for the null we'll write
         // TODO: throw away any more packets of path.
         response.status = STATUS_ERROR;
         common_hal_bleio_packet_buffer_write(&_transfer_packet_buffer, (const uint8_t *)&response, sizeof(struct write_pacing), NULL, 0);
         filesystem_unlock(active_mount);
-        override_fattime(0);
         return ANY_COMMAND;
     }
     offset += command->data_size;
@@ -351,9 +335,8 @@ static uint8_t _process_write_data(const uint8_t *raw_buf, size_t command_len) {
     response.truncated_time = _truncated_time;
     common_hal_bleio_packet_buffer_write(&_transfer_packet_buffer, (const uint8_t *)&response, sizeof(struct write_pacing), NULL, 0);
     if (total_write_length == offset) {
-        f_truncate(&active_file);
-        f_close(&active_file);
-        override_fattime(0);
+        supervisor_vfs_truncate_file(&active_file);
+        supervisor_vfs_close_file(&active_file);
         filesystem_unlock(active_mount);
         // Don't reload until everything is written out of the packet buffer.
         common_hal_bleio_packet_buffer_flush(&_transfer_packet_buffer);
@@ -382,16 +365,16 @@ static uint8_t _process_delete(const uint8_t *raw_buf, size_t command_len) {
     char *full_path = (char *)((uint8_t *)command) + header_size;
     full_path[command->path_length] = '\0';
 
-    FRESULT result = supervisor_workflow_delete_recursive(full_path);
+    supervisor_fs_err_t result = supervisor_workflow_delete_recursive(full_path);
 
-    if (result == FR_WRITE_PROTECTED) {
+    if (result == SUPERVISOR_FS_WRITE_PROTECTED) {
         response.status = STATUS_ERROR_READONLY;
     }
-    if (result != FR_OK) {
+    if (result != SUPERVISOR_FS_OK) {
         response.status = STATUS_ERROR;
     }
     common_hal_bleio_packet_buffer_write(&_transfer_packet_buffer, (const uint8_t *)&response, sizeof(struct delete_status), NULL, 0);
-    if (result == FR_OK) {
+    if (result == SUPERVISOR_FS_OK) {
         // Don't reload until everything is written out of the packet buffer.
         common_hal_bleio_packet_buffer_flush(&_transfer_packet_buffer);
     }
@@ -428,14 +411,12 @@ static uint8_t _process_mkdir(const uint8_t *raw_buf, size_t command_len) {
     char *full_path = (char *)command->path;
     _terminate_path(full_path, command->path_length);
 
-    DWORD fattime;
-    response.truncated_time = truncate_time(command->modification_time, &fattime);
-    FRESULT result = supervisor_workflow_mkdir(fattime, full_path);
-    if (result != FR_OK) {
+    supervisor_fs_err_t result = supervisor_workflow_mkdir(truncate_time(command->modification_time), full_path);
+    if (result != SUPERVISOR_FS_OK) {
         response.status = STATUS_ERROR;
     }
     common_hal_bleio_packet_buffer_write(&_transfer_packet_buffer, (const uint8_t *)&response, sizeof(struct mkdir_status), NULL, 0);
-    if (result == FR_OK) {
+    if (result == SUPERVISOR_FS_OK) {
         // Don't reload until everything is written out of the packet buffer.
         common_hal_bleio_packet_buffer_flush(&_transfer_packet_buffer);
     }
@@ -457,6 +438,9 @@ static uint8_t _process_listdir(uint8_t *raw_buf, size_t command_len) {
     const struct listdir_command *command = (struct listdir_command *)raw_buf;
     struct listdir_entry *entry = (struct listdir_entry *)raw_buf;
     size_t header_size = sizeof(struct listdir_command);
+    bool entry_is_dir;
+    size_t entry_size;
+    uint64_t entry_mtime;
     mp_int_t max_packet_size = common_hal_bleio_packet_buffer_get_outgoing_packet_length(&_transfer_packet_buffer);
     if (max_packet_size < 0) {
         // -1 means we're disconnected
@@ -481,16 +465,16 @@ static uint8_t _process_listdir(uint8_t *raw_buf, size_t command_len) {
 
     const char *mount_path;
     active_mount = filesystem_for_path(full_path, &mount_path);
-    if (active_mount == NULL || !filesystem_native_fatfs(active_mount)) {
+    if (active_mount == NULL || !supervisor_vfs_supported(active_mount)) {
         entry->command = LISTDIR_ENTRY;
         entry->status = STATUS_ERROR_NO_FILE;
         send_listdir_entry_header(entry, max_packet_size);
         return ANY_COMMAND;
     }
-    FATFS *fs = &active_mount->fatfs;
 
-    FF_DIR dir;
-    FRESULT res = f_opendir(fs, &dir, mount_path);
+    supervisor_vfs_dir_t dir;
+    memset(&dir, 0, sizeof(dir));
+    supervisor_fs_err_t res = supervisor_vfs_opendir(active_mount, mount_path, &dir);
 
     entry->command = LISTDIR_ENTRY;
     entry->status = STATUS_OK;
@@ -499,51 +483,44 @@ static uint8_t _process_listdir(uint8_t *raw_buf, size_t command_len) {
     entry->entry_count = 0;
     entry->flags = 0;
 
-    if (res != FR_OK) {
+    if (res != SUPERVISOR_FS_OK) {
         entry->status = STATUS_ERROR_NO_FILE;
         send_listdir_entry_header(entry, max_packet_size);
         return ANY_COMMAND;
     }
-    FILINFO file_info;
-    res = f_readdir(&dir, &file_info);
-    char *fn = file_info.fname;
+    char fn[FF_MAX_LFN + 1];
+    res = supervisor_vfs_readdir(&dir, fn, sizeof(fn), NULL, NULL, NULL);
     size_t total_entries = 0;
-    while (res == FR_OK && fn[0] != 0) {
-        res = f_readdir(&dir, &file_info);
+    while (res == SUPERVISOR_FS_OK && fn[0] != 0) {
+        res = supervisor_vfs_readdir(&dir, fn, sizeof(fn), NULL, NULL, NULL);
         total_entries += 1;
     }
     // Rewind the directory.
-    f_readdir(&dir, NULL);
+    supervisor_vfs_rewinddir(&dir);
     entry->entry_count = total_entries;
     for (size_t i = 0; i < total_entries; i++) {
-        res = f_readdir(&dir, &file_info);
+        res = supervisor_vfs_readdir(&dir, fn, sizeof(fn), &entry_is_dir, &entry_size, &entry_mtime);
         entry->entry_number = i;
-        uint64_t truncated_time = timeutils_mktime(1980 + (file_info.fdate >> 9),
-            (file_info.fdate >> 5) & 0xf,
-            file_info.fdate & 0x1f,
-            file_info.ftime >> 11,
-            (file_info.ftime >> 5) & 0x1f,
-            (file_info.ftime & 0x1f) * 2) * 1000000000ULL;
-        entry->truncated_time = truncated_time;
-        if ((file_info.fattrib & AM_DIR) != 0) {
+        entry->truncated_time = entry_mtime;
+        if (entry_is_dir) {
             entry->flags = 1; // Directory
             entry->file_size = 0;
         } else {
             entry->flags = 0;
-            entry->file_size = file_info.fsize;
+            entry->file_size = entry_size;
         }
 
-        size_t name_length = strlen(file_info.fname);
+        size_t name_length = strlen(fn);
         entry->path_length = name_length;
         send_listdir_entry_header(entry, max_packet_size);
         size_t fn_offset = 0;
         while (fn_offset < name_length) {
             size_t fn_size = MIN(name_length - fn_offset, 4);
-            common_hal_bleio_packet_buffer_write(&_transfer_packet_buffer, ((uint8_t *)file_info.fname) + fn_offset, fn_size, NULL, 0);
+            common_hal_bleio_packet_buffer_write(&_transfer_packet_buffer, ((uint8_t *)fn) + fn_offset, fn_size, NULL, 0);
             fn_offset += fn_size;
         }
     }
-    f_closedir(&dir);
+    supervisor_vfs_closedir(&dir);
     entry->path_length = 0;
     entry->entry_number = entry->entry_count;
     entry->flags = 0;
@@ -577,14 +554,14 @@ static uint8_t _process_move(const uint8_t *raw_buf, size_t command_len) {
     char *new_path = old_path + command->old_path_length + 1;
     new_path[command->new_path_length] = '\0';
 
-    FRESULT result = supervisor_workflow_move(old_path, new_path);
-    if (result == FR_WRITE_PROTECTED) {
+    supervisor_fs_err_t result = supervisor_workflow_move(old_path, new_path);
+    if (result == SUPERVISOR_FS_WRITE_PROTECTED) {
         response.status = STATUS_ERROR_READONLY;
-    } else if (result != FR_OK) {
+    } else if (result != SUPERVISOR_FS_OK) {
         response.status = STATUS_ERROR;
     }
     common_hal_bleio_packet_buffer_write(&_transfer_packet_buffer, (const uint8_t *)&response, sizeof(struct move_status), NULL, 0);
-    if (result == FR_OK) {
+    if (result == SUPERVISOR_FS_OK) {
         // Don't reload until everything is written out of the packet buffer.
         common_hal_bleio_packet_buffer_flush(&_transfer_packet_buffer);
     }
@@ -678,6 +655,6 @@ void supervisor_bluetooth_file_transfer_background(void) {
 void supervisor_bluetooth_file_transfer_disconnected(void) {
     next_command = ANY_COMMAND;
     current_offset = 0;
-    f_close(&active_file);
+    supervisor_vfs_close_file(&active_file);
     autoreload_resume(AUTORELOAD_SUSPEND_BLE);
 }

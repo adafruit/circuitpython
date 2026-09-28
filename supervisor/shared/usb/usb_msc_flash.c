@@ -137,7 +137,8 @@ size_t usb_msc_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *desc
 // We hardcode LUN -> mount mapping so that it doesn't changes with saves and
 // SD card appearing and disappearing.
 static fs_user_mount_t *get_vfs(int lun) {
-    fs_user_mount_t *root = filesystem_circuitpy();
+    supervisor_vfs_t *root_vfs = filesystem_circuitpy();
+    fs_user_mount_t *root = root_vfs == NULL ? NULL : &root_vfs->fat;
     if (lun == 0) {
         return root;
     }
@@ -146,7 +147,8 @@ static fs_user_mount_t *get_vfs(int lun) {
     #ifdef SAVES_LUN
     if (lun == SAVES_LUN) {
         const char *path_under_mount;
-        fs_user_mount_t *saves = filesystem_for_path("/saves", &path_under_mount);
+        supervisor_vfs_t *saves_mount = filesystem_for_path("/saves", &path_under_mount);
+        fs_user_mount_t *saves = saves_mount == NULL ? NULL : &saves_mount->fat;
         if (saves != root &&
             (saves->blockdev.flags & MP_BLOCKDEV_FLAG_NATIVE) != 0 && !gc_ptr_on_heap(saves)) {
             return saves;
@@ -156,7 +158,8 @@ static fs_user_mount_t *get_vfs(int lun) {
     #ifdef SDCARD_LUN
     if (lun == SDCARD_LUN) {
         const char *path_under_mount;
-        fs_user_mount_t *sdcard = filesystem_for_path("/sd", &path_under_mount);
+        supervisor_vfs_t *sdcard_mount = filesystem_for_path("/sd", &path_under_mount);
+        fs_user_mount_t *sdcard = sdcard_mount == NULL ? NULL : &sdcard_mount->fat;
         // If sdcard ("/sd") is on the root filesystem, nothing has been mounted there, so don't
         // return it as a separate filesystem.
         // If the SD card was automounted at startup, then it persists across VMs and its fs_user_mount_t is
@@ -177,8 +180,10 @@ static fs_user_mount_t *get_vfs(int lun) {
     #ifdef EMMC_LUN
     if (lun == EMMC_LUN) {
         const char *path_under_mount;
+        fs_user_mount_t *emmc;
 
-        fs_user_mount_t *emmc = filesystem_for_path(CIRCUITPY_EMMC_MOUNT_PATH, &path_under_mount);
+        supervisor_vfs_t *emmc_mount = filesystem_for_path(CIRCUITPY_EMMC_MOUNT_PATH, &path_under_mount);
+        emmc = emmc_mount == NULL ? NULL : &emmc_mount->fat;
         // Unlike the SD card there is no heap-mount case to allow: the eMMC's
         // drive exists only when the supervisor mounted it, and
         // that mount is static. A user mount made by code.py stays a Python
@@ -214,7 +219,7 @@ void usb_msc_umount(void) {
         if (vfs == NULL) {
             continue;
         }
-        blockdev_unlock(vfs);
+        blockdev_unlock((supervisor_vfs_t *)vfs);
         locked[i] = false;
     }
 }
@@ -296,7 +301,7 @@ bool tud_msc_is_writable_cb(uint8_t lun) {
         return false;
     }
     // Lock the blockdev once we say we're writable.
-    if (!locked[lun] && !blockdev_lock(vfs)) {
+    if (!locked[lun] && !blockdev_lock((supervisor_vfs_t *)vfs)) {
         return false;
     }
     locked[lun] = true;
@@ -465,7 +470,7 @@ bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, boo
             if (disk_ioctl(current_mount, CTRL_SYNC, NULL) != RES_OK) {
                 return false;
             } else {
-                blockdev_unlock(current_mount);
+                blockdev_unlock((supervisor_vfs_t *)current_mount);
                 ejected[lun] = true;
                 locked[lun] = false;
             }

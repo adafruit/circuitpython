@@ -175,6 +175,7 @@ MP_PROPERTY_GETSET(aurora_epaper_framebuffer_free_bus_obj,
 
 static const mp_rom_map_elem_t aurora_epaper_framebuffer_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&aurora_epaper_framebuffer_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&aurora_epaper_framebuffer_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR_set_temperature), MP_ROM_PTR(&aurora_epaper_frambuffer_set_temperature_obj) },
     { MP_ROM_QSTR(MP_QSTR_free_bus), MP_ROM_PTR(&aurora_epaper_framebuffer_free_bus_obj) },
 };

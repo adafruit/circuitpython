@@ -26,9 +26,9 @@
 #include "extmod/vfs_fat.h"
 
 #if CIRCUITPY_SETTINGS_TOML
+#if defined(UNIX)
 typedef FIL file_arg;
 static bool open_file(const char *name, file_arg *file_handle) {
-    #if defined(UNIX)
     nlr_buf_t nlr;
     if (nlr_push(&nlr) == 0) {
         mp_obj_t file_obj = mp_call_function_2(
@@ -41,15 +41,6 @@ static bool open_file(const char *name, file_arg *file_handle) {
     } else {
         return false;
     }
-    #else
-    fs_user_mount_t *fs_mount = filesystem_circuitpy();
-    if (fs_mount == NULL) {
-        return false;
-    }
-    FATFS *fatfs = &fs_mount->fatfs;
-    FRESULT result = f_open(fatfs, file_handle, name, FA_READ);
-    return result == FR_OK;
-    #endif
 }
 
 static void close_file(file_arg *file_handle) {
@@ -72,6 +63,46 @@ static uint8_t get_next_byte(FIL *file_handle) {
 static void seek_eof(file_arg *file_handle) {
     f_lseek(file_handle, f_size(file_handle));
 }
+#else
+// Outside of the unix port, settings.toml is read through the supervisor
+// filesystem API so it works on both FAT and littlefs mounts.
+typedef supervisor_vfs_file_t file_arg;
+
+static bool open_file(const char *name, file_arg *file_handle) {
+    supervisor_vfs_t *fs_mount = filesystem_circuitpy();
+    if (fs_mount == NULL) {
+        return false;
+    }
+    return supervisor_vfs_open_file(fs_mount, name, SUPERVISOR_FS_OPEN_READ, 0, file_handle) == SUPERVISOR_FS_OK;
+}
+
+static void close_file(file_arg *file_handle) {
+    supervisor_vfs_close_file(file_handle);
+}
+
+// Reads mark the end of the file by closing the handle.
+static bool is_eof(file_arg *file_handle) {
+    return !file_handle->open;
+}
+
+// Return 0 if there is no next character (EOF).
+static uint8_t get_next_byte(file_arg *file_handle) {
+    uint8_t character = 0;
+    size_t quantity_read;
+    // If there's an error or quantity_read is 0, character will remain 0.
+    supervisor_fs_err_t err = supervisor_vfs_read_file(file_handle, &character, 1, &quantity_read);
+    // If we hit the end of the file (or an error), close the handle so that
+    // is_eof() reports the file is done.
+    if (err != SUPERVISOR_FS_OK || quantity_read == 0) {
+        close_file(file_handle);
+    }
+    return character;
+}
+
+static void seek_eof(file_arg *file_handle) {
+    supervisor_vfs_seek_file(file_handle, supervisor_vfs_file_size(file_handle));
+}
+#endif
 
 // For a fixed buffer, record the required size rather than throwing
 static void vstr_add_byte_nonstd(vstr_t *vstr, byte b) {

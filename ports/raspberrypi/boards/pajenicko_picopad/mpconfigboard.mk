@@ -50,8 +50,3 @@ CFLAGS += \
 
 # Must be accompanied by a linker script change
 CFLAGS += -DCIRCUITPY_FIRMWARE_SIZE='(1536 * 1024)'
-
-# The rp2 port default is -O3; on this Cortex-M0+ (no SIMD/FPU, 16 KB XIP cache) -O2 plus
-# these five loop passes measures within +-1% of -O3 across the picogame render kernels
-# while using ~150 KB less flash (gc.o/vm.o stay -O3 via SUPEROPT regardless).
-OPTIMIZATION_FLAGS = -O2 -funswitch-loops -fpredictive-commoning -fgcse-after-reload -ftree-partial-pre -fsplit-paths

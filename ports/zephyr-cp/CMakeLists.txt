@@ -1,5 +1,11 @@
 cmake_minimum_required(VERSION 3.20.0)
 
+# The dynamic peripheral allocation / runtime pin routing code lives in a
+# Zephyr module kept in-tree for now (modules/iobroker, see its README.md).
+# It must be set before find_package(Zephyr). Repoint this at the module's new
+# home to consume an externalized copy.
+set(ZEPHYR_EXTRA_MODULES ${CMAKE_CURRENT_SOURCE_DIR}/modules/iobroker)
+
 find_package(Zephyr REQUIRED HINTS lib/zephyr)
 project(circuitpython)
 

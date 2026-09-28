@@ -14,6 +14,7 @@ import argparse
 import concurrent.futures
 import os
 import pathlib
+import select
 import shlex
 import subprocess
 import sys
@@ -34,6 +35,11 @@ class Jobserver:
                 return
             except InterruptedError:
                 continue
+            except BlockingIOError:
+                # GNU make opens its jobserver pipe non-blocking, so reading when
+                # no token is available raises instead of blocking. Wait until a
+                # token is written or the pipe closes.
+                select.select([self.read_fd], [], [])
 
     def release(self):
         while True:
@@ -42,6 +48,9 @@ class Jobserver:
                 return
             except InterruptedError:
                 continue
+            except BlockingIOError:
+                # Defensive: a non-blocking pipe can also refuse writes when full.
+                select.select([], [self.write_fd], [])
 
     def pass_fds(self):
         return (self.read_fd, self.write_fd)

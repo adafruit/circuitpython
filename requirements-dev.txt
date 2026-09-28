@@ -48,3 +48,6 @@ pytest
 pytest-rerunfailures
 pytest-xdist
 perfetto
+
+# For littlefs flash image tests on the zephyr port native_simulators
+littlefs-python

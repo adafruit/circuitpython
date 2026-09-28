@@ -101,7 +101,7 @@ static mp_obj_t audiofreeverb_freeverb_make_new(const mp_obj_type_t *type, size_
         mp_raise_ValueError(MP_ERROR_TEXT("bits_per_sample must be 16"));
     }
 
-    audiofreeverb_freeverb_obj_t *self = mp_obj_malloc(audiofreeverb_freeverb_obj_t, &audiofreeverb_freeverb_type);
+    audiofreeverb_freeverb_obj_t *self = mp_obj_malloc_with_finaliser(audiofreeverb_freeverb_obj_t, &audiofreeverb_freeverb_type);
     common_hal_audiofreeverb_freeverb_construct(self, args[ARG_roomsize].u_obj, args[ARG_damp].u_obj, args[ARG_pre_filter].u_obj, args[ARG_post_filter].u_obj, args[ARG_mix].u_obj, args[ARG_buffer_size].u_int, bits_per_sample, args[ARG_samples_signed].u_bool, channel_count, sample_rate);
 
     return MP_OBJ_FROM_PTR(self);
@@ -293,6 +293,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(audiofreeverb_freeverb_stop_obj, audiofreeverb_freever
 static const mp_rom_map_elem_t audiofreeverb_freeverb_locals_dict_table[] = {
     // Methods
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&audiofreeverb_freeverb_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&audiofreeverb_freeverb_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
     { MP_ROM_QSTR(MP_QSTR_play), MP_ROM_PTR(&audiofreeverb_freeverb_play_obj) },

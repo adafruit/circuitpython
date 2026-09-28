@@ -9,6 +9,7 @@
 #include <stdint.h>
 
 #include "py/runtime.h"
+#include "extmod/vfs.h"
 #include "py/objproperty.h"
 #include "shared/runtime/context_manager_helpers.h"
 #include "shared-bindings/util.h"
@@ -117,12 +118,12 @@ static mp_obj_t gifio_ondiskgif_make_new(const mp_obj_type_t *type, size_t n_arg
         filename = mp_call_function_2(MP_OBJ_FROM_PTR(&mp_builtin_open_obj), filename, MP_ROM_QSTR(MP_QSTR_rb));
     }
 
-    if (!mp_obj_is_type(filename, &mp_type_fileio)) {
+    if (!mp_obj_is_fileio(filename)) {
         mp_raise_TypeError(MP_ERROR_TEXT("file must be a file opened in byte mode"));
     }
 
-    gifio_ondiskgif_t *self = mp_obj_malloc(gifio_ondiskgif_t, &gifio_ondiskgif_type);
-    common_hal_gifio_ondiskgif_construct(self, MP_OBJ_TO_PTR(filename), args[ARG_use_palette].u_bool);
+    gifio_ondiskgif_t *self = mp_obj_malloc_with_finaliser(gifio_ondiskgif_t, &gifio_ondiskgif_type);
+    common_hal_gifio_ondiskgif_construct(self, filename, args[ARG_use_palette].u_bool);
 
     return MP_OBJ_FROM_PTR(self);
 }
@@ -287,6 +288,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(gifio_ondiskgif_deinit_obj, gifio_ondiskgif_obj_deinit
 
 static const mp_rom_map_elem_t gifio_ondiskgif_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&gifio_ondiskgif_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&gifio_ondiskgif_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
     { MP_ROM_QSTR(MP_QSTR_height), MP_ROM_PTR(&gifio_ondiskgif_height_obj) },

@@ -434,8 +434,13 @@ class Compiler:
     async def archive(self, objects: list[pathlib.Path], output_file: pathlib.Path):
         output_file.parent.mkdir(parents=True, exist_ok=True)
         responsefile = output_file.with_suffix(".rsp")
+        # Always create the archive from scratch. `ar r` on an existing archive replaces the
+        # members named on its command line and keeps every other member, so after a build
+        # of another language the old translations-*.o and autogen_display_resources-*.o
+        # stayed in the archive ahead of the new ones and the linker used them.
+        output_file.unlink(missing_ok=True)
         await run_command(
-            [self.ar, "rvs", output_file, *objects],
+            [self.ar, "rcs", output_file, *objects],
             description=f"Create archive {output_file.relative_to(self.srcdir)}",
             working_directory=self.srcdir,
             responsefile=responsefile,

@@ -8,6 +8,7 @@
 
 #include "py/obj.h"
 #include "lib/protomatter/src/core.h"
+#include "shared-bindings/digitalio/DigitalInOut.h"
 
 extern const mp_obj_type_t rgbmatrix_RGBMatrix_type;
 typedef struct {
@@ -28,4 +29,8 @@ typedef struct {
     bool doublebuffer;
     bool serpentine;
     int8_t tile;
+    // DigitalInOut objects that own each of the pins. They claim the pins and
+    // release them when they are deinitialized.
+    digitalio_digitalinout_obj_t *pin_digitalinouts[30 + 10 + 3];
+    uint8_t pin_digitalinout_count;
 } rgbmatrix_rgbmatrix_obj_t;

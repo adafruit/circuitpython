@@ -54,7 +54,6 @@ PORT_DEPS = {
         "lib/tlsf",
         "data/nvm.toml/",
     ],
-    "broadcom": ["extmod/ulab/", "lib/tlsf", "lib/tinyusb/"],
     "cxd56": ["extmod/ulab/", "lib/tlsf", "lib/tinyusb/"],
     "espressif": [
         "extmod/ulab/",
@@ -65,7 +64,6 @@ PORT_DEPS = {
         "lib/tlsf",
         "lib/tinyusb/",
     ],
-    "litex": ["extmod/ulab/", "lib/tinyusb/", "lib/tlsf"],
     "mimxrt10xx": ["extmod/ulab/", "lib/mp3/", "lib/tinyusb/", "lib/tlsf", "data/nvm.toml/"],
     "nordic": [
         "extmod/ulab/",
@@ -88,7 +86,6 @@ PORT_DEPS = {
         "lib/tlsf",
         "data/nvm.toml/",
     ],
-    "renode": ["lib/tlsf"],
     "silabs": ["extmod/ulab/", "data/nvm.toml/", "lib/tlsf"],
     "stm": [
         "extmod/ulab/",

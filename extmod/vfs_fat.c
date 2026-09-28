@@ -104,7 +104,7 @@ static mp_obj_t fat_vfs_make_new(const mp_obj_type_t *type, size_t n_args, size_
 
 // CIRCUITPY-CHANGE
 static void verify_fs_writable(fs_user_mount_t *vfs) {
-    if (!filesystem_is_writable_by_python(vfs)) {
+    if (!filesystem_is_writable_by_python((supervisor_vfs_t *)vfs)) {
         mp_raise_OSError(MP_EROFS);
     }
 }
@@ -430,7 +430,10 @@ static mp_obj_t vfs_fat_mount(mp_obj_t self_in, mp_obj_t readonly, mp_obj_t mkfs
     // CIRCUITPY-CHANGE: Use MP_BLOCKDEV_FLAG_USB_WRITABLE instead of writeblocks[0] =/!= MP_OBJ_NULL
     // to specify read-write.
     // If readonly to Python, it's writable by USB and vice versa.
-    filesystem_set_writable_by_usb(self, mp_obj_is_true(readonly));
+    // CIRCUITPY-CHANGE: The flag helpers take a supervisor_vfs_t so they work
+    // for the FAT and littlefs root filesystems alike. A VfsFat is always a
+    // fs_user_mount_t, whose blockdev prefix matches both vfs kinds.
+    filesystem_set_writable_by_usb((supervisor_vfs_t *)self, mp_obj_is_true(readonly));
 
     // check if we need to make the filesystem
     FRESULT res = (self->blockdev.flags & MP_BLOCKDEV_FLAG_NO_FILESYSTEM) ? FR_NO_FILESYSTEM : FR_OK;
@@ -487,7 +490,7 @@ static MP_DEFINE_CONST_FUN_OBJ_3(fat_vfs_utime_obj, vfs_fat_utime);
 
 static mp_obj_t vfs_fat_getreadonly(mp_obj_t self_in) {
     fs_user_mount_t *self = MP_OBJ_TO_PTR(self_in);
-    return mp_obj_new_bool(!filesystem_is_writable_by_python(self));
+    return mp_obj_new_bool(!filesystem_is_writable_by_python((supervisor_vfs_t *)self));
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(fat_vfs_getreadonly_obj, vfs_fat_getreadonly);
 

@@ -168,4 +168,11 @@ MP_DECLARE_CONST_FUN_OBJ_1(mp_vfs_statvfs_obj);
 mp_obj_t mp_vfs_rom_ioctl(size_t n_args, const mp_obj_t *args);
 #endif
 
+// CIRCUITPY-CHANGE: Shared bindings that take an already-opened file check
+// mp_type_fileio for a binary file. That is aliased to the FAT fileio type in
+// py/circuitpy_mpconfig.h, but files opened on a mounted littlefs (or posix)
+// filesystem are a different type, so provide this check that accepts any
+// filesystem's binary file type.
+bool mp_obj_is_fileio(mp_obj_t file);
+
 #endif // MICROPY_INCLUDED_EXTMOD_VFS_H

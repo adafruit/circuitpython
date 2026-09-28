@@ -17,6 +17,8 @@
 #include "py/mperrno.h"
 #include "py/objtype.h"
 #include "py/objproperty.h"
+#include "py/objstr.h"
+#include "py/persistentcode.h"
 #include "py/runtime.h"
 
 
@@ -43,6 +45,31 @@
 //|         Use `microcontroller.cpu` to access the sole instance available."""
 //|         ...
 //|
+
+//|     architecture: Optional[str]
+//|     """The native ``.mpy`` architecture this build can load, as a `str`. (read-only)
+//|
+//|     This is the name ``mpy-cross`` takes for ``-march``, such as ``"armv6m"``,
+//|     ``"armv7emsp"``, ``"xtensawin"`` or ``"rv32imc"``.
+//|
+//|     Is `None` if this build cannot load native code from ``.mpy`` files.
+//|     """
+#if MICROPY_PERSISTENT_CODE_LOAD_NATIVE
+static const MP_DEFINE_STR_OBJ(mcu_processor_architecture_str_obj, MPY_FEATURE_ARCH_NAME);
+#endif
+
+static mp_obj_t mcu_processor_get_architecture(mp_obj_t self) {
+    #if MICROPY_PERSISTENT_CODE_LOAD_NATIVE
+    return MP_OBJ_FROM_PTR(&mcu_processor_architecture_str_obj);
+    #else
+    return mp_const_none;
+    #endif
+}
+
+MP_DEFINE_CONST_FUN_OBJ_1(mcu_processor_get_architecture_obj, mcu_processor_get_architecture);
+
+MP_PROPERTY_GETTER(mcu_processor_architecture_obj,
+    (mp_obj_t)&mcu_processor_get_architecture_obj);
 
 //|     frequency: int
 //|     """The CPU operating frequency in Hertz.
@@ -143,6 +170,7 @@ MP_PROPERTY_GETTER(mcu_processor_voltage_obj,
     (mp_obj_t)&mcu_processor_get_voltage_obj);
 
 static const mp_rom_map_elem_t mcu_processor_locals_dict_table[] = {
+    { MP_ROM_QSTR(MP_QSTR_architecture), MP_ROM_PTR(&mcu_processor_architecture_obj) },
     { MP_ROM_QSTR(MP_QSTR_frequency), MP_ROM_PTR(&mcu_processor_frequency_obj) },
     { MP_ROM_QSTR(MP_QSTR_reset_reason), MP_ROM_PTR(&mcu_processor_reset_reason_obj) },
     { MP_ROM_QSTR(MP_QSTR_temperature), MP_ROM_PTR(&mcu_processor_temperature_obj) },

@@ -198,6 +198,7 @@ MP_PROPERTY_GETTER(is31fl3741_framebuffer_height_obj,
 
 static const mp_rom_map_elem_t is31fl3741_framebuffer_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&is31fl3741_framebuffer_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&is31fl3741_framebuffer_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR_brightness), MP_ROM_PTR(&is31fl3741_framebuffer_brightness_obj) },
     { MP_ROM_QSTR(MP_QSTR_refresh), MP_ROM_PTR(&is31fl3741_framebuffer_refresh_obj) },
     { MP_ROM_QSTR(MP_QSTR_width), MP_ROM_PTR(&is31fl3741_framebuffer_width_obj) },

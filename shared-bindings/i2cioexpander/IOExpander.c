@@ -95,7 +95,7 @@ static mp_obj_t i2cioexpander_ioexpander_make_new(const mp_obj_type_t *type, siz
     }
 
     i2cioexpander_ioexpander_obj_t *self =
-        mp_obj_malloc(i2cioexpander_ioexpander_obj_t, &i2cioexpander_ioexpander_type);
+        mp_obj_malloc_with_finaliser(i2cioexpander_ioexpander_obj_t, &i2cioexpander_ioexpander_type);
     common_hal_i2cioexpander_ioexpander_construct(
         self,
         i2c,
@@ -227,6 +227,7 @@ MP_PROPERTY_GETTER(i2cioexpander_ioexpander_pins_obj,
 static const mp_rom_map_elem_t i2cioexpander_ioexpander_locals_dict_table[] = {
     // Methods
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&i2cioexpander_ioexpander_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&i2cioexpander_ioexpander_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&i2cioexpander_ioexpander___exit___obj) },
 

@@ -48,30 +48,15 @@
         /* .wrap */ \
     }
 
-static mcu_pin_obj_t *pin_from_number(uint8_t number) {
-    const mp_map_t *mcu_map = &mcu_pin_globals.map;
-    for (uint8_t i = 0; i < mcu_map->alloc; i++) {
-        mp_obj_t val = mcu_map->table[i].value;
-        if (!mp_obj_is_type(val, &mcu_pin_type)) {
-            continue;
-        }
-        mcu_pin_obj_t *pin = MP_OBJ_TO_PTR(val);
-        if (pin->number == number) {
-            return pin;
-        }
-    }
-    return NULL;
-}
-
 void common_hal_imagecapture_parallelimagecapture_construct(imagecapture_parallelimagecapture_obj_t *self,
-    const uint8_t data_pins[],
+    const mcu_pin_obj_t **data_pins,
     uint8_t data_count,
     const mcu_pin_obj_t *data_clock,
     const mcu_pin_obj_t *vertical_sync,
     const mcu_pin_obj_t *horizontal_reference) {
 
     for (int i = 1; i < data_count; i++) {
-        if (data_pins[i] - data_pins[0] != i) {
+        if (common_hal_mcu_pin_number(data_pins[i]) - common_hal_mcu_pin_number(data_pins[0]) != i) {
             mp_raise_RuntimeError(MP_ERROR_TEXT("Pins must be sequential"));
         }
     }
@@ -84,7 +69,7 @@ void common_hal_imagecapture_parallelimagecapture_construct(imagecapture_paralle
         0, 0, // init
         NULL, 0, // may_exec
         NULL, 0, PIO_PINMASK32_NONE, PIO_PINMASK32_NONE, // out pins
-        pin_from_number(data_pins[0]), data_count, // in pins
+        data_pins[0], data_count, // in pins
         PIO_PINMASK32_NONE, PIO_PINMASK32_NONE, // in pulls
         NULL, 0, PIO_PINMASK32_NONE, PIO_PINMASK32_NONE, // set pins
         #if DEBUG_STATE_MACHINE

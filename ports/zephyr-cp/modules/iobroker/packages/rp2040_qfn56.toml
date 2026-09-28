@@ -1,0 +1,159 @@
+# Package pin map for rp2040_qfn56, transcribed from rp2040-datasheet.pdf,
+# Table 615 (GPIO pins), with a one-off pdftotext -layout parse. Review
+# against the datasheet figure before editing by hand.
+#
+# RP2040 has a single GPIO port; pads are numbered 0-29 and pad_name uses
+# the datasheet's GPIOx naming.
+
+name = "rp2040_qfn56"
+socs = ["SOC_RP2040"]
+
+[[pins]]
+pin = 2
+pad = 0
+pad_name = "GPIO0"
+
+[[pins]]
+pin = 3
+pad = 1
+pad_name = "GPIO1"
+
+[[pins]]
+pin = 4
+pad = 2
+pad_name = "GPIO2"
+
+[[pins]]
+pin = 5
+pad = 3
+pad_name = "GPIO3"
+
+[[pins]]
+pin = 6
+pad = 4
+pad_name = "GPIO4"
+
+[[pins]]
+pin = 7
+pad = 5
+pad_name = "GPIO5"
+
+[[pins]]
+pin = 8
+pad = 6
+pad_name = "GPIO6"
+
+[[pins]]
+pin = 9
+pad = 7
+pad_name = "GPIO7"
+
+[[pins]]
+pin = 11
+pad = 8
+pad_name = "GPIO8"
+
+[[pins]]
+pin = 12
+pad = 9
+pad_name = "GPIO9"
+
+[[pins]]
+pin = 13
+pad = 10
+pad_name = "GPIO10"
+
+[[pins]]
+pin = 14
+pad = 11
+pad_name = "GPIO11"
+
+[[pins]]
+pin = 15
+pad = 12
+pad_name = "GPIO12"
+
+[[pins]]
+pin = 16
+pad = 13
+pad_name = "GPIO13"
+
+[[pins]]
+pin = 17
+pad = 14
+pad_name = "GPIO14"
+
+[[pins]]
+pin = 18
+pad = 15
+pad_name = "GPIO15"
+
+[[pins]]
+pin = 27
+pad = 16
+pad_name = "GPIO16"
+
+[[pins]]
+pin = 28
+pad = 17
+pad_name = "GPIO17"
+
+[[pins]]
+pin = 29
+pad = 18
+pad_name = "GPIO18"
+
+[[pins]]
+pin = 30
+pad = 19
+pad_name = "GPIO19"
+
+[[pins]]
+pin = 31
+pad = 20
+pad_name = "GPIO20"
+
+[[pins]]
+pin = 32
+pad = 21
+pad_name = "GPIO21"
+
+[[pins]]
+pin = 34
+pad = 22
+pad_name = "GPIO22"
+
+[[pins]]
+pin = 35
+pad = 23
+pad_name = "GPIO23"
+
+[[pins]]
+pin = 36
+pad = 24
+pad_name = "GPIO24"
+
+[[pins]]
+pin = 37
+pad = 25
+pad_name = "GPIO25"
+
+[[pins]]
+pin = 38
+pad = 26
+pad_name = "GPIO26"
+
+[[pins]]
+pin = 39
+pad = 27
+pad_name = "GPIO27"
+
+[[pins]]
+pin = 40
+pad = 28
+pad_name = "GPIO28"
+
+[[pins]]
+pin = 41
+pad = 29
+pad_name = "GPIO29"

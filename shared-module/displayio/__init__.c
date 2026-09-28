@@ -72,7 +72,7 @@ displayio_buffer_transform_t null_transform = {
     .transpose_xy = false
 };
 
-#if CIRCUITPY_RGBMATRIX || CIRCUITPY_IS31FL3741 || CIRCUITPY_VIDEOCORE || CIRCUITPY_PICODVI || CIRCUITPY_MIPIDSI
+#if CIRCUITPY_RGBMATRIX || CIRCUITPY_IS31FL3741 || CIRCUITPY_PICODVI || CIRCUITPY_MIPIDSI
 static bool any_display_uses_this_framebuffer(mp_obj_base_t *obj) {
     for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
         if (displays[i].display_base.type == &framebufferio_framebufferdisplay_type) {
@@ -190,10 +190,6 @@ static void common_hal_displayio_release_displays_impl(bool keep_primary) {
         #if CIRCUITPY_SHARPDISPLAY
         } else if (bus_type == &sharpdisplay_framebuffer_type) {
             common_hal_sharpdisplay_framebuffer_deinit(&display_buses[i].sharpdisplay);
-        #endif
-        #if CIRCUITPY_VIDEOCORE
-        } else if (bus_type == &videocore_framebuffer_type) {
-            common_hal_videocore_framebuffer_deinit(&display_buses[i].videocore);
         #endif
         #if CIRCUITPY_PICODVI
         } else if (bus_type == &picodvi_framebuffer_type) {
@@ -315,15 +311,6 @@ void reset_displays(void) {
         } else if (display_bus_type == &sharpdisplay_framebuffer_type) {
             sharpdisplay_framebuffer_obj_t *sharp = &display_buses[i].sharpdisplay;
             common_hal_sharpdisplay_framebuffer_reset(sharp);
-        #endif
-        #if CIRCUITPY_VIDEOCORE
-        } else if (display_bus_type == &videocore_framebuffer_type) {
-            videocore_framebuffer_obj_t *vc = &display_buses[i].videocore;
-            if (!any_display_uses_this_framebuffer(&vc->base)) {
-                common_hal_videocore_framebuffer_deinit(vc);
-            }
-            // The framebuffer is allocated outside of the heap so it doesn't
-            // need to be moved.
         #endif
         #if CIRCUITPY_PICODVI
         } else if (display_bus_type == &picodvi_framebuffer_type) {

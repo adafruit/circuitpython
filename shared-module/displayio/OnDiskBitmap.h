@@ -11,8 +11,6 @@
 
 #include "py/obj.h"
 
-#include "extmod/vfs_fat.h"
-
 typedef struct {
     mp_obj_base_t base;
     uint16_t width;
@@ -22,7 +20,7 @@ typedef struct {
     uint32_t r_bitmask;
     uint32_t g_bitmask;
     uint32_t b_bitmask;
-    pyb_file_obj_t *file;
+    mp_obj_t file;
     union {
         mp_obj_base_t *pixel_shader_base;
         struct displayio_palette *palette;
@@ -30,4 +28,8 @@ typedef struct {
     };
     bool bitfield_compressed;
     uint8_t bits_per_pixel;
+    // The last bytes read from the file. Pixels are read along rows, so most reads hit it.
+    uint8_t cache_len;
+    uint32_t cache_start;
+    uint8_t cache[64];
 } displayio_ondiskbitmap_t;

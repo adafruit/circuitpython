@@ -15,6 +15,7 @@
 
 #include "py/mperrno.h"
 #include "py/runtime.h"
+#include "py/stream.h"
 
 
 #define DISPLAYIO_ODBMP_DEBUG(...) (void)0
@@ -25,19 +26,23 @@ static uint32_t read_word(uint16_t *bmp_header, uint16_t index) {
     return bmp_header[index] | bmp_header[index + 1] << 16;
 }
 
-void common_hal_displayio_ondiskbitmap_construct(displayio_ondiskbitmap_t *self, pyb_file_obj_t *file) {
-    // Load the wave
+void common_hal_displayio_ondiskbitmap_construct(displayio_ondiskbitmap_t *self, mp_obj_t file) {
     self->file = file;
+    self->cache_len = 0;
     uint16_t bmp_header[69];
-    f_rewind(&self->file->fp);
-    UINT bytes_read;
+    int errcode = 0;
+
+    mp_stream_seek(file, 0, MP_SEEK_SET, &errcode);
+    if (errcode != 0) {
+        mp_raise_OSError(errcode);
+    }
 
     // Read the minimum amount of bytes required to parse a BITMAPCOREHEADER.
     // If needed, we will read more bytes down below.
-    if (f_read(&self->file->fp, bmp_header, 26, &bytes_read) != FR_OK) {
-        mp_raise_OSError(MP_EIO);
+    mp_uint_t bytes_read = mp_stream_rw(file, bmp_header, 26, &errcode, MP_STREAM_RW_ONCE);
+    if (errcode != 0) {
+        mp_raise_OSError(errcode);
     }
-    DISPLAYIO_ODBMP_DEBUG("bytes_read: %d\n", bytes_read);
     if (bytes_read != 26 || memcmp(bmp_header, "BM", 2) != 0) {
         mp_arg_error_invalid(MP_QSTR_file);
     }
@@ -48,8 +53,9 @@ void common_hal_displayio_ondiskbitmap_construct(displayio_ondiskbitmap_t *self,
 
     if (header_size == 40 || header_size == 108 || header_size == 124) {
         // Read the remaining header bytes
-        if (f_read(&self->file->fp, bmp_header + 13, header_size - 12, &bytes_read) != FR_OK) {
-            mp_raise_OSError(MP_EIO);
+        bytes_read = mp_stream_rw(file, bmp_header + 13, header_size - 12, &errcode, MP_STREAM_RW_ONCE);
+        if (errcode != 0) {
+            mp_raise_OSError(errcode);
         }
         DISPLAYIO_ODBMP_DEBUG("bytes_read: %d\n", bytes_read);
         if (bytes_read != (header_size - 12)) {
@@ -116,12 +122,14 @@ void common_hal_displayio_ondiskbitmap_construct(displayio_ondiskbitmap_t *self,
 
             uint32_t *palette_data = m_malloc_without_collect(palette_size);
 
-            f_rewind(&self->file->fp);
-            f_lseek(&self->file->fp, palette_offset);
+            mp_stream_seek(file, palette_offset, MP_SEEK_SET, &errcode);
+            if (errcode != 0) {
+                mp_raise_OSError(errcode);
+            }
 
-            UINT palette_bytes_read;
-            if (f_read(&self->file->fp, palette_data, palette_size, &palette_bytes_read) != FR_OK) {
-                mp_raise_OSError(MP_EIO);
+            mp_uint_t palette_bytes_read = mp_stream_rw(file, palette_data, palette_size, &errcode, MP_STREAM_RW_ONCE);
+            if (errcode != 0) {
+                mp_raise_OSError(errcode);
             }
             if (palette_bytes_read != palette_size) {
                 mp_raise_ValueError(MP_ERROR_TEXT("Unable to read color palette data"));
@@ -175,40 +183,47 @@ uint32_t common_hal_displayio_ondiskbitmap_get_pixel(displayio_ondiskbitmap_t *s
     } else {
         location = self->data_offset + (self->height - y - 1) * self->stride + x / pixels_per_byte;
     }
-    // We don't cache here because the underlying FS caches sectors.
-    f_lseek(&self->file->fp, location);
-    UINT bytes_read;
-    uint32_t pixel_data = 0;
-    uint32_t result = f_read(&self->file->fp, &pixel_data, bytes_per_pixel, &bytes_read);
-    if (result == FR_OK) {
-        uint32_t tmp = 0;
-        uint8_t red;
-        uint8_t green;
-        uint8_t blue;
-        if (bytes_per_pixel == 1) {
-            uint8_t offset = (x % pixels_per_byte) * self->bits_per_pixel;
-            uint8_t mask = (1 << self->bits_per_pixel) - 1;
-
-            return (pixel_data >> ((8 - self->bits_per_pixel) - offset)) & mask;
-        } else if (bytes_per_pixel == 2) {
-            if (self->g_bitmask == 0x07e0) { // 565
-                red = ((pixel_data & self->r_bitmask) >> 11);
-                green = ((pixel_data & self->g_bitmask) >> 5);
-                blue = ((pixel_data & self->b_bitmask) >> 0);
-            } else { // 555
-                red = ((pixel_data & self->r_bitmask) >> 10);
-                green = ((pixel_data & self->g_bitmask) >> 4);
-                blue = ((pixel_data & self->b_bitmask) >> 0);
-            }
-            tmp = (red << 19 | green << 10 | blue << 3);
-            return tmp;
-        } else if ((bytes_per_pixel == 4) && (self->bitfield_compressed)) {
-            return pixel_data & 0x00FFFFFF;
-        } else {
-            return pixel_data;
+    int errcode = 0;
+    if (location < self->cache_start || location + bytes_per_pixel > self->cache_start + self->cache_len) {
+        mp_stream_seek(self->file, location, MP_SEEK_SET, &errcode);
+        if (errcode != 0) {
+            return 0;
+        }
+        self->cache_start = location;
+        self->cache_len = mp_stream_rw(self->file, self->cache, sizeof(self->cache), &errcode, MP_STREAM_RW_ONCE);
+        if (errcode != 0 || self->cache_len < bytes_per_pixel) {
+            self->cache_len = 0;
+            return 0;
         }
     }
-    return 0;
+    uint32_t pixel_data = 0;
+    memcpy(&pixel_data, self->cache + (location - self->cache_start), bytes_per_pixel);
+    uint32_t tmp = 0;
+    uint8_t red;
+    uint8_t green;
+    uint8_t blue;
+    if (bytes_per_pixel == 1) {
+        uint8_t offset = (x % pixels_per_byte) * self->bits_per_pixel;
+        uint8_t mask = (1 << self->bits_per_pixel) - 1;
+
+        return (pixel_data >> ((8 - self->bits_per_pixel) - offset)) & mask;
+    } else if (bytes_per_pixel == 2) {
+        if (self->g_bitmask == 0x07e0) { // 565
+            red = ((pixel_data & self->r_bitmask) >> 11);
+            green = ((pixel_data & self->g_bitmask) >> 5);
+            blue = ((pixel_data & self->b_bitmask) >> 0);
+        } else { // 555
+            red = ((pixel_data & self->r_bitmask) >> 10);
+            green = ((pixel_data & self->g_bitmask) >> 4);
+            blue = ((pixel_data & self->b_bitmask) >> 0);
+        }
+        tmp = (red << 19 | green << 10 | blue << 3);
+        return tmp;
+    } else if ((bytes_per_pixel == 4) && (self->bitfield_compressed)) {
+        return pixel_data & 0x00FFFFFF;
+    } else {
+        return pixel_data;
+    }
 }
 
 uint16_t common_hal_displayio_ondiskbitmap_get_height(displayio_ondiskbitmap_t *self) {

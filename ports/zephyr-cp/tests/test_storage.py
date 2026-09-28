@@ -60,6 +60,7 @@ print("done")
 """
 
 
+@pytest.mark.fat_filesystem_only
 @pytest.mark.circuitpy_drive({"code.py": GETMOUNT_CODE})
 def test_storage_getmount(circuitpython):
     """getmount('/') returns the VfsFat object for the root mount."""
@@ -131,6 +132,7 @@ print("done")
 """
 
 
+@pytest.mark.fat_filesystem_only
 @pytest.mark.circuitpy_drive({"code.py": LABEL_CODE})
 def test_storage_set_label(circuitpython):
     """VfsFat.label can be set when mounted read-write."""

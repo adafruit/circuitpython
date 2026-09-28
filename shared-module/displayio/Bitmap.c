@@ -92,8 +92,8 @@ uint32_t common_hal_displayio_bitmap_get_pixel(displayio_bitmap_t *self, int16_t
     int32_t row_start = y * self->stride;
     uint32_t *row = self->data + row_start;
     uint8_t bytes_per_value = self->bits_per_value / 8;
-    uint8_t values_per_byte = 8 / self->bits_per_value;
     if (bytes_per_value < 1) {
+        uint8_t values_per_byte = 8 / self->bits_per_value;
         uint8_t bits = ((uint8_t *)row)[x >> self->x_shift];
         uint8_t bit_position = (values_per_byte - (x & self->x_mask) - 1) * self->bits_per_value;
         return (bits >> bit_position) & self->bitmask;

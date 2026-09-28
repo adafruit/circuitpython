@@ -9,7 +9,7 @@
 #include "py/obj.h"
 #include "shared-module/displayio/Bitmap.h"
 
-#include "lib/oofatfs/ff.h"
+#include "supervisor/filesystem.h"
 
 #define LVFONTIO_INVALID_CODEPOINT 0xFFFFFFFF
 
@@ -58,7 +58,9 @@ typedef struct {
     bool use_gc_allocator;
     uint8_t half_width_px;
 
-    FIL file;
+    supervisor_vfs_file_t file;
+    // Which mount the file is open on, for locking around file reads.
+    supervisor_vfs_t *vfs;
     bool file_is_open;
 
     // Font metrics information loaded from file

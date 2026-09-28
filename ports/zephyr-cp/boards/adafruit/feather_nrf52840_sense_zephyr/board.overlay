@@ -42,6 +42,115 @@
 	};
 };
 
+// Bus instances enabled with all pins disconnected and marked
+// zephyr,deferred-init so nothing is claimed at boot: the iobroker
+// initializes and routes a device to arbitrary pins when a busio object is
+// constructed, and de-initializes it on release: I2C1, SPI2, SPI3 and UART1.
+// (The fixed I2C0 is the Stemma QT bus with the SHT31 sensor, and UART0 the
+// console. The formerly fixed SPI1 is dropped: it had no device attached and
+// its instance is the same peripheral as I2C1, so only one mode can be
+// enabled.)
+
+&pinctrl {
+	i2c1_dyn_default: i2c1_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(TWIM_SDA)>,
+				<NRF_PSEL_DISCONNECTED(TWIM_SCL)>;
+		};
+	};
+
+	i2c1_dyn_sleep: i2c1_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(TWIM_SDA)>,
+				<NRF_PSEL_DISCONNECTED(TWIM_SCL)>;
+		};
+	};
+
+	spi2_dyn_default: spi2_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(SPIM_SCK)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MOSI)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MISO)>;
+		};
+	};
+
+	spi2_dyn_sleep: spi2_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(SPIM_SCK)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MOSI)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MISO)>;
+		};
+	};
+
+	spi3_dyn_default: spi3_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(SPIM_SCK)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MOSI)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MISO)>;
+		};
+	};
+
+	spi3_dyn_sleep: spi3_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(SPIM_SCK)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MOSI)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MISO)>;
+		};
+	};
+
+	uart1_dyn_default: uart1_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(UART_TX)>,
+				<NRF_PSEL_DISCONNECTED(UART_RX)>;
+		};
+	};
+
+	uart1_dyn_sleep: uart1_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(UART_TX)>,
+				<NRF_PSEL_DISCONNECTED(UART_RX)>;
+		};
+	};
+};
+
+&i2c1 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&i2c1_dyn_default>;
+	pinctrl-1 = <&i2c1_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+// SPI1 is the same peripheral instance as I2C1, so leave it disabled.
+&spi1 {
+	status = "disabled";
+};
+
+&spi2 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&spi2_dyn_default>;
+	pinctrl-1 = <&spi2_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&spi3 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&spi3_dyn_default>;
+	pinctrl-1 = <&spi3_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&uart1 {
+	status = "okay";
+	zephyr,deferred-init;
+	current-speed = <115200>;
+	pinctrl-0 = <&uart1_dyn_default>;
+	pinctrl-1 = <&uart1_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
 &uart0 {
     status = "okay";
 };

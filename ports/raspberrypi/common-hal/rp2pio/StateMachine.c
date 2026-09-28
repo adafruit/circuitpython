@@ -433,7 +433,9 @@ bool rp2pio_statemachine_construct(rp2pio_statemachine_obj_t *self,
         added = true;
     } else {
         uint program_offset;
-        bool r = pio_claim_free_sm_and_add_program_for_gpio_range(&program_struct, &pio, (uint *)&state_machine, &program_offset, gpio_base, gpio_count, true);
+        bool r = gpio_count
+            ? pio_claim_free_sm_and_add_program_for_gpio_range(&program_struct, &pio, (uint *)&state_machine, &program_offset, gpio_base, gpio_count, true)
+            : pio_claim_free_sm_and_add_program(&program_struct, &pio, (uint *)&state_machine, &program_offset);
         if (!r) {
             return false;
         }

@@ -77,20 +77,39 @@ static mp_import_stat_t stat_path(vstr_t *path) {
 // argument. This is the logic that makes .py files take precedent over .mpy
 // files. This uses stat_path above, rather than mp_import_stat directly, so
 // that the .frozen path prefix is handled.
+// CIRCUITPY-CHANGE: builds that can load native code also try .<arch>.mpy
+// between .py and .mpy.
 static mp_import_stat_t stat_file_py_or_mpy(vstr_t *path) {
     mp_import_stat_t stat = stat_path(path);
     if (stat == MP_IMPORT_STAT_FILE) {
         return stat;
     }
 
+    #if MICROPY_PERSISTENT_CODE_LOAD || MICROPY_PERSISTENT_CODE_LOAD_NATIVE
+    size_t base_len = path->len - 3; // drop ".py"
+    #endif
+
+    #if MICROPY_PERSISTENT_CODE_LOAD_NATIVE
+    // CIRCUITPY-CHANGE: try '.<arch>.mpy' first, where <arch> is the mpy-cross -march
+    // name of this build. path is a fixed MICROPY_ALLOC_PATH_MAX buffer, so skip the
+    // probe when the longer name (plus NUL) would not fit rather than let vstr raise.
+    if (base_len + sizeof("." MPY_FEATURE_ARCH_NAME ".mpy") <= path->alloc) {
+        path->len = base_len;
+        vstr_add_str(path, "." MPY_FEATURE_ARCH_NAME ".mpy");
+        if (stat_path(path) == MP_IMPORT_STAT_FILE) {
+            return MP_IMPORT_STAT_FILE;
+        }
+    }
+    #endif
+
     #if MICROPY_PERSISTENT_CODE_LOAD
-    // Didn't find .py -- try the .mpy instead by inserting an 'm' into the '.py'.
+    // Didn't find .py -- try the .mpy instead.
     // Note: There's no point doing this if it's a frozen path, but adding the check
     // would be extra code, and no harm letting mp_find_frozen_module fail instead.
-    vstr_ins_byte(path, path->len - 2, 'm');
-    stat = stat_path(path);
-    if (stat == MP_IMPORT_STAT_FILE) {
-        return stat;
+    path->len = base_len;
+    vstr_add_str(path, ".mpy");
+    if (stat_path(path) == MP_IMPORT_STAT_FILE) {
+        return MP_IMPORT_STAT_FILE;
     }
     #endif
 

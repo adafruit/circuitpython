@@ -758,6 +758,7 @@ msgstr ""
 #: ports/analog/common-hal/busio/UART.c
 #: ports/atmel-samd/common-hal/busio/UART.c ports/cxd56/common-hal/busio/UART.c
 #: ports/nordic/common-hal/busio/UART.c ports/stm/common-hal/busio/UART.c
+#: ports/zephyr-cp/common-hal/busio/UART.c
 msgid "RS485"
 msgstr "RS485"
 
@@ -770,7 +771,9 @@ msgstr ""
 msgid "Both RX and TX required for flow control"
 msgstr "Και RX και TX απαιτούνται για έλεγχο flow"
 
-#: ports/analog/common-hal/busio/UART.c shared-module/rgbmatrix/RGBMatrix.c
+#: ports/analog/common-hal/busio/UART.c
+#: ports/raspberrypi/common-hal/usb_host/Port.c
+#: shared-module/rgbmatrix/RGBMatrix.c
 msgid "Failed to allocate %q buffer"
 msgstr ""
 
@@ -783,7 +786,7 @@ msgid "UART transaction timeout"
 msgstr ""
 
 #: ports/analog/common-hal/busio/UART.c ports/espressif/common-hal/busio/UART.c
-#: ports/nordic/common-hal/busio/UART.c
+#: ports/nordic/common-hal/busio/UART.c ports/zephyr-cp/common-hal/busio/UART.c
 msgid "All UART peripherals are in use"
 msgstr "Όλα τα UART περιφεριακά ειναι σε χρήση"
 
@@ -857,6 +860,9 @@ msgstr "Όλοι οι χρονιστές βρίσκονται σε χρήση"
 #: ports/atmel-samd/common-hal/rotaryio/IncrementalEncoder.c
 #: ports/cxd56/common-hal/pulseio/PulseIn.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2350.c
+#: ports/zephyr-cp/common-hal/busio/I2C.c
+#: ports/zephyr-cp/common-hal/busio/SPI.c
+#: ports/zephyr-cp/common-hal/busio/UART.c
 msgid "Internal resource(s) in use"
 msgstr ""
 
@@ -1023,6 +1029,21 @@ msgstr "Το Data 0 pin πρέπει να είναι byte aligned"
 #, c-format
 msgid "Bus pin %d is already in use"
 msgstr "Bus pin %d είναι ήδη σε χρήση"
+
+#: ports/atmel-samd/common-hal/picogame/Display.c
+#: ports/espressif/common-hal/espidf/__init__.c
+#: ports/raspberrypi/common-hal/picogame/Display.c
+#: shared-bindings/picogame/Canvas.c shared-bindings/picogame/__init__.c
+msgid "Operation or feature not supported"
+msgstr ""
+
+#: ports/atmel-samd/common-hal/picogame/Display.c
+#: ports/raspberrypi/common-hal/picogame/Display.c py/argcheck.c py/runtime.c
+#: shared-bindings/bitmapfilter/__init__.c
+#: shared-module/audiodelays/MultiTapDelay.c shared-module/synthio/Note.c
+#: shared-module/synthio/__init__.c
+msgid "%q must be of type %q, not %q"
+msgstr "%q πρέπει να είναι τύπου %q, όχι %q"
 
 #: ports/atmel-samd/common-hal/pulseio/PulseIn.c
 #: ports/cxd56/common-hal/pulseio/PulseIn.c
@@ -1205,6 +1226,7 @@ msgstr ""
 
 #: ports/espressif/common-hal/_bleio/Characteristic.c
 #: ports/espressif/common-hal/_bleio/Service.c
+#: ports/raspberrypi/common-hal/alarm/pin/PinAlarm.c
 msgid "Too many %q"
 msgstr ""
 
@@ -1392,7 +1414,7 @@ msgstr ""
 
 #: ports/espressif/common-hal/busio/I2C.c
 #: ports/espressif/common-hal/i2ctarget/I2CTarget.c
-#: ports/nordic/common-hal/busio/I2C.c
+#: ports/nordic/common-hal/busio/I2C.c ports/zephyr-cp/common-hal/busio/I2C.c
 msgid "All I2C peripherals are in use"
 msgstr "Όλα τα I2C περιφεριακά ειναι σε χρήση"
 
@@ -1406,6 +1428,7 @@ msgid "SPI configuration failed"
 msgstr ""
 
 #: ports/espressif/common-hal/busio/SPI.c ports/nordic/common-hal/busio/SPI.c
+#: ports/zephyr-cp/common-hal/busio/SPI.c
 msgid "All SPI peripherals are in use"
 msgstr "Όλα τα SPI περιφεριακά είναι σε χρήση"
 
@@ -1489,12 +1512,6 @@ msgstr ""
 
 #: ports/espressif/common-hal/espidf/__init__.c
 msgid "Requested resource not found"
-msgstr ""
-
-#: ports/espressif/common-hal/espidf/__init__.c
-#: ports/raspberrypi/common-hal/picogame/Display.c
-#: shared-bindings/picogame/__init__.c
-msgid "Operation or feature not supported"
 msgstr ""
 
 #: ports/espressif/common-hal/espidf/__init__.c
@@ -1738,11 +1755,6 @@ msgstr ""
 #: ports/nordic/common-hal/_bleio/Adapter.c
 #: ports/zephyr-cp/common-hal/_bleio/Adapter.c
 msgid "Failed to connect: timeout"
-msgstr ""
-
-#: ports/nordic/common-hal/_bleio/Connection.c
-#: ports/zephyr-cp/common-hal/_bleio/Connection.c
-msgid "Numeric comparison pairing"
 msgstr ""
 
 #: ports/nordic/common-hal/_bleio/UUID.c
@@ -1996,13 +2008,6 @@ msgstr ""
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
 msgid "All timers for this pin are in use"
 msgstr "Όλοι οι χρονιστές για αυτό το pin χρησιμοποιούνται ήδη"
-
-#: ports/raspberrypi/common-hal/picogame/Display.c py/argcheck.c py/runtime.c
-#: shared-bindings/bitmapfilter/__init__.c
-#: shared-module/audiodelays/MultiTapDelay.c shared-module/synthio/Note.c
-#: shared-module/synthio/__init__.c
-msgid "%q must be of type %q, not %q"
-msgstr "%q πρέπει να είναι τύπου %q, όχι %q"
 
 #: ports/raspberrypi/common-hal/rotaryio/IncrementalEncoder.c
 msgid "Pins must be sequential GPIO pins"
@@ -3826,12 +3831,6 @@ msgstr "%q πρέπει να είναι bytearray ή array τύπου 'h', 'H', 
 msgid "Length of %q must be an even multiple of channel_count * type_size"
 msgstr ""
 
-#: shared-bindings/audiocore/WaveFile.c shared-bindings/audiomp3/MP3Decoder.c
-#: shared-bindings/displayio/OnDiskBitmap.c shared-bindings/gifio/OnDiskGif.c
-#: shared-bindings/synthio/__init__.c shared-module/gifio/GifWriter.c
-msgid "file must be a file opened in byte mode"
-msgstr ""
-
 #: shared-bindings/audiodelays/Chorus.c shared-bindings/audiodelays/Echo.c
 #: shared-bindings/audiodelays/Flanger.c
 #: shared-bindings/audiodelays/GranularPitchShift.c
@@ -3859,6 +3858,12 @@ msgstr ""
 #: shared-bindings/audioio/AudioOut.c shared-bindings/emmcio/EMMC.c
 msgid "%q and %q must be different"
 msgstr "%q και %q πρεπει να είναι διαφορετικά"
+
+#: shared-bindings/audiomp3/MP3Decoder.c
+#: shared-bindings/displayio/OnDiskBitmap.c shared-bindings/gifio/OnDiskGif.c
+#: shared-bindings/synthio/__init__.c shared-module/gifio/GifWriter.c
+msgid "file must be a file opened in byte mode"
+msgstr ""
 
 #: shared-bindings/bitmapfilter/__init__.c
 msgid ""
@@ -4100,6 +4105,10 @@ msgstr ""
 msgid "Unsupported hash algorithm"
 msgstr ""
 
+#: shared-bindings/hmac/__init__.c
+msgid "hardware key slot is unused"
+msgstr ""
+
 #: shared-bindings/i2cioexpander/IOExpander.c
 msgid "num_pins must be 8 or 16"
 msgstr ""
@@ -4209,28 +4218,6 @@ msgstr ""
 
 #: shared-bindings/rclcpy/Publisher.c
 msgid "Publishers can only be created from a parent node"
-msgstr ""
-
-#: shared-bindings/rgbmatrix/RGBMatrix.c
-msgid "The length of rgb_pins must be 6, 12, 18, 24, or 30"
-msgstr ""
-
-#: shared-bindings/rgbmatrix/RGBMatrix.c
-#, c-format
-msgid "rgb_pins[%d] is not on the same port as clock"
-msgstr ""
-
-#: shared-bindings/rgbmatrix/RGBMatrix.c
-#, c-format
-msgid "rgb_pins[%d] duplicates another pin assignment"
-msgstr ""
-
-#: shared-bindings/rgbmatrix/RGBMatrix.c
-#, c-format
-msgid ""
-"Pinout uses %d bytes per element, which consumes more than the ideal %d "
-"bytes.  If this cannot be avoided, pass allow_inefficient=True to the "
-"constructor"
 msgstr ""
 
 #: shared-bindings/rgbmatrix/RGBMatrix.c
@@ -4382,7 +4369,7 @@ msgstr "Δεν μπόρεσε να δεσμευτεί decoder"
 msgid "Failed to parse MP3 file"
 msgstr ""
 
-#: shared-module/bitbangio/I2C.c
+#: shared-module/bitbangio/I2C.c shared-module/msgpack/__init__.c
 msgid "%q too long"
 msgstr ""
 
@@ -4438,6 +4425,14 @@ msgstr ""
 
 #: shared-module/gifio/GifWriter.c
 msgid "unsupported colorspace for GifWriter"
+msgstr ""
+
+#: shared-module/hmac/HMAC.c
+msgid "key does not support this digest"
+msgstr ""
+
+#: shared-module/hmac/HMAC.c
+msgid "HMAC of an empty message is not supported with a hardware key"
 msgstr ""
 
 #: shared-module/i2cdisplaybus/I2CDisplayBus.c
@@ -4511,6 +4506,28 @@ msgstr ""
 msgid ""
 "This microcontroller only supports data0=, not data_pins=, because it "
 "requires contiguous pins."
+msgstr ""
+
+#: shared-module/rgbmatrix/RGBMatrix.c
+msgid "The length of rgb_pins must be 6, 12, 18, 24, or 30"
+msgstr ""
+
+#: shared-module/rgbmatrix/RGBMatrix.c
+#, c-format
+msgid "rgb_pins[%d] is not on the same port as clock"
+msgstr ""
+
+#: shared-module/rgbmatrix/RGBMatrix.c
+#, c-format
+msgid "rgb_pins[%d] duplicates another pin assignment"
+msgstr ""
+
+#: shared-module/rgbmatrix/RGBMatrix.c
+#, c-format
+msgid ""
+"Pinout uses %d bytes per element, which consumes more than the ideal %d "
+"bytes.  If this cannot be avoided, pass allow_inefficient=True to the "
+"constructor"
 msgstr ""
 
 #: shared-module/rgbmatrix/RGBMatrix.c

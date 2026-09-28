@@ -8,7 +8,9 @@
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/microcontroller/Processor.h"
 #include "shared-bindings/usb_host/Port.h"
+#include "supervisor/port_heap.h"
 #include "supervisor/shared/serial.h"
+#include "supervisor/shared/settings.h"
 #include "supervisor/usb.h"
 
 #include "pico/time.h"
@@ -173,6 +175,32 @@ usb_host_port_obj_t *common_hal_usb_host_port_construct(const mcu_pin_obj_t *dp,
 
     common_hal_never_reset_pin(dp);
     common_hal_never_reset_pin(dm);
+
+    #if PIO_USB_HOST_ISOCHRONOUS
+    // Ring storage for isochronous IN endpoints (UVC cameras, UAC audio),
+    // opt-in via settings.toml. Set  before core 1 launches so it never
+    // observes a half-set ring.
+    mp_int_t iso_size = 0;
+    if (settings_get_int("CIRCUITPY_USB_HOST_ISO_BUFFER_SIZE", &iso_size) == SETTINGS_OK
+        && iso_size > 0) {
+        // Round up to a power of two and clamp to [2048, 65536]
+        uint32_t rounded = 2048;
+        while (rounded < (uint32_t)iso_size && rounded < 65536) {
+            rounded <<= 1;
+        }
+        // dma_capable=true forces the internal-SRAM heap. Never PSRAM: PSRAM
+        // is inside the XIP region that core 1's MPU blocks below, and the
+        // ring is written from core 1. Like the port itself, the buffer is
+        // never freed; it survives soft reload.
+        uint8_t *iso_buf = port_malloc(rounded, true);
+        if (iso_buf != NULL) {
+            pio_usb_host_set_iso_ring(iso_buf, rounded);
+        } else {
+            mp_raise_RuntimeError_varg(MP_ERROR_TEXT("Failed to allocate %q buffer"),
+                MP_QSTR_USB_HOST_ISO_BUFFER);
+        }
+    }
+    #endif
 
     // Core 1 will run the SOF interrupt directly.
     _core1_ready = false;

@@ -46,4 +46,6 @@ mp_negative_errno_t sdioio_sdcard_writeblocks(mp_obj_t self_in, uint8_t *buf, ui
 bool sdioio_sdcard_ioctl(mp_obj_t self_in, size_t cmd, size_t arg, mp_int_t *out_value);
 
 // This is used by the supervisor to claim SDIO devices indefinitely.
+#if CIRCUITPY_BULK_RESET
 extern void common_hal_sdioio_sdcard_never_reset(sdioio_sdcard_obj_t *self);
+#endif

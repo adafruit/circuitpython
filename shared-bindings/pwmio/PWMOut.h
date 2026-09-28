@@ -34,7 +34,9 @@ extern bool common_hal_pwmio_pwmout_get_variable_frequency(pwmio_pwmout_obj_t *s
 extern const mcu_pin_obj_t *common_hal_pwmio_pwmout_get_pin(pwmio_pwmout_obj_t *self);
 
 // This is used by the supervisor to claim PWMOut devices indefinitely.
+#if CIRCUITPY_BULK_RESET
 extern void common_hal_pwmio_pwmout_never_reset(pwmio_pwmout_obj_t *self);
+#endif
 extern void common_hal_pwmio_pwmout_reset_ok(pwmio_pwmout_obj_t *self);
 
 extern void common_hal_pwmio_pwmout_raise_error(pwmout_result_t result);

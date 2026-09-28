@@ -57,7 +57,7 @@ static mp_obj_t ps2io_ps2_make_new(const mp_obj_type_t *type, size_t n_args, siz
     const mcu_pin_obj_t *clock_pin = validate_obj_is_free_pin(args[ARG_clock_pin].u_obj, MP_QSTR_clock_pin);
     const mcu_pin_obj_t *data_pin = validate_obj_is_free_pin(args[ARG_data_pin].u_obj, MP_QSTR_data_pin);
 
-    ps2io_ps2_obj_t *self = mp_obj_malloc(ps2io_ps2_obj_t, &ps2io_ps2_type);
+    ps2io_ps2_obj_t *self = mp_obj_malloc_with_finaliser(ps2io_ps2_obj_t, &ps2io_ps2_type);
     common_hal_ps2io_ps2_construct(self, data_pin, clock_pin);
 
     return MP_OBJ_FROM_PTR(self);
@@ -197,6 +197,7 @@ static mp_obj_t ps2_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
 static const mp_rom_map_elem_t ps2io_ps2_locals_dict_table[] = {
     // Methods
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&ps2io_ps2_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&ps2io_ps2_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
     { MP_ROM_QSTR(MP_QSTR_popleft), MP_ROM_PTR(&ps2io_ps2_popleft_obj) },

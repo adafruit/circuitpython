@@ -22,6 +22,18 @@ CIRCUITPY_PARALLELDISPLAYBUS= 0
 CIRCUITPY_SPITARGET = 0
 CIRCUITPY_STAGE = 1
 
+CIRCUITPY_PICOGAME = 1
+CIRCUITPY_PICOGAME_FAST_DISPLAY = 1
+CIRCUITPY_PICOGAME_RGB444 = 1
+
+# Not enough room for picogame and these; all are only reachable through the Feather header.
+CIRCUITPY_BLEIO_HCI = 0
+CIRCUITPY_FREQUENCYIO = 0
+CIRCUITPY_I2CTARGET = 0
+CIRCUITPY_PS2IO = 0
+CIRCUITPY_PULSEIO = 0
+CIRCUITPY_SDCARDIO = 0
+
 FROZEN_MPY_DIRS += $(TOP)/frozen/circuitpython-stage/pybadge
 
 # We don't have room for the fonts for terminalio for certain languages,

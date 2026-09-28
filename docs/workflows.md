@@ -461,6 +461,7 @@ Returns information about the device.
 * `build_date`: CircuitPython build date.
 * `board_name`: Human readable name of the board.
 * `mcu_name`: Human readable name of the microcontroller.
+* `architecture`: Name of the native `.mpy` architecture this build can load, as used by `mpy-cross -march`. Omitted when the build cannot load native code.
 * `board_id`: Board id used in code and on circuitpython.org.
 * `creator_id`: Creator ID for the board.
 * `creation_id`: Creation ID for the board, set by the creator.

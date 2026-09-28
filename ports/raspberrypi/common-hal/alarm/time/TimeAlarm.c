@@ -10,13 +10,14 @@
 #include "shared-bindings/alarm/time/TimeAlarm.h"
 #include "shared-bindings/time/__init__.h"
 
-#include "shared/timeutils/timeutils.h"
-
 #include "hardware/gpio.h"
-#include "hardware/rtc.h"
+#include "pico/aon_timer.h"
 
 static bool woke_up = false;
 static bool _timealarm_set = false;
+#if PICO_RP2350
+static uint64_t _wakeup_ms;
+#endif
 
 static void timer_callback(void) {
     woke_up = true;
@@ -53,7 +54,7 @@ bool alarm_time_timealarm_woke_this_cycle(void) {
 }
 
 void alarm_time_timealarm_reset(void) {
-    rtc_disable_alarm();
+    aon_timer_disable_alarm();
     woke_up = false;
 }
 
@@ -81,28 +82,19 @@ void alarm_time_timealarm_set_alarms(bool deep_sleep, size_t n_alarms, const mp_
     // Compute how long to actually sleep, considering the time now.
     mp_float_t mono_seconds_to_date = uint64_to_float(common_hal_time_monotonic_ms()) / 1000.0f;
     mp_float_t wakeup_in_secs = MAX(0.0f, timealarm->monotonic_time - mono_seconds_to_date);
-    datetime_t t;
+    struct timespec t;
 
-    rtc_get_datetime(&t);
-
-    uint32_t rtc_seconds_to_date = timeutils_seconds_since_2000(t.year, t.month,
-        t.day, t.hour, t.min, t.sec);
+    aon_timer_get_time(&t);
 
     // The float value is always slightly under, so add 1 to compensate
-    uint32_t alarm_seconds = rtc_seconds_to_date + (uint32_t)wakeup_in_secs + 1;
-    timeutils_struct_time_t tm;
-    timeutils_seconds_since_2000_to_struct_time(alarm_seconds, &tm);
+    t.tv_sec += (uint32_t)wakeup_in_secs + 1;
+    t.tv_nsec = 0;
 
-    // reuse t
-    t.hour = tm.tm_hour;
-    t.min = tm.tm_min;
-    t.sec = tm.tm_sec;
-    t.day = tm.tm_mday;
-    t.month = tm.tm_mon;
-    t.year = tm.tm_year;
-    t.dotw = (tm.tm_wday + 1) % 7;
-
-    rtc_set_alarm(&t, &timer_callback);
+    // On RP2350 the last argument makes the alarm a powman wakeup source.
+    aon_timer_enable_alarm(&t, &timer_callback, deep_sleep);
+    #if PICO_RP2350
+    _wakeup_ms = (uint64_t)t.tv_sec * 1000;
+    #endif
 
     woke_up = false;
 }
@@ -110,3 +102,9 @@ void alarm_time_timealarm_set_alarms(bool deep_sleep, size_t n_alarms, const mp_
 bool alarm_time_timealarm_is_set(void) {
     return _timealarm_set;
 }
+
+#if PICO_RP2350
+uint64_t alarm_time_timealarm_get_wakeup_ms(void) {
+    return _wakeup_ms;
+}
+#endif

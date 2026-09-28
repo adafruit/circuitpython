@@ -110,16 +110,22 @@ void common_hal_busdisplay_busdisplay_construct(busdisplay_busdisplay_obj_t *sel
         if (result != PWMOUT_OK) {
             self->backlight_inout.base.type = &digitalio_digitalinout_type;
             common_hal_digitalio_digitalinout_construct(&self->backlight_inout, backlight_pin);
+            #if CIRCUITPY_BULK_RESET
             common_hal_never_reset_pin(backlight_pin);
+            #endif
         } else {
             self->backlight_pwm.base.type = &pwmio_pwmout_type;
+            #if CIRCUITPY_BULK_RESET
             common_hal_pwmio_pwmout_never_reset(&self->backlight_pwm);
+            #endif
         }
         #else
         // Otherwise default to digital
         self->backlight_inout.base.type = &digitalio_digitalinout_type;
         common_hal_digitalio_digitalinout_construct(&self->backlight_inout, backlight_pin);
+        #if CIRCUITPY_BULK_RESET
         common_hal_never_reset_pin(backlight_pin);
+        #endif
         #endif
     }
 
@@ -227,6 +233,7 @@ static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_are
         return true;
     }
     uint16_t rows_per_buffer = displayio_area_height(&clipped);
+    uint16_t cols_per_buffer = displayio_area_width(&clipped);
     uint8_t pixels_per_word = (sizeof(uint32_t) * 8) / self->core.colorspace.depth;
     uint16_t pixels_per_buffer = displayio_area_size(&clipped);
 
@@ -237,26 +244,29 @@ static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_are
         subrectangles = rows_per_buffer / 8;  // page addressing mode writes 8 rows at a time
         rows_per_buffer = 8;
     } else if (displayio_area_size(&clipped) > buffer_size * pixels_per_word) {
-        rows_per_buffer = buffer_size * pixels_per_word / displayio_area_width(&clipped);
-        if (rows_per_buffer == 0) {
-            rows_per_buffer = 1;
-        }
-        // If pixels are packed by column then ensure rows_per_buffer is on a byte boundary.
-        if (self->core.colorspace.depth < 8 && !self->core.colorspace.pixels_in_byte_share_row) {
-            uint8_t pixels_per_byte = 8 / self->core.colorspace.depth;
-            if (rows_per_buffer % pixels_per_byte != 0) {
-                rows_per_buffer -= rows_per_buffer % pixels_per_byte;
+        uint16_t buffer_pixels = buffer_size * pixels_per_word;
+        if (self->core.transform.transpose_xy && self->core.colorspace.depth >= 8) {
+            // Rotated 90 or 270: a panel column is a source row. Send bands of columns so sources
+            // are read along their rows, which OnDiskBitmap needs to avoid a file seek per pixel.
+            rows_per_buffer = MIN(rows_per_buffer, buffer_pixels);
+            cols_per_buffer = buffer_pixels / rows_per_buffer;
+        } else {
+            rows_per_buffer = buffer_pixels / cols_per_buffer;
+            if (rows_per_buffer == 0) {
+                rows_per_buffer = 1;
+            }
+            // If pixels are packed by column then ensure rows_per_buffer is on a byte boundary.
+            if (self->core.colorspace.depth < 8 && !self->core.colorspace.pixels_in_byte_share_row) {
+                uint8_t pixels_per_byte = 8 / self->core.colorspace.depth;
+                if (rows_per_buffer % pixels_per_byte != 0) {
+                    rows_per_buffer -= rows_per_buffer % pixels_per_byte;
+                }
             }
         }
-        subrectangles = displayio_area_height(&clipped) / rows_per_buffer;
-        if (displayio_area_height(&clipped) % rows_per_buffer != 0) {
-            subrectangles++;
-        }
-        pixels_per_buffer = rows_per_buffer * displayio_area_width(&clipped);
-        buffer_size = pixels_per_buffer / pixels_per_word;
-        if (pixels_per_buffer % pixels_per_word) {
-            buffer_size += 1;
-        }
+        subrectangles = ((displayio_area_height(&clipped) + rows_per_buffer - 1) / rows_per_buffer) *
+            ((displayio_area_width(&clipped) + cols_per_buffer - 1) / cols_per_buffer);
+        pixels_per_buffer = rows_per_buffer * cols_per_buffer;
+        buffer_size = (pixels_per_buffer + pixels_per_word - 1) / pixels_per_word;
     }
 
     // Allocated and shared as a uint32_t array so the compiler knows the
@@ -265,19 +275,17 @@ static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_are
     uint32_t buffer[buffer_size];
     uint32_t mask[mask_length];
 
-    uint16_t remaining_rows = displayio_area_height(&clipped);
+    displayio_area_t subrectangle = clipped;
+    subrectangle.next = NULL;
 
     for (uint16_t j = 0; j < subrectangles; j++) {
-        displayio_area_t subrectangle = {
-            .x1 = clipped.x1,
-            .y1 = clipped.y1 + rows_per_buffer * j,
-            .x2 = clipped.x2,
-            .y2 = clipped.y1 + rows_per_buffer * (j + 1)
-        };
-        if (remaining_rows < rows_per_buffer) {
-            subrectangle.y2 = subrectangle.y1 + remaining_rows;
+        // Down the rows of a band first, then to the next band of columns.
+        if (subrectangle.y1 >= clipped.y2) {
+            subrectangle.y1 = clipped.y1;
+            subrectangle.x1 += cols_per_buffer;
         }
-        remaining_rows -= rows_per_buffer;
+        subrectangle.x2 = MIN(subrectangle.x1 + cols_per_buffer, clipped.x2);
+        subrectangle.y2 = MIN(subrectangle.y1 + rows_per_buffer, clipped.y2);
 
         uint16_t subrectangle_size_bytes;
         if (self->core.colorspace.depth >= 8) {
@@ -299,6 +307,7 @@ static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_are
         }
         _send_pixels(self, (uint8_t *)buffer, subrectangle_size_bytes);
         displayio_display_bus_end_transaction(&self->bus);
+        subrectangle.y1 = subrectangle.y2;
 
         // Run background tasks so they can run during an explicit refresh.
         // Auto-refresh won't run background tasks here because it is a background task itself.

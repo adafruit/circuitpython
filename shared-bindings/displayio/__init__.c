@@ -52,7 +52,6 @@
 //|     rgbmatrix.RGBMatrix
 //|     | is31fl3741.IS31FL3741_FrameBuffer
 //|     | sharpdisplay.SharpMemoryFramebuffer
-//|     | videocore.Framebuffer
 //|     | picodvi.Framebuffer
 //|     | aurora_epaper.AuroraMemoryFramebuffer
 //| )

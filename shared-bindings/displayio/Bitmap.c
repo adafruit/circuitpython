@@ -55,7 +55,7 @@ static mp_obj_t displayio_bitmap_make_new(const mp_obj_type_t *type, size_t n_ar
         }
     }
 
-    displayio_bitmap_t *self = mp_obj_malloc(displayio_bitmap_t, &displayio_bitmap_type);
+    displayio_bitmap_t *self = mp_obj_malloc_with_finaliser(displayio_bitmap_t, &displayio_bitmap_type);
     common_hal_displayio_bitmap_construct(self, width, height, bits);
 
     return MP_OBJ_FROM_PTR(self);
@@ -264,6 +264,7 @@ static const mp_rom_map_elem_t displayio_bitmap_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_fill), MP_ROM_PTR(&displayio_bitmap_fill_obj) },
     { MP_ROM_QSTR(MP_QSTR_dirty), MP_ROM_PTR(&displayio_bitmap_dirty_obj) },
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&displayio_bitmap_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&displayio_bitmap_deinit_obj) },
 };
 static MP_DEFINE_CONST_DICT(displayio_bitmap_locals_dict, displayio_bitmap_locals_dict_table);
 

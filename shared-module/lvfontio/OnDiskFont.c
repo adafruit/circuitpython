@@ -13,8 +13,6 @@
 #include "py/objstr.h"
 #include "py/gc.h"
 #include "shared-bindings/displayio/Bitmap.h"
-#include "extmod/vfs_fat.h"
-#include "lib/oofatfs/ff.h"
 #include "supervisor/shared/translate/translate.h"
 #include "supervisor/port.h"
 #include "supervisor/shared/serial.h"
@@ -50,17 +48,24 @@ static inline void free_memory(lvfontio_ondiskfont_t *self, void *ptr) {
 static int16_t find_codepoint_slot(lvfontio_ondiskfont_t *self, uint32_t codepoint);
 static bool slot_has_active_full_width_partner(lvfontio_ondiskfont_t *self, uint16_t slot);
 static uint16_t find_free_slot(lvfontio_ondiskfont_t *self, uint32_t codepoint);
-static FRESULT read_bits(FIL *file, size_t num_bits, uint8_t *byte_val, uint8_t *remaining_bits, uint32_t *result);
-static FRESULT read_glyph_dimensions(FIL *file, lvfontio_ondiskfont_t *self, uint32_t *advance_width, int32_t *bbox_x, int32_t *bbox_y, uint32_t *bbox_w, uint32_t *bbox_h, uint8_t *byte_val, uint8_t *remaining_bits);
+static int16_t cache_glyph_locked(lvfontio_ondiskfont_t *self, uint32_t codepoint, bool *is_full_width);
+static bool read_bits(supervisor_vfs_file_t *file, size_t num_bits, uint8_t *byte_val, uint8_t *remaining_bits, uint32_t *result);
+static bool read_glyph_dimensions(supervisor_vfs_file_t *file, lvfontio_ondiskfont_t *self, uint32_t *advance_width, int32_t *bbox_x, int32_t *bbox_y, uint32_t *bbox_w, uint32_t *bbox_h, uint8_t *byte_val, uint8_t *remaining_bits);
+
+static bool read_file(supervisor_vfs_file_t *file, void *buf, size_t len) {
+    size_t bytes_read;
+    supervisor_fs_err_t err = supervisor_vfs_read_file(file, buf, len, &bytes_read);
+    return err == SUPERVISOR_FS_OK && bytes_read >= len;
+}
+
+static bool seek_file(supervisor_vfs_file_t *file, size_t offset) {
+    return supervisor_vfs_seek_file(file, offset) == SUPERVISOR_FS_OK;
+}
 
 // Load font header data from file
-static bool load_font_header(lvfontio_ondiskfont_t *self, FIL *file, size_t *max_slots) {
-    UINT bytes_read;
-    FRESULT res;
-
+static bool load_font_header(lvfontio_ondiskfont_t *self, supervisor_vfs_file_t *file, size_t *max_slots) {
     // Start at the beginning of the file
-    res = f_lseek(file, 0);
-    if (res != FR_OK) {
+    if (!seek_file(file, 0)) {
         return false;
     }
 
@@ -76,8 +81,7 @@ static bool load_font_header(lvfontio_ondiskfont_t *self, FIL *file, size_t *max
     // Read sections until we find all the sections we need or reach end of file
     while (true) {
         // Read section size (4 bytes)
-        res = f_read(file, buffer, 4, &bytes_read);
-        if (res != FR_OK || bytes_read < 4) {
+        if (!read_file(file, buffer, 4)) {
             break; // Read error or end of file
         }
 
@@ -89,8 +93,7 @@ static bool load_font_header(lvfontio_ondiskfont_t *self, FIL *file, size_t *max
         }
 
         // Read section marker (4 bytes)
-        res = f_read(file, buffer, 4, &bytes_read);
-        if (res != FR_OK || bytes_read < 4) {
+        if (!read_file(file, buffer, 4)) {
             break; // Read error or unexpected end of file
         }
 
@@ -103,8 +106,7 @@ static bool load_font_header(lvfontio_ondiskfont_t *self, FIL *file, size_t *max
         if (memcmp(buffer, "head", 4) == 0) {
             // Read head section data (35 bytes)
             uint8_t head_buf[35];
-            res = f_read(file, head_buf, 35, &bytes_read);
-            if (res != FR_OK || bytes_read < 35) {
+            if (!read_file(file, head_buf, sizeof(head_buf))) {
                 break;
             }
 
@@ -131,8 +133,7 @@ static bool load_font_header(lvfontio_ondiskfont_t *self, FIL *file, size_t *max
         } else if (memcmp(buffer, "cmap", 4) == 0) {
             // Read subtable count
             uint8_t cmap_header[4];
-            res = f_read(file, cmap_header, 4, &bytes_read);
-            if (res != FR_OK || bytes_read < 4) {
+            if (!read_file(file, cmap_header, sizeof(cmap_header))) {
                 break;
             }
 
@@ -149,8 +150,7 @@ static bool load_font_header(lvfontio_ondiskfont_t *self, FIL *file, size_t *max
             // Read each subtable
             for (uint16_t i = 0; i < subtable_count; i++) {
                 uint8_t subtable_buf[16];
-                res = f_read(file, subtable_buf, 16, &bytes_read);
-                if (res != FR_OK || bytes_read < 16) {
+                if (!read_file(file, subtable_buf, sizeof(subtable_buf))) {
                     break;
                 }
 
@@ -185,8 +185,7 @@ static bool load_font_header(lvfontio_ondiskfont_t *self, FIL *file, size_t *max
         } else if (memcmp(buffer, "loca", 4) == 0) {
             // Read max_cid
             uint8_t loca_header[4];
-            res = f_read(file, loca_header, 4, &bytes_read);
-            if (res != FR_OK || bytes_read < 4) {
+            if (!read_file(file, loca_header, sizeof(loca_header))) {
                 break;
             }
 
@@ -275,8 +274,7 @@ static bool load_font_header(lvfontio_ondiskfont_t *self, FIL *file, size_t *max
         current_position += section_size;
 
         // Skip to the end of the section
-        res = f_lseek(file, current_position);
-        if (res != FR_OK) {
+        if (!seek_file(file, current_position)) {
             break;
         }
 
@@ -318,17 +316,13 @@ static int32_t get_char_id(lvfontio_ondiskfont_t *self, uint32_t codepoint) {
 
                     // Calculate the absolute data position in the file
                     uint32_t data_pos = self->cmap_ranges[i].data_offset + idx; // 1 byte per entry
-                    FRESULT res = f_lseek(&self->file, data_pos);
-                    if (res != FR_OK) {
+                    if (!seek_file(&self->file, data_pos)) {
                         return -1;
                     }
 
                     // Read the glyph ID (1 byte)
                     uint8_t glyph_id;
-                    UINT bytes_read;
-                    res = f_read(&self->file, &glyph_id, 1, &bytes_read);
-
-                    if (res != FR_OK || bytes_read < 1) {
+                    if (!read_file(&self->file, &glyph_id, 1)) {
                         return -1;
                     }
 
@@ -346,9 +340,7 @@ static int32_t get_char_id(lvfontio_ondiskfont_t *self, uint32_t codepoint) {
                         return -1;
                     }
 
-                    FRESULT res;
-                    res = f_lseek(&self->file, self->cmap_ranges[i].data_offset);
-                    if (res != FR_OK) {
+                    if (!seek_file(&self->file, self->cmap_ranges[i].data_offset)) {
                         return -1;
                     }
                     uint16_t codepoint_delta = codepoint - self->cmap_ranges[i].range_start;
@@ -356,9 +348,7 @@ static int32_t get_char_id(lvfontio_ondiskfont_t *self, uint32_t codepoint) {
                     for (size_t j = 0; j < self->cmap_ranges[i].entries_count; j++) {
                         // Read code point at the index
                         uint16_t candidate_codepoint_delta;
-                        UINT bytes_read;
-                        res = f_read(&self->file, &candidate_codepoint_delta, 2, &bytes_read);
-                        if (res != FR_OK || bytes_read < 2) {
+                        if (!read_file(&self->file, &candidate_codepoint_delta, 2)) {
                             return -1;
                         }
 
@@ -380,7 +370,7 @@ static int32_t get_char_id(lvfontio_ondiskfont_t *self, uint32_t codepoint) {
 
 // Load glyph bitmap data into a slot
 // This function assumes the file is already open and positioned after reading the glyph dimensions
-static bool load_glyph_bitmap(FIL *file, lvfontio_ondiskfont_t *self, uint32_t codepoint, uint16_t slot,
+static bool load_glyph_bitmap(supervisor_vfs_file_t *file, lvfontio_ondiskfont_t *self, uint32_t codepoint, uint16_t slot,
     uint32_t glyph_advance, int32_t bbox_x, int32_t bbox_y, uint32_t bbox_w, uint32_t bbox_h,
     uint8_t *byte_val, uint8_t *remaining_bits) {
     // Store codepoint at slot
@@ -393,8 +383,7 @@ static bool load_glyph_bitmap(FIL *file, lvfontio_ondiskfont_t *self, uint32_t c
     for (uint16_t y = 0; y < bbox_h; y++) {
         for (uint16_t x = 0; x < bbox_w; x++) {
             uint32_t pixel_value;
-            FRESULT res = read_bits(file, self->header.bits_per_pixel, byte_val, remaining_bits, &pixel_value);
-            if (res != FR_OK) {
+            if (!read_bits(file, self->header.bits_per_pixel, byte_val, remaining_bits, &pixel_value)) {
                 return false;
             }
 
@@ -433,22 +422,36 @@ void common_hal_lvfontio_ondiskfont_construct(lvfontio_ondiskfont_t *self,
     self->max_glyphs = max_glyphs;
     self->cmap_ranges = NULL;
     self->file_is_open = false;
+    // Initialize to NULL so an early deinit (e.g. header load failure) is safe.
+    self->bitmap = NULL;
+    self->codepoints = NULL;
+    self->reference_counts = NULL;
 
     // Determine which filesystem to use based on the path
     const char *path_under_mount;
-    fs_user_mount_t *vfs = filesystem_for_path(file_path, &path_under_mount);
+    supervisor_vfs_t *vfs = filesystem_for_path(file_path, &path_under_mount);
 
-    if (vfs == NULL) {
+    if (vfs == NULL || !supervisor_vfs_supported(vfs)) {
+        // Not found, or a filesystem the supervisor API can't access.
         if (self->use_gc_allocator) {
             mp_raise_ValueError(MP_ERROR_TEXT("File not found"));
         }
         return;
     }
 
-    // Open the file and keep it open for the lifetime of the object
-    FRESULT res = f_open(&vfs->fatfs, &self->file, path_under_mount, FA_READ);
+    // Take the filesystem lock while opening and parsing the header so USB
+    // MSC and other writers can't modify the blocks under us while reading.
+    if (!filesystem_lock(vfs)) {
+        if (self->use_gc_allocator) {
+            mp_raise_OSError(MP_EBUSY);
+        }
+        return;
+    }
 
-    if (res != FR_OK) {
+    // Open the file and keep it open for the lifetime of the object
+    supervisor_fs_err_t err = supervisor_vfs_open_file(vfs, path_under_mount, SUPERVISOR_FS_OPEN_READ, 0, &self->file);
+    if (err != SUPERVISOR_FS_OK) {
+        filesystem_unlock(vfs);
         if (self->use_gc_allocator) {
             mp_raise_ValueError(MP_ERROR_TEXT("File not found"));
         }
@@ -456,17 +459,23 @@ void common_hal_lvfontio_ondiskfont_construct(lvfontio_ondiskfont_t *self,
     }
 
     self->file_is_open = true;
+    self->vfs = vfs;
 
     // Load font headers
     size_t max_slots;
     if (!load_font_header(self, &self->file, &max_slots)) {
-        f_close(&self->file);
-        self->file_is_open = false;
+        common_hal_lvfontio_ondiskfont_deinit(self);
+        filesystem_unlock(vfs);
         if (self->use_gc_allocator) {
             mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q"), MP_QSTR_file);
         }
         return;
     }
+    // All file reads are done; release the lock so other users (including
+    // other OnDiskFonts) may access the filesystem again until the next
+    // cache_glyph call.
+    filesystem_unlock(vfs);
+
     // Cap the number of slots to the number of slots needed by the font. That way
     // small font files don't need a bunch of extra cache space.
     max_glyphs = MIN(max_glyphs, max_slots);
@@ -531,7 +540,6 @@ void common_hal_lvfontio_ondiskfont_deinit(lvfontio_ondiskfont_t *self) {
     if (!self->file_is_open) {
         return;
     }
-
     if (self->bitmap != NULL) {
         common_hal_displayio_bitmap_deinit(self->bitmap);
         self->bitmap = NULL;
@@ -554,7 +562,7 @@ void common_hal_lvfontio_ondiskfont_deinit(lvfontio_ondiskfont_t *self) {
         self->cmap_ranges = NULL;
     }
 
-    f_close(&self->file);
+    supervisor_vfs_close_file(&self->file);
     self->file_is_open = false;
 }
 
@@ -584,6 +592,17 @@ void common_hal_lvfontio_ondiskfont_get_dimensions(const lvfontio_ondiskfont_t *
 }
 
 int16_t common_hal_lvfontio_ondiskfont_cache_glyph(lvfontio_ondiskfont_t *self, uint32_t codepoint, bool *is_full_width) {
+    // Take the filesystem lock while reading glyph data so USB MSC and other
+    // writers can't modify the blocks under us mid-read.
+    if (!filesystem_lock(self->vfs)) {
+        return -1;
+    }
+    int16_t slot = cache_glyph_locked(self, codepoint, is_full_width);
+    filesystem_unlock(self->vfs);
+    return slot;
+}
+
+static int16_t cache_glyph_locked(lvfontio_ondiskfont_t *self, uint32_t codepoint, bool *is_full_width) {
     // Check if already cached
     int16_t existing_slot = find_codepoint_slot(self, codepoint);
     if (existing_slot >= 0) {
@@ -627,17 +646,14 @@ int16_t common_hal_lvfontio_ondiskfont_cache_glyph(lvfontio_ondiskfont_t *self, 
     uint32_t loca_offset = self->loca_table_offset + char_id *
         (self->header.index_to_loc_format == 1 ? 4 : 2);
 
-    FRESULT res = f_lseek(&self->file, loca_offset);
-    if (res != FR_OK) {
+    if (!seek_file(&self->file, loca_offset)) {
         return -1;
     }
 
-    UINT bytes_read;
     if (self->header.index_to_loc_format == 1) {
         // 4-byte offset
         uint8_t offset_buf[4];
-        res = f_read(&self->file, offset_buf, 4, &bytes_read);
-        if (res != FR_OK || bytes_read < 4) {
+        if (!read_file(&self->file, offset_buf, sizeof(offset_buf))) {
             return -1;
         }
         glyph_offset = offset_buf[0] | (offset_buf[1] << 8) |
@@ -645,15 +661,13 @@ int16_t common_hal_lvfontio_ondiskfont_cache_glyph(lvfontio_ondiskfont_t *self, 
     } else {
         // 2-byte offset
         uint8_t offset_buf[2];
-        res = f_read(&self->file, offset_buf, 2, &bytes_read);
-        if (res != FR_OK || bytes_read < 2) {
+        if (!read_file(&self->file, offset_buf, sizeof(offset_buf))) {
             return -1;
         }
         glyph_offset = offset_buf[0] | (offset_buf[1] << 8);
     }
     // Seek to glyph data
-    res = f_lseek(&self->file, self->glyf_table_offset + glyph_offset);
-    if (res != FR_OK) {
+    if (!seek_file(&self->file, self->glyf_table_offset + glyph_offset)) {
         return -1;
     }
 
@@ -667,8 +681,7 @@ int16_t common_hal_lvfontio_ondiskfont_cache_glyph(lvfontio_ondiskfont_t *self, 
     uint8_t remaining_bits = 0;
 
     // Use the helper function to read glyph dimensions
-    res = read_glyph_dimensions(&self->file, self, &glyph_advance, &bbox_x, &bbox_y, &bbox_w, &bbox_h, &byte_val, &remaining_bits);
-    if (res != FR_OK) {
+    if (!read_glyph_dimensions(&self->file, self, &glyph_advance, &bbox_x, &bbox_y, &bbox_w, &bbox_h, &byte_val, &remaining_bits)) {
         return -1;
     }
 
@@ -792,24 +805,21 @@ static uint16_t find_free_slot(lvfontio_ondiskfont_t *self, uint32_t codepoint) 
     return UINT16_MAX;
 }
 
-static FRESULT read_glyph_dimensions(FIL *file, lvfontio_ondiskfont_t *self,
+static bool read_glyph_dimensions(supervisor_vfs_file_t *file, lvfontio_ondiskfont_t *self,
     uint32_t *advance_width, int32_t *bbox_x, int32_t *bbox_y,
     uint32_t *bbox_w, uint32_t *bbox_h,
     uint8_t *byte_val, uint8_t *remaining_bits) {
-    FRESULT res;
     uint32_t temp_value;
 
     // Read glyph_advance
-    res = read_bits(file, self->header.glyph_advance_bits, byte_val, remaining_bits, &temp_value);
-    if (res != FR_OK) {
-        return res;
+    if (!read_bits(file, self->header.glyph_advance_bits, byte_val, remaining_bits, &temp_value)) {
+        return false;
     }
     *advance_width = temp_value;
 
     // Read bbox_x (signed)
-    res = read_bits(file, self->header.glyph_bbox_xy_bits, byte_val, remaining_bits, &temp_value);
-    if (res != FR_OK) {
-        return res;
+    if (!read_bits(file, self->header.glyph_bbox_xy_bits, byte_val, remaining_bits, &temp_value)) {
+        return false;
     }
     // Convert to signed value if needed
     if (temp_value & (1 << (self->header.glyph_bbox_xy_bits - 1))) {
@@ -819,9 +829,8 @@ static FRESULT read_glyph_dimensions(FIL *file, lvfontio_ondiskfont_t *self,
     }
 
     // Read bbox_y (signed)
-    res = read_bits(file, self->header.glyph_bbox_xy_bits, byte_val, remaining_bits, &temp_value);
-    if (res != FR_OK) {
-        return res;
+    if (!read_bits(file, self->header.glyph_bbox_xy_bits, byte_val, remaining_bits, &temp_value)) {
+        return false;
     }
     // Convert to signed value if needed
     if (temp_value & (1 << (self->header.glyph_bbox_xy_bits - 1))) {
@@ -831,26 +840,21 @@ static FRESULT read_glyph_dimensions(FIL *file, lvfontio_ondiskfont_t *self,
     }
 
     // Read bbox_w
-    res = read_bits(file, self->header.glyph_bbox_wh_bits, byte_val, remaining_bits, &temp_value);
-    if (res != FR_OK) {
-        return res;
+    if (!read_bits(file, self->header.glyph_bbox_wh_bits, byte_val, remaining_bits, &temp_value)) {
+        return false;
     }
     *bbox_w = temp_value;
 
     // Read bbox_h
-    res = read_bits(file, self->header.glyph_bbox_wh_bits, byte_val, remaining_bits, &temp_value);
-    if (res != FR_OK) {
-        return res;
+    if (!read_bits(file, self->header.glyph_bbox_wh_bits, byte_val, remaining_bits, &temp_value)) {
+        return false;
     }
     *bbox_h = temp_value;
 
-    return FR_OK;
+    return true;
 }
 
-static FRESULT read_bits(FIL *file, size_t num_bits, uint8_t *byte_val, uint8_t *remaining_bits, uint32_t *result) {
-    FRESULT res = FR_OK;
-    UINT bytes_read;
-
+static bool read_bits(supervisor_vfs_file_t *file, size_t num_bits, uint8_t *byte_val, uint8_t *remaining_bits, uint32_t *result) {
     uint32_t value = 0;
     // Bits will be lost when num_bits > 32. However, this is good for skipping bits.
     size_t bits_needed = num_bits;
@@ -858,9 +862,8 @@ static FRESULT read_bits(FIL *file, size_t num_bits, uint8_t *byte_val, uint8_t 
     while (bits_needed > 0) {
         // If no bits remaining, read a new byte
         if (*remaining_bits == 0) {
-            res = f_read(file, byte_val, 1, &bytes_read);
-            if (res != FR_OK || bytes_read < 1) {
-                return FR_DISK_ERR;
+            if (!read_file(file, byte_val, 1)) {
+                return false;
             }
             *remaining_bits = 8;
         }
@@ -881,5 +884,5 @@ static FRESULT read_bits(FIL *file, size_t num_bits, uint8_t *byte_val, uint8_t 
     if (result != NULL) {
         *result = value;
     }
-    return FR_OK;
+    return true;
 }

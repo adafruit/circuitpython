@@ -15,6 +15,21 @@
 #include "hardware/gpio.h"
 #include "hardware/structs/iobank0.h"
 
+#if PICO_RP2350
+#include "hardware/powman.h"
+
+// Deep sleep on RP2350 wakes through powman, which has four GPIO wakeup slots.
+// The alarm objects are gone by the time we enter deep sleep, so copy what we need.
+#define POWMAN_WAKEUP_SLOTS (count_of(powman_hw->pwrup))
+typedef struct {
+    uint8_t pin_number;
+    bool edge;
+    bool value;
+} powman_wakeup_t;
+static powman_wakeup_t powman_wakeups[POWMAN_WAKEUP_SLOTS];
+static size_t powman_wakeup_count;
+#endif
+
 static bool woke_up;
 static uint64_t alarm_triggered_pins; // 36 actual pins
 static uint64_t alarm_reserved_pins; // 36 actual pins
@@ -89,6 +104,18 @@ mp_obj_t alarm_pin_pinalarm_record_wake_alarm(void) {
     alarm->base.type = &alarm_pin_pinalarm_type;
     // TODO: how to obtain the correct pin from memory?
     alarm->pin = NULL;
+    #if PICO_RP2350
+    // After a powman wake, the wakeup slot that fired still holds its pin number.
+    if (!woke_up && alarm_woke_from_powman()) {
+        uint32_t pwrup = powman_hw->last_swcore_pwrup & RP_POWMAN_PWRUP_GPIO_BITS;
+        for (size_t i = 0; i < POWMAN_WAKEUP_SLOTS; i++) {
+            if (pwrup & (1u << (i + RP_POWMAN_PWRUP_GPIO_LSB))) {
+                alarm->pin = mcu_get_pin_by_number(powman_hw->pwrup[i] & POWMAN_PWRUP0_SOURCE_BITS);
+                break;
+            }
+        }
+    }
+    #endif
     return alarm;
 }
 
@@ -109,12 +136,34 @@ void alarm_pin_pinalarm_reset(void) {
         }
     }
     alarm_reserved_pins = 0;
+
+    #if PICO_RP2350
+    for (size_t i = 0; i < POWMAN_WAKEUP_SLOTS; i++) {
+        powman_disable_gpio_wakeup(i);
+    }
+    powman_wakeup_count = 0;
+    #endif
 }
 
 void alarm_pin_pinalarm_set_alarms(bool deep_sleep, size_t n_alarms, const mp_obj_t *alarms) {
+    #if PICO_RP2350
+    powman_wakeup_count = 0;
+    #endif
     for (size_t i = 0; i < n_alarms; i++) {
         if (mp_obj_is_type(alarms[i], &alarm_pin_pinalarm_type)) {
             alarm_pin_pinalarm_obj_t *alarm = MP_OBJ_TO_PTR(alarms[i]);
+
+            #if PICO_RP2350
+            if (deep_sleep) {
+                if (powman_wakeup_count >= POWMAN_WAKEUP_SLOTS) {
+                    mp_raise_ValueError_varg(MP_ERROR_TEXT("Too many %q"), MP_QSTR_PinAlarm);
+                }
+                powman_wakeups[powman_wakeup_count].pin_number = alarm->pin->number;
+                powman_wakeups[powman_wakeup_count].edge = alarm->edge;
+                powman_wakeups[powman_wakeup_count].value = alarm->value;
+                powman_wakeup_count++;
+            }
+            #endif
 
             gpio_init(alarm->pin->number);
             if (alarm->pull) {
@@ -149,3 +198,24 @@ void alarm_pin_pinalarm_set_alarms(bool deep_sleep, size_t n_alarms, const mp_ob
         }
     }
 }
+
+#if PICO_RP2350
+// Arm the powman GPIO wakeups recorded by alarm_pin_pinalarm_set_alarms().
+// Call this just before powering down for deep sleep.
+void alarm_pin_pinalarm_enable_powman_wakeups(void) {
+    for (size_t i = 0; i < powman_wakeup_count; i++) {
+        powman_enable_gpio_wakeup(i, powman_wakeups[i].pin_number,
+            powman_wakeups[i].edge, powman_wakeups[i].value);
+    }
+}
+
+bool alarm_pin_pinalarm_first_powman_wakeup(uint *pin_number, bool *edge, bool *value) {
+    if (powman_wakeup_count == 0) {
+        return false;
+    }
+    *pin_number = powman_wakeups[0].pin_number;
+    *edge = powman_wakeups[0].edge;
+    *value = powman_wakeups[0].value;
+    return true;
+}
+#endif

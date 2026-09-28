@@ -63,7 +63,7 @@ static mp_obj_t bleio_packet_buffer_make_new(const mp_obj_type_t *type, size_t n
             (size_t)mp_arg_validate_int_min(max_packet_size_int, 1, MP_QSTR_max_packet_size);
     }
 
-    bleio_packet_buffer_obj_t *self = mp_obj_malloc(bleio_packet_buffer_obj_t, &bleio_packet_buffer_type);
+    bleio_packet_buffer_obj_t *self = mp_obj_malloc_with_finaliser(bleio_packet_buffer_obj_t, &bleio_packet_buffer_type);
 
     common_hal_bleio_packet_buffer_construct(self, characteristic, buffer_size, max_packet_size);
 
@@ -199,6 +199,7 @@ MP_PROPERTY_GETTER(bleio_packet_buffer_outgoing_packet_length_obj,
 
 static const mp_rom_map_elem_t bleio_packet_buffer_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit),                     MP_ROM_PTR(&bleio_packet_buffer_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&bleio_packet_buffer_deinit_obj) },
 
     // Standard stream methods.
     { MP_ROM_QSTR(MP_QSTR_readinto),               MP_ROM_PTR(&bleio_packet_buffer_readinto_obj) },

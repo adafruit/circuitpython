@@ -425,6 +425,70 @@ void common_hal_displayio_tilegrid_set_top_left(displayio_tilegrid_t *self, uint
     self->full_change = true;
 }
 
+// One row of the common case: an 8 or 16 bpp Bitmap, a Palette without dithering, a 16 bpp
+// display, no scaling, no x flip and no transpose. Same result as the per-pixel loop in
+// displayio_tilegrid_fill_area, without the per-pixel calls. Returns false if a pixel was
+// transparent.
+static bool _fill_row_fast(displayio_tilegrid_t *self, const void *tiles,
+    displayio_bitmap_t *bitmap, displayio_palette_t *palette,
+    const _displayio_colorspace_t *colorspace, uint32_t *mask, uint16_t *buffer,
+    int32_t offset, uint16_t x, uint16_t y, int16_t count, int16_t x_in_tile,
+    uint16_t x_tile_index, uint16_t row_tile_location, int16_t y_in_tile) {
+    bool covered = true;
+    uint16_t tile_width = self->tile_width;
+    while (count > 0) {
+        uint16_t tile_location = row_tile_location + x_tile_index;
+        // uint8_t like displayio_input_pixel_t.tile, which the per-pixel loop goes through.
+        uint8_t tile = (self->tiles_in_bitmap > 255) ?
+            ((const uint16_t *)tiles)[tile_location] : ((const uint8_t *)tiles)[tile_location];
+        int16_t bx = (tile % self->bitmap_width_in_tiles) * tile_width + x_in_tile;
+        int16_t by = (tile / self->bitmap_width_in_tiles) * self->tile_height + y_in_tile;
+        int16_t run = tile_width - x_in_tile;
+        if (run > count) {
+            run = count;
+        }
+        bool row_inside = by >= 0 && by < bitmap->height;
+        const uint32_t *row = bitmap->data + by * bitmap->stride;
+        for (int16_t i = 0; i < run; i++, offset++, bx++, x++) {
+            uint32_t bit = 1u << (offset & 31);
+            if (mask[offset >> 5] & bit) {
+                continue;
+            }
+            uint32_t index = 0;             // get_pixel returns 0 outside the bitmap
+            if (row_inside && bx >= 0 && bx < bitmap->width) {
+                index = (bitmap->bits_per_value == 8) ?
+                    ((const uint8_t *)row)[bx] : ((const uint16_t *)row)[bx];
+            }
+            if (index > palette->color_count || palette->colors[index].transparent) {
+                covered = false;
+                continue;
+            }
+            const _displayio_color_t *color = &palette->colors[index];
+            uint16_t pixel;
+            if (color->cached_colorspace == colorspace &&
+                color->cached_colorspace_grayscale_bit == colorspace->grayscale_bit &&
+                color->cached_colorspace_grayscale == colorspace->grayscale) {
+                pixel = color->cached_color;
+            } else {
+                displayio_input_pixel_t input_pixel = {
+                    .pixel = index, .x = x, .y = y, .tile = tile, .tile_x = bx, .tile_y = by,
+                };
+                displayio_output_pixel_t output_pixel = { .pixel = 0, .opaque = true };
+                displayio_palette_get_color(palette, colorspace, &input_pixel, &output_pixel);
+                pixel = output_pixel.pixel;
+            }
+            mask[offset >> 5] |= bit;
+            buffer[offset] = pixel;
+        }
+        count -= run;
+        x_in_tile = 0;
+        if (++x_tile_index == self->width_in_tiles) {
+            x_tile_index = 0;
+        }
+    }
+    return covered;
+}
+
 bool displayio_tilegrid_fill_area(displayio_tilegrid_t *self,
     const _displayio_colorspace_t *colorspace, const displayio_area_t *area,
     uint32_t *mask, uint32_t *buffer) {
@@ -515,10 +579,61 @@ bool displayio_tilegrid_fill_area(displayio_tilegrid_t *self,
     displayio_input_pixel_t input_pixel;
     displayio_output_pixel_t output_pixel;
 
+    uint16_t scale = self->absolute_transform->scale;
+    uint16_t tile_width = self->tile_width;
+    uint16_t width_in_tiles = self->width_in_tiles;
+
+    displayio_bitmap_t *row_bitmap = NULL;
+    displayio_palette_t *row_palette = NULL;
+    if (scale == 1 && x_stride == 1 && colorspace->depth == 16 &&
+        self->transpose_xy == self->absolute_transform->transpose_xy &&
+        mp_obj_is_type(self->bitmap, &displayio_bitmap_type) &&
+        mp_obj_is_type(self->pixel_shader, &displayio_palette_type)) {
+        displayio_bitmap_t *bitmap = self->bitmap;
+        displayio_palette_t *palette = self->pixel_shader;
+        if ((bitmap->bits_per_value == 8 || bitmap->bits_per_value == 16) && !palette->dither) {
+            row_bitmap = bitmap;
+            row_palette = palette;
+        }
+    }
+
     for (input_pixel.y = start_y; input_pixel.y < end_y; ++input_pixel.y) {
         int16_t row_start = start + (input_pixel.y - start_y + y_shift) * y_stride; // in pixels
-        int16_t local_y = input_pixel.y / self->absolute_transform->scale;
+        int16_t local_y = input_pixel.y / scale;
+        uint16_t y_tile_index = (local_y / self->tile_height + self->top_left_y) % self->height_in_tiles;
+        uint16_t row_tile_location = y_tile_index * width_in_tiles;
+        int16_t y_in_tile = local_y % self->tile_height;
+
+        // The x terms are stepped along the row instead of divided for every pixel.
+        int16_t local_x = start_x / scale;
+        uint16_t x_in_scale = start_x % scale;
+        int16_t x_in_tile = local_x % tile_width;
+        uint16_t x_tile_index = (local_x / tile_width + self->top_left_x) % width_in_tiles;
+        int32_t cached_tile = -1;
+        int16_t tile_base_x = 0;
+        int16_t tile_base_y = 0;
+
+        if (row_bitmap != NULL) {
+            if (!_fill_row_fast(self, tiles, row_bitmap, row_palette, colorspace, mask,
+                (uint16_t *)buffer, row_start + x_shift, start_x, input_pixel.y,
+                end_x - start_x, x_in_tile, x_tile_index, row_tile_location, y_in_tile)) {
+                full_coverage = false;
+            }
+            continue;
+        }
+
         for (input_pixel.x = start_x; input_pixel.x < end_x; ++input_pixel.x) {
+            if (input_pixel.x != start_x && ++x_in_scale == scale) {
+                x_in_scale = 0;
+                local_x++;
+                if (++x_in_tile == tile_width) {
+                    x_in_tile = 0;
+                    if (++x_tile_index == width_in_tiles) {
+                        x_tile_index = 0;
+                    }
+                }
+            }
+
             // Compute the destination pixel in the buffer and mask based on the transformations.
             int16_t offset = row_start + (input_pixel.x - start_x + x_shift) * x_stride; // in pixels
 
@@ -531,18 +646,20 @@ bool displayio_tilegrid_fill_area(displayio_tilegrid_t *self,
             if ((mask[offset / 32] & (1 << (offset % 32))) != 0) {
                 continue;
             }
-            int16_t local_x = input_pixel.x / self->absolute_transform->scale;
-            uint16_t x_tile_index = (local_x / self->tile_width + self->top_left_x) % self->width_in_tiles;
-            uint16_t y_tile_index = (local_y / self->tile_height + self->top_left_y) % self->height_in_tiles;
-            uint16_t tile_location = y_tile_index * self->width_in_tiles + x_tile_index;
+            uint16_t tile_location = row_tile_location + x_tile_index;
 
             if (self->tiles_in_bitmap > 255) {
                 input_pixel.tile = ((uint16_t *)tiles)[tile_location];
             } else {
                 input_pixel.tile = ((uint8_t *)tiles)[tile_location];
             }
-            input_pixel.tile_x = (input_pixel.tile % self->bitmap_width_in_tiles) * self->tile_width + local_x % self->tile_width;
-            input_pixel.tile_y = (input_pixel.tile / self->bitmap_width_in_tiles) * self->tile_height + local_y % self->tile_height;
+            if (input_pixel.tile != cached_tile) {
+                cached_tile = input_pixel.tile;
+                tile_base_x = (input_pixel.tile % self->bitmap_width_in_tiles) * tile_width;
+                tile_base_y = (input_pixel.tile / self->bitmap_width_in_tiles) * self->tile_height;
+            }
+            input_pixel.tile_x = tile_base_x + x_in_tile;
+            input_pixel.tile_y = tile_base_y + y_in_tile;
 
             output_pixel.pixel = 0;
             input_pixel.pixel = 0;

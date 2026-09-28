@@ -1,8 +1,0 @@
-USB_VID = 0x2E8A
-USB_PID = 0x100E
-USB_PRODUCT = "Zero"
-USB_MANUFACTURER = "Raspberry Pi"
-
-CHIP_VARIANT = "bcm2835"
-
-CIRCUITPY_BUILD_EXTENSIONS = disk.img.zip,kernel.img

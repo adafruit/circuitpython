@@ -56,7 +56,7 @@ static mp_obj_t bleio_characteristic_buffer_make_new(const mp_obj_type_t *type, 
     const mp_int_t buffer_size = mp_arg_validate_int_min(args[ARG_buffer_size].u_int, 1, MP_QSTR_buffer_size);
 
     bleio_characteristic_buffer_obj_t *self =
-        mp_obj_malloc(bleio_characteristic_buffer_obj_t, &bleio_characteristic_buffer_type);
+        mp_obj_malloc_with_finaliser(bleio_characteristic_buffer_obj_t, &bleio_characteristic_buffer_type);
 
     common_hal_bleio_characteristic_buffer_construct(self, characteristic, timeout, buffer_size);
 
@@ -184,6 +184,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(bleio_characteristic_buffer_deinit_obj, bleio_c
 
 static const mp_rom_map_elem_t bleio_characteristic_buffer_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit),        MP_ROM_PTR(&bleio_characteristic_buffer_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&bleio_characteristic_buffer_deinit_obj) },
 
     // Standard stream methods.
     { MP_ROM_QSTR(MP_QSTR_read),     MP_ROM_PTR(&mp_stream_read_obj) },

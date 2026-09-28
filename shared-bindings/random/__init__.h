@@ -13,5 +13,7 @@
 void shared_modules_random_seed(mp_uint_t seed);
 mp_uint_t shared_modules_random_getrandbits(uint8_t n);
 mp_int_t shared_modules_random_randrange(mp_int_t start, mp_int_t stop, mp_int_t step);
+// Returns a random integer in [a, b] inclusive. The caller must ensure a <= b.
+mp_int_t shared_modules_random_randint(mp_int_t a, mp_int_t b);
 mp_float_t shared_modules_random_random(void);
 mp_float_t shared_modules_random_uniform(mp_float_t a, mp_float_t b);

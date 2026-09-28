@@ -2,3 +2,35 @@ CIRCUITPY_BUILD_EXTENSIONS = ["elf", "uf2"]
 
 # Non-Zephyr build of the same board; nvm and CIRCUITPY must sit where it puts them.
 counterpart = "raspberrypi/adafruit_feather_rp2040"
+
+
+# Pin names copied from the ports/ counterpart board's pins.c and resolved
+# through the package pin map selected in board.conf.
+[pins]
+A0 = 38
+A1 = 39
+A2 = 40
+A3 = 41
+D24 = 36
+D25 = 37
+SCK = 29
+MOSI = 30
+MISO = 31
+D0 = 3
+RX = 3
+D1 = 2
+TX = 2
+D4 = 8
+SDA = 4
+SCL = 5
+D5 = 9
+D6 = 11
+D9 = 12
+D10 = 13
+D11 = 14
+D12 = 15
+LED = 16
+D13 = 16
+BUTTON = 6
+BOOT = 6
+NEOPIXEL = 27

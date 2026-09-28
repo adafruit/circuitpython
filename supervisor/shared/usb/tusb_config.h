@@ -210,7 +210,6 @@ extern "C" {
 #define CFG_TUH_HUB                 2
 #define CFG_TUH_CDC                 0
 #define CFG_TUH_MSC                 0
-#define CFG_TUH_VENDOR              0
 #define CFG_TUH_API_EDPT_XFER       1
 
 // max device support (excluding hub device)
@@ -228,6 +227,7 @@ extern "C" {
 #define nrf52_errata_187 errata_187
 #define nrf52_errata_171 errata_171
 #define nrf52_errata_166 errata_166
+#define nrf52_errata_199 errata_199
 
 #ifdef __cplusplus
 }

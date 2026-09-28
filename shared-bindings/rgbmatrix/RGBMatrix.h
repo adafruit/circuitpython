@@ -11,7 +11,7 @@
 
 extern const mp_obj_type_t rgbmatrix_RGBMatrix_type;
 
-void common_hal_rgbmatrix_rgbmatrix_construct(rgbmatrix_rgbmatrix_obj_t *self, int width, int bit_depth, uint8_t rgb_count, uint8_t *rgb_pins, uint8_t addr_count, uint8_t *addr_pins, uint8_t clock_pin, uint8_t latch_pin, uint8_t oe_pin, bool doublebuffer, mp_obj_t framebuffer, int8_t tile, bool serpentine, void *timer);
+void common_hal_rgbmatrix_rgbmatrix_construct(rgbmatrix_rgbmatrix_obj_t *self, int width, int bit_depth, uint8_t rgb_count, const mcu_pin_obj_t **rgb_pins, uint8_t addr_count, const mcu_pin_obj_t **addr_pins, const mcu_pin_obj_t *clock_pin, const mcu_pin_obj_t *latch_pin, const mcu_pin_obj_t *oe_pin, bool doublebuffer, mp_obj_t framebuffer, int8_t tile, bool serpentine, void *timer);
 void common_hal_rgbmatrix_rgbmatrix_deinit(rgbmatrix_rgbmatrix_obj_t *);
 void rgbmatrix_rgbmatrix_collect_ptrs(rgbmatrix_rgbmatrix_obj_t *);
 void common_hal_rgbmatrix_rgbmatrix_get_bufinfo(rgbmatrix_rgbmatrix_obj_t *self, mp_buffer_info_t *bufinfo);

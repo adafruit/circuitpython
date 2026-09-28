@@ -14,6 +14,9 @@
 #include "shared-bindings/microcontroller/Processor.h"
 #include "shared-bindings/microcontroller/ResetReason.h"
 #include "shared-bindings/time/__init__.h"
+#if CIRCUITPY_ALARM
+#include "common-hal/alarm/__init__.h"
+#endif
 
 #include "pico/stdlib.h"
 #include "hardware/adc.h"
@@ -150,6 +153,13 @@ mcu_reset_reason_t common_hal_mcu_processor_get_reset_reason(void) {
     if (chip_reset_reg & POWMAN_CHIP_RESET_HAD_POR_BITS) {
         reason = MCU_RESET_REASON_POWER_ON;
     }
+
+    #if CIRCUITPY_ALARM
+    // The chip reset flags above stay set through a powman wake, so check it last.
+    if (alarm_woke_from_powman()) {
+        reason = MCU_RESET_REASON_DEEP_SLEEP_ALARM;
+    }
+    #endif
     #endif
 
     // Check watchdog after chip reset since watchdog doesn't clear chip_reset, while chip_reset clears the watchdog

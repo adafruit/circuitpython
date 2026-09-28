@@ -48,7 +48,7 @@ static mp_obj_t spitarget_spi_target_make_new(const mp_obj_type_t *type, size_t 
     const mcu_pin_obj_t *miso = validate_obj_is_free_pin(args[ARG_miso].u_obj, MP_QSTR_miso);
     const mcu_pin_obj_t *ss = validate_obj_is_free_pin(args[ARG_ss].u_obj, MP_QSTR_ss);
 
-    spitarget_spi_target_obj_t *self = mp_obj_malloc(spitarget_spi_target_obj_t, &spitarget_spi_target_type);
+    spitarget_spi_target_obj_t *self = mp_obj_malloc_with_finaliser(spitarget_spi_target_obj_t, &spitarget_spi_target_type);
     common_hal_spitarget_spi_target_construct(self, sck, mosi, miso, ss);
 
     return MP_OBJ_FROM_PTR(self);
@@ -172,6 +172,7 @@ static MP_DEFINE_CONST_FUN_OBJ_KW(spitarget_spi_target_wait_transfer_obj, 1, spi
 
 static const mp_rom_map_elem_t spitarget_spi_target_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&spitarget_spi_target_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&spitarget_spi_target_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&spitarget_spi_target___exit___obj) },
     { MP_ROM_QSTR(MP_QSTR_load_packet), MP_ROM_PTR(&spitarget_spi_target_load_packet_obj) },

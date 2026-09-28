@@ -11,10 +11,6 @@
 #define CIRCUITPY_BOARD_I2C         (0)
 #define CIRCUITPY_BOARD_I2C_PIN     {{.scl = &pin_GPIO48, .sda = &pin_GPIO47}}
 
-// Display refresh buffer: 8192 bytes = 2048 uint32_t words on stack.
-// ESP32-S3 main task stack is 24KB; verified safe with this board.
-#define CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE (8192)
-
 // AMOLED Display (displayio + qspibus path) - initialized in board_init()
 #define CIRCUITPY_BOARD_DISPLAY      (1)
 #define CIRCUITPY_LCD_CS             (&pin_GPIO9)

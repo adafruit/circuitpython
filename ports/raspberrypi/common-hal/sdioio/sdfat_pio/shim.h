@@ -59,6 +59,10 @@ bool sdfat_pio_card_read_sectors(void *storage, uint32_t start_sector,
 bool sdfat_pio_card_write_sectors(void *storage, uint32_t start_sector,
     const uint8_t *src, size_t num_sectors);
 
+// Ends any open multi-block transfer (CMD12) and waits for the card to finish
+// programming. Returns false on timeout.
+bool sdfat_pio_card_sync(void *storage);
+
 // Last error code from the driver (see SdCardInfo.h).
 uint8_t sdfat_pio_card_error_code(void *storage);
 

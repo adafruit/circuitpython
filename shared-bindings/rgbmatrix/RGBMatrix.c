@@ -21,101 +21,6 @@
 //| class RGBMatrix:
 //|     """Displays an in-memory framebuffer to a HUB75-style RGB LED matrix."""
 //|
-
-extern Protomatter_core *_PM_protoPtr;
-
-static uint8_t validate_pin(mp_obj_t obj, qstr arg_name) {
-    const mcu_pin_obj_t *result = validate_obj_is_free_pin(obj, arg_name);
-    return common_hal_mcu_pin_number(result);
-}
-
-static void claim_and_never_reset_pin(mp_obj_t pin) {
-    common_hal_mcu_pin_claim(pin);
-    common_hal_never_reset_pin(pin);
-}
-
-static void claim_and_never_reset_pins(mp_obj_t seq) {
-    mp_int_t len = MP_OBJ_SMALL_INT_VALUE(mp_obj_len(seq));
-    for (mp_int_t i = 0; i < len; i++) {
-        claim_and_never_reset_pin(mp_obj_subscr(seq, MP_OBJ_NEW_SMALL_INT(i), MP_OBJ_SENTINEL));
-    }
-}
-
-static void preflight_pins_or_throw(uint8_t clock_pin, uint8_t *rgb_pins, uint8_t rgb_pin_count, bool allow_inefficient) {
-    if (rgb_pin_count <= 0 || rgb_pin_count % 6 != 0 || rgb_pin_count > 30) {
-        mp_raise_ValueError_varg(MP_ERROR_TEXT("The length of rgb_pins must be 6, 12, 18, 24, or 30"));
-    }
-
-// Most ports have a strict requirement for how the rgbmatrix pins are laid
-// out; these two micros don't. Special-case it here.
-    #if !defined(CONFIG_IDF_TARGET_ESP32S3) && !defined(CONFIG_IDF_TARGET_ESP32S2)
-    uint32_t port = clock_pin / 32;
-    uint32_t bit_mask = 1 << (clock_pin % 32);
-
-    for (uint8_t i = 0; i < rgb_pin_count; i++) {
-        uint32_t pin_port = rgb_pins[i] / 32;
-
-        if (pin_port != port) {
-            mp_raise_ValueError_varg(
-                MP_ERROR_TEXT("rgb_pins[%d] is not on the same port as clock"), i);
-        }
-
-        uint32_t pin_mask = 1 << (rgb_pins[i] % 32);
-        if (pin_mask & bit_mask) {
-            mp_raise_ValueError_varg(
-                MP_ERROR_TEXT("rgb_pins[%d] duplicates another pin assignment"), i);
-        }
-
-        bit_mask |= pin_mask;
-    }
-
-    if (allow_inefficient) {
-        return;
-    }
-
-    uint8_t byte_mask = 0;
-    if (bit_mask & 0x000000FF) {
-        byte_mask |= 0b0001;
-    }
-    if (bit_mask & 0x0000FF00) {
-        byte_mask |= 0b0010;
-    }
-    if (bit_mask & 0x00FF0000) {
-        byte_mask |= 0b0100;
-    }
-    if (bit_mask & 0xFF000000) {
-        byte_mask |= 0b1000;
-    }
-
-    uint8_t bytes_per_element = 0xff;
-    uint8_t ideal_bytes_per_element = (rgb_pin_count + 7) / 8;
-
-    switch (byte_mask) {
-        case 0b0001:
-        case 0b0010:
-        case 0b0100:
-        case 0b1000:
-            bytes_per_element = 1;
-            break;
-
-        case 0b0011:
-        case 0b1100:
-            bytes_per_element = 2;
-            break;
-
-        default:
-            bytes_per_element = 4;
-            break;
-    }
-
-    if (bytes_per_element != ideal_bytes_per_element) {
-        mp_raise_ValueError_varg(
-            MP_ERROR_TEXT("Pinout uses %d bytes per element, which consumes more than the ideal %d bytes.  If this cannot be avoided, pass allow_inefficient=True to the constructor"),
-            bytes_per_element, ideal_bytes_per_element);
-    }
-    #endif
-}
-
 //|     def __init__(
 //|         self,
 //|         *,
@@ -219,15 +124,15 @@ static mp_obj_t rgbmatrix_rgbmatrix_make_new(const mp_obj_type_t *type, size_t n
     self->base.type = &rgbmatrix_RGBMatrix_type;
 
     uint8_t rgb_count, addr_count;
-    uint8_t rgb_pins[MP_ARRAY_SIZE(self->rgb_pins)];
-    uint8_t addr_pins[MP_ARRAY_SIZE(self->addr_pins)];
-    uint8_t clock_pin = validate_pin(args[ARG_clock_pin].u_obj, MP_QSTR_clock_pin);
-    uint8_t latch_pin = validate_pin(args[ARG_latch_pin].u_obj, MP_QSTR_latch_pin);
-    uint8_t output_enable_pin = validate_pin(args[ARG_output_enable_pin].u_obj, MP_QSTR_output_enable_pin);
+    const mcu_pin_obj_t *rgb_pins[MP_ARRAY_SIZE(self->rgb_pins)];
+    const mcu_pin_obj_t *addr_pins[MP_ARRAY_SIZE(self->addr_pins)];
+    const mcu_pin_obj_t *clock_pin = validate_obj_is_free_pin(args[ARG_clock_pin].u_obj, MP_QSTR_clock_pin);
+    const mcu_pin_obj_t *latch_pin = validate_obj_is_free_pin(args[ARG_latch_pin].u_obj, MP_QSTR_latch_pin);
+    const mcu_pin_obj_t *output_enable_pin = validate_obj_is_free_pin(args[ARG_output_enable_pin].u_obj, MP_QSTR_output_enable_pin);
     mp_int_t bit_depth = mp_arg_validate_int_range(args[ARG_bit_depth].u_int, 1, 6, MP_QSTR_bit_depth);
 
-    validate_pins(MP_QSTR_rgb_pins, rgb_pins, MP_ARRAY_SIZE(self->rgb_pins), args[ARG_rgb_list].u_obj, &rgb_count);
-    validate_pins(MP_QSTR_addr_pins, addr_pins, MP_ARRAY_SIZE(self->addr_pins), args[ARG_addr_list].u_obj, &addr_count);
+    validate_list_is_free_pins(MP_QSTR_rgb_pins, rgb_pins, MP_ARRAY_SIZE(rgb_pins), args[ARG_rgb_list].u_obj, &rgb_count);
+    validate_list_is_free_pins(MP_QSTR_addr_pins, addr_pins, MP_ARRAY_SIZE(addr_pins), args[ARG_addr_list].u_obj, &addr_count);
 
     if (rgb_count % 6) {
         mp_raise_ValueError_varg(MP_ERROR_TEXT("Must use a multiple of 6 rgb pins, not %d"), rgb_count);
@@ -245,8 +150,6 @@ static mp_obj_t rgbmatrix_rgbmatrix_make_new(const mp_obj_type_t *type, size_t n
 
     mp_int_t width = mp_arg_validate_int_min(args[ARG_width].u_int, 1, MP_QSTR_width);
 
-    preflight_pins_or_throw(clock_pin, rgb_pins, rgb_count, true);
-
     common_hal_rgbmatrix_rgbmatrix_construct(self,
         width,
         bit_depth,
@@ -255,12 +158,6 @@ static mp_obj_t rgbmatrix_rgbmatrix_make_new(const mp_obj_type_t *type, size_t n
         clock_pin, latch_pin, output_enable_pin,
         args[ARG_doublebuffer].u_bool,
         args[ARG_framebuffer].u_obj, tile, args[ARG_serpentine].u_bool, NULL);
-
-    claim_and_never_reset_pins(args[ARG_rgb_list].u_obj);
-    claim_and_never_reset_pins(args[ARG_addr_list].u_obj);
-    claim_and_never_reset_pin(args[ARG_clock_pin].u_obj);
-    claim_and_never_reset_pin(args[ARG_output_enable_pin].u_obj);
-    claim_and_never_reset_pin(args[ARG_latch_pin].u_obj);
 
     return MP_OBJ_FROM_PTR(self);
 }
@@ -353,6 +250,7 @@ MP_PROPERTY_GETTER(rgbmatrix_rgbmatrix_height_obj,
 
 static const mp_rom_map_elem_t rgbmatrix_rgbmatrix_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&rgbmatrix_rgbmatrix_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&rgbmatrix_rgbmatrix_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR_brightness), MP_ROM_PTR(&rgbmatrix_rgbmatrix_brightness_obj) },
     { MP_ROM_QSTR(MP_QSTR_refresh), MP_ROM_PTR(&rgbmatrix_rgbmatrix_refresh_obj) },
     { MP_ROM_QSTR(MP_QSTR_width), MP_ROM_PTR(&rgbmatrix_rgbmatrix_width_obj) },

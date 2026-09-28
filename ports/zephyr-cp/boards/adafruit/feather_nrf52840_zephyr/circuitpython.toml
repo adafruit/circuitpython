@@ -5,3 +5,46 @@ NAME="Feather nRF52840 Express"
 
 # Non-Zephyr build of the same board; nvm and CIRCUITPY must sit where it puts them.
 counterpart = "nordic/feather_nrf52840_express"
+
+
+# Pin names copied from the ports/ counterpart board's pins.c and resolved
+# through the package pin map selected in board.conf.
+
+[pins]
+# Pin names copied from the ports/ counterpart board's pins.c and resolved
+# to MDBT50Q-1MV2 module pin numbers through the package pin map selected
+# in board.conf.
+A0 = 20
+A1 = 21
+A2 = 14
+A3 = 13
+A4 = 11
+A5 = 9
+AREF = 12
+VOLTAGE_MONITOR = 10
+BATTERY = 10
+SWITCH = 50
+NFC1 = 52
+NFC2 = 54
+D2 = 54
+D5 = 25
+D6 = 23
+D9 = 19
+D10 = 16
+D11 = 22
+D12 = 24
+D13 = 26
+NEOPIXEL = 38
+NEOPIXEL_POWER = 7
+SCK = 36
+MOSI = 37
+MISO = 39
+TX = 49
+RX = 48
+SCL = 27
+SDA = 29
+L = 8
+LED = 8
+RED_LED = 8
+D3 = 8
+BLUE_LED = 3

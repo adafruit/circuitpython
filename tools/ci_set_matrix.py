@@ -232,7 +232,9 @@ def set_boards(build_all: bool):
             module_matches = pattern_module.search(file)
             port = port_matches.group(1) if port_matches else None
             if port and not module_matches:
-                if port != "unix":
+                # The port may have been removed entirely. In that case, its
+                # boards are gone too, so there is nothing to build for it.
+                if port != "unix" and port in port_to_board:
                     boards_to_build.update(port_to_board[port])
                 continue
 
@@ -242,7 +244,7 @@ def set_boards(build_all: bool):
                 # Take a copy, because we remove items from it below. For
                 # instance, if we remove items from, say, all_board_ids, then
                 # the logic to build all boards breaks.
-                boards = set(port_to_board[port] if port else all_board_ids)
+                boards = set(port_to_board.get(port, ()) if port else all_board_ids)
 
                 # Zephyr boards don't use make, so decide them here from their committed
                 # module table and leave them out of the settings computation below.

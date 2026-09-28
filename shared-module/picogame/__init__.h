@@ -27,13 +27,33 @@
 #endif
 #endif
 
+// Fill nw 32-bit words with w, four per iteration. w32 must be 4-byte aligned.
+static inline void picogame_fill_words(uint32_t *w32, int nw, uint32_t w) {
+    for (int b = nw >> 2; b > 0; b--) {
+        w32[0] = w;
+        w32[1] = w;
+        w32[2] = w;
+        w32[3] = w;
+        w32 += 4;
+    }
+    if (nw & 2) {
+        w32[0] = w;
+        w32[1] = w;
+        w32 += 2;
+    }
+    if (nw & 1) {
+        w32[0] = w;
+    }
+}
+
 // Sample one texel as wire RGB565; false = transparent (skip). Shared by the sprite/canvas
 // blit paths so they inline one copy (see the blit contract: PAL8 indices must be < palette len).
+// key is the transparent value, or -1 for an opaque bitmap (never matches).
 static inline bool src_pixel_s(int format, const uint8_t *data, const uint16_t *pal,
-    bool transp, uint16_t key, int idx, uint16_t *out) {
+    int32_t key, int idx, uint16_t *out) {
     if (format == PICOGAME_FMT_PAL8) {
         uint8_t i = data[idx];
-        if (transp && i == (uint8_t)key) {
+        if ((int32_t)i == key) {
             return false;
         }
         *out = pal[i];                           // indices must be < palette length (see blit contract)
@@ -44,11 +64,16 @@ static inline bool src_pixel_s(int format, const uint8_t *data, const uint16_t *
     #pragma GCC diagnostic ignored "-Wcast-align"
     uint16_t v = ((const uint16_t *)data)[idx];
     #pragma GCC diagnostic pop
-    if (transp && v == key) {
+    if ((int32_t)v == key) {
         return false;
     }
     *out = v;
     return true;
+}
+
+// The transparent key of bm, or -1 when it is opaque.
+static inline int32_t picogame_key_of(const picogame_bitmap_obj_t *bm) {
+    return bm->has_transparent ? (int32_t)bm->transparent : -1;
 }
 
 
@@ -184,7 +209,8 @@ void picogame_blit_bitmap_affine(
 //
 // Strip-path contract a backend provides:
 //   picogame_strip_begin      - open a window for [x0,y0,x1,y1); return strip geometry
-//   picogame_out_strip_send   - push one composited strip (region_w*sh px, wire RGB565)
+//   picogame_out_strip_send   - push one composited strip (region_w*sh px, wire RGB565; packed to
+//                               RGB444 first when that panel is in 12-bit mode)
 //   picogame_out_strip_end    - close the transaction
 //   picogame_set_invert       - panel hardware colour inversion (a free full-screen flash)
 //   picogame_set_pixel_format - panel COLMOD (RGB565/RGB444), when CIRCUITPY_PICOGAME_RGB444
@@ -247,6 +273,10 @@ bool picogame_fb_take_invert_dirty(void);
 #if CIRCUITPY_PICOGAME_RGB444   // compiled in only on boards that opt into RGB444 (default off)
 // Set panel pixel format (COLMOD): rgb444 -> 12-bit RGB444, else 16-bit RGB565.
 void picogame_set_pixel_format(picogame_output_t *display, bool rgb444);
+
+// Put a panel left in RGB444 back to RGB565 at the end of a program, so the console stays
+// readable. Call before reset_displays().
+void picogame_reset(void);
 
 // Pack `npix` (even) wire-order RGB565 pixels in `buf` IN-PLACE to 12-bit RGB444; returns bytes.
 size_t picogame_pack_rgb444(uint16_t *buf, size_t npix);

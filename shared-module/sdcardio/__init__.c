@@ -40,7 +40,9 @@ void sdcardio_init(void) {
     sd_card_detect_pin.base.type = &digitalio_digitalinout_type;
     common_hal_digitalio_digitalinout_construct(&sd_card_detect_pin, DEFAULT_SD_CARD_DETECT);
     common_hal_digitalio_digitalinout_switch_to_input(&sd_card_detect_pin, PULL_UP);
+    #if CIRCUITPY_BULK_RESET
     common_hal_digitalio_digitalinout_never_reset(&sd_card_detect_pin);
+    #endif
     #endif
 }
 
@@ -97,7 +99,9 @@ void automount_sd_card(void) {
     spi_obj = &busio_spi_obj;
     spi_obj->base.type = &busio_spi_type;
     common_hal_busio_spi_construct(spi_obj, DEFAULT_SD_SCK, DEFAULT_SD_MOSI, DEFAULT_SD_MISO, false);
+    #if CIRCUITPY_BULK_RESET
     common_hal_busio_spi_never_reset(spi_obj);
+    #endif
     #endif
     sdcard.base.type = &sdcardio_SDCard_type;
     mp_obj_t cs_obj = MP_OBJ_FROM_PTR(DEFAULT_SD_CS);
@@ -112,7 +116,9 @@ void automount_sd_card(void) {
         return;
     }
     if (mp_obj_is_type(cs_obj, &mcu_pin_type)) {
+        #if CIRCUITPY_BULK_RESET
         common_hal_digitalio_digitalinout_never_reset(MP_OBJ_TO_PTR(sdcard.cs));
+        #endif
     }
     fs_user_mount_t *vfs = &_sdcard_usermount;
     vfs->base.type = &mp_fat_vfs_type;
@@ -134,8 +140,8 @@ void automount_sd_card(void) {
         return;
     }
 
-    filesystem_set_concurrent_write_protection(vfs, true);
-    filesystem_set_writable_by_usb(vfs, false);
+    filesystem_set_concurrent_write_protection((supervisor_vfs_t *)vfs, true);
+    filesystem_set_writable_by_usb((supervisor_vfs_t *)vfs, false);
 
     mp_vfs_mount_t *sdcard_vfs = &_sdcard_vfs;
     sdcard_vfs->str = "/sd";

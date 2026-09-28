@@ -489,7 +489,9 @@ hci_result_t hci_send_acl_pkt(uint16_t handle, uint8_t cid, uint16_t data_len, u
     acl_data_t *acl_data = (acl_data_t *)acl_pkt->data;
     acl_pkt->pkt_type = H4_ACL;
     acl_pkt->handle = handle;
-    acl_pkt->pb = ACL_DATA_PB_FIRST_FLUSH;
+    // Host-to-controller LE data must use the non-flushable start flag; NimBLE
+    // controllers (ESP32-C6) silently discard packets with ACL_DATA_PB_FIRST_FLUSH.
+    acl_pkt->pb = ACL_DATA_PB_FIRST_NON_FLUSH;
     acl_pkt->bc = 0;
     acl_pkt->data_len = (uint16_t)(sizeof(acl_data_t) + data_len);
     acl_data->acl_data_len = data_len;
@@ -608,7 +610,9 @@ hci_result_t hci_le_set_extended_advertising_parameters(uint8_t handle, uint16_t
         .prim_channel_map = prim_channel_map,
         .own_addr_type = own_addr_type,
         // .peer_addr set below.
+        .filter_policy = filter_policy,
         .tx_power = tx_power,
+        .prim_adv_phy = prim_adv_phy,
         .sec_adv_max_skip = sec_adv_max_skip,
         .sec_adv_phy = sec_adv_phy,
         .sid = sid,
@@ -619,6 +623,7 @@ hci_result_t hci_le_set_extended_advertising_parameters(uint8_t handle, uint16_t
         sizeof_field(struct bt_hci_cp_le_set_ext_adv_param, prim_min_interval));
     memcpy(params.prim_max_interval, (void *)&prim_max_interval,
         sizeof_field(struct bt_hci_cp_le_set_ext_adv_param, prim_max_interval));
+    params.peer_addr.type = peer_addr->type;
     memcpy(params.peer_addr.a.val, peer_addr->a.val, sizeof_field(bt_addr_le_t, a.val));
     return send_command(BT_HCI_OP_LE_SET_EXT_ADV_PARAM, sizeof(params), &params);
 }
@@ -672,6 +677,18 @@ hci_result_t hci_le_set_extended_advertising_data(uint8_t handle, uint8_t op, ui
     return send_command(BT_HCI_OP_LE_SET_EXT_ADV_DATA, sizeof(params) - (max_len - valid_len), &params);
 }
 
+hci_result_t hci_le_set_extended_scan_response_data(uint8_t handle, uint8_t op, uint8_t frag_pref, uint8_t len, uint8_t data[]) {
+    const uint8_t max_len = sizeof_field(struct bt_hci_cp_le_set_ext_scan_rsp_data, data);
+    uint8_t valid_len = MIN(len, max_len);
+    struct bt_hci_cp_le_set_ext_scan_rsp_data params = {
+        .handle = handle,
+        .op = op,
+        .frag_pref = frag_pref,
+        .len = valid_len,
+    };
+    memcpy(params.data, data, valid_len);
+    return send_command(BT_HCI_OP_LE_SET_EXT_SCAN_RSP_DATA, sizeof(params) - (max_len - valid_len), &params);
+}
 
 hci_result_t hci_le_set_scan_response_data(uint8_t len, uint8_t data[]) {
     struct bt_hci_cp_le_set_scan_rsp_data params = {

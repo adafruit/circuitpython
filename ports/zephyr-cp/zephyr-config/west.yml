@@ -10,7 +10,7 @@ manifest:
       path: modules/bsim_hw_models/nrf_hw_models
     - name: zephyr
       url: https://github.com/adafruit/zephyr
-      revision: 52dc937c7cda06a1c18ff6adec281bbeb096b3d4
+      revision: db2dd2aa0914b9b427baa6a3df3e6460699e4c80
       clone-depth: 100
       import:
         # Skip what no CircuitPython board can use, so west update fetches 37

@@ -8,7 +8,9 @@
 #include "shared-module/picogame/pg_compat.h"
 #include "shared-bindings/picogame/Canvas.h"
 #include "shared-bindings/picogame/Bitmap.h"
+#if CIRCUITPY_FONTIO
 #include "shared-bindings/fontio/BuiltinFont.h"
+#endif
 #include "shared-module/picogame/Canvas.h"
 
 //| class Canvas:
@@ -79,10 +81,9 @@ static mp_obj_t picogame_canvas_make_new(const mp_obj_type_t *type, size_t n_arg
         self->transparent = 0;
         self->has_transparent = false;
     }
-    uint16_t fill = self->has_transparent ? self->transparent : 0;
-    for (size_t i = 0; i < (size_t)w * h; i++) {
-        self->data[i] = fill;
-    }
+    // clear() marks the surface dirty and reads the accumulator, so reset it on both sides.
+    picogame_canvas_dirty_reset(self);
+    picogame_canvas_clear(self, self->has_transparent ? self->transparent : 0);
     picogame_canvas_dirty_reset(self);
     return MP_OBJ_FROM_PTR(self);
 }
@@ -512,10 +513,12 @@ static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(canvas_frame3d_obj, 7, 7, canvas_fram
 //|         is drawn; no memory is retained between calls. Only ASCII characters are
 //|         supported. If ``bg`` is given the glyph background is filled with it,
 //|         otherwise it is transparent. Inside a `StripDraw` callback the view is a
-//|         Canvas, so ``view.text(...)`` draws text directly into the frame."""
+//|         Canvas, so ``view.text(...)`` draws text directly into the frame.
+//|         Raises :py:class:`NotImplementedError` in builds without `fontio`."""
 //|         ...
 //|
 static mp_obj_t canvas_text(size_t n, const mp_obj_t *a) {
+    #if CIRCUITPY_FONTIO
     const char *s = mp_obj_str_get_str(a[3]);
     mp_int_t fg = mp_obj_get_int(a[4]);
     const void *font = MP_OBJ_TO_PTR(mp_arg_validate_type(a[5], &fontio_builtinfont_type, MP_QSTR_font));
@@ -524,6 +527,9 @@ static mp_obj_t canvas_text(size_t n, const mp_obj_t *a) {
     picogame_canvas_text(cv_self(a[0]), mp_obj_get_int(a[1]), mp_obj_get_int(a[2]),
         s, (uint16_t)fg, bg, has_bg, font);
     return mp_const_none;
+    #else
+    mp_raise_NotImplementedError(MP_ERROR_TEXT("Operation or feature not supported"));
+    #endif
 }
 static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(canvas_text_obj, 6, 7, canvas_text);
 

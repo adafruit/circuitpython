@@ -747,10 +747,10 @@ static void fill_row(displayio_bitmap_t *bitmap, int swap, int16_t *luminance_da
 
 static void write_pixels(displayio_bitmap_t *bitmap, int y, bool *data) {
     if (bitmap->bits_per_value == 1) {
-        uint32_t *pixel_data = (uint32_t *)(bitmap->data + bitmap->stride * y);
-        for (int i = 0; i < bitmap->width; i++) {
-            uint32_t p = 0;
-            for (int j = 0; j < 32; j++) {
+        uint8_t *pixel_data = (uint8_t *)(bitmap->data + bitmap->stride * y);
+        for (int i = 0; i < (bitmap->width + 7) / 8; i++) {
+            uint8_t p = 0;
+            for (int j = 0; j < 8; j++) {
                 p = (p << 1);
                 if (*data++) {
                     p |= 1;
@@ -787,6 +787,7 @@ void common_hal_bitmaptools_dither(displayio_bitmap_t *dest_bitmap, displayio_bi
     };
     // out holds one output row of pixels, and is padded to be a multiple of 32 so that the 1bpp storage loop can be simplified
     bool out[(width + 31) / 32 * 32];
+    memset(out + width, 0, sizeof(out) - width);
 
     fill_row(source_bitmap, swap, rows[0], 0, info->mx);
     fill_row(source_bitmap, swap, rows[1], 1, info->mx);

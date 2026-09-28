@@ -12,8 +12,7 @@
 #include "py/obj.h"
 #include "py/objnamedtuple.h"
 #include "py/runtime.h"
-#include "extmod/vfs_fat.h"
-#include "extmod/vfs_posix.h"
+#include "py/stream.h"
 
 #include "shared-bindings/synthio/__init__.h"
 #include "shared-bindings/synthio/Biquad.h"
@@ -211,16 +210,22 @@ static mp_obj_t synthio_from_file(size_t n_args, const mp_obj_t *pos_args, mp_ma
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
-    if (!mp_obj_is_type(args[ARG_file].u_obj, &mp_type_vfs_fat_fileio)) {
+    mp_obj_t file_obj = args[ARG_file].u_obj;
+    // Any readable, seekable binary stream works, regardless of which
+    // filesystem it came from.
+    const mp_stream_p_t *stream_p = mp_get_stream_raise(file_obj, MP_STREAM_OP_READ | MP_STREAM_OP_IOCTL);
+    if (stream_p->is_text) {
         mp_raise_TypeError(MP_ERROR_TEXT("file must be a file opened in byte mode"));
     }
-    pyb_file_obj_t *file = MP_OBJ_TO_PTR(args[ARG_file].u_obj);
 
     uint8_t chunk_header[14];
-    f_rewind(&file->fp);
-    UINT bytes_read;
-    if (f_read(&file->fp, chunk_header, sizeof(chunk_header), &bytes_read) != FR_OK) {
-        mp_raise_OSError(MP_EIO);
+    int errcode;
+    if (mp_stream_seek(file_obj, 0, MP_SEEK_SET, &errcode) == (mp_off_t)-1) {
+        mp_raise_OSError(errcode);
+    }
+    mp_uint_t bytes_read = mp_stream_rw(file_obj, chunk_header, sizeof(chunk_header), &errcode, MP_STREAM_RW_READ);
+    if (bytes_read == MP_STREAM_ERROR) {
+        mp_raise_OSError(errcode);
     }
     if (bytes_read != sizeof(chunk_header) ||
         memcmp(chunk_header, "MThd\0\0\0\6\0\0\0\1", 12)) {
@@ -235,8 +240,9 @@ static mp_obj_t synthio_from_file(size_t n_args, const mp_obj_t *pos_args, mp_ma
         tempo = 2 * ((chunk_header[12] << 8) | chunk_header[13]);
     }
 
-    if (f_read(&file->fp, chunk_header, 8, &bytes_read) != FR_OK) {
-        mp_raise_OSError(MP_EIO);
+    bytes_read = mp_stream_rw(file_obj, chunk_header, 8, &errcode, MP_STREAM_RW_READ);
+    if (bytes_read == MP_STREAM_ERROR) {
+        mp_raise_OSError(errcode);
     }
     if (bytes_read != 8 || memcmp(chunk_header, "MTrk", 4)) {
         mp_arg_error_invalid(MP_QSTR_file);
@@ -244,14 +250,15 @@ static mp_obj_t synthio_from_file(size_t n_args, const mp_obj_t *pos_args, mp_ma
     uint32_t track_size = (chunk_header[4] << 24) |
         (chunk_header[5] << 16) | (chunk_header[6] << 8) | chunk_header[7];
     uint8_t *buffer = m_malloc_without_collect(track_size);
-    if (f_read(&file->fp, buffer, track_size, &bytes_read) != FR_OK) {
-        mp_raise_OSError(MP_EIO);
+    bytes_read = mp_stream_rw(file_obj, buffer, track_size, &errcode, MP_STREAM_RW_READ);
+    if (bytes_read == MP_STREAM_ERROR) {
+        mp_raise_OSError(errcode);
     }
     if (bytes_read != track_size) {
         mp_arg_error_invalid(MP_QSTR_file);
     }
 
-    synthio_miditrack_obj_t *result = mp_obj_malloc(synthio_miditrack_obj_t, &synthio_miditrack_type);
+    synthio_miditrack_obj_t *result = mp_obj_malloc_with_finaliser(synthio_miditrack_obj_t, &synthio_miditrack_type);
     common_hal_synthio_miditrack_construct(result, buffer, track_size,
         tempo, args[ARG_sample_rate].u_int, args[ARG_waveform].u_obj,
         mp_const_none,

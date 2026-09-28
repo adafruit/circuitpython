@@ -139,9 +139,11 @@ bool keypad_debounce(keypad_scanner_obj_t *self, mp_uint_t key_number, bool curr
     return false;
 }
 
+#if CIRCUITPY_BULK_RESET
 void keypad_never_reset(keypad_scanner_obj_t *self) {
     self->never_reset = true;
 }
+#endif
 
 void common_hal_keypad_generic_reset(void *self_in) {
     keypad_scanner_obj_t *self = self_in;

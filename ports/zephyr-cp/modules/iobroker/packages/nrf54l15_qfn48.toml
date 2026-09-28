@@ -1,0 +1,165 @@
+# Package pin map for nrf54l15_qfn48, transcribed from nRF54L15_nRF54L10_nRF54L05_Datasheet_v1.0.pdf,
+# section 10.1.4 (QFN48, QFAA package pin assignments),
+# by tools/gen_package.py. Review against the datasheet figure before
+# editing by hand; regenerate instead when the datasheet changes.
+
+name = "nrf54l15_qfn48"
+socs = ["SOC_NRF54L15", "SOC_NRF54L10", "SOC_NRF54L05"]
+
+[[pins]]
+pin = 1
+pad = 32
+pad_name = "P1.00"
+
+[[pins]]
+pin = 2
+pad = 33
+pad_name = "P1.01"
+
+[[pins]]
+pin = 3
+pad = 34
+pad_name = "P1.02"
+
+[[pins]]
+pin = 4
+pad = 35
+pad_name = "P1.03"
+
+[[pins]]
+pin = 5
+pad = 36
+pad_name = "P1.04"
+
+[[pins]]
+pin = 6
+pad = 37
+pad_name = "P1.05"
+
+[[pins]]
+pin = 7
+pad = 38
+pad_name = "P1.06"
+
+[[pins]]
+pin = 8
+pad = 39
+pad_name = "P1.07"
+
+[[pins]]
+pin = 9
+pad = 40
+pad_name = "P1.08"
+
+[[pins]]
+pin = 11
+pad = 64
+pad_name = "P2.00"
+
+[[pins]]
+pin = 12
+pad = 65
+pad_name = "P2.01"
+
+[[pins]]
+pin = 13
+pad = 66
+pad_name = "P2.02"
+
+[[pins]]
+pin = 14
+pad = 67
+pad_name = "P2.03"
+
+[[pins]]
+pin = 15
+pad = 68
+pad_name = "P2.04"
+
+[[pins]]
+pin = 16
+pad = 69
+pad_name = "P2.05"
+
+[[pins]]
+pin = 17
+pad = 70
+pad_name = "P2.06"
+
+[[pins]]
+pin = 18
+pad = 71
+pad_name = "P2.07"
+
+[[pins]]
+pin = 19
+pad = 72
+pad_name = "P2.08"
+
+[[pins]]
+pin = 20
+pad = 73
+pad_name = "P2.09"
+
+[[pins]]
+pin = 21
+pad = 74
+pad_name = "P2.10"
+
+[[pins]]
+pin = 23
+pad = 0
+pad_name = "P0.00"
+
+[[pins]]
+pin = 24
+pad = 1
+pad_name = "P0.01"
+
+[[pins]]
+pin = 27
+pad = 2
+pad_name = "P0.02"
+
+[[pins]]
+pin = 28
+pad = 3
+pad_name = "P0.03"
+
+[[pins]]
+pin = 29
+pad = 4
+pad_name = "P0.04"
+
+[[pins]]
+pin = 37
+pad = 41
+pad_name = "P1.09"
+
+[[pins]]
+pin = 38
+pad = 42
+pad_name = "P1.10"
+
+[[pins]]
+pin = 39
+pad = 43
+pad_name = "P1.11"
+
+[[pins]]
+pin = 40
+pad = 44
+pad_name = "P1.12"
+
+[[pins]]
+pin = 41
+pad = 45
+pad_name = "P1.13"
+
+[[pins]]
+pin = 42
+pad = 46
+pad_name = "P1.14"
+
+# Package pins without a GPIO pad (not routable):
+# 10, 22, 25, 26, 30, 31, 32, 33, 34, 35, 36, 43, 44, 45, 46, 47, 48

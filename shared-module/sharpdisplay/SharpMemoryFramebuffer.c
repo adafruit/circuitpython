@@ -105,7 +105,7 @@ void common_hal_sharpdisplay_framebuffer_deinit(sharpdisplay_framebuffer_obj_t *
         common_hal_busio_spi_deinit(self->bus);
     }
 
-    common_hal_reset_pin(self->chip_select.pin);
+    common_hal_digitalio_digitalinout_deinit(&self->chip_select);
 
     port_free(self->bufinfo.buf);
 
@@ -122,10 +122,14 @@ void common_hal_sharpdisplay_framebuffer_construct(
     bool jdi_display) {
     common_hal_digitalio_digitalinout_construct(&self->chip_select, chip_select);
     common_hal_digitalio_digitalinout_switch_to_output(&self->chip_select, true, DRIVE_MODE_PUSH_PULL);
+    #if CIRCUITPY_BULK_RESET
     common_hal_never_reset_pin(chip_select);
+    #endif
 
     self->bus = spi;
+    #if CIRCUITPY_BULK_RESET
     common_hal_busio_spi_never_reset(self->bus);
+    #endif
 
     self->width = width;
     self->height = height;
