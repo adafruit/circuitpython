@@ -17,7 +17,9 @@
 //| no cryptography itself
 //| and holds no key material; it exists only so those operations can take explicit
 //| ``padding``/``algorithm`` arguments instead of baking one fixed combination into
-//| a method name. Named and organized after
+//| a method name. `hardwarekey.DigitalSignatureKey.sign()` /
+//| `hardwarekey.DigitalSignatureKey.decrypt()` are the operations these
+//| parameterize today. Named and organized after
 //| :py:mod:`cryptography.hazmat.primitives`, the equivalent shared home for
 //| :py:mod:`~cryptography.hazmat.primitives.asymmetric.padding` and
 //| :py:mod:`~cryptography.hazmat.primitives.hashes` in the ``cryptography`` package.

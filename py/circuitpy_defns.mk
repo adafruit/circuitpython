@@ -608,6 +608,7 @@ SRC_COMMON_HAL_ALL = \
 	sdioio/SDCard.c \
 	sdioio/__init__.c \
 	hardwarekey/HardwareKey.c \
+	hardwarekey/DigitalSignatureKey.c \
 	hardwarekey/__init__.c \
 	socketpool/__init__.c \
 	socketpool/SocketPool.c \
@@ -853,6 +854,7 @@ SRC_SHARED_MODULE_ALL = \
 	sdcardio/SDCard.c \
 	sdcardio/__init__.c \
 	hardwarekey/HardwareKey.c \
+	hardwarekey/DigitalSignatureKey.c \
 	sharpdisplay/SharpMemoryFramebuffer.c \
 	sharpdisplay/__init__.c \
 	socket/__init__.c \

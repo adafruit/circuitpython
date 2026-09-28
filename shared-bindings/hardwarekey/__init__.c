@@ -7,6 +7,7 @@
 #include "py/enum.h"
 #include "py/obj.h"
 
+#include "shared-bindings/hardwarekey/DigitalSignatureKey.h"
 #include "shared-bindings/hardwarekey/__init__.h"
 #include "shared-bindings/hardwarekey/HardwareKey.h"
 
@@ -22,8 +23,9 @@
 //| `HardwareKey` objects are not created by application code. Every hardware key
 //| slot the board has is exposed as a fixed object in :mod:`board` (for example
 //| ``board.EFUSE_KEY0``), in the same way that pins are. Compute a MAC with one
-//| by passing it to `hmac.new()`; sign or decrypt with one by calling
-//| `HardwareKey.sign()` / `HardwareKey.decrypt()`.
+//| by passing it to `hmac.new()`; turn a Digital Signature key into a
+//| `DigitalSignatureKey` with `load_digital_signature_key()`, then sign or
+//| decrypt with `DigitalSignatureKey.sign()` / `DigitalSignatureKey.decrypt()`.
 //| """
 
 MAKE_ENUM_VALUE(hardwarekey_purpose_type, hardwarekey_purpose, HMAC_UP, HARDWAREKEY_PURPOSE_HMAC);
@@ -38,8 +40,8 @@ MAKE_ENUM_VALUE(hardwarekey_purpose_type, hardwarekey_purpose, UNUSED, HARDWAREK
 //|     """The slot holds an HMAC key. It can be used with `hmac.new()`."""
 //|
 //|     HMAC_DOWN_DIGITAL_SIGNATURE: object
-//|     """The slot holds the key for a Digital Signature (RSA) key. Call
-//|     `HardwareKey.load_ds_params()` once, then `HardwareKey.sign()`."""
+//|     """The slot holds the key for a Digital Signature (RSA) key. Turn it into a
+//|     `DigitalSignatureKey` with `load_digital_signature_key()`."""
 //|
 //|     UNUSED: object
 //|     """No key is burned into the slot (or it is burned for something this module
@@ -59,6 +61,8 @@ MAKE_ENUM_TYPE(hardwarekey, Purpose, hardwarekey_purpose);
 static const mp_rom_map_elem_t hardwarekey_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_hardwarekey) },
     { MP_ROM_QSTR(MP_QSTR_HardwareKey), MP_ROM_PTR(&hardwarekey_hardwarekey_type) },
+    { MP_ROM_QSTR(MP_QSTR_DigitalSignatureKey), MP_ROM_PTR(&hardwarekey_digitalsignaturekey_type) },
+    { MP_ROM_QSTR(MP_QSTR_load_digital_signature_key), MP_ROM_PTR(&hardwarekey_load_digital_signature_key_obj) },
     { MP_ROM_QSTR(MP_QSTR_Purpose), MP_ROM_PTR(&hardwarekey_purpose_type) },
 };
 static MP_DEFINE_CONST_DICT(hardwarekey_module_globals, hardwarekey_module_globals_table);

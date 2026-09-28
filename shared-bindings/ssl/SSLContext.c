@@ -17,7 +17,7 @@
 #include "shared-bindings/ssl/SSLContext.h"
 
 #if CIRCUITPY_HARDWAREKEY
-#include "shared-bindings/hardwarekey/HardwareKey.h"
+#include "shared-bindings/hardwarekey/DigitalSignatureKey.h"
 #endif
 
 //| class SSLContext:
@@ -36,7 +36,7 @@ static mp_obj_t ssl_sslcontext_make_new(const mp_obj_type_t *type, size_t n_args
 }
 
 //|     def load_cert_chain(
-//|         self, certfile: str, keyfile: str | hardwarekey.HardwareKey | None = None
+//|         self, certfile: str, keyfile: str | hardwarekey.DigitalSignatureKey | None = None
 //|     ) -> None:
 //|         """Load a private key and the corresponding certificate.
 //|
@@ -45,10 +45,11 @@ static mp_obj_t ssl_sslcontext_make_new(const mp_obj_type_t *type, size_t n_args
 //|         needed to establish the certificate's authenticity.
 //|
 //|         ``keyfile`` is either the path to a file containing the private key, or
-//|         a `hardwarekey.HardwareKey` whose key never leaves the hardware -- in
-//|         which case signing during the TLS handshake is done by the hardware and
-//|         the private key is never exposed. If ``keyfile`` is omitted, the private
-//|         key is read from ``certfile``.
+//|         a `hardwarekey.DigitalSignatureKey` (obtained via
+//|         `hardwarekey.load_digital_signature_key()`) whose key never leaves the
+//|         hardware -- in which case signing during the TLS handshake is done by
+//|         the hardware and the private key is never exposed. If ``keyfile`` is
+//|         omitted, the private key is read from ``certfile``.
 //|         """
 //|
 
@@ -77,19 +78,16 @@ static mp_obj_t ssl_sslcontext_load_cert_chain(size_t n_args, const mp_obj_t *po
 
     mp_obj_t keyfile = args[ARG_keyfile].u_obj;
     #if CIRCUITPY_HARDWAREKEY
-    if (mp_obj_is_type(keyfile, &hardwarekey_hardwarekey_type)) {
-        hardwarekey_hardwarekey_obj_t *key = MP_OBJ_TO_PTR(keyfile);
-        if (common_hal_hardwarekey_hardwarekey_get_purpose(key) != HARDWAREKEY_PURPOSE_DS) {
-            mp_raise_ValueError_varg(MP_ERROR_TEXT("key does not have the expected %q purpose"), MP_QSTR_HMAC_DOWN_DIGITAL_SIGNATURE);
-        }
+    if (mp_obj_is_type(keyfile, &hardwarekey_digitalsignaturekey_type)) {
+        hardwarekey_digitalsignaturekey_obj_t *key = MP_OBJ_TO_PTR(keyfile);
         // TLS client-cert auth signs the handshake, so this commits the key to
-        // signing (see HardwareKey.sign()'s docstring on the one-algorithm-per-
-        // loaded-key rule) -- raises if load_ds_params() hasn't been called, or
-        // if this key already committed to a different algorithm (e.g. decrypt()).
-        common_hal_hardwarekey_hardwarekey_ensure_algorithm(key,
+        // signing (see DigitalSignatureKey.sign()'s docstring on the
+        // one-algorithm-per-lifetime rule) -- raises if this key already
+        // committed to a different algorithm (e.g. decrypt()).
+        common_hal_hardwarekey_digitalsignaturekey_ensure_algorithm(key,
             PSA_ALG_RSA_PKCS1V15_SIGN(PSA_ALG_ANY_HASH),
             PSA_KEY_USAGE_SIGN_MESSAGE | PSA_KEY_USAGE_SIGN_HASH);
-        hw_key_id = common_hal_hardwarekey_hardwarekey_get_key_id(key);
+        hw_key_id = common_hal_hardwarekey_digitalsignaturekey_get_key_id(key);
     } else
     #endif
     if (keyfile != mp_const_none) {
