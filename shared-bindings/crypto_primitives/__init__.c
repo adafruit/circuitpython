@@ -13,7 +13,7 @@
 //|
 //| ``crypto_primitives`` holds padding and hash-algorithm markers used to
 //| parameterize an operation elsewhere, for example
-//| `hardwarekey.HardwareKey.sign()` / `hardwarekey.HardwareKey.decrypt()`. It does
+//| `hardwarekey.DigitalSignatureKey.sign()` / `hardwarekey.DigitalSignatureKey.decrypt()`. It does
 //| no cryptography itself
 //| and holds no key material; it exists only so those operations can take explicit
 //| ``padding``/``algorithm`` arguments instead of baking one fixed combination into
@@ -60,7 +60,7 @@ const mp_obj_base_t crypto_primitives_sha256_obj = { &crypto_primitives_sha256_t
 //|     :py:class:`cryptography.hazmat.primitives.asymmetric.padding.OAEP`.
 //|
 //|     Whether `OAEP` is actually usable depends on the operation it's passed to --
-//|     see e.g. `hardwarekey.HardwareKey.decrypt()`."""
+//|     see e.g. `hardwarekey.DigitalSignatureKey.decrypt()`."""
 //|
 //|     def __init__(self, algorithm: object, *, label: Optional[ReadableBuffer] = None) -> None:
 //|         """
