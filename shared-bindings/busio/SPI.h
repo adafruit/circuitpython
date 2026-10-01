@@ -15,6 +15,9 @@
 // Type object used in Python. Should be shared between ports.
 extern const mp_obj_type_t busio_spi_type;
 
+// Also used by async_spi.SPI.
+mp_obj_t busio_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args);
+
 // Construct an underlying SPI object.
 extern void common_hal_busio_spi_construct(busio_spi_obj_t *self,
     const mcu_pin_obj_t *clock, const mcu_pin_obj_t *mosi,
@@ -57,6 +60,13 @@ extern void common_hal_busio_spi_transfer_start(busio_spi_obj_t *self, const uin
 // If the transfer started with done is still the bus's, finish it if done is set, and otherwise
 // stop it without setting done. Does nothing for an earlier transfer. Does not allocate.
 extern void common_hal_busio_spi_stop(busio_spi_obj_t *self, circuitpy_async_flag_t *done);
+
+// busio.SPI methods that async_spi.SPI shares: its objects start with a busio_spi_obj_t.
+extern const mp_obj_fun_builtin_fixed_t busio_spi_deinit_obj;
+extern const mp_obj_fun_builtin_var_t busio_spi_configure_obj;
+extern const mp_obj_fun_builtin_fixed_t busio_spi_try_lock_obj;
+extern const mp_obj_fun_builtin_fixed_t busio_spi_unlock_obj;
+extern const mp_obj_fun_builtin_fixed_t busio_spi_get_frequency_obj;
 #endif
 
 // Reads in len bytes while outputting the byte write_value.
