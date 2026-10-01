@@ -235,6 +235,10 @@ static int _wait_for_completion(uint32_t timeout_msecs) {
 typedef struct {
     uint8_t *buf;
     uint16_t len;
+    // True only once the callback below has actually written real data. `len` starts at
+    // the requested capacity, not zero, so without this flag a read that never completes
+    // is indistinguishable from one that fully succeeded.
+    bool completed;
 } _read_info_t;
 
 static int _read_cb(uint16_t conn_handle,
@@ -247,6 +251,7 @@ static int _read_cb(uint16_t conn_handle,
             int len = MIN(read_info->len, OS_MBUF_PKTLEN(attr->om));
             os_mbuf_copydata(attr->om, attr->offset, len, read_info->buf);
             read_info->len = len;
+            read_info->completed = true;
         }
             MP_FALLTHROUGH;
 
@@ -265,11 +270,15 @@ static int _read_cb(uint16_t conn_handle,
 int bleio_gattc_read(uint16_t conn_handle, uint16_t value_handle, uint8_t *buf, size_t len) {
     _read_info_t read_info = {
         .buf = buf,
-        .len = len
+        .len = len,
+        .completed = false,
     };
     _reset_completion_status();
     CHECK_NIMBLE_ERROR(ble_gattc_read(conn_handle, value_handle, _read_cb, &read_info));
     CHECK_NIMBLE_ERROR(_wait_for_completion(2000));
+    if (!read_info.completed) {
+        return 0;
+    }
     return read_info.len;
 }
 
