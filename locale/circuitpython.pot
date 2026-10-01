@@ -1152,7 +1152,7 @@ msgstr ""
 
 #: ports/atmel-samd/common-hal/picogame/Display.c
 #: ports/raspberrypi/common-hal/picogame/Display.c py/argcheck.c py/runtime.c
-#: shared-bindings/bitmapfilter/__init__.c
+#: shared-bindings/bitmapfilter/__init__.c shared-bindings/picotts/Engine.c
 #: shared-module/audiodelays/MultiTapDelay.c shared-module/synthio/Note.c
 #: shared-module/synthio/__init__.c
 msgid "%q must be of type %q, not %q"
@@ -1178,7 +1178,7 @@ msgstr ""
 
 #: ports/atmel-samd/common-hal/sdioio/SDCard.c
 #: ports/espressif/common-hal/qspibus/QSPIBus.c shared-bindings/emmcio/EMMC.c
-#: shared-bindings/socketpool/SocketPool.c
+#: shared-bindings/socketpool/SocketPool.c shared-module/picotts/Engine.c
 msgid "%q failure: %d"
 msgstr ""
 
