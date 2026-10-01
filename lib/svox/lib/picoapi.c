@@ -958,7 +958,7 @@ PICO_FUNC pico_loadVoiceFromPart(pico_System system,
     if (sg_part == NULL)
     {
         PICODBG_DEBUG(("SG partition not found for %s", name));
-        return PICO_EXC_FILE_NOT_FOUND; 
+        return PICO_EXC_FILE_NOT_FOUND;
     }
 
     // Attempt to find a partition with the SG subtype
@@ -966,7 +966,7 @@ PICO_FUNC pico_loadVoiceFromPart(pico_System system,
     if (ta_part == NULL)
     {
         PICODBG_DEBUG(("TA partition not found for %s", name));
-        return PICO_EXC_FILE_NOT_FOUND; 
+        return PICO_EXC_FILE_NOT_FOUND;
     }
 
     // Map the SG partition into the address space
