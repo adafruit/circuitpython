@@ -25,10 +25,10 @@ typedef struct {
     uint8_t polarity;
     uint8_t phase;
     uint8_t bits;
-    bool async_active;          // a write_start DMA transfer may still be running
+    bool async_active;          // an async DMA transfer may still be running
     bool dma_kept;              // dma_tx and dma_rx are ours until deinit
     uint8_t dma_tx;
     uint8_t dma_rx;
-    uint8_t discard;            // RX target of write_start
+    uint8_t one_byte;           // the one-byte side of an async write (RX) or read (TX)
     circuitpy_async_flag_t *async_done;
 } busio_spi_obj_t;

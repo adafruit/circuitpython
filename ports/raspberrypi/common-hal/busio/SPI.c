@@ -16,8 +16,50 @@
 
 #include "hardware/dma.h"
 #include "hardware/gpio.h"
+#if CIRCUITPY_ASYNC_SPI
+#include "hardware/irq.h"
+#endif
 
 #define NO_INSTANCE 0xff
+
+#if CIRCUITPY_ASYNC_SPI
+// Done flag of the async transfer on each kept RX channel, set when that channel finishes.
+static circuitpy_async_flag_t *async_flags[NUM_DMA_CHANNELS];
+// RX channels with the interrupt enabled.
+static uint32_t async_irq_mask;
+
+// Shared DMA_IRQ_0 handler: acknowledges and services only our channels, like audio_dma and rp2pio.
+static void __not_in_flash_func(spi_dma_irq_handler)(void) {
+    uint32_t pending = dma_hw->ints0 & async_irq_mask;
+    dma_hw->ints0 = pending;
+    for (uint chan = 0; pending != 0; chan++, pending >>= 1) {
+        if ((pending & 1) && async_flags[chan] != NULL) {
+            CIRCUITPY_ASYNC_FLAG_SET(async_flags[chan]);
+        }
+    }
+}
+
+static void async_irq_enable(uint chan) {
+    dma_hw->ints0 = 1u << chan;
+    if (async_irq_mask == 0) {
+        irq_add_shared_handler(DMA_IRQ_0, spi_dma_irq_handler, PICO_SHARED_IRQ_HANDLER_DEFAULT_ORDER_PRIORITY);
+    }
+    async_irq_mask |= 1u << chan;
+    dma_irqn_set_channel_enabled(0, chan, true);
+    irq_set_enabled(DMA_IRQ_0, true);
+}
+
+static void async_irq_disable(uint chan) {
+    dma_irqn_set_channel_enabled(0, chan, false);
+    async_irq_mask &= ~(1u << chan);
+    if (async_irq_mask == 0) {
+        irq_remove_handler(DMA_IRQ_0, spi_dma_irq_handler);
+    }
+    if (dma_hw->inte0 == 0) {
+        irq_set_enabled(DMA_IRQ_0, false);
+    }
+}
+#endif
 
 void common_hal_busio_spi_construct(busio_spi_obj_t *self,
     const mcu_pin_obj_t *clock, const mcu_pin_obj_t *mosi,
@@ -107,6 +149,9 @@ void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
     }
     common_hal_busio_spi_end(self);
     if (self->dma_kept) {
+        #if CIRCUITPY_ASYNC_SPI
+        async_irq_disable(self->dma_rx);
+        #endif
         dma_channel_unclaim(self->dma_tx);
         dma_channel_unclaim(self->dma_rx);
         self->dma_kept = false;
@@ -128,6 +173,9 @@ bool common_hal_busio_spi_configure(busio_spi_obj_t *self,
         bits == self->bits) {
         return true;
     }
+
+    // A running async transfer finishes with the old settings.
+    common_hal_busio_spi_end(self);
 
     spi_set_format(self->peripheral, bits, polarity, phase, SPI_MSB_FIRST);
 
@@ -171,11 +219,11 @@ void common_hal_busio_spi_unlock(busio_spi_obj_t *self) {
 
 // Start a transfer. With DMA it runs in the background and _end() finishes it; otherwise it is
 // done in software before this returns. An out or in buffer shorter than the transfer is one
-// byte repeated or dropped. keep_dma keeps the DMA channels until deinit, for buses that send
-// often. Returns whether DMA is running.
+// byte repeated or dropped. An async transfer passes its done flag, and keeps the DMA channels
+// until deinit, for buses that send often. Returns whether DMA is running.
 static bool _start(busio_spi_obj_t *self,
     const uint8_t *data_out, size_t out_len,
-    uint8_t *data_in, size_t in_len, bool keep_dma) {
+    uint8_t *data_in, size_t in_len, circuitpy_async_flag_t *done) {
     size_t len = MAX(out_len, in_len);
     // Only use DMA if both data buffers are in SRAM. Otherwise, we'll stall the DMA with PSRAM or flash cache misses.
     bool use_dma = len >= 32 && data_in >= (uint8_t *)SRAM_BASE && data_out >= (uint8_t *)SRAM_BASE;
@@ -185,7 +233,12 @@ static bool _start(busio_spi_obj_t *self,
         if (chan_tx >= 0 && chan_rx >= 0) {
             self->dma_tx = chan_tx;
             self->dma_rx = chan_rx;
-            self->dma_kept = keep_dma;
+            self->dma_kept = done != NULL;
+            #if CIRCUITPY_ASYNC_SPI
+            if (done != NULL) {
+                async_irq_enable(chan_rx);
+            }
+            #endif
         } else {
             // If we have claimed only one channel successfully, release it.
             if (chan_tx >= 0) {
@@ -220,6 +273,10 @@ static bool _start(busio_spi_obj_t *self,
             len,
             false);
 
+        #if CIRCUITPY_ASYNC_SPI
+        // Before the start, so that a short transfer cannot finish unseen.
+        async_flags[self->dma_rx] = done;
+        #endif
         dma_start_channel_mask((1u << self->dma_rx) | (1u << self->dma_tx));
         return true;
     }
@@ -269,7 +326,7 @@ static void _end(busio_spi_obj_t *self, bool background_tasks) {
 static bool _transfer(busio_spi_obj_t *self,
     const uint8_t *data_out, size_t out_len,
     uint8_t *data_in, size_t in_len) {
-    if (_start(self, data_out, out_len, data_in, in_len, false)) {
+    if (_start(self, data_out, out_len, data_in, in_len, NULL)) {
         // TODO: We should idle here until we get a DMA interrupt or something else.
         _end(self, true);
     }
@@ -282,22 +339,70 @@ bool common_hal_busio_spi_write(busio_spi_obj_t *self,
     return _transfer(self, data, len, (uint8_t *)&data_in, MIN(len, 4));
 }
 
-void common_hal_busio_spi_write_start(busio_spi_obj_t *self, const uint8_t *data, size_t len,
-    circuitpy_async_flag_t *done) {
-    common_hal_busio_spi_end(self);
+// Start an async transfer once the previous one has ended; done is set when it has finished,
+// here if it ran in software.
+static MP_NOINLINE void _async_start(busio_spi_obj_t *self, const uint8_t *data_out, size_t out_len,
+    uint8_t *data_in, size_t in_len, circuitpy_async_flag_t *done) {
     CIRCUITPY_ASYNC_FLAG_INIT(done);
     self->async_done = done;
-    self->async_active = _start(self, data, len, &self->discard, 1, true);
+    // An empty data side means there is nothing to send, whatever the one-byte side holds.
+    self->async_active = out_len != 0 && in_len != 0 &&
+        _start(self, data_out, out_len, data_in, in_len, done);
     if (!self->async_active) {
         CIRCUITPY_ASYNC_FLAG_SET(done);
     }
 }
+
+void common_hal_busio_spi_write_start(busio_spi_obj_t *self, const uint8_t *data, size_t len,
+    circuitpy_async_flag_t *done) {
+    common_hal_busio_spi_end(self);
+    _async_start(self, data, len, &self->one_byte, 1, done);
+}
+
+#if CIRCUITPY_ASYNC_SPI
+void common_hal_busio_spi_read_start(busio_spi_obj_t *self, uint8_t *data, size_t len,
+    uint8_t write_value, circuitpy_async_flag_t *done) {
+    // End the previous transfer first: an async write may still be receiving into one_byte.
+    common_hal_busio_spi_end(self);
+    self->one_byte = write_value;
+    _async_start(self, &self->one_byte, 1, data, len, done);
+}
+
+void common_hal_busio_spi_transfer_start(busio_spi_obj_t *self, const uint8_t *data_out,
+    uint8_t *data_in, size_t len, circuitpy_async_flag_t *done) {
+    common_hal_busio_spi_end(self);
+    _async_start(self, data_out, len, data_in, len, done);
+}
+
+void common_hal_busio_spi_stop(busio_spi_obj_t *self, circuitpy_async_flag_t *done) {
+    if (!self->async_active || self->async_done != done) {
+        return;
+    }
+    if (CIRCUITPY_ASYNC_FLAG_IS_SET(done)) {
+        common_hal_busio_spi_end(self);
+        return;
+    }
+    async_flags[self->dma_rx] = NULL;
+    dma_channel_abort(self->dma_tx);
+    dma_channel_abort(self->dma_rx);
+    self->async_active = false;
+    while (spi_is_busy(self->peripheral)) {
+    }
+    while (spi_is_readable(self->peripheral)) {
+        (void)spi_get_hw(self->peripheral)->dr;
+    }
+    spi_get_hw(self->peripheral)->icr = SPI_SSPICR_RORIC_BITS;
+}
+#endif
 
 void common_hal_busio_spi_end(busio_spi_obj_t *self) {
     if (self->async_active) {
         // No background tasks here: the caller holds the bus, and one of them may want it.
         _end(self, false);
         self->async_active = false;
+        #if CIRCUITPY_ASYNC_SPI
+        async_flags[self->dma_rx] = NULL;
+        #endif
         CIRCUITPY_ASYNC_FLAG_SET(self->async_done);
     }
 }

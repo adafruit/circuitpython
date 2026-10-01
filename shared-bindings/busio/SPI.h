@@ -47,6 +47,18 @@ extern void common_hal_busio_spi_write_start(busio_spi_obj_t *self, const uint8_
 extern void common_hal_busio_spi_end(busio_spi_obj_t *self);
 #endif
 
+#if CIRCUITPY_ASYNC_SPI
+// Like common_hal_busio_spi_write_start(), but reading into data while sending write_value, or
+// sending data_out while reading into data_in. common_hal_busio_spi_end() finishes these too.
+extern void common_hal_busio_spi_read_start(busio_spi_obj_t *self, uint8_t *data, size_t len,
+    uint8_t write_value, circuitpy_async_flag_t *done);
+extern void common_hal_busio_spi_transfer_start(busio_spi_obj_t *self, const uint8_t *data_out,
+    uint8_t *data_in, size_t len, circuitpy_async_flag_t *done);
+// If the transfer started with done is still the bus's, finish it if done is set, and otherwise
+// stop it without setting done. Does nothing for an earlier transfer. Does not allocate.
+extern void common_hal_busio_spi_stop(busio_spi_obj_t *self, circuitpy_async_flag_t *done);
+#endif
+
 // Reads in len bytes while outputting the byte write_value.
 extern bool common_hal_busio_spi_read(busio_spi_obj_t *self, uint8_t *data, size_t len, uint8_t write_value);
 
