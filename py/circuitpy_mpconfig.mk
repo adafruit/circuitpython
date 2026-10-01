@@ -638,6 +638,11 @@ ifneq ($(CIRCUITPY_PICOGAME_FPU),)
 CFLAGS += -DCIRCUITPY_PICOGAME_FPU=$(CIRCUITPY_PICOGAME_FPU)
 endif
 
+# SVOX Pico text to speech. About 160 KB of firmware flash. The voice is loaded from files at
+# run time, so boards need about 2.5 MB of RAM (PSRAM) for it and the engine.
+CIRCUITPY_PICOTTS ?= 0
+CFLAGS += -DCIRCUITPY_PICOTTS=$(CIRCUITPY_PICOTTS)
+
 CIRCUITPY_STATUS_BAR ?= 1
 CFLAGS += -DCIRCUITPY_STATUS_BAR=$(CIRCUITPY_STATUS_BAR)
 

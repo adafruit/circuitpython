@@ -417,6 +417,9 @@ endif
 ifeq ($(CIRCUITPY_PICOGAME),1)
 SRC_PATTERNS += picogame/%
 endif
+ifeq ($(CIRCUITPY_PICOTTS),1)
+SRC_PATTERNS += picotts/%
+endif
 ifeq ($(CIRCUITPY_STORAGE),1)
 SRC_PATTERNS += storage/%
 endif
@@ -836,6 +839,8 @@ SRC_SHARED_MODULE_ALL = \
 	onewireio/OneWire.c \
 	os/__init__.c \
 	paralleldisplaybus/ParallelBus.c \
+	picotts/Engine.c \
+	picotts/__init__.c \
 	qrio/__init__.c \
 	qrio/QRDecoder.c \
 	rainbowio/__init__.c \
@@ -964,6 +969,13 @@ ifeq ($(CIRCUITPY_AUDIOMP3_USE_PORT_ALLOCATOR),1)
 SRC_COMMON_HAL_ALL += \
 	audiomp3/__init__.c
 endif
+endif
+
+ifeq ($(CIRCUITPY_PICOTTS),1)
+# SVOX Pico engine (Apache-2.0). Third-party code, built as-is apart from lib/svox platform
+# guards, so its warnings are silenced.
+SRC_MOD += $(patsubst $(TOP)/%,%,$(wildcard $(TOP)/lib/svox/lib/*.c))
+$(BUILD)/lib/svox/lib/%.o: CFLAGS += -w -Wno-error -fno-single-precision-constant -fno-short-enums -Os
 endif
 
 ifeq ($(CIRCUITPY_GIFIO),1)
