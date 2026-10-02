@@ -99,6 +99,15 @@ int iobroker_pad_gpio(uint16_t soc_pad, uint16_t *gpio_pad_out) {
     #endif
 }
 
+int iobroker_package_pin_gpio_pad(package_pin_t pin, uint16_t *gpio_pad_out) {
+    uint16_t soc_pad;
+    int ret = iobroker_package_pin_soc_pad(pin, &soc_pad);
+    if (ret < 0) {
+        return ret;
+    }
+    return iobroker_pad_gpio(soc_pad, gpio_pad_out);
+}
+
 #if !IOBROKER_ROUTING
 
 // SoCs without runtime routing: the bus allocate/release API still exists so
@@ -127,6 +136,12 @@ int iobroker_uart_allocate(package_pin_t tx, package_pin_t rx,
     (void)rx;
     (void)rts;
     (void)cts;
+    (void)dev_out;
+    return -ENOSYS;
+}
+
+int iobroker_pwm_allocate(package_pin_t pin, const struct device **dev_out) {
+    (void)pin;
     (void)dev_out;
     return -ENOSYS;
 }
@@ -249,6 +264,16 @@ bool iobroker_pin_in_use(package_pin_t pin) {
         }
         for (uint8_t j = 0; j < iobroker_uart_bus_states[i].pin_count; j++) {
             if (iobroker_uart_bus_states[i].pins[j] == pin) {
+                return true;
+            }
+        }
+    }
+    for (size_t i = 0; i < iobroker_pwm_bus_count; i++) {
+        if (!iobroker_pwm_bus_states[i].in_use) {
+            continue;
+        }
+        for (uint8_t j = 0; j < iobroker_pwm_bus_states[i].pin_count; j++) {
+            if (iobroker_pwm_bus_states[i].pins[j] == pin) {
                 return true;
             }
         }

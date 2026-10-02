@@ -9,4 +9,7 @@ modules/iobroker/datasheets/*
 !modules/iobroker/datasheets/README.md
 /tools
 zephyr
+# The west workspace above, not the module descriptors of the in-tree Zephyr
+# modules (internal-modules/<name>/zephyr/module.yml).
+!internal-modules/*/zephyr/
 .west

@@ -53,6 +53,10 @@ static const char *nrf_fun_name(uint32_t fun) {
         "SPIM_SCK", "SPIM_MOSI", "SPIM_MISO",
         "SPIS_SCK", "SPIS_MOSI", "SPIS_MISO", "SPIS_CSN",
         "TWIM_SCL", "TWIM_SDA",
+        "I2S_SCK_M", "I2S_SCK_S", "I2S_LRCK_M", "I2S_LRCK_S", "I2S_SDIN",
+        "I2S_SDOUT", "I2S_MCK",
+        "PDM_CLK", "PDM_DIN",
+        "PWM_OUT0", "PWM_OUT1", "PWM_OUT2", "PWM_OUT3",
     };
     if (fun < ARRAY_SIZE(names)) {
         return names[fun];
@@ -123,6 +127,42 @@ static pinctrl_soc_pin_t nrf_psel_encode(uint32_t fun, uint16_t soc_pad,
     }
 
     return psel;
+}
+
+// Whether an instance can drive a pad, given as its global GPIO number
+// (port index * 32 + pin). nRF52 and nRF53 are a full crossbar.
+// On nRF54L, peripherals and GPIO controllers are grouped in power domains
+// and a peripheral can only drive pads of its own domain; the domain is
+// encoded in the register address (each occupies its own 256 KiB window:
+// 0x4xxxx for the "00" instances and P2, 0xcxxxx-0xfxxxx for the "2x"
+// instances and P1/P3, 0x10xxxx for the "30" instances and P0).
+static bool nrf_instance_reaches_pad(uint32_t reg_addr, uint16_t gpio_pad) {
+    #if defined(CONFIG_SOC_SERIES_NRF54L)
+    uint8_t port = (uint8_t)(gpio_pad / 32U);
+    for (size_t i = 0; i < iobroker_gpio_port_count; i++) {
+        if (iobroker_gpio_port_indexes[i] == port) {
+            return (reg_addr >> 18) == (iobroker_gpio_port_addrs[i] >> 18);
+        }
+    }
+    return false;
+    #else
+    (void)reg_addr;
+    (void)gpio_pad;
+    return true;
+    #endif
+}
+
+// Whether an instance can drive every connected pad of a set of encoded
+// entries (disconnected entries pass).
+static bool nrf_instance_reaches_all(uint32_t reg_addr,
+    const pinctrl_soc_pin_t *pins, uint8_t pin_count) {
+    for (uint8_t i = 0; i < pin_count; i++) {
+        uint32_t pad = NRF_GET_PIN(pins[i]);
+        if (pad != NRF_PIN_DISCONNECTED && !nrf_instance_reaches_pad(reg_addr, (uint16_t)pad)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 // Check whether a set of requested entries matches the devicetree default
@@ -227,8 +267,13 @@ static int iobroker_route(const iobroker_instance_t *inst, iobroker_state_t *sta
 static int iobroker_allocate(const char *kind, const iobroker_instance_t *buses,
     size_t count, iobroker_state_t *states, const package_pin_t *requested,
     const pinctrl_soc_pin_t *pins, uint8_t pin_count, const struct device **dev_out) {
+    bool reachable = false;
     for (size_t i = 0; i < count; i++) {
         iobroker_state_t *state = &states[i];
+        if (!nrf_instance_reaches_all(buses[i].reg_addr, pins, pin_count)) {
+            continue;
+        }
+        reachable = true;
         if (state->in_use) {
             continue;
         }
@@ -263,6 +308,10 @@ static int iobroker_allocate(const char *kind, const iobroker_instance_t *buses,
                 kind, buses[i].dev->name);
             return 0;
         }
+    }
+    if (!reachable) {
+        LOG_WRN("%s: no instance can be routed to the requested pins", kind);
+        return -EINVAL;
     }
     LOG_WRN("%s: no free instance for the requested pins", kind);
     return -ENODEV;
@@ -301,6 +350,12 @@ static bool iobroker_state_find(const struct device *dev, iobroker_state_t **sta
             return true;
         }
     }
+    for (size_t i = 0; i < iobroker_pwm_bus_count; i++) {
+        if (iobroker_pwm_buses[i].dev == dev) {
+            *state_out = &iobroker_pwm_bus_states[i];
+            return true;
+        }
+    }
     return false;
 }
 
@@ -315,6 +370,8 @@ bool iobroker_release(const struct device *dev) {
     // De-init so that the device ends up de-initialized (like deferred-init
     // devices are after boot); the caller initializes it again when it
     // allocates the instance next.
+    // TODO: pwm_nrfx has no deinit hook (-ENOTSUP), which matters once pwmio
+    // initializes PWM instances.
     (void)device_deinit(dev);
     state->in_use = false;
     state->routed = false;
@@ -444,6 +501,33 @@ int iobroker_uart_allocate(package_pin_t tx, package_pin_t rx,
     pins[3] = nrf_psel_encode(NRF_FUN_UART_CTS, cts_gpio, false);
     return iobroker_allocate("uart", iobroker_uart_buses, iobroker_uart_bus_count,
         iobroker_uart_bus_states, requested, pins, 4, dev_out);
+}
+
+int iobroker_pwm_allocate(package_pin_t pin, const struct device **dev_out) {
+    LOG_INF("pwm allocate: pin=%u", (unsigned)pin);
+    // The pin goes to OUT0; OUT1..OUT3 stay disconnected, and are recorded as
+    // disconnected so the instance's pin list is complete.
+    const package_pin_t requested[] = { pin, IOBROKER_NO_PIN, IOBROKER_NO_PIN, IOBROKER_NO_PIN };
+    int ret = iobroker_check_request("pwm", requested, 1);
+    if (ret < 0) {
+        return ret;
+    }
+    uint16_t pad;
+    if (pin == IOBROKER_NO_PIN || iobroker_package_pin_gpio_pad(pin, &pad) < 0) {
+        LOG_WRN("pwm allocate: package pin %u is unknown or has no GPIO", (unsigned)pin);
+        return -EINVAL;
+    }
+    char name[12];
+    LOG_INF("pwm allocate: OUT0 package pin %u -> %s", (unsigned)pin,
+        nrf_pad_name(pad, name, sizeof(name)));
+    pinctrl_soc_pin_t pins[4];
+    // Push-pull output, no pull.
+    pins[0] = nrf_psel_encode(NRF_FUN_PWM_OUT0, pad, false);
+    pins[1] = nrf_psel_encode(NRF_FUN_PWM_OUT1, IOBROKER_NO_PIN, false);
+    pins[2] = nrf_psel_encode(NRF_FUN_PWM_OUT2, IOBROKER_NO_PIN, false);
+    pins[3] = nrf_psel_encode(NRF_FUN_PWM_OUT3, IOBROKER_NO_PIN, false);
+    return iobroker_allocate("pwm", iobroker_pwm_buses, iobroker_pwm_bus_count,
+        iobroker_pwm_bus_states, requested, pins, 4, dev_out);
 }
 
 #endif // IOBROKER_ROUTING

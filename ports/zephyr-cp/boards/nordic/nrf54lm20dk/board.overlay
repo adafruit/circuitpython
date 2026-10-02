@@ -87,6 +87,42 @@
 				<NRF_PSEL_DISCONNECTED(UART_RX)>;
 		};
 	};
+
+	pwm21_dyn_default: pwm21_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
+
+	pwm21_dyn_sleep: pwm21_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
+
+	pwm22_dyn_default: pwm22_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
+
+	pwm22_dyn_sleep: pwm22_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
 };
 
 &i2c21 {
@@ -127,5 +163,27 @@
 	current-speed = <115200>;
 	pinctrl-0 = <&uart30_dyn_default>;
 	pinctrl-1 = <&uart30_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+// PWM instances 21 and 22, same scheme: all four outputs disconnected and
+// deferred init, so iobroker can hand an instance to neopixel_write and
+// pwmio and route its outputs at runtime. Instance 20 is left as the board
+// defines it: enabled with fixed pins for the PWM LED. On this SoC the "2x"
+// instances can only drive P1 and P3 pads (see the iobroker README).
+
+&pwm21 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&pwm21_dyn_default>;
+	pinctrl-1 = <&pwm21_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&pwm22 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&pwm22_dyn_default>;
+	pinctrl-1 = <&pwm22_dyn_sleep>;
 	pinctrl-names = "default", "sleep";
 };

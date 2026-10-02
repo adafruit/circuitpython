@@ -1,8 +1,9 @@
 # iobroker
 
 A Zephyr module for **dynamic peripheral allocation and runtime pin routing**:
-pick a free bus instance (I2C, SPI, UART) enabled in the devicetree, re-route
-it to requested pins at runtime and hand the Zephyr device to the caller.
+pick a free peripheral instance (I2C, SPI, UART, PWM) enabled in the
+devicetree, re-route it to requested pins at runtime and hand the Zephyr
+device to the caller.
 
 Pins are specified using `package_pin_t` and represent a single pin on a package
 or module containing a system-on-a-chip (SoC). This is the most common boundary
@@ -84,6 +85,7 @@ provide per-board tables (the generated `board.c` always emits them):
 const iobroker_instance_t iobroker_i2c_buses[];   // + _states[] and _bus_count
 const iobroker_instance_t iobroker_spi_buses[];   // ...
 const iobroker_instance_t iobroker_uart_buses[];  // ...
+const iobroker_instance_t iobroker_pwm_buses[];   // ...
 const struct device * const iobroker_gpio_port_devices[];  // + _indexes[] and _count
 const iobroker_package_pin_t iobroker_package_pins[];   // + _pin_count
 const uint16_t iobroker_reserved_pads[];   // + _pin_count
@@ -158,6 +160,21 @@ quiescent state (disconnected) on release, and GPIO claims conflict with bus
 allocations the same way bus allocations conflict with each other.
 `iobroker_gpio_allocate()` resolves the package pin through the map
 and returns both the GPIO controller device and the pin number within it.
+PWM instances are allocated whole with `iobroker_pwm_allocate()`, for one
+package pin routed to the instance's first output; the caller initializes the
+device and returns it with `iobroker_release()`, as with the buses. Sharing an
+instance between pins with the same base frequency (for pwmio) is not
+supported yet.
+
+Not every instance can reach every pad. On nRF52 and nRF53 the routing is a
+full crossbar, but on nRF54L peripherals and GPIO controllers are grouped in
+power domains and a peripheral can only drive pads of its own domain (the
+domain is encoded in the register addresses, which the instance and GPIO
+controller tables carry). An allocate call whose pins no instance of the
+requested kind can reach fails with `-EINVAL`, like a pin that is not in
+the package map: it is a property of the request, distinct from `-ENODEV`
+for "every instance that could is busy", so callers can report a wrong pin
+choice rather than a busy peripheral.
 `iobroker_gpio_package_pin()` maps a GPIO controller's hardware port index
 and pin number (the two halves of the global pin numbering) back to the
 package pin the pad is bonded to.

@@ -47,6 +47,23 @@ config PINCTRL_DYNAMIC
 config DEVICE_DEINIT_SUPPORT
 	default y if SOC_FAMILY_NORDIC_NRF
 
+# ===== Interrupt locking versus the Bluetooth controller (nRF) =====
+# CircuitPython cannot bound its critical sections (bitbangio, onewireio, user
+# code calling disable_interrupts(), the neopixel_write bit-bang fallback).
+#
+# Let the controller's radio interrupts (BT_CTLR_ZLI, default on) bypass
+# irq_lock(), as the SoftDevice's interrupts do in ports/nordic.
+config ZERO_LATENCY_IRQS
+	default y if SOC_FAMILY_NORDIC_NRF
+
+# The upper link layer schedules each radio event from an ordinary interrupt
+# and the controller allows 733 us (EVENT_OVERHEAD_START_US) for that to run.
+# Zephyr's default makes a longer delay a fatal assertion that halts the
+# system; with the assertion off the controller skips the delayed radio event
+# instead, which is the behavior we want.
+config BT_CTLR_ASSERT_OVERHEAD_START
+	default n if SOC_FAMILY_NORDIC_NRF
+
 # ===== Bluetooth defaults =====
 
 # Use a variable for the chosen name so the comma isn't parsed as an argument separator

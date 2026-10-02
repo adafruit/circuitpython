@@ -7,6 +7,9 @@ cmake_minimum_required(VERSION 3.20.0)
 # home to consume an externalized copy.
 set(ZEPHYR_EXTRA_MODULES
     ${CMAKE_CURRENT_SOURCE_DIR}/internal-modules/iobroker
+    # NeoPixel (WS2812-style) transmit on a runtime-chosen pin (see
+    # internal-modules/neopixel/README.md).
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal-modules/neopixel
     # Kconfig-only module with defaults that must merge before Zephyr's
     # subsystem Kconfig files (see internal-modules/circuitpython-kconfig/Kconfig).
     ${CMAKE_CURRENT_SOURCE_DIR}/internal-modules/circuitpython-kconfig

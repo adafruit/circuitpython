@@ -110,6 +110,9 @@ extern const size_t iobroker_package_pin_count;
 // controllers generate an empty table, so lookups return -EINVAL.
 extern const struct device *const iobroker_gpio_port_devices[];
 extern const uint8_t iobroker_gpio_port_indexes[];
+// Register block address of each controller, same order; see
+// iobroker_instance_t.reg_addr.
+extern const uint32_t iobroker_gpio_port_addrs[];
 extern const size_t iobroker_gpio_port_count;
 
 // Resolve a global pin number to its GPIO controller device and the pin
@@ -126,6 +129,14 @@ int iobroker_gpio_split(uint16_t number, const struct device **port_out,
 int iobroker_gpio_package_pin(uint8_t port, gpio_pin_t pin,
     package_pin_t *package_pin_out);
 
+// Resolve a package pin to the global GPIO number of the pad it is bonded to
+// (GPIO controller port index * 32 + pin within the port), for a caller that
+// drives the pad's registers itself. IOBROKER_NO_PIN passes through
+// unchanged. Returns 0, or -EINVAL when the pin is not in the map or its pad
+// has no GPIO controller (an analog-only pad); *gpio_pad_out is untouched on
+// error.
+int iobroker_package_pin_gpio_pad(package_pin_t pin, uint16_t *gpio_pad_out);
+
 #if defined(CONFIG_PINCTRL_NRF)
 
 #include <zephyr/drivers/pinctrl.h>
@@ -133,6 +144,11 @@ int iobroker_gpio_package_pin(uint8_t port, gpio_pin_t pin,
 // Description of one allocatable bus instance. Filled in by the board tables.
 typedef struct {
     const struct device *dev;
+    // Register block address of the instance, from the devicetree. The SoC
+    // routing code uses it to decide which pads the instance can reach: on
+    // nRF54L, peripherals only drive pads of their own power domain, which
+    // the address encodes.
+    uint32_t reg_addr;
     // Pin control configuration of the device. Mutable because
     // CONFIG_PINCTRL_DYNAMIC moves these to RAM so that states can be
     // swapped at runtime.
@@ -175,6 +191,12 @@ extern const iobroker_instance_t iobroker_uart_buses[];
 extern const size_t iobroker_uart_bus_count;
 extern iobroker_state_t iobroker_uart_bus_states[];
 
+// PWM instances. Each nRF PWM instance has four outputs (OUT0..OUT3) that
+// are routed with the same pinctrl mechanism as bus signals.
+extern const iobroker_instance_t iobroker_pwm_buses[];
+extern const size_t iobroker_pwm_bus_count;
+extern iobroker_state_t iobroker_pwm_bus_states[];
+
 // SoC pads owned by fixed peripherals (console UART, flash instance, I2S,
 // ...): the pads their devicetree pinctrl default state drives at boot.
 // iobroker_pin_in_use() reports these as always busy so that allocate()
@@ -189,7 +211,10 @@ extern const size_t iobroker_reserved_pads_count;
 //   -ENODEV: no compatible instance is free
 //   -ENOSYS: dynamic pin routing is unsupported on this SoC
 //   -EBUSY: a requested pin is already claimed by an allocated instance
-//   -EINVAL/-EIO: a pin or routing operation failed
+//   -EINVAL: a pin is not in the package map, has no GPIO, or no instance
+//            of this kind can be routed to the requested pins on this SoC
+//            (a pin-to-peripheral restriction, not a busy one)
+//   other negative values: a routing operation failed
 // Optional signals may be disconnected (IOBROKER_NO_PIN). Every allocate
 // call must be paired with iobroker_release().
 int iobroker_i2c_allocate(package_pin_t sda, package_pin_t scl,
@@ -198,6 +223,14 @@ int iobroker_spi_allocate(package_pin_t clock, package_pin_t mosi,
     package_pin_t miso, const struct device **dev_out);
 int iobroker_uart_allocate(package_pin_t tx, package_pin_t rx,
     package_pin_t rts, package_pin_t cts, const struct device **dev_out);
+// Allocate a whole PWM instance for one output pin, routed to the
+// instance's first output (OUT0 on nRF); its other outputs stay
+// disconnected. The instance is not shared, so the caller may program all
+// of it (neopixel_write plays its own sequence). Like the bus allocate
+// functions, the caller initializes the device (device_init()) and returns
+// it with iobroker_release(). Sharing an instance between pins with the same
+// base frequency, as pwmio will want, is not supported yet.
+int iobroker_pwm_allocate(package_pin_t pin, const struct device **dev_out);
 
 // Allocate a package pin for the ADC. Analog inputs have no runtime routing:
 // the pad's analog input is fixed by the SoC, so the call resolves and

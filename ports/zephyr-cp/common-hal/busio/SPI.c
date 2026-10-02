@@ -64,6 +64,9 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
         if (ret == -EBUSY) {
             mp_raise_ValueError(MP_ERROR_TEXT("Internal resource(s) in use"));
         }
+        if (ret == -EINVAL) {
+            raise_ValueError_invalid_pins();
+        }
         mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("Use device tree to define %q devices"), MP_QSTR_SPI);
     }
 
