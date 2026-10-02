@@ -614,6 +614,11 @@ SRC_C += \
 INC += \
 	-isystem lib/Pico-PIO-USB/src
 
+ifeq ($(CIRCUITPY_USB_HOST_BULK),1)
+# Pico-PIO-USB bulk IN ring, polled from the host frame handler.
+CFLAGS += -DPIO_USB_HOST_BULK_STREAM=1
+endif
+
 # Core1 posts USB events while core0 may hold the TinyUSB queue mutex. The
 # contended wait path calls these two flash-resident SDK functions, and core1
 # must not execute from flash. Replace them with RAM-resident implementations

@@ -471,6 +471,9 @@ endif
 ifeq ($(CIRCUITPY_USB_HOST),1)
 SRC_PATTERNS += usb_host/%
 endif
+ifeq ($(CIRCUITPY_USB_HOST_BULK),1)
+SRC_PATTERNS += usb_host_bulk/%
+endif
 ifeq ($(CIRCUITPY_USB_MIDI),1)
 SRC_PATTERNS += usb_midi/%
 endif
@@ -610,6 +613,8 @@ SRC_COMMON_HAL_ALL = \
 	spitarget/__init__.c \
 	usb_host/__init__.c \
 	usb_host/Port.c \
+	usb_host_bulk/__init__.c \
+	usb_host_bulk/InStream.c \
 	watchdog/WatchDogMode.c \
 	watchdog/WatchDogTimer.c \
 	watchdog/__init__.c \

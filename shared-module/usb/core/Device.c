@@ -21,6 +21,28 @@
 #include "supervisor/shared/tick.h"
 #include "supervisor/usb.h"
 
+#if CIRCUITPY_USB_HOST_BULK
+#include "shared-bindings/usb_host_bulk/InStream.h"
+#else
+static inline void usb_host_bulk_stop_device(uint8_t device_address) {
+    (void)device_address;
+}
+
+static inline bool usb_host_bulk_endpoint_busy(uint8_t device_address, uint8_t endpoint) {
+    (void)device_address;
+    (void)endpoint;
+    return false;
+}
+
+static inline void usb_host_bulk_device_gone(uint8_t device_address) {
+    (void)device_address;
+}
+
+static inline void usb_host_bulk_device_deinit(usb_core_device_obj_t *device) {
+    (void)device;
+}
+#endif
+
 // Track what device numbers are mounted. We can't use tuh_ready() because it is
 // true before enumeration completes and TinyUSB drivers are started.
 static size_t _mounted_devices = 0;
@@ -31,6 +53,7 @@ void tuh_mount_cb(uint8_t dev_addr) {
 
 void tuh_umount_cb(uint8_t dev_addr) {
     _mounted_devices &= ~(1 << dev_addr);
+    usb_host_bulk_device_gone(dev_addr);
 }
 
 static xfer_result_t _xfer_result;
@@ -82,6 +105,7 @@ void common_hal_usb_core_device_deinit(usb_core_device_obj_t *self) {
     if (common_hal_usb_core_device_deinited(self)) {
         return;
     }
+    usb_host_bulk_device_deinit(self);
     size_t open_size = sizeof(self->open_endpoints);
     for (size_t i = 0; i < open_size; i++) {
         if (self->open_endpoints[i] != 0) {
@@ -377,6 +401,7 @@ mp_int_t common_hal_usb_core_device_get_speed(usb_core_device_obj_t *self) {
 void common_hal_usb_core_device_set_configuration(usb_core_device_obj_t *self, mp_int_t configuration) {
     // We assume that the config index is one less than the value.
     uint8_t config_index = configuration - 1;
+    usb_host_bulk_stop_device(self->device_address);
     // Get the configuration descriptor and cache it. We'll use it later to open
     // endpoints.
 
@@ -460,7 +485,18 @@ static bool _open_endpoint(usb_core_device_obj_t *self, mp_int_t endpoint) {
     return open;
 }
 
+bool common_hal_usb_core_device_open_endpoint(usb_core_device_obj_t *self, mp_int_t endpoint) {
+    return _open_endpoint(self, endpoint);
+}
+
+static void _check_endpoint_free(usb_core_device_obj_t *self, mp_int_t endpoint) {
+    if (usb_host_bulk_endpoint_busy(self->device_address, endpoint)) {
+        mp_raise_usb_core_USBError(MP_ERROR_TEXT("%q in use"), MP_QSTR_endpoint);
+    }
+}
+
 mp_int_t common_hal_usb_core_device_write(usb_core_device_obj_t *self, mp_int_t endpoint, const uint8_t *buffer, mp_int_t len, mp_int_t timeout) {
+    _check_endpoint_free(self, endpoint);
     if (!_open_endpoint(self, endpoint)) {
         mp_raise_usb_core_USBError(NULL);
         return 0;
@@ -492,6 +528,7 @@ mp_int_t common_hal_usb_core_device_write(usb_core_device_obj_t *self, mp_int_t 
 }
 
 mp_int_t common_hal_usb_core_device_read(usb_core_device_obj_t *self, mp_int_t endpoint, uint8_t *buffer, mp_int_t len, mp_int_t timeout, bool raise_on_timeout) {
+    _check_endpoint_free(self, endpoint);
     if (!_open_endpoint(self, endpoint)) {
         mp_raise_usb_core_USBError(NULL);
         return 0;
@@ -530,6 +567,11 @@ mp_int_t common_hal_usb_core_device_ctrl_transfer(usb_core_device_obj_t *self,
     mp_int_t bmRequestType, mp_int_t bRequest,
     mp_int_t wValue, mp_int_t wIndex,
     uint8_t *buffer, mp_int_t len, mp_int_t timeout) {
+    // Stop a stream before the device changes or disables its endpoint.
+    if (len == 0 && ((bmRequestType == 0x01 && bRequest == TUSB_REQ_SET_INTERFACE) ||
+                     (bmRequestType == 0x00 && bRequest == TUSB_REQ_SET_CONFIGURATION))) {
+        usb_host_bulk_stop_device(self->device_address);
+    }
     // Timeout is in ms.
 
     #if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
