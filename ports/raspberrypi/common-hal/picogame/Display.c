@@ -40,7 +40,7 @@ void common_hal_picogame_display_construct(picogame_display_obj_t *self,
             MP_QSTR_display, MP_QSTR_FourWire, mp_obj_get_type(display->bus.bus)->name);
     }
     fourwire_fourwire_obj_t *fw = MP_OBJ_TO_PTR(display->bus.bus);
-    self->spi = fw->bus->peripheral;
+    self->spi = fw->bus->spi.peripheral;
 
     #if CIRCUITPY_PICOGAME_RGB444
     // Tell the panel which pixel format we'll send (COLMOD). Asserting it here also recovers from
