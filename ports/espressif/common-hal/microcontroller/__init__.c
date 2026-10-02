@@ -347,5 +347,9 @@ static const mp_rom_map_elem_t mcu_pin_global_dict_table[] = {
     #ifdef GPIO54_EXISTS
     { MP_ROM_QSTR(MP_QSTR_GPIO54), MP_ROM_PTR(&pin_GPIO54) },
     #endif
+    #if defined(CONFIG_IDF_TARGET_ESP32P4)
+    { MP_ROM_QSTR(MP_QSTR_USB_HS_DP), MP_ROM_PTR(&pin_USB_HS_DP) },
+    { MP_ROM_QSTR(MP_QSTR_USB_HS_DM), MP_ROM_PTR(&pin_USB_HS_DM) },
+    #endif
 };
 MP_DEFINE_CONST_DICT(mcu_pin_globals, mcu_pin_global_dict_table);
