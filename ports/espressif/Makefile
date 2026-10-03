@@ -660,6 +660,10 @@ SRC_C += \
 	lib/tinyusb/src/portable/synopsys/dwc2/dwc2_common.c
 endif
 
+ifeq ($(CIRCUITPY_USB_HOST),1)
+SRC_C += lib/tinyusb/src/portable/synopsys/dwc2/hcd_dwc2.c
+endif
+
 ifneq ($(CIRCUITPY_AUDIOBUSIO),0)
 CHIP_COMPONENTS += esp_driver_i2s
 endif

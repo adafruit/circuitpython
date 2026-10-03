@@ -61,3 +61,7 @@ const mcu_pin_obj_t pin_GPIO51 = PIN(51, ADC_UNIT_2, ADC_CHANNEL_4, NO_TOUCH_CHA
 const mcu_pin_obj_t pin_GPIO52 = PIN(52, ADC_UNIT_2, ADC_CHANNEL_5, NO_TOUCH_CHANNEL);
 const mcu_pin_obj_t pin_GPIO53 = PIN(53, ADC_UNIT_2, ADC_CHANNEL_6, NO_TOUCH_CHANNEL);
 const mcu_pin_obj_t pin_GPIO54 = PIN(54, ADC_UNIT_2, ADC_CHANNEL_7, NO_TOUCH_CHANNEL);
+
+// The USB high-speed PHY pads cannot be used as GPIOs.
+const mcu_pin_obj_t pin_USB_HS_DP = PIN(NO_PIN, NO_ADC, NO_ADC_CHANNEL, NO_TOUCH_CHANNEL);
+const mcu_pin_obj_t pin_USB_HS_DM = PIN(NO_PIN, NO_ADC, NO_ADC_CHANNEL, NO_TOUCH_CHANNEL);
