@@ -6,6 +6,9 @@
 
 include ../../py/circuitpy_mkenv.mk
 
+# Keep dependency selection identical during automatic CMake reconfiguration.
+export IDF_COMPONENT_MANAGER = 0
+
 ifeq ($(IDF_TARGET),esp32s3)
 BT_IDF_TARGET = esp32c3
 else ifeq ($(IDF_TARGET),esp32c61)
@@ -254,7 +257,9 @@ endif
 
 ifneq ($(CIRCUITPY_WIFI),0)
 ifeq ($(filter $(IDF_TARGET),esp32s2 esp32p4),)
+ifneq ($(CIRCUITPY_ESP_HOSTED),1)
 REGISTRATION_FUNCTIONS += -u esp_coex_init_include_func
+endif
 endif
 endif
 
@@ -885,7 +890,7 @@ do-sdkconfig: $(BUILD)/esp-idf/config/sdkconfig.h
 QSTR_GLOBAL_REQUIREMENTS += $(BUILD)/esp-idf/config/sdkconfig.h
 $(BUILD)/esp-idf/config/sdkconfig.h: boards/$(BOARD)/sdkconfig boards/$(BOARD)/mpconfigboard.mk CMakeLists.txt | $(BUILD)/esp-idf
 	$(STEPECHO) "Create $@"
-	$(Q)env IDF_PATH=$(IDF_PATH) IDF_COMPONENT_MANAGER=0 cmake -S . -B $(BUILD)/esp-idf -DSDKCONFIG=$(BUILD)/esp-idf/sdkconfig -DSDKCONFIG_DEFAULTS="$(SDKCONFIGS)" -DCMAKE_TOOLCHAIN_FILE=$(IDF_PATH)/tools/cmake/toolchain-$(IDF_TARGET).cmake -DIDF_TARGET=$(IDF_TARGET) -GNinja
+	$(Q)env IDF_PATH=$(IDF_PATH) IDF_COMPONENT_MANAGER=0 cmake -S . -B $(BUILD)/esp-idf -DSDKCONFIG=$(BUILD)/esp-idf/sdkconfig -DSDKCONFIG_DEFAULTS="$(SDKCONFIGS)" -DCMAKE_TOOLCHAIN_FILE=$(IDF_PATH)/tools/cmake/toolchain-$(IDF_TARGET).cmake -DIDF_TARGET=$(IDF_TARGET) -DCIRCUITPY_ESP_HOSTED=$(CIRCUITPY_ESP_HOSTED) -GNinja
 	$(Q)$(PYTHON) tools/check-sdkconfig.py \
 		CIRCUITPY_DUALBANK=$(CIRCUITPY_DUALBANK) \
 		CIRCUITPY_STORAGE_EXTEND=$(CIRCUITPY_STORAGE_EXTEND) \
@@ -923,6 +928,7 @@ BINARY_WIFI_BLOBS = libcore.a libespnow.a libnet80211.a libpp.a libsmartconfig.a
 ifneq ($(IDF_TARGET),esp32p4)
 	BINARY_BLOBS = esp-idf/components/esp_phy/lib/$(IDF_TARGET)/libphy.a
 endif
+ifneq ($(CIRCUITPY_ESP_HOSTED),1)
 ifneq ($(CIRCUITPY_WIFI),0)
 	BINARY_BLOBS += $(addprefix esp-idf/components/esp_wifi/lib/$(IDF_TARGET)/, $(BINARY_WIFI_BLOBS))
 	BINARY_BLOBS += esp-idf/components/esp_coex/lib/$(IDF_TARGET)/libcoexist.a
@@ -931,13 +937,27 @@ ifneq ($(CIRCUITPY_WIFI),0)
 	endif
 endif
 
+endif
+
 ifeq ($(IDF_TARGET),esp32)
 BINARY_BLOBS += esp-idf/components/esp_phy/lib/$(IDF_TARGET)/librtc.a
 endif
 
 ESP_IDF_COMPONENTS_LINK = $(IDF_TARGET_ARCH) $(CHIP_COMPONENTS) app_update bootloader_support driver esp_driver_dma esp_driver_gpio esp_driver_gptimer esp_driver_i2c esp_driver_ledc esp_driver_spi esp_driver_uart efuse esp_adc esp_app_format esp_common esp_event esp_gdbstub esp_hal_ana_conv esp_hal_clock esp_hal_gpio esp_hal_gpspi esp_hal_i2c esp_hal_ledc esp_hal_mspi esp_hal_security esp_hal_timg esp_hal_uart esp_hal_wdt esp_hw_support esp_mm esp_partition esp_pm esp_ringbuf esp_rom esp_system esp_timer freertos hal heap log esp_libc nvs_flash nvs_sec_provider pthread soc spi_flash vfs esp_stdio
 ifneq ($(CIRCUITPY_WIFI),0)
-	ESP_IDF_COMPONENTS_LINK += esp_coex esp_netif esp_security esp-tls esp_wifi lwip mbedtls mdns wpa_supplicant esp_phy
+	ESP_IDF_COMPONENTS_LINK += esp_netif esp_security esp-tls esp_wifi lwip mbedtls mdns
+ifneq ($(CIRCUITPY_ESP_HOSTED),1)
+ESP_IDF_COMPONENTS_LINK += esp_coex esp_phy wpa_supplicant
+endif
+endif
+ifeq ($(CIRCUITPY_ESP_HOSTED),1)
+export ESP_IDF_VERSION := $(shell sed -nE 's/set\(IDF_VERSION_(MAJOR|MINOR) ([0-9]+)\)/\2/p' esp-idf/tools/cmake/version.cmake | paste -sd.)
+INC := -isystem esp-wifi-remote/components/esp_wifi_remote/idf_v$(ESP_IDF_VERSION)/include/injected \
+       -isystem esp-wifi-remote/components/esp_wifi_remote/idf_v$(ESP_IDF_VERSION)/include \
+       -isystem esp-wifi-remote/components/esp_wifi_remote/include \
+       -isystem esp-hosted/host/api/include -isystem esp-hosted/host $(INC)
+ESP_IDF_COMPONENTS_LINK += esp_wifi_remote esp-hosted esp_http_client http_parser console
+REGISTRATION_FUNCTIONS += -u esp_hosted_init
 endif
 ifneq ($(CIRCUITPY_BLEIO_NATIVE),0)
 	BLE_IMPL_esp32 := esp32

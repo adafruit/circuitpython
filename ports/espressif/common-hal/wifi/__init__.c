@@ -17,7 +17,7 @@
 #include "py/mpstate.h"
 #include "py/runtime.h"
 
-#include "components/esp_wifi/include/esp_wifi.h"
+#include "esp_wifi.h"
 
 #include "components/heap/include/esp_heap_caps.h"
 
@@ -39,6 +39,11 @@ wifi_radio_obj_t common_hal_wifi_radio_obj;
 #endif
 
 #include "esp_ipc.h"
+
+#ifdef CONFIG_ESP_HOSTED_ENABLED
+#include "esp_hosted.h"
+#include "common-hal/microcontroller/Pin.h"
+#endif
 
 #ifdef CONFIG_IDF_TARGET_ESP32
 #include "nvs_flash.h"
@@ -457,6 +462,19 @@ void common_hal_wifi_init(bool user_initiated) {
     if (!wifi_ever_inited) {
         ESP_ERROR_CHECK(esp_event_loop_create_default());
         ESP_ERROR_CHECK(esp_netif_init());
+        #ifdef CONFIG_ESP_HOSTED_ENABLED
+        const uint8_t pins[] = {
+            CONFIG_ESP_HOSTED_SDIO_PIN_CLK, CONFIG_ESP_HOSTED_SDIO_PIN_CMD,
+            CONFIG_ESP_HOSTED_SDIO_PIN_D0, CONFIG_ESP_HOSTED_SDIO_PIN_D1,
+            CONFIG_ESP_HOSTED_SDIO_PIN_D2, CONFIG_ESP_HOSTED_SDIO_PIN_D3,
+            CONFIG_ESP_HOSTED_SDIO_GPIO_RESET_SLAVE,
+        };
+        for (size_t i = 0; i < MP_ARRAY_SIZE(pins); i++) {
+            claim_pin_number(pins[i]);
+            never_reset_pin_number(pins[i]);
+        }
+        ESP_ERROR_CHECK(esp_hosted_init());
+        #endif
         wifi_ever_inited = true;
     }
 
