@@ -80,6 +80,43 @@ uint32_t supervisor_flash_get_block_count(void) {
 void port_internal_flash_flush(void) {
 }
 
+#if CIRCUITPY_STORAGE_MAP_FILE
+// storage.map_file: each drive partition mapped into the data address space on first use. With
+// extended storage the drive spans two partitions that need not be adjacent in the mapping, so
+// *contiguous stops at the seam and the caller splits a cluster run there.
+static const uint8_t *map_partition(size_t i) {
+    static const uint8_t *base[2];
+    if (base[i] == NULL) {
+        const void *p;
+        esp_partition_mmap_handle_t handle;                  // stays mapped for the session
+        if (esp_partition_mmap(_partition[i], 0, _partition[i]->size, ESP_PARTITION_MMAP_DATA,
+            &p, &handle) != ESP_OK) {
+            return NULL;
+        }
+        base[i] = p;
+    }
+    return base[i];
+}
+
+const uint8_t *port_internal_flash_xip_address(uint32_t block, uint32_t *contiguous) {
+    size_t i = 0;
+    uint32_t blocks = _partition[0]->size / FILESYSTEM_BLOCK_SIZE;
+    #if CIRCUITPY_STORAGE_EXTEND
+    if (storage_extended && block >= blocks) {
+        block -= blocks;
+        blocks = _partition[1]->size / FILESYSTEM_BLOCK_SIZE;
+        i = 1;
+    }
+    #endif
+    const uint8_t *base = map_partition(i);
+    if (base == NULL) {
+        return NULL;
+    }
+    *contiguous = blocks - block;
+    return base + block * FILESYSTEM_BLOCK_SIZE;
+}
+#endif
+
 static void single_partition_rw(const esp_partition_t *partition, uint8_t *data,
     const uint32_t offset, const uint32_t size_total, const bool op) {
     if (op == OP_READ) {

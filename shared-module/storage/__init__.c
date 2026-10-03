@@ -18,6 +18,12 @@
 #include "shared-bindings/storage/__init__.h"
 #include "supervisor/filesystem.h"
 #include "supervisor/flash.h"
+#if CIRCUITPY_STORAGE_MAP_FILE
+#include "extmod/vfs_fat.h"
+#include "lib/oofatfs/ff.h"
+#include "py/objarray.h"
+#include "py/objlist.h"
+#endif
 
 #if CIRCUITPY_USB_DEVICE
 #include "supervisor/usb.h"
@@ -243,4 +249,110 @@ void common_hal_storage_erase_filesystem(bool extended) {
     common_hal_mcu_on_next_reset(RUNMODE_NORMAL);
     common_hal_mcu_reset();
     // We won't actually get here, since we're resetting.
+}
+
+#if CIRCUITPY_STORAGE_MAP_FILE
+// Start clusters of the files mapped this run; a write to one of them is refused until reload.
+MP_REGISTER_ROOT_POINTER(mp_obj_t storage_mapped_files);
+
+void storage_map_file_reset(void) {
+    MP_STATE_VM(storage_mapped_files) = MP_OBJ_NULL;
+}
+
+static bool mapped_files_contain(DWORD sclust) {
+    mp_obj_list_t *mapped = MP_OBJ_TO_PTR(MP_STATE_VM(storage_mapped_files));
+    for (size_t i = 0; i < mapped->len; i++) {
+        if (MP_OBJ_SMALL_INT_VALUE(mapped->items[i]) == (mp_int_t)sclust) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void mapped_files_add(DWORD sclust) {
+    if (MP_STATE_VM(storage_mapped_files) == MP_OBJ_NULL) {
+        MP_STATE_VM(storage_mapped_files) = mp_obj_new_list(0, NULL);
+    }
+    if (!mapped_files_contain(sclust)) {
+        mp_obj_list_append(MP_STATE_VM(storage_mapped_files), MP_OBJ_NEW_SMALL_INT(sclust));
+    }
+}
+
+void storage_map_file_check_writable(fs_user_mount_t *vfs, const char *path) {
+    if (MP_STATE_VM(storage_mapped_files) == MP_OBJ_NULL || vfs != filesystem_circuitpy()) {
+        return;
+    }
+    FIL fp;
+    if (f_open(&vfs->fatfs, &fp, path, FA_READ) != FR_OK) {
+        return;                                 // no such file yet
+    }
+    DWORD sclust = fp.obj.sclust;
+    f_close(&fp);
+    if (mapped_files_contain(sclust)) {
+        mp_raise_OSError(MP_EACCES);            // mapped: its flash bytes are in use
+    }
+}
+#endif
+
+mp_obj_t common_hal_storage_map_file(mp_obj_t file_in) {
+    #if CIRCUITPY_STORAGE_MAP_FILE
+    if (!mp_obj_is_type(file_in, &mp_type_vfs_fat_fileio)) {
+        mp_raise_OSError(MP_EOPNOTSUPP);        // only a FAT volume stores a file as flash bytes
+    }
+    pyb_file_obj_t *file = MP_OBJ_TO_PTR(file_in);
+    FATFS *fatfs = file->fp.obj.fs;
+    if (fatfs == NULL || (file->fp.flag & FA_WRITE)) {
+        mp_raise_OSError(MP_EINVAL);            // closed, or not open for reading only
+    }
+    fs_user_mount_t *drive = filesystem_circuitpy();
+    if (drive == NULL || fatfs != &drive->fatfs) {
+        mp_raise_OSError(MP_EOPNOTSUPP);        // another mount (an SD card): not memory-mapped
+    }
+    DWORD *tbl = file->fp.cltbl;
+    if (tbl == NULL) {
+        mp_raise_type(&mp_type_MemoryError);    // open() could not allocate the cluster map
+    }
+    FSIZE_t size = f_size(&file->fp);
+    if (size == 0) {
+        return mp_const_empty_tuple;
+    }
+    supervisor_flash_flush();                   // write back any RAM sector cache
+    // Walk the cluster runs of the link map open() built and split a run wherever the port's
+    // mapping is not contiguous, e.g. at the seam of a drive that spans two flash partitions.
+    mp_obj_t views = mp_obj_new_list(0, NULL);
+    size_t nruns = (size_t)((tbl[0] - 2) / 2);
+    FSIZE_t left = size;
+    for (size_t i = 0; i < nruns && left > 0; i++) {
+        DWORD sector = fatfs->database + (tbl[2 + 2 * i] - 2) * fatfs->csize;
+        FSIZE_t span = (FSIZE_t)tbl[1 + 2 * i] * fatfs->csize * FF_MIN_SS;
+        if (span > left) {
+            span = left;                        // the last run is clipped to the dir-entry size
+        }
+        while (span > 0) {
+            uint32_t contiguous;
+            const uint8_t *addr = supervisor_flash_xip_address(sector, &contiguous);
+            if (addr == NULL) {
+                mp_raise_OSError(MP_EOPNOTSUPP);    // this build cannot map the drive here
+            }
+            FSIZE_t piece = (FSIZE_t)contiguous * FF_MIN_SS;
+            if (piece > span) {
+                piece = span;
+            }
+            // read-only: a stray write raises instead of silently hitting the flash window
+            mp_obj_list_append(views, mp_obj_new_memoryview('B', (size_t)piece, (void *)addr));
+            span -= piece;
+            left -= piece;
+            sector += contiguous;
+        }
+    }
+    if (left != 0) {
+        mp_raise_OSError(MP_EIO);               // chain shorter than the dir-entry size: corrupt
+    }
+    mapped_files_add(file->fp.obj.sclust);
+    mp_obj_list_t *list = MP_OBJ_TO_PTR(views);
+    return mp_obj_new_tuple(list->len, list->items);
+    #else
+    (void)file_in;
+    mp_raise_type(&mp_type_NotImplementedError);    // this port does not map its drive
+    #endif
 }

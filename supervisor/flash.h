@@ -30,6 +30,12 @@ void supervisor_flash_flush(void);
 void supervisor_flash_release_cache(void);
 void supervisor_flash_mark_dirty(void);
 
+#if CIRCUITPY_STORAGE_MAP_FILE
+// storage.map_file: flash address of a CIRCUITPY FatFs sector, NULL if the port cannot map the
+// drive there; *contiguous receives how many sectors from it are contiguous in the mapping.
+const uint8_t *supervisor_flash_xip_address(uint32_t fatfs_sector, uint32_t *contiguous);
+#endif
+
 void supervisor_flash_set_extended(bool extended);
 bool supervisor_flash_get_extended(void);
 void supervisor_flash_update_extended(void);

@@ -37,6 +37,9 @@
 #include "lib/oofatfs/ff.h"
 #include "extmod/vfs_fat.h"
 #include "supervisor/filesystem.h"
+#if CIRCUITPY_STORAGE_MAP_FILE
+#include "shared-bindings/storage/__init__.h"
+#endif
 
 // this table converts from FRESULT to POSIX errno
 const byte fresult_to_errno_table[20] = {
@@ -249,7 +252,11 @@ static mp_obj_t fat_vfs_open(mp_obj_t self_in, mp_obj_t path_in, mp_obj_t mode_i
     if ((mode & FA_WRITE) != 0 && !filesystem_is_writable_by_python((supervisor_vfs_t *)self)) {
         mp_raise_OSError(MP_EROFS);
     }
-
+    #if CIRCUITPY_STORAGE_MAP_FILE
+    if ((mode & FA_WRITE) != 0) {
+        storage_map_file_check_writable(self, mp_obj_str_get_str(path_in));
+    }
+    #endif
 
     pyb_file_obj_t *o = mp_obj_malloc_with_finaliser(pyb_file_obj_t, type);
 
