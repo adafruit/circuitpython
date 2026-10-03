@@ -8,6 +8,7 @@
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/usb_host/Port.h"
 #include "supervisor/usb.h"
+#include "supervisor/shared/tick.h"
 #include "esp_private/usb_phy.h"
 #include "tusb.h"
 
@@ -46,6 +47,8 @@ usb_host_port_obj_t *common_hal_usb_host_port_construct(const mcu_pin_obj_t *dp,
     self->base.type = &usb_host_port_type;
     self->dp = dp;
     self->dm = dm;
+    // Keep polling enumeration timers even without an active display.
+    supervisor_enable_tick();
     return self;
 }
 
