@@ -15,6 +15,7 @@
 #include "shared-bindings/microcontroller/Processor.h"
 #include "shared-bindings/microcontroller/ResetReason.h"
 
+#include "esp_mac.h"
 #include "esp_sleep.h"
 #include "esp_system.h"
 #include "esp_pm.h"
@@ -161,8 +162,7 @@ void common_hal_mcu_processor_get_uid(uint8_t raw_id[]) {
     mac_address_part >>= 8;
     *ptr-- = swap_nibbles(mac_address_part & 0xff);
     #else
-    // TODO: Get UID for ESP32-P4.
-    return;
+    CHECK_ESP_RESULT(esp_efuse_mac_get_default(raw_id));
     #endif
 }
 

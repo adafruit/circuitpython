@@ -22,7 +22,6 @@ static const char *TAG = "SDCard.c";
 
 static bool slot_in_use[2];
 static bool never_reset_sdio[2] = { false, false };
-static bool host_initialized = false;
 
 static void common_hal_sdioio_sdcard_check_for_deinit(sdioio_sdcard_obj_t *self) {
     if (common_hal_sdioio_sdcard_deinited(self)) {
@@ -35,9 +34,17 @@ static int check_pins(const mcu_pin_obj_t *clock, const mcu_pin_obj_t *command, 
     // ESP32-S3 and P4 can use any pin for any SDMMC func in either slot
     // Default to SLOT_1 for SD cards
     ESP_LOGI(TAG, "Using chip with CONFIG_SOC_SDMMC_USE_GPIO_MATRIX");
-    if (!slot_in_use[1]) {
+    if (!slot_in_use[1]
+        #ifdef CONFIG_ESP_HOSTED_SDIO_HOST_INTERFACE
+        && CONFIG_ESP_HOSTED_SDIO_SLOT != 1
+        #endif
+        ) {
         return SDMMC_HOST_SLOT_1;
-    } else if (!slot_in_use[0]) {
+    } else if (!slot_in_use[0]
+               #ifdef CONFIG_ESP_HOSTED_SDIO_HOST_INTERFACE
+               && CONFIG_ESP_HOSTED_SDIO_SLOT != 0
+               #endif
+               ) {
         return SDMMC_HOST_SLOT_0;
     }
     #else
@@ -85,6 +92,7 @@ void common_hal_sdioio_sdcard_construct(sdioio_sdcard_obj_t *self,
     esp_err_t err = ESP_OK;
 
     sdmmc_host_t host = SDMMC_HOST_DEFAULT();
+    host.slot = sd_slot;
     host.max_freq_khz = frequency / 1000;
 
     sdmmc_slot_config_t slot_config = SDMMC_SLOT_CONFIG_DEFAULT();
@@ -113,7 +121,6 @@ void common_hal_sdioio_sdcard_construct(sdioio_sdcard_obj_t *self,
         if (err != ESP_OK) {
             mp_raise_OSError_msg_varg(MP_ERROR_TEXT("SDIO Init Error 0x%02x"), err);
         }
-        host_initialized = true;
     }
 
     err = sdmmc_host_init_slot(sd_slot, &slot_config);
@@ -145,7 +152,7 @@ void common_hal_sdioio_sdcard_construct(sdioio_sdcard_obj_t *self,
     ESP_LOGI(TAG, "Number of sectors: %d with sector_size: %d",
         self->card.csd.capacity, self->card.csd.sector_size);
 
-    self->frequency = self->card.real_freq_khz;
+    self->frequency = self->card.real_freq_khz * 1000;
     ESP_LOGI(TAG, "Real frequency is %lu", self->frequency);
     self->capacity = self->card.csd.capacity;  // Reported number of sectors
     ESP_LOGI(TAG, "Reported capacity is %lu", self->capacity);
@@ -251,13 +258,10 @@ void common_hal_sdioio_sdcard_deinit(sdioio_sdcard_obj_t *self) {
         return;
     }
 
+    sdmmc_host_deinit_slot(self->slot);
     never_reset_sdio[get_slot_index(self)] = false;
     slot_in_use[get_slot_index(self)] = false;
 
-    if (!slot_in_use[0] && !slot_in_use[1] && host_initialized) {
-        sdmmc_host_deinit();
-        host_initialized = false;
-    }
 
     reset_pin_number(self->command);
     self->command = COMMON_HAL_MCU_NO_PIN;
@@ -293,12 +297,11 @@ void common_hal_sdioio_sdcard_never_reset(sdioio_sdcard_obj_t *self) {
 void sdioio_reset(void) {
     for (size_t i = 0; i < MP_ARRAY_SIZE(slot_in_use); i++) {
         if (!never_reset_sdio[i]) {
+            if (slot_in_use[i]) {
+                sdmmc_host_deinit_slot(i);
+            }
             slot_in_use[i] = false;
         }
-    }
-    if (!slot_in_use[0] && !slot_in_use[1] && host_initialized) {
-        sdmmc_host_deinit();
-        host_initialized = false;
     }
 
     return;

@@ -421,3 +421,9 @@
 [submodule "frozen/Adafruit_CircuitPython_TAS2505"]
 	path = frozen/Adafruit_CircuitPython_TAS2505
 	url = https://github.com/adafruit/Adafruit_CircuitPython_TAS2505.git
+[submodule "ports/espressif/esp-hosted"]
+	path = ports/espressif/esp-hosted
+	url = https://github.com/espressif/esp-hosted-mcu.git
+[submodule "ports/espressif/esp-wifi-remote"]
+	path = ports/espressif/esp-wifi-remote
+	url = https://github.com/espressif/esp-wifi-remote.git

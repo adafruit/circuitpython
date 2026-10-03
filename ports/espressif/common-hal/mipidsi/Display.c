@@ -74,8 +74,9 @@ void common_hal_mipidsi_display_construct(mipidsi_display_obj_t *self,
     esp_lcd_dpi_panel_config_t dpi_config = {
         .virtual_channel = virtual_channel,
         .dpi_clk_src = MIPI_DSI_DPI_CLK_SRC_DEFAULT,
-        .dpi_clock_freq_mhz = pixel_clock_frequency / 1000000,
+        .dpi_clock_freq_mhz = pixel_clock_frequency / 1000000.0f,
         .in_color_format = color_format,
+        .out_color_format = color_format,
         .num_fbs = 1,
         .video_timing = {
             .h_size = width,

@@ -55,9 +55,13 @@ const mcu_pin_obj_t pin_GPIO45 = PIN(45, NO_ADC, NO_ADC_CHANNEL, NO_TOUCH_CHANNE
 const mcu_pin_obj_t pin_GPIO46 = PIN(46, NO_ADC, NO_ADC_CHANNEL, NO_TOUCH_CHANNEL);
 const mcu_pin_obj_t pin_GPIO47 = PIN(47, NO_ADC, NO_ADC_CHANNEL, NO_TOUCH_CHANNEL);
 const mcu_pin_obj_t pin_GPIO48 = PIN(48, NO_ADC, NO_ADC_CHANNEL, NO_TOUCH_CHANNEL);
-const mcu_pin_obj_t pin_GPIO49 = PIN(49, ADC_UNIT_2, ADC_CHANNEL_2, NO_TOUCH_CHANNEL);
-const mcu_pin_obj_t pin_GPIO50 = PIN(50, ADC_UNIT_2, ADC_CHANNEL_3, NO_TOUCH_CHANNEL);
-const mcu_pin_obj_t pin_GPIO51 = PIN(51, ADC_UNIT_2, ADC_CHANNEL_4, NO_TOUCH_CHANNEL);
-const mcu_pin_obj_t pin_GPIO52 = PIN(52, ADC_UNIT_2, ADC_CHANNEL_5, NO_TOUCH_CHANNEL);
-const mcu_pin_obj_t pin_GPIO53 = PIN(53, ADC_UNIT_2, ADC_CHANNEL_6, NO_TOUCH_CHANNEL);
-const mcu_pin_obj_t pin_GPIO54 = PIN(54, ADC_UNIT_2, ADC_CHANNEL_7, NO_TOUCH_CHANNEL);
+const mcu_pin_obj_t pin_GPIO49 = PIN(49, ADC_UNIT_2, ADC_CHANNEL_0, NO_TOUCH_CHANNEL);
+const mcu_pin_obj_t pin_GPIO50 = PIN(50, ADC_UNIT_2, ADC_CHANNEL_1, NO_TOUCH_CHANNEL);
+const mcu_pin_obj_t pin_GPIO51 = PIN(51, ADC_UNIT_2, ADC_CHANNEL_2, NO_TOUCH_CHANNEL);
+const mcu_pin_obj_t pin_GPIO52 = PIN(52, ADC_UNIT_2, ADC_CHANNEL_3, NO_TOUCH_CHANNEL);
+const mcu_pin_obj_t pin_GPIO53 = PIN(53, ADC_UNIT_2, ADC_CHANNEL_4, NO_TOUCH_CHANNEL);
+const mcu_pin_obj_t pin_GPIO54 = PIN(54, ADC_UNIT_2, ADC_CHANNEL_5, NO_TOUCH_CHANNEL);
+
+// The USB high-speed PHY pads cannot be used as GPIOs.
+const mcu_pin_obj_t pin_USB_HS_DP = PIN(NO_PIN, NO_ADC, NO_ADC_CHANNEL, NO_TOUCH_CHANNEL);
+const mcu_pin_obj_t pin_USB_HS_DM = PIN(NO_PIN, NO_ADC, NO_ADC_CHANNEL, NO_TOUCH_CHANNEL);
