@@ -167,6 +167,11 @@ void usb_background(void) {
         #elif CFG_TUSB_OS == OPT_OS_FREERTOS
         // TinyUSB may run in a separate task, at the same priority as CircuitPython.
         port_task_yield();
+        #if CIRCUITPY_USB_HOST
+        if (tuh_inited()) {
+            tuh_task_ext(0, false);
+        }
+        #endif
         #endif
         // No need to flush if there's no REPL.
         #if CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_CDC
