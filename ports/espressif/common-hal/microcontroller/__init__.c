@@ -111,7 +111,7 @@ void common_hal_mcu_on_next_reset(mcu_runmode_t runmode) {
             #if defined(CONFIG_IDF_TARGET_ESP32)
             // No UF2 bootloader.
             #elif defined(CONFIG_IDF_TARGET_ESP32P4)
-            REG_WRITE(LP_SYSTEM_REG_SYS_CTRL_REG, 0);
+            REG_CLR_BIT(LP_SYSTEM_REG_SYS_CTRL_REG, LP_SYSTEM_REG_FORCE_DOWNLOAD_BOOT);
             #elif defined(SOC_LP_AON_SUPPORTED)
             REG_WRITE(LP_AON_SYS_CFG_REG, 0); // reset bootloader
             #else
@@ -132,7 +132,7 @@ void common_hal_mcu_on_next_reset(mcu_runmode_t runmode) {
             #endif
 
             #if defined(CONFIG_IDF_TARGET_ESP32P4)
-            REG_WRITE(LP_SYSTEM_REG_SYS_CTRL_REG, LP_SYSTEM_REG_FORCE_DOWNLOAD_BOOT);
+            REG_SET_BIT(LP_SYSTEM_REG_SYS_CTRL_REG, LP_SYSTEM_REG_FORCE_DOWNLOAD_BOOT);
             #elif defined(SOC_LP_AON_SUPPORTED)
             REG_WRITE(LP_AON_SYS_CFG_REG, LP_AON_FORCE_DOWNLOAD_BOOT);
             #else
