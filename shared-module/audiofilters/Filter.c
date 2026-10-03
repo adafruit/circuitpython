@@ -195,6 +195,9 @@ audioio_get_buffer_result_t audiofilters_filter_get_buffer(audiofilters_filter_o
             shared_bindings_synthio_lfo_tick(self->base.sample_rate, n / self->base.channel_count);
             mp_float_t mix = synthio_block_slot_get_limited(&self->mix, MICROPY_FLOAT_CONST(0.0), MICROPY_FLOAT_CONST(1.0));
 
+            int32_t wet_scaled = (int32_t)(mix * MICROPY_FLOAT_CONST(32768.0));
+            int32_t dry_scaled = (int32_t)((MICROPY_FLOAT_CONST(1.0) - mix) * MICROPY_FLOAT_CONST(32768.0));
+
             if (mix <= MICROPY_FLOAT_CONST(0.01) || !self->filter.states) { // if mix is zero pure sample only or no biquad filter objects are provided
                 for (uint32_t i = 0; i < n; i++) {
                     if (MP_LIKELY(self->base.bits_per_sample == 16)) {
@@ -238,15 +241,15 @@ audioio_get_buffer_result_t audiofilters_filter_get_buffer(audiofilters_filter_o
                         bool buf_offset = (j % self->base.channel_count) == 1;
                         uint32_t k = j / self->base.channel_count;
                         if (MP_LIKELY(self->base.bits_per_sample == 16)) {
-                            word_buffer[i + j] = synthio_mix_down_sample((int32_t)((sample_src[i + j] * (MICROPY_FLOAT_CONST(1.0) - mix)) + (self->filter_buffer[k + SYNTHIO_MAX_DUR * buf_offset] * mix)), SYNTHIO_MIX_DOWN_SCALE(2));
+                            word_buffer[i + j] = synthio_mix_down_sample(((sample_src[i + j] * dry_scaled) >> 15) + ((self->filter_buffer[k + SYNTHIO_MAX_DUR * buf_offset] * wet_scaled) >> 15), SYNTHIO_MIX_DOWN_SCALE(2));
                             if (!self->base.samples_signed) {
                                 word_buffer[i + j] ^= 0x8000;
                             }
                         } else {
                             if (self->base.samples_signed) {
-                                hword_buffer[i + j] = (int8_t)((sample_hsrc[i + j] * (MICROPY_FLOAT_CONST(1.0) - mix)) + (self->filter_buffer[k + SYNTHIO_MAX_DUR * buf_offset] * mix));
+                                hword_buffer[i + j] = (int8_t)(((sample_hsrc[i + j] * dry_scaled) >> 15) + ((self->filter_buffer[k + SYNTHIO_MAX_DUR * buf_offset] * wet_scaled) >> 15));
                             } else {
-                                hword_buffer[i + j] = (uint8_t)(((int8_t)(((uint8_t)sample_hsrc[i + j]) ^ 0x80) * (MICROPY_FLOAT_CONST(1.0) - mix)) + (self->filter_buffer[k + SYNTHIO_MAX_DUR * buf_offset] * mix)) ^ 0x80;
+                                hword_buffer[i + j] = (uint8_t)((((int8_t)(((uint8_t)sample_hsrc[i + j]) ^ 0x80) * dry_scaled) >> 15) + ((self->filter_buffer[k + SYNTHIO_MAX_DUR * buf_offset] * wet_scaled) >> 15)) ^ 0x80;
                             }
                         }
                     }
