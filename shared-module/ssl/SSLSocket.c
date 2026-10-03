@@ -313,7 +313,14 @@ ssl_sslsocket_obj_t *common_hal_ssl_sslcontext_wrap_socket(ssl_sslcontext_obj_t 
     mbedtls_ssl_set_bio(&o->ssl, o, _mbedtls_ssl_send, _mbedtls_ssl_recv, NULL);
 
     if (self->cert_buf.buf != NULL) {
-        ret = mbedtls_pk_parse_key(&o->pkey, self->key_buf.buf, self->key_buf.len + 1, NULL, 0);
+        if (self->hw_key_id != 0) {
+            // The private key lives in hardware (e.g. hardwarekey.HardwareKey
+            // backed by the Digital Signature peripheral). Wrap the opaque PSA
+            // key; the handshake signature is computed by the hardware.
+            ret = mbedtls_pk_wrap_psa(&o->pkey, self->hw_key_id);
+        } else {
+            ret = mbedtls_pk_parse_key(&o->pkey, self->key_buf.buf, self->key_buf.len + 1, NULL, 0);
+        }
         if (ret != 0) {
             goto cleanup;
         }
