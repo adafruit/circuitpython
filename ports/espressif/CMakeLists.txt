@@ -8,7 +8,13 @@ set(ENV{IDF_PATH} ${CMAKE_SOURCE_DIR}/esp-idf)
 set(COMPONENTS bt driver esp_driver_dac esp_driver_gpio esp_driver_gptimer esp_driver_i2c esp_driver_i2s esp_driver_ledc esp_driver_pcnt esp_driver_rmt esp_driver_sdmmc esp_driver_spi esp_driver_touch_sens esp_driver_tsens esp_driver_uart esp-tls esp_adc esp_event esp_netif esp_psram esp_security esp_wifi esptool_py freertos log lwip main mbedtls mdns pthread soc ulp wpa_supplicant esp_lcd vfs esp_stdio sdmmc esp-camera)
 set(EXTRA_COMPONENT_DIRS "esp-protocols/components/mdns" "esp-camera")
 
+if(CIRCUITPY_ESP_HOSTED)
+    list(APPEND EXTRA_COMPONENT_DIRS "esp-hosted" "esp-wifi-remote/components/esp_wifi_remote")
+    list(APPEND COMPONENTS esp-hosted esp_wifi_remote)
+endif()
+
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+set(ENV{ESP_IDF_VERSION} "${IDF_VERSION_MAJOR}.${IDF_VERSION_MINOR}")
 project(circuitpython)
 
 idf_build_set_property(__OUTPUT_SDKCONFIG 0)

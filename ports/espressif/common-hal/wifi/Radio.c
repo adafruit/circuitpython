@@ -24,7 +24,7 @@
 #include "common-hal/socketpool/__init__.h"
 
 #include "components/esp_netif/include/esp_netif_net_stack.h"
-#include "components/esp_wifi/include/esp_wifi.h"
+#include "esp_wifi.h"
 #include "soc/soc_caps.h"
 #include "components/lwip/include/apps/ping/ping_sock.h"
 #include "lwip/sockets.h"
