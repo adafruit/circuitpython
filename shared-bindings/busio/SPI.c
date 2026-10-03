@@ -86,7 +86,7 @@
 
 
 // TODO(tannewt): Support LSB SPI.
-static mp_obj_t busio_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
+mp_obj_t busio_spi_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     #if CIRCUITPY_BUSIO_SPI
     enum { ARG_clock, ARG_MOSI, ARG_MISO, ARG_half_duplex };
     static const mp_arg_t allowed_args[] = {
@@ -106,7 +106,7 @@ static mp_obj_t busio_spi_make_new(const mp_obj_type_t *type, size_t n_args, siz
         mp_raise_ValueError(MP_ERROR_TEXT("Must provide MISO or MOSI pin"));
     }
 
-    busio_spi_obj_t *self = mp_obj_malloc_with_finaliser(busio_spi_obj_t, &busio_spi_type);
+    busio_spi_obj_t *self = mp_obj_malloc_with_finaliser(busio_spi_obj_t, type);
     common_hal_busio_spi_construct(self, clock, mosi, miso, args[ARG_half_duplex].u_bool);
     return MP_OBJ_FROM_PTR(self);
     #else

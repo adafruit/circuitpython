@@ -116,6 +116,9 @@ endif
 ifeq ($(CIRCUITPY_ANALOGIO),1)
 SRC_PATTERNS += analogio/%
 endif
+ifeq ($(CIRCUITPY_ASYNC_SPI),1)
+SRC_PATTERNS += async_spi/%
+endif
 ifeq ($(CIRCUITPY_ATEXIT),1)
 SRC_PATTERNS += atexit/%
 endif
@@ -736,6 +739,8 @@ SRC_SHARED_MODULE_ALL = \
 	picogame/Canvas.c \
 	aesio/__init__.c \
 	aesio/aes.c \
+	async_spi/SPI.c \
+	async_spi/__init__.c \
 	atexit/__init__.c \
 	audiocore/RawSample.c \
 	audiocore/WaveFile.c \
