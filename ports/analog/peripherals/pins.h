@@ -31,6 +31,10 @@ extern const mp_obj_type_t mcu_pin_type;
 // for non-connected pins
 #define NO_PIN 0xFF
 
-#ifdef MAX32690
+#if defined(MAX32690)
 #include "max32690/pins.h"
+#elif defined(MAX32650)
+#include "max32650/pins.h"
+#elif defined(MAX32665)
+#include "max32665/pins.h"
 #endif
