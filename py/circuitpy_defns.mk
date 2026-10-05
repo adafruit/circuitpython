@@ -116,6 +116,9 @@ endif
 ifeq ($(CIRCUITPY_ANALOGIO),1)
 SRC_PATTERNS += analogio/%
 endif
+ifeq ($(CIRCUITPY_ASYNC_SPI),1)
+SRC_PATTERNS += async_spi/%
+endif
 ifeq ($(CIRCUITPY_ATEXIT),1)
 SRC_PATTERNS += atexit/%
 endif
@@ -526,6 +529,8 @@ SRC_COMMON_HAL_ALL = \
 	analogio/AnalogIn.c \
 	analogio/AnalogOut.c \
 	analogio/__init__.c \
+	async_spi/SPI.c \
+	async_spi/__init__.c \
 	audiobusio/I2SOut.c \
 	audiobusio/PDMIn.c \
 	audiobusio/__init__.c \
