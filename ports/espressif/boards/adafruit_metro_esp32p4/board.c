@@ -10,6 +10,11 @@
 static esp_ldo_channel_handle_t io_ldo;
 
 void board_init(void) {
+    // Keep the rail acquired across simulated deep-sleep wakes.
+    if (io_ldo != NULL) {
+        return;
+    }
+
     // The SD card and C6 control pins (GPIO39-48) require the VO4 3.3 V rail.
     const esp_ldo_channel_config_t config = {
         .chan_id = 4,
