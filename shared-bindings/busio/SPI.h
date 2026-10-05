@@ -7,6 +7,7 @@
 #pragma once
 
 #include "py/obj.h"
+#include "py/runtime.h"
 #include "supervisor/shared/async_flag.h"
 
 #include "common-hal/microcontroller/Pin.h"
