@@ -157,6 +157,16 @@ def fetch(where):
             cwd=mbedtls,
         )
 
+    # ESP-Hosted keeps the protobuf-c runtime in a nested submodule.
+    esp_hosted = TOP / "ports" / "espressif" / "esp-hosted"
+    if (esp_hosted / ".gitmodules").exists():
+        depth_maybe = "" if clone_supports_filter else "--depth 1"
+        run(
+            "Init esp-hosted nested submodules",
+            f"git submodule update --init {filter_maybe} {depth_maybe} common/protobuf-c",
+            cwd=esp_hosted,
+        )
+
 
 def set_output(name, value):
     if "GITHUB_OUTPUT" in os.environ:

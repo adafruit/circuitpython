@@ -17,7 +17,7 @@
 #include "shared-bindings/wifi/Radio.h"
 #include "shared-bindings/wifi/ScannedNetworks.h"
 
-#include "components/esp_wifi/include/esp_wifi.h"
+#include "esp_wifi.h"
 #include "soc/soc_caps.h"
 
 static void wifi_scannednetworks_done(wifi_scannednetworks_obj_t *self) {
