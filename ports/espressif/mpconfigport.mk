@@ -68,6 +68,12 @@ CIRCUITPY_LIB_TLSF = 0
 
 CIRCUITPY_LIBC_STRING0 = 0
 
+# No space for audio on most C6 boards. A board can turn it back on.
+ifeq ($(IDF_TARGET),esp32c6)
+CIRCUITPY_AUDIOBUSIO ?= 0
+CIRCUITPY_AUDIOI2SIN ?= 0
+endif
+
 # These modules are implemented in ports/<port>/common-hal:
 CIRCUITPY__EVE ?= 1
 CIRCUITPY_ALARM ?= 1
@@ -253,10 +259,6 @@ CIRCUITPY_AUDIOIO = 0
 
 # No I2S peripheral PDM-to-PCM hardware support
 CIRCUITPY_AUDIOBUSIO_PDMIN = 0
-
-# No space for this
-CIRCUITPY_AUDIOBUSIO = 0
-CIRCUITPY_AUDIOI2SIN = 0
 
 # No I80 support from the IDF
 CIRCUITPY_PARALLELDISPLAYBUS = 0

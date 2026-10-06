@@ -9,3 +9,8 @@ CIRCUITPY_ESP_FLASH_SIZE = 4MB
 
 # Board was originally defined with a 2MB firmware, almost 2MB user filesystem. Leave it that way.
 CIRCUITPY_4MB_FLASH_LARGE_USER_FS_LAYOUT = 1
+
+CIRCUITPY_AUDIOBUSIO = 1
+CIRCUITPY_AUDIOI2SIN = 1
+# Fit the 2MB firmware partition
+CIRCUITPY_ULAB_OPTIMIZE_SIZE = 1
