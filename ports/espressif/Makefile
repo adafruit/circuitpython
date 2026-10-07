@@ -150,7 +150,6 @@ INC += \
 	-isystem esp-idf/components/lwip/port/include \
 	-isystem esp-idf/components/lwip/port/esp32xx/include \
 	-isystem esp-idf/components/lwip/port/freertos/include \
-	-isystem esp-idf/components/mbedtls/esp_crt_bundle/include \
 	-isystem esp-idf/components/mbedtls/mbedtls/include \
 	-isystem esp-idf/components/mbedtls/mbedtls/tf-psa-crypto/include \
 	-isystem esp-idf/components/mbedtls/mbedtls/tf-psa-crypto/drivers/builtin/include \
@@ -647,7 +646,11 @@ SRC_C += \
 	peripherals/$(IDF_TARGET)/pins.c
 
 ifeq ($(CIRCUITPY_SSL),1)
-SRC_C += common-hal/ssl/crt_bundle.c
+# The same root certificate bundle and lookup code as the other ports, not ESP-IDF's.
+SRC_C += lib/mbedtls_config/crt_bundle.c
+$(BUILD)/x509_crt_bundle.S: $(TOP)/lib/certificates/data/roots-full.pem $(TOP)/tools/gen_crt_bundle.py
+	$(Q)$(PYTHON) $(TOP)/tools/gen_crt_bundle.py -i $< -o $@ --asm
+OBJ_CRT_BUNDLE := $(BUILD)/x509_crt_bundle.o
 endif
 
 SRC_C += $(wildcard common-hal/espidf/*.c)
@@ -808,6 +811,7 @@ endif
 OBJ += $(addprefix $(BUILD)/, $(SRC_CIRCUITPY_COMMON:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_MOD:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_S:.s=.o))
+OBJ += $(OBJ_CRT_BUNDLE)
 
 $(BUILD)/$(FATFS_DIR)/ff.o: COPT += -Os
 $(filter $(PY_BUILD)/../extmod/vfs_fat_%.o, $(PY_O)): COPT += -Os

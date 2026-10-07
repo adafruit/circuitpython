@@ -25,6 +25,10 @@
 
 #define BUNDLE_HEADER_OFFSET 2
 #define CRT_HEADER_OFFSET 4
+// Each certificate is stored with the first NAME_HASH_LEN bytes of the SHA-256 of its DER subject
+// name instead of the name itself (tools/gen_crt_bundle.py). The hash only selects the candidate
+// root; the signature check decides.
+#define NAME_HASH_LEN 8
 
 /* a dummy certificate so that
  * cacert_ptr passes non-NULL check during handshake */
@@ -115,35 +119,40 @@ static int crt_verify_callback(void *buf, mbedtls_x509_crt *crt, int depth, uint
 
     LOGD(TAG, "%d certificates in bundle", s_crt_bundle.num_certs);
 
-    size_t name_len = 0;
-    const uint8_t *crt_name;
+    unsigned char issuer_hash[32];
+    if (mbedtls_md(mbedtls_md_info_from_type(MBEDTLS_MD_SHA256), child->issuer_raw.p, child->issuer_raw.len,
+        issuer_hash) != 0) {
+        return MBEDTLS_ERR_X509_FATAL_ERROR;
+    }
 
-    bool crt_found = false;
+    /* Binary search on the name hash, then try every root with that hash */
     int start = 0;
     int end = s_crt_bundle.num_certs - 1;
-    int middle = (end - start) / 2;
-
-    /* Look for the certificate using binary search on subject name */
+    int found = -1;
     while (start <= end) {
-        name_len = s_crt_bundle.crts[middle][0] << 8 | s_crt_bundle.crts[middle][1];
-        crt_name = s_crt_bundle.crts[middle] + CRT_HEADER_OFFSET;
-
-        int cmp_res = memcmp(child->issuer_raw.p, crt_name, name_len);
+        int middle = (start + end) / 2;
+        int cmp_res = memcmp(issuer_hash, s_crt_bundle.crts[middle] + CRT_HEADER_OFFSET, NAME_HASH_LEN);
         if (cmp_res == 0) {
-            crt_found = true;
+            found = middle;
             break;
         } else if (cmp_res < 0) {
             end = middle - 1;
         } else {
             start = middle + 1;
         }
-        middle = (start + end) / 2;
     }
 
     int ret = MBEDTLS_ERR_X509_FATAL_ERROR;
-    if (crt_found) {
-        size_t key_len = s_crt_bundle.crts[middle][2] << 8 | s_crt_bundle.crts[middle][3];
-        ret = crt_check_signature(child, s_crt_bundle.crts[middle] + CRT_HEADER_OFFSET + name_len, key_len);
+    if (found >= 0) {
+        while (found > 0 &&
+               memcmp(issuer_hash, s_crt_bundle.crts[found - 1] + CRT_HEADER_OFFSET, NAME_HASH_LEN) == 0) {
+            found--;
+        }
+        for (int i = found; i < s_crt_bundle.num_certs && ret != 0 &&
+             memcmp(issuer_hash, s_crt_bundle.crts[i] + CRT_HEADER_OFFSET, NAME_HASH_LEN) == 0; i++) {
+            size_t key_len = s_crt_bundle.crts[i][2] << 8 | s_crt_bundle.crts[i][3];
+            ret = crt_check_signature(child, s_crt_bundle.crts[i] + CRT_HEADER_OFFSET + NAME_HASH_LEN, key_len);
+        }
     }
 
     if (ret == 0) {
@@ -194,6 +203,11 @@ static int crt_bundle_init(const uint8_t *x509_bundle, size_t bundle_size) {
         }
         size_t name_len = cur_crt[0] << 8 | cur_crt[1];
         size_t key_len = cur_crt[2] << 8 | cur_crt[3];
+        if (name_len != NAME_HASH_LEN) {
+            LOGE(TAG, "Invalid certificate bundle");
+            m_tracked_free(crts);
+            return -MP_EINVAL;
+        }
         cur_crt = cur_crt + CRT_HEADER_OFFSET + name_len + key_len;
     }
 
