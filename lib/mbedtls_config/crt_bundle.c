@@ -94,6 +94,38 @@ cleanup:
 }
 
 
+static unsigned char s_name_hash[32];
+
+/* Index of the first bundled root whose name hash matches `name`, or -1. Leaves the hash in
+ * s_name_hash for crt_name_hash_equal(). */
+static int crt_bundle_find(const mbedtls_x509_buf *name) {
+    if (mbedtls_md(mbedtls_md_info_from_type(MBEDTLS_MD_SHA256), name->p, name->len, s_name_hash) != 0) {
+        return -1;
+    }
+    int start = 0;
+    int end = s_crt_bundle.num_certs - 1;
+    while (start <= end) {
+        int middle = (start + end) / 2;
+        int cmp_res = memcmp(s_name_hash, s_crt_bundle.crts[middle] + CRT_HEADER_OFFSET, NAME_HASH_LEN);
+        if (cmp_res == 0) {
+            while (middle > 0 &&
+                   memcmp(s_name_hash, s_crt_bundle.crts[middle - 1] + CRT_HEADER_OFFSET, NAME_HASH_LEN) == 0) {
+                middle--;
+            }
+            return middle;
+        } else if (cmp_res < 0) {
+            end = middle - 1;
+        } else {
+            start = middle + 1;
+        }
+    }
+    return -1;
+}
+
+static bool crt_name_hash_equal(int i) {
+    return memcmp(s_name_hash, s_crt_bundle.crts[i] + CRT_HEADER_OFFSET, NAME_HASH_LEN) == 0;
+}
+
 /* This callback is called for every certificate in the chain. If the chain
  * is proper each intermediate certificate is validated through its parent
  * in the x509_crt_verify_chain() function. So this callback should
@@ -119,40 +151,25 @@ static int crt_verify_callback(void *buf, mbedtls_x509_crt *crt, int depth, uint
 
     LOGD(TAG, "%d certificates in bundle", s_crt_bundle.num_certs);
 
-    unsigned char issuer_hash[32];
-    if (mbedtls_md(mbedtls_md_info_from_type(MBEDTLS_MD_SHA256), child->issuer_raw.p, child->issuer_raw.len,
-        issuer_hash) != 0) {
-        return MBEDTLS_ERR_X509_FATAL_ERROR;
-    }
-
-    /* Binary search on the name hash, then try every root with that hash */
-    int start = 0;
-    int end = s_crt_bundle.num_certs - 1;
-    int found = -1;
-    while (start <= end) {
-        int middle = (start + end) / 2;
-        int cmp_res = memcmp(issuer_hash, s_crt_bundle.crts[middle] + CRT_HEADER_OFFSET, NAME_HASH_LEN);
-        if (cmp_res == 0) {
-            found = middle;
-            break;
-        } else if (cmp_res < 0) {
-            end = middle - 1;
-        } else {
-            start = middle + 1;
+    /* A chain can carry a cross-signed copy of a root that is in the bundle, issued by a root
+     * that is not (GTS Root R4 signed by the retired GlobalSign Root CA). Trust that copy when
+     * its subject and public key match the bundled root. */
+    int i = crt_bundle_find(&child->subject_raw);
+    for (; i >= 0 && i < s_crt_bundle.num_certs && crt_name_hash_equal(i); i++) {
+        size_t key_len = s_crt_bundle.crts[i][2] << 8 | s_crt_bundle.crts[i][3];
+        if (key_len == child->pk_raw.len &&
+            memcmp(s_crt_bundle.crts[i] + CRT_HEADER_OFFSET + NAME_HASH_LEN, child->pk_raw.p, key_len) == 0) {
+            *flags = 0;
+            return 0;
         }
     }
 
+    /* Otherwise the root that issued this certificate must verify its signature */
     int ret = MBEDTLS_ERR_X509_FATAL_ERROR;
-    if (found >= 0) {
-        while (found > 0 &&
-               memcmp(issuer_hash, s_crt_bundle.crts[found - 1] + CRT_HEADER_OFFSET, NAME_HASH_LEN) == 0) {
-            found--;
-        }
-        for (int i = found; i < s_crt_bundle.num_certs && ret != 0 &&
-             memcmp(issuer_hash, s_crt_bundle.crts[i] + CRT_HEADER_OFFSET, NAME_HASH_LEN) == 0; i++) {
-            size_t key_len = s_crt_bundle.crts[i][2] << 8 | s_crt_bundle.crts[i][3];
-            ret = crt_check_signature(child, s_crt_bundle.crts[i] + CRT_HEADER_OFFSET + NAME_HASH_LEN, key_len);
-        }
+    i = crt_bundle_find(&child->issuer_raw);
+    for (; i >= 0 && i < s_crt_bundle.num_certs && ret != 0 && crt_name_hash_equal(i); i++) {
+        size_t key_len = s_crt_bundle.crts[i][2] << 8 | s_crt_bundle.crts[i][3];
+        ret = crt_check_signature(child, s_crt_bundle.crts[i] + CRT_HEADER_OFFSET + NAME_HASH_LEN, key_len);
     }
 
     if (ret == 0) {
