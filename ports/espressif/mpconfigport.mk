@@ -254,21 +254,23 @@ CIRCUITPY_AUDIOIO = 0
 # No I2S peripheral PDM-to-PCM hardware support
 CIRCUITPY_AUDIOBUSIO_PDMIN = 0
 
-# No space for this
-CIRCUITPY_AUDIOBUSIO = 0
-CIRCUITPY_AUDIOI2SIN = 0
-
 # No I80 support from the IDF
 CIRCUITPY_PARALLELDISPLAYBUS = 0
 
 # No SDMMC
 CIRCUITPY_SDIOIO = 0
 
+# Fit the 2MB firmware partition. Only 4MB boards on the default
+# layout get a 2816K firmware partition.
+ifneq ($(CIRCUITPY_ESP_FLASH_SIZE)$(CIRCUITPY_4MB_FLASH_LARGE_USER_FS_LAYOUT),4MB0)
+CIRCUITPY_ULAB_OPTIMIZE_SIZE ?= 1
+endif
+
 # Features
 CIRCUITPY_USB_DEVICE = 0
 CIRCUITPY_ESP_USB_SERIAL_JTAG ?= 1
 
-#### esp32c61 #########################################################
+#### esp32c61#########################################################
 else ifeq ($(IDF_TARGET),esp32c61)
 # Modules
 CIRCUITPY_ESPCAMERA = 0
