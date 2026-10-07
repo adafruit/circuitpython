@@ -68,12 +68,6 @@ CIRCUITPY_LIB_TLSF = 0
 
 CIRCUITPY_LIBC_STRING0 = 0
 
-# No space for audio on most C6 boards. A board can turn it back on.
-ifeq ($(IDF_TARGET),esp32c6)
-CIRCUITPY_AUDIOBUSIO ?= 0
-CIRCUITPY_AUDIOI2SIN ?= 0
-endif
-
 # These modules are implemented in ports/<port>/common-hal:
 CIRCUITPY__EVE ?= 1
 CIRCUITPY_ALARM ?= 1
@@ -266,11 +260,17 @@ CIRCUITPY_PARALLELDISPLAYBUS = 0
 # No SDMMC
 CIRCUITPY_SDIOIO = 0
 
+# Fit the 2MB firmware partition. Only 4MB boards on the default
+# layout get a 2816K firmware partition.
+ifneq ($(CIRCUITPY_ESP_FLASH_SIZE)$(CIRCUITPY_4MB_FLASH_LARGE_USER_FS_LAYOUT),4MB0)
+CIRCUITPY_ULAB_OPTIMIZE_SIZE ?= 1
+endif
+
 # Features
 CIRCUITPY_USB_DEVICE = 0
 CIRCUITPY_ESP_USB_SERIAL_JTAG ?= 1
 
-#### esp32c61 #########################################################
+#### esp32c61#########################################################
 else ifeq ($(IDF_TARGET),esp32c61)
 # Modules
 CIRCUITPY_ESPCAMERA = 0
