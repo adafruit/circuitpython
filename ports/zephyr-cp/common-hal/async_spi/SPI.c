@@ -28,8 +28,8 @@ static void apply_config(async_spi_spi_obj_t *self, uint32_t frequency, uint16_t
 
 static void transfer_done(const struct device *dev, int result, void *userdata) {
     ARG_UNUSED(dev);
-    ARG_UNUSED(result);
     async_spi_spi_obj_t *self = userdata;
+    self->result = result;
     CIRCUITPY_ASYNC_FLAG_SET(self->done);
     // A configure() that waited for this transfer.
     if (self->idle_done != NULL) {
@@ -40,13 +40,14 @@ static void transfer_done(const struct device *dev, int result, void *userdata) 
     port_wake_main_task_from_isr();
 }
 
-// Zephyr cannot stop a transfer, so this waits for it; deinit() waits too. Does not allocate.
+// Zephyr cannot stop a transfer, so cancel and deinit wait for it. No background tasks: this
+// also runs from a finalizer during GC.
 static void wait_done(async_spi_spi_obj_t *self) {
     if (self->done == NULL) {
         return;
     }
     while (!CIRCUITPY_ASYNC_FLAG_IS_SET(self->done)) {
-        RUN_BACKGROUND_TASKS;
+        port_task_sleep_ms(1);
     }
     self->done = NULL;
 }
@@ -154,6 +155,7 @@ static void start(async_spi_spi_obj_t *self, const uint8_t *data_out, uint8_t *d
     wait_done(self);
     CIRCUITPY_ASYNC_FLAG_INIT(done);
     self->done = done;
+    self->result = 0;
     if (len == 0) {
         CIRCUITPY_ASYNC_FLAG_SET(done);
         return;
@@ -203,14 +205,21 @@ void common_hal_async_spi_spi_write_readinto_start(async_spi_spi_obj_t *self,
     start(self, data_out, data_in, len, done);
 }
 
+// Called once done is set.
 mp_obj_t common_hal_async_spi_spi_transfer_end(void *context, circuitpy_async_flag_t *done) {
     async_spi_spi_obj_t *self = context;
     if (self->done == done) {
-        wait_done(self);
+        self->done = NULL;
+        if (self->result != 0) {
+            raise_zephyr_error(self->result);
+        }
     }
     return mp_const_none;
 }
 
 void common_hal_async_spi_spi_transfer_cancel(void *context, circuitpy_async_flag_t *done) {
-    common_hal_async_spi_spi_transfer_end(context, done);
+    async_spi_spi_obj_t *self = context;
+    if (self->done == done) {
+        wait_done(self);
+    }
 }

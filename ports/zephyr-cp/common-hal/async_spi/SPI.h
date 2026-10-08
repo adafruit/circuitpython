@@ -23,6 +23,7 @@ typedef struct {
     const mcu_pin_obj_t *mosi;
     const mcu_pin_obj_t *miso;
     circuitpy_async_flag_t *done;       // of the running transfer, NULL when none
+    int result;                         // of the last transfer, from the driver
     struct spi_buf tx_buf;              // the running transfer's buffers
     struct spi_buf rx_buf;
     struct spi_buf_set tx;
