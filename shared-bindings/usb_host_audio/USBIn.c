@@ -16,7 +16,9 @@
 #include "shared-bindings/usb_host/Port.h"
 #include "shared-bindings/usb_host_audio/USBIn.h"
 #include "shared-bindings/util.h"
-
+//| import usb.core
+//|
+//|
 //| class USBIn:
 //|     """Stream or record the audio of a USB microphone on a USB host port."""
 //|
