@@ -36,6 +36,10 @@ usb_host_port_obj_t usb_host_instance;
 
 volatile bool _core1_ready = false;
 
+// The isochronous ring storage was handed to the host controller. Like the
+// storage, this survives soft reload.
+static bool _iso_buffered = false;
+
 // Core1 posts TinyUSB events while core0 may hold the queue FIFO mutex. The
 // contended wait path calls best_effort_wfe_or_timeout() and time_us_64(),
 // which normally live in flash, but core1 must not touch flash (see the MPU
@@ -194,7 +198,7 @@ usb_host_port_obj_t *common_hal_usb_host_port_construct(const mcu_pin_obj_t *dp,
         // never freed; it survives soft reload.
         uint8_t *iso_buf = port_malloc(rounded, true);
         if (iso_buf != NULL) {
-            pio_usb_host_set_iso_ring(iso_buf, rounded);
+            _iso_buffered = pio_usb_host_set_iso_ring(iso_buf, rounded);
         } else {
             mp_raise_RuntimeError_varg(MP_ERROR_TEXT("Failed to allocate %q buffer"),
                 MP_QSTR_USB_HOST_ISO_BUFFER);
@@ -212,6 +216,10 @@ usb_host_port_obj_t *common_hal_usb_host_port_construct(const mcu_pin_obj_t *dp,
     tuh_init(TUH_OPT_RHPORT);
 
     return self;
+}
+
+bool common_hal_usb_host_port_iso_buffered(void) {
+    return _iso_buffered;
 }
 
 // Not used, but we must define to put this hook into SRAM

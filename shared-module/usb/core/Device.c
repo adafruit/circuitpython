@@ -39,6 +39,14 @@ static inline void usb_host_bulk_device_deinit(usb_core_device_obj_t *device) {
 }
 #endif
 
+#if CIRCUITPY_USB_HOST_AUDIO
+#include "shared-module/usb_host_audio/USBIn.h"
+#else
+static inline void usb_host_audio_stop_device(uint8_t device_address) {
+    (void)device_address;
+}
+#endif
+
 // Track what device numbers are mounted. We can't use tuh_ready() because it is
 // true before enumeration completes and TinyUSB drivers are started.
 static size_t _mounted_devices = 0;
@@ -404,6 +412,7 @@ void common_hal_usb_core_device_set_configuration(usb_core_device_obj_t *self, m
     // We assume that the config index is one less than the value.
     uint8_t config_index = configuration - 1;
     usb_host_bulk_stop_device(self->device_address);
+    usb_host_audio_stop_device(self->device_address);
     // Get the configuration descriptor and cache it. We'll use it later to open
     // endpoints.
 
@@ -572,6 +581,7 @@ mp_int_t common_hal_usb_core_device_ctrl_transfer(usb_core_device_obj_t *self,
     if (len == 0 && ((bmRequestType == 0x01 && bRequest == TUSB_REQ_SET_INTERFACE) ||
                      (bmRequestType == 0x00 && bRequest == TUSB_REQ_SET_CONFIGURATION))) {
         usb_host_bulk_stop_device(self->device_address);
+        usb_host_audio_stop_device(self->device_address);
     }
     // Timeout is in ms.
 

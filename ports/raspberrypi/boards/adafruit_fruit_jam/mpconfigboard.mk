@@ -27,3 +27,6 @@ CFLAGS += -DPIO_USB_HOST_ISOCHRONOUS=1
 
 # USB host bulk input, for SDR devices
 CIRCUITPY_USB_HOST_BULK = 1
+
+# USB microphones as audio sources. Needs the isochronous ring above.
+CIRCUITPY_USB_HOST_AUDIO = 1
