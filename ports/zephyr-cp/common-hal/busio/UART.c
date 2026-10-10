@@ -27,6 +27,14 @@
 #include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(busio_uart);
 
+// Turn RX back on after serial_cb() paused it for a full msgq.
+static void resume_rx(busio_uart_obj_t *self) {
+    if (self->rx_paused) {
+        self->rx_paused = false;
+        uart_irq_rx_enable(self->uart_device);
+    }
+}
+
 /*
  * Read characters from UART until line end is detected. Afterwards push the
  * data to the message queue.
@@ -42,20 +50,35 @@ static void serial_cb(const struct device *dev, void *user_data) {
         return;
     }
 
-    /* read until FIFO empty */
-    while (uart_fifo_read(dev, &c, 1) == 1) {
+    /* read until FIFO empty or msgq full */
+    while (true) {
+        if (k_msgq_num_free_get(&self->msgq) == 0) {
+            // Leave the remaining bytes in the driver instead of dropping
+            // them. USB CDC then stops accepting packets, so the host
+            // waits. read() calls resume_rx() after taking bytes out of
+            // the msgq.
+            self->rx_paused = true;
+            uart_irq_rx_disable(dev);
+            // read() may have freed msgq space just before rx_paused was
+            // set. Then read() saw rx_paused false and did not call
+            // resume_rx(), so check for space again.
+            if (k_msgq_num_free_get(&self->msgq) == 0) {
+                break;
+            }
+            resume_rx(self);
+        }
+        if (uart_fifo_read(dev, &c, 1) != 1) {
+            break;
+        }
         if (mp_interrupt_char == c) {
             common_hal_busio_uart_clear_rx_buffer(self);
             mp_sched_keyboard_interrupt();
             port_wake_main_task_from_isr();
-        } else if (!self->rx_paused) {
-            if (k_msgq_put(&self->msgq, &c, K_NO_WAIT) == 0) {
-                // Wake the main task so it can service the new RX data
-                // instead of sleeping out its full timeout.
-                port_wake_main_task_from_isr();
-            } else {
-                self->rx_paused = true;
-            }
+        } else {
+            k_msgq_put(&self->msgq, &c, K_NO_WAIT);
+            // Wake the main task so it can service the new RX data
+            // instead of sleeping out its full timeout.
+            port_wake_main_task_from_isr();
         }
     }
 }
@@ -203,7 +226,7 @@ size_t common_hal_busio_uart_read(busio_uart_obj_t *self, uint8_t *data, size_t 
         count++;
     }
     if (count > 0) {
-        self->rx_paused = false;
+        resume_rx(self);
     }
 
     return count;
@@ -253,6 +276,7 @@ uint32_t common_hal_busio_uart_rx_characters_available(busio_uart_obj_t *self) {
 
 void common_hal_busio_uart_clear_rx_buffer(busio_uart_obj_t *self) {
     k_msgq_purge(&self->msgq);
+    resume_rx(self);
 }
 
 bool common_hal_busio_uart_ready_to_tx(busio_uart_obj_t *self) {
