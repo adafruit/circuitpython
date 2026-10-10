@@ -595,6 +595,7 @@ SRC_C += \
 	audio_dma.c \
 	background.c \
 	peripherals/pins.c \
+	peripherals/spi.c \
 	lib/crypto-algorithms/sha256.c \
 	lib/tinyusb/src/portable/raspberrypi/rp2040/dcd_rp2040.c \
 	lib/tinyusb/src/portable/raspberrypi/rp2040/rp2040_usb.c \
