@@ -374,6 +374,11 @@ audioio_get_buffer_result_t audiodelays_multi_tap_delay_get_buffer(audiodelays_m
         mp_float_t mix = synthio_block_slot_get_limited(&self->mix, MICROPY_FLOAT_CONST(0.0), MICROPY_FLOAT_CONST(1.0)) * MICROPY_FLOAT_CONST(2.0);
         mp_float_t decay = synthio_block_slot_get_limited(&self->decay, MICROPY_FLOAT_CONST(0.0), MICROPY_FLOAT_CONST(1.0));
 
+        int32_t decay_scaled = (int32_t)(decay * MICROPY_FLOAT_CONST(32768.0));
+        int32_t tap_scaled = (int32_t)(MIN(mix, MICROPY_FLOAT_CONST(1.0)) * MICROPY_FLOAT_CONST(32768.0));
+        int32_t sample_scaled = (int32_t)(MIN(MICROPY_FLOAT_CONST(2.0) - mix,
+            MICROPY_FLOAT_CONST(1.0)) * MICROPY_FLOAT_CONST(32768.0));
+
         int16_t *sample_src = NULL;
         int8_t *sample_hsrc = NULL;
         if (self->sample != NULL) {
@@ -424,7 +429,7 @@ audioio_get_buffer_result_t audiodelays_multi_tap_delay_get_buffer(audiodelays_m
             }
 
             // Apply decay and add sample
-            delay_word = (int32_t)(delay_word * decay) + sample_word;
+            delay_word = ((delay_word * decay_scaled) >> 15) + sample_word;
 
             if (MP_LIKELY(self->base.bits_per_sample == 16)) {
                 delay_word = synthio_mix_down_sample(delay_word, SYNTHIO_MIX_DOWN_SCALE(2));
@@ -436,8 +441,7 @@ audioio_get_buffer_result_t audiodelays_multi_tap_delay_get_buffer(audiodelays_m
             }
 
             // Mix sample with tap output
-            word = (int32_t)((sample_word * MIN(MICROPY_FLOAT_CONST(2.0) - mix, MICROPY_FLOAT_CONST(1.0)))
-                + (word * MIN(mix, MICROPY_FLOAT_CONST(1.0))));
+            word = ((sample_word * sample_scaled) >> 15) + ((word * tap_scaled) >> 15);
             word = synthio_mix_down_sample(word, SYNTHIO_MIX_DOWN_SCALE(2));
 
             if (MP_LIKELY(self->base.bits_per_sample == 16)) {
