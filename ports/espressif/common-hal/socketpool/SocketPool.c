@@ -8,16 +8,29 @@
 #include "common-hal/socketpool/Socket.h"
 
 #include "py/runtime.h"
+#if CIRCUITPY_WIFI
 #include "shared-bindings/wifi/__init__.h"
+#endif
+#if CIRCUITPY_MII
+#include "shared-bindings/mii/Ethernet.h"
+#endif
 #include "common-hal/socketpool/__init__.h"
 
 #include "components/lwip/lwip/src/include/lwip/netdb.h"
 
 #include "bindings/espidf/__init__.h"
 
-void common_hal_socketpool_socketpool_construct(socketpool_socketpool_obj_t *self, mp_obj_t radio) {
-    if (radio != MP_OBJ_FROM_PTR(&common_hal_wifi_radio_obj)) {
-        mp_raise_ValueError(MP_ERROR_TEXT("SocketPool can only be used with wifi.radio"));
+void common_hal_socketpool_socketpool_construct(socketpool_socketpool_obj_t *self, mp_obj_t network_interface) {
+    bool valid = false;
+    #if CIRCUITPY_WIFI
+    valid = valid || network_interface == MP_OBJ_FROM_PTR(&common_hal_wifi_radio_obj);
+    #endif
+    #if CIRCUITPY_MII
+    valid = valid || mp_obj_is_type(network_interface, &mii_ethernet_type);
+    #endif
+    if (!valid) {
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("SocketPool can only be used with %q.%q or any %q.%q"),
+            MP_QSTR_wifi, MP_QSTR_radio, MP_QSTR_ethernet, MP_QSTR_Ethernet);
     }
 }
 

@@ -22,7 +22,7 @@ west sdk install
 Now to build from `ports/zephyr-cp`:
 
 ```sh
-make BOARD=nordic_nrf7002dk
+make BOARD=nordic_nrf5340dk
 ```
 
 This uses Zephyr's cmake to generate Makefiles that then delegate to

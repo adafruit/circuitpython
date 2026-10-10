@@ -15,8 +15,8 @@
 #include "lwip/dns.h"
 #include "lwip/inet.h"
 
-void common_hal_socketpool_socketpool_construct(socketpool_socketpool_obj_t *self, mp_obj_t radio) {
-    if (radio != MP_OBJ_FROM_PTR(&common_hal_wifi_radio_obj)) {
+void common_hal_socketpool_socketpool_construct(socketpool_socketpool_obj_t *self, mp_obj_t network_interface) {
+    if (network_interface != MP_OBJ_FROM_PTR(&common_hal_wifi_radio_obj)) {
         mp_raise_ValueError(MP_ERROR_TEXT("SocketPool can only be used with wifi.radio"));
     }
 }

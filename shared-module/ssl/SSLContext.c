@@ -21,6 +21,17 @@ void common_hal_ssl_sslcontext_construct(ssl_sslcontext_obj_t *self) {
     if (psa_crypto_init() != PSA_SUCCESS) {
         mp_raise_RuntimeError_varg(MP_ERROR_TEXT("%q init failed"), MP_QSTR_ssl);
     }
+    // The object is not zeroed on allocation. Without this, cert_buf.buf holds
+    // heap garbage, wrap_socket() takes that for a client certificate and feeds
+    // it to mbedtls_pk_parse_key(), which fails with MBEDTLS_ERR_PK_BAD_INPUT_DATA
+    // -- surfacing as the confusing "invalid key" on every default-context TLS
+    // connection (garbage is usually small ints; the exception only appears
+    // when the heap happens to hold nonzero junk, e.g. after other network use).
+    self->cert_buf.buf = NULL;
+    self->cert_buf.len = 0;
+    self->key_buf.buf = NULL;
+    self->key_buf.len = 0;
+    self->check_name = true;
     common_hal_ssl_sslcontext_set_default_verify_paths(self);
 }
 

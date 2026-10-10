@@ -82,6 +82,7 @@ INC += \
 	-isystem esp-idf/components/esp_hw_support/port/$(IDF_TARGET)/private_include \
 	-isystem esp-idf/components/esp_hw_support/etm/include \
 	-isystem esp-idf/components/esp_mm/include \
+	-isystem esp-idf/components/esp_eth/include \
 	-isystem esp-idf/components/esp_netif/include \
 	-isystem esp-idf/components/esp_blockdev/include \
 	-isystem esp-idf/components/esp_partition/include \
@@ -128,6 +129,8 @@ INC += \
 	-isystem esp-idf/components/esp_hal_gpspi/$(IDF_TARGET)/include \
 	-isystem esp-idf/components/esp_hal_dma/include \
 	-isystem esp-idf/components/esp_hal_dma/$(IDF_TARGET)/include \
+	-isystem esp-idf/components/esp_hal_emac/include \
+	-isystem esp-idf/components/esp_hal_emac/$(IDF_TARGET)/include \
 	-isystem esp-idf/components/esp_hal_lcd/include \
 	-isystem esp-idf/components/esp_hal_lcd/$(IDF_TARGET)/include \
 	-isystem esp-idf/components/esp_hal_sd/include \
@@ -367,6 +370,7 @@ CFLAGS += -isystem esp-idf/components/esp_driver_touch_sens/hw_ver1/include
 CHIP_COMPONENTS = \
 	esp_driver_dac \
 	esp_driver_touch_sens \
+	esp_hal_emac \
 	esp_hal_i2s \
 	esp_hal_lcd \
 	esp_hal_pcnt \
@@ -505,6 +509,7 @@ CHIP_COMPONENTS = \
 	esp_driver_tsens \
 	esp_driver_usb_serial_jtag \
 	esp_hal_dma \
+	esp_hal_emac \
 	esp_hal_i2s \
 	esp_hal_lcd \
 	esp_hal_pcnt \
@@ -957,8 +962,24 @@ LDFLAGS += -Trom.regi2c.ld
 else
 ESP_IDF_COMPONENTS_LINK += esp_hal_regi2c
 endif
+# Only targets with EMAC support (per SOC_EMAC_SUPPORTED in soc_caps.h) build
+# libesp_hal_emac.a; those targets list it in their CHIP_COMPONENTS above. The
+# component is interface-only elsewhere, so it must not appear in the list of
+# components to link.
 ifneq ($(CIRCUITPY_WIFI),0)
 	ESP_IDF_COMPONENTS_LINK += esp_coex esp_netif esp_security esp-tls esp_wifi lwip mdns wpa_supplicant esp_phy
+endif
+# mdns registers handlers on ETH_EVENT, which is defined by esp_eth. On EMAC-capable
+# targets, esp_eth's compiled EMAC sources reference the esp_hal_emac symbols; that
+# library comes via CHIP_COMPONENTS.
+ifneq ($(CIRCUITPY_MDNS),0)
+	ESP_IDF_COMPONENTS_LINK += esp_eth
+endif
+ifneq ($(CIRCUITPY_MII),0)
+	ESP_IDF_COMPONENTS_LINK += esp_eth
+  ifeq ($(CIRCUITPY_WIFI),0)
+	ESP_IDF_COMPONENTS_LINK += esp_netif lwip mbedtls
+  endif
 endif
 ifneq ($(CIRCUITPY_BLEIO_NATIVE),0)
 	BLE_IMPL_esp32 := esp32

@@ -974,6 +974,7 @@ msgstr ""
 #: ports/atmel-samd/common-hal/pulseio/PulseIn.c
 #: ports/atmel-samd/common-hal/rotaryio/IncrementalEncoder.c
 #: ports/cxd56/common-hal/pulseio/PulseIn.c
+#: ports/espressif/common-hal/mii/RMII.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2350.c
 #: ports/zephyr-cp/common-hal/busio/I2C.c
 #: ports/zephyr-cp/common-hal/busio/SPI.c
@@ -1786,13 +1787,11 @@ msgstr ""
 
 #: ports/espressif/common-hal/socketpool/Socket.c
 #: ports/raspberrypi/common-hal/socketpool/Socket.c
-#: ports/zephyr-cp/common-hal/socketpool/Socket.c
 msgid "Out of sockets"
 msgstr ""
 
 #: ports/espressif/common-hal/socketpool/SocketPool.c
-#: ports/raspberrypi/common-hal/socketpool/SocketPool.c
-msgid "SocketPool can only be used with wifi.radio"
+msgid "SocketPool can only be used with %q.%q or any %q.%q"
 msgstr ""
 
 #: ports/espressif/common-hal/watchdog/WatchDogTimer.c
@@ -2238,6 +2237,10 @@ msgstr ""
 msgid "Only IPv4 sockets supported"
 msgstr ""
 
+#: ports/raspberrypi/common-hal/socketpool/SocketPool.c
+msgid "SocketPool can only be used with wifi.radio"
+msgstr ""
+
 #: ports/raspberrypi/common-hal/usb_host/Port.c
 msgid "All dma channels in use"
 msgstr ""
@@ -2419,8 +2422,12 @@ msgstr ""
 msgid "Use device tree to define %q devices"
 msgstr ""
 
+#: ports/zephyr-cp/common-hal/mii/Ethernet.c
+msgid "cannot construct ethernet interfaces; use board.ETHERNET"
+msgstr ""
+
 #: ports/zephyr-cp/common-hal/socketpool/SocketPool.c
-msgid "SocketPool can only be used with wifi.radio or hostnetwork.HostNetwork"
+msgid "SocketPool can only be used with %q.%q, %q.%q, or %q.%q"
 msgstr ""
 
 #: ports/zephyr-cp/common-hal/usb_hid/Device.c shared-module/usb_hid/Device.c
@@ -4277,6 +4284,10 @@ msgstr ""
 msgid "%q and %q contain duplicate pins"
 msgstr ""
 
+#: shared-bindings/mii/Ethernet.c shared-bindings/wifi/Radio.c
+msgid "invalid hostname"
+msgstr ""
+
 #: shared-bindings/msgpack/ExtType.c
 msgid "code outside range 0~127"
 msgstr ""
@@ -4414,10 +4425,6 @@ msgstr ""
 
 #: shared-bindings/wifi/Radio.c
 msgid "Invalid hex password"
-msgstr ""
-
-#: shared-bindings/wifi/Radio.c
-msgid "invalid hostname"
 msgstr ""
 
 #: shared-bindings/wifi/Radio.c
@@ -4682,10 +4689,6 @@ msgstr ""
 
 #: shared-module/ssl/SSLSocket.c
 msgid "Invalid socket for TLS"
-msgstr ""
-
-#: shared-module/ssl/SSLSocket.c
-msgid "invalid key"
 msgstr ""
 
 #: shared-module/ssl/SSLSocket.c

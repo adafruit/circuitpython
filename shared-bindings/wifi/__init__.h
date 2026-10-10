@@ -14,3 +14,10 @@ void common_hal_wifi_init(bool user_initiated);
 void common_hal_wifi_gc_collect(void);
 
 void wifi_user_reset(void);
+
+// Raw hostname of the network interface as configured for the interface's
+// DHCP request (option 12). Never allocates. The returned pointer points into
+// storage owned by the port and stays valid until the hostname is replaced,
+// so use it promptly rather than holding onto it. Used by
+// supervisor/shared/web_workflow.
+const char *wifi_get_hostname_raw(void);

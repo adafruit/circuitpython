@@ -1,8 +1,8 @@
 # CircuitPython Zephyr port — application Kconfig
 #
 # Sources Zephyr's main Kconfig. CircuitPython-specific symbol defaults live
-# in modules/circuitpython-kconfig/Kconfig, a Kconfig-only Zephyr module: Zephyr
-# merges a
+# in internal-modules/circuitpython-kconfig/Kconfig, a Kconfig-only Zephyr module:
+# Zephyr merges a
 # module's Kconfig right after the SoC/board defconfigs and BEFORE its kernel/,
 # drivers/, lib/ and subsys/ Kconfigs, so the defaults there take precedence
 # over any default Zephyr's subsystem Kconfigs define. This file is merged
