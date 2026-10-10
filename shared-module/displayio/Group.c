@@ -187,7 +187,8 @@ void displayio_group_update_transform(displayio_group_t *self,
         self->absolute_transform.mirror_x = parent_transform->mirror_x;
         self->absolute_transform.mirror_y = parent_transform->mirror_y;
 
-        self->absolute_transform.scale = parent_transform->scale * self->scale;
+        uint32_t combined = (uint32_t)parent_transform->scale * self->scale;
+        self->absolute_transform.scale = combined > UINT16_MAX ? UINT16_MAX : (uint16_t)combined;
     }
     _update_child_transforms(self);
 }
@@ -197,10 +198,11 @@ void common_hal_displayio_group_set_scale(displayio_group_t *self, uint32_t scal
         return;
     }
     check_readonly(self);
-    uint8_t parent_scale = self->absolute_transform.scale / self->scale;
+    uint16_t parent_scale = self->absolute_transform.scale / self->scale;
     self->absolute_transform.dx = self->absolute_transform.dx / self->scale * scale;
     self->absolute_transform.dy = self->absolute_transform.dy / self->scale * scale;
-    self->absolute_transform.scale = parent_scale * scale;
+    uint32_t combined = (uint32_t)parent_scale * scale;
+    self->absolute_transform.scale = combined > UINT16_MAX ? UINT16_MAX : (uint16_t)combined;
     self->scale = scale;
     _update_child_transforms(self);
 }
