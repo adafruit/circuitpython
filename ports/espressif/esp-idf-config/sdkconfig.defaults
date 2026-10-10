@@ -98,7 +98,8 @@ CONFIG_MBEDTLS_SSL_OUT_CONTENT_LEN=2048
 #
 # Certificate Bundle
 #
-CONFIG_MBEDTLS_CERTIFICATE_BUNDLE_DEFAULT_FULL=y
+# CircuitPython ships its own bundle (lib/mbedtls_config/crt_bundle.c)
+# CONFIG_MBEDTLS_CERTIFICATE_BUNDLE is not set
 # end of Certificate Bundle
 
 # CONFIG_MBEDTLS_GCM_SUPPORT_NON_AES_CIPHER is not set

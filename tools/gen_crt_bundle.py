@@ -2,11 +2,14 @@
 #
 # ESP32 x509 certificate bundle generation utility
 #
-# Converts PEM and DER certificates to a custom bundle format which stores just the
-# subject name and public key to reduce space
+# Converts PEM and DER certificates to a custom bundle format which stores just a hash of the
+# subject name and the public key to reduce space
 #
-# The bundle will have the format: number of certificates; crt 1 subject name length; crt 1 public key length;
-# crt 1 subject name; crt 1 public key; crt 2...
+# The bundle will have the format: number of certificates; crt 1 name hash length; crt 1 public key length;
+# crt 1 name hash; crt 1 public key; crt 2...
+#
+# The name hash is the first NAME_HASH_LEN bytes of the SHA-256 of the DER subject name, and the
+# certificates are sorted by it. It only finds the candidate root: the signature check decides.
 #
 # Copyright 2018-2019 Espressif Systems (Shanghai) PTE LTD
 #
@@ -26,6 +29,7 @@ from __future__ import with_statement
 
 import argparse
 import csv
+import hashlib
 import os
 import re
 import struct
@@ -46,6 +50,7 @@ except ImportError:
     raise
 
 ca_bundle_bin_file = "x509_crt_bundle"
+NAME_HASH_LEN = 8  # must match NAME_HASH_LEN in lib/mbedtls_config/crt_bundle.c
 
 quiet = False
 
@@ -132,10 +137,13 @@ class CertificateBundle:
         status("Successfully added 1 certificate")
 
     def create_bundle(self):
+        def name_hash(cert):
+            return hashlib.sha256(cert.subject.public_bytes(default_backend())).digest()[
+                :NAME_HASH_LEN
+            ]
+
         # Sort certificates in order to do binary search when looking up certificates
-        self.certificates = sorted(
-            self.certificates, key=lambda cert: cert.subject.public_bytes(default_backend())
-        )
+        self.certificates = sorted(self.certificates, key=name_hash)
 
         bundle = struct.pack(">H", len(self.certificates))
 
@@ -146,15 +154,14 @@ class CertificateBundle:
                 serialization.Encoding.DER, serialization.PublicFormat.SubjectPublicKeyInfo
             )
 
-            """ Read the subject name as DER format """
-            sub_name_der = crt.subject.public_bytes(default_backend())
+            sub_name_hash = name_hash(crt)
 
-            name_len = len(sub_name_der)
+            name_len = len(sub_name_hash)
             key_len = len(pub_key_der)
             len_data = struct.pack(">HH", name_len, key_len)
 
             bundle += len_data
-            bundle += sub_name_der
+            bundle += sub_name_hash
             bundle += pub_key_der
 
         return bundle
