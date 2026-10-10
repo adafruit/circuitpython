@@ -1067,7 +1067,7 @@ msgstr ""
 msgid "No pull up found on SDA or SCL; check your wiring"
 msgstr ""
 
-#: ports/atmel-samd/common-hal/busio/UART.c shared-bindings/usb/core/Device.c
+#: ports/atmel-samd/common-hal/busio/UART.c
 #: shared-bindings/usb_host_bulk/InStream.c
 msgid "%q must be power of 2"
 msgstr ""
@@ -1346,6 +1346,7 @@ msgstr ""
 #: ports/espressif/common-hal/_bleio/Characteristic.c
 #: ports/espressif/common-hal/_bleio/Service.c
 #: ports/raspberrypi/common-hal/alarm/pin/PinAlarm.c
+#: ports/raspberrypi/common-hal/usb_host_bulk/InStream.c
 msgid "Too many %q"
 msgstr ""
 
@@ -1476,7 +1477,7 @@ msgid "%q must be array of type 'H'"
 msgstr ""
 
 #: ports/espressif/common-hal/audiobusio/PDMIn.c
-#: shared-bindings/audioi2sin/I2SIn.c
+#: shared-bindings/audioi2sin/I2SIn.c shared-bindings/usb_host_audio/USBIn.c
 msgid "%q must be 8, 16, 24, or 32"
 msgstr ""
 
@@ -1675,6 +1676,7 @@ msgstr ""
 #: shared-bindings/digitalio/DigitalInOut.c shared-bindings/emmcio/EMMC.c
 #: shared-bindings/i2cioexpander/IOPin.c shared-bindings/microcontroller/Pin.c
 #: shared-module/max3421e/Max3421E.c shared-module/usb/core/Device.c
+#: shared-module/usb_host_audio/USBIn.c
 msgid "%q in use"
 msgstr ""
 
@@ -3922,10 +3924,12 @@ msgid "%q must be multiple of 8."
 msgstr ""
 
 #: shared-bindings/audiobusio/PDMIn.c shared-bindings/audioi2sin/I2SIn.c
+#: shared-bindings/usb_host_audio/USBIn.c
 msgid "Cannot record to a file"
 msgstr ""
 
 #: shared-bindings/audiobusio/PDMIn.c shared-bindings/audioi2sin/I2SIn.c
+#: shared-bindings/usb_host_audio/USBIn.c
 msgid "Destination capacity is smaller than destination_length."
 msgstr ""
 
@@ -3965,7 +3969,7 @@ msgstr ""
 msgid "bits_per_sample must be 16"
 msgstr ""
 
-#: shared-bindings/audioi2sin/I2SIn.c
+#: shared-bindings/audioi2sin/I2SIn.c shared-bindings/usb_host_audio/USBIn.c
 #, c-format
 msgid "invalid destination buffer, must be an array of type: %c"
 msgstr ""
@@ -4742,6 +4746,10 @@ msgstr ""
 
 #: shared-module/usb_hid/Device.c
 msgid "USB busy"
+msgstr ""
+
+#: shared-module/usb_host_audio/USBIn.c
+msgid "%q not set in settings.toml"
 msgstr ""
 
 #: shared-module/vectorio/Circle.c shared-module/vectorio/Polygon.c

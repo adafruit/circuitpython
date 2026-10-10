@@ -97,6 +97,10 @@
 #include "shared-module/audiofilewriter/AudioFileWriter.h"
 #endif
 
+#if CIRCUITPY_USB_HOST_AUDIO
+#include "shared-module/usb_host_audio/USBIn.h"
+#endif
+
 #if CIRCUITPY_MEMORYMONITOR
 #include "shared-module/memorymonitor/__init__.h"
 #endif
@@ -418,6 +422,10 @@ static void cleanup_after_vm(mp_obj_t exception) {
 
     #if CIRCUITPY_AUDIOFILEWRITER
     audiofilewriter_reset();
+    #endif
+
+    #if CIRCUITPY_USB_HOST_AUDIO
+    usb_host_audio_reset();
     #endif
 
     // Close user-initiated sockets.
