@@ -68,14 +68,24 @@ void __no_inline_not_in_flash_func(mcu_processor_update_psram_timing)(uint32_t s
     // deassertion. Round up so we are never under.
     uint32_t min_deselect = (sys_clk_khz + 19999) / 20000;
 
+    uint32_t clock_divider = 2;
+    uint32_t rx_delay = 1;
+    #ifdef CIRCUITPY_PSRAM_MAX_SCK_HZ
+    // Some boards need a slower PSRAM bus. Preserve the limit when Python
+    // changes the CPU frequency, not only during initial PSRAM setup.
+    const uint32_t max_sck_khz = CIRCUITPY_PSRAM_MAX_SCK_HZ / 1000;
+    clock_divider = MAX(2, (sys_clk_khz + max_sck_khz - 1) / max_sck_khz);
+    rx_delay = MIN(clock_divider, 7);
+    #endif
+
     qmi_hw->m[1].timing =
         QMI_M0_TIMING_PAGEBREAK_VALUE_1024 << QMI_M0_TIMING_PAGEBREAK_LSB | // Break between pages.
             3 << QMI_M0_TIMING_SELECT_HOLD_LSB | // Delay releasing CS for 3 extra system cycles.
             1 << QMI_M0_TIMING_COOLDOWN_LSB |
-            1 << QMI_M0_TIMING_RXDELAY_LSB |
+            rx_delay << QMI_M0_TIMING_RXDELAY_LSB |
             max_select << QMI_M0_TIMING_MAX_SELECT_LSB |
             min_deselect << QMI_M0_TIMING_MIN_DESELECT_LSB |
-            2 << QMI_M0_TIMING_CLKDIV_LSB;
+            clock_divider << QMI_M0_TIMING_CLKDIV_LSB;
 }
 #endif
 
