@@ -25,5 +25,5 @@
 // SPI0 before the TFT, whose separate GPIOs use the same hardware peripheral.
 
 #define CIRCUITPY_PSRAM_CHIP_SELECT (&pin_GPIO47)
-// Sustained flux DMA into PSRAM was verified at 40 MHz on the prototype.
-#define CIRCUITPY_PSRAM_MAX_SCK_HZ (40000000)
+// Sustained flux DMA into PSRAM was verified at 80 MHz on the prototype.
+#define CIRCUITPY_PSRAM_MAX_SCK_HZ (80000000)
