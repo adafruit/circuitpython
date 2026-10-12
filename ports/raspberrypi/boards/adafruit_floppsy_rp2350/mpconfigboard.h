@@ -21,12 +21,8 @@
 #define DEFAULT_SPI_BUS_MOSI (&pin_GPIO7)
 #define DEFAULT_SPI_BUS_MISO NULL
 
-#define DEFAULT_SD_SCK (&pin_GPIO34)
-#define DEFAULT_SD_MOSI (&pin_GPIO35)
-#define DEFAULT_SD_MISO (&pin_GPIO36)
-#define DEFAULT_SD_CS (&pin_GPIO39)
-#define DEFAULT_SD_CARD_DETECT (&pin_GPIO33)
-#define DEFAULT_SD_CARD_INSERTED true
+// Use sdioio with the board.SD_* pins. Automatic SPI SD mounting would claim
+// SPI0 before the TFT, whose separate GPIOs use the same hardware peripheral.
 
 #define CIRCUITPY_PSRAM_CHIP_SELECT (&pin_GPIO47)
 // Sustained flux DMA into PSRAM was verified at 40 MHz on the prototype.
