@@ -459,7 +459,7 @@ static bool _fill_row_fast(displayio_tilegrid_t *self, const void *tiles,
                 index = (bitmap->bits_per_value == 8) ?
                     ((const uint8_t *)row)[bx] : ((const uint16_t *)row)[bx];
             }
-            if (index > palette->color_count || palette->colors[index].transparent) {
+            if (index >= palette->color_count || palette->colors[index].transparent) {
                 covered = false;
                 continue;
             }

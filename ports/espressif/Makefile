@@ -140,6 +140,9 @@ INC += \
 	-isystem esp-idf/components/esp_hal_wdt/include \
 	-isystem esp-idf/components/esp_hal_wdt/$(IDF_TARGET)/include \
 	-isystem esp-idf/components/esp_hal_security/include \
+	-isystem esp-idf/components/esp_hal_regi2c/include \
+	-isystem esp-idf/components/esp_hal_regi2c/$(IDF_TARGET)/include \
+	-isystem esp-idf/components/esp_hal_systimer/include \
 	-isystem esp-idf/components/heap/include \
 	-isystem esp-idf/components/log/include \
 	-isystem esp-idf/components/lwip/include \
@@ -174,7 +177,9 @@ CFLAGS += \
 	-DMBEDTLS_DECLARE_PRIVATE_IDENTIFIERS \
 	-DMBEDTLS_PADLOCK_FILE=\"ports/espressif/esp-idf/components/mbedtls/mbedtls/library/padlock.h\" \
 	-DUNITY_INCLUDE_CONFIG_H -DWITH_POSIX \
-	-DMP3DEC_GENERIC
+	-DMP3DEC_GENERIC \
+	-DSOC_MMU_PAGE_SIZE=CONFIG_MMU_PAGE_SIZE \
+	-DSOC_XTAL_FREQ_MHZ=CONFIG_XTAL_FREQ
 
 # Make our canary value match FreeRTOS's
 # This define is in FreeRTOS as tskSTACK_FILL_BYTE 0xa5U which we expand out to a full word.
@@ -339,6 +344,9 @@ LDFLAGS += \
 	-Lesp-idf/components/esp_rom/$(IDF_TARGET)/ld \
 	-Lesp-idf/components/soc/$(IDF_TARGET)/ld \
 	-Lesp-idf/components/esp_hal_wdt/$(IDF_TARGET) \
+	-Lesp-idf/components/esp_hal_systimer/$(IDF_TARGET) \
+	-Lesp-idf/components/heap/port/$(IDF_TARGET)/ld \
+	-Lesp-idf/components/esp_hal_regi2c/$(IDF_TARGET) \
 	-Tmemory.ld \
 	-Tsections.ld \
 	-T$(IDF_TARGET).peripherals.ld \
@@ -373,10 +381,8 @@ LDFLAGS += \
 	-Tesp32c2.rom.heap.ld \
 	-Tesp32c2.rom.libc.ld \
 	-Tesp32c2.rom.version.ld \
-	-Tesp32c2.rom.systimer.ld \
+	-Trom.systimer.ld \
 	-Trom.wdt.ld
-
-CFLAGS += -DSOC_XTAL_FREQ_MHZ=CONFIG_XTAL_FREQ
 
 CHIP_COMPONENTS = \
 	esp_driver_tsens \
@@ -411,7 +417,7 @@ LDFLAGS += \
 	-Tesp32c5.rom.version.ld \
 	-Tesp32c5.rom.coexist.ld \
 	-Tesp32c5.rom.heap.ld \
-	-Tesp32c5.rom.systimer.ld \
+	-Trom.systimer.ld \
 	-Trom.wdt.ld
 
 CHIP_COMPONENTS = \
@@ -433,7 +439,7 @@ LDFLAGS += \
 	-Tesp32c6.rom.libc.ld \
 	-Tesp32c6.rom.coexist.ld \
 	-Tesp32c6.rom.heap.ld \
-	-Tesp32c6.rom.systimer.ld \
+	-Trom.systimer.ld \
 	-Trom.wdt.ld
 
 
@@ -457,7 +463,7 @@ LDFLAGS += \
 	-Tesp32c61.rom.version.ld \
 	-Tesp32c61.rom.coexist.ld \
 	-Tesp32c61.rom.heap.ld \
-	-Tesp32c61.rom.systimer.ld \
+	-Trom.systimer.ld \
 	-Trom.wdt.ld
 
 
@@ -477,18 +483,18 @@ CFLAGS += \
 	-isystem esp-idf/components/esp_driver_touch_sens/hw_ver3/include
 
 ifeq ($(CIRCUITPY_ESP32P4_REV),3)
-IDF_TARGET_ROM_LD = esp32p4.rom.eco5.ld
-IDF_TARGET_ROM_FLOAT_LD = esp32p4.rom.eco5.rvfp.ld
+IDF_TARGET_ROM_FLOAT_LD = esp32p4.rom.rvfp.ld
 LDFLAGS += \
-	-Tesp32p4.rom.systimer.ld \
-	-Tesp32p4.rom.eco5.libc.ld \
+	-Trom.systimer.ld \
+	-Tesp32p4.rom.libc.ld \
 	-Tesp32p4.rom.version.ld \
 	-Trom.wdt.ld
 else
-IDF_TARGET_ROM_FLOAT_LD = esp32p4.rom.rvfp.ld
+IDF_TARGET_ROM_LD = esp32p4.rom.eco0_4.ld
+IDF_TARGET_ROM_FLOAT_LD = esp32p4.rom.eco0_4.rvfp.ld
 LDFLAGS += \
-	-Tesp32p4.rom.libc.ld \
-	-Tesp32p4.rom.systimer.ld \
+	-Trom.systimer.ld \
+	-Tesp32p4.rom.eco0_4.libc.ld \
 	-Tesp32p4.rom.version.ld \
 	-Trom.wdt.ld
 endif
@@ -512,7 +518,7 @@ else ifeq ($(IDF_TARGET),esp32h2)
 LDFLAGS += \
 	-Tesp32h2.rom.heap.ld \
 	-Tesp32h2.rom.libc.ld \
-	-Tesp32h2.rom.systimer.ld \
+	-Trom.systimer.ld \
 	-Trom.wdt.ld
 
 CHIP_COMPONENTS = \
@@ -553,7 +559,7 @@ CFLAGS += -isystem esp-idf/components/esp_driver_touch_sens/hw_ver2/include
 LDFLAGS += \
 	-Tesp32s3.rom.libc.ld \
 	-Tesp32s3.rom.version.ld \
-	-Tesp32s3.rom.systimer.ld \
+	-Trom.systimer.ld \
 	-Tesp32s3.rom.bt_funcs.ld \
 	-Trom.wdt.ld
 
@@ -655,9 +661,15 @@ SRC_C += peripherals/touch.c
 endif
 
 ifneq ($(CIRCUITPY_USB_DEVICE),0)
-SRC_C += \
-	lib/tinyusb/src/portable/synopsys/dwc2/dcd_dwc2.c \
-	lib/tinyusb/src/portable/synopsys/dwc2/dwc2_common.c
+SRC_C += lib/tinyusb/src/portable/synopsys/dwc2/dcd_dwc2.c
+endif
+
+ifeq ($(CIRCUITPY_USB_HOST),1)
+SRC_C += lib/tinyusb/src/portable/synopsys/dwc2/hcd_dwc2.c
+endif
+
+ifneq ($(filter 1,$(CIRCUITPY_USB_DEVICE) $(CIRCUITPY_USB_HOST)),)
+SRC_C += lib/tinyusb/src/portable/synopsys/dwc2/dwc2_common.c
 endif
 
 ifneq ($(CIRCUITPY_AUDIOBUSIO),0)
@@ -936,8 +948,17 @@ BINARY_BLOBS += esp-idf/components/esp_phy/lib/$(IDF_TARGET)/librtc.a
 endif
 
 ESP_IDF_COMPONENTS_LINK = $(IDF_TARGET_ARCH) $(CHIP_COMPONENTS) app_update bootloader_support driver esp_driver_dma esp_driver_gpio esp_driver_gptimer esp_driver_i2c esp_driver_ledc esp_driver_spi esp_driver_uart efuse esp_adc esp_app_format esp_common esp_event esp_gdbstub esp_hal_ana_conv esp_hal_clock esp_hal_gpio esp_hal_gpspi esp_hal_i2c esp_hal_ledc esp_hal_mspi esp_hal_security esp_hal_timg esp_hal_uart esp_hal_wdt esp_hw_support esp_mm esp_partition esp_pm esp_ringbuf esp_rom esp_system esp_timer freertos hal heap log esp_libc nvs_flash nvs_sec_provider pthread soc spi_flash vfs esp_stdio
+ifneq ($(IDF_TARGET),esp32)
+ESP_IDF_COMPONENTS_LINK += esp_hal_systimer
+endif
+# These chips have regi2c in ROM. The rest link the esp_hal_regi2c implementation.
+ifneq ($(filter $(IDF_TARGET),esp32 esp32c2 esp32c3 esp32s3),)
+LDFLAGS += -Trom.regi2c.ld
+else
+ESP_IDF_COMPONENTS_LINK += esp_hal_regi2c
+endif
 ifneq ($(CIRCUITPY_WIFI),0)
-	ESP_IDF_COMPONENTS_LINK += esp_coex esp_netif esp_security esp-tls esp_wifi lwip mbedtls mdns wpa_supplicant esp_phy
+	ESP_IDF_COMPONENTS_LINK += esp_coex esp_netif esp_security esp-tls esp_wifi lwip mdns wpa_supplicant esp_phy
 endif
 ifneq ($(CIRCUITPY_BLEIO_NATIVE),0)
 	BLE_IMPL_esp32 := esp32
@@ -965,11 +986,9 @@ ifneq ($(CIRCUITPY_BLEIO_NATIVE),0)
 
 	ifeq ($(BLE_IMPL),libble)
 	BINARY_BLOBS += esp-idf/components/esp_phy/lib/$(IDF_TARGET)/libbtbb.a
-	ifeq ($(BT_IDF_TARGET),esp32c6)
-		BINARY_BLOBS += esp-idf/components/bt/controller/lib_$(BT_IDF_TARGET)/$(BT_IDF_TARGET)-bt-lib/$(IDF_TARGET)/libble_app.a
-	else
-		BINARY_BLOBS += esp-idf/components/bt/controller/lib_$(IDF_TARGET)/$(IDF_TARGET)-bt-lib/libble_app.a
-	endif
+	# Shared lib first, else the per-chip one.
+	BLE_LIB_DIR = esp-idf/components/bt/controller/lib_$(BT_IDF_TARGET)/$(BT_IDF_TARGET)-bt-lib
+	BINARY_BLOBS += $(firstword $(wildcard $(BLE_LIB_DIR)/libble_app.a) $(BLE_LIB_DIR)/$(IDF_TARGET)/libble_app.a)
 	endif
 endif
 ifeq ($(IDF_TARGET),esp32p4)
@@ -1004,7 +1023,11 @@ MBEDTLS_COMPONENTS_LINK_EXPANDED = $(foreach component, $(MBEDTLS_COMPONENTS_LIN
 MBEDTLS_COMPONENTS_LINK_EXPANDED += $(BUILD)/esp-idf/esp-idf/mbedtls/mbedtls/library/libtfpsacrypto.a
 MBEDTLS_COMPONENTS_LINK_EXPANDED += $(BUILD)/esp-idf/esp-idf/mbedtls/mbedtls/tf-psa-crypto/drivers/builtin/libmbed-builtin.a
 MBEDTLS_COMPONENTS_LINK_EXPANDED += $(BUILD)/esp-idf/esp-idf/mbedtls/mbedtls/tf-psa-crypto/drivers/everest/libeverest.a
-MBEDTLS_COMPONENTS_LINK_EXPANDED += $(BUILD)/esp-idf/esp-idf/mbedtls/mbedtls/tf-psa-crypto/drivers/p256-m/libp256m.a
+MBEDTLS_COMPONENTS_LINK_EXPANDED += $(BUILD)/esp-idf/esp-idf/mbedtls/mbedtls/tf-psa-crypto/drivers/p256-m/libp256-m.a
+MBEDTLS_COMPONENTS_LINK_EXPANDED += $(BUILD)/esp-idf/esp-idf/mbedtls/mbedtls/tf-psa-crypto/extras/libextras.a
+MBEDTLS_COMPONENTS_LINK_EXPANDED += $(BUILD)/esp-idf/esp-idf/mbedtls/mbedtls/tf-psa-crypto/platform/libplatform.a
+MBEDTLS_COMPONENTS_LINK_EXPANDED += $(BUILD)/esp-idf/esp-idf/mbedtls/mbedtls/tf-psa-crypto/utilities/libutilities.a
+MBEDTLS_COMPONENTS_LINK_EXPANDED += $(BUILD)/esp-idf/esp-idf/mbedtls/libmbedtls.a
 
 ifeq ($(IDF_TARGET_ARCH),xtensa)
 BINARY_BLOBS += esp-idf/components/xtensa/$(IDF_TARGET)/libxt_hal.a

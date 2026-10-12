@@ -52,7 +52,7 @@ void common_hal_watchdog_feed(watchdog_watchdogtimer_obj_t *self) {
     WDT->CLEAR.reg = WDT_CLEAR_CLEAR_KEY;
 }
 
-void common_hal_watchdog_deinit(watchdog_watchdogtimer_obj_t *self) {
+void common_hal_watchdog_reset(watchdog_watchdogtimer_obj_t *self) {
     if (self->mode == WATCHDOGMODE_NONE) {
         return;
     }
@@ -84,7 +84,7 @@ void common_hal_watchdog_set_mode(watchdog_watchdogtimer_obj_t *self, watchdog_w
 
     switch (new_mode) {
         case WATCHDOGMODE_NONE:
-            common_hal_watchdog_deinit(self);
+            common_hal_watchdog_reset(self);
             break;
         case WATCHDOGMODE_RAISE:
             mp_raise_NotImplementedError(NULL);

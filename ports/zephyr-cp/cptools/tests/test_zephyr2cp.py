@@ -23,6 +23,7 @@ from zephyr2cp import (
     BLOCKED_FLASH_COMPAT,
     MINIMUM_RAM_SIZE,
     add_toml_pin_names,
+    _toml_status_pin,
 )
 
 
@@ -765,3 +766,33 @@ class TestAddTomlPinNamesDuplicates:
     def test_conflict_existing_devicetree_name_different_pin(self):
         with pytest.raises(RuntimeError, match="already maps to gpio0 pin 2"):
             self._add({"STATUS": 5}, {("gpio0", 2): ["STATUS"]})
+
+
+class TestTomlStatusPin:
+    """Resolution of circuitpython.toml STATUS_NEOPIXEL-style keys to pins."""
+
+    BOARD_NAMES = {
+        ("gpio0", 16): ["NEOPIXEL"],
+        ("gpio1", 14): ["NEOPIXEL_POWER"],
+        ("gpio1", 15): ["LED", "L"],
+    }
+
+    def test_resolves_pins_table_name(self):
+        assert _toml_status_pin(
+            {"STATUS_NEOPIXEL": "NEOPIXEL"}, self.BOARD_NAMES, "STATUS_NEOPIXEL"
+        ) == ("gpio0", 16)
+
+    def test_matches_sanitized_name(self):
+        assert _toml_status_pin(
+            {"STATUS_NEOPIXEL_POWER": "neopixel-power"},
+            self.BOARD_NAMES,
+            "STATUS_NEOPIXEL_POWER",
+        ) == ("gpio1", 14)
+
+    def test_absent_key_is_none(self):
+        assert _toml_status_pin({}, self.BOARD_NAMES, "STATUS_NEOPIXEL") is None
+        assert _toml_status_pin(None, self.BOARD_NAMES, "STATUS_NEOPIXEL") is None
+
+    def test_unknown_name_raises(self):
+        with pytest.raises(RuntimeError, match="STATUS_NEOPIXEL = 'NOPE' is not a board pin name"):
+            _toml_status_pin({"STATUS_NEOPIXEL": "NOPE"}, self.BOARD_NAMES, "STATUS_NEOPIXEL")

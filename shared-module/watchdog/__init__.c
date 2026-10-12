@@ -23,5 +23,5 @@ void watchdog_reset(void) {
             return;
         }
     }
-    common_hal_watchdog_deinit(self);
+    common_hal_watchdog_reset(self);
 }

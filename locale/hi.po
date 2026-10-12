@@ -917,7 +917,9 @@ msgstr ""
 #: ports/mimxrt10xx/common-hal/pwmio/PWMOut.c
 #: ports/raspberrypi/bindings/picodvi/Framebuffer.c
 #: ports/raspberrypi/bindings/rp2pio/StateMachine.c
-#: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c py/argcheck.c
+#: ports/raspberrypi/common-hal/picodvi/AudioOut.c
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
+#: ports/raspberrypi/common-hal/usb_host_bulk/InStream.c py/argcheck.c
 #: shared-bindings/digitalio/DigitalInOut.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c
 #: shared-bindings/i2cioexpander/IOPin.c shared-bindings/mipidsi/Display.c
@@ -1067,7 +1069,8 @@ msgstr ""
 msgid "No pull up found on SDA or SCL; check your wiring"
 msgstr ""
 
-#: ports/atmel-samd/common-hal/busio/UART.c
+#: ports/atmel-samd/common-hal/busio/UART.c shared-bindings/usb/core/Device.c
+#: shared-bindings/usb_host_bulk/InStream.c
 msgid "%q must be power of 2"
 msgstr ""
 
@@ -1148,6 +1151,7 @@ msgstr ""
 #: ports/atmel-samd/common-hal/picogame/Display.c
 #: ports/espressif/common-hal/espidf/__init__.c
 #: ports/raspberrypi/common-hal/picogame/Display.c
+#: ports/raspberrypi/common-hal/usb_host_bulk/InStream.c
 #: shared-bindings/picogame/Canvas.c shared-bindings/picogame/__init__.c
 msgid "Operation or feature not supported"
 msgstr ""
@@ -1233,6 +1237,7 @@ msgstr ""
 
 #: ports/espressif/bindings/espnow/ESPNow.c
 #: ports/espressif/common-hal/espulp/ULP.c
+#: ports/raspberrypi/common-hal/usb_host_bulk/InStream.c
 #: shared-module/memorymonitor/AllocationAlarm.c
 #: shared-module/memorymonitor/AllocationSize.c
 msgid "Already running"
@@ -1248,6 +1253,7 @@ msgstr ""
 
 #: ports/espressif/boards/adafruit_feather_esp32c6_4mbflash_nopsram/mpconfigboard.h
 #: ports/espressif/boards/adafruit_itsybitsy_esp32/mpconfigboard.h
+#: ports/espressif/boards/waveshare_esp32_c5_lcd_1_47/mpconfigboard.h
 #: ports/espressif/boards/waveshare_esp32_c6_lcd_1_47/mpconfigboard.h
 msgid "You pressed the BOOT button at start up."
 msgstr ""
@@ -1663,13 +1669,14 @@ msgstr ""
 #: ports/espressif/common-hal/qspibus/QSPIBus.c
 #: ports/mimxrt10xx/common-hal/audiobusio/__init__.c
 #: ports/mimxrt10xx/common-hal/usb_host/Port.c
+#: ports/raspberrypi/common-hal/picodvi/AudioOut.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2350.c
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 #: ports/raspberrypi/common-hal/usb_host/Port.c
 #: shared-bindings/digitalio/DigitalInOut.c shared-bindings/emmcio/EMMC.c
 #: shared-bindings/i2cioexpander/IOPin.c shared-bindings/microcontroller/Pin.c
-#: shared-module/max3421e/Max3421E.c
+#: shared-module/max3421e/Max3421E.c shared-module/usb/core/Device.c
 msgid "%q in use"
 msgstr ""
 
@@ -1723,7 +1730,9 @@ msgstr ""
 msgid "pop from an empty PulseIn"
 msgstr ""
 
-#: ports/espressif/common-hal/qspibus/QSPIBus.c shared-module/usb/core/Device.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
+#: ports/raspberrypi/common-hal/usb_host_bulk/InStream.c
+#: shared-module/usb/core/Device.c
 msgid "Could not allocate DMA capable buffer"
 msgstr ""
 
@@ -1971,6 +1980,13 @@ msgstr ""
 #: shared-bindings/supervisor/__init__.c shared-module/audiofilters/__init__.c
 #: shared-module/displayio/__init__.c shared-module/synthio/Synthesizer.c
 msgid "%q must be of type %q or %q, not %q"
+msgstr ""
+
+#: ports/raspberrypi/bindings/picodvi/AudioOut.c
+#: shared-bindings/audiobusio/I2SOut.c shared-bindings/audioio/AudioOut.c
+#: shared-bindings/audiopwmio/PWMAudioOut.c shared-bindings/mcp4822/MCP4822.c
+#: shared-bindings/usb_audio/USBMicrophone.c
+msgid "Not playing"
 msgstr ""
 
 #: ports/raspberrypi/bindings/rp2pio/StateMachine.c
@@ -3903,12 +3919,6 @@ msgstr ""
 msgid "%q must be a bytearray or array of type 'H' or 'B'"
 msgstr ""
 
-#: shared-bindings/audiobusio/I2SOut.c shared-bindings/audioio/AudioOut.c
-#: shared-bindings/audiopwmio/PWMAudioOut.c shared-bindings/mcp4822/MCP4822.c
-#: shared-bindings/usb_audio/USBMicrophone.c
-msgid "Not playing"
-msgstr ""
-
 #: shared-bindings/audiobusio/PDMIn.c
 msgid "%q must be multiple of 8."
 msgstr ""
@@ -4682,6 +4692,10 @@ msgstr ""
 
 #: shared-module/ssl/SSLSocket.c
 msgid "invalid cert"
+msgstr ""
+
+#: shared-module/storage/__init__.c
+msgid "File write in progress"
 msgstr ""
 
 #: shared-module/storage/__init__.c

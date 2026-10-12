@@ -141,6 +141,16 @@ void common_hal_dotclockframebuffer_framebuffer_construct(dotclockframebuffer_fr
     cfg->flags.refresh_on_demand = 0;
     cfg->flags.fb_in_psram = 1; // allocate frame buffer in PSRAM
 
+    // Stream the PSRAM frame buffer through bounce buffers in internal RAM so
+    // that PSRAM access stalls cannot starve the LCD DMA. The frame buffer size
+    // must be a multiple of the bounce buffer size, so pick up to 10 lines that
+    // divide the height evenly.
+    int bounce_lines = 10;
+    while (bounce_lines > 1 && height % bounce_lines != 0) {
+        bounce_lines--;
+    }
+    cfg->bounce_buffer_size_px = cfg->timings.h_res * bounce_lines;
+
     esp_err_t ret = esp_lcd_new_rgb_panel(&self->panel_config, &self->panel_handle);
     CHECK_ESP_RESULT(ret);
     CHECK_ESP_RESULT(esp_lcd_panel_reset(self->panel_handle));

@@ -23,7 +23,7 @@
 
 extern Protomatter_core *_PM_protoPtr;
 
-static void common_hal_rgbmatrix_rgbmatrix_construct1(rgbmatrix_rgbmatrix_obj_t *self, mp_obj_t framebuffer);
+static void common_hal_rgbmatrix_rgbmatrix_construct1(rgbmatrix_rgbmatrix_obj_t *self, mp_obj_t framebuffer, ProtomatterRowAddressMode row_address_mode);
 
 static void preflight_pins_or_throw(const mcu_pin_obj_t *clock_pin_obj, const mcu_pin_obj_t **rgb_pin_objs, uint8_t rgb_pin_count, bool allow_inefficient) {
     if (rgb_pin_count <= 0 || rgb_pin_count % 6 != 0 || rgb_pin_count > 30) {
@@ -117,7 +117,7 @@ static void store_pin_digitalinout(rgbmatrix_rgbmatrix_obj_t *self, const mcu_pi
     self->pin_digitalinouts[self->pin_digitalinout_count++] = digitalinout;
 }
 
-void common_hal_rgbmatrix_rgbmatrix_construct(rgbmatrix_rgbmatrix_obj_t *self, int width, int bit_depth, uint8_t rgb_count, const mcu_pin_obj_t **rgb_pins, uint8_t addr_count, const mcu_pin_obj_t **addr_pins, const mcu_pin_obj_t *clock_pin, const mcu_pin_obj_t *latch_pin, const mcu_pin_obj_t *oe_pin, bool doublebuffer, mp_obj_t framebuffer, int8_t tile, bool serpentine, void *timer) {
+void common_hal_rgbmatrix_rgbmatrix_construct(rgbmatrix_rgbmatrix_obj_t *self, int width, int bit_depth, uint8_t rgb_count, const mcu_pin_obj_t **rgb_pins, uint8_t addr_count, const mcu_pin_obj_t **addr_pins, const mcu_pin_obj_t *clock_pin, const mcu_pin_obj_t *latch_pin, const mcu_pin_obj_t *oe_pin, bool doublebuffer, mp_obj_t framebuffer, int8_t tile, bool serpentine, void *timer, uint8_t row_addr_count, ProtomatterRowAddressMode row_address_mode) {
     self->width = width;
     self->bit_depth = bit_depth;
     self->rgb_count = rgb_count;
@@ -129,6 +129,7 @@ void common_hal_rgbmatrix_rgbmatrix_construct(rgbmatrix_rgbmatrix_obj_t *self, i
         self->rgb_pins[i] = common_hal_mcu_pin_number(rgb_pins[i]);
     }
     self->addr_count = addr_count;
+    self->row_addr_count = row_addr_count;
     for (uint8_t i = 0; i < addr_count; i++) {
         store_pin_digitalinout(self, addr_pins[i]);
         self->addr_pins[i] = common_hal_mcu_pin_number(addr_pins[i]);
@@ -151,10 +152,10 @@ void common_hal_rgbmatrix_rgbmatrix_construct(rgbmatrix_rgbmatrix_obj_t *self, i
     self->width = width;
     self->bufsize = 2 * width * common_hal_rgbmatrix_rgbmatrix_get_height(self);
 
-    common_hal_rgbmatrix_rgbmatrix_construct1(self, framebuffer);
+    common_hal_rgbmatrix_rgbmatrix_construct1(self, framebuffer, row_address_mode);
 }
 
-static void common_hal_rgbmatrix_rgbmatrix_construct1(rgbmatrix_rgbmatrix_obj_t *self, mp_obj_t framebuffer) {
+static void common_hal_rgbmatrix_rgbmatrix_construct1(rgbmatrix_rgbmatrix_obj_t *self, mp_obj_t framebuffer, ProtomatterRowAddressMode row_address_mode) {
     if (framebuffer != mp_const_none) {
         mp_get_buffer_raise(self->framebuffer, &self->bufinfo, MP_BUFFER_READ);
         if (mp_get_buffer(self->framebuffer, &self->bufinfo, MP_BUFFER_RW)) {
@@ -175,13 +176,13 @@ static void common_hal_rgbmatrix_rgbmatrix_construct1(rgbmatrix_rgbmatrix_obj_t 
     self->framebuffer = framebuffer;
 
     memset(&self->protomatter, 0, sizeof(self->protomatter));
-    ProtomatterStatus stat = _PM_init(&self->protomatter,
+    ProtomatterStatus stat = _PM_init_with_row_address_mode(&self->protomatter,
         self->width, self->bit_depth,
         self->rgb_count / 6, self->rgb_pins,
-        self->addr_count, self->addr_pins,
+        self->row_addr_count, self->addr_pins,
         self->clock_pin, self->latch_pin, self->oe_pin,
         self->doublebuffer, self->serpentine ? -self->tile : self->tile,
-        self->timer);
+        self->timer, row_address_mode);
 
     if (stat == PROTOMATTER_OK) {
         _PM_protoPtr = &self->protomatter;
@@ -318,6 +319,6 @@ int common_hal_rgbmatrix_rgbmatrix_get_width(rgbmatrix_rgbmatrix_obj_t *self) {
 }
 
 int common_hal_rgbmatrix_rgbmatrix_get_height(rgbmatrix_rgbmatrix_obj_t *self) {
-    int computed_height = (self->rgb_count / 3) * (1 << (self->addr_count)) * self->tile;
+    int computed_height = (self->rgb_count / 3) * (1 << self->row_addr_count) * self->tile;
     return computed_height;
 }

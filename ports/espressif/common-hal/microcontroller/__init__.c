@@ -111,7 +111,7 @@ void common_hal_mcu_on_next_reset(mcu_runmode_t runmode) {
             #if defined(CONFIG_IDF_TARGET_ESP32)
             // No UF2 bootloader.
             #elif defined(CONFIG_IDF_TARGET_ESP32P4)
-            REG_WRITE(LP_SYSTEM_REG_SYS_CTRL_REG, 0);
+            REG_CLR_BIT(LP_SYSTEM_REG_SYS_CTRL_REG, LP_SYSTEM_REG_FORCE_DOWNLOAD_BOOT);
             #elif defined(SOC_LP_AON_SUPPORTED)
             REG_WRITE(LP_AON_SYS_CFG_REG, 0); // reset bootloader
             #else
@@ -132,7 +132,7 @@ void common_hal_mcu_on_next_reset(mcu_runmode_t runmode) {
             #endif
 
             #if defined(CONFIG_IDF_TARGET_ESP32P4)
-            REG_WRITE(LP_SYSTEM_REG_SYS_CTRL_REG, LP_SYSTEM_REG_FORCE_DOWNLOAD_BOOT);
+            REG_SET_BIT(LP_SYSTEM_REG_SYS_CTRL_REG, LP_SYSTEM_REG_FORCE_DOWNLOAD_BOOT);
             #elif defined(SOC_LP_AON_SUPPORTED)
             REG_WRITE(LP_AON_SYS_CFG_REG, LP_AON_FORCE_DOWNLOAD_BOOT);
             #else
@@ -346,6 +346,10 @@ static const mp_rom_map_elem_t mcu_pin_global_dict_table[] = {
     #endif
     #ifdef GPIO54_EXISTS
     { MP_ROM_QSTR(MP_QSTR_GPIO54), MP_ROM_PTR(&pin_GPIO54) },
+    #endif
+    #if defined(CONFIG_IDF_TARGET_ESP32P4)
+    { MP_ROM_QSTR(MP_QSTR_USB_HS_DP), MP_ROM_PTR(&pin_USB_HS_DP) },
+    { MP_ROM_QSTR(MP_QSTR_USB_HS_DM), MP_ROM_PTR(&pin_USB_HS_DM) },
     #endif
 };
 MP_DEFINE_CONST_DICT(mcu_pin_globals, mcu_pin_global_dict_table);

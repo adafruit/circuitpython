@@ -110,5 +110,6 @@ watchdog_watchdogtimer_obj_t common_hal_mcu_watchdogtimer_obj = {
     },
     .timeout = 0.0f,
     .mode = WATCHDOGMODE_NONE,
+    .channel_id = -1,
 };
 #endif

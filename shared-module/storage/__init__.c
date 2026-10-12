@@ -18,6 +18,12 @@
 #include "shared-bindings/storage/__init__.h"
 #include "supervisor/filesystem.h"
 #include "supervisor/flash.h"
+#if CIRCUITPY_STORAGE_MAP_FILE
+#include "extmod/vfs_fat.h"
+#include "lib/oofatfs/ff.h"
+#include "py/objarray.h"
+#include "py/objlist.h"
+#endif
 
 #if CIRCUITPY_USB_DEVICE
 #include "supervisor/usb.h"
@@ -28,9 +34,14 @@
 
 // Is the MSC device enabled?
 static volatile bool storage_usb_is_enabled;
+// CIRCUITPY's USB writability when the drive was disabled. It is restored on enable
+// unless a remount() changed it in the meantime.
+static bool usb_writable_before_disable;
+static bool restore_usb_writable;
 
 void storage_usb_set_defaults(void) {
     storage_usb_is_enabled = CIRCUITPY_USB_MSC_ENABLED_DEFAULT;
+    restore_usb_writable = false;
 }
 
 bool storage_usb_enabled(void) {
@@ -38,6 +49,18 @@ bool storage_usb_enabled(void) {
 }
 
 static bool usb_drive_set_enabled(bool enabled) {
+    if (enabled) {
+        // Set this before the LUN reports ready: the host reads write-protect status when it remounts.
+        if (restore_usb_writable) {
+            filesystem_set_internal_writable_by_usb(usb_writable_before_disable);
+            restore_usb_writable = false;
+        }
+    } else if (storage_usb_is_enabled) {
+        supervisor_vfs_t *circuitpy = filesystem_circuitpy();
+        usb_writable_before_disable = circuitpy != NULL &&
+            (circuitpy->common.blockdev.flags & MP_BLOCKDEV_FLAG_USB_WRITABLE) != 0;
+        restore_usb_writable = true;
+    }
     // We can't change the descriptors once we're connected, but we can make the LUN be ready or not ready.
     storage_usb_is_enabled = enabled;
     if (tud_connected()) {
@@ -48,7 +71,11 @@ static bool usb_drive_set_enabled(bool enabled) {
         // So wait long enough for host to send a TEST UNIT READY and receive a reply.
         mp_hal_delay_ms(2500);
     }
-    filesystem_set_internal_writable_by_usb(enabled);
+    if (!enabled) {
+        filesystem_set_internal_writable_by_usb(false);
+        // USB MSC may still hold the lock from when it reported the drive writable.
+        usb_msc_release_circuitpy_lock();
+    }
     return true;
 }
 
@@ -65,6 +92,13 @@ bool common_hal_storage_unsafe_disable_usb_drive(void) {
 }
 
 bool common_hal_storage_enable_usb_drive(void) {
+    // A file open for writing or a workflow transfer holds the filesystem lock.
+    // The host would then see the drive as read-only, and keep it that way after the lock is released.
+    supervisor_vfs_t *circuitpy = filesystem_circuitpy();
+    if (!storage_usb_is_enabled && circuitpy != NULL &&
+        (circuitpy->common.blockdev.flags & MP_BLOCKDEV_FLAG_LOCKED) != 0) {
+        mp_raise_RuntimeError(MP_ERROR_TEXT("File write in progress"));
+    }
     return usb_drive_set_enabled(true);
 }
 #else
@@ -203,7 +237,11 @@ mp_obj_t common_hal_storage_getmount(const char *mount_path) {
 static void remount_vfs(supervisor_vfs_t *fs_mount, bool readonly, bool disable_concurrent_write_protection) {
     #if CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_MSC
     if (!blockdev_lock(fs_mount)) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("Cannot remount path when visible via USB."));
+        if (usb_msc_holds_lock(&fs_mount->fat)) {
+            mp_raise_RuntimeError(MP_ERROR_TEXT("Cannot remount path when visible via USB."));
+        }
+        // A file open for writing or a workflow transfer holds the lock.
+        mp_raise_RuntimeError(MP_ERROR_TEXT("File write in progress"));
     }
     #endif
 
@@ -212,6 +250,10 @@ static void remount_vfs(supervisor_vfs_t *fs_mount, bool readonly, bool disable_
     blockdev_unlock(fs_mount);
 
     #if CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_MSC
+    if (fs_mount == filesystem_circuitpy()) {
+        // remount() wins over the state saved when the USB drive was disabled.
+        restore_usb_writable = false;
+    }
     usb_msc_remount(&fs_mount->fat);
     #endif
 }
@@ -243,4 +285,119 @@ void common_hal_storage_erase_filesystem(bool extended) {
     common_hal_mcu_on_next_reset(RUNMODE_NORMAL);
     common_hal_mcu_reset();
     // We won't actually get here, since we're resetting.
+}
+
+#if CIRCUITPY_STORAGE_MAP_FILE
+// Start clusters of the files mapped this run; a write to one of them is refused until reload.
+MP_REGISTER_ROOT_POINTER(mp_obj_t storage_mapped_files);
+
+void storage_map_file_reset(void) {
+    MP_STATE_VM(storage_mapped_files) = MP_OBJ_NULL;
+}
+
+static bool mapped_files_contain(DWORD sclust) {
+    mp_obj_list_t *mapped = MP_OBJ_TO_PTR(MP_STATE_VM(storage_mapped_files));
+    for (size_t i = 0; i < mapped->len; i++) {
+        if (MP_OBJ_SMALL_INT_VALUE(mapped->items[i]) == (mp_int_t)sclust) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void mapped_files_add(DWORD sclust) {
+    if (MP_STATE_VM(storage_mapped_files) == MP_OBJ_NULL) {
+        MP_STATE_VM(storage_mapped_files) = mp_obj_new_list(0, NULL);
+    }
+    if (!mapped_files_contain(sclust)) {
+        mp_obj_list_append(MP_STATE_VM(storage_mapped_files), MP_OBJ_NEW_SMALL_INT(sclust));
+    }
+}
+
+void storage_map_file_check_writable(fs_user_mount_t *vfs, const char *path) {
+    // A bare fs_user_mount_t (e.g. an SD card mount) shares the supervisor_vfs_t
+    // prefix, so the cast is safe. If CIRCUITPY is littlefs, the FAT mount can
+    // never be the CIRCUITPY mount, so no mapped file can match either.
+    if (MP_STATE_VM(storage_mapped_files) == MP_OBJ_NULL ||
+        (supervisor_vfs_t *)vfs != filesystem_circuitpy()) {
+        return;
+    }
+    FIL fp;
+    if (f_open(&vfs->fatfs, &fp, path, FA_READ) != FR_OK) {
+        return;                                 // no such file yet
+    }
+    DWORD sclust = fp.obj.sclust;
+    f_close(&fp);
+    if (mapped_files_contain(sclust)) {
+        mp_raise_OSError(MP_EACCES);            // mapped: its flash bytes are in use
+    }
+}
+#endif
+
+mp_obj_t common_hal_storage_map_file(mp_obj_t file_in) {
+    #if CIRCUITPY_STORAGE_MAP_FILE
+    if (!mp_obj_is_type(file_in, &mp_type_vfs_fat_fileio)) {
+        mp_raise_OSError(MP_EOPNOTSUPP);        // only a FAT volume stores a file as flash bytes
+    }
+    pyb_file_obj_t *file = MP_OBJ_TO_PTR(file_in);
+    FATFS *fatfs = file->fp.obj.fs;
+    if (fatfs == NULL || (file->fp.flag & FA_WRITE)) {
+        mp_raise_OSError(MP_EINVAL);            // closed, or not open for reading only
+    }
+    supervisor_vfs_t *fs_mount = filesystem_circuitpy();
+    // A littlefs CIRCUITPY doesn't store files as raw flash bytes to map.
+    if (fs_mount == NULL || fs_mount->common.base.type != &mp_fat_vfs_type) {
+        mp_raise_OSError(MP_EOPNOTSUPP);        // no FAT CIRCUITPY drive: not memory-mapped
+    }
+    fs_user_mount_t *drive = &fs_mount->fat;
+    if (fatfs != &drive->fatfs) {
+        mp_raise_OSError(MP_EOPNOTSUPP);        // another mount (an SD card): not memory-mapped
+    }
+    DWORD *tbl = file->fp.cltbl;
+    if (tbl == NULL) {
+        mp_raise_type(&mp_type_MemoryError);    // open() could not allocate the cluster map
+    }
+    FSIZE_t size = f_size(&file->fp);
+    if (size == 0) {
+        return mp_const_empty_tuple;
+    }
+    supervisor_flash_flush();                   // write back any RAM sector cache
+    // Walk the cluster runs of the link map open() built and split a run wherever the port's
+    // mapping is not contiguous, e.g. at the seam of a drive that spans two flash partitions.
+    mp_obj_t views = mp_obj_new_list(0, NULL);
+    size_t nruns = (size_t)((tbl[0] - 2) / 2);
+    FSIZE_t left = size;
+    for (size_t i = 0; i < nruns && left > 0; i++) {
+        DWORD sector = fatfs->database + (tbl[2 + 2 * i] - 2) * fatfs->csize;
+        FSIZE_t span = (FSIZE_t)tbl[1 + 2 * i] * fatfs->csize * FF_MIN_SS;
+        if (span > left) {
+            span = left;                        // the last run is clipped to the dir-entry size
+        }
+        while (span > 0) {
+            uint32_t contiguous;
+            const uint8_t *addr = supervisor_flash_xip_address(sector, &contiguous);
+            if (addr == NULL) {
+                mp_raise_OSError(MP_EOPNOTSUPP);    // this build cannot map the drive here
+            }
+            FSIZE_t piece = (FSIZE_t)contiguous * FF_MIN_SS;
+            if (piece > span) {
+                piece = span;
+            }
+            // read-only: a stray write raises instead of silently hitting the flash window
+            mp_obj_list_append(views, mp_obj_new_memoryview('B', (size_t)piece, (void *)addr));
+            span -= piece;
+            left -= piece;
+            sector += contiguous;
+        }
+    }
+    if (left != 0) {
+        mp_raise_OSError(MP_EIO);               // chain shorter than the dir-entry size: corrupt
+    }
+    mapped_files_add(file->fp.obj.sclust);
+    mp_obj_list_t *list = MP_OBJ_TO_PTR(views);
+    return mp_obj_new_tuple(list->len, list->items);
+    #else
+    (void)file_in;
+    mp_raise_type(&mp_type_NotImplementedError);    // this port does not map its drive
+    #endif
 }

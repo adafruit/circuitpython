@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: 2026 Vladimir Smitka
+# SPDX-License-Identifier: MIT
+
+description: SPI loopback for tests, MOSI wired to MISO
+
+compatible: "circuitpython,spi-loopback"
+
+include: spi-device.yaml

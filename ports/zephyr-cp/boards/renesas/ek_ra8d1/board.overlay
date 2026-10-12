@@ -14,4 +14,10 @@
 &option_setting_banksel_sel { status = "disabled"; };
 &option_setting_bps_sel     { status = "disabled"; };
 
+/* The RA WDT driver (r_wdt.c) doesn't build for RA8D1 either: it needs
+ * BSP_CFG_OPTION_SETTING_OFS0, which the RA8D1 BSP config doesn't define.
+ * Disable the wdt node so the driver isn't enabled and the watchdog module
+ * stays off. */
+&wdt { status = "disabled"; };
+
 #include "../../../app.overlay"

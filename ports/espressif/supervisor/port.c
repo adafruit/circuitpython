@@ -20,6 +20,7 @@
 #endif
 
 #include "esp_mac.h"
+#include "esp_memory_utils.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -332,7 +333,13 @@ void port_heap_init(void) {
 void *port_malloc(size_t size, bool dma_capable) {
     if (dma_capable) {
         // SPIRAM is not DMA-capable, so don't bother to ask for it.
+        #if defined(SOC_CACHE_INTERNAL_MEM_VIA_L1CACHE) && SOC_CACHE_INTERNAL_MEM_VIA_L1CACHE
+        // Cache maintenance must not touch memory outside this allocation.
+        size = (size + CONFIG_CACHE_L1_CACHE_LINE_SIZE - 1) & ~(CONFIG_CACHE_L1_CACHE_LINE_SIZE - 1);
+        return heap_caps_aligned_alloc(CONFIG_CACHE_L1_CACHE_LINE_SIZE, size, MALLOC_CAP_8BIT | MALLOC_CAP_DMA);
+        #else
         return heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_DMA);
+        #endif
     }
 
     void *ptr = NULL;
@@ -345,6 +352,22 @@ void *port_malloc(size_t size, bool dma_capable) {
     }
     return ptr;
 }
+
+#if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
+bool port_buffer_is_dma_capable(const void *ptr, size_t len) {
+    if (len == 0 || !esp_ptr_dma_capable(ptr) ||
+        !esp_ptr_dma_capable((const uint8_t *)ptr + len - 1)) {
+        return false;
+    }
+    #if defined(SOC_CACHE_INTERNAL_MEM_VIA_L1CACHE) && SOC_CACHE_INTERNAL_MEM_VIA_L1CACHE
+    // Cache maintenance must stay inside the caller's buffer at both ends.
+    return ((uintptr_t)ptr % CONFIG_CACHE_L1_CACHE_LINE_SIZE) == 0 &&
+           (len % CONFIG_CACHE_L1_CACHE_LINE_SIZE) == 0;
+    #else
+    return true;
+    #endif
+}
+#endif
 
 void port_free(void *ptr) {
     heap_caps_free(ptr);

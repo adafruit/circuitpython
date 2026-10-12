@@ -197,6 +197,10 @@ void common_hal_gifio_ondiskgif_construct(gifio_ondiskgif_t *self, mp_obj_t file
 }
 
 void common_hal_gifio_ondiskgif_deinit(gifio_ondiskgif_t *self) {
+    // __del__ runs this again after an explicit deinit() or a with block.
+    if (common_hal_gifio_ondiskgif_deinited(self)) {
+        return;
+    }
     self->file = NULL;
     common_hal_displayio_bitmap_deinit(self->bitmap);
     self->bitmap = NULL;

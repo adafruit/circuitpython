@@ -34,6 +34,12 @@ endif()
 if(CONFIG_ADC_MCUX_LPADC OR CONFIG_DAC_MCUX_LPDAC)
   zephyr_library_sources(src/nxp/mcxn/iobroker_analog.c)
 endif()
+
+# PWM channel allocation for the emulated PWM controllers on native_sim (the
+# nRF implementation is part of src/nordic/nrf/iobroker_route.c).
+zephyr_library_sources_ifdef(CONFIG_PWM_ADAFRUIT_EMUL
+  src/emul/iobroker_pwm.c
+)
 # Private headers shared by the core and the vendor implementations.
 zephyr_library_include_directories(src)
 

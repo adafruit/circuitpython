@@ -14,6 +14,8 @@
 #include <errno.h>
 #include <stddef.h>
 
+#include <zephyr/device.h>
+#include <zephyr/devicetree.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/util.h>
 
@@ -112,13 +114,28 @@ int iobroker_i2c_allocate(package_pin_t sda, package_pin_t scl,
     return -ENOSYS;
 }
 
+#if defined(CONFIG_BOARD_NATIVE_SIM) && DT_HAS_COMPAT_STATUS_OKAY(zephyr_spi_emul_controller)
+// native_sim has no pin routing: any pins get the emulated SPI controller.
+#define NATIVE_SIM_SPI DEVICE_DT_GET_ONE(zephyr_spi_emul_controller)
+static bool native_sim_spi_in_use;
+#endif
+
 int iobroker_spi_allocate(package_pin_t clock, package_pin_t mosi,
     package_pin_t miso, const struct device **dev_out) {
     (void)clock;
     (void)mosi;
     (void)miso;
+    #ifdef NATIVE_SIM_SPI
+    if (native_sim_spi_in_use) {
+        return -ENODEV;
+    }
+    native_sim_spi_in_use = true;
+    *dev_out = NATIVE_SIM_SPI;
+    return 0;
+    #else
     (void)dev_out;
     return -ENOSYS;
+    #endif
 }
 
 int iobroker_uart_allocate(package_pin_t tx, package_pin_t rx,
@@ -132,12 +149,40 @@ int iobroker_uart_allocate(package_pin_t tx, package_pin_t rx,
 }
 
 bool iobroker_release(const struct device *dev) {
+    #ifdef NATIVE_SIM_SPI
+    if (dev == NATIVE_SIM_SPI) {
+        native_sim_spi_in_use = false;
+    }
+    #endif
     (void)dev;
     LOG_DBG("release: no routing support on this SoC, nothing to release");
     return false;
 }
 
 #endif // !IOBROKER_ROUTING
+
+#if !IOBROKER_PWM_CHANNELS
+
+// SoCs without a PWM channel implementation: the API still exists so pwmio
+// can call it, but every allocation reports -ENOSYS. The implementations
+// live in src/<vendor>/<soc>/ (nRF) and in src/emul/ (the emulated PWM).
+int iobroker_pwm_channel_allocate(package_pin_t pin, uint32_t frequency,
+    bool exclusive, const struct device **dev_out, uint32_t *channel_out) {
+    (void)pin;
+    (void)frequency;
+    (void)exclusive;
+    (void)dev_out;
+    (void)channel_out;
+    return -ENOSYS;
+}
+
+bool iobroker_pwm_channel_release(const struct device *dev, uint32_t channel) {
+    (void)dev;
+    (void)channel;
+    return false;
+}
+
+#endif // !IOBROKER_PWM_CHANNELS
 
 #if !IOBROKER_ADC
 
@@ -249,6 +294,16 @@ bool iobroker_pin_in_use(package_pin_t pin) {
         }
         for (uint8_t j = 0; j < iobroker_uart_bus_states[i].pin_count; j++) {
             if (iobroker_uart_bus_states[i].pins[j] == pin) {
+                return true;
+            }
+        }
+    }
+    for (size_t i = 0; i < iobroker_pwm_bus_count; i++) {
+        if (!iobroker_pwm_bus_states[i].in_use) {
+            continue;
+        }
+        for (uint8_t j = 0; j < iobroker_pwm_bus_states[i].pin_count; j++) {
+            if (iobroker_pwm_bus_states[i].pins[j] == pin) {
                 return true;
             }
         }

@@ -27,6 +27,10 @@
 #include "audio_dma.h"
 #endif
 
+#if CIRCUITPY_PICODVI_AUDIOOUT
+#include "common-hal/picodvi/AudioOut.h"
+#endif
+
 #if CIRCUITPY_SSL
 #include "shared-module/ssl/__init__.h"
 #include "psa/crypto.h"
@@ -153,10 +157,11 @@ static size_t _psram_size = 0;
 #include "hardware/structs/xip_ctrl.h"
 
 static void __no_inline_not_in_flash_func(setup_psram)(void) {
-    // Read the system clock before QMI goes into direct mode; clock_get_hz() is
-    // in flash and XIP is reconfigured below.
+    // Read the system clock and the chip select pin before QMI goes into
+    // direct mode. Both are in flash, and flash reads fault in direct mode.
     uint32_t sys_clk_khz = clock_get_hz(clk_sys) / 1000;
-    gpio_set_function(CIRCUITPY_PSRAM_CHIP_SELECT->number, GPIO_FUNC_XIP_CS1);
+    const uint8_t cs_pin = CIRCUITPY_PSRAM_CHIP_SELECT->number;
+    gpio_set_function(cs_pin, GPIO_FUNC_XIP_CS1);
     _psram_size = 0;
     common_hal_mcu_disable_interrupts();
     // Try and read the PSRAM ID via direct_csr.
@@ -206,10 +211,10 @@ static void __no_inline_not_in_flash_func(setup_psram)(void) {
 
     if (kgd != 0x5D) {
         common_hal_mcu_enable_interrupts();
-        reset_pin_number(CIRCUITPY_PSRAM_CHIP_SELECT->number);
+        reset_pin_number(cs_pin);
         return;
     }
-    never_reset_pin_number(CIRCUITPY_PSRAM_CHIP_SELECT->number);
+    never_reset_pin_number(cs_pin);
 
     // Enable quad mode.
     qmi_hw->direct_csr = 30 << QMI_DIRECT_CSR_CLKDIV_LSB |
@@ -348,7 +353,7 @@ void *port_realloc(void *ptr, size_t size, bool dma_capable) {
 }
 
 #if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
-bool port_buffer_is_dma_capable(const void *ptr) {
+bool port_buffer_is_dma_capable(const void *ptr, size_t len) {
     // For RP2350, DMA can only access SRAM, not PSRAM
     // PSRAM addresses are below SRAM_BASE
     return ptr != NULL && ((size_t)ptr) >= SRAM_BASE;
@@ -498,6 +503,10 @@ void reset_port(void) {
 
     #if CIRCUITPY_AUDIOCORE
     audio_dma_reset();
+    #endif
+
+    #if CIRCUITPY_PICODVI_AUDIOOUT
+    picodvi_audioout_reset();
     #endif
 
     #if CIRCUITPY_SSL

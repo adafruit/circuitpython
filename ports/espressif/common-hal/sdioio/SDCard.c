@@ -145,7 +145,7 @@ void common_hal_sdioio_sdcard_construct(sdioio_sdcard_obj_t *self,
     ESP_LOGI(TAG, "Number of sectors: %d with sector_size: %d",
         self->card.csd.capacity, self->card.csd.sector_size);
 
-    self->frequency = self->card.real_freq_khz;
+    self->frequency = self->card.real_freq_khz * 1000;
     ESP_LOGI(TAG, "Real frequency is %lu", self->frequency);
     self->capacity = self->card.csd.capacity;  // Reported number of sectors
     ESP_LOGI(TAG, "Reported capacity is %lu", self->capacity);

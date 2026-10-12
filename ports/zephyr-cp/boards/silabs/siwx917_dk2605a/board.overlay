@@ -43,3 +43,15 @@
 &psram {
 	status = "okay";
 };
+
+// Enable the SoC watchdog and expose it through the `watchdog0` alias
+// (Zephyr's watchdog sample selection) for the watchdog module.
+&watchdog {
+	status = "okay";
+};
+
+/ {
+	aliases {
+		watchdog0 = &watchdog;
+	};
+};

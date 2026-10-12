@@ -125,4 +125,10 @@
 	memory-regions = <&cpuapp_dma_region>;
 };
 
+// Enable the hardware watchdog for the watchdog module. The Zephyr board dts
+// aliases watchdog0 to wdt010, but the SoC dtsi leaves it disabled.
+&wdt010 {
+	status = "okay";
+};
+
 #include "../../../app.overlay"

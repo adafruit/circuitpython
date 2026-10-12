@@ -55,7 +55,7 @@ uint32_t common_hal_displayio_palette_get_color(displayio_palette_t *self, uint3
 
 void displayio_palette_get_color(displayio_palette_t *self, const _displayio_colorspace_t *colorspace, const displayio_input_pixel_t *input_pixel, displayio_output_pixel_t *output_color) {
     uint32_t palette_index = input_pixel->pixel;
-    if (palette_index > self->color_count || self->colors[palette_index].transparent) {
+    if (palette_index >= self->color_count || self->colors[palette_index].transparent) {
         output_color->opaque = false;
         return;
     }

@@ -62,6 +62,15 @@ bool filesystem_present(void) {
     return false;
 }
 
+bool filesystem_lock(supervisor_vfs_t *fs_mount) {
+    (void)fs_mount;
+    return true;
+}
+
+void filesystem_unlock(supervisor_vfs_t *fs_mount) {
+    (void)fs_mount;
+}
+
 // Without a filesystem, nothing is supported and all file operations fail.
 bool supervisor_vfs_supported(supervisor_vfs_t *fs_mount) {
     (void)fs_mount;

@@ -67,15 +67,27 @@ void __no_inline_not_in_flash_func(mcu_processor_update_psram_timing)(uint32_t s
     // MIN_DESELECT is in system clock cycles; PSRAM needs 50 ns min CS
     // deassertion. Round up so we are never under.
     uint32_t min_deselect = (sys_clk_khz + 19999) / 20000;
+    // PSRAM SCK is clk_sys / CLKDIV and must stay at or below 133 MHz.
+    // Divisor 1 is not used above 100 MHz because the RXDELAY it needs is
+    // too late. RXDELAY samples later as the divisor grows, plus one more
+    // cycle once SCK is above 100 MHz. Same rule as arduino-pico.
+    uint32_t clkdiv = (sys_clk_khz + 132999) / 133000;
+    if (clkdiv == 1 && sys_clk_khz > 100000) {
+        clkdiv = 2;
+    }
+    uint32_t rxdelay = clkdiv;
+    if (sys_clk_khz / clkdiv > 100000) {
+        rxdelay++;
+    }
 
     qmi_hw->m[1].timing =
         QMI_M0_TIMING_PAGEBREAK_VALUE_1024 << QMI_M0_TIMING_PAGEBREAK_LSB | // Break between pages.
             3 << QMI_M0_TIMING_SELECT_HOLD_LSB | // Delay releasing CS for 3 extra system cycles.
             1 << QMI_M0_TIMING_COOLDOWN_LSB |
-            1 << QMI_M0_TIMING_RXDELAY_LSB |
+            rxdelay << QMI_M0_TIMING_RXDELAY_LSB |
             max_select << QMI_M0_TIMING_MAX_SELECT_LSB |
             min_deselect << QMI_M0_TIMING_MIN_DESELECT_LSB |
-            2 << QMI_M0_TIMING_CLKDIV_LSB;
+            clkdiv << QMI_M0_TIMING_CLKDIV_LSB;
 }
 #endif
 

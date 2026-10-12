@@ -73,7 +73,7 @@ void common_hal_watchdog_feed(watchdog_watchdogtimer_obj_t *self) {
     }
 }
 
-void common_hal_watchdog_deinit(watchdog_watchdogtimer_obj_t *self) {
+void common_hal_watchdog_reset(watchdog_watchdogtimer_obj_t *self) {
     if (self->mode == WATCHDOGMODE_RESET) {
         // Don't change anything because RESET cannot be undone.
         return;

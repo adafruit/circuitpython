@@ -37,6 +37,9 @@
 #include "lib/oofatfs/ff.h"
 #include "extmod/vfs_fat.h"
 #include "supervisor/filesystem.h"
+#if CIRCUITPY_STORAGE_MAP_FILE
+#include "shared-bindings/storage/__init__.h"
+#endif
 
 // this table converts from FRESULT to POSIX errno
 const byte fresult_to_errno_table[20] = {
@@ -129,10 +132,18 @@ static mp_uint_t file_obj_ioctl(mp_obj_t o_in, mp_uint_t request, uintptr_t arg,
     } else if (request == MP_STREAM_CLOSE) {
         // if fs==NULL then the file is closed and in that case this method is a no-op
         if (self->fp.obj.fs != NULL) {
+            // CIRCUITPY-CHANGE: get the mount now, because a successful f_close() clears obj.fs.
+            supervisor_vfs_t *mount = (supervisor_vfs_t *)self->fp.obj.fs->drv;
             FRESULT res = f_close(&self->fp);
             if (res != FR_OK) {
                 *errcode = fresult_to_errno_table[res];
                 return MP_STREAM_ERROR;
+            }
+            // CIRCUITPY-CHANGE: release the lock taken when the file was opened for writing.
+            // If f_close() fails, the file is still open and keeps the lock.
+            if (self->holds_lock) {
+                filesystem_unlock(mount);
+                self->holds_lock = false;
             }
         }
         return 0;
@@ -249,13 +260,34 @@ static mp_obj_t fat_vfs_open(mp_obj_t self_in, mp_obj_t path_in, mp_obj_t mode_i
     if ((mode & FA_WRITE) != 0 && !filesystem_is_writable_by_python((supervisor_vfs_t *)self)) {
         mp_raise_OSError(MP_EROFS);
     }
+    #if CIRCUITPY_STORAGE_MAP_FILE
+    if ((mode & FA_WRITE) != 0) {
+        storage_map_file_check_writable(self, mp_obj_str_get_str(path_in));
+    }
+    #endif
 
-
+    // CIRCUITPY-CHANGE: get fname first, because it can raise.
+    const char *fname = mp_obj_str_get_str(path_in);
     pyb_file_obj_t *o = mp_obj_malloc_with_finaliser(pyb_file_obj_t, type);
 
-    const char *fname = mp_obj_str_get_str(path_in);
+    // CIRCUITPY-CHANGE: a file open for writing holds the filesystem lock until it is closed,
+    // so USB MSC cannot make the filesystem writable to the host underneath it.
+    // With concurrent write protection off, Python and the host share the filesystem on purpose.
+    o->holds_lock = false;
+    if ((mode & FA_WRITE) != 0 && (self->blockdev.flags & MP_BLOCKDEV_FLAG_CONCURRENT_WRITE_PROTECTED) != 0) {
+        if (!filesystem_lock((supervisor_vfs_t *)self)) {
+            m_del_obj(pyb_file_obj_t, o);
+            mp_raise_OSError(MP_EROFS);
+        }
+        o->holds_lock = true;
+    }
+
     FRESULT res = f_open(&self->fatfs, &o->fp, fname, mode);
     if (res != FR_OK) {
+        // CIRCUITPY-CHANGE
+        if (o->holds_lock) {
+            filesystem_unlock((supervisor_vfs_t *)self);
+        }
         m_del_obj(pyb_file_obj_t, o);
         mp_raise_OSError_errno_str(fresult_to_errno_table[res], path_in);
     }

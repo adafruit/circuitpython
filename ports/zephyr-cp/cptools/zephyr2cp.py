@@ -511,6 +511,20 @@ INPUT_KEY_NAMES = {}
 NRF_PIN_FIELD_MASK = 0x1FF
 
 
+def _reg_addr_expr(device_tree, label):
+    """C expression for a node's register block address, or 0 when it has none.
+
+    The iobroker tables carry the address for SoC routing code that decides
+    reachability from it (nRF54L power domains). Some nodes the tables list
+    have no reg property (native_sim's gpio_emul, PIO-based buses), and
+    DT_REG_ADDR() does not compile for them.
+    """
+    node = device_tree.label2node.get(label)
+    if node is None or "reg" not in node.props:
+        return "0"
+    return f"DT_REG_ADDR(DT_NODELABEL({label}))"
+
+
 def _pinctrl_default_psels(node):
     """Return the raw nRF psel entries of a node's "default" pinctrl state.
 
@@ -714,6 +728,23 @@ def add_toml_pin_names(
     return analog_board_names
 
 
+def _toml_status_pin(mpconfigboard, board_names, key):
+    """Resolve a circuitpython.toml status pin key to its ``(ioport, num)``.
+
+    The key's value is a board pin name (``[pins]`` entries and
+    devicetree-derived names alike, matched after sanitizing the same way).
+    Returns None when the key is absent; raises when the name is unknown.
+    """
+    name = (mpconfigboard or {}).get(key)
+    if name is None:
+        return None
+    wanted = str(name).upper().replace(" ", "_").replace("-", "_")
+    for pin_key, names in board_names.items():
+        if any(existing.upper() == wanted for existing in names):
+            return pin_key
+    raise RuntimeError(f"circuitpython.toml {key} = {name!r} is not a board pin name")
+
+
 @cpbuild.run_in_thread
 def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir, mpconfigboard=None):  # noqa: C901
     board_dir = builddir / "board"
@@ -725,12 +756,14 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir, mpconfig
         "_bleio": False,
         "hostnetwork": board_id in ["native_sim"],
         "audiobusio": False,
+        "neopixel_write": False,
     }
 
     config_bt_enabled = False
     config_bt_found = False
     config_adc_enabled = False
     config_dac_enabled = False
+    config_rtc_enabled = False
     config_present = True
     config = zephyrbuilddir / ".config"
     if not config.exists():
@@ -747,6 +780,8 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir, mpconfig
                 config_adc_enabled = line.strip().endswith("=y")
             elif line.startswith("CONFIG_DAC="):
                 config_dac_enabled = line.strip().endswith("=y")
+            elif line.startswith("CONFIG_RTC="):
+                config_rtc_enabled = line.strip().endswith("=y")
 
     runners = zephyrbuilddir / "runners.yaml"
     runners = yaml.safe_load(runners.read_text())
@@ -891,6 +926,13 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir, mpconfig
                 # busio driver (i2c, spi, uart)
                 board_info["busio"] = True
                 logger.info(f"Supported busio driver: {driver}")
+                if driver not in active_zephyr_devices:
+                    active_zephyr_devices[driver] = []
+                active_zephyr_devices[driver].append(node.labels)
+            elif driver == "pwm":
+                # PWM instances are allocated at runtime through iobroker
+                # for neopixel_write and pwmio; no board singleton.
+                logger.info(f"Supported pwm driver: {driver}")
                 if driver not in active_zephyr_devices:
                     active_zephyr_devices[driver] = []
                 active_zephyr_devices[driver].append(node.labels)
@@ -1143,6 +1185,11 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir, mpconfig
         pad_name_of_pad,
         gpio_pad_of_pad,
     )
+    # Status NeoPixel from circuitpython.toml: ``STATUS_NEOPIXEL`` (and the
+    # optional ``STATUS_NEOPIXEL_POWER``) name a board pin, usually one from
+    # the [pins] table, that the status LED code drives with neopixel_write.
+    status_neopixel = _toml_status_pin(mpconfigboard, board_names, "STATUS_NEOPIXEL")
+    status_neopixel_power = _toml_status_pin(mpconfigboard, board_names, "STATUS_NEOPIXEL_POWER")
     # GPIO pad number -> pad: every (label, num) name and alias the
     # devicetree walk produced keys into one pin object per pad.
     pad_of_gpio = {}
@@ -1198,6 +1245,10 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir, mpconfig
                 status_led = pin_object_name
             if boot_button and (ioport, num) == boot_button:
                 boot_button = pin_object_name
+            if status_neopixel and (ioport, num) == status_neopixel:
+                status_neopixel = pin_object_name
+            if status_neopixel_power and (ioport, num) == status_neopixel_power:
+                status_neopixel_power = pin_object_name
             pin_defs.append(
                 f"const mcu_pin_obj_t pin_{pin_object_name} = {{ .base.type = &mcu_pin_type, .package_pin = {package_pin_init}}};"
             )
@@ -1343,11 +1394,27 @@ static MP_DEFINE_CONST_FUN_OBJ_0({function_object}, {c_function_name});""".lstri
     # instances with fixed devicetree pins are only usable when the requested
     # pins match their state.
     pinctrl_nrf = False
+    pwm_nrfx = False
+    pwm_emul = False
     if config_present:
         for line in config.read_text().splitlines():
             if line.startswith("CONFIG_PINCTRL_NRF="):
                 pinctrl_nrf = line.strip().endswith("=y")
-                break
+            elif line.startswith("CONFIG_PWM_NRFX="):
+                # Zephyr's nRF PWM driver defines the PWM instance devices.
+                # Without it, PWM nodes have no device to reference, and
+                # neopixel_write (the neopixel module's nRF implementation,
+                # which allocates an instance through iobroker) cannot transmit, so
+                # both the pwm pool and the module follow this symbol. pwmio
+                # allocates its channels through iobroker's nRF implementation
+                # too.
+                pwm_nrfx = line.strip().endswith("=y")
+            elif line.startswith("CONFIG_PWM_ADAFRUIT_EMUL="):
+                # The emulated PWM controllers on native_sim (pwm_emul
+                # module), which iobroker allocates pwmio channels on too.
+                pwm_emul = line.strip().endswith("=y")
+    board_info["neopixel_write"] = pwm_nrfx
+    board_info["pwmio"] = pwm_nrfx or pwm_emul
 
     iobroker_includes = """
 #include <zephyr/device.h>
@@ -1367,26 +1434,33 @@ static MP_DEFINE_CONST_FUN_OBJ_0({function_object}, {c_function_name});""".lstri
             f"DEVICE_DT_GET(DT_NODELABEL({label}))" for label in sorted(ioports.keys())
         )
         indexes = ", ".join(str(port_indexes[label]) for label in sorted(ioports.keys()))
+        addrs = ", ".join(_reg_addr_expr(device_tree, label) for label in sorted(ioports.keys()))
         count = len(port_indexes)
     else:
         devices = "NULL"
         indexes = "0"
+        addrs = "0"
         count = 0
     table_parts.append(
         f"""
 const struct device * const iobroker_gpio_port_devices[] = {{ {devices} }};
 const uint8_t iobroker_gpio_port_indexes[] = {{ {indexes} }};
+const uint32_t iobroker_gpio_port_addrs[] = {{ {addrs} }};
 const size_t iobroker_gpio_port_count = {count};
 """
     )
 
     if pinctrl_nrf:
-        pool_kinds = (("i2c", "i2c"), ("spi", "spi"), ("serial", "uart"))
+        pool_kinds = (("i2c", "i2c"), ("spi", "spi"), ("serial", "uart"), ("pwm", "pwm"))
         bus_table_parts = []
         for driver, pool in pool_kinds:
             dynamic_entries = []
             fixed_entries = []
-            for labels in active_zephyr_devices.get(driver, []):
+            # PWM instances only exist as devices when the driver is built.
+            instances = (
+                active_zephyr_devices.get(driver, []) if driver != "pwm" or pwm_nrfx else []
+            )
+            for labels in instances:
                 node = device_tree.label2node[labels[0]]
                 if node in path2chosen:
                     # Console and other system devices are not allocatable.
@@ -1401,7 +1475,7 @@ const size_t iobroker_gpio_port_count = {count};
 
             entries = dynamic_entries + fixed_entries
 
-            # Always define all three pools, even when empty: iobroker.c and
+            # Always define all four pools, even when empty: iobroker.c and
             # the nRF routing code reference every pool's tables whenever
             # CONFIG_PINCTRL_NRF is on, so an empty pool is still an empty
             # array plus a zero count.
@@ -1423,6 +1497,7 @@ const size_t iobroker_gpio_port_count = {count};
                 declares.append(f"PINCTRL_DT_DEV_CONFIG_DECLARE(DT_NODELABEL({label}));")
                 entry = (
                     f"    {{ .dev = DEVICE_DT_GET(DT_NODELABEL({label})), "
+                    f".reg_addr = {_reg_addr_expr(device_tree, label)}, "
                     f".pcfg = PINCTRL_DT_DEV_CONFIG_GET(DT_NODELABEL({label}))"
                 )
                 if psels is not None:
@@ -1564,6 +1639,16 @@ void board_init(void) {
     else:
         boot_button = ""
         boot_button_active_high = ""
+    if status_neopixel:
+        status_neopixel = f"#define MICROPY_HW_NEOPIXEL (&pin_{status_neopixel})\n"
+    else:
+        status_neopixel = ""
+    if status_neopixel_power:
+        status_neopixel_power = (
+            f"#define CIRCUITPY_STATUS_LED_POWER (&pin_{status_neopixel_power})\n"
+        )
+    else:
+        status_neopixel_power = ""
     ram_list = []
     ram_externs = []
     max_size = 0
@@ -1595,6 +1680,8 @@ void board_init(void) {
 {status_led_inverted}
 {boot_button}
 {boot_button_active_high}
+{status_neopixel}
+{status_neopixel_power}
         """
     if not header.exists() or header.read_text() != new_header_content:
         header.write_text(new_header_content)
@@ -1693,6 +1780,28 @@ MP_DEFINE_CONST_DICT(board_module_globals, board_module_globals_table);
     board_info["analogio"] = (adc_present and config_adc_enabled) or (
         dac_present and config_dac_enabled
     )
+    board_info["rtc"] = False
+    # RTC needs both a devicetree `rtc` alias pointing at the RTC device
+    # (the same selection Zephyr's own RTC sample uses) and the Zephyr RTC
+    # driver layer enabled (CONFIG_RTC).
+    rtc_node = device_tree.alias2node.get("rtc")
+    if rtc_node is not None:
+        rtc_status = rtc_node.props.get("status")
+        rtc_present = rtc_status is None or rtc_status.to_string() == "okay"
+        if rtc_present and config_rtc_enabled:
+            board_info["rtc"] = True
+        elif rtc_present:
+            logger.warning(
+                "Devicetree has a status-okay 'rtc' alias but CONFIG_RTC is "
+                "not enabled, so the rtc module is disabled."
+            )
+    board_info["watchdog"] = True
+    # Watchdog is always enabled: RAISE mode raises the WatchDogTimeout
+    # exception from a software Zephyr k_timer and works on every board.
+    # RESET mode additionally uses the hardware watchdog selected by the
+    # devicetree `watchdog0` alias (the same selection Zephyr's own watchdog
+    # sample uses); boards without the alias support only RAISE mode and
+    # raise NotImplementedError when RESET is requested.
     board_info["usb_num_endpoint_pairs"] = usb_num_endpoint_pairs
 
     # Detect NVM partition size from the device tree.

@@ -24,3 +24,6 @@ CFLAGS += -DCFG_TUH_ENUMERATION_BUFSIZE=4096
 # is only allocated when CIRCUITPY_USB_HOST_ISO_BUFFER_SIZE is set in
 # settings.toml.
 CFLAGS += -DPIO_USB_HOST_ISOCHRONOUS=1
+
+# USB host bulk input, for SDR devices
+CIRCUITPY_USB_HOST_BULK = 1

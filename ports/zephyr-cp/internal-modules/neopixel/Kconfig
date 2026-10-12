@@ -1,0 +1,15 @@
+# neopixel: NeoPixel (WS2812-style) LED strip transmit on a runtime-chosen
+# pin.
+#
+# The module's core is always compiled (see CMakeLists.txt); callers call it
+# directly. Transmitting needs SoC support: today it is implemented for nRF
+# SoCs, using a PWM instance's DMA sequence playback with a bit-bang
+# fallback. On other SoCs neopixel_send() reports -ENOSYS.
+
+config NEOPIXEL
+	bool "NeoPixel (WS2812-style) transmit"
+	default y
+	help
+	  Transmit NeoPixel (WS2812-style) LED data on a pin chosen at runtime,
+	  allocating a peripheral instance from the iobroker module for each
+	  transfer.

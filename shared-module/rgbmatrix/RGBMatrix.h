@@ -22,7 +22,7 @@ typedef struct {
     uint8_t rgb_pins[30];
     uint8_t addr_pins[10];
     uint8_t clock_pin, latch_pin, oe_pin;
-    uint8_t rgb_count, addr_count;
+    uint8_t rgb_count, addr_count, row_addr_count;
     uint8_t bit_depth;
     bool core_is_initialized;
     bool paused;

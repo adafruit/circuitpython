@@ -81,7 +81,41 @@
 		#io-channel-cells = <1>;
 		vref-mv = <3300>;
 	};
+
+	/* Emulated watchdog for the watchdog module, built on the native_sim counter
+	 * like Zephyr's own watchdog tests do (tests/drivers/watchdog). */
+	wdt_counter: wdt-counter {
+		compatible = "zephyr,counter-watchdog";
+		status = "okay";
+		counter = <&counter0>;
+	};
+
+	aliases {
+		watchdog0 = &wdt_counter;
+	};
+};
+
+/* Emulated PWM controller for pwmio tests: one channel per gpio_emul pin
+ * and two period groups that any channel can join, clocked at 16 MHz. */
+/ {
+	pwm_emul: pwm-emul {
+		compatible = "adafruit,pwm-emul";
+		status = "okay";
+		#pwm-cells = <3>;
+		channels = <32>;
+		groups = <2>;
+		clock-frequency = <16000000>;
+	};
 };
 
 
 #include "../../../app.overlay"
+
+/* An SPI loopback for testing: MOSI wired to MISO. */
+&spi0 {
+	loopback: loopback@0 {
+		compatible = "circuitpython,spi-loopback";
+		reg = <0>;
+		spi-max-frequency = <50000000>;
+	};
+};

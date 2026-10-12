@@ -107,7 +107,7 @@ size_t usb_msc_descriptor_length(void) {
     return sizeof(usb_msc_descriptor_template);
 }
 
-static const char storage_interface_name[] = USB_INTERFACE_NAME " Mass Storage";
+static const char storage_interface_name[] = "Mass Storage";
 
 size_t usb_msc_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *descriptor_counts, uint8_t *current_interface_string) {
     memcpy(descriptor_buf, usb_msc_descriptor_template, sizeof(usb_msc_descriptor_template));
@@ -127,7 +127,7 @@ size_t usb_msc_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *desc
     descriptor_counts->num_out_endpoints++;
     descriptor_counts->current_endpoint++;
 
-    usb_add_interface_string(*current_interface_string, storage_interface_name);
+    usb_add_interface_name(*current_interface_string, NULL, storage_interface_name);
     descriptor_buf[MSC_INTERFACE_STRING_INDEX] = *current_interface_string;
     (*current_interface_string)++;
 
@@ -222,6 +222,29 @@ void usb_msc_umount(void) {
         blockdev_unlock((supervisor_vfs_t *)vfs);
         locked[i] = false;
     }
+}
+
+// Release the USB MSC lock on CIRCUITPY (LUN 0), if USB MSC holds it.
+// Locks held by others (Python, workflows) are not touched.
+void usb_msc_release_circuitpy_lock(void) {
+    if (!locked[0]) {
+        return;
+    }
+    fs_user_mount_t *vfs = get_vfs(0);
+    if (vfs != NULL) {
+        blockdev_unlock((supervisor_vfs_t *)vfs);
+    }
+    locked[0] = false;
+}
+
+// Whether USB MSC holds the blockdev lock on this mount.
+bool usb_msc_holds_lock(fs_user_mount_t *vfs) {
+    for (uint8_t i = 0; i < LUN_COUNT; i++) {
+        if (locked[i] && get_vfs(i) == vfs) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void usb_msc_remount(fs_user_mount_t *fs_mount) {

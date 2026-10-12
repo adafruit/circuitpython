@@ -53,6 +53,10 @@ static const char *nrf_fun_name(uint32_t fun) {
         "SPIM_SCK", "SPIM_MOSI", "SPIM_MISO",
         "SPIS_SCK", "SPIS_MOSI", "SPIS_MISO", "SPIS_CSN",
         "TWIM_SCL", "TWIM_SDA",
+        "I2S_SCK_M", "I2S_SCK_S", "I2S_LRCK_M", "I2S_LRCK_S", "I2S_SDIN",
+        "I2S_SDOUT", "I2S_MCK",
+        "PDM_CLK", "PDM_DIN",
+        "PWM_OUT0", "PWM_OUT1", "PWM_OUT2", "PWM_OUT3",
     };
     if (fun < ARRAY_SIZE(names)) {
         return names[fun];
@@ -123,6 +127,42 @@ static pinctrl_soc_pin_t nrf_psel_encode(uint32_t fun, uint16_t soc_pad,
     }
 
     return psel;
+}
+
+// Whether an instance can drive a pad, given as its global GPIO number
+// (port index * 32 + pin). nRF52 and nRF53 are a full crossbar.
+// On nRF54L, peripherals and GPIO controllers are grouped in power domains
+// and a peripheral can only drive pads of its own domain; the domain is
+// encoded in the register address (each occupies its own 256 KiB window:
+// 0x4xxxx for the "00" instances and P2, 0xcxxxx-0xfxxxx for the "2x"
+// instances and P1/P3, 0x10xxxx for the "30" instances and P0).
+static bool nrf_instance_reaches_pad(uint32_t reg_addr, uint16_t gpio_pad) {
+    #if defined(CONFIG_SOC_SERIES_NRF54L)
+    uint8_t port = (uint8_t)(gpio_pad / 32U);
+    for (size_t i = 0; i < iobroker_gpio_port_count; i++) {
+        if (iobroker_gpio_port_indexes[i] == port) {
+            return (reg_addr >> 18) == (iobroker_gpio_port_addrs[i] >> 18);
+        }
+    }
+    return false;
+    #else
+    (void)reg_addr;
+    (void)gpio_pad;
+    return true;
+    #endif
+}
+
+// Whether an instance can drive every connected pad of a set of encoded
+// entries (disconnected entries pass).
+static bool nrf_instance_reaches_all(uint32_t reg_addr,
+    const pinctrl_soc_pin_t *pins, uint8_t pin_count) {
+    for (uint8_t i = 0; i < pin_count; i++) {
+        uint32_t pad = NRF_GET_PIN(pins[i]);
+        if (pad != NRF_PIN_DISCONNECTED && !nrf_instance_reaches_pad(reg_addr, (uint16_t)pad)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 // Check whether a set of requested entries matches the devicetree default
@@ -227,8 +267,13 @@ static int iobroker_route(const iobroker_instance_t *inst, iobroker_state_t *sta
 static int iobroker_allocate(const char *kind, const iobroker_instance_t *buses,
     size_t count, iobroker_state_t *states, const package_pin_t *requested,
     const pinctrl_soc_pin_t *pins, uint8_t pin_count, const struct device **dev_out) {
+    bool reachable = false;
     for (size_t i = 0; i < count; i++) {
         iobroker_state_t *state = &states[i];
+        if (!nrf_instance_reaches_all(buses[i].reg_addr, pins, pin_count)) {
+            continue;
+        }
+        reachable = true;
         if (state->in_use) {
             continue;
         }
@@ -264,6 +309,10 @@ static int iobroker_allocate(const char *kind, const iobroker_instance_t *buses,
             return 0;
         }
     }
+    if (!reachable) {
+        LOG_WRN("%s: no instance can be routed to the requested pins", kind);
+        return -EINVAL;
+    }
     LOG_WRN("%s: no free instance for the requested pins", kind);
     return -ENODEV;
 }
@@ -298,6 +347,12 @@ static bool iobroker_state_find(const struct device *dev, iobroker_state_t **sta
     for (size_t i = 0; i < iobroker_uart_bus_count; i++) {
         if (iobroker_uart_buses[i].dev == dev) {
             *state_out = &iobroker_uart_bus_states[i];
+            return true;
+        }
+    }
+    for (size_t i = 0; i < iobroker_pwm_bus_count; i++) {
+        if (iobroker_pwm_buses[i].dev == dev) {
+            *state_out = &iobroker_pwm_bus_states[i];
             return true;
         }
     }
@@ -444,6 +499,168 @@ int iobroker_uart_allocate(package_pin_t tx, package_pin_t rx,
     pins[3] = nrf_psel_encode(NRF_FUN_UART_CTS, cts_gpio, false);
     return iobroker_allocate("uart", iobroker_uart_buses, iobroker_uart_bus_count,
         iobroker_uart_bus_states, requested, pins, 4, dev_out);
+}
+
+// Allocate a whole PWM instance for one output pin, routed to its first
+// output (OUT0); the other outputs stay disconnected. Used for a new
+// channel group.
+static int nrf_pwm_instance_allocate(package_pin_t pin, const struct device **dev_out) {
+    LOG_INF("pwm allocate: pin=%u", (unsigned)pin);
+    // The pin goes to OUT0; OUT1..OUT3 stay disconnected, and are recorded as
+    // disconnected so the instance's pin list is complete.
+    const package_pin_t requested[] = { pin, IOBROKER_NO_PIN, IOBROKER_NO_PIN, IOBROKER_NO_PIN };
+    int ret = iobroker_check_request("pwm", requested, 1);
+    if (ret < 0) {
+        return ret;
+    }
+    uint16_t soc_pad;
+    uint16_t pad;
+    if (pin == IOBROKER_NO_PIN ||
+        iobroker_package_pin_soc_pad(pin, &soc_pad) < 0 ||
+        iobroker_pad_gpio(soc_pad, &pad) < 0) {
+        LOG_WRN("pwm allocate: package pin %u is unknown or has no GPIO", (unsigned)pin);
+        return -EINVAL;
+    }
+    char name[12];
+    LOG_INF("pwm allocate: OUT0 package pin %u -> %s", (unsigned)pin,
+        nrf_pad_name(pad, name, sizeof(name)));
+    pinctrl_soc_pin_t pins[4];
+    // Push-pull output, no pull.
+    pins[0] = nrf_psel_encode(NRF_FUN_PWM_OUT0, pad, false);
+    pins[1] = nrf_psel_encode(NRF_FUN_PWM_OUT1, IOBROKER_NO_PIN, false);
+    pins[2] = nrf_psel_encode(NRF_FUN_PWM_OUT2, IOBROKER_NO_PIN, false);
+    pins[3] = nrf_psel_encode(NRF_FUN_PWM_OUT3, IOBROKER_NO_PIN, false);
+    return iobroker_allocate("pwm", iobroker_pwm_buses, iobroker_pwm_bus_count,
+        iobroker_pwm_bus_states, requested, pins, 4, dev_out);
+}
+
+// Each PWM instance is one period group: its four outputs share COUNTERTOP
+// and PRESCALER.
+#define NRF_PWM_OUTPUTS 4
+BUILD_ASSERT(NRF_FUN_PWM_OUT1 == NRF_FUN_PWM_OUT0 + 1 &&
+    NRF_FUN_PWM_OUT2 == NRF_FUN_PWM_OUT0 + 2 &&
+    NRF_FUN_PWM_OUT3 == NRF_FUN_PWM_OUT0 + 3,
+    "PWM output function codes must be consecutive");
+static iobroker_state_t *nrf_pwm_state_find(const struct device *dev) {
+    for (size_t i = 0; i < iobroker_pwm_bus_count; i++) {
+        if (iobroker_pwm_buses[i].dev == dev) {
+            return &iobroker_pwm_bus_states[i];
+        }
+    }
+    return NULL;
+}
+
+// Connect output `out` of a running instance to a pad, or disconnect it when
+// pad is IOBROKER_NO_PIN. Only that output's PSEL (and its pad, when
+// connecting) is configured, so the instance's other outputs keep running
+// undisturbed. The stored states are updated too, so that the sleep state
+// applied at de-init covers exactly the connected pads.
+static int nrf_pwm_connect_output(const iobroker_instance_t *inst,
+    iobroker_state_t *state, uint8_t out, uint16_t pad) {
+    pinctrl_soc_pin_t psel = nrf_psel_encode(NRF_FUN_PWM_OUT0 + out, pad, false);
+    int ret = pinctrl_configure_pins(&psel, 1, inst->pcfg->reg);
+    if (ret < 0) {
+        LOG_WRN("pwm: connecting %s OUT%u failed: %d", inst->dev->name,
+            (unsigned)out, ret);
+        return ret;
+    }
+    state->default_pins[out] = psel;
+    state->sleep_pins[out] = psel | NRF_PSEL_LP;
+    return 0;
+}
+
+int iobroker_pwm_channel_allocate(package_pin_t pin, uint32_t frequency,
+    bool exclusive, const struct device **dev_out, uint32_t *channel_out) {
+    LOG_INF("pwm channel allocate: pin=%u frequency=%u exclusive=%u",
+        (unsigned)pin, (unsigned)frequency, (unsigned)exclusive);
+    const package_pin_t requested[] = { pin };
+    int ret = iobroker_check_request("pwm", requested, 1);
+    if (ret < 0) {
+        return ret;
+    }
+    uint16_t soc_pad;
+    uint16_t pad;
+    if (pin == IOBROKER_NO_PIN ||
+        iobroker_package_pin_soc_pad(pin, &soc_pad) < 0 ||
+        iobroker_pad_gpio(soc_pad, &pad) < 0) {
+        LOG_WRN("pwm channel allocate: package pin %u is unknown or has no GPIO",
+            (unsigned)pin);
+        return -EINVAL;
+    }
+
+    // Join a running group requested at the same frequency, with a free
+    // output.
+    for (size_t i = 0; i < iobroker_pwm_bus_count && !exclusive; i++) {
+        const iobroker_instance_t *inst = &iobroker_pwm_buses[i];
+        iobroker_state_t *state = &iobroker_pwm_bus_states[i];
+        if (!state->in_use || state->channels_used == 0 || state->exclusive ||
+            state->frequency != frequency ||
+            !nrf_instance_reaches_pad(inst->reg_addr, pad)) {
+            continue;
+        }
+        for (uint8_t out = 0; out < NRF_PWM_OUTPUTS; out++) {
+            if (state->channels_used & BIT(out)) {
+                continue;
+            }
+            if (nrf_pwm_connect_output(inst, state, out, pad) < 0) {
+                break;
+            }
+            state->channels_used |= BIT(out);
+            state->pins[out] = pin;
+            LOG_INF("pwm channel allocate: joined %s as OUT%u", inst->dev->name,
+                (unsigned)out);
+            *dev_out = inst->dev;
+            *channel_out = out;
+            return 0;
+        }
+    }
+
+    // Otherwise take a free instance, with the pin on OUT0.
+    const struct device *dev;
+    ret = nrf_pwm_instance_allocate(pin, &dev);
+    if (ret < 0) {
+        // No new PWM available.
+        return ret;
+    }
+    iobroker_state_t *state = nrf_pwm_state_find(dev);
+    state->frequency = frequency;
+    state->exclusive = exclusive;
+    state->channels_used = BIT(0);
+    *dev_out = dev;
+    *channel_out = 0;
+    return 0;
+}
+
+bool iobroker_pwm_channel_release(const struct device *dev, uint32_t channel) {
+    iobroker_state_t *state = nrf_pwm_state_find(dev);
+    if (state == NULL || channel >= NRF_PWM_OUTPUTS ||
+        !(state->channels_used & BIT(channel))) {
+        LOG_WRN("pwm channel release: %s channel %u is not allocated",
+            dev == NULL ? "(null)" : dev->name, (unsigned)channel);
+        return false;
+    }
+    const iobroker_instance_t *inst = &iobroker_pwm_buses[state - iobroker_pwm_bus_states];
+    package_pin_t pin = state->pins[channel];
+    uint16_t soc_pad;
+    bool have_pad = iobroker_package_pin_soc_pad(pin, &soc_pad) == 0;
+
+    state->channels_used &= ~BIT(channel);
+    if (state->channels_used == 0) {
+        // Last channel: release the whole group. De-init applies the sleep
+        // state to the instance's pads.
+        state->frequency = 0;
+        state->exclusive = false;
+        (void)iobroker_release(dev);
+    } else {
+        (void)nrf_pwm_connect_output(inst, state, (uint8_t)channel, IOBROKER_NO_PIN);
+        state->pins[channel] = IOBROKER_NO_PIN;
+    }
+    if (have_pad) {
+        iobroker_gpio_pad_quiesce(soc_pad);
+    }
+    LOG_INF("pwm channel release: %s OUT%u (%s)", dev->name, (unsigned)channel,
+        state->in_use ? "group still running" : "group released");
+    return true;
 }
 
 #endif // IOBROKER_ROUTING

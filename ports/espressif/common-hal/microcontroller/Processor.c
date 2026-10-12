@@ -15,11 +15,10 @@
 #include "shared-bindings/microcontroller/Processor.h"
 #include "shared-bindings/microcontroller/ResetReason.h"
 
+#include "esp_mac.h"
 #include "esp_sleep.h"
 #include "esp_system.h"
 #include "esp_pm.h"
-
-#include "soc/efuse_reg.h"
 
 #if !defined(CONFIG_IDF_TARGET_ESP32)
 #include "driver/temperature_sensor.h"
@@ -111,59 +110,12 @@ void common_hal_mcu_processor_set_frequency(mcu_processor_obj_t *self, uint32_t 
 }
 #endif
 
-#ifndef CONFIG_IDF_TARGET_ESP32P4
-static uint8_t swap_nibbles(uint8_t v) {
-    return ((v << 4) | (v >> 4)) & 0xff;
-}
-#endif
-
 void common_hal_mcu_processor_get_uid(uint8_t raw_id[]) {
-    #ifndef CONFIG_IDF_TARGET_ESP32P4
-    memset(raw_id, 0, COMMON_HAL_MCU_PROCESSOR_UID_LENGTH);
-
-    uint8_t *ptr = &raw_id[COMMON_HAL_MCU_PROCESSOR_UID_LENGTH - 1];
-    // MAC address contains 48 bits (6 bytes), 32 in the low order word
-
-    #if defined(CONFIG_IDF_TARGET_ESP32)
-    uint32_t mac_address_part = REG_READ(EFUSE_BLK0_RDATA1_REG);
-    #elif defined(CONFIG_IDF_TARGET_ESP32H2)
-    uint32_t mac_address_part = REG_READ(EFUSE_RD_MAC_SYS_0_REG);
-    #elif defined(CONFIG_IDF_TARGET_ESP32C2)
-    uint32_t mac_address_part = REG_READ(EFUSE_RD_BLK2_DATA0_REG);
-    #elif defined(CONFIG_IDF_TARGET_ESP32C61) || defined(CONFIG_IDF_TARGET_ESP32C5)
-    uint32_t mac_address_part = REG_READ(EFUSE_RD_MAC_SYS0_REG);
-    #else
-    uint32_t mac_address_part = REG_READ(EFUSE_RD_MAC_SPI_SYS_0_REG);
-    #endif
-
-    *ptr-- = swap_nibbles(mac_address_part & 0xff);
-    mac_address_part >>= 8;
-    *ptr-- = swap_nibbles(mac_address_part & 0xff);
-    mac_address_part >>= 8;
-    *ptr-- = swap_nibbles(mac_address_part & 0xff);
-    mac_address_part >>= 8;
-    *ptr-- = swap_nibbles(mac_address_part & 0xff);
-
-    // and 16 in the high order word
-    #if defined(CONFIG_IDF_TARGET_ESP32)
-    mac_address_part = REG_READ(EFUSE_BLK0_RDATA2_REG);
-    #elif defined(CONFIG_IDF_TARGET_ESP32H2)
-    mac_address_part = REG_READ(EFUSE_RD_MAC_SYS_1_REG);
-    #elif defined(CONFIG_IDF_TARGET_ESP32C2)
-    mac_address_part = REG_READ(EFUSE_RD_BLK2_DATA1_REG);
-    #elif defined(CONFIG_IDF_TARGET_ESP32C61) || defined(CONFIG_IDF_TARGET_ESP32C5)
-    mac_address_part = REG_READ(EFUSE_RD_MAC_SYS1_REG);
-    #else
-    mac_address_part = REG_READ(EFUSE_RD_MAC_SPI_SYS_1_REG);
-    #endif
-
-    *ptr-- = swap_nibbles(mac_address_part & 0xff);
-    mac_address_part >>= 8;
-    *ptr-- = swap_nibbles(mac_address_part & 0xff);
-    #else
-    // TODO: Get UID for ESP32-P4.
-    return;
-    #endif
+    // The factory MAC is six bytes even on IEEE 802.15.4 chips.
+    // USB descriptor setup also calls this outside the VM, so do not raise.
+    if (esp_read_mac(raw_id, ESP_MAC_EFUSE_FACTORY) != ESP_OK) {
+        memset(raw_id, 0, COMMON_HAL_MCU_PROCESSOR_UID_LENGTH);
+    }
 }
 
 mcu_reset_reason_t common_hal_mcu_processor_get_reset_reason(void) {

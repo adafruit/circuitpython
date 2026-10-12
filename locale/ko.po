@@ -923,7 +923,9 @@ msgstr "사용중인 모든 UART주변 기기"
 #: ports/mimxrt10xx/common-hal/pwmio/PWMOut.c
 #: ports/raspberrypi/bindings/picodvi/Framebuffer.c
 #: ports/raspberrypi/bindings/rp2pio/StateMachine.c
-#: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c py/argcheck.c
+#: ports/raspberrypi/common-hal/picodvi/AudioOut.c
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
+#: ports/raspberrypi/common-hal/usb_host_bulk/InStream.c py/argcheck.c
 #: shared-bindings/digitalio/DigitalInOut.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c
 #: shared-bindings/i2cioexpander/IOPin.c shared-bindings/mipidsi/Display.c
@@ -1075,7 +1077,8 @@ msgstr "모든 이벤트 채널이 사용 중입니다"
 msgid "No pull up found on SDA or SCL; check your wiring"
 msgstr "SDA 또는 SCL에서 풀업을 찾을 수 없습니다; 케이블 연결을 확인하십시오"
 
-#: ports/atmel-samd/common-hal/busio/UART.c
+#: ports/atmel-samd/common-hal/busio/UART.c shared-bindings/usb/core/Device.c
+#: shared-bindings/usb_host_bulk/InStream.c
 msgid "%q must be power of 2"
 msgstr "%q는 2의 거듭제곱이어야 합니다"
 
@@ -1158,6 +1161,7 @@ msgstr "Bus 핀 %d은 이미 사용 중입니다"
 #: ports/atmel-samd/common-hal/picogame/Display.c
 #: ports/espressif/common-hal/espidf/__init__.c
 #: ports/raspberrypi/common-hal/picogame/Display.c
+#: ports/raspberrypi/common-hal/usb_host_bulk/InStream.c
 #: shared-bindings/picogame/Canvas.c shared-bindings/picogame/__init__.c
 msgid "Operation or feature not supported"
 msgstr "작업 또는 기능이 지원되지 않습니다"
@@ -1244,6 +1248,7 @@ msgstr ""
 
 #: ports/espressif/bindings/espnow/ESPNow.c
 #: ports/espressif/common-hal/espulp/ULP.c
+#: ports/raspberrypi/common-hal/usb_host_bulk/InStream.c
 #: shared-module/memorymonitor/AllocationAlarm.c
 #: shared-module/memorymonitor/AllocationSize.c
 msgid "Already running"
@@ -1259,6 +1264,7 @@ msgstr ""
 
 #: ports/espressif/boards/adafruit_feather_esp32c6_4mbflash_nopsram/mpconfigboard.h
 #: ports/espressif/boards/adafruit_itsybitsy_esp32/mpconfigboard.h
+#: ports/espressif/boards/waveshare_esp32_c5_lcd_1_47/mpconfigboard.h
 #: ports/espressif/boards/waveshare_esp32_c6_lcd_1_47/mpconfigboard.h
 msgid "You pressed the BOOT button at start up."
 msgstr ""
@@ -1683,13 +1689,14 @@ msgstr "프로그램이 너무 깁니다"
 #: ports/espressif/common-hal/qspibus/QSPIBus.c
 #: ports/mimxrt10xx/common-hal/audiobusio/__init__.c
 #: ports/mimxrt10xx/common-hal/usb_host/Port.c
+#: ports/raspberrypi/common-hal/picodvi/AudioOut.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2350.c
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 #: ports/raspberrypi/common-hal/usb_host/Port.c
 #: shared-bindings/digitalio/DigitalInOut.c shared-bindings/emmcio/EMMC.c
 #: shared-bindings/i2cioexpander/IOPin.c shared-bindings/microcontroller/Pin.c
-#: shared-module/max3421e/Max3421E.c
+#: shared-module/max3421e/Max3421E.c shared-module/usb/core/Device.c
 msgid "%q in use"
 msgstr "%q 사용 중입니다"
 
@@ -1744,7 +1751,9 @@ msgstr ""
 msgid "pop from an empty PulseIn"
 msgstr ""
 
-#: ports/espressif/common-hal/qspibus/QSPIBus.c shared-module/usb/core/Device.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
+#: ports/raspberrypi/common-hal/usb_host_bulk/InStream.c
+#: shared-module/usb/core/Device.c
 msgid "Could not allocate DMA capable buffer"
 msgstr ""
 
@@ -1998,6 +2007,13 @@ msgstr "오디오 변환이 구현되지 않음"
 #: shared-module/displayio/__init__.c shared-module/synthio/Synthesizer.c
 msgid "%q must be of type %q or %q, not %q"
 msgstr "%q는 %q가 아닌 %q 또는 %q 유형이어야 합니다"
+
+#: ports/raspberrypi/bindings/picodvi/AudioOut.c
+#: shared-bindings/audiobusio/I2SOut.c shared-bindings/audioio/AudioOut.c
+#: shared-bindings/audiopwmio/PWMAudioOut.c shared-bindings/mcp4822/MCP4822.c
+#: shared-bindings/usb_audio/USBMicrophone.c
+msgid "Not playing"
+msgstr "재생되지 않았습니다"
 
 #: ports/raspberrypi/bindings/rp2pio/StateMachine.c
 msgid "Program size invalid"
@@ -3959,12 +3975,6 @@ msgstr ""
 msgid "%q must be a bytearray or array of type 'H' or 'B'"
 msgstr "%q는 'H' 또는 'B' 타입의 바이트 배열 또는 배열이어야 합니다"
 
-#: shared-bindings/audiobusio/I2SOut.c shared-bindings/audioio/AudioOut.c
-#: shared-bindings/audiopwmio/PWMAudioOut.c shared-bindings/mcp4822/MCP4822.c
-#: shared-bindings/usb_audio/USBMicrophone.c
-msgid "Not playing"
-msgstr "재생되지 않았습니다"
-
 #: shared-bindings/audiobusio/PDMIn.c
 msgid "%q must be multiple of 8."
 msgstr ""
@@ -4746,6 +4756,10 @@ msgstr "키가 유효하지 않습니다"
 #: shared-module/ssl/SSLSocket.c
 msgid "invalid cert"
 msgstr "cert가 유효하지 않습니다"
+
+#: shared-module/storage/__init__.c
+msgid "File write in progress"
+msgstr ""
 
 #: shared-module/storage/__init__.c
 msgid "Mount point directory missing"

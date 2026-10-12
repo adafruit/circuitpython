@@ -20,6 +20,6 @@ extern void common_hal_watchdog_set_timeout(watchdog_watchdogtimer_obj_t *self, 
 extern mp_float_t common_hal_watchdog_get_timeout(watchdog_watchdogtimer_obj_t *self);
 
 extern void common_hal_watchdog_enable(watchdog_watchdogtimer_obj_t *self);
-extern void common_hal_watchdog_deinit(watchdog_watchdogtimer_obj_t *self);
+extern void common_hal_watchdog_reset(watchdog_watchdogtimer_obj_t *self);
 
 extern const mp_obj_type_t watchdog_watchdogtimer_type;

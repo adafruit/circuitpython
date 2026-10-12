@@ -1,0 +1,43 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 Dan Halbert for Adafruit Industries LLC
+# SPDX-License-Identifier: MIT
+
+description: |
+  Emulated PWM controller for native_sim tests. It produces no output: it
+  records the period and pulse each channel is set to, and with Perfetto
+  tracing emits them on the counter tracks "pwm.NN.period" and
+  "pwm.NN.pulse". Channel N stands for GPIO N. Only one controller is
+  supported.
+
+  Channels that share a period form a group. Any channel can join any
+  group, and a group has no channel limit; the number of groups is set by
+  the groups property. The driver itself only records settings: CircuitPython's
+  iobroker module hands out the groups.
+
+compatible: "adafruit,pwm-emul"
+
+include: [pwm-controller.yaml, base.yaml]
+
+properties:
+  channels:
+    required: true
+
+  clock-frequency:
+    type: int
+    required: true
+    description: |
+      Frequency in Hz that pwm_get_cycles_per_sec() reports; periods and
+      pulses are counted in cycles of this clock.
+
+  groups:
+    type: int
+    required: true
+    description: |
+      Number of period groups (sets of channels sharing a period) available.
+
+  "#pwm-cells":
+    const: 3
+
+pwm-cells:
+  - channel
+  - period
+  - flags

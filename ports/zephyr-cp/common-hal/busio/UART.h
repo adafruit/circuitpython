@@ -27,6 +27,9 @@ typedef struct {
     const mcu_pin_obj_t *cts;
 
     bool rx_paused;     // set by irq if no space in rbuf
+    // Set when the sender waits for unread data (USB CDC), so RX can
+    // pause on a full msgq instead of dropping bytes.
+    bool flow_control;
 
     // True when the underlying Zephyr device was dynamically routed to the
     // pins above at construction time. Such objects own their receiver

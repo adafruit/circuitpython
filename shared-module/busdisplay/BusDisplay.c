@@ -480,8 +480,9 @@ void reset_busdisplay(busdisplay_busdisplay_obj_t *self) {
     circuitpython_splash.x = 0; // reset position in case someone moved it.
     circuitpython_splash.y = 0;
     supervisor_start_terminal(self->core.width, self->core.height);
-    if (!circuitpython_splash.in_group) {
-        common_hal_busdisplay_busdisplay_set_root_group(self, &circuitpython_splash);
+    // Show the splash if it is free, otherwise nothing. Other groups are on the VM heap.
+    if (!displayio_display_core_set_root_group(&self->core, &circuitpython_splash)) {
+        displayio_display_core_set_root_group(&self->core, NULL);
     }
 }
 

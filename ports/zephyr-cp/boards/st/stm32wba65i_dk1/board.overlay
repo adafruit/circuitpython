@@ -3,6 +3,22 @@
     status = "okay";
 };
 
+/* The board's &rtc node is already status-okay in the upstream devicetree, so
+ * alias it so the rtc module picks it up like other RTC boards do. */
+/ {
+	aliases {
+		rtc = &rtc;
+	};
+};
+
+/* The upstream board devicetree already enables the IWDG; the alias only
+ * exposes it to the watchdog module. */
+/ {
+	aliases {
+		watchdog0 = &iwdg;
+	};
+};
+
 /* The USB device controller (zephyr_udc0, including the OTG HS PHY and the
  * HSE/VOS clocking it needs) and the joystick-selector boot button are
  * defined in the mcuboot fork's dts/st/stm32wba65i_dk1.dtsi, which sysbuild

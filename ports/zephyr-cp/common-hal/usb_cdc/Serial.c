@@ -12,6 +12,7 @@
 
 mp_obj_t common_hal_usb_cdc_serial_construct_from_device(usb_cdc_serial_obj_t *self, const struct device *uart_device, uint16_t receiver_buffer_size, byte *receiver_buffer) {
     common_hal_busio_uart_construct_from_device(self, uart_device, receiver_buffer_size, receiver_buffer);
+    self->flow_control = true;
     self->base.type = &usb_cdc_serial_type;
     return MP_OBJ_FROM_PTR(self);
 }

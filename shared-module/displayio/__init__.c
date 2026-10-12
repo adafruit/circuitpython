@@ -394,6 +394,11 @@ void displayio_gc_collect(void) {
             common_hal_aurora_epaper_framebuffer_collect_ptrs(&display_buses[i].aurora_epaper);
         }
         #endif
+        #if CIRCUITPY_PICODVI_AUDIOOUT
+        if (display_bus_type == &picodvi_framebuffer_type) {
+            gc_collect_ptr(display_buses[i].picodvi.audioout);
+        }
+        #endif
     }
 
     for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {

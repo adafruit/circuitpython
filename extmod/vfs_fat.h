@@ -47,10 +47,13 @@ extern const mp_obj_type_t mp_type_vfs_fat_textio;
 
 MP_DECLARE_CONST_FUN_OBJ_3(fat_vfs_open_obj);
 
-// CIRCUITPY-CHANGE
+// CIRCUITPY-CHANGE: moved here from vfs_fat_file.c so other code can use the FIL.
+// holds_lock added.
 typedef struct _pyb_file_obj_t {
     mp_obj_base_t base;
     FIL fp;
+    // True if this file took the filesystem lock when it was opened for writing.
+    bool holds_lock;
 } pyb_file_obj_t;
 
 #endif  // MICROPY_INCLUDED_EXTMOD_VFS_FAT_H

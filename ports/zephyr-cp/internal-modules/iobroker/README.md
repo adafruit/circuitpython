@@ -1,8 +1,9 @@
 # iobroker
 
 A Zephyr module for **dynamic peripheral allocation and runtime pin routing**:
-pick a free bus instance (I2C, SPI, UART) enabled in the devicetree, re-route
-it to requested pins at runtime and hand the Zephyr device to the caller.
+pick a free peripheral instance (I2C, SPI, UART, PWM) enabled in the
+devicetree, re-route it to requested pins at runtime and hand the Zephyr
+device to the caller.
 
 Pins are specified using `package_pin_t` and represent a single pin on a package
 or module containing a system-on-a-chip (SoC). This is the most common boundary
@@ -84,6 +85,7 @@ provide per-board tables (the generated `board.c` always emits them):
 const iobroker_instance_t iobroker_i2c_buses[];   // + _states[] and _bus_count
 const iobroker_instance_t iobroker_spi_buses[];   // ...
 const iobroker_instance_t iobroker_uart_buses[];  // ...
+const iobroker_instance_t iobroker_pwm_buses[];   // ...
 const struct device * const iobroker_gpio_port_devices[];  // + _indexes[] and _count
 const iobroker_package_pin_t iobroker_package_pins[];   // + _pin_count
 const uint16_t iobroker_reserved_pads[];   // + _pin_count
@@ -158,6 +160,31 @@ quiescent state (disconnected) on release, and GPIO claims conflict with bus
 allocations the same way bus allocations conflict with each other.
 `iobroker_gpio_allocate()` resolves the package pin through the map
 and returns both the GPIO controller device and the pin number within it.
+PWM channels are allocated with `iobroker_pwm_channel_allocate()`, which
+shares an instance between pins. Channels that share a period form a group
+(for instance, on nRF, the four outputs of an instance; on other SoCs this
+might be a slice or a timer). The call takes the requested frequency only as
+the sharing key: it joins a running group requested at exactly the same
+frequency and with a free channel, or takes a free instance. It returns the
+device and the channel number; the caller turns the frequency into a period
+itself and passes it to `pwm_set_cycles()`. Checking that the hardware can
+produce that period is left to the driver, which doesn't reliably do so yet.
+Joining or leaving a running group connects or disconnects only that one
+output, so the group's other outputs are not disturbed. An exclusive request
+gets a group of its own that nobody joins: pwmio uses it for a variable
+frequency, and neopixel_write to program a whole nRF instance itself.
+`iobroker_pwm_channel_release()` returns a channel; the group's last channel
+releases the instance.
+
+Not every instance can reach every pad. On nRF52 and nRF53 the routing is a
+full crossbar, but on nRF54L peripherals and GPIO controllers are grouped in
+power domains and a peripheral can only drive pads of its own domain (the
+domain is encoded in the register addresses, which the instance and GPIO
+controller tables carry). An allocate call whose pins no instance of the
+requested kind can reach fails with `-EINVAL`, like a pin that is not in
+the package map: it is a property of the request, distinct from `-ENODEV`
+for "every instance that could is busy", so callers can report a wrong pin
+choice rather than a busy peripheral.
 `iobroker_gpio_package_pin()` maps a GPIO controller's hardware port index
 and pin number (the two halves of the global pin numbering) back to the
 package pin the pad is bonded to.

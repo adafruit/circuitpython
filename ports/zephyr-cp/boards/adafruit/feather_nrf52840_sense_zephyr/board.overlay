@@ -84,6 +84,78 @@
 				<NRF_PSEL_DISCONNECTED(UART_RX)>;
 		};
 	};
+
+	pwm0_dyn_default: pwm0_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
+
+	pwm0_dyn_sleep: pwm0_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
+
+	pwm1_dyn_default: pwm1_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
+
+	pwm1_dyn_sleep: pwm1_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
+
+	pwm2_dyn_default: pwm2_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
+
+	pwm2_dyn_sleep: pwm2_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
+
+	pwm3_dyn_default: pwm3_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
+
+	pwm3_dyn_sleep: pwm3_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
 };
 
 &i2c1 {
@@ -126,6 +198,42 @@
 
 &uart0 {
     status = "okay";
+};
+
+// PWM instances, same scheme: all four outputs disconnected and deferred
+// init, so iobroker can hand an instance to neopixel_write and pwmio and
+// route its outputs at runtime.
+
+&pwm0 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&pwm0_dyn_default>;
+	pinctrl-1 = <&pwm0_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&pwm1 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&pwm1_dyn_default>;
+	pinctrl-1 = <&pwm1_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&pwm2 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&pwm2_dyn_default>;
+	pinctrl-1 = <&pwm2_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&pwm3 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&pwm3_dyn_default>;
+	pinctrl-1 = <&pwm3_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
 };
 
 #include "../../../app.overlay"

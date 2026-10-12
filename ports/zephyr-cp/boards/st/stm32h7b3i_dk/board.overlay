@@ -23,4 +23,19 @@ zephyr_udc0: &usbotg_hs {
     status = "okay";
 };
 
+// Enable the SoC watchdog and expose it through the `watchdog0` alias
+// (Zephyr's watchdog sample selection) for the watchdog module. The IWDG
+// doesn't start on boot (START_ACTIVE_BY_DEFAULT is off); it only arms when
+// Python code sets a mode. It cannot be stopped once armed, like the native
+// STM32 CircuitPython port.
+&iwdg {
+	status = "okay";
+};
+
+/ {
+	aliases {
+		watchdog0 = &iwdg;
+	};
+};
+
 #include "../../../app.overlay"

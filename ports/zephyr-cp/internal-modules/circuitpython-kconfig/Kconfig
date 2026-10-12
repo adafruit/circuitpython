@@ -47,6 +47,23 @@ config PINCTRL_DYNAMIC
 config DEVICE_DEINIT_SUPPORT
 	default y if SOC_FAMILY_NORDIC_NRF
 
+# ===== Interrupt locking versus the Bluetooth controller (nRF) =====
+# CircuitPython cannot bound its critical sections (bitbangio, onewireio, user
+# code calling disable_interrupts(), the neopixel_write bit-bang fallback).
+#
+# Let the controller's radio interrupts (BT_CTLR_ZLI, default on) bypass
+# irq_lock(), as the SoftDevice's interrupts do in ports/nordic.
+config ZERO_LATENCY_IRQS
+	default y if SOC_FAMILY_NORDIC_NRF
+
+# The upper link layer schedules each radio event from an ordinary interrupt
+# and the controller allows 733 us (EVENT_OVERHEAD_START_US) for that to run.
+# Zephyr's default makes a longer delay a fatal assertion that halts the
+# system; with the assertion off the controller skips the delayed radio event
+# instead, which is the behavior we want.
+config BT_CTLR_ASSERT_OVERHEAD_START
+	default n if SOC_FAMILY_NORDIC_NRF
+
 # ===== Bluetooth defaults =====
 
 # Use a variable for the chosen name so the comma isn't parsed as an argument separator
@@ -124,6 +141,21 @@ config BT_SETTINGS
 
 config BT_KEYS_OVERWRITE_OLDEST
 	default y
+
+# The BLE controller's "Assert on Prepare Latency" (lll_adv prepare_cb) halts
+# the whole system with a kernel oops in the radio ISR when an ADV/connection
+# event starts late. CircuitPython runs arbitrary user Python code, so the
+# controller can never assume bounded CPU latency between events: a VM busy
+# with GC, printing or a big allocation will occasionally push an event past
+# its planned start (Zephyr GitHub issue #67868 fails exactly like this under
+# CPU overheads). Defining the default here puts it before Zephyr's
+# controller Kconfig, and Kconfig takes the first default, so late events are
+# skipped gracefully instead of halting, as Zephyr's help text recommends.
+# (The symbol resolves as promptless in this port's Kconfig tree - its
+# visibility is 0 - so setting CONFIG_BT_CTLR_ASSERT_OVERHEAD_START=n in
+# prj.conf/debug.conf is silently ignored, hence this defaults-module entry.)
+config BT_CTLR_ASSERT_OVERHEAD_START
+	default n
 
 # ===== OTA firmware updates over BLE (SMP/MCUmgr) =====
 #

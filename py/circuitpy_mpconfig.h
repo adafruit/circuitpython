@@ -256,6 +256,11 @@ typedef long mp_off_t;
 #define MICROPY_CPYTHON_EXCEPTION_CHAIN       (CIRCUITPY_FULL_BUILD)
 #endif
 
+// Allow %e/%f/%g in mp_printf().
+#ifndef MICROPY_PRINTF_FLOAT
+#define MICROPY_PRINTF_FLOAT                  (CIRCUITPY_FULL_BUILD && MICROPY_PY_BUILTINS_FLOAT)
+#endif
+
 #define MICROPY_PY_BUILTINS_POW3              (CIRCUITPY_BUILTINS_POW3)
 #define MICROPY_PY_FSTRINGS                   (1)
 #define MICROPY_MODULE_WEAK_LINKS             (0)
@@ -600,6 +605,11 @@ void background_callback_run_all(void);
 
 #ifndef CIRCUITPY_USB_HOST_HIGH_SPEED
 #define CIRCUITPY_USB_HOST_HIGH_SPEED 0
+#endif
+
+// usb_host_bulk takes a usb.core.Device and uses TinyUSB host calls.
+#if CIRCUITPY_USB_HOST_BULK && !(CIRCUITPY_USB_HOST && CIRCUITPY_PYUSB)
+#error CIRCUITPY_USB_HOST_BULK requires CIRCUITPY_USB_HOST and CIRCUITPY_PYUSB
 #endif
 
 // If the port requires certain USB endpoint numbers, define these in mpconfigport.h.

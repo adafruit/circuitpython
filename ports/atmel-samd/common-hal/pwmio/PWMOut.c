@@ -55,6 +55,22 @@ static bool channel_ok(const pin_timer_t *t) {
            t->is_tc;
 }
 
+// Find the divisor that gets the highest resolution: the smallest prescaler for which
+// the period fits in the timer. Sets *top to the period.
+static uint8_t compute_divisor(const pin_timer_t *t, uint32_t system_clock, uint32_t frequency,
+    uint32_t *top) {
+    // TCC resolution varies so look it up.
+    uint8_t resolution = t->is_tc ? 16 : tcc_sizes[t->index];
+    uint8_t divisor;
+    for (divisor = 0; divisor < 8; divisor++) {
+        *top = (system_clock / prescaler[divisor] / frequency) - 1;
+        if (*top < (1u << resolution)) {
+            break;
+        }
+    }
+    return divisor;
+}
+
 pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
     const mcu_pin_obj_t *pin,
     uint16_t duty,
@@ -141,22 +157,8 @@ pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
             return PWMOUT_INTERNAL_RESOURCES_IN_USE;
         }
 
-        uint8_t resolution = 0;
-        if (timer->is_tc) {
-            resolution = 16;
-        } else {
-            // TCC resolution varies so look it up.
-            resolution = tcc_sizes[timer->index];
-        }
-        // First determine the divisor that gets us the highest resolution.
         uint32_t top;
-        uint8_t divisor;
-        for (divisor = 0; divisor < 8; divisor++) {
-            top = (system_clock / prescaler[divisor] / frequency) - 1;
-            if (top < (1u << resolution)) {
-                break;
-            }
-        }
+        uint8_t divisor = compute_divisor(timer, system_clock, frequency, &top);
 
         set_timer_handler(timer->is_tc, timer->index, TC_HANDLER_NO_INTERRUPT);
         // We use the zeroeth clock on either port to go full speed.
@@ -333,21 +335,8 @@ void common_hal_pwmio_pwmout_set_frequency(pwmio_pwmout_obj_t *self,
         mp_arg_error_invalid(MP_QSTR_frequency);
     }
     const pin_timer_t *t = self->timer;
-    uint8_t resolution;
-    if (t->is_tc) {
-        resolution = 16;
-    } else {
-        // TCC resolution varies so look it up.
-        resolution = tcc_sizes[t->index];
-    }
     uint32_t new_top;
-    uint8_t new_divisor;
-    for (new_divisor = 0; new_divisor < 8; new_divisor++) {
-        new_top = (system_clock / prescaler[new_divisor] / frequency) - 1;
-        if (new_top < (1u << resolution)) {
-            break;
-        }
-    }
+    uint8_t new_divisor = compute_divisor(t, system_clock, frequency, &new_top);
     if (t->is_tc) {
         Tc *tc = tc_insts[t->index];
         uint8_t old_divisor = tc->COUNT16.CTRLA.bit.PRESCALER;

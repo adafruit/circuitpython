@@ -121,7 +121,7 @@ void shared_module_usb_video_swapbuffers(void) {
 }
 
 size_t usb_video_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *descriptor_counts, uint8_t *current_interface_string) {
-    usb_add_interface_string(*current_interface_string, "CircuitPython UVC");
+    usb_add_interface_name(*current_interface_string, NULL, "UVC");
     const uint8_t usb_video_descriptor[] = {
         #if CFG_TUD_VIDEO_STREAMING_BULK
         TUD_VIDEO_CAPTURE_DESCRIPTOR_UNCOMPR_BULK(*current_interface_string, descriptor_counts->current_endpoint | 0x80, usb_video_frame_width, usb_video_frame_height, DEFAULT_FRAME_RATE, 64, descriptor_counts->current_interface, descriptor_counts->current_interface + 1)
