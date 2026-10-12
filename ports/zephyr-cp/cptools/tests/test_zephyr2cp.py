@@ -24,6 +24,7 @@ from zephyr2cp import (
     MINIMUM_RAM_SIZE,
     add_toml_pin_names,
     _toml_status_pin,
+    _dynamically_routable,
 )
 
 
@@ -796,3 +797,50 @@ class TestTomlStatusPin:
     def test_unknown_name_raises(self):
         with pytest.raises(RuntimeError, match="STATUS_NEOPIXEL = 'NOPE' is not a board pin name"):
             _toml_status_pin({"STATUS_NEOPIXEL": "NOPE"}, self.BOARD_NAMES, "STATUS_NEOPIXEL")
+
+
+class TestDynamicallyRoutable:
+    """Test suite for _dynamically_routable function."""
+
+    def _bus(self, group):
+        dts = f"""
+/dts-v1/;
+
+/ {{
+    pinctrl {{
+        bus_default: bus_default {{
+            group1 {{
+                {group}
+            }};
+        }};
+    }};
+
+    bus: bus@1000 {{
+        reg = <0x1000 0x100>;
+        pinctrl-0 = <&bus_default>;
+        pinctrl-names = "default";
+    }};
+}};
+"""
+        return parse_dts_string(dts).label2node["bus"]
+
+    def test_nrf_all_disconnected(self):
+        assert _dynamically_routable(self._bus("psels = <0x0b0001ff 0x0c0001ff>;"))
+
+    def test_nrf_connected(self):
+        assert not _dynamically_routable(self._bus("psels = <0x0b00000a 0x0c0001ff>;"))
+
+    def test_pinmux_without_psels(self):
+        assert not _dynamically_routable(self._bus("pinmux = <0x1234 0x5678>;"))
+
+    def test_no_pinctrl(self):
+        dts = """
+/dts-v1/;
+
+/ {
+    bus: bus@1000 {
+        reg = <0x1000 0x100>;
+    };
+};
+"""
+        assert not _dynamically_routable(parse_dts_string(dts).label2node["bus"])

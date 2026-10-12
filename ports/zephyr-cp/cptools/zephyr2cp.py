@@ -550,6 +550,17 @@ def _pinctrl_default_psels(node):
     return psels
 
 
+def _dynamically_routable(node):
+    """Return True when every nRF psel in the node's default pinctrl state is
+    disconnected. Pinctrl states on other SoCs have no psels, so their buses
+    keep the pins the devicetree gives them.
+    """
+    psels = _pinctrl_default_psels(node)
+    return bool(psels) and all(
+        (value & NRF_PIN_FIELD_MASK) == NRF_PIN_FIELD_MASK for value in psels
+    )
+
+
 def _populate_input_key_names():
     header = (
         pathlib.Path(__file__).parent.parent
@@ -1300,11 +1311,7 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir, mpconfig
     iobroker_labels = set()
     for driver in BUSIO_CLASSES:
         for labels in active_zephyr_devices.get(driver, []):
-            node = device_tree.label2node[labels[0]]
-            psels = _pinctrl_default_psels(node)
-            if psels is not None and all(
-                (value & NRF_PIN_FIELD_MASK) == NRF_PIN_FIELD_MASK for value in psels
-            ):
+            if _dynamically_routable(device_tree.label2node[labels[0]]):
                 iobroker_labels.add(labels[0])
 
     zephyr_binding_headers = []
