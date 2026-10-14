@@ -1,0 +1,28 @@
+/* This board boots via the Adaboot MCUboot fork. Its
+ * bootloader/mcuboot/dts/renesas/ek_ra6m5.dtsi owns the partition layout
+ * (boot, slot0 and storage on the internal code flash, nvm on the data
+ * flash) and is applied to both the bootloader and the application image
+ * by sysbuild, so no partition definitions belong here. CIRCUITPY gets the
+ * fatfs_partition the layout carves from the 32 MB QSPI NOR (mx25l25645g).
+ *
+ * Disable OFS (Option Function Select) nodes so their high-address
+ * sections don't end up in the app HEX. MCUboot's own build still has
+ * them, so the merged HEX programs OFS correctly.
+ */
+&option_setting_ofs0        { status = "disabled"; };
+&option_setting_dualsel     { status = "disabled"; };
+&option_setting_ofs1_sec    { status = "disabled"; };
+&option_setting_banksel_sec { status = "disabled"; };
+&option_setting_bps_sec     { status = "disabled"; };
+&option_setting_pbps_sec    { status = "disabled"; };
+&option_setting_ofs1_sel    { status = "disabled"; };
+&option_setting_banksel_sel { status = "disabled"; };
+&option_setting_bps_sel     { status = "disabled"; };
+
+/* The RA WDT driver (r_wdt.c) doesn't build for RA6M5: it uses
+ * BSP_CFG_OPTION_SETTING_OFS0, which the RA6M5 BSP config doesn't define.
+ * Disable the wdt node so the driver isn't enabled and the watchdog module
+ * stays off. */
+&wdt { status = "disabled"; };
+
+#include "../../../app.overlay"

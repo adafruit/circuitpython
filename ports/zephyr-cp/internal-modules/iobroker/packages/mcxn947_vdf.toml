@@ -1,0 +1,954 @@
+# Package pin map for mcxn947_vdf, transcribed from MCXNP184M150F70.pdf,
+# section 6.1 Table 93 (Pinmux), 184BGA column ("ALL": the same ball
+# assignments apply across the family), with a one-off pdftotext -layout
+# parse of the datasheet and the workbook's ball map. Review against the NXP package drawing (98ASA01888D) before
+# editing by hand; regenerate instead when the datasheet changes.
+#
+# Ball packages: 'pin' numbers the 184 present balls sequentially in
+# row-major order (the datasheet only labels them, e.g. A17), so power
+# balls leave gaps; the pad->pin ids come from the package's Pinout
+# workbook (MCXNP184M150F70_Pinout.xlsx, VFBGA184 tab).
+#
+
+# The ``gpio`` column is the pad's global GPIO number (gpio port index * 32
+# + pin, the numbering the GPIO controller table resolves) when the pad
+# bonds a GPIO controller; pads without it (the analog-only pads) are
+# reachable only through the analog APIs.
+
+# The analog-only pads (Pad type - ANA, no GPIO controller) carry the
+# datasheet's ANA_x pad names and integrate into the row-major ball
+# numbering; zephyr2cp turns them into pin objects named by their
+# pad_name:
+#   ANA_0 = ADC0_A0 (ball P3, pad 139)
+#   ANA_1 = ADC0_B0 (ball R3, pad 150)
+#   ANA_14 = OPAMP0_INN (ball U6, pad 178)
+#   ANA_18 = OPAMP1_INN (ball U8, pad 179)
+#   ANA_22 = OPAMP2_INN (ball U10, pad 180)
+#   ANA_4 = ADC1_A0 (ball T2, pad 162)
+#   ANA_5 = ADC1_B0 (ball T3, pad 163)
+#   ANA_6 = DAC2_OUT (ball U2, pad 176)
+#   ANA_7 = unused (ball U4, pad 177)
+
+name = "mcxn947_vdf"
+socs = ["SOC_MCXN947"]
+
+[[pins]]
+pin = 1
+ball = "A1"
+pad_name = "P1.08"
+gpio = 40
+
+
+[[pins]]
+pin = 2
+ball = "A2"
+pad_name = "P1.07"
+gpio = 39
+
+
+[[pins]]
+pin = 3
+ball = "A4"
+pad_name = "P1.04"
+gpio = 36
+
+
+[[pins]]
+pin = 4
+ball = "A6"
+pad_name = "P0.25"
+gpio = 25
+
+
+[[pins]]
+pin = 5
+ball = "A8"
+pad_name = "P0.21"
+gpio = 21
+
+
+[[pins]]
+pin = 6
+ball = "A10"
+pad_name = "P0.17"
+gpio = 17
+
+
+[[pins]]
+pin = 7
+ball = "A12"
+pad_name = "P0.09"
+gpio = 9
+
+
+[[pins]]
+pin = 8
+ball = "A14"
+pad_name = "P0.05"
+gpio = 5
+
+
+[[pins]]
+pin = 9
+ball = "A16"
+pad_name = "P0.01"
+gpio = 1
+
+
+[[pins]]
+pin = 10
+ball = "A17"
+pad_name = "P0.00"
+gpio = 0
+
+
+[[pins]]
+pin = 11
+ball = "B1"
+pad_name = "P1.09"
+gpio = 41
+
+
+[[pins]]
+pin = 12
+ball = "B2"
+pad_name = "P1.06"
+gpio = 38
+
+
+[[pins]]
+pin = 13
+ball = "B3"
+pad_name = "P1.05"
+gpio = 37
+
+
+[[pins]]
+pin = 14
+ball = "B4"
+pad_name = "P1.03"
+gpio = 35
+
+
+[[pins]]
+pin = 15
+ball = "B6"
+pad_name = "P0.24"
+gpio = 24
+
+
+[[pins]]
+pin = 16
+ball = "B7"
+pad_name = "P0.23"
+gpio = 23
+
+
+[[pins]]
+pin = 17
+ball = "B8"
+pad_name = "P0.22"
+gpio = 22
+
+
+[[pins]]
+pin = 18
+ball = "B10"
+pad_name = "P0.16"
+gpio = 16
+
+
+[[pins]]
+pin = 19
+ball = "B11"
+pad_name = "P0.11"
+gpio = 11
+
+
+[[pins]]
+pin = 20
+ball = "B12"
+pad_name = "P0.10"
+gpio = 10
+
+
+[[pins]]
+pin = 21
+ball = "B14"
+pad_name = "P0.04"
+gpio = 4
+
+
+[[pins]]
+pin = 22
+ball = "B15"
+pad_name = "P0.03"
+gpio = 3
+
+
+[[pins]]
+pin = 23
+ball = "B16"
+pad_name = "P0.02"
+gpio = 2
+
+
+[[pins]]
+pin = 24
+ball = "B17"
+pad_name = "P3.00"
+gpio = 96
+
+
+[[pins]]
+pin = 25
+ball = "C3"
+pad_name = "P1.10"
+gpio = 42
+
+
+[[pins]]
+pin = 26
+ball = "C4"
+pad_name = "P1.02"
+gpio = 34
+
+
+[[pins]]
+pin = 27
+ball = "C5"
+pad_name = "P1.01"
+gpio = 33
+
+
+[[pins]]
+pin = 28
+ball = "C6"
+pad_name = "P1.00"
+gpio = 32
+
+
+[[pins]]
+pin = 29
+ball = "C8"
+pad_name = "P0.20"
+gpio = 20
+
+
+[[pins]]
+pin = 30
+ball = "C9"
+pad_name = "P0.19"
+gpio = 19
+
+
+[[pins]]
+pin = 31
+ball = "C10"
+pad_name = "P0.18"
+gpio = 18
+
+
+[[pins]]
+pin = 32
+ball = "C12"
+pad_name = "P0.08"
+gpio = 8
+
+
+[[pins]]
+pin = 33
+ball = "C13"
+pad_name = "P0.07"
+gpio = 7
+
+
+[[pins]]
+pin = 34
+ball = "C14"
+pad_name = "P0.06"
+gpio = 6
+
+
+[[pins]]
+pin = 35
+ball = "C15"
+pad_name = "P3.01"
+gpio = 97
+
+
+[[pins]]
+pin = 36
+ball = "D1"
+pad_name = "P1.13"
+gpio = 45
+
+
+[[pins]]
+pin = 37
+ball = "D2"
+pad_name = "P1.12"
+gpio = 44
+
+
+[[pins]]
+pin = 38
+ball = "D3"
+pad_name = "P1.11"
+gpio = 43
+
+
+[[pins]]
+pin = 39
+ball = "D4"
+pad_name = "P1.14"
+gpio = 46
+
+
+[[pins]]
+pin = 41
+ball = "D7"
+pad_name = "P0.31"
+gpio = 31
+
+
+[[pins]]
+pin = 43
+ball = "D11"
+pad_name = "P0.12"
+gpio = 12
+
+
+[[pins]]
+pin = 45
+ball = "D14"
+pad_name = "P3.07"
+gpio = 103
+
+
+[[pins]]
+pin = 46
+ball = "D15"
+pad_name = "P3.02"
+gpio = 98
+
+
+[[pins]]
+pin = 47
+ball = "D16"
+pad_name = "P3.03"
+gpio = 99
+
+
+[[pins]]
+pin = 48
+ball = "D17"
+pad_name = "P3.06"
+gpio = 102
+
+
+[[pins]]
+pin = 49
+ball = "E4"
+pad_name = "P1.15"
+gpio = 47
+
+
+[[pins]]
+pin = 51
+ball = "E7"
+pad_name = "P0.30"
+gpio = 30
+
+
+[[pins]]
+pin = 52
+ball = "E8"
+pad_name = "P0.28"
+gpio = 28
+
+
+[[pins]]
+pin = 53
+ball = "E10"
+pad_name = "P0.27"
+gpio = 27
+
+
+[[pins]]
+pin = 54
+ball = "E11"
+pad_name = "P0.14"
+gpio = 14
+
+
+[[pins]]
+pin = 56
+ball = "E14"
+pad_name = "P3.08"
+gpio = 104
+
+
+[[pins]]
+pin = 57
+ball = "F1"
+pad_name = "P1.30"
+gpio = 62
+
+
+[[pins]]
+pin = 58
+ball = "F2"
+pad_name = "P1.31"
+gpio = 63
+
+
+[[pins]]
+pin = 60
+ball = "F4"
+pad_name = "P1.17"
+gpio = 49
+
+
+[[pins]]
+pin = 61
+ball = "F6"
+pad_name = "P1.16"
+gpio = 48
+
+
+[[pins]]
+pin = 62
+ball = "F8"
+pad_name = "P0.29"
+gpio = 29
+
+
+[[pins]]
+pin = 63
+ball = "F10"
+pad_name = "P0.26"
+gpio = 26
+
+
+[[pins]]
+pin = 64
+ball = "F12"
+pad_name = "P0.13"
+gpio = 13
+
+
+[[pins]]
+pin = 65
+ball = "F14"
+pad_name = "P3.04"
+gpio = 100
+
+
+[[pins]]
+pin = 66
+ball = "F15"
+pad_name = "P3.09"
+gpio = 105
+
+
+[[pins]]
+pin = 67
+ball = "F16"
+pad_name = "P3.11"
+gpio = 107
+
+
+[[pins]]
+pin = 68
+ball = "F17"
+pad_name = "P3.10"
+gpio = 106
+
+
+[[pins]]
+pin = 70
+ball = "G4"
+pad_name = "P1.18"
+gpio = 50
+
+
+[[pins]]
+pin = 71
+ball = "G5"
+pad_name = "P1.19"
+gpio = 51
+
+
+[[pins]]
+pin = 74
+ball = "G13"
+pad_name = "P0.15"
+gpio = 15
+
+
+[[pins]]
+pin = 75
+ball = "G14"
+pad_name = "P3.05"
+gpio = 101
+
+
+[[pins]]
+pin = 76
+ball = "G16"
+pad_name = "P3.12"
+gpio = 108
+
+
+[[pins]]
+pin = 77
+ball = "H1"
+pad_name = "P2.01"
+gpio = 65
+
+
+[[pins]]
+pin = 78
+ball = "H2"
+pad_name = "P2.00"
+gpio = 64
+
+
+[[pins]]
+pin = 79
+ball = "H3"
+pad_name = "P2.02"
+gpio = 66
+
+
+[[pins]]
+pin = 87
+ball = "H15"
+pad_name = "P3.15"
+gpio = 111
+
+
+[[pins]]
+pin = 88
+ball = "H16"
+pad_name = "P3.13"
+gpio = 109
+
+
+[[pins]]
+pin = 89
+ball = "H17"
+pad_name = "P3.14"
+gpio = 110
+
+
+[[pins]]
+pin = 90
+ball = "J3"
+pad_name = "P2.03"
+gpio = 67
+
+
+[[pins]]
+pin = 95
+ball = "J15"
+pad_name = "P3.16"
+gpio = 112
+
+
+[[pins]]
+pin = 96
+ball = "K1"
+pad_name = "P2.05"
+gpio = 69
+
+
+[[pins]]
+pin = 97
+ball = "K2"
+pad_name = "P2.06"
+gpio = 70
+
+
+[[pins]]
+pin = 98
+ball = "K3"
+pad_name = "P2.04"
+gpio = 68
+
+
+[[pins]]
+pin = 99
+ball = "K5"
+pad_name = "P1.20"
+gpio = 52
+
+
+[[pins]]
+pin = 104
+ball = "K12"
+pad_name = "P5.05"
+gpio = 165
+
+
+[[pins]]
+pin = 105
+ball = "K13"
+pad_name = "P5.06"
+gpio = 166
+
+
+[[pins]]
+pin = 106
+ball = "K15"
+pad_name = "P3.17"
+gpio = 113
+
+
+[[pins]]
+pin = 107
+ball = "K16"
+pad_name = "P3.18"
+gpio = 114
+
+
+[[pins]]
+pin = 108
+ball = "K17"
+pad_name = "P3.19"
+gpio = 115
+
+
+[[pins]]
+pin = 109
+ball = "L2"
+pad_name = "P2.07"
+gpio = 71
+
+
+[[pins]]
+pin = 110
+ball = "L4"
+pad_name = "P1.22"
+gpio = 54
+
+
+[[pins]]
+pin = 111
+ball = "L5"
+pad_name = "P1.21"
+gpio = 53
+
+
+[[pins]]
+pin = 114
+ball = "L13"
+pad_name = "P5.07"
+gpio = 167
+
+
+[[pins]]
+pin = 115
+ball = "L14"
+pad_name = "P5.08"
+gpio = 168
+
+
+[[pins]]
+pin = 116
+ball = "L16"
+pad_name = "P3.21"
+gpio = 117
+
+
+[[pins]]
+pin = 117
+ball = "M1"
+pad_name = "P2.09"
+gpio = 73
+
+
+[[pins]]
+pin = 118
+ball = "M2"
+pad_name = "P2.08"
+gpio = 72
+
+
+[[pins]]
+pin = 119
+ball = "M3"
+pad_name = "P2.10"
+gpio = 74
+
+
+[[pins]]
+pin = 120
+ball = "M4"
+pad_name = "P1.23"
+gpio = 55
+
+
+[[pins]]
+pin = 121
+ball = "M6"
+pad_name = "P4.04"
+gpio = 132
+
+
+[[pins]]
+pin = 122
+ball = "M8"
+pad_name = "P4.05"
+gpio = 133
+
+
+[[pins]]
+pin = 123
+ball = "M10"
+pad_name = "P5.02"
+gpio = 162
+
+
+[[pins]]
+pin = 124
+ball = "M12"
+pad_name = "P5.04"
+gpio = 164
+
+
+[[pins]]
+pin = 125
+ball = "M14"
+pad_name = "P5.09"
+gpio = 169
+
+
+[[pins]]
+pin = 126
+ball = "M15"
+pad_name = "P3.23"
+gpio = 119
+
+
+[[pins]]
+pin = 127
+ball = "M16"
+pad_name = "P3.22"
+gpio = 118
+
+
+[[pins]]
+pin = 128
+ball = "M17"
+pad_name = "P3.20"
+gpio = 116
+
+
+[[pins]]
+pin = 129
+ball = "N4"
+pad_name = "P2.11"
+gpio = 75
+
+
+[[pins]]
+pin = 131
+ball = "N7"
+pad_name = "P4.06"
+gpio = 134
+
+
+[[pins]]
+pin = 132
+ball = "N8"
+pad_name = "P4.14"
+gpio = 142
+
+
+[[pins]]
+pin = 133
+ball = "N10"
+pad_name = "P4.18"
+gpio = 146
+
+
+[[pins]]
+pin = 134
+ball = "N11"
+pad_name = "P5.03"
+gpio = 163
+
+
+[[pins]]
+pin = 137
+ball = "P1"
+pad_name = "P4.00"
+gpio = 128
+
+
+[[pins]]
+pin = 138
+ball = "P2"
+pad_name = "P4.01"
+gpio = 129
+
+
+[[pins]]
+pin = 139
+ball = "P3"
+pad_name = "ANA_0"
+
+
+[[pins]]
+pin = 150
+ball = "R3"
+pad_name = "ANA_1"
+
+
+[[pins]]
+pin = 154
+ball = "R8"
+pad_name = "P4.16"
+gpio = 144
+
+
+[[pins]]
+pin = 155
+ball = "R9"
+pad_name = "P4.17"
+gpio = 145
+
+
+[[pins]]
+pin = 156
+ball = "R10"
+pad_name = "P4.19"
+gpio = 147
+
+
+[[pins]]
+pin = 161
+ball = "T1"
+pad_name = "P4.02"
+gpio = 130
+
+
+[[pins]]
+pin = 162
+ball = "T2"
+pad_name = "ANA_4"
+
+
+[[pins]]
+pin = 163
+ball = "T3"
+pad_name = "ANA_5"
+
+
+[[pins]]
+pin = 164
+ball = "T4"
+pad_name = "P4.07"
+gpio = 135
+
+
+[[pins]]
+pin = 165
+ball = "T6"
+pad_name = "P4.12"
+gpio = 140
+
+
+[[pins]]
+pin = 166
+ball = "T7"
+pad_name = "P4.13"
+gpio = 141
+
+
+[[pins]]
+pin = 167
+ball = "T8"
+pad_name = "P4.15"
+gpio = 143
+
+
+[[pins]]
+pin = 168
+ball = "T10"
+pad_name = "P4.20"
+gpio = 148
+
+
+[[pins]]
+pin = 169
+ball = "T11"
+pad_name = "P4.21"
+gpio = 149
+
+
+[[pins]]
+pin = 170
+ball = "T12"
+pad_name = "P4.22"
+gpio = 150
+
+
+[[pins]]
+pin = 175
+ball = "U1"
+pad_name = "P4.03"
+gpio = 131
+
+
+[[pins]]
+pin = 176
+ball = "U2"
+pad_name = "ANA_6"
+
+
+[[pins]]
+pin = 177
+ball = "U4"
+pad_name = "ANA_7"
+
+
+[[pins]]
+pin = 178
+ball = "U6"
+pad_name = "ANA_14"
+
+
+[[pins]]
+pin = 179
+ball = "U8"
+pad_name = "ANA_18"
+
+
+[[pins]]
+pin = 180
+ball = "U10"
+pad_name = "ANA_22"
+
+
+[[pins]]
+pin = 181
+ball = "U12"
+pad_name = "P4.23"
+gpio = 151
+
+
+[[pins]]
+pin = 183
+ball = "U16"
+pad_name = "P5.00"
+gpio = 160
+
+
+[[pins]]
+pin = 184
+ball = "U17"
+pad_name = "P5.01"
+gpio = 161

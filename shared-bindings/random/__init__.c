@@ -116,10 +116,7 @@ static mp_obj_t random_randint(mp_obj_t a_in, mp_obj_t b_in) {
     if (a > b) {
         mp_raise_ValueError(NULL);
     }
-    if (b == (mp_int_t)(~(mp_uint_t)0 >> 1)) {
-        mp_raise_ValueError(NULL);
-    }
-    return mp_obj_new_int(shared_modules_random_randrange(a, b + 1, 1));
+    return mp_obj_new_int(shared_modules_random_randint(a, b));
 }
 static MP_DEFINE_CONST_FUN_OBJ_2(random_randint_obj, random_randint);
 

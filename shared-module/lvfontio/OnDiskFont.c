@@ -48,7 +48,6 @@ static inline void free_memory(lvfontio_ondiskfont_t *self, void *ptr) {
 static int16_t find_codepoint_slot(lvfontio_ondiskfont_t *self, uint32_t codepoint);
 static bool slot_has_active_full_width_partner(lvfontio_ondiskfont_t *self, uint16_t slot);
 static uint16_t find_free_slot(lvfontio_ondiskfont_t *self, uint32_t codepoint);
-static int16_t cache_glyph_locked(lvfontio_ondiskfont_t *self, uint32_t codepoint, bool *is_full_width);
 static bool read_bits(supervisor_vfs_file_t *file, size_t num_bits, uint8_t *byte_val, uint8_t *remaining_bits, uint32_t *result);
 static bool read_glyph_dimensions(supervisor_vfs_file_t *file, lvfontio_ondiskfont_t *self, uint32_t *advance_width, int32_t *bbox_x, int32_t *bbox_y, uint32_t *bbox_w, uint32_t *bbox_h, uint8_t *byte_val, uint8_t *remaining_bits);
 
@@ -439,19 +438,10 @@ void common_hal_lvfontio_ondiskfont_construct(lvfontio_ondiskfont_t *self,
         return;
     }
 
-    // Take the filesystem lock while opening and parsing the header so USB
-    // MSC and other writers can't modify the blocks under us while reading.
-    if (!filesystem_lock(vfs)) {
-        if (self->use_gc_allocator) {
-            mp_raise_OSError(MP_EBUSY);
-        }
-        return;
-    }
-
-    // Open the file and keep it open for the lifetime of the object
+    // Open the file and keep it open for the lifetime of the object. Reads don't take the
+    // filesystem lock: it is the write lock, and USB MSC holds it while the host can write.
     supervisor_fs_err_t err = supervisor_vfs_open_file(vfs, path_under_mount, SUPERVISOR_FS_OPEN_READ, 0, &self->file);
     if (err != SUPERVISOR_FS_OK) {
-        filesystem_unlock(vfs);
         if (self->use_gc_allocator) {
             mp_raise_ValueError(MP_ERROR_TEXT("File not found"));
         }
@@ -459,23 +449,16 @@ void common_hal_lvfontio_ondiskfont_construct(lvfontio_ondiskfont_t *self,
     }
 
     self->file_is_open = true;
-    self->vfs = vfs;
 
     // Load font headers
     size_t max_slots;
     if (!load_font_header(self, &self->file, &max_slots)) {
         common_hal_lvfontio_ondiskfont_deinit(self);
-        filesystem_unlock(vfs);
         if (self->use_gc_allocator) {
             mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q"), MP_QSTR_file);
         }
         return;
     }
-    // All file reads are done; release the lock so other users (including
-    // other OnDiskFonts) may access the filesystem again until the next
-    // cache_glyph call.
-    filesystem_unlock(vfs);
-
     // Cap the number of slots to the number of slots needed by the font. That way
     // small font files don't need a bunch of extra cache space.
     max_glyphs = MIN(max_glyphs, max_slots);
@@ -592,17 +575,6 @@ void common_hal_lvfontio_ondiskfont_get_dimensions(const lvfontio_ondiskfont_t *
 }
 
 int16_t common_hal_lvfontio_ondiskfont_cache_glyph(lvfontio_ondiskfont_t *self, uint32_t codepoint, bool *is_full_width) {
-    // Take the filesystem lock while reading glyph data so USB MSC and other
-    // writers can't modify the blocks under us mid-read.
-    if (!filesystem_lock(self->vfs)) {
-        return -1;
-    }
-    int16_t slot = cache_glyph_locked(self, codepoint, is_full_width);
-    filesystem_unlock(self->vfs);
-    return slot;
-}
-
-static int16_t cache_glyph_locked(lvfontio_ondiskfont_t *self, uint32_t codepoint, bool *is_full_width) {
     // Check if already cached
     int16_t existing_slot = find_codepoint_slot(self, codepoint);
     if (existing_slot >= 0) {

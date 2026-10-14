@@ -53,7 +53,7 @@ static mp_obj_t touchio_touchin_make_new(const mp_obj_type_t *type,
     const mcu_pin_obj_t *pin = validate_obj_is_free_pin(args[ARG_pin].u_obj, MP_QSTR_pin);
     const digitalio_pull_t pull = validate_pull(args[ARG_pull].u_obj, MP_QSTR_pull);
 
-    touchio_touchin_obj_t *self = mp_obj_malloc(touchio_touchin_obj_t, &touchio_touchin_type);
+    touchio_touchin_obj_t *self = mp_obj_malloc_with_finaliser(touchio_touchin_obj_t, &touchio_touchin_type);
     common_hal_touchio_touchin_construct(self, pin, pull);
 
     return MP_OBJ_FROM_PTR(self);
@@ -161,6 +161,7 @@ static const mp_rom_map_elem_t touchio_touchin_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&touchio_touchin_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&touchio_touchin_deinit_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_value), MP_ROM_PTR(&touchio_touchin_value_obj)},
     { MP_ROM_QSTR(MP_QSTR_raw_value), MP_ROM_PTR(&touchio_touchin_raw_value_obj)},

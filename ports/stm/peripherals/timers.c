@@ -20,7 +20,6 @@
 #define NULL_IRQ 0xFF
 
 static bool stm_timer_reserved[MP_ARRAY_SIZE(mcu_tim_banks)];
-static bool stm_timer_never_reset[MP_ARRAY_SIZE(mcu_tim_banks)];
 
 typedef void (*stm_timer_callback_t)(void);
 // Array of function pointers.
@@ -268,22 +267,6 @@ void stm_peripherals_timer_free(TIM_TypeDef *instance) {
     stm_timer_callback[tim_idx] = NULL;
     tim_clock_disable(1 << tim_idx);
     stm_timer_reserved[tim_idx] = false;
-    stm_timer_never_reset[tim_idx] = false;
-}
-
-void stm_peripherals_timer_never_reset(TIM_TypeDef *instance) {
-    size_t tim_idx = stm_peripherals_timer_get_index(instance);
-    stm_timer_never_reset[tim_idx] = true;
-}
-
-void stm_peripherals_timer_reset_ok(TIM_TypeDef *instance) {
-    size_t tim_idx = stm_peripherals_timer_get_index(instance);
-    stm_timer_never_reset[tim_idx] = false;
-}
-
-bool stm_peripherals_timer_is_never_reset(TIM_TypeDef *instance) {
-    size_t tim_idx = stm_peripherals_timer_get_index(instance);
-    return stm_timer_never_reset[tim_idx];
 }
 
 bool stm_peripherals_timer_is_reserved(TIM_TypeDef *instance) {

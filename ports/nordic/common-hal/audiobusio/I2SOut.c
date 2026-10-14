@@ -240,7 +240,15 @@ void common_hal_audiobusio_i2sout_deinit(audiobusio_i2sout_obj_t *self) {
         return;
     }
     NRF_I2S->TASKS_STOP = 1;
+    // Mirror i2s_reset(): clear the interrupt enable and disconnect all
+    // PSEL lines so a later construct starts from a known state.
+    NRF_I2S->INTENCLR = I2S_INTENSET_TXPTRUPD_Msk;
     NRF_I2S->ENABLE = I2S_ENABLE_ENABLE_Disabled;
+    NRF_I2S->PSEL.MCK = 0xFFFFFFFF;
+    NRF_I2S->PSEL.SCK = 0xFFFFFFFF;
+    NRF_I2S->PSEL.LRCK = 0xFFFFFFFF;
+    NRF_I2S->PSEL.SDOUT = 0xFFFFFFFF;
+    NRF_I2S->PSEL.SDIN = 0xFFFFFFFF;
     if (self->external_clock) {
         nrf_gpio_cfg_default(self->bit_clock_pin_number);
         nrf_gpio_cfg_default(self->word_select_pin_number);
@@ -359,19 +367,4 @@ void i2s_background(void) {
             NRF_I2S->TASKS_STOP = 1;
         }
     }
-}
-
-void i2s_reset(void) {
-    NRF_I2S->TASKS_STOP = 1;
-    NRF_I2S->INTENCLR = I2S_INTENSET_TXPTRUPD_Msk;
-    NRF_I2S->ENABLE = I2S_ENABLE_ENABLE_Disabled;
-    NRF_I2S->PSEL.MCK = 0xFFFFFFFF;
-    NRF_I2S->PSEL.SCK = 0xFFFFFFFF;
-    NRF_I2S->PSEL.LRCK = 0xFFFFFFFF;
-    NRF_I2S->PSEL.SDOUT = 0xFFFFFFFF;
-    NRF_I2S->PSEL.SDIN = 0xFFFFFFFF;
-    if (instance) {
-        supervisor_disable_tick();
-    }
-    instance = NULL;
 }

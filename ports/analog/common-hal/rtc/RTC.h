@@ -7,5 +7,3 @@
 // SPDX-License-Identifier: MIT
 
 #pragma once
-
-extern void rtc_reset(void);

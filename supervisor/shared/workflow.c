@@ -144,7 +144,7 @@ supervisor_fs_err_t supervisor_workflow_mkdir(uint64_t mtime_ns, const char *ful
     }
 
     // If there is a mount on the directory, then the mount_path will be empty.
-    if (strlen(mount_path) == 0) {
+    if (strlen(mount_path) == 0 || strcmp(mount_path, "/") == 0) {
         return SUPERVISOR_FS_EXIST;
     }
 

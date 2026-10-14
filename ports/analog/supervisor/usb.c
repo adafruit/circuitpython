@@ -19,7 +19,6 @@
 
 void init_usb_hardware(void) {
     // USB GPIOs are non-configurable on MAX32 devices
-    // No need to add them to the never_reset list for mcu/Pin API.
 
     // 1 ms SysTick initialized in board.c
 

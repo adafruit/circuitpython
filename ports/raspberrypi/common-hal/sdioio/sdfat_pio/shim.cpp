@@ -65,6 +65,10 @@ bool sdfat_pio_card_write_sectors(void *storage, uint32_t start_sector,
     return reinterpret_cast<PioSdioCard *>(storage)->writeSectors(start_sector, src, num_sectors);
 }
 
+bool sdfat_pio_card_sync(void *storage) {
+    return reinterpret_cast<PioSdioCard *>(storage)->syncDevice();
+}
+
 uint8_t sdfat_pio_card_error_code(void *storage) {
     return reinterpret_cast<PioSdioCard *>(storage)->errorCode();
 }

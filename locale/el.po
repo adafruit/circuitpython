@@ -103,6 +103,10 @@ msgid "ndarray length overflows"
 msgstr ""
 
 #: extmod/ulab/code/ndarray.c
+msgid "maximum number of dimensions is "
+msgstr ""
+
+#: extmod/ulab/code/ndarray.c
 msgid "cannot convert complex type"
 msgstr ""
 
@@ -156,11 +160,23 @@ msgid "operation is not supported for given type"
 msgstr ""
 
 #: extmod/ulab/code/ndarray.c
-msgid "shape must be integer or tuple of integers"
+msgid "keyword argument must be tuple of integers"
 msgstr ""
 
-#: extmod/ulab/code/ndarray.c extmod/ulab/code/numpy/random/random.c
-msgid "maximum number of dimensions is "
+#: extmod/ulab/code/ndarray.c
+msgid "too many axes specified"
+msgstr ""
+
+#: extmod/ulab/code/ndarray.c
+msgid "axis index out of bounds"
+msgstr ""
+
+#: extmod/ulab/code/ndarray.c
+msgid "repeated indices"
+msgstr ""
+
+#: extmod/ulab/code/ndarray.c
+msgid "shape must be integer or tuple of integers"
 msgstr ""
 
 #: extmod/ulab/code/ndarray.c
@@ -227,6 +243,31 @@ msgstr ""
 msgid "not implemented for complex dtype"
 msgstr ""
 
+#: extmod/ulab/code/numpy/compare.c extmod/ulab/code/user/user.c
+#: shared-bindings/_eve/__init__.c
+msgid "input must be an ndarray"
+msgstr ""
+
+#: extmod/ulab/code/numpy/compare.c
+msgid "object too deep for desired array"
+msgstr ""
+
+#: extmod/ulab/code/numpy/compare.c
+msgid "cannot cast array data from dtype"
+msgstr ""
+
+#: extmod/ulab/code/numpy/compare.c
+msgid "minlength must not be negative"
+msgstr ""
+
+#: extmod/ulab/code/numpy/compare.c
+msgid "the weights and list don't have the same length"
+msgstr ""
+
+#: extmod/ulab/code/numpy/compare.c
+msgid "cannot cast weigths to float"
+msgstr ""
+
 #: extmod/ulab/code/numpy/compare.c extmod/ulab/code/numpy/create.c
 #: extmod/ulab/code/numpy/io/io.c extmod/ulab/code/numpy/transform.c
 #: extmod/ulab/code/numpy/vector.c
@@ -261,7 +302,7 @@ msgstr ""
 msgid "wrong axis specified"
 msgstr ""
 
-#: extmod/ulab/code/numpy/create.c
+#: extmod/ulab/code/numpy/create.c extmod/ulab/code/utils/utils.c
 msgid "input arrays are not compatible"
 msgstr ""
 
@@ -271,6 +312,45 @@ msgstr ""
 
 #: extmod/ulab/code/numpy/create.c
 msgid "number of points must be at least 2"
+msgstr ""
+
+#: extmod/ulab/code/numpy/create.c
+msgid "indexing should be 'xy' or 'ij'"
+msgstr ""
+
+#: extmod/ulab/code/numpy/create.c
+msgid "indexing must be 'xy' or 'ij'"
+msgstr ""
+
+#: extmod/ulab/code/numpy/create.c
+msgid "too many input arrays"
+msgstr ""
+
+#: extmod/ulab/code/numpy/create.c extmod/ulab/code/numpy/numerical.c
+#: extmod/ulab/code/numpy/transform.c
+msgid "arguments must be ndarrays"
+msgstr ""
+
+#: extmod/ulab/code/numpy/create.c
+msgid "arguments must be 1D arrays"
+msgstr ""
+
+#: extmod/ulab/code/numpy/create.c
+msgid "input is not an array"
+msgstr ""
+
+#: extmod/ulab/code/numpy/create.c extmod/ulab/code/numpy/numerical.c
+#: ports/espressif/common-hal/pulseio/PulseIn.c
+#: shared-bindings/bitmaptools/__init__.c
+msgid "index out of range"
+msgstr ""
+
+#: extmod/ulab/code/numpy/create.c
+msgid "mode should be raise, wrap or clip"
+msgstr ""
+
+#: extmod/ulab/code/numpy/create.c
+msgid "index must not be negative"
 msgstr ""
 
 #: extmod/ulab/code/numpy/create.c
@@ -293,7 +373,7 @@ msgstr ""
 msgid "FFT is implemented for linear arrays only"
 msgstr ""
 
-#: extmod/ulab/code/numpy/fft/fft_tools.c
+#: extmod/ulab/code/numpy/fft/fft_tools.c extmod/ulab/code/utils/utils.c
 msgid "input array length must be power of 2"
 msgstr ""
 
@@ -402,22 +482,12 @@ msgstr ""
 msgid "axis too long"
 msgstr ""
 
-#: extmod/ulab/code/numpy/numerical.c extmod/ulab/code/numpy/transform.c
-msgid "arguments must be ndarrays"
-msgstr ""
-
 #: extmod/ulab/code/numpy/numerical.c
 msgid "cross is defined for 1D arrays of length 3"
 msgstr ""
 
 #: extmod/ulab/code/numpy/numerical.c
 msgid "diff argument must be an ndarray"
-msgstr ""
-
-#: extmod/ulab/code/numpy/numerical.c extmod/ulab/code/ulab_tools.c
-#: ports/espressif/common-hal/pulseio/PulseIn.c
-#: shared-bindings/bitmaptools/__init__.c
-msgid "index out of range"
 msgstr ""
 
 #: extmod/ulab/code/numpy/numerical.c
@@ -465,10 +535,10 @@ msgid "argument must be None, an integer or a tuple of integers"
 msgstr ""
 
 #: extmod/ulab/code/numpy/random/random.c
-msgid "shape must be None, and integer or a tuple of integers"
+msgid "shape must be None, an integer or a tuple of integers"
 msgstr ""
 
-#: extmod/ulab/code/numpy/random/random.c
+#: extmod/ulab/code/numpy/random/random.c extmod/ulab/code/ulab_tools.c
 msgid "out has wrong type"
 msgstr ""
 
@@ -480,7 +550,7 @@ msgstr ""
 msgid "size must match out.shape when used together"
 msgstr ""
 
-#: extmod/ulab/code/numpy/random/random.c
+#: extmod/ulab/code/numpy/random/random.c extmod/ulab/code/ulab_tools.c
 msgid "output array must be contiguous"
 msgstr ""
 
@@ -504,7 +574,7 @@ msgstr ""
 msgid "dimensions do not match"
 msgstr ""
 
-#: extmod/ulab/code/numpy/vector.c
+#: extmod/ulab/code/numpy/vector.c extmod/ulab/code/utils/utils.c
 msgid "out must be an ndarray"
 msgstr ""
 
@@ -540,12 +610,34 @@ msgstr ""
 msgid "input dtype must be float or complex"
 msgstr ""
 
-#: extmod/ulab/code/numpy/vector.c
+#: extmod/ulab/code/numpy/vector.c extmod/ulab/code/scipy/integrate/integrate.c
 msgid "first argument must be a callable"
 msgstr ""
 
 #: extmod/ulab/code/numpy/vector.c
 msgid "wrong output type"
+msgstr ""
+
+#: extmod/ulab/code/scipy/integrate/integrate.c
+#, c-format
+msgid "can't convert arg %d from %s to float"
+msgstr ""
+
+#: extmod/ulab/code/scipy/integrate/integrate.c
+msgid "levels needs to be a positive integer"
+msgstr ""
+
+#: extmod/ulab/code/scipy/integrate/integrate.c
+msgid "steps needs to be a positive integer"
+msgstr ""
+
+#: extmod/ulab/code/scipy/integrate/integrate.c
+#: extmod/ulab/code/scipy/optimize/optimize.c
+msgid "first argument must be a function"
+msgstr ""
+
+#: extmod/ulab/code/scipy/integrate/integrate.c
+msgid "order needs to be a positive integer"
 msgstr ""
 
 #: extmod/ulab/code/scipy/linalg/linalg.c
@@ -554,10 +646,6 @@ msgstr ""
 
 #: extmod/ulab/code/scipy/linalg/linalg.c extmod/ulab/code/user/user.c
 msgid "input must be a dense ndarray"
-msgstr ""
-
-#: extmod/ulab/code/scipy/optimize/optimize.c
-msgid "first argument must be a function"
 msgstr ""
 
 #: extmod/ulab/code/scipy/optimize/optimize.c
@@ -624,8 +712,16 @@ msgstr ""
 msgid "input must be square matrix"
 msgstr ""
 
-#: extmod/ulab/code/user/user.c shared-bindings/_eve/__init__.c
-msgid "input must be an ndarray"
+#: extmod/ulab/code/ulab_tools.c
+msgid "out array has wrong dtype"
+msgstr ""
+
+#: extmod/ulab/code/ulab_tools.c
+msgid "out array has wrong dimension"
+msgstr ""
+
+#: extmod/ulab/code/ulab_tools.c
+msgid "out array has wrong shape"
 msgstr ""
 
 #: extmod/ulab/code/utils/utils.c
@@ -638,6 +734,34 @@ msgstr ""
 
 #: extmod/ulab/code/utils/utils.c
 msgid "out array is too small"
+msgstr ""
+
+#: extmod/ulab/code/utils/utils.c
+msgid "spectrogram is defined for ndarrays only"
+msgstr ""
+
+#: extmod/ulab/code/utils/utils.c
+msgid "spectrogram is implemented for 1D arrays only"
+msgstr ""
+
+#: extmod/ulab/code/utils/utils.c
+msgid "out array must be a 1D array of float type"
+msgstr ""
+
+#: extmod/ulab/code/utils/utils.c
+msgid "input and out arrays must have same length"
+msgstr ""
+
+#: extmod/ulab/code/utils/utils.c
+msgid "scratchpad must be an ndarray"
+msgstr ""
+
+#: extmod/ulab/code/utils/utils.c
+msgid "scratchpad must be a 1D dense float array"
+msgstr ""
+
+#: extmod/ulab/code/utils/utils.c
+msgid "scratchpad must be twice as long as input"
 msgstr ""
 
 #: extmod/vfs_fat.c py/moderrno.c
@@ -758,6 +882,7 @@ msgstr ""
 #: ports/analog/common-hal/busio/UART.c
 #: ports/atmel-samd/common-hal/busio/UART.c ports/cxd56/common-hal/busio/UART.c
 #: ports/nordic/common-hal/busio/UART.c ports/stm/common-hal/busio/UART.c
+#: ports/zephyr-cp/common-hal/busio/UART.c
 msgid "RS485"
 msgstr "RS485"
 
@@ -770,7 +895,9 @@ msgstr ""
 msgid "Both RX and TX required for flow control"
 msgstr "Και RX και TX απαιτούνται για έλεγχο flow"
 
-#: ports/analog/common-hal/busio/UART.c shared-module/rgbmatrix/RGBMatrix.c
+#: ports/analog/common-hal/busio/UART.c
+#: ports/raspberrypi/common-hal/usb_host/Port.c
+#: shared-module/rgbmatrix/RGBMatrix.c
 msgid "Failed to allocate %q buffer"
 msgstr ""
 
@@ -783,7 +910,7 @@ msgid "UART transaction timeout"
 msgstr ""
 
 #: ports/analog/common-hal/busio/UART.c ports/espressif/common-hal/busio/UART.c
-#: ports/nordic/common-hal/busio/UART.c
+#: ports/nordic/common-hal/busio/UART.c ports/zephyr-cp/common-hal/busio/UART.c
 msgid "All UART peripherals are in use"
 msgstr "Όλα τα UART περιφεριακά ειναι σε χρήση"
 
@@ -799,7 +926,9 @@ msgstr "Όλα τα UART περιφεριακά ειναι σε χρήση"
 #: ports/mimxrt10xx/common-hal/pwmio/PWMOut.c
 #: ports/raspberrypi/bindings/picodvi/Framebuffer.c
 #: ports/raspberrypi/bindings/rp2pio/StateMachine.c
-#: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c py/argcheck.c
+#: ports/raspberrypi/common-hal/picodvi/AudioOut.c
+#: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
+#: ports/raspberrypi/common-hal/usb_host_bulk/InStream.c py/argcheck.c
 #: shared-bindings/digitalio/DigitalInOut.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c
 #: shared-bindings/i2cioexpander/IOPin.c shared-bindings/mipidsi/Display.c
@@ -856,7 +985,11 @@ msgstr "Όλοι οι χρονιστές βρίσκονται σε χρήση"
 #: ports/atmel-samd/common-hal/pulseio/PulseIn.c
 #: ports/atmel-samd/common-hal/rotaryio/IncrementalEncoder.c
 #: ports/cxd56/common-hal/pulseio/PulseIn.c
+#: ports/espressif/common-hal/mii/RMII.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2350.c
+#: ports/zephyr-cp/common-hal/busio/I2C.c
+#: ports/zephyr-cp/common-hal/busio/SPI.c
+#: ports/zephyr-cp/common-hal/busio/UART.c
 msgid "Internal resource(s) in use"
 msgstr ""
 
@@ -947,6 +1080,7 @@ msgid "No pull up found on SDA or SCL; check your wiring"
 msgstr ""
 
 #: ports/atmel-samd/common-hal/busio/UART.c
+#: shared-bindings/usb_host_bulk/InStream.c
 msgid "%q must be power of 2"
 msgstr "%q πρέπει να είναι δύναμη του 2"
 
@@ -1024,6 +1158,22 @@ msgstr "Το Data 0 pin πρέπει να είναι byte aligned"
 msgid "Bus pin %d is already in use"
 msgstr "Bus pin %d είναι ήδη σε χρήση"
 
+#: ports/atmel-samd/common-hal/picogame/Display.c
+#: ports/espressif/common-hal/espidf/__init__.c
+#: ports/raspberrypi/common-hal/picogame/Display.c
+#: ports/raspberrypi/common-hal/usb_host_bulk/InStream.c
+#: shared-bindings/picogame/Canvas.c shared-bindings/picogame/__init__.c
+msgid "Operation or feature not supported"
+msgstr ""
+
+#: ports/atmel-samd/common-hal/picogame/Display.c
+#: ports/raspberrypi/common-hal/picogame/Display.c py/argcheck.c py/runtime.c
+#: shared-bindings/bitmapfilter/__init__.c
+#: shared-module/audiodelays/MultiTapDelay.c shared-module/synthio/Note.c
+#: shared-module/synthio/__init__.c
+msgid "%q must be of type %q, not %q"
+msgstr "%q πρέπει να είναι τύπου %q, όχι %q"
+
 #: ports/atmel-samd/common-hal/pulseio/PulseIn.c
 #: ports/cxd56/common-hal/pulseio/PulseIn.c
 #: ports/nordic/common-hal/pulseio/PulseIn.c
@@ -1097,6 +1247,7 @@ msgstr ""
 
 #: ports/espressif/bindings/espnow/ESPNow.c
 #: ports/espressif/common-hal/espulp/ULP.c
+#: ports/raspberrypi/common-hal/usb_host_bulk/InStream.c
 #: shared-module/memorymonitor/AllocationAlarm.c
 #: shared-module/memorymonitor/AllocationSize.c
 msgid "Already running"
@@ -1112,6 +1263,7 @@ msgstr ""
 
 #: ports/espressif/boards/adafruit_feather_esp32c6_4mbflash_nopsram/mpconfigboard.h
 #: ports/espressif/boards/adafruit_itsybitsy_esp32/mpconfigboard.h
+#: ports/espressif/boards/waveshare_esp32_c5_lcd_1_47/mpconfigboard.h
 #: ports/espressif/boards/waveshare_esp32_c6_lcd_1_47/mpconfigboard.h
 msgid "You pressed the BOOT button at start up."
 msgstr ""
@@ -1161,6 +1313,12 @@ msgstr ""
 #: ports/espressif/common-hal/_bleio/Adapter.c
 #: ports/nordic/common-hal/_bleio/Adapter.c
 #: ports/zephyr-cp/common-hal/_bleio/Adapter.c
+msgid "Failed to connect: timeout"
+msgstr ""
+
+#: ports/espressif/common-hal/_bleio/Adapter.c
+#: ports/nordic/common-hal/_bleio/Adapter.c
+#: ports/zephyr-cp/common-hal/_bleio/Adapter.c
 msgid "Failed to connect: internal error"
 msgstr ""
 
@@ -1205,6 +1363,8 @@ msgstr ""
 
 #: ports/espressif/common-hal/_bleio/Characteristic.c
 #: ports/espressif/common-hal/_bleio/Service.c
+#: ports/raspberrypi/common-hal/alarm/pin/PinAlarm.c
+#: ports/raspberrypi/common-hal/usb_host_bulk/InStream.c
 msgid "Too many %q"
 msgstr ""
 
@@ -1225,8 +1385,24 @@ msgstr "Δεν μπορεί να οριστεί CCCD σε τοπικό Character
 #: ports/zephyr-cp/common-hal/_bleio/Characteristic.c
 #: ports/zephyr-cp/common-hal/_bleio/Connection.c
 #: ports/zephyr-cp/common-hal/_bleio/Descriptor.c
+#: ports/zephyr-cp/common-hal/_bleio/__init__.c
 #: shared-bindings/_bleio/CharacteristicBuffer.c
 msgid "Not connected"
+msgstr ""
+
+#: ports/espressif/common-hal/_bleio/Connection.c
+#: ports/nordic/common-hal/_bleio/__init__.c
+#: ports/zephyr-cp/common-hal/_bleio/Connection.c
+msgid ""
+"Unspecified issue. The pairing request on the other device may have been "
+"declined or ignored."
+msgstr ""
+
+#: ports/espressif/common-hal/_bleio/Connection.c
+#: ports/nordic/common-hal/_bleio/__init__.c
+#: ports/zephyr-cp/common-hal/_bleio/Connection.c
+#, c-format
+msgid "Unknown security error: 0x%04x"
 msgstr ""
 
 #: ports/espressif/common-hal/_bleio/Connection.c
@@ -1273,32 +1449,44 @@ msgstr ""
 
 #: ports/espressif/common-hal/_bleio/__init__.c
 #, c-format
-msgid "Unknown system firmware error at %s:%d: %d"
-msgstr ""
-
-#: ports/espressif/common-hal/_bleio/__init__.c
-#, c-format
-msgid "Unknown system firmware error: %d"
+msgid "Unknown BLE error at %s:%d: 0x%04x"
 msgstr ""
 
 #: ports/espressif/common-hal/_bleio/__init__.c
 #: ports/nordic/common-hal/_bleio/__init__.c
+#, c-format
+msgid "Unknown BLE error: 0x%04x"
+msgstr ""
+
+#: ports/espressif/common-hal/_bleio/__init__.c
+#: ports/nordic/common-hal/_bleio/__init__.c
+#: ports/zephyr-cp/common-hal/_bleio/__init__.c
+msgid "%q not permitted"
+msgstr ""
+
+#: ports/espressif/common-hal/_bleio/__init__.c
+#: ports/nordic/common-hal/_bleio/__init__.c
+#: ports/zephyr-cp/common-hal/_bleio/__init__.c
 msgid "Insufficient authentication"
 msgstr ""
 
 #: ports/espressif/common-hal/_bleio/__init__.c
 #: ports/nordic/common-hal/_bleio/__init__.c
+#: ports/zephyr-cp/common-hal/_bleio/__init__.c
+msgid "Insufficient authorization"
+msgstr ""
+
+#: ports/espressif/common-hal/_bleio/__init__.c
+#: ports/nordic/common-hal/_bleio/__init__.c
+#: ports/zephyr-cp/common-hal/_bleio/__init__.c
 msgid "Insufficient encryption"
 msgstr ""
 
 #: ports/espressif/common-hal/_bleio/__init__.c
+#: ports/nordic/common-hal/_bleio/__init__.c
+#: ports/zephyr-cp/common-hal/_bleio/__init__.c
 #, c-format
-msgid "Unknown BLE error at %s:%d: %d"
-msgstr ""
-
-#: ports/espressif/common-hal/_bleio/__init__.c
-#, c-format
-msgid "Unknown BLE error: %d"
+msgid "Unknown gatt error: 0x%04x"
 msgstr ""
 
 #: ports/espressif/common-hal/alarm/pin/PinAlarm.c
@@ -1392,7 +1580,7 @@ msgstr ""
 
 #: ports/espressif/common-hal/busio/I2C.c
 #: ports/espressif/common-hal/i2ctarget/I2CTarget.c
-#: ports/nordic/common-hal/busio/I2C.c
+#: ports/nordic/common-hal/busio/I2C.c ports/zephyr-cp/common-hal/busio/I2C.c
 msgid "All I2C peripherals are in use"
 msgstr "Όλα τα I2C περιφεριακά ειναι σε χρήση"
 
@@ -1406,6 +1594,7 @@ msgid "SPI configuration failed"
 msgstr ""
 
 #: ports/espressif/common-hal/busio/SPI.c ports/nordic/common-hal/busio/SPI.c
+#: ports/zephyr-cp/common-hal/busio/SPI.c
 msgid "All SPI peripherals are in use"
 msgstr "Όλα τα SPI περιφεριακά είναι σε χρήση"
 
@@ -1492,12 +1681,6 @@ msgid "Requested resource not found"
 msgstr ""
 
 #: ports/espressif/common-hal/espidf/__init__.c
-#: ports/raspberrypi/common-hal/picogame/Display.c
-#: shared-bindings/picogame/__init__.c
-msgid "Operation or feature not supported"
-msgstr ""
-
-#: ports/espressif/common-hal/espidf/__init__.c
 #: ports/espressif/common-hal/qspibus/QSPIBus.c
 msgid "Operation timed out"
 msgstr ""
@@ -1532,13 +1715,14 @@ msgstr ""
 #: ports/espressif/common-hal/qspibus/QSPIBus.c
 #: ports/mimxrt10xx/common-hal/audiobusio/__init__.c
 #: ports/mimxrt10xx/common-hal/usb_host/Port.c
+#: ports/raspberrypi/common-hal/picodvi/AudioOut.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2350.c
 #: ports/raspberrypi/common-hal/rp2pio/StateMachine.c
 #: ports/raspberrypi/common-hal/usb_host/Port.c
 #: shared-bindings/digitalio/DigitalInOut.c shared-bindings/emmcio/EMMC.c
 #: shared-bindings/i2cioexpander/IOPin.c shared-bindings/microcontroller/Pin.c
-#: shared-module/max3421e/Max3421E.c
+#: shared-module/max3421e/Max3421E.c shared-module/usb/core/Device.c
 msgid "%q in use"
 msgstr "%q είναι σε χρήση"
 
@@ -1592,7 +1776,9 @@ msgstr ""
 msgid "pop from an empty PulseIn"
 msgstr ""
 
-#: ports/espressif/common-hal/qspibus/QSPIBus.c shared-module/usb/core/Device.c
+#: ports/espressif/common-hal/qspibus/QSPIBus.c
+#: ports/raspberrypi/common-hal/usb_host_bulk/InStream.c
+#: shared-module/usb/core/Device.c
 msgid "Could not allocate DMA capable buffer"
 msgstr ""
 
@@ -1648,13 +1834,11 @@ msgstr ""
 
 #: ports/espressif/common-hal/socketpool/Socket.c
 #: ports/raspberrypi/common-hal/socketpool/Socket.c
-#: ports/zephyr-cp/common-hal/socketpool/Socket.c
 msgid "Out of sockets"
 msgstr ""
 
 #: ports/espressif/common-hal/socketpool/SocketPool.c
-#: ports/raspberrypi/common-hal/socketpool/SocketPool.c
-msgid "SocketPool can only be used with wifi.radio"
+msgid "SocketPool can only be used with %q.%q or any %q.%q"
 msgstr ""
 
 #: ports/espressif/common-hal/watchdog/WatchDogTimer.c
@@ -1735,11 +1919,6 @@ msgstr ""
 msgid "non-zero timeout must be > 0.01"
 msgstr ""
 
-#: ports/nordic/common-hal/_bleio/Adapter.c
-#: ports/zephyr-cp/common-hal/_bleio/Adapter.c
-msgid "Failed to connect: timeout"
-msgstr ""
-
 #: ports/nordic/common-hal/_bleio/UUID.c
 msgid "Unexpected nrfx uuid type"
 msgstr ""
@@ -1751,24 +1930,6 @@ msgstr ""
 #: ports/nordic/common-hal/_bleio/__init__.c
 #, c-format
 msgid "Unknown system firmware error: %04x"
-msgstr ""
-
-#: ports/nordic/common-hal/_bleio/__init__.c
-#, c-format
-msgid "Unknown gatt error: 0x%04x"
-msgstr ""
-
-#: ports/nordic/common-hal/_bleio/__init__.c
-#: ports/zephyr-cp/common-hal/_bleio/Connection.c
-msgid ""
-"Unspecified issue. The pairing request on the other device may have been "
-"declined or ignored."
-msgstr ""
-
-#: ports/nordic/common-hal/_bleio/__init__.c
-#: ports/zephyr-cp/common-hal/_bleio/Connection.c
-#, c-format
-msgid "Unknown security error: 0x%04x"
 msgstr ""
 
 #: ports/nordic/common-hal/alarm/pin/PinAlarm.c
@@ -1841,6 +2002,13 @@ msgstr "Η μετατροπή ήχου δεν υποστηρίζεται"
 #: shared-module/displayio/__init__.c shared-module/synthio/Synthesizer.c
 msgid "%q must be of type %q or %q, not %q"
 msgstr "%q πρέπει να είναι τύπου %q ή %q, όχι %q"
+
+#: ports/raspberrypi/bindings/picodvi/AudioOut.c
+#: shared-bindings/audiobusio/I2SOut.c shared-bindings/audioio/AudioOut.c
+#: shared-bindings/audiopwmio/PWMAudioOut.c shared-bindings/mcp4822/MCP4822.c
+#: shared-bindings/usb_audio/USBMicrophone.c
+msgid "Not playing"
+msgstr ""
 
 #: ports/raspberrypi/bindings/rp2pio/StateMachine.c
 msgid "Program size invalid"
@@ -1992,13 +2160,6 @@ msgstr ""
 msgid "All timers for this pin are in use"
 msgstr "Όλοι οι χρονιστές για αυτό το pin χρησιμοποιούνται ήδη"
 
-#: ports/raspberrypi/common-hal/picogame/Display.c py/argcheck.c py/runtime.c
-#: shared-bindings/bitmapfilter/__init__.c
-#: shared-module/audiodelays/MultiTapDelay.c shared-module/synthio/Note.c
-#: shared-module/synthio/__init__.c
-msgid "%q must be of type %q, not %q"
-msgstr "%q πρέπει να είναι τύπου %q, όχι %q"
-
 #: ports/raspberrypi/common-hal/rotaryio/IncrementalEncoder.c
 msgid "Pins must be sequential GPIO pins"
 msgstr ""
@@ -2098,6 +2259,10 @@ msgstr ""
 
 #: ports/raspberrypi/common-hal/socketpool/Socket.c
 msgid "Only IPv4 sockets supported"
+msgstr ""
+
+#: ports/raspberrypi/common-hal/socketpool/SocketPool.c
+msgid "SocketPool can only be used with wifi.radio"
 msgstr ""
 
 #: ports/raspberrypi/common-hal/usb_host/Port.c
@@ -2281,8 +2446,12 @@ msgstr ""
 msgid "Use device tree to define %q devices"
 msgstr ""
 
+#: ports/zephyr-cp/common-hal/mii/Ethernet.c
+msgid "cannot construct ethernet interfaces; use board.ETHERNET"
+msgstr ""
+
 #: ports/zephyr-cp/common-hal/socketpool/SocketPool.c
-msgid "SocketPool can only be used with wifi.radio or hostnetwork.HostNetwork"
+msgid "SocketPool can only be used with %q.%q, %q.%q, or %q.%q"
 msgstr ""
 
 #: ports/zephyr-cp/common-hal/usb_hid/Device.c shared-module/usb_hid/Device.c
@@ -3785,12 +3954,6 @@ msgstr ""
 msgid "%q must be a bytearray or array of type 'H' or 'B'"
 msgstr "%q πρέπει να είναι bytearray ή array τύπου 'H' ή 'B'"
 
-#: shared-bindings/audiobusio/I2SOut.c shared-bindings/audioio/AudioOut.c
-#: shared-bindings/audiopwmio/PWMAudioOut.c shared-bindings/mcp4822/MCP4822.c
-#: shared-bindings/usb_audio/USBMicrophone.c
-msgid "Not playing"
-msgstr ""
-
 #: shared-bindings/audiobusio/PDMIn.c
 msgid "%q must be multiple of 8."
 msgstr ""
@@ -3821,12 +3984,6 @@ msgstr "%q πρέπει να είναι bytearray ή array τύπου 'h', 'H', 
 msgid "Length of %q must be an even multiple of channel_count * type_size"
 msgstr ""
 
-#: shared-bindings/audiocore/WaveFile.c shared-bindings/audiomp3/MP3Decoder.c
-#: shared-bindings/displayio/OnDiskBitmap.c shared-bindings/gifio/OnDiskGif.c
-#: shared-bindings/synthio/__init__.c shared-module/gifio/GifWriter.c
-msgid "file must be a file opened in byte mode"
-msgstr ""
-
 #: shared-bindings/audiodelays/Chorus.c shared-bindings/audiodelays/Echo.c
 #: shared-bindings/audiodelays/Flanger.c
 #: shared-bindings/audiodelays/GranularPitchShift.c
@@ -3854,6 +4011,12 @@ msgstr ""
 #: shared-bindings/audioio/AudioOut.c shared-bindings/emmcio/EMMC.c
 msgid "%q and %q must be different"
 msgstr "%q και %q πρεπει να είναι διαφορετικά"
+
+#: shared-bindings/audiomp3/MP3Decoder.c
+#: shared-bindings/displayio/OnDiskBitmap.c shared-bindings/gifio/OnDiskGif.c
+#: shared-bindings/synthio/__init__.c shared-module/gifio/GifWriter.c
+msgid "file must be a file opened in byte mode"
+msgstr ""
 
 #: shared-bindings/bitmapfilter/__init__.c
 msgid ""
@@ -4153,6 +4316,10 @@ msgstr "%q περιέχει διπλότυπα pins"
 msgid "%q and %q contain duplicate pins"
 msgstr "%q και %q περιέχουν διπλότυπα pins"
 
+#: shared-bindings/mii/Ethernet.c shared-bindings/wifi/Radio.c
+msgid "invalid hostname"
+msgstr ""
+
 #: shared-bindings/msgpack/ExtType.c
 msgid "code outside range 0~127"
 msgstr ""
@@ -4208,28 +4375,6 @@ msgstr ""
 
 #: shared-bindings/rclcpy/Publisher.c
 msgid "Publishers can only be created from a parent node"
-msgstr ""
-
-#: shared-bindings/rgbmatrix/RGBMatrix.c
-msgid "The length of rgb_pins must be 6, 12, 18, 24, or 30"
-msgstr ""
-
-#: shared-bindings/rgbmatrix/RGBMatrix.c
-#, c-format
-msgid "rgb_pins[%d] is not on the same port as clock"
-msgstr ""
-
-#: shared-bindings/rgbmatrix/RGBMatrix.c
-#, c-format
-msgid "rgb_pins[%d] duplicates another pin assignment"
-msgstr ""
-
-#: shared-bindings/rgbmatrix/RGBMatrix.c
-#, c-format
-msgid ""
-"Pinout uses %d bytes per element, which consumes more than the ideal %d "
-"bytes.  If this cannot be avoided, pass allow_inefficient=True to the "
-"constructor"
 msgstr ""
 
 #: shared-bindings/rgbmatrix/RGBMatrix.c
@@ -4313,10 +4458,6 @@ msgstr "%q πρέπει να είναι υποκλάση του %q"
 
 #: shared-bindings/wifi/Radio.c
 msgid "Invalid hex password"
-msgstr ""
-
-#: shared-bindings/wifi/Radio.c
-msgid "invalid hostname"
 msgstr ""
 
 #: shared-bindings/wifi/Radio.c
@@ -4521,6 +4662,28 @@ msgid ""
 msgstr ""
 
 #: shared-module/rgbmatrix/RGBMatrix.c
+msgid "The length of rgb_pins must be 6, 12, 18, 24, or 30"
+msgstr ""
+
+#: shared-module/rgbmatrix/RGBMatrix.c
+#, c-format
+msgid "rgb_pins[%d] is not on the same port as clock"
+msgstr ""
+
+#: shared-module/rgbmatrix/RGBMatrix.c
+#, c-format
+msgid "rgb_pins[%d] duplicates another pin assignment"
+msgstr ""
+
+#: shared-module/rgbmatrix/RGBMatrix.c
+#, c-format
+msgid ""
+"Pinout uses %d bytes per element, which consumes more than the ideal %d "
+"bytes.  If this cannot be avoided, pass allow_inefficient=True to the "
+"constructor"
+msgstr ""
+
+#: shared-module/rgbmatrix/RGBMatrix.c
 msgid "No timer available"
 msgstr ""
 
@@ -4562,11 +4725,11 @@ msgid "Invalid socket for TLS"
 msgstr ""
 
 #: shared-module/ssl/SSLSocket.c
-msgid "invalid key"
+msgid "invalid cert"
 msgstr ""
 
-#: shared-module/ssl/SSLSocket.c
-msgid "invalid cert"
+#: shared-module/storage/__init__.c
+msgid "File write in progress"
 msgstr ""
 
 #: shared-module/storage/__init__.c

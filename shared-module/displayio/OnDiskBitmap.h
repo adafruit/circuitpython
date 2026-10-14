@@ -28,4 +28,8 @@ typedef struct {
     };
     bool bitfield_compressed;
     uint8_t bits_per_pixel;
+    // The last bytes read from the file. Pixels are read along rows, so most reads hit it.
+    uint8_t cache_len;
+    uint32_t cache_start;
+    uint8_t cache[64];
 } displayio_ondiskbitmap_t;

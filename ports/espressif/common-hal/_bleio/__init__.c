@@ -28,8 +28,27 @@
 
 #include "nvs_flash.h"
 
+// State for the current GATT client read or write. The NimBLE callbacks run on the
+// nimble_host task and record the result here, under _completion_mutex.
+//
+// We stop waiting after 2 seconds, but NimBLE waits 30 seconds for a response, so a
+// callback can arrive after its caller has returned. Each request gets a new
+// sequence number, passed as the callback argument, and callbacks for older requests
+// are ignored. Read data is staged in _read_buf rather than written to the caller's
+// buffer, which may no longer exist.
+//
+// After a timeout, NimBLE still has the request outstanding on that connection. It
+// holds later requests on the connection until a response arrives or it disconnects
+// at 30 seconds, so those requests time out too. The stale requests also occupy
+// NimBLE's GATT procedure pool (CONFIG_BT_NIMBLE_GATT_MAX_PROCS), so new ones can
+// fail with BLE_HS_ENOMEM until then.
+static portMUX_TYPE _completion_mutex = portMUX_INITIALIZER_UNLOCKED;
+static uint32_t _completion_seq;
+// A status of 0 means success, so it can't also mean "still waiting".
 static volatile int _completion_status;
-static uint64_t _timeout_start_time;
+static volatile bool _completion_done;
+static uint8_t _read_buf[BLE_ATT_ATTR_MAX_LEN];
+static uint16_t _read_len;
 
 background_callback_t bleio_background_callback;
 
@@ -100,7 +119,13 @@ void bleio_reset(void) {
     // tables are stale. Signal Service Changed over the whole handle range.
     // Without Service Changed, a bonded host trusts its cache indefinitely and can
     // look up characteristics at stale handles.
-    ble_svc_gatt_changed(0x0001, 0xffff);
+    //
+    // supervisor_start_bluetooth() restarts the stack only when the BLE workflow
+    // is enabled. If it did not, NimBLE is stopped and its GATT server state is
+    // gone, so we can't signal anything, and if we tried, we'd cause a crash.
+    if (common_hal_bleio_adapter_get_enabled(&common_hal_bleio_adapter_obj)) {
+        ble_svc_gatt_changed(0x0001, 0xffff);
+    }
 }
 
 // The singleton _bleio.Adapter object, bound to _bleio.adapter
@@ -157,12 +182,12 @@ void check_nimble_error(int rc, const char *file, size_t line) {
         default:
             #if CIRCUITPY_VERBOSE_BLE || CIRCUITPY_DEBUG
             if (file) {
-                mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Unknown system firmware error at %s:%d: %d"), file, line, rc);
+                mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Unknown BLE error at %s:%d: 0x%04x"), file, line, rc);
             }
             #else
             (void)file;
             (void)line;
-            mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Unknown system firmware error: %d"), rc);
+            mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Unknown BLE error: 0x%04x"), rc);
             #endif
 
             break;
@@ -175,21 +200,38 @@ void check_ble_error(int error_code, const char *file, size_t line) {
         return;
     }
     switch (error_code) {
+        case BLE_HS_ATT_ERR(BLE_ATT_ERR_READ_NOT_PERMITTED):
+            mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("%q not permitted"), MP_QSTR_read);
+            return;
+        case BLE_HS_ATT_ERR(BLE_ATT_ERR_WRITE_NOT_PERMITTED):
+            mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("%q not permitted"), MP_QSTR_write);
+            return;
         case BLE_HS_ATT_ERR(BLE_ATT_ERR_INSUFFICIENT_AUTHEN):
             mp_raise_bleio_SecurityError(MP_ERROR_TEXT("Insufficient authentication"));
             return;
+        case BLE_HS_ATT_ERR(BLE_ATT_ERR_INSUFFICIENT_AUTHOR):
+            mp_raise_bleio_SecurityError(MP_ERROR_TEXT("Insufficient authorization"));
+            return;
         case BLE_HS_ATT_ERR(BLE_ATT_ERR_INSUFFICIENT_ENC):
+        case BLE_HS_ATT_ERR(BLE_ATT_ERR_INSUFFICIENT_KEY_SZ):
             mp_raise_bleio_SecurityError(MP_ERROR_TEXT("Insufficient encryption"));
             return;
+        case BLE_HS_ATT_ERR(BLE_ATT_ERR_INVALID_ATTR_VALUE_LEN):
+            mp_arg_error_invalid(MP_QSTR_length);
+            return;
         default:
+            if (error_code > BLE_HS_ERR_ATT_BASE && error_code < BLE_HS_ERR_HCI_BASE) {
+                // Some other ATT error from the peer.
+                mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Unknown gatt error: 0x%04x"), error_code);
+            }
             #if CIRCUITPY_VERBOSE_BLE || CIRCUITPY_DEBUG
             if (file) {
-                mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Unknown BLE error at %s:%d: %d"), file, line, error_code);
+                mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Unknown BLE error at %s:%d: 0x%04x"), file, line, error_code);
             }
             #else
             (void)file;
             (void)line;
-            mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Unknown BLE error: %d"), error_code);
+            mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Unknown BLE error: 0x%04x"), error_code);
             #endif
 
             break;
@@ -209,68 +251,91 @@ void bleio_check_connected(uint16_t conn_handle) {
     }
 }
 
-static void _reset_completion_status(void) {
+// Start a new request, which makes callbacks for any earlier request stale.
+// Returns the sequence number to pass as the NimBLE callback argument.
+static void *_start_request(void) {
+    portENTER_CRITICAL(&_completion_mutex);
+    _completion_seq++;
     _completion_status = 0;
+    _completion_done = false;
+    _read_len = 0;
+    const uint32_t seq = _completion_seq;
+    portEXIT_CRITICAL(&_completion_mutex);
+    return (void *)(uintptr_t)seq;
 }
 
-// Wait for a status change, recorded in a callback.
-// Try twice because sometimes we get a BLE_HS_EAGAIN.
-// Maybe we should try more than twice.
+// Record a callback's status if it is for the current request. Returns true if so.
+// Call with _completion_mutex held.
+static bool _complete_request(void *arg, int status) {
+    if ((uint32_t)(uintptr_t)arg != _completion_seq) {
+        return false;
+    }
+    _completion_status = status;
+    _completion_done = true;
+    return true;
+}
+
+// Wait for a callback to record a completion status, and return that status.
+// Return BLE_HS_ETIMEOUT if no callback arrives in time. If interrupted, return 0
+// with _completion_done still false, so the pending KeyboardInterrupt is raised
+// instead of an error.
 static int _wait_for_completion(uint32_t timeout_msecs) {
-    for (int tries = 1; tries <= 2; tries++) {
-        _timeout_start_time = common_hal_time_monotonic_ms();
-        while ((_completion_status == 0) &&
-               (common_hal_time_monotonic_ms() < _timeout_start_time + timeout_msecs) &&
-               !mp_hal_is_interrupted()) {
-            RUN_BACKGROUND_TASKS;
+    const uint64_t timeout_time_ms = common_hal_time_monotonic_ms() + timeout_msecs;
+    while (!_completion_done) {
+        if (mp_hal_is_interrupted()) {
+            return 0;
         }
-        if (_completion_status != BLE_HS_EAGAIN) {
-            // Quit, because either the status is either zero (OK) or it's an error.
-            break;
+        if (common_hal_time_monotonic_ms() >= timeout_time_ms) {
+            return BLE_HS_ETIMEOUT;
         }
+        RUN_BACKGROUND_TASKS;
     }
     return _completion_status;
 }
 
-typedef struct {
-    uint8_t *buf;
-    uint16_t len;
-} _read_info_t;
+// Raise an exception for a nonzero completion status. Statuses from
+// BLE_HS_ERR_ATT_BASE up are ATT errors from the peer, such as insufficient
+// encryption, which check_ble_error() maps to SecurityError.
+static void _check_completion_status(int status) {
+    if (status < BLE_HS_ERR_ATT_BASE) {
+        CHECK_NIMBLE_ERROR(status);
+        return;
+    }
+    CHECK_BLE_ERROR(status);
+}
 
 static int _read_cb(uint16_t conn_handle,
     const struct ble_gatt_error *error,
     struct ble_gatt_attr *attr,
     void *arg) {
-    _read_info_t *read_info = (_read_info_t *)arg;
-    switch (error->status) {
-        case 0: {
-            int len = MIN(read_info->len, OS_MBUF_PKTLEN(attr->om));
-            os_mbuf_copydata(attr->om, attr->offset, len, read_info->buf);
-            read_info->len = len;
-        }
-            MP_FALLTHROUGH;
+    #if CIRCUITPY_VERBOSE_BLE
+    // For debugging.
+    mp_printf(&mp_plat_print, "Read status: %d\n", error->status);
+    #endif
 
-        default:
-            #if CIRCUITPY_VERBOSE_BLE
-            // For debugging.
-            mp_printf(&mp_plat_print, "Read status: %d\n", error->status);
-            #endif
-            break;
+    portENTER_CRITICAL(&_completion_mutex);
+    // A single read gets exactly one callback, so the staged data can't be
+    // overwritten once the request is complete.
+    if (_complete_request(arg, error->status) && error->status == 0) {
+        _read_len = MIN(sizeof(_read_buf), OS_MBUF_PKTLEN(attr->om));
+        os_mbuf_copydata(attr->om, attr->offset, _read_len, _read_buf);
     }
-    _completion_status = error->status;
+    portEXIT_CRITICAL(&_completion_mutex);
 
     return 0;
 }
 
 int bleio_gattc_read(uint16_t conn_handle, uint16_t value_handle, uint8_t *buf, size_t len) {
-    _read_info_t read_info = {
-        .buf = buf,
-        .len = len
-    };
-    _reset_completion_status();
-    CHECK_NIMBLE_ERROR(ble_gattc_read(conn_handle, value_handle, _read_cb, &read_info));
-    CHECK_NIMBLE_ERROR(_wait_for_completion(2000));
-    return read_info.len;
+    void *seq = _start_request();
+    CHECK_NIMBLE_ERROR(ble_gattc_read(conn_handle, value_handle, _read_cb, seq));
+    _check_completion_status(_wait_for_completion(2000));
+    if (!_completion_done) {
+        // Interrupted: nothing was read.
+        return 0;
+    }
+    len = MIN(len, _read_len);
+    memcpy(buf, _read_buf, len);
+    return len;
 }
 
 
@@ -278,13 +343,15 @@ static int _write_cb(uint16_t conn_handle,
     const struct ble_gatt_error *error,
     struct ble_gatt_attr *attr,
     void *arg) {
-    _completion_status = error->status;
+    portENTER_CRITICAL(&_completion_mutex);
+    _complete_request(arg, error->status);
+    portEXIT_CRITICAL(&_completion_mutex);
 
     return 0;
 }
 
 void bleio_gattc_write(uint16_t conn_handle, uint16_t value_handle, uint8_t *buf, size_t len) {
-    _reset_completion_status();
-    CHECK_NIMBLE_ERROR(ble_gattc_write_flat(conn_handle, value_handle, buf, len, _write_cb, NULL));
-    CHECK_NIMBLE_ERROR(_wait_for_completion(2000));
+    void *seq = _start_request();
+    CHECK_NIMBLE_ERROR(ble_gattc_write_flat(conn_handle, value_handle, buf, len, _write_cb, seq));
+    _check_completion_status(_wait_for_completion(2000));
 }

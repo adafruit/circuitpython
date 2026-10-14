@@ -28,8 +28,6 @@ void initialize_discharge_pin(void) {
 
     common_hal_digitalio_digitalinout_construct(&power_pin, &pin_PE04);
     common_hal_digitalio_digitalinout_construct(&discharge_pin, &pin_PE06);
-    common_hal_digitalio_digitalinout_never_reset(&power_pin);
-    common_hal_digitalio_digitalinout_never_reset(&discharge_pin);
 
     GPIO_InitTypeDef GPIO_InitStruct;
     /* Set the DISCHARGE pin and the USB_DETECT pin to FLOAT */

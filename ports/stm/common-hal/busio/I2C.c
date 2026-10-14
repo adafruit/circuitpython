@@ -152,10 +152,6 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
     HAL_NVIC_EnableIRQ(self->irq);
 }
 
-void common_hal_busio_i2c_never_reset(busio_i2c_obj_t *self) {
-    never_reset_pin_number(self->scl->pin->port, self->scl->pin->number);
-    never_reset_pin_number(self->sda->pin->port, self->sda->pin->number);
-}
 
 bool common_hal_busio_i2c_deinited(busio_i2c_obj_t *self) {
     return self->sda == NULL;

@@ -54,7 +54,9 @@ typedef struct {
     // EDIV: Encrypted Diversifier: Identifies LTK during legacy pairing.
     uint16_t ediv;
     volatile pair_status_t pair_status;
-    uint8_t sec_status; // Internal security status.
+    // NimBLE status from the last BLE_GAP_EVENT_ENC_CHANGE: 0 on success, otherwise why
+    // pairing or encryption failed. Reported by pair().
+    volatile int sec_status;
     // The 6-digit LE Secure Connections numeric-comparison value stashed by
     // BLE_GAP_EVENT_PASSKEY_ACTION. Only valid while pair_status == PAIR_WAITING_NUMCMP.
     volatile uint32_t pairing_numcmp;

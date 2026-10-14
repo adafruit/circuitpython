@@ -29,5 +29,3 @@ typedef struct {
     uint8_t cts_pin_number;
     uint8_t rts_pin_number;
 } busio_uart_obj_t;
-
-void uart_reset(void);

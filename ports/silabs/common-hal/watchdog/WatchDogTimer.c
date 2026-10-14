@@ -39,7 +39,7 @@ void common_hal_watchdog_feed(watchdog_watchdogtimer_obj_t *self) {
     WDOGn_Feed(DEFAULT_WDOG);
 }
 
-void common_hal_watchdog_deinit(watchdog_watchdogtimer_obj_t *self) {
+void common_hal_watchdog_reset(watchdog_watchdogtimer_obj_t *self) {
     if (!_wdt_init) {
         return;
     }
@@ -129,7 +129,7 @@ void common_hal_watchdog_set_mode(watchdog_watchdogtimer_obj_t *self,
                 MP_ERROR_TEXT("RAISE mode is not implemented"));
         } else if (new_mode == WATCHDOGMODE_NONE) {
             self->mode = WATCHDOGMODE_NONE;
-            common_hal_watchdog_deinit(self);
+            common_hal_watchdog_reset(self);
         }
         self->mode = new_mode;
         common_hal_watchdog_set_timeout(self, self->timeout);

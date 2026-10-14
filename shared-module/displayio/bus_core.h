@@ -20,6 +20,10 @@ typedef struct {
     display_bus_bus_free bus_free;
     display_bus_begin_transaction begin_transaction;
     display_bus_send send;
+    // Optional. Like send, but may return before the data is sent: the data must not change and
+    // the bus must not be used until flush returns. NULL when the bus has no such mode; only set
+    // and read when CIRCUITPY_BUSIO_SPI_ASYNC.
+    display_bus_send send_async;
     display_bus_end_transaction end_transaction;
     display_bus_flush flush;
     display_bus_collect_ptrs collect_ptrs;

@@ -4,6 +4,8 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include <string.h>
+
 #include "py/runtime.h"
 #include "shared-module/picogame/pg_compat.h"
 #include "shared-bindings/picogame/Tilemap.h"
@@ -175,11 +177,9 @@ static mp_obj_t picogame_tilemap_fill(mp_obj_t self_in, mp_obj_t value_in) {
     picogame_tilemap_obj_t *self = MP_OBJ_TO_PTR(self_in);
     uint8_t v = mp_obj_get_int(value_in) & 0xff;
     size_t total = (size_t)self->map_w * self->map_h;
-    for (size_t i = 0; i < total; i++) {
-        self->map[i] = v;
-        if (self->orient) {
-            self->orient[i] = 0;       // a plain fill clears any per-cell orientation
-        }
+    memset(self->map, v, total);
+    if (self->orient) {
+        memset(self->orient, 0, total);   // a plain fill clears any per-cell orientation
     }
     int x1, y1, x2, y2;
     picogame_tilemap_extent(self, &x1, &y1, &x2, &y2);

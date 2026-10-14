@@ -59,8 +59,6 @@ typedef struct {
     uint8_t half_width_px;
 
     supervisor_vfs_file_t file;
-    // Which mount the file is open on, for locking around file reads.
-    supervisor_vfs_t *vfs;
     bool file_is_open;
 
     // Font metrics information loaded from file

@@ -47,6 +47,8 @@ typedef struct {
 // Shared implementation.
 bool usb_enabled(void);
 void usb_add_interface_string(uint8_t interface_string_index, const char str[]);
+// Add custom_name, or if it is NULL, USB_INTERFACE_NAME, a space, and default_suffix.
+void usb_add_interface_name(uint8_t interface_string_index, const char *custom_name, const char *default_suffix);
 bool usb_build_descriptors(const usb_identification_t *identification);
 bool usb_connected(void);
 void usb_disconnect(void);
@@ -66,9 +68,16 @@ size_t usb_msc_descriptor_length(void);
 size_t usb_msc_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *descriptor_counts, uint8_t *current_interface_string);
 void usb_msc_mount(void);
 void usb_msc_umount(void);
+// Release the USB MSC lock on CIRCUITPY (LUN 0) if USB MSC holds it, so that
+// Python, workflows, and storage.remount() can lock it again.
+// Does nothing if USB MSC does not hold the lock. Does not raise or allocate.
+void usb_msc_release_circuitpy_lock(void);
 
 #include "extmod/vfs_fat.h"
 void usb_msc_remount(fs_user_mount_t *fs_mount);
+// Whether USB MSC holds the blockdev lock on this mount because it reported
+// the drive writable to the host. Does not raise or allocate.
+bool usb_msc_holds_lock(fs_user_mount_t *vfs);
 #endif
 
 #if CIRCUITPY_USB_KEYBOARD_WORKFLOW

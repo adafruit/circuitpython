@@ -49,6 +49,8 @@ typedef union {
 } interface_string_t;
 static interface_string_t collected_interface_strings[MAX_INTERFACE_STRINGS];
 
+// Bit n set: string n is a suffix to put after USB_INTERFACE_NAME and a space.
+static uint32_t prefixed_interface_strings;
 static size_t collected_interface_strings_length;
 static uint8_t current_interface_string;
 
@@ -289,19 +291,36 @@ static bool usb_build_configuration_descriptor(void) {
 }
 
 // str must not be on the heap.
-void usb_add_interface_string(uint8_t interface_string_index, const char str[]) {
+void usb_add_interface_name(uint8_t interface_string_index, const char *custom_name, const char *default_suffix) {
     if (interface_string_index > MAX_INTERFACE_STRINGS) {
         reset_into_safe_mode(SAFE_MODE_USB_TOO_MANY_INTERFACE_NAMES);
     }
 
+    const char *str = custom_name;
+    if (str == NULL) {
+        str = default_suffix;
+        prefixed_interface_strings |= 1u << interface_string_index;
+        collected_interface_strings_length += sizeof(USB_INTERFACE_NAME " ") - 1;
+    }
     collected_interface_strings[interface_string_index].char_str = str;
     collected_interface_strings_length += strlen(str);
+}
+
+void usb_add_interface_string(uint8_t interface_string_index, const char str[]) {
+    usb_add_interface_name(interface_string_index, str, NULL);
 }
 
 static const uint16_t language_id[] = {
     0x0304,
     0x0409,
 };
+
+static uint16_t *ascii_to_le16(uint16_t *dest, const char *str) {
+    while (*str) {
+        *dest++ = *str++;
+    }
+    return dest;
+}
 
 static bool usb_build_interface_string_table(void) {
     // Allocate space for the le16 String descriptors.
@@ -322,22 +341,20 @@ static bool usb_build_interface_string_table(void) {
     // Start at 1 to skip the Language ID.
     for (uint8_t string_index = 1; string_index < current_interface_string; string_index++) {
         const char *str = collected_interface_strings[string_index].char_str;
-        const size_t str_len = strlen(str);
-        // 1 word for descriptor type and length, 1 word for each character.
-        const uint8_t descriptor_size_words = 1 + str_len;
-        const uint8_t descriptor_size_bytes = descriptor_size_words * 2;
-        string_descriptor[0] = 0x0300 | descriptor_size_bytes;
-
-        // Convert to le16.
-        for (size_t i = 0; i < str_len; i++) {
-            string_descriptor[i + 1] = str[i];
+        // Convert to le16 after 1 word for descriptor type and length.
+        uint16_t *end = string_descriptor + 1;
+        if (prefixed_interface_strings & (1u << string_index)) {
+            end = ascii_to_le16(end, USB_INTERFACE_NAME " ");
         }
+        end = ascii_to_le16(end, str);
+        const uint8_t descriptor_size_bytes = (end - string_descriptor) * 2;
+        string_descriptor[0] = 0x0300 | descriptor_size_bytes;
 
         // Save ptr to string descriptor with le16 str.
         collected_interface_strings[string_index].descriptor = string_descriptor;
 
         // Move to next descriptor slot.
-        string_descriptor += descriptor_size_words;
+        string_descriptor = end;
     }
     return true;
 }
@@ -358,6 +375,7 @@ bool usb_build_descriptors(const usb_identification_t *identification) {
     serial_number_hex_string[sizeof(serial_number_hex_string) - 1] = '\0';
 
     current_interface_string = 1;
+    prefixed_interface_strings = 0;
     collected_interface_strings_length = 0;
 
     return usb_build_device_descriptor(identification) &&

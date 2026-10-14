@@ -256,6 +256,11 @@ typedef long mp_off_t;
 #define MICROPY_CPYTHON_EXCEPTION_CHAIN       (CIRCUITPY_FULL_BUILD)
 #endif
 
+// Allow %e/%f/%g in mp_printf().
+#ifndef MICROPY_PRINTF_FLOAT
+#define MICROPY_PRINTF_FLOAT                  (CIRCUITPY_FULL_BUILD && MICROPY_PY_BUILTINS_FLOAT)
+#endif
+
 #define MICROPY_PY_BUILTINS_POW3              (CIRCUITPY_BUILTINS_POW3)
 #define MICROPY_PY_FSTRINGS                   (1)
 #define MICROPY_MODULE_WEAK_LINKS             (0)
@@ -404,6 +409,11 @@ typedef long mp_off_t;
 #define CIRCUITPY_CONSOLE_UART_HEXDUMP(...) (void)0
 #endif
 
+// Normally set from CIRCUITPY_BUSIO_SPI_ASYNC in the .mk files.
+#ifndef CIRCUITPY_BUSIO_SPI_ASYNC
+#define CIRCUITPY_BUSIO_SPI_ASYNC (0)
+#endif
+
 // These CIRCUITPY_xxx values should all be defined in the *.mk files as being on or off.
 // So if any are not defined in *.mk, they'll throw an error here.
 
@@ -412,16 +422,13 @@ typedef long mp_off_t;
 #define CIRCUITPY_DISPLAY_LIMIT (1)
 #endif
 
-// Display area buffer size in bytes for _refresh_area() VLA.
-// Allocated on stack; boards with larger displays can override per-board.
-// Default 512 bytes = 128 uint32_t words.
+// Normally set from CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE in the .mk files.
 #ifndef CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE
 #define CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE (512)
 #endif
 
 #else
 #define CIRCUITPY_DISPLAY_LIMIT (0)
-#define CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE (0)
 #endif
 
 // This is not a top-level module; it's microcontroller.nvm.
@@ -436,6 +443,19 @@ extern const struct _mp_obj_module_t nvm_module;
 // The random module is fairly large.
 #ifndef ULAB_NUMPY_HAS_RANDOM_MODULE
 #define ULAB_NUMPY_HAS_RANDOM_MODULE (0)
+#endif
+
+// The scipy.integrate module is about 6 kB.
+#ifndef ULAB_SCIPY_HAS_INTEGRATE_MODULE
+#define ULAB_SCIPY_HAS_INTEGRATE_MODULE (0)
+#endif
+
+// The ndarray modulo operators are about 4 kB.
+#ifndef NDARRAY_HAS_BINARY_OP_MODULO
+#define NDARRAY_HAS_BINARY_OP_MODULO (0)
+#endif
+#ifndef NDARRAY_HAS_INPLACE_MODULO
+#define NDARRAY_HAS_INPLACE_MODULO (0)
 #endif
 
 #if CIRCUITPY_ULAB
@@ -587,6 +607,11 @@ void background_callback_run_all(void);
 #define CIRCUITPY_USB_HOST_HIGH_SPEED 0
 #endif
 
+// usb_host_bulk takes a usb.core.Device and uses TinyUSB host calls.
+#if CIRCUITPY_USB_HOST_BULK && !(CIRCUITPY_USB_HOST && CIRCUITPY_PYUSB)
+#error CIRCUITPY_USB_HOST_BULK requires CIRCUITPY_USB_HOST and CIRCUITPY_PYUSB
+#endif
+
 // If the port requires certain USB endpoint numbers, define these in mpconfigport.h.
 
 #ifndef USB_CDC_EP_NUM_NOTIFICATION
@@ -714,6 +739,13 @@ void background_callback_run_all(void);
 #endif
 #if defined(CIRCUITPY_BOOT_BUTTON) && CIRCUITPY_BOOT_BUTTON_NO_GPIO
 #error "CIRCUITPY_BOOT_BUTTON and CIRCUITPY_BOOT_BUTTON_NO_GPIO are mutually exclusive"
+#endif
+
+// Boards that define CIRCUITPY_BOOT_BUTTON can set
+// CIRCUITPY_BOOT_BUTTON_ACTIVE_HIGH to 1 when the button pin reads high while
+// pressed. The default is active-low (the pin reads low while pressed).
+#ifndef CIRCUITPY_BOOT_BUTTON_ACTIVE_HIGH
+#define CIRCUITPY_BOOT_BUTTON_ACTIVE_HIGH (0)
 #endif
 
 #if defined(__GNUC__) && !defined(__ZEPHYR__)

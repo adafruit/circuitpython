@@ -1,0 +1,529 @@
+# Package pin map for mcxn947_vnl, transcribed from MCXNP184M150F70.pdf,
+# section 6.1 Table 93 (Pinmux), 100HLQFP N94 column, with a one-off
+# pdftotext -layout parse. Review against the datasheet figure before
+# editing by hand; regenerate instead when the datasheet changes.
+#
+# QFN-style package: 'pin' holds the datasheet's pin number (1..100); the
+# pads the package does not bond are omitted, so the numbering has gaps.
+
+# The ``gpio`` column is the pad's global GPIO number (gpio port index * 32
+# + pin, the numbering the GPIO controller table resolves) when the pad
+# bonds a GPIO controller; pads without it (the analog-only pads) are
+# reachable only through the analog APIs.
+
+# The analog-only pads (ANA) carry datasheet pad names:
+#   ANA_0 = ADC0_A0 (pin 22, pad 139)
+#   ANA_1 = ADC0_B0 (pin 23, pad 150)
+#   ANA_14 = OPAMP0_INN (pin 36, pad 178)
+#   ANA_18 = OPAMP1_INN (pin 39, pad 179)
+#   ANA_4 = ADC1_A0 (pin 26, pad 162)
+#   ANA_5 = ADC1_B0 (pin 27, pad 163)
+#   ANA_6 = DAC2_OUT (pin 28, pad 176)
+#   ANA_7 = unused (pin 29, pad 177)
+
+[[pins]]
+pin = 76
+pad_name = "P0.00"
+gpio = 0
+
+
+[[pins]]
+pin = 77
+pad_name = "P0.01"
+gpio = 1
+
+
+[[pins]]
+pin = 78
+pad_name = "P0.02"
+gpio = 2
+
+
+[[pins]]
+pin = 79
+pad_name = "P0.03"
+gpio = 3
+
+
+[[pins]]
+pin = 80
+pad_name = "P0.04"
+gpio = 4
+
+
+[[pins]]
+pin = 81
+pad_name = "P0.05"
+gpio = 5
+
+
+[[pins]]
+pin = 82
+pad_name = "P0.06"
+gpio = 6
+
+
+[[pins]]
+pin = 84
+pad_name = "P0.16"
+gpio = 16
+
+
+[[pins]]
+pin = 85
+pad_name = "P0.17"
+gpio = 17
+
+
+[[pins]]
+pin = 86
+pad_name = "P0.18"
+gpio = 18
+
+
+[[pins]]
+pin = 87
+pad_name = "P0.19"
+gpio = 19
+
+
+[[pins]]
+pin = 88
+pad_name = "P0.20"
+gpio = 20
+
+
+[[pins]]
+pin = 89
+pad_name = "P0.21"
+gpio = 21
+
+
+[[pins]]
+pin = 90
+pad_name = "P0.22"
+gpio = 22
+
+
+[[pins]]
+pin = 91
+pad_name = "P0.23"
+gpio = 23
+
+
+[[pins]]
+pin = 92
+pad_name = "P1.00"
+gpio = 32
+
+
+[[pins]]
+pin = 93
+pad_name = "P1.01"
+gpio = 33
+
+
+[[pins]]
+pin = 94
+pad_name = "P1.02"
+gpio = 34
+
+
+[[pins]]
+pin = 95
+pad_name = "P1.03"
+gpio = 35
+
+
+[[pins]]
+pin = 97
+pad_name = "P1.04"
+gpio = 36
+
+
+[[pins]]
+pin = 98
+pad_name = "P1.05"
+gpio = 37
+
+
+[[pins]]
+pin = 99
+pad_name = "P1.06"
+gpio = 38
+
+
+[[pins]]
+pin = 100
+pad_name = "P1.07"
+gpio = 39
+
+
+[[pins]]
+pin = 1
+pad_name = "P1.08"
+gpio = 40
+
+
+[[pins]]
+pin = 2
+pad_name = "P1.09"
+gpio = 41
+
+
+[[pins]]
+pin = 3
+pad_name = "P1.10"
+gpio = 42
+
+
+[[pins]]
+pin = 4
+pad_name = "P1.11"
+gpio = 43
+
+
+[[pins]]
+pin = 5
+pad_name = "P1.12"
+gpio = 44
+
+
+[[pins]]
+pin = 6
+pad_name = "P1.13"
+gpio = 45
+
+
+[[pins]]
+pin = 7
+pad_name = "P1.14"
+gpio = 46
+
+
+[[pins]]
+pin = 8
+pad_name = "P1.15"
+gpio = 47
+
+
+[[pins]]
+pin = 10
+pad_name = "P1.30"
+gpio = 62
+
+
+[[pins]]
+pin = 11
+pad_name = "P1.31"
+gpio = 63
+
+
+[[pins]]
+pin = 14
+pad_name = "P2.00"
+gpio = 64
+
+
+[[pins]]
+pin = 15
+pad_name = "P2.01"
+gpio = 65
+
+
+[[pins]]
+pin = 16
+pad_name = "P2.02"
+gpio = 66
+
+
+[[pins]]
+pin = 17
+pad_name = "P2.03"
+gpio = 67
+
+
+[[pins]]
+pin = 18
+pad_name = "P2.04"
+gpio = 68
+
+
+[[pins]]
+pin = 19
+pad_name = "P2.05"
+gpio = 69
+
+
+[[pins]]
+pin = 20
+pad_name = "P2.06"
+gpio = 70
+
+
+[[pins]]
+pin = 21
+pad_name = "P2.07"
+gpio = 71
+
+
+[[pins]]
+pin = 75
+pad_name = "P3.00"
+gpio = 96
+
+
+[[pins]]
+pin = 74
+pad_name = "P3.01"
+gpio = 97
+
+
+[[pins]]
+pin = 72
+pad_name = "P3.06"
+gpio = 102
+
+
+[[pins]]
+pin = 71
+pad_name = "P3.07"
+gpio = 103
+
+
+[[pins]]
+pin = 70
+pad_name = "P3.08"
+gpio = 104
+
+
+[[pins]]
+pin = 69
+pad_name = "P3.09"
+gpio = 105
+
+
+[[pins]]
+pin = 68
+pad_name = "P3.10"
+gpio = 106
+
+
+[[pins]]
+pin = 67
+pad_name = "P3.11"
+gpio = 107
+
+
+[[pins]]
+pin = 65
+pad_name = "P3.12"
+gpio = 108
+
+
+[[pins]]
+pin = 64
+pad_name = "P3.13"
+gpio = 109
+
+
+[[pins]]
+pin = 63
+pad_name = "P3.14"
+gpio = 110
+
+
+[[pins]]
+pin = 62
+pad_name = "P3.15"
+gpio = 111
+
+
+[[pins]]
+pin = 61
+pad_name = "P3.16"
+gpio = 112
+
+
+[[pins]]
+pin = 60
+pad_name = "P3.17"
+gpio = 113
+
+
+[[pins]]
+pin = 57
+pad_name = "P3.20"
+gpio = 116
+
+
+[[pins]]
+pin = 56
+pad_name = "P3.21"
+gpio = 117
+
+
+[[pins]]
+pin = 22
+pad_name = "P4.00"
+gpio = 128
+
+
+[[pins]]
+pin = 23
+pad_name = "P4.01"
+gpio = 129
+
+
+[[pins]]
+pin = 24
+pad_name = "P4.02"
+gpio = 130
+
+
+[[pins]]
+pin = 25
+pad_name = "P4.03"
+gpio = 131
+
+
+[[pins]]
+pin = 26
+pad_name = "P4.04"
+gpio = 132
+
+
+[[pins]]
+pin = 27
+pad_name = "P4.05"
+gpio = 133
+
+
+[[pins]]
+pin = 28
+pad_name = "P4.06"
+gpio = 134
+
+
+[[pins]]
+pin = 29
+pad_name = "P4.07"
+gpio = 135
+
+
+[[pins]]
+pin = 35
+pad_name = "P4.12"
+gpio = 140
+
+
+[[pins]]
+pin = 36
+pad_name = "P4.13"
+gpio = 141
+
+
+[[pins]]
+pin = 37
+pad_name = "P4.15"
+gpio = 143
+
+
+[[pins]]
+pin = 38
+pad_name = "P4.16"
+gpio = 144
+
+
+[[pins]]
+pin = 39
+pad_name = "P4.17"
+gpio = 145
+
+
+[[pins]]
+pin = 40
+pad_name = "P4.19"
+gpio = 147
+
+
+[[pins]]
+pin = 41
+pad_name = "P4.20"
+gpio = 148
+
+
+[[pins]]
+pin = 42
+pad_name = "P4.21"
+gpio = 149
+
+
+[[pins]]
+pin = 43
+pad_name = "P4.23"
+gpio = 151
+
+
+[[pins]]
+pin = 48
+pad_name = "P5.00"
+gpio = 160
+
+
+[[pins]]
+pin = 49
+pad_name = "P5.01"
+gpio = 161
+
+
+[[pins]]
+pin = 50
+pad_name = "P5.02"
+gpio = 162
+
+
+[[pins]]
+pin = 51
+pad_name = "P5.03"
+gpio = 163
+
+
+[[pins]]
+pin = 22
+pad_name = "ANA_0"
+
+
+[[pins]]
+pin = 23
+pad_name = "ANA_1"
+
+
+[[pins]]
+pin = 36
+pad_name = "ANA_14"
+
+
+[[pins]]
+pin = 39
+pad_name = "ANA_18"
+
+
+[[pins]]
+pin = 26
+pad_name = "ANA_4"
+
+
+[[pins]]
+pin = 27
+pad_name = "ANA_5"
+
+
+[[pins]]
+pin = 28
+pad_name = "ANA_6"
+
+
+[[pins]]
+pin = 29
+pad_name = "ANA_7"

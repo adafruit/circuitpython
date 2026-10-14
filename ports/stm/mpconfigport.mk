@@ -107,3 +107,6 @@ endif
 
 CIRCUITPY_PARALLELDISPLAYBUS := 0
 CIRCUITPY_BUILD_EXTENSIONS ?= bin
+
+# Cleanup is performed by GC finalizers (__del__ -> deinit) instead of a bulk pin reset.
+CIRCUITPY_BULK_RESET = 0

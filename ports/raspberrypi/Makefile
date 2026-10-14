@@ -217,6 +217,10 @@ CFLAGS += \
 	-DPICO_NO_BI_BOOTSEL_VIA_DOUBLE_RESET=0 \
 	-DDVI_1BPP_BIT_REVERSE=0
 
+# Shared IRQ handlers, counted over all IRQs: USB (2), CYW43, audio, rp2pio, PinAlarm and
+# max3421e. The SDK default of 4 is too few on Pico W boards.
+CFLAGS += -DPICO_MAX_SHARED_IRQ_HANDLERS=8
+
 # -O2 plus the two -O3 flags that measure: -funswitch-loops (16 KB) carries the sprite
 # blits, -fvect-cost-model=dynamic (4 KB) the fills and memcpy. Same speed as -O3 on both
 # cores for about 125 KB less flash. Boards may override this in mpconfigboard.mk.
@@ -482,12 +486,17 @@ UF2_ID = 0xe48bff59
 # Double coprocessor is only available on the ARM core.
 DOUBLE_EABI = dcp
 INC += \
-	-isystem sdk/src/rp2_common/hardware_dcp/include/
+	-isystem sdk/src/rp2_common/hardware_dcp/include/ \
+	-isystem sdk/src/rp2_common/hardware_rosc/include/ \
+	-isystem sdk/src/rp2_common/pico_low_power/include/
 
 CFLAGS += -DPICO_RP2040=0 -DPICO_RP2350=1
 
 SRC_SDK_CHIP_VARIANT := \
+	src/common/pico_util/fixed_bitset.c \
 	src/rp2_common/hardware_powman/powman.c \
+	src/rp2_common/hardware_rosc/rosc.c \
+	src/rp2_common/pico_low_power/low_power.c \
 
 SRC_S_UPPER_CHIP_VARIANT := \
 	sdk/src/rp2_common/pico_double/double_conv_m33.S \
@@ -605,6 +614,11 @@ SRC_C += \
 INC += \
 	-isystem lib/Pico-PIO-USB/src
 
+ifeq ($(CIRCUITPY_USB_HOST_BULK),1)
+# Pico-PIO-USB bulk IN ring, polled from the host frame handler.
+CFLAGS += -DPIO_USB_HOST_BULK_STREAM=1
+endif
+
 # Core1 posts USB events while core0 may hold the TinyUSB queue mutex. The
 # contended wait path calls these two flash-resident SDK functions, and core1
 # must not execute from flash. Replace them with RAM-resident implementations
@@ -615,9 +629,17 @@ endif
 ifeq ($(CIRCUITPY_PICODVI),1)
 SRC_C += \
 	bindings/picodvi/__init__.c \
+	bindings/picodvi/AudioOut.c \
 	bindings/picodvi/Framebuffer.c \
 	common-hal/picodvi/__init__.c \
 	common-hal/picodvi/Framebuffer_$(CHIP_VARIANT).c \
+
+ifeq ($(CIRCUITPY_PICODVI_AUDIOOUT),1)
+SRC_C += \
+	common-hal/picodvi/AudioOut.c \
+	common-hal/picodvi/dvi_audio_packet.c \
+
+endif
 
 ifeq ($(CHIP_VARIANT),RP2040)
 SRC_PICODVI := \

@@ -93,6 +93,7 @@ REVERSE_DEPENDENCIES = {
     "busio": ["fourwire", "i2cdisplaybus", "sdcardio", "sharpdisplay"],
     "fourwire": ["displayio", "busdisplay", "epaperdisplay"],
     "i2cdisplaybus": ["displayio", "busdisplay", "epaperdisplay"],
+    "neopixel_write": ["adafruit_pixelbuf", "_pixelmap"],
     # Zephyr display backends need displayio and, by extension, terminalio so
     # the REPL console appears on the display by default.
     "zephyr_display": ["displayio"],
@@ -114,7 +115,7 @@ REVERSE_DEPENDENCIES = {
 # Other flags to set when a module is enabled
 EXTRA_FLAGS = {
     "audiobusio": {"AUDIOBUSIO_I2SOUT": 1, "AUDIOBUSIO_PDMIN": 0},
-    "busio": {"BUSIO_SPI": 1, "BUSIO_I2C": 1},
+    "busio": {"BUSIO_SPI": 1, "BUSIO_I2C": 1, "BUSIO_UART": 1},
     "rotaryio": {"ROTARYIO_SOFTENCODER": 1},
     "synthio": {"SYNTHIO_MAX_CHANNELS": 12},
 }
@@ -313,11 +314,23 @@ def determine_enabled_modules(board_info, portdir, srcdir):
         enabled_modules.add("wifi")
         module_reasons["wifi"] = "Zephyr board has wifi"
 
+    if board_info.get("ethernet", False):
+        enabled_modules.add("mii")
+        module_reasons["mii"] = "Zephyr board has ethernet"
+
     if board_info["flash_count"] > 0:
         enabled_modules.add("storage")
         module_reasons["storage"] = "Zephyr board has flash"
 
-    network_enabled = board_info.get("wifi", False) or board_info.get("hostnetwork", False)
+    if board_info.get("nvm_size", 0) > 0:
+        enabled_modules.add("nvm")
+        module_reasons["nvm"] = "Board has NVM partition"
+
+    network_enabled = (
+        board_info.get("wifi", False)
+        or board_info.get("ethernet", False)
+        or board_info.get("hostnetwork", False)
+    )
 
     if network_enabled:
         enabled_modules.add("ipaddress")
@@ -327,17 +340,29 @@ def determine_enabled_modules(board_info, portdir, srcdir):
         enabled_modules.add("hashlib")
         module_reasons["hashlib"] = "Zephyr networking enabled"
 
-    if board_info.get("wifi", False) or board_info.get("ethernet", False):
+    if board_info.get("wifi", False):
         enabled_modules.add("ssl")
-        module_reasons["ssl"] = "Zephyr networking enabled"
+        module_reasons["ssl"] = "Zephyr wifi enabled"
+    elif board_info.get("ethernet", False):
+        enabled_modules.add("ssl")
+        module_reasons["ssl"] = "Zephyr ethernet enabled"
+    elif board_info.get("hostnetwork", False):
+        enabled_modules.add("ssl")
+        module_reasons["ssl"] = "Zephyr hostnetwork enabled"
 
-    for port_module in (portdir / "bindings").iterdir():
+    # Iterate the shared-bindings directory in a stable (sorted) order. Several
+    # modules can enable the same reverse dependency, and the "reason" comment
+    # recorded in autogen_board_info.toml belongs to whichever module enabled it
+    # first. Directory iteration order is filesystem dependent (it differs
+    # between machines and CI runners), so an unsorted walk made the generated
+    # comments - and therefore the committed toml files - change between builds.
+    for port_module in sorted((portdir / "bindings").iterdir(), key=lambda x: x.name):
         if not board_info.get(port_module.name, False):
             continue
         enabled_modules.add(port_module.name)
         module_reasons[port_module.name] = f"Zephyr board has {port_module.name}"
 
-    for shared_module in (srcdir / "shared-bindings").iterdir():
+    for shared_module in sorted((srcdir / "shared-bindings").iterdir(), key=lambda x: x.name):
         if not board_info.get(shared_module.name, False) or not shared_module.glob("*.c"):
             continue
         enabled_modules.add(shared_module.name)
@@ -374,6 +399,9 @@ async def build_circuitpython():  # noqa: C901
     lto = cmake_args.get("LTO", "n") == "y"
     circuitpython_flags.append(f"-DCIRCUITPY_ENABLE_MPY_NATIVE={1 if enable_mpy_native else 0}")
     circuitpython_flags.append(f"-DCIRCUITPY_FULL_BUILD={1 if full_build else 0}")
+    # Zephyr does not reset all pins in bulk on soft reset, so never_reset is
+    # compiled out and hardware is released by GC finalizers instead.
+    circuitpython_flags.append("-DCIRCUITPY_BULK_RESET=0")
     circuitpython_flags.append("-DCIRCUITPY_OPT_LOAD_ATTR_FAST_PATH=1")
     circuitpython_flags.append(f"-DCIRCUITPY_OPT_MAP_LOOKUP_CACHE={1 if full_build else 0}")
     circuitpython_flags.append(f"-DCIRCUITPY_SETTINGS_TOML={1 if full_build else 0}")
@@ -456,7 +484,11 @@ async def build_circuitpython():  # noqa: C901
     for m in mpconfigboard.get("DISABLED_MODULES", []):
         enabled_modules.discard(m)
 
-    web_workflow_enabled = board_info.get("wifi", False) or board_info.get("hostnetwork", False)
+    web_workflow_enabled = (
+        board_info.get("wifi", False)
+        or board_info.get("hostnetwork", False)
+        or "mii" in enabled_modules
+    )
 
     circuitpython_flags.extend(board_info["cflags"])
     circuitpython_flags.append(f"-DCIRCUITPY_WEB_WORKFLOW={1 if web_workflow_enabled else 0}")
@@ -470,6 +502,7 @@ async def build_circuitpython():  # noqa: C901
         "extmod/vfs_fat.c",
         "lib/tlsf/tlsf.c",
         portdir / "background.c",
+        portdir / "supervisor/adaboot_info.c",
         portdir / "common-hal/microcontroller/__init__.c",
         portdir / "common-hal/microcontroller/Pin.c",
         portdir / "common-hal/microcontroller/Processor.c",
@@ -676,6 +709,12 @@ async def build_circuitpython():  # noqa: C901
 
     if autogen_board_info_fn.parent.exists():
         autogen_board_info_fn.write_text(tomlkit.dumps(autogen_board_info))
+
+    # Set NVM size from the board's NVM partition.
+    nvm_size = board_info.get("nvm_size", 0)
+    circuitpython_flags.append(f"-DCIRCUITPY_INTERNAL_NVM_SIZE={nvm_size}")
+    if nvm_size > 0:
+        circuitpython_flags.append("-DCIRCUITPY_INTERNAL_NVM_START_ADDR=0")
 
     for mpflag in MPCONFIG_FLAGS:
         enabled = mpflag in DEFAULT_MODULES

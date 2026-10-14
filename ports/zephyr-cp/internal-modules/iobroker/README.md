@@ -1,0 +1,202 @@
+# iobroker
+
+A Zephyr module for **dynamic peripheral allocation and runtime pin routing**:
+pick a free peripheral instance (I2C, SPI, UART, PWM) enabled in the
+devicetree, re-route it to requested pins at runtime and hand the Zephyr
+device to the caller.
+
+Pins are specified using `package_pin_t` and represent a single pin on a package
+or module containing a system-on-a-chip (SoC). This is the most common boundary
+between an SoC and printed circuit board (PCB). Packages and modules may choose
+to map more than one SoC pin to a package pin and this way IOBroker ensures that
+each package pin is only used for one thing at a time. GPIO port and pin numbers
+are often used as names for these pins but using package pins allow us to
+accommodate pins without GPIO and those with multiple GPIO.
+
+IOBroker takes in a number of package pins and a device type. Device types are
+usually `drivers/<device type>` in the zephyr source tree. For example,
+`int iobroker_i2c_allocate(package_pin_t sda, package_pin_t scl, const struct device **dev_out);`
+will find a Zephyr I2C device that pins sda and scl can be connected to, connect
+them using pinctrl, claim these resources and return it. It will return
+`-ENODEV` if no such device can be found. The board DTS must enable these
+devices with `status = "okay";`, mark them as `zephyr,deferred-init;` and
+provide default pinctrl settings that will be overridden.
+
+## Status
+
+Currently, runtime routing is implemented for nRF SoCs, whose pin control
+encoding can be computed at runtime and whose peripherals can be routed to
+(almost) any pin via PSEL. On other SoCs the module compiles but the allocate
+functions always return `-ENOSYS`.
+
+Analog pads are allocated through two function pairs, ADC inputs via
+`iobroker_adc_allocate()` and DAC outputs via `iobroker_dac_allocate()`. Both
+have no routing: the pad's analog function is fixed by the SoC, so the call
+resolves it (for example a SAADC AIN number, or the RA's PmnPFS.ASEL analog
+switch) from a per-SoC table, claims the pad and hands out a free channel slot
+on the analog device. Zephyr's ADC API has no channel release, so the release
+implementation unconfigures the slot per SoC (through `nrfx` for the SAADC).
+See `src/nordic/nrf/iobroker_analog.c`, `src/nxp/mcxn/iobroker_analog.c`,
+`src/renesas/ra/iobroker_analog.c` and `src/emul/iobroker_analog.c`.
+
+## Source layout
+
+The source is organized by vendor and SoC family under `src/`:
+
+```
+src/
+  iobroker.c                       # SoC-agnostic core: package pin map
+                                      # lookup, GPIO controller split, claim
+                                      # registry, -ENOSYS stubs when routing
+                                      # is unavailable
+  iobroker_internal.h              # helpers shared between core and
+                                      # vendor implementations (private)
+  nordic/
+    nrf/                           # every nRF SoC shares one pinctrl
+      iobroker_route.c            # encoding, so the family is one dir
+  nxp/
+    mcxn/                        # NXP MCX N: LPADC inputs and the LPDAC
+      iobroker_analog.c         # output pad resolve from the pin
+                                   # functions table
+```
+
+The core compiles on every SoC. Each vendor adds a `src/<vendor>/<soc>/`
+directory with an implementation of the bus allocate/release functions and a
+corresponding `zephyr_library_sources_ifdef()` line in `CMakeLists.txt`;
+without one the core's `#if !IOBROKER_ROUTING` stubs report `-ENOSYS`. When
+an implementation covers a whole SoC family (as the nRF one does, keyed on
+`CONFIG_PINCTRL_NRF`), the directory is named for the family.
+
+## Enabling
+
+The module is registered by the CircuitPython Zephyr application
+(`ports/zephyr-cp/CMakeLists.txt`) via `ZEPHYR_EXTRA_MODULES`, so it works
+without west manifest changes. Its core is always compiled and its callers
+include `<iobroker/iobroker.h>` directly; runtime routing additionally
+requires `CONFIG_PINCTRL_DYNAMIC` and `CONFIG_DEVICE_DEINIT_SUPPORT`, which
+the port enables by default on nRF SoCs.
+
+## Board tables
+
+The core does not know which instances are allocatable; the application must
+provide per-board tables (the generated `board.c` always emits them):
+
+```c
+const iobroker_instance_t iobroker_i2c_buses[];   // + _states[] and _bus_count
+const iobroker_instance_t iobroker_spi_buses[];   // ...
+const iobroker_instance_t iobroker_uart_buses[];  // ...
+const iobroker_instance_t iobroker_pwm_buses[];   // ...
+const struct device * const iobroker_gpio_port_devices[];  // + _indexes[] and _count
+const iobroker_package_pin_t iobroker_package_pins[];   // + _pin_count
+const uint16_t iobroker_reserved_pads[];   // + _pin_count
+```
+
+The package pin map is selected from the module's reference maps:
+`Kconfig.packages` offers one option per transcribed package
+(`packages/*.toml`), each visible only for the SoCs it applies to and
+preselected for the development kits. The map's SoC pads are numbered by
+the package's own pin ids (row-major ball order, or the datasheet's pin
+number for a QFN/QFP package); each pad carries the global GPIO number
+it bonds to when it sits on a GPIO controller. Analog-only pads (pads no
+GPIO controller covers, e.g. MCX N's ANA pads) carry the datasheet's pad
+name in `pad_name` and become pin objects named by `zephyr2cp.py` from
+that name, so analogio can reach them. SoCs with no reference map fall
+back to `IOBROKER_PACKAGE_ONE_TO_ONE`, an identity map where the package
+pin number is the global pin number (gpio port index * 32 + pin within
+the port), so boards without a transcribed physical package can still
+resolve their pins. `IOBROKER_PACKAGE_NONE` is also available and
+generates an empty map, making package pin lookups fail with `-EINVAL`.
+The selected TOML (or the empty map) is rendered into a build-directory
+translation unit at build time. The identity map needs no rendered
+table: the core applies it directly.
+New maps are transcribed from a SoC datasheet with `tools/gen_package.py`
+(see the script's docstring; the datasheets live in `datasheets/`).
+Each instance entry contains the Zephyr device, its `struct
+pinctrl_dev_config` (via `PINCTRL_DT_DEV_CONFIG_DECLARE`/`_GET`) and, when the
+devicetree state has fixed pins, the raw `pinctrl_soc_pin_t` values of the
+"default" state. Instances whose devicetree "default" state leaves every
+signal disconnected (`NRF_PIN_DISCONNECTED`) set `.dt_psels = NULL` and can be
+routed to any pin at runtime. Instances with fixed devicetree pins are only
+allocatable when a request matches their existing state.
+
+In the CircuitPython tree these tables are generated into the board's
+`board.c` by `cptools/zephyr2cp.py` at build time.
+
+`iobroker_reserved_pads` lists the SoC pads that fixed peripherals (console
+UART, flash instance, I2S, ...) drive at boot through their devicetree
+pinctrl default state. `iobroker_pin_in_use()` reports them as busy so that
+allocate() rejects requests for those pads with `-EBUSY` instead of
+re-routing pads something else is already driving. The table only contains
+connected pins; dynamically routable instances (all signals disconnected in
+the devicetree) contribute nothing.
+
+The GPIO controller table pairs each controller device with its hardware
+port index. The indexes define the global pin numbering (index * 32 + pin
+within the port) shared with the pin objects, and let the module resolve a
+global pin number back to the controller device and pin number that
+Zephyr's GPIO API takes.
+
+## Public API
+
+See `include/iobroker/iobroker.h`. Signals are requested with
+`package_pin_t` values (`PACKAGE_PIN(n)`): the physical package pin numbered
+as the SoC datasheet numbers it (QFN pins 1..N; CSP/BGA balls numbered
+sequentially in row-major order, with the datasheet's ball label noted in the
+map and the generated C). The module resolves package pins to SoC pads
+through the package pin map, `iobroker_package_pins[]`, selected via
+`CONFIG_IOBROKER_PACKAGE_*` (see above); internally the lookup then
+proceeds package pin -> SoC pad -> peripheral routing. `IOBROKER_NO_PIN` leaves a
+signal disconnected. Pull resistors are chosen by the module per bus signal
+(I2C SDA/SCL and UART RX idle high). Every allocate call must be paired with
+`iobroker_release()`, so the application owns the lifecycle. Releasing also
+leaves the pins quiescent: `iobroker_release()` de-initializes the device,
+which applies its low-power pinctrl state to the routed pins.
+`iobroker_pin_in_use()` reports whether a package pin is claimed by a
+currently allocated instance, and `allocate()` refuses (-EBUSY) requests that
+would double-use a pin. Package pins can also be claimed for plain GPIO use
+with `iobroker_gpio_allocate()` / `iobroker_gpio_release()`: the caller
+configures the pad while the claim is held and the module returns it to a
+quiescent state (disconnected) on release, and GPIO claims conflict with bus
+allocations the same way bus allocations conflict with each other.
+`iobroker_gpio_allocate()` resolves the package pin through the map
+and returns both the GPIO controller device and the pin number within it.
+PWM channels are allocated with `iobroker_pwm_channel_allocate()`, which
+shares an instance between pins. Channels that share a period form a group
+(for instance, on nRF, the four outputs of an instance; on other SoCs this
+might be a slice or a timer). The call takes the requested frequency only as
+the sharing key: it joins a running group requested at exactly the same
+frequency and with a free channel, or takes a free instance. It returns the
+device and the channel number; the caller turns the frequency into a period
+itself and passes it to `pwm_set_cycles()`. Checking that the hardware can
+produce that period is left to the driver, which doesn't reliably do so yet.
+Joining or leaving a running group connects or disconnects only that one
+output, so the group's other outputs are not disturbed. An exclusive request
+gets a group of its own that nobody joins: pwmio uses it for a variable
+frequency, and neopixel_write to program a whole nRF instance itself.
+`iobroker_pwm_channel_release()` returns a channel; the group's last channel
+releases the instance.
+
+Not every instance can reach every pad. On nRF52 and nRF53 the routing is a
+full crossbar, but on nRF54L peripherals and GPIO controllers are grouped in
+power domains and a peripheral can only drive pads of its own domain (the
+domain is encoded in the register addresses, which the instance and GPIO
+controller tables carry). An allocate call whose pins no instance of the
+requested kind can reach fails with `-EINVAL`, like a pin that is not in
+the package map: it is a property of the request, distinct from `-ENODEV`
+for "every instance that could is busy", so callers can report a wrong pin
+choice rather than a busy peripheral.
+`iobroker_gpio_package_pin()` maps a GPIO controller's hardware port index
+and pin number (the two halves of the global pin numbering) back to the
+package pin the pad is bonded to.
+
+## Externalizing
+
+This module is application-agnostic: it depends only on Zephyr. To move it
+into its own repository:
+
+1. Copy this directory (minus this README) to the new repo root, keeping
+   `zephyr/module.yml`, `CMakeLists.txt`, `Kconfig`, `include/` and `src/`.
+2. Point `ZEPHYR_EXTRA_MODULES` in `ports/zephyr-cp/CMakeLists.txt` at the new
+   checkout, or register it as a project in `zephyr-config/west.yml`.
+3. Keep `iobroker.h`'s struct/function names stable — the generated
+   board tables are part of the module's de-facto API.

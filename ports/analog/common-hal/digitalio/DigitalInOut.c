@@ -14,11 +14,6 @@
 
 extern mxc_gpio_regs_t *gpio_ports[NUM_GPIO_PORTS];
 
-void common_hal_digitalio_digitalinout_never_reset(
-    digitalio_digitalinout_obj_t *self) {
-    common_hal_never_reset_pin(self->pin);
-}
-
 bool common_hal_digitalio_digitalinout_deinited(digitalio_digitalinout_obj_t *self) {
     return self->pin == NULL;
 }

@@ -105,11 +105,12 @@ MP_WEAK bool port_boot_button_pressed(void) {
     // Init/deinit the boot button every time in case it is used for LEDs.
     digitalio_digitalinout_obj_t boot_button;
     common_hal_digitalio_digitalinout_construct(&boot_button, CIRCUITPY_BOOT_BUTTON);
-    common_hal_digitalio_digitalinout_switch_to_input(&boot_button, PULL_UP);
+    common_hal_digitalio_digitalinout_switch_to_input(&boot_button,
+        CIRCUITPY_BOOT_BUTTON_ACTIVE_HIGH ? PULL_DOWN : PULL_UP);
     common_hal_time_delay_ms(1);
-    bool button_pressed = !common_hal_digitalio_digitalinout_get_value(&boot_button);
+    bool value = common_hal_digitalio_digitalinout_get_value(&boot_button);
     common_hal_digitalio_digitalinout_deinit(&boot_button);
-    return button_pressed;
+    return value == CIRCUITPY_BOOT_BUTTON_ACTIVE_HIGH;
     #else
     return false;
     #endif

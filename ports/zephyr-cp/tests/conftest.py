@@ -82,6 +82,10 @@ def pytest_configure(config):
         "markers",
         "fat_filesystem_only: skip the test on littlefs filesystem boards",
     )
+    config.addinivalue_line(
+        "markers",
+        "native_sim_args(*args): extra command-line args passed to native_sim",
+    )
 
 
 ZEPHYR_CP = Path(__file__).parent.parent
@@ -510,6 +514,10 @@ def circuitpython(request, board, sim_id, native_sim_binary, native_sim_env, tmp
         if marker and len(marker.args) > 0:
             for device in marker.args:
                 cmd.append(f"--disable-i2c={device}")
+
+        marker = request.node.get_closest_marker("native_sim_args")
+        if marker and len(marker.args) > 0:
+            cmd.extend(marker.args)
 
         if pixel_format is not None:
             cmd.append(f"--display_pixel_format={PIXEL_FORMAT_BITMASK[pixel_format]}")

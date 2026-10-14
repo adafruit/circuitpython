@@ -33,46 +33,12 @@
 
 GPIO_Port_TypeDef ports[] = {gpioPortA, gpioPortB, gpioPortC, gpioPortD};
 static uint16_t claimed_pins[GPIO_PORT_COUNT];
-static uint16_t __ALIGNED(4) never_reset_pins[GPIO_PORT_COUNT];
-
-// Reset all pin except pin in never_reset_pins list
-void reset_all_pins(void) {
-
-    uint8_t pin_num;
-    uint8_t port_num;
-    // Reset claimed pins
-    for (pin_num = 0; pin_num < GPIO_PORT_COUNT; pin_num++) {
-        claimed_pins[pin_num] = never_reset_pins[pin_num];
-    }
-
-    for (port_num = 0; port_num < GPIO_PORT_COUNT; port_num++) {
-        for (pin_num = 0; pin_num < 16; pin_num++) {
-            if (GPIO_PORT_PIN_VALID(ports[port_num], pin_num)
-                && !(never_reset_pins[port_num] >> pin_num & 0x01)) {
-                GPIO_PinModeSet(ports[port_num], pin_num, gpioModeInput, 1);
-            }
-        }
-    }
-}
 
 //  Mark pin as free and return it to a quiescent state.
 void reset_pin_number(uint8_t pin_port, uint8_t pin_number) {
     // Clear claimed bit & reset
     claimed_pins[pin_port] &= ~(1 << pin_number);
-    never_reset_pins[pin_port] &= ~(1 << pin_number);
     GPIO_PinModeSet(pin_port, pin_number, gpioModeInput, 1);
-}
-
-// Mark pin as never reset
-void never_reset_pin_number(uint8_t pin_port, uint8_t pin_number) {
-    never_reset_pins[pin_port] |= 1 << pin_number;
-    // Make sure never reset pins are also always claimed
-    claimed_pins[pin_port] |= 1 << pin_number;
-}
-
-// Mark pin as never reset
-void common_hal_never_reset_pin(const mcu_pin_obj_t *pin) {
-    never_reset_pin_number(pin->port, pin->number);
 }
 
 // Reset pin

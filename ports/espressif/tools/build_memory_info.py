@@ -45,6 +45,11 @@ internal_memory = {
         ("L2MEM", (0x4FF0_0000,), 768 * 1024),
         ("LP RAM", (0x5010_8000,), 32 * 1024),
     ],
+    "esp32s31": [
+        # Name, Start, Length
+        ("HP SRAM", (0x2F00_0000,), 512 * 1024),
+        ("LP RAM", (0x2E00_0000,), 32 * 1024),
+    ],
     "esp32c2": [
         # Name, Start, Length
         ("Internal SRAM 0", (0x4037_C000,), 16 * 1024),

@@ -48,6 +48,11 @@ for i in range(50):
     assert 2 <= random.randint(2, 6) <= 6
     assert -2 <= random.randint(-2, 2) <= 2
 
+# CIRCUITPY-CHANGE: upper bound at the largest 32-bit mp_int_t must not overflow
+for i in range(50):
+    assert 0 <= random.randint(0, 0x7FFFFFFF) <= 0x7FFFFFFF
+    assert 1 <= random.randint(1, 0x7FFFFFFF) <= 0x7FFFFFFF
+
 # empty range
 try:
     random.randint(2, 1)

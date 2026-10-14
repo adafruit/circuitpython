@@ -34,8 +34,6 @@ static NRF_PWM_Type *pwms[] = {
 
 static uint16_t pwm_seq[MP_ARRAY_SIZE(pwms)][CHANNELS_PER_PWM];
 
-static uint8_t never_reset_pwm[MP_ARRAY_SIZE(pwms)];
-
 static int pwm_idx(NRF_PWM_Type *pwm) {
     for (size_t i = 0; i < MP_ARRAY_SIZE(pwms); i++) {
         if (pwms[i] == pwm) {
@@ -43,12 +41,6 @@ static int pwm_idx(NRF_PWM_Type *pwm) {
         }
     }
     return -1;
-}
-
-void common_hal_pwmio_pwmout_never_reset(pwmio_pwmout_obj_t *self) {
-    never_reset_pwm[pwm_idx(self->pwm)] |= 1 << self->channel;
-
-    common_hal_never_reset_pin(self->pin);
 }
 
 static void reset_single_pwmout(uint8_t i) {
@@ -225,8 +217,6 @@ void common_hal_pwmio_pwmout_deinit(pwmio_pwmout_obj_t *self) {
     }
 
     nrf_gpio_cfg_default(self->pin->number);
-
-    never_reset_pwm[pwm_idx(self->pwm)] &= ~(1 << self->channel);
 
     NRF_PWM_Type *pwm = self->pwm;
     self->pwm = NULL;

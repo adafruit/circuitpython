@@ -71,7 +71,6 @@ void sdram_init(const struct stm32_sdram_config *config) {
             GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
             GPIO_InitStruct.Alternate = GPIO_AF12_FMC;
             HAL_GPIO_Init(pin_port(sdram_pin_list[i].pin->port), &GPIO_InitStruct);
-            never_reset_pin_number(sdram_pin_list[i].pin->port, sdram_pin_list[i].pin->number);
         }
     }
 

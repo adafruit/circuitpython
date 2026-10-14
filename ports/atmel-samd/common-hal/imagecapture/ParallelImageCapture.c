@@ -30,14 +30,14 @@
 #define PIN_PCC_CLK (PIN_PA14)
 
 void common_hal_imagecapture_parallelimagecapture_construct(imagecapture_parallelimagecapture_obj_t *self,
-    const uint8_t data_pins[],
+    const mcu_pin_obj_t **data_pins,
     uint8_t data_count,
     const mcu_pin_obj_t *data_clock,
     const mcu_pin_obj_t *vertical_sync,
     const mcu_pin_obj_t *horizontal_reference) {
 
     for (int i = 0; i < data_count; i++) {
-        if (data_pins[i] != PIN_PCC_D0 + i) {
+        if (common_hal_mcu_pin_number(data_pins[i]) != PIN_PCC_D0 + i) {
             mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid data_pins[%d]"), i);
         }
     }
@@ -56,7 +56,7 @@ void common_hal_imagecapture_parallelimagecapture_construct(imagecapture_paralle
     }
     // technically, 0 was validated as free already but check again
     for (int i = 0; i < data_count; i++) {
-        if (!pin_number_is_free(data_pins[i])) {
+        if (!pin_number_is_free(common_hal_mcu_pin_number(data_pins[i]))) {
             mp_raise_ValueError_varg(MP_ERROR_TEXT("data pin #%d in use"), i);
         }
     }

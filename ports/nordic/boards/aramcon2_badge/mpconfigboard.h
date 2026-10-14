@@ -37,10 +37,6 @@
 
 #define BOARD_USER_SAFE_MODE_ACTION MP_ERROR_TEXT("You pressed the left button at start up.")
 
-#define CIRCUITPY_INTERNAL_NVM_SIZE (4096)
-
-#define BOARD_FLASH_SIZE (FLASH_SIZE - 0x4000 - CIRCUITPY_INTERNAL_NVM_SIZE)
-
 #define DEFAULT_I2C_BUS_SCL         (&pin_P0_28)
 #define DEFAULT_I2C_BUS_SDA         (&pin_P0_03)
 

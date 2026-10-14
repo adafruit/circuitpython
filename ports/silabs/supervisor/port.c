@@ -156,14 +156,6 @@ safe_mode_t port_init(void) {
 }
 
 void reset_port(void) {
-    #if CIRCUITPY_BUSIO
-    uart_reset();
-    #endif
-
-    #if CIRCUITPY_ANALOGIO
-    analogout_reset();
-    #endif
-
     #if CIRCUITPY_BLEIO
     bleio_reset();
     #endif

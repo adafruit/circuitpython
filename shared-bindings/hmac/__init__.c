@@ -56,6 +56,7 @@ static hmac_hmac_obj_t *hmac_new_internal(mp_obj_t key_in, psa_algorithm_t hash_
 
     mp_buffer_info_t keyinfo;
     mp_get_buffer_raise(key_in, &keyinfo, MP_BUFFER_READ);
+
     common_hal_hmac_new(self, keyinfo.buf, keyinfo.len, 0, hash_alg);
     return self;
 }

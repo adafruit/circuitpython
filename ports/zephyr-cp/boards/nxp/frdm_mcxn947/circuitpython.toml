@@ -1,1 +1,18 @@
-CIRCUITPY_BUILD_EXTENSIONS = ["elf"]
+CIRCUITPY_BUILD_EXTENSIONS = ["hex", "uf2"]
+
+[pins]
+# Arduino header J4's analog pins, from UM12018 Table 20. A0 (ANA_0) and
+# A1 (ANA_1) sit on analog-only pads, which only the package pin map can
+# name; A2..A5 are GPIO pads the devicetree's arduino-header gpio-map
+# already names.
+A0 = "P3"
+A1 = "R3"
+
+[connectors.arduino_header]
+# The generic arduino-header-r3 name list assumes the gpio-map enumerates
+# the whole header; this board only maps its four analog pins (J4 pins 6,
+# 8, 10 and 12), so rebind them to their silkscreen names.
+"0" = "A2"
+"1" = "A3"
+"2" = "A4"
+"3" = "A5"

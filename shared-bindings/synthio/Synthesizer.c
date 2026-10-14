@@ -61,7 +61,7 @@ static mp_obj_t synthio_synthesizer_make_new(const mp_obj_type_t *type, size_t n
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    synthio_synthesizer_obj_t *self = mp_obj_malloc(synthio_synthesizer_obj_t, &synthio_synthesizer_type);
+    synthio_synthesizer_obj_t *self = mp_obj_malloc_with_finaliser(synthio_synthesizer_obj_t, &synthio_synthesizer_type);
     common_hal_synthio_synthesizer_construct(self,
         mp_arg_validate_int_min(args[ARG_sample_rate].u_int, 1, MP_QSTR_sample_rate),
         args[ARG_channel_count].u_int,
@@ -288,6 +288,7 @@ static const mp_rom_map_elem_t synthio_synthesizer_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_release_then_press), MP_ROM_PTR(&synthio_synthesizer_change_obj) },
     { MP_ROM_QSTR(MP_QSTR_release_all_then_press), MP_ROM_PTR(&synthio_synthesizer_release_all_then_press_obj) },
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&synthio_synthesizer_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&synthio_synthesizer_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
 

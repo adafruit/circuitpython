@@ -104,7 +104,7 @@ static mp_obj_t audiodelays_multi_tap_delay_make_new(const mp_obj_type_t *type, 
         mp_raise_ValueError(MP_ERROR_TEXT("bits_per_sample must be 8 or 16"));
     }
 
-    audiodelays_multi_tap_delay_obj_t *self = mp_obj_malloc(audiodelays_multi_tap_delay_obj_t, &audiodelays_multi_tap_delay_type);
+    audiodelays_multi_tap_delay_obj_t *self = mp_obj_malloc_with_finaliser(audiodelays_multi_tap_delay_obj_t, &audiodelays_multi_tap_delay_type);
     common_hal_audiodelays_multi_tap_delay_construct(self, max_delay_ms, args[ARG_delay_ms].u_obj, args[ARG_decay].u_obj, args[ARG_mix].u_obj, args[ARG_taps].u_obj, args[ARG_buffer_size].u_int, bits_per_sample, args[ARG_samples_signed].u_bool, channel_count, sample_rate);
 
     return MP_OBJ_FROM_PTR(self);
@@ -279,6 +279,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(audiodelays_multi_tap_delay_stop_obj, audiodelays_mult
 static const mp_rom_map_elem_t audiodelays_multi_tap_delay_locals_dict_table[] = {
     // Methods
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&audiodelays_multi_tap_delay_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&audiodelays_multi_tap_delay_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
     { MP_ROM_QSTR(MP_QSTR_play), MP_ROM_PTR(&audiodelays_multi_tap_delay_play_obj) },

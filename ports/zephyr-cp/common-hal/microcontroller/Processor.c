@@ -12,6 +12,7 @@
 #include "shared-bindings/microcontroller/ResetReason.h"
 
 #include <sys/types.h>
+#include <zephyr/devicetree.h>
 #include <zephyr/drivers/hwinfo.h>
 
 #if defined(CONFIG_WIFI)
@@ -47,10 +48,14 @@ float common_hal_mcu_processor_get_temperature(void) {
     return 0.0;
 }
 
-extern uint32_t SystemCoreClock;
+#define CPU_NODE DT_PATH(cpus, cpu_0)
+
 uint32_t common_hal_mcu_processor_get_frequency(void) {
-    #ifdef __ARM__
-    return SystemCoreClock;
+    #if DT_NODE_HAS_PROP(CPU_NODE, clock_frequency)
+    return DT_PROP(CPU_NODE, clock_frequency);
+    #elif DT_NODE_HAS_PROP(CPU_NODE, clocks)
+    // No clock-frequency on the cpu node (nRF54L), so use the clock that drives it.
+    return DT_PROP_OR(DT_CLOCKS_CTLR(CPU_NODE), clock_frequency, CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC);
     #else
     return CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC;
     #endif
@@ -80,22 +85,34 @@ void common_hal_mcu_processor_get_uid(uint8_t raw_id[]) {
     }
 }
 
+// Set in zephyr_main.c main() at boot: the hwinfo reset cause that was read
+// (and cleared there) for this run. nRF's RESETREAS bits are sticky, so a
+// live hwinfo_get_reset_cause() would mask newer causes (e.g. a watchdog
+// reset would keep reporting an old pin reset) with stale bits.
+extern uint32_t cp_reset_cause;
+
 mcu_reset_reason_t common_hal_mcu_processor_get_reset_reason(void) {
-    #if defined(CONFIG_HWINFO)
-    uint32_t cause = 0;
-    if (hwinfo_get_reset_cause(&cause) == 0) {
-        if (cause & RESET_POR) {
-            return MCU_RESET_REASON_POWER_ON;
-        } else if (cause & RESET_SOFTWARE) {
-            return MCU_RESET_REASON_SOFTWARE;
-        } else if (cause & RESET_WATCHDOG) {
-            return MCU_RESET_REASON_WATCHDOG;
-        } else if (cause & RESET_BROWNOUT) {
-            return MCU_RESET_REASON_BROWNOUT;
-        } else if (cause & RESET_PIN) {
-            return MCU_RESET_REASON_RESET_PIN;
-        }
+    // cp_reset_cause holds only the bits set for THIS boot since zephyr_main
+    // cleared the raw register at startup. Check in priority order.
+    uint32_t cause = cp_reset_cause;
+    if (cause == 0) {
+        return MCU_RESET_REASON_UNKNOWN;
     }
-    #endif
+    if (cause & RESET_POR) {
+        return MCU_RESET_REASON_POWER_ON;
+    } else if (cause & RESET_WATCHDOG) {
+        return MCU_RESET_REASON_WATCHDOG;
+    } else if (cause & RESET_CPU_LOCKUP) {
+        // Treat LOCKUP like a WATCHDOG
+        return MCU_RESET_REASON_WATCHDOG;
+    } else if (cause & RESET_BROWNOUT) {
+        return MCU_RESET_REASON_BROWNOUT;
+    } else if (cause & RESET_SOFTWARE) {
+        return MCU_RESET_REASON_SOFTWARE;
+    } else if (cause & RESET_PIN) {
+        return MCU_RESET_REASON_RESET_PIN;
+    } else if (cause & RESET_DEBUG || cause & RESET_LOW_POWER_WAKE) {
+        return MCU_RESET_REASON_UNKNOWN;
+    }
     return MCU_RESET_REASON_UNKNOWN;
 }

@@ -115,7 +115,3 @@ digitalinout_result_t common_hal_digitalio_digitalinout_set_pull(digitalio_digit
 digitalio_pull_t common_hal_digitalio_digitalinout_get_pull(digitalio_digitalinout_obj_t *self) {
     return self->pull;
 }
-
-void common_hal_digitalio_digitalinout_never_reset(digitalio_digitalinout_obj_t *self) {
-    never_reset_pin_number(self->pin->number);
-}

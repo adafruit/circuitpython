@@ -407,7 +407,15 @@ static void _new_connection(uint16_t conn_handle, bool user_owned) {
     connection->mtu = 0;
     connection->user_owned = user_owned;
 
-    ble_gattc_exchange_mtu(conn_handle, _mtu_reply, connection);
+    if (ble_gattc_exchange_mtu(conn_handle, _mtu_reply, connection) != 0) {
+        // _mtu_reply() won't be called, so do its work here.
+        // This is the usual case with a peer that starts the MTU exchange itself,
+        // such as Zephyr: NimBLE answers that before this runs, and then refuses
+        // to start a second exchange. The BLE_GAP_EVENT_MTU it sent went to
+        // _connect_event(), not to the connection's event callback, so get the MTU now.
+        connection->mtu = ble_att_mtu(conn_handle);
+        _connection_status = conn_handle;
+    }
 
     // Change the callback for the connection.
     ble_gap_set_event_cb(conn_handle, bleio_connection_event_cb, connection);
@@ -468,6 +476,10 @@ mp_obj_t common_hal_bleio_adapter_connect(bleio_adapter_obj_t *self, bleio_addre
     ble_addr_t addr;
     _convert_address(address, &addr);
 
+    // _connection_status gets set to either a positive connection handle or a negative error code.
+    // Reset it before connecting, so an early event isn't lost.
+    _connection_status = BLEIO_HANDLE_INVALID;
+
     const int timeout_ms = SEC_TO_UNITS(timeout, UNIT_1_MS) + 0.5f;
     CHECK_NIMBLE_ERROR(
         ble_gap_connect(own_addr_type, &addr,
@@ -475,20 +487,28 @@ mp_obj_t common_hal_bleio_adapter_connect(bleio_adapter_obj_t *self, bleio_addre
             &conn_params,
             _connect_event, self));
 
-    // Wait an extra 50 ms to give the connect method the opportunity to time out.
-
-    const uint64_t timeout_time_ms = common_hal_time_monotonic_ms() + timeout_ms;
-    // _connection_status gets set to either a positive connection handle or a negative error code.
-    _connection_status = BLEIO_HANDLE_INVALID;
-    while (_connection_status == BLEIO_HANDLE_INVALID && (common_hal_time_monotonic_ms() < timeout_time_ms)) {
+    // NimBLE always ends a connection attempt with a BLE_GAP_EVENT_CONNECT, including when
+    // timeout_ms expires, so wait for that instead of keeping a separate deadline here.
+    // If we stopped waiting first, NimBLE would still be connecting, and the next connect()
+    // would fail.
+    while (_connection_status == BLEIO_HANDLE_INVALID) {
         RUN_BACKGROUND_TASKS;
         if (mp_hal_is_interrupted()) {
-            // Return prematurely. Then the interrupt exception  will be raised.
+            // Stop connecting, and wait for the cancellation event, so NimBLE is ready
+            // for the next connect(). The interrupt exception is raised after we return.
+            if (ble_gap_conn_cancel() == 0) {
+                while (_connection_status == BLEIO_HANDLE_INVALID) {
+                    RUN_BACKGROUND_TASKS;
+                }
+            }
             return mp_const_none;
         }
     }
 
     // Negative values are error codes, connection handle otherwise.
+    if (_connection_status == -BLE_HS_ETIMEOUT) {
+        mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Failed to connect: timeout"));
+    }
     if (_connection_status < 0) {
         CHECK_BLE_ERROR(-_connection_status);
     }

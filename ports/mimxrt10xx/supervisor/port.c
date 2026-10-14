@@ -22,6 +22,7 @@
 
 #include "common-hal/microcontroller/Pin.h"
 #include "common-hal/rtc/RTC.h"
+#include "shared-bindings/rtc/__init__.h"
 #include "common-hal/busio/SPI.h"
 #include "shared-bindings/microcontroller/__init__.h"
 
@@ -415,7 +416,7 @@ safe_mode_t port_init(void) {
     #endif
 
     // Note that `reset_port` CANNOT GO HERE, unlike other ports, because `board_init` hasn't been
-    // run yet, which uses `never_reset` to protect critical pins from being reset by  `reset_port`.
+    // run yet, which may claim critical pins that should not be reset by `reset_port`.
 
     if (board_requests_safe_mode()) {
         return SAFE_MODE_USER;
@@ -425,24 +426,8 @@ safe_mode_t port_init(void) {
 }
 
 void reset_port(void) {
-    #if CIRCUITPY_AUDIOIO
-    audio_dma_reset();
-    #endif
-
-    #if CIRCUITPY_AUDIOBUSIO
-    i2s_reset();
-    #endif
-
-    #if CIRCUITPY_TOUCHIO && CIRCUITPY_TOUCHIO_USE_NATIVE
-    touchin_reset();
-    #endif
-
     #if CIRCUITPY_RTC
     rtc_reset();
-    #endif
-
-    #if CIRCUITPY_PEW
-    pew_reset();
     #endif
 
     // reset_event_system();

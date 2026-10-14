@@ -73,34 +73,17 @@ uint16_t common_hal_analogio_analogin_get_value(analogio_analogin_obj_t *self) {
 
     struct adc_sync_descriptor adc;
 
-    samd_peripherals_adc_setup(&adc, self->instance);
-
     // Full scale is 3.3V (VDDANA) = 65535.
 
     // On SAMD21, INTVCC1 is 0.5*VDDANA. On SAMD51, INTVCC1 is 1*VDDANA.
     // So on SAMD21 only, divide the input by 2, so full scale will match 0.5*VDDANA.
-    adc_sync_set_reference(&adc, ADC_REFCTRL_REFSEL_INTVCC1_Val);
     #ifdef SAMD21
-    adc_sync_set_channel_gain(&adc, self->channel, ADC_INPUTCTRL_GAIN_DIV2_Val);
+    const uint8_t gain = ADC_INPUTCTRL_GAIN_DIV2_Val;
+    #else
+    const uint8_t gain = 0;  // ignored
     #endif
-
-    adc_sync_set_resolution(&adc, ADC_CTRLB_RESSEL_12BIT_Val);
-
-    adc_sync_enable_channel(&adc, self->channel);
-
-    // We need to set the inputs because the above channel enable only enables the ADC.
-    adc_sync_set_inputs(&adc, self->channel, ADC_INPUTCTRL_MUXNEG_GND_Val, self->channel);
-
-    // Read twice and discard first result, as recommended in section 14 of
-    // http://www.atmel.com/images/Atmel-42645-ADC-Configurations-with-Examples_ApplicationNote_AT11481.pdf
-    // "Discard the first conversion result whenever there is a change in ADC configuration
-    // like voltage reference / ADC channel change"
-    // Empirical observation shows the first reading is quite different than subsequent ones.
-
-    uint16_t value;
-    adc_sync_read_channel(&adc, self->channel, ((uint8_t *)&value), 2);
-    adc_sync_read_channel(&adc, self->channel, ((uint8_t *)&value), 2);
-
+    samd_peripherals_adc_start(&adc, self->instance, ADC_REFCTRL_REFSEL_INTVCC1_Val, gain, self->channel);
+    uint16_t value = samd_peripherals_adc_read(&adc);
     adc_sync_deinit(&adc);
     // Stretch 12-bit ADC reading to 16-bit range
     return (value << 4) | (value >> 8);

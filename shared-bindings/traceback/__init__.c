@@ -102,7 +102,18 @@ static void traceback_exception_common(bool is_print_exception, mp_print_t *prin
         exc->traceback = (mp_obj_traceback_t *)&mp_const_empty_traceback_obj;
     }
 
-    shared_module_traceback_print_exception(MP_OBJ_TO_PTR(value), print, limit);
+    nlr_buf_t nlr;
+    if (nlr_push(&nlr) == 0) {
+        shared_module_traceback_print_exception(MP_OBJ_TO_PTR(value), print, limit);
+        nlr_pop();
+    } else {
+        exc->traceback = trace_backup;
+        #if MICROPY_CPYTHON_EXCEPTION_CHAIN
+        exc->context = context_backup;
+        exc->cause = cause_backup;
+        #endif
+        nlr_jump(nlr.ret_val);
+    }
     exc->traceback = trace_backup;
     #if MICROPY_CPYTHON_EXCEPTION_CHAIN
     exc->context = context_backup;

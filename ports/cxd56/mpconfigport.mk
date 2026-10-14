@@ -25,3 +25,6 @@ CIRCUITPY_USB_MIDI = 0
 INTERNAL_LIBM = 1
 
 CIRCUITPY_BUILD_EXTENSIONS ?= spk
+
+# Cleanup is performed by GC finalizers (__del__ -> deinit) instead of a bulk pin reset.
+CIRCUITPY_BULK_RESET = 0

@@ -32,6 +32,12 @@ void common_hal_fourwire_fourwire_send(mp_obj_t self, display_byte_type_t byte_t
 
 void common_hal_fourwire_fourwire_end_transaction(mp_obj_t self);
 
+#if CIRCUITPY_BUSIO_SPI_ASYNC
+void common_hal_fourwire_fourwire_send_async(mp_obj_t self, display_byte_type_t byte_type,
+    display_chip_select_behavior_t chip_select, const uint8_t *data, uint32_t data_length);
+void common_hal_fourwire_fourwire_flush(mp_obj_t self);
+#endif
+
 // The FourWire object always lives off the MP heap. So, code must collect any pointers
 // back to the MP heap manually. Otherwise they'll get freed.
 void common_hal_fourwire_fourwire_collect_ptrs(mp_obj_t obj);

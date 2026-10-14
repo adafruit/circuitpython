@@ -173,7 +173,6 @@ static bool i2s_clocking(I2S_Type *peripheral) {
     return false;
 }
 
-
 static bool i2s_queue_available(i2s_t *self) {
     return !self->handle.saiQueue[self->handle.queueUser].data;
 }
@@ -279,7 +278,6 @@ static void i2s_transfer_callback(I2S_Type *base, sai_handle_t *handle, status_t
         background_callback_add(&self->callback, i2s_callback_fun, self_in);
     }
 }
-
 
 void port_i2s_initialize(i2s_t *self, int instance, sai_transceiver_t *config) {
     if (!i2s_in_use) {
@@ -438,8 +436,4 @@ void port_i2s_pause(i2s_t *self) {
 
 void port_i2s_resume(i2s_t *self) {
     self->paused = false;
-}
-
-void i2s_reset(void) {
-// this port relies on object finalizers for reset
 }

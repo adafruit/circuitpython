@@ -15,7 +15,7 @@ mp_obj_t shared_module_getpass_getpass(const char *prompt, mp_print_t *print) {
     if (print == NULL) {
         mp_hal_stdout_tx_str(prompt);
     } else {
-        mp_printf(print, prompt);
+        mp_print_str(print, prompt);
     }
 
     for (;;) {

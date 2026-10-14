@@ -75,3 +75,6 @@ CIRCUITPY_BUSDEVICE = 0
 CIRCUITPY_BUILD_EXTENSIONS ?= elf
 
 CIRCUITPY_PORT_SERIAL = 1
+
+# Cleanup is performed by GC finalizers (__del__ -> deinit) instead of a bulk pin reset.
+CIRCUITPY_BULK_RESET = 0

@@ -99,13 +99,6 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
     common_hal_mcu_pin_claim(miso);
 }
 
-// Never reset SPI when reload
-void common_hal_busio_spi_never_reset(busio_spi_obj_t *self) {
-    common_hal_never_reset_pin(self->mosi);
-    common_hal_never_reset_pin(self->miso);
-    common_hal_never_reset_pin(self->sck);
-}
-
 // Check SPI status, deinited or not
 bool common_hal_busio_spi_deinited(busio_spi_obj_t *self) {
     return self->sck == NULL;
@@ -122,19 +115,17 @@ void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
         return;
     }
 
+    common_hal_reset_pin(self->mosi);
+    common_hal_reset_pin(self->miso);
+    common_hal_reset_pin(self->sck);
+
     Ecode_t sc = SPIDRV_DeInit(self->handle);
-    if (sc != ECODE_EMDRV_SPIDRV_OK) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("SPI re-init"));
-    }
+    (void)sc;  // Ignore errors: deinit must not raise when run from __del__.
 
     in_used = false;
     self->mosi = NULL;
     self->miso = NULL;
     self->handle = NULL;
-    common_hal_reset_pin(self->mosi);
-    common_hal_reset_pin(self->miso);
-    common_hal_reset_pin(self->sck);
-
     common_hal_busio_spi_mark_deinit(self);
 }
 

@@ -21,18 +21,15 @@ uint32_t last_down_ticks_ms;
 void board_init(void) {
     common_hal_digitalio_digitalinout_construct(&extcomin, &pin_P0_06);
     common_hal_digitalio_digitalinout_switch_to_output(&extcomin, true, DRIVE_MODE_PUSH_PULL);
-    common_hal_digitalio_digitalinout_never_reset(&extcomin);
 
     common_hal_digitalio_digitalinout_construct(&display_on, &pin_P0_07);
     common_hal_digitalio_digitalinout_switch_to_output(&display_on, true, DRIVE_MODE_PUSH_PULL);
-    common_hal_digitalio_digitalinout_never_reset(&display_on);
 
     sharpdisplay_framebuffer_obj_t *fb = &allocate_display_bus()->sharpdisplay;
     fb->base.type = &sharpdisplay_framebuffer_type;
 
     busio_spi_obj_t *spi = &fb->inline_bus;
     common_hal_busio_spi_construct(spi, &pin_P0_26, &pin_P0_27, NULL, false);
-    common_hal_busio_spi_never_reset(spi);
 
     common_hal_sharpdisplay_framebuffer_construct(fb, spi, &pin_P0_05, 500000, 176, 176, true);
 

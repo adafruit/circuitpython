@@ -284,43 +284,19 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
 
 
     if (have_tx) {
-        gpio_set_pin_direction(tx->number, GPIO_DIRECTION_OUT);
-        gpio_set_pin_pull_mode(tx->number, GPIO_PULL_OFF);
-        gpio_set_pin_function(tx->number, tx_pinmux);
-        self->tx_pin = tx->number;
-        claim_pin(tx);
-    } else {
-        self->tx_pin = NO_PIN;
+        self->tx_pin = sercom_setup_pin(tx, tx_pinmux, GPIO_DIRECTION_OUT, false);
     }
 
     if (have_rx) {
-        gpio_set_pin_direction(rx->number, GPIO_DIRECTION_IN);
-        gpio_set_pin_pull_mode(rx->number, GPIO_PULL_OFF);
-        gpio_set_pin_function(rx->number, rx_pinmux);
-        self->rx_pin = rx->number;
-        claim_pin(rx);
-    } else {
-        self->rx_pin = NO_PIN;
+        self->rx_pin = sercom_setup_pin(rx, rx_pinmux, GPIO_DIRECTION_IN, false);
     }
 
     if (have_rts) {
-        gpio_set_pin_direction(rts->number, GPIO_DIRECTION_OUT);
-        gpio_set_pin_pull_mode(rts->number, GPIO_PULL_OFF);
-        gpio_set_pin_function(rts->number, rts_pinmux);
-        self->rts_pin = rts->number;
-        claim_pin(rts);
-    } else {
-        self->rts_pin = NO_PIN;
+        self->rts_pin = sercom_setup_pin(rts, rts_pinmux, GPIO_DIRECTION_OUT, false);
     }
 
     if (have_cts) {
-        gpio_set_pin_direction(cts->number, GPIO_DIRECTION_IN);
-        gpio_set_pin_pull_mode(cts->number, GPIO_PULL_OFF);
-        gpio_set_pin_function(cts->number, cts_pinmux);
-        self->cts_pin = cts->number;
-        claim_pin(cts);
-    } else {
-        self->cts_pin = NO_PIN;
+        self->cts_pin = sercom_setup_pin(cts, cts_pinmux, GPIO_DIRECTION_IN, false);
     }
 
     usart_async_enable(usart_desc_p);

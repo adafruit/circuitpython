@@ -14,7 +14,7 @@
 
 extern const mp_obj_type_t socketpool_socketpool_type;
 
-void common_hal_socketpool_socketpool_construct(socketpool_socketpool_obj_t *self, mp_obj_t radio);
+void common_hal_socketpool_socketpool_construct(socketpool_socketpool_obj_t *self, mp_obj_t network_interface);
 
 socketpool_socket_obj_t *common_hal_socketpool_socket(socketpool_socketpool_obj_t *self,
     socketpool_socketpool_addressfamily_t family, socketpool_socketpool_sock_t type, int proto);

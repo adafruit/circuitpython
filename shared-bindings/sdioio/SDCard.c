@@ -85,7 +85,7 @@ static mp_obj_t sdioio_sdcard_make_new(const mp_obj_type_t *type, size_t n_args,
     uint8_t num_data;
     validate_list_is_free_pins(MP_QSTR_data, data_pins, MP_ARRAY_SIZE(data_pins), args[ARG_data].u_obj, &num_data);
 
-    sdioio_sdcard_obj_t *self = mp_obj_malloc(sdioio_sdcard_obj_t, &sdioio_SDCard_type);
+    sdioio_sdcard_obj_t *self = mp_obj_malloc_with_finaliser(sdioio_sdcard_obj_t, &sdioio_SDCard_type);
     common_hal_sdioio_sdcard_construct(self, clock, command, num_data, data_pins, args[ARG_frequency].u_int);
     return MP_OBJ_FROM_PTR(self);
 }
@@ -241,6 +241,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(sdioio_sdcard_deinit_obj, sdioio_sdcard_obj_deinit);
 
 static const mp_rom_map_elem_t sdioio_sdcard_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&sdioio_sdcard_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&sdioio_sdcard_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
 

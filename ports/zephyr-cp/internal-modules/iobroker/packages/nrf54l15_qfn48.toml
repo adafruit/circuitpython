@@ -1,0 +1,192 @@
+# Package pin map for nrf54l15_qfn48, transcribed from nRF54L15_nRF54L10_nRF54L05_Datasheet_v1.0.pdf,
+# section 10.1.4 (QFN48, QFAA package pin assignments),
+# by tools/gen_package.py. Review against the datasheet figure before
+# editing by hand; regenerate instead when the datasheet changes.
+
+name = "nrf54l15_qfn48"
+socs = ["SOC_NRF54L15", "SOC_NRF54L10", "SOC_NRF54L05"]
+
+[[pins]]
+pin = 1
+pad_name = "P1.00"
+gpio = 32
+
+
+[[pins]]
+pin = 2
+pad_name = "P1.01"
+gpio = 33
+
+
+[[pins]]
+pin = 3
+pad_name = "P1.02"
+gpio = 34
+
+
+[[pins]]
+pin = 4
+pad_name = "P1.03"
+gpio = 35
+
+
+[[pins]]
+pin = 5
+pad_name = "P1.04"
+gpio = 36
+
+
+[[pins]]
+pin = 6
+pad_name = "P1.05"
+gpio = 37
+
+
+[[pins]]
+pin = 7
+pad_name = "P1.06"
+gpio = 38
+
+
+[[pins]]
+pin = 8
+pad_name = "P1.07"
+gpio = 39
+
+
+[[pins]]
+pin = 9
+pad_name = "P1.08"
+gpio = 40
+
+
+[[pins]]
+pin = 11
+pad_name = "P2.00"
+gpio = 64
+
+
+[[pins]]
+pin = 12
+pad_name = "P2.01"
+gpio = 65
+
+
+[[pins]]
+pin = 13
+pad_name = "P2.02"
+gpio = 66
+
+
+[[pins]]
+pin = 14
+pad_name = "P2.03"
+gpio = 67
+
+
+[[pins]]
+pin = 15
+pad_name = "P2.04"
+gpio = 68
+
+
+[[pins]]
+pin = 16
+pad_name = "P2.05"
+gpio = 69
+
+
+[[pins]]
+pin = 17
+pad_name = "P2.06"
+gpio = 70
+
+
+[[pins]]
+pin = 18
+pad_name = "P2.07"
+gpio = 71
+
+
+[[pins]]
+pin = 19
+pad_name = "P2.08"
+gpio = 72
+
+
+[[pins]]
+pin = 20
+pad_name = "P2.09"
+gpio = 73
+
+
+[[pins]]
+pin = 21
+pad_name = "P2.10"
+gpio = 74
+
+
+[[pins]]
+pin = 23
+pad_name = "P0.00"
+gpio = 0
+
+
+[[pins]]
+pin = 24
+pad_name = "P0.01"
+gpio = 1
+
+
+[[pins]]
+pin = 27
+pad_name = "P0.02"
+gpio = 2
+
+
+[[pins]]
+pin = 28
+pad_name = "P0.03"
+gpio = 3
+
+
+[[pins]]
+pin = 29
+pad_name = "P0.04"
+gpio = 4
+
+
+[[pins]]
+pin = 37
+pad_name = "P1.09"
+gpio = 41
+
+
+[[pins]]
+pin = 38
+pad_name = "P1.10"
+gpio = 42
+
+
+[[pins]]
+pin = 39
+pad_name = "P1.11"
+gpio = 43
+
+
+[[pins]]
+pin = 40
+pad_name = "P1.12"
+gpio = 44
+
+
+[[pins]]
+pin = 41
+pad_name = "P1.13"
+gpio = 45
+
+
+[[pins]]
+pin = 42
+pad_name = "P1.14"
+gpio = 46

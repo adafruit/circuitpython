@@ -59,8 +59,10 @@ void bleio_connection_ensure_connected(bleio_connection_obj_t *self) {
 //|
 static mp_obj_t bleio_connection_disconnect(mp_obj_t self_in) {
     bleio_connection_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    // common_hal_bleio_connection_disconnect() does nothing if already disconnected.
-    common_hal_bleio_connection_disconnect(self->connection);
+    // Do nothing if already disconnected. self->connection is NULL after the peer disconnects.
+    if (common_hal_bleio_connection_get_connected(self)) {
+        common_hal_bleio_connection_disconnect(self->connection);
+    }
     return mp_const_none;
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(bleio_connection_disconnect_obj, bleio_connection_disconnect);

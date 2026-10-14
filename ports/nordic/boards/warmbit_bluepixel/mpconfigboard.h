@@ -13,9 +13,9 @@
 
 #define MICROPY_HW_LED_STATUS       (&pin_P0_12)
 
+// Smaller than the 8 KB default: the internal-flash filesystem leaves
+// little room for firmware.
 #define CIRCUITPY_INTERNAL_NVM_SIZE (4096)
-
-#define BOARD_FLASH_SIZE (FLASH_SIZE - 0x4000 - CIRCUITPY_INTERNAL_NVM_SIZE)
 
 #define BOARD_HAS_CRYSTAL 1
 

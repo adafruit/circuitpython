@@ -164,11 +164,3 @@ bool sdioio_sdcard_ioctl(mp_obj_t self_in, size_t cmd, size_t arg,
             return false;  // Unsupported command
     }
 }
-
-void common_hal_sdioio_sdcard_never_reset(sdioio_sdcard_obj_t *self) {
-    never_reset_pin_number(self->clock_pin->number);
-    never_reset_pin_number(self->command_pin->number);
-    for (uint8_t i = 0; i < DATA_PINS_NUM; i++) {
-        never_reset_pin_number(self->data_pins[i]->number);
-    }
-}

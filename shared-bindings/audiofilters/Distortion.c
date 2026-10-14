@@ -146,7 +146,7 @@ static mp_obj_t audiofilters_distortion_make_new(const mp_obj_type_t *type, size
     }
 
     audiofilters_distortion_obj_t *self =
-        mp_obj_malloc(audiofilters_distortion_obj_t, &audiofilters_distortion_type);
+        mp_obj_malloc_with_finaliser(audiofilters_distortion_obj_t, &audiofilters_distortion_type);
     common_hal_audiofilters_distortion_construct(self,
         args[ARG_drive].u_obj,
         args[ARG_pre_gain].u_obj,
@@ -368,6 +368,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(audiofilters_distortion_stop_obj, audiofilters_distort
 static const mp_rom_map_elem_t audiofilters_distortion_locals_dict_table[] = {
     // Methods
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&audiofilters_distortion_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&audiofilters_distortion_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
     { MP_ROM_QSTR(MP_QSTR_play), MP_ROM_PTR(&audiofilters_distortion_play_obj) },

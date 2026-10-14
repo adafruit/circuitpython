@@ -84,6 +84,9 @@ bool common_hal_analogio_analogout_deinited(analogio_analogout_obj_t *self) {
 
 void common_hal_analogio_analogout_deinit(analogio_analogout_obj_t *self) {
     #if HAS_DAC
+    if (common_hal_analogio_analogout_deinited(self)) {
+        return;
+    }
     reset_pin_number(self->pin->port, self->pin->number);
     self->pin = NULL;
     dac_on[self->dac_index] = false;

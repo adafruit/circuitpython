@@ -22,4 +22,6 @@ typedef struct {
 } keypad_demux_demuxkeymatrix_obj_t;
 
 void keypad_demux_demuxkeymatrix_scan(keypad_demux_demuxkeymatrix_obj_t *self);
+#if CIRCUITPY_BULK_RESET
 void demuxkeymatrix_never_reset(keypad_demux_demuxkeymatrix_obj_t *self);
+#endif

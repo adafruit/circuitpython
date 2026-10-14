@@ -1,5 +1,8 @@
 #include <stdio.h>
 
+#include <zephyr/kernel.h>
+#include <zephyr/drivers/hwinfo.h>
+
 extern int circuitpython_main(void);
 
 // Note: __has_feature must only be evaluated in a nested #if guarded by
@@ -23,7 +26,18 @@ __attribute__((constructor)) static void cp_disable_asan_fake_stack(void) {
 }
 #endif
 
+// The reset cause read and cleared at boot, consumed by
+// common-hal/microcontroller (nRF RESETREAS bits are sticky otherwise).
+uint32_t cp_reset_cause = 0;
+
 int main(void) {
+    // Read and clear the reset cause early: nRF's RESETREAS bits are sticky
+    // and would otherwise mask later causes in every subsequent get_reset_cause
+    // (e.g. a watchdog reset would keep reporting an older pin reset). Stash
+    // the value for get_reset_reason() and print it once as a boot diagnostic.
+    if (hwinfo_get_reset_cause(&cp_reset_cause) == 0) {
+        hwinfo_clear_reset_cause();
+    }
     // Use a unique name for CP main so that the linker needs to look in libcircuitpython.a
     return circuitpython_main();
 }

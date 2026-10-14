@@ -11,6 +11,8 @@
 
 #include "shared/runtime/interrupt_char.h"
 #include "shared/netutils/netutils.h"
+#include "mbedtls/version.h"
+#include "psa/crypto.h"
 #include "py/mperrno.h"
 #include "py/mphal.h"
 #include "py/objarray.h"
@@ -19,8 +21,6 @@
 #include "supervisor/shared/tick.h"
 
 #include "shared-bindings/socketpool/enum.h"
-
-#include "mbedtls/version.h"
 
 #define MP_STREAM_POLL_RDWR (MP_STREAM_POLL_RD | MP_STREAM_POLL_WR)
 
@@ -43,6 +43,51 @@ static void mbedtls_debug(void *ctx, int level, const char *file, int line, cons
 // Raise an OSError for an mbedtls error code.
 // `flags` is a bitmask from mbedtls_ssl_get_verify_result(), or 0 if not a verify error.
 static MP_NORETURN void mbedtls_raise_error_flags(int err, uint32_t flags) {
+    // In mbedtls 4.x with TF-PSA-Crypto 1.x, the legacy mbedtls error constants
+    // were renumbered into the PSA status space (mbedtls/compat-3-crypto.h), so
+    // crypto-layer failures surface from the TLS layer as PSA statuses
+    // (-132 .. -153). These collide both with legacy mbedtls codes and with the
+    // socket errno passthrough below, so translate them to conventional POSIX
+    // errnos first.
+    switch (err) {
+        case PSA_ERROR_GENERIC_ERROR:
+        case PSA_ERROR_COMMUNICATION_FAILURE:
+        case PSA_ERROR_STORAGE_FAILURE:
+        case PSA_ERROR_HARDWARE_FAILURE:
+        case PSA_ERROR_INSUFFICIENT_ENTROPY:
+        case PSA_ERROR_INSUFFICIENT_DATA:
+        case PSA_ERROR_SERVICE_FAILURE:
+        case PSA_ERROR_CORRUPTION_DETECTED:
+        case PSA_ERROR_DATA_CORRUPT:
+            mp_raise_OSError(MP_EIO);
+        case PSA_ERROR_NOT_PERMITTED:
+        case PSA_ERROR_BAD_STATE:
+            mp_raise_OSError(MP_EPERM);
+        case PSA_ERROR_NOT_SUPPORTED:
+            mp_raise_OSError(MP_EOPNOTSUPP);
+        case PSA_ERROR_BUFFER_TOO_SMALL:
+            mp_raise_OSError(MP_ENOBUFS);
+        case PSA_ERROR_ALREADY_EXISTS:
+            mp_raise_OSError(MP_EEXIST);
+        case PSA_ERROR_DOES_NOT_EXIST:
+            mp_raise_OSError(MP_ENOENT);
+        case PSA_ERROR_INVALID_HANDLE:
+            mp_raise_OSError(MP_EBADF);
+        case PSA_ERROR_INSUFFICIENT_MEMORY:
+            mp_raise_OSError(MP_ENOMEM);
+        case PSA_ERROR_INSUFFICIENT_STORAGE:
+            mp_raise_OSError(MP_ENOSPC);
+        case PSA_ERROR_INVALID_SIGNATURE:
+        case PSA_ERROR_INVALID_PADDING:
+        case PSA_ERROR_INVALID_ARGUMENT:
+        case PSA_ERROR_DATA_INVALID:
+        default:
+            if (err >= -153 && err <= -132) {
+                mp_raise_OSError(MP_EINVAL);
+            }
+            break;
+    }
+
     // _mbedtls_ssl_send and _mbedtls_ssl_recv (below) turn positive error codes from the
     // underlying socket into negative codes to pass them through mbedtls. Here we turn them
     // positive again so they get interpreted as the OSError they really are. The
@@ -337,8 +382,6 @@ cleanup:
 
     if (ret == MBEDTLS_ERR_SSL_ALLOC_FAILED) {
         mp_raise_type(&mp_type_MemoryError);
-    } else if (ret == MBEDTLS_ERR_PK_BAD_INPUT_DATA) {
-        mp_raise_ValueError(MP_ERROR_TEXT("invalid key"));
     } else if (ret == MBEDTLS_ERR_X509_BAD_INPUT_DATA) {
         mp_raise_ValueError(MP_ERROR_TEXT("invalid cert"));
     } else {
@@ -432,8 +475,6 @@ cleanup:
 
     if (ret == MBEDTLS_ERR_SSL_ALLOC_FAILED) {
         mp_raise_type(&mp_type_MemoryError);
-    } else if (ret == MBEDTLS_ERR_PK_BAD_INPUT_DATA) {
-        mp_raise_ValueError(MP_ERROR_TEXT("invalid key"));
     } else if (ret == MBEDTLS_ERR_X509_BAD_INPUT_DATA) {
         mp_raise_ValueError(MP_ERROR_TEXT("invalid cert"));
     } else {

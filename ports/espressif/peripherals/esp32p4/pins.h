@@ -120,3 +120,6 @@ extern const mcu_pin_obj_t pin_GPIO52;
 extern const mcu_pin_obj_t pin_GPIO53;
 #define GPIO54_EXISTS 1
 extern const mcu_pin_obj_t pin_GPIO54;
+
+extern const mcu_pin_obj_t pin_USB_HS_DP;
+extern const mcu_pin_obj_t pin_USB_HS_DM;

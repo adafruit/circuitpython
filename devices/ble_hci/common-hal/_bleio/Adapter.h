@@ -34,7 +34,6 @@ typedef struct _bleio_adapter_obj_t {
     digitalio_digitalinout_obj_t *cts_digitalinout;
     bool allocated;  // True when in use.
     bool now_advertising;
-    bool extended_advertising;
     bool circuitpython_advertising;
     bool enabled;
 
@@ -56,7 +55,6 @@ typedef struct _bleio_adapter_obj_t {
 
     uint16_t max_acl_buffer_len;
     uint16_t max_acl_num_buffers;
-    uint16_t max_adv_data_len;
     uint8_t features[8];        // Supported BLE features.
 
     // All the local attributes for this device. The index into the list

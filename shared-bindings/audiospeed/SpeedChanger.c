@@ -60,7 +60,7 @@ static mp_obj_t audiospeed_speedchanger_make_new(const mp_obj_type_t *type,
     mp_obj_t source = args[ARG_source].u_obj;
     audiosample_check(source);
 
-    audiospeed_speedchanger_obj_t *self = mp_obj_malloc(audiospeed_speedchanger_obj_t, &audiospeed_speedchanger_type);
+    audiospeed_speedchanger_obj_t *self = mp_obj_malloc_with_finaliser(audiospeed_speedchanger_obj_t, &audiospeed_speedchanger_type);
     common_hal_audiospeed_speedchanger_construct(self, source, args[ARG_rate].u_obj);
     return MP_OBJ_FROM_PTR(self);
 }
@@ -100,6 +100,7 @@ MP_PROPERTY_GETSET(audiospeed_speedchanger_rate_obj,
 
 static const mp_rom_map_elem_t audiospeed_speedchanger_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&audiospeed_speedchanger_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&audiospeed_speedchanger_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
     { MP_ROM_QSTR(MP_QSTR_rate), MP_ROM_PTR(&audiospeed_speedchanger_rate_obj) },

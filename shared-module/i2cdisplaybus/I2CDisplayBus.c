@@ -27,7 +27,9 @@ void common_hal_i2cdisplaybus_i2cdisplaybus_construct(i2cdisplaybus_i2cdisplaybu
         self->reset.base.type = &digitalio_digitalinout_type;
         common_hal_digitalio_digitalinout_construct(&self->reset, reset);
         common_hal_digitalio_digitalinout_switch_to_output(&self->reset, true, DRIVE_MODE_PUSH_PULL);
+        #if CIRCUITPY_BULK_RESET
         common_hal_never_reset_pin(reset);
+        #endif
         common_hal_i2cdisplaybus_i2cdisplaybus_reset(self);
     }
 
@@ -40,7 +42,9 @@ void common_hal_i2cdisplaybus_i2cdisplaybus_construct(i2cdisplaybus_i2cdisplaybu
 
     // Write to the device and return 0 on success or an appropriate error code from mperrno.h
     self->bus = i2c;
+    #if CIRCUITPY_BULK_RESET
     common_hal_busio_i2c_never_reset(self->bus);
+    #endif
 
     self->address = device_address;
 }

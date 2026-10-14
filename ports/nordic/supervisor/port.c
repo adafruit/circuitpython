@@ -202,37 +202,32 @@ safe_mode_t port_init(void) {
 }
 
 void reset_port(void) {
-    #if CIRCUITPY_BUSIO
-    uart_reset();
+    #if CIRCUITPY_RTC
+    rtc_reset();
     #endif
 
     #if CIRCUITPY_NEOPIXEL_WRITE
+    // Must run while the old GC heap is still alive so the pattern buffer is
+    // reclaimed instead of left dangling behind the root pointer.
     neopixel_write_reset();
-    #endif
-
-    #if CIRCUITPY_AUDIOBUSIO
-    i2s_reset();
-    #endif
-
-    #if CIRCUITPY_RTC
-    rtc_reset();
     #endif
 
     #if CIRCUITPY_EMMCIO
     emmcio_reset();
     #endif
 
-    timers_reset();
-
     #if CIRCUITPY_WATCHDOG
     watchdog_reset();
     #endif
 
-    // Always reset GPIOTE because it is shared.
-    if (nrfx_gpiote_is_init()) {
-        nrfx_gpiote_uninit();
+    // GPIOTE is shared by every object that needs an event channel (pulseio,
+    // countio, rotaryio, max3421e, alarm pins). Initialize it once and never
+    // tear it down here: each object uninit's its own channel in deinit
+    // (via __del__), and alarm pins are released by alarm_reset() in main.c
+    // before reset_port() runs.
+    if (!nrfx_gpiote_is_init()) {
+        nrfx_gpiote_init(NRFX_GPIOTE_CONFIG_IRQ_PRIORITY);
     }
-    nrfx_gpiote_init(NRFX_GPIOTE_CONFIG_IRQ_PRIORITY);
 }
 
 void reset_to_bootloader(void) {

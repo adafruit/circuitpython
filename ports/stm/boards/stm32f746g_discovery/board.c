@@ -25,7 +25,8 @@ void board_init(void) {
     HAL_GPIO_Init(GPIOK, &GPIO_InitStructure);
     HAL_GPIO_WritePin(GPIOK, GPIO_PIN_3, GPIO_PIN_RESET);
 
-    never_reset_pin_number(10, 3);
+    // PK3 drives the LCD backlight; mark it claimed so user code can't conflict with it.
+    claim_pin(10, 3);
 }
 
 // Use the MP_WEAK supervisor/shared/board.c versions of routines not defined here.

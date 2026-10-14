@@ -95,9 +95,9 @@ static mp_obj_t espcamera_camera_make_new(const mp_obj_type_t *type, size_t n_ar
     MP_STATIC_ASSERT(MP_ARRAY_SIZE(allowed_args) == NUM_ARGS);
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    uint8_t data_pins[8];
+    const mcu_pin_obj_t *data_pins[8];
     uint8_t data_pin_count;
-    validate_pins(MP_QSTR_data_pins, data_pins, MP_ARRAY_SIZE(data_pins), args[ARG_data_pins].u_obj, &data_pin_count);
+    validate_list_is_free_pins(MP_QSTR_data_pins, data_pins, MP_ARRAY_SIZE(data_pins), args[ARG_data_pins].u_obj, &data_pin_count);
     mp_arg_validate_length(data_pin_count, 8, MP_QSTR_data_pins);
 
     const mcu_pin_obj_t *pixel_clock_pin =

@@ -28,6 +28,9 @@ extern void claim_pin_number(gpio_num_t pin_number);
 extern bool pin_number_is_free(gpio_num_t pin_number);
 extern void never_reset_pin_number(gpio_num_t pin_number);
 
+extern uint8_t common_hal_mcu_pin_number(const mcu_pin_obj_t *pin);
+extern void common_hal_mcu_pin_claim(const mcu_pin_obj_t *pin);
+
 extern void preserve_pin_number(gpio_num_t pin_number);
 
 // Allow the board to reset a pin in a board-specific way. This can be used

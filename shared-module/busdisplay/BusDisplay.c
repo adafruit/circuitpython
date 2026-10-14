@@ -110,16 +110,22 @@ void common_hal_busdisplay_busdisplay_construct(busdisplay_busdisplay_obj_t *sel
         if (result != PWMOUT_OK) {
             self->backlight_inout.base.type = &digitalio_digitalinout_type;
             common_hal_digitalio_digitalinout_construct(&self->backlight_inout, backlight_pin);
+            #if CIRCUITPY_BULK_RESET
             common_hal_never_reset_pin(backlight_pin);
+            #endif
         } else {
             self->backlight_pwm.base.type = &pwmio_pwmout_type;
+            #if CIRCUITPY_BULK_RESET
             common_hal_pwmio_pwmout_never_reset(&self->backlight_pwm);
+            #endif
         }
         #else
         // Otherwise default to digital
         self->backlight_inout.base.type = &digitalio_digitalinout_type;
         common_hal_digitalio_digitalinout_construct(&self->backlight_inout, backlight_pin);
+        #if CIRCUITPY_BULK_RESET
         common_hal_never_reset_pin(backlight_pin);
+        #endif
         #endif
     }
 
@@ -218,6 +224,30 @@ static void _send_pixels(busdisplay_busdisplay_obj_t *self, uint8_t *pixels, uin
     self->bus.send(self->bus.bus, DISPLAY_DATA, CHIP_SELECT_UNTOUCHED, pixels, length);
 }
 
+// Whether the bus sends in the background. Always false without async SPI, so that code is
+// left out. Not a local variable: GCC would then compile the refresh loop twice.
+#define SEND_ASYNC(self) (CIRCUITPY_BUSIO_SPI_ASYNC && (self)->bus.send_async != NULL)
+
+// The data half of _send_pixels, handed to the bus without waiting for it to be sent.
+static void _send_pixels_async(busdisplay_busdisplay_obj_t *self, uint8_t *pixels, uint32_t length) {
+    if (!self->bus.data_as_commands) {
+        self->bus.send(self->bus.bus, DISPLAY_COMMAND, CHIP_SELECT_TOGGLE_EVERY_BYTE, &self->write_ram_command, 1);
+    }
+    self->bus.send_async(self->bus.bus, DISPLAY_DATA, CHIP_SELECT_UNTOUCHED, pixels, length);
+}
+
+// Call only with the bus transaction closed: a background task may use the same bus.
+static void _run_background_tasks(void) {
+    // Run background tasks so they can run during an explicit refresh.
+    // Auto-refresh won't run background tasks here because it is a background task itself.
+    RUN_BACKGROUND_TASKS;
+
+    // Run USB background tasks so they can run during an implicit refresh.
+    #if CIRCUITPY_TINYUSB
+    usb_background();
+    #endif
+}
+
 static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_area_t *area) {
     uint16_t buffer_size = CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE / sizeof(uint32_t); // In uint32_ts
 
@@ -227,6 +257,7 @@ static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_are
         return true;
     }
     uint16_t rows_per_buffer = displayio_area_height(&clipped);
+    uint16_t cols_per_buffer = displayio_area_width(&clipped);
     uint8_t pixels_per_word = (sizeof(uint32_t) * 8) / self->core.colorspace.depth;
     uint16_t pixels_per_buffer = displayio_area_size(&clipped);
 
@@ -237,47 +268,51 @@ static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_are
         subrectangles = rows_per_buffer / 8;  // page addressing mode writes 8 rows at a time
         rows_per_buffer = 8;
     } else if (displayio_area_size(&clipped) > buffer_size * pixels_per_word) {
-        rows_per_buffer = buffer_size * pixels_per_word / displayio_area_width(&clipped);
-        if (rows_per_buffer == 0) {
-            rows_per_buffer = 1;
-        }
-        // If pixels are packed by column then ensure rows_per_buffer is on a byte boundary.
-        if (self->core.colorspace.depth < 8 && !self->core.colorspace.pixels_in_byte_share_row) {
-            uint8_t pixels_per_byte = 8 / self->core.colorspace.depth;
-            if (rows_per_buffer % pixels_per_byte != 0) {
-                rows_per_buffer -= rows_per_buffer % pixels_per_byte;
+        uint16_t buffer_pixels = buffer_size * pixels_per_word;
+        if (self->core.transform.transpose_xy && self->core.colorspace.depth >= 8) {
+            // Rotated 90 or 270: a panel column is a source row. Send bands of columns so sources
+            // are read along their rows, which OnDiskBitmap needs to avoid a file seek per pixel.
+            rows_per_buffer = MIN(rows_per_buffer, buffer_pixels);
+            cols_per_buffer = buffer_pixels / rows_per_buffer;
+        } else {
+            rows_per_buffer = buffer_pixels / cols_per_buffer;
+            if (rows_per_buffer == 0) {
+                rows_per_buffer = 1;
+            }
+            // If pixels are packed by column then ensure rows_per_buffer is on a byte boundary.
+            if (self->core.colorspace.depth < 8 && !self->core.colorspace.pixels_in_byte_share_row) {
+                uint8_t pixels_per_byte = 8 / self->core.colorspace.depth;
+                if (rows_per_buffer % pixels_per_byte != 0) {
+                    rows_per_buffer -= rows_per_buffer % pixels_per_byte;
+                }
             }
         }
-        subrectangles = displayio_area_height(&clipped) / rows_per_buffer;
-        if (displayio_area_height(&clipped) % rows_per_buffer != 0) {
-            subrectangles++;
-        }
-        pixels_per_buffer = rows_per_buffer * displayio_area_width(&clipped);
-        buffer_size = pixels_per_buffer / pixels_per_word;
-        if (pixels_per_buffer % pixels_per_word) {
-            buffer_size += 1;
-        }
+        subrectangles = ((displayio_area_height(&clipped) + rows_per_buffer - 1) / rows_per_buffer) *
+            ((displayio_area_width(&clipped) + cols_per_buffer - 1) / cols_per_buffer);
+        pixels_per_buffer = rows_per_buffer * cols_per_buffer;
+        buffer_size = (pixels_per_buffer + pixels_per_word - 1) / pixels_per_word;
     }
 
     // Allocated and shared as a uint32_t array so the compiler knows the
     // alignment everywhere.
     uint32_t mask_length = (pixels_per_buffer / 32) + 1;
-    uint32_t buffer[buffer_size];
+    // With an asynchronous bus, one buffer is composited while the other is being sent.
+    uint32_t buffers[SEND_ASYNC(self) ? 2 : 1][buffer_size];
     uint32_t mask[mask_length];
+    uint8_t fill_index = 0;
+    bool sending = false;
 
-    uint16_t remaining_rows = displayio_area_height(&clipped);
+    displayio_area_t subrectangle = clipped;
+    subrectangle.next = NULL;
 
     for (uint16_t j = 0; j < subrectangles; j++) {
-        displayio_area_t subrectangle = {
-            .x1 = clipped.x1,
-            .y1 = clipped.y1 + rows_per_buffer * j,
-            .x2 = clipped.x2,
-            .y2 = clipped.y1 + rows_per_buffer * (j + 1)
-        };
-        if (remaining_rows < rows_per_buffer) {
-            subrectangle.y2 = subrectangle.y1 + remaining_rows;
+        // Down the rows of a band first, then to the next band of columns.
+        if (subrectangle.y1 >= clipped.y2) {
+            subrectangle.y1 = clipped.y1;
+            subrectangle.x1 += cols_per_buffer;
         }
-        remaining_rows -= rows_per_buffer;
+        subrectangle.x2 = MIN(subrectangle.x1 + cols_per_buffer, clipped.x2);
+        subrectangle.y2 = MIN(subrectangle.y1 + rows_per_buffer, clipped.y2);
 
         uint16_t subrectangle_size_bytes;
         if (self->core.colorspace.depth >= 8) {
@@ -286,10 +321,19 @@ static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_are
             subrectangle_size_bytes = displayio_area_size(&subrectangle) / (8 / self->core.colorspace.depth);
         }
 
+        uint32_t *buffer = buffers[fill_index];
         memset(mask, 0, mask_length * sizeof(mask[0]));
         memset(buffer, 0, buffer_size * sizeof(buffer[0]));
 
         displayio_display_core_fill_area(&self->core, &subrectangle, mask, buffer);
+
+        // The previous strip must be sent before the region commands for this one.
+        if (sending) {
+            displayio_display_bus_flush(&self->bus);
+            displayio_display_bus_end_transaction(&self->bus);
+            sending = false;
+            _run_background_tasks();
+        }
 
         displayio_display_bus_set_region_to_update(&self->bus, &self->core, &subrectangle);
 
@@ -297,21 +341,25 @@ static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_are
         if (!displayio_display_bus_begin_transaction(&self->bus)) {
             return false;
         }
-        _send_pixels(self, (uint8_t *)buffer, subrectangle_size_bytes);
-        displayio_display_bus_end_transaction(&self->bus);
-
-        // Run background tasks so they can run during an explicit refresh.
-        // Auto-refresh won't run background tasks here because it is a background task itself.
-        RUN_BACKGROUND_TASKS;
-
-        // Run USB background tasks so they can run during an implicit refresh.
-        #if CIRCUITPY_TINYUSB
-        usb_background();
-        #endif
+        if (SEND_ASYNC(self)) {
+            _send_pixels_async(self, (uint8_t *)buffer, subrectangle_size_bytes);
+            sending = true;
+            fill_index ^= 1;
+        } else {
+            _send_pixels(self, (uint8_t *)buffer, subrectangle_size_bytes);
+            displayio_display_bus_end_transaction(&self->bus);
+        }
+        subrectangle.y1 = subrectangle.y2;
+        if (!sending) {
+            _run_background_tasks();
+        }
     }
 
     // Drain any remaining asynchronous transfers.
     displayio_display_bus_flush(&self->bus);
+    if (sending) {
+        displayio_display_bus_end_transaction(&self->bus);
+    }
 
     return true;
 }
@@ -432,8 +480,9 @@ void reset_busdisplay(busdisplay_busdisplay_obj_t *self) {
     circuitpython_splash.x = 0; // reset position in case someone moved it.
     circuitpython_splash.y = 0;
     supervisor_start_terminal(self->core.width, self->core.height);
-    if (!circuitpython_splash.in_group) {
-        common_hal_busdisplay_busdisplay_set_root_group(self, &circuitpython_splash);
+    // Show the splash if it is free, otherwise nothing. Other groups are on the VM heap.
+    if (!displayio_display_core_set_root_group(&self->core, &circuitpython_splash)) {
+        displayio_display_core_set_root_group(&self->core, NULL);
     }
 }
 

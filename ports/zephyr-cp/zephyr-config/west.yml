@@ -8,9 +8,13 @@ manifest:
       url: https://github.com/tannewt/ext_nRF_hw_models
       revision: 41cb69cd08848cc31e91ed62d01d397511981919
       path: modules/bsim_hw_models/nrf_hw_models
+    - name: mcuboot
+      url: https://github.com/adafruit/adaboot
+      revision: 14d84b0ba784fec227208d4917b9e7c38e4e87bc
+      path: bootloader/mcuboot
     - name: zephyr
       url: https://github.com/adafruit/zephyr
-      revision: 52dc937c7cda06a1c18ff6adec281bbeb096b3d4
+      revision: 3ab36efea64edda80e45ece016753e3686bb763f
       clone-depth: 100
       import:
         # Skip what no CircuitPython board can use, so west update fetches 37
@@ -56,5 +60,4 @@ manifest:
           - openthread
           - percepio
           - uoscore-uedhoc
-          - zcbor
           - zephyr-xenlib

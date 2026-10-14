@@ -20,7 +20,6 @@
 
 // arrays use 0 based numbering: UART1 is stored at index 0
 static bool reserved_uart[MAX_UART];
-static bool never_reset_uart[MAX_UART];
 int errflag; // Used to restart read halts
 
 static void uart_clock_enable(uint16_t mask);
@@ -42,18 +41,6 @@ static USART_TypeDef *assign_uart_or_throw(busio_uart_obj_t *self, bool pin_eval
     }
 }
 
-void uart_reset(void) {
-    uint16_t never_reset_mask = 0x00;
-    for (uint8_t i = 0; i < MAX_UART; i++) {
-        if (!never_reset_uart[i]) {
-            reserved_uart[i] = false;
-            MP_STATE_PORT(cpy_uart_obj_all)[i] = NULL;
-        } else {
-            never_reset_mask |= 1 << i;
-        }
-    }
-    uart_clock_disable(ALL_UARTS & ~(never_reset_mask));
-}
 
 void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     const mcu_pin_obj_t *tx, const mcu_pin_obj_t *rx,
@@ -224,16 +211,6 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     errflag = HAL_OK;
 }
 
-void common_hal_busio_uart_never_reset(busio_uart_obj_t *self) {
-    for (size_t i = 0; i < MP_ARRAY_SIZE(mcu_uart_banks); i++) {
-        if (mcu_uart_banks[i] == self->handle.Instance) {
-            never_reset_uart[i] = true;
-            never_reset_pin_number(self->tx->pin->port, self->tx->pin->number);
-            never_reset_pin_number(self->rx->pin->port, self->rx->pin->number);
-            break;
-        }
-    }
-}
 
 bool common_hal_busio_uart_deinited(busio_uart_obj_t *self) {
     return self->tx == NULL && self->rx == NULL;
@@ -247,7 +224,9 @@ void common_hal_busio_uart_deinit(busio_uart_obj_t *self) {
     for (size_t i = 0; i < MP_ARRAY_SIZE(mcu_uart_banks); i++) {
         if (mcu_uart_banks[i] == self->handle.Instance) {
             reserved_uart[i] = false;
-            never_reset_uart[i] = false;
+            // Reset the peripheral and turn its clock back off, matching construct()'s
+            // uart_clock_enable() for this bank.
+            uart_clock_disable(1 << i);
             break;
         }
     }
@@ -601,6 +580,7 @@ static void uart_clock_disable(uint16_t mask) {
     }
     #endif
 }
+
 
 static void uart_assign_irq(busio_uart_obj_t *self, USART_TypeDef *USARTx) {
     #ifdef USART1

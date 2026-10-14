@@ -14,6 +14,9 @@
 #include "shared-bindings/microcontroller/Processor.h"
 #include "shared-bindings/microcontroller/ResetReason.h"
 #include "shared-bindings/time/__init__.h"
+#if CIRCUITPY_ALARM
+#include "common-hal/alarm/__init__.h"
+#endif
 
 #include "pico/stdlib.h"
 #include "hardware/adc.h"
@@ -64,15 +67,36 @@ void __no_inline_not_in_flash_func(mcu_processor_update_psram_timing)(uint32_t s
     // MIN_DESELECT is in system clock cycles; PSRAM needs 50 ns min CS
     // deassertion. Round up so we are never under.
     uint32_t min_deselect = (sys_clk_khz + 19999) / 20000;
+    // PSRAM SCK is clk_sys / CLKDIV and must stay at or below 133 MHz.
+    // Divisor 1 is not used above 100 MHz because the RXDELAY it needs is
+    // too late. RXDELAY samples later as the divisor grows, plus one more
+    // cycle once SCK is above 100 MHz. Same rule as arduino-pico.
+    uint32_t max_sck_khz = 133000;
+    #ifdef CIRCUITPY_PSRAM_MAX_SCK_HZ
+    // Keep a board's lower PSRAM clock limit when the CPU frequency changes.
+    max_sck_khz = MIN(max_sck_khz, CIRCUITPY_PSRAM_MAX_SCK_HZ / 1000);
+    #endif
+    uint32_t clkdiv = (sys_clk_khz + max_sck_khz - 1) / max_sck_khz;
+    if (clkdiv == 1 && sys_clk_khz > 100000) {
+        clkdiv = 2;
+    }
+    uint32_t rxdelay = clkdiv;
+    if (sys_clk_khz / clkdiv > 100000) {
+        rxdelay++;
+    }
+    #ifdef CIRCUITPY_PSRAM_MAX_SCK_HZ
+    // Slower PSRAM clocks can require a delay beyond this three-bit field.
+    rxdelay = MIN(rxdelay, QMI_M0_TIMING_RXDELAY_BITS >> QMI_M0_TIMING_RXDELAY_LSB);
+    #endif
 
     qmi_hw->m[1].timing =
         QMI_M0_TIMING_PAGEBREAK_VALUE_1024 << QMI_M0_TIMING_PAGEBREAK_LSB | // Break between pages.
             3 << QMI_M0_TIMING_SELECT_HOLD_LSB | // Delay releasing CS for 3 extra system cycles.
             1 << QMI_M0_TIMING_COOLDOWN_LSB |
-            1 << QMI_M0_TIMING_RXDELAY_LSB |
+            rxdelay << QMI_M0_TIMING_RXDELAY_LSB |
             max_select << QMI_M0_TIMING_MAX_SELECT_LSB |
             min_deselect << QMI_M0_TIMING_MIN_DESELECT_LSB |
-            2 << QMI_M0_TIMING_CLKDIV_LSB;
+            clkdiv << QMI_M0_TIMING_CLKDIV_LSB;
 }
 #endif
 
@@ -150,6 +174,13 @@ mcu_reset_reason_t common_hal_mcu_processor_get_reset_reason(void) {
     if (chip_reset_reg & POWMAN_CHIP_RESET_HAD_POR_BITS) {
         reason = MCU_RESET_REASON_POWER_ON;
     }
+
+    #if CIRCUITPY_ALARM
+    // The chip reset flags above stay set through a powman wake, so check it last.
+    if (alarm_woke_from_powman()) {
+        reason = MCU_RESET_REASON_DEEP_SLEEP_ALARM;
+    }
+    #endif
     #endif
 
     // Check watchdog after chip reset since watchdog doesn't clear chip_reset, while chip_reset clears the watchdog

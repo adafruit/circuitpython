@@ -51,7 +51,7 @@ CONFIG_PCNT_CTRL_FUNC_IN_IRAM=y
 #
 # LCD Peripheral Configuration
 #
-CONFIG_LCD_RGB_RESTART_IN_VSYNC=y
+# CONFIG_LCD_RGB_RESTART_IN_VSYNC is not set
 # end of LCD Peripheral Configuration
 
 # end of LCD and Touch Panel
@@ -93,8 +93,7 @@ CONFIG_LIBC_NEWLIB_NANO_FORMAT=y
 #
 CONFIG_ULP_COPROC_ENABLED=y
 CONFIG_ULP_COPROC_TYPE_FSM=y
-CONFIG_ULP_COPROC_TYPE_RISCV=y  # Note: enabling both ULPs simultaneously only works due to a modification of adafruit/esp-idf
-                                # (see adafruit/esp-idf/pull/16) until espressif/esp-idf/issues/12999 is fixed.
+CONFIG_ULP_COPROC_TYPE_RISCV=y
 CONFIG_ULP_COPROC_RESERVE_MEM=8144
 # end of Ultra Low Power (ULP) Co-processor
 

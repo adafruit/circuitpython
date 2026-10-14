@@ -79,10 +79,13 @@ int bleio_connection_event_cb(struct ble_gap_event *event, void *connection_in) 
         case BLE_GAP_EVENT_ENC_CHANGE: {
             struct ble_gap_conn_desc desc;
             ble_gap_conn_find(event->enc_change.conn_handle, &desc);
+            connection->sec_status = event->enc_change.status;
             if (desc.sec_state.encrypted) {
                 connection->pair_status = PAIR_PAIRED;
-            } else if (connection->pair_status == PAIR_WAITING_NUMCMP) {
-                // Numeric comparison was rejected, or SM otherwise failed.
+            } else if (connection->pair_status == PAIR_WAITING ||
+                       connection->pair_status == PAIR_WAITING_NUMCMP) {
+                // Pairing failed, or numeric comparison was rejected.
+                // This ends the wait in pair(), which reports sec_status.
                 connection->pair_status = PAIR_NOT_PAIRED;
             }
             // .authenticated is set once the MITM leg (numeric comparison / passkey entry)
@@ -187,6 +190,7 @@ void common_hal_bleio_connection_pair(bleio_connection_internal_t *self, bool bo
     if (self->pair_status == PAIR_PAIRED) {
         return;
     }
+    self->sec_status = 0;
     self->pair_status = PAIR_WAITING;
     CHECK_NIMBLE_ERROR(ble_gap_security_initiate(self->conn_handle));
     while (self->pair_status == PAIR_WAITING && !mp_hal_is_interrupted()) {
@@ -194,6 +198,22 @@ void common_hal_bleio_connection_pair(bleio_connection_internal_t *self, bool bo
     }
     if (mp_hal_is_interrupted()) {
         return;
+    }
+    if (self->conn_handle == BLEIO_HANDLE_INVALID) {
+        mp_raise_ConnectionError(MP_ERROR_TEXT("Not connected"));
+    }
+    if (self->pair_status == PAIR_PAIRED) {
+        return;
+    }
+    // Same messages as nordic.
+    switch (self->sec_status) {
+        case BLE_HS_SM_US_ERR(BLE_SM_ERR_UNSPECIFIED):
+        case BLE_HS_SM_PEER_ERR(BLE_SM_ERR_UNSPECIFIED):
+            mp_raise_bleio_SecurityError(MP_ERROR_TEXT("Unspecified issue. The pairing request on the other device may have been declined or ignored."));
+            break;
+        default:
+            mp_raise_bleio_SecurityError(MP_ERROR_TEXT("Unknown security error: 0x%04x"), self->sec_status);
+            break;
     }
 }
 

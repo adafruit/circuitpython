@@ -1,3 +1,6 @@
+/* Partition layout is owned by the mcuboot fork
+ * (dts/adafruit/adafruit_feather_nrf52840.dtsi) and applied to this image by
+ * sysbuild. This overlay only adds board/app config. */
 / {
 	chosen {
 		zephyr,console = &uart0;
@@ -12,34 +15,220 @@
 	/delete-node/ board_cdc_acm_uart;
 };
 
+// Bus instances enabled with all pins disconnected and marked
+// zephyr,deferred-init so nothing is claimed at boot: the iobroker
+// initializes and routes a device to arbitrary pins when a busio object is
+// constructed, and de-initializes it on release: I2C1, SPI2, SPI3 and UART1.
+// (The fixed I2C0 is the Stemma QT bus and UART0 the console. The formerly
+// fixed SPI1 is dropped: it had no device attached and its instance is the
+// same peripheral as I2C1, so only one mode can be enabled.)
 
-&gd25q16 {
-	/delete-node/ partitions;
-};
-
-/delete-node/ &storage_partition;
-/delete-node/ &code_partition;
-
-&flash0 {
-	partitions {
-		code_partition: partition@26000 {
-			compatible = "zephyr,mapped-partition";
-			label = "Application";
-			reg = <0x00026000 0x000c4000>;
-		};
-
-		storage_partition: partition@ea000 {
-			compatible = "zephyr,mapped-partition";
-			label = "storage";
-			reg = <0x000ea000 0x00008000>;
-		};
-
-		nvm_partition: partition@f2000 {
-			compatible = "zephyr,mapped-partition";
-			label = "nvm";
-			reg = <0x000f2000 0x00002000>;
+&pinctrl {
+	i2c1_dyn_default: i2c1_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(TWIM_SDA)>,
+				<NRF_PSEL_DISCONNECTED(TWIM_SCL)>;
 		};
 	};
+
+	i2c1_dyn_sleep: i2c1_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(TWIM_SDA)>,
+				<NRF_PSEL_DISCONNECTED(TWIM_SCL)>;
+		};
+	};
+
+	spi2_dyn_default: spi2_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(SPIM_SCK)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MOSI)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MISO)>;
+		};
+	};
+
+	spi2_dyn_sleep: spi2_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(SPIM_SCK)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MOSI)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MISO)>;
+		};
+	};
+
+	spi3_dyn_default: spi3_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(SPIM_SCK)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MOSI)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MISO)>;
+		};
+	};
+
+	spi3_dyn_sleep: spi3_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(SPIM_SCK)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MOSI)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MISO)>;
+		};
+	};
+
+	uart1_dyn_default: uart1_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(UART_TX)>,
+				<NRF_PSEL_DISCONNECTED(UART_RX)>;
+		};
+	};
+
+	uart1_dyn_sleep: uart1_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(UART_TX)>,
+				<NRF_PSEL_DISCONNECTED(UART_RX)>;
+		};
+	};
+
+	pwm0_dyn_default: pwm0_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
+
+	pwm0_dyn_sleep: pwm0_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
+
+	pwm1_dyn_default: pwm1_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
+
+	pwm1_dyn_sleep: pwm1_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
+
+	pwm2_dyn_default: pwm2_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
+
+	pwm2_dyn_sleep: pwm2_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
+
+	pwm3_dyn_default: pwm3_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
+
+	pwm3_dyn_sleep: pwm3_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
+};
+
+&i2c1 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&i2c1_dyn_default>;
+	pinctrl-1 = <&i2c1_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+// SPI1 is the same peripheral instance as I2C1, so leave it disabled.
+&spi1 {
+	status = "disabled";
+};
+
+&spi2 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&spi2_dyn_default>;
+	pinctrl-1 = <&spi2_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&spi3 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&spi3_dyn_default>;
+	pinctrl-1 = <&spi3_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&uart1 {
+	status = "okay";
+	zephyr,deferred-init;
+	current-speed = <115200>;
+	pinctrl-0 = <&uart1_dyn_default>;
+	pinctrl-1 = <&uart1_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+// PWM instances, same scheme: all four outputs disconnected and deferred
+// init, so iobroker can hand an instance to neopixel_write and pwmio and
+// route its outputs at runtime.
+
+&pwm0 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&pwm0_dyn_default>;
+	pinctrl-1 = <&pwm0_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&pwm1 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&pwm1_dyn_default>;
+	pinctrl-1 = <&pwm1_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&pwm2 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&pwm2_dyn_default>;
+	pinctrl-1 = <&pwm2_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&pwm3 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&pwm3_dyn_default>;
+	pinctrl-1 = <&pwm3_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
 };
 
 &uart0 {
@@ -47,3 +236,8 @@
 };
 
 #include "../../../app.overlay"
+
+/* Enable the SAADC for analogio (AIN0..AIN7 are on P0.02..P0.05 and P0.28..P0.31). */
+&adc {
+	status = "okay";
+};

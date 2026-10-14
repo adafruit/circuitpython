@@ -95,6 +95,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(sharpdisplay_framebuffer_deinit_obj, sharpdispl
 
 static const mp_rom_map_elem_t sharpdisplay_framebuffer_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&sharpdisplay_framebuffer_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&sharpdisplay_framebuffer_deinit_obj) },
 };
 static MP_DEFINE_CONST_DICT(sharpdisplay_framebuffer_locals_dict, sharpdisplay_framebuffer_locals_dict_table);
 

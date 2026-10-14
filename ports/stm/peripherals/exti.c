@@ -13,26 +13,10 @@
 #if !(CPY_STM32H7)
 
 static bool stm_exti_reserved[STM32_GPIO_PORT_SIZE];
-static bool stm_exti_never_reset[STM32_GPIO_PORT_SIZE];
 static void (*stm_exti_callback[STM32_GPIO_PORT_SIZE])(uint8_t num);
-
-void exti_reset(void) {
-    for (size_t i = 0; i < STM32_GPIO_PORT_SIZE; i++) {
-        if (!stm_exti_never_reset[i]) {
-            stm_exti_reserved[i] = false;
-            stm_exti_callback[i] = NULL;
-            stm_peripherals_exti_disable(i);
-        }
-    }
-}
-
-void stm_peripherals_exti_never_reset(uint8_t num) {
-    stm_exti_never_reset[num] = true;
-}
 
 void stm_peripherals_exti_reset_exti(uint8_t num) {
     stm_peripherals_exti_disable(num);
-    stm_exti_never_reset[num] = false;
     stm_exti_reserved[num] = false;
     stm_exti_callback[num] = NULL;
 }
@@ -59,10 +43,6 @@ void stm_peripherals_exti_disable(uint8_t num) {
 
 void stm_peripherals_exti_set_callback(void (*callback)(uint8_t num), uint8_t number) {
     stm_exti_callback[number] = callback;
-}
-
-void stm_peripherals_exti_free(uint8_t num) {
-    stm_exti_reserved[num] = true;
 }
 
 IRQn_Type stm_peripherals_exti_get_irq(uint8_t num) {

@@ -143,11 +143,11 @@
 [submodule "ports/espressif/esp-idf"]
 	path = ports/espressif/esp-idf
 	url = https://github.com/adafruit/esp-idf.git
-	branch = circuitpython-v5.5.1
+	branch = circuitpython-v6.1
 [submodule "ports/espressif/esp-protocols"]
 	path = ports/espressif/esp-protocols
 	url = https://github.com/adafruit/esp-protocols.git
-	branch = circuitpython
+	branch = circuitpython2026
 [submodule "ports/espressif/esp-camera"]
 	path = ports/espressif/esp-camera
 	url = https://github.com/adafruit/esp32-camera.git
@@ -337,7 +337,7 @@
 	url = https://github.com/adafruit/Adafruit_CircuitPython_Wave.git
 [submodule "ports/raspberrypi/lib/Pico-PIO-USB"]
 	path = ports/raspberrypi/lib/Pico-PIO-USB
-	url = https://github.com/sekigon-gonnoc/Pico-PIO-USB.git
+	url = https://github.com/adafruit/Pico-PIO-USB.git
 	branch = main
 [submodule "lib/micropython-lib"]
 	path = lib/micropython-lib

@@ -1,13 +1,31 @@
 cmake_minimum_required(VERSION 3.20.0)
 
-find_package(Zephyr REQUIRED HINTS lib/zephyr)
+# The dynamic peripheral allocation / runtime pin routing code lives in a
+# Zephyr module kept in-tree for now (modules/iobroker, see its README.md).
+# It must be set before find_package(Zephyr). Repoint this at the module's new
+
+# home to consume an externalized copy.
+set(ZEPHYR_EXTRA_MODULES
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal-modules/iobroker
+    # NeoPixel (WS2812-style) transmit on a runtime-chosen pin (see
+    # internal-modules/neopixel/README.md).
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal-modules/neopixel
+    # Emulated PWM controller for native_sim tests (see
+    # internal-modules/pwm_emul/src/pwm_emul.c).
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal-modules/pwm_emul
+    # Kconfig-only module with defaults that must merge before Zephyr's
+    # subsystem Kconfig files (see internal-modules/circuitpython-kconfig/Kconfig).
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal-modules/circuitpython-kconfig
+)
+
+find_package(Zephyr REQUIRED HINTS ${ZEPHYR_BASE} $ENV{ZEPHYR_BASE} lib/zephyr)
 project(circuitpython)
 
 target_sources(app PRIVATE zephyr_main.c)
 
-# Add I2C emulator control for native_sim testing
+# Add native_sim test support helpers.
 if(CONFIG_BOARD_NATIVE_SIM)
-    target_sources(app PRIVATE native_sim_i2c_emul_control.c)
+    target_sources(app PRIVATE native_sim_i2c_emul_control.c native_sim_spi_loopback_emul.c)
 endif()
 
 if(CONFIG_TRACING_PERFETTO)

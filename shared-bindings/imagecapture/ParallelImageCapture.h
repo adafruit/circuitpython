@@ -13,7 +13,7 @@ extern const mp_obj_type_t imagecapture_parallelimagecapture_type;
 
 // if only the first element of data_pins is non-NULL, the pins are sequential in microcontroller pin numbering.
 void common_hal_imagecapture_parallelimagecapture_construct(imagecapture_parallelimagecapture_obj_t *self,
-    const uint8_t data_pins[],
+    const mcu_pin_obj_t **data_pins,
     uint8_t data_count,
     const mcu_pin_obj_t *data_clock,
     const mcu_pin_obj_t *vertical_sync,

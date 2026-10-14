@@ -746,37 +746,3 @@ bool common_hal_audioio_audioout_get_paused(audioio_audioout_obj_t *self) {
     // quiescent after stop. Worth aligning to the espressif/stm convention.
     return self->playing && self->paused;
 }
-
-// ---------------------------------------------------------------------------
-// Reset hook
-// ---------------------------------------------------------------------------
-
-void audioout_reset(void) {
-    if (active_audioout != NULL) {
-        // Emergency stop: halt timer and DMA without ramping.
-        TIM6->CR1 &= ~TIM_CR1_CEN;
-        HAL_DAC_Stop_DMA(&handle, DAC_CHANNEL_1);
-        HAL_NVIC_DisableIRQ(DMA1_Stream5_IRQn);
-        if (active_audioout->dma_buffer_r) {
-            HAL_DAC_Stop_DMA(&handle, DAC_CHANNEL_2);
-            HAL_NVIC_DisableIRQ(DMA1_Stream6_IRQn);
-            m_free(active_audioout->dma_buffer_r);
-            active_audioout->dma_buffer_r = NULL;
-        }
-        if (active_audioout->dma_buffer) {
-            m_free(active_audioout->dma_buffer);
-            active_audioout->dma_buffer = NULL;
-        }
-        active_audioout->sample = MP_OBJ_NULL;
-        active_audioout->stopping = false;
-        active_audioout->paused = false;
-        active_audioout->playing = false;
-        // Mark the object deinited and drop both pin references so the next
-        // construct() starts from a fully clean state. reset_all_pins (run
-        // elsewhere in reset_port) releases the actual pin claims.
-        active_audioout->left_channel = NULL;
-        active_audioout->right_channel = NULL;
-        active_audioout = NULL;
-    }
-    __HAL_RCC_TIM6_CLK_DISABLE();
-}

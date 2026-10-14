@@ -382,10 +382,11 @@ static uint8_t _process_delete(const uint8_t *raw_buf, size_t command_len) {
 }
 
 // NULL-terminate the path and remove any trailing /. Older versions of the
-// protocol require it but newer ones do not.
+// protocol require it but newer ones do not. Keep the trailing / for the
+// root: both FatFS and littlefs accept "/", but FatFS treats "" as the
+// volume's current directory, not the root.
 static void _terminate_path(char *path, size_t path_length) {
-    // -1 because fatfs doesn't want a trailing /
-    if (path[path_length - 1] == '/') {
+    if (path_length > 1 && path[path_length - 1] == '/') {
         path[path_length - 1] = '\0';
     } else {
         path[path_length] = '\0';

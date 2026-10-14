@@ -1,7 +1,15 @@
-# West manages these folders.
+# West manages these folders. modules/* are west clones, except iobroker,
+# which is an in-tree Zephyr module (see modules/iobroker/README.md); its
+# datasheets/ PDFs are licensed by Nordic and not redistributed here.
 bootloader
 build
-modules
-tools
+modules/*
+!modules/iobroker
+modules/iobroker/datasheets/*
+!modules/iobroker/datasheets/README.md
+/tools
 zephyr
+# The west workspace above, not the module descriptors of the in-tree Zephyr
+# modules (internal-modules/<name>/zephyr/module.yml).
+!internal-modules/*/zephyr/
 .west

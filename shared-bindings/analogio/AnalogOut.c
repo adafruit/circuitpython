@@ -46,7 +46,7 @@ static mp_obj_t analogio_analogout_make_new(const mp_obj_type_t *type, mp_uint_t
 
     const mcu_pin_obj_t *pin = validate_obj_is_free_pin(args[0], MP_QSTR_pin);
 
-    analogio_analogout_obj_t *self = mp_obj_malloc(analogio_analogout_obj_t, &analogio_analogout_type);
+    analogio_analogout_obj_t *self = mp_obj_malloc_with_finaliser(analogio_analogout_obj_t, &analogio_analogout_type);
     common_hal_analogio_analogout_construct(self, pin);
 
     return MP_OBJ_FROM_PTR(self);
@@ -104,6 +104,7 @@ MP_PROPERTY_GETSET(analogio_analogout_value_obj,
 static const mp_rom_map_elem_t analogio_analogout_locals_dict_table[] = {
     // instance methods
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&analogio_analogout_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&analogio_analogout_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__),  MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__),   MP_ROM_PTR(&default___exit___obj) },
 

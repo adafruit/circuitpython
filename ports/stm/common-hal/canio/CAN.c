@@ -261,10 +261,3 @@ void common_hal_canio_can_deinit(canio_can_obj_t *self) {
     }
     self->handle.Instance = NULL;
 }
-
-void common_hal_canio_reset(void) {
-    for (size_t i = 0; i < MP_ARRAY_SIZE(mcu_can_banks); i++) {
-        SET_BIT(mcu_can_banks[i]->MCR, CAN_MCR_RESET);
-        reserved_can[i] = 0;
-    }
-}

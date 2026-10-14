@@ -69,4 +69,3 @@ typedef struct {
 } audioio_audioout_obj_t;
 
 // Called from reset_port() to stop any active playback on soft-reset.
-void audioout_reset(void);

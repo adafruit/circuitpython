@@ -608,7 +608,8 @@ int mp_vprintf(const mp_print_t *print, const char *fmt, va_list args) {
                 chrs += mp_print_int(print, val, fmt_chr == 'd', base, fmt_c, flags, fill, width);
                 break;
             }
-            #if MICROPY_PY_BUILTINS_FLOAT
+                // CIRCUITPY-CHANGE: optional
+            #if MICROPY_PRINTF_FLOAT
             case 'e':
             case 'E':
             case 'f':
@@ -623,6 +624,18 @@ int mp_vprintf(const mp_print_t *print, const char *fmt, va_list args) {
                 #endif
                 break;
             }
+                // CIRCUITPY-CHANGE: skip the argument so later ones still line up
+            #elif MICROPY_PY_BUILTINS_FLOAT
+            case 'e':
+            case 'E':
+            case 'f':
+            case 'F':
+            case 'g':
+            case 'G':
+                (void)va_arg(args, double);
+                print->print_strn(print->data, "?", 1);
+                chrs += 1;
+                break;
             #endif
 
             // CIRCUITPY-CHANGE: new format code to print compressed strings

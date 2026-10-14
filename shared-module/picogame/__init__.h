@@ -27,13 +27,33 @@
 #endif
 #endif
 
+// Fill nw 32-bit words with w, four per iteration. w32 must be 4-byte aligned.
+static inline void picogame_fill_words(uint32_t *w32, int nw, uint32_t w) {
+    for (int b = nw >> 2; b > 0; b--) {
+        w32[0] = w;
+        w32[1] = w;
+        w32[2] = w;
+        w32[3] = w;
+        w32 += 4;
+    }
+    if (nw & 2) {
+        w32[0] = w;
+        w32[1] = w;
+        w32 += 2;
+    }
+    if (nw & 1) {
+        w32[0] = w;
+    }
+}
+
 // Sample one texel as wire RGB565; false = transparent (skip). Shared by the sprite/canvas
 // blit paths so they inline one copy (see the blit contract: PAL8 indices must be < palette len).
+// key is the transparent value, or -1 for an opaque bitmap (never matches).
 static inline bool src_pixel_s(int format, const uint8_t *data, const uint16_t *pal,
-    bool transp, uint16_t key, int idx, uint16_t *out) {
+    int32_t key, int idx, uint16_t *out) {
     if (format == PICOGAME_FMT_PAL8) {
         uint8_t i = data[idx];
-        if (transp && i == (uint8_t)key) {
+        if ((int32_t)i == key) {
             return false;
         }
         *out = pal[i];                           // indices must be < palette length (see blit contract)
@@ -44,11 +64,16 @@ static inline bool src_pixel_s(int format, const uint8_t *data, const uint16_t *
     #pragma GCC diagnostic ignored "-Wcast-align"
     uint16_t v = ((const uint16_t *)data)[idx];
     #pragma GCC diagnostic pop
-    if (transp && v == key) {
+    if ((int32_t)v == key) {
         return false;
     }
     *out = v;
     return true;
+}
+
+// The transparent key of bm, or -1 when it is opaque.
+static inline int32_t picogame_key_of(const picogame_bitmap_obj_t *bm) {
+    return bm->has_transparent ? (int32_t)bm->transparent : -1;
 }
 
 

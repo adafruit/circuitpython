@@ -1,0 +1,12 @@
+# pwm_emul: emulated PWM controller for native_sim tests.
+
+config PWM_ADAFRUIT_EMUL
+	bool "Emulated PWM controller"
+	default y
+	depends on DT_HAS_ADAFRUIT_PWM_EMUL_ENABLED
+	depends on PWM
+	help
+	  Emulated PWM controller (adafruit,pwm-emul) for native_sim tests. It
+	  produces no output; it records the period and pulse each channel is
+	  set to and, with Perfetto tracing, emits them as counter tracks.
+	  Channel N stands for GPIO N.

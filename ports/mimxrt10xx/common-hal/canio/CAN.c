@@ -428,18 +428,21 @@ void common_hal_canio_can_deinit(canio_can_obj_t *self) {
         self->data = NULL;
     }
 
+    // Find which hardware instance we are so we can free its slot.
+    size_t instance = MP_ARRAY_SIZE(can_objs);
+    for (size_t i = 0; i < MP_ARRAY_SIZE(can_objs); i++) {
+        if (can_objs[i] == self) {
+            instance = i;
+            break;
+        }
+    }
+    if (instance < MP_ARRAY_SIZE(can_objs)) {
+        can_objs[instance] = NULL;
+    }
+
     common_hal_reset_pin(self->rx_pin);
     common_hal_reset_pin(self->tx_pin);
 
     self->rx_pin = NULL;
     self->tx_pin = NULL;
-}
-
-void common_hal_canio_reset(void) {
-    for (size_t i = 0; i < MP_ARRAY_SIZE(can_objs); i++) {
-        if (can_objs[i]) {
-            common_hal_canio_can_deinit(can_objs[i]);
-            can_objs[i] = NULL;
-        }
-    }
 }

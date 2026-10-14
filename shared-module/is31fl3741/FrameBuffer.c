@@ -27,7 +27,9 @@ void common_hal_is31fl3741_framebuffer_construct(is31fl3741_framebuffer_obj_t *s
 
     self->is31fl3741 = is31;
 
+    #if CIRCUITPY_BULK_RESET
     common_hal_busio_i2c_never_reset(self->is31fl3741->i2c);
+    #endif
 
     mp_obj_t *items;
     size_t len;

@@ -148,6 +148,7 @@ static const mp_rom_map_elem_t canio_listener_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&canio_listener_enter_obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&canio_listener_exit_obj) },
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&canio_listener_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&canio_listener_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR_in_waiting), MP_ROM_PTR(&canio_listener_in_waiting_obj) },
     { MP_ROM_QSTR(MP_QSTR_receive), MP_ROM_PTR(&canio_listener_receive_obj) },
     { MP_ROM_QSTR(MP_QSTR_timeout), MP_ROM_PTR(&canio_listener_timeout_obj) },

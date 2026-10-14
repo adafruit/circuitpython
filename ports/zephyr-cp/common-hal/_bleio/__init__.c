@@ -16,6 +16,8 @@
 #include "supervisor/shared/bluetooth/bluetooth.h"
 #include "supervisor/shared/tick.h"
 
+#include <zephyr/bluetooth/att.h>
+
 // The singleton _bleio.Adapter object
 bleio_adapter_obj_t common_hal_bleio_adapter_obj;
 
@@ -142,6 +144,47 @@ static void on_gattc_write(struct bt_conn *conn, uint8_t err,
     ctx->done = true;
 }
 
+// Raise an exception for a nonzero ATT error code from a GATT client read or write.
+// connected is whether the connection was still up when the request finished.
+static void check_gattc_status(bool connected, uint8_t err) {
+    if (err == 0) {
+        return;
+    }
+    // Zephyr reports local failures, including a disconnect while the request was
+    // outstanding, as BT_ATT_ERR_UNLIKELY. Check the connection before blaming the peer.
+    if (!connected) {
+        mp_raise_ConnectionError(MP_ERROR_TEXT("Not connected"));
+    }
+    switch (err) {
+        case BT_ATT_ERR_READ_NOT_PERMITTED:
+            mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("%q not permitted"), MP_QSTR_read);
+            return;
+        case BT_ATT_ERR_WRITE_NOT_PERMITTED:
+            mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("%q not permitted"), MP_QSTR_write);
+            return;
+        case BT_ATT_ERR_AUTHENTICATION:
+            mp_raise_bleio_SecurityError(MP_ERROR_TEXT("Insufficient authentication"));
+            return;
+        case BT_ATT_ERR_AUTHORIZATION:
+            mp_raise_bleio_SecurityError(MP_ERROR_TEXT("Insufficient authorization"));
+            return;
+        case BT_ATT_ERR_INSUFFICIENT_ENCRYPTION:
+        case BT_ATT_ERR_ENCRYPTION_KEY_SIZE:
+            mp_raise_bleio_SecurityError(MP_ERROR_TEXT("Insufficient encryption"));
+            return;
+        case BT_ATT_ERR_INVALID_ATTRIBUTE_LEN:
+            mp_arg_error_invalid(MP_QSTR_length);
+            return;
+        default:
+            mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Unknown gatt error: 0x%04x"), err);
+    }
+}
+
+static bool conn_is_connected(struct bt_conn *conn) {
+    struct bt_conn_info info;
+    return bt_conn_get_info(conn, &info) == 0 && info.state == BT_CONN_STATE_CONNECTED;
+}
+
 size_t bleio_gattc_read_sync(struct bt_conn *conn, uint16_t handle,
     uint8_t *buf, size_t len) {
     gattc_read_ctx_t ctx = {
@@ -159,9 +202,17 @@ size_t bleio_gattc_read_sync(struct bt_conn *conn, uint16_t handle,
     read_params.single.handle = handle;
     read_params.single.offset = 0;
 
+    // `bt_conn_ref()` holds a reference to the connection, so conn stays valid until
+    // its state is checked below, even if a disconnect drops the connection's own
+    // reference meanwhile. It returns NULL if the peer has already disconnected.
+    if (bt_conn_ref(conn) == NULL) {
+        active_read_ctx = NULL;
+        mp_raise_ConnectionError(MP_ERROR_TEXT("Not connected"));
+    }
     int err = bt_gatt_read(conn, &read_params);
     if (err != 0) {
         active_read_ctx = NULL;
+        bt_conn_unref(conn);
         raise_zephyr_error(err);
     }
 
@@ -170,9 +221,9 @@ size_t bleio_gattc_read_sync(struct bt_conn *conn, uint16_t handle,
     }
     active_read_ctx = NULL;
 
-    if (ctx.err != 0) {
-        raise_zephyr_error(ctx.err);
-    }
+    bool connected = conn_is_connected(conn);
+    bt_conn_unref(conn);
+    check_gattc_status(connected, ctx.err);
 
     return ctx.read_len;
 }
@@ -192,9 +243,17 @@ void bleio_gattc_write_sync(struct bt_conn *conn, uint16_t handle,
     write_params.data = data;
     write_params.length = len;
 
+    // `bt_conn_ref()` holds a reference to the connection, so conn stays valid until
+    // its state is checked below, even if a disconnect drops the connection's own
+    // reference meanwhile. It returns NULL if the peer has already disconnected.
+    if (bt_conn_ref(conn) == NULL) {
+        active_write_ctx = NULL;
+        mp_raise_ConnectionError(MP_ERROR_TEXT("Not connected"));
+    }
     int err = bt_gatt_write(conn, &write_params);
     if (err != 0) {
         active_write_ctx = NULL;
+        bt_conn_unref(conn);
         raise_zephyr_error(err);
     }
 
@@ -203,7 +262,7 @@ void bleio_gattc_write_sync(struct bt_conn *conn, uint16_t handle,
     }
     active_write_ctx = NULL;
 
-    if (ctx.err != 0) {
-        raise_zephyr_error(ctx.err);
-    }
+    bool connected = conn_is_connected(conn);
+    bt_conn_unref(conn);
+    check_gattc_status(connected, ctx.err);
 }

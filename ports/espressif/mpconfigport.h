@@ -31,6 +31,8 @@
     #define CIRCUITPY_BOOT_BUTTON (&pin_GPIO9)
   #elif defined(CONFIG_IDF_TARGET_ESP32C5)
     #define CIRCUITPY_BOOT_BUTTON (&pin_GPIO28)
+  #elif defined(CONFIG_IDF_TARGET_ESP32S31)
+    #define CIRCUITPY_BOOT_BUTTON (&pin_GPIO61)
   #elif !defined(CONFIG_IDF_TARGET_ESP32)
     #define CIRCUITPY_BOOT_BUTTON (&pin_GPIO0)
   #endif

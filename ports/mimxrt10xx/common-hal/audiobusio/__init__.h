@@ -27,7 +27,6 @@ typedef struct {
 } i2s_t;
 
 
-void i2s_reset(void);
 void port_i2s_initialize(i2s_t *self, int instance, sai_transceiver_t *config);
 void port_i2s_deinit(i2s_t *self);
 bool port_i2s_deinited(i2s_t *self);

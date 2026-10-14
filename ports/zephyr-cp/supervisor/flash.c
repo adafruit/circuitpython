@@ -21,16 +21,13 @@
 #include <zephyr/storage/flash_map.h>
 
 // The filesystem partition node label comes from the Adaboot fork's layout
-// dtsi (and the native simulator layout). Prefer the explicit fatfs/littlefs
-// names, then fall back to the generic circuitpy_partition name the native
-// simulators (and other boards) use, and finally to runtime discovery of an
-// unpartitioned flash device.
+// dtsi (and the native simulator layouts). Prefer the explicit fatfs/littlefs
+// names, then fall back to the older circuitpy_partition name some boards use,
+// and finally to runtime discovery of an unpartitioned flash device.
 #if FIXED_PARTITION_EXISTS(littlefs_partition)
 #define CIRCUITPY_PARTITION littlefs_partition
 #elif FIXED_PARTITION_EXISTS(fatfs_partition)
 #define CIRCUITPY_PARTITION fatfs_partition
-#elif FIXED_PARTITION_EXISTS(filesystem_partition)
-#define CIRCUITPY_PARTITION filesystem_partition
 #elif FIXED_PARTITION_EXISTS(circuitpy_partition)
 #define CIRCUITPY_PARTITION circuitpy_partition
 #endif

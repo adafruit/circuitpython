@@ -186,7 +186,7 @@ void shared_module_bitbangio_i2c_construct(bitbangio_i2c_obj_t *self,
 
 bool shared_module_bitbangio_i2c_deinited(bitbangio_i2c_obj_t *self) {
     // If one is deinited, both will be.
-    return digitalinout_protocol_deinited(self->scl);
+    return self->scl == MP_OBJ_NULL;
 }
 
 void shared_module_bitbangio_i2c_deinit(bitbangio_i2c_obj_t *self) {
@@ -202,6 +202,8 @@ void shared_module_bitbangio_i2c_deinit(bitbangio_i2c_obj_t *self) {
         digitalinout_protocol_deinit(self->sda);
         circuitpy_free_obj(self->sda);
     }
+    // Mark deinited; the pin objects may have been freed above.
+    self->scl = MP_OBJ_NULL;
 }
 
 bool shared_module_bitbangio_i2c_try_lock(bitbangio_i2c_obj_t *self) {

@@ -21,18 +21,13 @@ void stm32_peripherals_gpio_init(void) {
     // __HAL_RCC_GPIOH_CLK_ENABLE();
     // __HAL_RCC_GPIOI_CLK_ENABLE();
 
-    // Never reset pins
-    never_reset_pin_number(2, 14); // PC14 OSC32_IN
-    never_reset_pin_number(2, 15); // PC15 OSC32_OUT
-    never_reset_pin_number(0, 13); // PA13 SWDIO
-    never_reset_pin_number(0, 14); // PA14 SWCLK
-    // never_reset_pin_number(0,15); //PA15 JTDI
-    // never_reset_pin_number(1,3); //PB3 JTDO
-    // never_reset_pin_number(1,4); //PB4 JTRST
+    // Pins in use by the system; mark them claimed so user code can't use them.
+    claim_pin(2, 14); // PC14 OSC32_IN
+    claim_pin(2, 15); // PC15 OSC32_OUT
+    claim_pin(0, 13); // PA13 SWDIO
+    claim_pin(0, 14); // PA14 SWCLK
 
     // Port H is not included in GPIO port array
-    // never_reset_pin_number(5,0); //PH0 JTDO
-    // never_reset_pin_number(5,1); //PH1 JTRST
 }
 
 void stm32l4_peripherals_status_led(uint8_t led, uint8_t state) {

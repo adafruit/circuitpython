@@ -31,8 +31,8 @@
 
 #if MICROPY_PY_ASYNCIO
 
-// CIRCUITPY-CHANGE
-#if CIRCUITPY && !(defined(__unix__) || defined(__APPLE__))
+// CIRCUITPY-CHANGE: the unix port has no supervisor.
+#if CIRCUITPY && CIRCUITPY_SUPERVISOR
 #include "shared-bindings/supervisor/__init__.h"
 #endif
 
@@ -76,7 +76,7 @@ static mp_obj_t task_queue_make_new(const mp_obj_type_t *type, size_t n_args, si
 #define _TICKS_MAX (_TICKS_PERIOD - 1)
 #define _TICKS_HALFPERIOD (_TICKS_PERIOD >> 1)
 
-#if !CIRCUITPY || (defined(__unix__) || defined(__APPLE__))
+#if !CIRCUITPY || !CIRCUITPY_SUPERVISOR
 static mp_obj_t ticks(void) {
     return MP_OBJ_NEW_SMALL_INT(mp_hal_ticks_ms() & _TICKS_MAX);
 }

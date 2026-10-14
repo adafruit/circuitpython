@@ -36,8 +36,6 @@ static nrfx_uarte_t nrfx_uartes[] = {
     #endif
 };
 
-static bool never_reset[NRFX_UARTE0_ENABLED + NRFX_UARTE1_ENABLED];
-
 static uint32_t get_nrf_baud(uint32_t baudrate) {
 
     static const struct {
@@ -109,30 +107,6 @@ static void uart_callback_irq(const nrfx_uarte_event_t *event, void *context) {
         default:
             break;
     }
-}
-
-void uart_reset(void) {
-    for (size_t i = 0; i < MP_ARRAY_SIZE(nrfx_uartes); i++) {
-        if (never_reset[i]) {
-            continue;
-        }
-        nrfx_uarte_uninit(&nrfx_uartes[i]);
-    }
-}
-
-void common_hal_busio_uart_never_reset(busio_uart_obj_t *self) {
-    // Don't never reset objects on the heap.
-    if (gc_alloc_possible() && gc_ptr_on_heap(self)) {
-        return;
-    }
-    for (size_t i = 0; i < MP_ARRAY_SIZE(nrfx_uartes); i++) {
-        if (self->uarte == &nrfx_uartes[i]) {
-            never_reset[i] = true;
-            break;
-        }
-    }
-    never_reset_pin_number(self->tx_pin_number);
-    never_reset_pin_number(self->rx_pin_number);
 }
 
 void common_hal_busio_uart_construct(busio_uart_obj_t *self,
@@ -251,13 +225,6 @@ void common_hal_busio_uart_deinit(busio_uart_obj_t *self) {
         self->rts_pin_number = NO_PIN;
         self->cts_pin_number = NO_PIN;
         ringbuf_deinit(&self->ringbuf);
-
-        for (size_t i = 0; i < MP_ARRAY_SIZE(nrfx_uartes); i++) {
-            if (self->uarte == &nrfx_uartes[i]) {
-                never_reset[i] = false;
-                break;
-            }
-        }
     }
 }
 

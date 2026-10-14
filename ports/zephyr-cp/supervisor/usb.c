@@ -17,6 +17,7 @@
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/disk.h>
 #include <zephyr/drivers/pinctrl.h>
+#include <zephyr/drivers/uart.h>
 #include <zephyr/kernel.h>
 #include <zephyr/usb/usbd.h>
 #include <zephyr/usb/class/usbd_msc.h>
@@ -33,6 +34,15 @@ LOG_MODULE_REGISTER(cpusb, CONFIG_LOG_DEFAULT_LEVEL);
 
 #define USB_DEVICE DT_NODELABEL(zephyr_udc0)
 
+// usbd_register_class() below names the CDC ACM classes "cdc_acm_<n>", where
+// n is the devicetree instance number. A board or bootloader overlay that
+// adds its own cdc-acm-uart node renumbers them, so check that instance 0 is
+// the console and instance 1 the data port.
+BUILD_ASSERT(DT_SAME_NODE(DT_INST(0, zephyr_cdc_acm_uart), DT_NODELABEL(cdc_acm_console)),
+    "CDC ACM instance 0 must be cdc_acm_console");
+BUILD_ASSERT(DT_SAME_NODE(DT_INST(1, zephyr_cdc_acm_uart), DT_NODELABEL(cdc_acm_data)),
+    "CDC ACM instance 1 must be cdc_acm_data");
+
 USBD_DEVICE_DEFINE(main_usbd,
     DEVICE_DT_GET(DT_NODELABEL(zephyr_udc0)),
     USB_VID, USB_PID);
@@ -40,6 +50,10 @@ USBD_DEVICE_DEFINE(main_usbd,
 USBD_DESC_LANG_DEFINE(main_lang);
 USBD_DESC_MANUFACTURER_DEFINE(main_mfr, USB_MANUFACTURER);
 USBD_DESC_PRODUCT_DEFINE(main_product, USB_PRODUCT);
+// The stack fills this from hwinfo and fails the request without a driver.
+#if defined(CONFIG_HWINFO_HAS_DRIVER)
+USBD_DESC_SERIAL_NUMBER_DEFINE(main_sn);
+#endif
 
 USBD_DESC_CONFIG_DEFINE(fs_cfg_desc, "FS Configuration");
 USBD_DESC_CONFIG_DEFINE(hs_cfg_desc, "HS Configuration");
@@ -208,6 +222,21 @@ int _zephyr_disk_ioctl(struct disk_info *disk, uint8_t cmd, void *buff) {
 // volatile to avoid the compiler caching stale values.
 static volatile bool usb_configured = false;
 
+static const struct device *const console_dev = DEVICE_DT_GET(DT_NODELABEL(cdc_acm_console));
+static bool console_dtr = false;
+static bool usb_suspended = false;
+
+// With flow control on, the CDC ACM driver's poll_out waits for room in its
+// TX buffer instead of dropping output. Use it for the console only while
+// the host is connected, awake and holds DTR, as TinyUSB does.
+static void update_console_flow_control(void) {
+    bool on = usb_configured && !usb_suspended && console_dtr;
+    struct uart_config config = {
+        .flow_ctrl = on ? UART_CFG_FLOW_CTRL_RTS_CTS : UART_CFG_FLOW_CTRL_NONE,
+    };
+    uart_configure(console_dev, &config);
+}
+
 static void _msg_cb(struct usbd_context *const ctx, const struct usbd_msg *msg) {
     LOG_INF("USBD message: %s", usbd_msg_type_string(msg->type));
 
@@ -234,6 +263,20 @@ static void _msg_cb(struct usbd_context *const ctx, const struct usbd_msg *msg) 
     } else if (msg->type == USBD_MSG_RESET) {
         usb_configured = false;
     }
+
+    if (msg->type == USBD_MSG_SUSPEND) {
+        usb_suspended = true;
+    } else if (msg->type == USBD_MSG_RESUME || msg->type == USBD_MSG_RESET) {
+        usb_suspended = false;
+    }
+    if (msg->type == USBD_MSG_RESET) {
+        console_dtr = false;
+    } else if (msg->type == USBD_MSG_CDC_ACM_CONTROL_LINE_STATE && msg->dev == console_dev) {
+        uint32_t dtr = 0;
+        uart_line_ctrl_get(console_dev, UART_LINE_CTRL_DTR, &dtr);
+        console_dtr = dtr != 0;
+    }
+    update_console_flow_control();
 }
 
 void usb_init(void) {
@@ -259,11 +302,19 @@ void usb_init(void) {
         return;
     }
 
+    #if defined(CONFIG_HWINFO_HAS_DRIVER)
+    err = usbd_add_descriptor(&main_usbd, &main_sn);
+    if (err) {
+        LOG_ERR("Failed to initialize serial number descriptor (%d)", err);
+        return;
+    }
+    #endif
+
     bool console = usb_cdc_console_enabled();
     if (console) {
-        uint8_t *receiver_buffer = port_malloc(128, true);
+        uint8_t *receiver_buffer = port_malloc(1024, true);
         if (receiver_buffer != NULL) {
-            common_hal_usb_cdc_serial_construct_from_device(&usb_cdc_console_obj, DEVICE_DT_GET(DT_NODELABEL(cdc_acm_console)), 128, receiver_buffer);
+            common_hal_usb_cdc_serial_construct_from_device(&usb_cdc_console_obj, DEVICE_DT_GET(DT_NODELABEL(cdc_acm_console)), 1024, receiver_buffer);
         } else {
             console = false;
         }
@@ -272,9 +323,9 @@ void usb_init(void) {
 
     bool data = usb_cdc_data_enabled();
     if (data) {
-        uint8_t *receiver_buffer = port_malloc(128, true);
+        uint8_t *receiver_buffer = port_malloc(1024, true);
         if (receiver_buffer != NULL) {
-            common_hal_usb_cdc_serial_construct_from_device(&usb_cdc_data_obj, DEVICE_DT_GET(DT_NODELABEL(cdc_acm_data)), 128, receiver_buffer);
+            common_hal_usb_cdc_serial_construct_from_device(&usb_cdc_data_obj, DEVICE_DT_GET(DT_NODELABEL(cdc_acm_data)), 1024, receiver_buffer);
         } else {
             data = false;
         }

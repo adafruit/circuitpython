@@ -17,28 +17,28 @@
 #include "shared-bindings/socketpool/SocketPool.h"
 
 //| class SocketPool:
-//|     """A pool of socket resources available for the given radio. Only one
-//|     SocketPool can be created for each radio.
+//|     """A pool of socket resources available for the given network interface. Only one
+//|     SocketPool can be created for each network interface.
 //|
 //|     SocketPool should be used in place of CPython's socket which provides
 //|     a pool of sockets provided by the underlying OS.
 //|     """
 //|
-//|     def __init__(self, radio: Union[wifi.Radio, hostnetwork.HostNetwork]) -> None:
-//|         """Create a new SocketPool object for the provided radio
+//|     def __init__(self, network_interface: Union[wifi.Radio, mii.Ethernet, hostnetwork.HostNetwork]) -> None:
+//|         """Create a new SocketPool object for the provided network interface
 //|
-//|         :param radio: The (connected) network interface to associate with this
-//|             SocketPool, such as :py:attr:`wifi.radio` or :py:attr:`board.NETWORK`.
+//|         :param network_interface: The (connected) network interface to associate with this
+//|             SocketPool, such as :py:attr:`wifi.radio`, an `mii.Ethernet`, or :py:attr:`board.NETWORK`.
 //|         """
 //|         ...
 //|
 static mp_obj_t socketpool_socketpool_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *args) {
     mp_arg_check_num(n_args, n_kw, 1, 1, false);
 
-    mp_obj_t radio = args[0];
+    mp_obj_t network_interface = args[0];
 
     socketpool_socketpool_obj_t *s = mp_obj_malloc_with_finaliser(socketpool_socketpool_obj_t, &socketpool_socketpool_type);
-    common_hal_socketpool_socketpool_construct(s, radio);
+    common_hal_socketpool_socketpool_construct(s, network_interface);
 
     return MP_OBJ_FROM_PTR(s);
 }

@@ -205,6 +205,16 @@ SECTIONS
     _ld_dtcm_bss_start = ADDR(.dtcm_bss);
     _ld_dtcm_bss_size = SIZEOF(.dtcm_bss);
 
+    /* Kept powered through deep sleep by pico_low_power. Holds alarm.sleep_memory. */
+    .persistent_data (NOLOAD) : {
+        . = ALIGN(4);
+        __persistent_data_start__ = .;
+        *(.uninitialized)
+        *(.persistent_data*)
+        . = ALIGN(4);
+        __persistent_data_end__ = .;
+    } > RAM
+
     .uninitialized_data (COPY): {
         . = ALIGN(4);
         *(.uninitialized_data*)

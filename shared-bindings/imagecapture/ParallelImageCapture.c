@@ -48,16 +48,16 @@ static mp_obj_t imagecapture_parallelimagecapture_make_new(const mp_obj_type_t *
     MP_STATIC_ASSERT(MP_ARRAY_SIZE(allowed_args) == NUM_ARGS);
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    uint8_t pins[32];
+    const mcu_pin_obj_t *pins[32];
     uint8_t pin_count;
-    validate_pins(MP_QSTR_data, pins, MP_ARRAY_SIZE(pins), args[ARG_data_pins].u_obj, &pin_count);
+    validate_list_is_free_pins(MP_QSTR_data, pins, MP_ARRAY_SIZE(pins), args[ARG_data_pins].u_obj, &pin_count);
 
     const mcu_pin_obj_t *clock = validate_obj_is_free_pin(args[ARG_clock].u_obj, MP_QSTR_clock);
     const mcu_pin_obj_t *vsync = validate_obj_is_free_pin_or_none(args[ARG_vsync].u_obj, MP_QSTR_vsync);
     const mcu_pin_obj_t *href = validate_obj_is_free_pin_or_none(args[ARG_href].u_obj, MP_QSTR_href);
 
     imagecapture_parallelimagecapture_obj_t *self =
-        mp_obj_malloc(imagecapture_parallelimagecapture_obj_t, &imagecapture_parallelimagecapture_type);
+        mp_obj_malloc_with_finaliser(imagecapture_parallelimagecapture_obj_t, &imagecapture_parallelimagecapture_type);
     common_hal_imagecapture_parallelimagecapture_construct(self, pins, pin_count, clock, vsync, href);
 
     return self;
@@ -158,6 +158,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(imagecapture_parallelimagecapture_deinit_obj, i
 
 static const mp_rom_map_elem_t imagecapture_parallelimagecapture_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&imagecapture_parallelimagecapture_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&imagecapture_parallelimagecapture_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
 

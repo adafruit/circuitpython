@@ -65,6 +65,8 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
         mp_raise_ValueError(MP_ERROR_TEXT("SPI peripheral in use"));
     }
 
+    self->async_active = false;
+    self->dma_kept = false;
     self->target_frequency = 250000;
     self->real_frequency = spi_init(self->peripheral, self->target_frequency);
 
@@ -102,6 +104,12 @@ void common_hal_busio_spi_mark_deinit(busio_spi_obj_t *self) {
 void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
     if (common_hal_busio_spi_deinited(self)) {
         return;
+    }
+    common_hal_busio_spi_end(self);
+    if (self->dma_kept) {
+        dma_channel_unclaim(self->dma_tx);
+        dma_channel_unclaim(self->dma_rx);
+        self->dma_kept = false;
     }
     spi_deinit(self->peripheral);
 
@@ -161,89 +169,109 @@ void common_hal_busio_spi_unlock(busio_spi_obj_t *self) {
     self->has_lock = false;
 }
 
-static bool _transfer(busio_spi_obj_t *self,
+// Start a transfer. With DMA it runs in the background and _end() finishes it; otherwise it is
+// done in software before this returns. An out or in buffer shorter than the transfer is one
+// byte repeated or dropped. keep_dma keeps the DMA channels until deinit, for buses that send
+// often. Returns whether DMA is running.
+static bool _start(busio_spi_obj_t *self,
     const uint8_t *data_out, size_t out_len,
-    uint8_t *data_in, size_t in_len) {
-    // Use DMA for large transfers if channels are available
-    const size_t dma_min_size_threshold = 32;
-    int chan_tx = -1;
-    int chan_rx = -1;
+    uint8_t *data_in, size_t in_len, bool keep_dma) {
     size_t len = MAX(out_len, in_len);
-    if (len >= dma_min_size_threshold) {
-        // Use two DMA channels to service the two FIFOs
-        chan_tx = dma_claim_unused_channel(false);
-        chan_rx = dma_claim_unused_channel(false);
-    }
-    bool has_dma_channels = chan_rx >= 0 && chan_tx >= 0;
     // Only use DMA if both data buffers are in SRAM. Otherwise, we'll stall the DMA with PSRAM or flash cache misses.
-    bool data_in_sram = data_in >= (uint8_t *)SRAM_BASE && data_out >= (uint8_t *)SRAM_BASE;
-    bool use_dma = has_dma_channels && data_in_sram;
+    bool use_dma = len >= 32 && data_in >= (uint8_t *)SRAM_BASE && data_out >= (uint8_t *)SRAM_BASE;
+    if (use_dma && !self->dma_kept) {
+        int chan_tx = dma_claim_unused_channel(false);
+        int chan_rx = dma_claim_unused_channel(false);
+        if (chan_tx >= 0 && chan_rx >= 0) {
+            self->dma_tx = chan_tx;
+            self->dma_rx = chan_rx;
+            self->dma_kept = keep_dma;
+        } else {
+            // If we have claimed only one channel successfully, release it.
+            if (chan_tx >= 0) {
+                dma_channel_unclaim(chan_tx);
+            }
+            if (chan_rx >= 0) {
+                dma_channel_unclaim(chan_rx);
+            }
+            use_dma = false;
+        }
+    }
     if (use_dma) {
-        dma_channel_config c = dma_channel_get_default_config(chan_tx);
+        dma_channel_config c = dma_channel_get_default_config(self->dma_tx);
         channel_config_set_transfer_data_size(&c, DMA_SIZE_8);
         channel_config_set_dreq(&c, spi_get_index(self->peripheral) ? DREQ_SPI1_TX : DREQ_SPI0_TX);
         channel_config_set_read_increment(&c, out_len == len);
         channel_config_set_write_increment(&c, false);
-        dma_channel_configure(chan_tx, &c,
+        dma_channel_configure(self->dma_tx, &c,
             &spi_get_hw(self->peripheral)->dr,
             data_out,
             len,
             false);
 
-        c = dma_channel_get_default_config(chan_rx);
+        c = dma_channel_get_default_config(self->dma_rx);
         channel_config_set_transfer_data_size(&c, DMA_SIZE_8);
         channel_config_set_dreq(&c, spi_get_index(self->peripheral) ? DREQ_SPI1_RX : DREQ_SPI0_RX);
         channel_config_set_read_increment(&c, false);
         channel_config_set_write_increment(&c, in_len == len);
-        dma_channel_configure(chan_rx, &c,
+        dma_channel_configure(self->dma_rx, &c,
             data_in,
             &spi_get_hw(self->peripheral)->dr,
             len,
             false);
 
-        dma_start_channel_mask((1u << chan_rx) | (1u << chan_tx));
-        while (dma_channel_is_busy(chan_rx) || dma_channel_is_busy(chan_tx)) {
-            // TODO: We should idle here until we get a DMA interrupt or something else.
+        dma_start_channel_mask((1u << self->dma_rx) | (1u << self->dma_tx));
+        return true;
+    }
+
+    // Use software for small transfers, or if couldn't claim two DMA channels
+    // Never have more transfers in flight than will fit into the RX FIFO,
+    // else FIFO will overflow if this code is heavily interrupted.
+    const size_t fifo_depth = 8;
+    size_t rx_remaining = len;
+    size_t tx_remaining = len;
+
+    while (rx_remaining || tx_remaining) {
+        if (tx_remaining && spi_is_writable(self->peripheral) && rx_remaining - tx_remaining < fifo_depth) {
+            spi_get_hw(self->peripheral)->dr = (uint32_t)*data_out;
+            // Increment only if the buffer is the transfer length. It's 1 otherwise.
+            if (out_len == len) {
+                data_out++;
+            }
+            --tx_remaining;
+        }
+        if (rx_remaining && spi_is_readable(self->peripheral)) {
+            *data_in = (uint8_t)spi_get_hw(self->peripheral)->dr;
+            // Increment only if the buffer is the transfer length. It's 1 otherwise.
+            if (in_len == len) {
+                data_in++;
+            }
+            --rx_remaining;
+        }
+        RUN_BACKGROUND_TASKS;
+    }
+    return false;
+}
+
+// Wait for a DMA transfer started by _start(). The RX channel finishes last.
+static void _end(busio_spi_obj_t *self, bool background_tasks) {
+    while (dma_channel_is_busy(self->dma_rx)) {
+        if (background_tasks) {
             RUN_BACKGROUND_TASKS;
         }
     }
-
-    // If we have claimed only one channel successfully, we should release immediately. This also
-    // releases the DMA after use_dma has been done.
-    if (chan_rx >= 0) {
-        dma_channel_unclaim(chan_rx);
+    if (!self->dma_kept) {
+        dma_channel_unclaim(self->dma_tx);
+        dma_channel_unclaim(self->dma_rx);
     }
-    if (chan_tx >= 0) {
-        dma_channel_unclaim(chan_tx);
-    }
+}
 
-    if (!use_dma) {
-        // Use software for small transfers, or if couldn't claim two DMA channels
-        // Never have more transfers in flight than will fit into the RX FIFO,
-        // else FIFO will overflow if this code is heavily interrupted.
-        const size_t fifo_depth = 8;
-        size_t rx_remaining = len;
-        size_t tx_remaining = len;
-
-        while (rx_remaining || tx_remaining) {
-            if (tx_remaining && spi_is_writable(self->peripheral) && rx_remaining - tx_remaining < fifo_depth) {
-                spi_get_hw(self->peripheral)->dr = (uint32_t)*data_out;
-                // Increment only if the buffer is the transfer length. It's 1 otherwise.
-                if (out_len == len) {
-                    data_out++;
-                }
-                --tx_remaining;
-            }
-            if (rx_remaining && spi_is_readable(self->peripheral)) {
-                *data_in = (uint8_t)spi_get_hw(self->peripheral)->dr;
-                // Increment only if the buffer is the transfer length. It's 1 otherwise.
-                if (in_len == len) {
-                    data_in++;
-                }
-                --rx_remaining;
-            }
-            RUN_BACKGROUND_TASKS;
-        }
+static bool _transfer(busio_spi_obj_t *self,
+    const uint8_t *data_out, size_t out_len,
+    uint8_t *data_in, size_t in_len) {
+    if (_start(self, data_out, out_len, data_in, in_len, false)) {
+        // TODO: We should idle here until we get a DMA interrupt or something else.
+        _end(self, true);
     }
     return true;
 }
@@ -252,6 +280,26 @@ bool common_hal_busio_spi_write(busio_spi_obj_t *self,
     const uint8_t *data, size_t len) {
     uint32_t data_in;
     return _transfer(self, data, len, (uint8_t *)&data_in, MIN(len, 4));
+}
+
+void common_hal_busio_spi_write_start(busio_spi_obj_t *self, const uint8_t *data, size_t len,
+    circuitpy_async_flag_t *done) {
+    common_hal_busio_spi_end(self);
+    CIRCUITPY_ASYNC_FLAG_INIT(done);
+    self->async_done = done;
+    self->async_active = _start(self, data, len, &self->discard, 1, true);
+    if (!self->async_active) {
+        CIRCUITPY_ASYNC_FLAG_SET(done);
+    }
+}
+
+void common_hal_busio_spi_end(busio_spi_obj_t *self) {
+    if (self->async_active) {
+        // No background tasks here: the caller holds the bus, and one of them may want it.
+        _end(self, false);
+        self->async_active = false;
+        CIRCUITPY_ASYNC_FLAG_SET(self->async_done);
+    }
 }
 
 bool common_hal_busio_spi_read(busio_spi_obj_t *self,

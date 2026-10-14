@@ -85,7 +85,7 @@ static mp_obj_t audiomixer_mixer_make_new(const mp_obj_type_t *type, size_t n_ar
         mp_raise_ValueError(MP_ERROR_TEXT("bits_per_sample must be 8 or 16"));
     }
     audiomixer_mixer_obj_t *self =
-        mp_obj_malloc_var(audiomixer_mixer_obj_t, voice, mp_obj_t, voice_count, &audiomixer_mixer_type);
+        mp_obj_malloc_var_with_finaliser(audiomixer_mixer_obj_t, voice, mp_obj_t, voice_count, &audiomixer_mixer_type);
     common_hal_audiomixer_mixer_construct(self, voice_count, args[ARG_buffer_size].u_int, bits_per_sample, args[ARG_samples_signed].u_bool, channel_count, sample_rate);
 
     for (int v = 0; v < voice_count; v++) {
@@ -222,6 +222,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(audiomixer_mixer_stop_voice_obj, 1, audiomixer_mixer_
 static const mp_rom_map_elem_t audiomixer_mixer_locals_dict_table[] = {
     // Methods
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&audiomixer_mixer_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&audiomixer_mixer_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
     { MP_ROM_QSTR(MP_QSTR_play), MP_ROM_PTR(&audiomixer_mixer_play_obj) },

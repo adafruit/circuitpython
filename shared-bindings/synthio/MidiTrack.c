@@ -69,7 +69,7 @@ static mp_obj_t synthio_miditrack_make_new(const mp_obj_type_t *type, size_t n_a
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(args[ARG_buffer].u_obj, &bufinfo, MP_BUFFER_READ);
 
-    synthio_miditrack_obj_t *self = mp_obj_malloc(synthio_miditrack_obj_t, &synthio_miditrack_type);
+    synthio_miditrack_obj_t *self = mp_obj_malloc_with_finaliser(synthio_miditrack_obj_t, &synthio_miditrack_type);
     common_hal_synthio_miditrack_construct(self,
         (uint8_t *)bufinfo.buf, bufinfo.len,
         mp_arg_validate_int_min(args[ARG_tempo].u_int, 1, MP_QSTR_tempo),
@@ -156,6 +156,7 @@ MP_PROPERTY_GETTER(synthio_miditrack_error_location_obj,
 static const mp_rom_map_elem_t synthio_miditrack_locals_dict_table[] = {
     // Methods
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&synthio_miditrack_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&synthio_miditrack_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
 

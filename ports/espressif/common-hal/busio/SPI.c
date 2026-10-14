@@ -97,6 +97,9 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
 
     // Ensure the object starts in its deinit state.
     common_hal_busio_spi_mark_deinit(self);
+    #if CIRCUITPY_BUSIO_SPI_ASYNC
+    self->async_count = 0;
+    #endif
 
     const spi_bus_config_t bus_config = {
         .mosi_io_num = mosi != NULL ? mosi->number : -1,
@@ -176,6 +179,10 @@ void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
         RUN_BACKGROUND_TASKS;
     }
 
+    #if CIRCUITPY_BUSIO_SPI_ASYNC
+    common_hal_busio_spi_end(self);
+    #endif
+
     // Mark as deinit early in case we are used in an interrupt.
     common_hal_reset_pin(self->clock);
     common_hal_busio_spi_mark_deinit(self);
@@ -200,6 +207,9 @@ bool common_hal_busio_spi_configure(busio_spi_obj_t *self,
         bits == self->bits) {
         return true;
     }
+    #if CIRCUITPY_BUSIO_SPI_ASYNC
+    common_hal_busio_spi_end(self);
+    #endif
     spi_bus_remove_device(spi_handle[self->host_id]);
     set_spi_config(self, baudrate, polarity, phase, bits);
     return true;
@@ -323,6 +333,45 @@ bool common_hal_busio_spi_transfer(busio_spi_obj_t *self,
     }
     return true;
 }
+
+#if CIRCUITPY_BUSIO_SPI_ASYNC
+void common_hal_busio_spi_write_start(busio_spi_obj_t *self, const uint8_t *data, size_t len,
+    circuitpy_async_flag_t *done) {
+    common_hal_busio_spi_end(self);
+    CIRCUITPY_ASYNC_FLAG_INIT(done);
+    self->async_done = done;
+    size_t chunks = (len + SPI_MAX_DMA_LEN - 1) / SPI_MAX_DMA_LEN;
+    // Short writes, other word sizes and writes needing more transactions than we keep go the
+    // normal way.
+    if (len <= 4 || self->bits != 8 || chunks > MP_ARRAY_SIZE(self->async_trans)) {
+        common_hal_busio_spi_write(self, data, len);
+        CIRCUITPY_ASYNC_FLAG_SET(done);
+        return;
+    }
+    for (size_t i = 0; i < chunks; i++) {
+        size_t offset = i * SPI_MAX_DMA_LEN;
+        spi_transaction_t *trans = &self->async_trans[i];
+        memset(trans, 0, sizeof(*trans));
+        trans->length = MIN(len - offset, SPI_MAX_DMA_LEN) * 8;
+        trans->tx_buffer = data + offset;
+        spi_device_queue_trans(spi_handle[self->host_id], trans, portMAX_DELAY);
+    }
+    self->async_count = chunks;
+}
+
+void common_hal_busio_spi_end(busio_spi_obj_t *self) {
+    if (self->async_count == 0) {
+        return;
+    }
+    // No background tasks here: the caller holds the bus, and one of them may want it.
+    spi_transaction_t *trans;
+    while (self->async_count > 0) {
+        spi_device_get_trans_result(spi_handle[self->host_id], &trans, portMAX_DELAY);
+        self->async_count--;
+    }
+    CIRCUITPY_ASYNC_FLAG_SET(self->async_done);
+}
+#endif
 
 uint32_t common_hal_busio_spi_get_frequency(busio_spi_obj_t *self) {
     return self->baudrate;

@@ -158,7 +158,8 @@ void common_hal_pulseio_pulsein_deinit(pulseio_pulsein_obj_t *self) {
     }
     // Remove pulsein slot from shared array
     callback_obj_ref[self->pin->number] = NULL;
-    stm_peripherals_exti_free(self->pin->number);
+    // Disable the EXTI IRQ, unreserve the line and clear the callback.
+    stm_peripherals_exti_reset_exti(self->pin->number);
     reset_pin_number(self->pin->port, self->pin->number);
     self->pin = NULL;
 

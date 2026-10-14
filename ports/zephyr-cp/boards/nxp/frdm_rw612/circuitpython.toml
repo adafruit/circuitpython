@@ -1,4 +1,4 @@
-CIRCUITPY_BUILD_EXTENSIONS = ["elf"]
+CIRCUITPY_BUILD_EXTENSIONS = ["hex", "uf2", "signed.bin"]
 BLOBS=["hal_nxp"]
 
 [blob_fetch_args]

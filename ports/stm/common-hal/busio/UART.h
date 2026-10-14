@@ -34,5 +34,3 @@ typedef struct {
 
     bool sigint_enabled;
 } busio_uart_obj_t;
-
-void uart_reset(void);

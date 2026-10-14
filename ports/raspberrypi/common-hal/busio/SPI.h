@@ -9,6 +9,7 @@
 #include "common-hal/microcontroller/Pin.h"
 
 #include "py/obj.h"
+#include "supervisor/shared/async_flag.h"
 
 #include "hardware/spi.h"
 
@@ -24,4 +25,10 @@ typedef struct {
     uint8_t polarity;
     uint8_t phase;
     uint8_t bits;
+    bool async_active;          // a write_start DMA transfer may still be running
+    bool dma_kept;              // dma_tx and dma_rx are ours until deinit
+    uint8_t dma_tx;
+    uint8_t dma_rx;
+    uint8_t discard;            // RX target of write_start
+    circuitpy_async_flag_t *async_done;
 } busio_spi_obj_t;

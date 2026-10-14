@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: MIT
 
 #include "shared-bindings/wifi/Radio.h"
+#include "shared-bindings/wifi/__init__.h"
 #include "ports/zephyr-cp/common-hal/wifi/ScannedNetworks.h"
 #include "shared-bindings/wifi/Network.h"
 
@@ -126,6 +127,10 @@ void common_hal_wifi_radio_set_hostname(wifi_radio_obj_t *self, const char *host
     if (net_hostname_set((char *)hostname, strlen(hostname)) != 0) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to set hostname"));
     }
+}
+
+const char *wifi_get_hostname_raw(void) {
+    return net_hostname_get();
 }
 
 mp_obj_t common_hal_wifi_radio_get_mac_address(wifi_radio_obj_t *self) {

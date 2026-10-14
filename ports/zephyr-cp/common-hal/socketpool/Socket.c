@@ -205,7 +205,10 @@ socketpool_socket_obj_t *common_hal_socketpool_socket(socketpool_socketpool_obj_
     socketpool_socket_obj_t *sock = mp_obj_malloc_with_finaliser(socketpool_socket_obj_t, &socketpool_socket_type);
 
     if (!_socketpool_socket(self, family, type, proto, sock)) {
-        mp_raise_RuntimeError(MP_ERROR_TEXT("Out of sockets"));
+        // Report zsock_socket's real error: -EPFNOSUPPORT (e.g. TCP compiled
+        // out) is very different from a full fd table (EMFILE), so hiding the
+        // errno behind the generic "Out of sockets" hides the actual cause.
+        mp_raise_OSError(errno);
     }
     return sock;
 }

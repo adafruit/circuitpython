@@ -108,14 +108,3 @@ float common_hal_analogio_analogin_get_reference_voltage(analogio_analogin_obj_t
 
     return voltage;
 }
-
-void analogin_reset(void) {
-    for (int i = 0; i < MP_ARRAY_SIZE(analogin_dev); i++) {
-        if (analogin_dev[i].fd >= 0) {
-            // stop ADC
-            ioctl(analogin_dev[i].fd, ANIOC_CXD56_STOP, 0);
-            close(analogin_dev[i].fd);
-            analogin_dev[i].fd = -1;
-        }
-    }
-}

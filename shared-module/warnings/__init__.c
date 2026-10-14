@@ -21,9 +21,8 @@ void common_hal_warnings_warn(const char *message, const mp_obj_type_t *category
         return;
     }
     if (action == WARNINGS_ERROR) {
-        mp_raise_msg_str(category, message);
-        // Doesn't get here
-        return;
+        nlr_raise(mp_call_function_1(MP_OBJ_FROM_PTR(category),
+            mp_obj_new_str(message, strlen(message))));
     }
     mp_printf(MICROPY_ERROR_PRINTER, "%q: %s\n", category->name, message);
 }

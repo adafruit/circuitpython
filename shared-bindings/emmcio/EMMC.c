@@ -119,7 +119,7 @@ static mp_obj_t emmcio_emmc_make_new(const mp_obj_type_t *type, size_t n_args, s
         }
     }
 
-    emmcio_emmc_obj_t *self = mp_obj_malloc(emmcio_emmc_obj_t, &emmcio_emmc_type);
+    emmcio_emmc_obj_t *self = mp_obj_malloc_with_finaliser(emmcio_emmc_obj_t, &emmcio_emmc_type);
     // An OSError means the card itself did not come up; a ValueError means the
     // wiring or the hardware is unusable.
     int detail = 0;
@@ -458,6 +458,7 @@ MP_PROPERTY_GETTER(emmcio_emmc_frequency_obj, (mp_obj_t)&emmcio_emmc_get_frequen
 
 static const mp_rom_map_elem_t emmcio_emmc_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&emmcio_emmc_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&emmcio_emmc_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&emmcio_emmc___exit___obj) },
 

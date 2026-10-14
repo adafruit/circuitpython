@@ -152,15 +152,3 @@ void common_hal_analogio_analogout_set_value(analogio_analogout_obj_t *self,
     // Write the output value to VDAC DATA register
     VDAC_ChannelOutputSet(self->dac->vdac, self->dac->channel, value >> 4);
 }
-
-// Function reset dac peripheral
-void analogout_reset(void) {
-    uint8_t dac_index;
-    mcu_dac_pin_obj_t *p_dac;
-    for (dac_index = 0; dac_index < DAC_BANK_ARRAY_LEN; dac_index++) {
-        p_dac = &mcu_dac_list[dac_index];
-        if (p_dac->is_used == true) {
-            VDAC_Reset(p_dac->vdac);
-        }
-    }
-}

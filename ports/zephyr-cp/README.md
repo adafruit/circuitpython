@@ -22,7 +22,7 @@ west sdk install
 Now to build from `ports/zephyr-cp`:
 
 ```sh
-make BOARD=nordic_nrf7002dk
+make BOARD=nordic_nrf5340dk
 ```
 
 This uses Zephyr's cmake to generate Makefiles that then delegate to
@@ -98,6 +98,110 @@ Behavior and precedence:
 - If `SHIELD` or `SHIELDS` is explicitly provided, it overrides board defaults.
 - If neither is provided, defaults from `circuitpython.toml` are used.
 - Use `SHIELD=` (empty) to disable a board default shield for one build.
+
+## Pin names
+
+Human readable pin names (the `board` module) come from the devicetree by
+default: `gpio-leds` and `gpio-keys` labels, node aliases, and connector
+`gpio-map`s. Boards can add names without any devicetree involvement by
+listing them in `boards/<vendor>/<board>/circuitpython.toml` under `[pins]`.
+Each entry maps a board module name to the pin number exposed by the board's
+hardware: the SoC package pin (or, for ball grid array packages, the
+datasheet's ball id, e.g. `"B2"`), or the castellated module pin when the
+board uses a module like the Raytac MDBT50Q:
+
+```toml
+[pins]
+LED = 17      # QFN package pin number
+SDA = "B2"   # ball id for BGA/CSP packages
+D13 = 8      # MDBT50Q-1MV2 module pin number
+```
+
+The build resolves each package pin to a SoC pad using the iobroker package
+pin map selected by `CONFIG_IOBROKER_PACKAGE_<PACKAGE>`
+(`modules/iobroker/packages/<package>.toml`) and exposes the name on the
+matching pad in the `board` module. A name that already maps to the same pin
+(from the devicetree or an earlier entry) is deduplicated; a name that maps
+to two different pins is a build error. The package map must not be `CUSTOM`
+or missing, and the pad must be on an enabled GPIO controller; otherwise the
+build fails with an error naming the offending entry.
+
+## Connector names
+
+Devicetree connector nodes (`gpio-map`) get their names from a generic
+per-compatible list in `cptools/zephyr2cp.py`. A board whose silkscreen
+differs can override them per position in `circuitpython.toml` under
+`[connectors.<node label>]`, keying the gpio-map position (the header pin
+number, as a string) to a name:
+
+```toml
+[connectors.nordic_expansion_header]
+0 = "EXP_00"   # header GPIO 00
+21 = "EXP_21"  # header GPIO 21 (QSPI CS)
+```
+
+Positions left out of the table get no name.
+
+## OTA firmware updates over BLE
+
+Boards with Bluetooth and a `slot1_partition` can update CircuitPython
+itself over the air. A board opts in by shipping a `sysbuild.conf` in its
+board folder:
+
+```
+boards/<vendor>/<board>/sysbuild.conf:
+
+SB_CONFIG_BOOTLOADER_MCUBOOT=y
+```
+
+That makes sysbuild build the MCUboot bootloader into the board's
+`boot_partition` and link the application into `slot0_partition` (it must
+link into slot0 — see `nrf54lm20dk` for an example of a board that does
+not). The app image is wrapped with an MCUboot header using imgtool —
+signed, or hash-only when the board sets `SB_CONFIG_BOOT_SIGNATURE_TYPE_NONE`
+(like `nordic_nrf54l15dk` does). The port Kconfig then enables Zephyr's
+MCUmgr/SMP server over the Bluetooth SMP service:
+
+- `img upload` writes the uploaded image into slot 1
+- `img test`/`img confirm` plus `os reset` reboot into the new image
+- the app confirms the running image once it has booted, so an update that
+  fails to start is automatically reverted (the `TEST_AND_CONFIRM` flow in
+  the reference clients)
+
+The service requires an encrypted connection. CircuitPython has no
+display or keyboard IO capability, so authenticated (MITM) pairing can
+never complete; the OTA boards pair with Just Works instead
+(`CONFIG_BT_SMP_ENFORCE_MITM=n` and the SMP service's GATT permissions set
+to encryption-only, in the OTA boards' `board.conf`). Once paired and
+bonded, the client can upload.
+
+To update a device, flash it with `make BOARD=<board> flash` (which flashes
+both MCUboot and the app) and then use an SMP client such as Nordic's open
+source [nRF Connect Device Manager](https://github.com/nordicsemi/Android-nRF-Connect-Device-Manager)
+apps (the sample app is what's published on the app stores) or the `mcumgr`
+CLI, uploading the signed app image (`zephyr.signed.bin` from the build
+directory).
+
+### Resetting into the bootloader
+
+Code (and update tools) can enter the bootloader's update mode
+programmatically, the way a double-tap of the reset button does:
+`supervisor/port.c`'s `reset_to_bootloader()` (invoked by the 1200-bps CDC
+touch) and `microcontroller.OnNextReset(RunMode.UF2 / RunMode.BOOTLOADER)`
+set a request before resetting, via the adaboot fork's
+`adaboot/update_mode.h` helpers.
+
+The mechanism depends on which bootloader the board boots: fork adaboot
+(MCUboot) boards read the boot-mode retention flag, so the app needs
+`RETENTION_BOOT_MODE` (defaulted in the port Kconfig for boards whose layout
+provides a `zephyr,boot-mode` region) and the board's bootloader conf
+(`bootloader/mcuboot/conf/<vendor>/<board>.conf`) needs the matching entrance
+option (`MCUBOOT_UF2_ENTRANCE_BOOT_MODE`, or `BOOT_SERIAL_BOOT_MODE` on USB-less
+boards like `nrf54l15dk`). Boards that boot the stock Adafruit nRF52
+bootloader (the Adafruit boards) read the request from the raw GPREGRET
+register instead and need no bootloader-side changes.
+
+`nordic_nrf54l15dk` is the first board with this enabled.
 
 ## Testing other boards
 

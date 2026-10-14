@@ -38,5 +38,4 @@ typedef struct {
     bool single_buffer : 1;
 } audiobusio_i2sout_obj_t;
 
-void i2s_reset(void);
 void i2s_background(void);

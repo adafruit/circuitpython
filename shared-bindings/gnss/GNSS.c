@@ -62,7 +62,7 @@ static mp_obj_t gnss_make_new(const mp_obj_type_t *type, size_t n_args, size_t n
         mp_raise_TypeError(MP_ERROR_TEXT("System entry must be gnss.SatelliteSystem"));
     }
 
-    gnss_obj_t *self = mp_obj_malloc(gnss_obj_t, &gnss_type);
+    gnss_obj_t *self = mp_obj_malloc_with_finaliser(gnss_obj_t, &gnss_type);
     common_hal_gnss_construct(self, selection);
 
     return MP_OBJ_FROM_PTR(self);
@@ -164,6 +164,7 @@ MP_PROPERTY_GETTER(gnss_fix_obj,
 
 static const mp_rom_map_elem_t gnss_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&gnss_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&gnss_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR_update), MP_ROM_PTR(&gnss_update_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_latitude), MP_ROM_PTR(&gnss_latitude_obj) },

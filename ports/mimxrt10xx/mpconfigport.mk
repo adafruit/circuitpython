@@ -33,3 +33,6 @@ CIRCUITPY_USB_MIDI = 1
 LONGINT_IMPL = MPZ
 
 CIRCUITPY_BUILD_EXTENSIONS ?= hex,uf2
+
+# Cleanup is performed by GC finalizers (__del__ -> deinit) instead of a bulk pin reset.
+CIRCUITPY_BULK_RESET = 0

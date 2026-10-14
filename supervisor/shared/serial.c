@@ -191,7 +191,9 @@ void serial_early_init(void) {
     common_hal_busio_uart_construct(&console_uart, console_tx, console_rx, NULL, NULL, NULL,
         false, CIRCUITPY_CONSOLE_UART_BAUDRATE, 8, BUSIO_UART_PARITY_NONE, 1, 1.0f, sizeof(console_uart_rx_buf),
         console_uart_rx_buf, true);
+    #if CIRCUITPY_BULK_RESET
     common_hal_busio_uart_never_reset(&console_uart);
+    #endif
     #endif
 
     board_serial_early_init();

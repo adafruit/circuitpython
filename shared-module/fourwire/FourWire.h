@@ -25,4 +25,7 @@ typedef struct {
     bool own_command;
     bool own_chip_select;
     bool own_reset;
+    #if CIRCUITPY_BUSIO_SPI_ASYNC
+    circuitpy_async_flag_t sent;   // set once the last send_async has been sent
+    #endif
 } fourwire_fourwire_obj_t;

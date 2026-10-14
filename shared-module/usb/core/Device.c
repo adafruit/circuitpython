@@ -21,6 +21,24 @@
 #include "supervisor/shared/tick.h"
 #include "supervisor/usb.h"
 
+#if CIRCUITPY_USB_HOST_BULK
+#include "shared-bindings/usb_host_bulk/InStream.h"
+#else
+static inline void usb_host_bulk_stop_device(uint8_t device_address) {
+    (void)device_address;
+}
+
+static inline bool usb_host_bulk_endpoint_busy(uint8_t device_address, uint8_t endpoint) {
+    (void)device_address;
+    (void)endpoint;
+    return false;
+}
+
+static inline void usb_host_bulk_device_deinit(usb_core_device_obj_t *device) {
+    (void)device;
+}
+#endif
+
 // Track what device numbers are mounted. We can't use tuh_ready() because it is
 // true before enumeration completes and TinyUSB drivers are started.
 static size_t _mounted_devices = 0;
@@ -31,6 +49,7 @@ void tuh_mount_cb(uint8_t dev_addr) {
 
 void tuh_umount_cb(uint8_t dev_addr) {
     _mounted_devices &= ~(1 << dev_addr);
+    usb_host_bulk_stop_device(dev_addr);
 }
 
 static xfer_result_t _xfer_result;
@@ -39,7 +58,7 @@ static size_t _actual_len;
 #if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
 // Helper to ensure buffer is DMA-capable for transfer operations
 static uint8_t *_ensure_dma_buffer(usb_core_device_obj_t *self, const uint8_t *buffer, size_t len, bool for_write) {
-    if (port_buffer_is_dma_capable(buffer)) {
+    if (port_buffer_is_dma_capable(buffer, len)) {
         return (uint8_t *)buffer;  // Already DMA-capable, use directly
     }
 
@@ -82,6 +101,7 @@ void common_hal_usb_core_device_deinit(usb_core_device_obj_t *self) {
     if (common_hal_usb_core_device_deinited(self)) {
         return;
     }
+    usb_host_bulk_device_deinit(self);
     size_t open_size = sizeof(self->open_endpoints);
     for (size_t i = 0; i < open_size; i++) {
         if (self->open_endpoints[i] != 0) {
@@ -248,18 +268,33 @@ static mp_obj_t _get_string(const uint16_t *temp_buf) {
     return utf16le_to_string(temp_buf + 1, utf16_len);
 }
 
-static void _get_langid(usb_core_device_obj_t *self) {
+static bool _get_descriptor(usb_core_device_obj_t *self, uint8_t type, uint8_t index,
+    uint16_t language, void *buffer, size_t len) {
+    // TinyUSB's descriptor helpers pass buffers directly to DMA. Use our own
+    // control transfer function because it has cache-safe buffer handling and
+    // USBError propagation.
+    mp_int_t count = common_hal_usb_core_device_ctrl_transfer(self, 0x80, TUSB_REQ_GET_DESCRIPTOR,
+        (type << 8) | index, language, buffer, len, 1000);
+    if (mp_hal_is_interrupted()) {
+        return false;
+    }
+    if (count == 0) {
+        mp_raise_usb_core_USBError(NULL);
+    }
+    return true;
+}
+
+static bool _get_langid(usb_core_device_obj_t *self) {
     if (self->first_langid != 0) {
-        return;
+        return true;
     }
     // Two control bytes and one uint16_t language code.
     uint16_t temp_buf[2];
-    _prepare_for_transfer();
-    if (!tuh_descriptor_get_string(self->device_address, 0, 0, temp_buf, sizeof(temp_buf), _transfer_done_cb, 0)) {
-        mp_raise_usb_core_USBError(NULL);
-    } else if (_wait_for_callback()) {
-        self->first_langid = temp_buf[1];
+    if (!_get_descriptor(self, TUSB_DESC_STRING, 0, 0, temp_buf, sizeof(temp_buf))) {
+        return false;
     }
+    self->first_langid = temp_buf[1];
+    return true;
 }
 
 mp_obj_t common_hal_usb_core_device_get_serial_number(usb_core_device_obj_t *self) {
@@ -273,14 +308,11 @@ mp_obj_t common_hal_usb_core_device_get_serial_number(usb_core_device_obj_t *sel
         return mp_const_none;
     }
     // Device does provide this string, so continue
-    _get_langid(self);
-    _prepare_for_transfer();
-    if (!tuh_descriptor_get_serial_string(self->device_address, self->first_langid, temp_buf, sizeof(temp_buf), _transfer_done_cb, 0)) {
-        mp_raise_usb_core_USBError(NULL);
-    } else if (_wait_for_callback()) {
-        return _get_string(temp_buf);
+    if (!_get_langid(self) ||
+        !_get_descriptor(self, TUSB_DESC_STRING, descriptor.iSerialNumber, self->first_langid, temp_buf, sizeof(temp_buf))) {
+        return mp_const_none;
     }
-    return mp_const_none;
+    return _get_string(temp_buf);
 }
 
 mp_obj_t common_hal_usb_core_device_get_product(usb_core_device_obj_t *self) {
@@ -294,14 +326,11 @@ mp_obj_t common_hal_usb_core_device_get_product(usb_core_device_obj_t *self) {
         return mp_const_none;
     }
     // Device does provide this string, so continue
-    _get_langid(self);
-    _prepare_for_transfer();
-    if (!tuh_descriptor_get_product_string(self->device_address, self->first_langid, temp_buf, sizeof(temp_buf), _transfer_done_cb, 0)) {
-        mp_raise_usb_core_USBError(NULL);
-    } else if (_wait_for_callback()) {
-        return _get_string(temp_buf);
+    if (!_get_langid(self) ||
+        !_get_descriptor(self, TUSB_DESC_STRING, descriptor.iProduct, self->first_langid, temp_buf, sizeof(temp_buf))) {
+        return mp_const_none;
     }
-    return mp_const_none;
+    return _get_string(temp_buf);
 }
 
 mp_obj_t common_hal_usb_core_device_get_manufacturer(usb_core_device_obj_t *self) {
@@ -315,14 +344,11 @@ mp_obj_t common_hal_usb_core_device_get_manufacturer(usb_core_device_obj_t *self
         return mp_const_none;
     }
     // Device does provide this string, so continue
-    _get_langid(self);
-    _prepare_for_transfer();
-    if (!tuh_descriptor_get_manufacturer_string(self->device_address, self->first_langid, temp_buf, sizeof(temp_buf), _transfer_done_cb, 0)) {
-        mp_raise_usb_core_USBError(NULL);
-    } else if (_wait_for_callback()) {
-        return _get_string(temp_buf);
+    if (!_get_langid(self) ||
+        !_get_descriptor(self, TUSB_DESC_STRING, descriptor.iManufacturer, self->first_langid, temp_buf, sizeof(temp_buf))) {
+        return mp_const_none;
     }
-    return mp_const_none;
+    return _get_string(temp_buf);
 }
 
 
@@ -377,22 +403,22 @@ mp_int_t common_hal_usb_core_device_get_speed(usb_core_device_obj_t *self) {
 void common_hal_usb_core_device_set_configuration(usb_core_device_obj_t *self, mp_int_t configuration) {
     // We assume that the config index is one less than the value.
     uint8_t config_index = configuration - 1;
+    usb_host_bulk_stop_device(self->device_address);
     // Get the configuration descriptor and cache it. We'll use it later to open
     // endpoints.
 
     // Get only the config descriptor first.
     tusb_desc_configuration_t desc;
-    if (!tuh_descriptor_get_configuration(self->device_address, config_index, &desc, sizeof(desc), _transfer_done_cb, 0) ||
-        !_wait_for_callback()) {
+    if (!_get_descriptor(self, TUSB_DESC_CONFIGURATION, config_index, 0, &desc, sizeof(desc))) {
         return;
     }
 
     // Get the config descriptor plus interfaces and endpoints.
     self->configuration_descriptor = m_realloc(self->configuration_descriptor, desc.wTotalLength);
-    if (!tuh_descriptor_get_configuration(self->device_address, config_index, self->configuration_descriptor, desc.wTotalLength, _transfer_done_cb, 0) ||
-        !_wait_for_callback()) {
+    if (!_get_descriptor(self, TUSB_DESC_CONFIGURATION, config_index, 0, self->configuration_descriptor, desc.wTotalLength)) {
         return;
     }
+    _prepare_for_transfer();
     tuh_configuration_set(self->device_address, configuration, _transfer_done_cb, 0);
     _wait_for_callback();
 }
@@ -460,7 +486,18 @@ static bool _open_endpoint(usb_core_device_obj_t *self, mp_int_t endpoint) {
     return open;
 }
 
+bool common_hal_usb_core_device_open_endpoint(usb_core_device_obj_t *self, mp_int_t endpoint) {
+    return _open_endpoint(self, endpoint);
+}
+
+static void _check_endpoint_free(usb_core_device_obj_t *self, mp_int_t endpoint) {
+    if (usb_host_bulk_endpoint_busy(self->device_address, endpoint)) {
+        mp_raise_usb_core_USBError(MP_ERROR_TEXT("%q in use"), MP_QSTR_endpoint);
+    }
+}
+
 mp_int_t common_hal_usb_core_device_write(usb_core_device_obj_t *self, mp_int_t endpoint, const uint8_t *buffer, mp_int_t len, mp_int_t timeout) {
+    _check_endpoint_free(self, endpoint);
     if (!_open_endpoint(self, endpoint)) {
         mp_raise_usb_core_USBError(NULL);
         return 0;
@@ -492,6 +529,7 @@ mp_int_t common_hal_usb_core_device_write(usb_core_device_obj_t *self, mp_int_t 
 }
 
 mp_int_t common_hal_usb_core_device_read(usb_core_device_obj_t *self, mp_int_t endpoint, uint8_t *buffer, mp_int_t len, mp_int_t timeout, bool raise_on_timeout) {
+    _check_endpoint_free(self, endpoint);
     if (!_open_endpoint(self, endpoint)) {
         mp_raise_usb_core_USBError(NULL);
         return 0;
@@ -530,6 +568,11 @@ mp_int_t common_hal_usb_core_device_ctrl_transfer(usb_core_device_obj_t *self,
     mp_int_t bmRequestType, mp_int_t bRequest,
     mp_int_t wValue, mp_int_t wIndex,
     uint8_t *buffer, mp_int_t len, mp_int_t timeout) {
+    // Stop a stream before the device changes or disables its endpoint.
+    if (len == 0 && ((bmRequestType == 0x01 && bRequest == TUSB_REQ_SET_INTERFACE) ||
+                     (bmRequestType == 0x00 && bRequest == TUSB_REQ_SET_CONFIGURATION))) {
+        usb_host_bulk_stop_device(self->device_address);
+    }
     // Timeout is in ms.
 
     #if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
@@ -566,6 +609,9 @@ mp_int_t common_hal_usb_core_device_ctrl_transfer(usb_core_device_obj_t *self,
 
     _prepare_for_transfer();
     if (!tuh_control_xfer(&xfer)) {
+        if (dma_buffer != buffer) {
+            port_free(dma_buffer);
+        }
         mp_raise_usb_core_USBError(NULL);
         return 0;
     }

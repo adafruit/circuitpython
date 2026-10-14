@@ -27,7 +27,10 @@
 #include "tusb.h"
 
 #ifdef CONFIG_IDF_TARGET_ESP32P4
+#include "esp_rom_sys.h"
+#include "esp_system.h"
 #include "hal/usb_serial_jtag_ll.h"
+#include "soc/lp_system_reg.h"
 #endif
 
 #if CIRCUITPY_USB_DEVICE
@@ -41,6 +44,20 @@ StackType_t usb_device_stack[USBD_STACK_SIZE];
 StaticTask_t usb_device_taskdef;
 
 static usb_phy_handle_t device_phy_hdl;
+
+#ifdef CONFIG_IDF_TARGET_ESP32P4
+static void usb_shutdown(void) {
+    if (!(REG_READ(LP_SYSTEM_REG_SYS_CTRL_REG) & LP_SYSTEM_REG_FORCE_DOWNLOAD_BOOT)) {
+        return;
+    }
+    tud_disconnect();
+    vTaskDelay(pdMS_TO_TICKS(20));
+    // The PHY selection survives a CPU reset. Restore the ROM downloader's pins.
+    usb_serial_jtag_ll_phy_select(0);
+    // Reset the USB peripheral too so the ROM can initialize its downloader.
+    esp_rom_software_reset_system();
+}
+#endif
 
 // USB Device Driver task
 // This top level thread process all usb events and invoke callbacks
@@ -103,6 +120,10 @@ void init_usb_hardware(void) {
     // Put the device back onto the bus by re-enabling the pull-up on USB DP
     usb_serial_jtag_ll_phy_enable_pull_override(&override_enable_usb);
     usb_serial_jtag_ll_phy_disable_pull_override();
+    #endif
+
+    #ifdef CONFIG_IDF_TARGET_ESP32P4
+    ESP_ERROR_CHECK(esp_register_shutdown_handler(usb_shutdown));
     #endif
 
     // Pin the USB task to the same core as CircuitPython. This way we leave

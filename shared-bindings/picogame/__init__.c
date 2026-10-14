@@ -502,27 +502,42 @@ static mp_obj_t picogame_fbm1d(size_t n_args, const mp_obj_t *pos, mp_map_t *kw)
 static MP_DEFINE_CONST_FUN_OBJ_KW(picogame_fbm1d_obj, 1, picogame_fbm1d);
 #endif  // float fbm2d / fbm1d
 
+// floor((a * dd) / 65536) with 32-bit multiplies. Exact for a <= 2^16, dd <= 2^24.
+static inline int32_t pg_mulshr16(uint32_t a, uint32_t dd) {
+    return (int32_t)(a * (dd >> 16) + ((a * (dd & 0xFFFF)) >> 16));
+}
+
 // ---- fixed-point (Q16.16 coords, Q0.16 values) noise: the CANONICAL value-noise impl,
 // exposed under the plain names value2d/value1d/fbm2d/fbm1d. The inner math is integer
 // (float only at the Python boundary); ~1.8x faster than the retired float path. ----
-static inline uint32_t pg_nhash_raw(int32_t x, int32_t y, int32_t seed) {
-    uint32_t h = (uint32_t)x * 374761393u + (uint32_t)y * 668265263u + (uint32_t)seed * 362437u;
+
+// Mix step of the hash. The four corners of a cell differ only by constants
+// in the input, so the coordinate part is computed once per cell.
+static inline uint32_t pg_nhash_mix(uint32_t h) {
     h = (h ^ (h >> 13)) * 1274126177u;
     return (h ^ (h >> 16)) & 0xFFFFu;                      // Q0.16 in [0,1)
 }
 static inline uint32_t pg_smooth16(uint32_t t) {           // t,result Q0.16: t*t*(3-2t)
-    uint32_t t2 = (t * t) >> 16;
-    uint32_t e = (3u << 16) - 2u * t;
-    return (uint32_t)(((uint64_t)t2 * e) >> 16);
+    uint32_t t2 = (t * t) >> 16;                           // t <= 0xFFFF, so t*t fits uint32
+    uint32_t e = (3u << 16) - 2u * t;                      // e <= 3<<16, i.e. under 2^18
+    return (uint32_t)pg_mulshr16(t2, e);                   // t2 <= 2^16 and e <= 2^24: exact
 }
 static inline uint32_t pg_lerp16(uint32_t a, uint32_t b, uint32_t u) {
-    return (uint32_t)((int32_t)a + (int32_t)(((int64_t)((int32_t)b - (int32_t)a) * (int32_t)u) >> 16));
+    // Unsigned product with a sign split; a negative delta must floor like the old shift.
+    int32_t d = (int32_t)b - (int32_t)a;
+    if (d >= 0) {
+        return a + (((uint32_t)d * u) >> 16);
+    }
+    return a - ((((uint32_t)(-d) * u) + 0xFFFFu) >> 16);
 }
 static uint32_t pg_value2d_fx(int32_t X, int32_t Y, int32_t seed) {     // X,Y Q16.16 -> Q0.16
     int32_t xi = X >> 16, yi = Y >> 16;
     uint32_t xf = (uint32_t)(X - (xi << 16)), yf = (uint32_t)(Y - (yi << 16));
-    uint32_t a = pg_nhash_raw(xi, yi, seed), b = pg_nhash_raw(xi + 1, yi, seed);
-    uint32_t c = pg_nhash_raw(xi, yi + 1, seed), d = pg_nhash_raw(xi + 1, yi + 1, seed);
+    uint32_t base = (uint32_t)xi * 374761393u + (uint32_t)yi * 668265263u + (uint32_t)seed * 362437u;
+    uint32_t a = pg_nhash_mix(base);                       // (xi,   yi)
+    uint32_t b = pg_nhash_mix(base + 374761393u);          // (xi+1, yi)
+    uint32_t c = pg_nhash_mix(base + 668265263u);          // (xi,   yi+1)
+    uint32_t d = pg_nhash_mix(base + 374761393u + 668265263u);
     uint32_t u = pg_smooth16(xf), v = pg_smooth16(yf);
     return pg_lerp16(pg_lerp16(a, b, u), pg_lerp16(c, d, u), v);
 }
@@ -588,6 +603,18 @@ static mp_obj_t picogame_fbm1d_fx(size_t n_args, const mp_obj_t *pos, mp_map_t *
 }
 static MP_DEFINE_CONST_FUN_OBJ_KW(picogame_fbm1d_fx_obj, 1, picogame_fbm1d_fx);
 
+
+#if !CIRCUITPY_PICOGAME_FPU
+// ((int64_t)a * b) >> 16 with two 32-bit multiplies. Exact for |b| <= 65536.
+static __attribute__((noinline)) int32_t pg_fmul_basis(int32_t a, int32_t b) {
+    uint32_t hi = (uint32_t)(a >> 16) * (uint32_t)b;      // modulo 2^32 on purpose
+    uint32_t l = (uint32_t)(a & 0xFFFF);
+    if (b >= 0) {
+        return (int32_t)(hi + ((l * (uint32_t)b) >> 16));
+    }
+    return (int32_t)(hi - ((l * (uint32_t)(-b) + 0xFFFFu) >> 16));
+}
+#endif
 
 //| def project(
 //|     cam: ReadableBuffer,
@@ -666,10 +693,13 @@ static mp_obj_t picogame_project(size_t n_args, const mp_obj_t *args) {
     // the near plane - host-measured 23-34 px warps on close fly-bys at a file-browser world scale
     // (walls visibly broke). Correctness first: Q16 keeps the worst error a few px at any cz >= near,
     // for coords up to +-32k units; still ~4-5x faster than the same math in Python on the M0+.
+    // FMULB: same result as FMUL for |b| <= 65536 (every basis component), without
+    // __aeabi_lmul. The products by k keep FMUL because k is not bounded.
     #define FMUL(a, b) ((int32_t)(((int64_t)(a) * (b)) >> 16))
+    #define FMULB(a, b) pg_fmul_basis((a), (b))
     for (int i = 0; i < n; i++) {
         int32_t X = pts[i * 3] - ex, Y = pts[i * 3 + 1] - ey, Z = pts[i * 3 + 2] - ez;
-        int32_t cz = FMUL(X, fx) + FMUL(Y, fy) + FMUL(Z, fz);
+        int32_t cz = FMULB(X, fx) + FMULB(Y, fy) + FMULB(Z, fz);
         if (cz < near) {
             osx[i] = -32768;
             osy[i] = -32768;
@@ -679,12 +709,13 @@ static mp_obj_t picogame_project(size_t n_args, const mp_obj_t *args) {
         // an int64 divide on the M0+ (no HW divide) and the lost cz precision costs <0.02 px (host-
         // measured). Needs FOCAL < ~250 (focal<<8 in uint32) and near >= 1/256 (cz>>8 nonzero).
         int32_t k = (int32_t)(((uint32_t)focal << 8) / (uint32_t)(cz >> 8));
-        int32_t rr = FMUL(X, rx) + FMUL(Z, rz);
-        int32_t uu = FMUL(X, ux) + FMUL(Y, uy) + FMUL(Z, uz);
+        int32_t rr = FMULB(X, rx) + FMULB(Z, rz);
+        int32_t uu = FMULB(X, ux) + FMULB(Y, uy) + FMULB(Z, uz);
         osx[i] = (int16_t)((cx0 + FMUL(rr, k)) >> 16);
         osy[i] = (int16_t)((cy0 - FMUL(uu, k)) >> 16);
     }
 #undef FMUL
+#undef FMULB
     #endif
     return mp_const_none;
 }
@@ -753,8 +784,7 @@ static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(picogame_project_obj, 5, 5, picogame_
 // trig and passes Q16 ray params). map: read-only bytes, mw*mh wall types (0 = empty). pos*, l*x/l*y
 // (leftRay, column 0), s*x/s*y (rayStep per column) are all 16.16. wcolors: uint16[(maxtype+1)*2] -
 // [t*2] near, [t*2+1] side colour. top/bot/col: uint16 write buffers (len>=ncols); dist: int32 write
-// buffer (perpendicular distance, 16.16). The int64 divides/muls are ONLY the per-column setup
-// (O(ncols)); the DDA step loop is pure 32-bit. Mirrors the Python float fallback closely.
+// buffer (perpendicular distance, 16.16). All arithmetic is 32-bit.
 // Optional arg 17 (runs - ONE uint16 write buffer, len>=5*ncols, laid out as five ncols-long
 // planes [x0s | x1s | tops | bots | colors]): also emit the RLE-MERGED wall runs (adjacent equal
 // columns fused; x in PIXELS = column*stride) and return the run count. The planes feed
@@ -762,11 +792,18 @@ static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(picogame_project_obj, 5, 5, picogame_
 // loop into the same C pass (measured 2-6.5 ms/frame of interpreted merge at stride=1 on RP2040).
 // Callers clamp the LAST run's x1 to the screen width (stride rounding can overshoot by <stride).
 // Without it: returns None.
+
+// floor(2^32 / v) with one 32-bit divide. v must be >= 1.
+static inline uint32_t pg_recip32(uint32_t v) {
+    return (uint32_t)(0u - v) / v + 1u;
+}
+
 static mp_obj_t picogame_raycast(size_t n_args, const mp_obj_t *args) {
     mp_buffer_info_t mi, wi, ti, bi, ci, di;
     mp_get_buffer_raise(args[0], &mi, MP_BUFFER_READ);
-    int mw = mp_obj_get_int(args[1]);
-    int mh = mp_obj_get_int(args[2]);
+    // Non-negative: the DDA below bounds-checks with unsigned compares.
+    int mw = picogame_imax(mp_obj_get_int(args[1]), 0);
+    int mh = picogame_imax(mp_obj_get_int(args[2]), 0);
     int32_t posx = mp_obj_get_int(args[3]);        // camera x, 16.16
     int32_t posy = mp_obj_get_int(args[4]);
     int32_t rdx = mp_obj_get_int(args[5]);         // leftRay x (column 0), 16.16 - accumulates per column
@@ -805,6 +842,7 @@ static mp_obj_t picogame_raycast(size_t n_args, const mp_obj_t *args) {
     int half = sh >> 1;
     int imapx0 = posx >> 16;
     int imapy0 = posy >> 16;
+    int off0 = imapy0 * mw + imapx0;               // every column starts from the same cell
     int32_t fracx = posx & 0xFFFF;                 // fractional part of pos, 16.16
     int32_t fracy = posy & 0xFFFF;
     const int32_t DD_CAP = (int32_t)1 << 24;       // cap deltaDist so a 64-step accumulation stays in int32
@@ -816,41 +854,47 @@ static mp_obj_t picogame_raycast(size_t n_args, const mp_obj_t *args) {
         int mapy = imapy0;
         int32_t ax = rdx < 0 ? -rdx : rdx;
         int32_t ay = rdy < 0 ? -rdy : rdy;
-        // deltaDist = |1/rayDir| in 16.16 = (1<<32)/|rayDir_q16| (int64; per-column setup, not per-step)
-        int64_t ddx64 = ax ? (((int64_t)1 << 32) / ax) : (int64_t)DD_CAP;
-        int64_t ddy64 = ay ? (((int64_t)1 << 32) / ay) : (int64_t)DD_CAP;
-        int32_t ddx = ddx64 > DD_CAP ? DD_CAP : (int32_t)ddx64;
-        int32_t ddy = ddy64 > DD_CAP ? DD_CAP : (int32_t)ddy64;
+        // deltaDist = 2^32 / |rayDir|, capped at DD_CAP. ax < 256 is exactly the capped
+        // range, so the test also guards against ax == 0.
+        int32_t ddx = (ax < 256) ? DD_CAP : (int32_t)pg_recip32((uint32_t)ax);
+        int32_t ddy = (ay < 256) ? DD_CAP : (int32_t)pg_recip32((uint32_t)ay);
         int stepx, stepy;
         int32_t sidex, sidey;
-        // sideDist to the first grid line = (fractional distance) * deltaDist, 16.16 (int64 mul, setup only)
+        // sideDist to the first grid line = (fractional distance) * deltaDist, 16.16 (setup only)
         if (rdx < 0) {
             stepx = -1;
-            sidex = (int32_t)(((int64_t)fracx * ddx) >> 16);
+            sidex = pg_mulshr16((uint32_t)fracx, (uint32_t)ddx);
         } else {
             stepx = 1;
-            sidex = (int32_t)(((int64_t)(65536 - fracx) * ddx) >> 16);
+            sidex = pg_mulshr16((uint32_t)(65536 - fracx), (uint32_t)ddx);
         }
         if (rdy < 0) {
             stepy = -1;
-            sidey = (int32_t)(((int64_t)fracy * ddy) >> 16);
+            sidey = pg_mulshr16((uint32_t)fracy, (uint32_t)ddy);
         } else {
             stepy = 1;
-            sidey = (int32_t)(((int64_t)(65536 - fracy) * ddy) >> 16);
+            sidey = pg_mulshr16((uint32_t)(65536 - fracy), (uint32_t)ddy);
         }
         int side = 0;
         int cell = 1;
+        // Linear map offset, stepped with the cell coordinates.
+        int off = off0;
+        int stepy_off = stepy * mw;
         for (int i = 0; i < 64; i++) {             // DDA - pure 32-bit
             if (sidex < sidey) {
                 sidex += ddx;
                 mapx += stepx;
+                off += stepx;
                 side = 0;
             } else {
                 sidey += ddy;
                 mapy += stepy;
+                off += stepy_off;
                 side = 1;
             }
-            cell = (mapx >= 0 && mapx < mw && mapy >= 0 && mapy < mh) ? map[mapy * mw + mapx] : 1;
+            // Unsigned compares also reject negative coordinates.
+            cell = ((unsigned)mapx < (unsigned)mw && (unsigned)mapy < (unsigned)mh)
+                ? map[off] : 1;
             if (cell) {
                 break;
             }

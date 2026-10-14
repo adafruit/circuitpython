@@ -8,6 +8,9 @@
 #include "esp_err.h"
 
 #include "driver/sdmmc_host.h"
+#ifndef CONFIG_SOC_SDMMC_USE_GPIO_MATRIX
+#include "soc/sdmmc_pins.h"
+#endif
 #include "ports/espressif/esp-idf/components/sdmmc/include/sdmmc_cmd.h"
 
 #include "extmod/vfs.h"
@@ -41,14 +44,14 @@ static int check_pins(const mcu_pin_obj_t *clock, const mcu_pin_obj_t *command, 
         return SDMMC_HOST_SLOT_0;
     }
     #else
-    if (command->number == GPIO_NUM_11 && clock->number == GPIO_NUM_6 && data[0]->number == GPIO_NUM_7) {
+    if (command->number == SDMMC_SLOT0_IOMUX_PIN_NUM_CMD && clock->number == SDMMC_SLOT0_IOMUX_PIN_NUM_CLK && data[0]->number == SDMMC_SLOT0_IOMUX_PIN_NUM_D0) {
         // Might be slot 0
-        if (num_data == 1 || (num_data == 4 && data[1]->number == GPIO_NUM_8 && data[2]->number == GPIO_NUM_9 && data[3]->number == GPIO_NUM_10)) {
+        if (num_data == 1 || (num_data == 4 && data[1]->number == SDMMC_SLOT0_IOMUX_PIN_NUM_D1 && data[2]->number == SDMMC_SLOT0_IOMUX_PIN_NUM_D2 && data[3]->number == SDMMC_SLOT0_IOMUX_PIN_NUM_D3)) {
             return SDMMC_HOST_SLOT_0;
         }
-    } else if (command->number == GPIO_NUM_15 && clock->number == GPIO_NUM_14 && data[0]->number == 2) {
+    } else if (command->number == SDMMC_SLOT1_IOMUX_PIN_NUM_CMD && clock->number == SDMMC_SLOT1_IOMUX_PIN_NUM_CLK && data[0]->number == SDMMC_SLOT1_IOMUX_PIN_NUM_D0) {
         // Might be slot 1
-        if (num_data == 1 || (num_data == 4 && data[1]->number == GPIO_NUM_4 && data[2]->number == GPIO_NUM_12 && data[3]->number == GPIO_NUM_13)) {
+        if (num_data == 1 || (num_data == 4 && data[1]->number == SDMMC_SLOT1_IOMUX_PIN_NUM_D1 && data[2]->number == SDMMC_SLOT1_IOMUX_PIN_NUM_D2 && data[3]->number == SDMMC_SLOT1_IOMUX_PIN_NUM_D3)) {
             return SDMMC_HOST_SLOT_1;
         }
     }
@@ -145,7 +148,7 @@ void common_hal_sdioio_sdcard_construct(sdioio_sdcard_obj_t *self,
     ESP_LOGI(TAG, "Number of sectors: %d with sector_size: %d",
         self->card.csd.capacity, self->card.csd.sector_size);
 
-    self->frequency = self->card.real_freq_khz;
+    self->frequency = self->card.real_freq_khz * 1000;
     ESP_LOGI(TAG, "Real frequency is %lu", self->frequency);
     self->capacity = self->card.csd.capacity;  // Reported number of sectors
     ESP_LOGI(TAG, "Reported capacity is %lu", self->capacity);

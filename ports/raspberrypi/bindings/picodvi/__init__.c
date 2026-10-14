@@ -9,12 +9,14 @@
 #include "py/obj.h"
 #include "py/runtime.h"
 
+#include "bindings/picodvi/AudioOut.h"
 #include "bindings/picodvi/Framebuffer.h"
 
 //| """Low-level routines for interacting with PicoDVI Output"""
 
 static const mp_rom_map_elem_t picodvi_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_picodvi) },
+    { MP_ROM_QSTR(MP_QSTR_AudioOut), MP_ROM_PTR(&picodvi_audioout_type) },
     { MP_ROM_QSTR(MP_QSTR_Framebuffer), MP_ROM_PTR(&picodvi_framebuffer_type) },
 };
 

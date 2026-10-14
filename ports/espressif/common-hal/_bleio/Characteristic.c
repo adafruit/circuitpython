@@ -401,6 +401,17 @@ int bleio_characteristic_access_cb(uint16_t conn_handle, uint16_t attr_handle,
     switch (ctxt->op) {
         case BLE_GATT_ACCESS_OP_READ_CHR:
             if (attr_handle == self->handle) {
+                // NimBLE has no separate read permission for a characteristic: its READ flag
+                // both declares the READ property and allows reads. So refuse reads here
+                // when the read permission is NO_ACCESS. This matches nordic and zephyr-cp.
+                //
+                // NimBLE also calls this callback, with no connection, to get the value for
+                // some notifications and indications. Those must still be sent, so refuse
+                // only reads from a connected peer.
+                if (conn_handle != BLE_HS_CONN_HANDLE_NONE &&
+                    self->read_perm == SECURITY_MODE_NO_ACCESS) {
+                    return BLE_ATT_ERR_READ_NOT_PERMITTED;
+                }
                 rc = os_mbuf_append(ctxt->om,
                     self->current_value,
                     self->current_value_len);
@@ -410,6 +421,12 @@ int bleio_characteristic_access_cb(uint16_t conn_handle, uint16_t attr_handle,
 
         case BLE_GATT_ACCESS_OP_WRITE_CHR:
             if (attr_handle == self->handle) {
+                // NimBLE has no separate write permission for a characteristic: its WRITE flag
+                // both declares the WRITE property and allows writes. So refuse writes here
+                // when the write permission is NO_ACCESS. This matches nordic and zephyr-cp.
+                if (self->write_perm == SECURITY_MODE_NO_ACCESS) {
+                    return BLE_ATT_ERR_WRITE_NOT_PERMITTED;
+                }
                 uint16_t om_len = OS_MBUF_PKTLEN(ctxt->om);
                 if (om_len > self->max_length || (self->fixed_length && om_len != self->max_length)) {
                     return BLE_ATT_ERR_INVALID_ATTR_VALUE_LEN;

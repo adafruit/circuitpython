@@ -1,0 +1,8 @@
+/* The USB device controller (zephyr_udc0), the XIP code flash (xip_flash)
+ * with its partition map, and the flash chosen properties are defined in the
+ * mcuboot fork's dts/st/nucleo_n657x0_q.dtsi, which sysbuild prepends to this
+ * image's overlays. app-partition.overlay then points
+ * zephyr,code-partition at slot0_partition. app.overlay only adds the CDC
+ * ACM console/data endpoints and the HID device.
+ */
+#include "../../../app.overlay"

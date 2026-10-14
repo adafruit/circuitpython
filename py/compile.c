@@ -834,8 +834,22 @@ static qstr compile_classdef_helper(compiler_t *comp, mp_parse_node_struct_t *pn
     return cscope->simple_name;
 }
 
+// CIRCUITPY-CHANGE: returns true for native or viper with optional=True
+static bool compile_decorator_optional(mp_parse_node_t pn_trailer) {
+    if (MP_PARSE_NODE_IS_NULL(pn_trailer)) {
+        return false;
+    }
+    mp_parse_node_t pn_arg = ((mp_parse_node_struct_t *)pn_trailer)->nodes[0];
+    if (!MP_PARSE_NODE_IS_STRUCT_KIND(pn_arg, PN_argument)) {
+        return false;
+    }
+    mp_parse_node_struct_t *pns_arg = (mp_parse_node_struct_t *)pn_arg;
+    return MP_PARSE_NODE_IS_ID(pns_arg->nodes[0]) && MP_PARSE_NODE_LEAF_ARG(pns_arg->nodes[0]) == MP_QSTR_optional
+           && MP_PARSE_NODE_IS_TOKEN_KIND(pns_arg->nodes[1], MP_TOKEN_KW_TRUE);
+}
+
 // returns true if it was a built-in decorator (even if the built-in had an error)
-static bool compile_built_in_decorator(compiler_t *comp, size_t name_len, mp_parse_node_t *name_nodes, uint *emit_options) {
+static bool compile_built_in_decorator(compiler_t *comp, size_t name_len, mp_parse_node_t *name_nodes, mp_parse_node_t pn_trailer, uint *emit_options) {
     if (MP_PARSE_NODE_LEAF_ARG(name_nodes[0]) != MP_QSTR_micropython) {
         return false;
     }
@@ -846,6 +860,11 @@ static bool compile_built_in_decorator(compiler_t *comp, size_t name_len, mp_par
     }
 
     qstr attr = MP_PARSE_NODE_LEAF_ARG(name_nodes[1]);
+    // CIRCUITPY-CHANGE: optional=True compiles as bytecode where native code can't be emitted
+    bool optional = false;
+    if (attr == MP_QSTR_native || attr == MP_QSTR_viper) {
+        optional = compile_decorator_optional(pn_trailer);
+    }
     if (attr == MP_QSTR_bytecode) {
         *emit_options = MP_EMIT_OPT_BYTECODE;
     #if MICROPY_EMIT_NATIVE
@@ -853,6 +872,12 @@ static bool compile_built_in_decorator(compiler_t *comp, size_t name_len, mp_par
         *emit_options = MP_EMIT_OPT_NATIVE_PYTHON;
     } else if (attr == MP_QSTR_viper) {
         *emit_options = MP_EMIT_OPT_VIPER;
+    #else
+    } else if (attr == MP_QSTR_native || attr == MP_QSTR_viper) {
+        // CIRCUITPY-CHANGE: no native emitter on the board, so optional=True stays bytecode
+        if (!optional) {
+            compile_syntax_error(comp, name_nodes[1], MP_ERROR_TEXT("invalid micropython decorator"));
+        }
     #endif
         #if MICROPY_EMIT_INLINE_ASM
     #if MICROPY_DYNAMIC_COMPILER
@@ -874,13 +899,23 @@ static bool compile_built_in_decorator(compiler_t *comp, size_t name_len, mp_par
     #if MICROPY_EMIT_NATIVE && MICROPY_DYNAMIC_COMPILER
     if (*emit_options == MP_EMIT_OPT_NATIVE_PYTHON || *emit_options == MP_EMIT_OPT_VIPER) {
         if (emit_native_table[mp_dynamic_compiler.native_arch] == NULL) {
-            compile_syntax_error(comp, name_nodes[1], MP_ERROR_TEXT("invalid arch"));
+            // CIRCUITPY-CHANGE: no native emitter for this arch
+            if (optional) {
+                *emit_options = MP_EMIT_OPT_BYTECODE;
+            } else {
+                compile_syntax_error(comp, name_nodes[1], MP_ERROR_TEXT("invalid arch"));
+            }
         }
     } else if (*emit_options == MP_EMIT_OPT_ASM) {
         if (emit_asm_table[mp_dynamic_compiler.native_arch] == NULL) {
             compile_syntax_error(comp, name_nodes[1], MP_ERROR_TEXT("invalid arch"));
         }
     }
+    #endif
+
+    #if MICROPY_EMIT_NATIVE && !MICROPY_DYNAMIC_COMPILER
+    // CIRCUITPY-CHANGE: this build has an emitter, so native code is always emitted
+    (void)optional;
     #endif
 
     return true;
@@ -905,7 +940,7 @@ static void compile_decorated(compiler_t *comp, mp_parse_node_struct_t *pns) {
         size_t name_len = mp_parse_node_extract_list(&pns_decorator->nodes[0], PN_dotted_name, &name_nodes);
 
         // check for built-in decorators
-        if (compile_built_in_decorator(comp, name_len, name_nodes, &emit_options)) {
+        if (compile_built_in_decorator(comp, name_len, name_nodes, pns_decorator->nodes[1], &emit_options)) {
             // this was a built-in
             num_built_in_decorators += 1;
 

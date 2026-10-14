@@ -45,6 +45,7 @@ void m_tracked_free(void *ptr);
 // Size/speed tradeoffs ///////////////////////////////////////////////////////
 
 #define MBEDTLS_AES_ROM_TABLES
+#define MBEDTLS_AES_FEWER_TABLES
 #define MBEDTLS_SHA256_SMALLER
 #define MBEDTLS_ECP_NIST_OPTIM
 

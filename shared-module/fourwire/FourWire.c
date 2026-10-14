@@ -23,7 +23,9 @@ void common_hal_fourwire_fourwire_construct(fourwire_fourwire_obj_t *self,
     uint8_t polarity, uint8_t phase) {
 
     self->bus = spi;
+    #if CIRCUITPY_BULK_RESET
     common_hal_busio_spi_never_reset(self->bus);
+    #endif
 
     self->frequency = baudrate;
     self->polarity = polarity;
@@ -35,20 +37,26 @@ void common_hal_fourwire_fourwire_construct(fourwire_fourwire_obj_t *self,
     self->command = digitalinout_protocol_from_pin(command, MP_QSTR_command, true, use_port_allocation, &self->own_command);
     if (self->command != mp_const_none) {
         digitalinout_protocol_switch_to_output(self->command, true, DRIVE_MODE_PUSH_PULL);
+        #if CIRCUITPY_BULK_RESET
         common_hal_never_reset_pin(command);
+        #endif
     }
 
     self->reset = digitalinout_protocol_from_pin(reset, MP_QSTR_reset, true, use_port_allocation, &self->own_reset);
     if (self->reset != mp_const_none) {
         digitalinout_protocol_switch_to_output(self->reset, true, DRIVE_MODE_PUSH_PULL);
+        #if CIRCUITPY_BULK_RESET
         common_hal_never_reset_pin(reset);
+        #endif
         common_hal_fourwire_fourwire_reset(self);
     }
 
     self->chip_select = digitalinout_protocol_from_pin(chip_select, MP_QSTR_chip_select, true, use_port_allocation, &self->own_chip_select);
     if (self->chip_select != mp_const_none) {
         digitalinout_protocol_switch_to_output(self->chip_select, true, DRIVE_MODE_PUSH_PULL);
+        #if CIRCUITPY_BULK_RESET
         common_hal_never_reset_pin(chip_select);
+        #endif
     }
 }
 
@@ -177,6 +185,29 @@ void common_hal_fourwire_fourwire_send(mp_obj_t obj, display_byte_type_t data_ty
         }
     }
 }
+
+#if CIRCUITPY_BUSIO_SPI_ASYNC
+void common_hal_fourwire_fourwire_send_async(mp_obj_t obj, display_byte_type_t data_type,
+    display_chip_select_behavior_t chip_select, const uint8_t *data, uint32_t data_length) {
+    fourwire_fourwire_obj_t *self = MP_OBJ_TO_PTR(obj);
+    // Without a DC pin every byte carries a DC bit, and the toggling mode pulses CS per byte:
+    // both are sent byte by byte, so they stay synchronous.
+    if (self->command == mp_const_none || chip_select == CHIP_SELECT_TOGGLE_EVERY_BYTE) {
+        common_hal_fourwire_fourwire_send(obj, data_type, chip_select, data, data_length);
+        return;
+    }
+    if (data_length == 0) {
+        return;
+    }
+    digitalinout_protocol_set_value(self->command, data_type == DISPLAY_DATA);
+    common_hal_busio_spi_write_start(self->bus, data, data_length, &self->sent);
+}
+
+void common_hal_fourwire_fourwire_flush(mp_obj_t obj) {
+    fourwire_fourwire_obj_t *self = MP_OBJ_TO_PTR(obj);
+    common_hal_busio_spi_end(self->bus);
+}
+#endif
 
 void common_hal_fourwire_fourwire_end_transaction(mp_obj_t obj) {
     fourwire_fourwire_obj_t *self = MP_OBJ_TO_PTR(obj);

@@ -7,6 +7,7 @@
 #pragma once
 
 #include "py/obj.h"
+#include "supervisor/shared/async_flag.h"
 
 #include "common-hal/microcontroller/Pin.h"
 #include "common-hal/busio/SPI.h"
@@ -35,6 +36,17 @@ extern void common_hal_busio_spi_unlock(busio_spi_obj_t *self);
 // Writes out the given data.
 extern bool common_hal_busio_spi_write(busio_spi_obj_t *self, const uint8_t *data, size_t len);
 
+#if CIRCUITPY_BUSIO_SPI_ASYNC
+// Start writing data and return, possibly before it has been sent. *done is set once it has been
+// sent, at the latest by common_hal_busio_spi_end(). data must stay valid and unchanged, and
+// the bus must not be used, until then.
+extern void common_hal_busio_spi_write_start(busio_spi_obj_t *self, const uint8_t *data, size_t len,
+    circuitpy_async_flag_t *done);
+// Finish the transfer started by a common_hal_busio_spi_*_start(), waiting if needed. Returns
+// at once if there is none.
+extern void common_hal_busio_spi_end(busio_spi_obj_t *self);
+#endif
+
 // Reads in len bytes while outputting the byte write_value.
 extern bool common_hal_busio_spi_read(busio_spi_obj_t *self, uint8_t *data, size_t len, uint8_t write_value);
 
@@ -51,7 +63,9 @@ uint8_t common_hal_busio_spi_get_phase(busio_spi_obj_t *self);
 uint8_t common_hal_busio_spi_get_polarity(busio_spi_obj_t *self);
 
 // This is used by the supervisor to claim SPI devices indefinitely.
+#if CIRCUITPY_BULK_RESET
 extern void common_hal_busio_spi_never_reset(busio_spi_obj_t *self);
+#endif
 
 extern busio_spi_obj_t *validate_obj_is_spi_bus(mp_obj_t obj_in, qstr arg_name);
 

@@ -396,19 +396,6 @@ void reset_port(void) {
     #if CIRCUITPY_RTC
     rtc_reset();
     #endif
-
-    #if CIRCUITPY_BUSIO
-    uart_reset();
-    #endif
-    #if CIRCUITPY_SDIOIO
-    sdioio_reset();
-    #endif
-    #if CIRCUITPY_ALARM
-    exti_reset();
-    #endif
-    #if CIRCUITPY_AUDIOIO
-    audioout_reset();
-    #endif
 }
 
 void reset_to_bootloader(void) {

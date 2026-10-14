@@ -88,15 +88,6 @@ pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
     return PWMOUT_OK;
 }
 
-// Mark pwm obj to never reset after reload
-void common_hal_pwmio_pwmout_never_reset(pwmio_pwmout_obj_t *self) {
-    common_hal_never_reset_pin(self->tim->pin);
-}
-
-// Pwm will be reset after reloading.
-void common_hal_pwmio_pwmout_reset_ok(pwmio_pwmout_obj_t *self) {
-}
-
 // Check pwm obj status, deinited or not
 bool common_hal_pwmio_pwmout_deinited(pwmio_pwmout_obj_t *self) {
     return self->tim == NULL;

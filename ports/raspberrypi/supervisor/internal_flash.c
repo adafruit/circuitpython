@@ -149,3 +149,11 @@ mp_uint_t supervisor_flash_write_blocks(const uint8_t *src, uint32_t lba, uint32
 
 void supervisor_flash_release_cache(void) {
 }
+
+#if CIRCUITPY_STORAGE_MAP_FILE
+// storage.map_file: the CIRCUITPY drive is execute-in-place on every RP2 board.
+const uint8_t *port_internal_flash_xip_address(uint32_t block, uint32_t *contiguous) {
+    *contiguous = supervisor_flash_get_block_count() - block;
+    return (const uint8_t *)(XIP_BASE + CIRCUITPY_CIRCUITPY_DRIVE_START_ADDR + block * FILESYSTEM_BLOCK_SIZE);
+}
+#endif

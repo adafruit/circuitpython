@@ -122,7 +122,6 @@ void alarm_pin_pinalarm_set_alarms(bool deep_sleep, size_t n_alarms, const mp_ob
                 // so we put it off until right before sleeping.
                 deep_wkup_enabled = true;
                 // EXTI needs to persist past the VM cleanup for fake deep sleep
-                stm_peripherals_exti_never_reset(alarm->pin->number);
             }
             if (!stm_peripherals_exti_reserve(alarm->pin->number)) {
                 mp_raise_RuntimeError(MP_ERROR_TEXT("Pin interrupt already in use"));

@@ -1,1 +1,1 @@
-firmware_size = 1532k;
+firmware_size = 1536k;

@@ -17,20 +17,18 @@ void stm32_peripherals_gpio_init(void) {
     __HAL_RCC_GPIOB_CLK_ENABLE();
     __HAL_RCC_GPIOD_CLK_ENABLE();
 
-    // Never reset pins
+    // Pins in use by the system; mark them claimed so user code can't use them.
     // TODO: Move this out of peripherals. These helpers shouldn't reference anything CircuitPython
     // specific.
-    never_reset_pin_number(2, 14); // PC14 OSC32_IN
-    never_reset_pin_number(2, 15); // PC15 OSC32_OUT
+    claim_pin(2, 14); // PC14 OSC32_IN
+    claim_pin(2, 15); // PC15 OSC32_OUT
 
     #if !(BOARD_OVERWRITE_SWD)
-    never_reset_pin_number(0, 13); // PA13 SWDIO
-    never_reset_pin_number(0, 14); // PA14 SWCLK
+    claim_pin(0, 13); // PA13 SWDIO
+    claim_pin(0, 14); // PA14 SWCLK
     #endif
 
     // Port H is not included in GPIO port array
-    // never_reset_pin_number(5,0); //PH0 JTDO
-    // never_reset_pin_number(5,1); //PH1 JTRST
 }
 
 // LEDs are inverted on F411 DISCO

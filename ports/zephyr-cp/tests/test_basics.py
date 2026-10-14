@@ -3,6 +3,8 @@
 
 """Test basic native_sim functionality."""
 
+import time
+
 import pytest
 
 
@@ -90,6 +92,48 @@ def test_ctrl_c_interrupt(circuitpython):
     assert "loop 5" in output
     assert "KeyboardInterrupt" in output
     assert "completed" not in output
+
+
+INTERRUPT_SLEEP_CODE = """\
+import time
+
+print("starting")
+time.sleep(30)
+print("completed")
+"""
+
+
+# Real time so the 30 second sleep would actually take 30 seconds if Ctrl+C
+# did not cut it short.
+@pytest.mark.circuitpy_drive({"code.py": INTERRUPT_SLEEP_CODE})
+@pytest.mark.native_sim_rt
+@pytest.mark.duration(10)
+def test_ctrl_c_interrupts_long_sleep(circuitpython):
+    """Ctrl+C must cut a time.sleep() short instead of waiting it out."""
+    circuitpython.serial.wait_for("starting")
+    # Make sure the VM is inside time.sleep(30) before interrupting it.
+    time.sleep(0.5)
+    start = time.monotonic()
+    circuitpython.serial.write("\x03")
+    circuitpython.wait_until_done()
+    elapsed = time.monotonic() - start
+
+    output = circuitpython.serial.all_output
+    assert "KeyboardInterrupt" in output
+    assert "completed" not in output
+    assert elapsed < 5, f"Ctrl+C took {elapsed:.1f}s to interrupt time.sleep(30)"
+
+
+@pytest.mark.circuitpy_drive({"code.py": 'print("spinning")\nwhile True:\n    pass\n'})
+@pytest.mark.duration(10)
+def test_ctrl_c_after_unread_input(circuitpython):
+    """Ctrl+C must still interrupt when the console queue is full of unread input."""
+    circuitpython.serial.wait_for("spinning")
+    circuitpython.serial.write("x" * 200)
+    time.sleep(0.5)
+    circuitpython.serial.write("\x03")
+    circuitpython.wait_until_done()
+    assert "KeyboardInterrupt" in circuitpython.serial.all_output
 
 
 RELOAD_CODE = """\

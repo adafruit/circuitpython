@@ -45,19 +45,8 @@ DEFINE_BUF_QUEUE(UARTDRV_USART_BUFFER_SIZE, uartdrv_usart_tx_buffer);
 static UARTDRV_HandleData_t uartdrv_usart_handle;
 static UARTDRV_InitUart_t uartdrv_usart_init;
 static bool in_used = false;
-static bool never_reset = false;
 busio_uart_obj_t *context;
 volatile Ecode_t errflag; // Used to restart read halts
-
-// Reset uart peripheral
-void uart_reset(void) {
-    if ((!never_reset) && in_used) {
-        if (UARTDRV_DeInit(&uartdrv_usart_handle) != ECODE_EMDRV_UARTDRV_OK) {
-            mp_raise_ValueError(MP_ERROR_TEXT("UART Deinit fail"));
-        }
-        in_used = false;
-    }
-}
 
 // Construct uart obj
 void common_hal_busio_uart_construct(busio_uart_obj_t *self,
@@ -136,14 +125,6 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     } else {
         raise_ValueError_invalid_pins();
     }
-}
-
-// Never reset UART obj when reload
-void common_hal_busio_uart_never_reset(busio_uart_obj_t *self) {
-    never_reset = true;
-    common_hal_never_reset_pin(self->tx);
-    common_hal_never_reset_pin(self->rx);
-    return;
 }
 
 // Check Uart status, deinited or not

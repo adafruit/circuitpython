@@ -15,6 +15,7 @@
 #include "py/compile.h"
 #include "py/frozenmod.h"
 #include "py/mphal.h"
+#include "py/persistentcode.h"
 #include "py/runtime.h"
 #include "py/repl.h"
 #include "py/gc.h"
@@ -86,6 +87,10 @@
 
 #if CIRCUITPY_KEYPAD
 #include "shared-module/keypad/__init__.h"
+#endif
+
+#if CIRCUITPY_STORAGE_MAP_FILE
+#include "shared-bindings/storage/__init__.h"
 #endif
 
 #if CIRCUITPY_AUDIOFILEWRITER
@@ -397,12 +402,18 @@ static void cleanup_after_vm(mp_obj_t exception) {
     bleio_user_reset();
     #endif
 
-    #if CIRCUITPY_CANIO
+    #if CIRCUITPY_CANIO && CIRCUITPY_BULK_RESET
+    // Bulk-reset ports reset CAN controllers here. Finalizer ports rely on
+    // GC finalizers calling deinit on the CAN objects.
     common_hal_canio_reset();
     #endif
 
     #if CIRCUITPY_KEYPAD
     keypad_reset();
+    #endif
+
+    #if CIRCUITPY_STORAGE_MAP_FILE
+    storage_map_file_reset();
     #endif
 
     #if CIRCUITPY_AUDIOFILEWRITER
@@ -434,7 +445,9 @@ static void cleanup_after_vm(mp_obj_t exception) {
     stop_mp();
 
     // Don't reset pins until finalisers have run.
+    #if CIRCUITPY_BULK_RESET
     reset_all_pins();
+    #endif
 
     // Let the workflows know we've reset in case they want to restart.
     supervisor_workflow_reset();
@@ -814,7 +827,9 @@ static bool __attribute__((noinline)) run_code_py(safe_mode_t safe_mode, bool *s
         common_hal_alarm_clear_pin_preservations();
         #endif
         // Reset pins, as if there was a hard reset.
+        #if CIRCUITPY_BULK_RESET
         reset_all_pins();
+        #endif
         // Pretend that the next run is the first run, as if we were reset.
         *simulate_reset = true;
     }
@@ -894,6 +909,9 @@ static void __attribute__ ((noinline)) run_boot_py(safe_mode_t safe_mode) {
 
         // Write version info
         mp_printf(&mp_plat_print, "%s\nBoard ID:%s\n", MICROPY_FULL_VERSION_INFO, CIRCUITPY_BOARD_ID);
+        #if MICROPY_PERSISTENT_CODE_LOAD_NATIVE
+        mp_printf(&mp_plat_print, "%q:%s\n", MP_QSTR_architecture, MPY_FEATURE_ARCH_NAME);
+        #endif
         #if CIRCUITPY_MICROCONTROLLER && COMMON_HAL_MCU_PROCESSOR_UID_LENGTH > 0
         uint8_t raw_id[COMMON_HAL_MCU_PROCESSOR_UID_LENGTH];
         common_hal_mcu_processor_get_uid(raw_id);
@@ -1035,7 +1053,9 @@ int __attribute__((used)) main(void) {
     set_safe_mode(port_init());
 
     // All ports need pins reset, after never-reset pins are marked in port_init();
+    #if CIRCUITPY_BULK_RESET
     reset_all_pins();
+    #endif
 
     port_heap_init();
 

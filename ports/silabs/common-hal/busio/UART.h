@@ -47,6 +47,5 @@ typedef struct {
     bool sigint_enabled;
 } busio_uart_obj_t;
 
-void uart_reset(void);
 
 #endif  // MICROPY_INCLUDED_EFR32_COMMON_HAL_BUSIO_UART_H

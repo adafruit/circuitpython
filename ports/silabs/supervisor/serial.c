@@ -102,11 +102,9 @@ void port_serial_early_init(void) {
     EUSART_UartInitHf(EUSART0, &init);
 
 
-    // Claim and never reset UART console pin
+    // Claim UART console pins
     common_hal_mcu_pin_claim(&pin_PA5);
     common_hal_mcu_pin_claim(&pin_PA6);
-    common_hal_never_reset_pin(&pin_PA5);
-    common_hal_never_reset_pin(&pin_PA6);
 }
 
 // Enable EUSART0 interrupt, init ring buffer

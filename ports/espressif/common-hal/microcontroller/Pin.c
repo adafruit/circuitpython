@@ -87,6 +87,14 @@ static uint64_t _in_use_pin_mask;
 #define GPIO_SEL_54             ((uint64_t)PIN_BIT(54))     /*!< Pin 54 selected */
 #define GPIO_SEL_55             ((uint64_t)PIN_BIT(55))     /*!< Pin 55 selected */
 #endif
+#if SOC_GPIO_PIN_COUNT > 56
+#define GPIO_SEL_56             ((uint64_t)PIN_BIT(56))     /*!< Pin 56 selected */
+#define GPIO_SEL_57             ((uint64_t)PIN_BIT(57))     /*!< Pin 57 selected */
+#define GPIO_SEL_58             ((uint64_t)PIN_BIT(58))     /*!< Pin 58 selected */
+#define GPIO_SEL_59             ((uint64_t)PIN_BIT(59))     /*!< Pin 59 selected */
+#define GPIO_SEL_60             ((uint64_t)PIN_BIT(60))     /*!< Pin 60 selected */
+#define GPIO_SEL_61             ((uint64_t)PIN_BIT(61))     /*!< Pin 61 selected */
+#endif
 
 // Bit mask of all pins that should never EVER be reset.
 // Typically these are SPI flash and PSRAM control pins, and communication pins.
@@ -259,6 +267,27 @@ static const uint64_t pin_mask_reset_forbidden =
     GPIO_SEL_38 |
     #endif
     #endif // ESP32P4
+
+    #if defined(CONFIG_IDF_TARGET_ESP32S31)
+    // Never ever reset pins used to communicate with SPI flash.
+    // esp-idf/components/soc/esp32s31/register/soc/iomux_mspi_pin_reg.h
+    GPIO_SEL_26 |         // MSPI_IOMUX_PIN_NUM_CS0
+    GPIO_SEL_27 |         // MSPI_IOMUX_PIN_NUM_MISO
+    GPIO_SEL_28 |         // MSPI_IOMUX_PIN_NUM_WP
+    GPIO_SEL_30 |         // MSPI_IOMUX_PIN_NUM_HD
+    GPIO_SEL_31 |         // MSPI_IOMUX_PIN_NUM_CLK
+    GPIO_SEL_32 |         // MSPI_IOMUX_PIN_NUM_MOSI
+    #if CIRCUITPY_ESP_USB_SERIAL_JTAG || (defined(CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG) && CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG)
+    // Never ever reset serial/JTAG communication pins.
+    GPIO_SEL_33 |         // USB D-
+    GPIO_SEL_34 |         // USB D+
+    #endif
+    #if defined(CONFIG_ESP_CONSOLE_UART_DEFAULT) && CONFIG_ESP_CONSOLE_UART_DEFAULT && CONFIG_ESP_CONSOLE_UART_NUM == 0
+    // Never reset debug UART/console pins.
+    GPIO_SEL_58 |
+    GPIO_SEL_59 |
+    #endif
+    #endif // ESP32S31
 
     #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3)
     #if CIRCUITPY_USB_DEVICE
@@ -471,7 +500,7 @@ void common_hal_mcu_pin_claim(const mcu_pin_obj_t *pin) {
 }
 
 bool pin_number_is_free(gpio_num_t pin_number) {
-    return !(_in_use_pin_mask & PIN_BIT(pin_number));
+    return GPIO_IS_VALID_GPIO(pin_number) && !(_in_use_pin_mask & PIN_BIT(pin_number));
 }
 
 bool common_hal_mcu_pin_is_free(const mcu_pin_obj_t *pin) {

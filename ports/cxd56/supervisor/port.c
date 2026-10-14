@@ -57,9 +57,6 @@ void reset_cpu(void) {
 }
 
 void reset_port(void) {
-    #if CIRCUITPY_ANALOGIO
-    analogin_reset();
-    #endif
     #if CIRCUITPY_BUSIO
     busio_uart_reset();
     #endif

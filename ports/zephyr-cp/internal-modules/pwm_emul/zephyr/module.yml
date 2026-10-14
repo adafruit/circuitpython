@@ -1,0 +1,13 @@
+# Zephyr module descriptor for the pwm_emul module.
+#
+# The module is loaded from the CircuitPython tree via ZEPHYR_EXTRA_MODULES in
+# ports/zephyr-cp/CMakeLists.txt. To externalize it, move this directory into
+# its own repository and either point ZEPHYR_EXTRA_MODULES at the new checkout
+# or add it to the west manifest instead.
+name: pwm_emul
+build:
+  cmake: .
+  kconfig: Kconfig
+  settings:
+    # dts/bindings/ holds the adafruit,pwm-emul binding.
+    dts_root: .

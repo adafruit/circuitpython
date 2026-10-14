@@ -7,4 +7,3 @@
 #pragma once
 
 extern void rtc_init(void);
-extern void rtc_reset(void);

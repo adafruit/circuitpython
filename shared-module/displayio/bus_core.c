@@ -53,6 +53,9 @@ void displayio_display_bus_construct(displayio_display_bus_t *self,
     self->address_little_endian = address_little_endian;
 
     self->flush = NULL;
+    #if CIRCUITPY_BUSIO_SPI_ASYNC
+    self->send_async = NULL;
+    #endif
 
     #if CIRCUITPY_PARALLELDISPLAYBUS
     if (mp_obj_is_type(bus, &paralleldisplaybus_parallelbus_type)) {
@@ -72,6 +75,10 @@ void displayio_display_bus_construct(displayio_display_bus_t *self,
         self->send = common_hal_fourwire_fourwire_send;
         self->end_transaction = common_hal_fourwire_fourwire_end_transaction;
         self->collect_ptrs = common_hal_fourwire_fourwire_collect_ptrs;
+        #if CIRCUITPY_BUSIO_SPI_ASYNC
+        self->send_async = common_hal_fourwire_fourwire_send_async;
+        self->flush = common_hal_fourwire_fourwire_flush;
+        #endif
     } else
     #endif
     #if CIRCUITPY_I2CDISPLAYBUS

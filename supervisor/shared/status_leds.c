@@ -192,7 +192,7 @@ void status_led_deinit(void) {
     // it up and stop the reset period.
     while (port_get_raw_ticks(NULL) < next_start_raw_ticks) {
     }
-    common_hal_reset_pin(MICROPY_HW_NEOPIXEL);
+    common_hal_digitalio_digitalinout_deinit(&status_neopixel);
 
     #elif defined(MICROPY_HW_APA102_MOSI) && defined(MICROPY_HW_APA102_SCK)
     #if CIRCUITPY_BITBANG_APA102
@@ -319,12 +319,16 @@ void init_rxtx_leds(void) {
     #if CIRCUITPY_DIGITALIO && defined(MICROPY_HW_LED_RX)
     common_hal_digitalio_digitalinout_construct(&rx_led, MICROPY_HW_LED_RX);
     common_hal_digitalio_digitalinout_switch_to_output(&rx_led, true, DRIVE_MODE_PUSH_PULL);
+    #if CIRCUITPY_BULK_RESET
     common_hal_digitalio_digitalinout_never_reset(&rx_led);
+    #endif
     #endif
     #if CIRCUITPY_DIGITALIO && defined(MICROPY_HW_LED_TX)
     common_hal_digitalio_digitalinout_construct(&tx_led, MICROPY_HW_LED_TX);
     common_hal_digitalio_digitalinout_switch_to_output(&tx_led, true, DRIVE_MODE_PUSH_PULL);
+    #if CIRCUITPY_BULK_RESET
     common_hal_digitalio_digitalinout_never_reset(&tx_led);
+    #endif
     #endif
 }
 

@@ -1,23 +1,25 @@
-&w25q64jvssiq {
-    /delete-node/ partitions;
-
-    partitions {
-        #address-cells = <1>;
-        #size-cells = <1>;
-        ranges;
-
-        storage_partition: partition@0 {
-            compatible = "zephyr,mapped-partition";
-            label = "storage";
-            reg = <0x0 DT_SIZE_K(32)>;
-        };
-
-        circuitpy_partition: partition@8000 {
-            compatible = "zephyr,mapped-partition";
-            label = "circuitpy";
-            reg = <0x00008000 (DT_SIZE_M(8) - DT_SIZE_K(32))>;
-        };
-    };
-};
 
 #include "../../../app.overlay"
+
+/* analogio: enable LPADC0 (with its vref regulator) and the LPDAC0.
+ * The SoC pads' analog functions are bonded at mux 0 (see the pin functions
+ * table in modules/hal/nxp/dts/nxp/mcx/MCXN947VDF-pinctrl.h); iobroker
+ * resolves pads to their fixed LPADC/LPDAC channels.
+ *
+ * analogio measures inputs against the SoC's supply-referenced range, so
+ * mux CFG[REFSEL] to VDDA (3.3 V) instead of the on-die VREF regulator
+ * (1.8 V full scale): board signals (e.g. the Arduino analog pins) run to
+ * 3.3 V. VREFH can't be used instead: the schematic wires it to the VREF
+ * regulator output through 0-ohm R171, so it is 1.8 V like REFSEL = 1. */
+&vref {
+	status = "okay";
+};
+
+&lpadc0 {
+	status = "okay";
+	voltage-ref = <2>;
+};
+
+&dac0 {
+	status = "okay";
+};

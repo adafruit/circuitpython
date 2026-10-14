@@ -78,8 +78,6 @@ void init_usb_hardware(void) {
     #endif
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    never_reset_pin_number(0, 11);
-    never_reset_pin_number(0, 12);
     claim_pin(0, 11);
     claim_pin(0, 12);
 
@@ -89,7 +87,6 @@ void init_usb_hardware(void) {
     GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-    never_reset_pin_number(0, 9);
     claim_pin(0, 9);
     #endif
 
@@ -105,7 +102,6 @@ void init_usb_hardware(void) {
     GPIO_InitStruct.Alternate = GPIO_AF10_OTG_FS;
     #endif
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-    never_reset_pin_number(0, 10);
     claim_pin(0, 10);
     #endif
 
@@ -115,7 +111,6 @@ void init_usb_hardware(void) {
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
-    never_reset_pin_number(0, 8);
     claim_pin(0, 8);
     #endif
 

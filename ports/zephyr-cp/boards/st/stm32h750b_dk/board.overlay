@@ -1,21 +1,25 @@
-&ext_flash {
-    partitions {
-        /delete-node/ partition@7800000;
-
-        storage_partition: partition@7800000 {
-			compatible = "zephyr,mapped-partition";
-            label = "storage";
-            reg = <0x7800000 DT_SIZE_K(32)>;
-        };
-
-        circuitpy_partition: partition@7808000 {
-			compatible = "zephyr,mapped-partition";
-            label = "circuitpy";
-            reg = <0x7808000 (DT_SIZE_M(8) - DT_SIZE_K(32))>;
-        };
-    };
-};
-
 &rng {
     status = "okay";
 };
+
+/* The USB device controller (zephyr_udc0) and the QSPI flash partition map
+ * are defined in the mcuboot fork's dts/st/stm32h750b_dk.dtsi, which
+ * sysbuild prepends to this image's overlays. app.overlay only adds the
+ * CDC ACM console/data endpoints.
+ */
+// Enable the SoC watchdog and expose it through the `watchdog0` alias
+// (Zephyr's watchdog sample selection) for the watchdog module. The IWDG
+// doesn't start on boot (START_ACTIVE_BY_DEFAULT is off); it only arms when
+// Python code sets a mode. It cannot be stopped once armed, like the native
+// STM32 CircuitPython port.
+&iwdg {
+	status = "okay";
+};
+
+/ {
+	aliases {
+		watchdog0 = &iwdg;
+	};
+};
+
+#include "../../../app.overlay"

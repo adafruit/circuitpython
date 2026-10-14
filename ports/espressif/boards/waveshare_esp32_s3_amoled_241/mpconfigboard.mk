@@ -33,3 +33,7 @@ CIRCUITPY_TOUCHIO = 0
 
 # SD card via SDMMC interface
 CIRCUITPY_SDIOIO = 1
+
+# Display refresh buffer: 8192 bytes on the stack.
+# ESP32-S3 main task stack is 24KB; verified safe with this board.
+CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE = 8192

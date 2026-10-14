@@ -21,6 +21,11 @@ void common_hal_ssl_sslcontext_construct(ssl_sslcontext_obj_t *self) {
     if (psa_crypto_init() != PSA_SUCCESS) {
         mp_raise_RuntimeError_varg(MP_ERROR_TEXT("%q init failed"), MP_QSTR_ssl);
     }
+    self->cert_buf.buf = NULL;
+    self->cert_buf.len = 0;
+    self->key_buf.buf = NULL;
+    self->key_buf.len = 0;
+    self->check_name = true;
     common_hal_ssl_sslcontext_set_default_verify_paths(self);
 }
 

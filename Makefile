@@ -93,8 +93,13 @@ help:
 	@echo "  pseudoxml  to make pseudoxml-XML files for display purposes"
 	@echo "  linkcheck  to check all external links for integrity"
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
-	@echo "  fetch-all-submodules	to fetch submodules for all ports"
+	@echo "  fetch-all-submodules	to fetch submodules for all ports (several GB)"
 	@echo "  remove-all-submodules	remove all submodules, including files and .git/ data"
+	@echo ""
+	@echo "To build one board you only need its own submodules, which is a much smaller"
+	@echo "download. From a port directory:"
+	@echo "  make fetch-board-submodules BOARD=<board>	submodules for one board"
+	@echo "  make fetch-port-submodules			submodules for every board of that port"
 
 clean:
 	rm -rf $(BUILDDIR)/*

@@ -27,6 +27,10 @@
 #ifndef CIRCUITPY_FIRMWARE_SIZE
 #define CIRCUITPY_FIRMWARE_SIZE (1020 * 1024)
 #endif
+// The nvm sector and CIRCUITPY follow the firmware, so it must end on a flash erase sector.
+#if CIRCUITPY_FIRMWARE_SIZE % 4096 != 0
+#error "CIRCUITPY_FIRMWARE_SIZE must be a multiple of 4 KB"
+#endif
 
 #define CIRCUITPY_INTERNAL_NVM_SIZE         (4 * 1024)
 // This is the XIP address

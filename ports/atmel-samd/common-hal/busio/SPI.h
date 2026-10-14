@@ -6,11 +6,16 @@
 
 #pragma once
 
+#include "py/mpconfig.h"
+#if CIRCUITPY_BUSIO_SPI_ASYNC
+#include "peripherals/samd/dma.h"
+#endif
 #include "common-hal/microcontroller/Pin.h"
 
 #include "hal/include/hal_spi_m_sync.h"
 
 #include "py/obj.h"
+#include "supervisor/shared/async_flag.h"
 
 typedef struct {
     mp_obj_base_t base;
@@ -19,4 +24,9 @@ typedef struct {
     uint8_t clock_pin;
     uint8_t MOSI_pin;
     uint8_t MISO_pin;
+    #if CIRCUITPY_BUSIO_SPI_ASYNC
+    bool async_active;          // a write_start DMA transfer may still be running
+    dma_transfer_t async_xfer;
+    circuitpy_async_flag_t *async_done;
+    #endif
 } busio_spi_obj_t;

@@ -171,8 +171,6 @@ static void configure_pins_for_sleep(void) {
 
 void alarm_pin_pinalarm_set_alarms(bool deep_sleep, size_t n_alarms, const mp_obj_t *alarms) {
     // Bitmask of wake up settings.
-    size_t high_count = 0;
-    size_t low_count = 0;
     int pin_number = -1;
 
     for (size_t i = 0; i < n_alarms; i++) {
@@ -185,10 +183,8 @@ void alarm_pin_pinalarm_set_alarms(bool deep_sleep, size_t n_alarms, const mp_ob
         // mp_printf(&mp_plat_print, "alarm_pin_pinalarm_set_alarms(pin#=%d, val=%d, pull=%d)\r\n", pin_number, alarm->value, alarm->pull);
         if (alarm->value) {
             high_alarms |= 1ull << pin_number;
-            high_count++;
         } else {
             low_alarms |= 1ull << pin_number;
-            low_count++;
         }
         if (alarm->pull) {
             pull_pins |= 1ull << pin_number;

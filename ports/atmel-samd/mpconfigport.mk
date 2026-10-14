@@ -98,6 +98,10 @@ endif # samd21
 # Put samx5x-only choices here.
 
 ifneq ($(filter $(CHIP_FAMILY),samd51 same51 same54),)
+CIRCUITPY_BUSIO_SPI_ASYNC ?= 1
+
+# The 24 KB stack has room for a larger display refresh buffer.
+CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE ?= 2048
 
 # No native touchio on SAMx5x.
 CIRCUITPY_TOUCHIO_USE_NATIVE = 0

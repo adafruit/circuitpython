@@ -82,6 +82,16 @@ mp_int_t shared_modules_random_randrange(mp_int_t start, mp_int_t stop, mp_int_t
     return start + step * yasmarang_randbelow(n);
 }
 
+mp_int_t shared_modules_random_randint(mp_int_t a, mp_int_t b) {
+    // Compute the span unsigned so that b - a + 1 cannot overflow for any a <= b.
+    mp_uint_t n = (mp_uint_t)b - (mp_uint_t)a + 1;
+    if (n == 0) {
+        // a and b cover the full mp_int_t range: any value is in range.
+        return a + (mp_int_t)yasmarang();
+    }
+    return a + yasmarang_randbelow(n);
+}
+
 // returns a number in the range [0..1) using Yasmarang to fill in the fraction bits
 static mp_float_t yasmarang_float(void) {
     #if MICROPY_FLOAT_IMPL == MICROPY_FLOAT_IMPL_DOUBLE

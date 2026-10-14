@@ -90,7 +90,7 @@ static mp_obj_t audiofilters_filter_make_new(const mp_obj_type_t *type, size_t n
         mp_raise_ValueError(MP_ERROR_TEXT("bits_per_sample must be 8 or 16"));
     }
 
-    audiofilters_filter_obj_t *self = mp_obj_malloc(audiofilters_filter_obj_t, &audiofilters_filter_type);
+    audiofilters_filter_obj_t *self = mp_obj_malloc_with_finaliser(audiofilters_filter_obj_t, &audiofilters_filter_type);
     common_hal_audiofilters_filter_construct(self,
         args[ARG_filter].u_obj,
         args[ARG_mix].u_obj,
@@ -232,6 +232,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(audiofilters_filter_stop_obj, audiofilters_filter_obj_
 static const mp_rom_map_elem_t audiofilters_filter_locals_dict_table[] = {
     // Methods
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&audiofilters_filter_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&audiofilters_filter_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
     { MP_ROM_QSTR(MP_QSTR_play), MP_ROM_PTR(&audiofilters_filter_play_obj) },

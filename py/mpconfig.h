@@ -1027,6 +1027,11 @@ typedef double mp_float_t;
 #define MICROPY_PY_BUILTINS_FLOAT (0)
 #endif
 
+// CIRCUITPY-CHANGE: whether mp_printf() supports %e, %f and %g
+#ifndef MICROPY_PRINTF_FLOAT
+#define MICROPY_PRINTF_FLOAT (MICROPY_PY_BUILTINS_FLOAT)
+#endif
+
 #ifndef MICROPY_PY_BUILTINS_COMPLEX
 #define MICROPY_PY_BUILTINS_COMPLEX (MICROPY_PY_BUILTINS_FLOAT)
 #endif

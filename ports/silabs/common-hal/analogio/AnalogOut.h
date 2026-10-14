@@ -37,6 +37,5 @@ typedef struct
     mcu_dac_pin_obj_t *dac;
 } analogio_analogout_obj_t;
 
-void analogout_reset(void);
 
 #endif // MICROPY_INCLUDED_EFR32_COMMON_HAL_ANALOGIO_ANALOGOUT_H

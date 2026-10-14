@@ -21,10 +21,6 @@
     #error unknown MCU for DigitalInOut
 #endif
 
-void common_hal_digitalio_digitalinout_never_reset(
-    digitalio_digitalinout_obj_t *self) {
-    never_reset_pin_number(self->pin->port, self->pin->number);
-}
 
 digitalinout_result_t common_hal_digitalio_digitalinout_construct(
     digitalio_digitalinout_obj_t *self, const mcu_pin_obj_t *pin) {

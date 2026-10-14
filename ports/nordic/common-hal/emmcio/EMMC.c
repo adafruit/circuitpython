@@ -833,8 +833,7 @@ void emmcio_emmc_release_hardware(void) {
 }
 
 static void emmc_claim_pins(const mcu_pin_obj_t *clock, const mcu_pin_obj_t *command,
-    const mcu_pin_obj_t *data, const mcu_pin_obj_t *reset, const mcu_pin_obj_t *vccq,
-    bool never_reset) {
+    const mcu_pin_obj_t *data, const mcu_pin_obj_t *reset, const mcu_pin_obj_t *vccq) {
     emmc_pinout.clk = clock->number;
     emmc_pinout.cmd = command->number;
     emmc_pinout.dat0 = data->number;
@@ -853,9 +852,6 @@ static void emmc_claim_pins(const mcu_pin_obj_t *clock, const mcu_pin_obj_t *com
             continue;
         }
         claim_pin(pins[i]);
-        if (never_reset) {
-            never_reset_pin_number(pins[i]->number);
-        }
         s_claimed_pins[s_claimed_pin_count++] = pins[i];
     }
 }
@@ -950,7 +946,7 @@ emmcio_construct_result_t common_hal_emmcio_emmc_construct(emmcio_emmc_obj_t *se
     if (pin_err != EMMCIO_OK) {
         return pin_err;
     }
-    emmc_claim_pins(clock, command, data, reset, vccq, false);
+    emmc_claim_pins(clock, command, data, reset, vccq);
 
     emmcio_construct_result_t err = emmc_power_up(self, high_speed, detail);
     if (err != EMMCIO_OK) {
@@ -989,7 +985,7 @@ mp_obj_t emmcio_automount_construct(const mcu_pin_obj_t *clock, const mcu_pin_ob
     if (emmc_check_pins(clock, command, data, reset, vccq, &detail) != EMMCIO_OK) {
         return MP_OBJ_NULL;
     }
-    emmc_claim_pins(clock, command, data, reset, vccq, true);
+    emmc_claim_pins(clock, command, data, reset, vccq);
     s_automount_obj.base.type = &emmcio_emmc_type;
     if (emmc_power_up(&s_automount_obj, high_speed, &detail) != EMMCIO_OK) {
         return MP_OBJ_NULL;

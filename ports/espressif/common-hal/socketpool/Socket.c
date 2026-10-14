@@ -12,7 +12,9 @@
 #include "py/runtime.h"
 #include "shared-bindings/socketpool/SocketPool.h"
 #include "common-hal/socketpool/__init__.h"
+#if CIRCUITPY_WIFI
 #include "common-hal/wifi/__init__.h"
+#endif
 #if CIRCUITPY_SSL
 #include "shared-bindings/ssl/SSLSocket.h"
 #include "shared-module/ssl/SSLSocket.h"

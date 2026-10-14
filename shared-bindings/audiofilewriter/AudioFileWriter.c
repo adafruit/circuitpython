@@ -81,7 +81,7 @@ static mp_obj_t audiofilewriter_audiofilewriter_make_new(const mp_obj_type_t *ty
     // A buffer smaller than one source buffer is useless; require a sane floor.
     mp_int_t buffer_size = mp_arg_validate_int_min(args[ARG_buffer_size].u_int, 512, MP_QSTR_buffer_size);
 
-    audiofilewriter_audiofilewriter_obj_t *self = mp_obj_malloc(audiofilewriter_audiofilewriter_obj_t, &audiofilewriter_audiofilewriter_type);
+    audiofilewriter_audiofilewriter_obj_t *self = mp_obj_malloc_with_finaliser(audiofilewriter_audiofilewriter_obj_t, &audiofilewriter_audiofilewriter_type);
     common_hal_audiofilewriter_audiofilewriter_construct(self, args[ARG_file].u_obj, (uint32_t)buffer_size);
 
     return MP_OBJ_FROM_PTR(self);
@@ -164,6 +164,7 @@ MP_PROPERTY_GETTER(audiofilewriter_audiofilewriter_playing_obj,
 static const mp_rom_map_elem_t audiofilewriter_audiofilewriter_locals_dict_table[] = {
     // Methods
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&audiofilewriter_audiofilewriter_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&audiofilewriter_audiofilewriter_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
     { MP_ROM_QSTR(MP_QSTR_play), MP_ROM_PTR(&audiofilewriter_audiofilewriter_play_obj) },

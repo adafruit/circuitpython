@@ -209,6 +209,7 @@ MP_PROPERTY_GETTER(mipidsi_display_color_depth_obj,
 
 static const mp_rom_map_elem_t mipidsi_display_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&mipidsi_display_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&mipidsi_display_deinit_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_width), MP_ROM_PTR(&mipidsi_display_width_obj) },
     { MP_ROM_QSTR(MP_QSTR_height), MP_ROM_PTR(&mipidsi_display_height_obj) },

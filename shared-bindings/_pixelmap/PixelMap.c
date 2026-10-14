@@ -24,8 +24,8 @@
 static mp_obj_t pixelmap_pixelmap_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_pixelbuf, ARG_indices };
     static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_pixelbuf, MP_ARG_REQUIRED },
-        { MP_QSTR_indices, MP_ARG_REQUIRED },
+        { MP_QSTR_pixelbuf, MP_ARG_OBJ | MP_ARG_REQUIRED },
+        { MP_QSTR_indices, MP_ARG_OBJ | MP_ARG_REQUIRED },
     };
 
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];

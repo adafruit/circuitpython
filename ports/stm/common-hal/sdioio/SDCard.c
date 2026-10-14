@@ -18,7 +18,6 @@
 #include "shared-bindings/microcontroller/Pin.h"
 
 static bool reserved_sdio[MP_ARRAY_SIZE(mcu_sdio_banks)];
-static bool never_reset_sdio[MP_ARRAY_SIZE(mcu_sdio_banks)];
 
 static const mcu_periph_obj_t *find_pin_function(const mcu_periph_obj_t *table, size_t sz, const mcu_pin_obj_t *pin, int periph_index) {
     for (size_t i = 0; i < sz; i++, table++) {
@@ -334,12 +333,6 @@ bool common_hal_sdioio_sdcard_deinited(sdioio_sdcard_obj_t *self) {
     return self->command == NULL;
 }
 
-static void never_reset_mcu_periph(const mcu_periph_obj_t *periph) {
-    if (periph) {
-        never_reset_pin_number(periph->pin->port, periph->pin->number);
-    }
-}
-
 static void reset_mcu_periph(const mcu_periph_obj_t *periph) {
     if (periph) {
         reset_pin_number(periph->pin->port, periph->pin->number);
@@ -352,43 +345,15 @@ void common_hal_sdioio_sdcard_deinit(sdioio_sdcard_obj_t *self) {
     }
 
     reserved_sdio[self->command->periph_index - 1] = false;
-    never_reset_sdio[self->command->periph_index - 1] = false;
 
     reset_mcu_periph(self->command);
     self->command = NULL;
 
     reset_mcu_periph(self->clock);
-    self->command = NULL;
+    self->clock = NULL;
 
     for (size_t i = 0; i < MP_ARRAY_SIZE(self->data); i++) {
         reset_mcu_periph(self->data[i]);
         self->data[i] = NULL;
-    }
-}
-
-void common_hal_sdioio_sdcard_never_reset(sdioio_sdcard_obj_t *self) {
-    if (common_hal_sdioio_sdcard_deinited(self)) {
-        return;
-    }
-
-    if (never_reset_sdio[self->command->periph_index] - 1) {
-        return;
-    }
-
-    never_reset_sdio[self->command->periph_index - 1] = true;
-
-    never_reset_mcu_periph(self->command);
-    never_reset_mcu_periph(self->clock);
-
-    for (size_t i = 0; i < MP_ARRAY_SIZE(self->data); i++) {
-        never_reset_mcu_periph(self->data[i]);
-    }
-}
-
-void sdioio_reset(void) {
-    for (size_t i = 0; i < MP_ARRAY_SIZE(reserved_sdio); i++) {
-        if (!never_reset_sdio[i]) {
-            reserved_sdio[i] = false;
-        }
     }
 }

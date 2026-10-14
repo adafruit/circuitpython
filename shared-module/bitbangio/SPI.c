@@ -48,7 +48,7 @@ void shared_module_bitbangio_spi_construct(bitbangio_spi_obj_t *self,
 }
 
 bool shared_module_bitbangio_spi_deinited(bitbangio_spi_obj_t *self) {
-    return digitalinout_protocol_deinited(self->clock);
+    return self->clock == MP_OBJ_NULL;
 }
 
 void shared_module_bitbangio_spi_deinit(bitbangio_spi_obj_t *self) {
@@ -68,6 +68,8 @@ void shared_module_bitbangio_spi_deinit(bitbangio_spi_obj_t *self) {
         digitalinout_protocol_deinit(self->miso);
         circuitpy_free_obj(self->miso);
     }
+    // Mark deinited; the pin objects may have been freed above.
+    self->clock = MP_OBJ_NULL;
 }
 
 void shared_module_bitbangio_spi_configure(bitbangio_spi_obj_t *self,

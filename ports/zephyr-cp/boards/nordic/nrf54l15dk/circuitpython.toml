@@ -1,1 +1,1 @@
-CIRCUITPY_BUILD_EXTENSIONS = ["elf", "hex"]
+CIRCUITPY_BUILD_EXTENSIONS = ["hex", "signed.bin"]

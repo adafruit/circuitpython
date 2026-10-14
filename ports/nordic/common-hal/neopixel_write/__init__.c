@@ -82,7 +82,10 @@ static NRF_PWM_Type *find_free_pwm(void) {
 }
 
 static size_t pixels_pattern_heap_size = 0;
-// Called during reset_port() to free the pattern buffer
+// Clear the root pointer during reset_port() while the old GC heap (and the pattern
+// buffer in it) is still alive. Root pointers are NOT zeroed between VM runs, so
+// without this the pointer would dangle after the heap is torn down and re-created.
+// The now-unreferenced block is reclaimed by the final sweep in gc_deinit().
 void neopixel_write_reset(void) {
     MP_STATE_VM(pixels_pattern_heap) = NULL;
     pixels_pattern_heap_size = 0;

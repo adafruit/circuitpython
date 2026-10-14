@@ -18,7 +18,7 @@ typedef struct espcamera_camera_obj espcamera_camera_obj_t;
 
 extern void common_hal_espcamera_camera_construct(
     espcamera_camera_obj_t *self,
-    uint8_t data_pins[8],
+    const mcu_pin_obj_t **data_pins,
     const mcu_pin_obj_t *external_clock_pin,
     const mcu_pin_obj_t *pixel_clock_pin,
     const mcu_pin_obj_t *vsync_pin,

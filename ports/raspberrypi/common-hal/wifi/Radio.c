@@ -7,6 +7,7 @@
 #include "supervisor/port.h"
 #include "shared-bindings/wifi/PowerManagement.h"
 #include "shared-bindings/wifi/Radio.h"
+#include "shared-bindings/wifi/__init__.h"
 #include "shared-bindings/wifi/Network.h"
 
 #include <math.h>
@@ -78,6 +79,10 @@ void common_hal_wifi_radio_set_hostname(wifi_radio_obj_t *self, const char *host
     strncpy(self->hostname, hostname, MP_ARRAY_SIZE(self->hostname) - 1);
     netif_set_hostname(NETIF_STA, self->hostname);
     netif_set_hostname(NETIF_AP, self->hostname);
+}
+
+const char *wifi_get_hostname_raw(void) {
+    return NETIF_STA->hostname == NULL ? "" : NETIF_STA->hostname;
 }
 
 void wifi_radio_get_mac_address(wifi_radio_obj_t *self, uint8_t *mac) {

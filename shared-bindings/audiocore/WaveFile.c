@@ -73,7 +73,7 @@ static mp_obj_t audioio_wavefile_make_new(const mp_obj_type_t *type, size_t n_ar
         }
     }
 
-    audioio_wavefile_obj_t *self = mp_obj_malloc(audioio_wavefile_obj_t, &audioio_wavefile_type);
+    audioio_wavefile_obj_t *self = mp_obj_malloc_with_finaliser(audioio_wavefile_obj_t, &audioio_wavefile_type);
     common_hal_audioio_wavefile_construct(self, arg,
         buffer, buffer_size);
 
@@ -120,6 +120,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(audioio_wavefile_deinit_obj, audioio_wavefile_d
 static const mp_rom_map_elem_t audioio_wavefile_locals_dict_table[] = {
     // Methods
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&audioio_wavefile_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&audioio_wavefile_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
 

@@ -1,0 +1,9 @@
+# Zephyr module descriptor for the defaults module.
+#
+# The module is loaded from the CircuitPython tree via ZEPHYR_EXTRA_MODULES in
+# ports/zephyr-cp/CMakeLists.txt. It is Kconfig-only: it exists so its
+# Kconfig merges before Zephyr's subsystem Kconfig files (see Kconfig here for
+# why that ordering matters).
+name: defaults
+build:
+  kconfig: Kconfig

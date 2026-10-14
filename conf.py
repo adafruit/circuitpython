@@ -83,6 +83,18 @@ extensions = [
     "sphinx_search.extension",
     "rstjinja",
     "myst_parser",
+    "llms_txt",
+]
+
+# llms.txt: an index of every page for coding agents (docs/llms_txt.py)
+llms_txt_description = (
+    "Adafruit CircuitPython - Python for microcontrollers. "
+    "Each page is also served as Markdown with the Accept: text/markdown header."
+)
+llms_txt_exclude = [
+    "docs/porting",
+    "docs/pdf",
+    "shared-bindings/support_matrix",
 ]
 
 # Add any paths that contain templates here, relative to this directory.

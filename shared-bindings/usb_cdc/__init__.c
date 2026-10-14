@@ -89,6 +89,89 @@ static mp_obj_t usb_cdc_enable(size_t n_args, const mp_obj_t *pos_args, mp_map_t
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(usb_cdc_enable_obj, 0, usb_cdc_enable);
 
+#if CIRCUITPY_FULL_BUILD
+char *custom_usb_cdc_console_control_interface_name = NULL;
+char *custom_usb_cdc_console_data_interface_name = NULL;
+char *custom_usb_cdc_data_control_interface_name = NULL;
+char *custom_usb_cdc_data_data_interface_name = NULL;
+
+static void set_name(mp_obj_t name_obj, qstr arg_name_qstr, char **custom_name_p) {
+    if (name_obj != mp_const_none) {
+        mp_buffer_info_t name;
+        mp_get_buffer_raise(name_obj, &name, MP_BUFFER_READ);
+        mp_arg_validate_length_range(name.len, 1, 126, arg_name_qstr);
+
+        if (*custom_name_p == NULL) {
+            *custom_name_p = port_malloc(sizeof(char) * 128, false);
+        }
+
+        memcpy(*custom_name_p, name.buf, name.len);
+        (*custom_name_p)[name.len] = 0;
+    }
+}
+
+//| def set_names(
+//|     *,
+//|     console_control_interface_name: Optional[str] = None,
+//|     console_data_interface_name: Optional[str] = None,
+//|     data_control_interface_name: Optional[str] = None,
+//|     data_data_interface_name: Optional[str] = None,
+//| ) -> None:
+//|     """Override the CDC interface names in the USB Interface Descriptors.
+//|
+//|     Each CDC serial device has a control interface and a data interface.
+//|
+//|     :param Optional[str] console_control_interface_name: an ASCII string (or buffer) of at most 126 characters for the console control interface, or ``None`` to use the default name.
+//|     :param Optional[str] console_data_interface_name: an ASCII string (or buffer) of at most 126 characters for the console data interface, or ``None`` to use the default name.
+//|     :param Optional[str] data_control_interface_name: an ASCII string (or buffer) of at most 126 characters for the data-port control interface, or ``None`` to use the default name.
+//|     :param Optional[str] data_data_interface_name: an ASCII string (or buffer) of at most 126 characters for the data-port data interface, or ``None`` to use the default name.
+//|
+//|     This method must be called in ``boot.py`` to have any effect.
+//|
+//|     Not available on boards without native USB support or on reduced builds.
+//|     """
+//|     ...
+//|
+//|
+static mp_obj_t usb_cdc_set_names(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    enum {
+        ARG_console_control_interface_name,
+        ARG_console_data_interface_name,
+        ARG_data_control_interface_name,
+        ARG_data_data_interface_name
+    };
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_console_control_interface_name, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_rom_obj = mp_const_none} },
+        { MP_QSTR_console_data_interface_name,    MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_rom_obj = mp_const_none} },
+        { MP_QSTR_data_control_interface_name,    MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_rom_obj = mp_const_none} },
+        { MP_QSTR_data_data_interface_name,       MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_rom_obj = mp_const_none} },
+    };
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, (mp_arg_val_t *)&args);
+
+    set_name(
+        args[ARG_console_control_interface_name].u_obj,
+        MP_QSTR_console_control_interface_name,
+        &custom_usb_cdc_console_control_interface_name);
+    set_name(
+        args[ARG_console_data_interface_name].u_obj,
+        MP_QSTR_console_data_interface_name,
+        &custom_usb_cdc_console_data_interface_name);
+    set_name(
+        args[ARG_data_control_interface_name].u_obj,
+        MP_QSTR_data_control_interface_name,
+        &custom_usb_cdc_data_control_interface_name);
+    set_name(
+        args[ARG_data_data_interface_name].u_obj,
+        MP_QSTR_data_data_interface_name,
+        &custom_usb_cdc_data_data_interface_name);
+
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_KW(usb_cdc_set_names_obj, 0, usb_cdc_set_names);
+
+#endif
+
 // The usb_cdc module dict is mutable so that .console and .data may
 // be set to a Serial or to None depending on whether they are enabled or not.
 static mp_map_elem_t usb_cdc_module_globals_table[] = {
@@ -98,6 +181,9 @@ static mp_map_elem_t usb_cdc_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_data),     mp_const_none },
     { MP_ROM_QSTR(MP_QSTR_disable),  MP_OBJ_FROM_PTR(&usb_cdc_disable_obj) },
     { MP_ROM_QSTR(MP_QSTR_enable),   MP_OBJ_FROM_PTR(&usb_cdc_enable_obj) },
+    #if CIRCUITPY_FULL_BUILD
+    { MP_ROM_QSTR(MP_QSTR_set_names), MP_OBJ_FROM_PTR(&usb_cdc_set_names_obj) },
+    #endif
 };
 
 static MP_DEFINE_MUTABLE_DICT(usb_cdc_module_globals, usb_cdc_module_globals_table);

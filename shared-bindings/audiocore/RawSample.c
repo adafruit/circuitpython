@@ -103,7 +103,7 @@ static mp_obj_t audioio_rawsample_make_new(const mp_obj_type_t *type, size_t n_a
         mp_raise_ValueError_varg(MP_ERROR_TEXT("Length of %q must be an even multiple of channel_count * type_size"), MP_QSTR_buffer);
     }
 
-    audioio_rawsample_obj_t *self = mp_obj_malloc(audioio_rawsample_obj_t, &audioio_rawsample_type);
+    audioio_rawsample_obj_t *self = mp_obj_malloc_with_finaliser(audioio_rawsample_obj_t, &audioio_rawsample_type);
     common_hal_audioio_rawsample_construct(self,
         ((uint8_t *)bufinfo.buf),
         bufinfo.len,
@@ -151,6 +151,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(audioio_rawsample_deinit_obj, audioio_rawsample
 static const mp_rom_map_elem_t audioio_rawsample_locals_dict_table[] = {
     // Methods
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&audioio_rawsample_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&audioio_rawsample_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&default___enter___obj) },
     { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&default___exit___obj) },
 

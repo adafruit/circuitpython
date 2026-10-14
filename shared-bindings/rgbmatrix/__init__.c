@@ -10,6 +10,7 @@
 #include "py/runtime.h"
 
 #include "shared-bindings/rgbmatrix/RGBMatrix.h"
+#include "shared-bindings/rgbmatrix/RowAddressMode.h"
 
 //| """Low-level routines for bitbanged LED matrices
 //|
@@ -20,6 +21,7 @@
 static const mp_rom_map_elem_t rgbmatrix_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_rgbmatrix) },
     { MP_ROM_QSTR(MP_QSTR_RGBMatrix), MP_ROM_PTR(&rgbmatrix_RGBMatrix_type) },
+    { MP_ROM_QSTR(MP_QSTR_RowAddressMode), MP_ROM_PTR(&rgbmatrix_row_address_mode_type) },
 };
 
 static MP_DEFINE_CONST_DICT(rgbmatrix_module_globals, rgbmatrix_module_globals_table);

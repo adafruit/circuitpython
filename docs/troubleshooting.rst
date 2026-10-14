@@ -56,3 +56,20 @@ all available in the
 `Adafruit bundle <https://github.com/adafruit/Adafruit_CircuitPython_Bundle/releases/latest>`_
 and the `Community bundle <https://github.com/adafruit/CircuitPython_Community_Bundle/releases/latest>`_.
 Make sure to download a version with 7.0.0 or higher in the filename.
+
+The error can also come from a ``.mpy`` file that contains native code for a different
+kind of chip. On boards that can run native code, ``import foo`` looks for ``foo.py``,
+then ``foo.<arch>.mpy``, then ``foo.mpy``, where ``<arch>`` is
+``microcontroller.cpu.architecture``, for example ``foo.armv7emsp.mpy``. A
+``foo.<arch>.mpy`` built for another architecture or CircuitPython version raises this
+error instead of falling back to ``foo.mpy``.
+
+SyntaxError: invalid micropython decorator
+------------------------------------------
+
+CircuitPython cannot compile ``@micropython.native`` or ``@micropython.viper`` functions from a
+``.py`` file on the board. Add ``optional=True``, for example ``@micropython.viper(optional=True)``,
+to run the function as ordinary bytecode instead. ``mpy-cross`` does the same when it is run
+without ``-march``. Viper code that uses ``ptr8``, ``uint`` or other viper-only types raises
+``NameError`` when it runs as bytecode, so it needs a native ``.mpy`` file on a board that can
+load one.

@@ -63,4 +63,6 @@ extern const mp_obj_type_t mcu_pin_type;
 #include "esp32s2/pins.h"
 #elif defined(CONFIG_IDF_TARGET_ESP32S3)
 #include "esp32s3/pins.h"
+#elif defined(CONFIG_IDF_TARGET_ESP32S31)
+#include "esp32s31/pins.h"
 #endif
