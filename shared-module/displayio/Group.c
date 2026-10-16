@@ -10,7 +10,7 @@
 #include "py/objlist.h"
 #include "shared-bindings/displayio/TileGrid.h"
 
-#if CIRCUITPY_VECTORIO
+#if CIRCUITPY_VECTORIO || CIRCUITPY_VIDEOCORE
 #include "shared-bindings/vectorio/VectorShape.h"
 #endif
 
@@ -52,11 +52,15 @@ void common_hal_displayio_group_set_hidden(displayio_group_t *self, bool hidden)
             displayio_group_set_hidden_by_parent(layer, hidden);
             continue;
         }
-        #if CIRCUITPY_VECTORIO
+        #if CIRCUITPY_VECTORIO || CIRCUITPY_VIDEOCORE
         const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, self->members->items[i]);
         if (draw_protocol != NULL) {
             layer = draw_protocol->draw_get_protocol_self(self->members->items[i]);
-            draw_protocol->draw_protocol_impl->draw_set_dirty(layer);
+            if (draw_protocol->draw_protocol_impl->draw_set_hidden != NULL) {
+                draw_protocol->draw_protocol_impl->draw_set_hidden(layer, hidden);
+            } else {
+                draw_protocol->draw_protocol_impl->draw_set_dirty(layer);
+            }
             continue;
         }
         #endif
@@ -87,11 +91,15 @@ void displayio_group_set_hidden_by_parent(displayio_group_t *self, bool hidden) 
             displayio_group_set_hidden_by_parent(layer, hidden);
             continue;
         }
-        #if CIRCUITPY_VECTORIO
+        #if CIRCUITPY_VECTORIO || CIRCUITPY_VIDEOCORE
         const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, self->members->items[i]);
         if (draw_protocol != NULL) {
             layer = draw_protocol->draw_get_protocol_self(self->members->items[i]);
-            draw_protocol->draw_protocol_impl->draw_set_dirty(layer);
+            if (draw_protocol->draw_protocol_impl->draw_set_hidden != NULL) {
+                draw_protocol->draw_protocol_impl->draw_set_hidden(layer, hidden);
+            } else {
+                draw_protocol->draw_protocol_impl->draw_set_dirty(layer);
+            }
             continue;
         }
         #endif
@@ -146,7 +154,7 @@ static void _update_child_transforms(displayio_group_t *self) {
     }
     for (size_t i = 0; i < self->members->len; i++) {
         mp_obj_t layer;
-        #if CIRCUITPY_VECTORIO
+        #if CIRCUITPY_VECTORIO || CIRCUITPY_VIDEOCORE
         const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, self->members->items[i]);
         if (draw_protocol != NULL) {
             layer = draw_protocol->draw_get_protocol_self(self->members->items[i]);
@@ -248,7 +256,7 @@ void common_hal_displayio_group_set_y(displayio_group_t *self, mp_int_t y) {
 
 static void _add_layer(displayio_group_t *self, mp_obj_t layer) {
     check_readonly(self);
-    #if CIRCUITPY_VECTORIO
+    #if CIRCUITPY_VECTORIO || CIRCUITPY_VIDEOCORE
     const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, layer);
     if (draw_protocol != NULL) {
         mp_obj_t protocol_self = draw_protocol->draw_get_protocol_self(layer);
@@ -293,7 +301,7 @@ static void _remove_layer(displayio_group_t *self, size_t index) {
     mp_obj_t layer;
     displayio_area_t layer_area;
     bool rendered_last_frame = false;
-    #if CIRCUITPY_VECTORIO
+    #if CIRCUITPY_VECTORIO || CIRCUITPY_VIDEOCORE
     const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, self->members->items[index]);
     if (draw_protocol != NULL) {
         layer = draw_protocol->draw_get_protocol_self(self->members->items[index]);
@@ -377,7 +385,7 @@ bool displayio_group_fill_area(displayio_group_t *self, const _displayio_colorsp
     if (self->hidden == false) {
         for (int32_t i = self->members->len - 1; i >= 0; i--) {
             mp_obj_t layer;
-            #if CIRCUITPY_VECTORIO
+            #if CIRCUITPY_VECTORIO || CIRCUITPY_VIDEOCORE
             const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, self->members->items[i]);
             if (draw_protocol != NULL) {
                 layer = draw_protocol->draw_get_protocol_self(self->members->items[i]);
@@ -412,7 +420,7 @@ void displayio_group_finish_refresh(displayio_group_t *self) {
     self->item_removed = false;
     for (int32_t i = self->members->len - 1; i >= 0; i--) {
         mp_obj_t layer;
-        #if CIRCUITPY_VECTORIO
+        #if CIRCUITPY_VECTORIO || CIRCUITPY_VIDEOCORE
         const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, self->members->items[i]);
         if (draw_protocol != NULL) {
             layer = draw_protocol->draw_get_protocol_self(self->members->items[i]);
@@ -443,7 +451,7 @@ static displayio_area_t *group_get_refresh_areas_impl(displayio_group_t *self, d
 
     for (int32_t i = self->members->len - 1; i >= 0; i--) {
         mp_obj_t layer;
-        #if CIRCUITPY_VECTORIO
+        #if CIRCUITPY_VECTORIO || CIRCUITPY_VIDEOCORE
         const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, self->members->items[i]);
         if (draw_protocol != NULL) {
             layer = draw_protocol->draw_get_protocol_self(self->members->items[i]);
