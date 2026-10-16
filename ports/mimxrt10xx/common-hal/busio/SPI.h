@@ -17,6 +17,7 @@ typedef struct {
     LPSPI_Type *spi;
     bool has_lock;
     uint32_t baudrate;
+    uint32_t target_frequency;
     const mcu_periph_obj_t *clock;
     const mcu_periph_obj_t *mosi;
     const mcu_periph_obj_t *miso;

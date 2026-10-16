@@ -19,7 +19,15 @@
 #if IMXRT11XX
 #define LPSPI_MASTER_CLK_FREQ (24000000)
 #else
-#define LPSPI_MASTER_CLK_FREQ (CLOCK_GetFreq(kCLOCK_Usb1PllPfd0Clk) / (CLOCK_GetDiv(kCLOCK_LpspiDiv) + 1))
+#define LPSPI_MASTER_CLK_FREQ (lpspi_clock_freq())
+
+static uint32_t lpspi_clock_freq(void) {
+    // Indexed by the LPSPI_CLK_SEL mux setting.
+    static const clock_name_t sources[] = {
+        kCLOCK_Usb1PllPfd1Clk, kCLOCK_Usb1PllPfd0Clk, kCLOCK_SysPllClk, kCLOCK_SysPllPfd2Clk
+    };
+    return CLOCK_GetFreq(sources[CLOCK_GetMux(kCLOCK_LpspiMux)]) / (CLOCK_GetDiv(kCLOCK_LpspiDiv) + 1);
+}
 #endif
 
 #define MAX_SPI_BUSY_RETRIES 100
@@ -169,6 +177,7 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
     // Always start at 250khz which is what SD cards need. They are sensitive to
     // SPI bus noise before they are put into SPI mode.
     config.baudRate = 250000;
+    self->target_frequency = config.baudRate;
     LPSPI_MasterInit(self->spi, &config, LPSPI_MASTER_CLK_FREQ);
     LPSPI_Enable(self->spi, false);
     uint32_t tcrPrescaleValue;
@@ -219,8 +228,8 @@ bool common_hal_busio_spi_configure(busio_spi_obj_t *self,
 
     if ((polarity == common_hal_busio_spi_get_polarity(self)) &&
         (phase == common_hal_busio_spi_get_phase(self)) &&
-        (bits == ((self->spi->TCR & LPSPI_TCR_FRAMESZ_MASK) >> LPSPI_TCR_FRAMESZ_SHIFT)) + 1 &&
-        (baudrate == common_hal_busio_spi_get_frequency(self))) {
+        (bits == ((self->spi->TCR & LPSPI_TCR_FRAMESZ_MASK) >> LPSPI_TCR_FRAMESZ_SHIFT) + 1) &&
+        (baudrate == self->target_frequency)) {
         return true;
     }
 
@@ -246,6 +255,7 @@ bool common_hal_busio_spi_configure(busio_spi_obj_t *self,
     LPSPI_Enable(self->spi, false);
     self->baudrate = LPSPI_MasterSetBaudRate(self->spi, baudrate, LPSPI_MASTER_CLK_FREQ, &tcrPrescaleValue);
     LPSPI_Enable(self->spi, true);
+    self->target_frequency = baudrate;
 
     return true;
 }
