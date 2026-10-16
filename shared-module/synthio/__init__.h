@@ -22,6 +22,10 @@
 #include "shared-bindings/synthio/__init__.h"
 #include "shared-bindings/synthio/Biquad.h"
 
+#if defined(__ARM_FEATURE_SAT) && __ARM_FEATURE_SAT
+#include <arm_acle.h>
+#endif
+
 typedef struct {
     uint16_t dur;
     mp_obj_t note_obj[CIRCUITPY_SYNTHIO_MAX_CHANNELS];
@@ -97,4 +101,20 @@ extern mp_float_t synthio_global_rate_scale, synthio_global_W_scale;
 extern uint8_t synthio_global_tick;
 void shared_bindings_synthio_lfo_tick(uint32_t sample_rate, uint16_t num_samples);
 
-int16_t synthio_sat16(int32_t n, int rshift);
+// cleaner sat16 by http://www.moseleyinstruments.com/
+static inline int16_t synthio_sat16(int32_t n, int rshift) {
+    // Round towards 0 to avoid recirculating round-off noise.
+    n += (n >> 31) & ((1 << rshift) - 1);
+    n >>= rshift;
+    #if defined(__ARM_FEATURE_SAT) && __ARM_FEATURE_SAT
+    return __ssat(n, 16);
+    #else
+    if (n > 32767) {
+        return 32767;
+    }
+    if (n < -32768) {
+        return -32768;
+    }
+    return n;
+    #endif
+}

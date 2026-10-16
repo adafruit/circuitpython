@@ -24,27 +24,6 @@ static const int16_t square_wave[] = {-32768, 32767};
 static const uint16_t notes[] = {8372, 8870, 9397, 9956, 10548, 11175, 11840,
                                  12544, 13290, 14080, 14917, 15804}; // 9th octave
 
-// cleaner sat16 by http://www.moseleyinstruments.com/
-int16_t synthio_sat16(int32_t n, int rshift) {
-    // we should always round towards 0
-    // to avoid recirculating round-off noise
-    //
-    // a 2s complement positive number is always
-    // rounded down, so we only need to take
-    // care of negative numbers
-    if (n < 0) {
-        n = n + (~(0xFFFFFFFFUL << rshift));
-    }
-    n = n >> rshift;
-    if (n > 32767) {
-        return 32767;
-    }
-    if (n < -32768) {
-        return -32768;
-    }
-    return n;
-}
-
 static int64_t round_float_to_int64(mp_float_t f) {
     return (int64_t)(f + MICROPY_FLOAT_CONST(0.5));
 }
