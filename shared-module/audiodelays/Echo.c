@@ -298,6 +298,11 @@ audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *
         mp_float_t mix = synthio_block_slot_get_limited(&self->mix, MICROPY_FLOAT_CONST(0.0), MICROPY_FLOAT_CONST(1.0)) * MICROPY_FLOAT_CONST(2.0);
         mp_float_t decay = synthio_block_slot_get_limited(&self->decay, MICROPY_FLOAT_CONST(0.0), MICROPY_FLOAT_CONST(1.0));
 
+        int32_t decay_scaled = (int32_t)(decay * MICROPY_FLOAT_CONST(32768.0));
+        int32_t echo_scaled = (int32_t)(MIN(mix, MICROPY_FLOAT_CONST(1.0)) * MICROPY_FLOAT_CONST(32768.0));
+        int32_t sample_scaled = (int32_t)(MIN(MICROPY_FLOAT_CONST(2.0) - mix,
+            MICROPY_FLOAT_CONST(1.0)) * MICROPY_FLOAT_CONST(32768.0));
+
         mp_float_t f_delay_ms = synthio_block_slot_get(&self->delay_ms);
         if (MICROPY_FLOAT_C_FUN(fabs)(self->current_delay_ms - f_delay_ms) >= self->sample_ms) {
             recalculate_delay(self, f_delay_ms);
@@ -340,16 +345,16 @@ audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *
                         next_buffer_pos = echo_buffer_pos + self->echo_buffer_rate;
 
                         for (uint32_t j = echo_buffer_pos >> 8; j < next_buffer_pos >> 8; j++) {
-                            word = (int16_t)(echo_buffer[(j % echo_buf_len) + echo_buffer_offset] * decay);
+                            word = (int16_t)((echo_buffer[(j % echo_buf_len) + echo_buffer_offset] * decay_scaled) >> 15);
                             echo_buffer[(j % echo_buf_len) + echo_buffer_offset] = (int16_t)audiofilters_process_filter_chain(&self->filter, self->base.channel_count, !!echo_buffer_offset, word);
                         }
                     } else {
                         echo = echo_buffer[echo_buffer_pos + echo_buffer_offset];
-                        word = (int16_t)(echo * decay);
+                        word = (int16_t)((echo * decay_scaled) >> 15);
                         echo_buffer[echo_buffer_pos++ + echo_buffer_offset] = (int16_t)audiofilters_process_filter_chain(&self->filter, self->base.channel_count, !!echo_buffer_offset, word);
                     }
 
-                    word = (int16_t)(echo * MIN(mix, MICROPY_FLOAT_CONST(1.0)));
+                    word = (int16_t)((echo * echo_scaled) >> 15);
 
                     if (MP_LIKELY(self->base.bits_per_sample == 16)) {
                         word_buffer[i] = word;
@@ -418,13 +423,13 @@ audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *
                         next_buffer_pos = echo_buffer_pos + self->echo_buffer_rate;
                     } else {
                         echo = echo_buffer[echo_buffer_pos + echo_buffer_offset];
-                        word = (int32_t)(echo * decay + sample_word);
+                        word = ((echo * decay_scaled) >> 15) + sample_word;
                     }
 
                     if (MP_LIKELY(self->base.bits_per_sample == 16)) {
                         if (self->freq_shift) {
                             for (uint32_t j = echo_buffer_pos >> 8; j < next_buffer_pos >> 8; j++) {
-                                word = (int32_t)(echo_buffer[(j % echo_buf_len) + echo_buffer_offset] * decay + sample_word);
+                                word = ((echo_buffer[(j % echo_buf_len) + echo_buffer_offset] * decay_scaled) >> 15) + sample_word;
                                 word = synthio_mix_down_sample(word, SYNTHIO_MIX_DOWN_SCALE(2));
                                 echo_buffer[(j % echo_buf_len) + echo_buffer_offset] = (int16_t)audiofilters_process_filter_chain(&self->filter, self->base.channel_count, !!echo_buffer_offset, word);
                             }
@@ -435,7 +440,7 @@ audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *
                     } else {
                         if (self->freq_shift) {
                             for (uint32_t j = echo_buffer_pos >> 8; j < next_buffer_pos >> 8; j++) {
-                                word = (int32_t)(echo_buffer[(j % echo_buf_len) + echo_buffer_offset] * decay + sample_word);
+                                word = ((echo_buffer[(j % echo_buf_len) + echo_buffer_offset] * decay_scaled) >> 15) + sample_word;
                                 // Do not have mix_down for 8 bit so just hard cap samples into 1 byte
                                 word = MIN(MAX(word, -128), 127);
                                 echo_buffer[(j % echo_buf_len) + echo_buffer_offset] = (int8_t)audiofilters_process_filter_chain(&self->filter, self->base.channel_count, !!echo_buffer_offset, word);
@@ -447,8 +452,7 @@ audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *
                         }
                     }
 
-                    word = (int32_t)((sample_word * MIN(MICROPY_FLOAT_CONST(2.0) - mix, MICROPY_FLOAT_CONST(1.0)))
-                        + (echo * MIN(mix, MICROPY_FLOAT_CONST(1.0))));
+                    word = ((sample_word * sample_scaled) >> 15) + ((echo * echo_scaled) >> 15);
                     word = synthio_mix_down_sample(word, SYNTHIO_MIX_DOWN_SCALE(2));
 
                     if (MP_LIKELY(self->base.bits_per_sample == 16)) {
