@@ -231,12 +231,16 @@ size_t common_hal_busio_uart_write(busio_uart_obj_t *self, const uint8_t *data, 
             left_to_write--;
         }
         RUN_BACKGROUND_TASKS;
+        // Allow user to break out of a write blocked by flow control.
+        if (mp_hal_is_interrupted()) {
+            break;
+        }
     }
     if (self->rs485_dir_pin != NO_PIN) {
         uart_tx_wait_blocking(self->uart);
         gpio_put(self->rs485_dir_pin, self->rs485_invert);
     }
-    return len;
+    return len - left_to_write;
 }
 
 // Read characters.

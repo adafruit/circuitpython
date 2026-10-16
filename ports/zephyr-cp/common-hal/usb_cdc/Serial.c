@@ -22,7 +22,8 @@ size_t common_hal_usb_cdc_serial_read(usb_cdc_serial_obj_t *self, uint8_t *data,
 }
 
 size_t common_hal_usb_cdc_serial_write(usb_cdc_serial_obj_t *self, const uint8_t *data, size_t len, int *errcode) {
-    return common_hal_busio_uart_write(self, data, len, errcode);
+    zephyr_uart_write_blocking(self, data, len);
+    return len;
 }
 
 uint32_t common_hal_usb_cdc_serial_get_in_waiting(usb_cdc_serial_obj_t *self) {

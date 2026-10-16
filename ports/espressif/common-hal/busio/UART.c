@@ -374,12 +374,16 @@ size_t common_hal_busio_uart_write(busio_uart_obj_t *self, const uint8_t *data, 
         left_to_write -= count;
         data += count;
         RUN_BACKGROUND_TASKS;
+        // Allow user to break out of a write blocked by flow control.
+        if (mp_hal_is_interrupted()) {
+            break;
+        }
     }
-    while (uart_wait_tx_done(self->uart_num, 0) == ESP_ERR_TIMEOUT) {
+    while (uart_wait_tx_done(self->uart_num, 0) == ESP_ERR_TIMEOUT && !mp_hal_is_interrupted()) {
         RUN_BACKGROUND_TASKS;
     }
 
-    return len;
+    return len - left_to_write;
 }
 
 uint32_t common_hal_busio_uart_get_baudrate(busio_uart_obj_t *self) {

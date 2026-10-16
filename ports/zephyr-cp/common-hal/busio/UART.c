@@ -36,8 +36,8 @@ static void resume_rx(busio_uart_obj_t *self) {
 }
 
 /*
- * Read characters from UART until line end is detected. Afterwards push the
- * data to the message queue.
+ * Feed pending TX bytes to the driver, then move received characters into
+ * the message queue.
  */
 static void serial_cb(const struct device *dev, void *user_data) {
     busio_uart_obj_t *self = (busio_uart_obj_t *)user_data;
@@ -45,6 +45,18 @@ static void serial_cb(const struct device *dev, void *user_data) {
     uint8_t c;
 
     uart_irq_update(dev);
+
+    if (self->tx_len > 0 && uart_irq_tx_ready(dev)) {
+        int sent = uart_fifo_fill(dev, self->tx_data, self->tx_len);
+        if (sent > 0) {
+            self->tx_data += sent;
+            self->tx_len -= sent;
+        }
+        if (self->tx_len == 0) {
+            uart_irq_tx_disable(dev);
+            k_sem_give(&self->tx_done);
+        }
+    }
 
     if (!uart_irq_rx_ready(dev)) {
         return;
@@ -102,6 +114,8 @@ mp_obj_t common_hal_busio_uart_construct_from_device(busio_uart_obj_t *self, con
 
     self->timeout = K_FOREVER;
     self->write_timeout = K_FOREVER;
+    self->tx_len = 0;
+    k_sem_init(&self->tx_done, 0, 1);
     self->rx_paused = false;
     self->flow_control = false;
     self->sigint_enabled = sigint_enabled;
@@ -233,13 +247,36 @@ size_t common_hal_busio_uart_read(busio_uart_obj_t *self, uint8_t *data, size_t 
     return count;
 }
 
-// Write characters.
+// Write characters. serial_cb() feeds the driver from the TX interrupt, so
+// this thread only waits and can stop on Ctrl-C.
 size_t common_hal_busio_uart_write(busio_uart_obj_t *self, const uint8_t *data, size_t len, int *errcode) {
-    for (int i = 0; i < len; i++) {
+    if (len == 0) {
+        return 0;
+    }
+    k_sem_reset(&self->tx_done);
+    self->tx_data = data;
+    self->tx_len = len;
+    uart_irq_tx_enable(self->uart_device);
+    while (k_sem_take(&self->tx_done, K_MSEC(10)) != 0) {
+        RUN_BACKGROUND_TASKS;
+        if (mp_hal_is_interrupted()) {
+            break;
+        }
+    }
+    uart_irq_tx_disable(self->uart_device);
+
+    unsigned int key = irq_lock();
+    size_t not_sent = self->tx_len;
+    self->tx_len = 0;
+    irq_unlock(key);
+
+    return len - not_sent;
+}
+
+void zephyr_uart_write_blocking(busio_uart_obj_t *self, const uint8_t *data, size_t len) {
+    for (size_t i = 0; i < len; i++) {
         uart_poll_out(self->uart_device, data[i]);
     }
-
-    return len;
 }
 
 uint32_t common_hal_busio_uart_get_baudrate(busio_uart_obj_t *self) {

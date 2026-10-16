@@ -20,6 +20,11 @@ typedef struct {
 
     k_timeout_t timeout;
     k_timeout_t write_timeout;
+    // Bytes not yet handed to the driver by serial_cb(), and a semaphore it
+    // gives when they are all sent.
+    const uint8_t *tx_data;
+    size_t tx_len;
+    struct k_sem tx_done;
     byte *receiver_buffer;
     const mcu_pin_obj_t *tx;
     const mcu_pin_obj_t *rx;
@@ -44,6 +49,13 @@ mp_obj_t common_hal_busio_uart_construct_from_device(busio_uart_obj_t *self, con
 
 // Internal helper for clearing buffer
 void common_hal_busio_uart_clear_rx_buffer(busio_uart_obj_t *self);
+
+// Write all of data with uart_poll_out(). Used by the console and usb_cdc
+// instead of common_hal_busio_uart_write(), which stops early on a pending
+// Ctrl-C or reload and would cut console output short. With the host port
+// closed, the CDC ACM driver drops this output instead of blocking, as on
+// TinyUSB ports.
+void zephyr_uart_write_blocking(busio_uart_obj_t *self, const uint8_t *data, size_t len);
 
 // Zephyr-port-specific write-timeout accessors, used by usb_cdc/Serial.c.
 mp_float_t common_hal_busio_uart_get_write_timeout(busio_uart_obj_t *self);
