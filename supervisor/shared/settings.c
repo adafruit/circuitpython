@@ -393,6 +393,15 @@ settings_err_t settings_get_str(const char *key, char *value, size_t value_len) 
     return result;
 }
 
+// TOML does not allow leading zeros on decimal integers or on the integer part of floats.
+// https://toml.io/en/v1.0.0#integer and https://toml.io/en/v1.0.0#float
+static bool has_leading_zero(const char *str) {
+    if (*str == '+' || *str == '-') {
+        str++;
+    }
+    return str[0] == '0' && unichar_isdigit(str[1]);
+}
+
 static settings_err_t get_int(const char *key, mp_int_t *value) {
     char buf[16];
     bool quoted;
@@ -400,7 +409,7 @@ static settings_err_t get_int(const char *key, mp_int_t *value) {
     if (result != SETTINGS_OK) {
         return result;
     }
-    if (quoted) {
+    if (quoted || has_leading_zero(buf)) {
         return SETTINGS_ERR_BAD_VALUE;
     }
     char *end;
@@ -459,7 +468,7 @@ static settings_err_t get_float(const char *key, mp_float_t *value) {
     if (result != SETTINGS_OK) {
         return result;
     }
-    if (quoted) {
+    if (quoted || has_leading_zero(buf)) {
         return SETTINGS_ERR_BAD_VALUE;
     }
 

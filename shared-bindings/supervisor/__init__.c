@@ -384,6 +384,9 @@ MP_DEFINE_CONST_FUN_OBJ_KW(supervisor_set_usb_identification_obj, 0, supervisor_
 //|       The values are returned as Python ``True`` or ``False`` values.
 //|     - ``float``: signed or unsigned decimal number with a ``.`` or exponent, or ``inf``, ``inf``, ``nan``.
 //|
+//|     Leading zeros are not allowed in integers or in the integer part of floats:
+//|     ``017`` and ``01.5`` are errors.
+//|
 //|     Example::
 //|
 //|         # settings.toml:
