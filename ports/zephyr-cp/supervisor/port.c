@@ -303,11 +303,8 @@ void reset_port(void) {
 }
 
 void reset_to_bootloader(void) {
-    // The 1200-bps CDC disconnect (and the supervisor's bootloader reset
-    // cause) asks for the update mode. On bootloaders that distinguish the
-    // flavors this is the serial DFU one; on the fork's MCUboot adaboot both
-    // flavors end up in the same update mode.
-    adaboot_request_update_mode(false);
+    // Ask for UF2 mode so the bootloader shows its drive.
+    adaboot_request_update_mode(true);
     reset_cpu();
 }
 

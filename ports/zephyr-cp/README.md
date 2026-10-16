@@ -201,7 +201,12 @@ boards like `nrf54l15dk`). Boards that boot the stock Adafruit nRF52
 bootloader (the Adafruit boards) read the request from the raw GPREGRET
 register instead and need no bootloader-side changes.
 
-`nordic_nrf54l15dk` is the first board with this enabled.
+`nordic_nrf54l15dk` is the first MCUboot board with this enabled.
+
+RP2 boards have no MCUboot. The request is a flag in a few bytes of RAM that
+survive the reset. Early in the next boot Zephyr sees the flag and jumps to
+the chip's built-in ROM bootloader, which shows up as the RPI-RP2 (RP2040) or
+RP2350 UF2 drive. adaboot sets up that RAM region for the RP2 boards.
 
 ## Testing other boards
 

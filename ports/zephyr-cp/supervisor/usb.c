@@ -27,6 +27,7 @@
 
 #include "shared-module/storage/__init__.h"
 #include "supervisor/filesystem.h"
+#include "supervisor/port.h"
 #include "supervisor/shared/reload.h"
 
 #include <zephyr/logging/log.h>
@@ -237,6 +238,19 @@ static void update_console_flow_control(void) {
     uart_configure(console_dev, &config);
 }
 
+// First enabled CDC, as on TinyUSB ports.
+static const struct device *touch_cdc;
+
+static bool touch_requested(void) {
+    uint32_t baudrate = 0;
+    uint32_t dtr = 1;
+    if (uart_line_ctrl_get(touch_cdc, UART_LINE_CTRL_BAUD_RATE, &baudrate) != 0 ||
+        uart_line_ctrl_get(touch_cdc, UART_LINE_CTRL_DTR, &dtr) != 0) {
+        return false;
+    }
+    return baudrate == 1200 && dtr == 0;
+}
+
 static void _msg_cb(struct usbd_context *const ctx, const struct usbd_msg *msg) {
     LOG_INF("USBD message: %s", usbd_msg_type_string(msg->type));
 
@@ -277,6 +291,15 @@ static void _msg_cb(struct usbd_context *const ctx, const struct usbd_msg *msg) 
         console_dtr = dtr != 0;
     }
     update_console_flow_control();
+
+    // 1200 baud + DTR low, in either order.
+    if ((msg->type == USBD_MSG_CDC_ACM_LINE_CODING ||
+         msg->type == USBD_MSG_CDC_ACM_CONTROL_LINE_STATE) &&
+        msg->dev == touch_cdc && touch_requested()) {
+        // Detach so the host sees a disconnect.
+        usbd_disable(&main_usbd);
+        reset_to_bootloader();
+    }
 }
 
 void usb_init(void) {
@@ -440,6 +463,12 @@ void usb_init(void) {
         USB_BCC_MISCELLANEOUS, 0x02, 0x01);
     printk("Setting self powered\n");
     usbd_self_powered(&main_usbd, attributes & USB_SCD_SELF_POWERED);
+
+    if (usb_cdc_console_enabled()) {
+        touch_cdc = DEVICE_DT_GET(DT_NODELABEL(cdc_acm_console));
+    } else if (usb_cdc_data_enabled()) {
+        touch_cdc = DEVICE_DT_GET(DT_NODELABEL(cdc_acm_data));
+    }
 
     printk("Registering callback\n");
     err = usbd_msg_register_cb(&main_usbd, _msg_cb);
