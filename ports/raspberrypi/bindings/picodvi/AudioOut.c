@@ -116,7 +116,9 @@ static void check_for_deinit(picodvi_audioout_obj_t *self) {
 //|         Does not block. Use `playing` to block.
 //|
 //|         Sample must be an `audiocore.WaveFile`, `audiocore.RawSample`, `audiomixer.Mixer`,
-//|         `synthio.Synthesizer` or `audiomp3.MP3Decoder` with a sample rate of 48000 Hz.
+//|         `synthio.Synthesizer` or `audiomp3.MP3Decoder` with a sample rate of 32000, 44100
+//|         or 48000 Hz. Other rates raise `ValueError`; use `audiospeed.Resampler` to convert
+//|         them. Changing rate between samples can make the display mute briefly.
 //|
 //|         Mono samples will be converted to stereo by copying value to both the left channel and the right channel.
 //|

@@ -4,7 +4,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-// 48 kHz stereo DVI audio for the RP2350 picodvi Framebuffer.
+// 32, 44.1 or 48 kHz stereo DVI audio for the RP2350 picodvi Framebuffer.
 // No interrupt-time allocation, sample conversion, packet encoding, or Python callbacks.
 
 #include <string.h>
@@ -24,14 +24,26 @@
 #include "supervisor/background_callback.h"
 #include "supervisor/port.h"
 
-#define DVI_AUDIO_RATE 48000u
+typedef struct {
+    uint32_t sample_rate;
+    // The usual ACR N, for when no N gives an exact CTS.
+    uint32_t usual_n;
+} dvi_audio_rate_t;
+
+// The basic audio rates every DVI sink takes.
+static const dvi_audio_rate_t dvi_audio_rates[] = {
+    { 32000, 4096 },
+    { 44100, 6272 },
+    { 48000, 6144 },
+};
+#define DVI_AUDIO_RATE_COUNT MP_ARRAY_SIZE(dvi_audio_rates)
 #define DVI_AUDIO_H_TOTAL (MODE_640_H_FRONT_PORCH + MODE_640_H_SYNC_WIDTH + MODE_640_H_BACK_PORCH + MODE_640_H_ACTIVE_PIXELS)
 // Lines per frame that carry a data island. At the usual 25 MHz pixel clock
-// a 625 line frame needs 240 sample packets, 20 ACR packets and 2
+// and 48 kHz a 625 line frame needs 240 sample packets, 20 ACR packets and 2
 // InfoFrames.
 #define DVI_AUDIO_SLOTS 280
 // Buffers for encoded sample packets. Other packets never change, so their
-// islands point at fixed copies. 160 hold about 13 ms of audio.
+// islands point at fixed copies. 160 hold about 13 ms of 48 kHz audio.
 #define DVI_AUDIO_POOL 160
 // Packet words of an island, without its two guard band words at each end.
 #define DVI_AUDIO_SLOT_WORDS (HSTX_DATA_ISLAND_WORDS - 4)
@@ -82,8 +94,12 @@ typedef struct dvi_audio_state {
     size_t pool_tail;
     size_t pool_count;
     uint32_t pixel_clock;
-    // ACR packets per second, 128 * 48000 / N.
-    uint32_t acr_rate;
+    // The rate being sent, and the rate play() asked for, which takes over
+    // from the next slot written. Indexes into dvi_audio_rates.
+    size_t rate_index;
+    size_t next_rate_index;
+    // ACR packets per second at each rate, 128 * fs / N.
+    uint32_t acr_rate[DVI_AUDIO_RATE_COUNT];
     // Sample and ACR timing, carried from slot to slot.
     uint64_t sample_phase;
     uint64_t acr_phase;
@@ -100,10 +116,10 @@ typedef struct dvi_audio_state {
     uint16_t slot_line[DVI_AUDIO_SLOTS];
     uint8_t slot_samples[DVI_AUDIO_SLOTS];
     // Packets that never change, for blanking [0] and vsync [1] lines.
-    dvi_audio_island_t acr[2];
+    dvi_audio_island_t acr[DVI_AUDIO_RATE_COUNT][2];
     dvi_audio_island_t null_packet[2];
     dvi_audio_island_t silence[2];
-    dvi_audio_island_t audio_infoframe;
+    dvi_audio_island_t audio_infoframe[DVI_AUDIO_RATE_COUNT];
     dvi_audio_island_t avi_infoframe;
     uint32_t prefix[2][DVI_AUDIO_PREFIX_WORDS];
     uint32_t suffix_blank[2][DVI_AUDIO_SUFFIX_BLANK_WORDS];
@@ -215,19 +231,17 @@ static uint32_t *dvi_audio_slot_island(dvi_audio_state_t *audio, size_t slot) {
     return &audio->commands[(audio->slot_entry[slot] + 1) * audio->command_size - 1];
 }
 
-static void dvi_audio_init_packets(dvi_audio_state_t *audio) {
-    hstx_packet_t packet;
-    // Pick N so that every frame has the same whole number of ACR packets,
-    // and CTS is exact. Then a frame of silence repeats exactly and needs no
-    // rewriting. N may be anything from 128 * fs / 1500 to 128 * fs / 300.
-    // If no N fits, use the usual 6144 and round CTS.
+// Pick N so that every frame has the same whole number of ACR packets, and
+// CTS is exact. Then a frame of silence repeats exactly and needs no
+// rewriting. N may be anything from 128 * fs / 1500 to 128 * fs / 300.
+// If no N fits, use the usual N for the rate and round CTS.
+static uint32_t dvi_audio_find_n(uint32_t pixel_clock, const dvi_audio_rate_t *rate_info) {
     const uint64_t frame_pixels = (uint64_t)MODE_640_V_TOTAL_LINES * DVI_AUDIO_H_TOTAL;
-    const uint32_t n_times_rate = 128 * DVI_AUDIO_RATE;
-    uint32_t n = 6144;
-    uint32_t per_frame = (1000 * frame_pixels + audio->pixel_clock / 2) / audio->pixel_clock;
+    const uint32_t n_times_rate = 128 * rate_info->sample_rate;
+    uint32_t per_frame = (1000 * frame_pixels + pixel_clock / 2) / pixel_clock;
     for (uint32_t k = per_frame - 1; k <= per_frame + 1; k++) {
         // ACR packets per second when each frame has k.
-        uint64_t rate = (uint64_t)k * audio->pixel_clock;
+        uint64_t rate = (uint64_t)k * pixel_clock;
         if (k == 0 || rate % frame_pixels != 0) {
             continue;
         }
@@ -237,30 +251,43 @@ static void dvi_audio_init_packets(dvi_audio_state_t *audio) {
         }
         uint32_t candidate = n_times_rate / rate;
         if (candidate >= n_times_rate / 1500 && candidate <= n_times_rate / 300 &&
-            ((uint64_t)audio->pixel_clock * candidate) % n_times_rate == 0) {
-            n = candidate;
-            break;
+            ((uint64_t)pixel_clock * candidate) % n_times_rate == 0) {
+            return candidate;
         }
     }
-    audio->acr_rate = n_times_rate / n;
-    uint32_t cts = ((uint64_t)audio->pixel_clock * n + n_times_rate / 2) / n_times_rate;
-    hstx_packet_set_acr(&packet, n, cts);
-    for (int vsync = 0; vsync < 2; vsync++) {
-        dvi_audio_encode(audio->acr[vsync], &packet, vsync);
+    return rate_info->usual_n;
+}
+
+static void dvi_audio_init_packets(dvi_audio_state_t *audio) {
+    hstx_packet_t packet;
+    for (size_t rate_index = 0; rate_index < DVI_AUDIO_RATE_COUNT; rate_index++) {
+        const dvi_audio_rate_t *rate_info = &dvi_audio_rates[rate_index];
+        const uint32_t n_times_rate = 128 * rate_info->sample_rate;
+        uint32_t n = dvi_audio_find_n(audio->pixel_clock, rate_info);
+        audio->acr_rate[rate_index] = n_times_rate / n;
+        uint32_t cts = ((uint64_t)audio->pixel_clock * n + n_times_rate / 2) / n_times_rate;
+        hstx_packet_set_acr(&packet, n, cts);
+        for (int vsync = 0; vsync < 2; vsync++) {
+            dvi_audio_encode(audio->acr[rate_index][vsync], &packet, vsync);
+        }
+        // The first two slots of every frame carry the InfoFrames.
+        hstx_packet_set_audio_infoframe(&packet, rate_info->sample_rate, 2, 16);
+        dvi_audio_encode(audio->audio_infoframe[rate_index], &packet, dvi_audio_slot_vsync(audio, 0));
     }
+    // 48 kHz until play() asks for another rate.
+    audio->rate_index = DVI_AUDIO_RATE_COUNT - 1;
+    audio->next_rate_index = audio->rate_index;
     hstx_packet_init(&packet);
     for (int vsync = 0; vsync < 2; vsync++) {
         dvi_audio_encode(audio->null_packet[vsync], &packet, vsync);
     }
-    // Frame position 4 never sets the block start flag.
+    // Frame position 4 never sets the block start flag, and frames 4 to 7
+    // carry no channel status bits, so silence is the same at every rate.
     audio_sample_t silence[4] = {{0}};
-    hstx_packet_set_audio_samples(&packet, silence, 4, 4);
+    hstx_packet_set_audio_samples(&packet, silence, 4, 4, dvi_audio_rates[DVI_AUDIO_RATE_COUNT - 1].sample_rate);
     for (int vsync = 0; vsync < 2; vsync++) {
         dvi_audio_encode(audio->silence[vsync], &packet, vsync);
     }
-    // The first two slots of every frame carry the InfoFrames.
-    hstx_packet_set_audio_infoframe(&packet, DVI_AUDIO_RATE, 2, 16);
-    dvi_audio_encode(audio->audio_infoframe, &packet, dvi_audio_slot_vsync(audio, 0));
     // Unspecified VIC: preserve CircuitPython's existing 625-line timing.
     hstx_packet_set_avi_infoframe(&packet, 0, 0);
     dvi_audio_encode(audio->avi_infoframe, &packet, dvi_audio_slot_vsync(audio, 1));
@@ -404,8 +431,8 @@ static const uint32_t *dvi_audio_next_packet(dvi_audio_state_t *audio, const int
     size_t previous = slot == 0 ? DVI_AUDIO_SLOTS - 1 : slot - 1;
     size_t lines = (audio->slot_line[slot] + MODE_640_V_TOTAL_LINES - audio->slot_line[previous]) % MODE_640_V_TOTAL_LINES;
     const uint64_t pixel_clock = audio->pixel_clock;
-    uint64_t sample_phase = audio->sample_phase + (uint64_t)lines * DVI_AUDIO_RATE * DVI_AUDIO_H_TOTAL;
-    uint64_t acr_phase = audio->acr_phase + (uint64_t)lines * audio->acr_rate * DVI_AUDIO_H_TOTAL;
+    uint64_t sample_phase = audio->sample_phase + (uint64_t)lines * dvi_audio_rates[audio->rate_index].sample_rate * DVI_AUDIO_H_TOTAL;
+    uint64_t acr_phase = audio->acr_phase + (uint64_t)lines * audio->acr_rate[audio->rate_index] * DVI_AUDIO_H_TOTAL;
     // Never let sample timing build up a long burst.
     if (sample_phase > pixel_clock * 12) {
         sample_phase = pixel_clock * 12;
@@ -414,12 +441,12 @@ static const uint32_t *dvi_audio_next_packet(dvi_audio_state_t *audio, const int
     const uint32_t *island;
     *count = 0;
     if (slot == 0) {
-        island = audio->audio_infoframe;
+        island = audio->audio_infoframe[audio->rate_index];
     } else if (slot == 1) {
         island = audio->avi_infoframe;
     } else if (acr_phase >= pixel_clock) {
         acr_phase -= pixel_clock;
-        island = audio->acr[vsync];
+        island = audio->acr[audio->rate_index][vsync];
     } else {
         // Sample packets carry four frames, fewer only at the end of a
         // sample.
@@ -438,7 +465,8 @@ static const uint32_t *dvi_audio_next_packet(dvi_audio_state_t *audio, const int
                 packet_samples[i].right = samples[2 * i + 1];
             }
             hstx_packet_t packet;
-            audio->channel_frame = hstx_packet_set_audio_samples(&packet, packet_samples, n, audio->channel_frame);
+            audio->channel_frame = hstx_packet_set_audio_samples(&packet, packet_samples, n, audio->channel_frame,
+                dvi_audio_rates[audio->rate_index].sample_rate);
             uint32_t *buffer = audio->pool[audio->pool_head];
             dvi_audio_encode(buffer, &packet, vsync);
             audio->pool_position[audio->pool_head] = audio->write_position;
@@ -466,7 +494,9 @@ static const uint32_t *dvi_audio_next_packet(dvi_audio_state_t *audio, const int
 //
 // With nothing to play, every frame comes out the same once the timing at
 // slot 0 repeats. Then the slots already hold the right packets, and this
-// stops writing until there is something to play.
+// stops writing until there is something to play. At 44.1 kHz a frame holds
+// 882 samples, not a whole number of packets, so frames never repeat and
+// silence keeps being written.
 static bool dvi_audio_fill_slot(picodvi_framebuffer_obj_t *self, dvi_audio_state_t *audio, const int16_t *samples, size_t available, bool wait, size_t *used) {
     *used = 0;
     bool idle = available == 0 && !wait;
@@ -489,6 +519,7 @@ static bool dvi_audio_fill_slot(picodvi_framebuffer_obj_t *self, dvi_audio_state
         audio->idle_steady = false;
         audio->idle_run = 0;
     }
+    audio->rate_index = audio->next_rate_index;
     // Free the pool buffers DMA has finished with.
     while (audio->pool_count > 0 && audio->pool_position[audio->pool_tail] < read) {
         audio->pool_tail = (audio->pool_tail + 1) % DVI_AUDIO_POOL;
@@ -692,6 +723,12 @@ static void picodvi_framebuffer_audio_stop(picodvi_framebuffer_obj_t *self) {
     memset(audio->slot_samples, 0, sizeof(audio->slot_samples));
 }
 
+// Sends the rate at rate_index in dvi_audio_rates from the next slot written.
+// The packets already written ahead of DMA keep the old rate.
+static void picodvi_framebuffer_audio_set_rate(picodvi_framebuffer_obj_t *self, size_t rate_index) {
+    self->dvi_audio->next_rate_index = rate_index;
+}
+
 // Convert up to space frames of the current sample buffer into the stage.
 static void audioout_convert(picodvi_audioout_obj_t *self, size_t space) {
     audiosample_base_t *base = audiosample_cast_obj(self->sample);
@@ -885,12 +922,19 @@ void common_hal_picodvi_audioout_deinit(picodvi_audioout_obj_t *self) {
 
 void common_hal_picodvi_audioout_play(picodvi_audioout_obj_t *self, mp_obj_t sample, bool loop) {
     audiosample_base_t *base = audiosample_check(sample);
-    mp_arg_validate_int(base->sample_rate, 48000, MP_QSTR_sample_rate);
+    size_t rate_index = 0;
+    while (rate_index < DVI_AUDIO_RATE_COUNT && dvi_audio_rates[rate_index].sample_rate != base->sample_rate) {
+        rate_index++;
+    }
+    if (rate_index == DVI_AUDIO_RATE_COUNT) {
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q"), MP_QSTR_sample_rate);
+    }
     mp_arg_validate_int_range(base->channel_count, 1, 2, MP_QSTR_channel_count);
     if (base->bits_per_sample != 8 && base->bits_per_sample != 16) {
         mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q"), MP_QSTR_bits_per_sample);
     }
     common_hal_picodvi_audioout_stop(self);
+    picodvi_framebuffer_audio_set_rate(self->framebuffer, rate_index);
     audiosample_reset_buffer(sample, false, 0);
     self->bytes_per_frame = base->channel_count * base->bits_per_sample / 8;
     self->source_frames = 0;

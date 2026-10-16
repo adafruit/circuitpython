@@ -34,5 +34,6 @@ void hstx_packet_init(hstx_packet_t *packet);
 void hstx_packet_set_acr(hstx_packet_t *packet, uint32_t n, uint32_t cts);
 void hstx_packet_set_audio_infoframe(hstx_packet_t *packet, uint32_t sample_rate, uint8_t channels, uint8_t bits_per_sample);
 void hstx_packet_set_avi_infoframe(hstx_packet_t *packet, uint8_t vic, uint8_t pixel_repetition);
-int hstx_packet_set_audio_samples(hstx_packet_t *packet, const audio_sample_t *samples, int num_samples, int frame_count);
+int hstx_packet_set_audio_samples(hstx_packet_t *packet, const audio_sample_t *samples, int num_samples, int frame_count,
+    uint32_t sample_rate);
 void hstx_encode_data_island(hstx_data_island_t *out, const hstx_packet_t *packet, bool vsync_active, bool hsync_active);
