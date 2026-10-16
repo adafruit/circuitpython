@@ -28,6 +28,12 @@ make BOARD=nordic_nrf5340dk
 This uses Zephyr's cmake to generate Makefiles that then delegate to
 `tools/cpbuild/build_circuitpython.py` to build the CircuitPython bits in parallel.
 
+`DEBUG=1` adds the debug Kconfig settings in `debug.conf`. `CONSOLE=1` (implied
+by `DEBUG=1`) applies a board's `console.overlay`, if it has one, together with
+the port's `console.conf`, which turns the Zephyr UART console back on. Boards
+whose console UART pins are also user pins, such as the Feather nRF52840, have
+the Zephyr UART console only in those builds.
+
 ## Native simulator build container
 
 Building the native sim requires `libsdl2-dev:i386` and other 32bit dependencies that

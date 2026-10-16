@@ -1,0 +1,319 @@
+/* Partition layout is owned by the mcuboot fork
+ * (dts/adafruit/adafruit_itsybitsy_nrf52840.dtsi) and applied to this image by
+ * sysbuild. This overlay only adds board/app config. */
+/* No Zephyr console by default, so TX/RX are free for busio.UART. A CONSOLE=1
+ * build puts the console back on UART0 (console.overlay). */
+/ {
+	chosen {
+		/delete-property/ zephyr,console;
+		/delete-property/ zephyr,shell-uart;
+		/delete-property/ zephyr,uart-mcumgr;
+		/delete-property/ zephyr,bt-mon-uart;
+		/delete-property/ zephyr,bt-c2h-uart;
+	};
+
+	aliases {
+		/delete-property/ led-strip;
+	};
+};
+
+&zephyr_udc0 {
+	/delete-node/ board_cdc_acm_uart;
+};
+
+// board.I2C(), board.SPI() and board.UART(). The upstream board has no
+// header bus labels. See BOARD_BUS_LABELS in cptools/zephyr2cp.py.
+board_i2c: &i2c0 {};
+board_spi: &spi2 {};
+board_serial: &uart0 {};
+
+// The upstream board calls the user LED red, but it is blue. The label
+// becomes a board pin name.
+&led0 {
+	label = "Blue LED";
+};
+
+// The upstream board clocks QSPI at 32 MHz, which the GD25Q16C doesn't do
+// reliably here: the filesystem fails with I/O errors. Use 16 MHz, like the
+// Feather nRF52840 and ports/nordic (adafruit/circuitpython#1418).
+&gd25q16 {
+	sck-frequency = <16000000>;
+};
+
+// Bus instances enabled with all pins disconnected and marked
+// zephyr,deferred-init so nothing is claimed at boot: the iobroker
+// initializes and routes a device to arbitrary pins when a busio object is
+// constructed, and de-initializes it on release: I2C0, I2C1, SPI2, SPI3,
+// UART0 and UART1.
+//
+// See "nRF serial instances" in internal-modules/iobroker/README.md for how
+// the instances are shared and allocated.
+
+&pinctrl {
+	i2c0_dyn_default: i2c0_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(TWIM_SDA)>,
+				<NRF_PSEL_DISCONNECTED(TWIM_SCL)>;
+		};
+	};
+
+	i2c0_dyn_sleep: i2c0_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(TWIM_SDA)>,
+				<NRF_PSEL_DISCONNECTED(TWIM_SCL)>;
+		};
+	};
+
+	i2c1_dyn_default: i2c1_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(TWIM_SDA)>,
+				<NRF_PSEL_DISCONNECTED(TWIM_SCL)>;
+		};
+	};
+
+	i2c1_dyn_sleep: i2c1_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(TWIM_SDA)>,
+				<NRF_PSEL_DISCONNECTED(TWIM_SCL)>;
+		};
+	};
+
+	pwm0_dyn_default: pwm0_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
+
+	pwm0_dyn_sleep: pwm0_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
+
+	pwm1_dyn_default: pwm1_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
+
+	pwm1_dyn_sleep: pwm1_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
+
+	pwm2_dyn_default: pwm2_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
+
+	pwm2_dyn_sleep: pwm2_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
+
+	pwm3_dyn_default: pwm3_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
+
+	pwm3_dyn_sleep: pwm3_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(PWM_OUT0)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT1)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT2)>,
+				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
+		};
+	};
+
+	spi2_dyn_default: spi2_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(SPIM_SCK)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MOSI)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MISO)>;
+		};
+	};
+
+	spi2_dyn_sleep: spi2_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(SPIM_SCK)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MOSI)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MISO)>;
+		};
+	};
+
+	spi3_dyn_default: spi3_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(SPIM_SCK)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MOSI)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MISO)>;
+		};
+	};
+
+	spi3_dyn_sleep: spi3_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(SPIM_SCK)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MOSI)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MISO)>;
+		};
+	};
+
+	uart0_dyn_default: uart0_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(UART_TX)>,
+				<NRF_PSEL_DISCONNECTED(UART_RX)>;
+		};
+	};
+
+	uart0_dyn_sleep: uart0_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(UART_TX)>,
+				<NRF_PSEL_DISCONNECTED(UART_RX)>;
+		};
+	};
+
+	uart1_dyn_default: uart1_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(UART_TX)>,
+				<NRF_PSEL_DISCONNECTED(UART_RX)>;
+		};
+	};
+
+	uart1_dyn_sleep: uart1_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(UART_TX)>,
+				<NRF_PSEL_DISCONNECTED(UART_RX)>;
+		};
+	};
+};
+
+// The upstream board fixes I2C0 to SCL/SDA with the legacy TWI driver. Use
+// TWIM like I2C1 so iobroker can route it.
+&i2c0 {
+	compatible = "nordic,nrf-twim";
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&i2c0_dyn_default>;
+	pinctrl-1 = <&i2c0_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&i2c1 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&i2c1_dyn_default>;
+	pinctrl-1 = <&i2c1_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+// PWM instances, same scheme: all four outputs disconnected and deferred
+// init, so iobroker can hand an instance to neopixel_write and pwmio and
+// route its outputs at runtime.
+
+&pwm0 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&pwm0_dyn_default>;
+	pinctrl-1 = <&pwm0_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&pwm1 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&pwm1_dyn_default>;
+	pinctrl-1 = <&pwm1_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&pwm2 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&pwm2_dyn_default>;
+	pinctrl-1 = <&pwm2_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&pwm3 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&pwm3_dyn_default>;
+	pinctrl-1 = <&pwm3_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+// SPI1 is the same peripheral instance as I2C1, so leave it disabled.
+&spi1 {
+	status = "disabled";
+};
+
+// The upstream board puts the DotStar on SPI2 with the legacy SPI driver.
+// The status LED code bit-bangs the DotStar instead, so drop the node and use
+// SPIM like SPI3.
+/delete-node/ &apa102;
+
+&spi2 {
+	compatible = "nordic,nrf-spim";
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&spi2_dyn_default>;
+	pinctrl-1 = <&spi2_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&spi3 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&spi3_dyn_default>;
+	pinctrl-1 = <&spi3_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&uart0 {
+	status = "okay";
+	zephyr,deferred-init;
+	current-speed = <115200>;
+	pinctrl-0 = <&uart0_dyn_default>;
+	pinctrl-1 = <&uart0_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&uart1 {
+	status = "okay";
+	zephyr,deferred-init;
+	current-speed = <115200>;
+	pinctrl-0 = <&uart1_dyn_default>;
+	pinctrl-1 = <&uart1_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+#include "../../../app.overlay"
+
+/* Enable the SAADC for analogio (AIN0..AIN7 are on P0.02..P0.05 and P0.28..P0.31). */
+&adc {
+	status = "okay";
+};

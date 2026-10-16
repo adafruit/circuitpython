@@ -1,13 +1,15 @@
 /* Partition layout is owned by the mcuboot fork
  * (dts/adafruit/adafruit_feather_nrf52840.dtsi) and applied to this image by
  * sysbuild. This overlay only adds board/app config. */
+/* No Zephyr console by default, so TX/RX are free for busio.UART. A CONSOLE=1
+ * build puts the console back on UART0 (console.overlay). */
 / {
 	chosen {
-		zephyr,console = &uart0;
-		zephyr,shell-uart = &uart0;
-		zephyr,uart-mcumgr = &uart0;
-		zephyr,bt-mon-uart = &uart0;
-		zephyr,bt-c2h-uart = &uart0;
+		/delete-property/ zephyr,console;
+		/delete-property/ zephyr,shell-uart;
+		/delete-property/ zephyr,uart-mcumgr;
+		/delete-property/ zephyr,bt-mon-uart;
+		/delete-property/ zephyr,bt-c2h-uart;
 	};
 };
 
@@ -15,15 +17,36 @@
 	/delete-node/ board_cdc_acm_uart;
 };
 
+// board.I2C(), board.SPI() and board.UART() are on the Feather header buses.
+// See BOARD_BUS_LABELS in cptools/zephyr2cp.py.
+board_i2c: &feather_i2c {};
+board_spi: &feather_spi {};
+board_serial: &feather_serial {};
+
 // Bus instances enabled with all pins disconnected and marked
 // zephyr,deferred-init so nothing is claimed at boot: the iobroker
 // initializes and routes a device to arbitrary pins when a busio object is
-// constructed, and de-initializes it on release: I2C1, SPI2, SPI3 and UART1.
-// (The fixed I2C0 is the Stemma QT bus and UART0 the console. The formerly
-// fixed SPI1 is dropped: it had no device attached and its instance is the
-// same peripheral as I2C1, so only one mode can be enabled.)
+// constructed, and de-initializes it on release: I2C0, I2C1, SPI2, SPI3,
+// UART0 and UART1.
+//
+// See "nRF serial instances" in internal-modules/iobroker/README.md for how
+// the instances are shared and allocated.
 
 &pinctrl {
+	i2c0_dyn_default: i2c0_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(TWIM_SDA)>,
+				<NRF_PSEL_DISCONNECTED(TWIM_SCL)>;
+		};
+	};
+
+	i2c0_dyn_sleep: i2c0_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(TWIM_SDA)>,
+				<NRF_PSEL_DISCONNECTED(TWIM_SCL)>;
+		};
+	};
+
 	i2c1_dyn_default: i2c1_dyn_default {
 		group1 {
 			psels = <NRF_PSEL_DISCONNECTED(TWIM_SDA)>,
@@ -35,52 +58,6 @@
 		group1 {
 			psels = <NRF_PSEL_DISCONNECTED(TWIM_SDA)>,
 				<NRF_PSEL_DISCONNECTED(TWIM_SCL)>;
-		};
-	};
-
-	spi2_dyn_default: spi2_dyn_default {
-		group1 {
-			psels = <NRF_PSEL_DISCONNECTED(SPIM_SCK)>,
-				<NRF_PSEL_DISCONNECTED(SPIM_MOSI)>,
-				<NRF_PSEL_DISCONNECTED(SPIM_MISO)>;
-		};
-	};
-
-	spi2_dyn_sleep: spi2_dyn_sleep {
-		group1 {
-			psels = <NRF_PSEL_DISCONNECTED(SPIM_SCK)>,
-				<NRF_PSEL_DISCONNECTED(SPIM_MOSI)>,
-				<NRF_PSEL_DISCONNECTED(SPIM_MISO)>;
-		};
-	};
-
-	spi3_dyn_default: spi3_dyn_default {
-		group1 {
-			psels = <NRF_PSEL_DISCONNECTED(SPIM_SCK)>,
-				<NRF_PSEL_DISCONNECTED(SPIM_MOSI)>,
-				<NRF_PSEL_DISCONNECTED(SPIM_MISO)>;
-		};
-	};
-
-	spi3_dyn_sleep: spi3_dyn_sleep {
-		group1 {
-			psels = <NRF_PSEL_DISCONNECTED(SPIM_SCK)>,
-				<NRF_PSEL_DISCONNECTED(SPIM_MOSI)>,
-				<NRF_PSEL_DISCONNECTED(SPIM_MISO)>;
-		};
-	};
-
-	uart1_dyn_default: uart1_dyn_default {
-		group1 {
-			psels = <NRF_PSEL_DISCONNECTED(UART_TX)>,
-				<NRF_PSEL_DISCONNECTED(UART_RX)>;
-		};
-	};
-
-	uart1_dyn_sleep: uart1_dyn_sleep {
-		group1 {
-			psels = <NRF_PSEL_DISCONNECTED(UART_TX)>,
-				<NRF_PSEL_DISCONNECTED(UART_RX)>;
 		};
 	};
 
@@ -155,6 +132,77 @@
 				<NRF_PSEL_DISCONNECTED(PWM_OUT3)>;
 		};
 	};
+
+	spi2_dyn_default: spi2_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(SPIM_SCK)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MOSI)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MISO)>;
+		};
+	};
+
+	spi2_dyn_sleep: spi2_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(SPIM_SCK)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MOSI)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MISO)>;
+		};
+	};
+
+	spi3_dyn_default: spi3_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(SPIM_SCK)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MOSI)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MISO)>;
+		};
+	};
+
+	spi3_dyn_sleep: spi3_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(SPIM_SCK)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MOSI)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MISO)>;
+		};
+	};
+
+	uart0_dyn_default: uart0_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(UART_TX)>,
+				<NRF_PSEL_DISCONNECTED(UART_RX)>;
+		};
+	};
+
+	uart0_dyn_sleep: uart0_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(UART_TX)>,
+				<NRF_PSEL_DISCONNECTED(UART_RX)>;
+		};
+	};
+
+	uart1_dyn_default: uart1_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(UART_TX)>,
+				<NRF_PSEL_DISCONNECTED(UART_RX)>;
+		};
+	};
+
+	uart1_dyn_sleep: uart1_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(UART_TX)>,
+				<NRF_PSEL_DISCONNECTED(UART_RX)>;
+		};
+	};
+};
+
+// The upstream board fixes I2C0 to SCL/SDA with the legacy TWI driver. Use
+// TWIM like I2C1 so iobroker can route it.
+&i2c0 {
+	compatible = "nordic,nrf-twim";
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&i2c0_dyn_default>;
+	pinctrl-1 = <&i2c0_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
 };
 
 &i2c1 {
@@ -162,36 +210,6 @@
 	zephyr,deferred-init;
 	pinctrl-0 = <&i2c1_dyn_default>;
 	pinctrl-1 = <&i2c1_dyn_sleep>;
-	pinctrl-names = "default", "sleep";
-};
-
-// SPI1 is the same peripheral instance as I2C1, so leave it disabled.
-&spi1 {
-	status = "disabled";
-};
-
-&spi2 {
-	status = "okay";
-	zephyr,deferred-init;
-	pinctrl-0 = <&spi2_dyn_default>;
-	pinctrl-1 = <&spi2_dyn_sleep>;
-	pinctrl-names = "default", "sleep";
-};
-
-&spi3 {
-	status = "okay";
-	zephyr,deferred-init;
-	pinctrl-0 = <&spi3_dyn_default>;
-	pinctrl-1 = <&spi3_dyn_sleep>;
-	pinctrl-names = "default", "sleep";
-};
-
-&uart1 {
-	status = "okay";
-	zephyr,deferred-init;
-	current-speed = <115200>;
-	pinctrl-0 = <&uart1_dyn_default>;
-	pinctrl-1 = <&uart1_dyn_sleep>;
 	pinctrl-names = "default", "sleep";
 };
 
@@ -231,8 +249,43 @@
 	pinctrl-names = "default", "sleep";
 };
 
+// SPI1 is the same peripheral instance as I2C1, so leave it disabled.
+&spi1 {
+	status = "disabled";
+};
+
+&spi2 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&spi2_dyn_default>;
+	pinctrl-1 = <&spi2_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&spi3 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&spi3_dyn_default>;
+	pinctrl-1 = <&spi3_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
 &uart0 {
-    status = "okay";
+	status = "okay";
+	zephyr,deferred-init;
+	current-speed = <115200>;
+	pinctrl-0 = <&uart0_dyn_default>;
+	pinctrl-1 = <&uart0_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&uart1 {
+	status = "okay";
+	zephyr,deferred-init;
+	current-speed = <115200>;
+	pinctrl-0 = <&uart1_dyn_default>;
+	pinctrl-1 = <&uart1_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
 };
 
 #include "../../../app.overlay"

@@ -1,0 +1,2 @@
+/* Same console setup as the Feather nRF52840 Express. */
+#include "../feather_nrf52840_zephyr/console.overlay"

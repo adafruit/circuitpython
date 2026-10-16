@@ -1,0 +1,47 @@
+CIRCUITPY_BUILD_EXTENSIONS = ["elf", "uf2"]
+USB_VID=0x239A
+USB_PID=0x8052
+NAME="ItsyBitsy nRF52840 Express"
+
+# Non-Zephyr build of the same board; nvm and CIRCUITPY must sit where it puts them.
+counterpart = "nordic/itsybitsy_nrf52840_express"
+
+# Status DotStar, driven with bit-banged SPI; names from [pins].
+STATUS_DOTSTAR_DATA = "DOTSTAR_DATA"
+STATUS_DOTSTAR_CLOCK = "DOTSTAR_CLOCK"
+
+[pins]
+# Pin names copied from the ports/ counterpart board's pins.c and resolved
+# to MDBT50Q-1MV2 module pin numbers through the package pin map selected
+# in board.conf.
+A0 = 20
+A1 = 14
+A2 = 13
+A3 = 12
+A4 = 11
+A5 = 9
+SWITCH = 10
+D0 = 49
+RX = 49
+D1 = 48
+TX = 48
+D2 = 50
+D5 = 16
+D7 = 25
+D9 = 23
+D10 = 21
+D11 = 19
+D12 = 27
+D13 = 29
+SCL = 36
+SDA = 38
+APA102_MOSI = 24
+DOTSTAR_DATA = 24
+APA102_SCK = 26
+DOTSTAR_CLOCK = 26
+SCK = 37
+MOSI = 39
+MISO = 44
+L = 22
+LED = 22
+BLUE_LED = 22

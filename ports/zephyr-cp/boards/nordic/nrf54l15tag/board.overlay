@@ -46,6 +46,9 @@
 // claimed at boot; iobroker initializes and routes a device when a busio
 // object is constructed and de-initializes it on release.
 //
+// See "nRF serial instances" in internal-modules/iobroker/README.md for how
+// the instances are shared and allocated.
+//
 // Instance 21 stays with the fixed i2c21 (bme688 and adxl367 hang off it) and
 // instance 22 with the fixed spi22 (bmi270). Instance 30 is left alone:
 // uart30 is the console above and i2c30/spi30 share that same peripheral, so

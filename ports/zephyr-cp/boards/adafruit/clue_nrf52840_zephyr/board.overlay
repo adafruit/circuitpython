@@ -1,6 +1,8 @@
 /* Partition layout is owned by the mcuboot fork
  * (dts/adafruit/adafruit_clue_nrf52840.dtsi) and applied to this image by
  * sysbuild. This overlay only adds board/app config. */
+/* No Zephyr console by default, so TX/RX are free for busio.UART. A CONSOLE=1
+ * build puts the console back on UART0 (console.overlay). */
 / {
 	chosen {
 		/delete-property/ zephyr,console;
@@ -15,11 +17,23 @@
 	/delete-node/ board_cdc_acm_uart;
 };
 
-// UART0, I2C1 and SPI3 are enabled with all pins disconnected and marked
-// zephyr,deferred-init so nothing is claimed at boot: the iobroker
+// board.I2C() (also board.STEMMA_I2C), board.SPI() and board.UART(). The
+// upstream board has no header bus labels. See BOARD_BUS_LABELS in
+// cptools/zephyr2cp.py.
+board_i2c: &i2c0 {};
+board_stemma_i2c: &i2c0 {};
+board_spi: &spi3 {};
+board_serial: &uart0 {};
+
+// UART0, I2C0, I2C1 and SPI3 are enabled with all pins disconnected and
+// marked zephyr,deferred-init so nothing is claimed at boot: the iobroker
 // initializes and routes a device to arbitrary pins when a busio object is
-// constructed, and de-initializes it on release. (I2C0 is the fixed sensor
-// bus, SPI2 the fixed display bus, and QSPI the fixed external flash.)
+// constructed, and de-initializes it on release. (SPI2 is the fixed display
+// bus and QSPI the fixed external flash. The onboard sensors are on SCL/SDA
+// but have no devicetree nodes, so I2C0 does not need to be fixed.)
+//
+// See "nRF serial instances" in internal-modules/iobroker/README.md for how
+// the instances are shared and allocated.
 //
 // I2C1 and SPI1 are the same peripheral instance (0x40004000), so only one
 // mode can be enabled: I2C is the more useful dynamic bus on the CLUE.
@@ -38,6 +52,20 @@
 		group1 {
 			psels = <NRF_PSEL_DISCONNECTED(UART_TX)>,
 				<NRF_PSEL_DISCONNECTED(UART_RX)>;
+		};
+	};
+
+	i2c0_dyn_default: i2c0_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(TWIM_SDA)>,
+				<NRF_PSEL_DISCONNECTED(TWIM_SCL)>;
+		};
+	};
+
+	i2c0_dyn_sleep: i2c0_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(TWIM_SDA)>,
+				<NRF_PSEL_DISCONNECTED(TWIM_SCL)>;
 		};
 	};
 
@@ -150,6 +178,17 @@
 	current-speed = <115200>;
 	pinctrl-0 = <&uart0_dyn_default>;
 	pinctrl-1 = <&uart0_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+// The upstream board fixes I2C0 to SCL/SDA with the legacy TWI driver. Use
+// TWIM like I2C1 so iobroker can route it.
+&i2c0 {
+	compatible = "nordic,nrf-twim";
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&i2c0_dyn_default>;
+	pinctrl-1 = <&i2c0_dyn_sleep>;
 	pinctrl-names = "default", "sleep";
 };
 

@@ -10,7 +10,7 @@ manifest:
       path: modules/bsim_hw_models/nrf_hw_models
     - name: mcuboot
       url: https://github.com/adafruit/adaboot
-      revision: 14d84b0ba784fec227208d4917b9e7c38e4e87bc
+      revision: 3fcd1c8995694992e5cc107c32ae6febbe0bd847
       path: bootloader/mcuboot
     - name: zephyr
       url: https://github.com/adafruit/zephyr
