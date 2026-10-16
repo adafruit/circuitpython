@@ -61,16 +61,25 @@ endif
 # When DEBUG=1, apply additional Kconfig fragments for debug-friendly settings.
 DEBUG_CONF_FILE ?= $(CURDIR)/debug.conf
 ifeq ($(DEBUG),1)
-ifneq ($(CP_BOARD_CONF),)
-CP_BOARD_CONF := $(CP_BOARD_CONF);$(DEBUG_CONF_FILE)
-else
-CP_BOARD_CONF := $(DEBUG_CONF_FILE)
+CP_BOARD_CONF := $(strip $(CP_BOARD_CONF) $(DEBUG_CONF_FILE))
+endif
+# When CONSOLE=1 (implied by DEBUG=1), apply the board's console.overlay, if it has one, and the
+# port's console.conf. Boards whose console pins are also user pins enable the Zephyr UART console
+# only then.
+CONSOLE ?= $(DEBUG)
+CP_BOARD_CONSOLE_OVERLAY :=
+ifeq ($(CONSOLE),1)
+CP_BOARD_CONSOLE_OVERLAY := $(wildcard $(CP_BOARD_DIR)/console.overlay)
+ifneq ($(CP_BOARD_CONSOLE_OVERLAY),)
+CP_BOARD_CONF := $(strip $(CP_BOARD_CONF) $(CURDIR)/console.conf)
 endif
 endif
-# Always pass the conf file, even if empty. This undoes DEBUG=1 when it's omitted on a later run.
-# Quoted because with DEBUG=1 the value is a semicolon-separated list, and an unquoted semicolon
-# would end the shell command.
+CP_BOARD_CONF := $(subst $(eval) ,;,$(CP_BOARD_CONF))
+# Always pass the conf and console overlay files, even if empty. This undoes DEBUG=1 or CONSOLE=1
+# when it's omitted on a later run. Quoted because the conf value can be a semicolon-separated
+# list, and an unquoted semicolon would end the shell command.
 WEST_CMAKE_ARGS += -Dzephyr-cp_EXTRA_CONF_FILE="$(CP_BOARD_CONF)"
+WEST_CMAKE_ARGS += -Dzephyr-cp_EXTRA_DTC_OVERLAY_FILE="$(CP_BOARD_CONSOLE_OVERLAY)"
 
 # Boards can opt into building the MCUboot bootloader (and thus BLE OTA
 # updates) by shipping a sysbuild.conf fragment. It sets sysbuild-level

@@ -44,6 +44,9 @@
 // nothing is claimed at boot; iobroker initializes and routes a device when a
 // busio object is constructed and de-initializes it on release.
 //
+// See "nRF serial instances" in internal-modules/iobroker/README.md for how
+// the instances are shared and allocated.
+//
 // Instance 130 stays with the fixed arduino header i2c130. Instances 120,
 // 135 and 136 are left alone: uart120 and uart135 are the console UARTs of
 // the (not built here) FLPR and PPR cores, and uart136 is the app console.

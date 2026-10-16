@@ -29,6 +29,9 @@ i2s_rxtx: &i2s0 {
 // claimed at boot; iobroker initializes and routes a device when a busio
 // object is constructed and de-initializes it on release.
 //
+// See "nRF serial instances" in internal-modules/iobroker/README.md for how
+// the instances are shared and allocated.
+//
 // Instance 0 is left alone: uart0 is the console and i2c0/spi0 share that
 // same peripheral, so they must not be enabled. Instance 1 stays with the
 // fixed arduino header i2c1, and spi4 stays the fixed arduino header SPI.

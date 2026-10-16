@@ -14,6 +14,9 @@
 // claimed at boot; iobroker initializes and routes a device when a busio
 // object is constructed and de-initializes it on release.
 //
+// See "nRF serial instances" in internal-modules/iobroker/README.md for how
+// the instances are shared and allocated.
+//
 // Instance 20 is left alone: uart20 is the console (main UART) and i2c20/spi20
 // share that same peripheral, so they must not be enabled. Instance 00 is
 // owned by spi00 and the MX25R64 SPI flash, so uart00 must not be enabled.

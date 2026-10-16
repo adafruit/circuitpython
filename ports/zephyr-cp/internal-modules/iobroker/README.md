@@ -136,6 +136,37 @@ within the port) shared with the pin objects, and let the module resolve a
 global pin number back to the controller device and pin number that
 Zephyr's GPIO API takes.
 
+## nRF serial instances
+
+On nRF SoCs, the I2C and SPI nodes with the same instance number are one
+peripheral, and on nRF53, nRF54L and nRF91 so is the UART node: on the
+nRF52840, `i2c1` and `spi1` are both the peripheral at 0x40004000. Only one
+mode of an instance can be enabled, which Zephyr checks at build time
+(`zephyr/soc/nordic/validate_enabled_instances.c`).
+
+So the board overlay decides how many instances of each kind there are. It
+enables each free instance in one mode, with all signals disconnected and
+`zephyr,deferred-init`, and leaves alone the instances the board uses for a
+fixed purpose, such as the console or external flash. The overlay's
+comment says what it chose and why.
+
+The Feather nRF52840 boards use the same split as `ports/nordic`, whose
+`nrfx_config.h` defaults to `CIRCUITPY_NRF_NUM_I2C` = 2:
+
+| Kind | Instances |
+|---|---|
+| I2C | `i2c0`, `i2c1` (TWIM) |
+| SPI | `spi2`, `spi3` (SPIM) |
+| UART | `uart0`, `uart1` (UARTE, separate peripherals on nRF52) |
+
+`spi0` and `spi1` stay disabled because I2C has those instances.
+
+`zephyr2cp.py` lists each pool's instances by devicetree `max-frequency`,
+highest first, and iobroker allocates the first free instance that can
+reach the requested pins. So busio gets the nRF52840's 32 MHz SPIM3 before
+the 8 MHz SPIM2, and on the nRF54L the 32 MHz `spi00` before the 8 MHz
+instances, when a board leaves `spi00` dynamic.
+
 ## Public API
 
 See `include/iobroker/iobroker.h`. Signals are requested with
