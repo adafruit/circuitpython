@@ -85,6 +85,14 @@ BUTTON1 = "E8"
 BUTTON2 = "F8"
 BUTTON3 = "H3"
 
+# board.SPI() pins: the expansion header's SPI positions (header D3/D0/D1).
+SCK = "H4"
+MOSI = "H7"
+MISO = "H6"
+# board.UART() pins: P0.06/P0.07, the debugger's VCOM0 serial port.
+TX = "H2"
+RX = "G3"
+
 # Nordic expansion board header (P17), named per the board silkscreen.
 # Positions key the gpio-map order (header GPIO 00-21, odd/even columns from
 # the A0/B0 end); I0 sits opposite the header's mid GND and has no gpio-map

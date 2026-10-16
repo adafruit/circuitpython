@@ -1,1 +1,7 @@
 CIRCUITPY_BUILD_EXTENSIONS = ["hex", "signed.bin"]
+
+# QFN48 package pin numbers.
+[pins]
+# board.UART() pins: P0.00/P0.01, the debugger's VCOM0 serial port.
+TX = 23
+RX = 24

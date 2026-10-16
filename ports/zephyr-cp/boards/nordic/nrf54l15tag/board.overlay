@@ -46,13 +46,47 @@
 // claimed at boot; iobroker initializes and routes a device when a busio
 // object is constructed and de-initializes it on release.
 //
-// Instance 21 stays with the fixed i2c21 (bme688 and adxl367 hang off it) and
-// instance 22 with the fixed spi22 (bmi270). Instance 30 is left alone:
+// See "nRF serial instances" in internal-modules/iobroker/README.md for how
+// the instances are shared and allocated.
+//
+// Instance 21 is i2c21, the bus the bme688 and adxl367 hang off, and instance
+// 22 is spi22, the bmi270's bus (its CS is P1.07). Their Zephyr sensor nodes
+// are disabled, so both are routed like the others. Instance 30 is left alone:
 // uart30 is the console above and i2c30/spi30 share that same peripheral, so
 // they must not be enabled. There is no i2c00 on this SoC, so instance 00 can
 // only carry spi00 (or uart00).
 
 &pinctrl {
+	i2c21_dyn_default: i2c21_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(TWIM_SDA)>,
+				<NRF_PSEL_DISCONNECTED(TWIM_SCL)>;
+		};
+	};
+
+	i2c21_dyn_sleep: i2c21_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(TWIM_SDA)>,
+				<NRF_PSEL_DISCONNECTED(TWIM_SCL)>;
+		};
+	};
+
+	spi22_dyn_default: spi22_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(SPIM_SCK)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MOSI)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MISO)>;
+		};
+	};
+
+	spi22_dyn_sleep: spi22_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(SPIM_SCK)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MOSI)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MISO)>;
+		};
+	};
+
 	i2c20_dyn_default: i2c20_dyn_default {
 		group1 {
 			psels = <NRF_PSEL_DISCONNECTED(TWIM_SDA)>,
@@ -83,6 +117,28 @@
 		};
 	};
 };
+
+&i2c21 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&i2c21_dyn_default>;
+	pinctrl-1 = <&i2c21_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&spi22 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&spi22_dyn_default>;
+	pinctrl-1 = <&spi22_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+// board.I2C() is on the sensor I2C bus (SCL P1.11, SDA P1.12) and board.SPI()
+// on the bmi270's bus (SCK P1.08, MOSI P1.06, MISO P1.05). See
+// BOARD_BUS_LABELS in cptools/zephyr2cp.py.
+board_i2c: &i2c21 {};
+board_spi: &spi22 {};
 
 &i2c20 {
 	status = "okay";

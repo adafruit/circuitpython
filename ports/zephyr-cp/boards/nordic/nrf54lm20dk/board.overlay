@@ -14,6 +14,9 @@
 // claimed at boot; iobroker initializes and routes a device when a busio
 // object is constructed and de-initializes it on release.
 //
+// See "nRF serial instances" in internal-modules/iobroker/README.md for how
+// the instances are shared and allocated.
+//
 // Instance 20 is left alone: uart20 is the console (main UART) and i2c20/spi20
 // share that same peripheral, so they must not be enabled. Instance 00 is
 // owned by spi00 and the MX25R64 SPI flash, so uart00 must not be enabled.
@@ -170,6 +173,12 @@
 	pinctrl-1 = <&uart30_dyn_sleep>;
 	pinctrl-names = "default", "sleep";
 };
+
+// board.SPI() is on the expansion header's SPI pins (SCK/MOSI/MISO, header
+// D3/D0/D1), and board.UART() on TX/RX (P0.06/P0.07), the debugger's VCOM0
+// serial port. See BOARD_BUS_LABELS in cptools/zephyr2cp.py.
+board_spi: &nordic_expansion_spi {};
+board_serial: &uart30 {};
 
 // PWM instances 21 and 22, same scheme: all four outputs disconnected and
 // deferred init, so iobroker can hand an instance to neopixel_write and

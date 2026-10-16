@@ -1,6 +1,7 @@
 import sys
 import pathlib
 import tempfile
+from types import SimpleNamespace
 
 # Add devicetree library to path
 portdir = pathlib.Path(__file__).parent.parent.parent
@@ -23,6 +24,8 @@ from zephyr2cp import (
     BLOCKED_FLASH_COMPAT,
     MINIMUM_RAM_SIZE,
     add_toml_pin_names,
+    _fastest_first,
+    _dt_board_buses,
     _toml_status_pin,
 )
 
@@ -796,3 +799,82 @@ class TestTomlStatusPin:
     def test_unknown_name_raises(self):
         with pytest.raises(RuntimeError, match="STATUS_NEOPIXEL = 'NOPE' is not a board pin name"):
             _toml_status_pin({"STATUS_NEOPIXEL": "NOPE"}, self.BOARD_NAMES, "STATUS_NEOPIXEL")
+
+
+class TestDtBoardBuses:
+    """board.I2C(), board.SPI() and board.UART() from devicetree bus labels."""
+
+    BOARD_NAMES = {
+        ("gpio0", 11): ["SCL"],
+        ("gpio0", 12): ["SDA"],
+        ("gpio0", 14): ["SCK"],
+        ("gpio0", 13): ["MOSI"],
+        ("gpio0", 15): ["MISO"],
+        ("gpio0", 25): ["TX"],
+        ("gpio0", 24): ["RX"],
+    }
+
+    @staticmethod
+    def _device_tree(*labels):
+        return SimpleNamespace(label2node={label: object() for label in labels})
+
+    def test_board_labels(self):
+        buses = _dt_board_buses(
+            self._device_tree("board_i2c", "board_spi", "board_serial"), self.BOARD_NAMES
+        )
+        assert buses == {
+            "i2c": {"scl": ("gpio0", 11), "sda": ("gpio0", 12)},
+            "spi": {"clock": ("gpio0", 14), "mosi": ("gpio0", 13), "miso": ("gpio0", 15)},
+            "uart": {"tx": ("gpio0", 25), "rx": ("gpio0", 24)},
+        }
+
+    def test_only_labeled_buses(self):
+        buses = _dt_board_buses(
+            self._device_tree("board_i2c", "feather_spi", "i2c0"), self.BOARD_NAMES
+        )
+        assert list(buses) == ["i2c"]
+
+    def test_no_labels(self):
+        assert _dt_board_buses(self._device_tree("i2c0", "spi1"), self.BOARD_NAMES) == {}
+
+    def test_pin_names_ignore_case(self):
+        names = dict(self.BOARD_NAMES)
+        names[("gpio0", 11)] = ["scl"]
+        buses = _dt_board_buses(self._device_tree("board_i2c"), names)
+        assert buses["i2c"]["scl"] == ("gpio0", 11)
+
+    def test_missing_pin_name_raises(self):
+        names = {key: value for key, value in self.BOARD_NAMES.items() if value != ["MISO"]}
+        with pytest.raises(RuntimeError, match="board_spi needs a board pin named MISO"):
+            _dt_board_buses(self._device_tree("board_spi"), names)
+
+
+class TestFastestFirst:
+    """Ordering of bus instance pools by devicetree max-frequency."""
+
+    @staticmethod
+    def _node(name, max_frequency=None):
+        props = {}
+        if max_frequency is not None:
+            props["max-frequency"] = SimpleNamespace(to_num=lambda: max_frequency)
+        return SimpleNamespace(name=name, props=props)
+
+    def test_highest_first(self):
+        nodes = [self._node("spi2", 8_000_000), self._node("spi3", 32_000_000)]
+        assert [n.name for n in _fastest_first(nodes)] == ["spi3", "spi2"]
+
+    def test_stable_for_equal_and_missing(self):
+        nodes = [
+            self._node("i2c1"),
+            self._node("spi22", 8_000_000),
+            self._node("i2c0"),
+            self._node("spi21", 8_000_000),
+            self._node("spi00", 32_000_000),
+        ]
+        assert [n.name for n in _fastest_first(nodes)] == [
+            "spi00",
+            "spi22",
+            "spi21",
+            "i2c1",
+            "i2c0",
+        ]

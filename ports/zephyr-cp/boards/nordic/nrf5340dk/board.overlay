@@ -29,11 +29,45 @@ i2s_rxtx: &i2s0 {
 // claimed at boot; iobroker initializes and routes a device when a busio
 // object is constructed and de-initializes it on release.
 //
+// See "nRF serial instances" in internal-modules/iobroker/README.md for how
+// the instances are shared and allocated.
+//
 // Instance 0 is left alone: uart0 is the console and i2c0/spi0 share that
-// same peripheral, so they must not be enabled. Instance 1 stays with the
-// fixed arduino header i2c1, and spi4 stays the fixed arduino header SPI.
+// same peripheral, so they must not be enabled. Instance 1 is i2c1, the
+// Arduino header I2C. spi4 is the upstream Arduino header SPI and the only
+// SPI instance.
 
 &pinctrl {
+	spi4_dyn_default: spi4_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(SPIM_SCK)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MOSI)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MISO)>;
+		};
+	};
+
+	spi4_dyn_sleep: spi4_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(SPIM_SCK)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MOSI)>,
+				<NRF_PSEL_DISCONNECTED(SPIM_MISO)>;
+		};
+	};
+
+	i2c1_dyn_default: i2c1_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(TWIM_SDA)>,
+				<NRF_PSEL_DISCONNECTED(TWIM_SCL)>;
+		};
+	};
+
+	i2c1_dyn_sleep: i2c1_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(TWIM_SDA)>,
+				<NRF_PSEL_DISCONNECTED(TWIM_SCL)>;
+		};
+	};
+
 	i2c2_dyn_default: i2c2_dyn_default {
 		group1 {
 			psels = <NRF_PSEL_DISCONNECTED(TWIM_SDA)>,
@@ -63,11 +97,27 @@ i2s_rxtx: &i2s0 {
 	};
 };
 
+&i2c1 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&i2c1_dyn_default>;
+	pinctrl-1 = <&i2c1_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
 &i2c2 {
 	status = "okay";
 	zephyr,deferred-init;
 	pinctrl-0 = <&i2c2_dyn_default>;
 	pinctrl-1 = <&i2c2_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+};
+
+&spi4 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&spi4_dyn_default>;
+	pinctrl-1 = <&spi4_dyn_sleep>;
 	pinctrl-names = "default", "sleep";
 };
 
@@ -79,6 +129,14 @@ i2s_rxtx: &i2s0 {
 	pinctrl-1 = <&uart3_dyn_sleep>;
 	pinctrl-names = "default", "sleep";
 };
+
+// board.I2C() is on the Arduino header SCL/SDA (D15/D14), and board.UART()
+// on its TX/RX (D1/D0). uart1 is the upstream Arduino serial, but it is the
+// same instance as i2c1, so board.UART() uses uart3 instead. There is no
+// board.SPI(): the fixed i2s0 above uses the Arduino SPI pins. See
+// BOARD_BUS_LABELS in cptools/zephyr2cp.py.
+board_i2c: &arduino_i2c {};
+board_serial: &uart3 {};
 
 // PWM instances 1-3, same scheme: all four outputs disconnected and deferred
 // init, so iobroker can hand an instance to neopixel_write and pwmio and

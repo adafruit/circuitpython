@@ -1,32 +1,11 @@
-/*
- * SDA = P2.11
- * SCL = P2.10
- */
+// board.I2C() is on SCL/SDA (P2.10/P2.11). See BOARD_BUS_LABELS in
+// cptools/zephyr2cp.py.
+board_i2c: &i2c130 {};
 
-&pinctrl {
-	i2c130_default: i2c130_default {
-		group1 {
-			psels = <NRF_PSEL(TWIM_SDA, 2, 11)>,
-				<NRF_PSEL(TWIM_SCL, 2, 10)>;
-		};
-	};
-
-	i2c130_sleep: i2c130_sleep {
-		group1 {
-			psels = <NRF_PSEL(TWIM_SDA, 2, 11)>,
-				<NRF_PSEL(TWIM_SCL, 2, 10)>;
-			low-power-enable;
-		};
-	};
-};
-
-&i2c130 {
-	clock-frequency = <I2C_BITRATE_STANDARD>;
-	pinctrl-0 = <&i2c130_default>;
-	pinctrl-1 = <&i2c130_sleep>;
-	pinctrl-names = "default", "sleep";
-	zephyr,concat-buf-size = <256>;
-	memory-regions = <&cpuapp_dma_region>;
+// Enable P2's GPIO controller so its pads get pin objects. The SoC dtsi
+// leaves every port disabled and the board enables only the LED and button
+// ports.
+&gpio2 {
 	status = "okay";
 };
 
@@ -44,13 +23,30 @@
 // nothing is claimed at boot; iobroker initializes and routes a device when a
 // busio object is constructed and de-initializes it on release.
 //
-// Instance 130 stays with the fixed arduino header i2c130. Instances 120,
+// See "nRF serial instances" in internal-modules/iobroker/README.md for how
+// the instances are shared and allocated.
+//
+// Instance 130 is i2c130, labeled for board.I2C() above. Instances 120,
 // 135 and 136 are left alone: uart120 and uart135 are the console UARTs of
 // the (not built here) FLPR and PPR cores, and uart136 is the app console.
 // The DMA region is required on this SoC: the serial drivers only access
 // memory the peripheral's EasyDMA is allowed to reach.
 
 &pinctrl {
+	i2c130_dyn_default: i2c130_dyn_default {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(TWIM_SDA)>,
+				<NRF_PSEL_DISCONNECTED(TWIM_SCL)>;
+		};
+	};
+
+	i2c130_dyn_sleep: i2c130_dyn_sleep {
+		group1 {
+			psels = <NRF_PSEL_DISCONNECTED(TWIM_SDA)>,
+				<NRF_PSEL_DISCONNECTED(TWIM_SCL)>;
+		};
+	};
+
 	i2c131_dyn_default: i2c131_dyn_default {
 		group1 {
 			psels = <NRF_PSEL_DISCONNECTED(TWIM_SDA)>,
@@ -94,6 +90,16 @@
 				<NRF_PSEL_DISCONNECTED(UART_RX)>;
 		};
 	};
+};
+
+&i2c130 {
+	status = "okay";
+	zephyr,deferred-init;
+	pinctrl-0 = <&i2c130_dyn_default>;
+	pinctrl-1 = <&i2c130_dyn_sleep>;
+	pinctrl-names = "default", "sleep";
+	zephyr,concat-buf-size = <256>;
+	memory-regions = <&cpuapp_dma_region>;
 };
 
 &i2c131 {

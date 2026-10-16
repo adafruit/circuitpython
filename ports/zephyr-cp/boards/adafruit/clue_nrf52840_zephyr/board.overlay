@@ -21,6 +21,9 @@
 // constructed, and de-initializes it on release. (I2C0 is the fixed sensor
 // bus, SPI2 the fixed display bus, and QSPI the fixed external flash.)
 //
+// See "nRF serial instances" in internal-modules/iobroker/README.md for how
+// the instances are shared and allocated.
+//
 // I2C1 and SPI1 are the same peripheral instance (0x40004000), so only one
 // mode can be enabled: I2C is the more useful dynamic bus on the CLUE.
 // SPI1 is left disabled; UART1 is enabled by neither overlay because UART0

@@ -1,2 +1,9 @@
 CIRCUITPY_BUILD_EXTENSIONS = ["hex", "uf2"]
 DISABLED_MODULES=["jpegio", "gifio", "tilepalettemapper"]
+
+# No package map for this SoC yet, so pins are global GPIO numbers
+# (port * 32 + pin).
+[pins]
+# board.I2C() pins: P2.10/P2.11.
+SCL = 74
+SDA = 75

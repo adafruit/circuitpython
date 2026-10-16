@@ -1,3 +1,12 @@
 CIRCUITPY_BUILD_EXTENSIONS = ["hex", "uf2", "signed.bin"]
 USB_VID=0x239A
 USB_PID=0x8166
+
+# aQFN94 ball ids.
+[pins]
+# board.I2C() pins: Arduino header D14/D15 (P1.02/P1.03).
+SDA = "AE1"
+SCL = "AF2"
+# board.UART() pins: Arduino header D0/D1 (P1.00/P1.01).
+RX = "M2"
+TX = "P2"
