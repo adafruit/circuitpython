@@ -87,7 +87,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(displayio_group_get_scale_obj, displayio_group_obj_get
 static mp_obj_t displayio_group_obj_set_scale(mp_obj_t self_in, mp_obj_t scale_obj) {
     displayio_group_t *self = native_group(self_in);
 
-    mp_int_t scale = mp_arg_validate_int_min(mp_obj_get_int(scale_obj), 1, MP_QSTR_scale);
+    mp_int_t scale = mp_arg_validate_int_range(mp_obj_get_int(scale_obj), 1, 32767, MP_QSTR_scale);
 
     common_hal_displayio_group_set_scale(self, scale);
     return mp_const_none;

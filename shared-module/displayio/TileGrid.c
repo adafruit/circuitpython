@@ -22,7 +22,9 @@ void common_hal_displayio_tilegrid_construct(displayio_tilegrid_t *self, mp_obj_
     mp_obj_t pixel_shader, uint16_t width, uint16_t height,
     uint16_t tile_width, uint16_t tile_height, uint16_t x, uint16_t y, uint16_t default_tile) {
 
-    uint32_t total_tiles = width * height;
+    uint32_t total_tiles = (uint32_t)width * (uint32_t)height;
+    mp_arg_validate_length_max(total_tiles, SIZE_MAX / sizeof(uint16_t),
+        MP_QSTR_TileGrid);
     self->bitmap_width_in_tiles = bitmap_width_in_tiles;
     self->tiles_in_bitmap = bitmap_width_in_tiles * bitmap_height_in_tiles;
 

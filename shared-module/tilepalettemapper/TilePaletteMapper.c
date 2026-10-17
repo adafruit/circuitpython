@@ -67,6 +67,10 @@ void tilepalettemapper_tilepalettemapper_get_color(tilepalettemapper_tilepalette
         }
         return;
     }
+    if (input_pixel->pixel >= self->input_color_count) {
+        output_color->opaque = false;
+        return;
+    }
     uint16_t tile_index = y_tile_index * self->width_in_tiles + x_tile_index;
     uint32_t mapped_index = self->tile_mappings[tile_index][input_pixel->pixel];
     displayio_input_pixel_t tmp_pixel;
