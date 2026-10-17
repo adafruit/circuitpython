@@ -14,6 +14,7 @@ aesio = true
 alarm = false
 analogbufio = false
 analogio = true # Zephyr board has analogio
+async_spi = true # Zephyr board has async_spi
 atexit = false
 audiobusio = true # Zephyr board has audiobusio
 audiocore = true # Zephyr board has audiobusio
