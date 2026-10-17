@@ -34,7 +34,11 @@ uint32_t common_hal_mcu_processor_get_frequency(void) {
 // NOTE: COMMON_HAL_MCU_PROCESSOR_UID_LENGTH is defined in mpconfigboard.h
 // Use this per device to make sure raw_id is an appropriate minimum number of bytes
 void common_hal_mcu_processor_get_uid(uint8_t raw_id[]) {
+    #if defined(MAX32690) || defined(MAX32665)
     MXC_SYS_GetUSN(raw_id, NULL); // NULL checksum will not be verified by AES
+    #elif defined(MAX32650)
+    MXC_SYS_GetUSN(raw_id, 13);
+    #endif
     return;
 }
 
