@@ -250,6 +250,9 @@ def main(target):
                             lib_folder = lib_folder.split("/", maxsplit=2)
                             lib_folder = "/".join(lib_folder[:2])
                         submodules.append(lib_folder)
+                        # The frozen manifest build needs micropython-lib.
+                        if "lib/micropython-lib" not in submodules:
+                            submodules.append("lib/micropython-lib")
         else:
             # TODO: Add a way to specify frozen modules in circuitpython.toml
             pass
