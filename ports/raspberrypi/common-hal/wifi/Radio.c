@@ -364,6 +364,8 @@ wifi_radio_error_t common_hal_wifi_radio_connect(wifi_radio_obj_t *self, uint8_t
             case CYW43_LINK_UP:
                 memcpy(self->connected_ssid, ssid, ssid_len);
                 self->connected_ssid_len = ssid_len;
+                // Match the auth_mode flags used by cyw43_ev_scan_result_t.
+                self->connected_auth_mode = password_len ? 5 : 0;
                 bindings_cyw43_wifi_enforce_pm();
                 return WIFI_RADIO_ERROR_NONE;
             case CYW43_LINK_FAIL:
@@ -384,7 +386,29 @@ bool common_hal_wifi_radio_get_connected(wifi_radio_obj_t *self) {
 }
 
 mp_obj_t common_hal_wifi_radio_get_ap_info(wifi_radio_obj_t *self) {
-    mp_raise_NotImplementedError(NULL);
+    if (!common_hal_wifi_radio_get_connected(self)) {
+        return mp_const_none;
+    }
+
+    cyw43_ev_scan_result_t record = {0};
+    int32_t rssi;
+    int32_t channel;
+    if (cyw43_wifi_get_bssid(&cyw43_state, record.bssid) != 0 ||
+        cyw43_wifi_get_rssi(&cyw43_state, &rssi) != 0 ||
+        cyw43_ioctl(&cyw43_state, CYW43_IOCTL_GET_CHANNEL, sizeof(channel),
+            (uint8_t *)&channel, CYW43_ITF_STA) != 0) {
+        return mp_const_none;
+    }
+
+    memcpy(record.ssid, self->connected_ssid, self->connected_ssid_len);
+    record.ssid_len = self->connected_ssid_len;
+    record.channel = (uint16_t)channel;
+    record.rssi = (int16_t)rssi;
+    record.auth_mode = self->connected_auth_mode;
+
+    wifi_network_obj_t *ap_info = mp_obj_malloc(wifi_network_obj_t, &wifi_network_type);
+    ap_info->record = record;
+    return MP_OBJ_FROM_PTR(ap_info);
 }
 
 mp_obj_t common_hal_wifi_radio_get_ipv4_gateway(wifi_radio_obj_t *self) {
