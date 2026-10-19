@@ -40,7 +40,7 @@ jobs:
     - name: Set up python
       uses: actions/setup-python@v6
       with:
-        python-version: 3.x
+        python-version: "3.14"  # minify_html has no Python 3.15 wheel yet
     - name: Duplicate USB VID/PID check
       run: python3 -u -m tools.ci_check_duplicate_usb_vid_pid
     - name: Set up submodules
@@ -133,7 +133,7 @@ jobs:
     - name: Set up python
       uses: actions/setup-python@v6
       with:
-        python-version: 3.x
+        python-version: "3.14"  # minify_html has no Python 3.15 wheel yet
     - name: Set up submodules
       uses: ./.github/actions/deps/submodules
     - name: Versions
@@ -175,7 +175,7 @@ jobs:
     - name: Set up python
       uses: actions/setup-python@v6
       with:
-        python-version: 3.x
+        python-version: "3.14"  # minify_html has no Python 3.15 wheel yet
     - name: Set up submodules
       uses: ./.github/actions/deps/submodules
       with:
