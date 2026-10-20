@@ -404,6 +404,13 @@ CIRCUITPY_ESPCAMERA = 0
 # P4 has MIPI-DSI
 CIRCUITPY_MIPIDSI = 1
 
+# P4 has MIPI-CSI
+CIRCUITPY_MIPICSI = 1
+
+# P4 can play MIPI-CSI video into MIPI-DSI framebuffers
+CIRCUITPY_VIDEOCORE = 1
+
+
 #### esp32s31 #########################################################
 else ifeq ($(IDF_TARGET),esp32s31)
 

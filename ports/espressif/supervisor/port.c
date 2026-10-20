@@ -343,9 +343,11 @@ void *port_malloc(size_t size, bool dma_capable) {
     }
 
     void *ptr = NULL;
-    // Try SPIRAM first if available.
+    // Try SPIRAM first if available. Aligned to the GC block size so heap
+    // areas (and with 64-byte GC blocks, every GC allocation in them) are
+    // cache-line aligned, which video DMA destinations require.
     #ifdef CONFIG_SPIRAM
-    ptr = heap_caps_malloc(size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
+    ptr = heap_caps_aligned_alloc(MICROPY_BYTES_PER_GC_BLOCK, size, MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
     #endif
     if (ptr == NULL) {
         ptr = heap_caps_malloc(size, MALLOC_CAP_8BIT);

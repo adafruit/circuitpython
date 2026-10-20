@@ -142,8 +142,8 @@
 	url = https://github.com/adafruit/Adafruit_CircuitPython_RFM69.git
 [submodule "ports/espressif/esp-idf"]
 	path = ports/espressif/esp-idf
-	url = https://github.com/adafruit/esp-idf.git
-	branch = circuitpython-v6.1
+	url = https://github.com/tannewt/esp-idf.git
+	branch = camera_pausing
 [submodule "ports/espressif/esp-protocols"]
 	path = ports/espressif/esp-protocols
 	url = https://github.com/adafruit/esp-protocols.git

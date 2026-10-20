@@ -974,7 +974,6 @@ msgstr ""
 #: ports/atmel-samd/common-hal/pulseio/PulseIn.c
 #: ports/atmel-samd/common-hal/rotaryio/IncrementalEncoder.c
 #: ports/cxd56/common-hal/pulseio/PulseIn.c
-#: ports/espressif/common-hal/mii/RMII.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2350.c
 #: ports/zephyr-cp/common-hal/busio/I2C.c
 #: ports/zephyr-cp/common-hal/busio/SPI.c
@@ -1182,6 +1181,7 @@ msgid "Another send is already active"
 msgstr ""
 
 #: ports/atmel-samd/common-hal/sdioio/SDCard.c
+#: ports/espressif/common-hal/mii/Ethernet.c
 #: ports/espressif/common-hal/qspibus/QSPIBus.c shared-bindings/emmcio/EMMC.c
 #: shared-bindings/socketpool/SocketPool.c
 msgid "%q failure: %d"
@@ -1219,6 +1219,7 @@ msgstr ""
 #: shared-bindings/busdisplay/BusDisplay.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 #: shared-bindings/struct/__init__.c shared-module/struct/__init__.c
+#: shared-module/videocore/VideoBuffer.c
 msgid "Buffer too small"
 msgstr ""
 
@@ -1517,7 +1518,8 @@ msgid "%q must be 8, 16, 24, or 32"
 msgstr ""
 
 #: ports/espressif/common-hal/audiobusio/__init__.c
-#: ports/espressif/common-hal/audioi2sin/I2SIn.c shared-bindings/emmcio/EMMC.c
+#: ports/espressif/common-hal/audioi2sin/I2SIn.c
+#: ports/espressif/common-hal/mii/Ethernet.c shared-bindings/emmcio/EMMC.c
 msgid "Peripheral in use"
 msgstr ""
 
@@ -1563,6 +1565,8 @@ msgid "Can't construct AudioOut because continuous channel already open"
 msgstr ""
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
+#: ports/espressif/common-hal/mipicsi/Camera.c
+#: shared-module/videocore/VideoBuffer.c
 msgid "already playing"
 msgstr ""
 
@@ -1749,6 +1753,18 @@ msgstr ""
 #: ports/nordic/common-hal/memorymap/AddressRange.c
 #: ports/raspberrypi/common-hal/memorymap/AddressRange.c
 msgid "Address range not allowed"
+msgstr ""
+
+#: ports/espressif/common-hal/mipicsi/Camera.c
+msgid "pixel_format must be RAW8, RAW10 or RAW12 when output_format differs"
+msgstr ""
+
+#: ports/espressif/common-hal/mipicsi/Camera.c
+msgid "output_format must be RGB565 or RGB888"
+msgstr ""
+
+#: ports/espressif/common-hal/mipicsi/Camera.c
+msgid "ISP conversion not supported on this chip"
 msgstr ""
 
 #: ports/espressif/common-hal/nvm/ByteArray.c
@@ -4769,6 +4785,50 @@ msgstr ""
 
 #: shared-module/vectorio/Polygon.c
 msgid "Polygon needs at least 3 points"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "framebuffer went away"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "video doesn't fit in framebuffer"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "framebuffer missing required functions"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "expected FrameBuffer or %q"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "video format must be byte aligned"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "video format doesn't match framebuffer"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "video source rejected the destination"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "video in a framebuffer must be at x == 0"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "video size changed since play; stop and play again"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "VideoBuffer does not support transforms"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "VideoBuffer is playing into a different framebuffer"
 msgstr ""
 
 #: supervisor/shared/bluetooth/bluetooth.c

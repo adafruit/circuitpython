@@ -324,6 +324,9 @@ endif
 ifeq ($(CIRCUITPY_MICROCONTROLLER),1)
 SRC_PATTERNS += microcontroller/%
 endif
+ifeq ($(CIRCUITPY_MIPICSI),1)
+SRC_PATTERNS += mipicsi/%
+endif
 ifeq ($(CIRCUITPY_MIPIDSI),1)
 SRC_PATTERNS += mipidsi/%
 endif
@@ -492,6 +495,9 @@ endif
 ifeq ($(CIRCUITPY_VECTORIO),1)
 SRC_PATTERNS += vectorio/%
 endif
+ifeq ($(CIRCUITPY_VIDEOCORE),1)
+SRC_PATTERNS += videocore/%
+endif
 ifeq ($(CIRCUITPY_WARNINGS),1)
 SRC_PATTERNS += warnings/%
 endif
@@ -586,6 +592,8 @@ SRC_COMMON_HAL_ALL = \
 	mdns/__init__.c \
 	mdns/Server.c \
 	mdns/RemoteService.c \
+	mipicsi/__init__.c \
+	mipicsi/Camera.c \
 	mipidsi/Bus.c \
 	mipidsi/Display.c \
 	mipidsi/__init__.c \
@@ -690,6 +698,8 @@ $(filter $(SRC_PATTERNS), \
 	imagecapture/ParallelImageCapture.c \
 	locale/__init__.c \
 	math/__init__.c \
+	mipicsi/BayerOrder.c \
+	mipicsi/PixelFormat.c \
 	microcontroller/ResetReason.c \
 	microcontroller/RunMode.c \
 	msgpack/__init__.c \
@@ -895,6 +905,8 @@ SRC_SHARED_MODULE_ALL = \
 	vectorio/Rectangle.c \
 	vectorio/VectorShape.c \
 	vectorio/__init__.c \
+	videocore/VideoBuffer.c \
+	videocore/__init__.c \
 	warnings/__init__.c \
 	watchdog/__init__.c \
 	zlib/__init__.c \
