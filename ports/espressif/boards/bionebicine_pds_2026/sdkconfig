@@ -1,0 +1,22 @@
+#
+# Espressif IoT Development Framework Configuration
+#
+#
+# Component config
+#
+#
+# LWIP
+#
+# end of LWIP
+
+# end of Component config
+
+# end of Espressif IoT Development Framework Configuration
+
+# Use the external 32.768kHz crystal on IO15/IO16 for RTC_SLOW_CLK instead of ESP-IDF's
+# default internal RC oscillator. Falls back to the internal oscillator automatically if the
+# crystal fails to start (see esp_hw_support/port/esp32s3/Kconfig.rtc).
+CONFIG_RTC_CLK_SRC_EXT_CRYS=y
+CONFIG_RTC_CLK_CAL_CYCLES=3000
+
+
