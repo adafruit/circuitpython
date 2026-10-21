@@ -215,7 +215,7 @@ static void gc_mark_subtree(mp_state_mem_area_t *area, size_t block);
 static void gc_mark_subtree(size_t block);
 #endif
 static void gc_deal_with_stack_overflow(void);
-static void gc_sweep_run_finalisers(void);
+static void gc_sweep_run_finalisers(bool reverse_finalisers);
 static void gc_sweep_free_blocks(void);
 
 // TODO waste less memory; currently requires that all entries in alloc_table have a corresponding block in pool
@@ -753,7 +753,7 @@ void gc_sweep_all(void) {
 
 void gc_collect_end(void) {
     gc_deal_with_stack_overflow();
-    gc_sweep_run_finalisers();
+    gc_sweep_run_finalisers(false);
     gc_sweep_free_blocks();
     #if MICROPY_GC_SPLIT_HEAP
     MP_STATE_MEM(gc_last_free_area) = &MP_STATE_MEM(area);
@@ -790,8 +790,36 @@ static void gc_deal_with_stack_overflow(void) {
     }
 }
 
+#if MICROPY_ENABLE_FINALISER
+static void gc_sweep_run_finaliser(const mp_state_mem_area_t *area, size_t block) {
+    if (ATB_GET_KIND(area, block) == AT_HEAD) {
+        mp_obj_base_t *obj = (mp_obj_base_t *)PTR_FROM_BLOCK(area, block);
+        if (obj->type != NULL) {
+            // if the object has a type then see if it has a __del__ method
+            mp_obj_t dest[2];
+            mp_load_method_maybe(MP_OBJ_FROM_PTR(obj), MP_QSTR___del__, dest);
+            if (dest[0] != MP_OBJ_NULL) {
+                // load_method returned a method, execute it in a protected environment
+                #if MICROPY_ENABLE_SCHEDULER
+                mp_sched_lock();
+                #endif
+                mp_call_function_1_protected(dest[0], dest[1]);
+                #if MICROPY_ENABLE_SCHEDULER
+                mp_sched_unlock();
+                #endif
+            }
+        }
+        // clear finaliser flag
+        FTB_CLEAR(area, block);
+    }
+}
+#endif
+
 // Run finalisers for all to-be-freed blocks
-static void gc_sweep_run_finalisers(void) {
+static void gc_sweep_run_finalisers(bool reverse_finalisers) {
+    #if !MICROPY_ENABLE_FINALISER && !MICROPY_PY_WEAKREF
+    (void)reverse_finalisers;
+    #endif
     #if MICROPY_ENABLE_FINALISER || MICROPY_PY_WEAKREF
     #if MICROPY_ENABLE_FINALISER && MICROPY_PY_WEAKREF
     MP_STATIC_ASSERT(BLOCKS_PER_FTB == BLOCKS_PER_WTB);
@@ -800,57 +828,85 @@ static void gc_sweep_run_finalisers(void) {
         assert(area->gc_last_used_block <= area->gc_alloc_table_byte_len * BLOCKS_PER_ATB);
         // Small speed optimisation: skip over empty FTB blocks
         size_t ftb_end = area->gc_last_used_block / BLOCKS_PER_FTB; // index is inclusive
-        for (size_t ftb_idx = 0; ftb_idx <= ftb_end; ftb_idx++) {
-            #if MICROPY_ENABLE_FINALISER
-            byte ftb = area->gc_finaliser_table_start[ftb_idx];
-            size_t block = ftb_idx * BLOCKS_PER_FTB;
-            while (ftb) {
-                MICROPY_GC_HOOK_LOOP(block);
-                if (ftb & 1) { // FTB_GET(area, block) shortcut
-                    if (ATB_GET_KIND(area, block) == AT_HEAD) {
-                        mp_obj_base_t *obj = (mp_obj_base_t *)PTR_FROM_BLOCK(area, block);
-                        if (obj->type != NULL) {
-                            // if the object has a type then see if it has a __del__ method
-                            mp_obj_t dest[2];
-                            mp_load_method_maybe(MP_OBJ_FROM_PTR(obj), MP_QSTR___del__, dest);
-                            if (dest[0] != MP_OBJ_NULL) {
-                                // load_method returned a method, execute it in a protected environment
-                                #if MICROPY_ENABLE_SCHEDULER
-                                mp_sched_lock();
-                                #endif
-                                mp_call_function_1_protected(dest[0], dest[1]);
-                                #if MICROPY_ENABLE_SCHEDULER
-                                mp_sched_unlock();
-                                #endif
-                            }
-                        }
-                        // clear finaliser flag
-                        FTB_CLEAR(area, block);
+        #if MICROPY_ENABLE_FINALISER
+        if (reverse_finalisers) {
+            // Finalise in reverse allocation order so wrappers close before the
+            // resources they depend on during VM shutdown.
+            for (size_t ftb_idx = ftb_end;; ftb_idx--) {
+                byte ftb = area->gc_finaliser_table_start[ftb_idx];
+                for (size_t bit = BLOCKS_PER_FTB; bit-- > 0;) {
+                    size_t block = ftb_idx * BLOCKS_PER_FTB + bit;
+                    MICROPY_GC_HOOK_LOOP(block);
+                    if (block <= area->gc_last_used_block && (ftb & (1 << bit))) { // FTB_GET(area, block) shortcut
+                        gc_sweep_run_finaliser(area, block);
                     }
                 }
-                ftb >>= 1;
-                block++;
+                if (ftb_idx == 0) {
+                    break;
+                }
             }
-            #endif
-            #if MICROPY_PY_WEAKREF
-            byte wtb = area->gc_weakref_table_start[ftb_idx];
-            block = ftb_idx * BLOCKS_PER_WTB;
-            while (wtb) {
-                MICROPY_GC_HOOK_LOOP(block);
-                if (wtb & 1) { // WTB_GET(area, block) shortcut
-                    if (ATB_GET_KIND(area, block) == AT_HEAD) {
-                        mp_obj_base_t *obj = (mp_obj_base_t *)PTR_FROM_BLOCK(area, block);
-                        gc_weakref_about_to_be_freed(obj);
-                        WTB_CLEAR(area, block);
+        }
+        #endif
+        if (!reverse_finalisers) {
+            for (size_t ftb_idx = 0; ftb_idx <= ftb_end; ftb_idx++) {
+                #if MICROPY_ENABLE_FINALISER
+                byte ftb = area->gc_finaliser_table_start[ftb_idx];
+                size_t block = ftb_idx * BLOCKS_PER_FTB;
+                while (ftb) {
+                    MICROPY_GC_HOOK_LOOP(block);
+                    if (ftb & 1) { // FTB_GET(area, block) shortcut
+                        gc_sweep_run_finaliser(area, block);
                     }
+                    ftb >>= 1;
+                    block++;
                 }
-                wtb >>= 1;
-                block++;
+                #endif
+                #if MICROPY_PY_WEAKREF
+                byte wtb = area->gc_weakref_table_start[ftb_idx];
+                size_t weakref_block = ftb_idx * BLOCKS_PER_WTB;
+                while (wtb) {
+                    MICROPY_GC_HOOK_LOOP(weakref_block);
+                    if (wtb & 1) { // WTB_GET(area, block) shortcut
+                        if (ATB_GET_KIND(area, weakref_block) == AT_HEAD) {
+                            mp_obj_base_t *obj = (mp_obj_base_t *)PTR_FROM_BLOCK(area, weakref_block);
+                            gc_weakref_about_to_be_freed(obj);
+                            WTB_CLEAR(area, weakref_block);
+                        }
+                    }
+                    wtb >>= 1;
+                    weakref_block++;
+                }
+                #endif
+            }
+        } else {
+            #if MICROPY_PY_WEAKREF
+            for (size_t ftb_idx = 0; ftb_idx <= ftb_end; ftb_idx++) {
+                byte wtb = area->gc_weakref_table_start[ftb_idx];
+                size_t block = ftb_idx * BLOCKS_PER_WTB;
+                while (wtb) {
+                    MICROPY_GC_HOOK_LOOP(block);
+                    if (wtb & 1) { // WTB_GET(area, block) shortcut
+                        if (ATB_GET_KIND(area, block) == AT_HEAD) {
+                            mp_obj_base_t *obj = (mp_obj_base_t *)PTR_FROM_BLOCK(area, block);
+                            gc_weakref_about_to_be_freed(obj);
+                            WTB_CLEAR(area, block);
+                        }
+                    }
+                    wtb >>= 1;
+                    block++;
+                }
             }
             #endif
         }
     }
     #endif // MICROPY_ENABLE_FINALISER || MICROPY_PY_WEAKREF
+}
+
+void gc_run_finalisers(void) {
+    gc_collect_start_common();
+    gc_sweep_run_finalisers(true);
+    MP_STATE_THREAD(gc_lock_depth) &= ~GC_COLLECT_FLAG;
+    GC_EXIT();
 }
 
 // Free unmarked heads and their tails

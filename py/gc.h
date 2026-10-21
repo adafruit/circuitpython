@@ -38,6 +38,9 @@
 void gc_init(void *start, void *end);
 // CIRCUITPY-CHANGE
 void gc_deinit(void);
+// CIRCUITPY-CHANGE
+// Run all heap finalisers without freeing heap blocks.
+void gc_run_finalisers(void);
 
 #if MICROPY_GC_SPLIT_HEAP
 // Used to add additional memory areas to the heap.
