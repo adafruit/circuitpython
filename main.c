@@ -438,9 +438,9 @@ static void cleanup_after_vm(mp_obj_t exception) {
     wifi_user_reset();
     #endif
 
-    // Close user files while their block devices and buses are still usable.
-    // stop_mp() will free the heap later, after the ports have been reset.
-    gc_run_finalisers();
+    // Close files while their block devices and buses are still usable.
+    // Other finalisers run during stop_mp() after the ports have reset.
+    gc_run_finalisers_first();
 
     // reset_board_buses() first because it may release pins from the never_reset state, so that
     // reset_port() can reset them.

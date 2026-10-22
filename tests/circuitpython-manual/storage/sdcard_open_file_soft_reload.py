@@ -4,6 +4,7 @@
 # /sdcard-reload-test.txt from the SD card before starting.
 
 import board
+import gc
 import sdcardio
 import storage
 import supervisor
@@ -12,7 +13,11 @@ STATE_FILE = "/sdcard-reload-test-state.txt"
 SD_FILE = "/sd/sdcard-reload-test.txt"
 EXPECTED = "unflushed write survives soft reload"
 
+# Leave free blocks below SDCard for later allocations to reuse.
+heap_space = bytearray(4096)
 sd = sdcardio.SDCard(board.SPI(), board.SD_CS)
+del heap_space
+gc.collect()
 storage.mount(storage.VfsFat(sd), "/sd")
 
 try:
