@@ -406,6 +406,9 @@ CIRCUITPY_ESPCAMERA = 0
 # P4 has MIPI-DSI
 CIRCUITPY_MIPIDSI = 1
 
+# Hardware JPEG decoder
+CIRCUITPY_JPEGIO_HW ?= $(CIRCUITPY_JPEGIO)
+
 #### esp32s31 #########################################################
 else ifeq ($(IDF_TARGET),esp32s31)
 
@@ -439,6 +442,9 @@ CIRCUITPY_ESPULP = 0
 
 # The S31 has five eFuse key blocks, not six.
 CIRCUITPY_HARDWAREKEY = 0
+
+# Hardware JPEG decoder
+CIRCUITPY_JPEGIO_HW ?= $(CIRCUITPY_JPEGIO)
 
 # No I80 support from the IDF
 CIRCUITPY_PARALLELDISPLAYBUS = 0
