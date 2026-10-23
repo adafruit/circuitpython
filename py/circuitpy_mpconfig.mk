@@ -99,6 +99,11 @@ CFLAGS += -DMICROPY_PY_SELECT_SELECT=$(MICROPY_PY_SELECT_SELECT)
 CIRCUITPY_AESIO ?= $(CIRCUITPY_FULL_BUILD)
 CFLAGS += -DCIRCUITPY_AESIO=$(CIRCUITPY_AESIO)
 
+# An ESP32 co-processor running nina-fw, shared by the core and ESP32SPI (`_airlift`).
+# Not part of CIRCUITPY_NETWORK, which would also turn on ssl, ipaddress and so on.
+CIRCUITPY_AIRLIFT ?= 0
+CFLAGS += -DCIRCUITPY_AIRLIFT=$(CIRCUITPY_AIRLIFT)
+
 # TODO: CIRCUITPY_ALARM will gradually be added to as many ports as possible
 # so make this 1 or CIRCUITPY_FULL_BUILD eventually
 CIRCUITPY_ALARM ?= 0

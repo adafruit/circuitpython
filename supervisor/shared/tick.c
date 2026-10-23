@@ -31,6 +31,10 @@
 #include "shared-module/audiofilewriter/AudioFileWriter.h"
 #endif
 
+#if CIRCUITPY_AIRLIFT && CIRCUITPY_SOCKETPOOL
+#include "shared-module/_airlift/socketpool.h"
+#endif
+
 #include "shared-bindings/microcontroller/__init__.h"
 
 #if CIRCUITPY_WATCHDOG
@@ -88,6 +92,10 @@ void supervisor_tick(void) {
 
     #if CIRCUITPY_KEYPAD
     keypad_tick();
+    #endif
+
+    #if CIRCUITPY_AIRLIFT && CIRCUITPY_SOCKETPOOL
+    airlift_socketpool_tick();
     #endif
 
     background_callback_add(&tick_callback, supervisor_background_tick, NULL);
