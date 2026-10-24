@@ -34,3 +34,12 @@ int pinsToUart(const mcu_pin_obj_t *rx, const mcu_pin_obj_t *tx) {
     mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q"), MP_QSTR_pins);
     return -1;
 }
+
+int uart_init(mxc_uart_regs_t *uart, unsigned int baud) {
+    return MXC_UART_Init(uart, baud, MXC_UART_IBRO_CLK);
+}
+
+int uart_set_flow_ctrl(mxc_uart_regs_t *uart, bool enable, int rtsThreshold) {
+    mxc_uart_flow_t flow = enable ? MXC_UART_FLOW_EN : MXC_UART_FLOW_DIS;
+    return MXC_UART_SetFlowCtrl(uart, flow, rtsThreshold);
+}

@@ -13,3 +13,5 @@
 #include "gpio.h"
 #include "gpio_regs.h"
 #include "max32690.h"
+
+int32_t gpio_init(uint32_t portmask);
