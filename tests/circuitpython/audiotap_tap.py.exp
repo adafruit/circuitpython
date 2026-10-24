@@ -1,0 +1,19 @@
+idle False 0 (0.0, 0.0)
+idle silence {0} 0
+playing True
+played 256 [-300, -297, -294] True
+available 256
+read 256 True 0
+read empty 0
+levels 0.0092 0.0057
+levels again (0.0, 0.0)
+full 100 True False
+kept oldest 100 True
+cleared 0
+bytearray 5 59
+slice 3 [7, 7, 291, 294, 297, 7, 7, 7]
+meter 0 0 (1.0, 0.7905694150420949)
+stereo 4 [0, 1, 2, 3, 0]
+8 bit (0.5, 0.3535533905932738)
+ended False 200
+deinit Object has been deinitialized and can no longer be used. Create a new object.
