@@ -29,6 +29,9 @@
 #include "bindings/espulp/__init__.h"
 #include "common-hal/microcontroller/Pin.h"
 #include "common-hal/analogio/AnalogOut.h"
+#if CIRCUITPY_AUDIOPWMIO
+#include "common-hal/audiopwmio/PWMAudioOut.h"
+#endif
 #include "common-hal/busio/SPI.h"
 #include "common-hal/busio/UART.h"
 #include "common-hal/dualbank/__init__.h"
@@ -454,6 +457,10 @@ void reset_port(void) {
 
     #if CIRCUITPY_ANALOGIO
     analogout_reset();
+    #endif
+
+    #if CIRCUITPY_AUDIOPWMIO
+    audiopwmout_reset();
     #endif
 
     #if CIRCUITPY_BUSIO

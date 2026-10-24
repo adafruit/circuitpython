@@ -458,6 +458,9 @@ CIRCUITPY_MII = 0
 CIRCUITPY_AUDIOIO ?= 1
 CIRCUITPY_AUDIOFILEWRITER ?= 1
 
+# LEDC + GPTimer PWM audio, for boards whose speaker is not on a DAC pin.
+CIRCUITPY_AUDIOPWMIO ?= 1
+
 # No I2S peripheral PDM-to-PCM hardware support
 CIRCUITPY_AUDIOBUSIO_PDMIN = 0
 

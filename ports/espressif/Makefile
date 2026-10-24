@@ -123,6 +123,7 @@ INC += \
 	-isystem esp-idf/components/esp_hal_i2s/include \
 	-isystem esp-idf/components/esp_hal_i2s/$(IDF_TARGET)/include \
 	-isystem esp-idf/components/esp_hal_ledc/include \
+	-isystem esp-idf/components/esp_hal_ledc/$(IDF_TARGET)/include \
 	-isystem esp-idf/components/esp_hal_pcnt/include \
 	-isystem esp-idf/components/esp_hal_rmt/include \
 	-isystem esp-idf/components/esp_hal_rmt/$(IDF_TARGET)/include \

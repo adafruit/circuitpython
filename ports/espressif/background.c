@@ -8,6 +8,9 @@
 #include "supervisor/filesystem.h"
 #include "supervisor/port.h"
 #include "supervisor/shared/stack.h"
+#if CIRCUITPY_AUDIOPWMIO
+#include "common-hal/audiopwmio/PWMAudioOut.h"
+#endif
 #if CIRCUITPY_USB_HOST
 #include "supervisor/usb.h"
 #include "tusb.h"
@@ -28,6 +31,9 @@ void port_background_tick(void) {
 }
 
 void port_background_task(void) {
+    #if CIRCUITPY_AUDIOPWMIO
+    audiopwmout_background();
+    #endif
 }
 
 void port_start_background_tick(void) {
