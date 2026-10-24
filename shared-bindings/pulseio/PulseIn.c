@@ -33,6 +33,10 @@
 //|         :param bool idle_state: Idle state of the pin. At start and after `resume`
 //|           the first recorded pulse will the opposite state from idle.
 //|
+//|         **Limitations**: The `maxlen` parameter is limited depending on the specific board.
+//|         On most ESP32 variants the limit is 128. On ESP32-S3 and ESP32-P4 the first `PulseIn` instance
+//|         can use `maxlen` up to available RAM; all subsequent instances are limited to 128.
+//|
 //|         Read a short series of pulses::
 //|
 //|           import pulseio
