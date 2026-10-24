@@ -45,6 +45,8 @@ static mp_obj_t tilepalettemapper_tilepalettemapper_make_new(const mp_obj_type_t
         mp_raise_TypeError_varg(MP_ERROR_TEXT("unsupported %q type"), MP_QSTR_pixel_shader);
     }
 
+    mp_arg_validate_int_min(args[ARG_input_color_count].u_int, 1, MP_QSTR_input_color_count);
+
     tilepalettemapper_tilepalettemapper_t *self = mp_obj_malloc(tilepalettemapper_tilepalettemapper_t, &tilepalettemapper_tilepalettemapper_type);
     common_hal_tilepalettemapper_tilepalettemapper_construct(self, pixel_shader, args[ARG_input_color_count].u_int);
 
@@ -128,9 +130,12 @@ static mp_obj_t tilepalettemapper_subscr(mp_obj_t self_in, mp_obj_t index_obj, m
     } else {
         uint16_t x = 0;
         uint16_t y = 0;
+        uint16_t width = common_hal_tilepalettemapper_tilepalettemapper_get_width(self);
+        if (width == 0) {
+            mp_raise_IndexError(MP_ERROR_TEXT("Tile index out of bounds"));
+        }
         if (mp_obj_is_small_int(index_obj)) {
             mp_int_t i = MP_OBJ_SMALL_INT_VALUE(index_obj);
-            uint16_t width = common_hal_tilepalettemapper_tilepalettemapper_get_width(self);
             x = i % width;
             y = i / width;
         } else {

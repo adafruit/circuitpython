@@ -31,6 +31,7 @@ static void _clobber_points_list(vectorio_polygon_t *self, mp_obj_t points_tuple
     if (len < 3) {
         mp_raise_TypeError(MP_ERROR_TEXT("Polygon needs at least 3 points"));
     }
+    mp_arg_validate_length_range(len, 3, UINT16_MAX / 2, MP_QSTR_points);
 
     int16_t *points_list = gc_realloc(self->points_list, 2 * len * sizeof(uint16_t), true);
     VECTORIO_POLYGON_DEBUG("realloc(%p, %d) -> %p", self->points_list, 2 * len * sizeof(uint16_t), points_list);
@@ -39,7 +40,7 @@ static void _clobber_points_list(vectorio_polygon_t *self, mp_obj_t points_tuple
     self->points_list = NULL;
     self->len = 0;
 
-    for (uint16_t i = 0; i < len; ++i) {
+    for (size_t i = 0; i < len; ++i) {
         size_t tuple_len = 0;
         mp_obj_t *tuple_items;
         mp_arg_validate_type(items[i], &mp_type_tuple, MP_QSTR_point);
