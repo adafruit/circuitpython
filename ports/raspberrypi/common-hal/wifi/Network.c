@@ -31,7 +31,7 @@ mp_obj_t common_hal_wifi_network_get_channel(wifi_network_obj_t *self) {
 }
 
 mp_obj_t common_hal_wifi_network_get_country(wifi_network_obj_t *self) {
-    return (mp_obj_t)MP_QSTR_;
+    return MP_OBJ_NEW_QSTR(MP_QSTR_);
 }
 
 mp_obj_t common_hal_wifi_network_get_authmode(wifi_network_obj_t *self) {

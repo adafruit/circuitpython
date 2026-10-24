@@ -193,6 +193,12 @@ void common_hal_wifi_radio_stop_station(wifi_radio_obj_t *self) {
             break;
         }
     }
+    // Drop the DHCP address so the next connect() waits for a lease from the new network.
+    MICROPY_PY_LWIP_ENTER
+    if (dhcp_supplied_address(NETIF_STA)) {
+        netif_set_ipaddr(NETIF_STA, IP4_ADDR_ANY4);
+    }
+    MICROPY_PY_LWIP_EXIT
     bindings_cyw43_wifi_enforce_pm();
 }
 
@@ -347,7 +353,10 @@ wifi_radio_error_t common_hal_wifi_radio_connect(wifi_radio_obj_t *self, uint8_t
     // disconnect
     common_hal_wifi_radio_stop_station(self);
 
-    // connect
+    // connect. Record the network now: the join carries on after a timeout.
+    memcpy(self->connected_ssid, ssid, ssid_len);
+    self->connected_ssid_len = ssid_len;
+    self->connected_with_password = password_len != 0;
     int auth_mode = password_len ? CYW43_AUTH_WPA2_AES_PSK : CYW43_AUTH_OPEN;
     cyw43_arch_wifi_connect_async((const char *)ssid, (const char *)password, auth_mode);
     // TODO: Implement authmode check like in espressif
@@ -362,8 +371,6 @@ wifi_radio_error_t common_hal_wifi_radio_connect(wifi_radio_obj_t *self, uint8_t
 
         switch (result) {
             case CYW43_LINK_UP:
-                memcpy(self->connected_ssid, ssid, ssid_len);
-                self->connected_ssid_len = ssid_len;
                 bindings_cyw43_wifi_enforce_pm();
                 return WIFI_RADIO_ERROR_NONE;
             case CYW43_LINK_FAIL:
@@ -384,7 +391,34 @@ bool common_hal_wifi_radio_get_connected(wifi_radio_obj_t *self) {
 }
 
 mp_obj_t common_hal_wifi_radio_get_ap_info(wifi_radio_obj_t *self) {
-    mp_raise_NotImplementedError(NULL);
+    if (cyw43_tcpip_link_status(&cyw43_state, CYW43_ITF_STA) != CYW43_LINK_UP) {
+        return mp_const_none;
+    }
+
+    cyw43_ev_scan_result_t record = {0};
+    memcpy(record.ssid, self->connected_ssid, self->connected_ssid_len);
+    record.ssid_len = self->connected_ssid_len;
+
+    // channel_info_t: hardware channel, target channel, scan channel
+    uint32_t channel_info[3];
+    if (cyw43_ioctl(&cyw43_state, CYW43_IOCTL_GET_CHANNEL, sizeof(channel_info), (uint8_t *)channel_info, CYW43_ITF_STA) == 0) {
+        record.channel = channel_info[0];
+    }
+
+    int32_t rssi;
+    if (cyw43_wifi_get_rssi(&cyw43_state, &rssi) == 0) {
+        record.rssi = rssi;
+    }
+
+    cyw43_wifi_get_bssid(&cyw43_state, record.bssid);
+
+    // connect() joins with either CYW43_AUTH_OPEN or CYW43_AUTH_WPA2_AES_PSK.
+    // Encode that with the scan result bits from cyw43_ll.c: 1 is privacy, 4 is WPA2.
+    record.auth_mode = self->connected_with_password ? (1 | 4) : 0;
+
+    wifi_network_obj_t *ap_info = mp_obj_malloc(wifi_network_obj_t, &wifi_network_type);
+    ap_info->record = record;
+    return MP_OBJ_FROM_PTR(ap_info);
 }
 
 mp_obj_t common_hal_wifi_radio_get_ipv4_gateway(wifi_radio_obj_t *self) {

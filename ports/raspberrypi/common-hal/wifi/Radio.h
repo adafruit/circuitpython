@@ -17,6 +17,7 @@ typedef struct {
     wifi_scannednetworks_obj_t *current_scan;
     uint8_t connected_ssid[32];
     uint8_t connected_ssid_len;
+    bool connected_with_password;
     bool enabled;
 } wifi_radio_obj_t;
 
