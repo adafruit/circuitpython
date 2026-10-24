@@ -12,6 +12,7 @@
 #include "shared-module/usb_audio/USBSpeaker.h"
 #include "shared-module/usb_audio/usb_audio_descriptors.h"
 
+#include <math.h>
 #include <string.h>
 
 #include "py/misc.h"
@@ -50,9 +51,119 @@ uint8_t usb_audio_channel_count;
 bool usb_audio_microphone_enabled;
 bool usb_audio_speaker_enabled;
 
-// Audio control state surfaced to the host. One extra entry for the master channel 0.
-static int8_t usb_audio_mute[USB_AUDIO_N_CHANNELS + 1];
-static int16_t usb_audio_volume[USB_AUDIO_N_CHANNELS + 1];
+// Mute and volume as the host set them, per feature unit and per channel,
+// channel 0 being the master. The single-direction functions have one feature
+// unit, USB_AUDIO_ENTITY_FEATURE_UNIT; the headset has that one for its
+// speaker and USB_AUDIO_HS_ENTITY_MIC_FEATURE_UNIT for its microphone. Volume
+// is in 1/256 dB, as on the wire. The gain each works out to, master and
+// channel in series and mute folded in, is kept in Q15 so the sample paths
+// only multiply.
+#define USB_AUDIO_N_FEATURE_UNITS (2)
+#define USB_AUDIO_SPEAKER_FEATURE_UNIT_SLOT (0)
+// The volume range offered to the host: 0 dB, which is the default and
+// unity, down to this. Nothing above unity, so the host's slider cannot clip.
+#define USB_AUDIO_VOLUME_MIN_DB (-60)
+#define USB_AUDIO_GAIN_UNITY (1 << 15)
+static int8_t usb_audio_mute[USB_AUDIO_N_FEATURE_UNITS][USB_AUDIO_N_CHANNELS + 1];
+static int16_t usb_audio_volume[USB_AUDIO_N_FEATURE_UNITS][USB_AUDIO_N_CHANNELS + 1];
+static int32_t usb_audio_gain[USB_AUDIO_N_FEATURE_UNITS][USB_AUDIO_N_CHANNELS] = {
+    { USB_AUDIO_GAIN_UNITY, USB_AUDIO_GAIN_UNITY },
+    { USB_AUDIO_GAIN_UNITY, USB_AUDIO_GAIN_UNITY },
+};
+
+// Whether each unit's gain is applied to the samples here rather than left to
+// the application. Off by default; see usb_audio_set_apply_host_volume().
+static bool usb_audio_apply[USB_AUDIO_N_FEATURE_UNITS];
+
+// Which of the two feature units an entity id names, or -1 for none.
+static int usb_audio_feature_unit_slot(uint8_t entity_id) {
+    if (entity_id == USB_AUDIO_ENTITY_FEATURE_UNIT) {
+        return USB_AUDIO_SPEAKER_FEATURE_UNIT_SLOT;
+    }
+    if (entity_id == USB_AUDIO_HS_ENTITY_MIC_FEATURE_UNIT) {
+        return 1;
+    }
+    return -1;
+}
+
+// The unit that controls the microphone: its own in a headset, the only one
+// otherwise.
+static int usb_audio_microphone_feature_unit_slot(void) {
+    return usb_audio_speaker_enabled ? 1 : USB_AUDIO_SPEAKER_FEATURE_UNIT_SLOT;
+}
+
+static void usb_audio_update_gain(int slot) {
+    for (size_t ch = 0; ch < USB_AUDIO_N_CHANNELS; ch++) {
+        int32_t gain = 0;
+        if (!usb_audio_mute[slot][0] && !usb_audio_mute[slot][ch + 1]) {
+            // Master and channel attenuate in series, so their dB add.
+            int32_t db256 = usb_audio_volume[slot][0] + usb_audio_volume[slot][ch + 1];
+            if (db256 >= 0) {
+                gain = USB_AUDIO_GAIN_UNITY;
+            } else {
+                gain = (int32_t)(USB_AUDIO_GAIN_UNITY * powf(10.0f, (float)db256 / (256.0f * 20.0f)));
+            }
+        }
+        usb_audio_gain[slot][ch] = gain;
+    }
+}
+
+// The slot a direction's controls live in. A headset has a unit per direction;
+// a single-direction function has just the one, which both names resolve to.
+static int usb_audio_direction_slot(usb_audio_direction_t dir) {
+    if (dir == USB_AUDIO_DIR_MICROPHONE) {
+        return usb_audio_microphone_feature_unit_slot();
+    }
+    return USB_AUDIO_SPEAKER_FEATURE_UNIT_SLOT;
+}
+
+// The host writes these from the USB control-request callback while Python reads
+// them from the VM. Each is a single aligned scalar, so a read cannot tear on any
+// port CircuitPython targets, and a value one frame stale does not matter for a
+// volume slider - no locking.
+//
+// Both report the EFFECTIVE setting for the first channel, master and channel in
+// series, the same combination usb_audio_update_gain() uses. Reporting the master
+// alone would read 0 dB and unmuted forever on Windows, which drives the
+// per-channel controls and leaves the master untouched (measured).
+bool usb_audio_host_mute(usb_audio_direction_t dir) {
+    const int slot = usb_audio_direction_slot(dir);
+    return usb_audio_mute[slot][0] != 0 || usb_audio_mute[slot][1] != 0;
+}
+
+mp_float_t usb_audio_host_volume(usb_audio_direction_t dir) {
+    // Stored in 1/256 dB, as on the wire.
+    const int slot = usb_audio_direction_slot(dir);
+    return (usb_audio_volume[slot][0] + usb_audio_volume[slot][1]) / (mp_float_t)256.0;
+}
+
+mp_float_t usb_audio_host_gain(usb_audio_direction_t dir) {
+    return usb_audio_gain[usb_audio_direction_slot(dir)][0] / (mp_float_t)USB_AUDIO_GAIN_UNITY;
+}
+
+bool usb_audio_apply_host_volume(usb_audio_direction_t dir) {
+    return usb_audio_apply[usb_audio_direction_slot(dir)];
+}
+
+void usb_audio_set_apply_host_volume(usb_audio_direction_t dir, bool apply) {
+    usb_audio_apply[usb_audio_direction_slot(dir)] = apply;
+}
+
+// Scales interleaved wire-format frames in place by a unit's gains.
+static void usb_audio_apply_gain(int16_t *samples, size_t n_samples, int slot) {
+    if (!usb_audio_apply[slot]) {
+        return;                   // the application applies the host's gain, or ignores it
+    }
+    const int32_t left = usb_audio_gain[slot][0];
+    const int32_t right = usb_audio_gain[slot][1];
+    if (left == USB_AUDIO_GAIN_UNITY && right == USB_AUDIO_GAIN_UNITY) {
+        return;
+    }
+    for (size_t i = 0; i + 1 < n_samples; i += 2) {
+        samples[i] = (int16_t)((samples[i] * left) >> 15);
+        samples[i + 1] = (int16_t)((samples[i + 1] * right) >> 15);
+    }
+}
 
 bool shared_module_usb_audio_enable(mp_int_t sample_rate, mp_int_t channel_count, bool microphone, bool speaker) {
     if (tud_connected()) {
@@ -149,14 +260,20 @@ void usb_audio_setup_singletons(void) {
         speaker;
 }
 
-// Hand-rolled UAC2 speaker (host -> board) descriptor WITHOUT an async
-// feedback endpoint. This mirrors TinyUSB's TUD_AUDIO20_SPEAKER_STEREO_FB_DESCRIPTOR
-// (lib/tinyusb/src/device/usbd.h) but drops the trailing feedback endpoint, so
-// the streaming alt-setting declares a single OUT endpoint (_nEPs = 0x01). The
-// entity IDs match the mic descriptor (see usb_audio_descriptors.h); only the
-// terminal roles reverse: the input terminal is the USB-streaming side and the
-// output terminal is the desktop speaker, and the AS interface links the input
-// terminal (0x01). Async feedback for true clock matching is a later step.
+// Hand-rolled UAC2 speaker (host -> board) descriptor. This mirrors TinyUSB's
+// TUD_AUDIO20_SPEAKER_STEREO_FB_DESCRIPTOR (lib/tinyusb/src/device/usbd.h) but
+// drops the trailing feedback endpoint, so the streaming alt-setting declares
+// a single OUT endpoint (_nEPs = 0x01). The entity IDs match the mic descriptor
+// (see usb_audio_descriptors.h); only the terminal roles reverse: the input
+// terminal is the USB-streaming side and the output terminal is the desktop
+// speaker, and the AS interface links the input terminal (0x01).
+//
+// The OUT endpoint is adaptive, not asynchronous: an asynchronous sink has to
+// tell the host its rate through a feedback endpoint, and Windows'
+// usbaudio2.sys refuses the function (Code 10) when there is none, while an
+// adaptive sink takes the host's rate as given, which is what the receive ring
+// in USBSpeaker.c does, padding or dropping when the output's own clock
+// drifts from it.
 #define USB_AUDIO_SPEAKER_DESCRIPTOR(_itfnum, _stridx, _nBytesPerSample, _nBitsUsedPerSample, _epout, _epsize) \
     /* Standard Interface Association Descriptor (IAD) */ \
     TUD_AUDIO20_DESC_IAD(/*_firstitf*/ _itfnum, /*_nitfs*/ 0x02, /*_stridx*/ 0x00), \
@@ -185,11 +302,11 @@ void usb_audio_setup_singletons(void) {
     /* Class-Specific AS Isochronous Audio Data Endpoint Descriptor(4.10.1.2) */ \
     TUD_AUDIO20_DESC_CS_AS_ISO_EP(/*_attr*/ AUDIO20_CS_AS_ISO_DATA_EP_ATT_NON_MAX_PACKETS_OK, /*_ctrl*/ AUDIO20_CTRL_NONE, /*_lockdelayunit*/ AUDIO20_CS_AS_ISO_DATA_EP_LOCK_DELAY_UNIT_UNDEFINED, /*_lockdelay*/ 0x0000)
 
-// Hand-rolled UAC2 microphone (board -> host) descriptor WITHOUT an async
-// feedback endpoint. This mirrors TinyUSB's TUD_AUDIO20_MIC_ONE_CH_DESCRIPTOR
-// (lib/tinyusb/src/device/usbd.h) but drops the trailing feedback endpoint, so
-// the streaming alt-setting declares a single IN endpoint (_nEPs = 0x00). Async
-// feedback for true clock matching is a later step.
+// Hand-rolled UAC2 microphone (board -> host) descriptor. This mirrors
+// TinyUSB's TUD_AUDIO20_MIC_ONE_CH_DESCRIPTOR (lib/tinyusb/src/device/usbd.h)
+// but drops the trailing feedback endpoint, so the streaming alt-setting
+// declares a single IN endpoint. An asynchronous source needs no feedback: it
+// sends at its own rate and the host follows.
 #define USB_AUDIO_MIC_DESCRIPTOR(_itfnum, _stridx, _nBytesPerSample, _nBitsUsedPerSample, _epin, _epsize) \
     /* Standard Interface Association Descriptor (IAD) */ \
     TUD_AUDIO20_DESC_IAD(/*_firstitf*/ _itfnum, /*_nitfs*/ 0x02, /*_stridx*/ 0x00), \
@@ -227,9 +344,9 @@ void usb_audio_setup_singletons(void) {
 // must use distinct entity IDs (USB_AUDIO_HS_ENTITY_*; see usb_audio_descriptors.h)
 // because they live in the same AudioControl interface, and they share one clock
 // source. The function spans three interfaces: AudioControl (_itfnum), the
-// speaker AudioStreaming interface (_itfnum + 1, OUT endpoint), and the mic
-// AudioStreaming interface (_itfnum + 2, IN endpoint). Neither stream has an
-// async feedback endpoint, matching the single-direction descriptors.
+// speaker AudioStreaming interface (_itfnum + 1, adaptive OUT endpoint), and
+// the mic AudioStreaming interface (_itfnum + 2, asynchronous IN endpoint), as
+// in the single-direction descriptors.
 #define USB_AUDIO_HEADSET_DESCRIPTOR(_itfnum, _stridx, _nBytesPerSample, _nBitsUsedPerSample, _epout, _epin, _epsize) \
     /* Standard Interface Association Descriptor (IAD) -- 3 interfaces */ \
     TUD_AUDIO20_DESC_IAD(/*_firstitf*/ _itfnum, /*_nitfs*/ 0x03, /*_stridx*/ 0x00), \
@@ -262,7 +379,7 @@ void usb_audio_setup_singletons(void) {
     TUD_AUDIO20_DESC_CS_AS_INT(/*_termid*/ USB_AUDIO_HS_ENTITY_SPK_INPUT_TERMINAL, /*_ctrl*/ AUDIO20_CTRL_NONE, /*_formattype*/ AUDIO20_FORMAT_TYPE_I, /*_formats*/ AUDIO20_DATA_FORMAT_TYPE_I_PCM, /*_nchannelsphysical*/ USB_AUDIO_N_CHANNELS, /*_channelcfg*/ AUDIO20_CHANNEL_CONFIG_NON_PREDEFINED, /*_stridx*/ 0x00), \
     /* Type I Format Type Descriptor(2.3.1.6 - Audio Formats) */ \
     TUD_AUDIO20_DESC_TYPE_I_FORMAT(_nBytesPerSample, _nBitsUsedPerSample), \
-    /* Standard AS Isochronous Audio Data Endpoint Descriptor(4.10.1.1) */ \
+    /* Standard AS Isochronous Audio Data Endpoint Descriptor(4.10.1.1) -- adaptive, see USB_AUDIO_SPEAKER_DESCRIPTOR */ \
     TUD_AUDIO20_DESC_STD_AS_ISO_EP(/*_ep*/ _epout, /*_attr*/ (uint8_t)((uint8_t)TUSB_XFER_ISOCHRONOUS | (uint8_t)TUSB_ISO_EP_ATT_ADAPTIVE | (uint8_t)TUSB_ISO_EP_ATT_DATA), /*_maxEPsize*/ _epsize, /*_interval*/ 0x01), \
     /* Class-Specific AS Isochronous Audio Data Endpoint Descriptor(4.10.1.2) */ \
     TUD_AUDIO20_DESC_CS_AS_ISO_EP(/*_attr*/ AUDIO20_CS_AS_ISO_DATA_EP_ATT_NON_MAX_PACKETS_OK, /*_ctrl*/ AUDIO20_CTRL_NONE, /*_lockdelayunit*/ AUDIO20_CS_AS_ISO_DATA_EP_LOCK_DELAY_UNIT_UNDEFINED, /*_lockdelay*/ 0x0000), \
@@ -435,7 +552,7 @@ size_t usb_audio_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *de
 // sits in the audiosample source the output backend pulls from.
 static void usb_audio_speaker_task(void) {
     // One USB packet of scratch; we loop until ep_out_ff is empty.
-    static uint8_t chunk[CFG_TUD_AUDIO_FUNC_1_EP_OUT_SZ_MAX];
+    static int16_t chunk[CFG_TUD_AUDIO_FUNC_1_EP_OUT_SZ_MAX / sizeof(int16_t)];
 
     while (tud_audio_available() > 0) {
         uint16_t got = tud_audio_read(chunk, sizeof(chunk));
@@ -448,7 +565,8 @@ static void usb_audio_speaker_task(void) {
         if (got > sizeof(chunk)) {
             got = sizeof(chunk);
         }
-        usb_audio_usbspeaker_background_drain(chunk, got);
+        usb_audio_apply_gain(chunk, got / sizeof(int16_t), USB_AUDIO_SPEAKER_FEATURE_UNIT_SLOT);
+        usb_audio_usbspeaker_background_drain((const uint8_t *)chunk, got);
     }
 }
 
@@ -489,6 +607,10 @@ static void usb_audio_microphone_task(void) {
             // than flooding the stream with a burst of silence.
             want = filled;
             underran = true;
+        }
+        if (filled > 0) {
+            usb_audio_apply_gain(usb_audio_mic_samples, want / sizeof(int16_t),
+                usb_audio_microphone_feature_unit_slot());
         }
 
         if (tud_audio_write((uint8_t *)usb_audio_mic_samples, (uint16_t)want) == 0) {
@@ -585,24 +707,32 @@ bool tud_audio_set_req_entity_cb(uint8_t rhport, tusb_control_request_t const *p
     // Only current-value requests are supported.
     TU_VERIFY(p_request->bRequest == AUDIO20_CS_REQ_CUR);
 
-    // A headset exposes a feature unit per direction; the speaker's id matches the
-    // single-direction USB_AUDIO_ENTITY_FEATURE_UNIT, the mic adds a second one.
-    // Mute/volume state is shared across them.
-    if (entityID == USB_AUDIO_ENTITY_FEATURE_UNIT ||
-        entityID == USB_AUDIO_HS_ENTITY_MIC_FEATURE_UNIT) {
+    int slot = usb_audio_feature_unit_slot(entityID);
+    if (slot >= 0) {
         if (channelNum > USB_AUDIO_N_CHANNELS) {
             return false;
         }
         switch (ctrlSel) {
             case AUDIO20_FU_CTRL_MUTE:
                 TU_VERIFY(p_request->wLength == sizeof(audio20_control_cur_1_t));
-                usb_audio_mute[channelNum] = ((audio20_control_cur_1_t *)pBuff)->bCur;
+                usb_audio_mute[slot][channelNum] = ((audio20_control_cur_1_t *)pBuff)->bCur;
+                usb_audio_update_gain(slot);
                 return true;
 
-            case AUDIO20_FU_CTRL_VOLUME:
+            case AUDIO20_FU_CTRL_VOLUME: {
                 TU_VERIFY(p_request->wLength == sizeof(audio20_control_cur_2_t));
-                usb_audio_volume[channelNum] = ((audio20_control_cur_2_t *)pBuff)->bCur;
+                int16_t volume = ((audio20_control_cur_2_t *)pBuff)->bCur;
+                // Hosts stay inside the range they were given, but keep what
+                // is applied inside it whatever arrives.
+                if (volume > 0) {
+                    volume = 0;
+                } else if (volume < USB_AUDIO_VOLUME_MIN_DB * 256) {
+                    volume = USB_AUDIO_VOLUME_MIN_DB * 256;
+                }
+                usb_audio_volume[slot][channelNum] = volume;
+                usb_audio_update_gain(slot);
                 return true;
+            }
 
             default:
                 return false;
@@ -639,25 +769,25 @@ bool tud_audio_get_req_entity_cb(uint8_t rhport, tusb_control_request_t const *p
     }
 
     // Feature unit (mute/volume) for either the speaker or mic chain.
-    if (entityID == USB_AUDIO_ENTITY_FEATURE_UNIT ||
-        entityID == USB_AUDIO_HS_ENTITY_MIC_FEATURE_UNIT) {
+    int slot = usb_audio_feature_unit_slot(entityID);
+    if (slot >= 0) {
         if (channelNum > USB_AUDIO_N_CHANNELS) {
             return false;
         }
         switch (ctrlSel) {
             case AUDIO20_FU_CTRL_MUTE:
-                return tud_audio_buffer_and_schedule_control_xfer(rhport, p_request, &usb_audio_mute[channelNum], sizeof(usb_audio_mute[channelNum]));
+                return tud_audio_buffer_and_schedule_control_xfer(rhport, p_request, &usb_audio_mute[slot][channelNum], sizeof(usb_audio_mute[slot][channelNum]));
 
             case AUDIO20_FU_CTRL_VOLUME:
                 switch (p_request->bRequest) {
                     case AUDIO20_CS_REQ_CUR:
-                        return tud_audio_buffer_and_schedule_control_xfer(rhport, p_request, &usb_audio_volume[channelNum], sizeof(usb_audio_volume[channelNum]));
+                        return tud_audio_buffer_and_schedule_control_xfer(rhport, p_request, &usb_audio_volume[slot][channelNum], sizeof(usb_audio_volume[slot][channelNum]));
 
                     case AUDIO20_CS_REQ_RANGE: {
                         audio20_control_range_2_n_t(1) ret;
                         ret.wNumSubRanges = 1;
-                        ret.subrange[0].bMin = -90 * 256;  // -90 dB
-                        ret.subrange[0].bMax = 90 * 256;   // +90 dB
+                        ret.subrange[0].bMin = USB_AUDIO_VOLUME_MIN_DB * 256;
+                        ret.subrange[0].bMax = 0;
                         ret.subrange[0].bRes = 256;        // 1 dB steps
                         return tud_audio_buffer_and_schedule_control_xfer(rhport, p_request, &ret, sizeof(ret));
                     }

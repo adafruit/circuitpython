@@ -153,6 +153,75 @@ MP_DEFINE_CONST_FUN_OBJ_1(usb_audio_usbmicrophone_get_paused_obj, usb_audio_usbm
 MP_PROPERTY_GETTER(usb_audio_usbmicrophone_paused_obj,
     (mp_obj_t)&usb_audio_usbmicrophone_get_paused_obj);
 
+//|     host_mute: bool
+//|     """True when the host has muted this microphone. (read-only)"""
+//|
+static mp_obj_t usb_audio_usbmicrophone_obj_get_host_mute(mp_obj_t self_in) {
+    usb_audio_usbmicrophone_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    check_for_deinit(self);
+    return mp_obj_new_bool(usb_audio_host_mute(USB_AUDIO_DIR_MICROPHONE));
+}
+MP_DEFINE_CONST_FUN_OBJ_1(usb_audio_usbmicrophone_get_host_mute_obj,
+    usb_audio_usbmicrophone_obj_get_host_mute);
+
+MP_PROPERTY_GETTER(usb_audio_usbmicrophone_host_mute_obj,
+    (mp_obj_t)&usb_audio_usbmicrophone_get_host_mute_obj);
+
+//|     host_volume: float
+//|     """The volume the host has set, in decibels from ``-60.0`` to ``0.0``. (read-only)"""
+//|
+static mp_obj_t usb_audio_usbmicrophone_obj_get_host_volume(mp_obj_t self_in) {
+    usb_audio_usbmicrophone_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    check_for_deinit(self);
+    return mp_obj_new_float(usb_audio_host_volume(USB_AUDIO_DIR_MICROPHONE));
+}
+MP_DEFINE_CONST_FUN_OBJ_1(usb_audio_usbmicrophone_get_host_volume_obj,
+    usb_audio_usbmicrophone_obj_get_host_volume);
+
+MP_PROPERTY_GETTER(usb_audio_usbmicrophone_host_volume_obj,
+    (mp_obj_t)&usb_audio_usbmicrophone_get_host_volume_obj);
+
+//|     host_gain: float
+//|     """`host_volume` and `host_mute` as a linear factor from ``0.0`` to ``1.0``. (read-only)"""
+//|
+static mp_obj_t usb_audio_usbmicrophone_obj_get_host_gain(mp_obj_t self_in) {
+    usb_audio_usbmicrophone_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    check_for_deinit(self);
+    return mp_obj_new_float(usb_audio_host_gain(USB_AUDIO_DIR_MICROPHONE));
+}
+MP_DEFINE_CONST_FUN_OBJ_1(usb_audio_usbmicrophone_get_host_gain_obj,
+    usb_audio_usbmicrophone_obj_get_host_gain);
+
+MP_PROPERTY_GETTER(usb_audio_usbmicrophone_host_gain_obj,
+    (mp_obj_t)&usb_audio_usbmicrophone_get_host_gain_obj);
+
+//|     apply_host_volume: bool
+//|     """Whether the board scales the samples it sends by `host_gain` itself.
+//|     `False` by default, leaving the level to your code; `True` makes the host's
+//|     recording level and mute work on their own."""
+//|
+//|
+static mp_obj_t usb_audio_usbmicrophone_obj_get_apply_host_volume(mp_obj_t self_in) {
+    usb_audio_usbmicrophone_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    check_for_deinit(self);
+    return mp_obj_new_bool(usb_audio_apply_host_volume(USB_AUDIO_DIR_MICROPHONE));
+}
+MP_DEFINE_CONST_FUN_OBJ_1(usb_audio_usbmicrophone_get_apply_host_volume_obj,
+    usb_audio_usbmicrophone_obj_get_apply_host_volume);
+
+static mp_obj_t usb_audio_usbmicrophone_obj_set_apply_host_volume(mp_obj_t self_in, mp_obj_t value) {
+    usb_audio_usbmicrophone_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    check_for_deinit(self);
+    usb_audio_set_apply_host_volume(USB_AUDIO_DIR_MICROPHONE, mp_obj_is_true(value));
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_2(usb_audio_usbmicrophone_set_apply_host_volume_obj,
+    usb_audio_usbmicrophone_obj_set_apply_host_volume);
+
+MP_PROPERTY_GETSET(usb_audio_usbmicrophone_apply_host_volume_obj,
+    (mp_obj_t)&usb_audio_usbmicrophone_get_apply_host_volume_obj,
+    (mp_obj_t)&usb_audio_usbmicrophone_set_apply_host_volume_obj);
+
 static const mp_rom_map_elem_t usb_audio_usbmicrophone_locals_dict_table[] = {
     // Methods
     { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&usb_audio_usbmicrophone_deinit_obj) },
@@ -167,6 +236,10 @@ static const mp_rom_map_elem_t usb_audio_usbmicrophone_locals_dict_table[] = {
     // Properties
     { MP_ROM_QSTR(MP_QSTR_playing), MP_ROM_PTR(&usb_audio_usbmicrophone_playing_obj) },
     { MP_ROM_QSTR(MP_QSTR_paused), MP_ROM_PTR(&usb_audio_usbmicrophone_paused_obj) },
+    { MP_ROM_QSTR(MP_QSTR_host_mute), MP_ROM_PTR(&usb_audio_usbmicrophone_host_mute_obj) },
+    { MP_ROM_QSTR(MP_QSTR_host_volume), MP_ROM_PTR(&usb_audio_usbmicrophone_host_volume_obj) },
+    { MP_ROM_QSTR(MP_QSTR_host_gain), MP_ROM_PTR(&usb_audio_usbmicrophone_host_gain_obj) },
+    { MP_ROM_QSTR(MP_QSTR_apply_host_volume), MP_ROM_PTR(&usb_audio_usbmicrophone_apply_host_volume_obj) },
 };
 static MP_DEFINE_CONST_DICT(usb_audio_usbmicrophone_locals_dict, usb_audio_usbmicrophone_locals_dict_table);
 
