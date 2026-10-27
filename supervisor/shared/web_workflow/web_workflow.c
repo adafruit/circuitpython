@@ -24,6 +24,7 @@
 #include "supervisor/shared/reload.h"
 #include "supervisor/shared/web_workflow/web_workflow.h"
 #include "supervisor/shared/web_workflow/websocket.h"
+#include "supervisor/shared/web_workflow/display_stream.h"
 #include "supervisor/shared/workflow.h"
 
 #include "shared-bindings/hashlib/__init__.h"
@@ -426,6 +427,9 @@ bool supervisor_start_web_workflow(void) {
         socketpool_socket_reset(&active);
 
         websocket_init();
+        #if CIRCUITPY_DISPLAYIO
+        display_stream_init();
+        #endif
     }
 
     initialized = pool.base.type == &socketpool_socketpool_type;
@@ -1193,6 +1197,10 @@ STATIC_FILE(edit_js);
 STATIC_FILE(style_css);
 STATIC_FILE(serial_html);
 STATIC_FILE(serial_js);
+#if CIRCUITPY_DISPLAYIO
+STATIC_FILE(display_html);
+STATIC_FILE(display_js);
+#endif
 STATIC_FILE(blinka_32x32_ico);
 
 static void _reply_static(socketpool_socket_obj_t *socket, _request *request, const uint8_t *response, size_t response_len, const char *content_type) {
@@ -1234,6 +1242,12 @@ static void _reply_websocket_upgrade(socketpool_socket_obj_t *socket, _request *
         "Connection: Upgrade\r\n",
         "Sec-WebSocket-Accept: ", encoded_accept, "\r\n",
         "\r\n", NULL);
+    #if CIRCUITPY_DISPLAYIO
+    if (strcmp(request->path, "/cp/display/") == 0) {
+        display_stream_handoff(socket);
+        return;
+    }
+    #endif
     websocket_handoff(socket);
     // socket is now closed and "disconnected".
 }
@@ -1470,6 +1484,20 @@ static bool _reply(socketpool_socket_obj_t *socket, _request *request) {
             } else {
                 _REPLY_STATIC(socket, request, serial_html);
             }
+        #if CIRCUITPY_DISPLAYIO
+        } else if (strcmp(path, "/display/") == 0) {
+            if (!request->authenticated) {
+                if (_api_password[0] != '\0') {
+                    _reply_unauthorized(socket, request);
+                } else {
+                    _reply_forbidden(socket, request);
+                }
+            } else if (request->websocket) {
+                _reply_websocket_upgrade(socket, request);
+            } else {
+                _REPLY_STATIC(socket, request, display_html);
+            }
+        #endif
         } else {
             _reply_missing(socket, request);
         }
@@ -1486,6 +1514,10 @@ static bool _reply(socketpool_socket_obj_t *socket, _request *request) {
             _REPLY_STATIC(socket, request, welcome_js);
         } else if (strcmp(request->path, "/serial.js") == 0) {
             _REPLY_STATIC(socket, request, serial_js);
+        #if CIRCUITPY_DISPLAYIO
+        } else if (strcmp(request->path, "/display.js") == 0) {
+            _REPLY_STATIC(socket, request, display_js);
+        #endif
         } else if (strcmp(request->path, "/edit.js") == 0) {
             _REPLY_STATIC(socket, request, edit_js);
         } else if (strcmp(request->path, "/style.css") == 0) {
@@ -1733,6 +1765,9 @@ void supervisor_web_workflow_background(void *data) {
 
     // Let the websocket code run.
     websocket_background();
+    #if CIRCUITPY_DISPLAYIO
+    display_stream_background();
+    #endif
 
     // Resume polling
     socketpool_socket_poll_resume();
