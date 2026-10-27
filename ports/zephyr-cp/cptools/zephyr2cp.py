@@ -968,7 +968,9 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir, mpconfig
         "ethernet": False,
         "usb_device": False,
         "_bleio": False,
-        "hostnetwork": board_id in ["native_sim"],
+        # The native_sim board and its variant boards (asan, lfs, lvgl) all run
+        # on the host and can use the host's network stack.
+        "hostnetwork": board_id.startswith("native_sim"),
         "audiobusio": False,
         "neopixel_write": False,
     }
@@ -1963,9 +1965,9 @@ void i2sout_gc_collect(void) {{
     }
 #endif
         """.strip()
-        zephyr_display_board_entry = (
-            "{ MP_ROM_QSTR(MP_QSTR_DISPLAY), MP_ROM_PTR(&displays[0].zephyr_display) },"
-        )
+        zephyr_display_board_entry = """
+{ MP_ROM_QSTR(MP_QSTR_DISPLAY), MP_ROM_PTR(&displays[0].zephyr_display) },
+        """.strip()
 
     ethernet_init = ""
     ethernet_static_obj = ""
@@ -2029,7 +2031,7 @@ static mii_ethernet_obj_t ethernet_obj;
         max_size = max(max_size, size)
         # We always start at the end of a Zephyr linker section so we need the externs and &.
         # Native/simulated boards don't have real memory-mapped RAM, so we allocate static arrays.
-        if board_id in ["native_sim"] or "bsim" in board_id:
+        if board_id.startswith("native_sim") or "bsim" in board_id:
             ram_externs.append("// This is a native board so we provide all of RAM for our heaps.")
             ram_externs.append(f"static uint32_t _{device}[{size // 4}]; // {path}")
             start = f"(const uint32_t *) (_{device})"
@@ -2103,6 +2105,7 @@ static mii_ethernet_obj_t ethernet_obj;
 {zephyr_binding_headers}
 {iobroker_includes}
 {zephyr_display_header}
+
 
 const struct device* const flashes[] = {{ {", ".join(flashes)} }};
 const int circuitpy_flash_device_count = {len(flashes)};

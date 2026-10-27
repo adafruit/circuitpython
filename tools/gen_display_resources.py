@@ -23,7 +23,22 @@ parser.add_argument(
 )
 parser.add_argument("--output_c_file", type=argparse.FileType("w"), required=True)
 
+parser.add_argument(
+    "--lvgl-tilegrid",
+    action="store_true",
+    help="Set when building the LVGL compositing core: TileGrids have no partial_change field",
+)
+
 args = parser.parse_args()
+
+# The legacy TileGrid carries a partial_change flag for scanline dirty tracking; the
+# LVGL TileGrid does not, and the static initializer must match the struct in use.
+if args.lvgl_tilegrid:
+    partial_change_line = ""
+else:
+    partial_change_line = (
+        "    .partial_change = false,\n    .full_change = false,\n    .moved = false,\n"
+    )
 
 
 class BitmapStub:
@@ -121,7 +136,7 @@ if tile_y == 16:
     blinka_size = 16
     c_file.write(
         """\
-const uint32_t blinka_bitmap_data[32] = {
+uint32_t blinka_bitmap_data[32] = {
     0x11000000, 0x00000011,
     0x11010000, 0x00001053,
     0x11010000, 0x00001156,
@@ -145,7 +160,7 @@ else:
     blinka_size = 12
     c_file.write(
         """\
-const uint32_t blinka_bitmap_data[28] = {
+uint32_t blinka_bitmap_data[28] = {
     0x11010000, 0x00000000,
     0x53110000, 0x00000010,
     0x56110000, 0x00000011,
@@ -164,7 +179,7 @@ const uint32_t blinka_bitmap_data[28] = {
 
 c_file.write(
     """\
-const displayio_bitmap_t blinka_bitmap = {{
+displayio_bitmap_t blinka_bitmap = {{
     .base = {{.type = &displayio_bitmap_type }},
     .width = {0},
     .height = {0},
@@ -225,16 +240,16 @@ displayio_tilegrid_t supervisor_blinka_sprite = {{
     .top_left_x = {0},
     .top_left_y = {0},
     .tiles = 0,
-    .partial_change = false,
-    .full_change = false,
+{partial_change_line}
     .hidden = false,
     .hidden_by_parent = false,
-    .moved = false,
+#if !CIRCUITPY_DISPLAYIO_LVGL
     .inline_tiles = true,
+#endif
     .in_group = true
 }};
 #endif
-""".format(blinka_size)
+""".format(blinka_size, partial_change_line=partial_change_line)
 )
 
 c_file.write(
@@ -275,15 +290,15 @@ displayio_tilegrid_t supervisor_terminal_scroll_area_text_grid = {{
     .tile_width = {1},
     .tile_height = {2},
     .tiles = NULL,
-    .partial_change = false,
-    .full_change = false,
+{partial_change_line}
     .hidden = false,
     .hidden_by_parent = false,
-    .moved = false,
+#if !CIRCUITPY_DISPLAYIO_LVGL
     .inline_tiles = false,
+#endif
     .in_group = true
 }};
-""".format(len(filtered_characters), tile_x, tile_y)
+""".format(len(filtered_characters), tile_x, tile_y, partial_change_line=partial_change_line)
 )
 
 c_file.write(
@@ -303,20 +318,20 @@ displayio_tilegrid_t supervisor_terminal_status_bar_text_grid = {{
     .tile_width = {1},
     .tile_height = {2},
     .tiles = NULL,
-    .partial_change = false,
-    .full_change = false,
+{partial_change_line}
     .hidden = false,
     .hidden_by_parent = false,
-    .moved = false,
+#if !CIRCUITPY_DISPLAYIO_LVGL
     .inline_tiles = false,
+#endif
     .in_group = true
 }};
-""".format(len(filtered_characters), tile_x, tile_y)
+""".format(len(filtered_characters), tile_x, tile_y, partial_change_line=partial_change_line)
 )
 
 c_file.write(
     """\
-const uint32_t font_bitmap_data[{}] = {{
+uint32_t font_bitmap_data[{}] = {{
 """.format(bytes_per_row * tile_y // 4)
 )
 

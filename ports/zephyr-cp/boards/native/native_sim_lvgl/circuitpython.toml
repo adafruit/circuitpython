@@ -1,0 +1,2 @@
+NAME = "Native simulator - LVGL displayio compositor"
+CIRCUITPY_BUILD_EXTENSIONS = ["exe"]

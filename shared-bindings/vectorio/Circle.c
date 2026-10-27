@@ -61,11 +61,24 @@ static mp_obj_t vectorio_circle_make_new(const mp_obj_type_t *type, size_t n_arg
     return MP_OBJ_FROM_PTR(self);
 }
 
+#if CIRCUITPY_DISPLAYIO_LVGL
+static mp_obj_t circle_lvgl_protocol_self(mp_obj_t self_in) {
+    return common_hal_vectorio_circle_get_draw_protocol(MP_OBJ_TO_PTR(self_in));
+}
+
+static const lvgl_protocol_t circle_lvgl_protocol = {
+    MP_PROTO_IMPLEMENT(MP_QSTR_protocol_lvgl)
+    .protocol_self = circle_lvgl_protocol_self,
+};
+#define VECTORIO_CIRCLE_PROTOCOL &circle_lvgl_protocol
+#else
 static const vectorio_draw_protocol_t circle_draw_protocol = {
     MP_PROTO_IMPLEMENT(MP_QSTR_protocol_draw)
     .draw_get_protocol_self = (draw_get_protocol_self_fun)common_hal_vectorio_circle_get_draw_protocol,
     .draw_protocol_impl = &vectorio_vector_shape_draw_protocol_impl
 };
+#define VECTORIO_CIRCLE_PROTOCOL &circle_draw_protocol
+#endif
 
 
 //|     radius: int
@@ -146,5 +159,5 @@ MP_DEFINE_CONST_OBJ_TYPE(
     MP_TYPE_FLAG_HAS_SPECIAL_ACCESSORS,
     make_new, vectorio_circle_make_new,
     locals_dict, &vectorio_circle_locals_dict,
-    protocol, &circle_draw_protocol
+    protocol, VECTORIO_CIRCLE_PROTOCOL
     );

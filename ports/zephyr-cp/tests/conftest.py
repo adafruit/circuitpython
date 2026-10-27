@@ -100,6 +100,8 @@ FILESYSTEM_SIMULATORS = ["native_native_sim", "native_native_sim_lfs"]
 # with mtools.
 FAT_FILESYSTEM_BOARDS = {
     "native_native_sim",
+    "native_native_sim_lvgl",
+    "native_native_sim_lvgl_asan",
     "native_native_sim_asan",
     "native_nrf5340bsim",
     "native_nrf54lm20bsim",
@@ -186,11 +188,13 @@ def log_uart_trace_output(trace_file: Path) -> None:
             )
 
 
-# Native_sim boards each test runs against: the FAT default, the littlefs
-# build, and the asan-enabled build, so filesystem and memory errors fail
-# tests.
+# Native_sim boards each test runs against: the FAT legacy-compositor default,
+# the LVGL-compositor build, the littlefs build, and ASan builds of both
+# compositors, so compositor, filesystem and memory errors all fail tests.
 NATIVE_BOARDS = [
     "native_native_sim",
+    "native_native_sim_lvgl",
+    "native_native_sim_lvgl_asan",
     "native_native_sim_lfs",
     "native_native_sim_asan",
 ]

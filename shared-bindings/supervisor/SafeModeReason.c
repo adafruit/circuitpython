@@ -18,6 +18,7 @@ MAKE_ENUM_VALUE(supervisor_safe_mode_reason_type, safe_mode_reason, FLASH_WRITE_
 MAKE_ENUM_VALUE(supervisor_safe_mode_reason_type, safe_mode_reason, GC_ALLOC_OUTSIDE_VM, SAFE_MODE_GC_ALLOC_OUTSIDE_VM);
 MAKE_ENUM_VALUE(supervisor_safe_mode_reason_type, safe_mode_reason, HARD_FAULT, SAFE_MODE_HARD_FAULT);
 MAKE_ENUM_VALUE(supervisor_safe_mode_reason_type, safe_mode_reason, INTERRUPT_ERROR, SAFE_MODE_INTERRUPT_ERROR);
+MAKE_ENUM_VALUE(supervisor_safe_mode_reason_type, safe_mode_reason, LVGL_OUT_OF_MEMORY, SAFE_MODE_LVGL_OUT_OF_MEMORY);
 MAKE_ENUM_VALUE(supervisor_safe_mode_reason_type, safe_mode_reason, NLR_JUMP_FAIL, SAFE_MODE_NLR_JUMP_FAIL);
 MAKE_ENUM_VALUE(supervisor_safe_mode_reason_type, safe_mode_reason, NO_CIRCUITPY, SAFE_MODE_NO_CIRCUITPY);
 MAKE_ENUM_VALUE(supervisor_safe_mode_reason_type, safe_mode_reason, NO_HEAP, SAFE_MODE_NO_HEAP);
@@ -70,6 +71,11 @@ MAKE_ENUM_MAP(supervisor_safe_mode_reason) {
 //|     """Internal error related to interrupts."""
 //|
     MAKE_ENUM_MAP_ENTRY(safe_mode_reason, INTERRUPT_ERROR),
+
+//|     LVGL_OUT_OF_MEMORY: object
+//|     """LVGL could not allocate memory."""
+//|
+    MAKE_ENUM_MAP_ENTRY(safe_mode_reason, LVGL_OUT_OF_MEMORY),
 
 //|     NLR_JUMP_FAIL: object
 //|     """An error occurred during exception handling, possibly due to memory corruption."""

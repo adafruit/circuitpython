@@ -11,6 +11,10 @@
 
 extern const mp_obj_type_t zephyr_display_display_type;
 
+// Port hooks for the LVGL compositor (see shared-module/displayio/lvgl/lvgl_internal.h).
+void displayio_lvgl_port_lock(void);
+void displayio_lvgl_port_unlock(void);
+
 #define NO_FPS_LIMIT 0xffffffff
 
 void common_hal_zephyr_display_display_construct_from_device(zephyr_display_display_obj_t *self,

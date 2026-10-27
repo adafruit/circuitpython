@@ -17,6 +17,7 @@ CIRCUITPY_ESP_PSRAM_FREQ = 200m
 
 CIRCUITPY_MII = 1
 CIRCUITPY_SSL = 1
+CIRCUITPY_USB_VIDEO = 1
 
 # mdns on Espressif requires the wifi-based ESP-IDF mdns component
 CIRCUITPY_MDNS = 0

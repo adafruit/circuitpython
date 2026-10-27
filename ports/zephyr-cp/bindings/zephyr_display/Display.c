@@ -6,6 +6,9 @@
 
 #include "bindings/zephyr_display/Display.h"
 
+#include <zephyr/devicetree.h>
+
+#include "bindings/zephyr_kernel/__init__.h"
 #include "py/objproperty.h"
 #include "py/objtype.h"
 #include "py/runtime.h"
@@ -16,12 +19,32 @@ static mp_obj_t zephyr_display_display_make_new(const mp_obj_type_t *type,
     size_t n_args,
     size_t n_kw,
     const mp_obj_t *all_args) {
-    (void)type;
-    (void)n_args;
-    (void)n_kw;
-    (void)all_args;
-    mp_raise_NotImplementedError(NULL);
-    return mp_const_none;
+    enum { ARG_rotation, ARG_auto_refresh };
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_rotation, MP_ARG_KW_ONLY | MP_ARG_INT, { .u_int = 0 } },
+        { MP_QSTR_auto_refresh, MP_ARG_KW_ONLY | MP_ARG_BOOL, { .u_bool = true } },
+    };
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    mp_int_t rotation = args[ARG_rotation].u_int;
+    if (rotation % 90 != 0) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Display rotation must be in 90 degree increments"));
+    }
+
+    const struct device *display_dev = device_get_binding(DEVICE_DT_NAME(DT_CHOSEN(zephyr_display)));
+    if (display_dev == NULL || !device_is_ready(display_dev)) {
+        raise_zephyr_error(-ENODEV);
+    }
+
+    // The display device is a singleton and LVGL drives only one display at a time, so the one
+    // board_init() made has to be released first (as with any other display class).
+    primary_display_t *display_obj = allocate_display_or_raise();
+    zephyr_display_display_obj_t *self = &display_obj->zephyr_display;
+    self->base.type = &zephyr_display_display_type;
+    common_hal_zephyr_display_display_construct_from_device(self, display_dev, rotation,
+        args[ARG_auto_refresh].u_bool);
+    return MP_OBJ_FROM_PTR(self);
 }
 
 static zephyr_display_display_obj_t *native_display(mp_obj_t display_obj) {

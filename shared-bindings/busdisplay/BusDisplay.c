@@ -455,6 +455,15 @@ static mp_obj_t busdisplay_busdisplay_obj_fill_row(size_t n_args, const mp_obj_t
     mp_int_t y = args[ARG_y].u_int;
     mp_obj_t *result = args[ARG_buffer].u_obj;
 
+    #if CIRCUITPY_DISPLAYIO_LVGL
+    // LVGL renders into its own draw buffers, so there is no CPU-readable row to
+    // return. Keep the API available and report that this backend can't do it.
+    (void)self;
+    (void)y;
+    (void)result;
+    mp_raise_NotImplementedError(MP_ERROR_TEXT("Operation or feature not supported"));
+    #else
+
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(result, &bufinfo, MP_BUFFER_WRITE);
 
@@ -491,6 +500,7 @@ static mp_obj_t busdisplay_busdisplay_obj_fill_row(size_t n_args, const mp_obj_t
     } else {
         mp_raise_ValueError(MP_ERROR_TEXT("Buffer too small"));
     }
+    #endif
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(busdisplay_busdisplay_fill_row_obj, 1, busdisplay_busdisplay_obj_fill_row);
 

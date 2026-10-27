@@ -218,6 +218,9 @@ void print_safe_mode_message(safe_mode_t reason) {
             case SAFE_MODE_INTERRUPT_ERROR:
                 message = MP_ERROR_TEXT("Interrupt error.");
                 break;
+            case SAFE_MODE_LVGL_OUT_OF_MEMORY:
+                message = MP_ERROR_TEXT("LVGL ran out of memory.");
+                break;
             case SAFE_MODE_NLR_JUMP_FAIL:
                 message = MP_ERROR_TEXT("NLR jump failed. Likely memory corruption.");
                 break;
