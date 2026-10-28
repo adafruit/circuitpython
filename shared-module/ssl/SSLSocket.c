@@ -22,6 +22,8 @@
 
 #include "shared-bindings/socketpool/enum.h"
 
+#include "mbedtls/ssl_ticket.h"
+
 #define MP_STREAM_POLL_RDWR (MP_STREAM_POLL_RD | MP_STREAM_POLL_WR)
 
 #if defined(MBEDTLS_ERROR_C)
@@ -325,7 +327,16 @@ ssl_sslsocket_obj_t *common_hal_ssl_sslcontext_wrap_socket(ssl_sslcontext_obj_t 
         goto cleanup;
     }
 
-    if (self->crt_bundle_attach != NULL) {
+    if (server_side && !(self->cacert_buf && self->cacert_bytes)) {
+        // On a server the CA store is about authenticating *clients*. A
+        // context that only had load_cert_chain() called on it -- the normal
+        // HTTPS-server setup -- must not demand a client certificate, which is
+        // what the default root bundle turned into: every handshake failed
+        // with MBEDTLS_ERR_SSL_NO_CLIENT_CERTIFICATE. Match CPython, where a
+        // server-side context defaults to CERT_NONE; a program that loads its
+        // own CA with load_verify_locations() still gets client verification.
+        mbedtls_ssl_conf_authmode(&o->conf, MBEDTLS_SSL_VERIFY_NONE);
+    } else if (self->crt_bundle_attach != NULL) {
         mbedtls_ssl_conf_authmode(&o->conf, MBEDTLS_SSL_VERIFY_REQUIRED);
         self->crt_bundle_attach(&o->conf);
     } else if (self->cacert_buf && self->cacert_bytes) {
@@ -372,6 +383,23 @@ ssl_sslsocket_obj_t *common_hal_ssl_sslcontext_wrap_socket(ssl_sslcontext_obj_t 
             goto cleanup;
         }
     }
+    #if defined(MBEDTLS_SSL_SESSION_TICKETS) && defined(MBEDTLS_SSL_TICKET_C)
+    if (server_side) {
+        // Session tickets let a returning client resume without the (expensive) public-key
+        // handshake. One process-wide ticket key, rotated by lifetime; nothing to persist.
+        static mbedtls_ssl_ticket_context ticket_ctx;
+        static bool ticket_ready = false;
+        if (!ticket_ready) {
+            mbedtls_ssl_ticket_init(&ticket_ctx);
+            if (mbedtls_ssl_ticket_setup(&ticket_ctx, PSA_ALG_GCM, PSA_KEY_TYPE_AES, 256, 86400) == 0) {
+                ticket_ready = true;
+            }
+        }
+        if (ticket_ready) {
+            mbedtls_ssl_conf_session_tickets_cb(&o->conf, mbedtls_ssl_ticket_write, mbedtls_ssl_ticket_parse, &ticket_ctx);
+        }
+    }
+    #endif
     return o;
 cleanup:
     mbedtls_pk_free(&o->pkey);

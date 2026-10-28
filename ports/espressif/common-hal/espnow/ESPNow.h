@@ -37,3 +37,5 @@ extern void common_hal_espnow_set_pmk(espnow_obj_t *self, const uint8_t *key);
 
 extern mp_obj_t common_hal_espnow_send(espnow_obj_t *self, const mp_buffer_info_t *message, const uint8_t *mac);
 extern mp_obj_t common_hal_espnow_read(espnow_obj_t *self);
+
+extern size_t common_hal_espnow_get_bytes_available(espnow_obj_t *self);

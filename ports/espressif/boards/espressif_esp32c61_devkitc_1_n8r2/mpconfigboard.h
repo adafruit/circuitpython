@@ -13,3 +13,11 @@
 
 #define DEFAULT_UART_BUS_RX         (&pin_GPIO10)
 #define DEFAULT_UART_BUS_TX         (&pin_GPIO11)
+
+// Optional bench console through the onboard CP2102N. This uses fewer USB/IP
+// host channels than the native composite USB-JTAG interface on cascaded hubs.
+// Build with CIRCUITPY_ESP_USB_SERIAL_JTAG=0; the normal USB console stays default.
+#if !CIRCUITPY_ESP_USB_SERIAL_JTAG
+#define CIRCUITPY_CONSOLE_UART_RX DEFAULT_UART_BUS_RX
+#define CIRCUITPY_CONSOLE_UART_TX DEFAULT_UART_BUS_TX
+#endif

@@ -56,10 +56,6 @@ static void _copy_out_of_fifo(void) {
 static void usb_serial_jtag_isr_handler(void *arg) {
     uint32_t flags = usb_serial_jtag_ll_get_intsts_mask();
 
-    if (flags & USB_SERIAL_JTAG_INTR_SOF) {
-        usb_serial_jtag_ll_clr_intsts_mask(USB_SERIAL_JTAG_INTR_SOF);
-    }
-
     if (flags & USB_SERIAL_JTAG_INTR_TOKEN_REC_IN_EP1) {
         usb_serial_jtag_ll_clr_intsts_mask(USB_SERIAL_JTAG_INTR_TOKEN_REC_IN_EP1);
         connected = true;
@@ -74,10 +70,28 @@ static void usb_serial_jtag_isr_handler(void *arg) {
     }
 }
 
+// Defined in ESP-IDF components/esp_driver_usb_serial_jtag. Referencing it forces
+// the linker to keep usb_serial_jtag_connection_monitor.c, whose ESP_SYSTEM_INIT_FN
+// registers a FreeRTOS tick hook that watches the SOF raw interrupt status and
+// calls rtc_clk_bbpll_add_consumer()/rtc_clk_bbpll_remove_consumer() as the host
+// connects/disconnects. Without that consumer refcount, rtc_clk_cpu_freq_set_config()
+// powers the BBPLL down whenever the CPU leaves a PLL-derived clock (radio modem-sleep
+// retention does this constantly), and the USB-Serial/JTAG PHY - whose 48 MHz clock
+// comes from the BBPLL (USB_SERIAL_JTAG_LL_PHY_DEPENDS_ON_BBPLL) - stops answering
+// EP0 transactions: the port enumerates, then dies within ~1 s (seen on ESP32-C5).
+// IDF only links the monitor when the USJ is the system console, which CircuitPython
+// never configures (CONFIG_ESP_CONSOLE_NONE), so pull it in explicitly.
+extern void usb_serial_jtag_connection_monitor_include(void);
+
 void usb_serial_jtag_init(void) {
     ringbuf_init(&ringbuf, buf, sizeof(buf));
-    usb_serial_jtag_ll_clr_intsts_mask(USB_SERIAL_JTAG_INTR_SOF | USB_SERIAL_JTAG_INTR_SERIAL_OUT_RECV_PKT | USB_SERIAL_JTAG_INTR_TOKEN_REC_IN_EP1);
-    usb_serial_jtag_ll_ena_intr_mask(USB_SERIAL_JTAG_INTR_SOF | USB_SERIAL_JTAG_INTR_SERIAL_OUT_RECV_PKT | USB_SERIAL_JTAG_INTR_TOKEN_REC_IN_EP1);
+    usb_serial_jtag_connection_monitor_include();
+    // Do NOT enable or clear the SOF interrupt here: the connection monitor's tick
+    // hook decides host-connectedness by observing (and clearing) the SOF raw status
+    // bit once per tick. Taking a 1 kHz level-1 interrupt that cleared SOF (as this
+    // file used to) starves the monitor and makes it report the host as disconnected.
+    usb_serial_jtag_ll_clr_intsts_mask(USB_SERIAL_JTAG_INTR_SERIAL_OUT_RECV_PKT | USB_SERIAL_JTAG_INTR_TOKEN_REC_IN_EP1);
+    usb_serial_jtag_ll_ena_intr_mask(USB_SERIAL_JTAG_INTR_SERIAL_OUT_RECV_PKT | USB_SERIAL_JTAG_INTR_TOKEN_REC_IN_EP1);
     ESP_ERROR_CHECK(esp_intr_alloc(ETS_USB_SERIAL_JTAG_INTR_SOURCE, ESP_INTR_FLAG_LEVEL1,
         usb_serial_jtag_isr_handler, NULL, NULL));
 }

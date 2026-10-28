@@ -3,7 +3,11 @@ import subprocess
 
 
 def get_version_info_from_git(repo_path, extra_args=[]):
-    if "CP_VERSION" in os.environ:
+    # CIRCUITPY-CHANGE: treat an empty CP_VERSION as unset. A workflow that routes an
+    # unpopulated step output through `env:` (build-board-custom.yml ->
+    # .github/actions/mpy_cross does this for boards with frozen modules) exports
+    # CP_VERSION="" and must fall back to git describe instead of failing.
+    if os.environ.get("CP_VERSION"):
         git_tag = os.environ["CP_VERSION"]
     else:
         # Note: git describe doesn't work if no tag is available

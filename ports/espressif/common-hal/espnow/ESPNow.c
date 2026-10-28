@@ -20,6 +20,8 @@
 #include "esp_now.h"
 #include "mphalport.h"
 
+#include "freertos/FreeRTOS.h"
+
 #include "esp_now.h"
 
 #define ESPNOW_MAGIC 0x99
@@ -52,6 +54,10 @@ typedef struct {
     uint8_t msg[0];             // Message is up to 250 bytes
 } __attribute__((packed)) espnow_packet_t;
 
+// The Wi-Fi task may run on a different core from the VM. Protect complete
+// packets and the ring buffer's shared counters, not just individual copies.
+static portMUX_TYPE recv_buffer_mutex = portMUX_INITIALIZER_UNLOCKED;
+
 // --- The ESP-NOW send and recv callback routines ---
 
 // Callback triggered when a sent packet is acknowledged by the peer (or not).
@@ -73,8 +79,11 @@ static void recv_cb(const esp_now_recv_info_t *esp_now_info, const uint8_t *msg,
     espnow_obj_t *self = MP_STATE_PORT(espnow_singleton);
     ringbuf_t *buf = self->recv_buffer;
 
-    if (sizeof(espnow_packet_t) + msg_len > ringbuf_num_empty(buf)) {
+    portENTER_CRITICAL(&recv_buffer_mutex);
+    if (msg_len < 0 || msg_len > ESP_NOW_MAX_DATA_LEN ||
+        sizeof(espnow_packet_t) + msg_len > ringbuf_num_empty(buf)) {
         self->read_failure++;
+        portEXIT_CRITICAL(&recv_buffer_mutex);
         return;
     }
 
@@ -89,6 +98,7 @@ static void recv_cb(const esp_now_recv_info_t *esp_now_info, const uint8_t *msg,
     ringbuf_put_n(buf, msg, msg_len);
 
     self->read_success++;
+    portEXIT_CRITICAL(&recv_buffer_mutex);
 }
 
 bool common_hal_espnow_deinited(espnow_obj_t *self) {
@@ -183,33 +193,40 @@ mp_obj_t common_hal_espnow_send(espnow_obj_t *self, const mp_buffer_info_t *mess
     return mp_const_none;
 }
 
+size_t common_hal_espnow_get_bytes_available(espnow_obj_t *self) {
+    portENTER_CRITICAL(&recv_buffer_mutex);
+    size_t available = ringbuf_num_filled(self->recv_buffer);
+    portEXIT_CRITICAL(&recv_buffer_mutex);
+    return available;
+}
+
 mp_obj_t common_hal_espnow_read(espnow_obj_t *self) {
+    // Copy the entire packet while locked. Allocating Python objects or raising
+    // an exception must happen after releasing the cross-core critical section.
+    espnow_header_t header;
+    uint8_t mac_buf[ESP_NOW_ETH_ALEN];
+    uint8_t msg_buf[ESP_NOW_MAX_DATA_LEN];
+
+    portENTER_CRITICAL(&recv_buffer_mutex);
     if (!ringbuf_num_filled(self->recv_buffer)) {
+        portEXIT_CRITICAL(&recv_buffer_mutex);
         return mp_const_none;
     }
 
-    // Read the packet header from the incoming buffer
-    espnow_header_t header;
-    if (ringbuf_get_n(self->recv_buffer, (uint8_t *)&header, sizeof(header)) != sizeof(header)) {
-        mp_arg_error_invalid(MP_QSTR_buffer);
-    }
+    bool valid = ringbuf_get_n(self->recv_buffer, (uint8_t *)&header, sizeof(header)) == sizeof(header) &&
+        header.magic == ESPNOW_MAGIC &&
+        header.msg_len <= ESP_NOW_MAX_DATA_LEN &&
+        ringbuf_get_n(self->recv_buffer, mac_buf, ESP_NOW_ETH_ALEN) == ESP_NOW_ETH_ALEN &&
+        ringbuf_get_n(self->recv_buffer, msg_buf, header.msg_len) == header.msg_len;
+    portEXIT_CRITICAL(&recv_buffer_mutex);
 
-    uint8_t msg_len = header.msg_len;
-
-    uint8_t mac_buf[ESP_NOW_ETH_ALEN];
-    uint8_t msg_buf[msg_len];
-
-    // Check the message packet header format and read the message data
-    if (header.magic != ESPNOW_MAGIC ||
-        msg_len > ESP_NOW_MAX_DATA_LEN ||
-        ringbuf_get_n(self->recv_buffer, mac_buf, ESP_NOW_ETH_ALEN) != ESP_NOW_ETH_ALEN ||
-        ringbuf_get_n(self->recv_buffer, msg_buf, msg_len) != msg_len) {
+    if (!valid) {
         mp_arg_error_invalid(MP_QSTR_buffer);
     }
 
     mp_obj_t elems[4] = {
         mp_obj_new_bytes(mac_buf, ESP_NOW_ETH_ALEN),
-        mp_obj_new_bytes(msg_buf, msg_len),
+        mp_obj_new_bytes(msg_buf, header.msg_len),
         MP_OBJ_NEW_SMALL_INT(header.rssi),
         mp_obj_new_int(header.time_ms),
     };

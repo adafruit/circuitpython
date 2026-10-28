@@ -12,3 +12,10 @@
 # end of Component config
 
 # end of Espressif IoT Development Framework Configuration
+# Env Hub frozen libraries exceed the default 2 MB application slot.
+# Preserve TinyUF2's factory offset; back up user_fs before upgrading.
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="boards/adafruit_metro_esp32s3/partitions.csv"
+CONFIG_PARTITION_TABLE_FILENAME="boards/adafruit_metro_esp32s3/partitions.csv"
+# Fit the Env Hub server certificate chain in an outbound TLS record.
+# The current three-certificate chain needs 4159 bytes including TLS framing.
+CONFIG_MBEDTLS_SSL_OUT_CONTENT_LEN=8192

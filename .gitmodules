@@ -424,3 +424,30 @@
 [submodule "ports/espressif/esp-hosted"]
 	path = ports/espressif/esp-hosted
 	url = https://github.com/espressif/esp-hosted-mcu.git
+[submodule "frozen/Adafruit_CircuitPython_IL0373"]
+	path = frozen/Adafruit_CircuitPython_IL0373
+	url = https://github.com/adafruit/Adafruit_CircuitPython_IL0373.git
+[submodule "frozen/Adafruit_CircuitPython_JD79667"]
+	path = frozen/Adafruit_CircuitPython_JD79667
+	url = https://github.com/adafruit/Adafruit_CircuitPython_JD79667.git
+[submodule "frozen/Adafruit_CircuitPython_MAX1704x"]
+	path = frozen/Adafruit_CircuitPython_MAX1704x
+	url = https://github.com/adafruit/Adafruit_CircuitPython_MAX1704x.git
+[submodule "frozen/Adafruit_CircuitPython_NTP"]
+	path = frozen/Adafruit_CircuitPython_NTP
+	url = https://github.com/adafruit/Adafruit_CircuitPython_NTP.git
+[submodule "frozen/Adafruit_CircuitPython_SCD4X"]
+	path = frozen/Adafruit_CircuitPython_SCD4X
+	url = https://github.com/adafruit/Adafruit_CircuitPython_SCD4X.git
+[submodule "frozen/Adafruit_CircuitPython_SCD30"]
+	path = frozen/Adafruit_CircuitPython_SCD30
+	url = https://github.com/adafruit/Adafruit_CircuitPython_SCD30.git
+[submodule "frozen/Adafruit_CircuitPython_SEN6x"]
+	path = frozen/Adafruit_CircuitPython_SEN6x
+	url = https://github.com/adafruit/Adafruit_CircuitPython_SEN6x.git
+[submodule "frozen/Adafruit_CircuitPython_PCF8523"]
+	path = frozen/Adafruit_CircuitPython_PCF8523
+	url = https://github.com/adafruit/Adafruit_CircuitPython_PCF8523.git
+[submodule "frozen/Adafruit_CircuitPython_DS1307"]
+	path = frozen/Adafruit_CircuitPython_DS1307
+	url = https://github.com/adafruit/Adafruit_CircuitPython_DS1307.git

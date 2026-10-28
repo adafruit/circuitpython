@@ -1,0 +1,11 @@
+# Env Hub build: 3 MB OTA slots on the 16 MB Metro ESP32-S3.
+# Keep the existing TinyUF2 factory app at 0x410000. The gap before it
+# preserves that address while allowing ota_0 to grow. user_fs moves:
+# back up its files and reformat/restore when installing this layout.
+# Name, Type, SubType, Offset, Size
+nvs, data, nvs, 0x9000, 20K
+otadata, data, ota, 0xe000, 8K
+ota_0, app, ota_0, 0x10000, 3072K
+uf2, app, factory, 0x410000, 256K
+ota_1, app, ota_1, 0x450000, 3072K
+user_fs, data, fat, 0x750000, 8896K

@@ -12,3 +12,10 @@
 # end of Component config
 
 # end of Espressif IoT Development Framework Configuration
+# Allow the collector's TLS certificate chain to fit in a record.
+# The current three-certificate chain needs 4159 bytes including TLS framing.
+CONFIG_MBEDTLS_SSL_OUT_CONTENT_LEN=8192
+CONFIG_MBEDTLS_SSL_IN_CONTENT_LEN=16384
+# Frozen libraries need a larger application slot; back up user_fs before flashing.
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="boards/espressif_esp32c5_devkitc_1_n8r8/partitions.csv"
+CONFIG_PARTITION_TABLE_FILENAME="boards/espressif_esp32c5_devkitc_1_n8r8/partitions.csv"

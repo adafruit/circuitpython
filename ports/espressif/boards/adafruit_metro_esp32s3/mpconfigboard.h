@@ -26,3 +26,8 @@
 #define DEFAULT_UART_BUS_TX (&pin_GPIO40)
 
 #define DOUBLE_TAP_PIN (&pin_GPIO38)
+
+// Bench finding: 32 KB of IDF headroom is not enough for a softAP that also
+// serves TLS -- handshakes hit MemoryError and DHCP replies fail while the
+// Python heap still reports free space. 40 KB is what the C6 hub needed.
+#define CIRCUITPY_ESP_RADIO_HEAP_RESERVE (40 * 1024)

@@ -29,3 +29,8 @@
 
 // Reduce wifi.radio.tx_power due to the antenna design of this board
 #define CIRCUITPY_WIFI_DEFAULT_TX_POWER   (15)
+
+// Bench finding: 32 KB of IDF headroom is not enough for a softAP that also
+// serves TLS -- handshakes hit MemoryError and DHCP replies fail while the
+// Python heap still reports free space. 40 KB is what the C6 hub needed.
+#define CIRCUITPY_ESP_RADIO_HEAP_RESERVE (40 * 1024)

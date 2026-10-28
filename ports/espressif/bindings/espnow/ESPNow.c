@@ -109,7 +109,10 @@ static MP_DEFINE_CONST_FUN_OBJ_1(espnow_deinit_obj, espnow_deinit);
 //|         This blocks until a timeout of ``2`` seconds if the ESP-NOW internal buffers are full.
 //|
 //|         :param ReadableBuffer message: The message to send (length <= 250 bytes).
-//|         :param Peer peer: Send message to this peer. If `None`, send to all registered peers.
+//|         :param Peer peer: Send message to this peer. If `None`, send to registered
+//|             unicast peers only. To broadcast or multicast, pass the corresponding
+//|             registered `Peer` explicitly. If no unicast peers are registered,
+//|             sending with `None` raises `OSError`.
 //|         """
 //|         ...
 //|
@@ -308,7 +311,7 @@ static mp_uint_t espnow_stream_ioctl(mp_obj_t self_in, mp_uint_t request, uintpt
         case MP_STREAM_POLL: {
             mp_uint_t flags = arg;
             mp_uint_t ret = 0;
-            if ((flags & MP_STREAM_POLL_RD) && ringbuf_num_filled(self->recv_buffer) > 0) {
+            if ((flags & MP_STREAM_POLL_RD) && common_hal_espnow_get_bytes_available(self) > 0) {
                 ret |= MP_STREAM_POLL_RD;
             }
             return ret;
@@ -337,7 +340,7 @@ static const mp_stream_p_t espnow_stream_p = {
 static mp_obj_t espnow_unary_op(mp_unary_op_t op, mp_obj_t self_in) {
     espnow_obj_t *self = MP_OBJ_TO_PTR(self_in);
     espnow_check_for_deinit(self);
-    size_t len = ringbuf_num_filled(self->recv_buffer);
+    size_t len = common_hal_espnow_get_bytes_available(self);
     switch (op) {
         case MP_UNARY_OP_BOOL:
             return mp_obj_new_bool(len != 0);

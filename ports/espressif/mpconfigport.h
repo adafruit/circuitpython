@@ -73,6 +73,14 @@ extern portMUX_TYPE background_task_mutex;
 #define CIRCUITPY_WIFI_DEFAULT_TX_POWER (20)
 #endif
 
+// IDF heap kept free while the wifi radio or BLE adapter is enabled. The GC heap
+// grows on demand (MICROPY_GC_SPLIT_HEAP_AUTO) and would otherwise consume the
+// whole system heap, leaving the wifi driver, lwIP and NimBLE unable to allocate
+// (ESP-NOW sends fail, softAP stations get no DHCP lease). Boards can override.
+#ifndef CIRCUITPY_ESP_RADIO_HEAP_RESERVE
+#define CIRCUITPY_ESP_RADIO_HEAP_RESERVE (32 * 1024)
+#endif
+
 #ifndef CIRCUITPY_ESP32P4_SWAP_LSFS
 #define CIRCUITPY_ESP32P4_SWAP_LSFS (0)
 #endif

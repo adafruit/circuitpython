@@ -12,3 +12,13 @@
 # end of Component config
 
 # end of Espressif IoT Development Framework Configuration
+
+# The collector serves a certificate chain larger than the upstream 2 KB record.
+# The current three-certificate chain needs 4159 bytes including TLS framing.
+CONFIG_MBEDTLS_SSL_OUT_CONTENT_LEN=8192
+CONFIG_MBEDTLS_SSL_IN_CONTENT_LEN=16384
+
+# Frozen collector libraries exceed the upstream 2 MB application slot on C6.
+# This layout moves user_fs: back up CIRCUITPY before installing or reverting.
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="boards/espressif_esp32c6_devkitc_1_n8/partitions.csv"
+CONFIG_PARTITION_TABLE_FILENAME="boards/espressif_esp32c6_devkitc_1_n8/partitions.csv"

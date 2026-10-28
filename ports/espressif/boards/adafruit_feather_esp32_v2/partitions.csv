@@ -1,0 +1,7 @@
+# Env Hub build: 3 MiB OTA slots and 1984 KiB filesystem on the 8 MiB Feather V2.
+# Name, Type, SubType, Offset, Size
+nvs, data, nvs, 0x9000, 20K
+otadata, data, ota, 0xe000, 8K
+ota_0, app, ota_0, 0x10000, 3072K
+ota_1, app, ota_1, 0x310000, 3072K
+user_fs, data, fat, 0x610000, 1984K

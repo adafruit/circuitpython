@@ -34,3 +34,8 @@
 // UART pins attached to the USB-serial converter chip
 #define CIRCUITPY_CONSOLE_UART_TX (&pin_GPIO1)
 #define CIRCUITPY_CONSOLE_UART_RX (&pin_GPIO3)
+
+// Bench finding: 32 KB of IDF headroom is not enough for a softAP that also
+// serves TLS -- handshakes hit MemoryError and DHCP replies fail while the
+// Python heap still reports free space. 40 KB is what the C6 hub needed.
+#define CIRCUITPY_ESP_RADIO_HEAP_RESERVE (40 * 1024)

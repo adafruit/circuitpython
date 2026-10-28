@@ -1,0 +1,9 @@
+# Frozen Env Hub libraries exceed the original 2 MiB application slot.
+# Updating this layout moves user_fs; back up and restore files when flashing.
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="boards/adafruit_feather_esp32_v2/partitions.csv"
+CONFIG_PARTITION_TABLE_FILENAME="boards/adafruit_feather_esp32_v2/partitions.csv"
+
+# Allow the collector's certificate chain to fit in an outbound TLS record.
+# Keep the upstream 16 KiB inbound record limit.
+# The current three-certificate chain needs 4159 bytes including TLS framing.
+CONFIG_MBEDTLS_SSL_OUT_CONTENT_LEN=8192
