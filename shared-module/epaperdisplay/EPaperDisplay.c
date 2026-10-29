@@ -10,6 +10,7 @@
 #include "py/runtime.h"
 #include "shared/runtime/interrupt_char.h"
 #include "shared-bindings/displayio/ColorConverter.h"
+#include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/time/__init__.h"
 #include "shared-module/displayio/__init__.h"
@@ -68,6 +69,7 @@ void common_hal_epaperdisplay_epaperdisplay_construct(epaperdisplay_epaperdispla
     self->black_bits_inverted = args->black_bits_inverted;
     self->write_color_ram_command = args->write_color_ram_command;
     self->color_bits_inverted = args->color_bits_inverted;
+    self->write_previous_ram_command = args->write_previous_ram_command;
     self->refresh_time = args->refresh_time * 1000;
     self->busy_state = args->busy_state;
     self->refreshing = false;
@@ -130,6 +132,22 @@ uint16_t common_hal_epaperdisplay_epaperdisplay_get_width(epaperdisplay_epaperdi
 
 uint16_t common_hal_epaperdisplay_epaperdisplay_get_height(epaperdisplay_epaperdisplay_obj_t *self) {
     return displayio_display_core_get_height(&self->core);
+}
+
+// A stuck panel can't hold up what this driver waits for on its own account.
+#define EPAPER_WAIT_TIMEOUT_MS 30000
+
+// BUSY can take a moment to rise after an update command, and reading it low before then would
+// look like a finished update. If it never rises, nothing has started or it was too quick to see,
+// so this returns false after 2 ms. Short enough that an interrupt doesn't have to end it.
+static bool wait_for_update_start(epaperdisplay_epaperdisplay_obj_t *self) {
+    for (uint8_t wait = 0; wait < 200; wait++) {
+        if (common_hal_digitalio_digitalinout_get_value(&self->busy) == self->busy_state) {
+            return true;
+        }
+        common_hal_mcu_delay_us(10);
+    }
+    return false;
 }
 
 static void wait_for_busy(epaperdisplay_epaperdisplay_obj_t *self) {
@@ -229,14 +247,66 @@ uint32_t common_hal_epaperdisplay_epaperdisplay_get_time_to_refresh(epaperdispla
     return self->milliseconds_per_frame - elapsed_time;
 }
 
-static void epaperdisplay_epaperdisplay_finish_refresh(epaperdisplay_epaperdisplay_obj_t *self) {
+static bool epaperdisplay_epaperdisplay_refresh_area(epaperdisplay_epaperdisplay_obj_t *self, const displayio_area_t *area, bool write_previous);
+
+// False if the panel is still updating when the wait is over.
+static bool wait_for_update_end(epaperdisplay_epaperdisplay_obj_t *self) {
+    wait_for_update_start(self);
+    const uint64_t deadline = supervisor_ticks_ms64() + EPAPER_WAIT_TIMEOUT_MS;
+    bool busy;
+    while ((busy = common_hal_digitalio_digitalinout_get_value(&self->busy) == self->busy_state) &&
+           !mp_hal_is_interrupted() && supervisor_ticks_ms64() <= deadline) {
+        RUN_BACKGROUND_TASKS;
+    }
+    return !busy;
+}
+
+static void epaperdisplay_epaperdisplay_finish_refresh(epaperdisplay_epaperdisplay_obj_t *self, const displayio_area_t *areas) {
     // Actually refresh the display now that all pixel RAM has been updated.
     send_command_sequence(self, false, self->refresh_sequence, self->refresh_sequence_len);
+    const uint64_t refresh_start = supervisor_ticks_ms64();
+    bool previous_written = true;
+    mp_obj_t raised = MP_OBJ_NULL;
+
+    if (self->write_previous_ram_command != NO_COMMAND && areas != NULL) {
+        // Copy the new image into the previous image RAM so the next partial update compares
+        // against what is on screen. The controller ignores RAM writes while it is updating.
+        if (self->busy.base.type == &mp_type_NoneType) {
+            common_hal_time_delay_ms(self->refresh_time);
+        } else {
+            previous_written = wait_for_update_end(self);
+        }
+        nlr_buf_t nlr;
+        if (nlr_push(&nlr) == 0) {
+            while (areas != NULL && previous_written) {
+                previous_written = !mp_hal_is_interrupted() &&
+                    epaperdisplay_epaperdisplay_refresh_area(self, areas, true);
+                areas = areas->next;
+            }
+            nlr_pop();
+        } else {
+            // Ctrl-C raises from a transfer in progress, and that transaction is still open.
+            raised = nlr.ret_val;
+            previous_written = false;
+            if (!displayio_display_bus_is_free(&self->bus)) {
+                displayio_display_bus_end_transaction(&self->bus);
+            }
+        }
+    }
 
     supervisor_enable_tick();
     self->refreshing = true;
 
     displayio_display_core_finish_refresh(&self->core);
+    // The update began before the wait above, and refresh_time and seconds_per_frame count from it.
+    self->core.last_refresh = refresh_start;
+    if (!previous_written) {
+        // The previous RAM is stale, so the next update has to write everything.
+        self->core.full_refresh = true;
+    }
+    if (raised != MP_OBJ_NULL) {
+        nlr_jump(raised);
+    }
 }
 
 mp_obj_t common_hal_epaperdisplay_epaperdisplay_get_bus(epaperdisplay_epaperdisplay_obj_t *self) {
@@ -272,7 +342,7 @@ mp_obj_t common_hal_epaperdisplay_epaperdisplay_get_root_group(epaperdisplay_epa
     return self->core.current_group;
 }
 
-static bool epaperdisplay_epaperdisplay_refresh_area(epaperdisplay_epaperdisplay_obj_t *self, const displayio_area_t *area) {
+static bool epaperdisplay_epaperdisplay_refresh_area(epaperdisplay_epaperdisplay_obj_t *self, const displayio_area_t *area, bool write_previous) {
     uint16_t buffer_size = 128; // In uint32_ts
 
     displayio_area_t clipped;
@@ -307,7 +377,7 @@ static bool epaperdisplay_epaperdisplay_refresh_area(epaperdisplay_epaperdisplay
     uint32_t mask[mask_length];
 
     uint8_t passes = 1;
-    if (self->write_color_ram_command != NO_COMMAND) {
+    if (self->write_color_ram_command != NO_COMMAND && !write_previous) {
         passes = 2;
     }
     for (uint8_t pass = 0; pass < passes; pass++) {
@@ -320,6 +390,8 @@ static bool epaperdisplay_epaperdisplay_refresh_area(epaperdisplay_epaperdisplay
         uint8_t write_command = self->write_black_ram_command;
         if (pass == 1) {
             write_command = self->write_color_ram_command;
+        } else if (write_previous) {
+            write_command = self->write_previous_ram_command;
         }
         if (!displayio_display_bus_begin_transaction(&self->bus)) {
             // Display bus not available now.
@@ -455,7 +527,7 @@ bool common_hal_epaperdisplay_epaperdisplay_refresh(epaperdisplay_epaperdisplay_
     if (self->acep) {
         epaperdisplay_epaperdisplay_start_refresh(self);
         _clean_area(self);
-        epaperdisplay_epaperdisplay_finish_refresh(self);
+        epaperdisplay_epaperdisplay_finish_refresh(self, NULL);
         while (self->refreshing && !mp_hal_is_interrupted()) {
             RUN_BACKGROUND_TASKS;
         }
@@ -465,11 +537,12 @@ bool common_hal_epaperdisplay_epaperdisplay_refresh(epaperdisplay_epaperdisplay_
     }
 
     epaperdisplay_epaperdisplay_start_refresh(self);
+    const displayio_area_t *first_area = current_area;
     while (current_area != NULL) {
-        epaperdisplay_epaperdisplay_refresh_area(self, current_area);
+        epaperdisplay_epaperdisplay_refresh_area(self, current_area, false);
         current_area = current_area->next;
     }
-    epaperdisplay_epaperdisplay_finish_refresh(self);
+    epaperdisplay_epaperdisplay_finish_refresh(self, first_area);
     return true;
 }
 

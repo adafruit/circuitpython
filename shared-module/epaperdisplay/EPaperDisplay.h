@@ -29,6 +29,7 @@ typedef struct {
     uint16_t refresh_time;
     uint16_t write_black_ram_command;
     uint16_t write_color_ram_command;
+    uint16_t write_previous_ram_command;
     uint8_t hue;
     bool busy_state;
     bool black_bits_inverted;

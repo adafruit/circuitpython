@@ -37,6 +37,7 @@ typedef struct {
     bool black_bits_inverted;
     uint16_t write_color_ram_command;
     bool color_bits_inverted;
+    uint16_t write_previous_ram_command;
     uint32_t highlight_color;
     uint32_t highlight_color2;
     const uint8_t *refresh_sequence;
@@ -75,6 +76,7 @@ typedef struct {
         .black_bits_inverted = false, \
         .write_color_ram_command = NO_COMMAND, \
         .color_bits_inverted = false, \
+        .write_previous_ram_command = NO_COMMAND, \
         .highlight_color = 0x000000, \
         .highlight_color2 = 0x000000, \
         .refresh_sequence = NULL, \
