@@ -185,9 +185,14 @@ static void send_command_sequence(epaperdisplay_epaperdisplay_obj_t *self,
 }
 
 void epaperdisplay_epaperdisplay_change_refresh_mode_parameters(epaperdisplay_epaperdisplay_obj_t *self,
-    mp_buffer_info_t *start_sequence, float seconds_per_frame) {
+    mp_buffer_info_t *start_sequence, mp_buffer_info_t *refresh_sequence, float seconds_per_frame) {
     self->start_sequence = (uint8_t *)start_sequence->buf;
     self->start_sequence_len = start_sequence->len;
+    // NULL keeps the current refresh sequence.
+    if (refresh_sequence != NULL) {
+        self->refresh_sequence = (uint8_t *)refresh_sequence->buf;
+        self->refresh_sequence_len = refresh_sequence->len;
+    }
     self->milliseconds_per_frame = seconds_per_frame * 1000;
 }
 

@@ -268,16 +268,27 @@ static mp_obj_t epaperdisplay_epaperdisplay_obj_show(mp_obj_t self_in, mp_obj_t 
 MP_DEFINE_CONST_FUN_OBJ_2(epaperdisplay_epaperdisplay_show_obj, epaperdisplay_epaperdisplay_obj_show);
 
 //|     def update_refresh_mode(
-//|         self, start_sequence: ReadableBuffer, seconds_per_frame: float = 180
+//|         self,
+//|         start_sequence: ReadableBuffer,
+//|         seconds_per_frame: float = 180,
+//|         *,
+//|         refresh_sequence: Optional[ReadableBuffer] = None,
 //|     ) -> None:
 //|         """Updates the ``start_sequence`` and ``seconds_per_frame`` parameters to enable
-//|         varying the refresh mode of the display."""
+//|         varying the refresh mode of the display.
+//|
+//|         :param ReadableBuffer start_sequence: Byte sequence sent to initialize the display before each refresh.
+//|         :param float seconds_per_frame: Minimum number of seconds between refreshes.
+//|         :param ReadableBuffer refresh_sequence: Byte sequence sent to start a refresh.
+//|           It uses the same format as ``start_sequence``.
+//|           When it is None, the current refresh sequence is kept."""
 //|
 static mp_obj_t epaperdisplay_epaperdisplay_update_refresh_mode(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    enum { ARG_start_sequence, ARG_seconds_per_frame };
+    enum { ARG_start_sequence, ARG_seconds_per_frame, ARG_refresh_sequence };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_start_sequence, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_seconds_per_frame, MP_ARG_OBJ, {.u_obj = MP_OBJ_NEW_SMALL_INT(180)} },
+        { MP_QSTR_refresh_sequence, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
     };
     epaperdisplay_epaperdisplay_obj_t *self = native_display(pos_args[0]);
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
@@ -288,8 +299,15 @@ static mp_obj_t epaperdisplay_epaperdisplay_update_refresh_mode(size_t n_args, c
     mp_get_buffer_raise(args[ARG_start_sequence].u_obj, &start_sequence, MP_BUFFER_READ);
     float seconds_per_frame = mp_obj_get_float(args[ARG_seconds_per_frame].u_obj);
 
+    mp_buffer_info_t refresh_sequence;
+    mp_buffer_info_t *refresh_sequence_ptr = NULL;
+    if (args[ARG_refresh_sequence].u_obj != mp_const_none) {
+        mp_get_buffer_raise(args[ARG_refresh_sequence].u_obj, &refresh_sequence, MP_BUFFER_READ);
+        refresh_sequence_ptr = &refresh_sequence;
+    }
+
     // Update parameters
-    epaperdisplay_epaperdisplay_change_refresh_mode_parameters(self, &start_sequence, seconds_per_frame);
+    epaperdisplay_epaperdisplay_change_refresh_mode_parameters(self, &start_sequence, refresh_sequence_ptr, seconds_per_frame);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(epaperdisplay_epaperdisplay_update_refresh_mode_obj, 1, epaperdisplay_epaperdisplay_update_refresh_mode);
