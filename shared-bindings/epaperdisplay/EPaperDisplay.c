@@ -54,6 +54,7 @@
 //|         black_bits_inverted: bool = False,
 //|         write_color_ram_command: Optional[int] = None,
 //|         color_bits_inverted: bool = False,
+//|         write_previous_ram_command: Optional[int] = None,
 //|         highlight_color: int = 0x000000,
 //|         highlight_color2: int = 0x000000,
 //|         refresh_display_command: Union[int, circuitpython_typing.ReadableBuffer],
@@ -98,6 +99,11 @@
 //|         :param bool black_bits_inverted: True if 0 bits are used to show black pixels. Otherwise, 1 means to show black.
 //|         :param int write_color_ram_command: Command used to write pixels values into the update region
 //|         :param bool color_bits_inverted: True if 0 bits are used to show the color. Otherwise, 1 means to show color.
+//|         :param int write_previous_ram_command: Command used to write the same pixel values again after each refresh.
+//|           Use it for controllers that compare new and previous RAM to do a partial update, such as the SSD1680 old data RAM (0x26).
+//|           When set, ``refresh()`` waits for the display to finish updating before it returns.
+//|           Requires a non-empty ``stop_sequence``.
+//|           Leave ``write_color_ram_command`` as None when it writes the same RAM, or it will overwrite the previous image.
 //|         :param int highlight_color: RGB888 of source color to highlight with third ePaper color.
 //|         :param int highlight_color2: RGB888 of source color to highlight with fourth ePaper color.
 //|         :param int refresh_display_command: Command used to start a display refresh. Single int or byte-packed command sequence
@@ -120,7 +126,7 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
            ARG_ram_width, ARG_ram_height, ARG_colstart, ARG_rowstart, ARG_rotation,
            ARG_set_column_window_command, ARG_set_row_window_command, ARG_set_current_column_command,
            ARG_set_current_row_command, ARG_write_black_ram_command, ARG_black_bits_inverted,
-           ARG_write_color_ram_command, ARG_color_bits_inverted, ARG_highlight_color, ARG_highlight_color2,
+           ARG_write_color_ram_command, ARG_color_bits_inverted, ARG_write_previous_ram_command, ARG_highlight_color, ARG_highlight_color2,
            ARG_refresh_display_command,  ARG_refresh_time, ARG_busy_pin, ARG_busy_state,
            ARG_seconds_per_frame, ARG_always_toggle_chip_select, ARG_grayscale, ARG_advanced_color_epaper, ARG_spectra6,
            ARG_two_byte_sequence_length, ARG_start_up_time, ARG_address_little_endian };
@@ -143,6 +149,7 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
         { MP_QSTR_black_bits_inverted, MP_ARG_BOOL | MP_ARG_KW_ONLY, {.u_bool = false} },
         { MP_QSTR_write_color_ram_command, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = mp_const_none} },
         { MP_QSTR_color_bits_inverted, MP_ARG_BOOL | MP_ARG_KW_ONLY, {.u_bool = false} },
+        { MP_QSTR_write_previous_ram_command, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = mp_const_none} },
         { MP_QSTR_highlight_color, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 0x000000} },
         { MP_QSTR_highlight_color2, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 0x000000} },
         { MP_QSTR_refresh_display_command, MP_ARG_OBJ | MP_ARG_REQUIRED },
@@ -189,6 +196,10 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
     if (args[ARG_write_color_ram_command].u_obj != mp_const_none) {
         write_color_ram_command = mp_obj_get_int(args[ARG_write_color_ram_command].u_obj);
     }
+    mp_int_t write_previous_ram_command = NO_COMMAND;
+    if (args[ARG_write_previous_ram_command].u_obj != mp_const_none) {
+        write_previous_ram_command = mp_obj_get_int(args[ARG_write_previous_ram_command].u_obj);
+    }
 
     bool two_byte_sequence_length = args[ARG_two_byte_sequence_length].u_bool;
 
@@ -234,6 +245,7 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
     construct_args.black_bits_inverted = args[ARG_black_bits_inverted].u_bool;
     construct_args.write_color_ram_command = write_color_ram_command;
     construct_args.color_bits_inverted = args[ARG_color_bits_inverted].u_bool;
+    construct_args.write_previous_ram_command = write_previous_ram_command;
     construct_args.highlight_color = highlight_color;
     construct_args.highlight_color2 = highlight_color2;
     construct_args.refresh_sequence = refresh_buf;
