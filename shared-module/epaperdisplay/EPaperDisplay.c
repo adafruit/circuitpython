@@ -84,6 +84,9 @@ void common_hal_epaperdisplay_epaperdisplay_construct(epaperdisplay_epaperdispla
     self->stop_sequence_len = args->stop_sequence_len;
     self->refresh_sequence = args->refresh_sequence;
     self->refresh_sequence_len = args->refresh_sequence_len;
+    self->keep_awake = args->keep_awake;
+    self->awake = false;
+    self->needs_start = false;
 
     self->busy.base.type = &mp_type_NoneType;
     self->two_byte_sequence_length = args->two_byte_sequence_length;
@@ -212,6 +215,22 @@ void epaperdisplay_epaperdisplay_change_refresh_mode_parameters(epaperdisplay_ep
         self->refresh_sequence_len = refresh_sequence->len;
     }
     self->milliseconds_per_frame = seconds_per_frame * 1000;
+    self->needs_start = true;
+}
+
+// For a panel kept awake. Ctrl-C raises from a send in progress, and that transaction is still
+// open. The caller still has things to do first, so the interrupt raises later.
+static void send_stop_sequence_guarded(epaperdisplay_epaperdisplay_obj_t *self) {
+    nlr_buf_t nlr;
+    if (nlr_push(&nlr) == 0) {
+        send_command_sequence(self, false, self->stop_sequence, self->stop_sequence_len);
+        nlr_pop();
+    } else {
+        if (!displayio_display_bus_is_free(&self->bus)) {
+            displayio_display_bus_end_transaction(&self->bus);
+        }
+        mp_sched_exception(nlr.ret_val);
+    }
 }
 
 static void epaperdisplay_epaperdisplay_start_refresh(epaperdisplay_epaperdisplay_obj_t *self) {
@@ -224,6 +243,17 @@ static void epaperdisplay_epaperdisplay_start_refresh(epaperdisplay_epaperdispla
         return;
     }
 
+    if (self->keep_awake && self->awake) {
+        if (!self->needs_start) {
+            // The panel is still configured from the previous refresh.
+            return;
+        }
+        // SSD168x controllers commit the last RAM byte when the next command arrives, so a reset
+        // can't come straight after a RAM write.
+        send_stop_sequence_guarded(self);
+        self->awake = false;
+    }
+
     // run start sequence
     self->bus.bus_reset(self->bus.bus);
 
@@ -233,6 +263,8 @@ static void epaperdisplay_epaperdisplay_start_refresh(epaperdisplay_epaperdispla
     if (mp_hal_is_interrupted()) {
         return;
     }
+    self->awake = true;
+    self->needs_start = false;
 }
 
 uint32_t common_hal_epaperdisplay_epaperdisplay_get_time_to_refresh(epaperdisplay_epaperdisplay_obj_t *self) {
@@ -503,8 +535,10 @@ bool common_hal_epaperdisplay_epaperdisplay_refresh(epaperdisplay_epaperdisplay_
         if (common_hal_digitalio_digitalinout_get_value(&self->busy) != self->busy_state) {
             supervisor_disable_tick();
             self->refreshing = false;
-            // Run stop sequence but don't wait for busy because busy is set when sleeping.
-            send_command_sequence(self, false, self->stop_sequence, self->stop_sequence_len);
+            if (!self->keep_awake) {
+                // Run stop sequence but don't wait for busy because busy is set when sleeping.
+                send_command_sequence(self, false, self->stop_sequence, self->stop_sequence_len);
+            }
         } else {
             return false;
         }
@@ -558,8 +592,10 @@ void epaperdisplay_epaperdisplay_background(epaperdisplay_epaperdisplay_obj_t *s
         if (refresh_done) {
             supervisor_disable_tick();
             self->refreshing = false;
-            // Run stop sequence but don't wait for busy because busy is set when sleeping.
-            send_command_sequence(self, false, self->stop_sequence, self->stop_sequence_len);
+            if (!self->keep_awake) {
+                // Run stop sequence but don't wait for busy because busy is set when sleeping.
+                send_command_sequence(self, false, self->stop_sequence, self->stop_sequence_len);
+            }
         }
     }
 }
@@ -575,8 +611,15 @@ void release_epaperdisplay(epaperdisplay_epaperdisplay_obj_t *self) {
         supervisor_disable_tick();
         self->refreshing = false;
         // Run stop sequence but don't wait for busy because busy is set when sleeping.
-        send_command_sequence(self, false, self->stop_sequence, self->stop_sequence_len);
+        if (self->keep_awake) {
+            send_stop_sequence_guarded(self);
+        } else {
+            send_command_sequence(self, false, self->stop_sequence, self->stop_sequence_len);
+        }
+    } else if (self->keep_awake && self->awake) {
+        send_stop_sequence_guarded(self);
     }
+    self->awake = false;
 
     release_display_core(&self->core);
     if (self->busy.base.type == &digitalio_digitalinout_type) {
@@ -584,9 +627,24 @@ void release_epaperdisplay(epaperdisplay_epaperdisplay_obj_t *self) {
     }
 }
 
+void epaperdisplay_epaperdisplay_end_held_bus(epaperdisplay_epaperdisplay_obj_t *self) {
+    // The VM is over, so whatever holds the bus can never let it go: end it here.
+    if (self->keep_awake && !displayio_display_bus_is_free(&self->bus)) {
+        displayio_display_bus_end_transaction(&self->bus);
+    }
+}
+
 void epaperdisplay_epaperdisplay_reset(epaperdisplay_epaperdisplay_obj_t *self) {
     displayio_display_core_set_root_group(&self->core, &circuitpython_splash);
     self->core.full_refresh = true;
+    // Let the panel sleep after the next refresh when code isn't running.
+    if (self->keep_awake && self->awake && !self->refreshing) {
+        // Nothing can catch a raise from a send. A reload may be pending.
+        epaperdisplay_epaperdisplay_end_held_bus(self);
+        send_stop_sequence_guarded(self);
+        self->awake = false;
+    }
+    self->keep_awake = false;
 }
 
 void epaperdisplay_epaperdisplay_collect_ptrs(epaperdisplay_epaperdisplay_obj_t *self) {

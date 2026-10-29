@@ -52,6 +52,7 @@ typedef struct {
     bool spectra6;
     bool two_byte_sequence_length;
     bool address_little_endian;
+    bool keep_awake;
 } epaperdisplay_construct_args_t;
 
 #define EPAPERDISPLAY_CONSTRUCT_ARGS_DEFAULTS { \
@@ -90,7 +91,8 @@ typedef struct {
         .acep = false, \
         .spectra6 = false, \
         .two_byte_sequence_length = false, \
-        .address_little_endian = false \
+        .address_little_endian = false, \
+        .keep_awake = false \
 }
 
 void common_hal_epaperdisplay_epaperdisplay_construct(epaperdisplay_epaperdisplay_obj_t *self,

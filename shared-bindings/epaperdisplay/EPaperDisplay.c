@@ -69,6 +69,7 @@
 //|         two_byte_sequence_length: bool = False,
 //|         start_up_time: float = 0,
 //|         address_little_endian: bool = False,
+//|         keep_awake: bool = False,
 //|     ) -> None:
 //|         """Create a EPaperDisplay object on the given display bus (`fourwire.FourWire` or `paralleldisplaybus.ParallelBus`).
 //|
@@ -118,6 +119,10 @@
 //|         :param bool two_byte_sequence_length: When true, use two bytes to define sequence length
 //|         :param float start_up_time: Time to wait after reset before sending commands
 //|         :param bool address_little_endian: Send the least significant byte (not bit) of multi-byte addresses first. Ignored when ram is addressed with one byte
+//|         :param bool keep_awake: When true, the display is only reset and sent the ``start_sequence`` before the first refresh.
+//|           The ``stop_sequence`` is not sent after each refresh. It is sent when the display is released.
+//|           It is also sent before the reset that ``update_refresh_mode()`` asks for, so it can't be empty.
+//|           This keeps the display's settings and RAM between refreshes so they can be faster.
 //|         """
 //|         ...
 //|
@@ -129,7 +134,7 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
            ARG_write_color_ram_command, ARG_color_bits_inverted, ARG_write_previous_ram_command, ARG_highlight_color, ARG_highlight_color2,
            ARG_refresh_display_command,  ARG_refresh_time, ARG_busy_pin, ARG_busy_state,
            ARG_seconds_per_frame, ARG_always_toggle_chip_select, ARG_grayscale, ARG_advanced_color_epaper, ARG_spectra6,
-           ARG_two_byte_sequence_length, ARG_start_up_time, ARG_address_little_endian };
+           ARG_two_byte_sequence_length, ARG_start_up_time, ARG_address_little_endian, ARG_keep_awake };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_display_bus, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_start_sequence, MP_ARG_REQUIRED | MP_ARG_OBJ },
@@ -164,6 +169,7 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
         { MP_QSTR_two_byte_sequence_length, MP_ARG_BOOL | MP_ARG_KW_ONLY, {.u_bool = false} },
         { MP_QSTR_start_up_time, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = MP_OBJ_NEW_SMALL_INT(0)} },
         { MP_QSTR_address_little_endian, MP_ARG_BOOL | MP_ARG_KW_ONLY, {.u_bool = false} },
+        { MP_QSTR_keep_awake, MP_ARG_BOOL | MP_ARG_KW_ONLY, {.u_bool = false} },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
@@ -174,6 +180,12 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
     mp_get_buffer_raise(args[ARG_start_sequence].u_obj, &start_bufinfo, MP_BUFFER_READ);
     mp_buffer_info_t stop_bufinfo;
     mp_get_buffer_raise(args[ARG_stop_sequence].u_obj, &stop_bufinfo, MP_BUFFER_READ);
+    // A reset can follow these displays' last RAM write, and SSD168x controllers only commit the
+    // last byte when another command arrives.
+    if (stop_bufinfo.len == 0 &&
+        (args[ARG_keep_awake].u_bool || args[ARG_write_previous_ram_command].u_obj != mp_const_none)) {
+        mp_arg_error_invalid(MP_QSTR_stop_sequence);
+    }
 
 
     const mcu_pin_obj_t *busy_pin = validate_obj_is_free_pin_or_none(args[ARG_busy_pin].u_obj, MP_QSTR_busy_pin);
@@ -260,6 +272,7 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
     construct_args.spectra6 = args[ARG_spectra6].u_bool;
     construct_args.two_byte_sequence_length = two_byte_sequence_length;
     construct_args.address_little_endian = args[ARG_address_little_endian].u_bool;
+    construct_args.keep_awake = args[ARG_keep_awake].u_bool;
     common_hal_epaperdisplay_epaperdisplay_construct(self, &construct_args);
 
     return self;
@@ -287,7 +300,8 @@ MP_DEFINE_CONST_FUN_OBJ_2(epaperdisplay_epaperdisplay_show_obj, epaperdisplay_ep
 //|         refresh_sequence: Optional[ReadableBuffer] = None,
 //|     ) -> None:
 //|         """Updates the ``start_sequence`` and ``seconds_per_frame`` parameters to enable
-//|         varying the refresh mode of the display.
+//|         varying the refresh mode of the display. When ``keep_awake`` is true, the display is
+//|         reset and sent the new ``start_sequence`` before the next refresh.
 //|
 //|         :param ReadableBuffer start_sequence: Byte sequence sent to initialize the display before each refresh.
 //|         :param float seconds_per_frame: Minimum number of seconds between refreshes.

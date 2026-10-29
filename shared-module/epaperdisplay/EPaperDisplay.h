@@ -38,6 +38,9 @@ typedef struct {
     bool grayscale;
     bool acep;
     bool two_byte_sequence_length;
+    bool keep_awake;
+    bool awake;
+    bool needs_start; // update_refresh_mode() changed the start sequence.
     display_chip_select_behavior_t chip_select;
 } epaperdisplay_epaperdisplay_obj_t;
 
@@ -46,6 +49,9 @@ void epaperdisplay_epaperdisplay_change_refresh_mode_parameters(epaperdisplay_ep
 void epaperdisplay_epaperdisplay_background(epaperdisplay_epaperdisplay_obj_t *self);
 void epaperdisplay_epaperdisplay_reset(epaperdisplay_epaperdisplay_obj_t *self);
 void release_epaperdisplay(epaperdisplay_epaperdisplay_obj_t *self);
+// The VM is over: a keep_awake display ends whatever transaction still holds its bus, since its
+// stop sequence would wait for the bus forever. Other displays are left alone. Does not raise.
+void epaperdisplay_epaperdisplay_end_held_bus(epaperdisplay_epaperdisplay_obj_t *self);
 size_t maybe_refresh_epaperdisplay(void);
 
 void epaperdisplay_epaperdisplay_collect_ptrs(epaperdisplay_epaperdisplay_obj_t *self);
