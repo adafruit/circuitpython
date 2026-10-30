@@ -110,6 +110,8 @@ static mp_obj_t displayio_tilegrid_make_new(const mp_obj_type_t *type, size_t n_
     }
     mp_obj_t pixel_shader = args[ARG_pixel_shader].u_obj;
     displayio_tilegrid_validate_pixel_shader(pixel_shader);
+    mp_arg_validate_int_range(args[ARG_tile_width].u_int, 0, 0xffff, MP_QSTR_tile_width);
+    mp_arg_validate_int_range(args[ARG_tile_height].u_int, 0, 0xffff, MP_QSTR_tile_height);
     uint16_t tile_width = args[ARG_tile_width].u_int;
     if (tile_width == 0) {
         tile_width = bitmap_width;
@@ -118,6 +120,8 @@ static mp_obj_t displayio_tilegrid_make_new(const mp_obj_type_t *type, size_t n_
     if (tile_height == 0) {
         tile_height = bitmap_height;
     }
+    mp_arg_validate_int_min(tile_width, 1, MP_QSTR_tile_width);
+    mp_arg_validate_int_min(tile_height, 1, MP_QSTR_tile_height);
     if (bitmap_width % tile_width != 0) {
         mp_raise_ValueError(MP_ERROR_TEXT("Tile width must exactly divide bitmap width"));
     }
@@ -125,12 +129,23 @@ static mp_obj_t displayio_tilegrid_make_new(const mp_obj_type_t *type, size_t n_
         mp_raise_ValueError(MP_ERROR_TEXT("Tile height must exactly divide bitmap height"));
     }
 
+    mp_arg_validate_int_range(args[ARG_width].u_int, 1, 0xffff, MP_QSTR_width);
+    mp_arg_validate_int_range(args[ARG_height].u_int, 1, 0xffff, MP_QSTR_height);
+
+    uint16_t bitmap_width_in_tiles = bitmap_width / tile_width;
+    uint16_t bitmap_height_in_tiles = bitmap_height / tile_height;
+    uint32_t tiles_in_bitmap = (uint32_t)bitmap_width_in_tiles * bitmap_height_in_tiles;
+    mp_arg_validate_length_min(tiles_in_bitmap, 1, MP_QSTR_bitmap);
+
+    mp_arg_validate_int_range(args[ARG_default_tile].u_int, 0,
+        (mp_int_t)tiles_in_bitmap - 1, MP_QSTR_default_tile);
+
     int16_t x = args[ARG_x].u_int;
     int16_t y = args[ARG_y].u_int;
 
     displayio_tilegrid_t *self = mp_obj_malloc(displayio_tilegrid_t, &displayio_tilegrid_type);
     common_hal_displayio_tilegrid_construct(self, bitmap,
-        bitmap_width / tile_width, bitmap_height / tile_height,
+        bitmap_width_in_tiles, bitmap_height_in_tiles,
         pixel_shader, args[ARG_width].u_int, args[ARG_height].u_int,
         tile_width, tile_height, x, y, args[ARG_default_tile].u_int);
 
