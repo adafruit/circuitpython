@@ -689,6 +689,12 @@ async def build_circuitpython():  # noqa: C901
         circuitpython_flags.extend(
             (
                 "-isystem",
+                portdir / "modules" / "crypto" / "tf-psa-crypto" / "dispatch" / "include",
+            )
+        )
+        circuitpython_flags.extend(
+            (
+                "-isystem",
                 portdir
                 / "modules"
                 / "crypto"
