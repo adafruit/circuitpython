@@ -592,6 +592,75 @@ static mp_obj_t videocore_videobuffer_draw_protocol_self(mp_obj_t protocol_conta
     return protocol_container;
 }
 
+// Whether a layer above already claimed a pixel near the overlap. Checks whole words, which may
+// include pixels between overlap rows or just outside the overlap. That can only make the caller
+// take its slower path; it never misses a claimed pixel.
+static bool videocore_videobuffer_overlap_claimed(const uint32_t *mask, const displayio_area_t *area,
+    const displayio_area_t *overlap) {
+    const size_t span_px = displayio_area_width(area);
+    const size_t first_px = (size_t)(overlap->y1 - area->y1) * span_px + (overlap->x1 - area->x1);
+    const size_t end_px = (size_t)(overlap->y2 - 1 - area->y1) * span_px + (overlap->x2 - area->x1);
+    for (size_t word = first_px / 32; word <= (end_px - 1) / 32; word++) {
+        if (mask[word] != 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Copy a 1 bit per pixel plain buffer into a 1 bit display's buffer. Both are MSB first with
+// 1 = white, the same as a monochrome EPaperDisplay's first RAM pass before any inversion.
+// Whole bytes are copied when the rects line up and nothing above claimed these pixels.
+static bool videocore_videobuffer_fill_area_1bit(videocore_videobuffer_obj_t *self,
+    const _displayio_colorspace_t *colorspace, const displayio_area_t *area, const displayio_area_t *overlap,
+    bool full_coverage, uint32_t *mask, uint32_t *buffer) {
+    // Every grayscale bit of a 1 bit pixel is that pixel, so this also serves each grayscale pass.
+    if (!colorspace->pixels_in_byte_share_row || !colorspace->reverse_pixels_in_byte ||
+        !colorspace->grayscale) {
+        return false;
+    }
+    const size_t span_px = displayio_area_width(area);
+    const size_t width = displayio_area_width(overlap);
+    const size_t row_bytes = videocore_videobuffer_source_row_bytes(self);
+    const size_t x_in_frame = overlap->x1 - self->current_area.x1;
+    const size_t x_in_area = overlap->x1 - area->x1;
+    const uint8_t *frame = self->stream_base;
+    uint8_t *out = (uint8_t *)buffer;
+
+    const bool whole_bytes = span_px % 8 == 0 && x_in_area % 8 == 0 && x_in_frame % 8 == 0 && width % 8 == 0 &&
+        !videocore_videobuffer_overlap_claimed(mask, area, overlap);
+    for (int16_t y = overlap->y1; y < overlap->y2; y++) {
+        const size_t px = (size_t)(y - area->y1) * span_px + x_in_area;
+        const uint8_t *row = frame + (size_t)(y - self->current_area.y1) * row_bytes;
+        if (whole_bytes) {
+            memcpy(out + px / 8, row + x_in_frame / 8, width / 8);
+            // Full coverage ends the layer walk, so filling the mask once below is enough.
+            if (!full_coverage) {
+                for (size_t p = px; p < px + width; p++) {
+                    mask[p / 32] |= 1u << (p % 32);
+                }
+            }
+            continue;
+        }
+        for (size_t i = 0; i < width; i++) {
+            const size_t p = px + i;
+            if (mask[p / 32] & (1u << (p % 32))) {
+                continue;
+            }
+            const size_t f = x_in_frame + i;
+            if (row[f / 8] & (0x80 >> (f % 8))) {
+                out[p / 8] |= 0x80 >> (p % 8);
+            }
+            mask[p / 32] |= 1u << (p % 32);
+        }
+    }
+    if (whole_bytes && full_coverage) {
+        // A FramebufferDisplay writes nothing back when the mask is empty.
+        memset(mask, 0xff, (displayio_area_size(area) + 31) / 32 * sizeof(uint32_t));
+    }
+    return full_coverage;
+}
+
 static bool videocore_videobuffer_draw_fill_area(mp_obj_t self_in, const _displayio_colorspace_t *colorspace, const displayio_area_t *area, uint32_t *mask, uint32_t *buffer) {
     videocore_videobuffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     // buffer isn't necessarily the framebuffer. It may be a scratch buffer.
@@ -619,21 +688,7 @@ static bool videocore_videobuffer_draw_fill_area(mp_obj_t self_in, const _displa
         const uint8_t *frame = (const uint8_t *)self->stream_base;
         uint8_t *out = (uint8_t *)buffer;
 
-        // Check whole words. This may include pixels between overlap rows or
-        // just outside the overlap, which can only make us take the slower
-        // per-pixel path below; it never misses a claimed pixel.
-        const size_t first_px = (size_t)(overlap.y1 - area->y1) * span_px +
-            (overlap.x1 - area->x1);
-        const size_t end_px = (size_t)(overlap.y2 - 1 - area->y1) * span_px +
-            (overlap.x2 - area->x1);
-        bool masked = false;
-        for (size_t word = first_px / 32; word <= (end_px - 1) / 32; word++) {
-            if (mask[word] != 0) {
-                masked = true;
-                break;
-            }
-        }
-        if (full_coverage && !masked) {
+        if (full_coverage && !videocore_videobuffer_overlap_claimed(mask, area, &overlap)) {
             // Sole coverer: nothing was composed, so the driver skips the copy.
             return true;
         }
@@ -663,6 +718,10 @@ static bool videocore_videobuffer_draw_fill_area(mp_obj_t self_in, const _displa
             }
         }
         return full_coverage;
+    }
+
+    if (colorspace->depth == 1 && self->source_bits_per_pixel == 1) {
+        return videocore_videobuffer_fill_area_1bit(self, colorspace, area, &overlap, full_coverage, mask, buffer);
     }
 
     // Raw buffer target: bulk copy, no color conversion: the display depth

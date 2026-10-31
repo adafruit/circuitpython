@@ -35,7 +35,9 @@
 //|     process or save camera pixels. 1-bit pixels are packed together, and
 //|     each row is padded out to a whole byte.
 //|     A Group shows a plain buffer target only when its pixels are 16 bits
-//|     and the display uses 16-bit color.
+//|     and the display uses 16-bit color, or its pixels are 1 bit and the
+//|     display is monochrome with the leftmost pixel in the top bit of each
+//|     byte, such as `epaperdisplay.EPaperDisplay`. A 1 bit means white.
 //|
 //|     See the `videocore` module overview for complete examples.
 //|     """
