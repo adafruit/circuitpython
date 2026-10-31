@@ -3,6 +3,7 @@ name = "zephyr nRF5340 simulated boards (BabbleSim)"
 
 [modules]
 __future__ = true
+_airlift = false
 _bleio = true # Zephyr board has _bleio
 _eve = false
 _pew = false

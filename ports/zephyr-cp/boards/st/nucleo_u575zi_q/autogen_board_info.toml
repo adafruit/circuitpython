@@ -3,6 +3,7 @@ name = "STMicroelectronics Nucleo U575ZI Q"
 
 [modules]
 __future__ = true
+_airlift = false
 _bleio = false
 _eve = false
 _pew = false

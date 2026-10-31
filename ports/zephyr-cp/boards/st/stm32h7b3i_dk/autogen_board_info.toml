@@ -3,6 +3,7 @@ name = "STMicroelectronics STM32H7B3I Discovery kit"
 
 [modules]
 __future__ = true
+_airlift = false
 _bleio = false
 _eve = false
 _pew = false

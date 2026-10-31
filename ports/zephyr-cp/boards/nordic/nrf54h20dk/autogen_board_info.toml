@@ -3,6 +3,7 @@ name = "Nordic Semiconductor nRF54H20 DK"
 
 [modules]
 __future__ = true
+_airlift = false
 _bleio = false
 _eve = false
 _pew = false

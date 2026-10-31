@@ -3,6 +3,7 @@ name = "NXP Semiconductors FRDM-MCXN947"
 
 [modules]
 __future__ = true
+_airlift = false
 _bleio = false
 _eve = false
 _pew = false
