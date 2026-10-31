@@ -14,19 +14,6 @@
 #include "shared-module/picogame/Bitmap.h"
 #include "shared-module/picogame/Sprite.h"
 
-// Hardware-FPU boards run the pseudo-3D/math primitives (picogame.project) on plain float32 -
-// faster than the soft-float-equivalent fixed path and free of 16.16 range limits; no-FPU
-// targets (Cortex-M0+) use integer 16.16. Only ONE path is compiled per board. The default
-// follows the architecture; a board can override with CIRCUITPY_PICOGAME_FPU=0/1 in its
-// mpconfigboard.mk. Python reads `picogame.FPU` to pack camera/point buffers to match.
-#ifndef CIRCUITPY_PICOGAME_FPU
-#if (defined(__ARM_FP) && (__ARM_FP != 0)) || (defined(__riscv_flen) && (__riscv_flen > 0))
-#define CIRCUITPY_PICOGAME_FPU (1)
-#else
-#define CIRCUITPY_PICOGAME_FPU (0)
-#endif
-#endif
-
 // Fill nw 32-bit words with w, four per iteration. w32 must be 4-byte aligned.
 static inline void picogame_fill_words(uint32_t *w32, int nw, uint32_t w) {
     for (int b = nw >> 2; b > 0; b--) {
@@ -218,25 +205,20 @@ void picogame_blit_bitmap_affine(
 // CircuitPython backend: picogame_output_t == busdisplay; the impl lives in __init__.c.
 typedef busdisplay_busdisplay_obj_t picogame_output_t;
 
+// Q15 sine of a whole-degree angle in 0..360, from the quarter-wave table.
+int32_t picogame_sin_q15_reduced(int deg);
+
+// floor((a * dd) / 65536) with 32-bit multiplies. Exact for a <= 2^16, dd <= 2^24.
+static inline int32_t pg_mulshr16(uint32_t a, uint32_t dd) {
+    return (int32_t)(a * (dd >> 16) + ((a * (dd & 0xFFFF)) >> 16));
+}
+
 // Fill a strip with background, then composite items (sprites and tilemaps) in
 // order (items[0] = bottom). kinds[i] selects the type; kinds == NULL means
 // every item is a sprite. (ox, oy) is the view offset added to item positions
 // (scene space -> screen space) for camera/centering.
 // Returns a latched BaseException (Ctrl-C / ReloadException) raised by a StripDraw callback, or
 // MP_OBJ_NULL. The caller must re-raise it AFTER closing the display transaction.
-#if defined(PICOGAME_HAS_INTERP)
-// rp2-port SIO-interpolator mode7 row walker. Fast path only:
-// PAL8, opaque, stride == tw, log2(tw)+log2(th) <= 16; the caller guards and falls back.
-void picogame_mode7_row_interp(uint16_t *dst, int n,
-    const uint8_t *tex, const uint16_t *pal,
-    uint32_t fx, uint32_t fy, int32_t stepx, int32_t stepy,
-    int shx, int shy, int ltw, int lth);
-#endif
-
-// Racing-road curve pass (see the implementation comment in __init__.c).
-void picogame_road_edges(int16_t *rl, int16_t *rr, const int32_t *hw_q16, int n,
-    int32_t cx_q16, int32_t dist, const int32_t *cfg);
-
 mp_obj_t picogame_blit_strip_layers(
     uint16_t *buf, int region_w, int strip_top, int strip_h, int x0,
     mp_obj_t *items, uint8_t *kinds, size_t n, uint16_t background, int ox, int oy);

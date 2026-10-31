@@ -528,7 +528,7 @@ static const int16_t pg_sin_q15_quad[91] = {
     32767,
 };
 // deg must already be in 0..360 (360 == 0).
-static int32_t pg_sin_q15_reduced(int deg) {
+int32_t picogame_sin_q15_reduced(int deg) {
     if (deg <= 90) {
         return pg_sin_q15_quad[deg];
     }
@@ -545,65 +545,11 @@ static int32_t pg_sin_q15(int deg) {
     if (deg < 0) {
         deg += 360;
     }
-    return pg_sin_q15_reduced(deg);
+    return picogame_sin_q15_reduced(deg);
 }
 static int32_t pg_cos_q15(int deg) {
     return pg_sin_q15(deg + 90);
 }
-
-// sin of a Q16 degree angle: lerp between whole-degree LUT entries. The racing-road curvature is
-// DOUBLE-integrated over ~170 rows, which amplifies whole-degree quantization into visible pixels
-// (host-measured 9 px); one lerp per curvature eval brings the road within 1 px of the float original.
-static int32_t pg_sin_q15_lerp(int64_t deg_q16) {
-    // Reduce once; d0 + 1 is then at most 360, which the table handles.
-    int d0 = (int)(deg_q16 >> 16) % 360;
-    if (d0 < 0) {
-        d0 += 360;
-    }
-    int32_t frac = (int32_t)(deg_q16 & 0xFFFF);
-    int32_t a = pg_sin_q15_reduced(d0);
-    // Adjacent entries differ by < 600 and frac < 2^16, so this fits in 32 bits.
-    return a + (((pg_sin_q15_reduced(d0 + 1) - a) * frac) >> 16);
-}
-
-// (s * amp) >> 15 with 32-bit multiplies. Exact for |s| <= 2^15 and any int32 amp.
-static inline int32_t pg_mulshr15(int32_t s, int32_t amp) {
-    uint32_t hi = (uint32_t)(amp >> 15) * (uint32_t)s;
-    int32_t lo = ((amp & 0x7FFF) * s) >> 15;
-    return (int32_t)(hi + (uint32_t)lo);
-}
-
-// One racing-road frame's curve pass: the bottom-up curvature accumulator + per-row integer edges
-// (the OutRun-genre "compute_road" loop - profiled at ~8-10 ms of Python on picobike; this is the
-// batch-boundary rule in action: one C call does the frame's whole row loop). Fixed-point throughout:
-// cx/ddx accumulate in Q16, curvature = two LUT sines of the world distance. cfg (int32[7]):
-// [f1_q20, f2_q20, amp1k_q16, amp2k_q16, world_step, curve_step, d_row_off] - frequencies in
-// Q20 degrees/world-unit (Q16 phase-drifts over a long run), amplitudes premultiplied by the
-// per-row gain k, curvature re-evaluated every curve_step rows (it varies slowly). Edge stores use
-// trunc-toward-zero to match the Python original's int(). Host-proven <=1 px absolute AND row-delta
-// smoothness vs the float reference over 8k+ frames (road_edges_test.c).
-void picogame_road_edges(int16_t *rl, int16_t *rr, const int32_t *hw_q16, int n,
-    int32_t cx_q16, int32_t dist, const int32_t *cfg) {
-    int32_t f1 = cfg[0], f2 = cfg[1], a1k = cfg[2], a2k = cfg[3];
-    int32_t wstep = cfg[4], cstep = cfg[5], drow = cfg[6];
-    int32_t cx = cx_q16, ddx = 0, ck = 0;
-    int cnt = 0;
-    for (int i = n - 1; i >= 0; i--) {
-        if (cnt == 0) {
-            int32_t d = dist + (drow - i) * wstep;
-            ck = pg_mulshr15(pg_sin_q15_lerp(((int64_t)d * f1) >> 4), a1k)
-                + pg_mulshr15(pg_sin_q15_lerp(((int64_t)d * f2) >> 4), a2k);
-            cnt = cstep;
-        }
-        cnt--;
-        ddx += ck;
-        cx += ddx;
-        int32_t vl = cx - hw_q16[i], vr = cx + hw_q16[i];
-        rl[i] = (int16_t)(vl >= 0 ? (vl >> 16) : -((-vl) >> 16));
-        rr[i] = (int16_t)(vr >= 0 ? (vr >> 16) : -((-vr) >> 16));
-    }
-}
-
 
 // Forward-transform a w*h rect's 4 corners through (integer pivot, 8.8 scale, Q15 rotation) and
 // return the screen-space AABB. INTEGER (Q16) - measured ~40x faster than the old float version on

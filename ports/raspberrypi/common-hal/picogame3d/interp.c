@@ -20,13 +20,13 @@
 
 #include "py/mpconfig.h"
 
-#if CIRCUITPY_PICOGAME
+#if CIRCUITPY_PICOGAME3D
 
 #include <stdint.h>
 #include "hardware/interp.h"
-#include "shared-module/picogame/__init__.h"   // the prototype (PICOGAME_HAS_INTERP)
+#include "shared-module/picogame3d/__init__.h"   // the prototype (PICOGAME_HAS_INTERP)
 
-void picogame_mode7_row_interp(uint16_t *dst, int n,
+void picogame3d_mode7_row_interp(uint16_t *dst, int n,
     const uint8_t *tex, const uint16_t *pal,
     uint32_t fx, uint32_t fy, int32_t stepx, int32_t stepy,
     int shx, int shy, int ltw, int lth) {

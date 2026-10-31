@@ -435,6 +435,9 @@ endif
 ifeq ($(CIRCUITPY_PICOGAME),1)
 SRC_PATTERNS += picogame/%
 endif
+ifeq ($(CIRCUITPY_PICOGAME3D),1)
+SRC_PATTERNS += picogame3d/%
+endif
 ifeq ($(CIRCUITPY_STORAGE),1)
 SRC_PATTERNS += storage/%
 endif
@@ -783,6 +786,7 @@ SRC_SHARED_MODULE_ALL = \
 	picogame/Tilemap.c \
 	picogame/Particles.c \
 	picogame/Canvas.c \
+	picogame3d/__init__.c \
 	aesio/__init__.c \
 	aesio/aes.c \
 	atexit/__init__.c \
