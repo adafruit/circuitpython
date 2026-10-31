@@ -29,6 +29,9 @@
 //|     unsupported position directly raises an error, but moving a containing
 //|     Group may give garbled output instead.
 //|
+//|     A VideoBuffer can only be translated. Showing it on a rotated display, or
+//|     in a scaled Group, raises `ValueError`.
+//|
 //|     When the target is a plain buffer, frames are written with no gap
 //|     between rows, so each row takes ``(width * bits_per_pixel + 7) // 8``
 //|     bytes. Python code can read the buffer at any time, for example to
@@ -38,6 +41,9 @@
 //|     and the display uses 16-bit color, or its pixels are 1 bit and the
 //|     display is monochrome with the leftmost pixel in the top bit of each
 //|     byte, such as `epaperdisplay.EPaperDisplay`. A 1 bit means white.
+//|     On a tricolor display with separate black and color RAM, a 1 bit video
+//|     only draws black and white, and a highlight colored layer below it shows
+//|     through. Other tricolor displays don't draw it.
 //|
 //|     See the `videocore` module overview for complete examples.
 //|     """
