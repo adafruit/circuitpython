@@ -1231,6 +1231,7 @@ msgstr ""
 #: shared-bindings/busdisplay/BusDisplay.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 #: shared-bindings/struct/__init__.c shared-module/struct/__init__.c
+#: shared-module/videocore/VideoBuffer.c
 msgid "Buffer too small"
 msgstr "Tampon çok küçük"
 
@@ -1578,6 +1579,8 @@ msgid "Can't construct AudioOut because continuous channel already open"
 msgstr "AudioOut oluşturulamıyor çünkü kesintisiz kanal zaten açık"
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
+#: ports/espressif/common-hal/mipicsi/Camera.c
+#: shared-module/videocore/VideoBuffer.c
 msgid "already playing"
 msgstr ""
 
@@ -1766,6 +1769,14 @@ msgstr ""
 #: ports/nordic/common-hal/memorymap/AddressRange.c
 #: ports/raspberrypi/common-hal/memorymap/AddressRange.c
 msgid "Address range not allowed"
+msgstr ""
+
+#: ports/espressif/common-hal/mipicsi/Camera.c
+msgid "output_format must be RGB565 or RGB888"
+msgstr ""
+
+#: ports/espressif/common-hal/mipicsi/Camera.c
+msgid "ISP conversion not supported on this chip"
 msgstr ""
 
 #: ports/espressif/common-hal/nvm/ByteArray.c
@@ -4797,6 +4808,50 @@ msgstr ""
 
 #: shared-module/vectorio/Polygon.c
 msgid "Polygon needs at least 3 points"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "framebuffer went away"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "video doesn't fit in framebuffer"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "framebuffer missing required functions"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "expected FrameBuffer or %q"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "video format must be byte aligned"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "video format doesn't match framebuffer"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "video source rejected the destination"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "video in a framebuffer must be at x == 0"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "video size changed since play; stop and play again"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "VideoBuffer does not support transforms"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "VideoBuffer is playing into a different framebuffer"
 msgstr ""
 
 #: supervisor/shared/bluetooth/bluetooth.c
