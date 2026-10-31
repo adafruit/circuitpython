@@ -1232,6 +1232,7 @@ msgstr ""
 #: shared-bindings/busdisplay/BusDisplay.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
 #: shared-bindings/struct/__init__.c shared-module/struct/__init__.c
+#: shared-module/videocore/VideoBuffer.c
 msgid "Buffer too small"
 msgstr "버퍼가 너무 작습니다"
 
@@ -1583,6 +1584,8 @@ msgid "Can't construct AudioOut because continuous channel already open"
 msgstr ""
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
+#: ports/espressif/common-hal/mipicsi/Camera.c
+#: shared-module/videocore/VideoBuffer.c
 msgid "already playing"
 msgstr ""
 
@@ -1776,6 +1779,14 @@ msgstr ""
 #: ports/raspberrypi/common-hal/memorymap/AddressRange.c
 msgid "Address range not allowed"
 msgstr "주소 범위가 허용되지 않습니다"
+
+#: ports/espressif/common-hal/mipicsi/Camera.c
+msgid "output_format must be RGB565 or RGB888"
+msgstr ""
+
+#: ports/espressif/common-hal/mipicsi/Camera.c
+msgid "ISP conversion not supported on this chip"
+msgstr ""
 
 #: ports/espressif/common-hal/nvm/ByteArray.c
 msgid "NVS Error"
@@ -4840,6 +4851,50 @@ msgstr ""
 #: shared-module/vectorio/Polygon.c
 msgid "Polygon needs at least 3 points"
 msgstr "다각형은 최소 3개의 점이 필요합니다"
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "framebuffer went away"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "video doesn't fit in framebuffer"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "framebuffer missing required functions"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "expected FrameBuffer or %q"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "video format must be byte aligned"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "video format doesn't match framebuffer"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "video source rejected the destination"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "video in a framebuffer must be at x == 0"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "video size changed since play; stop and play again"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "VideoBuffer does not support transforms"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
+msgid "VideoBuffer is playing into a different framebuffer"
+msgstr ""
 
 #: supervisor/shared/bluetooth/bluetooth.c
 msgid "Reconnecting"
