@@ -859,9 +859,8 @@ CFLAGS += -DCIRCUITPY_ULAB=$(CIRCUITPY_ULAB)
 # element-wise array arithmetic roughly 1.5x slower.
 CIRCUITPY_ULAB_OPTIMIZE_SIZE ?= 0
 
-# Video pipeline: playing video sources into framebuffers. Requires a port
-# with a video source such as mipicsi and a framebuffer output such as
-# mipidsi.
+# Video pipeline: playing video sources into framebuffers or plain buffers.
+# A source can be a port's camera, such as mipicsi, or a GIF file with videogif.
 CIRCUITPY_VIDEOCORE ?= 0
 CFLAGS += -DCIRCUITPY_VIDEOCORE=$(CIRCUITPY_VIDEOCORE)
 
