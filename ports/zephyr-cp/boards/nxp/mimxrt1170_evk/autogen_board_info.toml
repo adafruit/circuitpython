@@ -3,6 +3,7 @@ name = "NXP Semiconductors MIMXRT1170-EVK"
 
 [modules]
 __future__ = true
+_airlift = false
 _bleio = false
 _eve = false
 _pew = false

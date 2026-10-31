@@ -3,6 +3,7 @@ name = "Silicon Labs SiWx917 Wi-Fi 6 and Bluetooth LE SoC Dev Kit (BRD2605A)"
 
 [modules]
 __future__ = true
+_airlift = false
 _bleio = true # Zephyr board has _bleio
 _eve = false
 _pew = false

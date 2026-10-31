@@ -3,6 +3,7 @@ name = "STMicroelectronics STM32WBA65I Discovery kit"
 
 [modules]
 __future__ = true
+_airlift = false
 _bleio = true # Zephyr board has _bleio
 _eve = false
 _pew = false

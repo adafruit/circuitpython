@@ -3,6 +3,7 @@ name = "Renesas Electronics Corporation RA6M5 Evaluation Kit"
 
 [modules]
 __future__ = true
+_airlift = false
 _bleio = false
 _eve = false
 _pew = false

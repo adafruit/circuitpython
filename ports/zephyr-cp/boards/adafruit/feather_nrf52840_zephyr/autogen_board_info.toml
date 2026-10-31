@@ -3,6 +3,7 @@ name = "Adafruit Industries LLC Feather nRF52840 Express"
 
 [modules]
 __future__ = true
+_airlift = false
 _bleio = true # Zephyr board has _bleio
 _eve = false
 _pew = false
