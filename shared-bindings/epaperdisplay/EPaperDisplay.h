@@ -53,6 +53,9 @@ typedef struct {
     bool two_byte_sequence_length;
     bool address_little_endian;
     bool keep_awake;
+    uint8_t lag_frames;
+    const uint8_t *clean_sequence;
+    uint32_t clean_sequence_len;
 } epaperdisplay_construct_args_t;
 
 #define EPAPERDISPLAY_CONSTRUCT_ARGS_DEFAULTS { \
@@ -92,7 +95,10 @@ typedef struct {
         .spectra6 = false, \
         .two_byte_sequence_length = false, \
         .address_little_endian = false, \
-        .keep_awake = false \
+        .keep_awake = false, \
+        .lag_frames = 0, \
+        .clean_sequence = NULL, \
+        .clean_sequence_len = 0 \
 }
 
 void common_hal_epaperdisplay_epaperdisplay_construct(epaperdisplay_epaperdisplay_obj_t *self,
