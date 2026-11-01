@@ -156,6 +156,12 @@ static void add_generic_services(bleio_adapter_obj_t *adapter) {
 
 static void check_enabled(bleio_adapter_obj_t *adapter) {
     if (!common_hal_bleio_adapter_get_enabled(adapter)) {
+        // A port's own adapter comes on at its first use, as a board's built-in one is always on:
+        // adafruit_ble's BLERadio() makes services without enabling it.
+        if (adapter->persistent) {
+            common_hal_bleio_adapter_set_enabled(adapter, true);
+            return;
+        }
         mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Adapter not enabled"));
     }
 }
