@@ -106,6 +106,15 @@ void common_hal_epaperdisplay_epaperdisplay_construct(epaperdisplay_epaperdispla
 
 bool common_hal_epaperdisplay_epaperdisplay_refresh(epaperdisplay_epaperdisplay_obj_t *self);
 
+#if CIRCUITPY_EPAPERDISPLAY_LAG
+// Lag drive only. Brings every pixel to white with balanced drive. When full, sends the clean
+// sequence and the start sequence. Then wipes each pixel frames toward black and frames toward
+// white. Blocks with background tasks running. The next refresh redraws the whole display.
+// Doesn't allocate. Holds any interrupt until it ends. Returns false, with any owed drive still
+// owed, if the bus can't be had.
+bool common_hal_epaperdisplay_epaperdisplay_clean(epaperdisplay_epaperdisplay_obj_t *self, uint8_t frames, bool full);
+#endif
+
 mp_obj_t common_hal_epaperdisplay_epaperdisplay_get_root_group(epaperdisplay_epaperdisplay_obj_t *self);
 bool common_hal_epaperdisplay_epaperdisplay_set_root_group(epaperdisplay_epaperdisplay_obj_t *self, displayio_group_t *root_group);
 

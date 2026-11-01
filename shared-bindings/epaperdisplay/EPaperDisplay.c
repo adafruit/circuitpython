@@ -419,6 +419,43 @@ static mp_obj_t epaperdisplay_epaperdisplay_obj_refresh(mp_obj_t self_in) {
 }
 MP_DEFINE_CONST_FUN_OBJ_1(epaperdisplay_epaperdisplay_refresh_obj, epaperdisplay_epaperdisplay_obj_refresh);
 
+//|     def clean(self, frames: int = 8, *, full: bool = False) -> None:
+//|         """Remove ghosting from a display using ``lag_frames``, with balanced drive. Only on builds
+//|         with ``CIRCUITPY_EPAPERDISPLAY_LAG``.
+//|
+//|         All pixels go to white, including the drive they are still owed. If ``full`` is True,
+//|         the ``clean_sequence`` is sent, followed by the ``start_sequence``. Then every pixel is
+//|         driven ``frames`` updates toward black and ``frames`` updates toward white. This blocks,
+//|         but a playing video keeps decoding. The next ``refresh()`` draws everything again.
+//|
+//|         :param int frames: Updates in each direction. 0 skips the wipe.
+//|         :param bool full: Also do a full refresh with ``clean_sequence``."""
+//|         ...
+//|
+#if CIRCUITPY_EPAPERDISPLAY_LAG
+static mp_obj_t epaperdisplay_epaperdisplay_clean(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    enum { ARG_frames, ARG_full };
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_frames, MP_ARG_INT, {.u_int = 8} },
+        { MP_QSTR_full, MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = false} },
+    };
+    epaperdisplay_epaperdisplay_obj_t *self = native_display(pos_args[0]);
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+    if (self->lag_frames == 0) {
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Invalid state"));
+    }
+    mp_int_t frames = mp_arg_validate_int_range(args[ARG_frames].u_int, 0, 255, MP_QSTR_frames);
+    if (!common_hal_epaperdisplay_epaperdisplay_clean(self, frames, args[ARG_full].u_bool)) {
+        // Interrupted is not too soon: raise what interrupted it.
+        mp_handle_pending(true);
+        mp_raise_RuntimeError(MP_ERROR_TEXT("Refresh too soon"));
+    }
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_KW(epaperdisplay_epaperdisplay_clean_obj, 1, epaperdisplay_epaperdisplay_clean);
+#endif
+
 //|     time_to_refresh: float
 //|     """Time, in fractional seconds, until the ePaper display can be refreshed."""
 static mp_obj_t epaperdisplay_epaperdisplay_obj_get_time_to_refresh(mp_obj_t self_in) {
@@ -534,6 +571,9 @@ static const mp_rom_map_elem_t epaperdisplay_epaperdisplay_locals_dict_table[] =
     { MP_ROM_QSTR(MP_QSTR_show), MP_ROM_PTR(&epaperdisplay_epaperdisplay_show_obj) },
     { MP_ROM_QSTR(MP_QSTR_update_refresh_mode), MP_ROM_PTR(&epaperdisplay_epaperdisplay_update_refresh_mode_obj) },
     { MP_ROM_QSTR(MP_QSTR_refresh), MP_ROM_PTR(&epaperdisplay_epaperdisplay_refresh_obj) },
+    #if CIRCUITPY_EPAPERDISPLAY_LAG
+    { MP_ROM_QSTR(MP_QSTR_clean), MP_ROM_PTR(&epaperdisplay_epaperdisplay_clean_obj) },
+    #endif
 
     { MP_ROM_QSTR(MP_QSTR_width), MP_ROM_PTR(&epaperdisplay_epaperdisplay_width_obj) },
     { MP_ROM_QSTR(MP_QSTR_height), MP_ROM_PTR(&epaperdisplay_epaperdisplay_height_obj) },
