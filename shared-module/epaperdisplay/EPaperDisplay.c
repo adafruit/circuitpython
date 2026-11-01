@@ -1269,7 +1269,7 @@ static bool lag_wait_idle(epaperdisplay_epaperdisplay_obj_t *self) {
 // The deadline bounds each piece of work, not the whole drive, which can be 32 updates and a clean.
 // Only called after progress, so a bus that is never free still runs out.
 static void lag_renew_deadline(epaperdisplay_epaperdisplay_obj_t *self) {
-    if (self->lag_busy_deadline != 0) {
+    if (self->lag_busy_deadline != 0 && !self->lag_last_try) {
         self->lag_busy_deadline = supervisor_ticks_ms64() + EPAPER_WAIT_TIMEOUT_MS;
     }
 }
@@ -1563,6 +1563,28 @@ static void lag_shutdown(epaperdisplay_epaperdisplay_obj_t *self) {
     if (self->refreshing) {
         supervisor_disable_tick();
         self->refreshing = false;
+    }
+    // BUSY outlasted the wait. One reset may free the panel for the stored waveform. If BUSY stays
+    // high after it, nothing more is sent, and the deadline isn't renewed, so this is the last wait.
+    if (!done && raises < 4 && common_hal_digitalio_digitalinout_get_value(&self->busy) == self->busy_state) {
+        self->lag_busy_deadline = supervisor_ticks_ms64() + EPAPER_WAIT_TIMEOUT_MS;
+        self->lag_last_try = true;
+        self->awake = false;
+        nlr_buf_t nlr;
+        if (nlr_push(&nlr) == 0) {
+            self->bus.bus_reset(self->bus.bus);
+            display_delay_ms(self, self->start_up_time_ms);
+            if (lag_wait_idle(self)) {
+                lag_recover(self);
+            }
+            nlr_pop();
+        } else {
+            lag_abandon_step(self);
+            if (self->lag_held_exception == MP_OBJ_NULL) {
+                self->lag_held_exception = nlr.ret_val;
+            }
+        }
+        self->lag_last_try = false;
     }
 }
 #endif // CIRCUITPY_EPAPERDISPLAY_LAG
