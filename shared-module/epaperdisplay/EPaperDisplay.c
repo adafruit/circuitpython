@@ -897,6 +897,22 @@ void release_epaperdisplay(epaperdisplay_epaperdisplay_obj_t *self) {
     }
 }
 
+#if CIRCUITPY_EPAPERDISPLAY_LAG
+void epaperdisplay_epaperdisplay_prepare_release(epaperdisplay_epaperdisplay_obj_t *self) {
+    if (self->lag_frames == 0 || (!self->awake && !self->lag_state_lost)) {
+        return;
+    }
+    const uint64_t deadline = supervisor_ticks_ms64() + EPAPER_WAIT_TIMEOUT_MS;
+    while (!displayio_display_bus_is_free(&self->bus)) {
+        mp_handle_pending(true);
+        if (supervisor_ticks_ms64() > deadline) {
+            mp_raise_RuntimeError_varg(MP_ERROR_TEXT("%q in use"), MP_QSTR_display_bus);
+        }
+        RUN_BACKGROUND_TASKS;
+    }
+}
+#endif // CIRCUITPY_EPAPERDISPLAY_LAG
+
 void epaperdisplay_epaperdisplay_end_held_bus(epaperdisplay_epaperdisplay_obj_t *self) {
     // The VM is over, so whatever holds the bus can never let it go: end it here.
     if (self->keep_awake && !displayio_display_bus_is_free(&self->bus)) {
@@ -910,9 +926,10 @@ void epaperdisplay_epaperdisplay_end_held_bus(epaperdisplay_epaperdisplay_obj_t 
 void epaperdisplay_epaperdisplay_reset(epaperdisplay_epaperdisplay_obj_t *self) {
     #if CIRCUITPY_EPAPERDISPLAY_LAG
     if (self->lag_frames > 0) {
-        // The heap is still here but the sequences won't be, and the display would otherwise
-        // persist to draw the splash with them. Finish now and stay asleep. Its bus still holds
-        // the pins until release_displays(), as for any display that persists.
+        // Only a primary display gets here; reset_displays() has released the others. The heap is
+        // still here but the sequences won't be, and the display would otherwise persist to draw
+        // the splash with them. Finish now and stay asleep. Its bus still holds the pins until
+        // the next VM ends or release_displays().
         epaperdisplay_epaperdisplay_end_held_bus(self);
         release_epaperdisplay(self);
         self->base.type = &mp_type_NoneType;
