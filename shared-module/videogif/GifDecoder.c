@@ -10,6 +10,7 @@
 
 #include "py/mpstate.h"
 #include "py/runtime.h"
+#include "shared-module/displayio/ColorConverter.h"
 #include "shared-module/gifio/OnDiskGif.h"
 #include "supervisor/port_heap.h"
 #include "supervisor/shared/tick.h"
@@ -20,8 +21,23 @@
 // decoding falls behind the GIF's delays.
 #define VIDEOGIF_MIN_GAP_MS 5
 
-static inline void videogif_put_pixel(uint8_t *row, int x, uint16_t value) {
-    memcpy(row + x * 2, &value, 2);
+// 1 bit per pixel: an RGB888 palette entry is white when its luma is at least
+// half, so any black and white palette maps exactly.
+static bool videogif_is_white(const uint8_t *rgb) {
+    return displayio_colorconverter_compute_luma((rgb[0] << 16) | (rgb[1] << 8) | rgb[2]) >= 128;
+}
+
+static inline void videogif_put_pixel(videogif_gifdecoder_obj_t *self, uint8_t *row, int x, uint16_t value) {
+    if (self->bits_per_pixel == 1) {
+        const uint8_t mask = 0x80 >> (x % 8);
+        if (value) {
+            row[x / 8] |= mask;
+        } else {
+            row[x / 8] &= ~mask;
+        }
+    } else {
+        memcpy(row + x * 2, &value, 2);
+    }
 }
 
 static displayio_area_t videogif_canvas(videogif_gifdecoder_obj_t *self) {
@@ -36,11 +52,16 @@ static displayio_area_t videogif_canvas(videogif_gifdecoder_obj_t *self) {
 // screen descriptor names.
 static void videogif_fill(videogif_gifdecoder_obj_t *self, const displayio_area_t *area) {
     const uint8_t index = self->gif->ucBackground;
-    const uint16_t value = self->gif->pPalette[index];
+    uint16_t value;
+    if (self->bits_per_pixel == 1) {
+        value = videogif_is_white((const uint8_t *)self->gif->pPalette + index * 3);
+    } else {
+        value = self->gif->pPalette[index];
+    }
     for (int y = area->y1; y < area->y2; y++) {
         uint8_t *row = self->destination.base + y * self->destination.stride;
         for (int x = area->x1; x < area->x2; x++) {
-            videogif_put_pixel(row, x, value);
+            videogif_put_pixel(self, row, x, value);
         }
     }
 }
@@ -66,6 +87,14 @@ static void videogif_draw_line(GIFDRAW *draw) {
     if (self->new_frame) {
         self->new_frame = false;
         videogif_start_frame(self);
+        if (self->bits_per_pixel == 1) {
+            memset(self->white, 0, sizeof(self->white));
+            for (int i = 0; i < 256; i++) {
+                if (videogif_is_white(draw->pPalette24 + i * 3)) {
+                    self->white[i / 8] |= 1 << (i % 8);
+                }
+            }
+        }
     }
 
     const int y = draw->iY + draw->y;
@@ -83,13 +112,23 @@ static void videogif_draw_line(GIFDRAW *draw) {
         if (draw->ucHasTransparency && index == draw->ucTransparent) {
             continue;
         }
-        videogif_put_pixel(row, draw->iX + i, draw->pPalette[index]);
+        uint16_t value;
+        if (self->bits_per_pixel == 1) {
+            value = (self->white[index / 8] >> (index % 8)) & 1;
+        } else {
+            value = draw->pPalette[index];
+        }
+        videogif_put_pixel(self, row, draw->iX + i, value);
     }
 }
 
 void common_hal_videogif_gifdecoder_construct(videogif_gifdecoder_obj_t *self, mp_obj_t file,
-    bool reverse_bytes_in_word) {
-    const uint8_t palette_type = reverse_bytes_in_word ? GIF_PALETTE_RGB565_BE : GIF_PALETTE_RGB565_LE;
+    mp_int_t bits_per_pixel, bool reverse_bytes_in_word) {
+    // 1 bit per pixel needs the RGB888 palette to compute luma.
+    uint8_t palette_type = GIF_PALETTE_RGB888;
+    if (bits_per_pixel == 16) {
+        palette_type = reverse_bytes_in_word ? GIF_PALETTE_RGB565_BE : GIF_PALETTE_RGB565_LE;
+    }
     // Outside the VM heap so it doesn't need a large gap there or grow it. Its
     // only heap pointers, the file and self, are held by self too. The
     // finaliser frees it.
@@ -100,6 +139,7 @@ void common_hal_videogif_gifdecoder_construct(videogif_gifdecoder_obj_t *self, m
     GIF_begin(self->gif, palette_type);
     self->gif->pfnDraw = videogif_draw_line;
     self->file = file;
+    self->bits_per_pixel = bits_per_pixel;
     gifio_open_gif(self->gif, file);
 }
 
@@ -132,6 +172,10 @@ mp_int_t common_hal_videogif_gifdecoder_get_width(videogif_gifdecoder_obj_t *sel
 
 mp_int_t common_hal_videogif_gifdecoder_get_height(videogif_gifdecoder_obj_t *self) {
     return self->gif != NULL ? self->gif->iCanvasHeight : 0;
+}
+
+mp_int_t common_hal_videogif_gifdecoder_get_bits_per_pixel(videogif_gifdecoder_obj_t *self) {
+    return self->bits_per_pixel;
 }
 
 // Keep the supervisor tick on only while a frame can come due.

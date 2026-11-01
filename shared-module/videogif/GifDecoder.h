@@ -37,6 +37,11 @@ typedef struct videogif_gifdecoder_obj {
     int32_t repeat_count;
     int32_t loops_done;
     uint8_t disposal;
+    // 1 or 16.
+    uint8_t bits_per_pixel;
+    // For 1 bit per pixel: which palette entries are white, one bit each,
+    // for the palette of the frame being decoded.
+    uint8_t white[256 / 8];
     bool playing;
     bool paused;
     // Played its last loop, or stopped on an error: no more frames are due.

@@ -72,35 +72,48 @@
 //|         self,
 //|         file: Union[str, typing.BinaryIO],
 //|         *,
+//|         bits_per_pixel: int = 16,
 //|         reverse_bytes_in_word: bool = False,
 //|     ) -> None:
 //|         """Open a GIF file so it can be played.
 //|
 //|         :param file: The name of a GIF file, such as ``"/animation.gif"``,
 //|             or a GIF file opened in binary mode.
+//|         :param int bits_per_pixel: The pixel format of each frame. Use 16
+//|             for color pixels (RGB565), or 1 for black and white pixels.
+//|             With 1, eight pixels are packed into each byte, with the
+//|             leftmost pixel in the most significant bit. A pixel is white
+//|             (1) when its brightness is at least 128 out of 255, so a GIF
+//|             that uses only black and white converts exactly.
 //|         :param bool reverse_bytes_in_word: Swap the two bytes of each 16-bit
 //|             pixel. Use the same value as your display, such as
-//|             `busdisplay.BusDisplay`'s ``reverse_bytes_in_word``.
+//|             `busdisplay.BusDisplay`'s ``reverse_bytes_in_word``. It has no
+//|             effect when ``bits_per_pixel`` is 1.
 //|
-//|         Frames are RGB565. Raises `ValueError` if the file is not a GIF or if
-//|         the GIF is wider than 320 pixels.
+//|         Raises `ValueError` if ``bits_per_pixel`` is not 1 or 16, if the
+//|         file is not a GIF, or if the GIF is wider than 320 pixels.
 //|         """
 //|         ...
 //|
 static mp_obj_t videogif_gifdecoder_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
-    enum { ARG_file, ARG_reverse_bytes_in_word, NUM_ARGS };
+    enum { ARG_file, ARG_bits_per_pixel, ARG_reverse_bytes_in_word, NUM_ARGS };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_file, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_bits_per_pixel, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 16} },
         { MP_QSTR_reverse_bytes_in_word, MP_ARG_BOOL | MP_ARG_KW_ONLY, {.u_bool = false} },
     };
     MP_STATIC_ASSERT(MP_ARRAY_SIZE(allowed_args) == NUM_ARGS);
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
+    const mp_int_t bits_per_pixel = args[ARG_bits_per_pixel].u_int;
+    if (bits_per_pixel != 1 && bits_per_pixel != 16) {
+        mp_arg_error_invalid(MP_QSTR_bits_per_pixel);
+    }
     mp_obj_t file = gifio_open_file(args[ARG_file].u_obj);
 
     videogif_gifdecoder_obj_t *self = mp_obj_malloc_with_finaliser(videogif_gifdecoder_obj_t, &videogif_gifdecoder_type);
-    common_hal_videogif_gifdecoder_construct(self, file, args[ARG_reverse_bytes_in_word].u_bool);
+    common_hal_videogif_gifdecoder_construct(self, file, bits_per_pixel, args[ARG_reverse_bytes_in_word].u_bool);
     return MP_OBJ_FROM_PTR(self);
 }
 
@@ -206,7 +219,7 @@ static mp_int_t videogif_gifdecoder_videosource_get_height(mp_obj_t self_in) {
 }
 
 static mp_int_t videogif_gifdecoder_get_bits_per_pixel(mp_obj_t self_in) {
-    return 16;
+    return common_hal_videogif_gifdecoder_get_bits_per_pixel(native_gifdecoder(self_in));
 }
 
 static const videosource_p_t videogif_gifdecoder_videosource_protocol = {
