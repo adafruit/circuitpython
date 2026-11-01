@@ -81,6 +81,12 @@ void release_epaperdisplay(epaperdisplay_epaperdisplay_obj_t *self);
 // The VM is over: a keep_awake display ends whatever transaction still holds its bus, since its
 // stop sequence would wait for the bus forever. Other displays are left alone. Does not raise.
 void epaperdisplay_epaperdisplay_end_held_bus(epaperdisplay_epaperdisplay_obj_t *self);
+#if CIRCUITPY_EPAPERDISPLAY_LAG
+// Waits up to 30 s for the bus so a release can finish the drive. Raises what interrupted it, or
+// RuntimeError if the bus stays held, with the display and its drive unchanged. Only call it where
+// an exception can be caught. Doesn't allocate.
+void epaperdisplay_epaperdisplay_prepare_release(epaperdisplay_epaperdisplay_obj_t *self);
+#endif
 size_t maybe_refresh_epaperdisplay(void);
 
 void epaperdisplay_epaperdisplay_collect_ptrs(epaperdisplay_epaperdisplay_obj_t *self);
