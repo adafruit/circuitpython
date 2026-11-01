@@ -33,6 +33,9 @@ typedef struct _bleio_adapter_obj_t {
     digitalio_digitalinout_obj_t *rts_digitalinout;
     digitalio_digitalinout_obj_t *cts_digitalinout;
     bool allocated;  // True when in use.
+    // A port's own adapter (its controller built in, not one the program wires up): a reset
+    // disables it but keeps it allocated and bound to _bleio.adapter for the next run.
+    bool persistent;
     bool now_advertising;
     bool circuitpython_advertising;
     bool enabled;

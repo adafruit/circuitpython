@@ -60,6 +60,10 @@ void bleio_reset(void) {
         return;
     }
     bleio_adapter_reset(&common_hal_bleio_adapter_obj);
+    if (common_hal_bleio_adapter_obj.persistent) {
+        // Left disabled, allocated and bound: enabling it again builds its attributes anew.
+        return;
+    }
     if (!vm_used_ble) {
         // No user-code BLE operations were done, so we can maintain the supervisor state.
         return;

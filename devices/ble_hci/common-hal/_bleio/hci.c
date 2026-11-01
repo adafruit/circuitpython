@@ -127,6 +127,13 @@ static volatile bool hci_poll_in_progress = false;
 #include "hci_debug.c"
 #endif // HCI_DEBUG
 
+// RTS to the controller; an adapter on USB has none (NULL), its link does the flow control.
+static void set_rts(bool value) {
+    if (common_hal_bleio_adapter_obj.rts_digitalinout != NULL) {
+        common_hal_digitalio_digitalinout_set_value(common_hal_bleio_adapter_obj.rts_digitalinout, value);
+    }
+}
+
 static void process_acl_data_pkt(uint8_t pkt_len, uint8_t pkt_data[]) {
     h4_hci_acl_pkt_t *pkt = (h4_hci_acl_pkt_t *)pkt_data;
 
@@ -307,7 +314,7 @@ hci_result_t hci_poll_for_incoming_pkt(void) {
     common_hal_mcu_enable_interrupts();
 
     // Assert RTS low to say we're ready to read data.
-    common_hal_digitalio_digitalinout_set_value(common_hal_bleio_adapter_obj.rts_digitalinout, false);
+    set_rts(false);
 
     int errcode = 0;
     bool packet_is_complete = false;
@@ -380,7 +387,7 @@ hci_result_t hci_poll_for_incoming_pkt(void) {
 
     if (packet_is_complete) {
         // Stop incoming data while processing packet.
-        common_hal_digitalio_digitalinout_set_value(common_hal_bleio_adapter_obj.rts_digitalinout, true);
+        set_rts(true);
         size_t pkt_len = rx_idx;
 
         // Reset for next packet.
@@ -410,7 +417,7 @@ hci_result_t hci_poll_for_incoming_pkt(void) {
         }
 
         // Let incoming bytes flow again.
-        common_hal_digitalio_digitalinout_set_value(common_hal_bleio_adapter_obj.rts_digitalinout, false);
+        set_rts(false);
     }
 
     // All done with this batch. Hold off receiving bytes until we're ready again.
@@ -424,7 +431,8 @@ static hci_result_t write_pkt(uint8_t *buffer, size_t len) {
     // Wait for CTS to go low before writing to HCI adapter.
     uint64_t start = supervisor_ticks_ms64();
 
-    while (common_hal_digitalio_digitalinout_get_value(common_hal_bleio_adapter_obj.cts_digitalinout)) {
+    while (common_hal_bleio_adapter_obj.cts_digitalinout != NULL &&
+           common_hal_digitalio_digitalinout_get_value(common_hal_bleio_adapter_obj.cts_digitalinout)) {
         RUN_BACKGROUND_TASKS;
         if (supervisor_ticks_ms64() - start > CTS_TIMEOUT_MSECS) {
             return HCI_WRITE_TIMEOUT;
