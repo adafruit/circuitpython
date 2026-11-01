@@ -273,6 +273,24 @@ static void bleio_adapter_hci_init(bleio_adapter_obj_t *self) {
         mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Could not read BLE features"));
     }
 
+    // A controller without a public address (00:00:00:00:00:00, as Zephyr's on an nRF) is used
+    // with a random static one: the controller's own if it has one, else one from LE Rand.
+    self->own_addr_type = BT_ADDR_LE_PUBLIC;
+    bt_addr_t public_address;
+    static const bt_addr_t no_address = { 0 };
+    if (hci_read_bd_addr(&public_address) == HCI_OK &&
+        memcmp(public_address.val, no_address.val, sizeof(no_address.val)) == 0) {
+        if (hci_vs_read_static_address(&self->random_address) != HCI_OK) {
+            uint8_t rand[8];
+            hci_check_error(hci_le_rand(rand));
+            memcpy(self->random_address.val, rand, sizeof(self->random_address.val));
+        }
+        // A static address has its two top bits set.
+        self->random_address.val[5] |= 0xc0;
+        hci_check_error(hci_le_set_random_address(self->random_address.val));
+        self->own_addr_type = BT_ADDR_LE_RANDOM;
+    }
+
     // Enabled desired events.
     // Most importantly, includes:
     // BT_EVT_MASK_LE_META_EVENT                BT_EVT_BIT(61)
@@ -360,16 +378,26 @@ bleio_address_obj_t *common_hal_bleio_adapter_get_address(bleio_adapter_obj_t *s
     check_enabled(self);
 
     bt_addr_t addr;
-    hci_check_error(hci_read_bd_addr(&addr));
+    if (self->own_addr_type == BT_ADDR_LE_RANDOM) {
+        addr = self->random_address;
+    } else {
+        hci_check_error(hci_read_bd_addr(&addr));
+    }
 
     // The cached address is refreshed on every call.
-    common_hal_bleio_address_construct(&self->address, addr.val, BT_ADDR_LE_PUBLIC);
+    common_hal_bleio_address_construct(&self->address, addr.val, self->own_addr_type);
     self->address.base.type = &bleio_address_type;
     return &self->address;
 }
 
 bool common_hal_bleio_adapter_set_address(bleio_adapter_obj_t *self, bleio_address_obj_t *address) {
-    return hci_le_set_random_address(address->bytes) == HCI_OK;
+    if (hci_le_set_random_address(address->bytes) != HCI_OK) {
+        return false;
+    }
+    // Advertising uses it from now on, as a random address.
+    memcpy(self->random_address.val, address->bytes, sizeof(self->random_address.val));
+    self->own_addr_type = BT_ADDR_LE_RANDOM;
+    return true;
 }
 
 mp_obj_str_t *common_hal_bleio_adapter_get_name(bleio_adapter_obj_t *self) {
@@ -652,7 +680,7 @@ uint32_t _common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
                 interval_units, // min interval
                 interval_units, // max interval
                 0b111,          // channel map: channels 37, 38, 39
-                anonymous ? BT_ADDR_LE_RANDOM : BT_ADDR_LE_PUBLIC,
+                anonymous ? BT_ADDR_LE_RANDOM : self->own_addr_type,
                 &peer_addr,
                 0x00,           // filter policy: no filter
                 BT_HCI_LE_ADV_TX_POWER_NO_PREF,
@@ -723,7 +751,7 @@ uint32_t _common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
                 interval_units, // min interval
                 interval_units, // max interval
                 adv_type,
-                anonymous ? BT_ADDR_LE_RANDOM : BT_ADDR_LE_PUBLIC,
+                anonymous ? BT_ADDR_LE_RANDOM : self->own_addr_type,
                 &peer_addr,
                 0b111,          // channel map: channels 37, 38, 39
                 0x00            // filter policy: no filter

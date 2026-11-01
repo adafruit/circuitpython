@@ -515,6 +515,7 @@ void att_add_connection(uint16_t handle, uint8_t role, bt_addr_le_t *peer_addr, 
     }
 
     bleio_connections[peer_index].conn_handle = handle;
+    bleio_connections[peer_index].connection_obj = mp_const_none;
     bleio_connections[peer_index].role = role;
     bleio_connections[peer_index].mtu = BT_ATT_DEFAULT_LE_MTU;
     memcpy(&bleio_connections[peer_index].addr, peer_addr, sizeof(bleio_connections[peer_index].addr));
@@ -897,7 +898,7 @@ static void process_find_type_req(uint16_t conn_handle, uint16_t mtu, uint8_t dl
     struct bt_att_find_type_req *req = (struct bt_att_find_type_req *)data;
 
     if (dlen < sizeof(struct bt_att_find_type_req)) {
-        send_error(conn_handle, BT_ATT_OP_FIND_TYPE_RSP, req->start_handle, BT_ATT_ERR_INVALID_PDU);
+        send_error(conn_handle, BT_ATT_OP_FIND_TYPE_REQ, req->start_handle, BT_ATT_ERR_INVALID_PDU);
         return;
     }
 
@@ -907,33 +908,35 @@ static void process_find_type_req(uint16_t conn_handle, uint16_t mtu, uint8_t dl
     response[0] = BT_ATT_OP_FIND_TYPE_RSP;
     response_length = 1;
 
-    // FIX
-    // if (find_type_req->type == BLE_UUID_SERVICE_PRIMARY) {
-    //     for (uint16_t i = (find_type_req->start_handle - 1); i < GATT.attributeCount() && i <= (find_type_req->end_handle - 1); i++) {
-    //         BLELocalAttribute* attribute = GATT.attribute(i);
-
-    //         if ((attribute->type() == find_type_req->type) && (attribute->uuidLength() == value_length) && memcmp(attribute->uuidData(), value, value_length) == 0) {
-    //             BLELocalService* service = (BLELocalService*)attribute;
-
-    //             // add the start handle
-    //             uint16_t start_handle = service->start_handle();
-    //             memcpy(&response[response_length], &start_handle, sizeof(start_handle));
-    //             response_length += sizeof(start_handle);
-
-    //             // add the end handle
-    //             uint16_t end_handle = service->end_handle();
-    //             memcpy(&response[response_length], &end_handle, sizeof(end_handle));
-    //             response_length += sizeof(end_handle);
-    //         }
-
-    //         if ((response_length + 4) > mtu) {
-    //             break;
-    //         }
-    //     }
-    // }
+    // Only services are found by type: the primary or secondary services whose UUID is the value,
+    // each as its start and end handle.
+    const size_t value_length = dlen - sizeof(struct bt_att_find_type_req);
+    if (req->type == BLE_UUID_SERVICE_PRIMARY || req->type == BLE_UUID_SERVICE_SECONDARY) {
+        const uint16_t max_attribute_handle = bleio_adapter_max_attribute_handle(&common_hal_bleio_adapter_obj);
+        for (uint16_t handle = req->start_handle;
+             handle <= max_attribute_handle && handle <= req->end_handle && response_length + 4 <= mtu;
+             handle++) {
+            mp_obj_t *attribute_obj = bleio_adapter_get_attribute(&common_hal_bleio_adapter_obj, handle);
+            if (!mp_obj_is_type(attribute_obj, &bleio_service_type)) {
+                continue;
+            }
+            bleio_service_obj_t *service = MP_OBJ_TO_PTR(attribute_obj);
+            uint8_t uuid[16];
+            if (service->is_secondary != (req->type == BLE_UUID_SERVICE_SECONDARY) ||
+                common_hal_bleio_uuid_get_size(service->uuid) / 8 != value_length) {
+                continue;
+            }
+            common_hal_bleio_uuid_pack_into(service->uuid, uuid);
+            if (memcmp(uuid, req->value, value_length) == 0) {
+                memcpy(&response[response_length], &service->start_handle, sizeof(service->start_handle));
+                memcpy(&response[response_length + 2], &service->end_handle, sizeof(service->end_handle));
+                response_length += 4;
+            }
+        }
+    }
 
     if (response_length == 1) {
-        send_error(conn_handle, BT_ATT_OP_FIND_TYPE_RSP, req->start_handle, BT_ATT_ERR_ATTRIBUTE_NOT_FOUND);
+        send_error(conn_handle, BT_ATT_OP_FIND_TYPE_REQ, req->start_handle, BT_ATT_ERR_ATTRIBUTE_NOT_FOUND);
     } else {
         hci_send_acl_pkt(conn_handle, BT_L2CAP_CID_ATT, response_length, response);
     }
