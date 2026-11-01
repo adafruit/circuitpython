@@ -54,6 +54,7 @@ typedef struct {
     mp_obj_t lag_held_exception;
     bool lag_holding_interrupts;
     bool lag_bus_held; // Inside a transaction, so an exception must end it.
+    bool lag_last_try; // Shutdown's reset after a stuck wait: the deadline is not renewed.
     bool lag_state_lost; // What the panel received is unknown, so it needs a stored-waveform refresh.
     bool lag_slot_overwriting; // The oldest frame in the ring is being replaced.
     bool lag_commit_drive; // The owed step has pixels to drive.
