@@ -91,7 +91,8 @@
 //|             effect when ``bits_per_pixel`` is 1.
 //|
 //|         Raises `ValueError` if ``bits_per_pixel`` is not 1 or 16, if the
-//|         file is not a GIF, or if the GIF is wider than 320 pixels.
+//|         file is not a GIF, or if the GIF is wider than the board supports
+//|         (320 pixels on most boards).
 //|         """
 //|         ...
 //|

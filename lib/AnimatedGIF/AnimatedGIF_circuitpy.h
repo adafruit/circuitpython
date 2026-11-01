@@ -33,7 +33,12 @@
 #define MAX_CHUNK_SIZE 255
 #define LZW_BUF_SIZE (6 * MAX_CHUNK_SIZE)
 #define LZW_HIGHWATER (4 * MAX_CHUNK_SIZE)
-#define MAX_WIDTH 320
+// Make ports set the width from mpconfigboard.mk. gif.c includes only this header, and the
+// zephyr-cp build passes no width, so it needs this default.
+#ifndef CIRCUITPY_GIFIO_MAX_WIDTH
+#define CIRCUITPY_GIFIO_MAX_WIDTH 320
+#endif
+#define MAX_WIDTH CIRCUITPY_GIFIO_MAX_WIDTH
 #define FILE_BUF_SIZE 4096
 
 #define PIXEL_FIRST 0

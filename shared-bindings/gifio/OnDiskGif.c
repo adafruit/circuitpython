@@ -108,7 +108,7 @@ mp_obj_t gifio_open_file(mp_obj_t file) {
 //|
 //|         If the image is too large it will be cropped at the bottom and right when displayed.
 //|
-//|         **Limitations**: The image width is limited to 320 pixels at present. `ValueError`
+//|         **Limitations**: The image width is limited to 320 pixels on most boards. `ValueError`
 //|         will be raised if the image is too wide. The height
 //|         is not limited but images that are too large will cause a memory exception.
 //|         """
