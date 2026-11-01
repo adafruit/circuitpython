@@ -259,10 +259,6 @@ static void _adapter_set_name(bleio_adapter_obj_t *self, mp_obj_str_t *name_obj)
 // Get various values and limits set by the adapter.
 // Set event mask.
 static void bleio_adapter_hci_init(bleio_adapter_obj_t *self) {
-    self->name = NULL;
-
-    bleio_adapter_reset_name(self);
-
     // Get version information.
     if (hci_read_local_version(&self->hci_version, &self->hci_revision, &self->lmp_version,
         &self->manufacturer, &self->lmp_subversion) != HCI_OK) {
@@ -321,6 +317,10 @@ static void bleio_adapter_hci_init(bleio_adapter_obj_t *self) {
         self->max_acl_buffer_len = acl_max_len;
         self->max_acl_num_buffers = acl_max_num;
     }
+
+    // The default name ends with the address, so it comes last; the generic services hold it.
+    self->name = NULL;
+    bleio_adapter_reset_name(self);
 }
 
 void common_hal_bleio_adapter_construct_hci_uart(bleio_adapter_obj_t *self, busio_uart_obj_t *uart, digitalio_digitalinout_obj_t *rts, digitalio_digitalinout_obj_t *cts) {
@@ -333,7 +333,6 @@ void common_hal_bleio_adapter_construct_hci_uart(bleio_adapter_obj_t *self, busi
     self->enabled = false;
 
     common_hal_bleio_adapter_set_enabled(self, true);
-    bleio_adapter_hci_init(self);
 }
 
 void common_hal_bleio_adapter_set_enabled(bleio_adapter_obj_t *self, bool enabled) {
@@ -367,6 +366,9 @@ void common_hal_bleio_adapter_set_enabled(bleio_adapter_obj_t *self, bool enable
         self->attributes = mp_obj_new_list(0, NULL);
         bleio_adapter_add_attribute(self, mp_const_none);
         add_generic_services(self);
+
+        // The reset cleared the event mask and the random address: set the controller up again.
+        bleio_adapter_hci_init(self);
     }
 }
 

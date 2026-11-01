@@ -516,6 +516,8 @@ void att_add_connection(uint16_t handle, uint8_t role, bt_addr_le_t *peer_addr, 
 
     bleio_connections[peer_index].conn_handle = handle;
     bleio_connections[peer_index].connection_obj = mp_const_none;
+    // adapter.connections is built again with this one.
+    common_hal_bleio_adapter_obj.connection_objs = NULL;
     bleio_connections[peer_index].role = role;
     bleio_connections[peer_index].mtu = BT_ATT_DEFAULT_LE_MTU;
     memcpy(&bleio_connections[peer_index].addr, peer_addr, sizeof(bleio_connections[peer_index].addr));
@@ -524,6 +526,8 @@ void att_add_connection(uint16_t handle, uint8_t role, bt_addr_le_t *peer_addr, 
 
 void att_remove_connection(uint16_t conn_handle, uint8_t reason) {
     (void)reason;
+    // adapter.connections is built again from what is left.
+    common_hal_bleio_adapter_obj.connection_objs = NULL;
     int peer_index = -1;
     int peer_count = 0;
 
