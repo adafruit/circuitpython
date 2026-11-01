@@ -70,9 +70,10 @@ typedef struct __attribute__ ((packed)) {
 
 typedef struct __attribute__ ((packed)) {
     uint8_t pkt_type;
+    // One type for all three, so the MS bitfield layout (MinGW) packs them into 16 bits.
     uint16_t handle : 12;
-    uint8_t pb : 2;            // Packet boundary flag: ACL_DATA_PB values.
-    uint8_t bc : 2;            // Broadcast flag: always 0b00 for BLE.
+    uint16_t pb : 2;           // Packet boundary flag: ACL_DATA_PB values.
+    uint16_t bc : 2;           // Broadcast flag: always 0b00 for BLE.
     uint16_t data_len;        // length of data[] in this packet.
     uint8_t data[];
 }  h4_hci_acl_pkt_t;
@@ -141,7 +142,7 @@ static void process_acl_data_pkt(uint8_t pkt_len, uint8_t pkt_data[]) {
     }
 
     acl_data_t *acl = (acl_data_t *)&acl_data_buffer;
-    if (acl_data_len != sizeof(acl) + acl->acl_data_len) {
+    if (acl_data_len != sizeof(*acl) + acl->acl_data_len) {
         // We don't have the full packet yet.
         return;
     }
@@ -283,7 +284,7 @@ static void process_evt_pkt(size_t pkt_len, uint8_t pkt_data[]) {
 
         default:
             #if HCI_DEBUG
-            mp_printf(&mp_plat_print, "process_evt_pkt: Unknown event: %02x\n");
+            mp_printf(&mp_plat_print, "process_evt_pkt: Unknown event: %02x\n", pkt->evt);
             #endif
             break;
     }
@@ -320,6 +321,7 @@ hci_result_t hci_poll_for_incoming_pkt(void) {
         size_t num_read =
             common_hal_busio_uart_read(common_hal_bleio_adapter_obj.hci_uart, rx_buffer + rx_idx, 1, &errcode);
         if (num_read == 0) {
+            hci_poll_in_progress = false;
             return HCI_OK;
         }
         if (errcode) {
@@ -333,6 +335,8 @@ hci_result_t hci_poll_for_incoming_pkt(void) {
         rx_idx++;
         if (rx_idx >= sizeof(rx_buffer)) {
             // Incoming packet is too large. Should not happen.
+            rx_idx = 0;
+            hci_poll_in_progress = false;
             return HCI_READ_ERROR;
         }
 
@@ -345,6 +349,8 @@ hci_result_t hci_poll_for_incoming_pkt(void) {
                         packet_is_complete = true;
                     }
                     if (rx_idx > total_len) {
+                        rx_idx = 0;
+                        hci_poll_in_progress = false;
                         return HCI_PACKET_SIZE_ERROR;
                     }
                 }
@@ -358,6 +364,8 @@ hci_result_t hci_poll_for_incoming_pkt(void) {
                         packet_is_complete = true;
                     }
                     if (rx_idx > total_len) {
+                        rx_idx = 0;
+                        hci_poll_in_progress = false;
                         return HCI_PACKET_SIZE_ERROR;
                     }
                 }

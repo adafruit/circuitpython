@@ -515,6 +515,7 @@ void att_add_connection(uint16_t handle, uint8_t role, bt_addr_le_t *peer_addr, 
     }
 
     bleio_connections[peer_index].conn_handle = handle;
+    bleio_connections[peer_index].connection_obj = mp_const_none;
     bleio_connections[peer_index].role = role;
     bleio_connections[peer_index].mtu = BT_ATT_DEFAULT_LE_MTU;
     memcpy(&bleio_connections[peer_index].addr, peer_addr, sizeof(bleio_connections[peer_index].addr));
@@ -894,49 +895,12 @@ static void process_find_info_rsp(uint16_t conn_handle, uint8_t dlen, uint8_t da
 }
 
 static void process_find_type_req(uint16_t conn_handle, uint16_t mtu, uint8_t dlen, uint8_t data[]) {
+    (void)mtu;
     struct bt_att_find_type_req *req = (struct bt_att_find_type_req *)data;
 
-    if (dlen < sizeof(struct bt_att_find_type_req)) {
-        send_error(conn_handle, BT_ATT_OP_FIND_TYPE_RSP, req->start_handle, BT_ATT_ERR_INVALID_PDU);
-        return;
-    }
-
-    uint8_t response[mtu];
-    uint16_t response_length;
-
-    response[0] = BT_ATT_OP_FIND_TYPE_RSP;
-    response_length = 1;
-
-    // FIX
-    // if (find_type_req->type == BLE_UUID_SERVICE_PRIMARY) {
-    //     for (uint16_t i = (find_type_req->start_handle - 1); i < GATT.attributeCount() && i <= (find_type_req->end_handle - 1); i++) {
-    //         BLELocalAttribute* attribute = GATT.attribute(i);
-
-    //         if ((attribute->type() == find_type_req->type) && (attribute->uuidLength() == value_length) && memcmp(attribute->uuidData(), value, value_length) == 0) {
-    //             BLELocalService* service = (BLELocalService*)attribute;
-
-    //             // add the start handle
-    //             uint16_t start_handle = service->start_handle();
-    //             memcpy(&response[response_length], &start_handle, sizeof(start_handle));
-    //             response_length += sizeof(start_handle);
-
-    //             // add the end handle
-    //             uint16_t end_handle = service->end_handle();
-    //             memcpy(&response[response_length], &end_handle, sizeof(end_handle));
-    //             response_length += sizeof(end_handle);
-    //         }
-
-    //         if ((response_length + 4) > mtu) {
-    //             break;
-    //         }
-    //     }
-    // }
-
-    if (response_length == 1) {
-        send_error(conn_handle, BT_ATT_OP_FIND_TYPE_RSP, req->start_handle, BT_ATT_ERR_ATTRIBUTE_NOT_FOUND);
-    } else {
-        hci_send_acl_pkt(conn_handle, BT_L2CAP_CID_ATT, response_length, response);
-    }
+    // Find By Type Value is not supported. The error must name the request.
+    send_error(conn_handle, BT_ATT_OP_FIND_TYPE_REQ, req->start_handle,
+        dlen < sizeof(struct bt_att_find_type_req) ? BT_ATT_ERR_INVALID_PDU : BT_ATT_ERR_ATTRIBUTE_NOT_FOUND);
 }
 
 static void process_read_group_req(uint16_t conn_handle, uint16_t mtu, uint8_t dlen, uint8_t data[]) {
