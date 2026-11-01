@@ -29,9 +29,13 @@
 //|     unsupported position directly raises an error, but moving a containing
 //|     Group may give garbled output instead.
 //|
-//|     When the target is a plain buffer, frames are written compactly (row
-//|     stride equals ``width * bits_per_pixel / 8``) and can be read from
-//|     Python at any time, for example to process or save camera pixels.
+//|     When the target is a plain buffer, frames are written with no gap
+//|     between rows, so each row takes ``(width * bits_per_pixel + 7) // 8``
+//|     bytes. Python code can read the buffer at any time, for example to
+//|     process or save camera pixels. 1-bit pixels are packed together, and
+//|     each row is padded out to a whole byte.
+//|     A Group shows a plain buffer target only when its pixels are 16 bits
+//|     and the display uses 16-bit color.
 //|
 //|     See the `videocore` module overview for complete examples.
 //|     """
@@ -67,15 +71,17 @@ static mp_obj_t videocore_videobuffer_make_new(const mp_obj_type_t *type, size_t
 //|         """Begin streaming the given video source into the target.
 //|
 //|         The source streams continuously, writing each new frame where the
-//|         VideoBuffer tells it to, replacing the previous one. The source's
-//|         frame format must be byte aligned. The source's size and format are
-//|         then fixed for the duration of the ``play()``; sources that change
-//|         them require ``stop()`` and a new ``play()``.
+//|         VideoBuffer tells it to, replacing the previous one. The source can
+//|         use 1 bit per pixel, or a whole number of bytes per pixel.
+//|         The source's size and format are then fixed for the duration of the
+//|         ``play()``; sources that change them require ``stop()`` and a new
+//|         ``play()``.
 //|
 //|         When the target is a framebuffer, its bits per pixel must match the
-//|         framebuffer color depth and the whole frame must fit within the
-//|         framebuffer at the current ``x``/``y`` position. An exception may be
-//|         raised if the video can't be played directly into the framebuffer.
+//|         source and be a whole number of bytes, and the whole frame must fit
+//|         within the framebuffer at the current ``x``/``y`` position. An
+//|         exception may be raised if the video can't be played directly into
+//|         the framebuffer.
 //|
 //|         When the target is a plain buffer, it must be large enough for a
 //|         whole frame.

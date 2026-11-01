@@ -141,9 +141,15 @@ static void videocore_videobuffer_update_area(videocore_videobuffer_obj_t *self)
     self->current_area.next = NULL;
 }
 
-// Bytes in one row of a source frame.
+// Bytes in one row of a source frame. 1-bit pixels are packed and each row is
+// padded to a whole byte. Framebuffer targets always use whole bytes (see
+// read_source_format).
+static size_t videocore_videobuffer_row_bytes(mp_int_t width, mp_int_t bits_per_pixel) {
+    return ((size_t)width * bits_per_pixel + 7) / 8;
+}
+
 static size_t videocore_videobuffer_source_row_bytes(videocore_videobuffer_obj_t *self) {
-    return (size_t)self->source_width * self->source_bits_per_pixel / 8;
+    return videocore_videobuffer_row_bytes(self->source_width, self->source_bits_per_pixel);
 }
 
 // Bytes a frame covers in a framebuffer with this row stride, from its first
@@ -321,12 +327,13 @@ static void videocore_videobuffer_read_source_format(videocore_videobuffer_obj_t
     const videosource_p_t *protocol = videosource_check(source);
 
     mp_int_t bits_per_pixel = protocol->get_bits_per_pixel(source);
-    if (bits_per_pixel % 8 != 0) {
+    // Whole bytes per pixel, or 1 bit packed into each byte.
+    if (bits_per_pixel % 8 != 0 && bits_per_pixel != 1) {
         mp_raise_ValueError(MP_ERROR_TEXT("video format must be byte aligned"));
     }
     mp_int_t width = protocol->get_width(source);
     mp_int_t height = protocol->get_height(source);
-    size_t frame_bytes = (size_t)((width * height * bits_per_pixel) / 8);
+    size_t frame_bytes = (size_t)height * videocore_videobuffer_row_bytes(width, bits_per_pixel);
 
     if (self->framebuffer_protocol != NULL) {
         mp_int_t color_depth = FB_GETTER(get_color_depth, 16);
