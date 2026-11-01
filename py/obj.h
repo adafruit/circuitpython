@@ -611,6 +611,8 @@ typedef mp_obj_t (*mp_fun_kw_t)(size_t n, const mp_obj_t *, mp_map_t *);
 #define MP_TYPE_FLAG_SUBSCR_ALLOWS_STACK_SLICE (0x0400)
 // CIRCUITPY-CHANGE: check for valid types in json dumps
 #define MP_TYPE_FLAG_PRINT_JSON (0x0800)
+// Run this type's finalisers before other finalisers when the VM is shutting down.
+#define MP_TYPE_FLAG_FINALISER_FIRST (0x1000)
 
 typedef enum {
     PRINT_STR = 0,

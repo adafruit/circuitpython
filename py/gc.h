@@ -38,6 +38,8 @@
 void gc_init(void *start, void *end);
 // CIRCUITPY-CHANGE
 void gc_deinit(void);
+// Run finalisers marked to run before the normal shutdown sweep.
+void gc_run_finalisers_first(void);
 
 #if MICROPY_GC_SPLIT_HEAP
 // Used to add additional memory areas to the heap.
