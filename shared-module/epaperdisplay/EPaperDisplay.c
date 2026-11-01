@@ -55,7 +55,7 @@ static void lag_shutdown(epaperdisplay_epaperdisplay_obj_t *self);
 static void lag_after_raise(epaperdisplay_epaperdisplay_obj_t *self);
 static MP_NORETURN void lag_raise(epaperdisplay_epaperdisplay_obj_t *self, mp_obj_t raised);
 static bool lag_refresh(epaperdisplay_epaperdisplay_obj_t *self, const displayio_area_t *areas);
-static bool lag_clean(epaperdisplay_epaperdisplay_obj_t *self);
+static bool lag_clean(epaperdisplay_epaperdisplay_obj_t *self, uint8_t frames, bool full);
 #endif // CIRCUITPY_EPAPERDISPLAY_LAG
 
 void common_hal_epaperdisplay_epaperdisplay_construct(epaperdisplay_epaperdisplay_obj_t *self,
@@ -1201,7 +1201,7 @@ static bool lag_step(epaperdisplay_epaperdisplay_obj_t *self, const displayio_ar
 static bool lag_refresh_unguarded(epaperdisplay_epaperdisplay_obj_t *self, const displayio_area_t *areas) {
     if (!self->awake || self->lag_state_lost) {
         // The panel may still hold anything, including ghosts from a run that lost power.
-        if (!lag_clean(self) || mp_hal_is_interrupted()) {
+        if (!lag_clean(self, 0, true) || mp_hal_is_interrupted()) {
             return false;
         }
         areas = &self->core.area;
@@ -1323,6 +1323,41 @@ static bool lag_write_solid(epaperdisplay_epaperdisplay_obj_t *self, uint8_t com
     return false;
 }
 
+// Updates with the planes as they are. Background tasks run, so a video keeps decoding. Returns how
+// many went out.
+static uint8_t lag_wipe_phase(epaperdisplay_epaperdisplay_obj_t *self, uint8_t frames) {
+    for (uint8_t i = 0; i < frames; i++) {
+        lag_renew_deadline(self);
+        if (!send_command_sequence(self, false, self->refresh_sequence, self->refresh_sequence_len)) {
+            return i;
+        }
+        wait_for_update_start(self);
+        if (!lag_wait_idle(self)) {
+            return i + 1; // A stuck panel: writes would be dropped, so nothing more can help.
+        }
+    }
+    return frames;
+}
+
+// Both planes must be white. Every pixel gets frames toward black, then the same number toward white,
+// and both planes are white again at the end. The caller holds interrupts, so the phases stay
+// together. If that can't be done the drive is unknown, and only a stored-waveform refresh is safe.
+static void lag_wipe(epaperdisplay_epaperdisplay_obj_t *self, uint8_t frames) {
+    bool ok = lag_write_solid(self, self->write_black_ram_command, false);
+    if (ok) {
+        const uint8_t toward_black = lag_wipe_phase(self, frames);
+        lag_renew_deadline(self);
+        ok = toward_black == frames && lag_wait_idle(self) &&
+            lag_write_solid(self, self->write_previous_ram_command, false) &&
+            lag_write_solid(self, self->write_black_ram_command, true) &&
+            lag_wipe_phase(self, frames) == frames &&
+            lag_write_solid(self, self->write_previous_ram_command, true);
+    }
+    if (!ok) {
+        self->lag_state_lost = true;
+    }
+}
+
 // A normal step to white, then the owed steps. Everything changed so far gets all of its drive,
 // and the ring and both planes end up white with nothing owed. False if interrupted first, with
 // the drive still owed.
@@ -1436,7 +1471,7 @@ static bool lag_recover(epaperdisplay_epaperdisplay_obj_t *self) {
 }
 
 // A clean can't stop partway, so an interrupt raises when it ends. False if the bus can't be had.
-static bool lag_clean(epaperdisplay_epaperdisplay_obj_t *self) {
+static bool lag_clean(epaperdisplay_epaperdisplay_obj_t *self, uint8_t frames, bool full) {
     if (!displayio_display_bus_is_free(&self->bus)) {
         return false;
     }
@@ -1448,7 +1483,7 @@ static bool lag_clean(epaperdisplay_epaperdisplay_obj_t *self) {
     } else {
         ok = self->awake || lag_wake(self);
         ok = ok && lag_to_white(self);
-        if (ok) {
+        if (ok && full) {
             lag_renew_deadline(self);
             self->lag_force_full = true;
             ok = send_command_sequence(self, true, self->clean_sequence, self->clean_sequence_len) && lag_wait_idle(self);
@@ -1459,8 +1494,21 @@ static bool lag_clean(epaperdisplay_epaperdisplay_obj_t *self) {
             }
         }
     }
+    if (ok && frames > 0) {
+        lag_wipe(self, frames);
+    }
     lag_release_interrupts(self);
     return ok;
+}
+
+bool common_hal_epaperdisplay_epaperdisplay_clean(epaperdisplay_epaperdisplay_obj_t *self, uint8_t frames, bool full) {
+    nlr_buf_t nlr;
+    if (nlr_push(&nlr) == 0) {
+        bool ok = lag_clean(self, frames, full);
+        nlr_pop();
+        return ok;
+    }
+    lag_raise(self, nlr.ret_val);
 }
 
 // Leave the panel white and balanced when the display goes away: release, or the end of the VM,
