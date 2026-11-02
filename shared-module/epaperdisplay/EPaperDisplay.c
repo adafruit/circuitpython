@@ -115,7 +115,9 @@ void common_hal_epaperdisplay_epaperdisplay_construct(epaperdisplay_epaperdispla
     self->black_bits_inverted = args->black_bits_inverted;
     self->write_color_ram_command = args->write_color_ram_command;
     self->color_bits_inverted = args->color_bits_inverted;
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
     self->write_previous_ram_command = args->write_previous_ram_command;
+    #endif
     self->refresh_time = args->refresh_time * 1000;
     self->busy_state = args->busy_state;
     self->refreshing = false;
@@ -136,9 +138,11 @@ void common_hal_epaperdisplay_epaperdisplay_construct(epaperdisplay_epaperdispla
     self->stop_sequence_len = args->stop_sequence_len;
     self->refresh_sequence = args->refresh_sequence;
     self->refresh_sequence_len = args->refresh_sequence_len;
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
     self->keep_awake = args->keep_awake;
     self->awake = false;
     self->needs_start = false;
+    #endif
 
     self->busy.base.type = &mp_type_NoneType;
     self->two_byte_sequence_length = args->two_byte_sequence_length;
@@ -189,6 +193,7 @@ uint16_t common_hal_epaperdisplay_epaperdisplay_get_height(epaperdisplay_epaperd
     return displayio_display_core_get_height(&self->core);
 }
 
+#if CIRCUITPY_EPAPERDISPLAY_FAST
 // BUSY can take a moment to rise after an update command, and reading it low before then would
 // look like a finished update. If it never rises, nothing has started or it was too quick to see,
 // so this returns false after 2 ms. Short enough that an interrupt doesn't have to end it.
@@ -201,6 +206,7 @@ static bool wait_for_update_start(epaperdisplay_epaperdisplay_obj_t *self) {
     }
     return false;
 }
+#endif // CIRCUITPY_EPAPERDISPLAY_FAST
 
 #if CIRCUITPY_EPAPERDISPLAY_LAG
 static bool lag_deadline_passed(epaperdisplay_epaperdisplay_obj_t *self) {
@@ -452,15 +458,20 @@ void epaperdisplay_epaperdisplay_change_refresh_mode_parameters(epaperdisplay_ep
     #endif // CIRCUITPY_EPAPERDISPLAY_LAG
     self->start_sequence = (uint8_t *)start_sequence->buf;
     self->start_sequence_len = start_sequence->len;
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
     // NULL keeps the current refresh sequence.
     if (refresh_sequence != NULL) {
         self->refresh_sequence = (uint8_t *)refresh_sequence->buf;
         self->refresh_sequence_len = refresh_sequence->len;
     }
+    #endif
     self->milliseconds_per_frame = seconds_per_frame * 1000;
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
     self->needs_start = true;
+    #endif
 }
 
+#if CIRCUITPY_EPAPERDISPLAY_FAST
 // For a panel kept awake. Ctrl-C raises from a send in progress, and that transaction is still
 // open. The caller still has things to do first, so the interrupt raises later.
 static void send_stop_sequence_guarded(epaperdisplay_epaperdisplay_obj_t *self) {
@@ -475,6 +486,7 @@ static void send_stop_sequence_guarded(epaperdisplay_epaperdisplay_obj_t *self) 
         mp_sched_exception(nlr.ret_val);
     }
 }
+#endif // CIRCUITPY_EPAPERDISPLAY_FAST
 
 static void epaperdisplay_epaperdisplay_start_refresh(epaperdisplay_epaperdisplay_obj_t *self) {
     if (!displayio_display_bus_is_free(&self->bus)) {
@@ -486,6 +498,7 @@ static void epaperdisplay_epaperdisplay_start_refresh(epaperdisplay_epaperdispla
         return;
     }
 
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
     if (self->keep_awake && self->awake) {
         if (!self->needs_start) {
             // The panel is still configured from the previous refresh.
@@ -497,6 +510,7 @@ static void epaperdisplay_epaperdisplay_start_refresh(epaperdisplay_epaperdispla
         send_stop_sequence_guarded(self);
         self->awake = false;
     }
+    #endif
 
     // run start sequence
     self->bus.bus_reset(self->bus.bus);
@@ -507,8 +521,10 @@ static void epaperdisplay_epaperdisplay_start_refresh(epaperdisplay_epaperdispla
         display_interrupted(self)) {
         return;
     }
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
     self->awake = true;
     self->needs_start = false;
+    #endif
 }
 
 uint32_t common_hal_epaperdisplay_epaperdisplay_get_time_to_refresh(epaperdisplay_epaperdisplay_obj_t *self) {
@@ -523,6 +539,7 @@ uint32_t common_hal_epaperdisplay_epaperdisplay_get_time_to_refresh(epaperdispla
     return self->milliseconds_per_frame - elapsed_time;
 }
 
+#if CIRCUITPY_EPAPERDISPLAY_FAST
 static bool epaperdisplay_epaperdisplay_refresh_area(epaperdisplay_epaperdisplay_obj_t *self, const displayio_area_t *area, bool write_previous);
 
 // False if the panel is still updating when the wait is over.
@@ -584,6 +601,17 @@ static void epaperdisplay_epaperdisplay_finish_refresh(epaperdisplay_epaperdispl
         nlr_jump(raised);
     }
 }
+#else
+static void epaperdisplay_epaperdisplay_finish_refresh(epaperdisplay_epaperdisplay_obj_t *self, const displayio_area_t *areas) {
+    // Actually refresh the display now that all pixel RAM has been updated.
+    send_command_sequence(self, false, self->refresh_sequence, self->refresh_sequence_len);
+
+    supervisor_enable_tick();
+    self->refreshing = true;
+
+    displayio_display_core_finish_refresh(&self->core);
+}
+#endif // CIRCUITPY_EPAPERDISPLAY_FAST
 
 mp_obj_t common_hal_epaperdisplay_epaperdisplay_get_bus(epaperdisplay_epaperdisplay_obj_t *self) {
     return self->bus.bus;
@@ -666,9 +694,12 @@ static bool epaperdisplay_epaperdisplay_refresh_area(epaperdisplay_epaperdisplay
         uint8_t write_command = self->write_black_ram_command;
         if (pass == 1) {
             write_command = self->write_color_ram_command;
-        } else if (write_previous) {
+        }
+        #if CIRCUITPY_EPAPERDISPLAY_FAST
+        else if (write_previous) {
             write_command = self->write_previous_ram_command;
         }
+        #endif
         if (!displayio_display_bus_begin_transaction(&self->bus)) {
             // Display bus not available now.
             return false;
@@ -779,10 +810,15 @@ bool common_hal_epaperdisplay_epaperdisplay_refresh(epaperdisplay_epaperdisplay_
         if (common_hal_digitalio_digitalinout_get_value(&self->busy) != self->busy_state) {
             supervisor_disable_tick();
             self->refreshing = false;
+            #if CIRCUITPY_EPAPERDISPLAY_FAST
             if (!self->keep_awake) {
                 // Run stop sequence but don't wait for busy because busy is set when sleeping.
                 send_command_sequence(self, false, self->stop_sequence, self->stop_sequence_len);
             }
+            #else
+            // Run stop sequence but don't wait for busy because busy is set when sleeping.
+            send_command_sequence(self, false, self->stop_sequence, self->stop_sequence_len);
+            #endif
         } else {
             #if CIRCUITPY_EPAPERDISPLAY_LAG
             lag_give_up_if_stuck(self);
@@ -850,10 +886,15 @@ void epaperdisplay_epaperdisplay_background(epaperdisplay_epaperdisplay_obj_t *s
         if (refresh_done) {
             supervisor_disable_tick();
             self->refreshing = false;
+            #if CIRCUITPY_EPAPERDISPLAY_FAST
             if (!self->keep_awake) {
                 // Run stop sequence but don't wait for busy because busy is set when sleeping.
                 send_command_sequence(self, false, self->stop_sequence, self->stop_sequence_len);
             }
+            #else
+            // Run stop sequence but don't wait for busy because busy is set when sleeping.
+            send_command_sequence(self, false, self->stop_sequence, self->stop_sequence_len);
+            #endif
         }
         #if CIRCUITPY_EPAPERDISPLAY_LAG
         else {
@@ -878,15 +919,22 @@ void release_epaperdisplay(epaperdisplay_epaperdisplay_obj_t *self) {
         supervisor_disable_tick();
         self->refreshing = false;
         // Run stop sequence but don't wait for busy because busy is set when sleeping.
+        #if CIRCUITPY_EPAPERDISPLAY_FAST
         if (self->keep_awake) {
             send_stop_sequence_guarded(self);
         } else {
             send_command_sequence(self, false, self->stop_sequence, self->stop_sequence_len);
         }
-    } else if (self->keep_awake && self->awake) {
+        #else
+        send_command_sequence(self, false, self->stop_sequence, self->stop_sequence_len);
+        #endif
+    }
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
+    else if (self->keep_awake && self->awake) {
         send_stop_sequence_guarded(self);
     }
     self->awake = false;
+    #endif
     #if CIRCUITPY_EPAPERDISPLAY_LAG
     lag_release_interrupts(self);
     #endif // CIRCUITPY_EPAPERDISPLAY_LAG
@@ -913,6 +961,7 @@ void epaperdisplay_epaperdisplay_prepare_release(epaperdisplay_epaperdisplay_obj
 }
 #endif // CIRCUITPY_EPAPERDISPLAY_LAG
 
+#if CIRCUITPY_EPAPERDISPLAY_FAST
 void epaperdisplay_epaperdisplay_end_held_bus(epaperdisplay_epaperdisplay_obj_t *self) {
     // The VM is over, so whatever holds the bus can never let it go: end it here.
     if (self->keep_awake && !displayio_display_bus_is_free(&self->bus)) {
@@ -922,6 +971,7 @@ void epaperdisplay_epaperdisplay_end_held_bus(epaperdisplay_epaperdisplay_obj_t 
         #endif
     }
 }
+#endif // CIRCUITPY_EPAPERDISPLAY_FAST
 
 void epaperdisplay_epaperdisplay_reset(epaperdisplay_epaperdisplay_obj_t *self) {
     #if CIRCUITPY_EPAPERDISPLAY_LAG
@@ -938,6 +988,7 @@ void epaperdisplay_epaperdisplay_reset(epaperdisplay_epaperdisplay_obj_t *self) 
     #endif // CIRCUITPY_EPAPERDISPLAY_LAG
     displayio_display_core_set_root_group(&self->core, &circuitpython_splash);
     self->core.full_refresh = true;
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
     // Let the panel sleep after the next refresh when code isn't running.
     if (self->keep_awake && self->awake && !self->refreshing) {
         // Nothing can catch a raise from a send. A reload may be pending.
@@ -946,6 +997,7 @@ void epaperdisplay_epaperdisplay_reset(epaperdisplay_epaperdisplay_obj_t *self) 
         self->awake = false;
     }
     self->keep_awake = false;
+    #endif
 }
 
 void epaperdisplay_epaperdisplay_collect_ptrs(epaperdisplay_epaperdisplay_obj_t *self) {

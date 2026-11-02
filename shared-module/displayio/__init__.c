@@ -170,9 +170,11 @@ static void common_hal_displayio_release_displays_impl(bool keep_primary) {
         #endif
         #if CIRCUITPY_EPAPERDISPLAY
         } else if (display_type == &epaperdisplay_epaperdisplay_type) {
+            #if CIRCUITPY_EPAPERDISPLAY_FAST
             if (keep_primary) {
                 epaperdisplay_epaperdisplay_end_held_bus(&displays[i].epaper_display);
             }
+            #endif
             release_epaperdisplay(&displays[i].epaper_display);
         #endif
         #if CIRCUITPY_FRAMEBUFFERIO

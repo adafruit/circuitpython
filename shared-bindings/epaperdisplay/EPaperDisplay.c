@@ -107,6 +107,7 @@
 //|           When set, ``refresh()`` waits for the display to finish updating before it returns.
 //|           Requires a non-empty ``stop_sequence``.
 //|           Leave ``write_color_ram_command`` as None when it writes the same RAM, or it will overwrite the previous image.
+//|           Not available on all boards.
 //|         :param int highlight_color: RGB888 of source color to highlight with third ePaper color.
 //|         :param int highlight_color2: RGB888 of source color to highlight with fourth ePaper color.
 //|         :param int refresh_display_command: Command used to start a display refresh. Single int or byte-packed command sequence
@@ -125,6 +126,7 @@
 //|           The ``stop_sequence`` is not sent after each refresh. It is sent when the display is released.
 //|           It is also sent before the reset that ``update_refresh_mode()`` asks for, so it can't be empty.
 //|           This keeps the display's settings and RAM between refreshes so they can be faster.
+//|           Not available on all boards.
 //|         :param int lag_frames: When more than 0, the previous RAM holds the frame from ``lag_frames`` refreshes ago
 //|           instead of the last one, so each changed pixel is driven for ``lag_frames`` refreshes, the same number
 //|           toward black and toward white. Only the box around the changed bytes is sent. ``refresh()`` returns as soon
@@ -132,12 +134,13 @@
 //|           ``lag_frames`` more times to finish the drive. Implies ``keep_awake``. Needs ``write_previous_ram_command``,
 //|           ``busy_pin``, ``clean_sequence``, the window commands and a monochrome display, and allocates
 //|           ``lag_frames * width * height / 8`` bytes outside the VM heap until the display is released.
-//|           Only on builds with ``CIRCUITPY_EPAPERDISPLAY_LAG``. Elsewhere, more than 0 raises `ValueError`.
+//|           Only on builds with ``CIRCUITPY_EPAPERDISPLAY_LAG``. Elsewhere, more than 0 raises `ValueError`,
+//|           and boards without ``keep_awake`` don't accept it.
 //|         :param ~circuitpython_typing.ReadableBuffer clean_sequence: Byte-packed commands for a full refresh, such as
 //|           one using the waveform stored in the display, for use when both RAM planes are white. It runs before the
 //|           first refresh with ``lag_frames``. When the display is released or the code stops, the display finishes
 //|           its drive, goes white and runs this and the ``stop_sequence``. Display drivers should provide it.
-//|           It is accepted on every build and only used with ``lag_frames``.
+//|           It is accepted wherever ``keep_awake`` is and only used with ``lag_frames``.
 //|         """
 //|         ...
 //|
@@ -146,10 +149,18 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
            ARG_ram_width, ARG_ram_height, ARG_colstart, ARG_rowstart, ARG_rotation,
            ARG_set_column_window_command, ARG_set_row_window_command, ARG_set_current_column_command,
            ARG_set_current_row_command, ARG_write_black_ram_command, ARG_black_bits_inverted,
-           ARG_write_color_ram_command, ARG_color_bits_inverted, ARG_write_previous_ram_command, ARG_highlight_color, ARG_highlight_color2,
+           ARG_write_color_ram_command, ARG_color_bits_inverted,
+           #if CIRCUITPY_EPAPERDISPLAY_FAST
+           ARG_write_previous_ram_command,
+           #endif
+           ARG_highlight_color, ARG_highlight_color2,
            ARG_refresh_display_command,  ARG_refresh_time, ARG_busy_pin, ARG_busy_state,
            ARG_seconds_per_frame, ARG_always_toggle_chip_select, ARG_grayscale, ARG_advanced_color_epaper, ARG_spectra6,
-           ARG_two_byte_sequence_length, ARG_start_up_time, ARG_address_little_endian, ARG_keep_awake, ARG_lag_frames, ARG_clean_sequence };
+           ARG_two_byte_sequence_length, ARG_start_up_time, ARG_address_little_endian,
+           #if CIRCUITPY_EPAPERDISPLAY_FAST
+           ARG_keep_awake, ARG_lag_frames, ARG_clean_sequence,
+           #endif
+    };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_display_bus, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_start_sequence, MP_ARG_REQUIRED | MP_ARG_OBJ },
@@ -169,7 +180,9 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
         { MP_QSTR_black_bits_inverted, MP_ARG_BOOL | MP_ARG_KW_ONLY, {.u_bool = false} },
         { MP_QSTR_write_color_ram_command, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = mp_const_none} },
         { MP_QSTR_color_bits_inverted, MP_ARG_BOOL | MP_ARG_KW_ONLY, {.u_bool = false} },
+        #if CIRCUITPY_EPAPERDISPLAY_FAST
         { MP_QSTR_write_previous_ram_command, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = mp_const_none} },
+        #endif
         { MP_QSTR_highlight_color, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 0x000000} },
         { MP_QSTR_highlight_color2, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 0x000000} },
         { MP_QSTR_refresh_display_command, MP_ARG_OBJ | MP_ARG_REQUIRED },
@@ -184,9 +197,11 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
         { MP_QSTR_two_byte_sequence_length, MP_ARG_BOOL | MP_ARG_KW_ONLY, {.u_bool = false} },
         { MP_QSTR_start_up_time, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = MP_OBJ_NEW_SMALL_INT(0)} },
         { MP_QSTR_address_little_endian, MP_ARG_BOOL | MP_ARG_KW_ONLY, {.u_bool = false} },
+        #if CIRCUITPY_EPAPERDISPLAY_FAST
         { MP_QSTR_keep_awake, MP_ARG_BOOL | MP_ARG_KW_ONLY, {.u_bool = false} },
         { MP_QSTR_lag_frames, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 0} },
         { MP_QSTR_clean_sequence, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = mp_const_none} },
+        #endif
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
@@ -197,12 +212,14 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
     mp_get_buffer_raise(args[ARG_start_sequence].u_obj, &start_bufinfo, MP_BUFFER_READ);
     mp_buffer_info_t stop_bufinfo;
     mp_get_buffer_raise(args[ARG_stop_sequence].u_obj, &stop_bufinfo, MP_BUFFER_READ);
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
     // A reset can follow these displays' last RAM write, and SSD168x controllers only commit the
     // last byte when another command arrives.
     if (stop_bufinfo.len == 0 &&
         (args[ARG_keep_awake].u_bool || args[ARG_write_previous_ram_command].u_obj != mp_const_none)) {
         mp_arg_error_invalid(MP_QSTR_stop_sequence);
     }
+    #endif
 
 
     const mcu_pin_obj_t *busy_pin = validate_obj_is_free_pin_or_none(args[ARG_busy_pin].u_obj, MP_QSTR_busy_pin);
@@ -212,6 +229,7 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
         mp_raise_ValueError(MP_ERROR_TEXT("Display rotation must be in 90 degree increments"));
     }
 
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
     mp_int_t lag_frames = mp_arg_validate_int_range(args[ARG_lag_frames].u_int, 0, 32, MP_QSTR_lag_frames);
     #if CIRCUITPY_EPAPERDISPLAY_LAG
     if (lag_frames > 0) {
@@ -241,7 +259,8 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
     if (lag_frames > 0) {
         mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q"), MP_QSTR_lag_frames);
     }
-    #endif
+    #endif // CIRCUITPY_EPAPERDISPLAY_LAG
+    #endif // CIRCUITPY_EPAPERDISPLAY_FAST
 
     primary_display_t *disp = allocate_display_or_raise();
     epaperdisplay_epaperdisplay_obj_t *self = &disp->epaper_display;
@@ -256,10 +275,12 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
     if (args[ARG_write_color_ram_command].u_obj != mp_const_none) {
         write_color_ram_command = mp_obj_get_int(args[ARG_write_color_ram_command].u_obj);
     }
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
     mp_int_t write_previous_ram_command = NO_COMMAND;
     if (args[ARG_write_previous_ram_command].u_obj != mp_const_none) {
         write_previous_ram_command = mp_obj_get_int(args[ARG_write_previous_ram_command].u_obj);
     }
+    #endif
 
     bool two_byte_sequence_length = args[ARG_two_byte_sequence_length].u_bool;
 
@@ -305,7 +326,9 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
     construct_args.black_bits_inverted = args[ARG_black_bits_inverted].u_bool;
     construct_args.write_color_ram_command = write_color_ram_command;
     construct_args.color_bits_inverted = args[ARG_color_bits_inverted].u_bool;
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
     construct_args.write_previous_ram_command = write_previous_ram_command;
+    #endif
     construct_args.highlight_color = highlight_color;
     construct_args.highlight_color2 = highlight_color2;
     construct_args.refresh_sequence = refresh_buf;
@@ -320,6 +343,7 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
     construct_args.spectra6 = args[ARG_spectra6].u_bool;
     construct_args.two_byte_sequence_length = two_byte_sequence_length;
     construct_args.address_little_endian = args[ARG_address_little_endian].u_bool;
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
     construct_args.keep_awake = args[ARG_keep_awake].u_bool || lag_frames > 0;
     construct_args.lag_frames = lag_frames;
     if (args[ARG_clean_sequence].u_obj != mp_const_none) {
@@ -328,6 +352,7 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
         construct_args.clean_sequence = clean_bufinfo.buf;
         construct_args.clean_sequence_len = clean_bufinfo.len;
     }
+    #endif
     common_hal_epaperdisplay_epaperdisplay_construct(self, &construct_args);
 
     return self;
@@ -362,14 +387,16 @@ MP_DEFINE_CONST_FUN_OBJ_2(epaperdisplay_epaperdisplay_show_obj, epaperdisplay_ep
 //|         :param float seconds_per_frame: Minimum number of seconds between refreshes.
 //|         :param ReadableBuffer refresh_sequence: Byte sequence sent to start a refresh.
 //|           It uses the same format as ``start_sequence``.
-//|           When it is None, the current refresh sequence is kept."""
+//|           When it is None, the current refresh sequence is kept. Not available on all boards."""
 //|
 static mp_obj_t epaperdisplay_epaperdisplay_update_refresh_mode(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum { ARG_start_sequence, ARG_seconds_per_frame, ARG_refresh_sequence };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_start_sequence, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_seconds_per_frame, MP_ARG_OBJ, {.u_obj = MP_OBJ_NEW_SMALL_INT(180)} },
+        #if CIRCUITPY_EPAPERDISPLAY_FAST
         { MP_QSTR_refresh_sequence, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
+        #endif
     };
     epaperdisplay_epaperdisplay_obj_t *self = native_display(pos_args[0]);
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
@@ -380,12 +407,16 @@ static mp_obj_t epaperdisplay_epaperdisplay_update_refresh_mode(size_t n_args, c
     mp_get_buffer_raise(args[ARG_start_sequence].u_obj, &start_sequence, MP_BUFFER_READ);
     float seconds_per_frame = mp_obj_get_float(args[ARG_seconds_per_frame].u_obj);
 
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
     mp_buffer_info_t refresh_sequence;
+    #endif
     mp_buffer_info_t *refresh_sequence_ptr = NULL;
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
     if (args[ARG_refresh_sequence].u_obj != mp_const_none) {
         mp_get_buffer_raise(args[ARG_refresh_sequence].u_obj, &refresh_sequence, MP_BUFFER_READ);
         refresh_sequence_ptr = &refresh_sequence;
     }
+    #endif
 
     // Update parameters
     epaperdisplay_epaperdisplay_change_refresh_mode_parameters(self, &start_sequence, refresh_sequence_ptr, seconds_per_frame);
