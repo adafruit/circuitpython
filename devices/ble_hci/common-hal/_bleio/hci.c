@@ -137,6 +137,12 @@ static void set_rts(bool value) {
 static void process_acl_data_pkt(uint8_t pkt_len, uint8_t pkt_data[]) {
     h4_hci_acl_pkt_t *pkt = (h4_hci_acl_pkt_t *)pkt_data;
 
+    // A frame longer than the buffer (a peer that ignores the MTU) is dropped, its fragments too.
+    size_t from = pkt->pb != ACL_DATA_PB_MIDDLE ? 0 : acl_data_len;
+    if (from + pkt->data_len > sizeof(acl_data_buffer)) {
+        acl_data_len = 0;
+        return;
+    }
     if (pkt->pb != ACL_DATA_PB_MIDDLE) {
         // This is the start of a fragmented acl_data packet or is a full packet.
         memcpy(acl_data_buffer, pkt->data, pkt->data_len);
@@ -491,10 +497,15 @@ static hci_result_t send_command(uint16_t opcode, uint8_t params_len, void *para
 }
 
 hci_result_t hci_send_acl_pkt(uint16_t handle, uint8_t cid, uint16_t data_len, uint8_t *data) {
-    // Wait for all backlogged packets to finish.
+    // Wait for all backlogged packets to finish, as long as a command's answer may take: a
+    // controller that keeps the credit (gone, or never set up) fails the send, never hangs it.
+    uint64_t start = supervisor_ticks_ms64();
     while (pending_pkt >= common_hal_bleio_adapter_obj.max_acl_num_buffers) {
         // RUN_BACKGROUND_TASKS includes hci_poll_for_incoming_pkt();
         RUN_BACKGROUND_TASKS;
+        if (supervisor_ticks_ms64() - start > RESPONSE_TIMEOUT_MSECS) {
+            return HCI_WRITE_TIMEOUT;
+        }
     }
 
     // buf_len is size of entire packet including header.
@@ -524,6 +535,8 @@ hci_result_t hci_send_acl_pkt(uint16_t handle, uint8_t cid, uint16_t data_len, u
     int errcode = 0;
     common_hal_busio_uart_write(common_hal_bleio_adapter_obj.hci_uart, tx_buffer, buf_len, &errcode);
     if (errcode) {
+        // Not sent, so not to be completed: its credit is not spent.
+        pending_pkt--;
         return HCI_WRITE_ERROR;
     }
     return HCI_OK;

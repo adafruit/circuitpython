@@ -56,14 +56,24 @@ void bleio_user_reset(void) {
 void bleio_reset(void) {
     bleio_hci_reset();
 
+    if (common_hal_bleio_adapter_obj.persistent) {
+        // Left disabled, allocated and bound; what it had on the VM's heap is gone with the heap
+        // (also after an enable that failed), and enabling it again builds that anew.
+        bleio_adapter_obj_t *adapter = &common_hal_bleio_adapter_obj;
+        bleio_adapter_reset(adapter);
+        adapter->name = NULL;
+        adapter->attributes = NULL;
+        adapter->scan_results = NULL;
+        adapter->connection_objs = NULL;
+        adapter->device_name_characteristic = NULL;
+        adapter->appearance_characteristic = NULL;
+        adapter->service_changed_characteristic = NULL;
+        return;
+    }
     if (!common_hal_bleio_adapter_get_enabled(&common_hal_bleio_adapter_obj)) {
         return;
     }
     bleio_adapter_reset(&common_hal_bleio_adapter_obj);
-    if (common_hal_bleio_adapter_obj.persistent) {
-        // Left disabled, allocated and bound: enabling it again builds its attributes anew.
-        return;
-    }
     if (!vm_used_ble) {
         // No user-code BLE operations were done, so we can maintain the supervisor state.
         return;
