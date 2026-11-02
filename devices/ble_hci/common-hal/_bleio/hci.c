@@ -130,6 +130,13 @@ static volatile bool hci_poll_in_progress = false;
 static void process_acl_data_pkt(uint8_t pkt_len, uint8_t pkt_data[]) {
     h4_hci_acl_pkt_t *pkt = (h4_hci_acl_pkt_t *)pkt_data;
 
+    // Drop a frame longer than the buffer, and continuation fragments with no frame started.
+    const bool middle = pkt->pb == ACL_DATA_PB_MIDDLE;
+    if ((middle && acl_data_len == 0) ||
+        (middle ? acl_data_len : 0) + pkt->data_len > sizeof(acl_data_buffer)) {
+        acl_data_len = 0;
+        return;
+    }
     if (pkt->pb != ACL_DATA_PB_MIDDLE) {
         // This is the start of a fragmented acl_data packet or is a full packet.
         memcpy(acl_data_buffer, pkt->data, pkt->data_len);
@@ -146,6 +153,7 @@ static void process_acl_data_pkt(uint8_t pkt_len, uint8_t pkt_data[]) {
         // We don't have the full packet yet.
         return;
     }
+    acl_data_len = 0;
 
     if (acl->cid == BT_L2CAP_CID_ATT) {
         att_process_data(pkt->handle, acl->acl_data_len, acl->acl_data);
@@ -169,11 +177,7 @@ static void process_acl_data_pkt(uint8_t pkt_len, uint8_t pkt_data[]) {
 // Process number of completed packets. Reduce number of pending packets by reported
 // number of completed.
 static void process_num_comp_pkts(uint16_t handle, uint16_t num_pkts) {
-    if (num_pkts && pending_pkt > num_pkts) {
-        pending_pkt -= num_pkts;
-    } else {
-        pending_pkt = 0;
-    }
+    pending_pkt -= MIN(pending_pkt, num_pkts);
 }
 
 static void process_evt_pkt(size_t pkt_len, uint8_t pkt_data[]) {
@@ -186,6 +190,10 @@ static void process_evt_pkt(size_t pkt_len, uint8_t pkt_data[]) {
             (void)disconn_complete;
 
             att_remove_connection(disconn_complete->handle, disconn_complete->reason);
+            // The controller frees a link's buffers without Number of Completed Packets.
+            if (!att_is_connected()) {
+                pending_pkt = 0;
+            }
             // FIX L2CAPSignaling.removeConnection(disconn_complete->handle, disconn_complete->reason);
             break;
         }
@@ -483,10 +491,14 @@ static hci_result_t send_command(uint16_t opcode, uint8_t params_len, void *para
 }
 
 hci_result_t hci_send_acl_pkt(uint16_t handle, uint8_t cid, uint16_t data_len, uint8_t *data) {
-    // Wait for all backlogged packets to finish.
+    // Wait for a free controller buffer, but not forever.
+    uint64_t start = supervisor_ticks_ms64();
     while (pending_pkt >= common_hal_bleio_adapter_obj.max_acl_num_buffers) {
         // RUN_BACKGROUND_TASKS includes hci_poll_for_incoming_pkt();
         RUN_BACKGROUND_TASKS;
+        if (supervisor_ticks_ms64() - start > RESPONSE_TIMEOUT_MSECS) {
+            return HCI_WRITE_TIMEOUT;
+        }
     }
 
     // buf_len is size of entire packet including header.
@@ -516,6 +528,8 @@ hci_result_t hci_send_acl_pkt(uint16_t handle, uint8_t cid, uint16_t data_len, u
     int errcode = 0;
     common_hal_busio_uart_write(common_hal_bleio_adapter_obj.hci_uart, tx_buffer, buf_len, &errcode);
     if (errcode) {
+        // Not sent: give the credit back.
+        pending_pkt--;
         return HCI_WRITE_ERROR;
     }
     return HCI_OK;

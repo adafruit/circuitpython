@@ -342,15 +342,24 @@ void common_hal_bleio_adapter_set_enabled(bleio_adapter_obj_t *self, bool enable
     self->advertising_timeout_msecs = 0;
 
     if (enabled) {
-        // Reset list of known attributes.
-        // Indices into the list are handles. Handle 0x0000 designates an invalid handle,
-        // so store None there to skip it.
-        self->attributes = mp_obj_new_list(0, NULL);
-        bleio_adapter_add_attribute(self, mp_const_none);
-        add_generic_services(self);
+        nlr_buf_t nlr;
+        if (nlr_push(&nlr) == 0) {
+            // Reset list of known attributes.
+            // Indices into the list are handles. Handle 0x0000 designates an invalid handle,
+            // so store None there to skip it.
+            self->attributes = mp_obj_new_list(0, NULL);
+            bleio_adapter_add_attribute(self, mp_const_none);
+            add_generic_services(self);
 
-        // The reset cleared the event mask: set the controller up again.
-        bleio_adapter_hci_init(self);
+            // The reset cleared the event mask: set the controller up again.
+            bleio_adapter_hci_init(self);
+            nlr_pop();
+        } else {
+            // On failure, leave the adapter off.
+            self->enabled = false;
+            supervisor_disable_tick();
+            nlr_jump(nlr.ret_val);
+        }
     }
 }
 
