@@ -24,15 +24,15 @@ static keypad_scanner_funcs_t keys_funcs = {
     .get_key_count = keys_get_key_count,
 };
 
-void common_hal_keypad_keys_construct(keypad_keys_obj_t *self, mp_uint_t num_pins, const mcu_pin_obj_t *pins[], bool value_when_pressed, bool pull, mp_float_t interval, size_t max_events, uint8_t debounce_threshold) {
+void common_hal_keypad_keys_construct(keypad_keys_obj_t *self, mp_uint_t num_pins, const mcu_pin_obj_t *pins[], const digitalio_pull_t pulls[], bool value_when_pressed, mp_float_t interval, size_t max_events, uint8_t debounce_threshold) {
     mp_obj_t dios[num_pins];
 
     for (size_t i = 0; i < num_pins; i++) {
         digitalio_digitalinout_obj_t *dio =
             mp_obj_malloc(digitalio_digitalinout_obj_t, &digitalio_digitalinout_type);
         common_hal_digitalio_digitalinout_construct(dio, pins[i]);
-        if (pull) {
-            common_hal_digitalio_digitalinout_set_pull(dio, value_when_pressed ? PULL_DOWN : PULL_UP);
+        if (pulls[i] != PULL_NONE) {
+            common_hal_digitalio_digitalinout_set_pull(dio, pulls[i]);
         }
         dios[i] = dio;
     }

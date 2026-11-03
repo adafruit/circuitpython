@@ -7,6 +7,7 @@
 #include "shared-bindings/board/__init__.h"
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/microcontroller/Pin.h"
+#include "shared-bindings/microcontroller/PinConfiguration.h"
 
 #include "py/nlr.h"
 #include "py/obj.h"
@@ -95,17 +96,17 @@ const mcu_pin_obj_t *validate_obj_is_free_pin(mp_obj_t obj, qstr arg_name) {
     return pin;
 }
 
-// Validate every element in the list is a unique pin
+// Validate every element in the list is a unique pin. An element may also be a PinConfiguration.
 void validate_no_duplicate_pins(mp_obj_t seq, qstr arg_name) {
     const size_t num_pins = (size_t)MP_OBJ_SMALL_INT_VALUE(mp_obj_len(seq));
 
     for (size_t pin_cnt = 0; pin_cnt < num_pins; pin_cnt++) {
         mp_obj_t pin1_obj = mp_obj_subscr(seq, MP_OBJ_NEW_SMALL_INT(pin_cnt), MP_OBJ_SENTINEL);
-        const mcu_pin_obj_t *pin1 = validate_obj_is_pin_in(pin1_obj, arg_name);
+        const mcu_pin_obj_t *pin1 = validate_obj_is_pin_in(mcu_pin_configuration_unpack(pin1_obj, NULL), arg_name);
 
         for (size_t pin_cnt_2 = pin_cnt + 1; pin_cnt_2 < num_pins; pin_cnt_2++) {
             mp_obj_t pin2_obj = mp_obj_subscr(seq, MP_OBJ_NEW_SMALL_INT(pin_cnt_2), MP_OBJ_SENTINEL);
-            const mcu_pin_obj_t *pin2 = validate_obj_is_pin_in(pin2_obj, arg_name);
+            const mcu_pin_obj_t *pin2 = validate_obj_is_pin_in(mcu_pin_configuration_unpack(pin2_obj, NULL), arg_name);
             if (pin1 == pin2) {
                 mp_raise_TypeError_varg(MP_ERROR_TEXT("%q contains duplicate pins"), arg_name);
             }

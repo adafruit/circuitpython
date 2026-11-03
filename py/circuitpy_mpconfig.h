@@ -708,6 +708,11 @@ void background_callback_run_all(void);
 #define CIRCUITPY_DIGITALIO_HAVE_INVALID_DRIVE_MODE (0)
 #endif
 
+// microcontroller.PinConfiguration uses digitalio.Pull.
+#ifndef CIRCUITPY_PIN_CONFIGURATION
+#define CIRCUITPY_PIN_CONFIGURATION (CIRCUITPY_FULL_BUILD && CIRCUITPY_DIGITALIO)
+#endif
+
 // Align the internal sector buffer. Useful when it is passed into TinyUSB for
 // loads.
 #ifndef MICROPY_FATFS_WINDOW_ALIGNMENT

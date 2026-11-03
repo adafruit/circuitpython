@@ -708,6 +708,7 @@ $(filter $(SRC_PATTERNS), \
 	math/__init__.c \
 	mipicsi/BayerOrder.c \
 	mipicsi/PixelFormat.c \
+	microcontroller/PinConfiguration.c \
 	microcontroller/ResetReason.c \
 	microcontroller/RunMode.c \
 	msgpack/__init__.c \

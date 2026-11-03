@@ -17,6 +17,7 @@
 
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/microcontroller/Pin.h"
+#include "shared-bindings/microcontroller/PinConfiguration.h"
 #include "shared-bindings/microcontroller/Processor.h"
 
 //| """Pin references and cpu functionality
@@ -164,6 +165,9 @@ static const mp_rom_map_elem_t mcu_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_ResetReason),  MP_ROM_PTR(&mcu_reset_reason_type) },
     { MP_ROM_QSTR(MP_QSTR_RunMode),  MP_ROM_PTR(&mcu_runmode_type) },
     { MP_ROM_QSTR(MP_QSTR_Pin),  MP_ROM_PTR(&mcu_pin_type) },
+    #if CIRCUITPY_PIN_CONFIGURATION
+    { MP_ROM_QSTR(MP_QSTR_PinConfiguration),  MP_ROM_PTR(&mcu_pin_configuration_type) },
+    #endif
     { MP_ROM_QSTR(MP_QSTR_pin),  MP_ROM_PTR(&mcu_pin_module) },
     { MP_ROM_QSTR(MP_QSTR_Processor),   MP_ROM_PTR(&mcu_processor_type) },
 

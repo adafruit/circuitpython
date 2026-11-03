@@ -16,6 +16,7 @@
 #include "py/mphal.h"
 
 #include "shared-bindings/microcontroller/Pin.h"
+#include "shared-bindings/microcontroller/PinConfiguration.h"
 #include "shared-bindings/digitalio/DigitalInOut.h"
 #include "shared-bindings/digitalio/DigitalInOutProtocol.h"
 #include "shared-bindings/digitalio/Direction.h"
@@ -59,22 +60,34 @@ MP_WEAK const mcu_pin_obj_t *common_hal_digitalio_validate_pin(mp_obj_t obj) {
 //|     a pin, see the :py:class:`analogio.AnalogIn` and
 //|     :py:class:`analogio.AnalogOut` classes."""
 //|
-//|     def __init__(self, pin: microcontroller.Pin) -> None:
+//|     def __init__(
+//|         self, pin: Union[microcontroller.Pin, microcontroller.PinConfiguration]
+//|     ) -> None:
 //|         """Create a new DigitalInOut object associated with the pin. Defaults to input
 //|         with no pull. Use :py:meth:`switch_to_input` and
 //|         :py:meth:`switch_to_output` to change the direction.
 //|
-//|         :param ~microcontroller.Pin pin: The pin to control"""
+//|         :param Union[~microcontroller.Pin, ~microcontroller.PinConfiguration] pin: The pin to control.
+//|           If it is a `microcontroller.PinConfiguration` whose ``pull`` is not ``None``,
+//|           the input starts with that pull."""
 //|         ...
 //|
 static mp_obj_t digitalio_digitalinout_make_new(const mp_obj_type_t *type,
     size_t n_args, size_t n_kw, const mp_obj_t *args) {
     mp_arg_check_num(n_args, n_kw, 1, 1, false);
 
-    const mcu_pin_obj_t *pin = common_hal_digitalio_validate_pin(args[0]);
+    digitalio_pull_t pull = PULL_NONE;
+    const mcu_pin_obj_t *pin = common_hal_digitalio_validate_pin(mcu_pin_configuration_unpack(args[0], &pull));
 
     digitalio_digitalinout_obj_t *self = mp_obj_malloc_with_finaliser(digitalio_digitalinout_obj_t, &digitalio_digitalinout_type);
     common_hal_digitalio_digitalinout_construct(self, pin);
+    if (pull != PULL_NONE) {
+        digitalinout_result_t result = common_hal_digitalio_digitalinout_set_pull(self, pull);
+        if (result != DIGITALINOUT_OK) {
+            common_hal_digitalio_digitalinout_deinit(self);
+            check_result(result);
+        }
+    }
 
     return MP_OBJ_FROM_PTR(self);
 }

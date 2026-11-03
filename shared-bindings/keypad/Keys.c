@@ -12,6 +12,7 @@
 #include "shared-bindings/keypad/Event.h"
 #include "shared-bindings/keypad/Keys.h"
 #include "shared-bindings/microcontroller/Pin.h"
+#include "shared-bindings/microcontroller/PinConfiguration.h"
 #include "shared-bindings/util.h"
 
 //| class Keys:
@@ -34,7 +35,7 @@
 //|
 //|     def __init__(
 //|         self,
-//|         pins: Sequence[microcontroller.Pin],
+//|         pins: Sequence[Union[microcontroller.Pin, microcontroller.PinConfiguration]],
 //|         *,
 //|         value_when_pressed: bool,
 //|         pull: bool = True,
@@ -48,13 +49,17 @@
 //|
 //|         An `EventQueue` is created when this object is created and is available in the `events` attribute.
 //|
-//|         :param Sequence[microcontroller.Pin] pins: The pins attached to the keys.
+//|         :param Sequence[Union[microcontroller.Pin, microcontroller.PinConfiguration]] pins:
+//|           The pins attached to the keys.
 //|           The key numbers correspond to indices into this sequence.
+//|           A `microcontroller.PinConfiguration` whose ``pull`` is not ``None`` sets the pull
+//|           for its pin, in place of the pull chosen by the ``pull`` argument.
 //|         :param bool value_when_pressed: ``True`` if the pin reads high when the key is pressed.
 //|           ``False`` if the pin reads low (is grounded) when the key is pressed.
 //|           All the pins must be connected in the same way.
 //|         :param bool pull: ``True`` if an internal pull-up or pull-down should be
-//|           enabled on each pin. A pull-up will be used if ``value_when_pressed`` is ``False``;
+//|           enabled on each pin whose pull is not set by a `microcontroller.PinConfiguration`.
+//|           A pull-up will be used if ``value_when_pressed`` is ``False``;
 //|           a pull-down will be used if it is ``True``.
 //|           If an external pull is already provided for all the pins, you can set ``pull`` to ``False``.
 //|           However, enabling an internal pull when an external one is already present is not a problem;
@@ -104,15 +109,20 @@ static mp_obj_t keypad_keys_make_new(const mp_obj_type_t *type, size_t n_args, s
     const size_t max_events = (size_t)mp_arg_validate_int_min(args[ARG_max_events].u_int, 1, MP_QSTR_max_events);
     const uint8_t debounce_threshold = (uint8_t)mp_arg_validate_int_range(args[ARG_debounce_threshold].u_int, 1, 127, MP_QSTR_debounce_threshold);
 
+    const digitalio_pull_t default_pull =
+        !args[ARG_pull].u_bool ? PULL_NONE : (value_when_pressed ? PULL_DOWN : PULL_UP);
     const mcu_pin_obj_t *pins_array[num_pins];
+    digitalio_pull_t pulls_array[num_pins];
 
     for (mp_uint_t i = 0; i < num_pins; i++) {
-        pins_array[i] =
-            validate_obj_is_free_pin(mp_obj_subscr(pins, MP_OBJ_NEW_SMALL_INT(i), MP_OBJ_SENTINEL), MP_QSTR_pin);
+        pulls_array[i] = default_pull;
+        mp_obj_t pin_obj = mcu_pin_configuration_unpack(
+            mp_obj_subscr(pins, MP_OBJ_NEW_SMALL_INT(i), MP_OBJ_SENTINEL), &pulls_array[i]);
+        pins_array[i] = validate_obj_is_free_pin(pin_obj, MP_QSTR_pin);
     }
 
     keypad_keys_obj_t *self = mp_obj_malloc_with_finaliser(keypad_keys_obj_t, &keypad_keys_type);
-    common_hal_keypad_keys_construct(self, num_pins, pins_array, value_when_pressed, args[ARG_pull].u_bool, interval, max_events, debounce_threshold);
+    common_hal_keypad_keys_construct(self, num_pins, pins_array, pulls_array, value_when_pressed, interval, max_events, debounce_threshold);
 
     return MP_OBJ_FROM_PTR(self);
     #else

@@ -169,3 +169,29 @@ def test_digitalio_blink_output(circuitpython):
             f"expected {expected_interval_ns / 1_000_000:.1f}ms by more than "
             f"{tolerance_ns / 1_000_000:.1f}ms tolerance"
         )
+
+
+PIN_CONFIGURATION_CODE = """\
+import digitalio
+import microcontroller
+from microcontroller import PinConfiguration
+
+for pull in (digitalio.Pull.UP, digitalio.Pull.DOWN, digitalio.Pull.UP):
+    pin = digitalio.DigitalInOut(PinConfiguration(microcontroller.pin.P_01, pull=pull))
+    print(f"pull={pin.pull} value={pin.value}")
+    pin.deinit()
+print("done")
+"""
+
+
+@pytest.mark.circuitpy_drive({"code.py": PIN_CONFIGURATION_CODE})
+def test_digitalio_pin_configuration_pull(circuitpython):
+    """DigitalInOut starts with the pull given by a PinConfiguration."""
+    circuitpython.wait_until_done()
+    output = circuitpython.serial.all_output
+    assert re.findall(r"pull=(\S+) value=(True|False)", output) == [
+        ("digitalio.Pull.UP", "True"),
+        ("digitalio.Pull.DOWN", "False"),
+        ("digitalio.Pull.UP", "True"),
+    ]
+    assert "done" in output

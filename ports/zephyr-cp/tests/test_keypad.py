@@ -98,3 +98,38 @@ def test_keypad_keys_active_high(circuitpython):
     """Keys with pull-downs reports presses when a trace drives the pins high."""
     circuitpython.wait_until_done()
     check_keys_events(circuitpython.serial.all_output)
+
+
+PIN_CONFIGURATION_CODE = """\
+import time
+import digitalio
+import keypad
+import microcontroller
+from microcontroller import PinConfiguration
+
+keys = keypad.Keys(
+    (
+        PinConfiguration(microcontroller.pin.P_01, pull=digitalio.Pull.UP),
+        PinConfiguration(microcontroller.pin.P_02, pull=digitalio.Pull.DOWN),
+        PinConfiguration(microcontroller.pin.P_03),
+    ),
+    value_when_pressed=False,
+)
+keys.reset()
+time.sleep(0.2)
+event = keypad.Event()
+while keys.events.get_into(event):
+    print(f"key={event.key_number} pressed={event.pressed}")
+keys.deinit()
+print("done")
+"""
+
+
+@pytest.mark.circuitpy_drive({"code.py": PIN_CONFIGURATION_CODE})
+def test_keypad_keys_pin_configuration_pull(circuitpython):
+    """A PinConfiguration pull overrides the pull Keys would choose for that pin."""
+    circuitpython.wait_until_done()
+    output = circuitpython.serial.all_output
+    # Only the pin pulled down reads low, which is pressed. P_03 gets the default pull-up.
+    assert re.findall(r"key=(\d+) pressed=(True|False)", output) == [("1", "True")]
+    assert "done" in output
