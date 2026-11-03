@@ -141,6 +141,10 @@
 //|           first refresh with ``lag_frames``. When the display is released or the code stops, the display finishes
 //|           its drive, goes white and runs this and the ``stop_sequence``. Display drivers should provide it.
 //|           It is accepted wherever ``keep_awake`` is and only used with ``lag_frames``.
+//|
+//|         .. warning:: ``keep_awake``, ``write_previous_ram_command`` and ``lag_frames`` allow updates
+//|            much faster than panel makers' limits on refresh rate. Fast updates need a balanced waveform,
+//|            and long-term wear on the panel is unknown.
 //|         """
 //|         ...
 //|
