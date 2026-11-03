@@ -325,18 +325,20 @@ void common_hal_bleio_adapter_set_enabled(bleio_adapter_obj_t *self, bool enable
         return;
     }
 
-    self->enabled = enabled;
-
     // We must poll for input from the HCI adapter.
     // TODO Can we instead trigger an interrupt on UART input traffic?
     if (enabled) {
+        self->enabled = true;
         supervisor_enable_tick();
-    } else {
-        supervisor_disable_tick();
     }
 
-    // Enabling or disabling: stop any current activity; reset to known state.
+    // Enabling or disabling: stop any current activity; reset to known state. While disabling,
+    // stay enabled until the reset's reply has been read.
     hci_reset();
+    if (!enabled) {
+        self->enabled = false;
+        supervisor_disable_tick();
+    }
     self->now_advertising = false;
     self->circuitpython_advertising = false;
     self->advertising_timeout_msecs = 0;
@@ -813,6 +815,11 @@ void common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
 void common_hal_bleio_adapter_stop_advertising(bleio_adapter_obj_t *self) {
     check_enabled(self);
 
+    // A connection already stopped advertising in the controller.
+    if (!self->now_advertising) {
+        self->circuitpython_advertising = false;
+        return;
+    }
     self->now_advertising = false;
     self->circuitpython_advertising = false;
 
