@@ -426,6 +426,8 @@ mp_obj_str_t *common_hal_bleio_adapter_get_name(bleio_adapter_obj_t *self) {
 }
 
 void common_hal_bleio_adapter_set_name(bleio_adapter_obj_t *self, const char *name) {
+    // The name lives in the GAP service, which enabling makes: a persistent adapter comes on.
+    check_enabled(self);
     self->name = mp_obj_new_str(name, strlen(name));
     _adapter_set_name(self, self->name);
 }
