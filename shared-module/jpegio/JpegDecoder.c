@@ -5,6 +5,8 @@
 // SPDX-License-Identifier: MIT
 
 #include "py/runtime.h"
+#include "py/objtype.h"
+#include "py/stream.h"
 
 #include "shared-bindings/jpegio/JpegDecoder.h"
 #include "shared-bindings/bitmaptools/__init__.h"
@@ -112,6 +114,15 @@ static size_t file_input(JDEC *jd, uint8_t *dest, size_t len) {
 
 mp_obj_t common_hal_jpegio_jpegdecoder_set_source_file(jpegio_jpegdecoder_obj_t *self, mp_obj_t file_obj) {
     self->data_obj = file_obj;
+    #if CIRCUITPY_JPEGIO_FAST
+    self->stream_start_position = -1;
+    // Seeking a Python io.IOBase subclass calls its ioctl method, which may not
+    // exist, so only native streams are read whole.
+    if (mp_obj_is_native_type(mp_obj_get_type(file_obj)) && mp_get_stream(file_obj)->ioctl != NULL) {
+        int errcode;
+        self->stream_start_position = mp_stream_seek(file_obj, 0, MP_SEEK_CUR, &errcode);
+    }
+    #endif
     return common_hal_jpegio_jpegdecoder_decode_common(self, file_input);
 }
 
@@ -133,41 +144,26 @@ mp_obj_t common_hal_jpegio_jpegdecoder_set_source_buffer(jpegio_jpegdecoder_obj_
     return common_hal_jpegio_jpegdecoder_decode_common(self, buffer_input);
 }
 
-#define DECODER_CONTINUE (1)
-#define DECODER_INTERRUPT (0)
-static int bitmap_output(JDEC *jd, void *data, JRECT *rect) {
-    jpegio_jpegdecoder_obj_t *self = CONTAINER_OF(jd, jpegio_jpegdecoder_obj_t, decoder);
-    int src_width = rect->right - rect->left + 1, src_pixel_stride = src_width /* in units of pixels! */, src_height = rect->bottom - rect->top + 1;
-
-    displayio_bitmap_t src = {
-        .width = src_width,
-        .height = src_height,
-        .data = data,
-        .stride = src_pixel_stride / 2, /* in units of uint32_t */
-        .bits_per_value = 16,
-        .x_shift = 1,
-        .x_mask = 1,
-        .bitmask = 0xffff,
-    };
-
+bool jpegio_jpegdecoder_blit_rect(jpegio_jpegdecoder_obj_t *self, displayio_bitmap_t *src, int left, int top) {
+    int src_width = src->width, src_height = src->height;
     int x = self->x;
     int y = self->y;
-    int x1 = self->lim.x1 - rect->left;
-    int x2 = self->lim.x2 - rect->left;
-    int y1 = self->lim.y1 - rect->top;
-    int y2 = self->lim.y2 - rect->top;
+    int x1 = self->lim.x1 - left;
+    int x2 = self->lim.x2 - left;
+    int y1 = self->lim.y1 - top;
+    int y2 = self->lim.y2 - top;
 
     if (y2 <= 0) {
         // The last row in the source image to copy FROM is above of this, so
         // no more pixels on any rows
-        return DECODER_INTERRUPT;
+        return false;
     }
 
     y2 = MIN(y2, src_height);
     if (x2 <= 0) {
         // The last column in the source image to copy FROM is left of this, so
         // no more pixels on this row but could be on subsequent rows
-        return DECODER_CONTINUE;
+        return true;
     }
     x2 = MIN(x2, src_width);
 
@@ -191,9 +187,75 @@ static int bitmap_output(JDEC *jd, void *data, JRECT *rect) {
     assert(x2 <= src_width);
     assert(y2 <= src_height);
 
-    common_hal_bitmaptools_blit(self->dest, &src, x, y, x1, y1, x2, y2, self->skip_source_index, self->skip_source_index_none, self->skip_dest_index, self->skip_dest_index_none);
-    return 1;
+    common_hal_bitmaptools_blit(self->dest, src, x, y, x1, y1, x2, y2, self->skip_source_index, self->skip_source_index_none, self->skip_dest_index, self->skip_dest_index_none);
+    return true;
 }
+
+#define DECODER_CONTINUE (1)
+#define DECODER_INTERRUPT (0)
+static int bitmap_output(JDEC *jd, void *data, JRECT *rect) {
+    jpegio_jpegdecoder_obj_t *self = CONTAINER_OF(jd, jpegio_jpegdecoder_obj_t, decoder);
+    int src_width = rect->right - rect->left + 1, src_pixel_stride = src_width /* in units of pixels! */, src_height = rect->bottom - rect->top + 1;
+
+    displayio_bitmap_t src = {
+        .width = src_width,
+        .height = src_height,
+        .data = data,
+        .stride = src_pixel_stride / 2, /* in units of uint32_t */
+        .bits_per_value = 16,
+        .x_shift = 1,
+        .x_mask = 1,
+        .bitmask = 0xffff,
+    };
+
+    return jpegio_jpegdecoder_blit_rect(self, &src, rect->left, rect->top) ? DECODER_CONTINUE : DECODER_INTERRUPT;
+}
+
+#if CIRCUITPY_JPEGIO_FAST
+// Read a seekable file or stream, from where the JPEG starts to the end, into
+// memory and pass it to the port's decoder. If the port declines, the stream is
+// put back where TJpgDec left it, so TJpgDec can continue.
+static bool fast_decode_stream(jpegio_jpegdecoder_obj_t *self, int scale) {
+    mp_obj_t stream = self->data_obj;
+    mp_off_t start = self->stream_start_position;
+    if (start == (mp_off_t)-1) {
+        return false;
+    }
+    int errcode;
+    mp_off_t pos = mp_stream_seek(stream, 0, MP_SEEK_CUR, &errcode);
+    if (pos == (mp_off_t)-1) {
+        return false;
+    }
+    mp_off_t end = mp_stream_seek(stream, 0, MP_SEEK_END, &errcode);
+    bool ok = false;
+    if (end != (mp_off_t)-1 && end > start) {
+        size_t size = end - start;
+        uint8_t *data = m_malloc_maybe(size);
+        if (data != NULL && mp_stream_seek(stream, start, MP_SEEK_SET, &errcode) == start &&
+            mp_stream_rw(stream, data, size, &errcode, MP_STREAM_RW_READ) == size) {
+            mp_buffer_info_t jpeg = { .buf = data, .len = size };
+            ok = jpegio_jpegdecoder_fast_decode(self, &jpeg, scale);
+        }
+        m_free(data);
+    }
+    if (!ok) {
+        mp_stream_seek(stream, pos, MP_SEEK_SET, &errcode);
+    }
+    return ok;
+}
+
+static bool fast_decode(jpegio_jpegdecoder_obj_t *self, int scale) {
+    if (!jpegio_jpegdecoder_fast_supported(self, scale)) {
+        return false;
+    }
+    if (self->decoder.infunc == file_input) {
+        return fast_decode_stream(self, scale);
+    }
+    mp_buffer_info_t jpeg;
+    return mp_get_buffer(self->data_obj, &jpeg, MP_BUFFER_READ) &&
+           jpegio_jpegdecoder_fast_decode(self, &jpeg, scale);
+}
+#endif
 
 void common_hal_jpegio_jpegdecoder_decode_into(
     jpegio_jpegdecoder_obj_t *self,
@@ -229,6 +291,13 @@ void common_hal_jpegio_jpegdecoder_decode_into(
     #else
     if (!self->software_ok) {
         mp_raise_ValueError(MP_ERROR_TEXT("Operation or feature not supported"));
+    }
+    #endif
+
+    #if CIRCUITPY_JPEGIO_FAST
+    if (fast_decode(self, scale)) {
+        common_hal_jpegio_jpegdecoder_close(self);
+        return;
     }
     #endif
 
