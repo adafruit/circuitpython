@@ -349,18 +349,22 @@ void common_hal_bleio_adapter_set_enabled(bleio_adapter_obj_t *self, bool enable
         return;
     }
 
-    self->enabled = enabled;
-
     // We must poll for input from the HCI adapter.
     // TODO Can we instead trigger an interrupt on UART input traffic?
     if (enabled) {
+        self->enabled = true;
         supervisor_enable_tick();
-    } else {
-        supervisor_disable_tick();
     }
 
-    // Enabling or disabling: stop any current activity; reset to known state.
+    // Enabling or disabling: stop any current activity; reset to known state. While disabling
+    // the adapter still counts as enabled here, so the background poll reads the reset's reply:
+    // left unread, the next enable takes it for the answer to its own reset and talks to a
+    // controller still resetting.
     hci_reset();
+    if (!enabled) {
+        self->enabled = false;
+        supervisor_disable_tick();
+    }
     self->now_advertising = false;
     self->circuitpython_advertising = false;
     self->advertising_timeout_msecs = 0;
@@ -853,6 +857,12 @@ void common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
 void common_hal_bleio_adapter_stop_advertising(bleio_adapter_obj_t *self) {
     check_enabled(self);
 
+    // A connection stops advertising in the controller (bleio_adapter_advertising_was_stopped):
+    // asking again gets no answer from an ESP32 and Command Disallowed from a CYW43.
+    if (!self->now_advertising) {
+        self->circuitpython_advertising = false;
+        return;
+    }
     self->now_advertising = false;
     self->circuitpython_advertising = false;
 
