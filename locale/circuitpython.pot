@@ -861,6 +861,7 @@ msgstr ""
 #: ports/analog/common-hal/busio/SPI.c
 #: ports/espressif/common-hal/espidf/__init__.c
 #: ports/nordic/common-hal/_bleio/__init__.c
+#: shared-bindings/epaperdisplay/EPaperDisplay.c
 msgid "Invalid state"
 msgstr ""
 
@@ -1735,8 +1736,10 @@ msgstr ""
 #: ports/raspberrypi/common-hal/usb_host/Port.c
 #: shared-bindings/digitalio/DigitalInOut.c shared-bindings/emmcio/EMMC.c
 #: shared-bindings/i2cioexpander/IOPin.c shared-bindings/microcontroller/Pin.c
-#: shared-module/_airlift/__init__.c shared-module/max3421e/Max3421E.c
-#: shared-module/usb/core/Device.c shared-module/usb_host_audio/USBIn.c
+#: shared-module/_airlift/__init__.c
+#: shared-module/epaperdisplay/EPaperDisplay.c
+#: shared-module/max3421e/Max3421E.c shared-module/usb/core/Device.c
+#: shared-module/usb_host_audio/USBIn.c
 msgid "%q in use"
 msgstr ""
 
