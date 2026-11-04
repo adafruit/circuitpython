@@ -314,7 +314,8 @@ CIRCUITPY_EPAPERDISPLAY ?= $(CIRCUITPY_DISPLAYIO)
 CFLAGS += -DCIRCUITPY_EPAPERDISPLAY=$(CIRCUITPY_EPAPERDISPLAY)
 
 # Faster e-paper refreshes: EPaperDisplay's write_previous_ram_command and keep_awake.
-CIRCUITPY_EPAPERDISPLAY_FAST ?= $(CIRCUITPY_EPAPERDISPLAY)
+# On only in ports with e-paper boards and room for it.
+CIRCUITPY_EPAPERDISPLAY_FAST ?= 0
 CFLAGS += -DCIRCUITPY_EPAPERDISPLAY_FAST=$(CIRCUITPY_EPAPERDISPLAY_FAST)
 
 # Fast e-paper updates with balanced drive: EPaperDisplay's lag_frames and clean().
