@@ -57,7 +57,7 @@ static void videocore_videobuffer_add_vacated_frame(videocore_videobuffer_obj_t 
 
 // Called from interrupt context or a background task when the source lands a
 // frame, so keep it tiny.
-static void videocore_videobuffer_on_frame(void *ctx, const void *frame, const videocore_area_t *changed) {
+static void videocore_videobuffer_on_frame(void *ctx, const void *frame, const displayio_area_t *changed) {
     videocore_videobuffer_obj_t *self = ctx;
     if (frame == self->stream_base) {
         const displayio_area_t whole_frame = {
@@ -69,14 +69,8 @@ static void videocore_videobuffer_on_frame(void *ctx, const void *frame, const v
             self->frame_replaceable = true;
         } else {
             // Keep a bad source rect from dirtying other layers.
-            const displayio_area_t reported = {
-                .x1 = changed->x1,
-                .y1 = changed->y1,
-                .x2 = changed->x2,
-                .y2 = changed->y2,
-            };
             displayio_area_t clipped;
-            if (!displayio_area_compute_overlap(&reported, &whole_frame, &clipped)) {
+            if (!displayio_area_compute_overlap(changed, &whole_frame, &clipped)) {
                 return;
             }
             displayio_area_union(&self->frame_changed_area, &clipped, &self->frame_changed_area);
@@ -94,7 +88,7 @@ static void videocore_videobuffer_on_frame(void *ctx, const void *frame, const v
 // Called from interrupt context or a background task when the source reached
 // the end of its stream. Only flag it: end_stream stops the source later, the
 // way audio outputs stop a finished sample.
-static void videocore_videobuffer_on_eos(void *ctx) {
+static void videocore_videobuffer_on_stream_end(void *ctx) {
     videocore_videobuffer_obj_t *self = ctx;
     self->source_ended = true;
 }
@@ -177,7 +171,9 @@ static void videocore_videobuffer_compute_destination(
         dest->stride = row_bytes;
         dest->row_bytes = row_bytes;
         dest->height = self->source_height;
-        dest->on_eos = videocore_videobuffer_on_eos;
+        // draw_fill_area swaps the bytes for displays that need it.
+        dest->reverse_bytes_in_word = false;
+        dest->on_stream_end = videocore_videobuffer_on_stream_end;
         if (self->bufinfo.len < self->source_frame_bytes) {
             mp_raise_ValueError(MP_ERROR_TEXT("Buffer too small"));
         }
@@ -214,7 +210,8 @@ static void videocore_videobuffer_compute_destination(
     dest->stride = row_stride;
     dest->row_bytes = row_bytes;
     dest->height = self->source_height;
-    dest->on_eos = videocore_videobuffer_on_eos;
+    dest->reverse_bytes_in_word = FB_GETTER(get_reverse_pixels_in_word, false);
+    dest->on_stream_end = videocore_videobuffer_on_stream_end;
 }
 
 // Move the framebuffer destination for a new absolute position, capping the
@@ -266,7 +263,8 @@ static void videocore_videobuffer_move_dest(
         .stride = row_stride,
         .row_bytes = row_bytes,
         .height = self->source_height,
-        .on_eos = videocore_videobuffer_on_eos,
+        .reverse_bytes_in_word = FB_GETTER(get_reverse_pixels_in_word, false),
+        .on_stream_end = videocore_videobuffer_on_stream_end,
     };
     // A rejected destination leaves the stream where it was.
     if (videosource_set_destination(self->source, &dest, videocore_videobuffer_on_frame, self)) {
@@ -745,10 +743,14 @@ static bool videocore_videobuffer_draw_fill_area(mp_obj_t self_in, const _displa
     for (int16_t y = overlap.y1; y < overlap.y2; y++) {
         const size_t px = (size_t)(y - area->y1) * span_px + (overlap.x1 - area->x1);
         const int16_t fy = y - self->current_area.y1;
-        memcpy(
-            (uint16_t *)buffer + px,
-            frame + (size_t)fy * row_bytes + (size_t)(overlap.x1 - self->current_area.x1) * bytes_per_pixel,
-            overlap_width * bytes_per_pixel);
+        uint16_t *out = (uint16_t *)buffer + px;
+        const uint8_t *in = frame + (size_t)fy * row_bytes + (size_t)(overlap.x1 - self->current_area.x1) * bytes_per_pixel;
+        memcpy(out, in, overlap_width * bytes_per_pixel);
+        if (colorspace->reverse_bytes_in_word) {
+            for (size_t i = 0; i < overlap_width; i++) {
+                out[i] = __builtin_bswap16(out[i]);
+            }
+        }
     }
     return full_coverage;
 }

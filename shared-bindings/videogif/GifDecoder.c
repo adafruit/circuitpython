@@ -4,11 +4,11 @@
 //
 // SPDX-License-Identifier: MIT
 
+#include "py/builtin.h"
 #include "py/obj.h"
 #include "py/objproperty.h"
 #include "py/runtime.h"
 
-#include "shared-bindings/gifio/OnDiskGif.h"
 #include "shared-bindings/util.h"
 #include "shared-bindings/videogif/GifDecoder.h"
 #include "shared/runtime/context_manager_helpers.h"
@@ -37,8 +37,10 @@
 //|     the animation slows down so your Python code still gets time to run.
 //|
 //|     The GIF starts again from its first frame, filled with its background
-//|     color, at each loop and whenever the VideoBuffer showing it directly
-//|     on a display is moved or shown again.
+//|     color, at each loop. When a VideoBuffer that draws straight into a
+//|     framebuffer is moved, or hidden and shown again, the GIF stops and
+//|     `videocore.VideoBuffer.playing` becomes False. Call
+//|     `videocore.VideoBuffer.play()` to start it again.
 //|
 //|     When a frame asks for its area to be cleared after it is shown (GIF
 //|     disposal method 2), that area is filled with the background color.
@@ -54,10 +56,7 @@
 //|         import videocore
 //|         import videogif
 //|
-//|         # Match your display's byte order. A BusDisplay usually swaps the
-//|         # bytes of each pixel (True). Framebuffer displays such as
-//|         # mipidsi.Display don't (False).
-//|         gif = videogif.GifDecoder("/animation.gif", reverse_bytes_in_word=False)
+//|         gif = videogif.GifDecoder("/animation.gif")
 //|         video = videocore.VideoBuffer(bytearray(gif.width * gif.height * 2))
 //|         video.play(gif)
 //|
@@ -70,38 +69,33 @@
 //|
 //|     def __init__(
 //|         self,
-//|         file: Union[str, typing.BinaryIO],
+//|         filename: str,
 //|         *,
 //|         bits_per_pixel: int = 16,
-//|         reverse_bytes_in_word: bool = False,
 //|     ) -> None:
 //|         """Open a GIF file so it can be played.
 //|
-//|         :param file: The name of a GIF file, such as ``"/animation.gif"``,
-//|             or a GIF file opened in binary mode.
+//|         :param str filename: The name of a GIF file, such as ``"/animation.gif"``.
+//|             The GifDecoder closes the file when it is deinitialized.
 //|         :param int bits_per_pixel: The pixel format of each frame. Use 16
 //|             for color pixels (RGB565), or 1 for black and white pixels.
 //|             With 1, eight pixels are packed into each byte, with the
 //|             leftmost pixel in the most significant bit. A pixel is white
 //|             (1) when its brightness is at least 128 out of 255, so a GIF
 //|             that uses only black and white converts exactly.
-//|         :param bool reverse_bytes_in_word: Swap the two bytes of each 16-bit
-//|             pixel. Use the same value as your display, such as
-//|             `busdisplay.BusDisplay`'s ``reverse_bytes_in_word``. It has no
-//|             effect when ``bits_per_pixel`` is 1.
 //|
-//|         Raises `ValueError` if ``bits_per_pixel`` is not 1 or 16, if the
-//|         file is not a GIF, or if the GIF is wider than the board supports
-//|         (320 pixels on most boards).
+//|         16-bit frames are in the byte order of the display or framebuffer
+//|         that shows them. Raises `ValueError` if ``bits_per_pixel`` is not 1
+//|         or 16, if the file is not a GIF, or if the GIF is wider than the
+//|         board supports (320 pixels on most boards).
 //|         """
 //|         ...
 //|
 static mp_obj_t videogif_gifdecoder_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
-    enum { ARG_file, ARG_bits_per_pixel, ARG_reverse_bytes_in_word, NUM_ARGS };
+    enum { ARG_filename, ARG_bits_per_pixel, NUM_ARGS };
     static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_file, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_filename, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_bits_per_pixel, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 16} },
-        { MP_QSTR_reverse_bytes_in_word, MP_ARG_BOOL | MP_ARG_KW_ONLY, {.u_bool = false} },
     };
     MP_STATIC_ASSERT(MP_ARRAY_SIZE(allowed_args) == NUM_ARGS);
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
@@ -111,10 +105,11 @@ static mp_obj_t videogif_gifdecoder_make_new(const mp_obj_type_t *type, size_t n
     if (bits_per_pixel != 1 && bits_per_pixel != 16) {
         mp_arg_error_invalid(MP_QSTR_bits_per_pixel);
     }
-    mp_obj_t file = gifio_open_file(args[ARG_file].u_obj);
+    mp_obj_t filename = mp_arg_validate_type_string(args[ARG_filename].u_obj, MP_QSTR_filename);
+    mp_obj_t file = mp_call_function_2(MP_OBJ_FROM_PTR(&mp_builtin_open_obj), filename, MP_ROM_QSTR(MP_QSTR_rb));
 
     videogif_gifdecoder_obj_t *self = mp_obj_malloc_with_finaliser(videogif_gifdecoder_obj_t, &videogif_gifdecoder_type);
-    common_hal_videogif_gifdecoder_construct(self, file, bits_per_pixel, args[ARG_reverse_bytes_in_word].u_bool);
+    common_hal_videogif_gifdecoder_construct(self, file, bits_per_pixel);
     return MP_OBJ_FROM_PTR(self);
 }
 
