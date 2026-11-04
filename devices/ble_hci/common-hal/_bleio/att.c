@@ -202,6 +202,7 @@ void bleio_att_reset(void) {
         bleio_connections[i].addr.type = 0;
         memset(bleio_connections[i].addr.a.val, 0, sizeof_field(bt_addr_t, val));
         bleio_connections[i].mtu = BT_ATT_DEFAULT_LE_MTU;
+        bleio_connections[i].remote_service_list = NULL;
     }
 }
 
@@ -521,6 +522,8 @@ void att_add_connection(uint16_t handle, uint8_t role, bt_addr_le_t *peer_addr, 
     bleio_connections[peer_index].role = role;
     bleio_connections[peer_index].mtu = BT_ATT_DEFAULT_LE_MTU;
     memcpy(&bleio_connections[peer_index].addr, peer_addr, sizeof(bleio_connections[peer_index].addr));
+    // Made by discover_remote_services(), on the program's heap.
+    bleio_connections[peer_index].remote_service_list = NULL;
 }
 
 
@@ -575,6 +578,7 @@ void att_remove_connection(uint16_t conn_handle, uint8_t reason) {
     bleio_connections[peer_index].role = 0x00;
     memset(&bleio_connections[peer_index].addr, 0x00, sizeof(bleio_connections[peer_index].addr));
     bleio_connections[peer_index].mtu = BT_ATT_DEFAULT_LE_MTU;
+    bleio_connections[peer_index].remote_service_list = NULL;
 }
 
 uint16_t att_conn_handle(bt_addr_le_t *addr) {
