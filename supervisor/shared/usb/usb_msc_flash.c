@@ -202,18 +202,26 @@ static fs_user_mount_t *get_vfs(int lun) {
     return NULL;
 }
 
+// Release the locks that USB MSC holds. Locks held by others (Python, workflows) are not touched.
+static void release_msc_locks(void) {
+    for (uint8_t i = 0; i < LUN_COUNT; i++) {
+        if (!locked[i]) {
+            continue;
+        }
+        fs_user_mount_t *vfs = get_vfs(i);
+        if (vfs != NULL) {
+            blockdev_unlock((supervisor_vfs_t *)vfs);
+        }
+        locked[i] = false;
+    }
+}
+
 static void _usb_msc_uneject(void) {
+    // A bus reset doesn't call tud_umount_cb(), so a lock from before it may still be held.
+    // Release it, or blockdev_lock() fails and the host sees a write-protected drive.
+    release_msc_locks();
     for (uint8_t i = 0; i < LUN_COUNT; i++) {
         ejected[i] = false;
-        // A bus reset doesn't call tud_umount_cb(), so a lock from before it may still be held.
-        // Release it, or blockdev_lock() fails and the host sees a write-protected drive.
-        if (locked[i]) {
-            fs_user_mount_t *vfs = get_vfs(i);
-            if (vfs != NULL) {
-                blockdev_unlock((supervisor_vfs_t *)vfs);
-            }
-            locked[i] = false;
-        }
     }
 }
 
@@ -222,14 +230,7 @@ void usb_msc_mount(void) {
 }
 
 void usb_msc_umount(void) {
-    for (uint8_t i = 0; i < LUN_COUNT; i++) {
-        fs_user_mount_t *vfs = get_vfs(i);
-        if (vfs == NULL) {
-            continue;
-        }
-        blockdev_unlock((supervisor_vfs_t *)vfs);
-        locked[i] = false;
-    }
+    release_msc_locks();
 }
 
 // Release the USB MSC lock on CIRCUITPY (LUN 0), if USB MSC holds it.
