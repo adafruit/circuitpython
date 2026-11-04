@@ -205,7 +205,15 @@ static fs_user_mount_t *get_vfs(int lun) {
 static void _usb_msc_uneject(void) {
     for (uint8_t i = 0; i < LUN_COUNT; i++) {
         ejected[i] = false;
-        locked[i] = false;
+        // A bus reset doesn't call tud_umount_cb(), so a lock from before it may still be held.
+        // Release it, or blockdev_lock() fails and the host sees a write-protected drive.
+        if (locked[i]) {
+            fs_user_mount_t *vfs = get_vfs(i);
+            if (vfs != NULL) {
+                blockdev_unlock((supervisor_vfs_t *)vfs);
+            }
+            locked[i] = false;
+        }
     }
 }
 
