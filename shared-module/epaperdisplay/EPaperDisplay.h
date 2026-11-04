@@ -47,8 +47,10 @@ typedef struct {
     #endif
     display_chip_select_behavior_t chip_select;
     #if CIRCUITPY_EPAPERDISPLAY_LAG
-    // Lag drive. Only used when lag_frames > 0. The ring has lag_frames slots: frames N-1 to
-    // N-lag_frames.
+    // Lag drive, built on FAST's write_previous_ram_command. FAST writes the last frame to the
+    // previous RAM, so each changed pixel is driven once. Lag writes the frame from lag_frames
+    // refreshes ago, so a changed pixel is driven lag_frames times, the same number each way.
+    // The ring holds those frames. Only used when lag_frames > 0.
     uint8_t **lag_slots;
     const uint8_t *clean_sequence;
     uint32_t clean_sequence_len;
