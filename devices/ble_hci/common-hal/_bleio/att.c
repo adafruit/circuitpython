@@ -1226,9 +1226,11 @@ static void process_read_type_req(uint16_t conn_handle, uint16_t mtu, uint8_t dl
                 if (!mp_get_buffer(descriptor->value, &bufinfo, MP_BUFFER_READ)) {
                     break;
                 }
-                uint16_t value_size = MIN(mtu - rsp_length, bufinfo.len);
+                // The handle and as much of the value as fits in the MTU.
+                uint16_t value_size = MIN(mtu - rsp_length - sizeof(att_data->handle), bufinfo.len);
                 memcpy(att_data->value, bufinfo.buf, value_size);
-                rsp_length += value_size;
+                rsp->r.len = sizeof(att_data->handle) + value_size;
+                rsp_length += rsp->r.len;
 
                 // Only return one descriptor value.
                 no_data = false;
@@ -1249,9 +1251,11 @@ static void process_read_type_req(uint16_t conn_handle, uint16_t mtu, uint8_t dl
                     // This shouldn't happen. There should be a buf in characteristic->value.
                     break;
                 }
-                uint16_t value_size = MIN(mtu - rsp_length, bufinfo.len);
+                // The handle and as much of the value as fits in the MTU.
+                uint16_t value_size = MIN(mtu - rsp_length - sizeof(att_data->handle), bufinfo.len);
                 memcpy(att_data->value, bufinfo.buf, value_size);
-                rsp_length += value_size;
+                rsp->r.len = sizeof(att_data->handle) + value_size;
+                rsp_length += rsp->r.len;
 
                 // Only return one characteristic value.
                 no_data = false;
