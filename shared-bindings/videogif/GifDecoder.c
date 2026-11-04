@@ -70,46 +70,38 @@
 //|     def __init__(
 //|         self,
 //|         filename: str,
-//|         *,
-//|         bits_per_pixel: int = 16,
 //|     ) -> None:
 //|         """Open a GIF file so it can be played.
 //|
 //|         :param str filename: The name of a GIF file, such as ``"/animation.gif"``.
 //|             The GifDecoder closes the file when it is deinitialized.
-//|         :param int bits_per_pixel: The pixel format of each frame. Use 16
-//|             for color pixels (RGB565), or 1 for black and white pixels.
-//|             With 1, eight pixels are packed into each byte, with the
-//|             leftmost pixel in the most significant bit. A pixel is white
-//|             (1) when its brightness is at least 128 out of 255, so a GIF
-//|             that uses only black and white converts exactly.
 //|
-//|         16-bit frames are in the byte order of the display or framebuffer
-//|         that shows them. Raises `ValueError` if ``bits_per_pixel`` is not 1
-//|         or 16, if the file is not a GIF, or if the GIF is wider than the
-//|         board supports (320 pixels on most boards).
+//|         The `videocore.VideoBuffer` playing the GIF sets the pixel format.
+//|         16-bit frames are RGB565, in the byte order of the display or
+//|         framebuffer that shows them. 1-bit frames pack eight pixels into
+//|         each byte, with the leftmost pixel in the most significant bit. A
+//|         pixel is white (1) when its brightness is at least 128 out of 255,
+//|         so a GIF that uses only black and white converts exactly.
+//|
+//|         Raises `ValueError` if the file is not a GIF, or if the GIF is wider
+//|         than the board supports (320 pixels on most boards).
 //|         """
 //|         ...
 //|
 static mp_obj_t videogif_gifdecoder_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
-    enum { ARG_filename, ARG_bits_per_pixel, NUM_ARGS };
+    enum { ARG_filename, NUM_ARGS };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_filename, MP_ARG_REQUIRED | MP_ARG_OBJ },
-        { MP_QSTR_bits_per_pixel, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 16} },
     };
     MP_STATIC_ASSERT(MP_ARRAY_SIZE(allowed_args) == NUM_ARGS);
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    const mp_int_t bits_per_pixel = args[ARG_bits_per_pixel].u_int;
-    if (bits_per_pixel != 1 && bits_per_pixel != 16) {
-        mp_arg_error_invalid(MP_QSTR_bits_per_pixel);
-    }
     mp_obj_t filename = mp_arg_validate_type_string(args[ARG_filename].u_obj, MP_QSTR_filename);
     mp_obj_t file = mp_call_function_2(MP_OBJ_FROM_PTR(&mp_builtin_open_obj), filename, MP_ROM_QSTR(MP_QSTR_rb));
 
     videogif_gifdecoder_obj_t *self = mp_obj_malloc_with_finaliser(videogif_gifdecoder_obj_t, &videogif_gifdecoder_type);
-    common_hal_videogif_gifdecoder_construct(self, file, bits_per_pixel);
+    common_hal_videogif_gifdecoder_construct(self, file);
     return MP_OBJ_FROM_PTR(self);
 }
 
@@ -218,6 +210,10 @@ static mp_int_t videogif_gifdecoder_get_bits_per_pixel(mp_obj_t self_in) {
     return common_hal_videogif_gifdecoder_get_bits_per_pixel(native_gifdecoder(self_in));
 }
 
+static bool videogif_gifdecoder_set_bits_per_pixel(mp_obj_t self_in, mp_int_t bits_per_pixel) {
+    return common_hal_videogif_gifdecoder_set_bits_per_pixel(native_gifdecoder(self_in), bits_per_pixel);
+}
+
 static const videosource_p_t videogif_gifdecoder_videosource_protocol = {
     MP_PROTO_IMPLEMENT(MP_QSTR_protocol_videosource)
     .play = videogif_gifdecoder_play,
@@ -228,6 +224,7 @@ static const videosource_p_t videogif_gifdecoder_videosource_protocol = {
     .get_width = videogif_gifdecoder_videosource_get_width,
     .get_height = videogif_gifdecoder_videosource_get_height,
     .get_bits_per_pixel = videogif_gifdecoder_get_bits_per_pixel,
+    .set_bits_per_pixel = videogif_gifdecoder_set_bits_per_pixel,
 };
 
 MP_DEFINE_CONST_OBJ_TYPE(

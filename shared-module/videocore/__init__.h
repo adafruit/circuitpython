@@ -94,6 +94,10 @@ typedef struct _videosource_p_t {
     mp_int_t (*get_height)(mp_obj_t self);
     // Bits per pixel of the frames the source streams.
     mp_int_t (*get_bits_per_pixel)(mp_obj_t self);
+    // Stream frames with this many bits per pixel from the next play. Called
+    // by VideoBuffer.play before play(). Returns whether the source can. May be
+    // NULL when the source only streams get_bits_per_pixel().
+    bool (*set_bits_per_pixel)(mp_obj_t self, mp_int_t bits_per_pixel);
 } videosource_p_t;
 
 // Protocol dispatch helpers. play and stop are no-ops when the source doesn't
@@ -111,6 +115,8 @@ bool videosource_set_destination(mp_obj_t source, const videocore_destination_t 
 mp_int_t videosource_get_width(mp_obj_t source);
 mp_int_t videosource_get_height(mp_obj_t source);
 mp_int_t videosource_get_bits_per_pixel(mp_obj_t source);
+// Ask source to stream bits_per_pixel. Returns whether it will.
+bool videosource_set_bits_per_pixel(mp_obj_t source, mp_int_t bits_per_pixel);
 
 // Raise when the group tree contains a VideoBuffer that streams into a
 // framebuffer other than the one this display renders. Called when a group

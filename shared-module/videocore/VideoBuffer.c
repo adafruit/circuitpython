@@ -272,7 +272,8 @@ static void videocore_videobuffer_move_dest(
     }
 }
 
-void common_hal_videocore_videobuffer_construct(videocore_videobuffer_obj_t *self, mp_obj_t framebuffer) {
+void common_hal_videocore_videobuffer_construct(videocore_videobuffer_obj_t *self, mp_obj_t framebuffer,
+    mp_int_t bits_per_pixel) {
     // Initialise what the finaliser uses before anything can raise.
     self->source = mp_const_none;
     self->stream_base = NULL;
@@ -285,12 +286,15 @@ void common_hal_videocore_videobuffer_construct(videocore_videobuffer_obj_t *sel
             self->framebuffer_protocol->get_height == NULL) {
             mp_raise_ValueError(MP_ERROR_TEXT("framebuffer missing required functions"));
         }
+        self->bits_per_pixel = FB_GETTER(get_color_depth, 16);
     } else if (!mp_get_buffer(framebuffer, &self->bufinfo, MP_BUFFER_WRITE)) {
         // Not a framebuffer and not a writable buffer such as a bytearray or
         // memoryview.
         mp_raise_TypeError_varg(MP_ERROR_TEXT("%q must be of type %q or %q, not %q"),
             MP_QSTR_framebuffer, MP_QSTR_buffer, MP_QSTR_framebuffer,
             mp_obj_get_type(framebuffer)->name);
+    } else {
+        self->bits_per_pixel = bits_per_pixel;
     }
 
     self->x = 0;
@@ -458,7 +462,9 @@ void common_hal_videocore_videobuffer_play(videocore_videobuffer_obj_t *self, mp
     if (self->playing) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("already playing"));
     }
-    videosource_check(source);
+    if (!videosource_set_bits_per_pixel(source, self->bits_per_pixel)) {
+        mp_arg_error_invalid(MP_QSTR_bits_per_pixel);
+    }
     self->stale_size = false;
     self->source_ended = false;
     videocore_videobuffer_forget_frame(self);

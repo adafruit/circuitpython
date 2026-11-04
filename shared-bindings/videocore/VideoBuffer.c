@@ -53,25 +53,37 @@
 //|         framebuffer: Union[
 //|             circuitpython_typing.FrameBuffer, circuitpython_typing.WriteableBuffer
 //|         ],
+//|         *,
+//|         bits_per_pixel: int = 16,
 //|     ) -> None:
 //|         """Create a VideoBuffer that plays video into the given framebuffer
 //|
 //|         :param framebuffer: The framebuffer to copy video frames into, or a
 //|             writable buffer such as a ``bytearray`` or ``memoryview``.
+//|         :param int bits_per_pixel: The pixel format of a writable buffer: 16
+//|             for color (RGB565), or 1 for black and white. ``play()`` asks the
+//|             source for this format and raises `ValueError` if the source
+//|             can't provide it. A framebuffer uses its own color depth instead.
 //|         """
 //|
 static mp_obj_t videocore_videobuffer_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
-    enum { ARG_framebuffer, NUM_ARGS };
+    enum { ARG_framebuffer, ARG_bits_per_pixel, NUM_ARGS };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_framebuffer, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_bits_per_pixel, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 16} },
     };
 
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     MP_STATIC_ASSERT(MP_ARRAY_SIZE(allowed_args) == NUM_ARGS);
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
+    const mp_int_t bits_per_pixel = args[ARG_bits_per_pixel].u_int;
+    if (bits_per_pixel != 1 && bits_per_pixel != 16) {
+        mp_arg_error_invalid(MP_QSTR_bits_per_pixel);
+    }
+
     videocore_videobuffer_obj_t *self = mp_obj_malloc_with_finaliser(videocore_videobuffer_obj_t, &videocore_videobuffer_type);
-    common_hal_videocore_videobuffer_construct(self, args[ARG_framebuffer].u_obj);
+    common_hal_videocore_videobuffer_construct(self, args[ARG_framebuffer].u_obj, bits_per_pixel);
     return MP_OBJ_FROM_PTR(self);
 }
 

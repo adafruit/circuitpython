@@ -180,10 +180,7 @@ static void videogif_open_gif(GIFIMAGE *gif, mp_obj_t file) {
     }
 }
 
-void common_hal_videogif_gifdecoder_construct(videogif_gifdecoder_obj_t *self, mp_obj_t file,
-    mp_int_t bits_per_pixel) {
-    // 1 bit per pixel needs the RGB888 palette to compute luma.
-    const uint8_t palette_type = bits_per_pixel == 16 ? GIF_PALETTE_RGB565_LE : GIF_PALETTE_RGB888;
+void common_hal_videogif_gifdecoder_construct(videogif_gifdecoder_obj_t *self, mp_obj_t file) {
     // Outside the VM heap so it doesn't need a large gap there or grow it. Its
     // only heap pointers, the file and self, are held by self too. The
     // finaliser frees it.
@@ -191,10 +188,10 @@ void common_hal_videogif_gifdecoder_construct(videogif_gifdecoder_obj_t *self, m
     if (self->gif == NULL) {
         m_malloc_fail(sizeof(GIFIMAGE));
     }
-    GIF_begin(self->gif, palette_type);
+    GIF_begin(self->gif, GIF_PALETTE_RGB565_LE);
     self->gif->pfnDraw = videogif_draw_line;
     self->file = file;
-    self->bits_per_pixel = bits_per_pixel;
+    self->bits_per_pixel = 16;
     videogif_open_gif(self->gif, file);
 }
 
@@ -234,6 +231,21 @@ mp_int_t common_hal_videogif_gifdecoder_get_height(videogif_gifdecoder_obj_t *se
 
 mp_int_t common_hal_videogif_gifdecoder_get_bits_per_pixel(videogif_gifdecoder_obj_t *self) {
     return self->bits_per_pixel;
+}
+
+bool common_hal_videogif_gifdecoder_set_bits_per_pixel(videogif_gifdecoder_obj_t *self,
+    mp_int_t bits_per_pixel) {
+    if (bits_per_pixel == self->bits_per_pixel) {
+        return true;
+    }
+    if (self->playing || self->gif == NULL || (bits_per_pixel != 1 && bits_per_pixel != 16)) {
+        return false;
+    }
+    self->bits_per_pixel = bits_per_pixel;
+    // 1 bit per pixel needs the RGB888 palette to compute luma. play()
+    // restarts, which reads the GIF header again with this palette type.
+    self->gif->ucPaletteType = bits_per_pixel == 1 ? GIF_PALETTE_RGB888 : GIF_PALETTE_RGB565_LE;
+    return true;
 }
 
 // Keep the supervisor tick on only while a frame can come due.
