@@ -10,7 +10,7 @@
 
 #include "py/mpstate.h"
 #include "py/runtime.h"
-#include "shared-module/gifio/OnDiskGif.h"
+#include "py/stream.h"
 #include "supervisor/port_heap.h"
 #include "supervisor/shared/tick.h"
 
@@ -87,9 +87,65 @@ static void videogif_draw_line(GIFDRAW *draw) {
     }
 }
 
-void common_hal_videogif_gifdecoder_construct(videogif_gifdecoder_obj_t *self, mp_obj_t file,
-    bool reverse_bytes_in_word) {
-    const uint8_t palette_type = reverse_bytes_in_word ? GIF_PALETTE_RGB565_BE : GIF_PALETTE_RGB565_LE;
+static int32_t videogif_read_file(GIFFILE *gif_file, uint8_t *buffer, int32_t length) {
+    // A read that would reach the end stops one byte short, the same as gifio:
+    // seeking stops working once the last byte is read.
+    if (gif_file->iSize - gif_file->iPos < length) {
+        length = gif_file->iSize - gif_file->iPos - 1;
+    }
+    if (length <= 0) {
+        return 0;
+    }
+    int errcode = 0;
+    mp_uint_t bytes_read = mp_stream_rw(MP_OBJ_FROM_PTR(gif_file->fHandle), buffer, length,
+        &errcode, MP_STREAM_RW_ONCE);
+    if (errcode != 0) {
+        mp_raise_OSError(errcode);
+    }
+    gif_file->iPos += bytes_read;
+    return bytes_read;
+}
+
+static int32_t videogif_seek_file(GIFFILE *gif_file, int32_t position) {
+    int errcode = 0;
+    mp_off_t new_position = mp_stream_seek(MP_OBJ_FROM_PTR(gif_file->fHandle), position,
+        MP_SEEK_SET, &errcode);
+    if (new_position < 0) {
+        mp_raise_OSError(errcode);
+    }
+    gif_file->iPos = new_position;
+    return new_position;
+}
+
+// Read the GIF header from file, which is already open.
+static void videogif_open_gif(GIFIMAGE *gif, mp_obj_t file) {
+    gif->iError = GIF_SUCCESS;
+    gif->pfnRead = videogif_read_file;
+    gif->pfnSeek = videogif_seek_file;
+    gif->pfnClose = NULL;
+    gif->pfnOpen = NULL;
+    gif->GIFFile.fHandle = MP_OBJ_TO_PTR(file);
+
+    int errcode = 0;
+    mp_off_t size = mp_stream_seek(file, 0, MP_SEEK_END, &errcode);
+    if (size < 0) {
+        mp_raise_OSError(errcode);
+    }
+    mp_stream_seek(file, 0, MP_SEEK_SET, &errcode);
+    if (errcode != 0) {
+        mp_raise_OSError(errcode);
+    }
+    gif->GIFFile.iSize = (int32_t)size;
+
+    if (GIF_init(gif) != 1) {
+        if (gif->iError == GIF_TOO_WIDE) {
+            mp_raise_ValueError_varg(MP_ERROR_TEXT("%q must be <= %d"), MP_QSTR_width, MAX_WIDTH);
+        }
+        mp_arg_error_invalid(MP_QSTR_filename);
+    }
+}
+
+void common_hal_videogif_gifdecoder_construct(videogif_gifdecoder_obj_t *self, mp_obj_t file) {
     // Outside the VM heap so it doesn't need a large gap there or grow it. Its
     // only heap pointers, the file and self, are held by self too. The
     // finaliser frees it.
@@ -97,10 +153,10 @@ void common_hal_videogif_gifdecoder_construct(videogif_gifdecoder_obj_t *self, m
     if (self->gif == NULL) {
         m_malloc_fail(sizeof(GIFIMAGE));
     }
-    GIF_begin(self->gif, palette_type);
+    GIF_begin(self->gif, GIF_PALETTE_RGB565_LE);
     self->gif->pfnDraw = videogif_draw_line;
     self->file = file;
-    gifio_open_gif(self->gif, file);
+    videogif_open_gif(self->gif, file);
 }
 
 bool common_hal_videogif_gifdecoder_deinited(videogif_gifdecoder_obj_t *self) {
@@ -109,9 +165,9 @@ bool common_hal_videogif_gifdecoder_deinited(videogif_gifdecoder_obj_t *self) {
 
 // Tell the destination no more frames are coming, once per play.
 static void videogif_end_stream(videogif_gifdecoder_obj_t *self) {
-    if (self->destination.on_eos != NULL) {
-        self->destination.on_eos(self->on_frame_context);
-        self->destination.on_eos = NULL;
+    if (self->destination.on_stream_end != NULL) {
+        self->destination.on_stream_end(self->on_frame_context);
+        self->destination.on_stream_end = NULL;
     }
 }
 
@@ -121,6 +177,9 @@ void common_hal_videogif_gifdecoder_deinit(videogif_gifdecoder_obj_t *self) {
     if (self->gif != NULL) {
         port_free(self->gif);
         self->gif = NULL;
+    }
+    if (self->file != NULL) {
+        mp_stream_close(self->file);
     }
     self->file = NULL;
 }
@@ -169,6 +228,7 @@ void common_hal_videogif_gifdecoder_play(videogif_gifdecoder_obj_t *self, bool p
     }
     self->playing = true;
     self->paused = paused;
+    self->shown = false;
     self->loops_done = 0;
     const videocore_destination_t none = {};
     self->destination = none;
@@ -199,21 +259,34 @@ void common_hal_videogif_gifdecoder_pause(videogif_gifdecoder_obj_t *self) {
 }
 
 void common_hal_videogif_gifdecoder_resume(videogif_gifdecoder_obj_t *self) {
-    // The destination may have been drawn over while paused.
     self->paused = false;
-    videogif_restart(self);
+    if (self->shown) {
+        // The destination may have been drawn over while paused, and frames
+        // only draw what changed, so end rather than draw over a stale image.
+        videogif_finish(self);
+    } else {
+        videogif_restart(self);
+    }
 }
 
 bool common_hal_videogif_gifdecoder_set_destination(videogif_gifdecoder_obj_t *self,
     const videocore_destination_t *destination, videocore_on_frame_fun on_frame, void *context) {
     // A new destination doesn't hold the previous frame to draw the next one
-    // over, so start again from the first frame.
-    if (destination->base != self->destination.base || destination->stride != self->destination.stride) {
-        videogif_restart(self);
-    }
+    // over. The first one of a play starts the GIF; a later one ends it.
+    const bool moved = destination->base != self->destination.base ||
+        destination->stride != self->destination.stride;
     self->destination = *destination;
     self->on_frame = on_frame;
     self->on_frame_context = context;
+    if (moved && self->shown) {
+        videogif_finish(self);
+    } else if (moved) {
+        // Restarting reads the GIF header again, which converts the global
+        // color table to this byte order.
+        self->gif->ucPaletteType = destination->reverse_bytes_in_word ?
+            GIF_PALETTE_RGB565_BE : GIF_PALETTE_RGB565_LE;
+        videogif_restart(self);
+    }
     return true;
 }
 
@@ -292,13 +365,8 @@ static void videogif_step(videogif_gifdecoder_obj_t *self) {
         delay_ms = 100;
     }
     self->next_frame_ms = MAX(self->next_frame_ms + delay_ms, supervisor_ticks_ms64() + VIDEOGIF_MIN_GAP_MS);
-    const videocore_area_t reported = {
-        .x1 = changed.x1,
-        .y1 = changed.y1,
-        .x2 = changed.x2,
-        .y2 = changed.y2,
-    };
-    self->on_frame(self->on_frame_context, self->destination.base, &reported);
+    self->on_frame(self->on_frame_context, self->destination.base, &changed);
+    self->shown = true;
     if (!more) {
         videogif_end_loop(self);
     }
@@ -329,7 +397,7 @@ void videogif_reset(void) {
     while (self != NULL) {
         videogif_gifdecoder_obj_t *next = self->next;
         self->playing = false;
-        // Forget on_eos too: at gc_deinit the VideoBuffer may be swept first.
+        // Forget on_stream_end too: at gc_deinit the VideoBuffer may be swept first.
         const videocore_destination_t none = {};
         self->destination = none;
         self->next = NULL;
