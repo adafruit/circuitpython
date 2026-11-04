@@ -1013,9 +1013,23 @@ void epaperdisplay_epaperdisplay_collect_ptrs(epaperdisplay_epaperdisplay_obj_t 
 }
 
 #if CIRCUITPY_EPAPERDISPLAY_LAG
-// Lag drive. Plane 0x26 holds frame N-lag instead of N-1, so a pixel that changes is driven for
-// lag steps, then driven the other way by the same number of steps if it changes back. Each
-// frame is rendered once into the ring and the planes are sent from there.
+// Lag drive. Plane 0x26 holds frame N-lag instead of N-1. Each step drives a pixel toward black
+// where N is black and N-lag is white, toward white where N is white and N-lag is black, and not
+// at all where they match.
+//
+// That keeps the drive balanced without counting. Each frame is used twice: pixels are driven
+// toward it in the step where it is N, and away from it lag steps later, where it is N-lag. So a
+// pixel that ends the way it started has been driven the same amount toward black and toward
+// white. For example, lag 3 and a pixel that is black for 2 steps (both planes start white):
+//
+//   step        1  2  3  4  5  6
+//   frame N     W  B  B  W  W  W
+//   frame N-3   W  W  W  W  B  B
+//   drive       -  B  B  -  W  W     2 toward black, 2 toward white
+//
+// A change that holds for lag steps or more is driven lag steps, so a bigger lag drives harder.
+// When frames stop changing, lag more steps finish the drive. Each frame is rendered once into
+// the ring and the planes are sent from there.
 //
 // The ring has lag slots, N-1 to N-lag, and N replaces N-lag in its slot. The box to send must
 // be known before that, so it comes from the areas that were rendered, not from comparing frames.
