@@ -1214,50 +1214,34 @@ static void process_read_type_req(uint16_t conn_handle, uint16_t mtu, uint8_t dl
             rsp_length += data_length;
             no_data = false;
 
-        } else if (mp_obj_is_type(attribute_obj, &bleio_descriptor_type)) {
-            // See if request is for a descriptor value with a 16-bit UUID, such as the CCCD.
-            bleio_descriptor_obj_t *descriptor = MP_OBJ_TO_PTR(attribute_obj);
-            if (bleio_uuid_get_uuid16_or_unknown(descriptor->uuid) == type_uuid) {
-                struct bt_att_data *att_data = (struct bt_att_data *)&rsp_bytes[rsp_length];
-
-                att_data->handle = handle;
-
-                mp_buffer_info_t bufinfo;
-                if (!mp_get_buffer(descriptor->value, &bufinfo, MP_BUFFER_READ)) {
-                    break;
+        } else {
+            // Match the value's handle, not the characteristic declaration's.
+            mp_obj_t value = MP_OBJ_NULL;
+            if (mp_obj_is_type(attribute_obj, &bleio_descriptor_type)) {
+                bleio_descriptor_obj_t *descriptor = MP_OBJ_TO_PTR(attribute_obj);
+                if (bleio_uuid_get_uuid16_or_unknown(descriptor->uuid) == type_uuid) {
+                    value = descriptor->value;
                 }
-                // The handle and as much of the value as fits in the MTU.
-                uint16_t value_size = MIN(mtu - rsp_length - sizeof(att_data->handle), bufinfo.len);
-                memcpy(att_data->value, bufinfo.buf, value_size);
-                rsp->r.len = sizeof(att_data->handle) + value_size;
-                rsp_length += rsp->r.len;
-
-                // Only return one descriptor value.
-                no_data = false;
-                break;
+            } else if (mp_obj_is_type(attribute_obj, &bleio_characteristic_type)) {
+                bleio_characteristic_obj_t *characteristic = MP_OBJ_TO_PTR(attribute_obj);
+                if (characteristic->handle == handle &&
+                    bleio_uuid_get_uuid16_or_unknown(characteristic->uuid) == type_uuid) {
+                    value = characteristic->value;
+                }
             }
-
-        } else if (mp_obj_is_type(attribute_obj, &bleio_characteristic_type)) {
-            // See if request is for a characteristic value with a 16-bit UUID.
-            bleio_characteristic_obj_t *characteristic = MP_OBJ_TO_PTR(attribute_obj);
-            if (bleio_uuid_get_uuid16_or_unknown(characteristic->uuid) == type_uuid) {
-
-                struct bt_att_data *att_data = (struct bt_att_data *)&rsp_bytes[rsp_length];
-
-                att_data->handle = handle;
-
+            if (value != MP_OBJ_NULL) {
                 mp_buffer_info_t bufinfo;
-                if (!mp_get_buffer(characteristic->value, &bufinfo, MP_BUFFER_READ)) {
-                    // This shouldn't happen. There should be a buf in characteristic->value.
+                if (!mp_get_buffer(value, &bufinfo, MP_BUFFER_READ)) {
                     break;
                 }
+                struct bt_att_data *att_data = (struct bt_att_data *)&rsp_bytes[rsp_length];
+                att_data->handle = handle;
                 // The handle and as much of the value as fits in the MTU.
                 uint16_t value_size = MIN(mtu - rsp_length - sizeof(att_data->handle), bufinfo.len);
                 memcpy(att_data->value, bufinfo.buf, value_size);
                 rsp->r.len = sizeof(att_data->handle) + value_size;
                 rsp_length += rsp->r.len;
 
-                // Only return one characteristic value.
                 no_data = false;
                 break;
             }
