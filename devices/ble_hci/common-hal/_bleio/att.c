@@ -1606,6 +1606,9 @@ void att_write_cmd(uint16_t conn_handle, uint16_t handle, const uint8_t *data, u
     send_req(conn_handle, sizeof(cmd_bytes), cmd_bytes);
 }
 
+// An ATT opcode with this bit set is a command.
+#define ATT_CMD_FLAG 0x40
+
 void att_process_data(uint16_t conn_handle, uint8_t dlen, uint8_t data[]) {
     // Opcode is a single byte at the front of the data.
     uint8_t opcode = data[0];
@@ -1692,10 +1695,12 @@ void att_process_data(uint16_t conn_handle, uint8_t dlen, uint8_t data[]) {
             process_confirm(conn_handle, dlen, data);
             break;
 
-        case BT_ATT_OP_READ_MULT_REQ:
-        case BT_ATT_OP_SIGNED_WRITE_CMD:
         default:
-            send_error(conn_handle, opcode, 0x00, BT_ATT_ERR_NOT_SUPPORTED);
+            // Answer only requests: a command has the command flag, and responses,
+            // notifications and indications have odd opcodes (a confirmation has its case).
+            if (!(opcode & (ATT_CMD_FLAG | 0x01))) {
+                send_error(conn_handle, opcode, 0x00, BT_ATT_ERR_NOT_SUPPORTED);
+            }
             break;
     }
 }
