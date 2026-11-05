@@ -155,7 +155,8 @@ static __attribute__((noinline)) int32_t pg_fmul_basis(int32_t a, int32_t b) {
 //|         near-plane distance
 //|     :param ~circuitpython_typing.ReadableBuffer pts: ``3 * n`` world coordinates
 //|         (x, y, z per point)
-//|     :param int n: number of points
+//|     :param int n: number of points; limited to what ``pts``, ``out_sx`` and
+//|         ``out_sy`` hold
 //|     :param ~circuitpython_typing.WriteableBuffer out_sx: at least ``n`` ``int16``
 //|         values; receives screen x, or the sentinel ``-32768`` for a point behind
 //|         the near plane
@@ -178,9 +179,10 @@ static mp_obj_t picogame3d_project(size_t n_args, const mp_obj_t *args) {
     mp_get_buffer_raise(args[4], &yi, MP_BUFFER_WRITE);
     int16_t *osx = xi.buf;
     int16_t *osy = yi.buf;
-    if (n > (int)(xi.len >> 1)) {
-        n = (int)(xi.len >> 1);
-    }
+    mp_arg_validate_length_min(ci.len, 15 * 4, MP_QSTR_cam);
+    // Never read or write past any buffer: 3 four-byte coordinates per point, one int16 per output.
+    n = picogame_imin(n, (int)(pi.len / 12));
+    n = picogame_imin(n, (int)(picogame_imin(xi.len, yi.len) >> 1));
     #if CIRCUITPY_PICOGAME3D_FLOAT
     const float *cam = ci.buf;
     const float *pts = pi.buf;
@@ -280,9 +282,11 @@ static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(picogame3d_project_obj, 5, 5, picogam
 //|     :param int sry: per-column ray step y (fixed-point)
 //|     :param int sh: screen height in pixels
 //|     :param int stride: pixel width of one column
-//|     :param int ncols: number of columns to cast
+//|     :param int ncols: number of columns to cast; limited to what the output
+//|         buffers hold
 //|     :param ~circuitpython_typing.ReadableBuffer wcolors: two ``uint16`` colors per
-//|         wall type: near face at ``[type * 2]``, side face at ``[type * 2 + 1]``
+//|         wall type: near face at ``[type * 2]``, side face at ``[type * 2 + 1]``;
+//|         at least types 0 and 1, and an unknown type uses type 1
 //|     :param ~circuitpython_typing.WriteableBuffer top: at least ``ncols`` ``uint16``
 //|         values; receives each column's wall top row
 //|     :param ~circuitpython_typing.WriteableBuffer bot: at least ``ncols`` ``uint16``
@@ -322,7 +326,8 @@ static mp_obj_t picogame3d_raycast(size_t n_args, const mp_obj_t *args) {
     mp_get_buffer_raise(args[0], &mi, MP_BUFFER_READ);
     // Non-negative: the DDA below bounds-checks with unsigned compares.
     int mw = picogame_imax(mp_obj_get_int(args[1]), 0);
-    int mh = picogame_imax(mp_obj_get_int(args[2]), 0);
+    // Unsigned: cells past mw * mh or past the map buffer read as wall.
+    unsigned cells = (unsigned)picogame_imax(mp_obj_get_int(args[2]), 0) * (unsigned)mw;
     int32_t posx = mp_obj_get_int(args[3]);        // camera x, 16.16
     int32_t posy = mp_obj_get_int(args[4]);
     int32_t rdx = mp_obj_get_int(args[5]);         // leftRay x (column 0), 16.16 - accumulates per column
@@ -353,7 +358,11 @@ static mp_obj_t picogame3d_raycast(size_t n_args, const mp_obj_t *args) {
     }
     const uint8_t *map = mi.buf;
     const uint16_t *wc = wi.buf;
-    int wc_types = (int)(wi.len >> 2);
+    // An unknown wall type falls back to type 1, so wcolors must hold types 0 and 1.
+    int wc_types = (int)(mp_arg_validate_length_min(wi.len, 2 * 4, MP_QSTR_wcolors) >> 2);
+    if (cells > mi.len) {
+        cells = mi.len;
+    }
     uint16_t *top = ti.buf;
     uint16_t *bot = bi.buf;
     uint16_t *col = ci.buf;
@@ -365,9 +374,8 @@ static mp_obj_t picogame3d_raycast(size_t n_args, const mp_obj_t *args) {
     int32_t fracx = posx & 0xFFFF;                 // fractional part of pos, 16.16
     int32_t fracy = posy & 0xFFFF;
     const int32_t DD_CAP = (int32_t)1 << 24;       // cap deltaDist so a 64-step accumulation stays in int32
-    if (ncols > (int)(ti.len >> 1)) {
-        ncols = (int)(ti.len >> 1);
-    }
+    ncols = picogame_imin(ncols, (int)(picogame_imin(picogame_imin(ti.len, bi.len), ci.len) >> 1));
+    ncols = picogame_imin(ncols, (int)(di.len >> 2));
     for (int c = 0; c < ncols; c++) {
         int mapx = imapx0;
         int mapy = imapy0;
@@ -412,7 +420,7 @@ static mp_obj_t picogame3d_raycast(size_t n_args, const mp_obj_t *args) {
                 side = 1;
             }
             // Unsigned compares also reject negative coordinates.
-            cell = ((unsigned)mapx < (unsigned)mw && (unsigned)mapy < (unsigned)mh)
+            cell = ((unsigned)mapx < (unsigned)mw && (unsigned)off < cells)
                 ? map[off] : 1;
             if (cell) {
                 break;
