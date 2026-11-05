@@ -20,23 +20,23 @@
 #include "common-hal/picodvi/AudioOut.h"
 #endif
 
+// Every supervisor allocation starts in internal RAM, so without this the heap
+// takes the space of a display that a program builds only later.
+static uint32_t *_boot_ram;
+static size_t _boot_ram_size;   // bytes
+
+uint32_t *picodvi_boot_ram_take(size_t bytes) {
+    // NULL when the boot allocation failed, or there is none.
+    return bytes <= _boot_ram_size ? _boot_ram : NULL;
+}
+
+bool picodvi_is_boot_ram(const void *ptr) {
+    return ptr != NULL && ptr == _boot_ram;
+}
+
 #if defined(DEFAULT_DVI_BUS_CLK_DP)
-static bool picodvi_autoconstruct_enabled(mp_int_t *default_width, mp_int_t *default_height) {
-    char buf[sizeof("detect")];
-    buf[0] = 0;
-
-    // (any failure leaves the content of buf untouched: an empty nul-terminated string
-    (void)settings_get_str("CIRCUITPY_PICODVI_ENABLE", buf, sizeof(buf));
-
-    if (!strcasecmp(buf, "never")) {
-        return false;
-    }
-    if (!strcasecmp(buf, "always")) {
-        return true;
-    }
-
-    // It's "detect" or else an invalid value which is treated the same as "detect".
-
+// True when a display answers at the EDID address and supports one of our modes.
+static bool picodvi_display_detected(mp_int_t *default_width, mp_int_t *default_height) {
     // check if address 0x50 is live on the I2C bus
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
     if (!i2c) {
@@ -99,11 +99,18 @@ void picodvi_autoconstruct(void) {
         return;
     }
 
-    mp_int_t default_width = 640;
-    mp_int_t default_height = 480;
-    if (!picodvi_autoconstruct_enabled(&default_width, &default_height)) {
+    char buf[sizeof("detect")];
+    buf[0] = 0;
+    // (any failure leaves the content of buf untouched: an empty nul-terminated string
+    (void)settings_get_str("CIRCUITPY_PICODVI_ENABLE", buf, sizeof(buf));
+    if (!strcasecmp(buf, "never")) {
         return;
     }
+    // It's "always", "detect" or else an invalid value which is treated the same as "detect".
+    mp_int_t default_width = 640;
+    mp_int_t default_height = 480;
+    bool enabled = !strcasecmp(buf, "always") ||
+        picodvi_display_detected(&default_width, &default_height);
 
     #if CIRCUITPY_PICODVI_AUDIOOUT
     bool audio = true;
@@ -147,6 +154,16 @@ void picodvi_autoconstruct(void) {
         width = default_width;
         height = default_height;
         color_depth = 8;
+    }
+
+    #ifdef CIRCUITPY_PSRAM_CHIP_SELECT
+    // Taken now, before anything else lands in internal RAM, whether or not the
+    // display is built. The heap has PSRAM to grow into.
+    _boot_ram_size = picodvi_framebuffer_internal_ram(width, height, color_depth);
+    _boot_ram = port_malloc(_boot_ram_size, true);
+    #endif
+    if (!enabled) {
+        return;
     }
 
     // construct framebuffer and display

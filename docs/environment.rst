@@ -219,6 +219,12 @@ A display configured in this manner is available at ``supervisor.runtime.display
 until it is released by ``displayio.release_displays()``. It does not appear at
 ``board.DISPLAY``.
 
+On boards with PSRAM, the buffers of the configured display (the size from
+``CIRCUITPY_DISPLAY_WIDTH`` and the related variables, or 640x480 by default) are
+allocated at boot even when no display is built, so ``picodvi.Framebuffer`` can
+still be constructed at that size, or a smaller one, after the heap has grown.
+``never`` allocates nothing.
+
 `Adafruit Feather RP2350 <https://circuitpython.org/board/adafruit_feather_rp2350/>`_
 `Adafruit Metro RP2350 <https://circuitpython.org/board/adafruit_metro_rp2350/>`_
 

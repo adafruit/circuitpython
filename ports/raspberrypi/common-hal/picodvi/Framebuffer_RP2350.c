@@ -25,6 +25,7 @@
  */
 
 #include "bindings/picodvi/Framebuffer.h"
+#include "common-hal/picodvi/__init__.h"
 
 #include "py/gc.h"
 #include "py/runtime.h"
@@ -273,22 +274,28 @@ void common_hal_picodvi_framebuffer_construct(picodvi_framebuffer_obj_t *self,
     self->pitch = pitch;
     self->dma_commands_len = dma_commands_len;
 
-    // We check that allocations aren't in PSRAM because we haven't added XIP
-    // streaming support.
-    self->framebuffer = (uint32_t *)port_malloc(framebuffer_size * sizeof(uint32_t), true);
-    if (self->framebuffer == NULL || ((size_t)self->framebuffer & 0xf0000000) == 0x10000000) {
-        common_hal_picodvi_framebuffer_deinit(self);
-        m_malloc_fail(framebuffer_size * sizeof(uint32_t));
-        return;
+    // The boot display's buffers, when this display fits in them.
+    uint32_t *boot_ram = picodvi_boot_ram_take((framebuffer_size + dma_commands_len) * sizeof(uint32_t));
+    if (boot_ram != NULL) {
+        self->framebuffer = boot_ram;
+        self->dma_commands = boot_ram + framebuffer_size;
+    } else {
+        // We check that allocations aren't in PSRAM because we haven't added XIP
+        // streaming support.
+        self->framebuffer = (uint32_t *)port_malloc(framebuffer_size * sizeof(uint32_t), true);
+        if (self->framebuffer == NULL || ((size_t)self->framebuffer & 0xf0000000) == 0x10000000) {
+            common_hal_picodvi_framebuffer_deinit(self);
+            m_malloc_fail(framebuffer_size * sizeof(uint32_t));
+            return;
+        }
+        self->dma_commands = (uint32_t *)port_malloc(self->dma_commands_len * sizeof(uint32_t), true);
+        if (self->dma_commands == NULL || ((size_t)self->dma_commands & 0xf0000000) == 0x10000000) {
+            common_hal_picodvi_framebuffer_deinit(self);
+            m_malloc_fail(self->dma_commands_len * sizeof(uint32_t));
+            return;
+        }
     }
     memset(self->framebuffer, 0, framebuffer_size * sizeof(uint32_t));
-
-    self->dma_commands = (uint32_t *)port_malloc(self->dma_commands_len * sizeof(uint32_t), true);
-    if (self->dma_commands == NULL || ((size_t)self->dma_commands & 0xf0000000) == 0x10000000) {
-        common_hal_picodvi_framebuffer_deinit(self);
-        m_malloc_fail(self->dma_commands_len * sizeof(uint32_t));
-        return;
-    }
 
     // The command channel and the pixel channel form a pipeline that feeds combined HSTX
     // commands and pixel data to the HSTX FIFO. The command channel reads a pre-computed
@@ -611,10 +618,12 @@ void common_hal_picodvi_framebuffer_deinit(picodvi_framebuffer_obj_t *self) {
 
     picodvi_audioout_framebuffer_deinit(self);
 
-    port_free(self->framebuffer);
+    // The boot display's buffers stay allocated for the next Framebuffer.
+    if (!picodvi_is_boot_ram(self->framebuffer)) {
+        port_free(self->framebuffer);
+        port_free(self->dma_commands);
+    }
     self->framebuffer = NULL;
-
-    port_free(self->dma_commands);
     self->dma_commands = NULL;
 
     self->base.type = &mp_type_NoneType;
