@@ -58,7 +58,6 @@ CIRCUITPY_FULL_BUILD ?= 1
 # The 24 KB stack has room for a larger display refresh buffer.
 CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE ?= 2048
 CIRCUITPY_EPAPERDISPLAY_FAST ?= $(CIRCUITPY_EPAPERDISPLAY)
-CIRCUITPY_EPAPERDISPLAY_LAG ?= $(CIRCUITPY_EPAPERDISPLAY_FAST)
 CIRCUITPY_BUSIO_SPI_ASYNC ?= 1
 
 # If SSL is enabled, it's mbedtls
@@ -587,3 +586,6 @@ CIRCUITPY_MESSAGE_COMPRESSION_LEVEL ?= 1
 
 # The CIRCUITPY partition is mapped into the data address space on first use
 CIRCUITPY_STORAGE_MAP_FILE ?= 1
+
+# Cleanup is performed by GC finalizers (__del__ -> deinit) instead of a bulk pin reset.
+CIRCUITPY_BULK_RESET = 0

@@ -46,7 +46,7 @@ typedef struct {
     bool needs_start; // update_refresh_mode() changed the start sequence.
     #endif
     display_chip_select_behavior_t chip_select;
-    #if CIRCUITPY_EPAPERDISPLAY_LAG
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
     // Lag drive, built on FAST's write_previous_ram_command. FAST writes the last frame to the
     // previous RAM, so each changed pixel is driven once. Lag writes the frame from lag_frames
     // refreshes ago, so a changed pixel is driven lag_frames times, the same number each way.
@@ -90,7 +90,7 @@ void release_epaperdisplay(epaperdisplay_epaperdisplay_obj_t *self);
 // stop sequence would wait for the bus forever. Other displays are left alone. Does not raise.
 void epaperdisplay_epaperdisplay_end_held_bus(epaperdisplay_epaperdisplay_obj_t *self);
 #endif
-#if CIRCUITPY_EPAPERDISPLAY_LAG
+#if CIRCUITPY_EPAPERDISPLAY_FAST
 // Waits up to 30 s for the bus so a release can finish the drive. Raises what interrupted it, or
 // RuntimeError if the bus stays held, with the display and its drive unchanged. Only call it where
 // an exception can be caught. Doesn't allocate.

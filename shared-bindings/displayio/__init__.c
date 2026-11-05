@@ -92,7 +92,7 @@
 //|
 //|
 static mp_obj_t displayio_release_displays(void) {
-    #if CIRCUITPY_EPAPERDISPLAY_LAG
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
     displayio_prepare_release_displays();
     #endif
     common_hal_displayio_release_displays();

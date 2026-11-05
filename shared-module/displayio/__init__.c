@@ -248,7 +248,7 @@ static void common_hal_displayio_release_displays_impl(bool keep_primary) {
     }
 }
 
-#if CIRCUITPY_EPAPERDISPLAY_LAG
+#if CIRCUITPY_EPAPERDISPLAY_FAST
 void displayio_prepare_release_displays(void) {
     for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
         if (displays[i].display_base.type == &epaperdisplay_epaperdisplay_type) {
