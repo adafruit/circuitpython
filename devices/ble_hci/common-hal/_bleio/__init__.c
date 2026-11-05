@@ -44,7 +44,11 @@ void common_hal_bleio_init(void) {
     // Create a UUID object for all CCCD's.
     cccd_uuid.base.type = &bleio_uuid_type;
     common_hal_bleio_uuid_construct(&cccd_uuid, BLE_UUID_CCCD, NULL);
-    bleio_hci_reset();
+    // Keep an enabled adapter's state: every module that uses _bleio imports it again.
+    // bleio_reset() resets at the end of each run.
+    if (!common_hal_bleio_adapter_obj.enabled) {
+        bleio_hci_reset();
+    }
 }
 
 void bleio_user_reset(void) {
