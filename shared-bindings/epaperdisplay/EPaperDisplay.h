@@ -106,7 +106,7 @@ void common_hal_epaperdisplay_epaperdisplay_construct(epaperdisplay_epaperdispla
 
 bool common_hal_epaperdisplay_epaperdisplay_refresh(epaperdisplay_epaperdisplay_obj_t *self);
 
-#if CIRCUITPY_EPAPERDISPLAY_LAG
+#if CIRCUITPY_EPAPERDISPLAY_FAST
 // Lag drive only. Brings every pixel to white with balanced drive. When full, sends the clean
 // sequence and the start sequence. Then wipes each pixel frames toward black and frames toward
 // white. Blocks with background tasks running. The next refresh redraws the whole display.

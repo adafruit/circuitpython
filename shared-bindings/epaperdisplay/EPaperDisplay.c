@@ -206,8 +206,6 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
     if (args[ARG_keep_awake].u_bool) {
         mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("%q"), MP_QSTR_keep_awake);
     }
-    #endif
-    #if !CIRCUITPY_EPAPERDISPLAY_LAG
     if (args[ARG_lag_frames].u_int != 0) {
         mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("%q"), MP_QSTR_lag_frames);
     }
@@ -238,7 +236,6 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
 
     #if CIRCUITPY_EPAPERDISPLAY_FAST
     mp_int_t lag_frames = mp_arg_validate_int_range(args[ARG_lag_frames].u_int, 0, 32, MP_QSTR_lag_frames);
-    #if CIRCUITPY_EPAPERDISPLAY_LAG
     if (lag_frames > 0) {
         // Each one a driver can leave out by mistake names itself. The rest are the display type.
         qstr missing = MP_QSTRnull;
@@ -262,7 +259,6 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
             mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q"), missing);
         }
     }
-    #endif // CIRCUITPY_EPAPERDISPLAY_LAG
     #endif // CIRCUITPY_EPAPERDISPLAY_FAST
 
     primary_display_t *disp = allocate_display_or_raise();
@@ -439,7 +435,7 @@ static mp_obj_t epaperdisplay_epaperdisplay_obj_refresh(mp_obj_t self_in) {
     epaperdisplay_epaperdisplay_obj_t *self = native_display(self_in);
     bool ok = common_hal_epaperdisplay_epaperdisplay_refresh(self);
     if (!ok) {
-        #if CIRCUITPY_EPAPERDISPLAY_LAG
+        #if CIRCUITPY_EPAPERDISPLAY_FAST
         if (self->lag_frames > 0) {
             // Interrupted is not too soon: raise what interrupted it.
             mp_handle_pending(true);
@@ -465,7 +461,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(epaperdisplay_epaperdisplay_refresh_obj, epaperdisplay
 //|         ...
 //|
 static mp_obj_t epaperdisplay_epaperdisplay_clean(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    #if !CIRCUITPY_EPAPERDISPLAY_LAG
+    #if !CIRCUITPY_EPAPERDISPLAY_FAST
     mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("%q"), MP_QSTR_clean);
     #else
     enum { ARG_frames, ARG_full };

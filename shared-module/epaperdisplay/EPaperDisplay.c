@@ -9,7 +9,7 @@
 #include "py/gc.h"
 #include "py/runtime.h"
 #include "shared/runtime/interrupt_char.h"
-#if CIRCUITPY_EPAPERDISPLAY_LAG && CIRCUITPY_WATCHDOG
+#if CIRCUITPY_EPAPERDISPLAY_FAST && CIRCUITPY_WATCHDOG
 #include "shared-bindings/watchdog/WatchDogTimer.h"
 #endif
 #include "shared-bindings/displayio/ColorConverter.h"
@@ -18,7 +18,7 @@
 #include "shared-bindings/time/__init__.h"
 #include "shared-module/displayio/__init__.h"
 #include "supervisor/shared/display.h"
-#if CIRCUITPY_EPAPERDISPLAY_LAG
+#if CIRCUITPY_EPAPERDISPLAY_FAST
 #include "supervisor/port_heap.h"
 #endif
 #include "supervisor/shared/tick.h"
@@ -36,17 +36,17 @@
 // display, and the wait before writing the previous RAM. A stock display's waits have no bound.
 #define EPAPER_WAIT_TIMEOUT_MS 30000
 
-#if CIRCUITPY_EPAPERDISPLAY_LAG
+#if CIRCUITPY_EPAPERDISPLAY_FAST
 // SSD168x only: NOP. These controllers keep the last RAM byte until the next command and lose it to
 // a reset, so a RAM write ends with this. Lag drive is only for displays where it is harmless.
 #define LAG_RAM_COMMIT_COMMAND 0x7f
 #endif
 
-#if CIRCUITPY_EPAPERDISPLAY_LAG
+#if CIRCUITPY_EPAPERDISPLAY_FAST
 enum { LAG_COMMIT_NONE, LAG_COMMIT_PLANE, LAG_COMMIT_ACTIVATE };
 #endif
 
-#if CIRCUITPY_EPAPERDISPLAY_LAG
+#if CIRCUITPY_EPAPERDISPLAY_FAST
 static void lag_construct(epaperdisplay_epaperdisplay_obj_t *self, uint8_t lag_frames);
 static void lag_flush(epaperdisplay_epaperdisplay_obj_t *self);
 static void lag_give_up_if_stuck(epaperdisplay_epaperdisplay_obj_t *self);
@@ -56,7 +56,7 @@ static void lag_after_raise(epaperdisplay_epaperdisplay_obj_t *self);
 static MP_NORETURN void lag_raise(epaperdisplay_epaperdisplay_obj_t *self, mp_obj_t raised);
 static bool lag_refresh(epaperdisplay_epaperdisplay_obj_t *self, const displayio_area_t *areas);
 static bool lag_clean(epaperdisplay_epaperdisplay_obj_t *self, uint8_t frames, bool full);
-#endif // CIRCUITPY_EPAPERDISPLAY_LAG
+#endif // CIRCUITPY_EPAPERDISPLAY_FAST
 
 void common_hal_epaperdisplay_epaperdisplay_construct(epaperdisplay_epaperdisplay_obj_t *self,
     const epaperdisplay_construct_args_t *args) {
@@ -97,7 +97,7 @@ void common_hal_epaperdisplay_epaperdisplay_construct(epaperdisplay_epaperdispla
         false /* data_as_commands */, args->always_toggle_chip_select,
         false /* SH1107_addressing */, args->address_little_endian);
 
-    #if CIRCUITPY_EPAPERDISPLAY_LAG
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
     self->lag_slots = NULL;
     self->lag_frames = 0;
     self->lag_busy_deadline = 0;
@@ -109,7 +109,7 @@ void common_hal_epaperdisplay_epaperdisplay_construct(epaperdisplay_epaperdispla
     self->lag_held_exception = MP_OBJ_NULL;
     self->clean_sequence = args->clean_sequence;
     self->clean_sequence_len = args->clean_sequence_len;
-    #endif // CIRCUITPY_EPAPERDISPLAY_LAG
+    #endif // CIRCUITPY_EPAPERDISPLAY_FAST
 
     self->write_black_ram_command = args->write_black_ram_command;
     self->black_bits_inverted = args->black_bits_inverted;
@@ -125,11 +125,11 @@ void common_hal_epaperdisplay_epaperdisplay_construct(epaperdisplay_epaperdispla
     self->chip_select = args->always_toggle_chip_select ? CHIP_SELECT_TOGGLE_EVERY_BYTE : CHIP_SELECT_UNTOUCHED;
     self->grayscale = grayscale;
 
-    #if CIRCUITPY_EPAPERDISPLAY_LAG
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
     if (args->lag_frames > 0) {
         lag_construct(self, args->lag_frames);
     }
-    #endif // CIRCUITPY_EPAPERDISPLAY_LAG
+    #endif // CIRCUITPY_EPAPERDISPLAY_FAST
 
     self->start_sequence = args->start_sequence;
     self->start_sequence_len = args->start_sequence_len;
@@ -208,7 +208,7 @@ static bool wait_for_update_start(epaperdisplay_epaperdisplay_obj_t *self) {
 }
 #endif // CIRCUITPY_EPAPERDISPLAY_FAST
 
-#if CIRCUITPY_EPAPERDISPLAY_LAG
+#if CIRCUITPY_EPAPERDISPLAY_FAST
 static bool lag_deadline_passed(epaperdisplay_epaperdisplay_obj_t *self) {
     return self->lag_busy_deadline != 0 && supervisor_ticks_ms64() > self->lag_busy_deadline;
 }
@@ -347,7 +347,7 @@ static void display_delay_ms(epaperdisplay_epaperdisplay_obj_t *self, uint32_t d
         display_interrupted(self);
     }
 }
-#else // CIRCUITPY_EPAPERDISPLAY_LAG
+#else // CIRCUITPY_EPAPERDISPLAY_FAST
 #define display_wait_deadline(self) ((uint64_t)0)
 #define display_interrupted(self) mp_hal_is_interrupted()
 #define display_send_command(self, command, data, length) ( \
@@ -355,7 +355,7 @@ static void display_delay_ms(epaperdisplay_epaperdisplay_obj_t *self, uint32_t d
     (self)->bus.send((self)->bus.bus, DISPLAY_DATA, (self)->chip_select, data, length), \
     true)
 #define display_delay_ms(self, delay_ms) common_hal_time_delay_ms(delay_ms)
-#endif // CIRCUITPY_EPAPERDISPLAY_LAG
+#endif // CIRCUITPY_EPAPERDISPLAY_FAST
 
 static void wait_for_busy(epaperdisplay_epaperdisplay_obj_t *self) {
     if (self->busy.base.type == &mp_type_NoneType) {
@@ -391,17 +391,17 @@ static bool send_command_sequence(epaperdisplay_epaperdisplay_obj_t *self,
                !display_interrupted(self) && (deadline == 0 || supervisor_ticks_ms64() <= deadline)) {
             RUN_BACKGROUND_TASKS;
         }
-        #if CIRCUITPY_EPAPERDISPLAY_LAG
+        #if CIRCUITPY_EPAPERDISPLAY_FAST
         if (!have_bus && self->lag_frames > 0) {
             return false;
         }
         self->lag_bus_held = have_bus;
-        #endif // CIRCUITPY_EPAPERDISPLAY_LAG
+        #endif // CIRCUITPY_EPAPERDISPLAY_FAST
         const bool sent = display_send_command(self, cmd, data, data_size);
         displayio_display_bus_end_transaction(&self->bus);
-        #if CIRCUITPY_EPAPERDISPLAY_LAG
+        #if CIRCUITPY_EPAPERDISPLAY_FAST
         self->lag_bus_held = false;
-        #endif // CIRCUITPY_EPAPERDISPLAY_LAG
+        #endif // CIRCUITPY_EPAPERDISPLAY_FAST
         if (!sent) {
             return false;
         }
@@ -415,7 +415,7 @@ static bool send_command_sequence(epaperdisplay_epaperdisplay_obj_t *self,
         }
         display_delay_ms(self, delay_length_ms);
         if (should_wait_for_busy) {
-            #if CIRCUITPY_EPAPERDISPLAY_LAG
+            #if CIRCUITPY_EPAPERDISPLAY_FAST
             if (self->lag_frames > 0) {
                 wait_for_update_start(self);
             }
@@ -435,7 +435,7 @@ static bool send_command_sequence(epaperdisplay_epaperdisplay_obj_t *self,
 
 void epaperdisplay_epaperdisplay_change_refresh_mode_parameters(epaperdisplay_epaperdisplay_obj_t *self,
     mp_buffer_info_t *start_sequence, mp_buffer_info_t *refresh_sequence, float seconds_per_frame) {
-    #if CIRCUITPY_EPAPERDISPLAY_LAG
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
     if (self->lag_frames > 0) {
         // Finish the drive with the waveform that started it, and rewrite both planes after.
         nlr_buf_t nlr;
@@ -455,7 +455,7 @@ void epaperdisplay_epaperdisplay_change_refresh_mode_parameters(epaperdisplay_ep
         }
         self->lag_force_full = true;
     }
-    #endif // CIRCUITPY_EPAPERDISPLAY_LAG
+    #endif // CIRCUITPY_EPAPERDISPLAY_FAST
     self->start_sequence = (uint8_t *)start_sequence->buf;
     self->start_sequence_len = start_sequence->len;
     #if CIRCUITPY_EPAPERDISPLAY_FAST
@@ -820,14 +820,14 @@ bool common_hal_epaperdisplay_epaperdisplay_refresh(epaperdisplay_epaperdisplay_
             send_command_sequence(self, false, self->stop_sequence, self->stop_sequence_len);
             #endif
         } else {
-            #if CIRCUITPY_EPAPERDISPLAY_LAG
+            #if CIRCUITPY_EPAPERDISPLAY_FAST
             lag_give_up_if_stuck(self);
             #endif
             return false;
         }
     }
     if (self->core.current_group == NULL) {
-        #if CIRCUITPY_EPAPERDISPLAY_LAG
+        #if CIRCUITPY_EPAPERDISPLAY_FAST
         // Nothing to draw, but the drive already started is still owed.
         if (self->lag_frames > 0 && self->awake) {
             return lag_refresh(self, NULL);
@@ -844,11 +844,11 @@ bool common_hal_epaperdisplay_epaperdisplay_refresh(epaperdisplay_epaperdisplay_
         return false;
     }
     const displayio_area_t *current_area = epaperdisplay_epaperdisplay_get_refresh_areas(self);
-    #if CIRCUITPY_EPAPERDISPLAY_LAG
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
     if (self->lag_frames > 0) {
         return lag_refresh(self, current_area);
     }
-    #endif // CIRCUITPY_EPAPERDISPLAY_LAG
+    #endif // CIRCUITPY_EPAPERDISPLAY_FAST
     if (current_area == NULL) {
         return true;
     }
@@ -896,7 +896,7 @@ void epaperdisplay_epaperdisplay_background(epaperdisplay_epaperdisplay_obj_t *s
             send_command_sequence(self, false, self->stop_sequence, self->stop_sequence_len);
             #endif
         }
-        #if CIRCUITPY_EPAPERDISPLAY_LAG
+        #if CIRCUITPY_EPAPERDISPLAY_FAST
         else {
             lag_give_up_if_stuck(self);
         }
@@ -910,10 +910,10 @@ bool common_hal_epaperdisplay_epaperdisplay_get_busy(epaperdisplay_epaperdisplay
 }
 
 void release_epaperdisplay(epaperdisplay_epaperdisplay_obj_t *self) {
-    #if CIRCUITPY_EPAPERDISPLAY_LAG
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
     lag_shutdown(self);
     lag_free(self);
-    #endif // CIRCUITPY_EPAPERDISPLAY_LAG
+    #endif // CIRCUITPY_EPAPERDISPLAY_FAST
     if (self->refreshing) {
         wait_for_busy(self);
         supervisor_disable_tick();
@@ -935,9 +935,9 @@ void release_epaperdisplay(epaperdisplay_epaperdisplay_obj_t *self) {
     }
     self->awake = false;
     #endif
-    #if CIRCUITPY_EPAPERDISPLAY_LAG
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
     lag_release_interrupts(self);
-    #endif // CIRCUITPY_EPAPERDISPLAY_LAG
+    #endif // CIRCUITPY_EPAPERDISPLAY_FAST
 
     release_display_core(&self->core);
     if (self->busy.base.type == &digitalio_digitalinout_type) {
@@ -945,7 +945,7 @@ void release_epaperdisplay(epaperdisplay_epaperdisplay_obj_t *self) {
     }
 }
 
-#if CIRCUITPY_EPAPERDISPLAY_LAG
+#if CIRCUITPY_EPAPERDISPLAY_FAST
 void epaperdisplay_epaperdisplay_prepare_release(epaperdisplay_epaperdisplay_obj_t *self) {
     if (self->lag_frames == 0 || (!self->awake && !self->lag_state_lost)) {
         return;
@@ -959,22 +959,20 @@ void epaperdisplay_epaperdisplay_prepare_release(epaperdisplay_epaperdisplay_obj
         RUN_BACKGROUND_TASKS;
     }
 }
-#endif // CIRCUITPY_EPAPERDISPLAY_LAG
+#endif // CIRCUITPY_EPAPERDISPLAY_FAST
 
 #if CIRCUITPY_EPAPERDISPLAY_FAST
 void epaperdisplay_epaperdisplay_end_held_bus(epaperdisplay_epaperdisplay_obj_t *self) {
     // The VM is over, so whatever holds the bus can never let it go: end it here.
     if (self->keep_awake && !displayio_display_bus_is_free(&self->bus)) {
         displayio_display_bus_end_transaction(&self->bus);
-        #if CIRCUITPY_EPAPERDISPLAY_LAG
         self->lag_bus_held = false;
-        #endif
     }
 }
 #endif // CIRCUITPY_EPAPERDISPLAY_FAST
 
 void epaperdisplay_epaperdisplay_reset(epaperdisplay_epaperdisplay_obj_t *self) {
-    #if CIRCUITPY_EPAPERDISPLAY_LAG
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
     if (self->lag_frames > 0) {
         // Only a primary display gets here; reset_displays() has released the others. The heap is
         // still here but the sequences won't be, and the display would otherwise persist to draw
@@ -985,7 +983,7 @@ void epaperdisplay_epaperdisplay_reset(epaperdisplay_epaperdisplay_obj_t *self) 
         self->base.type = &mp_type_NoneType;
         return;
     }
-    #endif // CIRCUITPY_EPAPERDISPLAY_LAG
+    #endif // CIRCUITPY_EPAPERDISPLAY_FAST
     displayio_display_core_set_root_group(&self->core, &circuitpython_splash);
     self->core.full_refresh = true;
     #if CIRCUITPY_EPAPERDISPLAY_FAST
@@ -1006,13 +1004,13 @@ void epaperdisplay_epaperdisplay_collect_ptrs(epaperdisplay_epaperdisplay_obj_t 
     gc_collect_ptr((void *)self->start_sequence);
     gc_collect_ptr((void *)self->stop_sequence);
     gc_collect_ptr((void *)self->refresh_sequence);
-    #if CIRCUITPY_EPAPERDISPLAY_LAG
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
     gc_collect_ptr((void *)self->clean_sequence);
     gc_collect_ptr(self->lag_held_exception);
-    #endif // CIRCUITPY_EPAPERDISPLAY_LAG
+    #endif // CIRCUITPY_EPAPERDISPLAY_FAST
 }
 
-#if CIRCUITPY_EPAPERDISPLAY_LAG
+#if CIRCUITPY_EPAPERDISPLAY_FAST
 // Lag drive. Plane 0x26 holds frame N-lag instead of N-1. Each step drives a pixel toward black
 // where N is black and N-lag is white, toward white where N is white and N-lag is black, and not
 // at all where they match.
@@ -1653,7 +1651,7 @@ static void lag_shutdown(epaperdisplay_epaperdisplay_obj_t *self) {
         self->lag_last_try = false;
     }
 }
-#endif // CIRCUITPY_EPAPERDISPLAY_LAG
+#endif // CIRCUITPY_EPAPERDISPLAY_FAST
 
 size_t maybe_refresh_epaperdisplay(void) {
     for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
