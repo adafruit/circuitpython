@@ -162,13 +162,16 @@ void picodvi_autoconstruct(void) {
     // grow into. A configured display gets its own size. A display built without
     // one may be switched for another later, so it gets the largest mode, 320x240
     // at 32 bits. With neither, nothing is held and the heap takes the RAM.
-    if (configured) {
-        _boot_ram_size = picodvi_framebuffer_internal_ram(width, height, color_depth);
-    } else if (enabled) {
-        _boot_ram_size = picodvi_framebuffer_internal_ram(320, 240, 32);
-    }
-    if (_boot_ram_size > 0) {
-        _boot_ram = port_malloc(_boot_ram_size, true);
+    // Once only: board_init() runs again after a fake deep sleep.
+    if (_boot_ram == NULL) {
+        if (configured) {
+            _boot_ram_size = picodvi_framebuffer_internal_ram(width, height, color_depth);
+        } else if (enabled) {
+            _boot_ram_size = picodvi_framebuffer_internal_ram(320, 240, 32);
+        }
+        if (_boot_ram_size > 0) {
+            _boot_ram = port_malloc(_boot_ram_size, true);
+        }
     }
     #endif
     if (!enabled) {
