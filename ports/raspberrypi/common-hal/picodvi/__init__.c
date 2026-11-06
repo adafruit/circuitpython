@@ -122,7 +122,7 @@ void picodvi_autoconstruct(void) {
     mp_int_t color_depth = 8;
     mp_int_t rotation = 0;
 
-    (void)settings_get_int("CIRCUITPY_DISPLAY_WIDTH", &width);
+    bool configured = settings_get_int("CIRCUITPY_DISPLAY_WIDTH", &width) == SETTINGS_OK;
     (void)settings_get_int("CIRCUITPY_DISPLAY_HEIGHT", &height);
     (void)settings_get_int("CIRCUITPY_DISPLAY_COLOR_DEPTH", &color_depth);
     (void)settings_get_int("CIRCUITPY_DISPLAY_ROTATION", &rotation);
@@ -154,13 +154,22 @@ void picodvi_autoconstruct(void) {
         width = default_width;
         height = default_height;
         color_depth = 8;
+        configured = false;
     }
 
     #ifdef CIRCUITPY_PSRAM_CHIP_SELECT
-    // Taken now, before anything else lands in internal RAM, whether or not the
-    // display is built. The heap has PSRAM to grow into.
-    _boot_ram_size = picodvi_framebuffer_internal_ram(width, height, color_depth);
-    _boot_ram = port_malloc(_boot_ram_size, true);
+    // Taken now, before anything else lands in internal RAM; the heap has PSRAM to
+    // grow into. A configured display gets its own size. A display built without
+    // one may be switched for another later, so it gets the largest mode, 320x240
+    // at 32 bits. With neither, nothing is held and the heap takes the RAM.
+    if (configured) {
+        _boot_ram_size = picodvi_framebuffer_internal_ram(width, height, color_depth);
+    } else if (enabled) {
+        _boot_ram_size = picodvi_framebuffer_internal_ram(320, 240, 32);
+    }
+    if (_boot_ram_size > 0) {
+        _boot_ram = port_malloc(_boot_ram_size, true);
+    }
     #endif
     if (!enabled) {
         return;
