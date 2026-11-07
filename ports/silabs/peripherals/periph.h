@@ -46,12 +46,12 @@ typedef struct {
 } mcu_tim_pin_obj_t;
 
 #define TIM(timer_index, channel_index, pin_fun, pin_num) \
-    {                                                     \
-        .timer = timer_index,                             \
-        .channel = channel_index,                         \
-        .fn_index = pin_fun,                              \
-        .pin = pin_num                                    \
-    }
+        {                                                     \
+            .timer = timer_index,                             \
+            .channel = channel_index,                         \
+            .fn_index = pin_fun,                              \
+            .pin = pin_num                                    \
+        }
 
 extern mcu_tim_pin_obj_t mcu_tim_list[TIM_BANK_ARRAY_LEN];
 
@@ -67,14 +67,14 @@ typedef struct {
 } mcu_dac_pin_obj_t;
 
 #define DAC(vdac_index, channel_index, pin_fun, used, dac_value, pin_num) \
-    {                                                                     \
-        .vdac = vdac_index,                                               \
-        .channel = channel_index,                                         \
-        .fn_index = pin_fun,                                              \
-        .is_used = used,                                                  \
-        .value = dac_value,                                               \
-        .pin = pin_num                                                    \
-    }
+        {                                                                     \
+            .vdac = vdac_index,                                               \
+            .channel = channel_index,                                         \
+            .fn_index = pin_fun,                                              \
+            .is_used = used,                                                  \
+            .value = dac_value,                                               \
+            .pin = pin_num                                                    \
+        }
 
 extern mcu_dac_pin_obj_t mcu_dac_list[DAC_BANK_ARRAY_LEN];
 

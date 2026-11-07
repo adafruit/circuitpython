@@ -19,6 +19,6 @@
 // SPI1 is used by a two secondary flash chips (one unpopulated)
 #define CIRCUITPY_BOARD_SPI         (2)
 #define CIRCUITPY_BOARD_SPI_PIN     \
-    {{.clock = &pin_GPIO7, .mosi = &pin_GPIO9}, \
-     {.clock = &pin_GPIO13, .mosi = &pin_GPIO11, .miso = &pin_GPIO12} \
-    }
+        {{.clock = &pin_GPIO7, .mosi = &pin_GPIO9}, \
+         {.clock = &pin_GPIO13, .mosi = &pin_GPIO11, .miso = &pin_GPIO12} \
+        }

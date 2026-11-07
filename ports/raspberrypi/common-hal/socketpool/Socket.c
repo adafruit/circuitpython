@@ -45,11 +45,11 @@
 mp_obj_t socketpool_ip_addr_to_str(const ip_addr_t *addr) {
     char ip_str[IPADDR_STRLEN_MAX]; // big enough for any supported address type
     switch (IP_GET_TYPE(addr)) {
-        #if CIRCUITPY_SOCKETPOOL_IPV6
+    #if CIRCUITPY_SOCKETPOOL_IPV6
         case IPADDR_TYPE_V6:
             ip6addr_ntoa_r(ip_2_ip6(addr), ip_str, sizeof(ip_str));
             break;
-        #endif
+    #endif
         default:
             ip4addr_ntoa_r(ip_2_ip4(addr), ip_str, sizeof(ip_str));
     }
@@ -453,20 +453,20 @@ static mp_uint_t lwip_raw_udp_receive(socketpool_socket_obj_t *socket, byte *buf
 
 // For use in stream virtual methods
 #define STREAM_ERROR_CHECK(socket) \
-    if (socket->state < 0) { \
-        *_errno = error_lookup_table[-socket->state]; \
-        return MP_STREAM_ERROR; \
-    } \
-    assert(socket->pcb.tcp);
+        if (socket->state < 0) { \
+            *_errno = error_lookup_table[-socket->state]; \
+            return MP_STREAM_ERROR; \
+        } \
+        assert(socket->pcb.tcp);
 
 // Version of above for use when lock is held
 #define STREAM_ERROR_CHECK_WITH_LOCK(socket) \
-    if (socket->state < 0) { \
-        *_errno = error_lookup_table[-socket->state]; \
-        MICROPY_PY_LWIP_EXIT \
-        return MP_STREAM_ERROR; \
-    } \
-    assert(socket->pcb.tcp);
+        if (socket->state < 0) { \
+            *_errno = error_lookup_table[-socket->state]; \
+            MICROPY_PY_LWIP_EXIT \
+            return MP_STREAM_ERROR; \
+        } \
+        assert(socket->pcb.tcp);
 
 
 // Helper function for send/sendto to handle TCP packets

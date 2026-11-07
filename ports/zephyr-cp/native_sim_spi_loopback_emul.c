@@ -57,7 +57,7 @@ static const struct spi_emul_api loopback_api = {
 };
 
 #define LOOPBACK_DEFINE(n) \
-    DEVICE_DT_INST_DEFINE(n, NULL, NULL, NULL, NULL, POST_KERNEL, CONFIG_SPI_INIT_PRIORITY, NULL); \
-    EMUL_DT_INST_DEFINE(n, loopback_init, NULL, NULL, &loopback_api, NULL);
+        DEVICE_DT_INST_DEFINE(n, NULL, NULL, NULL, NULL, POST_KERNEL, CONFIG_SPI_INIT_PRIORITY, NULL); \
+        EMUL_DT_INST_DEFINE(n, loopback_init, NULL, NULL, &loopback_api, NULL);
 
 DT_INST_FOREACH_STATUS_OKAY(LOOPBACK_DEFINE)

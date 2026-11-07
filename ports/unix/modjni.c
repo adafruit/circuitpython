@@ -363,10 +363,10 @@ static void jmethod_print(const mp_print_t *print, mp_obj_t self_in, mp_print_ki
 #define IMATCH(s, static) ((!strncmp(s, static, sizeof(static) - 1)) && (s += sizeof(static) - 1))
 
 #define CHECK_TYPE(java_type_name) \
-    if (strncmp(arg_type, java_type_name, sizeof(java_type_name) - 1) != 0) { \
-        return false; \
-    } \
-    arg_type += sizeof(java_type_name) - 1;
+        if (strncmp(arg_type, java_type_name, sizeof(java_type_name) - 1) != 0) { \
+            return false; \
+        } \
+        arg_type += sizeof(java_type_name) - 1;
 
 static const char *strprev(const char *s, char c) {
     while (*s != c) {

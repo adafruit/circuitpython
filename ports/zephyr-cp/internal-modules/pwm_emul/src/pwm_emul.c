@@ -53,7 +53,7 @@ struct pwm_emul_config {
 // then pulse).
 #define PWM_EMUL_GROUP_TRACK_UUID 0x50000000ULL
 #define PWM_EMUL_TRACK_UUID(channel, pulse) \
-    (PWM_EMUL_GROUP_TRACK_UUID + 1 + (uint64_t)(channel) * 2 + ((pulse) ? 1 : 0))
+        (PWM_EMUL_GROUP_TRACK_UUID + 1 + (uint64_t)(channel) * 2 + ((pulse) ? 1 : 0))
 
 static bool group_described;
 
@@ -117,13 +117,13 @@ static DEVICE_API(pwm, pwm_emul_api) = {
 };
 
 #define PWM_EMUL_DEFINE(n)                                                          \
-    static struct pwm_emul_channel pwm_emul_channels_##n[DT_INST_PROP(n, channels)]; \
-    static const struct pwm_emul_config pwm_emul_config_##n = {                    \
-        .clock_frequency = DT_INST_PROP(n, clock_frequency),                       \
-        .channels = pwm_emul_channels_##n,                                         \
-        .channel_count = DT_INST_PROP(n, channels),                                \
-    };                                                                             \
-    DEVICE_DT_INST_DEFINE(n, NULL, NULL, NULL, &pwm_emul_config_##n, POST_KERNEL,  \
+        static struct pwm_emul_channel pwm_emul_channels_##n[DT_INST_PROP(n, channels)]; \
+        static const struct pwm_emul_config pwm_emul_config_##n = {                    \
+            .clock_frequency = DT_INST_PROP(n, clock_frequency),                       \
+            .channels = pwm_emul_channels_##n,                                         \
+            .channel_count = DT_INST_PROP(n, channels),                                \
+        };                                                                             \
+        DEVICE_DT_INST_DEFINE(n, NULL, NULL, NULL, &pwm_emul_config_##n, POST_KERNEL,  \
     CONFIG_PWM_INIT_PRIORITY, &pwm_emul_api);
 
 DT_INST_FOREACH_STATUS_OKAY(PWM_EMUL_DEFINE)

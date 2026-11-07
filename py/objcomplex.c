@@ -120,7 +120,7 @@ static mp_obj_t complex_unary_op(mp_unary_op_t op, mp_obj_t o_in) {
         case MP_UNARY_OP_NEGATIVE:
             return mp_obj_new_complex(-o->real, -o->imag);
         case MP_UNARY_OP_ABS:
-            return mp_obj_new_float(MICROPY_FLOAT_C_FUN(sqrt)(o->real * o->real + o->imag * o->imag));
+            return mp_obj_new_float(MICROPY_FLOAT_C_FUN(sqrt)(o->real *o->real + o->imag *o->imag));
         default:
             return MP_OBJ_NULL;      // op not supported
     }
@@ -224,7 +224,7 @@ mp_obj_t mp_obj_complex_binary_op(mp_binary_op_t op, mp_float_t lhs_real, mp_flo
             //        = exp( (x2*ln1 - y2*arg1) + i*(y2*ln1 + x2*arg1) )
             //        = exp(x3 + i*y3)
             //        = exp(x3)*(cos(y3) + i*sin(y3))
-            mp_float_t abs1 = MICROPY_FLOAT_C_FUN(sqrt)(lhs_real * lhs_real + lhs_imag * lhs_imag);
+            mp_float_t abs1 = MICROPY_FLOAT_C_FUN(sqrt)(lhs_real *lhs_real + lhs_imag *lhs_imag);
             if (abs1 == 0) {
                 if (rhs_imag == 0 && rhs_real >= 0) {
                     lhs_real = (rhs_real == 0);

@@ -66,10 +66,10 @@ struct bt_hci_cmd_hdr {
 #define BT_HCI_CMD_HDR_SIZE             3
 
 /* Supported Commands */
-#define BT_CMD_TEST(cmd, octet, bit)            (cmd[octet] & BIT(bit))
+#define BT_CMD_TEST(cmd, octet, bit)            (cmd[octet] &BIT(bit))
 #define BT_CMD_LE_STATES(cmd)                   BT_CMD_TEST(cmd, 28, 3)
 
-#define BT_FEAT_TEST(feat, page, octet, bit)    (feat[page][octet] & BIT(bit))
+#define BT_FEAT_TEST(feat, page, octet, bit)    (feat[page][octet] &BIT(bit))
 
 #define BT_FEAT_BREDR(feat)                     !BT_FEAT_TEST(feat, 0, 4, 5)
 #define BT_FEAT_LE(feat)                        BT_FEAT_TEST(feat, 0, 4, 6)

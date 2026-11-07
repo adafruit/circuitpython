@@ -37,5 +37,5 @@
 
 /** Debug messages are disabled in the CircuitPython build. */
 #define DBG_MSG(...) \
-    do {             \
-    } while (0)
+        do {             \
+        } while (0)

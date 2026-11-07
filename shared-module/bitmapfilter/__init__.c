@@ -102,7 +102,7 @@ void shared_module_bitmapfilter_morph(
     int brows = ksize + 1;
 
     const int32_t m_int = (int32_t)MICROPY_FLOAT_C_FUN(round)(65536 * m);
-    const int32_t b_int = (int32_t)MICROPY_FLOAT_C_FUN(round)(65536 * COLOR_G6_MAX * b);
+    const int32_t b_int = (int32_t)MICROPY_FLOAT_C_FUN(round)(65536 * COLOR_G6_MAX *b);
 
     switch (bitmap->bits_per_value) {
         default:
@@ -214,7 +214,7 @@ void shared_module_bitmapfilter_mix(
             (i == 3 || i == 11) ? 65535 * COLOR_B5_MAX : // Offset for R/B
             (i == 7) ? 65535 * COLOR_G6_MAX : // Offset for G
             65536;
-        wt[i] = (int32_t)MICROPY_FLOAT_C_FUN(round)(scale * weights[i]);
+        wt[i] = (int32_t)MICROPY_FLOAT_C_FUN(round)(scale *weights[i]);
     }
 
     switch (bitmap->bits_per_value) {

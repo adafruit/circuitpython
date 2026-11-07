@@ -71,7 +71,7 @@ extern const mp_obj_type_t circuitpy_awaitable_type;
 
 // The awaitable that owns a done flag passed to start(), end() or cancel().
 #define CIRCUITPY_AWAITABLE_OF(done_ptr) \
-    ((circuitpy_awaitable_obj_t *)((char *)(done_ptr) - offsetof(circuitpy_awaitable_obj_t, done)))
+        ((circuitpy_awaitable_obj_t *)((char *)(done_ptr) - offsetof(circuitpy_awaitable_obj_t, done)))
 
 // A lock for asyncio code: `async with lock:`. __aenter__ is an awaitable that takes the lock
 // or waits in line for it; __aexit__ hands the lock to the next in line. Embed it in the
@@ -98,9 +98,9 @@ void circuitpy_async_lock_deinit(circuitpy_async_lock_obj_t *lock);
 enum { CIRCUITPY_AWAITABLE_NEW, CIRCUITPY_AWAITABLE_RUNNING, CIRCUITPY_AWAITABLE_FINISHED };
 
 #define CIRCUITPY_DEFINE_ASYNC_FUN_OBJ_KW(obj_name, n_args_min, start, end, cancel) \
-    const circuitpy_async_fun_obj_t obj_name = { \
-        {&circuitpy_async_fun_type}, MP_OBJ_FUN_MAKE_SIG(n_args_min, MP_OBJ_FUN_ARGS_MAX, true), \
-        start, end, cancel \
-    }
+        const circuitpy_async_fun_obj_t obj_name = { \
+            {&circuitpy_async_fun_type}, MP_OBJ_FUN_MAKE_SIG(n_args_min, MP_OBJ_FUN_ARGS_MAX, true), \
+            start, end, cancel \
+        }
 
 #endif // MICROPY_PY_ASYNC_AWAIT

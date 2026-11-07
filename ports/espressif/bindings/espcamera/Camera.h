@@ -40,20 +40,20 @@ extern camera_fb_t *common_hal_espcamera_camera_take(espcamera_camera_obj_t *sel
 extern void common_hal_espcamera_camera_reconfigure(espcamera_camera_obj_t *self, framesize_t frame_size, pixformat_t pixel_format, camera_grab_mode_t grab_mode, mp_int_t framebuffer_count);
 
 #define DECLARE_SENSOR_GETSET(type, name, field_name, setter_function_name) \
-    DECLARE_SENSOR_GET(type, name, field_name, setter_function_name) \
-    DECLARE_SENSOR_SET(type, name, setter_function_name)
+        DECLARE_SENSOR_GET(type, name, field_name, setter_function_name) \
+        DECLARE_SENSOR_SET(type, name, setter_function_name)
 
 #define DECLARE_SENSOR_STATUS_GETSET(type, name, status_field_name, setter_function_name) \
-    DECLARE_SENSOR_GETSET(type, name, status.status_field_name, setter_function_name)
+        DECLARE_SENSOR_GETSET(type, name, status.status_field_name, setter_function_name)
 
 #define DECLARE_SENSOR_STATUS_GET(type, name, status_field_name, setter_function_name) \
-    DECLARE_SENSOR_GET(type, name, status.status_field_name, setter_function_name)
+        DECLARE_SENSOR_GET(type, name, status.status_field_name, setter_function_name)
 
 #define DECLARE_SENSOR_GET(type, name, status_field_name, setter_function_name) \
-    extern type common_hal_espcamera_camera_get_##name(espcamera_camera_obj_t * self);
+        extern type common_hal_espcamera_camera_get_##name(espcamera_camera_obj_t * self);
 
 #define DECLARE_SENSOR_SET(type, name, setter_function_name) \
-    extern void common_hal_espcamera_camera_set_##name(espcamera_camera_obj_t * self, type value);
+        extern void common_hal_espcamera_camera_set_##name(espcamera_camera_obj_t * self, type value);
 
 DECLARE_SENSOR_GET(pixformat_t, pixel_format, pixformat, set_pixformat)
 DECLARE_SENSOR_STATUS_GET(framesize_t, frame_size, framesize, set_framesize)

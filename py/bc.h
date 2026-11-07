@@ -70,107 +70,107 @@
 #define MP_ENCODE_UINT_MAX_BYTES ((MP_BYTES_PER_OBJ_WORD * 8 + 6) / 7)
 
 #define MP_BC_PRELUDE_SIG_ENCODE(S, E, scope, out_byte, out_env) \
-    do {                                                            \
-        /*// Get values to store in prelude */                      \
-        size_t F = scope->scope_flags & MP_SCOPE_FLAG_ALL_SIG;      \
-        size_t A = scope->num_pos_args;                             \
-        size_t K = scope->num_kwonly_args;                          \
-        size_t D = scope->num_def_pos_args;                         \
+        do {                                                            \
+            /*// Get values to store in prelude */                      \
+            size_t F = scope->scope_flags & MP_SCOPE_FLAG_ALL_SIG;      \
+            size_t A = scope->num_pos_args;                             \
+            size_t K = scope->num_kwonly_args;                          \
+            size_t D = scope->num_def_pos_args;                         \
                                                                 \
-        /* Adjust S to shrink range, to compress better */          \
-        S -= 1;                                                     \
+            /* Adjust S to shrink range, to compress better */          \
+            S -= 1;                                                     \
                                                                 \
-        /* Encode prelude */                                        \
-        /* xSSSSEAA */                                              \
-        uint8_t z = (S & 0xf) << 3 | (E & 1) << 2 | (A & 3);        \
-        S >>= 4;                                                    \
-        E >>= 1;                                                    \
-        A >>= 2;                                                    \
-        while (S | E | F | A | K | D) {                             \
-            out_byte(out_env, 0x80 | z);                            \
-            /* xFSSKAED */                                          \
-            z = (F & 1) << 6 | (S & 3) << 4 | (K & 1) << 3          \
-                | (A & 1) << 2 | (E & 1) << 1 | (D & 1);            \
-            S >>= 2;                                                \
-            E >>= 1;                                                \
-            F >>= 1;                                                \
-            A >>= 1;                                                \
-            K >>= 1;                                                \
-            D >>= 1;                                                \
-        }                                                           \
-        out_byte(out_env, z);                                       \
-    } while (0)
+            /* Encode prelude */                                        \
+            /* xSSSSEAA */                                              \
+            uint8_t z = (S & 0xf) << 3 | (E & 1) << 2 | (A & 3);        \
+            S >>= 4;                                                    \
+            E >>= 1;                                                    \
+            A >>= 2;                                                    \
+            while (S | E | F | A | K | D) {                             \
+                out_byte(out_env, 0x80 | z);                            \
+                /* xFSSKAED */                                          \
+                z = (F & 1) << 6 | (S & 3) << 4 | (K & 1) << 3          \
+                    | (A & 1) << 2 | (E & 1) << 1 | (D & 1);            \
+                S >>= 2;                                                \
+                E >>= 1;                                                \
+                F >>= 1;                                                \
+                A >>= 1;                                                \
+                K >>= 1;                                                \
+                D >>= 1;                                                \
+            }                                                           \
+            out_byte(out_env, z);                                       \
+        } while (0)
 
 // CIRCUITPY-CHANGE: avoid warnings
 #define MP_BC_PRELUDE_SIG_DECODE_INTO(ip, S, E, F, A, K, D)     \
-    do {                                                            \
-        uint8_t z = *(ip)++;                                        \
-        /* xSSSSEAA */                                              \
-        S = (z >> 3) & 0xf;                                         \
-        E = (z >> 2) & 0x1;                                         \
-        F = 0;                                                      \
-        A = z & 0x3;                                                \
-        K = 0;                                                      \
-        D = 0;                                                      \
-        for (unsigned n = 0; z & 0x80; ++n) {                       \
-            z = *(ip)++;                                            \
-            /* xFSSKAED */                                          \
-            S |= (z & 0x30) << (2 * n);                             \
-            E |= (z & 0x02) << n;                                   \
-            F |= ((z & 0x40) >> 6) << n;                            \
-            A |= (z & 0x4) << n;                                    \
-            K |= ((z & 0x08) >> 3) << n;                            \
-            D |= (z & 0x1) << n;                                    \
-        }                                                           \
-        S += 1;                                                     \
-        (void)E;                                                    \
-        (void)F;                                                    \
-        (void)A;                                                    \
-        (void)K;                                                    \
-        (void)D;                                                    \
-    } while (0)
+        do {                                                            \
+            uint8_t z = *(ip)++;                                        \
+            /* xSSSSEAA */                                              \
+            S = (z >> 3) & 0xf;                                         \
+            E = (z >> 2) & 0x1;                                         \
+            F = 0;                                                      \
+            A = z & 0x3;                                                \
+            K = 0;                                                      \
+            D = 0;                                                      \
+            for (unsigned n = 0; z & 0x80; ++n) {                       \
+                z = *(ip)++;                                            \
+                /* xFSSKAED */                                          \
+                S |= (z & 0x30) << (2 * n);                             \
+                E |= (z & 0x02) << n;                                   \
+                F |= ((z & 0x40) >> 6) << n;                            \
+                A |= (z & 0x4) << n;                                    \
+                K |= ((z & 0x08) >> 3) << n;                            \
+                D |= (z & 0x1) << n;                                    \
+            }                                                           \
+            S += 1;                                                     \
+            (void)E;                                                    \
+            (void)F;                                                    \
+            (void)A;                                                    \
+            (void)K;                                                    \
+            (void)D;                                                    \
+        } while (0)
 
 #define MP_BC_PRELUDE_SIG_DECODE(ip) \
-    size_t n_state, n_exc_stack, scope_flags, n_pos_args, n_kwonly_args, n_def_pos_args; \
-    MP_BC_PRELUDE_SIG_DECODE_INTO(ip, n_state, n_exc_stack, scope_flags, n_pos_args, n_kwonly_args, n_def_pos_args); \
-    (void)n_state; (void)n_exc_stack; (void)scope_flags; \
-    (void)n_pos_args; (void)n_kwonly_args; (void)n_def_pos_args
+        size_t n_state, n_exc_stack, scope_flags, n_pos_args, n_kwonly_args, n_def_pos_args; \
+        MP_BC_PRELUDE_SIG_DECODE_INTO(ip, n_state, n_exc_stack, scope_flags, n_pos_args, n_kwonly_args, n_def_pos_args); \
+        (void)n_state; (void)n_exc_stack; (void)scope_flags; \
+        (void)n_pos_args; (void)n_kwonly_args; (void)n_def_pos_args
 
 #define MP_BC_PRELUDE_SIZE_ENCODE(I, C, out_byte, out_env)      \
-    do {                                                            \
-        /* Encode bit-wise as: xIIIIIIC */                          \
-        uint8_t z = 0;                                              \
-        do {                                                        \
-            z = (I & 0x3f) << 1 | (C & 1);                          \
-            C >>= 1;                                                \
-            I >>= 6;                                                \
-            if (C | I) {                                            \
-                z |= 0x80;                                          \
-            }                                                       \
-            out_byte(out_env, z);                                   \
-        } while (C | I);                                            \
-    } while (0)
+        do {                                                            \
+            /* Encode bit-wise as: xIIIIIIC */                          \
+            uint8_t z = 0;                                              \
+            do {                                                        \
+                z = (I & 0x3f) << 1 | (C & 1);                          \
+                C >>= 1;                                                \
+                I >>= 6;                                                \
+                if (C | I) {                                            \
+                    z |= 0x80;                                          \
+                }                                                       \
+                out_byte(out_env, z);                                   \
+            } while (C | I);                                            \
+        } while (0)
 
 #define MP_BC_PRELUDE_SIZE_DECODE_INTO(ip, I, C)                \
-    do {                                                            \
-        uint8_t z;                                                  \
-        C = 0;                                                      \
-        I = 0;                                                      \
-        for (unsigned n = 0;; ++n) {                                \
-            z = *(ip)++;                                            \
-            /* xIIIIIIC */                                          \
-            C |= (z & 1) << n;                                      \
-            I |= ((z & 0x7e) >> 1) << (6 * n);                      \
-            if (!(z & 0x80)) {                                      \
-                break;                                              \
-            }                                                       \
-        }                                                           \
-    } while (0)
+        do {                                                            \
+            uint8_t z;                                                  \
+            C = 0;                                                      \
+            I = 0;                                                      \
+            for (unsigned n = 0;; ++n) {                                \
+                z = *(ip)++;                                            \
+                /* xIIIIIIC */                                          \
+                C |= (z & 1) << n;                                      \
+                I |= ((z & 0x7e) >> 1) << (6 * n);                      \
+                if (!(z & 0x80)) {                                      \
+                    break;                                              \
+                }                                                       \
+            }                                                           \
+        } while (0)
 
 #define MP_BC_PRELUDE_SIZE_DECODE(ip) \
-    size_t n_info, n_cell; \
-    MP_BC_PRELUDE_SIZE_DECODE_INTO(ip, n_info, n_cell); \
-    (void)n_info; (void)n_cell
+        size_t n_info, n_cell; \
+        MP_BC_PRELUDE_SIZE_DECODE_INTO(ip, n_info, n_cell); \
+        (void)n_info; (void)n_cell
 
 // Sentinel value for mp_code_state_t.exc_sp_idx
 #define MP_CODE_STATE_EXC_SP_IDX_SENTINEL ((uint16_t)-1)

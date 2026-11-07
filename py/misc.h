@@ -466,7 +466,7 @@ static inline uint32_t mp_popcount(uint32_t x) {
 
 #define MP_FIT_UNSIGNED(bits, value) (((value) & (~0U << (bits))) == 0)
 #define MP_FIT_SIGNED(bits, value) \
-    (MP_FIT_UNSIGNED(((bits) - 1), (value)) || \
+        (MP_FIT_UNSIGNED(((bits) - 1), (value)) || \
     (((value) & (~0U << ((bits) - 1))) == (~0U << ((bits) - 1))))
 
 // mp_int_t can be larger than long, i.e. Windows 64-bit, nan-box variants
@@ -598,7 +598,7 @@ static inline bool mp_sub_ll_overflow(long long int lhs, long long int rhs, long
 #define MP_BSWAP32(x) __builtin_bswap32(x)
 #else
 #define MP_BSWAP32(x) \
-    ((uint32_t)((((x) & 0xFF) << 24) | (((x) & 0xFF00) << 8) | \
+        ((uint32_t)((((x) & 0xFF) << 24) | (((x) & 0xFF00) << 8) | \
     (((x) >> 8) & 0xFF00) | (((x) >> 24) & 0xFF)))
 #endif
 
@@ -606,7 +606,7 @@ static inline bool mp_sub_ll_overflow(long long int lhs, long long int rhs, long
 #define MP_BSWAP64(x) __builtin_bswap64(x)
 #else
 #define MP_BSWAP64(x) \
-    ((uint64_t)((((x) & 0xFF) << 56) | (((x) & 0xFF00) << 40) | \
+        ((uint64_t)((((x) & 0xFF) << 56) | (((x) & 0xFF00) << 40) | \
     (((x) & 0xFF0000) << 24) | (((x) & 0xFF000000) << 8) | \
     (((x) >> 8) & 0xFF000000) | (((x) >> 24) & 0xFF0000) | \
     (((x) >> 40) & 0xFF00) | (((x) >> 56) & 0xFF)))
