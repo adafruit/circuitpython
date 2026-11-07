@@ -34,7 +34,7 @@
 #if defined(CONFIG_SOC_FAMILY_NORDIC_NRF)
 // nRF PWM sequence: one 16-bit entry per bit plus two end-of-sequence entries.
 #define NEOPIXEL_PATTERN_BUFFER_SIZE(num_bytes) \
-    ((num_bytes) * 8 * sizeof(uint16_t) + 2 * sizeof(uint16_t))
+        ((num_bytes) * 8 * sizeof(uint16_t) + 2 * sizeof(uint16_t))
 #else
 // No transmit implementation: nothing to build.
 #define NEOPIXEL_PATTERN_BUFFER_SIZE(num_bytes) ((size_t)0)

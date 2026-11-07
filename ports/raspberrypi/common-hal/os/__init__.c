@@ -81,7 +81,7 @@ static void rosc_random_bytes(BYTE *buf, size_t count) {
 //     This is our early warning for a stuck oscillator or a successful
 //     injection lock to a fixed state.
 #define TRNG_BYPASS_BITS \
-    (TRNG_TRNG_DEBUG_CONTROL_VNC_BYPASS_BITS | \
+        (TRNG_TRNG_DEBUG_CONTROL_VNC_BYPASS_BITS | \
     TRNG_TRNG_DEBUG_CONTROL_AUTO_CORRELATE_BYPASS_BITS)
 
 // Collect 192 raw bits (6 x 32-bit words) from the TRNG.

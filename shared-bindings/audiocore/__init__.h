@@ -9,9 +9,9 @@
 #include "py/objproperty.h"
 
 #define AUDIOSAMPLE_FIELDS \
-    { MP_ROM_QSTR(MP_QSTR_sample_rate), MP_ROM_PTR(&audiosample_sample_rate_obj) }, \
-    { MP_ROM_QSTR(MP_QSTR_bits_per_sample), MP_ROM_PTR(&audiosample_bits_per_sample_obj) }, \
-    { MP_ROM_QSTR(MP_QSTR_channel_count), MP_ROM_PTR(&audiosample_channel_count_obj) }
+        { MP_ROM_QSTR(MP_QSTR_sample_rate), MP_ROM_PTR(&audiosample_sample_rate_obj) }, \
+        { MP_ROM_QSTR(MP_QSTR_bits_per_sample), MP_ROM_PTR(&audiosample_bits_per_sample_obj) }, \
+        { MP_ROM_QSTR(MP_QSTR_channel_count), MP_ROM_PTR(&audiosample_channel_count_obj) }
 
 typedef struct audiosample_base audiosample_base_t;
 extern const mp_obj_property_getset_t audiosample_sample_rate_obj;

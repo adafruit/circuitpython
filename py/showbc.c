@@ -33,55 +33,55 @@
 #if MICROPY_DEBUG_PRINTERS
 
 #define DECODE_UINT { \
-        unum = 0; \
-        do { \
-            unum = (unum << 7) + (*ip & 0x7f); \
-        } while ((*ip++ & 0x80) != 0); \
+            unum = 0; \
+            do { \
+                unum = (unum << 7) + (*ip & 0x7f); \
+            } while ((*ip++ & 0x80) != 0); \
 }
 
 #define DECODE_ULABEL \
-    do { \
-        if (ip[0] & 0x80) { \
-            unum = ((ip[0] & 0x7f) | (ip[1] << 7)); \
-            ip += 2; \
-        } else { \
-            unum = ip[0]; \
-            ip += 1; \
-        } \
-    } while (0)
+        do { \
+            if (ip[0] & 0x80) { \
+                unum = ((ip[0] & 0x7f) | (ip[1] << 7)); \
+                ip += 2; \
+            } else { \
+                unum = ip[0]; \
+                ip += 1; \
+            } \
+        } while (0)
 
 #define DECODE_SLABEL \
-    do { \
-        if (ip[0] & 0x80) { \
-            unum = ((ip[0] & 0x7f) | (ip[1] << 7)) - 0x4000; \
-            ip += 2; \
-        } else { \
-            unum = ip[0] - 0x40; \
-            ip += 1; \
-        } \
-    } while (0)
+        do { \
+            if (ip[0] & 0x80) { \
+                unum = ((ip[0] & 0x7f) | (ip[1] << 7)) - 0x4000; \
+                ip += 2; \
+            } else { \
+                unum = ip[0] - 0x40; \
+                ip += 1; \
+            } \
+        } while (0)
 
 #if MICROPY_EMIT_BYTECODE_USES_QSTR_TABLE
 
 #define DECODE_QSTR \
-    DECODE_UINT; \
-    qst = qstr_table[unum]
+        DECODE_UINT; \
+        qst = qstr_table[unum]
 
 #else
 
 #define DECODE_QSTR \
-    DECODE_UINT; \
-    qst = unum;
+        DECODE_UINT; \
+        qst = unum;
 
 #endif
 
 #define DECODE_PTR \
-    DECODE_UINT; \
-    unum = (mp_uint_t)(uintptr_t)child_table[unum]
+        DECODE_UINT; \
+        unum = (mp_uint_t)(uintptr_t)child_table[unum]
 
 #define DECODE_OBJ \
-    DECODE_UINT; \
-    unum = (mp_uint_t)obj_table[unum]
+        DECODE_UINT; \
+        unum = (mp_uint_t)obj_table[unum]
 
 void mp_bytecode_print(const mp_print_t *print, const mp_raw_code_t *rc, size_t fun_data_len, const mp_module_constants_t *cm) {
     const byte *ip_start = rc->fun_data;

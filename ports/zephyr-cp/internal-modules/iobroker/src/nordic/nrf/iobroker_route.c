@@ -37,13 +37,13 @@ LOG_MODULE_DECLARE(iobroker, CONFIG_LOG_DEFAULT_LEVEL);
 #define NRF_PSEL_FUN(fun)       (((uint32_t)(fun) & NRF_FUN_MSK) << NRF_FUN_POS)
 #define NRF_PSEL_PIN(pin)       (((uint32_t)(pin) & NRF_PIN_MSK) << NRF_PIN_POS)
 #define NRF_PSEL_DISCONNECT(fun) \
-    ((uint32_t)NRF_PIN_DISCONNECTED | NRF_PSEL_FUN(fun))
+        ((uint32_t)NRF_PIN_DISCONNECTED | NRF_PSEL_FUN(fun))
 #define NRF_PSEL_PULL_UP        ((uint32_t)NRF_PULL_UP << NRF_PULL_POS)
 #define NRF_PSEL_LP             ((uint32_t)NRF_LP_ENABLE << NRF_LP_POS)
 #define NRF_PSEL_CLOCKPIN       BIT(NRF_CLOCKPIN_ENABLE_POS)
 // Pin + function bits, used to compare a request against a devicetree state.
 #define NRF_PSEL_PINFUN_MASK    \
-    (((uint32_t)NRF_PIN_MSK << NRF_PIN_POS) | ((uint32_t)NRF_FUN_MSK << NRF_FUN_POS))
+        (((uint32_t)NRF_PIN_MSK << NRF_PIN_POS) | ((uint32_t)NRF_FUN_MSK << NRF_FUN_POS))
 
 // Log decode helpers: turn a fun code and a SoC pad into readable names, so
 // that the logs say which peripheral function goes to which GPIO.

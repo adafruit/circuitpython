@@ -91,11 +91,11 @@ static mp_obj_t format_address(const struct sockaddr *addr, int family) {
     const struct sockaddr_in *a = (void *)addr;
 
     switch (family) {
-        #if CIRCUITPY_SOCKETPOOL_IPV6
+    #if CIRCUITPY_SOCKETPOOL_IPV6
         case AF_INET6:
             zsock_inet_ntop(family, &((const struct sockaddr_in6 *)a)->sin6_addr, ip_str, sizeof(ip_str));
             break;
-        #endif
+    #endif
         default:
         case AF_INET:
             zsock_inet_ntop(family, &((const struct sockaddr_in *)a)->sin_addr, ip_str, sizeof(ip_str));

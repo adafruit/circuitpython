@@ -61,7 +61,7 @@ void espulp_ulpalarm_set_alarm(const bool deep_sleep, const size_t n_alarms, con
 
     // enable ulp interrupt
     switch (alarm->ulp->arch) {
-        #ifdef CONFIG_ULP_COPROC_TYPE_FSM
+    #ifdef CONFIG_ULP_COPROC_TYPE_FSM
         case FSM:
             #ifdef CONFIG_IDF_TARGET_ESP32
             rtc_isr_register(&ulp_interrupt, NULL, RTC_CNTL_ULP_CP_INT_RAW, 0);
@@ -70,13 +70,13 @@ void espulp_ulpalarm_set_alarm(const bool deep_sleep, const size_t n_alarms, con
             #endif
             REG_SET_BIT(RTC_CNTL_INT_ENA_REG, RTC_CNTL_ULP_CP_INT_ENA);
             break;
-        #endif
-        #ifdef CONFIG_ULP_COPROC_TYPE_RISCV
+    #endif
+    #ifdef CONFIG_ULP_COPROC_TYPE_RISCV
         case RISCV:
             rtc_isr_register(&ulp_interrupt, NULL, RTC_CNTL_COCPU_INT_ST, 0);
             REG_SET_BIT(RTC_CNTL_INT_ENA_REG, RTC_CNTL_COCPU_INT_ENA);
             break;
-        #endif
+    #endif
         default:
             mp_raise_NotImplementedError(NULL);
             break;

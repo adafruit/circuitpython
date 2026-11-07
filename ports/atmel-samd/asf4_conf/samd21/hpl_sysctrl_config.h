@@ -569,11 +569,11 @@
 
 #if CONF_DFLL_OVERWRITE_CALIBRATION == 0
 #define CONF_DEFAULT_CORASE                                                                                            \
-    ((FUSES_DFLL48M_COARSE_CAL_Msk & (*((uint32_t *)FUSES_DFLL48M_COARSE_CAL_ADDR))) >> FUSES_DFLL48M_COARSE_CAL_Pos)
+        ((FUSES_DFLL48M_COARSE_CAL_Msk & (*((uint32_t *)FUSES_DFLL48M_COARSE_CAL_ADDR))) >> FUSES_DFLL48M_COARSE_CAL_Pos)
 
 #define CONF_DFLLVAL                                                                                                   \
-    SYSCTRL_DFLLVAL_COARSE(((CONF_DEFAULT_CORASE) == 0x3F) ? 0x1F : (CONF_DEFAULT_CORASE))                             \
-    | SYSCTRL_DFLLVAL_FINE(512)
+        SYSCTRL_DFLLVAL_COARSE(((CONF_DEFAULT_CORASE) == 0x3F) ? 0x1F : (CONF_DEFAULT_CORASE))                             \
+        | SYSCTRL_DFLLVAL_FINE(512)
 
 #else
 #define CONF_DFLLVAL SYSCTRL_DFLLVAL_COARSE(CONF_DFLL_COARSE) | SYSCTRL_DFLLVAL_FINE(CONF_DFLL_FINE)

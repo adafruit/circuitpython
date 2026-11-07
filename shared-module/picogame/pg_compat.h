@@ -53,11 +53,11 @@ typedef struct _mp_obj_property_t {
 } mp_obj_property_getset_t;
 #ifndef MP_PROPERTY_GETTER
 #define MP_PROPERTY_GETTER(P, G) \
-    const mp_obj_property_getset_t P = { .base.type = &mp_type_property, .proxy = {G, MP_ROM_NONE, MP_ROM_NONE} }
+        const mp_obj_property_getset_t P = { .base.type = &mp_type_property, .proxy = {G, MP_ROM_NONE, MP_ROM_NONE} }
 #endif
 #ifndef MP_PROPERTY_GETSET
 #define MP_PROPERTY_GETSET(P, G, S) \
-    const mp_obj_property_getset_t P = { .base.type = &mp_type_property, .proxy = {G, S, MP_ROM_NONE} }
+        const mp_obj_property_getset_t P = { .base.type = &mp_type_property, .proxy = {G, S, MP_ROM_NONE} }
 #endif
 #endif // MICROPY_PY_BUILTINS_PROPERTY
 

@@ -106,7 +106,7 @@ void __assert_func(const char *file, int line, const char *func, const char *exp
  * @param priority    Priority to set.
  */
 #define NRFX_IRQ_PRIORITY_SET(irq_number, priority) \
-    _NRFX_IRQ_PRIORITY_SET(irq_number, priority)
+        _NRFX_IRQ_PRIORITY_SET(irq_number, priority)
 static inline void _NRFX_IRQ_PRIORITY_SET(IRQn_Type irq_number,
     uint8_t priority) {
     // ASSERT(INTERRUPT_PRIORITY_IS_VALID(priority));

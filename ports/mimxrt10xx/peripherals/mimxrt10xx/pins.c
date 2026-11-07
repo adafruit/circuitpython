@@ -72,12 +72,12 @@ static void pin_change_interrupt_common(uint32_t isr, volatile pin_change_interr
 }
 
 #define GPIO_INTERRUPT_HANDLER(name, ptr, instance, offset) \
-    void name(void); \
-    __attribute__((used)) void name(void) { \
-        uint32_t isr = ptr->ISR; \
-        ptr->ISR = isr; \
-        pin_change_interrupt_common(isr, pcid[instance]); \
-    }
+        void name(void); \
+        __attribute__((used)) void name(void) { \
+            uint32_t isr = ptr->ISR; \
+            ptr->ISR = isr; \
+            pin_change_interrupt_common(isr, pcid[instance]); \
+        }
 
 #if defined(GPIO1)
 GPIO_INTERRUPT_HANDLER(GPIO1_Combined_0_15_IRQHandler, GPIO1, 1, 0);

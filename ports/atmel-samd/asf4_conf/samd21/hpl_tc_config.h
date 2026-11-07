@@ -57,7 +57,7 @@
 /* Calculate pwm ccx register value based on WAVE_PER_VAL and Waveform Duty Value */
 #if CONF_TC3_PRESCALER < TC_CTRLA_PRESCALER_DIV64_Val
 #define CONF_TC3_CC0                                                                                                   \
-    ((uint32_t)(((double)CONF_TC3_WAVE_PER_VAL * CONF_GCLK_TC3_FREQUENCY) / 1000000 / (1 << CONF_TC3_PRESCALER) - 1))
+        ((uint32_t)(((double)CONF_TC3_WAVE_PER_VAL * CONF_GCLK_TC3_FREQUENCY) / 1000000 / (1 << CONF_TC3_PRESCALER) - 1))
 #define CONF_TC3_CC1 ((CONF_TC3_CC0 * CONF_TC3_WAVE_DUTY_VAL) / 1000)
 
 #elif CONF_TC3_PRESCALER == TC_CTRLA_PRESCALER_DIV64_Val

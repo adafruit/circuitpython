@@ -8,17 +8,17 @@
 #include "py/nativeglue.h"
 
 #define asm_debug_printf(as, fmt, ...) \
-    do { \
-        if (as->base.pass == MP_ASM_PASS_EMIT) { \
-            if (fmt[0] != 'E') { \
-                mp_printf(MICROPY_EMIT_NATIVE_DEBUG_PRINTER, "    "); \
+        do { \
+            if (as->base.pass == MP_ASM_PASS_EMIT) { \
+                if (fmt[0] != 'E') { \
+                    mp_printf(MICROPY_EMIT_NATIVE_DEBUG_PRINTER, "    "); \
+                } \
+                if (as->base.suppress) { \
+                    mp_printf(MICROPY_EMIT_NATIVE_DEBUG_PRINTER, "dead_code "); \
+                } \
+                mp_printf(MICROPY_EMIT_NATIVE_DEBUG_PRINTER, fmt, __VA_ARGS__); \
             } \
-            if (as->base.suppress) { \
-                mp_printf(MICROPY_EMIT_NATIVE_DEBUG_PRINTER, "dead_code "); \
-            } \
-            mp_printf(MICROPY_EMIT_NATIVE_DEBUG_PRINTER, fmt, __VA_ARGS__); \
-        } \
-    } while (0)
+        } while (0)
 
 enum {
     ASM_DEBUG_REG_R00,
@@ -196,83 +196,83 @@ static void asm_debug_setcc_reg_reg_reg(asm_debug_t *as, int op, int reg1, int r
 #define ASM_T               asm_debug_t
 #define ASM_END_PASS        asm_debug_end_pass
 #define ASM_ENTRY(as, num_locals, name) \
-    asm_debug_entry(as, num_locals, name)
+        asm_debug_entry(as, num_locals, name)
 #define ASM_EXIT(as) \
-    asm_debug_exit(as)
+        asm_debug_exit(as)
 
 #define ASM_JUMP(as, label) \
-    asm_debug_label(as, "jump", label)
+        asm_debug_label(as, "jump", label)
 #define ASM_JUMP_IF_REG_ZERO(as, reg, label, bool_test) \
-    asm_debug_reg_label_bool(as, "jump_if_reg_zero", reg, label, bool_test)
+        asm_debug_reg_label_bool(as, "jump_if_reg_zero", reg, label, bool_test)
 #define ASM_JUMP_IF_REG_NONZERO(as, reg, label, bool_test) \
-    asm_debug_reg_label_bool(as, "jump_if_reg_nonzero", reg, label, bool_test)
+        asm_debug_reg_label_bool(as, "jump_if_reg_nonzero", reg, label, bool_test)
 #define ASM_JUMP_IF_REG_EQ(as, reg1, reg2, label) \
-    asm_debug_reg_reg_label(as, "jump_if_reg_eq", reg1, reg2, label)
+        asm_debug_reg_reg_label(as, "jump_if_reg_eq", reg1, reg2, label)
 #define ASM_JUMP_REG(as, reg) \
-    asm_debug_reg(as, "jump_reg", reg)
+        asm_debug_reg(as, "jump_reg", reg)
 #define ASM_CALL_IND(as, idx) \
-    asm_debug_fun(as, "call_ind", idx)
+        asm_debug_fun(as, "call_ind", idx)
 
 #define ASM_MOV_LOCAL_REG(as, local_num, reg_src) \
-    asm_debug_local_reg(as, "mov_local_reg", local_num, reg_src)
+        asm_debug_local_reg(as, "mov_local_reg", local_num, reg_src)
 #define ASM_MOV_REG_IMM(as, reg_dest, imm) \
-    asm_debug_reg_imm(as, "mov_reg_imm", reg_dest, imm)
+        asm_debug_reg_imm(as, "mov_reg_imm", reg_dest, imm)
 #define ASM_MOV_REG_QSTR(as, reg_dest, qst) \
-    asm_debug_reg_qstr(as, "mov_reg_qstr", reg_dest, qst)
+        asm_debug_reg_qstr(as, "mov_reg_qstr", reg_dest, qst)
 #define ASM_MOV_REG_LOCAL(as, reg_dest, local_num) \
-    asm_debug_reg_local(as, "mov_reg_local", reg_dest, local_num)
+        asm_debug_reg_local(as, "mov_reg_local", reg_dest, local_num)
 #define ASM_MOV_REG_REG(as, reg_dest, reg_src) \
-    asm_debug_reg_reg(as, "mov_reg_reg", reg_dest, reg_src)
+        asm_debug_reg_reg(as, "mov_reg_reg", reg_dest, reg_src)
 #define ASM_MOV_REG_LOCAL_ADDR(as, reg_dest, local_num) \
-    asm_debug_reg_local(as, "mov_reg_local_addr", reg_dest, local_num)
+        asm_debug_reg_local(as, "mov_reg_local_addr", reg_dest, local_num)
 #define ASM_MOV_REG_PCREL(as, reg_dest, label) \
-    asm_debug_reg_label(as, "mov_reg_pcrel", reg_dest, label)
+        asm_debug_reg_label(as, "mov_reg_pcrel", reg_dest, label)
 
 #define ASM_NOT_REG(as, reg_dest) \
-    asm_debug_reg(as, "not", reg_dest)
+        asm_debug_reg(as, "not", reg_dest)
 #define ASM_NEG_REG(as, reg_dest) \
-    asm_debug_reg(as, "neg", reg_dest)
+        asm_debug_reg(as, "neg", reg_dest)
 #define ASM_LSL_REG_REG(as, reg_dest, reg_src) \
-    asm_debug_reg_reg(as, "lsl", reg_dest, reg_src)
+        asm_debug_reg_reg(as, "lsl", reg_dest, reg_src)
 #define ASM_LSR_REG_REG(as, reg_dest, reg_src) \
-    asm_debug_reg_reg(as, "lsr", reg_dest, reg_src)
+        asm_debug_reg_reg(as, "lsr", reg_dest, reg_src)
 #define ASM_ASR_REG_REG(as, reg_dest, reg_src) \
-    asm_debug_reg_reg(as, "asr", reg_dest, reg_src)
+        asm_debug_reg_reg(as, "asr", reg_dest, reg_src)
 #define ASM_OR_REG_REG(as, reg_dest, reg_src) \
-    asm_debug_reg_reg(as, "or", reg_dest, reg_src)
+        asm_debug_reg_reg(as, "or", reg_dest, reg_src)
 #define ASM_XOR_REG_REG(as, reg_dest, reg_src) \
-    asm_debug_reg_reg(as, "xor", reg_dest, reg_src)
+        asm_debug_reg_reg(as, "xor", reg_dest, reg_src)
 #define ASM_AND_REG_REG(as, reg_dest, reg_src) \
-    asm_debug_reg_reg(as, "and", reg_dest, reg_src)
+        asm_debug_reg_reg(as, "and", reg_dest, reg_src)
 #define ASM_ADD_REG_REG(as, reg_dest, reg_src) \
-    asm_debug_reg_reg(as, "add", reg_dest, reg_src)
+        asm_debug_reg_reg(as, "add", reg_dest, reg_src)
 #define ASM_SUB_REG_REG(as, reg_dest, reg_src) \
-    asm_debug_reg_reg(as, "sub", reg_dest, reg_src)
+        asm_debug_reg_reg(as, "sub", reg_dest, reg_src)
 #define ASM_MUL_REG_REG(as, reg_dest, reg_src) \
-    asm_debug_reg_reg(as, "mul", reg_dest, reg_src)
+        asm_debug_reg_reg(as, "mul", reg_dest, reg_src)
 
 #define ASM_LOAD_REG_REG_OFFSET(as, reg_dest, reg_base, word_offset) \
-    asm_debug_reg_reg_offset(as, "load", reg_dest, reg_base, word_offset)
+        asm_debug_reg_reg_offset(as, "load", reg_dest, reg_base, word_offset)
 #define ASM_LOAD8_REG_REG(as, reg_dest, reg_base) \
-    asm_debug_reg_reg(as, "load8", reg_dest, reg_base)
+        asm_debug_reg_reg(as, "load8", reg_dest, reg_base)
 #define ASM_LOAD16_REG_REG(as, reg_dest, reg_base) \
-    asm_debug_reg_reg(as, "load16", reg_dest, reg_base)
+        asm_debug_reg_reg(as, "load16", reg_dest, reg_base)
 #define ASM_LOAD16_REG_REG_OFFSET(as, reg_dest, reg_base, uint16_offset) \
-    asm_debug_reg_reg_offset(as, "load16", reg_dest, reg_base, uint16_offset)
+        asm_debug_reg_reg_offset(as, "load16", reg_dest, reg_base, uint16_offset)
 #define ASM_LOAD32_REG_REG(as, reg_dest, reg_base) \
-    asm_debug_reg_reg(as, "load32", reg_dest, reg_base)
+        asm_debug_reg_reg(as, "load32", reg_dest, reg_base)
 
 #define ASM_STORE_REG_REG_OFFSET(as, reg_src, reg_base, word_offset) \
-    asm_debug_reg_reg_offset(as, "store", reg_src, reg_base, word_offset)
+        asm_debug_reg_reg_offset(as, "store", reg_src, reg_base, word_offset)
 #define ASM_STORE8_REG_REG(as, reg_src, reg_base) \
-    asm_debug_reg_reg(as, "store8", reg_src, reg_base)
+        asm_debug_reg_reg(as, "store8", reg_src, reg_base)
 #define ASM_STORE16_REG_REG(as, reg_src, reg_base) \
-    asm_debug_reg_reg(as, "store16", reg_src, reg_base)
+        asm_debug_reg_reg(as, "store16", reg_src, reg_base)
 #define ASM_STORE32_REG_REG(as, reg_src, reg_base) \
-    asm_debug_reg_reg(as, "store32", reg_src, reg_base)
+        asm_debug_reg_reg(as, "store32", reg_src, reg_base)
 
 #define ASM_CLR_REG(as, reg_dest) \
-    asm_debug_reg(as, "clr", reg_dest)
+        asm_debug_reg(as, "clr", reg_dest)
 
 // Word indices of REG_LOCAL_x in nlr_buf_t
 #define NLR_BUF_IDX_LOCAL_1 (5) // rbx

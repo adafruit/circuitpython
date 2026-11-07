@@ -156,26 +156,26 @@ extern "C" {
 
 /** @brief Set .type and .uuid fields of ble_uuid_struct to specified UUID value. */
 #define BLE_UUID_BLE_ASSIGN(instance, value) do { \
-        instance.type = BLE_UUID_TYPE_BLE; \
-        instance.uuid = value;} while (0)
+            instance.type = BLE_UUID_TYPE_BLE; \
+            instance.uuid = value;} while (0)
 
 /** @brief Copy type and uuid members from src to dst ble_uuid_t pointer. Both pointers must be valid/non-null. */
 #define BLE_UUID_COPY_PTR(dst, src) do { \
-        (dst)->type = (src)->type; \
-        (dst)->uuid = (src)->uuid;} while (0)
+            (dst)->type = (src)->type; \
+            (dst)->uuid = (src)->uuid;} while (0)
 
 /** @brief Copy type and uuid members from src to dst ble_uuid_t struct. */
 #define BLE_UUID_COPY_INST(dst, src) do { \
-        (dst).type = (src).type; \
-        (dst).uuid = (src).uuid;} while (0)
+            (dst).type = (src).type; \
+            (dst).uuid = (src).uuid;} while (0)
 
 /** @brief Compare for equality both type and uuid members of two (valid, non-null) ble_uuid_t pointers. */
 #define BLE_UUID_EQ(p_uuid1, p_uuid2) \
-    (((p_uuid1)->type == (p_uuid2)->type) && ((p_uuid1)->uuid == (p_uuid2)->uuid))
+        (((p_uuid1)->type == (p_uuid2)->type) && ((p_uuid1)->uuid == (p_uuid2)->uuid))
 
 /** @brief Compare for difference both type and uuid members of two (valid, non-null) ble_uuid_t pointers. */
 #define BLE_UUID_NEQ(p_uuid1, p_uuid2) \
-    (((p_uuid1)->type != (p_uuid2)->type) || ((p_uuid1)->uuid != (p_uuid2)->uuid))
+        (((p_uuid1)->type != (p_uuid2)->type) || ((p_uuid1)->uuid != (p_uuid2)->uuid))
 
 /** @} */
 

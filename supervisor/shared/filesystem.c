@@ -173,8 +173,8 @@ static bool make_empty_file(supervisor_vfs_t *vfs, const char *path) {
 
 #if CIRCUITPY_FULL_BUILD
 #define MAKE_FILE_WITH_OPTIONAL_CONTENTS(vfs, filename, string_literal) do { \
-        const byte buffer[] = string_literal; \
-        make_file_with_contents(vfs, filename, buffer, sizeof(buffer) - 1); \
+            const byte buffer[] = string_literal; \
+            make_file_with_contents(vfs, filename, buffer, sizeof(buffer) - 1); \
 } while (0)
 
 static bool make_file_with_contents(supervisor_vfs_t *vfs, const char *filename, const byte *content, UINT size) {
@@ -189,7 +189,7 @@ static bool make_file_with_contents(supervisor_vfs_t *vfs, const char *filename,
 }
 #else
 #define MAKE_FILE_WITH_OPTIONAL_CONTENTS(vfs, filename, string_literal) \
-    (void)make_empty_file(vfs, filename)
+        (void)make_empty_file(vfs, filename)
 #endif
 
 #if CIRCUITPY_FILESYSTEM_LITTLEFS
@@ -1033,7 +1033,7 @@ supervisor_fs_err_t supervisor_vfs_readdir(supervisor_vfs_dir_t *dir, char *name
             // littlefs lists the "." and ".." entries; FatFS doesn't, so skip
             // them for parity.
         } while (info.name[0] == '.' &&
-            (info.name[1] == '\0' || (info.name[1] == '.' && info.name[2] == '\0')));
+                 (info.name[1] == '\0' || (info.name[1] == '.' && info.name[2] == '\0')));
         size_t name_chars = strlen(info.name);
         if (name_chars > name_len - 1) {
             name_chars = name_len - 1;

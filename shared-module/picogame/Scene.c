@@ -89,7 +89,7 @@ int picogame_scene_compute_dirty_rects(
     // Rects are stored in SCREEN coords: non-fixed items get the view offset added
     // here (per item), fixed (HUD) items don't - so no uniform offset at the end.
     #define ADD_RECT(ax, ay, bx, by) \
-    add_rect(raw, &nr, &overflow, screen_w, screen_h, (ax) + iox, (ay) + ioy, (bx) + iox, (by) + ioy)
+            add_rect(raw, &nr, &overflow, screen_w, screen_h, (ax) + iox, (ay) + ioy, (bx) + iox, (by) + ioy)
 
     for (size_t i = 0; i < n; i++) {
         uint8_t rawk = kinds[i];
