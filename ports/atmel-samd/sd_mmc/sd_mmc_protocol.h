@@ -821,7 +821,7 @@ static inline uint32_t SDMMC_UNSTUFF_BITS(uint8_t *reg, uint16_t reg_size, uint1
 #define SD_SW_STATUS_BIT_SIZE 512                      // !< 512 bits
 #define SD_SW_STATUS_BSIZE (SD_SW_STATUS_BIT_SIZE / 8) // !< 64 bytes
 #define SD_SW_STATUS_STRUCTURE(sd_sw_status, pos, size)                                                                \
-    SDMMC_UNSTUFF_BITS(sd_sw_status, SD_SW_STATUS_BIT_SIZE, pos, size)
+        SDMMC_UNSTUFF_BITS(sd_sw_status, SD_SW_STATUS_BIT_SIZE, pos, size)
 #define SD_SW_STATUS_MAX_CURRENT_CONSUMPTION(status) SD_SW_STATUS_STRUCTURE(status, 496, 16)
 #define SD_SW_STATUS_FUN_GRP6_INFO(status) SD_SW_STATUS_STRUCTURE(status, 480, 16)
 #define SD_SW_STATUS_FUN_GRP5_INFO(status) SD_SW_STATUS_STRUCTURE(status, 464, 16)
@@ -880,7 +880,7 @@ static inline uint32_t SDMMC_UNSTUFF_BITS(uint8_t *reg, uint16_t reg_size, uint1
 #define CARD_STATUS_ADDR_OUT_OF_RANGE (1lu << 31)
 
 #define CARD_STATUS_ERR_RD_WR                                                                                          \
-    (CARD_STATUS_ADDR_OUT_OF_RANGE | CARD_STATUS_ADDRESS_MISALIGN | CARD_STATUS_BLOCK_LEN_ERROR                        \
+        (CARD_STATUS_ADDR_OUT_OF_RANGE | CARD_STATUS_ADDRESS_MISALIGN | CARD_STATUS_BLOCK_LEN_ERROR                        \
     | CARD_STATUS_WP_VIOLATION | CARD_STATUS_ILLEGAL_COMMAND | CARD_STATUS_CC_ERROR | CARD_STATUS_ERROR)
 // ! @}
 

@@ -224,15 +224,15 @@ struct _nlr_jump_callback_node_t {
 
 // Helper macro to use at the start of a specific nlr_jump implementation
 #define MP_NLR_JUMP_HEAD(val, top) \
-    nlr_buf_t **_top_ptr = &MP_STATE_THREAD(nlr_top); \
-    nlr_buf_t *top = *_top_ptr; \
-    if (top == NULL) { \
-        nlr_jump_fail(val); \
-    } \
-    top->ret_val = val; \
-    nlr_call_jump_callbacks(top); \
-    MP_NLR_RESTORE_PYSTACK(top); \
-    *_top_ptr = top->prev; \
+        nlr_buf_t **_top_ptr = &MP_STATE_THREAD(nlr_top); \
+        nlr_buf_t *top = *_top_ptr; \
+        if (top == NULL) { \
+            nlr_jump_fail(val); \
+        } \
+        top->ret_val = val; \
+        nlr_call_jump_callbacks(top); \
+        MP_NLR_RESTORE_PYSTACK(top); \
+        *_top_ptr = top->prev; \
 
 #if MICROPY_NLR_SETJMP
 // nlr_push() must be defined as a macro, because "The stack context will be
@@ -264,16 +264,16 @@ MP_NORETURN void nlr_jump_fail(void *val);
 #else
 
 #define nlr_raise(val) \
-    do { \
-        void *_val = MP_OBJ_TO_PTR(val); \
-        assert(_val != NULL); \
-        assert(mp_obj_is_exception_instance(val)); \
-        nlr_jump(_val); \
-    } while (0)
+        do { \
+            void *_val = MP_OBJ_TO_PTR(val); \
+            assert(_val != NULL); \
+            assert(mp_obj_is_exception_instance(val)); \
+            nlr_jump(_val); \
+        } while (0)
 
 #if !MICROPY_NLR_SETJMP
 #define nlr_push(val) \
-    assert(MP_STATE_THREAD(nlr_top) != val), nlr_push(val)
+        assert(MP_STATE_THREAD(nlr_top) != val), nlr_push(val)
 #endif
 
 #endif

@@ -237,9 +237,9 @@ typedef long mp_off_t;
 // extra built in names to add to the global namespace
 // Not indented so as not to confused the editor.
 #define MICROPY_PORT_BUILTINS \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_help), (mp_obj_t)&mp_builtin_help_obj },      \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_input), (mp_obj_t)&mp_builtin_input_obj }, \
-    { MP_OBJ_NEW_QSTR(MP_QSTR_open), (mp_obj_t)&mp_builtin_open_obj },   \
+        { MP_OBJ_NEW_QSTR(MP_QSTR_help), (mp_obj_t)&mp_builtin_help_obj },      \
+        { MP_OBJ_NEW_QSTR(MP_QSTR_input), (mp_obj_t)&mp_builtin_input_obj }, \
+        { MP_OBJ_NEW_QSTR(MP_QSTR_open), (mp_obj_t)&mp_builtin_open_obj },   \
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // board-specific definitions, which control and may override definitions below.
@@ -488,13 +488,13 @@ extern const struct _mp_obj_module_t nvm_module;
 // and also include the underscore alternate names.
 #if MICROPY_MODULE_WEAK_LINKS
 #define MICROPY_PORT_BUILTIN_MODULES \
-    MICROPY_PORT_BUILTIN_MODULES_STRONG_LINKS \
-    MICROPY_PORT_BUILTIN_MODULE_ALT_NAMES
+        MICROPY_PORT_BUILTIN_MODULES_STRONG_LINKS \
+            MICROPY_PORT_BUILTIN_MODULE_ALT_NAMES
 #else
 // If weak links are disabled, included both strong and potentially weak lines
 #define MICROPY_PORT_BUILTIN_MODULES \
-    MICROPY_PORT_BUILTIN_MODULES_STRONG_LINKS \
-    MICROPY_PORT_BUILTIN_MODULE_WEAK_LINKS
+        MICROPY_PORT_BUILTIN_MODULES_STRONG_LINKS \
+        MICROPY_PORT_BUILTIN_MODULE_WEAK_LINKS
 #endif
 
 // We need to provide a declaration/definition of alloca()

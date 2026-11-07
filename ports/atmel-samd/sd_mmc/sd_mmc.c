@@ -125,7 +125,7 @@
 
 /** This SD MMC stack supports only the high voltage */
 #define SD_MMC_VOLTAGE_SUPPORT                                                                                         \
-    (OCR_VDD_27_28 | OCR_VDD_28_29 | OCR_VDD_29_30 | OCR_VDD_30_31 | OCR_VDD_31_32 | OCR_VDD_32_33)
+        (OCR_VDD_27_28 | OCR_VDD_28_29 | OCR_VDD_29_30 | OCR_VDD_30_31 | OCR_VDD_31_32 | OCR_VDD_32_33)
 
 /** SD/MMC card states */
 enum card_state {

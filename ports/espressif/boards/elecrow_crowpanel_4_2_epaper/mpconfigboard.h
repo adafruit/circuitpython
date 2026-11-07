@@ -15,8 +15,8 @@
 
 #define CIRCUITPY_BOARD_SPI         (2)
 #define CIRCUITPY_BOARD_SPI_PIN     { \
-        {.clock = &pin_GPIO39, .mosi = &pin_GPIO40, .miso = &pin_GPIO13}, /*SD*/ \
-        {.clock = &pin_GPIO12, .mosi = &pin_GPIO11}, /*EPD*/ \
+            {.clock = &pin_GPIO39, .mosi = &pin_GPIO40, .miso = &pin_GPIO13}, /*SD*/ \
+            {.clock = &pin_GPIO12, .mosi = &pin_GPIO11}, /*EPD*/ \
 }
 
 // UART pins attached to the USB-serial converter chip

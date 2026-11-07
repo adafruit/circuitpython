@@ -38,7 +38,7 @@ mp_float_t common_hal_synthio_voct_to_hz_float(mp_float_t octave) {
 
 static int16_t convert_time_to_rate(uint32_t sample_rate, mp_obj_t time_in, int16_t difference) {
     mp_float_t time = mp_obj_get_float(time_in);
-    int num_samples = (int)MICROPY_FLOAT_C_FUN(round)(time * sample_rate);
+    int num_samples = (int)MICROPY_FLOAT_C_FUN(round)(time *sample_rate);
     if (num_samples == 0) {
         return 32767;
     }

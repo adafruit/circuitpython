@@ -56,7 +56,7 @@ typedef struct {
 } pwm_regs_t;
 
 #define PWM_REGS_ENTRY(node_id) \
-    { .dev = DEVICE_DT_GET(node_id), .regs = (NRF_PWM_Type *)DT_REG_ADDR(node_id) },
+        { .dev = DEVICE_DT_GET(node_id), .regs = (NRF_PWM_Type *)DT_REG_ADDR(node_id) },
 
 static const pwm_regs_t pwm_regs[] = {
     DT_FOREACH_STATUS_OKAY(nordic_nrf_pwm, PWM_REGS_ENTRY)

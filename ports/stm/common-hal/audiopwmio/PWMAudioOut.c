@@ -111,7 +111,7 @@ static bool fill_buffers(audiopwmio_pwmaudioout_obj_t *self) {
             }
         }
     } while (get_buffer_result == GET_BUFFER_MORE_DATA &&
-        (!self->buffer_length[0] || (self->pin[1] && !self->buffer_length[1])));
+             (!self->buffer_length[0] || (self->pin[1] && !self->buffer_length[1])));
 
     if (get_buffer_result == GET_BUFFER_DONE) {
         // It's the final countdown

@@ -317,23 +317,23 @@ mp_obj_t mp_prof_instr_tick(mp_code_state_t *code_state, bool is_exception) {
 #include "runtime0.h"
 
 #define DECODE_UINT { \
-        unum = 0; \
-        do { \
-            unum = (unum << 7) + (*ip & 0x7f); \
-        } while ((*ip++ & 0x80) != 0); \
+            unum = 0; \
+            do { \
+                unum = (unum << 7) + (*ip & 0x7f); \
+            } while ((*ip++ & 0x80) != 0); \
 }
 #define DECODE_ULABEL do { unum = (ip[0] | (ip[1] << 8)); ip += 2; } while (0)
 #define DECODE_SLABEL do { unum = (ip[0] | (ip[1] << 8)) - 0x8000; ip += 2; } while (0)
 
 #define DECODE_QSTR \
-    qst = ip[0] | ip[1] << 8; \
-    ip += 2;
+        qst = ip[0] | ip[1] << 8; \
+        ip += 2;
 #define DECODE_PTR \
-    DECODE_UINT; \
-    ptr = (const byte *)const_table[unum]
+        DECODE_UINT; \
+        ptr = (const byte *)const_table[unum]
 #define DECODE_OBJ \
-    DECODE_UINT; \
-    obj = (mp_obj_t)const_table[unum]
+        DECODE_UINT; \
+        obj = (mp_obj_t)const_table[unum]
 
 typedef struct _mp_dis_instruction_t {
     mp_uint_t qstr_opname;

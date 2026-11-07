@@ -40,13 +40,13 @@ static void incrementalencoder_gpio_callback(const struct device *port,
 // Runs an iobroker/GPIO call and, on failure, releases any partial setup
 // before raising a Python exception with the Zephyr errno.
 #define CHECK_RESULT_OR_DEINIT(x) \
-    do { \
-        int _res = (x); \
-        if (_res < 0) { \
-            common_hal_rotaryio_incrementalencoder_deinit(self); \
-            raise_zephyr_error(_res); \
-        } \
-    } while (0)
+        do { \
+            int _res = (x); \
+            if (_res < 0) { \
+                common_hal_rotaryio_incrementalencoder_deinit(self); \
+                raise_zephyr_error(_res); \
+            } \
+        } while (0)
 
 void common_hal_rotaryio_incrementalencoder_construct(rotaryio_incrementalencoder_obj_t *self,
     const mcu_pin_obj_t *pin_a, const mcu_pin_obj_t *pin_b) {

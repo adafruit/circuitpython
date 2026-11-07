@@ -20,7 +20,7 @@ const mcu_pin_obj_t *validate_obj_is_pin_including_cyw43(mp_obj_t obj, qstr arg_
 // A `CONST_` prefix has been added to the computation function (expressed as a macro) and the values.
 
 #define CONST_cyw43_pm_value(pm_mode, pm2_sleep_ret_ms, li_beacon_period, li_dtim_period, li_assoc) \
-    (li_assoc << 20 | /* listen interval sent to ap */ \
+        (li_assoc << 20 | /* listen interval sent to ap */ \
         li_dtim_period << 16 | \
         li_beacon_period << 12 | \
         (pm2_sleep_ret_ms / 10) << 4 | /* cyw43_ll_wifi_pm multiplies this by 10 */ \

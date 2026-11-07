@@ -20,7 +20,7 @@ static inline void *mp_proto_get(uint16_t name, mp_const_obj_type_t obj) {
 }
 #else
 #define MP_PROTOCOL_HEAD \
-    uint16_t name;
+        uint16_t name;
 #define MP_PROTO_IMPLEMENT(n) .name = n,
 const void *mp_proto_get(uint16_t name, mp_const_obj_t obj);
 const void *mp_proto_get_or_throw(uint16_t name, mp_const_obj_t obj);

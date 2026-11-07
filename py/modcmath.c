@@ -43,7 +43,7 @@ static mp_obj_t mp_cmath_polar(mp_obj_t z_obj) {
     mp_float_t real, imag;
     mp_obj_get_complex(z_obj, &real, &imag);
     mp_obj_t tuple[2] = {
-        mp_obj_new_float(MICROPY_FLOAT_C_FUN(sqrt)(real * real + imag * imag)),
+        mp_obj_new_float(MICROPY_FLOAT_C_FUN(sqrt)(real *real + imag *imag)),
         mp_obj_new_float(MICROPY_FLOAT_C_FUN(atan2)(imag, real)),
     };
     return mp_obj_new_tuple(2, tuple);
@@ -72,7 +72,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(mp_cmath_exp_obj, mp_cmath_exp);
 static mp_obj_t mp_cmath_log(mp_obj_t z_obj) {
     mp_float_t real, imag;
     mp_obj_get_complex(z_obj, &real, &imag);
-    return mp_obj_new_complex(MICROPY_FLOAT_CONST(0.5) * MICROPY_FLOAT_C_FUN(log)(real * real + imag * imag), MICROPY_FLOAT_C_FUN(atan2)(imag, real));
+    return mp_obj_new_complex(MICROPY_FLOAT_CONST(0.5) * MICROPY_FLOAT_C_FUN(log)(real *real + imag *imag), MICROPY_FLOAT_C_FUN(atan2)(imag, real));
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(mp_cmath_log_obj, mp_cmath_log);
 
@@ -81,7 +81,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(mp_cmath_log_obj, mp_cmath_log);
 static mp_obj_t mp_cmath_log10(mp_obj_t z_obj) {
     mp_float_t real, imag;
     mp_obj_get_complex(z_obj, &real, &imag);
-    return mp_obj_new_complex(MICROPY_FLOAT_CONST(0.5) * MICROPY_FLOAT_C_FUN(log10)(real * real + imag * imag), MICROPY_FLOAT_CONST(0.4342944819032518) * MICROPY_FLOAT_C_FUN(atan2)(imag, real));
+    return mp_obj_new_complex(MICROPY_FLOAT_CONST(0.5) * MICROPY_FLOAT_C_FUN(log10)(real *real + imag *imag), MICROPY_FLOAT_CONST(0.4342944819032518) * MICROPY_FLOAT_C_FUN(atan2)(imag, real));
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(mp_cmath_log10_obj, mp_cmath_log10);
 #endif
@@ -90,7 +90,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(mp_cmath_log10_obj, mp_cmath_log10);
 static mp_obj_t mp_cmath_sqrt(mp_obj_t z_obj) {
     mp_float_t real, imag;
     mp_obj_get_complex(z_obj, &real, &imag);
-    mp_float_t sqrt_abs = MICROPY_FLOAT_C_FUN(pow)(real * real + imag * imag, MICROPY_FLOAT_CONST(0.25));
+    mp_float_t sqrt_abs = MICROPY_FLOAT_C_FUN(pow)(real *real + imag *imag, MICROPY_FLOAT_CONST(0.25));
     mp_float_t theta = MICROPY_FLOAT_CONST(0.5) * MICROPY_FLOAT_C_FUN(atan2)(imag, real);
     return mp_obj_new_complex(sqrt_abs * MICROPY_FLOAT_C_FUN(cos)(theta), sqrt_abs * MICROPY_FLOAT_C_FUN(sin)(theta));
 }

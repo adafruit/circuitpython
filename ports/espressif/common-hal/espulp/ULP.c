@@ -77,7 +77,7 @@ void common_hal_espulp_ulp_run(espulp_ulp_obj_t *self, uint32_t *program, size_t
 
     esp_err_t result;
     switch (self->arch) {
-        #ifdef CONFIG_ULP_COPROC_TYPE_FSM
+    #ifdef CONFIG_ULP_COPROC_TYPE_FSM
         case FSM:
             result = ulp_load_binary(0, (const uint8_t *)program, length / sizeof(uint32_t));
             if (result != ESP_OK) {
@@ -85,8 +85,8 @@ void common_hal_espulp_ulp_run(espulp_ulp_obj_t *self, uint32_t *program, size_t
             }
             CHECK_ESP_RESULT(ulp_run(entry_point / sizeof(uint32_t)));
             break;
-        #endif
-        #ifdef CONFIG_ULP_COPROC_TYPE_RISCV
+    #endif
+    #ifdef CONFIG_ULP_COPROC_TYPE_RISCV
         case RISCV:
             result = ulp_riscv_load_binary((const uint8_t *)program, length);
             if (result != ESP_OK) {
@@ -94,7 +94,7 @@ void common_hal_espulp_ulp_run(espulp_ulp_obj_t *self, uint32_t *program, size_t
             }
             CHECK_ESP_RESULT(ulp_riscv_run());
             break;
-        #endif
+    #endif
         default:
             mp_raise_NotImplementedError(NULL);
             break;
@@ -103,17 +103,17 @@ void common_hal_espulp_ulp_run(espulp_ulp_obj_t *self, uint32_t *program, size_t
 
 void common_hal_espulp_ulp_halt(espulp_ulp_obj_t *self) {
     switch (self->arch) {
-        #ifdef CONFIG_ULP_COPROC_TYPE_FSM
+    #ifdef CONFIG_ULP_COPROC_TYPE_FSM
         case FSM:
             ulp_timer_stop();
             break;
-        #endif
-        #ifdef CONFIG_ULP_COPROC_TYPE_RISCV
+    #endif
+    #ifdef CONFIG_ULP_COPROC_TYPE_RISCV
         case RISCV:
             ulp_riscv_timer_stop();
             ulp_riscv_halt();
             break;
-        #endif
+    #endif
         default:
             mp_raise_NotImplementedError(NULL);
             break;
@@ -136,14 +136,14 @@ void common_hal_espulp_ulp_construct(espulp_ulp_obj_t *self, espulp_architecture
     }
 
     switch (arch) {
-        #ifdef CONFIG_ULP_COPROC_TYPE_FSM
+    #ifdef CONFIG_ULP_COPROC_TYPE_FSM
         case FSM:
             break;
-        #endif
-        #ifdef CONFIG_ULP_COPROC_TYPE_RISCV
+    #endif
+    #ifdef CONFIG_ULP_COPROC_TYPE_RISCV
         case RISCV:
             break;
-        #endif
+    #endif
         default:
             mp_raise_NotImplementedError(NULL);
             break;

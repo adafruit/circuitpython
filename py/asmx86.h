@@ -157,28 +157,28 @@ void asm_x86_call_ind(asm_x86_t *as, size_t fun_id, mp_uint_t n_args, int temp_r
 
 #define ASM_JUMP                        asm_x86_jmp_label
 #define ASM_JUMP_IF_REG_ZERO(as, reg, label, bool_test) \
-    do { \
-        if (bool_test) { \
-            asm_x86_test_r8_with_r8(as, reg, reg); \
-        } else { \
-            asm_x86_test_r32_with_r32(as, reg, reg); \
-        } \
-        asm_x86_jcc_label(as, ASM_X86_CC_JZ, label); \
-    } while (0)
+        do { \
+            if (bool_test) { \
+                asm_x86_test_r8_with_r8(as, reg, reg); \
+            } else { \
+                asm_x86_test_r32_with_r32(as, reg, reg); \
+            } \
+            asm_x86_jcc_label(as, ASM_X86_CC_JZ, label); \
+        } while (0)
 #define ASM_JUMP_IF_REG_NONZERO(as, reg, label, bool_test) \
-    do { \
-        if (bool_test) { \
-            asm_x86_test_r8_with_r8(as, reg, reg); \
-        } else { \
-            asm_x86_test_r32_with_r32(as, reg, reg); \
-        } \
-        asm_x86_jcc_label(as, ASM_X86_CC_JNZ, label); \
-    } while (0)
+        do { \
+            if (bool_test) { \
+                asm_x86_test_r8_with_r8(as, reg, reg); \
+            } else { \
+                asm_x86_test_r32_with_r32(as, reg, reg); \
+            } \
+            asm_x86_jcc_label(as, ASM_X86_CC_JNZ, label); \
+        } while (0)
 #define ASM_JUMP_IF_REG_EQ(as, reg1, reg2, label) \
-    do { \
-        asm_x86_cmp_r32_with_r32(as, reg1, reg2); \
-        asm_x86_jcc_label(as, ASM_X86_CC_JE, label); \
-    } while (0)
+        do { \
+            asm_x86_cmp_r32_with_r32(as, reg1, reg2); \
+            asm_x86_jcc_label(as, ASM_X86_CC_JE, label); \
+        } while (0)
 #define ASM_JUMP_REG(as, reg) asm_x86_jmp_reg((as), (reg))
 #define ASM_CALL_IND(as, idx) asm_x86_call_ind(as, idx, mp_f_n_args[idx], ASM_X86_REG_EAX)
 
