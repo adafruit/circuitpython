@@ -66,11 +66,11 @@ extern const mp_obj_type_t mp_type_attrtuple;
 #define MP_OBJ_NEW_TUPLE(...) ({mp_obj_t _z[] = {__VA_ARGS__}; mp_obj_new_tuple(MP_ARRAY_SIZE(_z), _z);})
 
 #define MP_DEFINE_ATTRTUPLE(tuple_obj_name, fields, nitems, ...) \
-        const mp_rom_obj_tuple_t tuple_obj_name = { \
-            .base = {.type = &mp_type_attrtuple}, \
-            .len = nitems, \
-            .items = { __VA_ARGS__, MP_ROM_PTR((void *)fields) } \
-        }
+    const mp_rom_obj_tuple_t tuple_obj_name = { \
+        .base = {.type = &mp_type_attrtuple}, \
+        .len = nitems, \
+        .items = { __VA_ARGS__, MP_ROM_PTR((void *)fields) } \
+    }
 
 #if MICROPY_PY_COLLECTIONS
 void mp_obj_attrtuple_print_helper(const mp_print_t *print, const qstr *fields, mp_obj_tuple_t *o);

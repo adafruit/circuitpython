@@ -162,28 +162,28 @@ void asm_x64_call_ind(asm_x64_t *as, size_t fun_id, int temp_r32);
 
 #define ASM_JUMP                        asm_x64_jmp_label
 #define ASM_JUMP_IF_REG_ZERO(as, reg, label, bool_test) \
-        do { \
-            if (bool_test) { \
-                asm_x64_test_r8_with_r8((as), (reg), (reg)); \
-            } else { \
-                asm_x64_test_r64_with_r64((as), (reg), (reg)); \
-            } \
-            asm_x64_jcc_label(as, ASM_X64_CC_JZ, label); \
-        } while (0)
+    do { \
+        if (bool_test) { \
+            asm_x64_test_r8_with_r8((as), (reg), (reg)); \
+        } else { \
+            asm_x64_test_r64_with_r64((as), (reg), (reg)); \
+        } \
+        asm_x64_jcc_label(as, ASM_X64_CC_JZ, label); \
+    } while (0)
 #define ASM_JUMP_IF_REG_NONZERO(as, reg, label, bool_test) \
-        do { \
-            if (bool_test) { \
-                asm_x64_test_r8_with_r8((as), (reg), (reg)); \
-            } else { \
-                asm_x64_test_r64_with_r64((as), (reg), (reg)); \
-            } \
-            asm_x64_jcc_label(as, ASM_X64_CC_JNZ, label); \
-        } while (0)
+    do { \
+        if (bool_test) { \
+            asm_x64_test_r8_with_r8((as), (reg), (reg)); \
+        } else { \
+            asm_x64_test_r64_with_r64((as), (reg), (reg)); \
+        } \
+        asm_x64_jcc_label(as, ASM_X64_CC_JNZ, label); \
+    } while (0)
 #define ASM_JUMP_IF_REG_EQ(as, reg1, reg2, label) \
-        do { \
-            asm_x64_cmp_r64_with_r64(as, reg1, reg2); \
-            asm_x64_jcc_label(as, ASM_X64_CC_JE, label); \
-        } while (0)
+    do { \
+        asm_x64_cmp_r64_with_r64(as, reg1, reg2); \
+        asm_x64_jcc_label(as, ASM_X64_CC_JE, label); \
+    } while (0)
 #define ASM_JUMP_REG(as, reg) asm_x64_jmp_reg((as), (reg))
 #define ASM_CALL_IND(as, idx) asm_x64_call_ind(as, idx, ASM_X64_REG_RAX)
 

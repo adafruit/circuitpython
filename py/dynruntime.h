@@ -238,44 +238,44 @@ static inline void *mp_obj_malloc_helper_dyn(size_t num_bytes, const mp_obj_type
 #define mp_binary_op(op, lhs, rhs)  (mp_fun_table.binary_op((op), (lhs), (rhs)))
 
 #define mp_make_function_from_proto_fun(rc, context, def_args) \
-        (mp_fun_table.make_function_from_proto_fun((rc), (context), (def_args)))
+    (mp_fun_table.make_function_from_proto_fun((rc), (context), (def_args)))
 
 #define mp_call_function_n_kw(fun, n_args, n_kw, args) \
-        (mp_fun_table.call_function_n_kw((fun), (n_args) | ((n_kw) << 8), args))
+    (mp_fun_table.call_function_n_kw((fun), (n_args) | ((n_kw) << 8), args))
 
 #define mp_arg_check_num(n_args, n_kw, n_args_min, n_args_max, takes_kw) \
-        (mp_fun_table.arg_check_num_sig((n_args), (n_kw), MP_OBJ_FUN_MAKE_SIG((n_args_min), (n_args_max), (takes_kw))))
+    (mp_fun_table.arg_check_num_sig((n_args), (n_kw), MP_OBJ_FUN_MAKE_SIG((n_args_min), (n_args_max), (takes_kw))))
 
 #define mp_arg_parse_all(n_pos, pos, kws, n_allowed, allowed, out_vals) \
-        (mp_fun_table.arg_parse_all((n_pos), (pos), (kws), (n_allowed), (allowed), (out_vals)))
+    (mp_fun_table.arg_parse_all((n_pos), (pos), (kws), (n_allowed), (allowed), (out_vals)))
 
 #define mp_arg_parse_all_kw_array(n_pos, n_kw, args, n_allowed, allowed, out_vals) \
-        (mp_fun_table.arg_parse_all_kw_array((n_pos), (n_kw), (args), (n_allowed), (allowed), (out_vals)))
+    (mp_fun_table.arg_parse_all_kw_array((n_pos), (n_kw), (args), (n_allowed), (allowed), (out_vals)))
 
 // CIRCUITPY-CHANGE: .is_async
 #define MP_DYNRUNTIME_INIT_ENTRY \
-        mp_obj_t old_globals = mp_fun_table.swap_globals(self->context->module.globals); \
-        mp_raw_code_truncated_t rc; \
-        rc.proto_fun_indicator[0] = MP_PROTO_FUN_INDICATOR_RAW_CODE_0; \
-        rc.proto_fun_indicator[1] = MP_PROTO_FUN_INDICATOR_RAW_CODE_1; \
-        rc.kind = MP_CODE_NATIVE_VIPER; \
-        rc.is_generator = 0; \
-        rc.is_async = 0; \
-        (void)rc;
+    mp_obj_t old_globals = mp_fun_table.swap_globals(self->context->module.globals); \
+    mp_raw_code_truncated_t rc; \
+    rc.proto_fun_indicator[0] = MP_PROTO_FUN_INDICATOR_RAW_CODE_0; \
+    rc.proto_fun_indicator[1] = MP_PROTO_FUN_INDICATOR_RAW_CODE_1; \
+    rc.kind = MP_CODE_NATIVE_VIPER; \
+    rc.is_generator = 0; \
+    rc.is_async = 0; \
+    (void)rc;
 
 #define MP_DYNRUNTIME_INIT_EXIT \
-        mp_fun_table.swap_globals(old_globals); \
-        return mp_const_none;
+    mp_fun_table.swap_globals(old_globals); \
+    return mp_const_none;
 
 #define MP_DYNRUNTIME_MAKE_FUNCTION(f) \
-        (mp_make_function_from_proto_fun((rc.fun_data = (f), (const mp_raw_code_t *)&rc), self->context, NULL))
+    (mp_make_function_from_proto_fun((rc.fun_data = (f), (const mp_raw_code_t *)&rc), self->context, NULL))
 
 #define mp_import_name(name, fromlist, level) \
-        (mp_fun_table.import_name((name), (fromlist), (level)))
+    (mp_fun_table.import_name((name), (fromlist), (level)))
 #define mp_import_from(module, name) \
-        (mp_fun_table.import_from((module), (name)))
+    (mp_fun_table.import_from((module), (name)))
 #define mp_import_all(module) \
-        (mp_fun_table.import_all((module))
+    (mp_fun_table.import_all((module))
 
 /******************************************************************************/
 // Exceptions

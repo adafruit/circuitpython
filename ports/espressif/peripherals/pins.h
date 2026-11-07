@@ -34,13 +34,13 @@ extern const mp_obj_type_t mcu_pin_type;
 
 // This macro is used to simplify pin definition in peripherals/<chip>/pins.c
 #define PIN(p_number, p_adc_index, p_adc_channel, p_touch_channel) \
-        { \
-            { &mcu_pin_type }, \
-            .number = p_number, \
-            .adc_index = p_adc_index, \
-            .adc_channel = p_adc_channel, \
-            .touch_channel = p_touch_channel, \
-        }
+    { \
+        { &mcu_pin_type }, \
+        .number = p_number, \
+        .adc_index = p_adc_index, \
+        .adc_channel = p_adc_channel, \
+        .touch_channel = p_touch_channel, \
+    }
 
 // Choose based on chip
 #if defined(CONFIG_IDF_TARGET_ESP32)

@@ -37,16 +37,16 @@
 #define _5 SIDE(0b10100)
 
 #define IMAGECAPTURE_CODE(width, pclk, vsync, href) \
-        { \
+    { \
 /* 0 */ pio_encode_wait_gpio(0, vsync) | _0, \
 /* 1 */ pio_encode_wait_gpio(1, vsync) | _1, \
-            /* .wrap_target */  \
+        /* .wrap_target */  \
 /* 2 */ pio_encode_wait_gpio(1, href) | _2, \
 /* 3 */ pio_encode_wait_gpio(1, pclk) | _3, \
 /* 4 */ pio_encode_in(pio_pins, width) | _4, \
 /* 5 */ pio_encode_wait_gpio(0, pclk) | _5, \
-            /* .wrap */ \
-        }
+        /* .wrap */ \
+    }
 
 void common_hal_imagecapture_parallelimagecapture_construct(imagecapture_parallelimagecapture_obj_t *self,
     const mcu_pin_obj_t **data_pins,

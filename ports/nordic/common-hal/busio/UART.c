@@ -20,12 +20,12 @@
 
 // expression to examine, and return value in case of failing
 #define _VERIFY_ERR(_exp) \
-        do { \
-            uint32_t _err = (_exp); \
-            if (NRFX_SUCCESS != _err) { \
-                mp_raise_msg_varg(&mp_type_RuntimeError, MP_ERROR_TEXT("error = 0x%08lX"), _err); \
-            } \
-        } while (0)
+    do { \
+        uint32_t _err = (_exp); \
+        if (NRFX_SUCCESS != _err) { \
+            mp_raise_msg_varg(&mp_type_RuntimeError, MP_ERROR_TEXT("error = 0x%08lX"), _err); \
+        } \
+    } while (0)
 
 static nrfx_uarte_t nrfx_uartes[] = {
     #if NRFX_CHECK(NRFX_UARTE0_ENABLED)

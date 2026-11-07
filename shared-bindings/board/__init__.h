@@ -44,17 +44,17 @@ mp_obj_t board_uart(size_t n_args, const mp_obj_t *args);
 MP_DECLARE_CONST_FUN_OBJ_0(board_uart_obj);
 
 #define CIRCUITPY_BOARD_BUS_SINGLETON(name, bus, instance) \
-        static mp_obj_t board_##name(void) { \
-            return common_hal_board_create_##bus(instance); \
-        } \
-        MP_DEFINE_CONST_FUN_OBJ_0(board_##name##_obj, board_##name);
+    static mp_obj_t board_##name(void) { \
+        return common_hal_board_create_##bus(instance); \
+    } \
+    MP_DEFINE_CONST_FUN_OBJ_0(board_##name##_obj, board_##name);
 
 #define CIRCUITPYTHON_BOARD_DICT_STANDARD_ITEMS \
-        { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_board) }, \
-        { MP_ROM_QSTR(MP_QSTR_board_id), MP_ROM_PTR(&board_module_id_obj) }, \
-        CIRCUITPY_BOARD_HARDWARE_KEYS
+    { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_board) }, \
+    { MP_ROM_QSTR(MP_QSTR_board_id), MP_ROM_PTR(&board_module_id_obj) }, \
+    CIRCUITPY_BOARD_HARDWARE_KEYS
 
 #define CIRCUITPYTHON_MUTABLE_BOARD_DICT_STANDARD_ITEMS \
-        { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_board) }, \
-        { MP_ROM_QSTR(MP_QSTR_board_id), MP_OBJ_FROM_PTR(&board_module_id_obj) }, \
-        CIRCUITPY_BOARD_HARDWARE_KEYS
+    { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_board) }, \
+    { MP_ROM_QSTR(MP_QSTR_board_id), MP_OBJ_FROM_PTR(&board_module_id_obj) }, \
+    CIRCUITPY_BOARD_HARDWARE_KEYS

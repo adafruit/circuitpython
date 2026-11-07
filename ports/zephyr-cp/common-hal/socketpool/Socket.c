@@ -37,11 +37,11 @@ static mp_obj_t _format_address(const struct sockaddr *addr, int family) {
     const struct sockaddr_in *a = (void *)addr;
 
     switch (family) {
-    #if CIRCUITPY_SOCKETPOOL_IPV6
+        #if CIRCUITPY_SOCKETPOOL_IPV6
         case AF_INET6:
             zsock_inet_ntop(family, &((const struct sockaddr_in6 *)a)->sin6_addr, ip_str, sizeof(ip_str));
             break;
-    #endif
+        #endif
         default:
         case AF_INET:
             zsock_inet_ntop(family, &((const struct sockaddr_in *)a)->sin_addr, ip_str, sizeof(ip_str));
@@ -193,9 +193,9 @@ bool socketpool_socket(socketpool_socketpool_obj_t *self,
 socketpool_socket_obj_t *common_hal_socketpool_socket(socketpool_socketpool_obj_t *self,
     socketpool_socketpool_addressfamily_t family, socketpool_socketpool_sock_t type, int proto) {
     switch (family) {
-    #if CIRCUITPY_SOCKETPOOL_IPV6
+        #if CIRCUITPY_SOCKETPOOL_IPV6
         case SOCKETPOOL_AF_INET6:
-    #endif
+        #endif
         case SOCKETPOOL_AF_INET:
             break;
         default:

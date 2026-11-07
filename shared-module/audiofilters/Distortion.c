@@ -164,7 +164,7 @@ void common_hal_audiofilters_distortion_stop(audiofilters_distortion_obj_t *self
 }
 
 static mp_float_t db_to_linear(mp_float_t value) {
-    return MICROPY_FLOAT_C_FUN(exp)(value *MICROPY_FLOAT_CONST(0.11512925464970228420089957273422));
+    return MICROPY_FLOAT_C_FUN(exp)(value * MICROPY_FLOAT_CONST(0.11512925464970228420089957273422));
 }
 
 audioio_get_buffer_result_t audiofilters_distortion_get_buffer(audiofilters_distortion_obj_t *self, bool single_channel_output, uint8_t channel,
@@ -248,7 +248,7 @@ audioio_get_buffer_result_t audiofilters_distortion_get_buffer(audiofilters_dist
             } else if (self->mode == DISTORTION_MODE_WAVESHAPE) {
                 drive = MICROPY_FLOAT_CONST(2.0) * drive / (MICROPY_FLOAT_CONST(1.0001) - drive);
             } else if (self->mode == DISTORTION_MODE_LOFI) {
-                word_mask = 0xFFFFFFFF ^ ((1 << (uint32_t)MICROPY_FLOAT_C_FUN(round)(drive *MICROPY_FLOAT_CONST(14.0))) - 1);
+                word_mask = 0xFFFFFFFF ^ ((1 << (uint32_t)MICROPY_FLOAT_C_FUN(round)(drive * MICROPY_FLOAT_CONST(14.0))) - 1);
             }
 
             if (mix <= MICROPY_FLOAT_CONST(0.01)) { // if mix is zero pure sample only
@@ -299,7 +299,7 @@ audioio_get_buffer_result_t audiofilters_distortion_get_buffer(audiofilters_dist
                                 mp_float_t z = MICROPY_FLOAT_CONST(1.0) + MICROPY_FLOAT_C_FUN(exp)(MICROPY_FLOAT_C_FUN(sqrt)(MICROPY_FLOAT_C_FUN(fabs)(wordf)) * MICROPY_FLOAT_CONST(-0.75));
                                 mp_float_t word_exp = MICROPY_FLOAT_C_FUN(exp)(wordf);
                                 wordf *= MICROPY_FLOAT_CONST(-1.0);
-                                wordf = (word_exp - MICROPY_FLOAT_C_FUN(exp)(wordf *z)) / (word_exp + MICROPY_FLOAT_C_FUN(exp)(wordf));
+                                wordf = (word_exp - MICROPY_FLOAT_C_FUN(exp)(wordf * z)) / (word_exp + MICROPY_FLOAT_C_FUN(exp)(wordf));
                             } break;
                             case DISTORTION_MODE_WAVESHAPE: {
                                 wordf = (MICROPY_FLOAT_CONST(1.0) + drive) * wordf / (MICROPY_FLOAT_CONST(1.0) + drive * MICROPY_FLOAT_C_FUN(fabs)(wordf));

@@ -11,11 +11,11 @@
 extern const mp_obj_type_t mcu_pin_type;
 
 #define PIN(pin, a) \
-        { \
-            { &mcu_pin_type }, \
-            .number = (pin), \
-            .analog = (a) \
-        }
+    { \
+        { &mcu_pin_type }, \
+        .number = (pin), \
+        .analog = (a) \
+    }
 
 typedef struct {
     mp_obj_base_t base;

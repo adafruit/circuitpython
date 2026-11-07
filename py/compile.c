@@ -62,7 +62,7 @@ typedef enum {
 // Whether a mp_parse_node_struct_t that has pns->kind == PN_testlist_comp
 // corresponds to a list comprehension or generator.
 #define MP_PARSE_NODE_TESTLIST_COMP_HAS_COMP_FOR(pns) \
-        (MP_PARSE_NODE_STRUCT_NUM_NODES(pns) == 2 && \
+    (MP_PARSE_NODE_STRUCT_NUM_NODES(pns) == 2 && \
     MP_PARSE_NODE_IS_STRUCT_KIND(pns->nodes[1], PN_comp_for))
 
 #define NEED_METHOD_TABLE MICROPY_EMIT_NATIVE
@@ -90,7 +90,7 @@ typedef enum {
 #define NATIVE_EMITTER(f) emit_native_table[mp_dynamic_compiler.native_arch]->emit_##f
 #define NATIVE_EMITTER_TABLE (emit_native_table[mp_dynamic_compiler.native_arch])
 
-static const emit_method_table_t * emit_native_table[] = {
+static const emit_method_table_t *emit_native_table[] = {
     NULL,
     &emit_native_x86_method_table,
     &emit_native_x64_method_table,
@@ -136,7 +136,7 @@ static const emit_method_table_t * emit_native_table[] = {
 #define ASM_EMITTER(f) emit_asm_table[mp_dynamic_compiler.native_arch]->asm_##f
 #define ASM_EMITTER_TABLE emit_asm_table[mp_dynamic_compiler.native_arch]
 
-static const emit_inline_asm_method_table_t * emit_asm_table[] = {
+static const emit_inline_asm_method_table_t *emit_asm_table[] = {
     NULL,
     NULL,
     NULL,
@@ -1411,19 +1411,19 @@ done:
 }
 
 #define START_BREAK_CONTINUE_BLOCK \
-        uint16_t old_break_label = comp->break_label; \
-        uint16_t old_continue_label = comp->continue_label; \
-        uint16_t old_break_continue_except_level = comp->break_continue_except_level; \
-        uint break_label = comp_next_label(comp); \
-        uint continue_label = comp_next_label(comp); \
-        comp->break_label = break_label; \
-        comp->continue_label = continue_label; \
-        comp->break_continue_except_level = comp->cur_except_level;
+    uint16_t old_break_label = comp->break_label; \
+    uint16_t old_continue_label = comp->continue_label; \
+    uint16_t old_break_continue_except_level = comp->break_continue_except_level; \
+    uint break_label = comp_next_label(comp); \
+    uint continue_label = comp_next_label(comp); \
+    comp->break_label = break_label; \
+    comp->continue_label = continue_label; \
+    comp->break_continue_except_level = comp->cur_except_level;
 
 #define END_BREAK_CONTINUE_BLOCK \
-        comp->break_label = old_break_label; \
-        comp->continue_label = old_continue_label; \
-        comp->break_continue_except_level = old_break_continue_except_level;
+    comp->break_label = old_break_label; \
+    comp->continue_label = old_continue_label; \
+    comp->break_continue_except_level = old_break_continue_except_level;
 
 static void compile_while_stmt(compiler_t *comp, mp_parse_node_struct_t *pns) {
     START_BREAK_CONTINUE_BLOCK
@@ -3629,7 +3629,7 @@ void mp_compile_to_raw_code(mp_parse_tree_t *parse_tree, qstr source_file, bool 
 
             switch (s->emit_options) {
 
-            #if MICROPY_EMIT_NATIVE
+                #if MICROPY_EMIT_NATIVE
                 case MP_EMIT_OPT_NATIVE_PYTHON:
                 case MP_EMIT_OPT_VIPER:
                     if (emit_native == NULL) {
@@ -3645,7 +3645,7 @@ void mp_compile_to_raw_code(mp_parse_tree_t *parse_tree, qstr source_file, bool 
                     comp->emit_method_table = NATIVE_EMITTER_TABLE;
                     comp->emit = emit_native;
                     break;
-            #endif // MICROPY_EMIT_NATIVE
+                #endif // MICROPY_EMIT_NATIVE
 
                 default:
                     comp->emit = emit_bc;

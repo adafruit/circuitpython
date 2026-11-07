@@ -93,11 +93,11 @@ uint8_t bt_hci_raw_get_mode(void);
  *  @param _func Handler function to be called.
  */
 #define BT_HCI_RAW_CMD_EXT(_op, _min_len, _func) \
-        { \
-            .op = _op, \
-            .min_len = _min_len, \
-            .func = _func, \
-        }
+    { \
+        .op = _op, \
+        .min_len = _min_len, \
+        .func = _func, \
+    }
 
 struct bt_hci_raw_cmd_ext {
     /** Opcode of the command */

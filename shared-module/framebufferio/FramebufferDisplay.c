@@ -28,7 +28,7 @@
 #include <string.h>
 
 #define fb_getter_default(method, default_value) \
-        (self->framebuffer_protocol->method \
+    (self->framebuffer_protocol->method \
         ? self->framebuffer_protocol->method(self->framebuffer) \
         : (default_value))
 

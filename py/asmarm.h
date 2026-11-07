@@ -172,20 +172,20 @@ void asm_arm_bx_reg(asm_arm_t *as, uint reg_src);
 
 #define ASM_JUMP                        asm_arm_b_label
 #define ASM_JUMP_IF_REG_ZERO(as, reg, label, bool_test) \
-        do { \
-            asm_arm_cmp_reg_i8(as, reg, 0); \
-            asm_arm_bcc_label(as, ASM_ARM_CC_EQ, label); \
-        } while (0)
+    do { \
+        asm_arm_cmp_reg_i8(as, reg, 0); \
+        asm_arm_bcc_label(as, ASM_ARM_CC_EQ, label); \
+    } while (0)
 #define ASM_JUMP_IF_REG_NONZERO(as, reg, label, bool_test) \
-        do { \
-            asm_arm_cmp_reg_i8(as, reg, 0); \
-            asm_arm_bcc_label(as, ASM_ARM_CC_NE, label); \
-        } while (0)
+    do { \
+        asm_arm_cmp_reg_i8(as, reg, 0); \
+        asm_arm_bcc_label(as, ASM_ARM_CC_NE, label); \
+    } while (0)
 #define ASM_JUMP_IF_REG_EQ(as, reg1, reg2, label) \
-        do { \
-            asm_arm_cmp_reg_reg(as, reg1, reg2); \
-            asm_arm_bcc_label(as, ASM_ARM_CC_EQ, label); \
-        } while (0)
+    do { \
+        asm_arm_cmp_reg_reg(as, reg1, reg2); \
+        asm_arm_bcc_label(as, ASM_ARM_CC_EQ, label); \
+    } while (0)
 #define ASM_JUMP_REG(as, reg) asm_arm_bx_reg((as), (reg))
 #define ASM_CALL_IND(as, idx) asm_arm_bl_ind(as, idx, ASM_ARM_REG_R3)
 

@@ -58,46 +58,46 @@ static int SAI_GetInstance(I2S_Type *peripheral) {
 static bool i2s_clock_off(I2S_Type *peripheral) {
     int index = SAI_GetInstance(peripheral);
     switch (index) {
-    #if defined(SAI0)
+        #if defined(SAI0)
         case 0:
             CLOCK_DisableClock(kCLOCK_Sai0);
             return true;
-    #endif
-    #if defined(SAI1)
+        #endif
+        #if defined(SAI1)
         case 1:
             CLOCK_DisableClock(kCLOCK_Sai1);
             return true;
-    #endif
-    #if defined(SAI2)
+        #endif
+        #if defined(SAI2)
         case 2:
             CLOCK_DisableClock(kCLOCK_Sai2);
             return true;
-    #endif
-    #if defined(SAI3)
+        #endif
+        #if defined(SAI3)
         case 3:
             CLOCK_DisableClock(kCLOCK_Sai3);
             return true;
-    #endif
-    #if defined(SAI4)
+        #endif
+        #if defined(SAI4)
         case 4:
             CLOCK_DisableClock(kCLOCK_Sai4);
             return true;
-    #endif
-    #if defined(SAI5)
+        #endif
+        #if defined(SAI5)
         case 5:
             CLOCK_DisableClock(kCLOCK_Sai5);
             return true;
-    #endif
-    #if defined(SAI6)
+        #endif
+        #if defined(SAI6)
         case 6:
             CLOCK_DisableClock(kCLOCK_Sai6);
             return true;
-    #endif
-    #if defined(SAI7)
+        #endif
+        #if defined(SAI7)
         case 7:
             CLOCK_DisableClock(kCLOCK_Sai7);
             return true;
-    #endif
+        #endif
     }
     return false;
 }
@@ -105,70 +105,70 @@ static bool i2s_clock_off(I2S_Type *peripheral) {
 static bool i2s_clocking(I2S_Type *peripheral) {
     int index = SAI_GetInstance(peripheral);
     switch (index) {
-    #if defined(SAI0)
+        #if defined(SAI0)
         case 0:
             CLOCK_SetDiv(kCLOCK_Sai0PreDiv, SAI_CLOCK_SOURCE_PRE_DIVIDER);
             CLOCK_SetDiv(kCLOCK_Sai0Div, SAI_CLOCK_SOURCE_DIVIDER);
             CLOCK_SetMux(kCLOCK_Sai0Mux, SAI_CLOCK_SOURCE_SELECT);
             CLOCK_EnableClock(kCLOCK_Sai0);
             return true;
-    #endif
-    #if defined(SAI1)
+        #endif
+        #if defined(SAI1)
         case 1:
             CLOCK_SetDiv(kCLOCK_Sai1PreDiv, SAI_CLOCK_SOURCE_PRE_DIVIDER);
             CLOCK_SetDiv(kCLOCK_Sai1Div, SAI_CLOCK_SOURCE_DIVIDER);
             CLOCK_SetMux(kCLOCK_Sai1Mux, SAI_CLOCK_SOURCE_SELECT);
             CLOCK_EnableClock(kCLOCK_Sai1);
             return true;
-    #endif
-    #if defined(SAI2)
+        #endif
+        #if defined(SAI2)
         case 2:
             CLOCK_SetDiv(kCLOCK_Sai2PreDiv, SAI_CLOCK_SOURCE_PRE_DIVIDER);
             CLOCK_SetDiv(kCLOCK_Sai2Div, SAI_CLOCK_SOURCE_DIVIDER);
             CLOCK_SetMux(kCLOCK_Sai2Mux, SAI_CLOCK_SOURCE_SELECT);
             CLOCK_EnableClock(kCLOCK_Sai2);
             return true;
-    #endif
-    #if defined(SAI3)
+        #endif
+        #if defined(SAI3)
         case 3:
             CLOCK_SetDiv(kCLOCK_Sai3PreDiv, SAI_CLOCK_SOURCE_PRE_DIVIDER);
             CLOCK_SetDiv(kCLOCK_Sai3Div, SAI_CLOCK_SOURCE_DIVIDER);
             CLOCK_SetMux(kCLOCK_Sai3Mux, SAI_CLOCK_SOURCE_SELECT);
             CLOCK_EnableClock(kCLOCK_Sai3);
             return true;
-    #endif
-    #if defined(SAI4)
+        #endif
+        #if defined(SAI4)
         case 4:
             CLOCK_SetDiv(kCLOCK_Sai4PreDiv, SAI_CLOCK_SOURCE_PRE_DIVIDER);
             CLOCK_SetDiv(kCLOCK_Sai4Div, SAI_CLOCK_SOURCE_DIVIDER);
             CLOCK_SetMux(kCLOCK_Sai4Mux, SAI_CLOCK_SOURCE_SELECT);
             CLOCK_EnableClock(kCLOCK_Sai4);
             return true;
-    #endif
-    #if defined(SAI5)
+        #endif
+        #if defined(SAI5)
         case 5:
             CLOCK_SetDiv(kCLOCK_Sai5PreDiv, SAI_CLOCK_SOURCE_PRE_DIVIDER);
             CLOCK_SetDiv(kCLOCK_Sai5Div, SAI_CLOCK_SOURCE_DIVIDER);
             CLOCK_SetMux(kCLOCK_Sai5Mux, SAI_CLOCK_SOURCE_SELECT);
             CLOCK_EnableClock(kCLOCK_Sai5);
             return true;
-    #endif
-    #if defined(SAI6)
+        #endif
+        #if defined(SAI6)
         case 6:
             CLOCK_SetDiv(kCLOCK_Sai6PreDiv, SAI_CLOCK_SOURCE_PRE_DIVIDER);
             CLOCK_SetDiv(kCLOCK_Sai6Div, SAI_CLOCK_SOURCE_DIVIDER);
             CLOCK_SetMux(kCLOCK_Sai6Mux, SAI_CLOCK_SOURCE_SELECT);
             CLOCK_EnableClock(kCLOCK_Sai6);
             return true;
-    #endif
-    #if defined(SAI7)
+        #endif
+        #if defined(SAI7)
         case 7:
             CLOCK_SetDiv(kCLOCK_Sai7PreDiv, SAI_CLOCK_SOURCE_PRE_DIVIDER);
             CLOCK_SetDiv(kCLOCK_Sai7Div, SAI_CLOCK_SOURCE_DIVIDER);
             CLOCK_SetMux(kCLOCK_Sai7Mux, SAI_CLOCK_SOURCE_SELECT);
             CLOCK_EnableClock(kCLOCK_Sai7);
             return true;
-    #endif
+        #endif
     }
     return false;
 }

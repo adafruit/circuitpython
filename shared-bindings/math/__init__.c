@@ -31,30 +31,30 @@ static MP_NORETURN void math_error(void) {
 }
 
 #define MATH_FUN_1(py_name, c_name) \
-        static mp_obj_t mp_math_##py_name(mp_obj_t x_obj) { return mp_obj_new_float(MICROPY_FLOAT_C_FUN(c_name)(mp_obj_get_float(x_obj))); } \
-        static MP_DEFINE_CONST_FUN_OBJ_1(mp_math_##py_name##_obj, mp_math_##py_name);
+    static mp_obj_t mp_math_##py_name(mp_obj_t x_obj) { return mp_obj_new_float(MICROPY_FLOAT_C_FUN(c_name)(mp_obj_get_float(x_obj))); } \
+    static MP_DEFINE_CONST_FUN_OBJ_1(mp_math_##py_name##_obj, mp_math_##py_name);
 
 #define MATH_FUN_2(py_name, c_name) \
-        static mp_obj_t mp_math_##py_name(mp_obj_t x_obj, mp_obj_t y_obj) { return mp_obj_new_float(MICROPY_FLOAT_C_FUN(c_name)(mp_obj_get_float(x_obj), mp_obj_get_float(y_obj))); } \
-        static MP_DEFINE_CONST_FUN_OBJ_2(mp_math_##py_name##_obj, mp_math_##py_name);
+    static mp_obj_t mp_math_##py_name(mp_obj_t x_obj, mp_obj_t y_obj) { return mp_obj_new_float(MICROPY_FLOAT_C_FUN(c_name)(mp_obj_get_float(x_obj), mp_obj_get_float(y_obj))); } \
+    static MP_DEFINE_CONST_FUN_OBJ_2(mp_math_##py_name##_obj, mp_math_##py_name);
 
 #define MATH_FUN_1_TO_BOOL(py_name, c_name) \
-        static mp_obj_t mp_math_##py_name(mp_obj_t x_obj) { return mp_obj_new_bool(c_name(mp_obj_get_float(x_obj))); } \
-        static MP_DEFINE_CONST_FUN_OBJ_1(mp_math_##py_name##_obj, mp_math_##py_name);
+    static mp_obj_t mp_math_##py_name(mp_obj_t x_obj) { return mp_obj_new_bool(c_name(mp_obj_get_float(x_obj))); } \
+    static MP_DEFINE_CONST_FUN_OBJ_1(mp_math_##py_name##_obj, mp_math_##py_name);
 
 #define MATH_FUN_1_TO_INT(py_name, c_name) \
-        static mp_obj_t mp_math_##py_name(mp_obj_t x_obj) { return mp_obj_new_int_from_float(MICROPY_FLOAT_C_FUN(c_name)(mp_obj_get_float(x_obj))); } \
-        static MP_DEFINE_CONST_FUN_OBJ_1(mp_math_##py_name##_obj, mp_math_##py_name);
+    static mp_obj_t mp_math_##py_name(mp_obj_t x_obj) { return mp_obj_new_int_from_float(MICROPY_FLOAT_C_FUN(c_name)(mp_obj_get_float(x_obj))); } \
+    static MP_DEFINE_CONST_FUN_OBJ_1(mp_math_##py_name##_obj, mp_math_##py_name);
 
 #define MATH_FUN_1_ERRCOND(py_name, c_name, error_condition) \
-        static mp_obj_t mp_math_##py_name(mp_obj_t x_obj) { \
-            mp_float_t x = mp_obj_get_float(x_obj); \
-            if (error_condition) { \
-                math_error(); \
-            } \
-            return mp_obj_new_float(MICROPY_FLOAT_C_FUN(c_name)(x)); \
+    static mp_obj_t mp_math_##py_name(mp_obj_t x_obj) { \
+        mp_float_t x = mp_obj_get_float(x_obj); \
+        if (error_condition) { \
+            math_error(); \
         } \
-        static MP_DEFINE_CONST_FUN_OBJ_1(mp_math_##py_name##_obj, mp_math_##py_name);
+        return mp_obj_new_float(MICROPY_FLOAT_C_FUN(c_name)(x)); \
+    } \
+    static MP_DEFINE_CONST_FUN_OBJ_1(mp_math_##py_name##_obj, mp_math_##py_name);
 
 #ifdef MP_NEED_LOG2
 // 1.442695040888963407354163704 is 1/_M_LN2

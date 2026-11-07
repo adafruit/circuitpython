@@ -50,7 +50,7 @@
 
 #define FIT_UNSIGNED(value, bits) (((value) & ~((1U << (bits)) - 1)) == 0)
 #define FIT_SIGNED(value, bits) \
-        ((((value) & ~((1U << ((bits) - 1)) - 1)) == 0) ||                                      \
+    ((((value) & ~((1U << ((bits) - 1)) - 1)) == 0) ||                                      \
     (((value) & ~((1U << ((bits) - 1)) - 1)) == ~((1U << ((bits) - 1)) - 1)))
 
 static bool asm_rv32_allow_zba_opcodes(void) {

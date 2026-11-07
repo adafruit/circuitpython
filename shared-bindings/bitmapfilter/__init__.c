@@ -501,7 +501,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(bitmapfilter_solarize_obj, 0, bitmapfilter_solarize);
 static int scaled_lut(int maxval, mp_obj_t func, int i) {
     mp_obj_t obj = mp_call_function_1(func, mp_obj_new_float(i / (mp_float_t)maxval));
     mp_float_t val = mp_obj_get_float(obj);
-    return (int)MICROPY_FLOAT_C_FUN(round)(val *maxval);
+    return (int)MICROPY_FLOAT_C_FUN(round)(val * maxval);
 }
 
 static mp_obj_t bitmapfilter_lookup(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {

@@ -37,31 +37,31 @@
 #ifndef MICROPY_PY_ERRNO_LIST
 // CIRCUITPY-CHANGE: add ENOSPC and EROFS, because they are in mp_common_errno_to_str().
 #define MICROPY_PY_ERRNO_LIST \
-        X(EPERM) \
-        X(ENOENT) \
-        X(EIO) \
-        X(EBADF) \
-        X(EAGAIN) \
-        X(ENOMEM) \
-        X(EACCES) \
-        X(EBUSY) \
-        X(EEXIST) \
-        X(ENODEV) \
-        X(EISDIR) \
-        X(EINVAL) \
-        X(ENOSPC) \
-        X(EROFS) \
-        X(EOPNOTSUPP) \
-        X(EADDRINUSE) \
-        X(ECONNABORTED) \
-        X(ECONNRESET) \
-        X(ENOBUFS) \
-        X(ENOTCONN) \
-        X(ETIMEDOUT) \
-        X(ECONNREFUSED) \
-        X(EHOSTUNREACH) \
-        X(EALREADY) \
-        X(EINPROGRESS) \
+    X(EPERM) \
+    X(ENOENT) \
+    X(EIO) \
+    X(EBADF) \
+    X(EAGAIN) \
+    X(ENOMEM) \
+    X(EACCES) \
+    X(EBUSY) \
+    X(EEXIST) \
+    X(ENODEV) \
+    X(EISDIR) \
+    X(EINVAL) \
+    X(ENOSPC) \
+    X(EROFS) \
+    X(EOPNOTSUPP) \
+    X(EADDRINUSE) \
+    X(ECONNABORTED) \
+    X(ECONNRESET) \
+    X(ENOBUFS) \
+    X(ENOTCONN) \
+    X(ETIMEDOUT) \
+    X(ECONNREFUSED) \
+    X(EHOSTUNREACH) \
+    X(EALREADY) \
+    X(EINPROGRESS) \
 
 #endif
 

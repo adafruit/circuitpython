@@ -37,12 +37,12 @@ typedef struct {
 extern const mp_obj_type_t mcu_pin_type;
 
 #define PIN(p_port, p_number, p_funtion_list) \
-        {                                         \
-            {&mcu_pin_type},                      \
-            .port = p_port,                   \
-            .number = p_number,               \
-            .function_list = p_funtion_list   \
-        }
+    {                                         \
+        {&mcu_pin_type},                      \
+        .port = p_port,                   \
+        .number = p_number,               \
+        .function_list = p_funtion_list   \
+    }
 
 #ifdef GPIO_PA0_EXISTS
 extern const mcu_pin_obj_t pin_PA0;

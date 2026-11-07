@@ -57,32 +57,32 @@ mp_obj_t namedtuple_make_new(const mp_obj_type_t *type_in, size_t n_args, size_t
 
 // CIRCUITPY-CHANGE: yikes
 #define NAMEDTUPLE_TYPE_BASE_AND_SLOTS_MAKE_NEW(type_name, make_new_fun) \
-        .base = { \
-            .base = { .type = &mp_type_type }, \
-            .flags = MP_TYPE_FLAG_EQ_CHECKS_OTHER_TYPE, \
-            .name = type_name, \
-            .slot_index_make_new = 1, \
-            .slot_index_print = 2, \
-            .slot_index_unary_op = 3, \
-            .slot_index_binary_op = 4, \
-            .slot_index_attr = 5, \
-            .slot_index_subscr = 6, \
-            .slot_index_iter = 7, \
-            .slot_index_parent = 8, \
-        }, \
-        .slots = { \
-            make_new_fun, \
-            namedtuple_print, \
-            mp_obj_tuple_unary_op, \
-            mp_obj_tuple_binary_op, \
-            namedtuple_attr, \
-            mp_obj_tuple_subscr, \
-            mp_obj_tuple_getiter, \
-            (void *)&mp_type_tuple, \
-        }
+    .base = { \
+        .base = { .type = &mp_type_type }, \
+        .flags = MP_TYPE_FLAG_EQ_CHECKS_OTHER_TYPE, \
+        .name = type_name, \
+        .slot_index_make_new = 1, \
+        .slot_index_print = 2, \
+        .slot_index_unary_op = 3, \
+        .slot_index_binary_op = 4, \
+        .slot_index_attr = 5, \
+        .slot_index_subscr = 6, \
+        .slot_index_iter = 7, \
+        .slot_index_parent = 8, \
+    }, \
+    .slots = { \
+        make_new_fun, \
+        namedtuple_print, \
+        mp_obj_tuple_unary_op, \
+        mp_obj_tuple_binary_op, \
+        namedtuple_attr, \
+        mp_obj_tuple_subscr, \
+        mp_obj_tuple_getiter, \
+        (void *)&mp_type_tuple, \
+    }
 
 #define NAMEDTUPLE_TYPE_BASE_AND_SLOTS(type_name) \
-        NAMEDTUPLE_TYPE_BASE_AND_SLOTS_MAKE_NEW(type_name, namedtuple_make_new)
+    NAMEDTUPLE_TYPE_BASE_AND_SLOTS_MAKE_NEW(type_name, namedtuple_make_new)
 
 #endif // MICROPY_PY_COLLECTIONS
 

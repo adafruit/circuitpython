@@ -326,7 +326,7 @@ void common_hal_audioi2sin_i2sin_construct(audioi2sin_i2sin_obj_t *self,
         program, program_len,
         // In external clock mode the SM is driven by the waits, not the clock
         // divider, so run it at sysclk.
-        external_clock ? 0 : sample_rate * pio_clocks_per_frame,
+        external_clock ? 0 : sample_rate *pio_clocks_per_frame,
         NULL, 0, // init
         NULL, 0, // may_exec
         NULL, 0, PIO_PINMASK32_NONE, PIO_PINMASK32_NONE, // out pin

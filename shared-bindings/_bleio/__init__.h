@@ -21,7 +21,7 @@ extern bleio_adapter_obj_t common_hal_bleio_adapter_obj;
 void bleio_exception_print(const mp_print_t *print, mp_obj_t o_in, mp_print_kind_t kind);
 
 #define MP_DEFINE_BLEIO_EXCEPTION(exc_name, base_name) \
-        MP_DEFINE_CONST_OBJ_TYPE(mp_type_bleio_##exc_name, MP_QSTR_##exc_name, MP_TYPE_FLAG_NONE, \
+    MP_DEFINE_CONST_OBJ_TYPE(mp_type_bleio_##exc_name, MP_QSTR_##exc_name, MP_TYPE_FLAG_NONE, \
     make_new, mp_obj_exception_make_new, \
     print, bleio_exception_print, \
     attr, mp_obj_exception_attr, \

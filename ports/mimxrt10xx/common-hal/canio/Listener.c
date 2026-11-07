@@ -25,10 +25,10 @@
 
 // Convert from back from FLEXCAN IDs to normal CAN IDs.
 #define FLEXCAN_ID_TO_CAN_ID_STD(id) \
-        ((uint32_t)((((uint32_t)(id)) & CAN_ID_STD_MASK) >> CAN_ID_STD_SHIFT))
+    ((uint32_t)((((uint32_t)(id)) & CAN_ID_STD_MASK) >> CAN_ID_STD_SHIFT))
 
 #define FLEXCAN_ID_TO_CAN_ID_EXT(id) \
-        ((uint32_t)((((uint32_t)(id)) & (CAN_ID_STD_MASK | CAN_ID_EXT_MASK)) \
+    ((uint32_t)((((uint32_t)(id)) & (CAN_ID_STD_MASK | CAN_ID_EXT_MASK)) \
     >> CAN_ID_EXT_SHIFT))
 
 

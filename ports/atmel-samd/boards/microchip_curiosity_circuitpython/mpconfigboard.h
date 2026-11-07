@@ -20,9 +20,9 @@
 #define CIRCUITPY_BOARD_SPI         (3)
 // These correspond to the CIRCUITPY_BOARD_BUS_SINGLETON definitions in pins.c
 #define CIRCUITPY_BOARD_SPI_PIN     { \
-            {.clock = &pin_PB03, .mosi = &pin_PB02, .miso = &pin_PB00}, /*board.SPI()*/ \
-            {.clock = &pin_PA05, .mosi = &pin_PA04, .miso = NULL},  /*board.LCD_SPI()*/ \
-            {.clock = &pin_PA17, .mosi = &pin_PA16, .miso = &pin_PA18}, /*board.SD_SPI()*/ \
+        {.clock = &pin_PB03, .mosi = &pin_PB02, .miso = &pin_PB00}, /*board.SPI()*/ \
+        {.clock = &pin_PA05, .mosi = &pin_PA04, .miso = NULL},      /*board.LCD_SPI()*/ \
+        {.clock = &pin_PA17, .mosi = &pin_PA16, .miso = &pin_PA18}, /*board.SD_SPI()*/ \
 }
 
 #define DEFAULT_CAN_BUS_TX (&pin_PB12)

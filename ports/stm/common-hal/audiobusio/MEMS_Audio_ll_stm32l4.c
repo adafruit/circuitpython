@@ -20,28 +20,28 @@ static mems_audio_err_t MX_DMA_Uninit(void);
 static mems_audio_err_t MX_SAI1_Init(void);
 
 #define CHECK_HAL_ERROR(x, e) \
-        {                         \
-            if ((x) != HAL_OK)    \
-            return e;         \
-        }
+    {                         \
+        if ((x) != HAL_OK)    \
+        return e;         \
+    }
 
 /**
  * @brief Checks the HAL return code and returns from a void function on error. The
  * error is saved to lastError.
  */
 #define CHECK_HAL_ERROR_VOID(x, e)    \
-        {                                 \
-            if ((x) != HAL_OK) {          \
-                audioImpl->lastError = e; \
-                return;                   \
-            }                             \
-        }
+    {                                 \
+        if ((x) != HAL_OK) {          \
+            audioImpl->lastError = e; \
+            return;                   \
+        }                             \
+    }
 
 #define CHECK_MEMS_AUDIO_ERROR_LAST()            \
-        {                                            \
-            if (audioImpl->lastError != MEMS_AUDIO_OK) \
-            return audioImpl->lastError;    \
-        }
+    {                                            \
+        if (audioImpl->lastError != MEMS_AUDIO_OK) \
+        return audioImpl->lastError;    \
+    }
 
 static bool default_pdm_data_available(MemsAudio_STM32L4SAIPDM *audio, pdm_sample_t *pdmSamples, size_t count) {
     return true;

@@ -22,7 +22,7 @@
 #endif
 
 #define FB_GETTER(method, default_value) \
-        (self->framebuffer_protocol->method \
+    (self->framebuffer_protocol->method \
         ? self->framebuffer_protocol->method(self->framebuffer) \
         : (default_value))
 

@@ -20,8 +20,8 @@
 
 #define CIRCUITPY_BOARD_SPI         (2)
 #define CIRCUITPY_BOARD_SPI_PIN     { \
-            {.clock = &pin_GPIO18, .mosi = &pin_GPIO23, .miso = &pin_GPIO19}, /* SD card and SPI header */ \
-            {.clock = &pin_GPIO14, .mosi = &pin_GPIO13, .miso = &pin_GPIO12}, /* LCD and touch */ \
+        {.clock = &pin_GPIO18, .mosi = &pin_GPIO23, .miso = &pin_GPIO19}, /* SD card and SPI header */ \
+        {.clock = &pin_GPIO14, .mosi = &pin_GPIO13, .miso = &pin_GPIO12}, /* LCD and touch */ \
 }
 
 // UART pins attached to the CH340C USB-to-serial converter

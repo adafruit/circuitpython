@@ -22,9 +22,9 @@
 extern hardwarekey_hardwarekey_obj_t hardwarekey_efuse_keys[HARDWAREKEY_EFUSE_SLOT_COUNT];
 
 #define CIRCUITPY_BOARD_HARDWARE_KEYS \
-        { MP_ROM_QSTR(MP_QSTR_EFUSE_KEY0), MP_ROM_PTR(&hardwarekey_efuse_keys[0]) }, \
-        { MP_ROM_QSTR(MP_QSTR_EFUSE_KEY1), MP_ROM_PTR(&hardwarekey_efuse_keys[1]) }, \
-        { MP_ROM_QSTR(MP_QSTR_EFUSE_KEY2), MP_ROM_PTR(&hardwarekey_efuse_keys[2]) }, \
-        { MP_ROM_QSTR(MP_QSTR_EFUSE_KEY3), MP_ROM_PTR(&hardwarekey_efuse_keys[3]) }, \
-        { MP_ROM_QSTR(MP_QSTR_EFUSE_KEY4), MP_ROM_PTR(&hardwarekey_efuse_keys[4]) }, \
-        { MP_ROM_QSTR(MP_QSTR_EFUSE_KEY5), MP_ROM_PTR(&hardwarekey_efuse_keys[5]) },
+    { MP_ROM_QSTR(MP_QSTR_EFUSE_KEY0), MP_ROM_PTR(&hardwarekey_efuse_keys[0]) }, \
+    { MP_ROM_QSTR(MP_QSTR_EFUSE_KEY1), MP_ROM_PTR(&hardwarekey_efuse_keys[1]) }, \
+    { MP_ROM_QSTR(MP_QSTR_EFUSE_KEY2), MP_ROM_PTR(&hardwarekey_efuse_keys[2]) }, \
+    { MP_ROM_QSTR(MP_QSTR_EFUSE_KEY3), MP_ROM_PTR(&hardwarekey_efuse_keys[3]) }, \
+    { MP_ROM_QSTR(MP_QSTR_EFUSE_KEY4), MP_ROM_PTR(&hardwarekey_efuse_keys[4]) }, \
+    { MP_ROM_QSTR(MP_QSTR_EFUSE_KEY5), MP_ROM_PTR(&hardwarekey_efuse_keys[5]) },

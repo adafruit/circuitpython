@@ -42,11 +42,11 @@
 // Note that we don't delay for the full TIMEOUT_MS, as execution
 // can't be woken from the delay.
 #define MICROPY_INTERNAL_WFE(TIMEOUT_MS) \
-        do { \
-            MP_THREAD_GIL_EXIT(); \
-            mp_hal_delay_us(500); \
-            MP_THREAD_GIL_ENTER(); \
-        } while (0)
+    do { \
+        MP_THREAD_GIL_EXIT(); \
+        mp_hal_delay_us(500); \
+        MP_THREAD_GIL_ENTER(); \
+    } while (0)
 
 // The port provides `mp_hal_stdio_mode_raw()` and `mp_hal_stdio_mode_orig()`.
 #define MICROPY_HAL_HAS_STDIO_MODE_SWITCH (1)
@@ -94,25 +94,25 @@ static inline void mp_hal_delay_us(mp_uint_t us) {
 
 // This macro is used to implement PEP 475 to retry specified syscalls on EINTR
 #define MP_HAL_RETRY_SYSCALL(ret, syscall, raise) { \
-            for (;;) { \
-                MP_THREAD_GIL_EXIT(); \
-                ret = syscall; \
-                MP_THREAD_GIL_ENTER(); \
-                if (ret == -1) { \
-                    int err = errno; \
-                    if (err == EINTR) { \
-                        mp_handle_pending(true); \
-                        continue; \
-                    } \
-                    raise; \
+        for (;;) { \
+            MP_THREAD_GIL_EXIT(); \
+            ret = syscall; \
+            MP_THREAD_GIL_ENTER(); \
+            if (ret == -1) { \
+                int err = errno; \
+                if (err == EINTR) { \
+                    mp_handle_pending(true); \
+                    continue; \
                 } \
-                break; \
+                raise; \
             } \
+            break; \
+        } \
 }
 
 #define RAISE_ERRNO(err_flag, error_val) \
-        { if (err_flag == -1) \
-          { mp_raise_OSError(error_val); } }
+    { if (err_flag == -1) \
+      { mp_raise_OSError(error_val); } }
 
 void mp_hal_get_random(size_t n, void *buf);
 
@@ -127,9 +127,9 @@ void mp_hal_get_mac(int idx, uint8_t buf[6]);
 #if defined(__linux__) && (defined(__ARM_32BIT_STATE) || defined(__riscv))
 #if __has_builtin(__builtin___clear_cache)
 #define MP_HAL_CLEAN_DCACHE(fun_data, fun_len) \
-        do { \
-            __builtin___clear_cache((void *)fun_data, (char *)fun_data + fun_len); \
-        } while (0)
+    do { \
+        __builtin___clear_cache((void *)fun_data, (char *)fun_data + fun_len); \
+    } while (0)
 #endif
 #endif
 

@@ -131,7 +131,7 @@ static inline void asm_thumb_it_cc(asm_thumb_t *as, uint cc, uint mask) {
 #define ASM_THUMB_FORMAT_1_ASR (0x1000)
 
 #define ASM_THUMB_FORMAT_1_ENCODE(op, rlo_dest, rlo_src, offset) \
-        ((op) | ((offset) << 6) | ((rlo_src) << 3) | (rlo_dest))
+    ((op) | ((offset) << 6) | ((rlo_src) << 3) | (rlo_dest))
 
 static inline void asm_thumb_format_1(asm_thumb_t *as, uint op, uint rlo_dest, uint rlo_src, uint offset) {
     assert(rlo_dest < ASM_THUMB_REG_R8);
@@ -147,7 +147,7 @@ static inline void asm_thumb_format_1(asm_thumb_t *as, uint op, uint rlo_dest, u
 #define ASM_THUMB_FORMAT_2_IMM_OPERAND (0x0400)
 
 #define ASM_THUMB_FORMAT_2_ENCODE(op, rlo_dest, rlo_src, src_b) \
-        ((op) | ((src_b) << 6) | ((rlo_src) << 3) | (rlo_dest))
+    ((op) | ((src_b) << 6) | ((rlo_src) << 3) | (rlo_dest))
 
 static inline void asm_thumb_format_2(asm_thumb_t *as, uint op, uint rlo_dest, uint rlo_src, int src_b) {
     assert(rlo_dest < ASM_THUMB_REG_R8);
@@ -238,7 +238,7 @@ static inline void asm_thumb_neg_rlo_rlo(asm_thumb_t *as, uint rlo_dest, uint rl
 #define ASM_THUMB_FORMAT_5_BX (0x4700)
 
 #define ASM_THUMB_FORMAT_5_ENCODE(op, r_dest, r_src) \
-        ((op) | ((r_dest) << 4 & 0x0080) | ((r_src) << 3) | ((r_dest) & 0x0007))
+    ((op) | ((r_dest) << 4 & 0x0080) | ((r_src) << 3) | ((r_dest) & 0x0007))
 
 static inline void asm_thumb_format_5(asm_thumb_t *as, uint op, uint r_dest, uint r_src) {
     asm_thumb_op16(as, ASM_THUMB_FORMAT_5_ENCODE(op, r_dest, r_src));
@@ -262,7 +262,7 @@ static inline void asm_thumb_bx_reg(asm_thumb_t *as, uint r_src) {
 #define ASM_THUMB_FORMAT_8_STRH (0x5200)
 
 #define ASM_THUMB_FORMAT_7_8_ENCODE(op, rlo_dest, rlo_base, rlo_index) \
-        ((op) | ((rlo_index) << 6) | ((rlo_base) << 3) | ((rlo_dest)))
+    ((op) | ((rlo_index) << 6) | ((rlo_base) << 3) | ((rlo_dest)))
 
 static inline void asm_thumb_format_7_8(asm_thumb_t *as, uint op, uint rlo_dest, uint rlo_base, uint rlo_index) {
     assert(rlo_dest < ASM_THUMB_REG_R8);
@@ -311,7 +311,7 @@ static inline void asm_thumb_str_rlo_rlo_rlo(asm_thumb_t *as, uint rlo_src, uint
 #define ASM_THUMB_FORMAT_10_LDRH (0x8800)
 
 #define ASM_THUMB_FORMAT_9_10_ENCODE(op, rlo_dest, rlo_base, offset) \
-        ((op) | (((offset) << 6) & 0x07c0) | ((rlo_base) << 3) | (rlo_dest))
+    ((op) | (((offset) << 6) & 0x07c0) | ((rlo_base) << 3) | (rlo_dest))
 
 static inline void asm_thumb_format_9_10(asm_thumb_t *as, uint op, uint rlo_dest, uint rlo_base, uint offset) {
     asm_thumb_op16(as, ASM_THUMB_FORMAT_9_10_ENCODE(op, rlo_dest, rlo_base, offset));
@@ -327,7 +327,7 @@ static inline void asm_thumb_asr_rlo_rlo_i5(asm_thumb_t *as, uint rlo_dest, uint
 // FORMAT 11: sign/zero extend
 
 #define ASM_THUMB_FORMAT_11_ENCODE(op, rlo_dest, rlo_src) \
-        ((op) | ((rlo_src) << 3) | (rlo_dest))
+    ((op) | ((rlo_src) << 3) | (rlo_dest))
 
 #define ASM_THUMB_FORMAT_11_SXTH (0xb200)
 #define ASM_THUMB_FORMAT_11_SXTB (0xb240)
@@ -411,20 +411,20 @@ void asm_thumb_b_rel12(asm_thumb_t *as, int rel);
 
 #define ASM_JUMP                        asm_thumb_b_label
 #define ASM_JUMP_IF_REG_ZERO(as, reg, label, bool_test) \
-        do { \
-            asm_thumb_cmp_rlo_i8(as, reg, 0); \
-            asm_thumb_bcc_label(as, ASM_THUMB_CC_EQ, label); \
-        } while (0)
+    do { \
+        asm_thumb_cmp_rlo_i8(as, reg, 0); \
+        asm_thumb_bcc_label(as, ASM_THUMB_CC_EQ, label); \
+    } while (0)
 #define ASM_JUMP_IF_REG_NONZERO(as, reg, label, bool_test) \
-        do { \
-            asm_thumb_cmp_rlo_i8(as, reg, 0); \
-            asm_thumb_bcc_label(as, ASM_THUMB_CC_NE, label); \
-        } while (0)
+    do { \
+        asm_thumb_cmp_rlo_i8(as, reg, 0); \
+        asm_thumb_bcc_label(as, ASM_THUMB_CC_NE, label); \
+    } while (0)
 #define ASM_JUMP_IF_REG_EQ(as, reg1, reg2, label) \
-        do { \
-            asm_thumb_cmp_rlo_rlo(as, reg1, reg2); \
-            asm_thumb_bcc_label(as, ASM_THUMB_CC_EQ, label); \
-        } while (0)
+    do { \
+        asm_thumb_cmp_rlo_rlo(as, reg1, reg2); \
+        asm_thumb_bcc_label(as, ASM_THUMB_CC_EQ, label); \
+    } while (0)
 #define ASM_JUMP_REG(as, reg) asm_thumb_bx_reg((as), (reg))
 #define ASM_CALL_IND(as, idx) asm_thumb_bl_ind(as, idx, ASM_THUMB_REG_R3)
 
@@ -465,30 +465,30 @@ void asm_thumb_b_rel12(asm_thumb_t *as, int rel);
 
 #define ASM_LOAD8_REG_REG_REG(as, reg_dest, reg_base, reg_index) asm_thumb_ldrb_rlo_rlo_rlo((as), (reg_dest), (reg_base), (reg_index))
 #define ASM_LOAD16_REG_REG_REG(as, reg_dest, reg_base, reg_index) \
-        do { \
-            asm_thumb_lsl_rlo_rlo_i5((as), REG_TEMP2, (reg_index), 1); \
-            asm_thumb_ldrh_rlo_rlo_rlo((as), (reg_dest), (reg_base), REG_TEMP2); \
-        } while (0)
+    do { \
+        asm_thumb_lsl_rlo_rlo_i5((as), REG_TEMP2, (reg_index), 1); \
+        asm_thumb_ldrh_rlo_rlo_rlo((as), (reg_dest), (reg_base), REG_TEMP2); \
+    } while (0)
 #define ASM_LOAD32_REG_REG_REG(as, reg_dest, reg_base, reg_index) \
-        do { \
-            asm_thumb_lsl_rlo_rlo_i5((as), REG_TEMP2, (reg_index), 2); \
-            asm_thumb_ldr_rlo_rlo_rlo((as), (reg_dest), (reg_base), REG_TEMP2); \
-        } while (0)
+    do { \
+        asm_thumb_lsl_rlo_rlo_i5((as), REG_TEMP2, (reg_index), 2); \
+        asm_thumb_ldr_rlo_rlo_rlo((as), (reg_dest), (reg_base), REG_TEMP2); \
+    } while (0)
 #define ASM_STORE8_REG_REG_REG(as, reg_val, reg_base, reg_index) asm_thumb_strb_rlo_rlo_rlo((as), (reg_val), (reg_base), (reg_index))
 #define ASM_STORE16_REG_REG_REG(as, reg_val, reg_base, reg_index) \
-        do { \
-            asm_thumb_op16((as), 0xB400 | (1 << reg_index)); \
-            asm_thumb_lsl_rlo_rlo_i5((as), (reg_index), (reg_index), 1); \
-            asm_thumb_strh_rlo_rlo_rlo((as), (reg_val), (reg_base), (reg_index)); \
-            asm_thumb_op16((as), 0xBC00 | (1 << reg_index)); \
-        } while (0)
+    do { \
+        asm_thumb_op16((as), 0xB400 | (1 << reg_index)); \
+        asm_thumb_lsl_rlo_rlo_i5((as), (reg_index), (reg_index), 1); \
+        asm_thumb_strh_rlo_rlo_rlo((as), (reg_val), (reg_base), (reg_index)); \
+        asm_thumb_op16((as), 0xBC00 | (1 << reg_index)); \
+    } while (0)
 #define ASM_STORE32_REG_REG_REG(as, reg_val, reg_base, reg_index) \
-        do { \
-            asm_thumb_op16((as), 0xB400 | (1 << reg_index)); \
-            asm_thumb_lsl_rlo_rlo_i5((as), (reg_index), (reg_index), 2); \
-            asm_thumb_str_rlo_rlo_rlo((as), (reg_val), (reg_base), (reg_index)); \
-            asm_thumb_op16((as), 0xBC00 | (1 << reg_index)); \
-        } while (0)
+    do { \
+        asm_thumb_op16((as), 0xB400 | (1 << reg_index)); \
+        asm_thumb_lsl_rlo_rlo_i5((as), (reg_index), (reg_index), 2); \
+        asm_thumb_str_rlo_rlo_rlo((as), (reg_val), (reg_base), (reg_index)); \
+        asm_thumb_op16((as), 0xBC00 | (1 << reg_index)); \
+    } while (0)
 
 #define ASM_CLR_REG(as, reg_dest) asm_thumb_mov_rlo_i8((as), (reg_dest), 0)
 

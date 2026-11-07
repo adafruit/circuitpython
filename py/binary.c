@@ -452,12 +452,12 @@ void mp_binary_set_val(char struct_type, char val_type, mp_obj_t val_in, byte *p
 
     mp_uint_t val;
     switch (val_type) {
-    #if MICROPY_PY_STRUCT_UNSAFE_TYPECODES
+        #if MICROPY_PY_STRUCT_UNSAFE_TYPECODES
         case 'O':
             val = (mp_uint_t)val_in;
             break;
-    #endif
-    #if MICROPY_PY_BUILTINS_FLOAT
+        #endif
+        #if MICROPY_PY_BUILTINS_FLOAT
         case 'e':
             val = mp_encode_half_float(mp_obj_get_float_to_f(val_in));
             break;
@@ -492,7 +492,7 @@ void mp_binary_set_val(char struct_type, char val_type, mp_obj_t val_in, byte *p
             break;
         }
         #endif
-    #endif
+        #endif
         default:
             // Typecode is a standard integer
             #if MICROPY_LONGINT_IMPL != MICROPY_LONGINT_IMPL_NONE
@@ -523,7 +523,7 @@ static void mp_binary_set_val_array_from_int(char typecode, void *p, size_t inde
 
 void mp_binary_set_val_array(char typecode, void *p, size_t index, mp_obj_t val_in) {
     switch (typecode) {
-    #if MICROPY_PY_BUILTINS_FLOAT
+        #if MICROPY_PY_BUILTINS_FLOAT
         case 'f':
             ((float *)p)[index] = mp_obj_get_float_to_f(val_in);
             break;
@@ -533,13 +533,13 @@ void mp_binary_set_val_array(char typecode, void *p, size_t index, mp_obj_t val_
             ((double *)p)[index] = mp_obj_get_float_to_d(val_in);
             break;
         #endif
-    #endif
-    #if MICROPY_PY_STRUCT_UNSAFE_TYPECODES
+        #endif
+        #if MICROPY_PY_STRUCT_UNSAFE_TYPECODES
         // Extension to CPython: array of objects
         case 'O':
             ((mp_obj_t *)p)[index] = val_in;
             break;
-    #endif
+        #endif
         // In all remaining cases the type code is an integer
         default:
             #if MICROPY_LONGINT_IMPL != MICROPY_LONGINT_IMPL_NONE
@@ -576,16 +576,16 @@ void mp_binary_set_val_array(char typecode, void *p, size_t index, mp_obj_t val_
 
 #if OVERFLOW_CHECKS
 #define SET_VAL_AS(TYPE, IS_SIGNED) do { \
-            TYPE tmp = val; \
-            if ((mp_int_t)tmp == val && (IS_SIGNED || val >= 0)) { \
-                ((TYPE *)p)[index] = tmp; \
-            } else { \
-                goto raise;  \
-            } \
+        TYPE tmp = val; \
+        if ((mp_int_t)tmp == val && (IS_SIGNED || val >= 0)) { \
+            ((TYPE *)p)[index] = tmp; \
+        } else { \
+            goto raise;  \
+        } \
 } while (0)
 #else
 #define SET_VAL_AS(TYPE, _IS_SIGNED) do { \
-            ((TYPE *)p)[index] = val; \
+        ((TYPE *)p)[index] = val; \
 } while (0)
 #endif
 

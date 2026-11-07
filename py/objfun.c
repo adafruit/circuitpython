@@ -206,22 +206,22 @@ static void dump_args(const mp_obj_t *a, size_t sz) {
 #define VM_MAX_STATE_ON_STACK (sizeof(mp_uint_t) * 11)
 
 #define DECODE_CODESTATE_SIZE(bytecode, n_state_out_var, state_size_out_var) \
-        { \
-            const uint8_t *ip = bytecode; \
-            size_t n_exc_stack, scope_flags, n_pos_args, n_kwonly_args, n_def_args; \
-            MP_BC_PRELUDE_SIG_DECODE_INTO(ip, n_state_out_var, n_exc_stack, scope_flags, n_pos_args, n_kwonly_args, n_def_args); \
-            (void)scope_flags; (void)n_pos_args; (void)n_kwonly_args; (void)n_def_args; \
+    { \
+        const uint8_t *ip = bytecode; \
+        size_t n_exc_stack, scope_flags, n_pos_args, n_kwonly_args, n_def_args; \
+        MP_BC_PRELUDE_SIG_DECODE_INTO(ip, n_state_out_var, n_exc_stack, scope_flags, n_pos_args, n_kwonly_args, n_def_args); \
+        (void)scope_flags; (void)n_pos_args; (void)n_kwonly_args; (void)n_def_args; \
         \
-            /* state size in bytes */                                                 \
-            state_size_out_var = n_state_out_var * sizeof(mp_obj_t)                   \
-                + n_exc_stack * sizeof(mp_exc_stack_t);                \
-        }
+        /* state size in bytes */                                                 \
+        state_size_out_var = n_state_out_var * sizeof(mp_obj_t)                   \
+            + n_exc_stack * sizeof(mp_exc_stack_t);                \
+    }
 
 #define INIT_CODESTATE(code_state, _fun_bc, _n_state, n_args, n_kw, args) \
-        code_state->fun_bc = _fun_bc; \
-        code_state->n_state = _n_state; \
-        mp_setup_code_state(code_state, n_args, n_kw, args); \
-        code_state->old_globals = mp_globals_get();
+    code_state->fun_bc = _fun_bc; \
+    code_state->n_state = _n_state; \
+    mp_setup_code_state(code_state, n_args, n_kw, args); \
+    code_state->old_globals = mp_globals_get();
 
 #if MICROPY_STACKLESS
 mp_code_state_t *mp_obj_fun_bc_prepare_codestate(mp_obj_t self_in, size_t n_args, size_t n_kw, const mp_obj_t *args) {
