@@ -37,6 +37,7 @@ typedef struct {
     bool black_bits_inverted;
     uint16_t write_color_ram_command;
     bool color_bits_inverted;
+    uint16_t write_previous_ram_command;
     uint32_t highlight_color;
     uint32_t highlight_color2;
     const uint8_t *refresh_sequence;
@@ -51,6 +52,10 @@ typedef struct {
     bool spectra6;
     bool two_byte_sequence_length;
     bool address_little_endian;
+    bool keep_awake;
+    uint8_t lag_frames;
+    const uint8_t *clean_sequence;
+    uint32_t clean_sequence_len;
 } epaperdisplay_construct_args_t;
 
 #define EPAPERDISPLAY_CONSTRUCT_ARGS_DEFAULTS { \
@@ -75,6 +80,7 @@ typedef struct {
         .black_bits_inverted = false, \
         .write_color_ram_command = NO_COMMAND, \
         .color_bits_inverted = false, \
+        .write_previous_ram_command = NO_COMMAND, \
         .highlight_color = 0x000000, \
         .highlight_color2 = 0x000000, \
         .refresh_sequence = NULL, \
@@ -88,13 +94,26 @@ typedef struct {
         .acep = false, \
         .spectra6 = false, \
         .two_byte_sequence_length = false, \
-        .address_little_endian = false \
+        .address_little_endian = false, \
+        .keep_awake = false, \
+        .lag_frames = 0, \
+        .clean_sequence = NULL, \
+        .clean_sequence_len = 0 \
 }
 
 void common_hal_epaperdisplay_epaperdisplay_construct(epaperdisplay_epaperdisplay_obj_t *self,
     const epaperdisplay_construct_args_t *args);
 
 bool common_hal_epaperdisplay_epaperdisplay_refresh(epaperdisplay_epaperdisplay_obj_t *self);
+
+#if CIRCUITPY_EPAPERDISPLAY_FAST
+// Lag drive only. Brings every pixel to white with balanced drive. When full, sends the clean
+// sequence and the start sequence. Then wipes each pixel frames toward black and frames toward
+// white. Blocks with background tasks running. The next refresh redraws the whole display.
+// Doesn't allocate. Holds any interrupt until it ends. Returns false, with any owed drive still
+// owed, if the bus can't be had.
+bool common_hal_epaperdisplay_epaperdisplay_clean(epaperdisplay_epaperdisplay_obj_t *self, uint8_t frames, bool full);
+#endif
 
 mp_obj_t common_hal_epaperdisplay_epaperdisplay_get_root_group(epaperdisplay_epaperdisplay_obj_t *self);
 bool common_hal_epaperdisplay_epaperdisplay_set_root_group(epaperdisplay_epaperdisplay_obj_t *self, displayio_group_t *root_group);

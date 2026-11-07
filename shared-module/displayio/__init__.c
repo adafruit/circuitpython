@@ -173,6 +173,11 @@ static void common_hal_displayio_release_displays_impl(bool keep_primary) {
         #endif
         #if CIRCUITPY_EPAPERDISPLAY
         } else if (display_type == &epaperdisplay_epaperdisplay_type) {
+            #if CIRCUITPY_EPAPERDISPLAY_FAST
+            if (keep_primary) {
+                epaperdisplay_epaperdisplay_end_held_bus(&displays[i].epaper_display);
+            }
+            #endif
             release_epaperdisplay(&displays[i].epaper_display);
         #endif
         #if CIRCUITPY_FRAMEBUFFERIO
@@ -242,6 +247,16 @@ static void common_hal_displayio_release_displays_impl(bool keep_primary) {
         supervisor_stop_terminal();
     }
 }
+
+#if CIRCUITPY_EPAPERDISPLAY_FAST
+void displayio_prepare_release_displays(void) {
+    for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
+        if (displays[i].display_base.type == &epaperdisplay_epaperdisplay_type) {
+            epaperdisplay_epaperdisplay_prepare_release(&displays[i].epaper_display);
+        }
+    }
+}
+#endif
 
 void common_hal_displayio_release_displays(void) {
     common_hal_displayio_release_displays_impl(false);
