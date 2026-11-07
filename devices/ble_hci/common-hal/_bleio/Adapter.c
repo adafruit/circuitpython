@@ -156,6 +156,12 @@ static void add_generic_services(bleio_adapter_obj_t *adapter) {
 
 static void check_enabled(bleio_adapter_obj_t *adapter) {
     if (!common_hal_bleio_adapter_get_enabled(adapter)) {
+        // A port's own adapter comes on at its first use, as a board's built-in one is always on:
+        // adafruit_ble's BLERadio() makes services without enabling it.
+        if (adapter->persistent) {
+            common_hal_bleio_adapter_set_enabled(adapter, true);
+            return;
+        }
         mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Adapter not enabled"));
     }
 }
@@ -259,10 +265,6 @@ static void _adapter_set_name(bleio_adapter_obj_t *self, mp_obj_str_t *name_obj)
 // Get various values and limits set by the adapter.
 // Set event mask.
 static void bleio_adapter_hci_init(bleio_adapter_obj_t *self) {
-    self->name = NULL;
-
-    bleio_adapter_reset_name(self);
-
     // Get version information.
     if (hci_read_local_version(&self->hci_version, &self->hci_revision, &self->lmp_version,
         &self->manufacturer, &self->lmp_subversion) != HCI_OK) {
@@ -271,6 +273,24 @@ static void bleio_adapter_hci_init(bleio_adapter_obj_t *self) {
     // Get supported features.
     if (hci_le_read_local_supported_features(self->features) != HCI_OK) {
         mp_raise_bleio_BluetoothError(MP_ERROR_TEXT("Could not read BLE features"));
+    }
+
+    // A controller without a public address (00:00:00:00:00:00, as Zephyr's on an nRF) is used
+    // with a random static one: the controller's own if it has one, else one from LE Rand.
+    self->own_addr_type = BT_ADDR_LE_PUBLIC;
+    bt_addr_t public_address;
+    static const bt_addr_t no_address = { 0 };
+    if (hci_read_bd_addr(&public_address) == HCI_OK &&
+        memcmp(public_address.val, no_address.val, sizeof(no_address.val)) == 0) {
+        if (hci_vs_read_static_address(&self->random_address) != HCI_OK) {
+            uint8_t rand[8];
+            hci_check_error(hci_le_rand(rand));
+            memcpy(self->random_address.val, rand, sizeof(self->random_address.val));
+        }
+        // A static address has its two top bits set.
+        self->random_address.val[5] |= 0xc0;
+        hci_check_error(hci_le_set_random_address(self->random_address.val));
+        self->own_addr_type = BT_ADDR_LE_RANDOM;
     }
 
     // Enabled desired events.
@@ -303,6 +323,10 @@ static void bleio_adapter_hci_init(bleio_adapter_obj_t *self) {
         self->max_acl_buffer_len = acl_max_len;
         self->max_acl_num_buffers = acl_max_num;
     }
+
+    // The default name ends with the address, so it comes last; the generic services hold it.
+    self->name = NULL;
+    bleio_adapter_reset_name(self);
 }
 
 void common_hal_bleio_adapter_construct_hci_uart(bleio_adapter_obj_t *self, busio_uart_obj_t *uart, digitalio_digitalinout_obj_t *rts, digitalio_digitalinout_obj_t *cts) {
@@ -315,7 +339,6 @@ void common_hal_bleio_adapter_construct_hci_uart(bleio_adapter_obj_t *self, busi
     self->enabled = false;
 
     common_hal_bleio_adapter_set_enabled(self, true);
-    bleio_adapter_hci_init(self);
 }
 
 void common_hal_bleio_adapter_set_enabled(bleio_adapter_obj_t *self, bool enabled) {
@@ -326,29 +349,45 @@ void common_hal_bleio_adapter_set_enabled(bleio_adapter_obj_t *self, bool enable
         return;
     }
 
-    self->enabled = enabled;
-
     // We must poll for input from the HCI adapter.
     // TODO Can we instead trigger an interrupt on UART input traffic?
     if (enabled) {
+        self->enabled = true;
         supervisor_enable_tick();
-    } else {
-        supervisor_disable_tick();
     }
 
-    // Enabling or disabling: stop any current activity; reset to known state.
+    // Enabling or disabling: stop any current activity; reset to known state. While disabling
+    // the adapter still counts as enabled here, so the background poll reads the reset's reply:
+    // left unread, the next enable takes it for the answer to its own reset and talks to a
+    // controller still resetting.
     hci_reset();
+    if (!enabled) {
+        self->enabled = false;
+        supervisor_disable_tick();
+    }
     self->now_advertising = false;
     self->circuitpython_advertising = false;
     self->advertising_timeout_msecs = 0;
 
     if (enabled) {
-        // Reset list of known attributes.
-        // Indices into the list are handles. Handle 0x0000 designates an invalid handle,
-        // so store None there to skip it.
-        self->attributes = mp_obj_new_list(0, NULL);
-        bleio_adapter_add_attribute(self, mp_const_none);
-        add_generic_services(self);
+        nlr_buf_t nlr;
+        if (nlr_push(&nlr) == 0) {
+            // Reset list of known attributes.
+            // Indices into the list are handles. Handle 0x0000 designates an invalid handle,
+            // so store None there to skip it.
+            self->attributes = mp_obj_new_list(0, NULL);
+            bleio_adapter_add_attribute(self, mp_const_none);
+            add_generic_services(self);
+
+            // The reset cleared the event mask and the random address: set the controller up again.
+            bleio_adapter_hci_init(self);
+            nlr_pop();
+        } else {
+            // A controller that does not answer leaves the adapter off, not on with no buffers.
+            self->enabled = false;
+            supervisor_disable_tick();
+            nlr_jump(nlr.ret_val);
+        }
     }
 }
 
@@ -360,23 +399,39 @@ bleio_address_obj_t *common_hal_bleio_adapter_get_address(bleio_adapter_obj_t *s
     check_enabled(self);
 
     bt_addr_t addr;
-    hci_check_error(hci_read_bd_addr(&addr));
+    if (self->own_addr_type == BT_ADDR_LE_RANDOM) {
+        addr = self->random_address;
+    } else {
+        hci_check_error(hci_read_bd_addr(&addr));
+    }
 
     // The cached address is refreshed on every call.
-    common_hal_bleio_address_construct(&self->address, addr.val, BT_ADDR_LE_PUBLIC);
+    common_hal_bleio_address_construct(&self->address, addr.val, self->own_addr_type);
     self->address.base.type = &bleio_address_type;
     return &self->address;
 }
 
 bool common_hal_bleio_adapter_set_address(bleio_adapter_obj_t *self, bleio_address_obj_t *address) {
-    return hci_le_set_random_address(address->bytes) == HCI_OK;
+    if (hci_le_set_random_address(address->bytes) != HCI_OK) {
+        return false;
+    }
+    // Advertising uses it from now on, as a random address.
+    memcpy(self->random_address.val, address->bytes, sizeof(self->random_address.val));
+    self->own_addr_type = BT_ADDR_LE_RANDOM;
+    return true;
 }
 
 mp_obj_str_t *common_hal_bleio_adapter_get_name(bleio_adapter_obj_t *self) {
+    if (self->name == NULL) {
+        // A persistent adapter not used in this run yet: on, its name set; any other raises.
+        check_enabled(self);
+    }
     return self->name;
 }
 
 void common_hal_bleio_adapter_set_name(bleio_adapter_obj_t *self, const char *name) {
+    // The name lives in the GAP service, which enabling makes: a persistent adapter comes on.
+    check_enabled(self);
     self->name = mp_obj_new_str(name, strlen(name));
     _adapter_set_name(self, self->name);
 }
@@ -652,7 +707,7 @@ uint32_t _common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
                 interval_units, // min interval
                 interval_units, // max interval
                 0b111,          // channel map: channels 37, 38, 39
-                anonymous ? BT_ADDR_LE_RANDOM : BT_ADDR_LE_PUBLIC,
+                anonymous ? BT_ADDR_LE_RANDOM : self->own_addr_type,
                 &peer_addr,
                 0x00,           // filter policy: no filter
                 BT_HCI_LE_ADV_TX_POWER_NO_PREF,
@@ -723,7 +778,7 @@ uint32_t _common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
                 interval_units, // min interval
                 interval_units, // max interval
                 adv_type,
-                anonymous ? BT_ADDR_LE_RANDOM : BT_ADDR_LE_PUBLIC,
+                anonymous ? BT_ADDR_LE_RANDOM : self->own_addr_type,
                 &peer_addr,
                 0b111,          // channel map: channels 37, 38, 39
                 0x00            // filter policy: no filter
@@ -802,6 +857,12 @@ void common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
 void common_hal_bleio_adapter_stop_advertising(bleio_adapter_obj_t *self) {
     check_enabled(self);
 
+    // A connection stops advertising in the controller (bleio_adapter_advertising_was_stopped):
+    // asking again gets no answer from an ESP32 and Command Disallowed from a CYW43.
+    if (!self->now_advertising) {
+        self->circuitpython_advertising = false;
+        return;
+    }
     self->now_advertising = false;
     self->circuitpython_advertising = false;
 

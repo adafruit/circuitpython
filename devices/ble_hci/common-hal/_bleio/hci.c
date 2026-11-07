@@ -70,9 +70,10 @@ typedef struct __attribute__ ((packed)) {
 
 typedef struct __attribute__ ((packed)) {
     uint8_t pkt_type;
+    // One type for the three, so the MS bitfield layout (MinGW) packs them into the same 16 bits.
     uint16_t handle : 12;
-    uint8_t pb : 2;            // Packet boundary flag: ACL_DATA_PB values.
-    uint8_t bc : 2;            // Broadcast flag: always 0b00 for BLE.
+    uint16_t pb : 2;           // Packet boundary flag: ACL_DATA_PB values.
+    uint16_t bc : 2;           // Broadcast flag: always 0b00 for BLE.
     uint16_t data_len;        // length of data[] in this packet.
     uint8_t data[];
 }  h4_hci_acl_pkt_t;
@@ -126,9 +127,22 @@ static volatile bool hci_poll_in_progress = false;
 #include "hci_debug.c"
 #endif // HCI_DEBUG
 
+// RTS to the controller; an adapter on USB has none (NULL), its link does the flow control.
+static void set_rts(bool value) {
+    if (common_hal_bleio_adapter_obj.rts_digitalinout != NULL) {
+        common_hal_digitalio_digitalinout_set_value(common_hal_bleio_adapter_obj.rts_digitalinout, value);
+    }
+}
+
 static void process_acl_data_pkt(uint8_t pkt_len, uint8_t pkt_data[]) {
     h4_hci_acl_pkt_t *pkt = (h4_hci_acl_pkt_t *)pkt_data;
 
+    // A frame longer than the buffer (a peer that ignores the MTU) is dropped, its fragments too.
+    size_t from = pkt->pb != ACL_DATA_PB_MIDDLE ? 0 : acl_data_len;
+    if (from + pkt->data_len > sizeof(acl_data_buffer)) {
+        acl_data_len = 0;
+        return;
+    }
     if (pkt->pb != ACL_DATA_PB_MIDDLE) {
         // This is the start of a fragmented acl_data packet or is a full packet.
         memcpy(acl_data_buffer, pkt->data, pkt->data_len);
@@ -141,7 +155,7 @@ static void process_acl_data_pkt(uint8_t pkt_len, uint8_t pkt_data[]) {
     }
 
     acl_data_t *acl = (acl_data_t *)&acl_data_buffer;
-    if (acl_data_len != sizeof(acl) + acl->acl_data_len) {
+    if (acl_data_len != sizeof(*acl) + acl->acl_data_len) {
         // We don't have the full packet yet.
         return;
     }
@@ -283,7 +297,7 @@ static void process_evt_pkt(size_t pkt_len, uint8_t pkt_data[]) {
 
         default:
             #if HCI_DEBUG
-            mp_printf(&mp_plat_print, "process_evt_pkt: Unknown event: %02x\n");
+            mp_printf(&mp_plat_print, "process_evt_pkt: Unknown event: %02x\n", pkt->evt);
             #endif
             break;
     }
@@ -306,7 +320,7 @@ hci_result_t hci_poll_for_incoming_pkt(void) {
     common_hal_mcu_enable_interrupts();
 
     // Assert RTS low to say we're ready to read data.
-    common_hal_digitalio_digitalinout_set_value(common_hal_bleio_adapter_obj.rts_digitalinout, false);
+    set_rts(false);
 
     int errcode = 0;
     bool packet_is_complete = false;
@@ -320,6 +334,7 @@ hci_result_t hci_poll_for_incoming_pkt(void) {
         size_t num_read =
             common_hal_busio_uart_read(common_hal_bleio_adapter_obj.hci_uart, rx_buffer + rx_idx, 1, &errcode);
         if (num_read == 0) {
+            hci_poll_in_progress = false;
             return HCI_OK;
         }
         if (errcode) {
@@ -333,6 +348,8 @@ hci_result_t hci_poll_for_incoming_pkt(void) {
         rx_idx++;
         if (rx_idx >= sizeof(rx_buffer)) {
             // Incoming packet is too large. Should not happen.
+            rx_idx = 0;
+            hci_poll_in_progress = false;
             return HCI_READ_ERROR;
         }
 
@@ -345,6 +362,8 @@ hci_result_t hci_poll_for_incoming_pkt(void) {
                         packet_is_complete = true;
                     }
                     if (rx_idx > total_len) {
+                        rx_idx = 0;
+                        hci_poll_in_progress = false;
                         return HCI_PACKET_SIZE_ERROR;
                     }
                 }
@@ -358,6 +377,8 @@ hci_result_t hci_poll_for_incoming_pkt(void) {
                         packet_is_complete = true;
                     }
                     if (rx_idx > total_len) {
+                        rx_idx = 0;
+                        hci_poll_in_progress = false;
                         return HCI_PACKET_SIZE_ERROR;
                     }
                 }
@@ -372,7 +393,7 @@ hci_result_t hci_poll_for_incoming_pkt(void) {
 
     if (packet_is_complete) {
         // Stop incoming data while processing packet.
-        common_hal_digitalio_digitalinout_set_value(common_hal_bleio_adapter_obj.rts_digitalinout, true);
+        set_rts(true);
         size_t pkt_len = rx_idx;
 
         // Reset for next packet.
@@ -402,7 +423,7 @@ hci_result_t hci_poll_for_incoming_pkt(void) {
         }
 
         // Let incoming bytes flow again.
-        common_hal_digitalio_digitalinout_set_value(common_hal_bleio_adapter_obj.rts_digitalinout, false);
+        set_rts(false);
     }
 
     // All done with this batch. Hold off receiving bytes until we're ready again.
@@ -416,7 +437,8 @@ static hci_result_t write_pkt(uint8_t *buffer, size_t len) {
     // Wait for CTS to go low before writing to HCI adapter.
     uint64_t start = supervisor_ticks_ms64();
 
-    while (common_hal_digitalio_digitalinout_get_value(common_hal_bleio_adapter_obj.cts_digitalinout)) {
+    while (common_hal_bleio_adapter_obj.cts_digitalinout != NULL &&
+           common_hal_digitalio_digitalinout_get_value(common_hal_bleio_adapter_obj.cts_digitalinout)) {
         RUN_BACKGROUND_TASKS;
         if (supervisor_ticks_ms64() - start > CTS_TIMEOUT_MSECS) {
             return HCI_WRITE_TIMEOUT;
@@ -475,10 +497,15 @@ static hci_result_t send_command(uint16_t opcode, uint8_t params_len, void *para
 }
 
 hci_result_t hci_send_acl_pkt(uint16_t handle, uint8_t cid, uint16_t data_len, uint8_t *data) {
-    // Wait for all backlogged packets to finish.
+    // Wait for all backlogged packets to finish, as long as a command's answer may take: a
+    // controller that keeps the credit (gone, or never set up) fails the send, never hangs it.
+    uint64_t start = supervisor_ticks_ms64();
     while (pending_pkt >= common_hal_bleio_adapter_obj.max_acl_num_buffers) {
         // RUN_BACKGROUND_TASKS includes hci_poll_for_incoming_pkt();
         RUN_BACKGROUND_TASKS;
+        if (supervisor_ticks_ms64() - start > RESPONSE_TIMEOUT_MSECS) {
+            return HCI_WRITE_TIMEOUT;
+        }
     }
 
     // buf_len is size of entire packet including header.
@@ -508,6 +535,8 @@ hci_result_t hci_send_acl_pkt(uint16_t handle, uint8_t cid, uint16_t data_len, u
     int errcode = 0;
     common_hal_busio_uart_write(common_hal_bleio_adapter_obj.hci_uart, tx_buffer, buf_len, &errcode);
     if (errcode) {
+        // Not sent, so not to be completed: its credit is not spent.
+        pending_pkt--;
         return HCI_WRITE_ERROR;
     }
     return HCI_OK;
@@ -584,6 +613,30 @@ hci_result_t hci_read_buffer_size(uint16_t *acl_max_len, uint8_t *sco_max_len, u
 
 hci_result_t hci_le_set_random_address(uint8_t addr[6]) {
     return send_command(BT_HCI_OP_LE_SET_RANDOM_ADDRESS, 6, addr);
+}
+
+hci_result_t hci_le_rand(uint8_t rand[8]) {
+    int result = send_command(BT_HCI_OP_LE_RAND, 0, NULL);
+    if (result == HCI_OK) {
+        struct bt_hci_rp_le_rand *response = (struct bt_hci_rp_le_rand *)cmd_response_data;
+        memcpy(rand, response->rand, sizeof(response->rand));
+    }
+    return result;
+}
+
+// Zephyr's vendor command for the controller's static random address (an nRF's is in its FICR).
+#define BT_HCI_OP_VS_READ_STATIC_ADDRS BT_OP(BT_OGF_VS, 0x0009)
+
+hci_result_t hci_vs_read_static_address(bt_addr_t *addr) {
+    int result = send_command(BT_HCI_OP_VS_READ_STATIC_ADDRS, 0, NULL);
+    if (result == HCI_OK) {
+        // Status, the number of addresses, then each address and its 16-byte identity root.
+        if (cmd_response_len < 2 + sizeof(addr->val) || cmd_response_data[1] == 0) {
+            return HCI_PACKET_SIZE_ERROR;
+        }
+        memcpy(addr->val, &cmd_response_data[2], sizeof(addr->val));
+    }
+    return result;
 }
 
 hci_result_t hci_le_set_advertising_parameters(uint16_t min_interval, uint16_t max_interval, uint8_t type, uint8_t own_addr_type, bt_addr_le_t *direct_addr, uint8_t channel_map, uint8_t filter_policy) {

@@ -33,6 +33,9 @@ typedef struct _bleio_adapter_obj_t {
     digitalio_digitalinout_obj_t *rts_digitalinout;
     digitalio_digitalinout_obj_t *cts_digitalinout;
     bool allocated;  // True when in use.
+    // A port's own adapter (its controller built in, not one the program wires up): a reset
+    // disables it but keeps it allocated and bound to _bleio.adapter for the next run.
+    bool persistent;
     bool now_advertising;
     bool circuitpython_advertising;
     bool enabled;
@@ -68,6 +71,10 @@ typedef struct _bleio_adapter_obj_t {
     // Stored inline so it never needs to allocate, even when read before the
     // heap is available (e.g. from bleio_adapter_reset_name).
     bleio_address_obj_t address;
+    // BT_ADDR_LE_PUBLIC, or BT_ADDR_LE_RANDOM with random_address for a controller that has no
+    // public address.
+    uint8_t own_addr_type;
+    bt_addr_t random_address;
 } bleio_adapter_obj_t;
 
 uint16_t bleio_adapter_add_attribute(bleio_adapter_obj_t *adapter, mp_obj_t *attribute);

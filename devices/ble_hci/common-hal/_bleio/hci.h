@@ -72,7 +72,9 @@ hci_result_t hci_le_set_extended_advertising_parameters(uint8_t handle, uint16_t
 // Returns HCI_OK or the HCI error status; no output values.
 hci_result_t hci_le_set_extended_scan_response_data(uint8_t handle, uint8_t op, uint8_t frag_pref, uint8_t len, uint8_t data[]);
 
+hci_result_t hci_le_rand(uint8_t rand[8]);
 hci_result_t hci_le_set_random_address(uint8_t addr[6]);
+hci_result_t hci_vs_read_static_address(bt_addr_t *addr);
 hci_result_t hci_le_set_scan_enable(uint8_t enable, uint8_t filter_dup);
 hci_result_t hci_le_set_scan_parameters(uint8_t scan_type, uint16_t interval, uint16_t window, uint8_t addr_type, uint8_t filter_policy);
 hci_result_t hci_le_set_scan_response_data(uint8_t length, uint8_t data[]);
