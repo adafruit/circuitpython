@@ -11,6 +11,7 @@
 #include "py/mpstate.h"
 #include "py/runtime.h"
 #include "py/stream.h"
+#include "shared-module/displayio/ColorConverter.h"
 #include "supervisor/port_heap.h"
 #include "supervisor/shared/tick.h"
 
@@ -24,8 +25,23 @@
 // USB and audio for one decode.
 #define VIDEOGIF_MAX_LATE_FRAMES 3
 
-static inline void videogif_put_pixel(uint8_t *row, int x, uint16_t value) {
-    memcpy(row + x * 2, &value, 2);
+// 1 bit per pixel: an RGB888 palette entry is white when its luma is at least
+// half, so any black and white palette maps exactly.
+static bool videogif_is_white(const uint8_t *rgb) {
+    return displayio_colorconverter_compute_luma((rgb[0] << 16) | (rgb[1] << 8) | rgb[2]) >= 128;
+}
+
+static inline void videogif_put_pixel(videogif_gifdecoder_obj_t *self, uint8_t *row, int x, uint16_t value) {
+    if (self->bits_per_pixel == 1) {
+        const uint8_t mask = 0x80 >> (x % 8);
+        if (value) {
+            row[x / 8] |= mask;
+        } else {
+            row[x / 8] &= ~mask;
+        }
+    } else {
+        memcpy(row + x * 2, &value, 2);
+    }
 }
 
 static displayio_area_t videogif_canvas(videogif_gifdecoder_obj_t *self) {
@@ -40,11 +56,16 @@ static displayio_area_t videogif_canvas(videogif_gifdecoder_obj_t *self) {
 // screen descriptor names.
 static void videogif_fill(videogif_gifdecoder_obj_t *self, const displayio_area_t *area) {
     const uint8_t index = self->gif->ucBackground;
-    const uint16_t value = self->gif->pPalette[index];
+    uint16_t value;
+    if (self->bits_per_pixel == 1) {
+        value = videogif_is_white((const uint8_t *)self->gif->pPalette + index * 3);
+    } else {
+        value = self->gif->pPalette[index];
+    }
     for (int y = area->y1; y < area->y2; y++) {
         uint8_t *row = self->destination.base + y * self->destination.stride;
         for (int x = area->x1; x < area->x2; x++) {
-            videogif_put_pixel(row, x, value);
+            videogif_put_pixel(self, row, x, value);
         }
     }
 }
@@ -70,6 +91,14 @@ static void videogif_draw_line(GIFDRAW *draw) {
     if (self->new_frame) {
         self->new_frame = false;
         videogif_start_frame(self);
+        if (self->bits_per_pixel == 1) {
+            memset(self->white, 0, sizeof(self->white));
+            for (int i = 0; i < 256; i++) {
+                if (videogif_is_white(draw->pPalette24 + i * 3)) {
+                    self->white[i / 8] |= 1 << (i % 8);
+                }
+            }
+        }
     }
 
     const int y = draw->iY + draw->y;
@@ -87,7 +116,13 @@ static void videogif_draw_line(GIFDRAW *draw) {
         if (draw->ucHasTransparency && index == draw->ucTransparent) {
             continue;
         }
-        videogif_put_pixel(row, draw->iX + i, draw->pPalette[index]);
+        uint16_t value;
+        if (self->bits_per_pixel == 1) {
+            value = (self->white[index / 8] >> (index % 8)) & 1;
+        } else {
+            value = draw->pPalette[index];
+        }
+        videogif_put_pixel(self, row, draw->iX + i, value);
     }
 }
 
@@ -160,6 +195,7 @@ void common_hal_videogif_gifdecoder_construct(videogif_gifdecoder_obj_t *self, m
     GIF_begin(self->gif, GIF_PALETTE_RGB565_LE);
     self->gif->pfnDraw = videogif_draw_line;
     self->file = file;
+    self->bits_per_pixel = 16;
     videogif_open_gif(self->gif, file);
 }
 
@@ -195,6 +231,25 @@ mp_int_t common_hal_videogif_gifdecoder_get_width(videogif_gifdecoder_obj_t *sel
 
 mp_int_t common_hal_videogif_gifdecoder_get_height(videogif_gifdecoder_obj_t *self) {
     return self->gif != NULL ? self->gif->iCanvasHeight : 0;
+}
+
+mp_int_t common_hal_videogif_gifdecoder_get_bits_per_pixel(videogif_gifdecoder_obj_t *self) {
+    return self->bits_per_pixel;
+}
+
+bool common_hal_videogif_gifdecoder_set_bits_per_pixel(videogif_gifdecoder_obj_t *self,
+    mp_int_t bits_per_pixel) {
+    if (bits_per_pixel == self->bits_per_pixel) {
+        return true;
+    }
+    if (self->playing || self->gif == NULL || (bits_per_pixel != 1 && bits_per_pixel != 16)) {
+        return false;
+    }
+    self->bits_per_pixel = bits_per_pixel;
+    // 1 bit per pixel needs the RGB888 palette to compute luma. play()
+    // restarts, which reads the GIF header again with this palette type.
+    self->gif->ucPaletteType = bits_per_pixel == 1 ? GIF_PALETTE_RGB888 : GIF_PALETTE_RGB565_LE;
+    return true;
 }
 
 // Keep the supervisor tick on only while a frame can come due.
@@ -285,10 +340,12 @@ bool common_hal_videogif_gifdecoder_set_destination(videogif_gifdecoder_obj_t *s
     if (moved && self->shown) {
         videogif_finish(self);
     } else if (moved) {
-        // Restarting reads the GIF header again, which converts the global
-        // color table to this byte order.
-        self->gif->ucPaletteType = destination->reverse_bytes_in_word ?
-            GIF_PALETTE_RGB565_BE : GIF_PALETTE_RGB565_LE;
+        if (self->bits_per_pixel == 16) {
+            // Restarting reads the GIF header again, which converts the
+            // global color table to this byte order.
+            self->gif->ucPaletteType = destination->reverse_bytes_in_word ?
+                GIF_PALETTE_RGB565_BE : GIF_PALETTE_RGB565_LE;
+        }
         videogif_restart(self);
     }
     return true;

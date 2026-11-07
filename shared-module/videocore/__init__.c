@@ -49,3 +49,11 @@ mp_int_t videosource_get_height(mp_obj_t source) {
 mp_int_t videosource_get_bits_per_pixel(mp_obj_t source) {
     return videosource_check(source)->get_bits_per_pixel(source);
 }
+
+bool videosource_set_bits_per_pixel(mp_obj_t source, mp_int_t bits_per_pixel) {
+    const videosource_p_t *protocol = videosource_check(source);
+    if (protocol->set_bits_per_pixel == NULL) {
+        return protocol->get_bits_per_pixel(source) == bits_per_pixel;
+    }
+    return protocol->set_bits_per_pixel(source, bits_per_pixel);
+}

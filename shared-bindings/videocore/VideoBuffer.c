@@ -29,9 +29,21 @@
 //|     unsupported position directly raises an error, but moving a containing
 //|     Group may give garbled output instead.
 //|
-//|     When the target is a plain buffer, frames are written compactly (row
-//|     stride equals ``width * bits_per_pixel / 8``) and can be read from
-//|     Python at any time, for example to process or save camera pixels.
+//|     A VideoBuffer can only be translated. Showing it on a rotated display, or
+//|     in a scaled Group, raises `ValueError`.
+//|
+//|     When the target is a plain buffer, frames are written with no gap
+//|     between rows, so each row takes ``(width * bits_per_pixel + 7) // 8``
+//|     bytes. Python code can read the buffer at any time, for example to
+//|     process or save camera pixels. 1-bit pixels are packed together, and
+//|     each row is padded out to a whole byte.
+//|     A Group shows a plain buffer target only when its pixels are 16 bits
+//|     and the display uses 16-bit color, or its pixels are 1 bit and the
+//|     display is monochrome with the leftmost pixel in the top bit of each
+//|     byte, such as `epaperdisplay.EPaperDisplay`. A 1 bit means white.
+//|     On a tricolor display with separate black and color RAM, a 1 bit video
+//|     only draws black and white, and a highlight colored layer below it shows
+//|     through. Other tricolor displays don't draw it.
 //|
 //|     See the `videocore` module overview for complete examples.
 //|     """
@@ -41,25 +53,37 @@
 //|         framebuffer: Union[
 //|             circuitpython_typing.FrameBuffer, circuitpython_typing.WriteableBuffer
 //|         ],
+//|         *,
+//|         bits_per_pixel: int = 16,
 //|     ) -> None:
 //|         """Create a VideoBuffer that plays video into the given framebuffer
 //|
 //|         :param framebuffer: The framebuffer to copy video frames into, or a
 //|             writable buffer such as a ``bytearray`` or ``memoryview``.
+//|         :param int bits_per_pixel: The pixel format of a writable buffer: 16
+//|             for color (RGB565), or 1 for black and white. ``play()`` asks the
+//|             source for this format and raises `ValueError` if the source
+//|             can't provide it. A framebuffer uses its own color depth instead.
 //|         """
 //|
 static mp_obj_t videocore_videobuffer_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
-    enum { ARG_framebuffer, NUM_ARGS };
+    enum { ARG_framebuffer, ARG_bits_per_pixel, NUM_ARGS };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_framebuffer, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_bits_per_pixel, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 16} },
     };
 
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     MP_STATIC_ASSERT(MP_ARRAY_SIZE(allowed_args) == NUM_ARGS);
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
+    const mp_int_t bits_per_pixel = args[ARG_bits_per_pixel].u_int;
+    if (bits_per_pixel != 1 && bits_per_pixel != 16) {
+        mp_arg_error_invalid(MP_QSTR_bits_per_pixel);
+    }
+
     videocore_videobuffer_obj_t *self = mp_obj_malloc_with_finaliser(videocore_videobuffer_obj_t, &videocore_videobuffer_type);
-    common_hal_videocore_videobuffer_construct(self, args[ARG_framebuffer].u_obj);
+    common_hal_videocore_videobuffer_construct(self, args[ARG_framebuffer].u_obj, bits_per_pixel);
     return MP_OBJ_FROM_PTR(self);
 }
 
@@ -67,15 +91,17 @@ static mp_obj_t videocore_videobuffer_make_new(const mp_obj_type_t *type, size_t
 //|         """Begin streaming the given video source into the target.
 //|
 //|         The source streams continuously, writing each new frame where the
-//|         VideoBuffer tells it to, replacing the previous one. The source's
-//|         frame format must be byte aligned. The source's size and format are
-//|         then fixed for the duration of the ``play()``; sources that change
-//|         them require ``stop()`` and a new ``play()``.
+//|         VideoBuffer tells it to, replacing the previous one. The source can
+//|         use 1 bit per pixel, or a whole number of bytes per pixel.
+//|         The source's size and format are then fixed for the duration of the
+//|         ``play()``; sources that change them require ``stop()`` and a new
+//|         ``play()``.
 //|
 //|         When the target is a framebuffer, its bits per pixel must match the
-//|         framebuffer color depth and the whole frame must fit within the
-//|         framebuffer at the current ``x``/``y`` position. An exception may be
-//|         raised if the video can't be played directly into the framebuffer.
+//|         source and be a whole number of bytes, and the whole frame must fit
+//|         within the framebuffer at the current ``x``/``y`` position. An
+//|         exception may be raised if the video can't be played directly into
+//|         the framebuffer.
 //|
 //|         When the target is a plain buffer, it must be large enough for a
 //|         whole frame.

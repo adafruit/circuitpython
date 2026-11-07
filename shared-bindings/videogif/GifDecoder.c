@@ -81,9 +81,15 @@
 //|         :param str filename: The name of a GIF file, such as ``"/animation.gif"``.
 //|             The GifDecoder closes the file when it is deinitialized.
 //|
-//|         Frames are RGB565, in the byte order of the display or framebuffer
-//|         that shows them. Raises `ValueError` if the file is not a GIF or if
-//|         the GIF is wider than 320 pixels.
+//|         The `videocore.VideoBuffer` playing the GIF sets the pixel format.
+//|         16-bit frames are RGB565, in the byte order of the display or
+//|         framebuffer that shows them. 1-bit frames pack eight pixels into
+//|         each byte, with the leftmost pixel in the most significant bit. A
+//|         pixel is white (1) when its brightness is at least 128 out of 255,
+//|         so a GIF that uses only black and white converts exactly.
+//|
+//|         Raises `ValueError` if the file is not a GIF, or if the GIF is wider
+//|         than the board supports (320 pixels on most boards).
 //|         """
 //|         ...
 //|
@@ -206,7 +212,11 @@ static mp_int_t videogif_gifdecoder_videosource_get_height(mp_obj_t self_in) {
 }
 
 static mp_int_t videogif_gifdecoder_get_bits_per_pixel(mp_obj_t self_in) {
-    return 16;
+    return common_hal_videogif_gifdecoder_get_bits_per_pixel(native_gifdecoder(self_in));
+}
+
+static bool videogif_gifdecoder_set_bits_per_pixel(mp_obj_t self_in, mp_int_t bits_per_pixel) {
+    return common_hal_videogif_gifdecoder_set_bits_per_pixel(native_gifdecoder(self_in), bits_per_pixel);
 }
 
 static const videosource_p_t videogif_gifdecoder_videosource_protocol = {
@@ -219,6 +229,7 @@ static const videosource_p_t videogif_gifdecoder_videosource_protocol = {
     .get_width = videogif_gifdecoder_videosource_get_width,
     .get_height = videogif_gifdecoder_videosource_get_height,
     .get_bits_per_pixel = videogif_gifdecoder_get_bits_per_pixel,
+    .set_bits_per_pixel = videogif_gifdecoder_set_bits_per_pixel,
 };
 
 MP_DEFINE_CONST_OBJ_TYPE(

@@ -32,6 +32,9 @@ typedef struct {
     mp_int_t source_height;
     mp_int_t source_bits_per_pixel;
     size_t source_frame_bytes;
+    // The pixel format play() asks the source for: the plain buffer's, or
+    // the framebuffer's color depth.
+    mp_int_t bits_per_pixel;
     // Base of the destination the source last accepted, or NULL when there
     // is none.
     const void *stream_base;
@@ -80,7 +83,8 @@ typedef struct {
     bool paused;
 } videocore_videobuffer_obj_t;
 
-void common_hal_videocore_videobuffer_construct(videocore_videobuffer_obj_t *self, mp_obj_t framebuffer);
+void common_hal_videocore_videobuffer_construct(videocore_videobuffer_obj_t *self, mp_obj_t framebuffer,
+    mp_int_t bits_per_pixel);
 void common_hal_videocore_videobuffer_play(videocore_videobuffer_obj_t *self, mp_obj_t source);
 void common_hal_videocore_videobuffer_set_position(videocore_videobuffer_obj_t *self, mp_int_t x, mp_int_t y);
 void common_hal_videocore_videobuffer_stop(videocore_videobuffer_obj_t *self);
