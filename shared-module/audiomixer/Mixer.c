@@ -173,6 +173,22 @@ static inline uint32_t copy16msb(uint32_t val) {
     #endif
 }
 
+#if CIRCUITPY_AUDIOMIXER_USE_PORT_MIX
+// Mix with the port's vector code once the active levels equal the pending levels, so
+// assignmul() has nothing left to do. Returns how many words, starting at index 0, it
+// handled; the caller does the rest.
+static uint32_t mix_with_port(uint32_t *dst, const uint32_t *src, uint32_t n,
+    int32_t lomul, int32_t himul, bool accumulate) {
+    // The port needs dst aligned to 16 bytes.
+    uint32_t i = 0;
+    for (; i < n && ((uintptr_t)(dst + i) & 15) != 0; i++) {
+        uint32_t word = mult16signed(src[i], lomul, himul);
+        dst[i] = accumulate ? add16signed(word, dst[i]) : word;
+    }
+    return i + audiomixer_port_mix_signed_16_bit(dst + i, src + i, n - i, lomul, himul, accumulate);
+}
+#endif
+
 // Rather than immediately changing the loudness of audio playback, we keep a separate buffer of
 // the "active" loudness and wait until we meet the conditions of a "zero crossing". A zero crossing
 // occurs when either the current value is 0 or the value changes from negative to positive or
@@ -281,7 +297,13 @@ static void mix_down_one_voice(audiomixer_mixer_obj_t *self,
             if (MP_LIKELY(self->base.bits_per_sample == 16)) {
                 if (MP_LIKELY(self->base.samples_signed)) {
                     if (MP_LIKELY(self->base.channel_count == sample->channel_count)) {
-                        for (uint32_t i = 0; i < n; i++) {
+                        uint32_t i = 0;
+                        #if CIRCUITPY_AUDIOMIXER_USE_PORT_MIX
+                        if (active_lo_level == pending_lo_level && active_hi_level == pending_hi_level) {
+                            i = mix_with_port(word_buffer, src, n, active_lo_level, active_hi_level, false);
+                        }
+                        #endif
+                        for (; i < n; i++) {
                             uint32_t word = src[i];
                             assignmul(word, &last_word, &active_lo_level, &active_hi_level, pending_lo_level, pending_hi_level);
                             word_buffer[i] = mult16signed(word, active_lo_level, active_hi_level);
@@ -350,7 +372,13 @@ static void mix_down_one_voice(audiomixer_mixer_obj_t *self,
             if (MP_LIKELY(self->base.bits_per_sample == 16)) {
                 if (MP_LIKELY(self->base.samples_signed)) {
                     if (MP_LIKELY(self->base.channel_count == sample->channel_count)) {
-                        for (uint32_t i = 0; i < n; i++) {
+                        uint32_t i = 0;
+                        #if CIRCUITPY_AUDIOMIXER_USE_PORT_MIX
+                        if (active_lo_level == pending_lo_level && active_hi_level == pending_hi_level) {
+                            i = mix_with_port(word_buffer, src, n, active_lo_level, active_hi_level, true);
+                        }
+                        #endif
+                        for (; i < n; i++) {
                             uint32_t word = src[i];
                             assignmul(word, &last_word, &active_lo_level, &active_hi_level, pending_lo_level, pending_hi_level);
                             word_buffer[i] = add16signed(mult16signed(word, active_lo_level, active_hi_level), word_buffer[i]);
