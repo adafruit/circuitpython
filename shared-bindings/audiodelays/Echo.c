@@ -43,7 +43,7 @@
 //|            The mix parameter allows you to change how much of the unchanged sample passes through to
 //|            the output to how much of the effect audio you hear as the output.
 //|
-//|         :param int max_delay_ms: The maximum time the echo can be in milliseconds. At most 4000, and less above 131 kHz: 2730 at 192 kHz.
+//|         :param int max_delay_ms: The maximum time the echo can be in milliseconds. Must be 4000 or less. At sample rates above 131 kHz the limit is lower, for example 2730 at 192 kHz.
 //|         :param synthio.BlockInput delay_ms: The current time of the echo delay in milliseconds. Must be less the max_delay_ms
 //|         :param synthio.BlockInput decay: The rate the echo fades. 0.0 = instant; 1.0 = never.
 //|         :param Optional[synthio.Biquad|Tuple[synthio.Biquad]] filter: A normalized biquad filter object or tuple of normalized biquad filter objects. A copy of the samples are processed sequentially by each filter before writing into the echo buffer. The original samples are not affected by this argument.
