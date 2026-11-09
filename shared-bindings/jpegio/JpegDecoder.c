@@ -139,10 +139,11 @@ MP_DEFINE_CONST_FUN_OBJ_2(jpegio_jpegdecoder_open_obj, jpegio_jpegdecoder_open);
 //|         software decoder's. Other images, and data opened from a file or stream, use
 //|         the software decoder, or raise `ValueError` if ``software_ok`` is False.
 //|
-//|         On the ESP32-S3, ``decode`` uses a faster software decoder for baseline 4:2:0
-//|         color and grayscale JPEGs when ``scale`` is 0, ``bitmap`` holds 16-bit values, and
-//|         no skip index is given. Data opened from a file or stream is then read into memory
-//|         first. Colors may differ slightly from the usual software decoder's.
+//|         On an ESP32-S3 build with ``CIRCUITPY_JPEGIO_FAST`` turned on, ``decode`` uses a
+//|         faster software decoder for baseline 4:2:0 color and grayscale JPEGs when ``scale``
+//|         is 0, ``bitmap`` holds 16-bit values, and no skip index is given. Data opened from a
+//|         file or stream is then read into memory first. Colors may differ slightly from the
+//|         usual software decoder's.
 //|
 //|         :param Bitmap bitmap: Optional output buffer
 //|         :param int scale: Scale factor from 0 to 3, inclusive.
