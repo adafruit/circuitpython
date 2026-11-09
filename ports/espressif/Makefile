@@ -854,6 +854,9 @@ CHIP_COMPONENTS += esp_driver_jpeg esp_hal_jpeg
 endif
 
 ifneq ($(CIRCUITPY_JPEGIO_FAST),0)
+ifneq ($(IDF_TARGET),esp32s3)
+$(error CIRCUITPY_JPEGIO_FAST is only supported on the ESP32-S3)
+endif
 SRC_C += common-hal/jpegio/JpegDecoderFast.c
 CFLAGS += -isystem esp-adf-libs/esp_new_jpeg/include
 endif
@@ -1195,7 +1198,7 @@ endif
 
 # esp_new_jpeg is a prebuilt library from Espressif's esp-adf-libs.
 ifneq ($(CIRCUITPY_JPEGIO_FAST),0)
-BINARY_BLOBS += esp-adf-libs/esp_new_jpeg/lib/$(IDF_TARGET)/libesp_new_jpeg.a
+BINARY_BLOBS += esp-adf-libs/esp_new_jpeg/lib/esp32s3/libesp_new_jpeg.a
 endif
 
 ifneq ($(CIRCUITPY_RCLCPY),0)

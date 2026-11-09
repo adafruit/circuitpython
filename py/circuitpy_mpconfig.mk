@@ -444,7 +444,8 @@ CFLAGS += -DCIRCUITPY_JPEGIO=$(CIRCUITPY_JPEGIO)
 CIRCUITPY_JPEGIO_HW ?= 0
 CFLAGS += -DCIRCUITPY_JPEGIO_HW=$(CIRCUITPY_JPEGIO_HW)
 
-# The port has a faster software decoder for whole JPEGs in memory
+# The ESP32-S3 can decode JPEGs faster with esp_new_jpeg.
+# Off by default because it adds about 75 KB.
 CIRCUITPY_JPEGIO_FAST ?= 0
 CFLAGS += -DCIRCUITPY_JPEGIO_FAST=$(CIRCUITPY_JPEGIO_FAST)
 

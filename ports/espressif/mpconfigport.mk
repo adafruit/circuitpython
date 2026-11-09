@@ -505,9 +505,6 @@ CIRCUITPY_AUDIOIO = 0
 # LEDC + GPTimer PWM audio, the only analog audio output without I2S hardware.
 CIRCUITPY_AUDIOPWMIO ?= 1
 
-# esp_new_jpeg decodes JPEGs with the PIE SIMD instructions
-CIRCUITPY_JPEGIO_FAST ?= $(CIRCUITPY_JPEGIO)
-
 endif
 #### end chip-specific choices ########################################
 
