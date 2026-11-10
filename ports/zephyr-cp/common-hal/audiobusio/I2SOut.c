@@ -16,6 +16,7 @@
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-module/audiocore/__init__.h"
 #include "py/runtime.h"
+#include "supervisor/port.h"
 
 #if CIRCUITPY_AUDIOBUSIO_I2SOUT
 
@@ -161,7 +162,6 @@ void common_hal_audiobusio_i2sout_play(audiobusio_i2sout_obj_t *self,
     uint8_t channel_count = audiosample_get_channel_count(sample);
 
     // Store sample parameters
-    self->sample = sample;
     self->loop = loop;
     self->bytes_per_sample = bits_per_sample / 8;
     self->channel_count = channel_count;
@@ -183,8 +183,12 @@ void common_hal_audiobusio_i2sout_play(audiobusio_i2sout_obj_t *self,
     size_t block_size = self->block_size;
     uint32_t num_blocks = 4; // Use 4 blocks for buffering
 
-    // Allocate memory slab buffer
-    self->slab_buffer = m_malloc(self->block_size * num_blocks);
+    // Allocate memory slab buffer. Board I2SOut objects are static, so the GC doesn't scan them.
+    self->slab_buffer = port_malloc(self->block_size * num_blocks, true);
+    if (self->slab_buffer == NULL) {
+        m_malloc_fail(self->block_size * num_blocks);
+    }
+    self->sample = sample;
 
     // Initialize memory slab
     int ret = k_mem_slab_init(&self->mem_slab, self->slab_buffer, block_size, num_blocks);
@@ -271,7 +275,7 @@ void common_hal_audiobusio_i2sout_stop(audiobusio_i2sout_obj_t *self) {
 
     // Free buffers
     if (self->slab_buffer != NULL) {
-        m_free(self->slab_buffer);
+        port_free(self->slab_buffer);
         self->slab_buffer = NULL;
     }
 
