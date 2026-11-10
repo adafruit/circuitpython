@@ -14,6 +14,18 @@
 
 static bool stm_exti_reserved[STM32_GPIO_PORT_SIZE];
 static void (*stm_exti_callback[STM32_GPIO_PORT_SIZE])(uint8_t num);
+// Bitmask of lines whose interrupt is enabled.
+static uint16_t stm_exti_enabled;
+
+// Lines 5-9 and 10-15 each share one NVIC IRQ.
+static uint16_t irq_lines_mask(uint8_t num) {
+    if (num >= 5 && num <= 9) {
+        return 0x03e0;
+    } else if (num >= 10 && num <= 15) {
+        return 0xfc00;
+    }
+    return 1 << num;
+}
 
 void stm_peripherals_exti_reset_exti(uint8_t num) {
     stm_peripherals_exti_disable(num);
@@ -34,11 +46,15 @@ bool stm_peripherals_exti_reserve(uint8_t num) {
 }
 
 void stm_peripherals_exti_enable(uint8_t num) {
+    stm_exti_enabled |= 1 << num;
     HAL_NVIC_EnableIRQ(stm_peripherals_exti_get_irq(num));
 }
 
 void stm_peripherals_exti_disable(uint8_t num) {
-    HAL_NVIC_DisableIRQ(stm_peripherals_exti_get_irq(num));
+    stm_exti_enabled &= ~(1 << num);
+    if ((stm_exti_enabled & irq_lines_mask(num)) == 0) {
+        HAL_NVIC_DisableIRQ(stm_peripherals_exti_get_irq(num));
+    }
 }
 
 void stm_peripherals_exti_set_callback(void (*callback)(uint8_t num), uint8_t number) {
@@ -65,45 +81,48 @@ IRQn_Type stm_peripherals_exti_get_irq(uint8_t num) {
     }
 }
 
-void EXTI0_IRQHandler(void) {
-    stm_exti_callback[0](0);
-}
-void EXTI1_IRQHandler(void) {
-    stm_exti_callback[1](1);
-}
-void EXTI2_IRQHandler(void) {
-    stm_exti_callback[2](2);
-}
-void EXTI3_IRQHandler(void) {
-    stm_exti_callback[3](3);
-}
-void EXTI4_IRQHandler(void) {
-    stm_exti_callback[4](4);
-}
-
 #ifdef STM32L4
 #define PR PR1
 #endif
-void EXTI9_5_IRQHandler(void) {
+static void exti_irq_handler(uint8_t first, uint8_t last) {
     uint32_t pending = EXTI->PR;
-    for (uint i = 5; i <= 9; i++) {
-        if (pending & (1 << i)) {
-            stm_exti_callback[i](i);
+    for (uint8_t i = first; i <= last; i++) {
+        if (!(pending & (1 << i))) {
+            continue;
         }
-    }
-}
-
-void EXTI15_10_IRQHandler(void) {
-    uint32_t pending = EXTI->PR;
-    for (uint i = 10; i <= 15; i++) {
-        if (pending & (1 << i)) {
+        if ((stm_exti_enabled & (1 << i)) && stm_exti_callback[i] != NULL) {
             stm_exti_callback[i](i);
+        } else {
+            // No one is handling this line: clear it so the IRQ does not fire again.
+            EXTI->PR = 1 << i;
         }
     }
 }
 #ifdef STM32L4
 #undef PR
 #endif
+
+void EXTI0_IRQHandler(void) {
+    exti_irq_handler(0, 0);
+}
+void EXTI1_IRQHandler(void) {
+    exti_irq_handler(1, 1);
+}
+void EXTI2_IRQHandler(void) {
+    exti_irq_handler(2, 2);
+}
+void EXTI3_IRQHandler(void) {
+    exti_irq_handler(3, 3);
+}
+void EXTI4_IRQHandler(void) {
+    exti_irq_handler(4, 4);
+}
+void EXTI9_5_IRQHandler(void) {
+    exti_irq_handler(5, 9);
+}
+void EXTI15_10_IRQHandler(void) {
+    exti_irq_handler(10, 15);
+}
 
 
 #endif
