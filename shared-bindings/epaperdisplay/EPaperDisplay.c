@@ -340,7 +340,7 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
     construct_args.two_byte_sequence_length = two_byte_sequence_length;
     construct_args.address_little_endian = args[ARG_address_little_endian].u_bool;
     #if CIRCUITPY_EPAPERDISPLAY_FAST
-    construct_args.keep_awake = fast;
+    construct_args.fast = fast;
     construct_args.lag_frames = lag_frames;
     if (args[ARG_clean_sequence].u_obj != mp_const_none) {
         mp_buffer_info_t clean_bufinfo;

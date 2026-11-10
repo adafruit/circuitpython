@@ -52,7 +52,7 @@ typedef struct {
     bool spectra6;
     bool two_byte_sequence_length;
     bool address_little_endian;
-    bool keep_awake;
+    bool fast;
     uint8_t lag_frames;
     const uint8_t *clean_sequence;
     uint32_t clean_sequence_len;
@@ -95,7 +95,7 @@ typedef struct {
         .spectra6 = false, \
         .two_byte_sequence_length = false, \
         .address_little_endian = false, \
-        .keep_awake = false, \
+        .fast = false, \
         .lag_frames = 0, \
         .clean_sequence = NULL, \
         .clean_sequence_len = 0 \

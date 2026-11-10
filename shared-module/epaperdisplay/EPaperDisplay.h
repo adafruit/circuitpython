@@ -74,7 +74,7 @@ typedef struct {
     bool acep;
     bool two_byte_sequence_length;
     #if CIRCUITPY_EPAPERDISPLAY_FAST
-    bool keep_awake;
+    bool fast;
     bool awake;
     bool needs_start; // update_refresh_mode() changed the start sequence.
     #endif

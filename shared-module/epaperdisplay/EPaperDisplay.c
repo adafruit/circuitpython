@@ -139,7 +139,7 @@ void common_hal_epaperdisplay_epaperdisplay_construct(epaperdisplay_epaperdispla
     self->refresh_sequence = args->refresh_sequence;
     self->refresh_sequence_len = args->refresh_sequence_len;
     #if CIRCUITPY_EPAPERDISPLAY_FAST
-    self->keep_awake = args->keep_awake;
+    self->fast = args->fast;
     self->awake = false;
     self->needs_start = false;
     #endif
@@ -499,7 +499,7 @@ static void epaperdisplay_epaperdisplay_start_refresh(epaperdisplay_epaperdispla
     }
 
     #if CIRCUITPY_EPAPERDISPLAY_FAST
-    if (self->keep_awake && self->awake) {
+    if (self->fast && self->awake) {
         if (!self->needs_start) {
             // The panel is still configured from the previous refresh.
             return;
@@ -811,7 +811,7 @@ bool common_hal_epaperdisplay_epaperdisplay_refresh(epaperdisplay_epaperdisplay_
             supervisor_disable_tick();
             self->refreshing = false;
             #if CIRCUITPY_EPAPERDISPLAY_FAST
-            if (!self->keep_awake) {
+            if (!self->fast) {
                 // Run stop sequence but don't wait for busy because busy is set when sleeping.
                 send_command_sequence(self, false, self->stop_sequence, self->stop_sequence_len);
             }
@@ -887,7 +887,7 @@ void epaperdisplay_epaperdisplay_background(epaperdisplay_epaperdisplay_obj_t *s
             supervisor_disable_tick();
             self->refreshing = false;
             #if CIRCUITPY_EPAPERDISPLAY_FAST
-            if (!self->keep_awake) {
+            if (!self->fast) {
                 // Run stop sequence but don't wait for busy because busy is set when sleeping.
                 send_command_sequence(self, false, self->stop_sequence, self->stop_sequence_len);
             }
@@ -920,7 +920,7 @@ void release_epaperdisplay(epaperdisplay_epaperdisplay_obj_t *self) {
         self->refreshing = false;
         // Run stop sequence but don't wait for busy because busy is set when sleeping.
         #if CIRCUITPY_EPAPERDISPLAY_FAST
-        if (self->keep_awake) {
+        if (self->fast) {
             send_stop_sequence_guarded(self);
         } else {
             send_command_sequence(self, false, self->stop_sequence, self->stop_sequence_len);
@@ -930,7 +930,7 @@ void release_epaperdisplay(epaperdisplay_epaperdisplay_obj_t *self) {
         #endif
     }
     #if CIRCUITPY_EPAPERDISPLAY_FAST
-    else if (self->keep_awake && self->awake) {
+    else if (self->fast && self->awake) {
         send_stop_sequence_guarded(self);
     }
     self->awake = false;
@@ -964,7 +964,7 @@ void epaperdisplay_epaperdisplay_prepare_release(epaperdisplay_epaperdisplay_obj
 #if CIRCUITPY_EPAPERDISPLAY_FAST
 void epaperdisplay_epaperdisplay_end_held_bus(epaperdisplay_epaperdisplay_obj_t *self) {
     // The VM is over, so whatever holds the bus can never let it go: end it here.
-    if (self->keep_awake && !displayio_display_bus_is_free(&self->bus)) {
+    if (self->fast && !displayio_display_bus_is_free(&self->bus)) {
         displayio_display_bus_end_transaction(&self->bus);
         self->lag.bus_held = false;
     }
@@ -988,13 +988,13 @@ void epaperdisplay_epaperdisplay_reset(epaperdisplay_epaperdisplay_obj_t *self) 
     self->core.full_refresh = true;
     #if CIRCUITPY_EPAPERDISPLAY_FAST
     // Let the panel sleep after the next refresh when code isn't running.
-    if (self->keep_awake && self->awake && !self->refreshing) {
+    if (self->fast && self->awake && !self->refreshing) {
         // Nothing can catch a raise from a send. A reload may be pending.
         epaperdisplay_epaperdisplay_end_held_bus(self);
         send_stop_sequence_guarded(self);
         self->awake = false;
     }
-    self->keep_awake = false;
+    self->fast = false;
     #endif
 }
 
