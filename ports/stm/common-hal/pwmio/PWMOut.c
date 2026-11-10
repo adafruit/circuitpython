@@ -60,13 +60,15 @@ pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
 
         // if pin is same
         if (tim->pin == pin) {
-            // check if the timer has a channel active, or is reserved by main timer system
+            // PWMOut reserves its timers too, so a reserved timer with no PWM channels
+            // taken belongs to an internal module (PulseIn, PulseOut, audio, ...).
+            if (tim_index < TIM_BANK_ARRAY_LEN && tim_channels_taken[tim_index] == 0
+                && stm_peripherals_timer_is_reserved(mcu_tim_banks[tim_index])) {
+                last_failure = PWMOUT_INTERNAL_RESOURCES_IN_USE;
+                continue; // keep looking
+            }
+            // check if the timer has a channel active
             if (tim_index < TIM_BANK_ARRAY_LEN && tim_channels_taken[tim_index] != 0) {
-                // Timer has already been reserved by an internal module
-                if (stm_peripherals_timer_is_reserved(mcu_tim_banks[tim_index])) {
-                    last_failure = PWMOUT_INTERNAL_RESOURCES_IN_USE;
-                    continue; // keep looking
-                }
                 // is it the same channel? (or all channels reserved by a var-freq)
                 if (tim_channels_taken[tim_index] & (1 << tim_channel_index)) {
                     last_failure = PWMOUT_INTERNAL_RESOURCES_IN_USE;
@@ -145,6 +147,12 @@ pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
         if (HAL_TIM_PWM_Init(&self->handle) != HAL_OK) {
             return PWMOUT_INITIALIZATION_ERROR;
         }
+    } else {
+        // The timer is already running. HAL_TIM_PWM_Init() would restart it, but
+        // HAL_TIM_PWM_Start() refuses a channel unless the handle says it's ready.
+        self->handle.State = HAL_TIM_STATE_READY;
+        TIM_CHANNEL_STATE_SET_ALL(&self->handle, HAL_TIM_CHANNEL_STATE_READY);
+        TIM_CHANNEL_N_STATE_SET_ALL(&self->handle, HAL_TIM_CHANNEL_STATE_READY);
     }
 
     // Channel/PWM init
