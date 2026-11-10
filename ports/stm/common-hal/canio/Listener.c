@@ -203,14 +203,11 @@ void set_filters(canio_listener_obj_t *self, size_t nmatch, canio_match_obj_t **
 
 
 void common_hal_canio_listener_construct(canio_listener_obj_t *self, canio_can_obj_t *can, size_t nmatch, canio_match_obj_t **matches, float timeout) {
+    int fifo_idx;
     if (!can->fifo0_in_use) {
-        self->fifo_idx = 0;
-        self->rfr = &can->handle.Instance->RF0R;
-        can->fifo0_in_use = true;
+        fifo_idx = 0;
     } else if (!can->fifo1_in_use) {
-        self->fifo_idx = 1;
-        self->rfr = &can->handle.Instance->RF1R;
-        can->fifo1_in_use = true;
+        fifo_idx = 1;
     } else {
         mp_raise_ValueError(MP_ERROR_TEXT("All RX FIFOs in use"));
     }
@@ -219,7 +216,15 @@ void common_hal_canio_listener_construct(canio_listener_obj_t *self, canio_can_o
         mp_raise_ValueError(MP_ERROR_TEXT("Filters too complex"));
     }
 
-    // Nothing can fail now so it's safe to assign self->can
+    // Nothing can fail now so it's safe to claim the FIFO and assign self->can
+    self->fifo_idx = fifo_idx;
+    if (fifo_idx == 0) {
+        self->rfr = &can->handle.Instance->RF0R;
+        can->fifo0_in_use = true;
+    } else {
+        self->rfr = &can->handle.Instance->RF1R;
+        can->fifo1_in_use = true;
+    }
     self->can = can;
 
     self->mailbox = &can->handle.Instance->sFIFOMailBox[self->fifo_idx];
