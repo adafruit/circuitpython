@@ -149,8 +149,9 @@ static mp_obj_t i2cioexpander_ioexpander_obj_get_input_value(mp_obj_t self_in) {
     i2cioexpander_ioexpander_obj_t *self = MP_OBJ_TO_PTR(self_in);
     check_for_deinit(self);
     size_t value;
-    if (!common_hal_i2cioexpander_ioexpander_get_input_value(self, &value)) {
-        mp_raise_OSError(MP_EIO);
+    mp_negative_errno_t result = common_hal_i2cioexpander_ioexpander_get_input_value(self, &value);
+    if (result != 0) {
+        mp_raise_OSError(-result);
     }
     return MP_OBJ_NEW_SMALL_INT(value);
 }
@@ -180,7 +181,7 @@ static mp_obj_t i2cioexpander_ioexpander_obj_set_output_value(mp_obj_t self_in, 
     check_for_deinit(self);
     mp_negative_errno_t result = common_hal_i2cioexpander_ioexpander_set_output_value(self, mp_obj_get_int(value));
     if (result != 0) {
-        mp_raise_OSError(result);
+        mp_raise_OSError(-result);
     }
     return mp_const_none;
 }
@@ -211,7 +212,7 @@ static mp_obj_t i2cioexpander_ioexpander_obj_set_output_mask(mp_obj_t self_in, m
     check_for_deinit(self);
     mp_negative_errno_t result = common_hal_i2cioexpander_ioexpander_set_output_mask(self, mp_obj_get_int(value));
     if (result != 0) {
-        mp_raise_OSError(result);
+        mp_raise_OSError(-result);
     }
     return mp_const_none;
 }
