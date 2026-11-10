@@ -23,6 +23,16 @@ GPIO_ACTIVE_LOW = 1 << 0
 # neither of which should ever be in the Python heap.
 MINIMUM_RAM_SIZE = 8192
 
+# Preferred spellings and capitalizations for MICROPY_HW_MCU_NAME, keyed by the Zephyr
+# SoC name from board.yml. SoCs not listed use the Zephyr name as is.
+SOC_NAMES = {
+    "nrf52840": "nRF52840",
+    "nrf5340": "nRF5340",
+    "nrf54h20": "nRF54H20",
+    "nrf54l15": "nRF54L15",
+    "nrf54lm20a": "nRF54LM20A",
+}
+
 MANUAL_COMPAT_TO_DRIVER = {
     "renesas_ra_nv_flash": "flash",
     "soc_nv_flash": "flash",
@@ -2018,7 +2028,7 @@ static mii_ethernet_obj_t ethernet_obj;
     new_header_content = f"""#pragma once
 
 #define MICROPY_HW_BOARD_NAME       "{banner_name}"
-#define MICROPY_HW_MCU_NAME         "{soc_name}"
+#define MICROPY_HW_MCU_NAME         "{SOC_NAMES.get(soc_name, soc_name)}"
 #define CIRCUITPY_RAM_DEVICE_COUNT  {len(rams)}
 {status_led}
 {status_led_inverted}
