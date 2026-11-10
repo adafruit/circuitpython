@@ -7,6 +7,7 @@
 #include "common-hal/pulseio/PulseOut.h"
 
 #include <stdint.h>
+#include <string.h>
 
 #include "py/mpconfig.h"
 #include "shared-bindings/pulseio/PulseOut.h"
@@ -81,34 +82,43 @@ static void pulseout_event_handler(void) {
     }
 }
 
+static void free_timer(void) {
+    stm_peripherals_timer_free(tim_handle.Instance);
+    memset(&tim_handle, 0, sizeof(tim_handle));
+}
+
 void common_hal_pulseio_pulseout_construct(pulseio_pulseout_obj_t *self,
     const mcu_pin_obj_t *pin, uint32_t frequency, uint16_t duty_cycle) {
+    if (tim_handle.Instance == NULL) {
+        TIM_TypeDef *tim_instance = stm_peripherals_find_timer();
+        stm_peripherals_timer_reserve(tim_instance);
+
+        // calculate a 1ms period
+        uint32_t source = stm_peripherals_timer_get_source_freq(tim_instance);
+        uint32_t prescaler = source / 1000000; // 1us intervals
+
+        stm_peripherals_timer_preinit(tim_instance, 4, pulseout_event_handler);
+        tim_handle.Instance = tim_instance;
+        tim_handle.Init.Period = 100; // immediately replaced.
+        tim_handle.Init.Prescaler = prescaler - 1;
+        tim_handle.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+        tim_handle.Init.CounterMode = TIM_COUNTERMODE_UP;
+        tim_handle.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+
+        HAL_TIM_Base_Init(&tim_handle);
+        tim_handle.Instance->SR = 0;
+    }
+
     pwmout_result_t result = common_hal_pwmio_pwmout_construct(
         &self->pwmout, pin, duty_cycle, frequency, false);
-
+    if (result != PWMOUT_OK && refcount == 0) {
+        free_timer();
+    }
     // This will raise an exception and not return if needed.
     common_hal_pwmio_pwmout_raise_error(result);
 
     // Add to active PulseOuts
     refcount++;
-    TIM_TypeDef *tim_instance = stm_peripherals_find_timer();
-    stm_peripherals_timer_reserve(tim_instance);
-
-    // calculate a 1ms period
-    uint32_t source = stm_peripherals_timer_get_source_freq(tim_instance);
-    uint32_t prescaler = source / 1000000; // 1us intervals
-
-    stm_peripherals_timer_preinit(tim_instance, 4, pulseout_event_handler);
-    tim_handle.Instance = tim_instance;
-    tim_handle.Init.Period = 100; // immediately replaced.
-    tim_handle.Init.Prescaler = prescaler - 1;
-    tim_handle.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-    tim_handle.Init.CounterMode = TIM_COUNTERMODE_UP;
-    tim_handle.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-
-    HAL_TIM_Base_Init(&tim_handle);
-    tim_handle.Instance->SR = 0;
-
 
     turn_off(self);
 }
@@ -126,7 +136,7 @@ void common_hal_pulseio_pulseout_deinit(pulseio_pulseout_obj_t *self) {
 
     refcount--;
     if (refcount == 0) {
-        stm_peripherals_timer_free(tim_handle.Instance);
+        free_timer();
     }
 }
 
