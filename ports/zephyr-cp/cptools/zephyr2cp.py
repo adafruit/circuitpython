@@ -1680,7 +1680,7 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir, mpconfig
 static {obj_type}_obj_t {instance_name}_obj;
 static mp_obj_t {singleton_ptr} = mp_const_none;
 static mp_obj_t {c_function_name}(void) {{
-    if ({singleton_ptr} != mp_const_none) {{
+    if ({singleton_ptr} != mp_const_none && !common_hal_{obj_type}_deinited(&{instance_name}_obj)) {{
         return {singleton_ptr};
     }}
     {singleton_ptr} = {construct_call};
