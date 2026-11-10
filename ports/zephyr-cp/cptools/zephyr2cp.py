@@ -1899,9 +1899,17 @@ const size_t iobroker_gpio_port_count = {count};
     stop_calls = "\n    ".join(
         f"common_hal_audiobusio_i2sout_stop(&{name}_obj);" for name in i2sout_instance_names
     )
+    # And i2sout_gc_collect(): the board's I2SOut objects are static, so the GC doesn't scan them.
+    collect_calls = "\n    ".join(
+        f"audiobusio_i2sout_collect_ptrs(&{name}_obj);" for name in i2sout_instance_names
+    )
     i2sout_reset_func = f"""
 void i2sout_reset(void) {{
     {stop_calls}
+}}
+
+void i2sout_gc_collect(void) {{
+    {collect_calls}
 }}"""
 
     zephyr_display_header = ""

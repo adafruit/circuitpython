@@ -282,6 +282,12 @@ void reset_cpu(void) {
     }
 }
 
+void port_gc_collect(void) {
+    #if CIRCUITPY_AUDIOBUSIO_I2SOUT
+    i2sout_gc_collect();
+    #endif
+}
+
 void reset_port(void) {
     #if CIRCUITPY_AUDIOBUSIO_I2SOUT
     i2sout_reset();

@@ -15,6 +15,7 @@
 #include "bindings/zephyr_kernel/__init__.h"
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-module/audiocore/__init__.h"
+#include "py/gc.h"
 #include "py/runtime.h"
 #include "supervisor/port.h"
 
@@ -280,6 +281,10 @@ void common_hal_audiobusio_i2sout_stop(audiobusio_i2sout_obj_t *self) {
     }
 
     self->sample = NULL;
+}
+
+void audiobusio_i2sout_collect_ptrs(audiobusio_i2sout_obj_t *self) {
+    gc_collect_ptr(self->sample);
 }
 
 bool common_hal_audiobusio_i2sout_get_playing(audiobusio_i2sout_obj_t *self) {
