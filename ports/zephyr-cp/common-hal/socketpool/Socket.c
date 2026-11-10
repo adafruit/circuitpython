@@ -275,7 +275,7 @@ socketpool_socket_obj_t *common_hal_socketpool_socket_accept(socketpool_socket_o
     socketpool_socket_obj_t *sock = mp_obj_malloc_with_finaliser(socketpool_socket_obj_t, NULL);
     int newsoc = socketpool_socket_accept(self, peer_out, NULL);
 
-    if (newsoc > 0) {
+    if (newsoc >= 0) {
         // Create the socket
         sock->base.type = &socketpool_socket_type;
         sock->num = newsoc;
