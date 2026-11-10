@@ -233,7 +233,9 @@ void common_hal_pwmio_pwmout_set_frequency(pwmio_pwmout_obj_t *self, uint32_t fr
     uint32_t prescaler = 0;
     uint32_t period = 0;
     uint32_t source_freq = stm_peripherals_timer_get_source_freq(self->handle.Instance);
-    timer_get_optimal_divisors(&period, &prescaler, frequency, source_freq);
+    if (!timer_get_optimal_divisors(&period, &prescaler, frequency, source_freq)) {
+        mp_arg_error_invalid(MP_QSTR_frequency);
+    }
 
     // shut down
     HAL_TIM_PWM_Stop(&self->handle, self->channel);
