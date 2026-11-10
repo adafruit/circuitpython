@@ -13,6 +13,9 @@
 #if CIRCUITPY_AUDIOBUSIO_I2SOUT
 #include "common-hal/audiobusio/I2SOut.h"
 #endif
+#if CIRCUITPY_WATCHDOG
+#include "shared-module/watchdog/__init__.h"
+#endif
 #if CIRCUITPY_NEOPIXEL_WRITE
 #include "common-hal/neopixel_write/__init__.h"
 #endif
@@ -289,6 +292,10 @@ void port_gc_collect(void) {
 }
 
 void reset_port(void) {
+    #if CIRCUITPY_WATCHDOG
+    watchdog_reset();
+    #endif
+
     #if CIRCUITPY_AUDIOBUSIO_I2SOUT
     i2sout_reset();
     #endif

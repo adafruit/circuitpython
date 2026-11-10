@@ -146,7 +146,7 @@ LIBRARY_SOURCE = {
     "gifio": ["lib/AnimatedGIF/gif.c"],
 }
 
-SHARED_MODULE_AND_COMMON_HAL = ["_bleio", "os", "rotaryio"]
+SHARED_MODULE_AND_COMMON_HAL = ["_bleio", "os", "rotaryio", "watchdog"]
 
 # Mapping from module directory name to the flag name used in CIRCUITPY_<FLAG>
 MODULE_FLAG_NAMES = {
