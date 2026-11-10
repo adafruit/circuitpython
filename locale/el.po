@@ -930,11 +930,13 @@ msgstr "Όλα τα UART περιφεριακά ειναι σε χρήση"
 #: ports/raspberrypi/common-hal/picodvi/AudioOut.c
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2040.c
 #: ports/raspberrypi/common-hal/usb_host_bulk/InStream.c py/argcheck.c
+#: shared-bindings/cryptography/hazmat/primitives/asymmetric/utils/__init__.c
 #: shared-bindings/digitalio/DigitalInOut.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c
 #: shared-bindings/i2cioexpander/IOPin.c shared-bindings/mipidsi/Display.c
 #: shared-bindings/pwmio/PWMOut.c shared-bindings/supervisor/__init__.c
 #: shared-module/aurora_epaper/aurora_framebuffer.c
+#: shared-module/cryptography/hazmat/primitives/asymmetric/ec/EllipticCurvePublicKey.c
 #: shared-module/jpegio/JpegDecoder.c shared-module/lvfontio/OnDiskFont.c
 msgid "Invalid %q"
 msgstr ""
@@ -1565,7 +1567,7 @@ msgstr ""
 
 #: ports/espressif/common-hal/audioio/AudioOut.c
 #: ports/espressif/common-hal/mipicsi/Camera.c
-#: shared-module/videocore/VideoBuffer.c
+#: shared-module/videocore/VideoBuffer.c shared-module/videogif/GifDecoder.c
 msgid "already playing"
 msgstr ""
 
@@ -1915,6 +1917,7 @@ msgid "Already scanning for wifi networks"
 msgstr "Ήδη γίνεται σάρωση για δίκτυα wifi"
 
 #: ports/espressif/common-hal/wifi/Radio.c
+#: ports/espressif/common-hal/wifi/__init__.c
 #: ports/raspberrypi/common-hal/wifi/Radio.c
 #: ports/zephyr-cp/common-hal/wifi/Radio.c
 msgid "WiFi is not enabled"
@@ -2575,6 +2578,7 @@ msgstr "%q πρέπει να είναι >= %d"
 
 #: py/argcheck.c shared-bindings/gifio/GifWriter.c
 #: shared-module/_airlift/__init__.c shared-module/gifio/OnDiskGif.c
+#: shared-module/videogif/GifDecoder.c
 msgid "%q must be <= %d"
 msgstr "%q πρέπει να είναι <= %d"
 
@@ -4211,6 +4215,7 @@ msgstr ""
 msgid "RemoteTransmissionRequests limited to 8 bytes"
 msgstr ""
 
+#: shared-bindings/cryptography/hazmat/primitives/asymmetric/ec/EllipticCurvePublicKey.c
 #: shared-bindings/cryptography/hazmat/primitives/asymmetric/padding/__init__.c
 #: shared-bindings/cryptography/hazmat/primitives/asymmetric/rsa/DigitalSignatureKey.c
 msgid "Only %q supported"

@@ -13,6 +13,7 @@ CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE ?= 2048
 CIRCUITPY_NEOPIXEL_WRITE ?= $(CIRCUITPY_RP2PIO)
 CIRCUITPY_FLOPPYIO ?= 1
 CIRCUITPY_FRAMEBUFFERIO ?= $(CIRCUITPY_DISPLAYIO)
+CIRCUITPY_BITMAPTOOLS_FAST_ROTOZOOM ?= $(CIRCUITPY_BITMAPTOOLS)
 CIRCUITPY_FULL_BUILD ?= 1
 CIRCUITPY_AUDIOMP3 ?= 1
 CIRCUITPY_AUDIOSPEED ?= 1
@@ -87,7 +88,15 @@ CIRCUITPY_CYW43_INIT_DELAY ?= 0
 
 # Audio effects
 CIRCUITPY_AUDIOEFFECTS ?= 1
+
+# Run PSA SHA-256 (hashlib, hmac, ssl) on the SHA-256 block. Needs mbedtls, which
+# is built for ssl or hashlib-only mbedtls.
+CIRCUITPY_RP2_SHA256_HW ?= $(call enable-if-any,$(CIRCUITPY_SSL) $(CIRCUITPY_HASHLIB_MBEDTLS_ONLY))
 endif
+# RP2040 has no SHA-256 block.
+CIRCUITPY_RP2_SHA256_HW ?= 0
+# Adds the driver to mbedtls's hash dispatch.
+MBEDTLS_DRIVER_PATCH = $(if $(filter 1,$(CIRCUITPY_RP2_SHA256_HW)),$(TOP)/lib/mbedtls_config/psa_dispatch.patch)
 
 INTERNAL_LIBM = 1
 
@@ -104,3 +113,6 @@ CIRCUITPY_MESSAGE_COMPRESSION_LEVEL ?= 1
 
 # (ssl is selectively enabled but it's always the mbedtls implementation)
 CIRCUITPY_SSL_MBEDTLS = 1
+
+# Cleanup is performed by GC finalizers (__del__ -> deinit) instead of a bulk pin reset.
+CIRCUITPY_BULK_RESET = 0
