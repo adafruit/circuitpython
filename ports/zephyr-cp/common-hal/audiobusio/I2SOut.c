@@ -151,9 +151,7 @@ static void audio_thread_func(void *self_in, void *unused1, void *unused2) {
 void common_hal_audiobusio_i2sout_play(audiobusio_i2sout_obj_t *self,
     mp_obj_t sample, bool loop) {
     // Stop any existing playback
-    if (self->playing) {
-        common_hal_audiobusio_i2sout_stop(self);
-    }
+    common_hal_audiobusio_i2sout_stop(self);
 
     audiosample_check(sample);
 
@@ -193,7 +191,10 @@ void common_hal_audiobusio_i2sout_play(audiobusio_i2sout_obj_t *self,
 
     // Initialize memory slab
     int ret = k_mem_slab_init(&self->mem_slab, self->slab_buffer, block_size, num_blocks);
-    CHECK_ZEPHYR_RESULT(ret);
+    if (ret != 0) {
+        common_hal_audiobusio_i2sout_stop(self);
+        raise_zephyr_error(ret);
+    }
 
     // Configure I2S
     struct i2s_config config;
@@ -251,12 +252,13 @@ void common_hal_audiobusio_i2sout_play(audiobusio_i2sout_obj_t *self,
 }
 
 void common_hal_audiobusio_i2sout_stop(audiobusio_i2sout_obj_t *self) {
-    if (!self->playing) {
-        return;
-    }
-
     self->playing = false;
     self->paused = false;
+    // Nothing to stop until play() has allocated the slab. play() also calls this on its error
+    // paths, before it sets playing.
+    if (self->slab_buffer == NULL) {
+        return;
+    }
     self->stopping = true;
 
     // Stop I2S
