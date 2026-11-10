@@ -34,12 +34,14 @@ void mdns_server_construct(mdns_server_obj_t *self, bool workflow) {
         return;
     }
 
+    MICROPY_PY_LWIP_ENTER
     if (!inited) {
         mdns_resp_init();
         inited = true;
     } else {
         mdns_resp_restart(NETIF_STA);
     }
+    MICROPY_PY_LWIP_EXIT
     self->inited = true;
 
     self->instance_name[0] = '\0';
@@ -64,7 +66,9 @@ void mdns_server_construct(mdns_server_obj_t *self, bool workflow) {
         // Add a second host entry to respond to "circuitpython.local" queries as well.
 
         #if MDNS_MAX_SECONDARY_HOSTNAMES > 0
+        MICROPY_PY_LWIP_ENTER
         mdns_resp_add_secondary_hostname(NETIF_STA, "circuitpython");
+        MICROPY_PY_LWIP_EXIT
         #endif
     }
 }
@@ -86,7 +90,9 @@ void common_hal_mdns_server_deinit(mdns_server_obj_t *self) {
     }
     self->inited = false;
     object_inited = false;
+    MICROPY_PY_LWIP_ENTER
     mdns_resp_remove_netif(NETIF_STA);
+    MICROPY_PY_LWIP_EXIT
 }
 
 bool common_hal_mdns_server_deinited(mdns_server_obj_t *self) {
@@ -98,11 +104,13 @@ const char *common_hal_mdns_server_get_hostname(mdns_server_obj_t *self) {
 }
 
 void common_hal_mdns_server_set_hostname(mdns_server_obj_t *self, const char *hostname) {
+    MICROPY_PY_LWIP_ENTER
     if (mdns_resp_netif_active(NETIF_STA)) {
         mdns_resp_rename_netif(NETIF_STA, hostname);
     } else {
         mdns_resp_add_netif(NETIF_STA, hostname);
     }
+    MICROPY_PY_LWIP_EXIT
 
     strlcpy(self->hostname, hostname, sizeof(self->hostname));
 }
@@ -193,9 +201,11 @@ size_t mdns_server_find(mdns_server_obj_t *self, const char *service_type, const
     state.out = out;
     state.out_len = out_len;
 
+    MICROPY_PY_LWIP_ENTER
     err_t err = mdns_search_service(NULL, service_type, proto,
         NETIF_STA, &search_result_cb, &state,
         &state.request_id);
+    MICROPY_PY_LWIP_EXIT
     if (err != ERR_OK) {
         return 0;
     }
@@ -208,16 +218,19 @@ size_t mdns_server_find(mdns_server_obj_t *self, const char *service_type, const
            supervisor_ticks_ms64() - start_ticks < timeout_ms) {
         RUN_BACKGROUND_TASKS;
     }
+    MICROPY_PY_LWIP_ENTER
     if (state.request_id < MDNS_MAX_REQUESTS) {
         mdns_search_stop(state.request_id);
         state.request_id = MDNS_MAX_REQUESTS;
     }
+    MICROPY_PY_LWIP_EXIT
 
     return state.i;
 }
 
 typedef struct {
     uint8_t request_id;
+    bool out_of_memory;
     mdns_remoteservice_obj_t *head;
     size_t count;
 } alloc_search_state_t;
@@ -232,9 +245,8 @@ static void alloc_search_result_cb(struct mdns_answer *answer, const char *varpa
             // alloc fails
             mdns_search_stop(state->request_id);
             state->request_id = MDNS_MAX_REQUESTS;
-            if (state->count == 0) {
-                m_malloc_fail(sizeof(mdns_remoteservice_obj_t));
-            }
+            // lwip holds its lock here, so find() raises the MemoryError after releasing it.
+            state->out_of_memory = true;
             return;
         }
         service->base.type = &mdns_remoteservice_type;
@@ -253,12 +265,15 @@ mp_obj_t common_hal_mdns_server_find(mdns_server_obj_t *self, const char *servic
     }
 
     alloc_search_state_t state;
+    state.out_of_memory = false;
     state.count = 0;
     state.head = NULL;
 
+    MICROPY_PY_LWIP_ENTER
     err_t err = mdns_search_service(NULL, service_type, proto,
         NETIF_STA, &alloc_search_result_cb, &state,
         &state.request_id);
+    MICROPY_PY_LWIP_EXIT
     if (err != ERR_OK) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Unable to start mDNS query"));
     }
@@ -271,9 +286,15 @@ mp_obj_t common_hal_mdns_server_find(mdns_server_obj_t *self, const char *servic
            supervisor_ticks_ms64() - start_ticks < timeout_ms) {
         RUN_BACKGROUND_TASKS;
     }
+    MICROPY_PY_LWIP_ENTER
     if (state.request_id < MDNS_MAX_REQUESTS) {
         mdns_search_stop(state.request_id);
         state.request_id = MDNS_MAX_REQUESTS;
+    }
+    MICROPY_PY_LWIP_EXIT
+
+    if (state.out_of_memory && state.count == 0) {
+        m_malloc_fail(sizeof(mdns_remoteservice_obj_t));
     }
 
     mp_obj_tuple_t *tuple = MP_OBJ_TO_PTR(mp_obj_new_tuple(state.count, NULL));
@@ -298,7 +319,8 @@ static void srv_txt_cb(struct mdns_service *service, void *ptr) {
     for (size_t i = 0; i < self->num_txt_records; i++) {
         res = mdns_resp_add_service_txtitem(service, self->txt_records[i], strlen(self->txt_records[i]));
         if (res != ERR_OK) {
-            mp_raise_RuntimeError(MP_ERROR_TEXT("Failed to add service TXT record"));
+            // lwip calls this with its lock held, also from its IRQ: raising would leave the lock
+            // taken or unwind into lwip, so send the records that fit.
             return;
         }
     }
@@ -377,11 +399,15 @@ void common_hal_mdns_server_advertise_service(mdns_server_obj_t *self, const cha
         }
     }
     if (existing_slot < MDNS_MAX_SERVICES) {
+        MICROPY_PY_LWIP_ENTER
         mdns_resp_del_service(NETIF_STA, existing_slot);
+        MICROPY_PY_LWIP_EXIT
     }
 
     assign_txt_records(self, txt_records, num_txt_records);
+    MICROPY_PY_LWIP_ENTER
     int8_t slot = mdns_resp_add_service(NETIF_STA, common_hal_mdns_server_get_instance_name(self), service_type, proto, port, srv_txt_cb, self);
+    MICROPY_PY_LWIP_EXIT
     if (slot < 0) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Out of MDNS service slots"));
         return;
