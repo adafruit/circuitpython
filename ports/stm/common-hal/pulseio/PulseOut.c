@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include "py/mpconfig.h"
+#include "py/runtime.h"
 #include "shared-bindings/pulseio/PulseOut.h"
 #include "shared-bindings/pwmio/PWMOut.h"
 
@@ -89,8 +90,17 @@ static void free_timer(void) {
 
 void common_hal_pulseio_pulseout_construct(pulseio_pulseout_obj_t *self,
     const mcu_pin_obj_t *pin, uint32_t frequency, uint16_t duty_cycle) {
+    pwmout_result_t result = common_hal_pwmio_pwmout_construct(
+        &self->pwmout, pin, duty_cycle, frequency, false);
+    // This will raise an exception and not return if needed.
+    common_hal_pwmio_pwmout_raise_error(result);
+
     if (tim_handle.Instance == NULL) {
-        TIM_TypeDef *tim_instance = stm_peripherals_find_timer();
+        TIM_TypeDef *tim_instance = stm_peripherals_find_free_timer();
+        if (tim_instance == NULL) {
+            common_hal_pwmio_pwmout_deinit(&self->pwmout);
+            mp_raise_RuntimeError(MP_ERROR_TEXT("All timers in use"));
+        }
         stm_peripherals_timer_reserve(tim_instance);
 
         // calculate a 1ms period
@@ -108,14 +118,6 @@ void common_hal_pulseio_pulseout_construct(pulseio_pulseout_obj_t *self,
         HAL_TIM_Base_Init(&tim_handle);
         tim_handle.Instance->SR = 0;
     }
-
-    pwmout_result_t result = common_hal_pwmio_pwmout_construct(
-        &self->pwmout, pin, duty_cycle, frequency, false);
-    if (result != PWMOUT_OK && refcount == 0) {
-        free_timer();
-    }
-    // This will raise an exception and not return if needed.
-    common_hal_pwmio_pwmout_raise_error(result);
 
     // Add to active PulseOuts
     refcount++;

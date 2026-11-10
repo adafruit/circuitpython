@@ -209,7 +209,7 @@ size_t stm_peripherals_timer_get_irqnum(TIM_TypeDef *instance) {
     return irq_map[tim_id];
 }
 
-TIM_TypeDef *stm_peripherals_find_timer(void) {
+TIM_TypeDef *stm_peripherals_find_free_timer(void) {
     // Check for timers on pins outside the package size
     for (size_t i = 0; i < MP_ARRAY_SIZE(mcu_tim_banks); i++) {
         bool timer_in_package = false;
@@ -240,8 +240,15 @@ TIM_TypeDef *stm_peripherals_find_timer(void) {
             return mcu_tim_banks[i];
         }
     }
-    mp_raise_RuntimeError(MP_ERROR_TEXT("All timers in use"));
     return NULL;
+}
+
+TIM_TypeDef *stm_peripherals_find_timer(void) {
+    TIM_TypeDef *timer = stm_peripherals_find_free_timer();
+    if (timer == NULL) {
+        mp_raise_RuntimeError(MP_ERROR_TEXT("All timers in use"));
+    }
+    return timer;
 }
 
 void stm_peripherals_timer_preinit(TIM_TypeDef *instance, uint8_t prio, void (*callback)(void)) {
