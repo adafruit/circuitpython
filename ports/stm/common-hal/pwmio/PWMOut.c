@@ -135,6 +135,7 @@ pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
     GPIO_InitStruct.Alternate = self->tim->altfn_index;
     HAL_GPIO_Init(pin_port(pin->port), &GPIO_InitStruct);
     self->pin = pin;
+    common_hal_mcu_pin_claim(pin);
 
     tim_clock_enable(1 << tim_index);
 
