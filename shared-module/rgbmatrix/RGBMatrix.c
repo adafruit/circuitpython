@@ -231,7 +231,9 @@ static void deinit_pin_digitalinouts(rgbmatrix_rgbmatrix_obj_t *self) {
 
 extern int pm_row_count;
 static void common_hal_rgbmatrix_rgbmatrix_deinit1(rgbmatrix_rgbmatrix_obj_t *self) {
-    common_hal_rgbmatrix_timer_disable(self->timer);
+    if (self->timer) {
+        common_hal_rgbmatrix_timer_disable(self->timer);
+    }
 
     if (_PM_protoPtr == &self->protomatter) {
         _PM_protoPtr = NULL;
