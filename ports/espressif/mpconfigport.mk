@@ -451,6 +451,9 @@ CIRCUITPY_MIPICSI = 1
 # P4 can play MIPI-CSI video into MIPI-DSI framebuffers
 CIRCUITPY_VIDEOCORE = 1
 
+# The PPA rotates video into rotated framebuffers
+CIRCUITPY_VIDEOCORE_ACCEL ?= $(CIRCUITPY_VIDEOCORE)
+
 # Hardware JPEG decoder
 CIRCUITPY_JPEGIO_HW ?= $(CIRCUITPY_JPEGIO)
 

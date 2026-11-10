@@ -865,6 +865,11 @@ CIRCUITPY_ULAB_OPTIMIZE_SIZE ?= 0
 CIRCUITPY_VIDEOCORE ?= 0
 CFLAGS += -DCIRCUITPY_VIDEOCORE=$(CIRCUITPY_VIDEOCORE)
 
+# A 2D accelerator rotates videocore frames into rotated framebuffers. The
+# port implements videocore_accel_rotate_copy().
+CIRCUITPY_VIDEOCORE_ACCEL ?= 0
+CFLAGS += -DCIRCUITPY_VIDEOCORE_ACCEL=$(CIRCUITPY_VIDEOCORE_ACCEL)
+
 # Animated GIF files as a videocore video source. Shares gifio's decoder.
 CIRCUITPY_VIDEOGIF ?= $(call enable-if-all,$(CIRCUITPY_VIDEOCORE) $(CIRCUITPY_GIFIO))
 CFLAGS += -DCIRCUITPY_VIDEOGIF=$(CIRCUITPY_VIDEOGIF)

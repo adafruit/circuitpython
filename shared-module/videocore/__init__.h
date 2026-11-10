@@ -117,3 +117,40 @@ mp_int_t videosource_get_bits_per_pixel(mp_obj_t source);
 // is made a display's root group. Implemented in shared-module/videocore/
 // VideoBuffer.c.
 void videocore_validate_root_group(mp_obj_t root_group, mp_obj_t display);
+
+#if CIRCUITPY_VIDEOCORE_ACCEL
+// A copy of a src_width x src_height picture into a destination picture,
+// rotated clockwise by rotation (0, 90, 180 or 270) and then, when mirror_x,
+// flipped left to right. Its top left corner lands at dst_x, dst_y. A port
+// with a 2D accelerator implements the two hooks below; the MP_WEAK defaults
+// in shared-module/videocore/__init__.c handle nothing.
+typedef struct {
+    // The whole destination picture: dst_len bytes from dst_buf, rows
+    // dst_stride bytes apart.
+    uint8_t *dst_buf;
+    size_t dst_len;
+    size_t dst_stride;
+    mp_int_t dst_x;
+    mp_int_t dst_y;
+    // The source picture, rows src_stride bytes apart. NULL when only asking
+    // whether the copy is supported.
+    const uint8_t *src;
+    size_t src_stride;
+    mp_int_t src_width;
+    mp_int_t src_height;
+    // Same format in and out: pixels are copied, never converted.
+    mp_int_t bits_per_pixel;
+    uint16_t rotation;
+    bool mirror_x;
+} videocore_accel_rotate_copy_t;
+
+// Return whether videocore_accel_rotate_copy can do op (op->src is ignored
+// and may be NULL). Never raises, never allocates on the VM heap.
+bool videocore_accel_rotate_copy_supported(const videocore_accel_rotate_copy_t *op);
+
+// Do op and wait for it to finish. Call from task context (such as a
+// background callback), never from an interrupt. Returns false, with the
+// destination possibly partly written, when the copy wasn't done. Never
+// raises, never allocates on the VM heap.
+bool videocore_accel_rotate_copy(const videocore_accel_rotate_copy_t *op);
+#endif

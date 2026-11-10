@@ -21,6 +21,10 @@
 #include "shared-bindings/framebufferio/FramebufferDisplay.h"
 #endif
 
+#if CIRCUITPY_VIDEOCORE_ACCEL
+#include "supervisor/port_heap.h"
+#endif
+
 #define FB_GETTER(method, default_value) \
     (self->framebuffer_protocol->method \
         ? self->framebuffer_protocol->method(self->framebuffer) \
@@ -55,10 +59,38 @@ static void videocore_videobuffer_add_vacated_frame(videocore_videobuffer_obj_t 
     displayio_area_union(&self->vacated_area, &area, &self->vacated_area);
 }
 
+#if CIRCUITPY_VIDEOCORE_ACCEL
+static bool videocore_videobuffer_is_staging(videocore_videobuffer_obj_t *self, const void *frame) {
+    for (size_t i = 0; i < VIDEOCORE_STAGING_COUNT; i++) {
+        if (self->staging[i] != NULL && frame == self->staging[i]) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void videocore_videobuffer_accel_copy(void *data);
+#endif
+
 // Called from interrupt context or a background task when the source lands a
 // frame, so keep it tiny.
 static void videocore_videobuffer_on_frame(void *ctx, const void *frame, const displayio_area_t *changed) {
     videocore_videobuffer_obj_t *self = ctx;
+    #if CIRCUITPY_VIDEOCORE_ACCEL
+    if (videocore_videobuffer_is_staging(self, frame)) {
+        // Staging frames aren't shown where they land: the background
+        // callback copies them into the framebuffer. One that lands after
+        // rotated output stopped is simply dropped.
+        if (self->accel) {
+            // The source already has its next destination: it is the one
+            // that was accepted last.
+            self->accel_writing = self->accel_next;
+            self->accel_landed = frame;
+            background_callback_add(&self->accel_callback, videocore_videobuffer_accel_copy, self);
+        }
+        return;
+    }
+    #endif
     if (frame == self->stream_base) {
         const displayio_area_t whole_frame = {
             .x2 = self->source_width,
@@ -93,6 +125,192 @@ static void videocore_videobuffer_on_stream_end(void *ctx) {
     self->source_ended = true;
 }
 
+#if CIRCUITPY_VIDEOCORE_ACCEL
+// Point the source at a staging buffer. accel_next is NULL while the
+// destination changes, so a frame landing meanwhile has an unknown successor
+// and is skipped rather than copied while the source might be rewriting it.
+static void videocore_videobuffer_accel_set_next(videocore_videobuffer_obj_t *self, uint8_t *next) {
+    const void *previous = self->accel_next;
+    if (next == NULL || next == previous) {
+        return;
+    }
+    self->accel_next = NULL;
+    videocore_destination_t dest = self->accel_dest;
+    dest.base = next;
+    if (videosource_set_destination(self->source, &dest, videocore_videobuffer_on_frame, self)) {
+        self->accel_next = next;
+        self->stream_base = next;
+    } else {
+        self->accel_next = previous;
+    }
+}
+
+// Background callback: rotate the frame that landed in a staging buffer into
+// the framebuffer. Runs in task context, so it can wait for the accelerator,
+// but it must not raise or allocate on the VM heap.
+//
+// No tearing: the copy only reads a buffer the source won't write until the
+// copy is done. While the source fills `writing`, first point it at the
+// third buffer (neither `landed` nor `writing`), then copy `landed`. The frame
+// after `writing` goes to the third buffer, and `landed` is only handed back
+// to the source by a later callback, after this copy has finished. If this
+// callback runs so late that the source already went back to `landed`
+// (landed == writing), that frame is dropped instead.
+static void videocore_videobuffer_accel_copy(void *data) {
+    videocore_videobuffer_obj_t *self = data;
+    common_hal_mcu_disable_interrupts();
+    const void *landed = self->accel_landed;
+    const void *writing = self->accel_writing;
+    self->accel_landed = NULL;
+    common_hal_mcu_enable_interrupts();
+    if (landed == NULL || writing == NULL || !self->accel || !self->playing ||
+        self->paused || self->stale_size || self->fb_pixels == NULL) {
+        return;
+    }
+
+    uint8_t *next = NULL;
+    for (size_t i = 0; i < VIDEOCORE_STAGING_COUNT; i++) {
+        if (self->staging[i] != landed && self->staging[i] != writing) {
+            next = self->staging[i];
+            break;
+        }
+    }
+    videocore_videobuffer_accel_set_next(self, next);
+    if (landed == writing) {
+        return;
+    }
+
+    const videocore_accel_rotate_copy_t op = {
+        .dst_buf = (uint8_t *)self->fb_pixels,
+        .dst_len = self->fb_pixels_len,
+        .dst_stride = self->fb_row_stride,
+        .dst_x = self->accel_dst_x,
+        .dst_y = self->accel_dst_y,
+        .src = landed,
+        .src_stride = self->accel_dest.row_bytes,
+        .src_width = self->source_width,
+        .src_height = self->source_height,
+        .bits_per_pixel = self->source_bits_per_pixel,
+        .rotation = self->accel_rotation,
+        .mirror_x = self->accel_mirror_x,
+    };
+    if (!videocore_accel_rotate_copy(&op)) {
+        return;
+    }
+    // The whole rotated rect changed, relative to current_area.
+    const displayio_area_t whole_frame = {
+        .x2 = displayio_area_width(&self->current_area),
+        .y2 = displayio_area_height(&self->current_area),
+    };
+    common_hal_mcu_disable_interrupts();
+    self->frame_changed_area = whole_frame;
+    self->frame_replaceable = true;
+    self->frame_ready = true;
+    common_hal_mcu_enable_interrupts();
+}
+
+// Express the absolute transform as a clockwise rotation followed by an
+// optional left-right flip. Source pixel (i, j) of a W x H frame lands at
+// (u, v) in the rect on screen:
+//   not transposed: u = dx > 0 ? i : W-1-i,  v = dy > 0 ? j : H-1-j
+//   transposed:     u = dx > 0 ? j : H-1-j,  v = dy > 0 ? i : W-1-i
+// Clockwise 90 maps (i, j) to (H-1-j, i), 180 to (W-1-i, H-1-j) and 270 to
+// (j, W-1-i). So the display rotations (see display_core_set_rotation) are
+// pure rotations:
+//   rotation   0: not transposed, dx > 0, dy > 0 -> 0
+//   rotation  90: transposed,     dx < 0, dy > 0 -> 90
+//   rotation 180: not transposed, dx < 0, dy < 0 -> 180
+//   rotation 270: transposed,     dx > 0, dy < 0 -> 270
+// and the four other sign combinations are one of these then a flip of u.
+static void videocore_videobuffer_accel_orientation(const displayio_buffer_transform_t *t,
+    uint16_t *rotation, bool *mirror_x) {
+    const bool flip_u = t->dx < 0;
+    const bool flip_v = t->dy < 0;
+    if (t->transpose_xy) {
+        // v = i for 90 and W-1-i for 270; 90 flips u, 270 doesn't.
+        *rotation = flip_v ? 270 : 90;
+        *mirror_x = flip_u == flip_v;
+    } else {
+        // v = j for 0 and H-1-j for 180; 180 flips u, 0 doesn't.
+        *rotation = flip_v ? 180 : 0;
+        *mirror_x = flip_u != flip_v;
+    }
+}
+
+static void videocore_videobuffer_free_staging(videocore_videobuffer_obj_t *self) {
+    self->accel = false;
+    self->accel_landed = NULL;
+    self->accel_writing = NULL;
+    self->accel_next = NULL;
+    for (size_t i = 0; i < VIDEOCORE_STAGING_COUNT; i++) {
+        if (self->staging_alloc[i] != NULL) {
+            port_free(self->staging_alloc[i]);
+        }
+        self->staging_alloc[i] = NULL;
+        self->staging[i] = NULL;
+    }
+}
+
+// Allocate the staging buffers outside the VM heap, aligned and padded for
+// DMA. Never raises: returns false when there isn't enough memory.
+static bool videocore_videobuffer_alloc_staging(videocore_videobuffer_obj_t *self) {
+    if (self->staging[0] != NULL) {
+        return true;
+    }
+    const uintptr_t align = VIDEOCORE_STAGING_ALIGN;
+    const size_t len = (self->source_frame_bytes + align - 1) / align * align;
+    for (size_t i = 0; i < VIDEOCORE_STAGING_COUNT; i++) {
+        uint8_t *allocation = port_malloc(len + align - 1, false);
+        if (allocation == NULL) {
+            videocore_videobuffer_free_staging(self);
+            return false;
+        }
+        self->staging_alloc[i] = allocation;
+        self->staging[i] = (uint8_t *)(((uintptr_t)allocation + align - 1) & ~(align - 1));
+    }
+    return true;
+}
+
+// Decide whether frames go through the staging buffers and the accelerator:
+// when the display rotates or mirrors a framebuffer target and the port can
+// do that copy. Otherwise frames land in the framebuffer unrotated. Never
+// raises.
+static void videocore_videobuffer_update_accel(videocore_videobuffer_obj_t *self) {
+    const displayio_buffer_transform_t *t = &self->absolute_transform;
+    bool accel = false;
+    if (self->framebuffer_protocol != NULL && self->source != mp_const_none &&
+        t->scale != 0 && (t->transpose_xy || t->dx < 0 || t->dy < 0)) {
+        uint16_t rotation;
+        bool mirror_x;
+        videocore_videobuffer_accel_orientation(t, &rotation, &mirror_x);
+        mp_buffer_info_t bufinfo;
+        self->framebuffer_protocol->get_bufinfo(self->framebuffer, &bufinfo);
+        const mp_int_t fb_width = FB_GETTER(get_width, 0);
+        const mp_int_t row_stride = FB_GETTER(get_row_stride, fb_width * self->source_bits_per_pixel / 8);
+        const mp_int_t first_pixel_offset = FB_GETTER(get_first_pixel_offset, 0);
+        if (bufinfo.buf != NULL && (mp_int_t)bufinfo.len > first_pixel_offset && row_stride > 0) {
+            // Checked at the top left; the copy checks the real position.
+            const videocore_accel_rotate_copy_t op = {
+                .dst_buf = (uint8_t *)bufinfo.buf + first_pixel_offset,
+                .dst_len = bufinfo.len - first_pixel_offset,
+                .dst_stride = row_stride,
+                .src_stride = (size_t)self->source_width * self->source_bits_per_pixel / 8,
+                .src_width = self->source_width,
+                .src_height = self->source_height,
+                .bits_per_pixel = self->source_bits_per_pixel,
+                .rotation = rotation,
+                .mirror_x = mirror_x,
+            };
+            accel = videocore_accel_rotate_copy_supported(&op) &&
+                videocore_videobuffer_alloc_staging(self);
+        }
+        self->accel_rotation = rotation;
+        self->accel_mirror_x = mirror_x;
+    }
+    self->accel = accel;
+}
+#endif
+
 // Drop any landed frame the refresh hasn't taken yet.
 static void videocore_videobuffer_forget_frame(videocore_videobuffer_obj_t *self) {
     displayio_area_t empty = {};
@@ -126,17 +344,25 @@ static void videocore_videobuffer_dirty_current_area(videocore_videobuffer_obj_t
 
 // Compute the rect (in screen coordinates, which are the framebuffer's
 // physical coordinates) that a frame written at the logical position x/y
-// covers. Frames are never rotated: their rows always run along the
-// framebuffer's x, so the rect is source_width wide and source_height tall. On
-// a transposed (90 or 270 degree) display that makes its logical rect
-// source_height wide and source_width tall. The transform is only ever a
-// translation plus mirroring and/or transposing (scale 1), which this relies
-// on.
+// covers. Frames landing directly are never rotated: their rows always run
+// along the framebuffer's x, so the rect is source_width wide and
+// source_height tall. On a transposed (90 or 270 degree) display that makes
+// its logical rect source_height wide and source_width tall. Frames rotated
+// by the accelerator are upright instead: on a transposed display their rect
+// is source_height wide and source_width tall on screen. The transform is
+// only ever a translation plus mirroring and/or transposing (scale 1), which
+// this relies on.
 static void videocore_videobuffer_frame_rect(videocore_videobuffer_obj_t *self,
     mp_int_t x, mp_int_t y, displayio_area_t *area) {
     const displayio_buffer_transform_t *t = &self->absolute_transform;
-    const mp_int_t width = self->source_width;
-    const mp_int_t height = self->source_height;
+    mp_int_t width = self->source_width;
+    mp_int_t height = self->source_height;
+    #if CIRCUITPY_VIDEOCORE_ACCEL
+    if (self->accel && t->transpose_xy) {
+        width = self->source_height;
+        height = self->source_width;
+    }
+    #endif
     mp_int_t x1;
     mp_int_t y1;
     if (t->scale == 0) {
@@ -180,6 +406,39 @@ static mp_int_t videocore_videobuffer_frame_span(videocore_videobuffer_obj_t *se
     return MAX((mp_int_t)self->source_frame_bytes, strided);
 }
 
+#if CIRCUITPY_VIDEOCORE_ACCEL
+// Copy rotated frames to framebuffer pixel x, y and fill dest with the
+// staging buffer the source streams into: the one it already has, if any.
+static void videocore_videobuffer_accel_destination(videocore_videobuffer_obj_t *self,
+    const mp_buffer_info_t *bufinfo, mp_int_t fb_width, mp_int_t fb_height,
+    mp_int_t row_stride, mp_int_t first_pixel_offset, mp_int_t x, mp_int_t y,
+    videocore_destination_t *dest) {
+    videocore_videobuffer_cache_fb_geometry(
+        self, bufinfo, fb_width, fb_height, row_stride, first_pixel_offset);
+    self->accel_dst_x = x;
+    self->accel_dst_y = y;
+    const size_t row_bytes = videocore_videobuffer_source_row_bytes(self);
+    dest->base = (uint8_t *)(self->accel_next != NULL ? self->accel_next : self->staging[0]);
+    dest->stride = row_bytes;
+    dest->row_bytes = row_bytes;
+    dest->height = self->source_height;
+    dest->reverse_bytes_in_word = FB_GETTER(get_reverse_pixels_in_word, false);
+    dest->on_stream_end = videocore_videobuffer_on_stream_end;
+    self->accel_dest = *dest;
+}
+#endif
+
+// Record a destination the source accepted.
+static void videocore_videobuffer_accept_destination(videocore_videobuffer_obj_t *self,
+    const videocore_destination_t *dest) {
+    self->stream_base = dest->base;
+    #if CIRCUITPY_VIDEOCORE_ACCEL
+    if (videocore_videobuffer_is_staging(self, dest->base)) {
+        self->accel_next = dest->base;
+    }
+    #endif
+}
+
 // Compute the destination for the current position, including a containing
 // group's transform. Raises unless the whole frame fits in the target,
 // whether the source writes it contiguously or at the target's stride.
@@ -214,6 +473,24 @@ static void videocore_videobuffer_compute_destination(
     const mp_int_t fb_height = FB_GETTER(get_height, 0);
     const mp_int_t row_stride = FB_GETTER(get_row_stride, fb_width * self->source_bits_per_pixel / 8);
     const mp_int_t first_pixel_offset = FB_GETTER(get_first_pixel_offset, 0);
+
+    #if CIRCUITPY_VIDEOCORE_ACCEL
+    if (self->accel) {
+        // The source streams into a staging buffer; the rotated copy must
+        // fit within the framebuffer and the buffer.
+        displayio_area_t rect;
+        videocore_videobuffer_frame_rect(self, self->x, self->y, &rect);
+        if (self->x < 0 || self->y < 0 ||
+            rect.x1 < 0 || rect.y1 < 0 || rect.x2 > fb_width || rect.y2 > fb_height ||
+            first_pixel_offset + (rect.y2 - 1) * row_stride + rect.x2 * (mp_int_t)bytes_per_pixel >
+            (mp_int_t)bufinfo.len) {
+            mp_raise_ValueError(MP_ERROR_TEXT("video doesn't fit in framebuffer"));
+        }
+        videocore_videobuffer_accel_destination(self, &bufinfo, fb_width, fb_height,
+            row_stride, first_pixel_offset, rect.x1, rect.y1, dest);
+        return;
+    }
+    #endif
 
     // Frames keep the framebuffer's orientation, so this rect is where the
     // frame lands even on a rotated display (where a containing group's
@@ -264,6 +541,31 @@ static void videocore_videobuffer_move_dest(videocore_videobuffer_obj_t *self) {
 
     displayio_area_t rect;
     videocore_videobuffer_frame_rect(self, self->x, self->y, &rect);
+
+    #if CIRCUITPY_VIDEOCORE_ACCEL
+    if (self->accel) {
+        // Cap the rotated copy so it stays completely within the framebuffer.
+        const mp_int_t width = displayio_area_width(&rect);
+        const mp_int_t height = displayio_area_height(&rect);
+        const mp_int_t x = MAX(MIN(rect.x1, fb_width - width), 0);
+        const mp_int_t y = MAX(MIN(rect.y1, fb_height - height), 0);
+        if (width > fb_width || height > fb_height ||
+            first_pixel_offset + (y + height - 1) * row_stride + (x + width) * (mp_int_t)bytes_per_pixel >
+            (mp_int_t)bufinfo.len) {
+            return;
+        }
+        videocore_destination_t dest;
+        videocore_videobuffer_accel_destination(self, &bufinfo, fb_width, fb_height,
+            row_stride, first_pixel_offset, x, y, &dest);
+        // Already streaming into staging: only the copy moves.
+        if (!videocore_videobuffer_is_staging(self, self->stream_base) &&
+            videosource_set_destination(self->source, &dest, videocore_videobuffer_on_frame, self)) {
+            videocore_videobuffer_accept_destination(self, &dest);
+        }
+        return;
+    }
+    #endif
+
     mp_int_t shift_x = MAX(rect.x1, 0);
     mp_int_t shift_y = MAX(rect.y1, 0);
     // Cap the start and the end. Cap the rows first: enough rows must fit
@@ -294,7 +596,7 @@ static void videocore_videobuffer_move_dest(videocore_videobuffer_obj_t *self) {
     };
     // A rejected destination leaves the stream where it was.
     if (videosource_set_destination(self->source, &dest, videocore_videobuffer_on_frame, self)) {
-        self->stream_base = dest.base;
+        videocore_videobuffer_accept_destination(self, &dest);
     }
 }
 
@@ -340,6 +642,21 @@ void common_hal_videocore_videobuffer_construct(videocore_videobuffer_obj_t *sel
     self->frame_dirty_area = empty;
     displayio_buffer_transform_t empty_transform = {};
     self->absolute_transform = empty_transform;
+    #if CIRCUITPY_VIDEOCORE_ACCEL
+    self->accel = false;
+    self->accel_rotation = 0;
+    self->accel_mirror_x = false;
+    self->accel_dst_x = 0;
+    self->accel_dst_y = 0;
+    self->accel_landed = NULL;
+    self->accel_writing = NULL;
+    self->accel_next = NULL;
+    for (size_t i = 0; i < VIDEOCORE_STAGING_COUNT; i++) {
+        self->staging_alloc[i] = NULL;
+        self->staging[i] = NULL;
+    }
+    memset(&self->accel_callback, 0, sizeof(self->accel_callback));
+    #endif
     // Nothing is shown until a Group attached to a display updates our
     // transform.
     self->paused = true;
@@ -386,7 +703,7 @@ static void videocore_videobuffer_start_stream(videocore_videobuffer_obj_t *self
     if (!videosource_set_destination(self->source, &dest, videocore_videobuffer_on_frame, self)) {
         mp_raise_ValueError(MP_ERROR_TEXT("video source rejected the destination"));
     }
-    self->stream_base = dest.base;
+    videocore_videobuffer_accept_destination(self, &dest);
     self->paused = false;
 }
 
@@ -402,6 +719,9 @@ static void videocore_videobuffer_pause_stream(videocore_videobuffer_obj_t *self
     // lands after this, and on_frame adds it to vacated_area to repaint over.
     self->stream_base = NULL;
     self->paused = true;
+    #if CIRCUITPY_VIDEOCORE_ACCEL
+    self->accel_landed = NULL;
+    #endif
     nlr_buf_t nlr;
     if (nlr_push(&nlr) == 0) {
         videosource_pause(self->source);
@@ -429,7 +749,7 @@ static void videocore_videobuffer_resume_stream(videocore_videobuffer_obj_t *sel
         mp_raise_ValueError(MP_ERROR_TEXT("video source rejected the destination"));
     }
     videosource_resume(self->source);
-    self->stream_base = dest.base;
+    videocore_videobuffer_accept_destination(self, &dest);
     self->paused = false;
     // Wait for the first frame at the new destination.
     videocore_videobuffer_forget_frame(self);
@@ -448,6 +768,13 @@ static void videocore_videobuffer_end_stream(videocore_videobuffer_obj_t *self) 
     }
     self->playing = false;
     self->source = mp_const_none;
+    #if CIRCUITPY_VIDEOCORE_ACCEL
+    // stream_base stays, but a staging buffer was never shown.
+    if (videocore_videobuffer_is_staging(self, self->stream_base)) {
+        self->stream_base = NULL;
+    }
+    videocore_videobuffer_free_staging(self);
+    #endif
 }
 
 // Start, resume or pause a framebuffer target's source to match whether it is
@@ -485,6 +812,10 @@ void common_hal_videocore_videobuffer_play(videocore_videobuffer_obj_t *self, mp
         mp_raise_RuntimeError(MP_ERROR_TEXT("already playing"));
     }
     videosource_check(source);
+    #if CIRCUITPY_VIDEOCORE_ACCEL
+    // Nothing streams now, and the new source's frames may differ in size.
+    videocore_videobuffer_free_staging(self);
+    #endif
     self->stale_size = false;
     self->source_ended = false;
     videocore_videobuffer_forget_frame(self);
@@ -501,6 +832,9 @@ void common_hal_videocore_videobuffer_play(videocore_videobuffer_obj_t *self, mp
     nlr_buf_t nlr;
     if (nlr_push(&nlr) == 0) {
         videocore_videobuffer_read_source_format(self);
+        #if CIRCUITPY_VIDEOCORE_ACCEL
+        videocore_videobuffer_update_accel(self);
+        #endif
         videocore_videobuffer_update_area(self);
         self->playing = true;
         // A paused source gets its destination when the VideoBuffer is shown.
@@ -552,15 +886,19 @@ void common_hal_videocore_videobuffer_set_position(videocore_videobuffer_obj_t *
     videocore_destination_t dest;
     videocore_videobuffer_compute_destination(self, &dest);
     if (videosource_set_destination(self->source, &dest, videocore_videobuffer_on_frame, self)) {
-        self->stream_base = dest.base;
+        videocore_videobuffer_accept_destination(self, &dest);
     }
 }
 
+// Called once the source has stopped writing.
 static void videocore_videobuffer_clear(videocore_videobuffer_obj_t *self) {
     self->playing = false;
     videocore_videobuffer_forget_frame(self);
     self->stream_base = NULL;
     self->source = mp_const_none;
+    #if CIRCUITPY_VIDEOCORE_ACCEL
+    videocore_videobuffer_free_staging(self);
+    #endif
 }
 
 void common_hal_videocore_videobuffer_stop(videocore_videobuffer_obj_t *self) {
@@ -636,6 +974,13 @@ static bool videocore_videobuffer_draw_fill_area(mp_obj_t self_in, const _displa
         const mp_int_t fb_width = FB_GETTER(get_width, 0);
         const mp_int_t row_stride = FB_GETTER(get_row_stride, fb_width * self->source_bits_per_pixel / 8);
         const uint8_t *frame = (const uint8_t *)self->stream_base;
+        #if CIRCUITPY_VIDEOCORE_ACCEL
+        if (self->accel) {
+            // Rotated frames are copied here, not where the source streams.
+            frame = self->fb_pixels + (size_t)self->accel_dst_y * row_stride +
+                (size_t)self->accel_dst_x * bytes_per_pixel;
+        }
+        #endif
         uint8_t *out = (uint8_t *)buffer;
 
         // Check whole words. This may include pixels between overlap rows or
@@ -753,6 +1098,11 @@ static void videocore_videobuffer_draw_update_transform(mp_obj_t self_in, displa
         }
         self->absolute_transform = *group_transform;
     }
+
+    #if CIRCUITPY_VIDEOCORE_ACCEL
+    // Rotate through the accelerator when the display rotates or mirrors.
+    videocore_videobuffer_update_accel(self);
+    #endif
 
     // A framebuffer target starts or stops with whether it is shown (the
     // absolute transform is known now). This runs from Python contexts, so a

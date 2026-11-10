@@ -863,6 +863,14 @@ SRC_C += common-hal/jpegio/JpegDecoder.c
 CHIP_COMPONENTS += esp_driver_jpeg esp_hal_jpeg
 endif
 
+ifneq ($(CIRCUITPY_VIDEOCORE_ACCEL),0)
+CFLAGS += \
+	-isystem esp-idf/components/esp_driver_ppa/include \
+	-isystem esp-idf/components/esp_hal_ppa/include
+SRC_C += common-hal/videocore/accel.c
+CHIP_COMPONENTS += esp_driver_ppa esp_hal_ppa
+endif
+
 ifneq ($(CIRCUITPY_NEOPIXEL_WRITE),0)
 CHIP_COMPONENTS += esp_driver_rmt
 endif

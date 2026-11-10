@@ -14,6 +14,17 @@
 #include "shared-module/framebufferio/FramebufferDisplay.h" // framebuffer protocol
 #include "shared-module/videocore/__init__.h"
 
+#if CIRCUITPY_VIDEOCORE_ACCEL
+#include "supervisor/background_callback.h"
+
+// Staging buffers for rotated output: the source fills one, the accelerator
+// reads another, and the third is where the source goes next.
+#define VIDEOCORE_STAGING_COUNT (3)
+// Staging buffer address and size alignment. Covers the ESP32-P4's L1 and L2
+// cache lines, which DMA into and out of PSRAM needs.
+#define VIDEOCORE_STAGING_ALIGN (128)
+#endif
+
 typedef struct {
     mp_obj_base_t base;
     // Object frames are streamed into: an object implementing the framebuffer
@@ -87,6 +98,39 @@ typedef struct {
     // Tracked while stopped too, so play() can start the source paused.
     // Plain buffer targets are never paused.
     bool paused;
+    #if CIRCUITPY_VIDEOCORE_ACCEL
+    // Rotated output. When the display rotates or mirrors and the port's
+    // accelerator can do the copy, the source streams into staging buffers
+    // in its own orientation, and a background callback rotates each landed
+    // frame into the framebuffer at accel_dst_x/y, upright in display
+    // coordinates. current_area is then the rotated rect. Otherwise frames
+    // land directly in the framebuffer, unrotated.
+    bool accel;
+    // Clockwise rotation, then left-right flip, from source to screen.
+    uint16_t accel_rotation;
+    bool accel_mirror_x;
+    // Top left of the rotated frame, in framebuffer pixels.
+    mp_int_t accel_dst_x;
+    mp_int_t accel_dst_y;
+    // Destination handed to the source; only its base changes between
+    // staging buffers.
+    videocore_destination_t accel_dest;
+    // Source-orientation frames, aligned within the port_malloc allocations
+    // in staging_alloc (outside the VM heap, so never moved or collected).
+    // Allocated on first use and freed once the source has stopped.
+    uint8_t *staging_alloc[VIDEOCORE_STAGING_COUNT];
+    uint8_t *staging[VIDEOCORE_STAGING_COUNT];
+    // The latest frame that landed in a staging buffer and isn't copied yet,
+    // or NULL. Set from interrupt context.
+    const void *volatile accel_landed;
+    // The staging buffer the source was filling when accel_landed landed, or
+    // NULL when unknown. Set from interrupt context.
+    const void *volatile accel_writing;
+    // The staging buffer the source last accepted as its destination, or
+    // NULL while that is being changed.
+    const void *volatile accel_next;
+    background_callback_t accel_callback;
+    #endif
 } videocore_videobuffer_obj_t;
 
 void common_hal_videocore_videobuffer_construct(videocore_videobuffer_obj_t *self, mp_obj_t framebuffer);

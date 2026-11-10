@@ -49,3 +49,16 @@ mp_int_t videosource_get_height(mp_obj_t source) {
 mp_int_t videosource_get_bits_per_pixel(mp_obj_t source) {
     return videosource_check(source)->get_bits_per_pixel(source);
 }
+
+#if CIRCUITPY_VIDEOCORE_ACCEL
+// Ports with a 2D accelerator override these.
+MP_WEAK bool videocore_accel_rotate_copy_supported(const videocore_accel_rotate_copy_t *op) {
+    (void)op;
+    return false;
+}
+
+MP_WEAK bool videocore_accel_rotate_copy(const videocore_accel_rotate_copy_t *op) {
+    (void)op;
+    return false;
+}
+#endif
