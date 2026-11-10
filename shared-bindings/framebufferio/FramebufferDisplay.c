@@ -350,7 +350,8 @@ static mp_obj_t framebufferio_framebufferdisplay_obj_set_root_group(mp_obj_t sel
         #if CIRCUITPY_VIDEOCORE
         // Validate that draw protocol layers (e.g. a VideoBuffer) fit the
         // display they will render on.
-        videocore_validate_root_group(group_in, self_in);
+        videocore_validate_root_group(group_in, self_in,
+            common_hal_framebufferio_framebufferdisplay_get_rotation(self));
         #endif
     }
 
