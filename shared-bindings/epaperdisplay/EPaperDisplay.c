@@ -340,7 +340,7 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
     construct_args.two_byte_sequence_length = two_byte_sequence_length;
     construct_args.address_little_endian = args[ARG_address_little_endian].u_bool;
     #if CIRCUITPY_EPAPERDISPLAY_FAST
-    construct_args.keep_awake = fast;
+    construct_args.fast = fast;
     construct_args.lag_frames = lag_frames;
     if (args[ARG_clean_sequence].u_obj != mp_const_none) {
         mp_buffer_info_t clean_bufinfo;
@@ -433,7 +433,7 @@ static mp_obj_t epaperdisplay_epaperdisplay_obj_refresh(mp_obj_t self_in) {
     bool ok = common_hal_epaperdisplay_epaperdisplay_refresh(self);
     if (!ok) {
         #if CIRCUITPY_EPAPERDISPLAY_FAST
-        if (self->lag_frames > 0) {
+        if (self->lag.frames > 0) {
             // Interrupted is not too soon: raise what interrupted it.
             mp_handle_pending(true);
         }
@@ -469,7 +469,7 @@ static mp_obj_t epaperdisplay_epaperdisplay_clean(size_t n_args, const mp_obj_t 
     epaperdisplay_epaperdisplay_obj_t *self = native_display(pos_args[0]);
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
-    if (self->lag_frames == 0) {
+    if (self->lag.frames == 0) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Invalid state"));
     }
     mp_int_t frames = mp_arg_validate_int_range(args[ARG_frames].u_int, 0, 255, MP_QSTR_frames);

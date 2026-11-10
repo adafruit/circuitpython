@@ -313,9 +313,9 @@ CFLAGS += -DCIRCUITPY_QSPIBUS=$(CIRCUITPY_QSPIBUS)
 CIRCUITPY_EPAPERDISPLAY ?= $(CIRCUITPY_DISPLAYIO)
 CFLAGS += -DCIRCUITPY_EPAPERDISPLAY=$(CIRCUITPY_EPAPERDISPLAY)
 
-# Fast e-paper updates: EPaperDisplay's write_previous_ram_command, keep_awake, lag_frames
-# and clean(). On only in ports with e-paper boards and room for it.
-CIRCUITPY_EPAPERDISPLAY_FAST ?= 0
+# Fast e-paper updates: EPaperDisplay's write_previous_ram_command, fast, lag_frames
+# and clean(). Ports and boards short on flash turn it off.
+CIRCUITPY_EPAPERDISPLAY_FAST ?= $(CIRCUITPY_EPAPERDISPLAY)
 CFLAGS += -DCIRCUITPY_EPAPERDISPLAY_FAST=$(CIRCUITPY_EPAPERDISPLAY_FAST)
 
 CIRCUITPY_I2CDISPLAYBUS ?= $(CIRCUITPY_DISPLAYIO)
