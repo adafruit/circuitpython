@@ -209,23 +209,23 @@ void common_hal_pulseio_pulsein_resume(pulseio_pulsein_obj_t *self, uint16_t tri
 }
 
 void common_hal_pulseio_pulsein_clear(pulseio_pulsein_obj_t *self) {
-    stm_peripherals_exti_disable(self->pin->number);
+    common_hal_mcu_disable_interrupts();
     self->start = 0;
     self->len = 0;
-    stm_peripherals_exti_enable(self->pin->number);
+    common_hal_mcu_enable_interrupts();
 }
 
 uint16_t common_hal_pulseio_pulsein_get_item(pulseio_pulsein_obj_t *self, int16_t index) {
-    stm_peripherals_exti_disable(self->pin->number);
+    common_hal_mcu_disable_interrupts();
     if (index < 0) {
         index += self->len;
     }
     if (index < 0 || index >= self->len) {
-        stm_peripherals_exti_enable(self->pin->number);
+        common_hal_mcu_enable_interrupts();
         mp_raise_IndexError_varg(MP_ERROR_TEXT("%q out of range"), MP_QSTR_index);
     }
     uint16_t value = self->buffer[(self->start + index) % self->maxlen];
-    stm_peripherals_exti_enable(self->pin->number);
+    common_hal_mcu_enable_interrupts();
     return value;
 }
 
@@ -233,11 +233,11 @@ uint16_t common_hal_pulseio_pulsein_popleft(pulseio_pulsein_obj_t *self) {
     if (self->len == 0) {
         mp_raise_IndexError_varg(MP_ERROR_TEXT("pop from empty %q"), MP_QSTR_PulseIn);
     }
-    stm_peripherals_exti_disable(self->pin->number);
+    common_hal_mcu_disable_interrupts();
     uint16_t value = self->buffer[self->start];
     self->start = (self->start + 1) % self->maxlen;
     self->len--;
-    stm_peripherals_exti_enable(self->pin->number);
+    common_hal_mcu_enable_interrupts();
 
     return value;
 }
