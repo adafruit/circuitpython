@@ -29,6 +29,13 @@
 //|     unsupported position directly raises an error, but moving a containing
 //|     Group may give garbled output instead.
 //|
+//|     A framebuffer target streams rows straight into the display's memory, so
+//|     it never rotates the video's pixels. On a rotated display the video
+//|     keeps the framebuffer's orientation and ``x``/``y`` are transposed:
+//|     they position the frame in the rotated screen, so its top left lands in
+//|     whichever framebuffer corner that position maps to. A plain buffer
+//|     target can only be translated and can't be shown on a rotated display.
+//|
 //|     When the target is a plain buffer, frames are written compactly (row
 //|     stride equals ``width * bits_per_pixel / 8``) and can be read from
 //|     Python at any time, for example to process or save camera pixels.
@@ -129,8 +136,9 @@ MP_PROPERTY_GETTER(videocore_videobuffer_source_obj,
     (mp_obj_t)&videocore_videobuffer_get_source_obj);
 
 //|     x: int
-//|     """The x position of the video within its Group. Framebuffer targets
-//|     only support ``x == 0`` and raise `ValueError` otherwise."""
+//|     """The x position of the video within its Group. On a 90 or 270 degree
+//|     rotated display this position is transposed, because a framebuffer
+//|     target streams frames in the framebuffer's orientation."""
 //|
 //|     y: int
 //|     """The y position of the video within its Group."""

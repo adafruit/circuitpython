@@ -46,6 +46,11 @@
 //|     root.append(video)
 //|     display.root_group = root
 //|
+//| A framebuffer target streams frames in the framebuffer's orientation, so a
+//| rotated display doesn't rotate the camera's pixels. Size the sensor to the
+//| framebuffer (``framebuffer.width`` and ``framebuffer.height``) instead of
+//| the rotated display's ``width`` and ``height``.
+//|
 //| Capture a smaller part of the sensor's image into a `bytearray` and let
 //| displayio place it in a Group, together with other layers. displayio bulk
 //| copies new frames into the group's area of the display (no color

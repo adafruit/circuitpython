@@ -104,11 +104,13 @@ static void videocore_videobuffer_forget_frame(videocore_videobuffer_obj_t *self
 
 // Cache the framebuffer geometry for on_frame (see fb_pixels).
 static void videocore_videobuffer_cache_fb_geometry(videocore_videobuffer_obj_t *self,
-    const mp_buffer_info_t *bufinfo, mp_int_t fb_width, mp_int_t row_stride, mp_int_t first_pixel_offset) {
+    const mp_buffer_info_t *bufinfo, mp_int_t fb_width, mp_int_t fb_height,
+    mp_int_t row_stride, mp_int_t first_pixel_offset) {
     self->fb_pixels = (const uint8_t *)bufinfo->buf + first_pixel_offset;
     self->fb_pixels_len = bufinfo->len - first_pixel_offset;
     self->fb_row_stride = row_stride;
     self->fb_width = fb_width;
+    self->fb_height = fb_height;
 }
 
 // Add the currently rendered rect to the dirty area so the next refresh
@@ -122,17 +124,45 @@ static void videocore_videobuffer_dirty_current_area(videocore_videobuffer_obj_t
         &self->ephemeral_dirty_area, &self->current_area, &self->ephemeral_dirty_area);
 }
 
-// Recompute the rendered rect (screen coordinates) of the video from the
-// x/y position and the absolute transform. Video only supports scale 1 with
-// no mirroring (validated in update_transform), so the rect is the frame
-// size translated into place.
-static void videocore_videobuffer_update_area(videocore_videobuffer_obj_t *self) {
+// Compute the rect (in screen coordinates, which are the framebuffer's
+// physical coordinates) that a frame written at the logical position x/y
+// covers. Frames are never rotated: their rows always run along the
+// framebuffer's x, so the rect is source_width wide and source_height tall. On
+// a transposed (90 or 270 degree) display that makes its logical rect
+// source_height wide and source_width tall. The transform is only ever a
+// translation plus mirroring and/or transposing (scale 1), which this relies
+// on.
+static void videocore_videobuffer_frame_rect(videocore_videobuffer_obj_t *self,
+    mp_int_t x, mp_int_t y, displayio_area_t *area) {
     const displayio_buffer_transform_t *t = &self->absolute_transform;
-    self->current_area.x1 = self->x + t->x;
-    self->current_area.y1 = self->y + t->y;
-    self->current_area.x2 = self->current_area.x1 + self->source_width;
-    self->current_area.y2 = self->current_area.y1 + self->source_height;
-    self->current_area.next = NULL;
+    const mp_int_t width = self->source_width;
+    const mp_int_t height = self->source_height;
+    mp_int_t x1;
+    mp_int_t y1;
+    if (t->scale == 0) {
+        // Not on a display, so there is no transform to apply. Keep the plain
+        // position so the areas reported while detached stay sensible.
+        x1 = x;
+        y1 = y;
+    } else if (t->transpose_xy) {
+        // The local y axis becomes screen x and the local x axis screen y.
+        x1 = t->x + t->dx * (t->dx < 0 ? y + width : y);
+        y1 = t->y + t->dy * (t->dy < 0 ? x + height : x);
+    } else {
+        x1 = t->x + t->dx * (t->dx < 0 ? x + width : x);
+        y1 = t->y + t->dy * (t->dy < 0 ? y + height : y);
+    }
+    area->x1 = x1;
+    area->y1 = y1;
+    area->x2 = x1 + width;
+    area->y2 = y1 + height;
+    area->next = NULL;
+}
+
+// Recompute the rendered rect of the video from the x/y position and the
+// absolute transform.
+static void videocore_videobuffer_update_area(videocore_videobuffer_obj_t *self) {
+    videocore_videobuffer_frame_rect(self, self->x, self->y, &self->current_area);
 }
 
 // Bytes in one row of a source frame.
@@ -151,7 +181,7 @@ static mp_int_t videocore_videobuffer_frame_span(videocore_videobuffer_obj_t *se
 }
 
 // Compute the destination for the current position, including a containing
-// group's translation. Raises unless the whole frame fits in the target,
+// group's transform. Raises unless the whole frame fits in the target,
 // whether the source writes it contiguously or at the target's stride.
 // move_dest() is the non-raising variant used from displayio.
 static void videocore_videobuffer_compute_destination(
@@ -181,26 +211,28 @@ static void videocore_videobuffer_compute_destination(
     }
 
     const mp_int_t fb_width = FB_GETTER(get_width, 0);
+    const mp_int_t fb_height = FB_GETTER(get_height, 0);
     const mp_int_t row_stride = FB_GETTER(get_row_stride, fb_width * self->source_bits_per_pixel / 8);
     const mp_int_t first_pixel_offset = FB_GETTER(get_first_pixel_offset, 0);
 
-    // The absolute position includes a containing group's translation. The
-    // shift may land the frame's rows mid-row: the image won't look right,
-    // but the contiguous DMA stays contiguous. Only the frame's start and
-    // end must remain within the buffer.
-    const displayio_buffer_transform_t *t = &self->absolute_transform;
-    const mp_int_t shift_x = self->x + t->x;
-    const mp_int_t shift_y = self->y + t->y;
-    if (self->x < 0 || self->y < 0 || shift_x < 0 || shift_y < 0 ||
-        first_pixel_offset + shift_y * row_stride + shift_x * bytes_per_pixel +
+    // Frames keep the framebuffer's orientation, so this rect is where the
+    // frame lands even on a rotated display (where a containing group's
+    // transform mirrors and/or transposes the logical position). The whole
+    // frame must stay within the framebuffer and the buffer.
+    displayio_area_t rect;
+    videocore_videobuffer_frame_rect(self, self->x, self->y, &rect);
+    if (self->x < 0 || self->y < 0 ||
+        rect.x1 < 0 || rect.y1 < 0 || rect.x2 > fb_width || rect.y2 > fb_height ||
+        first_pixel_offset + rect.y1 * row_stride + rect.x1 * bytes_per_pixel +
         videocore_videobuffer_frame_span(self, row_stride) >
         bufinfo.len) {
         mp_raise_ValueError(MP_ERROR_TEXT("video doesn't fit in framebuffer"));
     }
-    videocore_videobuffer_cache_fb_geometry(self, &bufinfo, fb_width, row_stride, first_pixel_offset);
+    videocore_videobuffer_cache_fb_geometry(
+        self, &bufinfo, fb_width, fb_height, row_stride, first_pixel_offset);
 
     dest->base = (uint8_t *)bufinfo.buf + first_pixel_offset +
-        shift_y * row_stride + shift_x * bytes_per_pixel;
+        rect.y1 * row_stride + rect.x1 * bytes_per_pixel;
     dest->stride = row_stride;
     dest->row_bytes = row_bytes;
     dest->height = self->source_height;
@@ -208,11 +240,10 @@ static void videocore_videobuffer_compute_destination(
     dest->on_stream_end = videocore_videobuffer_on_stream_end;
 }
 
-// Move the framebuffer destination for a new absolute position, capping the
-// shift so the frame stays completely within the framebuffer. Best effort:
-// never raises, because this runs from displayio's refresh.
-static void videocore_videobuffer_move_dest(
-    videocore_videobuffer_obj_t *self, mp_int_t shift_x, mp_int_t shift_y) {
+// Move the framebuffer destination to follow the absolute transform, capping
+// it so the frame stays completely within the framebuffer. Best effort: never
+// raises, because this runs from displayio's refresh.
+static void videocore_videobuffer_move_dest(videocore_videobuffer_obj_t *self) {
     if (!self->playing || self->paused) {
         return;
     }
@@ -224,33 +255,34 @@ static void videocore_videobuffer_move_dest(
     const size_t bytes_per_pixel = self->source_bits_per_pixel / 8;
     const size_t row_bytes = videocore_videobuffer_source_row_bytes(self);
     const mp_int_t fb_width = FB_GETTER(get_width, 0);
+    const mp_int_t fb_height = FB_GETTER(get_height, 0);
     const mp_int_t row_stride = FB_GETTER(get_row_stride, fb_width * self->source_bits_per_pixel / 8);
     const mp_int_t first_pixel_offset = FB_GETTER(get_first_pixel_offset, 0);
+    if (row_stride <= 0 || bytes_per_pixel == 0) {
+        return;
+    }
 
-    if (shift_x < 0) {
-        shift_x = 0;
-    }
-    if (shift_y < 0) {
-        shift_y = 0;
-    }
+    displayio_area_t rect;
+    videocore_videobuffer_frame_rect(self, self->x, self->y, &rect);
+    mp_int_t shift_x = MAX(rect.x1, 0);
+    mp_int_t shift_y = MAX(rect.y1, 0);
     // Cap the start and the end. Cap the rows first: enough rows must fit
     // above the frame for it to fit at all.
     const mp_int_t max_end = (mp_int_t)bufinfo.len - first_pixel_offset -
         videocore_videobuffer_frame_span(self, row_stride);
-    if (shift_y > max_end / row_stride) {
-        shift_y = max_end / row_stride;
+    const mp_int_t buf_max_y = max_end / row_stride;
+    const mp_int_t max_y = MIN(fb_height - self->source_height, buf_max_y);
+    if (shift_y > max_y) {
+        shift_y = MAX(max_y, 0);
     }
-    if (shift_y < 0) {
-        shift_y = 0;
-    }
-    const mp_int_t max_x = (max_end - shift_y * row_stride) / bytes_per_pixel;
+    const mp_int_t buf_max_x =
+        (max_end - shift_y * row_stride) / (mp_int_t)bytes_per_pixel;
+    const mp_int_t max_x = MIN(fb_width - self->source_width, buf_max_x);
     if (shift_x > max_x) {
-        shift_x = max_x;
+        shift_x = MAX(max_x, 0);
     }
-    if (shift_x < 0) {
-        shift_x = 0;
-    }
-    videocore_videobuffer_cache_fb_geometry(self, &bufinfo, fb_width, row_stride, first_pixel_offset);
+    videocore_videobuffer_cache_fb_geometry(
+        self, &bufinfo, fb_width, fb_height, row_stride, first_pixel_offset);
 
     videocore_destination_t dest = {
         .base = bufinfo.buf + first_pixel_offset + shift_y * row_stride + shift_x * bytes_per_pixel,
@@ -294,6 +326,7 @@ void common_hal_videocore_videobuffer_construct(videocore_videobuffer_obj_t *sel
     self->fb_pixels_len = 0;
     self->fb_row_stride = 0;
     self->fb_width = 0;
+    self->fb_height = 0;
     self->in_group = false;
     self->hidden = false;
     self->stale_size = false;
@@ -482,11 +515,6 @@ void common_hal_videocore_videobuffer_play(videocore_videobuffer_obj_t *self, mp
 }
 
 void common_hal_videocore_videobuffer_set_position(videocore_videobuffer_obj_t *self, mp_int_t x, mp_int_t y) {
-    if (self->framebuffer_protocol != NULL && x != 0) {
-        // A contiguous source (the camera) ignores the stride, so every frame
-        // row must land on a framebuffer row: the video's x must be 0.
-        mp_raise_ValueError(MP_ERROR_TEXT("video in a framebuffer must be at x == 0"));
-    }
     videocore_videobuffer_end_stream(self);
     // Repaint where the video used to be. Union (rather than overwrite) so a
     // move before the previous one was refreshed isn't lost.
@@ -710,13 +738,17 @@ static void videocore_videobuffer_draw_update_transform(mp_obj_t self_in, displa
         displayio_buffer_transform_t no_transform = {};
         self->absolute_transform = no_transform;
     } else {
-        // Validate the transform: video frames are bulk copied (raw targets)
-        // or DMA'd contiguously (framebuffer targets), so only translation
-        // moves.
+        // Validate the transform. A plain buffer target is copied into the
+        // display row by row, so it can only be translated. A framebuffer
+        // target streams rows straight into the framebuffer, so a rotated
+        // display works: its transform mirrors and/or transposes the logical
+        // position, which compute_destination turns into a framebuffer
+        // position. Neither can scale.
+        const bool rotation_ok = self->framebuffer_protocol != NULL;
         if (group_transform->scale != 1 ||
-            group_transform->mirror_x || group_transform->mirror_y ||
-            group_transform->transpose_xy ||
-            group_transform->dx != 1 || group_transform->dy != 1) {
+            group_transform->dx == 0 || group_transform->dy == 0 ||
+            (!rotation_ok && (group_transform->mirror_x || group_transform->mirror_y ||
+                              group_transform->transpose_xy))) {
             mp_raise_ValueError(MP_ERROR_TEXT("VideoBuffer does not support transforms"));
         }
         self->absolute_transform = *group_transform;
@@ -746,14 +778,12 @@ static void videocore_videobuffer_draw_update_transform(mp_obj_t self_in, displa
     }
 
     // Framebuffer targets stream straight into the buffer: move the
-    // destination along with the shift. Best effort, since this can't raise:
-    // the shift may land the start mid-row, which won't look right but is
-    // obvious; the frame is capped to stay completely within the buffer.
+    // destination along with the transform, which a rotated display mirrors
+    // and/or transposes. Best effort, since this can't raise: the shift may
+    // land the start mid-row, which won't look right but is obvious; the frame
+    // is capped to stay completely within the buffer.
     if (self->framebuffer_protocol != NULL) {
-        videocore_videobuffer_move_dest(
-            self,
-            self->x + self->absolute_transform.x,
-            self->y + self->absolute_transform.y);
+        videocore_videobuffer_move_dest(self);
     }
 }
 

@@ -25,7 +25,10 @@ typedef struct {
     mp_buffer_info_t bufinfo;
     // The video source being played, or None.
     mp_obj_t source;
-    // Destination position of the video within the target.
+    // Destination position of the video within its Group. A framebuffer target
+    // streams rows straight into the framebuffer, so on a rotated (transposed)
+    // display these logical coordinates are transposed when the destination is
+    // computed.
     mp_int_t x;
     mp_int_t y;
     mp_int_t source_width;
@@ -51,17 +54,23 @@ typedef struct {
     // by on_frame in interrupt context; the refresh moves it into
     // ephemeral_dirty_area with interrupts disabled.
     displayio_area_t vacated_area;
-    // Framebuffer geometry cached for on_frame, which can't call the
-    // framebuffer protocol from interrupt context. fb_pixels is NULL for
-    // plain buffer targets.
+    // Framebuffer geometry cached for the destination and for on_frame, which
+    // can't call the framebuffer protocol from interrupt context. fb_pixels is
+    // NULL for plain buffer targets. fb_width and fb_height are the
+    // framebuffer's physical geometry, which is transposed on a rotated
+    // display.
     const uint8_t *fb_pixels;
     size_t fb_pixels_len;
     size_t fb_row_stride;
     mp_int_t fb_width;
+    mp_int_t fb_height;
     // displayio draw protocol state: the rect currently rendered (in screen
-    // coordinates) and the rect that changed since the last refresh.
+    // coordinates, which are the framebuffer's physical coordinates) and the
+    // rect that changed since the last refresh.
     displayio_area_t current_area;
     displayio_area_t ephemeral_dirty_area;
+    // Maps the video's Group-local coordinates to screen coordinates, which are
+    // the framebuffer's physical coordinates.
     displayio_buffer_transform_t absolute_transform;
     bool in_group;
     // Set by the group when hidden; while hidden the video doesn't show and
