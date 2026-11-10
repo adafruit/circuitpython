@@ -62,6 +62,15 @@ static void config_periph_pin(const mcu_periph_obj_t *periph) {
         | IOMUXC_SW_PAD_CTL_PAD_SRE(0));
 }
 
+static void mark_deinit(busio_uart_obj_t *self) {
+    self->rx = NULL;
+    self->tx = NULL;
+    self->cts = NULL;
+    self->rts = NULL;
+    self->rs485_dir = NULL;
+    self->ringbuf = NULL;
+}
+
 void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     const mcu_pin_obj_t *tx, const mcu_pin_obj_t *rx,
     const mcu_pin_obj_t *rts, const mcu_pin_obj_t *cts,
@@ -70,6 +79,7 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     mp_float_t timeout, uint16_t receiver_buffer_size, byte *receiver_buffer,
     bool sigint_enabled) {
 
+    mark_deinit(self);
     self->baudrate = baudrate;
     self->character_bits = (uint8_t)mp_arg_validate_int_range(bits, 7, 8, MP_QSTR_bits);
     self->timeout_ms = timeout * 1000;
@@ -213,6 +223,19 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
         }
     }
 
+    size_t ringbuf_size = receiver_buffer_size;
+    if (rx_config != NULL) {
+        if (receiver_buffer == NULL) {
+            // One byte is used internally so add one to make sure we have enough space.
+            ringbuf_size += 1;
+            self->ringbuf = gc_alloc(ringbuf_size, false);
+            if (self->ringbuf == NULL) {
+                m_malloc_fail(ringbuf_size);
+            }
+        } else {
+            self->ringbuf = receiver_buffer;
+        }
+    }
 
     self->index = bank_idx - 1;
     self->uart = mcu_uart_banks[self->index];
@@ -297,25 +320,11 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     }
 
     if (self->rx != NULL) {
-        if (receiver_buffer == NULL) {
-            // One byte is used internally so add one to make sure we have enough space.
-            receiver_buffer_size += 1;
-            self->ringbuf = gc_alloc(receiver_buffer_size, false);
-        } else {
-            self->ringbuf = receiver_buffer;
-        }
-
-
-        if (!self->ringbuf) {
-            LPUART_Deinit(self->uart);
-            m_malloc_fail(receiver_buffer_size);
-        }
-
         // Use the internal ring buffer implementation.
         LPUART_TransferCreateHandle(self->uart, &self->handle, NULL, NULL);
         // Pass actual allocated size; the LPUART routines are cognizant that
         // the capacity is one less than the size.
-        LPUART_TransferStartRingBuffer(self->uart, &self->handle, self->ringbuf, receiver_buffer_size);
+        LPUART_TransferStartRingBuffer(self->uart, &self->handle, self->ringbuf, ringbuf_size);
 
         claim_pin(self->rx);
     }
@@ -344,11 +353,7 @@ void common_hal_busio_uart_deinit(busio_uart_obj_t *self) {
     common_hal_reset_pin(self->rts);
     common_hal_reset_pin(self->rs485_dir);
 
-    self->rx = NULL;
-    self->tx = NULL;
-    self->cts = NULL;
-    self->rts = NULL;
-    self->rs485_dir = NULL;
+    mark_deinit(self);
 }
 
 // Read characters.
