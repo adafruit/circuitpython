@@ -138,7 +138,7 @@ static mp_obj_t is31fl3741_framebuffer_deinit(mp_obj_t self_in) {
 static MP_DEFINE_CONST_FUN_OBJ_1(is31fl3741_framebuffer_deinit_obj, is31fl3741_framebuffer_deinit);
 
 static void check_for_deinit(is31fl3741_framebuffer_obj_t *self) {
-    if (self->framebuffer == NULL) {
+    if (self->framebuffer == NULL || common_hal_is31fl3741_IS31FL3741_deinited(self->is31fl3741)) {
         raise_deinited_error();
     }
 }
