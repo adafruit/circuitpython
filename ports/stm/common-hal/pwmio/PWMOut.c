@@ -29,9 +29,16 @@ static bool timer_get_optimal_divisors(uint32_t *period, uint32_t *prescaler,
     uint32_t frequency, uint32_t source_freq) {
     // Find the largest possible period supported by this frequency
     *prescaler = 0;
+    if (frequency == 0) {
+        return false;
+    }
     for (uint32_t i = 1; i <= 0xffff; i++) {
-        *period = source_freq / (i * frequency);
-        if (*period <= 0xffff && *period >= 2) {
+        *period = source_freq / ((uint64_t)i * frequency);
+        if (*period < 2) {
+            // A larger prescaler only makes the period shorter.
+            break;
+        }
+        if (*period <= 0xffff) {
             *prescaler = i;
             break;
         }
