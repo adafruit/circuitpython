@@ -98,15 +98,15 @@ void common_hal_epaperdisplay_epaperdisplay_construct(epaperdisplay_epaperdispla
         false /* SH1107_addressing */, args->address_little_endian);
 
     #if CIRCUITPY_EPAPERDISPLAY_FAST
-    self->lag_slots = NULL;
-    self->lag_frames = 0;
-    self->lag_busy_deadline = 0;
-    self->lag_bus_held = false;
-    self->lag_state_lost = false;
-    self->lag_slot_overwriting = false;
-    self->lag_commit = LAG_COMMIT_NONE;
-    self->lag_holding_interrupts = false;
-    self->lag_held_exception = MP_OBJ_NULL;
+    self->lag.slots = NULL;
+    self->lag.frames = 0;
+    self->lag.busy_deadline = 0;
+    self->lag.bus_held = false;
+    self->lag.state_lost = false;
+    self->lag.slot_overwriting = false;
+    self->lag.commit = LAG_COMMIT_NONE;
+    self->lag.holding_interrupts = false;
+    self->lag.held_exception = MP_OBJ_NULL;
     self->clean_sequence = args->clean_sequence;
     self->clean_sequence_len = args->clean_sequence_len;
     #endif // CIRCUITPY_EPAPERDISPLAY_FAST
@@ -210,14 +210,14 @@ static bool wait_for_update_start(epaperdisplay_epaperdisplay_obj_t *self) {
 
 #if CIRCUITPY_EPAPERDISPLAY_FAST
 static bool lag_deadline_passed(epaperdisplay_epaperdisplay_obj_t *self) {
-    return self->lag_busy_deadline != 0 && supervisor_ticks_ms64() > self->lag_busy_deadline;
+    return self->lag.busy_deadline != 0 && supervisor_ticks_ms64() > self->lag.busy_deadline;
 }
 
 // When a wait for BUSY or the bus gives up, or 0 for never. Lag drive always has an end, so a
 // stuck panel can't hold up a caller that holds interrupts or has no way to be interrupted.
 static uint64_t display_wait_deadline(epaperdisplay_epaperdisplay_obj_t *self) {
-    if (self->lag_busy_deadline != 0 || self->lag_frames == 0) {
-        return self->lag_busy_deadline;
+    if (self->lag.busy_deadline != 0 || self->lag.frames == 0) {
+        return self->lag.busy_deadline;
     }
     return supervisor_ticks_ms64() + EPAPER_WAIT_TIMEOUT_MS;
 }
@@ -225,12 +225,12 @@ static uint64_t display_wait_deadline(epaperdisplay_epaperdisplay_obj_t *self) {
 // Between hold and release a waveform or a panel reset is under way, and cutting it short leaves
 // the panel dark. Whatever interrupts (Ctrl-C, a reload, a watchdog) waits for the release.
 static bool display_interrupted(epaperdisplay_epaperdisplay_obj_t *self) {
-    if (!self->lag_holding_interrupts) {
+    if (!self->lag.holding_interrupts) {
         return mp_hal_is_interrupted();
     }
     if (mp_hal_is_interrupted()) {
-        if (self->lag_held_exception == MP_OBJ_NULL) {
-            self->lag_held_exception = MP_STATE_THREAD(mp_pending_exception);
+        if (self->lag.held_exception == MP_OBJ_NULL) {
+            self->lag.held_exception = MP_STATE_THREAD(mp_pending_exception);
         }
         MP_STATE_THREAD(mp_pending_exception) = MP_OBJ_NULL;
     }
@@ -245,22 +245,22 @@ static bool display_interrupted(epaperdisplay_epaperdisplay_obj_t *self) {
 }
 
 static void lag_hold_interrupts(epaperdisplay_epaperdisplay_obj_t *self) {
-    self->lag_holding_interrupts = true;
-    if (self->lag_busy_deadline == 0) {
-        self->lag_busy_deadline = supervisor_ticks_ms64() + EPAPER_WAIT_TIMEOUT_MS;
+    self->lag.holding_interrupts = true;
+    if (self->lag.busy_deadline == 0) {
+        self->lag.busy_deadline = supervisor_ticks_ms64() + EPAPER_WAIT_TIMEOUT_MS;
     }
     display_interrupted(self);
 }
 
 static void lag_release_interrupts(epaperdisplay_epaperdisplay_obj_t *self) {
-    if (!self->lag_holding_interrupts) {
+    if (!self->lag.holding_interrupts) {
         return;
     }
-    self->lag_holding_interrupts = false;
-    self->lag_busy_deadline = 0;
-    if (self->lag_held_exception != MP_OBJ_NULL) {
-        mp_sched_exception(self->lag_held_exception);
-        self->lag_held_exception = MP_OBJ_NULL;
+    self->lag.holding_interrupts = false;
+    self->lag.busy_deadline = 0;
+    if (self->lag.held_exception != MP_OBJ_NULL) {
+        mp_sched_exception(self->lag.held_exception);
+        self->lag.held_exception = MP_OBJ_NULL;
     }
 }
 
@@ -269,7 +269,7 @@ static void lag_release_interrupts(epaperdisplay_epaperdisplay_obj_t *self) {
 // so the caller goes back to where the RAM or command can start again.
 static bool lag_send(epaperdisplay_epaperdisplay_obj_t *self, display_byte_type_t type,
     const uint8_t *data, uint32_t length) {
-    if (!self->lag_holding_interrupts) {
+    if (!self->lag.holding_interrupts) {
         self->bus.send(self->bus.bus, type, self->chip_select, data, length);
         return true;
     }
@@ -297,7 +297,7 @@ static bool display_send_command(epaperdisplay_epaperdisplay_obj_t *self, const 
             return true;
         }
         if (length == 0) {
-            self->lag_state_lost = true;
+            self->lag.state_lost = true;
             return false;
         }
     }
@@ -313,19 +313,19 @@ static bool lag_set_region(epaperdisplay_epaperdisplay_obj_t *self, displayio_ar
         }
         nlr_buf_t nlr;
         if (nlr_push(&nlr) == 0) {
-            self->lag_bus_held = true;
+            self->lag.bus_held = true;
             displayio_display_bus_set_region_to_update(&self->bus, &self->core, box);
-            self->lag_bus_held = false;
+            self->lag.bus_held = false;
             nlr_pop();
             return true;
         }
-        if (self->lag_bus_held) {
+        if (self->lag.bus_held) {
             if (!displayio_display_bus_is_free(&self->bus)) {
                 displayio_display_bus_end_transaction(&self->bus);
             }
-            self->lag_bus_held = false;
+            self->lag.bus_held = false;
         }
-        if (!self->lag_holding_interrupts) {
+        if (!self->lag.holding_interrupts) {
             nlr_jump(nlr.ret_val);
         }
         MP_STATE_THREAD(mp_pending_exception) = nlr.ret_val;
@@ -341,7 +341,7 @@ static void display_delay_ms(epaperdisplay_epaperdisplay_obj_t *self, uint32_t d
     while (true) {
         common_hal_time_delay_ms(delay_ms - elapsed);
         elapsed = supervisor_ticks_ms64() - start;
-        if (!self->lag_holding_interrupts || elapsed >= delay_ms) {
+        if (!self->lag.holding_interrupts || elapsed >= delay_ms) {
             return;
         }
         display_interrupted(self);
@@ -392,15 +392,15 @@ static bool send_command_sequence(epaperdisplay_epaperdisplay_obj_t *self,
             RUN_BACKGROUND_TASKS;
         }
         #if CIRCUITPY_EPAPERDISPLAY_FAST
-        if (!have_bus && self->lag_frames > 0) {
+        if (!have_bus && self->lag.frames > 0) {
             return false;
         }
-        self->lag_bus_held = have_bus;
+        self->lag.bus_held = have_bus;
         #endif // CIRCUITPY_EPAPERDISPLAY_FAST
         const bool sent = display_send_command(self, cmd, data, data_size);
         displayio_display_bus_end_transaction(&self->bus);
         #if CIRCUITPY_EPAPERDISPLAY_FAST
-        self->lag_bus_held = false;
+        self->lag.bus_held = false;
         #endif // CIRCUITPY_EPAPERDISPLAY_FAST
         if (!sent) {
             return false;
@@ -416,7 +416,7 @@ static bool send_command_sequence(epaperdisplay_epaperdisplay_obj_t *self,
         display_delay_ms(self, delay_length_ms);
         if (should_wait_for_busy) {
             #if CIRCUITPY_EPAPERDISPLAY_FAST
-            if (self->lag_frames > 0) {
+            if (self->lag.frames > 0) {
                 wait_for_update_start(self);
             }
             #endif
@@ -436,7 +436,7 @@ static bool send_command_sequence(epaperdisplay_epaperdisplay_obj_t *self,
 void epaperdisplay_epaperdisplay_change_refresh_mode_parameters(epaperdisplay_epaperdisplay_obj_t *self,
     mp_buffer_info_t *start_sequence, mp_buffer_info_t *refresh_sequence, float seconds_per_frame) {
     #if CIRCUITPY_EPAPERDISPLAY_FAST
-    if (self->lag_frames > 0) {
+    if (self->lag.frames > 0) {
         // Finish the drive with the waveform that started it, and rewrite both planes after.
         nlr_buf_t nlr;
         if (nlr_push(&nlr) == 0) {
@@ -446,14 +446,14 @@ void epaperdisplay_epaperdisplay_change_refresh_mode_parameters(epaperdisplay_ep
         } else {
             lag_raise(self, nlr.ret_val);
         }
-        if (self->lag_settle > 0 || self->lag_commit != LAG_COMMIT_NONE) {
+        if (self->lag.settle > 0 || self->lag.commit != LAG_COMMIT_NONE) {
             // Still owed: keep the mode that started it.
             if (!mp_hal_is_interrupted()) {
                 mp_raise_RuntimeError_varg(MP_ERROR_TEXT("%q in use"), MP_QSTR_display_bus);
             }
             return;
         }
-        self->lag_force_full = true;
+        self->lag.force_full = true;
     }
     #endif // CIRCUITPY_EPAPERDISPLAY_FAST
     self->start_sequence = (uint8_t *)start_sequence->buf;
@@ -829,7 +829,7 @@ bool common_hal_epaperdisplay_epaperdisplay_refresh(epaperdisplay_epaperdisplay_
     if (self->core.current_group == NULL) {
         #if CIRCUITPY_EPAPERDISPLAY_FAST
         // Nothing to draw, but the drive already started is still owed.
-        if (self->lag_frames > 0 && self->awake) {
+        if (self->lag.frames > 0 && self->awake) {
             return lag_refresh(self, NULL);
         }
         #endif
@@ -845,7 +845,7 @@ bool common_hal_epaperdisplay_epaperdisplay_refresh(epaperdisplay_epaperdisplay_
     }
     const displayio_area_t *current_area = epaperdisplay_epaperdisplay_get_refresh_areas(self);
     #if CIRCUITPY_EPAPERDISPLAY_FAST
-    if (self->lag_frames > 0) {
+    if (self->lag.frames > 0) {
         return lag_refresh(self, current_area);
     }
     #endif // CIRCUITPY_EPAPERDISPLAY_FAST
@@ -947,7 +947,7 @@ void release_epaperdisplay(epaperdisplay_epaperdisplay_obj_t *self) {
 
 #if CIRCUITPY_EPAPERDISPLAY_FAST
 void epaperdisplay_epaperdisplay_prepare_release(epaperdisplay_epaperdisplay_obj_t *self) {
-    if (self->lag_frames == 0 || (!self->awake && !self->lag_state_lost)) {
+    if (self->lag.frames == 0 || (!self->awake && !self->lag.state_lost)) {
         return;
     }
     const uint64_t deadline = supervisor_ticks_ms64() + EPAPER_WAIT_TIMEOUT_MS;
@@ -966,14 +966,14 @@ void epaperdisplay_epaperdisplay_end_held_bus(epaperdisplay_epaperdisplay_obj_t 
     // The VM is over, so whatever holds the bus can never let it go: end it here.
     if (self->keep_awake && !displayio_display_bus_is_free(&self->bus)) {
         displayio_display_bus_end_transaction(&self->bus);
-        self->lag_bus_held = false;
+        self->lag.bus_held = false;
     }
 }
 #endif // CIRCUITPY_EPAPERDISPLAY_FAST
 
 void epaperdisplay_epaperdisplay_reset(epaperdisplay_epaperdisplay_obj_t *self) {
     #if CIRCUITPY_EPAPERDISPLAY_FAST
-    if (self->lag_frames > 0) {
+    if (self->lag.frames > 0) {
         // Only a primary display gets here; reset_displays() has released the others. The heap is
         // still here but the sequences won't be, and the display would otherwise persist to draw
         // the splash with them. Finish now and stay asleep. Its bus still holds the pins until
@@ -1006,7 +1006,7 @@ void epaperdisplay_epaperdisplay_collect_ptrs(epaperdisplay_epaperdisplay_obj_t 
     gc_collect_ptr((void *)self->refresh_sequence);
     #if CIRCUITPY_EPAPERDISPLAY_FAST
     gc_collect_ptr((void *)self->clean_sequence);
-    gc_collect_ptr(self->lag_held_exception);
+    gc_collect_ptr(self->lag.held_exception);
     #endif // CIRCUITPY_EPAPERDISPLAY_FAST
 }
 
@@ -1037,48 +1037,48 @@ void epaperdisplay_epaperdisplay_collect_ptrs(epaperdisplay_epaperdisplay_obj_t 
 // or was last written with frames that have not changed there since.
 
 static void lag_construct(epaperdisplay_epaperdisplay_obj_t *self, uint8_t lag_frames) {
-    self->lag_stride = (self->core.area.x2 + 7) / 8;
-    self->lag_rows = self->core.area.y2;
-    self->lag_slot_size = self->lag_stride * self->lag_rows;
-    self->lag_frames = lag_frames;
-    self->lag_head = 0;
-    self->lag_box_index = 0;
-    self->lag_settle = 0;
+    self->lag.stride = (self->core.area.x2 + 7) / 8;
+    self->lag.rows = self->core.area.y2;
+    self->lag.slot_size = self->lag.stride * self->lag.rows;
+    self->lag.frames = lag_frames;
+    self->lag.head = 0;
+    self->lag.box_index = 0;
+    self->lag.settle = 0;
     // The panel's RAM is unknown, so the first step writes everything.
-    self->lag_force_full = true;
+    self->lag.force_full = true;
     size_t meta_size = lag_frames * sizeof(uint8_t *) + (lag_frames + 1) * sizeof(displayio_area_t);
-    self->lag_slots = port_malloc(meta_size, false);
-    bool ok = self->lag_slots != NULL;
+    self->lag.slots = port_malloc(meta_size, false);
+    bool ok = self->lag.slots != NULL;
     if (ok) {
-        memset(self->lag_slots, 0, meta_size);
-        self->lag_boxes = (displayio_area_t *)(self->lag_slots + lag_frames);
+        memset(self->lag.slots, 0, meta_size);
+        self->lag.boxes = (displayio_area_t *)(self->lag.slots + lag_frames);
     }
     for (uint8_t i = 0; ok && i < lag_frames; i++) {
-        self->lag_slots[i] = port_malloc(self->lag_slot_size, true);
-        ok = self->lag_slots[i] != NULL;
+        self->lag.slots[i] = port_malloc(self->lag.slot_size, true);
+        ok = self->lag.slots[i] != NULL;
     }
     if (!ok) {
         lag_free(self);
         self->base.type = &mp_type_NoneType;
-        m_malloc_fail(self->lag_slot_size);
+        m_malloc_fail(self->lag.slot_size);
     }
     // History starts white, the state a cleared panel is in.
     for (uint8_t i = 0; i < lag_frames; i++) {
-        memset(self->lag_slots[i], self->black_bits_inverted ? 0x00 : 0xff, self->lag_slot_size);
+        memset(self->lag.slots[i], self->black_bits_inverted ? 0x00 : 0xff, self->lag.slot_size);
     }
 }
 
 static void lag_free(epaperdisplay_epaperdisplay_obj_t *self) {
-    if (self->lag_slots != NULL) {
-        for (uint8_t i = 0; i < self->lag_frames; i++) {
-            if (self->lag_slots[i] != NULL) {
-                port_free(self->lag_slots[i]);
+    if (self->lag.slots != NULL) {
+        for (uint8_t i = 0; i < self->lag.frames; i++) {
+            if (self->lag.slots[i] != NULL) {
+                port_free(self->lag.slots[i]);
             }
         }
-        port_free(self->lag_slots);
-        self->lag_slots = NULL;
+        port_free(self->lag.slots);
+        self->lag.slots = NULL;
     }
-    self->lag_frames = 0;
+    self->lag.frames = 0;
 }
 
 static void lag_render_area(epaperdisplay_epaperdisplay_obj_t *self, const displayio_area_t *area, uint8_t *frame, bool white) {
@@ -1088,7 +1088,7 @@ static void lag_render_area(epaperdisplay_epaperdisplay_obj_t *self, const displ
     }
     if (white) {
         for (int16_t row = clipped.y1; row < clipped.y2; row++) {
-            memset(frame + row * self->lag_stride + clipped.x1 / 8, self->black_bits_inverted ? 0x00 : 0xff,
+            memset(frame + row * self->lag.stride + clipped.x1 / 8, self->black_bits_inverted ? 0x00 : 0xff,
                 displayio_area_width(&clipped) / 8);
         }
         return;
@@ -1119,7 +1119,7 @@ static void lag_render_area(epaperdisplay_epaperdisplay_obj_t *self, const displ
         }
         const uint8_t *in = (const uint8_t *)buffer;
         for (int16_t row = subrectangle.y1; row < subrectangle.y2; row++) {
-            memcpy(frame + row * self->lag_stride + clipped.x1 / 8, in, bytes_per_row);
+            memcpy(frame + row * self->lag.stride + clipped.x1 / 8, in, bytes_per_row);
             in += bytes_per_row;
         }
         // Run background tasks like a regular refresh does.
@@ -1138,8 +1138,8 @@ static bool lag_send_plane(epaperdisplay_epaperdisplay_obj_t *self, uint8_t comm
         return false;
     }
     uint16_t bytes_per_row = displayio_area_width(box) / 8;
-    const uint8_t *in = frame + box->y1 * self->lag_stride + box->x1 / 8;
-    if (bytes_per_row == self->lag_stride) {
+    const uint8_t *in = frame + box->y1 * self->lag.stride + box->x1 / 8;
+    if (bytes_per_row == self->lag.stride) {
         return lag_send(self, DISPLAY_DATA, in, displayio_area_height(box) * bytes_per_row) && lag_send_ram_commit(self);
     }
     uint8_t chunk[512];
@@ -1153,7 +1153,7 @@ static bool lag_send_plane(epaperdisplay_epaperdisplay_obj_t *self, uint8_t comm
         }
         memcpy(chunk + used, in, bytes_per_row);
         used += bytes_per_row;
-        in += self->lag_stride;
+        in += self->lag.stride;
     }
     return lag_send(self, DISPLAY_DATA, chunk, used) && lag_send_ram_commit(self);
 }
@@ -1164,10 +1164,10 @@ static bool lag_write_plane(epaperdisplay_epaperdisplay_obj_t *self, uint8_t com
         if (!lag_set_region(self, box) || !displayio_display_bus_begin_transaction(&self->bus)) {
             return false;
         }
-        self->lag_bus_held = true;
+        self->lag.bus_held = true;
         const bool sent = lag_send_plane(self, command, frame, box);
         displayio_display_bus_end_transaction(&self->bus);
-        self->lag_bus_held = false;
+        self->lag.bus_held = false;
         if (sent) {
             return true;
         }
@@ -1179,28 +1179,28 @@ static bool lag_write_plane(epaperdisplay_epaperdisplay_obj_t *self, uint8_t com
 // part stays owed until it has gone out, so a pixel is only counted as driven if it was. Interrupts
 // wait, since a send they stop can't be told from one that arrived. False if the bus can't be had.
 static bool lag_commit_step(epaperdisplay_epaperdisplay_obj_t *self) {
-    const bool was_holding = self->lag_holding_interrupts;
+    const bool was_holding = self->lag.holding_interrupts;
     lag_hold_interrupts(self);
     bool ok = true;
-    if (self->lag_commit == LAG_COMMIT_PLANE) {
-        ok = lag_write_plane(self, self->write_black_ram_command, self->lag_slots[self->lag_head], &self->lag_commit_box);
+    if (self->lag.commit == LAG_COMMIT_PLANE) {
+        ok = lag_write_plane(self, self->write_black_ram_command, self->lag.slots[self->lag.head], &self->lag.commit_box);
         if (ok) {
-            self->lag_commit = LAG_COMMIT_ACTIVATE;
+            self->lag.commit = LAG_COMMIT_ACTIVATE;
         }
     }
-    if (ok && self->lag_commit == LAG_COMMIT_ACTIVATE) {
+    if (ok && self->lag.commit == LAG_COMMIT_ACTIVATE) {
         // Nothing can differ when the box is empty, so an update would only take time.
-        if (self->lag_commit_drive) {
+        if (self->lag.commit_drive) {
             ok = send_command_sequence(self, false, self->refresh_sequence, self->refresh_sequence_len);
             if (ok) {
                 wait_for_update_start(self);
                 supervisor_enable_tick();
                 self->refreshing = true;
-                self->lag_update_start = supervisor_ticks_ms64();
+                self->lag.update_start = supervisor_ticks_ms64();
             }
         }
         if (ok) {
-            self->lag_commit = LAG_COMMIT_NONE;
+            self->lag.commit = LAG_COMMIT_NONE;
         }
     }
     if (!was_holding) {
@@ -1214,11 +1214,11 @@ static bool lag_commit_step(epaperdisplay_epaperdisplay_obj_t *self) {
 // doesn't advance if the bus can't be had before the slot is touched, so a retry does the same
 // step. Once it has, the step is owed and true is returned, whatever happens to the rest.
 static bool lag_step(epaperdisplay_epaperdisplay_obj_t *self, const displayio_area_t *areas, bool white) {
-    uint8_t lag = self->lag_frames;
-    uint8_t next = (self->lag_head + 1) % lag;
-    uint8_t *frame = self->lag_slots[next];
-    displayio_area_t *boxes = self->lag_boxes;
-    uint8_t index = self->lag_box_index;
+    uint8_t lag = self->lag.frames;
+    uint8_t next = (self->lag.head + 1) % lag;
+    uint8_t *frame = self->lag.slots[next];
+    displayio_area_t *boxes = self->lag.boxes;
+    uint8_t index = self->lag.box_index;
     bool changed = areas != NULL;
 
     for (const displayio_area_t *area = areas; area != NULL; area = area->next) {
@@ -1236,7 +1236,7 @@ static bool lag_step(epaperdisplay_epaperdisplay_obj_t *self, const displayio_ar
         }
     }
     displayio_area_t write_box;
-    if (self->lag_force_full) {
+    if (self->lag.force_full) {
         displayio_display_core_clip_area(&self->core, &self->core.area, &write_box);
     } else {
         displayio_area_union(&drive_box, &boxes[oldest], &write_box);
@@ -1247,51 +1247,51 @@ static bool lag_step(epaperdisplay_epaperdisplay_obj_t *self, const displayio_ar
         return false;
     }
     // N-1 and N-lag only differ inside the box.
-    self->lag_slot_overwriting = true;
-    if (write && next != self->lag_head) {
-        const uint8_t *in = self->lag_slots[self->lag_head] + write_box.y1 * self->lag_stride + write_box.x1 / 8;
-        uint8_t *out = frame + write_box.y1 * self->lag_stride + write_box.x1 / 8;
+    self->lag.slot_overwriting = true;
+    if (write && next != self->lag.head) {
+        const uint8_t *in = self->lag.slots[self->lag.head] + write_box.y1 * self->lag.stride + write_box.x1 / 8;
+        uint8_t *out = frame + write_box.y1 * self->lag.stride + write_box.x1 / 8;
         uint16_t bytes_per_row = displayio_area_width(&write_box) / 8;
         for (int16_t y = write_box.y1; y < write_box.y2; y++) {
             memcpy(out, in, bytes_per_row);
-            in += self->lag_stride;
-            out += self->lag_stride;
+            in += self->lag.stride;
+            out += self->lag.stride;
         }
     }
     for (const displayio_area_t *area = areas; area != NULL; area = area->next) {
         lag_render_area(self, area, frame, white);
     }
     // The slot no longer holds N-lag, so from here the step has to finish or that drive is lost.
-    self->lag_slot_overwriting = false;
-    self->lag_head = next;
-    self->lag_box_index = oldest;
+    self->lag.slot_overwriting = false;
+    self->lag.head = next;
+    self->lag.box_index = oldest;
     boxes[oldest] = (displayio_area_t) {0};
     if (changed) {
-        self->lag_settle = lag;
-    } else if (self->lag_settle > 0) {
-        self->lag_settle--;
+        self->lag.settle = lag;
+    } else if (self->lag.settle > 0) {
+        self->lag.settle--;
     }
-    self->lag_force_full = false;
-    self->lag_commit_box = write_box;
-    self->lag_commit_drive = !displayio_area_empty(&drive_box);
-    self->lag_commit = write ? LAG_COMMIT_PLANE : LAG_COMMIT_ACTIVATE;
+    self->lag.force_full = false;
+    self->lag.commit_box = write_box;
+    self->lag.commit_drive = !displayio_area_empty(&drive_box);
+    self->lag.commit = write ? LAG_COMMIT_PLANE : LAG_COMMIT_ACTIVATE;
     lag_commit_step(self);
     return true;
 }
 
 static bool lag_refresh_unguarded(epaperdisplay_epaperdisplay_obj_t *self, const displayio_area_t *areas) {
-    if (!self->awake || self->lag_state_lost) {
+    if (!self->awake || self->lag.state_lost) {
         // The panel may still hold anything, including ghosts from a run that lost power.
         if (!lag_clean(self, 0, true) || mp_hal_is_interrupted()) {
             return false;
         }
         areas = &self->core.area;
     }
-    if (self->lag_commit != LAG_COMMIT_NONE) {
+    if (self->lag.commit != LAG_COMMIT_NONE) {
         // The areas stay marked, so the next refresh draws them.
         return lag_commit_step(self);
     }
-    if (areas == NULL && self->lag_settle == 0) {
+    if (areas == NULL && self->lag.settle == 0) {
         return true;
     }
     if (self->needs_start) {
@@ -1314,12 +1314,12 @@ static bool lag_refresh_unguarded(epaperdisplay_epaperdisplay_obj_t *self, const
 // help. That has to wait for the next refresh or the shutdown, since the bus may be in use here.
 // Until then a script polling busy can go on.
 static void lag_give_up_if_stuck(epaperdisplay_epaperdisplay_obj_t *self) {
-    if (self->lag_frames > 0 && !self->lag_holding_interrupts &&
-        supervisor_ticks_ms64() - self->lag_update_start > EPAPER_WAIT_TIMEOUT_MS) {
+    if (self->lag.frames > 0 && !self->lag.holding_interrupts &&
+        supervisor_ticks_ms64() - self->lag.update_start > EPAPER_WAIT_TIMEOUT_MS) {
         supervisor_disable_tick();
         self->refreshing = false;
         self->awake = false;
-        self->lag_state_lost = true;
+        self->lag.state_lost = true;
     }
 }
 
@@ -1333,17 +1333,17 @@ static bool lag_wait_idle(epaperdisplay_epaperdisplay_obj_t *self) {
 // The deadline bounds each piece of work, not the whole drive, which can be 32 updates and a clean.
 // Only called after progress, so a bus that is never free still runs out.
 static void lag_renew_deadline(epaperdisplay_epaperdisplay_obj_t *self) {
-    if (self->lag_busy_deadline != 0 && !self->lag_last_try) {
-        self->lag_busy_deadline = supervisor_ticks_ms64() + EPAPER_WAIT_TIMEOUT_MS;
+    if (self->lag.busy_deadline != 0 && !self->lag.last_try) {
+        self->lag.busy_deadline = supervisor_ticks_ms64() + EPAPER_WAIT_TIMEOUT_MS;
     }
 }
 
 // Give every changed pixel the rest of its drive so the panel is left DC balanced.
 static void lag_flush(epaperdisplay_epaperdisplay_obj_t *self) {
-    if (self->lag_frames == 0 || !self->awake) {
+    if (self->lag.frames == 0 || !self->awake) {
         return;
     }
-    while (self->lag_settle > 0 || self->lag_commit != LAG_COMMIT_NONE) {
+    while (self->lag.settle > 0 || self->lag.commit != LAG_COMMIT_NONE) {
         if (!lag_wait_idle(self) || display_interrupted(self)) {
             return;
         }
@@ -1351,7 +1351,7 @@ static void lag_flush(epaperdisplay_epaperdisplay_obj_t *self) {
             supervisor_disable_tick();
             self->refreshing = false;
         }
-        if (self->lag_commit != LAG_COMMIT_NONE ? !lag_commit_step(self) : !lag_step(self, NULL, false)) {
+        if (self->lag.commit != LAG_COMMIT_NONE ? !lag_commit_step(self) : !lag_step(self, NULL, false)) {
             return;
         }
         lag_renew_deadline(self);
@@ -1375,7 +1375,7 @@ static bool lag_send_solid(epaperdisplay_epaperdisplay_obj_t *self, uint8_t comm
     }
     uint8_t chunk[512];
     memset(chunk, white != self->black_bits_inverted ? 0xff : 0x00, sizeof(chunk));
-    size_t remaining = self->lag_slot_size;
+    size_t remaining = self->lag.slot_size;
     while (remaining > 0) {
         size_t count = MIN(remaining, sizeof(chunk));
         if (!lag_send(self, DISPLAY_DATA, chunk, count)) {
@@ -1393,10 +1393,10 @@ static bool lag_write_solid(epaperdisplay_epaperdisplay_obj_t *self, uint8_t com
         if (!lag_set_region(self, &box) || !displayio_display_bus_begin_transaction(&self->bus)) {
             return false;
         }
-        self->lag_bus_held = true;
+        self->lag.bus_held = true;
         const bool sent = lag_send_solid(self, command, white);
         displayio_display_bus_end_transaction(&self->bus);
-        self->lag_bus_held = false;
+        self->lag.bus_held = false;
         if (sent) {
             return true;
         }
@@ -1435,7 +1435,7 @@ static void lag_wipe(epaperdisplay_epaperdisplay_obj_t *self, uint8_t frames) {
             lag_write_solid(self, self->write_previous_ram_command, true);
     }
     if (!ok) {
-        self->lag_state_lost = true;
+        self->lag.state_lost = true;
     }
 }
 
@@ -1451,7 +1451,7 @@ static bool lag_to_white(epaperdisplay_epaperdisplay_obj_t *self) {
             supervisor_disable_tick();
             self->refreshing = false;
         }
-        if (self->lag_commit == LAG_COMMIT_NONE) {
+        if (self->lag.commit == LAG_COMMIT_NONE) {
             break;
         }
         if (!lag_commit_step(self)) {
@@ -1465,7 +1465,7 @@ static bool lag_to_white(epaperdisplay_epaperdisplay_obj_t *self) {
     }
     lag_renew_deadline(self);
     lag_flush(self);
-    if (self->lag_settle > 0 || self->lag_commit != LAG_COMMIT_NONE || !lag_wait_idle(self)) {
+    if (self->lag.settle > 0 || self->lag.commit != LAG_COMMIT_NONE || !lag_wait_idle(self)) {
         return false;
     }
     if (self->refreshing) {
@@ -1479,16 +1479,16 @@ static bool lag_to_white(epaperdisplay_epaperdisplay_obj_t *self) {
 // this the bus stays locked and chip select low, and everything after waits for it. The next
 // step writes all of both planes, since this one may have stopped partway through either.
 static void lag_abandon_step(epaperdisplay_epaperdisplay_obj_t *self) {
-    if (self->lag_bus_held) {
+    if (self->lag.bus_held) {
         displayio_display_bus_end_transaction(&self->bus);
-        self->lag_bus_held = false;
+        self->lag.bus_held = false;
     }
     self->core.refresh_in_progress = false;
-    self->lag_force_full = true;
-    if (self->lag_slot_overwriting) {
+    self->lag.force_full = true;
+    if (self->lag.slot_overwriting) {
         // The drive it held can't be sent any more.
-        self->lag_slot_overwriting = false;
-        self->lag_state_lost = true;
+        self->lag.slot_overwriting = false;
+        self->lag.state_lost = true;
     }
 }
 
@@ -1499,9 +1499,9 @@ static void lag_after_raise(epaperdisplay_epaperdisplay_obj_t *self) {
 
 // Raise once: what was held, if anything, instead of both that and this.
 static MP_NORETURN void lag_raise(epaperdisplay_epaperdisplay_obj_t *self, mp_obj_t raised) {
-    if (self->lag_held_exception != MP_OBJ_NULL) {
-        raised = self->lag_held_exception;
-        self->lag_held_exception = MP_OBJ_NULL;
+    if (self->lag.held_exception != MP_OBJ_NULL) {
+        raised = self->lag.held_exception;
+        self->lag.held_exception = MP_OBJ_NULL;
     }
     lag_after_raise(self);
     nlr_jump(raised);
@@ -1540,14 +1540,14 @@ static bool lag_recover(epaperdisplay_epaperdisplay_obj_t *self) {
     if (!lag_wake(self)) {
         return false;
     }
-    for (uint8_t i = 0; i < self->lag_frames; i++) {
-        memset(self->lag_slots[i], self->black_bits_inverted ? 0x00 : 0xff, self->lag_slot_size);
+    for (uint8_t i = 0; i < self->lag.frames; i++) {
+        memset(self->lag.slots[i], self->black_bits_inverted ? 0x00 : 0xff, self->lag.slot_size);
     }
-    memset(self->lag_boxes, 0, (self->lag_frames + 1) * sizeof(displayio_area_t));
-    self->lag_settle = 0;
-    self->lag_commit = LAG_COMMIT_NONE;
-    self->lag_force_full = false;
-    self->lag_state_lost = false;
+    memset(self->lag.boxes, 0, (self->lag.frames + 1) * sizeof(displayio_area_t));
+    self->lag.settle = 0;
+    self->lag.commit = LAG_COMMIT_NONE;
+    self->lag.force_full = false;
+    self->lag.state_lost = false;
     return true;
 }
 
@@ -1559,14 +1559,14 @@ static bool lag_clean(epaperdisplay_epaperdisplay_obj_t *self, uint8_t frames, b
     lag_hold_interrupts(self);
     self->core.full_refresh = true;
     bool ok;
-    if (self->lag_state_lost) {
+    if (self->lag.state_lost) {
         ok = lag_recover(self);
     } else {
         ok = self->awake || lag_wake(self);
         ok = ok && lag_to_white(self);
         if (ok && full) {
             lag_renew_deadline(self);
-            self->lag_force_full = true;
+            self->lag.force_full = true;
             ok = send_command_sequence(self, true, self->clean_sequence, self->clean_sequence_len) && lag_wait_idle(self);
             if (ok) {
                 lag_renew_deadline(self);
@@ -1596,7 +1596,7 @@ bool common_hal_epaperdisplay_epaperdisplay_clean(epaperdisplay_epaperdisplay_ob
 // where nothing can catch an exception. Interrupts stay held until release_epaperdisplay() has sent
 // the stop sequence. All of it is bounded so a stuck panel can't hang shutdown. Doesn't allocate.
 static void lag_shutdown(epaperdisplay_epaperdisplay_obj_t *self) {
-    if (self->lag_frames == 0 || (!self->awake && !self->lag_state_lost)) {
+    if (self->lag.frames == 0 || (!self->awake && !self->lag.state_lost)) {
         return; // Nothing was drawn.
     }
     lag_after_raise(self); // Anything still held from before is ours to end.
@@ -1607,7 +1607,7 @@ static void lag_shutdown(epaperdisplay_epaperdisplay_obj_t *self) {
     while (!done && !lag_deadline_passed(self) && raises < 4) {
         nlr_buf_t nlr;
         if (nlr_push(&nlr) == 0) {
-            if (self->lag_state_lost) {
+            if (self->lag.state_lost) {
                 done = lag_recover(self);
             } else if (lag_to_white(self)) {
                 lag_renew_deadline(self);
@@ -1618,8 +1618,8 @@ static void lag_shutdown(epaperdisplay_epaperdisplay_obj_t *self) {
         } else {
             lag_abandon_step(self);
             raises++;
-            if (self->lag_held_exception == MP_OBJ_NULL) {
-                self->lag_held_exception = nlr.ret_val;
+            if (self->lag.held_exception == MP_OBJ_NULL) {
+                self->lag.held_exception = nlr.ret_val;
             }
         }
     }
@@ -1631,8 +1631,8 @@ static void lag_shutdown(epaperdisplay_epaperdisplay_obj_t *self) {
     // BUSY outlasted the wait. One reset may free the panel for the stored waveform. If BUSY stays
     // high after it, nothing more is sent, and the deadline isn't renewed, so this is the last wait.
     if (!done && raises < 4 && common_hal_digitalio_digitalinout_get_value(&self->busy) == self->busy_state) {
-        self->lag_busy_deadline = supervisor_ticks_ms64() + EPAPER_WAIT_TIMEOUT_MS;
-        self->lag_last_try = true;
+        self->lag.busy_deadline = supervisor_ticks_ms64() + EPAPER_WAIT_TIMEOUT_MS;
+        self->lag.last_try = true;
         self->awake = false;
         nlr_buf_t nlr;
         if (nlr_push(&nlr) == 0) {
@@ -1644,11 +1644,11 @@ static void lag_shutdown(epaperdisplay_epaperdisplay_obj_t *self) {
             nlr_pop();
         } else {
             lag_abandon_step(self);
-            if (self->lag_held_exception == MP_OBJ_NULL) {
-                self->lag_held_exception = nlr.ret_val;
+            if (self->lag.held_exception == MP_OBJ_NULL) {
+                self->lag.held_exception = nlr.ret_val;
             }
         }
-        self->lag_last_try = false;
+        self->lag.last_try = false;
     }
 }
 #endif // CIRCUITPY_EPAPERDISPLAY_FAST
