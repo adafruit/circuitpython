@@ -540,6 +540,9 @@ CIRCUITPY_AUDIOIO = 0
 # LEDC + GPTimer PWM audio, the only analog audio output without I2S hardware.
 CIRCUITPY_AUDIOPWMIO ?= 1
 
+# PIE vector instructions for audiomixer.
+CIRCUITPY_AUDIOMIXER_USE_PORT_MIX ?= 1
+
 endif
 #### end chip-specific choices ########################################
 
