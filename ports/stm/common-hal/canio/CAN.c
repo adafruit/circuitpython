@@ -137,6 +137,10 @@ void common_hal_canio_can_construct(canio_can_obj_t *self, const mcu_pin_obj_t *
     HAL_CAN_Start(&self->handle);
 
     reserved_can[periph_index - 1] = true;
+    self->tx_pin = tx;
+    self->rx_pin = rx;
+    common_hal_mcu_pin_claim(tx);
+    common_hal_mcu_pin_claim(rx);
 }
 
 bool common_hal_canio_can_loopback_get(canio_can_obj_t *self) {
@@ -258,6 +262,8 @@ void common_hal_canio_can_deinit(canio_can_obj_t *self) {
         while (READ_BIT(self->handle.Instance->MCR, CAN_MCR_RESET)) {
         }
         reserved_can[self->periph_index - 1] = false;
+        common_hal_reset_pin(self->tx_pin);
+        common_hal_reset_pin(self->rx_pin);
     }
     self->handle.Instance = NULL;
 }
