@@ -16,12 +16,12 @@
 #include "shared-bindings/util.h"
 #include "shared-bindings/busio/I2C.h"
 
-static void mark_deinit(is31fl3741_IS31FL3741_obj_t *self) {
+void common_hal_is31fl3741_IS31FL3741_mark_deinit(is31fl3741_IS31FL3741_obj_t *self) {
     self->i2c = NULL;
 }
 
 void common_hal_is31fl3741_IS31FL3741_construct(is31fl3741_IS31FL3741_obj_t *self, busio_i2c_obj_t *i2c, uint8_t addr) {
-    mark_deinit(self);
+    common_hal_is31fl3741_IS31FL3741_mark_deinit(self);
 
     // Probe the bus to see if a device acknowledges the given address.
     if (!common_hal_busio_i2c_probe(i2c, addr)) {
@@ -47,7 +47,7 @@ void common_hal_is31fl3741_IS31FL3741_deinit(is31fl3741_IS31FL3741_obj_t *self) 
         common_hal_busio_i2c_deinit(self->i2c);
     }
 
-    mark_deinit(self);
+    common_hal_is31fl3741_IS31FL3741_mark_deinit(self);
 }
 
 void common_hal_is31fl3741_write(is31fl3741_IS31FL3741_obj_t *is31, const mp_obj_t *mapping, const uint8_t *pixels, size_t numBytes) {

@@ -32,6 +32,10 @@
 #include "shared-bindings/dotclockframebuffer/DotClockFramebuffer.h"
 #endif
 
+#if CIRCUITPY_IS31FL3741
+#include "shared-bindings/is31fl3741/IS31FL3741.h"
+#endif
+
 #if CIRCUITPY_SHARPDISPLAY
 #include "shared-bindings/sharpdisplay/SharpMemoryFramebuffer.h"
 #include "shared-module/sharpdisplay/SharpMemoryFramebuffer.h"
@@ -322,12 +326,16 @@ void reset_displays(void) {
                 if (gc_ptr_on_heap(original_is31)) {
                     memcpy(&is31fb->inline_is31fl3741, original_is31, sizeof(is31fl3741_IS31FL3741_obj_t));
                     is31fb->is31fl3741 = &is31fb->inline_is31fl3741;
+                    // Mark the old IS31FL3741 object so it is considered deinit.
+                    common_hal_is31fl3741_IS31FL3741_mark_deinit(original_is31);
                 }
 
                 busio_i2c_obj_t *original_i2c = is31fb->is31fl3741->i2c;
                 if (gc_ptr_on_heap(original_i2c)) {
                     memcpy(&is31fb->is31fl3741->inline_i2c, original_i2c, sizeof(busio_i2c_obj_t));
                     is31fb->is31fl3741->i2c = &is31fb->is31fl3741->inline_i2c;
+                    // Mark the old i2c object so it is considered deinit.
+                    common_hal_busio_i2c_mark_deinit(original_i2c);
                 }
             }
 
