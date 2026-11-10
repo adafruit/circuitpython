@@ -144,9 +144,13 @@ static bool _refresh_area(framebufferio_framebufferdisplay_obj_t *self, const di
     if (displayio_area_size(&clipped) > buffer_size * pixels_per_word) {
         uint32_t buffer_pixels = buffer_size * pixels_per_word;
         if (self->core.transform.transpose_xy && self->core.colorspace.depth >= 8) {
-            // Rotated 90 or 270: a panel column is a source row. Send bands of columns so sources
-            // are read along their rows, which OnDiskBitmap needs to avoid a file seek per pixel.
-            rows_per_buffer = MIN(rows_per_buffer, buffer_pixels);
+            // Rotated 90 or 270: a panel column is a source row. Square tiles keep both the
+            // source reads and the framebuffer writes within a few cache lines.
+            uint16_t side = 1;
+            while ((uint32_t)(side + 1) * (side + 1) <= buffer_pixels) {
+                side++;
+            }
+            rows_per_buffer = MIN(rows_per_buffer, side);
             cols_per_buffer = buffer_pixels / rows_per_buffer;
         } else {
             rows_per_buffer = buffer_pixels / cols_per_buffer;
