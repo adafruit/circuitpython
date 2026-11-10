@@ -1,4 +1,7 @@
 CIRCUITPY_BUILD_EXTENSIONS = ["uf2"]
+NAME="Feather RP2040"
+VENDOR="Adafruit"
+USB_MANUFACTURER="Adafruit"
 
 # Non-Zephyr build of the same board; nvm and CIRCUITPY must sit where it puts them.
 counterpart = "raspberrypi/adafruit_feather_rp2040"

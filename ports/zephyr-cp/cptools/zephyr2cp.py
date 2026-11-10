@@ -1016,6 +1016,10 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir, mpconfig
     if mpconfigboard and "NAME" in mpconfigboard:
         board_name = mpconfigboard["NAME"]
     board_info["name"] = board_name
+    # Banner board name: VENDOR + NAME when circuitpython.toml sets VENDOR, else just the name.
+    banner_name = board_name
+    if mpconfigboard and "VENDOR" in mpconfigboard:
+        banner_name = f"{mpconfigboard['VENDOR']} {board_name}"
     # board_id_yaml = zephyr_board_dir / (zephyr_board_dir.name + ".yaml")
     # board_id_yaml = yaml.safe_load(board_id_yaml.read_text())
     # print(board_id_yaml)
@@ -2013,7 +2017,7 @@ static mii_ethernet_obj_t ethernet_obj;
 
     new_header_content = f"""#pragma once
 
-#define MICROPY_HW_BOARD_NAME       "{board_name}"
+#define MICROPY_HW_BOARD_NAME       "{banner_name}"
 #define MICROPY_HW_MCU_NAME         "{soc_name}"
 #define CIRCUITPY_RAM_DEVICE_COUNT  {len(rams)}
 {status_led}

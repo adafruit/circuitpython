@@ -489,6 +489,7 @@ async def build_circuitpython():  # noqa: C901
 
     vendor = mpconfigboard.get("VENDOR", board_info["vendor"])
     name = mpconfigboard.get("NAME", board_info["name"])
+    usb_manufacturer = mpconfigboard.get("USB_MANUFACTURER", board_info["vendor"])
 
     enabled_modules, module_reasons = determine_enabled_modules(board_info, portdir, srcdir)
     for m in mpconfigboard.get("DISABLED_MODULES", []):
@@ -582,7 +583,7 @@ async def build_circuitpython():  # noqa: C901
         )
         for macro, limit, value in (
             ("USB_PRODUCT", 16, name),
-            ("USB_MANUFACTURER", 8, vendor),
+            ("USB_MANUFACTURER", 8, usb_manufacturer),
         ):
             circuitpython_flags.append(f"-D{macro}='\"{value}\"'")
             circuitpython_flags.append(f"-D{macro}_{limit}='\"{value[:limit]}\"'")

@@ -1,6 +1,8 @@
 CIRCUITPY_BUILD_EXTENSIONS = ["hex", "uf2"]
 BLOBS=["hal_infineon"]
-NAME="Raspberry Pi Pico 2 W"
+NAME="Pico 2 W"
+VENDOR="Raspberry Pi"
+USB_MANUFACTURER="Raspberry Pi"
 
 # Non-Zephyr build of the same board; nvm and CIRCUITPY must sit where it puts them.
 counterpart = "raspberrypi/raspberry_pi_pico2_w"
