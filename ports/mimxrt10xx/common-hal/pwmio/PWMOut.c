@@ -213,7 +213,7 @@ pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
         _pwm_sm_frequencies[flexpwm_index][submodule] = frequency;
 
         if (variable_frequency) {
-            _pwm_variable_frequency[flexpwm_index] = sm_mask;
+            _pwm_variable_frequency[flexpwm_index] |= sm_mask;
         }
     }
 
