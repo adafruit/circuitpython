@@ -23,6 +23,8 @@ GPIO_ACTIVE_LOW = 1 << 0
 # neither of which should ever be in the Python heap.
 MINIMUM_RAM_SIZE = 8192
 
+# Checked before the generated COMPAT_TO_DRIVER, so an entry here overrides a
+# wrong generated one.
 MANUAL_COMPAT_TO_DRIVER = {
     "renesas_ra_nv_flash": "flash",
     "soc_nv_flash": "flash",
