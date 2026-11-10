@@ -1,4 +1,6 @@
 CIRCUITPY_BUILD_EXTENSIONS = ["hex", "uf2"]
+USB_VID=0x239A
+USB_PID=0x8162
 BLOBS=["hal_infineon"]
 NAME="Pico 2 W"
 VENDOR="Raspberry Pi"
