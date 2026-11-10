@@ -351,9 +351,8 @@ void common_hal_audiomp3_mp3file_construct(audiomp3_mp3file_obj_t *self,
     common_hal_audiomp3_mp3file_set_file(self, stream);
 }
 
-void common_hal_audiomp3_mp3file_set_file(audiomp3_mp3file_obj_t *self, mp_obj_t stream) {
-    background_callback_prevent();
-
+// Call with background callbacks prevented.
+static bool mp3file_set_file_and_get_frame_info(audiomp3_mp3file_obj_t *self, mp_obj_t stream, MP3FrameInfo *fi) {
     self->stream = stream;
     mp_load_method_maybe(stream, MP_QSTR_settimeout, self->settimeout_args);
 
@@ -384,8 +383,22 @@ void common_hal_audiomp3_mp3file_set_file(audiomp3_mp3file_obj_t *self, mp_obj_t
     memset(decoder->IMDCTInfoPS, 0, sizeof(IMDCTInfo));
     memset(decoder->SubbandInfoPS, 0, sizeof(SubbandInfo));
 
+    return mp3file_get_next_frame_info(self, fi, true);
+}
+
+void common_hal_audiomp3_mp3file_set_file(audiomp3_mp3file_obj_t *self, mp_obj_t stream) {
+    background_callback_prevent();
+
     MP3FrameInfo fi;
-    bool result = mp3file_get_next_frame_info(self, &fi, true);
+    bool result;
+    nlr_buf_t nlr;
+    if (nlr_push(&nlr) == 0) {
+        result = mp3file_set_file_and_get_frame_info(self, stream, &fi);
+        nlr_pop();
+    } else {
+        background_callback_allow();
+        nlr_jump(nlr.ret_val);
+    }
     background_callback_allow();
     if (!result) {
         mp_raise_msg(&mp_type_RuntimeError,
