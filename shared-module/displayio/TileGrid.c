@@ -429,16 +429,17 @@ void common_hal_displayio_tilegrid_set_top_left(displayio_tilegrid_t *self, uint
 #define MAX_16BIT_PIXEL_VALUE (0xffff)
 
 // One row of the common case: an 8 or 16 bpp Bitmap or a mapped 8 bpp OnDiskBitmap, a Palette
-// without dithering, a 16 bpp display, no scaling, no x flip and no transpose. Also a 16 bpp
-// Bitmap with an RGB565 ColorConverter without dithering, whose pixels reach a 16 bpp display
-// unchanged apart from byte order. Same result as the per-pixel loop in
+// without dithering, a 16 bpp display and no scaling. Also a 16 bpp Bitmap with an RGB565
+// ColorConverter without dithering, whose pixels reach a 16 bpp display unchanged apart from
+// byte order. Reads go along a bitmap row and land x_stride pixels apart in buffer, which
+// covers flips and rotated displays. Same result as the per-pixel loop in
 // displayio_tilegrid_fill_area, without the per-pixel calls. Returns false if a pixel was
 // transparent.
 static bool _fill_row_fast(displayio_tilegrid_t *self, const void *tiles,
     displayio_bitmap_t *bitmap, displayio_ondiskbitmap_t *odb, displayio_palette_t *palette,
     displayio_colorconverter_t *converter,
     const _displayio_colorspace_t *colorspace, uint32_t *mask, uint16_t *buffer,
-    int32_t offset, uint16_t x, uint16_t y, int16_t count, int16_t x_in_tile,
+    int32_t offset, int16_t x_stride, uint16_t x, uint16_t y, int16_t count, int16_t x_in_tile,
     uint16_t x_tile_index, uint16_t row_tile_location, int16_t y_in_tile) {
     bool covered = true;
     uint16_t tile_width = self->tile_width;
@@ -477,9 +478,10 @@ static bool _fill_row_fast(displayio_tilegrid_t *self, const void *tiles,
         if (converter != NULL) {
             // A separate loop, so the Palette loop below stays as fast as before. With no
             // transparent color, copy 32 pixels at a time where none of them is set yet.
-            bool blocks = converter->transparent_color > MAX_16BIT_PIXEL_VALUE &&
+            // Blocks need consecutive destination pixels, so only when x_stride is 1.
+            bool blocks = x_stride == 1 && converter->transparent_color > MAX_16BIT_PIXEL_VALUE &&
                 row_inside && bx >= 0 && bx + run <= bitmap_width;
-            for (int16_t i = 0; i < run; i++, offset++, bx++) {
+            for (int16_t i = 0; i < run; i++, offset += x_stride, bx++) {
                 while (blocks && (offset & 31) == 0 && run - i >= 32 && mask[offset >> 5] == 0) {
                     const uint16_t *in = (const uint16_t *)row + bx;
                     uint16_t *out = buffer + offset;
@@ -515,7 +517,7 @@ static bool _fill_row_fast(displayio_tilegrid_t *self, const void *tiles,
             }
             x += run;
         } else {
-            for (int16_t i = 0; i < run; i++, offset++, bx++, x++) {
+            for (int16_t i = 0; i < run; i++, offset += x_stride, bx++, x++) {
                 uint32_t bit = 1u << (offset & 31);
                 if (mask[offset >> 5] & bit) {
                     continue;
@@ -668,8 +670,7 @@ bool displayio_tilegrid_fill_area(displayio_tilegrid_t *self,
     displayio_ondiskbitmap_t *row_odb = NULL;
     displayio_palette_t *row_palette = NULL;
     displayio_colorconverter_t *row_converter = NULL;
-    if (scale == 1 && x_stride == 1 && colorspace->depth == 16 &&
-        self->transpose_xy == self->absolute_transform->transpose_xy &&
+    if (scale == 1 && colorspace->depth == 16 &&
         mp_obj_is_type(self->bitmap, &displayio_bitmap_type)) {
         displayio_bitmap_t *bitmap = self->bitmap;
         if (mp_obj_is_type(self->pixel_shader, &displayio_palette_type)) {
@@ -689,8 +690,7 @@ bool displayio_tilegrid_fill_area(displayio_tilegrid_t *self,
         }
     }
     #if CIRCUITPY_STORAGE_MAP_FILE
-    if (row_bitmap == NULL && scale == 1 && x_stride == 1 && colorspace->depth == 16 &&
-        self->transpose_xy == self->absolute_transform->transpose_xy) {
+    if (row_bitmap == NULL && scale == 1 && colorspace->depth == 16) {
         row_odb = _row_ondiskbitmap(self);
         if (row_odb != NULL) {
             row_palette = self->pixel_shader;
@@ -716,8 +716,9 @@ bool displayio_tilegrid_fill_area(displayio_tilegrid_t *self,
 
         if (row_bitmap != NULL || row_odb != NULL) {
             if (!_fill_row_fast(self, tiles, row_bitmap, row_odb, row_palette, row_converter,
-                colorspace, mask, (uint16_t *)buffer, row_start + x_shift, start_x, input_pixel.y,
-                end_x - start_x, x_in_tile, x_tile_index, row_tile_location, y_in_tile)) {
+                colorspace, mask, (uint16_t *)buffer, row_start + x_shift * x_stride, x_stride,
+                start_x, input_pixel.y, end_x - start_x, x_in_tile, x_tile_index,
+                row_tile_location, y_in_tile)) {
                 full_coverage = false;
             }
             continue;
