@@ -129,6 +129,8 @@ static bool _socketpool_socket(socketpool_socketpool_obj_t *self,
     socketpool_socketpool_addressfamily_t family, socketpool_socketpool_sock_t type,
     int proto,
     socketpool_socket_obj_t *sock) {
+    sock->num = -1;
+
     int addr_family;
     int ipproto;
 
