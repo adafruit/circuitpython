@@ -320,8 +320,8 @@ void reset_displays(void) {
         } else if (display_bus_type == &is31fl3741_framebuffer_type) {
             is31fl3741_framebuffer_obj_t *is31fb = &display_buses[i].is31fl3741;
 
-            if (((uint32_t)is31fb->is31fl3741->i2c) < ((uint32_t)&display_buses) ||
-                ((uint32_t)is31fb->is31fl3741->i2c) > ((uint32_t)&display_buses + CIRCUITPY_DISPLAY_LIMIT)) {
+            if (((size_t)is31fb->is31fl3741->i2c) < ((size_t)&display_buses) ||
+                ((size_t)is31fb->is31fl3741->i2c) > ((size_t)&display_buses + CIRCUITPY_DISPLAY_LIMIT * sizeof(primary_display_bus_t))) {
                 is31fl3741_IS31FL3741_obj_t *original_is31 = is31fb->is31fl3741;
                 if (gc_ptr_on_heap(original_is31)) {
                     memcpy(&is31fb->inline_is31fl3741, original_is31, sizeof(is31fl3741_IS31FL3741_obj_t));
