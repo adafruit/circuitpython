@@ -152,6 +152,9 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
         mp_raise_ValueError(MP_ERROR_TEXT("Hardware in use, try alternative pins"));
     }
 
+    // Use the LPUART that the RX or TX pin belongs to.
+    const uint8_t bank_idx = (rx_config != NULL ? rx_config : tx_config)->bank_idx;
+
     if (is_onedirection && ((rts != NULL) || (cts != NULL))) {
         mp_raise_ValueError(MP_ERROR_TEXT("Both RX and TX required for flow control"));
     }
@@ -178,7 +181,7 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
 
     if ((rts != NULL) || (rs485_dir != NULL)) {
         for (uint32_t i = 0; i < rts_count; ++i) {
-            if (mcu_uart_rts_list[i].bank_idx == rx_config->bank_idx) {
+            if (mcu_uart_rts_list[i].bank_idx == bank_idx) {
                 if (mcu_uart_rts_list[i].pin == rts) {
                     rts_config = &mcu_uart_rts_list[i];
                     break;
@@ -198,7 +201,7 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
 
     if (cts != NULL) {
         for (uint32_t i = 0; i < cts_count; ++i) {
-            if (mcu_uart_cts_list[i].bank_idx == tx_config->bank_idx) {
+            if (mcu_uart_cts_list[i].bank_idx == bank_idx) {
                 if (mcu_uart_cts_list[i].pin == cts) {
                     cts_config = &mcu_uart_cts_list[i];
                     break;
@@ -211,12 +214,7 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     }
 
 
-    if (self->rx) {
-        self->index = rx_config->bank_idx - 1;
-    } else {
-        assert(self->tx);
-        self->index = tx_config->bank_idx - 1;
-    }
+    self->index = bank_idx - 1;
     self->uart = mcu_uart_banks[self->index];
 
     assert(self->uart);
