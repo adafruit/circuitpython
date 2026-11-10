@@ -1144,6 +1144,7 @@ $(filter $(SRC_PATTERNS), \
 	_airlift/transport.c \
 	displayio/bus_core.c \
 	displayio/display_core.c \
+	epaperdisplay/lag_drive.c \
 	usb/utf16le.c \
 )
 
