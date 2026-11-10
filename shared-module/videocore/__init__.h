@@ -112,8 +112,9 @@ mp_int_t videosource_get_width(mp_obj_t source);
 mp_int_t videosource_get_height(mp_obj_t source);
 mp_int_t videosource_get_bits_per_pixel(mp_obj_t source);
 
-// Raise when the group tree contains a VideoBuffer that streams into a
-// framebuffer other than the one this display renders. Called when a group
-// is made a display's root group. Implemented in shared-module/videocore/
-// VideoBuffer.c.
-void videocore_validate_root_group(mp_obj_t root_group, mp_obj_t display);
+// Raise when the group tree contains a VideoBuffer that can't be shown on
+// this display: one that streams into a framebuffer other than the one this
+// display renders, or a framebuffer target on a rotated display. rotation is
+// the display's rotation in degrees. Called when a group is made a display's
+// root group. Implemented in shared-module/videocore/VideoBuffer.c.
+void videocore_validate_root_group(mp_obj_t root_group, mp_obj_t display, mp_int_t rotation);

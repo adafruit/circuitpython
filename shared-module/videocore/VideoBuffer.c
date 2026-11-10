@@ -104,11 +104,13 @@ static void videocore_videobuffer_forget_frame(videocore_videobuffer_obj_t *self
 
 // Cache the framebuffer geometry for on_frame (see fb_pixels).
 static void videocore_videobuffer_cache_fb_geometry(videocore_videobuffer_obj_t *self,
-    const mp_buffer_info_t *bufinfo, mp_int_t fb_width, mp_int_t row_stride, mp_int_t first_pixel_offset) {
+    const mp_buffer_info_t *bufinfo, mp_int_t fb_width, mp_int_t fb_height,
+    mp_int_t row_stride, mp_int_t first_pixel_offset) {
     self->fb_pixels = (const uint8_t *)bufinfo->buf + first_pixel_offset;
     self->fb_pixels_len = bufinfo->len - first_pixel_offset;
     self->fb_row_stride = row_stride;
     self->fb_width = fb_width;
+    self->fb_height = fb_height;
 }
 
 // Add the currently rendered rect to the dirty area so the next refresh
@@ -122,17 +124,94 @@ static void videocore_videobuffer_dirty_current_area(videocore_videobuffer_obj_t
         &self->ephemeral_dirty_area, &self->current_area, &self->ephemeral_dirty_area);
 }
 
-// Recompute the rendered rect (screen coordinates) of the video from the
-// x/y position and the absolute transform. Video only supports scale 1 with
-// no mirroring (validated in update_transform), so the rect is the frame
-// size translated into place.
-static void videocore_videobuffer_update_area(videocore_videobuffer_obj_t *self) {
+// Compute the rect (in screen coordinates, which are the framebuffer's
+// physical coordinates) that a frame written at the logical position x/y
+// covers. A framebuffer target's frames are never rotated, and a rotated
+// display is rejected when its transform is applied, so the transform only
+// translates: the rect is source_width wide and source_height tall. A video
+// that isn't shown has no transform, which translates by nothing, so the
+// areas reported while detached stay sensible.
+static void videocore_videobuffer_frame_rect(videocore_videobuffer_obj_t *self,
+    mp_int_t x, mp_int_t y, displayio_area_t *area) {
     const displayio_buffer_transform_t *t = &self->absolute_transform;
-    self->current_area.x1 = self->x + t->x;
-    self->current_area.y1 = self->y + t->y;
-    self->current_area.x2 = self->current_area.x1 + self->source_width;
-    self->current_area.y2 = self->current_area.y1 + self->source_height;
-    self->current_area.next = NULL;
+    area->x1 = t->x + x;
+    area->y1 = t->y + y;
+    area->x2 = area->x1 + self->source_width;
+    area->y2 = area->y1 + self->source_height;
+    area->next = NULL;
+}
+
+// The source pixel that a screen pixel shows along one axis. d and origin come
+// from the transform. A mirrored axis (d < 0) runs the other way, so the source
+// pixel ends at the origin edge instead of starting there.
+static mp_int_t videocore_videobuffer_source_axis(int8_t d, mp_int_t screen,
+    mp_int_t origin, mp_int_t offset) {
+    if (d > 0) {
+        return screen - origin - offset;
+    }
+    return origin - screen - 1 - offset;
+}
+
+// Map a point in the source's coordinates (0, 0 to source_width/
+// source_height) to screen coordinates, which are the framebuffer's physical
+// coordinates. A plain buffer target is rotated with the display as displayio
+// copies its pixels, so both axes can be mirrored and swapped. The transform
+// is only ever a translation plus mirroring and/or transposing (scale 1),
+// which this relies on. While the video isn't shown there is no transform, so
+// the point keeps its plain x/y position.
+static void videocore_videobuffer_source_point(videocore_videobuffer_obj_t *self,
+    mp_int_t source_x, mp_int_t source_y, mp_int_t *screen_x, mp_int_t *screen_y) {
+    const displayio_buffer_transform_t *t = &self->absolute_transform;
+    const mp_int_t x = self->x + source_x;
+    const mp_int_t y = self->y + source_y;
+    if (t->scale == 0) {
+        // Not on a display, so there is no transform to apply. Keep the plain
+        // position so the areas reported while detached stay sensible.
+        *screen_x = x;
+        *screen_y = y;
+    } else if (t->transpose_xy) {
+        // The local y axis becomes screen x and the local x axis screen y.
+        *screen_x = t->x + t->dx * y;
+        *screen_y = t->y + t->dy * x;
+    } else {
+        *screen_x = t->x + t->dx * x;
+        *screen_y = t->y + t->dy * y;
+    }
+}
+
+// Map a rect in source coordinates to the screen rect it covers once it is
+// rotated. Mirroring and transposing a rect keeps it axis aligned, only
+// swapping its width and height on a transposed (90 or 270 degree) display.
+static void videocore_videobuffer_source_rect(videocore_videobuffer_obj_t *self,
+    const displayio_area_t *source, displayio_area_t *screen) {
+    mp_int_t x1;
+    mp_int_t y1;
+    mp_int_t x2;
+    mp_int_t y2;
+    videocore_videobuffer_source_point(self, source->x1, source->y1, &x1, &y1);
+    videocore_videobuffer_source_point(self, source->x2, source->y2, &x2, &y2);
+    screen->x1 = MIN(x1, x2);
+    screen->y1 = MIN(y1, y2);
+    screen->x2 = MAX(x1, x2);
+    screen->y2 = MAX(y1, y2);
+    screen->next = NULL;
+}
+
+// Recompute the rendered rect of the video from the x/y position and the
+// absolute transform. A framebuffer target only follows the transform's
+// position because its frames are never rotated. A plain buffer target is
+// rotated with the display, so its whole frame is transformed.
+static void videocore_videobuffer_update_area(videocore_videobuffer_obj_t *self) {
+    if (self->framebuffer_protocol != NULL) {
+        videocore_videobuffer_frame_rect(self, self->x, self->y, &self->current_area);
+        return;
+    }
+    displayio_area_t whole = {
+        .x2 = self->source_width,
+        .y2 = self->source_height,
+        .next = NULL,
+    };
+    videocore_videobuffer_source_rect(self, &whole, &self->current_area);
 }
 
 // Bytes in one row of a source frame.
@@ -181,26 +260,27 @@ static void videocore_videobuffer_compute_destination(
     }
 
     const mp_int_t fb_width = FB_GETTER(get_width, 0);
+    const mp_int_t fb_height = FB_GETTER(get_height, 0);
     const mp_int_t row_stride = FB_GETTER(get_row_stride, fb_width * self->source_bits_per_pixel / 8);
     const mp_int_t first_pixel_offset = FB_GETTER(get_first_pixel_offset, 0);
 
-    // The absolute position includes a containing group's translation. The
-    // shift may land the frame's rows mid-row: the image won't look right,
-    // but the contiguous DMA stays contiguous. Only the frame's start and
-    // end must remain within the buffer.
-    const displayio_buffer_transform_t *t = &self->absolute_transform;
-    const mp_int_t shift_x = self->x + t->x;
-    const mp_int_t shift_y = self->y + t->y;
-    if (self->x < 0 || self->y < 0 || shift_x < 0 || shift_y < 0 ||
-        first_pixel_offset + shift_y * row_stride + shift_x * bytes_per_pixel +
+    // Frames keep the framebuffer's orientation: the containing group's
+    // transform only translates them. The whole frame must stay within the
+    // framebuffer and the buffer.
+    displayio_area_t rect;
+    videocore_videobuffer_frame_rect(self, self->x, self->y, &rect);
+    if (self->x < 0 || self->y < 0 ||
+        rect.x1 < 0 || rect.y1 < 0 || rect.x2 > fb_width || rect.y2 > fb_height ||
+        first_pixel_offset + rect.y1 * row_stride + rect.x1 * bytes_per_pixel +
         videocore_videobuffer_frame_span(self, row_stride) >
         bufinfo.len) {
         mp_raise_ValueError(MP_ERROR_TEXT("video doesn't fit in framebuffer"));
     }
-    videocore_videobuffer_cache_fb_geometry(self, &bufinfo, fb_width, row_stride, first_pixel_offset);
+    videocore_videobuffer_cache_fb_geometry(
+        self, &bufinfo, fb_width, fb_height, row_stride, first_pixel_offset);
 
     dest->base = (uint8_t *)bufinfo.buf + first_pixel_offset +
-        shift_y * row_stride + shift_x * bytes_per_pixel;
+        rect.y1 * row_stride + rect.x1 * bytes_per_pixel;
     dest->stride = row_stride;
     dest->row_bytes = row_bytes;
     dest->height = self->source_height;
@@ -211,8 +291,7 @@ static void videocore_videobuffer_compute_destination(
 // Move the framebuffer destination for a new absolute position, capping the
 // shift so the frame stays completely within the framebuffer. Best effort:
 // never raises, because this runs from displayio's refresh.
-static void videocore_videobuffer_move_dest(
-    videocore_videobuffer_obj_t *self, mp_int_t shift_x, mp_int_t shift_y) {
+static void videocore_videobuffer_move_dest(videocore_videobuffer_obj_t *self) {
     if (!self->playing || self->paused) {
         return;
     }
@@ -224,33 +303,34 @@ static void videocore_videobuffer_move_dest(
     const size_t bytes_per_pixel = self->source_bits_per_pixel / 8;
     const size_t row_bytes = videocore_videobuffer_source_row_bytes(self);
     const mp_int_t fb_width = FB_GETTER(get_width, 0);
+    const mp_int_t fb_height = FB_GETTER(get_height, 0);
     const mp_int_t row_stride = FB_GETTER(get_row_stride, fb_width * self->source_bits_per_pixel / 8);
     const mp_int_t first_pixel_offset = FB_GETTER(get_first_pixel_offset, 0);
+    if (row_stride <= 0 || bytes_per_pixel == 0) {
+        return;
+    }
 
-    if (shift_x < 0) {
-        shift_x = 0;
-    }
-    if (shift_y < 0) {
-        shift_y = 0;
-    }
+    displayio_area_t rect;
+    videocore_videobuffer_frame_rect(self, self->x, self->y, &rect);
+    mp_int_t shift_x = MAX(rect.x1, 0);
+    mp_int_t shift_y = MAX(rect.y1, 0);
     // Cap the start and the end. Cap the rows first: enough rows must fit
     // above the frame for it to fit at all.
     const mp_int_t max_end = (mp_int_t)bufinfo.len - first_pixel_offset -
         videocore_videobuffer_frame_span(self, row_stride);
-    if (shift_y > max_end / row_stride) {
-        shift_y = max_end / row_stride;
+    const mp_int_t buf_max_y = max_end / row_stride;
+    const mp_int_t max_y = MIN(fb_height - self->source_height, buf_max_y);
+    if (shift_y > max_y) {
+        shift_y = MAX(max_y, 0);
     }
-    if (shift_y < 0) {
-        shift_y = 0;
-    }
-    const mp_int_t max_x = (max_end - shift_y * row_stride) / bytes_per_pixel;
+    const mp_int_t buf_max_x =
+        (max_end - shift_y * row_stride) / (mp_int_t)bytes_per_pixel;
+    const mp_int_t max_x = MIN(fb_width - self->source_width, buf_max_x);
     if (shift_x > max_x) {
-        shift_x = max_x;
+        shift_x = MAX(max_x, 0);
     }
-    if (shift_x < 0) {
-        shift_x = 0;
-    }
-    videocore_videobuffer_cache_fb_geometry(self, &bufinfo, fb_width, row_stride, first_pixel_offset);
+    videocore_videobuffer_cache_fb_geometry(
+        self, &bufinfo, fb_width, fb_height, row_stride, first_pixel_offset);
 
     videocore_destination_t dest = {
         .base = bufinfo.buf + first_pixel_offset + shift_y * row_stride + shift_x * bytes_per_pixel,
@@ -294,6 +374,7 @@ void common_hal_videocore_videobuffer_construct(videocore_videobuffer_obj_t *sel
     self->fb_pixels_len = 0;
     self->fb_row_stride = 0;
     self->fb_width = 0;
+    self->fb_height = 0;
     self->in_group = false;
     self->hidden = false;
     self->stale_size = false;
@@ -656,33 +737,89 @@ static bool videocore_videobuffer_draw_fill_area(mp_obj_t self_in, const _displa
         return full_coverage;
     }
 
-    // Raw buffer target: bulk copy, no color conversion: the display depth
-    // must match the video's pixel format byte for byte.
+    // Raw buffer target: copy the pixels, with no color conversion: the
+    // display depth must match the video's pixel format byte for byte.
     if (colorspace->depth != self->source_bits_per_pixel || colorspace->depth != 16) {
         return false;
     }
 
-    // Opaque: claim the pixels.
-    for (int16_t y = overlap.y1; y < overlap.y2; y++) {
-        const size_t px = (size_t)(y - area->y1) * span_px + (overlap.x1 - area->x1);
-        for (size_t i = 0; i < overlap_width; i++) {
-            mask[(px + i) / 32] |= 1u << ((px + i) % 32);
-        }
-    }
-
     const size_t bytes_per_pixel = self->source_bits_per_pixel / 8;
-    const size_t row_bytes = (size_t)self->source_width * bytes_per_pixel;
     const uint8_t *frame = (const uint8_t *)self->stream_base;
+    // displayio renders in screen coordinates (the framebuffer's physical
+    // ones) while the frame is stored in the source's own orientation, so
+    // walk from each screen pixel back to its source pixel. A plain buffer
+    // target is rotated with the display; while the video isn't shown there
+    // is no transform and the orientations match.
+    const displayio_buffer_transform_t *t = &self->absolute_transform;
+    const bool shown = t->scale != 0;
+    const int8_t dx = shown ? t->dx : 1;
+    const int8_t dy = shown ? t->dy : 1;
+    const bool transpose = shown && t->transpose_xy;
+    const mp_int_t origin_x = shown ? t->x : 0;
+    const mp_int_t origin_y = shown ? t->y : 0;
+    // Source pixels run along screen x only when the frame isn't transposed,
+    // and forwards only when screen x isn't mirrored.
+    const bool contiguous = !transpose && dx > 0;
 
     for (int16_t y = overlap.y1; y < overlap.y2; y++) {
         const size_t px = (size_t)(y - area->y1) * span_px + (overlap.x1 - area->x1);
-        const int16_t fy = y - self->current_area.y1;
         uint16_t *out = (uint16_t *)buffer + px;
-        const uint8_t *in = frame + (size_t)fy * row_bytes + (size_t)(overlap.x1 - self->current_area.x1) * bytes_per_pixel;
-        memcpy(out, in, overlap_width * bytes_per_pixel);
-        if (colorspace->reverse_bytes_in_word) {
+        // The first source pixel this row shows. The frame's column and row
+        // follow the transform, which swaps them on a transposed display.
+        mp_int_t source_x;
+        mp_int_t source_y;
+        if (transpose) {
+            source_x = videocore_videobuffer_source_axis(dy, y, origin_y, self->x);
+            source_y = videocore_videobuffer_source_axis(dx, overlap.x1, origin_x, self->y);
+        } else {
+            source_x = videocore_videobuffer_source_axis(dx, overlap.x1, origin_x, self->x);
+            source_y = videocore_videobuffer_source_axis(dy, y, origin_y, self->y);
+        }
+        // Where the next screen x leads: the next source column, or on a
+        // transposed display the next source row.
+        const ptrdiff_t step = transpose
+            ? (ptrdiff_t)dx * (ptrdiff_t)self->source_width * (ptrdiff_t)bytes_per_pixel
+            : (ptrdiff_t)dx * (ptrdiff_t)bytes_per_pixel;
+        const uint8_t *in = frame +
+            ((size_t)source_y * self->source_width + (size_t)source_x) * bytes_per_pixel;
+        if (contiguous) {
+            size_t i = 0;
+            while (i < overlap_width) {
+                // Skip pixels a higher layer already claimed or drew.
+                while (i < overlap_width && (mask[(px + i) / 32] & (1u << ((px + i) % 32)))) {
+                    i++;
+                }
+                const size_t start = i;
+                while (i < overlap_width && !(mask[(px + i) / 32] & (1u << ((px + i) % 32)))) {
+                    mask[(px + i) / 32] |= 1u << ((px + i) % 32);
+                    i++;
+                }
+                if (i > start) {
+                    memcpy(
+                        out + start,
+                        in + start * bytes_per_pixel,
+                        (i - start) * bytes_per_pixel);
+                    if (colorspace->reverse_bytes_in_word) {
+                        for (size_t j = start; j < i; j++) {
+                            out[j] = __builtin_bswap16(out[j]);
+                        }
+                    }
+                }
+            }
+        } else {
+            // Mirrored or transposed: the source pixels between screen pixels
+            // aren't next to each other, so copy them one by one.
             for (size_t i = 0; i < overlap_width; i++) {
-                out[i] = __builtin_bswap16(out[i]);
+                if (mask[(px + i) / 32] & (1u << ((px + i) % 32))) {
+                    continue;
+                }
+                mask[(px + i) / 32] |= 1u << ((px + i) % 32);
+                uint16_t value;
+                memcpy(&value, in + (ptrdiff_t)i * step, bytes_per_pixel);
+                if (colorspace->reverse_bytes_in_word) {
+                    value = __builtin_bswap16(value);
+                }
+                out[i] = value;
             }
         }
     }
@@ -710,13 +847,20 @@ static void videocore_videobuffer_draw_update_transform(mp_obj_t self_in, displa
         displayio_buffer_transform_t no_transform = {};
         self->absolute_transform = no_transform;
     } else {
-        // Validate the transform: video frames are bulk copied (raw targets)
-        // or DMA'd contiguously (framebuffer targets), so only translation
-        // moves.
+        // Validate the transform. A framebuffer target streams rows straight
+        // into the framebuffer's memory, so it can't turn with a rotated
+        // display. This is also checked when a group becomes the display's
+        // root group, but rotation can change afterwards.
+        if (self->framebuffer_protocol != NULL &&
+            (group_transform->mirror_x || group_transform->mirror_y ||
+             group_transform->transpose_xy)) {
+            mp_raise_ValueError(MP_ERROR_TEXT("VideoBuffer can't stream into a rotated display"));
+        }
+        // A plain buffer target is copied into the display, so a rotated
+        // display works: its transform mirrors and/or transposes the logical
+        // position, which the copy applies to the frame. Neither can scale.
         if (group_transform->scale != 1 ||
-            group_transform->mirror_x || group_transform->mirror_y ||
-            group_transform->transpose_xy ||
-            group_transform->dx != 1 || group_transform->dy != 1) {
+            group_transform->dx == 0 || group_transform->dy == 0) {
             mp_raise_ValueError(MP_ERROR_TEXT("VideoBuffer does not support transforms"));
         }
         self->absolute_transform = *group_transform;
@@ -750,10 +894,7 @@ static void videocore_videobuffer_draw_update_transform(mp_obj_t self_in, displa
     // the shift may land the start mid-row, which won't look right but is
     // obvious; the frame is capped to stay completely within the buffer.
     if (self->framebuffer_protocol != NULL) {
-        videocore_videobuffer_move_dest(
-            self,
-            self->x + self->absolute_transform.x,
-            self->y + self->absolute_transform.y);
+        videocore_videobuffer_move_dest(self);
     }
 }
 
@@ -796,8 +937,16 @@ static displayio_area_t *videocore_videobuffer_draw_get_refresh_areas(mp_obj_t s
         return tail;
     }
     if (frame_ready) {
-        // New frame: bulk copy in the part that changed.
-        displayio_area_shift(&self->frame_dirty_area, self->current_area.x1, self->current_area.y1);
+        // New frame: copy the part that changed. A plain buffer target is
+        // rotated as it is copied, so map the changed source pixels to the
+        // screen; a framebuffer target's frame lands unrotated at the current
+        // area, so shift them there.
+        if (self->framebuffer_protocol == NULL) {
+            displayio_area_t changed = self->frame_dirty_area;
+            videocore_videobuffer_source_rect(self, &changed, &self->frame_dirty_area);
+        } else {
+            displayio_area_shift(&self->frame_dirty_area, self->current_area.x1, self->current_area.y1);
+        }
         self->frame_dirty_area.next = tail;
         tail = &self->frame_dirty_area;
     }
@@ -860,14 +1009,16 @@ const vectorio_draw_protocol_t videocore_videobuffer_draw_protocol = {
 
 // Root group validation: a VideoBuffer that streams straight into a
 // framebuffer bypasses displayio rendering, so it may only be shown on a
-// display that renders that same framebuffer. Plain buffer targets are drawn
-// by displayio and are fine anywhere. Walks the group tree and raises when a
-// VideoBuffer doesn't match the display it would render on.
-static void videocore_validate_member(mp_obj_t member, mp_obj_t display) {
+// display that renders that same framebuffer, and only while that display is
+// unrotated: its frames go straight into the framebuffer's memory, so they
+// can't turn with the display. Plain buffer targets are drawn by displayio,
+// rotate with the display and are fine anywhere. Walks the group tree and
+// raises when a VideoBuffer can't be shown on the display it would render on.
+static void videocore_validate_member(mp_obj_t member, mp_obj_t display, mp_int_t rotation) {
     displayio_group_t *group = mp_obj_cast_to_native_base(member, &displayio_group_type);
     if (group != MP_OBJ_NULL) {
         for (size_t i = 0; i < group->members->len; i++) {
-            videocore_validate_member(group->members->items[i], display);
+            videocore_validate_member(group->members->items[i], display, rotation);
         }
         return;
     }
@@ -880,7 +1031,13 @@ static void videocore_validate_member(mp_obj_t member, mp_obj_t display) {
         return;
     }
     videocore_videobuffer_obj_t *self = MP_OBJ_TO_PTR(layer);
-    if (self->framebuffer_protocol == NULL || display == self->framebuffer) {
+    if (self->framebuffer_protocol == NULL) {
+        return; // Plain buffer targets are drawn, and rotated, by displayio.
+    }
+    if (rotation != 0) {
+        mp_raise_ValueError(MP_ERROR_TEXT("VideoBuffer can't stream into a rotated display"));
+    }
+    if (display == self->framebuffer) {
         return;
     }
     #if CIRCUITPY_FRAMEBUFFERIO
@@ -897,6 +1054,6 @@ static void videocore_validate_member(mp_obj_t member, mp_obj_t display) {
     mp_raise_ValueError(MP_ERROR_TEXT("VideoBuffer is playing into a different framebuffer"));
 }
 
-void videocore_validate_root_group(mp_obj_t root_group, mp_obj_t display) {
-    videocore_validate_member(root_group, display);
+void videocore_validate_root_group(mp_obj_t root_group, mp_obj_t display, mp_int_t rotation) {
+    videocore_validate_member(root_group, display, rotation);
 }
