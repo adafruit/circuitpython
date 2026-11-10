@@ -14,6 +14,7 @@
 
 #include "common-hal/canio/__init__.h"
 #include "common-hal/canio/Listener.h"
+#include "shared-bindings/canio/CAN.h"
 #include "shared-bindings/canio/Listener.h"
 #include "shared-bindings/util.h"
 #include "supervisor/shared/tick.h"
@@ -290,7 +291,7 @@ mp_obj_t common_hal_canio_listener_receive(canio_listener_obj_t *self) {
 }
 
 void common_hal_canio_listener_deinit(canio_listener_obj_t *self) {
-    if (self->can) {
+    if (self->can && !common_hal_canio_can_deinited(self->can)) {
         clear_filters(self);
         if (self->fifo_idx == 0) {
             self->can->fifo0_in_use = false;
