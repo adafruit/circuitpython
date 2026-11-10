@@ -160,14 +160,14 @@ static void install_all_match_filter(canio_listener_obj_t *self) {
 
     // filter mode: 0 = mask
     // (this bit should be clear already, we never set it; but just in case)
-    CLEAR_BIT(self->can->filter_hw->FM1R, bank);
+    CLEAR_BIT(self->can->filter_hw->FM1R, 1 << bank);
     // filter scale: 1 = 32 bits
-    SET_BIT(self->can->filter_hw->FS1R, bank);
+    SET_BIT(self->can->filter_hw->FS1R, 1 << bank);
     // fifo assignment: 1 = FIFO 1
     if (self->fifo_idx) {
-        SET_BIT(self->can->filter_hw->FFA1R, bank);
+        SET_BIT(self->can->filter_hw->FFA1R, 1 << bank);
     } else {
-        CLEAR_BIT(self->can->filter_hw->FFA1R, bank);
+        CLEAR_BIT(self->can->filter_hw->FFA1R, 1 << bank);
     }
 
     // filter activation: 1 = enabled
