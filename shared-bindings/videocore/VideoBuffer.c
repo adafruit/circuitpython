@@ -61,9 +61,8 @@
 //|         :param framebuffer: The framebuffer to copy video frames into, or a
 //|             writable buffer such as a ``bytearray`` or ``memoryview``.
 //|         :param int bits_per_pixel: The pixel format of a writable buffer: 16
-//|             for color (RGB565), or 1 for black and white. ``play()`` asks the
-//|             source for this format and raises `ValueError` if the source
-//|             can't provide it. A framebuffer uses its own color depth instead.
+//|             for color (RGB565), or 1 for black and white. A framebuffer uses
+//|             its own color depth instead.
 //|         """
 //|
 static mp_obj_t videocore_videobuffer_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {

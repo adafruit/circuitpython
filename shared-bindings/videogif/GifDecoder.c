@@ -88,8 +88,7 @@
 //|         pixel is white (1) when its brightness is at least 128 out of 255,
 //|         so a GIF that uses only black and white converts exactly.
 //|
-//|         Raises `ValueError` if the file is not a GIF, or if the GIF is wider
-//|         than the board supports (320 pixels on most boards).
+//|         Raises `ValueError` if the file is not a GIF.
 //|         """
 //|         ...
 //|

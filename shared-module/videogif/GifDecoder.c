@@ -177,10 +177,13 @@ static void videogif_open_gif(GIFIMAGE *gif, mp_obj_t file) {
     gif->GIFFile.iSize = (int32_t)size;
 
     if (GIF_init(gif) != 1) {
-        if (gif->iError == GIF_TOO_WIDE) {
-            mp_raise_ValueError_varg(MP_ERROR_TEXT("%q must be <= %d"), MP_QSTR_width, MAX_WIDTH);
-        }
         mp_arg_error_invalid(MP_QSTR_filename);
+    }
+    // One line of 8-bit pixels, sized to the canvas. Outside the VM heap like gif itself, and
+    // freed with it in deinit.
+    gif->ucLineBuf = port_malloc(gif->iCanvasWidth, false);
+    if (gif->ucLineBuf == NULL) {
+        m_malloc_fail(gif->iCanvasWidth);
     }
 }
 
@@ -215,6 +218,9 @@ void common_hal_videogif_gifdecoder_deinit(videogif_gifdecoder_obj_t *self) {
     videogif_end_stream(self);
     common_hal_videogif_gifdecoder_stop(self);
     if (self->gif != NULL) {
+        if (self->gif->ucLineBuf != NULL) {
+            port_free(self->gif->ucLineBuf);
+        }
         port_free(self->gif);
         self->gif = NULL;
     }

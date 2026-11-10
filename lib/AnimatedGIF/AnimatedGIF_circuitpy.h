@@ -33,12 +33,6 @@
 #define MAX_CHUNK_SIZE 255
 #define LZW_BUF_SIZE (6 * MAX_CHUNK_SIZE)
 #define LZW_HIGHWATER (4 * MAX_CHUNK_SIZE)
-// Make ports set the width from mpconfigboard.mk. gif.c includes only this header, and the
-// zephyr-cp build passes no width, so it needs this default.
-#ifndef CIRCUITPY_GIFIO_MAX_WIDTH
-#define CIRCUITPY_GIFIO_MAX_WIDTH 320
-#endif
-#define MAX_WIDTH CIRCUITPY_GIFIO_MAX_WIDTH
 #define FILE_BUF_SIZE 4096
 
 #define PIXEL_FIRST 0
@@ -145,7 +139,7 @@ typedef struct gif_image_tag
     //unsigned char *pFrameBuffer;
     unsigned int *pFrameBuffer;
     unsigned char *pPixels, *pOldPixels;
-    unsigned char ucLineBuf[MAX_WIDTH]; // current line
+    unsigned char *ucLineBuf; // current line, iCanvasWidth bytes. The caller allocates it after GIF_init().
     unsigned char ucFileBuf[FILE_BUF_SIZE]; // holds temp data and pixel stack
     unsigned short pPalette[384]; // can hold RGB565 or RGB888 - set in begin()
     unsigned short pLocalPalette[384]; // color palettes for GIF images
