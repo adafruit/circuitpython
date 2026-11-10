@@ -224,6 +224,7 @@ pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
     // Configure the IOMUX once we know everything else is working.
     config_periph_pin(self->pwm);
 
+    claim_pin(pin);
     self->pin = pin;
     return PWMOUT_OK;
 }
