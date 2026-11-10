@@ -156,6 +156,7 @@ void common_hal_rgbmatrix_rgbmatrix_construct(rgbmatrix_rgbmatrix_obj_t *self, i
 }
 
 static void common_hal_rgbmatrix_rgbmatrix_construct1(rgbmatrix_rgbmatrix_obj_t *self, mp_obj_t framebuffer, ProtomatterRowAddressMode row_address_mode) {
+    self->framebuffer = framebuffer;
     if (framebuffer != mp_const_none) {
         mp_get_buffer_raise(self->framebuffer, &self->bufinfo, MP_BUFFER_READ);
         if (mp_get_buffer(self->framebuffer, &self->bufinfo, MP_BUFFER_RW)) {
@@ -173,7 +174,6 @@ static void common_hal_rgbmatrix_rgbmatrix_construct1(rgbmatrix_rgbmatrix_obj_t 
         self->bufinfo.len = self->bufsize;
         self->bufinfo.typecode = 'H' | MP_OBJ_ARRAY_TYPECODE_FLAG_RW;
     }
-    self->framebuffer = framebuffer;
 
     memset(&self->protomatter, 0, sizeof(self->protomatter));
     ProtomatterStatus stat = _PM_init_with_row_address_mode(&self->protomatter,
