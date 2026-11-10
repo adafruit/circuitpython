@@ -193,7 +193,7 @@ void reset_board_buses(void) {
             }
             #endif
             #if CIRCUITPY_AURORA_EPAPER
-            if (bus_type == &aurora_epaper_framebuffer_type && display_buses[i].aurora_epaper.bus == &spi_obj[instance]) {
+            if (bus_type == &aurora_framebuffer_type && display_buses[i].aurora_epaper.bus == &spi_obj[instance]) {
                 display_using_spi = true;
                 break;
             }

@@ -361,7 +361,7 @@ void reset_displays(void) {
         } else if (display_bus_type == &aurora_framebuffer_type) {
             aurora_epaper_framebuffer_obj_t *aurora = &display_buses[i].aurora_epaper;
             if (gc_ptr_on_heap(aurora->bus)) {
-                common_hal_aurora_epaper_framebuffer_set_free_bus(false);
+                common_hal_aurora_epaper_framebuffer_set_free_bus(aurora, false);
             }
             // Set to None, gets deinit'd up by display_base
             display_buses[i].bus_base.type = &mp_type_NoneType;
