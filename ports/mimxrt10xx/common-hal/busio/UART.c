@@ -141,15 +141,15 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
         // we won't get here.
     }
 
+    if (uart_taken) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Hardware in use, try alternative pins"));
+    }
+
     if (rx && !rx_config) {
         raise_ValueError_invalid_pin_name(MP_QSTR_rx);
     }
     if (tx && !tx_config) {
         raise_ValueError_invalid_pin_name(MP_QSTR_tx);
-    }
-
-    if (uart_taken) {
-        mp_raise_ValueError(MP_ERROR_TEXT("Hardware in use, try alternative pins"));
     }
 
     // Use the LPUART that the RX or TX pin belongs to.
@@ -319,6 +319,7 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
 
         claim_pin(self->rx);
     }
+    reserved_uart[self->index] = true;
     DBGPrintf(&mp_plat_print, "\t<< Init completed >>\n");
 }
 
