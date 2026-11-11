@@ -227,13 +227,12 @@ static void audiofilewriter_pump(audiofilewriter_audiofilewriter_obj_t *self) {
         self->budget_frames = frames_per_pull;
     }
 
-    // Pull a buffer as soon as any of its audio is due, the way an output's
-    // DMA asks for its next buffer while the current one plays, and pay for it
-    // from the budget. A source may hand back less than its maximum buffer (a
-    // USBIn returns half of it), so waiting for a whole maximum buffer of
-    // budget, and dropping what accrues past the cap meanwhile, would pull
-    // slower than real time and overflow a live source. Several pulls catch up
-    // after a stall. Also require room for a full source buffer.
+    // Read another buffer from the source whenever any audio is due, the way
+    // an audio output asks for its next buffer while the current one plays.
+    // Don't wait until a whole maximum-size buffer is due: a source can return
+    // less than its maximum (USBIn returns half). Tries up to 4
+    // reads per tick catch up after a stall. Stop when the ring has no room
+    // for a full source buffer.
     for (int pulls = 0; pulls < 4; pulls++) {
         if (self->source_done || self->budget_frames <= 0 ||
             (audiofilewriter_has_file(self) &&
