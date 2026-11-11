@@ -8,3 +8,6 @@ MCU_CHIP = nrf52840
 CIRCUITPY_BUILD_EXTENSIONS = hex,uf2
 
 INTERNAL_FLASH_FILESYSTEM = 1
+
+# No display on this USB stick, and the ru build is short on flash.
+CIRCUITPY_GIFIO = 0
