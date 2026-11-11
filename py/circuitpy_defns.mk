@@ -957,6 +957,12 @@ SRC_SHARED_MODULE_EXPANDED = $(addprefix shared-bindings/, $(SRC_SHARED_MODULE))
 # Doing a $(sort ...) removes duplicates as part of sorting.
 SRC_COMMON_HAL_SHARED_MODULE_EXPANDED = $(sort $(SRC_COMMON_HAL_EXPANDED) $(SRC_SHARED_MODULE_EXPANDED))
 
+# The port provides vector code for audiomixer.
+ifeq ($(CIRCUITPY_AUDIOMIXER_USE_PORT_MIX),1)
+SRC_COMMON_HAL_ALL += \
+	audiomixer/__init__.c
+endif
+
 # Use the native touchio if requested. This flag is set conditionally in, say, mpconfigport.h.
 # The presence of common-hal/touchio/* does not imply it's available for all chips in a port,
 # so there is an explicit flag. For example, SAMD21 touchio is native, but SAMD51 is not.

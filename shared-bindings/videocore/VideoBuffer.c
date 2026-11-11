@@ -29,8 +29,8 @@
 //|     unsupported position directly raises an error, but moving a containing
 //|     Group may give garbled output instead.
 //|
-//|     A VideoBuffer can only be translated. Showing it on a rotated display, or
-//|     in a scaled Group, raises `ValueError`.
+//|     Assigning a Group that contains a framebuffer target as a rotated
+//|     display's ``root_group`` raises `ValueError`.
 //|
 //|     When the target is a plain buffer, frames are written with no gap
 //|     between rows, so each row takes ``(width * bits_per_pixel + 7) // 8``

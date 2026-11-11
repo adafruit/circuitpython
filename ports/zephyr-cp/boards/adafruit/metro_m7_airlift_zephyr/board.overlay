@@ -1,0 +1,29 @@
+/* No Zephyr console by default, so LPUART1 on D0/D1, which is also the
+ * ESP32's UART, is free for busio.UART, as in ports/mimxrt10xx. A CONSOLE=1
+ * build puts the console back on LPUART1 (console.overlay). */
+/ {
+	chosen {
+		/delete-property/ zephyr,console;
+		/delete-property/ zephyr,shell-uart;
+		/delete-property/ zephyr,uart-mcumgr;
+	};
+
+	// Named pins that are not on the Arduino header, as in ports/mimxrt10xx.
+	// Their names are in circuitpython.toml [connectors.metro_m7_pins].
+	metro_m7_pins: metro-m7-pins {
+		compatible = "adafruit-metro-m7-pins";
+		#gpio-cells = <2>;
+		gpio-map-mask = <0xffffffff 0xffffffc0>;
+		gpio-map-pass-thru = <0 0x3f>;
+		gpio-map = <0 0 &gpio1 20 0>,	/* SCK, GPIO_AD_06 */
+			   <1 0 &gpio1 18 0>,	/* MOSI, GPIO_AD_04 */
+			   <2 0 &gpio1 17 0>,	/* MISO, GPIO_AD_03 */
+			   <3 0 &gpio1 0 0>,	/* NEOPIXEL, GPIO_00 */
+			   <4 0 &gpio1 28 0>,	/* ESP_CS, GPIO_AD_14 */
+			   <5 0 &gpio1 25 0>,	/* ESP_BUSY, GPIO_AD_11 */
+			   <6 0 &gpio1 21 0>,	/* ESP_RESET, GPIO_AD_07 */
+			   <7 0 &gpio2 5 0>;	/* ESP_GPIO0, GPIO_SD_05 */
+	};
+};
+
+#include "../../../app.overlay"
