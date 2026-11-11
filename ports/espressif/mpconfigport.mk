@@ -34,6 +34,11 @@ IDF_TARGET_ARCH = xtensa
 CROSS_COMPILE = xtensa-$(IDF_TARGET)-elf-
 endif
 
+# Fast e-paper doesn't fit in flash on the C3, C5 and C6.
+ifneq ($(filter $(IDF_TARGET),esp32c3 esp32c5 esp32c6),)
+CIRCUITPY_EPAPERDISPLAY_FAST ?= 0
+endif
+
 # Use "internal flash" for CIRCUITPY drive.
 # Even thought it's an external flash chip, it appears as internal.
 INTERNAL_FLASH_FILESYSTEM = 1
