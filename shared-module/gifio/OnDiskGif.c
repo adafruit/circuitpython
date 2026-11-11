@@ -201,6 +201,7 @@ void common_hal_gifio_ondiskgif_deinit(gifio_ondiskgif_t *self) {
         return;
     }
     self->file = NULL;
+    m_del(uint8_t, self->gif.ucLineBuf, self->gif.iCanvasWidth);
     self->gif.ucLineBuf = NULL;
     common_hal_displayio_bitmap_deinit(self->bitmap);
     self->bitmap = NULL;
