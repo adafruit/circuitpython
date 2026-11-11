@@ -299,7 +299,7 @@ The status LED blinks during this time.
 If not specified, use the default delay, which is one second.
 
 CIRCUITPY_STORAGE_MAP_FILE (boolean)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Controls direct flash mapping for :py:func:`storage.map_file` and automatic
 :py:class:`displayio.OnDiskBitmap` mapping. Defaults to ``true`` on builds that
 support file mapping. Set it to ``false`` to use cached file reads for
