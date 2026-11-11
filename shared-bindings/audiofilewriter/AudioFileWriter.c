@@ -27,18 +27,21 @@
 //|     Recording runs on a background pump paced to the source's real-time rate,
 //|     so it does not block and does not require a Python read loop."""
 //|
-//|     def __init__(self, file: typing.BinaryIO, *, buffer_size: int = 32768) -> None:
+//|     def __init__(self, file: Optional[typing.BinaryIO], *, buffer_size: int = 32768) -> None:
 //|         """Create an ``AudioFileWriter`` that writes to ``file``.
 //|
 //|         :param typing.BinaryIO file: An already-open writable binary stream
 //|           (a file opened in ``"wb"`` mode, or an `io.BytesIO`). The stream must
 //|           support seeking so the WAV header sizes can be patched when recording
 //|           stops. ``AudioFileWriter`` does not close it; the caller owns it.
+//|           ``None`` writes nothing: the source is still played at its
+//|           real-time rate, and its audio is dropped. That keeps audio flowing
+//|           through an `audiotap.Tap` on a board with no audio output.
 //|         :param int buffer_size: Size in bytes of the internal RAM ring that
 //|           decouples file-write latency from the source. Larger values tolerate
 //|           longer write stalls (e.g. a slow SD card) at the cost of RAM.
-//|           Minimum valid value, and default, is ``512``. Must be at least the
-//|           size of the source buffer.
+//|           Minimum valid value is ``512``. Must be at least the
+//|           size of the source buffer. Not used when ``file`` is ``None``.
 //|
 //|         The audio format (sample rate, channel count, bit depth) is taken from
 //|         the source at `play()` time, so there are no format arguments here.
@@ -66,6 +69,66 @@
 //|                   time.sleep(0.10)
 //|               writer.stop()
 //|           print("Done ->", OUTPUT_PATH)
+//|
+//|         Measuring levels on a USB microphone on the Metro ESP32-P4.
+//|         The ``adafruit_usb_host_descriptors`` library finds the
+//|         microphone and its format, and `usb.core` starts its stream; see
+//|         `usb_host_audio.USBIn`::
+//|
+//|           import time
+//|
+//|           import adafruit_usb_host_descriptors
+//|           import audiotap
+//|           import board
+//|           import digitalio
+//|           import usb_host
+//|           import usb_host_audio
+//|           from audiofilewriter import AudioFileWriter
+//|
+//|           # The Metro's USB host port isn't started by the board: power it and start it.
+//|           usb_power = digitalio.DigitalInOut(board.USB_HOST_POWER)
+//|           usb_power.switch_to_output(value=True)
+//|           usb_port = usb_host.Port(board.USB_HOST_DP, board.USB_HOST_DM)
+//|
+//|           # Give a microphone that is already plugged in time to enumerate.
+//|           device = None
+//|           deadline = time.monotonic() + 3
+//|           while device is None and time.monotonic() < deadline:
+//|               device = adafruit_usb_host_descriptors.find_microphone()
+//|               time.sleep(0.1)
+//|           if device is None:
+//|               raise RuntimeError("Plug a USB microphone or webcam into the USB host port")
+//|           formats = adafruit_usb_host_descriptors.find_microphone_formats(device)
+//|           mic_format = adafruit_usb_host_descriptors.choose_microphone_format(formats, sample_rate=48000)
+//|           sample_rate = mic_format.nearest_rate(48000)
+//|
+//|           device.set_configuration()
+//|           # SET_INTERFACE to the format's alternate setting starts the stream, then
+//|           # SET_CUR of the endpoint's sampling frequency picks the rate.
+//|           device.ctrl_transfer(0x01, 11, mic_format.alternate, mic_format.interface, None)
+//|           if mic_format.rate_control:
+//|               device.ctrl_transfer(
+//|                   0x22, 0x01, 0x0100, mic_format.endpoint, sample_rate.to_bytes(3, "little")
+//|               )
+//|
+//|           mic = usb_host_audio.USBIn(
+//|               device,
+//|               mic_format.endpoint,
+//|               sample_rate=sample_rate,
+//|               channel_count=mic_format.channel_count,
+//|               bit_depth=8 * mic_format.bytes_per_sample,
+//|               samples_signed=mic_format.samples_signed,
+//|               max_packet_size=mic_format.max_packet_size,
+//|           )
+//|           # The tap only measures the levels, so it keeps no audio.
+//|           tap = audiotap.Tap(capacity=0)
+//|           # No file: fetch buffers through the tap at the microphone's rate and drop them.
+//|           sink = AudioFileWriter(None)
+//|           sink.play(tap.play(mic))
+//|
+//|           while True:
+//|               print(f"peak {tap.peak:.3f} rms {tap.rms:.3f}")
+//|               time.sleep(0.5)
 //|         """
 //|         ...
 //|
