@@ -19,8 +19,8 @@ typedef struct _audiofilewriter_audiofilewriter_obj_t {
     mp_obj_base_t base;
 
     // Output stream (anything with write + MP_STREAM_SEEK ioctl: a file or a
-    // BytesIO). Held so it stays referenced while recording. None to only pull
-    // the source; MP_OBJ_NULL once deinited.
+    // BytesIO). Held so it stays referenced while recording. None to fetch
+    // buffers from the source and drop them; MP_OBJ_NULL once deinited.
     mp_obj_t file;
     // The source being recorded. Only valid (and referenced) while playing.
     mp_obj_t sample;
@@ -43,8 +43,10 @@ typedef struct _audiofilewriter_audiofilewriter_obj_t {
     uint32_t ring_tail;           // read cursor
     uint32_t ring_count;          // bytes currently buffered
 
-    // Real-time pacing: budget accrues sample_rate frames per second of elapsed
-    // supervisor ticks; a buffer is pulled only when budget is positive.
+    // Real-time pacing: budget_frames is the number of frames due from the
+    // source. It goes up by sample_rate frames for each second of elapsed
+    // supervisor ticks and down by the frames in each buffer fetched. The next
+    // buffer is fetched from the source only while it is above zero.
     int64_t budget_frames;
     uint32_t budget_remainder;    // thousandths of a frame not yet in budget_frames
     uint64_t last_tick_ms;

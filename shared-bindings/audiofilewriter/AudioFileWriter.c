@@ -122,7 +122,7 @@
 //|           )
 //|           # The tap only measures the levels, so it keeps no audio.
 //|           tap = audiotap.Tap(capacity=0)
-//|           # No file: pull the audio through the tap at the microphone's rate and drop it.
+//|           # No file: fetch buffers through the tap at the microphone's rate and drop them.
 //|           sink = AudioFileWriter(None)
 //|           sink.play(tap.play(mic))
 //|

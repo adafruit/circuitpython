@@ -78,8 +78,9 @@ static void audiofilewriter_unregister(audiofilewriter_audiofilewriter_obj_t *se
     }
 }
 
-// Without a file the writer only pulls the source, at its real-time rate, and
-// drops the audio: nothing is buffered, written or patched.
+// Without a file the writer still fetches the next buffer from the source at
+// the source's real-time rate, but drops the audio: nothing is buffered,
+// written or patched.
 static bool audiofilewriter_has_file(audiofilewriter_audiofilewriter_obj_t *self) {
     return self->file != mp_const_none;
 }
@@ -196,14 +197,15 @@ static void audiofilewriter_pump(audiofilewriter_audiofilewriter_obj_t *self) {
         return;
     }
 
-    // The pull granularity through the chain is one source buffer, so we pace
-    // in whole-buffer units.
-    int64_t frames_per_pull = (int64_t)(self->source_max_buffer / self->bytes_per_frame);
-    if (frames_per_pull < 1) {
-        frames_per_pull = 1;
+    // Each fetch of the next buffer from the source returns at most one
+    // source buffer, so pacing works in whole-buffer units.
+    int64_t frames_per_fetch = (int64_t)(self->source_max_buffer / self->bytes_per_frame);
+    if (frames_per_fetch < 1) {
+        frames_per_fetch = 1;
     }
 
-    // Accrue a real-time sample budget from elapsed ticks.
+    // budget_frames counts how many frames are due from the source. Add the
+    // frames that real time says have played since the last tick.
     uint64_t now = supervisor_ticks_ms64();
     uint64_t elapsed = now - self->last_tick_ms;
     self->last_tick_ms = now;
@@ -217,23 +219,23 @@ static void audiofilewriter_pump(audiofilewriter_audiofilewriter_obj_t *self) {
     uint64_t scaled = elapsed * self->sample_rate + self->budget_remainder;
     self->budget_frames += (int64_t)(scaled / 1000);
     self->budget_remainder = (uint32_t)(scaled % 1000);
-    // Never bank more than a single buffer of catch-up. For a LIVE source the
-    // captured audio sits in the source's own bounded ring; once we fall more
-    // than that behind, the surplus is already gone, so a large banked budget
-    // cannot recover it -- it would only burst-drain the source on consecutive
-    // ticks and then silence-pad, stretching one stall into a long glitch.
-    // Capping at one buffer yields at most one brief discontinuity per stall.
-    if (self->budget_frames > frames_per_pull) {
-        self->budget_frames = frames_per_pull;
+    // Let no more than one source buffer of frames be due at once. A live
+    // source keeps its captured audio in its own fixed-size buffer; if we fall
+    // further behind than that, the extra audio has already been lost, so
+    // catching up can't recover it. It would only fetch the source's buffers
+    // back to back until it runs out and returns silence, turning one stall
+    // into a long glitch. With this limit a stall causes at most one short gap.
+    if (self->budget_frames > frames_per_fetch) {
+        self->budget_frames = frames_per_fetch;
     }
 
-    // Read another buffer from the source whenever any audio is due, the way
+    // Fetch the next buffer from the source whenever any audio is due, the way
     // an audio output asks for its next buffer while the current one plays.
     // Don't wait until a whole maximum-size buffer is due: a source can return
-    // less than its maximum (USBIn returns half). Tries up to 4
-    // reads per tick catch up after a stall. Stop when the ring has no room
-    // for a full source buffer.
-    for (int pulls = 0; pulls < 4; pulls++) {
+    // less than its maximum (USBIn returns half). Fetching up to 4 buffers per
+    // tick catches up after a stall. Stop when the ring has no room for a full
+    // source buffer.
+    for (int fetches = 0; fetches < 4; fetches++) {
         if (self->source_done || self->budget_frames <= 0 ||
             (audiofilewriter_has_file(self) &&
              (self->ring_size - self->ring_count) < self->source_max_buffer)) {
