@@ -6,7 +6,3 @@ USB_MANUFACTURER = "Switch Science, Inc."
 MCU_CHIP = nrf52840
 
 INTERNAL_FLASH_FILESYSTEM = 1
-
-# Not enough flash in some translations
-CIRCUITPY_MSGPACK = 0
-CIRCUITPY_RGBMATRIX = 0
