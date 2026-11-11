@@ -495,9 +495,14 @@ static void _stretch(usb_host_audio_usbin_obj_t *self, uint8_t *out, const uint8
             uint32_t out_at = i * channels + c;
             int32_t a, b;
             if (is_16) {
-                a = is_signed ? ((const int16_t *)(const void *)in)[a_at] : ((const uint16_t *)(const void *)in)[a_at];
-                b = is_signed ? ((const int16_t *)(const void *)in)[b_at] : ((const uint16_t *)(const void *)in)[b_at];
-                ((uint16_t *)(void *)out)[out_at] = a + (((b - a) * frac) >> 15);
+                // in and out are in output_buffer, which we allocated ourselves,
+                // at offsets of whole 16 bit frames, so they are aligned.
+                #pragma GCC diagnostic push
+                #pragma GCC diagnostic ignored "-Wcast-align"
+                a = is_signed ? ((const int16_t *)in)[a_at] : ((const uint16_t *)in)[a_at];
+                b = is_signed ? ((const int16_t *)in)[b_at] : ((const uint16_t *)in)[b_at];
+                ((uint16_t *)out)[out_at] = a + (((b - a) * frac) >> 15);
+                #pragma GCC diagnostic pop
             } else {
                 a = is_signed ? ((const int8_t *)in)[a_at] : in[a_at];
                 b = is_signed ? ((const int8_t *)in)[b_at] : in[b_at];
