@@ -23,6 +23,8 @@ GPIO_ACTIVE_LOW = 1 << 0
 # neither of which should ever be in the Python heap.
 MINIMUM_RAM_SIZE = 8192
 
+# Checked before the generated COMPAT_TO_DRIVER, so an entry here overrides a
+# wrong generated one.
 MANUAL_COMPAT_TO_DRIVER = {
     "renesas_ra_nv_flash": "flash",
     "soc_nv_flash": "flash",
@@ -33,6 +35,9 @@ MANUAL_COMPAT_TO_DRIVER = {
     "nordic_nrf_spim": "spi",
     "nordic_nrf_spi": "spi",
     "nordic_nrf_i2s": "i2s",
+    # The driver lives in drivers/spi/spi_nxp_lpspi/, so the generated table
+    # names it "spi/spi_nxp_lpspi", which is not a busio class.
+    "nxp_lpspi": "spi",
 }
 
 # These are controllers, not the flash devices themselves.
@@ -413,9 +418,9 @@ def find_flash_devices(device_tree):
         drivers = []
         for c in compatible:
             underscored = c.replace(",", "_").replace("-", "_")
-            driver = COMPAT_TO_DRIVER.get(underscored, None)
+            driver = MANUAL_COMPAT_TO_DRIVER.get(underscored, None)
             if not driver:
-                driver = MANUAL_COMPAT_TO_DRIVER.get(underscored, None)
+                driver = COMPAT_TO_DRIVER.get(underscored, None)
             if driver:
                 drivers.append(driver)
         logger.debug(f"  {node.labels[0] if node.labels else node.name} drivers: {drivers}")
@@ -515,9 +520,14 @@ def find_ram_regions(device_tree):
             continue
 
         is_mmio_sram = "mmio-sram" in compatible
+        # The i.MX RT DTCM and ITCM are read/write RAM too, but their nodes are
+        # not mmio-sram. On RT10xx the kernel stacks are relocated to DTCM and
+        # the XIP-sensitive flash code to ITCM; what each leaves free (from
+        # __DTCM_end / __ITCM_end) becomes heap.
+        is_imx_tcm = "nxp,imx-dtcm" in compatible or "nxp,imx-itcm" in compatible
         device_type = node.props.get("device_type")
         has_memory_device_type = device_type and device_type.to_string() == "memory"
-        if not (is_mmio_sram or has_memory_device_type):
+        if not (is_mmio_sram or is_imx_tcm or has_memory_device_type):
             continue
 
         size = node.props["reg"].to_nums()[1]
@@ -1085,9 +1095,9 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir, mpconfig
             logger.debug(f" chosen: {chosen}")
         for c in compatible:
             underscored = c.replace(",", "_").replace("-", "_")
-            driver = COMPAT_TO_DRIVER.get(underscored, None)
+            driver = MANUAL_COMPAT_TO_DRIVER.get(underscored, None)
             if not driver:
-                driver = MANUAL_COMPAT_TO_DRIVER.get(underscored, None)
+                driver = COMPAT_TO_DRIVER.get(underscored, None)
             logger.debug(f" {c} -> {underscored} -> {driver}")
             if not driver or status != "okay":
                 continue

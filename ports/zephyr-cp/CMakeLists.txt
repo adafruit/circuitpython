@@ -25,6 +25,14 @@ include(ExternalProject)
 
 target_sources(app PRIVATE zephyr_main.c)
 
+# The i.MX RT10xx FlexRAM is split into OCRAM, DTCM and ITCM (64/32/32 KB on the
+# RT1011), and only OCRAM is zephyr,sram. Put the kernel's no-init stacks (the
+# main thread's, where the VM runs, plus the interrupt and idle stacks) in DTCM,
+# as ports/mimxrt10xx does, so OCRAM is left for the heap.
+if(CONFIG_SOC_SERIES_IMXRT10XX)
+  zephyr_code_relocate(FILES ${ZEPHYR_BASE}/kernel/init.c LOCATION DTCM_NOINIT)
+endif()
+
 # Add native_sim test support helpers.
 if(CONFIG_BOARD_NATIVE_SIM)
     target_sources(app PRIVATE native_sim_i2c_emul_control.c native_sim_spi_loopback_emul.c)

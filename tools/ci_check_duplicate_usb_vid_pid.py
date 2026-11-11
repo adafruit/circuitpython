@@ -61,6 +61,7 @@ DEFAULT_CLUSTERLIST = {
         "espressif_esp32s3_devkitc_1_n8r8_hacktablet",
         "espressif_esp32s3_devkitc_1_n16",
         "espressif_esp32s3_devkitc_1_n32r8",
+        "espressif_esp32s3_devkitc_1_n32r8_v1_1",
         "espressif_esp32s3_devkitc_1_n32r16",
     ],
     "0x303A:0x7009": [

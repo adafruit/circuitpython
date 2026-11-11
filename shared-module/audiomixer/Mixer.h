@@ -37,3 +37,13 @@ audioio_get_buffer_result_t audiomixer_mixer_get_buffer(audiomixer_mixer_obj_t *
     uint8_t channel,
     uint8_t **buffer,
     uint32_t *buffer_length);                                                      // length in bytes
+
+#if CIRCUITPY_AUDIOMIXER_USE_PORT_MIX
+// Provided by the port. Scales the signed 16-bit sample pairs in src by lomul and himul
+// (0 to 32768, where 32768 is 1.0) and stores them in dst, or adds them to dst with
+// saturation when accumulate is true. The results match the scalar mixing code. dst must
+// be aligned to 16 bytes. Returns how many words, starting at index 0, it handled, which
+// may be 0; the caller mixes the rest.
+uint32_t audiomixer_port_mix_signed_16_bit(uint32_t *dst, const uint32_t *src, uint32_t n,
+    int32_t lomul, int32_t himul, bool accumulate);
+#endif
