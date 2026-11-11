@@ -20,3 +20,5 @@ FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_LC709203F
 FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_DRV2605
 FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_BLE
 FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_BLE_Apple_Notification_Center
+
+CIRCUITPY_EPAPERDISPLAY_FAST = 0
