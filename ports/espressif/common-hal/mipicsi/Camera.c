@@ -113,7 +113,7 @@ static IRAM_ATTR bool mipicsi_on_trans_finished(
     // Report where the frame actually landed: after a destination change
     // (or a pause) the frame that was in flight lands at the previous one.
     if (self->dest_base != NULL && self->dest_on_frame != NULL) {
-        self->dest_on_frame(self->dest_ctx, trans->buffer);
+        self->dest_on_frame(self->dest_ctx, trans->buffer, NULL);
     }
     return false;
 }
@@ -232,6 +232,12 @@ void common_hal_mipicsi_camera_videosource_play(
     if (result != ESP_OK) {
         mipidsi_phy_ldo_release();
         self->phy_ldo = NULL;
+        #if SOC_ISP_SUPPORTED
+        if (self->isp_proc) {
+            esp_isp_del_processor(self->isp_proc);
+            self->isp_proc = NULL;
+        }
+        #endif
         raise_esp_error(result);
     }
 
@@ -406,7 +412,7 @@ bool common_hal_mipicsi_camera_set_destination(
     mipicsi_camera_obj_t *self,
     uint8_t *base,
     size_t stride,
-    void (*on_frame)(void *ctx, const void *frame),
+    videocore_on_frame_fun on_frame,
     void *ctx) {
     const size_t row_bytes = ((size_t)self->width * mipicsi_bits_per_pixel_for(self->output_format) + 7) / 8;
     const size_t frame_bytes = (size_t)self->height * row_bytes;

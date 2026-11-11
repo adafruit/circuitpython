@@ -116,6 +116,10 @@ emitter_tests_to_skip = {
         "misc/sys_settrace_loop.py",
         # These are bytecode-specific tests.
         "stress/bytecode_limit.py",
+        # CIRCUITPY-CHANGE: native code records no traceback entries.
+        "circuitpython/traceback_test.py",
+        # CIRCUITPY-CHANGE: these require "raise from".
+        "circuitpython/traceback_test_chained.py",
     ),
 }
 
@@ -195,6 +199,12 @@ platform_tests_to_skip = {
         # Skip thread tests that require more than 4 threads.
         "thread/stress_heap.py",
         "thread/thread_lock3.py",
+    ),
+    # CIRCUITPY-CHANGE: CircuitPython's Zephyr port (ports/zephyr-cp) is "Zephyr".
+    "Zephyr": (
+        "basics/array_micropython.py",  # no 'O' array typecode
+        "basics/memoryerror.py",  # 32-bit: the list size overflows before malloc fails
+        "basics/nanbox_smallint.py",  # no micropython.heap_unlock()
     ),
 }
 
@@ -1389,6 +1399,7 @@ the last matching regex is used:
         if args.test_dirs is None or main_tests_dir_in_args is not None:
             test_dirs = (
                 "basics",
+                "circuitpython",  # CIRCUITPY-CHANGE
                 "micropython",
                 "misc",
                 "extmod",

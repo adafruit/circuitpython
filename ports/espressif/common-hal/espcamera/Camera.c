@@ -22,8 +22,9 @@
 #endif
 
 // The underlying esp-camera driver only handles a singleton camera.
-// Track it here so it can be reset, releasing its
-// device on the shared I2C bus, before the I2C bus is deinited.
+// Track the camera object that owns the shared esp-camera driver so deinit
+// can tell whether it should release it (and its device on the shared I2C
+// bus) before the I2C bus is deinited.
 static espcamera_camera_obj_t *live_camera = NULL;
 
 static void i2c_lock(espcamera_camera_obj_t *self) {
@@ -62,6 +63,16 @@ void common_hal_espcamera_camera_construct(
     mp_int_t framebuffer_count,
     camera_grab_mode_t grab_mode) {
 
+    // Start the external clock before claiming anything: if it fails, nothing is left claimed.
+    if (external_clock_pin) {
+        common_hal_pwmio_pwmout_raise_error(
+            common_hal_pwmio_pwmout_construct(&self->pwm, external_clock_pin, 1, external_clock_frequency, true));
+        self->camera_config.ledc_timer = self->pwm.tim_handle.timer_num;
+        self->camera_config.ledc_channel = self->pwm.chan_handle.channel;
+    } else {
+        self->camera_config.ledc_channel = 0xff; // NO_CAMERA_LEDC_CHANNEL
+    }
+
     for (int i = 0; i < 8; i++) {
         claim_pin(data_pins[i]);
     }
@@ -71,14 +82,6 @@ void common_hal_espcamera_camera_construct(
     claim_pin(href_pin);
     maybe_claim_pin(powerdown_pin);
     maybe_claim_pin(reset_pin);
-
-    if (external_clock_pin) {
-        common_hal_pwmio_pwmout_construct(&self->pwm, external_clock_pin, 1, external_clock_frequency, true);
-        self->camera_config.ledc_timer = self->pwm.tim_handle.timer_num;
-        self->camera_config.ledc_channel = self->pwm.chan_handle.channel;
-    } else {
-        self->camera_config.ledc_channel = 0xff; // NO_CAMERA_LEDC_CHANNEL
-    }
 
     self->i2c = i2c;
 
@@ -129,12 +132,6 @@ void common_hal_espcamera_camera_construct(
     // Only record the camera once esp_camera_init() has succeeded, so a failed
     // second construction doesn't overwrite the live singleton.
     live_camera = self;
-}
-
-void espcamera_reset(void) {
-    if (live_camera != NULL) {
-        common_hal_espcamera_camera_deinit(live_camera);
-    }
 }
 
 extern void common_hal_espcamera_camera_deinit(espcamera_camera_obj_t *self) {

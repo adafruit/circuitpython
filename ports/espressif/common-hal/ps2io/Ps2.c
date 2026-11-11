@@ -29,15 +29,6 @@
 #define ERROR_TX_RTS 0x1000
 #define ERROR_TX_NORESP 0x2000
 
-static bool ps2_used = false;
-
-void ps2_reset(void) {
-    if (!ps2_used) {
-        return;
-    }
-    gpio_uninstall_isr_service();
-}
-
 static void delay_us(uint32_t t) {
     common_hal_mcu_delay_us(t);
 }
@@ -123,7 +114,6 @@ static void IRAM_ATTR ps2_interrupt_handler(void *self_in) {
 
 static void enable_interrupt(ps2io_ps2_obj_t *self) {
     // turn on falling edge interrupt
-    ps2_used = true;
     gpio_install_isr_service(ESP_INTR_FLAG_IRAM);
     gpio_set_intr_type(self->clk_pin, GPIO_INTR_NEGEDGE);
     gpio_isr_handler_add(self->clk_pin, ps2_interrupt_handler, (void *)self);
@@ -238,7 +228,10 @@ void common_hal_ps2io_ps2_deinit(ps2io_ps2_obj_t *self) {
     if (common_hal_ps2io_ps2_deinited(self)) {
         return;
     }
-    gpio_uninstall_isr_service();
+    // Remove only this object's handler. Uninstalling the GPIO ISR service
+    // would remove every other object's GPIO interrupt handler too.
+    disable_interrupt(self);
+    gpio_set_intr_type(self->clk_pin, GPIO_INTR_DISABLE);
     reset_pin_number(self->clk_pin);
     reset_pin_number(self->data_pin);
     self->clk_pin = GPIO_NUM_MAX;

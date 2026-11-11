@@ -382,11 +382,42 @@ CIRCUITPY_BLEIO_NATIVE = 0
 CIRCUITPY_WIFI = $(CIRCUITPY_ESP_HOSTED)
 CIRCUITPY_SSL = $(CIRCUITPY_ESP_HOSTED)
 
-# Second stage bootloader doesn't work when the factory partition is empty due to
-# UF2 missing.
-UF2_BOOTLOADER = 0
+# The P4 has two USB device controllers. Controller 0 is the full-speed one with
+# 7 endpoints, only 5 of which can be IN. Controller 1 is the high-speed one with
+# 16 endpoints, 8 of which can be IN. Boards name the controller they use with
+# CIRCUITPY_USB_DEVICE_INSTANCE in their mpconfigboard.mk so they don't have to
+# know which number is which. Map the name to the number the C code needs.
+ifneq ($(filter 1 HIGH_SPEED_INSTANCE,$(CIRCUITPY_USB_DEVICE_INSTANCE)),)
+USB_DEVICE_INSTANCE_NUM := 1
+else
+USB_DEVICE_INSTANCE_NUM := 0
+endif
+CFLAGS += -DCIRCUITPY_USB_DEVICE_INSTANCE=$(USB_DEVICE_INSTANCE_NUM)
+
+# The high-speed controller is the second instance.
+CIRCUITPY_USB_DEVICE_HIGH_SPEED := $(USB_DEVICE_INSTANCE_NUM)
+CFLAGS += -DCIRCUITPY_USB_DEVICE_HIGH_SPEED=$(CIRCUITPY_USB_DEVICE_HIGH_SPEED)
+
+ifeq ($(USB_DEVICE_INSTANCE_NUM),1)
+USB_NUM_ENDPOINT_PAIRS = 16
+USB_NUM_IN_ENDPOINTS = 8
+else
+USB_NUM_ENDPOINT_PAIRS = 7
+USB_NUM_IN_ENDPOINTS = 5
+endif
+
+# The full-speed controller's IN endpoints are already mostly spoken for, so HID,
+# MIDI and UVC stay compiled out. The high-speed controller has room for all three,
+# so turn them on there.
+ifeq ($(CIRCUITPY_USB_DEVICE_HIGH_SPEED),1)
+CIRCUITPY_USB_HID ?= 1
+CIRCUITPY_USB_MIDI ?= 1
+CIRCUITPY_USB_VIDEO ?= 1
+else
 CIRCUITPY_USB_HID = 0
 CIRCUITPY_USB_MIDI = 0
+endif
+
 CIRCUITPY_TUSB_MEM_ALIGN = 64
 CIRCUITPY_ALL_MEMORY_DMA_CAPABLE = 0
 
@@ -430,9 +461,6 @@ CIRCUITPY_BLEIO_NATIVE = 0
 CIRCUITPY_WIFI = 0
 CIRCUITPY_SSL = 0
 
-# Second stage bootloader doesn't work when the factory partition is empty due to
-# UF2 missing.
-UF2_BOOTLOADER = 0
 CIRCUITPY_TUSB_MEM_ALIGN = 64
 CIRCUITPY_ALL_MEMORY_DMA_CAPABLE = 0
 CIRCUITPY_MAX3421E = 0
@@ -505,6 +533,9 @@ CIRCUITPY_AUDIOIO = 0
 # LEDC + GPTimer PWM audio, the only analog audio output without I2S hardware.
 CIRCUITPY_AUDIOPWMIO ?= 1
 
+# PIE vector instructions for audiomixer.
+CIRCUITPY_AUDIOMIXER_USE_PORT_MIX ?= 1
+
 endif
 #### end chip-specific choices ########################################
 
@@ -543,6 +574,7 @@ endif
 CIRCUITPY_ESPNOW ?= $(CIRCUITPY_WIFI)
 CIRCUITPY_GIFIO ?= $(CIRCUITPY_DISPLAYIO)
 CIRCUITPY_JPEGIO ?= $(CIRCUITPY_DISPLAYIO)
+CIRCUITPY_BITMAPTOOLS_FAST_ROTOZOOM ?= $(CIRCUITPY_BITMAPTOOLS)
 CIRCUITPY_QRIO ?= $(CIRCUITPY_ESPCAMERA)
 
 CIRCUITPY_BLE_FILE_SERVICE ?= $(CIRCUITPY_BLEIO_NATIVE)
@@ -564,8 +596,10 @@ endif
 # Due to the limited number of endpoints, some USB devices will be off by default.
 # For instance MIDI is available, but the device is turned off. It can be turned on
 # only if something else is turned off, such as HID.
-USB_NUM_ENDPOINT_PAIRS = 7
-USB_NUM_IN_ENDPOINTS = 5
+#
+# Targets and boards with different USB controllers override these.
+USB_NUM_ENDPOINT_PAIRS ?= 7
+USB_NUM_IN_ENDPOINTS ?= 5
 
 # usb_audio is compiled in on the S3 but claims no endpoints until
 # usb_audio.enable() is called from boot.py, so enabling it by default does not
@@ -585,3 +619,6 @@ CIRCUITPY_MESSAGE_COMPRESSION_LEVEL ?= 1
 
 # The CIRCUITPY partition is mapped into the data address space on first use
 CIRCUITPY_STORAGE_MAP_FILE ?= 1
+
+# Cleanup is performed by GC finalizers (__del__ -> deinit) instead of a bulk pin reset.
+CIRCUITPY_BULK_RESET = 0

@@ -136,7 +136,17 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
         mp_raise_RuntimeError(MP_ERROR_TEXT("Unable to create lock"));
     }
 
-    set_spi_config(self, 250000, 0, 0, 8);
+    // set_spi_config() can raise. Don't leave the bus and mutex behind.
+    nlr_buf_t nlr;
+    if (nlr_push(&nlr) == 0) {
+        set_spi_config(self, 250000, 0, 0, 8);
+        nlr_pop();
+    } else {
+        vSemaphoreDelete(self->mutex);
+        self->mutex = NULL;
+        spi_bus_free(self->host_id);
+        nlr_jump(nlr.ret_val);
+    }
 
     self->MOSI = mosi;
     self->MISO = miso;
@@ -149,16 +159,6 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
         claim_pin(miso);
     }
     claim_pin(clock);
-}
-
-void common_hal_busio_spi_never_reset(busio_spi_obj_t *self) {
-    common_hal_never_reset_pin(self->clock);
-    if (self->MOSI != NULL) {
-        common_hal_never_reset_pin(self->MOSI);
-    }
-    if (self->MISO != NULL) {
-        common_hal_never_reset_pin(self->MISO);
-    }
 }
 
 bool common_hal_busio_spi_deinited(busio_spi_obj_t *self) {
@@ -174,8 +174,13 @@ void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
         return;
     }
 
-    // Wait for any other users of this to finish.
-    while (!common_hal_busio_spi_try_lock(self)) {
+    // Wait for other users to finish. Ctrl-C ends the wait and leaves the bus up.
+    // The mutex isn't recursive, so if this task already holds the lock (code
+    // that ended without unlocking), don't wait: it would never be released.
+    while (!common_hal_busio_spi_has_lock(self) && !common_hal_busio_spi_try_lock(self)) {
+        if (mp_hal_is_interrupted()) {
+            return;
+        }
         RUN_BACKGROUND_TASKS;
     }
 

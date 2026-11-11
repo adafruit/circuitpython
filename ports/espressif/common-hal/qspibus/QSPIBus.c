@@ -331,31 +331,22 @@ void common_hal_qspibus_qspibus_construct(
         mp_raise_OSError_msg_varg(MP_ERROR_TEXT("%q failure: %d"), MP_QSTR_QSPI, (int)err);
     }
 
-    // Mark the bus pins never-reset so they stay attached to the SPI peripheral
-    // across reset_all_pins() at VM end; the display (e.g. board.DISPLAY) outlives
-    // the VM. deinit() clears this again via reset_pin_number().
+    // Claim the bus pins. The display (e.g. board.DISPLAY) may outlive the VM;
+    // deinit() releases them via reset_pin_number().
     claim_pin(clock);
-    common_hal_never_reset_pin(clock);
     claim_pin(data0);
-    common_hal_never_reset_pin(data0);
     claim_pin(data1);
-    common_hal_never_reset_pin(data1);
     claim_pin(data2);
-    common_hal_never_reset_pin(data2);
     claim_pin(data3);
-    common_hal_never_reset_pin(data3);
     claim_pin(cs);
-    common_hal_never_reset_pin(cs);
     if (dcx != NULL) {
         claim_pin(dcx);
-        common_hal_never_reset_pin(dcx);
         gpio_set_direction((gpio_num_t)self->dcx_pin, GPIO_MODE_OUTPUT);
         gpio_set_level((gpio_num_t)self->dcx_pin, 1);
     }
 
     if (reset != NULL) {
         claim_pin(reset);
-        common_hal_never_reset_pin(reset);
 
         gpio_set_direction((gpio_num_t)self->reset_pin, GPIO_MODE_OUTPUT);
         gpio_set_level((gpio_num_t)self->reset_pin, 0);
@@ -407,6 +398,18 @@ void common_hal_qspibus_qspibus_deinit(qspibus_qspibus_obj_t *self) {
     self->pending_command = 0;
     self->transfer_in_progress = false;
     self->inflight_transfers = 0;
+
+    // A failed construct calls deinit() and leaves the bus in its display bus slot,
+    // so release_displays() can call deinit() again later. Don't reset the pins
+    // twice: by then they may belong to something else.
+    self->clock_pin = -1;
+    self->data0_pin = -1;
+    self->data1_pin = -1;
+    self->data2_pin = -1;
+    self->data3_pin = -1;
+    self->cs_pin = -1;
+    self->dcx_pin = -1;
+    self->reset_pin = -1;
 }
 
 bool common_hal_qspibus_qspibus_deinited(qspibus_qspibus_obj_t *self) {
