@@ -19,7 +19,8 @@ typedef struct _audiofilewriter_audiofilewriter_obj_t {
     mp_obj_base_t base;
 
     // Output stream (anything with write + MP_STREAM_SEEK ioctl: a file or a
-    // BytesIO). Held so it stays referenced while recording.
+    // BytesIO). Held so it stays referenced while recording. None to only pull
+    // the source; MP_OBJ_NULL once deinited.
     mp_obj_t file;
     // The source being recorded. Only valid (and referenced) while playing.
     mp_obj_t sample;
@@ -35,7 +36,7 @@ typedef struct _audiofilewriter_audiofilewriter_obj_t {
 
     // RAM ring that decouples SD-write latency from the source. Written by the
     // pump, drained to the file by the pump. Only touched from background-task
-    // context (never an ISR), so no locking is needed.
+    // context (never an ISR), so no locking is needed. NULL without a file.
     uint8_t *ring;
     uint32_t ring_size;           // capacity in bytes
     uint32_t ring_head;           // write cursor
@@ -45,6 +46,7 @@ typedef struct _audiofilewriter_audiofilewriter_obj_t {
     // Real-time pacing: budget accrues sample_rate frames per second of elapsed
     // supervisor ticks; a buffer is pulled only when budget is positive.
     int64_t budget_frames;
+    uint32_t budget_remainder;    // thousandths of a frame not yet in budget_frames
     uint64_t last_tick_ms;
 
     // Absolute file offset of the RIFF header start, so stop() can seek back and
