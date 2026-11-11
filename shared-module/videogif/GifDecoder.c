@@ -176,14 +176,19 @@ static void videogif_open_gif(GIFIMAGE *gif, mp_obj_t file) {
     }
     gif->GIFFile.iSize = (int32_t)size;
 
-    if (GIF_init(gif) != 1) {
+    // Measure the canvas first, then hand the decoder a line buffer of that width.
+    if (GIF_init(gif, NULL, 0) != 1) {
         mp_arg_error_invalid(MP_QSTR_filename);
     }
     // One line of 8-bit pixels, sized to the canvas. Outside the VM heap like gif itself, and
     // freed with it in deinit.
-    gif->ucLineBuf = port_malloc(gif->iCanvasWidth, false);
-    if (gif->ucLineBuf == NULL) {
-        m_malloc_fail(gif->iCanvasWidth);
+    int width = gif->iCanvasWidth;
+    unsigned char *line_buf = port_malloc(width, false);
+    if (line_buf == NULL) {
+        m_malloc_fail(width);
+    }
+    if (GIF_init(gif, line_buf, width) != 1) {
+        mp_arg_error_invalid(MP_QSTR_filename);
     }
 }
 

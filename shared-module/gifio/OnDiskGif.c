@@ -162,12 +162,16 @@ void common_hal_gifio_ondiskgif_construct(gifio_ondiskgif_t *self, mp_obj_t file
     }
     self->gif.GIFFile.iSize = (int32_t)size;
 
-    int result = GIF_init(&self->gif);
-    if (result != 1) {
+    // Measure the canvas first, then hand the decoder a line buffer of that width.
+    if (GIF_init(&self->gif, NULL, 0) != 1) {
         mp_arg_error_invalid(MP_QSTR_file);
     }
     // One line of 8-bit pixels. It holds no pointers, so the GC doesn't scan it.
-    self->gif.ucLineBuf = m_malloc_without_collect(self->gif.iCanvasWidth);
+    int width = self->gif.iCanvasWidth;
+    unsigned char *line_buf = m_malloc_without_collect(width);
+    if (GIF_init(&self->gif, line_buf, width) != 1) {
+        mp_arg_error_invalid(MP_QSTR_file);
+    }
 
     int bpp = 16;
     if (use_palette == true) {

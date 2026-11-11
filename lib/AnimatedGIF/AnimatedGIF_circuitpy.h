@@ -139,7 +139,7 @@ typedef struct gif_image_tag
     //unsigned char *pFrameBuffer;
     unsigned int *pFrameBuffer;
     unsigned char *pPixels, *pOldPixels;
-    unsigned char *ucLineBuf; // current line, iCanvasWidth bytes. The caller allocates it after GIF_init().
+    unsigned char *ucLineBuf; // current line, at least iCanvasWidth bytes. Set by GIF_init().
     unsigned char ucFileBuf[FILE_BUF_SIZE]; // holds temp data and pixel stack
     unsigned short pPalette[384]; // can hold RGB565 or RGB888 - set in begin()
     unsigned short pLocalPalette[384]; // color palettes for GIF images
@@ -165,7 +165,10 @@ int GIF_getComment(GIFIMAGE *pGIF, char *destBuffer);
 int GIF_getInfo(GIFIMAGE *pGIF, GIFINFO *pInfo);
 int GIF_getLastError(GIFIMAGE *pGIF);
 int GIF_getLoopCount(GIFIMAGE *pGIF);
-int GIF_init(GIFIMAGE *pGIF);
+// Reads the header and fills in the canvas size. pLineBuf holds one line of pixels and must be
+// at least iCanvasWidth bytes, or this fails with GIF_TOO_WIDE. Pass NULL and 0 to only measure
+// the canvas, then call again with a buffer before decoding. Returns 1 on success, 0 on failure.
+int GIF_init(GIFIMAGE *pGIF, unsigned char *pLineBuf, int iLineBufSize);
 void GIF_setDrawCallback(GIFIMAGE *pGIF, GIF_DRAW_CALLBACK *pfnDraw);
 void GIF_scaleHalf(uint16_t *pCurrent, uint16_t *pPrev, int iWidth, int bBigEndian);
 

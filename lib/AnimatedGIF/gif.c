@@ -163,8 +163,16 @@ int GIF_getLastError(GIFIMAGE *pGIF)
     return pGIF->iError;
 } /* GIF_getLastError() */
 
-int GIF_init(GIFIMAGE *pGIF) {
-    return GIFInit(pGIF);
+int GIF_init(GIFIMAGE *pGIF, unsigned char *pLineBuf, int iLineBufSize) {
+    pGIF->ucLineBuf = pLineBuf;
+    if (!GIFInit(pGIF)) {
+        return 0;
+    }
+    if (pLineBuf != NULL && pGIF->iCanvasWidth > iLineBufSize) {
+        pGIF->iError = GIF_TOO_WIDE;
+        return 0;
+    }
+    return 1;
 }
 
 //
