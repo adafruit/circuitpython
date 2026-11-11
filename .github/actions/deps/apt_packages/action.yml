@@ -23,13 +23,27 @@ runs:
         restore-keys: ${{ steps.cache-name.outputs.prefix }}
     - name: Install packages
       id: install
-      # apt only downloads the packages that are not already in ~/apt-archives, and
-      # autoclean drops versions the mirror no longer has. The cache key names the
-      # .deb files kept, so it changes whenever a package is updated.
+      # apt only downloads packages whose newest version isn't already in ~/apt-archives.
+      # If Ubuntu's servers can't be reached, install the cached versions without checking
+      # for updates. autoclean drops versions the mirror no longer has. The cache key names
+      # the .deb files kept, so it changes whenever a package is updated.
       run: |
         mkdir -p ~/apt-archives/partial
-        sudo apt-get update
-        sudo apt-get install -y -o Dir::Cache::Archives="$HOME/apt-archives" $PACKAGES
+        # Azure's Ubuntu mirror sometimes stops resolving on the runners. Use Ubuntu's own.
+        sudo sed -i 's|azure\.archive\.ubuntu\.com|archive.ubuntu.com|g' /etc/apt/apt-mirrors.txt /etc/apt/sources.list.d/*.sources 2>/dev/null || true
+        if sudo apt-get update --error-on=any; then
+          sudo apt-get install -y -o Dir::Cache::Archives="$HOME/apt-archives" $PACKAGES
+          # The runner image has no package lists for extra architectures such as i386.
+          # Keep them with the cached files, so the offline install can find those packages.
+          rm -rf ~/apt-archives/lists
+          mkdir -p ~/apt-archives/lists
+          for arch in $(dpkg --print-foreign-architectures); do
+            cp /var/lib/apt/lists/*_binary-"$arch"_Packages* ~/apt-archives/lists/ 2>/dev/null || true
+          done
+        else
+          sudo cp ~/apt-archives/lists/* /var/lib/apt/lists/ 2>/dev/null || true
+          sudo apt-get install -y --no-download -o Dir::Cache::Archives="$HOME/apt-archives" $PACKAGES
+        fi
         sudo apt-get autoclean -o Dir::Cache::Archives="$HOME/apt-archives"
         sudo rm -rf ~/apt-archives/partial ~/apt-archives/lock
         sudo chown -R "$(id -un)" ~/apt-archives
