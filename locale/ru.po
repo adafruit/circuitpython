@@ -4956,6 +4956,10 @@ msgid "video size changed since play; stop and play again"
 msgstr ""
 
 #: shared-module/videocore/VideoBuffer.c
+msgid "VideoBuffer can't stream into a rotated display"
+msgstr ""
+
+#: shared-module/videocore/VideoBuffer.c
 msgid "VideoBuffer does not support transforms"
 msgstr ""
 
