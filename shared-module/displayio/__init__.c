@@ -523,7 +523,13 @@ void common_hal_displayio_set_primary_display(mp_obj_t new_primary_display) {
     }
     for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
         mp_obj_t display = MP_OBJ_FROM_PTR(&displays[i]);
-        if (new_primary_display == display && is_display_active(display)) {
+        if (!is_display_active(display)) {
+            continue;
+        }
+        // Python subclass instances hold the native display in subobj[0].
+        mp_obj_t native = mp_obj_cast_to_native_base(new_primary_display,
+            MP_OBJ_FROM_PTR(displays[i].display_base.type));
+        if (native == display) {
             primary_display_number = i;
             primary_display_set_by_user = true;
             return;
