@@ -117,7 +117,7 @@ $(BUILD)/zephyr-cp/zephyr/zephyr.elf:
 		echo west build -d $(BUILD); \
 		west build -d $(BUILD); \
 	fi
-	python ../../tools/build_memory_info.py $(BUILD)/zephyr-cp/zephyr/zephyr.map $(BUILD) --image $(BUILD)/zephyr-cp/zephyr/zephyr.bin
+	python ../../tools/build_memory_info.py $(BUILD)/zephyr-cp/zephyr/zephyr.map $(BUILD) --elf $(BUILD)/zephyr-cp/zephyr/zephyr.elf
 
 $(BUILD)/firmware.elf: $(BUILD)/zephyr-cp/zephyr/zephyr.elf
 	cp $^ $@

@@ -135,7 +135,7 @@ $(OUTPUT_DIR)/firmware.out: $(SILABS_BUILD)/pin_functions.h $(SILABS_BUILD)/pins
 	$(STEPECHO) 'Linking $(OUTPUT_DIR)/firmware.out'
 	$(Q)echo "$(OBJS) $(OBJ)" > $(OUTPUT_DIR)/linker_objs
 	$(Q)$(CC) $(LD_FLAGS) @$(OUTPUT_DIR)/linker_objs -Wl,--print-memory-usage -Wl,-Map=$(OUTPUT_DIR)/firmware.out.map $(LIBS) -o $(OUTPUT_DIR)/firmware.out
-	$(Q)$(SIZE) $(OUTPUT_DIR)/firmware.out | $(PYTHON) $(TOP)/tools/build_memory_info.py $(OUTPUT_DIR)/firmware.out.map $(BUILD)
+	$(Q)$(PYTHON) $(TOP)/tools/build_memory_info.py $(OUTPUT_DIR)/firmware.out.map $(BUILD) --elf $(OUTPUT_DIR)/firmware.out
 	$(Q)$(OBJCOPY) $(OUTPUT_DIR)/firmware.out -O binary $(OUTPUT_DIR)/firmware.bin
 
 flash: $(OUTPUT_DIR)/firmware.bin
