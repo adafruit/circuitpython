@@ -32,6 +32,10 @@
 #include "shared-bindings/dotclockframebuffer/DotClockFramebuffer.h"
 #endif
 
+#if CIRCUITPY_IS31FL3741
+#include "shared-bindings/is31fl3741/IS31FL3741.h"
+#endif
+
 #if CIRCUITPY_SHARPDISPLAY
 #include "shared-bindings/sharpdisplay/SharpMemoryFramebuffer.h"
 #include "shared-module/sharpdisplay/SharpMemoryFramebuffer.h"
@@ -316,18 +320,22 @@ void reset_displays(void) {
         } else if (display_bus_type == &is31fl3741_framebuffer_type) {
             is31fl3741_framebuffer_obj_t *is31fb = &display_buses[i].is31fl3741;
 
-            if (((uint32_t)is31fb->is31fl3741->i2c) < ((uint32_t)&display_buses) ||
-                ((uint32_t)is31fb->is31fl3741->i2c) > ((uint32_t)&display_buses + CIRCUITPY_DISPLAY_LIMIT)) {
+            if (((size_t)is31fb->is31fl3741->i2c) < ((size_t)&display_buses) ||
+                ((size_t)is31fb->is31fl3741->i2c) > ((size_t)&display_buses + CIRCUITPY_DISPLAY_LIMIT * sizeof(primary_display_bus_t))) {
                 is31fl3741_IS31FL3741_obj_t *original_is31 = is31fb->is31fl3741;
                 if (gc_ptr_on_heap(original_is31)) {
                     memcpy(&is31fb->inline_is31fl3741, original_is31, sizeof(is31fl3741_IS31FL3741_obj_t));
                     is31fb->is31fl3741 = &is31fb->inline_is31fl3741;
+                    // Mark the old IS31FL3741 object so it is considered deinit.
+                    common_hal_is31fl3741_IS31FL3741_mark_deinit(original_is31);
                 }
 
                 busio_i2c_obj_t *original_i2c = is31fb->is31fl3741->i2c;
                 if (gc_ptr_on_heap(original_i2c)) {
                     memcpy(&is31fb->is31fl3741->inline_i2c, original_i2c, sizeof(busio_i2c_obj_t));
                     is31fb->is31fl3741->i2c = &is31fb->is31fl3741->inline_i2c;
+                    // Mark the old i2c object so it is considered deinit.
+                    common_hal_busio_i2c_mark_deinit(original_i2c);
                 }
             }
 
@@ -353,7 +361,7 @@ void reset_displays(void) {
         } else if (display_bus_type == &aurora_framebuffer_type) {
             aurora_epaper_framebuffer_obj_t *aurora = &display_buses[i].aurora_epaper;
             if (gc_ptr_on_heap(aurora->bus)) {
-                common_hal_aurora_epaper_framebuffer_set_free_bus(false);
+                common_hal_aurora_epaper_framebuffer_set_free_bus(aurora, false);
             }
             // Set to None, gets deinit'd up by display_base
             display_buses[i].bus_base.type = &mp_type_NoneType;
