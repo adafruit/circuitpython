@@ -219,6 +219,11 @@ void common_hal_canio_can_construct(canio_can_obj_t *self, const mcu_pin_obj_t *
     MIMXRT_CANIO_CAN_DEBUG("canio: init silent: %d\n", silent ? 1 : 0);
     MIMXRT_CANIO_CAN_DEBUG("canio: init baudrate: %d\n", baudrate);
 
+    // can_objs[] is indexed from 0; instance is 1 for CAN1.
+    if (can_objs[instance - 1] != NULL) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Hardware in use, try alternative pins"));
+    }
+
     self->rx_pin = rx;
     self->tx_pin = tx;
     config_periph_pin(rx_periph);
@@ -274,7 +279,7 @@ void common_hal_canio_can_construct(canio_can_obj_t *self, const mcu_pin_obj_t *
     claim_pin(rx);
     claim_pin(tx);
 
-    can_objs[instance] = self;
+    can_objs[instance - 1] = self;
 }
 
 bool common_hal_canio_can_loopback_get(canio_can_obj_t *self) {

@@ -46,6 +46,8 @@ void common_hal_reset_pin(const mcu_pin_obj_t *pin) {
         return;
     }
 
+    claimed_pins[pin->mux_idx] = false;
+
     if (_reset_forbidden(pin)) {
         return;
     }
@@ -56,7 +58,6 @@ void common_hal_reset_pin(const mcu_pin_obj_t *pin) {
     }
 
     disable_pin_change_interrupt(pin);
-    claimed_pins[pin->mux_idx] = false;
 
     // Make sure this pin's GPIO is set to input. Otherwise, output values could interfere
     // with the ADC.
