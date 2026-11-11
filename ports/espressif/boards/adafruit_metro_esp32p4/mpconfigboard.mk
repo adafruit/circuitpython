@@ -5,6 +5,8 @@ USB_MANUFACTURER = "Adafruit"
 
 IDF_TARGET = esp32p4
 
+CIRCUITPY_USB_DEVICE_INSTANCE = FULL_SPEED_INSTANCE
+
 CIRCUITPY_USB_HOST = 1
 CIRCUITPY_ESP_HOSTED = 1
 
@@ -15,3 +17,8 @@ CIRCUITPY_ESP_FLASH_FREQ = 80m
 CIRCUITPY_ESP_PSRAM_SIZE = 16MB
 CIRCUITPY_ESP_PSRAM_MODE = hpi
 CIRCUITPY_ESP_PSRAM_FREQ = 200m
+
+# Some USB MIDI devices, such as the M-Vave FM-1, have configuration descriptors
+# over the 288-byte default. TinyUSB skips enumerating any device whose
+# descriptor doesn't fit here.
+CFLAGS += -DCFG_TUH_ENUMERATION_BUFSIZE=512

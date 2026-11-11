@@ -20,6 +20,9 @@
 #if CIRCUITPY_RTC
 #include "shared-bindings/rtc/__init__.h"
 #endif
+#if CIRCUITPY_SSL
+#include "shared-module/ssl/__init__.h"
+#endif
 
 #include <stdlib.h>
 
@@ -291,6 +294,10 @@ void reset_port(void) {
     rtc_reset();
     #endif
 
+    #if CIRCUITPY_SSL
+    ssl_reset();
+    #endif
+
     #if defined(CONFIG_ARCH_POSIX)
     native_sim_reset_port_count++;
     if (native_sim_port_resets != INT32_MAX &&
@@ -329,7 +336,15 @@ void port_boot_info(void) {
 
 // Get stack limit address
 uint32_t *port_stack_get_limit(void) {
+    #if defined(CONFIG_ARCH_POSIX)
+    // The VM runs on the main thread, which on hosted builds has a pthread stack
+    // of several megabytes. Give it the stack size it has on a board, so deep
+    // recursion raises RuntimeError like on a board instead of running out of
+    // heap first.
+    return port_stack_get_top() - CONFIG_MAIN_STACK_SIZE / sizeof(uint32_t);
+    #else
     return (uint32_t *)k_current_get()->stack_info.start;
+    #endif
 }
 
 // Get stack top address

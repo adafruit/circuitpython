@@ -36,6 +36,29 @@ config UART_LINE_CTRL
 config ENTROPY_GENERATOR
 	default y
 
+# ===== Logging =====
+# Log only when the board has a console. Boards with no console in their
+# normal build delete the zephyr,console chosen node in board.overlay, and
+# then save the log buffer and logging thread, about 2 KB; their
+# console.overlay, used in CONSOLE=1 builds, sets it again. This checks the
+# devicetree because the console Kconfig symbols (UART_CONSOLE, RTT_CONSOLE)
+# would make a dependency loop with LOG.
+DT_CHOSEN_Z_CONSOLE := zephyr,console
+
+config LOG
+	default y if $(dt_chosen_enabled,$(DT_CHOSEN_Z_CONSOLE)) || ARCH_POSIX
+
+# Warnings and errors only, and block a logging thread rather than drop
+# messages when the log buffer is full. Defaults rather than prj.conf settings,
+# which would warn on boards where LOG is off.
+if LOG
+config LOG_MAX_LEVEL
+	default 2
+
+config LOG_BLOCK_IN_THREAD
+	default y
+endif
+
 # ===== Dynamic pin routing (nRF) =====
 # CircuitPython routes peripherals to pins at runtime on nRF SoCs. That needs
 # pinctrl states to be swappable (PINCTRL_DYNAMIC) and devices to be

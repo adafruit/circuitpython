@@ -509,6 +509,10 @@ void background_callback_run_all(void);
 #define MICROPY_VM_HOOK_RETURN RUN_BACKGROUND_TASKS;
 #define MICROPY_INTERNAL_EVENT_HOOK (RUN_BACKGROUND_TASKS)
 
+#ifndef CIRCUITPY_AUDIOMIXER_USE_PORT_MIX
+#define CIRCUITPY_AUDIOMIXER_USE_PORT_MIX (0)
+#endif
+
 // CIRCUITPY_AUTORELOAD_DELAY_MS = 0 will completely disable autoreload.
 #ifndef CIRCUITPY_AUTORELOAD_DELAY_MS
 #define CIRCUITPY_AUTORELOAD_DELAY_MS 750
@@ -545,6 +549,12 @@ void background_callback_run_all(void);
 
 #ifndef CIRCUITPY_STATUS_LED_POWER_INVERTED
 #define CIRCUITPY_STATUS_LED_POWER_INVERTED (0)
+#endif
+
+// Byte order of the status NeoPixel. Most WS2812s take GRB. Boards whose LED takes RGB set
+// this to STATUS_NEOPIXEL_ORDER_RGB, from supervisor/shared/status_leds.h.
+#ifndef MICROPY_HW_NEOPIXEL_ORDER
+#define MICROPY_HW_NEOPIXEL_ORDER (STATUS_NEOPIXEL_ORDER_GRB)
 #endif
 
 #define CIRCUITPY_BOOT_OUTPUT_FILE "/boot_out.txt"

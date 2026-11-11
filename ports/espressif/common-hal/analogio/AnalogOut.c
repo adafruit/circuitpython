@@ -13,6 +13,7 @@
 
 #include "shared-bindings/analogio/AnalogOut.h"
 #include "shared-bindings/microcontroller/Pin.h"
+#include "bindings/espidf/__init__.h"
 
 #ifdef SOC_DAC_SUPPORTED
 #include "driver/dac_oneshot.h"
@@ -41,8 +42,9 @@ void common_hal_analogio_analogout_construct(analogio_analogout_obj_t *self,
     dac_oneshot_config_t config = {
         .chan_id = self->channel
     };
-    dac_oneshot_new_channel(&config, &self->handle);
+    CHECK_ESP_RESULT(dac_oneshot_new_channel(&config, &self->handle));
     _active_handles[self->channel] = self->handle;
+    claim_pin(pin);
     #else
     mp_raise_NotImplementedError(NULL);
     #endif
@@ -58,9 +60,13 @@ bool common_hal_analogio_analogout_deinited(analogio_analogout_obj_t *self) {
 
 void common_hal_analogio_analogout_deinit(analogio_analogout_obj_t *self) {
     #ifdef SOC_DAC_SUPPORTED
+    if (common_hal_analogio_analogout_deinited(self)) {
+        return;
+    }
     dac_oneshot_del_channel(self->handle);
     self->handle = NULL;
     _active_handles[self->channel] = NULL;
+    reset_pin_number(self->channel == DAC_CHAN_0 ? pin_CHANNEL_0.number : pin_CHANNEL_1.number);
     #endif
 }
 
@@ -69,16 +75,5 @@ void common_hal_analogio_analogout_set_value(analogio_analogout_obj_t *self,
     #ifdef SOC_DAC_SUPPORTED
     uint8_t dac_value = (value * 255) / 65535;
     dac_oneshot_output_voltage(self->handle, dac_value);
-    #endif
-}
-
-void analogout_reset(void) {
-    #ifdef SOC_DAC_SUPPORTED
-    for (uint8_t c = 0; c < SOC_DAC_CHAN_NUM; c++) {
-        if (_active_handles[c] != NULL) {
-            dac_oneshot_del_channel(_active_handles[c]);
-        }
-        _active_handles[c] = NULL;
-    }
     #endif
 }

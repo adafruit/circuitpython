@@ -682,9 +682,19 @@ CFLAGS += \
 	-DCFG_TUD_CDC_TX_BUFSIZE=1024 \
 	-DCFG_TUD_MSC_BUFSIZE=4096
 endif
+ifeq ($(CIRCUITPY_USB_DEVICE_HIGH_SPEED),1)
+# At high speed the MIDI endpoint is a 512-byte bulk endpoint. The MIDI driver
+# refuses to arm the endpoint unless the stream FIFO can hold a full packet, so
+# the buffers must be at least as big as the endpoint's max packet size.
+CFLAGS += \
+	-DCFG_TUD_MIDI_RX_BUFSIZE=512 \
+	-DCFG_TUD_MIDI_TX_BUFSIZE=512
+else
 CFLAGS += \
 	-DCFG_TUD_MIDI_RX_BUFSIZE=128 \
-	-DCFG_TUD_MIDI_TX_BUFSIZE=128 \
+	-DCFG_TUD_MIDI_TX_BUFSIZE=128
+endif
+CFLAGS += \
 	-DCFG_TUD_VENDOR_RX_BUFSIZE=128 \
 	-DCFG_TUD_VENDOR_TX_BUFSIZE=128
 endif
@@ -916,34 +926,16 @@ $(BUILD)/esp-idf:
 
 TARGET_SDKCONFIG = esp-idf-config/sdkconfig-$(IDF_TARGET).defaults
 
-
 # Choose the correct partition layout, based on UF2 or not, flash size, etc.
 UF2_BOOTLOADER ?= $(CIRCUITPY_USB_DEVICE)
 
-ifeq ($(CIRCUITPY_ESP_FLASH_SIZE), 2MB)
-# ..... No 2MB UF2 boards, so always no OTA, not UF2
-	FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-ota-no-uf2.defaults
-else ifeq ($(CIRCUITPY_ESP_FLASH_SIZE), 4MB)
-	ifeq ($(UF2_BOOTLOADER), 1)
-#.............  ESP32-S2 and ESP32-S3 do not have an extra ota partition for OTA update.
-		FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-ota.defaults
-	else
-# ............. Non-UF2 4MB: C3, C6, etc.
-		ifeq ($(CIRCUITPY_4MB_FLASH_LARGE_USER_FS_LAYOUT), 1)
-# ....................  Some boards use a 2MB firmware and almost 2MB user filesystem, for historical reasons.
-			FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-ota-no-uf2-large-user_fs.defaults
-		else
-			FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-ota-no-uf2.defaults
-		endif
-	endif
-else
-# ..... All the rest are >4MB flash
-	ifeq ($(UF2_BOOTLOADER), 1)
-		FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE).defaults
-	else
-		FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-uf2.defaults
-	endif
-endif
+# The sdkconfig file naming rules are shared with tools/update_sdkconfig.py.
+# Keep them in tools/flash_layout.py so that they cannot drift.
+FLASH_SIZE_SDKCONFIG ?= $(if $(VALID_BOARD),$(shell $(PYTHON) tools/flash_layout.py \
+	--family "$(IDF_TARGET)" \
+	--flash-size "$(CIRCUITPY_ESP_FLASH_SIZE)" \
+	$(if $(filter 1,$(UF2_BOOTLOADER)),--uf2) \
+	$(if $(filter 1,$(CIRCUITPY_4MB_FLASH_LARGE_USER_FS_LAYOUT)),--large-user-fs)))
 
 FLASH_MODE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_MODE).defaults
 FLASH_SPEED_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_FREQ).defaults
@@ -1305,6 +1297,7 @@ endif
 UF2_FAMILY_ID_esp32s2 = 0xbfdd4eee
 UF2_FAMILY_ID_esp32s3 = 0xc47e5767
 UF2_FAMILY_ID_esp32p4 = 0x3d308e94
+UF2_FAMILY_ID_esp32s31 = 0x3101f7c1
 
 $(BUILD)/firmware.uf2: $(BUILD)/circuitpython-firmware.bin
 	$(STEPECHO) "Create $@"

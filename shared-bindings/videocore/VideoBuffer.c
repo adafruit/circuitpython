@@ -29,6 +29,9 @@
 //|     unsupported position directly raises an error, but moving a containing
 //|     Group may give garbled output instead.
 //|
+//|     Assigning a Group that contains a framebuffer target as a rotated
+//|     display's ``root_group`` raises `ValueError`.
+//|
 //|     When the target is a plain buffer, frames are written compactly (row
 //|     stride equals ``width * bits_per_pixel / 8``) and can be read from
 //|     Python at any time, for example to process or save camera pixels.
@@ -81,7 +84,7 @@ static mp_obj_t videocore_videobuffer_make_new(const mp_obj_type_t *type, size_t
 //|         whole frame.
 //|
 //|         :param ~circuitpython_typing.VideoSource source: The video source to
-//|             play, such as `mipicsi.Camera`
+//|             play, such as `mipicsi.Camera` or `videogif.GifDecoder`
 //|         """
 //|
 static mp_obj_t videocore_videobuffer_play(mp_obj_t self_in, mp_obj_t source) {
@@ -103,7 +106,11 @@ static mp_obj_t videocore_videobuffer_stop(mp_obj_t self_in) {
 static MP_DEFINE_CONST_FUN_OBJ_1(videocore_videobuffer_stop_obj, videocore_videobuffer_stop);
 
 //|     playing: bool
-//|     """True when a video source is being played, False otherwise. (read-only)"""
+//|     """True when a video source is being played, False otherwise. It also
+//|     becomes False when the source has no more frames, such as a GIF that
+//|     has finished its last loop. The last frame then stays shown until
+//|     ``stop()`` or the next ``play()``. A framebuffer target also drops it
+//|     when moved or hidden. (read-only)"""
 //|
 static mp_obj_t videocore_videobuffer_get_playing(mp_obj_t self_in) {
     videocore_videobuffer_obj_t *self = MP_OBJ_TO_PTR(self_in);

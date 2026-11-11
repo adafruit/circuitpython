@@ -25,7 +25,7 @@ typedef struct {
     mp_buffer_info_t bufinfo;
     // The video source being played, or None.
     mp_obj_t source;
-    // Destination position of the video within the target.
+    // Destination position of the video within its Group.
     mp_int_t x;
     mp_int_t y;
     mp_int_t source_width;
@@ -36,26 +36,37 @@ typedef struct {
     // is none.
     const void *stream_base;
     // Set from interrupt context when the source lands a frame in the
-    // destination; cleared by the refresh pass once the new frame has been
-    // rendered into the display.
+    // destination; cleared when the refresh takes the changed area.
     volatile bool frame_ready;
+    // What changed in the frames landed since the last refresh, in source
+    // coordinates. Grown with frame_ready and cleared with it.
+    displayio_area_t frame_changed_area;
+    // The last frame landed passed NULL, so the next one repaints everything.
+    volatile bool frame_replaceable;
+    // frame_changed_area in screen coordinates, as handed to the refresh.
+    displayio_area_t frame_dirty_area;
     // Screen area of frames that landed where the video used to be: the frame
     // in flight when the destination moves or the source pauses still lands
     // at the old destination, possibly after that area was repainted. Grown
     // by on_frame in interrupt context; the refresh moves it into
     // ephemeral_dirty_area with interrupts disabled.
     displayio_area_t vacated_area;
-    // Framebuffer geometry cached for on_frame, which can't call the
-    // framebuffer protocol from interrupt context. fb_pixels is NULL for
-    // plain buffer targets.
+    // Framebuffer geometry cached for the destination and for on_frame, which
+    // can't call the framebuffer protocol from interrupt context. fb_pixels is
+    // NULL for plain buffer targets. fb_width and fb_height are the
+    // framebuffer's physical geometry.
     const uint8_t *fb_pixels;
     size_t fb_pixels_len;
     size_t fb_row_stride;
     mp_int_t fb_width;
+    mp_int_t fb_height;
     // displayio draw protocol state: the rect currently rendered (in screen
-    // coordinates) and the rect that changed since the last refresh.
+    // coordinates, which are the framebuffer's physical coordinates) and the
+    // rect that changed since the last refresh.
     displayio_area_t current_area;
     displayio_area_t ephemeral_dirty_area;
+    // Maps the video's Group-local coordinates to screen coordinates, which are
+    // the framebuffer's physical coordinates.
     displayio_buffer_transform_t absolute_transform;
     bool in_group;
     // Set by the group when hidden; while hidden the video doesn't show and
@@ -65,6 +76,9 @@ typedef struct {
     // the video won't show until stop and play again.
     bool stale_size;
     bool playing;
+    // Set from interrupt context or a background task when the source reached
+    // the end of its stream; the VideoBuffer then stops it lazily.
+    volatile bool source_ended;
     // True while a framebuffer target isn't shown, so its source is paused.
     // Tracked while stopped too, so play() can start the source paused.
     // Plain buffer targets are never paused.

@@ -9,11 +9,15 @@
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/microcontroller/Pin.h"
 
+#include "bindings/espidf/__init__.h"
 #include "esp_sleep.h"
 #include "peripherals/touch.h"
 #include "supervisor/port.h"
 
 static uint16_t touch_channel_mask;
+// Bitmask of the channels in use by live TouchIn objects when an alarm took
+// over the touch controller. These channels are set up again after wake.
+static uint16_t touchin_channel_mask;
 static volatile bool woke_up = false;
 
 void common_hal_alarm_touch_touchalarm_construct(alarm_touch_touchalarm_obj_t *self, const mcu_pin_obj_t *pin) {
@@ -75,8 +79,6 @@ void alarm_touch_touchalarm_set_alarm(const bool deep_sleep, const size_t n_alar
             }
             touch_alarm = MP_OBJ_TO_PTR(alarms[i]);
             touch_channel_mask |= 1 << touch_alarm->pin->touch_channel;
-            // Resetting the pin will set a pull-up, which we don't want.
-            skip_reset_once_pin_number(touch_alarm->pin->number);
             touch_alarm_set = true;
         }
     }
@@ -85,14 +87,21 @@ void alarm_touch_touchalarm_set_alarm(const bool deep_sleep, const size_t n_alar
         return;
     }
 
-    // Reset touch peripheral and keep it from being reset again
+    // Remember the TouchIn channels that the reset below deletes.
+    touchin_channel_mask = 0;
+    for (uint8_t i = TOUCH_MIN_CHAN_ID; i <= TOUCH_MAX_CHAN_ID; i++) {
+        if (peripherals_touch_get_handle(i) != NULL && (touch_channel_mask & (1 << i)) == 0) {
+            touchin_channel_mask |= 1 << i;
+        }
+    }
+
+    // Reset touch peripheral
     peripherals_touch_reset();
-    peripherals_touch_never_reset(true);
 
     // Initialize all touch channels used for alarms
     for (uint8_t i = TOUCH_MIN_CHAN_ID; i <= TOUCH_MAX_CHAN_ID; i++) {
         if ((touch_channel_mask & (1 << i)) != 0) {
-            peripherals_touch_init(i);
+            CHECK_ESP_RESULT(peripherals_touch_init(i));
         }
     }
 
@@ -221,10 +230,19 @@ void alarm_touch_touchalarm_reset(void) {
         }
     }
 
-    touch_channel_mask = 0;
+    if (touch_channel_mask) {
+        // Tear down the channel(s) this alarm configured. Without this, a TouchIn built after
+        // wake would reuse this alarm's sleep-tuned threshold instead of getting a fresh one.
+        peripherals_touch_reset();
 
-    // Tear down the channel(s) this alarm configured. Without this, a TouchIn built after
-    // wake would reuse this alarm's sleep-tuned threshold instead of getting a fresh one.
-    peripherals_touch_never_reset(false);
-    peripherals_touch_reset();
+        // Set up the live TouchIn channels again.
+        for (uint8_t i = TOUCH_MIN_CHAN_ID; i <= TOUCH_MAX_CHAN_ID; i++) {
+            if ((touchin_channel_mask & (1 << i)) != 0) {
+                peripherals_touch_init(i);
+            }
+        }
+    }
+
+    touch_channel_mask = 0;
+    touchin_channel_mask = 0;
 }

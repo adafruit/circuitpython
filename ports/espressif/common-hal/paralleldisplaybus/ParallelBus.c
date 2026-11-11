@@ -67,10 +67,16 @@ void common_hal_paralleldisplaybus_parallelbus_construct_nonsequential(paralleld
     panel_io_config.dc_levels.dc_cmd_level = 0;
     panel_io_config.dc_levels.dc_data_level = 1;
     panel_io_config.dc_levels.dc_idle_level = 1;
-    CHECK_ESP_RESULT(esp_lcd_new_panel_io_i80(self->bus_handle, &panel_io_config, &self->panel_io_handle));
+    esp_err_t err = esp_lcd_new_panel_io_i80(self->bus_handle, &panel_io_config, &self->panel_io_handle);
+    if (err != ESP_OK) {
+        esp_lcd_del_i80_bus(self->bus_handle);
+        self->bus_handle = NULL;
+        CHECK_ESP_RESULT(err);
+    }
 
+    // read and reset are optional. The display bus slot is zeroed, and pin 0 is a real pin.
+    self->read_pin_number = NO_PIN;
     if (read != NULL) {
-        common_hal_never_reset_pin(read);
         gpio_config_t read_config = {
             .pin_bit_mask = 1ull << read->number,
                 .mode = GPIO_MODE_OUTPUT,
@@ -85,7 +91,6 @@ void common_hal_paralleldisplaybus_parallelbus_construct_nonsequential(paralleld
 
     self->reset_pin_number = NO_PIN;
     if (reset != NULL) {
-        common_hal_never_reset_pin(reset);
         self->reset_pin_number = reset->number;
     }
 
@@ -100,12 +105,17 @@ void common_hal_paralleldisplaybus_parallelbus_construct_nonsequential(paralleld
     gpio_config(&chip_select_config);
     gpio_set_level(self->cs_pin_number, true);
 
-    common_hal_never_reset_pin(chip_select);
-    common_hal_never_reset_pin(command);
-    common_hal_never_reset_pin(write);
-
     for (uint8_t i = 0; i < n_pins; i++) {
-        common_hal_never_reset_pin(data_pins[i]);
+        claim_pin(data_pins[i]);
+    }
+    claim_pin(command);
+    claim_pin(chip_select);
+    claim_pin(write);
+    if (read != NULL) {
+        claim_pin(read);
+    }
+    if (reset != NULL) {
+        claim_pin(reset);
     }
 }
 

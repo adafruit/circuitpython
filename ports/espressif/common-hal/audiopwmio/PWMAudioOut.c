@@ -240,15 +240,6 @@ void audiopwmout_background(void) {
     }
 }
 
-void audiopwmout_reset(void) {
-    for (size_t i = 0; i < MP_ARRAY_SIZE(active_audio); i++) {
-        if (active_audio[i] != NULL) {
-            active_audio[i]->playing = false;
-            stop_timer(active_audio[i]);
-        }
-    }
-}
-
 // Caller validates that pins are free.
 void common_hal_audiopwmio_pwmaudioout_construct(audiopwmio_pwmaudioout_obj_t *self,
     const mcu_pin_obj_t *left_channel, const mcu_pin_obj_t *right_channel, uint16_t quiescent_value) {
@@ -265,9 +256,6 @@ void common_hal_audiopwmio_pwmaudioout_construct(audiopwmio_pwmaudioout_obj_t *s
     }
     self->internal_data->stereo = right_channel != NULL;
     self->internal_data->out_channels = right_channel != NULL ? 2 : 1;
-
-    self->left_pwm.deinited = true;
-    self->right_pwm.deinited = true;
 
     // variable_frequency is false so that the two channels of a stereo pair can
     // share one LEDC timer. At PWM_FREQUENCY pwmio picks a PWM_BITS-wide duty.
