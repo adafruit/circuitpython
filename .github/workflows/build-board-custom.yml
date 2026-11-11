@@ -72,7 +72,7 @@ jobs:
     - name: Set up python
       uses: actions/setup-python@v6
       with:
-        python-version: 3.x
+        python-version: "3.14"  # minify_html has no Python 3.15 wheel yet
     - name: Board to port
       id: board-to-port
       run: |

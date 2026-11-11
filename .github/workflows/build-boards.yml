@@ -39,7 +39,7 @@ jobs:
     - name: Set up python
       uses: actions/setup-python@v6
       with:
-        python-version: ${{ inputs.port == 'zephyr-cp' && '3.13' || '3.x' }}
+        python-version: ${{ inputs.port == 'zephyr-cp' && '3.13' || '3.14' }}  # minify_html has no Python 3.15 wheel yet
 
     - name: Set up port
       id: set-up-port
