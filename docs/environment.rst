@@ -298,6 +298,31 @@ to initiate safe mode after a hard reset.
 The status LED blinks during this time.
 If not specified, use the default delay, which is one second.
 
+CIRCUITPY_STORAGE_MAP_FILE (boolean)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Controls direct flash mapping for :py:func:`storage.map_file` and automatic
+:py:class:`displayio.OnDiskBitmap` mapping. Defaults to ``true`` on builds that
+support file mapping. Set it to ``false`` to use cached file reads for
+``OnDiskBitmap`` instead; explicit ``storage.map_file()`` calls then raise
+``OSError`` with ``EOPNOTSUPP``.
+
+On the Qualia ESP32-S3 RGB666, disabling mapping allows PSRAM XIP to keep the
+external-memory cache available during flash writes, so the RGB driver's
+bounce-buffer refill can continue. Bitmap drawing may be slower without
+mapping; leave it enabled for applications that prioritize bitmap performance.
+
+This setting is read once after mounting CIRCUITPY at startup. Press RESET or
+power-cycle the board after changing it; a reload or Ctrl-D does not change it
+because existing flash mappings can persist across reloads. It cannot enable
+mapping on builds that do not support it.
+
+Example: disable file mapping to avoid flash-write display interruptions on
+the Qualia:
+
+.. code-block:: toml
+
+    CIRCUITPY_STORAGE_MAP_FILE = false
+
 CIRCUITPY_TERMINAL_SCALE (integer)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Allows the entry of a display scaling factor used during the terminalio console construction.

@@ -23,6 +23,9 @@
 #include "lib/oofatfs/ff.h"
 #include "py/objarray.h"
 #include "py/objlist.h"
+#if CIRCUITPY_SETTINGS_TOML
+#include "supervisor/shared/settings.h"
+#endif
 #endif
 
 #if CIRCUITPY_USB_DEVICE
@@ -288,6 +291,15 @@ void common_hal_storage_erase_filesystem(bool extended) {
 }
 
 #if CIRCUITPY_STORAGE_MAP_FILE
+// Flash mappings can outlive the Python VM, so read this setting only at boot.
+static bool storage_map_file_enabled = true;
+
+void storage_map_file_init(void) {
+    #if CIRCUITPY_SETTINGS_TOML
+    settings_get_bool("CIRCUITPY_STORAGE_MAP_FILE", &storage_map_file_enabled);
+    #endif
+}
+
 // Start clusters of the files mapped since the VM started; a write to one of them is refused
 // until reload.
 MP_REGISTER_ROOT_POINTER(mp_obj_t storage_mapped_files);
@@ -337,6 +349,9 @@ void storage_map_file_check_writable(fs_user_mount_t *vfs, const char *path) {
 
 #if CIRCUITPY_STORAGE_MAP_FILE
 int storage_map_runs(mp_obj_t file_in, storage_map_run_fn_t fn, void *ctx) {
+    if (!storage_map_file_enabled) {
+        return MP_EOPNOTSUPP;
+    }
     if (!mp_obj_is_type(file_in, &mp_type_vfs_fat_fileio)) {
         return MP_EOPNOTSUPP;                   // only a FAT volume stores a file as flash bytes
     }

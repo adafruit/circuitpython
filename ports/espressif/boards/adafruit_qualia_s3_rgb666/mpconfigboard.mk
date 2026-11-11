@@ -14,6 +14,3 @@ CIRCUITPY_ESP_PSRAM_MODE = opi
 CIRCUITPY_ESP_PSRAM_FREQ = 120m
 
 CIRCUITPY_DOTCLOCKFRAMEBUFFER = 1
-
-# Persistent flash mappings suspend the PSRAM cache during flash writes.
-CIRCUITPY_STORAGE_MAP_FILE = 0
