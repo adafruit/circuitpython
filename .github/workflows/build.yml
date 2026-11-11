@@ -184,6 +184,8 @@ jobs:
         version: true
     - name: Install dependencies
       run: |
+        # Azure's Ubuntu mirror sometimes stops resolving on the runners. Use Ubuntu's own.
+        sudo sed -i 's|azure\.archive\.ubuntu\.com|archive.ubuntu.com|g' /etc/apt/apt-mirrors.txt /etc/apt/sources.list.d/*.sources 2>/dev/null || true
         sudo apt-get update
         sudo apt-get install -y latexmk librsvg2-bin texlive-fonts-recommended texlive-latex-recommended texlive-latex-extra
         pip install -r requirements-doc.txt

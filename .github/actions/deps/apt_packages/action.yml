@@ -28,6 +28,8 @@ runs:
       # .deb files kept, so it changes whenever a package is updated.
       run: |
         mkdir -p ~/apt-archives/partial
+        # Azure's Ubuntu mirror sometimes stops resolving on the runners. Use Ubuntu's own.
+        sudo sed -i 's|azure\.archive\.ubuntu\.com|archive.ubuntu.com|g' /etc/apt/apt-mirrors.txt /etc/apt/sources.list.d/*.sources 2>/dev/null || true
         sudo apt-get update
         sudo apt-get install -y -o Dir::Cache::Archives="$HOME/apt-archives" $PACKAGES
         sudo apt-get autoclean -o Dir::Cache::Archives="$HOME/apt-archives"
