@@ -30,6 +30,13 @@
 
 #define DELAY 0x80
 
+// lag_drive.c calls these only when it is built. Otherwise they stay static, as before it.
+#if CIRCUITPY_EPAPERDISPLAY_FAST
+#define LAG_SHARED
+#else
+#define LAG_SHARED static
+#endif
+
 void common_hal_epaperdisplay_epaperdisplay_construct(epaperdisplay_epaperdisplay_obj_t *self,
     const epaperdisplay_construct_args_t *args) {
     uint16_t color_depth = 1;
@@ -255,7 +262,7 @@ void epaperdisplay_epaperdisplay_delay_ms(epaperdisplay_epaperdisplay_obj_t *sel
 #define epaperdisplay_epaperdisplay_delay_ms(self, delay_ms) common_hal_time_delay_ms(delay_ms)
 #endif // CIRCUITPY_EPAPERDISPLAY_FAST
 
-void epaperdisplay_epaperdisplay_wait_for_busy(epaperdisplay_epaperdisplay_obj_t *self) {
+LAG_SHARED void epaperdisplay_epaperdisplay_wait_for_busy(epaperdisplay_epaperdisplay_obj_t *self) {
     if (self->busy.base.type == &mp_type_NoneType) {
         return;
     }
@@ -270,7 +277,7 @@ void epaperdisplay_epaperdisplay_wait_for_busy(epaperdisplay_epaperdisplay_obj_t
 }
 
 // True if every command went out. Lag drive counts an update only if its last command did.
-bool epaperdisplay_epaperdisplay_send_command_sequence(epaperdisplay_epaperdisplay_obj_t *self,
+LAG_SHARED bool epaperdisplay_epaperdisplay_send_command_sequence(epaperdisplay_epaperdisplay_obj_t *self,
     bool should_wait_for_busy, const uint8_t *sequence, uint32_t sequence_len) {
     uint32_t i = 0;
     while (i < sequence_len) {
@@ -320,13 +327,20 @@ bool epaperdisplay_epaperdisplay_send_command_sequence(epaperdisplay_epaperdispl
             #endif
             epaperdisplay_epaperdisplay_wait_for_busy(self);
         }
+        #if !CIRCUITPY_EPAPERDISPLAY_FAST
+        if (mp_hal_is_interrupted()) {
+            return true;
+        }
+        #endif
         i += 2 + data_size;
         if (self->two_byte_sequence_length) {
             i++;
         }
+        #if CIRCUITPY_EPAPERDISPLAY_FAST
         if (epaperdisplay_epaperdisplay_interrupted(self)) {
             return i >= sequence_len;
         }
+        #endif
     }
     return true;
 }
@@ -386,7 +400,7 @@ static void send_stop_sequence_guarded(epaperdisplay_epaperdisplay_obj_t *self) 
 }
 #endif // CIRCUITPY_EPAPERDISPLAY_FAST
 
-void epaperdisplay_epaperdisplay_start_refresh(epaperdisplay_epaperdisplay_obj_t *self) {
+LAG_SHARED void epaperdisplay_epaperdisplay_start_refresh(epaperdisplay_epaperdisplay_obj_t *self) {
     if (!displayio_display_bus_is_free(&self->bus)) {
         // Can't acquire display bus; skip updating this display. Try next display.
         return;
@@ -415,13 +429,15 @@ void epaperdisplay_epaperdisplay_start_refresh(epaperdisplay_epaperdisplay_obj_t
 
     epaperdisplay_epaperdisplay_delay_ms(self, self->start_up_time_ms);
 
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
     if (!epaperdisplay_epaperdisplay_send_command_sequence(self, true, self->start_sequence, self->start_sequence_len) ||
         epaperdisplay_epaperdisplay_interrupted(self)) {
         return;
     }
-    #if CIRCUITPY_EPAPERDISPLAY_FAST
     self->awake = true;
     self->needs_start = false;
+    #else
+    epaperdisplay_epaperdisplay_send_command_sequence(self, true, self->start_sequence, self->start_sequence_len);
     #endif
 }
 

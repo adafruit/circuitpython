@@ -10,6 +10,7 @@
 
 // Shared by EPaperDisplay.c and lag_drive.c only.
 
+#if CIRCUITPY_EPAPERDISPLAY_FAST
 // Sends a start, stop or refresh sequence. True if every command went out.
 bool epaperdisplay_epaperdisplay_send_command_sequence(epaperdisplay_epaperdisplay_obj_t *self,
     bool should_wait_for_busy, const uint8_t *sequence, uint32_t sequence_len);
@@ -19,7 +20,6 @@ void epaperdisplay_epaperdisplay_start_refresh(epaperdisplay_epaperdisplay_obj_t
 // Waits for BUSY to clear or an interrupt. On a lag display the wait is bounded.
 void epaperdisplay_epaperdisplay_wait_for_busy(epaperdisplay_epaperdisplay_obj_t *self);
 
-#if CIRCUITPY_EPAPERDISPLAY_FAST
 // Longer than one update or stored-waveform refresh takes. This bounds each wait for an update on
 // a lag display, and the wait before writing the previous RAM. A stock display's waits have no bound.
 #define EPAPER_WAIT_TIMEOUT_MS 30000
