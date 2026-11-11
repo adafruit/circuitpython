@@ -53,7 +53,9 @@
 //|         :param int channel_count: The number of channels the source samples contain. 1 = mono; 2 = stereo.
 //|         :param int bits_per_sample: The bits per sample of the effect
 //|         :param bool samples_signed: Effect is signed (True) or unsigned (False)
-//|         :param bool freq_shift: Do echos change frequency as the echo delay changes
+//|         :param bool freq_shift: Do echoes change frequency as the echo delay changes. The pitch follows the
+//|            slope of delay_ms, so a `synthio.LFO` with its default triangle waveform holds two steady
+//|            pitches and jumps between them, while a sine waveform glides.
 //|
 //|         Playing adding an echo to a synth::
 //|
