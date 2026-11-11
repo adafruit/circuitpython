@@ -64,13 +64,7 @@ void common_hal_audiobusio_i2sout_construct(audiobusio_i2sout_obj_t *self,
     const mcu_periph_obj_t *sync_periph = find_pin_function(mcu_i2s_tx_sync_list, word_select, &instance, MP_QSTR_word_select);
     const mcu_periph_obj_t *data_periph = find_pin_function(mcu_i2s_tx_data0_list, data, &instance, MP_QSTR_data);
 
-    if (main_clock != NULL) {
-        const mcu_periph_obj_t *mclk_periph = find_pin_function(mcu_i2s_mclk_list, main_clock, &instance, MP_QSTR_main_clock);
-        self->mclk = main_clock;
-        claim_pin(main_clock);
-        config_periph_pin(mclk_periph);
-        IOMUXC_GPR->GPR1 |= IOMUXC_GPR_GPR1_SAI1_MCLK_DIR_MASK << (instance - 1);
-    }
+    const mcu_periph_obj_t *mclk_periph = find_pin_function(mcu_i2s_mclk_list, main_clock, &instance, MP_QSTR_main_clock);
     self->instance = instance;
 
     sai_transceiver_t config;
@@ -83,6 +77,12 @@ void common_hal_audiobusio_i2sout_construct(audiobusio_i2sout_obj_t *self,
     config.masterSlave = kSAI_Master;
     port_i2s_initialize(&self->i2s, instance, &config);
 
+    if (main_clock != NULL) {
+        claim_pin(main_clock);
+        config_periph_pin(mclk_periph);
+        IOMUXC_GPR->GPR1 |= IOMUXC_GPR_GPR1_SAI1_MCLK_DIR_MASK << (instance - 1);
+    }
+    self->mclk = main_clock;
     self->bit_clock = bit_clock;
     self->word_select = word_select;
     self->data = data;
