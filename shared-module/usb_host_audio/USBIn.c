@@ -9,10 +9,12 @@
 #include <string.h>
 
 #include "tusb.h"
+#include "host/hcd.h"
 #include "host/usbh_pvt.h"
 
 #include "py/runtime.h"
 #include "shared/runtime/interrupt_char.h"
+#include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/usb/core/__init__.h"
 #include "shared-bindings/usb/core/Device.h"
 #include "shared-bindings/usb_host/Port.h"
@@ -32,6 +34,13 @@
 // deinit() waits this long for the device to stop streaming. A request without
 // a data stage takes at most 50 ms.
 #define USBIN_STOP_TIMEOUT_MS (100)
+// The stream ends after this many failed transfers in a row. A microphone that
+// was unplugged or stopped sending fails every one.
+#define USBIN_MAX_FAILURES (32)
+// Frame numbers are compared modulo this. Host controllers count to a multiple of it.
+#define USBIN_FRAME_MASK (0x7ff)
+// An aborted transfer of a periodic endpoint ends at the end of the frame.
+#define USBIN_ABORT_SETTLE_US (2000)
 
 // The host controller receives one isochronous IN stream at a time, so there is
 // one streaming object at most. TinyUSB copies the transfer and calls back with
@@ -88,6 +97,19 @@ static void _ring_take(usb_host_audio_usbin_obj_t *self, uint8_t *dest, uint32_t
 static void _transfer_done_cb(tuh_xfer_t *xfer);
 
 static bool _queue_transfer(usb_host_audio_usbin_obj_t *self) {
+    #if !CIRCUITPY_USB_HOST_ISO_RECORDS
+    // The transfer receives the packet of the endpoint's next service interval.
+    // Those that went by since the last transfer was queued are lost.
+    uint16_t frame = hcd_frame_number(TUH_OPT_RHPORT) & USBIN_FRAME_MASK;
+    if (self->frame_known) {
+        uint16_t elapsed = (frame - self->queued_frame) & USBIN_FRAME_MASK;
+        if (elapsed > self->frame_interval) {
+            self->overflow = true;
+        }
+    }
+    self->queued_frame = frame;
+    self->frame_known = true;
+    #endif
     tuh_xfer_t xfer = {
         .daddr = self->device_address,
         .ep_addr = self->endpoint,
@@ -107,6 +129,7 @@ static void _transfer_done_cb(tuh_xfer_t *xfer) {
         // Late completion of a stream that already ended.
         return;
     }
+    #if CIRCUITPY_USB_HOST_ISO_RECORDS
     if (xfer->result != XFER_RESULT_SUCCESS) {
         self->streaming = false;
         return;
@@ -127,26 +150,46 @@ static void _transfer_done_cb(tuh_xfer_t *xfer) {
         _ring_append(self, buf + pos, record_len / self->wire_frame_bytes);
         pos += record_len;
     }
+    #else
+    if (xfer->result == XFER_RESULT_SUCCESS) {
+        // The transfer holds one packet.
+        self->failures = 0;
+        uint32_t len = MIN(xfer->actual_len, self->xfer_buffer_len);
+        _ring_append(self, self->xfer_buffer, len / self->wire_frame_bytes);
+    } else if (xfer->result == XFER_RESULT_FAILED && self->failures < USBIN_MAX_FAILURES) {
+        // A packet that was damaged or not received in its frame. Isochronous
+        // packets are not retried.
+        self->failures++;
+        self->overflow = true;
+    } else {
+        self->streaming = false;
+        return;
+    }
+    #endif
     _queue_transfer(self);
 }
 
-// The number of the interface whose alternate setting has endpoint.
-static uint8_t _endpoint_interface(usb_core_device_obj_t *device, uint8_t endpoint) {
+// The descriptor of endpoint in the device's configuration, or NULL. Sets
+// interface to the number of the interface whose alternate setting has it.
+static const tusb_desc_endpoint_t *_find_endpoint(usb_core_device_obj_t *device, uint8_t endpoint,
+    uint8_t *interface) {
+    *interface = USBIN_NO_INTERFACE;
     const uint8_t *desc = device->configuration_descriptor;
     if (desc == NULL) {
-        return USBIN_NO_INTERFACE;
+        return NULL;
     }
     const uint8_t *end = desc + tu_le16toh(((const tusb_desc_configuration_t *)desc)->wTotalLength);
-    uint8_t interface = USBIN_NO_INTERFACE;
+    uint8_t current = USBIN_NO_INTERFACE;
     for (const uint8_t *p = tu_desc_next(desc); p < end; p = tu_desc_next(p)) {
         if (tu_desc_type(p) == TUSB_DESC_INTERFACE) {
-            interface = ((const tusb_desc_interface_t *)p)->bInterfaceNumber;
+            current = ((const tusb_desc_interface_t *)p)->bInterfaceNumber;
         } else if (tu_desc_type(p) == TUSB_DESC_ENDPOINT &&
                    ((const tusb_desc_endpoint_t *)p)->bEndpointAddress == endpoint) {
-            return interface;
+            *interface = current;
+            return (const tusb_desc_endpoint_t *)p;
         }
     }
-    return USBIN_NO_INTERFACE;
+    return NULL;
 }
 
 // Select alternate setting 0, which stops the microphone sending. usb.core
@@ -211,8 +254,10 @@ void common_hal_usb_host_audio_usbin_construct(usb_host_audio_usbin_obj_t *self,
     if (!common_hal_usb_core_device_open_endpoint(device, endpoint)) {
         mp_raise_usb_core_USBError(NULL);
     }
-    self->interface = _endpoint_interface(device, endpoint);
+    const tusb_desc_endpoint_t *endpoint_desc = _find_endpoint(device, endpoint, &self->interface);
 
+    #if CIRCUITPY_USB_HOST_ISO_RECORDS
+    (void)endpoint_desc;
     // The host controller keeps the packets that arrive between transfers in a
     // ring of its own. Only one isochronous stream at a time can use it.
     if (!common_hal_usb_host_port_claim_iso_buffer(iso_buffer_size)) {
@@ -222,12 +267,30 @@ void common_hal_usb_host_audio_usbin_construct(usb_host_audio_usbin_obj_t *self,
     // A record that doesn't fit in the transfer buffer is dropped by the host
     // controller, so leave room for the largest packet and its length.
     self->xfer_buffer_len = MAX(USBIN_MIN_XFER_BUFFER, max_packet_size + 2);
+    #else
+    (void)iso_buffer_size;
+    // Each transfer receives one packet. A longer one would ask for more
+    // packets in the same frame.
+    uint8_t interval = 1;
+    if (endpoint_desc != NULL) {
+        max_packet_size = tu_edpt_packet_size(endpoint_desc);
+        interval = endpoint_desc->bInterval;
+    }
+    mp_arg_validate_int_min(max_packet_size, 1, MP_QSTR_max_packet_size);
+    self->xfer_buffer_len = max_packet_size;
+    self->frame_interval = 1 << (MIN(MAX(interval, 1), 16) - 1);
+    self->frame_known = false;
+    self->aborted = false;
+    self->failures = 0;
+    #endif
     size_t ring_bytes = self->ring_frames * self->frame_bytes;
     self->ring = port_malloc(ring_bytes, false);
     // The host controller writes the transfer buffer.
     self->xfer_buffer = port_malloc(self->xfer_buffer_len, true);
     if (self->ring == NULL || self->xfer_buffer == NULL) {
+        #if CIRCUITPY_USB_HOST_ISO_RECORDS
         common_hal_usb_host_port_release_iso_buffer();
+        #endif
         port_free(self->ring);
         port_free(self->xfer_buffer);
         self->ring = NULL;
@@ -259,18 +322,29 @@ void common_hal_usb_host_audio_usbin_deinit(usb_host_audio_usbin_obj_t *self) {
     }
     if (_active == self) {
         if (self->streaming) {
-            // Once this returns the host controller no longer writes the
-            // transfer buffer. It fails when the device is gone, and then its
-            // endpoints are closed already.
+            // It fails when the device is gone, and then its endpoints are
+            // closed already.
             tuh_edpt_abort_xfer(self->device_address, self->endpoint);
+            #if !CIRCUITPY_USB_HOST_ISO_RECORDS
+            self->aborted = true;
+            #endif
         }
         // Drop a completion that is queued already.
         _seq++;
         _active = NULL;
+        #if CIRCUITPY_USB_HOST_ISO_RECORDS
         // Whatever ended the stream also stopped the host controller writing
-        // to its ring.
+        // to its ring, and once the abort returned it no longer writes the
+        // transfer buffer.
         common_hal_usb_host_port_release_iso_buffer();
+        #endif
     }
+    #if !CIRCUITPY_USB_HOST_ISO_RECORDS
+    if (self->aborted) {
+        // The aborted transfer may still receive its packet.
+        common_hal_mcu_delay_us(USBIN_ABORT_SETTLE_US);
+    }
+    #endif
     self->streaming = false;
     port_free(self->xfer_buffer);
     port_free(self->ring);
@@ -299,6 +373,9 @@ void usb_host_audio_stop_device(uint8_t device_address) {
         // which some devices answer by no longer answering control requests.
         tuh_edpt_abort_xfer(self->device_address, self->endpoint);
         self->streaming = false;
+        #if !CIRCUITPY_USB_HOST_ISO_RECORDS
+        self->aborted = true;
+        #endif
     }
     // Drop a completion that is queued already, so it queues nothing.
     _seq++;
@@ -418,9 +495,9 @@ static void _stretch(usb_host_audio_usbin_obj_t *self, uint8_t *out, const uint8
             uint32_t out_at = i * channels + c;
             int32_t a, b;
             if (is_16) {
-                a = is_signed ? ((const int16_t *)in)[a_at] : ((const uint16_t *)in)[a_at];
-                b = is_signed ? ((const int16_t *)in)[b_at] : ((const uint16_t *)in)[b_at];
-                ((uint16_t *)out)[out_at] = a + (((b - a) * frac) >> 15);
+                a = is_signed ? ((const int16_t *)(const void *)in)[a_at] : ((const uint16_t *)(const void *)in)[a_at];
+                b = is_signed ? ((const int16_t *)(const void *)in)[b_at] : ((const uint16_t *)(const void *)in)[b_at];
+                ((uint16_t *)(void *)out)[out_at] = a + (((b - a) * frac) >> 15);
             } else {
                 a = is_signed ? ((const int8_t *)in)[a_at] : in[a_at];
                 b = is_signed ? ((const int8_t *)in)[b_at] : in[b_at];

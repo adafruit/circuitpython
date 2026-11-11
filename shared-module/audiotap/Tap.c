@@ -86,7 +86,7 @@ static void take_format(audiotap_tap_obj_t *self, mp_obj_t sample) {
     if (source->samples_signed) {
         memset(silence, 0, silence_len);
     } else if (sample_bytes == 2) {
-        uint16_t *words = (uint16_t *)silence;
+        uint16_t *words = (uint16_t *)(void *)silence;
         for (uint32_t i = 0; i < silence_len / 2; i++) {
             words[i] = 0x8000;
         }
@@ -154,7 +154,7 @@ static uint32_t ring_advance(uint32_t capacity, uint32_t pos, uint32_t count) {
 // The sample at i, as a signed 16 bit value.
 static int32_t sample_at(audiotap_tap_obj_t *self, const uint8_t *data, uint32_t i) {
     if (MP_LIKELY(self->base.bits_per_sample == 16)) {
-        uint16_t raw = ((const uint16_t *)data)[i];
+        uint16_t raw = ((const uint16_t *)(const void *)data)[i];
         return self->base.samples_signed ? (int16_t)raw : (int16_t)(raw ^ 0x8000);
     }
     uint8_t raw = data[i];
