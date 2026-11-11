@@ -29,6 +29,9 @@
 //|     unsupported position directly raises an error, but moving a containing
 //|     Group may give garbled output instead.
 //|
+//|     Assigning a Group that contains a framebuffer target as a rotated
+//|     display's ``root_group`` raises `ValueError`.
+//|
 //|     When the target is a plain buffer, frames are written compactly (row
 //|     stride equals ``width * bits_per_pixel / 8``) and can be read from
 //|     Python at any time, for example to process or save camera pixels.

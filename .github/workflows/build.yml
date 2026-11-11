@@ -183,10 +183,11 @@ jobs:
       with:
         version: true
     - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y latexmk librsvg2-bin texlive-fonts-recommended texlive-latex-recommended texlive-latex-extra
-        pip install -r requirements-doc.txt
+      uses: ./.github/actions/deps/apt_packages
+      with:
+        packages: latexmk librsvg2-bin texlive-fonts-recommended texlive-latex-recommended texlive-latex-extra
+    - name: Install Python dependencies
+      run: pip install -r requirements-doc.txt
     - name: Build and Validate Stubs
       run: make check-stubs -j$(nproc)
     - uses: actions/upload-artifact@v7

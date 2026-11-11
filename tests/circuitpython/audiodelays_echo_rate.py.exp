@@ -1,0 +1,8 @@
+rate fraction True
+repeatable True
+slow lfo moves rate True
+no freq_shift holds length True
+no sample repeats True
+131071 accepted
+131072 ValueError
+131072 no freq_shift ValueError

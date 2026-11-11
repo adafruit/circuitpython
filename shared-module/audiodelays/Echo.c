@@ -134,8 +134,9 @@ void recalculate_delay(audiodelays_echo_obj_t *self, mp_float_t f_delay_ms) {
     uint32_t max_echo_buffer_len = self->max_echo_buffer_len >> (self->base.channel_count - 1);
 
     if (self->freq_shift) {
-        // Calculate the rate of iteration over the echo buffer with 8 sub-bits
-        self->echo_buffer_rate = (uint32_t)MAX(self->max_delay_ms / f_delay_ms * MICROPY_FLOAT_CONST(256.0), MICROPY_FLOAT_CONST(1.0));
+        // Calculate the rate of iteration over the echo buffer in fixed point
+        mp_float_t rate = self->max_delay_ms / f_delay_ms * (1 << AUDIODELAYS_ECHO_RATE_FRACTION_BITS);
+        self->echo_buffer_rate = (uint32_t)MAX(rate, MICROPY_FLOAT_CONST(1.0));
         // Only use half of the buffer per channel if stereo
         self->echo_buffer_len = max_echo_buffer_len;
     } else {
@@ -299,7 +300,9 @@ audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *
         mp_float_t decay = synthio_block_slot_get_limited(&self->decay, MICROPY_FLOAT_CONST(0.0), MICROPY_FLOAT_CONST(1.0));
 
         mp_float_t f_delay_ms = synthio_block_slot_get(&self->delay_ms);
-        if (MICROPY_FLOAT_C_FUN(fabs)(self->current_delay_ms - f_delay_ms) >= self->sample_ms) {
+        // With freq_shift any change moves the rate, and recalculating is only a divide.
+        // Otherwise the length moves by whole samples.
+        if (self->freq_shift || MICROPY_FLOAT_C_FUN(fabs)(self->current_delay_ms - f_delay_ms) >= self->sample_ms) {
             recalculate_delay(self, f_delay_ms);
         }
 
@@ -336,10 +339,10 @@ audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *
                     uint32_t echo_buffer_pos = echo_buffer_offset ? self->echo_buffer_right_pos : self->echo_buffer_left_pos;
 
                     if (self->freq_shift) {
-                        echo = echo_buffer[(echo_buffer_pos >> 8) + echo_buffer_offset];
+                        echo = echo_buffer[(echo_buffer_pos >> AUDIODELAYS_ECHO_RATE_FRACTION_BITS) + echo_buffer_offset];
                         next_buffer_pos = echo_buffer_pos + self->echo_buffer_rate;
 
-                        for (uint32_t j = echo_buffer_pos >> 8; j < next_buffer_pos >> 8; j++) {
+                        for (uint32_t j = echo_buffer_pos >> AUDIODELAYS_ECHO_RATE_FRACTION_BITS; j < next_buffer_pos >> AUDIODELAYS_ECHO_RATE_FRACTION_BITS; j++) {
                             word = (int16_t)(echo_buffer[(j % echo_buf_len) + echo_buffer_offset] * decay);
                             echo_buffer[(j % echo_buf_len) + echo_buffer_offset] = (int16_t)audiofilters_process_filter_chain(&self->filter, self->base.channel_count, !!echo_buffer_offset, word);
                         }
@@ -364,7 +367,7 @@ audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *
                     }
 
                     if (self->freq_shift) {
-                        echo_buffer_pos = next_buffer_pos % (echo_buf_len << 8);
+                        echo_buffer_pos = next_buffer_pos % (echo_buf_len << AUDIODELAYS_ECHO_RATE_FRACTION_BITS);
                     } else if (!self->freq_shift && echo_buffer_pos >= echo_buf_len) {
                         echo_buffer_pos = 0;
                     }
@@ -414,7 +417,7 @@ audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *
                     uint32_t echo_buffer_pos = echo_buffer_offset ? self->echo_buffer_right_pos : self->echo_buffer_left_pos;
 
                     if (self->freq_shift) {
-                        echo = echo_buffer[(echo_buffer_pos >> 8) + echo_buffer_offset];
+                        echo = echo_buffer[(echo_buffer_pos >> AUDIODELAYS_ECHO_RATE_FRACTION_BITS) + echo_buffer_offset];
                         next_buffer_pos = echo_buffer_pos + self->echo_buffer_rate;
                     } else {
                         echo = echo_buffer[echo_buffer_pos + echo_buffer_offset];
@@ -423,7 +426,7 @@ audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *
 
                     if (MP_LIKELY(self->base.bits_per_sample == 16)) {
                         if (self->freq_shift) {
-                            for (uint32_t j = echo_buffer_pos >> 8; j < next_buffer_pos >> 8; j++) {
+                            for (uint32_t j = echo_buffer_pos >> AUDIODELAYS_ECHO_RATE_FRACTION_BITS; j < next_buffer_pos >> AUDIODELAYS_ECHO_RATE_FRACTION_BITS; j++) {
                                 word = (int32_t)(echo_buffer[(j % echo_buf_len) + echo_buffer_offset] * decay + sample_word);
                                 word = synthio_mix_down_sample(word, SYNTHIO_MIX_DOWN_SCALE(2));
                                 echo_buffer[(j % echo_buf_len) + echo_buffer_offset] = (int16_t)audiofilters_process_filter_chain(&self->filter, self->base.channel_count, !!echo_buffer_offset, word);
@@ -434,7 +437,7 @@ audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *
                         }
                     } else {
                         if (self->freq_shift) {
-                            for (uint32_t j = echo_buffer_pos >> 8; j < next_buffer_pos >> 8; j++) {
+                            for (uint32_t j = echo_buffer_pos >> AUDIODELAYS_ECHO_RATE_FRACTION_BITS; j < next_buffer_pos >> AUDIODELAYS_ECHO_RATE_FRACTION_BITS; j++) {
                                 word = (int32_t)(echo_buffer[(j % echo_buf_len) + echo_buffer_offset] * decay + sample_word);
                                 // Do not have mix_down for 8 bit so just hard cap samples into 1 byte
                                 word = MIN(MAX(word, -128), 127);
@@ -466,7 +469,7 @@ audioio_get_buffer_result_t audiodelays_echo_get_buffer(audiodelays_echo_obj_t *
                     }
 
                     if (self->freq_shift) {
-                        echo_buffer_pos = next_buffer_pos % (echo_buf_len << 8);
+                        echo_buffer_pos = next_buffer_pos % (echo_buf_len << AUDIODELAYS_ECHO_RATE_FRACTION_BITS);
                     } else if (!self->freq_shift && echo_buffer_pos >= echo_buf_len) {
                         echo_buffer_pos = 0;
                     }
