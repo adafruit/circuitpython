@@ -1704,7 +1704,7 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir, mpconfig
 static {obj_type}_obj_t {instance_name}_obj;
 static mp_obj_t {singleton_ptr} = mp_const_none;
 static mp_obj_t {c_function_name}(void) {{
-    if ({singleton_ptr} != mp_const_none) {{
+    if ({singleton_ptr} != mp_const_none && !common_hal_{obj_type}_deinited(&{instance_name}_obj)) {{
         return {singleton_ptr};
     }}
     {singleton_ptr} = {construct_call};
@@ -1923,9 +1923,17 @@ const size_t iobroker_gpio_port_count = {count};
     stop_calls = "\n    ".join(
         f"common_hal_audiobusio_i2sout_stop(&{name}_obj);" for name in i2sout_instance_names
     )
+    # And i2sout_gc_collect(): the board's I2SOut objects are static, so the GC doesn't scan them.
+    collect_calls = "\n    ".join(
+        f"audiobusio_i2sout_collect_ptrs(&{name}_obj);" for name in i2sout_instance_names
+    )
     i2sout_reset_func = f"""
 void i2sout_reset(void) {{
     {stop_calls}
+}}
+
+void i2sout_gc_collect(void) {{
+    {collect_calls}
 }}"""
 
     zephyr_display_header = ""

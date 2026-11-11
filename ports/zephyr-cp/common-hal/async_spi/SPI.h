@@ -33,7 +33,6 @@ typedef struct {
     struct spi_buf_set rx;
     uint8_t *fill;                      // the bytes a read sends, when not zero
     size_t fill_len;
-    bool fill_from_port;                // fill came from port_malloc, not the heap
 } async_spi_spi_obj_t;
 
 void common_hal_async_spi_spi_construct_from_device(async_spi_spi_obj_t *self,
