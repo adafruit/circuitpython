@@ -33,7 +33,15 @@ runs:
         sudo sed -i 's|azure\.archive\.ubuntu\.com|archive.ubuntu.com|g' /etc/apt/apt-mirrors.txt /etc/apt/sources.list.d/*.sources 2>/dev/null || true
         if sudo apt-get update --error-on=any; then
           sudo apt-get install -y -o Dir::Cache::Archives="$HOME/apt-archives" $PACKAGES
+          # The runner image has no package lists for extra architectures such as i386.
+          # Keep them with the cached files, so the offline install can find those packages.
+          rm -rf ~/apt-archives/lists
+          mkdir -p ~/apt-archives/lists
+          for arch in $(dpkg --print-foreign-architectures); do
+            cp /var/lib/apt/lists/*_binary-"$arch"_Packages* ~/apt-archives/lists/ 2>/dev/null || true
+          done
         else
+          sudo cp ~/apt-archives/lists/* /var/lib/apt/lists/ 2>/dev/null || true
           sudo apt-get install -y --no-download -o Dir::Cache::Archives="$HOME/apt-archives" $PACKAGES
         fi
         sudo apt-get autoclean -o Dir::Cache::Archives="$HOME/apt-archives"
