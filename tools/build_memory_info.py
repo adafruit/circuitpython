@@ -83,13 +83,34 @@ def flash_end_in_region(path, start, length):
     return end
 
 
-def ram_used_in_region(path, start, length):
-    """Bytes the loadable ELF segments occupy in the region once running."""
-    used = 0
+def ram_used_by_region(path, regions):
+    """Bytes the RAM-resident ELF segments occupy in each region once running.
+
+    A segment runs from RAM if it is copied there from flash or has zero-initialized
+    memory. Its flags can't say: Zephyr marks its flash text segment writable. It
+    counts against the smallest region holding its run address: nordic's APP_RAM,
+    not the RAM region that APP_RAM sits inside.
+    """
+    used = {}
     with open(path, "rb") as f:
         for segment in ELFFile(f).iter_segments():
-            if segment["p_type"] == "PT_LOAD" and start <= segment["p_vaddr"] < start + length:
-                used += segment["p_memsz"]
+            if segment["p_type"] != "PT_LOAD" or segment["p_memsz"] == 0:
+                continue
+            in_ram = (
+                segment["p_vaddr"] != segment["p_paddr"]
+                or segment["p_memsz"] > segment["p_filesz"]
+            )
+            if not in_ram:
+                continue
+            address = segment["p_vaddr"]
+            holding = [
+                (length, name)
+                for name, (origin, length) in regions.items()
+                if origin <= address < origin + length
+            ]
+            if holding:
+                _, name = min(holding)
+                used[name] = used.get(name, 0) + segment["p_memsz"]
     return used
 
 
@@ -123,12 +144,13 @@ print(
         used_flash, free_flash, firmware_region, firmware_region / 1024
     )
 )
-if "RAM" in regions:
-    _, ram_region = regions["RAM"]
-    used_ram = ram_used_in_region(elf, *regions["RAM"])
+ram_used = ram_used_by_region(elf, regions)
+for ram_name in sorted(ram_used, key=lambda n: regions[n][0]):
+    _, ram_region = regions[ram_name]
+    used_ram = ram_used[ram_name]
     print(
-        "{} bytes used, {} bytes free in ram for stack and heap out of {} bytes ({}kB).".format(
-            used_ram, ram_region - used_ram, ram_region, ram_region / 1024
+        "{} bytes used, {} bytes free in {} out of {} bytes ({}kB).".format(
+            used_ram, ram_region - used_ram, ram_name, ram_region, ram_region / 1024
         )
     )
 print()
