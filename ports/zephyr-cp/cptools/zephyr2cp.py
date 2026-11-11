@@ -23,6 +23,16 @@ GPIO_ACTIVE_LOW = 1 << 0
 # neither of which should ever be in the Python heap.
 MINIMUM_RAM_SIZE = 8192
 
+# Preferred spellings and capitalizations for MICROPY_HW_MCU_NAME, keyed by the Zephyr
+# SoC name from board.yml. SoCs not listed use the Zephyr name as is.
+SOC_NAMES = {
+    "nrf52840": "nRF52840",
+    "nrf5340": "nRF5340",
+    "nrf54h20": "nRF54H20",
+    "nrf54l15": "nRF54L15",
+    "nrf54lm20a": "nRF54LM20A",
+}
+
 # Checked before the generated COMPAT_TO_DRIVER, so an entry here overrides a
 # wrong generated one.
 MANUAL_COMPAT_TO_DRIVER = {
@@ -1026,6 +1036,10 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir, mpconfig
     if mpconfigboard and "NAME" in mpconfigboard:
         board_name = mpconfigboard["NAME"]
     board_info["name"] = board_name
+    # Banner board name: VENDOR + NAME when circuitpython.toml sets VENDOR, else just the name.
+    banner_name = board_name
+    if mpconfigboard and "VENDOR" in mpconfigboard:
+        banner_name = f"{mpconfigboard['VENDOR']} {board_name}"
     # board_id_yaml = zephyr_board_dir / (zephyr_board_dir.name + ".yaml")
     # board_id_yaml = yaml.safe_load(board_id_yaml.read_text())
     # print(board_id_yaml)
@@ -2023,8 +2037,8 @@ static mii_ethernet_obj_t ethernet_obj;
 
     new_header_content = f"""#pragma once
 
-#define MICROPY_HW_BOARD_NAME       "{board_name}"
-#define MICROPY_HW_MCU_NAME         "{soc_name}"
+#define MICROPY_HW_BOARD_NAME       "{banner_name}"
+#define MICROPY_HW_MCU_NAME         "{SOC_NAMES.get(soc_name, soc_name)}"
 #define CIRCUITPY_RAM_DEVICE_COUNT  {len(rams)}
 {status_led}
 {status_led_inverted}

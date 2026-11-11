@@ -1,4 +1,9 @@
 CIRCUITPY_BUILD_EXTENSIONS = ["hex", "uf2"]
+USB_VID=0x2E8A
+USB_PID=0x000B
+NAME="Pico 2"
+VENDOR="Raspberry Pi"
+USB_MANUFACTURER="Raspberry Pi"
 
 # Non-Zephyr build of the same board; nvm and CIRCUITPY must sit where it puts them.
 counterpart = "raspberrypi/raspberry_pi_pico2"
