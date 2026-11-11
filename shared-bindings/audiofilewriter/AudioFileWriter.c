@@ -70,7 +70,7 @@
 //|               writer.stop()
 //|           print("Done ->", OUTPUT_PATH)
 //|
-//|         Measuring a USB microphone on the Metro ESP32-P4.
+//|         Measuring levels on a USB microphone on the Metro ESP32-P4.
 //|         The ``adafruit_usb_host_descriptors`` library finds the
 //|         microphone and its format, and `usb.core` starts its stream; see
 //|         `usb_host_audio.USBIn`::
