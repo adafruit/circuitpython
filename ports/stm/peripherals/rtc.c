@@ -128,7 +128,9 @@ uint64_t stm32_peripherals_rtc_monotonic_ticks(uint8_t *subticks) {
         monotonic_ticks--;
         monotonic_subticks += SUBTICKS_PER_TICK;
     }
-    *subticks = (uint8_t)monotonic_subticks;
+    if (subticks != NULL) {
+        *subticks = (uint8_t)monotonic_subticks;
+    }
     return monotonic_ticks;
 }
 
