@@ -158,7 +158,7 @@ mp_obj_t common_hal_canio_listener_receive(canio_listener_obj_t *self) {
 }
 
 void common_hal_canio_listener_deinit(canio_listener_obj_t *self) {
-    if (self->can) {
+    if (self->can && !common_hal_canio_can_deinited(self->can)) {
         // Clear all filters.
         flexcan_rx_fifo_config_t fifo_config;
         fifo_config.idFilterNum = 0;

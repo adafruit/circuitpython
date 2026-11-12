@@ -26,24 +26,18 @@ static keypad_scanner_funcs_t shiftregisterkeys_funcs = {
 
 void common_hal_keypad_shiftregisterkeys_construct(keypad_shiftregisterkeys_obj_t *self, const mcu_pin_obj_t *clock_pin, mp_uint_t num_data_pins, const mcu_pin_obj_t *data_pins[], const mcu_pin_obj_t *latch_pin, bool value_to_latch, mp_uint_t num_key_counts, size_t key_counts[], bool value_when_pressed, mp_float_t interval, size_t max_events, uint8_t debounce_threshold) {
 
+    common_hal_keypad_deinit_core(self);
+
     digitalio_digitalinout_obj_t *clock =
         mp_obj_malloc(digitalio_digitalinout_obj_t, &digitalio_digitalinout_type);
-    common_hal_digitalio_digitalinout_construct(clock, clock_pin);
-    common_hal_digitalio_digitalinout_switch_to_output(clock, false, DRIVE_MODE_PUSH_PULL);
     self->clock = clock;
 
     digitalio_digitalinout_obj_t *latch = mp_obj_malloc(digitalio_digitalinout_obj_t, &digitalio_digitalinout_type);
-    common_hal_digitalio_digitalinout_construct(latch, latch_pin);
-    common_hal_digitalio_digitalinout_switch_to_output(latch, true, DRIVE_MODE_PUSH_PULL);
     self->latch = latch;
 
     mp_obj_t dios[num_data_pins];
-
     for (size_t i = 0; i < num_data_pins; i++) {
-        digitalio_digitalinout_obj_t *dio = mp_obj_malloc(digitalio_digitalinout_obj_t, &digitalio_digitalinout_type);
-        common_hal_digitalio_digitalinout_construct(dio, data_pins[i]);
-        common_hal_digitalio_digitalinout_switch_to_input(dio, PULL_NONE);
-        dios[i] = dio;
+        dios[i] = mp_obj_malloc(digitalio_digitalinout_obj_t, &digitalio_digitalinout_type);
     }
 
     // Allocate a tuple object with the data pins
@@ -71,7 +65,22 @@ void common_hal_keypad_shiftregisterkeys_construct(keypad_shiftregisterkeys_obj_
     self->value_when_pressed = value_when_pressed;
     self->funcs = &shiftregisterkeys_funcs;
 
-    keypad_construct_common((keypad_scanner_obj_t *)self, interval, max_events, debounce_threshold, true);
+    keypad_eventqueue_obj_t *events =
+        keypad_allocate_common((keypad_scanner_obj_t *)self, interval, max_events, debounce_threshold, true);
+
+    common_hal_digitalio_digitalinout_construct(clock, clock_pin);
+    common_hal_digitalio_digitalinout_switch_to_output(clock, false, DRIVE_MODE_PUSH_PULL);
+
+    common_hal_digitalio_digitalinout_construct(latch, latch_pin);
+    common_hal_digitalio_digitalinout_switch_to_output(latch, true, DRIVE_MODE_PUSH_PULL);
+
+    for (size_t i = 0; i < num_data_pins; i++) {
+        digitalio_digitalinout_obj_t *dio = dios[i];
+        common_hal_digitalio_digitalinout_construct(dio, data_pins[i]);
+        common_hal_digitalio_digitalinout_switch_to_input(dio, PULL_NONE);
+    }
+
+    keypad_start_common((keypad_scanner_obj_t *)self, events);
 }
 
 void common_hal_keypad_shiftregisterkeys_deinit(keypad_shiftregisterkeys_obj_t *self) {

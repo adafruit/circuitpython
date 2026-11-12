@@ -622,6 +622,14 @@ void background_callback_run_all(void);
 #define CIRCUITPY_USB_HOST_HIGH_SPEED 0
 #endif
 
+// The host controller keeps receiving isochronous IN packets between
+// transfers, in a buffer from common_hal_usb_host_port_claim_iso_buffer(), and
+// hands them over as records: a little endian uint16_t length, then the
+// packet.
+#ifndef CIRCUITPY_USB_HOST_ISO_RECORDS
+#define CIRCUITPY_USB_HOST_ISO_RECORDS (0)
+#endif
+
 // usb_host_bulk takes a usb.core.Device and uses TinyUSB host calls.
 #if CIRCUITPY_USB_HOST_BULK && !(CIRCUITPY_USB_HOST && CIRCUITPY_PYUSB)
 #error CIRCUITPY_USB_HOST_BULK requires CIRCUITPY_USB_HOST and CIRCUITPY_PYUSB

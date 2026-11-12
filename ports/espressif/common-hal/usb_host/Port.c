@@ -64,8 +64,7 @@ usb_host_port_obj_t *common_hal_usb_host_port_construct(const mcu_pin_obj_t *dp,
 // TinyUSB installs the controller IRQ. Process its events on the VM task,
 // where the Python USB device and keyboard callbacks are safe to run.
 void tuh_event_hook_cb(uint8_t rhport, uint32_t eventid, bool in_isr) {
-    // The background tick polls IRQ events; scheduling here wakes a FreeRTOS task.
-    if (!in_isr) {
-        usb_background_schedule();
-    }
+    // Don't wait for the background tick: an isochronous stream must queue its
+    // next transfer within the frame.
+    usb_background_schedule();
 }

@@ -49,6 +49,8 @@
 
 #if CIRCUITPY_USB_HOST
 #define CIRCUITPY_USB_HOST_INSTANCE 1
+// Pico-PIO-USB
+#define CIRCUITPY_USB_HOST_ISO_RECORDS (1)
 #endif
 
 // This also includes mpconfigboard.h.

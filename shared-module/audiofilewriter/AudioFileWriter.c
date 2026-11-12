@@ -78,6 +78,13 @@ static void audiofilewriter_unregister(audiofilewriter_audiofilewriter_obj_t *se
     }
 }
 
+// Without a file the writer still fetches the next buffer from the source at
+// the source's real-time rate, but drops the audio: nothing is buffered,
+// written or patched.
+static bool audiofilewriter_has_file(audiofilewriter_audiofilewriter_obj_t *self) {
+    return self->file != mp_const_none;
+}
+
 // ---------------------------------------------------------------------------
 // RAM ring
 // ---------------------------------------------------------------------------
@@ -111,6 +118,9 @@ static void audiofilewriter_ring_write(audiofilewriter_audiofilewriter_obj_t *se
 // Drain the ring to the file. Returns false on a write error. Non-raising:
 // safe to call from background-task context.
 static bool audiofilewriter_flush(audiofilewriter_audiofilewriter_obj_t *self) {
+    if (!audiofilewriter_has_file(self)) {
+        return true;
+    }
     while (self->ring_count > 0) {
         uint32_t span = self->ring_size - self->ring_tail;
         if (span > self->ring_count) {
@@ -136,6 +146,9 @@ static bool audiofilewriter_flush(audiofilewriter_audiofilewriter_obj_t *self) {
 // ---------------------------------------------------------------------------
 
 static void audiofilewriter_patch_header(audiofilewriter_audiofilewriter_obj_t *self) {
+    if (!audiofilewriter_has_file(self)) {
+        return;
+    }
     uint8_t sz[4];
     int err = 0;
 
@@ -184,14 +197,15 @@ static void audiofilewriter_pump(audiofilewriter_audiofilewriter_obj_t *self) {
         return;
     }
 
-    // The pull granularity through the chain is one source buffer, so we pace
-    // in whole-buffer units.
-    int64_t frames_per_pull = (int64_t)(self->source_max_buffer / self->bytes_per_frame);
-    if (frames_per_pull < 1) {
-        frames_per_pull = 1;
+    // Each fetch of the next buffer from the source returns at most one
+    // source buffer, so pacing works in whole-buffer units.
+    int64_t frames_per_fetch = (int64_t)(self->source_max_buffer / self->bytes_per_frame);
+    if (frames_per_fetch < 1) {
+        frames_per_fetch = 1;
     }
 
-    // Accrue a real-time sample budget from elapsed ticks.
+    // budget_frames counts how many frames are due from the source. Add the
+    // frames that real time says have played since the last tick.
     uint64_t now = supervisor_ticks_ms64();
     uint64_t elapsed = now - self->last_tick_ms;
     self->last_tick_ms = now;
@@ -200,40 +214,56 @@ static void audiofilewriter_pump(audiofilewriter_audiofilewriter_obj_t *self) {
     if (elapsed > 100) {
         elapsed = 100;
     }
-    self->budget_frames += (int64_t)((elapsed * self->sample_rate) / 1000);
-    // Never bank more than a single buffer of catch-up. For a LIVE source the
-    // captured audio sits in the source's own bounded ring; once we fall more
-    // than that behind, the surplus is already gone, so a large banked budget
-    // cannot recover it -- it would only burst-drain the source on consecutive
-    // ticks and then silence-pad, stretching one stall into a long glitch.
-    // Capping at one buffer yields at most one brief discontinuity per stall.
-    if (self->budget_frames > frames_per_pull) {
-        self->budget_frames = frames_per_pull;
+    // Keep the fraction of a frame, which is most of the rounding error at
+    // 44.1 kHz and 22.05 kHz.
+    uint64_t scaled = elapsed * self->sample_rate + self->budget_remainder;
+    self->budget_frames += (int64_t)(scaled / 1000);
+    self->budget_remainder = (uint32_t)(scaled % 1000);
+    // Let no more than one source buffer of frames be due at once. A live
+    // source keeps its captured audio in its own fixed-size buffer; if we fall
+    // further behind than that, the extra audio has already been lost, so
+    // catching up can't recover it. It would only fetch the source's buffers
+    // back to back until it runs out and returns silence, turning one stall
+    // into a long glitch. With this limit a stall causes at most one short gap.
+    if (self->budget_frames > frames_per_fetch) {
+        self->budget_frames = frames_per_fetch;
     }
 
-    // Pull one buffer only once a full buffer of real time has elapsed: strict
-    // real-time pacing so we never pull ahead of a live source (which would
-    // only hand back silence). Also require room for a full source buffer.
-    if (!self->source_done && self->budget_frames >= frames_per_pull &&
-        (self->ring_size - self->ring_count) >= self->source_max_buffer) {
+    // Fetch the next buffer from the source whenever any audio is due, the way
+    // an audio output asks for its next buffer while the current one plays.
+    // Don't wait until a whole maximum-size buffer is due: a source can return
+    // less than its maximum (USBIn returns half). Fetching up to 4 buffers per
+    // tick catches up after a stall. Stop when the ring has no room for a full
+    // source buffer.
+    for (int fetches = 0; fetches < 4; fetches++) {
+        if (self->source_done || self->budget_frames <= 0 ||
+            (audiofilewriter_has_file(self) &&
+             (self->ring_size - self->ring_count) < self->source_max_buffer)) {
+            break;
+        }
         uint8_t *buf = NULL;
         uint32_t len = 0;
         audioio_get_buffer_result_t res =
             audiosample_get_buffer(self->sample, false, 0, &buf, &len);
         if (res == GET_BUFFER_ERROR) {
             self->source_done = true;
-        } else {
-            if (len > 0 && buf != NULL) {
-                // Defend against a source that hands back more than it advertised.
-                if (len > self->source_max_buffer) {
-                    len = self->source_max_buffer;
-                }
+            break;
+        }
+        if (len > 0 && buf != NULL) {
+            // Defend against a source that hands back more than it advertised.
+            if (len > self->source_max_buffer) {
+                len = self->source_max_buffer;
+            }
+            if (audiofilewriter_has_file(self)) {
                 audiofilewriter_ring_write(self, buf, len);
-                self->budget_frames -= (int64_t)(len / self->bytes_per_frame);
             }
-            if (res == GET_BUFFER_DONE) {
-                self->source_done = true;
-            }
+            self->budget_frames -= (int64_t)(len / self->bytes_per_frame);
+        }
+        if (res == GET_BUFFER_DONE) {
+            self->source_done = true;
+        }
+        if (len == 0) {
+            break;
         }
     }
 
@@ -281,13 +311,17 @@ void audiofilewriter_reset(void) {
 
 void common_hal_audiofilewriter_audiofilewriter_construct(audiofilewriter_audiofilewriter_obj_t *self,
     mp_obj_t file, uint32_t buffer_size) {
-    // The file must be a writable, seekable binary stream (a file or BytesIO).
-    mp_get_stream_raise(file, MP_STREAM_OP_WRITE | MP_STREAM_OP_IOCTL);
+    self->ring = NULL;
+    self->ring_size = 0;
+    if (file != mp_const_none) {
+        // The file must be a writable, seekable binary stream (a file or BytesIO).
+        mp_get_stream_raise(file, MP_STREAM_OP_WRITE | MP_STREAM_OP_IOCTL);
+        self->ring_size = buffer_size;
+        self->ring = m_malloc_without_collect(buffer_size);
+    }
 
     self->file = file;
     self->sample = MP_OBJ_NULL;
-    self->ring_size = buffer_size;
-    self->ring = m_malloc_without_collect(buffer_size);
     self->ring_head = 0;
     self->ring_tail = 0;
     self->ring_count = 0;
@@ -297,7 +331,7 @@ void common_hal_audiofilewriter_audiofilewriter_construct(audiofilewriter_audiof
 }
 
 bool common_hal_audiofilewriter_audiofilewriter_deinited(audiofilewriter_audiofilewriter_obj_t *self) {
-    return self->ring == NULL;
+    return self->file == MP_OBJ_NULL;
 }
 
 void common_hal_audiofilewriter_audiofilewriter_deinit(audiofilewriter_audiofilewriter_obj_t *self) {
@@ -327,7 +361,8 @@ void common_hal_audiofilewriter_audiofilewriter_play(audiofilewriter_audiofilewr
     if ((bits != 8 && bits != 16) || channels < 1 || channels > 2) {
         mp_raise_ValueError(MP_ERROR_TEXT("Only 8/16-bit mono/stereo is supported"));
     }
-    if (max_buffer_length == 0 || self->ring_size < max_buffer_length) {
+    if (max_buffer_length == 0 ||
+        (audiofilewriter_has_file(self) && self->ring_size < max_buffer_length)) {
         mp_raise_ValueError(MP_ERROR_TEXT("buffer_size too small for source"));
     }
 
@@ -338,36 +373,38 @@ void common_hal_audiofilewriter_audiofilewriter_play(audiofilewriter_audiofilewr
     self->bytes_per_frame = (uint8_t)(channels * (bits / 8));
     self->source_max_buffer = max_buffer_length;
 
-    // Remember where the header starts so stop() can patch its size fields,
-    // then write a placeholder header with zeroed sizes.
-    int err = 0;
-    mp_off_t off = mp_stream_seek(self->file, 0, MP_SEEK_CUR, &err);
-    if (off == (mp_off_t)-1) {
-        mp_raise_OSError(err ? err : MP_EIO);
-    }
-    self->header_offset = (uint32_t)off;
+    if (audiofilewriter_has_file(self)) {
+        // Remember where the header starts so stop() can patch its size fields,
+        // then write a placeholder header with zeroed sizes.
+        int err = 0;
+        mp_off_t off = mp_stream_seek(self->file, 0, MP_SEEK_CUR, &err);
+        if (off == (mp_off_t)-1) {
+            mp_raise_OSError(err ? err : MP_EIO);
+        }
+        self->header_offset = (uint32_t)off;
 
-    uint32_t block_align = self->bytes_per_frame;
-    uint32_t byte_rate = rate * block_align;
-    uint8_t hdr[44];
-    memcpy(hdr + 0, "RIFF", 4);
-    put_u32le(hdr + 4, 36);              // RIFF size (patched at stop)
-    memcpy(hdr + 8, "WAVE", 4);
-    memcpy(hdr + 12, "fmt ", 4);
-    put_u32le(hdr + 16, 16);             // fmt chunk size
-    put_u16le(hdr + 20, 1);              // PCM
-    put_u16le(hdr + 22, channels);
-    put_u32le(hdr + 24, rate);
-    put_u32le(hdr + 28, byte_rate);
-    put_u16le(hdr + 32, (uint16_t)block_align);
-    put_u16le(hdr + 34, bits);
-    memcpy(hdr + 36, "data", 4);
-    put_u32le(hdr + 40, 0);              // data size (patched at stop)
+        uint32_t block_align = self->bytes_per_frame;
+        uint32_t byte_rate = rate * block_align;
+        uint8_t hdr[44];
+        memcpy(hdr + 0, "RIFF", 4);
+        put_u32le(hdr + 4, 36);              // RIFF size (patched at stop)
+        memcpy(hdr + 8, "WAVE", 4);
+        memcpy(hdr + 12, "fmt ", 4);
+        put_u32le(hdr + 16, 16);             // fmt chunk size
+        put_u16le(hdr + 20, 1);              // PCM
+        put_u16le(hdr + 22, channels);
+        put_u32le(hdr + 24, rate);
+        put_u32le(hdr + 28, byte_rate);
+        put_u16le(hdr + 32, (uint16_t)block_align);
+        put_u16le(hdr + 34, bits);
+        memcpy(hdr + 36, "data", 4);
+        put_u32le(hdr + 40, 0);              // data size (patched at stop)
 
-    err = 0;
-    mp_uint_t wrote = mp_stream_write_exactly(self->file, hdr, sizeof(hdr), &err);
-    if (err != 0 || wrote != sizeof(hdr)) {
-        mp_raise_OSError(err ? err : MP_EIO);
+        err = 0;
+        mp_uint_t wrote = mp_stream_write_exactly(self->file, hdr, sizeof(hdr), &err);
+        if (err != 0 || wrote != sizeof(hdr)) {
+            mp_raise_OSError(err ? err : MP_EIO);
+        }
     }
 
     audiosample_reset_buffer(sample_obj, false, 0);
@@ -377,6 +414,7 @@ void common_hal_audiofilewriter_audiofilewriter_play(audiofilewriter_audiofilewr
     self->ring_tail = 0;
     self->ring_count = 0;
     self->budget_frames = 0;
+    self->budget_remainder = 0;
     self->data_bytes = 0;
     self->source_done = false;
     self->last_tick_ms = supervisor_ticks_ms64();

@@ -59,6 +59,19 @@ typedef struct {
     uint8_t *output_buffer;
     uint32_t output_half_bytes;
     uint8_t output_index;
+    #if !CIRCUITPY_USB_HOST_ISO_RECORDS
+    // The host controller frame number when the last transfer was queued.
+    uint16_t queued_frame;
+    // Frames (microframes at high speed) between the endpoint's packets.
+    uint16_t frame_interval;
+    // queued_frame is set.
+    bool frame_known;
+    // A transfer was aborted. The host controller may write the transfer
+    // buffer until the end of the frame.
+    bool aborted;
+    // Transfers in a row that failed.
+    uint8_t failures;
+    #endif
 } usb_host_audio_usbin_obj_t;
 
 // Stops a stream left running by the VM that just finished.

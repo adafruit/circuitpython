@@ -155,11 +155,20 @@ static bool read_byte(bitbangio_i2c_obj_t *self, uint8_t *val, bool ack) {
     return true;
 }
 
+static void mark_deinit(bitbangio_i2c_obj_t *self) {
+    self->scl = MP_OBJ_NULL;
+    self->sda = MP_OBJ_NULL;
+    self->own_scl = false;
+    self->own_sda = false;
+}
+
 void shared_module_bitbangio_i2c_construct(bitbangio_i2c_obj_t *self,
     mp_obj_t scl,
     mp_obj_t sda,
     uint32_t frequency,
     uint32_t us_timeout) {
+
+    mark_deinit(self);
 
     self->us_timeout = us_timeout;
     self->us_delay = 500000 / frequency;
@@ -173,14 +182,23 @@ void shared_module_bitbangio_i2c_construct(bitbangio_i2c_obj_t *self,
     // Convert scl from Pin to DigitalInOutProtocol
     self->scl = digitalinout_protocol_from_pin(scl, MP_QSTR_scl, false, use_port_allocation, &self->own_scl);
 
-    // Convert sda from Pin to DigitalInOutProtocol
-    self->sda = digitalinout_protocol_from_pin(sda, MP_QSTR_sda, false, use_port_allocation, &self->own_sda);
+    nlr_buf_t nlr;
+    if (nlr_push(&nlr) == 0) {
+        // Convert sda from Pin to DigitalInOutProtocol
+        bool own_sda;
+        self->sda = digitalinout_protocol_from_pin(sda, MP_QSTR_sda, false, use_port_allocation, &own_sda);
+        self->own_sda = own_sda;
 
-    digitalinout_protocol_switch_to_output(self->scl, true, DRIVE_MODE_OPEN_DRAIN);
-    digitalinout_protocol_switch_to_output(self->sda, true, DRIVE_MODE_OPEN_DRAIN);
+        digitalinout_protocol_switch_to_output(self->scl, true, DRIVE_MODE_OPEN_DRAIN);
+        digitalinout_protocol_switch_to_output(self->sda, true, DRIVE_MODE_OPEN_DRAIN);
 
-    if (!stop(self)) {
-        mp_raise_OSError(MP_EIO);
+        if (!stop(self)) {
+            mp_raise_OSError(MP_EIO);
+        }
+        nlr_pop();
+    } else {
+        shared_module_bitbangio_i2c_deinit(self);
+        nlr_jump(nlr.ret_val);
     }
 }
 
@@ -203,7 +221,7 @@ void shared_module_bitbangio_i2c_deinit(bitbangio_i2c_obj_t *self) {
         circuitpy_free_obj(self->sda);
     }
     // Mark deinited; the pin objects may have been freed above.
-    self->scl = MP_OBJ_NULL;
+    mark_deinit(self);
 }
 
 bool shared_module_bitbangio_i2c_try_lock(bitbangio_i2c_obj_t *self) {
