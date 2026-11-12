@@ -501,9 +501,13 @@ bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, boo
             if (disk_ioctl(current_mount, CTRL_SYNC, NULL) != RES_OK) {
                 return false;
             } else {
-                blockdev_unlock((supervisor_vfs_t *)current_mount);
+                // Release the lock only if USB MSC holds it. Locks held by others
+                // (Python, workflows) are not touched.
+                if (locked[lun]) {
+                    blockdev_unlock((supervisor_vfs_t *)current_mount);
+                    locked[lun] = false;
+                }
                 ejected[lun] = true;
-                locked[lun] = false;
             }
         } else {
             // We can only load if it hasn't been ejected.
