@@ -56,9 +56,6 @@ static unsigned long timeout = 5000;
 
 static volatile bool confirm;
 
-static uint16_t long_write_handle = BLE_GATT_HANDLE_INVALID;
-static uint8_t *long_write_value = NULL;
-static uint16_t long_write_value_length = 0;
 
 // When we send a request, fill this struct with info about the expected response.
 // We check this against the actual received response.
@@ -192,9 +189,6 @@ static void check_and_save_expected_rsp(uint16_t conn_handle, uint8_t opcode, ui
 void bleio_att_reset(void) {
     max_mtu = BT_ATT_DEFAULT_LE_MTU;
     timeout = 5000;
-    long_write_handle = BLE_GATT_HANDLE_INVALID;
-    long_write_value = NULL;
-    long_write_value_length = 0;
 
     for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
         bleio_connections[i].conn_handle = BLE_CONN_HANDLE_INVALID;
@@ -569,9 +563,6 @@ void att_remove_connection(uint16_t conn_handle, uint8_t reason) {
                 }
             }
         }
-
-        long_write_handle = BLE_GATT_HANDLE_INVALID;
-        long_write_value_length = 0;
     }
 
     bleio_connections[peer_index].conn_handle = 0xffff;
@@ -1367,107 +1358,6 @@ static void process_write_rsp(uint16_t conn_handle, uint8_t dlen, uint8_t data[]
     check_and_save_expected_rsp(conn_handle, BT_ATT_OP_WRITE_RSP, dlen, data);
 }
 
-static void process_prepare_write_req(uint16_t conn_handle, uint16_t mtu, uint8_t dlen, uint8_t data[]) {
-    struct bt_att_prepare_write_req *req = (struct bt_att_prepare_write_req *)data;
-
-    if (dlen < sizeof(struct bt_att_prepare_write_req)) {
-        send_error(conn_handle, BT_ATT_OP_PREPARE_WRITE_REQ, BLE_GATT_HANDLE_INVALID, BT_ATT_ERR_INVALID_PDU);
-        return;
-    }
-
-    uint16_t handle = req->handle;
-    uint16_t offset = req->offset;
-    (void)offset;
-
-    if (handle > bleio_adapter_max_attribute_handle(&common_hal_bleio_adapter_obj)) {
-        send_error(conn_handle, BT_ATT_OP_PREPARE_WRITE_REQ, handle, BT_ATT_ERR_ATTRIBUTE_NOT_FOUND);
-        return;
-    }
-
-    mp_obj_t *attribute = bleio_adapter_get_attribute(&common_hal_bleio_adapter_obj, handle);
-
-    if (!mp_obj_is_type(attribute, &bleio_characteristic_type)) {
-        send_error(conn_handle, BT_ATT_OP_PREPARE_WRITE_REQ, handle, BT_ATT_ERR_ATTRIBUTE_NOT_LONG);
-        return;
-    }
-
-    bleio_characteristic_obj_t *characteristic = MP_OBJ_TO_PTR(attribute);
-
-    if (handle != characteristic->handle) {
-        send_error(conn_handle, BT_ATT_OP_PREPARE_WRITE_REQ, handle, BT_ATT_ERR_ATTRIBUTE_NOT_LONG);
-        return;
-    }
-
-    if ((characteristic->props & CHAR_PROP_WRITE) == 0) {
-        send_error(conn_handle, BT_ATT_OP_PREPARE_WRITE_REQ, handle, BT_ATT_ERR_WRITE_NOT_PERMITTED);
-        return;
-    }
-
-    // FIX if (long_write_handle == BLE_GATT_HANDLE_INVALID)
-    //     int valueSize = characteristic->valueSize();
-
-    //     long_write_value = (uint8_t*)realloc(long_write_value, valueSize);
-    //     long_write_value_length = 0;
-    //     long_write_handle = handle;
-
-    //     memset(long_write_value, 0x00, valueSize);
-    // } else if (long_write_handle != handle) {
-    //     send_error(conn_handle, BT_ATT_OP_PREPARE_WRITE_REQ, handle, BT_ATT_ERR_UNLIKELY);
-    //     return;
-    // }
-
-    // uint8_t value_length = dlen - sizeof(struct bt_att_prepare_write_req);
-    // uint8_t* value = &data[sizeof(struct bt_att_prepare_write_req)];
-
-    // if ((offset != long_write_value_length) || ((offset + value_length) > (uint16_t)characteristic->valueSize())) {
-    //     send_error(conn_handle, BT_ATT_OP_PREPARE_WRITE_REQ, handle, BT_ATT_ERR_INVALID_OFFSET);
-    //     return;
-    // }
-
-    // memcpy(long_write_value + offset, value, value_length);
-    // long_write_value_length += value_length;
-
-    // uint8_t response[mtu];
-    // uint16_t response_length;
-
-    // response[0] = BT_ATT_OP_PREP_WRITE_RSP;
-    // memcpy(&response[1], data, dlen);
-    // response_length = dlen + 1;
-
-    // hci_send_acl_pkt(conn_handle, BT_L2CAP_CID_ATT, response_length, response);
-}
-
-static void process_exec_write_req(uint16_t conn_handle, uint16_t mtu, uint8_t dlen, uint8_t data[]) {
-    struct bt_att_exec_write_req *req = (struct bt_att_exec_write_req *)data;
-
-    if (dlen != sizeof(struct bt_att_exec_write_req)) {
-        send_error(conn_handle, BT_ATT_OP_EXEC_WRITE_REQ, BLE_GATT_HANDLE_INVALID, BT_ATT_ERR_INVALID_PDU);
-        return;
-    }
-
-    if (long_write_handle && (req->flags & 0x01)) {
-        // FIX BLELocalCharacteristic* characteristic = (BLELocalCharacteristic*)GATT.attribute(long_write_handle - 1);
-
-        for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
-            if (bleio_connections[i].conn_handle == conn_handle) {
-                // FIX characteristic->writeValue(BLEDevice(bleio_connections[i].address_type, bleio_connections[i].address), long_write_value, long_write_value_length);
-                break;
-            }
-        }
-    }
-
-    long_write_handle = BLE_GATT_HANDLE_INVALID;
-    long_write_value_length = 0;
-
-    uint8_t response[mtu];
-    uint16_t response_length;
-
-    response[0] = BT_ATT_OP_EXEC_WRITE_RSP;
-    response_length = 1;
-
-    hci_send_acl_pkt(conn_handle, BT_L2CAP_CID_ATT, response_length, response);
-}
-
 static void process_notify_or_indicate(uint16_t conn_handle, uint8_t opcode, uint8_t dlen, uint8_t data[]) {
     if (dlen < 2) {
         return; // drop
@@ -1648,14 +1538,6 @@ void att_process_data(uint16_t conn_handle, uint8_t dlen, uint8_t data[]) {
 
         case BT_ATT_OP_WRITE_RSP:
             process_write_rsp(conn_handle, dlen, data);
-            break;
-
-        case BT_ATT_OP_PREPARE_WRITE_REQ:
-            process_prepare_write_req(conn_handle, mtu, dlen, data);
-            break;
-
-        case BT_ATT_OP_EXEC_WRITE_REQ:
-            process_exec_write_req(conn_handle, mtu, dlen, data);
             break;
 
         case BT_ATT_OP_NOTIFY:
