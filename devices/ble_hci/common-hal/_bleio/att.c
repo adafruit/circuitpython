@@ -186,17 +186,28 @@ static void check_and_save_expected_rsp(uint16_t conn_handle, uint8_t opcode, ui
     }
 }
 
+// Frees a slot. The program's Connection is detached, so it doesn't see the next link there.
+static void clear_slot(bleio_connection_internal_t *slot, uint8_t reason) {
+    mp_obj_t connection_obj = slot->connection_obj;
+    if (connection_obj != NULL && connection_obj != mp_const_none) {
+        bleio_connection_obj_t *connection = MP_OBJ_TO_PTR(connection_obj);
+        connection->connection = NULL;
+        connection->disconnect_reason = reason;
+    }
+    slot->connection_obj = mp_const_none;
+    slot->conn_handle = BLE_CONN_HANDLE_INVALID;
+    slot->role = 0x00;
+    memset(&slot->addr, 0x00, sizeof(slot->addr));
+    slot->mtu = BT_ATT_DEFAULT_LE_MTU;
+    slot->remote_service_list = NULL;
+}
+
 void bleio_att_reset(void) {
     max_mtu = BT_ATT_DEFAULT_LE_MTU;
     timeout = 5000;
 
     for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
-        bleio_connections[i].conn_handle = BLE_CONN_HANDLE_INVALID;
-        bleio_connections[i].role = 0x00;
-        bleio_connections[i].addr.type = 0;
-        memset(bleio_connections[i].addr.a.val, 0, sizeof_field(bt_addr_t, val));
-        bleio_connections[i].mtu = BT_ATT_DEFAULT_LE_MTU;
-        bleio_connections[i].remote_service_list = NULL;
+        clear_slot(&bleio_connections[i], BT_HCI_ERR_LOCALHOST_TERM_CONN);
     }
 }
 
@@ -522,7 +533,6 @@ void att_add_connection(uint16_t handle, uint8_t role, bt_addr_le_t *peer_addr, 
 
 
 void att_remove_connection(uint16_t conn_handle, uint8_t reason) {
-    (void)reason;
     // adapter.connections is built again from what is left.
     common_hal_bleio_adapter_obj.connection_objs = NULL;
     int peer_index = -1;
@@ -565,11 +575,7 @@ void att_remove_connection(uint16_t conn_handle, uint8_t reason) {
         }
     }
 
-    bleio_connections[peer_index].conn_handle = 0xffff;
-    bleio_connections[peer_index].role = 0x00;
-    memset(&bleio_connections[peer_index].addr, 0x00, sizeof(bleio_connections[peer_index].addr));
-    bleio_connections[peer_index].mtu = BT_ATT_DEFAULT_LE_MTU;
-    bleio_connections[peer_index].remote_service_list = NULL;
+    clear_slot(&bleio_connections[peer_index], reason);
 }
 
 uint16_t att_conn_handle(bt_addr_le_t *addr) {
