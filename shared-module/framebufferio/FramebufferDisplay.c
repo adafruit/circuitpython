@@ -138,29 +138,34 @@ static bool _refresh_area(framebufferio_framebufferdisplay_obj_t *self, const di
     }
 
     uint16_t rows_per_buffer = displayio_area_height(&clipped);
+    uint16_t cols_per_buffer = displayio_area_width(&clipped);
     uint8_t pixels_per_word = (sizeof(uint32_t) * 8) / self->core.colorspace.depth;
     uint16_t pixels_per_buffer = displayio_area_size(&clipped);
     if (displayio_area_size(&clipped) > buffer_size * pixels_per_word) {
-        rows_per_buffer = buffer_size * pixels_per_word / displayio_area_width(&clipped);
-        if (rows_per_buffer == 0) {
-            rows_per_buffer = 1;
-        }
-        // If pixels are packed by column then ensure rows_per_buffer is on a byte boundary.
-        if (self->core.colorspace.depth < 8 && !self->core.colorspace.pixels_in_byte_share_row) {
-            uint8_t pixels_per_byte = 8 / self->core.colorspace.depth;
-            if (rows_per_buffer % pixels_per_byte != 0) {
-                rows_per_buffer -= rows_per_buffer % pixels_per_byte;
+        uint32_t buffer_pixels = buffer_size * pixels_per_word;
+        if (self->core.transform.transpose_xy && self->core.colorspace.depth >= 8) {
+            // Rotated 90 or 270: a panel column is a source row. Square tiles keep both the
+            // source reads and the framebuffer writes within a few cache lines.
+            uint16_t side = 1 << ((31 - __builtin_clz(buffer_pixels)) / 2);
+            rows_per_buffer = MIN(rows_per_buffer, side);
+            cols_per_buffer = buffer_pixels / rows_per_buffer;
+        } else {
+            rows_per_buffer = buffer_pixels / cols_per_buffer;
+            if (rows_per_buffer == 0) {
+                rows_per_buffer = 1;
+            }
+            // If pixels are packed by column then ensure rows_per_buffer is on a byte boundary.
+            if (self->core.colorspace.depth < 8 && !self->core.colorspace.pixels_in_byte_share_row) {
+                uint8_t pixels_per_byte = 8 / self->core.colorspace.depth;
+                if (rows_per_buffer % pixels_per_byte != 0) {
+                    rows_per_buffer -= rows_per_buffer % pixels_per_byte;
+                }
             }
         }
-        subrectangles = displayio_area_height(&clipped) / rows_per_buffer;
-        if (displayio_area_height(&clipped) % rows_per_buffer != 0) {
-            subrectangles++;
-        }
-        pixels_per_buffer = rows_per_buffer * displayio_area_width(&clipped);
-        buffer_size = pixels_per_buffer / pixels_per_word;
-        if (pixels_per_buffer % pixels_per_word) {
-            buffer_size += 1;
-        }
+        subrectangles = ((displayio_area_height(&clipped) + rows_per_buffer - 1) / rows_per_buffer) *
+            ((displayio_area_width(&clipped) + cols_per_buffer - 1) / cols_per_buffer);
+        pixels_per_buffer = rows_per_buffer * cols_per_buffer;
+        buffer_size = (pixels_per_buffer + pixels_per_word - 1) / pixels_per_word;
     }
 
     // Allocated and shared as a uint32_t array so the compiler knows the
@@ -168,20 +173,18 @@ static bool _refresh_area(framebufferio_framebufferdisplay_obj_t *self, const di
     uint32_t buffer[buffer_size];
     uint32_t mask_length = (pixels_per_buffer / 32) + 1;
     uint32_t mask[mask_length];
-    uint16_t remaining_rows = displayio_area_height(&clipped);
+
+    displayio_area_t subrectangle = clipped;
+    subrectangle.next = NULL;
 
     for (uint16_t j = 0; j < subrectangles; j++) {
-        displayio_area_t subrectangle = {
-            .x1 = clipped.x1,
-            .y1 = clipped.y1 + rows_per_buffer * j,
-            .x2 = clipped.x2,
-            .y2 = clipped.y1 + rows_per_buffer * (j + 1)
-        };
-
-        if (remaining_rows < rows_per_buffer) {
-            subrectangle.y2 = subrectangle.y1 + remaining_rows;
+        // Down the rows of a band first, then to the next band of columns.
+        if (subrectangle.y1 >= clipped.y2) {
+            subrectangle.y1 = clipped.y1;
+            subrectangle.x1 += cols_per_buffer;
         }
-        remaining_rows -= rows_per_buffer;
+        subrectangle.x2 = MIN(subrectangle.x1 + cols_per_buffer, clipped.x2);
+        subrectangle.y2 = MIN(subrectangle.y1 + rows_per_buffer, clipped.y2);
 
         memset(mask, 0, mask_length * sizeof(mask[0]));
         memset(buffer, 0, buffer_size * sizeof(buffer[0]));
@@ -231,6 +234,7 @@ static bool _refresh_area(framebufferio_framebufferdisplay_obj_t *self, const di
         #if CIRCUITPY_TINYUSB
         usb_background();
         #endif
+        subrectangle.y1 = subrectangle.y2;
     }
     return true;
 }

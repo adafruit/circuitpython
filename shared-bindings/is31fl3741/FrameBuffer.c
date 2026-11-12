@@ -68,7 +68,10 @@ static mp_obj_t is31fl3741_framebuffer_make_new(const mp_obj_type_t *type, size_
 
     // Validate everything before taking a display bus slot. Once the slot has a type,
     // release_displays() deinits it, even if construct never ran.
-    mp_arg_validate_type(args[ARG_is31].u_obj, &is31fl3741_IS31FL3741_type, MP_QSTR_is31);
+    is31fl3741_IS31FL3741_obj_t *is31 = MP_OBJ_TO_PTR(mp_arg_validate_type(args[ARG_is31].u_obj, &is31fl3741_IS31FL3741_type, MP_QSTR_is31));
+    if (common_hal_is31fl3741_IS31FL3741_deinited(is31)) {
+        raise_deinited_error();
+    }
 
     if (args[ARG_width].u_int <= 0) {
         mp_raise_ValueError(MP_ERROR_TEXT("width must be greater than zero"));
@@ -135,7 +138,7 @@ static mp_obj_t is31fl3741_framebuffer_deinit(mp_obj_t self_in) {
 static MP_DEFINE_CONST_FUN_OBJ_1(is31fl3741_framebuffer_deinit_obj, is31fl3741_framebuffer_deinit);
 
 static void check_for_deinit(is31fl3741_framebuffer_obj_t *self) {
-    if (self->framebuffer == NULL) {
+    if (self->framebuffer == NULL || common_hal_is31fl3741_IS31FL3741_deinited(self->is31fl3741)) {
         raise_deinited_error();
     }
 }

@@ -37,7 +37,12 @@ void keypad_tick(void);
 
 void keypad_register_scanner(keypad_scanner_obj_t *scanner);
 void keypad_deregister_scanner(keypad_scanner_obj_t *scanner);
-void keypad_construct_common(keypad_scanner_obj_t *scanner, mp_float_t interval, size_t max_events, uint8_t debounce_cycles, bool use_gc_allocator);
+// Allocate a scanner's debounce counters and event queue. Call before
+// claiming any pins. The scanner's funcs and key count must already be set.
+struct _keypad_eventqueue_obj_t *keypad_allocate_common(keypad_scanner_obj_t *scanner, mp_float_t interval, size_t max_events, uint8_t debounce_cycles, bool use_gc_allocator);
+// Make the scanner live with the event queue from keypad_allocate_common(),
+// and start scanning. Call after the pins are set up.
+void keypad_start_common(keypad_scanner_obj_t *scanner, struct _keypad_eventqueue_obj_t *events);
 bool keypad_debounce(keypad_scanner_obj_t *self, mp_uint_t key_number, bool current);
 
 size_t common_hal_keypad_generic_get_key_count(void *scanner);

@@ -13,5 +13,8 @@ CIRCUITPY_ESP_PSRAM_SIZE = 8MB
 CIRCUITPY_ESP_PSRAM_MODE = qio
 CIRCUITPY_ESP_PSRAM_FREQ = 80m
 
+# Out of internal RAM with audiopwmio
+CIRCUITPY_AUDIOPWMIO = 0
+
 # Fast e-paper doesn't fit in internal RAM.
 CIRCUITPY_EPAPERDISPLAY_FAST = 0

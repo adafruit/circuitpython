@@ -96,6 +96,7 @@ ifeq ($(INTERNAL_FLASH_FILESYSTEM),1)
   OPTIMIZATION_FLAGS ?= -Os
   CIRCUITPY_LTO = 1
   CIRCUITPY_LTO_PARTITION = balanced
+  CIRCUITPY_MSGPACK ?= 0
   CIRCUITPY_ULAB_OPTIMIZE_SIZE ?= 1
   # Fast e-paper doesn't fit in what internal flash has left.
   CIRCUITPY_EPAPERDISPLAY_FAST ?= 0

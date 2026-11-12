@@ -60,6 +60,12 @@ static mp_obj_t is31fl3741_IS31FL3741_deinit(mp_obj_t self_in) {
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(is31fl3741_IS31FL3741_deinit_obj, is31fl3741_IS31FL3741_deinit);
 
+static void check_for_deinit(is31fl3741_IS31FL3741_obj_t *self) {
+    if (common_hal_is31fl3741_IS31FL3741_deinited(self)) {
+        raise_deinited_error();
+    }
+}
+
 //| def reset(self) -> None:
 //|     """Resets the IS31FL3741 chip."""
 //|     ...
@@ -67,6 +73,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(is31fl3741_IS31FL3741_deinit_obj, is31fl3741_IS
 //|
 static mp_obj_t is31fl3741_IS31FL3741_reset(mp_obj_t self_in) {
     is31fl3741_IS31FL3741_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    check_for_deinit(self);
     common_hal_is31fl3741_send_reset(self);
     return mp_const_none;
 }
@@ -79,6 +86,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(is31fl3741_IS31FL3741_reset_obj, is31fl3741_IS31FL3741
 //|
 static mp_obj_t is31fl3741_IS31FL3741_enable(mp_obj_t self_in) {
     is31fl3741_IS31FL3741_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    check_for_deinit(self);
     common_hal_is31fl3741_send_enable(self);
     return mp_const_none;
 }
@@ -93,6 +101,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(is31fl3741_IS31FL3741_enable_obj, is31fl3741_IS31FL374
 //|
 static mp_obj_t is31fl3741_IS31FL3741_set_global_current(mp_obj_t self_in, mp_obj_t value) {
     is31fl3741_IS31FL3741_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    check_for_deinit(self);
     mp_int_t current = mp_obj_get_int(value);
     common_hal_is31fl3741_set_current(self, current);
     return mp_const_none;
@@ -112,6 +121,7 @@ MP_DEFINE_CONST_FUN_OBJ_2(is31fl3741_IS31FL3741_set_global_current_obj, is31fl37
 //|
 static mp_obj_t is31fl3741_IS31FL3741_set_led(size_t n_args, const mp_obj_t *args) {
     is31fl3741_IS31FL3741_obj_t *self = MP_OBJ_TO_PTR(args[0]);
+    check_for_deinit(self);
     mp_int_t led = mp_obj_get_int(args[1]);
     mp_int_t value = mp_obj_get_int(args[2]);
     mp_int_t page = mp_obj_get_int(args[3]);
@@ -131,6 +141,7 @@ MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(is31fl3741_IS31FL3741_set_led_obj, 4, 4, is3
 //|
 static mp_obj_t is31fl3741_IS31FL3741_write(mp_obj_t self_in, mp_obj_t mapping, mp_obj_t buffer) {
     is31fl3741_IS31FL3741_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    check_for_deinit(self);
     if (!mp_obj_is_tuple_compatible(mapping)) {
         mp_raise_ValueError(MP_ERROR_TEXT("Mapping must be a tuple"));
     }

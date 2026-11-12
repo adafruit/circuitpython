@@ -81,9 +81,11 @@ void common_hal_audiopwmio_pwmaudioout_construct(audiopwmio_pwmaudioout_obj_t *s
     self->left_channel = left_channel;
     self->right_channel = right_channel;
     claim_pin(left_channel);
-    claim_pin(right_channel);
     config_periph_pin(left_periph);
-    config_periph_pin(right_periph);
+    if (right_channel != NULL) {
+        claim_pin(right_channel);
+        config_periph_pin(right_periph);
+    }
     config_mqs();
 }
 

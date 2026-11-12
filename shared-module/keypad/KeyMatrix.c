@@ -32,31 +32,39 @@ static mp_uint_t row_column_to_key_number(keypad_keymatrix_obj_t *self, mp_uint_
 
 void common_hal_keypad_keymatrix_construct(keypad_keymatrix_obj_t *self, mp_uint_t num_row_pins, const mcu_pin_obj_t *row_pins[], mp_uint_t num_column_pins, const mcu_pin_obj_t *column_pins[], bool columns_to_anodes, mp_float_t interval, size_t max_events, uint8_t debounce_threshold) {
 
+    common_hal_keypad_deinit_core(self);
+
     mp_obj_t row_dios[num_row_pins];
     for (size_t row = 0; row < num_row_pins; row++) {
-        digitalio_digitalinout_obj_t *dio =
-            mp_obj_malloc(digitalio_digitalinout_obj_t, &digitalio_digitalinout_type);
-        common_hal_digitalio_digitalinout_construct(dio, row_pins[row]);
-        common_hal_digitalio_digitalinout_switch_to_input(dio, columns_to_anodes ? PULL_UP : PULL_DOWN);
-        row_dios[row] = dio;
+        row_dios[row] = mp_obj_malloc(digitalio_digitalinout_obj_t, &digitalio_digitalinout_type);
     }
     self->row_digitalinouts = mp_obj_new_tuple(num_row_pins, row_dios);
 
     mp_obj_t column_dios[num_column_pins];
     for (size_t column = 0; column < num_column_pins; column++) {
-        digitalio_digitalinout_obj_t *dio =
-            mp_obj_malloc(digitalio_digitalinout_obj_t, &digitalio_digitalinout_type);
-        dio->base.type = &digitalio_digitalinout_type;
-        common_hal_digitalio_digitalinout_construct(dio, column_pins[column]);
-        common_hal_digitalio_digitalinout_switch_to_input(dio, columns_to_anodes ? PULL_UP : PULL_DOWN);
-        column_dios[column] = dio;
+        column_dios[column] = mp_obj_malloc(digitalio_digitalinout_obj_t, &digitalio_digitalinout_type);
     }
     self->column_digitalinouts = mp_obj_new_tuple(num_column_pins, column_dios);
 
     self->columns_to_anodes = columns_to_anodes;
     self->funcs = &keymatrix_funcs;
 
-    keypad_construct_common((keypad_scanner_obj_t *)self, interval, max_events, debounce_threshold, true);
+    keypad_eventqueue_obj_t *events =
+        keypad_allocate_common((keypad_scanner_obj_t *)self, interval, max_events, debounce_threshold, true);
+
+    for (size_t row = 0; row < num_row_pins; row++) {
+        digitalio_digitalinout_obj_t *dio = row_dios[row];
+        common_hal_digitalio_digitalinout_construct(dio, row_pins[row]);
+        common_hal_digitalio_digitalinout_switch_to_input(dio, columns_to_anodes ? PULL_UP : PULL_DOWN);
+    }
+
+    for (size_t column = 0; column < num_column_pins; column++) {
+        digitalio_digitalinout_obj_t *dio = column_dios[column];
+        common_hal_digitalio_digitalinout_construct(dio, column_pins[column]);
+        common_hal_digitalio_digitalinout_switch_to_input(dio, columns_to_anodes ? PULL_UP : PULL_DOWN);
+    }
+
+    keypad_start_common((keypad_scanner_obj_t *)self, events);
 }
 
 void common_hal_keypad_keymatrix_deinit(keypad_keymatrix_obj_t *self) {

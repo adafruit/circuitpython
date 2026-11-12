@@ -15,7 +15,9 @@
 #include "bindings/zephyr_kernel/__init__.h"
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-module/audiocore/__init__.h"
+#include "py/gc.h"
 #include "py/runtime.h"
+#include "supervisor/port.h"
 
 #if CIRCUITPY_AUDIOBUSIO_I2SOUT
 
@@ -149,9 +151,7 @@ static void audio_thread_func(void *self_in, void *unused1, void *unused2) {
 void common_hal_audiobusio_i2sout_play(audiobusio_i2sout_obj_t *self,
     mp_obj_t sample, bool loop) {
     // Stop any existing playback
-    if (self->playing) {
-        common_hal_audiobusio_i2sout_stop(self);
-    }
+    common_hal_audiobusio_i2sout_stop(self);
 
     audiosample_check(sample);
 
@@ -161,7 +161,6 @@ void common_hal_audiobusio_i2sout_play(audiobusio_i2sout_obj_t *self,
     uint8_t channel_count = audiosample_get_channel_count(sample);
 
     // Store sample parameters
-    self->sample = sample;
     self->loop = loop;
     self->bytes_per_sample = bits_per_sample / 8;
     self->channel_count = channel_count;
@@ -183,12 +182,19 @@ void common_hal_audiobusio_i2sout_play(audiobusio_i2sout_obj_t *self,
     size_t block_size = self->block_size;
     uint32_t num_blocks = 4; // Use 4 blocks for buffering
 
-    // Allocate memory slab buffer
-    self->slab_buffer = m_malloc(self->block_size * num_blocks);
+    // Allocate memory slab buffer. Board I2SOut objects are static, so the GC doesn't scan them.
+    self->slab_buffer = port_malloc(self->block_size * num_blocks, true);
+    if (self->slab_buffer == NULL) {
+        m_malloc_fail(self->block_size * num_blocks);
+    }
+    self->sample = sample;
 
     // Initialize memory slab
     int ret = k_mem_slab_init(&self->mem_slab, self->slab_buffer, block_size, num_blocks);
-    CHECK_ZEPHYR_RESULT(ret);
+    if (ret != 0) {
+        common_hal_audiobusio_i2sout_stop(self);
+        raise_zephyr_error(ret);
+    }
 
     // Configure I2S
     struct i2s_config config;
@@ -246,12 +252,13 @@ void common_hal_audiobusio_i2sout_play(audiobusio_i2sout_obj_t *self,
 }
 
 void common_hal_audiobusio_i2sout_stop(audiobusio_i2sout_obj_t *self) {
-    if (!self->playing) {
-        return;
-    }
-
     self->playing = false;
     self->paused = false;
+    // Nothing to stop until play() has allocated the slab. play() also calls this on its error
+    // paths, before it sets playing.
+    if (self->slab_buffer == NULL) {
+        return;
+    }
     self->stopping = true;
 
     // Stop I2S
@@ -271,11 +278,15 @@ void common_hal_audiobusio_i2sout_stop(audiobusio_i2sout_obj_t *self) {
 
     // Free buffers
     if (self->slab_buffer != NULL) {
-        m_free(self->slab_buffer);
+        port_free(self->slab_buffer);
         self->slab_buffer = NULL;
     }
 
     self->sample = NULL;
+}
+
+void audiobusio_i2sout_collect_ptrs(audiobusio_i2sout_obj_t *self) {
+    gc_collect_ptr(self->sample);
 }
 
 bool common_hal_audiobusio_i2sout_get_playing(audiobusio_i2sout_obj_t *self) {

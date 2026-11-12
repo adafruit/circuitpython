@@ -555,6 +555,11 @@ void port_disable_tick(void) {
 }
 
 void port_wake_main_task(void) {
+    // background_callback_add() may be called from an interrupt.
+    if (xPortInIsrContext()) {
+        port_wake_main_task_from_isr();
+        return;
+    }
     xTaskNotifyGive(circuitpython_task);
 }
 
