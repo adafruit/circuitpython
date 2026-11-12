@@ -1487,25 +1487,15 @@ void att_process_data(uint16_t conn_handle, uint8_t dlen, uint8_t data[]) {
 
     uint16_t mtu = att_mtu(conn_handle);
 
+    // Server only: the ATT client is not implemented, so responses and notifications fall to
+    // the default and are dropped. An indication still gets its Confirmation.
     switch (opcode) {
-        case BT_ATT_OP_ERROR_RSP:
-            process_error(conn_handle, dlen, data);
-            break;
-
         case BT_ATT_OP_MTU_REQ:
             process_mtu_req(conn_handle, dlen, data);
             break;
 
-        case BT_ATT_OP_MTU_RSP:
-            process_mtu_rsp(conn_handle, dlen, data);
-            break;
-
         case BT_ATT_OP_FIND_INFO_REQ:
             process_find_info_req(conn_handle, mtu, dlen, data);
-            break;
-
-        case BT_ATT_OP_FIND_INFO_RSP:
-            process_find_info_rsp(conn_handle, dlen, data);
             break;
 
         case BT_ATT_OP_FIND_TYPE_REQ:
@@ -1516,16 +1506,8 @@ void att_process_data(uint16_t conn_handle, uint8_t dlen, uint8_t data[]) {
             process_read_type_req(conn_handle, mtu, dlen, data);
             break;
 
-        case BT_ATT_OP_READ_TYPE_RSP:
-            process_read_type_rsp(conn_handle, dlen, data);
-            break;
-
         case BT_ATT_OP_READ_GROUP_REQ:
             process_read_group_req(conn_handle, mtu, dlen, data);
-            break;
-
-        case BT_ATT_OP_READ_GROUP_RSP:
-            process_read_group_rsp(conn_handle, dlen, data);
             break;
 
         case BT_ATT_OP_READ_REQ:
@@ -1533,20 +1515,11 @@ void att_process_data(uint16_t conn_handle, uint8_t dlen, uint8_t data[]) {
             process_read_or_read_blob_req(conn_handle, mtu, opcode, dlen, data);
             break;
 
-        case BT_ATT_OP_READ_RSP:
-            process_read_rsp(conn_handle, dlen, data);
-            break;
-
         case BT_ATT_OP_WRITE_REQ:
         case BT_ATT_OP_WRITE_CMD:
             process_write_req_or_cmd(conn_handle, mtu, opcode, dlen, data);
             break;
 
-        case BT_ATT_OP_WRITE_RSP:
-            process_write_rsp(conn_handle, dlen, data);
-            break;
-
-        case BT_ATT_OP_NOTIFY:
         case BT_ATT_OP_INDICATE:
             process_notify_or_indicate(conn_handle, opcode, dlen, data);
             break;
