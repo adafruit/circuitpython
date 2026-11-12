@@ -219,6 +219,8 @@ MP_PROPERTY_GETSET(supervisor_runtime_rgb_status_brightness_obj,
 //|     available here until it is released with ``displayio.release_displays()``.
 //|
 //|     The display can be of any supported display type, such as `busdisplay.BusDisplay`.
+//|     A subclass of one, such as a display from a driver library, can also be assigned.
+//|     Reading the property back then returns the underlying built-in display object.
 //|
 //|     If no display is configured, this property is `None`.
 //|
