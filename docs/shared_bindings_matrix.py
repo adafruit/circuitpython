@@ -350,7 +350,8 @@ def support_matrix_by_board(
 
         if use_branded_name or add_branded_name:
             if autogen_board_info:
-                branded_name = autogen_board_info["name"]
+                # Many zephyr-cp boards share a name with a native board, so tell them apart.
+                branded_name = autogen_board_info["name"] + " (Zephyr)"
             else:
                 with open(board_directory / "mpconfigboard.h") as get_name:
                     board_contents = get_name.read()

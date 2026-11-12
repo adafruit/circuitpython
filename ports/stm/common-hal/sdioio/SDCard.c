@@ -100,10 +100,19 @@ static int check_pins(sdioio_sdcard_obj_t *self,
 }
 
 
+static void mark_deinit(sdioio_sdcard_obj_t *self) {
+    self->command = NULL;
+    self->clock = NULL;
+    for (size_t i = 0; i < MP_ARRAY_SIZE(self->data); i++) {
+        self->data[i] = NULL;
+    }
+}
+
 void common_hal_sdioio_sdcard_construct(sdioio_sdcard_obj_t *self,
     const mcu_pin_obj_t *clock, const mcu_pin_obj_t *command,
     uint8_t num_data, const mcu_pin_obj_t **data, uint32_t frequency) {
 
+    mark_deinit(self);
     int periph_index = check_pins(self, clock, command, num_data, data);
     #ifdef STM32H750xx
     SDMMC_TypeDef *SDMMCx = mcu_sdio_banks[periph_index - 1];
@@ -138,6 +147,7 @@ void common_hal_sdioio_sdcard_construct(sdioio_sdcard_obj_t *self,
     PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SDMMC;
     PeriphClkInitStruct.SdmmcClockSelection = RCC_SDMMCCLKSOURCE_PLL;
     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK) {
+        common_hal_sdioio_sdcard_deinit(self);
         mp_raise_ValueError_varg(MP_ERROR_TEXT("MMC/SDIO Clock Error %x"));
     }
     __HAL_RCC_SDMMC1_CLK_ENABLE();
@@ -165,12 +175,14 @@ void common_hal_sdioio_sdcard_construct(sdioio_sdcard_obj_t *self,
 
     HAL_StatusTypeDef r = HAL_SD_Init(&self->handle);
     if (r != HAL_OK) {
+        common_hal_sdioio_sdcard_deinit(self);
         mp_raise_ValueError_varg(MP_ERROR_TEXT("SDIO Init Error 0x%02x"), (unsigned int)r);
     }
 
     HAL_SD_CardInfoTypeDef info;
     r = HAL_SD_GetCardInfo(&self->handle, &info);
     if (r != HAL_OK) {
+        common_hal_sdioio_sdcard_deinit(self);
         mp_raise_ValueError_varg(MP_ERROR_TEXT("SDIO GetCardInfo Error %d"), (int)r);
     }
 
@@ -347,13 +359,9 @@ void common_hal_sdioio_sdcard_deinit(sdioio_sdcard_obj_t *self) {
     reserved_sdio[self->command->periph_index - 1] = false;
 
     reset_mcu_periph(self->command);
-    self->command = NULL;
-
     reset_mcu_periph(self->clock);
-    self->clock = NULL;
-
     for (size_t i = 0; i < MP_ARRAY_SIZE(self->data); i++) {
         reset_mcu_periph(self->data[i]);
-        self->data[i] = NULL;
     }
+    mark_deinit(self);
 }
