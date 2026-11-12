@@ -306,7 +306,6 @@ static void bleio_adapter_hci_init(bleio_adapter_obj_t *self) {
 }
 
 void common_hal_bleio_adapter_construct_hci_uart(bleio_adapter_obj_t *self, busio_uart_obj_t *uart, digitalio_digitalinout_obj_t *rts, digitalio_digitalinout_obj_t *cts) {
-    self->allocated = true;
     self->hci_uart = uart;
     self->rts_digitalinout = rts;
     self->cts_digitalinout = cts;
@@ -315,6 +314,8 @@ void common_hal_bleio_adapter_construct_hci_uart(bleio_adapter_obj_t *self, busi
     self->enabled = false;
 
     common_hal_bleio_adapter_set_enabled(self, true);
+    // Not when enabling failed: the adapter is not kept.
+    self->allocated = true;
 }
 
 void common_hal_bleio_adapter_set_enabled(bleio_adapter_obj_t *self, bool enabled) {
@@ -548,7 +549,6 @@ mp_obj_t common_hal_bleio_adapter_connect(bleio_adapter_obj_t *self, bleio_addre
     // ble_drv_add_event_handler(connect_on_ble_evt, &event_info);
     // event_info.done = false;
 
-    vm_used_ble = true;
     // uint32_t err_code = sd_ble_gap_connect(&addr, &scan_params, &conn_params, BLE_CONN_CFG_TAG_CUSTOM);
 
     // if (err_code != NRF_SUCCESS) {
@@ -762,7 +762,6 @@ uint32_t _common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
         hci_check_error(hci_le_set_advertising_enable(BT_HCI_LE_ADV_ENABLE));
     } // end legacy advertising setup
 
-    vm_used_ble = true;
     self->now_advertising = true;
     return 0;
 }
