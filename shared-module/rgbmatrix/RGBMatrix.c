@@ -111,9 +111,6 @@ static void store_pin_digitalinout(rgbmatrix_rgbmatrix_obj_t *self, const mcu_pi
         m_malloc_fail(sizeof(digitalio_digitalinout_obj_t));
     }
     common_hal_digitalio_digitalinout_construct(digitalinout, pin);
-    #if CIRCUITPY_BULK_RESET
-    common_hal_digitalio_digitalinout_never_reset(digitalinout);
-    #endif
     self->pin_digitalinouts[self->pin_digitalinout_count++] = digitalinout;
 }
 

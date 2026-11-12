@@ -114,22 +114,13 @@ void common_hal_busdisplay_busdisplay_construct(busdisplay_busdisplay_obj_t *sel
         if (result != PWMOUT_OK) {
             self->backlight_inout.base.type = &digitalio_digitalinout_type;
             common_hal_digitalio_digitalinout_construct(&self->backlight_inout, backlight_pin);
-            #if CIRCUITPY_BULK_RESET
-            common_hal_never_reset_pin(backlight_pin);
-            #endif
         } else {
             self->backlight_pwm.base.type = &pwmio_pwmout_type;
-            #if CIRCUITPY_BULK_RESET
-            common_hal_pwmio_pwmout_never_reset(&self->backlight_pwm);
-            #endif
         }
         #else
         // Otherwise default to digital
         self->backlight_inout.base.type = &digitalio_digitalinout_type;
         common_hal_digitalio_digitalinout_construct(&self->backlight_inout, backlight_pin);
-        #if CIRCUITPY_BULK_RESET
-        common_hal_never_reset_pin(backlight_pin);
-        #endif
         #endif
     }
 
