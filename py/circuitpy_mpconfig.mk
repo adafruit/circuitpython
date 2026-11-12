@@ -234,13 +234,6 @@ CFLAGS += -DCIRCUITPY_BUSDEVICE=$(CIRCUITPY_BUSDEVICE)
 CIRCUITPY_BUILTINS_POW3 ?= $(CIRCUITPY_FULL_BUILD)
 CFLAGS += -DCIRCUITPY_BUILTINS_POW3=$(CIRCUITPY_BUILTINS_POW3)
 
-# Bulk reset: when enabled, pins and buses registered with never_reset survive a
-# soft reset (the port resets all remaining pins in bulk). When disabled, ports
-# rely solely on GC finalizers to release hardware, so never_reset is compiled
-# out. Ports that do not perform a bulk pin reset should set this to 0.
-CIRCUITPY_BULK_RESET ?= 1
-CFLAGS += -DCIRCUITPY_BULK_RESET=$(CIRCUITPY_BULK_RESET)
-
 CIRCUITPY_BUSIO ?= 1
 CFLAGS += -DCIRCUITPY_BUSIO=$(CIRCUITPY_BUSIO)
 

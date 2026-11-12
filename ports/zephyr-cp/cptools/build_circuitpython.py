@@ -440,9 +440,6 @@ async def build_circuitpython():  # noqa: C901
     lto = cmake_args.get("LTO", "n") == "y"
     circuitpython_flags.append(f"-DCIRCUITPY_ENABLE_MPY_NATIVE={1 if enable_mpy_native else 0}")
     circuitpython_flags.append(f"-DCIRCUITPY_FULL_BUILD={1 if full_build else 0}")
-    # Zephyr does not reset all pins in bulk on soft reset, so never_reset is
-    # compiled out and hardware is released by GC finalizers instead.
-    circuitpython_flags.append("-DCIRCUITPY_BULK_RESET=0")
     circuitpython_flags.append("-DCIRCUITPY_OPT_LOAD_ATTR_FAST_PATH=1")
     circuitpython_flags.append(f"-DCIRCUITPY_OPT_MAP_LOOKUP_CACHE={1 if full_build else 0}")
     circuitpython_flags.append(f"-DCIRCUITPY_SETTINGS_TOML={1 if full_build else 0}")

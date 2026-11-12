@@ -123,9 +123,6 @@ void common_hal_async_spi_spi_deinit(async_spi_spi_obj_t *self) {
     self->miso = NULL;
 }
 
-void common_hal_async_spi_spi_never_reset(async_spi_spi_obj_t *self) {
-}
-
 void common_hal_async_spi_spi_mark_deinit(async_spi_spi_obj_t *self) {
     if (self->dynamic) {
         self->spi_device = NULL;
