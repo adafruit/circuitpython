@@ -424,3 +424,6 @@
 [submodule "ports/espressif/esp-hosted"]
 	path = ports/espressif/esp-hosted
 	url = https://github.com/espressif/esp-hosted-mcu.git
+[submodule "ports/espressif/esp-adf-libs"]
+	path = ports/espressif/esp-adf-libs
+	url = https://github.com/espressif/esp-adf-libs.git
