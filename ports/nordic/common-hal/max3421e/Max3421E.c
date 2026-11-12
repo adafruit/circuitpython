@@ -35,8 +35,6 @@ void common_hal_max3421e_max3421e_init_irq(max3421e_max3421e_obj_t *self) {
 
 void common_hal_max3421e_max3421e_deinit_irq(max3421e_max3421e_obj_t *self) {
     size_t pin_number = self->irq.pin->number;
-    // Bulk reset may have already reset us but this will raise an assert in
-    // debug mode if so.
     nrfx_gpiote_in_event_disable(pin_number);
     nrfx_gpiote_in_uninit(pin_number);
     _active = NULL;
