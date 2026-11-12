@@ -747,11 +747,12 @@ uint32_t _common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
         uint8_t full_data[MAX_ADVERTISEMENT_SIZE] = { 0 };
         memcpy(full_data, advertising_data, MIN(sizeof(full_data), advertising_data_len));
         hci_check_error(hci_le_set_advertising_data(advertising_data_len, full_data));
+        // Always set, even empty: the controller keeps the previous scan response.
         memset(full_data, 0, sizeof(full_data));
         if (scan_response_data_len > 0) {
             memcpy(full_data, scan_response_data, MIN(sizeof(full_data), scan_response_data_len));
-            hci_check_error(hci_le_set_scan_response_data(scan_response_data_len, full_data));
         }
+        hci_check_error(hci_le_set_scan_response_data(scan_response_data_len, full_data));
 
         // No duration mechanism is provided for legacy advertising, so we need to do our own.
         self->advertising_timeout_msecs = timeout * 1000;
