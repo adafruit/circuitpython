@@ -217,9 +217,8 @@ static void release_msc_locks(void) {
 }
 
 static void _usb_msc_uneject(void) {
-    // A bus reset doesn't call tud_umount_cb(), so a lock from before it may still be held.
-    // Release it, or blockdev_lock() fails and the host sees a write-protected drive.
-    release_msc_locks();
+    // A bus reset doesn't call tud_umount_cb(), so USB MSC may still hold its locks.
+    // Keep them: tud_msc_is_writable_cb() sees locked[] and doesn't lock again.
     for (uint8_t i = 0; i < LUN_COUNT; i++) {
         ejected[i] = false;
     }
