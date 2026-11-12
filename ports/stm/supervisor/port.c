@@ -509,6 +509,8 @@ void port_idle_until_interrupt(void) {
         return;
     }
     common_hal_mcu_disable_interrupts();
+    // Don't sleep on a tick that has stopped.
+    stm32_peripherals_rtc_recover_wakeup();
     if (!background_callback_pending()) {
         __WFI();
     }

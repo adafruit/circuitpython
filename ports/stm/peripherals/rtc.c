@@ -200,7 +200,9 @@ void stm32_peripherals_rtc_set_wakeup_mode_seconds(uint32_t seconds) {
 }
 
 void stm32_peripherals_rtc_set_wakeup_mode_tick(void) {
-    HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, (rtc_clock_frequency / 16) / TICKS_PER_SECOND, RTC_WAKEUPCLOCK_RTCCLK_DIV2);
+    // The timer counts RTCCLK / 2 and wakes every (counter + 1) counts.
+    uint32_t counter = (rtc_clock_frequency + TICKS_PER_SECOND) / (2 * TICKS_PER_SECOND) - 1;
+    HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, counter, RTC_WAKEUPCLOCK_RTCCLK_DIV2);
 }
 
 void stm32_peripherals_rtc_enable_wakeup_timer(void) {
@@ -213,6 +215,17 @@ void stm32_peripherals_rtc_disable_wakeup_timer(void) {
     peripherals_wkup_on = false;
     HAL_NVIC_DisableIRQ(RTC_WKUP_IRQn);
     HAL_RTCEx_DeactivateWakeUpTimer(&hrtc);
+}
+
+// A clear of the wakeup flag is lost if it comes less than 1.5 RTCCLK periods before the timer
+// sets the flag again, for example when a flash erase has held off the interrupt. The flag then
+// stays set, the EXTI line sees no new rising edge, and the tick stops. Call with interrupts
+// disabled: if that has happened, run the handler again so that it clears the flag.
+void stm32_peripherals_rtc_recover_wakeup(void) {
+    if (peripherals_wkup_on && __HAL_RTC_WAKEUPTIMER_GET_FLAG(&hrtc, RTC_FLAG_WUTF) &&
+        !__HAL_RTC_WAKEUPTIMER_EXTI_GET_FLAG()) {
+        NVIC_SetPendingIRQ(RTC_WKUP_IRQn);
+    }
 }
 
 void stm32_peripherals_rtc_reset_alarms(void) {
