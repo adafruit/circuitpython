@@ -1339,6 +1339,13 @@ static void process_write_req_or_cmd(uint16_t conn_handle, uint16_t mtu, uint8_t
             return;
         }
 
+        // A CCCD is two bytes; the setter would raise inside the background poll.
+        if (bufinfo.len != 2) {
+            if (with_response) {
+                send_error(conn_handle, BT_ATT_OP_WRITE_REQ, req->handle, BT_ATT_ERR_INVALID_ATTRIBUTE_LEN);
+            }
+            return;
+        }
         common_hal_bleio_descriptor_set_value(descriptor, &bufinfo);
     }
 

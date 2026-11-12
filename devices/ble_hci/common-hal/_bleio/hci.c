@@ -304,6 +304,7 @@ void bleio_hci_reset(void) {
     rx_idx = 0;
     pending_pkt = 0;
     hci_poll_in_progress = false;
+    hci_waits = 0;
     bleio_att_reset();
 }
 
