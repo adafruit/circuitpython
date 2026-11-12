@@ -336,6 +336,9 @@ void common_hal_bleio_adapter_set_enabled(bleio_adapter_obj_t *self, bool enable
     // Enabling or disabling: stop any current activity; reset to known state. While disabling,
     // stay enabled until the reset's reply has been read.
     hci_reset();
+    // The reset ended all links without Disconnection Complete events.
+    bleio_hci_reset();
+    self->connection_objs = NULL;
     if (!enabled) {
         self->enabled = false;
         supervisor_disable_tick();
@@ -933,24 +936,8 @@ void bleio_adapter_gc_collect(bleio_adapter_obj_t *adapter) {
 }
 
 void bleio_adapter_reset(bleio_adapter_obj_t *adapter) {
-
-    if (!common_hal_bleio_adapter_get_enabled(adapter)) {
-        return;
-    }
-
-    // Adapter will be reset.
+    // Disabling resets the controller and forgets the links it ends.
     common_hal_bleio_adapter_set_enabled(adapter, false);
-
-    adapter->connection_objs = NULL;
-    for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
-        bleio_connection_internal_t *connection = &bleio_connections[i];
-        // Disconnect all connections with Python state cleanly. Keep any supervisor-only connections.
-        if (connection->connection_obj != mp_const_none &&
-            connection->conn_handle != BLE_CONN_HANDLE_INVALID) {
-            common_hal_bleio_connection_disconnect(connection);
-        }
-        connection->connection_obj = mp_const_none;
-    }
 }
 
 void bleio_adapter_background(bleio_adapter_obj_t *adapter) {

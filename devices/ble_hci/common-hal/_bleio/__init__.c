@@ -63,10 +63,7 @@ void bleio_reset(void) {
         return;
     }
     // The adapter belongs to the program and its UART is on the VM heap: always free it.
-    if (common_hal_bleio_adapter_get_enabled(adapter)) {
-        bleio_adapter_reset(adapter);
-        common_hal_bleio_adapter_set_enabled(adapter, false);
-    }
+    bleio_adapter_reset(adapter);
     adapter->allocated = false;
 
     bleio_set_adapter(mp_const_none);
