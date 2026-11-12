@@ -100,6 +100,19 @@ MP_PROPERTY_GETSET(wifi_radio_enabled_obj,
     (mp_obj_t)&wifi_radio_get_enabled_obj,
     (mp_obj_t)&wifi_radio_set_enabled_obj);
 
+//|     version: Optional[str]
+//|     """WiFi co-processor firmware identification, such as ``"esp32c6 ESP-Hosted 2.12.13"``,
+//|     or ``None`` if the radio is not a separate co-processor or its version cannot be read.
+//|     (read-only)"""
+static mp_obj_t wifi_radio_get_version(mp_obj_t self_in) {
+    wifi_radio_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    return common_hal_wifi_radio_get_version(self);
+}
+MP_DEFINE_CONST_FUN_OBJ_1(wifi_radio_get_version_obj, wifi_radio_get_version);
+
+MP_PROPERTY_GETTER(wifi_radio_version_obj,
+    (mp_obj_t)&wifi_radio_get_version_obj);
+
 //|     hostname: Union[str, ReadableBuffer]
 //|     """Hostname for wifi interface. When the hostname is altered after interface started/connected
 //|        the changes would only be reflected once the interface restarts/reconnects."""
@@ -867,6 +880,7 @@ static MP_DEFINE_CONST_FUN_OBJ_KW(wifi_radio_ping_obj, 1, wifi_radio_ping);
 
 static const mp_rom_map_elem_t wifi_radio_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_enabled), MP_ROM_PTR(&wifi_radio_enabled_obj) },
+    { MP_ROM_QSTR(MP_QSTR_version), MP_ROM_PTR(&wifi_radio_version_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_hostname),    MP_ROM_PTR(&wifi_radio_hostname_obj) },
 

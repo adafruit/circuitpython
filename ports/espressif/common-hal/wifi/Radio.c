@@ -38,6 +38,10 @@
 #include "common-hal/mdns/Server.h"
 #endif
 
+#ifdef CONFIG_ESP_HOSTED_ENABLED
+#include "esp_hosted.h"
+#endif
+
 #define MAC_ADDRESS_LENGTH 6
 
 static void set_mode_station(wifi_radio_obj_t *self, bool state) {
@@ -110,6 +114,36 @@ void common_hal_wifi_radio_set_enabled(wifi_radio_obj_t *self, bool enabled) {
         common_hal_wifi_radio_set_tx_power(self, CIRCUITPY_WIFI_DEFAULT_TX_POWER);
         return;
     }
+}
+
+mp_obj_t common_hal_wifi_radio_get_version(wifi_radio_obj_t *self) {
+    #ifdef CONFIG_ESP_HOSTED_ENABLED
+    // netif is NULL when the co-processor didn't answer as ESP-Hosted at Wi-Fi init.
+    if (self->netif == NULL) {
+        return mp_const_none;
+    }
+    esp_hosted_coprocessor_fwver_t ver;
+    if (esp_hosted_get_coprocessor_fwversion(&ver) != ESP_OK) {
+        return mp_const_none;
+    }
+
+    // Co-processor firmware that predates reporting its target name sends an empty one.
+    // Use the configured target then.
+    const char *target = CONFIG_ESP_HOSTED_IDF_SLAVE_TARGET;
+    char reported[32] = "";
+    if (esp_hosted_get_cp_info(NULL, reported, sizeof(reported)) == ESP_OK &&
+        reported[0] != '\0') {
+        target = reported;
+    }
+
+    vstr_t vstr;
+    vstr_init(&vstr, 32);
+    vstr_printf(&vstr, "%s ESP-Hosted %u.%u.%u", target,
+        (unsigned int)ver.major1, (unsigned int)ver.minor1, (unsigned int)ver.patch1);
+    return mp_obj_new_str_from_vstr(&vstr);
+    #else
+    return mp_const_none;
+    #endif
 }
 
 mp_obj_t common_hal_wifi_radio_get_hostname(wifi_radio_obj_t *self) {
