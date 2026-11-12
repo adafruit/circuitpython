@@ -182,6 +182,14 @@ static void process_num_comp_pkts(uint16_t handle, uint16_t num_pkts) {
     pending_pkt -= MIN(pending_pkt, num_pkts);
 }
 
+static void remove_link(uint16_t handle, uint8_t reason) {
+    att_remove_connection(handle, reason);
+    // The controller frees a link's buffers without Number of Completed Packets.
+    if (!att_is_connected()) {
+        pending_pkt = 0;
+    }
+}
+
 static void process_evt_pkt(size_t pkt_len, uint8_t pkt_data[]) {
     h4_hci_evt_pkt_t *pkt = (h4_hci_evt_pkt_t *)pkt_data;
 
@@ -191,11 +199,7 @@ static void process_evt_pkt(size_t pkt_len, uint8_t pkt_data[]) {
                 (struct bt_hci_evt_disconn_complete *)pkt->params;
             (void)disconn_complete;
 
-            att_remove_connection(disconn_complete->handle, disconn_complete->reason);
-            // The controller frees a link's buffers without Number of Completed Packets.
-            if (!att_is_connected()) {
-                pending_pkt = 0;
-            }
+            remove_link(disconn_complete->handle, disconn_complete->reason);
             // FIX L2CAPSignaling.removeConnection(disconn_complete->handle, disconn_complete->reason);
             break;
         }
@@ -832,7 +836,12 @@ hci_result_t hci_disconnect(uint16_t handle) {
         .reason = BT_HCI_ERR_REMOTE_USER_TERM_CONN,
     };
 
-    return send_command(BT_HCI_OP_DISCONNECT, sizeof(params), &params);
+    hci_result_t result = send_command(BT_HCI_OP_DISCONNECT, sizeof(params), &params);
+    // The controller no longer knows the link: its Disconnection Complete was lost.
+    if (result == BT_HCI_ERR_UNKNOWN_CONN_ID) {
+        remove_link(handle, result);
+    }
+    return result;
 }
 
 void hci_check_error(hci_result_t result) {
