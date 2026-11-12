@@ -12,3 +12,6 @@
 # end of Component config
 
 # end of Espressif IoT Development Framework Configuration
+# Keep the RGB bounce-buffer refill cache available during flash writes when
+# settings.toml disables persistent flash-file mappings.
+CONFIG_SPIRAM_XIP_FROM_PSRAM=y

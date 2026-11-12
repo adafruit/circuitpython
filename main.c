@@ -1100,6 +1100,10 @@ int __attribute__((used)) main(void) {
         set_safe_mode(SAFE_MODE_NO_CIRCUITPY);
     }
 
+    #if CIRCUITPY_STORAGE_MAP_FILE
+    storage_map_file_init();
+    #endif
+
     // Wait briefly to give a reset window where we'll enter safe mode after the reset.
     // Do this after mounting the filesystem because settings.toml can contain
     // CIRCUITPY_SAFE_MODE_DELAY to change the default delay.
