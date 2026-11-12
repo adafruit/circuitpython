@@ -95,6 +95,8 @@ else
     ifeq ($(CHIP_FAMILY), samd21)
       # max-inline-insns-auto increases the size of SAMD51 builds.
       CFLAGS += -finline-limit=45 --param max-inline-insns-auto=110
+    else ifeq ($(HAS_1MB_FLASH),0)
+      CFLAGS += -finline-limit=45
     endif
   endif
 
