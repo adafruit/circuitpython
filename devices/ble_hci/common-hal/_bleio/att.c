@@ -739,50 +739,27 @@ static void process_error(uint16_t conn_handle, uint8_t dlen, uint8_t data[]) {
 }
 
 static void process_mtu_req(uint16_t conn_handle, uint8_t dlen, uint8_t data[]) {
-    struct bt_att_exchange_mtu_req *req = (struct bt_att_exchange_mtu_req *)data;
-
     if (dlen != sizeof(struct bt_att_exchange_mtu_req)) {
         send_error(conn_handle, BT_ATT_OP_MTU_REQ, BLE_GATT_HANDLE_INVALID, BT_ATT_ERR_INVALID_PDU);
         return;
     }
 
-    uint16_t mtu = req->mtu;
-
-    if (mtu > max_mtu) {
-        mtu = max_mtu;
-    }
-
-    for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
-        if (bleio_connections[i].conn_handle == conn_handle) {
-            bleio_connections[i].mtu = mtu;
-            break;
-        }
-    }
-
+    // Our receive MTU is 23, so the link keeps 23.
     struct __packed {
         struct bt_att_hdr h;
         struct bt_att_exchange_mtu_rsp r;
     } rsp = { {
                   .code = BT_ATT_OP_MTU_RSP,
               }, {
-                  .mtu = mtu,
+                  .mtu = max_mtu,
               }};
 
     hci_send_acl_pkt(conn_handle, BT_L2CAP_CID_ATT, sizeof(rsp), (uint8_t *)&rsp);
 }
 
 static void process_mtu_rsp(uint16_t conn_handle, uint8_t dlen, uint8_t data[]) {
-    struct bt_att_exchange_mtu_rsp *rsp = (struct bt_att_exchange_mtu_rsp *)data;
-
     if (dlen != sizeof(struct bt_att_exchange_mtu_rsp)) {
         return;
-    }
-
-    for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
-        if (bleio_connections[i].conn_handle == conn_handle) {
-            bleio_connections[i].mtu = rsp->mtu;
-            break;
-        }
     }
 
     check_and_save_expected_rsp(conn_handle, BT_ATT_OP_MTU_RSP, dlen, data);
