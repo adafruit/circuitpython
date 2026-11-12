@@ -164,6 +164,10 @@ CFLAGS += -DCIRCUITPY_AUDIOCORE=$(CIRCUITPY_AUDIOCORE)
 CIRCUITPY_AUDIOMIXER ?= $(CIRCUITPY_AUDIOCORE)
 CFLAGS += -DCIRCUITPY_AUDIOMIXER=$(CIRCUITPY_AUDIOMIXER)
 
+# Mix 16-bit audio with the port's vector code. Ports that have it turn it on.
+CIRCUITPY_AUDIOMIXER_USE_PORT_MIX ?= 0
+CFLAGS += -DCIRCUITPY_AUDIOMIXER_USE_PORT_MIX=$(CIRCUITPY_AUDIOMIXER_USE_PORT_MIX)
+
 ifndef CIRCUITPY_AUDIOCORE_DEBUG
 CIRCUITPY_AUDIOCORE_DEBUG ?= 0
 endif
@@ -229,13 +233,6 @@ CFLAGS += -DCIRCUITPY_BUSDEVICE=$(CIRCUITPY_BUSDEVICE)
 
 CIRCUITPY_BUILTINS_POW3 ?= $(CIRCUITPY_FULL_BUILD)
 CFLAGS += -DCIRCUITPY_BUILTINS_POW3=$(CIRCUITPY_BUILTINS_POW3)
-
-# Bulk reset: when enabled, pins and buses registered with never_reset survive a
-# soft reset (the port resets all remaining pins in bulk). When disabled, ports
-# rely solely on GC finalizers to release hardware, so never_reset is compiled
-# out. Ports that do not perform a bulk pin reset should set this to 0.
-CIRCUITPY_BULK_RESET ?= 1
-CFLAGS += -DCIRCUITPY_BULK_RESET=$(CIRCUITPY_BULK_RESET)
 
 CIRCUITPY_BUSIO ?= 1
 CFLAGS += -DCIRCUITPY_BUSIO=$(CIRCUITPY_BUSIO)

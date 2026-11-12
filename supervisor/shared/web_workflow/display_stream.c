@@ -36,7 +36,16 @@
 #define BLOCK_W (64)
 #define BLOCK_H (HEXTILE_SIZE)
 #define BLOCK_PIXELS (BLOCK_W * BLOCK_H)
+#if CIRCUITPY_MIPIDSI
+// DSI panels are bigger, such as the 720x1280 Raspberry Pi Touch Display 2.
+#define MAX_SIZE (2048)
+typedef uint32_t block_columns_t;
+#else
 #define MAX_SIZE (1024)
+typedef uint16_t block_columns_t;
+#endif
+// A bit for each column of blocks.
+#define BLOCK_COLUMNS (MAX_SIZE / BLOCK_W)
 #define BLOCK_ROWS (MAX_SIZE / BLOCK_H)
 // Room for one message: the websocket header and the RFB data.
 #define MESSAGE_SIZE (8192)
@@ -86,6 +95,7 @@ enum {
 enum {
     FORMAT_NONE,
     FORMAT_BGRX8888,
+    FORMAT_BGR888,
     FORMAT_RGB565LE,
     FORMAT_RGB565BE,
     FORMAT_RGB332,
@@ -178,9 +188,9 @@ static volatile uint8_t pass_countdown;
 static bool tick_enabled;
 
 // Blocks written since they were last sent, a bit per column in each row of blocks.
-static uint16_t dirty[BLOCK_ROWS];
+static block_columns_t dirty[BLOCK_ROWS];
 // The blocks of the update being sent, and how many are left.
-static uint16_t pending[BLOCK_ROWS];
+static block_columns_t pending[BLOCK_ROWS];
 static uint16_t rects_left;
 static uint16_t next_block_row;
 
@@ -219,9 +229,9 @@ static void _mark_dirty(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
     if (x1 >= x2 || y1 >= y2) {
         return;
     }
-    uint16_t columns = 0;
-    for (uint16_t c = x1 / BLOCK_W; c <= (x2 - 1) / BLOCK_W && c < 16; c++) {
-        columns |= 1 << c;
+    block_columns_t columns = 0;
+    for (uint16_t c = x1 / BLOCK_W; c <= (x2 - 1) / BLOCK_W && c < BLOCK_COLUMNS; c++) {
+        columns |= (block_columns_t)1 << c;
     }
     for (uint16_t r = y1 / BLOCK_H; r <= (y2 - 1) / BLOCK_H && r < BLOCK_ROWS; r++) {
         dirty[r] |= columns;
@@ -411,6 +421,8 @@ static uint8_t _format_of(const _displayio_colorspace_t *colorspace) {
     switch (colorspace->depth) {
         case 32:
             return FORMAT_BGRX8888;
+        case 24:
+            return FORMAT_BGR888;
         case 16:
             return colorspace->reverse_bytes_in_word ? FORMAT_RGB565BE : FORMAT_RGB565LE;
         case 8:
@@ -488,6 +500,9 @@ static uint32_t _rgb(const uint8_t *row, uint16_t x) {
     switch (format) {
         case FORMAT_BGRX8888:
             row += x * 4;
+            return row[2] << 16 | row[1] << 8 | row[0];
+        case FORMAT_BGR888:
+            row += x * 3;
             return row[2] << 16 | row[1] << 8 | row[0];
         case FORMAT_RGB565LE:
         case FORMAT_RGB565BE: {
@@ -756,7 +771,7 @@ static bool _fill(uint64_t end_ms) {
             next_block_row++;
         }
         uint8_t column = __builtin_ctz(pending[next_block_row]);
-        pending[next_block_row] &= ~(1 << column);
+        pending[next_block_row] &= ~((block_columns_t)1 << column);
         _put_block_rect(column * BLOCK_W, next_block_row * BLOCK_H);
         rects_left--;
         first = false;

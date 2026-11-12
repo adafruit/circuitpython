@@ -441,6 +441,13 @@ bool filesystem_init(bool create_allowed, bool force_create) {
     circuitpy_vfs->obj = MP_OBJ_FROM_PTR(circuitpy);
     circuitpy_vfs->next = NULL;
 
+    #if CIRCUITPY_STORAGE_EXTEND
+    // The volume is mounted, so settle whether the drive spans the next-update partition before
+    // the mount is published. Nothing can query the block count until the mount table points at
+    // this filesystem, so every reader sees the same value.
+    supervisor_flash_update_extended();
+    #endif
+
     MP_STATE_VM(vfs_mount_table) = circuitpy_vfs;
 
     #if CIRCUITPY_SAVES_PARTITION_SIZE > 0
@@ -458,10 +465,6 @@ bool filesystem_init(bool create_allowed, bool force_create) {
     // The current directory is used as the boot up directory.
     // It is set to the internal flash filesystem by default.
     MP_STATE_PORT(vfs_cur) = circuitpy_vfs;
-
-    #if CIRCUITPY_STORAGE_EXTEND
-    supervisor_flash_update_extended();
-    #endif
 
     #if CIRCUITPY_SDCARDIO
     sdcardio_init();

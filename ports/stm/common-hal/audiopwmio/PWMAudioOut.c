@@ -8,6 +8,7 @@
 #include "py/runtime.h"
 #include "common-hal/audiopwmio/PWMAudioOut.h"
 #include "shared-bindings/audiopwmio/PWMAudioOut.h"
+#include "shared-bindings/microcontroller/Pin.h"
 
 #include "timers.h"
 
@@ -191,6 +192,11 @@ static void pwmaudioout_event_handler(void) {
     }
 }
 
+static void mark_deinit(audiopwmio_pwmaudioout_obj_t *self) {
+    self->pin[0] = NULL;
+    self->pin[1] = NULL;
+}
+
 // Caller validates that pins are free.
 void common_hal_audiopwmio_pwmaudioout_construct(audiopwmio_pwmaudioout_obj_t *self,
     const mcu_pin_obj_t *left_channel, const mcu_pin_obj_t *right_channel, uint16_t quiescent_value) {
@@ -199,8 +205,10 @@ void common_hal_audiopwmio_pwmaudioout_construct(audiopwmio_pwmaudioout_obj_t *s
     self->pin[0] = left_channel;
     self->pin[1] = right_channel;
     set_drive_mode(left_channel, GPIO_MODE_OUTPUT_PP);
+    common_hal_mcu_pin_claim(left_channel);
     if (right_channel) {
         set_drive_mode(right_channel, GPIO_MODE_OUTPUT_PP);
+        common_hal_mcu_pin_claim(right_channel);
     }
 
     self->buffer[0] = NULL;
@@ -246,8 +254,9 @@ void common_hal_audiopwmio_pwmaudioout_deinit(audiopwmio_pwmaudioout_obj_t *self
 
     free_buffers(self);
 
-    self->pin[0] = 0;
-    self->pin[1] = 0;
+    common_hal_reset_pin(self->pin[0]);
+    common_hal_reset_pin(self->pin[1]);
+    mark_deinit(self);
 }
 
 void common_hal_audiopwmio_pwmaudioout_play(audiopwmio_pwmaudioout_obj_t *self, mp_obj_t sample, bool loop) {

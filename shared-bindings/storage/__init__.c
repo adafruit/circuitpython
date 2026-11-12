@@ -156,9 +156,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(storage_getmount_obj, storage_getmount);
 //|         and the ``extended`` parameter, the **CIRCUITPY** storage can be
 //|         extended by setting this to `True`. If this isn't provided or
 //|         set to `None` (default), the existing configuration will be used.
-//|
-//|     .. note:: New firmware starts with storage extended. In case of an existing
-//|          filesystem (e.g. uf2 load), the existing extension setting is preserved.
+//|         If no filesystem is present, it will not be extended.
 //|
 //|     .. warning:: All the data on **CIRCUITPY** will be lost, and
 //|         CircuitPython will restart on certain boards."""

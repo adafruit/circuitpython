@@ -23,6 +23,18 @@ GPIO_ACTIVE_LOW = 1 << 0
 # neither of which should ever be in the Python heap.
 MINIMUM_RAM_SIZE = 8192
 
+# Preferred spellings and capitalizations for MICROPY_HW_MCU_NAME, keyed by the Zephyr
+# SoC name from board.yml. SoCs not listed use the Zephyr name as is.
+SOC_NAMES = {
+    "nrf52840": "nRF52840",
+    "nrf5340": "nRF5340",
+    "nrf54h20": "nRF54H20",
+    "nrf54l15": "nRF54L15",
+    "nrf54lm20a": "nRF54LM20A",
+}
+
+# Checked before the generated COMPAT_TO_DRIVER, so an entry here overrides a
+# wrong generated one.
 MANUAL_COMPAT_TO_DRIVER = {
     "renesas_ra_nv_flash": "flash",
     "soc_nv_flash": "flash",
@@ -33,6 +45,9 @@ MANUAL_COMPAT_TO_DRIVER = {
     "nordic_nrf_spim": "spi",
     "nordic_nrf_spi": "spi",
     "nordic_nrf_i2s": "i2s",
+    # The driver lives in drivers/spi/spi_nxp_lpspi/, so the generated table
+    # names it "spi/spi_nxp_lpspi", which is not a busio class.
+    "nxp_lpspi": "spi",
 }
 
 # These are controllers, not the flash devices themselves.
@@ -413,9 +428,9 @@ def find_flash_devices(device_tree):
         drivers = []
         for c in compatible:
             underscored = c.replace(",", "_").replace("-", "_")
-            driver = COMPAT_TO_DRIVER.get(underscored, None)
+            driver = MANUAL_COMPAT_TO_DRIVER.get(underscored, None)
             if not driver:
-                driver = MANUAL_COMPAT_TO_DRIVER.get(underscored, None)
+                driver = COMPAT_TO_DRIVER.get(underscored, None)
             if driver:
                 drivers.append(driver)
         logger.debug(f"  {node.labels[0] if node.labels else node.name} drivers: {drivers}")
@@ -515,9 +530,14 @@ def find_ram_regions(device_tree):
             continue
 
         is_mmio_sram = "mmio-sram" in compatible
+        # The i.MX RT DTCM and ITCM are read/write RAM too, but their nodes are
+        # not mmio-sram. On RT10xx the kernel stacks are relocated to DTCM and
+        # the XIP-sensitive flash code to ITCM; what each leaves free (from
+        # __DTCM_end / __ITCM_end) becomes heap.
+        is_imx_tcm = "nxp,imx-dtcm" in compatible or "nxp,imx-itcm" in compatible
         device_type = node.props.get("device_type")
         has_memory_device_type = device_type and device_type.to_string() == "memory"
-        if not (is_mmio_sram or has_memory_device_type):
+        if not (is_mmio_sram or is_imx_tcm or has_memory_device_type):
             continue
 
         size = node.props["reg"].to_nums()[1]
@@ -1016,6 +1036,10 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir, mpconfig
     if mpconfigboard and "NAME" in mpconfigboard:
         board_name = mpconfigboard["NAME"]
     board_info["name"] = board_name
+    # Banner board name: VENDOR + NAME when circuitpython.toml sets VENDOR, else just the name.
+    banner_name = board_name
+    if mpconfigboard and "VENDOR" in mpconfigboard:
+        banner_name = f"{mpconfigboard['VENDOR']} {board_name}"
     # board_id_yaml = zephyr_board_dir / (zephyr_board_dir.name + ".yaml")
     # board_id_yaml = yaml.safe_load(board_id_yaml.read_text())
     # print(board_id_yaml)
@@ -1085,9 +1109,9 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir, mpconfig
             logger.debug(f" chosen: {chosen}")
         for c in compatible:
             underscored = c.replace(",", "_").replace("-", "_")
-            driver = COMPAT_TO_DRIVER.get(underscored, None)
+            driver = MANUAL_COMPAT_TO_DRIVER.get(underscored, None)
             if not driver:
-                driver = MANUAL_COMPAT_TO_DRIVER.get(underscored, None)
+                driver = COMPAT_TO_DRIVER.get(underscored, None)
             logger.debug(f" {c} -> {underscored} -> {driver}")
             if not driver or status != "okay":
                 continue
@@ -1680,7 +1704,7 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir, mpconfig
 static {obj_type}_obj_t {instance_name}_obj;
 static mp_obj_t {singleton_ptr} = mp_const_none;
 static mp_obj_t {c_function_name}(void) {{
-    if ({singleton_ptr} != mp_const_none) {{
+    if ({singleton_ptr} != mp_const_none && !common_hal_{obj_type}_deinited(&{instance_name}_obj)) {{
         return {singleton_ptr};
     }}
     {singleton_ptr} = {construct_call};
@@ -1899,9 +1923,17 @@ const size_t iobroker_gpio_port_count = {count};
     stop_calls = "\n    ".join(
         f"common_hal_audiobusio_i2sout_stop(&{name}_obj);" for name in i2sout_instance_names
     )
+    # And i2sout_gc_collect(): the board's I2SOut objects are static, so the GC doesn't scan them.
+    collect_calls = "\n    ".join(
+        f"audiobusio_i2sout_collect_ptrs(&{name}_obj);" for name in i2sout_instance_names
+    )
     i2sout_reset_func = f"""
 void i2sout_reset(void) {{
     {stop_calls}
+}}
+
+void i2sout_gc_collect(void) {{
+    {collect_calls}
 }}"""
 
     zephyr_display_header = ""
@@ -2013,8 +2045,8 @@ static mii_ethernet_obj_t ethernet_obj;
 
     new_header_content = f"""#pragma once
 
-#define MICROPY_HW_BOARD_NAME       "{board_name}"
-#define MICROPY_HW_MCU_NAME         "{soc_name}"
+#define MICROPY_HW_BOARD_NAME       "{banner_name}"
+#define MICROPY_HW_MCU_NAME         "{SOC_NAMES.get(soc_name, soc_name)}"
 #define CIRCUITPY_RAM_DEVICE_COUNT  {len(rams)}
 {status_led}
 {status_led_inverted}

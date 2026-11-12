@@ -96,6 +96,7 @@ ifeq ($(INTERNAL_FLASH_FILESYSTEM),1)
   OPTIMIZATION_FLAGS ?= -Os
   CIRCUITPY_LTO = 1
   CIRCUITPY_LTO_PARTITION = balanced
+  CIRCUITPY_MSGPACK ?= 0
   CIRCUITPY_ULAB_OPTIMIZE_SIZE ?= 1
 else
   CIRCUITPY_USB_AUDIO ?= 1
@@ -134,6 +135,3 @@ ifneq ($(CIRCUITPY_BLEIO_NATIVE),1)
 CIRCUITPY_BLE_FILE_SERVICE = 0
 CIRCUITPY_BLE_SERIAL_SERVICE = 0
 endif
-
-# Cleanup is performed by GC finalizers (__del__ -> deinit) instead of a bulk pin reset.
-CIRCUITPY_BULK_RESET = 0

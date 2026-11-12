@@ -68,10 +68,6 @@
 #include "shared-module/board/__init__.h"
 #endif
 
-#if CIRCUITPY_CANIO
-#include "common-hal/canio/CAN.h"
-#endif
-
 #if CIRCUITPY_DISPLAYIO
 #include "shared-module/displayio/__init__.h"
 #include "shared-bindings/displayio/__init__.h"
@@ -415,12 +411,6 @@ static void cleanup_after_vm(mp_obj_t exception) {
     bleio_user_reset();
     #endif
 
-    #if CIRCUITPY_CANIO && CIRCUITPY_BULK_RESET
-    // Bulk-reset ports reset CAN controllers here. Finalizer ports rely on
-    // GC finalizers calling deinit on the CAN objects.
-    common_hal_canio_reset();
-    #endif
-
     #if CIRCUITPY_STORAGE_MAP_FILE
     storage_map_file_reset();
     #endif
@@ -448,8 +438,6 @@ static void cleanup_after_vm(mp_obj_t exception) {
     wifi_user_reset();
     #endif
 
-    // reset_board_buses() first because it may release pins from the never_reset state, so that
-    // reset_port() can reset them.
     #if CIRCUITPY_BOARD
     reset_board_buses();
     #endif
@@ -461,11 +449,6 @@ static void cleanup_after_vm(mp_obj_t exception) {
 
     // Runs finalisers while shutting down the heap.
     stop_mp();
-
-    // Don't reset pins until finalisers have run.
-    #if CIRCUITPY_BULK_RESET
-    reset_all_pins();
-    #endif
 
     // Let the workflows know we've reset in case they want to restart.
     supervisor_workflow_reset();
@@ -856,10 +839,6 @@ static bool __attribute__((noinline)) run_code_py(safe_mode_t safe_mode, bool *s
         #if CIRCUITPY_ALARM_PRESERVE_DIOS
         common_hal_alarm_clear_pin_preservations();
         #endif
-        // Reset pins, as if there was a hard reset.
-        #if CIRCUITPY_BULK_RESET
-        reset_all_pins();
-        #endif
         // Pretend that the next run is the first run, as if we were reset.
         *simulate_reset = true;
     }
@@ -1081,11 +1060,6 @@ int __attribute__((used)) main(void) {
 
     // initialise the cpu and peripherals
     set_safe_mode(port_init());
-
-    // All ports need pins reset, after never-reset pins are marked in port_init();
-    #if CIRCUITPY_BULK_RESET
-    reset_all_pins();
-    #endif
 
     port_heap_init();
 

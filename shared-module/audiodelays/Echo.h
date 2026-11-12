@@ -15,6 +15,11 @@
 
 extern const mp_obj_type_t audiodelays_echo_type;
 
+// Fractional bits of the uint32_t position and rate used when freq_shift=True.
+#define AUDIODELAYS_ECHO_RATE_FRACTION_BITS 12
+// The largest echo buffer per channel. Position and rate each stay under 2^31 so their sum fits.
+#define AUDIODELAYS_ECHO_MAX_BUFFER_SAMPLES ((1 << (31 - AUDIODELAYS_ECHO_RATE_FRACTION_BITS)) - 1)
+
 typedef struct {
     audiosample_base_t base;
     uint32_t max_delay_ms;
@@ -40,9 +45,9 @@ typedef struct {
     uint32_t echo_buffer_len; // bytes
     uint32_t max_echo_buffer_len; // bytes
 
-    uint32_t echo_buffer_left_pos; // words (<< 8 when freq_shift=True)
-    uint32_t echo_buffer_right_pos; // words (<< 8 when freq_shift=True)
-    uint32_t echo_buffer_rate; // words << 8
+    uint32_t echo_buffer_left_pos; // words (fixed point when freq_shift=True)
+    uint32_t echo_buffer_right_pos; // words (fixed point when freq_shift=True)
+    uint32_t echo_buffer_rate; // words, fixed point
 
     mp_obj_t sample;
 } audiodelays_echo_obj_t;

@@ -27,10 +27,6 @@ void common_hal_is31fl3741_framebuffer_construct(is31fl3741_framebuffer_obj_t *s
 
     self->is31fl3741 = is31;
 
-    #if CIRCUITPY_BULK_RESET
-    common_hal_busio_i2c_never_reset(self->is31fl3741->i2c);
-    #endif
-
     mp_obj_t *items;
     size_t len;
     // The binding has checked the mapping's length.
@@ -96,8 +92,6 @@ void common_hal_is31fl3741_framebuffer_reconstruct(is31fl3741_framebuffer_obj_t 
 }
 
 void common_hal_is31fl3741_framebuffer_deinit(is31fl3741_framebuffer_obj_t *self) {
-    common_hal_is31fl3741_end_transaction(self->is31fl3741); // in case we still had a lock
-
     common_hal_is31fl3741_IS31FL3741_deinit(self->is31fl3741);
 
     if (self->mapping != NULL) {
@@ -125,7 +119,7 @@ bool common_hal_is31fl3741_framebuffer_get_paused(is31fl3741_framebuffer_obj_t *
 }
 
 void common_hal_is31fl3741_framebuffer_refresh(is31fl3741_framebuffer_obj_t *self, uint8_t *dirtyrows) {
-    if (!self->paused) {
+    if (!self->paused && !common_hal_is31fl3741_IS31FL3741_deinited(self->is31fl3741)) {
         common_hal_is31fl3741_begin_transaction(self->is31fl3741);
 
         uint8_t dirty_row_flags = 0xFF;

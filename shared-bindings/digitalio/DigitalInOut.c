@@ -74,7 +74,7 @@ static mp_obj_t digitalio_digitalinout_make_new(const mp_obj_type_t *type,
     const mcu_pin_obj_t *pin = common_hal_digitalio_validate_pin(args[0]);
 
     digitalio_digitalinout_obj_t *self = mp_obj_malloc_with_finaliser(digitalio_digitalinout_obj_t, &digitalio_digitalinout_type);
-    common_hal_digitalio_digitalinout_construct(self, pin);
+    check_result(common_hal_digitalio_digitalinout_construct(self, pin));
 
     return MP_OBJ_FROM_PTR(self);
 }

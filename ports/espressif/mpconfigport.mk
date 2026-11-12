@@ -382,10 +382,6 @@ CIRCUITPY_BLEIO_NATIVE = 0
 CIRCUITPY_WIFI = $(CIRCUITPY_ESP_HOSTED)
 CIRCUITPY_SSL = $(CIRCUITPY_ESP_HOSTED)
 
-# Second stage bootloader doesn't work when the factory partition is empty due to
-# UF2 missing.
-UF2_BOOTLOADER = 0
-
 # The P4 has two USB device controllers. Controller 0 is the full-speed one with
 # 7 endpoints, only 5 of which can be IN. Controller 1 is the high-speed one with
 # 16 endpoints, 8 of which can be IN. Boards name the controller they use with
@@ -465,9 +461,6 @@ CIRCUITPY_BLEIO_NATIVE = 0
 CIRCUITPY_WIFI = 0
 CIRCUITPY_SSL = 0
 
-# Second stage bootloader doesn't work when the factory partition is empty due to
-# UF2 missing.
-UF2_BOOTLOADER = 0
 CIRCUITPY_TUSB_MEM_ALIGN = 64
 CIRCUITPY_ALL_MEMORY_DMA_CAPABLE = 0
 CIRCUITPY_MAX3421E = 0
@@ -539,6 +532,9 @@ CIRCUITPY_AUDIOIO = 0
 
 # LEDC + GPTimer PWM audio, the only analog audio output without I2S hardware.
 CIRCUITPY_AUDIOPWMIO ?= 1
+
+# PIE vector instructions for audiomixer.
+CIRCUITPY_AUDIOMIXER_USE_PORT_MIX ?= 1
 
 endif
 #### end chip-specific choices ########################################
@@ -623,6 +619,3 @@ CIRCUITPY_MESSAGE_COMPRESSION_LEVEL ?= 1
 
 # The CIRCUITPY partition is mapped into the data address space on first use
 CIRCUITPY_STORAGE_MAP_FILE ?= 1
-
-# Cleanup is performed by GC finalizers (__del__ -> deinit) instead of a bulk pin reset.
-CIRCUITPY_BULK_RESET = 0

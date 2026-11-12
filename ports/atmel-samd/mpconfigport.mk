@@ -132,8 +132,10 @@ CIRCUITPY_RGBMATRIX ?= $(CIRCUITPY_FRAMEBUFFERIO)
 CIRCUITPY_SAMD ?= 1
 CIRCUITPY_SPITARGET ?= 1
 CIRCUITPY_SYNTHIO_MAX_CHANNELS = 12
-# Trade ulab speed for flash only where flash is tight.
+# Trade some speed for flash only where flash is tight.
 ifeq ($(HAS_1MB_FLASH),0)
+CIRCUITPY_COMPUTED_GOTO_SAVE_SPACE ?= 1
+CIRCUITPY_LTO_PARTITION ?= one
 CIRCUITPY_ULAB_OPTIMIZE_SIZE ?= 1
 endif
 CIRCUITPY_WATCHDOG ?= 1
@@ -147,6 +149,3 @@ endif # samx5x
 ######################################################################
 
 CIRCUITPY_BUILD_EXTENSIONS ?= uf2
-
-# Cleanup is performed by GC finalizers (__del__ -> deinit) instead of a bulk pin reset.
-CIRCUITPY_BULK_RESET = 0

@@ -44,12 +44,6 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self, const mcu_pin_obj_t *
     self->sent = NULL;
 }
 
-#if CIRCUITPY_BULK_RESET
-void common_hal_busio_spi_never_reset(busio_spi_obj_t *self) {
-    common_hal_async_spi_spi_never_reset(&self->async_spi);
-}
-#endif
-
 bool common_hal_busio_spi_deinited(busio_spi_obj_t *self) {
     return common_hal_async_spi_spi_deinited(&self->async_spi);
 }

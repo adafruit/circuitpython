@@ -29,4 +29,3 @@ void common_hal_canio_can_check_for_deinit(canio_can_obj_t *self);
 void common_hal_canio_can_deinit(canio_can_obj_t *self);
 void common_hal_canio_can_restart(canio_can_obj_t *self);
 void common_hal_canio_can_send(canio_can_obj_t *self, mp_obj_t message);
-void common_hal_canio_reset(void);

@@ -33,19 +33,20 @@
 DAC_HandleTypeDef handle;
 #endif
 
-static bool dac_on[2];
+static void mark_deinit(analogio_analogout_obj_t *self) {
+    self->pin = NULL;
+}
 
 void common_hal_analogio_analogout_construct(analogio_analogout_obj_t *self,
     const mcu_pin_obj_t *pin) {
+    mark_deinit(self);
     #if !(HAS_DAC)
     mp_raise_ValueError(MP_ERROR_TEXT("No DAC on chip"));
     #else
     if (pin == &pin_PA04) {
         self->channel = DAC_CHANNEL_1;
-        self->dac_index = 0;
     } else if (pin == &pin_PA05) {
         self->channel = DAC_CHANNEL_2;
-        self->dac_index = 1;
     } else {
         raise_ValueError_invalid_pin();
     }
@@ -72,14 +73,13 @@ void common_hal_analogio_analogout_construct(analogio_analogout_obj_t *self,
         mp_raise_ValueError(MP_ERROR_TEXT("DAC Channel Init Error"));
     }
 
-    dac_on[self->dac_index] = true;
     self->pin = pin;
     common_hal_mcu_pin_claim(pin);
     #endif
 }
 
 bool common_hal_analogio_analogout_deinited(analogio_analogout_obj_t *self) {
-    return !dac_on[self->dac_index];
+    return self->pin == NULL;
 }
 
 void common_hal_analogio_analogout_deinit(analogio_analogout_obj_t *self) {
@@ -88,11 +88,10 @@ void common_hal_analogio_analogout_deinit(analogio_analogout_obj_t *self) {
         return;
     }
     reset_pin_number(self->pin->port, self->pin->number);
-    self->pin = NULL;
-    dac_on[self->dac_index] = false;
+    mark_deinit(self);
 
-    // turn off the DAC if both channels are off
-    if (dac_on[0] == false && dac_on[1] == false) {
+    // Turn off the DAC once neither of its pins is in use by an AnalogOut or AudioOut.
+    if (common_hal_mcu_pin_is_free(&pin_PA04) && common_hal_mcu_pin_is_free(&pin_PA05)) {
         __HAL_RCC_DAC_CLK_DISABLE();
         HAL_DAC_DeInit(&handle);
     }

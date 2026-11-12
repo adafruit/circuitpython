@@ -8,7 +8,6 @@
 
 #include <string.h>
 
-#include "py/gc.h"
 #include "py/runtime.h"
 #include "supervisor/port.h"
 #include "bindings/zephyr_kernel/__init__.h"
@@ -64,16 +63,12 @@ void common_hal_async_spi_spi_construct_from_device(async_spi_spi_obj_t *self,
     self->done = NULL;
     self->fill = NULL;
     self->fill_len = 0;
-    self->fill_from_port = false;
 }
 
 static void free_fill(async_spi_spi_obj_t *self) {
-    if (self->fill_from_port) {
-        port_free(self->fill);
-    }
+    port_free(self->fill);
     self->fill = NULL;
     self->fill_len = 0;
-    self->fill_from_port = false;
 }
 
 void common_hal_async_spi_spi_construct(async_spi_spi_obj_t *self, const mcu_pin_obj_t *clock,
@@ -126,9 +121,6 @@ void common_hal_async_spi_spi_deinit(async_spi_spi_obj_t *self) {
     self->clock = NULL;
     self->mosi = NULL;
     self->miso = NULL;
-}
-
-void common_hal_async_spi_spi_never_reset(async_spi_spi_obj_t *self) {
 }
 
 void common_hal_async_spi_spi_mark_deinit(async_spi_spi_obj_t *self) {
@@ -220,14 +212,10 @@ void *common_hal_async_spi_spi_readinto_start(async_spi_spi_obj_t *self, uint8_t
     if (len != 0) {
         if (self->fill_len < len) {
             free_fill(self);
-            if (gc_alloc_possible()) {
-                self->fill = m_malloc(len);
-            } else {
-                self->fill = port_malloc(len, false);
-                self->fill_from_port = true;
-            }
+            // Allocate from the port heap, because board.SPI() and other static buses are not
+            // scanned by the GC.
+            self->fill = port_malloc(len, false);
             if (self->fill == NULL) {
-                self->fill_from_port = false;
                 self->result = -ENOMEM;
                 CIRCUITPY_ASYNC_FLAG_INIT(done);
                 CIRCUITPY_ASYNC_FLAG_SET(done);

@@ -509,6 +509,10 @@ void background_callback_run_all(void);
 #define MICROPY_VM_HOOK_RETURN RUN_BACKGROUND_TASKS;
 #define MICROPY_INTERNAL_EVENT_HOOK (RUN_BACKGROUND_TASKS)
 
+#ifndef CIRCUITPY_AUDIOMIXER_USE_PORT_MIX
+#define CIRCUITPY_AUDIOMIXER_USE_PORT_MIX (0)
+#endif
+
 // CIRCUITPY_AUTORELOAD_DELAY_MS = 0 will completely disable autoreload.
 #ifndef CIRCUITPY_AUTORELOAD_DELAY_MS
 #define CIRCUITPY_AUTORELOAD_DELAY_MS 750
@@ -611,6 +615,14 @@ void background_callback_run_all(void);
 
 #ifndef CIRCUITPY_USB_HOST_HIGH_SPEED
 #define CIRCUITPY_USB_HOST_HIGH_SPEED 0
+#endif
+
+// The host controller keeps receiving isochronous IN packets between
+// transfers, in a buffer from common_hal_usb_host_port_claim_iso_buffer(), and
+// hands them over as records: a little endian uint16_t length, then the
+// packet.
+#ifndef CIRCUITPY_USB_HOST_ISO_RECORDS
+#define CIRCUITPY_USB_HOST_ISO_RECORDS (0)
 #endif
 
 // usb_host_bulk takes a usb.core.Device and uses TinyUSB host calls.

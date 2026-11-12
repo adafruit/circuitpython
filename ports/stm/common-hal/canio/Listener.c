@@ -14,6 +14,7 @@
 
 #include "common-hal/canio/__init__.h"
 #include "common-hal/canio/Listener.h"
+#include "shared-bindings/canio/CAN.h"
 #include "shared-bindings/canio/Listener.h"
 #include "shared-bindings/util.h"
 #include "supervisor/shared/tick.h"
@@ -160,14 +161,14 @@ static void install_all_match_filter(canio_listener_obj_t *self) {
 
     // filter mode: 0 = mask
     // (this bit should be clear already, we never set it; but just in case)
-    CLEAR_BIT(self->can->filter_hw->FM1R, bank);
+    CLEAR_BIT(self->can->filter_hw->FM1R, 1 << bank);
     // filter scale: 1 = 32 bits
-    SET_BIT(self->can->filter_hw->FS1R, bank);
+    SET_BIT(self->can->filter_hw->FS1R, 1 << bank);
     // fifo assignment: 1 = FIFO 1
     if (self->fifo_idx) {
-        SET_BIT(self->can->filter_hw->FFA1R, bank);
+        SET_BIT(self->can->filter_hw->FFA1R, 1 << bank);
     } else {
-        CLEAR_BIT(self->can->filter_hw->FFA1R, bank);
+        CLEAR_BIT(self->can->filter_hw->FFA1R, 1 << bank);
     }
 
     // filter activation: 1 = enabled
@@ -203,14 +204,11 @@ void set_filters(canio_listener_obj_t *self, size_t nmatch, canio_match_obj_t **
 
 
 void common_hal_canio_listener_construct(canio_listener_obj_t *self, canio_can_obj_t *can, size_t nmatch, canio_match_obj_t **matches, float timeout) {
+    int fifo_idx;
     if (!can->fifo0_in_use) {
-        self->fifo_idx = 0;
-        self->rfr = &can->handle.Instance->RF0R;
-        can->fifo0_in_use = true;
+        fifo_idx = 0;
     } else if (!can->fifo1_in_use) {
-        self->fifo_idx = 1;
-        self->rfr = &can->handle.Instance->RF1R;
-        can->fifo1_in_use = true;
+        fifo_idx = 1;
     } else {
         mp_raise_ValueError(MP_ERROR_TEXT("All RX FIFOs in use"));
     }
@@ -219,7 +217,15 @@ void common_hal_canio_listener_construct(canio_listener_obj_t *self, canio_can_o
         mp_raise_ValueError(MP_ERROR_TEXT("Filters too complex"));
     }
 
-    // Nothing can fail now so it's safe to assign self->can
+    // Nothing can fail now so it's safe to claim the FIFO and assign self->can
+    self->fifo_idx = fifo_idx;
+    if (fifo_idx == 0) {
+        self->rfr = &can->handle.Instance->RF0R;
+        can->fifo0_in_use = true;
+    } else {
+        self->rfr = &can->handle.Instance->RF1R;
+        can->fifo1_in_use = true;
+    }
     self->can = can;
 
     self->mailbox = &can->handle.Instance->sFIFOMailBox[self->fifo_idx];
@@ -285,7 +291,7 @@ mp_obj_t common_hal_canio_listener_receive(canio_listener_obj_t *self) {
 }
 
 void common_hal_canio_listener_deinit(canio_listener_obj_t *self) {
-    if (self->can) {
+    if (self->can && !common_hal_canio_can_deinited(self->can)) {
         clear_filters(self);
         if (self->fifo_idx == 0) {
             self->can->fifo0_in_use = false;

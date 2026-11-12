@@ -146,7 +146,7 @@ LIBRARY_SOURCE = {
     "gifio": ["lib/AnimatedGIF/gif.c"],
 }
 
-SHARED_MODULE_AND_COMMON_HAL = ["_bleio", "os", "rotaryio"]
+SHARED_MODULE_AND_COMMON_HAL = ["_bleio", "os", "rotaryio", "watchdog"]
 
 # Mapping from module directory name to the flag name used in CIRCUITPY_<FLAG>
 MODULE_FLAG_NAMES = {
@@ -440,9 +440,6 @@ async def build_circuitpython():  # noqa: C901
     lto = cmake_args.get("LTO", "n") == "y"
     circuitpython_flags.append(f"-DCIRCUITPY_ENABLE_MPY_NATIVE={1 if enable_mpy_native else 0}")
     circuitpython_flags.append(f"-DCIRCUITPY_FULL_BUILD={1 if full_build else 0}")
-    # Zephyr does not reset all pins in bulk on soft reset, so never_reset is
-    # compiled out and hardware is released by GC finalizers instead.
-    circuitpython_flags.append("-DCIRCUITPY_BULK_RESET=0")
     circuitpython_flags.append("-DCIRCUITPY_OPT_LOAD_ATTR_FAST_PATH=1")
     circuitpython_flags.append(f"-DCIRCUITPY_OPT_MAP_LOOKUP_CACHE={1 if full_build else 0}")
     circuitpython_flags.append(f"-DCIRCUITPY_SETTINGS_TOML={1 if full_build else 0}")
@@ -520,6 +517,7 @@ async def build_circuitpython():  # noqa: C901
 
     vendor = mpconfigboard.get("VENDOR", board_info["vendor"])
     name = mpconfigboard.get("NAME", board_info["name"])
+    usb_manufacturer = mpconfigboard.get("USB_MANUFACTURER", board_info["vendor"])
 
     enabled_modules, module_reasons = determine_enabled_modules(board_info, portdir, srcdir)
     for m in mpconfigboard.get("DISABLED_MODULES", []):
@@ -613,7 +611,7 @@ async def build_circuitpython():  # noqa: C901
         )
         for macro, limit, value in (
             ("USB_PRODUCT", 16, name),
-            ("USB_MANUFACTURER", 8, vendor),
+            ("USB_MANUFACTURER", 8, usb_manufacturer),
         ):
             circuitpython_flags.append(f"-D{macro}='\"{value}\"'")
             circuitpython_flags.append(f"-D{macro}_{limit}='\"{value[:limit]}\"'")

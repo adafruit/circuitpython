@@ -47,8 +47,13 @@
 //|         the microphone stops also when a ``with`` block is left by an
 //|         exception, or when the program ends.
 //|
-//|         The host controller buffers the stream between reads, in a buffer of
-//|         ``iso_buffer_size`` bytes that `USBIn` allocates and `deinit` frees.
+//|         On RP2 boards, whose host port is PIO-USB, the host controller buffers
+//|         the stream between reads, in a buffer of ``iso_buffer_size`` bytes that
+//|         `USBIn` allocates and `deinit` frees. On boards whose host port is the
+//|         chip's own USB controller, such as the Metro ESP32-P4, there is no such
+//|         buffer and ``iso_buffer_size`` is not used: each packet is received as
+//|         it arrives, and packets that arrive while background tasks can't run,
+//|         such as during a long garbage collection, are lost and set `overflow`.
 //|
 //|         Only one isochronous IN endpoint is received at a time, so only one
 //|         `USBIn` can stream, and a USB camera cannot stream video meanwhile.
@@ -78,7 +83,8 @@
 //|           the stream, from 2048 to 65536, rounded up to a power of two. It holds the
 //|           packets that arrive while background tasks don't run, each with 2 bytes of
 //|           overhead: 16384 is about half a second of 16 kHz mono audio or 80 ms of 48 kHz
-//|           stereo.
+//|           stereo. Only used on RP2 boards; ignored on the Metro ESP32-P4 and other
+//|           boards whose host port is the chip's own USB controller.
 //|
 //|         Example, recording a second from the microphone of a Logitech C270
 //|         webcam. It streams 16 bit mono on interface 3, alternate setting 1,
