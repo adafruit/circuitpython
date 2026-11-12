@@ -118,6 +118,11 @@ void common_hal_wifi_radio_set_enabled(wifi_radio_obj_t *self, bool enabled) {
     }
 }
 
+mp_obj_t common_hal_wifi_radio_get_version(wifi_radio_obj_t *self) {
+    // No WiFi co-processor version is reported on this port yet.
+    return mp_const_none;
+}
+
 mp_obj_t common_hal_wifi_radio_get_hostname(wifi_radio_obj_t *self) {
     const char *hostname = net_hostname_get();
     return mp_obj_new_str(hostname, strlen(hostname));

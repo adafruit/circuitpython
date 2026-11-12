@@ -67,6 +67,11 @@ void common_hal_wifi_radio_set_enabled(wifi_radio_obj_t *self, bool enabled) {
 
 }
 
+mp_obj_t common_hal_wifi_radio_get_version(wifi_radio_obj_t *self) {
+    // The CYW43 firmware is loaded by CircuitPython, so it doesn't vary independently.
+    return mp_const_none;
+}
+
 mp_obj_t common_hal_wifi_radio_get_hostname(wifi_radio_obj_t *self) {
     if (!NETIF_STA->hostname) {
         return mp_const_none;
