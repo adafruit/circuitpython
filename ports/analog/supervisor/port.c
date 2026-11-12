@@ -48,6 +48,36 @@
 // true random number generator, TRNG
 #include "trng.h"
 
+// Define macros for RTC flags for portability
+#if defined(MAX32690)
+#define TOD_FLAG MXC_F_RTC_CTRL_TOD_ALARM
+#define SSEC_FLAG MXC_F_RTC_CTRL_SSEC_ALARM
+#define RDY_FLAG MXC_F_RTC_CTRL_RDY
+
+#define TOD_ENABLE MXC_F_RTC_CTRL_TOD_ALARM_IE
+#define SSEC_ENABLE MXC_F_RTC_CTRL_SSEC_ALARM_IE
+#define RDY_ENABLE MXC_F_RTC_CTRL_RDY_IE
+#define RTC_ENABLE MXC_F_RTC_CTRL_EN
+#elif defined(MAX32650)
+#define TOD_FLAG MXC_F_RTC_CTRL_TOD_ALARM_FL
+#define SSEC_FLAG MXC_F_RTC_CTRL_SSEC_ALARM_FL
+#define RDY_FLAG MXC_F_RTC_CTRL_READY
+
+#define TOD_ENABLE MXC_F_RTC_CTRL_TOD_ALARM_EN
+#define SSEC_ENABLE MXC_F_RTC_CTRL_SSEC_ALARM_EN
+#define RDY_ENABLE MXC_F_RTC_CTRL_READY_INT_EN
+#define RTC_ENABLE MXC_F_RTC_CTRL_ENABLE
+#elif defined(MAX32665)
+#define TOD_FLAG MXC_F_RTC_CTRL_ALDF
+#define SSEC_FLAG MXC_F_RTC_CTRL_ALSF
+#define RDY_FLAG MXC_F_RTC_CTRL_RDY
+
+#define TOD_ENABLE MXC_F_RTC_CTRL_ADE
+#define SSEC_ENABLE MXC_F_RTC_CTRL_ASE
+#define RDY_ENABLE MXC_F_RTC_CTRL_RDYE
+#define RTC_ENABLE MXC_F_RTC_CTRL_RTCE
+#endif
+
 // msec to RTC subsec ticks (4 kHz)
 /* Converts a time in milleseconds to equivalent RSSA register value */
 #define MSEC_TO_SS_ALARM(x) (0 - ((x * 4096) / 1000))
@@ -94,16 +124,10 @@ safe_mode_t port_init(void) {
 
     // Enable GPIO (enables clocks + common init for ports)
     for (int i = 0; i < MXC_CFG_GPIO_INSTANCES; i++) {
-        err = MXC_GPIO_Init(0x1 << i);
+        err = gpio_init(i);
         if (err) {
             return SAFE_MODE_PROGRAMMATIC;
         }
-    }
-
-    // Enable clock to RTC peripheral
-    MXC_GCR->clkctrl |= MXC_F_GCR_CLKCTRL_ERTCO_EN;
-    while (!(MXC_GCR->clkctrl & MXC_F_GCR_CLKCTRL_ERTCO_RDY)) {
-        ;
     }
 
     NVIC_EnableIRQ(RTC_IRQn);
@@ -116,9 +140,9 @@ safe_mode_t port_init(void) {
     ;
 
     // enable 1 sec RTC SSEC alarm
-    MXC_RTC_DisableInt(MXC_F_RTC_CTRL_SSEC_ALARM_IE);
+    MXC_RTC_DisableInt(SSEC_ENABLE);
     MXC_RTC_SetSubsecondAlarm(MSEC_TO_SS_ALARM(1000));
-    MXC_RTC_EnableInt(MXC_F_RTC_CTRL_SSEC_ALARM_IE);
+    MXC_RTC_EnableInt(SSEC_ENABLE);
 
     // Enable RTC
     while (MXC_RTC_Start() != E_SUCCESS) {
@@ -142,14 +166,14 @@ void RTC_IRQHandler(void) {
     int flags = MXC_RTC_GetFlags();
 
     switch (flags) {
-        case MXC_F_RTC_CTRL_SSEC_ALARM:
-            MXC_RTC_ClearFlags(MXC_F_RTC_CTRL_SSEC_ALARM);
+        case SSEC_FLAG:
+            MXC_RTC_ClearFlags(SSEC_FLAG);
             break;
-        case MXC_F_RTC_CTRL_TOD_ALARM:
-            MXC_RTC_ClearFlags(MXC_F_RTC_CTRL_TOD_ALARM);
+        case TOD_FLAG:
+            MXC_RTC_ClearFlags(TOD_FLAG);
             break;
-        case MXC_F_RTC_CTRL_RDY:
-            MXC_RTC_ClearFlags(MXC_F_RTC_CTRL_RDY);
+        case RDY_FLAG:
+            MXC_RTC_ClearFlags(RDY_FLAG);
             break;
         default:
             break;
@@ -217,7 +241,7 @@ uint32_t port_get_saved_word(void) {
 uint64_t port_get_raw_ticks(uint8_t *subticks) {
     // Ensure we can read from ssec register as soon as we can
     // MXC function does cross-tick / busy checking of RTC controller
-    if (MXC_RTC->ctrl & MXC_F_RTC_CTRL_EN) {
+    if (MXC_RTC->ctrl & RTC_ENABLE) {
         // NOTE: RTC_GetTime always returns BUSY if RTC is not running
         while ((MXC_RTC_GetTime(&sec, &subsec)) != E_NO_ERROR) {
             ;
@@ -258,11 +282,10 @@ void port_disable_tick(void) {
 void port_interrupt_after_ticks(uint32_t ticks) {
     uint32_t ticks_msec = 0;
 
-    ticks_msec = (ticks / TICKS_PER_SEC) * 1000;
+    ticks_msec = ((ticks * 1000) / TICKS_PER_SEC);
 
     // Disable RTC interrupts
-    MXC_RTC_DisableInt(MXC_F_RTC_CTRL_SSEC_ALARM_IE |
-        MXC_F_RTC_CTRL_TOD_ALARM_IE | MXC_F_RTC_CTRL_RDY_IE);
+    MXC_RTC_DisableInt(SSEC_ENABLE | TOD_ENABLE | RDY_ENABLE);
 
     // Stop RTC & store current time & ticks
     port_get_raw_ticks(NULL);
@@ -275,14 +298,14 @@ void port_interrupt_after_ticks(uint32_t ticks) {
     while (MXC_RTC_SetSubsecondAlarm(MSEC_TO_SS_ALARM(ticks_msec)) != E_SUCCESS) {
     }
 
-    MXC_RTC_EnableInt(MXC_F_RTC_CTRL_SSEC_ALARM_IE);
+    MXC_RTC_EnableInt(SSEC_ENABLE);
 
 }
 
 void port_idle_until_interrupt(void) {
     #if CIRCUITPY_RTC
     // Check if alarm triggers before we even got here
-    if (MXC_RTC_GetFlags() == (MXC_F_RTC_CTRL_TOD_ALARM | MXC_F_RTC_CTRL_SSEC_ALARM)) {
+    if (MXC_RTC_GetFlags() == (TOD_FLAG | SSEC_FLAG)) {
         return;
     }
     #endif

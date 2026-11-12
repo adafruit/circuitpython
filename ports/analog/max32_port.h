@@ -14,18 +14,24 @@
 #include "mxc_device.h"
 #include "mxc_pins.h"
 #include "mxc_sys.h"
-#include "mcr_regs.h"
 
 #include "gpio.h"
 
 #ifdef MAX32690
+#include "mcr_regs.h"
 #include "system_max32690.h"
 #include "max32690.h"
+
+// GPIO ports & initialization
+#include "peripherals/max32690/gpios.h"
 
 // UART Ports & pins
 #include "peripherals/max32690/max32_uart.h"
 #include "peripherals/max32690/max32_i2c.h"
 #include "peripherals/max32690/max32_spi.h"
+
+// 12-bit ssec register, ticks @ 4096 Hz
+#define SUBSEC_PER_TICK 4
 
 /** START: GPIO4 Handling specific to MAX32690 */
     #define GPIO4_PIN_MASK 0x00000003
@@ -56,6 +62,38 @@
 
 #endif
 
+#ifdef MAX32650
+#include "system_max32650.h"
+#include "max32650.h"
+
+// 12-bit ssec register, ticks @ 4096 Hz
+#define SUBSEC_PER_TICK 4
+
+// GPIO ports & initialization
+#include "peripherals/max32650/gpios.h"
+
+// BUSIO Ports & pins
+#include "peripherals/max32650/max32_uart.h"
+#include "peripherals/max32650/max32_i2c.h"
+#include "peripherals/max32650/max32_spi.h"
+#endif
+
+#ifdef MAX32665
+#include "system_max32665.h"
+#include "max32665.h"
+
+// 12-bit ssec register, ticks @ 4096 Hz
+#define SUBSEC_PER_TICK 4
+
+// GPIO ports & initialization
+#include "peripherals/max32665/gpios.h"
+
+// BUSIO Ports & pins
+#include "peripherals/max32665/max32_uart.h"
+#include "peripherals/max32665/max32_i2c.h"
+#include "peripherals/max32665/max32_spi.h"
+#endif
+
 /** Linker variables defined....
  *  _estack:    end of the stack
  * _ebss:       end of BSS section
@@ -70,10 +108,5 @@ extern uint32_t SystemCoreClock;
 
 // Tick timer should be 1/1024 s. RTC Oscillator is usually 32.768 kHz ERTCO.
 #define TICKS_PER_SEC   1024
-
-#ifdef MAX32690
-// 12-bit ssec register, ticks @ 4096 Hz
-#define SUBSEC_PER_TICK 4
-#endif
 
 #endif // MAX32_PORT_H
