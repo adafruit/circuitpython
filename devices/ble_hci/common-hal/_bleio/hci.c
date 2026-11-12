@@ -119,6 +119,8 @@ static size_t cmd_response_len;
 static uint8_t *cmd_response_data;
 
 static volatile bool hci_poll_in_progress = false;
+// Commands or ACL writes in flight: the advertising timeout waits until there are none.
+static volatile uint8_t hci_waits;
 
 
 //////////////////////////////////////////////////////////////////////
@@ -465,41 +467,60 @@ static hci_result_t send_command(uint16_t opcode, uint8_t params_len, void *para
     dump_cmd_pkt(true, sizeof(tx_buffer), tx_buffer);
     #endif
 
+    // Busy from before the write: a UART write may run background tasks.
+    hci_waits++;
+    cmd_response_received = false;
     int result = write_pkt(tx_buffer, cmd_pkt_len);
     if (result != HCI_OK) {
+        hci_waits--;
         return result;
     }
 
-    cmd_response_received = false;
-
     // Wait for a response. Note that other packets may be received that are not
     // command responses.
+    result = HCI_RESPONSE_TIMEOUT;
     uint64_t start = supervisor_ticks_ms64();
     while (supervisor_ticks_ms64() - start < RESPONSE_TIMEOUT_MSECS) {
-        // RUN_BACKGROUND_TASKS includes hci_poll_for_incoming_pkt();
         RUN_BACKGROUND_TASKS;
+        // Poll here too: background tasks don't nest, so from one nothing else would read the
+        // answer.
+        hci_poll_for_incoming_pkt();
         if (cmd_response_received && cmd_response_opcode == opcode) {
             // If this is definitely a response to the command that was sent,
             // return the status value, which will will be
             // BT_HCI_ERR_SUCCESS (0x00) if the command succeeded,
             // or a BT_HCI_ERR_x value (> 0x00) if there was a problem.
-            return cmd_response_status;
+            result = cmd_response_status;
+            break;
         }
     }
+    hci_waits--;
 
-    // No I/O error, but no response sent back in time.
-    return HCI_RESPONSE_TIMEOUT;
+    // HCI_RESPONSE_TIMEOUT: no I/O error, but no response sent back in time.
+    return result;
+}
+
+bool hci_busy(void) {
+    return hci_waits > 0 || hci_poll_in_progress;
 }
 
 hci_result_t hci_send_acl_pkt(uint16_t handle, uint8_t cid, uint16_t data_len, uint8_t *data) {
-    // Wait for a free controller buffer, but not forever.
+    // Wait for a free controller buffer, but not forever. Outside the poll, one is kept
+    // for the responses the poll sends.
+    const size_t max_pkt = common_hal_bleio_adapter_obj.max_acl_num_buffers;
+    const bool in_poll = hci_poll_in_progress;
+    // Busy until the packet is written: the wait and the UART write may run background tasks.
+    hci_waits++;
     uint64_t start = supervisor_ticks_ms64();
-    while (pending_pkt >= common_hal_bleio_adapter_obj.max_acl_num_buffers) {
-        // RUN_BACKGROUND_TASKS includes hci_poll_for_incoming_pkt();
-        RUN_BACKGROUND_TASKS;
-        if (supervisor_ticks_ms64() - start > RESPONSE_TIMEOUT_MSECS) {
+    while (pending_pkt + (max_pkt > 1 && !in_poll) >= max_pkt) {
+        // Inside the poll no credit can come back.
+        if (in_poll || supervisor_ticks_ms64() - start > RESPONSE_TIMEOUT_MSECS) {
+            hci_waits--;
             return HCI_WRITE_TIMEOUT;
         }
+        RUN_BACKGROUND_TASKS;
+        // As in send_command(): the credits arrive in packets read here.
+        hci_poll_for_incoming_pkt();
     }
 
     // buf_len is size of entire packet including header.
@@ -528,6 +549,7 @@ hci_result_t hci_send_acl_pkt(uint16_t handle, uint8_t cid, uint16_t data_len, u
 
     int errcode = 0;
     common_hal_busio_uart_write(common_hal_bleio_adapter_obj.hci_uart, tx_buffer, buf_len, &errcode);
+    hci_waits--;
     if (errcode) {
         // Not sent: give the credit back.
         pending_pkt--;

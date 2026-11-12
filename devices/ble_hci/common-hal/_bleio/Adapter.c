@@ -833,11 +833,8 @@ void common_hal_bleio_adapter_stop_advertising(bleio_adapter_obj_t *self) {
     } else {
         result = hci_le_set_advertising_enable(BT_HCI_LE_ADV_DISABLE);
     }
-    // OK if we're already stopped. There seems to be an ESP32 HCI bug:
-    // If advertising is already off, then LE_SET_ADV_ENABLE does not return a response.
-    if (result != HCI_RESPONSE_TIMEOUT) {
-        hci_check_error(result);
-    }
+    // Not checked: from a background task, an exception would stop them all.
+    (void)result;
 
     // TODO startup CircuitPython advertising again.
 }
@@ -958,6 +955,11 @@ void bleio_adapter_reset(bleio_adapter_obj_t *adapter) {
 
 void bleio_adapter_background(bleio_adapter_obj_t *adapter) {
     if (!common_hal_bleio_adapter_get_enabled(adapter)) {
+        return;
+    }
+
+    // Not while a command or an ACL packet is in flight: answers would get mixed up.
+    if (hci_busy()) {
         return;
     }
 
