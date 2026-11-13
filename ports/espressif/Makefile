@@ -864,8 +864,10 @@ CHIP_COMPONENTS += esp_driver_jpeg esp_hal_jpeg
 endif
 
 ifneq ($(CIRCUITPY_JPEGIO_FAST),0)
+ifneq ($(VALID_BOARD),)
 ifneq ($(IDF_TARGET),esp32s3)
 $(error CIRCUITPY_JPEGIO_FAST is only supported on the ESP32-S3)
+endif
 endif
 SRC_C += common-hal/jpegio/JpegDecoderFast.c
 CFLAGS += -isystem esp-adf-libs/esp_new_jpeg/include
