@@ -101,7 +101,7 @@ extern void common_hal_mcu_enable_interrupts(void);
 #define MICROPY_GC_ALLOC_THRESHOLD       (0)
 #define MICROPY_GC_SPLIT_HEAP            (1)
 #define MICROPY_GC_SPLIT_HEAP_AUTO       (1)
-#define MP_PLAT_ALLOC_HEAP(size) port_malloc(size, false)
+#define MP_PLAT_ALLOC_HEAP(size) port_vm_heap_grow(size)
 #define MP_PLAT_FREE_HEAP(ptr) port_free(ptr)
 #include "supervisor/port_heap.h"
 #define MICROPY_HELPER_LEXER_UNIX        (0)

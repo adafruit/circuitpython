@@ -14,6 +14,7 @@
 #include "shared-bindings/supervisor/Runtime.h"
 #include "shared-bindings/supervisor/SafeModeReason.h"
 
+#include "supervisor/port_heap.h"
 #include "supervisor/shared/reload.h"
 #include "supervisor/shared/serial.h"
 #include "supervisor/shared/stack.h"
@@ -266,6 +267,31 @@ MP_DEFINE_CONST_FUN_OBJ_1(supervisor_runtime_get_audio_obj, supervisor_runtime_g
 MP_PROPERTY_GETTER(supervisor_runtime_audio_obj,
     (mp_obj_t)&supervisor_runtime_get_audio_obj);
 
+//|     fast_heap: bool
+//|     """Whether the heap grows into internal RAM first on a board that also has PSRAM.
+//|     Internal RAM is faster, but displays, audio and other drivers need it for their
+//|     buffers. Create those first, then set this. Memory the heap already has stays where
+//|     it is, so set it early. It is ``False`` again when the next program starts.
+//|
+//|     Read-only ``False`` on boards without this choice."""
+//|
+#if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
+static mp_obj_t supervisor_runtime_get_fast_heap(mp_obj_t self) {
+    return mp_obj_new_bool(port_vm_heap_prefers_dma_capable);
+}
+MP_DEFINE_CONST_FUN_OBJ_1(supervisor_runtime_get_fast_heap_obj, supervisor_runtime_get_fast_heap);
+
+static mp_obj_t supervisor_runtime_set_fast_heap(mp_obj_t self, mp_obj_t state_in) {
+    port_vm_heap_prefers_dma_capable = mp_obj_is_true(state_in);
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_2(supervisor_runtime_set_fast_heap_obj, supervisor_runtime_set_fast_heap);
+
+MP_PROPERTY_GETSET(supervisor_runtime_fast_heap_obj,
+    (mp_obj_t)&supervisor_runtime_get_fast_heap_obj,
+    (mp_obj_t)&supervisor_runtime_set_fast_heap_obj);
+#endif
+
 static const mp_rom_map_elem_t supervisor_runtime_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_usb_connected), MP_ROM_PTR(&supervisor_runtime_usb_connected_obj) },
     { MP_ROM_QSTR(MP_QSTR_serial_connected), MP_ROM_PTR(&supervisor_runtime_serial_connected_obj) },
@@ -281,6 +307,11 @@ static const mp_rom_map_elem_t supervisor_runtime_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_display),  MP_ROM_NONE },
     #endif
     { MP_ROM_QSTR(MP_QSTR_audio),  MP_ROM_PTR(&supervisor_runtime_audio_obj) },
+    #if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
+    { MP_ROM_QSTR(MP_QSTR_fast_heap),  MP_ROM_PTR(&supervisor_runtime_fast_heap_obj) },
+    #else
+    { MP_ROM_QSTR(MP_QSTR_fast_heap),  MP_ROM_FALSE },
+    #endif
 };
 
 static MP_DEFINE_CONST_DICT(supervisor_runtime_locals_dict, supervisor_runtime_locals_dict_table);
