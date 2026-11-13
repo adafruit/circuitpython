@@ -317,7 +317,6 @@ hci_result_t hci_poll_for_incoming_pkt(void) {
     // Assert RTS low to say we're ready to read data.
     common_hal_digitalio_digitalinout_set_value(common_hal_bleio_adapter_obj.rts_digitalinout, false);
 
-    int errcode = 0;
     bool packet_is_complete = false;
 
     // Read bytes until we run out. There may be more than one packet in the input buffer.
@@ -325,7 +324,9 @@ hci_result_t hci_poll_for_incoming_pkt(void) {
            common_hal_busio_uart_rx_characters_available(common_hal_bleio_adapter_obj.hci_uart) > 0) {
 
         // Read just one character a a time, so we don't accidentally get part of a second
-        // packet.
+        // packet. A read can fail with EAGAIN although a character is waiting: the next
+        // read must not see that error.
+        int errcode = 0;
         size_t num_read =
             common_hal_busio_uart_read(common_hal_bleio_adapter_obj.hci_uart, rx_buffer + rx_idx, 1, &errcode);
         if (num_read == 0) {
