@@ -193,14 +193,6 @@ void stm32_peripherals_rtc_assign_wkup_callback(void (*callback)(void)) {
     wkup_callback = callback;
 }
 
-void stm32_peripherals_rtc_set_wakeup_mode_seconds(uint32_t seconds) {
-    // prep stuff from CubeMX
-    __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
-    __HAL_RTC_WAKEUPTIMER_CLEAR_FLAG(&hrtc, RTC_FLAG_WUTF);
-
-    HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, (rtc_clock_frequency / 16) * seconds, RTC_WAKEUPCLOCK_RTCCLK_DIV16);
-}
-
 void stm32_peripherals_rtc_set_wakeup_mode_tick(void) {
     // The timer counts RTCCLK / 2 and wakes every (counter + 1) counts.
     uint32_t counter = (rtc_clock_frequency + TICKS_PER_SECOND) / (2 * TICKS_PER_SECOND) - 1;
