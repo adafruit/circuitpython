@@ -49,7 +49,11 @@ static mp_obj_t rtc_rtc_make_new(const mp_obj_type_t *type, size_t n_args, size_
 //|
 //|       current_time = r.datetime
 //|       print(current_time)
-//|       # struct_time(tm_year=2019, tm_month=5, ...)"""
+//|       # struct_time(tm_year=2019, tm_month=5, ...)
+//|
+//|     The RTC does not store ``tm_isdst``: it is ignored when setting the time, and it reads back
+//|     as -1 (unknown). CircuitPython has no time zone or daylight saving time information, so the
+//|     RTC never adjusts for daylight saving time: it keeps counting from the time you set."""
 static mp_obj_t rtc_rtc_obj_get_datetime(mp_obj_t self_in) {
     timeutils_struct_time_t tm;
     common_hal_rtc_get_time(&tm);
