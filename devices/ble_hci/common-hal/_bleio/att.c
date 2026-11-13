@@ -1050,7 +1050,7 @@ static void process_read_or_read_blob_req(uint16_t conn_handle, uint16_t mtu, ui
     mp_obj_t *attribute_obj = bleio_adapter_get_attribute(&common_hal_bleio_adapter_obj, handle);
     if (mp_obj_is_type(attribute_obj, &bleio_service_type)) {
         if (offset) {
-            send_error(conn_handle, BT_ATT_ERR_ATTRIBUTE_NOT_LONG, handle, BT_ATT_ERR_INVALID_PDU);
+            send_error(conn_handle, opcode, handle, BT_ATT_ERR_ATTRIBUTE_NOT_LONG);
             return;
         }
 
@@ -1091,7 +1091,7 @@ static void process_read_or_read_blob_req(uint16_t conn_handle, uint16_t mtu, ui
             mp_buffer_info_t bufinfo;
             mp_get_buffer(characteristic->value, &bufinfo, MP_BUFFER_READ);
 
-            if (offset >= bufinfo.len) {
+            if (offset > bufinfo.len) {
                 send_error(conn_handle, opcode, handle, BT_ATT_ERR_INVALID_OFFSET);
                 return;
             }
@@ -1106,7 +1106,7 @@ static void process_read_or_read_blob_req(uint16_t conn_handle, uint16_t mtu, ui
         mp_buffer_info_t bufinfo;
         mp_get_buffer(descriptor->value, &bufinfo, MP_BUFFER_READ);
 
-        if (offset >= bufinfo.len) {
+        if (offset > bufinfo.len) {
             send_error(conn_handle, opcode, handle, BT_ATT_ERR_INVALID_OFFSET);
             return;
         }
