@@ -34,6 +34,14 @@ static NRF_PWM_Type *pwms[] = {
 
 static uint16_t pwm_seq[MP_ARRAY_SIZE(pwms)][CHANNELS_PER_PWM];
 
+// Which channels of each PWM are in use, one bit per channel.
+// We can't tell from the pin setting (PSEL) whether a channel is free, because
+// pulseio.PulseOut disconnects its pin between pulses but still owns the channel.
+static uint8_t claimed_channels[MP_ARRAY_SIZE(pwms)];
+// True if one object owns the whole PWM. A variable-frequency PWMOut and
+// PWMAudioOut can't share their PWM with anything else.
+static bool exclusive[MP_ARRAY_SIZE(pwms)];
+
 static int pwm_idx(NRF_PWM_Type *pwm) {
     for (size_t i = 0; i < MP_ARRAY_SIZE(pwms); i++) {
         if (pwms[i] == pwm) {
@@ -102,9 +110,9 @@ NRF_PWM_Type *pwmout_allocate(uint16_t countertop, nrf_pwm_clk_t base_clock,
     IRQn_Type *irq) {
     for (size_t pwm_index = 0; pwm_index < MP_ARRAY_SIZE(pwms); pwm_index++) {
         NRF_PWM_Type *pwm = pwms[pwm_index];
-        bool pwm_already_in_use = pwm->ENABLE & PWM_ENABLE_ENABLE_Msk;
+        bool pwm_already_in_use = claimed_channels[pwm_index] != 0;
         if (pwm_already_in_use) {
-            if (variable_frequency) {
+            if (variable_frequency || exclusive[pwm_index]) {
                 // Variable frequency requires exclusive use of a PWM, so try the next one.
                 continue;
             }
@@ -113,8 +121,9 @@ NRF_PWM_Type *pwmout_allocate(uint16_t countertop, nrf_pwm_clk_t base_clock,
             // look for a free channel.
             if (pwm->COUNTERTOP == countertop && pwm->PRESCALER == base_clock) {
                 for (size_t chan = 0; chan < CHANNELS_PER_PWM; chan++) {
-                    if (pwm->PSEL.OUT[chan] == 0xFFFFFFFF) {
+                    if (!(claimed_channels[pwm_index] & (1 << chan))) {
                         // Channel is free.
+                        claimed_channels[pwm_index] |= 1 << chan;
                         if (channel_out) {
                             *channel_out = chan;
                         }
@@ -130,6 +139,8 @@ NRF_PWM_Type *pwmout_allocate(uint16_t countertop, nrf_pwm_clk_t base_clock,
             }
         } else {
             // PWM not yet in use, so we can start to use it. Use channel 0.
+            claimed_channels[pwm_index] = 1 << 0;
+            exclusive[pwm_index] = variable_frequency;
             if (channel_out) {
                 *channel_out = 0;
             }
@@ -149,11 +160,18 @@ void pwmout_free_channel(NRF_PWM_Type *pwm, int8_t channel) {
     // Disconnect pin from channel.
     pwm->PSEL.OUT[channel] = 0xFFFFFFFF;
 
-    for (int i = 0; i < CHANNELS_PER_PWM; i++) {
-        if (pwm->PSEL.OUT[i] != 0xFFFFFFFF) {
-            // Some channel is still being used, so don't disable.
-            return;
-        }
+    int pwm_index = pwm_idx(pwm);
+    if (exclusive[pwm_index]) {
+        // The exclusive user is giving up the whole PWM.
+        claimed_channels[pwm_index] = 0;
+        exclusive[pwm_index] = false;
+    } else {
+        claimed_channels[pwm_index] &= ~(1 << channel);
+    }
+
+    if (claimed_channels[pwm_index] != 0) {
+        // Some channel is still being used, so don't disable.
+        return;
     }
 
     nrf_pwm_disable(pwm);
