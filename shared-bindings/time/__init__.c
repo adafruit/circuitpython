@@ -225,6 +225,8 @@ MP_DEFINE_CONST_FUN_OBJ_0(time_monotonic_ns_obj, time_monotonic_ns);
 //|     local time. If secs is not provided or None, the current time as returned
 //|     by time() is used.
 //|     The earliest date for which it can generate a time is Jan 1, 2000.
+//|     The latest possible date time is 2038-01-19 03:14:07, which is the largest number of seconds that fits in a
+//|     signed 32-bit integer. Larger values raise `OverflowError`.
 //|
 //|     :return: the current time
 //|     :rtype: time.struct_time"""
