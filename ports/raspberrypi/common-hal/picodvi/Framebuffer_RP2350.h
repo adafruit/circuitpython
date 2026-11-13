@@ -103,7 +103,3 @@ typedef struct {
 
 // The framebuffer the frame interrupt is driving, or NULL.
 extern picodvi_framebuffer_obj_t *active_picodvi;
-
-// The internal RAM a display of this size takes: its framebuffer and the DMA
-// command list for one frame, in bytes.
-size_t picodvi_framebuffer_internal_ram(mp_uint_t width, mp_uint_t height, mp_uint_t color_depth);

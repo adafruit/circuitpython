@@ -25,7 +25,6 @@
  */
 
 #include "bindings/picodvi/Framebuffer.h"
-#include "common-hal/picodvi/__init__.h"
 
 #include "py/gc.h"
 #include "py/runtime.h"
@@ -177,46 +176,6 @@ bool common_hal_picodvi_framebuffer_preflight(
     return false;
 }
 
-// Where a display of this size lives in RAM: the output mode, the words per row,
-// and the lengths in words of the framebuffer and of the DMA command list for one
-// frame.
-static void picodvi_framebuffer_layout(mp_uint_t width, mp_uint_t height, mp_uint_t color_depth,
-    mp_uint_t *output_width, size_t *pitch, size_t *framebuffer_len, size_t *dma_commands_len) {
-    if (width % 160 == 0) {
-        *output_width = 640;
-    } else {
-        *output_width = 720;
-    }
-    size_t output_scaling = *output_width / width;
-
-    // Pitch is number of 32-bit words per line. We round up pitch_bytes to the nearest word
-    // so that each scanline begins on a natural 32-bit word boundary.
-    size_t pitch_bytes = (width * color_depth) / 8;
-    *pitch = (pitch_bytes + sizeof(uint32_t) - 1) / sizeof(uint32_t);
-    *framebuffer_len = *pitch * height;
-
-    // We compute all DMA transfers needed for a single frame. This ensure we don't have any super
-    // quick interrupts that we need to respond to. Each transfer takes two words, trans_count and
-    // read_addr. Active pixel lines need two transfers due to different read addresses. When pixel
-    // doubling, then we must also set transfer size.
-    size_t dma_command_size = 2;
-    if (output_scaling > 1) {
-        dma_command_size = 4;
-    }
-    if (*output_width == 640) {
-        *dma_commands_len = (MODE_640_V_FRONT_PORCH + MODE_640_V_SYNC_WIDTH + MODE_640_V_BACK_PORCH + 2 * MODE_640_V_ACTIVE_LINES + 1) * dma_command_size;
-    } else {
-        *dma_commands_len = (MODE_720_V_FRONT_PORCH + MODE_720_V_SYNC_WIDTH + MODE_720_V_BACK_PORCH + 2 * MODE_720_V_ACTIVE_LINES + 1) * dma_command_size;
-    }
-}
-
-size_t picodvi_framebuffer_internal_ram(mp_uint_t width, mp_uint_t height, mp_uint_t color_depth) {
-    mp_uint_t output_width;
-    size_t pitch, framebuffer_len, dma_commands_len;
-    picodvi_framebuffer_layout(width, height, color_depth, &output_width, &pitch, &framebuffer_len, &dma_commands_len);
-    return (framebuffer_len + dma_commands_len) * sizeof(uint32_t);
-}
-
 void common_hal_picodvi_framebuffer_construct(picodvi_framebuffer_obj_t *self,
     mp_uint_t width, mp_uint_t height,
     const mcu_pin_obj_t *clk_dp, const mcu_pin_obj_t *clk_dn,
@@ -237,10 +196,11 @@ void common_hal_picodvi_framebuffer_construct(picodvi_framebuffer_obj_t *self,
     self->dma_command_channel = -1;
     self->dma_pixel_channel = -1;
 
-    size_t pitch;
-    size_t framebuffer_size;
-    size_t dma_commands_len;
-    picodvi_framebuffer_layout(width, height, color_depth, &self->output_width, &pitch, &framebuffer_size, &dma_commands_len);
+    if (width % 160 == 0) {
+        self->output_width = 640;
+    } else {
+        self->output_width = 720;
+    }
     size_t output_scaling = self->output_width / width;
 
     size_t all_allocated = 0;
@@ -271,31 +231,42 @@ void common_hal_picodvi_framebuffer_construct(picodvi_framebuffer_obj_t *self,
     self->width = width;
     self->height = height;
     self->color_depth = color_depth;
-    self->pitch = pitch;
-    self->dma_commands_len = dma_commands_len;
+    // Pitch is number of 32-bit words per line. We round up pitch_bytes to the nearest word
+    // so that each scanline begins on a natural 32-bit word boundary.
+    size_t pitch_bytes = (self->width * color_depth) / 8;
+    self->pitch = (pitch_bytes + sizeof(uint32_t) - 1) / sizeof(uint32_t);
+    size_t framebuffer_size = self->pitch * self->height;
 
-    // The boot display's buffers, when this display fits in them.
-    uint32_t *boot_ram = picodvi_boot_ram_take((framebuffer_size + dma_commands_len) * sizeof(uint32_t));
-    if (boot_ram != NULL) {
-        self->framebuffer = boot_ram;
-        self->dma_commands = boot_ram + framebuffer_size;
-    } else {
-        // We check that allocations aren't in PSRAM because we haven't added XIP
-        // streaming support.
-        self->framebuffer = (uint32_t *)port_malloc(framebuffer_size * sizeof(uint32_t), true);
-        if (self->framebuffer == NULL || ((size_t)self->framebuffer & 0xf0000000) == 0x10000000) {
-            common_hal_picodvi_framebuffer_deinit(self);
-            m_malloc_fail(framebuffer_size * sizeof(uint32_t));
-            return;
-        }
-        self->dma_commands = (uint32_t *)port_malloc(self->dma_commands_len * sizeof(uint32_t), true);
-        if (self->dma_commands == NULL || ((size_t)self->dma_commands & 0xf0000000) == 0x10000000) {
-            common_hal_picodvi_framebuffer_deinit(self);
-            m_malloc_fail(self->dma_commands_len * sizeof(uint32_t));
-            return;
-        }
+    // We check that allocations aren't in PSRAM because we haven't added XIP
+    // streaming support.
+    self->framebuffer = (uint32_t *)port_malloc(framebuffer_size * sizeof(uint32_t), true);
+    if (self->framebuffer == NULL || ((size_t)self->framebuffer & 0xf0000000) == 0x10000000) {
+        common_hal_picodvi_framebuffer_deinit(self);
+        m_malloc_fail(framebuffer_size * sizeof(uint32_t));
+        return;
     }
     memset(self->framebuffer, 0, framebuffer_size * sizeof(uint32_t));
+
+    // We compute all DMA transfers needed for a single frame. This ensure we don't have any super
+    // quick interrupts that we need to respond to. Each transfer takes two words, trans_count and
+    // read_addr. Active pixel lines need two transfers due to different read addresses. When pixel
+    // doubling, then we must also set transfer size.
+    size_t dma_command_size = 2;
+    if (output_scaling > 1) {
+        dma_command_size = 4;
+    }
+
+    if (self->output_width == 640) {
+        self->dma_commands_len = (MODE_640_V_FRONT_PORCH + MODE_640_V_SYNC_WIDTH + MODE_640_V_BACK_PORCH + 2 * MODE_640_V_ACTIVE_LINES + 1) * dma_command_size;
+    } else {
+        self->dma_commands_len = (MODE_720_V_FRONT_PORCH + MODE_720_V_SYNC_WIDTH + MODE_720_V_BACK_PORCH + 2 * MODE_720_V_ACTIVE_LINES + 1) * dma_command_size;
+    }
+    self->dma_commands = (uint32_t *)port_malloc(self->dma_commands_len * sizeof(uint32_t), true);
+    if (self->dma_commands == NULL || ((size_t)self->dma_commands & 0xf0000000) == 0x10000000) {
+        common_hal_picodvi_framebuffer_deinit(self);
+        m_malloc_fail(self->dma_commands_len * sizeof(uint32_t));
+        return;
+    }
 
     // The command channel and the pixel channel form a pipeline that feeds combined HSTX
     // commands and pixel data to the HSTX FIFO. The command channel reads a pre-computed
@@ -618,12 +589,10 @@ void common_hal_picodvi_framebuffer_deinit(picodvi_framebuffer_obj_t *self) {
 
     picodvi_audioout_framebuffer_deinit(self);
 
-    // The boot display's buffers stay allocated for the next Framebuffer.
-    if (!picodvi_is_boot_ram(self->framebuffer)) {
-        port_free(self->framebuffer);
-        port_free(self->dma_commands);
-    }
+    port_free(self->framebuffer);
     self->framebuffer = NULL;
+
+    port_free(self->dma_commands);
     self->dma_commands = NULL;
 
     self->base.type = &mp_type_NoneType;
