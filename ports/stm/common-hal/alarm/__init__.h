@@ -29,4 +29,5 @@ extern alarm_wake_alarm_union_t alarm_wake_alarm;
 
 extern void alarm_set_wakeup_reason(stm_sleep_source_t reason);
 extern stm_sleep_source_t alarm_get_wakeup_cause(void);
+extern bool alarm_woke_from_true_deep_sleep(void);
 extern void alarm_reset(void);
