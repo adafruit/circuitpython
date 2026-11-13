@@ -345,7 +345,9 @@ hci_result_t hci_poll_for_incoming_pkt(void) {
                 continue;
             }
             hci_poll_in_progress = false;
+            #if HCI_DEBUG
             mp_printf(&mp_plat_print, "HCI_READ_ERROR, errcode: %x\n", errcode);
+            #endif
             return HCI_READ_ERROR;
         }
         rx_idx++;

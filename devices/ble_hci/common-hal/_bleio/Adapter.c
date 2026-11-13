@@ -956,8 +956,5 @@ void bleio_adapter_background(bleio_adapter_obj_t *adapter) {
         common_hal_bleio_adapter_stop_advertising(adapter);
     }
 
-    hci_result_t result = hci_poll_for_incoming_pkt();
-    if (result != HCI_OK) {
-        mp_printf(&mp_plat_print, "bad hci_poll_for_incoming_pkt() result in background: %d\n", result);
-    }
+    hci_poll_for_incoming_pkt();
 }
