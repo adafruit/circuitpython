@@ -241,12 +241,21 @@ void stm32_peripherals_rtc_assign_alarm_callback(uint8_t alarm_idx, void (*callb
 }
 
 void stm32_peripherals_rtc_set_alarm(uint8_t alarm_idx, uint32_t ticks) {
-    uint64_t raw_ticks = stm32_peripherals_rtc_raw_ticks(NULL) + ticks;
+    // Count from the current subtick, not from the start of the current tick, which would make
+    // the alarm up to a tick early.
+    uint8_t subticks;
+    uint64_t target = (stm32_peripherals_rtc_raw_ticks(&subticks) + ticks) * SUBTICKS_PER_TICK + subticks;
+    // The first subsecond count at which stm32_peripherals_rtc_raw_ticks() reaches the target:
+    // the inverse of its scaling, rounded up. Both factors of the product are at most 32768, so it
+    // is below 2^30. Rounding up can give a whole second, so add it to the seconds before splitting.
+    uint32_t subticks_in_second = target % SUBTICKS_PER_SECOND;
+    uint64_t count = (target / SUBTICKS_PER_SECOND) * rtc_clock_frequency +
+        (subticks_in_second * rtc_clock_frequency + SUBTICKS_PER_SECOND - 1) / SUBTICKS_PER_SECOND;
 
     RTC_AlarmTypeDef alarm;
     if (ticks > TICKS_PER_SECOND) {
         timeutils_struct_time_t tm;
-        timeutils_seconds_since_2000_to_struct_time(raw_ticks / TICKS_PER_SECOND, &tm);
+        timeutils_seconds_since_2000_to_struct_time(count / rtc_clock_frequency, &tm);
         alarm.AlarmTime.Hours = tm.tm_hour;
         alarm.AlarmTime.Minutes = tm.tm_min;
         alarm.AlarmTime.Seconds = tm.tm_sec;
@@ -259,13 +268,7 @@ void stm32_peripherals_rtc_set_alarm(uint8_t alarm_idx, uint32_t ticks) {
         alarm.AlarmMask = RTC_ALARMMASK_ALL;
     }
 
-    // The first subsecond count at which stm32_peripherals_rtc_raw_ticks() reaches the tick:
-    // the inverse of its scaling, rounded up. It is below rtc_clock_frequency. Both factors of
-    // the product are at most 32768, so it is below 2^30.
-    uint32_t subticks_in_second = (raw_ticks % TICKS_PER_SECOND) * SUBTICKS_PER_TICK;
-    uint32_t subseconds = (subticks_in_second * rtc_clock_frequency + SUBTICKS_PER_SECOND - 1) /
-        SUBTICKS_PER_SECOND;
-    alarm.AlarmTime.SubSeconds = rtc_clock_frequency - 1 - subseconds;
+    alarm.AlarmTime.SubSeconds = rtc_clock_frequency - 1 - count % rtc_clock_frequency;
     alarm.AlarmTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
     alarm.AlarmTime.StoreOperation = RTC_STOREOPERATION_SET;
     // Masking here means that the bits are ignored so we set none of them.
@@ -277,9 +280,8 @@ void stm32_peripherals_rtc_set_alarm(uint8_t alarm_idx, uint32_t ticks) {
     alarmed_already[alarm_idx] = false;
     // The alarm matches only its exact subsecond count, and arming it takes a few RTC periods.
     // If the target is less than a quarter tick away (or past), act as if the alarm had fired.
-    uint8_t subticks;
     uint64_t now = stm32_peripherals_rtc_raw_ticks(&subticks);
-    if (now * SUBTICKS_PER_TICK + subticks + SUBTICKS_PER_TICK / 4 >= raw_ticks * SUBTICKS_PER_TICK) {
+    if (now * SUBTICKS_PER_TICK + subticks + SUBTICKS_PER_TICK / 4 >= target) {
         if (alarm_callbacks[alarm_idx]) {
             alarm_callbacks[alarm_idx]();
         }
