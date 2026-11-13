@@ -20,6 +20,7 @@ typedef enum displayio_colorspace {
     DISPLAYIO_COLORSPACE_BGR565_SWAPPED,
     DISPLAYIO_COLORSPACE_BGR555_SWAPPED,
     DISPLAYIO_COLORSPACE_L8,
+    DISPLAYIO_COLORSPACE_L1,
 } displayio_colorspace_t;
 
 void common_hal_displayio_release_displays(void);
@@ -30,6 +31,7 @@ bool common_hal_displayio_primary_display_set_by_user(void);
 
 extern const mp_obj_type_t displayio_colorspace_type;
 extern const cp_enum_obj_t displayio_colorspace_RGB888_obj;
+extern const cp_enum_obj_t displayio_colorspace_RGB565_obj;
 
 
 // Used in the various bus displays: BusDisplay, EPaperDisplay and ParallelDisplay

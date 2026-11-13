@@ -8,6 +8,7 @@
 #include "py/objproperty.h"
 #include "py/runtime.h"
 
+#include "shared-bindings/displayio/__init__.h"
 #include "shared-bindings/videocore/VideoBuffer.h"
 #include "shared-bindings/util.h"
 #include "shared/runtime/context_manager_helpers.h"
@@ -33,10 +34,11 @@
 //|     display's ``root_group`` raises `ValueError`.
 //|
 //|     When the target is a plain buffer, frames are written with no gap
-//|     between rows, so each row takes ``(width * bits_per_pixel + 7) // 8``
-//|     bytes. Python code can read the buffer at any time, for example to
-//|     process or save camera pixels. 1-bit pixels are packed together, and
-//|     each row is padded out to a whole byte.
+//|     between rows, so each row takes ``width * 2`` bytes for
+//|     `displayio.Colorspace.RGB565` and ``(width + 7) // 8`` bytes for
+//|     `displayio.Colorspace.L1`, where each row is padded out to a whole
+//|     byte. Python code can read the buffer at any time, for example to
+//|     process or save camera pixels.
 //|     A Group shows a plain buffer target only when its pixels are 16 bits
 //|     and the display uses 16-bit color, or its pixels are 1 bit and the
 //|     display is monochrome with the leftmost pixel in the top bit of each
@@ -54,31 +56,41 @@
 //|             circuitpython_typing.FrameBuffer, circuitpython_typing.WriteableBuffer
 //|         ],
 //|         *,
-//|         bits_per_pixel: int = 16,
+//|         colorspace: displayio.Colorspace = displayio.Colorspace.RGB565,
 //|     ) -> None:
 //|         """Create a VideoBuffer that plays video into the given framebuffer
 //|
 //|         :param framebuffer: The framebuffer to copy video frames into, or a
 //|             writable buffer such as a ``bytearray`` or ``memoryview``.
-//|         :param int bits_per_pixel: The pixel format of a writable buffer: 16
-//|             for color (RGB565), or 1 for black and white. A framebuffer uses
-//|             its own color depth instead.
+//|         :param displayio.Colorspace colorspace: The pixel format of a writable
+//|             buffer: `displayio.Colorspace.RGB565` for color, or
+//|             `displayio.Colorspace.L1` for black and white. Other colorspaces
+//|             raise `ValueError`. A framebuffer uses its own color depth instead.
 //|         """
 //|
 static mp_obj_t videocore_videobuffer_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
-    enum { ARG_framebuffer, ARG_bits_per_pixel, NUM_ARGS };
+    enum { ARG_framebuffer, ARG_colorspace, NUM_ARGS };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_framebuffer, MP_ARG_REQUIRED | MP_ARG_OBJ },
-        { MP_QSTR_bits_per_pixel, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 16} },
+        { MP_QSTR_colorspace, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = (void *)&displayio_colorspace_RGB565_obj} },
     };
 
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     MP_STATIC_ASSERT(MP_ARRAY_SIZE(allowed_args) == NUM_ARGS);
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    const mp_int_t bits_per_pixel = args[ARG_bits_per_pixel].u_int;
-    if (bits_per_pixel != 1 && bits_per_pixel != 16) {
-        mp_arg_error_invalid(MP_QSTR_bits_per_pixel);
+    const displayio_colorspace_t colorspace =
+        (displayio_colorspace_t)cp_enum_value(&displayio_colorspace_type, args[ARG_colorspace].u_obj, MP_QSTR_colorspace);
+    mp_int_t bits_per_pixel;
+    switch (colorspace) {
+        case DISPLAYIO_COLORSPACE_RGB565:
+            bits_per_pixel = 16;
+            break;
+        case DISPLAYIO_COLORSPACE_L1:
+            bits_per_pixel = 1;
+            break;
+        default:
+            mp_arg_error_invalid(MP_QSTR_colorspace);
     }
 
     videocore_videobuffer_obj_t *self = mp_obj_malloc_with_finaliser(videocore_videobuffer_obj_t, &videocore_videobuffer_type);
