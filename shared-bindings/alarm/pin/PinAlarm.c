@@ -38,6 +38,10 @@
 //|           that of ``value``. For instance, if ``value`` is set to ``True``, setting ``pull``
 //|           to ``True`` will enable a pull-down, to hold the pin low normally until an outside signal
 //|           pulls it high.
+//|
+//|         **Limitations:** On RP2xxx boards, the BOOTSEL button cannot be used as a PinAlarm for true deep sleep.
+//|         Using it to wake from deep sleep causes the board to restart into the UF2
+//|         bootloader instead of CircuitPython.
 //|         """
 //|         ...
 //|
