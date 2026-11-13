@@ -53,6 +53,9 @@ bool alarm_time_timealarm_woke_this_cycle(void) {
 }
 
 void alarm_time_timealarm_reset(void) {
+    // Turn the alarm off, as the other ports do. A TimeAlarm that didn't end the sleep would
+    // otherwise still fire, and the next sleep would return at once.
+    stm32_peripherals_rtc_cancel_alarm(PERIPHERALS_ALARM_B);
     woke_up = false;
 }
 
