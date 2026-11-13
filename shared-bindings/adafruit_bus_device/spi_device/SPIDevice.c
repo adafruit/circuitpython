@@ -24,6 +24,7 @@
 //|         spi: busio.SPI,
 //|         chip_select: Optional[digitalio.DigitalInOut] = None,
 //|         *,
+//|         cs_active_value: bool = False,
 //|         baudrate: int = 100000,
 //|         polarity: int = 0,
 //|         phase: int = 0,
@@ -34,7 +35,13 @@
 //|
 //|         :param ~busio.SPI spi: The SPI bus the device is on
 //|         :param ~digitalio.DigitalInOut chip_select: The chip select pin object that implements the DigitalInOut API. ``None`` if a chip select pin is not being used.
-//|         :param bool cs_active_value: Set to true if your device requires CS to be active high. Defaults to false.
+//|         :param bool cs_active_value: Set to ``True`` if your device requires CS to be active high. Defaults to ``False``.
+//|         :param int baudrate: the desired clock rate in Hertz. The value is treated as a ceiling:
+//|           the actual clock rate may be lower due to the granularity of available clock settings,
+//|           but it will not exceed the given value.
+//|         :param int polarity: the base state of the clock line (0 or 1)
+//|         :param int phase: the edge of the clock that data is captured. First (0)
+//|           or second (1). Rising or falling depends on clock polarity.
 //|         :param int extra_clocks: The minimum number of clock cycles to cycle the bus after CS is high. (Used for SD cards.)
 //|
 //|         Example::
