@@ -126,7 +126,9 @@ void common_hal_mcu_processor_get_uid(uint8_t raw_id[]) {
 
 mcu_reset_reason_t common_hal_mcu_processor_get_reset_reason(void) {
     #if CIRCUITPY_ALARM
-    if (alarm_get_wakeup_cause() != STM_WAKEUP_UNDEF) {
+    // Only a wake from a real deep sleep counts, not an alarm that fired since boot: main.c
+    // goes straight into a real deep sleep, even with USB connected, when this says so.
+    if (alarm_woke_from_true_deep_sleep()) {
         return MCU_RESET_REASON_DEEP_SLEEP_ALARM;
     }
     #endif
