@@ -577,6 +577,17 @@ def run_micropython(
                                 preexec_fn=preexec_fn,
                             )
                             banner = get(True)
+                            # CIRCUITPY-CHANGE: wait for the first prompt before sending input.
+                            #
+                            # get() returns after 20 ms of silence. With "-i -c", the -c output
+                            # can arrive well before the banner, especially on a loaded CI runner.
+                            # Input sent before the REPL puts the terminal in raw mode is echoed
+                            # by the kernel and corrupts the captured output.
+                            import time
+
+                            deadline = time.monotonic() + 5
+                            while not banner.endswith(b">>> ") and time.monotonic() < deadline:
+                                banner += get()
                             if send_sigint:
                                 import signal
 
