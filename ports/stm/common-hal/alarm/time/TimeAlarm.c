@@ -79,7 +79,8 @@ void alarm_time_timealarm_set_alarms(bool deep_sleep, size_t n_alarms, const mp_
 
     // Compute how long to actually sleep, considering the time now.
     mp_float_t now_secs = uint64_to_float(common_hal_time_monotonic_ms()) / 1000.0f;
-    uint32_t wakeup_in_secs = MAX(0.0f, timealarm->monotonic_time - now_secs);
+    // Scale before converting to an integer, so the fraction of a second isn't lost.
+    mp_float_t wakeup_in_secs = MAX(0.0f, timealarm->monotonic_time - now_secs);
     uint32_t wakeup_in_ticks = wakeup_in_secs * 1024;
 
     // In the deep sleep case, we can't start the timer until the USB delay has finished
