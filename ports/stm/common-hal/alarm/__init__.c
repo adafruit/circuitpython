@@ -120,11 +120,11 @@ mp_obj_t common_hal_alarm_light_sleep_until_alarms(size_t n_alarms, const mp_obj
         port_idle_until_interrupt();
     }
 
+    alarm_reset();
     if (mp_hal_is_interrupted()) {
         return mp_const_none; // Shouldn't be given to python code because exception handling should kick in.
     }
 
-    alarm_reset();
     return wake_alarm;
 }
 

@@ -235,6 +235,10 @@ void stm32_peripherals_rtc_reset_alarms(void) {
     HAL_RTC_DeactivateAlarm(&hrtc, RTC_ALARM_B);
 }
 
+void stm32_peripherals_rtc_cancel_alarm(uint8_t alarm_idx) {
+    HAL_RTC_DeactivateAlarm(&hrtc, (alarm_idx == PERIPHERALS_ALARM_A) ? RTC_ALARM_A : RTC_ALARM_B);
+}
+
 void stm32_peripherals_rtc_assign_alarm_callback(uint8_t alarm_idx, void (*callback)(void)) {
     alarm_callbacks[alarm_idx] = callback;
 }
@@ -270,9 +274,9 @@ void stm32_peripherals_rtc_set_alarm(uint8_t alarm_idx, uint32_t ticks) {
     alarm.AlarmSubSecondMask = RTC_ALARMSUBSECONDMASK_NONE;
     alarm.AlarmDateWeekDaySel = RTC_ALARMDATEWEEKDAYSEL_DATE;
     alarm.Alarm = (alarm_idx == PERIPHERALS_ALARM_A) ? RTC_ALARM_A : RTC_ALARM_B;
-    alarmed_already[alarm_idx] = false;
     HAL_RTC_SetAlarm_IT(&hrtc, &alarm, RTC_FORMAT_BIN);
     HAL_NVIC_EnableIRQ(RTC_Alarm_IRQn);
+    alarmed_already[alarm_idx] = false;
     // The alarm matches only its exact subsecond count, and arming it takes a few RTC periods.
     // If the target is less than a quarter tick away (or past), act as if the alarm had fired.
     uint8_t subticks;
