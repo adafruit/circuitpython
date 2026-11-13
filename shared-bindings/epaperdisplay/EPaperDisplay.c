@@ -103,8 +103,9 @@
 //|         :param bool black_bits_inverted: True if 0 bits are used to show black pixels. Otherwise, 1 means to show black.
 //|         :param int write_color_ram_command: Command used to write pixels values into the update region
 //|         :param bool color_bits_inverted: True if 0 bits are used to show the color. Otherwise, 1 means to show color.
-//|         :param int write_previous_ram_command: Command used to write the same pixel values again after each refresh.
-//|           Use it for controllers that compare new and previous RAM to do a partial update, such as the SSD1680 old data RAM (0x26).
+//|         :param int write_previous_ram_command: Command used to write the same pixel values again after each refresh,
+//|           into the RAM the LUT pairs with the black RAM, such as the SSD1680 RAM 0x26. The LUT decides what each pair
+//|           of bits does. It must treat this RAM as the previous image.
 //|           When set, ``refresh()`` waits for the display to finish updating before it returns.
 //|           Requires a non-empty ``stop_sequence``.
 //|           Leave ``write_color_ram_command`` as None when it writes the same RAM, or it will overwrite the previous image.
@@ -131,7 +132,9 @@
 //|           before the next one. If the image stops changing, call ``refresh()`` ``lag_frames`` more times to finish
 //|           the drive. Needs ``write_previous_ram_command``, ``busy_pin``, ``clean_sequence``, the window commands and
 //|           a monochrome display, and allocates ``lag_frames * width * height / 8`` bytes outside the VM heap until
-//|           the display is released. Not accepted on boards without fast e-paper support.
+//|           the display is released. The ``start_sequence`` must load a LUT that moves a pixel one step toward its
+//|           black RAM value when the two RAMs differ and does not drive it when they match, the same amount toward
+//|           black as toward white. Not accepted on boards without fast e-paper support.
 //|         :param int lag_frames: How many refreshes each changed pixel is driven for, 1 to 32, when ``fast`` is true.
 //|           More gives darker motion with more smear and uses more memory. Ignored when ``fast`` is false.
 //|         :param ~circuitpython_typing.ReadableBuffer clean_sequence: Byte-packed commands for a full refresh, such as
