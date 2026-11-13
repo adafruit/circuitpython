@@ -769,6 +769,10 @@ static void process_find_info_req(uint16_t conn_handle, uint16_t mtu, uint8_t dl
         send_error(conn_handle, BT_ATT_OP_FIND_INFO_REQ, req->start_handle, BT_ATT_ERR_INVALID_PDU);
         return;
     }
+    if (req->start_handle == 0 || req->start_handle > req->end_handle) {
+        send_error(conn_handle, BT_ATT_OP_FIND_INFO_REQ, req->start_handle, BT_ATT_ERR_INVALID_HANDLE);
+        return;
+    }
 
     typedef struct __packed {
         struct bt_att_hdr h;
@@ -1478,6 +1482,9 @@ void att_write_cmd(uint16_t conn_handle, uint16_t handle, const uint8_t *data, u
 #define ATT_CMD_FLAG 0x40
 
 void att_process_data(uint16_t conn_handle, uint8_t dlen, uint8_t data[]) {
+    if (dlen == 0) {
+        return;
+    }
     // Opcode is a single byte at the front of the data.
     uint8_t opcode = data[0];
 
