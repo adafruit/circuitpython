@@ -197,14 +197,6 @@ void stm32_peripherals_rtc_assign_wkup_callback(void (*callback)(void)) {
     wkup_callback = callback;
 }
 
-void stm32_peripherals_rtc_set_wakeup_mode_seconds(uint32_t seconds) {
-    // prep stuff from CubeMX
-    __HAL_PWR_CLEAR_FLAG(PWR_FLAG_WU);
-    __HAL_RTC_WAKEUPTIMER_CLEAR_FLAG(&hrtc, RTC_FLAG_WUTF);
-
-    HAL_RTCEx_SetWakeUpTimer_IT(&hrtc, (rtc_clock_frequency / 16) * seconds, RTC_WAKEUPCLOCK_RTCCLK_DIV16);
-}
-
 void stm32_peripherals_rtc_set_wakeup_mode_tick(void) {
     // The timer counts RTCCLK / 2 and wakes every (counter + 1) counts.
     uint32_t counter = (rtc_clock_frequency + TICKS_PER_SECOND) / (2 * TICKS_PER_SECOND) - 1;
@@ -237,6 +229,10 @@ void stm32_peripherals_rtc_recover_wakeup(void) {
 void stm32_peripherals_rtc_reset_alarms(void) {
     HAL_RTC_DeactivateAlarm(&hrtc, RTC_ALARM_A);
     HAL_RTC_DeactivateAlarm(&hrtc, RTC_ALARM_B);
+}
+
+void stm32_peripherals_rtc_cancel_alarm(uint8_t alarm_idx) {
+    HAL_RTC_DeactivateAlarm(&hrtc, (alarm_idx == PERIPHERALS_ALARM_A) ? RTC_ALARM_A : RTC_ALARM_B);
 }
 
 void stm32_peripherals_rtc_assign_alarm_callback(uint8_t alarm_idx, void (*callback)(void)) {
@@ -277,6 +273,16 @@ void stm32_peripherals_rtc_set_alarm(uint8_t alarm_idx, uint32_t ticks) {
     HAL_RTC_SetAlarm_IT(&hrtc, &alarm, RTC_FORMAT_BIN);
     HAL_NVIC_EnableIRQ(RTC_Alarm_IRQn);
     alarmed_already[alarm_idx] = false;
+    // The alarm matches only its exact subsecond count, and arming it takes a few RTC periods.
+    // If the target is less than a quarter tick away (or past), act as if the alarm had fired.
+    uint8_t subticks;
+    uint64_t now = stm32_peripherals_rtc_raw_ticks(&subticks);
+    if (now * SUBTICKS_PER_TICK + subticks + SUBTICKS_PER_TICK / 4 >= raw_ticks * SUBTICKS_PER_TICK) {
+        if (alarm_callbacks[alarm_idx]) {
+            alarm_callbacks[alarm_idx]();
+        }
+        alarmed_already[alarm_idx] = true;
+    }
 }
 
 bool stm32_peripherals_rtc_alarm_triggered(uint8_t alarm_idx) {
