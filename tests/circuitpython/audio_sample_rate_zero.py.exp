@@ -1,0 +1,11 @@
+RawSample 8000 8000
+RawSample 0 ValueError: sample_rate must be >= 1
+RawSample -1 ValueError: sample_rate must be >= 1
+MidiTrack 8000 8000
+MidiTrack 0 ValueError: sample_rate must be >= 1
+MidiTrack -1 ValueError: sample_rate must be >= 1
+from_file 8000 8000
+from_file 0 ValueError: sample_rate must be >= 1
+from_file -1 ValueError: sample_rate must be >= 1
+WaveFile 8000 8000
+WaveFile 0 ValueError: Format not supported
