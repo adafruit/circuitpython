@@ -87,7 +87,8 @@ static uint64_t stm32_peripherals_rtc_raw_ticks(uint8_t *subticks) {
 
     uint32_t subseconds = rtc_clock_frequency - 1 - ssr;
     // Unless the RTC clock is 32768 Hz, a step of the subsecond counter is not a whole subtick,
-    // so scale. subseconds is below 32768, so the product fits in 32 bits.
+    // so scale. subseconds < rtc_clock_frequency <= 32768 (the synchronous prescaler has 15
+    // bits), so the product is below 2^30.
     uint32_t subticks_in_second = subseconds * SUBTICKS_PER_SECOND / rtc_clock_frequency;
 
     if (date != cached_date) {
@@ -259,7 +260,8 @@ void stm32_peripherals_rtc_set_alarm(uint8_t alarm_idx, uint32_t ticks) {
     }
 
     // The first subsecond count at which stm32_peripherals_rtc_raw_ticks() reaches the tick:
-    // the inverse of its scaling, rounded up. It is below rtc_clock_frequency.
+    // the inverse of its scaling, rounded up. It is below rtc_clock_frequency. Both factors of
+    // the product are at most 32768, so it is below 2^30.
     uint32_t subticks_in_second = (raw_ticks % TICKS_PER_SECOND) * SUBTICKS_PER_TICK;
     uint32_t subseconds = (subticks_in_second * rtc_clock_frequency + SUBTICKS_PER_SECOND - 1) /
         SUBTICKS_PER_SECOND;
