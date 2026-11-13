@@ -47,6 +47,9 @@ static void reset_single_pwmout(uint8_t i) {
     NRF_PWM_Type *pwm = pwms[i];
 
     pwm->ENABLE = 0;
+    // A previous user may have left shortcuts set. audiopwmio stops a non-looping
+    // sample with SEQEND->STOP, which would stop a PWMOut after one sequence.
+    pwm->SHORTS = 0;
     pwm->MODE = PWM_MODE_UPDOWN_Up;
     pwm->DECODER = PWM_DECODER_LOAD_Individual;
     pwm->LOOP = 0;
