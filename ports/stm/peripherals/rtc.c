@@ -13,8 +13,9 @@
 
 // Default period for ticks is 1/1024 second
 #define TICKS_PER_SECOND 1024
-// Based on a 32768 kHz clock
+// A subtick is 1/32768 second, one period of a 32768 Hz crystal.
 #define SUBTICKS_PER_TICK 32
+#define SUBTICKS_PER_SECOND (TICKS_PER_SECOND * SUBTICKS_PER_TICK)
 
 static RTC_HandleTypeDef hrtc;
 
@@ -85,6 +86,9 @@ static uint64_t stm32_peripherals_rtc_raw_ticks(uint8_t *subticks) {
     __enable_irq();
 
     uint32_t subseconds = rtc_clock_frequency - 1 - ssr;
+    // Unless the RTC clock is 32768 Hz, a step of the subsecond counter is not a whole subtick,
+    // so scale. subseconds is below 32768, so the product fits in 32 bits.
+    uint32_t subticks_in_second = subseconds * SUBTICKS_PER_SECOND / rtc_clock_frequency;
 
     if (date != cached_date) {
         uint32_t year = (uint8_t)((date & (RTC_DR_YT | RTC_DR_YU)) >> 16U);
@@ -109,10 +113,10 @@ static uint64_t stm32_peripherals_rtc_raw_ticks(uint8_t *subticks) {
     uint8_t seconds = (uint8_t)(time & (RTC_TR_ST | RTC_TR_SU));
     seconds = (uint8_t)RTC_Bcd2ToByte(seconds);
     if (subticks != NULL) {
-        *subticks = subseconds % SUBTICKS_PER_TICK;
+        *subticks = subticks_in_second % SUBTICKS_PER_TICK;
     }
 
-    uint64_t raw_ticks = ((uint64_t)TICKS_PER_SECOND) * (seconds_to_date + seconds_to_minute + seconds) + subseconds / SUBTICKS_PER_TICK;
+    uint64_t raw_ticks = ((uint64_t)TICKS_PER_SECOND) * (seconds_to_date + seconds_to_minute + seconds) + subticks_in_second / SUBTICKS_PER_TICK;
     return raw_ticks;
 }
 
@@ -258,12 +262,12 @@ void stm32_peripherals_rtc_set_alarm(uint8_t alarm_idx, uint32_t ticks) {
         alarm.AlarmMask = RTC_ALARMMASK_ALL;
     }
 
-    alarm.AlarmTime.SubSeconds = rtc_clock_frequency - 1 -
-        ((raw_ticks % TICKS_PER_SECOND) * SUBTICKS_PER_TICK);
-    if (alarm.AlarmTime.SubSeconds > rtc_clock_frequency) {
-        alarm.AlarmTime.SubSeconds = alarm.AlarmTime.SubSeconds +
-            rtc_clock_frequency;
-    }
+    // The first subsecond count at which stm32_peripherals_rtc_raw_ticks() reaches the tick:
+    // the inverse of its scaling, rounded up. It is below rtc_clock_frequency.
+    uint32_t subticks_in_second = (raw_ticks % TICKS_PER_SECOND) * SUBTICKS_PER_TICK;
+    uint32_t subseconds = (subticks_in_second * rtc_clock_frequency + SUBTICKS_PER_SECOND - 1) /
+        SUBTICKS_PER_SECOND;
+    alarm.AlarmTime.SubSeconds = rtc_clock_frequency - 1 - subseconds;
     alarm.AlarmTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
     alarm.AlarmTime.StoreOperation = RTC_STOREOPERATION_SET;
     // Masking here means that the bits are ignored so we set none of them.
