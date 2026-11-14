@@ -1,0 +1,57 @@
+#
+#
+# Debug/Diagnostic settings for K10
+#
+
+#
+# Bootloader config
+#
+CONFIG_BOOTLOADER_LOG_LEVEL_INFO=y
+# CONFIG_BOOTLOADER_LOG_LEVEL_NONE is not set
+# CONFIG_BOOTLOADER_LOG_LEVEL_WARN is not set
+# CONFIG_BOOTLOADER_LOG_LEVEL_ERROR is not set
+# default:
+CONFIG_BOOTLOADER_LOG_LEVEL=3
+
+#
+# ESP-STDIO (USB Serial/JTAG console)
+#
+# CONFIG_ESP_CONSOLE_NONE is not set
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+# default:
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG_ENABLED=y
+# default:
+CONFIG_ESP_CONSOLE_UART_NUM=-1
+# default:
+CONFIG_ESP_CONSOLE_ROM_SERIAL_PORT_NUM=6
+
+#
+# ESP System Settings - panic behavior
+#
+CONFIG_ESP_SYSTEM_PANIC_PRINT_REBOOT=y
+# CONFIG_ESP_SYSTEM_PANIC_SILENT_REBOOT is not set
+# CONFIG_ESP_SYSTEM_PANIC_PRINT_HALT is not set
+
+#
+# PSRAM - allow boot even if memtest fails
+#
+CONFIG_SPIRAM_IGNORE_NOTFOUND=y
+
+# Espressif IoT Development Framework Configuration
+#
+#
+# Component config
+#
+#
+# LWIP
+#
+# end of LWIP
+
+# end of Component config
+
+# end of Espressif IoT Development Framework Configuration
+
+#
+# Camera sensor support - GC2145
+#
+CONFIG_GC2145_SUPPORT=y
