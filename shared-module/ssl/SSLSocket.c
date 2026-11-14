@@ -488,6 +488,7 @@ static void do_handshake(ssl_sslsocket_obj_t *self) {
 
 cleanup:
     self->closed = true;
+    ssl_socket_close(self);
 
     // Verification flags are only valid for CERT_VERIFY_FAILED.
     // Read them before mbedtls_ssl_free() below: they live in the ssl context's
