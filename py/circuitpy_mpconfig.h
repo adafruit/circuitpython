@@ -414,6 +414,11 @@ typedef long mp_off_t;
 #define CIRCUITPY_BUSIO_SPI_ASYNC (0)
 #endif
 
+// Normally set from CIRCUITPY_EPAPERDISPLAY_FAST in the .mk files. zephyr-cp doesn't set it.
+#ifndef CIRCUITPY_EPAPERDISPLAY_FAST
+#define CIRCUITPY_EPAPERDISPLAY_FAST (0)
+#endif
+
 // These CIRCUITPY_xxx values should all be defined in the *.mk files as being on or off.
 // So if any are not defined in *.mk, they'll throw an error here.
 
