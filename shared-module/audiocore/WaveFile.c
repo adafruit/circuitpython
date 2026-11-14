@@ -78,6 +78,7 @@ void common_hal_audioio_wavefile_construct(audioio_wavefile_obj_t *self,
 
     if ((format_size != 40 && format.audio_format != 1) ||
         format.num_channels > 2 ||
+        format.sample_rate == 0 ||
         format.bits_per_sample > 16 ||
         (format_size == 18 && format.extra_params != 0) ||
         (format_size == 40 &&
