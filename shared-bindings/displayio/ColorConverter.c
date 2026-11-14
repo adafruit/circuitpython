@@ -23,7 +23,7 @@
 //|     ) -> None:
 //|         """Create a ColorConverter object to convert color formats.
 //|
-//|         :param Colorspace colorspace: The source colorspace, one of the Colorspace constants except ``L1``
+//|         :param Colorspace colorspace: The source colorspace, one of the Colorspace constants
 //|         :param bool dither: Adds random noise to dither the output image"""
 //|         ...
 //|
