@@ -21,8 +21,6 @@
 // UUID shared by all cccd's.
 bleio_uuid_obj_t cccd_uuid;
 
-bool vm_used_ble;
-
 // void check_sec_status(uint8_t sec_status) {
 //     if (sec_status == BLE_GAP_SEC_STATUS_SUCCESS) {
 //         return;
@@ -44,7 +42,11 @@ void common_hal_bleio_init(void) {
     // Create a UUID object for all CCCD's.
     cccd_uuid.base.type = &bleio_uuid_type;
     common_hal_bleio_uuid_construct(&cccd_uuid, BLE_UUID_CCCD, NULL);
-    bleio_hci_reset();
+    // Keep an enabled adapter's state: every module that uses _bleio imports it again.
+    // bleio_reset() resets at the end of each run.
+    if (!common_hal_bleio_adapter_obj.enabled) {
+        bleio_hci_reset();
+    }
 }
 
 void bleio_user_reset(void) {
@@ -56,16 +58,13 @@ void bleio_user_reset(void) {
 void bleio_reset(void) {
     bleio_hci_reset();
 
-    if (!common_hal_bleio_adapter_get_enabled(&common_hal_bleio_adapter_obj)) {
+    bleio_adapter_obj_t *adapter = &common_hal_bleio_adapter_obj;
+    if (!adapter->allocated) {
         return;
     }
-    bleio_adapter_reset(&common_hal_bleio_adapter_obj);
-    if (!vm_used_ble) {
-        // No user-code BLE operations were done, so we can maintain the supervisor state.
-        return;
-    }
-    common_hal_bleio_adapter_set_enabled(&common_hal_bleio_adapter_obj, false);
-    common_hal_bleio_adapter_obj.allocated = false;
+    // The adapter belongs to the program and its UART is on the VM heap: always free it.
+    bleio_adapter_reset(adapter);
+    adapter->allocated = false;
 
     bleio_set_adapter(mp_const_none);
 

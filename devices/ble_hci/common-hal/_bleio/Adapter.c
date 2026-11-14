@@ -259,10 +259,6 @@ static void _adapter_set_name(bleio_adapter_obj_t *self, mp_obj_str_t *name_obj)
 // Get various values and limits set by the adapter.
 // Set event mask.
 static void bleio_adapter_hci_init(bleio_adapter_obj_t *self) {
-    self->name = NULL;
-
-    bleio_adapter_reset_name(self);
-
     // Get version information.
     if (hci_read_local_version(&self->hci_version, &self->hci_revision, &self->lmp_version,
         &self->manufacturer, &self->lmp_subversion) != HCI_OK) {
@@ -303,10 +299,13 @@ static void bleio_adapter_hci_init(bleio_adapter_obj_t *self) {
         self->max_acl_buffer_len = acl_max_len;
         self->max_acl_num_buffers = acl_max_num;
     }
+
+    // After the address is read: the default name includes it.
+    self->name = NULL;
+    bleio_adapter_reset_name(self);
 }
 
 void common_hal_bleio_adapter_construct_hci_uart(bleio_adapter_obj_t *self, busio_uart_obj_t *uart, digitalio_digitalinout_obj_t *rts, digitalio_digitalinout_obj_t *cts) {
-    self->allocated = true;
     self->hci_uart = uart;
     self->rts_digitalinout = rts;
     self->cts_digitalinout = cts;
@@ -315,7 +314,8 @@ void common_hal_bleio_adapter_construct_hci_uart(bleio_adapter_obj_t *self, busi
     self->enabled = false;
 
     common_hal_bleio_adapter_set_enabled(self, true);
-    bleio_adapter_hci_init(self);
+    // Not when enabling failed: the adapter is not kept.
+    self->allocated = true;
 }
 
 void common_hal_bleio_adapter_set_enabled(bleio_adapter_obj_t *self, bool enabled) {
@@ -326,29 +326,46 @@ void common_hal_bleio_adapter_set_enabled(bleio_adapter_obj_t *self, bool enable
         return;
     }
 
-    self->enabled = enabled;
-
     // We must poll for input from the HCI adapter.
     // TODO Can we instead trigger an interrupt on UART input traffic?
     if (enabled) {
+        self->enabled = true;
         supervisor_enable_tick();
-    } else {
-        supervisor_disable_tick();
     }
 
-    // Enabling or disabling: stop any current activity; reset to known state.
+    // Enabling or disabling: stop any current activity; reset to known state. While disabling,
+    // stay enabled until the reset's reply has been read.
     hci_reset();
+    // The reset ended all links without Disconnection Complete events.
+    bleio_hci_reset();
+    self->connection_objs = NULL;
+    if (!enabled) {
+        self->enabled = false;
+        supervisor_disable_tick();
+    }
     self->now_advertising = false;
     self->circuitpython_advertising = false;
     self->advertising_timeout_msecs = 0;
 
     if (enabled) {
-        // Reset list of known attributes.
-        // Indices into the list are handles. Handle 0x0000 designates an invalid handle,
-        // so store None there to skip it.
-        self->attributes = mp_obj_new_list(0, NULL);
-        bleio_adapter_add_attribute(self, mp_const_none);
-        add_generic_services(self);
+        nlr_buf_t nlr;
+        if (nlr_push(&nlr) == 0) {
+            // Reset list of known attributes.
+            // Indices into the list are handles. Handle 0x0000 designates an invalid handle,
+            // so store None there to skip it.
+            self->attributes = mp_obj_new_list(0, NULL);
+            bleio_adapter_add_attribute(self, mp_const_none);
+            add_generic_services(self);
+
+            // The reset cleared the event mask: set the controller up again.
+            bleio_adapter_hci_init(self);
+            nlr_pop();
+        } else {
+            // On failure, leave the adapter off.
+            self->enabled = false;
+            supervisor_disable_tick();
+            nlr_jump(nlr.ret_val);
+        }
     }
 }
 
@@ -535,7 +552,6 @@ mp_obj_t common_hal_bleio_adapter_connect(bleio_adapter_obj_t *self, bleio_addre
     // ble_drv_add_event_handler(connect_on_ble_evt, &event_info);
     // event_info.done = false;
 
-    vm_used_ble = true;
     // uint32_t err_code = sd_ble_gap_connect(&addr, &scan_params, &conn_params, BLE_CONN_CFG_TAG_CUSTOM);
 
     // if (err_code != NRF_SUCCESS) {
@@ -734,11 +750,12 @@ uint32_t _common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
         uint8_t full_data[MAX_ADVERTISEMENT_SIZE] = { 0 };
         memcpy(full_data, advertising_data, MIN(sizeof(full_data), advertising_data_len));
         hci_check_error(hci_le_set_advertising_data(advertising_data_len, full_data));
+        // Always set, even empty: the controller keeps the previous scan response.
         memset(full_data, 0, sizeof(full_data));
         if (scan_response_data_len > 0) {
             memcpy(full_data, scan_response_data, MIN(sizeof(full_data), scan_response_data_len));
-            hci_check_error(hci_le_set_scan_response_data(scan_response_data_len, full_data));
         }
+        hci_check_error(hci_le_set_scan_response_data(scan_response_data_len, full_data));
 
         // No duration mechanism is provided for legacy advertising, so we need to do our own.
         self->advertising_timeout_msecs = timeout * 1000;
@@ -748,7 +765,6 @@ uint32_t _common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
         hci_check_error(hci_le_set_advertising_enable(BT_HCI_LE_ADV_ENABLE));
     } // end legacy advertising setup
 
-    vm_used_ble = true;
     self->now_advertising = true;
     return 0;
 }
@@ -802,6 +818,11 @@ void common_hal_bleio_adapter_start_advertising(bleio_adapter_obj_t *self,
 void common_hal_bleio_adapter_stop_advertising(bleio_adapter_obj_t *self) {
     check_enabled(self);
 
+    // A connection already stopped advertising in the controller.
+    if (!self->now_advertising) {
+        self->circuitpython_advertising = false;
+        return;
+    }
     self->now_advertising = false;
     self->circuitpython_advertising = false;
 
@@ -815,11 +836,8 @@ void common_hal_bleio_adapter_stop_advertising(bleio_adapter_obj_t *self) {
     } else {
         result = hci_le_set_advertising_enable(BT_HCI_LE_ADV_DISABLE);
     }
-    // OK if we're already stopped. There seems to be an ESP32 HCI bug:
-    // If advertising is already off, then LE_SET_ADV_ENABLE does not return a response.
-    if (result != HCI_RESPONSE_TIMEOUT) {
-        hci_check_error(result);
-    }
+    // Not checked: from a background task, an exception would stop them all.
+    (void)result;
 
     // TODO startup CircuitPython advertising again.
 }
@@ -918,28 +936,17 @@ void bleio_adapter_gc_collect(bleio_adapter_obj_t *adapter) {
 }
 
 void bleio_adapter_reset(bleio_adapter_obj_t *adapter) {
-
-    if (!common_hal_bleio_adapter_get_enabled(adapter)) {
-        return;
-    }
-
-    // Adapter will be reset.
+    // Disabling resets the controller and forgets the links it ends.
     common_hal_bleio_adapter_set_enabled(adapter, false);
-
-    adapter->connection_objs = NULL;
-    for (size_t i = 0; i < BLEIO_TOTAL_CONNECTION_COUNT; i++) {
-        bleio_connection_internal_t *connection = &bleio_connections[i];
-        // Disconnect all connections with Python state cleanly. Keep any supervisor-only connections.
-        if (connection->connection_obj != mp_const_none &&
-            connection->conn_handle != BLE_CONN_HANDLE_INVALID) {
-            common_hal_bleio_connection_disconnect(connection);
-        }
-        connection->connection_obj = mp_const_none;
-    }
 }
 
 void bleio_adapter_background(bleio_adapter_obj_t *adapter) {
     if (!common_hal_bleio_adapter_get_enabled(adapter)) {
+        return;
+    }
+
+    // Not while a command or an ACL packet is in flight: answers would get mixed up.
+    if (hci_busy()) {
         return;
     }
 
@@ -949,8 +956,5 @@ void bleio_adapter_background(bleio_adapter_obj_t *adapter) {
         common_hal_bleio_adapter_stop_advertising(adapter);
     }
 
-    hci_result_t result = hci_poll_for_incoming_pkt();
-    if (result != HCI_OK) {
-        mp_printf(&mp_plat_print, "bad hci_poll_for_incoming_pkt() result in background: %d\n", result);
-    }
+    hci_poll_for_incoming_pkt();
 }
