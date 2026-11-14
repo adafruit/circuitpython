@@ -293,6 +293,12 @@ uint32_t displayio_colorconverter_convert_pixel(displayio_colorspace_t colorspac
             pixel = l8 * 0x010101;
         }
         break;
+
+        case DISPLAYIO_COLORSPACE_L1: {
+            uint32_t l1 = pixel & 0x1;
+            pixel = l1 * 0xffffff;
+        }
+        break;
     }
 
     return pixel;

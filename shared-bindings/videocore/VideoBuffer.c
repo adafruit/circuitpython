@@ -8,6 +8,7 @@
 #include "py/objproperty.h"
 #include "py/runtime.h"
 
+#include "shared-bindings/displayio/__init__.h"
 #include "shared-bindings/videocore/VideoBuffer.h"
 #include "shared-bindings/util.h"
 #include "shared/runtime/context_manager_helpers.h"
@@ -32,9 +33,19 @@
 //|     Assigning a Group that contains a framebuffer target as a rotated
 //|     display's ``root_group`` raises `ValueError`.
 //|
-//|     When the target is a plain buffer, frames are written compactly (row
-//|     stride equals ``width * bits_per_pixel / 8``) and can be read from
-//|     Python at any time, for example to process or save camera pixels.
+//|     When the target is a plain buffer, frames are written with no gap
+//|     between rows, so each row takes ``width * 2`` bytes for
+//|     `displayio.Colorspace.RGB565` and ``(width + 7) // 8`` bytes for
+//|     `displayio.Colorspace.L1`, where each row is padded out to a whole
+//|     byte. Python code can read the buffer at any time, for example to
+//|     process or save camera pixels.
+//|     A Group shows a plain buffer target only when its pixels are 16 bits
+//|     and the display uses 16-bit color, or its pixels are 1 bit and the
+//|     display is monochrome with the leftmost pixel in the top bit of each
+//|     byte, such as `epaperdisplay.EPaperDisplay`. A 1 bit means white.
+//|     On a tricolor display with separate black and color RAM, a 1 bit video
+//|     only draws black and white, and a highlight colored layer below it shows
+//|     through. Other tricolor displays don't draw it.
 //|
 //|     See the `videocore` module overview for complete examples.
 //|     """
@@ -44,25 +55,46 @@
 //|         framebuffer: Union[
 //|             circuitpython_typing.FrameBuffer, circuitpython_typing.WriteableBuffer
 //|         ],
+//|         *,
+//|         colorspace: displayio.Colorspace = displayio.Colorspace.RGB565,
 //|     ) -> None:
 //|         """Create a VideoBuffer that plays video into the given framebuffer
 //|
 //|         :param framebuffer: The framebuffer to copy video frames into, or a
 //|             writable buffer such as a ``bytearray`` or ``memoryview``.
+//|         :param displayio.Colorspace colorspace: The pixel format of a writable
+//|             buffer: `displayio.Colorspace.RGB565` for color, or
+//|             `displayio.Colorspace.L1` for black and white. Other colorspaces
+//|             raise `ValueError`. A framebuffer uses its own color depth instead.
 //|         """
 //|
 static mp_obj_t videocore_videobuffer_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
-    enum { ARG_framebuffer, NUM_ARGS };
+    enum { ARG_framebuffer, ARG_colorspace, NUM_ARGS };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_framebuffer, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_colorspace, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = (void *)&displayio_colorspace_RGB565_obj} },
     };
 
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     MP_STATIC_ASSERT(MP_ARRAY_SIZE(allowed_args) == NUM_ARGS);
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
+    const displayio_colorspace_t colorspace =
+        (displayio_colorspace_t)cp_enum_value(&displayio_colorspace_type, args[ARG_colorspace].u_obj, MP_QSTR_colorspace);
+    mp_int_t bits_per_pixel;
+    switch (colorspace) {
+        case DISPLAYIO_COLORSPACE_RGB565:
+            bits_per_pixel = 16;
+            break;
+        case DISPLAYIO_COLORSPACE_L1:
+            bits_per_pixel = 1;
+            break;
+        default:
+            mp_arg_error_invalid(MP_QSTR_colorspace);
+    }
+
     videocore_videobuffer_obj_t *self = mp_obj_malloc_with_finaliser(videocore_videobuffer_obj_t, &videocore_videobuffer_type);
-    common_hal_videocore_videobuffer_construct(self, args[ARG_framebuffer].u_obj);
+    common_hal_videocore_videobuffer_construct(self, args[ARG_framebuffer].u_obj, bits_per_pixel);
     return MP_OBJ_FROM_PTR(self);
 }
 
@@ -70,15 +102,17 @@ static mp_obj_t videocore_videobuffer_make_new(const mp_obj_type_t *type, size_t
 //|         """Begin streaming the given video source into the target.
 //|
 //|         The source streams continuously, writing each new frame where the
-//|         VideoBuffer tells it to, replacing the previous one. The source's
-//|         frame format must be byte aligned. The source's size and format are
-//|         then fixed for the duration of the ``play()``; sources that change
-//|         them require ``stop()`` and a new ``play()``.
+//|         VideoBuffer tells it to, replacing the previous one. The source can
+//|         use 1 bit per pixel, or a whole number of bytes per pixel.
+//|         The source's size and format are then fixed for the duration of the
+//|         ``play()``; sources that change them require ``stop()`` and a new
+//|         ``play()``.
 //|
 //|         When the target is a framebuffer, its bits per pixel must match the
-//|         framebuffer color depth and the whole frame must fit within the
-//|         framebuffer at the current ``x``/``y`` position. An exception may be
-//|         raised if the video can't be played directly into the framebuffer.
+//|         source and be a whole number of bytes, and the whole frame must fit
+//|         within the framebuffer at the current ``x``/``y`` position. An
+//|         exception may be raised if the video can't be played directly into
+//|         the framebuffer.
 //|
 //|         When the target is a plain buffer, it must be large enough for a
 //|         whole frame.

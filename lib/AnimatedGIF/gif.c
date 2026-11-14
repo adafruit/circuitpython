@@ -163,8 +163,16 @@ int GIF_getLastError(GIFIMAGE *pGIF)
     return pGIF->iError;
 } /* GIF_getLastError() */
 
-int GIF_init(GIFIMAGE *pGIF) {
-    return GIFInit(pGIF);
+int GIF_init(GIFIMAGE *pGIF, unsigned char *pLineBuf, int iLineBufSize) {
+    pGIF->ucLineBuf = pLineBuf;
+    if (!GIFInit(pGIF)) {
+        return 0;
+    }
+    if (pLineBuf != NULL && pGIF->iCanvasWidth > iLineBufSize) {
+        pGIF->iError = GIF_TOO_WIDE;
+        return 0;
+    }
+    return 1;
 }
 
 //
@@ -253,10 +261,6 @@ static int GIFInit(GIFIMAGE *pGIF)
     if (!GIFParseInfo(pGIF, 1)) // gather info for the first frame
        return 0; // something went wrong; not a GIF file?
     (*pGIF->pfnSeek)(&pGIF->GIFFile, 0); // seek back to start of the file
-    if (pGIF->iCanvasWidth > MAX_WIDTH) { // need to allocate more space
-        pGIF->iError = GIF_TOO_WIDE;
-        return 0;
-    }
   return 1;
 } /* GIFInit() */
 
@@ -445,6 +449,11 @@ static int GIFParseInfo(GIFIMAGE *pPage, int bInfoOnly)
     pPage->iWidth = INTELSHORT(&p[iOffset+4]);
     pPage->iHeight = INTELSHORT(&p[iOffset+6]);
     iOffset += 8;
+    // The line buffer is sized to the canvas, so a frame must fit inside it.
+    if (pPage->iX + pPage->iWidth > pPage->iCanvasWidth) {
+        pPage->iError = GIF_DECODE_ERROR;
+        return 0;
+    }
 
     /* Image descriptor
      7 6 5 4 3 2 1 0    M=0 - use global color map, ignore pixel
