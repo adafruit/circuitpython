@@ -65,7 +65,7 @@ MP_WEAK void port_free(void *ptr) {
     tlsf_free(heap, ptr);
 }
 
-#if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
+#if CIRCUITPY_FAST_HEAP
 bool port_vm_heap_prefers_dma_capable = false;
 
 void *port_vm_heap_grow(size_t size) {

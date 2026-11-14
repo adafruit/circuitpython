@@ -273,9 +273,9 @@ MP_PROPERTY_GETTER(supervisor_runtime_audio_obj,
 //|     buffers. Create those first, then set this. Memory the heap already has stays where
 //|     it is, so set it early. It is ``False`` again when the next program starts.
 //|
-//|     Boards without this choice do not have this property."""
+//|     Not every board has this property, and it changes nothing on a board without PSRAM."""
 //|
-#if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
+#if CIRCUITPY_FAST_HEAP
 static mp_obj_t supervisor_runtime_get_fast_heap(mp_obj_t self) {
     return mp_obj_new_bool(port_vm_heap_prefers_dma_capable);
 }
@@ -307,7 +307,7 @@ static const mp_rom_map_elem_t supervisor_runtime_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_display),  MP_ROM_NONE },
     #endif
     { MP_ROM_QSTR(MP_QSTR_audio),  MP_ROM_PTR(&supervisor_runtime_audio_obj) },
-    #if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
+    #if CIRCUITPY_FAST_HEAP
     { MP_ROM_QSTR(MP_QSTR_fast_heap),  MP_ROM_PTR(&supervisor_runtime_fast_heap_obj) },
     #endif
 };

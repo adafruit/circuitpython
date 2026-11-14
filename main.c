@@ -203,7 +203,7 @@ static void start_mp(safe_mode_t safe_mode) {
     #endif
 
     #if MICROPY_ENABLE_GC
-    #if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
+    #if CIRCUITPY_FAST_HEAP
     port_vm_heap_prefers_dma_capable = false;
     #endif
     size_t heap_size = 0;

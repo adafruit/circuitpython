@@ -31,7 +31,9 @@ void *port_realloc(void *ptr, size_t size, bool dma_capable);
 // Check if the full buffer is in DMA-capable memory and meets cache alignment
 // requirements. DMA-capable memory is also accessible during flash operations.
 bool port_buffer_is_dma_capable(const void *ptr, size_t len);
+#endif
 
+#if CIRCUITPY_FAST_HEAP
 // While set, the VM heap grows into DMA-capable memory when that has room. A program sets it
 // with supervisor.runtime.fast_heap. Cleared when the VM starts.
 extern bool port_vm_heap_prefers_dma_capable;
