@@ -20,6 +20,7 @@
 #include "py/stream.h"
 #include "supervisor/port.h"
 #include "supervisor/shared/tick.h"
+#include "esp_sleep.h"
 
 static void uart_event_task(void *param) {
     busio_uart_obj_t *self = param;
@@ -216,7 +217,8 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
         uart_driver_delete(self->uart_num);
         mp_raise_RuntimeError(MP_ERROR_TEXT("UART init"));
     }
-
+    uart_set_wakeup_threshold(self->uart_num, 1);
+    esp_sleep_enable_uart_wakeup(self->uart_num);
     self->tx_pin = NULL;
     self->rx_pin = NULL;
     self->rts_pin = NULL;
