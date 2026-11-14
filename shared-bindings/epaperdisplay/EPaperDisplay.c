@@ -70,8 +70,7 @@
 //|         two_byte_sequence_length: bool = False,
 //|         start_up_time: float = 0,
 //|         address_little_endian: bool = False,
-//|         fast: bool = False,
-//|         lag_frames: int = 4,
+//|         lag_frames: int = 0,
 //|         clean_sequence: Optional[ReadableBuffer] = None,
 //|     ) -> None:
 //|         """Create a EPaperDisplay object on the given display bus (`fourwire.FourWire` or `paralleldisplaybus.ParallelBus`).
@@ -83,6 +82,32 @@
 //|         byte. The bytes following are the parameters. When the delay bit is set, a single byte after
 //|         the parameters specifies the delay duration in milliseconds. The value 0xff will lead to an
 //|         extra long 500 ms delay instead of 255 ms. The next byte will begin a new command definition.
+//|
+//|         To drive the display fast, set ``lag_frames`` to at least 1. Each frame is then compared
+//|         against a reference frame ``lag_frames`` refreshes back, kept in the RAM that
+//|         ``write_previous_ram_command`` writes, and only pixels that differ are driven. The
+//|         ``start_sequence`` must load a LUT with a short period that nudges a pixel one step toward
+//|         its black RAM value when the two RAMs differ and doesn't drive it when they match, the same
+//|         amount toward black as toward white. The LUT period sets the refresh rate: shorter is faster.
+//|         ``lag_frames`` sets how many nudges each change gets. For example, with ``lag_frames`` = 5,
+//|         a white pixel that changes to black is driven toward black for 5 refreshes, until the change
+//|         reaches the reference frame.
+//|
+//|         ``lag_frames`` > 0 stores that many frames, ``lag_frames * width * height / 8`` bytes outside
+//|         the VM heap, until the display is released. Each refresh sends the current frame and the
+//|         reference frame, but only inside the union of the stored frames' dirty boxes. ``refresh()``
+//|         returns as soon as the update starts, so poll ``busy`` before the next one. If the image stops
+//|         changing, call ``refresh()`` ``lag_frames`` more times to finish the drive. The display is
+//|         reset and sent the ``start_sequence`` only before the first refresh, and the ``stop_sequence``
+//|         when it is released.
+//|
+//|         Fast updates need ``write_previous_ram_command``, ``busy_pin``, ``clean_sequence``, a non-empty
+//|         ``stop_sequence``, the window commands and a monochrome display. Not available on boards
+//|         without fast e-paper support.
+//|
+//|         .. warning:: ``lag_frames`` and ``write_previous_ram_command`` allow updates much faster than panel makers'
+//|            limits on refresh rate. Fast updates need a balanced waveform, and long-term wear on the panel
+//|            is unknown.
 //|
 //|         :param display_bus: The bus that the display is connected to
 //|         :type _DisplayBus: fourwire.FourWire or paralleldisplaybus.ParallelBus
@@ -124,28 +149,13 @@
 //|         :param bool two_byte_sequence_length: When true, use two bytes to define sequence length
 //|         :param float start_up_time: Time to wait after reset before sending commands
 //|         :param bool address_little_endian: Send the least significant byte (not bit) of multi-byte addresses first. Ignored when ram is addressed with one byte
-//|         :param bool fast: When true, updates take a fraction of a second. The display is only reset and sent the
-//|           ``start_sequence`` before the first refresh, and the ``stop_sequence`` when it is released, so it can't be
-//|           empty. The previous RAM holds the frame from ``lag_frames`` refreshes ago instead of the last one, so each
-//|           changed pixel is driven for ``lag_frames`` refreshes, the same number toward black and toward white. Only
-//|           the box around the changed bytes is sent. ``refresh()`` returns as soon as the update starts. Poll ``busy``
-//|           before the next one. If the image stops changing, call ``refresh()`` ``lag_frames`` more times to finish
-//|           the drive. Needs ``write_previous_ram_command``, ``busy_pin``, ``clean_sequence``, the window commands and
-//|           a monochrome display, and allocates ``lag_frames * width * height / 8`` bytes outside the VM heap until
-//|           the display is released. The ``start_sequence`` must load a LUT that moves a pixel one step toward its
-//|           black RAM value when the two RAMs differ and does not drive it when they match, the same amount toward
-//|           black as toward white. Not accepted on boards without fast e-paper support.
-//|         :param int lag_frames: How many refreshes each changed pixel is driven for, 1 to 32, when ``fast`` is true.
-//|           More gives darker motion with more smear and uses more memory. Ignored when ``fast`` is false.
+//|         :param int lag_frames: How many refreshes back the reference frame is, 0 to 32. 0, the
+//|           default, turns fast updates off. More gives darker motion with more smear and uses more memory.
 //|         :param ~circuitpython_typing.ReadableBuffer clean_sequence: Byte-packed commands for a full refresh, such as
 //|           one using the waveform stored in the display, for use when both RAM planes are white. It runs before the
-//|           first refresh with ``fast``. When the display is released or the code stops, the display finishes
+//|           first fast update. When the display is released or the code stops, the display finishes
 //|           its drive, goes white and runs this and the ``stop_sequence``. Display drivers should provide it.
-//|           It is only used with ``fast``.
-//|
-//|         .. warning:: ``fast`` and ``write_previous_ram_command`` allow updates much faster than panel makers'
-//|            limits on refresh rate. Fast updates need a balanced waveform, and long-term wear on the panel
-//|            is unknown.
+//|           It is only used with fast updates.
 //|         """
 //|         ...
 //|
@@ -159,7 +169,7 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
            ARG_seconds_per_frame, ARG_always_toggle_chip_select, ARG_grayscale, ARG_advanced_color_epaper, ARG_spectra6,
            ARG_two_byte_sequence_length, ARG_start_up_time, ARG_address_little_endian,
            #if CIRCUITPY_EPAPERDISPLAY_FAST
-           ARG_write_previous_ram_command, ARG_fast, ARG_lag_frames, ARG_clean_sequence,
+           ARG_write_previous_ram_command, ARG_lag_frames, ARG_clean_sequence,
            #endif
     };
     static const mp_arg_t allowed_args[] = {
@@ -197,8 +207,7 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
         { MP_QSTR_address_little_endian, MP_ARG_BOOL | MP_ARG_KW_ONLY, {.u_bool = false} },
         #if CIRCUITPY_EPAPERDISPLAY_FAST
         { MP_QSTR_write_previous_ram_command, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = mp_const_none} },
-        { MP_QSTR_fast, MP_ARG_BOOL | MP_ARG_KW_ONLY, {.u_bool = false} },
-        { MP_QSTR_lag_frames, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 4} },
+        { MP_QSTR_lag_frames, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 0} },
         { MP_QSTR_clean_sequence, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = mp_const_none} },
         #endif
     };
@@ -212,10 +221,12 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
     mp_buffer_info_t stop_bufinfo;
     mp_get_buffer_raise(args[ARG_stop_sequence].u_obj, &stop_bufinfo, MP_BUFFER_READ);
     #if CIRCUITPY_EPAPERDISPLAY_FAST
+    mp_int_t lag_frames = mp_arg_validate_int_range(args[ARG_lag_frames].u_int, 0, 32, MP_QSTR_lag_frames);
+    bool fast = lag_frames > 0;
     // A reset can follow these displays' last RAM write, and SSD168x controllers only commit the
     // last byte when another command arrives.
     if (stop_bufinfo.len == 0 &&
-        (args[ARG_fast].u_bool || args[ARG_write_previous_ram_command].u_obj != mp_const_none)) {
+        (fast || args[ARG_write_previous_ram_command].u_obj != mp_const_none)) {
         mp_arg_error_invalid(MP_QSTR_stop_sequence);
     }
     #endif
@@ -229,10 +240,7 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
     }
 
     #if CIRCUITPY_EPAPERDISPLAY_FAST
-    bool fast = args[ARG_fast].u_bool;
-    mp_int_t lag_frames = 0;
     if (fast) {
-        lag_frames = mp_arg_validate_int_range(args[ARG_lag_frames].u_int, 1, 32, MP_QSTR_lag_frames);
         // Each one a driver can leave out by mistake names itself. The rest are the display type.
         qstr missing = MP_QSTRnull;
         if (args[ARG_busy_pin].u_obj == mp_const_none) {
@@ -249,7 +257,7 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
                    args[ARG_highlight_color].u_int != 0 || args[ARG_highlight_color2].u_int != 0 ||
                    args[ARG_grayscale].u_bool || args[ARG_advanced_color_epaper].u_bool ||
                    args[ARG_spectra6].u_bool) {
-            missing = MP_QSTR_fast;
+            missing = MP_QSTR_lag_frames;
         }
         if (missing != MP_QSTRnull) {
             mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q"), missing);
@@ -378,12 +386,15 @@ MP_DEFINE_CONST_FUN_OBJ_2(epaperdisplay_epaperdisplay_show_obj, epaperdisplay_ep
 //|         refresh_sequence: Optional[ReadableBuffer] = None,
 //|     ) -> None:
 //|         """Updates the ``start_sequence`` and ``seconds_per_frame`` parameters to enable
-//|         varying the refresh mode of the display. When ``fast`` is true, the display is
+//|         varying the refresh mode of the display. With fast updates (``lag_frames`` > 0), the display is
 //|         reset and sent the new ``start_sequence`` before the next refresh.
 //|
 //|         :param ReadableBuffer start_sequence: Byte sequence sent to initialize the display before each refresh.
 //|         :param float seconds_per_frame: Minimum number of seconds between refreshes.
 //|         :param ReadableBuffer refresh_sequence: Byte sequence sent to start a refresh.
+//|           Pass it when switching between the stored waveform and a fast LUT, since they
+//|           start a refresh differently. On the SSD1683, a fast LUT in RAM needs ``0x22 0x0C``
+//|           before ``0x20``, and the stored waveform needs only ``0x20``.
 //|           It uses the same format as ``start_sequence``.
 //|           When it is None, the current refresh sequence is kept. Not accepted on boards
 //|           without fast e-paper support."""
@@ -430,7 +441,7 @@ MP_DEFINE_CONST_FUN_OBJ_KW(epaperdisplay_epaperdisplay_update_refresh_mode_obj, 
 //|         ``time.sleep(display.time_to_refresh)`` to sleep until a refresh can occur.
 //|
 //|         The minimum time between refreshes is ``seconds_per_frame``, 180 by default. With
-//|         ``fast``, set it to 0 and poll ``busy`` instead, since this returns once the update
+//|         fast updates, set it to 0 and poll ``busy`` instead, since this returns once the update
 //|         starts. The first refresh also runs the ``clean_sequence``, which takes seconds, and an
 //|         interrupt during it raises when it ends."""
 //|         ...
@@ -453,10 +464,10 @@ MP_DEFINE_CONST_FUN_OBJ_1(epaperdisplay_epaperdisplay_refresh_obj, epaperdisplay
 
 #if CIRCUITPY_EPAPERDISPLAY_FAST
 //|     def clean(self, frames: int = 8, *, full: bool = False) -> None:
-//|         """Remove ghosting from a display using ``fast``, with balanced drive. Not available
+//|         """Remove ghosting from a display using fast updates, with balanced drive. Not available
 //|         on boards without fast e-paper support.
 //|
-//|         All pixels go to white, including the drive they are still owed. If ``full`` is True,
+//|         All pixels go to white for ``lag_frames`` frames to get to a white steady state. If ``full`` is True,
 //|         the ``clean_sequence`` is sent, followed by the ``start_sequence``. Then every pixel is
 //|         driven ``frames`` updates toward black and ``frames`` updates toward white. This blocks,
 //|         but a playing video keeps decoding. The next ``refresh()`` draws everything again.
@@ -506,7 +517,7 @@ MP_PROPERTY_GETTER(epaperdisplay_epaperdisplay_time_to_refresh_obj,
 
 //|     busy: bool
 //|     """True when the display is refreshing. This uses the ``busy_pin`` when available or the
-//|        ``refresh_time`` otherwise. With ``fast``, a panel still busy after 30 seconds is
+//|        ``refresh_time`` otherwise. With fast updates, a panel still busy after 30 seconds is
 //|        given up on, so this goes False and the next ``refresh()`` resets the panel and cleans it."""
 static mp_obj_t epaperdisplay_epaperdisplay_obj_get_busy(mp_obj_t self_in) {
     epaperdisplay_epaperdisplay_obj_t *self = native_display(self_in);
