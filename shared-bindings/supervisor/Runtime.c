@@ -273,7 +273,7 @@ MP_PROPERTY_GETTER(supervisor_runtime_audio_obj,
 //|     buffers. Create those first, then set this. Memory the heap already has stays where
 //|     it is, so set it early. It is ``False`` again when the next program starts.
 //|
-//|     Read-only ``False`` on boards without this choice."""
+//|     Boards without this choice do not have this property."""
 //|
 #if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
 static mp_obj_t supervisor_runtime_get_fast_heap(mp_obj_t self) {
@@ -309,8 +309,6 @@ static const mp_rom_map_elem_t supervisor_runtime_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_audio),  MP_ROM_PTR(&supervisor_runtime_audio_obj) },
     #if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
     { MP_ROM_QSTR(MP_QSTR_fast_heap),  MP_ROM_PTR(&supervisor_runtime_fast_heap_obj) },
-    #else
-    { MP_ROM_QSTR(MP_QSTR_fast_heap),  MP_ROM_FALSE },
     #endif
 };
 
