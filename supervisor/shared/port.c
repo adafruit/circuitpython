@@ -65,6 +65,42 @@ MP_WEAK void port_free(void *ptr) {
     tlsf_free(heap, ptr);
 }
 
+#if CIRCUITPY_FAST_HEAP
+bool port_vm_heap_prefers_dma_capable = false;
+
+void *port_vm_heap_grow(size_t size) {
+    if (!port_vm_heap_prefers_dma_capable) {
+        return port_malloc(size, false);
+    }
+    void *chunk = port_malloc(size, true);
+    if (chunk != NULL) {
+        return chunk;
+    }
+    chunk = port_malloc(size, false);
+    if (chunk == NULL) {
+        return NULL;
+    }
+    // DMA-capable memory has no room for a chunk this big. Add the largest one it does have
+    // room for as well, found to within 1 kB, so that it fills up before `chunk` is used.
+    size_t largest = 0;
+    for (size_t step = size / 2; step >= 1024; step /= 2) {
+        void *probe = port_malloc(largest + step, true);
+        if (probe != NULL) {
+            port_free(probe);
+            largest += step;
+        }
+    }
+    // Anything smaller than the first chunk of the heap is not worth a chunk of its own.
+    if (largest >= CIRCUITPY_HEAP_START_SIZE) {
+        void *extra = port_malloc(largest, true);
+        if (extra != NULL) {
+            gc_add(extra, (uint8_t *)extra + largest);
+        }
+    }
+    return chunk;
+}
+#endif
+
 // Safely free an object that may have been allocated from either the GC heap or port heap.
 // If the pointer is on the GC heap, it will be freed by the GC automatically, so we do nothing.
 // If the pointer is not on the GC heap (i.e., allocated with port_malloc), we free it with port_free.

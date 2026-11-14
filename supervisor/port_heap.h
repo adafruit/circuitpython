@@ -33,4 +33,16 @@ void *port_realloc(void *ptr, size_t size, bool dma_capable);
 bool port_buffer_is_dma_capable(const void *ptr, size_t len);
 #endif
 
+#if CIRCUITPY_FAST_HEAP
+// While set, the VM heap grows into DMA-capable memory when that has room. A program sets it
+// with supervisor.runtime.fast_heap. Cleared when the VM starts.
+extern bool port_vm_heap_prefers_dma_capable;
+
+// Returns the next chunk of the VM heap. With the flag set it may also add a DMA-capable chunk
+// to the heap itself, with gc_add(), so only the heap's own growth code may call it.
+void *port_vm_heap_grow(size_t size);
+#else
+#define port_vm_heap_grow(size) port_malloc(size, false)
+#endif
+
 size_t port_heap_get_largest_free_size(void);
