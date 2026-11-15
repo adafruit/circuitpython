@@ -83,10 +83,32 @@ def main(input_template: pathlib.Path, output_path: pathlib.Path, skus: str = ty
             read_command = 0xEB
             wait_cycles = 4
 
-    # RP2350 stage 2 always uses 0xeb for quad reads. Datasheets rate 0xeb, but
-    # often give no separate rating for 0xe7.
+    # RP2350 stage 2 always uses 0xeb for quad reads, because the read timing
+    # below is rated for 0xeb. Datasheets often give no separate rating for 0xe7.
     rp2350_read_command = 0xEB if quad_ok else 0x03
     rp2350_wait_cycles = 4 if quad_ok else 0
+
+    # Read timing for choosing the RP2350 flash clock divider and sample delay
+    # (mcu_processor_update_flash_timing() in common-hal/microcontroller/Processor.c).
+    # Use the worst case across all the listed devices, because any of them may
+    # be fitted. A device without a value uses the defaults passed to worst()
+    # below: 75 MHz, an output valid time of 8 ns and an output hold time of 0.
+    #
+    # A device with eb_quad_read_max_clock_speed_mhz = 0 has no 0xeb read, so
+    # stage 2 uses the plain 0x03 read. All the devices in data/nvm.toml
+    # support 0x03 at 33 MHz or more.
+    def worst(key, default, pick):
+        values = []
+        for nvm in flashes["nvm"]:
+            value = nvm.get(key, default)
+            if key == "eb_quad_read_max_clock_speed_mhz" and value == 0:
+                value = 33
+            values.append(value)
+        return pick(values)
+
+    eb_max_khz = int(worst("eb_quad_read_max_clock_speed_mhz", 75, min) * 1000)
+    max_output_valid_ps = int(worst("max_output_valid_ns", 8, max) * 1000)
+    min_output_hold_ps = int(worst("min_output_hold_ns", 0, min) * 1000)
 
     flash_settings = {
         "quad_ok": quad_ok,
@@ -100,6 +122,9 @@ def main(input_template: pathlib.Path, output_path: pathlib.Path, skus: str = ty
         "rp2350_read_command": rp2350_read_command,
         "rp2350_wait_cycles": rp2350_wait_cycles,
         "default_power_of_two": default_power_of_two,
+        "eb_max_khz": eb_max_khz,
+        "max_output_valid_ps": max_output_valid_ps,
+        "min_output_hold_ps": min_output_hold_ps,
     }
 
     template = Template(input_template.read_text())

@@ -848,6 +848,7 @@ $(HEADER_BUILD)/flash_info.h: flash_info.h.jinja gen_stage2.py
 	$(Q)$(PYTHON) gen_stage2.py $< $@ $(EXTERNAL_FLASH_DEVICES)
 
 $(BUILD)/supervisor/internal_flash.o: $(HEADER_BUILD)/flash_info.h
+$(BUILD)/common-hal/microcontroller/Processor.o: $(HEADER_BUILD)/flash_info.h
 
 $(BUILD)/boot2.elf: $(BUILD)/stage2.c
 	$(STEPECHO) "BOOT $<"
