@@ -304,7 +304,8 @@ Controls direct flash mapping for :py:func:`storage.map_file` and automatic
 :py:class:`displayio.OnDiskBitmap` mapping. Defaults to ``true`` on builds that
 support file mapping. Set it to ``false`` to use cached file reads for
 ``OnDiskBitmap`` instead; explicit ``storage.map_file()`` calls then raise
-``OSError`` with ``EOPNOTSUPP``.
+``OSError`` with ``EOPNOTSUPP``, and a ``.mpy`` file is imported into RAM instead
+of being run from flash.
 
 On the Qualia ESP32-S3 RGB666, disabling mapping allows PSRAM XIP to keep the
 external-memory cache available during flash writes, so the RGB driver's

@@ -39,6 +39,10 @@
 #if MICROPY_PERSISTENT_CODE_LOAD || MICROPY_PERSISTENT_CODE_SAVE
 
 #include "py/smallint.h"
+// CIRCUITPY-CHANGE
+#if CIRCUITPY_STORAGE_MAP_IMPORT
+#include "shared-bindings/storage/__init__.h"
+#endif
 
 // makeqstrdata.py has a fixed list of qstrs at the start that we can assume
 // are available with know indices on all MicroPython implementations, and
@@ -553,7 +557,13 @@ void mp_raw_code_load_mem(const byte *buf, size_t len, mp_compiled_module_t *con
 
 void mp_raw_code_load_file(qstr filename, mp_compiled_module_t *context) {
     mp_reader_t reader;
-    mp_reader_new_file(&reader, filename);
+    // CIRCUITPY-CHANGE: read a CIRCUITPY .mpy from its flash runs, so its data stays in flash
+    #if CIRCUITPY_STORAGE_MAP_IMPORT
+    if (!storage_map_file_reader(&reader, filename))
+    #endif
+    {
+        mp_reader_new_file(&reader, filename);
+    }
     mp_raw_code_load(&reader, context);
 }
 

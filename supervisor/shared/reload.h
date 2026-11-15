@@ -50,5 +50,6 @@ bool autoreload_pending(void);
 // immediate reload.
 // Used during the REPL or during parts of BLE workflow.
 void autoreload_suspend(uint32_t suspend_reason_mask);
+bool autoreload_is_suspended(uint32_t suspend_reason_mask);
 // Allow autoreloads again, for the given reason(s).
 void autoreload_resume(uint32_t suspend_reason_mask);
