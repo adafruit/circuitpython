@@ -64,6 +64,15 @@ def main(input_template: pathlib.Path, output_path: pathlib.Path, skus: str = ty
 
     clock_divider = 4
 
+    # RP2350 stage 2 runs after every flash erase or program, at whatever the
+    # system clock is then. In quad mode it makes one read to enter
+    # continuous-read mode. Its divider and sample delay must be safe at any
+    # system clock. Divider 8 with a sample delay of 6 (set in the template)
+    # meets the setup and hold times of flash with an output valid time of 8 ns
+    # or less, up to 532 MHz. CircuitPython sets the real timing for the system
+    # clock afterward.
+    rp2350_clock_divider = 8
+
     read_command = 0x03
     wait_cycles = 0
     if quad_ok:
@@ -74,14 +83,22 @@ def main(input_template: pathlib.Path, output_path: pathlib.Path, skus: str = ty
             read_command = 0xEB
             wait_cycles = 4
 
+    # RP2350 stage 2 always uses 0xeb for quad reads. Datasheets rate 0xeb, but
+    # often give no separate rating for 0xe7.
+    rp2350_read_command = 0xEB if quad_ok else 0x03
+    rp2350_wait_cycles = 4 if quad_ok else 0
+
     flash_settings = {
         "quad_ok": quad_ok,
         "quad_enable_status_byte": quad_enable_status_byte,
         "quad_enable_bit_mask": quad_enable_bit_mask,
         "split_status_write": split_status_write,
         "clock_divider": clock_divider,
+        "rp2350_clock_divider": rp2350_clock_divider,
         "read_command": read_command,
         "wait_cycles": wait_cycles,
+        "rp2350_read_command": rp2350_read_command,
+        "rp2350_wait_cycles": rp2350_wait_cycles,
         "default_power_of_two": default_power_of_two,
     }
 
