@@ -314,6 +314,9 @@ MP_REGISTER_ROOT_POINTER(void *storage_mapped_imports);
 
 void storage_map_file_reset(void) {
     MP_STATE_VM(storage_mapped_files) = MP_OBJ_NULL;
+    // A held workflow write may ask for a reload after the VM has already stopped. Drop
+    // that request: left pending, it makes the BLE workflow drop its replies.
+    MP_STATE_THREAD(mp_pending_exception) = MP_OBJ_NULL;
     #if CIRCUITPY_STORAGE_MAP_IMPORT
     common_hal_mcu_disable_interrupts();        // the USB task may be checking the list
     MP_STATE_VM(storage_mapped_imports) = NULL;

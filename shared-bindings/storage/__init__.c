@@ -314,7 +314,8 @@ MP_DEFINE_CONST_FUN_OBJ_0(storage_enable_usb_drive_obj, storage_enable_usb_drive
 //|     order. The views stay valid after the file is closed.
 //|
 //|     Until the next reload, opening the file for writing or removing it raises ``OSError``
-//|     ``EACCES``. A USB host can still rewrite it.
+//|     ``EACCES``. Writing or removing it over the web workflow or BLE stops the program first.
+//|     A USB host can still rewrite it.
 //|
 //|     File mapping is enabled by default. To disable it, including automatic
 //|     `displayio.OnDiskBitmap` mapping, set ``CIRCUITPY_STORAGE_MAP_FILE = false`` in
