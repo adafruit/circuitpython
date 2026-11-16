@@ -69,9 +69,21 @@ static mp_obj_t vectorio_polygon_make_new(const mp_obj_type_t *type, size_t n_ar
     return MP_OBJ_FROM_PTR(self);
 }
 
+// A Python subclass of Polygon is an mp_obj_instance_t that holds the native Polygon in
+// subobj[0], so every entry point below has to see that native object instead of the instance.
+// See native_rectangle() in Rectangle.c.
+static vectorio_polygon_t *native_polygon(mp_obj_t self_in) {
+    mp_obj_t native = mp_obj_cast_to_native_base(self_in, MP_OBJ_FROM_PTR(&vectorio_polygon_type));
+    if (native == MP_OBJ_NULL) {
+        return MP_OBJ_TO_PTR(self_in);
+    }
+    mp_obj_assert_native_inited(native);
+    return MP_OBJ_TO_PTR(native);
+}
+
 #if CIRCUITPY_DISPLAYIO_LVGL
 static mp_obj_t polygon_lvgl_protocol_self(mp_obj_t self_in) {
-    return common_hal_vectorio_polygon_get_draw_protocol(MP_OBJ_TO_PTR(self_in));
+    return common_hal_vectorio_polygon_get_draw_protocol(native_polygon(self_in));
 }
 
 static const lvgl_protocol_t polygon_lvgl_protocol = {
@@ -80,9 +92,13 @@ static const lvgl_protocol_t polygon_lvgl_protocol = {
 };
 #define VECTORIO_POLYGON_PROTOCOL &polygon_lvgl_protocol
 #else
+static mp_obj_t polygon_draw_protocol_self(mp_obj_t self_in) {
+    return common_hal_vectorio_polygon_get_draw_protocol(native_polygon(self_in));
+}
+
 static const vectorio_draw_protocol_t polygon_draw_protocol = {
     MP_PROTO_IMPLEMENT(MP_QSTR_protocol_draw)
-    .draw_get_protocol_self = (draw_get_protocol_self_fun)common_hal_vectorio_polygon_get_draw_protocol,
+    .draw_get_protocol_self = polygon_draw_protocol_self,
     .draw_protocol_impl = &vectorio_vector_shape_draw_protocol_impl
 };
 #define VECTORIO_POLYGON_PROTOCOL &polygon_draw_protocol
@@ -92,13 +108,13 @@ static const vectorio_draw_protocol_t polygon_draw_protocol = {
 //|     points: List[Tuple[int, int]]
 //|     """Vertices for the polygon."""
 static mp_obj_t vectorio_polygon_obj_get_points(mp_obj_t self_in) {
-    vectorio_polygon_t *self = MP_OBJ_TO_PTR(self_in);
+    vectorio_polygon_t *self = native_polygon(self_in);
     return common_hal_vectorio_polygon_get_points(self);
 }
 MP_DEFINE_CONST_FUN_OBJ_1(vectorio_polygon_get_points_obj, vectorio_polygon_obj_get_points);
 
 static mp_obj_t vectorio_polygon_obj_set_points(mp_obj_t self_in, mp_obj_t points) {
-    vectorio_polygon_t *self = MP_OBJ_TO_PTR(self_in);
+    vectorio_polygon_t *self = native_polygon(self_in);
 
     common_hal_vectorio_polygon_set_points(self, points);
     return mp_const_none;
@@ -112,13 +128,13 @@ MP_PROPERTY_GETSET(vectorio_polygon_points_obj,
 //|     color_index: int
 //|     """The color_index of the polygon as 0 based index of the palette."""
 static mp_obj_t vectorio_polygon_obj_get_color_index(mp_obj_t self_in) {
-    vectorio_polygon_t *self = MP_OBJ_TO_PTR(self_in);
+    vectorio_polygon_t *self = native_polygon(self_in);
     return mp_obj_new_int(common_hal_vectorio_polygon_get_color_index(self));
 }
 MP_DEFINE_CONST_FUN_OBJ_1(vectorio_polygon_get_color_index_obj, vectorio_polygon_obj_get_color_index);
 
 static mp_obj_t vectorio_polygon_obj_set_color_index(mp_obj_t self_in, mp_obj_t color_index) {
-    vectorio_polygon_t *self = MP_OBJ_TO_PTR(self_in);
+    vectorio_polygon_t *self = native_polygon(self_in);
     common_hal_vectorio_polygon_set_color_index(self, mp_obj_get_int(color_index));
     return mp_const_none;
 }

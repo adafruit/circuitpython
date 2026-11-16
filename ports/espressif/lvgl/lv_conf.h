@@ -29,6 +29,12 @@
 #define LV_USE_PPA_IMG 1
 /* Leave regular PSRAM arbitration gaps for the DSI framebuffer scanout DMA. */
 #define LV_PPA_BURST_LENGTH 64
+
+/* Rounded rectangles are drawn from cached corner alpha tables, keyed by radius. A rounded
+ * shape with an outline uses two entries (the outer radius and the inner one), so the default
+ * of 4 fills up after two shapes with different radii. Each entry is a few hundred bytes to a
+ * couple of KB, and a UI with a few corner radii then never rasterizes a corner again. */
+#define LV_DRAW_SW_CIRCLE_CACHE_SIZE 8
 /* LVGL 9.6 checks this before defining it, which trips -Wundef. */
 #define LV_PPA_NONBLOCKING_OPS 0
 #define LV_DRAW_BUF_ALIGN 64
