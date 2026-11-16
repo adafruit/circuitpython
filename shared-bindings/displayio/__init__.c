@@ -84,11 +84,17 @@
 //|     Once you release a builtin display (one that is initialized automatically, not by user code),
 //|     the display will remain released even if you restart the CircuitPython VM, for instance by typing ctrl-D.
 //|     The display is not re-initialized until you do a hard reset or manually initialize it again.
+//|
+//|     If an EPaperDisplay using ``lag_frames`` can't get its bus, this waits up to 30 seconds and then
+//|     raises `RuntimeError` with every display left as it was, so you can free the bus and call it again.
 //|     """
 //|     ...
 //|
 //|
 static mp_obj_t displayio_release_displays(void) {
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
+    displayio_prepare_release_displays();
+    #endif
     common_hal_displayio_release_displays();
     return mp_const_none;
 }
