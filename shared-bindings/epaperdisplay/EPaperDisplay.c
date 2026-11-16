@@ -87,8 +87,7 @@
 //|         against a reference frame ``lag_frames`` refreshes back, kept in the RAM that
 //|         ``write_previous_ram_command`` writes, and only pixels that differ are driven. The
 //|         ``start_sequence`` must load a LUT with a short period that nudges a pixel one step toward
-//|         its black RAM value when the two RAMs differ and doesn't drive it when they match, the same
-//|         amount toward black as toward white. The LUT period sets the refresh rate: shorter is faster.
+//|         its current value when the two RAMs differ and doesn't drive it when they match. The LUT period sets the refresh rate: shorter is faster.
 //|         ``lag_frames`` sets how many nudges each change gets. For example, with ``lag_frames`` = 5,
 //|         a white pixel that changes to black is driven toward black for 5 refreshes, until the change
 //|         reaches the reference frame.
