@@ -7,15 +7,21 @@ from jinja2 import Template
 
 
 def main(input_template: pathlib.Path, output_path: pathlib.Path, skus: str = typer.Argument("")):
-    if "," in skus:
-        skus = skus.split(",")
-    else:
-        skus = [skus]
-    skus = ['sku="{}"'.format(f.strip()) for f in skus]
-    flashes = cascadetoml.filter_toml(pathlib.Path("../../data/nvm.toml"), skus)
-
-    if len(skus) == 0:
+    skus = [sku.strip() for sku in skus.split(",") if sku.strip()]
+    if not skus:
         print("Set EXTERNAL_FLASH_DEVICES in mpconfigboard.mk with all possible flash skus")
+        raise typer.Exit(code=1)
+
+    flashes = cascadetoml.filter_toml(
+        pathlib.Path("../../data/nvm.toml"), ['sku="{}"'.format(sku) for sku in skus]
+    )
+
+    # Stop if a listed device is not in data/nvm.toml. Otherwise it would be
+    # left out silently, and its settings and read timing would not be used.
+    found = {nvm["sku"] for nvm in flashes["nvm"]}
+    missing = [sku for sku in skus if sku not in found]
+    if missing:
+        print("EXTERNAL_FLASH_DEVICES lists devices not in data/nvm.toml:", ", ".join(missing))
         raise typer.Exit(code=1)
 
     def all_have(nvms, key):
