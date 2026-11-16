@@ -214,9 +214,15 @@ static void videocore_videobuffer_update_area(videocore_videobuffer_obj_t *self)
     videocore_videobuffer_source_rect(self, &whole, &self->current_area);
 }
 
-// Bytes in one row of a source frame.
+// Bytes in one row of a source frame. 1-bit pixels are packed and each row is
+// padded to a whole byte. Framebuffer targets always use whole bytes (see
+// read_source_format).
+static size_t videocore_videobuffer_row_bytes(mp_int_t width, mp_int_t bits_per_pixel) {
+    return ((size_t)width * bits_per_pixel + 7) / 8;
+}
+
 static size_t videocore_videobuffer_source_row_bytes(videocore_videobuffer_obj_t *self) {
-    return (size_t)self->source_width * self->source_bits_per_pixel / 8;
+    return videocore_videobuffer_row_bytes(self->source_width, self->source_bits_per_pixel);
 }
 
 // Bytes a frame covers in a framebuffer with this row stride, from its first
@@ -346,7 +352,8 @@ static void videocore_videobuffer_move_dest(videocore_videobuffer_obj_t *self) {
     }
 }
 
-void common_hal_videocore_videobuffer_construct(videocore_videobuffer_obj_t *self, mp_obj_t framebuffer) {
+void common_hal_videocore_videobuffer_construct(videocore_videobuffer_obj_t *self, mp_obj_t framebuffer,
+    mp_int_t bits_per_pixel) {
     // Initialise what the finaliser uses before anything can raise.
     self->source = mp_const_none;
     self->stream_base = NULL;
@@ -359,12 +366,15 @@ void common_hal_videocore_videobuffer_construct(videocore_videobuffer_obj_t *sel
             self->framebuffer_protocol->get_height == NULL) {
             mp_raise_ValueError(MP_ERROR_TEXT("framebuffer missing required functions"));
         }
+        self->bits_per_pixel = FB_GETTER(get_color_depth, 16);
     } else if (!mp_get_buffer(framebuffer, &self->bufinfo, MP_BUFFER_WRITE)) {
         // Not a framebuffer and not a writable buffer such as a bytearray or
         // memoryview.
         mp_raise_TypeError_varg(MP_ERROR_TEXT("%q must be of type %q or %q, not %q"),
             MP_QSTR_framebuffer, MP_QSTR_buffer, MP_QSTR_framebuffer,
             mp_obj_get_type(framebuffer)->name);
+    } else {
+        self->bits_per_pixel = bits_per_pixel;
     }
 
     self->x = 0;
@@ -400,12 +410,13 @@ static void videocore_videobuffer_read_source_format(videocore_videobuffer_obj_t
     const videosource_p_t *protocol = videosource_check(source);
 
     mp_int_t bits_per_pixel = protocol->get_bits_per_pixel(source);
-    if (bits_per_pixel % 8 != 0) {
+    // Whole bytes per pixel, or 1 bit packed into each byte.
+    if (bits_per_pixel % 8 != 0 && bits_per_pixel != 1) {
         mp_raise_ValueError(MP_ERROR_TEXT("video format must be byte aligned"));
     }
     mp_int_t width = protocol->get_width(source);
     mp_int_t height = protocol->get_height(source);
-    size_t frame_bytes = (size_t)((width * height * bits_per_pixel) / 8);
+    size_t frame_bytes = (size_t)height * videocore_videobuffer_row_bytes(width, bits_per_pixel);
 
     if (self->framebuffer_protocol != NULL) {
         mp_int_t color_depth = FB_GETTER(get_color_depth, 16);
@@ -532,7 +543,9 @@ void common_hal_videocore_videobuffer_play(videocore_videobuffer_obj_t *self, mp
     if (self->playing) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("already playing"));
     }
-    videosource_check(source);
+    if (!videosource_set_bits_per_pixel(source, self->bits_per_pixel)) {
+        mp_arg_error_invalid(MP_QSTR_bits_per_pixel);
+    }
     self->stale_size = false;
     self->source_ended = false;
     videocore_videobuffer_forget_frame(self);
@@ -664,6 +677,117 @@ static mp_obj_t videocore_videobuffer_draw_protocol_self(mp_obj_t protocol_conta
     return protocol_container;
 }
 
+// Whether a layer above already claimed a pixel near the overlap. Checks whole words, which may
+// include pixels between overlap rows or just outside the overlap. That can only make the caller
+// take its slower path; it never misses a claimed pixel.
+static bool videocore_videobuffer_overlap_claimed(const uint32_t *mask, const displayio_area_t *area,
+    const displayio_area_t *overlap) {
+    const size_t span_px = displayio_area_width(area);
+    const size_t first_px = (size_t)(overlap->y1 - area->y1) * span_px + (overlap->x1 - area->x1);
+    const size_t end_px = (size_t)(overlap->y2 - 1 - area->y1) * span_px + (overlap->x2 - area->x1);
+    for (size_t word = first_px / 32; word <= (end_px - 1) / 32; word++) {
+        if (mask[word] != 0) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Copy a 1 bit per pixel plain buffer into a 1 bit display's buffer. Both are MSB first with
+// 1 = white, the same as a monochrome EPaperDisplay's first RAM pass before any inversion.
+// On a rotated display each screen pixel is walked back to its source pixel, as the 16 bit copy
+// does. Whole bytes are copied when the source runs forwards along screen x, the rects line up
+// and nothing above claimed these pixels.
+static bool videocore_videobuffer_fill_area_1bit(videocore_videobuffer_obj_t *self,
+    const _displayio_colorspace_t *colorspace, const displayio_area_t *area, const displayio_area_t *overlap,
+    bool full_coverage, uint32_t *mask, uint32_t *buffer) {
+    // Every grayscale bit of a 1 bit pixel is that pixel, so this also serves each grayscale pass.
+    if (!colorspace->pixels_in_byte_share_row || !colorspace->reverse_pixels_in_byte ||
+        !colorspace->grayscale) {
+        return false;
+    }
+    const size_t span_px = displayio_area_width(area);
+    const size_t width = displayio_area_width(overlap);
+    const size_t row_bytes = videocore_videobuffer_source_row_bytes(self);
+    const size_t x_in_area = overlap->x1 - area->x1;
+    const uint8_t *frame = self->stream_base;
+    uint8_t *out = (uint8_t *)buffer;
+
+    // While the video isn't shown there is no transform and the orientations match.
+    const displayio_buffer_transform_t *t = &self->absolute_transform;
+    const bool shown = t->scale != 0;
+    const int8_t dx = shown ? t->dx : 1;
+    const int8_t dy = shown ? t->dy : 1;
+    const bool transpose = shown && t->transpose_xy;
+    const mp_int_t origin_x = shown ? t->x : 0;
+    const mp_int_t origin_y = shown ? t->y : 0;
+    const bool contiguous = !transpose && dx > 0;
+    // The first source column of every row when the source runs along screen x.
+    const mp_int_t first_x = videocore_videobuffer_source_axis(dx, overlap->x1, origin_x, self->x);
+
+    const bool whole_bytes = contiguous && span_px % 8 == 0 && x_in_area % 8 == 0 && first_x % 8 == 0 &&
+        width % 8 == 0 && !videocore_videobuffer_overlap_claimed(mask, area, overlap);
+    for (int16_t y = overlap->y1; y < overlap->y2; y++) {
+        const size_t px = (size_t)(y - area->y1) * span_px + x_in_area;
+        if (!contiguous) {
+            // Mirrored or transposed: walk each screen pixel back to its source pixel. Screen x
+            // steps along a source row, or down a source column on a transposed display.
+            mp_int_t source_x;
+            mp_int_t source_y;
+            if (transpose) {
+                source_x = videocore_videobuffer_source_axis(dy, y, origin_y, self->x);
+                source_y = videocore_videobuffer_source_axis(dx, overlap->x1, origin_x, self->y);
+            } else {
+                source_x = videocore_videobuffer_source_axis(dx, overlap->x1, origin_x, self->x);
+                source_y = videocore_videobuffer_source_axis(dy, y, origin_y, self->y);
+            }
+            for (size_t i = 0; i < width; i++) {
+                const size_t p = px + i;
+                if (mask[p / 32] & (1u << (p % 32))) {
+                    continue;
+                }
+                const mp_int_t step = (mp_int_t)i * dx;
+                const mp_int_t fx = transpose ? source_x : source_x + step;
+                const mp_int_t fy = transpose ? source_y + step : source_y;
+                if (frame[(size_t)fy * row_bytes + (size_t)fx / 8] & (0x80 >> (fx % 8))) {
+                    out[p / 8] |= 0x80 >> (p % 8);
+                }
+                mask[p / 32] |= 1u << (p % 32);
+            }
+            continue;
+        }
+        const size_t x_in_frame = first_x;
+        const mp_int_t source_y = videocore_videobuffer_source_axis(dy, y, origin_y, self->y);
+        const uint8_t *row = frame + (size_t)source_y * row_bytes;
+        if (whole_bytes) {
+            memcpy(out + px / 8, row + x_in_frame / 8, width / 8);
+            // Full coverage ends the layer walk, so filling the mask once below is enough.
+            if (!full_coverage) {
+                for (size_t p = px; p < px + width; p++) {
+                    mask[p / 32] |= 1u << (p % 32);
+                }
+            }
+            continue;
+        }
+        for (size_t i = 0; i < width; i++) {
+            const size_t p = px + i;
+            if (mask[p / 32] & (1u << (p % 32))) {
+                continue;
+            }
+            const size_t f = x_in_frame + i;
+            if (row[f / 8] & (0x80 >> (f % 8))) {
+                out[p / 8] |= 0x80 >> (p % 8);
+            }
+            mask[p / 32] |= 1u << (p % 32);
+        }
+    }
+    if (whole_bytes && full_coverage) {
+        // A FramebufferDisplay writes nothing back when the mask is empty.
+        memset(mask, 0xff, (displayio_area_size(area) + 31) / 32 * sizeof(uint32_t));
+    }
+    return full_coverage;
+}
+
 static bool videocore_videobuffer_draw_fill_area(mp_obj_t self_in, const _displayio_colorspace_t *colorspace, const displayio_area_t *area, uint32_t *mask, uint32_t *buffer) {
     videocore_videobuffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     // buffer isn't necessarily the framebuffer. It may be a scratch buffer.
@@ -691,21 +815,7 @@ static bool videocore_videobuffer_draw_fill_area(mp_obj_t self_in, const _displa
         const uint8_t *frame = (const uint8_t *)self->stream_base;
         uint8_t *out = (uint8_t *)buffer;
 
-        // Check whole words. This may include pixels between overlap rows or
-        // just outside the overlap, which can only make us take the slower
-        // per-pixel path below; it never misses a claimed pixel.
-        const size_t first_px = (size_t)(overlap.y1 - area->y1) * span_px +
-            (overlap.x1 - area->x1);
-        const size_t end_px = (size_t)(overlap.y2 - 1 - area->y1) * span_px +
-            (overlap.x2 - area->x1);
-        bool masked = false;
-        for (size_t word = first_px / 32; word <= (end_px - 1) / 32; word++) {
-            if (mask[word] != 0) {
-                masked = true;
-                break;
-            }
-        }
-        if (full_coverage && !masked) {
+        if (full_coverage && !videocore_videobuffer_overlap_claimed(mask, area, &overlap)) {
             // Sole coverer: nothing was composed, so the driver skips the copy.
             return true;
         }
@@ -735,6 +845,10 @@ static bool videocore_videobuffer_draw_fill_area(mp_obj_t self_in, const _displa
             }
         }
         return full_coverage;
+    }
+
+    if (colorspace->depth == 1 && self->source_bits_per_pixel == 1) {
+        return videocore_videobuffer_fill_area_1bit(self, colorspace, area, &overlap, full_coverage, mask, buffer);
     }
 
     // Raw buffer target: copy the pixels, with no color conversion: the

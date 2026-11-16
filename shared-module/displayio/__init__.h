@@ -118,6 +118,10 @@ extern displayio_group_t circuitpython_splash;
 
 void displayio_background(void);
 void reset_displays(void);
+#if CIRCUITPY_EPAPERDISPLAY_FAST
+// Raises if a display using lag_frames can't finish its drive, before any display is released.
+void displayio_prepare_release_displays(void);
+#endif
 void displayio_gc_collect(void);
 
 primary_display_t *allocate_display(void);

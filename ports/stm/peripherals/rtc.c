@@ -21,8 +21,19 @@ static RTC_HandleTypeDef hrtc;
 
 #if BOARD_HAS_LOW_SPEED_CRYSTAL
 static uint32_t rtc_clock_frequency = LSE_VALUE;
+static uint32_t rtc_subseconds_per_second = LSE_VALUE;
 #else
+// LSI_VALUE is only the nominal frequency. stm32_peripherals_rtc_init() measures the real one.
 static uint32_t rtc_clock_frequency = LSI_VALUE;
+static uint32_t rtc_subseconds_per_second = LSI_VALUE;
+
+// The LSI is an RC oscillator: the F4 datasheets allow 17 to 47 kHz. A measurement outside
+// this range means something went wrong, so the nominal value is kept.
+#define LSI_MIN_FREQUENCY 15000
+#define LSI_MAX_FREQUENCY 50000
+// About 1/30 second. Each end of the measurement is found to within one pass of the polling
+// loop, well under a microsecond, so this gives the frequency to about 30 ppm.
+#define LSI_MEASURE_STEPS 1024
 #endif
 
 volatile uint32_t seconds_to_date = 0;
@@ -48,6 +59,81 @@ uint32_t stm32_peripherals_get_rtc_freq(void) {
     return rtc_clock_frequency;
 }
 
+// Set the prescalers so that the calendar advances once per second of rtc_clock_frequency.
+static void rtc_set_prescalers(void) {
+    // Divide async as little as possible so that the subsecond counter has the finest steps.
+    // The sync prescaler has 15 bits, so a clock above 32768 Hz needs an async divider of 2.
+    uint32_t async_divider = (rtc_clock_frequency + 32767) / 32768;
+    rtc_subseconds_per_second = (rtc_clock_frequency + async_divider / 2) / async_divider;
+    hrtc.Init.AsynchPrediv = async_divider - 1;
+    hrtc.Init.SynchPrediv = rtc_subseconds_per_second - 1;
+    HAL_RTC_Init(&hrtc);
+}
+
+#if !BOARD_HAS_LOW_SPEED_CRYSTAL
+// With the shadow registers bypassed, a read can catch SSR as it changes. Read it until two
+// reads agree.
+static uint32_t rtc_read_ssr(void) {
+    uint32_t ssr;
+    do {
+        ssr = RTC->SSR;
+    } while (ssr != RTC->SSR);
+    return ssr;
+}
+
+// Count the CPU cycles taken by LSI_MEASURE_STEPS steps of the subsecond counter. The CPU clock
+// comes from the HSE crystal, so it is accurate. The async divider must be 1 (PREDIV_A = 0), so
+// that each step is one LSI period. Returns the LSI frequency in Hz, or 0 if it could not be
+// measured.
+static uint32_t rtc_measure_lsi(void) {
+    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+    #if __CORTEX_M == 7
+    // The Cortex-M7 ignores writes to the DWT until it is unlocked.
+    DWT->LAR = 0xC5ACCE55;
+    #endif
+    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+
+    uint32_t last_step = DWT->CYCCNT;
+    uint32_t ssr = rtc_read_ssr();
+    if (DWT->CYCCNT == last_step) {
+        // The cycle counter is not running: reading SSR takes several cycles.
+        return 0;
+    }
+    // Twice the longest possible LSI period.
+    uint32_t timeout = SystemCoreClock / (LSI_MIN_FREQUENCY / 2);
+    uint32_t start = 0;
+    uint32_t steps = 0;
+    bool started = false;
+
+    // An interrupt at the start or end would delay the cycle count.
+    __disable_irq();
+    while (steps < LSI_MEASURE_STEPS) {
+        uint32_t new_ssr = rtc_read_ssr();
+        uint32_t now = DWT->CYCCNT;
+        if (new_ssr == ssr) {
+            if (now - last_step > timeout) {
+                __enable_irq();
+                return 0;
+            }
+            continue;
+        }
+        if (started) {
+            // SSR counts down, and reloads with PREDIV_S after 0.
+            steps += (ssr + rtc_subseconds_per_second - new_ssr) % rtc_subseconds_per_second;
+        } else {
+            start = now;
+            started = true;
+        }
+        ssr = new_ssr;
+        last_step = now;
+    }
+    __enable_irq();
+
+    uint32_t cycles = last_step - start;
+    return ((uint64_t)SystemCoreClock * steps + cycles / 2) / cycles;
+}
+#endif
+
 void stm32_peripherals_rtc_init(void) {
     rtc_ticks_offset = 0;
     rtc_subticks_offset = 0;
@@ -56,14 +142,18 @@ void stm32_peripherals_rtc_init(void) {
     __HAL_RCC_RTC_ENABLE();
     hrtc.Instance = RTC;
     hrtc.Init.HourFormat = RTC_HOURFORMAT_24;
-    // Divide async as little as possible so that we have rtc_clock_frequency count in subseconds.
-    // This ensures our timing > 1 second is correct.
-    hrtc.Init.AsynchPrediv = 0x0;
-    hrtc.Init.SynchPrediv = rtc_clock_frequency - 1;
     hrtc.Init.OutPut = RTC_OUTPUT_DISABLE;
 
-    HAL_RTC_Init(&hrtc);
+    rtc_set_prescalers();
     HAL_RTCEx_EnableBypassShadow(&hrtc);
+
+    #if !BOARD_HAS_LOW_SPEED_CRYSTAL
+    uint32_t lsi_frequency = rtc_measure_lsi();
+    if (lsi_frequency >= LSI_MIN_FREQUENCY && lsi_frequency <= LSI_MAX_FREQUENCY) {
+        rtc_clock_frequency = lsi_frequency;
+        rtc_set_prescalers();
+    }
+    #endif
     HAL_NVIC_EnableIRQ(RTC_Alarm_IRQn);
 }
 
@@ -85,11 +175,11 @@ static uint64_t stm32_peripherals_rtc_raw_ticks(uint8_t *subticks) {
     }
     __enable_irq();
 
-    uint32_t subseconds = rtc_clock_frequency - 1 - ssr;
+    uint32_t subseconds = rtc_subseconds_per_second - 1 - ssr;
     // Unless the RTC clock is 32768 Hz, a step of the subsecond counter is not a whole subtick,
-    // so scale. subseconds < rtc_clock_frequency <= 32768 (the synchronous prescaler has 15
-    // bits), so the product is below 2^30.
-    uint32_t subticks_in_second = subseconds * SUBTICKS_PER_SECOND / rtc_clock_frequency;
+    // so scale. subseconds < rtc_subseconds_per_second <= 32768 (the synchronous prescaler has
+    // 15 bits), so the product is below 2^30.
+    uint32_t subticks_in_second = subseconds * SUBTICKS_PER_SECOND / rtc_subseconds_per_second;
 
     if (date != cached_date) {
         uint32_t year = (uint8_t)((date & (RTC_DR_YT | RTC_DR_YU)) >> 16U);
@@ -249,13 +339,13 @@ void stm32_peripherals_rtc_set_alarm(uint8_t alarm_idx, uint32_t ticks) {
     // the inverse of its scaling, rounded up. Both factors of the product are at most 32768, so it
     // is below 2^30. Rounding up can give a whole second, so add it to the seconds before splitting.
     uint32_t subticks_in_second = target % SUBTICKS_PER_SECOND;
-    uint64_t count = (target / SUBTICKS_PER_SECOND) * rtc_clock_frequency +
-        (subticks_in_second * rtc_clock_frequency + SUBTICKS_PER_SECOND - 1) / SUBTICKS_PER_SECOND;
+    uint64_t count = (target / SUBTICKS_PER_SECOND) * rtc_subseconds_per_second +
+        (subticks_in_second * rtc_subseconds_per_second + SUBTICKS_PER_SECOND - 1) / SUBTICKS_PER_SECOND;
 
     RTC_AlarmTypeDef alarm;
     if (ticks > TICKS_PER_SECOND) {
         timeutils_struct_time_t tm;
-        timeutils_seconds_since_2000_to_struct_time(count / rtc_clock_frequency, &tm);
+        timeutils_seconds_since_2000_to_struct_time(count / rtc_subseconds_per_second, &tm);
         alarm.AlarmTime.Hours = tm.tm_hour;
         alarm.AlarmTime.Minutes = tm.tm_min;
         alarm.AlarmTime.Seconds = tm.tm_sec;
@@ -268,7 +358,7 @@ void stm32_peripherals_rtc_set_alarm(uint8_t alarm_idx, uint32_t ticks) {
         alarm.AlarmMask = RTC_ALARMMASK_ALL;
     }
 
-    alarm.AlarmTime.SubSeconds = rtc_clock_frequency - 1 - count % rtc_clock_frequency;
+    alarm.AlarmTime.SubSeconds = rtc_subseconds_per_second - 1 - count % rtc_subseconds_per_second;
     alarm.AlarmTime.DayLightSaving = RTC_DAYLIGHTSAVING_NONE;
     alarm.AlarmTime.StoreOperation = RTC_STOREOPERATION_SET;
     // Masking here means that the bits are ignored so we set none of them.
