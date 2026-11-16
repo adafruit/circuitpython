@@ -66,8 +66,8 @@
 #define CIRCUITPY_I2C_ALLOW_INTERNAL_PULL_UP (0)
 #endif
 
-// CIRCUITPY_FLASH_MAX_SCK_HZ is not defined by default. RP2350 chooses its
-// flash clock from the flash's datasheet timing in flash_info.h, which is
+// CIRCUITPY_FLASH_MAX_SCK_HZ is not defined by default. The flash clock is
+// chosen from the flash's datasheet timing in flash_info.h, which is
 // generated from data/nvm.toml. A board whose flash or wiring needs a slower
 // flash clock can define CIRCUITPY_FLASH_MAX_SCK_HZ in mpconfigboard.h as a
 // limit, in Hz.

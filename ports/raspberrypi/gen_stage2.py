@@ -41,7 +41,6 @@ def main(input_template: pathlib.Path, output_path: pathlib.Path, skus: str = ty
     quad_enable_bit_mask = all_match(flashes["nvm"], "quad_enable_bit_mask")
     continuous_status_write = all_have(flashes["nvm"], "01_continuous_status_write")
     split_status_write = all_have(flashes["nvm"], "write_status_register_split")
-    e7_quad_word_read = all_have(flashes["nvm"], "e7_quad_word_read")
 
     quad_ok = quad_enable_status_byte is not None and quad_enable_bit_mask is not None
 
@@ -73,22 +72,12 @@ def main(input_template: pathlib.Path, output_path: pathlib.Path, skus: str = ty
     # clock afterward.
     rp2350_clock_divider = 8
 
-    read_command = 0x03
-    wait_cycles = 0
-    if quad_ok:
-        if e7_quad_word_read:
-            read_command = 0xE7
-            wait_cycles = 2
-        else:
-            read_command = 0xEB
-            wait_cycles = 4
+    # Stage 2 always uses 0xeb for quad reads, because the read timing below is
+    # rated for 0xeb. Datasheets often give no separate rating for 0xe7.
+    read_command = 0xEB if quad_ok else 0x03
+    wait_cycles = 4 if quad_ok else 0
 
-    # RP2350 stage 2 always uses 0xeb for quad reads, because the read timing
-    # below is rated for 0xeb. Datasheets often give no separate rating for 0xe7.
-    rp2350_read_command = 0xEB if quad_ok else 0x03
-    rp2350_wait_cycles = 4 if quad_ok else 0
-
-    # Read timing for choosing the RP2350 flash clock divider and sample delay
+    # Read timing for choosing the flash clock divider, and on RP2350 the sample delay
     # (mcu_processor_update_flash_timing() in common-hal/microcontroller/Processor.c).
     # Use the worst case across all the listed devices, because any of them may
     # be fitted. A device without a value uses the defaults passed to worst()
@@ -119,8 +108,6 @@ def main(input_template: pathlib.Path, output_path: pathlib.Path, skus: str = ty
         "rp2350_clock_divider": rp2350_clock_divider,
         "read_command": read_command,
         "wait_cycles": wait_cycles,
-        "rp2350_read_command": rp2350_read_command,
-        "rp2350_wait_cycles": rp2350_wait_cycles,
         "default_power_of_two": default_power_of_two,
         "eb_max_khz": eb_max_khz,
         "max_output_valid_ps": max_output_valid_ps,

@@ -386,14 +386,12 @@ size_t port_heap_get_largest_free_size(void) {
 safe_mode_t port_init(void) {
     _binary_info();
 
-    #if PICO_RP2350
     // Stage 2 left slow flash timing that is safe at any system clock. Switch
     // to the fastest flash timing allowed at this clock. Interrupts are off so
     // that no interrupt handler reads flash during the change.
     common_hal_mcu_disable_interrupts();
     mcu_processor_update_flash_timing(clock_get_hz(clk_sys) / 1000);
     common_hal_mcu_enable_interrupts();
-    #endif
 
     // Set brown out.
 

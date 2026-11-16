@@ -24,8 +24,9 @@
 #include "hardware/vreg.h"
 #include "hardware/watchdog.h"
 
-#if PICO_RP2350
 #include "genhdr/flash_info.h"
+
+#if PICO_RP2350
 #include "hardware/regs/io_qspi.h"
 #include "hardware/regs/qmi.h"
 #include "hardware/structs/io_qspi.h"
@@ -33,7 +34,9 @@
 #endif
 
 #if PICO_RP2040
+#include "hardware/regs/ssi.h"
 #include "hardware/regs/vreg_and_chip_reset.h"
+#include "hardware/structs/ssi.h"
 #include "hardware/structs/vreg_and_chip_reset.h"
 #endif
 #if PICO_RP2350
@@ -191,6 +194,49 @@ void __no_inline_not_in_flash_func(mcu_processor_update_flash_timing)(uint32_t s
 }
 #endif
 
+#if PICO_RP2040
+// Highest RP2040 flash clock. The RP2040 datasheet gives no QSPI pad delays,
+// so this can't be worked out like the RP2350 timing. 62.5 MHz (divider 2 at
+// 125 MHz) is the pico-sdk default for the Pico.
+//
+// On a Feather RP2040, a sample delay of 1 read correctly at every divider and
+// every system clock from 48 to 250 MHz. At a 75 MHz flash clock (divider 2 at
+// 150 MHz), no other sample delay worked, so this limit keeps some margin.
+#define RP2040_FLASH_MAX_SCK_KHZ (62500)
+
+// SSI clock divider for the current system clock. The SSI (synchronous serial
+// interface) reads the flash. A flash erase, program or command reruns stage
+// 2, which sets divider 4, and mcu_processor_restore_flash_timing() writes
+// this value back. Until the first update, it is stage 2's value.
+static uint32_t _flash_clock_divider = 4;
+
+void __no_inline_not_in_flash_func(mcu_processor_restore_flash_timing)(void) {
+    // The divider can change only while the SSI is disabled, which also stops
+    // XIP (execute in place). So this runs from RAM.
+    while (ssi_hw->sr & SSI_SR_BUSY_BITS) {
+    }
+    ssi_hw->ssienr = 0;
+    ssi_hw->baudr = _flash_clock_divider;
+    // Sample read data one system clock late, as stage 2 does.
+    ssi_hw->rx_sample_dly = 1;
+    ssi_hw->ssienr = 1;
+}
+
+void mcu_processor_update_flash_timing(uint32_t sys_clk_khz) {
+    // Use the smallest divider that keeps the flash clock within the flash's
+    // 0xeb rating and RP2040_FLASH_MAX_SCK_KHZ. The SSI supports only even
+    // dividers, 2 or more.
+    uint32_t max_sck_khz = MIN(FLASH_EB_MAX_SCK_KHZ, RP2040_FLASH_MAX_SCK_KHZ);
+    #ifdef CIRCUITPY_FLASH_MAX_SCK_HZ
+    max_sck_khz = MIN(max_sck_khz, CIRCUITPY_FLASH_MAX_SCK_HZ / 1000);
+    #endif
+    uint32_t divider = (sys_clk_khz + max_sck_khz - 1) / max_sck_khz;
+    divider += divider & 1;
+    _flash_clock_divider = MAX(divider, 2);
+    mcu_processor_restore_flash_timing();
+}
+#endif
+
 void common_hal_mcu_processor_set_frequency(mcu_processor_obj_t *self, uint32_t frequency) {
     uint vco, postdiv1, postdiv2;
     uint32_t freq_khz = frequency / 1000;
@@ -210,22 +256,18 @@ void common_hal_mcu_processor_set_frequency(mcu_processor_obj_t *self, uint32_t 
     // Wait for a stable voltage
     common_hal_time_delay_ms(10);
 
-    #if PICO_RP2350
     // Prevent interrupt handlers from accessing flash or PSRAM until their
     // timing matches the new system clock.
     common_hal_mcu_disable_interrupts();
     // While the clock changes, use the flash timing for the faster of the old
     // and new clocks. That keeps the flash within its timing limits at both.
     mcu_processor_update_flash_timing(MAX(freq_khz, clock_get_hz(clk_sys) / 1000));
-    #endif
     set_sys_clock_khz(freq_khz, false);
     #ifdef CIRCUITPY_PSRAM_CHIP_SELECT
     mcu_processor_update_psram_timing(freq_khz);
     #endif
-    #if PICO_RP2350
     mcu_processor_update_flash_timing(freq_khz);
     common_hal_mcu_enable_interrupts();
-    #endif
 }
 
 void common_hal_mcu_processor_get_uid(uint8_t raw_id[]) {

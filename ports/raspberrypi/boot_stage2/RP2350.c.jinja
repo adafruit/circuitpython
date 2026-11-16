@@ -29,7 +29,7 @@
         QMI_M0_RFMT_PREFIX_LEN_VALUE_8   << QMI_M0_RFMT_PREFIX_LEN_LSB)
 {% endif %}
 
-#define READ_INSTRUCTION (0x{{ '%02x' % rp2350_read_command }})
+#define READ_INSTRUCTION (0x{{ '%02x' % read_command }})
 
 #define CMD_READ_STATUS1 0x05
 #define CMD_READ_STATUS2 0x35
@@ -135,7 +135,7 @@ void __attribute__((section(".entry._stage2_boot"), used)) _stage2_boot(void) {
         MODE_CONTINUOUS_READ << QMI_M0_RCMD_SUFFIX_LSB;
     qmi_hw->m[0].rfmt =
         RFMT |
-        {{ rp2350_wait_cycles }}                << QMI_M0_RFMT_DUMMY_LEN_LSB;
+        {{ wait_cycles }}                << QMI_M0_RFMT_DUMMY_LEN_LSB;
 
     {% if quad_ok %}
     // Dummy transfer to get into continuous mode. It must be volatile, or the
