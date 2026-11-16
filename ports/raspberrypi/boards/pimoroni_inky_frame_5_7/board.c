@@ -54,7 +54,7 @@ static void pre_init(void) {
     gpio_set_dir_masked(SR_PIN_MASK, SR_PIN_DIR);
     gpio_put_masked(SR_PIN_MASK, SR_PIN_VALUE);
     uint8_t state = 0u;
-    for (uint8_t i = 0u; i < 8; i++) {
+    for (volatile uint8_t i = 0u; i < 8; i++) {
         gpio_put(SR_CLK, true);
         if (gpio_get(SR_DATA)) {
             state |= (0b1 << i);
