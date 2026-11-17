@@ -54,10 +54,12 @@ safe_mode_t wait_for_safe_mode_reset(void) {
     }
 
     const mcu_reset_reason_t reset_reason = common_hal_mcu_processor_get_reset_reason();
-    // Skip safe-mode wait if the reset reason was due to a problem.
+    // Skip the safe-mode wait if the reset was due to a problem,
+    // or was a wake from deep sleep, where the wait would waste time.
     if (reset_reason == MCU_RESET_REASON_BROWNOUT ||
         reset_reason == MCU_RESET_REASON_WATCHDOG ||
-        reset_reason == MCU_RESET_REASON_RESCUE_DEBUG) {
+        reset_reason == MCU_RESET_REASON_RESCUE_DEBUG ||
+        reset_reason == MCU_RESET_REASON_DEEP_SLEEP_ALARM) {
         return SAFE_MODE_NONE;
     }
     #if CIRCUITPY_SKIP_SAFE_MODE_WAIT
