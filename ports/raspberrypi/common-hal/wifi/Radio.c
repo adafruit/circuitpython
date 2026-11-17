@@ -33,6 +33,9 @@
 
 #include "shared/netutils/dhcpserver.h"
 
+// WIFI_JOIN_STATE_AUTH in cyw43_ctrl.c, which does not export it.
+#define CYW43_JOIN_STATE_AUTH (0x0200)
+
 #define MAC_ADDRESS_LENGTH 6
 
 #define NETIF_STA (&cyw43_state.netif[CYW43_ITF_STA])
@@ -366,6 +369,12 @@ wifi_radio_error_t common_hal_wifi_radio_connect(wifi_radio_obj_t *self, uint8_t
     cyw43_arch_wifi_connect_async((const char *)ssid, (const char *)password, auth_mode);
     // TODO: Implement authmode check like in espressif
 
+    // Join with WPA2. If the AP has not accepted authentication by half the
+    // timeout (at least 4 s), retry once with WPA3 SAE and a fresh timeout.
+    // The driver clears the AUTH bit once the join completes, so remember it.
+    uint64_t sae_fallback_at = start + MAX(timeout_ms / 2, 4000);
+    bool authenticated = false;
+
     while (port_get_raw_ticks(NULL) < deadline) {
         RUN_BACKGROUND_TASKS;
         if (mp_hal_is_interrupted()) {
@@ -373,6 +382,9 @@ wifi_radio_error_t common_hal_wifi_radio_connect(wifi_radio_obj_t *self, uint8_t
         }
 
         int result = cyw43_tcpip_link_status(&cyw43_state, CYW43_ITF_STA);
+        if (cyw43_state.wifi_join_state & CYW43_JOIN_STATE_AUTH) {
+            authenticated = true;
+        }
 
         switch (result) {
             case CYW43_LINK_UP:
@@ -384,6 +396,14 @@ wifi_radio_error_t common_hal_wifi_radio_connect(wifi_radio_obj_t *self, uint8_t
                 return WIFI_RADIO_ERROR_NO_AP_FOUND;
             case CYW43_LINK_BADAUTH:
                 return WIFI_RADIO_ERROR_AUTH_FAIL;
+        }
+
+        if (result == CYW43_LINK_JOIN && auth_mode == CYW43_AUTH_WPA2_AES_PSK &&
+            !authenticated && port_get_raw_ticks(NULL) >= sae_fallback_at) {
+            common_hal_wifi_radio_stop_station(self);
+            auth_mode = CYW43_AUTH_WPA3_SAE_AES_PSK;
+            cyw43_arch_wifi_connect_async((const char *)ssid, (const char *)password, auth_mode);
+            deadline = port_get_raw_ticks(NULL) + timeout_ms;
         }
     }
 
@@ -417,8 +437,8 @@ mp_obj_t common_hal_wifi_radio_get_ap_info(wifi_radio_obj_t *self) {
 
     cyw43_wifi_get_bssid(&cyw43_state, record.bssid);
 
-    // connect() joins with either CYW43_AUTH_OPEN or CYW43_AUTH_WPA2_AES_PSK.
-    // Encode that with the scan result bits from cyw43_ll.c: 1 is privacy, 4 is WPA2.
+    // connect() joins open, WPA2 or WPA3 SAE. Encode that with the scan result
+    // bits from cyw43_ll.c, which reports WPA2 and WPA3 alike: 1 is privacy, 4 is WPA2.
     record.auth_mode = self->connected_with_password ? (1 | 4) : 0;
 
     wifi_network_obj_t *ap_info = mp_obj_malloc(wifi_network_obj_t, &wifi_network_type);
