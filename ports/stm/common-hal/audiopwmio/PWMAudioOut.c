@@ -61,15 +61,18 @@ static void start_timer(audiopwmio_pwmaudioout_obj_t *self) {
     __HAL_TIM_ENABLE_IT(&tim_handle, TIM_IT_UPDATE);
 }
 
+static void queue_entry(audiopwmio_pwmaudioout_obj_t *self, int8_t channel, uint16_t entry, bool replicate) {
+    self->buffer[channel][self->buffer_length[channel]++] = entry;
+    if (replicate) {
+        self->buffer[1 - channel][self->buffer_length[1 - channel]++] = entry;
+    }
+}
+
 // Queue a channel's span so far as a HOLD entry. Two ticks stay pending, so a
 // transition on the next sample is queued as before.
 static void hold_span(audiopwmio_pwmaudioout_obj_t *self, int8_t channel, bool replicate) {
     if (self->len[channel] > 2) {
-        uint16_t entry = HOLD | (self->len[channel] - 2);
-        self->buffer[channel][self->buffer_length[channel]++] = entry;
-        if (replicate) {
-            self->buffer[1 - channel][self->buffer_length[1 - channel]++] = entry;
-        }
+        queue_entry(self, channel, HOLD | (self->len[channel] - 2), replicate);
         self->len[channel] = 2;
     }
 }
@@ -118,10 +121,7 @@ static bool fill_buffers(audiopwmio_pwmaudioout_obj_t *self) {
                 int8_t new_pos = (val > threshold) - (val < -threshold);
                 if (new_pos == -self->pos[channel]) {
                     if (self->len[channel] > 1) {
-                        self->buffer[channel][self->buffer_length[channel]++] = self->len[channel];
-                        if (replicate) {
-                            self->buffer[1 - channel][self->buffer_length[1 - channel]++] = self->len[channel];
-                        }
+                        queue_entry(self, channel, self->len[channel], replicate);
                         self->len[channel] = 0;
                     }
                     self->pos[channel] = new_pos;
@@ -146,10 +146,7 @@ static bool fill_buffers(audiopwmio_pwmaudioout_obj_t *self) {
     if (get_buffer_result == GET_BUFFER_DONE) {
         // It's the final countdown
         for (int8_t channel = 0; channel < effective_channels; channel++) {
-            self->buffer[channel][self->buffer_length[channel]++] = self->len[channel];
-            if (replicate) {
-                self->buffer[1 - channel][self->buffer_length[1 - channel]++] = self->len[channel];
-            }
+            queue_entry(self, channel, self->len[channel], replicate);
         }
 
         if (self->loop) {
