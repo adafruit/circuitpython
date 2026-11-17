@@ -13,6 +13,7 @@
 #include "py/runtime.h"
 #include "shared-bindings/time/__init__.h"
 #include "shared-module/displayio/__init__.h"
+#include "shared-module/displayio/ColorConverter.h"
 #include "supervisor/shared/display.h"
 #include "supervisor/shared/tick.h"
 
@@ -99,7 +100,9 @@ static void zephyr_display_lvgl_flush_565x(lv_display_t *display, const lv_area_
 typedef struct {
     struct lvgl_disp_data driver;
     void *buf;
-    void *mono_buf;
+    // Grayscale and mono displays render through LVGL in RGB888 so the transfer can use
+    // displayio's luminance coefficients (which the legacy compositor uses).
+    void *flush_buf;
     // The Zephyr glue's flush callbacks copy rendered areas straight to the display and
     // don't rotate them. When the display is rotated, the rendered partial buffer is
     // rotated into this scratch buffer before the glue callback runs.
@@ -196,13 +199,111 @@ static void zephyr_display_lvgl_rotate_flush(lv_display_t *display, const lv_are
 
 static void zephyr_display_lvgl_delete_cb(lv_event_t *event) {
     circuitpython_lvgl_display_data_t *data = lv_event_get_user_data(event);
-    if (data->mono_buf != NULL) {
-        lvgl_set_mono_conversion_buffer(NULL, 0);
-    }
     lv_free(data->rotation_buf);
-    lv_free(data->mono_buf);
+    lv_free(data->flush_buf);
     lv_free(data->buf);
     lv_free(data);
+}
+
+// Grayscale and mono panels need the same luminance calculation as the legacy
+// compositor. LVGL's own conversion uses different coefficients, so render those
+// displays in RGB888 and convert the flushed pixels with displayio's routine.
+static void zephyr_display_lvgl_flush_luma(lv_display_t *display, const lv_area_t *area,
+    uint8_t *px_map) {
+    circuitpython_lvgl_display_data_t *data = lv_display_get_user_data(display);
+    const struct display_capabilities *cap = &data->driver.cap;
+    uint16_t width = lv_area_get_width(area);
+    uint16_t height = lv_area_get_height(area);
+    uint32_t pixel_count = (uint32_t)width * (uint32_t)height;
+    uint32_t src_stride = lv_draw_buf_width_to_stride(width, LV_COLOR_FORMAT_RGB888);
+    uint8_t *out = data->flush_buf;
+    struct display_buffer_descriptor desc = {
+        .width = width,
+        .pitch = width,
+        .height = height,
+        .frame_incomplete = !lv_display_flush_is_last(display),
+    };
+
+    if (cap->current_pixel_format == PIXEL_FORMAT_L_8 ||
+        cap->current_pixel_format == PIXEL_FORMAT_AL_88) {
+        uint8_t *dest = out;
+        for (uint16_t y = 0; y < height; y++) {
+            const uint8_t *src = px_map + (uint32_t)y * src_stride;
+            for (uint16_t x = 0; x < width; x++) {
+                // LVGL's RGB888 is stored in memory as B, G, R.
+                uint8_t luma = displayio_colorconverter_compute_luma(
+                    (uint32_t)src[x * 3 + 2] << 16 |
+                            (uint32_t)src[x * 3 + 1] << 8 |
+                        src[x * 3]);
+                *dest++ = luma;
+                if (cap->current_pixel_format == PIXEL_FORMAT_AL_88) {
+                    *dest++ = 0xff;
+                }
+            }
+        }
+        desc.buf_size = pixel_count *
+            (cap->current_pixel_format == PIXEL_FORMAT_AL_88 ? 2 : 1);
+    } else {
+        // Pack the luminance into the display's row- or column-major 1bpp layout,
+        // matching the Zephyr glue's mono conversion.
+        uint32_t out_size = (pixel_count + 7) / 8;
+        bool vtiled = cap->screen_info & SCREEN_INFO_MONO_VTILED;
+        bool msb_first = cap->screen_info & SCREEN_INFO_MONO_MSB_FIRST;
+        #ifdef CONFIG_LV_Z_COLOR_MONO_HW_INVERSION
+        uint8_t clear_color = 0x00;
+        #else
+        uint8_t clear_color = cap->current_pixel_format == PIXEL_FORMAT_MONO01 ? 0x00 : 0xff;
+        #endif
+        memset(out, clear_color, out_size);
+        for (uint16_t y = 0; y < height; y++) {
+            const uint8_t *src = px_map + (uint32_t)y * src_stride;
+            for (uint16_t x = 0; x < width; x++) {
+                uint8_t luma = displayio_colorconverter_compute_luma(
+                    (uint32_t)src[x * 3 + 2] << 16 |
+                            (uint32_t)src[x * 3 + 1] << 8 |
+                        src[x * 3]);
+                if (luma < 128) {
+                    continue;
+                }
+                uint32_t bit;
+                uint8_t *byte;
+                if (vtiled) {
+                    bit = msb_first ? 7 - (y % 8) : y % 8;
+                    byte = &out[x + (y / 8) * width];
+                } else {
+                    bit = msb_first ? 7 - (x % 8) : x % 8;
+                    byte = &out[x / 8 + y * (width / 8)];
+                }
+                #ifdef CONFIG_LV_Z_COLOR_MONO_HW_INVERSION
+                *byte |= 1 << bit;
+                #else
+                if (cap->current_pixel_format == PIXEL_FORMAT_MONO01) {
+                    *byte |= 1 << bit;
+                } else {
+                    *byte &= ~(1 << bit);
+                }
+                #endif
+            }
+        }
+        desc.buf_size = out_size;
+        desc.pitch = width;
+    }
+
+    const bool is_epd = cap->screen_info & SCREEN_INFO_EPD;
+    const bool is_last = lv_display_flush_is_last(display);
+    if (is_epd && !data->driver.blanking_on && !is_last) {
+        display_blanking_on(data->driver.display_dev);
+        data->driver.blanking_on = true;
+    }
+    display_write(data->driver.display_dev, area->x1, area->y1, &desc, out);
+    if (cap->screen_info & SCREEN_INFO_DOUBLE_BUFFER) {
+        display_write(data->driver.display_dev, area->x1, area->y1, &desc, out);
+    }
+    if (is_epd && is_last && data->driver.blanking_on) {
+        display_blanking_off(data->driver.display_dev);
+        data->driver.blanking_on = false;
+    }
+    lv_display_flush_ready(display);
 }
 
 // Recreate the default LVGL display for the (possibly newly selected) driver pixel format,
@@ -236,7 +337,16 @@ static int zephyr_display_lvgl_recreate_display(zephyr_display_display_obj_t *se
     }
 
     // Override the glue's flush choice where the legacy-compatible transfer differs.
-    if (self->pixel_format == PIXEL_FORMAT_RGB_565X) {
+    bool legacy_luma = self->pixel_format == PIXEL_FORMAT_L_8 ||
+        self->pixel_format == PIXEL_FORMAT_AL_88 ||
+        self->pixel_format == PIXEL_FORMAT_MONO01 ||
+        self->pixel_format == PIXEL_FORMAT_MONO10;
+    if (legacy_luma) {
+        // Render in RGB888, then convert with displayio's luminance coefficients in
+        // zephyr_display_lvgl_flush_luma().
+        lv_display_set_color_format(display, LV_COLOR_FORMAT_RGB888);
+        lv_display_set_flush_cb(display, zephyr_display_lvgl_flush_luma);
+    } else if (self->pixel_format == PIXEL_FORMAT_RGB_565X) {
         lv_display_set_color_format(display, LV_COLOR_FORMAT_RGB565);
         lv_display_set_flush_cb(display, zephyr_display_lvgl_flush_565x);
     } else if (self->pixel_format == PIXEL_FORMAT_ABGR_8888 ||
@@ -255,7 +365,6 @@ static int zephyr_display_lvgl_recreate_display(zephyr_display_display_obj_t *se
         buf_nbr_pixels = hor_res;
     }
     uint32_t buf_size;
-    bool mono = self->pixel_format == PIXEL_FORMAT_MONO01 || self->pixel_format == PIXEL_FORMAT_MONO10;
     bool al88 = self->pixel_format == PIXEL_FORMAT_AL_88;
     switch (self->pixel_format) {
         case PIXEL_FORMAT_ARGB_8888:
@@ -282,7 +391,10 @@ static int zephyr_display_lvgl_recreate_display(zephyr_display_display_obj_t *se
             buf_size = 2 * buf_nbr_pixels;
             break;
     }
-    if (al88) {
+    if (legacy_luma) {
+        // The temporary RGB888 render buffer.
+        buf_size = 3 * buf_nbr_pixels;
+    } else if (al88) {
         buf_size = 2 * buf_nbr_pixels;
     }
 
@@ -292,6 +404,21 @@ static int zephyr_display_lvgl_recreate_display(zephyr_display_display_obj_t *se
         return -ENOMEM;
     }
     lv_display_set_buffers(display, data->buf, NULL, buf_size, LV_DISPLAY_RENDER_MODE_PARTIAL);
+
+    if (legacy_luma) {
+        uint32_t flush_buf_size = buf_nbr_pixels;
+        if (al88) {
+            flush_buf_size *= 2;
+        } else if (self->pixel_format == PIXEL_FORMAT_MONO01 ||
+                   self->pixel_format == PIXEL_FORMAT_MONO10) {
+            flush_buf_size = buf_nbr_pixels / 8 + 8;
+        }
+        data->flush_buf = lv_malloc(flush_buf_size);
+        if (data->flush_buf == NULL) {
+            lv_display_delete(display);
+            return -ENOMEM;
+        }
+    }
 
     // A rotated flush has the same number of pixels as the rendered area, but may need
     // the I1 palette header in front of the pixel data.
@@ -305,16 +432,6 @@ static int zephyr_display_lvgl_recreate_display(zephyr_display_display_obj_t *se
     data->base_flush_cb = lv_display_get_flush_cb(display);
     lv_display_set_flush_cb(display, zephyr_display_lvgl_rotate_flush);
 
-    if (mono) {
-        // The glue's mono flush converts the row-packed LVGL 1bpp buffer into the
-        // display's (possibly vertically tiled) layout through this buffer.
-        data->mono_buf = lv_malloc(buf_size);
-        if (data->mono_buf == NULL) {
-            lv_display_delete(display);
-            return -ENOMEM;
-        }
-        lvgl_set_mono_conversion_buffer(data->mono_buf, buf_size);
-    }
     self->lv_display = display;
     return 0;
 }
