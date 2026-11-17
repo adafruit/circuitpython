@@ -13,6 +13,7 @@
 #include "shared-module/displayio/__init__.h"
 #include "shared-bindings/board/__init__.h"
 #include "supervisor/shared/board.h"
+#include "py/mphal.h"
 #include "inky-shared.h"
 
 #define DELAY 0x80
@@ -55,6 +56,7 @@ static void pre_init(void) {
     gpio_put_masked(SR_PIN_MASK, SR_PIN_VALUE);
     uint8_t state = 0u;
     for (uint8_t i = 0u; i < 8; i++) {
+        mp_hal_delay_us(1);   // reduce clockout frequency
         gpio_put(SR_CLK, true);
         if (gpio_get(SR_DATA)) {
             state |= (0b1 << i);
@@ -64,8 +66,7 @@ static void pre_init(void) {
     reset_button_state = state;
 
     // Turn on LED_CONN so the user knows it is ok to release the button.
-    // The LED is only on for a short time, since it is automatically turned
-    // off during board-init.
+    // The LED is only on for a short time, since it is reset from board_init.
     gpio_init(LED_CONN);
     gpio_put(LED_CONN, true);
     gpio_set_dir(LED_CONN, GPIO_OUT);
@@ -117,6 +118,10 @@ const uint8_t refresh_sequence[] = {
 };
 
 void board_init(void) {
+    // reset LED_CONN (turned on in pre_init())
+    gpio_deinit(LED_CONN);
+
+    // create bus and display
     fourwire_fourwire_obj_t *bus = &allocate_display_bus()->fourwire_bus;
     busio_spi_obj_t *spi = common_hal_board_create_spi(0);
 
