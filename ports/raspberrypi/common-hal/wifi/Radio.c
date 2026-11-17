@@ -33,9 +33,6 @@
 
 #include "shared/netutils/dhcpserver.h"
 
-// WIFI_JOIN_STATE_AUTH in cyw43_ctrl.c, which does not export it.
-#define CYW43_JOIN_STATE_AUTH (0x0200)
-
 #define MAC_ADDRESS_LENGTH 6
 
 #define NETIF_STA (&cyw43_state.netif[CYW43_ITF_STA])
@@ -341,6 +338,34 @@ static bool connection_unchanged(wifi_radio_obj_t *self, const uint8_t *ssid, si
     return true;
 }
 
+// Static, not on the stack: results can arrive after scan_for_auth() gives up.
+static uint32_t scan_auth;
+
+static int scan_for_auth_cb(void *env, const cyw43_ev_scan_result_t *result) {
+    scan_auth |= result->auth_mode;
+    return 0;
+}
+
+// Scan for one SSID. Returns its scan result auth flags, or 0 if not seen.
+static uint32_t scan_for_auth(wifi_radio_obj_t *self, const uint8_t *ssid, size_t ssid_len, uint64_t deadline) {
+    // A user scan owns the driver's scan callback.
+    if (self->current_scan != NULL) {
+        return 0;
+    }
+    cyw43_wifi_scan_options_t opts = {0};
+    opts.ssid_len = ssid_len;
+    memcpy(opts.ssid, ssid, ssid_len);
+    scan_auth = 0;
+    if (cyw43_wifi_scan(&cyw43_state, &opts, NULL, scan_for_auth_cb) != 0) {
+        return 0;
+    }
+    while (cyw43_wifi_scan_active(&cyw43_state) && port_get_raw_ticks(NULL) < deadline &&
+           !mp_hal_is_interrupted()) {
+        RUN_BACKGROUND_TASKS;
+    }
+    return scan_auth;
+}
+
 wifi_radio_error_t common_hal_wifi_radio_connect(wifi_radio_obj_t *self, uint8_t *ssid, size_t ssid_len, uint8_t *password, size_t password_len, uint8_t channel, mp_float_t timeout, uint8_t *bssid, size_t bssid_len) {
     if (!common_hal_wifi_radio_get_enabled(self)) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("WiFi is not enabled"));
@@ -361,19 +386,20 @@ wifi_radio_error_t common_hal_wifi_radio_connect(wifi_radio_obj_t *self, uint8_t
     // disconnect
     common_hal_wifi_radio_stop_station(self);
 
+    // Joining with WPA3 SAE fails on a WPA2-only network, so scan for the
+    // network first and use WPA3 only if it advertises it.
+    uint32_t auth_mode = CYW43_AUTH_OPEN;
+    if (password_len) {
+        uint32_t ap_auth = scan_for_auth(self, ssid, ssid_len, deadline);
+        auth_mode = (ap_auth & CYW43_AUTH_FLAG_WPA3_SECURITY) ?
+            CYW43_AUTH_WPA3_SAE_AES_PSK : CYW43_AUTH_WPA2_AES_PSK;
+    }
+
     // connect. Record the network now: the join carries on after a timeout.
     memcpy(self->connected_ssid, ssid, ssid_len);
     self->connected_ssid_len = ssid_len;
-    self->connected_with_password = password_len != 0;
-    int auth_mode = password_len ? CYW43_AUTH_WPA2_AES_PSK : CYW43_AUTH_OPEN;
+    self->connected_auth_mode = auth_mode;
     cyw43_arch_wifi_connect_async((const char *)ssid, (const char *)password, auth_mode);
-    // TODO: Implement authmode check like in espressif
-
-    // Join with WPA2. If the AP has not accepted authentication by half the
-    // timeout (at least 4 s), retry once with WPA3 SAE and a fresh timeout.
-    // The driver clears the AUTH bit once the join completes, so remember it.
-    uint64_t sae_fallback_at = start + MAX(timeout_ms / 2, 4000);
-    bool authenticated = false;
 
     while (port_get_raw_ticks(NULL) < deadline) {
         RUN_BACKGROUND_TASKS;
@@ -382,9 +408,6 @@ wifi_radio_error_t common_hal_wifi_radio_connect(wifi_radio_obj_t *self, uint8_t
         }
 
         int result = cyw43_tcpip_link_status(&cyw43_state, CYW43_ITF_STA);
-        if (cyw43_state.wifi_join_state & CYW43_JOIN_STATE_AUTH) {
-            authenticated = true;
-        }
 
         switch (result) {
             case CYW43_LINK_UP:
@@ -396,14 +419,6 @@ wifi_radio_error_t common_hal_wifi_radio_connect(wifi_radio_obj_t *self, uint8_t
                 return WIFI_RADIO_ERROR_NO_AP_FOUND;
             case CYW43_LINK_BADAUTH:
                 return WIFI_RADIO_ERROR_AUTH_FAIL;
-        }
-
-        if (result == CYW43_LINK_JOIN && auth_mode == CYW43_AUTH_WPA2_AES_PSK &&
-            !authenticated && port_get_raw_ticks(NULL) >= sae_fallback_at) {
-            common_hal_wifi_radio_stop_station(self);
-            auth_mode = CYW43_AUTH_WPA3_SAE_AES_PSK;
-            cyw43_arch_wifi_connect_async((const char *)ssid, (const char *)password, auth_mode);
-            deadline = port_get_raw_ticks(NULL) + timeout_ms;
         }
     }
 
@@ -437,9 +452,8 @@ mp_obj_t common_hal_wifi_radio_get_ap_info(wifi_radio_obj_t *self) {
 
     cyw43_wifi_get_bssid(&cyw43_state, record.bssid);
 
-    // connect() joins open, WPA2 or WPA3 SAE. Encode that with the scan result
-    // bits from cyw43_ll.c, which reports WPA2 and WPA3 alike: 1 is privacy, 4 is WPA2.
-    record.auth_mode = self->connected_with_password ? (1 | 4) : 0;
+    // CYW43_AUTH_* values use the same flags as a scan result's auth_mode.
+    record.auth_mode = self->connected_auth_mode;
 
     wifi_network_obj_t *ap_info = mp_obj_malloc(wifi_network_obj_t, &wifi_network_type);
     ap_info->record = record;

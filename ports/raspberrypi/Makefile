@@ -587,7 +587,7 @@ SRC_SDK := \
 	$(SRC_SDK_CHIP_VARIANT) \
 
 SRC_SDK := $(addprefix sdk/, $(SRC_SDK))
-$(patsubst %.c,$(BUILD)/%.o,$(SRC_SDK) $(SRC_CYW43)): CFLAGS += -Wno-missing-prototypes -Wno-undef -Wno-unused-function -Wno-nested-externs -Wno-strict-prototypes -Wno-double-promotion -Wno-sign-compare -Wno-unused-variable -Wno-strict-overflow -Ilib/cyw43-driver
+$(patsubst %.c,$(BUILD)/%.o,$(SRC_SDK) $(SRC_CYW43)): CFLAGS += -Wno-missing-prototypes -Wno-undef -Wno-unused-function -Wno-nested-externs -Wno-strict-prototypes -Wno-double-promotion -Wno-sign-compare -Wno-discarded-qualifiers -Wno-unused-variable -Wno-strict-overflow -Ilib/cyw43-driver
 
 SRC_C += \
 	boards/$(BOARD)/board.c \
