@@ -17,9 +17,9 @@ manifest:
       revision: 90cba5dc632d9b4691739e3de304d259dc77eb3f
       clone-depth: 100
       import:
-        # Skip what no CircuitPython board can use, so west update fetches 37
+        # Skip what no CircuitPython board can use, so west update fetches 38
         # projects instead of 80. Boards come from adafruit, nordic, nxp,
-        # raspberrypi, renesas, silabs and st; the Pico W's CYW43 is in hal_infineon.
+        # raspberrypi, renesas, silabs, st and wch; the Pico W's CYW43 is in hal_infineon.
         name-blocklist:
           # HALs of vendors without a board here
           - hal_adi
@@ -40,7 +40,6 @@ manifest:
           - hal_tdk
           - hal_telink
           - hal_ti
-          - hal_wch
           - hal_wurthelektronik
           - hal_xtensa
           # libraries the port never enables

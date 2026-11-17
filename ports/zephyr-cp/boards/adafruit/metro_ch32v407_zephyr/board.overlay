@@ -1,0 +1,25 @@
+/* No Zephyr console by default, so D0/D1 (USART1) are free for busio.UART. A
+ * CONSOLE=1 build puts the console back on USART1 (console.overlay). */
+/ {
+	chosen {
+		/delete-property/ zephyr,console;
+		/delete-property/ zephyr,shell-uart;
+	};
+
+	// Named pins that are not on the Arduino header.
+	// Their names are in circuitpython.toml [connectors.metro_ch32v4x7_pins].
+	metro_ch32v4x7_pins: metro-ch32v4x7-pins {
+		compatible = "adafruit-metro-ch32v4x7-pins";
+		#gpio-cells = <2>;
+		gpio-map-mask = <0xffffffff 0xffffffc0>;
+		gpio-map-pass-thru = <0 0x3f>;
+		gpio-map = <0 0 &gpioa 5 0>,	/* SCK */
+			   <1 0 &gpioa 7 0>,	/* MOSI */
+			   <2 0 &gpioa 6 0>,	/* MISO */
+			   <3 0 &gpioc 14 0>,	/* NEOPIXEL */
+			   <4 0 &gpioc 15 0>,	/* BUTTON */
+			   <5 0 &gpioa 10 0>;	/* SD_CD */
+	};
+};
+
+#include "../../../app.overlay"
