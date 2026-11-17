@@ -69,11 +69,19 @@ void PLACE_IN_ITCM(background_callback_run_all)(void) {
         return;
     }
     ++background_prevention_count;
-    background_callback_t *cb = (background_callback_t *)callback_head;
-    callback_head = NULL;
-    callback_tail = NULL;
-    while (cb) {
-        background_callback_t *next = cb->next;
+    // Run the callbacks queued now, taking each one off the live queue just before it
+    // runs. A callback that allows background tasks (like a display auto-refresh) can
+    // then run the rest in a nested call. Stop at the current tail so callbacks added
+    // while running wait for the next call.
+    background_callback_t *last = (background_callback_t *)callback_tail;
+    while (callback_head) {
+        background_callback_t *cb = (background_callback_t *)callback_head;
+        callback_head = cb->next;
+        if (callback_head) {
+            callback_head->prev = NULL;
+        } else {
+            callback_tail = NULL;
+        }
         cb->next = cb->prev = NULL;
         background_callback_fun fun = cb->fun;
         void *data = cb->data;
@@ -83,7 +91,9 @@ void PLACE_IN_ITCM(background_callback_run_all)(void) {
             fun(data);
         }
         CALLBACK_CRITICAL_BEGIN;
-        cb = next;
+        if (cb == last) {
+            break;
+        }
     }
     --background_prevention_count;
     CALLBACK_CRITICAL_END;

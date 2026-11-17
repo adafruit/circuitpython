@@ -13,6 +13,7 @@
 #include "shared-bindings/time/__init__.h"
 #include "shared-module/displayio/__init__.h"
 #include "shared-module/displayio/display_core.h"
+#include "supervisor/background_callback.h"
 #include "supervisor/shared/display.h"
 #include "supervisor/shared/tick.h"
 
@@ -226,8 +227,8 @@ static bool _refresh_area(framebufferio_framebufferdisplay_obj_t *self, const di
         #if CIRCUITPY_WEB_WORKFLOW
         display_stream_area_updated(&self->core, &subrectangle);
         #endif
-        // Run background tasks so they can run during an explicit refresh.
-        // Auto-refresh won't run background tasks here because it is a background task itself.
+        // Run background tasks so they can run during a refresh. Auto-refresh allows
+        // them in framebufferio_framebufferdisplay_background().
         RUN_BACKGROUND_TASKS;
 
         // Run USB background tasks so they can run during an implicit refresh.
@@ -338,7 +339,12 @@ void framebufferio_framebufferdisplay_background(framebufferio_framebufferdispla
     _update_backlight(self);
 
     if (self->auto_refresh && (supervisor_ticks_ms64() - self->core.last_refresh) > self->native_ms_per_frame) {
+        // Auto-refresh runs inside a background callback, which blocks other callbacks.
+        // Allow callbacks so RUN_BACKGROUND_TASKS in _refresh_area() can run them.
+        // refresh_in_progress stops a nested refresh of this display.
+        background_callback_allow();
         _refresh_display(self);
+        background_callback_prevent();
     }
 }
 
