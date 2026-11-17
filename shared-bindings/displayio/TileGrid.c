@@ -487,5 +487,6 @@ MP_DEFINE_CONST_OBJ_TYPE(
     MP_TYPE_FLAG_HAS_SPECIAL_ACCESSORS,
     make_new, displayio_tilegrid_make_new,
     locals_dict, &displayio_tilegrid_locals_dict,
-    subscr, tilegrid_subscr
+    subscr, tilegrid_subscr,
+    protocol, DISPLAYIO_TILEGRID_LVGL_PROTOCOL
     );

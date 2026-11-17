@@ -21,6 +21,7 @@
 #include "supervisor/shared/web_workflow/display_stream.h"
 #endif
 
+
 #if CIRCUITPY_TINYUSB
 #include "supervisor/usb.h"
 #endif
@@ -32,6 +33,7 @@
     (self->framebuffer_protocol->method \
         ? self->framebuffer_protocol->method(self->framebuffer) \
         : (default_value))
+
 
 void common_hal_framebufferio_framebufferdisplay_construct(framebufferio_framebufferdisplay_obj_t *self,
     mp_obj_t framebuffer,
@@ -71,6 +73,7 @@ void common_hal_framebufferio_framebufferdisplay_construct(framebufferio_framebu
 
     self->native_frames_per_second = fb_getter_default(get_native_frames_per_second, 60);
     self->native_ms_per_frame = 1000 / self->native_frames_per_second;
+
 
     if (rotation != 0) {
         common_hal_framebufferio_framebufferdisplay_set_rotation(self, rotation);

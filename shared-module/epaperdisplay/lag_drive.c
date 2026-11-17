@@ -80,7 +80,7 @@ static bool lag_set_region(epaperdisplay_epaperdisplay_obj_t *self, displayio_ar
         nlr_buf_t nlr;
         if (nlr_push(&nlr) == 0) {
             self->lag.bus_held = true;
-            displayio_display_bus_set_region_to_update(&self->bus, &self->core, box);
+            displayio_display_bus_set_region_to_update(&self->bus, &self->core.colorspace, box);
             self->lag.bus_held = false;
             nlr_pop();
             return true;

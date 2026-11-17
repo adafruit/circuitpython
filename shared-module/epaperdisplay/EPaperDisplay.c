@@ -599,7 +599,7 @@ static bool epaperdisplay_epaperdisplay_refresh_area(epaperdisplay_epaperdisplay
         uint16_t remaining_rows = displayio_area_height(&clipped);
 
         if (self->bus.row_command != NO_COMMAND) {
-            displayio_display_bus_set_region_to_update(&self->bus, &self->core, &clipped);
+            displayio_display_bus_set_region_to_update(&self->bus, &self->core.colorspace, &clipped);
         }
 
         uint8_t write_command = self->write_black_ram_command;

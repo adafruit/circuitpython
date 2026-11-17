@@ -6,22 +6,67 @@
 
 #include "bindings/zephyr_display/Display.h"
 
+#include <zephyr/devicetree.h>
+
+#include "bindings/zephyr_kernel/__init__.h"
 #include "py/objproperty.h"
 #include "py/objtype.h"
 #include "py/runtime.h"
 #include "shared-bindings/displayio/Group.h"
 #include "shared-module/displayio/__init__.h"
 
+//| class Display:
+//|     """Manage the display selected by the Zephyr devicetree
+//|
+//|     There is no display bus argument because the device comes from the
+//|     ``zephyr,display`` chosen devicetree node.
+//|
+//|     Creating a `Display` releases the display built during startup
+//|     (``supervisor.runtime.display``), as with other display classes."""
+//|
+// The current implementation composites with LVGL, which drives only one display and draws
+// from its own fixed-size heap (CONFIG_LV_Z_MEM_POOL_SIZE). Those are implementation details,
+// so they stay out of the docs above, but they explain why only one Display can exist and why
+// complex scenes can fail inside the draw code instead of raising MemoryError.
+//|     def __init__(self, *, rotation: int = 0, auto_refresh: bool = True) -> None:
+//|         """Create a `Display` for the ``zephyr,display`` device.
+//|
+//|         :param int rotation: The rotation of the display in degrees. Must be a multiple
+//|             of 90.
+//|         :param bool auto_refresh: Automatically refresh the screen.
+//|         """
+//|         ...
+//|
 static mp_obj_t zephyr_display_display_make_new(const mp_obj_type_t *type,
     size_t n_args,
     size_t n_kw,
     const mp_obj_t *all_args) {
-    (void)type;
-    (void)n_args;
-    (void)n_kw;
-    (void)all_args;
-    mp_raise_NotImplementedError(NULL);
-    return mp_const_none;
+    enum { ARG_rotation, ARG_auto_refresh };
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_rotation, MP_ARG_KW_ONLY | MP_ARG_INT, { .u_int = 0 } },
+        { MP_QSTR_auto_refresh, MP_ARG_KW_ONLY | MP_ARG_BOOL, { .u_bool = true } },
+    };
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    mp_int_t rotation = args[ARG_rotation].u_int;
+    if (rotation % 90 != 0) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Display rotation must be in 90 degree increments"));
+    }
+
+    const struct device *display_dev = device_get_binding(DEVICE_DT_NAME(DT_CHOSEN(zephyr_display)));
+    if (display_dev == NULL || !device_is_ready(display_dev)) {
+        raise_zephyr_error(-ENODEV);
+    }
+
+    // The display device is a singleton and LVGL drives only one display at a time, so the one
+    // board_init() made has to be released first (as with any other display class).
+    primary_display_t *display_obj = allocate_display_or_raise();
+    zephyr_display_display_obj_t *self = &display_obj->zephyr_display;
+    self->base.type = &zephyr_display_display_type;
+    common_hal_zephyr_display_display_construct_from_device(self, display_dev, rotation,
+        args[ARG_auto_refresh].u_bool);
+    return MP_OBJ_FROM_PTR(self);
 }
 
 static zephyr_display_display_obj_t *native_display(mp_obj_t display_obj) {
@@ -38,6 +83,34 @@ static mp_obj_t zephyr_display_display_obj_show(mp_obj_t self_in, mp_obj_t group
 }
 MP_DEFINE_CONST_FUN_OBJ_2(zephyr_display_display_show_obj, zephyr_display_display_obj_show);
 
+//|     def refresh(
+//|         self,
+//|         *,
+//|         target_frames_per_second: Optional[int] = None,
+//|         minimum_frames_per_second: int = 0,
+//|     ) -> bool:
+//|         """When auto_refresh is off, and ``target_frames_per_second`` is not `None` this
+//|         waits for the target frame rate and then refreshes the display, returning
+//|         `True`. If the call has taken too long since the last refresh call for the given
+//|         target frame rate, then the refresh returns `False` immediately without updating
+//|         the screen to try to keep latency low.
+//|
+//|         If the time since the last successful refresh is below the minimum frame rate,
+//|         then an exception will be raised. The default ``minimum_frames_per_second`` of 0
+//|         disables this behavior.
+//|
+//|         When auto_refresh is off, and ``target_frames_per_second`` is `None` this will
+//|         update the display immediately. When auto_refresh is on, it updates the display
+//|         immediately too; the display also updates without calls to this.
+//|
+//|         :param Optional[int] target_frames_per_second: The target frame rate that
+//|             :py:func:`refresh` should try to achieve. Set to `None` for immediate
+//|             refresh.
+//|         :param int minimum_frames_per_second: The minimum number of times the screen
+//|             should be updated per second.
+//|         """
+//|         ...
+//|
 static mp_obj_t zephyr_display_display_obj_refresh(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
     enum {
         ARG_target_frames_per_second,
@@ -73,6 +146,8 @@ static mp_obj_t zephyr_display_display_obj_refresh(size_t n_args, const mp_obj_t
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(zephyr_display_display_refresh_obj, 1, zephyr_display_display_obj_refresh);
 
+//|     auto_refresh: bool
+//|     """True when the display is refreshed automatically."""
 static mp_obj_t zephyr_display_display_obj_get_auto_refresh(mp_obj_t self_in) {
     zephyr_display_display_obj_t *self = native_display(self_in);
     return mp_obj_new_bool(common_hal_zephyr_display_display_get_auto_refresh(self));
@@ -90,6 +165,11 @@ MP_PROPERTY_GETSET(zephyr_display_display_auto_refresh_obj,
     (mp_obj_t)&zephyr_display_display_get_auto_refresh_obj,
     (mp_obj_t)&zephyr_display_display_set_auto_refresh_obj);
 
+//|     brightness: float
+//|     """The brightness of the display as a float. 0.0 is off and 1.0 is full brightness.
+//|
+//|     .. note:: Zephyr displays do not implement brightness control yet, so reading or
+//|         writing this raises `RuntimeError`."""
 static mp_obj_t zephyr_display_display_obj_get_brightness(mp_obj_t self_in) {
     zephyr_display_display_obj_t *self = native_display(self_in);
     mp_float_t brightness = common_hal_zephyr_display_display_get_brightness(self);
@@ -118,6 +198,8 @@ MP_PROPERTY_GETSET(zephyr_display_display_brightness_obj,
     (mp_obj_t)&zephyr_display_display_get_brightness_obj,
     (mp_obj_t)&zephyr_display_display_set_brightness_obj);
 
+//|     width: int
+//|     """The width of the display in pixels, with rotation applied."""
 static mp_obj_t zephyr_display_display_obj_get_width(mp_obj_t self_in) {
     zephyr_display_display_obj_t *self = native_display(self_in);
     return MP_OBJ_NEW_SMALL_INT(common_hal_zephyr_display_display_get_width(self));
@@ -125,6 +207,8 @@ static mp_obj_t zephyr_display_display_obj_get_width(mp_obj_t self_in) {
 MP_DEFINE_CONST_FUN_OBJ_1(zephyr_display_display_get_width_obj, zephyr_display_display_obj_get_width);
 MP_PROPERTY_GETTER(zephyr_display_display_width_obj, (mp_obj_t)&zephyr_display_display_get_width_obj);
 
+//|     height: int
+//|     """The height of the display in pixels, with rotation applied."""
 static mp_obj_t zephyr_display_display_obj_get_height(mp_obj_t self_in) {
     zephyr_display_display_obj_t *self = native_display(self_in);
     return MP_OBJ_NEW_SMALL_INT(common_hal_zephyr_display_display_get_height(self));
@@ -132,6 +216,8 @@ static mp_obj_t zephyr_display_display_obj_get_height(mp_obj_t self_in) {
 MP_DEFINE_CONST_FUN_OBJ_1(zephyr_display_display_get_height_obj, zephyr_display_display_obj_get_height);
 MP_PROPERTY_GETTER(zephyr_display_display_height_obj, (mp_obj_t)&zephyr_display_display_get_height_obj);
 
+//|     rotation: int
+//|     """The rotation of the display in degrees."""
 static mp_obj_t zephyr_display_display_obj_get_rotation(mp_obj_t self_in) {
     zephyr_display_display_obj_t *self = native_display(self_in);
     return MP_OBJ_NEW_SMALL_INT(common_hal_zephyr_display_display_get_rotation(self));
@@ -149,6 +235,12 @@ MP_PROPERTY_GETSET(zephyr_display_display_rotation_obj,
     (mp_obj_t)&zephyr_display_display_get_rotation_obj,
     (mp_obj_t)&zephyr_display_display_set_rotation_obj);
 
+//|     root_group: Optional[displayio.Group]
+//|     """The `displayio.Group` that is drawn on the display, or `None` when the display
+//|     is cleared.
+//|
+//|     A `displayio.Group` can only be the root group of one display at a time. Setting a
+//|     group that is already in use raises `ValueError`."""
 static mp_obj_t zephyr_display_display_obj_get_root_group(mp_obj_t self_in) {
     zephyr_display_display_obj_t *self = native_display(self_in);
     return common_hal_zephyr_display_display_get_root_group(self);

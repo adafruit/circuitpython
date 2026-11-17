@@ -16,6 +16,7 @@
 #include "tusb.h"
 #endif
 
+#include "py/mpconfig.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 

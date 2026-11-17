@@ -26,7 +26,7 @@ void render_stage(
     area.y1 = y0 * scale;
     area.x2 = x1 * scale;
     area.y2 = y1 * scale;
-    displayio_display_bus_set_region_to_update(&display->bus, &display->core, &area);
+    displayio_display_bus_set_region_to_update(&display->bus, &display->core.colorspace, &area);
 
     while (!displayio_display_bus_begin_transaction(&display->bus)) {
         RUN_BACKGROUND_TASKS;

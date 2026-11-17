@@ -7,7 +7,9 @@
 #include "shared-module/displayio/bus_core.h"
 
 #include "py/gc.h"
+#include "py/mphal.h"
 #include "py/runtime.h"
+#include "shared/runtime/interrupt_char.h"
 #if CIRCUITPY_FOURWIRE
 #include "shared-bindings/fourwire/FourWire.h"
 #endif
@@ -29,6 +31,8 @@
 
 #include <stdint.h>
 #include <string.h>
+
+#define DELAY 0x80
 
 #define DISPLAYIO_CORE_DEBUG(...) (void)0
 // #define DISPLAYIO_CORE_DEBUG(...) mp_printf(&mp_plat_print __VA_OPT__(,) __VA_ARGS__)
@@ -149,21 +153,59 @@ void displayio_display_bus_end_transaction(displayio_display_bus_t *self) {
     self->end_transaction(self->bus);
 }
 
-void displayio_display_bus_set_region_to_update(displayio_display_bus_t *self, displayio_display_core_t *display, displayio_area_t *area) {
+void displayio_display_bus_send_init_sequence(displayio_display_bus_t *self,
+    const uint8_t *init_sequence, uint16_t init_sequence_len) {
+    uint32_t i = 0;
+    while (i < init_sequence_len) {
+        const uint8_t *cmd = init_sequence + i;
+        uint8_t data_size = *(cmd + 1);
+        bool delay = (data_size & DELAY) != 0;
+        data_size &= ~DELAY;
+        const uint8_t *data = cmd + 2;
+        while (!displayio_display_bus_begin_transaction(self)) {
+            RUN_BACKGROUND_TASKS;
+            if (mp_hal_is_interrupted()) {
+                mp_raise_RuntimeError_varg(MP_ERROR_TEXT("%q init failed"), MP_QSTR_display);
+            }
+        }
+        if (self->data_as_commands) {
+            uint8_t full_command[data_size + 1];
+            full_command[0] = cmd[0];
+            memcpy(full_command + 1, data, data_size);
+            self->send(self->bus, DISPLAY_COMMAND, CHIP_SELECT_TOGGLE_EVERY_BYTE, full_command, data_size + 1);
+        } else {
+            self->send(self->bus, DISPLAY_COMMAND, data_size > 0 ? CHIP_SELECT_TOGGLE_EVERY_BYTE : CHIP_SELECT_UNTOUCHED, cmd, 1);
+            self->send(self->bus, DISPLAY_DATA, CHIP_SELECT_UNTOUCHED, data, data_size);
+        }
+        displayio_display_bus_end_transaction(self);
+        uint16_t delay_length_ms = 10;
+        if (delay) {
+            data_size++;
+            delay_length_ms = *(cmd + 1 + data_size);
+            if (delay_length_ms == 255) {
+                delay_length_ms = 500;
+            }
+        }
+        common_hal_time_delay_ms(delay_length_ms);
+        i += 2 + data_size;
+    }
+}
+
+void displayio_display_bus_set_region_to_update(displayio_display_bus_t *self, const _displayio_colorspace_t *colorspace, displayio_area_t *area) {
     uint16_t x1 = area->x1 + self->colstart;
     uint16_t x2 = area->x2 + self->colstart;
     uint16_t y1 = area->y1 + self->rowstart;
     uint16_t y2 = area->y2 + self->rowstart;
 
     // Collapse down the dimension where multiple pixels are in a byte.
-    if (display->colorspace.depth < 8) {
-        uint8_t pixels_per_byte = 8 / display->colorspace.depth;
-        if (display->colorspace.pixels_in_byte_share_row) {
-            x1 /= pixels_per_byte * display->colorspace.bytes_per_cell;
-            x2 /= pixels_per_byte * display->colorspace.bytes_per_cell;
+    if (colorspace->depth < 8) {
+        uint8_t pixels_per_byte = 8 / colorspace->depth;
+        if (colorspace->pixels_in_byte_share_row) {
+            x1 /= pixels_per_byte * colorspace->bytes_per_cell;
+            x2 /= pixels_per_byte * colorspace->bytes_per_cell;
         } else {
-            y1 /= pixels_per_byte * display->colorspace.bytes_per_cell;
-            y2 /= pixels_per_byte * display->colorspace.bytes_per_cell;
+            y1 /= pixels_per_byte * colorspace->bytes_per_cell;
+            y2 /= pixels_per_byte * colorspace->bytes_per_cell;
         }
     }
 

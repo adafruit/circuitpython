@@ -19,7 +19,13 @@ jobs:
         include:
           - shard: native_sim
             boards: native_native_sim
-            pytest_args: tests/ --ignore=tests/bsim -k 'not native_native_sim_asan and not native_native_sim_lfs' -n $(nproc) --dist loadfile
+            pytest_args: tests/ --ignore=tests/bsim -k 'not native_native_sim_asan and not native_native_sim_lfs and not native_native_sim_lvgl' -n $(nproc) --dist loadfile
+          - shard: native_sim_lvgl
+            boards: native_native_sim_lvgl
+            pytest_args: tests/ --ignore=tests/bsim -k 'native_native_sim_lvgl and not native_native_sim_lvgl_asan' -n $(nproc) --dist loadfile
+          - shard: native_sim_lvgl_asan
+            boards: native_native_sim_lvgl_asan
+            pytest_args: tests/ --ignore=tests/bsim -k native_native_sim_lvgl_asan -n $(nproc) --dist loadfile
           - shard: native_sim_asan
             boards: native_native_sim_asan
             pytest_args: tests/ --ignore=tests/bsim -k native_native_sim_asan -n $(nproc) --dist loadfile

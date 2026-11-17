@@ -427,3 +427,7 @@
 [submodule "ports/espressif/esp-adf-libs"]
 	path = ports/espressif/esp-adf-libs
 	url = https://github.com/espressif/esp-adf-libs.git
+[submodule "lib/lvgl"]
+	path = lib/lvgl
+	url = https://github.com/adafruit/lvgl.git
+	branch = circuitpython-v9.6
