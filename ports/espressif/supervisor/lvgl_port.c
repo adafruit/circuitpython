@@ -74,7 +74,9 @@ static void *lvgl_heap_alloc(size_t size) {
 }
 
 // A NULL from lv_malloc_core is fatal in most of LVGL (the callers dereference the result), so
-// record why it happened and reset into safe mode before LVGL can dereference it.
+// record why it happened and reset into safe mode before LVGL can dereference it. Raising a
+// Python MemoryError isn't possible here because this runs during display refreshes, which may
+// be on the background display task, not in a Python frame.
 static MP_NORETURN void lvgl_heap_log_oom(const char *what, size_t size) {
     ESP_LOGE(lvgl_tag, "%s(%u) failed: internal %u free (%u largest), PSRAM %u free (%u largest)",
         what, (unsigned)size,

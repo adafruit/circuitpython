@@ -20,8 +20,8 @@
 
 // --- The shader registry -----------------------------------------------------
 //
-// Bitmaps keep their views in the Bitmap itself, but Palettes are shared and may be `const`
-// statistics, so whoever draws with one registers in this port-memory registry keyed by the
+// Bitmaps keep their views in the Bitmap itself, but Palettes are shared and may be `const`,
+// so whoever draws with one registers in this port-memory registry keyed by the
 // shader object. A Palette change then walks the list and updates each mirror.
 
 typedef struct {
