@@ -46,10 +46,13 @@ void epaperdisplay_lag_give_up_if_stuck(epaperdisplay_epaperdisplay_obj_t *self)
 // Abandons the step in progress, ends any hold on interrupts, then raises. An interrupt saved
 // during the hold is raised instead of raised.
 MP_NORETURN void epaperdisplay_lag_raise(epaperdisplay_epaperdisplay_obj_t *self, mp_obj_t raised);
-// Sends one lag step for areas, or only the owed drive when areas is NULL. False if the step
+// Sends one lag step for areas, or only the owed drive when there are none. False if the step
 // couldn't be sent: interrupted, the panel is stuck, or the start sequence changed. The areas
 // stay marked and the drive stays owed.
-bool epaperdisplay_lag_refresh(epaperdisplay_epaperdisplay_obj_t *self, const displayio_area_t *areas);
+// LVGL builds keep dirty areas in an array, because displayio_area_t is lv_area_t and has no list
+// link there. Other builds ignore area_count. NULL must be paired with area_count == 0.
+bool epaperdisplay_lag_refresh(epaperdisplay_epaperdisplay_obj_t *self, const displayio_area_t *areas,
+    uint8_t area_count);
 // Ends a hold on interrupts and schedules any interrupt saved during it.
 void epaperdisplay_lag_release_interrupts(epaperdisplay_epaperdisplay_obj_t *self);
 // Sends bytes on the bus. False only while interrupts are held and the transfer was interrupted.

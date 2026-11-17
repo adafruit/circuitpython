@@ -26,6 +26,52 @@
 static void lag_after_raise(epaperdisplay_epaperdisplay_obj_t *self);
 static bool lag_clean(epaperdisplay_epaperdisplay_obj_t *self, uint8_t frames, bool full);
 
+static bool lag_clip_area(epaperdisplay_epaperdisplay_obj_t *self, const displayio_area_t *area,
+    displayio_area_t *clipped) {
+    #if CIRCUITPY_DISPLAYIO_LVGL
+    return epaperdisplay_lvgl_clip_area(self, area, clipped);
+    #else
+    return displayio_display_core_clip_area(&self->core, area, clipped);
+    #endif
+}
+
+// Clip the whole panel to whole bytes of pixels. Filling a plane or forcing a full step uses it.
+static bool lag_full_area(epaperdisplay_epaperdisplay_obj_t *self, displayio_area_t *area) {
+    #if CIRCUITPY_DISPLAYIO_LVGL
+    displayio_area_t whole;
+    epaperdisplay_lvgl_full_area(self, &whole);
+    return epaperdisplay_lvgl_clip_area(self, &whole, area);
+    #else
+    bool ok = displayio_display_core_clip_area(&self->core, &self->core.area, area);
+    area->next = NULL;
+    return ok;
+    #endif
+}
+
+static void lag_finish_refresh(epaperdisplay_epaperdisplay_obj_t *self) {
+    #if CIRCUITPY_DISPLAYIO_LVGL
+    epaperdisplay_lvgl_finish_refresh(self);
+    #else
+    displayio_display_core_finish_refresh(&self->core);
+    #endif
+}
+
+static void lag_set_full_refresh(epaperdisplay_epaperdisplay_obj_t *self, bool full_refresh) {
+    #if CIRCUITPY_DISPLAYIO_LVGL
+    self->full_refresh = full_refresh;
+    #else
+    self->core.full_refresh = full_refresh;
+    #endif
+}
+
+static void lag_set_refresh_in_progress(epaperdisplay_epaperdisplay_obj_t *self, bool in_progress) {
+    #if CIRCUITPY_DISPLAYIO_LVGL
+    self->refresh_in_progress = in_progress;
+    #else
+    self->core.refresh_in_progress = in_progress;
+    #endif
+}
+
 static bool lag_deadline_passed(epaperdisplay_epaperdisplay_obj_t *self) {
     return self->lag.busy_deadline != 0 && supervisor_ticks_ms64() > self->lag.busy_deadline;
 }
@@ -126,8 +172,13 @@ static bool lag_set_region(epaperdisplay_epaperdisplay_obj_t *self, displayio_ar
 // or was last written with frames that have not changed there since.
 
 void epaperdisplay_lag_construct(epaperdisplay_epaperdisplay_obj_t *self, uint8_t lag_frames) {
+    #if CIRCUITPY_DISPLAYIO_LVGL
+    self->lag.stride = (self->canvas_width + 7) / 8;
+    self->lag.rows = self->canvas_height;
+    #else
     self->lag.stride = (self->core.area.x2 + 7) / 8;
     self->lag.rows = self->core.area.y2;
+    #endif
     self->lag.slot_size = self->lag.stride * self->lag.rows;
     self->lag.frames = lag_frames;
     self->lag.head = 0;
@@ -172,9 +223,26 @@ void epaperdisplay_lag_free(epaperdisplay_epaperdisplay_obj_t *self) {
 
 static void lag_render_area(epaperdisplay_epaperdisplay_obj_t *self, const displayio_area_t *area, uint8_t *frame, bool white) {
     displayio_area_t clipped;
-    if (!displayio_display_core_clip_area(&self->core, area, &clipped)) {
+    if (!lag_clip_area(self, area, &clipped)) {
         return;
     }
+    uint16_t width = displayio_area_width(&clipped);
+    uint16_t bytes_per_row = width / 8;
+    #if CIRCUITPY_DISPLAYIO_LVGL
+    for (int16_t row = clipped.y1; row < clipped.y2; row++) {
+        uint8_t *dest = frame + row * self->lag.stride + clipped.x1 / 8;
+        if (white) {
+            memset(dest, self->black_bits_inverted ? 0x00 : 0xff, bytes_per_row);
+        } else {
+            // The flush callback already converted this part of the LVGL scene into the
+            // packed panel framebuffer. A lag step only needs to take a copy of it.
+            const uint8_t *source = self->black_buf + row * self->canvas_stride + clipped.x1 / 8;
+            memcpy(dest, source, bytes_per_row);
+        }
+    }
+    // Run background tasks like a regular refresh does.
+    RUN_BACKGROUND_TASKS;
+    #else
     if (white) {
         for (int16_t row = clipped.y1; row < clipped.y2; row++) {
             memset(frame + row * self->lag.stride + clipped.x1 / 8, self->black_bits_inverted ? 0x00 : 0xff,
@@ -182,8 +250,6 @@ static void lag_render_area(epaperdisplay_epaperdisplay_obj_t *self, const displ
         }
         return;
     }
-    uint16_t width = displayio_area_width(&clipped);
-    uint16_t bytes_per_row = width / 8;
     uint16_t rows_per_buffer = MAX(1, 128 * 32 / width);
     size_t words = (rows_per_buffer * width + 31) / 32;
     uint32_t buffer[words];
@@ -214,6 +280,7 @@ static void lag_render_area(epaperdisplay_epaperdisplay_obj_t *self, const displ
         // Run background tasks like a regular refresh does.
         RUN_BACKGROUND_TASKS;
     }
+    #endif
 }
 
 static bool lag_send_ram_commit(epaperdisplay_epaperdisplay_obj_t *self) {
@@ -234,6 +301,13 @@ static bool lag_send_plane(epaperdisplay_epaperdisplay_obj_t *self, uint8_t comm
     uint8_t chunk[512];
     size_t used = 0;
     for (int16_t y = box->y1; y < box->y2; y++) {
+        if (bytes_per_row > sizeof(chunk)) {
+            if (!epaperdisplay_lag_send(self, DISPLAY_DATA, in, bytes_per_row)) {
+                return false;
+            }
+            in += self->lag.stride;
+            continue;
+        }
         if (used + bytes_per_row > sizeof(chunk)) {
             if (!epaperdisplay_lag_send(self, DISPLAY_DATA, chunk, used)) {
                 return false;
@@ -302,20 +376,31 @@ static bool lag_commit_step(epaperdisplay_epaperdisplay_obj_t *self) {
 // NULL) over its slot, or white in those areas without rendering, to the other. The history
 // doesn't advance if the bus can't be had before the slot is touched, so a retry does the same
 // step. Once it has, the step is owed and true is returned, whatever happens to the rest.
-static bool lag_step(epaperdisplay_epaperdisplay_obj_t *self, const displayio_area_t *areas, bool white) {
+static bool lag_step(epaperdisplay_epaperdisplay_obj_t *self, const displayio_area_t *areas,
+    uint8_t area_count, bool white) {
     uint8_t lag = self->lag.frames;
     uint8_t next = (self->lag.head + 1) % lag;
     uint8_t *frame = self->lag.slots[next];
     displayio_area_t *boxes = self->lag.boxes;
     uint8_t index = self->lag.box_index;
-    bool changed = areas != NULL;
-
-    for (const displayio_area_t *area = areas; area != NULL; area = area->next) {
+    #if CIRCUITPY_DISPLAYIO_LVGL
+    bool changed = area_count > 0;
+    for (uint8_t i = 0; i < area_count; i++) {
         displayio_area_t clipped;
-        if (displayio_display_core_clip_area(&self->core, area, &clipped)) {
+        if (lag_clip_area(self, &areas[i], &clipped)) {
             displayio_area_union(&boxes[index], &clipped, &boxes[index]);
         }
     }
+    #else
+    (void)area_count;
+    bool changed = areas != NULL;
+    for (const displayio_area_t *area = areas; area != NULL; area = area->next) {
+        displayio_area_t clipped;
+        if (lag_clip_area(self, area, &clipped)) {
+            displayio_area_union(&boxes[index], &clipped, &boxes[index]);
+        }
+    }
+    #endif
     // The oldest entry is lag steps back: only needed to make the planes equal again.
     uint8_t oldest = (index + 1) % (lag + 1);
     displayio_area_t drive_box = {0};
@@ -326,7 +411,9 @@ static bool lag_step(epaperdisplay_epaperdisplay_obj_t *self, const displayio_ar
     }
     displayio_area_t write_box;
     if (self->lag.force_full) {
-        displayio_display_core_clip_area(&self->core, &self->core.area, &write_box);
+        if (!lag_full_area(self, &write_box)) {
+            write_box = (displayio_area_t) {0};
+        }
     } else {
         displayio_area_union(&drive_box, &boxes[oldest], &write_box);
     }
@@ -347,9 +434,15 @@ static bool lag_step(epaperdisplay_epaperdisplay_obj_t *self, const displayio_ar
             out += self->lag.stride;
         }
     }
+    #if CIRCUITPY_DISPLAYIO_LVGL
+    for (uint8_t i = 0; i < area_count; i++) {
+        lag_render_area(self, &areas[i], frame, white);
+    }
+    #else
     for (const displayio_area_t *area = areas; area != NULL; area = area->next) {
         lag_render_area(self, area, frame, white);
     }
+    #endif
     // The slot no longer holds N-lag, so from here the step has to finish or that drive is lost.
     self->lag.slot_overwriting = false;
     self->lag.head = next;
@@ -368,19 +461,29 @@ static bool lag_step(epaperdisplay_epaperdisplay_obj_t *self, const displayio_ar
     return true;
 }
 
-static bool lag_refresh_unguarded(epaperdisplay_epaperdisplay_obj_t *self, const displayio_area_t *areas) {
+static bool lag_refresh_unguarded(epaperdisplay_epaperdisplay_obj_t *self, const displayio_area_t *areas,
+    uint8_t area_count) {
+    displayio_area_t whole;
     if (!self->awake || self->lag.state_lost) {
         // The panel may still hold anything, including ghosts from a run that lost power.
         if (!lag_clean(self, 0, true) || mp_hal_is_interrupted()) {
             return false;
         }
-        areas = &self->core.area;
+        if (!lag_full_area(self, &whole)) {
+            return false;
+        }
+        areas = &whole;
+        area_count = 1;
     }
     if (self->lag.commit != LAG_COMMIT_NONE) {
         // The areas stay marked, so the next refresh draws them.
         return lag_commit_step(self);
     }
+    #if CIRCUITPY_DISPLAYIO_LVGL
+    if (area_count == 0 && self->lag.settle == 0) {
+    #else
     if (areas == NULL && self->lag.settle == 0) {
+        #endif
         return true;
     }
     if (self->needs_start) {
@@ -390,11 +493,11 @@ static bool lag_refresh_unguarded(epaperdisplay_epaperdisplay_obj_t *self, const
     } else {
         epaperdisplay_epaperdisplay_start_refresh(self);
     }
-    bool ok = !self->needs_start && lag_step(self, areas, false);
+    bool ok = !self->needs_start && lag_step(self, areas, area_count, false);
     if (ok) {
-        displayio_display_core_finish_refresh(&self->core);
+        lag_finish_refresh(self);
     } else {
-        self->core.refresh_in_progress = false;
+        lag_set_refresh_in_progress(self, false);
     }
     return ok;
 }
@@ -440,17 +543,18 @@ void epaperdisplay_lag_flush(epaperdisplay_epaperdisplay_obj_t *self) {
             supervisor_disable_tick();
             self->refreshing = false;
         }
-        if (self->lag.commit != LAG_COMMIT_NONE ? !lag_commit_step(self) : !lag_step(self, NULL, false)) {
+        if (self->lag.commit != LAG_COMMIT_NONE ? !lag_commit_step(self) : !lag_step(self, NULL, 0, false)) {
             return;
         }
         lag_renew_deadline(self);
     }
 }
 
-bool epaperdisplay_lag_refresh(epaperdisplay_epaperdisplay_obj_t *self, const displayio_area_t *areas) {
+bool epaperdisplay_lag_refresh(epaperdisplay_epaperdisplay_obj_t *self, const displayio_area_t *areas,
+    uint8_t area_count) {
     nlr_buf_t nlr;
     if (nlr_push(&nlr) == 0) {
-        bool ok = lag_refresh_unguarded(self, areas);
+        bool ok = lag_refresh_unguarded(self, areas, area_count);
         nlr_pop();
         return ok;
     }
@@ -477,7 +581,9 @@ static bool lag_send_solid(epaperdisplay_epaperdisplay_obj_t *self, uint8_t comm
 
 static bool lag_write_solid(epaperdisplay_epaperdisplay_obj_t *self, uint8_t command, bool white) {
     displayio_area_t box;
-    displayio_display_core_clip_area(&self->core, &self->core.area, &box);
+    if (!lag_full_area(self, &box)) {
+        return true;
+    }
     for (uint8_t attempt = 0; attempt < 3; attempt++) {
         if (!lag_set_region(self, &box) || !displayio_display_bus_begin_transaction(&self->bus)) {
             return false;
@@ -547,9 +653,11 @@ static bool lag_to_white(epaperdisplay_epaperdisplay_obj_t *self) {
             return false;
         }
     }
-    displayio_area_t whole = self->core.area;
-    whole.next = NULL;
-    if (!lag_step(self, &whole, true)) {
+    displayio_area_t whole;
+    if (!lag_full_area(self, &whole)) {
+        return false;
+    }
+    if (!lag_step(self, &whole, 1, true)) {
         return false;
     }
     lag_renew_deadline(self);
@@ -572,7 +680,7 @@ static void lag_abandon_step(epaperdisplay_epaperdisplay_obj_t *self) {
         displayio_display_bus_end_transaction(&self->bus);
         self->lag.bus_held = false;
     }
-    self->core.refresh_in_progress = false;
+    lag_set_refresh_in_progress(self, false);
     self->lag.force_full = true;
     if (self->lag.slot_overwriting) {
         // The drive it held can't be sent any more.
@@ -646,7 +754,7 @@ static bool lag_clean(epaperdisplay_epaperdisplay_obj_t *self, uint8_t frames, b
         return false;
     }
     lag_hold_interrupts(self);
-    self->core.full_refresh = true;
+    lag_set_full_refresh(self, true);
     bool ok;
     if (self->lag.state_lost) {
         ok = lag_recover(self);

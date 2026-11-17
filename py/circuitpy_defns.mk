@@ -698,6 +698,7 @@ $(filter $(SRC_PATTERNS), \
 	__future__/__init__.c \
 	busdisplay/BusDisplay.c \
 	camera/ImageFormat.c \
+	epaperdisplay/EPaperDisplay.c \
 	canio/Match.c \
 	codeop/__init__.c \
 	countio/Edge.c \
@@ -834,7 +835,6 @@ SRC_SHARED_MODULE_ALL = \
 	dotclockframebuffer/__init__.c \
 	emmcio/__init__.c \
 	epaperdisplay/__init__.c \
-	epaperdisplay/EPaperDisplay.c \
 	i2cioexpander/IOExpander.c \
 	i2cioexpander/IOPin.c \
 	i2cioexpander/__init__.c \
@@ -953,6 +953,7 @@ $(filter $(SRC_PATTERNS), \
 	busdisplay/lvgl/BusDisplay.c \
 	displayio/lvgl/TileGrid.c \
 	displayio/legacy/__init__.c \
+	epaperdisplay/lvgl/EPaperDisplay.c \
 	framebufferio/lvgl/FramebufferDisplay.c \
 	vectorio/lvgl/VectorShape.c \
 	videocore/lvgl/VideoBuffer.c \
@@ -969,6 +970,7 @@ $(filter $(SRC_PATTERNS), \
 	displayio/legacy/OnDiskBitmap.c \
 	displayio/legacy/Palette.c \
 	displayio/legacy/TileGrid.c \
+	epaperdisplay/legacy/EPaperDisplay.c \
 	framebufferio/legacy/FramebufferDisplay.c \
 	vectorio/legacy/VectorShape.c \
 	videocore/legacy/VideoBuffer.c \
