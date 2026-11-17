@@ -12,6 +12,11 @@
 
 #include "timers.h"
 
+// An entry is a number of sample ticks, after which the pin toggles. A HOLD entry
+// doesn't toggle: it lets a span without a transition, such as silence, be queued.
+#define HOLD (0x8000)
+#define DURATION_MASK (0x7fff)
+
 // TODO: support multiple concurrently active outputs.
 static TIM_HandleTypeDef tim_handle;
 static audiopwmio_pwmaudioout_obj_t *active_audio = NULL;
@@ -40,9 +45,9 @@ static void start_timer(audiopwmio_pwmaudioout_obj_t *self) {
         return;
     }
 
-    self->period = self->buffer[0][self->buffer_ptr[0]];
-    if (self->pin[1] && self->period > self->buffer[1][self->buffer_ptr[1]]) {
-        self->period = self->buffer[1][self->buffer_ptr[1]];
+    self->period = self->buffer[0][self->buffer_ptr[0]] & DURATION_MASK;
+    if (self->pin[1] && self->period > (self->buffer[1][self->buffer_ptr[1]] & DURATION_MASK)) {
+        self->period = self->buffer[1][self->buffer_ptr[1]] & DURATION_MASK;
     }
 
     // Set the new period
@@ -54,6 +59,19 @@ static void start_timer(audiopwmio_pwmaudioout_obj_t *self) {
     tim_handle.Instance->CR1 |= TIM_CR1_CEN; // Resume timer
     tim_handle.Instance->CR1 |= TIM_CR1_URS; // Disable non-overflow interrupts
     __HAL_TIM_ENABLE_IT(&tim_handle, TIM_IT_UPDATE);
+}
+
+// Queue a channel's span so far as a HOLD entry. Two ticks stay pending, so a
+// transition on the next sample is queued as before.
+static void hold_span(audiopwmio_pwmaudioout_obj_t *self, int8_t channel, bool replicate) {
+    if (self->len[channel] > 2) {
+        uint16_t entry = HOLD | (self->len[channel] - 2);
+        self->buffer[channel][self->buffer_length[channel]++] = entry;
+        if (replicate) {
+            self->buffer[1 - channel][self->buffer_length[1 - channel]++] = entry;
+        }
+        self->len[channel] = 2;
+    }
 }
 
 static bool fill_buffers(audiopwmio_pwmaudioout_obj_t *self) {
@@ -108,7 +126,18 @@ static bool fill_buffers(audiopwmio_pwmaudioout_obj_t *self) {
                     }
                     self->pos[channel] = new_pos;
                 }
-                self->len[channel]++;
+                if (++self->len[channel] == DURATION_MASK) {
+                    hold_span(self, channel, replicate);
+                }
+            }
+        }
+        // A block without a transition, such as silence, is queued as it is, so
+        // a silent source doesn't keep this loop reading forever.
+        if (get_buffer_result == GET_BUFFER_MORE_DATA) {
+            for (int8_t channel = 0; channel < effective_channels; channel++) {
+                if (!self->buffer_length[channel]) {
+                    hold_span(self, channel, replicate);
+                }
             }
         }
     } while (get_buffer_result == GET_BUFFER_MORE_DATA &&
@@ -154,17 +183,23 @@ static void pwmaudioout_event_handler(void) {
 
             bool refill = false;
 
-            active_audio->buffer[0][active_audio->buffer_ptr[0]] -= active_audio->period;
-            if (!active_audio->buffer[0][active_audio->buffer_ptr[0]]) {
-                toggle_pin(0);
+            uint16_t *entry = &active_audio->buffer[0][active_audio->buffer_ptr[0]];
+            *entry -= active_audio->period;
+            if (!(*entry & DURATION_MASK)) {
+                if (!(*entry & HOLD)) {
+                    toggle_pin(0);
+                }
                 if (++(active_audio->buffer_ptr[0]) >= active_audio->buffer_length[0]) {
                     refill = true;
                 }
             }
             if (active_audio->pin[1]) {
-                active_audio->buffer[1][active_audio->buffer_ptr[1]] -= active_audio->period;
-                if (!active_audio->buffer[1][active_audio->buffer_ptr[1]]) {
-                    toggle_pin(1);
+                entry = &active_audio->buffer[1][active_audio->buffer_ptr[1]];
+                *entry -= active_audio->period;
+                if (!(*entry & DURATION_MASK)) {
+                    if (!(*entry & HOLD)) {
+                        toggle_pin(1);
+                    }
                     if (++(active_audio->buffer_ptr[1]) >= active_audio->buffer_length[1]) {
                         refill = true;
                     }
