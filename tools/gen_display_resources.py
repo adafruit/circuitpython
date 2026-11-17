@@ -123,6 +123,13 @@ c_file.write(
 #include "shared-bindings/displayio/Palette.h"
 #include "supervisor/shared/display.h"
 
+// LVGL builds keep these bitmaps in RAM. Other builds keep them in flash to save RAM.
+#if CIRCUITPY_DISPLAYIO_LVGL
+#define DISPLAY_RESOURCE_CONST
+#else
+#define DISPLAY_RESOURCE_CONST const
+#endif
+
 """
 )
 
@@ -136,7 +143,7 @@ if tile_y == 16:
     blinka_size = 16
     c_file.write(
         """\
-uint32_t blinka_bitmap_data[32] = {
+DISPLAY_RESOURCE_CONST uint32_t blinka_bitmap_data[32] = {
     0x11000000, 0x00000011,
     0x11010000, 0x00001053,
     0x11010000, 0x00001156,
@@ -160,7 +167,7 @@ else:
     blinka_size = 12
     c_file.write(
         """\
-uint32_t blinka_bitmap_data[28] = {
+DISPLAY_RESOURCE_CONST uint32_t blinka_bitmap_data[28] = {
     0x11010000, 0x00000000,
     0x53110000, 0x00000010,
     0x56110000, 0x00000011,
@@ -331,7 +338,7 @@ displayio_tilegrid_t supervisor_terminal_status_bar_text_grid = {{
 
 c_file.write(
     """\
-uint32_t font_bitmap_data[{}] = {{
+DISPLAY_RESOURCE_CONST uint32_t font_bitmap_data[{}] = {{
 """.format(bytes_per_row * tile_y // 4)
 )
 
