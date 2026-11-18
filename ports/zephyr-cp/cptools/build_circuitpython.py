@@ -630,6 +630,10 @@ async def build_circuitpython():  # noqa: C901
             "layout dtsi, or disable the USB device controller in the devicetree."
         )
     circuitpython_flags.append(f"-DCIRCUITPY_USB_DEVICE={1 if usb_ok else 0}")
+    # MSC is the CIRCUITPY drive interface. The Zephyr port registers it only when
+    # storage.disable_usb_drive() has not turned it off (see supervisor/usb.c).
+    circuitpython_flags.append(f"-DCIRCUITPY_USB_MSC={1 if usb_ok else 0}")
+    circuitpython_flags.append(f"-DCIRCUITPY_USB_MSC_ENABLED_DEFAULT={1 if usb_ok else 0}")
 
     if usb_ok:
         enabled_modules.add("usb_cdc")
