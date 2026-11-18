@@ -164,7 +164,11 @@ audioio_get_buffer_result_t audiofilters_phaser_get_buffer(audiofilters_phaser_o
     self->last_buf_idx = !self->last_buf_idx;
 
     // If we are using 16 bit samples we need a 16 bit pointer, 8 bit needs an 8 bit pointer
+    // buffer[] was allocated on the heap, so it is aligned for 16-bit access.
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wcast-align"
     int16_t *word_buffer = (int16_t *)self->buffer[self->last_buf_idx];
+    #pragma GCC diagnostic pop
     int8_t *hword_buffer = self->buffer[self->last_buf_idx];
     uint32_t length = self->buffer_len / (self->base.bits_per_sample / 8);
 
@@ -221,7 +225,11 @@ audioio_get_buffer_result_t audiofilters_phaser_get_buffer(audiofilters_phaser_o
             // Determine how many bytes we can process to our buffer, the less of the sample we have left and our buffer remaining
             uint32_t n = MIN(MIN(self->sample_buffer_length, length), SYNTHIO_MAX_DUR * self->base.channel_count);
 
+            // The source's buffer is aligned, and it is only advanced in whole samples.
+            #pragma GCC diagnostic push
+            #pragma GCC diagnostic ignored "-Wcast-align"
             int16_t *sample_src = (int16_t *)self->sample_remaining_buffer; // for 16-bit samples
+            #pragma GCC diagnostic pop
             int8_t *sample_hsrc = (int8_t *)self->sample_remaining_buffer; // for 8-bit samples
 
             // get the effect values we need from the BlockInput. These may change at run time so you need to do bounds checking if required
