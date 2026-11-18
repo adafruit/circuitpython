@@ -32,9 +32,12 @@ static TaskHandle_t lvgl_task_handle = NULL;
 static volatile uint32_t lvgl_frame_generation = 0;
 static uint32_t lvgl_frame_seen = 0;
 
-// BusDisplay flushes stay on the CircuitPython thread. Its LVGL refresh timer is proxied to this
-// background callback, so no supervisor tick is involved.
+// Display auto-refreshes render on the CircuitPython thread, from these background callbacks.
+// BusDisplay's LVGL refresh timer is proxied to the first; a framebuffer frame boundary queues the
+// second. Like the legacy framebufferio, they allow other callbacks (audio refill) to run while
+// they render.
 static background_callback_t lvgl_cp_refresh_cb;
+static background_callback_t lvgl_cp_paced_refresh_cb;
 
 // LVGL's allocator hooks (LV_USE_STDLIB_MALLOC == LV_STDLIB_CUSTOM). Displays and
 // their buffers outlive the VM, so they come from the port heap.
@@ -153,7 +156,23 @@ void displayio_lvgl_port_unlock(void) {
 
 static void lvgl_cp_refresh(void *unused) {
     LV_UNUSED(unused);
-    displayio_lvgl_refresh_unsafe_displays();
+    background_callback_allow();
+    bool rendered = displayio_lvgl_refresh_unsafe_displays(true);
+    background_callback_prevent();
+    if (!rendered) {
+        // Another render was running background tasks. Try again after it.
+        background_callback_add(&lvgl_cp_refresh_cb, lvgl_cp_refresh, NULL);
+    }
+}
+
+static void lvgl_cp_paced_refresh(void *unused) {
+    LV_UNUSED(unused);
+    background_callback_allow();
+    bool rendered = displayio_lvgl_refresh_paced_displays(true);
+    background_callback_prevent();
+    if (!rendered) {
+        background_callback_add(&lvgl_cp_paced_refresh_cb, lvgl_cp_paced_refresh, NULL);
+    }
 }
 
 // BusDisplay's LVGL refresh timer normally flushes on the render task. Replace its callback with
@@ -184,8 +203,8 @@ IRAM_ATTR void displayio_lvgl_port_frame_boundary(void) {
         return;
     }
     // UVC invokes its frame callback from a background task on the CircuitPython thread. Render
-    // directly there; there is no task handoff.
-    displayio_lvgl_refresh_paced_displays();
+    // directly there, before the frame is converted; there is no task handoff.
+    displayio_lvgl_refresh_paced_displays(false);
 }
 
 static void lvgl_task(void *arg) {
@@ -211,7 +230,7 @@ static void lvgl_task(void *arg) {
         uint32_t frame_generation = lvgl_frame_generation;
         if (frame_generation != lvgl_frame_seen) {
             lvgl_frame_seen = frame_generation;
-            displayio_lvgl_refresh_paced_displays();
+            background_callback_add(&lvgl_cp_paced_refresh_cb, lvgl_cp_paced_refresh, NULL);
         }
     }
 }

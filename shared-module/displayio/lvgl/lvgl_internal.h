@@ -69,16 +69,23 @@ void displayio_lvgl_register_display(lv_display_t *display);
 bool displayio_lvgl_auto_refresh(void);
 
 // Render displays that can't flush from the LVGL task (currently BusDisplay when the port asks
-// for it). Called on the CircuitPython thread by the port's proxy, under the LVGL lock.
-void displayio_lvgl_refresh_unsafe_displays(void);
+// for it). Called on the CircuitPython thread by the port's proxy. With `yield`, the render runs
+// background tasks between steps, so the caller must be in a background callback that has called
+// background_callback_allow(). Returns false, without rendering, when another render on this
+// thread is already in progress; the caller should try again later.
+bool displayio_lvgl_refresh_unsafe_displays(bool yield);
 
 // Render the framebuffer displays that pace themselves from a frame boundary. Called on the
-// CircuitPython thread (directly or from the render task after an ISR notification), under the
-// LVGL lock.
-void displayio_lvgl_refresh_paced_displays(void);
+// CircuitPython thread. `yield` and the return value are as for
+// displayio_lvgl_refresh_unsafe_displays().
+bool displayio_lvgl_refresh_paced_displays(bool yield);
 
-// True while an explicit display.refresh() renders on the CircuitPython thread. Long
-// render steps (TileGrid compose, display flush) run background tasks when it is set.
+// Render one display now on the CircuitPython thread, as display.refresh() does. `yield` and the
+// return value are as above.
+bool displayio_lvgl_render_now(lv_display_t *display, bool yield);
+
+// True while a render on the CircuitPython thread may run background tasks. Long render steps
+// (TileGrid compose, display flush) run them when it is set, so audio can refill.
 extern bool displayio_lvgl_refresh_yield;
 
 // Attach/detach the compositor's root group. Implemented in lvgl/Group.c. NULL detach.
