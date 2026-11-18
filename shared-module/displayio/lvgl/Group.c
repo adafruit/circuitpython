@@ -172,11 +172,12 @@ bool displayio_lvgl_auto_refresh(void) {
 
 // Render the displays that can't run on the render task. The guard keeps the proxy from
 // re-entering LVGL rendering if a background callback is processed while a refresh is already
-// active on the CircuitPython thread.
+// active on the CircuitPython thread, including an explicit display.refresh() that is running
+// background tasks mid-render.
 void displayio_lvgl_refresh_unsafe_displays(void) {
     #if CIRCUITPY_BUSDISPLAY
     static bool refreshing = false;
-    if (refreshing) {
+    if (refreshing || displayio_lvgl_refresh_yield) {
         return;
     }
     refreshing = true;
