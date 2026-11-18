@@ -18,6 +18,9 @@
 #ifdef STM32F412Cx
 #include "stm32f4/stm32f412cx/clocks.h"
 #endif
+#ifdef STM32F412Rx
+#include "stm32f4/stm32f412rx/clocks.h"
+#endif
 #ifdef STM32F412Zx
 #include "stm32f4/stm32f412zx/clocks.h"
 #endif
