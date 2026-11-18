@@ -29,6 +29,6 @@ bool pin_number_is_free(uint8_t pin_number);
 uint8_t common_hal_mcu_pin_number(const mcu_pin_obj_t *pin);
 
 #if CIRCUITPY_CYW43
-extern bool cyw_ever_init;
+extern bool cyw_init_succeeded;
 void reset_pin_number_cyw(uint8_t pin_number);
 #endif
