@@ -66,7 +66,7 @@ void common_hal_wifi_init(bool user_initiated) {
     common_hal_wifi_radio_set_enabled(self, true);
 }
 
-bool wifi_hostname_is_set(void) {
+bool wifi_is_initialized(void) {
     return wifi_inited;
 }
 

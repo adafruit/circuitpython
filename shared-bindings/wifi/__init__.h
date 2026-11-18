@@ -22,9 +22,10 @@ void wifi_user_reset(void);
 // supervisor/shared/web_workflow.
 const char *wifi_get_hostname_raw(void);
 
-// True once common_hal_wifi_init() has set the interface's hostname, so that
-// wifi_get_hostname_raw() returns it. Never allocates or raises.
-bool wifi_hostname_is_set(void);
+// True once common_hal_wifi_init() has run, until wifi_reset() undoes it. Some
+// ports never undo it. While true, wifi_get_hostname_raw() returns the
+// interface's hostname. Never allocates or raises.
+bool wifi_is_initialized(void);
 
 // Gets the hostname that common_hal_wifi_init() sets when
 // CIRCUITPY_WIFI_HOSTNAME is not in settings.toml. Can be called before the

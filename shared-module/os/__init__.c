@@ -321,7 +321,7 @@ void common_hal_os_get_nodename(char *buf, size_t buf_size) {
     buf[0] = '\0';
 
     #if CIRCUITPY_WIFI
-    if (wifi_hostname_is_set()) {
+    if (wifi_is_initialized()) {
         strlcpy(buf, wifi_get_hostname_raw(), buf_size);
     } else {
         // Report the hostname common_hal_wifi_init() will set.
