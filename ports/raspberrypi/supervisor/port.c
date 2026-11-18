@@ -475,7 +475,7 @@ safe_mode_t port_init(void) {
     if (cyw43_arch_init_with_country(PICO_CYW43_ARCH_DEFAULT_COUNTRY_CODE)) {
         serial_write("WiFi init failed\n");
     } else {
-        cyw_init_succeeded = true;
+        cyw_driver_ready = true;
     }
     #endif
     if (board_requests_safe_mode()) {
@@ -699,7 +699,7 @@ void port_task_yield(void) {
 void port_boot_info(void) {
     #if CIRCUITPY_CYW43
     // Access CYW43 GPIO to power it up before reading the MAC
-    if (cyw_init_succeeded) {
+    if (cyw_driver_ready) {
         cyw43_arch_gpio_get(pin_CYW2.number);
     }
     mp_printf(&mp_plat_print, "MAC");
