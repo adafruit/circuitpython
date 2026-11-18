@@ -56,6 +56,16 @@ static void busdisplay_lvgl_flush_cb(lv_display_t *disp, const lv_area_t *area, 
     uint16_t w = area->x2 - area->x1 + 1;
     uint16_t h = area->y2 - area->y1 + 1;
     size_t len = (size_t)w * h * ((self->color_depth + 7) / 8);
+    if (self->color_depth == 16 && self->reverse_bytes_in_word) {
+        // reverse_bytes_in_word (the default) sends the high byte first.
+        // Partial render mode redraws the buffer for every flush, so swap it in place.
+        uint8_t *end = px_map + (size_t)w * h * 2;
+        for (uint8_t *p = px_map; p < end; p += 2) {
+            uint8_t low = p[0];
+            p[0] = p[1];
+            p[1] = low;
+        }
+    }
     if (self->color_depth == 1) {
         len = (w * h + 7) / 8;
         if (self->bytes_per_cell > 1) {
