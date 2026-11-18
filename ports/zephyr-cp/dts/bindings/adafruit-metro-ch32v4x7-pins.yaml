@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: 2026 Adafruit Industries
+# SPDX-License-Identifier: MIT
+
+description: |
+    Named Adafruit Metro CH32V407/CH32V467 pins that are not on its Arduino
+    header: the 2x3 SPI header, the NeoPixel, the USER button and the microSD
+    card detect.
+
+    The pin names come from the board's circuitpython.toml
+    [connectors.<node label>] table, keyed by gpio-map position.
+
+compatible: "adafruit-metro-ch32v4x7-pins"
+
+include: [gpio-nexus.yaml, base.yaml]

@@ -1074,6 +1074,7 @@ COMPAT_TO_DRIVER = {
     "nxp_imx_src": "hwinfo",
     "nxp_imx_src_rev2": "hwinfo",
     "nxp_lpc_uid": "hwinfo",
+    "wch_esig": "hwinfo",
     #
     # hwspinlock
     "nxp_sema42": "hwspinlock",
@@ -2874,6 +2875,7 @@ COMPAT_TO_DRIVER = {
     "st_stm32_otgfs": "usb/udc",
     "st_stm32_otghs": "usb/udc",
     "st_stm32_usb": "usb/udc",
+    "wch_usbhs2": "usb/udc",
     "zephyr_udc_skeleton": "usb/udc",
     "zephyr_udc_virtual": "usb/udc",
     #
