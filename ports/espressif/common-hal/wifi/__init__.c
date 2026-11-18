@@ -634,9 +634,16 @@ void wifi_reset(void) {
         IP_EVENT_STA_GOT_IP,
         radio->handler_instance_got_ip));
     ESP_ERROR_CHECK(esp_wifi_deinit());
-    esp_netif_destroy(radio->netif);
+    // Use the default-netif destructor so the Wi-Fi default event handlers let go of
+    // these first. esp_wifi_stop() posts WIFI_EVENT_STA_STOP/AP_STOP, which the default
+    // event loop handles asynchronously (and, over ESP-Hosted, after an RPC round trip),
+    // so it can run after this function. The handler would then call esp_netif_stop() on
+    // the freed netif (whose DHCP pointer is already reused memory), which asserts in
+    // heap_caps_free(). Clearing the handler's netif pointers here makes that stop event
+    // a no-op.
+    esp_netif_destroy_default_wifi(radio->netif);
     radio->netif = NULL;
-    esp_netif_destroy(radio->ap_netif);
+    esp_netif_destroy_default_wifi(radio->ap_netif);
     radio->ap_netif = NULL;
     wifi_inited = false;
     #endif

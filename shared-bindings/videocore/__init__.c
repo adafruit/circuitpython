@@ -47,9 +47,9 @@
 //|     display.root_group = root
 //|
 //| Capture a smaller part of the sensor's image into a `bytearray` and let
-//| displayio place it in a Group, together with other layers. displayio bulk
-//| copies new frames into the group's area of the display (no color
-//| conversion):
+//| displayio place it in a Group, together with other layers. The scanline
+//| compositor bulk copies new frames into the group's area of the display (no
+//| color conversion); the LVGL compositor samples the buffer directly:
 //|
 //| .. code-block:: python
 //|

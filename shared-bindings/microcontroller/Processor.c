@@ -75,7 +75,12 @@ MP_PROPERTY_GETTER(mcu_processor_architecture_obj,
 //|     """The CPU operating frequency in Hertz.
 //|
 //|     **Limitations:** On most boards, ``frequency`` is read-only. Setting
-//|     the ``frequency`` is possible on RP2040 boards, some ESP32 boards and some i.MX boards.
+//|     the ``frequency`` is possible on RP2040 and RP2350 boards, some ESP32 boards and some
+//|     i.MX boards.
+//|
+//|     .. note:: On RP2040, the flash clock is the CPU frequency divided by an
+//|       even number, and is at most 62.5 MHz. So some frequencies just above
+//|       125 MHz, such as 150 MHz, run Python code more slowly than 125 MHz.
 //|
 //|     .. warning:: Overclocking likely voids your warranties and may reduce
 //|       the lifetime of the chip.

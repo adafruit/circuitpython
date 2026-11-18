@@ -19,6 +19,11 @@ ifeq ($(INTERNAL_FLASH_FILESYSTEM),1)
   OPTIMIZATION_FLAGS ?= -Os
 endif
 
+# Fast e-paper doesn't fit in flash on the F401 and F411.
+ifeq ($(MCU_VARIANT),$(filter $(MCU_VARIANT),STM32F401xE STM32F411xE))
+        CIRCUITPY_EPAPERDISPLAY_FAST ?= 0
+endif
+
 ifeq ($(MCU_VARIANT),STM32F407xx)
         UF2_FAMILY_ID ?= 0x6d0922fa
 endif

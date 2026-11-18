@@ -450,7 +450,9 @@ static void _check_display(void) {
             new_pixels = displays[i].framebuffer_display.bufinfo.buf;
         }
         #endif
-        #if CIRCUITPY_BUSDISPLAY
+        // The LVGL compositor's BusDisplay has no display_core and no readable
+        // pixels, so only framebuffer displays can be streamed there.
+        #if CIRCUITPY_BUSDISPLAY && !CIRCUITPY_DISPLAYIO_LVGL
         if (type == &busdisplay_busdisplay_type) {
             core = &displays[i].display.core;
         }
@@ -458,10 +460,18 @@ static void _check_display(void) {
         (void)type;
     }
     uint8_t new_format = FORMAT_NONE;
+    // The panel's size, whatever the rotation. The legacy compositor keeps it in the
+    // full refresh area; LVGL tracks invalidation itself, so the core keeps only the size.
+    #if CIRCUITPY_DISPLAYIO_LVGL
+    uint16_t new_width = core != NULL ? core->width : width;
+    uint16_t new_height = core != NULL ? core->height : height;
+    #else
+    uint16_t new_width = core != NULL ? core->area.x2 : width;
+    uint16_t new_height = core != NULL ? core->area.y2 : height;
+    #endif
     if (core != NULL) {
         new_format = _format_of(&core->colorspace);
-        // The core's area is the panel's size, whatever the rotation.
-        if (core->area.x2 > MAX_SIZE || core->area.y2 > MAX_SIZE) {
+        if (new_width > MAX_SIZE || new_height > MAX_SIZE) {
             new_format = FORMAT_NONE;
         }
         if (fb != NULL ? new_pixels == NULL : core->colorspace.depth < 8) {
@@ -473,8 +483,6 @@ static void _check_display(void) {
             new_pixels = NULL;
         }
     }
-    uint16_t new_width = core != NULL ? core->area.x2 : width;
-    uint16_t new_height = core != NULL ? core->area.y2 : height;
     if (core == target &&
         (core == NULL || (new_format == format && new_width == width && new_height == height &&
                           new_pixels == pixels))) {
@@ -551,7 +559,8 @@ static void _load_block(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
         x0 = x;
     }
     #endif
-    #if CIRCUITPY_BUSDISPLAY
+    // Rendering a bus display's areas again needs the scanline compositor.
+    #if CIRCUITPY_BUSDISPLAY && !CIRCUITPY_DISPLAYIO_LVGL
     if (src == NULL) {
         // Rendered into block itself. Converting from the end doesn't overwrite
         // a pixel before it's read, since pixels are at most 4 bytes.

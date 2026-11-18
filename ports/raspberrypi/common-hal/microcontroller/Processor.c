@@ -24,13 +24,19 @@
 #include "hardware/vreg.h"
 #include "hardware/watchdog.h"
 
-#ifdef CIRCUITPY_PSRAM_CHIP_SELECT
+#include "genhdr/flash_info.h"
+
+#if PICO_RP2350
+#include "hardware/regs/io_qspi.h"
 #include "hardware/regs/qmi.h"
+#include "hardware/structs/io_qspi.h"
 #include "hardware/structs/qmi.h"
 #endif
 
 #if PICO_RP2040
+#include "hardware/regs/ssi.h"
 #include "hardware/regs/vreg_and_chip_reset.h"
+#include "hardware/structs/ssi.h"
 #include "hardware/structs/vreg_and_chip_reset.h"
 #endif
 #if PICO_RP2350
@@ -100,6 +106,137 @@ void __no_inline_not_in_flash_func(mcu_processor_update_psram_timing)(uint32_t s
 }
 #endif
 
+#if PICO_RP2350
+// Saved flash timing for the current system clock: the value of the timing
+// register for QMI window 0. QMI is the Quad Memory Interface, which reads the
+// flash. A flash erase, program or command leaves stage 2's slow timing in
+// place, and mcu_processor_restore_flash_timing() writes this value back.
+static uint32_t _flash_timing;
+
+void __no_inline_not_in_flash_func(mcu_processor_restore_flash_timing)(void) {
+    // QMI has no busy flag. Instead, wait until the flash chip select pad (SS,
+    // active low) is deasserted, so the timing doesn't change during a read.
+    while ((io_qspi_hw->io[1].status & IO_QSPI_GPIO_QSPI_SS_STATUS_OUTTOPAD_BITS) == 0) {
+    }
+    qmi_hw->m[0].timing = _flash_timing;
+    // The new timing applies from the next read. Read once through XIP
+    // (execute in place) so that it is in use before returning.
+    (void)*(volatile uint32_t *)XIP_NOCACHE_NOALLOC_BASE;
+}
+
+// Maximum delays inside the RP2350 at VDDIO = 3.3 V, from RP2350 datasheet
+// Table 1291 (QMI timing delay).
+#define QMI_CLOCK_TO_OUTPUT_PS (2500)
+#define QMI_INPUT_TO_SAMPLE_PS (1500)
+// Allowance for the board trace between the RP2350 and the flash, each way.
+#define FLASH_TRACE_DELAY_PS (500)
+// Margin required beyond the flash's output hold time.
+#define FLASH_HOLD_MARGIN_PS (500)
+
+void __no_inline_not_in_flash_func(mcu_processor_update_flash_timing)(uint32_t sys_clk_khz) {
+    // Choose the flash clock divider (CLKDIV) and sample delay (RXDELAY) from
+    // the flash's datasheet timing in flash_info.h, assuming worst-case delays.
+    //
+    // The flash drives each data bit after a falling clock edge. QMI samples
+    // the bit (CLKDIV + RXDELAY) half system clocks after that edge.
+    //   Setup: the sample must come after the bit is valid. That is the RP2350
+    //          output delay, plus the flash's output valid time, plus the
+    //          RP2350 input delay, plus the board trace delay both ways.
+    //   Hold:  the sample must come before the flash starts driving the next
+    //          bit. That is one SCK period plus the flash's output hold time,
+    //          less FLASH_HOLD_MARGIN_PS. The RP2350's minimum delays aren't
+    //          specified, so they count as 0.
+    //
+    // Use the smallest divider that keeps SCK within the flash's 0xeb rating
+    // and has a sample delay meeting both checks. Of those sample delays, pick
+    // the one furthest from failing either check.
+    const int32_t period_ps = 1000000000 / sys_clk_khz;
+    const int32_t setup_ps = QMI_CLOCK_TO_OUTPUT_PS + FLASH_MAX_OUTPUT_VALID_PS +
+        QMI_INPUT_TO_SAMPLE_PS + 2 * FLASH_TRACE_DELAY_PS;
+    uint32_t max_sck_khz = FLASH_EB_MAX_SCK_KHZ;
+    #ifdef CIRCUITPY_FLASH_MAX_SCK_HZ
+    max_sck_khz = MIN(max_sck_khz, CIRCUITPY_FLASH_MAX_SCK_HZ / 1000);
+    #endif
+    const uint32_t max_rxdelay = QMI_M0_TIMING_RXDELAY_BITS >> QMI_M0_TIMING_RXDELAY_LSB;
+
+    uint32_t clkdiv = (sys_clk_khz + max_sck_khz - 1) / max_sck_khz;
+    uint32_t rxdelay = max_rxdelay;
+    for (; clkdiv <= 255; clkdiv++) {
+        const int32_t hold_ps = (int32_t)clkdiv * period_ps + FLASH_MIN_OUTPUT_HOLD_PS - FLASH_HOLD_MARGIN_PS;
+        int32_t best_margin_ps = -1;
+        for (uint32_t r = 0; r <= max_rxdelay; r++) {
+            const int32_t sample_ps = (int32_t)(clkdiv + r) * period_ps / 2;
+            const int32_t margin_ps = MIN(sample_ps - setup_ps, hold_ps - sample_ps);
+            if (margin_ps > best_margin_ps) {
+                best_margin_ps = margin_ps;
+                rxdelay = r;
+            }
+        }
+        if (best_margin_ps >= 0) {
+            break;
+        }
+    }
+    if (clkdiv > 255) {
+        // No divider up to 255 passes both checks. That can't happen at a real
+        // clock speed, but fall back to the slowest timing.
+        clkdiv = 255;
+        rxdelay = max_rxdelay;
+    }
+
+    // COOLDOWN = 1 keeps chip select asserted briefly after a read, so the next
+    // read from the following address doesn't resend the address. Stage 2
+    // sets the same value.
+    _flash_timing =
+        1 << QMI_M0_TIMING_COOLDOWN_LSB |
+            rxdelay << QMI_M0_TIMING_RXDELAY_LSB |
+            clkdiv << QMI_M0_TIMING_CLKDIV_LSB;
+    mcu_processor_restore_flash_timing();
+}
+#endif
+
+#if PICO_RP2040
+// Highest RP2040 flash clock. The RP2040 datasheet gives no QSPI pad delays,
+// so this can't be worked out like the RP2350 timing. 62.5 MHz (divider 2 at
+// 125 MHz) is the pico-sdk default for the Pico.
+//
+// On a Feather RP2040, a sample delay of 1 read correctly at every divider and
+// every system clock from 48 to 250 MHz. At a 75 MHz flash clock (divider 2 at
+// 150 MHz), no other sample delay worked, so this limit keeps some margin.
+#define RP2040_FLASH_MAX_SCK_KHZ (62500)
+
+// SSI clock divider for the current system clock. The SSI (synchronous serial
+// interface) reads the flash. A flash erase, program or command reruns stage
+// 2, which sets divider 4, and mcu_processor_restore_flash_timing() writes
+// this value back. Until the first update, it is stage 2's value.
+static uint32_t _flash_clock_divider = 4;
+
+void __no_inline_not_in_flash_func(mcu_processor_restore_flash_timing)(void) {
+    // The divider can change only while the SSI is disabled, which also stops
+    // XIP (execute in place). So this runs from RAM.
+    while (ssi_hw->sr & SSI_SR_BUSY_BITS) {
+    }
+    ssi_hw->ssienr = 0;
+    ssi_hw->baudr = _flash_clock_divider;
+    // Sample read data one system clock late, as stage 2 does.
+    ssi_hw->rx_sample_dly = 1;
+    ssi_hw->ssienr = 1;
+}
+
+void mcu_processor_update_flash_timing(uint32_t sys_clk_khz) {
+    // Use the smallest divider that keeps the flash clock within the flash's
+    // 0xeb rating and RP2040_FLASH_MAX_SCK_KHZ. The SSI supports only even
+    // dividers, 2 or more.
+    uint32_t max_sck_khz = MIN(FLASH_EB_MAX_SCK_KHZ, RP2040_FLASH_MAX_SCK_KHZ);
+    #ifdef CIRCUITPY_FLASH_MAX_SCK_HZ
+    max_sck_khz = MIN(max_sck_khz, CIRCUITPY_FLASH_MAX_SCK_HZ / 1000);
+    #endif
+    uint32_t divider = (sys_clk_khz + max_sck_khz - 1) / max_sck_khz;
+    divider += divider & 1;
+    _flash_clock_divider = MAX(divider, 2);
+    mcu_processor_restore_flash_timing();
+}
+#endif
+
 void common_hal_mcu_processor_set_frequency(mcu_processor_obj_t *self, uint32_t frequency) {
     uint vco, postdiv1, postdiv2;
     uint32_t freq_khz = frequency / 1000;
@@ -119,16 +256,18 @@ void common_hal_mcu_processor_set_frequency(mcu_processor_obj_t *self, uint32_t 
     // Wait for a stable voltage
     common_hal_time_delay_ms(10);
 
-    #ifdef CIRCUITPY_PSRAM_CHIP_SELECT
-    // Prevent interrupt handlers from accessing PSRAM until its timing matches
-    // the new system clock.
+    // Prevent interrupt handlers from accessing flash or PSRAM until their
+    // timing matches the new system clock.
     common_hal_mcu_disable_interrupts();
-    #endif
+    // While the clock changes, use the flash timing for the faster of the old
+    // and new clocks. That keeps the flash within its timing limits at both.
+    mcu_processor_update_flash_timing(MAX(freq_khz, clock_get_hz(clk_sys) / 1000));
     set_sys_clock_khz(freq_khz, false);
     #ifdef CIRCUITPY_PSRAM_CHIP_SELECT
     mcu_processor_update_psram_timing(freq_khz);
-    common_hal_mcu_enable_interrupts();
     #endif
+    mcu_processor_update_flash_timing(freq_khz);
+    common_hal_mcu_enable_interrupts();
 }
 
 void common_hal_mcu_processor_get_uid(uint8_t raw_id[]) {

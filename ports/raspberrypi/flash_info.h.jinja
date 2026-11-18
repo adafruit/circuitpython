@@ -3,3 +3,9 @@
 #pragma once
 
 #define FLASH_DEFAULT_POWER_OF_TWO {{ default_power_of_two }}
+
+// Worst-case read timing across the board's flash devices, from data/nvm.toml.
+// Used to choose the flash clock divider, and on RP2350 the sample delay.
+#define FLASH_EB_MAX_SCK_KHZ {{ eb_max_khz }}
+#define FLASH_MAX_OUTPUT_VALID_PS {{ max_output_valid_ps }}
+#define FLASH_MIN_OUTPUT_HOLD_PS {{ min_output_hold_ps }}

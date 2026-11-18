@@ -6,6 +6,7 @@
 
 #include "supervisor/board.h"
 #include "mpconfigboard.h"
+#include "common-hal/dotclockframebuffer/DotClockFramebuffer.h"
 #include "shared-bindings/dotclockframebuffer/DotClockFramebuffer.h"
 #include "shared-bindings/framebufferio/FramebufferDisplay.h"
 #include "shared-bindings/microcontroller/Pin.h"

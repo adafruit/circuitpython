@@ -36,7 +36,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#define DELAY 0x80
 
 void common_hal_busdisplay_busdisplay_construct(busdisplay_busdisplay_obj_t *self,
     mp_obj_t bus, uint16_t width, uint16_t height, int16_t colstart, int16_t rowstart,
@@ -70,59 +69,9 @@ void common_hal_busdisplay_busdisplay_construct(busdisplay_busdisplay_obj_t *sel
     self->native_frames_per_second = native_frames_per_second;
     self->native_ms_per_frame = 1000 / native_frames_per_second;
 
-    uint32_t i = 0;
-    while (i < init_sequence_len) {
-        uint8_t *cmd = init_sequence + i;
-        uint8_t data_size = *(cmd + 1);
-        bool delay = (data_size & DELAY) != 0;
-        data_size &= ~DELAY;
-        uint8_t *data = cmd + 2;
-        while (!displayio_display_bus_begin_transaction(&self->bus)) {
-            RUN_BACKGROUND_TASKS;
-            if (mp_hal_is_interrupted()) {
-                mp_raise_RuntimeError_varg(MP_ERROR_TEXT("%q init failed"), MP_QSTR_display);
-            }
-        }
-        if (self->bus.data_as_commands) {
-            uint8_t full_command[data_size + 1];
-            full_command[0] = cmd[0];
-            memcpy(full_command + 1, data, data_size);
-            self->bus.send(self->bus.bus, DISPLAY_COMMAND, CHIP_SELECT_TOGGLE_EVERY_BYTE, full_command, data_size + 1);
-        } else {
-            self->bus.send(self->bus.bus, DISPLAY_COMMAND, data_size > 0 ? CHIP_SELECT_TOGGLE_EVERY_BYTE : CHIP_SELECT_UNTOUCHED, cmd, 1);
-            self->bus.send(self->bus.bus, DISPLAY_DATA, CHIP_SELECT_UNTOUCHED, data, data_size);
-        }
-        displayio_display_bus_end_transaction(&self->bus);
-        uint16_t delay_length_ms = 10;
-        if (delay) {
-            data_size++;
-            delay_length_ms = *(cmd + 1 + data_size);
-            if (delay_length_ms == 255) {
-                delay_length_ms = 500;
-            }
-        }
-        common_hal_time_delay_ms(delay_length_ms);
-        i += 2 + data_size;
-    }
+    displayio_display_bus_send_init_sequence(&self->bus, init_sequence, init_sequence_len);
 
-    // Always set the backlight type in case we're reusing memory.
-    self->backlight_inout.base.type = &mp_type_NoneType;
-    if (backlight_pin != NULL && common_hal_mcu_pin_is_free(backlight_pin)) {
-        // Avoid PWM types and functions when the module isn't enabled
-        #if (CIRCUITPY_PWMIO)
-        pwmout_result_t result = common_hal_pwmio_pwmout_construct(&self->backlight_pwm, backlight_pin, 0, backlight_pwm_frequency, false);
-        if (result != PWMOUT_OK) {
-            self->backlight_inout.base.type = &digitalio_digitalinout_type;
-            common_hal_digitalio_digitalinout_construct(&self->backlight_inout, backlight_pin);
-        } else {
-            self->backlight_pwm.base.type = &pwmio_pwmout_type;
-        }
-        #else
-        // Otherwise default to digital
-        self->backlight_inout.base.type = &digitalio_digitalinout_type;
-        common_hal_digitalio_digitalinout_construct(&self->backlight_inout, backlight_pin);
-        #endif
-    }
+    busdisplay_backlight_construct(&self->backlight, backlight_pin, backlight_pwm_frequency);
 
     common_hal_busdisplay_busdisplay_set_brightness(self, brightness);
 
@@ -150,26 +99,9 @@ bool common_hal_busdisplay_busdisplay_set_brightness(busdisplay_busdisplay_obj_t
     if (!self->backlight_on_high) {
         brightness = 1.0 - brightness;
     }
-    bool ok = false;
+    bool ok = busdisplay_backlight_set(&self->backlight, brightness);
 
-    // Avoid PWM types and functions when the module isn't enabled
-    #if (CIRCUITPY_PWMIO)
-    bool ispwm = (self->backlight_pwm.base.type == &pwmio_pwmout_type) ? true : false;
-    #else
-    bool ispwm = false;
-    #endif
-
-    if (ispwm) {
-        #if (CIRCUITPY_PWMIO)
-        common_hal_pwmio_pwmout_set_duty_cycle(&self->backlight_pwm, (uint16_t)(0xffff * brightness));
-        ok = true;
-        #else
-        ok = false;
-        #endif
-    } else if (self->backlight_inout.base.type == &digitalio_digitalinout_type) {
-        common_hal_digitalio_digitalinout_set_value(&self->backlight_inout, brightness > 0.99);
-        ok = true;
-    } else if (self->brightness_command != NO_BRIGHTNESS_COMMAND) {
+    if (!ok && self->brightness_command != NO_BRIGHTNESS_COMMAND) {
         ok = displayio_display_bus_begin_transaction(&self->bus);
         if (ok) {
             if (self->bus.data_as_commands) {
@@ -333,7 +265,7 @@ static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_are
             _run_background_tasks();
         }
 
-        displayio_display_bus_set_region_to_update(&self->bus, &self->core, &subrectangle);
+        displayio_display_bus_set_region_to_update(&self->bus, &self->core.colorspace, &subrectangle);
 
         // Can't acquire display bus; skip the rest of the data.
         if (!displayio_display_bus_begin_transaction(&self->bus)) {
@@ -462,15 +394,7 @@ void busdisplay_busdisplay_background(busdisplay_busdisplay_obj_t *self) {
 void release_busdisplay(busdisplay_busdisplay_obj_t *self) {
     common_hal_busdisplay_busdisplay_set_auto_refresh(self, false);
     release_display_core(&self->core);
-    #if (CIRCUITPY_PWMIO)
-    if (self->backlight_pwm.base.type == &pwmio_pwmout_type) {
-        common_hal_pwmio_pwmout_deinit(&self->backlight_pwm);
-    } else if (self->backlight_inout.base.type == &digitalio_digitalinout_type) {
-        common_hal_digitalio_digitalinout_deinit(&self->backlight_inout);
-    }
-    #else
-    common_hal_digitalio_digitalinout_deinit(&self->backlight_inout);
-    #endif
+    busdisplay_backlight_deinit(&self->backlight);
 }
 
 void reset_busdisplay(busdisplay_busdisplay_obj_t *self) {

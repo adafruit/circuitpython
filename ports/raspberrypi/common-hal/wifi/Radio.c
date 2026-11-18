@@ -587,10 +587,10 @@ mp_int_t common_hal_wifi_radio_ping(wifi_radio_obj_t *self, mp_obj_t ip_address,
     }
     raw_recv(ping_pcb, ping_recv, NULL);
     raw_bind(ping_pcb, IP_ADDR_ANY);
-    MICROPY_PY_LWIP_EXIT
-
-        ping_received = false;
+    ping_received = false;
     ping_send(ping_pcb, &ping_addr);
+    MICROPY_PY_LWIP_EXIT;
+
     size_t timeout_ms = (size_t)MICROPY_FLOAT_C_FUN(ceil)(timeout * 1000);
     uint64_t start = port_get_raw_ticks(NULL);
     uint64_t deadline = start + timeout_ms;

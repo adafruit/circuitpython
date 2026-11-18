@@ -70,9 +70,10 @@ typedef struct __attribute__ ((packed)) {
 
 typedef struct __attribute__ ((packed)) {
     uint8_t pkt_type;
+    // One type for all three, so the MS bitfield layout (MinGW) packs them into 16 bits.
     uint16_t handle : 12;
-    uint8_t pb : 2;            // Packet boundary flag: ACL_DATA_PB values.
-    uint8_t bc : 2;            // Broadcast flag: always 0b00 for BLE.
+    uint16_t pb : 2;           // Packet boundary flag: ACL_DATA_PB values.
+    uint16_t bc : 2;           // Broadcast flag: always 0b00 for BLE.
     uint16_t data_len;        // length of data[] in this packet.
     uint8_t data[];
 }  h4_hci_acl_pkt_t;
@@ -118,6 +119,8 @@ static size_t cmd_response_len;
 static uint8_t *cmd_response_data;
 
 static volatile bool hci_poll_in_progress = false;
+// Commands or ACL writes in flight: the advertising timeout waits until there are none.
+static volatile uint8_t hci_waits;
 
 
 //////////////////////////////////////////////////////////////////////
@@ -129,6 +132,13 @@ static volatile bool hci_poll_in_progress = false;
 static void process_acl_data_pkt(uint8_t pkt_len, uint8_t pkt_data[]) {
     h4_hci_acl_pkt_t *pkt = (h4_hci_acl_pkt_t *)pkt_data;
 
+    // Drop a frame longer than the buffer, and continuation fragments with no frame started.
+    const bool middle = pkt->pb == ACL_DATA_PB_MIDDLE;
+    if ((middle && acl_data_len == 0) ||
+        (middle ? acl_data_len : 0) + pkt->data_len > sizeof(acl_data_buffer)) {
+        acl_data_len = 0;
+        return;
+    }
     if (pkt->pb != ACL_DATA_PB_MIDDLE) {
         // This is the start of a fragmented acl_data packet or is a full packet.
         memcpy(acl_data_buffer, pkt->data, pkt->data_len);
@@ -141,10 +151,11 @@ static void process_acl_data_pkt(uint8_t pkt_len, uint8_t pkt_data[]) {
     }
 
     acl_data_t *acl = (acl_data_t *)&acl_data_buffer;
-    if (acl_data_len != sizeof(acl) + acl->acl_data_len) {
+    if (acl_data_len != sizeof(*acl) + acl->acl_data_len) {
         // We don't have the full packet yet.
         return;
     }
+    acl_data_len = 0;
 
     if (acl->cid == BT_L2CAP_CID_ATT) {
         att_process_data(pkt->handle, acl->acl_data_len, acl->acl_data);
@@ -168,9 +179,13 @@ static void process_acl_data_pkt(uint8_t pkt_len, uint8_t pkt_data[]) {
 // Process number of completed packets. Reduce number of pending packets by reported
 // number of completed.
 static void process_num_comp_pkts(uint16_t handle, uint16_t num_pkts) {
-    if (num_pkts && pending_pkt > num_pkts) {
-        pending_pkt -= num_pkts;
-    } else {
+    pending_pkt -= MIN(pending_pkt, num_pkts);
+}
+
+static void remove_link(uint16_t handle, uint8_t reason) {
+    att_remove_connection(handle, reason);
+    // The controller frees a link's buffers without Number of Completed Packets.
+    if (!att_is_connected()) {
         pending_pkt = 0;
     }
 }
@@ -184,7 +199,7 @@ static void process_evt_pkt(size_t pkt_len, uint8_t pkt_data[]) {
                 (struct bt_hci_evt_disconn_complete *)pkt->params;
             (void)disconn_complete;
 
-            att_remove_connection(disconn_complete->handle, disconn_complete->reason);
+            remove_link(disconn_complete->handle, disconn_complete->reason);
             // FIX L2CAPSignaling.removeConnection(disconn_complete->handle, disconn_complete->reason);
             break;
         }
@@ -283,7 +298,7 @@ static void process_evt_pkt(size_t pkt_len, uint8_t pkt_data[]) {
 
         default:
             #if HCI_DEBUG
-            mp_printf(&mp_plat_print, "process_evt_pkt: Unknown event: %02x\n");
+            mp_printf(&mp_plat_print, "process_evt_pkt: Unknown event: %02x\n", pkt->evt);
             #endif
             break;
     }
@@ -293,6 +308,7 @@ void bleio_hci_reset(void) {
     rx_idx = 0;
     pending_pkt = 0;
     hci_poll_in_progress = false;
+    hci_waits = 0;
     bleio_att_reset();
 }
 
@@ -308,7 +324,6 @@ hci_result_t hci_poll_for_incoming_pkt(void) {
     // Assert RTS low to say we're ready to read data.
     common_hal_digitalio_digitalinout_set_value(common_hal_bleio_adapter_obj.rts_digitalinout, false);
 
-    int errcode = 0;
     bool packet_is_complete = false;
 
     // Read bytes until we run out. There may be more than one packet in the input buffer.
@@ -316,10 +331,13 @@ hci_result_t hci_poll_for_incoming_pkt(void) {
            common_hal_busio_uart_rx_characters_available(common_hal_bleio_adapter_obj.hci_uart) > 0) {
 
         // Read just one character a a time, so we don't accidentally get part of a second
-        // packet.
+        // packet. A read can fail with EAGAIN although a character is waiting: the next
+        // read must not see that error.
+        int errcode = 0;
         size_t num_read =
             common_hal_busio_uart_read(common_hal_bleio_adapter_obj.hci_uart, rx_buffer + rx_idx, 1, &errcode);
         if (num_read == 0) {
+            hci_poll_in_progress = false;
             return HCI_OK;
         }
         if (errcode) {
@@ -327,12 +345,16 @@ hci_result_t hci_poll_for_incoming_pkt(void) {
                 continue;
             }
             hci_poll_in_progress = false;
+            #if HCI_DEBUG
             mp_printf(&mp_plat_print, "HCI_READ_ERROR, errcode: %x\n", errcode);
+            #endif
             return HCI_READ_ERROR;
         }
         rx_idx++;
         if (rx_idx >= sizeof(rx_buffer)) {
             // Incoming packet is too large. Should not happen.
+            rx_idx = 0;
+            hci_poll_in_progress = false;
             return HCI_READ_ERROR;
         }
 
@@ -345,6 +367,8 @@ hci_result_t hci_poll_for_incoming_pkt(void) {
                         packet_is_complete = true;
                     }
                     if (rx_idx > total_len) {
+                        rx_idx = 0;
+                        hci_poll_in_progress = false;
                         return HCI_PACKET_SIZE_ERROR;
                     }
                 }
@@ -358,6 +382,8 @@ hci_result_t hci_poll_for_incoming_pkt(void) {
                         packet_is_complete = true;
                     }
                     if (rx_idx > total_len) {
+                        rx_idx = 0;
+                        hci_poll_in_progress = false;
                         return HCI_PACKET_SIZE_ERROR;
                     }
                 }
@@ -448,37 +474,60 @@ static hci_result_t send_command(uint16_t opcode, uint8_t params_len, void *para
     dump_cmd_pkt(true, sizeof(tx_buffer), tx_buffer);
     #endif
 
+    // Busy from before the write: a UART write may run background tasks.
+    hci_waits++;
+    cmd_response_received = false;
     int result = write_pkt(tx_buffer, cmd_pkt_len);
     if (result != HCI_OK) {
+        hci_waits--;
         return result;
     }
 
-    cmd_response_received = false;
-
     // Wait for a response. Note that other packets may be received that are not
     // command responses.
+    result = HCI_RESPONSE_TIMEOUT;
     uint64_t start = supervisor_ticks_ms64();
     while (supervisor_ticks_ms64() - start < RESPONSE_TIMEOUT_MSECS) {
-        // RUN_BACKGROUND_TASKS includes hci_poll_for_incoming_pkt();
         RUN_BACKGROUND_TASKS;
+        // Poll here too: background tasks don't nest, so from one nothing else would read the
+        // answer.
+        hci_poll_for_incoming_pkt();
         if (cmd_response_received && cmd_response_opcode == opcode) {
             // If this is definitely a response to the command that was sent,
             // return the status value, which will will be
             // BT_HCI_ERR_SUCCESS (0x00) if the command succeeded,
             // or a BT_HCI_ERR_x value (> 0x00) if there was a problem.
-            return cmd_response_status;
+            result = cmd_response_status;
+            break;
         }
     }
+    hci_waits--;
 
-    // No I/O error, but no response sent back in time.
-    return HCI_RESPONSE_TIMEOUT;
+    // HCI_RESPONSE_TIMEOUT: no I/O error, but no response sent back in time.
+    return result;
+}
+
+bool hci_busy(void) {
+    return hci_waits > 0 || hci_poll_in_progress;
 }
 
 hci_result_t hci_send_acl_pkt(uint16_t handle, uint8_t cid, uint16_t data_len, uint8_t *data) {
-    // Wait for all backlogged packets to finish.
-    while (pending_pkt >= common_hal_bleio_adapter_obj.max_acl_num_buffers) {
-        // RUN_BACKGROUND_TASKS includes hci_poll_for_incoming_pkt();
+    // Wait for a free controller buffer, but not forever. Outside the poll, one is kept
+    // for the responses the poll sends.
+    const size_t max_pkt = common_hal_bleio_adapter_obj.max_acl_num_buffers;
+    const bool in_poll = hci_poll_in_progress;
+    // Busy until the packet is written: the wait and the UART write may run background tasks.
+    hci_waits++;
+    uint64_t start = supervisor_ticks_ms64();
+    while (pending_pkt + (max_pkt > 1 && !in_poll) >= max_pkt) {
+        // Inside the poll no credit can come back.
+        if (in_poll || supervisor_ticks_ms64() - start > RESPONSE_TIMEOUT_MSECS) {
+            hci_waits--;
+            return HCI_WRITE_TIMEOUT;
+        }
         RUN_BACKGROUND_TASKS;
+        // As in send_command(): the credits arrive in packets read here.
+        hci_poll_for_incoming_pkt();
     }
 
     // buf_len is size of entire packet including header.
@@ -507,7 +556,10 @@ hci_result_t hci_send_acl_pkt(uint16_t handle, uint8_t cid, uint16_t data_len, u
 
     int errcode = 0;
     common_hal_busio_uart_write(common_hal_bleio_adapter_obj.hci_uart, tx_buffer, buf_len, &errcode);
+    hci_waits--;
     if (errcode) {
+        // Not sent: give the credit back.
+        pending_pkt--;
         return HCI_WRITE_ERROR;
     }
     return HCI_OK;
@@ -786,7 +838,12 @@ hci_result_t hci_disconnect(uint16_t handle) {
         .reason = BT_HCI_ERR_REMOTE_USER_TERM_CONN,
     };
 
-    return send_command(BT_HCI_OP_DISCONNECT, sizeof(params), &params);
+    hci_result_t result = send_command(BT_HCI_OP_DISCONNECT, sizeof(params), &params);
+    // The controller no longer knows the link: its Disconnection Complete was lost.
+    if (result == BT_HCI_ERR_UNKNOWN_CONN_ID) {
+        remove_link(handle, result);
+    }
+    return result;
 }
 
 void hci_check_error(hci_result_t result) {

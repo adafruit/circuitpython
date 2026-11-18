@@ -213,6 +213,7 @@ static mp_obj_t synthio_from_file(size_t n_args, const mp_obj_t *pos_args, mp_ma
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+    mp_int_t sample_rate = mp_arg_validate_int_min(args[ARG_sample_rate].u_int, 1, MP_QSTR_sample_rate);
     mp_obj_t file_obj = args[ARG_file].u_obj;
     // Any readable, seekable binary stream works, regardless of which
     // filesystem it came from.
@@ -270,7 +271,7 @@ static mp_obj_t synthio_from_file(size_t n_args, const mp_obj_t *pos_args, mp_ma
 
     synthio_miditrack_obj_t *result = mp_obj_malloc_with_finaliser(synthio_miditrack_obj_t, &synthio_miditrack_type);
     common_hal_synthio_miditrack_construct(result, buffer, track_size,
-        tempo, ticks_per_beat, args[ARG_sample_rate].u_int, args[ARG_waveform].u_obj,
+        tempo, ticks_per_beat, sample_rate, args[ARG_waveform].u_obj,
         mp_const_none,
         args[ARG_envelope].u_obj
         );

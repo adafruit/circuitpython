@@ -22,6 +22,21 @@ void shared_module_usb_video_uvcframebuffer_refresh(usb_video_uvcframebuffer_obj
     shared_module_usb_video_swapbuffers();
 }
 
+void shared_module_usb_video_uvcframebuffer_swapbuffers(usb_video_uvcframebuffer_obj_t *self, const uint8_t *dirty_row_bitmap) {
+    shared_module_usb_video_swapbuffers_dirty(dirty_row_bitmap);
+}
+
+void shared_module_usb_video_uvcframebuffer_set_frame_callback(usb_video_uvcframebuffer_obj_t *self, framebuffer_frame_callback_t cb, void *data) {
+    self->frame_cb = cb;
+    self->frame_cb_data = data;
+}
+
+void shared_module_usb_video_uvcframebuffer_frame_boundary(usb_video_uvcframebuffer_obj_t *self) {
+    if (self->frame_cb != NULL) {
+        self->frame_cb(self->frame_cb_data);
+    }
+}
+
 int shared_module_usb_video_uvcframebuffer_get_width(usb_video_uvcframebuffer_obj_t *self) {
     return usb_video_frame_width;
 }

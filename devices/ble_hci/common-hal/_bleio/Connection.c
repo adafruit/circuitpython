@@ -717,13 +717,8 @@ void common_hal_bleio_connection_set_connection_interval(bleio_connection_intern
 
 mp_obj_tuple_t *common_hal_bleio_connection_discover_remote_services(bleio_connection_obj_t *self, mp_obj_t service_uuids_whitelist) {
     // FIX discover_remote_services(self->connection, service_uuids_whitelist);
-    bleio_connection_ensure_connected(self);
-    // Convert to a tuple and then clear the list so the callee will take ownership.
-    mp_obj_tuple_t *services_tuple =
-        mp_obj_new_tuple(self->connection->remote_service_list->len,
-            self->connection->remote_service_list->items);
-    mp_obj_list_clear(MP_OBJ_FROM_PTR(self->connection->remote_service_list));
-    return services_tuple;
+    // Discovery is not implemented.
+    return (mp_obj_tuple_t *)&mp_const_empty_tuple_obj;
 }
 
 uint16_t bleio_connection_get_conn_handle(bleio_connection_obj_t *self) {

@@ -11,8 +11,8 @@
 extern const mp_obj_type_t videogif_gifdecoder_type;
 
 // Open the GIF in file, which the constructor opened from its filename. Frames
-// are RGB565.
-// Raises when the file isn't a GIF or is wider than AnimatedGIF supports.
+// are 16-bit until set_bits_per_pixel asks for 1. Raises when the file isn't a
+// GIF or is wider than AnimatedGIF supports.
 void common_hal_videogif_gifdecoder_construct(videogif_gifdecoder_obj_t *self, mp_obj_t file);
 // Stop playing, free the decoder and close the file. Safe to call more than
 // once.
@@ -20,6 +20,11 @@ void common_hal_videogif_gifdecoder_deinit(videogif_gifdecoder_obj_t *self);
 bool common_hal_videogif_gifdecoder_deinited(videogif_gifdecoder_obj_t *self);
 mp_int_t common_hal_videogif_gifdecoder_get_width(videogif_gifdecoder_obj_t *self);
 mp_int_t common_hal_videogif_gifdecoder_get_height(videogif_gifdecoder_obj_t *self);
+mp_int_t common_hal_videogif_gifdecoder_get_bits_per_pixel(videogif_gifdecoder_obj_t *self);
+// Decode frames to 1 or 16 bits per pixel from the next play. Returns false
+// while playing or for another value. Never raises.
+bool common_hal_videogif_gifdecoder_set_bits_per_pixel(videogif_gifdecoder_obj_t *self,
+    mp_int_t bits_per_pixel);
 
 // Videosource protocol steps, driven by videocore.VideoBuffer. Frames are
 // decoded by the supervisor background tick, never in an interrupt. play

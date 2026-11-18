@@ -7,6 +7,7 @@ This directory contains native_sim golden-image tests for the Zephyr-specific `z
 - `board.DISPLAY` is present and usable.
 - CircuitPython terminal/console tilegrids are attached to the default display root group.
 - Deterministic console terminal output matches a checked-in golden image.
+- `terminalio.Terminal` output matches checked-in golden images at 90, 180 and 270 degree rotations.
 - `zephyr_display` pixel format constants are exposed.
 - `displayio` rendering produces expected stripe colors at sampled pixel locations.
 
@@ -14,6 +15,7 @@ This directory contains native_sim golden-image tests for the Zephyr-specific `z
 
 - `test_zephyr_display.py` – pytest tests.
 - `golden/terminal_console_output_320x240.png` – console terminal output golden reference image.
+- `golden/terminal_rotated_{90,180,270}_320x240.png` – rotated terminal golden reference images.
 
 ## How capture works
 

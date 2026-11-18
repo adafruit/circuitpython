@@ -293,6 +293,12 @@ CFLAGS += -DCIRCUITPY_COUNTIO=$(CIRCUITPY_COUNTIO)
 CIRCUITPY_DISPLAYIO ?= $(CIRCUITPY_FULL_BUILD)
 CFLAGS += -DCIRCUITPY_DISPLAYIO=$(CIRCUITPY_DISPLAYIO)
 
+# Select the displayio compositing core implementation: 0 = legacy scanline core (default),
+# 1 = LVGL-based core (shared-module/displayio/lvgl). The LVGL variant requires LVGL be
+# available to the port at build time.
+CIRCUITPY_DISPLAYIO_LVGL ?= 0
+CFLAGS += -DCIRCUITPY_DISPLAYIO_LVGL=$(CIRCUITPY_DISPLAYIO_LVGL)
+
 # Stack bytes a display refresh composes at once. Bigger means fewer, larger pieces per refresh.
 CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE ?= 512
 CFLAGS += -DCIRCUITPY_DISPLAY_AREA_BUFFER_SIZE=$(CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE)
@@ -309,6 +315,11 @@ CFLAGS += -DCIRCUITPY_QSPIBUS=$(CIRCUITPY_QSPIBUS)
 
 CIRCUITPY_EPAPERDISPLAY ?= $(CIRCUITPY_DISPLAYIO)
 CFLAGS += -DCIRCUITPY_EPAPERDISPLAY=$(CIRCUITPY_EPAPERDISPLAY)
+
+# Fast e-paper updates: EPaperDisplay's write_previous_ram_command, fast, lag_frames
+# and clean(). Ports and boards short on flash turn it off.
+CIRCUITPY_EPAPERDISPLAY_FAST ?= $(CIRCUITPY_EPAPERDISPLAY)
+CFLAGS += -DCIRCUITPY_EPAPERDISPLAY_FAST=$(CIRCUITPY_EPAPERDISPLAY_FAST)
 
 CIRCUITPY_I2CDISPLAYBUS ?= $(CIRCUITPY_DISPLAYIO)
 CFLAGS += -DCIRCUITPY_I2CDISPLAYBUS=$(CIRCUITPY_I2CDISPLAYBUS)
@@ -729,6 +740,10 @@ CIRCUITPY_LVFONTIO ?= $(CIRCUITPY_TERMINALIO)
 CFLAGS += -DCIRCUITPY_LVFONTIO=$(CIRCUITPY_LVFONTIO)
 
 CIRCUITPY_TILEPALETTEMAPPER ?= $(CIRCUITPY_DISPLAYIO)
+# tilepalettemapper uses the scanline palette conversion API.
+ifeq ($(CIRCUITPY_DISPLAYIO_LVGL),1)
+CIRCUITPY_TILEPALETTEMAPPER = 0
+endif
 CFLAGS += -DCIRCUITPY_TILEPALETTEMAPPER=$(CIRCUITPY_TILEPALETTEMAPPER)
 
 CIRCUITPY_TIME ?= 1
@@ -860,9 +875,8 @@ CFLAGS += -DCIRCUITPY_ULAB=$(CIRCUITPY_ULAB)
 # element-wise array arithmetic roughly 1.5x slower.
 CIRCUITPY_ULAB_OPTIMIZE_SIZE ?= 0
 
-# Video pipeline: playing video sources into framebuffers. Requires a port
-# with a video source such as mipicsi and a framebuffer output such as
-# mipidsi.
+# Video pipeline: playing video sources into framebuffers or plain buffers.
+# A source can be a port's camera, such as mipicsi, or a GIF file with videogif.
 CIRCUITPY_VIDEOCORE ?= 0
 CFLAGS += -DCIRCUITPY_VIDEOCORE=$(CIRCUITPY_VIDEOCORE)
 
