@@ -361,9 +361,26 @@ print('no outline', rectangle.contains(11, 30), rectangle.outline_width)
 palette.make_transparent(1)
 print('transparent fill', rectangle.contains(50, 30))
 
-# The circle ring behaves the same way.
+# The circle ring behaves the same way. Its outline cannot be wider than its
+# radius, and shrinking the radius cannot invalidate an existing outline.
+try:
+    vectorio.Circle(pixel_shader=palette, radius=20, outline_width=21)
+except ValueError:
+    print('circle constructor outline limit: ValueError')
 circle = vectorio.Circle(pixel_shader=palette, radius=20, x=100, y=100,
     color_index=2, outline_width=4, outline_color_index=3)
+try:
+    circle.outline_width = 21
+except ValueError:
+    print('circle outline limit: ValueError')
+try:
+    circle.radius = 3
+except ValueError:
+    print('circle resize limit: ValueError')
+print('circle limits', circle.radius, circle.outline_width)
+# The maximum itself is valid.
+circle.outline_width = circle.radius
+circle.outline_width = 4
 print('ring', circle.outline_width, circle.outline_color_index,
     circle.contains(100, 84), circle.contains(100, 100),
     circle.contains(100, 79), circle.contains(100, 121))
@@ -421,7 +438,9 @@ class RoundRect(vectorio.Rectangle):
             self._palette.make_opaque(1)
 
 
-round_rect = RoundRect(10, 10, 80, 40, 12, fill=0xFF0000, outline=0x00FF00, stroke=4)
+# Use display_shapes.RoundRect's default one-pixel stroke, not only the thicker
+# outlines exercised by the native API and rendering tests.
+round_rect = RoundRect(10, 10, 80, 40, 12, fill=0xFF0000, outline=0x00FF00)
 print('size', round_rect.x, round_rect.y, round_rect.width, round_rect.height)
 print('shape', round_rect.radius, round_rect.outline_width,
     round_rect.outline_color_index, round_rect.color_index)
@@ -472,6 +491,39 @@ polygon.points = [(0, 0), (50, 0), (0, 40)]
 polygon.color_index = 1
 print('other mutations', circle.radius, circle.outline_width, polygon.points,
     polygon.color_index, circle.contains(150, 100), polygon.contains(225, 105))
+
+# Until super().__init__() runs, the instance has no native Rectangle. Native properties,
+# inherited VectorShape properties and Group.append() must raise instead of treating the
+# Python instance as a native shape.
+class EarlyAccess(vectorio.Rectangle):
+    def __init__(self, palette):
+        self.early = []
+        for name, attempt in (
+            ('radius', lambda: self.radius),
+            ('x', lambda: self.x),
+            ('append', lambda: displayio.Group().append(self)),
+        ):
+            try:
+                attempt()
+                self.early.append(name + ' ok')
+            except Exception as e:
+                self.early.append(name + ' ' + type(e).__name__)
+        super().__init__(pixel_shader=palette, width=20, height=20, radius=5)
+
+
+early = EarlyAccess(round_rect._palette)
+print('early access', ', '.join(early.early), early.radius)
+
+
+# An __init__() that never calls super().__init__() gets its native Rectangle built
+# afterwards from the constructor's arguments.
+class NoSuperInit(vectorio.Rectangle):
+    def __init__(self, **kwargs):
+        pass
+
+
+late = NoSuperInit(pixel_shader=round_rect._palette, width=20, height=20, radius=5)
+print('no super init', late.width, late.radius)
 
 # Restore the rectangle after the API checks and render all three Python subclasses. This
 # verifies that Group's protocol lookup reaches the native wrapper on both compositors.
@@ -562,6 +614,10 @@ def test_vectorio_radius_and_outline_api(circuitpython):
     assert "no outline True 0" in output
     assert "transparent fill True" in output
     # The ring covers radius-4..radius, the fill covers everything inside.
+    assert "circle constructor outline limit: ValueError" in output
+    assert "circle outline limit: ValueError" in output
+    assert "circle resize limit: ValueError" in output
+    assert "circle limits 20 4" in output
     assert "ring 4 3 True True False False" in output
     assert "no ring True" in output
     assert "done" in output
@@ -576,7 +632,7 @@ def test_vectorio_python_subclass(circuitpython):
 
     output = circuitpython.serial.all_output
     assert "size 10 10 80 40" in output
-    assert "shape 12 4 1 0" in output
+    assert "shape 12 1 1 0" in output
     assert "colors 0xff0000 0xff00" in output
     assert "shader True" in output
     assert "contains True False" in output
@@ -588,6 +644,13 @@ def test_vectorio_python_subclass(circuitpython):
     assert "second group: ValueError" in output
     assert "other shapes 20 4 1 [(0, 0), (40, 0), (0, 40)] 0" in output
     assert "other mutations 22 3 [(0, 0), (50, 0), (0, 40)] 1 True True" in output
+    # Before super().__init__(), every entry point raises instead of reading the instance
+    # as a native shape. Without super().__init__(), the native base is built afterwards.
+    assert (
+        "early access radius NotImplementedError, x NotImplementedError, "
+        "append NotImplementedError 5" in output
+    )
+    assert "no super init 20 5" in output
     assert "done" in output
     assert "rendered" in output
 

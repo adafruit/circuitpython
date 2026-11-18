@@ -34,7 +34,7 @@
 //|         :param int color_index: Initial color_index to use when selecting color from the palette.
 //|         :param int outline_width: The width in pixels of a ring drawn just inside the
 //|             circle's outer edge, so it never makes the circle bigger. 0 (the default)
-//|             draws no ring.
+//|             draws no ring. The width must not exceed the radius.
 //|         :param Optional[int] outline_color_index: The 0 based palette index of the ring
 //|             color, or ``None`` (the default) for no ring. Only used when
 //|             ``outline_width`` is greater than 0. Use ``None`` rather than a transparent
@@ -75,7 +75,7 @@ static mp_obj_t vectorio_circle_make_new(const mp_obj_type_t *type, size_t n_arg
     mp_arg_validate_int_min(radius, 1, MP_QSTR_radius);
 
     mp_int_t outline_width = args[ARG_outline_width].u_int;
-    mp_arg_validate_int_min(outline_width, 0, MP_QSTR_outline_width);
+    mp_arg_validate_int_range(outline_width, 0, radius, MP_QSTR_outline_width);
 
     vectorio_circle_t *self = mp_obj_malloc(vectorio_circle_t, &vectorio_circle_type);
     uint16_t color_index = args[ARG_color_index].u_int;
@@ -138,7 +138,10 @@ MP_DEFINE_CONST_FUN_OBJ_1(vectorio_circle_get_radius_obj, vectorio_circle_obj_ge
 
 static mp_obj_t vectorio_circle_obj_set_radius(mp_obj_t self_in, mp_obj_t radius) {
     vectorio_circle_t *self = native_circle(self_in);
-    common_hal_vectorio_circle_set_radius(self, mp_obj_get_int(radius));
+    mp_int_t new_radius = mp_arg_validate_int_min(mp_obj_get_int(radius), 1, MP_QSTR_radius);
+    // Shrinking the circle must not leave an outline wider than its new radius.
+    mp_arg_validate_int_range(self->outline_width, 0, new_radius, MP_QSTR_outline_width);
+    common_hal_vectorio_circle_set_radius(self, new_radius);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(vectorio_circle_set_radius_obj, vectorio_circle_obj_set_radius);
@@ -168,7 +171,7 @@ MP_PROPERTY_GETSET(vectorio_circle_color_index_obj,
 
 //|     outline_width: int
 //|     """The width of the ring in pixels. The ring is drawn inside the circle, so it never
-//|     changes the circle's size. 0 draws no ring."""
+//|     changes the circle's size. 0 draws no ring. The width must not exceed the radius."""
 static mp_obj_t vectorio_circle_obj_get_outline_width(mp_obj_t self_in) {
     vectorio_circle_t *self = native_circle(self_in);
     return mp_obj_new_int(common_hal_vectorio_circle_get_outline_width(self));
@@ -177,7 +180,9 @@ MP_DEFINE_CONST_FUN_OBJ_1(vectorio_circle_get_outline_width_obj, vectorio_circle
 
 static mp_obj_t vectorio_circle_obj_set_outline_width(mp_obj_t self_in, mp_obj_t outline_width) {
     vectorio_circle_t *self = native_circle(self_in);
-    common_hal_vectorio_circle_set_outline_width(self, mp_arg_validate_int_min(mp_obj_get_int(outline_width), 0, MP_QSTR_outline_width));
+    mp_int_t new_outline_width = mp_arg_validate_int_range(mp_obj_get_int(outline_width), 0,
+        self->radius, MP_QSTR_outline_width);
+    common_hal_vectorio_circle_set_outline_width(self, new_outline_width);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(vectorio_circle_set_outline_width_obj, vectorio_circle_obj_set_outline_width);
