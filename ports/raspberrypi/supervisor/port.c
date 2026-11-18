@@ -698,9 +698,7 @@ void port_task_yield(void) {
 
 void port_boot_info(void) {
     #if CIRCUITPY_CYW43
-    // cyw43_state.mac is filled in when the chip powers up, which
-    // cyw43_arch_init() doesn't do. Any CYW43 GPIO access powers it up, and
-    // reading VBUS sense changes nothing.
+    // Access CYW43 GPIO to power it up before reading the MAC
     if (cyw_ever_init) {
         cyw43_arch_gpio_get(pin_CYW2.number);
     }
