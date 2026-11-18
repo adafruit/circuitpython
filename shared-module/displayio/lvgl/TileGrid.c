@@ -822,6 +822,39 @@ static void _cell_display_area(displayio_tilegrid_t *self, uint32_t x, uint32_t 
 // or dispatch each task, so drawing a long queue at once takes time with the square of its length.
 #define DISPLAYIO_LVGL_COMPOSE_BATCH 64
 
+// Clear the cells about to be composed to transparent (ARGB8888) or black (RGB565):
+// lv_draw_image() writes nothing where the source is transparent, which is exactly where the hole
+// has to stay. Each lv_draw_buf_clear() call costs about the same for many cells as for one (on
+// ESP it writes back whole buffer rows), so clear the whole buffer on a full compose, and each run
+// of changed cells in a tile row otherwise.
+static void _clear_changed_cells(displayio_tilegrid_t *self, bool full) {
+    if (full) {
+        lv_draw_buf_clear(self->lv_buf, NULL);
+        return;
+    }
+    uint32_t tiles_w = self->width_in_tiles;
+    for (uint32_t cy = 0; cy < self->height_in_tiles; cy++) {
+        uint32_t cx = 0;
+        while (cx < tiles_w) {
+            if (!_cell_is_marked(self, cy * tiles_w + cx)) {
+                cx++;
+                continue;
+            }
+            uint32_t first = cx;
+            while (cx < tiles_w && _cell_is_marked(self, cy * tiles_w + cx)) {
+                cx++;
+            }
+            lv_area_t run = {
+                .x1 = first * self->tile_width,
+                .y1 = cy * self->tile_height,
+                .x2 = cx * self->tile_width - 1,
+                .y2 = (cy + 1) * self->tile_height - 1,
+            };
+            lv_draw_buf_clear(self->lv_buf, &run);
+        }
+    }
+}
+
 // Compose every cell that changed into the buffer. Returns false when nothing was drawn so the
 // caller can skip the invalidation. `dirty` comes back as the union of the composed cells, in
 // container coordinates.
@@ -858,6 +891,8 @@ static bool _compose(displayio_tilegrid_t *self, lv_area_t *dirty) {
     lv_area_t layer_clip = layer._clip_area;
     uint32_t queued = 0;
 
+    _clear_changed_cells(self, full);
+
     uint32_t cells = _cell_count(self);
     uint32_t tiles_w = self->width_in_tiles;
     for (uint32_t cell = 0; cell < cells; cell++) {
@@ -872,11 +907,6 @@ static bool _compose(displayio_tilegrid_t *self, lv_area_t *dirty) {
         };
         cell_area.x2 = cell_area.x1 + self->tile_width - 1;
         cell_area.y2 = cell_area.y1 + self->tile_height - 1;
-
-        // Start from transparent (ARGB8888) or black (RGB565): lv_draw_image() writes nothing
-        // where the source is transparent, which is exactly where the hole has to stay.
-        // ESP_LOGI(TAG, "clearing cell area %d,%d-%d,%d", cell_area.x1, cell_area.y1, cell_area.x2, cell_area.y2);
-        lv_draw_buf_clear(self->lv_buf, &cell_area);
 
         if (self->lv_src != NULL && self->lv_src->data != NULL) {
             uint16_t x0, y0;
