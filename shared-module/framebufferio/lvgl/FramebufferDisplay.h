@@ -42,9 +42,6 @@ typedef struct {
     // The framebuffer reports frame boundaries, so this display renders on those instead of the
     // LVGL autorefresh tick.
     bool lv_paced;
-    // Set while display.refresh() renders on the CircuitPython thread, so the flush
-    // callback can run background tasks (audio, USB) between chunks.
-    bool lv_refresh_yield;
 } framebufferio_framebufferdisplay_obj_t;
 
 void framebufferio_framebufferdisplay_background(framebufferio_framebufferdisplay_obj_t *self);
