@@ -19,11 +19,11 @@ print("done")
 
 @pytest.mark.circuitpy_drive({"code.py": UNAME_CODE})
 def test_os_uname(circuitpython):
-    """sysname is "Zephyr". With no Wi-Fi or Ethernet, nodename is the microcontroller name."""
+    """sysname is "CircuitPython". With no Wi-Fi or Ethernet, nodename is the microcontroller name."""
     circuitpython.wait_until_done()
 
     output = circuitpython.serial.all_output
-    assert "sysname: Zephyr" in output
+    assert "sysname: CircuitPython" in output
     nodename = output.split("nodename: ", 1)[1].split("\n", 1)[0].strip()
     assert nodename
     # machine is "<board name> with <microcontroller name>".

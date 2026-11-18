@@ -38,7 +38,7 @@
 //|     """The type of values that :py:func:`.uname()` returns"""
 //|
 //|     sysname: str
-//|     """``"CircuitPython"``, or ``"Zephyr"`` on the Zephyr port."""
+//|     """Always ``"CircuitPython"``."""
 //|     nodename: str
 //|     """The network hostname, read each time :py:func:`.uname()` is called.
 //|     Before Wi-Fi or Ethernet is set up, this is the hostname that the interface will use.
@@ -59,7 +59,7 @@ static const qstr os_uname_info_fields[] = {
     MP_QSTR_sysname, MP_QSTR_nodename,
     MP_QSTR_release, MP_QSTR_version, MP_QSTR_machine
 };
-static const MP_DEFINE_STR_OBJ(os_uname_info_sysname_obj, CIRCUITPY_OS_UNAME_SYSNAME);
+static const MP_DEFINE_STR_OBJ(os_uname_info_sysname_obj, "CircuitPython");
 static const MP_DEFINE_STR_OBJ(os_uname_info_release_obj, MICROPY_VERSION_STRING);
 static const MP_DEFINE_STR_OBJ(os_uname_info_version_obj, MICROPY_GIT_TAG " on " MICROPY_BUILD_DATE);
 static const MP_DEFINE_STR_OBJ(os_uname_info_machine_obj, MICROPY_HW_BOARD_NAME " with " MICROPY_HW_MCU_NAME);
