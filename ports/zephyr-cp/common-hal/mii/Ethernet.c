@@ -12,6 +12,7 @@
 #include "bindings/zephyr_kernel/__init__.h"
 
 #include "supervisor/port.h"
+#include "supervisor/shared/network.h"
 #include "supervisor/workflow.h"
 #include "shared/runtime/interrupt_char.h"
 
@@ -354,21 +355,12 @@ void common_hal_mii_ethernet_construct(mii_ethernet_obj_t *self,
     net_mgmt_add_event_callback(&eth_ipv4_cb);
 
     #if defined(CONFIG_NET_HOSTNAME)
-    // Set hostname based on board name and MAC address.
-    size_t board_len = MIN(NET_HOSTNAME_MAX_LEN - ((MAC_ADDRESS_LENGTH * 2) + 6), strlen(CIRCUITPY_BOARD_ID));
-    size_t board_trim = strlen(CIRCUITPY_BOARD_ID) - board_len;
-    if (CIRCUITPY_BOARD_ID[board_trim] == '_') {
-        board_trim++;
-    }
-
-    char cpy_default_hostname[board_len + (MAC_ADDRESS_LENGTH * 2) + 6];
+    // Set the default hostname, capped at NET_HOSTNAME_MAX_LEN characters.
+    char cpy_default_hostname[NET_HOSTNAME_MAX_LEN];
     struct net_linkaddr *mac = net_if_get_link_addr(self->netif);
     if (mac->len >= MAC_ADDRESS_LENGTH) {
-        snprintf(cpy_default_hostname, sizeof(cpy_default_hostname), "cpy-%s-%02x%02x%02x%02x%02x%02x",
-            CIRCUITPY_BOARD_ID + board_trim,
-            mac->addr[0], mac->addr[1], mac->addr[2],
-            mac->addr[3], mac->addr[4], mac->addr[5]);
-        net_hostname_set(cpy_default_hostname, strlen(cpy_default_hostname));
+        size_t len = network_format_default_hostname(cpy_default_hostname, sizeof(cpy_default_hostname), mac->addr);
+        net_hostname_set(cpy_default_hostname, len);
     }
     #endif
 
@@ -410,6 +402,30 @@ const char *mii_get_hostname_raw(void) {
         return "";
     }
     return net_hostname_get();
+}
+
+void mii_get_default_hostname(char *buf, size_t buf_size) {
+    if (buf_size == 0) {
+        return;
+    }
+    buf[0] = '\0';
+    #if defined(CONFIG_NET_HOSTNAME)
+    if (buf_size < 18) {
+        return;
+    }
+    // The Ethernet constructor uses the first Ethernet network interface.
+    // Zephyr creates that interface at boot, so it already exists.
+    struct net_if *netif = net_if_get_first_by_type(&NET_L2_GET_NAME(ETHERNET));
+    if (netif == NULL) {
+        return;
+    }
+    struct net_linkaddr *mac = net_if_get_link_addr(netif);
+    if (mac->len < MAC_ADDRESS_LENGTH) {
+        return;
+    }
+    // Use the same length limit as the constructor.
+    network_format_default_hostname(buf, MIN(buf_size, NET_HOSTNAME_MAX_LEN), mac->addr);
+    #endif
 }
 
 // Blocks until the DHCP lease is bound. DHCPv4 parses its options (which adds
