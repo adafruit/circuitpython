@@ -839,9 +839,9 @@ msgid "soft reboot\n"
 msgstr ""
 
 #: ports/analog/common-hal/busio/SPI.c ports/analog/common-hal/busio/UART.c
-#: ports/stm/common-hal/audioio/AudioOut.c
+#: ports/cxd56/common-hal/busio/SPI.c ports/stm/common-hal/audioio/AudioOut.c
 #: shared-bindings/digitalio/DigitalInOutProtocol.c
-#: shared-module/busdisplay/BusDisplay.c shared-module/ssl/SSLContext.c
+#: shared-module/displayio/bus_core.c shared-module/ssl/SSLContext.c
 msgid "%q init failed"
 msgstr ""
 
@@ -863,6 +863,7 @@ msgstr ""
 #: ports/analog/common-hal/busio/SPI.c
 #: ports/espressif/common-hal/espidf/__init__.c
 #: ports/nordic/common-hal/_bleio/__init__.c
+#: shared-bindings/epaperdisplay/EPaperDisplay.c
 msgid "Invalid state"
 msgstr ""
 
@@ -877,7 +878,7 @@ msgstr ""
 msgid "RS485"
 msgstr "RS485"
 
-#: ports/analog/common-hal/busio/UART.c
+#: ports/analog/common-hal/busio/UART.c ports/cxd56/common-hal/busio/UART.c
 msgid "UART needs TX & RX"
 msgstr ""
 
@@ -968,6 +969,7 @@ msgstr ""
 #: ports/nordic/common-hal/pulseio/PulseIn.c
 #: ports/nordic/peripherals/nrf/timers.c
 #: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
+#: ports/stm/common-hal/pulseio/PulseOut.c
 msgid "All timers in use"
 msgstr ""
 
@@ -1027,6 +1029,7 @@ msgid "Too many channels in sample"
 msgstr ""
 
 #: ports/atmel-samd/common-hal/audiobusio/I2SOut.c
+#: ports/atmel-samd/common-hal/audiobusio/PDMIn.c
 #: ports/atmel-samd/common-hal/audioio/AudioOut.c
 #: ports/raspberrypi/common-hal/audiobusio/I2SOut.c
 #: ports/raspberrypi/common-hal/audiopwmio/PWMAudioOut.c
@@ -1215,6 +1218,9 @@ msgstr ""
 #: ports/cxd56/common-hal/camera/Camera.c
 #: ports/espressif/common-hal/jpegio/JpegDecoder.c
 #: shared-module/audiocore/WaveFile.c
+#: shared-module/busdisplay/lvgl/BusDisplay.c
+#: shared-module/displayio/lvgl/TileGrid.c
+#: shared-module/framebufferio/lvgl/FramebufferDisplay.c
 msgid "Format not supported"
 msgstr ""
 
@@ -1690,6 +1696,8 @@ msgstr ""
 #: ports/espressif/common-hal/espidf/__init__.c
 #: ports/espressif/common-hal/jpegio/JpegDecoder.c
 #: ports/raspberrypi/common-hal/usb_host_bulk/InStream.c
+#: shared-bindings/busdisplay/BusDisplay.c
+#: shared-bindings/framebufferio/FramebufferDisplay.c
 #: shared-bindings/picogame/Canvas.c shared-bindings/picogame/__init__.c
 #: shared-module/jpegio/JpegDecoder.c shared-module/picogame/Display.c
 msgid "Operation or feature not supported"
@@ -1739,8 +1747,10 @@ msgstr ""
 #: ports/raspberrypi/common-hal/usb_host/Port.c
 #: shared-bindings/digitalio/DigitalInOut.c shared-bindings/emmcio/EMMC.c
 #: shared-bindings/i2cioexpander/IOPin.c shared-bindings/microcontroller/Pin.c
-#: shared-module/_airlift/__init__.c shared-module/max3421e/Max3421E.c
-#: shared-module/usb/core/Device.c shared-module/usb_host_audio/USBIn.c
+#: shared-module/_airlift/__init__.c
+#: shared-module/epaperdisplay/EPaperDisplay.c
+#: shared-module/max3421e/Max3421E.c shared-module/usb/core/Device.c
+#: shared-module/usb_host_audio/USBIn.c
 msgid "%q in use"
 msgstr ""
 
@@ -1934,7 +1944,8 @@ msgid "Must provide MISO or MOSI pin"
 msgstr ""
 
 #: ports/mimxrt10xx/common-hal/busio/SPI.c
-#: ports/mimxrt10xx/common-hal/busio/UART.c ports/stm/common-hal/busio/I2C.c
+#: ports/mimxrt10xx/common-hal/busio/UART.c
+#: ports/mimxrt10xx/common-hal/canio/CAN.c ports/stm/common-hal/busio/I2C.c
 #: ports/stm/common-hal/busio/SPI.c ports/stm/common-hal/busio/UART.c
 #: ports/stm/common-hal/canio/CAN.c ports/stm/common-hal/sdioio/SDCard.c
 #: shared-bindings/emmcio/EMMC.c
@@ -2042,8 +2053,8 @@ msgstr ""
 #: shared-bindings/bitmapfilter/__init__.c shared-bindings/canio/CAN.c
 #: shared-bindings/digitalio/Pull.c shared-bindings/picogame/Sprite.c
 #: shared-bindings/supervisor/__init__.c shared-module/audiofilters/__init__.c
-#: shared-module/displayio/__init__.c shared-module/synthio/Synthesizer.c
-#: shared-module/videocore/VideoBuffer.c
+#: shared-module/displayio/legacy/__init__.c
+#: shared-module/synthio/Synthesizer.c shared-module/videocore/VideoBuffer.c
 msgid "%q must be of type %q or %q, not %q"
 msgstr ""
 
@@ -2182,10 +2193,6 @@ msgstr ""
 #: ports/raspberrypi/common-hal/picodvi/Framebuffer_RP2350.c
 #: shared-module/aurora_epaper/aurora_framebuffer.c
 msgid "Invalid %q and %q"
-msgstr ""
-
-#: ports/raspberrypi/common-hal/mdns/Server.c
-msgid "Failed to add service TXT record"
 msgstr ""
 
 #: ports/raspberrypi/common-hal/mdns/Server.c
@@ -2455,6 +2462,14 @@ msgstr ""
 #: shared-bindings/busdisplay/BusDisplay.c
 #: shared-bindings/epaperdisplay/EPaperDisplay.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
+#: shared-bindings/mipidsi/Display.c
+msgid "Display rotation must be in 90 degree increments"
+msgstr ""
+
+#: ports/zephyr-cp/bindings/zephyr_display/Display.c
+#: shared-bindings/busdisplay/BusDisplay.c
+#: shared-bindings/epaperdisplay/EPaperDisplay.c
+#: shared-bindings/framebufferio/FramebufferDisplay.c
 msgid ".show(x) removed. Use .root_group = x"
 msgstr ""
 
@@ -2474,8 +2489,9 @@ msgstr ""
 
 #: ports/zephyr-cp/bindings/zephyr_display/Display.c
 #: shared-bindings/framebufferio/FramebufferDisplay.c
-#: shared-module/busdisplay/BusDisplay.c
-#: shared-module/framebufferio/FramebufferDisplay.c
+#: shared-module/busdisplay/legacy/BusDisplay.c
+#: shared-module/framebufferio/legacy/FramebufferDisplay.c
+#: shared-module/framebufferio/lvgl/FramebufferDisplay.c
 msgid "Group already used"
 msgstr ""
 
@@ -2506,9 +2522,11 @@ msgstr ""
 msgid "Failed to set hostname"
 msgstr ""
 
-#: ports/zephyr-cp/common-hal/zephyr_display/Display.c
-#: shared-module/busdisplay/BusDisplay.c
-#: shared-module/framebufferio/FramebufferDisplay.c
+#: ports/zephyr-cp/common-hal/zephyr_display/legacy/Display.c
+#: ports/zephyr-cp/common-hal/zephyr_display/lvgl/Display.c
+#: shared-module/busdisplay/legacy/BusDisplay.c
+#: shared-module/framebufferio/legacy/FramebufferDisplay.c
+#: shared-module/framebufferio/lvgl/FramebufferDisplay.c
 msgid "Below minimum frame rate"
 msgstr ""
 
@@ -3907,7 +3925,9 @@ msgstr ""
 #: shared-bindings/_bleio/__init__.c shared-bindings/emmcio/EMMC.c
 #: shared-bindings/memorymonitor/AllocationSize.c
 #: shared-bindings/pulseio/PulseIn.c shared-module/bitmaptools/__init__.c
-#: shared-module/displayio/Bitmap.c shared-module/displayio/Group.c
+#: shared-module/displayio/legacy/Bitmap.c
+#: shared-module/displayio/legacy/Group.c shared-module/displayio/lvgl/Bitmap.c
+#: shared-module/displayio/lvgl/Group.c
 msgid "Read-only"
 msgstr ""
 
@@ -4170,13 +4190,6 @@ msgid "No default %q bus"
 msgstr ""
 
 #: shared-bindings/busdisplay/BusDisplay.c
-#: shared-bindings/epaperdisplay/EPaperDisplay.c
-#: shared-bindings/framebufferio/FramebufferDisplay.c
-#: shared-bindings/mipidsi/Display.c
-msgid "Display rotation must be in 90 degree increments"
-msgstr ""
-
-#: shared-bindings/busdisplay/BusDisplay.c
 msgid "%q must be 1 when %q is True"
 msgstr ""
 
@@ -4283,7 +4296,8 @@ msgstr ""
 
 #: shared-bindings/displayio/TileGrid.c
 #: shared-bindings/tilepalettemapper/TilePaletteMapper.c
-#: shared-module/displayio/TileGrid.c
+#: shared-module/displayio/legacy/TileGrid.c
+#: shared-module/displayio/lvgl/TileGrid.c
 msgid "Tile index out of bounds"
 msgstr ""
 
@@ -4338,6 +4352,10 @@ msgstr ""
 
 #: shared-bindings/is31fl3741/FrameBuffer.c
 msgid "Scale dimensions must divide by 3"
+msgstr ""
+
+#: shared-bindings/is31fl3741/FrameBuffer.c
+msgid "LED mappings must match display size"
 msgstr ""
 
 #: shared-bindings/is31fl3741/IS31FL3741.c
@@ -4582,50 +4600,92 @@ msgstr ""
 msgid "unsupported bitmap depth"
 msgstr ""
 
+#: shared-module/busdisplay/lvgl/BusDisplay.c
+#: shared-module/framebufferio/lvgl/FramebufferDisplay.c
+msgid "LVGL display create failed"
+msgstr ""
+
+#: shared-module/busdisplay/lvgl/BusDisplay.c
+#: shared-module/framebufferio/lvgl/FramebufferDisplay.c
+msgid "LVGL buffer alloc failed"
+msgstr ""
+
 #: shared-module/cryptography/hazmat/primitives/asymmetric/rsa/DigitalSignatureKey.c
 msgid "OAEP requires this build to enable TLS 1.3 support"
 msgstr ""
 
-#: shared-module/displayio/Bitmap.c
+#: shared-module/displayio/bus_core.c
+msgid "Unsupported display bus type"
+msgstr ""
+
+#: shared-module/displayio/legacy/Bitmap.c
+#: shared-module/displayio/lvgl/Bitmap.c
 msgid "Invalid bits per value"
 msgstr ""
 
-#: shared-module/displayio/ColorConverter.c
+#: shared-module/displayio/legacy/ColorConverter.c
+#: shared-module/displayio/lvgl/ColorConverter.c
 msgid "Only one color can be transparent at a time"
 msgstr ""
 
-#: shared-module/displayio/Group.c
+#: shared-module/displayio/legacy/Group.c shared-module/displayio/lvgl/Group.c
 msgid "Layer already in a group"
 msgstr ""
 
-#: shared-module/displayio/Group.c
+#: shared-module/displayio/legacy/Group.c
 msgid "Layer must be a Group or TileGrid subclass"
 msgstr ""
 
-#: shared-module/displayio/OnDiskBitmap.c
+#: shared-module/displayio/legacy/OnDiskBitmap.c
+#: shared-module/displayio/lvgl/OnDiskBitmap.c
 #, c-format
 msgid ""
 "Only Windows format, uncompressed BMP supported: given header size is %d"
 msgstr ""
 
-#: shared-module/displayio/OnDiskBitmap.c
+#: shared-module/displayio/legacy/OnDiskBitmap.c
+#: shared-module/displayio/lvgl/OnDiskBitmap.c
 msgid "RLE-compressed BMP not supported"
 msgstr ""
 
-#: shared-module/displayio/OnDiskBitmap.c
+#: shared-module/displayio/legacy/OnDiskBitmap.c
+#: shared-module/displayio/lvgl/OnDiskBitmap.c
 msgid "Unable to read color palette data"
 msgstr ""
 
-#: shared-module/displayio/__init__.c
+#: shared-module/displayio/legacy/__init__.c
 msgid "Too many displays"
 msgstr ""
 
-#: shared-module/displayio/__init__.c
+#: shared-module/displayio/legacy/__init__.c
 msgid "Too many display busses; forgot displayio.release_displays() ?"
 msgstr ""
 
-#: shared-module/displayio/bus_core.c
-msgid "Unsupported display bus type"
+#: shared-module/displayio/lvgl/Group.c
+msgid "Layer does not support scaling"
+msgstr ""
+
+#: shared-module/displayio/lvgl/Group.c
+msgid "Layer must be a Group, TileGrid, vector shape or VideoBuffer"
+msgstr ""
+
+#: shared-module/displayio/lvgl/TileGrid.c
+msgid "LVGL displayio backend does not support flips/transpose yet"
+msgstr ""
+
+#: shared-module/displayio/lvgl/TileGrid.c
+msgid "OnDiskBitmap requires its own pixel_shader"
+msgstr ""
+
+#: shared-module/framebufferio/lvgl/FramebufferDisplay.c
+msgid "LVGL dirty row alloc failed"
+msgstr ""
+
+#: shared-module/framebufferio/lvgl/FramebufferDisplay.c
+#: shared-module/videocore/VideoBuffer.c
+#: shared-module/videocore/legacy/VideoBuffer.c
+#: shared-module/videocore/lvgl/VideoBuffer.c
+msgid "VideoBuffer can't stream into a rotated display"
 msgstr ""
 
 #: shared-module/gifio/GifWriter.c
@@ -4652,10 +4712,6 @@ msgstr ""
 
 #: shared-module/imagecapture/ParallelImageCapture.c
 msgid "This microcontroller does not support continuous capture."
-msgstr ""
-
-#: shared-module/is31fl3741/FrameBuffer.c
-msgid "LED mappings must match display size"
 msgstr ""
 
 #: shared-module/jpegio/JpegDecoder.c
@@ -4874,15 +4930,15 @@ msgid "video size changed since play; stop and play again"
 msgstr ""
 
 #: shared-module/videocore/VideoBuffer.c
-msgid "VideoBuffer can't stream into a rotated display"
+msgid "VideoBuffer is playing into a different framebuffer"
 msgstr ""
 
-#: shared-module/videocore/VideoBuffer.c
+#: shared-module/videocore/legacy/VideoBuffer.c
 msgid "VideoBuffer does not support transforms"
 msgstr ""
 
-#: shared-module/videocore/VideoBuffer.c
-msgid "VideoBuffer is playing into a different framebuffer"
+#: shared-module/videocore/lvgl/VideoBuffer.c
+msgid "video format must be 16, 24 or 32 bits per pixel"
 msgstr ""
 
 #: supervisor/shared/bluetooth/bluetooth.c
@@ -4969,6 +5025,10 @@ msgstr ""
 
 #: supervisor/shared/safe_mode.c
 msgid "Interrupt error."
+msgstr ""
+
+#: supervisor/shared/safe_mode.c
+msgid "LVGL ran out of memory."
 msgstr ""
 
 #: supervisor/shared/safe_mode.c

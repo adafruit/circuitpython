@@ -9,7 +9,7 @@ set(ENV{IDF_PATH} ${CMAKE_SOURCE_DIR}/esp-idf)
 # Core components
 set(COMPONENTS bt driver esptool_py freertos log main mbedtls pthread soc)
 # Peripheral drivers
-list(APPEND COMPONENTS esp_driver_dac esp_driver_gpio esp_driver_gptimer esp_driver_i2c esp_driver_i2s esp_driver_jpeg esp_driver_ledc esp_driver_pcnt esp_driver_rmt esp_driver_sdmmc esp_driver_spi esp_driver_touch_sens esp_driver_tsens esp_driver_uart)
+list(APPEND COMPONENTS esp_driver_dac esp_driver_gpio esp_driver_gptimer esp_driver_i2c esp_driver_i2s esp_driver_jpeg esp_driver_ledc esp_driver_pcnt esp_driver_ppa esp_driver_rmt esp_driver_sdmmc esp_driver_spi esp_driver_touch_sens esp_driver_tsens esp_driver_uart)
 # Networking
 list(APPEND COMPONENTS esp_eth esp-tls esp_event esp_netif esp_wifi lwip mdns wpa_supplicant)
 # Misc
@@ -22,6 +22,7 @@ if(CIRCUITPY_MIPICSI)
 endif()
 
 set(EXTRA_COMPONENT_DIRS "esp-protocols/components/mdns" "esp-camera")
+set(EXTRA_COMPONENT_DIRS "${EXTRA_COMPONENT_DIRS}" "${CMAKE_SOURCE_DIR}/../../lib/lvgl")
 
 if(CIRCUITPY_ESP_HOSTED)
     list(APPEND EXTRA_COMPONENT_DIRS "esp-hosted")

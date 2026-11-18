@@ -7,6 +7,7 @@
 #pragma once
 
 #include "py/obj.h"
+#include "shared-module/framebufferio/__init__.h"
 #include "shared-bindings/mipidsi/Bus.h"
 #include "common-hal/microcontroller/Pin.h"
 #include "common-hal/digitalio/DigitalInOut.h"
@@ -36,4 +37,6 @@ typedef struct {
     };
     bool backlight_on_high;
     mp_float_t current_brightness;
+    framebuffer_frame_callback_t frame_cb;
+    void *frame_cb_data;
 } mipidsi_display_obj_t;

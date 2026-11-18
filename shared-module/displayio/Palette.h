@@ -60,7 +60,8 @@ typedef struct displayio_palette {
 } displayio_palette_t;
 
 
+#if !CIRCUITPY_DISPLAYIO_LVGL
 void displayio_palette_get_color(displayio_palette_t *palette, const _displayio_colorspace_t *colorspace, const displayio_input_pixel_t *input_pixel, displayio_output_pixel_t *output_color);
-;
+#endif
 bool displayio_palette_needs_refresh(displayio_palette_t *self);
 void displayio_palette_finish_refresh(displayio_palette_t *self);

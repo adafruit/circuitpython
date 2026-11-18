@@ -1,0 +1,2 @@
+NAME = "Native simulator - LVGL + ASan"
+CIRCUITPY_BUILD_EXTENSIONS = ["exe"]

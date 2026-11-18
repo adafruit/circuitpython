@@ -4,6 +4,8 @@
 //
 // SPDX-License-Identifier: MIT
 
+#if CIRCUITPY_VECTORIO
+
 #include "stdlib.h"
 
 #include "shared-module/vectorio/__init__.h"
@@ -565,3 +567,5 @@ bool vectorio_vector_shape_set_in_group(vectorio_vector_shape_t *self, bool in_g
     self->in_group = in_group;
     return was_in_group;
 }
+
+#endif  // CIRCUITPY_VECTORIO

@@ -178,8 +178,7 @@ bool jpegio_jpegdecoder_hw_decode(jpegio_jpegdecoder_obj_t *self, const mp_buffe
     }
 
     if (direct) {
-        displayio_area_t area = { 0, 0, width, height, NULL };
-        displayio_bitmap_set_dirty_area(bitmap, &area);
+        displayio_bitmap_set_dirty(bitmap, 0, 0, width, height);
         return true;
     }
 

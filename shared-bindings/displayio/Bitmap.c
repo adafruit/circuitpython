@@ -235,14 +235,11 @@ static mp_obj_t displayio_bitmap_obj_dirty(size_t n_args, const mp_obj_t *pos_ar
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    displayio_area_t dirty_area = {
-        .x1 = args[ARG_x1].u_int,
-        .y1 = args[ARG_y1].u_int,
-        .x2 = args[ARG_x2].u_int == -1 ? self->width : args[ARG_x2].u_int,
-        .y2 = args[ARG_y2].u_int == -1 ? self->height : args[ARG_y2].u_int,
-    };
-
-    displayio_bitmap_set_dirty_area(self, &dirty_area);
+    displayio_bitmap_set_dirty(self,
+        args[ARG_x1].u_int,
+        args[ARG_y1].u_int,
+        args[ARG_x2].u_int == -1 ? self->width : args[ARG_x2].u_int,
+        args[ARG_y2].u_int == -1 ? self->height : args[ARG_y2].u_int);
 
     return mp_const_none;
 }

@@ -10,11 +10,11 @@ manifest:
       path: modules/bsim_hw_models/nrf_hw_models
     - name: mcuboot
       url: https://github.com/adafruit/adaboot
-      revision: a0d60998d9ad231edf6bb8ad0bb59826ffb7954a
+      revision: df45e384c3e1a99c391bbb72de424b02f6111988
       path: bootloader/mcuboot
     - name: zephyr
       url: https://github.com/adafruit/zephyr
-      revision: 870e2e18690178c1811e44cb6e1148ecff9c1a22
+      revision: ab22ad4b118709cd02119d50b04fce4e3c37e50a
       clone-depth: 100
       import:
         # Skip what no CircuitPython board can use, so west update fetches 38
@@ -52,7 +52,6 @@ manifest:
           - libsbc
           - lora-basics-modem
           - loramac-node
-          - lvgl
           - mipi-sys-t
           - mldsa-native
           - net-tools

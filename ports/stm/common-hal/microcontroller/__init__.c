@@ -61,6 +61,11 @@ void common_hal_mcu_on_next_reset(mcu_runmode_t runmode) {
     if (runmode == RUNMODE_BOOTLOADER) {
         next_reset_to_bootloader = true;
     }
+    #if BOARD_UF2_STM32F_BOOTLOADER
+    if (runmode == RUNMODE_UF2) {
+        next_reset_to_bootloader = true;
+    }
+    #endif
 }
 
 void common_hal_mcu_reset(void) {
@@ -69,7 +74,7 @@ void common_hal_mcu_reset(void) {
     if (next_reset_to_bootloader) {
         reset_to_bootloader();
     } else {
-        NVIC_SystemReset();
+        reset_cpu();
     }
 }
 

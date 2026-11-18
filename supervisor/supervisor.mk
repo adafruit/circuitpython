@@ -289,6 +289,10 @@ $(BUILD)/supervisor/shared/translate/translate.o: $(HEADER_BUILD)/qstrdefs.gener
 CIRCUITPY_DISPLAY_FONT ?= "../../tools/fonts/ter-u12n.bdf"
 CIRCUITPY_FONT_EXTRA_CHARACTERS ?= ""
 
+ifeq ($(CIRCUITPY_DISPLAYIO_LVGL),1)
+CIRCUITPY_GEN_DISPLAY_RESOURCES_LVGL = --lvgl-tilegrid
+endif
+
 $(BUILD)/autogen_display_resources-$(TRANSLATION).c: ../../tools/gen_display_resources.py $(TOP)/locale/$(TRANSLATION).po Makefile | $(HEADER_BUILD)
 	$(STEPECHO) "GEN $@"
 	$(Q)install -d $(BUILD)/genhdr
@@ -296,4 +300,5 @@ $(BUILD)/autogen_display_resources-$(TRANSLATION).c: ../../tools/gen_display_res
 		--font $(CIRCUITPY_DISPLAY_FONT) \
 		--sample_file $(TOP)/locale/$(TRANSLATION).po \
 		--extra_characters $(CIRCUITPY_FONT_EXTRA_CHARACTERS) \
-		--output_c_file $@
+		--output_c_file $@ \
+		$(CIRCUITPY_GEN_DISPLAY_RESOURCES_LVGL)

@@ -11,6 +11,7 @@
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/mipidsi/Bus.h"
 #include "shared-bindings/mipidsi/Display.h"
+#include "shared-bindings/framebufferio/FramebufferDisplay.h"
 #include "shared-module/displayio/__init__.h"
 #include "shared-module/framebufferio/__init__.h"
 #include "shared-module/framebufferio/FramebufferDisplay.h"

@@ -167,6 +167,60 @@ def test_console_output_golden_pixel_format(pixel_format, request, circuitpython
     )
 
 
+ROTATED_TERMINAL_CODE = """\
+import board
+import displayio
+import terminalio
+import time
+import zephyr_display
+
+displayio.release_displays()
+display = zephyr_display.Display(auto_refresh=False)
+
+font = terminalio.FONT
+cell_width, cell_height = font.get_bounding_box()
+palette = displayio.Palette(2)
+palette[0] = 0x000000
+palette[1] = 0xFFFFFF
+group = displayio.Group()
+grid = displayio.TileGrid(font.bitmap, pixel_shader=palette, width=20, height=10,
+    tile_width=cell_width, tile_height=cell_height)
+group.append(grid)
+terminal = terminalio.Terminal(grid, font)
+terminal.write("ROTATED\\r\\nTERMINAL\\r\\n{rotation} DEG")
+
+display.root_group = group
+display.rotation = {rotation}
+display.refresh()
+print('shown', display.rotation, display.width, display.height)
+while True:
+    time.sleep(1)
+"""
+
+
+@pytest.fixture(params=[90, 180, 270])
+def terminal_rotation(request):
+    """Add a drive whose code sets the display to this rotation."""
+    rotation = request.param
+    request.node.add_marker(
+        pytest.mark.circuitpy_drive({"code.py": ROTATED_TERMINAL_CODE.format(rotation=rotation)})
+    )
+    return rotation
+
+
+@pytest.mark.display(capture_times_ns=[4_000_000_000])
+@pytest.mark.duration(8)
+def test_terminal_rotated(terminal_rotation, request, circuitpython):
+    circuitpython.wait_until_done()
+
+    width, height = (240, 320) if terminal_rotation in (90, 270) else (320, 240)
+    output = circuitpython.serial.all_output
+    assert f"shown {terminal_rotation} {width} {height}" in output
+
+    golden = Path(__file__).parent / "golden" / f"terminal_rotated_{terminal_rotation}_320x240.png"
+    _golden_compare_or_update(request, circuitpython.display_capture_paths(), golden)
+
+
 MONO_NO_VTILED_FORMATS = ["MONO01", "MONO10"]
 
 

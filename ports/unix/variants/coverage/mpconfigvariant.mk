@@ -106,9 +106,9 @@ SRC_BITMAP := \
 	shared-module/bitmapfilter/__init__.c \
 	shared-module/bitmaptools/__init__.c \
 	shared-module/displayio/area.c \
-	shared-module/displayio/Bitmap.c \
-	shared-module/displayio/ColorConverter.c \
-	shared-module/displayio/Palette.c \
+	shared-module/displayio/legacy/Bitmap.c \
+	shared-module/displayio/legacy/ColorConverter.c \
+	shared-module/displayio/legacy/Palette.c \
 	shared-module/floppyio/__init__.c \
 	shared-module/jpegio/__init__.c \
 	shared-module/jpegio/JpegDecoder.c \
@@ -126,7 +126,7 @@ SRC_BITMAP := \
 	shared-module/vectorio/__init__.c \
 	shared-module/vectorio/Polygon.c \
 	shared-module/vectorio/Rectangle.c \
-	shared-module/vectorio/VectorShape.c \
+	shared-module/vectorio/legacy/VectorShape.c \
 	shared-module/traceback/__init__.c \
 	shared-module/zlib/__init__.c \
 

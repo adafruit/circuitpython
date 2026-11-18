@@ -252,14 +252,7 @@ uint32_t common_hal_gifio_ondiskgif_next_frame(gifio_ondiskgif_t *self, bool set
     result = GIF_playFrame(&self->gif, &nextDelay, self);
 
     if ((result >= 0) && (setDirty)) {
-        displayio_area_t dirty_area = {
-            .x1 = 0,
-            .y1 = 0,
-            .x2 = self->bitmap->width,
-            .y2 = self->bitmap->height,
-        };
-
-        displayio_bitmap_set_dirty_area(self->bitmap, &dirty_area);
+        displayio_bitmap_set_dirty(self->bitmap, 0, 0, self->bitmap->width, self->bitmap->height);
     }
 
     return nextDelay;

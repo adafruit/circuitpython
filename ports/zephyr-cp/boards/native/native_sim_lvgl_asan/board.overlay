@@ -1,0 +1,7 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Reuse the LVGL native simulator's hardware description for its ASan variant.
+ */
+
+#include "../native_sim_lvgl/board.overlay"
