@@ -910,6 +910,10 @@ static bool _compose(displayio_tilegrid_t *self, lv_area_t *dirty) {
                 queued++;
                 if (queued == DISPLAYIO_LVGL_COMPOSE_BATCH) {
                     lv_canvas_finish_layer(self->lv_canvas, &layer);
+                    // A big compose (a re-rendered text grid) can outlast the audio buffers.
+                    if (displayio_lvgl_refresh_yield) {
+                        RUN_BACKGROUND_TASKS;
+                    }
                     lv_canvas_init_layer(self->lv_canvas, &layer);
                     queued = 0;
                 }
