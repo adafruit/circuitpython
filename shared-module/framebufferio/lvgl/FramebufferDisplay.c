@@ -21,6 +21,9 @@
 #include "shared-module/videocore/VideoBuffer.h"
 #endif
 #include "supervisor/port_heap.h"
+#if CIRCUITPY_WEB_WORKFLOW
+#include "supervisor/shared/web_workflow/display_stream.h"
+#endif
 
 #if CIRCUITPY_ESPIDF
 #include "esp_attr.h"
@@ -191,6 +194,9 @@ static void framebufferio_lvgl_flush_cb(lv_display_t *disp, const lv_area_t *are
         for (uint16_t y = area->y1; y <= area->y2; y++) {
             MARK_ROW_DIRTY(y);
         }
+        #if CIRCUITPY_WEB_WORKFLOW
+        display_stream_area_updated(&self->core, area);
+        #endif
     } else {
         lv_area_t rotated_area = *area;
         lv_display_rotate_area(disp, &rotated_area);
@@ -205,6 +211,10 @@ static void framebufferio_lvgl_flush_cb(lv_display_t *disp, const lv_area_t *are
         for (uint16_t y = rotated_area.y1; y <= rotated_area.y2; y++) {
             MARK_ROW_DIRTY(y);
         }
+        #if CIRCUITPY_WEB_WORKFLOW
+        // The stream reads the framebuffer, so it needs the area in the panel's orientation.
+        display_stream_area_updated(&self->core, &rotated_area);
+        #endif
     }
 
     // Publish each flushed area now. LVGL doesn't reliably report the last flush part in all
