@@ -77,6 +77,10 @@ void displayio_lvgl_refresh_unsafe_displays(void);
 // LVGL lock.
 void displayio_lvgl_refresh_paced_displays(void);
 
+// True while an explicit display.refresh() renders on the CircuitPython thread. Long
+// render steps (TileGrid compose, display flush) run background tasks when it is set.
+extern bool displayio_lvgl_refresh_yield;
+
 // Attach/detach the compositor's root group. Implemented in lvgl/Group.c. NULL detach.
 void displayio_lvgl_set_root_group(displayio_group_t *group);
 

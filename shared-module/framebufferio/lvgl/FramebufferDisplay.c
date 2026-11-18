@@ -212,6 +212,12 @@ static void framebufferio_lvgl_flush_cb(lv_display_t *disp, const lv_area_t *are
     self->framebuffer_protocol->swapbuffers(self->framebuffer, self->lv_dirty_row_bitmask);
     memset(self->lv_dirty_row_bitmask, 0, self->lv_dirty_row_bitmask_size);
     lv_display_flush_ready(disp);
+
+    // A refresh can take longer than the audio buffers last. Like the legacy
+    // framebufferio, let background tasks run between chunks of an explicit refresh.
+    if (self->lv_refresh_yield) {
+        RUN_BACKGROUND_TASKS;
+    }
 }
 
 
@@ -268,6 +274,7 @@ void common_hal_framebufferio_framebufferdisplay_construct(framebufferio_framebu
     self->lv_dirty_row_bitmask_size = 0;
     self->lv_direct = false;
     self->lv_paced = false;
+    self->lv_refresh_yield = false;
     framebufferdisplay_construct_cleanup_t cleanup = { .self = self, .locked = false };
     nlr_push_jump_callback(&cleanup.node, framebufferdisplay_construct_abort);
     self->framebuffer_protocol = mp_proto_get_or_throw(MP_QSTR_protocol_framebuffer, framebuffer);
@@ -479,7 +486,11 @@ bool common_hal_framebufferio_framebufferdisplay_refresh(framebufferio_framebuff
     if (self->lv_display != NULL) {
         // The renderer refreshes on its own thread too, so this has to exclude it.
         displayio_lvgl_lock();
+        self->lv_refresh_yield = true;
+        displayio_lvgl_refresh_yield = true;
         lv_refr_now(self->lv_display);
+        displayio_lvgl_refresh_yield = false;
+        self->lv_refresh_yield = false;
         displayio_lvgl_unlock();
     }
     self->core.last_refresh = supervisor_ticks_ms64();

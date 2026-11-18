@@ -50,6 +50,7 @@ static const lvgl_protocol_t *_layer_protocol(mp_obj_t *layer) {
 
 static displayio_group_t *cp_lvgl_root_group = NULL;
 static bool cp_lvgl_inited = false;
+bool displayio_lvgl_refresh_yield = false;
 
 // The port lock is recursive. Keeping the recursion at the port instead of counting here matters
 // once LVGL renders on its own task: a shared depth counter would let the render task believe it
@@ -201,7 +202,9 @@ void displayio_lvgl_refresh_unsafe_displays(void) {
 void displayio_lvgl_refresh_paced_displays(void) {
     #if CIRCUITPY_FRAMEBUFFERIO
     static bool refreshing = false;
-    if (refreshing) {
+    // An explicit display.refresh() runs background tasks while it renders. A frame callback
+    // queued among them must not start a nested render; it draws at the next frame instead.
+    if (refreshing || displayio_lvgl_refresh_yield) {
         return;
     }
     refreshing = true;
