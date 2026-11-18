@@ -21,3 +21,13 @@ void wifi_user_reset(void);
 // so use it promptly rather than holding onto it. Used by
 // supervisor/shared/web_workflow.
 const char *wifi_get_hostname_raw(void);
+
+// True once common_hal_wifi_init() has set the interface's hostname, so that
+// wifi_get_hostname_raw() returns it. Never allocates or raises.
+bool wifi_hostname_is_set(void);
+
+// Gets the hostname that common_hal_wifi_init() sets when
+// CIRCUITPY_WIFI_HOSTNAME is not in settings.toml. Can be called before the
+// radio is initialized. Writes the hostname to buf as a NUL-terminated string,
+// truncated to fit in buf_size bytes. Never allocates or raises.
+void wifi_get_default_hostname(char *buf, size_t buf_size);

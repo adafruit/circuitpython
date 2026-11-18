@@ -576,6 +576,11 @@ void background_callback_run_all(void);
 #define CIRCUITPY_VERBOSE_BLE 0
 #endif
 
+// Value of os.uname().sysname.
+#ifndef CIRCUITPY_OS_UNAME_SYSNAME
+#define CIRCUITPY_OS_UNAME_SYSNAME "CircuitPython"
+#endif
+
 // Display the Blinka logo in the REPL on displayio displays.
 #ifndef CIRCUITPY_REPL_LOGO
 #define CIRCUITPY_REPL_LOGO (1)

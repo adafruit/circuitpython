@@ -18,6 +18,8 @@
 #endif
 
 #define MICROPY_PY_SYS_PLATFORM "Zephyr"
+// Override the default name "CircuitPython", set in py/circuitpy_mpconfig.h.
+#define CIRCUITPY_OS_UNAME_SYSNAME "Zephyr"
 
 // Add "(Zephyr)" to distinguish zephyr-cp builds from classic-port builds for the same board in the banner.
 #define MICROPY_BANNER_MACHINE MICROPY_HW_BOARD_NAME " with " MICROPY_HW_MCU_NAME " (Zephyr)"

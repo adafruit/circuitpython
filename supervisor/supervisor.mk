@@ -32,6 +32,11 @@ ifeq ($(CIRCUITPY_ASYNC_SPI),1)
 SRC_SUPERVISOR += supervisor/shared/awaitable.c
 endif
 
+# Networking code shared by wifi and mii.
+ifneq ($(filter 1,$(CIRCUITPY_WIFI) $(CIRCUITPY_MII)),)
+SRC_SUPERVISOR += supervisor/shared/network.c
+endif
+
 # For tlsf
 CFLAGS += -D_DEBUG=0
 
