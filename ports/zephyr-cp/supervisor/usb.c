@@ -125,7 +125,6 @@ int _zephyr_disk_status(struct disk_info *disk) {
     fs_user_mount_t *root = root_vfs == NULL ? NULL : &root_vfs->fat;
     int lun = 0;
     if (!msc_enabled()) {
-        printk("Status: Disabled\n");
         return DISK_STATUS_NOMEDIA;
     }
     if (root == NULL) {
@@ -429,10 +428,7 @@ void usb_init(void) {
         if (msc_enabled()) {
             err = usbd_register_class(&main_usbd, "msc_0", USBD_SPEED_HS, 1);
             if (err) {
-                printk("Failed to add register MSC class %d\n", err);
                 return;
-            } else {
-                printk("Registered MSC class for high speed\n");
             }
         }
 
@@ -484,7 +480,6 @@ void usb_init(void) {
     if (msc_enabled()) {
         err = usbd_register_class(&main_usbd, "msc_0", USBD_SPEED_FS, 1);
         if (err) {
-            printk("Failed to add register MSC class %d\n", err);
             return;
         }
     }
