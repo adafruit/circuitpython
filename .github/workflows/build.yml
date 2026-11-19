@@ -198,7 +198,7 @@ jobs:
         name: stubs
         path: circuitpython-stubs/dist/*
     - name: Test Documentation Build (HTML)
-      run: sphinx-build -E -W -b html -D version="$CP_VERSION" -D release="$CP_VERSION" . _build/html
+      run: sphinx-build -E -W -j auto -b html -D version="$CP_VERSION" -D release="$CP_VERSION" . _build/html
     - uses: actions/upload-artifact@v7
       with:
         name: docs-html

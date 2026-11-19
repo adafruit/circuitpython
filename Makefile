@@ -7,7 +7,7 @@
 
 # You can set these variables from the command line.
 PYTHON        = python3
-SPHINXOPTS    = -W --keep-going
+SPHINXOPTS    = -W --keep-going -j auto
 SPHINXBUILD   = sphinx-build
 PAPER         =
 # path to build the generated docs
