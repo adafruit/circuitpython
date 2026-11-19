@@ -24,6 +24,16 @@
 
 #if CIRCUITPY_DISPLAYIO_LVGL
 
+// LVGL image scales are Q8 fixed point: 256 means 1x. Use a 64-bit intermediate
+// so nested groups and large coordinates cannot overflow the multiplication.
+static inline int32_t displayio_lvgl_scale_coordinate(int32_t value, uint32_t scale) {
+    return (int32_t)(((int64_t)value * scale + (LV_SCALE_NONE / 2)) >> 8);
+}
+
+static inline uint32_t displayio_lvgl_compose_scale(uint32_t parent, uint32_t own) {
+    return (uint32_t)(((uint64_t)parent * own + (LV_SCALE_NONE / 2)) >> 8);
+}
+
 // Port hook: initialize LVGL itself and its tick source. Implemented by each port's
 // common-hal and safe to call repeatedly.
 void displayio_lvgl_port_init(void);

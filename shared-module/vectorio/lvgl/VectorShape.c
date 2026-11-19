@@ -173,10 +173,10 @@ static void _update_visible(vectorio_vector_shape_t *self) {
 
 // Rebuild the polygon coverage mask. LVGL treats an A8 image as a mask and blends it with
 // the image recolor color, so the mask only needs to say where the shape is, not what color
-// it is. Group scale is baked into the mask resolution, which reproduces displayio's
-// nearest-neighbor sampling of the shape.
+// it is. Group scale is baked into the mask resolution, including fractional Q8 scales, which
+// reproduces displayio's nearest-neighbor sampling of the shape.
 static void _refresh_mask(vectorio_vector_shape_t *self, int32_t x1, int32_t y1, int32_t w,
-    int32_t h, uint16_t scale) {
+    int32_t h, uint32_t scale) {
     if (self->mask == NULL || (int32_t)self->mask->header.w != w || (int32_t)self->mask->header.h != h) {
         // The image borrows the mask. Clear its source before freeing the old buffer:
         // if the replacement allocation fails it must draw nothing, not freed memory.
@@ -197,11 +197,10 @@ static void _refresh_mask(vectorio_vector_shape_t *self, int32_t x1, int32_t y1,
     uint32_t stride = self->mask->header.stride;
     for (int32_t y = 0; y < h; y++) {
         uint8_t *row = self->mask->data + (uint32_t)y * stride;
-        int16_t shape_y = y1 + y / scale;
+        int16_t shape_y = y1 + (int64_t)y * LV_SCALE_NONE / scale;
         for (int32_t x = 0; x < w; x++) {
-            row[x] = self->ishape.get_pixel(self->ishape.shape, x1 + x / scale, shape_y) == 0
-                ? 0
-                : COVERAGE_OPAQUE;
+            row[x] = self->ishape.get_pixel(self->ishape.shape,
+                x1 + (int64_t)x * LV_SCALE_NONE / scale, shape_y) == 0 ? 0 : COVERAGE_OPAQUE;
         }
     }
 }
@@ -227,13 +226,14 @@ static void _sync_mirror(vectorio_vector_shape_t *self, bool rebuild_mask) {
     int32_t x2;
     int32_t y2;
     _shape_bounds(self, &x1, &y1, &x2, &y2);
-    uint16_t scale = self->abs_scale == 0 ? 1 : self->abs_scale;
-    // The bounds are inclusive, so the extent is one more than the difference.
-    int32_t w = (x2 - x1 + 1) * scale;
-    int32_t h = (y2 - y1 + 1) * scale;
-    // A shape with an empty extent (a rectangle with no width or height) covers no
-    // pixels at all, so it must not be painted.
-    bool empty = w < 1 || h < 1;
+    uint32_t scale = self->abs_scale == 0 ? LV_SCALE_NONE : self->abs_scale;
+    int32_t source_w = x2 - x1 + 1;
+    int32_t source_h = y2 - y1 + 1;
+    // A shape with an empty source extent (a rectangle with no width or height) covers no
+    // pixels at all. A nonempty shape still gets one output pixel when scaled far down.
+    bool empty = source_w < 1 || source_h < 1;
+    int32_t w = displayio_lvgl_scale_coordinate(source_w, scale);
+    int32_t h = displayio_lvgl_scale_coordinate(source_h, scale);
     if (w < 1) {
         w = 1;
     }
@@ -244,8 +244,8 @@ static void _sync_mirror(vectorio_vector_shape_t *self, bool rebuild_mask) {
     bool polygon = _is_polygon(self);
     // abs_x/y is the parent group's origin on the screen; groups are screen sized
     // objects at the screen origin, so members are positioned in screen coordinates.
-    _place(self->lv_obj, self->abs_x + (self->x + x1) * scale,
-        self->abs_y + (self->y + y1) * scale);
+    _place(self->lv_obj, self->abs_x + displayio_lvgl_scale_coordinate(self->x + x1, scale),
+        self->abs_y + displayio_lvgl_scale_coordinate(self->y + y1, scale));
     if (lv_obj_get_width(self->lv_obj) != w || lv_obj_get_height(self->lv_obj) != h) {
         lv_obj_set_size(self->lv_obj, w, h);
         // A new size means a new mask buffer too.
@@ -271,14 +271,16 @@ static void _sync_mirror(vectorio_vector_shape_t *self, bool rebuild_mask) {
     // scaled group scales the object's size, so the shape's own pixels have to be scaled too
     // to keep the corners and the outline proportional.
     bool circle = mp_obj_is_type(self->ishape.shape, &vectorio_circle_type);
-    int32_t radius = circle ? LV_RADIUS_CIRCLE : (int32_t)_shape_radius(self) * scale;
+    int32_t radius = circle ? LV_RADIUS_CIRCLE :
+        displayio_lvgl_scale_coordinate(_shape_radius(self), scale);
     uint16_t outline_width = _shape_outline_width(self);
     lv_color_t outline_color;
     bool outlined = !empty && outline_width > 0 &&
         _resolve_color(self->pixel_shader, _biased_outline_color_index(self), &outline_color);
 
     lv_obj_set_style_radius(self->lv_obj, radius, 0);
-    lv_obj_set_style_border_width(self->lv_obj, outlined ? (int32_t)outline_width * scale : 0, 0);
+    lv_obj_set_style_border_width(self->lv_obj,
+        outlined ? displayio_lvgl_scale_coordinate(outline_width, scale) : 0, 0);
     if (painted) {
         lv_obj_set_style_bg_color(self->lv_obj, color, 0);
     }
@@ -321,7 +323,7 @@ void common_hal_vectorio_vector_shape_construct(vectorio_vector_shape_t *self,
     self->ishape = ishape;
     self->abs_x = 0;
     self->abs_y = 0;
-    self->abs_scale = 1;
+    self->abs_scale = LV_SCALE_NONE;
     self->lv_obj = NULL;
     self->mask = NULL;
     self->hidden = false;
@@ -336,8 +338,8 @@ void common_hal_vectorio_vector_shape_set_dirty(void *vector_shape) {
     _set_dirty(vector_shape, true);
 }
 
-static int32_t _screen_to_shape(int32_t screen, int32_t origin, uint16_t scale) {
-    int32_t relative = screen - origin;
+static int32_t _screen_to_shape(int32_t screen, int32_t origin, uint32_t scale) {
+    int64_t relative = ((int64_t)screen - origin) * LV_SCALE_NONE;
     if (relative < 0) {
         // Floor division so that negative coordinates map to the pixel that contains them.
         return -((-relative + scale - 1) / scale);
@@ -348,9 +350,11 @@ static int32_t _screen_to_shape(int32_t screen, int32_t origin, uint16_t scale) 
 bool common_hal_vectorio_vector_shape_contains(vectorio_vector_shape_t *self, mp_int_t x, mp_int_t y) {
     x = mp_arg_validate_int_range(x, SHRT_MIN, SHRT_MAX, MP_QSTR_x);
     y = mp_arg_validate_int_range(y, SHRT_MIN, SHRT_MAX, MP_QSTR_y);
-    uint16_t scale = self->abs_scale == 0 ? 1 : self->abs_scale;
-    int16_t shape_x = (int16_t)(_screen_to_shape(x, self->abs_x, scale) - self->x);
-    int16_t shape_y = (int16_t)(_screen_to_shape(y, self->abs_y, scale) - self->y);
+    uint32_t scale = self->abs_scale == 0 ? LV_SCALE_NONE : self->abs_scale;
+    int32_t origin_x = self->abs_x + displayio_lvgl_scale_coordinate(self->x, scale);
+    int32_t origin_y = self->abs_y + displayio_lvgl_scale_coordinate(self->y, scale);
+    int16_t shape_x = (int16_t)_screen_to_shape(x, origin_x, scale);
+    int16_t shape_y = (int16_t)_screen_to_shape(y, origin_y, scale);
     return self->ishape.get_pixel(self->ishape.shape, shape_x, shape_y) != 0;
 }
 
@@ -491,14 +495,14 @@ void displayio_lvgl_vector_shape_detach(vectorio_vector_shape_t *self) {
 }
 
 void displayio_lvgl_vector_shape_set_transform(vectorio_vector_shape_t *self, int32_t abs_x,
-    int32_t abs_y, uint16_t scale) {
+    int32_t abs_y, uint32_t scale) {
     if (self->abs_x == abs_x && self->abs_y == abs_y && self->abs_scale == scale) {
         return;
     }
     self->abs_x = abs_x;
     self->abs_y = abs_y;
-    uint16_t previous_scale = self->abs_scale;
-    self->abs_scale = scale == 0 ? 1 : scale;
+    uint32_t previous_scale = self->abs_scale;
+    self->abs_scale = scale == 0 ? LV_SCALE_NONE : scale;
     // The mask is rasterized at the scaled resolution, so a scale change rebuilds it.
     _set_dirty(self, self->abs_scale != previous_scale);
 }
@@ -533,7 +537,7 @@ static void _vector_shape_protocol_detach(mp_obj_t layer) {
 }
 
 static bool _vector_shape_protocol_set_transform(mp_obj_t layer, int32_t abs_x,
-    int32_t abs_y, uint16_t scale) {
+    int32_t abs_y, uint32_t scale) {
     displayio_lvgl_vector_shape_set_transform(MP_OBJ_TO_PTR(layer), abs_x, abs_y, scale);
     return true;
 }
