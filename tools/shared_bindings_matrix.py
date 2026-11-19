@@ -449,6 +449,22 @@ def collect_board_data():
         return dict(executor.map(collect, real_boards))
 
 
+def write_board_data(path, board_data):
+    """Save the output of collect_board_data() as JSON."""
+    # Keep the board order: when boards share a product name, the last one wins.
+    with open(path, "w") as f:
+        json.dump(board_data, f, indent=1)
+
+
+def read_board_data(path):
+    """Return board data saved by write_board_data(), or None if path doesn't exist."""
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return None
+
+
 def support_matrix_by_board(
     use_branded_name=True,
     withurl=True,
