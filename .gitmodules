@@ -431,3 +431,6 @@
 	path = lib/lvgl
 	url = https://github.com/adafruit/lvgl.git
 	branch = circuitpython-v9.6
+[submodule "frozen/picogame-libs"]
+	path = frozen/picogame-libs
+	url = https://github.com/MakerClassCZ/picogame-libs.git
