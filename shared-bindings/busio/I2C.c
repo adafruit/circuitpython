@@ -157,6 +157,12 @@ MP_DEFINE_CONST_FUN_OBJ_1(busio_i2c_scan_obj, busio_i2c_scan);
 //|     def try_lock(self) -> bool:
 //|         """Attempts to grab the I2C lock. Returns True on success.
 //|
+//|         .. warning:: Ideally, release the lock with `unlock()` as soon as you are done with the bus.
+//|           Use :class:`~adafruit_bus_device.I2CDevice`, which holds the lock only
+//|           during each transaction.
+//|           On Espressif boards, holding the lock for a long time while using WiFi
+//|           can starve the WiFi and USB tasks, and the board may hang or restart in safe mode.
+//|
 //|         :return: True when lock has been grabbed
 //|         :rtype: bool"""
 //|         ...

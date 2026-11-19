@@ -7,7 +7,21 @@
 |see_cpython_module| :mod:`python:errno`.
 
 This module provides access to symbolic error codes for `OSError` exception.
-Some codes are not available on the smallest CircuitPython builds, such as SAMD21, for space reasons.
+Most SAMD21 boards, including all SAMD21 boards without external flash, do not include :mod:`errno`.
+A few other small builds also do not include it.
+To check a particular board, see the :ref:`module-support-matrix`.
+
+The available codes depend on the build:
+
+* Most builds provide ``EACCES``, ``EADDRINUSE``, ``EAGAIN``, ``EALREADY``, ``EBADF``,
+  ``EBUSY``, ``ECONNABORTED``, ``ECONNREFUSED``, ``ECONNRESET``, ``EEXIST``,
+  ``EHOSTUNREACH``, ``EINPROGRESS``, ``EINVAL``, ``EIO``, ``EISDIR``, ``ENOBUFS``,
+  ``ENODEV``, ``ENOENT``, ``ENOMEM``, ``ENOSPC``, ``ENOTCONN``, ``EOPNOTSUPP``,
+  ``EPERM``, ``EROFS``, and ``ETIMEDOUT``.
+* SAMD21 builds that include :mod:`errno` provide only ``EACCES``, ``EAGAIN``, ``EEXIST``,
+  ``EINVAL``, ``EIO``, ``EISDIR``, ``ENODEV``, ``ENOENT``, ``ENOMEM``, and ``EPERM``.
+
+``dir(errno)`` lists the codes available on a particular board.
 
 Constants
 ---------
