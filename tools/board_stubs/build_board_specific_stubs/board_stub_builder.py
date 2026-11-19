@@ -160,7 +160,6 @@ def create_board_stubs(board_id, records, mappings, board_filename):
         boards_file.write(f"Board stub for {mappings['board_name']}\n")
         boards_file.write(f" - port: {mappings['port']}\n")
         boards_file.write(f" - board_id: {board_id}\n")
-        boards_file.write(f" - NVM size: {mappings['nvm_size']}\n")
         boards_file.write(f" - Included modules: {included_modules}\n")
         boards_file.write(f" - Frozen libraries: {frozen_libraries}\n")
         boards_file.write('"""\n\n')
@@ -306,15 +305,6 @@ def build_stubs(circuitpython_dir, circuitpython_org_dir, export_dir, version="8
 
         board_mappings[board]["pins_filename"] = pins_path
 
-        nvm_size = "Unknown"
-        with open(f"{port_path}/mpconfigport.h") as get_name:
-            port_contents = get_name.read()
-            port_nvm_re = re.search(
-                r"(?<=#define CIRCUITPY_INTERNAL_NVM_SIZE)\s+(.+)", port_contents
-            )
-            if port_nvm_re:
-                nvm_size = port_nvm_re.group(1).strip()
-
         board_name = board
         with open(f"{board_path}/mpconfigboard.h") as get_name:
             board_contents = get_name.read()
@@ -322,18 +312,7 @@ def build_stubs(circuitpython_dir, circuitpython_org_dir, export_dir, version="8
             if board_name_re:
                 board_name = board_name_re.group(1).strip('"')
 
-            port_nvm_re = re.search(
-                r"(?<=#define CIRCUITPY_INTERNAL_NVM_SIZE)\s+(.+)", port_contents
-            )
-            if port_nvm_re:
-                nvm_size = port_nvm_re.group(1).strip()
-
-        nvm_size_re = re.search(r"^[0-9\(\) *]*$", nvm_size)
-        if nvm_size_re:
-            nvm_size = eval(nvm_size_re.group(0))
-
         board_mappings[board]["board_name"] = board_name
-        board_mappings[board]["nvm_size"] = nvm_size
         board_mappings[board]["libraries"] = libraries.get(board, None)
 
     process(board_mappings, export_dir)
