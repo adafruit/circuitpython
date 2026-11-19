@@ -205,16 +205,6 @@ def main(target):
         submodules = ["extmod/ulab", "frozen"]
     elif target == "mpy-cross" or target == "mpy-cross-mac":
         submodules = ["tools/"]  # for huffman
-    elif target == "windows":
-        # This builds one board from a number of ports so fill out a bunch of submodules
-        for port in ("atmel-samd", "nordic", "raspberrypi", "stm"):
-            submodules.append(f"ports/{port}")
-            submodules.extend(PORT_DEPS[port])
-        unique_submodules = set(submodules)
-        submodules = list(unique_submodules)
-    elif target == "windows-zephyr":
-        submodules.append("ports/zephyr-cp")
-        submodules.extend(PORT_DEPS["zephyr-cp"])
     elif target == "website":
         submodules = ["tools/adabot", "frozen"]
     elif target == "pre-commit":
@@ -288,6 +278,6 @@ if __name__ == "__main__":
 
     run("Sync submodule URLs", "git submodule sync --quiet", cwd=TOP)
 
-    # Target will be a board, "test", "docs", "mpy-cross-mac", or "windows"
+    # Target will be a board, "test", "docs" or "mpy-cross-mac"
     for target in sys.argv[1:]:
         main(target)

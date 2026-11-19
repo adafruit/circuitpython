@@ -120,18 +120,6 @@ def zephyr_board_has_module(board, module):
     return board not in zephyr_modules or zephyr_modules[board].get(module, True)
 
 
-PATTERN_WINDOWS = {
-    ".github/",
-    "extmod/",
-    "lib/",
-    "mpy-cross/",
-    "ports/unix/",
-    "py/",
-    "tools/",
-    "requirements-dev.txt",
-}
-
-
 def git_diff(pattern: str):
     return set(
         subprocess.run(
@@ -415,27 +403,6 @@ def set_mpy_cross(run: bool):
     set_output("mpy-cross", run)
 
 
-def set_windows(run: bool):
-    if not run:
-        if last_failed_jobs.get("windows"):
-            run = True
-        else:
-            for file in changed_files:
-                for pattern in PATTERN_WINDOWS:
-                    if file.startswith(pattern) and not any(
-                        [file.startswith(path) for path in IGNORE_BOARD]
-                    ):
-                        run = True
-                        break
-                else:
-                    continue
-                break
-
-    # Set the step outputs
-    print("Building windows:", run)
-    set_output("windows", run)
-
-
 def main():
     run_all = not changed_files and not compute_diff
     print("Running: " + ("all" if run_all else "conditionally"))
@@ -445,7 +412,6 @@ def main():
     set_tests(run_all)
     # Pushes upload each version's mpy-cross binaries to S3, so build them every time.
     set_mpy_cross(run_all or os.environ.get("GITHUB_EVENT_NAME") == "push")
-    set_windows(run_all)
     set_boards(run_all)
 
 
