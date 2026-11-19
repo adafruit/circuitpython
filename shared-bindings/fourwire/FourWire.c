@@ -40,10 +40,10 @@
 //|         """Create a FourWire object associated with the given pins.
 //|
 //|         The SPI bus and pins are then in use by the display until your code finishes or
-//|         `displayio.release_displays()` is called. If the display is
+//|         the display's ``deinit()`` is called. If the display is
 //|         `supervisor.runtime.display <supervisor.Runtime.display>`, they stay in use after your code finishes, so CircuitPython can
 //|         use the display. In that case, check `supervisor.runtime.display <supervisor.Runtime.display>` before creating the display
-//|         again, or call :py:func:`displayio.release_displays` first.
+//|         again, or call ``supervisor.runtime.display.deinit()`` first.
 //|
 //|         If the ``command`` pin is not specified, a 9-bit SPI mode will be simulated by adding a
 //|         data/command bit to every bit being transmitted, and splitting the resulting data back

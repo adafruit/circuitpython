@@ -40,10 +40,10 @@
 //|         by implying the next 7 additional pins on a given GPIO port.
 //|
 //|         The parallel bus and pins are then in use by the display until your code finishes or
-//|         `displayio.release_displays()` is called. If the display is
+//|         the display's ``deinit()`` is called. If the display is
 //|         `supervisor.runtime.display <supervisor.Runtime.display>`, they stay in use after your code finishes, so CircuitPython can
 //|         use the display. In that case, check `supervisor.runtime.display <supervisor.Runtime.display>` before creating the display
-//|         again, or call :py:func:`displayio.release_displays` first.
+//|         again, or call ``supervisor.runtime.display.deinit()`` first.
 //|
 //|         :param microcontroller.Pin data_pins: A list of data pins.  Specify exactly one of ``data_pins`` or ``data0``.
 //|         :param microcontroller.Pin data0: The first data pin. The rest are implied

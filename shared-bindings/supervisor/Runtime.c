@@ -216,7 +216,7 @@ MP_PROPERTY_GETSET(supervisor_runtime_rgb_status_brightness_obj,
 //|
 //|     If the board has a display that is hard coded, or that was explicitly set
 //|     in boot.py or code.py (including a previous run of code.py), it is
-//|     available here until it is released with ``displayio.release_displays()``.
+//|     available here until it is released with ``supervisor.runtime.display.deinit()``.
 //|
 //|     The display can be of any supported display type, such as `busdisplay.BusDisplay`.
 //|     A subclass of one, such as a display from a driver library, can also be assigned.
@@ -256,7 +256,7 @@ MP_WEAK mp_obj_t common_hal_supervisor_runtime_get_audio(void) {
 //|     sends sound over the DVI cable along with the picture. It is `None` when
 //|     the display did not start, when audio is turned off with
 //|     ``CIRCUITPY_PICODVI_AUDIO = false`` in ``settings.toml``, or after the
-//|     display is released with ``displayio.release_displays()``.
+//|     display is released, such as with ``supervisor.runtime.display.deinit()``.
 //|
 //|     On boards without such an output, this property is always `None`."""
 //|
