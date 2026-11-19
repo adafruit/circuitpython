@@ -67,14 +67,13 @@ const mcu_periph_obj_t mcu_spi_miso_list[8] = {
     PERIPH(4, 5, &pin_PE13),
 };
 
-const mcu_periph_obj_t mcu_spi_nss_list[9] = {
+const mcu_periph_obj_t mcu_spi_nss_list[8] = {
     PERIPH(1, 5, &pin_PA04),
     PERIPH(1, 5, &pin_PA15),
     PERIPH(2, 5, &pin_PB09),
     PERIPH(2, 5, &pin_PB12),
     PERIPH(3, 6, &pin_PA04),
     PERIPH(3, 6, &pin_PA15),
-    PERIPH(4, 6, &pin_PB12),
     PERIPH(4, 5, &pin_PE04),
     PERIPH(4, 5, &pin_PE11),
 };
@@ -132,9 +131,9 @@ const mcu_tim_pin_obj_t mcu_tim_pin_list[44] = {
     TIM(4, 2, 1, &pin_PB06),
     TIM(4, 2, 2, &pin_PB07),
     TIM(4, 2, 3, &pin_PB08),
-    TIM(10, 2, 1, &pin_PB08),
+    TIM(10, 3, 1, &pin_PB08),
     TIM(4, 2, 4, &pin_PB09),
-    TIM(11, 2, 1, &pin_PB09),
+    TIM(11, 3, 1, &pin_PB09),
     TIM(2, 1, 3, &pin_PB10),
     TIM(3, 2, 1, &pin_PC06),
     TIM(3, 2, 2, &pin_PC07),

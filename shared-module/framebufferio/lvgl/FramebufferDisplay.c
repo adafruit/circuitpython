@@ -21,6 +21,9 @@
 #include "shared-module/videocore/VideoBuffer.h"
 #endif
 #include "supervisor/port_heap.h"
+#if CIRCUITPY_WEB_WORKFLOW
+#include "supervisor/shared/web_workflow/display_stream.h"
+#endif
 
 #if CIRCUITPY_ESPIDF
 #include "esp_attr.h"
@@ -191,6 +194,9 @@ static void framebufferio_lvgl_flush_cb(lv_display_t *disp, const lv_area_t *are
         for (uint16_t y = area->y1; y <= area->y2; y++) {
             MARK_ROW_DIRTY(y);
         }
+        #if CIRCUITPY_WEB_WORKFLOW
+        display_stream_area_updated(&self->core, area);
+        #endif
     } else {
         lv_area_t rotated_area = *area;
         lv_display_rotate_area(disp, &rotated_area);
@@ -205,6 +211,10 @@ static void framebufferio_lvgl_flush_cb(lv_display_t *disp, const lv_area_t *are
         for (uint16_t y = rotated_area.y1; y <= rotated_area.y2; y++) {
             MARK_ROW_DIRTY(y);
         }
+        #if CIRCUITPY_WEB_WORKFLOW
+        // The stream reads the framebuffer, so it needs the area in the panel's orientation.
+        display_stream_area_updated(&self->core, &rotated_area);
+        #endif
     }
 
     // Publish each flushed area now. LVGL doesn't reliably report the last flush part in all
@@ -212,6 +222,12 @@ static void framebufferio_lvgl_flush_cb(lv_display_t *disp, const lv_area_t *are
     self->framebuffer_protocol->swapbuffers(self->framebuffer, self->lv_dirty_row_bitmask);
     memset(self->lv_dirty_row_bitmask, 0, self->lv_dirty_row_bitmask_size);
     lv_display_flush_ready(disp);
+
+    // A refresh can take longer than the audio buffers last. Like the legacy
+    // framebufferio, let background tasks run between chunks of an explicit refresh.
+    if (displayio_lvgl_refresh_yield) {
+        RUN_BACKGROUND_TASKS;
+    }
 }
 
 
@@ -479,7 +495,9 @@ bool common_hal_framebufferio_framebufferdisplay_refresh(framebufferio_framebuff
     if (self->lv_display != NULL) {
         // The renderer refreshes on its own thread too, so this has to exclude it.
         displayio_lvgl_lock();
+        displayio_lvgl_refresh_yield = true;
         lv_refr_now(self->lv_display);
+        displayio_lvgl_refresh_yield = false;
         displayio_lvgl_unlock();
     }
     self->core.last_refresh = supervisor_ticks_ms64();

@@ -17,6 +17,7 @@
 #include "py/mpstate.h"
 #include "py/runtime.h"
 
+#include "esp_mac.h"
 #include "esp_wifi.h"
 
 #include "components/heap/include/esp_heap_caps.h"
@@ -26,6 +27,7 @@ wifi_radio_obj_t common_hal_wifi_radio_obj;
 #include "components/log/include/esp_log.h"
 
 #include "supervisor/port.h"
+#include "supervisor/shared/network.h"
 #include "supervisor/workflow.h"
 
 #include "lwip/sockets.h"
@@ -585,29 +587,44 @@ void common_hal_wifi_init(bool user_initiated) {
     }
     #endif
     else {
-        // Set the default lwip_local_hostname capped at 32 characters. We trim off
-        // the start of the board name (likely manufacturer) because the end is
-        // often more unique to the board.
-        size_t board_len = MIN(32 - ((MAC_ADDRESS_LENGTH * 2) + 6), strlen(CIRCUITPY_BOARD_ID));
-        size_t board_trim = strlen(CIRCUITPY_BOARD_ID) - board_len;
-        // Avoid double _ in the hostname.
-        if (CIRCUITPY_BOARD_ID[board_trim] == '_') {
-            board_trim++;
-        }
-
-        char cpy_default_hostname[board_len + (MAC_ADDRESS_LENGTH * 2) + 6];
+        // Set the default hostname, capped at 32 characters.
+        char cpy_default_hostname[32];
         uint8_t mac[MAC_ADDRESS_LENGTH];
         esp_wifi_get_mac(WIFI_IF_STA, mac);
-        snprintf(cpy_default_hostname, sizeof(cpy_default_hostname), "cpy-%s-%02x%02x%02x%02x%02x%02x", CIRCUITPY_BOARD_ID + board_trim, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
-
-        const char *default_lwip_local_hostname = cpy_default_hostname;
-        ESP_ERROR_CHECK(esp_netif_set_hostname(self->netif, default_lwip_local_hostname));
+        network_format_default_hostname(cpy_default_hostname, sizeof(cpy_default_hostname), mac);
+        ESP_ERROR_CHECK(esp_netif_set_hostname(self->netif, cpy_default_hostname));
     }
 
     // set station mode to avoid the default SoftAP
     common_hal_wifi_radio_start_station(self);
     // start wifi
     common_hal_wifi_radio_set_enabled(self, true);
+}
+
+bool wifi_is_initialized(void) {
+    return wifi_inited;
+}
+
+void wifi_get_default_hostname(char *buf, size_t buf_size) {
+    if (buf_size < 18) {
+        if (buf_size > 0) {
+            buf[0] = '\0';
+        }
+        return;
+    }
+    // esp_wifi_get_mac() works only after the Wi-Fi driver starts.
+    // esp_read_mac() reads the factory MAC from the chip's one-time-programmable
+    // memory (efuse), so it works before the driver starts.
+    //
+    // With ESP-Hosted, a separate co-processor chip runs the Wi-Fi radio, and
+    // common_hal_wifi_init() uses that chip's MAC. So on those boards this
+    // hostname may differ from the one common_hal_wifi_init() sets.
+    uint8_t mac[MAC_ADDRESS_LENGTH] = {0};
+    if (esp_read_mac(mac, ESP_MAC_WIFI_STA) != ESP_OK) {
+        memset(mac, 0, sizeof(mac));
+    }
+    // Use the same length limit as common_hal_wifi_init().
+    network_format_default_hostname(buf, MIN(buf_size, 32), mac);
 }
 
 void wifi_user_reset(void) {

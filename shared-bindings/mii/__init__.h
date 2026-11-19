@@ -29,6 +29,13 @@ uint32_t mii_get_ipv4_address(void);
 // so use it promptly rather than holding onto it.
 const char *mii_get_hostname_raw(void);
 
+// Gets the hostname that common_hal_mii_ethernet_construct() gives the Ethernet
+// interface. Can be called before common_hal_mii_ethernet_construct() runs.
+// Writes the hostname to buf as a NUL-terminated string, truncated to fit in
+// buf_size bytes. If there is no default hostname, writes "". Never allocates
+// or raises.
+void mii_get_default_hostname(char *buf, size_t buf_size);
+
 // Blocks until the interface has an IPv4 address (DHCP lease or static), or
 // 20s pass, or a hard interrupt arrives. Returns immediately when the
 // interface cannot ever get one (down, disabled or no link).

@@ -18,7 +18,7 @@ extern SPI_TypeDef *mcu_spi_banks[4];
 extern const mcu_periph_obj_t mcu_spi_sck_list[9];
 extern const mcu_periph_obj_t mcu_spi_mosi_list[9];
 extern const mcu_periph_obj_t mcu_spi_miso_list[8];
-extern const mcu_periph_obj_t mcu_spi_nss_list[9];
+extern const mcu_periph_obj_t mcu_spi_nss_list[8];
 
 // UART
 extern USART_TypeDef *mcu_uart_banks[MAX_UART];

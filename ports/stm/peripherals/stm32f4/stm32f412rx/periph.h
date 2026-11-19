@@ -33,3 +33,8 @@ extern const mcu_periph_obj_t mcu_uart_rx_list[8];
 #define TIM_PIN_ARRAY_LEN 41
 extern TIM_TypeDef *mcu_tim_banks[TIM_BANK_ARRAY_LEN];
 extern const mcu_tim_pin_obj_t mcu_tim_pin_list[TIM_PIN_ARRAY_LEN];
+
+// FSMC
+extern const mcu_periph_obj_t mcu_fsmc_data_list[8];
+extern const mcu_periph_obj_t mcu_fsmc_nwe_list[2];
+extern const mcu_periph_obj_t mcu_fsmc_noe_list[1];
