@@ -266,7 +266,7 @@ def build_stubs(circuitpython_dir, circuitpython_org_dir, export_dir, version="8
         circuitpython_dir = circuitpython_dir + "/"
 
     sys.path.append(circuitpython_dir)
-    from docs import shared_bindings_matrix
+    from tools import shared_bindings_matrix
 
     if not os.path.exists(export_dir):
         os.makedirs(export_dir)

@@ -22,9 +22,6 @@
 #
 
 import re
-import sys
-
-sys.path.append("../docs")
 
 from shared_bindings_matrix import support_matrix_by_board
 

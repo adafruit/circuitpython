@@ -35,7 +35,6 @@ tools_dir = pathlib.Path(__file__).resolve().parent
 top_dir = tools_dir.parent
 
 sys.path.insert(0, str(tools_dir / "adabot"))
-sys.path.insert(0, str(top_dir / "docs"))
 
 import build_board_info
 from shared_bindings_matrix import (
@@ -52,6 +51,7 @@ IGNORE_BOARD = {
     "tools/ci_changes_per_commit.py",
     "tools/ci_check_duplicate_usb_vid_pid.py",
     "tools/ci_set_matrix.py",
+    "tools/shared_bindings_matrix.py",
     ".github/workflows/run-tests.yml",
     ".github/workflows/run-zephyr-tests.yml",
     ".github/workflows/build-board-custom.yml",
@@ -67,7 +67,7 @@ IGNORE_BOARD = {
 
 PATTERN_DOCS = (
     r"^(?:\.github|docs|extmod\/ulab)|"
-    r"^(?:(?:ports\/\w+\/bindings|shared-bindings)\S+\.c|tools\/extract_pyi\.py|\.readthedocs\.yml|conf\.py|requirements-doc\.txt)$|"
+    r"^(?:(?:ports\/\w+\/bindings|shared-bindings)\S+\.c|tools\/extract_pyi\.py|tools\/shared_bindings_matrix\.py|\.readthedocs\.yml|conf\.py|requirements-doc\.txt)$|"
     r"(?:-stubs|\.(?:md|MD|mk|rst|RST)|/Makefile)$"
 )
 
@@ -78,7 +78,7 @@ GITHUB_MATRIX_LIMIT = 256
 # (this port has none), documentation, the unix test suite or the autogen PR workflow.
 PATTERN_ZEPHYR_TESTS_IGNORE = re.compile(
     r"^(?:docs|frozen|locale|tests)/|^ports/(?!zephyr-cp/)"
-    r"|^\.github/workflows/zephyr-autogen-pr\.yml$"
+    r"|^\.github/workflows/zephyr-autogen-pr\.yml$|^tools/shared_bindings_matrix\.py$"
 )
 
 # Files that can't affect the unix coverage tests: other ports and the documentation.
