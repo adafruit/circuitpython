@@ -97,6 +97,7 @@ REVERSE_DEPENDENCIES = {
         "audiofreeverb",
         "audiomixer",
         "audiomp3",
+        "audiotap",
         "synthio",
     ],
     "busio": ["fourwire", "i2cdisplaybus", "sdcardio", "sharpdisplay"],
