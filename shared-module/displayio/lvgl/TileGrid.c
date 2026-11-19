@@ -31,8 +31,6 @@
 
 #include "shared-bindings/displayio/TileGrid.h"
 
-#include <string.h>
-
 #include "py/gc.h"
 #include "py/objtype.h"
 #include "py/runtime.h"
@@ -168,8 +166,8 @@ static uint8_t _source_index(const uint8_t *row, uint32_t x, uint8_t bpp) {
     return (row[bit >> 3] >> (8 - bpp - (bit & 7))) & ((1u << bpp) - 1);
 }
 
-// Whether a tile holds only palette entry 0. A compose buffer is cleared to entry 0 (black or
-// transparent), so only such a cell can be left out of the compose draw entirely.
+// Whether a tile holds only palette entry 0. A compose buffer is cleared to zero, so when entry 0
+// matches that value, such a cell can be left out of the compose draw entirely.
 static bool _tile_is_blank(displayio_tilegrid_t *self, uint16_t tile_index) {
     const lv_image_dsc_t *src = self->lv_src;
     if (src == NULL || src->data == NULL) {
@@ -822,11 +820,10 @@ static void _cell_display_area(displayio_tilegrid_t *self, uint32_t x, uint32_t 
 // or dispatch each task, so drawing a long queue at once takes time with the square of its length.
 #define DISPLAYIO_LVGL_COMPOSE_BATCH 64
 
-// Clear the cells about to be composed to transparent (ARGB8888) or black (RGB565):
-// lv_draw_image() writes nothing where the source is transparent, which is exactly where the hole
-// has to stay. Each lv_draw_buf_clear() call costs about the same for many cells as for one (on
-// ESP it writes back whole buffer rows), so clear the whole buffer on a full compose, and each run
-// of changed cells in a tile row otherwise.
+// Zero the cells about to be composed: transparent for ARGB8888, black for RGB565.
+// lv_draw_image() leaves transparent source pixels untouched, so they keep the cleared value.
+// A full compose clears the whole buffer; otherwise each run of changed cells in a tile row is
+// cleared with one lv_draw_buf_clear().
 static void _clear_changed_cells(displayio_tilegrid_t *self, bool full) {
     if (full) {
         lv_draw_buf_clear(self->lv_buf, NULL);
