@@ -234,7 +234,7 @@ Whether to configure the display at board initialization time, one of the follow
     CIRCUITPY_PICODVI_ENABLE="never"
 
 A display configured in this manner is available at ``supervisor.runtime.display``
-until it is released by ``displayio.release_displays()``. It does not appear at
+until it is released by ``supervisor.runtime.display.deinit()``. It does not appear at
 ``board.DISPLAY``.
 
 `Adafruit Feather RP2350 <https://circuitpython.org/board/adafruit_feather_rp2350/>`_
@@ -284,7 +284,7 @@ next to a 640x480 display. Set this to false to keep that RAM free, for
 example on a monitor without speakers.
 
 ``supervisor.runtime.audio`` is a :py:class:`picodvi.AudioOut`. It becomes ``None`` when
-the display is released by ``displayio.release_displays()`` or when it is
+the display is released, such as by ``supervisor.runtime.display.deinit()``, or when it is
 deinitialized, and stays ``None`` until the next reset.
 
 `Adafruit Feather RP2350 <https://circuitpython.org/board/adafruit_feather_rp2350/>`_
