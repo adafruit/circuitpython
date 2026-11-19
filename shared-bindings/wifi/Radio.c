@@ -203,8 +203,15 @@ MP_PROPERTY_GETSET(wifi_radio_tx_power_obj,
     (mp_obj_t)&wifi_radio_get_tx_power_obj,
     (mp_obj_t)&wifi_radio_set_tx_power_obj);
 
+// TODO: Remove the ESP-Hosted exception below when the upstream bug is fixed.
+//   https://github.com/espressif/esp-idf/issues/16096
+//   https://github.com/adafruit/circuitpython/issues/11682
 //|     power_management: PowerManagement
 //|     """Wifi power management setting. See `wifi.PowerManagement`. The default is `wifi.PowerManagement.MIN`.
+//|
+//|     On Espressif boards whose WiFi runs on an ESP-Hosted co-processor, such as the Metro ESP32-P4,
+//|     the default is `wifi.PowerManagement.NONE`. This is a temporary workaround for a bug in power
+//|     save mode; see `#11682 <https://github.com/adafruit/circuitpython/issues/11682>`_.
 //|     """
 static mp_obj_t wifi_radio_get_power_management(mp_obj_t self_in) {
     wifi_radio_obj_t *self = MP_OBJ_TO_PTR(self_in);
