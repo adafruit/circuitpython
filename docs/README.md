@@ -23,6 +23,18 @@ In `circuitpython/`, build the docs:
 
 You'll find the index page at `_build/html/index.html`.
 
+### Building the PDF
+
+The PDF build also needs LaTeX and `rsvg-convert`. On Debian or Ubuntu, install them with:
+
+    sudo apt install latexmk librsvg2-bin texlive-fonts-recommended texlive-latex-recommended texlive-latex-extra
+
+Then build the PDF:
+
+    make latexpdf
+
+You'll find it at `_build/latex/CircuitPython.pdf`.
+
 ### More flexibility
 
 Running `make` by itself will list out the multiple doc generating commands available.
@@ -38,8 +50,9 @@ All commands will, by default, run with `-E` (forces a rebuild from scratch of d
     # will turn OFF the force rebuild and make it doubly verbose when running
     make html FORCE= VERBOSE="-v -v"
 
-You can also pass other options to sphinx by using `SPHINXOPTS`.
+You can also pass other options to sphinx by using `SPHINXOPTS`. It replaces the default
+options, `-W --keep-going -j auto`, so include any of those you still want:
 
-    make html SPHINXOPTS="-T"
+    make html SPHINXOPTS="-W --keep-going -j auto -T"
 
 For more flexibility and customization, take a look at the Makefile for all variables you can pass in and overwrite.
