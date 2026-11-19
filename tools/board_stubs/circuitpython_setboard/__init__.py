@@ -79,7 +79,7 @@ def set_board():
             #
 
             lines = get_doc_or_exit(board).split("\n")
-            port = lines[2].split("-")[1].split(":")[1].strip()
+            port = lines[2].split(":", 1)[1].strip()
 
             if looking_for not in board.name.lower() and looking_for not in port.lower():
                 continue
