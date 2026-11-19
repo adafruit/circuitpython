@@ -7,6 +7,7 @@
 #include "shared-bindings/epaperdisplay/EPaperDisplay.h"
 
 #include "py/runtime.h"
+#include "shared/runtime/interrupt_char.h"
 #include "shared-bindings/time/__init__.h"
 #include "shared-module/displayio/__init__.h"
 #include "shared-module/epaperdisplay/lag_drive.h"
