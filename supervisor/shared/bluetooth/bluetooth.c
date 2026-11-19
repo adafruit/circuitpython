@@ -353,7 +353,12 @@ static mp_obj_t guard_characteristic_list_items[1];
 void supervisor_start_bluetooth(void) {
     #if BLE_WORKFLOW
 
-    if (workflow_state != WORKFLOW_ENABLED || ble_started) {
+    if (ble_started) {
+        // Called on a VM reset too: run a file command that waited for the VM to stop.
+        supervisor_bluetooth_background();
+        return;
+    }
+    if (workflow_state != WORKFLOW_ENABLED) {
         return;
     }
 

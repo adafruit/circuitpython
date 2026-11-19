@@ -133,7 +133,7 @@ static void refresh_palette(displayio_ondiskbitmap_t *self) {
 }
 
 #if CIRCUITPY_STORAGE_MAP_FILE
-static void add_run(void *self_in, const uint8_t *addr, size_t len) {
+static void add_run(void *self_in, const uint8_t *addr, size_t len, uint32_t block) {
     displayio_ondiskbitmap_t *self = self_in;
     if (self->map_count < MP_ARRAY_SIZE(self->map)) {
         self->map[self->map_count].addr = addr;

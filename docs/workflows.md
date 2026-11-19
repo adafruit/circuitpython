@@ -289,7 +289,7 @@ Deletes the directory and all of its contents.
 * `401 Unauthorized` - Incorrect password
 * `403 Forbidden` - No `CIRCUITPY_WEB_API_PASSWORD` set
 * `404 Not Found` - No directory
-* `409 Conflict` - USB is active and preventing file system modification
+* `409 Conflict` - USB is active and preventing file system modification, or a file in it is mapped in the REPL
 
 Example:
 
@@ -314,7 +314,7 @@ Returns:
 * `401 Unauthorized` - Incorrect password
 * `403 Forbidden` - No `CIRCUITPY_WEB_API_PASSWORD` set
 * `404 Not Found` - Missing parent directory
-* `409 Conflict` - USB is active and preventing file system modification
+* `409 Conflict` - USB is active and preventing file system modification, or the file is mapped in the REPL
 * `413 Payload Too Large` - `Expect` header not sent and file is too large
 * `417 Expectation Failed` - `Expect` header sent and file is too large
 * `500 Server Error` - Other, unhandled error
@@ -377,7 +377,7 @@ Deletes the file.
 * `401 Unauthorized` - Incorrect password
 * `403 Forbidden` - No `CIRCUITPY_WEB_API_PASSWORD` set
 * `404 Not Found` - File not found
-* `409 Conflict` - USB is active and preventing file system modification
+* `409 Conflict` - USB is active and preventing file system modification, or the file is mapped in the REPL
 
 Example:
 
