@@ -324,3 +324,5 @@ install: $(BUILD)/$(PROG)
 
 uninstall:
 	-rm $(BINDIR)/$(PROG)
+
+# TEST: unix-only change (drop before review)
