@@ -493,7 +493,7 @@ bool common_hal_framebufferio_framebufferdisplay_refresh(framebufferio_framebuff
     }
     self->first_manual_refresh = false;
     if (self->lv_display != NULL) {
-        // Yield like the legacy framebufferio so audio can refill during a long render.
+        // Yield so audio can refill during a long render.
         displayio_lvgl_render_now(self->lv_display, true);
     }
     self->core.last_refresh = supervisor_ticks_ms64();

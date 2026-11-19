@@ -70,9 +70,10 @@ bool displayio_lvgl_auto_refresh(void);
 
 // Render displays that can't flush from the LVGL task (currently BusDisplay when the port asks
 // for it). Called on the CircuitPython thread by the port's proxy. With `yield`, the render runs
-// background tasks between steps, so the caller must be in a background callback that has called
-// background_callback_allow(). Returns false, without rendering, when another render on this
-// thread is already in progress; the caller should try again later.
+// background tasks between steps, so background callbacks must not be prevented at the call (a
+// background callback calls background_callback_allow() first). Returns false, without
+// rendering, when another render on this thread is already in progress; the caller should try
+// again later.
 bool displayio_lvgl_refresh_unsafe_displays(bool yield);
 
 // Render the framebuffer displays that pace themselves from a frame boundary. Called on the

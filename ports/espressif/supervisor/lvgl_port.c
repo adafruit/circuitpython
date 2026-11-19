@@ -34,8 +34,7 @@ static uint32_t lvgl_frame_seen = 0;
 
 // Display auto-refreshes render on the CircuitPython thread, from these background callbacks.
 // BusDisplay's LVGL refresh timer is proxied to the first; a framebuffer frame boundary queues the
-// second. Like the legacy framebufferio, they allow other callbacks (audio refill) to run while
-// they render.
+// second. They allow other callbacks (audio refill) to run while they render.
 static background_callback_t lvgl_cp_refresh_cb;
 static background_callback_t lvgl_cp_paced_refresh_cb;
 
@@ -171,6 +170,7 @@ static void lvgl_cp_paced_refresh(void *unused) {
     bool rendered = displayio_lvgl_refresh_paced_displays(true);
     background_callback_prevent();
     if (!rendered) {
+        // Another render was running background tasks. Try again after it.
         background_callback_add(&lvgl_cp_paced_refresh_cb, lvgl_cp_paced_refresh, NULL);
     }
 }
@@ -203,7 +203,9 @@ IRAM_ATTR void displayio_lvgl_port_frame_boundary(void) {
         return;
     }
     // UVC invokes its frame callback from a background task on the CircuitPython thread. Render
-    // directly there, before the frame is converted; there is no task handoff.
+    // directly there, before the frame is converted; there is no task handoff. No yield: other
+    // callbacks, including this one, must not run before the frame is converted. If another render
+    // is in progress this frame is skipped, and the next frame boundary renders.
     displayio_lvgl_refresh_paced_displays(false);
 }
 
@@ -266,7 +268,7 @@ void displayio_lvgl_port_init(void) {
 
     // The task must run above the CircuitPython task so a tight Python loop can't starve
     // rendering. Pin it to the CircuitPython core as well: background_callback_add() (used by the
-    // BusDisplay proxy) is interrupt-safe on a single core, and sharing the core keeps it from
+    // BusDisplay proxy and the frame boundary) is interrupt-safe on a single core, and sharing the core keeps it from
     // racing the CircuitPython thread's callback list. A recursive mutex (priority inheritance)
     // keeps that from blocking the main task for long. 16 KB covers the draw paths plus LVGL's
     // internal compositor state; 8 KB overflowed on complex screens.
