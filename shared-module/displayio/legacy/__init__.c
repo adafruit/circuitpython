@@ -133,7 +133,7 @@ static mp_obj_t get_display_bus(int display_number) {
     #endif
     #if CIRCUITPY_EPAPERDISPLAY
     } else if (display->display_base.type == &epaperdisplay_epaperdisplay_type) {
-        return display->epaper_display.bus.bus;
+        return display->epaper_display.epaper.bus.bus;
     #endif
     #if CIRCUITPY_FRAMEBUFFERIO
     } else if (display->display_base.type == &framebufferio_framebufferdisplay_type) {

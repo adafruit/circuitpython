@@ -835,6 +835,7 @@ SRC_SHARED_MODULE_ALL = \
 	dotclockframebuffer/__init__.c \
 	emmcio/__init__.c \
 	epaperdisplay/__init__.c \
+	epaperdisplay/EPaperDisplay.c \
 	i2cioexpander/IOExpander.c \
 	i2cioexpander/IOPin.c \
 	i2cioexpander/__init__.c \
@@ -1221,6 +1222,7 @@ $(filter $(SRC_PATTERNS), \
 	displayio/bus_core.c \
 	displayio/display_core.c \
 	displayio/area.c \
+	epaperdisplay/epaper_core.c \
 	epaperdisplay/lag_drive.c \
 	usb/utf16le.c \
 )
