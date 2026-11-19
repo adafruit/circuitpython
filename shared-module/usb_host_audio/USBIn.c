@@ -46,27 +46,65 @@
 // one streaming object at most. TinyUSB copies the transfer and calls back with
 // only user_data, which carries _seq so that a completion which was already on
 // its way when its stream ended is recognised and dropped.
+// Only the VM changes these, and the completion callback reads them.
 static usb_host_audio_usbin_obj_t *_active;
 static uintptr_t _seq;
 
+// The completion callback runs in tuh_task(), which may be a task of its own
+// (CIRCUITPY_USB_HOST_TASK). It holds this lock while it uses _active and
+// queues the next transfer, and the VM holds it while it changes _active or
+// _seq or aborts the transfer. Then a callback never queues a transfer, or
+// writes the ring, of a stream that the VM ended and is freeing. Without an
+// RTOS the callback runs on the VM, and the lock is nothing. The VM never
+// holds it while it waits for TinyUSB, which would wait for the callback.
+#if OSAL_MUTEX_REQUIRED
+static osal_mutex_def_t _lock_def;
+static osal_mutex_t _lock;
+#else
+#define _lock NULL
+#endif
+
+static void _lock_take(void) {
+    (void)osal_mutex_lock(_lock, OSAL_TIMEOUT_WAIT_FOREVER);
+}
+
+static void _lock_give(void) {
+    (void)osal_mutex_unlock(_lock);
+}
+
+// The PCM ring is written by the completion callback and read by the VM, each
+// moving only its own index (see USBIn.h). An index runs from 0 to
+// 2 * ring_frames - 1.
+
+static uint32_t _ring_index_add(usb_host_audio_usbin_obj_t *self, uint32_t index, uint32_t frames) {
+    index += frames;
+    return index >= 2 * self->ring_frames ? index - 2 * self->ring_frames : index;
+}
+
+static uint32_t _ring_frames_between(usb_host_audio_usbin_obj_t *self, uint32_t from, uint32_t to) {
+    return to >= from ? to - from : to + 2 * self->ring_frames - from;
+}
+
+static uint8_t *_ring_at(usb_host_audio_usbin_obj_t *self, uint32_t index) {
+    return self->ring + (index >= self->ring_frames ? index - self->ring_frames : index) * self->frame_bytes;
+}
+
+// Called by the completion callback only.
 static void _ring_append(usb_host_audio_usbin_obj_t *self, const uint8_t *data, uint32_t frames) {
-    if (frames > self->ring_frames) {
-        data += (frames - self->ring_frames) * self->wire_frame_bytes;
-        frames = self->ring_frames;
+    uint32_t wr = self->ring_wr;
+    // The VM has read what it moved its index past.
+    uint32_t rd = __atomic_load_n(&self->ring_rd, __ATOMIC_ACQUIRE);
+    uint32_t room = self->ring_frames - _ring_frames_between(self, rd, wr);
+    if (frames > room) {
+        // Nothing is reading fast enough. The reader owns the oldest audio, so
+        // keep that and drop what doesn't fit. The reader skips ahead.
+        frames = room;
+        self->dropped++;
     }
-    if (self->ring_count + frames > self->ring_frames) {
-        // Nothing is reading fast enough. Keep the newest audio.
-        uint32_t excess = self->ring_count + frames - self->ring_frames;
-        self->ring_head = (self->ring_head + excess) % self->ring_frames;
-        self->ring_count -= excess;
-        self->overflowed = true;
-        self->overflow = true;
-    }
-    uint32_t tail = (self->ring_head + self->ring_count) % self->ring_frames;
-    self->ring_count += frames;
     while (frames > 0) {
-        uint32_t run = MIN(frames, self->ring_frames - tail);
-        uint8_t *dest = self->ring + tail * self->frame_bytes;
+        uint32_t offset = wr >= self->ring_frames ? wr - self->ring_frames : wr;
+        uint32_t run = MIN(frames, self->ring_frames - offset);
+        uint8_t *dest = _ring_at(self, wr);
         if (self->bit_depth > 16) {
             // Keep the top two bytes of each little endian 3 or 4 byte sample.
             const uint32_t sample_bytes = self->bit_depth / 8;
@@ -79,23 +117,42 @@ static void _ring_append(usb_host_audio_usbin_obj_t *self, const uint8_t *data, 
             memcpy(dest, data, run * self->frame_bytes);
             data += run * self->frame_bytes;
         }
-        tail = (tail + run) % self->ring_frames;
+        wr = _ring_index_add(self, wr, run);
         frames -= run;
     }
+    // Publish the frames after they are in the ring.
+    __atomic_store_n(&self->ring_wr, wr, __ATOMIC_RELEASE);
 }
 
+// The frames waiting in the ring. VM only.
+static uint32_t _ring_count(usb_host_audio_usbin_obj_t *self) {
+    uint32_t wr = __atomic_load_n(&self->ring_wr, __ATOMIC_ACQUIRE);
+    return _ring_frames_between(self, self->ring_rd, wr);
+}
+
+// Takes frames, which must be waiting, out of the ring into dest, or drops them
+// when dest is NULL. VM only.
 static void _ring_take(usb_host_audio_usbin_obj_t *self, uint8_t *dest, uint32_t frames) {
-    uint32_t first = MIN(frames, self->ring_frames - self->ring_head);
+    uint32_t rd = self->ring_rd;
     if (dest != NULL) {
-        memcpy(dest, self->ring + self->ring_head * self->frame_bytes, first * self->frame_bytes);
+        uint32_t offset = rd >= self->ring_frames ? rd - self->ring_frames : rd;
+        uint32_t first = MIN(frames, self->ring_frames - offset);
+        memcpy(dest, _ring_at(self, rd), first * self->frame_bytes);
         memcpy(dest + first * self->frame_bytes, self->ring, (frames - first) * self->frame_bytes);
     }
-    self->ring_head = (self->ring_head + frames) % self->ring_frames;
-    self->ring_count -= frames;
+    // The callback may write over the frames once the index is past them.
+    __atomic_store_n(&self->ring_rd, _ring_index_add(self, rd, frames), __ATOMIC_RELEASE);
+}
+
+// Drops all the frames waiting.
+static void _ring_drop_all(usb_host_audio_usbin_obj_t *self) {
+    _ring_take(self, NULL, _ring_count(self));
 }
 
 static void _transfer_done_cb(tuh_xfer_t *xfer);
+static void _stream_done(usb_host_audio_usbin_obj_t *self, tuh_xfer_t *xfer);
 
+// Called with the lock held.
 static bool _queue_transfer(usb_host_audio_usbin_obj_t *self) {
     #if !CIRCUITPY_USB_HOST_ISO_RECORDS
     // The transfer receives the packet of the endpoint's next service interval.
@@ -104,7 +161,7 @@ static bool _queue_transfer(usb_host_audio_usbin_obj_t *self) {
     if (self->frame_known) {
         uint16_t elapsed = (frame - self->queued_frame) & USBIN_FRAME_MASK;
         if (elapsed > self->frame_interval) {
-            self->overflow = true;
+            self->lost++;
         }
     }
     self->queued_frame = frame;
@@ -122,13 +179,23 @@ static bool _queue_transfer(usb_host_audio_usbin_obj_t *self) {
     return self->streaming;
 }
 
-// Runs inside tuh_task(), so as a background callback on core 0.
+// Runs inside tuh_task(): a background callback on the VM, or a task of its
+// own (CIRCUITPY_USB_HOST_TASK) that runs while the VM is busy.
 static void _transfer_done_cb(tuh_xfer_t *xfer) {
+    _lock_take();
     usb_host_audio_usbin_obj_t *self = _active;
     if (self == NULL || xfer->user_data != _seq) {
         // Late completion of a stream that already ended.
+        _lock_give();
         return;
     }
+    _stream_done(self, xfer);
+    _lock_give();
+}
+
+// Stores the audio of a completed transfer and queues the next one. Called
+// with the lock held.
+static void _stream_done(usb_host_audio_usbin_obj_t *self, tuh_xfer_t *xfer) {
     #if CIRCUITPY_USB_HOST_ISO_RECORDS
     if (xfer->result != XFER_RESULT_SUCCESS) {
         self->streaming = false;
@@ -143,7 +210,7 @@ static void _transfer_done_cb(tuh_xfer_t *xfer) {
         uint32_t record_len = buf[pos] | (buf[pos + 1] << 8);
         pos += 2;
         if (record_len == USBIN_LOST_RECORD) {
-            self->overflow = true;
+            self->lost++;
             continue;
         }
         record_len = MIN(record_len, len - pos);
@@ -160,7 +227,7 @@ static void _transfer_done_cb(tuh_xfer_t *xfer) {
         // A packet that was damaged or not received in its frame. Isochronous
         // packets are not retried.
         self->failures++;
-        self->overflow = true;
+        self->lost++;
     } else {
         self->streaming = false;
         return;
@@ -244,12 +311,19 @@ void common_hal_usb_host_audio_usbin_construct(usb_host_audio_usbin_obj_t *self,
     self->output_buffer = NULL;
     self->output_index = 0;
     self->ring_frames = buffer_frames * USBIN_RING_BUFFERS;
-    self->ring_head = 0;
-    self->ring_count = 0;
+    self->ring_wr = 0;
+    self->ring_rd = 0;
     self->primed = false;
-    self->overflowed = false;
-    self->overflow = false;
+    self->dropped = 0;
+    self->lost = 0;
+    self->dropped_skipped = 0;
+    self->overflow_reported = 0;
     self->streaming = false;
+    #if OSAL_MUTEX_REQUIRED
+    if (_lock == NULL) {
+        _lock = osal_mutex_create(&_lock_def);
+    }
+    #endif
 
     if (!common_hal_usb_core_device_open_endpoint(device, endpoint)) {
         mp_raise_usb_core_USBError(NULL);
@@ -298,9 +372,12 @@ void common_hal_usb_host_audio_usbin_construct(usb_host_audio_usbin_obj_t *self,
         m_malloc_fail(ring_bytes + self->xfer_buffer_len);
     }
 
+    _lock_take();
     _seq++;
     _active = self;
-    if (!_queue_transfer(self)) {
+    bool queued = _queue_transfer(self);
+    _lock_give();
+    if (!queued) {
         common_hal_usb_host_audio_usbin_deinit(self);
         mp_raise_usb_core_USBError(NULL);
     }
@@ -321,6 +398,7 @@ void common_hal_usb_host_audio_usbin_deinit(usb_host_audio_usbin_obj_t *self) {
         _stop_device(self);
     }
     if (_active == self) {
+        _lock_take();
         if (self->streaming) {
             // It fails when the device is gone, and then its endpoints are
             // closed already.
@@ -332,6 +410,7 @@ void common_hal_usb_host_audio_usbin_deinit(usb_host_audio_usbin_obj_t *self) {
         // Drop a completion that is queued already.
         _seq++;
         _active = NULL;
+        _lock_give();
         #if CIRCUITPY_USB_HOST_ISO_RECORDS
         // Whatever ended the stream also stopped the host controller writing
         // to its ring, and once the abort returned it no longer writes the
@@ -353,7 +432,6 @@ void common_hal_usb_host_audio_usbin_deinit(usb_host_audio_usbin_obj_t *self) {
     self->ring = NULL;
     self->output_buffer = NULL;
     self->device = NULL;
-    self->ring_count = 0;
 }
 
 void usb_host_audio_reset(void) {
@@ -367,6 +445,7 @@ void usb_host_audio_stop_device(uint8_t device_address) {
     if (self == NULL || self->device_address != device_address) {
         return;
     }
+    _lock_take();
     if (self->streaming) {
         // The host controller stops polling the endpoint when it sends the
         // request. A transfer queued after that would start polling it again,
@@ -379,20 +458,18 @@ void usb_host_audio_stop_device(uint8_t device_address) {
     }
     // Drop a completion that is queued already, so it queues nothing.
     _seq++;
+    _lock_give();
 }
 
 uint32_t common_hal_usb_host_audio_usbin_record_to_buffer(usb_host_audio_usbin_obj_t *self,
     uint8_t *buffer, uint32_t length) {
     uint32_t frames = length / self->base.channel_count;
     uint32_t done = 0;
-    if (self->overflowed) {
-        // There is a gap behind the buffered audio. Record what comes after it.
-        _ring_take(self, NULL, self->ring_count);
-        self->overflowed = false;
-    }
+    // A full ring keeps the older audio, so what is waiting comes before any
+    // gap and is recorded too.
     uint32_t last_audio = supervisor_ticks_ms32();
     while (done < frames) {
-        uint32_t take = MIN(frames - done, self->ring_count);
+        uint32_t take = MIN(frames - done, _ring_count(self));
         if (take > 0) {
             _ring_take(self, buffer + done * self->frame_bytes, take);
             done += take;
@@ -403,7 +480,7 @@ uint32_t common_hal_usb_host_audio_usbin_record_to_buffer(usb_host_audio_usbin_o
             supervisor_ticks_ms32() - last_audio > USBIN_RECORD_TIMEOUT_MS) {
             break;
         }
-        // The background tasks include TinyUSB, which fills the ring.
+        // TinyUSB fills the ring, in the background tasks or in a task of its own.
         RUN_BACKGROUND_TASKS;
     }
     return done * self->base.channel_count;
@@ -418,17 +495,21 @@ bool common_hal_usb_host_audio_usbin_get_samples_signed(usb_host_audio_usbin_obj
 }
 
 bool common_hal_usb_host_audio_usbin_get_streaming(usb_host_audio_usbin_obj_t *self) {
-    // Closing the endpoint, as usb.core.Device.set_configuration() does, ends
-    // the transfer without a completion.
-    if (self->streaming && !usbh_edpt_busy(self->device_address, self->endpoint)) {
+    // Unplugging the device ends the transfer without a completion. (usb.core
+    // stops the stream itself before it closes the endpoint.) The endpoint
+    // isn't busy for a moment after each completion, until the callback queues
+    // the next transfer, which a callback in a task of its own may be doing
+    // right now, so that doesn't tell.
+    if (self->streaming && !tuh_mounted(self->device_address)) {
         self->streaming = false;
     }
     return self->streaming;
 }
 
 bool common_hal_usb_host_audio_usbin_get_overflow(usb_host_audio_usbin_obj_t *self) {
-    bool overflow = self->overflow;
-    self->overflow = false;
+    uint32_t count = self->dropped + self->lost;
+    bool overflow = count != self->overflow_reported;
+    self->overflow_reported = count;
     return overflow;
 }
 
@@ -451,10 +532,10 @@ void common_hal_usb_host_audio_usbin_reset_buffer(usb_host_audio_usbin_obj_t *se
     self->output_index = 0;
     // Start on live audio rather than on what piled up while nothing played.
     // Dropping that is not an overflow.
-    _ring_take(self, NULL, self->ring_count);
+    _ring_drop_all(self);
     self->primed = false;
-    self->overflowed = false;
-    self->overflow = false;
+    self->dropped_skipped = self->dropped;
+    self->overflow_reported = self->dropped + self->lost;
 }
 
 static void _fill_silence(usb_host_audio_usbin_obj_t *self, uint8_t *buffer, uint32_t bytes) {
@@ -525,20 +606,23 @@ audioio_get_buffer_result_t common_hal_usb_host_audio_usbin_get_buffer(
     self->output_index = 1 - self->output_index;
 
     uint32_t target = self->buffer_frames * USBIN_TARGET_BUFFERS;
-    if (self->overflowed) {
+    uint32_t count = _ring_count(self);
+    uint32_t dropped = self->dropped;
+    if (dropped != self->dropped_skipped) {
         // The consumer stalled or runs slower than the microphone. Skip ahead
         // so that the latency stays bounded.
-        self->overflowed = false;
-        if (self->ring_count > target) {
-            _ring_take(self, NULL, self->ring_count - target);
+        self->dropped_skipped = dropped;
+        if (count > target) {
+            _ring_take(self, NULL, count - target);
+            count = target;
         }
     }
-    if (!self->primed && self->ring_count >= target) {
+    if (!self->primed && count >= target) {
         self->primed = true;
-        self->level = self->ring_count << USBIN_LEVEL_SHIFT;
+        self->level = count << USBIN_LEVEL_SHIFT;
         self->drift = 0;
     }
-    if (self->primed && self->ring_count >= self->buffer_frames) {
+    if (self->primed && count >= self->buffer_frames) {
         // The microphone's clock and the consumer's drift apart, which shows
         // as a slow change of how much audio is waiting. The count at any one
         // call depends on when both sides were last serviced, so follow its
@@ -547,12 +631,12 @@ audioio_get_buffer_result_t common_hal_usb_host_audio_usbin_get_buffer(
         // the differences says when. That spreads the corrections evenly,
         // where correcting only beyond a threshold would bunch them up into
         // an audible wobble of the pitch.
-        self->level += (int32_t)self->ring_count - (int32_t)(self->level >> USBIN_LEVEL_SHIFT);
+        self->level += (int32_t)count - (int32_t)(self->level >> USBIN_LEVEL_SHIFT);
         const int32_t every = self->buffer_frames;
         self->drift += (int32_t)(self->level >> USBIN_LEVEL_SHIFT) - (int32_t)target;
         self->drift = MAX(-2 * every, MIN(2 * every, self->drift));
         uint32_t take = self->buffer_frames;
-        if (self->drift >= every && self->ring_count > take) {
+        if (self->drift >= every && count > take) {
             take++;
             self->drift -= every;
         } else if (self->drift <= -every) {
