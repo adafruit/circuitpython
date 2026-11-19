@@ -584,7 +584,7 @@ primary_display_bus_t *allocate_display_bus_or_raise(void) {
     if (result) {
         return result;
     }
-    mp_raise_RuntimeError(MP_ERROR_TEXT("Too many display busses; forgot displayio.release_displays() ?"));
+    mp_raise_RuntimeError(MP_ERROR_TEXT("Too many display buses; deinit() unused displays"));
 }
 
 mp_obj_t common_hal_displayio_get_primary_display(void) {
