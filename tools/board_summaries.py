@@ -182,7 +182,7 @@ def write_csvs(rows=1000, present="1", absent="0"):
         "frozen": frozen_incidence_matrix_csvs(s, rows=rows, present=present, absent=absent),
         "pins": board_pins_matrix_csvs(s, rows=rows),
     }
-    for key, values in csvs:
+    for key, values in csvs.items():
         for i in range(len(values)):
             filename = f"{key}_{i}.csv"
             print(f"writing {filename}")
