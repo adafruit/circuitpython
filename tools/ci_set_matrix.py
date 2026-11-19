@@ -81,6 +81,16 @@ PATTERN_ZEPHYR_TESTS_IGNORE = re.compile(
     r"|^\.github/workflows/zephyr-autogen-pr\.yml$"
 )
 
+# Files that can't affect the unix coverage tests: other ports and the documentation.
+# The tests build nothing from ports/ except ports/unix. frozen/ is not on this list,
+# because run-tests.py puts the frozen asyncio and Ticks libraries on the module search path.
+PATTERN_TESTS_IGNORE = re.compile(r"^docs/|^ports/(?!unix/)")
+
+# Files that can't affect mpy-cross: ports, frozen libraries, the documentation and the tests.
+# The board builds don't need the mpy-cross and mpy-cross-mac jobs. They use the mpy-cross
+# that the scheduler job builds.
+PATTERN_MPY_CROSS_IGNORE = re.compile(r"^(?:docs|frozen|ports|tests)/")
+
 # Zephyr boards don't use make, so their module tables can't be computed here. Each
 # board's build writes autogen_board_info.toml next to its circuitpython.toml and that
 # file is committed; a board whose table is missing, unreadable or doesn't name a
@@ -384,6 +394,27 @@ def set_zephyr_tests(run: bool):
     set_output("zephyr-tests", run)
 
 
+# These don't check last_failed_jobs. If a tests or mpy-cross job failed on the last checked
+# commit, ci_changes_per_commit.py reports no commit, so all the pull request's changes are
+# checked again.
+def set_tests(run: bool):
+    if not run:
+        run = any(not PATTERN_TESTS_IGNORE.match(file) for file in changed_files)
+
+    # Set the step outputs
+    print("Running tests:", run)
+    set_output("tests", run)
+
+
+def set_mpy_cross(run: bool):
+    if not run:
+        run = any(not PATTERN_MPY_CROSS_IGNORE.match(file) for file in changed_files)
+
+    # Set the step outputs
+    print("Building mpy-cross:", run)
+    set_output("mpy-cross", run)
+
+
 def set_windows(run: bool):
     if not run:
         if last_failed_jobs.get("windows"):
@@ -411,6 +442,9 @@ def main():
     # Set jobs
     set_docs(run_all)
     set_zephyr_tests(run_all)
+    set_tests(run_all)
+    # Pushes upload each version's mpy-cross binaries to S3, so build them every time.
+    set_mpy_cross(run_all or os.environ.get("GITHUB_EVENT_NAME") == "push")
     set_windows(run_all)
     set_boards(run_all)
 
