@@ -31,8 +31,6 @@
 
 #include "shared-bindings/displayio/TileGrid.h"
 
-#include <string.h>
-
 #include "py/gc.h"
 #include "py/objtype.h"
 #include "py/runtime.h"
@@ -168,8 +166,8 @@ static uint8_t _source_index(const uint8_t *row, uint32_t x, uint8_t bpp) {
     return (row[bit >> 3] >> (8 - bpp - (bit & 7))) & ((1u << bpp) - 1);
 }
 
-// Whether a tile holds only palette entry 0. A compose buffer is cleared to entry 0 (black or
-// transparent), so only such a cell can be left out of the compose draw entirely.
+// Whether a tile holds only palette entry 0. A compose buffer is cleared to zero, so when entry 0
+// matches that value, such a cell can be left out of the compose draw entirely.
 static bool _tile_is_blank(displayio_tilegrid_t *self, uint16_t tile_index) {
     const lv_image_dsc_t *src = self->lv_src;
     if (src == NULL || src->data == NULL) {
@@ -822,52 +820,35 @@ static void _cell_display_area(displayio_tilegrid_t *self, uint32_t x, uint32_t 
 // or dispatch each task, so drawing a long queue at once takes time with the square of its length.
 #define DISPLAYIO_LVGL_COMPOSE_BATCH 64
 
-// Fast compose for the common case: an indexed source (I1/I2/I4/I8) with a palette. Each
-// cell is a straight palette lookup into the buffer, which is what lv_draw_image() of the cell
-// onto a cleared buffer produces, without a draw task per cell. LVGL's per-task cost is tens of
-// microseconds, which a 1500-cell text grid turns into 100+ ms per refresh.
-typedef struct {
-    bool ok;
-    bool argb;
-    uint8_t bpp;
-    uint32_t lut32[256];
-    uint16_t lut16[256];
-} _fast_compose_t;
-
-static void _fast_compose_init(displayio_tilegrid_t *self, _fast_compose_t *fc) {
-    fc->ok = false;
-    const lv_image_dsc_t *src = self->lv_src;
-    if (src != &self->lv_src_dsc || src == NULL || src->data == NULL || src->palette == NULL ||
-        !LV_COLOR_FORMAT_IS_INDEXED(src->header.cf)) {
+// Zero the cells about to be composed: transparent for ARGB8888, black for RGB565.
+// lv_draw_image() leaves transparent source pixels untouched, so they keep the cleared value.
+// A full compose clears the whole buffer; otherwise each run of changed cells in a tile row is
+// cleared with one lv_draw_buf_clear().
+static void _clear_changed_cells(displayio_tilegrid_t *self, bool full) {
+    if (full) {
+        lv_draw_buf_clear(self->lv_buf, NULL);
         return;
     }
-    lv_color_format_t dcf = self->lv_buf->header.cf;
-    if (dcf != LV_COLOR_FORMAT_ARGB8888 && dcf != LV_COLOR_FORMAT_RGB565) {
-        return;
-    }
-    fc->bpp = lv_color_format_get_bpp(src->header.cf);
-    if (fc->bpp != 1 && fc->bpp != 2 && fc->bpp != 4 && fc->bpp != 8) {
-        return;
-    }
-    fc->argb = dcf == LV_COLOR_FORMAT_ARGB8888;
-    uint32_t n = 1u << fc->bpp;
-    for (uint32_t i = 0; i < n; i++) {
-        lv_color32_t c = src->palette[i];
-        if (fc->argb) {
-            memcpy(&fc->lut32[i], &c, sizeof(uint32_t));
-        } else {
-            fc->lut16[i] = lv_color_to_u16(lv_color_make(c.red, c.green, c.blue));
+    uint32_t tiles_w = self->width_in_tiles;
+    for (uint32_t cy = 0; cy < self->height_in_tiles; cy++) {
+        uint32_t cx = 0;
+        while (cx < tiles_w) {
+            if (!_cell_is_marked(self, cy * tiles_w + cx)) {
+                cx++;
+                continue;
+            }
+            uint32_t first = cx;
+            while (cx < tiles_w && _cell_is_marked(self, cy * tiles_w + cx)) {
+                cx++;
+            }
+            lv_area_t run = {
+                .x1 = first * self->tile_width,
+                .y1 = cy * self->tile_height,
+                .x2 = cx * self->tile_width - 1,
+                .y2 = (cy + 1) * self->tile_height - 1,
+            };
+            lv_draw_buf_clear(self->lv_buf, &run);
         }
-    }
-    fc->ok = true;
-}
-
-// lv_draw_buf_clear() without its cache write-back: the ESP handler syncs whole buffer rows per
-// call, and _compose() writes back the union of the cells once at the end anyway.
-static void _clear_cell_area(lv_draw_buf_t *buf, const lv_area_t *a) {
-    uint32_t bytes = (lv_area_get_width(a) * lv_color_format_get_bpp(buf->header.cf) + 7) >> 3;
-    for (int32_t y = a->y1; y <= a->y2; y++) {
-        lv_memzero(lv_draw_buf_goto_xy(buf, a->x1, y), bytes);
     }
 }
 
@@ -907,44 +888,10 @@ static bool _compose(displayio_tilegrid_t *self, lv_area_t *dirty) {
     lv_area_t layer_clip = layer._clip_area;
     uint32_t queued = 0;
 
+    _clear_changed_cells(self, full);
+
     uint32_t cells = _cell_count(self);
     uint32_t tiles_w = self->width_in_tiles;
-    _fast_compose_t fc;
-    _fast_compose_init(self, &fc);
-    if (fc.ok) {
-        // Write the fast cells directly, one pixel line across every changed cell of a tile
-        // row at a time. The loop below then only does the bookkeeping for these cells.
-        const lv_image_dsc_t *src = self->lv_src;
-        for (uint32_t cy = 0; cy < self->height_in_tiles; cy++) {
-            for (uint16_t y = 0; y < self->tile_height; y++) {
-                uint8_t *line = lv_draw_buf_goto_xy(self->lv_buf, 0, cy * self->tile_height + y);
-                for (uint32_t cx = 0; cx < tiles_w; cx++) {
-                    uint32_t cell = cy * tiles_w + cx;
-                    if (!full && !_cell_is_marked(self, cell)) {
-                        continue;
-                    }
-                    uint16_t tile_index = _tile_index(self, cell);
-                    if (tile_index == DISPLAYIO_TILEGRID_BLANK_TILE) {
-                        continue;
-                    }
-                    uint16_t x0, y0;
-                    _tile_origin(self, tile_index, &x0, &y0);
-                    const uint8_t *row = src->data + (uint32_t)(y0 + y) * src->header.stride;
-                    if (fc.argb) {
-                        uint32_t *d = (uint32_t *)(void *)line + cx * self->tile_width;
-                        for (uint16_t x = 0; x < self->tile_width; x++) {
-                            d[x] = fc.lut32[_source_index(row, x0 + x, fc.bpp)];
-                        }
-                    } else {
-                        uint16_t *d = (uint16_t *)(void *)line + cx * self->tile_width;
-                        for (uint16_t x = 0; x < self->tile_width; x++) {
-                            d[x] = fc.lut16[_source_index(row, x0 + x, fc.bpp)];
-                        }
-                    }
-                }
-            }
-        }
-    }
     for (uint32_t cell = 0; cell < cells; cell++) {
         if (!full && !_cell_is_marked(self, cell)) {
             continue;
@@ -957,17 +904,6 @@ static bool _compose(displayio_tilegrid_t *self, lv_area_t *dirty) {
         };
         cell_area.x2 = cell_area.x1 + self->tile_width - 1;
         cell_area.y2 = cell_area.y1 + self->tile_height - 1;
-
-        // Start from transparent (ARGB8888) or black (RGB565): lv_draw_image() writes nothing
-        // where the source is transparent, which is exactly where the hole has to stay.
-        // ESP_LOGI(TAG, "clearing cell area %d,%d-%d,%d", cell_area.x1, cell_area.y1, cell_area.x2, cell_area.y2);
-        if (fc.ok && self->lv_src->data != NULL &&
-            _tile_index(self, cell) != DISPLAYIO_TILEGRID_BLANK_TILE) {
-            // pixels already written by the raster pass above
-            drawn_cell_area = cell_area;
-            goto cell_done;
-        }
-        _clear_cell_area(self->lv_buf, &cell_area);
 
         if (self->lv_src != NULL && self->lv_src->data != NULL) {
             uint16_t x0, y0;
@@ -1010,7 +946,6 @@ static bool _compose(displayio_tilegrid_t *self, lv_area_t *dirty) {
                 }
             }
         }
-    cell_done:
         _clear_cell(self, cell);
         lv_area_t cell_display;
         _cell_display_area(self, cx, cy, &cell_display);
