@@ -35,6 +35,11 @@ Then build the PDF:
 
 You'll find it at `_build/latex/CircuitPython.pdf`.
 
+`pdflatex`'s output is verbose, with thousands of inconsequential warnings, so it goes to
+`_build/latex/CircuitPython.log` instead of the console. To see it on the console anyway:
+
+    make latexpdf LATEXMKOPTS=
+
 ### More flexibility
 
 Running `make` by itself will list out the multiple doc generating commands available.
