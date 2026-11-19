@@ -265,6 +265,10 @@ static void mipidsi_display_deinit_proto(mp_obj_t self_in) {
     common_hal_mipidsi_display_deinit(self_in);
 }
 
+static void mipidsi_display_set_frame_callback(mp_obj_t self_in, framebuffer_frame_callback_t cb, void *data) {
+    common_hal_mipidsi_display_set_frame_callback(self_in, cb, data);
+}
+
 static int mipidsi_display_get_width_proto(mp_obj_t self_in) {
     return common_hal_mipidsi_display_get_width(self_in);
 }
@@ -312,6 +316,7 @@ static const framebuffer_p_t mipidsi_display_proto = {
     .get_pixels_in_byte_share_row = mipidsi_display_get_pixels_in_byte_share_row_proto,
     .swapbuffers = mipidsi_display_swapbuffers,
     .deinit = mipidsi_display_deinit_proto,
+    .set_frame_callback = mipidsi_display_set_frame_callback,
 };
 
 MP_DEFINE_CONST_OBJ_TYPE(

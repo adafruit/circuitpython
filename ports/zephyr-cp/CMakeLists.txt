@@ -16,6 +16,10 @@ set(ZEPHYR_EXTRA_MODULES
     # Kconfig-only module with defaults that must merge before Zephyr's
     # subsystem Kconfig files (see internal-modules/circuitpython-kconfig/Kconfig).
     ${CMAKE_CURRENT_SOURCE_DIR}/internal-modules/circuitpython-kconfig
+    # The same LVGL copy the Espressif port builds (lib/lvgl), instead of the one
+    # west checks out for Zephyr. It has the same module name, which zephyr_module.py
+    # resolves in favor of extra modules, so both ports build the same LVGL.
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../lib/lvgl
 )
 
 find_package(Zephyr REQUIRED HINTS ${ZEPHYR_BASE} $ENV{ZEPHYR_BASE} lib/zephyr)
@@ -66,7 +70,23 @@ set(external_project_cflags
 
 zephyr_get(TRANSLATION SYSBUILD GLOBAL)
 zephyr_get(CONFIG_LTO SYSBUILD GLOBAL)
+zephyr_get(CONFIG_LVGL SYSBUILD GLOBAL)
 zephyr_get(BOARD_ALIAS SYSBUILD GLOBAL)
+
+# displayio hands indexed bitmaps to LVGL as I1/I2/I4/I8 images. Decode them fully
+# (instead of line by line) so they can be scaled and cached. LVGL's lv_conf_internal.h
+# doesn't map a Kconfig option for this, so define it directly.
+if(CONFIG_LVGL)
+    zephyr_compile_definitions(LV_BIN_DECODER_RAM_LOAD=1)
+endif()
+
+# LVGL module (used by the displayio LVGL compositing core) passes its include paths to the
+# CircuitPython static library build explicitly, since the core build does not consume CMake
+# target information.
+set(LVGL_MODULE_DIR "")
+if(CONFIG_LVGL AND DEFINED ZEPHYR_LVGL_MODULE_DIR)
+    set(LVGL_MODULE_DIR ${ZEPHYR_LVGL_MODULE_DIR})
+endif()
 
 ExternalProject_Add(circuitpython
     DOWNLOAD_COMMAND ""
@@ -84,6 +104,8 @@ ExternalProject_Add(circuitpython
     PORT_SRC_DIR=${CMAKE_CURRENT_SOURCE_DIR}
     TRANSLATION=${TRANSLATION}
     LTO=${CONFIG_LTO}
+    LVGL=${CONFIG_LVGL}
+    LVGL_DIR=${LVGL_MODULE_DIR}
     BUILD_BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/libcircuitpython.a
     BUILD_JOB_SERVER_AWARE TRUE
     BUILD_ALWAYS TRUE

@@ -48,7 +48,7 @@ const mcu_periph_obj_t mcu_uart_tx_list[UART_TX_ARRAY_LEN] = {
 const mcu_periph_obj_t mcu_uart_rx_list[UART_RX_ARRAY_LEN] = {
     PERIPH(2, 7, &pin_PA03),
     PERIPH(1, 7, &pin_PA10),
-    PERIPH(2, 7, &pin_PA15),
+    PERIPH(2, 3, &pin_PA15),
     PERIPH(1, 7, &pin_PB07),
     PERIPH(3, 7, &pin_PB11),
 };
@@ -60,22 +60,22 @@ const mcu_tim_pin_obj_t mcu_tim_pin_list[TIM_PIN_ARRAY_LEN] = {
     TIM(2, 1, 1, &pin_PA00),
     TIM(2, 1, 2, &pin_PA01),
     TIM(2, 1, 3, &pin_PA02),
-    TIM(15, 15, 1, &pin_PA02),
+    TIM(15, 14, 1, &pin_PA02),
     TIM(2, 1, 4, &pin_PA03),
-    TIM(15, 15, 2, &pin_PA03),
+    TIM(15, 14, 2, &pin_PA03),
     TIM(2, 1, 1, &pin_PA05),
-    TIM(16, 15, 1, &pin_PA06),
+    TIM(16, 14, 1, &pin_PA06),
     TIM(1, 1, 1, &pin_PA08),
     TIM(1, 1, 2, &pin_PA09),
     TIM(1, 1, 3, &pin_PA10),
     TIM(1, 1, 4, &pin_PA11),
     TIM(2, 1, 1, &pin_PA15),
     TIM(2, 1, 2, &pin_PB03),
-    TIM(16, 15, 1, &pin_PB08),
+    TIM(16, 14, 1, &pin_PB08),
     TIM(2, 1, 3, &pin_PB10),
     TIM(2, 1, 4, &pin_PB11),
-    TIM(15, 15, 1, &pin_PB14),
-    TIM(15, 15, 2, &pin_PB15),
+    TIM(15, 14, 1, &pin_PB14),
+    TIM(15, 14, 2, &pin_PB15),
 };
 
 // CAN

@@ -12,6 +12,10 @@
 #include "bindings/espidf/__init__.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "soc/soc_caps.h"
+#if defined(SOC_CACHE_INTERNAL_MEM_VIA_L1CACHE) && SOC_CACHE_INTERNAL_MEM_VIA_L1CACHE
+#include "esp_cache.h"
+#endif
 
 #include "shared-module/audiocore/__init__.h"
 
@@ -114,7 +118,18 @@ static void i2s_fill_buffer(i2s_t *self) {
 
 static void i2s_callback_fun(void *self_in) {
     i2s_t *self = self_in;
+    #if defined(SOC_CACHE_INTERNAL_MEM_VIA_L1CACHE) && SOC_CACHE_INTERNAL_MEM_VIA_L1CACHE
+    void *buffer = self->next_buffer;
+    size_t buffer_size = self->next_buffer_size;
+    #endif
     i2s_fill_buffer(self);
+    #if defined(SOC_CACHE_INTERNAL_MEM_VIA_L1CACHE) && SOC_CACHE_INTERNAL_MEM_VIA_L1CACHE
+    // Internal RAM is cached. IDF writes the buffer back right after on_sent, before
+    // we fill it here, so write it back again or the DMA plays stale data.
+    if (buffer != NULL) {
+        esp_cache_msync(buffer, buffer_size, ESP_CACHE_MSYNC_FLAG_DIR_C2M);
+    }
+    #endif
 }
 
 static bool i2s_event_interrupt(i2s_chan_handle_t handle, i2s_event_data_t *event, void *self_in) {

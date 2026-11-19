@@ -404,6 +404,8 @@ ssl_sslsocket_obj_t *common_hal_ssl_sslcontext_wrap_socket(ssl_sslcontext_obj_t 
     }
     return o;
 cleanup:
+    o->closed = true;
+    ssl_socket_close(o);
     mbedtls_pk_free(&o->pkey);
     mbedtls_x509_crt_free(&o->cert);
     mbedtls_x509_crt_free(&o->cacert);
@@ -488,6 +490,7 @@ static void do_handshake(ssl_sslsocket_obj_t *self) {
 
 cleanup:
     self->closed = true;
+    ssl_socket_close(self);
 
     // Verification flags are only valid for CERT_VERIFY_FAILED.
     // Read them before mbedtls_ssl_free() below: they live in the ssl context's

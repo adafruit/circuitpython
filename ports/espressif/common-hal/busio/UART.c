@@ -96,6 +96,17 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     #endif
 
     for (uart_port_t num = 0; num < UART_LIMIT; num++) {
+        // The IDF log console usually runs on the ROM's UART code, so no driver is installed on
+        // it and uart_is_driver_installed() can't see it. Skip it explicitly: uart_set_pin()
+        // below would move the console onto our pins, and its log output would then share our
+        // wire, which corrupts both the logs and the data. CircuitPython builds that own the
+        // console UART (CIRCUITPY_CONSOLE_UART) allocate it through this function, so only
+        // reserve the IDF console's UART when it isn't ours.
+        #if !CIRCUITPY_CONSOLE_UART && defined(CONFIG_ESP_CONSOLE_UART) && CONFIG_ESP_CONSOLE_UART
+        if (num == (uart_port_t)CONFIG_ESP_CONSOLE_UART_NUM) {
+            continue;
+        }
+        #endif
         if (!uart_is_driver_installed(num)) {
             self->uart_num = num;
             break;

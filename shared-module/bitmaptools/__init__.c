@@ -322,7 +322,7 @@ void common_hal_bitmaptools_rotozoom(displayio_bitmap_t *self, int16_t ox, int16
     mp_float_t rowu = startu + miny * duCol;
     mp_float_t rowv = startv + miny * dvCol;
 
-    displayio_area_t dirty_area = {minx, miny, maxx + 1, maxy + 1, NULL};
+    displayio_area_t dirty_area = {minx, miny, maxx + 1, maxy + 1 };
     displayio_bitmap_set_dirty_area(self, &dirty_area);
 
     #if CIRCUITPY_BITMAPTOOLS_FAST_ROTOZOOM
@@ -374,10 +374,10 @@ void common_hal_bitmaptools_fill_region(displayio_bitmap_t *destination,
     //
     // input checks should ensure that x1 < x2 and y1 < y2 and are within the bitmap region
 
-    displayio_area_t area = { x1, y1, x2, y2, NULL };
+    displayio_area_t area = { x1, y1, x2, y2 };
     displayio_area_canon(&area);
 
-    displayio_area_t bitmap_area = { 0, 0, destination->width, destination->height, NULL };
+    displayio_area_t bitmap_area = { 0, 0, destination->width, destination->height };
     displayio_area_compute_overlap(&area, &bitmap_area, &area);
 
     // update the dirty rectangle
@@ -529,7 +529,7 @@ void common_hal_bitmaptools_boundary_fill(displayio_bitmap_t *destination,
     }
 
     // set dirty the area so displayio will draw
-    displayio_area_t area = { minx, miny, maxx + 1, maxy + 1, NULL};
+    displayio_area_t area = { minx, miny, maxx + 1, maxy + 1 };
     displayio_bitmap_set_dirty_area(destination, &area);
 
 }
@@ -637,8 +637,8 @@ void common_hal_bitmaptools_draw_line(displayio_bitmap_t *destination,
         ybb0 = y1;
         ybb1 = y0 + 1;
     }
-    displayio_area_t area = { xbb0, ybb0, xbb1, ybb1, NULL };
-    displayio_area_t bitmap_area = { 0, 0, destination->width, destination->height, NULL };
+    displayio_area_t area = { xbb0, ybb0, xbb1, ybb1 };
+    displayio_area_t bitmap_area = { 0, 0, destination->width, destination->height };
     displayio_area_compute_overlap(&area, &bitmap_area, &area);
 
     displayio_bitmap_set_dirty_area(destination, &area);
@@ -684,8 +684,8 @@ void common_hal_bitmaptools_draw_polygon(displayio_bitmap_t *destination, void *
         draw_line(destination, xprev, yprev, x0, y0, value);
     }
 
-    displayio_area_t area = { xmin, ymin, xmax + 1, ymax + 1, NULL };
-    displayio_area_t bitmap_area = { 0, 0, destination->width, destination->height, NULL };
+    displayio_area_t area = { xmin, ymin, xmax + 1, ymax + 1 };
+    displayio_area_t bitmap_area = { 0, 0, destination->width, destination->height };
     displayio_area_compute_overlap(&area, &bitmap_area, &area);
     displayio_bitmap_set_dirty_area(destination, &area);
 }
@@ -716,7 +716,7 @@ void common_hal_bitmaptools_arrayblit(displayio_bitmap_t *self, void *data, int 
             }
         }
     }
-    displayio_area_t area = { x1, y1, x2, y2, NULL };
+    displayio_area_t area = { x1, y1, x2, y2 };
     displayio_bitmap_set_dirty_area(self, &area);
 }
 
@@ -725,7 +725,7 @@ void common_hal_bitmaptools_readinto(displayio_bitmap_t *self, mp_obj_t *file, i
 
     mp_get_stream_raise(file, MP_STREAM_OP_READ);
 
-    displayio_area_t a = {0, 0, self->width, self->height, NULL};
+    displayio_area_t a = {0, 0, self->width, self->height };
     displayio_bitmap_set_dirty_area(self, &a);
 
     size_t elements_per_row = (self->width * bits_per_pixel + element_size * 8 - 1) / (element_size * 8);
@@ -1001,14 +1001,14 @@ void common_hal_bitmaptools_dither(displayio_bitmap_t *dest_bitmap, displayio_bi
         fill_row(source_bitmap, swap, rows[2], y + 3, info->mx);
     }
 
-    displayio_area_t a = { 0, 0, width, height, NULL };
+    displayio_area_t a = { 0, 0, width, height };
     displayio_bitmap_set_dirty_area(dest_bitmap, &a);
 }
 
 void common_hal_bitmaptools_alphablend(displayio_bitmap_t *dest, displayio_bitmap_t *source1, displayio_bitmap_t *source2, displayio_colorspace_t colorspace, mp_float_t factor1, mp_float_t factor2,
     bitmaptools_blendmode_t blendmode, uint32_t skip_source1_index, bool skip_source1_index_none, uint32_t skip_source2_index, bool skip_source2_index_none,
     displayio_bitmap_t *mask) {
-    displayio_area_t a = {0, 0, dest->width, dest->height, NULL};
+    displayio_area_t a = {0, 0, dest->width, dest->height };
     displayio_bitmap_set_dirty_area(dest, &a);
 
     int ifactor1_base = (int)(factor1 * 256);
@@ -1220,8 +1220,8 @@ void common_hal_bitmaptools_draw_circle(displayio_bitmap_t *destination,
     ybb0 = y - radius;
     ybb1 = y + radius + 1;
 
-    displayio_area_t area = { xbb0, ybb0, xbb1, ybb1, NULL };
-    displayio_area_t bitmap_area = { 0, 0, destination->width, destination->height, NULL };
+    displayio_area_t area = { xbb0, ybb0, xbb1, ybb1 };
+    displayio_area_t bitmap_area = { 0, 0, destination->width, destination->height };
     displayio_area_compute_overlap(&area, &bitmap_area, &area);
 
     displayio_bitmap_set_dirty_area(destination, &area);
@@ -1277,6 +1277,7 @@ static bool blit_rows_fast(displayio_bitmap_t *destination, displayio_bitmap_t *
 void common_hal_bitmaptools_blit(displayio_bitmap_t *destination, displayio_bitmap_t *source, int16_t x, int16_t y,
     int16_t x1, int16_t y1, int16_t x2, int16_t y2, uint32_t skip_source_index, bool skip_source_index_none, uint32_t skip_dest_index,
     bool skip_dest_index_none) {
+    // ESP_LOGI(TAG, "blit start");
 
     if (destination->read_only) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Read-only"));
@@ -1296,7 +1297,7 @@ void common_hal_bitmaptools_blit(displayio_bitmap_t *destination, displayio_bitm
         dirty_y_max = destination->height;
     }
 
-    displayio_area_t a = { x, y, dirty_x_max, dirty_y_max, NULL};
+    displayio_area_t a = { x, y, dirty_x_max, dirty_y_max };
     displayio_bitmap_set_dirty_area(destination, &a);
 
     bool x_reverse = false;
@@ -1312,6 +1313,7 @@ void common_hal_bitmaptools_blit(displayio_bitmap_t *destination, displayio_bitm
 
     if (skip_source_index_none && skip_dest_index_none &&
         blit_rows_fast(destination, source, x, y, x1, y1, x2, y2)) {
+        // ESP_LOGI(TAG, "blit_rows_fast succeeded");
         return;
     }
 
@@ -1345,4 +1347,5 @@ void common_hal_bitmaptools_blit(displayio_bitmap_t *destination, displayio_bitm
             }
         }
     }
+    // ESP_LOGI(TAG, "blit end");
 }

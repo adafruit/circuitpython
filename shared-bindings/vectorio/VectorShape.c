@@ -22,6 +22,31 @@
 #include "py/objtype.h"
 #include "py/runtime.h"
 
+#if CIRCUITPY_DISPLAYIO_LVGL
+#include "shared-module/displayio/lvgl/lvgl_protocol.h"
+#endif
+
+// The VectorShape wrapper behind a Python-visible shape (Rectangle, Circle or Polygon). A
+// shape's compositor state lives in the wrapper, so the properties below are defined on it
+// and reach it through the shape's protocol slot: protocol_lvgl's protocol_self() in LVGL
+// builds, the draw protocol's draw_get_protocol_self() in legacy builds.
+static vectorio_vector_shape_t *_wrapper_shape(mp_obj_t wrapper_shape) {
+    #if CIRCUITPY_DISPLAYIO_LVGL
+    const lvgl_protocol_t *protocol = mp_proto_get(MP_QSTR_protocol_lvgl, wrapper_shape);
+    if (protocol == NULL || protocol->protocol_self == NULL) {
+        return NULL;
+    }
+    return MP_OBJ_TO_PTR(protocol->protocol_self(wrapper_shape));
+    #else
+    const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw,
+        wrapper_shape);
+    if (draw_protocol == NULL) {
+        return NULL;
+    }
+    return MP_OBJ_TO_PTR(draw_protocol->draw_get_protocol_self(wrapper_shape));
+    #endif
+}
+
 
 // shape: The shape implementation to draw.
 // pixel_shader: The pixel shader that produces colors from values. The shader can be a displayio.Palette(1); it will be asked to color pixel value 0.
@@ -37,15 +62,21 @@ mp_obj_t vectorio_vector_shape_make_new(const mp_obj_t shape, const mp_obj_t pix
     // Wire up shape functions
     if (mp_obj_is_type(shape, &vectorio_polygon_type)) {
         ishape.shape = shape;
+        #if !CIRCUITPY_DISPLAYIO_LVGL
         ishape.get_area = &common_hal_vectorio_polygon_get_area;
+        #endif
         ishape.get_pixel = &common_hal_vectorio_polygon_get_pixel;
     } else if (mp_obj_is_type(shape, &vectorio_rectangle_type)) {
         ishape.shape = shape;
+        #if !CIRCUITPY_DISPLAYIO_LVGL
         ishape.get_area = &common_hal_vectorio_rectangle_get_area;
+        #endif
         ishape.get_pixel = &common_hal_vectorio_rectangle_get_pixel;
     } else if (mp_obj_is_type(shape, &vectorio_circle_type)) {
         ishape.shape = shape;
+        #if !CIRCUITPY_DISPLAYIO_LVGL
         ishape.get_area = &common_hal_vectorio_circle_get_area;
+        #endif
         ishape.get_pixel = &common_hal_vectorio_circle_get_pixel;
     } else {
         mp_raise_TypeError_varg(MP_ERROR_TEXT("unsupported %q type"), MP_QSTR_shape);
@@ -76,13 +107,17 @@ mp_obj_t vectorio_vector_shape_make_new(const mp_obj_t shape, const mp_obj_t pix
 }
 
 vectorio_draw_protocol_impl_t vectorio_vector_shape_draw_protocol_impl = {
+    .draw_set_dirty = (draw_set_dirty_fun)common_hal_vectorio_vector_shape_set_dirty,
+    .draw_set_in_group = (draw_set_in_group_fun)vectorio_vector_shape_set_in_group,
+    #if !CIRCUITPY_DISPLAYIO_LVGL
+    // The scanline compositor asks shapes to fill spans and to track dirty areas. LVGL
+    // draws and invalidates the shape's mirror object instead, so none of this exists.
     .draw_fill_area = (draw_fill_area_fun)vectorio_vector_shape_fill_area,
     .draw_get_dirty_area = (draw_get_dirty_area_fun)vectorio_vector_shape_get_dirty_area,
     .draw_update_transform = (draw_update_transform_fun)vectorio_vector_shape_update_transform,
     .draw_finish_refresh = (draw_finish_refresh_fun)vectorio_vector_shape_finish_refresh,
     .draw_get_refresh_areas = (draw_get_refresh_areas_fun)vectorio_vector_shape_get_refresh_areas,
-    .draw_set_dirty = (draw_set_dirty_fun)common_hal_vectorio_vector_shape_set_dirty,
-    .draw_set_in_group = (draw_set_in_group_fun)vectorio_vector_shape_set_in_group,
+    #endif
 };
 
 // Stub checker does not approve of these shared properties.
@@ -91,9 +126,7 @@ vectorio_draw_protocol_impl_t vectorio_vector_shape_draw_protocol_impl = {
 //     """true if x,y lies inside the shape."""
 //
 static mp_obj_t vectorio_vector_shape_obj_contains(mp_obj_t wrapper_shape, mp_obj_t x_obj, mp_obj_t y_obj) {
-    // Relies on the fact that only vector_shape impl gets matched with a VectorShape.
-    const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, wrapper_shape);
-    vectorio_vector_shape_t *self = MP_OBJ_TO_PTR(draw_protocol->draw_get_protocol_self(wrapper_shape));
+    vectorio_vector_shape_t *self = _wrapper_shape(wrapper_shape);
 
     mp_int_t x = mp_obj_get_int(x_obj);
     mp_int_t y = mp_obj_get_int(y_obj);
@@ -106,18 +139,14 @@ MP_DEFINE_CONST_FUN_OBJ_3(vectorio_vector_shape_contains_obj, vectorio_vector_sh
 //     """X position of the center point of the shape in the parent."""
 //
 static mp_obj_t vectorio_vector_shape_obj_get_x(mp_obj_t wrapper_shape) {
-    // Relies on the fact that only vector_shape impl gets matched with a VectorShape.
-    const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, wrapper_shape);
-    vectorio_vector_shape_t *self = MP_OBJ_TO_PTR(draw_protocol->draw_get_protocol_self(wrapper_shape));
+    vectorio_vector_shape_t *self = _wrapper_shape(wrapper_shape);
 
     return MP_OBJ_NEW_SMALL_INT(common_hal_vectorio_vector_shape_get_x(self));
 }
 MP_DEFINE_CONST_FUN_OBJ_1(vectorio_vector_shape_get_x_obj, vectorio_vector_shape_obj_get_x);
 
 static mp_obj_t vectorio_vector_shape_obj_set_x(mp_obj_t wrapper_shape, mp_obj_t x_obj) {
-    // Relies on the fact that only vector_shape impl gets matched with a VectorShape.
-    const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, wrapper_shape);
-    vectorio_vector_shape_t *self = MP_OBJ_TO_PTR(draw_protocol->draw_get_protocol_self(wrapper_shape));
+    vectorio_vector_shape_t *self = _wrapper_shape(wrapper_shape);
 
     mp_int_t x = mp_obj_get_int(x_obj);
     common_hal_vectorio_vector_shape_set_x(self, x);
@@ -134,18 +163,14 @@ MP_PROPERTY_GETSET(vectorio_vector_shape_x_obj,
 //     """Y position of the center point of the shape in the parent."""
 //
 static mp_obj_t vectorio_vector_shape_obj_get_y(mp_obj_t wrapper_shape) {
-    // Relies on the fact that only vector_shape impl gets matched with a VectorShape.
-    const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, wrapper_shape);
-    vectorio_vector_shape_t *self = MP_OBJ_TO_PTR(draw_protocol->draw_get_protocol_self(wrapper_shape));
+    vectorio_vector_shape_t *self = _wrapper_shape(wrapper_shape);
 
     return MP_OBJ_NEW_SMALL_INT(common_hal_vectorio_vector_shape_get_y(self));
 }
 MP_DEFINE_CONST_FUN_OBJ_1(vectorio_vector_shape_get_y_obj, vectorio_vector_shape_obj_get_y);
 
 static mp_obj_t vectorio_vector_shape_obj_set_y(mp_obj_t wrapper_shape, mp_obj_t y_obj) {
-    // Relies on the fact that only vector_shape impl gets matched with a VectorShape.
-    const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, wrapper_shape);
-    vectorio_vector_shape_t *self = MP_OBJ_TO_PTR(draw_protocol->draw_get_protocol_self(wrapper_shape));
+    vectorio_vector_shape_t *self = _wrapper_shape(wrapper_shape);
 
     mp_int_t y = mp_obj_get_int(y_obj);
     common_hal_vectorio_vector_shape_set_y(self, y);
@@ -162,18 +187,14 @@ MP_PROPERTY_GETSET(vectorio_vector_shape_y_obj,
 //     """location of the center point of the shape in the parent."""
 //
 static mp_obj_t vectorio_vector_shape_obj_get_location(mp_obj_t wrapper_shape) {
-    // Relies on the fact that only vector_shape impl gets matched with a VectorShape.
-    const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, wrapper_shape);
-    vectorio_vector_shape_t *self = MP_OBJ_TO_PTR(draw_protocol->draw_get_protocol_self(wrapper_shape));
+    vectorio_vector_shape_t *self = _wrapper_shape(wrapper_shape);
 
     return MP_OBJ_TO_PTR(common_hal_vectorio_vector_shape_get_location(self));
 }
 MP_DEFINE_CONST_FUN_OBJ_1(vectorio_vector_shape_get_location_obj, vectorio_vector_shape_obj_get_location);
 
 static mp_obj_t vectorio_vector_shape_obj_set_location(mp_obj_t wrapper_shape, mp_obj_t location_obj) {
-    // Relies on the fact that only vector_shape impl gets matched with a VectorShape.
-    const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, wrapper_shape);
-    vectorio_vector_shape_t *self = MP_OBJ_TO_PTR(draw_protocol->draw_get_protocol_self(wrapper_shape));
+    vectorio_vector_shape_t *self = _wrapper_shape(wrapper_shape);
 
     common_hal_vectorio_vector_shape_set_location(self, location_obj);
     return mp_const_none;
@@ -190,17 +211,13 @@ MP_PROPERTY_GETSET(vectorio_vector_shape_location_obj,
 //     """Hide the shape or not."""
 //
 static mp_obj_t vectorio_vector_shape_obj_get_hidden(mp_obj_t wrapper_shape) {
-    // Relies on the fact that only vector_shape impl gets matched with a VectorShape.
-    const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, wrapper_shape);
-    vectorio_vector_shape_t *self = MP_OBJ_TO_PTR(draw_protocol->draw_get_protocol_self(wrapper_shape));
+    vectorio_vector_shape_t *self = _wrapper_shape(wrapper_shape);
     return mp_obj_new_bool(common_hal_vectorio_vector_shape_get_hidden(self));
 }
 MP_DEFINE_CONST_FUN_OBJ_1(vectorio_vector_shape_get_hidden_obj, vectorio_vector_shape_obj_get_hidden);
 
 static mp_obj_t vectorio_vector_shape_obj_set_hidden(mp_obj_t wrapper_shape, mp_obj_t hidden_obj) {
-    // Relies on the fact that only vector_shape impl gets matched with a VectorShape.
-    const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, wrapper_shape);
-    vectorio_vector_shape_t *self = MP_OBJ_TO_PTR(draw_protocol->draw_get_protocol_self(wrapper_shape));
+    vectorio_vector_shape_t *self = _wrapper_shape(wrapper_shape);
 
     common_hal_vectorio_vector_shape_set_hidden(self, mp_obj_is_true(hidden_obj));
     return mp_const_none;
@@ -216,18 +233,14 @@ MP_PROPERTY_GETSET(vectorio_vector_shape_hidden_obj,
 //     """The pixel shader of the shape."""
 //
 static mp_obj_t vectorio_vector_shape_obj_get_pixel_shader(mp_obj_t wrapper_shape) {
-    // Relies on the fact that only vector_shape impl gets matched with a VectorShape.
-    const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, wrapper_shape);
-    vectorio_vector_shape_t *self = MP_OBJ_TO_PTR(draw_protocol->draw_get_protocol_self(wrapper_shape));
+    vectorio_vector_shape_t *self = _wrapper_shape(wrapper_shape);
 
     return common_hal_vectorio_vector_shape_get_pixel_shader(self);
 }
 MP_DEFINE_CONST_FUN_OBJ_1(vectorio_vector_shape_get_pixel_shader_obj, vectorio_vector_shape_obj_get_pixel_shader);
 
 static mp_obj_t vectorio_vector_shape_obj_set_pixel_shader(mp_obj_t wrapper_shape, mp_obj_t pixel_shader) {
-    // Relies on the fact that only vector_shape impl gets matched with a VectorShape.
-    const vectorio_draw_protocol_t *draw_protocol = mp_proto_get(MP_QSTR_protocol_draw, wrapper_shape);
-    vectorio_vector_shape_t *self = MP_OBJ_TO_PTR(draw_protocol->draw_get_protocol_self(wrapper_shape));
+    vectorio_vector_shape_t *self = _wrapper_shape(wrapper_shape);
 
     if (!mp_obj_is_type(pixel_shader, &displayio_palette_type) && !mp_obj_is_type(pixel_shader, &displayio_colorconverter_type)) {
         mp_raise_TypeError_varg(MP_ERROR_TEXT("unsupported %q type"), MP_QSTR_pixel_shader);
@@ -252,5 +265,6 @@ MP_DEFINE_CONST_OBJ_TYPE(
     vectorio_vector_shape_type,
     MP_QSTR_VectorShape,
     MP_TYPE_FLAG_HAS_SPECIAL_ACCESSORS,
-    locals_dict, &vectorio_vector_shape_locals_dict
+    locals_dict, &vectorio_vector_shape_locals_dict,
+    protocol, VECTORIO_VECTOR_SHAPE_LVGL_PROTOCOL
     );

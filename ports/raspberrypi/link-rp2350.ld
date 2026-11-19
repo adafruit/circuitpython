@@ -37,11 +37,6 @@ ENTRY(_entry_point)
 
 SECTIONS
 {
-    /* Second stage bootloader is prepended to the image. It must be 256 bytes big
-       and checksummed. It is usually built by the boot_stage2 target
-       in the Pico SDK
-    */
-
     .flash_begin : {
         __flash_binary_start = .;
     } > FLASH_FIRMWARE
@@ -83,6 +78,22 @@ SECTIONS
         *(.eh_frame*)
         . = ALIGN(4);
     } > FLASH_FIRMWARE
+
+    /* Stage 2 (the flash read setup function), generated from
+       boot_stage2/RP2350.c.jinja. On RP2350 the boot ROM does not run it.
+       The Pico SDK's startup code (crt0) runs it at boot and copies it to boot
+       RAM, and the SDK reruns it after each flash erase or program. It must
+       fit in boot RAM's 256 bytes.
+    */
+    .boot2 : {
+        . = ALIGN(4);
+        __boot2_start__ = .;
+        *(.boot2)
+        __boot2_end__ = .;
+    } > FLASH_FIRMWARE
+
+    ASSERT(__boot2_end__ - __boot2_start__ <= 256,
+        "ERROR: RP2350 stage 2 must be no more than 256 bytes in size")
 
     .rodata : {
         *(EXCLUDE_FILE(*libgcc.a: *libc.a:*lib_a-mem*.o *libm.a:) .rodata*)

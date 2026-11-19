@@ -10,6 +10,7 @@
 #include "shared-bindings/usb_video/__init__.h"
 #include "shared-bindings/usb_video/USBFramebuffer.h"
 #include "shared-module/usb_video/__init__.h"
+#include "shared-module/usb_video/uvc_usb_descriptors.h"
 
 //| """Allows streaming bitmaps to a host computer via USB
 //|
@@ -48,12 +49,14 @@
 //|
 //|
 
-//| def enable_framebuffer(width: int, height: int) -> None:
+//| def enable_framebuffer(width: int, height: int, *, frame_rate: int = 15) -> None:
 //|     """Enable a USB video framebuffer, setting the given width & height
 //|
 //|     This function may only be used from ``boot.py``.
 //|
-//|     Width is rounded up to a multiple of 2.
+//|     Width is rounded up to a multiple of 2. ``frame_rate`` is the advertised
+//|     UVC frame rate; uncompressed YUYV uses 2 bytes per pixel, so larger frames
+//|     need a lower rate to fit in USB high-speed bandwidth.
 //|
 //|     After boot.py completes, the framebuffer will be allocated. Total storage
 //|     of 4×``width``×``height`` bytes is required, reducing the amount available
@@ -63,10 +66,11 @@
 //|
 
 static mp_obj_t usb_video_enable_framebuffer(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    enum { ARG_width, ARG_height };
+    enum { ARG_width, ARG_height, ARG_frame_rate };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_width, MP_ARG_REQUIRED | MP_ARG_INT, { .u_int = 0 } },
         { MP_QSTR_height, MP_ARG_REQUIRED | MP_ARG_INT, { .u_int = 0 } },
+        { MP_QSTR_frame_rate, MP_ARG_KW_ONLY | MP_ARG_INT, { .u_int = DEFAULT_FRAME_RATE } },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
@@ -74,7 +78,8 @@ static mp_obj_t usb_video_enable_framebuffer(size_t n_args, const mp_obj_t *pos_
     // (but note that most devices will not be able to allocate this much memory.
     uint32_t width = mp_arg_validate_int_range(args[ARG_width].u_int, 0, 32767, MP_QSTR_width);
     uint32_t height = mp_arg_validate_int_range(args[ARG_height].u_int, 0, 32767, MP_QSTR_height);
-    if (!shared_module_usb_video_enable(width, height)) {
+    uint32_t frame_rate = mp_arg_validate_int_range(args[ARG_frame_rate].u_int, 1, 60, MP_QSTR_frame_rate);
+    if (!shared_module_usb_video_enable(width, height, frame_rate)) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Cannot change USB devices now"));
     }
 

@@ -9,22 +9,27 @@
 #include "shared-bindings/displayio/__init__.h"
 #include "shared-bindings/displayio/Group.h"
 
+#if !CIRCUITPY_DISPLAYIO_LVGL
 #include "shared-module/displayio/area.h"
+#endif
 
 #define NO_COMMAND 0x100
 
 typedef struct {
     displayio_group_t *current_group;
     uint64_t last_refresh;
-    displayio_buffer_transform_t transform;
-    displayio_area_t area;
     uint16_t width;
     uint16_t height;
     uint16_t rotation;
     _displayio_colorspace_t colorspace;
 
+    #if !CIRCUITPY_DISPLAYIO_LVGL
+    // Scanline-compositor refresh state. LVGL invalidates its own objects.
+    displayio_buffer_transform_t transform;
+    displayio_area_t area;
     bool full_refresh; // New group means we need to refresh the whole display.
     bool refresh_in_progress;
+    #endif
 } displayio_display_core_t;
 
 void displayio_display_core_construct(displayio_display_core_t *self,
@@ -43,11 +48,13 @@ void displayio_display_core_set_rotation(displayio_display_core_t *self, int rot
 
 void release_display_core(displayio_display_core_t *self);
 
+#if !CIRCUITPY_DISPLAYIO_LVGL
 bool displayio_display_core_start_refresh(displayio_display_core_t *self);
 void displayio_display_core_finish_refresh(displayio_display_core_t *self);
-
-void displayio_display_core_collect_ptrs(displayio_display_core_t *self);
 
 bool displayio_display_core_fill_area(displayio_display_core_t *self, displayio_area_t *area, uint32_t *mask, uint32_t *buffer);
 
 bool displayio_display_core_clip_area(displayio_display_core_t *self, const displayio_area_t *area, displayio_area_t *clipped);
+#endif
+
+void displayio_display_core_collect_ptrs(displayio_display_core_t *self);

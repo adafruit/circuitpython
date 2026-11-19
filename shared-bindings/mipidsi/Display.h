@@ -36,6 +36,7 @@ void common_hal_mipidsi_display_construct(mipidsi_display_obj_t *self,
 void common_hal_mipidsi_display_deinit(mipidsi_display_obj_t *self);
 bool common_hal_mipidsi_display_deinited(mipidsi_display_obj_t *self);
 void common_hal_mipidsi_display_refresh(mipidsi_display_obj_t *self);
+void common_hal_mipidsi_display_set_frame_callback(mipidsi_display_obj_t *self, framebuffer_frame_callback_t cb, void *data);
 // Make the rows marked in dirty_row_bitmap (one bit per row, LSB first) visible to the
 // display. NULL refreshes every row. This backs the framebuffer protocol's swapbuffers
 // callback (mipidsi_display_swapbuffers in Display.c), which FramebufferDisplay calls

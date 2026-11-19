@@ -170,6 +170,8 @@ void supervisor_flash_init(void) {
     // printk("flash area %d %d\n", filesystem_area->fa_id, filesystem_area->fa_size);
     printk("hello from flash init\n");
     bool covered_by_areas[circuitpy_flash_device_count];
+    // fa_cb only sets entries to true, so start from all false.
+    memset(covered_by_areas, 0, sizeof(covered_by_areas));
     flash_area_foreach(fa_cb, covered_by_areas);
     for (int i = 0; i < circuitpy_flash_device_count; i++) {
         const struct device *d = flashes[i];

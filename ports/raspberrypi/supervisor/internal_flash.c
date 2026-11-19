@@ -20,6 +20,7 @@
 #include "shared-bindings/microcontroller/__init__.h"
 
 #include "audio_dma.h"
+#include "common-hal/microcontroller/Processor.h"
 #include "supervisor/flash.h"
 #include "supervisor/usb.h"
 
@@ -54,6 +55,9 @@ void supervisor_flash_pre_write(void) {
 }
 
 void supervisor_flash_post_write(void) {
+    // The flash erase, program or command left stage 2's slow timing in place.
+    // Restore the timing for the current system clock.
+    mcu_processor_restore_flash_timing();
     #if CIRCUITPY_AUDIOCORE
     // Unpause audio DMA.
     audio_dma_unpause_mask(_audio_channel_mask);

@@ -492,6 +492,11 @@ INC += \
 
 CFLAGS += -DPICO_RP2040=0 -DPICO_RP2350=1
 
+# Make crt0 (the SDK's startup code) run our stage 2 at boot and copy it to boot
+# RAM, so the SDK reruns it after each flash write. Otherwise the boot ROM's
+# flash read setup is used.
+CFLAGS += -DPICO_EMBED_XIP_SETUP=1
+
 SRC_SDK_CHIP_VARIANT := \
 	src/common/pico_util/fixed_bitset.c \
 	src/rp2_common/hardware_powman/powman.c \
@@ -816,9 +821,17 @@ $(BUILD)/%.o: $(BUILD)/%.S
 	$(STEPECHO) "CC $<"
 	$(Q)$(CC) $(CFLAGS) -c -o $@ $<
 
+# RP2350 stage 2 has no checksum, so it is padded without one. The SDK's RP2350
+# pad script also defines __boot2_entry_point, which crt0 uses to run stage 2
+# and copy it to boot RAM.
 $(BUILD)/boot2_padded_checksummed.S: $(BUILD)/boot2.bin
+ifeq ($(CHIP_VARIANT),RP2350)
+	$(STEPECHO) "PAD $<"
+	$(Q)$(PYTHON) sdk/src/rp2350/boot_stage2/pad $< $@
+else
 	$(STEPECHO) "PAD_CHECKSUM $<"
 	$(Q)$(PYTHON) sdk/src/rp2040/boot_stage2/pad_checksum -s 0xffffffff $< $@
+endif
 
 $(BUILD)/boot2.bin: $(BUILD)/boot2.elf
 	$(STEPECHO) "OBJCOPY $<"
@@ -835,6 +848,7 @@ $(HEADER_BUILD)/flash_info.h: flash_info.h.jinja gen_stage2.py
 	$(Q)$(PYTHON) gen_stage2.py $< $@ $(EXTERNAL_FLASH_DEVICES)
 
 $(BUILD)/supervisor/internal_flash.o: $(HEADER_BUILD)/flash_info.h
+$(BUILD)/common-hal/microcontroller/Processor.o: $(HEADER_BUILD)/flash_info.h
 
 $(BUILD)/boot2.elf: $(BUILD)/stage2.c
 	$(STEPECHO) "BOOT $<"

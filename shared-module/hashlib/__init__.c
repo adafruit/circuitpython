@@ -10,7 +10,9 @@
 #include "psa/crypto.h"
 
 bool common_hal_hashlib_new(hashlib_hash_obj_t *self, const char *algorithm) {
-    if (strcmp(algorithm, "sha1") == 0) {
+    if (strcmp(algorithm, "md5") == 0) {
+        self->hash_alg = PSA_ALG_MD5;
+    } else if (strcmp(algorithm, "sha1") == 0) {
         self->hash_alg = PSA_ALG_SHA_1;
     } else if (strcmp(algorithm, "sha256") == 0) {
         self->hash_alg = PSA_ALG_SHA_256;

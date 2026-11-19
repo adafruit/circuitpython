@@ -34,6 +34,11 @@ IDF_TARGET_ARCH = xtensa
 CROSS_COMPILE = xtensa-$(IDF_TARGET)-elf-
 endif
 
+# Fast e-paper doesn't fit in flash on the C3, C5 and C6.
+ifneq ($(filter $(IDF_TARGET),esp32c3 esp32c5 esp32c6),)
+CIRCUITPY_EPAPERDISPLAY_FAST ?= 0
+endif
+
 # Use "internal flash" for CIRCUITPY drive.
 # Even thought it's an external flash chip, it appears as internal.
 INTERNAL_FLASH_FILESYSTEM = 1
@@ -371,6 +376,9 @@ else ifeq ($(IDF_TARGET),esp32p4)
 
 # No DAC
 CIRCUITPY_AUDIOIO = 0
+CIRCUITPY_AUDIOFILTERS ?= 1
+CIRCUITPY_AUDIOTAP ?= 1
+CIRCUITPY_USB_HOST_AUDIO ?= $(CIRCUITPY_USB_HOST)
 
 # MII is available on these targets with EMAC hardware.
 CIRCUITPY_MII ?= 1
@@ -440,6 +448,8 @@ CIRCUITPY_ESPCAMERA = 0
 
 # P4 has MIPI-DSI
 CIRCUITPY_MIPIDSI = 1
+CIRCUITPY_DISPLAYIO_LVGL = 1
+CFLAGS += -DLV_CONF_INCLUDE_SIMPLE
 
 # P4 has MIPI-CSI
 CIRCUITPY_MIPICSI = 1
@@ -496,6 +506,8 @@ CIRCUITPY_RGBMATRIX = 0
 CIRCUITPY_ALARM_TOUCH = 0
 CIRCUITPY_TOUCHIO = 0
 CIRCUITPY_TOUCHIO_USE_NATIVE = 0
+CIRCUITPY_DISPLAYIO_LVGL = 1
+CFLAGS += -DLV_CONF_INCLUDE_SIMPLE
 
 #### esp32s2 ##########################################################
 else ifeq ($(IDF_TARGET),esp32s2)
@@ -538,6 +550,12 @@ CIRCUITPY_AUDIOMIXER_USE_PORT_MIX ?= 1
 
 endif
 #### end chip-specific choices ########################################
+
+# The LVGL compositing core replaces the legacy scanline core. EPaperDisplay still
+# depends on the legacy display core, so it isn't available with LVGL yet.
+ifeq ($(CIRCUITPY_DISPLAYIO_LVGL),1)
+CIRCUITPY_EPAPERDISPLAY = 0
+endif
 
 # By default, load native .mpy files. Boards without the flash space turn it off.
 CIRCUITPY_LOAD_NATIVE ?= 1

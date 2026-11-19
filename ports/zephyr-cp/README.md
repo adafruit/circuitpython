@@ -109,6 +109,23 @@ python -m serial.tools.miniterm /dev/pts/1 115200
 If the container has no display (it was created without `DISPLAY` or with `ZCP_NO_DISPLAY=1`),
 run the simulator as `SDL_VIDEODRIVER=dummy make run-sim`.
 
+### Testing LVGL with AddressSanitizer
+
+The `native_native_sim_lvgl_asan` board runs the LVGL displayio compositor with
+AddressSanitizer enabled for CircuitPython and LVGL. It also poisons allocations in
+LVGL's private `sys_heap` to catch buffer overruns and use-after-free, and stops on
+the first ASan error. ASan does not replace explicit leak checks.
+
+```sh
+make BOARD=native_native_sim_lvgl_asan
+make test TEST_BOARDS=native_native_sim_lvgl_asan \
+    PYTEST_ARGS="tests/ --ignore=tests/bsim -k native_native_sim_lvgl_asan"
+```
+
+The executable is `build-native_native_sim_lvgl_asan/zephyr-cp/zephyr/zephyr.exe`.
+The regular `make test` target includes this board as well as the unsanitized LVGL
+and legacy-compositor variants.
+
 ## Running the core test suite
 
 `make test-run-tests` runs `tests/run-tests.py` against the native simulator. It needs

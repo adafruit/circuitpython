@@ -385,6 +385,14 @@ size_t port_heap_get_largest_free_size(void) {
 
 safe_mode_t port_init(void) {
     _binary_info();
+
+    // Stage 2 left slow flash timing that is safe at any system clock. Switch
+    // to the fastest flash timing allowed at this clock. Interrupts are off so
+    // that no interrupt handler reads flash during the change.
+    common_hal_mcu_disable_interrupts();
+    mcu_processor_update_flash_timing(clock_get_hz(clk_sys) / 1000);
+    common_hal_mcu_enable_interrupts();
+
     // Set brown out.
 
     // Load from the XIP memory space that doesn't cache. That way we don't
@@ -467,7 +475,7 @@ safe_mode_t port_init(void) {
     if (cyw43_arch_init_with_country(PICO_CYW43_ARCH_DEFAULT_COUNTRY_CODE)) {
         serial_write("WiFi init failed\n");
     } else {
-        cyw_ever_init = true;
+        cyw_driver_ready = true;
     }
     #endif
     if (board_requests_safe_mode()) {
@@ -690,6 +698,10 @@ void port_task_yield(void) {
 
 void port_boot_info(void) {
     #if CIRCUITPY_CYW43
+    // Access CYW43 GPIO to power it up before reading the MAC
+    if (cyw_driver_ready) {
+        cyw43_arch_gpio_get(pin_CYW2.number);
+    }
     mp_printf(&mp_plat_print, "MAC");
     for (int i = 0; i < 6; i++) {
         mp_printf(&mp_plat_print, ":%02X", cyw43_state.mac[i]);
