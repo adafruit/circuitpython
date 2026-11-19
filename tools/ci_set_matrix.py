@@ -35,7 +35,6 @@ tools_dir = pathlib.Path(__file__).resolve().parent
 top_dir = tools_dir.parent
 
 sys.path.insert(0, str(tools_dir / "adabot"))
-sys.path.insert(0, str(top_dir / "docs"))
 
 import build_board_info
 from shared_bindings_matrix import (
@@ -49,9 +48,11 @@ IGNORE_BOARD = {
     "conf.py",
     "docs",
     "tests",
+    "tools/board_stubs/",
     "tools/ci_changes_per_commit.py",
     "tools/ci_check_duplicate_usb_vid_pid.py",
     "tools/ci_set_matrix.py",
+    "tools/shared_bindings_matrix.py",
     ".github/workflows/run-tests.yml",
     ".github/workflows/run-zephyr-tests.yml",
     ".github/workflows/build-board-custom.yml",
@@ -66,8 +67,8 @@ IGNORE_BOARD = {
 }
 
 PATTERN_DOCS = (
-    r"^(?:\.github|docs|extmod\/ulab)|"
-    r"^(?:(?:ports\/\w+\/bindings|shared-bindings)\S+\.c|tools\/extract_pyi\.py|\.readthedocs\.yml|conf\.py|requirements-doc\.txt)$|"
+    r"^(?:\.github|docs|extmod\/ulab|tools\/board_stubs\/)|"
+    r"^(?:(?:ports\/\w+\/bindings|shared-bindings)\S+\.c|tools\/extract_pyi\.py|tools\/shared_bindings_matrix\.py|\.readthedocs\.yml|conf\.py|requirements-doc\.txt)$|"
     r"(?:-stubs|\.(?:md|MD|mk|rst|RST)|/Makefile)$"
 )
 
@@ -75,21 +76,28 @@ GITHUB_MATRIX_LIMIT = 256
 
 # The Zephyr tests build native_sim and the two bsim boards out of the shared sources, so a
 # change confined to these cannot reach them: another port, a translation, a frozen library
-# (this port has none), documentation, the unix test suite or the autogen PR workflow.
+# (this port has none), documentation, the board stub tools, the unix test suite or the
+# autogen PR workflow.
 PATTERN_ZEPHYR_TESTS_IGNORE = re.compile(
-    r"^(?:docs|frozen|locale|tests)/|^ports/(?!zephyr-cp/)"
-    r"|^\.github/workflows/zephyr-autogen-pr\.yml$"
+    r"^(?:docs|frozen|locale|tests|tools/board_stubs)/|^ports/(?!zephyr-cp/)"
+    r"|^\.github/workflows/zephyr-autogen-pr\.yml$|^tools/shared_bindings_matrix\.py$"
 )
 
-# Files that can't affect the unix coverage tests: other ports and the documentation.
-# The tests build nothing from ports/ except ports/unix. frozen/ is not on this list,
-# because run-tests.py puts the frozen asyncio and Ticks libraries on the module search path.
-PATTERN_TESTS_IGNORE = re.compile(r"^docs/|^ports/(?!unix/)")
+# Files that can't affect the unix coverage tests: other ports and the documentation,
+# including the docs' support matrix code and the board stub tools. The tests build nothing
+# from ports/ except ports/unix. frozen/ is not on this list, because run-tests.py puts the
+# frozen asyncio and Ticks libraries on the module search path.
+PATTERN_TESTS_IGNORE = re.compile(
+    r"^(?:docs|tools/board_stubs)/|^ports/(?!unix/)|^tools/shared_bindings_matrix\.py$"
+)
 
-# Files that can't affect mpy-cross: ports, frozen libraries, the documentation and the tests.
-# The board builds don't need the mpy-cross and mpy-cross-mac jobs. They use the mpy-cross
-# that the scheduler job builds.
-PATTERN_MPY_CROSS_IGNORE = re.compile(r"^(?:docs|frozen|ports|tests)/")
+# Files that can't affect mpy-cross: ports, frozen libraries, the documentation (including
+# the support matrix code and the board stub tools) and the tests. The board builds don't
+# need the mpy-cross and mpy-cross-mac jobs. They use the mpy-cross that the scheduler job
+# builds.
+PATTERN_MPY_CROSS_IGNORE = re.compile(
+    r"^(?:docs|frozen|ports|tests|tools/board_stubs)/|^tools/shared_bindings_matrix\.py$"
+)
 
 # Zephyr boards don't use make, so their module tables can't be computed here. Each
 # board's build writes autogen_board_info.toml next to its circuitpython.toml and that
