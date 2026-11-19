@@ -13,5 +13,3 @@ CIRCUITPY__EVE = 1
 CIRCUITPY_PICOGAME = 1
 
 CIRCUITPY_PICODVI = 1
-
-# TEST: board-only change (drop before review)

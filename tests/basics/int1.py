@@ -103,5 +103,3 @@ try:
     int([])
 except TypeError:
     print("TypeError")
-
-# TEST: tests-only change (drop before review)
