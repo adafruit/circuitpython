@@ -47,13 +47,15 @@
 //|         the microphone stops also when a ``with`` block is left by an
 //|         exception, or when the program ends.
 //|
-//|         On RP2 boards, whose host port is PIO-USB, the host controller buffers
-//|         the stream between reads, in a buffer of ``iso_buffer_size`` bytes that
-//|         `USBIn` allocates and `deinit` frees. On boards whose host port is the
-//|         chip's own USB controller, such as the Metro ESP32-P4, there is no such
+//|         On RP2 boards, whose host port is PIO-USB, and on the ESP32-P4, the
+//|         host controller buffers the stream between reads, in a buffer of
+//|         ``iso_buffer_size`` bytes that `USBIn` allocates and `deinit` frees.
+//|         Packets that arrive while background tasks can't run, such as during a
+//|         long garbage collection or a write to an SD card, wait there. On other
+//|         boards whose host port is the chip's own USB controller there is no such
 //|         buffer and ``iso_buffer_size`` is not used: each packet is received as
-//|         it arrives, and packets that arrive while background tasks can't run,
-//|         such as during a long garbage collection, are lost and set `overflow`.
+//|         it arrives, and packets that arrive while background tasks can't run
+//|         are lost and set `overflow`.
 //|
 //|         Only one isochronous IN endpoint is received at a time, so only one
 //|         `USBIn` can stream, and a USB camera cannot stream video meanwhile.
@@ -80,11 +82,11 @@
 //|         :param int max_packet_size: The endpoint's ``wMaxPacketSize``
 //|         :param int buffer_frames: The number of frames handed to the audio pipeline at a time
 //|         :param int iso_buffer_size: The size in bytes of the host controller's buffer for
-//|           the stream, from 2048 to 65536, rounded up to a power of two. It holds the
-//|           packets that arrive while background tasks don't run, each with 2 bytes of
-//|           overhead: 16384 is about half a second of 16 kHz mono audio or 80 ms of 48 kHz
-//|           stereo. Only used on RP2 boards; ignored on the Metro ESP32-P4 and other
-//|           boards whose host port is the chip's own USB controller.
+//|           the stream, rounded up to a power of two: from 2048 to 65536 on RP2 boards, and
+//|           to 1048576 on the ESP32-P4. It holds the packets that arrive while background
+//|           tasks don't run, each with 2 bytes of overhead: 16384 is about half a second of
+//|           16 kHz mono audio or 80 ms of 48 kHz stereo. Only used on RP2 boards and the
+//|           ESP32-P4; ignored on boards whose host port is another USB controller.
 //|
 //|         Example, recording a second from the microphone of a Logitech C270
 //|         webcam. It streams 16 bit mono on interface 3, alternate setting 1,
@@ -144,7 +146,7 @@ static mp_obj_t usb_host_audio_usbin_make_new(const mp_obj_type_t *type, size_t 
     }
     mp_int_t max_packet_size = mp_arg_validate_int_range(args[ARG_max_packet_size].u_int, 0, 1024, MP_QSTR_max_packet_size);
     mp_int_t buffer_frames = mp_arg_validate_int_range(args[ARG_buffer_frames].u_int, 32, 4096, MP_QSTR_buffer_frames);
-    mp_int_t iso_buffer_size = mp_arg_validate_int_range(args[ARG_iso_buffer_size].u_int, 2048, 65536, MP_QSTR_iso_buffer_size);
+    mp_int_t iso_buffer_size = mp_arg_validate_int_range(args[ARG_iso_buffer_size].u_int, 2048, 1048576, MP_QSTR_iso_buffer_size);
 
     usb_host_audio_usbin_obj_t *self = mp_obj_malloc_with_finaliser(usb_host_audio_usbin_obj_t, &usb_host_audio_usbin_type);
     common_hal_usb_host_audio_usbin_construct(self, device, endpoint, sample_rate, channel_count,

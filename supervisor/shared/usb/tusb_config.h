@@ -174,6 +174,8 @@ extern "C" {
 
 #if defined(CONFIG_IDF_TARGET_ESP32P4)
 #define CFG_TUH_DWC2_DMA_ENABLE (1)
+// Isochronous IN packets are kept in a ring between transfers.
+#define CFG_TUH_DWC2_ISO_RING (CIRCUITPY_USB_HOST_ISO_RECORDS)
 #endif
 
 // Always use PIO to do host on RP2.

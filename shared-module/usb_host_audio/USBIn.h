@@ -13,8 +13,13 @@
 
 // The PCM ring holds this many get_buffer() buffers. Playback starts, and
 // restarts after an underrun, once USBIN_TARGET_BUFFERS of them are waiting.
+#if CIRCUITPY_USB_HOST_ISO_RECORDS
+#define USBIN_RING_BUFFERS (32)
+#define USBIN_TARGET_BUFFERS (4)
+#else
 #define USBIN_RING_BUFFERS (8)
 #define USBIN_TARGET_BUFFERS (2)
+#endif
 #define USBIN_NO_INTERFACE (0xff)
 
 typedef struct {

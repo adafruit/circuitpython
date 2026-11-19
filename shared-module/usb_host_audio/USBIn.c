@@ -24,7 +24,7 @@
 
 // Room for a good number of records per transfer, for when the ring in the
 // host controller has a backlog.
-#define USBIN_MIN_XFER_BUFFER (1024)
+#define USBIN_MIN_XFER_BUFFER (4096)
 // The host controller marks lost packets with a record of this length.
 #define USBIN_LOST_RECORD (0xffff)
 // get_buffer() averages the frames waiting over about 2^this calls.
@@ -255,9 +255,14 @@ void common_hal_usb_host_audio_usbin_construct(usb_host_audio_usbin_obj_t *self,
         mp_raise_usb_core_USBError(NULL);
     }
     const tusb_desc_endpoint_t *endpoint_desc = _find_endpoint(device, endpoint, &self->interface);
+    uint8_t interval = 1;
+    if (endpoint_desc != NULL) {
+        max_packet_size = tu_edpt_packet_size(endpoint_desc);
+        interval = endpoint_desc->bInterval;
+    }
 
     #if CIRCUITPY_USB_HOST_ISO_RECORDS
-    (void)endpoint_desc;
+    (void)interval;
     // The host controller keeps the packets that arrive between transfers in a
     // ring of its own. Only one isochronous stream at a time can use it.
     if (!common_hal_usb_host_port_claim_iso_buffer(iso_buffer_size)) {
@@ -271,11 +276,6 @@ void common_hal_usb_host_audio_usbin_construct(usb_host_audio_usbin_obj_t *self,
     (void)iso_buffer_size;
     // Each transfer receives one packet. A longer one would ask for more
     // packets in the same frame.
-    uint8_t interval = 1;
-    if (endpoint_desc != NULL) {
-        max_packet_size = tu_edpt_packet_size(endpoint_desc);
-        interval = endpoint_desc->bInterval;
-    }
     mp_arg_validate_int_min(max_packet_size, 1, MP_QSTR_max_packet_size);
     self->xfer_buffer_len = max_packet_size;
     self->frame_interval = 1 << (MIN(MAX(interval, 1), 16) - 1);
@@ -377,6 +377,14 @@ void usb_host_audio_stop_device(uint8_t device_address) {
         self->aborted = true;
         #endif
     }
+    #if CIRCUITPY_USB_HOST_ISO_RECORDS
+    // The host controller may poll the endpoint into its ring between
+    // transfers, which the abort above can't stop when no transfer was queued
+    // at that moment. Releasing the ring stops it, or, where the controller is
+    // still polling and can't give the ring back yet, keeps it claimed for
+    // deinit to release.
+    common_hal_usb_host_port_release_iso_buffer();
+    #endif
     // Drop a completion that is queued already, so it queues nothing.
     _seq++;
 }

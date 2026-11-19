@@ -245,6 +245,9 @@ REGISTRATION_FUNCTIONS = \
 # supervisor/port.c aligns the PSRAM heap areas to the same value.
 ifeq ($(IDF_TARGET),esp32p4)
 CFLAGS += -DMICROPY_BYTES_PER_GC_BLOCK=64
+# TinyUSB's DWC2 host driver keeps receiving isochronous IN packets between
+# transfers (CFG_TUH_DWC2_ISO_RING, which needs its buffer DMA mode).
+CFLAGS += -DCIRCUITPY_USB_HOST_ISO_RECORDS=1
 endif
 
 # RISC-V picolibc ships optimized memcpy/memset/etc. that need forcing
