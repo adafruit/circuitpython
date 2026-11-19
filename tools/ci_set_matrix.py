@@ -81,15 +81,18 @@ PATTERN_ZEPHYR_TESTS_IGNORE = re.compile(
     r"|^\.github/workflows/zephyr-autogen-pr\.yml$|^tools/shared_bindings_matrix\.py$"
 )
 
-# Files that can't affect the unix coverage tests: other ports and the documentation.
-# The tests build nothing from ports/ except ports/unix. frozen/ is not on this list,
-# because run-tests.py puts the frozen asyncio and Ticks libraries on the module search path.
-PATTERN_TESTS_IGNORE = re.compile(r"^docs/|^ports/(?!unix/)")
+# Files that can't affect the unix coverage tests: other ports and the documentation,
+# including the docs' support matrix code. The tests build nothing from ports/ except
+# ports/unix. frozen/ is not on this list, because run-tests.py puts the frozen asyncio and
+# Ticks libraries on the module search path.
+PATTERN_TESTS_IGNORE = re.compile(r"^docs/|^ports/(?!unix/)|^tools/shared_bindings_matrix\.py$")
 
-# Files that can't affect mpy-cross: ports, frozen libraries, the documentation and the tests.
-# The board builds don't need the mpy-cross and mpy-cross-mac jobs. They use the mpy-cross
-# that the scheduler job builds.
-PATTERN_MPY_CROSS_IGNORE = re.compile(r"^(?:docs|frozen|ports|tests)/")
+# Files that can't affect mpy-cross: ports, frozen libraries, the documentation (including
+# the support matrix code) and the tests. The board builds don't need the mpy-cross and
+# mpy-cross-mac jobs. They use the mpy-cross that the scheduler job builds.
+PATTERN_MPY_CROSS_IGNORE = re.compile(
+    r"^(?:docs|frozen|ports|tests)/|^tools/shared_bindings_matrix\.py$"
+)
 
 # Zephyr boards don't use make, so their module tables can't be computed here. Each
 # board's build writes autogen_board_info.toml next to its circuitpython.toml and that
