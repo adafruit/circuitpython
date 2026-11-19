@@ -331,6 +331,12 @@ static int zephyr_display_lvgl_recreate_display(zephyr_display_display_obj_t *se
     lv_display_set_user_data(display, &data->driver);
 
     int result = set_lvgl_rendering_cb(display);
+    // The glue rejects monochrome unless LVGL itself renders 1bpp. The luma flush
+    // below renders it instead.
+    if (result == -ENOTSUP && (self->pixel_format == PIXEL_FORMAT_MONO01 ||
+                               self->pixel_format == PIXEL_FORMAT_MONO10)) {
+        result = 0;
+    }
     if (result != 0) {
         lv_display_delete(display);
         return result;
