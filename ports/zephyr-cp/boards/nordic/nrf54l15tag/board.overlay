@@ -1,5 +1,13 @@
 // No app.overlay because it doesn't have USB.
 
+// Keep the button nodes and their GPIOs available for board pin-name
+// generation, but don't instantiate the GPIO-keys input driver. The
+// zephyr_input module currently exposes touch input only, and the input
+// subsystem otherwise consumes most of this board's remaining flash.
+&{/buttons} {
+	status = "disabled";
+};
+
 // The nrf54l15tag Zephyr board doesn't enable a UART or set zephyr,console,
 // unlike the nrf54l15dk. Set up UART30 as the console using available pins.
 &uart30 {
