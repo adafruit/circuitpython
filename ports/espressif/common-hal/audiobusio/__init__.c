@@ -18,8 +18,6 @@
 #endif
 
 #include "shared-module/audiocore/__init__.h"
-#include "supervisor/background_callback.h"
-#include "supervisor/port.h"
 
 // The maximum DMA buffer size (in bytes)
 #define I2S_DMA_BUFFER_MAX_SIZE     4092
@@ -34,22 +32,21 @@
 #define I2S_FILL_TASK_PRIORITY (ESP_TASK_MAIN_PRIO + 2)
 #define I2S_FILL_TASK_STACK_SIZE (8192)
 
-// Held by a fill task while it refills, and by the CircuitPython task while background callbacks
-// are prevented or running. So code that prevents background callbacks to change a sample (like
-// MP3Decoder.file) still keeps refill out. Recursive because a sample may prevent them itself
-// while it fills. Created with the first I2SOut, from the FreeRTOS heap rather than static RAM,
-// which is tight on the ESP32-S2. Until then there is no fill task to keep out.
-static SemaphoreHandle_t background_lock;
+// Held by a fill task while it refills, and by any code that changes a sample being played (see
+// audiocore_lock()). Recursive because a sample may take it again itself while it fills. Created
+// with the first I2SOut, from the FreeRTOS heap rather than static RAM, which is tight on the
+// ESP32-S2. Until then there is no fill task to keep out.
+static SemaphoreHandle_t audiocore_mutex;
 
-void port_background_lock(void) {
-    if (background_lock != NULL) {
-        xSemaphoreTakeRecursive(background_lock, portMAX_DELAY);
+void audiocore_lock(void) {
+    if (audiocore_mutex != NULL) {
+        xSemaphoreTakeRecursive(audiocore_mutex, portMAX_DELAY);
     }
 }
 
-void port_background_unlock(void) {
-    if (background_lock != NULL && xSemaphoreGetMutexHolder(background_lock) == xTaskGetCurrentTaskHandle()) {
-        xSemaphoreGiveRecursive(background_lock);
+void audiocore_unlock(void) {
+    if (audiocore_mutex != NULL) {
+        xSemaphoreGiveRecursive(audiocore_mutex);
     }
 }
 
@@ -145,7 +142,7 @@ static void i2s_fill_task(void *self_in) {
     i2s_t *self = self_in;
     for (;;) {
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-        port_background_lock();
+        audiocore_lock();
         #if defined(SOC_CACHE_INTERNAL_MEM_VIA_L1CACHE) && SOC_CACHE_INTERNAL_MEM_VIA_L1CACHE
         void *buffer = self->next_buffer;
         size_t buffer_size = self->next_buffer_size;
@@ -158,7 +155,7 @@ static void i2s_fill_task(void *self_in) {
             esp_cache_msync(buffer, buffer_size, ESP_CACHE_MSYNC_FLAG_DIR_C2M);
         }
         #endif
-        port_background_unlock();
+        audiocore_unlock();
     }
 }
 
@@ -183,9 +180,9 @@ void port_i2s_allocate_init(i2s_t *self, bool left_justified) {
     if (err == ESP_ERR_NOT_FOUND) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Peripheral in use"));
     }
-    if (background_lock == NULL) {
-        background_lock = xSemaphoreCreateRecursiveMutex();
-        if (background_lock == NULL) {
+    if (audiocore_mutex == NULL) {
+        audiocore_mutex = xSemaphoreCreateRecursiveMutex();
+        if (audiocore_mutex == NULL) {
             i2s_del_channel(self->handle);
             m_malloc_fail(sizeof(StaticSemaphore_t));
         }
@@ -214,12 +211,12 @@ void port_i2s_deinit(i2s_t *self) {
     i2s_del_channel(self->handle);
     self->handle = NULL;
     if (self->fill_task != NULL) {
-        // The channel is gone, so nothing wakes the task again. Preventing background callbacks
-        // takes the lock, so the task isn't mid-fill.
-        background_callback_prevent();
+        // The channel is gone, so nothing wakes the task again. Holding the lock means the task
+        // isn't mid-fill.
+        audiocore_lock();
         vTaskDelete(self->fill_task);
         self->fill_task = NULL;
-        background_callback_allow();
+        audiocore_unlock();
     }
 }
 
@@ -227,9 +224,9 @@ void port_i2s_play(i2s_t *self, mp_obj_t sample, bool loop) {
     audiosample_check(sample);
     // Pause to disable the I2S channel so we can adjust the clock.
     port_i2s_pause(self);
-    // Keep refill out while the sample changes. Loading it can raise, so allow again if it does.
-    MP_DEFINE_NLR_JUMP_CALLBACK_FUNCTION_1(allow, background_callback_allow, NULL);
-    background_callback_prevent();
+    // Keep refill out while the sample changes. Loading it can raise, so unlock again if it does.
+    MP_DEFINE_NLR_JUMP_CALLBACK_FUNCTION_1(allow, audiocore_unlock, NULL);
+    audiocore_lock();
     nlr_push_jump_callback(&allow.callback, mp_call_function_1_from_nlr_jump_callback);
     self->sample = sample;
     self->loop = loop;
@@ -292,12 +289,12 @@ bool port_i2s_paused(i2s_t *self) {
 
 void port_i2s_stop(i2s_t *self) {
     port_i2s_pause(self);
-    background_callback_prevent();
+    audiocore_lock();
     self->sample = NULL;
     self->playing = false;
     self->stopping = false;
     self->last_buffer = false;
-    background_callback_allow();
+    audiocore_unlock();
 }
 
 void port_i2s_pause(i2s_t *self) {

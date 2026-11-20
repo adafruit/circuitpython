@@ -122,9 +122,11 @@ static void stream_set_blocking(audiomp3_mp3file_obj_t *self, bool block_ok) {
 static bool mp3file_update_inbuf_always(audiomp3_mp3file_obj_t *self, bool block_ok) {
     // Every return from this function must be preceded by background_callback_allow();
     background_callback_prevent();
+    audiocore_lock();
 
     if (self->eof || INPUT_BUFFER_SPACE(self->inbuf) == 0) {
         bool result = INPUT_BUFFER_AVAILABLE(self->inbuf) > 0;
+        audiocore_unlock();
         background_callback_allow();
         return result;
     }
@@ -151,6 +153,7 @@ static bool mp3file_update_inbuf_always(audiomp3_mp3file_obj_t *self, bool block
                 break;
             }
             self->eof = true;
+            audiocore_unlock();
             background_callback_allow();
             mp_raise_OSError(errcode);
         }
@@ -169,6 +172,7 @@ static bool mp3file_update_inbuf_always(audiomp3_mp3file_obj_t *self, bool block
     // Return true iff there are at least some useful bytes in the buffer
     bool result = INPUT_BUFFER_AVAILABLE(self->inbuf) > 0;
 
+    audiocore_unlock();
     background_callback_allow();
     return result;
 }
@@ -388,6 +392,7 @@ static bool mp3file_set_file_and_get_frame_info(audiomp3_mp3file_obj_t *self, mp
 
 void common_hal_audiomp3_mp3file_set_file(audiomp3_mp3file_obj_t *self, mp_obj_t stream) {
     background_callback_prevent();
+    audiocore_lock();
 
     MP3FrameInfo fi;
     bool result;
@@ -396,9 +401,11 @@ void common_hal_audiomp3_mp3file_set_file(audiomp3_mp3file_obj_t *self, mp_obj_t
         result = mp3file_set_file_and_get_frame_info(self, stream, &fi);
         nlr_pop();
     } else {
+        audiocore_unlock();
         background_callback_allow();
         nlr_jump(nlr.ret_val);
     }
+    audiocore_unlock();
     background_callback_allow();
     if (!result) {
         mp_raise_msg(&mp_type_RuntimeError,
@@ -416,6 +423,7 @@ void common_hal_audiomp3_mp3file_set_file(audiomp3_mp3file_obj_t *self, mp_obj_t
 }
 
 void common_hal_audiomp3_mp3file_deinit(audiomp3_mp3file_obj_t *self) {
+    audiocore_lock();
     audiosample_mark_deinit(&self->base);
     if (self->decoder) {
         MP3FreeDecoder(self->decoder);
@@ -427,6 +435,7 @@ void common_hal_audiomp3_mp3file_deinit(audiomp3_mp3file_obj_t *self) {
     self->stream = mp_const_none;
     self->settimeout_args[0] = MP_OBJ_NULL;
     self->samples_decoded = 0;
+    audiocore_unlock();
 }
 
 void audiomp3_mp3file_reset_buffer(audiomp3_mp3file_obj_t *self,
@@ -438,6 +447,7 @@ void audiomp3_mp3file_reset_buffer(audiomp3_mp3file_obj_t *self,
     // We don't reset the buffer index in case we're looping and we have an odd number of buffer
     // loads
     background_callback_prevent();
+    audiocore_lock();
     if (self->eof && stream_lseek(self->stream, 0, SEEK_SET) == 0) {
         INPUT_BUFFER_CLEAR(self->inbuf);
         self->eof = 0;
@@ -446,6 +456,7 @@ void audiomp3_mp3file_reset_buffer(audiomp3_mp3file_obj_t *self,
         mp3file_skip_id3v2(self, false);
         mp3file_find_sync_word(self, false);
     }
+    audiocore_unlock();
     background_callback_allow();
 }
 

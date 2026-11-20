@@ -21,6 +21,12 @@
 #include "shared-bindings/audiomixer/Mixer.h"
 #include "shared-module/audiomixer/Mixer.h"
 
+MP_WEAK void audiocore_lock(void) {
+}
+
+MP_WEAK void audiocore_unlock(void) {
+}
+
 void audiosample_reset_buffer(mp_obj_t sample_obj, bool single_channel_output, uint8_t audio_channel) {
     const audiosample_p_t *proto = mp_proto_get_or_throw(MP_QSTR_protocol_audiosample, sample_obj);
     if (audiosample_deinited(audiosample_cast_obj(sample_obj))) {
