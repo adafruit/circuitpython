@@ -26,6 +26,12 @@ static volatile background_callback_t *volatile callback_head, *volatile callbac
 MP_WEAK void PLACE_IN_ITCM(port_wake_main_task)(void) {
 }
 
+MP_WEAK void PLACE_IN_ITCM(port_background_lock)(void) {
+}
+
+MP_WEAK void PLACE_IN_ITCM(port_background_unlock)(void) {
+}
+
 void PLACE_IN_ITCM(background_callback_add_core)(background_callback_t * cb) {
     CALLBACK_CRITICAL_BEGIN;
     if (cb->prev || callback_head == cb) {
@@ -63,9 +69,11 @@ void PLACE_IN_ITCM(background_callback_run_all)(void) {
     if (!background_callback_pending()) {
         return;
     }
+    port_background_lock();
     CALLBACK_CRITICAL_BEGIN;
     if (background_prevention_count) {
         CALLBACK_CRITICAL_END;
+        port_background_unlock();
         return;
     }
     ++background_prevention_count;
@@ -97,9 +105,11 @@ void PLACE_IN_ITCM(background_callback_run_all)(void) {
     }
     --background_prevention_count;
     CALLBACK_CRITICAL_END;
+    port_background_unlock();
 }
 
 void background_callback_prevent(void) {
+    port_background_lock();
     CALLBACK_CRITICAL_BEGIN;
     ++background_prevention_count;
     CALLBACK_CRITICAL_END;
@@ -109,6 +119,7 @@ void background_callback_allow(void) {
     CALLBACK_CRITICAL_BEGIN;
     --background_prevention_count;
     CALLBACK_CRITICAL_END;
+    port_background_unlock();
 }
 
 

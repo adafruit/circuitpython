@@ -10,14 +10,16 @@
 
 #include "common-hal/audiobusio/__init__.h"
 #include "bindings/espidf/__init__.h"
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
+#include "esp_task.h"
+#include "freertos/semphr.h"
 #include "soc/soc_caps.h"
 #if defined(SOC_CACHE_INTERNAL_MEM_VIA_L1CACHE) && SOC_CACHE_INTERNAL_MEM_VIA_L1CACHE
 #include "esp_cache.h"
 #endif
 
 #include "shared-module/audiocore/__init__.h"
+#include "supervisor/background_callback.h"
+#include "supervisor/port.h"
 
 // The maximum DMA buffer size (in bytes)
 #define I2S_DMA_BUFFER_MAX_SIZE     4092
@@ -27,6 +29,30 @@
 #define CIRCUITPY_BUFFER_SIZE (I2S_DMA_BUFFER_MAX_SIZE / 4)
 // The number of output channels is fixed at 2
 #define CIRCUITPY_OUTPUT_SLOTS (2)
+// Refill runs on its own task, above the LVGL render task, so a long display render can't starve
+// it.
+#define I2S_FILL_TASK_PRIORITY (ESP_TASK_MAIN_PRIO + 2)
+#define I2S_FILL_TASK_STACK_SIZE (8192)
+
+// Held by a fill task while it refills, and by the CircuitPython task while background callbacks
+// are prevented or running. So code that prevents background callbacks to change a sample (like
+// MP3Decoder.file) still keeps refill out. Recursive because a sample may prevent them itself
+// while it fills.
+static StaticSemaphore_t background_lock_storage;
+static SemaphoreHandle_t background_lock;
+
+void port_background_lock(void) {
+    if (background_lock == NULL) {
+        background_lock = xSemaphoreCreateRecursiveMutexStatic(&background_lock_storage);
+    }
+    xSemaphoreTakeRecursive(background_lock, portMAX_DELAY);
+}
+
+void port_background_unlock(void) {
+    if (background_lock != NULL && xSemaphoreGetMutexHolder(background_lock) == xTaskGetCurrentTaskHandle()) {
+        xSemaphoreGiveRecursive(background_lock);
+    }
+}
 
 static void i2s_fill_buffer(i2s_t *self) {
     if (self->next_buffer_size == 0) {
@@ -116,20 +142,25 @@ static void i2s_fill_buffer(i2s_t *self) {
     self->next_buffer_size = 0;
 }
 
-static void i2s_callback_fun(void *self_in) {
+static void i2s_fill_task(void *self_in) {
     i2s_t *self = self_in;
-    #if defined(SOC_CACHE_INTERNAL_MEM_VIA_L1CACHE) && SOC_CACHE_INTERNAL_MEM_VIA_L1CACHE
-    void *buffer = self->next_buffer;
-    size_t buffer_size = self->next_buffer_size;
-    #endif
-    i2s_fill_buffer(self);
-    #if defined(SOC_CACHE_INTERNAL_MEM_VIA_L1CACHE) && SOC_CACHE_INTERNAL_MEM_VIA_L1CACHE
-    // Internal RAM is cached. IDF writes the buffer back right after on_sent, before
-    // we fill it here, so write it back again or the DMA plays stale data.
-    if (buffer != NULL) {
-        esp_cache_msync(buffer, buffer_size, ESP_CACHE_MSYNC_FLAG_DIR_C2M);
+    for (;;) {
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        port_background_lock();
+        #if defined(SOC_CACHE_INTERNAL_MEM_VIA_L1CACHE) && SOC_CACHE_INTERNAL_MEM_VIA_L1CACHE
+        void *buffer = self->next_buffer;
+        size_t buffer_size = self->next_buffer_size;
+        #endif
+        i2s_fill_buffer(self);
+        #if defined(SOC_CACHE_INTERNAL_MEM_VIA_L1CACHE) && SOC_CACHE_INTERNAL_MEM_VIA_L1CACHE
+        // Internal RAM is cached. IDF writes the buffer back right after on_sent, before
+        // we fill it here, so write it back again or the DMA plays stale data.
+        if (buffer != NULL) {
+            esp_cache_msync(buffer, buffer_size, ESP_CACHE_MSYNC_FLAG_DIR_C2M);
+        }
+        #endif
+        port_background_unlock();
     }
-    #endif
 }
 
 static bool i2s_event_interrupt(i2s_chan_handle_t handle, i2s_event_data_t *event, void *self_in) {
@@ -137,8 +168,9 @@ static bool i2s_event_interrupt(i2s_chan_handle_t handle, i2s_event_data_t *even
     self->underrun = self->underrun || self->next_buffer != NULL;
     self->next_buffer = (int16_t *)event->dma_buf;
     self->next_buffer_size = event->size;
-    background_callback_add(&self->callback, i2s_callback_fun, self_in);
-    return false;
+    BaseType_t woken = pdFALSE;
+    vTaskNotifyGiveFromISR(self->fill_task, &woken);
+    return woken == pdTRUE;
 }
 
 void port_i2s_allocate_init(i2s_t *self, bool left_justified) {
@@ -151,6 +183,12 @@ void port_i2s_allocate_init(i2s_t *self, bool left_justified) {
     esp_err_t err = i2s_new_channel(&chan_config, &self->handle, NULL);
     if (err == ESP_ERR_NOT_FOUND) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Peripheral in use"));
+    }
+    self->fill_task = NULL;
+    if (xTaskCreatePinnedToCore(i2s_fill_task, "i2s fill", I2S_FILL_TASK_STACK_SIZE, self,
+        I2S_FILL_TASK_PRIORITY, &self->fill_task, CONFIG_ESP_MAIN_TASK_AFFINITY) != pdPASS) {
+        port_i2s_deinit(self);
+        m_malloc_fail(I2S_FILL_TASK_STACK_SIZE);
     }
     self->playing = false;
     self->paused = false;
@@ -169,12 +207,24 @@ void port_i2s_deinit(i2s_t *self) {
     port_i2s_stop(self);
     i2s_del_channel(self->handle);
     self->handle = NULL;
+    if (self->fill_task != NULL) {
+        // The channel is gone, so nothing wakes the task again. Preventing background callbacks
+        // takes the lock, so the task isn't mid-fill.
+        background_callback_prevent();
+        vTaskDelete(self->fill_task);
+        self->fill_task = NULL;
+        background_callback_allow();
+    }
 }
 
 void port_i2s_play(i2s_t *self, mp_obj_t sample, bool loop) {
     audiosample_check(sample);
     // Pause to disable the I2S channel so we can adjust the clock.
     port_i2s_pause(self);
+    // Keep refill out while the sample changes. Loading it can raise, so allow again if it does.
+    MP_DEFINE_NLR_JUMP_CALLBACK_FUNCTION_1(allow, background_callback_allow, NULL);
+    background_callback_prevent();
+    nlr_push_jump_callback(&allow.callback, mp_call_function_1_from_nlr_jump_callback);
     self->sample = sample;
     self->loop = loop;
     self->bytes_per_sample = audiosample_get_bits_per_sample(sample) / 8;
@@ -215,6 +265,7 @@ void port_i2s_play(i2s_t *self, mp_obj_t sample, bool loop) {
         i2s_channel_preload_data(self->handle, &starting_frame, sizeof(uint32_t), &bytes_loaded);
         preloaded += bytes_loaded;
     }
+    nlr_pop_jump_callback(true);
 
     // enable the channel
     i2s_channel_enable(self->handle);
@@ -235,10 +286,12 @@ bool port_i2s_paused(i2s_t *self) {
 
 void port_i2s_stop(i2s_t *self) {
     port_i2s_pause(self);
+    background_callback_prevent();
     self->sample = NULL;
     self->playing = false;
     self->stopping = false;
     self->last_buffer = false;
+    background_callback_allow();
 }
 
 void port_i2s_pause(i2s_t *self) {

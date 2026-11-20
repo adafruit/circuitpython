@@ -94,6 +94,13 @@ void port_wake_main_task(void);
 // default weak implementation is provided that does nothing.
 void port_wake_main_task_from_isr(void);
 
+// Ports that run background work, like audio refill, on another task take a lock here so that
+// work is kept out while background callbacks are prevented (background_callback_prevent() or
+// while they run). Calls nest and come from the CircuitPython task or a port's own task, never
+// an interrupt. Default weak implementations do nothing.
+void port_background_lock(void);
+void port_background_unlock(void);
+
 // Some ports may use real RTOS tasks besides the background task framework of
 // CircuitPython. Calling this will yield to other tasks at the same priority level
 // (or higher priority level if pre-emption is not immediate in the RTOS)
