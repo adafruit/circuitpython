@@ -269,21 +269,7 @@ static void _refresh_display(framebufferio_framebufferdisplay_obj_t *self) {
 }
 
 void common_hal_framebufferio_framebufferdisplay_set_rotation(framebufferio_framebufferdisplay_obj_t *self, int rotation) {
-    bool transposed = (self->core.rotation == 90 || self->core.rotation == 270);
-    bool will_transposed = (rotation == 90 || rotation == 270);
-    if (transposed != will_transposed) {
-        int tmp = self->core.width;
-        self->core.width = self->core.height;
-        self->core.height = tmp;
-    }
-    displayio_display_core_set_rotation(&self->core, rotation);
-    if (self == &displays[0].framebuffer_display) {
-        supervisor_stop_terminal();
-        supervisor_start_terminal(self->core.width, self->core.height);
-    }
-    if (self->core.current_group != NULL) {
-        displayio_group_update_transform(self->core.current_group, &self->core.transform);
-    }
+    displayio_display_core_set_rotation_and_update(&self->core, rotation, &self->base);
 }
 
 uint16_t common_hal_framebufferio_framebufferdisplay_get_rotation(framebufferio_framebufferdisplay_obj_t *self) {
