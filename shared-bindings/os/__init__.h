@@ -17,6 +17,15 @@ mp_obj_t common_hal_os_getcwd(void);
 mp_obj_t common_hal_os_getenv(const char *key, mp_obj_t default_);
 mp_obj_t common_hal_os_getenv_path(const char *path, const char *key, mp_obj_t default_);
 
+#if CIRCUITPY_WIFI || CIRCUITPY_MII
+// Gets the value of os.uname().nodename. That is the network hostname, or the
+// hostname the network interface will be given once it is set up, or
+// MICROPY_HW_MCU_NAME if there is no hostname. Writes the value to buf as a
+// NUL-terminated string, truncated to fit in buf_size bytes. If buf_size is 0,
+// writes nothing. Never allocates or raises.
+void common_hal_os_get_nodename(char *buf, size_t buf_size);
+#endif
+
 mp_obj_t common_hal_os_listdir(const char *path);
 void common_hal_os_mkdir(const char *path);
 void common_hal_os_remove(const char *path);

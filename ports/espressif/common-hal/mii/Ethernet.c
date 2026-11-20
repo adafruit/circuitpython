@@ -170,12 +170,8 @@ void common_hal_mii_ethernet_construct(mii_ethernet_obj_t *self,
     CHECK_ESP_RESULT(esp_event_handler_register(IP_EVENT, IP_EVENT_ETH_GOT_IP, _eth_event_handler, self));
 
     // Set hostname
-    uint8_t local_mac[MAC_ADDRESS_LENGTH];
-    esp_eth_ioctl(self->eth_handle, ETH_CMD_G_MAC_ADDR, local_mac);
     char hostname[32];
-    snprintf(hostname, sizeof(hostname), "cpy-%02x%02x%02x%02x%02x%02x",
-        local_mac[0], local_mac[1], local_mac[2],
-        local_mac[3], local_mac[4], local_mac[5]);
+    mii_get_default_hostname(hostname, sizeof(hostname));
     esp_netif_set_hostname(self->netif, hostname);
 
     // Start the ethernet driver (DHCP starts automatically with default netif config)
@@ -233,6 +229,17 @@ const char *mii_get_hostname_raw(void) {
     const char *hostname = NULL;
     esp_netif_get_hostname(self->netif, &hostname);
     return hostname == NULL ? "" : hostname;
+}
+
+void mii_get_default_hostname(char *buf, size_t buf_size) {
+    if (buf_size == 0) {
+        return;
+    }
+    // The Ethernet constructor sets the MAC to the chip's factory default MAC.
+    uint8_t mac[MAC_ADDRESS_LENGTH] = {0};
+    esp_efuse_mac_get_default(mac);
+    snprintf(buf, buf_size, "cpy-%02x%02x%02x%02x%02x%02x",
+        mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 }
 
 // Raw uint32_t IPv4 address of the interface, in network byte order, or 0

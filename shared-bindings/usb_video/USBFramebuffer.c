@@ -94,12 +94,15 @@ static void usb_video_uvcframebuffer_get_bufinfo(mp_obj_t self_in, mp_buffer_inf
 // These version exists so that the prototype matches the protocol,
 // avoiding a type cast that can hide errors
 static void usb_video_uvcframebuffer_swapbuffers(mp_obj_t self_in, uint8_t *dirty_row_bitmap) {
-    (void)dirty_row_bitmap;
-    shared_module_usb_video_uvcframebuffer_refresh(self_in);
+    shared_module_usb_video_uvcframebuffer_swapbuffers(self_in, dirty_row_bitmap);
 }
 
 static void usb_video_uvcframebuffer_deinit_proto(mp_obj_t self_in) {
     /* NOTHING */
+}
+
+static void usb_video_uvcframebuffer_set_frame_callback(mp_obj_t self_in, framebuffer_frame_callback_t cb, void *data) {
+    shared_module_usb_video_uvcframebuffer_set_frame_callback(self_in, cb, data);
 }
 
 static int usb_video_uvcframebuffer_get_width_proto(mp_obj_t self_in) {
@@ -128,6 +131,7 @@ static const framebuffer_p_t usb_video_uvcframebuffer_proto = {
     .swapbuffers = usb_video_uvcframebuffer_swapbuffers,
     .deinit = usb_video_uvcframebuffer_deinit_proto,
     .get_reverse_pixels_in_word = usb_video_uvcframebuffer_get_reverse_pixels_in_word_proto,
+    .set_frame_callback = usb_video_uvcframebuffer_set_frame_callback,
 };
 
 static mp_int_t usb_video_uvcframebuffer_get_buffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_uint_t flags) {

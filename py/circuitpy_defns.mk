@@ -696,6 +696,7 @@ $(filter $(SRC_PATTERNS), \
 	_bleio/ScanEntry.c \
 	_eve/__init__.c \
 	__future__/__init__.c \
+	busdisplay/BusDisplay.c \
 	camera/ImageFormat.c \
 	canio/Match.c \
 	codeop/__init__.c \
@@ -704,8 +705,16 @@ $(filter $(SRC_PATTERNS), \
 	digitalio/Direction.c \
 	digitalio/DriveMode.c \
 	digitalio/Pull.c \
+	displayio/Bitmap.c \
+	displayio/ColorConverter.c \
+	displayio/Group.c \
+	displayio/OnDiskBitmap.c \
+	displayio/Palette.c \
+	displayio/TileGrid.c \
+	displayio/__init__.c \
 	displayio/Colorspace.c \
 	fontio/Glyph.c \
+	framebufferio/FramebufferDisplay.c \
 	imagecapture/ParallelImageCapture.c \
 	locale/__init__.c \
 	math/__init__.c \
@@ -722,6 +731,7 @@ $(filter $(SRC_PATTERNS), \
 	supervisor/RunReason.c \
 	supervisor/Runtime.c \
 	supervisor/StatusBar.c \
+	vectorio/VectorShape.c \
 	videogif/__init__.c \
 	wifi/AuthMode.c \
 	wifi/Packet.c \
@@ -818,18 +828,9 @@ SRC_SHARED_MODULE_ALL = \
 	adafruit_bus_device/i2c_device/I2CDevice.c \
 	adafruit_bus_device/spi_device/SPIDevice.c \
 	busdisplay/__init__.c \
-	busdisplay/BusDisplay.c \
 	canio/Match.c \
 	canio/Message.c \
 	canio/RemoteTransmissionRequest.c \
-	displayio/Bitmap.c \
-	displayio/ColorConverter.c \
-	displayio/Group.c \
-	displayio/OnDiskBitmap.c \
-	displayio/Palette.c \
-	displayio/TileGrid.c \
-	displayio/area.c \
-	displayio/__init__.c \
 	dotclockframebuffer/__init__.c \
 	emmcio/__init__.c \
 	epaperdisplay/__init__.c \
@@ -844,7 +845,6 @@ SRC_SHARED_MODULE_ALL = \
 	lvfontio/__init__.c \
 	fourwire/__init__.c \
 	fourwire/FourWire.c \
-	framebufferio/FramebufferDisplay.c \
 	framebufferio/__init__.c \
 	getpass/__init__.c \
 	gifio/__init__.c \
@@ -930,7 +930,6 @@ SRC_SHARED_MODULE_ALL = \
 	vectorio/Circle.c \
 	vectorio/Polygon.c \
 	vectorio/Rectangle.c \
-	vectorio/VectorShape.c \
 	vectorio/__init__.c \
 	videocore/VideoBuffer.c \
 	videocore/__init__.c \
@@ -938,6 +937,43 @@ SRC_SHARED_MODULE_ALL = \
 	warnings/__init__.c \
 	watchdog/__init__.c \
 	zlib/__init__.c \
+
+# The displayio and vectorio implementation sources live in one of the two backend
+# directories. vectorio's shape math (Circle, Polygon, Rectangle) is backend agnostic and
+# lives in shared-module/vectorio/ directly.
+ifeq ($(CIRCUITPY_DISPLAYIO_LVGL),1)
+SRC_SHARED_MODULE_INTERNAL += \
+$(filter $(SRC_PATTERNS), \
+	displayio/lvgl/Bitmap.c \
+	displayio/lvgl/ColorConverter.c \
+	displayio/lvgl/Group.c \
+	displayio/lvgl/ImageRoot.c \
+	displayio/lvgl/OnDiskBitmap.c \
+	displayio/lvgl/Palette.c \
+	busdisplay/lvgl/BusDisplay.c \
+	displayio/lvgl/TileGrid.c \
+	displayio/legacy/__init__.c \
+	framebufferio/lvgl/FramebufferDisplay.c \
+	vectorio/lvgl/VectorShape.c \
+	videocore/lvgl/VideoBuffer.c \
+)
+else
+SRC_SHARED_MODULE_INTERNAL += \
+$(filter $(SRC_PATTERNS), \
+	busdisplay/legacy/BusDisplay.c \
+	displayio/legacy/__init__.c \
+	displayio/legacy/Bitmap.c \
+	displayio/legacy/ColorConverter.c \
+	displayio/legacy/display_core_scanline.c \
+	displayio/legacy/Group.c \
+	displayio/legacy/OnDiskBitmap.c \
+	displayio/legacy/Palette.c \
+	displayio/legacy/TileGrid.c \
+	framebufferio/legacy/FramebufferDisplay.c \
+	vectorio/legacy/VectorShape.c \
+	videocore/legacy/VideoBuffer.c \
+)
+endif
 
 # All possible sources are listed here, and are filtered by SRC_PATTERNS.
 SRC_SHARED_MODULE = $(filter $(SRC_PATTERNS), $(SRC_SHARED_MODULE_ALL))
@@ -1173,13 +1209,17 @@ $(BUILD)/lib/uzlib/tinflate.o: CFLAGS += -Wno-missing-braces -Wno-missing-protot
 endif
 
 # All possible sources are listed here, and are filtered by SRC_PATTERNS.
-SRC_SHARED_MODULE_INTERNAL = \
+# area.c is shared by both compositors (vectorio needs the area helpers) so it is
+# always compiled.
+SRC_SHARED_MODULE_INTERNAL += \
 $(filter $(SRC_PATTERNS), \
 	_airlift/network.c \
 	_airlift/socketpool.c \
 	_airlift/transport.c \
 	displayio/bus_core.c \
 	displayio/display_core.c \
+	displayio/area.c \
+	epaperdisplay/lag_drive.c \
 	usb/utf16le.c \
 )
 

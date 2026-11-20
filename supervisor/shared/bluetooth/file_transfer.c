@@ -115,6 +115,7 @@ void supervisor_stop_bluetooth_file_transfer(void) {
 
 #define ANY_COMMAND 0x00
 #define THIS_COMMAND 0x01
+#define HELD_COMMAND 0x02   // the running program uses the file: run this command again once it stops
 
 // FATFS has a two second timestamp resolution but the BLE API allows for nanosecond resolution.
 // This function truncates the time to a resolution storable by FATFS and returns it.
@@ -268,6 +269,10 @@ static uint8_t _process_write(const uint8_t *raw_buf, size_t command_len) {
     _truncated_time = truncate_time(command->modification_time);
     supervisor_fs_err_t result = supervisor_vfs_open_file(active_mount, mount_path,
         SUPERVISOR_FS_OPEN_WRITE | SUPERVISOR_FS_OPEN_CREATE, command->modification_time, &active_file);
+    if (result == SUPERVISOR_FS_BUSY) {
+        filesystem_unlock(active_mount);
+        return HELD_COMMAND;
+    }
     if (result != SUPERVISOR_FS_OK) {
         response.status = STATUS_ERROR;
         common_hal_bleio_packet_buffer_write(&_transfer_packet_buffer, (const uint8_t *)&response, sizeof(struct write_pacing), NULL, 0);
@@ -366,6 +371,9 @@ static uint8_t _process_delete(const uint8_t *raw_buf, size_t command_len) {
     full_path[command->path_length] = '\0';
 
     supervisor_fs_err_t result = supervisor_workflow_delete_recursive(full_path);
+    if (result == SUPERVISOR_FS_BUSY) {
+        return HELD_COMMAND;
+    }
 
     if (result == SUPERVISOR_FS_WRITE_PROTECTED) {
         response.status = STATUS_ERROR_READONLY;
@@ -582,9 +590,11 @@ void supervisor_bluetooth_file_transfer_background(void) {
     running = true;
     mp_int_t size = 1;
     while (size > 0) {
-        size = common_hal_bleio_packet_buffer_readinto(&_transfer_packet_buffer, current_command + current_offset, COMMAND_SIZE - current_offset);
+        // A held command runs again from what is already in the buffer.
+        size = next_command == HELD_COMMAND ? 0 :
+            common_hal_bleio_packet_buffer_readinto(&_transfer_packet_buffer, current_command + current_offset, COMMAND_SIZE - current_offset);
 
-        if (size == 0) {
+        if (size == 0 && next_command != HELD_COMMAND) {
             break;
         }
         autoreload_suspend(AUTORELOAD_SUSPEND_BLE);
@@ -635,7 +645,7 @@ void supervisor_bluetooth_file_transfer_background(void) {
                 break;
         }
         // Preserve the offset if we are waiting for more from this command.
-        if (next_command != THIS_COMMAND) {
+        if (next_command != THIS_COMMAND && next_command != HELD_COMMAND) {
             current_offset = 0;
         }
         if (next_command == ANY_COMMAND) {

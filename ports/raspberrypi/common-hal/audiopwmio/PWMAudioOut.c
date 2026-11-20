@@ -46,7 +46,7 @@ static uint32_t limit_denominator(uint32_t max_denominator, uint32_t num_in, uin
     uint32_t g = gcd(n, d);
     d /= g;
     n /= g;
-    if (d < max_denominator) {
+    if (d <= max_denominator) {
         *den_out = d;
         return n;
     }
@@ -71,8 +71,11 @@ static uint32_t limit_denominator(uint32_t max_denominator, uint32_t num_in, uin
     uint32_t bound1_num = p0 + k * p1, bound1_den = q0 + k * q1;
     uint32_t bound2_num = p1, bound2_den = q1;
 
-    if (fabsf((float)bound1_num / bound1_den - (float)num_in / den_in) <=
-        fabsf((float)bound2_num / bound2_den - (float)num_in / den_in)) {
+    // Pick the closer bound like Python does, but never a zero numerator because the pacing
+    // timer would never fire. Rates below den_in / max_denominator get the slowest rate instead.
+    if (bound2_num != 0 &&
+        fabsf((float)bound2_num / bound2_den - (float)num_in / den_in) <=
+        fabsf((float)bound1_num / bound1_den - (float)num_in / den_in)) {
         *den_out = bound2_den;
         return bound2_num;
     }

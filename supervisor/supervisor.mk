@@ -32,6 +32,11 @@ ifeq ($(CIRCUITPY_ASYNC_SPI),1)
 SRC_SUPERVISOR += supervisor/shared/awaitable.c
 endif
 
+# Networking code shared by wifi and mii.
+ifneq ($(filter 1,$(CIRCUITPY_WIFI) $(CIRCUITPY_MII)),)
+SRC_SUPERVISOR += supervisor/shared/network.c
+endif
+
 # For tlsf
 CFLAGS += -D_DEBUG=0
 
@@ -289,6 +294,10 @@ $(BUILD)/supervisor/shared/translate/translate.o: $(HEADER_BUILD)/qstrdefs.gener
 CIRCUITPY_DISPLAY_FONT ?= "../../tools/fonts/ter-u12n.bdf"
 CIRCUITPY_FONT_EXTRA_CHARACTERS ?= ""
 
+ifeq ($(CIRCUITPY_DISPLAYIO_LVGL),1)
+CIRCUITPY_GEN_DISPLAY_RESOURCES_LVGL = --lvgl-tilegrid
+endif
+
 $(BUILD)/autogen_display_resources-$(TRANSLATION).c: ../../tools/gen_display_resources.py $(TOP)/locale/$(TRANSLATION).po Makefile | $(HEADER_BUILD)
 	$(STEPECHO) "GEN $@"
 	$(Q)install -d $(BUILD)/genhdr
@@ -296,4 +305,5 @@ $(BUILD)/autogen_display_resources-$(TRANSLATION).c: ../../tools/gen_display_res
 		--font $(CIRCUITPY_DISPLAY_FONT) \
 		--sample_file $(TOP)/locale/$(TRANSLATION).po \
 		--extra_characters $(CIRCUITPY_FONT_EXTRA_CHARACTERS) \
-		--output_c_file $@
+		--output_c_file $@ \
+		$(CIRCUITPY_GEN_DISPLAY_RESOURCES_LVGL)

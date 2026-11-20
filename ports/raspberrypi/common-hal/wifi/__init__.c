@@ -11,9 +11,13 @@
 #include "shared-bindings/wifi/Monitor.h"
 #include "shared-bindings/wifi/Radio.h"
 
+#include <string.h>
+
 #include "py/mperrno.h"
 #include "py/mpstate.h"
 #include "py/runtime.h"
+
+#include "lib/cyw43-driver/src/cyw43_config.h"
 
 #if CIRCUITPY_SETTINGS_TOML
 #include "supervisor/shared/settings.h"
@@ -60,6 +64,16 @@ void common_hal_wifi_init(bool user_initiated) {
 
     // start wifi
     common_hal_wifi_radio_set_enabled(self, true);
+}
+
+bool wifi_is_initialized(void) {
+    return wifi_inited;
+}
+
+void wifi_get_default_hostname(char *buf, size_t buf_size) {
+    // When the station interface starts, the driver for the CYW43 Wi-Fi chip
+    // gives it the name CYW43_HOST_NAME. The Pico SDK sets that to "PicoW".
+    strlcpy(buf, CYW43_HOST_NAME, buf_size);
 }
 
 void wifi_user_reset(void) {

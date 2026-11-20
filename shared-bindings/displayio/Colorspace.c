@@ -20,6 +20,7 @@ MAKE_ENUM_VALUE(displayio_colorspace_type, displayio_colorspace, BGR565_SWAPPED,
 MAKE_ENUM_VALUE(displayio_colorspace_type, displayio_colorspace, BGR555, DISPLAYIO_COLORSPACE_BGR555);
 MAKE_ENUM_VALUE(displayio_colorspace_type, displayio_colorspace, BGR555_SWAPPED, DISPLAYIO_COLORSPACE_BGR555_SWAPPED);
 MAKE_ENUM_VALUE(displayio_colorspace_type, displayio_colorspace, L8, DISPLAYIO_COLORSPACE_L8);
+MAKE_ENUM_VALUE(displayio_colorspace_type, displayio_colorspace, L1, DISPLAYIO_COLORSPACE_L1);
 
 //| class Colorspace:
 //|     """The colorspace for a `ColorConverter` to operate in"""
@@ -39,6 +40,10 @@ MAKE_ENUM_VALUE(displayio_colorspace_type, displayio_colorspace, L8, DISPLAYIO_C
 //|     RGB555_SWAPPED: Colorspace
 //|     """The swapped 15-bit colorspace.  First, the high and low 8 bits of the number are swapped, then they are interpreted as for RGB555"""
 //|
+//|     L1: Colorspace
+//|     """The 1-bit black and white colorspace. 8 pixels are packed into each byte, with the leftmost pixel in
+//|     the top bit. 1 is white and 0 is black."""
+//|
 //|
 MAKE_ENUM_MAP(displayio_colorspace) {
     MAKE_ENUM_MAP_ENTRY(displayio_colorspace, RGB888),
@@ -51,6 +56,7 @@ MAKE_ENUM_MAP(displayio_colorspace) {
     MAKE_ENUM_MAP_ENTRY(displayio_colorspace, BGR555),
     MAKE_ENUM_MAP_ENTRY(displayio_colorspace, BGR555_SWAPPED),
     MAKE_ENUM_MAP_ENTRY(displayio_colorspace, L8),
+    MAKE_ENUM_MAP_ENTRY(displayio_colorspace, L1),
 };
 static MP_DEFINE_CONST_DICT(displayio_colorspace_locals_dict, displayio_colorspace_locals_table);
 

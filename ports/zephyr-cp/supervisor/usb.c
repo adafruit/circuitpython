@@ -94,6 +94,7 @@ int _zephyr_disk_status(struct disk_info *disk);
 int _zephyr_disk_read(struct disk_info *disk, uint8_t *data_buf, uint32_t start_sector, uint32_t num_sector);
 int _zephyr_disk_write(struct disk_info *disk, const uint8_t *data_buf, uint32_t start_sector, uint32_t num_sector);
 int _zephyr_disk_ioctl(struct disk_info *disk, uint8_t cmd, void *buff);
+static bool msc_enabled(void);
 
 static const struct disk_operations disk_ops = {
     .init = _zephyr_disk_init,
@@ -123,6 +124,9 @@ int _zephyr_disk_status(struct disk_info *disk) {
     supervisor_vfs_t *root_vfs = filesystem_circuitpy();
     fs_user_mount_t *root = root_vfs == NULL ? NULL : &root_vfs->fat;
     int lun = 0;
+    if (!msc_enabled()) {
+        return DISK_STATUS_NOMEDIA;
+    }
     if (root == NULL) {
         printk("Status: No media\n");
         return DISK_STATUS_NOMEDIA;
@@ -223,6 +227,38 @@ int _zephyr_disk_ioctl(struct disk_info *disk, uint8_t cmd, void *buff) {
 // workqueue context) and read from the CircuitPython VM thread, so keep it
 // volatile to avoid the compiler caching stale values.
 static volatile bool usb_configured = false;
+
+// Whether the CIRCUITPY MSC drive is enabled (storage.disable_usb_drive() clears it).
+static bool msc_enabled(void) {
+    #if CIRCUITPY_USB_MSC && CIRCUITPY_STORAGE
+    return storage_usb_enabled();
+    #else
+    return false;
+    #endif
+}
+
+// Release the USB MSC lock on CIRCUITPY, if disk status took it. Other holders are not touched.
+void usb_msc_release_circuitpy_lock(void) {
+    if (!locked[0]) {
+        return;
+    }
+    supervisor_vfs_t *circuitpy = filesystem_circuitpy();
+    if (circuitpy != NULL) {
+        blockdev_unlock(circuitpy);
+    }
+    locked[0] = false;
+}
+
+// Whether USB MSC holds the blockdev lock on this mount.
+bool usb_msc_holds_lock(fs_user_mount_t *vfs) {
+    supervisor_vfs_t *circuitpy = filesystem_circuitpy();
+    return locked[0] && circuitpy != NULL && &circuitpy->fat == vfs;
+}
+
+// Zephyr's MSC reports the LUN state on every TEST UNIT READY, so there is no eject state to reset.
+void usb_msc_remount(fs_user_mount_t *fs_mount) {
+    (void)fs_mount;
+}
 
 static const struct device *const console_dev = DEVICE_DT_GET(DT_NODELABEL(cdc_acm_console));
 static bool console_dtr = false;
@@ -389,12 +425,11 @@ void usb_init(void) {
             }
         }
 
-        err = usbd_register_class(&main_usbd, "msc_0", USBD_SPEED_HS, 1);
-        if (err) {
-            printk("Failed to add register MSC class %d\n", err);
-            return;
-        } else {
-            printk("Registered MSC class for high speed\n");
+        if (msc_enabled()) {
+            err = usbd_register_class(&main_usbd, "msc_0", USBD_SPEED_HS, 1);
+            if (err) {
+                return;
+            }
         }
 
         #if CIRCUITPY_USB_HID
@@ -442,10 +477,11 @@ void usb_init(void) {
         }
     }
 
-    err = usbd_register_class(&main_usbd, "msc_0", USBD_SPEED_FS, 1);
-    if (err) {
-        printk("Failed to add register MSC class %d\n", err);
-        return;
+    if (msc_enabled()) {
+        err = usbd_register_class(&main_usbd, "msc_0", USBD_SPEED_FS, 1);
+        if (err) {
+            return;
+        }
     }
     /* doc functions register end */
 

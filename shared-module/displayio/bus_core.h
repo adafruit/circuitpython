@@ -11,6 +11,7 @@
 
 #include "shared-module/displayio/area.h"
 #include "shared-module/displayio/display_core.h"
+#include "shared-module/displayio/Palette.h"
 
 #define NO_COMMAND 0x100
 
@@ -56,7 +57,12 @@ bool displayio_display_bus_is_free(displayio_display_bus_t *self);
 bool displayio_display_bus_begin_transaction(displayio_display_bus_t *self);
 void displayio_display_bus_end_transaction(displayio_display_bus_t *self);
 
-void displayio_display_bus_set_region_to_update(displayio_display_bus_t *self, displayio_display_core_t *display, displayio_area_t *area);
+void displayio_display_bus_set_region_to_update(displayio_display_bus_t *self, const _displayio_colorspace_t *colorspace, displayio_area_t *area);
+
+// Send a BusDisplay-style init sequence. Each command is command, length byte (with 0x80
+// marking a delay), data, optional delay in ms.
+void displayio_display_bus_send_init_sequence(displayio_display_bus_t *self,
+    const uint8_t *init_sequence, uint16_t init_sequence_len);
 
 // Drain any pending asynchronous transfers on the bus.
 // No-op for synchronous buses (FourWire, I2C, ParallelBus).

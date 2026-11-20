@@ -18,11 +18,13 @@
 #include "shared-bindings/storage/__init__.h"
 #include "supervisor/filesystem.h"
 #include "supervisor/flash.h"
+#include "supervisor/shared/reload.h"
 #if CIRCUITPY_STORAGE_MAP_FILE
 #include "extmod/vfs_fat.h"
 #include "lib/oofatfs/ff.h"
 #include "py/objarray.h"
 #include "py/objlist.h"
+#include "py/stream.h"
 #if CIRCUITPY_SETTINGS_TOML
 #include "supervisor/shared/settings.h"
 #endif
@@ -304,8 +306,25 @@ void storage_map_file_init(void) {
 // until reload.
 MP_REGISTER_ROOT_POINTER(mp_obj_t storage_mapped_files);
 
+#if CIRCUITPY_STORAGE_MAP_IMPORT
+// Readers of the .mpy files imported in place, linked through next_reader. They stay
+// until reload: their runs are in use.
+MP_REGISTER_ROOT_POINTER(void *storage_mapped_imports);
+#endif
+
 void storage_map_file_reset(void) {
     MP_STATE_VM(storage_mapped_files) = MP_OBJ_NULL;
+    // A held workflow write may ask for a reload after the VM has already stopped. Drop
+    // that request: left pending, it makes the BLE workflow drop its replies.
+    MP_STATE_THREAD(mp_pending_exception) = MP_OBJ_NULL;
+    #if CIRCUITPY_STORAGE_MAP_IMPORT
+    common_hal_mcu_disable_interrupts();        // the USB task may be checking the list
+    MP_STATE_VM(storage_mapped_imports) = NULL;
+    common_hal_mcu_enable_interrupts();
+    #if CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_MSC
+    usb_msc_finish_deferred_write();            // the code it would have overwritten is gone
+    #endif
+    #endif
 }
 
 static bool mapped_files_contain(DWORD sclust) {
@@ -327,21 +346,26 @@ static void mapped_files_add(DWORD sclust) {
     }
 }
 
-void storage_map_file_check_writable(fs_user_mount_t *vfs, const char *path) {
+// Not inlined into its raising wrapper: the supervisor file writers call it too.
+MP_NOINLINE bool storage_map_file_in_use(fs_user_mount_t *vfs, const char *path) {
     // A bare fs_user_mount_t (e.g. an SD card mount) shares the supervisor_vfs_t
     // prefix, so the cast is safe. If CIRCUITPY is littlefs, the FAT mount can
     // never be the CIRCUITPY mount, so no mapped file can match either.
     if (MP_STATE_VM(storage_mapped_files) == MP_OBJ_NULL ||
         (supervisor_vfs_t *)vfs != filesystem_circuitpy()) {
-        return;
+        return false;
     }
     FIL fp;
     if (f_open(&vfs->fatfs, &fp, path, FA_READ) != FR_OK) {
-        return;                                 // no such file yet
+        return false;                           // no such file yet
     }
     DWORD sclust = fp.obj.sclust;
     f_close(&fp);
-    if (mapped_files_contain(sclust)) {
+    return mapped_files_contain(sclust);
+}
+
+void storage_map_file_check_writable(fs_user_mount_t *vfs, const char *path) {
+    if (storage_map_file_in_use(vfs, path)) {
         mp_raise_OSError(MP_EACCES);            // mapped: its flash bytes are in use
     }
 }
@@ -394,7 +418,7 @@ int storage_map_runs(mp_obj_t file_in, storage_map_run_fn_t fn, void *ctx) {
             if (piece > span) {
                 piece = span;
             }
-            fn(ctx, addr, (size_t)piece);
+            fn(ctx, addr, (size_t)piece, sector);
             span -= piece;
             left -= piece;
             sector += contiguous;
@@ -403,7 +427,7 @@ int storage_map_runs(mp_obj_t file_in, storage_map_run_fn_t fn, void *ctx) {
     return left != 0 ? MP_EIO : 0;              // chain shorter than the dir-entry size: corrupt
 }
 
-static void append_view(void *views, const uint8_t *addr, size_t len) {
+static void append_view(void *views, const uint8_t *addr, size_t len, uint32_t block) {
     // read-only: a stray write raises instead of silently hitting the flash window
     mp_obj_list_append(MP_OBJ_FROM_PTR(views), mp_obj_new_memoryview('B', len, (void *)addr));
 }
@@ -430,3 +454,123 @@ mp_obj_t common_hal_storage_map_file(mp_obj_t file_in) {
     mp_raise_type(&mp_type_NotImplementedError);    // this port does not map its drive
     #endif
 }
+
+#if CIRCUITPY_STORAGE_MAP_IMPORT
+#ifndef CIRCUITPY_STORAGE_MAP_GUARD_BLOCKS
+#define CIRCUITPY_STORAGE_MAP_GUARD_BLOCKS (1)
+#endif
+
+// Reads a .mpy straight from its flash runs. Data inside one run is used in place; the
+// loader copies anything that spans two runs.
+typedef struct {
+    const uint8_t *addr;
+    size_t len;
+    uint32_t block;             // first drive block, for the USB write guard
+} map_run_t;
+
+typedef struct _map_reader_t {
+    struct _map_reader_t *next_reader;  // the import before this one
+    const uint8_t *cur;
+    const uint8_t *end;         // end of the current run
+    size_t next_run;            // index of the run after the current one
+    size_t run_count;
+    map_run_t runs[];
+} map_reader_t;
+
+static void count_run(void *ctx, const uint8_t *addr, size_t len, uint32_t block) {
+    (*(size_t *)ctx)++;
+}
+
+static void add_run(void *ctx, const uint8_t *addr, size_t len, uint32_t block) {
+    map_reader_t *r = ctx;
+    r->runs[r->run_count] = (map_run_t) {addr, len, block};
+    r->run_count++;
+}
+
+// Steps to the next run when the current one is used up. False at the end of the file.
+static bool map_reader_fill(map_reader_t *r) {
+    while (r->cur == r->end) {
+        if (r->next_run == r->run_count) {
+            return false;
+        }
+        r->cur = r->runs[r->next_run].addr;
+        r->end = r->cur + r->runs[r->next_run].len;
+        r->next_run++;
+    }
+    return true;
+}
+
+mp_uint_t storage_map_reader_readbyte(void *data) {
+    map_reader_t *r = data;
+    if (!map_reader_fill(r)) {
+        return MP_READER_EOF;
+    }
+    return *r->cur++;
+}
+
+const uint8_t *storage_map_reader_try_read_rom(void *data, size_t len) {
+    map_reader_t *r = data;
+    map_reader_fill(r);
+    // A str in flash needs its NUL after it, so data may fill a run exactly only at the end
+    // of the file, where no str ends.
+    size_t avail = r->end - r->cur;
+    if (len > avail || (len == avail && r->next_run != r->run_count)) {
+        return NULL;
+    }
+    const uint8_t *addr = r->cur;
+    r->cur += len;
+    return addr;
+}
+
+bool storage_map_import_uses_blocks(uint32_t lba, uint32_t count) {
+    // A port that erases a whole sector while the VM can run rewrites the neighbours too.
+    const uint32_t sector = CIRCUITPY_STORAGE_MAP_GUARD_BLOCKS;
+    uint32_t end = (lba + count + sector - 1) / sector * sector;
+    lba -= lba % sector;
+    for (map_reader_t *r = MP_STATE_VM(storage_mapped_imports); r != NULL; r = r->next_reader) {
+        for (size_t j = 0; j < r->run_count; j++) {
+            const map_run_t *run = &r->runs[j];
+            if (run->block < end && lba < run->block + (run->len + FF_MIN_SS - 1) / FF_MIN_SS) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+static void map_reader_close(void *data) {
+    // Kept in storage_mapped_imports until reload.
+}
+
+bool storage_map_file_reader(mp_reader_t *reader, qstr filename) {
+    // The REPL can't be stopped while it waits for input, so a host write could not be held
+    // off until its imports are gone. Load them into RAM instead.
+    if (autoreload_is_suspended(AUTORELOAD_SUSPEND_REPL)) {
+        return false;
+    }
+    mp_obj_t args[2] = {
+        MP_OBJ_NEW_QSTR(filename),
+        MP_OBJ_NEW_QSTR(MP_QSTR_rb),
+    };
+    mp_obj_t file = mp_vfs_open(MP_ARRAY_SIZE(args), &args[0], (mp_map_t *)&mp_const_empty_map);
+    map_reader_t *r = NULL;
+    size_t n = 0;
+    if (storage_map_runs(file, count_run, &n) == 0 && n > 0) {
+        r = m_new_obj_var(map_reader_t, runs, map_run_t, n);
+        r->cur = r->end = NULL;
+        r->next_run = r->run_count = 0;
+        storage_map_runs(file, add_run, r);
+        mapped_files_add(((pyb_file_obj_t *)MP_OBJ_TO_PTR(file))->fp.obj.sclust);
+        r->next_reader = MP_STATE_VM(storage_mapped_imports);
+        MP_STATE_VM(storage_mapped_imports) = r;
+    }
+    mp_stream_close(file);
+    if (r == NULL) {
+        return false;
+    }
+    reader->data = r;
+    reader->readbyte = storage_map_reader_readbyte;
+    reader->close = map_reader_close;
+    return true;
+}
+#endif

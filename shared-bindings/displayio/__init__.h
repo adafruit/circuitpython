@@ -20,9 +20,22 @@ typedef enum displayio_colorspace {
     DISPLAYIO_COLORSPACE_BGR565_SWAPPED,
     DISPLAYIO_COLORSPACE_BGR555_SWAPPED,
     DISPLAYIO_COLORSPACE_L8,
+    DISPLAYIO_COLORSPACE_L1,
 } displayio_colorspace_t;
 
 void common_hal_displayio_release_displays(void);
+
+// Release one display and its bus.
+//
+// display is the native display object (not a Python subclass instance).
+// - Does nothing if display is not an active display.
+// - The bus is not released if another display still uses it.
+// - If display is the primary display, the primary display is cleared
+//   and the terminal is stopped.
+//
+// Raises RuntimeError, with nothing released, if an EPaperDisplay using
+// lag_frames can't get its bus.
+void common_hal_displayio_deinit_display(mp_obj_t display);
 mp_obj_t common_hal_displayio_get_primary_display(void);
 void common_hal_displayio_set_primary_display(mp_obj_t o);
 void common_hal_displayio_auto_primary_display(void);
@@ -30,6 +43,7 @@ bool common_hal_displayio_primary_display_set_by_user(void);
 
 extern const mp_obj_type_t displayio_colorspace_type;
 extern const cp_enum_obj_t displayio_colorspace_RGB888_obj;
+extern const cp_enum_obj_t displayio_colorspace_RGB565_obj;
 
 
 // Used in the various bus displays: BusDisplay, EPaperDisplay and ParallelDisplay

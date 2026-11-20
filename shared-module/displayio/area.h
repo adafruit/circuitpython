@@ -9,6 +9,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#if CIRCUITPY_DISPLAYIO_LVGL
+#include "lvgl.h"
+// LVGL owns invalidation and tracks its own areas, so displayio only needs the
+// coordinate type there. The linked-list area below is a scanline-compositor detail.
+typedef lv_area_t displayio_area_t;
+#else
 // Implementations are in area.c
 typedef struct _displayio_area_t displayio_area_t;
 
@@ -19,6 +25,7 @@ struct _displayio_area_t {
     int16_t y2;
     const displayio_area_t *next; // Next area in the linked list.
 };
+#endif
 
 typedef struct {
     uint16_t x;

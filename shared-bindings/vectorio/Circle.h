@@ -12,7 +12,7 @@
 
 extern const mp_obj_type_t vectorio_circle_type;
 
-void common_hal_vectorio_circle_construct(vectorio_circle_t *self, uint16_t radius, uint16_t color_index);
+void common_hal_vectorio_circle_construct(vectorio_circle_t *self, uint16_t radius, uint16_t color_index, uint16_t outline_width, int32_t outline_color_index);
 
 void common_hal_vectorio_circle_set_on_dirty(vectorio_circle_t *self, vectorio_event_t notification);
 
@@ -26,5 +26,12 @@ void common_hal_vectorio_circle_set_radius(void *circle, int16_t radius);
 
 uint16_t common_hal_vectorio_circle_get_color_index(void *obj);
 void common_hal_vectorio_circle_set_color_index(void *obj, uint16_t color_index);
+
+uint16_t common_hal_vectorio_circle_get_outline_width(void *obj);
+void common_hal_vectorio_circle_set_outline_width(void *obj, uint16_t outline_width);
+
+// -1 means no outline color was set.
+int32_t common_hal_vectorio_circle_get_outline_color_index(void *obj);
+void common_hal_vectorio_circle_set_outline_color_index(void *obj, int32_t outline_color_index);
 
 mp_obj_t common_hal_vectorio_circle_get_draw_protocol(void *circle);

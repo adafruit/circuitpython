@@ -117,6 +117,9 @@ extern void common_hal_mcu_enable_interrupts(void);
 #define MICROPY_OPT_MPZ_BITWISE          (0)
 #define MICROPY_OPT_CACHE_MAP_LOOKUP_IN_BYTECODE (CIRCUITPY_OPT_CACHE_MAP_LOOKUP_IN_BYTECODE)
 #define MICROPY_PERSISTENT_CODE_LOAD     (1)
+// The ROM-reader half of MicroPython's VFS ROM support: .mpy data referenced in place, no ROM VFS.
+#define MICROPY_VFS_ROM                  (CIRCUITPY_STORAGE_MAP_IMPORT)
+#define MICROPY_VFS_ROM_IOCTL            (0)
 #define MICROPY_PERSISTENT_CODE_LOAD_NATIVE (CIRCUITPY_LOAD_NATIVE || CIRCUITPY_ENABLE_MPY_NATIVE)
 
 #define MICROPY_PY_ARRAY                 (CIRCUITPY_ARRAY)
@@ -412,6 +415,11 @@ typedef long mp_off_t;
 // Normally set from CIRCUITPY_BUSIO_SPI_ASYNC in the .mk files.
 #ifndef CIRCUITPY_BUSIO_SPI_ASYNC
 #define CIRCUITPY_BUSIO_SPI_ASYNC (0)
+#endif
+
+// Normally set from CIRCUITPY_EPAPERDISPLAY_FAST in the .mk files. zephyr-cp doesn't set it.
+#ifndef CIRCUITPY_EPAPERDISPLAY_FAST
+#define CIRCUITPY_EPAPERDISPLAY_FAST (0)
 #endif
 
 // These CIRCUITPY_xxx values should all be defined in the *.mk files as being on or off.

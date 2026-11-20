@@ -398,8 +398,24 @@ void reset_port(void) {
     #endif
 }
 
+#if BOARD_UF2_STM32F_BOOTLOADER
+// uf2-stm32f (https://github.com/mmoskal/uf2-stm32f) reads RTC->BKP0R on reset.
+// With no signature it starts UF2 mode and, once USB enumerates, stays there.
+// port_init() resets the backup domain, so this is written just before reset.
+#define UF2_STM32F_BOOT_SIGNATURE 0x71a21877
+#define UF2_STM32F_APP_SIGNATURE 0x24a22d12
+
+static void set_uf2_stm32f_signature(uint32_t signature) {
+    __HAL_RCC_PWR_CLK_ENABLE();
+    HAL_PWR_EnableBkUpAccess();
+    RTC->BKP0R = signature;
+}
+#endif
+
 void reset_to_bootloader(void) {
-    #if CPY_STM32F4
+    #if BOARD_UF2_STM32F_BOOTLOADER
+    set_uf2_stm32f_signature(UF2_STM32F_BOOT_SIGNATURE);
+    #elif CPY_STM32F4
     // Record the request and reset, rather than jumping from a running
     // application. check_enter_bootloader() jumps on the way back up.
     port_set_saved_word(BOOTLOADER_MAGIC |
@@ -413,6 +429,9 @@ void reset_to_bootloader(void) {
 }
 
 void reset_cpu(void) {
+    #if BOARD_UF2_STM32F_BOOTLOADER
+    set_uf2_stm32f_signature(UF2_STM32F_APP_SIGNATURE);
+    #endif
     NVIC_SystemReset();
 }
 

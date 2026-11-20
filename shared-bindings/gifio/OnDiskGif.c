@@ -97,9 +97,8 @@
 //|
 //|         If the image is too large it will be cropped at the bottom and right when displayed.
 //|
-//|         **Limitations**: The image width is limited to 320 pixels at present. `ValueError`
-//|         will be raised if the image is too wide. The height
-//|         is not limited but images that are too large will cause a memory exception.
+//|         **Limitations**: The width and height are not limited, but images that are too
+//|         large will cause a memory exception.
 //|         """
 //|         ...
 //|
