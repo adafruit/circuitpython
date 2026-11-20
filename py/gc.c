@@ -542,7 +542,10 @@ bool gc_is_locked(void) {
 }
 
 // CIRCUITPY-CHANGE: additional function
-bool gc_ptr_on_heap(const void *ptr) {
+// In ITCM (RAM, on chips that have it) because background_callback_add_core() can call
+// this from an interrupt that fires during a flash write. Code in flash can't run during
+// a flash write.
+bool PLACE_IN_ITCM(gc_ptr_on_heap)(const void *ptr) {
     for (mp_state_mem_area_t *area = &MP_STATE_MEM(area); area != NULL; area = NEXT_AREA(area)) {
         if (ptr >= (void *)area->gc_pool_start   // must be above start of pool
             && ptr < (void *)area->gc_pool_end) {   // must be below end of pool

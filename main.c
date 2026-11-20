@@ -207,6 +207,7 @@ static void start_mp(safe_mode_t safe_mode) {
     _heap = _allocate_memory(safe_mode, "CIRCUITPY_HEAP_START_SIZE", CIRCUITPY_HEAP_START_SIZE, &heap_size);
     gc_init(_heap, _heap + heap_size);
     #endif
+    background_callback_heap_ready();
     mp_init();
     mp_obj_list_init((mp_obj_list_t *)mp_sys_path, 0);
     mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR_)); // current dir (or base dir of the script)

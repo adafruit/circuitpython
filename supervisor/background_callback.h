@@ -61,8 +61,21 @@ void background_callback_run_all(void);
  * interrupts are disabled. */
 bool background_callback_pending(void);
 
-/* During soft reset, remove all pending callbacks and clear the critical section flag */
+/* During soft reset, remove pending callbacks that are on the GC heap or whose data is on
+ * the GC heap, and cancel any background_callback_prevent() calls.
+ *
+ * Until background_callback_heap_ready() is called, background_callback_add() also drops
+ * any new callback that is on the heap or whose data is on the heap. Hardware owned by a
+ * heap object can keep interrupting until the object's finaliser stops it. A callback
+ * queued during teardown would still be pending after the heap is freed.
+ */
 void background_callback_reset(void);
+
+/* Let background_callback_add() queue callbacks on the GC heap again, after
+ * background_callback_reset() stopped it. Call once gc_init() has set up the new heap.
+ * Never fails.
+ */
+void background_callback_heap_ready(void);
 
 /* Sometimes background callbacks must be blocked.  Use these functions to
  * bracket the section of code where this is the case.  These calls nest, and
