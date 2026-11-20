@@ -147,7 +147,8 @@ MP_PROPERTY_GETSET(wifi_radio_hostname_obj,
 //|     """MAC address for the station. When the address is altered after interface is connected
 //|        the changes would only be reflected once the interface reconnects.
 //|
-//|     **Limitations:** Not settable on RP2040 CYW43 boards, such as Pi Pico W.
+//|     **Limitations:** Settable on Espressif.
+//|     Not settable on Raspberry Pi RP2xxx CYW43 boards, such as Pico W and Pico 2 W.
 //|     """
 
 
@@ -232,7 +233,8 @@ MP_PROPERTY_GETSET(wifi_radio_power_management_obj,
 //|     """MAC address for the AP. When the address is altered after interface is started
 //|        the changes would only be reflected once the interface restarts.
 //|
-//|     **Limitations:** Not settable on RP2040 CYW43 boards, such as Pi Pico W.
+//|     **Limitations:** Settable on Espressif.
+//|     Not settable on Raspberry Pi RP2xxx CYW43 boards, such as Pico W and Pico 2 W.
 //|     """
 //|
 static mp_obj_t wifi_radio_get_mac_address_ap(mp_obj_t self_in) {
@@ -277,7 +279,7 @@ MP_PROPERTY_GETTER(wifi_radio_mac_address_ap_obj,
 //|
 //|         .. note::
 //|
-//|             In the raspberrypi port (RP2040 CYW43), ``start_channel`` and ``stop_channel`` are ignored.
+//|             In the raspberrypi port (RP2xxx CYW43), ``start_channel`` and ``stop_channel`` are ignored.
 //|         """
 //|         ...
 //|
@@ -378,7 +380,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(wifi_radio_stop_station_obj, wifi_radio_stop_station);
 //|
 //|         .. note::
 //|
-//|             In the raspberrypi port (RP2040 CYW43), ``max_connections`` is ignored
+//|             In the raspberrypi port (RP2xxx CYW43), ``max_connections`` is ignored
 //|             and only 2.4 GHz channels (1-13) are accepted.
 //|         """
 //|         ...
@@ -635,7 +637,7 @@ MP_PROPERTY_GETTER(wifi_radio_ipv4_subnet_ap_obj,
 //|
 //|         .. note::
 //|
-//|             In the raspberrypi port (RP2040 CYW43), the access point needs to be started before the IP v4 address can be set.
+//|             In the raspberrypi port (RP2xxx CYW43), the access point needs to be started before the IP v4 address can be set.
 //|         """
 //|         ...
 //|

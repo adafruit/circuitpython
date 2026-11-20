@@ -18,8 +18,9 @@
 //| class AnalogOut:
 //|     """Output analog values (a specific voltage).
 //|
-//|     **Limitations:** Not available on Nordic, RP2040, Spresense, as there is no on-chip DAC.
-//|     On Espressif, available only on ESP32 and ESP32-S2; other chips do not have a DAC.
+//|     **Limitations:** Available only on chips with an on-chip DAC:
+//|     SAMD21, SAMD51, ESP32, ESP32-S2, STM32F405, STM32F407, and EFR32MG24.
+//|     On Zephyr-based boards, available only if the board defines a DAC.
 //|     On ESP32-S2 boards, GPIO18 (DAC2) is often connected to a pull-up resistor, which causes
 //|     `unexpected output values in the lower part of the output range
 //|     <https://github.com/adafruit/circuitpython/issues/7871>`_.

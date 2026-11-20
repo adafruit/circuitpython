@@ -36,6 +36,7 @@
 // specific port's needs.  If it's not defined then we provide a default.
 #ifndef MICROPY_PY_ERRNO_LIST
 // CIRCUITPY-CHANGE: add ENOSPC and EROFS, because they are in mp_common_errno_to_str().
+// CIRCUITPY-CHANGE: docs/library/errno.rst lists these names. Update it if this list changes.
 #define MICROPY_PY_ERRNO_LIST \
     X(EPERM) \
     X(ENOENT) \
