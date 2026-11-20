@@ -37,15 +37,14 @@
 // Held by a fill task while it refills, and by the CircuitPython task while background callbacks
 // are prevented or running. So code that prevents background callbacks to change a sample (like
 // MP3Decoder.file) still keeps refill out. Recursive because a sample may prevent them itself
-// while it fills.
-static StaticSemaphore_t background_lock_storage;
+// while it fills. Created with the first I2SOut, from the FreeRTOS heap rather than static RAM,
+// which is tight on the ESP32-S2. Until then there is no fill task to keep out.
 static SemaphoreHandle_t background_lock;
 
 void port_background_lock(void) {
-    if (background_lock == NULL) {
-        background_lock = xSemaphoreCreateRecursiveMutexStatic(&background_lock_storage);
+    if (background_lock != NULL) {
+        xSemaphoreTakeRecursive(background_lock, portMAX_DELAY);
     }
-    xSemaphoreTakeRecursive(background_lock, portMAX_DELAY);
 }
 
 void port_background_unlock(void) {
@@ -183,6 +182,13 @@ void port_i2s_allocate_init(i2s_t *self, bool left_justified) {
     esp_err_t err = i2s_new_channel(&chan_config, &self->handle, NULL);
     if (err == ESP_ERR_NOT_FOUND) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Peripheral in use"));
+    }
+    if (background_lock == NULL) {
+        background_lock = xSemaphoreCreateRecursiveMutex();
+        if (background_lock == NULL) {
+            i2s_del_channel(self->handle);
+            m_malloc_fail(sizeof(StaticSemaphore_t));
+        }
     }
     self->fill_task = NULL;
     if (xTaskCreatePinnedToCore(i2s_fill_task, "i2s fill", I2S_FILL_TASK_STACK_SIZE, self,
