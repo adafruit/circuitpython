@@ -240,21 +240,7 @@ static void epaperdisplay_epaperdisplay_finish_refresh(epaperdisplay_epaperdispl
 #endif // CIRCUITPY_EPAPERDISPLAY_FAST
 
 void common_hal_epaperdisplay_epaperdisplay_set_rotation(epaperdisplay_epaperdisplay_obj_t *self, int rotation) {
-    bool transposed = (self->epaper.core.rotation == 90 || self->epaper.core.rotation == 270);
-    bool will_transposed = (rotation == 90 || rotation == 270);
-    if (transposed != will_transposed) {
-        int tmp = self->epaper.core.width;
-        self->epaper.core.width = self->epaper.core.height;
-        self->epaper.core.height = tmp;
-    }
-    displayio_display_core_set_rotation(&self->epaper.core, rotation);
-    if (self == &displays[0].epaper_display) {
-        supervisor_stop_terminal();
-        supervisor_start_terminal(self->epaper.core.width, self->epaper.core.height);
-    }
-    if (self->epaper.core.current_group != NULL) {
-        displayio_group_update_transform(self->epaper.core.current_group, &self->epaper.core.transform);
-    }
+    displayio_display_core_set_rotation_and_update(&self->epaper.core, rotation, &self->base);
 }
 
 static bool epaperdisplay_epaperdisplay_refresh_area(epaperdisplay_epaperdisplay_obj_t *self, const displayio_area_t *area, bool write_previous) {

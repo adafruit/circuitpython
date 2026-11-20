@@ -49,6 +49,9 @@ void displayio_display_core_set_rotation(displayio_display_core_t *self, int rot
 void release_display_core(displayio_display_core_t *self);
 
 #if !CIRCUITPY_DISPLAYIO_LVGL
+void displayio_display_core_set_rotation_and_update(displayio_display_core_t *self, int rotation,
+    mp_obj_base_t *display);
+
 bool displayio_display_core_start_refresh(displayio_display_core_t *self);
 void displayio_display_core_finish_refresh(displayio_display_core_t *self);
 
