@@ -115,6 +115,10 @@ static void check_lock(busio_i2c_obj_t *self) {
 //|     def probe(self, address: int) -> bool:
 //|         """Check if a device at the specified address responds.
 //|
+//|         **Limitations:** On Zephyr-based nRF boards, `probe()` does not work reliably
+//|         at 400 kHz. Use 100 kHz.
+//|         See `#11604 <https://github.com/adafruit/circuitpython/issues/11604>`_.
+//|
 //|         :param int address: 7-bit device address
 //|         :return: ``True`` if a device at ``address`` responds; ``False`` otherwise
 //|         :rtype: bool"""
@@ -133,6 +137,10 @@ MP_DEFINE_CONST_FUN_OBJ_2(busio_i2c_probe_obj, busio_i2c_probe);
 //|     def scan(self) -> List[int]:
 //|         """Scan all I2C addresses between 0x08 and 0x77 inclusive and return a
 //|         list of those that respond.
+//|
+//|         **Limitations:** On Zephyr-based nRF boards, `scan()` does not work reliably
+//|         at 400 kHz. Use 100 kHz.
+//|         See `#11604 <https://github.com/adafruit/circuitpython/issues/11604>`_.
 //|
 //|         :return: List of device ids on the I2C bus
 //|         :rtype: list"""
@@ -156,6 +164,12 @@ MP_DEFINE_CONST_FUN_OBJ_1(busio_i2c_scan_obj, busio_i2c_scan);
 
 //|     def try_lock(self) -> bool:
 //|         """Attempts to grab the I2C lock. Returns True on success.
+//|
+//|         .. warning:: Ideally, release the lock with `unlock()` as soon as you are done with the bus.
+//|           Use :class:`~adafruit_bus_device.I2CDevice`, which holds the lock only
+//|           during each transaction.
+//|           On Espressif boards, holding the lock for a long time while using WiFi
+//|           can starve the WiFi and USB tasks, and the board may hang or restart in safe mode.
 //|
 //|         :return: True when lock has been grabbed
 //|         :rtype: bool"""

@@ -11,30 +11,24 @@
 
 #include "py/obj.h"
 #include "py/objlist.h"
-#include "shared-module/displayio/area.h"
 #include "shared-module/displayio/Palette.h"
 
-typedef struct {
-    mp_obj_base_t base;
-    mp_obj_list_t *members;
-    displayio_buffer_transform_t absolute_transform;
-    displayio_area_t dirty_area; // Catch all for changed area
-    int16_t x;
-    int16_t y;
-    uint16_t scale;
-    bool item_removed : 1;
-    bool in_group : 1;
-    bool active : 1;
-    bool hidden : 1;
-    bool hidden_by_parent : 1;
-    bool readonly : 1;
-    uint8_t padding : 2;
-} displayio_group_t;
-
-void displayio_group_construct(displayio_group_t *self, mp_obj_list_t *members, uint32_t scale, mp_int_t x, mp_int_t y);
-void displayio_group_set_hidden_by_parent(displayio_group_t *self, bool hidden);
-bool displayio_group_get_previous_area(displayio_group_t *group, displayio_area_t *area);
-bool displayio_group_fill_area(displayio_group_t *group, const _displayio_colorspace_t *colorspace, const displayio_area_t *area, uint32_t *mask, uint32_t *buffer);
-void displayio_group_update_transform(displayio_group_t *group, const displayio_buffer_transform_t *parent_transform);
-void displayio_group_finish_refresh(displayio_group_t *self);
-displayio_area_t *displayio_group_get_refresh_areas(displayio_group_t *self, displayio_area_t *tail);
+// The compositing core (Group and TileGrid) has two implementations, selected at build
+// time with CIRCUITPY_DISPLAYIO_LVGL:
+//
+//   legacy/ — the original scanline compositing core used by display_core.c and every
+//     BusDisplay/EPaperDisplay/FramebufferDisplay variant.
+//   lvgl/  — an implementation that mirrors Groups and TileGrids into an LVGL object tree
+//     which is rendered by LVGL. Groups are plain lv_obj containers. A TileGrid is a
+//     single lv_image (single-tile sprites) or an lv_obj container with one lv_image per
+//     tile. Images share the source bitmap's pixel data directly when the source format
+//     matches the display format; otherwise a custom LVGL image decoder converts tiles.
+#if CIRCUITPY_DISPLAYIO_LVGL
+#include "shared-module/displayio/lvgl/Group.h"
+// The protocol slot an LVGL-backed Group exposes to its parent Group. Legacy Groups are found
+// by type, so the slot stays empty there. See displayio/lvgl/lvgl_protocol.h.
+#define DISPLAYIO_GROUP_LVGL_PROTOCOL &displayio_lvgl_group_protocol
+#else
+#include "shared-module/displayio/legacy/Group.h"
+#define DISPLAYIO_GROUP_LVGL_PROTOCOL NULL
+#endif

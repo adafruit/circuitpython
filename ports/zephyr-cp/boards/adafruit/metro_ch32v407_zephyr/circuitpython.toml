@@ -1,0 +1,36 @@
+CIRCUITPY_BUILD_EXTENSIONS = ["uf2"]
+USB_VID=0x239A
+USB_PID=0x817E
+NAME="Metro CH32V407"
+
+[connectors.arduino_header]
+"0" = "A0"
+"1" = "A1"
+"2" = "A2"
+"3" = "A3"
+"4" = "A4"
+"5" = "A5"
+"6" = ["D0", "RX"]
+"7" = ["D1", "TX"]
+"8" = "D2"
+"9" = "D3"
+"10" = "D4"
+"11" = "D5"
+"12" = "D6"
+"13" = "D7"
+"14" = "D8"
+"15" = "D9"
+"16" = "D10"
+"17" = "D11"
+"18" = "D12"
+"19" = ["D13", "LED"]
+"20" = "SDA"
+"21" = "SCL"
+
+[connectors.metro_ch32v4x7_pins]
+"0" = "SCK"
+"1" = "MOSI"
+"2" = "MISO"
+"3" = "NEOPIXEL"
+"4" = "BUTTON"
+"5" = "SD_CD"

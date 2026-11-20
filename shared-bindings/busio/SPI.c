@@ -208,6 +208,12 @@ MP_DEFINE_CONST_FUN_OBJ_KW(busio_spi_configure_obj, 1, busio_spi_configure);
 //|     def try_lock(self) -> bool:
 //|         """Attempts to grab the SPI lock. Returns True on success.
 //|
+//|         .. warning:: Ideally, release the lock with `unlock()` as soon as you are done with the bus.
+//|           Use :class:`~adafruit_bus_device.SPIDevice`, which holds the lock only
+//|           during each transaction.
+//|           On Espressif boards, holding the lock for a long time while using WiFi
+//|           can starve the WiFi and USB tasks, and the board may hang or restart in safe mode.
+//|
 //|         :return: True when lock has been grabbed
 //|         :rtype: bool"""
 //|         ...

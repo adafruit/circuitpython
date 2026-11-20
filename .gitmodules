@@ -303,7 +303,7 @@
 	url = https://github.com/elecfreaks/circuitpython_picoed.git
 [submodule "ports/raspberrypi/lib/cyw43-driver"]
 	path = ports/raspberrypi/lib/cyw43-driver
-	url = https://github.com/georgerobotics/cyw43-driver
+	url = https://github.com/adafruit/cyw43-driver
 	branch = main
 [submodule "ports/raspberrypi/lib/lwip"]
 	path = ports/raspberrypi/lib/lwip
@@ -427,3 +427,7 @@
 [submodule "ports/espressif/esp-adf-libs"]
 	path = ports/espressif/esp-adf-libs
 	url = https://github.com/espressif/esp-adf-libs.git
+[submodule "lib/lvgl"]
+	path = lib/lvgl
+	url = https://github.com/adafruit/lvgl.git
+	branch = circuitpython-v9.6

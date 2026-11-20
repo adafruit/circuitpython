@@ -35,7 +35,6 @@ tools_dir = pathlib.Path(__file__).resolve().parent
 top_dir = tools_dir.parent
 
 sys.path.insert(0, str(tools_dir / "adabot"))
-sys.path.insert(0, str(top_dir / "docs"))
 
 import build_board_info
 from shared_bindings_matrix import (
@@ -49,9 +48,11 @@ IGNORE_BOARD = {
     "conf.py",
     "docs",
     "tests",
+    "tools/board_stubs/",
     "tools/ci_changes_per_commit.py",
     "tools/ci_check_duplicate_usb_vid_pid.py",
     "tools/ci_set_matrix.py",
+    "tools/shared_bindings_matrix.py",
     ".github/workflows/run-tests.yml",
     ".github/workflows/run-zephyr-tests.yml",
     ".github/workflows/build-board-custom.yml",
@@ -66,8 +67,8 @@ IGNORE_BOARD = {
 }
 
 PATTERN_DOCS = (
-    r"^(?:\.github|docs|extmod\/ulab)|"
-    r"^(?:(?:ports\/\w+\/bindings|shared-bindings)\S+\.c|tools\/extract_pyi\.py|\.readthedocs\.yml|conf\.py|requirements-doc\.txt)$|"
+    r"^(?:\.github|docs|extmod\/ulab|tools\/board_stubs\/)|"
+    r"^(?:(?:ports\/\w+\/bindings|shared-bindings)\S+\.c|tools\/extract_pyi\.py|tools\/shared_bindings_matrix\.py|\.readthedocs\.yml|conf\.py|requirements-doc\.txt)$|"
     r"(?:-stubs|\.(?:md|MD|mk|rst|RST)|/Makefile)$"
 )
 
@@ -75,10 +76,27 @@ GITHUB_MATRIX_LIMIT = 256
 
 # The Zephyr tests build native_sim and the two bsim boards out of the shared sources, so a
 # change confined to these cannot reach them: another port, a translation, a frozen library
-# (this port has none), documentation, the unix test suite or the autogen PR workflow.
+# (this port has none), documentation, the board stub tools, the unix test suite or the
+# autogen PR workflow.
 PATTERN_ZEPHYR_TESTS_IGNORE = re.compile(
-    r"^(?:docs|frozen|locale|tests)/|^ports/(?!zephyr-cp/)"
-    r"|^\.github/workflows/zephyr-autogen-pr\.yml$"
+    r"^(?:docs|frozen|locale|tests|tools/board_stubs)/|^ports/(?!zephyr-cp/)"
+    r"|^\.github/workflows/zephyr-autogen-pr\.yml$|^tools/shared_bindings_matrix\.py$"
+)
+
+# Files that can't affect the unix coverage tests: other ports and the documentation,
+# including the docs' support matrix code and the board stub tools. The tests build nothing
+# from ports/ except ports/unix. frozen/ is not on this list, because run-tests.py puts the
+# frozen asyncio and Ticks libraries on the module search path.
+PATTERN_TESTS_IGNORE = re.compile(
+    r"^(?:docs|tools/board_stubs)/|^ports/(?!unix/)|^tools/shared_bindings_matrix\.py$"
+)
+
+# Files that can't affect mpy-cross: ports, frozen libraries, the documentation (including
+# the support matrix code and the board stub tools) and the tests. The board builds don't
+# need the mpy-cross and mpy-cross-mac jobs. They use the mpy-cross that the scheduler job
+# builds.
+PATTERN_MPY_CROSS_IGNORE = re.compile(
+    r"^(?:docs|frozen|ports|tests|tools/board_stubs)/|^tools/shared_bindings_matrix\.py$"
 )
 
 # Zephyr boards don't use make, so their module tables can't be computed here. Each
@@ -108,18 +126,6 @@ def zephyr_board_has_module(board, module):
     if zephyr_modules is None:
         zephyr_modules = load_zephyr_modules()
     return board not in zephyr_modules or zephyr_modules[board].get(module, True)
-
-
-PATTERN_WINDOWS = {
-    ".github/",
-    "extmod/",
-    "lib/",
-    "mpy-cross/",
-    "ports/unix/",
-    "py/",
-    "tools/",
-    "requirements-dev.txt",
-}
 
 
 def git_diff(pattern: str):
@@ -384,25 +390,25 @@ def set_zephyr_tests(run: bool):
     set_output("zephyr-tests", run)
 
 
-def set_windows(run: bool):
+# These don't check last_failed_jobs. If a tests or mpy-cross job failed on the last checked
+# commit, ci_changes_per_commit.py reports no commit, so all the pull request's changes are
+# checked again.
+def set_tests(run: bool):
     if not run:
-        if last_failed_jobs.get("windows"):
-            run = True
-        else:
-            for file in changed_files:
-                for pattern in PATTERN_WINDOWS:
-                    if file.startswith(pattern) and not any(
-                        [file.startswith(path) for path in IGNORE_BOARD]
-                    ):
-                        run = True
-                        break
-                else:
-                    continue
-                break
+        run = any(not PATTERN_TESTS_IGNORE.match(file) for file in changed_files)
 
     # Set the step outputs
-    print("Building windows:", run)
-    set_output("windows", run)
+    print("Running tests:", run)
+    set_output("tests", run)
+
+
+def set_mpy_cross(run: bool):
+    if not run:
+        run = any(not PATTERN_MPY_CROSS_IGNORE.match(file) for file in changed_files)
+
+    # Set the step outputs
+    print("Building mpy-cross:", run)
+    set_output("mpy-cross", run)
 
 
 def main():
@@ -411,7 +417,9 @@ def main():
     # Set jobs
     set_docs(run_all)
     set_zephyr_tests(run_all)
-    set_windows(run_all)
+    set_tests(run_all)
+    # Pushes upload each version's mpy-cross binaries to S3, so build them every time.
+    set_mpy_cross(run_all or os.environ.get("GITHUB_EVENT_NAME") == "push")
     set_boards(run_all)
 
 

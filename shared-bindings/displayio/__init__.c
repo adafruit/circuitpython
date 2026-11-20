@@ -77,6 +77,11 @@
 //|     release the builtin display on boards that have one. You will need to reinitialize it yourself
 //|     afterwards. This may take seconds to complete if an active EPaperDisplay is refreshing.
 //|
+//|     .. deprecated:: 11.0.0
+//|        Call ``deinit()`` on the display instead. To release a built-in display or a display
+//|        kept from an earlier run, use ``supervisor.runtime.display.deinit()``.
+//|        ``release_displays()`` will be removed in a future major release.
+//|
 //|     Displays that are not `supervisor.runtime.display <supervisor.Runtime.display>` are released automatically when your code
 //|     finishes. Use this before initializing a display if one may still be active, such as a builtin
 //|     display or a display from an earlier run.

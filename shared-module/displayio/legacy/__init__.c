@@ -18,7 +18,6 @@
 #include "shared-bindings/displayio/Bitmap.h"
 #include "shared-bindings/displayio/Group.h"
 #include "shared-bindings/displayio/Palette.h"
-#include "shared-module/displayio/area.h"
 #include "supervisor/shared/display.h"
 #include "supervisor/shared/reload.h"
 
@@ -68,19 +67,6 @@ static bool primary_display_set_by_user = false;
 
 primary_display_bus_t display_buses[CIRCUITPY_DISPLAY_LIMIT];
 primary_display_t displays[CIRCUITPY_DISPLAY_LIMIT];
-
-displayio_buffer_transform_t null_transform = {
-    .x = 0,
-    .y = 0,
-    .dx = 1,
-    .dy = 1,
-    .scale = 1,
-    .width = 0,
-    .height = 0,
-    .mirror_x = false,
-    .mirror_y = false,
-    .transpose_xy = false
-};
 
 #if CIRCUITPY_RGBMATRIX || CIRCUITPY_IS31FL3741 || CIRCUITPY_PICODVI || CIRCUITPY_MIPIDSI
 static bool any_display_uses_this_framebuffer(mp_obj_base_t *obj) {
@@ -135,119 +121,132 @@ void displayio_background(void) {
 }
 
 // Displays and buses are allocated separately, so a display's bus may be at a different index.
-static mp_obj_t get_primary_display_bus(void) {
-    if (primary_display_number == -1) {
+static mp_obj_t get_display_bus(int display_number) {
+    if (display_number < 0 || display_number >= CIRCUITPY_DISPLAY_LIMIT) {
         return NULL;
     }
-    primary_display_t *primary = &displays[primary_display_number];
+    primary_display_t *display = &displays[display_number];
     if (false) {
     #if CIRCUITPY_BUSDISPLAY
-    } else if (primary->display_base.type == &busdisplay_busdisplay_type) {
-        return primary->display.bus.bus;
+    } else if (display->display_base.type == &busdisplay_busdisplay_type) {
+        return display->display.bus.bus;
     #endif
     #if CIRCUITPY_EPAPERDISPLAY
-    } else if (primary->display_base.type == &epaperdisplay_epaperdisplay_type) {
-        return primary->epaper_display.bus.bus;
+    } else if (display->display_base.type == &epaperdisplay_epaperdisplay_type) {
+        return display->epaper_display.epaper.bus.bus;
     #endif
     #if CIRCUITPY_FRAMEBUFFERIO
-    } else if (primary->display_base.type == &framebufferio_framebufferdisplay_type) {
-        return primary->framebuffer_display.framebuffer;
+    } else if (display->display_base.type == &framebufferio_framebufferdisplay_type) {
+        return display->framebuffer_display.framebuffer;
     #endif
     }
     return NULL;
 }
 
-static void common_hal_displayio_release_displays_impl(bool keep_primary) {
+// Release the display in displays[i], if any. keeping_primary is true when code has finished
+// and the primary display is being kept.
+static void release_display_slot(int i, bool keeping_primary) {
+    mp_const_obj_t display_type = displays[i].display_base.type;
+    if (display_type == NULL || display_type == &mp_type_NoneType) {
+        return;
+    #if CIRCUITPY_BUSDISPLAY
+    } else if (display_type == &busdisplay_busdisplay_type) {
+        release_busdisplay(&displays[i].display);
+    #endif
+    #if CIRCUITPY_EPAPERDISPLAY
+    } else if (display_type == &epaperdisplay_epaperdisplay_type) {
+        #if CIRCUITPY_EPAPERDISPLAY_FAST
+        if (keeping_primary) {
+            epaperdisplay_epaperdisplay_end_held_bus(&displays[i].epaper_display);
+        }
+        #endif
+        release_epaperdisplay(&displays[i].epaper_display);
+    #endif
+    #if CIRCUITPY_FRAMEBUFFERIO
+    } else if (display_type == &framebufferio_framebufferdisplay_type) {
+        release_framebufferdisplay(&displays[i].framebuffer_display);
+    #endif
+    #if CIRCUITPY_ZEPHYR_DISPLAY
+    } else if (display_type == &zephyr_display_display_type) {
+        release_zephyr_display(&displays[i].zephyr_display);
+    #endif
+    }
+    displays[i].display_base.type = &mp_type_NoneType;
+}
+
+// Release the display bus in display_buses[i], if any.
+static void release_display_bus_slot(int i) {
+    mp_const_obj_t bus_type = display_buses[i].bus_base.type;
+    if (bus_type == NULL || bus_type == &mp_type_NoneType) {
+        return;
+    #if CIRCUITPY_FOURWIRE
+    } else if (bus_type == &fourwire_fourwire_type) {
+        common_hal_fourwire_fourwire_deinit(&display_buses[i].fourwire_bus);
+    #endif
+    #if CIRCUITPY_I2CDISPLAYBUS
+    } else if (bus_type == &i2cdisplaybus_i2cdisplaybus_type) {
+        common_hal_i2cdisplaybus_i2cdisplaybus_deinit(&display_buses[i].i2cdisplay_bus);
+    #endif
+    #if CIRCUITPY_DOTCLOCKFRAMEBUFFER
+    } else if (bus_type == &dotclockframebuffer_framebuffer_type) {
+        common_hal_dotclockframebuffer_framebuffer_deinit(&display_buses[i].dotclock);
+    #endif
+    #if CIRCUITPY_PARALLELDISPLAYBUS
+    } else if (bus_type == &paralleldisplaybus_parallelbus_type) {
+        common_hal_paralleldisplaybus_parallelbus_deinit(&display_buses[i].parallel_bus);
+    #endif
+    #if CIRCUITPY_RGBMATRIX
+    } else if (bus_type == &rgbmatrix_RGBMatrix_type) {
+        common_hal_rgbmatrix_rgbmatrix_deinit(&display_buses[i].rgbmatrix);
+    #endif
+    #if CIRCUITPY_IS31FL3741
+    } else if (bus_type == &is31fl3741_framebuffer_type) {
+        common_hal_is31fl3741_framebuffer_deinit(&display_buses[i].is31fl3741);
+    #endif
+    #if CIRCUITPY_SHARPDISPLAY
+    } else if (bus_type == &sharpdisplay_framebuffer_type) {
+        common_hal_sharpdisplay_framebuffer_deinit(&display_buses[i].sharpdisplay);
+    #endif
+    #if CIRCUITPY_PICODVI
+    } else if (bus_type == &picodvi_framebuffer_type) {
+        common_hal_picodvi_framebuffer_deinit(&display_buses[i].picodvi);
+    #endif
+    #if CIRCUITPY_MIPIDSI
+    } else if (bus_type == &mipidsi_display_type) {
+        common_hal_mipidsi_display_deinit(&display_buses[i].mipidsi);
+    #endif
+    #if CIRCUITPY_QSPIBUS
+    } else if (bus_type == &qspibus_qspibus_type) {
+        common_hal_qspibus_qspibus_deinit(&display_buses[i].qspi_bus);
+    #endif
+    }
+    display_buses[i].bus_base.type = &mp_type_NoneType;
+}
+
+void displayio_release_displays_slots(int keep_index) {
     // Release displays before busses so that they can send any final commands to turn the display
     // off properly.
+    for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
+        if (i != keep_index) {
+            release_display_slot(i, keep_index >= 0);
+        }
+    }
+    mp_obj_t keep_bus = get_display_bus(keep_index);
+    for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
+        if (MP_OBJ_FROM_PTR(&display_buses[i]) != keep_bus) {
+            release_display_bus_slot(i);
+        }
+    }
+}
+
+static void common_hal_displayio_release_displays_impl(bool keep_primary) {
+    int keep_index = keep_primary ? primary_display_number : -1;
     if (!keep_primary) {
         primary_display_number = -1;
         primary_display_set_by_user = false;
     }
-    for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
-        if (i == primary_display_number) {
-            continue;
-        }
-        mp_const_obj_t display_type = displays[i].display_base.type;
-        if (display_type == NULL || display_type == &mp_type_NoneType) {
-            continue;
-        #if CIRCUITPY_BUSDISPLAY
-        } else if (display_type == &busdisplay_busdisplay_type) {
-            release_busdisplay(&displays[i].display);
-        #endif
-        #if CIRCUITPY_EPAPERDISPLAY
-        } else if (display_type == &epaperdisplay_epaperdisplay_type) {
-            #if CIRCUITPY_EPAPERDISPLAY_FAST
-            if (keep_primary) {
-                epaperdisplay_epaperdisplay_end_held_bus(&displays[i].epaper_display);
-            }
-            #endif
-            release_epaperdisplay(&displays[i].epaper_display);
-        #endif
-        #if CIRCUITPY_FRAMEBUFFERIO
-        } else if (display_type == &framebufferio_framebufferdisplay_type) {
-            release_framebufferdisplay(&displays[i].framebuffer_display);
-        #endif
-        #if CIRCUITPY_ZEPHYR_DISPLAY
-        } else if (display_type == &zephyr_display_display_type) {
-            release_zephyr_display(&displays[i].zephyr_display);
-        #endif
-        }
-        displays[i].display_base.type = &mp_type_NoneType;
-    }
-    mp_obj_t primary_bus = get_primary_display_bus();
-    for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
-        if (MP_OBJ_FROM_PTR(&display_buses[i]) == primary_bus) {
-            continue;
-        }
-        mp_const_obj_t bus_type = display_buses[i].bus_base.type;
-        if (bus_type == NULL || bus_type == &mp_type_NoneType) {
-            continue;
-        #if CIRCUITPY_FOURWIRE
-        } else if (bus_type == &fourwire_fourwire_type) {
-            common_hal_fourwire_fourwire_deinit(&display_buses[i].fourwire_bus);
-        #endif
-        #if CIRCUITPY_I2CDISPLAYBUS
-        } else if (bus_type == &i2cdisplaybus_i2cdisplaybus_type) {
-            common_hal_i2cdisplaybus_i2cdisplaybus_deinit(&display_buses[i].i2cdisplay_bus);
-        #endif
-        #if CIRCUITPY_DOTCLOCKFRAMEBUFFER
-        } else if (bus_type == &dotclockframebuffer_framebuffer_type) {
-            common_hal_dotclockframebuffer_framebuffer_deinit(&display_buses[i].dotclock);
-        #endif
-        #if CIRCUITPY_PARALLELDISPLAYBUS
-        } else if (bus_type == &paralleldisplaybus_parallelbus_type) {
-            common_hal_paralleldisplaybus_parallelbus_deinit(&display_buses[i].parallel_bus);
-        #endif
-        #if CIRCUITPY_RGBMATRIX
-        } else if (bus_type == &rgbmatrix_RGBMatrix_type) {
-            common_hal_rgbmatrix_rgbmatrix_deinit(&display_buses[i].rgbmatrix);
-        #endif
-        #if CIRCUITPY_IS31FL3741
-        } else if (bus_type == &is31fl3741_framebuffer_type) {
-            common_hal_is31fl3741_framebuffer_deinit(&display_buses[i].is31fl3741);
-        #endif
-        #if CIRCUITPY_SHARPDISPLAY
-        } else if (bus_type == &sharpdisplay_framebuffer_type) {
-            common_hal_sharpdisplay_framebuffer_deinit(&display_buses[i].sharpdisplay);
-        #endif
-        #if CIRCUITPY_PICODVI
-        } else if (bus_type == &picodvi_framebuffer_type) {
-            common_hal_picodvi_framebuffer_deinit(&display_buses[i].picodvi);
-        #endif
-        #if CIRCUITPY_MIPIDSI
-        } else if (bus_type == &mipidsi_display_type) {
-            common_hal_mipidsi_display_deinit(&display_buses[i].mipidsi);
-        #endif
-        #if CIRCUITPY_QSPIBUS
-        } else if (bus_type == &qspibus_qspibus_type) {
-            common_hal_qspibus_qspibus_deinit(&display_buses[i].qspi_bus);
-        #endif
-        }
-        display_buses[i].bus_base.type = &mp_type_NoneType;
-    }
-
-    if (primary_display_number == -1) {
+    displayio_release_displays_slots(keep_index);
+    if (!keep_primary) {
         supervisor_stop_terminal();
     }
 }
@@ -264,6 +263,61 @@ void displayio_prepare_release_displays(void) {
 
 void common_hal_displayio_release_displays(void) {
     common_hal_displayio_release_displays_impl(false);
+}
+
+void common_hal_displayio_deinit_display(mp_obj_t display) {
+    int display_number = -1;
+    for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
+        if (MP_OBJ_FROM_PTR(&displays[i]) == display) {
+            display_number = i;
+            break;
+        }
+    }
+    if (display_number == -1) {
+        return;
+    }
+    mp_const_obj_t display_type = displays[display_number].display_base.type;
+    if (display_type == NULL || display_type == &mp_type_NoneType) {
+        // Already released.
+        return;
+    }
+
+    #if CIRCUITPY_EPAPERDISPLAY_FAST
+    // This can raise RuntimeError. It runs before anything is released, so an error
+    // leaves the display as it was.
+    if (display_type == &epaperdisplay_epaperdisplay_type) {
+        epaperdisplay_epaperdisplay_prepare_release(&displays[display_number].epaper_display);
+    }
+    #endif
+
+    // get_display_bus() returns NULL for a released display, so look up the bus first.
+    mp_obj_t bus = get_display_bus(display_number);
+    release_display_slot(display_number, false);
+
+    // Release the bus too, unless another display still uses it.
+    if (bus != NULL) {
+        bool bus_in_use = false;
+        for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
+            if (get_display_bus(i) == bus) {
+                bus_in_use = true;
+                break;
+            }
+        }
+        if (!bus_in_use) {
+            for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
+                if (MP_OBJ_FROM_PTR(&display_buses[i]) == bus) {
+                    release_display_bus_slot(i);
+                    break;
+                }
+            }
+        }
+    }
+
+    if (display_number == primary_display_number) {
+        primary_display_number = -1;
+        primary_display_set_by_user = false;
+        supervisor_stop_terminal();
+    }
 }
 
 void reset_displays(void) {
@@ -421,7 +475,7 @@ void reset_displays(void) {
     }
 }
 
-void displayio_gc_collect(void) {
+void displayio_display_slots_gc_collect(void) {
     for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
         mp_const_obj_t display_bus_type = display_buses[i].bus_base.type;
         if (display_bus_type == NULL || display_bus_type == &mp_type_NoneType) {
@@ -481,6 +535,12 @@ void displayio_gc_collect(void) {
     }
 }
 
+#if !CIRCUITPY_DISPLAYIO_LVGL
+void displayio_gc_collect(void) {
+    displayio_display_slots_gc_collect();
+}
+#endif
+
 static bool is_display_active(mp_obj_base_t *display_maybe) {
     return display_maybe->type != &mp_type_NoneType && display_maybe->type != NULL;
 }
@@ -524,7 +584,7 @@ primary_display_bus_t *allocate_display_bus_or_raise(void) {
     if (result) {
         return result;
     }
-    mp_raise_RuntimeError(MP_ERROR_TEXT("Too many display busses; forgot displayio.release_displays() ?"));
+    mp_raise_RuntimeError(MP_ERROR_TEXT("Too many display buses; deinit() unused displays"));
 }
 
 mp_obj_t common_hal_displayio_get_primary_display(void) {

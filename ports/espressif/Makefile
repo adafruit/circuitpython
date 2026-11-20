@@ -22,6 +22,10 @@ endif
 #######################################
 
 INC += \
+	-I../../lib/lvgl \
+	-I../../lib/lvgl/include \
+	-I../../lib/lvgl/src \
+	-I./lvgl \
 	-I.\
 	-I./boards \
 	-I./boards/$(BOARD) \
@@ -72,6 +76,7 @@ INC += \
 	-isystem esp-idf/components/esp_driver_ledc/include \
 	-isystem esp-idf/components/esp_driver_parlio/include \
 	-isystem esp-idf/components/esp_driver_pcnt/include \
+	-isystem esp-idf/components/esp_driver_ppa/include \
 	-isystem esp-idf/components/esp_driver_rmt/include \
 	-isystem esp-idf/components/esp_driver_sdio/include \
 	-isystem esp-idf/components/esp_driver_sdmmc/include \
@@ -115,6 +120,8 @@ INC += \
 	-isystem esp-idf/components/hal/platform_port/include \
 	-isystem esp-idf/components/esp_hal_gpio/include \
 	-isystem esp-idf/components/esp_hal_gpio/$(IDF_TARGET)/include \
+	-isystem esp-idf/components/esp_hal_ppa/include \
+	-isystem esp-idf/components/esp_hal_ppa/$(IDF_TARGET)/include \
 	-isystem esp-idf/components/esp_hal_timg/include \
 	-isystem esp-idf/components/esp_hal_ana_conv/include \
 	-isystem esp-idf/components/esp_hal_touch_sens/include \
@@ -703,8 +710,19 @@ endif
 # source
 ######################################
 
+ifeq ($(CIRCUITPY_DISPLAYIO_LVGL),1)
+# Compile LVGL as part of CircuitPython's build rather than as an ESP-IDF component so
+# that it uses the port's lv_conf.h. The library and the display code must agree on the
+# LVGL configuration or struct layouts will differ.
+LVGL_SRC = $(patsubst $(TOP)/%,%,$(shell find $(TOP)/lib/lvgl/src -name '*.c'))
+SRC_MOD += $(LVGL_SRC)
+# LVGL isn't warning-clean under CircuitPython's strict warning flags.
+$(addprefix $(BUILD)/, $(LVGL_SRC:.c=.o)): CFLAGS += -w
+endif
+
 SRC_C += \
 	background.c \
+	supervisor/lvgl_port.c \
 	mphalport.c \
 	boards/$(BOARD)/board.c \
 	boards/$(BOARD)/pins.c \
@@ -917,8 +935,9 @@ $(filter $(PY_BUILD)/../extmod/vfs_fat_%.o, $(PY_O)): COPT += -Os
 
 $(BUILD)/lib/protomatter/src/core.o: CFLAGS += -DESP32
 
-# List of sources for qstr extraction
-SRC_QSTR += $(SRC_C) $(SRC_SUPERVISOR) $(SRC_MOD) $(SRC_COMMON_HAL_SHARED_MODULE_EXPANDED) $(SRC_CIRCUITPY_COMMON)
+# List of sources for qstr extraction. LVGL sources contain no qstrs and aren't
+# -Wundef clean, so skip preprocessing them.
+SRC_QSTR += $(SRC_C) $(SRC_SUPERVISOR) $(filter-out lib/lvgl/%, $(SRC_MOD)) $(SRC_COMMON_HAL_SHARED_MODULE_EXPANDED) $(SRC_CIRCUITPY_COMMON)
 
 # IDF build commands
 IDF_PATH = $(realpath ./esp-idf)
@@ -1147,6 +1166,10 @@ ifneq ($(CIRCUITPY_ESPULP),0)
 endif
 ifneq ($(CIRCUITPY_ESP_PSRAM_SIZE),0)
 	ESP_IDF_COMPONENTS_LINK += esp_psram
+endif
+# The LVGL PPA draw unit uses the P4/S31 Pixel Processing Accelerator.
+ifneq ($(CIRCUITPY_DISPLAYIO_LVGL),0)
+	ESP_IDF_COMPONENTS_LINK += esp_driver_ppa esp_hal_ppa
 endif
 ifneq ($(CIRCUITPY_DOTCLOCKFRAMEBUFFER),0)
 	ESP_IDF_COMPONENTS_LINK += esp_lcd

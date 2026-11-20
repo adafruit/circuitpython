@@ -183,7 +183,7 @@ def test_gifio_metadata(circuitpython):
 @pytest.mark.circuitpy_drive(_GIFIO_DECODE_DRIVE)
 @pytest.mark.display(capture_times_ns=_DECODE_CAPTURE_TIMES_NS)
 @pytest.mark.duration(60)
-def test_gifio_decode(request, circuitpython):
+def test_gifio_decode(request, board, circuitpython):
     circuitpython.wait_until_done()
 
     output = circuitpython.serial.all_output
@@ -192,6 +192,11 @@ def test_gifio_decode(request, circuitpython):
     for frame_index in range(_DECODE_FRAME_COUNT):
         assert f"rendered {frame_index}" in output
     assert "done" in output
+
+    if board.startswith("native_native_sim_lvgl"):
+        # The frames are decoded correctly, but LVGL scales the TileGrid about pixel
+        # centers and resamples, so it doesn't match displayio's whole-pixel scaling.
+        request.applymarker(pytest.mark.xfail(reason="LVGL image scaling isn't pixel exact"))
 
     captures = circuitpython.display_capture_paths()
     assert len(captures) == _DECODE_FRAME_COUNT

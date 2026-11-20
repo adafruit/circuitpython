@@ -442,6 +442,29 @@ static int _connect_event(struct ble_gap_event *event, void *self_in) {
             }
             break;
 
+        case BLE_GAP_EVENT_DISCONNECT:
+            // The link failed before NimBLE reported the connection, e.g. with 0x3E (connection
+            // failed to be established) once its automatic reattempts were used up. No
+            // BLE_GAP_EVENT_CONNECT follows, so end the wait here. No connection slot was
+            // taken yet: that only happens on BLE_GAP_EVENT_CONNECT.
+            #if CIRCUITPY_VERBOSE_BLE
+            mp_printf(&mp_plat_print, "Disconnected while connecting: reason 0x%04x\n",
+                event->disconnect.reason);
+            #endif
+            _connection_status = event->disconnect.reason > 0
+                ? -event->disconnect.reason
+                : -BLE_HS_ENOTCONN;
+            break;
+
+        #if MYNEWT_VAL(BLE_ENABLE_CONN_REATTEMPT)
+        case BLE_GAP_EVENT_REATTEMPT_COUNT:
+            // NimBLE is retrying a link that failed to be established. Keep waiting.
+            #if CIRCUITPY_VERBOSE_BLE
+            mp_printf(&mp_plat_print, "Connect reattempt %d\n", event->reattempt_cnt.count);
+            #endif
+            break;
+        #endif
+
         default:
             #if CIRCUITPY_VERBOSE_BLE
             // For debugging.
@@ -487,8 +510,9 @@ mp_obj_t common_hal_bleio_adapter_connect(bleio_adapter_obj_t *self, bleio_addre
             &conn_params,
             _connect_event, self));
 
-    // NimBLE always ends a connection attempt with a BLE_GAP_EVENT_CONNECT, including when
-    // timeout_ms expires, so wait for that instead of keeping a separate deadline here.
+    // NimBLE ends a connection attempt with a BLE_GAP_EVENT_CONNECT, including when timeout_ms
+    // expires, or with a BLE_GAP_EVENT_DISCONNECT if the link fails before the connection is
+    // reported. Wait for one of those instead of keeping a separate deadline here.
     // If we stopped waiting first, NimBLE would still be connecting, and the next connect()
     // would fail.
     while (_connection_status == BLEIO_HANDLE_INVALID) {

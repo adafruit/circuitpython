@@ -17,3 +17,10 @@ CIRCUITPY_BITBANG_APA102 = 1
 
 # Include these Python libraries in firmware.
 # FROZEN_MPY_DIRS += $(TOP)/frozen/Adafruit_CircuitPython_DotStar
+
+# Fast e-paper does not fit in internal RAM.
+CIRCUITPY_EPAPERDISPLAY_FAST = 0
+
+# The ESP32-S2 shares its 152KB SRAM between IRAM and DRAM. -O2 overflows
+# dram0_0_seg, so use the same optimization level as the smaller-flash boards.
+OPTIMIZATION_FLAGS ?= -Os

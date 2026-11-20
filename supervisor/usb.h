@@ -78,6 +78,9 @@ void usb_msc_remount(fs_user_mount_t *fs_mount);
 // Whether USB MSC holds the blockdev lock on this mount because it reported
 // the drive writable to the host. Does not raise or allocate.
 bool usb_msc_holds_lock(fs_user_mount_t *vfs);
+
+// Finish a host write that waited for the VM to stop running the .mpy it overwrites.
+void usb_msc_finish_deferred_write(void);
 #endif
 
 #if CIRCUITPY_USB_KEYBOARD_WORKFLOW

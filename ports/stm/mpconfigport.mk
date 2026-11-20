@@ -110,5 +110,6 @@ ifeq ($(MCU_VARIANT),STM32L433xx)
         USB_NUM_ENDPOINT_PAIRS = 4
 endif
 
-CIRCUITPY_PARALLELDISPLAYBUS := 0
+# Implemented with the FSMC, for variants whose periph.c lists the FSMC pins.
+CIRCUITPY_PARALLELDISPLAYBUS ?= 0
 CIRCUITPY_BUILD_EXTENSIONS ?= bin

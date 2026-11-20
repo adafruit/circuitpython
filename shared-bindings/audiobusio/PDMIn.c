@@ -47,7 +47,7 @@
 //|          to allow microphone to turn on. Most require only 0.01s; some require 0.1s. Longer is safer.
 //|          Must be in range 0.0-1.0 seconds.
 //|
-//|         **Limitations:** On SAMD and RP2040, supports only 8 or 16 bit mono input, with 64x oversampling.
+//|         **Limitations:** On SAMD and RP2xxx, supports only 8 or 16 bit mono input, with 64x oversampling.
 //|         On nRF52840, supports only 16 bit mono input at 16 kHz; oversampling is fixed at 64x. Not provided
 //|         on nRF52833 for space reasons. On Espressif, only available on ESP32, ESP32-S3, and ESP32-P4.
 //|

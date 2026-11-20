@@ -500,7 +500,7 @@ bool rp2pio_statemachine_construct(rp2pio_statemachine_obj_t *self,
     }
     uint64_t frequency256 = ((uint64_t)clock_get_hz(clk_sys)) * 256;
     uint64_t div256 = frequency256 / frequency;
-    if (frequency256 % div256 > 0) {
+    if (frequency256 % frequency > 0) {
         div256 += 1;
     }
     self->actual_frequency = frequency256 / div256;
@@ -903,7 +903,7 @@ void common_hal_rp2pio_statemachine_set_frequency(rp2pio_statemachine_obj_t *sel
     }
     uint64_t frequency256 = ((uint64_t)clock_get_hz(clk_sys)) * 256;
     uint64_t div256 = frequency256 / frequency;
-    if (frequency256 % div256 > 0) {
+    if (frequency256 % frequency > 0) {
         div256 += 1;
     }
     // 0 is interpreted as 0x10000 so it's valid.

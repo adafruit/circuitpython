@@ -227,7 +227,9 @@ void supervisor_start_terminal(uint16_t width_px, uint16_t height_px) {
     // Right align the status bar.
     status_bar->x = width_px - status_bar->pixel_width;
     status_bar->top_left_y = 0;
+    #if !CIRCUITPY_DISPLAYIO_LVGL
     status_bar->full_change = true;
+    #endif
 
     scroll_area->tile_width = glyph_width;
     scroll_area->tile_height = glyph_height;
@@ -242,7 +244,9 @@ void supervisor_start_terminal(uint16_t width_px, uint16_t height_px) {
     // Align the scroll area to the bottom so that the newest line isn't cutoff. The top line
     // may be clipped by the status bar and that's ok.
     scroll_area->y = height_px - scroll_area->pixel_height;
+    #if !CIRCUITPY_DISPLAYIO_LVGL
     scroll_area->full_change = true;
+    #endif
 
     mp_obj_t new_bitmap = mp_const_none;
     mp_obj_t new_font = mp_const_none;
@@ -297,8 +301,11 @@ void supervisor_start_terminal(uint16_t width_px, uint16_t height_px) {
             port_free(tilegrid_tiles);
             tilegrid_tiles = NULL;
         }
+        // A TileGrid stores a tile index in one byte when the bitmap has at most 255 tiles and in
+        // two when it has more (tiles_in_bitmap, which is total_values below). The number of cells
+        // on screen says nothing about how wide an index is.
         size_t bytes_per_tile = 1;
-        if (total_tiles > 255) {
+        if (total_values > 255) {
             // Two bytes per tile.
             bytes_per_tile = 2;
         }

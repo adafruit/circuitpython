@@ -30,7 +30,7 @@ MAKE_ENUM_VALUE(countio_edge_type, edge, RISE_AND_FALL, EDGE_RISE_AND_FALL);
 //|     RISE_AND_FALL: Edge
 //|     """Count the rising and falling edges.
 //|
-//|     **Limitations:** ``RISE_AND_FALL`` is not available to RP2040 due to hardware limitations.
+//|     **Limitations:** ``RISE_AND_FALL`` is not available on RP2xxx due to hardware limitations.
 //|     """
 //|
 //|

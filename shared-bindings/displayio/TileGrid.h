@@ -10,6 +10,9 @@
 
 extern const mp_obj_type_t displayio_tilegrid_type;
 
+// Raises TypeError if pixel_shader isn't a Palette, ColorConverter or TilePaletteMapper.
+void displayio_tilegrid_validate_pixel_shader(mp_obj_t pixel_shader);
+
 void common_hal_displayio_tilegrid_construct(displayio_tilegrid_t *self, mp_obj_t bitmap,
     uint16_t bitmap_width_in_tiles, uint16_t bitmap_height_in_tiles,
     mp_obj_t pixel_shader, uint16_t width, uint16_t height,

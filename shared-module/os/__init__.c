@@ -21,6 +21,12 @@
 #include "supervisor/shared/settings.h"
 #endif
 
+#if CIRCUITPY_WIFI
+#include "shared-bindings/wifi/__init__.h"
+#elif CIRCUITPY_MII
+#include "shared-bindings/mii/__init__.h"
+#endif
+
 // This provides all VFS related OS functions so that ports can share the code
 // as needed.
 
@@ -306,3 +312,40 @@ mp_obj_t common_hal_os_getenv(const char *key, mp_obj_t default_) {
 #endif
 
 MP_REGISTER_ROOT_POINTER(const char *cwd_path);
+
+#if CIRCUITPY_WIFI || CIRCUITPY_MII
+void common_hal_os_get_nodename(char *buf, size_t buf_size) {
+    if (buf_size == 0) {
+        return;
+    }
+    buf[0] = '\0';
+
+    #if CIRCUITPY_WIFI
+    if (wifi_is_initialized()) {
+        strlcpy(buf, wifi_get_hostname_raw(), buf_size);
+    } else {
+        // Report the hostname common_hal_wifi_init() will set.
+        #if CIRCUITPY_SETTINGS_TOML
+        if (settings_get_str("CIRCUITPY_WIFI_HOSTNAME", buf, buf_size) != SETTINGS_OK) {
+            buf[0] = '\0';
+        }
+        #endif
+        if (buf[0] == '\0') {
+            wifi_get_default_hostname(buf, buf_size);
+        }
+    }
+    #elif CIRCUITPY_MII
+    const char *hostname = mii_get_hostname_raw();
+    if (hostname[0] != '\0') {
+        strlcpy(buf, hostname, buf_size);
+    } else {
+        // Report the hostname the Ethernet constructor will set.
+        mii_get_default_hostname(buf, buf_size);
+    }
+    #endif
+
+    if (buf[0] == '\0') {
+        strlcpy(buf, MICROPY_HW_MCU_NAME, buf_size);
+    }
+}
+#endif

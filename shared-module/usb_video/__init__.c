@@ -9,9 +9,13 @@
 #include "class/video/video_device.h"
 #include "shared-bindings/displayio/Bitmap.h"
 #include "shared-bindings/usb_video/__init__.h"
+#include "shared-bindings/usb_video/USBFramebuffer.h"
 #include "shared-module/bitmapfilter/macros.h"
 #include "shared-module/usb_video/__init__.h"
 #include "shared-module/usb_video/uvc_usb_descriptors.h"
+#if CIRCUITPY_DISPLAYIO_LVGL
+#include "shared-module/displayio/lvgl/lvgl_internal.h"
+#endif
 #include "supervisor/background_callback.h"
 #include "supervisor/shared/tick.h"
 #include "device/usbd.h"
@@ -29,14 +33,22 @@ static unsigned frame_num = 0;
 static unsigned tx_busy = 0;
 static unsigned interval_ms = 1000 / DEFAULT_FRAME_RATE;
 
+// Rows of the RGB565 framebuffer that changed since the last UVC frame was converted. The
+// display's flush tells us which rows it wrote, so only those rows need the RGB565 -> YUYV
+// conversion; the rest of the YUYV buffer still holds the previous frame.
+static uint8_t *dirty_rows;
+static size_t dirty_rows_size;
+static bool convert_all = true;
+
 // TODO must dynamically allocate this, otherwise everyone pays for it
 static uint8_t *frame_buffer_yuyv;
 uint16_t *usb_video_framebuffer_rgb565;
 
 static bool usb_video_is_enabled = false;
 uint16_t usb_video_frame_width, usb_video_frame_height;
+static mp_int_t usb_video_frame_rate = DEFAULT_FRAME_RATE;
 
-bool shared_module_usb_video_enable(mp_int_t frame_width, mp_int_t frame_height) {
+bool shared_module_usb_video_enable(mp_int_t frame_width, mp_int_t frame_height, mp_int_t frame_rate) {
     if (tud_connected()) {
         return false;
     }
@@ -51,6 +63,8 @@ bool shared_module_usb_video_enable(mp_int_t frame_width, mp_int_t frame_height)
 
     usb_video_frame_width = frame_width;
     usb_video_frame_height = frame_height;
+    usb_video_frame_rate = frame_rate;
+    interval_ms = 1000 / frame_rate;
 
     size_t framebuffer_size = usb_video_frame_width * usb_video_frame_height * 2;
     frame_buffer_yuyv = port_malloc(framebuffer_size, false);
@@ -66,6 +80,14 @@ bool shared_module_usb_video_enable(mp_int_t frame_width, mp_int_t frame_height)
     memset(frame_buffer_yuyv, 0, framebuffer_size);
     memset(usb_video_framebuffer_rgb565, 0, framebuffer_size);
 
+    dirty_rows_size = (usb_video_frame_height + 7) / 8;
+    dirty_rows = port_malloc(dirty_rows_size, false);
+    if (dirty_rows != NULL) {
+        memset(dirty_rows, 0, dirty_rows_size);
+    }
+    convert_all = true;
+    do_convert = true;
+
     usb_video_is_enabled = true;
 
     return true;
@@ -78,8 +100,12 @@ bool shared_module_usb_video_disable(void) {
     usb_video_is_enabled = false;
     port_free(frame_buffer_yuyv);
     port_free(usb_video_framebuffer_rgb565);
+    port_free(dirty_rows);
     frame_buffer_yuyv = NULL;
     usb_video_framebuffer_rgb565 = NULL;
+    dirty_rows = NULL;
+    dirty_rows_size = 0;
+    convert_all = true;
     return true;
 }
 
@@ -89,22 +115,17 @@ bool usb_video_enabled(void) {
 
 size_t usb_video_descriptor_length(void) {
     #if CFG_TUD_VIDEO_STREAMING_BULK
-    return sizeof((char[]) {TUD_VIDEO_CAPTURE_DESCRIPTOR_UNCOMPR_BULK(0, 0, DEFAULT_FRAME_WIDTH, DEFAULT_FRAME_HEIGHT, DEFAULT_FRAME_RATE, USB_VIDEO_BULK_PACKET_SIZE, 0, 0)});
+    return sizeof((char[]) {TUD_VIDEO_CAPTURE_DESCRIPTOR_UNCOMPR_BULK(0, 0, DEFAULT_FRAME_WIDTH, DEFAULT_FRAME_HEIGHT, usb_video_frame_rate, USB_VIDEO_BULK_PACKET_SIZE, 0, 0)});
     #else
-    return sizeof((char[]) {TUD_VIDEO_CAPTURE_DESCRIPTOR_UNCOMPR(0, 0, DEFAULT_FRAME_WIDTH, DEFAULT_FRAME_HEIGHT, DEFAULT_FRAME_RATE, CFG_TUD_VIDEO_STREAMING_EP_BUFSIZE, 0, 0)});
+    return sizeof((char[]) {TUD_VIDEO_CAPTURE_DESCRIPTOR_UNCOMPR(0, 0, DEFAULT_FRAME_WIDTH, DEFAULT_FRAME_HEIGHT, usb_video_frame_rate, CFG_TUD_VIDEO_STREAMING_EP_BUFSIZE, 0, 0)});
     #endif
 }
 
-static void convert_framebuffer_maybe(void) {
-    if (!do_convert) {
-        return; // new data not ready yet
-    }
-    do_convert = false; // assumes this happens via background, not interrupt
+static void convert_row(uint16_t y) {
+    uint8_t *dest = frame_buffer_yuyv + (size_t)y * usb_video_frame_width * 2;
+    uint16_t *src = usb_video_framebuffer_rgb565 + (size_t)y * usb_video_frame_width;
 
-    uint8_t *dest = frame_buffer_yuyv;
-    uint16_t *src = usb_video_framebuffer_rgb565;
-
-    for (int i = 0; i < usb_video_frame_width * usb_video_frame_height / 2; i++) {
+    for (int x = 0; x < usb_video_frame_width; x += 2) {
         uint16_t p1 = IMAGE_GET_RGB565_PIXEL_FAST(src, 0);
         uint16_t p2 = IMAGE_GET_RGB565_PIXEL_FAST(src, 1);
         src += 2;
@@ -124,7 +145,68 @@ static void convert_framebuffer_maybe(void) {
     }
 }
 
+static void convert_framebuffer_maybe(void) {
+    if (!do_convert) {
+        return; // new data not ready yet
+    }
+    do_convert = false; // assumes this happens via background, not interrupt
+
+    if (convert_all || dirty_rows == NULL) {
+        for (uint16_t y = 0; y < usb_video_frame_height; y++) {
+            convert_row(y);
+        }
+        convert_all = false;
+        if (dirty_rows != NULL) {
+            memset(dirty_rows, 0, dirty_rows_size);
+        }
+        return;
+    }
+
+    for (uint16_t y = 0; y < usb_video_frame_height; y++) {
+        uint8_t bit = 1 << (y & 7);
+        if (dirty_rows[y >> 3] & bit) {
+            convert_row(y);
+            dirty_rows[y >> 3] &= ~bit;
+        }
+    }
+}
+
+// Under LVGL the framebuffer can be flushed by the port's render task while the UVC background
+// callback converts it. Both paths take the displayio LVGL lock, so the dirty rows this reads are
+// not being changed and the pixels it copies are not being rewritten. Without LVGL every step is
+// on the CircuitPython thread already.
+static void convert_framebuffer_locked(void) {
+    #if CIRCUITPY_DISPLAYIO_LVGL
+    displayio_lvgl_lock();
+    convert_framebuffer_maybe();
+    displayio_lvgl_unlock();
+    #else
+    convert_framebuffer_maybe();
+    #endif
+}
+
+// The frame boundary is the UVC frame rate. A FramebufferDisplay pacing itself off this callback
+// renders the latest display state before the rows are converted, so the frame on the wire
+// matches the framebuffer.
+static void usb_video_frame_boundary(void) {
+    shared_module_usb_video_uvcframebuffer_frame_boundary(&usb_video_uvcframebuffer_singleton_obj);
+}
+
 void shared_module_usb_video_swapbuffers(void) {
+    convert_all = true;
+    do_convert = true;
+}
+
+void shared_module_usb_video_swapbuffers_dirty(const uint8_t *dirty_row_bitmap) {
+    // Under LVGL this is called from the display flush path, which holds the displayio LVGL lock
+    // against convert_framebuffer_locked().
+    if (dirty_row_bitmap == NULL || dirty_rows == NULL) {
+        convert_all = true;
+    } else {
+        for (size_t i = 0; i < dirty_rows_size; i++) {
+            dirty_rows[i] |= dirty_row_bitmap[i];
+        }
+    }
     do_convert = true;
 }
 
@@ -132,9 +214,9 @@ size_t usb_video_add_descriptor(uint8_t *descriptor_buf, descriptor_counts_t *de
     usb_add_interface_name(*current_interface_string, NULL, "UVC");
     const uint8_t usb_video_descriptor[] = {
         #if CFG_TUD_VIDEO_STREAMING_BULK
-        TUD_VIDEO_CAPTURE_DESCRIPTOR_UNCOMPR_BULK(*current_interface_string, descriptor_counts->current_endpoint | 0x80, usb_video_frame_width, usb_video_frame_height, DEFAULT_FRAME_RATE, USB_VIDEO_BULK_PACKET_SIZE, descriptor_counts->current_interface, descriptor_counts->current_interface + 1)
+        TUD_VIDEO_CAPTURE_DESCRIPTOR_UNCOMPR_BULK(*current_interface_string, descriptor_counts->current_endpoint | 0x80, usb_video_frame_width, usb_video_frame_height, usb_video_frame_rate, USB_VIDEO_BULK_PACKET_SIZE, descriptor_counts->current_interface, descriptor_counts->current_interface + 1)
         #else
-        TUD_VIDEO_CAPTURE_DESCRIPTOR_UNCOMPR(*current_interface_string, descriptor_counts->current_endpoint | 0x80, usb_video_frame_width, usb_video_frame_height, DEFAULT_FRAME_RATE, CFG_TUD_VIDEO_STREAMING_EP_BUFSIZE, descriptor_counts->current_interface, descriptor_counts->current_interface + 1)
+        TUD_VIDEO_CAPTURE_DESCRIPTOR_UNCOMPR(*current_interface_string, descriptor_counts->current_endpoint | 0x80, usb_video_frame_width, usb_video_frame_height, usb_video_frame_rate, CFG_TUD_VIDEO_STREAMING_EP_BUFSIZE, descriptor_counts->current_interface, descriptor_counts->current_interface + 1)
         #endif
     };
     (*current_interface_string)++;
@@ -165,9 +247,12 @@ static void usb_video_cb_fun(void *unused) {
     if (!already_sent) {
         already_sent = 1;
         start_ms = supervisor_ticks_ms32();
-        convert_framebuffer_maybe();
+        usb_video_frame_boundary();
+        convert_framebuffer_locked();
         bool result = tud_video_n_frame_xfer(0, 0, (void *)frame_buffer_yuyv, usb_video_frame_width * usb_video_frame_height * 16 / 8);
-        (void)result;
+        if (result) {
+            tx_busy = 1;
+        }
     }
 
     unsigned cur = supervisor_ticks_ms32();
@@ -179,11 +264,17 @@ static void usb_video_cb_fun(void *unused) {
         background_callback_add(&usb_video_cb, usb_video_cb_fun, NULL); // re-queue
         return;
     }
-    start_ms += interval_ms;
-
-    convert_framebuffer_maybe();
+    usb_video_frame_boundary();
+    convert_framebuffer_locked();
     bool result = tud_video_n_frame_xfer(0, 0, (void *)frame_buffer_yuyv, usb_video_frame_width * usb_video_frame_height * 16 / 8);
-    (void)result;
+    if (result) {
+        tx_busy = 1;
+        start_ms += interval_ms;
+    } else {
+        // No completion callback will arrive when the transfer wasn't queued, so keep the
+        // background callback alive and try again.
+        background_callback_add(&usb_video_cb, usb_video_cb_fun, NULL);
+    }
 }
 
 

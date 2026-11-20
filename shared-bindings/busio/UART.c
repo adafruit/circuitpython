@@ -77,8 +77,8 @@
 //|         *New in CircuitPython 4.0:* ``timeout`` has incompatibly changed units from milliseconds to seconds.
 //|         The new upper limit on ``timeout`` is meant to catch mistaken use of milliseconds.
 //|
-//|         **Limitations:** RS485 is not supported on SAMD, Nordic, Spresense, or STM.
-//|         On i.MX and Raspberry Pi RP2040, RS485 support is implemented in software:
+//|         **Limitations:** RS485 is available only on Espressif, i.MX, and Raspberry Pi RP2xxx.
+//|         On i.MX and RP2xxx, RS485 support is implemented in software:
 //|         The timing for the ``rs485_dir`` pin signal is done on a best-effort basis, and may not meet
 //|         RS485 specifications intermittently.
 //|         """

@@ -14,16 +14,16 @@
 #include "inky-shared.h"
 
 // For use with keypad.ShiftRegisterKeys(): maps keycodes (bit-number)
-// to logical names such as board.KEYCODES.BUTTON_A etc.
+// to logical names such as board.KEYCODES.SW_A etc.
 // N.B.: labels and bit-numbers in the schematic are reversed, i.e.
-//       BUTTON_A on D0 has bit-number 7
+//       SW_A on D0 has bit-number 7
 
 static const qstr board_keycodes_fields[] = {
-    MP_QSTR_BUTTON_A,
-    MP_QSTR_BUTTON_B,
-    MP_QSTR_BUTTON_C,
-    MP_QSTR_BUTTON_D,
-    MP_QSTR_BUTTON_E,
+    MP_QSTR_SW_A,
+    MP_QSTR_SW_B,
+    MP_QSTR_SW_C,
+    MP_QSTR_SW_D,
+    MP_QSTR_SW_E,
     MP_QSTR_RTC_ALARM,
     MP_QSTR_EXT_TRIGGER,
     MP_QSTR_INKY_BUS
@@ -59,9 +59,9 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_LED), MP_ROM_PTR(&pin_GPIO6) },
     { MP_ROM_QSTR(MP_QSTR_LED_CONN), MP_ROM_PTR(&pin_GPIO7) },
 
-    { MP_ROM_QSTR(MP_QSTR_BUTTON_CLK), MP_ROM_PTR(&pin_GPIO8) },
-    { MP_ROM_QSTR(MP_QSTR_BUTTON_LATCH), MP_ROM_PTR(&pin_GPIO9) },
-    { MP_ROM_QSTR(MP_QSTR_BUTTON_OUT), MP_ROM_PTR(&pin_GPIO10) },
+    { MP_ROM_QSTR(MP_QSTR_SWITCH_CLK), MP_ROM_PTR(&pin_GPIO8) },
+    { MP_ROM_QSTR(MP_QSTR_SWITCH_LATCH), MP_ROM_PTR(&pin_GPIO9) },
+    { MP_ROM_QSTR(MP_QSTR_SWITCH_OUT), MP_ROM_PTR(&pin_GPIO10) },
 
     { MP_ROM_QSTR(MP_QSTR_LED_A), MP_ROM_PTR(&pin_GPIO11) },
     { MP_ROM_QSTR(MP_QSTR_LED_B), MP_ROM_PTR(&pin_GPIO12) },
