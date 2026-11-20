@@ -29,8 +29,6 @@ bool pin_number_is_free(uint8_t pin_number);
 uint8_t common_hal_mcu_pin_number(const mcu_pin_obj_t *pin);
 
 #if CIRCUITPY_CYW43
-// True once cyw43_arch_init() succeeded in port_init(). The driver is ready,
-// but the chip may still be powered down until something accesses it.
-extern bool cyw_driver_ready;
+extern bool cyw_ever_init;
 void reset_pin_number_cyw(uint8_t pin_number);
 #endif
