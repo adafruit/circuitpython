@@ -52,36 +52,6 @@ static displayio_group_t *cp_lvgl_root_group = NULL;
 static bool cp_lvgl_inited = false;
 bool displayio_lvgl_refresh_yield = false;
 
-// Set while a display renders on the CircuitPython thread. A background callback run from inside
-// that render (see displayio_lvgl_refresh_yield) must not start a nested one: LVGL keeps the
-// display being rendered in a global and doesn't restore it.
-static bool cp_lvgl_rendering = false;
-
-static bool _render_begin(bool yield) {
-    if (cp_lvgl_rendering) {
-        return false;
-    }
-    cp_lvgl_rendering = true;
-    displayio_lvgl_lock();
-    displayio_lvgl_refresh_yield = yield;
-    return true;
-}
-
-static void _render_end(void) {
-    displayio_lvgl_refresh_yield = false;
-    displayio_lvgl_unlock();
-    cp_lvgl_rendering = false;
-}
-
-bool displayio_lvgl_render_now(lv_display_t *display, bool yield) {
-    if (!_render_begin(yield)) {
-        return false;
-    }
-    lv_refr_now(display);
-    _render_end();
-    return true;
-}
-
 // The port lock is recursive. Keeping the recursion at the port instead of counting here matters
 // once LVGL renders on its own task: a shared depth counter would let the render task believe it
 // owns a lock that the CircuitPython task is holding.
@@ -200,12 +170,18 @@ bool displayio_lvgl_auto_refresh(void) {
     return true;
 }
 
-// Render the displays that can't run on the render task.
-bool displayio_lvgl_refresh_unsafe_displays(bool yield) {
+// Render the displays that can't run on the render task. The guard keeps the proxy from
+// re-entering LVGL rendering if a background callback is processed while a refresh is already
+// active on the CircuitPython thread, including an explicit display.refresh() that is running
+// background tasks mid-render.
+void displayio_lvgl_refresh_unsafe_displays(void) {
     #if CIRCUITPY_BUSDISPLAY
-    if (!_render_begin(yield)) {
-        return false;
+    static bool refreshing = false;
+    if (refreshing || displayio_lvgl_refresh_yield) {
+        return;
     }
+    refreshing = true;
+    displayio_lvgl_lock();
     for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
         mp_const_obj_t display_type = displays[i].display_base.type;
         if (display_type != &busdisplay_busdisplay_type) {
@@ -216,17 +192,24 @@ bool displayio_lvgl_refresh_unsafe_displays(bool yield) {
             lv_refr_now(busdisplay->lv_display);
         }
     }
-    _render_end();
+    displayio_lvgl_unlock();
+    refreshing = false;
     #endif
-    return true;
 }
 
-// Render the framebuffer displays that pace themselves from a frame boundary.
-bool displayio_lvgl_refresh_paced_displays(bool yield) {
+// Render the framebuffer displays that pace themselves from a frame boundary. Like the BusDisplay
+// proxy, this runs on the CircuitPython thread and takes the LVGL lock; a frame callback may be
+// running on the render task at the same time, so the lock serializes them.
+void displayio_lvgl_refresh_paced_displays(void) {
     #if CIRCUITPY_FRAMEBUFFERIO
-    if (!_render_begin(yield)) {
-        return false;
+    static bool refreshing = false;
+    // An explicit display.refresh() runs background tasks while it renders. A frame callback
+    // queued among them must not start a nested render; it draws at the next frame instead.
+    if (refreshing || displayio_lvgl_refresh_yield) {
+        return;
     }
+    refreshing = true;
+    displayio_lvgl_lock();
     for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
         mp_const_obj_t display_type = displays[i].display_base.type;
         if (display_type != &framebufferio_framebufferdisplay_type) {
@@ -237,9 +220,9 @@ bool displayio_lvgl_refresh_paced_displays(bool yield) {
             lv_refr_now(display->lv_display);
         }
     }
-    _render_end();
+    displayio_lvgl_unlock();
+    refreshing = false;
     #endif
-    return true;
 }
 
 void displayio_lvgl_init(void) {

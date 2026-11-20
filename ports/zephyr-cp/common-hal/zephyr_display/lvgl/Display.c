@@ -67,7 +67,7 @@ void displayio_lvgl_port_install_busdisplay_refresh(lv_display_t *display) {
 void displayio_lvgl_port_frame_boundary(void) {
     // No Zephyr framebuffer exposes a frame callback yet. If one does, this must be made ISR
     // safe (for example by scheduling the refresh on the LVGL workqueue).
-    displayio_lvgl_refresh_paced_displays(false);
+    displayio_lvgl_refresh_paced_displays();
 }
 
 static void zephyr_display_lvgl_flush_argb_alpha0(lv_display_t *display, const lv_area_t *area,
