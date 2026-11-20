@@ -792,6 +792,7 @@ SRC_SHARED_MODULE_ALL = \
 	audiospeed/Resampler.c \
 	audiospeed/SpeedChanger.c \
 	audiospeed/__init__.c \
+	audiotap/LevelReader.c \
 	audiotap/Tap.c \
 	audiotap/__init__.c \
 	audiodelays/Echo.c \

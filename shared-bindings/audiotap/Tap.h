@@ -23,5 +23,3 @@ uint32_t common_hal_audiotap_tap_get_available(audiotap_tap_obj_t *self);
 uint32_t common_hal_audiotap_tap_readinto(audiotap_tap_obj_t *self, uint8_t *buffer, uint32_t length);
 void common_hal_audiotap_tap_clear(audiotap_tap_obj_t *self);
 bool common_hal_audiotap_tap_get_overflow(audiotap_tap_obj_t *self);
-mp_float_t common_hal_audiotap_tap_get_peak(audiotap_tap_obj_t *self);
-mp_float_t common_hal_audiotap_tap_get_rms(audiotap_tap_obj_t *self);

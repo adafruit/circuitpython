@@ -120,14 +120,15 @@
 //|               samples_signed=mic_format.samples_signed,
 //|               max_packet_size=mic_format.max_packet_size,
 //|           )
-//|           # The tap only measures the levels, so it keeps no audio.
+//|           # The tap is only there to measure the levels, so it keeps no audio.
 //|           tap = audiotap.Tap(capacity=0)
+//|           levels = audiotap.LevelReader(tap)
 //|           # No file: fetch buffers through the tap at the microphone's rate and drop them.
 //|           sink = AudioFileWriter(None)
 //|           sink.play(tap.play(mic))
 //|
 //|           while True:
-//|               print(f"peak {tap.peak:.3f} rms {tap.rms:.3f}")
+//|               print(f"peak {levels.peak:.3f} rms {levels.rms:.3f}")
 //|               time.sleep(0.5)
 //|         """
 //|         ...
