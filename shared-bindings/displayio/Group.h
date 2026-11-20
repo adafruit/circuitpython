@@ -12,15 +12,10 @@ extern const mp_obj_type_t displayio_group_type;
 
 displayio_group_t *native_group(mp_obj_t group_obj);
 
-#if CIRCUITPY_DISPLAYIO_LVGL
-void common_hal_displayio_group_construct(displayio_group_t *self, mp_float_t scale, mp_int_t x, mp_int_t y);
-mp_float_t common_hal_displayio_group_get_scale(displayio_group_t *self);
-void common_hal_displayio_group_set_scale(displayio_group_t *self, mp_float_t scale);
-#else
-void common_hal_displayio_group_construct(displayio_group_t *self, uint32_t scale, mp_int_t x, mp_int_t y);
-uint32_t common_hal_displayio_group_get_scale(displayio_group_t *self);
-void common_hal_displayio_group_set_scale(displayio_group_t *self, uint32_t scale);
-#endif
+// scale may be an int or float, depending on the implementation.
+void common_hal_displayio_group_construct(displayio_group_t *self, mp_obj_t scale, mp_int_t x, mp_int_t y);
+mp_obj_t common_hal_displayio_group_get_scale(displayio_group_t *self);
+void common_hal_displayio_group_set_scale(displayio_group_t *self, mp_obj_t scale);
 bool common_hal_displayio_group_get_hidden(displayio_group_t *self);
 void common_hal_displayio_group_set_hidden(displayio_group_t *self, bool hidden);
 mp_int_t common_hal_displayio_group_get_x(displayio_group_t *self);

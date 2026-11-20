@@ -89,6 +89,14 @@ static uint32_t _scale_to_q8(mp_float_t scale) {
     return (uint32_t)(scale * LV_SCALE_NONE);
 }
 
+static mp_float_t _validate_scale(mp_obj_t scale_obj) {
+    mp_float_t scale = mp_arg_validate_obj_float_range(scale_obj, 0, 32767, MP_QSTR_scale);
+    if (scale < (mp_float_t)1 / LV_SCALE_NONE) {
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("%q out of range"), MP_QSTR_scale);
+    }
+    return scale;
+}
+
 // Recompute members' inherited scale and screen positions after this group's scale or
 // position changed. Returns false when a member rejects the transform; some members may
 // already have taken it then, so callers restore the group's own transform and push again.
@@ -246,12 +254,12 @@ void displayio_lvgl_init(void) {
     displayio_lvgl_unlock();
 }
 
-void displayio_group_construct(displayio_group_t *self, mp_obj_list_t *members, mp_float_t scale, mp_int_t x, mp_int_t y) {
+void displayio_group_construct(displayio_group_t *self, mp_obj_list_t *members, mp_obj_t scale, mp_int_t x, mp_int_t y) {
     self->x = x;
     self->y = y;
     self->members = members;
     self->item_removed = false;
-    self->scale = _scale_to_q8(scale);
+    self->scale = _scale_to_q8(_validate_scale(scale));
     self->requested_scale = scale;
     self->in_group = false;
     self->readonly = false;
@@ -261,7 +269,7 @@ void displayio_group_construct(displayio_group_t *self, mp_obj_list_t *members, 
     self->lv_abs_y = y;
 }
 
-void common_hal_displayio_group_construct(displayio_group_t *self, mp_float_t scale, mp_int_t x, mp_int_t y) {
+void common_hal_displayio_group_construct(displayio_group_t *self, mp_obj_t scale, mp_int_t x, mp_int_t y) {
     mp_obj_list_t *members = mp_obj_new_list(0, NULL);
     displayio_group_construct(self, members, scale, x, y);
 }
@@ -324,16 +332,17 @@ void displayio_group_set_hidden_by_parent(displayio_group_t *self, bool hidden) 
     displayio_lvgl_unlock_with_cleanup();
 }
 
-mp_float_t common_hal_displayio_group_get_scale(displayio_group_t *self) {
+mp_obj_t common_hal_displayio_group_get_scale(displayio_group_t *self) {
     return self->requested_scale;
 }
 
-void common_hal_displayio_group_set_scale(displayio_group_t *self, mp_float_t scale) {
+void common_hal_displayio_group_set_scale(displayio_group_t *self, mp_obj_t scale) {
+    mp_float_t scale_value = _validate_scale(scale);
     if (self->requested_scale == scale) {
         return;
     }
     check_readonly(self);
-    uint32_t scale_q8 = _scale_to_q8(scale);
+    uint32_t scale_q8 = _scale_to_q8(scale_value);
     if (self->scale == scale_q8) {
         self->requested_scale = scale;
         return;
@@ -344,7 +353,7 @@ void common_hal_displayio_group_set_scale(displayio_group_t *self, mp_float_t sc
         return;
     }
     uint32_t previous_scale = self->scale;
-    mp_float_t previous_requested_scale = self->requested_scale;
+    mp_obj_t previous_requested_scale = self->requested_scale;
     self->scale = scale_q8;
     self->requested_scale = scale;
     nlr_jump_callback_node_t cleanup;

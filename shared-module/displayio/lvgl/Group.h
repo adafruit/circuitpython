@@ -30,7 +30,7 @@ typedef struct {
     uint32_t scale;  // Own scale in LVGL's Q8 format; LV_SCALE_NONE is 1x.
     // Keep the requested value for Python readback. In particular, consecutive animation
     // values may quantize to the same Q8 step but must not become stuck at the old value.
-    mp_float_t requested_scale;
+    mp_obj_t requested_scale;
     bool item_removed : 1;
     bool in_group : 1;
     bool hidden : 1;
@@ -46,7 +46,7 @@ typedef struct {
     int32_t lv_abs_y;
 } displayio_group_t;
 
-void displayio_group_construct(displayio_group_t *self, mp_obj_list_t *members, mp_float_t scale, mp_int_t x, mp_int_t y);
+void displayio_group_construct(displayio_group_t *self, mp_obj_list_t *members, mp_obj_t scale, mp_int_t x, mp_int_t y);
 void displayio_group_set_hidden_by_parent(displayio_group_t *self, bool hidden);
 
 // Shared LVGL compositor API. Implemented in shared-module/displayio/lvgl/Group.c.

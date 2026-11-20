@@ -27,16 +27,6 @@
 //|         :param int y: Initial y position within the parent."""
 //|         ...
 //|
-#if CIRCUITPY_DISPLAYIO_LVGL
-static mp_float_t _validate_scale(mp_obj_t scale_obj) {
-    mp_float_t scale = mp_arg_validate_obj_float_range(scale_obj, 0, 32767, MP_QSTR_scale);
-    if (scale < (mp_float_t)1 / LV_SCALE_NONE) {
-        mp_raise_ValueError_varg(MP_ERROR_TEXT("%q out of range"), MP_QSTR_scale);
-    }
-    return scale;
-}
-#endif
-
 static mp_obj_t displayio_group_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_scale, ARG_x, ARG_y };
     static const mp_arg_t allowed_args[] = {
@@ -47,11 +37,7 @@ static mp_obj_t displayio_group_make_new(const mp_obj_type_t *type, size_t n_arg
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    #if CIRCUITPY_DISPLAYIO_LVGL
-    mp_float_t scale = _validate_scale(args[ARG_scale].u_obj);
-    #else
-    mp_int_t scale = mp_arg_validate_int_range(mp_obj_get_int(args[ARG_scale].u_obj), 1, 32767, MP_QSTR_scale);
-    #endif
+    mp_obj_t scale = args[ARG_scale].u_obj;
 
     displayio_group_t *self = mp_obj_malloc(displayio_group_t, &displayio_group_type);
     common_hal_displayio_group_construct(self, scale, args[ARG_x].u_int, args[ARG_y].u_int);
@@ -97,29 +83,14 @@ MP_PROPERTY_GETSET(displayio_group_hidden_obj,
 //|     that doesn't go over the given scale. Reading this property returns the requested scale."""
 static mp_obj_t displayio_group_obj_get_scale(mp_obj_t self_in) {
     displayio_group_t *self = native_group(self_in);
-    #if CIRCUITPY_DISPLAYIO_LVGL
-    mp_float_t scale = common_hal_displayio_group_get_scale(self);
-    mp_int_t integer_scale = (mp_int_t)scale;
-    if (scale == integer_scale) {
-        return MP_OBJ_NEW_SMALL_INT(integer_scale);
-    }
-    return mp_obj_new_float(scale);
-    #else
-    return MP_OBJ_NEW_SMALL_INT(common_hal_displayio_group_get_scale(self));
-    #endif
+    return common_hal_displayio_group_get_scale(self);
 }
 MP_DEFINE_CONST_FUN_OBJ_1(displayio_group_get_scale_obj, displayio_group_obj_get_scale);
 
 static mp_obj_t displayio_group_obj_set_scale(mp_obj_t self_in, mp_obj_t scale_obj) {
     displayio_group_t *self = native_group(self_in);
 
-    #if CIRCUITPY_DISPLAYIO_LVGL
-    mp_float_t scale = _validate_scale(scale_obj);
-    #else
-    mp_int_t scale = mp_arg_validate_int_min(mp_obj_get_int(scale_obj), 1, MP_QSTR_scale);
-    #endif
-
-    common_hal_displayio_group_set_scale(self, scale);
+    common_hal_displayio_group_set_scale(self, scale_obj);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(displayio_group_set_scale_obj, displayio_group_obj_set_scale);
