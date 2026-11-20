@@ -41,8 +41,14 @@ uint8_t display_init_sequence[] = {
     0x29, 0x80, 0x78, //  # Display on then delay 0x78 (120ms)
 };
 
+static fourwire_fourwire_obj_t board_display_bus;
+busdisplay_busdisplay_obj_t board_display;
+
 static void display_init(void) {
-    fourwire_fourwire_obj_t *bus = &allocate_display_bus()->fourwire_bus;
+    fourwire_fourwire_obj_t *bus = displayio_native_init(&board_display_bus, &fourwire_fourwire_protocol, &fourwire_fourwire_type, 0, MP_OBJ_NULL, true);
+    if (bus == NULL) {
+        return;
+    }
     busio_spi_obj_t *spi = &bus->inline_bus;
     mp_int_t rotation;
     common_hal_busio_spi_construct(spi, &pin_GPIO14, &pin_GPIO13, &pin_GPIO12, false);
@@ -57,7 +63,11 @@ static void display_init(void) {
         0, // Polarity
         0); // Phase
 
-    busdisplay_busdisplay_obj_t *display = &allocate_display()->display;
+    busdisplay_busdisplay_obj_t *display = displayio_native_init(&board_display, &busdisplay_busdisplay_protocol, &busdisplay_busdisplay_type, 0, MP_OBJ_FROM_PTR(bus), true);
+
+    if (display == NULL) {
+        return;
+    }
     display->base.type = &busdisplay_busdisplay_type;
     settings_err_t result = settings_get_int("CIRCUITPY_DISPLAY_ROTATION", &rotation);
     if (result != SETTINGS_OK) {

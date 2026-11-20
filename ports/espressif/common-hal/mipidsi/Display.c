@@ -20,6 +20,10 @@
 // Cache write-back function (should be from rom/cache.h but it's not always available)
 extern int Cache_WriteBack_Addr(uint32_t addr, uint32_t size);
 
+mp_obj_t mipidsi_display_start_vm(mipidsi_display_obj_t *self) {
+    return mp_obj_new_list(1, (mp_obj_t[]) {MP_OBJ_FROM_PTR(self->bus)});
+}
+
 // Delete the panel and IO handles that construct created. construct's error
 // paths use this rather than deinit(): deinit() does nothing until the DPI
 // panel exists, and it gives back a bus use that construct hasn't taken yet.
@@ -247,6 +251,8 @@ void common_hal_mipidsi_display_construct(mipidsi_display_obj_t *self,
         }
     }
     mipidsi_bus_increment_use_count(self->bus);
+
+    displayio_register(MP_OBJ_FROM_PTR(self));
 }
 
 void common_hal_mipidsi_display_deinit(mipidsi_display_obj_t *self) {

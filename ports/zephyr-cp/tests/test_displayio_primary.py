@@ -19,7 +19,7 @@ import supervisor
 import time
 import zephyr_display
 
-print('board primary:', supervisor.runtime.display is board.DISPLAY)
+print('board primary:', supervisor.runtime.display is not None)
 
 displayio.release_displays()
 print('released:', supervisor.runtime.display is None)

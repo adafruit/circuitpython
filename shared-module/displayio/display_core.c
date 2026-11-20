@@ -40,11 +40,6 @@ void displayio_display_core_construct(displayio_display_core_t *self,
     self->height = height;
 
     displayio_display_core_set_rotation(self, rotation);
-
-    // If nothing has claimed the primary display yet, this display becomes it. A display created
-    // by user code (for example a USB video framebuffer) must be kept across the end of the VM so
-    // that the supervisor terminal and REPL have somewhere to draw.
-    common_hal_displayio_auto_primary_display();
 }
 
 void displayio_display_core_set_rotation(displayio_display_core_t *self,
@@ -118,7 +113,7 @@ MP_NOINLINE void displayio_display_core_set_rotation_and_update(displayio_displa
         self->height = tmp;
     }
     displayio_display_core_set_rotation(self, rotation);
-    if (display == &displays[0].display_base) {
+    if (displayio_is_primary_display(display)) {
         supervisor_stop_terminal();
         supervisor_start_terminal(self->width, self->height);
     }

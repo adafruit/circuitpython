@@ -43,6 +43,10 @@ const mcu_pin_obj_t *common_hal_digitalio_validate_pin(mp_obj_t obj);
 digitalinout_result_t common_hal_digitalio_digitalinout_construct(digitalio_digitalinout_obj_t *self, const mcu_pin_obj_t *pin);
 void common_hal_digitalio_digitalinout_deinit(digitalio_digitalinout_obj_t *self);
 bool common_hal_digitalio_digitalinout_deinited(digitalio_digitalinout_obj_t *self);
+// True when the live object can be relocated. move() returns false without
+// changing either object when relocation fails.
+bool common_hal_digitalio_digitalinout_is_moveable(digitalio_digitalinout_obj_t *self);
+bool common_hal_digitalio_digitalinout_move(digitalio_digitalinout_obj_t *self, digitalio_digitalinout_obj_t *destination);
 digitalinout_result_t common_hal_digitalio_digitalinout_switch_to_input(digitalio_digitalinout_obj_t *self, digitalio_pull_t pull);
 digitalinout_result_t common_hal_digitalio_digitalinout_switch_to_output(digitalio_digitalinout_obj_t *self, bool value, digitalio_drive_mode_t drive_mode);
 digitalio_direction_t common_hal_digitalio_digitalinout_get_direction(digitalio_digitalinout_obj_t *self);

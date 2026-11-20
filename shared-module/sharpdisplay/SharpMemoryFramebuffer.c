@@ -53,14 +53,15 @@ static bool common_hal_sharpdisplay_framebuffer_get_pixels_in_byte_share_row(sha
     return true;
 }
 
-void common_hal_sharpdisplay_framebuffer_reset(sharpdisplay_framebuffer_obj_t *self) {
+bool common_hal_sharpdisplay_framebuffer_stop_vm(sharpdisplay_framebuffer_obj_t *self) {
     if (self->bus != &self->inline_bus && gc_ptr_on_heap(self->bus)) {
-        busio_spi_obj_t *original_spi = self->bus;
-        memcpy(&self->inline_bus, original_spi, sizeof(busio_spi_obj_t));
+        if (!common_hal_busio_spi_move(self->bus, &self->inline_bus)) {
+            common_hal_busio_spi_deinit(self->bus);
+            return false;
+        }
         self->bus = &self->inline_bus;
-        // Mark the old SPI object so it is considered deinit.
-        common_hal_busio_spi_mark_deinit(original_spi);
     }
+    return true;
 }
 
 void common_hal_sharpdisplay_framebuffer_reconstruct(sharpdisplay_framebuffer_obj_t *self) {
@@ -112,7 +113,9 @@ void common_hal_sharpdisplay_framebuffer_deinit(sharpdisplay_framebuffer_obj_t *
 
     port_free(self->bufinfo.buf);
 
-    memset(self, 0, sizeof(*self));
+    self->bufinfo.buf = NULL;
+    self->bufinfo.len = 0;
+    self->base.type = &mp_type_NoneType;
 }
 
 void common_hal_sharpdisplay_framebuffer_construct(
@@ -134,6 +137,8 @@ void common_hal_sharpdisplay_framebuffer_construct(
     self->jdi_display = jdi_display;
 
     common_hal_sharpdisplay_framebuffer_get_bufinfo(self, NULL);
+
+    displayio_register(MP_OBJ_FROM_PTR(self));
 }
 
 static void common_hal_sharpdisplay_framebuffer_swapbuffers(sharpdisplay_framebuffer_obj_t *self, uint8_t *dirty_row_bitmask) {
@@ -175,12 +180,12 @@ static void common_hal_sharpdisplay_framebuffer_swapbuffers(sharpdisplay_framebu
 }
 
 static void sharpdisplay_framebuffer_deinit(mp_obj_t self_in) {
-    sharpdisplay_framebuffer_obj_t *self = self_in;
+    sharpdisplay_framebuffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_sharpdisplay_framebuffer_deinit(self);
 }
 
 static void sharpdisplay_framebuffer_get_bufinfo(mp_obj_t self_in, mp_buffer_info_t *bufinfo) {
-    sharpdisplay_framebuffer_obj_t *self = self_in;
+    sharpdisplay_framebuffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_sharpdisplay_framebuffer_get_bufinfo(self, bufinfo);
 }
 
@@ -195,37 +200,37 @@ static bool sharpdisplay_framebuffer_get_grayscale(mp_obj_t self_in) {
 }
 
 static int sharpdisplay_framebuffer_get_height(mp_obj_t self_in) {
-    sharpdisplay_framebuffer_obj_t *self = self_in;
+    sharpdisplay_framebuffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     return common_hal_sharpdisplay_framebuffer_get_height(self);
 }
 
 static int sharpdisplay_framebuffer_get_width(mp_obj_t self_in) {
-    sharpdisplay_framebuffer_obj_t *self = self_in;
+    sharpdisplay_framebuffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     return common_hal_sharpdisplay_framebuffer_get_width(self);
 }
 
 static int sharpdisplay_framebuffer_get_first_pixel_offset(mp_obj_t self_in) {
-    sharpdisplay_framebuffer_obj_t *self = self_in;
+    sharpdisplay_framebuffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     return common_hal_sharpdisplay_framebuffer_get_first_pixel_offset(self);
 }
 
 static bool sharpdisplay_framebuffer_get_pixels_in_byte_share_row(mp_obj_t self_in) {
-    sharpdisplay_framebuffer_obj_t *self = self_in;
+    sharpdisplay_framebuffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     return common_hal_sharpdisplay_framebuffer_get_pixels_in_byte_share_row(self);
 }
 
 static bool sharpdisplay_framebuffer_get_reverse_pixels_in_byte(mp_obj_t self_in) {
-    sharpdisplay_framebuffer_obj_t *self = self_in;
+    sharpdisplay_framebuffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     return common_hal_sharpdisplay_framebuffer_get_reverse_pixels_in_byte(self);
 }
 
 static int sharpdisplay_framebuffer_get_row_stride(mp_obj_t self_in) {
-    sharpdisplay_framebuffer_obj_t *self = self_in;
+    sharpdisplay_framebuffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     return common_hal_sharpdisplay_framebuffer_get_row_stride(self);
 }
 
 static void sharpdisplay_framebuffer_swapbuffers(mp_obj_t self_in, uint8_t *dirty_row_bitmask) {
-    sharpdisplay_framebuffer_obj_t *self = self_in;
+    sharpdisplay_framebuffer_obj_t *self = MP_OBJ_TO_PTR(self_in);
     common_hal_sharpdisplay_framebuffer_swapbuffers(self, dirty_row_bitmask);
 }
 
@@ -248,3 +253,40 @@ const framebuffer_p_t sharpdisplay_framebuffer_proto = {
 void common_hal_sharpdisplay_framebuffer_collect_ptrs(sharpdisplay_framebuffer_obj_t *self) {
     gc_collect_ptr(self->bus);
 }
+
+mp_obj_t sharpdisplay_framebuffer_start_vm(sharpdisplay_framebuffer_obj_t *self) {
+    if (self->bus == &self->inline_bus) {
+        busio_spi_obj_t *heap_bus = mp_obj_malloc_with_finaliser(busio_spi_obj_t, &busio_spi_type);
+        if (!common_hal_busio_spi_move(self->bus, heap_bus)) {
+            common_hal_busio_spi_deinit(self->bus);
+            m_free(heap_bus);
+            mp_raise_ValueError(MP_ERROR_TEXT("Display resources cannot move between VMs"));
+        }
+        self->bus = heap_bus;
+    }
+    return mp_obj_new_list(1, (mp_obj_t[]) {MP_OBJ_FROM_PTR(self->bus)});
+}
+
+static void sharpdisplay_protocol_deinit(void *self) {
+    common_hal_sharpdisplay_framebuffer_deinit(self);
+}
+
+static void *sharpdisplay_protocol_start_vm(void *self) {
+    return sharpdisplay_framebuffer_start_vm(self);
+}
+
+static bool sharpdisplay_protocol_is_moveable(void *self_in) {
+    sharpdisplay_framebuffer_obj_t *self = self_in;
+    return !gc_ptr_on_heap(self->bus) || common_hal_busio_spi_is_moveable(self->bus);
+}
+
+static bool sharpdisplay_protocol_stop_vm(void *self) {
+    return common_hal_sharpdisplay_framebuffer_stop_vm(self);
+}
+
+const displayio_protocol_t sharpdisplay_framebuffer_protocol = {
+    .deinit = sharpdisplay_protocol_deinit,
+    .is_moveable = sharpdisplay_protocol_is_moveable,
+    .start_vm = sharpdisplay_protocol_start_vm,
+    .stop_vm = sharpdisplay_protocol_stop_vm,
+};

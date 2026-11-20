@@ -6,6 +6,8 @@
 
 #include "py/objtuple.h"
 #include "shared-bindings/board/__init__.h"
+
+#include "board.h"
 #include "shared-module/displayio/__init__.h"
 #include "badger2350-shared.h"
 
@@ -119,7 +121,6 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     // CYW0, CYW1 is unconnected
     { MP_ROM_QSTR(MP_QSTR_CHARGE_STAT), MP_ROM_PTR(&pin_CYW2) },
 
-    { MP_ROM_QSTR(MP_QSTR_DISPLAY), MP_ROM_PTR(&displays[0].epaper_display)},
 
     // button-state on reset
     // Use `board.RESET_STATE()` to query the state of all buttons at reset.
@@ -131,5 +132,6 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     // during reset.
     { MP_ROM_QSTR(MP_QSTR_ON_RESET_PRESSED), (mp_obj_t)&on_reset_pressed_obj },
 
+    { MP_ROM_QSTR(MP_QSTR_DISPLAY), MP_ROM_PTR(&board_display) },
 };
 MP_DEFINE_CONST_DICT(board_module_globals, board_module_globals_table);

@@ -257,7 +257,7 @@ bool picogame_fb_take_invert_dirty(void);
 void picogame_set_pixel_format(picogame_output_t *display, bool rgb444);
 
 // Put a panel left in RGB444 back to RGB565 at the end of a program, so the console stays
-// readable. Call before reset_displays().
+// readable. Call before displayio_stop_vm().
 void picogame_reset(void);
 
 // Pack `npix` (even) wire-order RGB565 pixels in `buf` IN-PLACE to 12-bit RGB444; returns bytes.

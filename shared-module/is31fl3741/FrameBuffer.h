@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "shared-module/displayio/lifetime.h"
+
 #include "py/obj.h"
 #include "lib/protomatter/src/core.h"
 #include "shared-module/is31fl3741/IS31FL3741.h"
@@ -13,6 +15,7 @@
 extern const mp_obj_type_t is31fl3741_framebuffer_type;
 typedef struct {
     mp_obj_base_t base;
+    displayio_bus_lifetime_t bus_lifetime;
     is31fl3741_IS31FL3741_obj_t *is31fl3741;
     is31fl3741_IS31FL3741_obj_t inline_is31fl3741;
     mp_obj_t framebuffer;
@@ -24,3 +27,5 @@ typedef struct {
     bool scale;
     bool auto_gamma;
 } is31fl3741_framebuffer_obj_t;
+
+mp_obj_t is31fl3741_framebuffer_start_vm(is31fl3741_framebuffer_obj_t *self);

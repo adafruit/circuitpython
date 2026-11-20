@@ -46,6 +46,8 @@ void common_hal_is31fl3741_framebuffer_construct(is31fl3741_framebuffer_obj_t *s
     }
 
     common_hal_is31fl3741_framebuffer_reconstruct(self, framebuffer);
+
+    displayio_register(MP_OBJ_FROM_PTR(self));
 }
 
 void common_hal_is31fl3741_framebuffer_reconstruct(is31fl3741_framebuffer_obj_t *self, mp_obj_t framebuffer) {
@@ -198,4 +200,39 @@ void is31fl3741_framebuffer_collect_ptrs(is31fl3741_framebuffer_obj_t *self) {
     gc_collect_ptr(self->framebuffer);
     gc_collect_ptr(self->is31fl3741->i2c);
     gc_collect_ptr(self->is31fl3741);
+}
+
+mp_obj_t is31fl3741_framebuffer_start_vm(is31fl3741_framebuffer_obj_t *self) {
+    mp_obj_t refs = mp_obj_new_list(3, NULL);
+    if (self->is31fl3741 == &self->inline_is31fl3741) {
+        is31fl3741_IS31FL3741_obj_t *heap_is31 = mp_obj_malloc_with_finaliser(is31fl3741_IS31FL3741_obj_t, &is31fl3741_IS31FL3741_type);
+        busio_i2c_obj_t *heap_i2c = NULL;
+        if (self->is31fl3741->i2c == &self->is31fl3741->inline_i2c) {
+            heap_i2c = mp_obj_malloc_with_finaliser(busio_i2c_obj_t, &busio_i2c_type);
+        }
+        if (!common_hal_is31fl3741_IS31FL3741_move(self->is31fl3741, heap_is31)) {
+            common_hal_is31fl3741_IS31FL3741_deinit(self->is31fl3741);
+            m_free(heap_is31);
+            if (heap_i2c != NULL) {
+                m_free(heap_i2c);
+            }
+            mp_raise_ValueError(MP_ERROR_TEXT("Display resources cannot move between VMs"));
+        }
+        self->is31fl3741 = heap_is31;
+        if (heap_i2c != NULL) {
+            if (!common_hal_busio_i2c_move(&heap_is31->inline_i2c, heap_i2c)) {
+                common_hal_busio_i2c_deinit(&heap_is31->inline_i2c);
+                heap_is31->i2c = NULL;
+                self->is31fl3741 = &self->inline_is31fl3741;
+                m_free(heap_is31);
+                m_free(heap_i2c);
+                mp_raise_ValueError(MP_ERROR_TEXT("Display resources cannot move between VMs"));
+            }
+            heap_is31->i2c = heap_i2c;
+        }
+    }
+    mp_obj_list_store(refs, MP_OBJ_NEW_SMALL_INT(0), MP_OBJ_FROM_PTR(self->is31fl3741));
+    mp_obj_list_store(refs, MP_OBJ_NEW_SMALL_INT(1), MP_OBJ_FROM_PTR(self->is31fl3741->i2c));
+    mp_obj_list_store(refs, MP_OBJ_NEW_SMALL_INT(2), self->framebuffer);
+    return refs;
 }

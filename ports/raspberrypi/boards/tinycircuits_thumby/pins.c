@@ -5,6 +5,8 @@
 // SPDX-License-Identifier: MIT
 
 #include "shared-bindings/board/__init__.h"
+
+#include "board.h"
 #include "shared-module/displayio/__init__.h"
 
 static const mp_rom_map_elem_t board_module_globals_table[] = {
@@ -23,7 +25,6 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_MOSI), MP_ROM_PTR(DEFAULT_SPI_BUS_MOSI) },
 
     { MP_ROM_QSTR(MP_QSTR_SPI), MP_ROM_PTR(&board_spi_obj) },
-    { MP_ROM_QSTR(MP_QSTR_DISPLAY), MP_ROM_PTR(&displays[0].display)},
 
     // Buttons
     { MP_ROM_QSTR(MP_QSTR_BUTTON_LEFT), MP_ROM_PTR(&pin_GPIO3) },
@@ -43,6 +44,7 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_OBJ_NEW_QSTR(MP_QSTR_ID0), MP_ROM_PTR(&pin_GPIO15) },
 
     // Power pins
-    { MP_ROM_QSTR(MP_QSTR_VBUS_SENSE), MP_ROM_PTR(&pin_GPIO26) }
+    { MP_ROM_QSTR(MP_QSTR_VBUS_SENSE), MP_ROM_PTR(&pin_GPIO26) },
+    { MP_ROM_QSTR(MP_QSTR_DISPLAY), MP_ROM_PTR(&board_display) },
 };
 MP_DEFINE_CONST_DICT(board_module_globals, board_module_globals_table);

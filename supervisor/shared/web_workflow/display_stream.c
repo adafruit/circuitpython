@@ -495,24 +495,24 @@ static void _check_display(void) {
     displayio_display_core_t *core = NULL;
     void *fb = NULL;
     void *new_pixels = NULL;
-    for (size_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT && core == NULL; i++) {
-        const mp_obj_type_t *type = displays[i].display_base.type;
-        #if CIRCUITPY_FRAMEBUFFERIO
-        if (type == &framebufferio_framebufferdisplay_type) {
-            fb = &displays[i].framebuffer_display;
-            core = &displays[i].framebuffer_display.core;
-            new_pixels = displays[i].framebuffer_display.bufinfo.buf;
-        }
-        #endif
-        // The LVGL compositor's BusDisplay has no display_core and no readable
-        // pixels, so only framebuffer displays can be streamed there.
-        #if CIRCUITPY_BUSDISPLAY && !CIRCUITPY_DISPLAYIO_LVGL
-        if (type == &busdisplay_busdisplay_type) {
-            core = &displays[i].display.core;
-        }
-        #endif
-        (void)type;
+    mp_obj_t primary = displayio_primary_display_native();
+    const mp_obj_type_t *type = primary == MP_OBJ_NULL ? NULL : mp_obj_get_type(primary);
+    #if CIRCUITPY_FRAMEBUFFERIO
+    if (type == &framebufferio_framebufferdisplay_type) {
+        framebufferio_framebufferdisplay_obj_t *display = MP_OBJ_TO_PTR(primary);
+        fb = display;
+        core = &display->core;
+        new_pixels = display->bufinfo.buf;
     }
+    #endif
+    // The LVGL compositor's BusDisplay has no display_core and no readable
+    // pixels, so only framebuffer displays can be streamed there.
+    #if CIRCUITPY_BUSDISPLAY && !CIRCUITPY_DISPLAYIO_LVGL
+    if (type == &busdisplay_busdisplay_type) {
+        core = &((busdisplay_busdisplay_obj_t *)MP_OBJ_TO_PTR(primary))->core;
+    }
+    #endif
+    (void)type;
     uint8_t new_format = FORMAT_NONE;
     // The panel's size, whatever the rotation. The legacy compositor keeps it in the
     // full refresh area; LVGL tracks invalidation itself, so the core keeps only the size.

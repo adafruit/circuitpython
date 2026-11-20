@@ -178,6 +178,9 @@ static mp_obj_t _set_update_speed(mp_obj_t speed_in) {
 
 MP_DEFINE_CONST_FUN_OBJ_1(set_update_speed_obj, _set_update_speed);
 
+static fourwire_fourwire_obj_t board_display_bus;
+epaperdisplay_epaperdisplay_obj_t board_display;
+
 void board_init(void) {
     // Drive the I2C_POWER_EN pin high
     i2c_power_en_pin_obj.base.type = &digitalio_digitalinout_type;
@@ -186,7 +189,11 @@ void board_init(void) {
     common_hal_digitalio_digitalinout_switch_to_output(
         &i2c_power_en_pin_obj, true, DRIVE_MODE_PUSH_PULL);
 
-    fourwire_fourwire_obj_t *bus = &allocate_display_bus()->fourwire_bus;
+    fourwire_fourwire_obj_t *bus = displayio_native_init(&board_display_bus, &fourwire_fourwire_protocol, &fourwire_fourwire_type, 0, MP_OBJ_NULL, true);
+
+    if (bus == NULL) {
+        return;
+    }
     busio_spi_obj_t *spi = &bus->inline_bus;
     common_hal_busio_spi_construct(spi, &pin_GPIO18, &pin_GPIO19, NULL, false);
 
@@ -201,15 +208,18 @@ void board_init(void) {
         0); // Phase
 
     // create and configure display
-    epaperdisplay_epaperdisplay_obj_t *display = &allocate_display()->epaper_display;
+    epaperdisplay_epaperdisplay_obj_t *display = displayio_native_init(&board_display, &epaperdisplay_epaperdisplay_protocol, &epaperdisplay_epaperdisplay_type, 0, MP_OBJ_FROM_PTR(bus), true);
+    if (display == NULL) {
+        return;
+    }
     display->base.type = &epaperdisplay_epaperdisplay_type;
 
     epaperdisplay_construct_args_t args = EPAPERDISPLAY_CONSTRUCT_ARGS_DEFAULTS;
     args.bus = bus;
-    args.start_sequence = _start_sequence;
-    args.start_sequence_len = sizeof(_start_sequence);
-    args.stop_sequence = _stop_sequence;
-    args.stop_sequence_len = sizeof(_stop_sequence);
+    static MP_DEFINE_BYTES_OBJ(_start_sequence_obj, _start_sequence, sizeof(_start_sequence));
+    args.start_sequence_obj = MP_OBJ_FROM_PTR(&_start_sequence_obj);
+    static MP_DEFINE_BYTES_OBJ(_stop_sequence_obj, _stop_sequence, sizeof(_stop_sequence));
+    args.stop_sequence_obj = MP_OBJ_FROM_PTR(&_stop_sequence_obj);
     args.width = 264;
     args.height = 176;
     args.ram_width = 250;
@@ -221,8 +231,8 @@ void board_init(void) {
     args.set_current_row_command = 0x4f;
     args.write_black_ram_command = 0x24;
     args.write_color_ram_command = 0x26;
-    args.refresh_sequence = _refresh_sequence;
-    args.refresh_sequence_len = sizeof(_refresh_sequence);
+    static MP_DEFINE_BYTES_OBJ(_refresh_sequence_obj, _refresh_sequence, sizeof(_refresh_sequence));
+    args.refresh_sequence_obj = MP_OBJ_FROM_PTR(&_refresh_sequence_obj);
     args.refresh_time = 1.0;
     args.busy_pin = &pin_GPIO16;
     args.busy_state = true;
@@ -234,8 +244,8 @@ void board_init(void) {
 }
 
 void board_deinit(void) {
-    epaperdisplay_epaperdisplay_obj_t *display = &displays[0].epaper_display;
-    if (display->base.type == &epaperdisplay_epaperdisplay_type) {
+    epaperdisplay_epaperdisplay_obj_t *display = MP_OBJ_TO_PTR(displayio_board_display_native());
+    if (display != NULL && display->base.type == &epaperdisplay_epaperdisplay_type) {
         while (common_hal_epaperdisplay_epaperdisplay_get_busy(display)) {
             RUN_BACKGROUND_TASKS;
         }

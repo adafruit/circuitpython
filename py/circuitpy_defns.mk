@@ -958,7 +958,7 @@ $(filter $(SRC_PATTERNS), \
 	displayio/lvgl/Palette.c \
 	busdisplay/lvgl/BusDisplay.c \
 	displayio/lvgl/TileGrid.c \
-	displayio/legacy/__init__.c \
+	displayio/lifetime.c \
 	epaperdisplay/lvgl/EPaperDisplay.c \
 	framebufferio/lvgl/FramebufferDisplay.c \
 	vectorio/lvgl/VectorShape.c \
@@ -968,7 +968,7 @@ else
 SRC_SHARED_MODULE_INTERNAL += \
 $(filter $(SRC_PATTERNS), \
 	busdisplay/legacy/BusDisplay.c \
-	displayio/legacy/__init__.c \
+	displayio/lifetime.c \
 	displayio/legacy/Bitmap.c \
 	displayio/legacy/ColorConverter.c \
 	displayio/legacy/display_core_scanline.c \

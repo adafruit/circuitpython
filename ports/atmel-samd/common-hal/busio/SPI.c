@@ -178,6 +178,19 @@ void common_hal_busio_spi_mark_deinit(busio_spi_obj_t *self) {
     self->clock_pin = NO_PIN;
 }
 
+bool common_hal_busio_spi_is_moveable(busio_spi_obj_t *self) {
+    return !common_hal_busio_spi_deinited(self) && !self->has_lock;
+}
+
+bool common_hal_busio_spi_move(busio_spi_obj_t *self, busio_spi_obj_t *destination) {
+    if (!common_hal_busio_spi_is_moveable(self)) {
+        return false;
+    }
+    *destination = *self;
+    common_hal_busio_spi_mark_deinit(self);
+    return true;
+}
+
 void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
     if (common_hal_busio_spi_deinited(self)) {
         return;

@@ -96,15 +96,22 @@ static mp_obj_t paralleldisplaybus_parallelbus_make_new(const mp_obj_type_t *typ
         validate_list_is_free_pins(MP_QSTR_data_pins, data_pins, (mp_int_t)MP_ARRAY_SIZE(data_pins), args[ARG_data_pins].u_obj, &num_pins);
     }
 
-    paralleldisplaybus_parallelbus_obj_t *self = &allocate_display_bus_or_raise()->parallel_bus;
-    self->base.type = &paralleldisplaybus_parallelbus_type;
+    paralleldisplaybus_parallelbus_obj_t *self = displayio_native_init(NULL, &paralleldisplaybus_parallelbus_protocol,
+        &paralleldisplaybus_parallelbus_type, sizeof(*self), MP_OBJ_NULL, false);
 
-    if (specified_data0) {
-        common_hal_paralleldisplaybus_parallelbus_construct(self, data0, command, chip_select, write, read, reset, frequency);
-    } else {
-        common_hal_paralleldisplaybus_parallelbus_construct_nonsequential(self, num_pins, data_pins, command, chip_select, write, read, reset, frequency);
+    nlr_buf_t nlr;
+    if (nlr_push(&nlr) == 0) {
+        if (specified_data0) {
+            common_hal_paralleldisplaybus_parallelbus_construct(self, data0, command, chip_select, write, read, reset, frequency);
+        } else {
+            common_hal_paralleldisplaybus_parallelbus_construct_nonsequential(self, num_pins, data_pins, command, chip_select, write, read, reset, frequency);
+        }
+        mp_obj_t proxy = displayio_register(MP_OBJ_FROM_PTR(self));
+        nlr_pop();
+        return proxy;
     }
-    return self;
+    displayio_construct_failed(MP_OBJ_FROM_PTR(self));
+    nlr_jump(nlr.ret_val);
 }
 
 //|     def reset(self) -> None:
@@ -114,7 +121,7 @@ static mp_obj_t paralleldisplaybus_parallelbus_make_new(const mp_obj_type_t *typ
 //|
 
 static mp_obj_t paralleldisplaybus_parallelbus_obj_reset(mp_obj_t self_in) {
-    paralleldisplaybus_parallelbus_obj_t *self = self_in;
+    paralleldisplaybus_parallelbus_obj_t *self = displayio_proxy_native(self_in, &paralleldisplaybus_parallelbus_type);
 
     if (!common_hal_paralleldisplaybus_parallelbus_reset(self)) {
         mp_raise_RuntimeError_varg(MP_ERROR_TEXT("No %q pin"), MP_QSTR_reset);
@@ -130,6 +137,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(paralleldisplaybus_parallelbus_reset_obj, paralleldisp
 //|
 //|
 static mp_obj_t paralleldisplaybus_parallelbus_obj_send(mp_obj_t self, mp_obj_t command_obj, mp_obj_t data_obj) {
+    paralleldisplaybus_parallelbus_obj_t *native = displayio_proxy_native(self, &paralleldisplaybus_parallelbus_type);
     mp_int_t command_int = mp_arg_validate_int_range(mp_obj_get_int(command_obj), 0, 255, MP_QSTR_command);
 
     uint8_t command = command_int;
@@ -137,18 +145,39 @@ static mp_obj_t paralleldisplaybus_parallelbus_obj_send(mp_obj_t self, mp_obj_t 
     mp_get_buffer_raise(data_obj, &bufinfo, MP_BUFFER_READ);
 
     // Wait for display bus to be available.
-    while (!common_hal_paralleldisplaybus_parallelbus_begin_transaction(self)) {
+    while (!common_hal_paralleldisplaybus_parallelbus_begin_transaction(native)) {
         RUN_BACKGROUND_TASKS;
     }
-    common_hal_paralleldisplaybus_parallelbus_send(self, DISPLAY_COMMAND, CHIP_SELECT_UNTOUCHED, &command, 1);
-    common_hal_paralleldisplaybus_parallelbus_send(self, DISPLAY_DATA, CHIP_SELECT_UNTOUCHED, ((uint8_t *)bufinfo.buf), bufinfo.len);
-    common_hal_paralleldisplaybus_parallelbus_end_transaction(self);
+    common_hal_paralleldisplaybus_parallelbus_send(native, DISPLAY_COMMAND, CHIP_SELECT_UNTOUCHED, &command, 1);
+    common_hal_paralleldisplaybus_parallelbus_send(native, DISPLAY_DATA, CHIP_SELECT_UNTOUCHED, ((uint8_t *)bufinfo.buf), bufinfo.len);
+    common_hal_paralleldisplaybus_parallelbus_end_transaction(native);
 
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_3(paralleldisplaybus_parallelbus_send_obj, paralleldisplaybus_parallelbus_obj_send);
 
+static mp_obj_t paralleldisplaybus_parallelbus_obj_deinit(mp_obj_t self_in) {
+    displayio_bus_deinit_obj(self_in, &paralleldisplaybus_parallelbus_type);
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(paralleldisplaybus_parallelbus_deinit_obj, paralleldisplaybus_parallelbus_obj_deinit);
+static mp_obj_t paralleldisplaybus_parallelbus_obj___del__(mp_obj_t self_in) {
+    displayio_bus_proxy_finalise(MP_OBJ_TO_PTR(self_in));
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(paralleldisplaybus_parallelbus___del___obj, paralleldisplaybus_parallelbus_obj___del__);
+
+static void parallelbus_protocol_deinit(void *self) {
+    common_hal_paralleldisplaybus_parallelbus_deinit(self);
+}
+
+const displayio_protocol_t paralleldisplaybus_parallelbus_protocol = {
+    .deinit = parallelbus_protocol_deinit,
+};
+
 static const mp_rom_map_elem_t paralleldisplaybus_parallelbus_locals_dict_table[] = {
+    { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&paralleldisplaybus_parallelbus_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&paralleldisplaybus_parallelbus___del___obj) },
     { MP_ROM_QSTR(MP_QSTR_reset), MP_ROM_PTR(&paralleldisplaybus_parallelbus_reset_obj) },
     { MP_ROM_QSTR(MP_QSTR_send), MP_ROM_PTR(&paralleldisplaybus_parallelbus_send_obj) },
 };

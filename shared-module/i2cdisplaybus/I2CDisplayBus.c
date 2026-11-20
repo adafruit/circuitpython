@@ -32,7 +32,6 @@ void common_hal_i2cdisplaybus_i2cdisplaybus_construct(i2cdisplaybus_i2cdisplaybu
 
     // Probe the bus to see if a device acknowledges the given address.
     if (!common_hal_busio_i2c_probe(i2c, device_address)) {
-        self->base.type = &mp_type_NoneType;
         common_hal_i2cdisplaybus_i2cdisplaybus_deinit(self);
         mp_raise_ValueError_varg(MP_ERROR_TEXT("Unable to find I2C Display at %x"), device_address);
     }
@@ -41,6 +40,8 @@ void common_hal_i2cdisplaybus_i2cdisplaybus_construct(i2cdisplaybus_i2cdisplaybu
     self->bus = i2c;
 
     self->address = device_address;
+
+    displayio_register(MP_OBJ_FROM_PTR(self));
 }
 
 void common_hal_i2cdisplaybus_i2cdisplaybus_deinit(i2cdisplaybus_i2cdisplaybus_obj_t *self) {
@@ -54,6 +55,44 @@ void common_hal_i2cdisplaybus_i2cdisplaybus_deinit(i2cdisplaybus_i2cdisplaybus_o
         common_hal_digitalio_digitalinout_deinit(&self->reset);
     }
 }
+
+static void i2cdisplaybus_protocol_deinit(void *self) {
+    common_hal_i2cdisplaybus_i2cdisplaybus_deinit(self);
+}
+
+static void *i2cdisplaybus_protocol_start_vm(void *self) {
+    return i2cdisplaybus_i2cdisplaybus_start_vm(self);
+}
+
+static bool i2cdisplaybus_protocol_is_moveable(void *self_in) {
+    i2cdisplaybus_i2cdisplaybus_obj_t *self = self_in;
+    return !gc_ptr_on_heap(self->bus) || common_hal_busio_i2c_is_moveable(self->bus);
+}
+
+static bool i2cdisplaybus_protocol_stop_vm(void *self_in) {
+    i2cdisplaybus_i2cdisplaybus_obj_t *self = self_in;
+    if (!i2cdisplaybus_protocol_is_moveable(self)) {
+        if (gc_ptr_on_heap(self->bus)) {
+            common_hal_busio_i2c_deinit(self->bus);
+        }
+        return false;
+    }
+    if (gc_ptr_on_heap(self->bus)) {
+        if (!common_hal_busio_i2c_move(self->bus, &self->inline_bus)) {
+            common_hal_busio_i2c_deinit(self->bus);
+            return false;
+        }
+        self->bus = &self->inline_bus;
+    }
+    return true;
+}
+
+const displayio_protocol_t i2cdisplaybus_i2cdisplaybus_protocol = {
+    .deinit = i2cdisplaybus_protocol_deinit,
+    .is_moveable = i2cdisplaybus_protocol_is_moveable,
+    .start_vm = i2cdisplaybus_protocol_start_vm,
+    .stop_vm = i2cdisplaybus_protocol_stop_vm,
+};
 
 bool common_hal_i2cdisplaybus_i2cdisplaybus_reset(mp_obj_t obj) {
     i2cdisplaybus_i2cdisplaybus_obj_t *self = MP_OBJ_TO_PTR(obj);
@@ -104,7 +143,17 @@ void common_hal_i2cdisplaybus_i2cdisplaybus_end_transaction(mp_obj_t obj) {
     common_hal_busio_i2c_unlock(self->bus);
 }
 
-void common_hal_i2cdisplaybus_i2cdisplaybus_collect_ptrs(mp_obj_t obj) {
-    i2cdisplaybus_i2cdisplaybus_obj_t *self = MP_OBJ_TO_PTR(obj);
-    gc_collect_ptr((void *)self->bus);
+mp_obj_t i2cdisplaybus_i2cdisplaybus_start_vm(i2cdisplaybus_i2cdisplaybus_obj_t *self) {
+    mp_obj_t refs = mp_obj_new_list(1, NULL);
+    if (self->bus == &self->inline_bus) {
+        busio_i2c_obj_t *heap_bus = mp_obj_malloc_with_finaliser(busio_i2c_obj_t, &busio_i2c_type);
+        if (!common_hal_busio_i2c_move(self->bus, heap_bus)) {
+            common_hal_busio_i2c_deinit(self->bus);
+            m_free(heap_bus);
+            mp_raise_ValueError(MP_ERROR_TEXT("Display resources cannot move between VMs"));
+        }
+        self->bus = heap_bus;
+    }
+    mp_obj_list_store(refs, MP_OBJ_NEW_SMALL_INT(0), MP_OBJ_FROM_PTR(self->bus));
+    return refs;
 }

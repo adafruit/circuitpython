@@ -30,6 +30,10 @@ extern void common_hal_busio_spi_construct(busio_spi_obj_t *self,
 
 extern void common_hal_busio_spi_deinit(busio_spi_obj_t *self);
 extern bool common_hal_busio_spi_deinited(busio_spi_obj_t *self);
+// True when the live, idle bus can be relocated. move() returns false without
+// changing either object when relocation fails.
+extern bool common_hal_busio_spi_is_moveable(busio_spi_obj_t *self);
+extern bool common_hal_busio_spi_move(busio_spi_obj_t *self, busio_spi_obj_t *destination);
 
 // Mark as deinit without deiniting. This is used by displayio after copying the
 // object elsewhere and prevents the heap from deiniting the object.

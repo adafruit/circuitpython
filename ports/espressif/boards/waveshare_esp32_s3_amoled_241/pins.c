@@ -5,6 +5,8 @@
 #include "py/obj.h"
 #include "py/mphal.h"
 #include "shared-bindings/board/__init__.h"
+
+#include "board.h"
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-module/displayio/__init__.h"
 
@@ -104,6 +106,6 @@ static const mp_rom_map_elem_t board_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_IO46),  MP_ROM_PTR(&pin_GPIO46) },  // Available
 
     // Board display (initialized in board_init)
-    { MP_ROM_QSTR(MP_QSTR_DISPLAY), MP_ROM_PTR(&displays[0].display) },
+    { MP_ROM_QSTR(MP_QSTR_DISPLAY), MP_ROM_PTR(&board_display) },
 };
 MP_DEFINE_CONST_DICT(board_module_globals, board_module_globals_table);

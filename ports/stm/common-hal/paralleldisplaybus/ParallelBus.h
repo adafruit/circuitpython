@@ -6,10 +6,13 @@
 
 #pragma once
 
+#include "shared-module/displayio/lifetime.h"
+
 #include "common-hal/digitalio/DigitalInOut.h"
 
 typedef struct {
     mp_obj_base_t base;
+    displayio_bus_lifetime_t bus_lifetime;
     const mcu_pin_obj_t *data_pins[8];
     const mcu_pin_obj_t *write;
     const mcu_pin_obj_t *read;

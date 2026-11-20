@@ -7,21 +7,21 @@
 #pragma once
 
 #include "common-hal/microcontroller/Pin.h"
+#include "py/objstr.h"
 
 #include "shared-module/epaperdisplay/EPaperDisplay.h"
 #include "shared-module/displayio/Group.h"
 
 extern const mp_obj_type_t epaperdisplay_epaperdisplay_type;
+extern const displayio_protocol_t epaperdisplay_epaperdisplay_protocol;
 
 #define NO_COMMAND 0x100
 
 typedef struct epaperdisplay_construct_args_t {
     mp_obj_t bus;
-    const uint8_t *start_sequence;
-    uint16_t start_sequence_len;
+    mp_obj_t start_sequence_obj;
     mp_float_t start_up_time;
-    const uint8_t *stop_sequence;
-    uint16_t stop_sequence_len;
+    mp_obj_t stop_sequence_obj;
     uint16_t width;
     uint16_t height;
     uint16_t ram_width;
@@ -40,8 +40,7 @@ typedef struct epaperdisplay_construct_args_t {
     uint16_t write_previous_ram_command;
     uint32_t highlight_color;
     uint32_t highlight_color2;
-    const uint8_t *refresh_sequence;
-    uint16_t refresh_sequence_len;
+    mp_obj_t refresh_sequence_obj;
     mp_float_t refresh_time;
     const mcu_pin_obj_t *busy_pin;
     bool busy_state;
@@ -54,17 +53,14 @@ typedef struct epaperdisplay_construct_args_t {
     bool address_little_endian;
     bool fast;
     uint8_t lag_frames;
-    const uint8_t *clean_sequence;
-    uint32_t clean_sequence_len;
+    mp_obj_t clean_sequence_obj;
 } epaperdisplay_construct_args_t;
 
 #define EPAPERDISPLAY_CONSTRUCT_ARGS_DEFAULTS { \
         .bus = mp_const_none, \
-        .start_sequence = NULL, \
-        .start_sequence_len = 0, \
+        .start_sequence_obj = mp_const_none, \
         .start_up_time = 0.0, \
-        .stop_sequence = NULL, \
-        .stop_sequence_len = 0, \
+        .stop_sequence_obj = mp_const_none, \
         .width = 0, \
         .height = 0, \
         .ram_width = 0, \
@@ -83,8 +79,7 @@ typedef struct epaperdisplay_construct_args_t {
         .write_previous_ram_command = NO_COMMAND, \
         .highlight_color = 0x000000, \
         .highlight_color2 = 0x000000, \
-        .refresh_sequence = NULL, \
-        .refresh_sequence_len = 0, \
+        .refresh_sequence_obj = mp_const_none, \
         .refresh_time = 0.0, \
         .busy_pin = NULL, \
         .busy_state = false, \
@@ -97,8 +92,7 @@ typedef struct epaperdisplay_construct_args_t {
         .address_little_endian = false, \
         .fast = false, \
         .lag_frames = 0, \
-        .clean_sequence = NULL, \
-        .clean_sequence_len = 0 \
+        .clean_sequence_obj = mp_const_none \
 }
 
 void common_hal_epaperdisplay_epaperdisplay_construct(epaperdisplay_epaperdisplay_obj_t *self,

@@ -1835,15 +1835,13 @@ static bool supervisor_filesystem_access_could_block(void) {
         // Assume that the CIRCUITPY root is not sharing a SPI bus with the display SPI bus
         return false;
     }
-    // Check display 0 to see if it's on a fourwire (SPI) bus. If it is, blocking is possible
-    // in theory other displays could block but also in reality there's generally 0 or 1 displays
-    for (size_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
-        if (display_buses[i].bus_base.type != &fourwire_fourwire_type) {
-            continue;
-        }
-        if (!common_hal_fourwire_fourwire_bus_free(MP_OBJ_FROM_PTR(&display_buses[i].bus_base))) {
-            return true;
-        }
+    // Only the preserved primary bus's bus survives VM teardown. Check its
+    // underlying SPI state directly rather than enumerating display buses.
+    mp_obj_t primary = displayio_primary_display_native();
+    mp_obj_t bus = displayio_display_bus_native(primary);
+    if (bus != MP_OBJ_NULL && mp_obj_get_type(bus) == &fourwire_fourwire_type &&
+        !common_hal_fourwire_fourwire_bus_free(bus)) {
+        return true;
     }
     #endif
     return false;

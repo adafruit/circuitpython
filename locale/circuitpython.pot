@@ -2051,8 +2051,8 @@ msgstr ""
 #: shared-bindings/bitmapfilter/__init__.c shared-bindings/canio/CAN.c
 #: shared-bindings/digitalio/Pull.c shared-bindings/picogame/Sprite.c
 #: shared-bindings/supervisor/__init__.c shared-module/audiofilters/__init__.c
-#: shared-module/displayio/legacy/__init__.c
-#: shared-module/synthio/Synthesizer.c shared-module/videocore/VideoBuffer.c
+#: shared-module/displayio/lifetime.c shared-module/synthio/Synthesizer.c
+#: shared-module/videocore/VideoBuffer.c
 msgid "%q must be of type %q or %q, not %q"
 msgstr ""
 
@@ -4597,6 +4597,10 @@ msgstr ""
 msgid "unsupported bitmap depth"
 msgstr ""
 
+#: shared-module/busdisplay/__init__.c
+msgid "%q must be a DigitalInOut, PWMOut or None"
+msgstr ""
+
 #: shared-module/busdisplay/lvgl/BusDisplay.c
 #: shared-module/framebufferio/lvgl/FramebufferDisplay.c
 msgid "LVGL display create failed"
@@ -4650,12 +4654,12 @@ msgstr ""
 msgid "Unable to read color palette data"
 msgstr ""
 
-#: shared-module/displayio/legacy/__init__.c
-msgid "Too many displays"
+#: shared-module/displayio/lifetime.c
+msgid "Display resources cannot move between VMs"
 msgstr ""
 
-#: shared-module/displayio/legacy/__init__.c
-msgid "Too many display buses; deinit() unused displays"
+#: shared-module/displayio/lifetime.c
+msgid "expected %q"
 msgstr ""
 
 #: shared-module/displayio/lvgl/Group.c

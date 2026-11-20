@@ -35,8 +35,14 @@ uint8_t refresh_sequence[] = {
     0x12, 0x00
 };
 
+static fourwire_fourwire_obj_t board_display_bus;
+epaperdisplay_epaperdisplay_obj_t board_display;
+
 void board_init(void) {
-    fourwire_fourwire_obj_t *bus = &allocate_display_bus()->fourwire_bus;
+    fourwire_fourwire_obj_t *bus = displayio_native_init(&board_display_bus, &fourwire_fourwire_protocol, &fourwire_fourwire_type, 0, MP_OBJ_NULL, true);
+    if (bus == NULL) {
+        return;
+    }
     busio_spi_obj_t *spi = &bus->inline_bus;
     common_hal_busio_spi_construct(spi, &pin_PB13, &pin_PB15, NULL, false);
 
@@ -50,22 +56,26 @@ void board_init(void) {
         0, // Polarity
         0); // Phase
 
-    epaperdisplay_epaperdisplay_obj_t *display = &allocate_display()->epaper_display;
+    epaperdisplay_epaperdisplay_obj_t *display = displayio_native_init(&board_display, &epaperdisplay_epaperdisplay_protocol, &epaperdisplay_epaperdisplay_type, 0, MP_OBJ_FROM_PTR(bus), true);
+
+    if (display == NULL) {
+        return;
+    }
     display->base.type = &epaperdisplay_epaperdisplay_type;
     epaperdisplay_construct_args_t args = EPAPERDISPLAY_CONSTRUCT_ARGS_DEFAULTS;
     args.bus = bus;
-    args.start_sequence = start_sequence;
-    args.start_sequence_len = sizeof(start_sequence);
-    args.stop_sequence = stop_sequence;
-    args.stop_sequence_len = sizeof(stop_sequence);
+    static MP_DEFINE_BYTES_OBJ(start_sequence_obj, start_sequence, sizeof(start_sequence));
+    args.start_sequence_obj = MP_OBJ_FROM_PTR(&start_sequence_obj);
+    static MP_DEFINE_BYTES_OBJ(stop_sequence_obj, stop_sequence, sizeof(stop_sequence));
+    args.stop_sequence_obj = MP_OBJ_FROM_PTR(&stop_sequence_obj);
     args.width = 300;
     args.height = 400;
     args.ram_width = 300;
     args.ram_height = 400;
     args.rotation = 270;
     args.write_black_ram_command = 0x13;
-    args.refresh_sequence = refresh_sequence;
-    args.refresh_sequence_len = sizeof(refresh_sequence);
+    static MP_DEFINE_BYTES_OBJ(refresh_sequence_obj, refresh_sequence, sizeof(refresh_sequence));
+    args.refresh_sequence_obj = MP_OBJ_FROM_PTR(&refresh_sequence_obj);
     args.refresh_time = 40.0;
     args.busy_pin = &pin_PA01;
     args.seconds_per_frame = 5.0;

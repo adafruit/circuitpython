@@ -73,10 +73,10 @@ static void supervisor_background_tick(void *unused) {
     bleio_hci_background();
     #endif
 
-    #if CIRCUITPY_DISPLAYIO && !CIRCUITPY_DISPLAYIO_LVGL
-    // The LVGL compositor renders on an RTOS thread of its own; nothing to pump here.
+    #if CIRCUITPY_DISPLAYIO && (!CIRCUITPY_DISPLAYIO_LVGL || CIRCUITPY_EPAPERDISPLAY)
     displayio_background();
-    #elif CIRCUITPY_DISPLAYIO && CIRCUITPY_DISPLAYIO_LVGL && CIRCUITPY_VIDEOCORE
+    #endif
+    #if CIRCUITPY_DISPLAYIO && CIRCUITPY_DISPLAYIO_LVGL && CIRCUITPY_VIDEOCORE
     // Video frames land in interrupt context, so repaint them here, from a
     // normal background context, for the next LVGL render.
     displayio_lvgl_video_background();

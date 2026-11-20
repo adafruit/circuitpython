@@ -27,7 +27,6 @@ typedef struct {
     display_bus_send send_async;
     display_bus_end_transaction end_transaction;
     display_bus_flush flush;
-    display_bus_collect_ptrs collect_ptrs;
     uint16_t ram_width;
     uint16_t ram_height;
     int16_t colstart;
@@ -45,7 +44,7 @@ typedef struct {
 } displayio_display_bus_t;
 
 // Raise ValueError if bus isn't a supported display bus type. Call it before allocating a
-// display, so a bad bus doesn't leave a half-built display in its slot.
+// display, so a bad bus doesn't leave a partially constructed native display.
 void displayio_display_bus_validate(mp_obj_t bus);
 
 void displayio_display_bus_construct(displayio_display_bus_t *self,
@@ -69,5 +68,3 @@ void displayio_display_bus_send_init_sequence(displayio_display_bus_t *self,
 void displayio_display_bus_flush(displayio_display_bus_t *self);
 
 void release_display_bus(displayio_display_bus_t *self);
-
-void displayio_display_bus_collect_ptrs(displayio_display_bus_t *self);

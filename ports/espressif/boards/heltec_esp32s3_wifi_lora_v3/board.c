@@ -33,6 +33,9 @@ uint8_t display_init_sequence[] = { // SSD1306
 
 digitalio_digitalinout_obj_t display_on;
 
+static i2cdisplaybus_i2cdisplaybus_obj_t board_display_bus;
+busdisplay_busdisplay_obj_t board_display;
+
 static void display_init(void) {
     // Need to bring GPIO36 high or the screen doesn't get power
     // & the board can't see the i2c bus at all.
@@ -41,7 +44,11 @@ static void display_init(void) {
 
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
 
-    i2cdisplaybus_i2cdisplaybus_obj_t *bus = &allocate_display_bus()->i2cdisplay_bus;
+    i2cdisplaybus_i2cdisplaybus_obj_t *bus = displayio_native_init(&board_display_bus, &i2cdisplaybus_i2cdisplaybus_protocol, &i2cdisplaybus_i2cdisplaybus_type, 0, MP_OBJ_NULL, true);
+
+    if (bus == NULL) {
+        return;
+    }
     bus->base.type = &i2cdisplaybus_i2cdisplaybus_type;
     common_hal_i2cdisplaybus_i2cdisplaybus_construct(
         bus,
@@ -50,7 +57,11 @@ static void display_init(void) {
         &pin_GPIO21  // broken-out on V3
         );
 
-    busdisplay_busdisplay_obj_t *display = &allocate_display()->display;
+    busdisplay_busdisplay_obj_t *display = displayio_native_init(&board_display, &busdisplay_busdisplay_protocol, &busdisplay_busdisplay_type, 0, MP_OBJ_FROM_PTR(bus), true);
+
+    if (display == NULL) {
+        return;
+    }
     display->base.type = &busdisplay_busdisplay_type;
     common_hal_busdisplay_busdisplay_construct(display,
         bus,

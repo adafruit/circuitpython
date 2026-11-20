@@ -1943,6 +1943,7 @@ void i2sout_gc_collect(void) {{
 }}"""
 
     zephyr_display_header = ""
+    zephyr_display_static_obj = ""
     zephyr_display_init = ""
     zephyr_display_board_entry = ""
     if board_info.get("zephyr_display", False):
@@ -1952,25 +1953,32 @@ void i2sout_gc_collect(void) {{
 #include "shared-module/displayio/__init__.h"
 #include "bindings/zephyr_display/Display.h"
         """.strip()
-        zephyr_display_init = """
+        zephyr_display_static_obj = """
 #if CIRCUITPY_ZEPHYR_DISPLAY && DT_HAS_CHOSEN(zephyr_display)
-    // Always allocate a display slot so board.DISPLAY is at least a valid
-    // NoneType object even if the underlying Zephyr display is unavailable.
-    primary_display_t *display_obj = allocate_display();
-    if (display_obj != NULL) {
-        zephyr_display_display_obj_t *display = &display_obj->zephyr_display;
-        display->base.type = &mp_type_NoneType;
-
-        const struct device *display_dev = device_get_binding(DEVICE_DT_NAME(DT_CHOSEN(zephyr_display)));
-        if (display_dev != NULL && device_is_ready(display_dev)) {
-            display->base.type = &zephyr_display_display_type;
-            common_hal_zephyr_display_display_construct_from_device(display, display_dev, 0, true);
-        }
-    }
+static zephyr_display_display_obj_t board_display = {
+    .base = { &mp_type_NoneType },
+};
 #endif
         """.strip()
         zephyr_display_board_entry = """
-{ MP_ROM_QSTR(MP_QSTR_DISPLAY), MP_ROM_PTR(&displays[0].zephyr_display) },
+#if CIRCUITPY_ZEPHYR_DISPLAY && DT_HAS_CHOSEN(zephyr_display)
+    { MP_ROM_QSTR(MP_QSTR_DISPLAY), MP_ROM_PTR(&board_display) },
+#endif
+        """.strip()
+        zephyr_display_init = """
+#if CIRCUITPY_ZEPHYR_DISPLAY && DT_HAS_CHOSEN(zephyr_display)
+    // DISPLAY remains available as None when the device is unavailable.
+    const struct device *display_dev = device_get_binding(DEVICE_DT_NAME(DT_CHOSEN(zephyr_display)));
+    if (display_dev != NULL && device_is_ready(display_dev)) {
+        zephyr_display_display_obj_t *display = displayio_native_init(&board_display,
+            &zephyr_display_display_protocol, &zephyr_display_display_type,
+            sizeof(board_display), MP_OBJ_NULL, true);
+        if (display != NULL) {
+            common_hal_zephyr_display_display_construct_from_device(display, display_dev, 0, true);
+            displayio_register(MP_OBJ_FROM_PTR(display));
+        }
+    }
+#endif
         """.strip()
 
     ethernet_init = ""
@@ -2121,6 +2129,7 @@ const uint32_t* const ram_bounds[] = {{
 const size_t circuitpy_max_ram_size = {max_size};
 
 {ethernet_static_obj}
+{zephyr_display_static_obj}
 {pin_defs}
 
 {zephyr_binding_objects}

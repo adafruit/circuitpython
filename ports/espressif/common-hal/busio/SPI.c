@@ -169,6 +169,21 @@ void common_hal_busio_spi_mark_deinit(busio_spi_obj_t *self) {
     self->clock = NULL;
 }
 
+bool common_hal_busio_spi_is_moveable(busio_spi_obj_t *self) {
+    // The mutex can't be carried to another VM while someone holds it, so only move a free bus.
+    return !common_hal_busio_spi_deinited(self) &&
+           self->mutex != NULL && xSemaphoreGetMutexHolder(self->mutex) == NULL;
+}
+
+bool common_hal_busio_spi_move(busio_spi_obj_t *self, busio_spi_obj_t *destination) {
+    if (!common_hal_busio_spi_is_moveable(self)) {
+        return false;
+    }
+    *destination = *self;
+    common_hal_busio_spi_mark_deinit(self);
+    return true;
+}
+
 void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
     if (common_hal_busio_spi_deinited(self)) {
         return;

@@ -134,31 +134,34 @@ static mp_obj_t mipidsi_display_make_new(const mp_obj_type_t *type, size_t n_arg
         mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q"), MP_QSTR_color_depth);
     }
 
-    // Validate everything before taking a display bus slot.
-    mipidsi_display_obj_t *self = &allocate_display_bus_or_raise()->mipidsi;
-    self->base.type = &mipidsi_display_type;
+    mipidsi_display_obj_t *self = displayio_native_init(NULL, &mipidsi_display_protocol,
+        &mipidsi_display_type, sizeof(*self), MP_OBJ_NULL, false);
 
-    common_hal_mipidsi_display_construct(self, bus, bufinfo.buf, bufinfo.len, virtual_channel, width, height,
-        rotation, color_depth, MP_OBJ_TO_PTR(backlight_pin), brightness,
-        args[ARG_native_frames_per_second].u_int,
-        args[ARG_backlight_on_high].u_bool,
-        args[ARG_hsync_pulse_width].u_int,
-        args[ARG_hsync_back_porch].u_int,
-        args[ARG_hsync_front_porch].u_int,
-        args[ARG_vsync_pulse_width].u_int,
-        args[ARG_vsync_back_porch].u_int,
-        args[ARG_vsync_front_porch].u_int,
-        args[ARG_pixel_clock_frequency].u_int,
-        args[ARG_low_power_blanking].u_bool);
-
-    return MP_OBJ_FROM_PTR(self);
+    nlr_buf_t nlr;
+    if (nlr_push(&nlr) == 0) {
+        common_hal_mipidsi_display_construct(self, bus, bufinfo.buf, bufinfo.len, virtual_channel, width, height,
+            rotation, color_depth, MP_OBJ_TO_PTR(backlight_pin), brightness,
+            args[ARG_native_frames_per_second].u_int,
+            args[ARG_backlight_on_high].u_bool,
+            args[ARG_hsync_pulse_width].u_int,
+            args[ARG_hsync_back_porch].u_int,
+            args[ARG_hsync_front_porch].u_int,
+            args[ARG_vsync_pulse_width].u_int,
+            args[ARG_vsync_back_porch].u_int,
+            args[ARG_vsync_front_porch].u_int,
+            args[ARG_pixel_clock_frequency].u_int,
+            args[ARG_low_power_blanking].u_bool);
+        mp_obj_t proxy = displayio_register(MP_OBJ_FROM_PTR(self));
+        nlr_pop();
+        return proxy;
+    }
+    displayio_construct_failed(MP_OBJ_FROM_PTR(self));
+    nlr_jump(nlr.ret_val);
 }
 
 // Helper to ensure we have the native super class instead of a subclass.
 static mipidsi_display_obj_t *native_display(mp_obj_t display_obj) {
-    mp_obj_t native_display = mp_obj_cast_to_native_base(display_obj, &mipidsi_display_type);
-    mp_obj_assert_native_inited(native_display);
-    return MP_OBJ_TO_PTR(native_display);
+    return displayio_proxy_native(display_obj, &mipidsi_display_type);
 }
 
 //|     def deinit(self) -> None:
@@ -168,12 +171,30 @@ static mipidsi_display_obj_t *native_display(mp_obj_t display_obj) {
 //|         ...
 //|
 static mp_obj_t mipidsi_display_deinit(mp_obj_t self_in) {
-    mipidsi_display_obj_t *self = native_display(self_in);
-    common_hal_mipidsi_display_deinit(self);
+    displayio_bus_deinit_obj(self_in, &mipidsi_display_type);
     return mp_const_none;
 }
 
 static MP_DEFINE_CONST_FUN_OBJ_1(mipidsi_display_deinit_obj, mipidsi_display_deinit);
+
+static mp_obj_t mipidsi_display___del__(mp_obj_t self_in) {
+    displayio_bus_proxy_finalise(MP_OBJ_TO_PTR(self_in));
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(mipidsi_display___del___obj, mipidsi_display___del__);
+
+static void mipidsi_protocol_deinit(void *self) {
+    common_hal_mipidsi_display_deinit(self);
+}
+
+static void *mipidsi_protocol_start_vm(void *self) {
+    return mipidsi_display_start_vm(self);
+}
+
+const displayio_protocol_t mipidsi_display_protocol = {
+    .deinit = mipidsi_protocol_deinit,
+    .start_vm = mipidsi_protocol_start_vm,
+};
 
 static void check_for_deinit(mipidsi_display_obj_t *self) {
     if (common_hal_mipidsi_display_deinited(self)) {
@@ -194,7 +215,6 @@ MP_PROPERTY_GETTER(mipidsi_display_width_obj,
 
 //|     height: int
 //|     """The height of the framebuffer, in pixels."""
-//|
 //|
 static mp_obj_t mipidsi_display_get_height(mp_obj_t self_in) {
     mipidsi_display_obj_t *self = native_display(self_in);
@@ -221,6 +241,8 @@ MP_PROPERTY_GETTER(mipidsi_display_color_depth_obj,
 //|     """The pixel clock frequency the DSI host actually generates, in Hz. This
 //|     can differ from the requested frequency when the clock source cannot divide
 //|     down to it exactly."""
+//|
+//|
 static mp_obj_t mipidsi_display_get_pixel_clock_frequency(mp_obj_t self_in) {
     mipidsi_display_obj_t *self = native_display(self_in);
     check_for_deinit(self);
@@ -233,7 +255,7 @@ MP_PROPERTY_GETTER(mipidsi_display_pixel_clock_frequency_obj,
 
 static const mp_rom_map_elem_t mipidsi_display_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&mipidsi_display_deinit_obj) },
-    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&mipidsi_display_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&mipidsi_display___del___obj) },
 
     { MP_ROM_QSTR(MP_QSTR_width), MP_ROM_PTR(&mipidsi_display_width_obj) },
     { MP_ROM_QSTR(MP_QSTR_height), MP_ROM_PTR(&mipidsi_display_height_obj) },
@@ -243,46 +265,46 @@ static const mp_rom_map_elem_t mipidsi_display_locals_dict_table[] = {
 static MP_DEFINE_CONST_DICT(mipidsi_display_locals_dict, mipidsi_display_locals_dict_table);
 
 static void mipidsi_display_get_bufinfo(mp_obj_t self_in, mp_buffer_info_t *bufinfo) {
-    common_hal_mipidsi_display_get_buffer(self_in, bufinfo, 0);
+    common_hal_mipidsi_display_get_buffer(native_display(self_in), bufinfo, 0);
 }
 
 static float mipidsi_display_get_brightness_proto(mp_obj_t self_in) {
-    return common_hal_mipidsi_display_get_brightness(self_in);
+    return common_hal_mipidsi_display_get_brightness(MP_OBJ_TO_PTR(self_in));
 }
 
 static bool mipidsi_display_set_brightness_proto(mp_obj_t self_in, mp_float_t value) {
-    common_hal_mipidsi_display_set_brightness(self_in, value);
+    common_hal_mipidsi_display_set_brightness(MP_OBJ_TO_PTR(self_in), value);
     return true;
 }
 
 // These versions exist so that the prototype matches the protocol,
 // avoiding a type cast that can hide errors
 static void mipidsi_display_swapbuffers(mp_obj_t self_in, uint8_t *dirty_row_bitmap) {
-    common_hal_mipidsi_display_refresh_rows(self_in, dirty_row_bitmap);
+    common_hal_mipidsi_display_refresh_rows(MP_OBJ_TO_PTR(self_in), dirty_row_bitmap);
 }
 
 static void mipidsi_display_deinit_proto(mp_obj_t self_in) {
-    common_hal_mipidsi_display_deinit(self_in);
+    common_hal_mipidsi_display_deinit(MP_OBJ_TO_PTR(self_in));
 }
 
 static void mipidsi_display_set_frame_callback(mp_obj_t self_in, framebuffer_frame_callback_t cb, void *data) {
-    common_hal_mipidsi_display_set_frame_callback(self_in, cb, data);
+    common_hal_mipidsi_display_set_frame_callback(MP_OBJ_TO_PTR(self_in), cb, data);
 }
 
 static int mipidsi_display_get_width_proto(mp_obj_t self_in) {
-    return common_hal_mipidsi_display_get_width(self_in);
+    return common_hal_mipidsi_display_get_width(MP_OBJ_TO_PTR(self_in));
 }
 
 static int mipidsi_display_get_height_proto(mp_obj_t self_in) {
-    return common_hal_mipidsi_display_get_height(self_in);
+    return common_hal_mipidsi_display_get_height(MP_OBJ_TO_PTR(self_in));
 }
 
 static int mipidsi_display_get_color_depth_proto(mp_obj_t self_in) {
-    return common_hal_mipidsi_display_get_color_depth(self_in);
+    return common_hal_mipidsi_display_get_color_depth(MP_OBJ_TO_PTR(self_in));
 }
 
 static bool mipidsi_display_get_grayscale_proto(mp_obj_t self_in) {
-    return common_hal_mipidsi_display_get_grayscale(self_in);
+    return common_hal_mipidsi_display_get_grayscale(MP_OBJ_TO_PTR(self_in));
 }
 
 static int mipidsi_display_get_bytes_per_cell_proto(mp_obj_t self_in) {
@@ -290,7 +312,7 @@ static int mipidsi_display_get_bytes_per_cell_proto(mp_obj_t self_in) {
 }
 
 static int mipidsi_display_get_native_frames_per_second_proto(mp_obj_t self_in) {
-    return common_hal_mipidsi_display_get_native_frames_per_second(self_in);
+    return common_hal_mipidsi_display_get_native_frames_per_second(MP_OBJ_TO_PTR(self_in));
 }
 
 static bool mipidsi_display_get_pixels_in_byte_share_row_proto(mp_obj_t self_in) {
@@ -298,7 +320,7 @@ static bool mipidsi_display_get_pixels_in_byte_share_row_proto(mp_obj_t self_in)
 }
 
 static int mipidsi_display_get_row_stride_proto(mp_obj_t self_in) {
-    return common_hal_mipidsi_display_get_row_stride(self_in);
+    return common_hal_mipidsi_display_get_row_stride(MP_OBJ_TO_PTR(self_in));
 }
 
 static const framebuffer_p_t mipidsi_display_proto = {
@@ -319,12 +341,16 @@ static const framebuffer_p_t mipidsi_display_proto = {
     .set_frame_callback = mipidsi_display_set_frame_callback,
 };
 
+static mp_int_t mipidsi_display_get_buffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_uint_t flags) {
+    return common_hal_mipidsi_display_get_buffer(native_display(self_in), bufinfo, flags);
+}
+
 MP_DEFINE_CONST_OBJ_TYPE(
     mipidsi_display_type,
     MP_QSTR_Display,
     MP_TYPE_FLAG_HAS_SPECIAL_ACCESSORS,
     locals_dict, &mipidsi_display_locals_dict,
     make_new, mipidsi_display_make_new,
-    buffer, common_hal_mipidsi_display_get_buffer,
+    buffer, mipidsi_display_get_buffer,
     protocol, &mipidsi_display_proto
     );

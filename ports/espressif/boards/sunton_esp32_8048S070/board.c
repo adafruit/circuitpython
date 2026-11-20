@@ -37,13 +37,20 @@ static const mcu_pin_obj_t *red_pins[] = {
     &pin_GPIO45
 };
 
+static dotclockframebuffer_framebuffer_obj_t board_display_bus;
+framebufferio_framebufferdisplay_obj_t board_display;
+
 static void display_init(void) {
 
     // Turn on backlight
     gpio_set_direction(2, GPIO_MODE_DEF_OUTPUT);
     gpio_set_level(2, true);
 
-    dotclockframebuffer_framebuffer_obj_t *framebuffer = &allocate_display_bus_or_raise()->dotclock;
+    dotclockframebuffer_framebuffer_obj_t *framebuffer = displayio_native_init(&board_display_bus, &dotclockframebuffer_framebuffer_protocol, &dotclockframebuffer_framebuffer_type, 0, MP_OBJ_NULL, true);
+
+    if (framebuffer == NULL) {
+        return;
+    }
     framebuffer->base.type = &dotclockframebuffer_framebuffer_type;
 
     common_hal_dotclockframebuffer_framebuffer_construct(
@@ -66,7 +73,11 @@ static void display_init(void) {
         0               // overscan left
         );
 
-    framebufferio_framebufferdisplay_obj_t *display = &allocate_display_or_raise()->framebuffer_display;
+    framebufferio_framebufferdisplay_obj_t *display = displayio_native_init(&board_display, &framebufferio_framebufferdisplay_protocol, &framebufferio_framebufferdisplay_type, 0, MP_OBJ_FROM_PTR(framebuffer), true);
+
+    if (display == NULL) {
+        return;
+    }
     display->base.type = &framebufferio_framebufferdisplay_type;
     common_hal_framebufferio_framebufferdisplay_construct(
         display,

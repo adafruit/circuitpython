@@ -94,6 +94,9 @@ static bool picodvi_autoconstruct_enabled(mp_int_t *default_width, mp_int_t *def
 
 // For picodvi_autoconstruct to work, the 8 DVI/HSTX pin names must be defined, AND
 // i2c bus 0 must also be connected to DVI with on-board pull ups
+static picodvi_framebuffer_obj_t board_display_bus;
+static framebufferio_framebufferdisplay_obj_t picodvi_board_display;
+
 void picodvi_autoconstruct(void) {
     if (get_safe_mode() != SAFE_MODE_NONE) {
         return;
@@ -150,7 +153,11 @@ void picodvi_autoconstruct(void) {
     }
 
     // construct framebuffer and display
-    picodvi_framebuffer_obj_t *fb = &allocate_display_bus_or_raise()->picodvi;
+    picodvi_framebuffer_obj_t *fb = displayio_native_init(&board_display_bus, &picodvi_framebuffer_protocol,
+        &picodvi_framebuffer_type, 0, MP_OBJ_NULL, true);
+    if (fb == NULL) {
+        return;
+    }
     fb->base.type = &picodvi_framebuffer_type;
     common_hal_picodvi_framebuffer_construct(fb,
         width, height,
@@ -164,7 +171,15 @@ void picodvi_autoconstruct(void) {
         DEFAULT_DVI_BUS_BLUE_DN,
         color_depth);
 
-    framebufferio_framebufferdisplay_obj_t *display = &allocate_display()->framebuffer_display;
+    framebufferio_framebufferdisplay_obj_t *display = displayio_native_init(&picodvi_board_display,
+        &framebufferio_framebufferdisplay_protocol, &framebufferio_framebufferdisplay_type,
+        0, MP_OBJ_FROM_PTR(fb), true);
+
+    if (display == NULL) {
+
+        return;
+
+    }
     display->base.type = &framebufferio_framebufferdisplay_type;
     common_hal_framebufferio_framebufferdisplay_construct(
         display,

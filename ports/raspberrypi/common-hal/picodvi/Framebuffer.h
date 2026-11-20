@@ -11,3 +11,9 @@
 #else
 #include "Framebuffer_RP2350.h"
 #endif
+
+mp_obj_t picodvi_framebuffer_start_vm(picodvi_framebuffer_obj_t *self);
+#if !PICO_RP2040
+void picodvi_framebuffer_set_audioout(picodvi_framebuffer_obj_t *self, mp_obj_t audioout);
+void picodvi_framebuffer_set_audioout_sample(picodvi_framebuffer_obj_t *self, mp_obj_t sample);
+#endif

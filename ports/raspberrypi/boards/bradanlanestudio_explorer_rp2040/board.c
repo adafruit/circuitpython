@@ -200,11 +200,18 @@ bool board_reset_pin_number(uint8_t pin_number) {
     return false;
 }
 
+static fourwire_fourwire_obj_t board_display_bus;
+epaperdisplay_epaperdisplay_obj_t board_display;
+
 void board_init(void) {
     board_reset_pin_number(DISPLAY_EN_PIN);
     _set_vid(); // sets vid_setting global
 
-    fourwire_fourwire_obj_t *bus = &allocate_display_bus()->fourwire_bus;
+    fourwire_fourwire_obj_t *bus = displayio_native_init(&board_display_bus, &fourwire_fourwire_protocol, &fourwire_fourwire_type, 0, MP_OBJ_NULL, true);
+
+    if (bus == NULL) {
+        return;
+    }
     busio_spi_obj_t *spi = &bus->inline_bus;
     common_hal_busio_spi_construct(spi, &pin_GPIO14, &pin_GPIO15, NULL, false);
 
@@ -224,7 +231,10 @@ void board_init(void) {
     epaperdisplay_epaperdisplay_obj_t *display = NULL;
 
     // Set up the DisplayIO epaper object
-    display = &allocate_display()->epaper_display;
+    display = displayio_native_init(&board_display, &epaperdisplay_epaperdisplay_protocol, &epaperdisplay_epaperdisplay_type, 0, MP_OBJ_FROM_PTR(bus), true);
+    if (display == NULL) {
+        return;
+    }
     display->base.type = &epaperdisplay_epaperdisplay_type;
 
     // default to no rotation
@@ -252,11 +262,11 @@ void board_init(void) {
         (vid_setting == 4)) {   // Explorer  SSD1681 BWR rotated 0
         epaperdisplay_construct_args_t args = EPAPERDISPLAY_CONSTRUCT_ARGS_DEFAULTS;
         args.bus = bus;
-        args.start_sequence = _start_sequence_ssd1681;
-        args.start_sequence_len = sizeof(_start_sequence_ssd1681);
+        static MP_DEFINE_BYTES_OBJ(_start_sequence_ssd1681_obj, _start_sequence_ssd1681, sizeof(_start_sequence_ssd1681));
+        args.start_sequence_obj = MP_OBJ_FROM_PTR(&_start_sequence_ssd1681_obj);
         args.start_up_time = 1.0;
-        args.stop_sequence = _stop_sequence_ssd1681;
-        args.stop_sequence_len = sizeof(_stop_sequence_ssd1681);
+        static MP_DEFINE_BYTES_OBJ(_stop_sequence_ssd1681_obj, _stop_sequence_ssd1681, sizeof(_stop_sequence_ssd1681));
+        args.stop_sequence_obj = MP_OBJ_FROM_PTR(&_stop_sequence_ssd1681_obj);
         args.width = WIDTH;
         args.height = HEIGHT;
         args.ram_width = WIDTH;
@@ -269,8 +279,8 @@ void board_init(void) {
         args.write_black_ram_command = SSD_WRITE_RAM_BLK;
         args.write_color_ram_command = SSD_WRITE_RAM_RED;
         args.highlight_color = 0xFF0000;
-        args.refresh_sequence = _refresh_sequence_ssd1681;
-        args.refresh_sequence_len = sizeof(_refresh_sequence_ssd1681);
+        static MP_DEFINE_BYTES_OBJ(_refresh_sequence_ssd1681_obj, _refresh_sequence_ssd1681, sizeof(_refresh_sequence_ssd1681));
+        args.refresh_sequence_obj = MP_OBJ_FROM_PTR(&_refresh_sequence_ssd1681_obj);
         args.refresh_time = refresh_time;
         args.busy_pin = &pin_GPIO9;
         args.busy_state = true;
@@ -281,11 +291,11 @@ void board_init(void) {
     } else if (vid_setting == 2) {  // Explorer SSD1608 BW
         epaperdisplay_construct_args_t args = EPAPERDISPLAY_CONSTRUCT_ARGS_DEFAULTS;
         args.bus = bus;
-        args.start_sequence = _start_sequence_ssd1608;
-        args.start_sequence_len = sizeof(_start_sequence_ssd1608);
+        static MP_DEFINE_BYTES_OBJ(_start_sequence_ssd1608_obj, _start_sequence_ssd1608, sizeof(_start_sequence_ssd1608));
+        args.start_sequence_obj = MP_OBJ_FROM_PTR(&_start_sequence_ssd1608_obj);
         args.start_up_time = 1.0;
-        args.stop_sequence = _stop_sequence_ssd1608;
-        args.stop_sequence_len = sizeof(_stop_sequence_ssd1608);
+        static MP_DEFINE_BYTES_OBJ(_stop_sequence_ssd1608_obj, _stop_sequence_ssd1608, sizeof(_stop_sequence_ssd1608));
+        args.stop_sequence_obj = MP_OBJ_FROM_PTR(&_stop_sequence_ssd1608_obj);
         args.width = WIDTH;
         args.height = HEIGHT;
         args.ram_width = WIDTH;
@@ -297,8 +307,8 @@ void board_init(void) {
         args.set_current_row_command = SSD_SET_RAMYCOUNT;
         args.write_black_ram_command = SSD_WRITE_RAM_BLK;
         args.write_color_ram_command = NO_COMMAND;
-        args.refresh_sequence = _refresh_sequence_ssd1608;
-        args.refresh_sequence_len = sizeof(_refresh_sequence_ssd1608);
+        static MP_DEFINE_BYTES_OBJ(_refresh_sequence_ssd1608_obj, _refresh_sequence_ssd1608, sizeof(_refresh_sequence_ssd1608));
+        args.refresh_sequence_obj = MP_OBJ_FROM_PTR(&_refresh_sequence_ssd1608_obj);
         args.refresh_time = refresh_time;
         args.busy_pin = &pin_GPIO9;
         args.busy_state = true;
@@ -311,14 +321,13 @@ void board_init(void) {
         // currently, we mark the display as None
         display->base.type = &mp_type_NoneType;
     }
-
 }
 
 void board_deinit(void) {
     if ((vid_setting == 1) || (vid_setting == 2)) {
         // we initialized an ePaper display so we can de-init it
-        epaperdisplay_epaperdisplay_obj_t *display = &displays[0].epaper_display;
-        if (display->base.type == &epaperdisplay_epaperdisplay_type) {
+        epaperdisplay_epaperdisplay_obj_t *display = MP_OBJ_TO_PTR(displayio_board_display_native());
+        if (display != NULL && display->base.type == &epaperdisplay_epaperdisplay_type) {
             while (common_hal_epaperdisplay_epaperdisplay_get_busy(display)) {
                 // RUN_BACKGROUND_TASKS;
             }

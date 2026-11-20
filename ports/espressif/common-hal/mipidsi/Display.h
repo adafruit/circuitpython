@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "shared-module/displayio/lifetime.h"
+
 #include "py/obj.h"
 #include "shared-module/framebufferio/__init__.h"
 #include "shared-bindings/mipidsi/Bus.h"
@@ -17,6 +19,7 @@
 
 typedef struct {
     mp_obj_base_t base;
+    displayio_bus_lifetime_t bus_lifetime;
     mipidsi_bus_obj_t *bus;
     mp_uint_t virtual_channel;
     mp_uint_t width;
@@ -40,3 +43,5 @@ typedef struct {
     framebuffer_frame_callback_t frame_cb;
     void *frame_cb_data;
 } mipidsi_display_obj_t;
+
+mp_obj_t mipidsi_display_start_vm(mipidsi_display_obj_t *self);

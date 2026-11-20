@@ -11,6 +11,7 @@
 #include "common-hal/microcontroller/Pin.h"
 
 extern const mp_obj_type_t mipidsi_display_type;
+extern const displayio_protocol_t mipidsi_display_protocol;
 
 void common_hal_mipidsi_display_construct(mipidsi_display_obj_t *self,
     mipidsi_bus_obj_t *bus,

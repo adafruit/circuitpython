@@ -42,6 +42,9 @@ static uint8_t display_init_sequence[] = {
     0x51, 0x01, 0xFF,             // Set brightness to maximum
 };
 
+static qspibus_qspibus_obj_t board_display_bus;
+busdisplay_busdisplay_obj_t board_display;
+
 void board_init(void) {
     // 0. Enable display power before any bus/display init.
     digitalio_digitalinout_obj_t power_pin;
@@ -52,7 +55,10 @@ void board_init(void) {
     mp_hal_delay_ms(200);
 
     // 1. Allocate and construct QSPI bus
-    qspibus_qspibus_obj_t *bus = &allocate_display_bus_or_raise()->qspi_bus;
+    qspibus_qspibus_obj_t *bus = displayio_native_init(&board_display_bus, &qspibus_qspibus_protocol, &qspibus_qspibus_type, 0, MP_OBJ_NULL, true);
+    if (bus == NULL) {
+        return;
+    }
     bus->base.type = &qspibus_qspibus_type;
 
     common_hal_qspibus_qspibus_construct(bus,
@@ -69,7 +75,10 @@ void board_init(void) {
     // 2. Allocate and construct BusDisplay with RM690B0 init sequence.
     //    Physical panel: 450 cols × 600 rows.
     //    MADCTL MV=1 swaps row/col → logical 600×450 landscape.
-    busdisplay_busdisplay_obj_t *display = &allocate_display_or_raise()->display;
+    busdisplay_busdisplay_obj_t *display = displayio_native_init(&board_display, &busdisplay_busdisplay_protocol, &busdisplay_busdisplay_type, 0, MP_OBJ_FROM_PTR(bus), true);
+    if (display == NULL) {
+        return;
+    }
     display->base.type = &busdisplay_busdisplay_type;
 
     common_hal_busdisplay_busdisplay_construct(display,

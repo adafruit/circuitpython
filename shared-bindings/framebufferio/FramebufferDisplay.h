@@ -13,6 +13,7 @@
 #include "shared-module/displayio/Group.h"
 
 extern const mp_obj_type_t framebufferio_framebufferdisplay_type;
+extern const displayio_protocol_t framebufferio_framebufferdisplay_protocol;
 
 #define NO_BRIGHTNESS_COMMAND 0x100
 #define NO_FPS_LIMIT 0xffffffff

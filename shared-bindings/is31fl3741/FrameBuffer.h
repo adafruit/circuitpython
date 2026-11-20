@@ -10,6 +10,7 @@
 #include "shared-module/is31fl3741/IS31FL3741.h"
 
 extern const mp_obj_type_t is31fl3741_framebuffer_type;
+extern const displayio_protocol_t is31fl3741_framebuffer_protocol;
 
 void common_hal_is31fl3741_framebuffer_construct(is31fl3741_framebuffer_obj_t *self, int width, int height, mp_obj_t framebuffer, is31fl3741_IS31FL3741_obj_t *is31, mp_obj_t mapping);
 

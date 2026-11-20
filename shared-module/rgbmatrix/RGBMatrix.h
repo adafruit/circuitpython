@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "shared-module/displayio/lifetime.h"
+
 #include "py/obj.h"
 #include "lib/protomatter/src/core.h"
 #include "shared-bindings/digitalio/DigitalInOut.h"
@@ -13,6 +15,7 @@
 extern const mp_obj_type_t rgbmatrix_RGBMatrix_type;
 typedef struct {
     mp_obj_base_t base;
+    displayio_bus_lifetime_t bus_lifetime;
     mp_obj_t framebuffer;
     mp_buffer_info_t bufinfo;
     Protomatter_core protomatter;
@@ -34,3 +37,5 @@ typedef struct {
     digitalio_digitalinout_obj_t *pin_digitalinouts[30 + 10 + 3];
     uint8_t pin_digitalinout_count;
 } rgbmatrix_rgbmatrix_obj_t;
+
+mp_obj_t rgbmatrix_rgbmatrix_start_vm(rgbmatrix_rgbmatrix_obj_t *self);

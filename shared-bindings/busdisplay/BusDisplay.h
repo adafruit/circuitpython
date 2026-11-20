@@ -12,6 +12,7 @@
 #include "shared-module/displayio/Group.h"
 
 extern const mp_obj_type_t busdisplay_busdisplay_type;
+extern const displayio_protocol_t busdisplay_busdisplay_protocol;
 
 #define NO_BRIGHTNESS_COMMAND 0x100
 #define NO_FPS_LIMIT 0xffffffff
@@ -21,7 +22,7 @@ void common_hal_busdisplay_busdisplay_construct(busdisplay_busdisplay_obj_t *sel
     int16_t colstart, int16_t rowstart, uint16_t rotation, uint16_t color_depth, bool grayscale,
     bool pixels_in_byte_share_row, uint8_t bytes_per_cell, bool reverse_pixels_in_byte, bool reverse_bytes_in_word,
     uint8_t set_column_command, uint8_t set_row_command, uint8_t write_ram_command,
-    uint8_t *init_sequence, uint16_t init_sequence_len, const mcu_pin_obj_t *backlight_pin, uint16_t brightness_command,
+    uint8_t *init_sequence, uint16_t init_sequence_len, const void *backlight_pin, uint16_t brightness_command,
     mp_float_t brightness,
     bool single_byte_bounds, bool data_as_commands, bool auto_refresh, uint16_t native_frames_per_second,
     bool backlight_on_high, bool SH1107_addressing, uint16_t backlight_pwm_frequency);

@@ -101,6 +101,19 @@ bool common_hal_busio_i2c_deinited(busio_i2c_obj_t *self) {
     return self->sda == NULL;
 }
 
+bool common_hal_busio_i2c_is_moveable(busio_i2c_obj_t *self) {
+    return !common_hal_busio_i2c_deinited(self) && !self->has_lock;
+}
+
+bool common_hal_busio_i2c_move(busio_i2c_obj_t *self, busio_i2c_obj_t *destination) {
+    if (!common_hal_busio_i2c_is_moveable(self)) {
+        return false;
+    }
+    *destination = *self;
+    self->sda = NULL;
+    return true;
+}
+
 // Deinit i2c obj, reset I2C pin
 void common_hal_busio_i2c_deinit(busio_i2c_obj_t *self) {
     MXC_I2C_Shutdown(self->i2c_regs);

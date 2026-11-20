@@ -73,6 +73,8 @@ void common_hal_paralleldisplaybus_parallelbus_construct(paralleldisplaybus_para
 
     for (uint8_t i = 0; i < 8; i++) {
     }
+
+    displayio_register(MP_OBJ_FROM_PTR(self));
 }
 
 void common_hal_paralleldisplaybus_parallelbus_deinit(paralleldisplaybus_parallelbus_obj_t *self) {

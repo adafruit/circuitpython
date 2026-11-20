@@ -150,6 +150,8 @@ void common_hal_rgbmatrix_rgbmatrix_construct(rgbmatrix_rgbmatrix_obj_t *self, i
     self->bufsize = 2 * width * common_hal_rgbmatrix_rgbmatrix_get_height(self);
 
     common_hal_rgbmatrix_rgbmatrix_construct1(self, framebuffer, row_address_mode);
+
+    displayio_register(MP_OBJ_FROM_PTR(self));
 }
 
 static void common_hal_rgbmatrix_rgbmatrix_construct1(rgbmatrix_rgbmatrix_obj_t *self, mp_obj_t framebuffer, ProtomatterRowAddressMode row_address_mode) {
@@ -282,6 +284,7 @@ void common_hal_rgbmatrix_rgbmatrix_reconstruct(rgbmatrix_rgbmatrix_obj_t *self)
         }
         self->bufinfo.len = self->bufsize;
         self->bufinfo.typecode = 'H' | MP_OBJ_ARRAY_TYPECODE_FLAG_RW;
+        self->framebuffer = mp_const_none;
     }
     memset(self->bufinfo.buf, 0, self->bufinfo.len);
     common_hal_rgbmatrix_rgbmatrix_set_paused(self, false);
@@ -289,6 +292,10 @@ void common_hal_rgbmatrix_rgbmatrix_reconstruct(rgbmatrix_rgbmatrix_obj_t *self)
 
 void rgbmatrix_rgbmatrix_collect_ptrs(rgbmatrix_rgbmatrix_obj_t *self) {
     gc_collect_ptr(self->framebuffer);
+}
+
+mp_obj_t rgbmatrix_rgbmatrix_start_vm(rgbmatrix_rgbmatrix_obj_t *self) {
+    return mp_obj_new_list(1, (mp_obj_t[]) {self->framebuffer});
 }
 
 void common_hal_rgbmatrix_rgbmatrix_set_paused(rgbmatrix_rgbmatrix_obj_t *self, bool paused) {

@@ -246,6 +246,9 @@ static const uint8_t ili9881c_init_sequence[] = {
 #define PI4IO_REG_PULL_SEL 0x0D
 #define PI4IO_REG_PULL_EN 0x0B
 
+static mipidsi_display_obj_t board_display_bus;
+framebufferio_framebufferdisplay_obj_t board_display;
+
 void board_init(void) {
     // Initialize I2C for GPIO expander and display detection
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
@@ -337,9 +340,10 @@ void board_init(void) {
     board_mipidsi_bus.base.type = &mipidsi_bus_type;
     common_hal_mipidsi_bus_construct(&board_mipidsi_bus, minimum_bus_frequency, 2);  // 2 lanes
 
-    // Allocate display bus for the display object
-    primary_display_bus_t *display_bus_obj = allocate_display_bus_or_raise();
-    mipidsi_display_obj_t *display = &display_bus_obj->mipidsi;
+    mipidsi_display_obj_t *display = displayio_native_init(&board_display_bus, &mipidsi_display_protocol, &mipidsi_display_type, 0, MP_OBJ_NULL, true);
+    if (display == NULL) {
+        return;
+    }
     display->base.type = &mipidsi_display_type;
 
     common_hal_mipidsi_display_construct(
@@ -367,7 +371,10 @@ void board_init(void) {
         );
 
     // Create framebuffer display
-    framebufferio_framebufferdisplay_obj_t *fb_display = &allocate_display()->framebuffer_display;
+    framebufferio_framebufferdisplay_obj_t *fb_display = displayio_native_init(&board_display, &framebufferio_framebufferdisplay_protocol, &framebufferio_framebufferdisplay_type, 0, MP_OBJ_FROM_PTR(display), true);
+    if (fb_display == NULL) {
+        return;
+    }
     fb_display->base.type = &framebufferio_framebufferdisplay_type;
 
     common_hal_framebufferio_framebufferdisplay_construct(

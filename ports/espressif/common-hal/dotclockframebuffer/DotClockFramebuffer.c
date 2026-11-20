@@ -70,6 +70,17 @@ void common_hal_dotclockframebuffer_framebuffer_construct(dotclockframebuffer_fr
     int vsync_pulse_width, int vsync_back_porch, int vsync_front_porch, bool vsync_idle_low,
     bool de_idle_high, bool pclk_active_high, bool pclk_idle_high, int overscan_left) {
 
+    nlr_buf_t nlr;
+    if (nlr_push(&nlr) != 0) {
+        reset_pin_mask(self->used_pins_mask);
+        self->used_pins_mask = 0;
+        if (self->panel_handle != NULL) {
+            esp_lcd_panel_del(self->panel_handle);
+            self->panel_handle = NULL;
+        }
+        nlr_jump(nlr.ret_val);
+    }
+
     if (num_red != 5 || num_green != 6 || num_blue != 5) {
         mp_raise_ValueError(MP_ERROR_TEXT("Must provide 5/6/5 RGB pins"));
     }
@@ -171,6 +182,9 @@ void common_hal_dotclockframebuffer_framebuffer_construct(dotclockframebuffer_fr
 //  LCD_CAM.lcd_ctrl2.lcd_vsync_idle_pol = _vsync_polarity;
 //  LCD_CAM.lcd_ctrl2.lcd_hsync_idle_pol = _hsync_polarity;
 
+    nlr_pop();
+
+    displayio_register(MP_OBJ_FROM_PTR(self));
 }
 
 
@@ -182,6 +196,7 @@ void common_hal_dotclockframebuffer_framebuffer_deinit(dotclockframebuffer_frame
     reset_pin_mask(self->used_pins_mask);
     self->used_pins_mask = 0;
     esp_lcd_panel_del(self->panel_handle);
+    self->panel_handle = NULL;
 }
 
 bool common_hal_dotclockframebuffer_framebuffer_deinitialized(dotclockframebuffer_framebuffer_obj_t *self) {

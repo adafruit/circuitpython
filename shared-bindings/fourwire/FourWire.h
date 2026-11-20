@@ -14,6 +14,7 @@
 
 
 extern const mp_obj_type_t fourwire_fourwire_type;
+extern const displayio_protocol_t fourwire_fourwire_protocol;
 
 void common_hal_fourwire_fourwire_construct(fourwire_fourwire_obj_t *self,
     busio_spi_obj_t *spi, mp_obj_t command,
@@ -40,4 +41,3 @@ void common_hal_fourwire_fourwire_flush(mp_obj_t self);
 
 // The FourWire object always lives off the MP heap. So, code must collect any pointers
 // back to the MP heap manually. Otherwise they'll get freed.
-void common_hal_fourwire_fourwire_collect_ptrs(mp_obj_t obj);

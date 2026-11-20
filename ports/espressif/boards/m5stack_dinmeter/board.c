@@ -42,13 +42,19 @@ uint8_t display_init_sequence[] = {
 
 
 // Overrides the weakly linked function from supervisor/shared/board.c
+static fourwire_fourwire_obj_t board_display_bus;
+busdisplay_busdisplay_obj_t board_display;
+
 void board_init(void) {
     // GPIO46 (POWER_HOLD) keeps the board on when it runs from the battery.
     // Default to high (on).
     espressif_board_reset_pin_number(46);
 
     busio_spi_obj_t *spi = common_hal_board_create_spi(0);
-    fourwire_fourwire_obj_t *bus = &allocate_display_bus()->fourwire_bus;
+    fourwire_fourwire_obj_t *bus = displayio_native_init(&board_display_bus, &fourwire_fourwire_protocol, &fourwire_fourwire_type, 0, MP_OBJ_NULL, true);
+    if (bus == NULL) {
+        return;
+    }
     bus->base.type = &fourwire_fourwire_type;
 
     // see here for inspiration: https://github.com/m5stack/M5GFX/blob/33d7d3135e816a86a008fae8ab3757938cee95d2/src/M5GFX.cpp#L1350
@@ -62,7 +68,10 @@ void board_init(void) {
         0,              // polarity
         0               // phase
         );
-    busdisplay_busdisplay_obj_t *display = &allocate_display()->display;
+    busdisplay_busdisplay_obj_t *display = displayio_native_init(&board_display, &busdisplay_busdisplay_protocol, &busdisplay_busdisplay_type, 0, MP_OBJ_FROM_PTR(bus), true);
+    if (display == NULL) {
+        return;
+    }
     display->base.type = &busdisplay_busdisplay_type;
 
     common_hal_busdisplay_busdisplay_construct(

@@ -31,7 +31,9 @@
 //|         spi_bus: busio.SPI,
 //|         *,
 //|         command: Optional[Union[microcontroller.Pin, digitalio.DigitalInOutProtocol]] = None,
-//|         chip_select: Optional[Union[microcontroller.Pin, digitalio.DigitalInOutProtocol]] = None,
+//|         chip_select: Optional[
+//|             Union[microcontroller.Pin, digitalio.DigitalInOutProtocol]
+//|         ] = None,
 //|         reset: Optional[Union[microcontroller.Pin, digitalio.DigitalInOutProtocol]] = None,
 //|         baudrate: int = 24000000,
 //|         polarity: int = 0,
@@ -79,13 +81,19 @@ static mp_obj_t fourwire_fourwire_make_new(const mp_obj_type_t *type, size_t n_a
     uint8_t polarity = (uint8_t)mp_arg_validate_int_range(args[ARG_polarity].u_int, 0, 1, MP_QSTR_polarity);
     uint8_t phase = (uint8_t)mp_arg_validate_int_range(args[ARG_phase].u_int, 0, 1, MP_QSTR_phase);
 
-    // Validate everything before taking a display bus slot.
-    fourwire_fourwire_obj_t *self = &allocate_display_bus_or_raise()->fourwire_bus;
-    self->base.type = &fourwire_fourwire_type;
+    fourwire_fourwire_obj_t *self = displayio_native_init(NULL, &fourwire_fourwire_protocol,
+        &fourwire_fourwire_type, sizeof(*self), MP_OBJ_NULL, false);
 
-    common_hal_fourwire_fourwire_construct(self,
-        MP_OBJ_TO_PTR(spi), args[ARG_command].u_obj, args[ARG_chip_select].u_obj, args[ARG_reset].u_obj, args[ARG_baudrate].u_int, polarity, phase);
-    return self;
+    nlr_buf_t nlr;
+    if (nlr_push(&nlr) == 0) {
+        common_hal_fourwire_fourwire_construct(self,
+            MP_OBJ_TO_PTR(spi), args[ARG_command].u_obj, args[ARG_chip_select].u_obj, args[ARG_reset].u_obj, args[ARG_baudrate].u_int, polarity, phase);
+        mp_obj_t proxy = displayio_register(MP_OBJ_FROM_PTR(self));
+        nlr_pop();
+        return proxy;
+    }
+    displayio_construct_failed(MP_OBJ_FROM_PTR(self));
+    nlr_jump(nlr.ret_val);
 }
 
 //|     def reset(self) -> None:
@@ -94,7 +102,7 @@ static mp_obj_t fourwire_fourwire_make_new(const mp_obj_type_t *type, size_t n_a
 //|         ...
 //|
 static mp_obj_t fourwire_fourwire_obj_reset(mp_obj_t self_in) {
-    fourwire_fourwire_obj_t *self = self_in;
+    fourwire_fourwire_obj_t *self = displayio_proxy_native(self_in, &fourwire_fourwire_type);
 
     if (!common_hal_fourwire_fourwire_reset(self)) {
         mp_raise_RuntimeError_varg(MP_ERROR_TEXT("No %q pin"), MP_QSTR_reset);
@@ -123,7 +131,7 @@ static mp_obj_t fourwire_fourwire_obj_send(size_t n_args, const mp_obj_t *pos_ar
 
     mp_int_t command_int = mp_arg_validate_int_range(args[ARG_command].u_int, 0, 255, MP_QSTR_command);
 
-    fourwire_fourwire_obj_t *self = pos_args[0];
+    fourwire_fourwire_obj_t *self = displayio_proxy_native(pos_args[0], &fourwire_fourwire_type);
     uint8_t command = command_int;
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(args[ARG_data].u_obj, &bufinfo, MP_BUFFER_READ);
@@ -144,7 +152,21 @@ static mp_obj_t fourwire_fourwire_obj_send(size_t n_args, const mp_obj_t *pos_ar
 }
 MP_DEFINE_CONST_FUN_OBJ_KW(fourwire_fourwire_send_obj, 1, fourwire_fourwire_obj_send);
 
+static mp_obj_t fourwire_fourwire_obj_deinit(mp_obj_t self_in) {
+    displayio_bus_deinit_obj(self_in, &fourwire_fourwire_type);
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(fourwire_fourwire_deinit_obj, fourwire_fourwire_obj_deinit);
+
+static mp_obj_t fourwire_fourwire_obj___del__(mp_obj_t self_in) {
+    displayio_bus_proxy_finalise(MP_OBJ_TO_PTR(self_in));
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(fourwire_fourwire___del___obj, fourwire_fourwire_obj___del__);
+
 static const mp_rom_map_elem_t fourwire_fourwire_locals_dict_table[] = {
+    { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&fourwire_fourwire_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&fourwire_fourwire___del___obj) },
     { MP_ROM_QSTR(MP_QSTR_reset), MP_ROM_PTR(&fourwire_fourwire_reset_obj) },
     { MP_ROM_QSTR(MP_QSTR_send), MP_ROM_PTR(&fourwire_fourwire_send_obj) },
 };

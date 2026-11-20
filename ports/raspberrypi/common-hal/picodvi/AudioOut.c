@@ -145,6 +145,13 @@ static bool is_board_audioout(const picodvi_audioout_obj_t *self) {
 }
 #endif
 
+static void set_sample(picodvi_audioout_obj_t *self, mp_obj_t sample) {
+    self->sample = sample;
+    if (self->framebuffer != NULL) {
+        picodvi_framebuffer_set_audioout_sample(self->framebuffer, sample);
+    }
+}
+
 // Active line with the video preamble and guard band that audio mode needs.
 static uint32_t dvi_audio_vactive_line640[] = {
     HSTX_CMD_RAW_REPEAT | MODE_640_H_FRONT_PORCH,
@@ -376,7 +383,7 @@ void picodvi_audioout_framebuffer_deinit(picodvi_framebuffer_obj_t *self) {
         picodvi_audioout_obj_t *audioout = MP_OBJ_TO_PTR(self->audioout);
         audioout->sample = MP_OBJ_NULL;
         audioout->framebuffer = NULL;
-        self->audioout = MP_OBJ_NULL;
+        picodvi_framebuffer_set_audioout(self, MP_OBJ_NULL);
         if (is_board_audioout(audioout)) {
             // supervisor.runtime.audio goes back to None, as the display does.
             audioout->base.type = &mp_type_NoneType;
@@ -846,9 +853,9 @@ void common_hal_picodvi_audioout_construct(picodvi_audioout_obj_t *self, picodvi
     }
     picodvi_framebuffer_audio_reserve(framebuffer);
     self->framebuffer = framebuffer;
-    self->sample = MP_OBJ_NULL;
+    set_sample(self, MP_OBJ_NULL);
     // The framebuffer keeps this object alive and schedules its refills.
-    framebuffer->audioout = MP_OBJ_FROM_PTR(self);
+    picodvi_framebuffer_set_audioout(framebuffer, MP_OBJ_FROM_PTR(self));
 }
 
 void picodvi_audioout_reset(void) {
@@ -887,10 +894,10 @@ bool picodvi_audioout_construct_board(picodvi_framebuffer_obj_t *framebuffer) {
     memset(self, 0, sizeof(*self));
     self->base.type = &picodvi_audioout_type;
     self->framebuffer = framebuffer;
-    self->sample = MP_OBJ_NULL;
+    set_sample(self, MP_OBJ_NULL);
     // The framebuffer schedules its refills, which send silence until a
     // sample plays.
-    framebuffer->audioout = MP_OBJ_FROM_PTR(self);
+    picodvi_framebuffer_set_audioout(framebuffer, MP_OBJ_FROM_PTR(self));
     return true;
 }
 
@@ -911,7 +918,7 @@ void common_hal_picodvi_audioout_deinit(picodvi_audioout_obj_t *self) {
         return;
     }
     common_hal_picodvi_audioout_stop(self);
-    self->framebuffer->audioout = MP_OBJ_NULL;
+    picodvi_framebuffer_set_audioout(self->framebuffer, MP_OBJ_NULL);
     picodvi_framebuffer_audio_release(self->framebuffer);
     self->framebuffer = NULL;
     if (is_board_audioout(self)) {
@@ -945,12 +952,12 @@ void common_hal_picodvi_audioout_play(picodvi_audioout_obj_t *self, mp_obj_t sam
     self->loop = loop;
     self->paused = false;
     self->refilling = false;
-    self->sample = sample;
+    set_sample(self, sample);
     audioout_refill(self);
 }
 
 void common_hal_picodvi_audioout_stop(picodvi_audioout_obj_t *self) {
-    self->sample = MP_OBJ_NULL;
+    set_sample(self, MP_OBJ_NULL);
     self->paused = false;
     // Drops what was staged.
     self->stage_frames = 0;

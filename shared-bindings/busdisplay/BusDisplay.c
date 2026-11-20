@@ -65,6 +65,7 @@
 //|         set_row_command: int = 0x2B,
 //|         write_ram_command: int = 0x2C,
 //|         backlight_pin: Optional[microcontroller.Pin] = None,
+//|         backlight: Optional[Union[digitalio.DigitalInOut, pwmio.PWMOut]] = None,
 //|         brightness_command: Optional[int] = None,
 //|         brightness: float = 1.0,
 //|         single_byte_bounds: bool = False,
@@ -119,7 +120,9 @@
 //|         :param int set_column_command: Command used to set the start and end columns to update
 //|         :param int set_row_command: Command used so set the start and end rows to update
 //|         :param int write_ram_command: Command used to write pixels values into the update region. Ignored if data_as_commands is set.
-//|         :param microcontroller.Pin backlight_pin: Pin connected to the display's backlight
+//|         :param microcontroller.Pin backlight_pin: Pin connected to the display's backlight.
+//|         :param Union[digitalio.DigitalInOut, pwmio.PWMOut] backlight: Existing backlight object.
+//|             Supplied objects are borrowed and are not deinitialized when the display is released.
 //|         :param int brightness_command: Command to set display brightness. Usually available in OLED controllers.
 //|         :param float brightness: Initial display brightness.
 //|         :param bool single_byte_bounds: Display column and row commands use single bytes
@@ -128,7 +131,8 @@
 //|         :param int native_frames_per_second: Number of display refreshes per second that occur with the given init_sequence.
 //|         :param bool backlight_on_high: If True, pulling the backlight pin high turns the backlight on.
 //|         :param bool SH1107_addressing: Special quirk for SH1107, use upper/lower column set and page set
-//|         :param int backlight_pwm_frequency: The frequency to use to drive the PWM for backlight brightness control. Default is 50000.
+//|         :param int backlight_pwm_frequency: The frequency used when constructing a PWM backlight from
+//|             a pin. Ignored when an existing DigitalInOut or PWMOut is supplied. Default is 50000.
 //|         """
 //|         ...
 //|
@@ -138,7 +142,11 @@ static mp_obj_t busdisplay_busdisplay_make_new(const mp_obj_type_t *type, size_t
            ARG_rotation, ARG_color_depth, ARG_grayscale, ARG_pixels_in_byte_share_row,
            ARG_bytes_per_cell, ARG_reverse_pixels_in_byte, ARG_reverse_bytes_in_word,
            ARG_set_column_command, ARG_set_row_command, ARG_write_ram_command,
-           ARG_backlight_pin, ARG_brightness_command,
+           ARG_backlight_pin,
+           #if CIRCUITPY_FULL_BUILD
+           ARG_backlight,
+           #endif
+           ARG_brightness_command,
            ARG_brightness, ARG_single_byte_bounds, ARG_data_as_commands,
            ARG_auto_refresh, ARG_native_frames_per_second, ARG_backlight_on_high,
            ARG_SH1107_addressing, ARG_backlight_pwm_frequency };
@@ -160,6 +168,9 @@ static mp_obj_t busdisplay_busdisplay_make_new(const mp_obj_type_t *type, size_t
         { MP_QSTR_set_row_command, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 0x2b} },
         { MP_QSTR_write_ram_command, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 0x2c} },
         { MP_QSTR_backlight_pin, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = mp_const_none} },
+        #if CIRCUITPY_FULL_BUILD
+        { MP_QSTR_backlight, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = mp_const_none} },
+        #endif
         { MP_QSTR_brightness_command, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = NO_BRIGHTNESS_COMMAND} },
         { MP_QSTR_brightness, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = MP_OBJ_NEW_SMALL_INT(1)} },
         { MP_QSTR_single_byte_bounds, MP_ARG_BOOL | MP_ARG_KW_ONLY, {.u_bool = false} },
@@ -178,8 +189,19 @@ static mp_obj_t busdisplay_busdisplay_make_new(const mp_obj_type_t *type, size_t
     mp_buffer_info_t bufinfo;
     mp_get_buffer_raise(args[ARG_init_sequence].u_obj, &bufinfo, MP_BUFFER_READ);
 
-    const mcu_pin_obj_t *backlight_pin =
-        validate_obj_is_free_pin_or_none(args[ARG_backlight_pin].u_obj, MP_QSTR_backlight_pin);
+    const mcu_pin_obj_t *backlight_pin = validate_obj_is_free_pin_or_none(
+        args[ARG_backlight_pin].u_obj, MP_QSTR_backlight_pin);
+    mp_obj_t backlight = backlight_pin == NULL ? mp_const_none : MP_OBJ_FROM_PTR(backlight_pin);
+    #if CIRCUITPY_FULL_BUILD
+    mp_obj_t backlight_object = args[ARG_backlight].u_obj;
+    busdisplay_backlight_validate(backlight_object);
+    if (backlight_pin != NULL && backlight_object != mp_const_none) {
+        mp_arg_error_invalid(MP_QSTR_backlight);
+    }
+    if (backlight_object != mp_const_none) {
+        backlight = backlight_object;
+    }
+    #endif
 
     mp_float_t brightness = mp_obj_get_float(args[ARG_brightness].u_obj);
 
@@ -194,52 +216,48 @@ static mp_obj_t busdisplay_busdisplay_make_new(const mp_obj_type_t *type, size_t
         mp_raise_ValueError_varg(MP_ERROR_TEXT("%q must be 1 when %q is True"), MP_QSTR_color_depth, MP_QSTR_SH1107_addressing);
     }
 
-    // Check the bus before taking a display slot: construct would raise after the slot is in use.
+    // Resolve the proxy before allocation; the native bus owns the new display.
     displayio_display_bus_validate(display_bus);
+    mp_obj_t native_bus = MP_OBJ_FROM_PTR(displayio_proxy_native(display_bus, mp_obj_get_type(display_bus)));
+    busdisplay_busdisplay_obj_t *self = displayio_native_init(NULL, &busdisplay_busdisplay_protocol,
+        &busdisplay_busdisplay_type, sizeof(*self), native_bus, false);
 
-    primary_display_t *disp = allocate_display_or_raise();
-    busdisplay_busdisplay_obj_t *self = &disp->display;
-
-    self->base.type = &busdisplay_busdisplay_type;
-    common_hal_busdisplay_busdisplay_construct(
-        self,
-        display_bus, args[ARG_width].u_int, args[ARG_height].u_int, args[ARG_colstart].u_int, args[ARG_rowstart].u_int, rotation,
-        color_depth, args[ARG_grayscale].u_bool,
-        args[ARG_pixels_in_byte_share_row].u_bool,
-        args[ARG_bytes_per_cell].u_bool,
-        args[ARG_reverse_pixels_in_byte].u_bool,
-        args[ARG_reverse_bytes_in_word].u_bool,
-        args[ARG_set_column_command].u_int, args[ARG_set_row_command].u_int,
-        args[ARG_write_ram_command].u_int,
-        bufinfo.buf, bufinfo.len,
-        MP_OBJ_TO_PTR(backlight_pin),
-        args[ARG_brightness_command].u_int,
-        brightness,
-        args[ARG_single_byte_bounds].u_bool,
-        args[ARG_data_as_commands].u_bool,
-        args[ARG_auto_refresh].u_bool,
-        args[ARG_native_frames_per_second].u_int,
-        args[ARG_backlight_on_high].u_bool,
-        sh1107_addressing,
-        args[ARG_backlight_pwm_frequency].u_int
-        );
-
-    return self;
+    nlr_buf_t nlr;
+    if (nlr_push(&nlr) == 0) {
+        common_hal_busdisplay_busdisplay_construct(
+            self,
+            native_bus, args[ARG_width].u_int, args[ARG_height].u_int, args[ARG_colstart].u_int, args[ARG_rowstart].u_int, rotation,
+            color_depth, args[ARG_grayscale].u_bool,
+            args[ARG_pixels_in_byte_share_row].u_bool,
+            args[ARG_bytes_per_cell].u_bool,
+            args[ARG_reverse_pixels_in_byte].u_bool,
+            args[ARG_reverse_bytes_in_word].u_bool,
+            args[ARG_set_column_command].u_int, args[ARG_set_row_command].u_int,
+            args[ARG_write_ram_command].u_int,
+            bufinfo.buf, bufinfo.len,
+            backlight,
+            args[ARG_brightness_command].u_int,
+            brightness,
+            args[ARG_single_byte_bounds].u_bool,
+            args[ARG_data_as_commands].u_bool,
+            args[ARG_auto_refresh].u_bool,
+            args[ARG_native_frames_per_second].u_int,
+            args[ARG_backlight_on_high].u_bool,
+            sh1107_addressing,
+            args[ARG_backlight_pwm_frequency].u_int
+            );
+        mp_obj_t proxy = displayio_register(MP_OBJ_FROM_PTR(self));
+        nlr_pop();
+        return proxy;
+    }
+    displayio_construct_failed(MP_OBJ_FROM_PTR(self));
+    nlr_jump(nlr.ret_val);
 }
 
 // Helper to ensure we have the native super class instead of a subclass.
 // Raises if the display has been released.
 static busdisplay_busdisplay_obj_t *native_display(mp_obj_t display_obj) {
-    mp_obj_t native_display = mp_obj_cast_to_native_base(display_obj, &busdisplay_busdisplay_type);
-    if (native_display == MP_OBJ_NULL) {
-        raise_deinited_error();
-    }
-    mp_obj_assert_native_inited(native_display);
-    busdisplay_busdisplay_obj_t *self = MP_OBJ_TO_PTR(native_display);
-    if (self->base.type != &busdisplay_busdisplay_type) {
-        raise_deinited_error();
-    }
-    return self;
+    return displayio_proxy_native(display_obj, &busdisplay_busdisplay_type);
 }
 
 //|     def deinit(self) -> None:
@@ -249,18 +267,64 @@ static busdisplay_busdisplay_obj_t *native_display(mp_obj_t display_obj) {
 //|
 //|         To release a built-in display, or a display kept from an earlier run,
 //|         use ``supervisor.runtime.display.deinit()``.
-//|         As of CircuitPython 11.0.0, this replaces `displayio.release_displays()`, which is deprecated.
 //|         """
 //|         ...
 //|
 static mp_obj_t busdisplay_busdisplay_obj_deinit(mp_obj_t self_in) {
-    mp_obj_t native_display = mp_obj_cast_to_native_base(self_in, &busdisplay_busdisplay_type);
-    if (native_display != MP_OBJ_NULL) {
-        common_hal_displayio_deinit_display(native_display);
+    mp_obj_t proxy = mp_obj_cast_to_native_base(self_in, MP_OBJ_FROM_PTR(&busdisplay_busdisplay_type));
+    if (proxy != MP_OBJ_NULL) {
+        displayio_display_deinit(((displayio_proxy_t *)MP_OBJ_TO_PTR(proxy))->native);
     }
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_1(busdisplay_busdisplay_deinit_obj, busdisplay_busdisplay_obj_deinit);
+
+static mp_obj_t busdisplay_busdisplay_obj___del__(mp_obj_t self_in) {
+    displayio_display_proxy_finalise(MP_OBJ_TO_PTR(self_in));
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(busdisplay_busdisplay___del___obj, busdisplay_busdisplay_obj___del__);
+
+static void busdisplay_protocol_deinit(void *self) {
+    release_busdisplay(self);
+}
+
+static void *busdisplay_protocol_start_vm(void *self) {
+    return busdisplay_busdisplay_start_vm(self);
+}
+
+static bool busdisplay_protocol_is_moveable(void *self_in) {
+    busdisplay_busdisplay_obj_t *self = self_in;
+    return busdisplay_backlight_is_moveable(&self->backlight);
+}
+
+static bool busdisplay_protocol_stop_vm(void *self_in) {
+    busdisplay_busdisplay_obj_t *self = self_in;
+    if (displayio_is_primary_display(self)) {
+        busdisplay_backlight_adopt(&self->backlight);
+    }
+    reset_busdisplay(self);
+    return true;
+}
+
+#if !CIRCUITPY_DISPLAYIO_LVGL
+static void busdisplay_protocol_background(void *self) {
+    busdisplay_busdisplay_background(self);
+}
+#endif
+
+
+const displayio_protocol_t busdisplay_busdisplay_protocol = {
+    .deinit = busdisplay_protocol_deinit,
+    .is_moveable = busdisplay_protocol_is_moveable,
+    .start_vm = busdisplay_protocol_start_vm,
+    .stop_vm = busdisplay_protocol_stop_vm,
+    #if !CIRCUITPY_DISPLAYIO_LVGL
+    .background = busdisplay_protocol_background,
+    #else
+    .background = displayio_display_background_noop,
+    #endif
+};
 
 // Undocumented show() implementation with a friendly error message.
 static mp_obj_t busdisplay_busdisplay_obj_show(mp_obj_t self_in, mp_obj_t group_in) {
@@ -345,6 +409,22 @@ MP_DEFINE_CONST_FUN_OBJ_2(busdisplay_busdisplay_set_auto_refresh_obj, busdisplay
 MP_PROPERTY_GETSET(busdisplay_busdisplay_auto_refresh_obj,
     (mp_obj_t)&busdisplay_busdisplay_get_auto_refresh_obj,
     (mp_obj_t)&busdisplay_busdisplay_set_auto_refresh_obj);
+
+//|     backlight: Optional[Union[digitalio.DigitalInOut, pwmio.PWMOut]]
+//|     """The display's backlight object, or None when it has no backlight object.
+//|
+//|     A primary display's adopted backlight is restored to the VM heap when a new VM starts.
+//|     It can be supplied to another display as ``backlight``."""
+#if CIRCUITPY_FULL_BUILD
+static mp_obj_t busdisplay_busdisplay_obj_get_backlight(mp_obj_t self_in) {
+    busdisplay_busdisplay_obj_t *self = native_display(self_in);
+    return self->backlight.object;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(busdisplay_busdisplay_get_backlight_obj, busdisplay_busdisplay_obj_get_backlight);
+
+MP_PROPERTY_GETTER(busdisplay_busdisplay_backlight_obj,
+    (mp_obj_t)&busdisplay_busdisplay_get_backlight_obj);
+#endif
 
 //|     brightness: float
 //|     """The brightness of the display as a float. 0.0 is off and 1.0 is full brightness."""
@@ -454,6 +534,7 @@ static mp_obj_t busdisplay_busdisplay_obj_set_root_group(mp_obj_t self_in, mp_ob
     }
 
     common_hal_busdisplay_busdisplay_set_root_group(self, group);
+    displayio_display_set_root_group_reference(MP_OBJ_FROM_PTR(self), group_in);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(busdisplay_busdisplay_set_root_group_obj, busdisplay_busdisplay_obj_set_root_group);
@@ -535,12 +616,16 @@ MP_DEFINE_CONST_FUN_OBJ_KW(busdisplay_busdisplay_fill_row_obj, 1, busdisplay_bus
 
 static const mp_rom_map_elem_t busdisplay_busdisplay_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&busdisplay_busdisplay_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&busdisplay_busdisplay___del___obj) },
     { MP_ROM_QSTR(MP_QSTR_show), MP_ROM_PTR(&busdisplay_busdisplay_show_obj) },
     { MP_ROM_QSTR(MP_QSTR_refresh), MP_ROM_PTR(&busdisplay_busdisplay_refresh_obj) },
     { MP_ROM_QSTR(MP_QSTR_fill_row), MP_ROM_PTR(&busdisplay_busdisplay_fill_row_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_auto_refresh), MP_ROM_PTR(&busdisplay_busdisplay_auto_refresh_obj) },
 
+    #if CIRCUITPY_FULL_BUILD
+    { MP_ROM_QSTR(MP_QSTR_backlight), MP_ROM_PTR(&busdisplay_busdisplay_backlight_obj) },
+    #endif
     { MP_ROM_QSTR(MP_QSTR_brightness), MP_ROM_PTR(&busdisplay_busdisplay_brightness_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_width), MP_ROM_PTR(&busdisplay_busdisplay_width_obj) },

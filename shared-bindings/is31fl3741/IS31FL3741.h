@@ -15,6 +15,8 @@ void common_hal_is31fl3741_IS31FL3741_construct(is31fl3741_IS31FL3741_obj_t *sel
 void common_hal_is31fl3741_IS31FL3741_deinit(is31fl3741_IS31FL3741_obj_t *);
 bool common_hal_is31fl3741_IS31FL3741_deinited(is31fl3741_IS31FL3741_obj_t *self);
 void common_hal_is31fl3741_IS31FL3741_mark_deinit(is31fl3741_IS31FL3741_obj_t *self);
+bool common_hal_is31fl3741_IS31FL3741_is_moveable(is31fl3741_IS31FL3741_obj_t *self);
+bool common_hal_is31fl3741_IS31FL3741_move(is31fl3741_IS31FL3741_obj_t *self, is31fl3741_IS31FL3741_obj_t *destination);
 
 void common_hal_is31fl3741_write(is31fl3741_IS31FL3741_obj_t *is31, const mp_obj_t *mapping, const uint8_t *pixels, size_t numBytes);
 

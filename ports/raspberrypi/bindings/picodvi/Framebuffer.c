@@ -124,16 +124,21 @@ static mp_obj_t picodvi_framebuffer_make_new(const mp_obj_type_t *type, size_t n
     const mcu_pin_obj_t *blue_dp = validate_obj_is_free_pin(args[ARG_blue_dp].u_obj, MP_QSTR_blue_dp);
     const mcu_pin_obj_t *blue_dn = validate_obj_is_free_pin(args[ARG_blue_dn].u_obj, MP_QSTR_blue_dn);
 
-    // Validate everything before taking a display bus slot.
-    picodvi_framebuffer_obj_t *self = &allocate_display_bus_or_raise()->picodvi;
-    self->base.type = &picodvi_framebuffer_type;
+    picodvi_framebuffer_obj_t *self = displayio_native_init(NULL, &picodvi_framebuffer_protocol,
+        &picodvi_framebuffer_type, sizeof(*self), MP_OBJ_NULL, false);
 
-    common_hal_picodvi_framebuffer_construct(self,
-        width, height,
-        clk_dp, clk_dn, red_dp, red_dn, green_dp, green_dn, blue_dp, blue_dn,
-        color_depth);
-
-    return MP_OBJ_FROM_PTR(self);
+    nlr_buf_t nlr;
+    if (nlr_push(&nlr) == 0) {
+        common_hal_picodvi_framebuffer_construct(self,
+            width, height,
+            clk_dp, clk_dn, red_dp, red_dn, green_dp, green_dn, blue_dp, blue_dn,
+            color_depth);
+        mp_obj_t proxy = displayio_register(MP_OBJ_FROM_PTR(self));
+        nlr_pop();
+        return proxy;
+    }
+    displayio_construct_failed(MP_OBJ_FROM_PTR(self));
+    nlr_jump(nlr.ret_val);
 }
 
 //|     def deinit(self) -> None:
@@ -143,12 +148,34 @@ static mp_obj_t picodvi_framebuffer_make_new(const mp_obj_type_t *type, size_t n
 //|         ...
 //|
 static mp_obj_t picodvi_framebuffer_deinit(mp_obj_t self_in) {
-    picodvi_framebuffer_obj_t *self = (picodvi_framebuffer_obj_t *)self_in;
-    common_hal_picodvi_framebuffer_deinit(self);
+    displayio_bus_deinit_obj(self_in, &picodvi_framebuffer_type);
     return mp_const_none;
 }
 
 static MP_DEFINE_CONST_FUN_OBJ_1(picodvi_framebuffer_deinit_obj, picodvi_framebuffer_deinit);
+
+static mp_obj_t picodvi_framebuffer___del__(mp_obj_t self_in) {
+    displayio_bus_proxy_finalise(MP_OBJ_TO_PTR(self_in));
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(picodvi_framebuffer___del___obj, picodvi_framebuffer___del__);
+
+static void picodvi_protocol_deinit(void *self) {
+    common_hal_picodvi_framebuffer_deinit(self);
+}
+
+static void *picodvi_protocol_start_vm(void *self) {
+    return picodvi_framebuffer_start_vm(self);
+}
+
+const displayio_protocol_t picodvi_framebuffer_protocol = {
+    .deinit = picodvi_protocol_deinit,
+    .start_vm = picodvi_protocol_start_vm,
+};
+
+static picodvi_framebuffer_obj_t *native_framebuffer(mp_obj_t obj) {
+    return displayio_proxy_native(obj, &picodvi_framebuffer_type);
+}
 
 static void check_for_deinit(picodvi_framebuffer_obj_t *self) {
     if (common_hal_picodvi_framebuffer_deinited(self)) {
@@ -159,7 +186,7 @@ static void check_for_deinit(picodvi_framebuffer_obj_t *self) {
 //|     width: int
 //|     """The width of the framebuffer, in pixels. It may be doubled for output."""
 static mp_obj_t picodvi_framebuffer_get_width(mp_obj_t self_in) {
-    picodvi_framebuffer_obj_t *self = (picodvi_framebuffer_obj_t *)self_in;
+    picodvi_framebuffer_obj_t *self = native_framebuffer(self_in);
     check_for_deinit(self);
     return MP_OBJ_NEW_SMALL_INT(common_hal_picodvi_framebuffer_get_width(self));
 }
@@ -170,9 +197,8 @@ MP_PROPERTY_GETTER(picodvi_framebuffer_width_obj,
 //|     height: int
 //|     """The width of the framebuffer, in pixels. It may be doubled for output."""
 //|
-//|
 static mp_obj_t picodvi_framebuffer_get_height(mp_obj_t self_in) {
-    picodvi_framebuffer_obj_t *self = (picodvi_framebuffer_obj_t *)self_in;
+    picodvi_framebuffer_obj_t *self = native_framebuffer(self_in);
     check_for_deinit(self);
     return MP_OBJ_NEW_SMALL_INT(common_hal_picodvi_framebuffer_get_height(self));
 }
@@ -183,8 +209,9 @@ MP_PROPERTY_GETTER(picodvi_framebuffer_height_obj,
 
 //|     color_depth: int
 //|     """The color depth of the framebuffer."""
+//|
 static mp_obj_t picodvi_framebuffer_get_color_depth(mp_obj_t self_in) {
-    picodvi_framebuffer_obj_t *self = (picodvi_framebuffer_obj_t *)self_in;
+    picodvi_framebuffer_obj_t *self = native_framebuffer(self_in);
     check_for_deinit(self);
     return MP_OBJ_NEW_SMALL_INT(common_hal_picodvi_framebuffer_get_color_depth(self));
 }
@@ -201,8 +228,10 @@ MP_PROPERTY_GETTER(picodvi_framebuffer_color_depth_obj,
 //|         repaint a smaller area. Bounded by a short timeout, so it is safe even if no DVI
 //|         signal is active. No-op on the RP2040 PIO-DVI path."""
 //|         ...
+//|
+//|
 static mp_obj_t picodvi_framebuffer_wait_for_vblank(mp_obj_t self_in) {
-    picodvi_framebuffer_obj_t *self = (picodvi_framebuffer_obj_t *)self_in;
+    picodvi_framebuffer_obj_t *self = native_framebuffer(self_in);
     check_for_deinit(self);
     common_hal_picodvi_framebuffer_wait_for_vblank(self);
     return mp_const_none;
@@ -212,6 +241,7 @@ static MP_DEFINE_CONST_FUN_OBJ_1(picodvi_framebuffer_wait_for_vblank_obj, picodv
 
 static const mp_rom_map_elem_t picodvi_framebuffer_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&picodvi_framebuffer_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&picodvi_framebuffer___del___obj) },
     { MP_ROM_QSTR(MP_QSTR_wait_for_vblank), MP_ROM_PTR(&picodvi_framebuffer_wait_for_vblank_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_width), MP_ROM_PTR(&picodvi_framebuffer_width_obj) },
@@ -221,34 +251,34 @@ static const mp_rom_map_elem_t picodvi_framebuffer_locals_dict_table[] = {
 static MP_DEFINE_CONST_DICT(picodvi_framebuffer_locals_dict, picodvi_framebuffer_locals_dict_table);
 
 static void picodvi_framebuffer_get_bufinfo(mp_obj_t self_in, mp_buffer_info_t *bufinfo) {
-    common_hal_picodvi_framebuffer_get_buffer(self_in, bufinfo, 0);
+    common_hal_picodvi_framebuffer_get_buffer(MP_OBJ_TO_PTR(self_in), bufinfo, 0);
 }
 
 // These versions exist so that the prototype matches the protocol,
 // avoiding a type cast that can hide errors
 static void picodvi_framebuffer_swapbuffers(mp_obj_t self_in, uint8_t *dirty_row_bitmap) {
     (void)dirty_row_bitmap;
-    common_hal_picodvi_framebuffer_refresh(self_in);
+    common_hal_picodvi_framebuffer_refresh(MP_OBJ_TO_PTR(self_in));
 }
 
 static void picodvi_framebuffer_deinit_proto(mp_obj_t self_in) {
-    common_hal_picodvi_framebuffer_deinit(self_in);
+    common_hal_picodvi_framebuffer_deinit(MP_OBJ_TO_PTR(self_in));
 }
 
 static int picodvi_framebuffer_get_width_proto(mp_obj_t self_in) {
-    return common_hal_picodvi_framebuffer_get_width(self_in);
+    return common_hal_picodvi_framebuffer_get_width(MP_OBJ_TO_PTR(self_in));
 }
 
 static int picodvi_framebuffer_get_height_proto(mp_obj_t self_in) {
-    return common_hal_picodvi_framebuffer_get_height(self_in);
+    return common_hal_picodvi_framebuffer_get_height(MP_OBJ_TO_PTR(self_in));
 }
 
 static int picodvi_framebuffer_get_color_depth_proto(mp_obj_t self_in) {
-    return common_hal_picodvi_framebuffer_get_color_depth(self_in);
+    return common_hal_picodvi_framebuffer_get_color_depth(MP_OBJ_TO_PTR(self_in));
 }
 
 static bool picodvi_framebuffer_get_grayscale_proto(mp_obj_t self_in) {
-    return common_hal_picodvi_framebuffer_get_grayscale(self_in);
+    return common_hal_picodvi_framebuffer_get_grayscale(MP_OBJ_TO_PTR(self_in));
 }
 
 static int picodvi_framebuffer_get_bytes_per_cell_proto(mp_obj_t self_in) {
@@ -256,7 +286,7 @@ static int picodvi_framebuffer_get_bytes_per_cell_proto(mp_obj_t self_in) {
 }
 
 static int picodvi_framebuffer_get_native_frames_per_second_proto(mp_obj_t self_in) {
-    return common_hal_picodvi_framebuffer_get_native_frames_per_second(self_in);
+    return common_hal_picodvi_framebuffer_get_native_frames_per_second(MP_OBJ_TO_PTR(self_in));
 }
 
 static bool picodvi_framebuffer_get_pixels_in_byte_share_row_proto(mp_obj_t self_in) {
@@ -264,7 +294,7 @@ static bool picodvi_framebuffer_get_pixels_in_byte_share_row_proto(mp_obj_t self
 }
 
 static int picodvi_framebuffer_get_row_stride_proto(mp_obj_t self_in) {
-    return common_hal_picodvi_framebuffer_get_row_stride(self_in);
+    return common_hal_picodvi_framebuffer_get_row_stride(MP_OBJ_TO_PTR(self_in));
 }
 
 static const framebuffer_p_t picodvi_framebuffer_proto = {
@@ -282,12 +312,16 @@ static const framebuffer_p_t picodvi_framebuffer_proto = {
     .deinit = picodvi_framebuffer_deinit_proto,
 };
 
+static mp_int_t picodvi_framebuffer_get_buffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_uint_t flags) {
+    return common_hal_picodvi_framebuffer_get_buffer(native_framebuffer(self_in), bufinfo, flags);
+}
+
 MP_DEFINE_CONST_OBJ_TYPE(
     picodvi_framebuffer_type,
     MP_QSTR_Framebuffer,
     MP_TYPE_FLAG_HAS_SPECIAL_ACCESSORS,
     locals_dict, &picodvi_framebuffer_locals_dict,
     make_new, picodvi_framebuffer_make_new,
-    buffer, common_hal_picodvi_framebuffer_get_buffer,
+    buffer, picodvi_framebuffer_get_buffer,
     protocol, &picodvi_framebuffer_proto
     );

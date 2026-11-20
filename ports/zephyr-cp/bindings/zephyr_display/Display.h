@@ -10,6 +10,7 @@
 #include "common-hal/zephyr_display/Display.h"
 
 extern const mp_obj_type_t zephyr_display_display_type;
+extern const displayio_protocol_t zephyr_display_display_protocol;
 
 // Port hooks for the LVGL compositor (see shared-module/displayio/lvgl/lvgl_internal.h).
 void displayio_lvgl_port_lock(void);

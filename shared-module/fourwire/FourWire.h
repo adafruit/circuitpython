@@ -6,6 +6,8 @@
 
 #pragma once
 
+#include "shared-module/displayio/lifetime.h"
+
 #include <stdbool.h>
 
 #include "common-hal/busio/SPI.h"
@@ -14,6 +16,7 @@
 
 typedef struct {
     mp_obj_base_t base;
+    displayio_bus_lifetime_t bus_lifetime;
     busio_spi_obj_t *bus;
     busio_spi_obj_t inline_bus;
     mp_obj_t command;
@@ -29,3 +32,5 @@ typedef struct {
     circuitpy_async_flag_t sent;   // set once the last send_async has been sent
     #endif
 } fourwire_fourwire_obj_t;
+
+mp_obj_t fourwire_fourwire_start_vm(fourwire_fourwire_obj_t *self);

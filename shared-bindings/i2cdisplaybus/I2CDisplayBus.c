@@ -59,12 +59,19 @@ static mp_obj_t i2cdisplaybus_i2cdisplaybus_make_new(const mp_obj_type_t *type, 
     const mcu_pin_obj_t *reset = validate_obj_is_free_pin_or_none(args[ARG_reset].u_obj, MP_QSTR_reset);
 
     mp_obj_t i2c = mp_arg_validate_type(args[ARG_i2c_bus].u_obj, &busio_i2c_type, MP_QSTR_i2c_bus);
-    i2cdisplaybus_i2cdisplaybus_obj_t *self = &allocate_display_bus_or_raise()->i2cdisplay_bus;
-    self->base.type = &i2cdisplaybus_i2cdisplaybus_type;
+    i2cdisplaybus_i2cdisplaybus_obj_t *self = displayio_native_init(NULL, &i2cdisplaybus_i2cdisplaybus_protocol,
+        &i2cdisplaybus_i2cdisplaybus_type, sizeof(*self), MP_OBJ_NULL, false);
 
-    common_hal_i2cdisplaybus_i2cdisplaybus_construct(self,
-        MP_OBJ_TO_PTR(i2c), args[ARG_device_address].u_int, reset);
-    return self;
+    nlr_buf_t nlr;
+    if (nlr_push(&nlr) == 0) {
+        common_hal_i2cdisplaybus_i2cdisplaybus_construct(self,
+            MP_OBJ_TO_PTR(i2c), args[ARG_device_address].u_int, reset);
+        mp_obj_t proxy = displayio_register(MP_OBJ_FROM_PTR(self));
+        nlr_pop();
+        return proxy;
+    }
+    displayio_construct_failed(MP_OBJ_FROM_PTR(self));
+    nlr_jump(nlr.ret_val);
 }
 
 //|     def reset(self) -> None:
@@ -73,7 +80,7 @@ static mp_obj_t i2cdisplaybus_i2cdisplaybus_make_new(const mp_obj_type_t *type, 
 //|         ...
 //|
 static mp_obj_t i2cdisplaybus_i2cdisplaybus_obj_reset(mp_obj_t self_in) {
-    i2cdisplaybus_i2cdisplaybus_obj_t *self = self_in;
+    i2cdisplaybus_i2cdisplaybus_obj_t *self = displayio_proxy_native(self_in, &i2cdisplaybus_i2cdisplaybus_type);
 
     if (!common_hal_i2cdisplaybus_i2cdisplaybus_reset(self)) {
         mp_raise_RuntimeError_varg(MP_ERROR_TEXT("No %q pin"), MP_QSTR_reset);
@@ -89,6 +96,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(i2cdisplaybus_i2cdisplaybus_reset_obj, i2cdisplaybus_i
 //|
 //|
 static mp_obj_t i2cdisplaybus_i2cdisplaybus_obj_send(mp_obj_t self, mp_obj_t command_obj, mp_obj_t data_obj) {
+    i2cdisplaybus_i2cdisplaybus_obj_t *native = displayio_proxy_native(self, &i2cdisplaybus_i2cdisplaybus_type);
     mp_int_t command_int = mp_obj_get_int(command_obj);
     mp_arg_validate_int_range(command_int, 0, 255, MP_QSTR_command);
 
@@ -97,20 +105,34 @@ static mp_obj_t i2cdisplaybus_i2cdisplaybus_obj_send(mp_obj_t self, mp_obj_t com
     mp_get_buffer_raise(data_obj, &bufinfo, MP_BUFFER_READ);
 
     // Wait for display bus to be available.
-    while (!common_hal_i2cdisplaybus_i2cdisplaybus_begin_transaction(self)) {
+    while (!common_hal_i2cdisplaybus_i2cdisplaybus_begin_transaction(native)) {
         RUN_BACKGROUND_TASKS;
     }
     uint8_t full_command[bufinfo.len + 1];
     full_command[0] = command;
     memcpy(full_command + 1, ((uint8_t *)bufinfo.buf), bufinfo.len);
-    common_hal_i2cdisplaybus_i2cdisplaybus_send(self, DISPLAY_COMMAND, CHIP_SELECT_UNTOUCHED, full_command, bufinfo.len + 1);
-    common_hal_i2cdisplaybus_i2cdisplaybus_end_transaction(self);
+    common_hal_i2cdisplaybus_i2cdisplaybus_send(native, DISPLAY_COMMAND, CHIP_SELECT_UNTOUCHED, full_command, bufinfo.len + 1);
+    common_hal_i2cdisplaybus_i2cdisplaybus_end_transaction(native);
 
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_3(i2cdisplaybus_i2cdisplaybus_send_obj, i2cdisplaybus_i2cdisplaybus_obj_send);
 
+static mp_obj_t i2cdisplaybus_i2cdisplaybus_obj_deinit(mp_obj_t self_in) {
+    displayio_bus_deinit_obj(self_in, &i2cdisplaybus_i2cdisplaybus_type);
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(i2cdisplaybus_i2cdisplaybus_deinit_obj, i2cdisplaybus_i2cdisplaybus_obj_deinit);
+
+static mp_obj_t i2cdisplaybus_i2cdisplaybus_obj___del__(mp_obj_t self_in) {
+    displayio_bus_proxy_finalise(MP_OBJ_TO_PTR(self_in));
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(i2cdisplaybus_i2cdisplaybus___del___obj, i2cdisplaybus_i2cdisplaybus_obj___del__);
+
 static const mp_rom_map_elem_t i2cdisplaybus_i2cdisplaybus_locals_dict_table[] = {
+    { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&i2cdisplaybus_i2cdisplaybus_deinit_obj) },
+    { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&i2cdisplaybus_i2cdisplaybus___del___obj) },
     { MP_ROM_QSTR(MP_QSTR_reset), MP_ROM_PTR(&i2cdisplaybus_i2cdisplaybus_reset_obj) },
     { MP_ROM_QSTR(MP_QSTR_send), MP_ROM_PTR(&i2cdisplaybus_i2cdisplaybus_send_obj) },
 };

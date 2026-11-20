@@ -154,29 +154,25 @@ void displayio_lvgl_register_display(lv_display_t *display) {
     displayio_lvgl_unlock();
 }
 
-// Whether any active display mirrored into LVGL still wants automatic repaints. The display slots
-// are the shared registry (the same ones the legacy compositor uses), so this works for both
-// display classes the compositor supports.
+// Whether any active display mirrored into LVGL still wants automatic repaints. LVGL's own
+// display list provides the iteration, so this works without a displayio registry.
 bool displayio_lvgl_auto_refresh(void) {
-    for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
-        mp_const_obj_t display_type = displays[i].display_base.type;
-        if (display_type == NULL || display_type == &mp_type_NoneType) {
+    for (lv_display_t *lv = lv_display_get_next(NULL); lv != NULL; lv = lv_display_get_next(lv)) {
+        mp_obj_t native = MP_OBJ_FROM_PTR(lv_display_get_driver_data(lv));
+        if (native == MP_OBJ_NULL) {
             continue;
         }
+        const mp_obj_type_t *display_type = mp_obj_get_type(native);
         #if CIRCUITPY_BUSDISPLAY
-        if (display_type == &busdisplay_busdisplay_type) {
-            if (displays[i].display.auto_refresh) {
-                return true;
-            }
-            continue;
+        if (display_type == &busdisplay_busdisplay_type &&
+            ((busdisplay_busdisplay_obj_t *)MP_OBJ_TO_PTR(native))->auto_refresh) {
+            return true;
         }
         #endif
         #if CIRCUITPY_FRAMEBUFFERIO
-        if (display_type == &framebufferio_framebufferdisplay_type) {
-            if (displays[i].framebuffer_display.auto_refresh) {
-                return true;
-            }
-            continue;
+        if (display_type == &framebufferio_framebufferdisplay_type &&
+            ((framebufferio_framebufferdisplay_obj_t *)MP_OBJ_TO_PTR(native))->auto_refresh) {
+            return true;
         }
         #endif
     }
@@ -196,13 +192,10 @@ void displayio_lvgl_refresh_unsafe_displays(void) {
     }
     refreshing = true;
     displayio_lvgl_lock();
-    for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
-        mp_const_obj_t display_type = displays[i].display_base.type;
-        if (display_type != &busdisplay_busdisplay_type) {
-            continue;
-        }
-        busdisplay_busdisplay_obj_t *busdisplay = &displays[i].display;
-        if (busdisplay->auto_refresh && busdisplay->lv_display != NULL) {
+    for (lv_display_t *lv = lv_display_get_next(NULL); lv != NULL; lv = lv_display_get_next(lv)) {
+        busdisplay_busdisplay_obj_t *busdisplay = lv_display_get_driver_data(lv);
+        if (busdisplay != NULL && busdisplay->base.type == &busdisplay_busdisplay_type &&
+            busdisplay->auto_refresh && busdisplay->lv_display != NULL) {
             lv_refr_now(busdisplay->lv_display);
         }
     }
@@ -224,13 +217,10 @@ void displayio_lvgl_refresh_paced_displays(void) {
     }
     refreshing = true;
     displayio_lvgl_lock();
-    for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
-        mp_const_obj_t display_type = displays[i].display_base.type;
-        if (display_type != &framebufferio_framebufferdisplay_type) {
-            continue;
-        }
-        framebufferio_framebufferdisplay_obj_t *display = &displays[i].framebuffer_display;
-        if (display->lv_paced && display->auto_refresh && display->lv_display != NULL) {
+    for (lv_display_t *lv = lv_display_get_next(NULL); lv != NULL; lv = lv_display_get_next(lv)) {
+        framebufferio_framebufferdisplay_obj_t *display = lv_display_get_driver_data(lv);
+        if (display != NULL && display->base.type == &framebufferio_framebufferdisplay_type &&
+            display->lv_paced && display->auto_refresh && display->lv_display != NULL) {
             lv_refr_now(display->lv_display);
         }
     }
@@ -711,6 +701,15 @@ void displayio_lvgl_set_root_group(displayio_group_t *group) {
     displayio_lvgl_unlock_with_cleanup();
 }
 
+void displayio_lvgl_detach_display(lv_display_t *display) {
+    // The caller holds the LVGL lock. The compositor mirrors one root group;
+    // do not detach it when destroying a different display.
+    if (display != NULL && cp_lvgl_root_group != NULL && cp_lvgl_root_group->lv_obj != NULL &&
+        lv_obj_get_display(cp_lvgl_root_group->lv_obj) == display) {
+        displayio_lvgl_set_root_group(NULL);
+    }
+}
+
 void displayio_gc_collect(void) {
     void *root_ptrs[1] = { cp_lvgl_root_group };
     if (root_ptrs[0] != NULL) {
@@ -720,8 +719,8 @@ void displayio_gc_collect(void) {
     displayio_lvgl_mirror_gc();
     // So does the compositor's list of attached TileGrids.
     displayio_lvgl_tilegrid_gc_collect();
-    // Displays live in the static slot registry, which the GC can't see.
-    displayio_display_slots_gc_collect();
+    // Root only the primary and board proxies; secondary displays are kept alive by user references.
+    displayio_gc_collect_primary_and_board();
     #if CIRCUITPY_VIDEOCORE
     // So does the compositor's list of attached VideoBuffer mirrors.
     displayio_lvgl_video_gc_collect();

@@ -20,6 +20,8 @@
  */
 #pragma once
 
+#include "shared-module/displayio/lifetime.h"
+
 #include "py/obj.h"
 #include "shared-bindings/busio/SPI.h"
 #include "shared-bindings/digitalio/DigitalInOut.h"
@@ -35,7 +37,9 @@ enum AuroraType {
 
 typedef struct {
     mp_obj_base_t base;
+    displayio_bus_lifetime_t bus_lifetime;
     busio_spi_obj_t *bus;
+    busio_spi_obj_t inline_bus;
     digitalio_digitalinout_obj_t chip_select;
     digitalio_digitalinout_obj_t reset;
     digitalio_digitalinout_obj_t busy;
@@ -52,6 +56,9 @@ typedef struct {
 } aurora_epaper_framebuffer_obj_t;
 
 extern const framebuffer_p_t aurora_epaper_framebuffer_proto;
+extern const displayio_protocol_t aurora_framebuffer_protocol;
+
+mp_obj_t aurora_epaper_framebuffer_start_vm(aurora_epaper_framebuffer_obj_t *self);
 
 void common_hal_aurora_epaper_framebuffer_construct(aurora_epaper_framebuffer_obj_t *self, busio_spi_obj_t *spi, const mcu_pin_obj_t *chip_select, const mcu_pin_obj_t *reset, const mcu_pin_obj_t *busy, const mcu_pin_obj_t *discharge, const mcu_pin_obj_t *power, int width, int height, bool free_bus);
 int common_hal_aurora_epaper_framebuffer_get_width(aurora_epaper_framebuffer_obj_t *self);

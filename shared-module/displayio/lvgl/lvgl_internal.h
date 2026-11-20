@@ -93,5 +93,6 @@ extern bool displayio_lvgl_refresh_yield;
 
 // Attach/detach the compositor's root group. Implemented in lvgl/Group.c. NULL detach.
 void displayio_lvgl_set_root_group(displayio_group_t *group);
+void displayio_lvgl_detach_display(lv_display_t *display);
 
 #endif  // CIRCUITPY_DISPLAYIO_LVGL

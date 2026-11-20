@@ -6,12 +6,15 @@
 
 #pragma once
 
+#include "shared-module/displayio/lifetime.h"
+
 #include "common-hal/digitalio/DigitalInOut.h"
 
 #include <esp-idf/components/esp_lcd/include/esp_lcd_panel_io.h>
 
 typedef struct {
     mp_obj_base_t base;
+    displayio_bus_lifetime_t bus_lifetime;
     gpio_num_t cs_pin_number;
     gpio_num_t read_pin_number;
     gpio_num_t reset_pin_number;

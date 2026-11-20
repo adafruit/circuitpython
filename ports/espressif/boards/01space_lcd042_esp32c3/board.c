@@ -31,14 +31,20 @@ uint8_t display_init_sequence[] = { // SSD1306
     0xAF, 0, // DISPLAY_ON
 };
 
+static i2cdisplaybus_i2cdisplaybus_obj_t board_display_bus;
+busdisplay_busdisplay_obj_t board_display;
+
 void board_init(void) {
     busio_i2c_obj_t *i2c = common_hal_board_create_i2c(0);
 
     // What we would do if it wasn't the shared board I2C: (for reference)
-    // busio_i2c_obj_t *i2c = &allocate_display_bus()->i2cdisplay_bus.inline_bus;
     // common_hal_busio_i2c_construct(i2c, &pin_GPIO23, &pin_GPIO22, 100000, 0);
 
-    i2cdisplaybus_i2cdisplaybus_obj_t *bus = &allocate_display_bus()->i2cdisplay_bus;
+    i2cdisplaybus_i2cdisplaybus_obj_t *bus = displayio_native_init(&board_display_bus, &i2cdisplaybus_i2cdisplaybus_protocol, &i2cdisplaybus_i2cdisplaybus_type, 0, MP_OBJ_NULL, true);
+
+    if (bus == NULL) {
+        return;
+    }
     bus->base.type = &i2cdisplaybus_i2cdisplaybus_type;
     common_hal_i2cdisplaybus_i2cdisplaybus_construct(bus,
         i2c,
@@ -46,7 +52,11 @@ void board_init(void) {
         NULL
         );
 
-    busdisplay_busdisplay_obj_t *display = &allocate_display()->display;
+    busdisplay_busdisplay_obj_t *display = displayio_native_init(&board_display, &busdisplay_busdisplay_protocol, &busdisplay_busdisplay_type, 0, MP_OBJ_FROM_PTR(bus), true);
+
+    if (display == NULL) {
+        return;
+    }
     display->base.type = &busdisplay_busdisplay_type;
     common_hal_busdisplay_busdisplay_construct(display,
         bus,

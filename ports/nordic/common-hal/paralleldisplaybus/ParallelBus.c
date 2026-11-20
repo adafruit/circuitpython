@@ -90,6 +90,8 @@ void common_hal_paralleldisplaybus_parallelbus_construct(paralleldisplaybus_para
 
     // The bus is live from here.
     self->bus = bus;
+
+    displayio_register(MP_OBJ_FROM_PTR(self));
 }
 
 void common_hal_paralleldisplaybus_parallelbus_deinit(paralleldisplaybus_parallelbus_obj_t *self) {

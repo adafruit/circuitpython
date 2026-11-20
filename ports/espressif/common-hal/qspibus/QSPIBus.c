@@ -354,6 +354,8 @@ void common_hal_qspibus_qspibus_construct(
         gpio_set_level((gpio_num_t)self->reset_pin, 1);
         vTaskDelay(pdMS_TO_TICKS(120));
     }
+
+    displayio_register(MP_OBJ_FROM_PTR(self));
 }
 
 void common_hal_qspibus_qspibus_deinit(qspibus_qspibus_obj_t *self) {
@@ -578,8 +580,4 @@ void common_hal_qspibus_qspibus_flush(mp_obj_t obj) {
     if (!qspibus_wait_all_transfers_done(self, pdMS_TO_TICKS(QSPI_COLOR_TIMEOUT_MS))) {
         qspibus_reset_transfer_state(self);
     }
-}
-
-void common_hal_qspibus_qspibus_collect_ptrs(mp_obj_t obj) {
-    (void)obj;
 }

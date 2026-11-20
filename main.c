@@ -223,6 +223,9 @@ static void start_mp(safe_mode_t safe_mode) {
     common_hal_os_chdir("/");
 
     _vm_is_running = true;
+    #if CIRCUITPY_DISPLAYIO
+    displayio_start_vm();
+    #endif
 }
 
 static void stop_mp(void) {
@@ -398,9 +401,9 @@ static void cleanup_after_vm(mp_obj_t exception) {
     videogif_reset();
     #endif
 
-    // Turn off the display and flush the filesystem before the heap disappears.
+    // Release or preserve displays while their drivers and the VM still exist.
     #if CIRCUITPY_DISPLAYIO
-    reset_displays();
+    displayio_stop_vm();
     #endif
 
     #if CIRCUITPY_MEMORYMONITOR
@@ -445,10 +448,8 @@ static void cleanup_after_vm(mp_obj_t exception) {
     reset_port();
     reset_board();
 
-    // Free the heap last because other modules may reference heap memory and need to shut down.
+    // Free the heap last because other modules may reference heap memory.
     filesystem_flush();
-
-    // Runs finalisers while shutting down the heap.
     stop_mp();
 
     // Let the workflows know we've reset in case they want to restart.
@@ -708,9 +709,8 @@ static bool __attribute__((noinline)) run_code_py(safe_mode_t safe_mode, bool *s
                 // OK to start sleeping, real or fake.
                 const bool true_deep_sleep = awoke_from_true_deep_sleep || !supervisor_workflow_active();
                 #if CIRCUITPY_DISPLAYIO
-                // A fake sleep doesn't run boot.py again, so keep a display set as
-                // supervisor.runtime.display. Also leave the board as a reload does, because
-                // board_init() can't make its own display if the kept one fills the slots.
+                // A fake sleep doesn't run boot.py again, so preserve a user-selected
+                // display and leave the board initialized, as on soft reload.
                 keep_display_in_fake_sleep = !true_deep_sleep && common_hal_displayio_primary_display_set_by_user();
                 if (!keep_display_in_fake_sleep) {
                     common_hal_displayio_release_displays();
@@ -832,9 +832,6 @@ static bool __attribute__((noinline)) run_code_py(safe_mode_t safe_mode, bool *s
     if (fake_sleeping) {
         if (!keep_display_in_fake_sleep) {
             board_init();
-            #if CIRCUITPY_DISPLAYIO
-            common_hal_displayio_auto_primary_display();
-            #endif
         }
         // Undo any preserve_dios.
         #if CIRCUITPY_ALARM_PRESERVE_DIOS
@@ -1139,10 +1136,6 @@ int __attribute__((used)) main(void) {
 
     // displays init after filesystem, since they could share the flash SPI
     board_init();
-
-    #if CIRCUITPY_DISPLAYIO
-    common_hal_displayio_auto_primary_display();
-    #endif
 
     mp_hal_stdout_tx_str(line_clear);
 
