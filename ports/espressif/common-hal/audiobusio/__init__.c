@@ -224,10 +224,13 @@ void port_i2s_play(i2s_t *self, mp_obj_t sample, bool loop) {
     audiosample_check(sample);
     // Pause to disable the I2S channel so we can adjust the clock.
     port_i2s_pause(self);
-    // Keep refill out while the sample changes. Loading it can raise, so unlock again if it does.
-    MP_DEFINE_NLR_JUMP_CALLBACK_FUNCTION_1(allow, audiocore_unlock, NULL);
+    // Set the clock first, because it can raise and nothing below may raise while locked.
+    uint32_t sample_rate = audiosample_get_sample_rate(sample);
+    i2s_std_clk_config_t clk_config = I2S_STD_CLK_DEFAULT_CONFIG(sample_rate);
+    CHECK_ESP_RESULT(i2s_channel_reconfig_std_clock(self->handle, &clk_config));
+    // Keep refill out while the sample changes. Samples report load errors by return value, so
+    // nothing here raises with the lock held.
     audiocore_lock();
-    nlr_push_jump_callback(&allow.callback, mp_call_function_1_from_nlr_jump_callback);
     self->sample = sample;
     self->loop = loop;
     self->bytes_per_sample = audiosample_get_bits_per_sample(sample) / 8;
@@ -244,10 +247,6 @@ void port_i2s_play(i2s_t *self, mp_obj_t sample, bool loop) {
     // uint16_t bits_per_sample_output = bits_per_sample * 2;
 
     audiosample_reset_buffer(self->sample, false, 0);
-
-    uint32_t sample_rate = audiosample_get_sample_rate(sample);
-    i2s_std_clk_config_t clk_config = I2S_STD_CLK_DEFAULT_CONFIG(sample_rate);
-    CHECK_ESP_RESULT(i2s_channel_reconfig_std_clock(self->handle, &clk_config));
 
     // preload the data
     self->playing = true;
@@ -268,7 +267,7 @@ void port_i2s_play(i2s_t *self, mp_obj_t sample, bool loop) {
         i2s_channel_preload_data(self->handle, &starting_frame, sizeof(uint32_t), &bytes_loaded);
         preloaded += bytes_loaded;
     }
-    nlr_pop_jump_callback(true);
+    audiocore_unlock();
 
     // enable the channel
     i2s_channel_enable(self->handle);
