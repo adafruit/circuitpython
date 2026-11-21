@@ -50,6 +50,7 @@ static const lvgl_protocol_t *_layer_protocol(mp_obj_t *layer) {
 
 static displayio_group_t *cp_lvgl_root_group = NULL;
 static bool cp_lvgl_inited = false;
+bool displayio_lvgl_refresh_yield = false;
 
 // The port lock is recursive. Keeping the recursion at the port instead of counting here matters
 // once LVGL renders on its own task: a shared depth counter would let the render task believe it
@@ -171,11 +172,12 @@ bool displayio_lvgl_auto_refresh(void) {
 
 // Render the displays that can't run on the render task. The guard keeps the proxy from
 // re-entering LVGL rendering if a background callback is processed while a refresh is already
-// active on the CircuitPython thread.
+// active on the CircuitPython thread, including an explicit display.refresh() that is running
+// background tasks mid-render.
 void displayio_lvgl_refresh_unsafe_displays(void) {
     #if CIRCUITPY_BUSDISPLAY
     static bool refreshing = false;
-    if (refreshing) {
+    if (refreshing || displayio_lvgl_refresh_yield) {
         return;
     }
     refreshing = true;
@@ -201,7 +203,9 @@ void displayio_lvgl_refresh_unsafe_displays(void) {
 void displayio_lvgl_refresh_paced_displays(void) {
     #if CIRCUITPY_FRAMEBUFFERIO
     static bool refreshing = false;
-    if (refreshing) {
+    // An explicit display.refresh() runs background tasks while it renders. A frame callback
+    // queued among them must not start a nested render; it draws at the next frame instead.
+    if (refreshing || displayio_lvgl_refresh_yield) {
         return;
     }
     refreshing = true;

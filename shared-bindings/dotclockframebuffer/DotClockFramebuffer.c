@@ -47,10 +47,10 @@
 //|         """Create a DotClockFramebuffer object associated with the given pins.
 //|
 //|         The pins are then in use by the display until your code finishes or
-//|         `displayio.release_displays()` is called. If the display is
+//|         the display's ``deinit()`` is called. If the display is
 //|         `supervisor.runtime.display <supervisor.Runtime.display>`, they stay in use after your code finishes, so CircuitPython can
 //|         use the display. In that case, check `supervisor.runtime.display <supervisor.Runtime.display>` before creating the display
-//|         again, or call :py:func:`displayio.release_displays` first.
+//|         again, or call ``supervisor.runtime.display.deinit()`` first.
 //|
 //|         When a board has dedicated dot clock framebuffer pins and/or timings, they are intended to be used in the constructor with ``**`` dictionary unpacking like so:
 //|         ``DotClockFramebuffer(**board.TFT_PINS, **board.TFT_TIMINGS)``

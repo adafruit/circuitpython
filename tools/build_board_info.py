@@ -19,7 +19,6 @@ from sh.contrib import git
 sys.path.append("adabot")
 import adabot.github_requests as github
 
-sys.path.append("../docs")
 from shared_bindings_matrix import (
     SUPPORTED_PORTS,
     support_matrix_by_board,

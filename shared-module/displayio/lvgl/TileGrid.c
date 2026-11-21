@@ -31,8 +31,6 @@
 
 #include "shared-bindings/displayio/TileGrid.h"
 
-#include <string.h>
-
 #include "py/gc.h"
 #include "py/objtype.h"
 #include "py/runtime.h"
@@ -168,8 +166,8 @@ static uint8_t _source_index(const uint8_t *row, uint32_t x, uint8_t bpp) {
     return (row[bit >> 3] >> (8 - bpp - (bit & 7))) & ((1u << bpp) - 1);
 }
 
-// Whether a tile holds only palette entry 0. A compose buffer is cleared to entry 0 (black or
-// transparent), so only such a cell can be left out of the compose draw entirely.
+// Whether a tile holds only palette entry 0. A compose buffer is cleared to zero, so when entry 0
+// matches that value, such a cell can be left out of the compose draw entirely.
 static bool _tile_is_blank(displayio_tilegrid_t *self, uint16_t tile_index) {
     const lv_image_dsc_t *src = self->lv_src;
     if (src == NULL || src->data == NULL) {
@@ -822,6 +820,38 @@ static void _cell_display_area(displayio_tilegrid_t *self, uint32_t x, uint32_t 
 // or dispatch each task, so drawing a long queue at once takes time with the square of its length.
 #define DISPLAYIO_LVGL_COMPOSE_BATCH 64
 
+// Zero the cells about to be composed: transparent for ARGB8888, black for RGB565.
+// lv_draw_image() leaves transparent source pixels untouched, so they keep the cleared value.
+// A full compose clears the whole buffer; otherwise each run of changed cells in a tile row is
+// cleared with one lv_draw_buf_clear().
+static void _clear_changed_cells(displayio_tilegrid_t *self, bool full) {
+    if (full) {
+        lv_draw_buf_clear(self->lv_buf, NULL);
+        return;
+    }
+    uint32_t tiles_w = self->width_in_tiles;
+    for (uint32_t cy = 0; cy < self->height_in_tiles; cy++) {
+        uint32_t cx = 0;
+        while (cx < tiles_w) {
+            if (!_cell_is_marked(self, cy * tiles_w + cx)) {
+                cx++;
+                continue;
+            }
+            uint32_t first = cx;
+            while (cx < tiles_w && _cell_is_marked(self, cy * tiles_w + cx)) {
+                cx++;
+            }
+            lv_area_t run = {
+                .x1 = first * self->tile_width,
+                .y1 = cy * self->tile_height,
+                .x2 = cx * self->tile_width - 1,
+                .y2 = (cy + 1) * self->tile_height - 1,
+            };
+            lv_draw_buf_clear(self->lv_buf, &run);
+        }
+    }
+}
+
 // Compose every cell that changed into the buffer. Returns false when nothing was drawn so the
 // caller can skip the invalidation. `dirty` comes back as the union of the composed cells, in
 // container coordinates.
@@ -858,6 +888,8 @@ static bool _compose(displayio_tilegrid_t *self, lv_area_t *dirty) {
     lv_area_t layer_clip = layer._clip_area;
     uint32_t queued = 0;
 
+    _clear_changed_cells(self, full);
+
     uint32_t cells = _cell_count(self);
     uint32_t tiles_w = self->width_in_tiles;
     for (uint32_t cell = 0; cell < cells; cell++) {
@@ -872,11 +904,6 @@ static bool _compose(displayio_tilegrid_t *self, lv_area_t *dirty) {
         };
         cell_area.x2 = cell_area.x1 + self->tile_width - 1;
         cell_area.y2 = cell_area.y1 + self->tile_height - 1;
-
-        // Start from transparent (ARGB8888) or black (RGB565): lv_draw_image() writes nothing
-        // where the source is transparent, which is exactly where the hole has to stay.
-        // ESP_LOGI(TAG, "clearing cell area %d,%d-%d,%d", cell_area.x1, cell_area.y1, cell_area.x2, cell_area.y2);
-        lv_draw_buf_clear(self->lv_buf, &cell_area);
 
         if (self->lv_src != NULL && self->lv_src->data != NULL) {
             uint16_t x0, y0;
@@ -910,6 +937,10 @@ static bool _compose(displayio_tilegrid_t *self, lv_area_t *dirty) {
                 queued++;
                 if (queued == DISPLAYIO_LVGL_COMPOSE_BATCH) {
                     lv_canvas_finish_layer(self->lv_canvas, &layer);
+                    // A big compose (a re-rendered text grid) can outlast the audio buffers.
+                    if (displayio_lvgl_refresh_yield) {
+                        RUN_BACKGROUND_TASKS;
+                    }
                     lv_canvas_init_layer(self->lv_canvas, &layer);
                     queued = 0;
                 }

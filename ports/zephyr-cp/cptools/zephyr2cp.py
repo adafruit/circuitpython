@@ -1147,6 +1147,9 @@ def zephyr_dts_to_cp_board(board_id, portdir, builddir, zephyrbuilddir, mpconfig
                 if driver not in active_zephyr_devices:
                     active_zephyr_devices[driver] = []
                 active_zephyr_devices[driver].append(node.labels)
+            elif driver == "input":
+                board_info["zephyr_input"] = True
+                logger.info("Supported Zephyr input device: %s", underscored)
             elif driver in EXCEPTIONAL_DRIVERS:
                 pass
             elif driver in BUSIO_CLASSES:

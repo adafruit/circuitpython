@@ -2597,8 +2597,7 @@ msgid "%q must be >= %d"
 msgstr "%q musí být >= %d"
 
 #: py/argcheck.c shared-bindings/gifio/GifWriter.c
-#: shared-module/_airlift/__init__.c shared-module/gifio/OnDiskGif.c
-#: shared-module/videogif/GifDecoder.c
+#: shared-module/_airlift/__init__.c
 msgid "%q must be <= %d"
 msgstr "%q musí být <= %d"
 
@@ -4677,9 +4676,8 @@ msgid "Too many displays"
 msgstr "Příliš mnoho displejů"
 
 #: shared-module/displayio/legacy/__init__.c
-msgid "Too many display busses; forgot displayio.release_displays() ?"
+msgid "Too many display buses; deinit() unused displays"
 msgstr ""
-"Příliš mnoho sběrnic displaye; nezapomněl si na displayio.release_displays()?"
 
 #: shared-module/displayio/lvgl/Group.c
 msgid "Layer does not support scaling"
@@ -5103,6 +5101,11 @@ msgstr "vypnuto"
 #: supervisor/shared/web_workflow/web_workflow.c
 msgid "No IP"
 msgstr "Není IP"
+
+#~ msgid "Too many display busses; forgot displayio.release_displays() ?"
+#~ msgstr ""
+#~ "Příliš mnoho sběrnic displaye; nezapomněl si na "
+#~ "displayio.release_displays()?"
 
 #~ msgid "invalid key"
 #~ msgstr "špatný klíč"

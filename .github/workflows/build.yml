@@ -25,6 +25,8 @@ jobs:
     outputs:
       docs: ${{ steps.set-matrix.outputs.docs }}
       zephyr-tests: ${{ steps.set-matrix.outputs.zephyr-tests }}
+      tests: ${{ steps.set-matrix.outputs.tests }}
+      mpy-cross: ${{ steps.set-matrix.outputs.mpy-cross }}
       ports: ${{ steps.set-matrix.outputs.ports }}
       cp-version: ${{ steps.set-up-submodules.outputs.version }}
     steps:
@@ -99,6 +101,7 @@ jobs:
 
   tests:
     needs: scheduler
+    if: needs.scheduler.outputs.tests == 'True'
     uses: ./.github/workflows/run-tests.yml
     with:
       cp-version: ${{ needs.scheduler.outputs.cp-version }}
@@ -112,7 +115,7 @@ jobs:
 
   mpy-cross:
     needs: scheduler
-    if: needs.scheduler.outputs.ports != '{}'
+    if: needs.scheduler.outputs.mpy-cross == 'True'
     uses: ./.github/workflows/build-mpy-cross.yml
     secrets: inherit
     with:
@@ -121,7 +124,7 @@ jobs:
   mpy-cross-mac:
     runs-on: macos-latest
     needs: scheduler
-    if: needs.scheduler.outputs.ports != '{}'
+    if: needs.scheduler.outputs.mpy-cross == 'True'
     env:
       CP_VERSION: ${{ needs.scheduler.outputs.cp-version }}
     steps:
@@ -195,7 +198,7 @@ jobs:
         name: stubs
         path: circuitpython-stubs/dist/*
     - name: Test Documentation Build (HTML)
-      run: sphinx-build -E -W -b html -D version="$CP_VERSION" -D release="$CP_VERSION" . _build/html
+      run: sphinx-build -E -W -j auto -b html -D version="$CP_VERSION" -D release="$CP_VERSION" . _build/html
     - uses: actions/upload-artifact@v7
       with:
         name: docs-html
@@ -226,7 +229,8 @@ jobs:
 
   ports:
     needs: [scheduler, tests]
-    if: needs.scheduler.outputs.ports != '{}'
+    # Without !failure() and !cancelled(), a skipped tests job would skip this job too.
+    if: ${{ !failure() && !cancelled() && needs.scheduler.outputs.ports != '{}' }}
     uses: ./.github/workflows/build-boards.yml
     secrets: inherit
     strategy:

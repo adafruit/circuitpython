@@ -35,10 +35,10 @@
 //|         """Create a I2CDisplayBus object associated with the given I2C bus and reset pin.
 //|
 //|         The I2C bus and pins are then in use by the display until your code finishes or
-//|         `displayio.release_displays()` is called. If the display is
+//|         the display's ``deinit()`` is called. If the display is
 //|         `supervisor.runtime.display <supervisor.Runtime.display>`, they stay in use after your code finishes, so CircuitPython can
 //|         use the display. In that case, check `supervisor.runtime.display <supervisor.Runtime.display>` before creating the display
-//|         again, or call :py:func:`displayio.release_displays` first.
+//|         again, or call ``supervisor.runtime.display.deinit()`` first.
 //|
 //|         :param busio.I2C i2c_bus: The I2C bus that make up the clock and data lines
 //|         :param int device_address: The I2C address of the device

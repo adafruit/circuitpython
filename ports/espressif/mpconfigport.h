@@ -40,6 +40,9 @@
 
 #define CIRCUITPY_INTERNAL_NVM_START_ADDR (0x9000)
 
+// The USB task erases and rewrites a whole 4 kB sector while the VM may run.
+#define CIRCUITPY_STORAGE_MAP_GUARD_BLOCKS (4096 / FILESYSTEM_BLOCK_SIZE)
+
 // 20kB is statically allocated to nvs, but when overwriting an existing
 // item, it's temporarily necessary to store both the old and new copies.
 // Additionally, there is some overhad for the names and values of items

@@ -19,7 +19,7 @@ def output(sample, times=1):
 
 # Before a sample is played, the tap has no format and keeps nothing.
 tap = Tap(capacity=0.125)
-print("idle", tap.playing, tap.available, tap.peak, tap.rms)
+print("idle", tap.playing, tap.available)
 
 # The tap takes the format of the first sample it plays and keeps 125 ms of it.
 tap.play(source, loop=True)
@@ -33,11 +33,8 @@ copy = array.array("h", [0] * 1200)
 print("read", tap.readinto(copy), list(copy[:800]) == played, tap.available)
 print("read empty", tap.readinto(copy))
 
-# Peak and RMS are measured separately, each since it was last read.
-print("peak", round(tap.peak, 4), tap.peak)
-output(tap)
-print("rms", round(tap.rms, 4), tap.rms)
-print("peak again", round(tap.peak, 4))
+# Levels are measured by a LevelReader (audiotap_levelreader.py), not the tap.
+print("no levels", hasattr(tap, "peak"), hasattr(tap, "rms"))
 
 # Later samples must match the first one's format.
 try:
@@ -69,11 +66,10 @@ print("bytearray", small.readinto(raw), small.available)
 part = array.array("h", [7] * 8)
 print("slice", small.readinto(memoryview(part)[2:5]), list(part))
 
-# Levels only.
-meter = Tap(capacity=0)
-meter.play(RawSample(array.array("h", [16384, -32768] * 16), sample_rate=8000), loop=True)
-output(meter)
-print("meter", meter.available, meter.readinto(copy), meter.peak, meter.rms)
+# A tap that keeps nothing still passes audio through.
+nothing = Tap(capacity=0)
+nothing.play(source, loop=True)
+print("keeps nothing", output(nothing) == list(ramp), nothing.available, nothing.readinto(copy))
 
 # Stereo reads whole frames.
 stereo = Tap(capacity=0.004)  # 32 frames
@@ -81,12 +77,6 @@ stereo.play(RawSample(array.array("h", range(16)), sample_rate=8000, channel_cou
 output(stereo)
 odd = array.array("h", [0] * 5)
 print("stereo", stereo.channel_count, stereo.readinto(odd), list(odd))
-
-# 8 bit unsigned levels: 0x80 is silence.
-eight = Tap(capacity=0.002)
-eight.play(RawSample(array.array("B", [0x80, 0xC0] * 8), sample_rate=8000), loop=True)
-output(eight)
-print("8 bit", eight.bits_per_sample, eight.peak, eight.rms)
 
 # In a chain, and the end of a sample that does not loop: then the tap plays silence.
 once = Tap()

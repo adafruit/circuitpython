@@ -133,6 +133,7 @@ warnings = true
 watchdog = true # Zephyr board has watchdog
 wifi = false
 zephyr_display = false
+zephyr_input = false
 zephyr_kernel = false
 zlib = true
 # extmod modules shared with MicroPython

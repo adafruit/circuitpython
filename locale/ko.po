@@ -2627,8 +2627,7 @@ msgid "%q must be >= %d"
 msgstr "%q 는 >= %d 여야 합니다"
 
 #: py/argcheck.c shared-bindings/gifio/GifWriter.c
-#: shared-module/_airlift/__init__.c shared-module/gifio/OnDiskGif.c
-#: shared-module/videogif/GifDecoder.c
+#: shared-module/_airlift/__init__.c
 #, fuzzy
 msgid "%q must be <= %d"
 msgstr "%q 는 <= %d 여야 합니다"
@@ -4720,7 +4719,7 @@ msgid "Too many displays"
 msgstr ""
 
 #: shared-module/displayio/legacy/__init__.c
-msgid "Too many display busses; forgot displayio.release_displays() ?"
+msgid "Too many display buses; deinit() unused displays"
 msgstr ""
 
 #: shared-module/displayio/lvgl/Group.c

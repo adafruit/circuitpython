@@ -43,6 +43,7 @@ SRC_BITMAP := \
 	shared-bindings/audiofilters/Filter.c \
 	shared-bindings/audiofilters/Phaser.c \
 	shared-bindings/audiofilters/__init__.c \
+	shared-bindings/audiotap/LevelReader.c \
 	shared-bindings/audiotap/Tap.c \
 	shared-bindings/audiotap/__init__.c \
 	shared-bindings/audiofreeverb/Freeverb.c \
@@ -95,6 +96,7 @@ SRC_BITMAP := \
 	shared-module/audiofilters/Filter.c \
 	shared-module/audiofilters/Phaser.c \
 	shared-module/audiofilters/__init__.c \
+	shared-module/audiotap/LevelReader.c \
 	shared-module/audiotap/Tap.c \
 	shared-module/audiotap/__init__.c \
 	shared-module/audiofreeverb/Freeverb.c \

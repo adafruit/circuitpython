@@ -7,8 +7,11 @@
 
 # You can set these variables from the command line.
 PYTHON        = python3
-SPHINXOPTS    = -W --keep-going
+SPHINXOPTS    = -W --keep-going -j auto
 SPHINXBUILD   = sphinx-build
+# -silent hides pdflatex's progress output, including the thousands of undefined-reference
+# warnings from its first pass. Warnings left after the last pass, and errors, are still reported.
+LATEXMKOPTS   = -silent
 PAPER         =
 # path to build the generated docs
 BUILDDIR      = _build
@@ -171,7 +174,7 @@ latex:
 latexpdf:
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
 	@echo "Running LaTeX files through pdflatex..."
-	$(MAKE) -C $(BUILDDIR)/latex all-pdf
+	$(MAKE) -C $(BUILDDIR)/latex all-pdf LATEXMKOPTS="$(LATEXMKOPTS)"
 	@echo "pdflatex finished; the PDF files are in $(BUILDDIR)/latex."
 
 # seems to be malfunctioning

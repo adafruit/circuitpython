@@ -78,7 +78,7 @@ MP_PROPERTY_GETSET(rtc_rtc_datetime_obj,
 //|
 //|     A positive value speeds up the clock and a negative value slows it down.
 //|
-//|     **Limitations:** Calibration not supported on SAMD, Nordic, RP2040, Spresense, and STM.
+//|     **Limitations:** Calibration is supported only on SAMD. On other ports, setting it raises `NotImplementedError`.
 //|
 //|     Range and value is hardware specific, but one step is often approximately 1 ppm::
 //|

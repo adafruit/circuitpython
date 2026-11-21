@@ -38,22 +38,51 @@
 //|     """The type of values that :py:func:`.uname()` returns"""
 //|
 //|     sysname: str
+//|     """Always ``"CircuitPython"``."""
 //|     nodename: str
+//|     """The network hostname, read each time :py:func:`.uname()` is called.
+//|     Before Wi-Fi or Ethernet is set up, this is the hostname that the interface will use.
+//|     For Wi-Fi, that is ``CIRCUITPY_WIFI_HOSTNAME`` from ``settings.toml`` if it is set.
+//|     Otherwise it is the interface's default hostname.
+//|     On boards where Wi-Fi runs on a separate co-processor,
+//|     the hostname before Wi-Fi is set up may not exactly match the one it will use.
+//|     On boards without Wi-Fi or Ethernet, this is the microcontroller name, such as ``"nRF52840"``."""
 //|     release: str
+//|     """The CircuitPython version."""
 //|     version: str
+//|     """The CircuitPython build version and build date."""
 //|     machine: str
+//|     """The board name and microcontroller name."""
 //|
 //|
 static const qstr os_uname_info_fields[] = {
     MP_QSTR_sysname, MP_QSTR_nodename,
     MP_QSTR_release, MP_QSTR_version, MP_QSTR_machine
 };
-static const MP_DEFINE_STR_OBJ(os_uname_info_sysname_obj, MICROPY_HW_MCU_NAME);
-static const MP_DEFINE_STR_OBJ(os_uname_info_nodename_obj, MICROPY_HW_MCU_NAME);
+static const MP_DEFINE_STR_OBJ(os_uname_info_sysname_obj, "CircuitPython");
 static const MP_DEFINE_STR_OBJ(os_uname_info_release_obj, MICROPY_VERSION_STRING);
 static const MP_DEFINE_STR_OBJ(os_uname_info_version_obj, MICROPY_GIT_TAG " on " MICROPY_BUILD_DATE);
 static const MP_DEFINE_STR_OBJ(os_uname_info_machine_obj, MICROPY_HW_BOARD_NAME " with " MICROPY_HW_MCU_NAME);
 
+#if CIRCUITPY_WIFI || CIRCUITPY_MII
+// The hostname can change, so build a new tuple each time.
+static mp_obj_t os_uname(void) {
+    // A hostname has at most 63 characters.
+    char nodename[64];
+    common_hal_os_get_nodename(nodename, sizeof(nodename));
+    const mp_obj_t items[] = {
+        MP_OBJ_FROM_PTR(&os_uname_info_sysname_obj),
+        mp_obj_new_str(nodename, strlen(nodename)),
+        MP_OBJ_FROM_PTR(&os_uname_info_release_obj),
+        MP_OBJ_FROM_PTR(&os_uname_info_version_obj),
+        MP_OBJ_FROM_PTR(&os_uname_info_machine_obj),
+    };
+    return mp_obj_new_attrtuple(os_uname_info_fields, MP_ARRAY_SIZE(items), items);
+}
+#else
+// Without networking, nodename is always the microcontroller name, so the
+// tuple never changes.
+static const MP_DEFINE_STR_OBJ(os_uname_info_nodename_obj, MICROPY_HW_MCU_NAME);
 
 static MP_DEFINE_ATTRTUPLE(
     os_uname_info_obj,
@@ -69,6 +98,7 @@ static MP_DEFINE_ATTRTUPLE(
 static mp_obj_t os_uname(void) {
     return MP_OBJ_FROM_PTR(&os_uname_info_obj);
 }
+#endif
 static MP_DEFINE_CONST_FUN_OBJ_0(os_uname_obj, os_uname);
 
 //| def chdir(path: str) -> None:

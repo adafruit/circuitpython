@@ -696,16 +696,6 @@ void port_task_yield(void) {
     #endif
 }
 
-void port_boot_info(void) {
-    #if CIRCUITPY_CYW43
-    mp_printf(&mp_plat_print, "MAC");
-    for (int i = 0; i < 6; i++) {
-        mp_printf(&mp_plat_print, ":%02X", cyw43_state.mac[i]);
-    }
-    mp_printf(&mp_plat_print, "\n");
-    #endif
-}
-
 #if CIRCUITPY_BOOT_BUTTON_NO_GPIO
 bool __no_inline_not_in_flash_func(port_boot_button_pressed)(void) {
     // Sense the state of the boot button. Because this function

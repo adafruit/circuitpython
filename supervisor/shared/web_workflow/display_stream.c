@@ -408,7 +408,12 @@ void display_stream_area_updated(displayio_display_core_t *core, const displayio
         return;
     }
     if (core == target) {
+        #if CIRCUITPY_DISPLAYIO_LVGL
+        // An lv_area_t: the second corner is inclusive.
+        _mark_dirty(area->x1, area->y1, area->x2 + 1, area->y2 + 1);
+        #else
         _mark_dirty(area->x1, area->y1, area->x2, area->y2);
+        #endif
     }
     // Another display may be a new one to switch to.
     _pass_later();
@@ -463,8 +468,11 @@ static void _check_display(void) {
     // The panel's size, whatever the rotation. The legacy compositor keeps it in the
     // full refresh area; LVGL tracks invalidation itself, so the core keeps only the size.
     #if CIRCUITPY_DISPLAYIO_LVGL
-    uint16_t new_width = core != NULL ? core->width : width;
-    uint16_t new_height = core != NULL ? core->height : height;
+    // The LVGL core keeps the rotated size, but the framebuffer read below is in
+    // the panel's own orientation, so swap them back when transposed.
+    bool transposed = core != NULL && (core->rotation == 90 || core->rotation == 270);
+    uint16_t new_width = core != NULL ? (transposed ? core->height : core->width) : width;
+    uint16_t new_height = core != NULL ? (transposed ? core->width : core->height) : height;
     #else
     uint16_t new_width = core != NULL ? core->area.x2 : width;
     uint16_t new_height = core != NULL ? core->area.y2 : height;

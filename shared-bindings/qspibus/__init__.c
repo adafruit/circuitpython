@@ -19,9 +19,10 @@
 //|
 //|   import board
 //|   import qspibus
-//|   import displayio
+//|   import supervisor
 //|
-//|   displayio.release_displays()
+//|   if supervisor.runtime.display:
+//|       supervisor.runtime.display.deinit()
 //|
 //|   bus = qspibus.QSPIBus(
 //|       clock=board.LCD_CLK,

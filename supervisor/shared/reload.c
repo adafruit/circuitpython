@@ -52,6 +52,10 @@ void autoreload_suspend(uint32_t suspend_reason_mask) {
     autoreload_suspended |= suspend_reason_mask;
 }
 
+bool autoreload_is_suspended(uint32_t suspend_reason_mask) {
+    return (autoreload_suspended & suspend_reason_mask) != 0;
+}
+
 void autoreload_resume(uint32_t suspend_reason_mask) {
     autoreload_suspended &= ~suspend_reason_mask;
 }

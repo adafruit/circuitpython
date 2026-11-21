@@ -41,6 +41,37 @@ static uint16_t _biased_color_index(vectorio_vector_shape_t *self) {
     return ((vectorio_polygon_t *)MP_OBJ_TO_PTR(self->ishape.shape))->color_index;
 }
 
+// The shape's outline color index, still biased by one like its color_index. Polygon has no
+// outline: it draws through an A8 mask image, which has no border of its own.
+static uint16_t _biased_outline_color_index(vectorio_vector_shape_t *self) {
+    if (mp_obj_is_type(self->ishape.shape, &vectorio_rectangle_type)) {
+        return ((vectorio_rectangle_t *)MP_OBJ_TO_PTR(self->ishape.shape))->outline_color_index;
+    }
+    if (mp_obj_is_type(self->ishape.shape, &vectorio_circle_type)) {
+        return ((vectorio_circle_t *)MP_OBJ_TO_PTR(self->ishape.shape))->outline_color_index;
+    }
+    return 0;
+}
+
+// Corner radius and outline width in the shape's own pixels. A circle is drawn with
+// LV_RADIUS_CIRCLE instead of a stored radius, so its radius is not read here.
+static uint16_t _shape_radius(vectorio_vector_shape_t *self) {
+    if (mp_obj_is_type(self->ishape.shape, &vectorio_rectangle_type)) {
+        return ((vectorio_rectangle_t *)MP_OBJ_TO_PTR(self->ishape.shape))->radius;
+    }
+    return 0;
+}
+
+static uint16_t _shape_outline_width(vectorio_vector_shape_t *self) {
+    if (mp_obj_is_type(self->ishape.shape, &vectorio_rectangle_type)) {
+        return ((vectorio_rectangle_t *)MP_OBJ_TO_PTR(self->ishape.shape))->outline_width;
+    }
+    if (mp_obj_is_type(self->ishape.shape, &vectorio_circle_type)) {
+        return ((vectorio_circle_t *)MP_OBJ_TO_PTR(self->ishape.shape))->outline_width;
+    }
+    return 0;
+}
+
 // Resolve the pixel shader to the color to paint. Returns false when nothing should be
 // drawn at all, which is what the "not covered" color index, a transparent palette entry
 // and a ColorConverter's transparent color all mean.
@@ -220,26 +251,42 @@ static void _sync_mirror(vectorio_vector_shape_t *self, bool rebuild_mask) {
         // A new size means a new mask buffer too.
         rebuild_mask = true;
     }
-    if (polygon && rebuild_mask) {
-        _refresh_mask(self, x1, y1, w, h, scale);
-    } else if (!polygon) {
-        bool circle = mp_obj_is_type(self->ishape.shape, &vectorio_circle_type);
-        lv_obj_set_style_radius(self->lv_obj, circle ? LV_RADIUS_CIRCLE : 0, 0);
-    }
 
     lv_color_t color;
     bool painted = !empty && _resolve_color(self->pixel_shader, _biased_color_index(self), &color);
+
     if (polygon) {
+        if (rebuild_mask) {
+            _refresh_mask(self, x1, y1, w, h, scale);
+        }
         if (painted) {
             lv_obj_set_style_image_recolor(self->lv_obj, color, 0);
         }
         lv_obj_set_style_image_recolor_opa(self->lv_obj, painted ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
-    } else {
-        if (painted) {
-            lv_obj_set_style_bg_color(self->lv_obj, color, 0);
-        }
-        lv_obj_set_style_bg_opa(self->lv_obj, painted ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
+        return;
     }
+
+    // The fill and the outline are style properties of the same lv_obj, so LVGL draws the
+    // corners once for the fill and once for the border and neither is recomputed by us. A
+    // scaled group scales the object's size, so the shape's own pixels have to be scaled too
+    // to keep the corners and the outline proportional.
+    bool circle = mp_obj_is_type(self->ishape.shape, &vectorio_circle_type);
+    int32_t radius = circle ? LV_RADIUS_CIRCLE : (int32_t)_shape_radius(self) * scale;
+    uint16_t outline_width = _shape_outline_width(self);
+    lv_color_t outline_color;
+    bool outlined = !empty && outline_width > 0 &&
+        _resolve_color(self->pixel_shader, _biased_outline_color_index(self), &outline_color);
+
+    lv_obj_set_style_radius(self->lv_obj, radius, 0);
+    lv_obj_set_style_border_width(self->lv_obj, outlined ? (int32_t)outline_width * scale : 0, 0);
+    if (painted) {
+        lv_obj_set_style_bg_color(self->lv_obj, color, 0);
+    }
+    lv_obj_set_style_bg_opa(self->lv_obj, painted ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
+    if (outlined) {
+        lv_obj_set_style_border_color(self->lv_obj, outline_color, 0);
+    }
+    lv_obj_set_style_border_opa(self->lv_obj, outlined ? LV_OPA_COVER : LV_OPA_TRANSP, 0);
 }
 
 // A move changes nothing but where the shape is, so the polygon mask survives it.
@@ -409,6 +456,7 @@ void displayio_lvgl_vector_shape_attach(vectorio_vector_shape_t *self, lv_obj_t 
         lv_obj_remove_style_all(self->lv_obj);
         lv_obj_set_style_pad_all(self->lv_obj, 0, 0);
         lv_obj_set_style_border_width(self->lv_obj, 0, 0);
+        lv_obj_set_style_border_side(self->lv_obj, LV_BORDER_SIDE_FULL, 0);
         lv_obj_set_style_radius(self->lv_obj, 0, 0);
         lv_obj_set_style_bg_opa(self->lv_obj, LV_OPA_TRANSP, 0);
         lv_obj_set_style_opa(self->lv_obj, LV_OPA_COVER, 0);

@@ -22,6 +22,9 @@
 //|         height: int,
 //|         x: int,
 //|         y: int,
+//|         radius: int = 0,
+//|         outline_width: int = 0,
+//|         outline_color_index: Optional[int] = None,
 //|     ) -> None:
 //|         """Represents a rectangle by defining its bounds
 //|
@@ -31,10 +34,45 @@
 //|         :param int x: Initial x position of the top left corner.
 //|         :param int y: Initial y position of the top left corner.
 //|         :param int color_index: Initial color_index to use when selecting color from the palette.
+//|         :param int radius: The radius of the corners in pixels. 0 (the default) is square
+//|             corners. The radius must not exceed half of the shortest side.
+//|         :param int outline_width: The width in pixels of a border drawn just inside the
+//|             rectangle's bounds, so it never makes the rectangle bigger. 0 (the default)
+//|             draws no border. The width must not exceed half of the shortest side.
+//|         :param Optional[int] outline_color_index: The 0 based palette index of the border
+//|             color, or ``None`` (the default) for no border. Only used when
+//|             ``outline_width`` is greater than 0. Use ``None`` rather than a transparent
+//|             palette entry to remove a border: the two compositors draw a band with a
+//|             transparent color differently.
 //|         """
 //|
+// -1 means no outline color, which the shape stores as an unset bias.
+static int32_t parse_outline_color_index(mp_obj_t outline_color_index) {
+    if (outline_color_index == mp_const_none) {
+        return -1;
+    }
+    return mp_arg_validate_int_min(mp_obj_get_int(outline_color_index), 0, MP_QSTR_outline_color_index);
+}
+
+static mp_obj_t outline_color_index_to_obj(int32_t outline_color_index) {
+    if (outline_color_index < 0) {
+        return mp_const_none;
+    }
+    return mp_obj_new_int(outline_color_index);
+}
+
+static mp_int_t half_short_side(mp_int_t width, mp_int_t height) {
+    return (width < height ? width : height) / 2;
+}
+
+static void validate_radius_and_outline(mp_int_t radius, mp_int_t outline_width, mp_int_t width, mp_int_t height) {
+    mp_int_t maximum = half_short_side(width, height);
+    mp_arg_validate_int_range(radius, 0, maximum, MP_QSTR_radius);
+    mp_arg_validate_int_range(outline_width, 0, maximum, MP_QSTR_outline_width);
+}
+
 static mp_obj_t vectorio_rectangle_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
-    enum { ARG_pixel_shader, ARG_width, ARG_height, ARG_x, ARG_y, ARG_color_index };
+    enum { ARG_pixel_shader, ARG_width, ARG_height, ARG_x, ARG_y, ARG_color_index, ARG_radius, ARG_outline_width, ARG_outline_color_index };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_pixel_shader, MP_ARG_OBJ | MP_ARG_KW_ONLY | MP_ARG_REQUIRED, {.u_obj = NULL } },
         { MP_QSTR_width, MP_ARG_REQUIRED | MP_ARG_INT, {.u_int = 0 } },
@@ -42,6 +80,9 @@ static mp_obj_t vectorio_rectangle_make_new(const mp_obj_type_t *type, size_t n_
         { MP_QSTR_x, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 0} },
         { MP_QSTR_y, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 0} },
         { MP_QSTR_color_index, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 0} },
+        { MP_QSTR_radius, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 0} },
+        { MP_QSTR_outline_width, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 0} },
+        { MP_QSTR_outline_color_index, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_obj = mp_const_none} },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
@@ -50,10 +91,14 @@ static mp_obj_t vectorio_rectangle_make_new(const mp_obj_type_t *type, size_t n_
     mp_arg_validate_int_min(width, 1, MP_QSTR_width);
     mp_int_t height = args[ARG_height].u_int;
     mp_arg_validate_int_min(height, 1, MP_QSTR_height);
+    mp_int_t radius = args[ARG_radius].u_int;
+    mp_int_t outline_width = args[ARG_outline_width].u_int;
+    validate_radius_and_outline(radius, outline_width, width, height);
 
     vectorio_rectangle_t *self = mp_obj_malloc(vectorio_rectangle_t, &vectorio_rectangle_type);
     uint16_t color_index = args[ARG_color_index].u_int;
-    common_hal_vectorio_rectangle_construct(self, width, height, color_index);
+    int32_t outline_color_index = parse_outline_color_index(args[ARG_outline_color_index].u_obj);
+    common_hal_vectorio_rectangle_construct(self, width, height, color_index, radius, outline_width, outline_color_index);
 
     // VectorShape parts
     mp_obj_t pixel_shader = args[ARG_pixel_shader].u_obj;
@@ -65,9 +110,22 @@ static mp_obj_t vectorio_rectangle_make_new(const mp_obj_type_t *type, size_t n_
     return MP_OBJ_FROM_PTR(self);
 }
 
+// A Python subclass of Rectangle (a display_shapes RoundRect, for example) is an
+// mp_obj_instance_t that holds the native Rectangle in subobj[0], so every entry point below
+// has to see that native object instead of the instance. Resolving it here keeps the protocol
+// slot on the native type. See displayio.TileGrid for the same pattern.
+static vectorio_rectangle_t *native_rectangle(mp_obj_t self_in) {
+    mp_obj_t native = mp_obj_cast_to_native_base(self_in, MP_OBJ_FROM_PTR(&vectorio_rectangle_type));
+    if (native == MP_OBJ_NULL) {
+        return MP_OBJ_TO_PTR(self_in);
+    }
+    mp_obj_assert_native_inited(native);
+    return MP_OBJ_TO_PTR(native);
+}
+
 #if CIRCUITPY_DISPLAYIO_LVGL
 static mp_obj_t rectangle_lvgl_protocol_self(mp_obj_t self_in) {
-    return common_hal_vectorio_rectangle_get_draw_protocol(MP_OBJ_TO_PTR(self_in));
+    return common_hal_vectorio_rectangle_get_draw_protocol(native_rectangle(self_in));
 }
 
 static const lvgl_protocol_t rectangle_lvgl_protocol = {
@@ -76,9 +134,13 @@ static const lvgl_protocol_t rectangle_lvgl_protocol = {
 };
 #define VECTORIO_RECTANGLE_PROTOCOL &rectangle_lvgl_protocol
 #else
+static mp_obj_t rectangle_draw_protocol_self(mp_obj_t self_in) {
+    return common_hal_vectorio_rectangle_get_draw_protocol(native_rectangle(self_in));
+}
+
 static const vectorio_draw_protocol_t rectangle_draw_protocol = {
     MP_PROTO_IMPLEMENT(MP_QSTR_protocol_draw)
-    .draw_get_protocol_self = (draw_get_protocol_self_fun)common_hal_vectorio_rectangle_get_draw_protocol,
+    .draw_get_protocol_self = rectangle_draw_protocol_self,
     .draw_protocol_impl = &vectorio_vector_shape_draw_protocol_impl
 };
 #define VECTORIO_RECTANGLE_PROTOCOL &rectangle_draw_protocol
@@ -87,14 +149,16 @@ static const vectorio_draw_protocol_t rectangle_draw_protocol = {
 //|     width: int
 //|     """The width of the rectangle in pixels."""
 static mp_obj_t vectorio_rectangle_obj_get_width(mp_obj_t self_in) {
-    vectorio_rectangle_t *self = MP_OBJ_TO_PTR(self_in);
+    vectorio_rectangle_t *self = native_rectangle(self_in);
     return mp_obj_new_int(common_hal_vectorio_rectangle_get_width(self));
 }
 MP_DEFINE_CONST_FUN_OBJ_1(vectorio_rectangle_get_width_obj, vectorio_rectangle_obj_get_width);
 
 static mp_obj_t vectorio_rectangle_obj_set_width(mp_obj_t self_in, mp_obj_t width) {
-    vectorio_rectangle_t *self = MP_OBJ_TO_PTR(self_in);
-    common_hal_vectorio_rectangle_set_width(self, mp_obj_get_int(width));
+    vectorio_rectangle_t *self = native_rectangle(self_in);
+    mp_int_t new_width = mp_arg_validate_int_min(mp_obj_get_int(width), 1, MP_QSTR_width);
+    validate_radius_and_outline(self->radius, self->outline_width, new_width, self->height);
+    common_hal_vectorio_rectangle_set_width(self, new_width);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(vectorio_rectangle_set_width_obj, vectorio_rectangle_obj_set_width);
@@ -106,14 +170,16 @@ MP_PROPERTY_GETSET(vectorio_rectangle_width_obj,
 //|     height: int
 //|     """The height of the rectangle in pixels."""
 static mp_obj_t vectorio_rectangle_obj_get_height(mp_obj_t self_in) {
-    vectorio_rectangle_t *self = MP_OBJ_TO_PTR(self_in);
+    vectorio_rectangle_t *self = native_rectangle(self_in);
     return mp_obj_new_int(common_hal_vectorio_rectangle_get_height(self));
 }
 MP_DEFINE_CONST_FUN_OBJ_1(vectorio_rectangle_get_height_obj, vectorio_rectangle_obj_get_height);
 
 static mp_obj_t vectorio_rectangle_obj_set_height(mp_obj_t self_in, mp_obj_t height) {
-    vectorio_rectangle_t *self = MP_OBJ_TO_PTR(self_in);
-    common_hal_vectorio_rectangle_set_height(self, mp_obj_get_int(height));
+    vectorio_rectangle_t *self = native_rectangle(self_in);
+    mp_int_t new_height = mp_arg_validate_int_min(mp_obj_get_int(height), 1, MP_QSTR_height);
+    validate_radius_and_outline(self->radius, self->outline_width, self->width, new_height);
+    common_hal_vectorio_rectangle_set_height(self, new_height);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(vectorio_rectangle_set_height_obj, vectorio_rectangle_obj_set_height);
@@ -122,16 +188,83 @@ MP_PROPERTY_GETSET(vectorio_rectangle_height_obj,
     (mp_obj_t)&vectorio_rectangle_get_height_obj,
     (mp_obj_t)&vectorio_rectangle_set_height_obj);
 
+//|     radius: int
+//|     """The radius of the rectangle's corners in pixels. 0 is square corners.
+//|
+//|     The radius must not exceed half of the shortest side."""
+static mp_obj_t vectorio_rectangle_obj_get_radius(mp_obj_t self_in) {
+    vectorio_rectangle_t *self = native_rectangle(self_in);
+    return mp_obj_new_int(common_hal_vectorio_rectangle_get_radius(self));
+}
+MP_DEFINE_CONST_FUN_OBJ_1(vectorio_rectangle_get_radius_obj, vectorio_rectangle_obj_get_radius);
+
+static mp_obj_t vectorio_rectangle_obj_set_radius(mp_obj_t self_in, mp_obj_t radius) {
+    vectorio_rectangle_t *self = native_rectangle(self_in);
+    mp_int_t new_radius = mp_arg_validate_int_range(mp_obj_get_int(radius), 0,
+        half_short_side(self->width, self->height), MP_QSTR_radius);
+    common_hal_vectorio_rectangle_set_radius(self, new_radius);
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_2(vectorio_rectangle_set_radius_obj, vectorio_rectangle_obj_set_radius);
+
+MP_PROPERTY_GETSET(vectorio_rectangle_radius_obj,
+    (mp_obj_t)&vectorio_rectangle_get_radius_obj,
+    (mp_obj_t)&vectorio_rectangle_set_radius_obj);
+
+//|     outline_width: int
+//|     """The width of the border in pixels. The border is drawn inside the rectangle, so it
+//|     never changes the rectangle's size. 0 draws no border. The width must not exceed half
+//|     of the shortest side."""
+static mp_obj_t vectorio_rectangle_obj_get_outline_width(mp_obj_t self_in) {
+    vectorio_rectangle_t *self = native_rectangle(self_in);
+    return mp_obj_new_int(common_hal_vectorio_rectangle_get_outline_width(self));
+}
+MP_DEFINE_CONST_FUN_OBJ_1(vectorio_rectangle_get_outline_width_obj, vectorio_rectangle_obj_get_outline_width);
+
+static mp_obj_t vectorio_rectangle_obj_set_outline_width(mp_obj_t self_in, mp_obj_t outline_width) {
+    vectorio_rectangle_t *self = native_rectangle(self_in);
+    mp_int_t new_outline_width = mp_arg_validate_int_range(mp_obj_get_int(outline_width), 0,
+        half_short_side(self->width, self->height), MP_QSTR_outline_width);
+    common_hal_vectorio_rectangle_set_outline_width(self, new_outline_width);
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_2(vectorio_rectangle_set_outline_width_obj, vectorio_rectangle_obj_set_outline_width);
+
+MP_PROPERTY_GETSET(vectorio_rectangle_outline_width_obj,
+    (mp_obj_t)&vectorio_rectangle_get_outline_width_obj,
+    (mp_obj_t)&vectorio_rectangle_set_outline_width_obj);
+
+//|     outline_color_index: Optional[int]
+//|     """The 0 based palette index of the border color, or ``None`` for no border. Only used
+//|     when :py:attr:`outline_width` is greater than 0."""
+static mp_obj_t vectorio_rectangle_obj_get_outline_color_index(mp_obj_t self_in) {
+    vectorio_rectangle_t *self = native_rectangle(self_in);
+    return outline_color_index_to_obj(common_hal_vectorio_rectangle_get_outline_color_index(self));
+}
+MP_DEFINE_CONST_FUN_OBJ_1(vectorio_rectangle_get_outline_color_index_obj, vectorio_rectangle_obj_get_outline_color_index);
+
+static mp_obj_t vectorio_rectangle_obj_set_outline_color_index(mp_obj_t self_in, mp_obj_t outline_color_index) {
+    vectorio_rectangle_t *self = native_rectangle(self_in);
+    common_hal_vectorio_rectangle_set_outline_color_index(self,
+        parse_outline_color_index(outline_color_index));
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_2(vectorio_rectangle_set_outline_color_index_obj, vectorio_rectangle_obj_set_outline_color_index);
+
+MP_PROPERTY_GETSET(vectorio_rectangle_outline_color_index_obj,
+    (mp_obj_t)&vectorio_rectangle_get_outline_color_index_obj,
+    (mp_obj_t)&vectorio_rectangle_set_outline_color_index_obj);
+
 //|     color_index: int
 //|     """The color_index of the rectangle in 1 based index of the palette."""
 static mp_obj_t vectorio_rectangle_obj_get_color_index(mp_obj_t self_in) {
-    vectorio_rectangle_t *self = MP_OBJ_TO_PTR(self_in);
+    vectorio_rectangle_t *self = native_rectangle(self_in);
     return mp_obj_new_int(common_hal_vectorio_rectangle_get_color_index(self));
 }
 MP_DEFINE_CONST_FUN_OBJ_1(vectorio_rectangle_get_color_index_obj, vectorio_rectangle_obj_get_color_index);
 
 static mp_obj_t vectorio_rectangle_obj_set_color_index(mp_obj_t self_in, mp_obj_t color_index) {
-    vectorio_rectangle_t *self = MP_OBJ_TO_PTR(self_in);
+    vectorio_rectangle_t *self = native_rectangle(self_in);
     common_hal_vectorio_rectangle_set_color_index(self, mp_obj_get_int(color_index));
     return mp_const_none;
 }
@@ -170,6 +303,9 @@ static const mp_rom_map_elem_t vectorio_rectangle_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_color_index), MP_ROM_PTR(&vectorio_rectangle_color_index_obj) },
     { MP_ROM_QSTR(MP_QSTR_width), MP_ROM_PTR(&vectorio_rectangle_width_obj) },
     { MP_ROM_QSTR(MP_QSTR_height), MP_ROM_PTR(&vectorio_rectangle_height_obj) },
+    { MP_ROM_QSTR(MP_QSTR_radius), MP_ROM_PTR(&vectorio_rectangle_radius_obj) },
+    { MP_ROM_QSTR(MP_QSTR_outline_width), MP_ROM_PTR(&vectorio_rectangle_outline_width_obj) },
+    { MP_ROM_QSTR(MP_QSTR_outline_color_index), MP_ROM_PTR(&vectorio_rectangle_outline_color_index_obj) },
     { MP_ROM_QSTR(MP_QSTR_location), MP_ROM_PTR(&vectorio_vector_shape_location_obj) },
     { MP_ROM_QSTR(MP_QSTR_pixel_shader), MP_ROM_PTR(&vectorio_vector_shape_pixel_shader_obj) },
 };

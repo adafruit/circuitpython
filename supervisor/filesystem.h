@@ -59,6 +59,7 @@ typedef enum {
     SUPERVISOR_FS_WRITE_PROTECTED,  // Filesystem or media is not writable.
     SUPERVISOR_FS_NO_SPACE,         // No space left on the filesystem.
     SUPERVISOR_FS_IO,               // Any other error.
+    SUPERVISOR_FS_BUSY,             // The running program uses the file; try again once it stops.
 } supervisor_fs_err_t;
 
 // littlefs mtime attribute id, matching extmod/vfs_lfs.c:
@@ -82,6 +83,7 @@ typedef FRESULT supervisor_fs_err_t;
 #define SUPERVISOR_FS_WRITE_PROTECTED FR_WRITE_PROTECTED
 #define SUPERVISOR_FS_NO_SPACE       FR_DENIED
 #define SUPERVISOR_FS_IO             FR_INT_ERR
+#define SUPERVISOR_FS_BUSY           FR_LOCKED     // FF_FS_LOCK is 0, so only mapped files
 
 #endif
 

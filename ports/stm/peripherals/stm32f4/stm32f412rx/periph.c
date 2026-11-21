@@ -156,3 +156,26 @@ const mcu_tim_pin_obj_t mcu_tim_pin_list[41] = {
     TIM(8, 3, 3, &pin_PC08),
     TIM(8, 3, 4, &pin_PC09)
 };
+
+// FSMC, used by paralleldisplaybus. periph_index is the data bit (D0-D7).
+// Pin and alternate function mapping from ST's STM32_open_pin_data.
+
+const mcu_periph_obj_t mcu_fsmc_data_list[8] = {
+    PERIPH(0, 10, &pin_PB14),
+    PERIPH(1, 10, &pin_PC06),
+    PERIPH(2, 10, &pin_PC11),
+    PERIPH(3, 10, &pin_PC12),
+    PERIPH(4, 12, &pin_PA02),
+    PERIPH(5, 12, &pin_PA03),
+    PERIPH(6, 12, &pin_PA04),
+    PERIPH(7, 12, &pin_PA05)
+};
+
+const mcu_periph_obj_t mcu_fsmc_nwe_list[2] = {
+    PERIPH(1, 12, &pin_PC02),
+    PERIPH(1, 10, &pin_PD02)
+};
+
+const mcu_periph_obj_t mcu_fsmc_noe_list[1] = {
+    PERIPH(1, 12, &pin_PC05)
+};

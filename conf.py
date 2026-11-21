@@ -36,6 +36,7 @@ from sphinx.ext import intersphinx
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath("docs"))
+sys.path.insert(0, os.path.abspath("tools"))
 sys.path.insert(0, os.path.abspath("."))
 
 import shared_bindings_matrix
@@ -45,11 +46,14 @@ master_doc = "docs/index"
 # Grab the JSON values to use while building the module support matrix
 # in 'shared-bindings/index.rst'
 
-# The stubs must be built before we calculate the shared bindings matrix
+# Building the stubs also saves the board data the support matrix needs, so the
+# slow per-board collection runs only once. If that file is missing,
+# support_matrix_by_board() collects the data itself.
 subprocess.check_output(["make", "stubs"])
+board_data = shared_bindings_matrix.read_board_data("circuitpython-stubs/board_data.json")
 
 # modules_support_matrix = shared_bindings_matrix.support_matrix_excluded_boards()
-modules_support_matrix = shared_bindings_matrix.support_matrix_by_board()
+modules_support_matrix = shared_bindings_matrix.support_matrix_by_board(board_data=board_data)
 modules_support_matrix_reverse = defaultdict(list)
 for board, matrix_info in modules_support_matrix.items():
     for module in matrix_info["modules"]:

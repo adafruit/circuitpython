@@ -14,6 +14,10 @@
 
 #include "shared/timeutils/timeutils.h"
 #include "supervisor/fatfs.h"
+#if CIRCUITPY_STORAGE_MAP_FILE
+#include "shared-bindings/storage/__init__.h"
+#include "supervisor/shared/reload.h"
+#endif
 #include "supervisor/flash.h"
 #include "supervisor/linker.h"
 
@@ -67,6 +71,8 @@ static supervisor_fs_err_t fat_error(FRESULT res) {
             // FatFS uses FR_DENIED for read-only media and for no free
             // cluster. We can't tell them apart, so report no space.
             return SUPERVISOR_FS_NO_SPACE;
+        case FR_LOCKED:
+            return SUPERVISOR_FS_BUSY;
         default:
             return SUPERVISOR_FS_IO;
     }
@@ -644,6 +650,19 @@ bool supervisor_vfs_supported(supervisor_vfs_t *vfs) {
     return filesystem_native_fatfs(vfs);
 }
 
+#if CIRCUITPY_STORAGE_MAP_FILE
+// The running program uses the file's flash bytes (storage.map_file() or an in-place .mpy
+// import). Stop it, so the workflow can try again once it is gone. The REPL can't be stopped
+// while it waits for input, so there the write just fails.
+MP_NOINLINE static supervisor_fs_err_t mapped_file_error(void) {
+    if (autoreload_is_suspended(AUTORELOAD_SUSPEND_REPL)) {
+        return fat_error(FR_WRITE_PROTECTED);
+    }
+    reload_initiate(RUN_REASON_AUTO_RELOAD);
+    return fat_error(FR_LOCKED);
+}
+#endif
+
 supervisor_fs_err_t supervisor_vfs_open_file(supervisor_vfs_t *vfs, const char *path, uint32_t flags,
     uint64_t mtime_ns, supervisor_vfs_file_t *file) {
     if (vfs == NULL) {
@@ -701,6 +720,11 @@ supervisor_fs_err_t supervisor_vfs_open_file(supervisor_vfs_t *vfs, const char *
     #if CIRCUITPY_FILESYSTEM_LITTLEFS
     if (!filesystem_native_fatfs(vfs)) {
         return SUPERVISOR_FS_IO;
+    }
+    #endif
+    #if CIRCUITPY_STORAGE_MAP_FILE
+    if ((flags & SUPERVISOR_FS_OPEN_WRITE) != 0 && storage_map_file_in_use(&vfs->fat, path)) {
+        return mapped_file_error();
     }
     #endif
     DWORD fattime = mtime_ns != 0 ? fattime_from_ns(mtime_ns) : 0;
@@ -956,6 +980,11 @@ supervisor_fs_err_t supervisor_vfs_unlink(supervisor_vfs_t *vfs, const char *pat
     #if CIRCUITPY_FILESYSTEM_LITTLEFS
     if (!filesystem_native_fatfs(vfs)) {
         return SUPERVISOR_FS_IO;
+    }
+    #endif
+    #if CIRCUITPY_STORAGE_MAP_FILE
+    if (storage_map_file_in_use(&vfs->fat, path)) {
+        return mapped_file_error();             // its clusters would be reused while in use
     }
     #endif
     return fat_error(f_unlink(&vfs->fat.fatfs, path));

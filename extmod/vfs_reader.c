@@ -87,7 +87,9 @@ void mp_reader_new_file(mp_reader_t *reader, qstr filename) {
     const mp_stream_p_t *stream_p = mp_get_stream_raise(file, MP_STREAM_OP_READ);
     int errcode = 0;
 
-    #if MICROPY_VFS_ROM
+    // CIRCUITPY-CHANGE: no CircuitPython file object supports the buffer protocol; a mapped
+    // CIRCUITPY .mpy reaches the ROM loader through storage_map_file_reader() instead.
+    #if MICROPY_VFS_ROM && !CIRCUITPY_STORAGE_MAP_IMPORT
     // Check if the stream can be memory mapped.
     mp_buffer_info_t bufinfo;
     if (mp_get_buffer(file, &bufinfo, MP_BUFFER_READ)) {

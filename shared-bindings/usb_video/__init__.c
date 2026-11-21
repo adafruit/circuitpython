@@ -37,9 +37,10 @@
 //|     # code.py
 //|     import usb_video
 //|     import framebufferio
-//|     import displayio
+//|     import supervisor
 //|
-//|     displayio.release_displays()
+//|     if supervisor.runtime.display:
+//|         supervisor.runtime.display.deinit()
 //|     display = framebufferio.FramebufferDisplay(usb_video.USBFramebuffer())
 //|
 //|     # ... use the display object with displayio Group and TileGrid objects

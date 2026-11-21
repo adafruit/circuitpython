@@ -318,6 +318,153 @@ def lookup_setting(settings, key, default=""):
     return value
 
 
+def get_branded_name(board_id, board_directory, autogen_board_info):
+    """Return the board's product name, falling back to its board id."""
+    if autogen_board_info:
+        # Many zephyr-cp boards share a name with a native board, so tell them apart.
+        return autogen_board_info["name"] + " (Zephyr)"
+    with open(board_directory / "mpconfigboard.h") as f:
+        board_name_re = re.search(r"(?<=MICROPY_HW_BOARD_NAME)\s+(.+)", f.read())
+    if not board_name_re:
+        return board_id
+    branded_name = board_name_re.group(1).strip('"')
+    if '"' in branded_name:  # sometimes the closing " is not at line end
+        branded_name = branded_name[: branded_name.index('"')]
+    return branded_name
+
+
+def get_mcu_and_flash(board_directory, autogen_board_info):
+    """Return the board's MCU name and its external flash chips as a quoted, comma-separated string.
+
+    zephyr-cp boards don't record either yet, so they get empty strings.
+    """
+    if autogen_board_info:
+        return "", ""
+    with open(board_directory / "mpconfigboard.h") as f:
+        mcu_re = re.search(r"(?<=MICROPY_HW_MCU_NAME)\s+(.+)", f.read())
+    mcu = ""
+    if mcu_re:
+        mcu = mcu_re.group(1).strip('"')
+        if '"' in mcu:  # in case the closing " is not at line end
+            mcu = mcu[: mcu.index('"')]
+    with open(board_directory / "mpconfigboard.mk") as f:
+        flash_re = re.search(r"(?<=EXTERNAL_FLASH_DEVICES)\s+=\s+(.+)", f.read())
+    flash = ""
+    if flash_re:
+        # Multiple flash chips are written in several ways. Normalize them to
+        # a quoted, comma-separated string.
+        flash = '"' + flash_re.group(1).replace('"', "") + '"'
+    return mcu, flash
+
+
+def get_pins(board_directory):
+    """Return the board's [board_pin, chip_pin] pairs from pins.c."""
+    try:
+        with open(board_directory / "pins.c") as f:
+            pin_lines = f.readlines()
+    except FileNotFoundError:  # silabs and zephyr-cp boards have no pins.c
+        return []
+    pins = []
+    for line in pin_lines:
+        if pin_re := re.search(r"QSTR_([^\)]+).+pin_([^\)]+)", line):
+            pins.append([pin_re.group(1), pin_re.group(2)])
+    return pins
+
+
+def get_board_modules(settings, autogen_board_info, base):
+    """Return the sorted names of the modules enabled on the board."""
+    if autogen_board_info:
+        modules = [k for k, enabled in autogen_board_info["modules"].items() if enabled]
+    else:
+        modules = [
+            info["name"]
+            for info in base.values()
+            if int(lookup_setting(settings, info["key"], "0"))
+        ]
+    return sorted(modules)
+
+
+def get_board_extensions(board_id, settings):
+    """Return the file extensions the board's build produces, such as ["uf2"]."""
+    if "CIRCUITPY_BUILD_EXTENSIONS" not in settings:
+        raise OSError(f"Board extensions undefined: {board_id}.")
+    extensions = settings["CIRCUITPY_BUILD_EXTENSIONS"]
+    if isinstance(extensions, str):
+        extensions = [extension.strip() for extension in extensions.split(",")]
+    return extensions
+
+
+def collect_board_data():
+    """Gather what support_matrix_by_board() needs about every board, keyed by board id.
+
+    Aliases are left out; support_matrix_by_board() adds them. The result holds
+    only JSON types, so it can be saved and reused.
+
+    This runs make once for each board outside zephyr-cp, which takes a while.
+    """
+    base = build_module_map()
+
+    def collect(arg):
+        board_id, board_info = arg
+        port = board_info["port"]
+        board_directory = board_info["directory"]
+        if port == "zephyr-cp":
+            with (board_directory / "circuitpython.toml").open("rb") as f:
+                settings = tomllib.load(f)
+            with (board_directory / "autogen_board_info.toml").open("rb") as f:
+                autogen_board_info = tomllib.load(f)
+        else:
+            port_dir = board_directory.parent.parent
+            settings = get_settings_from_makefile(str(port_dir), board_directory.name)
+            autogen_board_info = None
+
+        frozen_libraries = []
+        if "FROZEN_MPY_DIRS" in settings:
+            frozen_libraries = [
+                list(library)
+                for library in sorted(
+                    frozen_modules_from_dirs(settings["FROZEN_MPY_DIRS"], withurl=True)
+                )
+            ]
+
+        mcu, flash = get_mcu_and_flash(board_directory, autogen_board_info)
+        return board_id, {
+            "port": port,
+            "branded_name": get_branded_name(board_id, board_directory, autogen_board_info),
+            "mcu": mcu,
+            "flash": flash,
+            "pins": get_pins(board_directory),
+            "modules": get_board_modules(settings, autogen_board_info, base),
+            "extensions": get_board_extensions(board_id, settings),
+            # [name, repository url] pairs
+            "frozen_libraries": frozen_libraries,
+        }
+
+    real_boards = [
+        (board_id, board_info)
+        for board_id, board_info in get_board_mapping().items()
+        if not board_info.get("alias", False)
+    ]
+    with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+        return dict(executor.map(collect, real_boards))
+
+
+def write_board_data(path, board_data):
+    """Save the output of collect_board_data() as JSON."""
+    # Keep the board order: when boards share a product name, the last one wins.
+    with open(path, "w") as f:
+        json.dump(board_data, f, indent=1)
+
+
+def read_board_data(path):
+    """Return board data saved by write_board_data(), or None if path doesn't exist."""
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return None
+
+
 def support_matrix_by_board(
     use_branded_name=True,
     withurl=True,
@@ -325,166 +472,47 @@ def support_matrix_by_board(
     add_chips=False,
     add_pins=False,
     add_branded_name=False,
+    board_data=None,
 ):
-    """Compiles a list of the available core modules available for each
-    board.
+    """Return each board's modules, frozen libraries and build extensions.
+
+    Aliases get their own entries. Keys are board ids, or product names if
+    use_branded_name is set. The add_* flags add more fields.
+
+    board_data is the output of collect_board_data(). If it is None, it is collected here.
     """
-    base = build_module_map()
+    if board_data is None:
+        board_data = collect_board_data()
 
-    def support_matrix(arg):
-        board_id, board_info = arg
-        port = board_info["port"]
-        board_directory = board_info["directory"]
-        port_dir = board_directory.parent.parent
-        if port != "zephyr-cp":
-            settings = get_settings_from_makefile(str(port_dir), board_directory.name)
-            autogen_board_info = None
-        else:
-            circuitpython_toml_fn = board_directory / "circuitpython.toml"
-            with circuitpython_toml_fn.open("rb") as f:
-                settings = tomllib.load(f)
-
-            autogen_board_info_fn = board_directory / "autogen_board_info.toml"
-            with autogen_board_info_fn.open("rb") as f:
-                autogen_board_info = tomllib.load(f)
-
-        if use_branded_name or add_branded_name:
-            if autogen_board_info:
-                # Many zephyr-cp boards share a name with a native board, so tell them apart.
-                branded_name = autogen_board_info["name"] + " (Zephyr)"
-            else:
-                with open(board_directory / "mpconfigboard.h") as get_name:
-                    board_contents = get_name.read()
-                board_name_re = re.search(r"(?<=MICROPY_HW_BOARD_NAME)\s+(.+)", board_contents)
-                if board_name_re:
-                    branded_name = board_name_re.group(1).strip('"')
-                    if '"' in branded_name:  # sometimes the closing " is not at line end
-                        branded_name = branded_name[: branded_name.index('"')]
-                    board_name = branded_name
-
-        if use_branded_name:
-            board_name = branded_name
-        else:
-            board_name = board_id
-
-        if add_chips:
-            with open(board_directory / "mpconfigboard.h") as get_name:
-                board_contents = get_name.read()
-            mcu_re = re.search(r"(?<=MICROPY_HW_MCU_NAME)\s+(.+)", board_contents)
-            if mcu_re:
-                mcu = mcu_re.group(1).strip('"')
-                if '"' in mcu:  # in case the closing " is not at line end
-                    mcu = mcu[: mcu.index('"')]
-            else:
-                mcu = ""
-            with open(board_directory / "mpconfigboard.mk") as get_name:
-                board_contents = get_name.read()
-            flash_re = re.search(r"(?<=EXTERNAL_FLASH_DEVICES)\s+=\s+(.+)", board_contents)
-            if flash_re:
-                # deal with the variability in the way multiple flash chips
-                # are denoted.  We want them to end up as a quoted,
-                # comma separated string
-                flash = flash_re.group(1).replace('"', "")
-                flash = f'"{flash}"'
-            else:
-                flash = ""
-
-        if add_pins:
-            pins = []
-            try:
-                with open(board_directory / "pins.c") as get_name:
-                    pin_lines = get_name.readlines()
-            except FileNotFoundError:  # silabs boards have no pins.c
-                pass
-            else:
-                for p in pin_lines:
-                    pin_re = re.search(r"QSTR_([^\)]+).+pin_([^\)]+)", p)
-                    if pin_re:
-                        board_pin = pin_re.group(1)
-                        chip_pin = pin_re.group(2)
-                        pins.append((board_pin, chip_pin))
-
-        board_modules = []
-        if autogen_board_info:
-            autogen_modules = autogen_board_info["modules"]
-            for k in autogen_modules:
-                if autogen_modules[k]:
-                    board_modules.append(k)
-        else:
-            for module in base:
-                key = base[module]["key"]
-                if int(lookup_setting(settings, key, "0")):
-                    board_modules.append(base[module]["name"])
-        board_modules.sort()
-
-        if "CIRCUITPY_BUILD_EXTENSIONS" in settings:
-            board_extensions = settings["CIRCUITPY_BUILD_EXTENSIONS"]
-            if isinstance(board_extensions, str):
-                board_extensions = [extension.strip() for extension in board_extensions.split(",")]
-        else:
-            raise OSError(f"Board extensions undefined: {board_name}.")
-
-        frozen_modules = []
-        if "FROZEN_MPY_DIRS" in settings:
-            frozen_modules = frozen_modules_from_dirs(settings["FROZEN_MPY_DIRS"], withurl)
-            if frozen_modules:
-                frozen_modules.sort()
-
-        # generate alias boards too
-
-        board_info = {
-            "modules": board_modules,
-            "frozen_libraries": frozen_modules,
-            "extensions": board_extensions,
+    def board_entry(data):
+        entry = {
+            "modules": data["modules"],
+            "frozen_libraries": [
+                tuple(library) if withurl else library[0] for library in data["frozen_libraries"]
+            ],
+            "extensions": data["extensions"],
         }
         if add_branded_name:
-            board_info["branded_name"] = branded_name
+            entry["branded_name"] = data["branded_name"]
         if add_port:
-            board_info["port"] = port
+            entry["port"] = data["port"]
         if add_chips:
-            board_info["mcu"] = mcu
-            board_info["flash"] = flash
+            entry["mcu"] = data["mcu"]
+            entry["flash"] = data["flash"]
         if add_pins:
-            board_info["pins"] = pins
-        board_matrix = [(board_name, board_info)]
-        if board_id in ALIASES_BY_BOARD:
-            for alias in ALIASES_BY_BOARD[board_id]:
-                if use_branded_name:
-                    if alias in ALIASES_BRAND_NAMES:
-                        alias = ALIASES_BRAND_NAMES[alias]
-                    else:
-                        alias = alias.replace("_", " ").title()
-                board_info = {
-                    "modules": board_modules,
-                    "frozen_libraries": frozen_modules,
-                    "extensions": board_extensions,
-                }
-                if add_branded_name:
-                    board_info["branded_name"] = branded_name
-                if add_port:
-                    board_info["port"] = port
-                if add_chips:
-                    board_info["mcu"] = mcu
-                    board_info["flash"] = flash
-                if add_pins:
-                    board_info["pins"] = pins
-                board_matrix.append((alias, board_info))
+            entry["pins"] = [tuple(pin) for pin in data["pins"]]
+        return entry
 
-        return board_matrix  # this is now a list of (board,modules)
+    boards = []
+    for board_id, data in board_data.items():
+        boards.append((data["branded_name"] if use_branded_name else board_id, board_entry(data)))
+        for alias in ALIASES_BY_BOARD.get(board_id, []):
+            if use_branded_name:
+                alias = ALIASES_BRAND_NAMES.get(alias, alias.replace("_", " ").title())
+            boards.append((alias, board_entry(data)))
 
-    board_mapping = get_board_mapping()
-    real_boards = []
-    for board in board_mapping:
-        if not board_mapping[board].get("alias", False):
-            real_boards.append((board, board_mapping[board]))
-    executor = ThreadPoolExecutor(max_workers=os.cpu_count())
-    mapped_exec = executor.map(support_matrix, real_boards)
-    # flatmap with comprehensions
-    boards = dict(
-        sorted([board for matrix in mapped_exec for board in matrix], key=lambda x: x[0])
-    )
-
-    return boards
+    # Several boards can share a product name; the last one listed wins.
+    return dict(sorted(boards, key=lambda board: board[0]))
 
 
 if __name__ == "__main__":

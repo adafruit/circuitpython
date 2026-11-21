@@ -97,6 +97,7 @@ REVERSE_DEPENDENCIES = {
         "audiofreeverb",
         "audiomixer",
         "audiomp3",
+        "audiotap",
         "synthio",
     ],
     "busio": ["fourwire", "i2cdisplaybus", "sdcardio", "sharpdisplay"],
@@ -630,6 +631,10 @@ async def build_circuitpython():  # noqa: C901
             "layout dtsi, or disable the USB device controller in the devicetree."
         )
     circuitpython_flags.append(f"-DCIRCUITPY_USB_DEVICE={1 if usb_ok else 0}")
+    # MSC is the CIRCUITPY drive interface. The Zephyr port registers it only when
+    # storage.disable_usb_drive() has not turned it off (see supervisor/usb.c).
+    circuitpython_flags.append(f"-DCIRCUITPY_USB_MSC={1 if usb_ok else 0}")
+    circuitpython_flags.append(f"-DCIRCUITPY_USB_MSC_ENABLED_DEFAULT={1 if usb_ok else 0}")
 
     if usb_ok:
         enabled_modules.add("usb_cdc")
@@ -767,7 +772,7 @@ async def build_circuitpython():  # noqa: C901
                         or s.parent.name == backend_dir
                         or (s.parent.name == "legacy" and s.name == "__init__.c")
                     ]
-                if module.name in ("busdisplay", "framebufferio"):
+                if module.name in ("busdisplay", "epaperdisplay", "framebufferio"):
                     # These have legacy scanline implementations and LVGL ones.
                     backend_dir = "lvgl" if lvgl_enabled else "legacy"
                     backend_root = top / "shared-module" / module.name
