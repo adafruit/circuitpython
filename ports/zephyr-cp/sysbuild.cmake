@@ -14,7 +14,7 @@ if(SB_CONFIG_NET_CORE_IMAGE_HCI_IPC)
     )
 
     set(${NET_APP}_OVERLAY_CONFIG
-     ${NET_APP_SRC_DIR}/extra-cis-bt_ll_sw_split.conf
+     ${CMAKE_CURRENT_LIST_DIR}/sysbuild/hci_ipc_cis.conf
      CACHE INTERNAL ""
     )
 

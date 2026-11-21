@@ -178,7 +178,7 @@ static const struct device *const analog_adc_devices[2] = {
 static uint8_t analog_adc_channel_count(const struct device *dev) {
     (void)dev;
     // One command-channel slot per LPADC CMD register.
-    return CONFIG_LPADC_CHANNEL_COUNT;
+    return 15;
 }
 
 #else

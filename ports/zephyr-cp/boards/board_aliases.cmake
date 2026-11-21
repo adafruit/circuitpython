@@ -1,28 +1,11 @@
-# Workaround for Zephyr alias handling with BOARD_QUALIFIERS in newer Zephyr.
+# Translate CircuitPython board names to full Zephyr board targets.
 #
-# Instead of using <alias>_BOARD_ALIAS variables, translate BOARD directly so
-# we don't end up with a spurious trailing '/' in BOARD_QUALIFIERS.
+# Zephyr loads this file before it splits BOARD into name, revision and
+# qualifiers, so setting BOARD to the full target is enough.
 macro(cp_board_alias alias target)
   if(BOARD STREQUAL "${alias}")
-    if(NOT "${target}" MATCHES "^([^@/]+)(@[^@/]+)?(/([^@]+))?$")
-      message(FATAL_ERROR "Invalid alias target '${target}'")
-    endif()
-
     set(BOARD_ALIAS "${alias}" CACHE STRING "Board alias, provided by user")
-    set(BOARD "${CMAKE_MATCH_1}")
-
-    if(CMAKE_MATCH_2)
-      string(REPLACE "@" "" _rev "${CMAKE_MATCH_2}")
-      set(BOARD_REVISION "${_rev}")
-    else()
-      unset(BOARD_REVISION)
-    endif()
-
-    if(CMAKE_MATCH_4)
-      set(BOARD_QUALIFIERS "${CMAKE_MATCH_4}")
-    else()
-      unset(BOARD_QUALIFIERS)
-    endif()
+    set(BOARD "${target}")
   endif()
 endmacro()
 
@@ -56,8 +39,8 @@ cp_board_alias(nxp_mimxrt1170_evk mimxrt1170_evk@A/mimxrt1176/cm7)
 cp_board_alias(pca10056 nrf52840dk/nrf52840)
 cp_board_alias(raspberrypi_rpi_pico_zephyr rpi_pico/rp2040)
 cp_board_alias(raspberrypi_rpi_pico_w_zephyr rpi_pico/rp2040/w)
-cp_board_alias(raspberrypi_rpi_pico2_zephyr rpi_pico2/rp2350a/m33)
-cp_board_alias(raspberrypi_rpi_pico2_w_zephyr rpi_pico2/rp2350a/m33/w)
+cp_board_alias(raspberrypi_rpi_pico2_zephyr rpi_pico2/rp2350a/m33_0)
+cp_board_alias(raspberrypi_rpi_pico2_w_zephyr rpi_pico2/rp2350a/m33_0/w)
 cp_board_alias(renesas_da14695_dk_usb da14695_dk_usb)
 cp_board_alias(renesas_ek_ra6m5 ek_ra6m5)
 cp_board_alias(renesas_ek_ra8d1 ek_ra8d1)
