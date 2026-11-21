@@ -7,6 +7,7 @@
 #pragma once
 
 #include "py/obj.h"
+#include "py/ringbuf.h"
 
 #include "shared-module/audiocore/__init__.h"
 #include "shared-module/usb/core/Device.h"
@@ -16,7 +17,7 @@
 // restarts after an underrun, once USBIN_TARGET_BUFFERS of them are waiting.
 // The ring is what holds the stream while its consumer is held up. Where
 // TinyUSB runs in a task of its own, packets keep arriving while the VM is
-// held up by other workp. A consumer that doesn't catch up afterwards, such as
+// held up by other work. A consumer that doesn't catch up afterwards, such as
 // an audio output, is left with up to that much more latency, which drift
 // correction then takes out slowly.
 #ifndef USBIN_RING_BUFFERS
@@ -46,28 +47,19 @@ typedef struct {
     // Both buffers below are outside the VM heap; NULL xfer_buffer means deinited.
     uint8_t *xfer_buffer;
     uint16_t xfer_buffer_len;
-    // Converted PCM frames. Filled by the transfer's completion callback, which
-    // runs in tuh_task(), and drained by get_buffer(), record() and
-    // reset_buffer() on the VM. tuh_task() may be a task of its own
-    // (CIRCUITPY_USB_HOST_TASK), so the ring has one writer and one reader that
-    // each move only their own index: ring_wr is the callback's, ring_rd the
-    // VM's. Both run from 0 to 2 * ring_frames - 1, so that a full ring and an
-    // empty one differ.
-    uint8_t *ring;
-    uint32_t ring_frames;
-    uint32_t ring_wr;
-    uint32_t ring_rd;
+    // Converted PCM frames, whole ones only. Filled by the transfer's
+    // completion callback, which runs in tuh_task(), and drained by
+    // get_buffer(), record() and reset_buffer() on the VM. tuh_task() may be a
+    // task of its own (CIRCUITPY_USB_HOST_TASK), so the ring, overflowed and
+    // overflow are only used with the lock in USBIn.c held. The buffer is
+    // outside the VM heap.
+    ringbuf_t ring;
     uint32_t buffer_frames;
     bool primed;
-    // Counted by the callback: times the ring was full and audio was dropped,
-    // and packets that were lost before they got to the ring. The VM compares
-    // them with the counts it last acted on.
-    volatile uint32_t dropped;
-    volatile uint32_t lost;
-    // dropped when get_buffer() last skipped ahead.
-    uint32_t dropped_skipped;
-    // dropped + lost when the user last read the overflow property.
-    uint32_t overflow_reported;
+    // The ring was full and audio was dropped; get_buffer() skips ahead.
+    bool overflowed;
+    // Audio was dropped since the user last read the overflow property.
+    bool overflow;
     // Average of the frames waiting as get_buffer() finds them, scaled by 2^USBIN_LEVEL_SHIFT.
     uint32_t level;
     // Sum of how far level was from the target, less what was corrected.
