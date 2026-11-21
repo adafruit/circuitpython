@@ -526,7 +526,7 @@ static void evsyshandler_common(void) {
     audio_dma_evsys_handler();
     #endif
 
-    #if CIRCUITPY_AUDIOBUSIO
+    #if CIRCUITPY_AUDIOBUSIO_PDMIN
     pdmin_evsys_handler();
     #endif
 }
