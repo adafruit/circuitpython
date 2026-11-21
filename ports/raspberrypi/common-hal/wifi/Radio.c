@@ -340,9 +340,14 @@ static bool connection_unchanged(wifi_radio_obj_t *self, const uint8_t *ssid, si
 
 // Static, not on the stack: results can arrive after scan_for_auth() gives up.
 static uint32_t scan_auth;
+static uint8_t scan_ssid[32];
+static size_t scan_ssid_len;
 
 static int scan_for_auth_cb(void *env, const cyw43_ev_scan_result_t *result) {
-    scan_auth |= result->auth_mode;
+    // Only count results for the SSID being joined.
+    if (result->ssid_len == scan_ssid_len && memcmp(result->ssid, scan_ssid, scan_ssid_len) == 0) {
+        scan_auth |= result->auth_mode;
+    }
     return 0;
 }
 
@@ -355,6 +360,8 @@ static uint32_t scan_for_auth(wifi_radio_obj_t *self, const uint8_t *ssid, size_
     cyw43_wifi_scan_options_t opts = {0};
     opts.ssid_len = ssid_len;
     memcpy(opts.ssid, ssid, ssid_len);
+    memcpy(scan_ssid, ssid, ssid_len);
+    scan_ssid_len = ssid_len;
     scan_auth = 0;
     if (cyw43_wifi_scan(&cyw43_state, &opts, NULL, scan_for_auth_cb) != 0) {
         return 0;
