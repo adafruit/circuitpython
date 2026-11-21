@@ -11,6 +11,8 @@
 
 extern const mp_obj_type_t audiotap_tap_type;
 
+struct audiotap_levelreader_obj;
+
 typedef struct {
     audiosample_base_t base;
 
@@ -41,13 +43,8 @@ typedef struct {
     // Audio was dropped because the ring was full. Cleared when read.
     volatile bool overflow;
 
-    // Levels of the audio since each was last read. Reading one asks for its
-    // reset, and the writer does it, so that only the writer changes them.
-    volatile uint32_t peak; // largest magnitude, 0 to 32768
-    volatile bool peak_reset;
-    volatile float sum_squares; // of samples scaled to -1.0 to 1.0
-    volatile uint32_t level_count; // samples summed
-    volatile bool rms_reset;
+    // Measures the audio that passes through, when a LevelReader is attached.
+    struct audiotap_levelreader_obj *volatile levels;
 } audiotap_tap_obj_t;
 
 void audiotap_tap_reset_buffer(audiotap_tap_obj_t *self,

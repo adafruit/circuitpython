@@ -9,17 +9,20 @@
 #include "py/obj.h"
 #include "py/runtime.h"
 
+#include "shared-bindings/audiotap/LevelReader.h"
 #include "shared-bindings/audiotap/Tap.h"
 
 //| """Look at audio as it plays
 //|
 //| The `audiotap` module contains `Tap`, which goes into an audio chain like
 //| the effects in `audiofilters` and `audiodelays`. Audio passes through it
-//| unchanged, and the program can read a copy of it and its levels, for meters,
-//| waveforms, spectrum analysis or recording, while it plays."""
+//| unchanged, and the program can read a copy of it, for waveforms, spectrum
+//| analysis or recording, while it plays. A `LevelReader` attached to a tap
+//| measures the peak and RMS levels of its audio, for meters."""
 
 static const mp_rom_map_elem_t audiotap_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_audiotap) },
+    { MP_ROM_QSTR(MP_QSTR_LevelReader), MP_ROM_PTR(&audiotap_levelreader_type) },
     { MP_ROM_QSTR(MP_QSTR_Tap), MP_ROM_PTR(&audiotap_tap_type) },
 };
 
