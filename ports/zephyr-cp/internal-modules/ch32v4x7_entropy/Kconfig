@@ -1,0 +1,11 @@
+# ch32v4x7_entropy: entropy driver for the WCH CH32V4x7.
+
+config ENTROPY_CH32V4X7_ADC
+	bool "CH32V4x7 ADC temperature sensor entropy driver"
+	default y
+	depends on ENTROPY_GENERATOR
+	depends on DT_HAS_ADAFRUIT_CH32V4X7_ADC_ENTROPY_ENABLED
+	select ENTROPY_HAS_DRIVER
+	help
+	  Entropy from ADC1 internal temperature sensor noise, conditioned
+	  with SHA-256.

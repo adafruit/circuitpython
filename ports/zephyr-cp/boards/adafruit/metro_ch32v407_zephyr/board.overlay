@@ -4,6 +4,13 @@
 	chosen {
 		/delete-property/ zephyr,console;
 		/delete-property/ zephyr,shell-uart;
+		zephyr,entropy = &adc_entropy;
+	};
+
+	// The on-chip RNG repeats too often to use.
+	adc_entropy: adc-entropy {
+		compatible = "adafruit,ch32v4x7-adc-entropy";
+		status = "okay";
 	};
 
 	// Named pins that are not on the Arduino header.
