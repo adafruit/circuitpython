@@ -80,6 +80,12 @@ extern portMUX_TYPE background_task_mutex;
 #define CIRCUITPY_ESP32P4_SWAP_LSFS (0)
 #endif
 
+// TinyUSB's host stack runs in a FreeRTOS task of its own that waits on its
+// event queue, instead of as a background callback of the VM. Completion
+// callbacks then run, and isochronous streams queue their next transfer, while
+// the VM is busy. See common-hal/usb_host/Port.c.
+#define CIRCUITPY_USB_HOST_TASK (CIRCUITPY_USB_HOST)
+
 #if MICROPY_PERSISTENT_CODE_LOAD_NATIVE
 // Loaded native code is copied out of the GC heap into executable RAM.
 void *esp_native_code_commit(void *buf, size_t len, void *reloc);

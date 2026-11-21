@@ -917,6 +917,35 @@ static mp_obj_t extra_coverage(void) {
         ringbuf_clear(&ringbuf);
         ringbuf_put(&ringbuf, 0xaa);
         mp_printf(&mp_plat_print, "%d\n", ringbuf_get16(&ringbuf));
+
+        // Multi-byte put/get that wrap around, and discard.
+        {
+            byte data[RINGBUF_SIZE + 1];
+            byte out[RINGBUF_SIZE + 1];
+            for (int i = 0; i < RINGBUF_SIZE + 1; ++i) {
+                data[i] = i;
+            }
+            ringbuf_clear(&ringbuf);
+            for (int i = 0; i < RINGBUF_SIZE - 10; ++i) {
+                ringbuf_put(&ringbuf, i);
+                ringbuf_get(&ringbuf);
+            }
+            // 20 bytes from 10 before the end: wraps.
+            mp_printf(&mp_plat_print, "%d\n", (int)ringbuf_put_n(&ringbuf, data, 20));
+            mp_printf(&mp_plat_print, "%d %d\n", (int)ringbuf_num_empty(&ringbuf), (int)ringbuf_num_filled(&ringbuf));
+            // Only what fits.
+            mp_printf(&mp_plat_print, "%d\n", (int)ringbuf_put_n(&ringbuf, data + 20, RINGBUF_SIZE + 1 - 20));
+            mp_printf(&mp_plat_print, "%d %d\n", (int)ringbuf_num_empty(&ringbuf), (int)ringbuf_num_filled(&ringbuf));
+            mp_printf(&mp_plat_print, "%d\n", (int)ringbuf_put_n(&ringbuf, data, 1));
+            // Discard 5, then get what is left, which wraps.
+            mp_printf(&mp_plat_print, "%d\n", (int)ringbuf_discard_n(&ringbuf, 5));
+            mp_printf(&mp_plat_print, "%d\n", (int)ringbuf_get_n(&ringbuf, out, sizeof(out)));
+            mp_printf(&mp_plat_print, "%d\n", memcmp(out, data + 5, RINGBUF_SIZE - 5) == 0);
+            mp_printf(&mp_plat_print, "%d %d\n", (int)ringbuf_num_empty(&ringbuf), (int)ringbuf_num_filled(&ringbuf));
+            // Nothing to get or discard.
+            mp_printf(&mp_plat_print, "%d\n", (int)ringbuf_get_n(&ringbuf, out, 1));
+            mp_printf(&mp_plat_print, "%d\n", (int)ringbuf_discard_n(&ringbuf, 1));
+        }
     }
 
     // pairheap

@@ -7,9 +7,11 @@
 #include "bindings/espidf/__init__.h"
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/usb_host/Port.h"
+#include "supervisor/port.h"
 #include "supervisor/usb.h"
-#include "supervisor/shared/tick.h"
 #include "esp_private/usb_phy.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "tusb.h"
 
 #if defined(CONFIG_IDF_TARGET_ESP32P4)
@@ -27,9 +29,41 @@
 #if CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_DEVICE_INSTANCE == CIRCUITPY_USB_HOST_INSTANCE
 #error "USB host and device must use different controllers"
 #endif
+#if !CIRCUITPY_USB_HOST_TASK
+#error "The espressif USB host runs TinyUSB in a task of its own"
+#endif
+
+// TinyUSB's host stack runs in this task, which waits on TinyUSB's event queue
+// and so runs as soon as the controller interrupt posts an event. The VM
+// doesn't have to get to its background tasks first: an isochronous stream
+// queues its next transfer within the frame while the VM writes to an SD card
+// or collects garbage.
+//
+// It runs above the VM's priority, like the MAX3421E's host task, so that a
+// busy VM doesn't hold it up. Like the other USB tasks it is pinned to the
+// same core as CircuitPython, which leaves the other core for networking.
+#define USB_HOST_TASK_PRIORITY (5)
+// Bytes. Enumeration and the class and Python module callbacks run on it.
+#define USB_HOST_TASK_STACK_SIZE (4096)
 
 static usb_host_port_obj_t usb_host_instance;
 static usb_phy_handle_t host_phy;
+
+static StackType_t _host_task_stack[USB_HOST_TASK_STACK_SIZE];
+static StaticTask_t _host_task_tcb;
+static TaskHandle_t _host_task = NULL;
+
+static void _usb_host_task(void *param) {
+    (void)param;
+    while (true) {
+        // Returns once the events that came in are handled. It waits only as
+        // long as no TinyUSB timer (enumeration delays, control transfer
+        // timeouts) is due.
+        tuh_task_ext(UINT32_MAX, false);
+        // Python code may be waiting for what the events completed.
+        port_wake_main_task();
+    }
+}
 
 usb_host_port_obj_t *common_hal_usb_host_port_construct(const mcu_pin_obj_t *dp, const mcu_pin_obj_t *dm) {
     // The high-speed PHY has dedicated pads, not GPIOs.
@@ -53,18 +87,16 @@ usb_host_port_obj_t *common_hal_usb_host_port_construct(const mcu_pin_obj_t *dp,
         host_phy = NULL;
         CHECK_ESP_RESULT(ESP_FAIL);
     }
+    // The port is never deinited, so neither is the task. It is the only
+    // caller of tuh_task_ext(), which is why it only starts after tuh_init().
+    // This runs on the VM, so xPortGetCoreID() is CircuitPython's core.
+    if (_host_task == NULL) {
+        _host_task = xTaskCreateStaticPinnedToCore(_usb_host_task, "usbh",
+            USB_HOST_TASK_STACK_SIZE, NULL, USB_HOST_TASK_PRIORITY,
+            _host_task_stack, &_host_task_tcb, xPortGetCoreID());
+    }
     self->base.type = &usb_host_port_type;
     self->dp = dp;
     self->dm = dm;
-    // Keep polling enumeration timers even without an active display.
-    supervisor_enable_tick();
     return self;
-}
-
-// TinyUSB installs the controller IRQ. Process its events on the VM task,
-// where the Python USB device and keyboard callbacks are safe to run.
-void tuh_event_hook_cb(uint8_t rhport, uint32_t eventid, bool in_isr) {
-    // Don't wait for the background tick: an isochronous stream must queue its
-    // next transfer within the frame.
-    usb_background_schedule();
 }
