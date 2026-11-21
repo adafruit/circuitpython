@@ -77,6 +77,7 @@ endif
 ifeq ($(CHIP_VARIANT),RP2350)
 # RP2350 has PSRAM that is not DMA-capable
 CIRCUITPY_ALL_MEMORY_DMA_CAPABLE = 0
+CIRCUITPY_FAST_HEAP ?= 1
 
 # Default PICODVI on because it doesn't require much code in RAM to talk to HSTX.
 CIRCUITPY_PICODVI ?= 1
