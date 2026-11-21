@@ -416,11 +416,13 @@ void epaperdisplay_epaper_core_background(epaperdisplay_epaper_core_t *self) {
             self->refreshing = false;
             #if CIRCUITPY_EPAPERDISPLAY_FAST
             if (!self->fast) {
-                // Run stop sequence but don't wait for busy because busy is set when sleeping.
+                // Run stop sequence but don't wait for busy after it, because some panels set busy
+                // when sleeping.
                 epaperdisplay_epaper_core_send_command_sequence(self, false, self->stop_sequence, self->stop_sequence_len);
             }
             #else
-            // Run stop sequence but don't wait for busy because busy is set when sleeping.
+            // Run stop sequence but don't wait for busy after it, because some panels set busy
+            // when sleeping.
             epaperdisplay_epaper_core_send_command_sequence(self, false, self->stop_sequence, self->stop_sequence_len);
             #endif
         }
