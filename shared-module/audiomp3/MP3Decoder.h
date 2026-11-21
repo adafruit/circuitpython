@@ -33,6 +33,7 @@ typedef struct {
     uint8_t buffer_index;
     bool eof;
     bool block_ok;
+    int read_error; // errno from a failed stream read, 0 if none. Raised from Python context.
     mp_obj_t settimeout_args[3];
 
     int8_t other_channel;
