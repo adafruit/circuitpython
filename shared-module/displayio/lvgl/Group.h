@@ -27,7 +27,10 @@ typedef struct {
     mp_obj_list_t *members;
     int16_t x;
     int16_t y;
-    uint16_t scale;
+    uint32_t scale;  // Own scale in LVGL's Q8 format; LV_SCALE_NONE is 1x.
+    // Keep the requested value for Python readback. In particular, consecutive animation
+    // values may quantize to the same Q8 step but must not become stuck at the old value.
+    mp_obj_t requested_scale;
     bool item_removed : 1;
     bool in_group : 1;
     bool hidden : 1;
@@ -36,14 +39,14 @@ typedef struct {
     uint8_t padding : 3;
     // LVGL mirror state.
     lv_obj_t *lv_obj;    // Plain lv_obj container created when the group is attached.
-    uint16_t lv_scale;   // Scale inherited from the parent group for child positioning.
+    uint32_t lv_scale;   // Inherited parent scale in Q8 format.
     // Absolute position of this group's coordinate origin. Children use it to keep their
     // own absolute position (needed by vectorio's contains()) in sync.
     int32_t lv_abs_x;
     int32_t lv_abs_y;
 } displayio_group_t;
 
-void displayio_group_construct(displayio_group_t *self, mp_obj_list_t *members, uint32_t scale, mp_int_t x, mp_int_t y);
+void displayio_group_construct(displayio_group_t *self, mp_obj_list_t *members, mp_obj_t scale, mp_int_t x, mp_int_t y);
 void displayio_group_set_hidden_by_parent(displayio_group_t *self, bool hidden);
 
 // Shared LVGL compositor API. Implemented in shared-module/displayio/lvgl/Group.c.

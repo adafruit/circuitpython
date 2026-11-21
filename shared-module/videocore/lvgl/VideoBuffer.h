@@ -36,6 +36,9 @@ typedef struct {
     uint16_t lv_width;
     uint16_t lv_height;
     uint16_t lv_stride;
+    // Inherited Group scale in Q8 format. LVGL transforms the sampled image through an
+    // intermediate buffer when needed, leaving the source destination unscaled.
+    uint32_t lv_scale;
     // The compositor's list of attached mirrors, rooted during GC.
     struct _videocore_videobuffer_obj_t *lv_next;
     bool lv_registered;
