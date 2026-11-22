@@ -31,7 +31,7 @@ void board_init(void) {
     // Wait for everything to start
     mp_hal_delay_ms(300);
 
-    // Initialize the board's peripherals here.
+    // Initialize the board's peripherals here. 0 means instance 0 of the boards I2C buses.
     busio_i2c_obj_t *i2c = MP_OBJ_TO_PTR(common_hal_board_create_i2c(0));
     // The IO expanders use this bus after code.py ends.
     board_i2c_retain(0);
