@@ -17,8 +17,8 @@ manifest:
       revision: 712b9d6a9a50e89d675689774484d4fcd3b2a4b6
       clone-depth: 100
       import:
-        # Skip what no CircuitPython board can use, so west update fetches 41
-        # projects instead of 83. Boards come from adafruit, nordic, nxp,
+        # Skip what no CircuitPython board can use, so west update fetches about
+        # half of the projects. Boards come from adafruit, nordic, nxp,
         # raspberrypi, renesas, silabs, st and wch; the Pico W's CYW43 is in hal_infineon.
         name-blocklist:
           # HALs of vendors without a board here
@@ -57,6 +57,6 @@ manifest:
           - net-tools
           - openthread
           - percepio
+          - reqmgmt
           - uoscore-uedhoc
           - zephyr-xenlib
-          - reqmgmt
