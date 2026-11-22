@@ -81,6 +81,11 @@ static mp_obj_t socketpool_ip_addr_and_port_to_tuple(const ip_addr_t *addr, int 
 // Timeout between closing a TCP socket and doing a tcp_abort on that
 // socket, if the connection isn't closed cleanly in that time.
 #define MICROPY_PY_LWIP_TCP_CLOSE_TIMEOUT_MS (10000)
+// lwIP's tcp_poll interval is measured in slow timer ticks.
+#define TCP_CLOSE_POLL_TICKS \
+    ((MICROPY_PY_LWIP_TCP_CLOSE_TIMEOUT_MS + TCP_SLOW_INTERVAL - 1) / TCP_SLOW_INTERVAL)
+// It must fit in lwIP's u8_t pollinterval. 0 would abort on the next tick.
+MP_STATIC_ASSERT(TCP_CLOSE_POLL_TICKS > 0 && TCP_CLOSE_POLL_TICKS <= UINT8_MAX);
 
 // All socket options should be globally distinct,
 // because we ignore option levels for efficiency.
@@ -950,7 +955,7 @@ void socketpool_socket_close(socketpool_socket_obj_t *socket) {
                 // Schedule a callback to abort the connection if it's not cleanly closed after
                 // the given timeout.  The callback must be set before calling tcp_close since
                 // the latter may free the pcb; if it doesn't then the callback will be active.
-                tcp_poll(socket->pcb.tcp, _lwip_tcp_close_poll, MICROPY_PY_LWIP_TCP_CLOSE_TIMEOUT_MS / 500);
+                tcp_poll(socket->pcb.tcp, _lwip_tcp_close_poll, TCP_CLOSE_POLL_TICKS);
             }
             if (tcp_close(socket->pcb.tcp) != ERR_OK) {
                 DEBUG_printf("lwip_close: had to call tcp_abort()\n");
