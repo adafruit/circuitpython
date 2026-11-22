@@ -4,6 +4,8 @@
 //
 // SPDX-License-Identifier: MIT
 
+#if CIRCUITPY_AUDIOBUSIO_PDMIN
+
 #include <stdint.h>
 #include <string.h>
 #include <math.h>
@@ -492,3 +494,5 @@ uint32_t common_hal_audiobusio_pdmin_record_to_buffer(audiobusio_pdmin_obj_t *se
 
     return values_output;
 }
+
+#endif // CIRCUITPY_AUDIOBUSIO_PDMIN
