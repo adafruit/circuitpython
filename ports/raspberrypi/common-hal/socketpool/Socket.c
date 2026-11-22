@@ -84,7 +84,8 @@ static mp_obj_t socketpool_ip_addr_and_port_to_tuple(const ip_addr_t *addr, int 
 // lwIP's tcp_poll interval is measured in slow timer ticks.
 #define TCP_CLOSE_POLL_TICKS \
     ((MICROPY_PY_LWIP_TCP_CLOSE_TIMEOUT_MS + TCP_SLOW_INTERVAL - 1) / TCP_SLOW_INTERVAL)
-_Static_assert(TCP_CLOSE_POLL_TICKS <= UINT8_MAX, "TCP close poll interval exceeds lwIP range");
+// It must fit in lwIP's u8_t pollinterval. 0 would abort on the next tick.
+MP_STATIC_ASSERT(TCP_CLOSE_POLL_TICKS > 0 && TCP_CLOSE_POLL_TICKS <= UINT8_MAX);
 
 // All socket options should be globally distinct,
 // because we ignore option levels for efficiency.
