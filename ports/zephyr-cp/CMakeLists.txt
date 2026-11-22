@@ -13,6 +13,9 @@ set(ZEPHYR_EXTRA_MODULES
     # Emulated PWM controller for native_sim tests (see
     # internal-modules/pwm_emul/src/pwm_emul.c).
     ${CMAKE_CURRENT_SOURCE_DIR}/internal-modules/pwm_emul
+    # Entropy for the WCH CH32V4x7 (see
+    # internal-modules/ch32v4x7_entropy/src/entropy_ch32v4x7_adc.c).
+    ${CMAKE_CURRENT_SOURCE_DIR}/internal-modules/ch32v4x7_entropy
     # Kconfig-only module with defaults that must merge before Zephyr's
     # subsystem Kconfig files (see internal-modules/circuitpython-kconfig/Kconfig).
     ${CMAKE_CURRENT_SOURCE_DIR}/internal-modules/circuitpython-kconfig

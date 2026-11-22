@@ -169,11 +169,13 @@ static void _sync_mirror(videocore_videobuffer_obj_t *self) {
         lv_image_set_src(self->backend.lv_obj, &self->backend.lv_dsc);
     }
 
-    // Group scaling is refused before it can change anything (see
-    // _video_protocol_set_transform), so the position is the parent's origin
-    // plus the video's own position.
-    const int32_t x = self->absolute_transform.x + self->x;
-    const int32_t y = self->absolute_transform.y + self->y;
+    // The position is the parent's origin plus the video's scaled own position.
+    // LVGL applies the scale to the image itself, using an intermediate buffer when the
+    // draw unit needs one, while the video source keeps writing unscaled frames.
+    const int32_t x = self->absolute_transform.x +
+        displayio_lvgl_scale_coordinate(self->x, self->backend.lv_scale);
+    const int32_t y = self->absolute_transform.y +
+        displayio_lvgl_scale_coordinate(self->y, self->backend.lv_scale);
     if (lv_obj_get_x(self->backend.lv_obj) != x || lv_obj_get_y(self->backend.lv_obj) != y) {
         if (!was_hidden) {
             lv_obj_invalidate(self->backend.lv_obj);
@@ -187,6 +189,7 @@ static void _sync_mirror(videocore_videobuffer_obj_t *self) {
         }
         lv_obj_set_size(self->backend.lv_obj, self->source_width, self->source_height);
     }
+    lv_image_set_scale(self->backend.lv_obj, self->backend.lv_scale);
     if (was_hidden) {
         lv_obj_clear_flag(self->backend.lv_obj, LV_OBJ_FLAG_HIDDEN);
     }
@@ -200,6 +203,7 @@ void videocore_videobuffer_backend_construct(videocore_videobuffer_obj_t *self) 
     self->backend.lv_width = 0;
     self->backend.lv_height = 0;
     self->backend.lv_stride = 0;
+    self->backend.lv_scale = LV_SCALE_NONE;
     self->backend.lv_next = NULL;
     self->backend.lv_registered = false;
     self->backend.lv_pending = false;
@@ -349,21 +353,19 @@ static void _video_protocol_detach(mp_obj_t layer) {
 }
 
 static bool _video_protocol_set_transform(mp_obj_t layer, int32_t abs_x, int32_t abs_y,
-    uint16_t scale) {
+    uint32_t scale) {
     videocore_videobuffer_obj_t *self = MP_OBJ_TO_PTR(layer);
-    // displayio's scale is whole pixels; LVGL's image scaling would change
-    // that and take the video off the draw unit's fast path.
-    if (scale != 1) {
-        return false;
-    }
     nlr_jump_callback_node_t cleanup;
     displayio_lvgl_lock_with_cleanup(&cleanup);
+    self->backend.lv_scale = scale;
     displayio_buffer_transform_t transform = {
         .x = abs_x,
         .y = abs_y,
         .dx = 1,
         .dy = 1,
-        .scale = scale,
+        // The shared streaming code uses scale as a shown/hidden marker and moves the
+        // unscaled DMA destination. The LVGL mirror holds the actual Q8 scale.
+        .scale = scale == 0 ? 0 : 1,
     };
     self->absolute_transform = transform;
     videocore_videobuffer_update_area(self);

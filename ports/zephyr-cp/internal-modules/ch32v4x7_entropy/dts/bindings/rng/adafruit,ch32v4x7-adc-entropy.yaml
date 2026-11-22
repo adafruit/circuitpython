@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: 2026 Mikey Sklar for Adafruit Industries
+# SPDX-License-Identifier: MIT
+
+description: |
+  CH32V4x7 entropy source: ADC1 internal temperature sensor noise,
+  hashed with SHA-256.
+
+compatible: "adafruit,ch32v4x7-adc-entropy"
+
+include: base.yaml

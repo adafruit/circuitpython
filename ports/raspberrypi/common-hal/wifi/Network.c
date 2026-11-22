@@ -35,22 +35,27 @@ mp_obj_t common_hal_wifi_network_get_country(wifi_network_obj_t *self) {
 }
 
 mp_obj_t common_hal_wifi_network_get_authmode(wifi_network_obj_t *self) {
+    uint32_t auth = self->record.auth_mode;
     uint32_t authmode_mask = 0;
-    if (self->record.auth_mode == 0) {
+    if (auth == 0) {
         authmode_mask = AUTHMODE_OPEN;
     }
-    if (self->record.auth_mode & 1) {
-        authmode_mask |= AUTHMODE_PSK;
-    }
-    ;
-    if (self->record.auth_mode & 2) {
+    if (auth & CYW43_AUTH_FLAG_WPA_SECURITY) {
         authmode_mask |= AUTHMODE_WPA;
     }
-    ;
-    if (self->record.auth_mode & 4) {
+    if (auth & CYW43_AUTH_FLAG_WPA2_SECURITY) {
         authmode_mask |= AUTHMODE_WPA2;
     }
-    ;
+    if (auth & CYW43_AUTH_FLAG_WPA3_SECURITY) {
+        authmode_mask |= AUTHMODE_WPA3;
+    }
+    if (auth & CYW43_AUTH_FLAG_ENTERPRISE_ENABLED) {
+        authmode_mask |= AUTHMODE_ENTERPRISE;
+    } else if (authmode_mask & (AUTHMODE_WPA | AUTHMODE_WPA2 | AUTHMODE_WPA3)) {
+        authmode_mask |= AUTHMODE_PSK;
+    } else if (auth & CYW43_AUTH_FLAG_WEP_ENABLED) {
+        authmode_mask |= AUTHMODE_WEP;
+    }
     mp_obj_t authmode_list = mp_obj_new_list(0, NULL);
     if (authmode_mask != 0) {
         for (uint32_t i = 0; i < 32; i++) {

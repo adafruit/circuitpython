@@ -472,10 +472,14 @@ MP_DEFINE_CONST_FUN_OBJ_KW(epaperdisplay_epaperdisplay_update_refresh_mode_obj, 
 //|         """Refreshes the display immediately or raises an exception if too soon. Use
 //|         ``time.sleep(display.time_to_refresh)`` to sleep until a refresh can occur.
 //|
+//|         This returns when the update starts, not when it finishes. Before removing power from
+//|         the display, wait until ``busy`` is False. If the display has a ``busy_pin``,
+//|         `alarm.exit_and_deep_sleep_until_alarms()` waits for the update to finish by itself.
+//|
 //|         The minimum time between refreshes is ``seconds_per_frame``, 180 by default. With
-//|         fast updates, set it to 0 and poll ``busy`` instead, since this returns once the update
-//|         starts. The first refresh also runs the ``clean_sequence``, which takes seconds, and an
-//|         interrupt during it raises when it ends."""
+//|         fast updates, set it to 0 and poll ``busy`` instead. The first refresh also runs the
+//|         ``clean_sequence``, which takes seconds, and an interrupt during it raises when it
+//|         ends."""
 //|         ...
 //|
 static mp_obj_t epaperdisplay_epaperdisplay_obj_refresh(mp_obj_t self_in) {

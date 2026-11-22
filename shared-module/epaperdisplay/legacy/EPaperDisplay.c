@@ -409,11 +409,13 @@ bool common_hal_epaperdisplay_epaperdisplay_refresh(epaperdisplay_epaperdisplay_
             self->epaper.refreshing = false;
             #if CIRCUITPY_EPAPERDISPLAY_FAST
             if (!self->epaper.fast) {
-                // Run stop sequence but don't wait for busy because busy is set when sleeping.
+                // Run stop sequence but don't wait for busy after it, because some panels set busy
+                // when sleeping.
                 epaperdisplay_epaper_core_send_command_sequence(&self->epaper, false, self->epaper.stop_sequence, self->epaper.stop_sequence_len);
             }
             #else
-            // Run stop sequence but don't wait for busy because busy is set when sleeping.
+            // Run stop sequence but don't wait for busy after it, because some panels set busy
+            // when sleeping.
             epaperdisplay_epaper_core_send_command_sequence(&self->epaper, false, self->epaper.stop_sequence, self->epaper.stop_sequence_len);
             #endif
         } else {
@@ -477,10 +479,15 @@ void release_epaperdisplay(epaperdisplay_epaperdisplay_obj_t *self) {
     epaperdisplay_lag_free(&self->epaper);
     #endif // CIRCUITPY_EPAPERDISPLAY_FAST
     if (self->epaper.refreshing) {
-        epaperdisplay_epaper_core_wait_for_busy(&self->epaper);
+        // Mark the refresh as done before waiting for busy. Otherwise the background task could
+        // end the refresh during the wait by running the stop sequence, and on panels that set
+        // busy when sleeping, such as the SSD1680, the wait would never end.
         supervisor_disable_tick();
         self->epaper.refreshing = false;
-        // Run stop sequence but don't wait for busy because busy is set when sleeping.
+        epaperdisplay_epaper_core_wait_for_busy(&self->epaper);
+
+        // Run stop sequence but don't wait for busy after it, because some panels set busy when
+        // sleeping.
         #if CIRCUITPY_EPAPERDISPLAY_FAST
         if (self->epaper.fast) {
             epaperdisplay_epaper_core_send_stop_sequence_guarded(&self->epaper);
