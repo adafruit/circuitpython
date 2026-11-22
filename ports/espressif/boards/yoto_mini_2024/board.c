@@ -19,6 +19,7 @@
 #include "shared-bindings/i2cioexpander/IOExpander.h"
 #include "shared-bindings/i2cioexpander/IOPin.h"
 #include "shared-bindings/sdioio/SDCard.h"
+#include "shared-module/board/__init__.h"
 #include "shared-module/displayio/__init__.h"
 #include "shared-module/displayio/mipi_constants.h"
 
@@ -79,8 +80,8 @@ void board_init(void) {
 
     // Initialize the board's peripherals here.
     busio_i2c_obj_t *i2c = MP_OBJ_TO_PTR(common_hal_board_create_i2c(0));
-    // The IO expander pins stay in use after code.py ends, so keep the I2C pins
-    // from being reset with the others.
+    // The IO expander uses this bus after code.py ends.
+    board_i2c_retain(0);
 
     // Initialize the IOExpander
     ioexpander.base.type = &i2cioexpander_ioexpander_type;

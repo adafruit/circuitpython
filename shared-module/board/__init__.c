@@ -46,6 +46,14 @@ typedef struct {
 static const board_i2c_pin_t i2c_pin[CIRCUITPY_BOARD_I2C] = CIRCUITPY_BOARD_I2C_PIN;
 static busio_i2c_obj_t i2c_obj[CIRCUITPY_BOARD_I2C];
 static bool i2c_obj_created[CIRCUITPY_BOARD_I2C];
+// Number of board-owned users, such as an IO expander, that keep using the bus.
+static uint8_t i2c_retain_count[CIRCUITPY_BOARD_I2C];
+
+void board_i2c_retain(uint8_t instance) {
+    if (i2c_retain_count[instance] < UINT8_MAX) {
+        i2c_retain_count[instance]++;
+    }
+}
 
 mp_obj_t common_hal_board_get_i2c(const mp_int_t instance) {
     return i2c_obj_created[instance] ? &i2c_obj[instance] : NULL;
@@ -151,23 +159,19 @@ mp_obj_t common_hal_board_create_uart(const mp_int_t instance) {
 void reset_board_buses(void) {
     #if CIRCUITPY_BOARD_I2C
     for (uint8_t instance = 0; instance < CIRCUITPY_BOARD_I2C; instance++) {
-        bool display_using_i2c = false;
+        bool keep_bus = i2c_retain_count[instance] > 0;
         #if CIRCUITPY_I2CDISPLAYBUS
         for (uint8_t i = 0; i < CIRCUITPY_DISPLAY_LIMIT; i++) {
             if (display_buses[i].bus_base.type == &i2cdisplaybus_i2cdisplaybus_type && display_buses[i].i2cdisplay_bus.bus == &i2c_obj[instance]) {
-                display_using_i2c = true;
+                keep_bus = true;
                 break;
             }
         }
         #endif
-        #if CIRCUITPY_I2CIOEXPANDER
-        // Assume the native I2C bus is used for IO Expander pins.
-        display_using_i2c = true;
-        #endif
         if (i2c_obj_created[instance]) {
             // make sure I2C lock is not held over a soft reset
             common_hal_busio_i2c_unlock(&i2c_obj[instance]);
-            if (!display_using_i2c) {
+            if (!keep_bus) {
                 common_hal_busio_i2c_deinit(&i2c_obj[instance]);
                 i2c_obj_created[instance] = false;
             }
