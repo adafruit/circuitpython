@@ -28,10 +28,10 @@
 //     winding rule, tinted with the image recolor styles. The mask is rebuilt when the
 //     shape changes, so a frame costs one A8 blend.
 //
-// Group scale is applied by scaling the mirror's position, size and mask resolution
-// instead of using lv_obj transform styles. Transform styles route the object through an
-// ARGB8888 transform layer that cannot be sliced, which would defeat partial redraw and
-// replace displayio's integer nearest-neighbor scaling with bilinear filtering. See
+// Group scale is applied in Q8 fixed point by scaling the mirror's position, size and mask
+// resolution instead of using lv_obj transform styles. Transform styles route the object through an
+// ARGB8888 transform layer that cannot be sliced, which would defeat partial redraw and replace
+// displayio's nearest-neighbor scaling with bilinear filtering. See
 // shared-module/displayio/lvgl/Group.c for the same reasoning applied to TileGrids.
 
 typedef struct {
@@ -45,7 +45,7 @@ typedef struct {
     // in screen coordinates from these.
     int32_t abs_x;
     int32_t abs_y;
-    uint16_t abs_scale;
+    uint32_t abs_scale;
     lv_obj_t *lv_obj;    // Mirror: lv_obj for rectangles and circles, lv_image for polygons.
     lv_draw_buf_t *mask; // Polygon coverage (A8), NULL for the style-drawn shapes.
     bool hidden : 1;
@@ -59,7 +59,7 @@ typedef struct {
 void displayio_lvgl_vector_shape_attach(vectorio_vector_shape_t *self, lv_obj_t *parent);
 void displayio_lvgl_vector_shape_detach(vectorio_vector_shape_t *self);
 void displayio_lvgl_vector_shape_set_transform(vectorio_vector_shape_t *self, int32_t abs_x,
-    int32_t abs_y, uint16_t scale);
+    int32_t abs_y, uint32_t scale);
 void displayio_lvgl_vector_shape_set_hidden_by_parent(vectorio_vector_shape_t *self, bool hidden);
 // A pixel shader this shape registered with has changed.
 void displayio_lvgl_vector_shape_shader_changed(vectorio_vector_shape_t *self);

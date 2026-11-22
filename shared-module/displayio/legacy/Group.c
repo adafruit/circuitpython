@@ -20,7 +20,8 @@ static void check_readonly(displayio_group_t *self) {
     }
 }
 
-void common_hal_displayio_group_construct(displayio_group_t *self, uint32_t scale, mp_int_t x, mp_int_t y) {
+void common_hal_displayio_group_construct(displayio_group_t *self, mp_obj_t scale_obj, mp_int_t x, mp_int_t y) {
+    uint32_t scale = mp_arg_validate_int_range(mp_obj_get_int(scale_obj), 1, 32767, MP_QSTR_scale);
     mp_obj_list_t *members = mp_obj_new_list(0, NULL);
     displayio_group_construct(self, members, scale, x, y);
 }
@@ -106,8 +107,8 @@ void displayio_group_set_hidden_by_parent(displayio_group_t *self, bool hidden) 
     }
 }
 
-uint32_t common_hal_displayio_group_get_scale(displayio_group_t *self) {
-    return self->scale;
+mp_obj_t common_hal_displayio_group_get_scale(displayio_group_t *self) {
+    return MP_OBJ_NEW_SMALL_INT(self->scale);
 }
 
 bool displayio_group_get_previous_area(displayio_group_t *self, displayio_area_t *area) {
@@ -208,7 +209,8 @@ void displayio_group_update_transform(displayio_group_t *self,
     _update_child_transforms(self);
 }
 
-void common_hal_displayio_group_set_scale(displayio_group_t *self, uint32_t scale) {
+void common_hal_displayio_group_set_scale(displayio_group_t *self, mp_obj_t scale_obj) {
+    uint32_t scale = mp_arg_validate_int_min(mp_obj_get_int(scale_obj), 1, MP_QSTR_scale);
     if (self->scale == scale) {
         return;
     }

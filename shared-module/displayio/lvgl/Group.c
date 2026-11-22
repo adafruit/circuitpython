@@ -7,7 +7,7 @@
 // LVGL-based displayio Group implementation. Each Group is mirrored into a plain lv_obj
 // container; members are appended as children so the lv object tree's child order matches
 // the displayio z-order (later members draw on top). Group scale is applied by scaling
-// child positions and images directly. That keeps displayio's integer nearest-neighbor
+// child positions and images directly. That keeps displayio's nearest-neighbor
 // scaling and per-child invalidation; LVGL transform styles use an ARGB8888 transform
 // layer and bilinear filtering instead.
 //
@@ -83,11 +83,25 @@ void displayio_lvgl_unlock_with_cleanup(void) {
 // redraws the member's old and new area. (A group sized to its content would be redrawn
 // from its origin to its farthest member whenever a member moves.)
 //
+static uint32_t _scale_to_q8(mp_float_t scale) {
+    // Keep the stored scale at or below the requested value. All Q8 steps are supported by
+    // LVGL's software renderer, so the closest one is the truncated fixed-point value.
+    return (uint32_t)(scale * LV_SCALE_NONE);
+}
+
+static mp_float_t _validate_scale(mp_obj_t scale_obj) {
+    mp_float_t scale = mp_arg_validate_obj_float_range(scale_obj, 0, 32767, MP_QSTR_scale);
+    if (scale < (mp_float_t)1 / LV_SCALE_NONE) {
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("%q out of range"), MP_QSTR_scale);
+    }
+    return scale;
+}
+
 // Recompute members' inherited scale and screen positions after this group's scale or
 // position changed. Returns false when a member rejects the transform; some members may
 // already have taken it then, so callers restore the group's own transform and push again.
 static bool _update_children(displayio_group_t *self) {
-    uint16_t child_scale = self->lv_scale * self->scale;
+    uint32_t child_scale = displayio_lvgl_compose_scale(self->lv_scale, self->scale);
     for (size_t i = 0; i < self->members->len; i++) {
         mp_obj_t layer = self->members->items[i];
         const lvgl_protocol_t *protocol = _layer_protocol(&layer);
@@ -240,21 +254,22 @@ void displayio_lvgl_init(void) {
     displayio_lvgl_unlock();
 }
 
-void displayio_group_construct(displayio_group_t *self, mp_obj_list_t *members, uint32_t scale, mp_int_t x, mp_int_t y) {
+void displayio_group_construct(displayio_group_t *self, mp_obj_list_t *members, mp_obj_t scale, mp_int_t x, mp_int_t y) {
     self->x = x;
     self->y = y;
     self->members = members;
     self->item_removed = false;
-    self->scale = scale;
+    self->scale = _scale_to_q8(_validate_scale(scale));
+    self->requested_scale = scale;
     self->in_group = false;
     self->readonly = false;
     self->lv_obj = NULL;
-    self->lv_scale = 1;
+    self->lv_scale = LV_SCALE_NONE;
     self->lv_abs_x = x;
     self->lv_abs_y = y;
 }
 
-void common_hal_displayio_group_construct(displayio_group_t *self, uint32_t scale, mp_int_t x, mp_int_t y) {
+void common_hal_displayio_group_construct(displayio_group_t *self, mp_obj_t scale, mp_int_t x, mp_int_t y) {
     mp_obj_list_t *members = mp_obj_new_list(0, NULL);
     displayio_group_construct(self, members, scale, x, y);
 }
@@ -317,21 +332,30 @@ void displayio_group_set_hidden_by_parent(displayio_group_t *self, bool hidden) 
     displayio_lvgl_unlock_with_cleanup();
 }
 
-uint32_t common_hal_displayio_group_get_scale(displayio_group_t *self) {
-    return self->scale;
+mp_obj_t common_hal_displayio_group_get_scale(displayio_group_t *self) {
+    return self->requested_scale;
 }
 
-void common_hal_displayio_group_set_scale(displayio_group_t *self, uint32_t scale) {
-    if (self->scale == scale) {
+void common_hal_displayio_group_set_scale(displayio_group_t *self, mp_obj_t scale) {
+    mp_float_t scale_value = _validate_scale(scale);
+    if (self->requested_scale == scale) {
         return;
     }
     check_readonly(self);
-    if (self->lv_obj == NULL) {
-        self->scale = scale;
+    uint32_t scale_q8 = _scale_to_q8(scale_value);
+    if (self->scale == scale_q8) {
+        self->requested_scale = scale;
         return;
     }
-    uint16_t previous_scale = self->scale;
-    self->scale = scale;
+    if (self->lv_obj == NULL) {
+        self->scale = scale_q8;
+        self->requested_scale = scale;
+        return;
+    }
+    uint32_t previous_scale = self->scale;
+    mp_obj_t previous_requested_scale = self->requested_scale;
+    self->scale = scale_q8;
+    self->requested_scale = scale;
     nlr_jump_callback_node_t cleanup;
     displayio_lvgl_lock_with_cleanup(&cleanup);
     bool accepted = _update_children(self);
@@ -339,6 +363,7 @@ void common_hal_displayio_group_set_scale(displayio_group_t *self, uint32_t scal
         // A member can't be shown at this scale. Put the group back the way it was, push that
         // to the members that already took the new scale, and report it.
         self->scale = previous_scale;
+        self->requested_scale = previous_requested_scale;
         _update_children(self);
     }
     displayio_lvgl_unlock_with_cleanup();
@@ -357,7 +382,8 @@ void common_hal_displayio_group_set_x(displayio_group_t *self, mp_int_t x) {
     }
     check_readonly(self);
     // The origin is in screen pixels, so the move is scaled by the parent chain.
-    self->lv_abs_x += (x - self->x) * self->lv_scale;
+    self->lv_abs_x += displayio_lvgl_scale_coordinate(x, self->lv_scale) -
+        displayio_lvgl_scale_coordinate(self->x, self->lv_scale);
     self->x = x;
     if (self->lv_obj != NULL) {
         nlr_jump_callback_node_t cleanup;
@@ -378,7 +404,8 @@ void common_hal_displayio_group_set_y(displayio_group_t *self, mp_int_t y) {
     }
     check_readonly(self);
     // The origin is in screen pixels, so the move is scaled by the parent chain.
-    self->lv_abs_y += (y - self->y) * self->lv_scale;
+    self->lv_abs_y += displayio_lvgl_scale_coordinate(y, self->lv_scale) -
+        displayio_lvgl_scale_coordinate(self->y, self->lv_scale);
     self->y = y;
     if (self->lv_obj != NULL) {
         nlr_jump_callback_node_t cleanup;
@@ -421,7 +448,7 @@ static void _adopt_member(displayio_group_t *self, mp_obj_t layer) {
     if (nlr_push(&nlr) == 0) {
         if (protocol->set_transform != NULL &&
             !protocol->set_transform(layer, self->lv_abs_x, self->lv_abs_y,
-                self->lv_scale * self->scale)) {
+                displayio_lvgl_compose_scale(self->lv_scale, self->scale))) {
             mp_raise_ValueError(MP_ERROR_TEXT("Layer does not support scaling"));
         }
         if (protocol->set_hidden_by_parent != NULL) {
@@ -578,13 +605,13 @@ static void _group_protocol_detach(mp_obj_t layer) {
 }
 
 static bool _group_protocol_set_transform(mp_obj_t layer, int32_t abs_x, int32_t abs_y,
-    uint16_t scale) {
+    uint32_t scale) {
     displayio_group_t *self = MP_OBJ_TO_PTR(layer);
     self->lv_scale = scale;
     // abs_x/y is where this group's parent origin is on the screen; shift by this group's
     // own position, scaled the same way as its members are.
-    self->lv_abs_x = abs_x + self->x * scale;
-    self->lv_abs_y = abs_y + self->y * scale;
+    self->lv_abs_x = abs_x + displayio_lvgl_scale_coordinate(self->x, scale);
+    self->lv_abs_y = abs_y + displayio_lvgl_scale_coordinate(self->y, scale);
     if (self->lv_obj == NULL) {
         return true;
     }
@@ -669,7 +696,7 @@ void displayio_lvgl_set_root_group(displayio_group_t *group) {
     cp_lvgl_root_group = group;
     if (cp_lvgl_root_group != NULL) {
         // The root group's origin is its own position.
-        group->lv_scale = 1;
+        group->lv_scale = LV_SCALE_NONE;
         group->lv_abs_x = group->x;
         group->lv_abs_y = group->y;
         displayio_lvgl_group_attach(cp_lvgl_root_group, lv_screen_active());
