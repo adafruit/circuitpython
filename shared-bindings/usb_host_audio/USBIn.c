@@ -49,16 +49,15 @@
 //|
 //|         On RP2 boards, whose host port is PIO-USB, the host controller buffers
 //|         the stream between reads, in a buffer of ``iso_buffer_size`` bytes that
-//|         `USBIn` allocates and `deinit` frees. On the ESP32-P4 the USB host runs in a task of its own,
-//|         so packets keep arriving while Python is busy, such as during an SD
-//|         card write or a long garbage collection. On other such boards packets
-//|         that arrive while background tasks can't run are lost and set
-//|         `overflow`.
+//|         `USBIn` allocates and `deinit` frees. On Espressif boards, such as the
+//|         Metro ESP32-P4, ``iso_buffer_size`` is not used. There the USB host
+//|         runs in a task of its own, so packets keep arriving while Python is
+//|         busy, such as during an SD card write or a long garbage collection.
 //|
 //|         Audio waits for `record` or playback in a buffer of
-//|         ``32 * buffer_frames`` frames on the ESP32-P4 and ``8 * buffer_frames``
-//|         elsewhere. When that fills up, the newest audio is dropped and
-//|         `overflow` is set.
+//|         ``32 * buffer_frames`` frames on Espressif boards and
+//|         ``8 * buffer_frames`` frames on others. When that fills up, the newest
+//|         audio is dropped and `overflow` is set.
 //|
 //|         Only one isochronous IN endpoint is received at a time, so only one
 //|         `USBIn` can stream, and a USB camera cannot stream video meanwhile.

@@ -633,6 +633,12 @@ void background_callback_run_all(void);
 #define CIRCUITPY_USB_HOST_ISO_RECORDS (0)
 #endif
 
+// The port runs tuh_task() in a task of its own rather than from
+// usb_background(), so that it runs while the VM is busy.
+#ifndef CIRCUITPY_USB_HOST_TASK
+#define CIRCUITPY_USB_HOST_TASK (0)
+#endif
+
 // usb_host_bulk takes a usb.core.Device and uses TinyUSB host calls.
 #if CIRCUITPY_USB_HOST_BULK && !(CIRCUITPY_USB_HOST && CIRCUITPY_PYUSB)
 #error CIRCUITPY_USB_HOST_BULK requires CIRCUITPY_USB_HOST and CIRCUITPY_PYUSB

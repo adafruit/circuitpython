@@ -48,7 +48,8 @@ static inline void usb_host_audio_stop_device(uint8_t device_address) {
 #endif
 
 // The TinyUSB callbacks below run in tuh_task(), which is a task of its own on
-// some ports (CIRCUITPY_USB_HOST_TASK). What they set is read by the VM.
+// some ports (CIRCUITPY_USB_HOST_TASK) and for the MAX3421E on espressif. What
+// they set is read by the VM.
 
 // Track what device numbers are mounted. We can't use tuh_ready() because it is
 // true before enumeration completes and TinyUSB drivers are started.

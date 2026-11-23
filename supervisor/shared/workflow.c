@@ -113,10 +113,6 @@ void supervisor_workflow_start(void) {
         supervisor_workflow_request_background();
     }
     #endif
-
-    #if CIRCUITPY_USB_KEYBOARD_WORKFLOW
-    usb_keyboard_init();
-    #endif
 }
 
 supervisor_fs_err_t supervisor_workflow_move(const char *old_path, const char *new_path) {

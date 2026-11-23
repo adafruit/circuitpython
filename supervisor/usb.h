@@ -19,14 +19,6 @@ void usb_background(void);
 // Schedule usb background
 void usb_background_schedule(void);
 
-#include "py/mpconfig.h"
-// The port runs tuh_task() in a task of its own rather than from
-// usb_background(). TinyUSB host callbacks then run outside the VM's task, so
-// what they share with the VM has to be safe for that.
-#ifndef CIRCUITPY_USB_HOST_TASK
-#define CIRCUITPY_USB_HOST_TASK (0)
-#endif
-
 // Ports must call this from their particular USB IRQ handler
 void usb_irq_handler(int instance);
 

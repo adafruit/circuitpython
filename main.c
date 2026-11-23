@@ -1130,6 +1130,12 @@ int __attribute__((used)) main(void) {
     reset_port();
     reset_board();
 
+    #if CIRCUITPY_USB_KEYBOARD_WORKFLOW
+    // board_init() or boot.py may start a USB host port, and from then on
+    // TinyUSB's callbacks use the keyboard's lock and buffer.
+    usb_keyboard_init();
+    #endif
+
     // displays init after filesystem, since they could share the flash SPI
     board_init();
 

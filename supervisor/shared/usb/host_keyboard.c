@@ -44,10 +44,11 @@ static uint8_t _report_kbd_report_id;
 static uint8_t user_keymap[384];
 static size_t user_keymap_len = 0;
 
-// The TinyUSB callbacks below run in tuh_task(), which may be a task of its own
-// (CIRCUITPY_USB_HOST_TASK), while the VM reads keys, repeats them and attaches
-// and detaches the keyboard. This lock keeps them apart. Without an RTOS it is
-// nothing. Nothing waits for TinyUSB while holding it.
+// The TinyUSB callbacks below run in tuh_task(), which may be a task of its own,
+// such as the espressif USB host task (CIRCUITPY_USB_HOST_TASK) or the MAX3421E
+// task on espressif, while the VM reads keys, repeats them and attaches and
+// detaches the keyboard. This lock keeps them apart. Nothing waits for TinyUSB
+// while holding it.
 #if OSAL_MUTEX_REQUIRED
 static osal_mutex_def_t _lock_def;
 static osal_mutex_t _lock;
@@ -436,10 +437,8 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
 
 void usb_keyboard_init(void) {
     #if OSAL_MUTEX_REQUIRED
-    // This runs again for each VM, while the keyboard may stay attached.
-    if (_lock == NULL) {
-        _lock = osal_mutex_create(&_lock_def);
-    }
+    // This runs once, at startup.
+    _lock = osal_mutex_create(&_lock_def);
     #endif
     _lock_take();
     ringbuf_init(&_incoming_ringbuf, _buf, sizeof(_buf));

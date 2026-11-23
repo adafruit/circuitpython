@@ -11,7 +11,6 @@
 
 #include "shared-module/audiocore/__init__.h"
 #include "shared-module/usb/core/Device.h"
-#include "supervisor/usb.h"
 
 // The PCM ring holds this many get_buffer() buffers. Playback starts, and
 // restarts after an underrun, once USBIN_TARGET_BUFFERS of them are waiting.

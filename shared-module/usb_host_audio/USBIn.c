@@ -55,11 +55,17 @@ static uintptr_t _seq;
 // the ring and queues the next transfer, and the VM holds it while it changes
 // _active or _seq, aborts the transfer or uses the ring. Then a callback never
 // queues a transfer, or writes the ring, of a stream that the VM ended and is
-// freeing, and the ring has one user at a time. Without
-// an RTOS the callback runs on the VM, and the lock is nothing. The VM never
-// holds it while it waits for TinyUSB, which would wait for the callback, and
-// holds it only for a copy into or out of the ring. The callback holds it no
-// longer than it takes to store one transfer.
+// freeing, and the ring has one user at a time. The VM never holds it while it
+// waits for TinyUSB, which would wait for the callback, and holds it only for
+// a copy into or out of the ring. The callback holds it no longer than it
+// takes to store one transfer.
+//
+// The lock is real wherever TinyUSB is built for an OS (OSAL_MUTEX_REQUIRED),
+// and it is not recursive: taking it again on the same core waits forever.
+// On RP2 (OPT_OS_PICO) it is a pico-sdk mutex. There tuh_task() and the audio
+// refill are both background callbacks on core 0, and the VM doesn't run
+// background callbacks while it holds the lock, so it is never contended.
+// Without an OS it does nothing.
 #if OSAL_MUTEX_REQUIRED
 static osal_mutex_def_t _lock_def;
 static osal_mutex_t _lock;
