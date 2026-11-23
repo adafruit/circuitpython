@@ -563,6 +563,9 @@ bool supervisor_start_web_workflow(void) {
         bool vnc_keys = false;
         (void)settings_get_bool("CIRCUITPY_WEB_VNC_KEYS", &vnc_keys);
         display_stream_set_vnc(vnc_port, vnc_keys);
+        mp_int_t display_rate_limit = 0;
+        (void)settings_get_int("CIRCUITPY_WEB_DISPLAY_RATE_LIMIT", &display_rate_limit);
+        display_stream_set_rate_limit(display_rate_limit);
         #endif
     }
 
