@@ -56,6 +56,13 @@ static inline uint8_t audiosample_get_channel_count(audiosample_base_t *self) {
     return self->channel_count;
 }
 
+// Ports that fetch sample buffers on their own task, not the CircuitPython task, hold this lock
+// while they fetch. Code that changes a sample that may be playing holds it too, so the fetch
+// never sees the sample half changed. Calls nest. Never call from an interrupt. The default does
+// nothing, for ports that fetch on the CircuitPython task.
+void audiocore_lock(void);
+void audiocore_unlock(void);
+
 void audiosample_reset_buffer(mp_obj_t sample_obj, bool single_channel_output, uint8_t audio_channel);
 audioio_get_buffer_result_t audiosample_get_buffer(mp_obj_t sample_obj,
     bool single_channel_output,

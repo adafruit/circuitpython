@@ -8,9 +8,9 @@
 
 #include "py/obj.h"
 
-#include "supervisor/background_callback.h"
-
 #include "driver/i2s_std.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 
 typedef struct {
     mp_obj_t *sample;
@@ -28,7 +28,7 @@ typedef struct {
     void *next_buffer;
     size_t next_buffer_size;
     i2s_chan_handle_t handle;
-    background_callback_t callback;
+    TaskHandle_t fill_task; // Refills DMA buffers when the I2S interrupt wakes it.
     bool underrun;
 } i2s_t;
 
