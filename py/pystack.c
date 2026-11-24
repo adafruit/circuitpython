@@ -26,6 +26,9 @@
 
 #include <stdio.h>
 
+// CIRCUITPY-CHANGE: memset
+#include <string.h>
+
 #include "py/runtime.h"
 
 #if MICROPY_ENABLE_PYSTACK
@@ -38,6 +41,8 @@ void mp_pystack_init(void *start, void *end) {
 
 // CIRCUITPY-CHANGE: PLACE_IN_ITCM
 void *PLACE_IN_ITCM(mp_pystack_alloc)(size_t n_bytes) {
+    // CIRCUITPY-CHANGE: remember the size before it is rounded up
+    size_t requested = n_bytes;
     n_bytes = (n_bytes + (MICROPY_PYSTACK_ALIGN - 1)) & ~(MICROPY_PYSTACK_ALIGN - 1);
     #if MP_PYSTACK_DEBUG
     n_bytes += MICROPY_PYSTACK_ALIGN;
@@ -48,6 +53,9 @@ void *PLACE_IN_ITCM(mp_pystack_alloc)(size_t n_bytes) {
     }
     void *ptr = MP_STATE_THREAD(pystack_cur);
     MP_STATE_THREAD(pystack_cur) += n_bytes;
+    // CIRCUITPY-CHANGE: the collector scans the whole pystack. Clear the padding, which the
+    // caller never writes, so it can't keep a pointer left by an earlier allocation.
+    memset((uint8_t *)ptr + requested, 0, n_bytes - requested);
     #if MP_PYSTACK_DEBUG
     *(size_t *)(MP_STATE_THREAD(pystack_cur) - MICROPY_PYSTACK_ALIGN) = n_bytes;
     #endif
