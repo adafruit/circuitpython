@@ -434,6 +434,12 @@ size_t port_heap_get_largest_free_size(void) {
     return largest;
 }
 
+#if CIRCUITPY_INTERNAL_MEMORY
+bool port_heap_ptr_is_internal(const void *ptr) {
+    return esp_ptr_internal(ptr);
+}
+#endif
+
 #if MICROPY_PERSISTENT_CODE_LOAD_NATIVE
 // Loaded native code, kept outside the GC heap until port_gc_deinit().
 typedef struct _native_code_node_t {

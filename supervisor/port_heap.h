@@ -44,4 +44,9 @@ void *port_vm_heap_grow(size_t size);
 #define port_vm_heap_grow(size) port_malloc(size, false)
 #endif
 
+#if CIRCUITPY_INTERNAL_MEMORY
+// True when `ptr` is in internal RAM, the kind port_malloc() gives when dma_capable is set.
+bool port_heap_ptr_is_internal(const void *ptr);
+#endif
+
 size_t port_heap_get_largest_free_size(void);

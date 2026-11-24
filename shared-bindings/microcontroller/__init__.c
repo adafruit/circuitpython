@@ -9,6 +9,7 @@
 
 #include <stdint.h>
 
+#include "py/gc.h"
 #include "py/obj.h"
 #include "py/runtime.h"
 
@@ -140,9 +141,69 @@ const mp_obj_module_t mcu_pin_module = {
     .globals = (mp_obj_dict_t *)&mcu_pin_globals,
 };
 
+//| class InternalMemory:
+//|     """The type of `microcontroller.internal_memory`. It cannot be created."""
+//|
+//|     def __enter__(self) -> InternalMemory:
+//|         """Starts the block. Blocks can be nested."""
+//|         ...
+//|
+//|     def __exit__(self) -> None:
+//|         """Ends the block."""
+//|         ...
+//|
+//|
+//| internal_memory: InternalMemory
+//| """A context manager. Buffers of 1 kB and more allocated inside its ``with`` block are
+//| placed in internal RAM, or raise `MemoryError` when internal RAM has no room.
+//|
+//| On a board that also has PSRAM the heap is in PSRAM, which is slower. Internal RAM is
+//| scarce and displays, audio and other drivers need it for their buffers, so keep the block
+//| to the few buffers that have to be fast::
+//|
+//|   with microcontroller.internal_memory:
+//|       buffer = bytearray(32768)
+//|
+//| The buffer stays in internal RAM until it is no longer used and has been collected. Call
+//| `gc.collect()` before something else needs that RAM, a larger display for example.
+//|
+//| Not every board has it."""
+//|
+#if CIRCUITPY_INTERNAL_MEMORY
+static mp_obj_t mcu_internal_memory_enter(mp_obj_t self) {
+    gc_internal_memory_enter();
+    return self;
+}
+static MP_DEFINE_CONST_FUN_OBJ_1(mcu_internal_memory_enter_obj, mcu_internal_memory_enter);
+
+static mp_obj_t mcu_internal_memory_exit(size_t n_args, const mp_obj_t *args) {
+    gc_internal_memory_exit();
+    return mp_const_none;
+}
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mcu_internal_memory_exit_obj, 4, 4, mcu_internal_memory_exit);
+
+static const mp_rom_map_elem_t mcu_internal_memory_locals_dict_table[] = {
+    { MP_ROM_QSTR(MP_QSTR___enter__), MP_ROM_PTR(&mcu_internal_memory_enter_obj) },
+    { MP_ROM_QSTR(MP_QSTR___exit__), MP_ROM_PTR(&mcu_internal_memory_exit_obj) },
+};
+static MP_DEFINE_CONST_DICT(mcu_internal_memory_locals_dict, mcu_internal_memory_locals_dict_table);
+
+static MP_DEFINE_CONST_OBJ_TYPE(
+    mcu_internal_memory_type,
+    MP_QSTR_InternalMemory,
+    MP_TYPE_FLAG_NONE,
+    locals_dict, &mcu_internal_memory_locals_dict
+    );
+
+static const mp_obj_base_t mcu_internal_memory_obj = { &mcu_internal_memory_type };
+#endif
+
 static const mp_rom_map_elem_t mcu_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_microcontroller) },
     { MP_ROM_QSTR(MP_QSTR_cpu),  MP_ROM_PTR(&common_hal_mcu_processor_obj) },
+    #if CIRCUITPY_INTERNAL_MEMORY
+    { MP_ROM_QSTR(MP_QSTR_internal_memory),  MP_ROM_PTR(&mcu_internal_memory_obj) },
+    #endif
     #if CIRCUITPY_PROCESSOR_COUNT > 1
     { MP_ROM_QSTR(MP_QSTR_cpus),  MP_ROM_PTR(&common_hal_multi_processor_obj) },
     #endif

@@ -129,6 +129,12 @@ static bool max_size_walker(void *ptr, size_t size, int used, void *user) {
     return true;
 }
 
+#if CIRCUITPY_INTERNAL_MEMORY
+MP_WEAK bool port_heap_ptr_is_internal(const void *ptr) {
+    return true;
+}
+#endif
+
 MP_WEAK size_t port_heap_get_largest_free_size(void) {
     size_t max_size = 0;
     tlsf_walk_pool(tlsf_get_pool(heap), max_size_walker, &max_size);
