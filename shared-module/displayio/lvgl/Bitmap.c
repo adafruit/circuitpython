@@ -184,17 +184,16 @@ void common_hal_displayio_bitmap_set_pixel(displayio_bitmap_t *self, int16_t x, 
     if (0 > x || x >= self->width || 0 > y || y >= self->height || self->data == NULL) {
         return;
     }
-    // Mark before writing: the compose pass must re-read a region that is already changing.
-    displayio_bitmap_set_dirty(self, x, y, x + 1, y + 1);
     _write_pixel_unchecked(self, x, y, value);
+    // Mark after writing: the render task can draw at any time, and the area it consumes must
+    // already hold the new pixels.
+    displayio_bitmap_set_dirty(self, x, y, x + 1, y + 1);
 }
 
 void common_hal_displayio_bitmap_fill(displayio_bitmap_t *self, uint32_t value) {
     if (self->read_only) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Read-only"));
     }
-    displayio_bitmap_set_dirty(self, 0, 0, self->width, self->height);
-
     // build the packed word
     uint32_t word = 0;
     for (uint8_t i = 0; i < 32 / self->bits_per_value; i++) {
@@ -204,6 +203,8 @@ void common_hal_displayio_bitmap_fill(displayio_bitmap_t *self, uint32_t value) 
     for (uint32_t i = 0; i < self->stride * self->height; i++) {
         self->data[i] = word;
     }
+    // Mark after writing, so a render that starts during the fill can't consume the change.
+    displayio_bitmap_set_dirty(self, 0, 0, self->width, self->height);
 }
 
 int common_hal_displayio_bitmap_get_buffer(displayio_bitmap_t *self, mp_buffer_info_t *bufinfo, mp_uint_t flags) {

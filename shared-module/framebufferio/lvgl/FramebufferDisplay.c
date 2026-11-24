@@ -516,6 +516,21 @@ void common_hal_framebufferio_framebufferdisplay_set_auto_refresh(framebufferio_
     // displayio_lvgl_auto_refresh() instead, so this flag only decides whether the compositor
     // repaints on its own.
     self->auto_refresh = auto_refresh;
+    // A paced display only renders at its frame boundary, which already checks auto_refresh. An
+    // unpaced one renders from LVGL's refresh timer whenever something is invalidated, so swap
+    // that timer's callback: pause-only while auto_refresh is off (display.refresh() still
+    // renders through lv_refr_now()), LVGL's own refresh when it is on.
+    if (self->lv_display != NULL && !self->lv_paced) {
+        lv_timer_t *refr_timer = lv_display_get_refr_timer(self->lv_display);
+        if (refr_timer != NULL) {
+            lv_timer_set_cb(refr_timer,
+                auto_refresh ? lv_display_refr_timer : framebufferio_lvgl_paced_refr_cb);
+            if (auto_refresh) {
+                // Draw what changed while auto_refresh was off.
+                lv_timer_resume(refr_timer);
+            }
+        }
+    }
 }
 
 static void _update_backlight(framebufferio_framebufferdisplay_obj_t *self) {
