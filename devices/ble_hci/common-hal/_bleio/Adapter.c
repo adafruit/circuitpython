@@ -938,6 +938,19 @@ void bleio_adapter_gc_collect(bleio_adapter_obj_t *adapter) {
 void bleio_adapter_reset(bleio_adapter_obj_t *adapter) {
     // Disabling resets the controller and forgets the links it ends.
     common_hal_bleio_adapter_set_enabled(adapter, false);
+
+    // These objects are on the heap of the program that is ending.
+    // bleio_adapter_gc_collect() would keep whatever the next program puts there.
+    adapter->scan_results = NULL;
+    adapter->name = NULL;
+    adapter->connection_objs = NULL;
+    adapter->hci_uart = NULL;
+    adapter->rts_digitalinout = NULL;
+    adapter->cts_digitalinout = NULL;
+    adapter->device_name_characteristic = NULL;
+    adapter->appearance_characteristic = NULL;
+    adapter->service_changed_characteristic = NULL;
+    adapter->attributes = NULL;
 }
 
 void bleio_adapter_background(bleio_adapter_obj_t *adapter) {
