@@ -134,6 +134,12 @@ void common_hal_espcamera_camera_construct(
     live_camera = self;
 }
 
+void espcamera_reset(void) {
+    if (live_camera != NULL) {
+        common_hal_espcamera_camera_deinit(live_camera);
+    }
+}
+
 extern void common_hal_espcamera_camera_deinit(espcamera_camera_obj_t *self) {
     if (common_hal_espcamera_camera_deinited(self)) {
         return;

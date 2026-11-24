@@ -498,12 +498,19 @@ void *esp_native_code_commit(void *buf, size_t len, void *reloc) {
 #endif
 
 void reset_port_early(void) {
-    // esp-camera adds an I2C device on the ESP I2C bus, and keeps it there. This
-    // is unlike busio.I2C, which adds and removes the device on each operation.
-    // Since the camera object is not deinit'ed yet at this point, we can't call
-    // esp_camera_deinit() from here. Instead, let GC finalization (via __del__)
-    // deinit the camera before reset_board_buses() deletes the I2C bus.
-    // Unfortunately, there is no I2C driver API to enumerate or delete all the devices.
+    // Deinit the camera now, before reset_board_buses() deinits board.I2C().
+    //
+    // The camera shares its I2C bus with busio.I2C and keeps a device
+    // registered on that bus for as long as the camera is alive. ESP-IDF
+    // refuses to delete a bus that still has devices, so if the camera is
+    // still alive when the bus is deinited, the bus is never freed. Its I2C
+    // peripheral then stays in use until a hard reset.
+    //
+    // Waiting for the camera's finaliser doesn't work: finalisers run after
+    // reset_board_buses().
+    #if CIRCUITPY_ESPCAMERA
+    espcamera_reset();
+    #endif
 }
 
 void reset_port(void) {
