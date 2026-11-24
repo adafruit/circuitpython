@@ -21,8 +21,10 @@
 #include <lvgl.h>
 #include <lvgl_display.h>
 #include <lvgl_zephyr.h>
+#include <zephyr/sys/printk.h>
 
 #include "lvgl/draw/lv_draw_utils.h"
+#include "lvgl_private.h"
 
 #include "shared-bindings/displayio/Group.h"
 #include "shared-module/displayio/lvgl/lvgl_internal.h"
@@ -205,6 +207,19 @@ static void zephyr_display_lvgl_delete_cb(lv_event_t *event) {
     lv_free(data);
 }
 
+// LVGL has merged the invalidated areas into the list it is about to redraw.
+static void zephyr_display_lvgl_print_dirty_cb(lv_event_t *event) {
+    lv_display_t *display = lv_event_get_target(event);
+    for (uint32_t i = 0; i < display->inv_p; i++) {
+        if (display->inv_area_joined[i]) {
+            continue;
+        }
+        const lv_area_t *area = &display->inv_areas[i];
+        printk("lvgl dirty %d %d %d %d\n", (int)area->x1, (int)area->y1, (int)area->x2,
+            (int)area->y2);
+    }
+}
+
 // Grayscale and mono panels need the same luminance calculation as the legacy
 // compositor. LVGL's own conversion uses different coefficients, so render those
 // displays in RGB888 and convert the flushed pixels with displayio's routine.
@@ -326,6 +341,10 @@ static int zephyr_display_lvgl_recreate_display(zephyr_display_display_obj_t *se
         return -ENOMEM;
     }
     lv_display_add_event_cb(display, zephyr_display_lvgl_delete_cb, LV_EVENT_DELETE, data);
+    if (IS_ENABLED(CONFIG_CIRCUITPY_LVGL_PRINT_DIRTY_AREAS)) {
+        lv_display_add_event_cb(display, zephyr_display_lvgl_print_dirty_cb, LV_EVENT_RENDER_START,
+            NULL);
+    }
     data->driver.display_dev = self->device;
     display_get_capabilities(self->device, &data->driver.cap);
     lv_display_set_user_data(display, &data->driver);
