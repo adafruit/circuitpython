@@ -21,7 +21,7 @@
 #include "freertos/task.h"
 
 void port_background_tick(void) {
-    #if CIRCUITPY_USB_HOST
+    #if CIRCUITPY_USB_HOST && !CIRCUITPY_USB_HOST_TASK
     // Enumeration delays need polling even when no new USB IRQ arrives.
     if (tuh_task_event_ready()) {
         usb_background_schedule();

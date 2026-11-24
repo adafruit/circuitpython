@@ -47,9 +47,13 @@ static inline void usb_host_audio_stop_device(uint8_t device_address) {
 }
 #endif
 
+// The TinyUSB callbacks below run in tuh_task(), which is a task of its own on
+// some ports (CIRCUITPY_USB_HOST_TASK) and for the MAX3421E on espressif. What
+// they set is read by the VM.
+
 // Track what device numbers are mounted. We can't use tuh_ready() because it is
 // true before enumeration completes and TinyUSB drivers are started.
-static size_t _mounted_devices = 0;
+static volatile size_t _mounted_devices = 0;
 
 void tuh_mount_cb(uint8_t dev_addr) {
     _mounted_devices |= 1 << dev_addr;
@@ -60,8 +64,8 @@ void tuh_umount_cb(uint8_t dev_addr) {
     usb_host_bulk_stop_device(dev_addr);
 }
 
-static xfer_result_t _xfer_result;
-static size_t _actual_len;
+static volatile xfer_result_t _xfer_result;
+static volatile size_t _actual_len;
 
 #if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
 // Helper to ensure buffer is DMA-capable for transfer operations
@@ -110,6 +114,8 @@ void common_hal_usb_core_device_deinit(usb_core_device_obj_t *self) {
         return;
     }
     usb_host_bulk_device_deinit(self);
+    // A usb_host_audio stream ends with its endpoint, without a completion.
+    usb_host_audio_stop_device(self->device_address);
     size_t open_size = sizeof(self->open_endpoints);
     for (size_t i = 0; i < open_size; i++) {
         if (self->open_endpoints[i] != 0) {
@@ -139,11 +145,21 @@ uint16_t common_hal_usb_core_device_get_idProduct(usb_core_device_obj_t *self) {
 }
 
 static void _transfer_done_cb(tuh_xfer_t *xfer) {
-    // Store the result so we stop waiting for the transfer.
-    _xfer_result = xfer->result;
     // The passed in xfer is not the original one we passed in, so we need to
     // copy any info out that we want (like actual_len.)
     _actual_len = xfer->actual_len;
+    // Store the result so we stop waiting for the transfer. The waiter reads
+    // _actual_len once it sees the result, so the result has to come last.
+    __atomic_thread_fence(__ATOMIC_RELEASE);
+    _xfer_result = xfer->result;
+}
+
+// The result of the transfer, once the callback has stored it.
+static xfer_result_t _get_xfer_result(void) {
+    xfer_result_t result = _xfer_result;
+    // _actual_len is read after this, and must be at least as new.
+    __atomic_thread_fence(__ATOMIC_ACQUIRE);
+    return result;
 }
 
 static bool _wait_for_callback(void) {
@@ -158,7 +174,7 @@ static bool _wait_for_callback(void) {
         return false;
     }
     // Handle callback result code from TinyUSB
-    xfer_result_t result = _xfer_result;
+    xfer_result_t result = _get_xfer_result();
     _xfer_result = XFER_RESULT_INVALID;
     switch (result) {
         case XFER_RESULT_SUCCESS:
@@ -222,7 +238,7 @@ static size_t _handle_timed_transfer_callback(tuh_xfer_t *xfer, mp_int_t timeout
         return 0;
     }
     // Handle transfer result code from TinyUSB
-    xfer_result_t result = _xfer_result;
+    xfer_result_t result = _get_xfer_result();
     _xfer_result = XFER_RESULT_INVALID;
     // Free the bounce buffer only on paths that raise: raising unwinds past
     // the caller's cleanup, so it must be freed here. Paths that return

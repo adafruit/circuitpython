@@ -40,6 +40,7 @@ size_t ringbuf_num_empty(ringbuf_t *r);
 size_t ringbuf_num_filled(ringbuf_t *r);
 size_t ringbuf_put_n(ringbuf_t *r, const uint8_t *buf, size_t bufsize);
 size_t ringbuf_get_n(ringbuf_t *r, uint8_t *buf, size_t bufsize);
+size_t ringbuf_discard_n(ringbuf_t *r, size_t n);
 
 // Note: big-endian. Return -1 if can't read or write two bytes.
 int ringbuf_get16(ringbuf_t *r);
