@@ -438,6 +438,16 @@ size_t port_heap_get_largest_free_size(void) {
 bool port_heap_ptr_is_internal(const void *ptr) {
     return esp_ptr_internal(ptr);
 }
+
+// The IDF takes internal RAM at any time, for Wi-Fi and BLE. The heap leaves it this much.
+#define INTERNAL_RAM_RESERVE (64 * 1024)
+
+void *port_heap_grow_internal(size_t size) {
+    if (heap_caps_get_free_size(MALLOC_CAP_8BIT | MALLOC_CAP_INTERNAL) < size + INTERNAL_RAM_RESERVE) {
+        return NULL;
+    }
+    return port_malloc(size, true);
+}
 #endif
 
 #if MICROPY_PERSISTENT_CODE_LOAD_NATIVE
