@@ -25,24 +25,29 @@ static keypad_scanner_funcs_t keys_funcs = {
 };
 
 void common_hal_keypad_keys_construct(keypad_keys_obj_t *self, mp_uint_t num_pins, const mcu_pin_obj_t *pins[], bool value_when_pressed, bool pull, mp_float_t interval, size_t max_events, uint8_t debounce_threshold) {
-    mp_obj_t dios[num_pins];
+    common_hal_keypad_deinit_core(self);
 
+    mp_obj_t dios[num_pins];
     for (size_t i = 0; i < num_pins; i++) {
-        digitalio_digitalinout_obj_t *dio =
-            mp_obj_malloc(digitalio_digitalinout_obj_t, &digitalio_digitalinout_type);
-        common_hal_digitalio_digitalinout_construct(dio, pins[i]);
-        if (pull) {
-            common_hal_digitalio_digitalinout_set_pull(dio, value_when_pressed ? PULL_DOWN : PULL_UP);
-        }
-        dios[i] = dio;
+        dios[i] = mp_obj_malloc(digitalio_digitalinout_obj_t, &digitalio_digitalinout_type);
     }
 
     self->digitalinouts = mp_obj_new_tuple(num_pins, dios);
     self->value_when_pressed = value_when_pressed;
     self->funcs = &keys_funcs;
 
-    keypad_construct_common((keypad_scanner_obj_t *)self, interval, max_events, debounce_threshold, true);
+    keypad_eventqueue_obj_t *events =
+        keypad_allocate_common((keypad_scanner_obj_t *)self, interval, max_events, debounce_threshold, true);
 
+    for (size_t i = 0; i < num_pins; i++) {
+        digitalio_digitalinout_obj_t *dio = dios[i];
+        common_hal_digitalio_digitalinout_construct(dio, pins[i]);
+        if (pull) {
+            common_hal_digitalio_digitalinout_set_pull(dio, value_when_pressed ? PULL_DOWN : PULL_UP);
+        }
+    }
+
+    keypad_start_common((keypad_scanner_obj_t *)self, events);
 }
 
 void common_hal_keypad_keys_deinit(keypad_keys_obj_t *self) {

@@ -95,6 +95,8 @@ else
     ifeq ($(CHIP_FAMILY), samd21)
       # max-inline-insns-auto increases the size of SAMD51 builds.
       CFLAGS += -finline-limit=45 --param max-inline-insns-auto=110
+    else ifeq ($(HAS_1MB_FLASH),0)
+      CFLAGS += -finline-limit=45
     endif
   endif
 
@@ -350,7 +352,7 @@ $(BUILD)/firmware.elf: $(OBJ) $(GENERATED_LD_FILE)
 	$(STEPECHO) "LINK $@"
 	$(Q)echo $(OBJ) > $(BUILD)/firmware.objs
 	$(Q)$(CC) -o $@ $(LDFLAGS) @$(BUILD)/firmware.objs -Wl,--print-memory-usage -Wl,--start-group $(LIBS) -Wl,--end-group
-	$(Q)$(SIZE) $@ | $(PYTHON) $(TOP)/tools/build_memory_info.py $@.map $(BUILD)
+	$(Q)$(PYTHON) $(TOP)/tools/build_memory_info.py $@.map $(BUILD) --elf $@
 endif
 
 $(BUILD)/firmware.bin: $(BUILD)/firmware.elf

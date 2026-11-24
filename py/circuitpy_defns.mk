@@ -510,6 +510,9 @@ endif
 ifeq ($(CIRCUITPY_VIDEOCORE),1)
 SRC_PATTERNS += videocore/%
 endif
+ifeq ($(CIRCUITPY_VIDEOGIF),1)
+SRC_PATTERNS += videogif/%
+endif
 ifeq ($(CIRCUITPY_WARNINGS),1)
 SRC_PATTERNS += warnings/%
 endif
@@ -693,7 +696,9 @@ $(filter $(SRC_PATTERNS), \
 	_bleio/ScanEntry.c \
 	_eve/__init__.c \
 	__future__/__init__.c \
+	busdisplay/BusDisplay.c \
 	camera/ImageFormat.c \
+	epaperdisplay/EPaperDisplay.c \
 	canio/Match.c \
 	codeop/__init__.c \
 	countio/Edge.c \
@@ -701,8 +706,16 @@ $(filter $(SRC_PATTERNS), \
 	digitalio/Direction.c \
 	digitalio/DriveMode.c \
 	digitalio/Pull.c \
+	displayio/Bitmap.c \
+	displayio/ColorConverter.c \
+	displayio/Group.c \
+	displayio/OnDiskBitmap.c \
+	displayio/Palette.c \
+	displayio/TileGrid.c \
+	displayio/__init__.c \
 	displayio/Colorspace.c \
 	fontio/Glyph.c \
+	framebufferio/FramebufferDisplay.c \
 	imagecapture/ParallelImageCapture.c \
 	locale/__init__.c \
 	math/__init__.c \
@@ -719,6 +732,8 @@ $(filter $(SRC_PATTERNS), \
 	supervisor/RunReason.c \
 	supervisor/Runtime.c \
 	supervisor/StatusBar.c \
+	vectorio/VectorShape.c \
+	videogif/__init__.c \
 	wifi/AuthMode.c \
 	wifi/Packet.c \
 	wifi/PowerManagement.c \
@@ -777,6 +792,7 @@ SRC_SHARED_MODULE_ALL = \
 	audiospeed/Resampler.c \
 	audiospeed/SpeedChanger.c \
 	audiospeed/__init__.c \
+	audiotap/LevelReader.c \
 	audiotap/Tap.c \
 	audiotap/__init__.c \
 	audiodelays/Echo.c \
@@ -814,18 +830,9 @@ SRC_SHARED_MODULE_ALL = \
 	adafruit_bus_device/i2c_device/I2CDevice.c \
 	adafruit_bus_device/spi_device/SPIDevice.c \
 	busdisplay/__init__.c \
-	busdisplay/BusDisplay.c \
 	canio/Match.c \
 	canio/Message.c \
 	canio/RemoteTransmissionRequest.c \
-	displayio/Bitmap.c \
-	displayio/ColorConverter.c \
-	displayio/Group.c \
-	displayio/OnDiskBitmap.c \
-	displayio/Palette.c \
-	displayio/TileGrid.c \
-	displayio/area.c \
-	displayio/__init__.c \
 	dotclockframebuffer/__init__.c \
 	emmcio/__init__.c \
 	epaperdisplay/__init__.c \
@@ -840,7 +847,6 @@ SRC_SHARED_MODULE_ALL = \
 	lvfontio/__init__.c \
 	fourwire/__init__.c \
 	fourwire/FourWire.c \
-	framebufferio/FramebufferDisplay.c \
 	framebufferio/__init__.c \
 	getpass/__init__.c \
 	gifio/__init__.c \
@@ -883,12 +889,16 @@ SRC_SHARED_MODULE_ALL = \
 	sdcardio/SDCard.c \
 	sdcardio/__init__.c \
 	cryptography/__init__.c \
+	cryptography/exceptions/__init__.c \
 	cryptography/hazmat/__init__.c \
 	cryptography/hazmat/primitives/__init__.c \
 	cryptography/hazmat/primitives/asymmetric/__init__.c \
+	cryptography/hazmat/primitives/asymmetric/ec/__init__.c \
+	cryptography/hazmat/primitives/asymmetric/ec/EllipticCurvePublicKey.c \
 	cryptography/hazmat/primitives/asymmetric/padding/__init__.c \
 	cryptography/hazmat/primitives/asymmetric/rsa/__init__.c \
 	cryptography/hazmat/primitives/asymmetric/rsa/DigitalSignatureKey.c \
+	cryptography/hazmat/primitives/asymmetric/utils/__init__.c \
 	cryptography/hazmat/primitives/hashes/__init__.c \
 	hardwarekey/HardwareKey.c \
 	sharpdisplay/SharpMemoryFramebuffer.c \
@@ -922,13 +932,52 @@ SRC_SHARED_MODULE_ALL = \
 	vectorio/Circle.c \
 	vectorio/Polygon.c \
 	vectorio/Rectangle.c \
-	vectorio/VectorShape.c \
 	vectorio/__init__.c \
 	videocore/VideoBuffer.c \
 	videocore/__init__.c \
+	videogif/GifDecoder.c \
 	warnings/__init__.c \
 	watchdog/__init__.c \
 	zlib/__init__.c \
+
+# The displayio and vectorio implementation sources live in one of the two backend
+# directories. vectorio's shape math (Circle, Polygon, Rectangle) is backend agnostic and
+# lives in shared-module/vectorio/ directly.
+ifeq ($(CIRCUITPY_DISPLAYIO_LVGL),1)
+SRC_SHARED_MODULE_INTERNAL += \
+$(filter $(SRC_PATTERNS), \
+	displayio/lvgl/Bitmap.c \
+	displayio/lvgl/ColorConverter.c \
+	displayio/lvgl/Group.c \
+	displayio/lvgl/ImageRoot.c \
+	displayio/lvgl/OnDiskBitmap.c \
+	displayio/lvgl/Palette.c \
+	busdisplay/lvgl/BusDisplay.c \
+	displayio/lvgl/TileGrid.c \
+	displayio/legacy/__init__.c \
+	epaperdisplay/lvgl/EPaperDisplay.c \
+	framebufferio/lvgl/FramebufferDisplay.c \
+	vectorio/lvgl/VectorShape.c \
+	videocore/lvgl/VideoBuffer.c \
+)
+else
+SRC_SHARED_MODULE_INTERNAL += \
+$(filter $(SRC_PATTERNS), \
+	busdisplay/legacy/BusDisplay.c \
+	displayio/legacy/__init__.c \
+	displayio/legacy/Bitmap.c \
+	displayio/legacy/ColorConverter.c \
+	displayio/legacy/display_core_scanline.c \
+	displayio/legacy/Group.c \
+	displayio/legacy/OnDiskBitmap.c \
+	displayio/legacy/Palette.c \
+	displayio/legacy/TileGrid.c \
+	epaperdisplay/legacy/EPaperDisplay.c \
+	framebufferio/legacy/FramebufferDisplay.c \
+	vectorio/legacy/VectorShape.c \
+	videocore/legacy/VideoBuffer.c \
+)
+endif
 
 # All possible sources are listed here, and are filtered by SRC_PATTERNS.
 SRC_SHARED_MODULE = $(filter $(SRC_PATTERNS), $(SRC_SHARED_MODULE_ALL))
@@ -947,6 +996,12 @@ SRC_SHARED_MODULE_EXPANDED = $(addprefix shared-bindings/, $(SRC_SHARED_MODULE))
 # because a few modules have files both in common-hal/ and shared-module/.
 # Doing a $(sort ...) removes duplicates as part of sorting.
 SRC_COMMON_HAL_SHARED_MODULE_EXPANDED = $(sort $(SRC_COMMON_HAL_EXPANDED) $(SRC_SHARED_MODULE_EXPANDED))
+
+# The port provides vector code for audiomixer.
+ifeq ($(CIRCUITPY_AUDIOMIXER_USE_PORT_MIX),1)
+SRC_COMMON_HAL_ALL += \
+	audiomixer/__init__.c
+endif
 
 # Use the native touchio if requested. This flag is set conditionally in, say, mpconfigport.h.
 # The presence of common-hal/touchio/* does not imply it's available for all chips in a port,
@@ -1041,6 +1096,32 @@ SRC_MOD += lib/tjpgd/src/tjpgd.c
 $(BUILD)/lib/tjpgd/src/tjpgd.o: CFLAGS += -Wno-shadow -Wno-cast-align
 endif
 
+# A port adds its own PSA drivers to mbedtls's dispatch layer by setting
+# MBEDTLS_DRIVER_PATCH (in mpconfigport.mk) to a patch against mbedtls's driver
+# wrapper templates and PSA context header. They are copied to the build directory
+# and patched with no fuzz, so an mbedtls update that moves the patched code stops
+# the build here. The patched header shadows mbedtls's own for every file, and is
+# made before anything is compiled.
+ifneq ($(MBEDTLS_DRIVER_PATCH),)
+MBEDTLS_DISPATCH := $(BUILD)/psa_dispatch
+MBEDTLS_DISPATCH_STAMP := $(MBEDTLS_DISPATCH)/.patched
+MBEDTLS_WRAPPERS_ARGS := --template-dir $(MBEDTLS_DISPATCH)/driver_templates
+CFLAGS += -I$(MBEDTLS_DISPATCH)/include
+QSTR_GLOBAL_REQUIREMENTS += $(MBEDTLS_DISPATCH_STAMP)
+
+MBEDTLS_DISPATCH_TEMPLATES := $(wildcard $(TOP)/lib/mbedtls/tf-psa-crypto/scripts/data_files/driver_templates/*)
+MBEDTLS_DISPATCH_CONTEXTS := $(TOP)/lib/mbedtls/tf-psa-crypto/include/psa/crypto_driver_contexts_primitives.h
+
+$(MBEDTLS_DISPATCH_STAMP): $(MBEDTLS_DRIVER_PATCH) $(MBEDTLS_DISPATCH_TEMPLATES) $(MBEDTLS_DISPATCH_CONTEXTS)
+	$(STEPECHO) "PATCH $<"
+	$(Q)rm -rf $(MBEDTLS_DISPATCH)
+	$(Q)mkdir -p $(MBEDTLS_DISPATCH)/driver_templates $(MBEDTLS_DISPATCH)/include/psa
+	$(Q)cp $(MBEDTLS_DISPATCH_TEMPLATES) $(MBEDTLS_DISPATCH)/driver_templates/
+	$(Q)cp $(MBEDTLS_DISPATCH_CONTEXTS) $(MBEDTLS_DISPATCH)/include/psa/
+	$(Q)patch -s -F0 -p1 -d $(MBEDTLS_DISPATCH) < $<
+	$(Q)touch $@
+endif
+
 ifeq ($(CIRCUITPY_HASHLIB_MBEDTLS_ONLY),1)
 # mbedtls 4.x moved the crypto implementations out of lib/mbedtls/library into the
 # tf-psa-crypto submodule and made the legacy mbedtls_sha256_*() headers private, so
@@ -1075,10 +1156,10 @@ SRC_MOD += $(MBEDTLS_HASHLIB_WRAPPERS_C:$(BUILD)/%=%)
 $(MBEDTLS_HASHLIB_WRAPPERS_C): $(MBEDTLS_HASHLIB_WRAPPERS_H)
 	@true
 
-$(MBEDTLS_HASHLIB_WRAPPERS_H): $(TOP)/lib/mbedtls/tf-psa-crypto/scripts/generate_driver_wrappers.py
+$(MBEDTLS_HASHLIB_WRAPPERS_H): $(TOP)/lib/mbedtls/tf-psa-crypto/scripts/generate_driver_wrappers.py $(MBEDTLS_DISPATCH_STAMP)
 	$(STEPECHO) "GEN $@"
 	$(Q)mkdir -p $(MBEDTLS_HASHLIB_GEN)
-	$(Q)PYTHONPATH=$(TOP)/lib/mbedtls/framework/scripts $(PYTHON) $< $(MBEDTLS_HASHLIB_GEN)
+	$(Q)PYTHONPATH=$(TOP)/lib/mbedtls/framework/scripts $(PYTHON) $< $(MBEDTLS_WRAPPERS_ARGS) $(MBEDTLS_HASHLIB_GEN)
 
 # psa_crypto.c and friends #include the generated header.
 $(addprefix $(BUILD)/, $(SRC_MOD:.c=.o)): $(MBEDTLS_HASHLIB_WRAPPERS_H)
@@ -1132,13 +1213,18 @@ $(BUILD)/lib/uzlib/tinflate.o: CFLAGS += -Wno-missing-braces -Wno-missing-protot
 endif
 
 # All possible sources are listed here, and are filtered by SRC_PATTERNS.
-SRC_SHARED_MODULE_INTERNAL = \
+# area.c is shared by both compositors (vectorio needs the area helpers) so it is
+# always compiled.
+SRC_SHARED_MODULE_INTERNAL += \
 $(filter $(SRC_PATTERNS), \
 	_airlift/network.c \
 	_airlift/socketpool.c \
 	_airlift/transport.c \
 	displayio/bus_core.c \
 	displayio/display_core.c \
+	displayio/area.c \
+	epaperdisplay/epaper_core.c \
+	epaperdisplay/lag_drive.c \
 	usb/utf16le.c \
 )
 

@@ -72,6 +72,33 @@ long heap_size = 1024 * 1024 * (sizeof(mp_uint_t) / 4);
 #define MICROPY_GC_SPLIT_HEAP_N_HEAPS (1)
 #endif
 
+// CIRCUITPY-CHANGE: let the collector add and free heaps, as it does on the boards
+#if MICROPY_GC_SPLIT_HEAP_AUTO
+// The heap starts with one of the MICROPY_GC_SPLIT_HEAP_N_HEAPS parts of heap_size and the
+// collector adds the others when it needs them, so the total stays the same.
+static size_t heaps_added;
+
+size_t gc_get_max_new_split(void) {
+    if (heaps_added < MICROPY_GC_SPLIT_HEAP_N_HEAPS - 1) {
+        return heap_size / MICROPY_GC_SPLIT_HEAP_N_HEAPS;
+    }
+    return 0;
+}
+
+void *unix_alloc_heap(size_t size) {
+    void *heap = malloc(size);
+    if (heap != NULL) {
+        heaps_added++;
+    }
+    return heap;
+}
+
+void unix_free_heap(void *heap) {
+    heaps_added--;
+    free(heap);
+}
+#endif
+
 #if !MICROPY_PY_SYS_PATH
 #error "The unix port requires MICROPY_PY_SYS_PATH=1"
 #endif
@@ -488,6 +515,13 @@ MP_NOINLINE int main_(int argc, char **argv) {
     char *heaps[MICROPY_GC_SPLIT_HEAP_N_HEAPS];
     long multi_heap_size = heap_size / MICROPY_GC_SPLIT_HEAP_N_HEAPS;
     for (size_t i = 0; i < MICROPY_GC_SPLIT_HEAP_N_HEAPS; i++) {
+        // CIRCUITPY-CHANGE: with MICROPY_GC_SPLIT_HEAP_AUTO the collector adds the other heaps itself
+        #if MICROPY_GC_SPLIT_HEAP_AUTO
+        if (i > 0) {
+            heaps[i] = NULL;
+            continue;
+        }
+        #endif
         heaps[i] = malloc(multi_heap_size);
         if (i == 0) {
             gc_init(heaps[i], heaps[i] + multi_heap_size);

@@ -44,6 +44,26 @@ static uint8_t _report_kbd_report_id;
 static uint8_t user_keymap[384];
 static size_t user_keymap_len = 0;
 
+// The TinyUSB callbacks below run in tuh_task(), which may be a task of its own,
+// such as the espressif USB host task (CIRCUITPY_USB_HOST_TASK) or the MAX3421E
+// task on espressif, while the VM reads keys, repeats them and attaches and
+// detaches the keyboard. This lock keeps them apart. Nothing waits for TinyUSB
+// while holding it.
+#if OSAL_MUTEX_REQUIRED
+static osal_mutex_def_t _lock_def;
+static osal_mutex_t _lock;
+#else
+#define _lock NULL
+#endif
+
+static void _lock_take(void) {
+    (void)osal_mutex_lock(_lock, OSAL_TIMEOUT_WAIT_FOREVER);
+}
+
+static void _lock_give(void) {
+    (void)osal_mutex_unlock(_lock);
+}
+
 void usb_keymap_set(const uint8_t *buf, size_t len) {
     user_keymap_len = len = MIN(len, sizeof(user_keymap));
     memcpy(user_keymap, buf, len);
@@ -205,7 +225,9 @@ static void send_repeat(void) {
 }
 
 static void repeat_f(void *unused) {
+    _lock_take();
     send_repeat();
+    _lock_give();
 }
 
 hid_keyboard_report_t old_report;
@@ -322,7 +344,9 @@ bool usb_keyboard_in_use(uint8_t dev_addr, uint8_t interface) {
 }
 
 void usb_keyboard_detach(uint8_t dev_addr, uint8_t interface) {
+    _lock_take();
     if (!usb_keyboard_in_use(dev_addr, interface)) {
+        _lock_give();
         return;
     }
     // No more key repeats
@@ -331,11 +355,14 @@ void usb_keyboard_detach(uint8_t dev_addr, uint8_t interface) {
     tuh_hid_receive_abort(dev_addr, interface);
     _dev_addr = 0;
     _interface = 0;
+    _lock_give();
     supervisor_status_bar_request_update(false);
 }
 
 void usb_keyboard_attach(uint8_t dev_addr, uint8_t interface) {
+    _lock_take();
     if (usb_keyboard_in_use(dev_addr, interface) || _dev_addr != 0) {
+        _lock_give();
         return;
     }
     uint8_t const itf_protocol = tuh_hid_interface_protocol(dev_addr, interface);
@@ -348,6 +375,7 @@ void usb_keyboard_attach(uint8_t dev_addr, uint8_t interface) {
         _interface = interface;
         tuh_hid_receive_report(dev_addr, interface);
     }
+    _lock_give();
     supervisor_status_bar_request_update(false);
 }
 
@@ -357,6 +385,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t interface, uint8_t const *desc_r
     // Otherwise its interrupt IN endpoint is never drained, and a CircuitPython
     // device plugged into us raises OSError("USB busy") on its second
     // send_report() (#10721).
+    _lock_take();
     if (tuh_hid_interface_protocol(dev_addr, interface) == HID_ITF_PROTOCOL_NONE &&
         _report_kbd_dev_addr == 0) {
         tuh_hid_report_info_t report_info[8];
@@ -372,19 +401,23 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t interface, uint8_t const *desc_r
             }
         }
     }
+    _lock_give();
     usb_keyboard_attach(dev_addr, interface);
 }
 
 void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t interface) {
+    _lock_take();
     if (dev_addr == _report_kbd_dev_addr && interface == _report_kbd_interface) {
         _report_kbd_dev_addr = 0;
         _report_kbd_interface = 0;
         _report_kbd_report_id = 0;
     }
+    _lock_give();
     usb_keyboard_detach(dev_addr, interface);
 }
 
 void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *report, uint16_t len) {
+    _lock_take();
     if (len == sizeof(hid_keyboard_report_t)) {
         process_event(dev_addr, instance, (hid_keyboard_report_t *)report);
     } else if (dev_addr == _report_kbd_dev_addr && instance == _report_kbd_interface &&
@@ -394,6 +427,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
         // Report-protocol keyboards prefix the report with its report ID.
         process_event(dev_addr, instance, (const hid_keyboard_report_t *)(report + 1));
     }
+    _lock_give();
     // Always request the next report, even when this one wasn't a keyboard
     // report we understand (a mouse or consumer control report ID from a
     // composite device, for instance), so that the device's endpoint keeps
@@ -402,18 +436,30 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
 }
 
 void usb_keyboard_init(void) {
+    #if OSAL_MUTEX_REQUIRED
+    // This runs once, at startup.
+    _lock = osal_mutex_create(&_lock_def);
+    #endif
+    _lock_take();
     ringbuf_init(&_incoming_ringbuf, _buf, sizeof(_buf));
+    _lock_give();
 }
 
 uint32_t usb_keyboard_chars_available(void) {
-    return ringbuf_num_filled(&_incoming_ringbuf);
+    _lock_take();
+    uint32_t count = ringbuf_num_filled(&_incoming_ringbuf);
+    _lock_give();
+    return count;
 }
 
 char usb_keyboard_read_char(void) {
+    char c = -1;
+    _lock_take();
     if (ringbuf_num_filled(&_incoming_ringbuf) > 0) {
-        return ringbuf_get(&_incoming_ringbuf);
+        c = ringbuf_get(&_incoming_ringbuf);
     }
-    return -1;
+    _lock_give();
+    return c;
 }
 
 void usb_keyboard_status(void) {

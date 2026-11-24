@@ -1,0 +1,13 @@
+/* No Zephyr console by default, so LPUART1 on the Arduino header's D0/D1
+ * (also the debug probe's serial port) is free for busio.UART, as in
+ * ports/mimxrt10xx. A CONSOLE=1 build puts the console back on LPUART1
+ * (console.overlay). */
+/ {
+	chosen {
+		/delete-property/ zephyr,console;
+		/delete-property/ zephyr,shell-uart;
+		/delete-property/ zephyr,uart-mcumgr;
+	};
+};
+
+#include "../../../app.overlay"

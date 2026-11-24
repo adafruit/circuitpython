@@ -88,14 +88,19 @@ static int calculate_pulse_count(uint32_t frequency, uint8_t *prescaler) {
     return 0;
 }
 
+static void mark_deinit(pwmio_pwmout_obj_t *self) {
+    self->pin = NULL;
+}
+
 pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
     const mcu_pin_obj_t *pin,
     uint16_t duty,
     uint32_t frequency,
     bool variable_frequency) {
-    self->pin = pin;
+    mark_deinit(self);
     self->variable_frequency = variable_frequency;
 
+    self->pwm = NULL;
     for (uint32_t i = 0; i < MP_ARRAY_SIZE(mcu_pwm_list); ++i) {
         if (mcu_pwm_list[i].pin != pin) {
             continue;
@@ -108,6 +113,11 @@ pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
 
     if (self->pwm == NULL) {
         return PWMOUT_INVALID_PIN;
+    }
+
+    // X channels can't do a full 100% duty cycle.
+    if (duty == 65535 && self->pwm->channel == kPWM_PwmX) {
+        mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q"), MP_QSTR_duty_cycle);
     }
 
     PWM_Type *flexpwm = self->pwm->pwm;
@@ -203,7 +213,7 @@ pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
         _pwm_sm_frequencies[flexpwm_index][submodule] = frequency;
 
         if (variable_frequency) {
-            _pwm_variable_frequency[flexpwm_index] = sm_mask;
+            _pwm_variable_frequency[flexpwm_index] |= sm_mask;
         }
     }
 
@@ -214,6 +224,8 @@ pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
     // Configure the IOMUX once we know everything else is working.
     config_periph_pin(self->pwm);
 
+    claim_pin(pin);
+    self->pin = pin;
     return PWMOUT_OK;
 }
 
@@ -232,7 +244,7 @@ void common_hal_pwmio_pwmout_deinit(pwmio_pwmout_obj_t *self) {
 
     // Reset the pin before we turn it off.
     common_hal_reset_pin(self->pin);
-    self->pin = NULL;
+    mark_deinit(self);
 
     // Always disable the output.
     flexpwm->OUTEN &= ~_outen_mask(submodule, self->pwm->channel);

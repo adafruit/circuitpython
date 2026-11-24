@@ -20,7 +20,7 @@ void *common_hal_rgbmatrix_timer_allocate(rgbmatrix_rgbmatrix_obj_t *self) {
 }
 
 static uint8_t tc_index_from_ptr(void *ptr) {
-    for (uint8_t i = TC_INST_NUM; i > 0; i--) {
+    for (uint8_t i = 0; i < TC_INST_NUM; i++) {
         if (tc_insts[i] == ptr) {
             return i;
         }
@@ -53,4 +53,5 @@ void common_hal_rgbmatrix_timer_free(void *ptr) {
     }
     tc_set_enable(ptr, false);
     tc_reset(ptr);
+    turn_off_clocks(TIMER_TYPE_TC, timer_index);
 }

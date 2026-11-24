@@ -36,6 +36,10 @@
 #include "psa/crypto.h"
 #endif
 
+#if CIRCUITPY_RP2_SHA256_HW
+#include "rp2_sha256_psa.h"
+#endif
+
 #if CIRCUITPY_WIFI
 #include "common-hal/wifi/__init__.h"
 #endif
@@ -215,7 +219,6 @@ static void __no_inline_not_in_flash_func(setup_psram)(void) {
         reset_pin_number(cs_pin);
         return;
     }
-    never_reset_pin_number(cs_pin);
 
     // Enable quad mode.
     qmi_hw->direct_csr = 30 << QMI_DIRECT_CSR_CLKDIV_LSB |
@@ -378,6 +381,14 @@ size_t port_heap_get_largest_free_size(void) {
 
 safe_mode_t port_init(void) {
     _binary_info();
+
+    // Stage 2 left slow flash timing that is safe at any system clock. Switch
+    // to the fastest flash timing allowed at this clock. Interrupts are off so
+    // that no interrupt handler reads flash during the change.
+    common_hal_mcu_disable_interrupts();
+    mcu_processor_update_flash_timing(clock_get_hz(clk_sys) / 1000);
+    common_hal_mcu_enable_interrupts();
+
     // Set brown out.
 
     // Load from the XIP memory space that doesn't cache. That way we don't
@@ -411,13 +422,6 @@ safe_mode_t port_init(void) {
 
     // Set up the critical section to protect the background task queue.
     critical_section_init(&background_queue_lock);
-
-    #if CIRCUITPY_CYW43
-    never_reset_pin_number(CYW43_DEFAULT_PIN_WL_REG_ON);
-    never_reset_pin_number(CYW43_DEFAULT_PIN_WL_DATA_IN);
-    never_reset_pin_number(CYW43_DEFAULT_PIN_WL_CS);
-    never_reset_pin_number(CYW43_DEFAULT_PIN_WL_CLOCK);
-    #endif
 
     // Reset everything into a known state before board_init.
     reset_port();
@@ -478,28 +482,8 @@ safe_mode_t port_init(void) {
 }
 
 void reset_port(void) {
-    #if CIRCUITPY_BUSIO
-    reset_uart();
-    #endif
-
-    #if CIRCUITPY_COUNTIO
-    reset_countio();
-    #endif
-
-    #if CIRCUITPY_RP2PIO
-    reset_rp2pio_statemachine();
-    #endif
-
-    #if CIRCUITPY_SDIOIO
-    sdioio_reset();
-    #endif
-
     #if CIRCUITPY_RTC
     rtc_reset();
-    #endif
-
-    #if CIRCUITPY_AUDIOCORE
-    audio_dma_reset();
     #endif
 
     #if CIRCUITPY_PICODVI_AUDIOOUT
@@ -516,6 +500,10 @@ void reset_port(void) {
     // common_hal_ssl_sslcontext_construct() re-inits PSA on demand.
     // So for raspberrypi, we must call mbedtls_psa_crypto_free() explicitly.
     mbedtls_psa_crypto_free();
+    #endif
+
+    #if CIRCUITPY_RP2_SHA256_HW
+    rp2_sha256_psa_reset();
     #endif
 
     #if CIRCUITPY_WATCHDOG
@@ -701,16 +689,6 @@ __attribute__((used)) void __not_in_flash_func(isr_hardfault)(void) {
 void port_task_yield(void) {
     #if CIRCUITPY_CYW43
     cyw43_arch_poll();
-    #endif
-}
-
-void port_boot_info(void) {
-    #if CIRCUITPY_CYW43
-    mp_printf(&mp_plat_print, "MAC");
-    for (int i = 0; i < 6; i++) {
-        mp_printf(&mp_plat_print, ":%02X", cyw43_state.mac[i]);
-    }
-    mp_printf(&mp_plat_print, "\n");
     #endif
 }
 

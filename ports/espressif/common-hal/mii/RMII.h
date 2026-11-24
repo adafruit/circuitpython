@@ -35,8 +35,7 @@ typedef struct {
     esp_eth_mac_t *mac;
 } mii_rmii_obj_t;
 
-// Claims the signals and marks them never-reset so VM teardowns leave the
-// RMII wiring alone. Raises NotImplementedError on chips whose EMAC cannot
+// Claims the signals. Raises NotImplementedError on chips whose EMAC cannot
 // route RMII signals via the GPIO matrix.
 void common_hal_mii_rmii_construct(mii_rmii_obj_t *self,
     mii_mdio_obj_t *mdio, uint32_t device,

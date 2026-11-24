@@ -116,6 +116,10 @@ emitter_tests_to_skip = {
         "misc/sys_settrace_loop.py",
         # These are bytecode-specific tests.
         "stress/bytecode_limit.py",
+        # CIRCUITPY-CHANGE: native code records no traceback entries.
+        "circuitpython/traceback_test.py",
+        # CIRCUITPY-CHANGE: these require "raise from".
+        "circuitpython/traceback_test_chained.py",
     ),
 }
 
@@ -195,6 +199,12 @@ platform_tests_to_skip = {
         # Skip thread tests that require more than 4 threads.
         "thread/stress_heap.py",
         "thread/thread_lock3.py",
+    ),
+    # CIRCUITPY-CHANGE: CircuitPython's Zephyr port (ports/zephyr-cp) is "Zephyr".
+    "Zephyr": (
+        "basics/array_micropython.py",  # no 'O' array typecode
+        "basics/memoryerror.py",  # 32-bit: the list size overflows before malloc fails
+        "basics/nanbox_smallint.py",  # no micropython.heap_unlock()
     ),
 }
 
@@ -567,6 +577,17 @@ def run_micropython(
                                 preexec_fn=preexec_fn,
                             )
                             banner = get(True)
+                            # CIRCUITPY-CHANGE: wait for the first prompt before sending input.
+                            #
+                            # get() returns after 20 ms of silence. With "-i -c", the -c output
+                            # can arrive well before the banner, especially on a loaded CI runner.
+                            # Input sent before the REPL puts the terminal in raw mode is echoed
+                            # by the kernel and corrupts the captured output.
+                            import time
+
+                            deadline = time.monotonic() + 5
+                            while not banner.endswith(b">>> ") and time.monotonic() < deadline:
+                                banner += get()
                             if send_sigint:
                                 import signal
 
@@ -1389,6 +1410,7 @@ the last matching regex is used:
         if args.test_dirs is None or main_tests_dir_in_args is not None:
             test_dirs = (
                 "basics",
+                "circuitpython",  # CIRCUITPY-CHANGE
                 "micropython",
                 "misc",
                 "extmod",

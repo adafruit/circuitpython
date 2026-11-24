@@ -47,7 +47,11 @@ static DWORD fatfs_bytes(void) {
     FATFS *fatfs = &fs_mount->fat.fatfs;
     return (fatfs->csize * SECSIZE(fatfs)) * (fatfs->n_fatent - 2);
 }
-static bool storage_extended = true;
+// A fresh filesystem does not extend into the next-update partition. Extending is opt-in through
+// storage.erase_filesystem(extended=True), and an existing extended filesystem is kept because
+// supervisor_flash_update_extended() notices it once it is mounted. That happens before the mount
+// is published, so every reader of storage_extended sees the same value.
+static bool storage_extended = false;
 static const esp_partition_t *_partition[2];
 #else
 static const esp_partition_t *_partition[1];
@@ -213,6 +217,7 @@ bool supervisor_flash_get_extended(void) {
 
 void supervisor_flash_update_extended(void) {
     #if CIRCUITPY_STORAGE_EXTEND
+    // Only keep extending when the filesystem on flash is already that big.
     storage_extended = (_partition[0]->size < fatfs_bytes());
     #endif
 }

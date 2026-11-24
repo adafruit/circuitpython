@@ -68,10 +68,6 @@
 #include "shared-module/board/__init__.h"
 #endif
 
-#if CIRCUITPY_CANIO
-#include "common-hal/canio/CAN.h"
-#endif
-
 #if CIRCUITPY_DISPLAYIO
 #include "shared-module/displayio/__init__.h"
 #include "shared-bindings/displayio/__init__.h"
@@ -95,6 +91,10 @@
 
 #if CIRCUITPY_USB_HOST_AUDIO
 #include "shared-module/usb_host_audio/USBIn.h"
+#endif
+
+#if CIRCUITPY_VIDEOGIF
+#include "shared-module/videogif/GifDecoder.h"
 #endif
 
 #if CIRCUITPY_MEMORYMONITOR
@@ -210,6 +210,7 @@ static void start_mp(safe_mode_t safe_mode) {
     _heap = _allocate_memory(safe_mode, "CIRCUITPY_HEAP_START_SIZE", CIRCUITPY_HEAP_START_SIZE, &heap_size);
     gc_init(_heap, _heap + heap_size);
     #endif
+    background_callback_heap_ready();
     mp_init();
     mp_obj_list_init((mp_obj_list_t *)mp_sys_path, 0);
     mp_obj_list_append(mp_sys_path, MP_OBJ_NEW_QSTR(MP_QSTR_)); // current dir (or base dir of the script)
@@ -395,6 +396,11 @@ static void cleanup_after_vm(mp_obj_t exception) {
     picogame_reset();
     #endif
 
+    // Stop GIF playback before the displays and their framebuffers go away.
+    #if CIRCUITPY_VIDEOGIF
+    videogif_reset();
+    #endif
+
     // Turn off the display and flush the filesystem before the heap disappears.
     #if CIRCUITPY_DISPLAYIO
     reset_displays();
@@ -407,12 +413,6 @@ static void cleanup_after_vm(mp_obj_t exception) {
     // Disable user related BLE state that uses the VM heap. Leave BLE workflow running if it's in use.
     #if CIRCUITPY_BLEIO
     bleio_user_reset();
-    #endif
-
-    #if CIRCUITPY_CANIO && CIRCUITPY_BULK_RESET
-    // Bulk-reset ports reset CAN controllers here. Finalizer ports rely on
-    // GC finalizers calling deinit on the CAN objects.
-    common_hal_canio_reset();
     #endif
 
     #if CIRCUITPY_STORAGE_MAP_FILE
@@ -442,8 +442,6 @@ static void cleanup_after_vm(mp_obj_t exception) {
     wifi_user_reset();
     #endif
 
-    // reset_board_buses() first because it may release pins from the never_reset state, so that
-    // reset_port() can reset them.
     #if CIRCUITPY_BOARD
     reset_board_buses();
     #endif
@@ -455,11 +453,6 @@ static void cleanup_after_vm(mp_obj_t exception) {
 
     // Runs finalisers while shutting down the heap.
     stop_mp();
-
-    // Don't reset pins until finalisers have run.
-    #if CIRCUITPY_BULK_RESET
-    reset_all_pins();
-    #endif
 
     // Let the workflows know we've reset in case they want to restart.
     supervisor_workflow_reset();
@@ -850,10 +843,6 @@ static bool __attribute__((noinline)) run_code_py(safe_mode_t safe_mode, bool *s
         #if CIRCUITPY_ALARM_PRESERVE_DIOS
         common_hal_alarm_clear_pin_preservations();
         #endif
-        // Reset pins, as if there was a hard reset.
-        #if CIRCUITPY_BULK_RESET
-        reset_all_pins();
-        #endif
         // Pretend that the next run is the first run, as if we were reset.
         *simulate_reset = true;
     }
@@ -1076,11 +1065,6 @@ int __attribute__((used)) main(void) {
     // initialise the cpu and peripherals
     set_safe_mode(port_init());
 
-    // All ports need pins reset, after never-reset pins are marked in port_init();
-    #if CIRCUITPY_BULK_RESET
-    reset_all_pins();
-    #endif
-
     port_heap_init();
 
 
@@ -1120,6 +1104,10 @@ int __attribute__((used)) main(void) {
         set_safe_mode(SAFE_MODE_NO_CIRCUITPY);
     }
 
+    #if CIRCUITPY_STORAGE_MAP_FILE
+    storage_map_file_init();
+    #endif
+
     // Wait briefly to give a reset window where we'll enter safe mode after the reset.
     // Do this after mounting the filesystem because settings.toml can contain
     // CIRCUITPY_SAFE_MODE_DELAY to change the default delay.
@@ -1145,6 +1133,12 @@ int __attribute__((used)) main(void) {
     // Reset everything and prep MicroPython to run boot.py.
     reset_port();
     reset_board();
+
+    #if CIRCUITPY_USB_KEYBOARD_WORKFLOW
+    // board_init() or boot.py may start a USB host port, and from then on
+    // TinyUSB's callbacks use the keyboard's lock and buffer.
+    usb_keyboard_init();
+    #endif
 
     // displays init after filesystem, since they could share the flash SPI
     board_init();

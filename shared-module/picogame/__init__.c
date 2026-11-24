@@ -1021,7 +1021,7 @@ bool picogame_strip_begin(
     area.x2 = x1;
     area.y2 = y1;
     area.next = NULL;
-    displayio_display_bus_set_region_to_update(&display->bus, &display->core, &area);
+    displayio_display_bus_set_region_to_update(&display->bus, &display->core.colorspace, &area);
 
     while (!displayio_display_bus_begin_transaction(&display->bus)) {
         RUN_BACKGROUND_TASKS;

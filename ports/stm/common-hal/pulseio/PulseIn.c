@@ -76,8 +76,14 @@ static void pulsein_exti_event_handler(uint8_t num) {
     self->last_overflow = current_overflow;
 }
 
+static void mark_deinit(pulseio_pulsein_obj_t *self) {
+    self->pin = NULL;
+}
+
 void common_hal_pulseio_pulsein_construct(pulseio_pulsein_obj_t *self, const mcu_pin_obj_t *pin,
     uint16_t maxlen, bool idle_state) {
+    mark_deinit(self);
+
     // STM32 has one shared EXTI for each pin number, 0-15
     if (!stm_peripherals_exti_is_free(pin->number)) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Pin interrupt already in use"));
@@ -89,17 +95,6 @@ void common_hal_pulseio_pulsein_construct(pulseio_pulsein_obj_t *self, const mcu
         // TODO: free the EXTI here?
         m_malloc_fail(maxlen * sizeof(uint16_t));
     }
-
-    // Set internal variables
-    self->pin = pin;
-    self->maxlen = maxlen;
-    self->idle_state = idle_state;
-    self->start = 0;
-    self->len = 0;
-    self->first_edge = true;
-    self->paused = false;
-    self->last_count = 0;
-    self->last_overflow = 0;
 
     if (HAL_TIM_Base_GetState(&tim_handle) == HAL_TIM_STATE_RESET) {
         // Find a suitable timer
@@ -129,6 +124,17 @@ void common_hal_pulseio_pulsein_construct(pulseio_pulsein_obj_t *self, const mcu
     }
     // Add to active PulseIns
     refcount++;
+
+    // Set internal variables
+    self->pin = pin;
+    self->maxlen = maxlen;
+    self->idle_state = idle_state;
+    self->start = 0;
+    self->len = 0;
+    self->first_edge = true;
+    self->paused = false;
+    self->last_count = 0;
+    self->last_overflow = 0;
 
     if (!stm_peripherals_exti_reserve(pin->number)) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Pin interrupt already in use"));
@@ -161,7 +167,7 @@ void common_hal_pulseio_pulsein_deinit(pulseio_pulsein_obj_t *self) {
     // Disable the EXTI IRQ, unreserve the line and clear the callback.
     stm_peripherals_exti_reset_exti(self->pin->number);
     reset_pin_number(self->pin->port, self->pin->number);
-    self->pin = NULL;
+    mark_deinit(self);
 
     refcount--;
     if (refcount == 0) {
@@ -209,23 +215,23 @@ void common_hal_pulseio_pulsein_resume(pulseio_pulsein_obj_t *self, uint16_t tri
 }
 
 void common_hal_pulseio_pulsein_clear(pulseio_pulsein_obj_t *self) {
-    stm_peripherals_exti_disable(self->pin->number);
+    common_hal_mcu_disable_interrupts();
     self->start = 0;
     self->len = 0;
-    stm_peripherals_exti_enable(self->pin->number);
+    common_hal_mcu_enable_interrupts();
 }
 
 uint16_t common_hal_pulseio_pulsein_get_item(pulseio_pulsein_obj_t *self, int16_t index) {
-    stm_peripherals_exti_disable(self->pin->number);
+    common_hal_mcu_disable_interrupts();
     if (index < 0) {
         index += self->len;
     }
     if (index < 0 || index >= self->len) {
-        stm_peripherals_exti_enable(self->pin->number);
+        common_hal_mcu_enable_interrupts();
         mp_raise_IndexError_varg(MP_ERROR_TEXT("%q out of range"), MP_QSTR_index);
     }
     uint16_t value = self->buffer[(self->start + index) % self->maxlen];
-    stm_peripherals_exti_enable(self->pin->number);
+    common_hal_mcu_enable_interrupts();
     return value;
 }
 
@@ -233,11 +239,11 @@ uint16_t common_hal_pulseio_pulsein_popleft(pulseio_pulsein_obj_t *self) {
     if (self->len == 0) {
         mp_raise_IndexError_varg(MP_ERROR_TEXT("pop from empty %q"), MP_QSTR_PulseIn);
     }
-    stm_peripherals_exti_disable(self->pin->number);
+    common_hal_mcu_disable_interrupts();
     uint16_t value = self->buffer[self->start];
     self->start = (self->start + 1) % self->maxlen;
     self->len--;
-    stm_peripherals_exti_enable(self->pin->number);
+    common_hal_mcu_enable_interrupts();
 
     return value;
 }

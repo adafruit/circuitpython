@@ -22,6 +22,10 @@ endif
 #######################################
 
 INC += \
+	-I../../lib/lvgl \
+	-I../../lib/lvgl/include \
+	-I../../lib/lvgl/src \
+	-I./lvgl \
 	-I.\
 	-I./boards \
 	-I./boards/$(BOARD) \
@@ -72,6 +76,7 @@ INC += \
 	-isystem esp-idf/components/esp_driver_ledc/include \
 	-isystem esp-idf/components/esp_driver_parlio/include \
 	-isystem esp-idf/components/esp_driver_pcnt/include \
+	-isystem esp-idf/components/esp_driver_ppa/include \
 	-isystem esp-idf/components/esp_driver_rmt/include \
 	-isystem esp-idf/components/esp_driver_sdio/include \
 	-isystem esp-idf/components/esp_driver_sdmmc/include \
@@ -115,6 +120,8 @@ INC += \
 	-isystem esp-idf/components/hal/platform_port/include \
 	-isystem esp-idf/components/esp_hal_gpio/include \
 	-isystem esp-idf/components/esp_hal_gpio/$(IDF_TARGET)/include \
+	-isystem esp-idf/components/esp_hal_ppa/include \
+	-isystem esp-idf/components/esp_hal_ppa/$(IDF_TARGET)/include \
 	-isystem esp-idf/components/esp_hal_timg/include \
 	-isystem esp-idf/components/esp_hal_ana_conv/include \
 	-isystem esp-idf/components/esp_hal_touch_sens/include \
@@ -682,9 +689,19 @@ CFLAGS += \
 	-DCFG_TUD_CDC_TX_BUFSIZE=1024 \
 	-DCFG_TUD_MSC_BUFSIZE=4096
 endif
+ifeq ($(CIRCUITPY_USB_DEVICE_HIGH_SPEED),1)
+# At high speed the MIDI endpoint is a 512-byte bulk endpoint. The MIDI driver
+# refuses to arm the endpoint unless the stream FIFO can hold a full packet, so
+# the buffers must be at least as big as the endpoint's max packet size.
+CFLAGS += \
+	-DCFG_TUD_MIDI_RX_BUFSIZE=512 \
+	-DCFG_TUD_MIDI_TX_BUFSIZE=512
+else
 CFLAGS += \
 	-DCFG_TUD_MIDI_RX_BUFSIZE=128 \
-	-DCFG_TUD_MIDI_TX_BUFSIZE=128 \
+	-DCFG_TUD_MIDI_TX_BUFSIZE=128
+endif
+CFLAGS += \
 	-DCFG_TUD_VENDOR_RX_BUFSIZE=128 \
 	-DCFG_TUD_VENDOR_TX_BUFSIZE=128
 endif
@@ -693,8 +710,19 @@ endif
 # source
 ######################################
 
+ifeq ($(CIRCUITPY_DISPLAYIO_LVGL),1)
+# Compile LVGL as part of CircuitPython's build rather than as an ESP-IDF component so
+# that it uses the port's lv_conf.h. The library and the display code must agree on the
+# LVGL configuration or struct layouts will differ.
+LVGL_SRC = $(patsubst $(TOP)/%,%,$(shell find $(TOP)/lib/lvgl/src -name '*.c'))
+SRC_MOD += $(LVGL_SRC)
+# LVGL isn't warning-clean under CircuitPython's strict warning flags.
+$(addprefix $(BUILD)/, $(LVGL_SRC:.c=.o)): CFLAGS += -w
+endif
+
 SRC_C += \
 	background.c \
+	supervisor/lvgl_port.c \
 	mphalport.c \
 	boards/$(BOARD)/board.c \
 	boards/$(BOARD)/pins.c \
@@ -853,6 +881,16 @@ SRC_C += common-hal/jpegio/JpegDecoder.c
 CHIP_COMPONENTS += esp_driver_jpeg esp_hal_jpeg
 endif
 
+ifneq ($(CIRCUITPY_JPEGIO_FAST),0)
+ifneq ($(VALID_BOARD),)
+ifneq ($(IDF_TARGET),esp32s3)
+$(error CIRCUITPY_JPEGIO_FAST is only supported on the ESP32-S3)
+endif
+endif
+SRC_C += common-hal/jpegio/JpegDecoderFast.c
+CFLAGS += -isystem esp-adf-libs/esp_new_jpeg/include
+endif
+
 ifneq ($(CIRCUITPY_NEOPIXEL_WRITE),0)
 CHIP_COMPONENTS += esp_driver_rmt
 endif
@@ -897,8 +935,9 @@ $(filter $(PY_BUILD)/../extmod/vfs_fat_%.o, $(PY_O)): COPT += -Os
 
 $(BUILD)/lib/protomatter/src/core.o: CFLAGS += -DESP32
 
-# List of sources for qstr extraction
-SRC_QSTR += $(SRC_C) $(SRC_SUPERVISOR) $(SRC_MOD) $(SRC_COMMON_HAL_SHARED_MODULE_EXPANDED) $(SRC_CIRCUITPY_COMMON)
+# List of sources for qstr extraction. LVGL sources contain no qstrs and aren't
+# -Wundef clean, so skip preprocessing them.
+SRC_QSTR += $(SRC_C) $(SRC_SUPERVISOR) $(filter-out lib/lvgl/%, $(SRC_MOD)) $(SRC_COMMON_HAL_SHARED_MODULE_EXPANDED) $(SRC_CIRCUITPY_COMMON)
 
 # IDF build commands
 IDF_PATH = $(realpath ./esp-idf)
@@ -908,34 +947,16 @@ $(BUILD)/esp-idf:
 
 TARGET_SDKCONFIG = esp-idf-config/sdkconfig-$(IDF_TARGET).defaults
 
-
 # Choose the correct partition layout, based on UF2 or not, flash size, etc.
 UF2_BOOTLOADER ?= $(CIRCUITPY_USB_DEVICE)
 
-ifeq ($(CIRCUITPY_ESP_FLASH_SIZE), 2MB)
-# ..... No 2MB UF2 boards, so always no OTA, not UF2
-	FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-ota-no-uf2.defaults
-else ifeq ($(CIRCUITPY_ESP_FLASH_SIZE), 4MB)
-	ifeq ($(UF2_BOOTLOADER), 1)
-#.............  ESP32-S2 and ESP32-S3 do not have an extra ota partition for OTA update.
-		FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-ota.defaults
-	else
-# ............. Non-UF2 4MB: C3, C6, etc.
-		ifeq ($(CIRCUITPY_4MB_FLASH_LARGE_USER_FS_LAYOUT), 1)
-# ....................  Some boards use a 2MB firmware and almost 2MB user filesystem, for historical reasons.
-			FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-ota-no-uf2-large-user_fs.defaults
-		else
-			FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-ota-no-uf2.defaults
-		endif
-	endif
-else
-# ..... All the rest are >4MB flash
-	ifeq ($(UF2_BOOTLOADER), 1)
-		FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE).defaults
-	else
-		FLASH_SIZE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_SIZE)-no-uf2.defaults
-	endif
-endif
+# The sdkconfig file naming rules are shared with tools/update_sdkconfig.py.
+# Keep them in tools/flash_layout.py so that they cannot drift.
+FLASH_SIZE_SDKCONFIG ?= $(if $(VALID_BOARD),$(shell $(PYTHON) tools/flash_layout.py \
+	--family "$(IDF_TARGET)" \
+	--flash-size "$(CIRCUITPY_ESP_FLASH_SIZE)" \
+	$(if $(filter 1,$(UF2_BOOTLOADER)),--uf2) \
+	$(if $(filter 1,$(CIRCUITPY_4MB_FLASH_LARGE_USER_FS_LAYOUT)),--large-user-fs)))
 
 FLASH_MODE_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_MODE).defaults
 FLASH_SPEED_SDKCONFIG ?= esp-idf-config/sdkconfig-flash-$(CIRCUITPY_ESP_FLASH_FREQ).defaults
@@ -1146,6 +1167,10 @@ endif
 ifneq ($(CIRCUITPY_ESP_PSRAM_SIZE),0)
 	ESP_IDF_COMPONENTS_LINK += esp_psram
 endif
+# The LVGL PPA draw unit uses the P4/S31 Pixel Processing Accelerator.
+ifneq ($(CIRCUITPY_DISPLAYIO_LVGL),0)
+	ESP_IDF_COMPONENTS_LINK += esp_driver_ppa esp_hal_ppa
+endif
 ifneq ($(CIRCUITPY_DOTCLOCKFRAMEBUFFER),0)
 	ESP_IDF_COMPONENTS_LINK += esp_lcd
 endif
@@ -1186,6 +1211,11 @@ endif
 ifneq ($(CIRCUITPY_ESPCAMERA),0)
 ESP_IDF_COMPONENTS_EXPANDED += $(BUILD)/esp-idf/esp-idf/esp-camera/libesp-camera.a
 #$(error $(ESP_IDF_COMPONENTS_EXPANDED))
+endif
+
+# esp_new_jpeg is a prebuilt library from Espressif's esp-adf-libs.
+ifneq ($(CIRCUITPY_JPEGIO_FAST),0)
+BINARY_BLOBS += esp-adf-libs/esp_new_jpeg/lib/esp32s3/libesp_new_jpeg.a
 endif
 
 ifneq ($(CIRCUITPY_RCLCPY),0)
@@ -1292,6 +1322,7 @@ endif
 UF2_FAMILY_ID_esp32s2 = 0xbfdd4eee
 UF2_FAMILY_ID_esp32s3 = 0xc47e5767
 UF2_FAMILY_ID_esp32p4 = 0x3d308e94
+UF2_FAMILY_ID_esp32s31 = 0x3101f7c1
 
 $(BUILD)/firmware.uf2: $(BUILD)/circuitpython-firmware.bin
 	$(STEPECHO) "Create $@"

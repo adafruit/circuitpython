@@ -7,6 +7,7 @@
 #include "shared-bindings/microcontroller/__init__.h"
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/busio/UART.h"
+#include "bindings/espidf/__init__.h"
 
 #include "driver/uart.h"
 
@@ -95,6 +96,17 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     #endif
 
     for (uart_port_t num = 0; num < UART_LIMIT; num++) {
+        // The IDF log console usually runs on the ROM's UART code, so no driver is installed on
+        // it and uart_is_driver_installed() can't see it. Skip it explicitly: uart_set_pin()
+        // below would move the console onto our pins, and its log output would then share our
+        // wire, which corrupts both the logs and the data. CircuitPython builds that own the
+        // console UART (CIRCUITPY_CONSOLE_UART) allocate it through this function, so only
+        // reserve the IDF console's UART when it isn't ours.
+        #if !CIRCUITPY_CONSOLE_UART && defined(CONFIG_ESP_CONSOLE_UART) && CONFIG_ESP_CONSOLE_UART
+        if (num == (uart_port_t)CONFIG_ESP_CONSOLE_UART_NUM) {
+            continue;
+        }
+        #endif
         if (!uart_is_driver_installed(num)) {
             self->uart_num = num;
             break;
@@ -126,10 +138,16 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
 
     uart_config.rx_flow_ctrl_thresh = UART_HW_FIFO_LEN(self->uart_num) - 8;
     // Install the driver before we change the settings.
-    if (uart_driver_install(self->uart_num, receiver_buffer_size, 0, 20, &self->event_queue, 0) != ESP_OK ||
-        uart_set_mode(self->uart_num, mode) != ESP_OK) {
+    if (uart_driver_install(self->uart_num, receiver_buffer_size, 0, 20, &self->event_queue, 0) != ESP_OK) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("UART init"));
     }
+    if (uart_set_mode(self->uart_num, mode) != ESP_OK) {
+        uart_driver_delete(self->uart_num);
+        mp_raise_RuntimeError(MP_ERROR_TEXT("UART init"));
+    }
+    // IDF interrupts at 120 of the 128 FIFO bytes, which leaves 8 byte times (40 us at 2 Mbaud)
+    // before bytes are dropped. Half the FIFO gives 320 us at 2 Mbaud.
+    uart_set_rx_full_threshold(self->uart_num, UART_HW_FIFO_LEN(self->uart_num) / 2);
 
     // On the console uart, enable pattern detection to look for CTRL+C
     #if CIRCUITPY_CONSOLE_UART
@@ -140,14 +158,17 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     #endif
 
     // Start a task to listen for uart events
-    xTaskCreatePinnedToCore(
+    if (xTaskCreatePinnedToCore(
         uart_event_task,
         "uart_event_task",
         configMINIMAL_STACK_SIZE + 512,
         self,
         CONFIG_PTHREAD_TASK_PRIO_DEFAULT,
         &self->event_task,
-        xPortGetCoreID());
+        xPortGetCoreID()) != pdPASS) {
+        uart_driver_delete(self->uart_num);
+        mp_raise_espidf_MemoryError();
+    }
     // uart_set_hw_flow_ctrl(self->uart_num, uart_config.flow_control, uart_config.rx_flow_ctrl_thresh);
 
     // Set baud rate
@@ -202,6 +223,8 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
 
     // config all in one?
     if (uart_param_config(self->uart_num, &uart_config) != ESP_OK) {
+        vTaskDelete(self->event_task);
+        uart_driver_delete(self->uart_num);
         mp_raise_RuntimeError(MP_ERROR_TEXT("UART init"));
     }
 

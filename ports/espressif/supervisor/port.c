@@ -17,7 +17,6 @@
 #include "py/runtime.h"
 #if MICROPY_PERSISTENT_CODE_LOAD_NATIVE
 #include "py/persistentcode.h"
-#include "soc/soc_caps.h"
 #if defined(SOC_CACHE_INTERNAL_MEM_VIA_L1CACHE) && SOC_CACHE_INTERNAL_MEM_VIA_L1CACHE
 #include "esp_cache.h"
 #endif
@@ -25,6 +24,7 @@
 
 #include "esp_mac.h"
 #include "esp_memory_utils.h"
+#include "soc/soc_caps.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
@@ -332,6 +332,8 @@ void port_heap_init(void) {
     // The IDF sets up the heap, so we don't need to.
 }
 
+static void port_heap_log_usage(size_t size, void *ptr);
+
 void *port_malloc(size_t size, bool dma_capable) {
     if (dma_capable) {
         // SPIRAM is not DMA-capable, so don't bother to ask for it.
@@ -354,7 +356,30 @@ void *port_malloc(size_t size, bool dma_capable) {
     if (ptr == NULL) {
         ptr = heap_caps_malloc(size, MALLOC_CAP_8BIT);
     }
+    port_heap_log_usage(size, ptr);
     return ptr;
+}
+
+// Debug aid for running out of PSRAM: a board that exhausts it takes the display stack (LVGL)
+// down with a hard fault, and the crash dump doesn't say what used the memory. Log the big
+// allocations (a GC heap split is at least megabytes) and, once the heap is nearly gone, the
+// small ones too, so the log shows which consumer took the last of it. Silent otherwise.
+static void port_heap_log_usage(size_t size, void *ptr) {
+    #ifdef CONFIG_SPIRAM
+    size_t psram_free = heap_caps_get_free_size(MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM);
+    const size_t big = 1024 * 1024;
+    const size_t low_water = 512 * 1024;
+    if (size < big && (psram_free >= low_water || size < 1024)) {
+        return;
+    }
+    ESP_LOGI(TAG, "port_malloc(%u) = %p: PSRAM %u free (%u largest), internal %u free",
+        (unsigned)size, ptr, (unsigned)psram_free,
+        (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_8BIT | MALLOC_CAP_SPIRAM),
+        (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT));
+    #else
+    (void)size;
+    (void)ptr;
+    #endif
 }
 
 #if !CIRCUITPY_ALL_MEMORY_DMA_CAPABLE
@@ -386,8 +411,27 @@ void *port_realloc(void *ptr, size_t size, bool dma_capable) {
 }
 
 size_t port_heap_get_largest_free_size(void) {
-    size_t free_size = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
-    return free_size;
+    size_t largest = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
+    #ifdef CONFIG_SPIRAM
+    // The VM heap only ever grows, and gc_try_add_heap() takes up to the whole largest free block
+    // when it doesn't need the full doubling. Without a reserve a Python allocation can therefore
+    // swallow the last of PSRAM, and the next display/LVGL allocation (a framebuffer, a TileGrid
+    // compose buffer, a draw task) fails. LVGL doesn't check for NULL there, so the board hard
+    // faults in the renderer instead of the VM raising MemoryError. Keep up to a quarter of the
+    // heap (4 MB on a 16 MB board) for the port side; gc.mem_free() reports the reduced number,
+    // which is the honest one.
+    size_t total = heap_caps_get_total_size(MALLOC_CAP_8BIT);
+    size_t reserve = total / 4;
+    const size_t max_reserve = 4 * 1024 * 1024;
+    if (reserve > max_reserve) {
+        reserve = max_reserve;
+    }
+    if (largest <= reserve) {
+        return 0;
+    }
+    largest -= reserve;
+    #endif
+    return largest;
 }
 
 #if MICROPY_PERSISTENT_CODE_LOAD_NATIVE
@@ -454,12 +498,19 @@ void *esp_native_code_commit(void *buf, size_t len, void *reloc) {
 #endif
 
 void reset_port_early(void) {
-    // esp-camera adds an I2C device on the ESP I2C bus, and keeps it there. This
-    // is unlike busio.I2C, which adds and removes the device on each operation.
-    // Since the camera object is not deinit'ed yet at this point, we can't call
-    // esp_camera_deinit() from here. Instead, let GC finalization (via __del__)
-    // deinit the camera before reset_board_buses() deletes the I2C bus.
-    // Unfortunately, there is no I2C driver API to enumerate or delete all the devices.
+    // Deinit the camera now, before reset_board_buses() deinits board.I2C().
+    //
+    // The camera shares its I2C bus with busio.I2C and keeps a device
+    // registered on that bus for as long as the camera is alive. ESP-IDF
+    // refuses to delete a bus that still has devices, so if the camera is
+    // still alive when the bus is deinited, the bus is never freed. Its I2C
+    // peripheral then stays in use until a hard reset.
+    //
+    // Waiting for the camera's finaliser doesn't work: finalisers run after
+    // reset_board_buses().
+    #if CIRCUITPY_ESPCAMERA
+    espcamera_reset();
+    #endif
 }
 
 void reset_port(void) {
@@ -555,6 +606,11 @@ void port_disable_tick(void) {
 }
 
 void port_wake_main_task(void) {
+    // background_callback_add() may be called from an interrupt.
+    if (xPortInIsrContext()) {
+        port_wake_main_task_from_isr();
+        return;
+    }
     xTaskNotifyGive(circuitpython_task);
 }
 

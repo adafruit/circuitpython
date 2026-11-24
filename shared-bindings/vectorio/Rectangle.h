@@ -12,7 +12,7 @@
 
 extern const mp_obj_type_t vectorio_rectangle_type;
 
-void common_hal_vectorio_rectangle_construct(vectorio_rectangle_t *self, uint32_t width, uint32_t height, uint16_t color_index);
+void common_hal_vectorio_rectangle_construct(vectorio_rectangle_t *self, uint32_t width, uint32_t height, uint16_t color_index, uint16_t radius, uint16_t outline_width, int32_t outline_color_index);
 void common_hal_vectorio_rectangle_set_on_dirty(vectorio_rectangle_t *self, vectorio_event_t on_dirty);
 
 uint32_t common_hal_vectorio_rectangle_get_pixel(void *rectangle, int16_t x, int16_t y);
@@ -29,3 +29,13 @@ void common_hal_vectorio_rectangle_set_color_index(void *obj, uint16_t color_ind
 
 int16_t common_hal_vectorio_rectangle_get_height(void *obj);
 void common_hal_vectorio_rectangle_set_height(void *obj, int16_t height);
+
+uint16_t common_hal_vectorio_rectangle_get_radius(void *obj);
+void common_hal_vectorio_rectangle_set_radius(void *obj, uint16_t radius);
+
+uint16_t common_hal_vectorio_rectangle_get_outline_width(void *obj);
+void common_hal_vectorio_rectangle_set_outline_width(void *obj, uint16_t outline_width);
+
+// -1 means no outline color was set.
+int32_t common_hal_vectorio_rectangle_get_outline_color_index(void *obj);
+void common_hal_vectorio_rectangle_set_outline_color_index(void *obj, int32_t outline_color_index);

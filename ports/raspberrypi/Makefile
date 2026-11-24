@@ -492,6 +492,11 @@ INC += \
 
 CFLAGS += -DPICO_RP2040=0 -DPICO_RP2350=1
 
+# Make crt0 (the SDK's startup code) run our stage 2 at boot and copy it to boot
+# RAM, so the SDK reruns it after each flash write. Otherwise the boot ROM's
+# flash read setup is used.
+CFLAGS += -DPICO_EMBED_XIP_SETUP=1
+
 SRC_SDK_CHIP_VARIANT := \
 	src/common/pico_util/fixed_bitset.c \
 	src/rp2_common/hardware_powman/powman.c \
@@ -524,6 +529,10 @@ ifeq ($(CIRCUITPY_PICOGAME),1)
 # Portable C remains the fallback on other ports.
 SRC_C += common-hal/picogame/interp.c
 CFLAGS += -DPICOGAME_HAS_INTERP=1
+endif
+
+ifeq ($(CIRCUITPY_BITMAPTOOLS_FAST_ROTOZOOM),1)
+SRC_C += common-hal/bitmaptools/__init__.c
 endif
 
 SRC_SDK := \
@@ -579,6 +588,8 @@ SRC_SDK := \
 
 SRC_SDK := $(addprefix sdk/, $(SRC_SDK))
 $(patsubst %.c,$(BUILD)/%.o,$(SRC_SDK) $(SRC_CYW43)): CFLAGS += -Wno-missing-prototypes -Wno-undef -Wno-unused-function -Wno-nested-externs -Wno-strict-prototypes -Wno-double-promotion -Wno-sign-compare -Wno-unused-variable -Wno-strict-overflow -Ilib/cyw43-driver
+# cyw43_ll.c assigns string literals to a non-const pointer in its scan IE parser.
+$(BUILD)/lib/cyw43-driver/src/cyw43_ll.o: CFLAGS += -Wno-discarded-qualifiers
 
 SRC_C += \
 	boards/$(BOARD)/board.c \
@@ -740,10 +751,10 @@ MBEDTLS_WRAPPERS_C := $(MBEDTLS_GEN)/psa_crypto_driver_wrappers_no_static.c
 $(MBEDTLS_WRAPPERS_C): $(MBEDTLS_WRAPPERS_H)
 	@true
 
-$(MBEDTLS_WRAPPERS_H): $(TOP)/lib/mbedtls/tf-psa-crypto/scripts/generate_driver_wrappers.py
+$(MBEDTLS_WRAPPERS_H): $(TOP)/lib/mbedtls/tf-psa-crypto/scripts/generate_driver_wrappers.py $(MBEDTLS_DISPATCH_STAMP)
 	$(STEPECHO) "GEN $@"
 	$(Q)mkdir -p $(MBEDTLS_GEN)
-	$(Q)PYTHONPATH=$(TOP)/lib/mbedtls/framework/scripts $(PYTHON) $< $(MBEDTLS_GEN)
+	$(Q)PYTHONPATH=$(TOP)/lib/mbedtls/framework/scripts $(PYTHON) $< $(MBEDTLS_WRAPPERS_ARGS) $(MBEDTLS_GEN)
 
 OBJ_MBEDTLS += $(MBEDTLS_WRAPPERS_C:.c=.o)
 CFLAGS += -I$(MBEDTLS_GEN)
@@ -762,6 +773,15 @@ $(patsubst %.c,$(BUILD)/%.o,$(SRC_MBEDTLS)) $(OBJ_MBEDTLS): CFLAGS += \
 else
 OBJ_MBEDTLS :=
 endif
+
+# SHA-256 on the RP2350 SHA-256 block, as a PSA driver that mbedtls's hash dispatch
+# calls before its builtin code. The default and MBEDTLS_DRIVER_PATCH, which adds
+# the driver to the dispatch, are set in mpconfigport.mk.
+ifeq ($(CIRCUITPY_RP2_SHA256_HW),1)
+SRC_C += sha256_psa/rp2_sha256_psa.c
+CFLAGS += -Isha256_psa -isystem sdk/src/rp2_common/hardware_sha256/include/
+endif
+CFLAGS += -DCIRCUITPY_RP2_SHA256_HW=$(CIRCUITPY_RP2_SHA256_HW)
 
 BOOT2_S_CFLAGS ?= -DPICO_FLASH_SPI_CLKDIV=4
 SRC_S_UPPER = sdk/src/rp2_common/hardware_irq/irq_handler_chain.S \
@@ -803,9 +823,17 @@ $(BUILD)/%.o: $(BUILD)/%.S
 	$(STEPECHO) "CC $<"
 	$(Q)$(CC) $(CFLAGS) -c -o $@ $<
 
+# RP2350 stage 2 has no checksum, so it is padded without one. The SDK's RP2350
+# pad script also defines __boot2_entry_point, which crt0 uses to run stage 2
+# and copy it to boot RAM.
 $(BUILD)/boot2_padded_checksummed.S: $(BUILD)/boot2.bin
+ifeq ($(CHIP_VARIANT),RP2350)
+	$(STEPECHO) "PAD $<"
+	$(Q)$(PYTHON) sdk/src/rp2350/boot_stage2/pad $< $@
+else
 	$(STEPECHO) "PAD_CHECKSUM $<"
 	$(Q)$(PYTHON) sdk/src/rp2040/boot_stage2/pad_checksum -s 0xffffffff $< $@
+endif
 
 $(BUILD)/boot2.bin: $(BUILD)/boot2.elf
 	$(STEPECHO) "OBJCOPY $<"
@@ -822,6 +850,7 @@ $(HEADER_BUILD)/flash_info.h: flash_info.h.jinja gen_stage2.py
 	$(Q)$(PYTHON) gen_stage2.py $< $@ $(EXTERNAL_FLASH_DEVICES)
 
 $(BUILD)/supervisor/internal_flash.o: $(HEADER_BUILD)/flash_info.h
+$(BUILD)/common-hal/microcontroller/Processor.o: $(HEADER_BUILD)/flash_info.h
 
 $(BUILD)/boot2.elf: $(BUILD)/stage2.c
 	$(STEPECHO) "BOOT $<"
@@ -863,7 +892,7 @@ $(BUILD)/firmware.elf: $(OBJ) $(BOARD_LD) link-$(CHIP_VARIANT_LOWER).ld
 	$(Q)echo $(OBJ) > $(BUILD)/firmware.objs
 	$(Q)echo $(PICO_LDFLAGS) > $(BUILD)/firmware.ldflags
 	$(Q)$(CC) -o $@ $(CFLAGS) @$(BUILD)/firmware.ldflags $(LINKER_SCRIPTS) -Wl,--print-memory-usage -Wl,-Map=$@.map -Wl,-cref -Wl,--gc-sections @$(BUILD)/firmware.objs -Wl,-lc
-	$(Q)$(SIZE) $@ | $(PYTHON) $(TOP)/tools/build_memory_info.py $@.map $(BUILD)
+	$(Q)$(PYTHON) $(TOP)/tools/build_memory_info.py $@.map $(BUILD) --elf $@
 ifneq ($(CORE1_CHECK_ROOTS),)
 	$(STEPECHO) "CHECK core1 flash calls"
 	$(Q)$(PYTHON) $(TOP)/tools/check_core1_flash_calls.py $@ $(CORE1_CHECK_ROOTS)

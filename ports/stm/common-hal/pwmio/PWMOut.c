@@ -29,15 +29,26 @@ static bool timer_get_optimal_divisors(uint32_t *period, uint32_t *prescaler,
     uint32_t frequency, uint32_t source_freq) {
     // Find the largest possible period supported by this frequency
     *prescaler = 0;
+    if (frequency == 0) {
+        return false;
+    }
     for (uint32_t i = 1; i <= 0xffff; i++) {
-        *period = source_freq / (i * frequency);
-        if (*period <= 0xffff && *period >= 2) {
+        *period = source_freq / ((uint64_t)i * frequency);
+        if (*period < 2) {
+            // A larger prescaler only makes the period shorter.
+            break;
+        }
+        if (*period <= 0xffff) {
             *prescaler = i;
             break;
         }
     }
     // Return success or failure.
     return *prescaler != 0;
+}
+
+static void mark_deinit(pwmio_pwmout_obj_t *self) {
+    self->tim = NULL;
 }
 
 pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
@@ -49,24 +60,25 @@ pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
     pwmout_result_t last_failure = PWMOUT_INVALID_PIN;
     bool first_time_setup = true;
 
-    uint8_t tim_index;
-    uint8_t tim_channel_index;
+    mark_deinit(self);
 
-    self->tim = NULL;
+    const mcu_tim_pin_obj_t *found = NULL;
     for (uint i = 0; i < MP_ARRAY_SIZE(mcu_tim_pin_list); i++) {
         const mcu_tim_pin_obj_t *tim = &mcu_tim_pin_list[i];
-        tim_index = tim->tim_index;
-        tim_channel_index = tim->channel_index;
+        uint8_t tim_index = tim->tim_index;
+        uint8_t tim_channel_index = tim->channel_index;
 
         // if pin is same
         if (tim->pin == pin) {
-            // check if the timer has a channel active, or is reserved by main timer system
+            // PWMOut reserves its timers too, so a reserved timer with no PWM channels
+            // taken belongs to an internal module (PulseIn, PulseOut, audio, ...).
+            if (tim_index < TIM_BANK_ARRAY_LEN && tim_channels_taken[tim_index] == 0
+                && stm_peripherals_timer_is_reserved(mcu_tim_banks[tim_index])) {
+                last_failure = PWMOUT_INTERNAL_RESOURCES_IN_USE;
+                continue; // keep looking
+            }
+            // check if the timer has a channel active
             if (tim_index < TIM_BANK_ARRAY_LEN && tim_channels_taken[tim_index] != 0) {
-                // Timer has already been reserved by an internal module
-                if (stm_peripherals_timer_is_reserved(mcu_tim_banks[tim_index])) {
-                    last_failure = PWMOUT_INTERNAL_RESOURCES_IN_USE;
-                    continue; // keep looking
-                }
                 // is it the same channel? (or all channels reserved by a var-freq)
                 if (tim_channels_taken[tim_index] & (1 << tim_channel_index)) {
                     last_failure = PWMOUT_INTERNAL_RESOURCES_IN_USE;
@@ -85,30 +97,16 @@ pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
                 first_time_setup = false; // skip setting up the timer
             }
             // No problems taken, so set it up
-            self->tim = tim;
+            found = tim;
             break;
         }
     }
 
-    TIM_TypeDef *TIMx;
-
-    // handle valid/invalid timer instance
-    if (self->tim != NULL) {
-        // create instance
-        TIMx = mcu_tim_banks[tim_index];
-        // reserve timer/channel
-        if (variable_frequency) {
-            // Take all the channels.
-            tim_channels_taken[tim_index] = 0x0F;
-        } else {
-            tim_channels_taken[tim_index] |= 1 << tim_channel_index;
-        }
-        tim_frequencies[tim_index] = frequency;
-        stm_peripherals_timer_reserve(TIMx);
-    } else {
-        // no match found
+    if (found == NULL) {
         return last_failure;
     }
+    uint8_t tim_index = found->tim_index;
+    TIM_TypeDef *TIMx = mcu_tim_banks[tim_index];
 
     uint32_t prescaler = 0; // prescaler is 15 bit
     uint32_t period = 0; // period is 16 bit
@@ -116,6 +114,18 @@ pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
     if (!timer_get_optimal_divisors(&period, &prescaler, frequency, source_freq)) {
         return PWMOUT_INVALID_FREQUENCY;
     }
+
+    // reserve timer/channel
+    if (variable_frequency) {
+        // Take all the channels.
+        tim_channels_taken[tim_index] = 0x0F;
+    } else {
+        tim_channels_taken[tim_index] |= 1 << found->channel_index;
+    }
+    tim_frequencies[tim_index] = frequency;
+    stm_peripherals_timer_reserve(TIMx);
+    self->tim = found;
+    self->variable_frequency = variable_frequency;
 
     GPIO_InitTypeDef GPIO_InitStruct = {0};
     GPIO_InitStruct.Pin = pin_mask(pin->number);
@@ -125,11 +135,12 @@ pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
     GPIO_InitStruct.Alternate = self->tim->altfn_index;
     HAL_GPIO_Init(pin_port(pin->port), &GPIO_InitStruct);
     self->pin = pin;
+    common_hal_mcu_pin_claim(pin);
 
     tim_clock_enable(1 << tim_index);
 
     // translate channel into handle value: TIM_CHANNEL_1, _2, _3, _4.
-    self->channel = 4 * tim_channel_index;
+    self->channel = 4 * found->channel_index;
 
     // Timer init
     self->handle.Instance = TIMx;
@@ -143,8 +154,15 @@ pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
     // only run init if this is the first instance of this timer
     if (first_time_setup) {
         if (HAL_TIM_PWM_Init(&self->handle) != HAL_OK) {
+            common_hal_pwmio_pwmout_deinit(self);
             return PWMOUT_INITIALIZATION_ERROR;
         }
+    } else {
+        // The timer is already running. HAL_TIM_PWM_Init() would restart it, but
+        // HAL_TIM_PWM_Start() refuses a channel unless the handle says it's ready.
+        self->handle.State = HAL_TIM_STATE_READY;
+        TIM_CHANNEL_STATE_SET_ALL(&self->handle, HAL_TIM_CHANNEL_STATE_READY);
+        TIM_CHANNEL_N_STATE_SET_ALL(&self->handle, HAL_TIM_CHANNEL_STATE_READY);
     }
 
     // Channel/PWM init
@@ -153,13 +171,14 @@ pwmout_result_t common_hal_pwmio_pwmout_construct(pwmio_pwmout_obj_t *self,
     self->chan_handle.OCPolarity = TIM_OCPOLARITY_HIGH;
     self->chan_handle.OCFastMode = TIM_OCFAST_DISABLE;
     if (HAL_TIM_PWM_ConfigChannel(&self->handle, &self->chan_handle, self->channel) != HAL_OK) {
+        common_hal_pwmio_pwmout_deinit(self);
         return PWMOUT_INITIALIZATION_ERROR;
     }
     if (HAL_TIM_PWM_Start(&self->handle, self->channel) != HAL_OK) {
+        common_hal_pwmio_pwmout_deinit(self);
         return PWMOUT_INITIALIZATION_ERROR;
     }
 
-    self->variable_frequency = variable_frequency;
     self->frequency = frequency;
     self->duty_cycle = duty;
     self->period = period;
@@ -192,7 +211,7 @@ void common_hal_pwmio_pwmout_deinit(pwmio_pwmout_obj_t *self) {
         stm_peripherals_timer_free(self->handle.Instance);
     }
 
-    self->tim = NULL;
+    mark_deinit(self);
 }
 
 void common_hal_pwmio_pwmout_set_duty_cycle(pwmio_pwmout_obj_t *self, uint16_t duty) {
@@ -214,7 +233,9 @@ void common_hal_pwmio_pwmout_set_frequency(pwmio_pwmout_obj_t *self, uint32_t fr
     uint32_t prescaler = 0;
     uint32_t period = 0;
     uint32_t source_freq = stm_peripherals_timer_get_source_freq(self->handle.Instance);
-    timer_get_optimal_divisors(&period, &prescaler, frequency, source_freq);
+    if (!timer_get_optimal_divisors(&period, &prescaler, frequency, source_freq)) {
+        mp_arg_error_invalid(MP_QSTR_frequency);
+    }
 
     // shut down
     HAL_TIM_PWM_Stop(&self->handle, self->channel);

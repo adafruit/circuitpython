@@ -32,8 +32,9 @@ void common_hal_analogbufio_bufferedin_construct(analogbufio_bufferedin_obj_t *s
         raise_ValueError_invalid_pin();
     }
 
-    // Validate sample rate here
-    sample_rate = (uint32_t)mp_arg_validate_int_range(sample_rate, ADC_CLOCK_INPUT / ADC_MAX_CLOCK_DIV, ADC_CLOCK_INPUT / 96, MP_QSTR_sample_rate);
+    // Validate sample rate here. The divider is ADC_CLOCK_INPUT / sample_rate - 1 and must
+    // stay below ADC_MAX_CLOCK_DIV, so the lowest rate is 733 Hz, not 732.
+    sample_rate = (uint32_t)mp_arg_validate_int_range(sample_rate, ADC_CLOCK_INPUT / (ADC_MAX_CLOCK_DIV + 1) + 1, ADC_CLOCK_INPUT / 96, MP_QSTR_sample_rate);
 
     // Set pin and channel
     self->pin = pin;

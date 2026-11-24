@@ -38,6 +38,10 @@
 #include "common-hal/mdns/Server.h"
 #endif
 
+#ifdef CONFIG_ESP_HOSTED_ENABLED
+#include "esp_hosted.h"
+#endif
+
 #define MAC_ADDRESS_LENGTH 6
 
 static void set_mode_station(wifi_radio_obj_t *self, bool state) {
@@ -83,6 +87,11 @@ bool common_hal_wifi_radio_get_enabled(wifi_radio_obj_t *self) {
 }
 
 void common_hal_wifi_radio_set_enabled(wifi_radio_obj_t *self, bool enabled) {
+    if (self->netif == NULL) {
+        // Wi-Fi init failed, for example because the co-processor doesn't run ESP-Hosted.
+        // Leave the radio off so callers see that, rather than starting a driver that isn't there.
+        return;
+    }
     if (self->started && !enabled) {
         if (self->current_scan != NULL) {
             common_hal_wifi_radio_stop_scanning_networks(self);
@@ -103,8 +112,48 @@ void common_hal_wifi_radio_set_enabled(wifi_radio_obj_t *self, bool enabled) {
         #endif
         self->started = true;
         common_hal_wifi_radio_set_tx_power(self, CIRCUITPY_WIFI_DEFAULT_TX_POWER);
+        #ifdef CONFIG_ESP_HOSTED_ENABLED
+        // Temporary workaround: default to no power save on ESP-Hosted co-processors.
+        //
+        // With some APs, inbound traffic stalls in MIN_MODEM power save. A likely cause is
+        // the ESP32-C6 missing broadcast and ARP frames from the AP in power save.
+        // TODO: Remove when fixed upstream.
+        //   https://github.com/espressif/esp-idf/issues/16096
+        //   https://github.com/adafruit/circuitpython/issues/11682
+        esp_wifi_set_ps(WIFI_PS_NONE);
+        #endif
         return;
     }
+}
+
+mp_obj_t common_hal_wifi_radio_get_version(wifi_radio_obj_t *self) {
+    #ifdef CONFIG_ESP_HOSTED_ENABLED
+    // netif is NULL when the co-processor didn't answer as ESP-Hosted at Wi-Fi init.
+    if (self->netif == NULL) {
+        return mp_const_none;
+    }
+    esp_hosted_coprocessor_fwver_t ver;
+    if (esp_hosted_get_coprocessor_fwversion(&ver) != ESP_OK) {
+        return mp_const_none;
+    }
+
+    // Co-processor firmware that predates reporting its target name sends an empty one.
+    // Use the configured target then.
+    const char *target = CONFIG_ESP_HOSTED_IDF_SLAVE_TARGET;
+    char reported[32] = "";
+    if (esp_hosted_get_cp_info(NULL, reported, sizeof(reported)) == ESP_OK &&
+        reported[0] != '\0') {
+        target = reported;
+    }
+
+    vstr_t vstr;
+    vstr_init(&vstr, 32);
+    vstr_printf(&vstr, "%s ESP-Hosted %u.%u.%u", target,
+        (unsigned int)ver.major1, (unsigned int)ver.minor1, (unsigned int)ver.patch1);
+    return mp_obj_new_str_from_vstr(&vstr);
+    #else
+    return mp_const_none;
+    #endif
 }
 
 mp_obj_t common_hal_wifi_radio_get_hostname(wifi_radio_obj_t *self) {
@@ -422,7 +471,12 @@ wifi_radio_error_t common_hal_wifi_radio_connect(wifi_radio_obj_t *self, uint8_t
     esp_wifi_set_config(WIFI_IF_STA, config);
     self->starting_retries = 5;
     self->retries_left = 5;
-    esp_wifi_connect();
+    // On failure no connected or disconnected event will come, and the loop below would never end.
+    // ESP_ERR_WIFI_STATE only means a scan was aborted; the connection attempt still goes ahead.
+    esp_err_t connect_result = esp_wifi_connect();
+    if (connect_result != ESP_OK && connect_result != ESP_ERR_WIFI_STATE) {
+        return WIFI_RADIO_ERROR_UNSPECIFIED;
+    }
 
     do {
         RUN_BACKGROUND_TASKS;

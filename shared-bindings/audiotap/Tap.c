@@ -24,10 +24,10 @@
 //|         plays the tap gets the sample's audio unchanged.
 //|
 //|         As the audio passes through, the tap keeps up to ``capacity`` seconds
-//|         of it in a buffer, which `readinto` copies out of without waiting, and
-//|         measures its `peak` and `rms` levels. The program can look at
-//|         the audio this way, at the point in the chain where the tap is,
-//|         while it plays.
+//|         of it in a buffer, which `readinto` copies out of without waiting.
+//|         The program can look at the audio this way, at the point in the
+//|         chain where the tap is, while it plays. To measure its peak and RMS
+//|         levels as well, attach a `LevelReader` to the tap.
 //|
 //|         The tap takes its sample rate, channel count, bits per sample and
 //|         signedness from the first sample it plays, and allocates the buffer
@@ -45,8 +45,8 @@
 //|         never affected.
 //|
 //|         :param float capacity: How many seconds of audio are kept for
-//|           `readinto`. 0 keeps none, for a tap that only measures `peak` and
-//|           `rms`.
+//|           `readinto`. 0 keeps none, for a tap that is only measured by a
+//|           `LevelReader`.
 //|
 //|         Showing the level of a USB microphone while it is heard through the
 //|         DVI output, and keeping the audio for a spectrum display. The
@@ -94,6 +94,7 @@
 //|           )
 //|           # Keep a quarter second, more than arrives between reads of the loop below.
 //|           tap = audiotap.Tap(capacity=0.25)
+//|           levels = audiotap.LevelReader(tap)
 //|           mixer = audiomixer.Mixer(voice_count=1, sample_rate=48000, channel_count=mic.channel_count)
 //|           supervisor.runtime.audio.play(mixer)
 //|           mixer.voice[0].play(audiospeed.Resampler(tap.play(mic)))
@@ -116,8 +117,8 @@
 //|               # Read the audio that is waiting. A spectrum display would use these samples.
 //|               while tap.available >= len(samples):
 //|                   tap.readinto(samples)
-//|               peak = tap.peak
-//|               rms = tap.rms
+//|               peak = levels.peak
+//|               rms = levels.rms
 //|               peak_bar.width = max(1, int(peak * display.width))
 //|               rms_bar.width = max(1, int(rms * display.width))
 //|               print(f"peak {peak:.3f} rms {rms:.3f}")
@@ -249,38 +250,6 @@ static mp_obj_t audiotap_tap_obj_clear(mp_obj_t self_in) {
 }
 MP_DEFINE_CONST_FUN_OBJ_1(audiotap_tap_clear_obj, audiotap_tap_obj_clear);
 
-//|     peak: float
-//|     """The largest magnitude of the audio that passed through since this was
-//|     last read, from 0.0 to 1.0 of full scale. Reading this starts a new
-//|     measurement. 0.0 when no audio passed through. The channels of stereo
-//|     audio are measured together. (read-only)"""
-//|
-static mp_obj_t audiotap_tap_obj_get_peak(mp_obj_t self_in) {
-    audiotap_tap_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    check_for_deinit(self);
-    return mp_obj_new_float(common_hal_audiotap_tap_get_peak(self));
-}
-MP_DEFINE_CONST_FUN_OBJ_1(audiotap_tap_get_peak_obj, audiotap_tap_obj_get_peak);
-
-MP_PROPERTY_GETTER(audiotap_tap_peak_obj,
-    (mp_obj_t)&audiotap_tap_get_peak_obj);
-
-//|     rms: float
-//|     """The RMS level of the audio that passed through since this was last
-//|     read, from 0.0 to 1.0 of full scale. Reading this starts a new
-//|     measurement, separate from `peak`'s. 0.0 when no audio passed through.
-//|     The channels of stereo audio are measured together. (read-only)"""
-//|
-static mp_obj_t audiotap_tap_obj_get_rms(mp_obj_t self_in) {
-    audiotap_tap_obj_t *self = MP_OBJ_TO_PTR(self_in);
-    check_for_deinit(self);
-    return mp_obj_new_float(common_hal_audiotap_tap_get_rms(self));
-}
-MP_DEFINE_CONST_FUN_OBJ_1(audiotap_tap_get_rms_obj, audiotap_tap_obj_get_rms);
-
-MP_PROPERTY_GETTER(audiotap_tap_rms_obj,
-    (mp_obj_t)&audiotap_tap_get_rms_obj);
-
 //|     def play(self, sample: circuitpython_typing.AudioSample, *, loop: bool = False) -> Tap:
 //|         """Plays the sample once when loop=False and continuously when loop=True.
 //|         Does not block. Use `playing` to block.
@@ -337,8 +306,6 @@ static const mp_rom_map_elem_t audiotap_tap_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_playing), MP_ROM_PTR(&audiotap_tap_playing_obj) },
     { MP_ROM_QSTR(MP_QSTR_available), MP_ROM_PTR(&audiotap_tap_available_obj) },
     { MP_ROM_QSTR(MP_QSTR_overflow), MP_ROM_PTR(&audiotap_tap_overflow_obj) },
-    { MP_ROM_QSTR(MP_QSTR_peak), MP_ROM_PTR(&audiotap_tap_peak_obj) },
-    { MP_ROM_QSTR(MP_QSTR_rms), MP_ROM_PTR(&audiotap_tap_rms_obj) },
     AUDIOSAMPLE_FIELDS,
 };
 static MP_DEFINE_CONST_DICT(audiotap_tap_locals_dict, audiotap_tap_locals_dict_table);

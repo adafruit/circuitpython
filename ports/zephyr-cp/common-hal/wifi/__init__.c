@@ -20,6 +20,7 @@
 wifi_radio_obj_t common_hal_wifi_radio_obj;
 
 #include "supervisor/port.h"
+#include "supervisor/shared/network.h"
 #include "supervisor/workflow.h"
 
 #if CIRCUITPY_SETTINGS_TOML
@@ -322,16 +323,6 @@ void common_hal_wifi_init(bool user_initiated) {
     net_mgmt_add_event_callback(&ipv4_cb);
 
     #if defined(CONFIG_NET_HOSTNAME)
-    // Set the default hostname capped at NET_HOSTNAME_MAX_LEN characters. We trim off
-    // the start of the board name (likely manufacturer) because the end is
-    // often more unique to the board.
-    size_t board_len = MIN(NET_HOSTNAME_MAX_LEN - ((MAC_ADDRESS_LENGTH * 2) + 6), strlen(CIRCUITPY_BOARD_ID));
-    size_t board_trim = strlen(CIRCUITPY_BOARD_ID) - board_len;
-    // Avoid double _ in the hostname.
-    if (CIRCUITPY_BOARD_ID[board_trim] == '_') {
-        board_trim++;
-    }
-
     #if CIRCUITPY_SETTINGS_TOML
     char hostname[NET_HOSTNAME_MAX_LEN];
     if (settings_get_str("CIRCUITPY_WIFI_HOSTNAME", hostname, sizeof(hostname)) == SETTINGS_OK) {
@@ -342,14 +333,14 @@ void common_hal_wifi_init(bool user_initiated) {
     }
     #endif
     else {
-        char cpy_default_hostname[board_len + (MAC_ADDRESS_LENGTH * 2) + 6];
+        // Set the default hostname, capped at NET_HOSTNAME_MAX_LEN characters.
+        char cpy_default_hostname[NET_HOSTNAME_MAX_LEN];
         struct net_linkaddr *mac = net_if_get_link_addr(self->sta_netif);
         if (mac->len < MAC_ADDRESS_LENGTH) {
             LOG_ERR("MAC address too short");
         }
-        snprintf(cpy_default_hostname, sizeof(cpy_default_hostname), "cpy-%s-%02x%02x%02x%02x%02x%02x", CIRCUITPY_BOARD_ID + board_trim, mac->addr[0], mac->addr[1], mac->addr[2], mac->addr[3], mac->addr[4], mac->addr[5]);
-
-        CHECK_ZEPHYR_RESULT(net_hostname_set(cpy_default_hostname, strlen(cpy_default_hostname)));
+        size_t len = network_format_default_hostname(cpy_default_hostname, sizeof(cpy_default_hostname), mac->addr);
+        CHECK_ZEPHYR_RESULT(net_hostname_set(cpy_default_hostname, len));
     }
     #else
     LOG_WRN("Hostname support disabled in Zephyr config");
@@ -360,6 +351,34 @@ void common_hal_wifi_init(bool user_initiated) {
     common_hal_wifi_radio_set_enabled(self, true);
 
     LOG_DBG("common_hal_wifi_init done");
+}
+
+bool wifi_is_initialized(void) {
+    return wifi_inited;
+}
+
+void wifi_get_default_hostname(char *buf, size_t buf_size) {
+    if (buf_size == 0) {
+        return;
+    }
+    buf[0] = '\0';
+    #if defined(CONFIG_NET_HOSTNAME)
+    if (buf_size < 18) {
+        return;
+    }
+    // Zephyr creates the interface at boot, so it exists before
+    // common_hal_wifi_init() runs.
+    struct net_if *sta_netif = net_if_get_wifi_sta();
+    if (sta_netif == NULL) {
+        return;
+    }
+    struct net_linkaddr *mac = net_if_get_link_addr(sta_netif);
+    if (mac->len < MAC_ADDRESS_LENGTH) {
+        return;
+    }
+    // Use the same length limit as common_hal_wifi_init().
+    network_format_default_hostname(buf, MIN(buf_size, NET_HOSTNAME_MAX_LEN), mac->addr);
+    #endif
 }
 
 void wifi_user_reset(void) {

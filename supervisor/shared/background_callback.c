@@ -16,6 +16,11 @@
 
 static volatile background_callback_t *volatile callback_head, *volatile callback_tail;
 
+// True from background_callback_reset() until background_callback_heap_ready(), while
+// the VM's heap is torn down. While it is set, background_callback_add_core() drops any
+// callback that is on the heap or whose data is on the heap.
+static bool reject_heap_callbacks;
+
 #ifndef CALLBACK_CRITICAL_BEGIN
 #define CALLBACK_CRITICAL_BEGIN (common_hal_mcu_disable_interrupts())
 #endif
@@ -29,6 +34,14 @@ MP_WEAK void PLACE_IN_ITCM(port_wake_main_task)(void) {
 void PLACE_IN_ITCM(background_callback_add_core)(background_callback_t * cb) {
     CALLBACK_CRITICAL_BEGIN;
     if (cb->prev || callback_head == cb) {
+        CALLBACK_CRITICAL_END;
+        return;
+    }
+    // During heap teardown, hardware owned by a heap object (such as an I2SOut) keeps
+    // interrupting until the object's finaliser stops it. A callback queued during teardown
+    // would still be pending after the heap is freed. Drop any callback that is on the heap
+    // or whose data is on the heap.
+    if (reject_heap_callbacks && (gc_ptr_on_heap(cb) || gc_ptr_on_heap(cb->data))) {
         CALLBACK_CRITICAL_END;
         return;
     }
@@ -69,11 +82,19 @@ void PLACE_IN_ITCM(background_callback_run_all)(void) {
         return;
     }
     ++background_prevention_count;
-    background_callback_t *cb = (background_callback_t *)callback_head;
-    callback_head = NULL;
-    callback_tail = NULL;
-    while (cb) {
-        background_callback_t *next = cb->next;
+    // Run the callbacks queued now, taking each one off the live queue just before it
+    // runs. A callback that allows background tasks (like a display auto-refresh) can
+    // then run the rest in a nested call. Stop at the current tail so callbacks added
+    // while running wait for the next call.
+    background_callback_t *last = (background_callback_t *)callback_tail;
+    while (callback_head) {
+        background_callback_t *cb = (background_callback_t *)callback_head;
+        callback_head = cb->next;
+        if (callback_head) {
+            callback_head->prev = NULL;
+        } else {
+            callback_tail = NULL;
+        }
         cb->next = cb->prev = NULL;
         background_callback_fun fun = cb->fun;
         void *data = cb->data;
@@ -83,7 +104,9 @@ void PLACE_IN_ITCM(background_callback_run_all)(void) {
             fun(data);
         }
         CALLBACK_CRITICAL_BEGIN;
-        cb = next;
+        if (cb == last) {
+            break;
+        }
     }
     --background_prevention_count;
     CALLBACK_CRITICAL_END;
@@ -132,6 +155,13 @@ void background_callback_reset(void) {
     callback_head = new_head;
     callback_tail = new_tail;
     background_prevention_count = 0;
+    reject_heap_callbacks = true;
+    CALLBACK_CRITICAL_END;
+}
+
+void background_callback_heap_ready(void) {
+    CALLBACK_CRITICAL_BEGIN;
+    reject_heap_callbacks = false;
     CALLBACK_CRITICAL_END;
 }
 

@@ -1,0 +1,14 @@
+# SPDX-FileCopyrightText: 2026 Dan Halbert for Adafruit Industries
+# SPDX-License-Identifier: MIT
+
+description: |
+    Named Adafruit Metro M7 pins that are not on its Arduino header: the 2x3
+    SPI header, the NeoPixel, and the microSD or AirLift ESP32 control pins.
+
+    The pin names come from the board's circuitpython.toml
+    [connectors.<node label>] table, keyed by gpio-map position, because the
+    microSD and AirLift boards name different pins.
+
+compatible: "adafruit-metro-m7-pins"
+
+include: [gpio-nexus.yaml, base.yaml]

@@ -200,6 +200,8 @@ bool common_hal_busio_spi_deinited(busio_spi_obj_t *self) {
 
 void common_hal_busio_spi_mark_deinit(busio_spi_obj_t *self) {
     self->clock = NULL;
+    self->mosi = NULL;
+    self->miso = NULL;
 }
 
 void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
@@ -210,11 +212,12 @@ void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
     reserved_spi[self->clock->bank_idx - 1] = false;
 
     common_hal_reset_pin(self->clock->pin);
-    common_hal_reset_pin(self->mosi->pin);
-    common_hal_reset_pin(self->miso->pin);
-
-    self->mosi = NULL;
-    self->miso = NULL;
+    if (self->mosi != NULL) {
+        common_hal_reset_pin(self->mosi->pin);
+    }
+    if (self->miso != NULL) {
+        common_hal_reset_pin(self->miso->pin);
+    }
 
     common_hal_busio_spi_mark_deinit(self);
 }

@@ -100,6 +100,19 @@ MP_PROPERTY_GETSET(wifi_radio_enabled_obj,
     (mp_obj_t)&wifi_radio_get_enabled_obj,
     (mp_obj_t)&wifi_radio_set_enabled_obj);
 
+//|     version: Optional[str]
+//|     """WiFi co-processor firmware identification, such as ``"esp32c6 ESP-Hosted 2.12.13"``,
+//|     or ``None`` if the radio is not a separate co-processor or its version cannot be read.
+//|     (read-only)"""
+static mp_obj_t wifi_radio_get_version(mp_obj_t self_in) {
+    wifi_radio_obj_t *self = MP_OBJ_TO_PTR(self_in);
+    return common_hal_wifi_radio_get_version(self);
+}
+MP_DEFINE_CONST_FUN_OBJ_1(wifi_radio_get_version_obj, wifi_radio_get_version);
+
+MP_PROPERTY_GETTER(wifi_radio_version_obj,
+    (mp_obj_t)&wifi_radio_get_version_obj);
+
 //|     hostname: Union[str, ReadableBuffer]
 //|     """Hostname for wifi interface. When the hostname is altered after interface started/connected
 //|        the changes would only be reflected once the interface restarts/reconnects."""
@@ -134,7 +147,8 @@ MP_PROPERTY_GETSET(wifi_radio_hostname_obj,
 //|     """MAC address for the station. When the address is altered after interface is connected
 //|        the changes would only be reflected once the interface reconnects.
 //|
-//|     **Limitations:** Not settable on RP2040 CYW43 boards, such as Pi Pico W.
+//|     **Limitations:** Settable on Espressif.
+//|     Not settable on Raspberry Pi RP2xxx CYW43 boards, such as Pico W and Pico 2 W.
 //|     """
 
 
@@ -190,8 +204,15 @@ MP_PROPERTY_GETSET(wifi_radio_tx_power_obj,
     (mp_obj_t)&wifi_radio_get_tx_power_obj,
     (mp_obj_t)&wifi_radio_set_tx_power_obj);
 
+// TODO: Remove the ESP-Hosted exception below when the upstream bug is fixed.
+//   https://github.com/espressif/esp-idf/issues/16096
+//   https://github.com/adafruit/circuitpython/issues/11682
 //|     power_management: PowerManagement
 //|     """Wifi power management setting. See `wifi.PowerManagement`. The default is `wifi.PowerManagement.MIN`.
+//|
+//|     On Espressif boards whose WiFi runs on an ESP-Hosted co-processor, such as the Metro ESP32-P4,
+//|     the default is `wifi.PowerManagement.NONE`. This is a temporary workaround for a bug in power
+//|     save mode; see `#11682 <https://github.com/adafruit/circuitpython/issues/11682>`_.
 //|     """
 static mp_obj_t wifi_radio_get_power_management(mp_obj_t self_in) {
     wifi_radio_obj_t *self = MP_OBJ_TO_PTR(self_in);
@@ -219,7 +240,8 @@ MP_PROPERTY_GETSET(wifi_radio_power_management_obj,
 //|     """MAC address for the AP. When the address is altered after interface is started
 //|        the changes would only be reflected once the interface restarts.
 //|
-//|     **Limitations:** Not settable on RP2040 CYW43 boards, such as Pi Pico W.
+//|     **Limitations:** Settable on Espressif.
+//|     Not settable on Raspberry Pi RP2xxx CYW43 boards, such as Pico W and Pico 2 W.
 //|     """
 //|
 static mp_obj_t wifi_radio_get_mac_address_ap(mp_obj_t self_in) {
@@ -264,7 +286,7 @@ MP_PROPERTY_GETTER(wifi_radio_mac_address_ap_obj,
 //|
 //|         .. note::
 //|
-//|             In the raspberrypi port (RP2040 CYW43), ``start_channel`` and ``stop_channel`` are ignored.
+//|             In the raspberrypi port (RP2xxx CYW43), ``start_channel`` and ``stop_channel`` are ignored.
 //|         """
 //|         ...
 //|
@@ -365,7 +387,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(wifi_radio_stop_station_obj, wifi_radio_stop_station);
 //|
 //|         .. note::
 //|
-//|             In the raspberrypi port (RP2040 CYW43), ``max_connections`` is ignored
+//|             In the raspberrypi port (RP2xxx CYW43), ``max_connections`` is ignored
 //|             and only 2.4 GHz channels (1-13) are accepted.
 //|         """
 //|         ...
@@ -622,7 +644,7 @@ MP_PROPERTY_GETTER(wifi_radio_ipv4_subnet_ap_obj,
 //|
 //|         .. note::
 //|
-//|             In the raspberrypi port (RP2040 CYW43), the access point needs to be started before the IP v4 address can be set.
+//|             In the raspberrypi port (RP2xxx CYW43), the access point needs to be started before the IP v4 address can be set.
 //|         """
 //|         ...
 //|
@@ -867,6 +889,7 @@ static MP_DEFINE_CONST_FUN_OBJ_KW(wifi_radio_ping_obj, 1, wifi_radio_ping);
 
 static const mp_rom_map_elem_t wifi_radio_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_enabled), MP_ROM_PTR(&wifi_radio_enabled_obj) },
+    { MP_ROM_QSTR(MP_QSTR_version), MP_ROM_PTR(&wifi_radio_version_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_hostname),    MP_ROM_PTR(&wifi_radio_hostname_obj) },
 

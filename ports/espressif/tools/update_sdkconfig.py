@@ -2,10 +2,13 @@
 build."""
 
 import pathlib
+import subprocess
 import click
 import copy
 import kconfiglib
 import os
+
+from flash_layout import sdkconfig_flash_filename
 
 OPT_SETTINGS = [
     "CONFIG_ESP_ERR_TO_NAME_LOOKUP",
@@ -147,6 +150,22 @@ def sym_default(sym):
     return False
 
 
+def make_settings(board, names):
+    """Return the port Makefile's values for the given print-<name> targets."""
+    result = subprocess.run(
+        ["make", "-s", f"BOARD={board}", *(f"print-{name}" for name in names)],
+        stdout=subprocess.PIPE,
+        text=True,
+        check=True,
+    )
+    settings = {}
+    for line in result.stdout.splitlines():
+        name, separator, value = line.partition("=")
+        if separator and name.strip() in names:
+            settings[name.strip()] = value.strip()
+    return settings
+
+
 @click.command()
 @click.option("--debug")
 @click.option("--board")
@@ -162,7 +181,6 @@ def update(debug, board, update_all):  # noqa: C901 too complex
 
     board_make = pathlib.Path(f"boards/{board}/mpconfigboard.mk")
     psram_size = "0"
-    uf2_bootloader = None
     ble_enabled = None
     load_native = True  # Matches the mpconfigport.mk default.
     mpy_native = False
@@ -174,8 +192,6 @@ def update(debug, board, update_all):  # noqa: C901 too complex
         value = value.strip()
         if key == "IDF_TARGET":
             target = value
-            if uf2_bootloader is None:
-                uf2_bootloader = target in ("esp32s2", "esp32s3")
             if ble_enabled is None:
                 ble_enabled = target not in ("esp32s2",)  # S2 doesn't support it.
         elif key == "CIRCUITPY_ESP_FLASH_SIZE":
@@ -190,8 +206,6 @@ def update(debug, board, update_all):  # noqa: C901 too complex
             psram_mode = value
         elif key == "CIRCUITPY_ESP_PSRAM_FREQ":
             psram_freq = value
-        elif key == "UF2_BOOTLOADER":
-            uf2_bootloader = not (value == "0")
         elif key == "CIRCUITPY_BLEIO_NATIVE":
             ble_enabled = not (value == "0")
         elif key == "CIRCUITPY_LOAD_NATIVE":
@@ -221,14 +235,22 @@ def update(debug, board, update_all):  # noqa: C901 too complex
     else:
         opt_config = pathlib.Path("esp-idf-config/sdkconfig-opt.defaults")
     sdkconfigs.append(opt_config)
-    size_options = ""
-    if flash_size == "2MB":
-        size_options = "-no-ota-no-uf2"
-    elif not uf2_bootloader:
-        # These boards don't have native USB.
-        size_options = "-no-uf2"
+    # Ask the Makefile for the resolved values: it knows the board overrides
+    # and the port/target defaults that feed the layout decision.
+    layout_settings = make_settings(
+        board,
+        (
+            "UF2_BOOTLOADER",
+            "CIRCUITPY_4MB_FLASH_LARGE_USER_FS_LAYOUT",
+        ),
+    )
     flash_size_config = pathlib.Path(
-        f"esp-idf-config/sdkconfig-flash-{flash_size}{size_options}.defaults"
+        sdkconfig_flash_filename(
+            target,
+            flash_size,
+            layout_settings["UF2_BOOTLOADER"] == "1",
+            layout_settings["CIRCUITPY_4MB_FLASH_LARGE_USER_FS_LAYOUT"] == "1",
+        )
     )
     flash_mode_config = pathlib.Path(f"esp-idf-config/sdkconfig-flash-{flash_mode}.defaults")
     flash_freq_config = pathlib.Path(f"esp-idf-config/sdkconfig-flash-{flash_freq}.defaults")

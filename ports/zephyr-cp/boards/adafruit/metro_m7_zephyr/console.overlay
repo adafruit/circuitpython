@@ -1,0 +1,9 @@
+/* Applied after board.overlay in CONSOLE=1 and DEBUG=1 builds: the Zephyr
+ * console on LPUART1, D0/D1. D0/D1 are then not available to busio.UART. */
+/ {
+	chosen {
+		zephyr,console = &lpuart1;
+		zephyr,shell-uart = &lpuart1;
+		zephyr,uart-mcumgr = &lpuart1;
+	};
+};

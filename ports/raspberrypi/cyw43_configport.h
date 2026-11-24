@@ -16,6 +16,10 @@
 
 #define CYW43_NETUTILS                  (1)
 
+// Keep driver warnings off the serial console. Every scan warns once per network
+// that offers a cipher the driver does not know, such as GCMP on WPA3 routers.
+#define CYW43_WARN(...) ((void)0)
+
 #if CIRCUITPY_USB_DEVICE
 #include "supervisor/usb.h"
 #define CYW43_EVENT_POLL_HOOK usb_background();

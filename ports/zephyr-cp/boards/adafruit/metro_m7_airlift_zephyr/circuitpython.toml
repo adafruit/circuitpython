@@ -1,0 +1,44 @@
+CIRCUITPY_BUILD_EXTENSIONS = ["hex", "uf2"]
+USB_VID=0x239A
+USB_PID=0x80E2
+NAME="Metro M7 iMX RT1011 AirLift"
+
+# Pin names from ports/mimxrt10xx/boards/metro_m7_1011/pins.c.
+
+[connectors.arduino_header]
+# The generic arduino-header-r3 names put SCK, MOSI and MISO on D13, D11 and
+# D12, but the Metro's SPI pins are on the 2x3 header (metro_m7_pins below),
+# and the classic port names SDA and SCL without D14 and D15. D0 and D1 are
+# also the ESP32's UART.
+"0" = "A0"
+"1" = "A1"
+"2" = "A2"
+"3" = "A3"
+"4" = "A4"
+"5" = "A5"
+"6" = ["D0", "RX", "ESP_RX"]
+"7" = ["D1", "TX", "ESP_TX"]
+"8" = "D2"
+"9" = "D3"
+"10" = "D4"
+"11" = "D5"
+"12" = "D6"
+"13" = "D7"
+"14" = "D8"
+"15" = ["D9", "I2S_BIT_CLOCK", "I2S_BCLK"]
+"16" = ["D10", "I2S_WORD_SELECT", "I2S_WSEL"]
+"17" = "D11"
+"18" = ["D12", "I2S_DATA", "I2S_DOUT"]
+"19" = "D13"
+"20" = "SDA"
+"21" = "SCL"
+
+[connectors.metro_m7_pins]
+"0" = "SCK"
+"1" = "MOSI"
+"2" = "MISO"
+"3" = "NEOPIXEL"
+"4" = "ESP_CS"
+"5" = "ESP_BUSY"
+"6" = "ESP_RESET"
+"7" = "ESP_GPIO0"

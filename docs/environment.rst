@@ -127,6 +127,15 @@ Human-friendly name the board advertises over mDNS for the Web Workflow.
 Defaults to the human-readable board name if omitted.
 This is not the hostname.
 
+CIRCUITPY_WEB_DISPLAY_RATE_LIMIT (integer)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Most bytes per second sent to a viewer of the board's display (the ``/cp/display/``
+page or a VNC viewer). No limit when omitted or ``0``. A lower limit leaves more time
+for ``code.py`` while the display changes a lot, but the viewer catches up more slowly.
+Useful on boards whose network co-processor is reached over SPI (AirLift), where sending
+can hold up code that has to keep up with something else, such as USB or audio
+streaming; ``12800`` suits the Fruit Jam.
+
 CIRCUITPY_WEB_VNC_PORT (integer)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 TCP port number for VNC viewers to show the board's display, typically 5900.
@@ -168,6 +177,24 @@ so set this to ``false`` if you don't need this feature.
 
 Additional board-specific keys
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+CIRCUITPY_BOARD_VARIANT (string)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Selects a hardware variant for boards sold in versions that the chip can't tell apart,
+such as clones with a different status LED color order. Each board documents the values it
+accepts in its ``board.c``. Unknown values are ignored and the board uses its default.
+Read at startup.
+
+`ESP32-S3 SuperMini <https://circuitpython.org/board/generic_esp32s3_supermini/>`_:
+``"rgb_led"`` for boards whose status NeoPixel takes RGB order. To check, run this.
+If the LED shows green instead of red, set ``CIRCUITPY_BOARD_VARIANT = "rgb_led"``
+and power cycle.
+
+.. code-block:: python
+
+    import board, neopixel
+    p = neopixel.NeoPixel(board.NEOPIXEL, 1, pixel_order=neopixel.GRB)
+    p[0] = (255, 0, 0)
 
 CIRCUITPY_DISPLAY_WIDTH (integer)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -216,7 +243,7 @@ Whether to configure the display at board initialization time, one of the follow
     CIRCUITPY_PICODVI_ENABLE="never"
 
 A display configured in this manner is available at ``supervisor.runtime.display``
-until it is released by ``displayio.release_displays()``. It does not appear at
+until it is released by ``supervisor.runtime.display.deinit()``. It does not appear at
 ``board.DISPLAY``.
 
 `Adafruit Feather RP2350 <https://circuitpython.org/board/adafruit_feather_rp2350/>`_
@@ -266,7 +293,7 @@ next to a 640x480 display. Set this to false to keep that RAM free, for
 example on a monitor without speakers.
 
 ``supervisor.runtime.audio`` is a :py:class:`picodvi.AudioOut`. It becomes ``None`` when
-the display is released by ``displayio.release_displays()`` or when it is
+the display is released, such as by ``supervisor.runtime.display.deinit()``, or when it is
 deinitialized, and stays ``None`` until the next reset.
 
 `Adafruit Feather RP2350 <https://circuitpython.org/board/adafruit_feather_rp2350/>`_
@@ -279,6 +306,32 @@ Wait for the specified amount of time, in seconds, for the user to press the res
 to initiate safe mode after a hard reset.
 The status LED blinks during this time.
 If not specified, use the default delay, which is one second.
+
+CIRCUITPY_STORAGE_MAP_FILE (boolean)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Controls direct flash mapping for :py:func:`storage.map_file` and automatic
+:py:class:`displayio.OnDiskBitmap` mapping. Defaults to ``true`` on builds that
+support file mapping. Set it to ``false`` to use cached file reads for
+``OnDiskBitmap`` instead; explicit ``storage.map_file()`` calls then raise
+``OSError`` with ``EOPNOTSUPP``, and a ``.mpy`` file is imported into RAM instead
+of being run from flash.
+
+On the Qualia ESP32-S3 RGB666, disabling mapping allows PSRAM XIP to keep the
+external-memory cache available during flash writes, so the RGB driver's
+bounce-buffer refill can continue. Bitmap drawing may be slower without
+mapping; leave it enabled for applications that prioritize bitmap performance.
+
+This setting is read once after mounting CIRCUITPY at startup. Press RESET or
+power-cycle the board after changing it; a reload or Ctrl-D does not change it
+because existing flash mappings can persist across reloads. It cannot enable
+mapping on builds that do not support it.
+
+Example: disable file mapping to avoid flash-write display interruptions on
+the Qualia:
+
+.. code-block:: toml
+
+    CIRCUITPY_STORAGE_MAP_FILE = false
 
 CIRCUITPY_TERMINAL_SCALE (integer)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

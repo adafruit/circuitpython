@@ -96,7 +96,15 @@ ifeq ($(INTERNAL_FLASH_FILESYSTEM),1)
   OPTIMIZATION_FLAGS ?= -Os
   CIRCUITPY_LTO = 1
   CIRCUITPY_LTO_PARTITION = balanced
+  CIRCUITPY_CODEOP ?= 0
+  CIRCUITPY_MSGPACK ?= 0
   CIRCUITPY_ULAB_OPTIMIZE_SIZE ?= 1
+  # Fast e-paper doesn't fit in what internal flash has left.
+  CIRCUITPY_EPAPERDISPLAY_FAST ?= 0
+  # Compile gc.c and vm.c with -Os instead of CSUPEROPT. Saves about 3 kB,
+  # for a 1-4% VM slowdown and 12% slower full gc with a live heap.
+  SUPEROPT_GC ?= 0
+  SUPEROPT_VM ?= 0
 else
   CIRCUITPY_USB_AUDIO ?= 1
 endif
@@ -124,6 +132,7 @@ OPTIMIZATION_FLAGS ?= -Os
 CIRCUITPY_LTO = 1
 CIRCUITPY_LTO_PARTITION = one
 ifeq ($(INTERNAL_FLASH_FILESYSTEM),1)
+  CIRCUITPY_EPAPERDISPLAY_FAST ?= 0
   CIRCUITPY_FULL_BUILD ?= 0
   CIRCUITPY_PULSEIO ?= 1
 endif
@@ -134,6 +143,3 @@ ifneq ($(CIRCUITPY_BLEIO_NATIVE),1)
 CIRCUITPY_BLE_FILE_SERVICE = 0
 CIRCUITPY_BLE_SERIAL_SERVICE = 0
 endif
-
-# Cleanup is performed by GC finalizers (__del__ -> deinit) instead of a bulk pin reset.
-CIRCUITPY_BULK_RESET = 0

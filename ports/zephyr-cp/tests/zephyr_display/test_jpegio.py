@@ -76,12 +76,17 @@ _JPEGIO_DRIVE = {"code.py": JPEGIO_DECODE_CODE, "test.jpg": _TEST_JPG_BYTES}
 @pytest.mark.circuitpy_drive(_JPEGIO_DRIVE)
 @pytest.mark.display(capture_times_ns=[14_000_000_000])
 @pytest.mark.duration(18)
-def test_jpegio_decode(request, circuitpython):
+def test_jpegio_decode(request, board, circuitpython):
     circuitpython.wait_until_done()
 
     output = circuitpython.serial.all_output
     assert "size 20 20" in output
     assert "rendered" in output
+
+    if board.startswith("native_native_sim_lvgl"):
+        # The image is decoded correctly, but LVGL scales it about pixel centers and
+        # resamples, so it doesn't match displayio's whole-pixel scaling.
+        request.applymarker(pytest.mark.xfail(reason="LVGL image scaling isn't pixel exact"))
 
     golden = Path(__file__).parent / "golden" / "jpegio_test_pattern_320x240.png"
     _golden_compare_or_update(request, circuitpython.display_capture_paths(), golden)

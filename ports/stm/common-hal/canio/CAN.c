@@ -48,7 +48,7 @@ void common_hal_canio_can_construct(canio_can_obj_t *self, const mcu_pin_obj_t *
         raise_ValueError_invalid_pin_name(MP_QSTR_rx);
     }
 
-    if (reserved_can[periph_index]) {
+    if (reserved_can[periph_index - 1]) {
         mp_raise_ValueError(MP_ERROR_TEXT("Hardware in use, try alternative pins"));
     }
 
@@ -136,7 +136,11 @@ void common_hal_canio_can_construct(canio_can_obj_t *self, const mcu_pin_obj_t *
 
     HAL_CAN_Start(&self->handle);
 
-    reserved_can[periph_index] = true;
+    reserved_can[periph_index - 1] = true;
+    self->tx_pin = tx;
+    self->rx_pin = rx;
+    common_hal_mcu_pin_claim(tx);
+    common_hal_mcu_pin_claim(rx);
 }
 
 bool common_hal_canio_can_loopback_get(canio_can_obj_t *self) {
@@ -257,7 +261,9 @@ void common_hal_canio_can_deinit(canio_can_obj_t *self) {
         SET_BIT(self->handle.Instance->MCR, CAN_MCR_RESET);
         while (READ_BIT(self->handle.Instance->MCR, CAN_MCR_RESET)) {
         }
-        reserved_can[self->periph_index] = 0;
+        reserved_can[self->periph_index - 1] = false;
+        common_hal_reset_pin(self->tx_pin);
+        common_hal_reset_pin(self->rx_pin);
     }
     self->handle.Instance = NULL;
 }

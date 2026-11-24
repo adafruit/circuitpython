@@ -3,6 +3,17 @@
     status = "okay";
 };
 
+/* Keep the button/key nodes available for board pin-name generation, but
+ * don't instantiate the input drivers. zephyr_input currently exposes touch
+ * input only, so these key devices don't provide useful input through it. */
+&{/gpio_keys} {
+	status = "disabled";
+};
+
+&{/adc-keys} {
+	status = "disabled";
+};
+
 /* The board's &rtc node is already status-okay in the upstream devicetree, so
  * alias it so the rtc module picks it up like other RTC boards do. */
 / {

@@ -42,6 +42,8 @@
 void display_stream_init(void);
 // Sets the VNC port, 0 for none, and whether keys typed there reach the console.
 void display_stream_set_vnc(mp_int_t port, bool allow_keys);
+// Sets the most bytes per second the stream sends, 0 for no limit.
+void display_stream_set_rate_limit(mp_int_t bytes_per_second);
 // Opens the VNC port if there is one and it isn't open.
 void display_stream_listen(socketpool_socketpool_obj_t *pool);
 // Takes a connected socket: a websocket upgrade request for /cp/display/, or a

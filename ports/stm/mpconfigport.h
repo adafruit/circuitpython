@@ -24,6 +24,11 @@ extern uint8_t _ld_default_stack_size;
 #ifndef BOARD_VTOR_DEFER
 #define BOARD_VTOR_DEFER (0)
 #endif
+// The board runs the uf2-stm32f bootloader (MakeCode Arcade consoles), which
+// reads RTC->BKP0R on reset to choose between UF2 mode and the application.
+#ifndef BOARD_UF2_STM32F_BOOTLOADER
+#define BOARD_UF2_STM32F_BOOTLOADER (0)
+#endif
 #ifndef BOARD_NO_VBUS_SENSE
 #define BOARD_NO_VBUS_SENSE (0)
 #endif

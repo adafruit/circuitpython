@@ -1,0 +1,9 @@
+/*
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Device tree overlay for CircuitPython on native_sim with the LVGL-based
+ * displayio compositor. Identical hardware description to the legacy-compositor
+ * board, so just reuse it.
+ */
+
+#include "../native_sim/board.overlay"

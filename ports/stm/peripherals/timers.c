@@ -209,7 +209,7 @@ size_t stm_peripherals_timer_get_irqnum(TIM_TypeDef *instance) {
     return irq_map[tim_id];
 }
 
-TIM_TypeDef *stm_peripherals_find_timer(void) {
+TIM_TypeDef *stm_peripherals_find_free_timer(void) {
     // Check for timers on pins outside the package size
     for (size_t i = 0; i < MP_ARRAY_SIZE(mcu_tim_banks); i++) {
         bool timer_in_package = false;
@@ -228,20 +228,27 @@ TIM_TypeDef *stm_peripherals_find_timer(void) {
         }
         // If no results are found, no unclaimed pins with this timer are in this package,
         // and it is safe to pick
-        if (timer_in_package == false && mcu_tim_banks[i] != NULL) {
+        if (timer_in_package == false && mcu_tim_banks[i] != NULL && !stm_timer_reserved[i]) {
             return mcu_tim_banks[i];
         }
     }
     // TODO: secondary search for timers outside the pins in the board profile
 
     // Work backwards - higher index timers have fewer pin allocations
-    for (size_t i = (MP_ARRAY_SIZE(mcu_tim_banks) - 1); i >= 0; i--) {
+    for (size_t i = MP_ARRAY_SIZE(mcu_tim_banks); i-- > 0;) {
         if ((!stm_timer_reserved[i]) && (mcu_tim_banks[i] != NULL)) {
             return mcu_tim_banks[i];
         }
     }
-    mp_raise_RuntimeError(MP_ERROR_TEXT("All timers in use"));
     return NULL;
+}
+
+TIM_TypeDef *stm_peripherals_find_timer(void) {
+    TIM_TypeDef *timer = stm_peripherals_find_free_timer();
+    if (timer == NULL) {
+        mp_raise_RuntimeError(MP_ERROR_TEXT("All timers in use"));
+    }
+    return timer;
 }
 
 void stm_peripherals_timer_preinit(TIM_TypeDef *instance, uint8_t prio, void (*callback)(void)) {
@@ -263,6 +270,11 @@ void stm_peripherals_timer_set_callback(void (*callback)(void), TIM_TypeDef *tim
 
 void stm_peripherals_timer_free(TIM_TypeDef *instance) {
     size_t tim_idx = stm_peripherals_timer_get_index(instance);
+    // Gating the clock keeps the register state, so stop the timer and clear its
+    // interrupts; otherwise the next user gets a stale update interrupt.
+    instance->CR1 &= ~TIM_CR1_CEN;
+    instance->DIER = 0;
+    instance->SR = 0;
     HAL_NVIC_DisableIRQ(irq_map[tim_idx]);
     stm_timer_callback[tim_idx] = NULL;
     tim_clock_disable(1 << tim_idx);

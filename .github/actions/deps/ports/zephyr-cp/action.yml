@@ -37,7 +37,7 @@ runs:
       with:
         app-path: zephyr-config
         base-path: ports/zephyr-cp
-        toolchains: arm-zephyr-eabi
+        toolchains: arm-zephyr-eabi:riscv64-zephyr-elf
         # The action's ccache stores a new ~150 MB entry per board job under one key
         # shared by every board, and each job restores whichever entry was saved last.
         # Measured across all 30 boards: hits on 5 boards by luck, none on the other 25,

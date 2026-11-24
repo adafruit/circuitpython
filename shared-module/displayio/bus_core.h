@@ -11,6 +11,7 @@
 
 #include "shared-module/displayio/area.h"
 #include "shared-module/displayio/display_core.h"
+#include "shared-module/displayio/Palette.h"
 
 #define NO_COMMAND 0x100
 
@@ -43,6 +44,10 @@ typedef struct {
     bool address_little_endian;
 } displayio_display_bus_t;
 
+// Raise ValueError if bus isn't a supported display bus type. Call it before allocating a
+// display, so a bad bus doesn't leave a half-built display in its slot.
+void displayio_display_bus_validate(mp_obj_t bus);
+
 void displayio_display_bus_construct(displayio_display_bus_t *self,
     mp_obj_t bus, uint16_t ram_width, uint16_t ram_height, int16_t colstart, int16_t rowstart,
     uint16_t column_command, uint16_t row_command, uint16_t set_current_column_command, uint16_t set_current_row_command,
@@ -52,7 +57,12 @@ bool displayio_display_bus_is_free(displayio_display_bus_t *self);
 bool displayio_display_bus_begin_transaction(displayio_display_bus_t *self);
 void displayio_display_bus_end_transaction(displayio_display_bus_t *self);
 
-void displayio_display_bus_set_region_to_update(displayio_display_bus_t *self, displayio_display_core_t *display, displayio_area_t *area);
+void displayio_display_bus_set_region_to_update(displayio_display_bus_t *self, const _displayio_colorspace_t *colorspace, displayio_area_t *area);
+
+// Send a BusDisplay-style init sequence. Each command is command, length byte (with 0x80
+// marking a delay), data, optional delay in ms.
+void displayio_display_bus_send_init_sequence(displayio_display_bus_t *self,
+    const uint8_t *init_sequence, uint16_t init_sequence_len);
 
 // Drain any pending asynchronous transfers on the bus.
 // No-op for synchronous buses (FourWire, I2C, ParallelBus).

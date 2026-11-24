@@ -139,6 +139,9 @@ MP_DEFINE_CONST_FUN_OBJ_2(jpegio_jpegdecoder_open_obj, jpegio_jpegdecoder_open);
 //|         software decoder's. Other images, and data opened from a file or stream, use
 //|         the software decoder, or raise `ValueError` if ``software_ok`` is False.
 //|
+//|         Some builds use a faster decoder for common JPEG types. Colors may differ slightly
+//|         between decoders.
+//|
 //|         :param Bitmap bitmap: Optional output buffer
 //|         :param int scale: Scale factor from 0 to 3, inclusive.
 //|         :param int x: Horizontal pixel location in bitmap where source_bitmap upper-left

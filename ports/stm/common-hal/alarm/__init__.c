@@ -46,6 +46,10 @@ void alarm_set_wakeup_reason(stm_sleep_source_t reason) {
     true_deep_wake_reason = reason;
 }
 
+bool alarm_woke_from_true_deep_sleep(void) {
+    return true_deep_wake_reason != STM_WAKEUP_UNDEF;
+}
+
 stm_sleep_source_t alarm_get_wakeup_cause(void) {
     // If in light/fake sleep, check modules
     if (alarm_pin_pinalarm_woke_this_cycle()) {
@@ -120,11 +124,11 @@ mp_obj_t common_hal_alarm_light_sleep_until_alarms(size_t n_alarms, const mp_obj
         port_idle_until_interrupt();
     }
 
+    alarm_reset();
     if (mp_hal_is_interrupted()) {
         return mp_const_none; // Shouldn't be given to python code because exception handling should kick in.
     }
 
-    alarm_reset();
     return wake_alarm;
 }
 

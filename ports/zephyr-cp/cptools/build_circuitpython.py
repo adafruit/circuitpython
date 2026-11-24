@@ -3,6 +3,7 @@ import logging
 import os
 import pathlib
 import pickle
+import re
 import sys
 
 import board_tools
@@ -96,6 +97,7 @@ REVERSE_DEPENDENCIES = {
         "audiofreeverb",
         "audiomixer",
         "audiomp3",
+        "audiotap",
         "synthio",
     ],
     "busio": ["fourwire", "i2cdisplaybus", "sdcardio", "sharpdisplay"],
@@ -145,7 +147,7 @@ LIBRARY_SOURCE = {
     "gifio": ["lib/AnimatedGIF/gif.c"],
 }
 
-SHARED_MODULE_AND_COMMON_HAL = ["_bleio", "os", "rotaryio"]
+SHARED_MODULE_AND_COMMON_HAL = ["_bleio", "os", "rotaryio", "watchdog"]
 
 # Mapping from module directory name to the flag name used in CIRCUITPY_<FLAG>
 MODULE_FLAG_NAMES = {
@@ -201,15 +203,45 @@ async def collect_defs(mode, build_path):
     return output_file
 
 
+def _rewrite_qstr_lines_if_changed(input_file, output_file, pattern, replacement):
+    content = re.sub(pattern, replacement, input_file.read_text(), flags=re.MULTILINE)
+    if not output_file.exists() or output_file.read_text() != content:
+        output_file.write_text(content)
+
+
+async def preprocess_qstrdefs(build_path, compiler, flags):
+    """Preprocess py/qstrdefs.h like py/py.mk does. It holds the qstrs whose value
+    can't be recovered from their MP_QSTR_ name, such as {:#b}. The Q() lines are
+    quoted so the preprocessor passes them through unchanged."""
+    quoted = build_path / "genhdr" / "qstrdefs.quoted.c"
+    quoted_pp = build_path / "genhdr" / "qstrdefs.quoted.pp"
+    preprocessed = build_path / "genhdr" / "qstrdefs.preprocessed.h"
+    await cpbuild.run_function(
+        _rewrite_qstr_lines_if_changed,
+        (srcdir / "py" / "qstrdefs.h", quoted, r"^Q\(.*\)$", r'"\g<0>"'),
+        {},
+        description=f"Quote py/qstrdefs.h -> {quoted.relative_to(build_path)}",
+    )
+    await compiler.preprocess(quoted, quoted_pp, flags)
+    await cpbuild.run_function(
+        _rewrite_qstr_lines_if_changed,
+        (quoted_pp, preprocessed, r'^"(Q\(.*\))"$', r"\1"),
+        {},
+        description=f"Unquote -> {preprocessed.relative_to(build_path)}",
+    )
+    return preprocessed
+
+
 async def generate_qstr_headers(build_path, compiler, flags, translation):
     collected = await collect_defs("qstr", build_path)
+    qstrdefs = await preprocess_qstrdefs(build_path, compiler, flags)
     generated = build_path / "genhdr" / "qstrdefs.generated.h"
 
     # check_hash: the collected file is rewritten on every build, so this reruns every
     # build too. Keep the old modification time when the header comes out unchanged, or
     # every file that includes it would be recompiled.
     await cpbuild.run_command(
-        ["python", srcdir / "py" / "makeqstrdata.py", collected, ">", generated],
+        ["python", srcdir / "py" / "makeqstrdata.py", qstrdefs, collected, ">", generated],
         srcdir,
         check_hash=[generated],
     )
@@ -268,23 +300,24 @@ async def generate_root_pointer_header(build_path):
     )
 
 
-async def generate_display_resources(output_path, translation, font, extra_characters):
-    await cpbuild.run_command(
-        [
-            "python",
-            srcdir / "tools" / "gen_display_resources.py",
-            "--font",
-            srcdir / font,
-            "--sample_file",
-            srcdir / "locale" / f"{translation}.po",
-            "--extra_characters",
-            repr(extra_characters),
-            "--output_c_file",
-            output_path,
-        ],
-        srcdir,
-        check_hash=[output_path],
-    )
+async def generate_display_resources(
+    output_path, translation, font, extra_characters, lvgl_tilegrid
+):
+    cmd = [
+        "python",
+        srcdir / "tools" / "gen_display_resources.py",
+        "--font",
+        srcdir / font,
+        "--sample_file",
+        srcdir / "locale" / f"{translation}.po",
+        "--extra_characters",
+        repr(extra_characters),
+        "--output_c_file",
+        output_path,
+    ]
+    if lvgl_tilegrid:
+        cmd.append("--lvgl-tilegrid")
+    await cpbuild.run_command(cmd, srcdir, check_hash=[output_path])
 
 
 async def generate_web_workflow_static(output_path, static_files):
@@ -407,11 +440,15 @@ async def build_circuitpython():  # noqa: C901
     for module in ALWAYS_ON_MODULES:
         circuitpython_flags.append(f"-DCIRCUITPY_{module.upper()}=1")
     lto = cmake_args.get("LTO", "n") == "y"
+    # LVGL module enabled for this board. The flag comes from CONFIG_LVGL via
+    # ExternalProject args so it stays in sync with the Kconfig choice. Any board that
+    # sets CONFIG_LVGL gets the LVGL-based displayio compositing core; boards without
+    # LVGL build the legacy scanline compositor.
+    lvgl_enabled = cmake_args.get("LVGL", "n") == "y"
+    lvgl_dir = cmake_args.get("LVGL_DIR", "")
+    logger.info(f"LVGL compositing core enabled: {lvgl_enabled} (dir={lvgl_dir or 'none'})")
     circuitpython_flags.append(f"-DCIRCUITPY_ENABLE_MPY_NATIVE={1 if enable_mpy_native else 0}")
     circuitpython_flags.append(f"-DCIRCUITPY_FULL_BUILD={1 if full_build else 0}")
-    # Zephyr does not reset all pins in bulk on soft reset, so never_reset is
-    # compiled out and hardware is released by GC finalizers instead.
-    circuitpython_flags.append("-DCIRCUITPY_BULK_RESET=0")
     circuitpython_flags.append("-DCIRCUITPY_OPT_LOAD_ATTR_FAST_PATH=1")
     circuitpython_flags.append(f"-DCIRCUITPY_OPT_MAP_LOOKUP_CACHE={1 if full_build else 0}")
     circuitpython_flags.append(f"-DCIRCUITPY_SETTINGS_TOML={1 if full_build else 0}")
@@ -420,6 +457,17 @@ async def build_circuitpython():  # noqa: C901
     circuitpython_flags.append(f"-DMICROPY_PY_SELECT={1 if full_build else 0}")
     circuitpython_flags.append(f"-DMICROPY_PY_SELECT_SELECT={1 if full_build else 0}")
     circuitpython_flags.append("-DCIRCUITPY_STATUS_BAR=1")
+    if lvgl_enabled:
+        circuitpython_flags.append("-DCIRCUITPY_DISPLAYIO_LVGL=1")
+        circuitpython_flags.extend(("-isystem", lvgl_dir))
+        circuitpython_flags.extend(("-isystem", lvgl_dir + "/include"))
+        # The zephyr-provided LV_CONF_PATH definition loses its shell quoting while
+        # crossing the ExternalProject boundary. Re-supply it quoted so LVGL resolves
+        # the config header.
+        lv_conf_path = portdir / "zephyr" / "modules" / "lvgl" / "include" / "lv_conf.h"
+        circuitpython_flags.append("-ULV_CONF_PATH")
+        # The command runs through a shell, so escape the quotes for it.
+        circuitpython_flags.append(f'-DLV_CONF_PATH=\\"{lv_conf_path}\\"')
     circuitpython_flags.append(f"-DCIRCUITPY_USB_HOST={1 if usb_host else 0}")
     circuitpython_flags.append(f"-DCIRCUITPY_BOARD_ID='\"{board}\"'")
     circuitpython_flags.append(f"-DCIRCUITPY_TRANSLATE_OBJECT={1 if lto else 0}")
@@ -489,10 +537,28 @@ async def build_circuitpython():  # noqa: C901
 
     vendor = mpconfigboard.get("VENDOR", board_info["vendor"])
     name = mpconfigboard.get("NAME", board_info["name"])
+    usb_manufacturer = mpconfigboard.get("USB_MANUFACTURER", board_info["vendor"])
 
     enabled_modules, module_reasons = determine_enabled_modules(board_info, portdir, srcdir)
     for m in mpconfigboard.get("DISABLED_MODULES", []):
         enabled_modules.discard(m)
+
+    if lvgl_enabled:
+        # These display-side modules render through the scanline compositor and do not
+        # work with the LVGL one. Exclude them so LVGL builds don't link legacy rendering
+        # machinery. BusDisplay, FramebufferDisplay, FourWire and I2CDisplayBus have LVGL
+        # implementations and stay enabled. bitmaptools and jpegio stay enabled because
+        # bitmaptools now writes through the Bitmap dirty API and jpegio decodes through
+        # bitmaptools.blit.
+        legacy_display_modules = [
+            "epaperdisplay",
+            "sharpdisplay",
+            "tilepalettemapper",
+        ]
+        for m in legacy_display_modules:
+            if m in enabled_modules:
+                enabled_modules.discard(m)
+                module_reasons[m] = "Legacy scanline display module; excluded from LVGL builds"
 
     web_workflow_enabled = (
         board_info.get("wifi", False)
@@ -565,6 +631,10 @@ async def build_circuitpython():  # noqa: C901
             "layout dtsi, or disable the USB device controller in the devicetree."
         )
     circuitpython_flags.append(f"-DCIRCUITPY_USB_DEVICE={1 if usb_ok else 0}")
+    # MSC is the CIRCUITPY drive interface. The Zephyr port registers it only when
+    # storage.disable_usb_drive() has not turned it off (see supervisor/usb.c).
+    circuitpython_flags.append(f"-DCIRCUITPY_USB_MSC={1 if usb_ok else 0}")
+    circuitpython_flags.append(f"-DCIRCUITPY_USB_MSC_ENABLED_DEFAULT={1 if usb_ok else 0}")
 
     if usb_ok:
         enabled_modules.add("usb_cdc")
@@ -582,7 +652,7 @@ async def build_circuitpython():  # noqa: C901
         )
         for macro, limit, value in (
             ("USB_PRODUCT", 16, name),
-            ("USB_MANUFACTURER", 8, vendor),
+            ("USB_MANUFACTURER", 8, usb_manufacturer),
         ):
             circuitpython_flags.append(f"-D{macro}='\"{value}\"'")
             circuitpython_flags.append(f"-D{macro}_{limit}='\"{value[:limit]}\"'")
@@ -620,6 +690,12 @@ async def build_circuitpython():  # noqa: C901
         )
         circuitpython_flags.extend(
             ("-isystem", portdir / "modules" / "crypto" / "tf-psa-crypto" / "include")
+        )
+        circuitpython_flags.extend(
+            (
+                "-isystem",
+                portdir / "modules" / "crypto" / "tf-psa-crypto" / "dispatch" / "include",
+            )
         )
         circuitpython_flags.extend(
             (
@@ -673,10 +749,59 @@ async def build_circuitpython():  # noqa: C901
         if enabled:
             hal_source.extend(portdir.glob(f"bindings/{module.name}/*.c"))
             len_before = len(hal_source)
-            hal_source.extend(top.glob(f"ports/zephyr-cp/common-hal/{module.name}/*.c"))
+            if module.name == "zephyr_display":
+                backend_dir = "lvgl" if lvgl_enabled else "legacy"
+                hal_source.extend(
+                    top.glob(f"ports/zephyr-cp/common-hal/zephyr_display/{backend_dir}/*.c")
+                )
+            else:
+                hal_source.extend(top.glob(f"ports/zephyr-cp/common-hal/{module.name}/*.c"))
             # Only include shared-module/*.c if no common-hal/*.c files were found
             if len(hal_source) == len_before or module.name in SHARED_MODULE_AND_COMMON_HAL:
-                hal_source.extend(top.glob(f"shared-module/{module.name}/**/*.c"))
+                shared_module_sources = top.glob(f"shared-module/{module.name}/**/*.c")
+                if module.name == "displayio":
+                    # The compositing core (Group/TileGrid) is selected by backend directory.
+                    backend_dir = "lvgl" if lvgl_enabled else "legacy"
+                    backend_root = top / "shared-module" / "displayio"
+                    shared_module_sources = [
+                        s
+                        for s in shared_module_sources
+                        # The legacy slot registry is shared by the LVGL compositor so that
+                        # displayio.release_displays() can find displays.
+                        if s.parent.parent != backend_root
+                        or s.parent.name == backend_dir
+                        or (s.parent.name == "legacy" and s.name == "__init__.c")
+                    ]
+                if module.name in ("busdisplay", "epaperdisplay", "framebufferio"):
+                    # These have legacy scanline implementations and LVGL ones.
+                    backend_dir = "lvgl" if lvgl_enabled else "legacy"
+                    backend_root = top / "shared-module" / module.name
+                    shared_module_sources = [
+                        s
+                        for s in shared_module_sources
+                        if s.parent == backend_root or s.parent.name == backend_dir
+                    ]
+                if module.name == "vectorio":
+                    # The vector shape wrapper is selected by backend directory too; the
+                    # shape math (Circle/Polygon/Rectangle) is backend agnostic.
+                    backend_dir = "lvgl" if lvgl_enabled else "legacy"
+                    backend_root = top / "shared-module" / "vectorio"
+                    shared_module_sources = [
+                        s
+                        for s in shared_module_sources
+                        if s.parent.parent != backend_root or s.parent.name == backend_dir
+                    ]
+                if module.name == "videocore":
+                    # The video source/target state is shared; only the VideoBuffer's
+                    # compositor mirror is backend specific.
+                    backend_dir = "lvgl" if lvgl_enabled else "legacy"
+                    backend_root = top / "shared-module" / "videocore"
+                    shared_module_sources = [
+                        s
+                        for s in shared_module_sources
+                        if s.parent == backend_root or s.parent.name == backend_dir
+                    ]
+                hal_source.extend(shared_module_sources)
             # The USB HID report descriptors are shared with the TinyUSB ports and
             # have no common-hal override, so always compile them.
             if module.name == "usb_hid":
@@ -828,7 +953,9 @@ async def build_circuitpython():  # noqa: C901
             )
             extra_characters = mpconfigboard.get("CIRCUITPY_FONT_EXTRA_CHARACTERS", "")
             tg.create_task(
-                generate_display_resources(output_path, translation, font_path, extra_characters)
+                generate_display_resources(
+                    output_path, translation, font_path, extra_characters, lvgl_enabled
+                )
             )
             source_files.append(output_path)
 

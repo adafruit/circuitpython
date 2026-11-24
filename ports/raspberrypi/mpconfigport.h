@@ -49,6 +49,8 @@
 
 #if CIRCUITPY_USB_HOST
 #define CIRCUITPY_USB_HOST_INSTANCE 1
+// Pico-PIO-USB
+#define CIRCUITPY_USB_HOST_ISO_RECORDS (1)
 #endif
 
 // This also includes mpconfigboard.h.
@@ -63,6 +65,12 @@
 #ifndef CIRCUITPY_I2C_ALLOW_INTERNAL_PULL_UP
 #define CIRCUITPY_I2C_ALLOW_INTERNAL_PULL_UP (0)
 #endif
+
+// CIRCUITPY_FLASH_MAX_SCK_HZ is not defined by default. The flash clock is
+// chosen from the flash's datasheet timing in flash_info.h, which is
+// generated from data/nvm.toml. A board whose flash or wiring needs a slower
+// flash clock can define CIRCUITPY_FLASH_MAX_SCK_HZ in mpconfigboard.h as a
+// limit, in Hz.
 
 #if CIRCUITPY_CYW43
 #define MICROPY_PY_LWIP_ENTER   cyw43_arch_lwip_begin();

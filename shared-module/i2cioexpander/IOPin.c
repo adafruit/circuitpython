@@ -26,6 +26,9 @@ mp_negative_errno_t i2cioexpander_iopin_construct(
 }
 
 void common_hal_i2cioexpander_iopin_deinit(i2cioexpander_iopin_obj_t *self) {
+    if (common_hal_i2cioexpander_iopin_deinited(self)) {
+        return;
+    }
     // Switch to input on deinit.
     common_hal_i2cioexpander_iopin_switch_to_input(self, PULL_NONE);
 }

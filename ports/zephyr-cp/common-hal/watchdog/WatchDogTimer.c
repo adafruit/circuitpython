@@ -208,6 +208,10 @@ static void watchdog_stop(watchdog_watchdogtimer_obj_t *self) {
     self->mode = WATCHDOGMODE_NONE;
 }
 
+void common_hal_watchdog_reset(watchdog_watchdogtimer_obj_t *self) {
+    watchdog_stop(self);
+}
+
 mp_float_t common_hal_watchdog_get_timeout(watchdog_watchdogtimer_obj_t *self) {
     return self->timeout;
 }

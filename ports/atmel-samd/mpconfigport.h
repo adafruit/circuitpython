@@ -27,6 +27,7 @@
 #define MICROPY_PY_REVERSE_SPECIAL_METHODS          (0)
 #define MICROPY_PY_COLLECTIONS_DEQUE                (0)
 #define MICROPY_PY_COLLECTIONS_ORDEREDDICT          (0)
+// docs/library/errno.rst lists these names. Update it if this list changes.
 #define MICROPY_PY_ERRNO_LIST \
     X(EPERM) \
     X(ENOENT) \

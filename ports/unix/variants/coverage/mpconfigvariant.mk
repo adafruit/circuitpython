@@ -43,6 +43,7 @@ SRC_BITMAP := \
 	shared-bindings/audiofilters/Filter.c \
 	shared-bindings/audiofilters/Phaser.c \
 	shared-bindings/audiofilters/__init__.c \
+	shared-bindings/audiotap/LevelReader.c \
 	shared-bindings/audiotap/Tap.c \
 	shared-bindings/audiotap/__init__.c \
 	shared-bindings/audiofreeverb/Freeverb.c \
@@ -95,6 +96,7 @@ SRC_BITMAP := \
 	shared-module/audiofilters/Filter.c \
 	shared-module/audiofilters/Phaser.c \
 	shared-module/audiofilters/__init__.c \
+	shared-module/audiotap/LevelReader.c \
 	shared-module/audiotap/Tap.c \
 	shared-module/audiotap/__init__.c \
 	shared-module/audiofreeverb/Freeverb.c \
@@ -106,9 +108,9 @@ SRC_BITMAP := \
 	shared-module/bitmapfilter/__init__.c \
 	shared-module/bitmaptools/__init__.c \
 	shared-module/displayio/area.c \
-	shared-module/displayio/Bitmap.c \
-	shared-module/displayio/ColorConverter.c \
-	shared-module/displayio/Palette.c \
+	shared-module/displayio/legacy/Bitmap.c \
+	shared-module/displayio/legacy/ColorConverter.c \
+	shared-module/displayio/legacy/Palette.c \
 	shared-module/floppyio/__init__.c \
 	shared-module/jpegio/__init__.c \
 	shared-module/jpegio/JpegDecoder.c \
@@ -126,7 +128,7 @@ SRC_BITMAP := \
 	shared-module/vectorio/__init__.c \
 	shared-module/vectorio/Polygon.c \
 	shared-module/vectorio/Rectangle.c \
-	shared-module/vectorio/VectorShape.c \
+	shared-module/vectorio/legacy/VectorShape.c \
 	shared-module/traceback/__init__.c \
 	shared-module/zlib/__init__.c \
 
@@ -163,10 +165,12 @@ CFLAGS += \
 	-DCIRCUITPY_AUDIODELAYS=1 \
 	-DCIRCUITPY_AUDIOFILTERS=1 \
 	-DCIRCUITPY_AUDIOMIXER=1 \
+	-DCIRCUITPY_AUDIOMIXER_USE_PORT_MIX=0 \
 	-DCIRCUITPY_AUDIOTAP=1 \
 	-DCIRCUITPY_AUDIOMP3=1 \
 	-DCIRCUITPY_AUDIOCORE_DEBUG=1 \
 	-DCIRCUITPY_BITMAPTOOLS=1 \
+	-DCIRCUITPY_BITMAPTOOLS_FAST_ROTOZOOM=1 \
 	-DCIRCUITPY_CODEOP=1 \
 	-DCIRCUITPY_DISPLAYIO_UNIX=1 \
 	-DCIRCUITPY_FLOPPYIO=1 \

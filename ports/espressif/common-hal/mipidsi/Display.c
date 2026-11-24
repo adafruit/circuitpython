@@ -14,10 +14,52 @@
 #include <math.h>
 #include <esp_lcd_panel_ops.h>
 #include <esp_heap_caps.h>
+#include "hal/axi_icm_ll.h"
 #include "py/runtime.h"
 
 // Cache write-back function (should be from rom/cache.h but it's not always available)
 extern int Cache_WriteBack_Addr(uint32_t addr, uint32_t size);
+
+// Delete the panel and IO handles that construct created. construct's error
+// paths use this rather than deinit(): deinit() does nothing until the DPI
+// panel exists, and it gives back a bus use that construct hasn't taken yet.
+static void clear_panel_handles(mipidsi_display_obj_t *self) {
+    if (self->dpi_panel_handle != NULL) {
+        esp_lcd_panel_del(self->dpi_panel_handle);
+        self->dpi_panel_handle = NULL;
+    }
+    if (self->dbi_io_handle != NULL) {
+        esp_lcd_panel_io_del(self->dbi_io_handle);
+        self->dbi_io_handle = NULL;
+    }
+}
+
+// The vsync ISR reads the frame callback and its data as a pair, so they change together.
+static portMUX_TYPE frame_cb_lock = portMUX_INITIALIZER_UNLOCKED;
+
+static void set_frame_cb(mipidsi_display_obj_t *self, framebuffer_frame_callback_t cb, void *data) {
+    portENTER_CRITICAL(&frame_cb_lock);
+    self->frame_cb = cb;
+    self->frame_cb_data = data;
+    portEXIT_CRITICAL(&frame_cb_lock);
+}
+
+// The DPI driver requires this callback to live in IRAM. It runs in interrupt context, so it only
+// forwards to the framebuffer's frame callback (which hands off to the LVGL port) and returns.
+static bool IRAM_ATTR mipidsi_display_vsync_cb(esp_lcd_panel_handle_t panel,
+    esp_lcd_dpi_panel_event_data_t *edata, void *user_ctx) {
+    (void)panel;
+    (void)edata;
+    mipidsi_display_obj_t *self = user_ctx;
+    portENTER_CRITICAL_ISR(&frame_cb_lock);
+    framebuffer_frame_callback_t cb = self->frame_cb;
+    void *data = self->frame_cb_data;
+    portEXIT_CRITICAL_ISR(&frame_cb_lock);
+    if (cb != NULL) {
+        cb(data);
+    }
+    return false;
+}
 
 void common_hal_mipidsi_display_construct(mipidsi_display_obj_t *self,
     mipidsi_bus_obj_t *bus,
@@ -52,6 +94,8 @@ void common_hal_mipidsi_display_construct(mipidsi_display_obj_t *self,
     self->framebuffer = NULL;
     self->dbi_io_handle = NULL;
     self->dpi_panel_handle = NULL;
+    self->frame_cb = NULL;
+    self->frame_cb_data = NULL;
     self->backlight_inout.base.type = &mp_type_NoneType;
 
     // Create the DBI interface for sending commands
@@ -70,7 +114,7 @@ void common_hal_mipidsi_display_construct(mipidsi_display_obj_t *self,
     } else if (color_depth == 24) {
         color_format = LCD_COLOR_FMT_RGB888;
     } else {
-        common_hal_mipidsi_display_deinit(self);
+        clear_panel_handles(self);
         mp_raise_ValueError_varg(MP_ERROR_TEXT("Invalid %q"), MP_QSTR_color_depth);
     }
 
@@ -100,9 +144,15 @@ void common_hal_mipidsi_display_construct(mipidsi_display_obj_t *self,
 
     esp_err_t ret = esp_lcd_new_panel_dpi(bus->bus_handle, &dpi_config, &self->dpi_panel_handle);
     if (ret != ESP_OK) {
-        common_hal_mipidsi_display_deinit(self);
+        clear_panel_handles(self);
         CHECK_ESP_RESULT(ret);
     }
+
+    // Scanout continuously reads the framebuffer from PSRAM through DW-GDMA.
+    // Give those reads the highest AXI-ICM QoS priority so CPU, cache and PPA
+    // traffic cannot starve the DSI bridge FIFO. DSI does not write to PSRAM.
+    axi_icm_ll_set_dw_gdma_qos_arbiter_prio(0, 0, 15);
+    axi_icm_ll_set_dw_gdma_qos_arbiter_prio(1, 0, 15);
 
     // The DPI divider is an integer, so record the clock it really produces.
     float pixel_clock_mhz = 0;
@@ -113,8 +163,8 @@ void common_hal_mipidsi_display_construct(mipidsi_display_obj_t *self,
     // Get the framebuffer allocated by the driver
     void *fb = NULL;
     ret = esp_lcd_dpi_panel_get_frame_buffer(self->dpi_panel_handle, 1, &fb);
-    if (ret != ESP_OK || fb == NULL) {
-        common_hal_mipidsi_display_deinit(self);
+    if (ret != ESP_OK) {
+        clear_panel_handles(self);
         CHECK_ESP_RESULT(ret);
     }
 
@@ -147,7 +197,18 @@ void common_hal_mipidsi_display_construct(mipidsi_display_obj_t *self,
     // Initialize the panel after sending init commands
     ret = esp_lcd_panel_init(self->dpi_panel_handle);
     if (ret != ESP_OK) {
-        common_hal_mipidsi_display_deinit(self);
+        clear_panel_handles(self);
+        CHECK_ESP_RESULT(ret);
+    }
+
+    // VSYNC is the frame boundary a FramebufferDisplay can pace itself with. The callback stays
+    // registered for the life of the panel; frame_cb is only set when a display asks for it.
+    esp_lcd_dpi_panel_event_callbacks_t dpi_cbs = {
+        .on_vsync = mipidsi_display_vsync_cb,
+    };
+    ret = esp_lcd_dpi_panel_register_event_callbacks(self->dpi_panel_handle, &dpi_cbs, self);
+    if (ret != ESP_OK) {
+        clear_panel_handles(self);
         CHECK_ESP_RESULT(ret);
     }
 
@@ -193,6 +254,9 @@ void common_hal_mipidsi_display_deinit(mipidsi_display_obj_t *self) {
         return;
     }
 
+    // Stop the vsync ISR from reaching a display that is going away before the panel is deleted.
+    set_frame_cb(self, NULL, NULL);
+
     // Cleanup backlight
     #if (CIRCUITPY_PWMIO)
     if (self->backlight_pwm.base.type == &pwmio_pwmout_type) {
@@ -203,17 +267,7 @@ void common_hal_mipidsi_display_deinit(mipidsi_display_obj_t *self) {
         common_hal_digitalio_digitalinout_deinit(&self->backlight_inout);
     }
 
-    // Delete the DPI panel
-    if (self->dpi_panel_handle != NULL) {
-        esp_lcd_panel_del(self->dpi_panel_handle);
-        self->dpi_panel_handle = NULL;
-    }
-
-    // Delete the DBI interface
-    if (self->dbi_io_handle != NULL) {
-        esp_lcd_panel_io_del(self->dbi_io_handle);
-        self->dbi_io_handle = NULL;
-    }
+    clear_panel_handles(self);
 
     mipidsi_bus_decrement_use_count(self->bus);
     self->bus = NULL;
@@ -232,6 +286,11 @@ void common_hal_mipidsi_display_refresh(mipidsi_display_obj_t *self) {
     // The DPI panel will automatically refresh from the framebuffer
     // No explicit refresh call is needed as the DSI hardware continuously
     // sends data from the framebuffer to the display
+}
+
+void common_hal_mipidsi_display_set_frame_callback(mipidsi_display_obj_t *self,
+    framebuffer_frame_callback_t cb, void *data) {
+    set_frame_cb(self, cb, data);
 }
 
 void common_hal_mipidsi_display_refresh_rows(mipidsi_display_obj_t *self, const uint8_t *dirty_row_bitmap) {

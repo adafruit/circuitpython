@@ -66,26 +66,43 @@ static mp_obj_t is31fl3741_framebuffer_make_new(const mp_obj_type_t *type, size_
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    is31fl3741_framebuffer_obj_t *self = &allocate_display_bus_or_raise()->is31fl3741;
-    self->base.type = &is31fl3741_framebuffer_type;
+    // Validate everything before taking a display bus slot. Once the slot has a type,
+    // release_displays() deinits it, even if construct never ran.
+    is31fl3741_IS31FL3741_obj_t *is31 = MP_OBJ_TO_PTR(mp_arg_validate_type(args[ARG_is31].u_obj, &is31fl3741_IS31FL3741_type, MP_QSTR_is31));
+    if (common_hal_is31fl3741_IS31FL3741_deinited(is31)) {
+        raise_deinited_error();
+    }
 
     if (args[ARG_width].u_int <= 0) {
         mp_raise_ValueError(MP_ERROR_TEXT("width must be greater than zero"));
     }
 
-    self->scale = args[ARG_scale].u_bool;
-    if (self->scale) {
+    bool scale = args[ARG_scale].u_bool;
+    int scale_width = args[ARG_width].u_int;
+    int scale_height = args[ARG_height].u_int;
+    if (scale) {
         if (((args[ARG_height].u_int % 3) != 0) || ((args[ARG_width].u_int % 3) != 0)) {
             mp_raise_ValueError(MP_ERROR_TEXT("Scale dimensions must divide by 3"));
         }
 
-        self->scale_width = args[ARG_width].u_int / 3;
-        self->scale_height = args[ARG_height].u_int / 3;
-    } else {
-        self->scale_width = args[ARG_width].u_int;
-        self->scale_height = args[ARG_height].u_int;
+        scale_width /= 3;
+        scale_height /= 3;
     }
 
+    size_t mapping_len;
+    mp_obj_t *mapping_items;
+    mp_arg_validate_type(args[ARG_mapping].u_obj, &mp_type_tuple, MP_QSTR_mapping);
+    mp_obj_tuple_get(args[ARG_mapping].u_obj, &mapping_len, &mapping_items);
+    if (mapping_len != (size_t)(scale_width * scale_height * 3)) {
+        mp_raise_ValueError(MP_ERROR_TEXT("LED mappings must match display size"));
+    }
+
+    is31fl3741_framebuffer_obj_t *self = &allocate_display_bus_or_raise()->is31fl3741;
+    self->base.type = &is31fl3741_framebuffer_type;
+
+    self->scale = scale;
+    self->scale_width = scale_width;
+    self->scale_height = scale_height;
     self->auto_gamma = args[ARG_gamma].u_bool;
 
     mp_obj_t framebuffer = args[ARG_framebuffer].u_obj;
@@ -121,7 +138,7 @@ static mp_obj_t is31fl3741_framebuffer_deinit(mp_obj_t self_in) {
 static MP_DEFINE_CONST_FUN_OBJ_1(is31fl3741_framebuffer_deinit_obj, is31fl3741_framebuffer_deinit);
 
 static void check_for_deinit(is31fl3741_framebuffer_obj_t *self) {
-    if (self->framebuffer == NULL) {
+    if (self->framebuffer == NULL || common_hal_is31fl3741_IS31FL3741_deinited(self->is31fl3741)) {
         raise_deinited_error();
     }
 }

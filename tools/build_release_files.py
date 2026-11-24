@@ -16,7 +16,6 @@ import time
 import json
 import tomllib
 
-sys.path.append("../docs")
 from shared_bindings_matrix import get_settings_from_makefile
 
 TOP = pathlib.Path(__file__).resolve().parent.parent

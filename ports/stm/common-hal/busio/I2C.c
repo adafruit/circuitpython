@@ -53,6 +53,17 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
     // Ensure the object starts in its deinit state.
     common_hal_busio_i2c_mark_deinit(self);
 
+    #if (CPY_STM32H7 || CPY_STM32F7 || CPY_STM32L4)
+    uint32_t timing;
+    if (frequency == 400000) {
+        timing = CPY_I2CFAST_TIMINGR;
+    } else if (frequency == 100000) {
+        timing = CPY_I2CSTANDARD_TIMINGR;
+    } else {
+        mp_arg_error_invalid(MP_QSTR_frequency);
+    }
+    #endif
+
     // Match pins to I2C objects
     I2C_TypeDef *I2Cx;
     uint8_t sda_len = MP_ARRAY_SIZE(mcu_i2c_sda_list);
@@ -118,13 +129,7 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
 
     // Handle the HAL handle differences
     #if (CPY_STM32H7 || CPY_STM32F7 || CPY_STM32L4)
-    if (frequency == 400000) {
-        self->handle.Init.Timing = CPY_I2CFAST_TIMINGR;
-    } else if (frequency == 100000) {
-        self->handle.Init.Timing = CPY_I2CSTANDARD_TIMINGR;
-    } else {
-        mp_arg_error_invalid(MP_QSTR_frequency);
-    }
+    self->handle.Init.Timing = timing;
     #else
     self->handle.Init.ClockSpeed = frequency;
     self->handle.Init.DutyCycle = I2C_DUTYCYCLE_2;
@@ -139,6 +144,7 @@ void common_hal_busio_i2c_construct(busio_i2c_obj_t *self,
     self->handle.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
     self->handle.State = HAL_I2C_STATE_RESET;
     if (HAL_I2C_Init(&(self->handle)) != HAL_OK) {
+        common_hal_busio_i2c_deinit(self);
         mp_raise_RuntimeError(MP_ERROR_TEXT("I2C init error"));
     }
     common_hal_mcu_pin_claim(sda);
@@ -164,6 +170,7 @@ void common_hal_busio_i2c_deinit(busio_i2c_obj_t *self) {
 
     i2c_clock_disable(1 << (self->sda->periph_index - 1));
     reserved_i2c[self->sda->periph_index - 1] = false;
+    MP_STATE_PORT(cpy_i2c_obj_all)[self->sda->periph_index - 1] = NULL;
 
     reset_pin_number(self->sda->pin->port, self->sda->pin->number);
     reset_pin_number(self->scl->pin->port, self->scl->pin->number);
@@ -172,6 +179,7 @@ void common_hal_busio_i2c_deinit(busio_i2c_obj_t *self) {
 
 void common_hal_busio_i2c_mark_deinit(busio_i2c_obj_t *self) {
     self->sda = NULL;
+    self->scl = NULL;
 }
 
 bool common_hal_busio_i2c_probe(busio_i2c_obj_t *self, uint8_t addr) {

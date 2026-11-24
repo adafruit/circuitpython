@@ -139,6 +139,12 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
     // nRF UARTE only supports 8 data bits.
     mp_arg_validate_int(bits, 8, MP_QSTR_bits);
 
+    bool allocated_buffer = false;
+    if (receiver_buffer == NULL) {
+        receiver_buffer = m_malloc(receiver_buffer_size);
+        allocated_buffer = true;
+    }
+
     const struct device *dev = NULL;
     int ret = iobroker_uart_allocate(tx != NULL ? tx->package_pin : IOBROKER_NO_PIN,
         rx != NULL ? rx->package_pin : IOBROKER_NO_PIN,
@@ -155,12 +161,6 @@ void common_hal_busio_uart_construct(busio_uart_obj_t *self,
             raise_ValueError_invalid_pins();
         }
         mp_raise_NotImplementedError_varg(MP_ERROR_TEXT("Use device tree to define %q devices"), MP_QSTR_UART);
-    }
-
-    bool allocated_buffer = false;
-    if (receiver_buffer == NULL) {
-        receiver_buffer = m_malloc(receiver_buffer_size);
-        allocated_buffer = true;
     }
 
     common_hal_busio_uart_construct_from_device(self, dev, receiver_buffer_size, receiver_buffer, sigint_enabled);

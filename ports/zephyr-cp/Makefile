@@ -117,7 +117,7 @@ $(BUILD)/zephyr-cp/zephyr/zephyr.elf:
 		echo west build -d $(BUILD); \
 		west build -d $(BUILD); \
 	fi
-	python ../../tools/build_memory_info.py $(BUILD)/zephyr-cp/zephyr/zephyr.map $(BUILD) --image $(BUILD)/zephyr-cp/zephyr/zephyr.bin
+	python ../../tools/build_memory_info.py $(BUILD)/zephyr-cp/zephyr/zephyr.map $(BUILD) --elf $(BUILD)/zephyr-cp/zephyr/zephyr.elf
 
 $(BUILD)/firmware.elf: $(BUILD)/zephyr-cp/zephyr/zephyr.elf
 	cp $^ $@
@@ -129,9 +129,15 @@ $(BUILD)/firmware.elf: $(BUILD)/zephyr-cp/zephyr/zephyr.elf
 # writer routes blocks by flash-area offset, see boot/zephyr/uf2_disk.c).
 # Like the fork's dts/ tree, the per-board conf/mk fragments live in vendor
 # subdirectories; the vendor is the BOARD id's first underscore-separated
-# token (the fork's boards.toml keys are board ids minus that prefix).
+# token (the fork's boards.toml keys are board ids minus that prefix). Adafruit
+# boards are the exception: their keys keep the prefix (adafruit_metro_m7), and
+# the board id adds _zephyr to it (adafruit_metro_m7_zephyr).
 ADABOOT_VENDOR := $(word 1,$(subst _, ,$(BOARD)))
+ifneq ($(filter %_zephyr,$(BOARD)),)
+ADABOOT_KEY := $(patsubst %_zephyr,%,$(BOARD))
+else
 ADABOOT_KEY := $(subst $(ADABOOT_VENDOR)_,,$(BOARD))
+endif
 -include bootloader/mcuboot/conf/$(ADABOOT_VENDOR)/$(ADABOOT_KEY)-autogen.mk
 
 # MCUBOOT_UF2_APP_BASE is only set for boards that boot via the Adaboot
@@ -242,10 +248,11 @@ sim:
 clean-sim:
 	rm -rf $(wildcard build-native_*)
 
-# Every board the test suite uses: native sim (non-asan + asan) and the bsim
-# boards (tests/bsim/conftest.py parametrizes over both). Zephyr samples for
-# bsim tests are built on demand by the zephyr_sample fixture.
-TEST_BOARDS := native_native_sim native_native_sim_asan native_native_sim_lfs native_nrf5340bsim native_nrf54lm20bsim
+# Every board the test suite uses: native sim (legacy + lvgl compositors, each
+# with an asan variant, plus lfs) and the bsim boards (tests/bsim/conftest.py parametrizes over
+# both). Zephyr samples for bsim tests are built on demand by the zephyr_sample
+# fixture.
+TEST_BOARDS := native_native_sim native_native_sim_lvgl native_native_sim_lvgl_asan native_native_sim_asan native_native_sim_lfs native_nrf5340bsim native_nrf54lm20bsim
 
 # Delegate to a sub-make with BOARD set so the per-board build rule (and its
 # shield args + bsim prep) applies. The targets are phony: the west builds are
@@ -264,3 +271,12 @@ PYTEST_ARGS ?= tests/
 test: $(TEST_BOARDS:%=test-build-%)
 	pytest cptools/tests
 	pytest -v $(PYTEST_ARGS)
+
+# The core test suite (tests/run-tests.py) on native_sim. Pass test directories
+# or files and the number of simulators in RUN_TESTS_ARGS, for example
+# RUN_TESTS_ARGS="-j 8 -d basics extmod".
+RUN_TESTS_ARGS ?=
+
+.PHONY: test-run-tests
+test-run-tests: test-build-native_native_sim
+	python cptools/run_tests_native_sim.py $(RUN_TESTS_ARGS)

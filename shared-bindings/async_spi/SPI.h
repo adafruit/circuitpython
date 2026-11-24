@@ -20,7 +20,6 @@ bool common_hal_async_spi_spi_deinited(async_spi_spi_obj_t *self);
 // Stops a running transfer.
 void common_hal_async_spi_spi_deinit(async_spi_spi_obj_t *self);
 // For busio.SPI built on this implementation (shared-module/busio/SPI.c).
-void common_hal_async_spi_spi_never_reset(async_spi_spi_obj_t *self);
 void common_hal_async_spi_spi_mark_deinit(async_spi_spi_obj_t *self);
 uint32_t common_hal_async_spi_spi_get_frequency(async_spi_spi_obj_t *self);
 circuitpy_async_lock_obj_t *common_hal_async_spi_spi_get_lock(async_spi_spi_obj_t *self);

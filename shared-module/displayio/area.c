@@ -8,6 +8,21 @@
 
 #include "py/misc.h"
 
+// Identity transform. Shared by vectorio and the legacy compositor; the LVGL
+// compositor ignores display transforms.
+displayio_buffer_transform_t null_transform = {
+    .x = 0,
+    .y = 0,
+    .dx = 1,
+    .dy = 1,
+    .scale = 1,
+    .width = 0,
+    .height = 0,
+    .mirror_x = false,
+    .mirror_y = false,
+    .transpose_xy = false
+};
+
 void displayio_area_copy(const displayio_area_t *src, displayio_area_t *dst) {
     dst->x1 = src->x1;
     dst->y1 = src->y1;
@@ -63,12 +78,12 @@ bool displayio_area_empty(const displayio_area_t *a) {
 
 void displayio_area_canon(displayio_area_t *a) {
     if (a->x1 > a->x2) {
-        int16_t t = a->x1;
+        int32_t t = a->x1;
         a->x1 = a->x2;
         a->x2 = t;
     }
     if (a->y1 > a->y2) {
-        int16_t t = a->y1;
+        int32_t t = a->y1;
         a->y1 = a->y2;
         a->y2 = t;
     }
@@ -131,8 +146,8 @@ void displayio_area_transform_within(bool mirror_x, bool mirror_y, bool transpos
         transformed->y2 = original->y2;
     }
     if (transpose_xy) {
-        int16_t y1 = transformed->y1;
-        int16_t y2 = transformed->y2;
+        int32_t y1 = transformed->y1;
+        int32_t y2 = transformed->y2;
         transformed->y1 = whole->y1 + (transformed->x1 - whole->x1);
         transformed->y2 = whole->y1 + (transformed->x2 - whole->x1);
         transformed->x2 = whole->x1 + (y2 - whole->y1);

@@ -195,6 +195,7 @@ void common_hal_busio_spi_construct(busio_spi_obj_t *self,
     self->handle.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
     self->handle.Init.CRCPolynomial = 10;
     if (HAL_SPI_Init(&self->handle) != HAL_OK) {
+        common_hal_busio_spi_deinit(self);
         mp_raise_ValueError(MP_ERROR_TEXT("SPI init error"));
     }
     self->baudrate = default_baudrate;
@@ -220,6 +221,8 @@ bool common_hal_busio_spi_deinited(busio_spi_obj_t *self) {
 
 void common_hal_busio_spi_mark_deinit(busio_spi_obj_t *self) {
     self->sck = NULL;
+    self->mosi = NULL;
+    self->miso = NULL;
 }
 
 void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
@@ -236,9 +239,7 @@ void common_hal_busio_spi_deinit(busio_spi_obj_t *self) {
     if (self->miso != NULL) {
         reset_pin_number(self->miso->pin->port, self->miso->pin->number);
     }
-    self->sck = NULL;
-    self->mosi = NULL;
-    self->miso = NULL;
+    common_hal_busio_spi_mark_deinit(self);
 }
 
 bool common_hal_busio_spi_configure(busio_spi_obj_t *self,

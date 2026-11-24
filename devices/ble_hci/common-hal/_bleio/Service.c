@@ -19,8 +19,6 @@ uint32_t _common_hal_bleio_service_construct(bleio_service_obj_t *self, bleio_uu
     self->connection = NULL;
     self->is_secondary = is_secondary;
 
-    vm_used_ble = true;
-
     self->handle = bleio_adapter_add_attribute(&common_hal_bleio_adapter_obj, MP_OBJ_TO_PTR(self));
     self->start_handle = self->handle;
     self->end_handle = self->handle;

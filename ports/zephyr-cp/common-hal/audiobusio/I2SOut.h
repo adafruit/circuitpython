@@ -43,5 +43,7 @@ typedef struct {
 mp_obj_t common_hal_audiobusio_i2sout_construct_from_device(audiobusio_i2sout_obj_t *self, const struct device *i2s_device);
 
 void i2sout_reset(void);
+void i2sout_gc_collect(void);
+void audiobusio_i2sout_collect_ptrs(audiobusio_i2sout_obj_t *self);
 
 #endif // CIRCUITPY_AUDIOBUSIO_I2SOUT

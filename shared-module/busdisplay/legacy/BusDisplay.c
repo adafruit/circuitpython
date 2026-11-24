@@ -1,0 +1,400 @@
+// This file is part of the CircuitPython project: https://circuitpython.org
+//
+// SPDX-FileCopyrightText: Copyright (c) 2018 Scott Shawcroft for Adafruit Industries
+//
+// SPDX-License-Identifier: MIT
+
+#include "shared-bindings/busdisplay/BusDisplay.h"
+
+#include "py/mphal.h"
+#include "py/runtime.h"
+#if CIRCUITPY_FOURWIRE
+#include "shared-bindings/fourwire/FourWire.h"
+#endif
+#if CIRCUITPY_I2CDISPLAYBUS
+#include "shared-bindings/i2cdisplaybus/I2CDisplayBus.h"
+#endif
+#if CIRCUITPY_PARALLELDISPLAYBUS
+#include "shared-bindings/paralleldisplaybus/ParallelBus.h"
+#endif
+#include "shared/runtime/interrupt_char.h"
+#include "shared-bindings/microcontroller/Pin.h"
+#include "shared-bindings/time/__init__.h"
+#include "shared-module/displayio/__init__.h"
+#include "shared-module/displayio/display_core.h"
+#include "supervisor/shared/display.h"
+#include "supervisor/shared/tick.h"
+
+#if CIRCUITPY_WEB_WORKFLOW
+#include "supervisor/shared/web_workflow/display_stream.h"
+#endif
+
+#if CIRCUITPY_TINYUSB
+#include "supervisor/usb.h"
+#endif
+
+#include <stdint.h>
+#include <string.h>
+
+
+void common_hal_busdisplay_busdisplay_construct(busdisplay_busdisplay_obj_t *self,
+    mp_obj_t bus, uint16_t width, uint16_t height, int16_t colstart, int16_t rowstart,
+    uint16_t rotation, uint16_t color_depth, bool grayscale, bool pixels_in_byte_share_row,
+    uint8_t bytes_per_cell, bool reverse_pixels_in_byte, bool reverse_bytes_in_word, uint8_t set_column_command,
+    uint8_t set_row_command, uint8_t write_ram_command,
+    uint8_t *init_sequence, uint16_t init_sequence_len, const mcu_pin_obj_t *backlight_pin,
+    uint16_t brightness_command, mp_float_t brightness,
+    bool single_byte_bounds, bool data_as_commands, bool auto_refresh, uint16_t native_frames_per_second,
+    bool backlight_on_high, bool SH1107_addressing, uint16_t backlight_pwm_frequency) {
+
+    // Turn off auto-refresh as we init.
+    self->auto_refresh = false;
+    uint16_t ram_width = 0x100;
+    uint16_t ram_height = 0x100;
+    if (single_byte_bounds) {
+        ram_width = 0xff;
+        ram_height = 0xff;
+    }
+    displayio_display_core_construct(&self->core, width, height, rotation,
+        color_depth, grayscale, pixels_in_byte_share_row, bytes_per_cell, reverse_pixels_in_byte, reverse_bytes_in_word);
+    displayio_display_bus_construct(&self->bus, bus, ram_width, ram_height, colstart, rowstart,
+        set_column_command, set_row_command, NO_COMMAND, NO_COMMAND, data_as_commands, false /* always_toggle_chip_select */,
+        SH1107_addressing && color_depth == 1, false /*address_little_endian */);
+
+    self->write_ram_command = write_ram_command;
+    self->brightness_command = brightness_command;
+    self->first_manual_refresh = !auto_refresh;
+    self->backlight_on_high = backlight_on_high;
+
+    self->native_frames_per_second = native_frames_per_second;
+    self->native_ms_per_frame = 1000 / native_frames_per_second;
+
+    displayio_display_bus_send_init_sequence(&self->bus, init_sequence, init_sequence_len);
+
+    busdisplay_backlight_construct(&self->backlight, backlight_pin, backlight_pwm_frequency);
+
+    common_hal_busdisplay_busdisplay_set_brightness(self, brightness);
+
+    // Set the group after initialization otherwise we may send pixels while we delay in
+    // initialization.
+    if (!circuitpython_splash.in_group) {
+        common_hal_busdisplay_busdisplay_set_root_group(self, &circuitpython_splash);
+    }
+    common_hal_busdisplay_busdisplay_set_auto_refresh(self, auto_refresh);
+}
+
+uint16_t common_hal_busdisplay_busdisplay_get_width(busdisplay_busdisplay_obj_t *self) {
+    return displayio_display_core_get_width(&self->core);
+}
+
+uint16_t common_hal_busdisplay_busdisplay_get_height(busdisplay_busdisplay_obj_t *self) {
+    return displayio_display_core_get_height(&self->core);
+}
+
+mp_float_t common_hal_busdisplay_busdisplay_get_brightness(busdisplay_busdisplay_obj_t *self) {
+    return self->current_brightness;
+}
+
+bool common_hal_busdisplay_busdisplay_set_brightness(busdisplay_busdisplay_obj_t *self, mp_float_t brightness) {
+    if (!self->backlight_on_high) {
+        brightness = 1.0 - brightness;
+    }
+    bool ok = busdisplay_backlight_set(&self->backlight, brightness);
+
+    if (!ok && self->brightness_command != NO_BRIGHTNESS_COMMAND) {
+        ok = displayio_display_bus_begin_transaction(&self->bus);
+        if (ok) {
+            if (self->bus.data_as_commands) {
+                uint8_t set_brightness[2] = {self->brightness_command, (uint8_t)(0xff * brightness)};
+                self->bus.send(self->bus.bus, DISPLAY_COMMAND, CHIP_SELECT_TOGGLE_EVERY_BYTE, set_brightness, 2);
+            } else {
+                uint8_t command = self->brightness_command;
+                uint8_t hex_brightness = 0xff * brightness;
+                self->bus.send(self->bus.bus, DISPLAY_COMMAND, CHIP_SELECT_TOGGLE_EVERY_BYTE, &command, 1);
+                self->bus.send(self->bus.bus, DISPLAY_DATA, CHIP_SELECT_UNTOUCHED, &hex_brightness, 1);
+            }
+            displayio_display_bus_end_transaction(&self->bus);
+        }
+
+    }
+    if (ok) {
+        self->current_brightness = brightness;
+    }
+    return ok;
+}
+
+mp_obj_t common_hal_busdisplay_busdisplay_get_bus(busdisplay_busdisplay_obj_t *self) {
+    return self->bus.bus;
+}
+
+mp_obj_t common_hal_busdisplay_busdisplay_get_root_group(busdisplay_busdisplay_obj_t *self) {
+    if (self->core.current_group == NULL) {
+        return mp_const_none;
+    }
+    return self->core.current_group;
+}
+
+static const displayio_area_t *_get_refresh_areas(busdisplay_busdisplay_obj_t *self) {
+    if (self->core.full_refresh) {
+        self->core.area.next = NULL;
+        return &self->core.area;
+    } else if (self->core.current_group != NULL) {
+        return displayio_group_get_refresh_areas(self->core.current_group, NULL);
+    }
+    return NULL;
+}
+
+static void _send_pixels(busdisplay_busdisplay_obj_t *self, uint8_t *pixels, uint32_t length) {
+    if (!self->bus.data_as_commands) {
+        self->bus.send(self->bus.bus, DISPLAY_COMMAND, CHIP_SELECT_TOGGLE_EVERY_BYTE, &self->write_ram_command, 1);
+    }
+    self->bus.send(self->bus.bus, DISPLAY_DATA, CHIP_SELECT_UNTOUCHED, pixels, length);
+}
+
+// Whether the bus sends in the background. Always false without async SPI, so that code is
+// left out. Not a local variable: GCC would then compile the refresh loop twice.
+#define SEND_ASYNC(self) (CIRCUITPY_BUSIO_SPI_ASYNC && (self)->bus.send_async != NULL)
+
+// The data half of _send_pixels, handed to the bus without waiting for it to be sent.
+static void _send_pixels_async(busdisplay_busdisplay_obj_t *self, uint8_t *pixels, uint32_t length) {
+    if (!self->bus.data_as_commands) {
+        self->bus.send(self->bus.bus, DISPLAY_COMMAND, CHIP_SELECT_TOGGLE_EVERY_BYTE, &self->write_ram_command, 1);
+    }
+    self->bus.send_async(self->bus.bus, DISPLAY_DATA, CHIP_SELECT_UNTOUCHED, pixels, length);
+}
+
+// Call only with the bus transaction closed: a background task may use the same bus.
+static void _run_background_tasks(void) {
+    // Run background tasks so they can run during an explicit refresh.
+    // Auto-refresh won't run background tasks here because it is a background task itself.
+    RUN_BACKGROUND_TASKS;
+
+    // Run USB background tasks so they can run during an implicit refresh.
+    #if CIRCUITPY_TINYUSB
+    usb_background();
+    #endif
+}
+
+static bool _refresh_area(busdisplay_busdisplay_obj_t *self, const displayio_area_t *area) {
+    uint16_t buffer_size = CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE / sizeof(uint32_t); // In uint32_ts
+
+    displayio_area_t clipped;
+    // Clip the area to the display by overlapping the areas. If there is no overlap then we're done.
+    if (!displayio_display_core_clip_area(&self->core, area, &clipped)) {
+        return true;
+    }
+    #if CIRCUITPY_WEB_WORKFLOW
+    display_stream_area_updated(&self->core, &clipped);
+    #endif
+    uint16_t rows_per_buffer = displayio_area_height(&clipped);
+    uint16_t cols_per_buffer = displayio_area_width(&clipped);
+    uint8_t pixels_per_word = (sizeof(uint32_t) * 8) / self->core.colorspace.depth;
+    uint16_t pixels_per_buffer = displayio_area_size(&clipped);
+
+    uint16_t subrectangles = 1;
+    // for SH1107 and other boundary constrained controllers
+    //      write one single row at a time
+    if (self->bus.SH1107_addressing) {
+        subrectangles = rows_per_buffer / 8;  // page addressing mode writes 8 rows at a time
+        rows_per_buffer = 8;
+    } else if (displayio_area_size(&clipped) > buffer_size * pixels_per_word) {
+        uint16_t buffer_pixels = buffer_size * pixels_per_word;
+        if (self->core.transform.transpose_xy && self->core.colorspace.depth >= 8) {
+            // Rotated 90 or 270: a panel column is a source row. Send bands of columns so sources
+            // are read along their rows, which OnDiskBitmap needs to avoid a file seek per pixel.
+            rows_per_buffer = MIN(rows_per_buffer, buffer_pixels);
+            cols_per_buffer = buffer_pixels / rows_per_buffer;
+        } else {
+            rows_per_buffer = buffer_pixels / cols_per_buffer;
+            if (rows_per_buffer == 0) {
+                rows_per_buffer = 1;
+            }
+            // If pixels are packed by column then ensure rows_per_buffer is on a byte boundary.
+            if (self->core.colorspace.depth < 8 && !self->core.colorspace.pixels_in_byte_share_row) {
+                uint8_t pixels_per_byte = 8 / self->core.colorspace.depth;
+                if (rows_per_buffer % pixels_per_byte != 0) {
+                    rows_per_buffer -= rows_per_buffer % pixels_per_byte;
+                }
+            }
+        }
+        subrectangles = ((displayio_area_height(&clipped) + rows_per_buffer - 1) / rows_per_buffer) *
+            ((displayio_area_width(&clipped) + cols_per_buffer - 1) / cols_per_buffer);
+        pixels_per_buffer = rows_per_buffer * cols_per_buffer;
+        buffer_size = (pixels_per_buffer + pixels_per_word - 1) / pixels_per_word;
+    }
+
+    // Allocated and shared as a uint32_t array so the compiler knows the
+    // alignment everywhere.
+    uint32_t mask_length = (pixels_per_buffer / 32) + 1;
+    // With an asynchronous bus, one buffer is composited while the other is being sent.
+    uint32_t buffers[SEND_ASYNC(self) ? 2 : 1][buffer_size];
+    uint32_t mask[mask_length];
+    uint8_t fill_index = 0;
+    bool sending = false;
+
+    displayio_area_t subrectangle = clipped;
+    subrectangle.next = NULL;
+
+    for (uint16_t j = 0; j < subrectangles; j++) {
+        // Down the rows of a band first, then to the next band of columns.
+        if (subrectangle.y1 >= clipped.y2) {
+            subrectangle.y1 = clipped.y1;
+            subrectangle.x1 += cols_per_buffer;
+        }
+        subrectangle.x2 = MIN(subrectangle.x1 + cols_per_buffer, clipped.x2);
+        subrectangle.y2 = MIN(subrectangle.y1 + rows_per_buffer, clipped.y2);
+
+        uint16_t subrectangle_size_bytes;
+        if (self->core.colorspace.depth >= 8) {
+            subrectangle_size_bytes = displayio_area_size(&subrectangle) * (self->core.colorspace.depth / 8);
+        } else {
+            subrectangle_size_bytes = displayio_area_size(&subrectangle) / (8 / self->core.colorspace.depth);
+        }
+
+        uint32_t *buffer = buffers[fill_index];
+        memset(mask, 0, mask_length * sizeof(mask[0]));
+        memset(buffer, 0, buffer_size * sizeof(buffer[0]));
+
+        displayio_display_core_fill_area(&self->core, &subrectangle, mask, buffer);
+
+        // The previous strip must be sent before the region commands for this one.
+        if (sending) {
+            displayio_display_bus_flush(&self->bus);
+            displayio_display_bus_end_transaction(&self->bus);
+            sending = false;
+            _run_background_tasks();
+        }
+
+        displayio_display_bus_set_region_to_update(&self->bus, &self->core.colorspace, &subrectangle);
+
+        // Can't acquire display bus; skip the rest of the data.
+        if (!displayio_display_bus_begin_transaction(&self->bus)) {
+            return false;
+        }
+        if (SEND_ASYNC(self)) {
+            _send_pixels_async(self, (uint8_t *)buffer, subrectangle_size_bytes);
+            sending = true;
+            fill_index ^= 1;
+        } else {
+            _send_pixels(self, (uint8_t *)buffer, subrectangle_size_bytes);
+            displayio_display_bus_end_transaction(&self->bus);
+        }
+        subrectangle.y1 = subrectangle.y2;
+        if (!sending) {
+            _run_background_tasks();
+        }
+    }
+
+    // Drain any remaining asynchronous transfers.
+    displayio_display_bus_flush(&self->bus);
+    if (sending) {
+        displayio_display_bus_end_transaction(&self->bus);
+    }
+
+    return true;
+}
+
+static void _refresh_display(busdisplay_busdisplay_obj_t *self) {
+    if (!displayio_display_bus_is_free(&self->bus)) {
+        // A refresh on this bus is already in progress.  Try next display.
+        return;
+    }
+    if (!displayio_display_core_start_refresh(&self->core)) {
+        // Refresh for this display already in progress.
+        return;
+    }
+
+    const displayio_area_t *current_area = _get_refresh_areas(self);
+    while (current_area != NULL) {
+        _refresh_area(self, current_area);
+        current_area = current_area->next;
+    }
+    displayio_display_core_finish_refresh(&self->core);
+}
+
+void common_hal_busdisplay_busdisplay_set_rotation(busdisplay_busdisplay_obj_t *self, int rotation) {
+    displayio_display_core_set_rotation_and_update(&self->core, rotation, &self->base);
+}
+
+uint16_t common_hal_busdisplay_busdisplay_get_rotation(busdisplay_busdisplay_obj_t *self) {
+    return self->core.rotation;
+}
+
+
+bool common_hal_busdisplay_busdisplay_refresh(busdisplay_busdisplay_obj_t *self, uint32_t target_ms_per_frame, uint32_t maximum_ms_per_real_frame) {
+    if (!self->auto_refresh && !self->first_manual_refresh && (target_ms_per_frame != NO_FPS_LIMIT)) {
+        uint64_t current_time = supervisor_ticks_ms64();
+        uint32_t current_ms_since_real_refresh = current_time - self->core.last_refresh;
+        // Test to see if the real frame time is below our minimum.
+        if (current_ms_since_real_refresh > maximum_ms_per_real_frame) {
+            mp_raise_RuntimeError(MP_ERROR_TEXT("Below minimum frame rate"));
+        }
+        uint32_t current_ms_since_last_call = current_time - self->last_refresh_call;
+        self->last_refresh_call = current_time;
+        // Skip the actual refresh to help catch up.
+        if (current_ms_since_last_call > target_ms_per_frame) {
+            return false;
+        }
+        uint32_t remaining_time = target_ms_per_frame - (current_ms_since_real_refresh % target_ms_per_frame);
+        // We're ahead of the game so wait until we align with the frame rate.
+        while (supervisor_ticks_ms64() - self->last_refresh_call < remaining_time) {
+            RUN_BACKGROUND_TASKS;
+        }
+    }
+    self->first_manual_refresh = false;
+    _refresh_display(self);
+    return true;
+}
+
+bool common_hal_busdisplay_busdisplay_get_auto_refresh(busdisplay_busdisplay_obj_t *self) {
+    return self->auto_refresh;
+}
+
+void common_hal_busdisplay_busdisplay_set_auto_refresh(busdisplay_busdisplay_obj_t *self,
+    bool auto_refresh) {
+    self->first_manual_refresh = !auto_refresh;
+    if (auto_refresh != self->auto_refresh) {
+        if (auto_refresh) {
+            supervisor_enable_tick();
+        } else {
+            supervisor_disable_tick();
+        }
+    }
+    self->auto_refresh = auto_refresh;
+}
+
+mp_obj_t common_hal_busdisplay_busdisplay_set_root_group(busdisplay_busdisplay_obj_t *self, displayio_group_t *root_group) {
+    bool ok = displayio_display_core_set_root_group(&self->core, root_group);
+    if (!ok) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Group already used"));
+    }
+    return mp_const_none;
+}
+
+void busdisplay_busdisplay_background(busdisplay_busdisplay_obj_t *self) {
+    if (self->auto_refresh && (supervisor_ticks_ms64() - self->core.last_refresh) > self->native_ms_per_frame) {
+        _refresh_display(self);
+    }
+}
+
+void release_busdisplay(busdisplay_busdisplay_obj_t *self) {
+    common_hal_busdisplay_busdisplay_set_auto_refresh(self, false);
+    release_display_core(&self->core);
+    busdisplay_backlight_deinit(&self->backlight);
+}
+
+void reset_busdisplay(busdisplay_busdisplay_obj_t *self) {
+    common_hal_busdisplay_busdisplay_set_auto_refresh(self, true);
+    circuitpython_splash.x = 0; // reset position in case someone moved it.
+    circuitpython_splash.y = 0;
+    supervisor_start_terminal(self->core.width, self->core.height);
+    // Show the splash if it is free, otherwise nothing. Other groups are on the VM heap.
+    if (!displayio_display_core_set_root_group(&self->core, &circuitpython_splash)) {
+        displayio_display_core_set_root_group(&self->core, NULL);
+    }
+}
+
+void busdisplay_busdisplay_collect_ptrs(busdisplay_busdisplay_obj_t *self) {
+    displayio_display_core_collect_ptrs(&self->core);
+    displayio_display_bus_collect_ptrs(&self->bus);
+}

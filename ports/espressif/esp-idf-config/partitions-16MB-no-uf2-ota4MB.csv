@@ -1,0 +1,10 @@
+# 4 MB OTA slots without UF2, for chips whose largest firmware image is
+# bigger than 2 MB but that have no USB device port.
+# Name,             Type,   SubType,    Offset,     Size
+# bootloader,       app,    boot,       0x2000/0x0, 24/32K
+# partition_table,  data,   table,      0x8000,     4K
+nvs,                data,   nvs,        0x9000,     20K
+otadata,            data,   ota,        0xe000,     8K
+ota_0,              app,    ota_0,      0x10000,    4096K
+ota_1,              app,    ota_1,      0x410000,   4096K
+user_fs,            data,   fat,        0x810000,   8128K

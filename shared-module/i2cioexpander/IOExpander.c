@@ -14,6 +14,11 @@
 #include "shared-bindings/busio/I2C.h"
 #include "supervisor/port.h"
 
+static void mark_deinit(i2cioexpander_ioexpander_obj_t *self) {
+    self->i2c = NULL;
+    self->pins = NULL;
+}
+
 void common_hal_i2cioexpander_ioexpander_construct(
     i2cioexpander_ioexpander_obj_t *self,
     mp_obj_t i2c,
@@ -23,8 +28,8 @@ void common_hal_i2cioexpander_ioexpander_construct(
     uint16_t get_value_reg,
     uint16_t set_direction_reg) {
 
-    // Store the I2C bus
-    self->i2c = (busio_i2c_obj_t *)i2c;
+    mark_deinit(self);
+
     self->address = address;
     self->num_pins = num_pins;
     self->output_value = 0;
@@ -64,17 +69,19 @@ void common_hal_i2cioexpander_ioexpander_construct(
     }
 
     self->pins = pins_tuple;
+    self->i2c = (busio_i2c_obj_t *)i2c;
 }
 
 void common_hal_i2cioexpander_ioexpander_deinit(i2cioexpander_ioexpander_obj_t *self) {
+    if (common_hal_i2cioexpander_ioexpander_deinited(self)) {
+        return;
+    }
     if (gc_alloc_possible() && !gc_ptr_on_heap(self)) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Cannot deinitialize board IOExpander"));
     }
-    for (uint8_t i = 0; i < self->num_pins; i++) {
-        circuitpy_free_obj(self->pins->items[i]);
-    }
-    circuitpy_free_obj(self->pins);
-    self->i2c = NULL;
+    // The IOPins and their tuple are on the GC heap, and user code may still
+    // hold them, so leave them for the GC instead of freeing them.
+    mark_deinit(self);
 }
 
 bool common_hal_i2cioexpander_ioexpander_deinited(i2cioexpander_ioexpander_obj_t *self) {

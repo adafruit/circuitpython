@@ -27,9 +27,6 @@ MP_NORETURN void raise_ValueError_invalid_pin_name(qstr pin_name);
 void assert_pin_free(const mcu_pin_obj_t *pin);
 
 bool common_hal_mcu_pin_is_free(const mcu_pin_obj_t *pin);
-#if CIRCUITPY_BULK_RESET
-void common_hal_never_reset_pin(const mcu_pin_obj_t *pin);
-#endif
 void common_hal_mcu_pin_reset_number(uint8_t pin_no);
 
 void shared_bindings_microcontroller_pin_print(const mp_print_t *print, mp_obj_t self_in, mp_print_kind_t kind);

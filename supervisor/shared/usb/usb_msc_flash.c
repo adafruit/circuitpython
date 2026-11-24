@@ -15,6 +15,8 @@
 #include "py/mpstate.h"
 #include "py/runtime.h"
 
+#include "shared-bindings/microcontroller/__init__.h"
+#include "shared-bindings/storage/__init__.h"
 #include "shared-module/storage/__init__.h"
 #include "supervisor/filesystem.h"
 #include "supervisor/shared/reload.h"
@@ -202,26 +204,50 @@ static fs_user_mount_t *get_vfs(int lun) {
     return NULL;
 }
 
+// Release the locks that USB MSC holds. Locks held by others (Python, workflows) are not touched.
+static void release_msc_locks(void) {
+    for (uint8_t i = 0; i < LUN_COUNT; i++) {
+        if (!locked[i]) {
+            continue;
+        }
+        fs_user_mount_t *vfs = get_vfs(i);
+        if (vfs != NULL) {
+            blockdev_unlock((supervisor_vfs_t *)vfs);
+        }
+        locked[i] = false;
+    }
+}
+
+#if CIRCUITPY_STORAGE_MAP_IMPORT
+// A write held back until the VM stops; TinyUSB keeps buffer untouched until it completes.
+static struct {
+    uint8_t *buffer;
+    uint32_t lba;
+    uint32_t bufsize;
+} deferred_write;
+
+// MSC is one command at a time, so a new command means the host gave up on the held write.
+// TinyUSB reuses the buffer for every command, so the write must not be applied later.
+#define DROP_DEFERRED_WRITE() (deferred_write.buffer = NULL)
+#else
+#define DROP_DEFERRED_WRITE()
+#endif
+
 static void _usb_msc_uneject(void) {
+    // A bus reset doesn't call tud_umount_cb(), so USB MSC may still hold its locks.
+    // Keep them: tud_msc_is_writable_cb() sees locked[] and doesn't lock again.
     for (uint8_t i = 0; i < LUN_COUNT; i++) {
         ejected[i] = false;
-        locked[i] = false;
     }
 }
 
 void usb_msc_mount(void) {
     _usb_msc_uneject();
+    DROP_DEFERRED_WRITE();                      // the host reset the bus
 }
 
 void usb_msc_umount(void) {
-    for (uint8_t i = 0; i < LUN_COUNT; i++) {
-        fs_user_mount_t *vfs = get_vfs(i);
-        if (vfs == NULL) {
-            continue;
-        }
-        blockdev_unlock((supervisor_vfs_t *)vfs);
-        locked[i] = false;
-    }
+    release_msc_locks();
 }
 
 // Release the USB MSC lock on CIRCUITPY (LUN 0), if USB MSC holds it.
@@ -334,6 +360,7 @@ bool tud_msc_is_writable_cb(uint8_t lun) {
 // Callback invoked when received READ10 command.
 // Copy disk's data to buffer (up to bufsize) and return number of copied bytes.
 int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void *buffer, uint32_t bufsize) {
+    DROP_DEFERRED_WRITE();
     (void)offset;
 
     const uint32_t block_count = bufsize / MSC_FLASH_BLOCK_SIZE;
@@ -357,12 +384,42 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba, uint32_t offset, void *buff
     return block_count * MSC_FLASH_BLOCK_SIZE;
 }
 
+#if CIRCUITPY_STORAGE_MAP_IMPORT
+void usb_msc_finish_deferred_write(void) {
+    common_hal_mcu_disable_interrupts();        // the USB task may drop it meanwhile
+    uint8_t *buffer = deferred_write.buffer;
+    deferred_write.buffer = NULL;
+    common_hal_mcu_enable_interrupts();
+    if (buffer != NULL) {
+        int32_t written = tud_msc_write10_cb(0, deferred_write.lba, 0, buffer, deferred_write.bufsize);
+        tud_msc_async_io_done(written, false);
+    }
+}
+#endif
+
 // Callback invoked when received WRITE10 command.
 // Process data in buffer to disk's storage and return number of written bytes
 int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba, uint32_t offset, uint8_t *buffer, uint32_t bufsize) {
-    (void)lun;
     (void)offset;
     autoreload_suspend(AUTORELOAD_SUSPEND_USB);
+
+    #if CIRCUITPY_STORAGE_MAP_IMPORT
+    // An imported .mpy runs from these blocks, so stop the VM before they change. On ports with
+    // a USB task the VM may be clearing the import list, so check and hold in one step.
+    common_hal_mcu_disable_interrupts();
+    bool hold = lun == 0 && storage_map_import_uses_blocks(lba, bufsize / MSC_FLASH_BLOCK_SIZE);
+    if (hold) {
+        deferred_write.lba = lba;
+        deferred_write.bufsize = bufsize;
+        deferred_write.buffer = buffer;
+    }
+    common_hal_mcu_enable_interrupts();
+    if (hold) {
+        reload_initiate(RUN_REASON_AUTO_RELOAD);
+        return TUD_MSC_RET_ASYNC;
+    }
+    #endif
+    DROP_DEFERRED_WRITE();
 
     const uint32_t block_count = bufsize / MSC_FLASH_BLOCK_SIZE;
 
@@ -462,6 +519,7 @@ bool tud_msc_test_unit_ready_cb(uint8_t lun) {
     if (lun >= LUN_COUNT) {
         return false;
     }
+    DROP_DEFERRED_WRITE();
 
     fs_user_mount_t *current_mount = get_vfs(lun);
     if (current_mount == NULL) {
@@ -499,9 +557,13 @@ bool tud_msc_start_stop_cb(uint8_t lun, uint8_t power_condition, bool start, boo
             if (disk_ioctl(current_mount, CTRL_SYNC, NULL) != RES_OK) {
                 return false;
             } else {
-                blockdev_unlock((supervisor_vfs_t *)current_mount);
+                // Release the lock only if USB MSC holds it. Locks held by others
+                // (Python, workflows) are not touched.
+                if (locked[lun]) {
+                    blockdev_unlock((supervisor_vfs_t *)current_mount);
+                    locked[lun] = false;
+                }
                 ejected[lun] = true;
-                locked[lun] = false;
             }
         } else {
             // We can only load if it hasn't been ejected.

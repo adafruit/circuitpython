@@ -156,9 +156,7 @@ MP_DEFINE_CONST_FUN_OBJ_1(storage_getmount_obj, storage_getmount);
 //|         and the ``extended`` parameter, the **CIRCUITPY** storage can be
 //|         extended by setting this to `True`. If this isn't provided or
 //|         set to `None` (default), the existing configuration will be used.
-//|
-//|     .. note:: New firmware starts with storage extended. In case of an existing
-//|          filesystem (e.g. uf2 load), the existing extension setting is preserved.
+//|         If no filesystem is present, it will not be extended.
 //|
 //|     .. warning:: All the data on **CIRCUITPY** will be lost, and
 //|         CircuitPython will restart on certain boards."""
@@ -316,11 +314,18 @@ MP_DEFINE_CONST_FUN_OBJ_0(storage_enable_usb_drive_obj, storage_enable_usb_drive
 //|     order. The views stay valid after the file is closed.
 //|
 //|     Until the next reload, opening the file for writing or removing it raises ``OSError``
-//|     ``EACCES``. A USB host can still rewrite it.
+//|     ``EACCES``. Writing or removing it over the web workflow or BLE stops the program first.
+//|     A USB host can still rewrite it.
+//|
+//|     File mapping is enabled by default. To disable it, including automatic
+//|     `displayio.OnDiskBitmap` mapping, set ``CIRCUITPY_STORAGE_MAP_FILE = false`` in
+//|     ``settings.toml`` and press RESET or power-cycle the board. A reload does not
+//|     change the boot-time setting.
 //|
 //|     :param typing.BinaryIO file: A file on the CIRCUITPY drive open with ``"rb"``
 //|     :raises OSError: ``EINVAL`` if the file is closed or not open for reading only,
-//|       ``EOPNOTSUPP`` if it is not on a FAT CIRCUITPY drive or the drive is not memory-mapped,
+//|       ``EOPNOTSUPP`` if mapping is disabled in ``settings.toml``, the file is not on a FAT
+//|       CIRCUITPY drive, or the drive is not memory-mapped,
 //|       ``EIO`` if its cluster chain is corrupt
 //|     :raises ~builtins.MemoryError: if the file's cluster map could not be allocated
 //|     :raises NotImplementedError: on a port whose drive is not memory-mapped"""

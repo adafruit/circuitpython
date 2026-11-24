@@ -167,6 +167,60 @@ def test_console_output_golden_pixel_format(pixel_format, request, circuitpython
     )
 
 
+ROTATED_TERMINAL_CODE = """\
+import board
+import displayio
+import terminalio
+import time
+import zephyr_display
+
+displayio.release_displays()
+display = zephyr_display.Display(auto_refresh=False)
+
+font = terminalio.FONT
+cell_width, cell_height = font.get_bounding_box()
+palette = displayio.Palette(2)
+palette[0] = 0x000000
+palette[1] = 0xFFFFFF
+group = displayio.Group()
+grid = displayio.TileGrid(font.bitmap, pixel_shader=palette, width=20, height=10,
+    tile_width=cell_width, tile_height=cell_height)
+group.append(grid)
+terminal = terminalio.Terminal(grid, font)
+terminal.write("ROTATED\\r\\nTERMINAL\\r\\n{rotation} DEG")
+
+display.root_group = group
+display.rotation = {rotation}
+display.refresh()
+print('shown', display.rotation, display.width, display.height)
+while True:
+    time.sleep(1)
+"""
+
+
+@pytest.fixture(params=[90, 180, 270])
+def terminal_rotation(request):
+    """Add a drive whose code sets the display to this rotation."""
+    rotation = request.param
+    request.node.add_marker(
+        pytest.mark.circuitpy_drive({"code.py": ROTATED_TERMINAL_CODE.format(rotation=rotation)})
+    )
+    return rotation
+
+
+@pytest.mark.display(capture_times_ns=[4_000_000_000])
+@pytest.mark.duration(8)
+def test_terminal_rotated(terminal_rotation, request, circuitpython):
+    circuitpython.wait_until_done()
+
+    width, height = (240, 320) if terminal_rotation in (90, 270) else (320, 240)
+    output = circuitpython.serial.all_output
+    assert f"shown {terminal_rotation} {width} {height}" in output
+
+    golden = Path(__file__).parent / "golden" / f"terminal_rotated_{terminal_rotation}_320x240.png"
+    _golden_compare_or_update(request, circuitpython.display_capture_paths(), golden)
+
+
 MONO_NO_VTILED_FORMATS = ["MONO01", "MONO10"]
 
 
@@ -190,6 +244,57 @@ def test_console_output_golden_mono_no_vtiled(pixel_format, request, circuitpyth
     _golden_compare_or_update(
         request, circuitpython.display_capture_paths(), golden, _CONSOLE_GOLDEN_MASK
     )
+
+
+MONO_PARTIAL_UPDATE_CODE = """\
+import displayio
+import time
+import vectorio
+import zephyr_display
+
+displayio.release_displays()
+display = zephyr_display.Display(auto_refresh=False)
+palette = displayio.Palette(1)
+palette[0] = 0xFFFFFF
+square = vectorio.Rectangle(pixel_shader=palette, width=6, height=6, x=3, y=3)
+group = displayio.Group()
+group.append(square)
+display.root_group = group
+display.refresh()
+time.sleep(0.5)
+square.x = 11
+square.y = 13
+display.refresh()
+print("moved")
+while True:
+    time.sleep(1)
+"""
+
+
+@pytest.mark.circuitpy_drive({"code.py": MONO_PARTIAL_UPDATE_CODE})
+@pytest.mark.display(capture_times_ns=[4_000_000_000])
+@pytest.mark.duration(6)
+@pytest.mark.parametrize(
+    "vtiled",
+    [
+        pytest.param(True, marks=pytest.mark.display_mono_vtiled(True)),
+        pytest.param(False, marks=pytest.mark.display_mono_vtiled(False)),
+    ],
+)
+@pytest.mark.parametrize("pixel_format", MONO_NO_VTILED_FORMATS, indirect=True)
+def test_mono_partial_update_unaligned(pixel_format, vtiled, circuitpython):
+    """Check that moving a square off the 8 pixel grid redraws the whole square."""
+    circuitpython.wait_until_done()
+    assert "moved" in circuitpython.serial.all_output
+
+    image = Image.open(circuitpython.display_capture_paths()[0]).convert("L")
+    wrong_pixels = []
+    for y in range(24):
+        for x in range(24):
+            expected_white = 11 <= x < 17 and 13 <= y < 19
+            if (image.getpixel((x, y)) > 127) != expected_white:
+                wrong_pixels.append((x, y))
+    assert not wrong_pixels
 
 
 def _generate_gradient_bmp(width, height):

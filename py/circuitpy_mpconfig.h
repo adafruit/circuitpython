@@ -117,6 +117,9 @@ extern void common_hal_mcu_enable_interrupts(void);
 #define MICROPY_OPT_MPZ_BITWISE          (0)
 #define MICROPY_OPT_CACHE_MAP_LOOKUP_IN_BYTECODE (CIRCUITPY_OPT_CACHE_MAP_LOOKUP_IN_BYTECODE)
 #define MICROPY_PERSISTENT_CODE_LOAD     (1)
+// The ROM-reader half of MicroPython's VFS ROM support: .mpy data referenced in place, no ROM VFS.
+#define MICROPY_VFS_ROM                  (CIRCUITPY_STORAGE_MAP_IMPORT)
+#define MICROPY_VFS_ROM_IOCTL            (0)
 #define MICROPY_PERSISTENT_CODE_LOAD_NATIVE (CIRCUITPY_LOAD_NATIVE || CIRCUITPY_ENABLE_MPY_NATIVE)
 
 #define MICROPY_PY_ARRAY                 (CIRCUITPY_ARRAY)
@@ -414,6 +417,11 @@ typedef long mp_off_t;
 #define CIRCUITPY_BUSIO_SPI_ASYNC (0)
 #endif
 
+// Normally set from CIRCUITPY_EPAPERDISPLAY_FAST in the .mk files. zephyr-cp doesn't set it.
+#ifndef CIRCUITPY_EPAPERDISPLAY_FAST
+#define CIRCUITPY_EPAPERDISPLAY_FAST (0)
+#endif
+
 // These CIRCUITPY_xxx values should all be defined in the *.mk files as being on or off.
 // So if any are not defined in *.mk, they'll throw an error here.
 
@@ -509,6 +517,10 @@ void background_callback_run_all(void);
 #define MICROPY_VM_HOOK_RETURN RUN_BACKGROUND_TASKS;
 #define MICROPY_INTERNAL_EVENT_HOOK (RUN_BACKGROUND_TASKS)
 
+#ifndef CIRCUITPY_AUDIOMIXER_USE_PORT_MIX
+#define CIRCUITPY_AUDIOMIXER_USE_PORT_MIX (0)
+#endif
+
 // CIRCUITPY_AUTORELOAD_DELAY_MS = 0 will completely disable autoreload.
 #ifndef CIRCUITPY_AUTORELOAD_DELAY_MS
 #define CIRCUITPY_AUTORELOAD_DELAY_MS 750
@@ -545,6 +557,12 @@ void background_callback_run_all(void);
 
 #ifndef CIRCUITPY_STATUS_LED_POWER_INVERTED
 #define CIRCUITPY_STATUS_LED_POWER_INVERTED (0)
+#endif
+
+// Byte order of the status NeoPixel. Most WS2812s take GRB. Boards whose LED takes RGB set
+// this to STATUS_NEOPIXEL_ORDER_RGB, from supervisor/shared/status_leds.h.
+#ifndef MICROPY_HW_NEOPIXEL_ORDER
+#define MICROPY_HW_NEOPIXEL_ORDER (STATUS_NEOPIXEL_ORDER_GRB)
 #endif
 
 #define CIRCUITPY_BOOT_OUTPUT_FILE "/boot_out.txt"
@@ -605,6 +623,20 @@ void background_callback_run_all(void);
 
 #ifndef CIRCUITPY_USB_HOST_HIGH_SPEED
 #define CIRCUITPY_USB_HOST_HIGH_SPEED 0
+#endif
+
+// The host controller keeps receiving isochronous IN packets between
+// transfers, in a buffer from common_hal_usb_host_port_claim_iso_buffer(), and
+// hands them over as records: a little endian uint16_t length, then the
+// packet.
+#ifndef CIRCUITPY_USB_HOST_ISO_RECORDS
+#define CIRCUITPY_USB_HOST_ISO_RECORDS (0)
+#endif
+
+// The port runs tuh_task() in a task of its own rather than from
+// usb_background(), so that it runs while the VM is busy.
+#ifndef CIRCUITPY_USB_HOST_TASK
+#define CIRCUITPY_USB_HOST_TASK (0)
 #endif
 
 // usb_host_bulk takes a usb.core.Device and uses TinyUSB host calls.
