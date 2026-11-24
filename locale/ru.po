@@ -2617,8 +2617,7 @@ msgid "%q must be >= %d"
 msgstr "%q должно быть >= %d"
 
 #: py/argcheck.c shared-bindings/gifio/GifWriter.c
-#: shared-module/_airlift/__init__.c shared-module/gifio/OnDiskGif.c
-#: shared-module/videogif/GifDecoder.c
+#: shared-module/_airlift/__init__.c
 msgid "%q must be <= %d"
 msgstr "%q должно быть <= %d"
 
@@ -4736,8 +4735,8 @@ msgid "Too many displays"
 msgstr "Слишком много дисплеев"
 
 #: shared-module/displayio/legacy/__init__.c
-msgid "Too many display busses; forgot displayio.release_displays() ?"
-msgstr "Слишком много шин дисплея; забыл displayio.release_displays()?"
+msgid "Too many display buses; deinit() unused displays"
+msgstr ""
 
 #: shared-module/displayio/lvgl/Group.c
 msgid "Layer does not support scaling"
@@ -5167,6 +5166,9 @@ msgstr "выключить"
 #: supervisor/shared/web_workflow/web_workflow.c
 msgid "No IP"
 msgstr "Нет IP"
+
+#~ msgid "Too many display busses; forgot displayio.release_displays() ?"
+#~ msgstr "Слишком много шин дисплея; забыл displayio.release_displays()?"
 
 #~ msgid "Failed to add service TXT record"
 #~ msgstr "Не удалось добавить служебную запись TXT"

@@ -5,10 +5,7 @@
 # SPDX-License-Identifier: MIT
 
 import sys
-from pathlib import Path
 
-docs = Path(__file__).parent.parent / "docs"
-sys.path.append(str(docs))
 from shared_bindings_matrix import get_board_mapping
 
 board = sys.argv[1]

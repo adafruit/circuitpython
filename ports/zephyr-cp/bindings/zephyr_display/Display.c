@@ -12,7 +12,9 @@
 #include "py/objproperty.h"
 #include "py/objtype.h"
 #include "py/runtime.h"
+#include "shared-bindings/displayio/__init__.h"
 #include "shared-bindings/displayio/Group.h"
+#include "shared-bindings/util.h"
 #include "shared-module/displayio/__init__.h"
 
 //| class Display:
@@ -69,11 +71,38 @@ static mp_obj_t zephyr_display_display_make_new(const mp_obj_type_t *type,
     return MP_OBJ_FROM_PTR(self);
 }
 
+// Helper to ensure we have the native super class instead of a subclass.
+// Raises if the display has been released.
 static zephyr_display_display_obj_t *native_display(mp_obj_t display_obj) {
     mp_obj_t native = mp_obj_cast_to_native_base(display_obj, &zephyr_display_display_type);
+    if (native == MP_OBJ_NULL) {
+        raise_deinited_error();
+    }
     mp_obj_assert_native_inited(native);
-    return MP_OBJ_TO_PTR(native);
+    zephyr_display_display_obj_t *self = MP_OBJ_TO_PTR(native);
+    if (self->base.type != &zephyr_display_display_type) {
+        raise_deinited_error();
+    }
+    return self;
 }
+
+//|     def deinit(self) -> None:
+//|         """Release the display. A new `Display` can then be created.
+//|
+//|         To release the display built during startup, use
+//|         ``supervisor.runtime.display.deinit()``.
+//|         As of CircuitPython 11.0.0, this replaces `displayio.release_displays()`, which is deprecated.
+//|         """
+//|         ...
+//|
+static mp_obj_t zephyr_display_display_obj_deinit(mp_obj_t self_in) {
+    mp_obj_t native = mp_obj_cast_to_native_base(self_in, &zephyr_display_display_type);
+    if (native != MP_OBJ_NULL) {
+        common_hal_displayio_deinit_display(native);
+    }
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(zephyr_display_display_deinit_obj, zephyr_display_display_obj_deinit);
 
 static mp_obj_t zephyr_display_display_obj_show(mp_obj_t self_in, mp_obj_t group_in) {
     (void)self_in;
@@ -267,6 +296,7 @@ MP_PROPERTY_GETSET(zephyr_display_display_root_group_obj,
     (mp_obj_t)&zephyr_display_display_set_root_group_obj);
 
 static const mp_rom_map_elem_t zephyr_display_display_locals_dict_table[] = {
+    { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&zephyr_display_display_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR_show), MP_ROM_PTR(&zephyr_display_display_show_obj) },
     { MP_ROM_QSTR(MP_QSTR_refresh), MP_ROM_PTR(&zephyr_display_display_refresh_obj) },
 

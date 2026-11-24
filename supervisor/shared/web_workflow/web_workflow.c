@@ -97,6 +97,7 @@ typedef struct {
     bool json;
     bool websocket;
     bool new_socket;
+    bool held;              // a file the running program uses: replied to once the VM stops
     // RFC6455 for websockets says this header should be 24 base64 characters long.
     char websocket_key[24 + 1];
 } _request;
@@ -562,13 +563,17 @@ bool supervisor_start_web_workflow(void) {
         bool vnc_keys = false;
         (void)settings_get_bool("CIRCUITPY_WEB_VNC_KEYS", &vnc_keys);
         display_stream_set_vnc(vnc_port, vnc_keys);
+        mp_int_t display_rate_limit = 0;
+        (void)settings_get_int("CIRCUITPY_WEB_DISPLAY_RATE_LIMIT", &display_rate_limit);
+        display_stream_set_rate_limit(display_rate_limit);
         #endif
     }
 
     initialized = pool.base.type == &socketpool_socketpool_type;
 
     if (initialized) {
-        if (!common_hal_socketpool_socket_get_closed(&active)) {
+        // A held request waits for exactly this reset, so keep its socket.
+        if (!active_request.held && !common_hal_socketpool_socket_get_closed(&active)) {
             common_hal_socketpool_socket_close(&active);
         }
 
@@ -1207,6 +1212,11 @@ static void _write_file_and_reply(socketpool_socket_obj_t *socket, _request *req
         old_length = supervisor_vfs_file_size(&active_file);
     }
 
+    if (result == SUPERVISOR_FS_BUSY) {
+        filesystem_unlock(fs_mount);
+        request->held = true;                   // the body stays unread until we try again
+        return;
+    }
     if (result == SUPERVISOR_FS_NO_PATH) {
         filesystem_unlock(fs_mount);
         _discard_incoming(socket, request->content_length);
@@ -1407,6 +1417,7 @@ static uint64_t _parse_decimal(const char *str) {
 }
 
 static bool _reply(socketpool_socket_obj_t *socket, _request *request) {
+    request->held = false;
     if (request->redirect) {
         #if CIRCUITPY_MDNS
         if (!common_hal_mdns_server_deinited(&mdns)) {
@@ -1453,7 +1464,9 @@ static bool _reply(socketpool_socket_obj_t *socket, _request *request) {
             // implementation.
             if (strcasecmp(request->method, "DELETE") == 0) {
                 supervisor_fs_err_t result = supervisor_workflow_delete_recursive(path);
-                if (result == SUPERVISOR_FS_WRITE_PROTECTED) {
+                if (result == SUPERVISOR_FS_BUSY) {
+                    request->held = true;
+                } else if (result == SUPERVISOR_FS_WRITE_PROTECTED) {
                     _reply_conflict(socket, request);
                 } else if (result == SUPERVISOR_FS_NO_PATH || result == SUPERVISOR_FS_NO_FILE) {
                     _reply_missing(socket, request);
@@ -1659,6 +1672,7 @@ static void _reset_request(_request *request) {
     request->expect = false;
     request->json = false;
     request->websocket = false;
+    request->held = false;
 }
 
 static void _process_request(socketpool_socket_obj_t *socket, _request *request) {
@@ -1666,7 +1680,7 @@ static void _process_request(socketpool_socket_obj_t *socket, _request *request)
     bool error = false;
     uint8_t c;
     // This code assumes header lines are terminated with \r\n
-    while (more && !error) {
+    while (more && !error && !request->done) {
 
         int len = socketpool_socket_recv_into(socket, &c, 1);
         if (len != 1) {
@@ -1803,6 +1817,9 @@ static void _process_request(socketpool_socket_obj_t *socket, _request *request)
         return;
     }
     bool reload = _reply(socket, request);
+    if (request->held) {
+        return;                                 // the VM is stopping; try again then
+    }
     _reset_request(request);
     common_hal_socketpool_socket_close(socket);
     autoreload_resume(AUTORELOAD_SUSPEND_WEB);

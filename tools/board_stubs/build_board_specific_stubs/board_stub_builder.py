@@ -160,7 +160,6 @@ def create_board_stubs(board_id, records, mappings, board_filename):
         boards_file.write(f"Board stub for {mappings['board_name']}\n")
         boards_file.write(f" - port: {mappings['port']}\n")
         boards_file.write(f" - board_id: {board_id}\n")
-        boards_file.write(f" - NVM size: {mappings['nvm_size']}\n")
         boards_file.write(f" - Included modules: {included_modules}\n")
         boards_file.write(f" - Frozen libraries: {frozen_libraries}\n")
         boards_file.write('"""\n\n')
@@ -261,20 +260,27 @@ def process(board_mappings, export_dir):
             print(f"    - {board}")
 
 
-def build_stubs(circuitpython_dir, circuitpython_org_dir, export_dir, version="8.2.9"):
+def build_stubs(
+    circuitpython_dir, circuitpython_org_dir, export_dir, version="8.2.9", board_data_path=None
+):
     if circuitpython_dir[-1] != "/":
         circuitpython_dir = circuitpython_dir + "/"
 
     sys.path.append(circuitpython_dir)
-    from docs import shared_bindings_matrix
+    from tools import shared_bindings_matrix
 
     if not os.path.exists(export_dir):
         os.makedirs(export_dir)
 
+    collected = shared_bindings_matrix.collect_board_data()
+    if board_data_path:
+        # conf.py reads this so it doesn't have to collect the same data again.
+        shared_bindings_matrix.write_board_data(board_data_path, collected)
+
     libraries = {}
     if circuitpython_org_dir is None:
         libraries = shared_bindings_matrix.support_matrix_by_board(
-            use_branded_name=False, withurl=False
+            use_branded_name=False, withurl=False, board_data=collected
         )
     else:
         with open(f"{circuitpython_org_dir}/_data/files.json") as libraries_file:
@@ -306,38 +312,16 @@ def build_stubs(circuitpython_dir, circuitpython_org_dir, export_dir, version="8
 
         board_mappings[board]["pins_filename"] = pins_path
 
-        nvm_size = "Unknown"
-        with open(f"{port_path}/mpconfigport.h") as get_name:
-            port_contents = get_name.read()
-            port_nvm_re = re.search(
-                r"(?<=#define CIRCUITPY_INTERNAL_NVM_SIZE)\s+(.+)", port_contents
-            )
-            if port_nvm_re:
-                nvm_size = port_nvm_re.group(1).strip()
-
-        board_name = board
-        with open(f"{board_path}/mpconfigboard.h") as get_name:
-            board_contents = get_name.read()
-            board_name_re = re.search(r"(?<=MICROPY_HW_BOARD_NAME)\s+(.+)", board_contents)
-            if board_name_re:
-                board_name = board_name_re.group(1).strip('"')
-
-            port_nvm_re = re.search(
-                r"(?<=#define CIRCUITPY_INTERNAL_NVM_SIZE)\s+(.+)", port_contents
-            )
-            if port_nvm_re:
-                nvm_size = port_nvm_re.group(1).strip()
-
-        nvm_size_re = re.search(r"^[0-9\(\) *]*$", nvm_size)
-        if nvm_size_re:
-            nvm_size = eval(nvm_size_re.group(0))
-
-        board_mappings[board]["board_name"] = board_name
-        board_mappings[board]["nvm_size"] = nvm_size
+        board_mappings[board]["board_name"] = collected[lookup]["branded_name"]
         board_mappings[board]["libraries"] = libraries.get(board, None)
 
     process(board_mappings, export_dir)
 
 
 if __name__ == "__main__":
-    build_stubs("./", None, "circuitpython-stubs/board_definitions/")
+    build_stubs(
+        "./",
+        None,
+        "circuitpython-stubs/board_definitions/",
+        board_data_path="circuitpython-stubs/board_data.json",
+    )

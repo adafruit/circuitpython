@@ -57,14 +57,26 @@ typedef uint16_t block_columns_t;
 #define BLOCK_MASK_WORDS (BLOCK_PIXELS / 32 + 1)
 // The message, a block in viewer pixels and the mask rendering a block needs.
 #define BUFFER_SIZE (MESSAGE_SIZE + BLOCK_PIXELS * 4 + BLOCK_MASK_WORDS * 4)
-// How long one background pass may spend sending.
-#define PASS_BUDGET_MS (8)
+// How long one background pass may spend encoding and sending. Sends to a
+// network co-processor block until the bytes are handed over, so the budget is
+// checked between sends of at most SEND_CHUNK bytes: a pass overruns it by one
+// chunk at most.
+#ifndef PASS_BUDGET_US
+#define PASS_BUDGET_US (2000)
+#endif
+#ifndef SEND_CHUNK
+#define SEND_CHUNK (1024)
+#endif
+// CIRCUITPY_WEB_DISPLAY_RATE_LIMIT caps the bytes sent per second, as at most
+// pass_bytes_max per pass. Some network co-processors (AirLift) buffer sends and
+// move them at the end of the background run, out of sight of the time budget,
+// so the time budget alone doesn't bound what the stream costs there.
 // How often the connection is checked and the VNC port accepts. Each can cost a
 // command to the network co-processor, so it isn't done every pass.
 #define POLL_MS (250)
 // Passes that send start at least this far apart, so the stream takes at most
-// PASS_BUDGET_MS of every PASS_INTERVAL_MS however fast the display changes or
-// however slowly the viewer reads.
+// PASS_BUDGET_US and pass_bytes_max of every PASS_INTERVAL_MS however fast the
+// display changes or however slowly the viewer reads.
 #define PASS_INTERVAL_MS (20)
 
 #define ENCODING_RAW (0)
@@ -126,6 +138,7 @@ static socketpool_socket_obj_t vnc_incoming;
 static uint64_t last_accept_ms;
 static mp_int_t vnc_port;
 static bool vnc_keys;
+static size_t pass_bytes_max = SIZE_MAX;
 
 static websocket_t ws;
 static bool over_websocket;
@@ -187,10 +200,18 @@ static uint64_t last_pass_ms;
 static volatile uint8_t pass_countdown;
 static bool tick_enabled;
 
-// Blocks written since they were last sent, a bit per column in each row of blocks.
+// Blocks written since they were last sent, a bit per column in each row of blocks,
+// and the rows written in each row of blocks: from dirty_top up to dirty_bottom,
+// counted from the top of the row of blocks. Only those rows of its blocks are
+// sent, so a line of text or a picture coming in a line at a time doesn't send
+// every line around it again.
 static block_columns_t dirty[BLOCK_ROWS];
+static uint8_t dirty_top[BLOCK_ROWS];
+static uint8_t dirty_bottom[BLOCK_ROWS];
 // The blocks of the update being sent, and how many are left.
 static block_columns_t pending[BLOCK_ROWS];
+static uint8_t pending_top[BLOCK_ROWS];
+static uint8_t pending_bottom[BLOCK_ROWS];
 static uint16_t rects_left;
 static uint16_t next_block_row;
 
@@ -204,6 +225,14 @@ void display_stream_init(void) {
 void display_stream_set_vnc(mp_int_t port, bool allow_keys) {
     vnc_port = port;
     vnc_keys = allow_keys;
+}
+
+void display_stream_set_rate_limit(mp_int_t bytes_per_second) {
+    if (bytes_per_second <= 0) {
+        pass_bytes_max = SIZE_MAX;
+    } else {
+        pass_bytes_max = MAX(1, (uint64_t)bytes_per_second * PASS_INTERVAL_MS / 1000);
+    }
 }
 
 void display_stream_listen(socketpool_socketpool_obj_t *pool) {
@@ -225,6 +254,15 @@ void display_stream_listen(socketpool_socketpool_obj_t *pool) {
     }
 }
 
+// Microseconds, for budgets of a few milliseconds: the raw ticks are 1/1024 s
+// and their subticks 1/32768 s on every port. Wraps every 71 minutes, so compare
+// differences.
+static uint32_t _now_us(void) {
+    uint8_t subticks = 0;
+    uint64_t ticks = port_get_raw_ticks(&subticks);
+    return (uint32_t)((ticks * 32 + subticks) * 15625 / 512);
+}
+
 static void _mark_dirty(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
     if (x1 >= x2 || y1 >= y2) {
         return;
@@ -233,7 +271,18 @@ static void _mark_dirty(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2) {
     for (uint16_t c = x1 / BLOCK_W; c <= (x2 - 1) / BLOCK_W && c < BLOCK_COLUMNS; c++) {
         columns |= (block_columns_t)1 << c;
     }
-    for (uint16_t r = y1 / BLOCK_H; r <= (y2 - 1) / BLOCK_H && r < BLOCK_ROWS; r++) {
+    uint16_t first = y1 / BLOCK_H;
+    uint16_t last = (y2 - 1) / BLOCK_H;
+    for (uint16_t r = first; r <= last && r < BLOCK_ROWS; r++) {
+        uint8_t top = r == first ? y1 % BLOCK_H : 0;
+        uint8_t bottom = r == last ? (y2 - 1) % BLOCK_H + 1 : BLOCK_H;
+        if (dirty[r] == 0) {
+            dirty_top[r] = top;
+            dirty_bottom[r] = bottom;
+        } else {
+            dirty_top[r] = MIN(dirty_top[r], top);
+            dirty_bottom[r] = MAX(dirty_bottom[r], bottom);
+        }
         dirty[r] |= columns;
     }
 }
@@ -709,9 +758,10 @@ static void _put_rect_header(uint8_t *p, uint16_t x, uint16_t y, uint16_t w, uin
     _put32(p, encoding);
 }
 
-static void _put_block_rect(uint16_t x, uint16_t y) {
+// Adds the rows from y of the block at x, at most h of them, as one rectangle.
+static void _put_block_rect(uint16_t x, uint16_t y, uint16_t h) {
     uint16_t w = MIN(BLOCK_W, width - x);
-    uint16_t h = MIN(BLOCK_H, height - y);
+    h = MIN(h, height - y);
     _load_block(x, y, w, h);
     _put_rect_header(_out(RECT_HEADER_SIZE), x, y, w, h, use_hextile ? ENCODING_HEXTILE : ENCODING_RAW);
     uint8_t *start = _out(0);
@@ -732,7 +782,7 @@ static void _put_block_rect(uint16_t x, uint16_t y) {
 // Adds the next part of an update to the message, starting an update if one
 // was asked for and there is something to send. Returns false when there was
 // nothing to add.
-static bool _fill(uint64_t end_ms) {
+static bool _fill(uint32_t end_us) {
     _check_display();
     if (rects_left == 0) {
         if (next_pf_set) {
@@ -767,6 +817,8 @@ static bool _fill(uint64_t end_ms) {
         uint16_t rows = (height + BLOCK_H - 1) / BLOCK_H;
         for (uint16_t r = 0; r < rows; r++) {
             pending[r] = dirty[r];
+            pending_top[r] = dirty_top[r];
+            pending_bottom[r] = dirty_bottom[r];
             dirty[r] = 0;
             count += __builtin_popcount(pending[r]);
         }
@@ -783,13 +835,14 @@ static bool _fill(uint64_t end_ms) {
     }
     bool first = true;
     while (rects_left > 0 && out_len + WORST_RECT <= PAYLOAD_SIZE &&
-           (first || supervisor_ticks_ms64() < end_ms)) {
+           (first || (int32_t)(_now_us() - end_us) < 0)) {
         while (pending[next_block_row] == 0) {
             next_block_row++;
         }
         uint8_t column = __builtin_ctz(pending[next_block_row]);
         pending[next_block_row] &= ~((block_columns_t)1 << column);
-        _put_block_rect(column * BLOCK_W, next_block_row * BLOCK_H);
+        _put_block_rect(column * BLOCK_W, next_block_row * BLOCK_H + pending_top[next_block_row],
+            pending_bottom[next_block_row] - pending_top[next_block_row]);
         rects_left--;
         first = false;
     }
@@ -1134,9 +1187,15 @@ void display_stream_background(void) {
         return;
     }
     last_pass_ms = start;
+    uint32_t pass_start_us = _now_us();
+    size_t pass_bytes = 0;
     do {
         if (message_start < message_end) {
-            int sent = socketpool_socket_send(&ws.socket, message + message_start, message_end - message_start);
+            if (pass_bytes >= pass_bytes_max) {
+                break;
+            }
+            size_t chunk = MIN(MIN(message_end - message_start, SEND_CHUNK), pass_bytes_max - pass_bytes);
+            int sent = socketpool_socket_send(&ws.socket, message + message_start, chunk);
             if (sent == -MP_EAGAIN) {
                 break;
             }
@@ -1145,6 +1204,7 @@ void display_stream_background(void) {
                 return;
             }
             message_start += sent;
+            pass_bytes += sent;
             continue;
         }
         if (out_len > 0) {
@@ -1155,13 +1215,13 @@ void display_stream_background(void) {
             _stop();
             return;
         }
-        if (state < STATE_MESSAGE || !_fill(start + PASS_BUDGET_MS)) {
+        if (state < STATE_MESSAGE || !_fill(pass_start_us + PASS_BUDGET_US)) {
             break;
         }
         if (!streaming) {
             return;
         }
-    } while (supervisor_ticks_ms64() - start < PASS_BUDGET_MS);
+    } while (_now_us() - pass_start_us < PASS_BUDGET_US);
     // Come back for what's left: the rest of a message the socket couldn't take
     // yet, or an update the budget ran out on.
     if (message_start < message_end || out_len > 0 || rects_left > 0) {

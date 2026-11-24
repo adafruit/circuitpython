@@ -2602,8 +2602,7 @@ msgid "%q must be >= %d"
 msgstr "%q >= %d olmalıdır"
 
 #: py/argcheck.c shared-bindings/gifio/GifWriter.c
-#: shared-module/_airlift/__init__.c shared-module/gifio/OnDiskGif.c
-#: shared-module/videogif/GifDecoder.c
+#: shared-module/_airlift/__init__.c
 msgid "%q must be <= %d"
 msgstr "%q <= %d olmalıdır"
 
@@ -4681,7 +4680,7 @@ msgid "Too many displays"
 msgstr ""
 
 #: shared-module/displayio/legacy/__init__.c
-msgid "Too many display busses; forgot displayio.release_displays() ?"
+msgid "Too many display buses; deinit() unused displays"
 msgstr ""
 
 #: shared-module/displayio/lvgl/Group.c

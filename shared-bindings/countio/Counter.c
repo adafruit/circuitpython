@@ -47,7 +47,7 @@
 //|                     pin_counter.reset()
 //|                 print(pin_counter.count)
 //|
-//|         **Limitations:** On RP2040, `Counter` uses the PWM peripheral, and
+//|         **Limitations:** On RP2xxx, `Counter` uses the PWM peripheral, and
 //|         is limited to using PWM channel B pins due to hardware restrictions.
 //|         See the pin assignments for your board to see which pins can be used.
 //|         """

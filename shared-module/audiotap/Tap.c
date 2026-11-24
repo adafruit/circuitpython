@@ -4,9 +4,9 @@
 //
 // SPDX-License-Identifier: MIT
 #include "shared-bindings/audiotap/Tap.h"
+#include "shared-module/audiotap/LevelReader.h"
 #include "shared-bindings/audiocore/__init__.h"
 
-#include <math.h>
 #include <stdint.h>
 #include <string.h>
 
@@ -39,11 +39,7 @@ void common_hal_audiotap_tap_construct(audiotap_tap_obj_t *self, mp_float_t capa
     self->read_pos = 0;
     self->overflow = false;
 
-    self->peak = 0;
-    self->peak_reset = false;
-    self->sum_squares = 0;
-    self->level_count = 0;
-    self->rms_reset = false;
+    self->levels = NULL;
 }
 
 void common_hal_audiotap_tap_deinit(audiotap_tap_obj_t *self) {
@@ -52,6 +48,7 @@ void common_hal_audiotap_tap_deinit(audiotap_tap_obj_t *self) {
     self->silence = NULL;
     self->ring = NULL;
     self->capacity = 0;
+    self->levels = NULL;
 }
 
 void audiotap_tap_reset_buffer(audiotap_tap_obj_t *self,
@@ -155,51 +152,18 @@ static uint32_t ring_advance(uint32_t capacity, uint32_t pos, uint32_t count) {
     return pos >= 2 * capacity ? pos - 2 * capacity : pos;
 }
 
-// The sample at i, as a signed 16 bit value.
-static int32_t sample_at(audiotap_tap_obj_t *self, const uint8_t *data, uint32_t i) {
-    if (MP_LIKELY(self->base.bits_per_sample == 16)) {
-        // data is the source's 16 bit buffer, or the silence allocated on the
-        // heap, advanced only in whole samples, so it is aligned.
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wcast-align"
-        uint16_t raw = ((const uint16_t *)data)[i];
-        #pragma GCC diagnostic pop
-        return self->base.samples_signed ? (int16_t)raw : (int16_t)(raw ^ 0x8000);
-    }
-    uint8_t raw = data[i];
-    return (self->base.samples_signed ? (int8_t)raw : (int8_t)(raw ^ 0x80)) * 256;
-}
-
 // Called by whatever plays the tap, for each run of samples from the source.
 // It may be an interrupt, so it never allocates and changes only write_pos and
-// the levels.
+// the attached LevelReader's levels.
 static void tap_capture(audiotap_tap_obj_t *self, const uint8_t *data, uint32_t count) {
     if (count == 0) {
         return;
     }
 
-    if (self->peak_reset) {
-        self->peak = 0;
-        self->peak_reset = false;
+    audiotap_levelreader_obj_t *levels = self->levels;
+    if (levels != NULL) {
+        audiotap_levelreader_measure(levels, &self->base, data, count);
     }
-    if (self->rms_reset) {
-        self->sum_squares = 0;
-        self->level_count = 0;
-        self->rms_reset = false;
-    }
-    uint32_t peak = self->peak;
-    uint64_t sum = 0;
-    for (uint32_t i = 0; i < count; i++) {
-        int32_t value = sample_at(self, data, i);
-        uint32_t magnitude = value < 0 ? -value : value;
-        if (magnitude > peak) {
-            peak = magnitude;
-        }
-        sum += (uint64_t)(value * value);
-    }
-    self->peak = peak;
-    self->sum_squares += (float)sum / (32768.0f * 32768.0f);
-    self->level_count += count;
 
     if (self->ring == NULL) {
         return;
@@ -267,27 +231,6 @@ bool common_hal_audiotap_tap_get_overflow(audiotap_tap_obj_t *self) {
     bool overflow = self->overflow;
     self->overflow = false;
     return overflow;
-}
-
-mp_float_t common_hal_audiotap_tap_get_peak(audiotap_tap_obj_t *self) {
-    if (self->peak_reset) {
-        // No audio passed since the last read.
-        return 0;
-    }
-    mp_float_t peak = (mp_float_t)self->peak / MICROPY_FLOAT_CONST(32768.0);
-    self->peak_reset = true;
-    return peak;
-}
-
-mp_float_t common_hal_audiotap_tap_get_rms(audiotap_tap_obj_t *self) {
-    if (self->rms_reset) {
-        // No audio passed since the last read.
-        return 0;
-    }
-    uint32_t count = self->level_count;
-    float sum_squares = self->sum_squares;
-    self->rms_reset = true;
-    return count > 0 ? MICROPY_FLOAT_C_FUN(sqrt)((mp_float_t)sum_squares / count) : 0;
 }
 
 audioio_get_buffer_result_t audiotap_tap_get_buffer(audiotap_tap_obj_t *self, bool single_channel_output, uint8_t channel,

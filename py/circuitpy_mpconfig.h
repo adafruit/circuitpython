@@ -117,6 +117,9 @@ extern void common_hal_mcu_enable_interrupts(void);
 #define MICROPY_OPT_MPZ_BITWISE          (0)
 #define MICROPY_OPT_CACHE_MAP_LOOKUP_IN_BYTECODE (CIRCUITPY_OPT_CACHE_MAP_LOOKUP_IN_BYTECODE)
 #define MICROPY_PERSISTENT_CODE_LOAD     (1)
+// The ROM-reader half of MicroPython's VFS ROM support: .mpy data referenced in place, no ROM VFS.
+#define MICROPY_VFS_ROM                  (CIRCUITPY_STORAGE_MAP_IMPORT)
+#define MICROPY_VFS_ROM_IOCTL            (0)
 #define MICROPY_PERSISTENT_CODE_LOAD_NATIVE (CIRCUITPY_LOAD_NATIVE || CIRCUITPY_ENABLE_MPY_NATIVE)
 
 #define MICROPY_PY_ARRAY                 (CIRCUITPY_ARRAY)
@@ -628,6 +631,12 @@ void background_callback_run_all(void);
 // packet.
 #ifndef CIRCUITPY_USB_HOST_ISO_RECORDS
 #define CIRCUITPY_USB_HOST_ISO_RECORDS (0)
+#endif
+
+// The port runs tuh_task() in a task of its own rather than from
+// usb_background(), so that it runs while the VM is busy.
+#ifndef CIRCUITPY_USB_HOST_TASK
+#define CIRCUITPY_USB_HOST_TASK (0)
 #endif
 
 // usb_host_bulk takes a usb.core.Device and uses TinyUSB host calls.

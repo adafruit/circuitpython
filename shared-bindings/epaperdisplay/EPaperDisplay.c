@@ -13,6 +13,7 @@
 #include "py/objproperty.h"
 #include "py/objtype.h"
 #include "py/runtime.h"
+#include "shared-bindings/displayio/__init__.h"
 #include "shared-bindings/displayio/Group.h"
 #include "shared-bindings/microcontroller/Pin.h"
 #include "shared-bindings/util.h"
@@ -364,11 +365,43 @@ static mp_obj_t epaperdisplay_epaperdisplay_make_new(const mp_obj_type_t *type, 
 }
 
 // Helper to ensure we have the native super class instead of a subclass.
+// Raises if the display has been released.
 static epaperdisplay_epaperdisplay_obj_t *native_display(mp_obj_t display_obj) {
     mp_obj_t native_display = mp_obj_cast_to_native_base(display_obj, &epaperdisplay_epaperdisplay_type);
+    if (native_display == MP_OBJ_NULL) {
+        raise_deinited_error();
+    }
     mp_obj_assert_native_inited(native_display);
-    return MP_OBJ_TO_PTR(native_display);
+    epaperdisplay_epaperdisplay_obj_t *self = MP_OBJ_TO_PTR(native_display);
+    if (self->base.type != &epaperdisplay_epaperdisplay_type) {
+        raise_deinited_error();
+    }
+    return self;
 }
+
+//|     def deinit(self) -> None:
+//|         """Release the display and its display bus, so their pins can be used again.
+//|         The display bus is not released if another display still uses it.
+//|         A `busio.SPI` or `busio.I2C` object that you passed to the display bus is not deinitialized.
+//|
+//|         If a refresh is in progress, this waits for it to finish, which may take seconds.
+//|         If the display uses ``lag_frames`` and can't get its bus, this waits up to 30 seconds.
+//|         It then raises `RuntimeError` and leaves the display as it was.
+//|
+//|         To release a built-in display, or a display kept from an earlier run,
+//|         use ``supervisor.runtime.display.deinit()``.
+//|         As of CircuitPython 11.0.0, this replaces `displayio.release_displays()`, which is deprecated.
+//|         """
+//|         ...
+//|
+static mp_obj_t epaperdisplay_epaperdisplay_obj_deinit(mp_obj_t self_in) {
+    mp_obj_t native_display = mp_obj_cast_to_native_base(self_in, &epaperdisplay_epaperdisplay_type);
+    if (native_display != MP_OBJ_NULL) {
+        common_hal_displayio_deinit_display(native_display);
+    }
+    return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_1(epaperdisplay_epaperdisplay_deinit_obj, epaperdisplay_epaperdisplay_obj_deinit);
 
 // Undocumented show() implementation with a friendly error message.
 static mp_obj_t epaperdisplay_epaperdisplay_obj_show(mp_obj_t self_in, mp_obj_t group_in) {
@@ -439,10 +472,14 @@ MP_DEFINE_CONST_FUN_OBJ_KW(epaperdisplay_epaperdisplay_update_refresh_mode_obj, 
 //|         """Refreshes the display immediately or raises an exception if too soon. Use
 //|         ``time.sleep(display.time_to_refresh)`` to sleep until a refresh can occur.
 //|
+//|         This returns when the update starts, not when it finishes. Before removing power from
+//|         the display, wait until ``busy`` is False. If the display has a ``busy_pin``,
+//|         `alarm.exit_and_deep_sleep_until_alarms()` waits for the update to finish by itself.
+//|
 //|         The minimum time between refreshes is ``seconds_per_frame``, 180 by default. With
-//|         fast updates, set it to 0 and poll ``busy`` instead, since this returns once the update
-//|         starts. The first refresh also runs the ``clean_sequence``, which takes seconds, and an
-//|         interrupt during it raises when it ends."""
+//|         fast updates, set it to 0 and poll ``busy`` instead. The first refresh also runs the
+//|         ``clean_sequence``, which takes seconds, and an interrupt during it raises when it
+//|         ends."""
 //|         ...
 //|
 static mp_obj_t epaperdisplay_epaperdisplay_obj_refresh(mp_obj_t self_in) {
@@ -450,7 +487,7 @@ static mp_obj_t epaperdisplay_epaperdisplay_obj_refresh(mp_obj_t self_in) {
     bool ok = common_hal_epaperdisplay_epaperdisplay_refresh(self);
     if (!ok) {
         #if CIRCUITPY_EPAPERDISPLAY_FAST
-        if (self->lag.frames > 0) {
+        if (common_hal_epaperdisplay_epaperdisplay_has_lag_frames(self)) {
             // Interrupted is not too soon: raise what interrupted it.
             mp_handle_pending(true);
         }
@@ -484,7 +521,7 @@ static mp_obj_t epaperdisplay_epaperdisplay_clean(size_t n_args, const mp_obj_t 
     epaperdisplay_epaperdisplay_obj_t *self = native_display(pos_args[0]);
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all(n_args - 1, pos_args + 1, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
-    if (self->lag.frames == 0) {
+    if (!common_hal_epaperdisplay_epaperdisplay_has_lag_frames(self)) {
         mp_raise_RuntimeError(MP_ERROR_TEXT("Invalid state"));
     }
     mp_int_t frames = mp_arg_validate_int_range(args[ARG_frames].u_int, 0, 255, MP_QSTR_frames);
@@ -610,6 +647,7 @@ MP_PROPERTY_GETSET(epaperdisplay_epaperdisplay_root_group_obj,
     (mp_obj_t)&epaperdisplay_epaperdisplay_set_root_group_obj);
 
 static const mp_rom_map_elem_t epaperdisplay_epaperdisplay_locals_dict_table[] = {
+    { MP_ROM_QSTR(MP_QSTR_deinit), MP_ROM_PTR(&epaperdisplay_epaperdisplay_deinit_obj) },
     { MP_ROM_QSTR(MP_QSTR_show), MP_ROM_PTR(&epaperdisplay_epaperdisplay_show_obj) },
     { MP_ROM_QSTR(MP_QSTR_update_refresh_mode), MP_ROM_PTR(&epaperdisplay_epaperdisplay_update_refresh_mode_obj) },
     { MP_ROM_QSTR(MP_QSTR_refresh), MP_ROM_PTR(&epaperdisplay_epaperdisplay_refresh_obj) },

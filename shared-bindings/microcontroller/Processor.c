@@ -132,7 +132,8 @@ MP_PROPERTY_GETTER(mcu_processor_reset_reason_obj,
 //|
 //|     Is `None` if the temperature is not available.
 //|
-//|     **Limitations:** Not available on ESP32 or ESP32-S3. On small SAMD21 builds without external flash,
+//|     **Limitations:** Not available on ESP32, MAX32, Spresense, STM chips other than STM32F4,
+//|     or Zephyr-based boards. On small SAMD21 builds without external flash,
 //|     the reported temperature has reduced accuracy and precision, to save code space.
 //|     """
 static mp_obj_t mcu_processor_get_temperature(mp_obj_t self) {

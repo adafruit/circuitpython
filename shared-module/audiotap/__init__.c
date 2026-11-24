@@ -4,4 +4,5 @@
 //
 // SPDX-License-Identifier: MIT
 
-// Nothing to do here. The module's only state is in its Tap objects.
+// Nothing to do here. The module's only state is in its Tap and LevelReader
+// objects.

@@ -112,6 +112,16 @@ void common_hal_wifi_radio_set_enabled(wifi_radio_obj_t *self, bool enabled) {
         #endif
         self->started = true;
         common_hal_wifi_radio_set_tx_power(self, CIRCUITPY_WIFI_DEFAULT_TX_POWER);
+        #ifdef CONFIG_ESP_HOSTED_ENABLED
+        // Temporary workaround: default to no power save on ESP-Hosted co-processors.
+        //
+        // With some APs, inbound traffic stalls in MIN_MODEM power save. A likely cause is
+        // the ESP32-C6 missing broadcast and ARP frames from the AP in power save.
+        // TODO: Remove when fixed upstream.
+        //   https://github.com/espressif/esp-idf/issues/16096
+        //   https://github.com/adafruit/circuitpython/issues/11682
+        esp_wifi_set_ps(WIFI_PS_NONE);
+        #endif
         return;
     }
 }

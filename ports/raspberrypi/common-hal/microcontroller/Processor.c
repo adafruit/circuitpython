@@ -252,9 +252,14 @@ void common_hal_mcu_processor_set_frequency(mcu_processor_obj_t *self, uint32_t 
     } else if (freq_khz > 133000) {
         voltage = VREG_VOLTAGE_1_20;
     }
-    vreg_set_voltage(voltage);
-    // Wait for a stable voltage
-    common_hal_time_delay_ms(10);
+    // Raise the voltage before raising the clock, and lower it after lowering
+    // the clock.
+    enum vreg_voltage current_voltage = vreg_get_voltage();
+    if (voltage > current_voltage) {
+        vreg_set_voltage(voltage);
+        // Wait for a stable voltage
+        common_hal_time_delay_ms(10);
+    }
 
     // Prevent interrupt handlers from accessing flash or PSRAM until their
     // timing matches the new system clock.
@@ -268,6 +273,9 @@ void common_hal_mcu_processor_set_frequency(mcu_processor_obj_t *self, uint32_t 
     #endif
     mcu_processor_update_flash_timing(freq_khz);
     common_hal_mcu_enable_interrupts();
+    if (voltage < current_voltage) {
+        vreg_set_voltage(voltage);
+    }
 }
 
 void common_hal_mcu_processor_get_uid(uint8_t raw_id[]) {

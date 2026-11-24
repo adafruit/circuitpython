@@ -507,7 +507,7 @@ static bool gc_try_add_heap(size_t failed_alloc) {
         return false;
     }
 
-    gc_add(new_heap, (void *)new_heap + to_alloc);
+    gc_add(new_heap, (byte *)new_heap + to_alloc);
 
     return true;
 }
@@ -542,7 +542,10 @@ bool gc_is_locked(void) {
 }
 
 // CIRCUITPY-CHANGE: additional function
-bool gc_ptr_on_heap(const void *ptr) {
+// In ITCM (RAM, on chips that have it) because background_callback_add_core() can call
+// this from an interrupt that fires during a flash write. Code in flash can't run during
+// a flash write.
+bool PLACE_IN_ITCM(gc_ptr_on_heap)(const void *ptr) {
     for (mp_state_mem_area_t *area = &MP_STATE_MEM(area); area != NULL; area = NEXT_AREA(area)) {
         if (ptr >= (void *)area->gc_pool_start   // must be above start of pool
             && ptr < (void *)area->gc_pool_end) {   // must be below end of pool
@@ -878,6 +881,8 @@ static void gc_sweep_free_blocks(void) {
 
     for (mp_state_mem_area_t *area = &MP_STATE_MEM(area); area != NULL; area = NEXT_AREA(area)) {
         size_t last_used_block = 0;
+        // CIRCUITPY-CHANGE: last_used_block is also 0 when only the first block is in use
+        bool any_used = false;
         assert(area->gc_last_used_block <= area->gc_alloc_table_byte_len * BLOCKS_PER_ATB);
 
         for (size_t block = 0; block <= area->gc_last_used_block; block++) {
@@ -900,6 +905,7 @@ static void gc_sweep_free_blocks(void) {
                         #endif
                     } else {
                         last_used_block = block;
+                        any_used = true;
                     }
                     break;
 
@@ -907,6 +913,7 @@ static void gc_sweep_free_blocks(void) {
                     ATB_MARK_TO_HEAD(area, block);
                     free_tail = 0;
                     last_used_block = block;
+                    any_used = true;
                     break;
             }
         }
@@ -915,13 +922,15 @@ static void gc_sweep_free_blocks(void) {
 
         #if MICROPY_GC_SPLIT_HEAP_AUTO
         // Free any empty area, aside from the first one
-        if (last_used_block == 0 && prev_area != NULL) {
+        if (!any_used && prev_area != NULL) {
             DEBUG_printf("gc_sweep_free_blocks free empty area %p\n", area);
             NEXT_AREA(prev_area) = NEXT_AREA(area);
             MP_PLAT_FREE_HEAP(area);
             area = prev_area;
         }
         prev_area = area;
+        #else
+        (void)any_used;
         #endif
     }
 }

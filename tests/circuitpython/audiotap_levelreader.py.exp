@@ -1,0 +1,15 @@
+idle 0.0 0.0
+peak 0.0092 0.0
+rms 0.0053 0.0
+peak again 0.0092
+read 1000 True
+second tap in use
+deinit Object has been deinitialized and can no longer be used. Create a new object.
+not measured 0.0 0.0
+measured 0.0092
+detached by exit 0.0
+meter 0 1.0 0.7905694150420949
+8 bit 8 0.5 0.3535533905932738
+not a tap tap must be of type Tap, not RawSample
+tap deinit Object has been deinitialized and can no longer be used. Create a new object.
+new on deinit tap Object has been deinitialized and can no longer be used. Create a new object.

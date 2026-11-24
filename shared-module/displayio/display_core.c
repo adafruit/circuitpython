@@ -106,6 +106,28 @@ void displayio_display_core_set_rotation(displayio_display_core_t *self,
     #endif
 }
 
+#if !CIRCUITPY_DISPLAYIO_LVGL
+// Keep this out of line so each display implementation and its binding don't get separate copies.
+MP_NOINLINE void displayio_display_core_set_rotation_and_update(displayio_display_core_t *self,
+    int rotation, mp_obj_base_t *display) {
+    bool transposed = (self->rotation == 90 || self->rotation == 270);
+    bool will_transposed = (rotation == 90 || rotation == 270);
+    if (transposed != will_transposed) {
+        int tmp = self->width;
+        self->width = self->height;
+        self->height = tmp;
+    }
+    displayio_display_core_set_rotation(self, rotation);
+    if (display == &displays[0].display_base) {
+        supervisor_stop_terminal();
+        supervisor_start_terminal(self->width, self->height);
+    }
+    if (self->current_group != NULL) {
+        displayio_group_update_transform(self->current_group, &self->transform);
+    }
+}
+#endif
+
 bool displayio_display_core_set_root_group(displayio_display_core_t *self, displayio_group_t *root_group) {
 
     if (root_group == NULL) {

@@ -115,16 +115,19 @@ static void stream_set_blocking(audiomp3_mp3file_obj_t *self, bool block_ok) {
  * false otherwise.  (The input buffer will be padded to the end with
  * 0 bytes, which do not interfere with MP3 decoding)
  *
- * Raises OSError if stream_read fails.
+ * Sets self->read_error and self->eof if stream_read fails, instead of raising, because this also
+ * runs where nothing can catch an exception (a port's audio fill task).
  *
  * Sets self->eof if any read of the file returns 0 bytes
  */
 static bool mp3file_update_inbuf_always(audiomp3_mp3file_obj_t *self, bool block_ok) {
     // Every return from this function must be preceded by background_callback_allow();
     background_callback_prevent();
+    audiocore_lock();
 
     if (self->eof || INPUT_BUFFER_SPACE(self->inbuf) == 0) {
         bool result = INPUT_BUFFER_AVAILABLE(self->inbuf) > 0;
+        audiocore_unlock();
         background_callback_allow();
         return result;
     }
@@ -151,8 +154,8 @@ static bool mp3file_update_inbuf_always(audiomp3_mp3file_obj_t *self, bool block
                 break;
             }
             self->eof = true;
-            background_callback_allow();
-            mp_raise_OSError(errcode);
+            self->read_error = errcode;
+            break;
         }
 
         if (n_read == 0) {
@@ -169,6 +172,7 @@ static bool mp3file_update_inbuf_always(audiomp3_mp3file_obj_t *self, bool block
     // Return true iff there are at least some useful bytes in the buffer
     bool result = INPUT_BUFFER_AVAILABLE(self->inbuf) > 0;
 
+    audiocore_unlock();
     background_callback_allow();
     return result;
 }
@@ -358,6 +362,7 @@ static bool mp3file_set_file_and_get_frame_info(audiomp3_mp3file_obj_t *self, mp
 
     INPUT_BUFFER_CLEAR(self->inbuf);
     self->eof = 0;
+    self->read_error = 0;
 
     self->block_ok = false;
     stream_set_blocking(self, true);
@@ -388,6 +393,7 @@ static bool mp3file_set_file_and_get_frame_info(audiomp3_mp3file_obj_t *self, mp
 
 void common_hal_audiomp3_mp3file_set_file(audiomp3_mp3file_obj_t *self, mp_obj_t stream) {
     background_callback_prevent();
+    audiocore_lock();
 
     MP3FrameInfo fi;
     bool result;
@@ -396,10 +402,15 @@ void common_hal_audiomp3_mp3file_set_file(audiomp3_mp3file_obj_t *self, mp_obj_t
         result = mp3file_set_file_and_get_frame_info(self, stream, &fi);
         nlr_pop();
     } else {
+        audiocore_unlock();
         background_callback_allow();
         nlr_jump(nlr.ret_val);
     }
+    audiocore_unlock();
     background_callback_allow();
+    if (self->read_error) {
+        mp_raise_OSError(self->read_error);
+    }
     if (!result) {
         mp_raise_msg(&mp_type_RuntimeError,
             MP_ERROR_TEXT("Failed to parse MP3 file"));
@@ -416,6 +427,7 @@ void common_hal_audiomp3_mp3file_set_file(audiomp3_mp3file_obj_t *self, mp_obj_t
 }
 
 void common_hal_audiomp3_mp3file_deinit(audiomp3_mp3file_obj_t *self) {
+    audiocore_lock();
     audiosample_mark_deinit(&self->base);
     if (self->decoder) {
         MP3FreeDecoder(self->decoder);
@@ -427,6 +439,7 @@ void common_hal_audiomp3_mp3file_deinit(audiomp3_mp3file_obj_t *self) {
     self->stream = mp_const_none;
     self->settimeout_args[0] = MP_OBJ_NULL;
     self->samples_decoded = 0;
+    audiocore_unlock();
 }
 
 void audiomp3_mp3file_reset_buffer(audiomp3_mp3file_obj_t *self,
@@ -438,14 +451,17 @@ void audiomp3_mp3file_reset_buffer(audiomp3_mp3file_obj_t *self,
     // We don't reset the buffer index in case we're looping and we have an odd number of buffer
     // loads
     background_callback_prevent();
+    audiocore_lock();
     if (self->eof && stream_lseek(self->stream, 0, SEEK_SET) == 0) {
         INPUT_BUFFER_CLEAR(self->inbuf);
         self->eof = 0;
+        self->read_error = 0;
         self->samples_decoded = 0;
         self->other_channel = -1;
         mp3file_skip_id3v2(self, false);
         mp3file_find_sync_word(self, false);
     }
+    audiocore_unlock();
     background_callback_allow();
 }
 
@@ -459,6 +475,10 @@ audioio_get_buffer_result_t audiomp3_mp3file_get_buffer(audiomp3_mp3file_obj_t *
         if (DO_DEBUG) {
             mp_printf(&mp_plat_print, "%s:%d\n", __FILE__, __LINE__);
         }
+        return GET_BUFFER_ERROR;
+    }
+    if (self->read_error) {
+        *buffer_length = 0;
         return GET_BUFFER_ERROR;
     }
     if (!single_channel_output) {
@@ -489,7 +509,7 @@ audioio_get_buffer_result_t audiomp3_mp3file_get_buffer(audiomp3_mp3file_obj_t *
     if (!mp3file_find_sync_word(self, false)) {
         memset(buffer, 0, self->base.max_buffer_length);
         *buffer_length = 0;
-        return self->eof ? GET_BUFFER_DONE : GET_BUFFER_ERROR;
+        return self->eof && !self->read_error ? GET_BUFFER_DONE : GET_BUFFER_ERROR;
     }
     int bytes_left = BYTES_LEFT(self);
     uint8_t *inbuf = READ_PTR(self);

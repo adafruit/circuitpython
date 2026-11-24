@@ -17,6 +17,12 @@
 
 #define CIRCUITPY_DIGITALIO_HAVE_INPUT_ONLY (1)
 
+// TinyUSB's host stack runs in a FreeRTOS task of its own that waits on its
+// event queue, instead of as a background callback of the VM. Completion
+// callbacks then run, and isochronous streams queue their next transfer, while
+// the VM is busy. See common-hal/usb_host/Port.c.
+#define CIRCUITPY_USB_HOST_TASK (CIRCUITPY_USB_HOST)
+
 #include "py/circuitpy_mpconfig.h"
 
 #define MICROPY_NLR_SETJMP                  (1)
@@ -39,6 +45,9 @@
 #endif
 
 #define CIRCUITPY_INTERNAL_NVM_START_ADDR (0x9000)
+
+// The USB task erases and rewrites a whole 4 kB sector while the VM may run.
+#define CIRCUITPY_STORAGE_MAP_GUARD_BLOCKS (4096 / FILESYSTEM_BLOCK_SIZE)
 
 // 20kB is statically allocated to nvs, but when overwriting an existing
 // item, it's temporarily necessary to store both the old and new copies.

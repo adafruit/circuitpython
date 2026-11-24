@@ -1,0 +1,11 @@
+# Zephyr module descriptor for the ch32v4x7_entropy module.
+#
+# The module is loaded from the CircuitPython tree via ZEPHYR_EXTRA_MODULES in
+# ports/zephyr-cp/CMakeLists.txt.
+name: ch32v4x7_entropy
+build:
+  cmake: .
+  kconfig: Kconfig
+  settings:
+    # dts/bindings/ holds the adafruit,ch32v4x7-adc-entropy binding.
+    dts_root: .

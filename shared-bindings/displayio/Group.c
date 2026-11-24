@@ -17,11 +17,12 @@
 //| class Group:
 //|     """Manage a group of sprites and groups and how they are inter-related."""
 //|
-//|     def __init__(self, *, scale: int = 1, x: int = 0, y: int = 0) -> None:
+//|     def __init__(self, *, scale: int | float = 1, x: int = 0, y: int = 0) -> None:
 //|         """Create a Group of a given size and scale. Scale is in one dimension. For example, scale=2
-//|         leads to a layer's pixel being 2x2 pixels when in the group.
+//|         leads to a layer's pixel being 2x2 pixels when in the group. The LVGL compositor also
+//|         supports fractional scales.
 //|
-//|         :param int scale: Scale of layer pixels in one dimension.
+//|         :param int | float scale: Scale of layer pixels in one dimension.
 //|         :param int x: Initial x position within the parent.
 //|         :param int y: Initial y position within the parent."""
 //|         ...
@@ -29,14 +30,14 @@
 static mp_obj_t displayio_group_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     enum { ARG_scale, ARG_x, ARG_y };
     static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_scale, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 1} },
+        { MP_QSTR_scale, MP_ARG_OBJ | MP_ARG_KW_ONLY, {.u_rom_obj = MP_ROM_INT(1)} },
         { MP_QSTR_x, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 0} },
         { MP_QSTR_y, MP_ARG_INT | MP_ARG_KW_ONLY, {.u_int = 0} },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
-    mp_int_t scale = mp_arg_validate_int_range(args[ARG_scale].u_int, 1, 32767, MP_QSTR_scale);
+    mp_obj_t scale = args[ARG_scale].u_obj;
 
     displayio_group_t *self = mp_obj_malloc(displayio_group_t, &displayio_group_type);
     common_hal_displayio_group_construct(self, scale, args[ARG_x].u_int, args[ARG_y].u_int);
@@ -75,21 +76,21 @@ MP_PROPERTY_GETSET(displayio_group_hidden_obj,
     (mp_obj_t)&displayio_group_get_hidden_obj,
     (mp_obj_t)&displayio_group_set_hidden_obj);
 
-//|     scale: int
+//|     scale: int | float
 //|     """Scales each pixel within the Group in both directions. For example, when scale=2 each pixel
-//|     will be represented by 2x2 pixels."""
+//|     will be represented by 2x2 pixels. The LVGL compositor also supports fractional scales.
+//|     Different hardware can accelerate different fractional scales. It will pick the closest scale
+//|     that doesn't go over the given scale. Reading this property returns the requested scale."""
 static mp_obj_t displayio_group_obj_get_scale(mp_obj_t self_in) {
     displayio_group_t *self = native_group(self_in);
-    return MP_OBJ_NEW_SMALL_INT(common_hal_displayio_group_get_scale(self));
+    return common_hal_displayio_group_get_scale(self);
 }
 MP_DEFINE_CONST_FUN_OBJ_1(displayio_group_get_scale_obj, displayio_group_obj_get_scale);
 
 static mp_obj_t displayio_group_obj_set_scale(mp_obj_t self_in, mp_obj_t scale_obj) {
     displayio_group_t *self = native_group(self_in);
 
-    mp_int_t scale = mp_arg_validate_int_min(mp_obj_get_int(scale_obj), 1, MP_QSTR_scale);
-
-    common_hal_displayio_group_set_scale(self, scale);
+    common_hal_displayio_group_set_scale(self, scale_obj);
     return mp_const_none;
 }
 MP_DEFINE_CONST_FUN_OBJ_2(displayio_group_set_scale_obj, displayio_group_obj_set_scale);

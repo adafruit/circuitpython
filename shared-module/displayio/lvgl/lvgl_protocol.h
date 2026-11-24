@@ -53,10 +53,10 @@ typedef struct _lvgl_protocol_t {
 
     // Push the inherited transform. abs_x/abs_y is the parent group's origin in screen
     // pixels and scale is the composed scale of the whole ancestor chain; this layer's own
-    // position and scale are not applied here. Return false when the layer can't be shown
-    // that way (a VideoBuffer can't be scaled, for example); Group then restores its own
-    // transform, pushes that again, and raises ValueError.
-    bool (*set_transform)(mp_obj_t self, int32_t abs_x, int32_t abs_y, uint16_t scale);
+    // position and scale are not applied here. scale is the composed scale in Q8 format
+    // (LV_SCALE_NONE is 1x). Return false when the layer can't be shown that way; Group then
+    // restores its own transform, pushes that again, and raises ValueError.
+    bool (*set_transform)(mp_obj_t self, int32_t abs_x, int32_t abs_y, uint32_t scale);
 
     // Propagate an ancestor's hidden state. NULL means always drawn while attached.
     void (*set_hidden_by_parent)(mp_obj_t self, bool hidden);

@@ -127,6 +127,15 @@ Human-friendly name the board advertises over mDNS for the Web Workflow.
 Defaults to the human-readable board name if omitted.
 This is not the hostname.
 
+CIRCUITPY_WEB_DISPLAY_RATE_LIMIT (integer)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Most bytes per second sent to a viewer of the board's display (the ``/cp/display/``
+page or a VNC viewer). No limit when omitted or ``0``. A lower limit leaves more time
+for ``code.py`` while the display changes a lot, but the viewer catches up more slowly.
+Useful on boards whose network co-processor is reached over SPI (AirLift), where sending
+can hold up code that has to keep up with something else, such as USB or audio
+streaming; ``12800`` suits the Fruit Jam.
+
 CIRCUITPY_WEB_VNC_PORT (integer)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 TCP port number for VNC viewers to show the board's display, typically 5900.
@@ -234,7 +243,7 @@ Whether to configure the display at board initialization time, one of the follow
     CIRCUITPY_PICODVI_ENABLE="never"
 
 A display configured in this manner is available at ``supervisor.runtime.display``
-until it is released by ``displayio.release_displays()``. It does not appear at
+until it is released by ``supervisor.runtime.display.deinit()``. It does not appear at
 ``board.DISPLAY``.
 
 `Adafruit Feather RP2350 <https://circuitpython.org/board/adafruit_feather_rp2350/>`_
@@ -284,7 +293,7 @@ next to a 640x480 display. Set this to false to keep that RAM free, for
 example on a monitor without speakers.
 
 ``supervisor.runtime.audio`` is a :py:class:`picodvi.AudioOut`. It becomes ``None`` when
-the display is released by ``displayio.release_displays()`` or when it is
+the display is released, such as by ``supervisor.runtime.display.deinit()``, or when it is
 deinitialized, and stays ``None`` until the next reset.
 
 `Adafruit Feather RP2350 <https://circuitpython.org/board/adafruit_feather_rp2350/>`_
@@ -304,7 +313,8 @@ Controls direct flash mapping for :py:func:`storage.map_file` and automatic
 :py:class:`displayio.OnDiskBitmap` mapping. Defaults to ``true`` on builds that
 support file mapping. Set it to ``false`` to use cached file reads for
 ``OnDiskBitmap`` instead; explicit ``storage.map_file()`` calls then raise
-``OSError`` with ``EOPNOTSUPP``.
+``OSError`` with ``EOPNOTSUPP``, and a ``.mpy`` file is imported into RAM instead
+of being run from flash.
 
 On the Qualia ESP32-S3 RGB666, disabling mapping allows PSRAM XIP to keep the
 external-memory cache available during flash writes, so the RGB driver's

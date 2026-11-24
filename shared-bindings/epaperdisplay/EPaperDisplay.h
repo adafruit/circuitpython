@@ -15,7 +15,7 @@ extern const mp_obj_type_t epaperdisplay_epaperdisplay_type;
 
 #define NO_COMMAND 0x100
 
-typedef struct {
+typedef struct epaperdisplay_construct_args_t {
     mp_obj_t bus;
     const uint8_t *start_sequence;
     uint16_t start_sequence_len;
@@ -113,6 +113,8 @@ bool common_hal_epaperdisplay_epaperdisplay_refresh(epaperdisplay_epaperdisplay_
 // Doesn't allocate. Holds any interrupt until it ends. Returns false, with any owed drive still
 // owed, if the bus can't be had.
 bool common_hal_epaperdisplay_epaperdisplay_clean(epaperdisplay_epaperdisplay_obj_t *self, uint8_t frames, bool full);
+// True when lag driving is configured for the display.
+bool common_hal_epaperdisplay_epaperdisplay_has_lag_frames(epaperdisplay_epaperdisplay_obj_t *self);
 #endif
 
 mp_obj_t common_hal_epaperdisplay_epaperdisplay_get_root_group(epaperdisplay_epaperdisplay_obj_t *self);

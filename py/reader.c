@@ -31,6 +31,10 @@
 #include "py/mperrno.h"
 #include "py/mpthread.h"
 #include "py/reader.h"
+// CIRCUITPY-CHANGE
+#if CIRCUITPY_STORAGE_MAP_IMPORT
+#include "shared-bindings/storage/__init__.h"
+#endif
 
 typedef struct _mp_reader_mem_t {
     size_t free_len; // if >0 mem is freed on close by: m_free(beg, free_len)
@@ -68,6 +72,12 @@ void mp_reader_new_mem(mp_reader_t *reader, const byte *buf, size_t len, size_t 
 }
 
 const uint8_t *mp_reader_try_read_rom(mp_reader_t *reader, size_t len) {
+    // CIRCUITPY-CHANGE: a CIRCUITPY .mpy read from its flash runs
+    #if CIRCUITPY_STORAGE_MAP_IMPORT
+    if (reader->readbyte == storage_map_reader_readbyte) {
+        return storage_map_reader_try_read_rom(reader->data, len);
+    }
+    #endif
     if (reader->readbyte != mp_reader_mem_readbyte) {
         return NULL;
     }

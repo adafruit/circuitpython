@@ -31,8 +31,6 @@
 
 #include "shared-bindings/displayio/TileGrid.h"
 
-#include <string.h>
-
 #include "py/gc.h"
 #include "py/objtype.h"
 #include "py/runtime.h"
@@ -168,8 +166,8 @@ static uint8_t _source_index(const uint8_t *row, uint32_t x, uint8_t bpp) {
     return (row[bit >> 3] >> (8 - bpp - (bit & 7))) & ((1u << bpp) - 1);
 }
 
-// Whether a tile holds only palette entry 0. A compose buffer is cleared to entry 0 (black or
-// transparent), so only such a cell can be left out of the compose draw entirely.
+// Whether a tile holds only palette entry 0. A compose buffer is cleared to zero, so when entry 0
+// matches that value, such a cell can be left out of the compose draw entirely.
 static bool _tile_is_blank(displayio_tilegrid_t *self, uint16_t tile_index) {
     const lv_image_dsc_t *src = self->lv_src;
     if (src == NULL || src->data == NULL) {
@@ -395,10 +393,16 @@ static bool _source_is_indexed(displayio_tilegrid_t *self) {
     return LV_COLOR_FORMAT_IS_INDEXED(_source_cf(self->bitmap, self->pixel_shader));
 }
 
+static bool _has_fractional_scale(displayio_tilegrid_t *self) {
+    return (self->lv_scale & (LV_SCALE_NONE - 1)) != 0;
+}
+
 // A single cell showing a direct color source is exactly the source pixels, so there is nothing
-// to compose and nothing to copy.
+// to compose and nothing to copy. Fractional scales use a composed image with one duplicated
+// bottom/right pixel, because LVGL's nearest-neighbor transform otherwise omits those edges.
 static bool _wants_direct(displayio_tilegrid_t *self) {
-    return self->width_in_tiles == 1 && self->height_in_tiles == 1 && !_source_is_indexed(self);
+    return self->width_in_tiles == 1 && self->height_in_tiles == 1 &&
+           !_source_is_indexed(self) && !_has_fractional_scale(self);
 }
 
 // Point the source descriptor at the whole bitmap. Caller holds the lock and has no source bound.
@@ -413,7 +417,7 @@ static bool _bind_source(displayio_tilegrid_t *self) {
         }
         // LVGL can't transform a partially decoded image, but a composed grid draws its cells
         // unscaled and scales the views of its own buffer instead.
-        self->lv_src_odb_full = self->lv_direct && self->lv_scale != 1;
+        self->lv_src_odb_full = self->lv_direct && self->lv_scale != LV_SCALE_NONE;
         self->lv_src = displayio_ondiskbitmap_lv_acquire(odb, self->lv_src_odb_full, self->lv_obj);
         self->lv_argb = _source_has_alpha(self, cf);
         return self->lv_src != NULL;
@@ -492,21 +496,22 @@ static void _set_lv_pos(displayio_tilegrid_t *self) {
     if (self->lv_obj == NULL) {
         return;
     }
-    _place(self->lv_obj, self->lv_origin_x + self->x * self->lv_scale,
-        self->lv_origin_y + self->y * self->lv_scale);
+    _place(self->lv_obj, self->lv_origin_x + displayio_lvgl_scale_coordinate(self->x, self->lv_scale),
+        self->lv_origin_y + displayio_lvgl_scale_coordinate(self->y, self->lv_scale));
 }
 
 // Scale a view from its top left corner. Moving a pivot makes LVGL lay out the whole screen, and
 // the pivot only matters once the view is scaled.
-static void _set_view_scale(lv_obj_t *img, uint16_t scale) {
-    if (scale != 1) {
+static void _set_view_scale(lv_obj_t *img, uint32_t scale) {
+    if (scale != LV_SCALE_NONE) {
         lv_image_set_pivot(img, 0, 0);
     }
-    lv_image_set_scale(img, (int32_t)scale * LV_SCALE_NONE);
+    lv_image_set_antialias(img, false);
+    lv_image_set_scale(img, scale);
 }
 
-// Create one view: an lv_image that shows one window of the composed buffer, scaled about its top
-// left corner like the legacy compositor's whole-pixel scaling.
+// Create one view: an lv_image that shows one window of the composed buffer,
+// scaled about its top left corner.
 static lv_obj_t *_create_view(displayio_tilegrid_t *self, lv_obj_t *parent) {
     lv_obj_t *img = lv_image_create(parent);
     if (img == NULL) {
@@ -515,7 +520,6 @@ static lv_obj_t *_create_view(displayio_tilegrid_t *self, lv_obj_t *parent) {
     lv_obj_clear_flag(img, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_clear_flag(img, LV_OBJ_FLAG_SCROLLABLE);
     lv_image_set_inner_align(img, LV_IMAGE_ALIGN_TOP_LEFT);
-    lv_image_set_antialias(img, false);
     _set_view_scale(img, self->lv_scale);
     return img;
 }
@@ -552,8 +556,8 @@ static bool _create_objects(displayio_tilegrid_t *self, lv_obj_t *parent) {
     lv_obj_add_flag(container, LV_OBJ_FLAG_OVERFLOW_VISIBLE);
     lv_obj_clear_flag(container, LV_OBJ_FLAG_CLICKABLE);
     lv_obj_clear_flag(container, LV_OBJ_FLAG_SCROLLABLE);
-    lv_obj_set_size(container, self->pixel_width * self->lv_scale,
-        self->pixel_height * self->lv_scale);
+    lv_obj_set_size(container, displayio_lvgl_scale_coordinate(self->pixel_width, self->lv_scale),
+        displayio_lvgl_scale_coordinate(self->pixel_height, self->lv_scale));
     self->lv_obj = container;
     return _ensure_canvas(self);
 }
@@ -580,8 +584,11 @@ static void _destroy_objects(displayio_tilegrid_t *self) {
 // --- The composed buffer ---------------------------------------------------
 
 static bool _ensure_buffer(displayio_tilegrid_t *self) {
-    uint32_t w = self->pixel_width;
-    uint32_t h = self->pixel_height;
+    // Fractional transforms otherwise omit the outermost source pixels. Reserve one extra
+    // right column and bottom row; composition duplicates the edges into them so LVGL's
+    // center-based sampling covers the whole scaled image.
+    uint32_t w = self->pixel_width + (_has_fractional_scale(self) ? 1 : 0);
+    uint32_t h = self->pixel_height + (_has_fractional_scale(self) ? 1 : 0);
     if (w == 0 || h == 0 || self->lv_obj == NULL) {
         return false;
     }
@@ -667,10 +674,10 @@ static void _layout_views(displayio_tilegrid_t *self) {
         _tile_origin(self, _tile_index(self, 0), &x0, &y0);
         lv_image_set_src(self->lv_views[0],
             self->lv_src != NULL && self->lv_src->data != NULL ? self->lv_src : NULL);
-        lv_image_set_offset_x(self->lv_views[0], -(int32_t)x0 * self->lv_scale);
-        lv_image_set_offset_y(self->lv_views[0], -(int32_t)y0 * self->lv_scale);
-        lv_obj_set_size(self->lv_views[0], self->tile_width * self->lv_scale,
-            self->tile_height * self->lv_scale);
+        lv_image_set_offset_x(self->lv_views[0], -displayio_lvgl_scale_coordinate(x0, self->lv_scale));
+        lv_image_set_offset_y(self->lv_views[0], -displayio_lvgl_scale_coordinate(y0, self->lv_scale));
+        lv_obj_set_size(self->lv_views[0], displayio_lvgl_scale_coordinate(self->tile_width, self->lv_scale),
+            displayio_lvgl_scale_coordinate(self->tile_height, self->lv_scale));
         lv_obj_clear_flag(self->lv_views[0], LV_OBJ_FLAG_HIDDEN);
         _place(self->lv_views[0], 0, 0);
         for (uint8_t i = 1; i < DISPLAYIO_LVGL_TILEGRID_VIEWS; i++) {
@@ -709,24 +716,34 @@ static void _layout_views(displayio_tilegrid_t *self) {
             lv_memzero(dsc, sizeof(*dsc));
             dsc->header.magic = LV_IMAGE_HEADER_MAGIC;
             dsc->header.cf = cf;
-            dsc->header.w = cols[c].len;
-            dsc->header.h = rows[r].len;
+            uint32_t src_w = cols[c].len;
+            uint32_t src_h = rows[r].len;
+            if (_has_fractional_scale(self)) {
+                // Only the run touching the composed image's bottom/right owns
+                // the duplicated padding pixels.
+                src_w += cols[c].src + cols[c].len == grid_w;
+                src_h += rows[r].src + rows[r].len == grid_h;
+            }
+            dsc->header.w = src_w;
+            dsc->header.h = src_h;
             dsc->header.stride = stride;
             dsc->data = self->lv_buf->data + rows[r].src * stride +
                 cols[c].src * bytes_per_pixel;
-            dsc->data_size = stride * rows[r].len;
+            dsc->data_size = stride * src_h;
             lv_obj_t *img = self->lv_views[view];
             lv_image_set_src(img, dsc);
             lv_image_set_offset_x(img, 0);
             lv_image_set_offset_y(img, 0);
-            lv_obj_set_size(img, cols[c].len * self->lv_scale, rows[r].len * self->lv_scale);
+            lv_obj_set_size(img, displayio_lvgl_scale_coordinate(cols[c].len, self->lv_scale),
+                displayio_lvgl_scale_coordinate(rows[r].len, self->lv_scale));
             lv_obj_clear_flag(img, LV_OBJ_FLAG_HIDDEN);
-            _place(img, cols[c].dst * self->lv_scale, rows[r].dst * self->lv_scale);
+            _place(img, displayio_lvgl_scale_coordinate(cols[c].dst, self->lv_scale),
+                displayio_lvgl_scale_coordinate(rows[r].dst, self->lv_scale));
             DISPLAYIO_TILEGRID_DEBUG(
                 "views %p view %d buf %p cf %d %dx%d stride %lu data %p at (%d,%d)",
                 self, view, self->lv_buf->data, (int)cf, cols[c].len, rows[r].len,
-                (unsigned long)stride, (void *)dsc->data, (int)(cols[c].dst * self->lv_scale),
-                (int)(rows[r].dst * self->lv_scale));
+                (unsigned long)stride, (void *)dsc->data, (int)displayio_lvgl_scale_coordinate(cols[c].dst, self->lv_scale),
+                (int)displayio_lvgl_scale_coordinate(rows[r].dst, self->lv_scale));
             view++;
         }
     }
@@ -760,6 +777,30 @@ static void _union_area(lv_area_t *area, const lv_area_t *other) {
     if (other->y2 > area->y2) {
         area->y2 = other->y2;
     }
+}
+
+// LVGL's nearest-neighbor extent is based on the outer source-pixel centers.
+// Duplicate the final source row and column into one pixel of padding so the
+// real edges are sampled at fractional scales. This is one pixel per composed
+// TileGrid, not per atlas tile.
+static void _duplicate_fractional_edges(displayio_tilegrid_t *self, lv_area_t *dirty) {
+    if (!_has_fractional_scale(self)) {
+        return;
+    }
+    uint32_t w = self->pixel_width;
+    uint32_t h = self->pixel_height;
+    uint32_t bpp = lv_color_format_get_size(self->lv_buf->header.cf);
+    uint32_t stride = self->lv_buf->header.stride;
+    uint8_t *data = self->lv_buf->data;
+    for (uint32_t y = 0; y < h; y++) {
+        memcpy(data + y * stride + w * bpp, data + y * stride + (w - 1) * bpp, bpp);
+    }
+    memcpy(data + h * stride, data + (h - 1) * stride, (w + 1) * bpp);
+
+    lv_area_t right = {(int32_t)w, 0, (int32_t)w, (int32_t)h};
+    lv_area_t bottom = {0, (int32_t)h, (int32_t)w, (int32_t)h};
+    _union_area(dirty, &right);
+    _union_area(dirty, &bottom);
 }
 
 // Cells whose tile overlaps the changed source rect need composing. This is the inverse of the
@@ -812,62 +853,45 @@ static void _cell_display_area(displayio_tilegrid_t *self, uint32_t x, uint32_t 
     if (py < 0) {
         py += grid_h;
     }
-    area->x1 = px * self->lv_scale;
-    area->y1 = py * self->lv_scale;
-    area->x2 = area->x1 + self->tile_width * self->lv_scale - 1;
-    area->y2 = area->y1 + self->tile_height * self->lv_scale - 1;
+    area->x1 = displayio_lvgl_scale_coordinate(px, self->lv_scale);
+    area->y1 = displayio_lvgl_scale_coordinate(py, self->lv_scale);
+    area->x2 = displayio_lvgl_scale_coordinate(px + self->tile_width, self->lv_scale) - 1;
+    area->y2 = displayio_lvgl_scale_coordinate(py + self->tile_height, self->lv_scale) - 1;
 }
 
 // The most cells a compose pass queues before drawing them. LVGL walks the whole task list to add
 // or dispatch each task, so drawing a long queue at once takes time with the square of its length.
 #define DISPLAYIO_LVGL_COMPOSE_BATCH 64
 
-// Fast compose for the common case: an indexed source (I1/I2/I4/I8) with a palette. Each
-// cell is a straight palette lookup into the buffer, which is what lv_draw_image() of the cell
-// onto a cleared buffer produces, without a draw task per cell. LVGL's per-task cost is tens of
-// microseconds, which a 1500-cell text grid turns into 100+ ms per refresh.
-typedef struct {
-    bool ok;
-    bool argb;
-    uint8_t bpp;
-    uint32_t lut32[256];
-    uint16_t lut16[256];
-} _fast_compose_t;
-
-static void _fast_compose_init(displayio_tilegrid_t *self, _fast_compose_t *fc) {
-    fc->ok = false;
-    const lv_image_dsc_t *src = self->lv_src;
-    if (src != &self->lv_src_dsc || src == NULL || src->data == NULL || src->palette == NULL ||
-        !LV_COLOR_FORMAT_IS_INDEXED(src->header.cf)) {
+// Zero the cells about to be composed: transparent for ARGB8888, black for RGB565.
+// lv_draw_image() leaves transparent source pixels untouched, so they keep the cleared value.
+// A full compose clears the whole buffer; otherwise each run of changed cells in a tile row is
+// cleared with one lv_draw_buf_clear().
+static void _clear_changed_cells(displayio_tilegrid_t *self, bool full) {
+    if (full) {
+        lv_draw_buf_clear(self->lv_buf, NULL);
         return;
     }
-    lv_color_format_t dcf = self->lv_buf->header.cf;
-    if (dcf != LV_COLOR_FORMAT_ARGB8888 && dcf != LV_COLOR_FORMAT_RGB565) {
-        return;
-    }
-    fc->bpp = lv_color_format_get_bpp(src->header.cf);
-    if (fc->bpp != 1 && fc->bpp != 2 && fc->bpp != 4 && fc->bpp != 8) {
-        return;
-    }
-    fc->argb = dcf == LV_COLOR_FORMAT_ARGB8888;
-    uint32_t n = 1u << fc->bpp;
-    for (uint32_t i = 0; i < n; i++) {
-        lv_color32_t c = src->palette[i];
-        if (fc->argb) {
-            memcpy(&fc->lut32[i], &c, sizeof(uint32_t));
-        } else {
-            fc->lut16[i] = lv_color_to_u16(lv_color_make(c.red, c.green, c.blue));
+    uint32_t tiles_w = self->width_in_tiles;
+    for (uint32_t cy = 0; cy < self->height_in_tiles; cy++) {
+        uint32_t cx = 0;
+        while (cx < tiles_w) {
+            if (!_cell_is_marked(self, cy * tiles_w + cx)) {
+                cx++;
+                continue;
+            }
+            uint32_t first = cx;
+            while (cx < tiles_w && _cell_is_marked(self, cy * tiles_w + cx)) {
+                cx++;
+            }
+            lv_area_t run = {
+                .x1 = first * self->tile_width,
+                .y1 = cy * self->tile_height,
+                .x2 = cx * self->tile_width - 1,
+                .y2 = (cy + 1) * self->tile_height - 1,
+            };
+            lv_draw_buf_clear(self->lv_buf, &run);
         }
-    }
-    fc->ok = true;
-}
-
-// lv_draw_buf_clear() without its cache write-back: the ESP handler syncs whole buffer rows per
-// call, and _compose() writes back the union of the cells once at the end anyway.
-static void _clear_cell_area(lv_draw_buf_t *buf, const lv_area_t *a) {
-    uint32_t bytes = (lv_area_get_width(a) * lv_color_format_get_bpp(buf->header.cf) + 7) >> 3;
-    for (int32_t y = a->y1; y <= a->y2; y++) {
-        lv_memzero(lv_draw_buf_goto_xy(buf, a->x1, y), bytes);
     }
 }
 
@@ -907,44 +931,10 @@ static bool _compose(displayio_tilegrid_t *self, lv_area_t *dirty) {
     lv_area_t layer_clip = layer._clip_area;
     uint32_t queued = 0;
 
+    _clear_changed_cells(self, full);
+
     uint32_t cells = _cell_count(self);
     uint32_t tiles_w = self->width_in_tiles;
-    _fast_compose_t fc;
-    _fast_compose_init(self, &fc);
-    if (fc.ok) {
-        // Write the fast cells directly, one pixel line across every changed cell of a tile
-        // row at a time. The loop below then only does the bookkeeping for these cells.
-        const lv_image_dsc_t *src = self->lv_src;
-        for (uint32_t cy = 0; cy < self->height_in_tiles; cy++) {
-            for (uint16_t y = 0; y < self->tile_height; y++) {
-                uint8_t *line = lv_draw_buf_goto_xy(self->lv_buf, 0, cy * self->tile_height + y);
-                for (uint32_t cx = 0; cx < tiles_w; cx++) {
-                    uint32_t cell = cy * tiles_w + cx;
-                    if (!full && !_cell_is_marked(self, cell)) {
-                        continue;
-                    }
-                    uint16_t tile_index = _tile_index(self, cell);
-                    if (tile_index == DISPLAYIO_TILEGRID_BLANK_TILE) {
-                        continue;
-                    }
-                    uint16_t x0, y0;
-                    _tile_origin(self, tile_index, &x0, &y0);
-                    const uint8_t *row = src->data + (uint32_t)(y0 + y) * src->header.stride;
-                    if (fc.argb) {
-                        uint32_t *d = (uint32_t *)(void *)line + cx * self->tile_width;
-                        for (uint16_t x = 0; x < self->tile_width; x++) {
-                            d[x] = fc.lut32[_source_index(row, x0 + x, fc.bpp)];
-                        }
-                    } else {
-                        uint16_t *d = (uint16_t *)(void *)line + cx * self->tile_width;
-                        for (uint16_t x = 0; x < self->tile_width; x++) {
-                            d[x] = fc.lut16[_source_index(row, x0 + x, fc.bpp)];
-                        }
-                    }
-                }
-            }
-        }
-    }
     for (uint32_t cell = 0; cell < cells; cell++) {
         if (!full && !_cell_is_marked(self, cell)) {
             continue;
@@ -957,17 +947,6 @@ static bool _compose(displayio_tilegrid_t *self, lv_area_t *dirty) {
         };
         cell_area.x2 = cell_area.x1 + self->tile_width - 1;
         cell_area.y2 = cell_area.y1 + self->tile_height - 1;
-
-        // Start from transparent (ARGB8888) or black (RGB565): lv_draw_image() writes nothing
-        // where the source is transparent, which is exactly where the hole has to stay.
-        // ESP_LOGI(TAG, "clearing cell area %d,%d-%d,%d", cell_area.x1, cell_area.y1, cell_area.x2, cell_area.y2);
-        if (fc.ok && self->lv_src->data != NULL &&
-            _tile_index(self, cell) != DISPLAYIO_TILEGRID_BLANK_TILE) {
-            // pixels already written by the raster pass above
-            drawn_cell_area = cell_area;
-            goto cell_done;
-        }
-        _clear_cell_area(self->lv_buf, &cell_area);
 
         if (self->lv_src != NULL && self->lv_src->data != NULL) {
             uint16_t x0, y0;
@@ -1010,7 +989,6 @@ static bool _compose(displayio_tilegrid_t *self, lv_area_t *dirty) {
                 }
             }
         }
-    cell_done:
         _clear_cell(self, cell);
         lv_area_t cell_display;
         _cell_display_area(self, cx, cy, &cell_display);
@@ -1034,6 +1012,7 @@ static bool _compose(displayio_tilegrid_t *self, lv_area_t *dirty) {
 
     lv_canvas_finish_layer(self->lv_canvas, &layer);
     if (any) {
+        _duplicate_fractional_edges(self, &buf_dirty);
         // The compose pass may have run in software, so write those lines out before a DMA
         // consumer (the display flush, or the PPA on the display pass) reads the buffer.
         lv_draw_buf_flush_cache(self->lv_buf, &buf_dirty);
@@ -1228,8 +1207,8 @@ static bool _rebind(displayio_tilegrid_t *self) {
     // rebinding their bitmap. Keep the mirror geometry in sync too: resizing the canvas
     // or its views does not resize or move their container, and LVGL clips invalidation
     // to that container even when OVERFLOW_VISIBLE is set.
-    lv_obj_set_size(self->lv_obj, self->pixel_width * self->lv_scale,
-        self->pixel_height * self->lv_scale);
+    lv_obj_set_size(self->lv_obj, displayio_lvgl_scale_coordinate(self->pixel_width, self->lv_scale),
+        displayio_lvgl_scale_coordinate(self->pixel_height, self->lv_scale));
     _set_lv_pos(self);
     _mark_all(self);
     _mark_views(self);
@@ -1285,15 +1264,24 @@ void displayio_lvgl_tilegrid_update_scale(displayio_tilegrid_t *self) {
     }
     nlr_jump_callback_node_t cleanup;
     displayio_lvgl_lock_with_cleanup(&cleanup);
-    if (mp_obj_is_type(self->bitmap, &displayio_ondiskbitmap_type) && self->lv_direct &&
-        (self->lv_scale != 1) != self->lv_src_odb_full) {
+    bool was_direct = self->lv_direct;
+    if (was_direct != _wants_direct(self)) {
+        // Fractional direct images need the composed path's edge padding.
+        _unbind_source(self);
+        if (!was_direct && self->lv_buf != NULL) {
+            lv_draw_buf_destroy(self->lv_buf);
+            self->lv_buf = NULL;
+        }
+        _rebind(self);
+    } else if (mp_obj_is_type(self->bitmap, &displayio_ondiskbitmap_type) && self->lv_direct &&
+               (self->lv_scale != LV_SCALE_NONE) != self->lv_src_odb_full) {
         // Re-source: whether the file's rows can be streamed changed with the scale.
         _unbind_source(self);
         _bind_source(self);
     }
     if (!self->lv_direct) {
-        lv_obj_set_size(self->lv_obj, self->pixel_width * self->lv_scale,
-            self->pixel_height * self->lv_scale);
+        lv_obj_set_size(self->lv_obj, displayio_lvgl_scale_coordinate(self->pixel_width, self->lv_scale),
+            displayio_lvgl_scale_coordinate(self->pixel_height, self->lv_scale));
     }
     for (uint8_t i = 0; i < DISPLAYIO_LVGL_TILEGRID_VIEWS; i++) {
         if (self->lv_views[i] != NULL) {
@@ -1333,7 +1321,7 @@ static void _tilegrid_protocol_detach(mp_obj_t layer) {
 }
 
 static bool _tilegrid_protocol_set_transform(mp_obj_t layer, int32_t abs_x, int32_t abs_y,
-    uint16_t scale) {
+    uint32_t scale) {
     displayio_tilegrid_t *self = MP_OBJ_TO_PTR(layer);
     // A TileGrid has no position or scale of its own: it places itself from the parent
     // origin plus its own x/y, and renders at the scale of the parent chain.
@@ -1437,7 +1425,7 @@ void common_hal_displayio_tilegrid_construct(displayio_tilegrid_t *self, mp_obj_
     self->lv_view_count = 0;
     self->lv_next = NULL;
     self->lv_bitmap_next = NULL;
-    self->lv_scale = 1;
+    self->lv_scale = LV_SCALE_NONE;
     self->lv_origin_x = 0;
     self->lv_origin_y = 0;
     for (uint8_t i = 0; i < DISPLAYIO_LVGL_TILEGRID_VIEWS; i++) {
