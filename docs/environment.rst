@@ -127,6 +127,15 @@ Human-friendly name the board advertises over mDNS for the Web Workflow.
 Defaults to the human-readable board name if omitted.
 This is not the hostname.
 
+CIRCUITPY_WEB_DISPLAY_RATE_LIMIT (integer)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Most bytes per second sent to a viewer of the board's display (the ``/cp/display/``
+page or a VNC viewer). No limit when omitted or ``0``. A lower limit leaves more time
+for ``code.py`` while the display changes a lot, but the viewer catches up more slowly.
+Useful on boards whose network co-processor is reached over SPI (AirLift), where sending
+can hold up code that has to keep up with something else, such as USB or audio
+streaming; ``12800`` suits the Fruit Jam.
+
 CIRCUITPY_WEB_VNC_PORT (integer)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 TCP port number for VNC viewers to show the board's display, typically 5900.
