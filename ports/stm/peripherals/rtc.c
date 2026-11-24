@@ -55,10 +55,6 @@ bool peripherals_wkup_on = false;
 static void (*wkup_callback)(void);
 static void (*alarm_callbacks[2])(void);
 
-uint32_t stm32_peripherals_get_rtc_freq(void) {
-    return rtc_clock_frequency;
-}
-
 // Set the prescalers so that the calendar advances once per second of rtc_clock_frequency.
 static void rtc_set_prescalers(void) {
     // Divide async as little as possible so that the subsecond counter has the finest steps.
