@@ -1,6 +1,6 @@
 CIRCUITPY_BUILD_EXTENSIONS = ["hex"]
-# The ru build had only 8 bytes of flash left.
-DISABLED_MODULES = ["msgpack"]
+# The ru build ran out of flash. keypad_demux has no known users.
+DISABLED_MODULES = ["msgpack", "keypad_demux"]
 
 # QFN48 package pin numbers.
 [pins]

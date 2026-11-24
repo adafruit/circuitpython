@@ -11,7 +11,7 @@
 //
 // ADC: allocate additionally hands out a free LPADC command-channel slot (the
 // Zephyr channel_id indexes the CMD registers; the number is
-// CONFIG_LPADC_CHANNEL_COUNT). The hardware input comes from input_positive,
+// ADC_CMDL_COUNT). The hardware input comes from input_positive,
 // which Zephyr encodes as the channel number in bits 0..4 and the B-side mux
 // in bit 5 (the driver writes ADCH = input & 0x1f and picks the sample mode's
 // side from bit 5). The same channel slot is handed back at release; the
@@ -34,6 +34,8 @@
 #include <zephyr/device.h>
 #include <zephyr/logging/log.h>
 #include <zephyr/sys/util.h>
+
+#include <soc.h>
 
 #include "iobroker_internal.h"
 
@@ -178,7 +180,7 @@ static const struct device *const analog_adc_devices[2] = {
 static uint8_t analog_adc_channel_count(const struct device *dev) {
     (void)dev;
     // One command-channel slot per LPADC CMD register.
-    return CONFIG_LPADC_CHANNEL_COUNT;
+    return ADC_CMDL_COUNT;
 }
 
 #else

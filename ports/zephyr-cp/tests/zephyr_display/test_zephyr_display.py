@@ -246,6 +246,57 @@ def test_console_output_golden_mono_no_vtiled(pixel_format, request, circuitpyth
     )
 
 
+MONO_PARTIAL_UPDATE_CODE = """\
+import displayio
+import time
+import vectorio
+import zephyr_display
+
+displayio.release_displays()
+display = zephyr_display.Display(auto_refresh=False)
+palette = displayio.Palette(1)
+palette[0] = 0xFFFFFF
+square = vectorio.Rectangle(pixel_shader=palette, width=6, height=6, x=3, y=3)
+group = displayio.Group()
+group.append(square)
+display.root_group = group
+display.refresh()
+time.sleep(0.5)
+square.x = 11
+square.y = 13
+display.refresh()
+print("moved")
+while True:
+    time.sleep(1)
+"""
+
+
+@pytest.mark.circuitpy_drive({"code.py": MONO_PARTIAL_UPDATE_CODE})
+@pytest.mark.display(capture_times_ns=[4_000_000_000])
+@pytest.mark.duration(6)
+@pytest.mark.parametrize(
+    "vtiled",
+    [
+        pytest.param(True, marks=pytest.mark.display_mono_vtiled(True)),
+        pytest.param(False, marks=pytest.mark.display_mono_vtiled(False)),
+    ],
+)
+@pytest.mark.parametrize("pixel_format", MONO_NO_VTILED_FORMATS, indirect=True)
+def test_mono_partial_update_unaligned(pixel_format, vtiled, circuitpython):
+    """Check that moving a square off the 8 pixel grid redraws the whole square."""
+    circuitpython.wait_until_done()
+    assert "moved" in circuitpython.serial.all_output
+
+    image = Image.open(circuitpython.display_capture_paths()[0]).convert("L")
+    wrong_pixels = []
+    for y in range(24):
+        for x in range(24):
+            expected_white = 11 <= x < 17 and 13 <= y < 19
+            if (image.getpixel((x, y)) > 127) != expected_white:
+                wrong_pixels.append((x, y))
+    assert not wrong_pixels
+
+
 def _generate_gradient_bmp(width, height):
     """Generate a 24-bit BMP with HSL color gradient.
 
