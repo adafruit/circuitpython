@@ -239,6 +239,19 @@ static void _wake_refresh(displayio_tilegrid_t *self, int32_t cell) {
     lv_obj_invalidate_area(self->lv_obj, &area);
 }
 
+// Grid of one cell whose tile is the whole bitmap, drawn 1:1 with no flips: bitmap coordinates
+// are the grid's own coordinates, so a changed rectangle maps straight across. This covers both
+// direct grids and composed ones (an indexed bitmap behind a Palette).
+static bool _is_identity(displayio_tilegrid_t *self) {
+    if (self->width_in_tiles != 1 || self->height_in_tiles != 1 ||
+        self->lv_scale != LV_SCALE_NONE || self->flip_x || self->flip_y ||
+        self->transpose_xy || !mp_obj_is_type(self->bitmap, &displayio_bitmap_type)) {
+        return false;
+    }
+    displayio_bitmap_t *bitmap = MP_OBJ_TO_PTR(self->bitmap);
+    return self->tile_width == bitmap->width && self->tile_height == bitmap->height;
+}
+
 static void _mark_work(displayio_tilegrid_t *self) {
     if (self->lv_work) {
         return;
@@ -898,7 +911,9 @@ static void _clear_changed_cells(displayio_tilegrid_t *self, bool full) {
 // Compose every cell that changed into the buffer. Returns false when nothing was drawn so the
 // caller can skip the invalidation. `dirty` comes back as the union of the composed cells, in
 // container coordinates.
-static bool _compose(displayio_tilegrid_t *self, lv_area_t *dirty) {
+// clip, when not NULL, limits a partial compose of a single-cell identity grid to the pixels
+// that changed. It is in buffer coordinates and inside the cell.
+static bool _compose(displayio_tilegrid_t *self, const lv_area_t *clip, lv_area_t *dirty) {
     if (!self->lv_full_dirty && self->lv_dirty_count == 0) {
         return false;
     }
@@ -908,6 +923,9 @@ static bool _compose(displayio_tilegrid_t *self, lv_area_t *dirty) {
         return false;
     }
     bool full = self->lv_full_dirty;
+    if (full) {
+        clip = NULL;
+    }
     bool any = false;
     lv_area_t buf_dirty = {0, 0, -1, -1};
     lv_area_t drawn_cell_area = {0, 0, -1, -1};
@@ -916,7 +934,9 @@ static bool _compose(displayio_tilegrid_t *self, lv_area_t *dirty) {
     // holds entry 0's color (black in RGB565, transparent in ARGB8888). Tile index 0 isn't
     // necessarily blank (it is for the terminal's space glyph, but it's an ordinary tile in any
     // other atlas), so check the tile's pixels instead of assuming it.
-    bool skip_blank = self->lv_src == &self->lv_src_dsc && self->lv_src->palette != NULL &&
+    // A partial compose redraws its clip either way, so it doesn't need the tile scan.
+    bool skip_blank = clip == NULL &&
+        self->lv_src == &self->lv_src_dsc && self->lv_src->palette != NULL &&
         LV_COLOR_FORMAT_IS_INDEXED(self->lv_src->header.cf) &&
         (self->lv_argb ? self->lv_src->palette[0].alpha == 0 :
             (self->lv_src->palette[0].red | self->lv_src->palette[0].green |
@@ -931,9 +951,20 @@ static bool _compose(displayio_tilegrid_t *self, lv_area_t *dirty) {
     lv_area_t layer_clip = layer._clip_area;
     uint32_t queued = 0;
 
-    _clear_changed_cells(self, full);
-
     uint32_t cells = _cell_count(self);
+    // An opaque source drawn into the only cell rewrites every pixel of it, so clearing first
+    // is wasted work.
+    bool covers = cells == 1 && !self->lv_argb && self->lv_src != NULL &&
+        self->lv_src->data != NULL &&
+        !(skip_blank && _tile_index(self, 0) == DISPLAYIO_TILEGRID_BLANK_TILE);
+    if (!covers) {
+        if (clip != NULL) {
+            lv_draw_buf_clear(self->lv_buf, clip);
+        } else {
+            _clear_changed_cells(self, full);
+        }
+    }
+
     uint32_t tiles_w = self->width_in_tiles;
     for (uint32_t cell = 0; cell < cells; cell++) {
         if (!full && !_cell_is_marked(self, cell)) {
@@ -964,7 +995,7 @@ static bool _compose(displayio_tilegrid_t *self, lv_area_t *dirty) {
                 lv_draw_image_dsc_init(&dsc);
                 dsc.src = self->lv_src;
                 dsc.antialias = 0;
-                layer._clip_area = cell_area;
+                layer._clip_area = clip != NULL ? *clip : cell_area;
                 // The whole atlas is placed so that the tile's origin lands on the cell's corner;
                 // the clip above limits the draw to the cell.
                 int32_t dest_x = cell_area.x1 - (int32_t)x0;
@@ -992,6 +1023,11 @@ static bool _compose(displayio_tilegrid_t *self, lv_area_t *dirty) {
         _clear_cell(self, cell);
         lv_area_t cell_display;
         _cell_display_area(self, cx, cy, &cell_display);
+        if (clip != NULL) {
+            // Identity grid: buffer, cell and grid coordinates are the same.
+            cell_area = *clip;
+            cell_display = *clip;
+        }
         if (!any) {
             buf_dirty = cell_area;
             *dirty = cell_display;
@@ -1080,10 +1116,18 @@ static void _refresh(displayio_tilegrid_t *self) {
         if (changed && self->lv_src != NULL) {
             lv_image_cache_drop(self->lv_src);
         }
+        if (changed && _is_identity(self)) {
+            dirty.x1 = self->lv_src_x1;
+            dirty.y1 = self->lv_src_y1;
+            dirty.x2 = self->lv_src_x2 - 1;
+            dirty.y2 = self->lv_src_y2 - 1;
+        }
         self->lv_src_dirty = false;
         if (self->lv_views_dirty) {
             _layout_views(self);
         }
+        // Composed grids clear this in _compose(); direct grids have no compose pass.
+        self->lv_full_dirty = false;
     } else {
         if (!_ensure_buffer(self)) {
             // Out of memory (or a zero-sized grid): there is nothing to compose into. Keep the
@@ -1096,11 +1140,23 @@ static void _refresh(displayio_tilegrid_t *self) {
             DISPLAYIO_TILEGRID_DEBUG("refresh %p no buffer, backing off", self);
             return;
         }
+        // A bitmap write is the only pending change to a single-cell identity grid: recompose
+        // just the written pixels instead of the whole cell.
+        lv_area_t written;
+        bool partial = _is_identity(self) && self->lv_src_dirty && !self->lv_full_dirty &&
+            !self->lv_views_dirty && self->lv_dirty_count == 0;
+        if (partial) {
+            written.x1 = LV_MAX(self->lv_src_x1, 0);
+            written.y1 = LV_MAX(self->lv_src_y1, 0);
+            written.x2 = LV_MIN(self->lv_src_x2, (int32_t)self->tile_width) - 1;
+            written.y2 = LV_MIN(self->lv_src_y2, (int32_t)self->tile_height) - 1;
+            partial = written.x2 >= written.x1 && written.y2 >= written.y1;
+        }
         _sync_source(self);
         if (self->lv_views_dirty) {
             _layout_views(self);
         }
-        changed = _compose(self, &dirty);
+        changed = _compose(self, partial ? &written : NULL, &dirty);
     }
     lv_display_enable_invalidation(display, true);
 
@@ -1165,6 +1221,24 @@ void displayio_lvgl_tilegrid_bitmap_changed(displayio_bitmap_t *bitmap, int16_t 
             self->lv_src_x2 = x2;
             self->lv_src_y2 = y2;
             self->lv_src_dirty = true;
+        }
+        if (_is_identity(self) && !self->lv_full_dirty &&
+            lv_obj_get_display(self->lv_obj) != NULL) {
+            // Wake LVGL once per batch of writes, for the first written pixels instead of the
+            // whole grid. The refresh then invalidates everything written since (lv_src_*).
+            if (self->lv_work) {
+                continue;
+            }
+            lv_area_t area = { x1, y1, x2 - 1, y2 - 1 };
+            lv_area_t obj_coords;
+            lv_obj_get_coords(self->lv_obj, &obj_coords);
+            lv_area_move(&area, obj_coords.x1, obj_coords.y1);
+            // LVGL drops an invalidation it can't see, so only rely on a visible one.
+            if (lv_obj_area_is_visible(self->lv_obj, &area)) {
+                self->lv_work = true;
+                lv_obj_invalidate_area(self->lv_obj, &area);
+                continue;
+            }
         }
         _mark_work(self);
     }
