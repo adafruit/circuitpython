@@ -13,7 +13,6 @@
 #define PERIPHERALS_ALARM_A 0
 #define PERIPHERALS_ALARM_B 1
 
-uint32_t stm32_peripherals_get_rtc_freq(void);
 void stm32_peripherals_rtc_init(void);
 uint64_t stm32_peripherals_rtc_monotonic_ticks(uint8_t *subticks);
 
