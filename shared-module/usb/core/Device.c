@@ -119,7 +119,19 @@ void common_hal_usb_core_device_deinit(usb_core_device_obj_t *self) {
     size_t open_size = sizeof(self->open_endpoints);
     for (size_t i = 0; i < open_size; i++) {
         if (self->open_endpoints[i] != 0) {
-            tuh_edpt_close(self->device_address, self->open_endpoints[i]);
+            // The host controller has one endpoint entry per (address, endpoint), shared with
+            // TinyUSB's class drivers. If the keyboard workflow owns this interface again
+            // (attach_kernel_driver(), or never detached), its HID receive uses the same entry:
+            // closing it here (often in the finaliser when the VM ends) would leave the
+            // keyboard dead at the REPL until it's re-plugged.
+            #if CIRCUITPY_USB_KEYBOARD_WORKFLOW
+            bool keep = usb_keyboard_in_use(self->device_address, self->open_endpoint_interfaces[i]);
+            #else
+            bool keep = false;
+            #endif
+            if (!keep) {
+                tuh_edpt_close(self->device_address, self->open_endpoints[i]);
+            }
             self->open_endpoints[i] = 0;
         }
     }
@@ -489,8 +501,11 @@ static bool _open_endpoint(usb_core_device_obj_t *self, mp_int_t endpoint) {
     uint8_t const *p_desc = tu_desc_next(desc_cfg);
 
     // parse each interfaces
+    uint8_t interface = 0;
     while (p_desc < desc_end) {
-        if (TUSB_DESC_ENDPOINT == tu_desc_type(p_desc)) {
+        if (TUSB_DESC_INTERFACE == tu_desc_type(p_desc)) {
+            interface = ((tusb_desc_interface_t const *)p_desc)->bInterfaceNumber;
+        } else if (TUSB_DESC_ENDPOINT == tu_desc_type(p_desc)) {
             tusb_desc_endpoint_t const *desc_ep = (tusb_desc_endpoint_t const *)p_desc;
             if (desc_ep->bEndpointAddress == endpoint) {
                 break;
@@ -507,6 +522,7 @@ static bool _open_endpoint(usb_core_device_obj_t *self, mp_int_t endpoint) {
     bool open = tuh_edpt_open(self->device_address, desc_ep);
     if (open) {
         self->open_endpoints[first_free] = endpoint;
+        self->open_endpoint_interfaces[first_free] = interface;
     }
     return open;
 }
