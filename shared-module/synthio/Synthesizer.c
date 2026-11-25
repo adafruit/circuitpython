@@ -42,14 +42,16 @@ audioio_get_buffer_result_t synthio_synthesizer_get_buffer(synthio_synthesizer_o
     synthio_synth_synthesize(&self->synth, buffer, buffer_length, single_channel_output ? channel : 0);
 
     // free-running LFOs
-    mp_obj_iter_buf_t iter_buf;
-    mp_obj_t iterable = mp_getiter(self->blocks, &iter_buf);
-    mp_obj_t item;
-    while ((item = mp_iternext(iterable)) != MP_OBJ_STOP_ITERATION) {
-        if (!synthio_obj_is_block(item)) {
+    // Index the list directly: mp_iternext() checks the VM task's stack, and this may
+    // run on an audio fill task.
+    size_t len;
+    mp_obj_t *items;
+    mp_obj_list_get(self->blocks, &len, &items);
+    for (size_t i = 0; i < len; i++) {
+        if (!synthio_obj_is_block(items[i])) {
             continue;
         }
-        synthio_block_slot_t slot = { item };
+        synthio_block_slot_t slot = { items[i] };
         (void)synthio_block_slot_get(&slot);
     }
     return GET_BUFFER_MORE_DATA;
