@@ -259,7 +259,13 @@ void stm32_peripherals_rtc_set_time(timeutils_struct_time_t *tm) {
     time.Hours = tm->tm_hour;
     time.Minutes = tm->tm_min;
     time.Seconds = tm->tm_sec;
-    date.WeekDay = tm->tm_wday + 1;
+    // The calendar's weekday runs from 1 (Monday) to 7, and the HAL shifts it into the date
+    // register unmasked: a tm_wday of 7 would set a bit of the year. Store the date's own weekday
+    // instead, ignoring tm_wday as the other ports do.
+    timeutils_struct_time_t day;
+    timeutils_seconds_since_2000_to_struct_time(
+        timeutils_seconds_since_2000(tm->tm_year, tm->tm_mon, tm->tm_mday, 0, 0, 0), &day);
+    date.WeekDay = day.tm_wday + 1;
     date.Date = tm->tm_mday;
     date.Month = tm->tm_mon;
     date.Year = tm->tm_year - 2000;
