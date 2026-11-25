@@ -1,0 +1,36 @@
+# This file is part of the CircuitPython project: https://circuitpython.org
+# SPDX-FileCopyrightText: Copyright (c) 2026 Hassan Naeem
+# SPDX-License-Identifier: MIT
+
+USB_VID = 0x303A
+USB_PID = 0x8413
+USB_MANUFACTURER = "Waveshare"
+USB_PRODUCT = "ESP32-S3-Touch-AMOLED-1.75C"
+
+IDF_TARGET = esp32s3
+
+# 32MB quad flash
+CIRCUITPY_ESP_FLASH_SIZE = 32MB
+CIRCUITPY_ESP_FLASH_MODE = qio
+CIRCUITPY_ESP_FLASH_FREQ = 80m
+
+# 8MB octal PSRAM
+CIRCUITPY_ESP_PSRAM_SIZE = 8MB
+CIRCUITPY_ESP_PSRAM_MODE = opi
+CIRCUITPY_ESP_PSRAM_FREQ = 80m
+
+OPTIMIZATION_FLAGS = -Os
+
+# QSPI bus for the CO5300 AMOLED panel
+CIRCUITPY_QSPIBUS = 1
+CIRCUITPY_PARALLELDISPLAYBUS = 0
+
+CIRCUITPY_ESPCAMERA = 0
+
+# Touch is the CST9217 on I2C, not the ESP32-S3's capacitive pins
+CIRCUITPY_TOUCHIO = 0
+
+# No SD card slot on the 1.75C
+CIRCUITPY_SDIOIO = 0
+
+CIRCUITPY_DISPLAY_AREA_BUFFER_SIZE = 8192
