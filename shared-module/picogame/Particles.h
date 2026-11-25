@@ -25,7 +25,9 @@ typedef struct {
     uint16_t cap, count;
     int16_t gravity;      // 8.8, added to vy each tick
     uint8_t size;         // particle size in pixels
-    bool fade;            // dim each particle toward black as it ages
+    uint8_t stretch;      // 0 = a dot; N = N more copies back along the velocity (a speed streak)
+    bool fade;            // blend each particle toward fade_to as it ages
+    uint16_t fade_to;     // wire-order RGB565 the fade ends at (0 = black, the classic dim)
     // dirty bounding boxes (scene coords): previous frame and current frame.
     // int32 (not int16): positions are 24.8 in int32, so emitters past +-32767 px would truncate.
     int32_t cx1, cy1, cx2, cy2;
