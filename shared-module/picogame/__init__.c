@@ -88,10 +88,46 @@ static inline uint16_t picogame_mul565(uint16_t a, uint16_t b) {
     return (uint16_t)((o >> 8) | (o << 8));
 }
 
+// a + b per channel, saturating (wire-order RGB565): the destination lit by a glow pixel.
+static inline uint16_t picogame_add565(uint16_t a, uint16_t b) {
+    uint16_t ca = (uint16_t)((a >> 8) | (a << 8));
+    uint16_t cb = (uint16_t)((b >> 8) | (b << 8));
+    uint16_t r = (uint16_t)(((ca >> 11) & 0x1f) + ((cb >> 11) & 0x1f));
+    uint16_t g = (uint16_t)(((ca >> 5) & 0x3f) + ((cb >> 5) & 0x3f));
+    uint16_t bl = (uint16_t)((ca & 0x1f) + (cb & 0x1f));
+    if (r > 0x1f) {
+        r = 0x1f;
+    }
+    if (g > 0x3f) {
+        g = 0x3f;
+    }
+    if (bl > 0x1f) {
+        bl = 0x1f;
+    }
+    uint16_t o = (uint16_t)((r << 11) | (g << 5) | bl);
+    return (uint16_t)((o >> 8) | (o << 8));
+}
+
+// One copy, not one per blit path: picogame_fx_put is inlined into every blitter, and the add
+// with its multiply is the biggest case. A PAL8 sprite arrives with the colour baked into its
+// palette (colour = white).
+__attribute__((noinline)) static void picogame_fx_add_put(uint16_t *dst, uint16_t src, uint16_t color) {
+    if (color != 0xffff) {
+        src = picogame_mul565(src, color);
+    }
+    *dst = picogame_add565(*dst, src);
+}
+
 // Write one opaque source pixel through the effect. (x, y) are screen coords (for DITHER).
 static inline void picogame_fx_put(uint16_t *dst, uint16_t src, int x, int y, const picogame_fx_t *fx) {
     if (fx == NULL) {
         *dst = src;
+        return;
+    }
+    // ADD stays out of the switch: a sixth case turns every inlined copy of it into a jump table
+    // (measured +176 B of rodata over the five-way chain).
+    if (fx->mode == PICOGAME_FX_ADD) {
+        picogame_fx_add_put(dst, src, fx->color);
         return;
     }
     switch (fx->mode) {
@@ -743,6 +779,9 @@ static void blit_sprite(uint16_t *buf, int bw, int bh, int clip_x, int clip_y,
     } else if (spr->flags & PICOGAME_SPR_TINT) {
         fxm.mode = PICOGAME_FX_TINT;
         fxm.color = spr->flash_color;             // shared colour field (flash/tint exclusive)
+    } else if (spr->flags & PICOGAME_SPR_ADD) {
+        fxm.mode = PICOGAME_FX_ADD;
+        fxm.color = spr->flash_color;
     } else if (spr->flags & PICOGAME_SPR_SHADOW) {
         fxm.mode = PICOGAME_FX_SHADOW;
     }
@@ -751,18 +790,24 @@ static void blit_sprite(uint16_t *buf, int bw, int bh, int clip_x, int clip_y,
     // ONCE and blit plain, instead of picogame_mul565 per pixel (~4x on tinted PAL8 sprites; the
     // dominant sprite format). Small palettes only; larger ones keep the per-pixel tint. Transparency
     // is keyed on the INDEX before the palette lookup, so the (unused) tinted key entry is harmless.
+    // ADD bakes its colour the same way and then adds the palette as it is (colour = white).
     picogame_bitmap_obj_t *bmuse = spr->bitmap;
     picogame_bitmap_obj_t bmtint;
     uint16_t tpal[PICOGAME_TINT_PAL_CAP];
-    if (fxp != NULL && fxm.mode == PICOGAME_FX_TINT && bmuse != NULL &&
-        bmuse->format == PICOGAME_FMT_PAL8 && bmuse->pal_entries <= PICOGAME_TINT_PAL_CAP) {
+    if (fxp != NULL && (fxm.mode == PICOGAME_FX_TINT || fxm.mode == PICOGAME_FX_ADD) && bmuse != NULL &&
+        bmuse->format == PICOGAME_FMT_PAL8 && bmuse->pal_entries <= PICOGAME_TINT_PAL_CAP &&
+        fxm.color != 0xffff) {
         for (int i = 0; i < bmuse->pal_entries; i++) {
             tpal[i] = picogame_mul565(bmuse->palette[i], fxm.color);
         }
         bmtint = *bmuse;                          // shallow copy; override only the palette
         bmtint.palette = tpal;
         bmuse = &bmtint;
-        fxp = NULL;                               // tint now baked in -> plain (fast) blit
+        if (fxm.mode == PICOGAME_FX_TINT) {
+            fxp = NULL;                           // tint now baked in -> plain (fast) blit
+        } else {
+            fxm.color = 0xffff;                   // the add still runs per pixel, now without the multiply
+        }
     }
     if (spr->angle == 0 && spr->scale == 256) {
         int tx, ty;

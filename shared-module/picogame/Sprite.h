@@ -21,6 +21,7 @@ enum {
     PICOGAME_SPR_DITHER = 1 << 5,   // skip pixels via a Bayer pattern -> fake transparency
     PICOGAME_SPR_TINT = 1 << 6,     // multiply opaque pixels by a colour (keeps shading)
     PICOGAME_SPR_TRANSPOSE = 1 << 7, // swap x/y -> cheap 90deg (with flips = all 8 orientations)
+    PICOGAME_SPR_ADD = 1 << 8,      // add opaque pixels (times a colour) to the destination: light
 };
 
 typedef struct {
@@ -32,9 +33,9 @@ typedef struct {
     uint16_t anchor_y;    // pivot as a 1/256 fraction of height: 0=top, 128~=center, 256=bottom
     uint16_t scale;       // uniform draw scale, 8.8 fixed-point (256 = 1.0x); nearest-neighbour
     int16_t angle;        // rotation about the anchor, whole degrees (0 = axis-aligned fast path)
-    uint16_t flash_color; // FLASH mode: wire-order RGB565 that replaces opaque pixels
+    uint16_t flash_color; // FLASH mode: wire-order RGB565 that replaces opaque pixels (TINT/ADD: the colour)
+    uint16_t flags;
     uint8_t frame;
-    uint8_t flags;
     uint8_t seq;          // bumped by touch() to force a repaint after an in-place bitmap mutation
     uint8_t dither;       // DITHER mode: transparency level 0..16 (0=opaque, 16=invisible)
     // ---- affine transform cache (angle != 0 path). Filled lazily on first use, invalidated

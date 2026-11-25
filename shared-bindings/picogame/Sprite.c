@@ -95,7 +95,7 @@ static mp_obj_t picogame_sprite_make_new(const mp_obj_type_t *type, size_t n_arg
     return MP_OBJ_FROM_PTR(self);
 }
 
-static void set_flag(picogame_sprite_obj_t *self, uint8_t flag, bool on) {
+static void set_flag(picogame_sprite_obj_t *self, uint16_t flag, bool on) {
     if (on) {
         self->flags |= flag;
     } else {
@@ -106,12 +106,12 @@ static void set_flag(picogame_sprite_obj_t *self, uint8_t flag, bool on) {
 // shadow / flash / dither are mutually exclusive (one blit effect at a time); setting one ON
 // clears the others, so "the last effect you set wins". Turning one OFF clears ONLY its own flag,
 // so clearing an effect you never enabled (e.g. spr.flash = 0) can't wipe a different active one.
-#define PICOGAME_SPR_FX_MASK (PICOGAME_SPR_SHADOW | PICOGAME_SPR_FLASH | PICOGAME_SPR_DITHER | PICOGAME_SPR_TINT)
-static void set_effect(picogame_sprite_obj_t *self, uint8_t flag, bool on) {
+#define PICOGAME_SPR_FX_MASK (PICOGAME_SPR_SHADOW | PICOGAME_SPR_FLASH | PICOGAME_SPR_DITHER | PICOGAME_SPR_TINT | PICOGAME_SPR_ADD)
+static void set_effect(picogame_sprite_obj_t *self, uint16_t flag, bool on) {
     if (on) {
-        self->flags = (uint8_t)((self->flags & ~PICOGAME_SPR_FX_MASK) | flag);
+        self->flags = (uint16_t)((self->flags & ~PICOGAME_SPR_FX_MASK) | flag);
     } else {
-        self->flags &= (uint8_t) ~flag;
+        self->flags &= (uint16_t) ~flag;
     }
 }
 
@@ -384,6 +384,31 @@ static mp_obj_t sprite_set_tint(mp_obj_t self_in, mp_obj_t v) {
 static MP_DEFINE_CONST_FUN_OBJ_2(sprite_set_tint_obj, sprite_set_tint);
 MP_PROPERTY_GETSET(sprite_tint_obj, (mp_obj_t)&sprite_get_tint_obj, (mp_obj_t)&sprite_set_tint_obj);
 
+//|     add: int
+//|     """Add opaque pixels to what is under them, multiplied by a color from
+//|     :py:func:`rgb565`, saturating per channel: the sprite is light. A white soft disc
+//|     bitmap becomes a torch glow, a muzzle flash or a pool of light on the floor,
+//|     in any color, drawn after the layers it lights. ``0`` disables, so pure black
+//|     cannot be the color (it would add nothing anyway). Mutually exclusive with
+//|     `shadow`, `flash`, `dither` and `tint`."""
+static mp_obj_t sprite_get_add(mp_obj_t self_in) {
+    picogame_sprite_obj_t *s = MP_OBJ_TO_PTR(self_in);
+    return MP_OBJ_NEW_SMALL_INT((s->flags & PICOGAME_SPR_ADD) ? s->flash_color : 0);
+}
+static MP_DEFINE_CONST_FUN_OBJ_1(sprite_get_add_obj, sprite_get_add);
+static mp_obj_t sprite_set_add(mp_obj_t self_in, mp_obj_t v) {
+    picogame_sprite_obj_t *s = MP_OBJ_TO_PTR(self_in);
+    if (!mp_obj_is_true(v)) {
+        set_effect(s, PICOGAME_SPR_ADD, false);
+    } else {
+        s->flash_color = (uint16_t)mp_obj_get_int(v);   // shared colour field with flash/tint
+        set_effect(s, PICOGAME_SPR_ADD, true);
+    }
+    return mp_const_none;
+}
+static MP_DEFINE_CONST_FUN_OBJ_2(sprite_set_add_obj, sprite_set_add);
+MP_PROPERTY_GETSET(sprite_add_obj, (mp_obj_t)&sprite_get_add_obj, (mp_obj_t)&sprite_set_add_obj);
+
 //|     transpose: bool
 //|     """Transpose the frame by swapping its x and y axes. Combined with `flip_x`
 //|     and `flip_y` this yields all 8 orthogonal orientations. Applies only at
@@ -595,6 +620,7 @@ static const mp_rom_map_elem_t picogame_sprite_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_flash), MP_ROM_PTR(&sprite_flash_obj) },
     { MP_ROM_QSTR(MP_QSTR_dither), MP_ROM_PTR(&sprite_dither_obj) },
     { MP_ROM_QSTR(MP_QSTR_tint), MP_ROM_PTR(&sprite_tint_obj) },
+    { MP_ROM_QSTR(MP_QSTR_add), MP_ROM_PTR(&sprite_add_obj) },
     { MP_ROM_QSTR(MP_QSTR_transpose), MP_ROM_PTR(&sprite_transpose_obj) },
     { MP_ROM_QSTR(MP_QSTR_data), MP_ROM_PTR(&sprite_data_obj) },
     { MP_ROM_QSTR(MP_QSTR_bitmap), MP_ROM_PTR(&sprite_bitmap_obj) },

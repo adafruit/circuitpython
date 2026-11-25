@@ -147,10 +147,11 @@ void picogame_sprite_aabb(const picogame_sprite_obj_t *s, int *x1, int *y1, int 
 // pointer means "no effect" (the fast path). SHADOW darkens the destination, FLASH
 // replaces opaque pixels with `color`, DITHER skips pixels via a Bayer pattern (0..16
 // transparency) for fake translucency without alpha.
-enum { PICOGAME_FX_NONE = 0, PICOGAME_FX_SHADOW, PICOGAME_FX_FLASH, PICOGAME_FX_DITHER, PICOGAME_FX_TINT };
+// ADD adds the pixel (times `color`) to the destination with per-channel saturation: light.
+enum { PICOGAME_FX_NONE = 0, PICOGAME_FX_SHADOW, PICOGAME_FX_FLASH, PICOGAME_FX_DITHER, PICOGAME_FX_TINT, PICOGAME_FX_ADD };
 typedef struct {
     uint8_t mode;
-    uint16_t color;       // FLASH: solid colour to write; TINT: colour to multiply by (wire RGB565)
+    uint16_t color;       // FLASH: solid colour to write; TINT/ADD: colour to multiply by (wire RGB565)
     uint8_t level;        // DITHER: 0..16 transparency (higher = more pixels skipped)
 } picogame_fx_t;
 
