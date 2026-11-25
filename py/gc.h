@@ -84,6 +84,13 @@ enum {
     #endif
 };
 
+// CIRCUITPY-CHANGE
+#if MICROPY_GC_INTERNAL_AREAS
+// Between the two, allocations come from internal RAM or fail. Calls can nest.
+void gc_internal_memory_enter(void);
+void gc_internal_memory_exit(void);
+#endif
+
 void *gc_alloc(size_t n_bytes, unsigned int alloc_flags);
 void gc_free(void *ptr); // does not call finaliser
 size_t gc_nbytes(const void *ptr);

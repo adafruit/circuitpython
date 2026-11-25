@@ -291,6 +291,10 @@ static void gc_setup_area(mp_state_mem_area_t *area, void *start, void *end) {
 
     area->gc_last_free_atb_index = 0;
     area->gc_last_used_block = 0;
+    // CIRCUITPY-CHANGE
+    #if MICROPY_GC_INTERNAL_AREAS
+    area->internal_only = false;
+    #endif
 
     #if MICROPY_GC_SPLIT_HEAP
     area->next = NULL;
@@ -352,6 +356,12 @@ void gc_init(void *start, void *end) {
 
     // allow auto collection
     MP_STATE_MEM(gc_auto_collect_enabled) = 1;
+
+    // CIRCUITPY-CHANGE
+    #if MICROPY_GC_INTERNAL_AREAS
+    MP_STATE_MEM(gc_internal_depth) = 0;
+    MP_STATE_MEM(gc_internal_added) = 0;
+    #endif
 
     #if MICROPY_GC_ALLOC_THRESHOLD
     // by default, maxuint for gc threshold, effectively turning gc-by-threshold off
@@ -614,6 +624,10 @@ static mp_state_mem_area_t *gc_get_ptr_area(const void *ptr) {
 
 void gc_collect_start(void) {
     gc_collect_start_common();
+    // CIRCUITPY-CHANGE
+    #if MICROPY_GC_INTERNAL_AREAS
+    MP_STATE_MEM(gc_internal_added) = 0;
+    #endif
     #if MICROPY_GC_ALLOC_THRESHOLD
     MP_STATE_MEM(gc_alloc_amount) = 0;
     #endif
@@ -1075,6 +1089,36 @@ bool gc_alloc_possible(void) {
     return MP_STATE_MEM(area).gc_pool_start != 0;
 }
 
+// CIRCUITPY-CHANGE: allocations that ask for internal RAM
+#if MICROPY_GC_INTERNAL_AREAS
+void gc_internal_memory_enter(void) {
+    MP_STATE_MEM(gc_internal_depth)++;
+}
+
+void gc_internal_memory_exit(void) {
+    if (MP_STATE_MEM(gc_internal_depth) > 0) {
+        MP_STATE_MEM(gc_internal_depth)--;
+    }
+}
+
+static bool gc_area_is_internal(const mp_state_mem_area_t *area) {
+    return MP_PLAT_PTR_IS_INTERNAL(area->gc_pool_start);
+}
+
+// Adds an area in internal RAM, just big enough for the allocation. An area goes back to the
+// port only when it is empty, so one that held several buffers would stay for the last of them.
+static bool gc_try_add_internal_area(size_t failed_alloc) {
+    size_t to_alloc = compute_heap_size((failed_alloc + BYTES_PER_BLOCK - 1) / BYTES_PER_BLOCK);
+    mp_state_mem_area_t *new_heap = MP_PLAT_ALLOC_HEAP_INTERNAL(to_alloc);
+    if (new_heap == NULL) {
+        return false;
+    }
+    gc_add(new_heap, (byte *)new_heap + to_alloc);
+    new_heap->internal_only = true;
+    return true;
+}
+#endif
+
 void *gc_alloc(size_t n_bytes, unsigned int alloc_flags) {
     bool has_finaliser = alloc_flags & GC_ALLOC_FLAG_HAS_FINALISER;
     size_t n_blocks = ((n_bytes + BYTES_PER_BLOCK - 1) & (~(BYTES_PER_BLOCK - 1))) / BYTES_PER_BLOCK;
@@ -1101,6 +1145,14 @@ void *gc_alloc(size_t n_bytes, unsigned int alloc_flags) {
     #if MICROPY_GC_SPLIT_HEAP_AUTO
     bool added = false;
     #endif
+    // CIRCUITPY-CHANGE
+    #if MICROPY_GC_INTERNAL_AREAS
+    // Where the heap itself is in internal RAM there is nothing to do differently.
+    // Only buffers go there. Small things made along the way, a dict that grows or an exception,
+    // would outlive the block and keep a whole area of internal RAM.
+    bool want_internal = MP_STATE_MEM(gc_internal_depth) > 0 && n_bytes >= MICROPY_GC_INTERNAL_MIN_BYTES &&
+        !gc_area_is_internal(&MP_STATE_MEM(area));
+    #endif
 
     #if MICROPY_GC_ALLOC_THRESHOLD
     if (!collected && MP_STATE_MEM(gc_alloc_amount) >= MP_STATE_MEM(gc_alloc_threshold)) {
@@ -1123,9 +1175,22 @@ void *gc_alloc(size_t n_bytes, unsigned int alloc_flags) {
         if (area == 0) {
             reset_into_safe_mode(SAFE_MODE_GC_ALLOC_OUTSIDE_VM);
         }
+        // CIRCUITPY-CHANGE
+        #if MICROPY_GC_INTERNAL_AREAS
+        if (want_internal) {
+            // gc_last_free_area is about the areas ordinary allocations use.
+            area = &MP_STATE_MEM(area);
+        }
+        #endif
 
         // look for a run of n_blocks available blocks
         for (; area != NULL; area = NEXT_AREA(area), i = 0) {
+            // CIRCUITPY-CHANGE
+            #if MICROPY_GC_INTERNAL_AREAS
+            if (want_internal ? !gc_area_is_internal(area) : area->internal_only) {
+                continue;
+            }
+            #endif
             n_free = 0;
             for (i = area->gc_last_free_atb_index; i < area->gc_alloc_table_byte_len; i++) {
                 MICROPY_GC_HOOK_LOOP(i);
@@ -1150,9 +1215,25 @@ void *gc_alloc(size_t n_bytes, unsigned int alloc_flags) {
 
         GC_EXIT();
         // nothing found!
+        // CIRCUITPY-CHANGE: internal RAM is added without collecting first, up to a limit
+        // between two collections. A collection for every buffer would cost too much, and
+        // without the limit garbage would hold internal RAM until it ran out.
+        #if MICROPY_GC_INTERNAL_AREAS
+        if (want_internal && !collected &&
+            MP_STATE_MEM(gc_internal_added) + n_bytes <= MICROPY_GC_INTERNAL_ADD_LIMIT &&
+            gc_try_add_internal_area(n_bytes)) {
+            MP_STATE_MEM(gc_internal_added) += n_bytes;
+            continue;
+        }
+        #endif
         if (collected) {
             #if MICROPY_GC_SPLIT_HEAP_AUTO
+            // CIRCUITPY-CHANGE
+            #if MICROPY_GC_INTERNAL_AREAS
+            if (!added && (want_internal ? gc_try_add_internal_area(n_bytes) : gc_try_add_heap(n_bytes))) {
+            #else
             if (!added && gc_try_add_heap(n_bytes)) {
+                #endif
                 added = true;
                 continue;
             }
@@ -1183,6 +1264,10 @@ found:
     // if this index needs adjusting (see gc_realloc and gc_free).
     if (n_free == 1) {
         #if MICROPY_GC_SPLIT_HEAP
+        // CIRCUITPY-CHANGE: an allocation in internal RAM passes over areas with free blocks
+        #if MICROPY_GC_INTERNAL_AREAS
+        if (!want_internal)
+        #endif
         MP_STATE_MEM(gc_last_free_area) = area;
         #endif
         area->gc_last_free_atb_index = (i + 1) / BLOCKS_PER_ATB;

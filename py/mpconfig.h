@@ -815,6 +815,24 @@ typedef uint64_t mp_uint_t;
 #define MICROPY_GC_SPLIT_HEAP_AUTO (0)
 #endif
 
+// CIRCUITPY-CHANGE: whether allocations can ask for internal RAM, which the heap then keeps in
+// areas of its own. Needs MICROPY_GC_SPLIT_HEAP_AUTO, MP_PLAT_ALLOC_HEAP_INTERNAL and
+// MP_PLAT_PTR_IS_INTERNAL.
+#ifndef MICROPY_GC_INTERNAL_AREAS
+#define MICROPY_GC_INTERNAL_AREAS (0)
+#endif
+
+// CIRCUITPY-CHANGE: the smallest allocation that is placed in internal RAM when asked for
+#ifndef MICROPY_GC_INTERNAL_MIN_BYTES
+#define MICROPY_GC_INTERNAL_MIN_BYTES (1024)
+#endif
+
+// CIRCUITPY-CHANGE: how much internal RAM the heap may add between two collections without
+// collecting first
+#ifndef MICROPY_GC_INTERNAL_ADD_LIMIT
+#define MICROPY_GC_INTERNAL_ADD_LIMIT (32768)
+#endif
+
 // Hook to run code during time consuming garbage collector operations
 // *i* is the loop index variable (e.g. can be used to run every x loops)
 #ifndef MICROPY_GC_HOOK_LOOP

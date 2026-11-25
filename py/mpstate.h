@@ -133,6 +133,11 @@ typedef struct _mp_state_mem_area_t {
 
     size_t gc_last_free_atb_index;
     size_t gc_last_used_block; // The block ID of the highest block allocated in the area
+    // CIRCUITPY-CHANGE
+    #if MICROPY_GC_INTERNAL_AREAS
+    // An area added for allocations that asked for internal RAM. The others skip it.
+    bool internal_only;
+    #endif
 } mp_state_mem_area_t;
 
 // This structure hold information about the memory allocation system.
@@ -168,6 +173,14 @@ typedef struct _mp_state_mem_t {
 
     #if MICROPY_GC_SPLIT_HEAP
     mp_state_mem_area_t *gc_last_free_area;
+    #endif
+
+    // CIRCUITPY-CHANGE
+    #if MICROPY_GC_INTERNAL_AREAS
+    // Above zero while allocations have to come from internal RAM.
+    uint16_t gc_internal_depth;
+    // Bytes of internal RAM added to the heap since the last collection.
+    size_t gc_internal_added;
     #endif
 
     #if MICROPY_PY_GC_COLLECT_RETVAL
