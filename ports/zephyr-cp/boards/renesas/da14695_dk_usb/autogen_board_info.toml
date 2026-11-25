@@ -89,6 +89,7 @@ onewireio = false
 os = true
 paralleldisplaybus = false
 picogame = false
+picogame3d = false
 ps2io = false
 pulseio = false
 pwmio = false
