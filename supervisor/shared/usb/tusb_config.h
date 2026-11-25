@@ -189,7 +189,12 @@ extern "C" {
 #define _HOST_SPEED 0
 #endif
 
-#if CIRCUITPY_USB_HOST_INSTANCE == 0
+#if CIRCUITPY_USB_HOST_INSTANCE == 0 && CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_DEVICE_INSTANCE == 0
+// Device and host share controller 0 (ESP32-S2/S3). Build both stacks for it;
+// the supervisor starts only one of them at boot (see usb_mode_init()).
+#undef CFG_TUSB_RHPORT0_MODE
+#define CFG_TUSB_RHPORT0_MODE       (OPT_MODE_DEVICE | _DEVICE_SPEED | OPT_MODE_HOST | _HOST_SPEED)
+#elif CIRCUITPY_USB_HOST_INSTANCE == 0
 #define CFG_TUSB_RHPORT0_MODE       (OPT_MODE_HOST | _HOST_SPEED)
 #elif CIRCUITPY_USB_HOST_INSTANCE == 1
 #define CFG_TUSB_RHPORT1_MODE       (OPT_MODE_HOST | _HOST_SPEED)

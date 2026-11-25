@@ -530,6 +530,11 @@ CIRCUITPY_SDIOIO = 0
 
 CIRCUITPY_ESP_USB_SERIAL_JTAG ?= 0
 
+# One full-speed USB controller (TinyUSB rhport 0), shared by USB device and,
+# when CIRCUITPY_USB_HOST = 1, USB host. The role is picked at startup
+# (usb_host.Port in boot.py makes it a host, see supervisor/usb.h).
+CFLAGS += -DCIRCUITPY_USB_HOST_INSTANCE=0
+
 #### esp32s3 ##########################################################
 else ifeq ($(IDF_TARGET),esp32s3)
 
@@ -547,6 +552,11 @@ CIRCUITPY_AUDIOPWMIO ?= 1
 
 # PIE vector instructions for audiomixer.
 CIRCUITPY_AUDIOMIXER_USE_PORT_MIX ?= 1
+
+# One full-speed USB controller (TinyUSB rhport 0), shared by USB device and,
+# when CIRCUITPY_USB_HOST = 1, USB host. The role is picked at startup
+# (usb_host.Port in boot.py makes it a host, see supervisor/usb.h).
+CFLAGS += -DCIRCUITPY_USB_HOST_INSTANCE=0
 
 endif
 #### end chip-specific choices ########################################

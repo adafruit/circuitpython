@@ -23,6 +23,14 @@
 //|         reinitialize the USB host port. It will raise an exception when
 //|         given different arguments from the first successful call.
 //|
+//|         On chips with one USB controller for both device and host
+//|         (ESP32-S2 and ESP32-S3), the controller is a USB device unless
+//|         ``boot.py`` creates the port: creating it there makes the controller
+//|         a host until the next hard reset, so there is no CIRCUITPY drive and
+//|         no USB serial console; use the web workflow, BLE or a UART console
+//|         instead. After ``boot.py`` it raises `RuntimeError`. Safe mode does
+//|         not run ``boot.py``, so it always starts as a USB device.
+//|
 //|         :param ~microcontroller.Pin dp: The data plus pin
 //|         :param ~microcontroller.Pin dm: The data minus pin
 //|         """
