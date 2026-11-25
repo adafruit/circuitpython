@@ -157,7 +157,10 @@ void stm32_peripherals_rtc_init(void) {
 // register value. The STM HAL always does shifts and conversion if we use it directly.
 static uint64_t stm32_peripherals_rtc_raw_ticks(uint8_t *subticks) {
     // Disable IRQs to ensure we read all of the RTC registers as close in time as possible. Read
-    // SSR twice to make sure we didn't read across a tick.
+    // SSR twice to make sure we didn't read across a tick. The caller may have disabled them
+    // already (the HAL reads the time inside supervisor_disable_tick(), and on H7 and L4 inside
+    // supervisor_enable_tick() too), so restore their state afterwards instead of enabling them.
+    uint32_t primask = __get_PRIMASK();
     __disable_irq();
     uint32_t first_ssr = (uint32_t)(RTC->SSR);
     uint32_t time = (uint32_t)(RTC->TR & RTC_TR_RESERVED_MASK);
@@ -169,7 +172,7 @@ static uint64_t stm32_peripherals_rtc_raw_ticks(uint8_t *subticks) {
         date = (uint32_t)(RTC->DR & RTC_DR_RESERVED_MASK);
         ssr = (uint32_t)(RTC->SSR);
     }
-    __enable_irq();
+    __set_PRIMASK(primask);
 
     uint32_t subseconds = rtc_subseconds_per_second - 1 - ssr;
     // Unless the RTC clock is 32768 Hz, a step of the subsecond counter is not a whole subtick,
