@@ -16,6 +16,14 @@
 #include "shared-bindings/displayio/Palette.h"
 #include "shared-bindings/displayio/TileGrid.h"
 
+// The static splash bypasses Group's Python constructor. Keep its scale in the
+// representation expected by the selected compositor.
+#if CIRCUITPY_DISPLAYIO_LVGL
+#define SUPERVISOR_SPLASH_SCALE(scale) ((scale) * LV_SCALE_NONE)
+#else
+#define SUPERVISOR_SPLASH_SCALE(scale) (scale)
+#endif
+
 #if CIRCUITPY_RGBMATRIX
 #include "shared-module/displayio/__init__.h"
 #endif
@@ -199,7 +207,7 @@ void supervisor_start_terminal(uint16_t width_px, uint16_t height_px) {
         reset_tiles = true;
     }
 
-    circuitpython_splash.scale = scale;
+    circuitpython_splash.scale = SUPERVISOR_SPLASH_SCALE(scale);
     if (!reset_tiles) {
         return;
     }
@@ -392,7 +400,7 @@ displayio_group_t circuitpython_splash = {
     .base = {.type = &displayio_group_type },
     .x = 0,
     .y = 0,
-    .scale = 2,
+    .scale = SUPERVISOR_SPLASH_SCALE(2),
     .members = &splash_children,
     .item_removed = false,
     .in_group = false,
