@@ -29,12 +29,12 @@ typedef struct {
                       // even if the previous bitmap has since been freed
     uint16_t scale;   // draw scale (8.8) when last drawn - detect scale changes
     int16_t angle;    // rotation when last drawn - detect rotation changes
+    uint16_t flags;
+    uint16_t flash_color;  // flash/tint/add colour when last drawn - detect a colour-only change
+                           // (the effect flag stays set, so without this red->blue wouldn't repaint)
     uint8_t frame;
-    uint8_t flags;
     uint8_t seq;      // sprite.seq when last drawn - detect touch() (in-place content change)
     uint8_t dither;   // dither level when last drawn - detect translucency animation
-    uint16_t flash_color;  // flash/tint colour when last drawn - detect a colour-only change
-                           // (the effect flag stays set, so without this red->blue wouldn't repaint)
 } picogame_snapshot_t;
 
 typedef struct {

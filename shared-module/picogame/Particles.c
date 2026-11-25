@@ -31,14 +31,17 @@ static void swap_remove(picogame_particles_obj_t *ps, int i) {
     ps->count--;
 }
 
-// Dim a wire-order RGB565 color to num/den of its brightness (per channel).
-static inline uint16_t scale_wire565(uint16_t wire, int num, int den) {
+// Blend wire-order RGB565 `wire` toward `to`: num/den of `wire`, the rest of `to` (per channel).
+// With to = 0 this is the classic dim toward black.
+static inline uint16_t lerp_wire565(uint16_t wire, uint16_t to, int num, int den) {
     uint16_t c = (uint16_t)((wire >> 8) | (wire << 8));   // wire -> native
+    uint16_t t = (uint16_t)((to >> 8) | (to << 8));
     // One Q8 reciprocal for all three channels (0 <= q <= 256). At most 1 LSB darker.
     int q = (num << 8) / den;
-    int r = (((c >> 11) & 0x1F) * q) >> 8;
-    int g = (((c >> 5) & 0x3F) * q) >> 8;
-    int b = ((c & 0x1F) * q) >> 8;
+    int p = 256 - q;
+    int r = (((c >> 11) & 0x1F) * q + ((t >> 11) & 0x1F) * p) >> 8;
+    int g = (((c >> 5) & 0x3F) * q + ((t >> 5) & 0x3F) * p) >> 8;
+    int b = ((c & 0x1F) * q + (t & 0x1F) * p) >> 8;
     uint16_t out = (uint16_t)((r << 11) | (g << 5) | b);
     return (uint16_t)((out >> 8) | (out << 8));           // native -> wire
 }
@@ -74,6 +77,22 @@ void picogame_particles_update(picogame_particles_obj_t *ps) {
         ps->life[i]--;
         int sx = ps->px[i] >> 8;
         int sy = ps->py[i] >> 8;
+        if (ps->stretch) {                    // the streak's tail lies one velocity back
+            int tx = (ps->px[i] - ps->vx[i]) >> 8;
+            int ty = (ps->py[i] - ps->vy[i]) >> 8;
+            if (tx < x1) {
+                x1 = tx;
+            }
+            if (ty < y1) {
+                y1 = ty;
+            }
+            if (tx + sz > x2) {
+                x2 = tx + sz;
+            }
+            if (ty + sz > y2) {
+                y2 = ty + sz;
+            }
+        }
         if (sx < x1) {
             x1 = sx;
         }
@@ -146,28 +165,37 @@ void picogame_blit_particles(
     int ylo = strip_top - sz - oy;             // py >> 8 <= ylo -> entirely above
     int yhi = ry2 - oy;                        // py >> 8 >= yhi -> entirely below
     int count = ps->count;
+    int steps = ps->stretch;
     for (int i = 0; i < count; i++) {
         int sy8 = pys[i] >> 8;
-        if (sy8 <= ylo || sy8 >= yhi) {
-            continue;
-        }
-        int sx = (pxs[i] >> 8) + ox;
-        int sy = sy8 + oy;
-        int xs = picogame_imax(sx, x0);
-        int ys = picogame_imax(sy, strip_top);
-        int xe = picogame_imin(sx + sz, rx2);
-        int ye = picogame_imin(sy + sz, ry2);
-        if (xs >= xe || ys >= ye) {
+        if (steps == 0 && (sy8 <= ylo || sy8 >= yhi)) {   // a streak's tail may still reach the strip
             continue;
         }
         uint16_t c = ps->color[i];
         if (ps->fade) {
-            c = scale_wire565(c, ps->life[i], ps->life0[i]);
+            c = lerp_wire565(c, ps->fade_to, ps->life[i], ps->life0[i]);
         }
-        for (int y = ys; y < ye; y++) {
-            uint16_t *dst = buf + (y - strip_top) * region_w + (xs - x0);
-            for (int x = xs; x < xe; x++) {
-                *dst++ = c;
+        // copy j of steps+1 sits j/steps of one velocity back: head at the particle, tail one tick behind
+        for (int j = 0; j <= steps; j++) {
+            int32_t bx = pxs[i], by = pys[i];
+            if (j) {
+                bx -= ps->vx[i] * j / steps;
+                by -= ps->vy[i] * j / steps;
+            }
+            int sx = (bx >> 8) + ox;
+            int sy = (by >> 8) + oy;
+            int xs = picogame_imax(sx, x0);
+            int ys = picogame_imax(sy, strip_top);
+            int xe = picogame_imin(sx + sz, rx2);
+            int ye = picogame_imin(sy + sz, ry2);
+            if (xs >= xe || ys >= ye) {
+                continue;
+            }
+            for (int y = ys; y < ye; y++) {
+                uint16_t *dst = buf + (y - strip_top) * region_w + (xs - x0);
+                for (int x = xs; x < xe; x++) {
+                    *dst++ = c;
+                }
             }
         }
     }

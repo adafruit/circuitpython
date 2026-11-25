@@ -23,7 +23,14 @@ static void reset_dirty(picogame_particles_obj_t *self) {
 //|     Add it to a Scene, ``emit()`` bursts, and call ``tick()`` each frame."""
 //|
 //|     def __init__(
-//|         self, capacity: int, *, size: int = 1, gravity: float = 0.0, fade: bool = False
+//|         self,
+//|         capacity: int,
+//|         *,
+//|         size: int = 1,
+//|         gravity: float = 0.0,
+//|         fade: bool = False,
+//|         fade_to: int = 0,
+//|         stretch: int = 0,
 //|     ) -> None:
 //|         """``capacity`` is how many particles may be alive at once; the pool is
 //|         allocated once here and never grows. If :py:meth:`emit` would exceed it,
@@ -32,17 +39,25 @@ static void reset_dirty(picogame_particles_obj_t *self) {
 //|         ``size`` is the square side of one particle in pixels. ``gravity`` is added to
 //|         each particle's vertical speed every :py:meth:`tick`. ``fade=True`` dims
 //|         particles towards the end of their life instead of letting them vanish at full
-//|         brightness."""
+//|         brightness. ``fade_to`` is the colour (from :py:func:`rgb565`) the fade ends at;
+//|         the default black is the classic dim, a dark red turns white sparks into embers.
+//|         Giving ``fade_to`` turns ``fade`` on.
+//|
+//|         ``stretch`` draws each particle ``stretch`` more times spread back along its
+//|         velocity, so a fast particle is a streak one tick long and a slow one stays a
+//|         dot. ``0`` (the default) draws dots; ``2``..``4`` reads as sparks."""
 //|         ...
 //|
 static mp_obj_t picogame_particles_make_new(const mp_obj_type_t *type, size_t n_args,
     size_t n_kw, const mp_obj_t *all_args) {
-    enum { ARG_capacity, ARG_size, ARG_gravity, ARG_fade };
+    enum { ARG_capacity, ARG_size, ARG_gravity, ARG_fade, ARG_fade_to, ARG_stretch };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_capacity, MP_ARG_REQUIRED | MP_ARG_INT },
         { MP_QSTR_size, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 1} },
         { MP_QSTR_gravity, MP_ARG_KW_ONLY | MP_ARG_OBJ, {.u_obj = mp_const_none} },
         { MP_QSTR_fade, MP_ARG_KW_ONLY | MP_ARG_BOOL, {.u_bool = false} },
+        { MP_QSTR_fade_to, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
+        { MP_QSTR_stretch, MP_ARG_KW_ONLY | MP_ARG_INT, {.u_int = 0} },
     };
     mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
     mp_arg_parse_all_kw_array(n_args, n_kw, all_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
@@ -62,7 +77,9 @@ static mp_obj_t picogame_particles_make_new(const mp_obj_type_t *type, size_t n_
     self->count = 0;
     self->size = size;
     self->gravity = (int16_t)(gravity * 256);
-    self->fade = args[ARG_fade].u_bool;
+    self->fade_to = (uint16_t)mp_arg_validate_int_range(args[ARG_fade_to].u_int, 0, 0xFFFF, MP_QSTR_fade_to);
+    self->fade = args[ARG_fade].u_bool || self->fade_to != 0;
+    self->stretch = (uint8_t)mp_arg_validate_int_range(args[ARG_stretch].u_int, 0, 8, MP_QSTR_stretch);
     // Pure numeric arrays, no Python pointers -> exempt from the conservative GC scan
     // (shorter gc.collect() pauses; fixed at construction, never m_renew'd).
     self->px = m_malloc_without_collect(cap * sizeof(int32_t));
