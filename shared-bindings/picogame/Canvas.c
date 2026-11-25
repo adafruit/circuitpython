@@ -168,45 +168,6 @@ static mp_obj_t canvas_blit(size_t n, const mp_obj_t *a) {
 }
 static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(canvas_blit_obj, 4, 7, canvas_blit);
 
-//|     def mode7(
-//|         self,
-//|         texture: Bitmap,
-//|         horizon: int,
-//|         y_off: int,
-//|         z: int,
-//|         rx0: int,
-//|         ry0: int,
-//|         rsx: int,
-//|         rsy: int,
-//|         cam_x: int,
-//|         cam_y: int,
-//|     ) -> None:
-//|         """Fill rows below ``horizon`` with a perspective projection of ``texture``.
-//|         The ``picogame_mode7`` helper computes the camera terms from an angle,
-//|         position and field of view.
-//|
-//|         :param Bitmap texture: texture whose width and height are powers of two
-//|         :param int horizon: first canvas row to fill
-//|         :param int y_off: vertical offset of the projection, in rows
-//|         :param int z: camera height (signed 16.16 fixed-point)
-//|         :param int rx0: ray x at the left column (signed 16.16 fixed-point)
-//|         :param int ry0: ray y at the left column (signed 16.16 fixed-point)
-//|         :param int rsx: per-column ray step x (signed 16.16 fixed-point)
-//|         :param int rsy: per-column ray step y (signed 16.16 fixed-point)
-//|         :param int cam_x: camera x position (signed 16.16 fixed-point)
-//|         :param int cam_y: camera y position (signed 16.16 fixed-point)"""
-//|         ...
-//|
-static mp_obj_t canvas_mode7(size_t n, const mp_obj_t *a) {
-    picogame_bitmap_obj_t *tex = MP_OBJ_TO_PTR(
-        mp_arg_validate_type(a[1], &picogame_bitmap_type, MP_QSTR_texture));
-    picogame_canvas_mode7(cv_self(a[0]), tex,
-        mp_obj_get_int(a[2]), mp_obj_get_int(a[3]), mp_obj_get_int(a[4]),
-        mp_obj_get_int(a[5]), mp_obj_get_int(a[6]), mp_obj_get_int(a[7]),
-        mp_obj_get_int(a[8]), mp_obj_get_int(a[9]), mp_obj_get_int(a[10]));
-    return mp_const_none;
-}
-static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(canvas_mode7_obj, 11, 11, canvas_mode7);
 
 //|     def fill_triangles(
 //|         self,
@@ -282,7 +243,7 @@ static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(canvas_fill_triangles_obj, 4, 6, canv
 //|         :param int y_off: added to every y before clipping
 //|
 //|         The offsets translate the whole batch, so one screen-space batch (for
-//|         example `raycast` wall runs) can be replayed into each `StripDraw` view by
+//|         example `picogame3d.raycast` wall runs) can be replayed into each `StripDraw` view by
 //|         passing the negated view origin; spans outside the view are skipped."""
 //|         ...
 //|
@@ -324,53 +285,6 @@ static mp_obj_t canvas_vspans(size_t na, const mp_obj_t *a) {
 }
 static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(canvas_vspans_obj, 7, 9, canvas_vspans);
 
-//|     def road(
-//|         self,
-//|         ri0: int,
-//|         tab: ReadableBuffer,
-//|         rl: ReadableBuffer,
-//|         rr: ReadableBuffer,
-//|         d05_q8: int,
-//|         d07_q8: int,
-//|         colors: ReadableBuffer,
-//|     ) -> None:
-//|         """Draw one racing-road strip from precomputed tables. A low-level
-//|         interface used by the ``picogame_road`` helper, which builds the tables.
-//|
-//|         :param int ri0: road-table row of this surface's row 0; negative values
-//|             are sky rows
-//|         :param ~circuitpython_typing.ReadableBuffer tab: ``int16`` rows of
-//|             ``edge_w``, ``dash_hw``, ``wb05_q8``, ``wb07_q8``, ``flags``
-//|         :param ~circuitpython_typing.ReadableBuffer rl: ``int16`` per-row left
-//|             edges, as computed by :py:func:`road_edges`
-//|         :param ~circuitpython_typing.ReadableBuffer rr: ``int16`` per-row right
-//|             edges
-//|         :param int d05_q8: scroll phase (Q8 fixed-point)
-//|         :param int d07_q8: scroll phase (Q8 fixed-point)
-//|         :param ~circuitpython_typing.ReadableBuffer colors: six ``uint16`` colors,
-//|             in order: sky, road a, road b, rumble a, rumble b, dash"""
-//|         ...
-//|
-static mp_obj_t canvas_road(size_t n, const mp_obj_t *a) {
-    mp_buffer_info_t tabi, rli, rri, coli;
-    mp_get_buffer_raise(a[2], &tabi, MP_BUFFER_READ);
-    mp_get_buffer_raise(a[3], &rli, MP_BUFFER_READ);
-    mp_get_buffer_raise(a[4], &rri, MP_BUFFER_READ);
-    mp_get_buffer_raise(a[7], &coli, MP_BUFFER_READ);
-    int ntab = (int)(tabi.len / (5 * 2));
-    int nedge = (int)(rli.len < rri.len ? rli.len : rri.len) / 2;
-    if (nedge < ntab) {
-        ntab = nedge;                                // never read past the shorter per-frame arrays
-    }
-    if (ntab <= 0 || coli.len < 6 * 2) {
-        return mp_const_none;
-    }
-    picogame_canvas_road(cv_self(a[0]), mp_obj_get_int(a[1]),
-        (const int16_t *)tabi.buf, ntab, (const int16_t *)rli.buf, (const int16_t *)rri.buf,
-        mp_obj_get_int(a[5]), mp_obj_get_int(a[6]), (const uint16_t *)coli.buf);
-    return mp_const_none;
-}
-static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(canvas_road_obj, 8, 8, canvas_road);
 
 //|     def rect(self, x: int, y: int, w: int, h: int, color: int) -> None:
 //|         """Draw a one-pixel rectangle outline."""
@@ -615,10 +529,8 @@ static const mp_rom_map_elem_t picogame_canvas_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_pixel), MP_ROM_PTR(&canvas_pixel_obj) },
     { MP_ROM_QSTR(MP_QSTR_fill_rect), MP_ROM_PTR(&canvas_fill_rect_obj) },
     { MP_ROM_QSTR(MP_QSTR_blit), MP_ROM_PTR(&canvas_blit_obj) },
-    { MP_ROM_QSTR(MP_QSTR_mode7), MP_ROM_PTR(&canvas_mode7_obj) },
     { MP_ROM_QSTR(MP_QSTR_fill_triangles), MP_ROM_PTR(&canvas_fill_triangles_obj) },
     { MP_ROM_QSTR(MP_QSTR_vspans), MP_ROM_PTR(&canvas_vspans_obj) },
-    { MP_ROM_QSTR(MP_QSTR_road), MP_ROM_PTR(&canvas_road_obj) },
     { MP_ROM_QSTR(MP_QSTR_rect), MP_ROM_PTR(&canvas_rect_obj) },
     { MP_ROM_QSTR(MP_QSTR_line), MP_ROM_PTR(&canvas_line_obj) },
     { MP_ROM_QSTR(MP_QSTR_fill_circle), MP_ROM_PTR(&canvas_fill_circle_obj) },

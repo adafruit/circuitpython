@@ -49,17 +49,8 @@ void picogame_canvas_fill_round_rect(picogame_canvas_obj_t *cv, int x, int y, in
 void picogame_canvas_frame3d(picogame_canvas_obj_t *cv, int x, int y, int w, int h, uint16_t light, uint16_t dark);
 void picogame_canvas_text(picogame_canvas_obj_t *cv, int x, int y, const char *text,
     uint16_t fg, uint16_t bg, bool has_bg, const void *font);
-// Mode-7 perspective ground plane: fill rows below `horizon` with a receding view
-// of `tex` (power-of-2 dims). Args are 16.16 fixed-point (a Python helper computes
-// them from camera angle/pos/fov). See picogame_canvas_mode7 for the exact math.
-// One racing-road strip: per-row spans (road/rumbles/dashes/sky) from precomputed tables.
-void picogame_canvas_road(picogame_canvas_obj_t *cv, int ri0,
-    const int16_t *tab, int ntab, const int16_t *rl, const int16_t *rr,
-    int32_t d05_q8, int32_t d07_q8, const uint16_t *colors);
-
-void picogame_canvas_mode7(picogame_canvas_obj_t *cv, picogame_bitmap_obj_t *tex,
-    int horizon, int y_off, int32_t z, int32_t rx0, int32_t ry0, int32_t rsx, int32_t rsy,
-    int32_t cam_x, int32_t cam_y);
+// Fill n RGB565 pixels at p (word stores; any 2-byte alignment).
+void picogame_fill565(uint16_t *p, int n, uint16_t color);
 
 void picogame_blit_canvas(
     uint16_t *buf, int region_w, int strip_top, int strip_h, int x0,

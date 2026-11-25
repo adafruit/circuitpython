@@ -32,7 +32,7 @@
 //|     pixel buffer is held. Triangles layers always draw in screen coordinates and
 //|     ignore the scene's view offset.
 //|
-//|     For each frame: project points with :py:func:`project`, write triangles
+//|     For each frame: project points with :py:func:`picogame3d.project`, write triangles
 //|     into the buffers in back-to-front order, set :py:attr:`count`, then call
 //|     :py:meth:`Scene.refresh`."""
 //|

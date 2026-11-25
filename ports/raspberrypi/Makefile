@@ -524,10 +524,10 @@ endif
 
 SRC_C += shared/runtime/gchelper_native.c
 
-ifeq ($(CIRCUITPY_PICOGAME),1)
-# SIO interpolator fast path for the picogame mode7 inner row (RP2040 + RP2350).
+ifeq ($(CIRCUITPY_PICOGAME3D),1)
+# SIO interpolator fast path for the picogame3d mode7 inner row (RP2040 + RP2350).
 # Portable C remains the fallback on other ports.
-SRC_C += common-hal/picogame/interp.c
+SRC_C += common-hal/picogame3d/interp.c
 CFLAGS += -DPICOGAME_HAS_INTERP=1
 endif
 

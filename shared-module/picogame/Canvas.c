@@ -64,7 +64,7 @@ static __attribute__((noinline)) void put(picogame_canvas_obj_t *cv, int x, int 
 // view's rows into the render strip can start on an odd pixel. This is the per-frame path for
 // view.clear / Sky / HUD-bar / Fade fills, so the word-fill is worth it.
 // Not in SRAM: every caller is in flash, and the long-branch veneer made it slower.
-static void fill565(uint16_t *p, int n, uint16_t color) {
+void picogame_fill565(uint16_t *p, int n, uint16_t color) {
     if (n <= 0) {
         return;
     }
@@ -94,11 +94,9 @@ static void fill565(uint16_t *p, int n, uint16_t color) {
     }
 }
 
-// Defined with the filled shapes below; forward-declared for picogame_canvas_road.
-static void span565(picogame_canvas_obj_t *cv, int y, int xs, int xe, uint16_t color);
 
 void picogame_canvas_clear(picogame_canvas_obj_t *cv, uint16_t color) {
-    fill565(cv->data, cv->w * cv->h, color);
+    picogame_fill565(cv->data, cv->w * cv->h, color);
     mark(cv, 0, 0, cv->w, cv->h);
 }
 
@@ -112,7 +110,7 @@ void picogame_canvas_fill_rect(picogame_canvas_obj_t *cv, int x, int y, int w, i
     int cx1 = x < 0 ? 0 : x, cy1 = y < 0 ? 0 : y;
     int cx2 = x2 > cv->w ? cv->w : x2, cy2 = y2 > cv->h ? cv->h : y2;
     for (int yy = cy1; yy < cy2; yy++) {
-        fill565(cv->data + yy * cv->w + cx1, cx2 - cx1, color);
+        picogame_fill565(cv->data + yy * cv->w + cx1, cx2 - cx1, color);
     }
     mark(cv, x, y, x2, y2);
 }
@@ -123,151 +121,6 @@ void picogame_canvas_blit(picogame_canvas_obj_t *cv, picogame_bitmap_obj_t *bm,
     // Reuses the sprite blit path, targeting the canvas's own RGB565 surface instead of a strip.
     picogame_blit_bitmap(cv->data, cv->w, cv->h, 0, 0, bm, x, y, frame, flip_x, flip_y, false, NULL);
     mark(cv, x, y, x + bm->width, y + bm->height);
-}
-
-// Number of low zero bits (log2 for a power of 2; 0 for non-pow2, caught by caller).
-static int log2_pow2(unsigned v) {
-    int n = 0;
-    while ((v & 1) == 0 && v > 1) {
-        v >>= 1;
-        n++;
-    }
-    return n;
-}
-
-// One racing-road strip, all rows in one call (the OutRun-genre "draw_road" scanline loop - profiled
-// at ~20-25 ms of Python on picobike: ~4 fill_rect boundary crossings + an int(float) phase per row).
-// ri0 = the road-table row of THIS surface's row 0 (vy - horizon_base); negative rows are sky.
-// tab = int16[ntab][5]: {edge_w, dash_hw, wb05_q8, wb07_q8, flags(bit0 = dashes allowed)} - static per
-// game. rl/rr = per-frame integer road edges (road_edges output). d05/d07 = the frame's scrolling
-// stripe/dash phases in Q8; the row's band parity is ((d05+wb05)>>8)&1, matching the Python
-// int(d05f + wb05f) & 1 (both non-negative). colors = uint16[6]: {sky, road_a, road_b, rumble_a,
-// rumble_b, dash}. Grass underneath and the finish-line chequer stay the caller's job (one fill_rect
-// per strip / a few rows near the lap line - no reason to carry them in C).
-void picogame_canvas_road(picogame_canvas_obj_t *cv, int ri0,
-    const int16_t *tab, int ntab, const int16_t *rl, const int16_t *rr,
-    int32_t d05_q8, int32_t d07_q8, const uint16_t *colors) {
-    int w = cv->w;
-    for (int ly = 0; ly < cv->h; ly++) {
-        int ri = ri0 + ly;
-        if (ri < 0) {                                // above the horizon: sky
-            fill565(&cv->data[ly * w], w, colors[0]);
-            continue;
-        }
-        if (ri >= ntab) {
-            ri = ntab - 1;
-        }
-        const int16_t *t = tab + ri * 5;
-        int band = (int)(((d05_q8 + t[2]) >> 8) & 1);
-        uint16_t road = band ? colors[1] : colors[2];
-        uint16_t rumble = band ? colors[3] : colors[4];
-        int l = rl[ri], r = rr[ri];
-        if (r <= l) {
-            continue;
-        }
-        span565(cv, ly, l, r - 1, road);             // fill_rect(l, w=r-l) covers l..r-1
-        int ew = t[0];
-        span565(cv, ly, l, l + ew - 1, rumble);
-        span565(cv, ly, r - ew, r - 1, rumble);
-        if ((t[4] & 1) && (((d07_q8 + t[3]) >> 8) & 1)) {
-            int mid = (l + r) >> 1, dw = t[1];
-            span565(cv, ly, mid - dw, mid + dw - 1, colors[5]);
-        }
-    }
-    mark(cv, 0, 0, w, cv->h);
-}
-
-// Context + row walker for the mode7 loop (each row derives rowdist/steps from its own sy).
-typedef struct {
-    picogame_canvas_obj_t *cv;
-    const uint8_t *data;
-    const uint16_t *pal;
-    int fmt, stride, shx, shy, mx, my, horizon, y_off;
-    int32_t z, rx0, ry0, rsx, rsy, cam_x, cam_y;
-    bool transp;
-    int32_t key;
-} mode7_ctx_t;
-
-static void mode7_rows(void *arg, int lo, int hi) {
-    mode7_ctx_t *c = arg;
-    picogame_canvas_obj_t *cv = c->cv;
-    int w = cv->w;
-    #if defined(PICOGAME_HAS_INTERP)
-    int ltw = 16 - c->shx;
-    int lth = 16 - c->shy;
-    bool use_interp = (c->fmt == PICOGAME_FMT_PAL8) && !c->transp && c->pal != NULL
-        && c->stride == c->mx + 1
-        && ltw >= 1 && lth >= 1 && ltw + lth <= 16;   // lane1 shift = shy-ltw must be >= 0
-    #endif
-    for (int sy = lo; sy < hi; sy++) {
-        int denom = (sy + c->y_off) - c->horizon;
-        if (denom <= 0) {
-            continue;
-        }
-        // 32-bit throughout (no 64-bit mul helper on the M0+): rowdist*coeff stays
-        // within int32 for sane camera params - the Python helper keeps z and the
-        // ray deltas small; extreme values degrade to wrong pixels, never a crash.
-        int32_t rowdist = c->z / denom;
-        int32_t stepx = (rowdist * c->rsx) >> 16;
-        int32_t stepy = (rowdist * c->rsy) >> 16;
-        int32_t fx = c->cam_x + ((rowdist * c->rx0) >> 16);
-        int32_t fy = c->cam_y + ((rowdist * c->ry0) >> 16);
-        uint16_t *drow = cv->data + sy * w;
-        #if defined(PICOGAME_HAS_INTERP)
-        if (use_interp) {
-            picogame_mode7_row_interp(drow, w, c->data, c->pal,
-                (uint32_t)fx, (uint32_t)fy, stepx, stepy, c->shx, c->shy, ltw, lth);
-            continue;
-        }
-        #endif
-        for (int sx = 0; sx < w; sx++) {
-            int tx = (fx >> c->shx) & c->mx, ty = (fy >> c->shy) & c->my;
-            uint16_t val;
-            if (src_pixel_s(c->fmt, c->data, c->pal, c->key, ty * c->stride + tx, &val)) {
-                drow[sx] = val;
-            }
-            fx += stepx;
-            fy += stepy;
-        }
-    }
-}
-
-void picogame_canvas_mode7(picogame_canvas_obj_t *cv, picogame_bitmap_obj_t *tex,
-    int horizon, int y_off, int32_t z, int32_t rx0, int32_t ry0, int32_t rsx, int32_t rsy,
-    int32_t cam_x, int32_t cam_y) {
-    // Perspective ground plane (Mode-7 / floorcaster). For each screen row below
-    // `horizon`, distance = z / (row - horizon) (16.16); the texture-space coord
-    // of the left edge is cam + distance*ray0, stepping by distance*rayDelta per
-    // pixel; sample `tex` (power-of-2, so wrap = a mask, and world 1.0 = one tile
-    // via a shift, no multiply). Integer throughout - no FPU needed (RP2040).
-    if (tex == NULL) {
-        return;
-    }
-    int tw = tex->width, th = tex->height;
-    if ((tw & (tw - 1)) || (th & (th - 1))) {   // require power-of-2 dims
-        return;
-    }
-    int shx = 16 - log2_pow2((unsigned)tw);     // world(1.0) -> one full tile
-    int shy = 16 - log2_pow2((unsigned)th);
-    int mx = tw - 1, my = th - 1, stride = tex->stride;
-    int fmt = tex->format;
-    const uint8_t *data = tex->data;
-    const uint16_t *pal = tex->palette;
-    bool transp = tex->has_transparent;           // still gates the interp fast path above
-    int32_t key = picogame_key_of(tex);
-    // sy is a row WITHIN this surface (a StripDraw view is a Canvas onto one strip);
-    // the absolute screen row is sy + y_off, so the horizon test uses that. y_off = 0
-    // for a full-screen Canvas, = the strip's screen y for a StripDraw view (0-RAM floor).
-    int y0 = horizon - y_off + 1;
-    if (y0 < 0) {
-        y0 = 0;
-    }
-    mode7_ctx_t ctx = {
-        cv, data, pal, fmt, stride, shx, shy, mx, my, horizon, y_off,
-        z, rx0, ry0, rsx, rsy, cam_x, cam_y, transp, key
-    };
-    mode7_rows(&ctx, y0, cv->h);
-    mark(cv, 0, y0, cv->w, cv->h);
 }
 
 void picogame_canvas_rect(picogame_canvas_obj_t *cv, int x, int y, int w, int h, uint16_t color) {
@@ -326,7 +179,7 @@ static void span565(picogame_canvas_obj_t *cv, int y, int xs, int xe, uint16_t c
         xe = cv->w - 1;
     }
     if (xs <= xe) {
-        fill565(&cv->data[y * cv->w + xs], xe - xs + 1, color);
+        picogame_fill565(&cv->data[y * cv->w + xs], xe - xs + 1, color);
     }
 }
 
@@ -442,7 +295,7 @@ void picogame_canvas_fill_triangle(picogame_canvas_obj_t *cv,
                 xe = w - 1;
             }
             if (xs <= xe) {
-                fill565(&data[y * w + xs], xe - xs + 1, color);
+                picogame_fill565(&data[y * w + xs], xe - xs + 1, color);
             }
             accAC += sAC;
             acc2 += sAB;
@@ -467,7 +320,7 @@ void picogame_canvas_fill_triangle(picogame_canvas_obj_t *cv,
                 xe = w - 1;
             }
             if (xs <= xe) {
-                fill565(&data[y * w + xs], xe - xs + 1, color);
+                picogame_fill565(&data[y * w + xs], xe - xs + 1, color);
             }
             accAC += sAC;
             acc2 += sBC;

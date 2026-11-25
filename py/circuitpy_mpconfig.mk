@@ -690,11 +690,9 @@ CFLAGS += -DCIRCUITPY_PICOGAME_RGB444=$(CIRCUITPY_PICOGAME_RGB444)
 # boards like the Fruit Jam). Off by default so flash-tight SPI-only boards don't carry it.
 CIRCUITPY_PICOGAME_FRAMEBUFFER ?= 0
 CFLAGS += -DCIRCUITPY_PICOGAME_FRAMEBUFFER=$(CIRCUITPY_PICOGAME_FRAMEBUFFER)
-# Float vs 16.16 fixed path for the 3D helpers: the default follows the architecture
-# (see shared-module/picogame/__init__.h); set 0/1 here only to override for a board.
-ifneq ($(CIRCUITPY_PICOGAME_FPU),)
-CFLAGS += -DCIRCUITPY_PICOGAME_FPU=$(CIRCUITPY_PICOGAME_FPU)
-endif
+# Perspective and 3D drawing for picogame canvases (mode7, road, raycast, project).
+CIRCUITPY_PICOGAME3D ?= $(CIRCUITPY_PICOGAME)
+CFLAGS += -DCIRCUITPY_PICOGAME3D=$(CIRCUITPY_PICOGAME3D)
 
 CIRCUITPY_STATUS_BAR ?= 1
 CFLAGS += -DCIRCUITPY_STATUS_BAR=$(CIRCUITPY_STATUS_BAR)

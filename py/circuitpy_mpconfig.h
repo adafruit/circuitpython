@@ -644,6 +644,10 @@ void background_callback_run_all(void);
 #error CIRCUITPY_USB_HOST_BULK requires CIRCUITPY_USB_HOST and CIRCUITPY_PYUSB
 #endif
 
+#if CIRCUITPY_PICOGAME3D && !CIRCUITPY_PICOGAME
+#error CIRCUITPY_PICOGAME3D requires CIRCUITPY_PICOGAME
+#endif
+
 // If the port requires certain USB endpoint numbers, define these in mpconfigport.h.
 
 #ifndef USB_CDC_EP_NUM_NOTIFICATION
