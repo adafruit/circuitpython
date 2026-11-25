@@ -288,7 +288,7 @@ static const uint64_t pin_mask_reset_forbidden =
     #endif // ESP32S31
 
     #if defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3)
-    #if CIRCUITPY_USB_DEVICE
+    #if CIRCUITPY_USB_DEVICE || CIRCUITPY_USB_HOST
     // Never ever reset USB pins.
     GPIO_SEL_19 |         // USB D-
     GPIO_SEL_20 |         // USB D+

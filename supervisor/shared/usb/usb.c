@@ -12,6 +12,13 @@
 #include "supervisor/usb.h"
 #include "shared/readline/readline.h"
 
+#if CIRCUITPY_USB_ROLE_SWITCH
+#include "supervisor/filesystem.h"
+#if CIRCUITPY_USB_CDC
+#include "shared-bindings/usb_cdc/__init__.h"
+#endif
+#endif
+
 #if CIRCUITPY_STATUS_BAR
 #include "supervisor/shared/status_bar.h"
 #endif
@@ -107,7 +114,35 @@ bool usb_connected(void) {
 MP_WEAK void post_usb_init(void) {
 }
 
+#if CIRCUITPY_USB_ROLE_SWITCH
+static bool _usb_host_mode = false;
+
+bool usb_host_mode(void) {
+    return _usb_host_mode;
+}
+
+void usb_set_host_mode(void) {
+    _usb_host_mode = true;
+}
+#endif
+
 void usb_init(void) {
+    #if CIRCUITPY_USB_ROLE_SWITCH
+    if (usb_host_mode()) {
+        // boot.py made the controller a host (usb_host.Port), which runs the host
+        // stack. No device: no descriptors, no device PHY, no tud_init().
+        // No USB drive either, so code may write CIRCUITPY, as on a board without USB.
+        filesystem_set_internal_writable_by_usb(false);
+        #if CIRCUITPY_USB_CDC
+        // No USB serial: usb_cdc.console and usb_cdc.data are None, and the
+        // serial console code skips USB CDC.
+        common_hal_usb_cdc_disable();
+        #endif
+        post_usb_init();
+        return;
+    }
+    #endif
+
     #if CIRCUITPY_USB_DEVICE
     usb_identification_t defaults;
     usb_identification_t *identification;
@@ -183,6 +218,12 @@ void usb_background(void) {
         }
         #endif
         #endif
+        #if CIRCUITPY_USB_ROLE_SWITCH
+        if (usb_host_mode()) {
+            // The device stack is not running.
+            return;
+        }
+        #endif
         // No need to flush if there's no REPL.
         #if CIRCUITPY_USB_DEVICE && CIRCUITPY_USB_CDC
         if (usb_cdc_console_enabled()) {
@@ -217,14 +258,23 @@ void PLACE_IN_ITCM(usb_background_schedule)(void) {
 
 void PLACE_IN_ITCM(usb_irq_handler)(int instance) {
     #if CFG_TUSB_MCU != OPT_MCU_RP2040
+    // When device and host share one controller, only the running role's
+    // handler may touch it. (On espressif TinyUSB installs its own role-aware
+    // handler, but other ports call this one.)
+    #if CIRCUITPY_USB_ROLE_SWITCH
+    const bool host_mode = usb_host_mode();
+    #else
+    const bool host_mode = false;
+    #endif
+    (void)host_mode;
     #if CIRCUITPY_USB_DEVICE
     // For rp2040, IRQ handler is already installed and invoked automatically
-    if (instance == CIRCUITPY_USB_DEVICE_INSTANCE) {
+    if (instance == CIRCUITPY_USB_DEVICE_INSTANCE && !host_mode) {
         tud_int_handler(instance);
     }
     #endif
     #if CIRCUITPY_USB_HOST
-    if (instance == CIRCUITPY_USB_HOST_INSTANCE) {
+    if (instance == CIRCUITPY_USB_HOST_INSTANCE && (host_mode || !CIRCUITPY_USB_ROLE_SWITCH)) {
         tuh_int_handler(instance);
     }
     #endif

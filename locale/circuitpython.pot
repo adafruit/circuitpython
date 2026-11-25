@@ -4988,6 +4988,10 @@ msgstr ""
 msgid "Stack overflow. Increase stack size."
 msgstr ""
 
+#: ports/espressif/common-hal/usb_host/Port.c
+msgid "USB is a device. Create usb_host.Port in boot.py to make it a host."
+msgstr ""
+
 #: supervisor/shared/safe_mode.c
 msgid "USB devices need more endpoints than are available."
 msgstr ""
