@@ -412,7 +412,7 @@ void *port_realloc(void *ptr, size_t size, bool dma_capable) {
 
 size_t port_heap_get_largest_free_size(void) {
     size_t largest = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
-    #ifdef CONFIG_SPIRAM
+    #if defined(CONFIG_SPIRAM) && CIRCUITPY_DISPLAYIO_LVGL
     // The VM heap only ever grows, and gc_try_add_heap() takes up to the whole largest free block
     // when it doesn't need the full doubling. Without a reserve a Python allocation can therefore
     // swallow the last of PSRAM, and the next display/LVGL allocation (a framebuffer, a TileGrid
