@@ -188,6 +188,7 @@ void picogame3d_tcolumns(picogame_canvas_obj_t *cv, picogame_bitmap_obj_t *tex,
     const uint8_t *cmap, const picogame3d_tcolumns_args_t *p) {
     const int sh = p->sh, stride = p->stride, tex_cols = p->tex_cols, nlights = p->nlights;
     const int light_shift = p->light_shift, x_off = p->x_off, y_off = p->y_off;
+    const int mode = p->mode, tex_id = p->tex_id;
     int texels = tex->width;
     if (tex->format != PICOGAME_FMT_PAL8 || tex->palette == NULL
         || texels <= 0 || (texels & (texels - 1)) || tex_cols <= 0 || (tex_cols & (tex_cols - 1))
@@ -205,16 +206,20 @@ void picogame3d_tcolumns(picogame_canvas_obj_t *cv, picogame_bitmap_obj_t *tex,
         int lh = (int)(((int32_t)sh << 16) / perp);   // full projected height, unclipped
         int t = half - (lh >> 1) + y_off;
         int b = t + lh;
+        if (mode) {
+            // A step riser stands on the floor line, as high as its type in eighths of a cell.
+            t = b - ((lh * picogame_imin(type, 8)) >> 3);
+        }
         int x0 = picogame_imax(i * stride + x_off, 0);
         int x1 = picogame_imin(i * stride + x_off + stride, cw);
-        int row = (type - 1) * tex_cols + ((wallx[i] * tex_cols) >> 16);
+        int row = (mode ? tex_id : type - 1) * tex_cols + ((wallx[i] * tex_cols) >> 16);
         if (lh <= 0 || b <= 0 || t >= ch || x1 <= x0 || (unsigned)row >= tex->height) {
             continue;                               // a type past the atlas draws nothing
         }
         const uint8_t *src = tex->data + (size_t)row * tex->stride;
         int light = picogame_imin((int)(perp >> light_shift) + (kinds[i] & 1), nlights - 1);
         const uint8_t *lm = cmap + (light << 8);
-        int32_t vstep = (int32_t)(((uint32_t)texels << 16) / (uint32_t)lh);
+        int32_t vstep = (int32_t)(((uint32_t)texels << 16) / (uint32_t)picogame_imax(b - t, 1));
         int ct = picogame_imax(t, 0), cb = picogame_imin(b, ch);
         int32_t v0 = (ct - t) * vstep;
         for (int x = x0; x < x1; x++) {

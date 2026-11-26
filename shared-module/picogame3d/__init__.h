@@ -41,9 +41,9 @@ void picogame3d_road(picogame_canvas_obj_t *cv, int ri0,
 // binding can fill them in a loop.
 typedef union {
     struct {
-        int sh, stride, tex_cols, nlights, light_shift, x_off, y_off;
+        int sh, stride, tex_cols, nlights, light_shift, x_off, y_off, mode, tex_id;
     };
-    int v[7];
+    int v[9];
 } picogame3d_tcolumns_args_t;
 void picogame3d_tcolumns(picogame_canvas_obj_t *cv, picogame_bitmap_obj_t *tex,
     const int32_t *dists, const uint16_t *wallx, const uint16_t *kinds, int n,

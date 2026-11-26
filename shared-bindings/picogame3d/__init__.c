@@ -511,6 +511,8 @@ static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(picogame3d_raycast_obj, 17, 19, picog
 //|     light_shift: int = 15,
 //|     x_off: int = 0,
 //|     y_off: int = 0,
+//|     mode: int = 0,
+//|     tex_id: int = 0,
 //| ) -> None:
 //|     """Paint the textured wall columns of one `raycast` frame into ``canvas``.
 //|
@@ -542,7 +544,10 @@ static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(picogame3d_raycast_obj, 17, 19, picog
 //|         at most ``nlights - 1``
 //|     :param int x_off: added to every column x
 //|     :param int y_off: added to every column y; for a `picogame.StripDraw` view, the
-//|         negated strip origin"""
+//|         negated strip origin
+//|     :param int mode: ``1`` draws step risers instead of walls: the face of a raised
+//|         floor cell standing on the floor line, as high as the cell type in eighths of a cell
+//|     :param int tex_id: texture of the risers in the atlas"""
 //|     ...
 //|
 static mp_obj_t picogame3d_tcolumns_fn(size_t n, const mp_obj_t *a) {
@@ -554,8 +559,8 @@ static mp_obj_t picogame3d_tcolumns_fn(size_t n, const mp_obj_t *a) {
         mp_arg_validate_type(a[5], &picogame_bitmap_type, MP_QSTR_texture));
     mp_get_buffer_raise(a[6], &ci, MP_BUFFER_READ);
     // sh onward are plain ints with these defaults: sh, stride, tex_cols, nlights, light_shift,
-    // x_off, y_off.
-    static const int8_t defaults[] = { 0, 1, 64, 32, 15, 0, 0 };
+    // x_off, y_off, mode, tex_id.
+    static const int8_t defaults[] = { 0, 1, 64, 32, 15, 0, 0, 0, 0 };
     picogame3d_tcolumns_args_t p;
     for (size_t i = 0; i < MP_ARRAY_SIZE(defaults); i++) {
         p.v[i] = 7 + i < n ? mp_obj_get_int(a[7 + i]) : defaults[i];
@@ -567,7 +572,7 @@ static mp_obj_t picogame3d_tcolumns_fn(size_t n, const mp_obj_t *a) {
     picogame3d_tcolumns(pg3d_canvas(a[0]), tex, di.buf, wi.buf, ki.buf, cols, ci.buf, &p);
     return mp_const_none;
 }
-static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(picogame3d_tcolumns_obj, 8, 14, picogame3d_tcolumns_fn);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(picogame3d_tcolumns_obj, 8, 16, picogame3d_tcolumns_fn);
 
 //| def road_edges(
 //|     rl: WriteableBuffer,
