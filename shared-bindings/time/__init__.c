@@ -149,6 +149,19 @@ mp_obj_t struct_time_from_tm(timeutils_struct_time_t *tm) {
     return namedtuple_make_new((const mp_obj_type_t *)&struct_time_type_obj, 9, 0, elems);
 };
 
+// Raises ValueError unless the fields are a real date and time in the years the time functions
+// handle on 32-bit boards: 1970 to 2099 (see py/mpconfig.h). A second may be 60 or 61, as
+// struct_time documents. A port whose clock holds less should check the rest itself.
+void struct_time_validate(mp_int_t year, mp_int_t mon, mp_int_t mday, mp_int_t hour,
+    mp_int_t min, mp_int_t sec) {
+    mp_arg_validate_int_range(year, 1970, 2099, MP_QSTR_tm_year);
+    mp_arg_validate_int_range(mon, 1, 12, MP_QSTR_tm_mon);
+    mp_arg_validate_int_range(mday, 1, timeutils_days_in_month(year, mon), MP_QSTR_tm_mday);
+    mp_arg_validate_int_range(hour, 0, 23, MP_QSTR_tm_hour);
+    mp_arg_validate_int_range(min, 0, 59, MP_QSTR_tm_min);
+    mp_arg_validate_int_range(sec, 0, 61, MP_QSTR_tm_sec);
+}
+
 void struct_time_to_tm(mp_obj_t t, timeutils_struct_time_t *tm) {
     mp_obj_t *elems;
     size_t len;
@@ -162,12 +175,22 @@ void struct_time_to_tm(mp_obj_t t, timeutils_struct_time_t *tm) {
         mp_raise_TypeError_varg(MP_ERROR_TEXT("function takes %d positional arguments but %d were given"), 9, len);
     }
 
-    tm->tm_year = mp_obj_get_int(elems[0]);
-    tm->tm_mon = mp_obj_get_int(elems[1]);
-    tm->tm_mday = mp_obj_get_int(elems[2]);
-    tm->tm_hour = mp_obj_get_int(elems[3]);
-    tm->tm_min = mp_obj_get_int(elems[4]);
-    tm->tm_sec = mp_obj_get_int(elems[5]);
+    mp_int_t year = mp_obj_get_int(elems[0]);
+    mp_int_t mon = mp_obj_get_int(elems[1]);
+    mp_int_t mday = mp_obj_get_int(elems[2]);
+    mp_int_t hour = mp_obj_get_int(elems[3]);
+    mp_int_t min = mp_obj_get_int(elems[4]);
+    mp_int_t sec = mp_obj_get_int(elems[5]);
+    // Check before the fields are narrowed into tm, where a month of 257 would become 1.
+    struct_time_validate(year, mon, mday, hour, min, sec);
+    tm->tm_year = year;
+    tm->tm_mon = mon;
+    tm->tm_mday = mday;
+    tm->tm_hour = hour;
+    tm->tm_min = min;
+    tm->tm_sec = sec;
+    // tm_wday and tm_yday aren't checked: nothing that sets a clock uses them, and code often
+    // passes -1 or 0 for them.
     tm->tm_wday = mp_obj_get_int(elems[6]);
     tm->tm_yday = mp_obj_get_int(elems[7]);
     // elems[8] tm_isdst is not supported

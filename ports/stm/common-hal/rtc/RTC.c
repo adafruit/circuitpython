@@ -13,6 +13,10 @@
 
 
 void common_hal_rtc_set_time(timeutils_struct_time_t *tm) {
+    // struct_time_to_tm() has checked the date and time. The calendar holds only the last two
+    // digits of the year, and no leap second.
+    mp_arg_validate_int_range(tm->tm_year, 2000, 2099, MP_QSTR_tm_year);
+    mp_arg_validate_int_range(tm->tm_sec, 0, 59, MP_QSTR_tm_sec);
     stm32_peripherals_rtc_set_time(tm);
 }
 

@@ -14,6 +14,8 @@
 
 extern mp_obj_t struct_time_from_tm(timeutils_struct_time_t *tm);
 extern void struct_time_to_tm(mp_obj_t t, timeutils_struct_time_t *tm);
+extern void struct_time_validate(mp_int_t year, mp_int_t mon, mp_int_t mday, mp_int_t hour,
+    mp_int_t min, mp_int_t sec);
 
 extern uint64_t common_hal_time_monotonic_ms(void);
 extern uint64_t common_hal_time_monotonic_ns(void);

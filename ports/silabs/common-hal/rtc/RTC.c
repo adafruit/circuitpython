@@ -36,6 +36,19 @@
 #include "peripherals/rtc.h"
 #include "sl_sleeptimer.h"
 
+// The sleeptimer's wall clock starts at 1900-01-01, before the years the time functions handle,
+// so time.localtime() would refuse it. Start it at 2000-01-01, as the other ports do.
+void common_hal_rtc_init(void) {
+    timeutils_struct_time_t tm = {
+        .tm_year = 2000,
+        .tm_mon = 1,
+        .tm_mday = 1,
+        .tm_wday = 5, // Saturday
+        .tm_yday = 1,
+    };
+    common_hal_rtc_set_time(&tm);
+}
+
 // Set rtc time
 void common_hal_rtc_set_time(timeutils_struct_time_t *tm) {
 
