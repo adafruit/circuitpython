@@ -381,7 +381,7 @@ static int _mtu_reply(uint16_t conn_handle,
     return 0;
 }
 
-static void _new_connection(uint16_t conn_handle, bool user_owned) {
+static bleio_connection_internal_t *_new_connection(uint16_t conn_handle, bool user_owned) {
     // Set the tx_power for the connection higher than the advertisement.
     esp_ble_tx_power_set(conn_handle, ESP_PWR_LVL_N0);
 
@@ -397,28 +397,23 @@ static void _new_connection(uint16_t conn_handle, bool user_owned) {
 
     // Shouldn't happen, but just return if no connection available.
     if (!connection) {
-        return;
+        return NULL;
     }
 
     connection->conn_handle = conn_handle;
     connection->connection_obj = mp_const_none;
     connection->pair_status = PAIR_NOT_PAIRED;
     connection->indicate_outstanding = false;
-    connection->mtu = 0;
+    // The peer may have started the MTU exchange already: NimBLE answers it before this runs,
+    // and its BLE_GAP_EVENT_MTU went to the old callback, which drops it. Get the MTU now.
+    // A peripheral leaves the exchange to the central: an unrequested one collides with
+    // Chrome on Android's own requestMtu().
+    connection->mtu = ble_att_mtu(conn_handle);
     connection->user_owned = user_owned;
-
-    if (ble_gattc_exchange_mtu(conn_handle, _mtu_reply, connection) != 0) {
-        // _mtu_reply() won't be called, so do its work here.
-        // This is the usual case with a peer that starts the MTU exchange itself,
-        // such as Zephyr: NimBLE answers that before this runs, and then refuses
-        // to start a second exchange. The BLE_GAP_EVENT_MTU it sent went to
-        // _connect_event(), not to the connection's event callback, so get the MTU now.
-        connection->mtu = ble_att_mtu(conn_handle);
-        _connection_status = conn_handle;
-    }
 
     // Change the callback for the connection.
     ble_gap_set_event_cb(conn_handle, bleio_connection_event_cb, connection);
+    return connection;
 }
 
 static int _connect_event(struct ble_gap_event *event, void *self_in) {
@@ -430,9 +425,19 @@ static int _connect_event(struct ble_gap_event *event, void *self_in) {
     switch (event->type) {
         case BLE_GAP_EVENT_CONNECT:
             if (event->connect.status == 0) {
-                // This triggers an MTU exchange. Its reply will exit the loop waiting for a connection.
                 // Only user code connects in the central role.
-                _new_connection(event->connect.conn_handle, true);
+                // The MTU exchange's reply will exit the loop waiting for a connection.
+                bleio_connection_internal_t *connection =
+                    _new_connection(event->connect.conn_handle, true);
+                if (connection != NULL &&
+                    ble_gattc_exchange_mtu(event->connect.conn_handle,
+                        _mtu_reply, connection) != 0) {
+                    // _mtu_reply() won't be called, so end the wait here.
+                    // This is the usual case with a peer that starts the MTU exchange itself,
+                    // such as Zephyr: NimBLE refuses to start a second exchange.
+                    // _new_connection() already got the MTU.
+                    _connection_status = event->connect.conn_handle;
+                }
                 // Set connections objs back to NULL since we have a new
                 // connection and need a new tuple.
                 self->connection_objs = NULL;
