@@ -449,7 +449,6 @@ CIRCUITPY_ESPCAMERA = 0
 # P4 has MIPI-DSI
 CIRCUITPY_MIPIDSI = 1
 CIRCUITPY_DISPLAYIO_LVGL = 1
-CFLAGS += -DLV_CONF_INCLUDE_SIMPLE
 
 # P4 has MIPI-CSI
 CIRCUITPY_MIPICSI = 1
@@ -507,7 +506,6 @@ CIRCUITPY_ALARM_TOUCH = 0
 CIRCUITPY_TOUCHIO = 0
 CIRCUITPY_TOUCHIO_USE_NATIVE = 0
 CIRCUITPY_DISPLAYIO_LVGL = 1
-CFLAGS += -DLV_CONF_INCLUDE_SIMPLE
 
 #### esp32s2 ##########################################################
 else ifeq ($(IDF_TARGET),esp32s2)
@@ -639,3 +637,12 @@ CIRCUITPY_MESSAGE_COMPRESSION_LEVEL ?= 1
 
 # The CIRCUITPY partition is mapped into the data address space on first use
 CIRCUITPY_STORAGE_MAP_FILE ?= 1
+
+ifeq ($(CIRCUITPY_DISPLAYIO_LVGL),1)
+CFLAGS += -DLV_CONF_INCLUDE_SIMPLE
+# LVGL draw buffers come from the Python heap and need LV_DRAW_BUF_ALIGN (64).
+# The P4 and S31 already use 64-byte GC blocks.
+ifeq ($(filter esp32p4 esp32s31,$(IDF_TARGET)),)
+CFLAGS += -DMICROPY_BYTES_PER_GC_BLOCK=64
+endif
+endif
