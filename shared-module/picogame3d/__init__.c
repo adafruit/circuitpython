@@ -173,6 +173,59 @@ void picogame3d_mode7(picogame_canvas_obj_t *cv, picogame_bitmap_obj_t *tex,
     mark_rows(cv, y0);
 }
 
+// Textured wall columns (the Doom column renderer). For each column, walk the rows with a 16.16
+// texture accumulator through a light-level colormap. The transposed atlas makes one texture
+// column a contiguous run, and power-of-two sizes turn the wrap into a mask.
+void picogame3d_tcolumns(picogame_canvas_obj_t *cv, picogame_bitmap_obj_t *tex,
+    const int32_t *dists, const uint16_t *wallx, const uint16_t *kinds, int n,
+    const uint8_t *cmap, const picogame3d_tcolumns_args_t *p) {
+    const int sh = p->sh, stride = p->stride, tex_cols = p->tex_cols, nlights = p->nlights;
+    const int light_shift = p->light_shift, x_off = p->x_off, y_off = p->y_off;
+    int texels = tex->width;
+    if (tex->format != PICOGAME_FMT_PAL8 || tex->palette == NULL
+        || texels <= 0 || (texels & (texels - 1)) || tex_cols <= 0 || (tex_cols & (tex_cols - 1))
+        || n <= 0 || stride <= 0 || nlights <= 0) {
+        return;
+    }
+    const uint16_t *pal = tex->palette;
+    const int cw = cv->w, ch = cv->h, mask = texels - 1, half = sh >> 1;
+    for (int i = 0; i < n; i++) {
+        int32_t perp = dists[i];
+        int type = kinds[i] >> 1;
+        if (perp <= 0 || type < 1) {
+            continue;
+        }
+        int lh = (int)(((int32_t)sh << 16) / perp);   // full projected height, unclipped
+        int t = half - (lh >> 1) + y_off;
+        int b = t + lh;
+        int x0 = picogame_imax(i * stride + x_off, 0);
+        int x1 = picogame_imin(i * stride + x_off + stride, cw);
+        int row = (type - 1) * tex_cols + ((wallx[i] * tex_cols) >> 16);
+        if (lh <= 0 || b <= 0 || t >= ch || x1 <= x0 || (unsigned)row >= tex->height) {
+            continue;                               // a type past the atlas draws nothing
+        }
+        const uint8_t *src = tex->data + (size_t)row * tex->stride;
+        int light = picogame_imin((int)(perp >> light_shift) + (kinds[i] & 1), nlights - 1);
+        const uint8_t *lm = cmap + (light << 8);
+        int32_t vstep = (int32_t)(((uint32_t)texels << 16) / (uint32_t)lh);
+        int ct = picogame_imax(t, 0), cb = picogame_imin(b, ch);
+        int32_t v0 = (ct - t) * vstep;
+        for (int x = x0; x < x1; x++) {
+            uint16_t *dst = cv->data + ct * cw + x;
+            int32_t v = v0;
+            for (int y = ct; y < cb; y++) {
+                *dst = pal[lm[src[(v >> 16) & mask]]];
+                dst += cw;
+                v += vstep;
+            }
+        }
+    }
+    int x0 = picogame_imax(x_off, 0), x1 = picogame_imin(x_off + n * stride, cw);
+    if (x1 > x0) {
+        picogame_canvas_dirty_union(cv, cv->x + x0, cv->y, cv->x + x1, cv->y + ch);
+    }
+}
+
 // sin of a Q16 degree angle: lerp between whole-degree LUT entries. The racing-road curvature is
 // DOUBLE-integrated over ~170 rows, which amplifies whole-degree quantization into visible pixels
 // (host-measured 9 px); one lerp per curvature eval brings the road within 1 px of the float original.

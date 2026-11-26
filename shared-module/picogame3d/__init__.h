@@ -36,6 +36,19 @@ void picogame3d_road(picogame_canvas_obj_t *cv, int ri0,
     const int16_t *tab, int ntab, const int16_t *rl, const int16_t *rr,
     int32_t d05_q8, int32_t d07_q8, const uint16_t *colors);
 
+// Textured wall columns for one raycast frame, from its dist/wallx/col planes and a PAL8 atlas
+// stored transposed (row = texture column). The plain-int arguments are also an array, so the
+// binding can fill them in a loop.
+typedef union {
+    struct {
+        int sh, stride, tex_cols, nlights, light_shift, x_off, y_off;
+    };
+    int v[7];
+} picogame3d_tcolumns_args_t;
+void picogame3d_tcolumns(picogame_canvas_obj_t *cv, picogame_bitmap_obj_t *tex,
+    const int32_t *dists, const uint16_t *wallx, const uint16_t *kinds, int n,
+    const uint8_t *cmap, const picogame3d_tcolumns_args_t *p);
+
 // Racing-road curve pass (see the implementation comment in __init__.c).
 void picogame3d_road_edges(int16_t *rl, int16_t *rr, const int32_t *hw_q16, int n,
     int32_t cx_q16, int32_t dist, const int32_t *cfg);

@@ -17,8 +17,8 @@
 //|
 //| The `picogame3d` module draws pseudo-3D views into a :py:class:`picogame.Canvas`,
 //| including a `picogame.StripDraw` view: a perspective floor (`mode7`), a racing
-//| road (`road_edges` and `road`) and grid-map wall rays (`raycast`). `project`
-//| batch-projects 3D points for :py:class:`picogame.Triangles` and
+//| road (`road_edges` and `road`) and grid-map wall rays (`raycast`, textured by
+//| `tcolumns`). `project` batch-projects 3D points for :py:class:`picogame.Triangles` and
 //| :py:meth:`picogame.Canvas.fill_triangles`.
 //|
 //| These are low-level interfaces. The ``picogame_mode7``, ``picogame_road`` and
@@ -263,6 +263,7 @@ static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(picogame3d_project_obj, 5, 5, picogam
 //|     col: WriteableBuffer,
 //|     dist: WriteableBuffer,
 //|     runs: Optional[WriteableBuffer] = None,
+//|     wallx: Optional[WriteableBuffer] = None,
 //| ) -> Optional[int]:
 //|     """Cast one frame of wall-finding rays across the screen columns of a
 //|     grid-map view. A low-level interface used by the ``picogame_ray`` helper,
@@ -299,7 +300,11 @@ static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(picogame3d_project_obj, 5, 5, picogam
 //|         ``5 * ncols`` ``uint16`` values, laid out as five ``ncols``-long planes
 //|         (x0s, x1s, tops, bots, colors). When given, adjacent equal columns are
 //|         merged into wall runs suitable for :py:meth:`picogame.Canvas.vspans` and the
-//|         run count is returned; otherwise `None` is returned."""
+//|         run count is returned; otherwise `None` is returned.
+//|     :param ~circuitpython_typing.WriteableBuffer wallx: optional; at least ``ncols``
+//|         ``uint16`` values; receives where along the wall face each ray landed, as a
+//|         16.16 fraction of one cell. This is the texture coordinate `tcolumns` needs,
+//|         already mirrored so that a texture reads the same way round on every face."""
 //|     ...
 //|
 // C DDA wall raycaster for picogame_ray.Raycaster - INTEGER ONLY (16.16 fixed-point, no FPU; the paint,
@@ -343,7 +348,14 @@ static mp_obj_t picogame3d_raycast(size_t n_args, const mp_obj_t *args) {
     mp_get_buffer_raise(args[15], &ci, MP_BUFFER_WRITE);
     mp_get_buffer_raise(args[16], &di, MP_BUFFER_WRITE);
     uint16_t *r0 = NULL, *r1 = NULL, *rt = NULL, *rb = NULL, *rcol = NULL;
-    if (n_args >= 18) {                            // run outputs requested
+    uint16_t *wallx = NULL;
+    if (n_args >= 19 && args[18] != mp_const_none) {   // texture coordinate requested
+        mp_buffer_info_t q;
+        mp_get_buffer_raise(args[18], &q, MP_BUFFER_WRITE);
+        ncols = picogame_imin(ncols, (int)(q.len >> 1));
+        wallx = q.buf;
+    }
+    if (n_args >= 18 && args[17] != mp_const_none) {   // run outputs requested
         mp_buffer_info_t q;
         mp_get_buffer_raise(args[17], &q, MP_BUFFER_WRITE);
         int cap = (int)(q.len / 10);               // five uint16 planes
@@ -444,6 +456,18 @@ static mp_obj_t picogame3d_raycast(size_t n_args, const mp_obj_t *args) {
         int ct = (cell < wc_types) ? cell : 1;     // unknown type -> type 1 (matches Python default)
         col[c] = wc[ct * 2 + side];
         dist_out[c] = perp;
+        if (wallx != NULL) {
+            // The fraction of the coordinate that runs along the face (y for an x-side hit, x for
+            // a y-side one) is the texture coordinate; mirror the faces seen from behind.
+            int32_t w = (side == 0)
+                ? posy + (int32_t)(((int64_t)perp * rdy) >> 16)
+                : posx + (int32_t)(((int64_t)perp * rdx) >> 16);
+            uint16_t frac = (uint16_t)(w & 0xffff);
+            if ((side == 0 && rdx > 0) || (side == 1 && rdy < 0)) {
+                frac = (uint16_t)(65535 - frac);
+            }
+            wallx[c] = frac;
+        }
         rdx += srx;                                // accumulate ray direction for the next column (no overflow)
         rdy += sry;
     }
@@ -466,7 +490,80 @@ static mp_obj_t picogame3d_raycast(size_t n_args, const mp_obj_t *args) {
     }
     return mp_const_none;
 }
-static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(picogame3d_raycast_obj, 17, 18, picogame3d_raycast);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(picogame3d_raycast_obj, 17, 19, picogame3d_raycast);
+
+//| def tcolumns(
+//|     canvas: picogame.Canvas,
+//|     dists: ReadableBuffer,
+//|     wallx: ReadableBuffer,
+//|     kinds: ReadableBuffer,
+//|     n: int,
+//|     texture: picogame.Bitmap,
+//|     colormap: ReadableBuffer,
+//|     sh: int,
+//|     stride: int = 1,
+//|     tex_cols: int = 64,
+//|     nlights: int = 32,
+//|     light_shift: int = 15,
+//|     x_off: int = 0,
+//|     y_off: int = 0,
+//| ) -> None:
+//|     """Paint the textured wall columns of one `raycast` frame into ``canvas``.
+//|
+//|     Column ``i`` is ``stride`` pixels wide at ``i * stride + x_off``. Its height comes
+//|     from ``dists``, not from the clipped ``top`` and ``bot`` of `raycast`, so a wall does
+//|     not stretch when the camera is close to it.
+//|
+//|     :param picogame.Canvas canvas: surface to draw into
+//|     :param ~circuitpython_typing.ReadableBuffer dists: ``n`` ``int32`` distances, the
+//|         ``dist`` output of `raycast`
+//|     :param ~circuitpython_typing.ReadableBuffer wallx: ``n`` ``uint16`` texture
+//|         coordinates, the ``wallx`` output of `raycast`
+//|     :param ~circuitpython_typing.ReadableBuffer kinds: ``n`` ``uint16`` values of
+//|         ``type * 2 + side``: the ``col`` output of `raycast` given ``wcolors`` that map
+//|         every entry to its own index. Type 0 draws nothing
+//|     :param int n: number of columns; limited to what the buffers hold
+//|     :param picogame.Bitmap texture: PAL8 bitmap with a palette, stored transposed: row
+//|         ``r`` holds texture column ``r``. Its width is the texels per column, and wall
+//|         type ``t`` uses rows from ``(t - 1) * tex_cols``. Width and ``tex_cols`` must be
+//|         powers of two
+//|     :param ~circuitpython_typing.ReadableBuffer colormap: ``nlights * 256`` bytes; a
+//|         texel ``v`` at light level ``l`` is drawn as ``palette[colormap[l * 256 + v]]``,
+//|         so every value must be a valid palette index
+//|     :param int sh: screen height given to `raycast`
+//|     :param int stride: pixel width of one column
+//|     :param int tex_cols: texture columns per wall type
+//|     :param int nlights: light levels in ``colormap``
+//|     :param int light_shift: the light level is ``(distance >> light_shift) + side``,
+//|         at most ``nlights - 1``
+//|     :param int x_off: added to every column x
+//|     :param int y_off: added to every column y; for a `picogame.StripDraw` view, the
+//|         negated strip origin"""
+//|     ...
+//|
+static mp_obj_t picogame3d_tcolumns_fn(size_t n, const mp_obj_t *a) {
+    mp_buffer_info_t di, wi, ki, ci;
+    mp_get_buffer_raise(a[1], &di, MP_BUFFER_READ);
+    mp_get_buffer_raise(a[2], &wi, MP_BUFFER_READ);
+    mp_get_buffer_raise(a[3], &ki, MP_BUFFER_READ);
+    picogame_bitmap_obj_t *tex = MP_OBJ_TO_PTR(
+        mp_arg_validate_type(a[5], &picogame_bitmap_type, MP_QSTR_texture));
+    mp_get_buffer_raise(a[6], &ci, MP_BUFFER_READ);
+    // sh onward are plain ints with these defaults: sh, stride, tex_cols, nlights, light_shift,
+    // x_off, y_off.
+    static const int8_t defaults[] = { 0, 1, 64, 32, 15, 0, 0 };
+    picogame3d_tcolumns_args_t p;
+    for (size_t i = 0; i < MP_ARRAY_SIZE(defaults); i++) {
+        p.v[i] = 7 + i < n ? mp_obj_get_int(a[7 + i]) : defaults[i];
+    }
+    // Never read past the shortest plane, nor past the colormap's light rows.
+    int cols = picogame_imin(mp_obj_get_int(a[4]), (int)(di.len >> 2));
+    cols = picogame_imin(cols, (int)(picogame_imin(wi.len, ki.len) >> 1));
+    p.nlights = picogame_imin(p.nlights, (int)(ci.len >> 8));
+    picogame3d_tcolumns(pg3d_canvas(a[0]), tex, di.buf, wi.buf, ki.buf, cols, ci.buf, &p);
+    return mp_const_none;
+}
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(picogame3d_tcolumns_obj, 8, 14, picogame3d_tcolumns_fn);
 
 //| def road_edges(
 //|     rl: WriteableBuffer,
@@ -530,6 +627,7 @@ static const mp_rom_map_elem_t picogame3d_module_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_road), MP_ROM_PTR(&picogame3d_road_obj) },
     { MP_ROM_QSTR(MP_QSTR_road_edges), MP_ROM_PTR(&picogame3d_road_edges_obj) },
     { MP_ROM_QSTR(MP_QSTR_raycast), MP_ROM_PTR(&picogame3d_raycast_obj) },
+    { MP_ROM_QSTR(MP_QSTR_tcolumns), MP_ROM_PTR(&picogame3d_tcolumns_obj) },
     { MP_ROM_QSTR(MP_QSTR_project), MP_ROM_PTR(&picogame3d_project_obj) },
     { MP_ROM_QSTR(MP_QSTR_FLOAT), MP_ROM_INT(CIRCUITPY_PICOGAME3D_FLOAT) },
 };
