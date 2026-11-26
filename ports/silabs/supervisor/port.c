@@ -47,6 +47,7 @@
 #include "common-hal/alarm/__init__.h"
 #endif
 #if CIRCUITPY_RTC
+#include "common-hal/rtc/RTC.h"
 #include "shared-bindings/rtc/__init__.h"
 #endif
 #if CIRCUITPY_ANALOGIO
@@ -123,6 +124,10 @@ safe_mode_t port_init(void) {
         // Note that if the kernel is present, processing task(s) will be created by
         // this call.
         sl_system_init();
+        #if CIRCUITPY_RTC
+        // Once per reset, after sl_system_init() has started the sleeptimer.
+        common_hal_rtc_init();
+        #endif
         // Create thread for Bluetooth stack
         if (tid_thread_circuitpython == NULL) {
             tid_thread_circuitpython = osThreadNew(circuitpython_thread,

@@ -43,6 +43,8 @@ static mp_obj_t rtc_rtc_make_new(const mp_obj_type_t *type, size_t n_args, size_
 //|       r = rtc.RTC()
 //|       r.datetime = time.struct_time((2019, 5, 29, 15, 14, 15, 0, -1, -1))
 //|
+//|     Setting an impossible date or time, such as February 30, raises `ValueError`. Some boards'
+//|     clocks hold less: on STM32 boards, only the years 2000 to 2099 and no leap second.
 //|
 //|     Once set, the RTC will automatically update this value as time passes. You can read this
 //|     property to get a snapshot of the current time::

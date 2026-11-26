@@ -28,5 +28,6 @@
 #define MICROPY_INCLUDED_STM_COMMON_HAL_RTC_RTC_H
 
 extern void rtc_init(void);
+extern void common_hal_rtc_init(void);
 
 #endif  // MICROPY_INCLUDED_STM_COMMON_HAL_RTC_RTC_H
