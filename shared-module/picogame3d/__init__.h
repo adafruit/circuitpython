@@ -29,7 +29,7 @@
 // them from camera angle/pos/fov). See picogame3d_mode7 for the exact math.
 void picogame3d_mode7(picogame_canvas_obj_t *cv, picogame_bitmap_obj_t *tex,
     int horizon, int y_off, int32_t z, int32_t rx0, int32_t ry0, int32_t rsx, int32_t rsy,
-    int32_t cam_x, int32_t cam_y);
+    int32_t cam_x, int32_t cam_y, bool up);
 
 // One racing-road strip: per-row spans (road/rumbles/dashes/sky) from precomputed tables.
 void picogame3d_road(picogame_canvas_obj_t *cv, int ri0,

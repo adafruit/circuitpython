@@ -45,10 +45,11 @@ static picogame_canvas_obj_t *pg3d_canvas(mp_obj_t o) {
 //|     rsy: int,
 //|     cam_x: int,
 //|     cam_y: int,
+//|     up: bool = False,
 //| ) -> None:
-//|     """Fill rows of ``canvas`` below ``horizon`` with a perspective projection of
-//|     ``texture``. The ``picogame_mode7`` helper computes the camera terms from an
-//|     angle, position and field of view.
+//|     """Fill rows of ``canvas`` below ``horizon``, or above it when ``up`` is true,
+//|     with a perspective projection of ``texture``. The ``picogame_mode7`` helper
+//|     computes the camera terms from an angle, position and field of view.
 //|
 //|     :param picogame.Canvas canvas: surface to draw into
 //|     :param picogame.Bitmap texture: texture whose width and height are powers of two
@@ -60,7 +61,9 @@ static picogame_canvas_obj_t *pg3d_canvas(mp_obj_t o) {
 //|     :param int rsx: per-column ray step x (signed 16.16 fixed-point)
 //|     :param int rsy: per-column ray step y (signed 16.16 fixed-point)
 //|     :param int cam_x: camera x position (signed 16.16 fixed-point)
-//|     :param int cam_y: camera y position (signed 16.16 fixed-point)"""
+//|     :param int cam_y: camera y position (signed 16.16 fixed-point)
+//|     :param bool up: draw a ceiling above ``horizon`` instead of a floor below it;
+//|         ``z`` then sets the height of the ceiling above the camera"""
 //|     ...
 //|
 static mp_obj_t picogame3d_mode7_fn(size_t n, const mp_obj_t *a) {
@@ -70,10 +73,11 @@ static mp_obj_t picogame3d_mode7_fn(size_t n, const mp_obj_t *a) {
     picogame3d_mode7(cv, tex,
         mp_obj_get_int(a[2]), mp_obj_get_int(a[3]), mp_obj_get_int(a[4]),
         mp_obj_get_int(a[5]), mp_obj_get_int(a[6]), mp_obj_get_int(a[7]),
-        mp_obj_get_int(a[8]), mp_obj_get_int(a[9]), mp_obj_get_int(a[10]));
+        mp_obj_get_int(a[8]), mp_obj_get_int(a[9]), mp_obj_get_int(a[10]),
+        n > 11 && mp_obj_is_true(a[11]));
     return mp_const_none;
 }
-static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(picogame3d_mode7_obj, 11, 11, picogame3d_mode7_fn);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(picogame3d_mode7_obj, 11, 12, picogame3d_mode7_fn);
 
 //| def road(
 //|     canvas: picogame.Canvas,
